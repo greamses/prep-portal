@@ -220,10 +220,10 @@ export const SITE_PAGES = [
   { id: "game-flip", title: "Flip", href: "/home/games/flip/index.html", category: "games", blurb: "Memory-match card game.", keywords: ["flip game", "memory game", "card match"] },
   { id: "game-slide", title: "Slide", href: "/home/games/slide/game.html", category: "games", blurb: "Sliding tile puzzle.", keywords: ["slide game", "sliding puzzle"] },
   { id: "game-block", title: "Block", href: "/home/games/block/tetris.html", category: "games", blurb: "Falling-block stacking game.", keywords: ["block game", "tetris"] },
-  { id: "game-flappy-addition", title: "Flappy Bird — Addition", href: "/home/games/flappy-bird/flappy-bird-addition/index.html", category: "games", blurb: "Flappy Bird with addition facts.", keywords: ["flappy bird addition", "addition game"] },
-  { id: "game-flappy-subtraction", title: "Flappy Bird — Subtraction", href: "/home/games/flappy-bird/flappy-bird-subtraction/index.html", category: "games", blurb: "Flappy Bird with subtraction facts.", keywords: ["flappy bird subtraction", "subtraction game"] },
-  { id: "game-flappy-multiplication", title: "Flappy Bird — Multiplication", href: "/home/games/flappy-bird/flappy-bird-multiplication/index.html", category: "games", blurb: "Flappy Bird with multiplication facts.", keywords: ["flappy bird multiplication", "multiplication game", "times tables"] },
-  { id: "game-flappy-division", title: "Flappy Bird — Division", href: "/home/games/flappy-bird/flappy-bird-division/index.html", category: "games", blurb: "Flappy Bird with division facts.", keywords: ["flappy bird division", "division game"] },
+  { id: "game-flappy-addition", title: "Flappy Bird — Addition", href: "/home/games/flappy-bird/flappy.html?op=add", category: "games", blurb: "Flappy Bird with addition facts.", keywords: ["flappy bird addition", "addition game"] },
+  { id: "game-flappy-subtraction", title: "Flappy Bird — Subtraction", href: "/home/games/flappy-bird/flappy.html?op=sub", category: "games", blurb: "Flappy Bird with subtraction facts.", keywords: ["flappy bird subtraction", "subtraction game"] },
+  { id: "game-flappy-multiplication", title: "Flappy Bird — Multiplication", href: "/home/games/flappy-bird/flappy.html?op=mul", category: "games", blurb: "Flappy Bird with multiplication facts.", keywords: ["flappy bird multiplication", "multiplication game", "times tables"] },
+  { id: "game-flappy-division", title: "Flappy Bird — Division", href: "/home/games/flappy-bird/flappy.html?op=div", category: "games", blurb: "Flappy Bird with division facts.", keywords: ["flappy bird division", "division game"] },
 ];
 
 /* ── Compact overview for the AI system prompt ──

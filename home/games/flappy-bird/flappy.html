@@ -1,197 +1,142 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-plain-buttons>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Math Flappy Bird — Keep Flying, Keep Answering | PrepPortal</title>
+    <meta
+      name="description"
+      content="Flap the bird through the pipes while you answer sums from a table you choose — addition, subtraction, multiplication or division."
+    />
 
-<head>
-    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Math Flappy Bird</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style/styles.css">
-  <style>
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(5px);
-    }
-  
-    .modal-content h2 {
-      color: #FF6347;
-      font-size: 28px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    
-    .close {
-      position: absolute;
-      right: 25px;
-      top: 15px;
-      color: #FF6347;
-      font-size: 32px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    
-    .close:hover {
-      color: #CD5C5C;
-      transform: scale(1.1);
-    }
-    
-    .instructions {
-      text-align: left;
-      margin: 20px 0;
-      color: #333;
-    }
-    
-    .instructions h3 {
-      color: #FF6347;
-      margin: 15px 0 10px;
-      font-size: 20px;
-    }
-    
-    .instructions ul {
-      padding-left: 25px;
-      margin-bottom: 15px;
-    }
-    
-    .instructions li {
-      margin-bottom: 8px;
-      line-height: 1.5;
-    }
-    
-    
-    
-    .modal-button:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 9px 0 #45a049, 0 18px 0 rgba(0, 0, 0, 0.1);
-    }
-    
-    .modal-button:active {
-      transform: translateY(3px);
-      box-shadow: 0 3px 0 #45a049, 0 6px 0 rgba(0, 0, 0, 0.1);
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 600px) {
-      .modal-content {
-        padding: 20px;
-        width: 90%;
-        max-height: 90%;
-        overflow: scroll;
-      }
-      
-      .modal-content h2 {
-        font-size: 24px;
-      }
-      
-      .instructions h3 {
-        font-size: 18px;
-      }
-      
-      .modal-button {
-        font-size: 16px;
-        padding: 10px 25px;
-      }
-    }
-  </style>
-</head>
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
 
-<body>
-  <div class="game-container">
-    <!-- Start Screen -->
-    <div id="startScreen" style="background: transparent;">
-      <div id="tableChoices">
-        <a href="./flappy-bird-addition/index.html">
-          <button class="tableChoice">Addition</button>
-        </a>
-        <a href="./flappy-bird-subtraction/index.html">
-          <button class="tableChoice">Subtraction</button>
-        </a>
-        <a href="./flappy-bird-multiplication/index.html">
-          <button class="tableChoice">Multiplication</button>
-        </a>
-        <a href="./flappy-bird-division/index.html">
-          <button class="tableChoice">Division</button>
-        </a>
-        
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/theme.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/utils/components/setup.css" />
+    <link rel="stylesheet" href="/utils/components/game-overlays.css" />
+    <link rel="stylesheet" href="/home/games/css/paper-game.css" />
+    <link rel="stylesheet" href="./flappy.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>FLAPPY</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="builder-paint" aria-hidden="true"></div>
+
+    <!-- ═══ SETUP ═══ -->
+    <main class="pp-setup" id="flappy-setup">
+      <div class="pgame-hdr">
+        <div class="pgame-eyebrow">Mathematics</div>
+        <h1>Math Flappy Bird</h1>
+        <p class="pgame-sub">Keep the bird in the air and keep answering. A wrong answer, a pipe or the ground ends the flight.</p>
+      </div>
+
+      <div class="pp-setup__receipt pp-receipt">
+        <div class="pp-setup__paper pp-receipt__paper">
+          <p class="pp-setup__title">Flight Settings</p>
+
+          <div class="pp-setup-field">
+            <span>The Sums</span>
+            <div class="strip-group" data-label="Operation" data-setting="operation">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="flappy-op" value="add" /><span>Addition</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="flappy-op" value="sub" /><span>Subtraction</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="radio" name="flappy-op" value="mul" checked /><span>Multiplication</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3"><input type="radio" name="flappy-op" value="div" /><span>Division</span></label>
+            </div>
+            <div class="strip-group" data-label="Table of" data-setting="table">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="flappy-table" value="2" checked /><span>2</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="radio" name="flappy-table" value="3" /><span>3</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="flappy-table" value="4" /><span>4</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="flappy-table" value="5" /><span>5</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="radio" name="flappy-table" value="6" /><span>6</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3"><input type="radio" name="flappy-table" value="7" /><span>7</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="flappy-table" value="8" /><span>8</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="radio" name="flappy-table" value="9" /><span>9</span></label>
+            </div>
+          </div>
+
+          <div class="pp-setup-field">
+            <span>How to Play</span>
+            <ul class="flappy-how">
+              <li><strong>Flap:</strong> tap the sky, or press Space or the up arrow.</li>
+              <li><strong>Answer:</strong> tap an answer, or press 1 to 4.</li>
+              <li>Every right answer is a point. Fly as long as you can.</li>
+            </ul>
+          </div>
+
+          <button class="pgame-start-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0" type="button" onclick="openGame()">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="16" height="16"><path d="M6.6 3.8 20.4 12 6.6 20.2z" fill="var(--accent-success)"/></svg>
+            <span>Start Game</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══ PLAY OVERLAY ═══ -->
+    <div class="review-bd" id="game-modal" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <div class="pgame-head">
+          <span class="pp-sticky pp-sticky--tape pgame-note" id="flappy-score">0 correct</span>
+          <span class="pp-sticky pp-sticky--tape pgame-note" id="flappy-best">best 0</span>
+        </div>
+
+        <div class="pp-receipt">
+          <div class="pp-receipt__paper pgame-paper">
+            <p class="flappy-sum" id="flappy-sum" aria-live="polite"></p>
+            <canvas class="flappy-sky" id="flappy-sky" aria-label="The sky — tap to flap"></canvas>
+          </div>
+        </div>
+
+        <!-- The four answers: sticky-note keys, numbered for the keyboard. -->
+        <div class="flappy-choices" id="flappy-choices"></div>
+
+        <p class="pgame-feedback" id="game-feedback"></p>
+
+        <div class="pp-lobby-actions">
+          <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="again-btn" type="button" onclick="playAgain()" hidden>Play Again</button>
+          <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" type="button" onclick="closeGame()">Exit</button>
+        </div>
       </div>
     </div>
-    
-    <!-- Game Elements -->
-    <div class="clouds">
-      <div class="cloud"></div>
-      <div class="cloud"></div>
-      <div class="cloud"></div>
-    </div>
-  </div>
-  
-  
-  <div id="instructionsModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h2 style="font-weight: 500; border-bottom: 2px solid #FF634777">Math Flappy Bird</h2>
-      <div class="instructions">
-        <p><em>Game Objective:</em> Answer math problems correctly to keep flying!</p>
-        
-        <h3 style="font-weight: 500;">Controls:</h3>
-        <ul>
-          <li><em>Jump:</em> Press SPACE, UP ARROW, or click/tap the screen</li>
-          <li><em>Answer Questions:</em> Click the correct answer or press 1-4 to select</li>
-        </ul>
-        
-        <h3 style="font-weight: 500;">Game Rules:</h3>
-        <ul>
-          <li>Choose a table to practice at the start</li>
-          <li>Answer problems correctly to get points</li>
-          <li>Wrong answers will end the game</li>
-          <li>Avoid hitting the pipes or the ground</li>
-        </ul>
-        
-        <h3 style="font-weight: 500;">Tips:</h3>
-        <ul>
-          <li>Time your jumps carefully to navigate through pipes</li>
-          <li>Focus on the math problems while avoiding obstacles</li>
-          <li>The game gets faster as you score more points</li>
-        </ul>
-      </div>
-      <button id="gotItButton" class="modal-button">Got It!</button>
-    </div>
-  </div>
-  
-  <script>
-    // Get modal elements
-    const modal = document.getElementById('instructionsModal');
-    const closeBtn = document.querySelector('.close');
-    const gotItButton = document.getElementById('gotItButton');
-    
-    // Show modal when page loads
-    window.addEventListener('load', () => {
-      modal.style.display = 'block';
-    });
-    
-    // Close modal when X is clicked
-    closeBtn.addEventListener('click', () => {
-      modal.style.display = 'none';
-    });
-    
-    // Close modal when Got It button is clicked
-    gotItButton.addEventListener('click', () => {
-      modal.style.display = 'none';
-    });
-    
-    window.addEventListener('click', (event) => {
-      if (event.target === modal) {
-        modal.style.display = 'none';
-      }
-    });
-  </script>
-</body>
 
+    <script src="./flappy.js"></script>
+    <script src="/utils/components/nav-builder.js" type="module"></script>
+
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".builder-paint").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+  </body>
 </html>

@@ -1,0 +1,84 @@
+/* ═══════════════════════════════════════════════════════
+   MATH FLAPPY BIRD — flap through the pipes while answering sums
+   The page, header, buttons and play overlay are the shared paper-game frame
+   (/home/games/css/paper-game.css). Only the sky, the sum and the answer
+   keys are here.
+═══════════════════════════════════════════════════════ */
+
+/* The answers and two buttons sit under the sky, so the frame is kept a little
+   smaller than its default to leave them on screen. */
+#game-modal .review-wrap { width: min(520px, 100%, max(280px, calc((100vh - 21rem) * 4 / 3))); }
+
+/* ── SETUP: the three lines of how-to ─────────────────── */
+.flappy-how {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+.flappy-how strong { color: var(--ink); }
+
+/* ── THE SUM, printed above the sky ───────────────────── */
+.flappy-sum {
+  min-height: 1.3em;
+  margin: 0 0 0.7rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+/* ── THE SKY ──────────────────────────────────────────── */
+/* The colour of the sky is this background; flappy.js draws only what moves
+   across it. A soft blue in both themes — it is a daytime sky either way. */
+.flappy-sky {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(#bfe3f7, #e2f3fb);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 18%, transparent);
+  cursor: pointer;
+  touch-action: none; /* a tap here flaps; it never scrolls the page */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── THE ANSWERS — four sticky-note keys, as on the Drills numpad ── */
+.flappy-choices {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+  margin: 1.1rem 0 0;
+}
+.flappy-choice {
+  position: relative;
+  min-width: 0;
+  padding: 0.75rem 0.2rem 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+/* The key's number on the keyboard, small in the corner. */
+.flappy-choice small {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.35rem;
+  font-size: 0.55rem;
+  font-weight: 700;
+  opacity: 0.5;
+}
+.flappy-choice:disabled { cursor: default; }
+.flappy-choice.is-right { box-shadow: 0 0 0 3px var(--accent-success), 5px 8px 12px -4px rgba(20, 19, 15, 0.3); }
+.flappy-choice.is-wrong { box-shadow: 0 0 0 3px var(--accent-danger), 5px 8px 12px -4px rgba(20, 19, 15, 0.3); }
+
+@media (max-width: 560px) {
+  .flappy-sum { font-size: 1.25rem; }
+  .flappy-choices { gap: 0.4rem; }
+  .flappy-choice { font-size: 1.05rem; }
+}

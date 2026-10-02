@@ -139,9 +139,9 @@ export const GAMES = [
     category: "Arcade",
     type: "2d",
     premium: false,
-    ready: false,
+    ready: true,
     href: "/home/games/flappy-bird/flappy.html",
     image: "/home/games/flappy-bird/thumb.jpg",
-    desc: "Solve quick sums correctly to fly the bird safely through each gap.",
+    desc: "Flap through the pipes while you answer sums from a table you choose. One slip ends the flight.",
   },
 ];
