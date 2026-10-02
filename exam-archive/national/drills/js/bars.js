@@ -10,6 +10,16 @@
    Line it up and a FRESH sum takes its place, on and on until the clock runs
    out; the score is the number of sums lined up.
 
+   Subtraction is the same surface with one more line: 3/4 − 1/3 puts the three
+   quarter-bars on top and the third-bar under their far end, hatched, as the
+   part taken away. What the player lines up is what is LEFT — from the start
+   of the line to where the hatched bar begins.
+
+   Two levels. Basic: one denominator is a multiple of the other, so the bar
+   that fits is already on the top line (1/2 + 1/4 → quarters). Advanced: the
+   common denominator is NEITHER denominator (3/4 + 1/3 → twelfths), so it has
+   to be worked out.
+
    The line has to be built from ONE size of bar. Without that rule the answer
    to 3/4 + 1/3 is to copy the top line, which drills nothing; with it the only
    bars that fit are twelfths — the player has found the common denominator
@@ -45,25 +55,31 @@ const TRACK_UNITS = Math.round(TRACK_WHOLES * UNITS);
 
 const gcd = (a, b) => (b ? gcd(b, a % b) : a);
 
-// Every sum the drill can deal, grouped by common denominator. Each is two
-// proper fractions in lowest terms with DIFFERENT denominators, and:
+// Every sum one (operation, level) can deal, grouped by common denominator.
+// Each is two proper fractions in lowest terms with DIFFERENT denominators, and:
 //   · their common denominator is on the tray (20 or less);
-//   · the total does not simplify — 1/2 + 1/6 is 2/3, which two third-bars
+//   · basic: that common denominator IS one of the two denominators;
+//     advanced: it is neither of them;
+//   · the answer does not simplify — 1/2 + 1/6 is 2/3, which two third-bars
 //     would match in length without lining up under either fraction;
-//   · the answer is a reasonable number of bars, on a line that fits.
-const POOL = (() => {
+//   · the answer is a reasonable number of bars, on a line that fits;
+//   · a subtraction leaves something over.
+function buildPool(op, level) {
+  const sign = op === 'fracSub' ? -1 : 1;
   const groups = new Map();
   for (let d1 = MIN_D; d1 <= MAX_D; d1++) {
     for (let d2 = MIN_D; d2 <= MAX_D; d2++) {
       if (d1 === d2) continue;
       const lcm = (d1 * d2) / gcd(d1, d2);
       if (lcm > MAX_D) continue;
+      const isOneOfThem = lcm === d1 || lcm === d2;
+      if (isOneOfThem !== (level !== 'advanced')) continue;
       for (let n1 = 1; n1 < d1; n1++) {
         if (gcd(n1, d1) > 1) continue;
         for (let n2 = 1; n2 < d2; n2++) {
           if (gcd(n2, d2) > 1) continue;
-          const count = (n1 * lcm) / d1 + (n2 * lcm) / d2;
-          if (gcd(count, lcm) > 1 || count > MAX_BARS || count / lcm > MAX_SUM) continue;
+          const count = (n1 * lcm) / d1 + sign * ((n2 * lcm) / d2);
+          if (count < 1 || gcd(count, lcm) > 1 || count > MAX_BARS || count / lcm > MAX_SUM) continue;
           if (!groups.has(lcm)) groups.set(lcm, []);
           groups.get(lcm).push({ a: { n: n1, d: d1 }, b: { n: n2, d: d2 } });
         }
@@ -71,17 +87,33 @@ const POOL = (() => {
     }
   }
   return [...groups.values()];
-})();
+}
 
-// The index-th sum of the room's stream — deterministic per (seed, index),
-// exactly like rng.js's questionAt(seed, i). The common denominator is drawn
-// first and the sum second: drawn flat, the stream would be mostly fourteenths
-// and sixteenths, simply because those have the most numerators to choose from.
-export function barsAt(seed, index) {
+const pools = new Map(); // built on first use, one per (operation, level)
+function poolFor(op, level) {
+  const key = `${op}_${level}`;
+  if (!pools.has(key)) pools.set(key, buildPool(op, level));
+  return pools.get(key);
+}
+
+const BAR_OPS = ['fracAdd', 'fracSub'];
+
+// The index-th sum of the room's stream — deterministic per (seed, index) and
+// the room's own dials, exactly like rng.js's questionAt(seed, i, opts). The
+// common denominator is drawn before the sum: drawn flat, the stream would be
+// mostly fourteenths and sixteenths, simply because those have the most
+// numerators to choose from. A room from before the dials existed has neither
+// field and plays what it always played first: basic addition.
+export function barsAt(seed, index, { operations, level } = {}) {
   const rng = mulberry32(hashSeed(seed, CONTENT_NS + index));
-  const group = POOL[Math.floor(rng() * POOL.length)];
+  const ops = BAR_OPS.filter((op) => (operations || []).includes(op));
+  if (!ops.length) ops.push('fracAdd');
+  const op = ops[Math.floor(rng() * ops.length)];
+  const pool = poolFor(op, level === 'advanced' ? 'advanced' : 'basic');
+  const group = pool[Math.floor(rng() * pool.length)];
   const { a, b } = group[Math.floor(rng() * group.length)];
-  return { a, b, units: (a.n * UNITS) / a.d + (b.n * UNITS) / b.d };
+  const sign = op === 'fracSub' ? -1 : 1;
+  return { a, b, op, units: (a.n * UNITS) / a.d + sign * ((b.n * UNITS) / b.d) };
 }
 
 /* ── ROUND RUNNER ───────────────────────────────────────────────────────── */
@@ -102,6 +134,7 @@ const THIN_PX = 17; // narrower than this, a bar's fraction is written up its si
 // the player is holding.
 const TAKE_OFF = window.matchMedia('(pointer: coarse)').matches ? 'Double-tap' : 'Double-click';
 const HINT = `Line up one size of bar underneath. ${TAKE_OFF} a bar to take it off.`;
+const HINT_SUB = `Line up one size of bar under what is left. ${TAKE_OFF} a bar to take it off.`;
 const HINT_MIXED = 'Same length — now do it with one size of bar.';
 
 let active = false;
@@ -111,6 +144,7 @@ let endAt = 0;
 let rafId = null;
 let resolveRound = null;
 let curSeed = 0;
+let curOpts = {}; // the room's dials: { operations, level }
 let sumIndex = 0;
 let current = null; // the sum on the top line
 let placed = []; // denominators of the bars on the bottom line, left to right
@@ -127,6 +161,7 @@ let receiptEl = null;
 let sumEl = null;
 let boardEl = null;
 let targetRow = null;
+let takeRow = null; // subtraction only — the bars taken away, under the far end
 let answerRow = null;
 let markEl = null; // where the top line ends, ruled down through the bottom one
 let hintEl = null;
@@ -188,13 +223,15 @@ function ensureMount() {
   boardEl.className = 'drill-bars-board';
   targetRow = document.createElement('div');
   targetRow.className = 'drill-bars-row drill-bars-target';
+  takeRow = document.createElement('div');
+  takeRow.className = 'drill-bars-row drill-bars-take';
   answerRow = document.createElement('div');
   answerRow.className = 'drill-bars-row drill-bars-answer';
   answerRow.setAttribute('aria-label', 'Your line of bars');
   markEl = document.createElement('span');
   markEl.className = 'drill-bars-mark';
   markEl.setAttribute('aria-hidden', 'true');
-  boardEl.append(targetRow, answerRow, markEl);
+  boardEl.append(targetRow, takeRow, answerRow, markEl);
 
   hintEl = document.createElement('p');
   hintEl.className = 'drill-bars-hint';
@@ -336,7 +373,7 @@ function onPlacedKey(e) {
 function check() {
   const sameLength = placedUnits() === current.units;
   const oneSize = placed.every((d) => d === placed[0]);
-  hintEl.textContent = sameLength && !oneSize ? HINT_MIXED : HINT;
+  hintEl.textContent = sameLength && !oneSize ? HINT_MIXED : hintFor(current);
   hintEl.classList.toggle('is-nudge', sameLength && !oneSize);
   if (!sameLength || !oneSize) return;
 
@@ -353,23 +390,37 @@ function check() {
   }, NEXT_DELAY_MS);
 }
 
+const hintFor = (sum) => (sum.op === 'fracSub' ? HINT_SUB : HINT);
+
 // Lay out the top line for the current sum and clear the bottom one.
 function renderSum() {
-  current = barsAt(curSeed, sumIndex);
+  current = barsAt(curSeed, sumIndex, curOpts);
   const { a, b } = current;
+  const isSub = current.op === 'fracSub';
   placed = [];
   dropDrag();
 
-  sumEl.innerHTML = `${fracHtml(a.n, a.d)}<span class="drill-bars-plus">+</span>${fracHtml(b.n, b.d)}`;
-  sumEl.setAttribute('aria-label', `${a.n}/${a.d} + ${b.n}/${b.d}`);
+  sumEl.innerHTML = `${fracHtml(a.n, a.d)}<span class="drill-bars-plus">${isSub ? '−' : '+'}</span>${fracHtml(b.n, b.d)}`;
+  sumEl.setAttribute('aria-label', `${a.n}/${a.d} ${isSub ? '−' : '+'} ${b.n}/${b.d}`);
 
+  // Addition lays both sets end to end on the top line. Subtraction keeps the
+  // first set there and hangs the second under its far end — pushed along by
+  // exactly what is left, which is the gap the player has to fill.
   targetRow.innerHTML = '';
+  takeRow.innerHTML = '';
+  takeRow.hidden = !isSub;
+  if (isSub) {
+    const gap = document.createElement('span');
+    gap.className = 'drill-bars-gap';
+    gap.style.width = `${(current.units / TRACK_UNITS) * 100}%`;
+    takeRow.appendChild(gap);
+  }
   [a, b].forEach((f, set) => {
     for (let i = 0; i < f.n; i++) {
       const bar = barEl(f.d);
       // A heavier rule where the second fraction's bars begin.
-      if (set === 1 && i === 0) bar.classList.add('is-set-start');
-      targetRow.appendChild(bar);
+      if (set === 1 && i === 0 && !isSub) bar.classList.add('is-set-start');
+      (set === 1 && isSub ? takeRow : targetRow).appendChild(bar);
     }
   });
   markEl.style.left = `${(current.units / TRACK_UNITS) * 100}%`;
@@ -377,7 +428,7 @@ function renderSum() {
 
   answerRow.innerHTML = '';
   answerRow.classList.remove('is-correct', 'is-full');
-  hintEl.textContent = HINT;
+  hintEl.textContent = hintFor(current);
   hintEl.classList.remove('is-nudge');
 }
 
@@ -415,12 +466,13 @@ function endRound() {
 
 // Resolves with the number of sums lined up once the local timer hits zero.
 // Same shape/contract as game.js's startRound so main.js can dispatch on it.
-export function startBarsRound({ seed, timeLimit, startAt, roster }) {
+export function startBarsRound({ seed, timeLimit, startAt, operations, level, roster }) {
   return new Promise((resolve) => {
     ensureMount();
     score = 0;
     sumIndex = 0;
     curSeed = seed;
+    curOpts = { operations, level };
     resolveRound = resolve;
     placed = [];
     locked = false;

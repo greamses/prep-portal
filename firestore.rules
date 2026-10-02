@@ -309,11 +309,15 @@ service cloud.firestore {
         // Tables (grid filler): which play surface and how blank each 5×5 grid
         // is. Both optional for the same reason as `compounds` — a tab open
         // across this deploy predates the fields — but present-but-wrong is
-        // still rejected. 'bars' is Fraction Bars, which has no dial of its own.
+        // still rejected. 'bars' is Fraction Bars.
         (!('activity' in request.resource.data) ||
           request.resource.data.activity in ['drill', 'grid', 'bars']) &&
         (!('gridBlanks' in request.resource.data) ||
-          request.resource.data.gridBlanks in ['light', 'heavy']);
+          request.resource.data.gridBlanks in ['light', 'heavy']) &&
+        // Fraction Bars: how the two denominators are related. Optional for
+        // the same reason again.
+        (!('barsLevel' in request.resource.data) ||
+          request.resource.data.barsLevel in ['basic', 'advanced']);
 
       allow update: if isLoggedIn() && (
         // A join: playerCount +1, never past size, nothing else changes.

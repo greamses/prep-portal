@@ -57,9 +57,9 @@ const CATEGORY_OPERATIONS = {
   // placeholder so the room doc still carries a valid, non-empty operations
   // list; the grid round ignores it entirely (see js/grid.js).
   timestable: ['multiply'],
-  // Fraction Bars has no operations step either — every sum is an addition of
-  // unlike fractions, so 'fracAdd' is both the placeholder and the truth.
-  fracbars: ['fracAdd'],
+  // Fraction Bars adds and subtracts unlike fractions — the same two keys the
+  // Fractions category uses, read by js/bars.js instead of rng.js.
+  fracbars: ['fracAdd', 'fracSub'],
 };
 const CATEGORY_DEFAULT_OPS = {
   basic: ['multiply', 'divide'],
@@ -163,6 +163,9 @@ let range = mem.get('range', 'all', RANGES.map((r) => r.key));
 // always 5×5 with a fresh mix of 1..12 tables per grid, streamed one after the
 // next, so there is no size dial.
 let gridBlanks = mem.get('gridBlanks', 'light', ['light', 'heavy']);
+// Fraction Bars only — basic: one denominator is a multiple of the other, so
+// the common denominator is already on the top line; advanced: it is neither.
+let barsLevel = mem.get('barsLevel', 'basic', ['basic', 'advanced']);
 // The multi-pick sets restore from saved arrays, dropping anything that's no
 // longer a valid member of its list.
 const tables = new Set(mem.get('tables', [], Array.isArray).filter((n) => UNIT_NUMBERS.includes(n))); // Basic + 1-9 only — the cherry-picked number set
@@ -178,7 +181,6 @@ const compounds = new Set(savedSets.length ? savedSets : ALL_COMPOUND_SETS); // 
 // Chemistry's single operation is never offered as a step, so a remembered
 // setup that somehow lost it would leave the player unable to start.
 if (categoryValue === 'chemistry') operations.add('rmm');
-if (categoryValue === 'fracbars') operations.add('fracAdd'); // likewise never offered
 
 // One save covers this section's whole branch — called wherever it exits.
 const saveContent = () => mem.save({
@@ -187,6 +189,7 @@ const saveContent = () => mem.save({
   fractionTypes: [...fractionTypes], denominators: [...denominators],
   compounds: [...compounds],
   gridBlanks,
+  barsLevel,
 });
 
 // Which play surface the room runs — 'grid' for Tables, 'bars' for Fraction
@@ -234,8 +237,6 @@ function getTablesPool() {
 function updateStartDisabled() {
   // Tables always has a valid setup (size + blanks both default to a value).
   if (categoryValue === 'timestable') { startBtn.disabled = false; return; }
-  // Fraction Bars has nothing to set up at all.
-  if (categoryValue === 'fracbars') { startBtn.disabled = false; return; }
   const needsNumbers = isNumbersMode() && tables.size === 0;
   const isFractions = categoryValue === 'fractions';
   const needsFractionType = isFractions && fractionTypes.size === 0;
@@ -297,7 +298,7 @@ player.start('name');
      Fractions → Fraction Type → Operations → Denominators (2–12)
      Chemistry → Compounds (inorganic / organic)
      Tables    → Blanks (light / heavy)
-     Fraction Bars → nothing; the category is the whole choice
+     Fraction Bars → Operations (add / subtract) → Level (basic / advanced)
 
    Fractions has NO number range on purpose: in rng.js that same pool supplies
    the denominators, so "90–100" would mean fractions over ninety-somethings.
@@ -313,11 +314,13 @@ topic.addSlide('numbers', 'Numbers', () => {});
 topic.addSlide('denominators', 'Denominators', () => {});
 topic.addSlide('compounds', 'Compounds', () => {});
 topic.addSlide('grid-blanks', 'Blanks', () => {});
+topic.addSlide('bars-level', 'Level', () => {});
 
 function renderOperationsPick() {
   const isFractions = categoryValue === 'fractions';
+  const isBars = categoryValue === 'fracbars';
   renderMultiStep(topic, 'operations', {
-    title: `Which ${categoryValue} operations?`,
+    title: isBars ? 'Add, subtract, or both?' : `Which ${categoryValue} operations?`,
     colorOffset: 3,
     options: CATEGORY_OPERATIONS[categoryValue].map((op) => ({ value: op, label: OPERATION_LABELS[op] })),
     isChecked: (v) => operations.has(v),
@@ -328,6 +331,7 @@ function renderOperationsPick() {
     nextLabel: 'Next',
     onNext: () => {
       if (isFractions) { renderDenominatorsPick(); topic.goTo('denominators'); return; }
+      if (isBars) { renderBarsLevelStep(); topic.goTo('bars-level'); return; }
       renderRangePick();
       topic.goTo('range');
     },
@@ -408,6 +412,25 @@ function renderGridBlanksStep() {
   });
 }
 
+/* Fraction Bars — how the two denominators are related. Always has a value. */
+function renderBarsLevelStep() {
+  renderChoiceStep(topic, 'bars-level', {
+    title: 'How hard?',
+    subtitle: 'Basic: the bar that fits is one of the two you are given (1/2 and 1/4 → quarters). Advanced: it is neither (3/4 and 1/3 → twelfths).',
+    name: 'drill-bars-level',
+    colorOffset: 7,
+    options: [
+      { value: 'basic', label: 'Basic', checked: barsLevel === 'basic' },
+      { value: 'advanced', label: 'Advanced', checked: barsLevel === 'advanced' },
+    ],
+    onPick: (v) => {
+      barsLevel = v;
+      saveContent();
+      flow.next(); // last step of this section
+    },
+  });
+}
+
 function renderRangePick() {
   renderChoiceStep(topic, 'range', {
     title: 'Which number range?',
@@ -471,10 +494,7 @@ renderChoiceStep(topic, 'category', {
       updateStartDisabled();
     }
 
-    // Fraction Bars has no dial to turn: unlike fractions, bars from 1/2 to
-    // 1/20. Picking it is the last step of this section.
-    if (v === 'fracbars') { saveContent(); flow.next(); }
-    else if (v === 'timestable') { renderGridBlanksStep(); topic.goTo('grid-blanks'); }
+    if (v === 'timestable') { renderGridBlanksStep(); topic.goTo('grid-blanks'); }
     else if (v === 'chemistry') { renderCompoundsPick(); topic.goTo('compounds'); }
     else if (v === 'fractions') { renderFractionTypePick(); topic.goTo('fraction-type'); }
     else { renderOperationsPick(); topic.goTo('operations'); }
@@ -595,7 +615,11 @@ const flow = createSectionFlow([
         ];
       }
       if (categoryValue === 'fracbars') {
-        return [{ label: 'Fraction Bars' }, { label: 'Unlike fractions' }];
+        return [
+          { label: 'Fraction Bars' },
+          ...[...operations].map((o) => ({ label: opName(o) })),
+          { label: barsLevel === 'advanced' ? 'Advanced' : 'Basic' },
+        ];
       }
       // Chemistry's one operation IS the category — "Chemistry · Molecular
       // Mass · Inorganic" says it without repeating itself.
@@ -784,6 +808,8 @@ async function playRoundAndShowResults(room, myName) {
         seed: room.seed,
         timeLimit: room.timeLimit,
         startAt: room.startAt,
+        operations: room.operations,
+        level: room.barsLevel,
         roster,
       })
     : await startRound({
@@ -878,7 +904,7 @@ async function runMultiplayer({ timeLimit, operationsList, tablesList, fractionT
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, displayName: myName },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -899,7 +925,7 @@ async function runMultiplayerCreate({ timeLimit, operationsList, tablesList, fra
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for other players…') },
     );
   } catch (e) {
@@ -965,7 +991,7 @@ async function runVersusCreate({ timeLimit, operationsList, tablesList, fraction
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, displayName: myName },
+      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for your opponent…') },
     );
   } catch (e) {
