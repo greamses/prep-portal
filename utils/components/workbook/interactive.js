@@ -2472,10 +2472,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
   function startDrill() {
     stopDrill();
-    if (!timed || !live) return;
+    /* `timed` may be a function: a workbook whose on-screen paper is a drill
+       in one mode and not in another asks its options each time */
+    const T = typeof timed === "function" ? timed() : timed;
+    if (!T || !live) return;
     const list = drillPlaces();
     if (!list.length) return;
-    drill = { list, at: -1, left: timed.seconds * 1000, last: 0, raf: 0, inTime: 0 };
+    drill = { list, at: -1, secs: T.seconds, left: T.seconds * 1000, last: 0, raf: 0, inTime: 0 };
     clock.hidden = false;
     list.forEach((p) => {
       const input = inputOf(p);
@@ -2497,7 +2500,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         });
       }
     });
-    clock.textContent = `${timed.seconds} s for each answer`;
+    clock.textContent = `${drill.secs} s for each answer`;
     const first = list.findIndex((p) => !p.slot.classList.contains("is-drill-done"));
     if (first >= 0) goPlace(first);
   }
@@ -2506,7 +2509,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     if (!drill) return;
     sheet.querySelectorAll(".is-drill-now").forEach((n) => n.classList.remove("is-drill-now"));
     drill.at = i;
-    drill.left = timed.seconds * 1000;
+    drill.left = drill.secs * 1000;
     drill.last = 0;
     const p = drill.list[i];
     if (!p) { finishDrill(); return; }
@@ -2532,7 +2535,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         drill.last = now;
       } else drill.last = 0;
       const left = Math.max(0, drill.left);
-      sheet.style.setProperty("--wb-drill", String(left / (timed.seconds * 1000)));
+      sheet.style.setProperty("--wb-drill", String(left / (drill.secs * 1000)));
       clock.textContent = `${Math.ceil(left / 1000)} s · ${drill.at + 1} of ${drill.list.length}`;
       if (drill.left <= 0) { passPlace(false); return; }
       drill.raf = requestAnimationFrame(tick);

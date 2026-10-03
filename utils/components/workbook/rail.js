@@ -469,7 +469,7 @@ export function mountBuilder(cfg) {
         /* …and its place-value chart, on the same terms as the blocks. */
         chart: cfg.interactive.chart || null,
         /* a workbook that is a speed drill on screen (the Vedic Maths one) */
-        timed: cfg.interactive.timed || null,
+        timed: typeof cfg.interactive.timed === "function" ? () => cfg.interactive.timed(readOptions()) : cfg.interactive.timed || null,
       });
     }
 

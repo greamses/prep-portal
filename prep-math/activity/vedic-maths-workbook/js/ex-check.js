@@ -96,7 +96,7 @@ const sum = {
 
 /* ═══ checking a product ═══════════════════════════════════════════════════*/
 
-const SAYS = ["could be right", "is wrong"];
+export const SAYS = ["could be right", "is wrong"];
 
 const check = {
   id: "vm-check9",

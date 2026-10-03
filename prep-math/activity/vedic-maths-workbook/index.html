@@ -7,10 +7,10 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
     <meta name="theme-color" content="#f4c95d" />
-    <title>Prep Portal | Vedic Maths Workbook</title>
+    <title>Prep Portal | Mental Maths Workbook</title>
     <meta
       name="description"
-      content="A printable Vedic maths workbook: mental-maths tricks set out as their own steps, done on screen as a timed drill — 5 seconds a number, the cursor jumping on at each right answer. Complements and adding or taking away with them; multiplying by 11, 5, 25 and 50, units that make 10, vertically and crosswise, and near a base; squares ending in 5 and in 1, starting with 1, same-digit numbers, near 50 and near 100; square and cube roots at a glance; dividing by 9 and casting out nines; and the Trachtenberg system — × 12, 6, 7, 5, 9 and 8, one digit at a time from the right. Three levels, worked examples and an answer key."
+      content="A printable mental maths workbook: mental-maths tricks in two kinds of practice — skill development (worked examples and the trick set out as its steps, no timer) and drills (whole answers, 5 seconds a number on screen). Complements and adding or taking away with them; multiplying by 11, 5, 25 and 50, units that make 10, vertically and crosswise, and near a base; squares ending in 5 and in 1, starting with 1, same-digit numbers, near 50 and near 100; square and cube roots at a glance; dividing by 9 and casting out nines; and the Trachtenberg system — × 12, 6, 7, 5, 9 and 8, one digit at a time from the right. Three levels, worked examples and an answer key."
     />
 
     <!-- Page access gate: feature "prep-math-activities", part "vedic-maths-workbook" -->
@@ -72,14 +72,16 @@
     <main class="wb-main">
       <header class="wb-hero">
         <span class="wb-eyebrow"><span data-icon="print"></span> Mathematics · Something to print</span>
-        <h1 class="wb-title">Vedic Maths Workbook<em>.</em></h1>
+        <h1 class="wb-title">Mental Maths Workbook<em>.</em></h1>
         <p class="wb-lead">
           Mental maths the quick way — each trick a pattern the answer always
           has, set out as its own steps so the pattern is what gets learnt.
         </p>
         <p class="wb-sister">
-          On screen it is a timed drill: 5 seconds a number, and the cursor
-          jumps on the moment an answer is right. The
+          Two kinds of practice: <strong>skill development</strong>, with an
+          example and the trick's steps and no clock, and <strong>drills</strong>,
+          whole answers at 5 seconds a number with the cursor jumping on the
+          moment an answer is right. The
           same bench builds the
           <a href="/prep-math/activity/maths-workbook/index.html">Maths Workbook</a>,
           the <a href="/prep-math/activity/algebra-workbook/index.html">Algebra Workbook</a>
@@ -97,12 +99,12 @@
               <label class="wb-field">
                 <span>Title on the front</span>
                 <input class="wb-input" id="wb-title" type="text" maxlength="52"
-                       value="Vedic Maths" autocomplete="off" />
+                       value="Mental Maths" autocomplete="off" />
               </label>
 
               <label class="wb-field">
-                <span>How much help</span>
-                <select class="wb-select" id="vm-help"></select>
+                <span>What kind of practice</span>
+                <select class="wb-select" id="vm-mode"></select>
               </label>
 
               <label class="wb-field">

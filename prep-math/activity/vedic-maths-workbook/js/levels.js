@@ -26,3 +26,20 @@ export const HELP = {
 };
 
 export const helpOf = (o) => HELP[o.help] || HELP.help;
+
+/* WHAT KIND OF PRACTICE. The same tricks, two ways:
+
+     skill development   learning the trick: a worked example at the top of
+                         every section, the trick set out as its steps (and
+                         digit by digit where it goes digit by digit), and no
+                         clock
+     drills              using it: just the question and ONE box for the whole
+                         answer, no examples, and on screen 5 seconds a number
+
+   A paper saved before there were modes is a skill paper. */
+export const MODES = {
+  skill: { id: "skill", label: "Skill development — examples and the steps, no timer" },
+  drill: { id: "drill", label: "Drills — whole answers against the clock, no examples" },
+};
+export const modeOf = (o) => MODES[o?.mode] || MODES.skill;
+export const isDrill = (o) => modeOf(o).id === "drill";

@@ -6,9 +6,11 @@
    /wb/<code> — builds exactly the same paper from the same options.
    ========================================================================== */
 
-import { EXERCISES, levelOf, helpOf, unavailable, exerciseById, chapterOf } from "./exercises.js";
+import { EXERCISES, levelOf, modeOf, isDrill, unavailable, exerciseById, chapterOf } from "./exercises.js";
 
-export const WORKBOOK = { id: "vedic-maths-workbook", label: "Vedic Maths Workbook", style: "/prep-math/activity/vedic-maths-workbook/style.css" };
+/* Called "Mental Maths" since 2026-10-03; the id and the URL keep the old
+   name so saved papers, assignments and links all still open. */
+export const WORKBOOK = { id: "vedic-maths-workbook", label: "Mental Maths Workbook", style: "/prep-math/activity/vedic-maths-workbook/style.css" };
 
 const CHAPTERS = {
   1: "Chapter 1: Adding and taking away",
@@ -30,26 +32,26 @@ export const SUBJECT = {
     const which = !list.length ? "Something to print"
       : list.length === 1 ? CHAPTERS[list[0]]
         : `Chapters ${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
-    return `Mathematics · Vedic maths · ${which}`;
+    return `Mathematics · Mental maths · ${isDrill(o) ? "Drills" : "Skill development"} · ${which}`;
   },
   subtitle: (o) => {
     const L = levelOf(o);
-    const H = helpOf(o);
     const parts = [];
     parts.push(L.id === "gentle" ? "two-digit numbers, nothing carries" : L.id === "middle" ? "carrying, three digits, near 100" : "bigger numbers, above the base, near 1000");
-    parts.push(H.id === "show" ? "one done for you" : H.id === "help" ? "the steps named" : "nothing named");
+    parts.push(isDrill(o) ? "whole answers, 5 seconds each" : "one done for you, then the steps");
     return parts.join(" · ");
   },
   exercises: EXERCISES,
   unavailable,
   sectionHead: (section, o) => {
-    if (helpOf(o).id !== "show" || !section.ex.worked) return "";
+    if (isDrill(o) || !section.ex.worked) return "";
     return section.ex.worked(section.opts);
   },
 };
 
-/* Done on screen, the paper is a SPEED DRILL: 5 seconds for every number,
+/* A Drills paper done on screen is a SPEED DRILL: 5 seconds for every number,
    one box at a time; a right answer moves the cursor straight on to the next
-   box. A trick is only a trick if it is quick. (The engine's `timed` option,
-   /utils/components/workbook/interactive.js.) */
-export const LIVE = { timed: { seconds: 5 } };
+   box. A skill paper has no clock — it is for learning the trick, not racing
+   it. (The engine's `timed` option, /utils/components/workbook/interactive.js,
+   asked again each time the drill would start.) */
+export const LIVE = { timed: (o) => (isDrill(o) ? { seconds: 5 } : null) };

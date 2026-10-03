@@ -211,7 +211,8 @@ export function blocksOf(sections, o, subject) {
       node: headBlock(section, sectionLetter(i), o, subject, state, i),
     });
 
-    const cols = section.ex.cols || 1;
+    /* a number, or — for a workbook whose layout changes with a dial — a function of the options */
+    const cols = (typeof section.ex.cols === "function" ? section.ex.cols(section.opts) : section.ex.cols) || 1;
     for (let k = 0; k < section.items.length; k += cols) {
       const row = el("div", `wb-row wb-row--${cols}`);
       section.items.slice(k, k + cols).forEach((entry) => row.appendChild(itemNode(section, entry)));

@@ -35,11 +35,56 @@ import { SQ_GROUPS, SQ_EXERCISES } from "./ex-squares.js";
 import { RT_GROUPS, RT_EXERCISES } from "./ex-roots.js";
 import { CK_GROUPS, CK_EXERCISES } from "./ex-check.js";
 import { TR_GROUPS, TR_EXERCISES } from "./ex-trach.js";
+import { SAYS } from "./ex-check.js";
+import { isDrill } from "./levels.js";
+import { want, rightValues } from "/utils/components/workbook/want.js";
+import { tick } from "./common.js";
 
-export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
+export { LEVELS, HELP, MODES, levelOf, helpOf, modeOf, isDrill } from "./levels.js";
 
 export const GROUPS = [...CM_GROUPS, ...QK_GROUPS, ...SQ_GROUPS, ...RT_GROUPS, ...CK_GROUPS, ...TR_GROUPS];
-export const EXERCISES = [...CM_EXERCISES, ...QK_EXERCISES, ...SQ_EXERCISES, ...RT_EXERCISES, ...CK_EXERCISES, ...TR_EXERCISES];
+const SKILL = [...CM_EXERCISES, ...QK_EXERCISES, ...SQ_EXERCISES, ...RT_EXERCISES, ...CK_EXERCISES, ...TR_EXERCISES];
+
+/* ═══ the DRILL form of every exercise ══════════════════════════════════════
+   In Drills mode an exercise is its question and one box for the whole
+   answer — no steps, no digit boxes, no example. The question is the one the
+   skill paper prints in large type; the answer is the trick's last step.
+   The few that are not like that say so here. */
+const DRILL = {
+  "vm-nine": (it) => ({ q: `${it.B} − ${it.n}`, a: [it.B - it.n] }),
+  "vm-root": (it) => ({ q: `the digit root of ${it.n}`, a: null }),
+  "vm-div9": (it) => ({ q: `${it.n} ÷ 9`, a: [Math.floor(it.n / 9), it.n % 9], rem: true }),
+  "vm-check9": (it) => ({ q: `${it.a} × ${it.b} = ${it.shown} ?`, tick: it.kind }),
+};
+const BOX = '<span class="wb-answer vm-whole"></span>';
+
+function drillOf(ex, item, o) {
+  if (DRILL[ex.id]) return DRILL[ex.id](item);
+  if (item.product != null && /^vm-tr/.test(ex.id)) return { q: `${item.n} × ${item.m}`, a: [item.product] };
+  const html = ex.render(item, o);
+  return { q: (html.match(/class="wb-ask vm-q">(.*?)<\/p>/) || [])[1] || ex.heading, a: null };
+}
+
+const asDrill = (ex) => ({
+  ...ex,
+  cols: (o) => (isDrill(o) ? 2 : ex.cols),
+  render(item, o) {
+    if (!isDrill(o)) return ex.render(item, o);
+    const d = drillOf(ex, item, o);
+    if (d.tick != null) return `<p class="wb-ask vm-q vm-drill">${d.q}</p><p class="wb-ask">${tick(...SAYS)}</p>`;
+    return `<p class="wb-ask vm-q vm-drill">${d.q} = ${BOX}${d.rem ? ` r ${BOX}` : ""}</p>`;
+  },
+  key(item, o) {
+    const full = ex.key(item, o);
+    if (!isDrill(o)) return full;
+    const d = drillOf(ex, item, o);
+    if (d.tick != null) return [full[full.length - 1]];
+    if (d.a) return d.a.map((v) => want.num(v));
+    return [want.num(Number(rightValues(full[full.length - 1])[0]))];
+  },
+});
+
+export const EXERCISES = SKILL.map(asDrill);
 
 /** Which chapter an exercise belongs to. */
 const CHAPTER = new Map([
