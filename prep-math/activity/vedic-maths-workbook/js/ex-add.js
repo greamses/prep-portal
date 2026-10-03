@@ -16,9 +16,11 @@
    and then two ways to take away with NO regrouping at all, however many
    noughts are in the way:
 
-     same difference      slide both numbers up the number line by the same
-                          amount until the one taken away is round — the
-                          difference does not move: 503 − 278 = 525 − 300
+     same difference      slide both numbers along the number line by the
+                          same amount until the one taken away is round —
+                          the NEAREST round number, up or down (21 → 20, not
+                          30) — and the difference does not move:
+                          503 − 278 = 525 − 300, 503 − 213 = 490 − 200
      easy regroupers      split the top number into one made of 9s and the
                           rest: 503 = 499 + 4, and 499 − 278 never borrows
 
@@ -250,10 +252,10 @@ const same = {
   id: "vm-same",
   group: "vm-regroup",
   label: "Same difference",
-  blurb: "Slide both numbers up together until the one taken away is round.",
+  blurb: "Slide both numbers together to the nearest round number — up or down.",
   heading: "Same difference: slide to a round number",
   instruction: () =>
-    "A take-away is the DISTANCE between two numbers on the number line. Move both numbers up by the same amount and the distance stays the same. So slide them up until the number being taken away is a round number — then nothing needs regrouping. On screen, drag the difference bar and watch the column sum change.",
+    "A take-away is the DISTANCE between two numbers on the number line. Move both numbers by the same amount and the distance stays the same. So slide them until the number being taken away is a round number — the NEAREST one, up or down: 21 goes down 1 to 20, not up 9 to 30 — and nothing needs regrouping. On screen, drag the difference bar and watch the column sum change.",
   cols: 1,
   defaultCount: 4,
   make(r, o) {
@@ -265,7 +267,8 @@ const same = {
       if (b % unit === 0) continue;
       const a = r.int(b + 2, 10 ** n - 1);
       if (owes(a, b) < need) continue;
-      const R = Math.ceil(b / unit) * unit;
+      /* the NEAREST round number, up or down — the shorter slide */
+      const R = Math.round(b / unit) * unit;
       if (String(a + (R - b)).length > n) continue;
       return { a, b, R, goal: R - b };
     }
@@ -273,19 +276,20 @@ const same = {
   render(item) {
     const { a, b, R, goal } = item;
     return big(`${a} − ${b}`) + sameDiffFigure(a, b, { goal }) +
-      steps(step(`slide both up until ${b} is ${R}: up by`), step(`then ${a} becomes`), step(`and that − ${R} =`));
+      steps(step(`slide both ${goal > 0 ? "up" : "down"} until ${b} is ${R}: ${goal > 0 ? "up" : "down"} by`), step(`then ${a} becomes`), step(`and that − ${R} =`));
   },
   worked() {
     return worked(big("503 − 278") + sameDiffFigure(503, 278, { goal: 22 }) +
       ask("278 is 22 short of 300, so slide both up 22: " + strip("503 + 22", "278 + 22") + " → " + strip("525", "300") + ", and 525 − 300 = 225") +
-      say("503 − 278 borrows twice. 525 − 300 borrows never — and it is the same distance, so the same answer: 225."));
+      say("503 − 278 borrows twice. 525 − 300 borrows never — and it is the same distance, so the same answer: 225.") +
+      say("Slide to the NEAREST round number. For 503 − 213, 200 is nearer than 300: slide both DOWN 13, and 490 − 200 = 290."));
   },
   key(item) {
-    return [want.num(item.goal), want.num(item.a + item.goal), want.num(item.a - item.b)];
+    return [want.num(Math.abs(item.goal)), want.num(item.a + item.goal), want.num(item.a - item.b)];
   },
   answer(item) {
     const { a, b, R, goal } = item;
-    return [`up ${goal}: ${a + goal} − ${R} = ${a - b}`];
+    return [`${goal > 0 ? "up" : "down"} ${Math.abs(goal)}: ${a + goal} − ${R} = ${a - b}`];
   },
 };
 

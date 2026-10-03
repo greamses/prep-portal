@@ -4,7 +4,7 @@
    A take-away is a DISTANCE on the number line: 503 − 278 is how far it is
    from 278 to 503. Slide both numbers along by the same amount and the
    distance does not change — so slide until the number being taken away is
-   a round one, and the sum needs no regrouping at all:
+   a round one (the nearest, up or down), and the sum needs no regrouping:
 
        503 − 278   slide both up 22   525 − 300   = 225
 
@@ -19,7 +19,8 @@
    It is working, never marked — the boxes beside it are the answers.
 
      sameDiffFigure(a, b, { goal })   the printed figure (goal = the shift to
-                                      the round number, drawn dashed)
+                                      the round number, + up or − down,
+                                      drawn dashed)
      mountSameDiff(el, { saved, onChange })  → { shift(), set(s), clear(), dispose() }
    ========================================================================== */
 
@@ -34,11 +35,12 @@ const H = 30;
 const f = (n) => (+n).toFixed(2);
 const NICE = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000];
 
-/** The stretch of number line a question needs: room to slide to the goal and a little past. */
+/** The stretch of number line a question needs: room to slide to the goal
+    (up or down — the nearest round number may be either way) and a little past. */
 function rangeOf(a, b, goal) {
   const span = a - b;
-  const pad = Math.max(2, Math.ceil((span + Math.max(goal, 0)) * 0.12));
-  const lo = Math.max(0, b - pad);
+  const pad = Math.max(2, Math.ceil((span + Math.abs(goal)) * 0.12));
+  const lo = Math.max(0, b + Math.min(goal, 0) - pad);
   const hi = a + Math.max(goal, 0) + pad;
   const step = NICE.find((s) => (hi - lo) / s <= 12) || 10000;
   return { lo: Math.floor(lo / step) * step, hi: Math.ceil(hi / step) * step, step };
