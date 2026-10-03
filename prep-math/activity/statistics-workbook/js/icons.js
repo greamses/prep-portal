@@ -212,6 +212,21 @@ export const ICON = {
       `<rect x="12.4" y="8" width="10" height="10" rx="2.6" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.5"/>` +
       face(15.4, 11, 1.5, GOLD) + face(19.4, 15, 1.5, GOLD)
   ),
+  /* Counting: three things in a row, and the row again in another order. */
+  pcCount: svg(
+    `<circle cx="5" cy="8" r="2.6" fill="${LOUD}"/><circle cx="12" cy="8" r="2.6" fill="${GOLD}"/><circle cx="19" cy="8" r="2.6" fill="${QUIET}"/>` +
+      `<circle cx="5" cy="16" r="2.6" fill="${GOLD}"/><circle cx="12" cy="16" r="2.6" fill="${QUIET}"/><circle cx="19" cy="16" r="2.6" fill="${LOUD}"/>`
+  ),
+  /* Permutations and combinations: two picked out of five. */
+  pcPerm: svg(
+    [3.4, 7.7, 12, 16.3, 20.6].map((x, i) => `<circle cx="${x}" cy="15" r="1.9" fill="${i === 1 || i === 3 ? LOUD : QUIET}"/>`).join("") +
+      `<rect x="6" y="4" width="12" height="5" rx="2.5" fill="${GOLD}"/>`
+  ),
+  /* Conditions: two tied together in the row. */
+  pcMore: svg(
+    `<rect x="7.4" y="8" width="9.2" height="8" rx="4" fill="${GOLD}"/>` +
+      `<circle cx="4" cy="12" r="2.2" fill="${QUIET}"/><circle cx="10" cy="12" r="2.2" fill="${LOUD}"/><circle cx="14" cy="12" r="2.2" fill="${LOUD}"/><circle cx="20" cy="12" r="2.2" fill="${QUIET}"/>`
+  ),
   /* A probability tree: one point, two branches, four ends. */
   pbTree: svg(
     [[3, 12, 11, 6], [3, 12, 11, 18], [11, 6, 20, 3], [11, 6, 20, 9], [11, 18, 20, 15], [11, 18, 20, 21]]

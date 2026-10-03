@@ -39,16 +39,18 @@ import { PI_GROUPS, PI_EXERCISES } from "./ex-pie.js";
 import { SC_GROUPS, SC_EXERCISES } from "./ex-scatter.js";
 import { PB_GROUPS, PB_EXERCISES } from "./ex-prob.js";
 import { TR_GROUPS, TR_EXERCISES } from "./ex-tree.js";
+import { PC_GROUPS, PC_EXERCISES } from "./ex-count.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
-export const GROUPS = [...PG_GROUPS, ...BR_GROUPS, ...LN_GROUPS, ...PI_GROUPS, ...SC_GROUPS, ...PB_GROUPS, ...TR_GROUPS];
-export const EXERCISES = [...PG_EXERCISES, ...BR_EXERCISES, ...LN_EXERCISES, ...PI_EXERCISES, ...SC_EXERCISES, ...PB_EXERCISES, ...TR_EXERCISES];
+export const GROUPS = [...PG_GROUPS, ...BR_GROUPS, ...LN_GROUPS, ...PI_GROUPS, ...SC_GROUPS, ...PB_GROUPS, ...TR_GROUPS, ...PC_GROUPS];
+export const EXERCISES = [...PG_EXERCISES, ...BR_EXERCISES, ...LN_EXERCISES, ...PI_EXERCISES, ...SC_EXERCISES, ...PB_EXERCISES, ...TR_EXERCISES, ...PC_EXERCISES];
 
 /** Which chapter an exercise belongs to. */
 const CHAPTER = new Map([...PG_GROUPS.map((g) => [g.id, 1]), ...BR_GROUPS.map((g) => [g.id, 2]), ...LN_GROUPS.map((g) => [g.id, 3]),
   ...PI_GROUPS.map((g) => [g.id, 4]), ...SC_GROUPS.map((g) => [g.id, 5]),
-  ...PB_GROUPS.map((g) => [g.id, 6]), ...TR_GROUPS.map((g) => [g.id, 6])]);
+  ...PB_GROUPS.map((g) => [g.id, 6]), ...TR_GROUPS.map((g) => [g.id, 6]),
+  ...PC_GROUPS.map((g) => [g.id, 7])]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 
 export function exerciseById(id) {
@@ -57,7 +59,8 @@ export function exerciseById(id) {
 
 /** Why an exercise cannot run under these settings, or null. */
 export function unavailable(ex, o) {
-  if (ex.minLevel === "middle" && (o.level || "gentle") === "gentle") return "needs Middle or Stretch";
+  if ((ex.minLevel === "middle" || ex.hardest) && (o.level || "gentle") === "gentle") return "needs Middle or Stretch";
+  if (ex.minLevel === "stretch" && o.level !== "stretch") return "needs Stretch";
   return null;
 }
 
