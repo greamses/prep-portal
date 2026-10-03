@@ -196,6 +196,7 @@ const NAV_CONFIG = [
           { text: "Algebra Workbook", href: "/prep-math/activity/algebra-workbook/index.html", description: "From the bar model to quadratics, simultaneous equations, matrices, vectors and logic" },
           { text: "Statistics Workbook", href: "/prep-math/activity/statistics-workbook/index.html", description: "Pictograms, bar charts, line graphs, pie charts, scatter graphs" },
           { text: "Mental Maths Workbook", href: "/prep-math/activity/vedic-maths-workbook/index.html", description: "Mental-maths tricks: skill development with steps, or timed drills — complements, doubles, squares, roots, Trachtenberg" },
+          { text: "Competition Word Problems", href: "/prep-math/activity/word-problems-workbook/index.html", description: "Word problems for competitive exams: ages, mixtures, HCF and LCM, ratio, work, systems, series, counting, probability, percentages" },
           { text: "JavaScript Workbook", href: "/prep-math/activity/js-workbook/index.html", description: "Learn to code: data types and variables, with an editor and a console" },
         ],
       },

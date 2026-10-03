@@ -118,6 +118,7 @@ export const FEATURES = [
       { id: "statistics-workbook", label: "Statistics Workbook (printable — pictograms: sorting, tallies, keys, building one, problems)", path: "/prep-math/activity/statistics-workbook" },
       { id: "js-workbook", label: "JavaScript Workbook (printable — data types and variables, with an editor and a console that runs the programs)", path: "/prep-math/activity/js-workbook" },
       { id: "vedic-maths-workbook", label: "Mental Maths Workbook (printable — skill development or 5-second drills: complements, doubles, no-regrouping take-aways, × 11, vertically and crosswise, six squaring tricks, roots, ÷ 9, casting out nines, Trachtenberg)", path: "/prep-math/activity/vedic-maths-workbook" },
+      { id: "word-problems-workbook", label: "Competition Word Problems (printable — ages, alligation and mixture, HCF and LCM, compound and squared ratios, algebraic fractions, systems, sequences, arrangements and selections, probability trees, percentages, remainder theorem)", path: "/prep-math/activity/word-problems-workbook" },
       { id: "polygon-angles", label: "Polygon Angles", path: "/prep-math/activity/polygon-angles" },
       { id: "pythagoras", label: "Pythagoras (squares on the sides)", path: "/prep-math/activity/pythagoras" },
       { id: "surface-area", label: "Surface Area", path: "/prep-math/activity/surface-area" },

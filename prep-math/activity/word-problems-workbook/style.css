@@ -1,0 +1,25 @@
+/* ============================================================================
+   Competition Word Problems — what THIS workbook draws
+   ----------------------------------------------------------------------------
+   The paper, the bench and every mark a child writes into come from
+   /utils/components/workbook.css. What is left here is the story line, the
+   room to work under it, and the bar model board for the chapters that are
+   solved with a picture. Fixed hex colours, like the rest of the paper: it
+   prints the same in either theme.
+   ========================================================================== */
+
+.wb-sheet .wb-ask { font-size: 10.5pt; line-height: 1.5; }
+
+/* room to work: ruled faintly, so the working keeps to lines */
+.wp-room {
+  height: 30mm;
+  margin: 1.5mm 0 2mm;
+  border-radius: 1.5mm;
+  background: repeating-linear-gradient(to bottom, transparent 0 7.3mm, #ddd8cc 7.3mm 7.5mm);
+}
+
+/* the bar model board (utils/components/workbook/barmodel.js) */
+.mb-art { margin: 1.5mm 0 2mm; }
+.mb-art svg { display: block; max-width: 100%; height: auto; }
+
+.wb-sheet .wb-answer { min-width: 16mm; }

@@ -31,6 +31,7 @@ const WORKBOOKS = {
   "algebra-workbook": "Algebra Workbook",
   "statistics-workbook": "Statistics Workbook",
   "vedic-maths-workbook": "Mental Maths Workbook",
+  "word-problems-workbook": "Competition Word Problems",
   "js-workbook": "JavaScript Workbook",
 };
 const FEATURE = "prep-math-activities";
