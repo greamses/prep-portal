@@ -9,6 +9,10 @@
      adding with it       + 98 is + 100 − 2
      taking away with it  − 98 is − 100 + 2
 
+   doubles and near doubles, seen as a bar model: two bars the same length
+   (47 + 47 is double 40 and double 7), or one bar a little longer than the
+   other (36 + 38 is double 36 and the extra 2)
+
    and then two ways to take away with NO regrouping at all, however many
    noughts are in the way:
 
@@ -24,10 +28,12 @@
 
 import { want } from "/utils/components/workbook/want.js";
 import { sameDiffFigure, borrows } from "/utils/components/workbook/samediff.js";
+import { modelSvg } from "/prep-math/activity/maths-workbook/js/modelart.js";
 import { ask, big, worked, say, tier, step, steps, strip } from "./common.js";
 
 export const CM_GROUPS = [
   { id: "vm-comp", chapter: "Chapter 1 · Adding and taking away", label: "Complements", blurb: "How far short of 10, 100 or 1000 — then the round number does the work." },
+  { id: "vm-double", label: "Doubles and near doubles", blurb: "Two bars the same, or one a little longer — double, then add the extra." },
   { id: "vm-regroup", label: "Taking away without regrouping", blurb: "Slide to a round number, or split off the nines — and nothing borrows." },
 ];
 
@@ -142,6 +148,97 @@ const subc = {
   },
 };
 
+/* ═══ doubles and near doubles, as bar models ═══════════════════════════════*/
+
+const model = (html) => `<div class="mb-art vm-model">${html}</div>`;
+/** n split into its front place and the rest: 47 → 40 and 7, 236 → 200 and 36. */
+function front(n) {
+  const unit = 10 ** (String(n).length - 1);
+  const top = Math.floor(n / unit) * unit;
+  return { top, rest: n - top };
+}
+
+const dbl = {
+  id: "vm-dbl",
+  group: "vm-double",
+  label: "Doubles",
+  blurb: "47 + 47: double 40, double 7, put them together.",
+  heading: "Doubles: two bars the same",
+  instruction: () =>
+    "Adding a number to itself is DOUBLING it: two bars exactly the same. Cut each bar where its front place ends — 47 is 40 and 7 — and double each piece. Doubling a round number and a small one is easy; put the two together.",
+  cols: 1,
+  defaultCount: 4,
+  make(r, o) {
+    const t = tier(o);
+    for (;;) {
+      const n = t === "gentle" ? r.int(13, 49) : t === "middle" ? r.pick([r.int(26, 99), r.int(112, 499)]) : r.int(126, 4999);
+      const { top, rest } = front(n);
+      if (rest && rest % 10 !== 0 || (rest && n < 100)) return { n, top, rest };
+    }
+  },
+  render(item) {
+    const { n, top, rest } = item;
+    const row = () => ({ parts: [{ text: String(top), value: top, tone: "a" }, { text: String(rest), value: rest, tone: "c" }] });
+    return big(`${n} + ${n}`) + model(modelSvg([row(), row()], { total: "?", cap: 7 })) +
+      steps(step(`double ${top} =`), step(`double ${rest} =`), step("together ="));
+  },
+  worked() {
+    const row = () => ({ parts: [{ text: "40", value: 40, tone: "a" }, { text: "7", value: 7, tone: "c" }] });
+    return worked(big("47 + 47") + model(modelSvg([row(), row()], { total: "?", cap: 7 })) +
+      ask(strip("double 40", "double 7") + " → " + strip("80", "14") + " = 94") +
+      say("Both bars are 40 and 7. The two forties make 80, the two sevens make 14, and 80 + 14 is 94."));
+  },
+  key(item) {
+    return [want.num(2 * item.top), want.num(2 * item.rest), want.num(2 * item.n)];
+  },
+  answer(item) {
+    return [`${2 * item.top} + ${2 * item.rest} = ${2 * item.n}`];
+  },
+};
+
+const ndbl = {
+  id: "vm-ndbl",
+  group: "vm-double",
+  label: "Near doubles",
+  blurb: "36 + 38: double 36, and the extra 2.",
+  heading: "Near doubles: one bar a little longer",
+  instruction: () =>
+    "Two numbers close together are NEARLY a double. Draw them as bars: the longer one is the shorter one and a little extra. So double the SMALLER number, then add the extra on. 36 + 38 is double 36, and 2 more.",
+  cols: 1,
+  defaultCount: 4,
+  make(r, o) {
+    const t = tier(o);
+    const small = t === "gentle" ? r.int(11, 45) : t === "middle" ? r.pick([r.int(24, 95), r.int(105, 480)]) : r.int(120, 4800);
+    const d = t === "gentle" ? r.int(1, 3) : t === "middle" ? r.int(1, 9) : r.pick([r.int(1, 9), r.int(11, 30)]);
+    const flip = r.chance(0.5);
+    return { small, d, a: flip ? small + d : small, b: flip ? small : small + d };
+  },
+  render(item) {
+    const { small, d, a, b } = item;
+    const rows = [
+      { parts: [{ text: String(small), value: small, tone: "a" }] },
+      { parts: [{ text: String(small), value: small, tone: "a" }, { text: "", value: d, tone: "c" }], below: [{ from: 1, to: 2, text: `+${d}` }] },
+    ];
+    return big(`${a} + ${b}`) + model(modelSvg(rows, { total: "?", cap: 7 })) +
+      steps(step(`double ${small} =`), step(`and the extra ${d}: total =`));
+  },
+  worked() {
+    const rows = [
+      { parts: [{ text: "36", value: 36, tone: "a" }] },
+      { parts: [{ text: "36", value: 36, tone: "a" }, { text: "", value: 2, tone: "c" }], below: [{ from: 1, to: 2, text: "+2" }] },
+    ];
+    return worked(big("36 + 38") + model(modelSvg(rows, { total: "?", cap: 7 })) +
+      ask(strip("double 36", "+ 2") + " → " + strip("72", "+ 2") + " = 74") +
+      say("38 is 36 and 2 more, so the bars are 36 twice and a little extra: 72 and 2 more is 74."));
+  },
+  key(item) {
+    return [want.num(2 * item.small), want.num(item.a + item.b)];
+  },
+  answer(item) {
+    return [`double ${item.small} = ${2 * item.small}, + ${item.d} = ${item.a + item.b}`];
+  },
+};
+
 /* ═══ taking away with no regrouping ═══════════════════════════════════════*/
 
 const lenOf = (o) => ({ gentle: 2, middle: 3, stretch: 4 })[tier(o)];
@@ -232,4 +329,4 @@ const split = {
   },
 };
 
-export const CM_EXERCISES = [nine, addc, subc, same, split];
+export const CM_EXERCISES = [nine, addc, subc, dbl, ndbl, same, split];

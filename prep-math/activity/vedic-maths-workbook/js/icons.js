@@ -12,6 +12,8 @@ const cell = (x, y, w, h, fill, rx = 1.2) => `<rect x="${x}" y="${y}" width="${w
 
 export const ICON = {
   ...BASE,
+  /* doubles and near doubles: two bars, the lower one a little longer */
+  vmDouble: svg(cell(3, 5, 13, 5.5, PAPER) + cell(3, 13.5, 13, 5.5, PAPER) + cell(16, 13.5, 5, 5.5, LOUD)),
   /* taking away without regrouping: a difference bar riding a number line */
   vmRegroup: svg(`<rect x="2" y="15" width="20" height="2.4" rx="1.2" fill="${PAPER}"/>` + cell(6, 6, 11, 6.5, LOUD) + `<path d="M3.5 9.2h2M17.5 9.2h2" stroke="${LOUD}" stroke-width="1.6" stroke-linecap="round"/>`),
   /* The Trachtenberg stages: two digit boxes, painted by what they hold —

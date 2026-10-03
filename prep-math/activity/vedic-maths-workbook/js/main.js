@@ -45,6 +45,7 @@ mountBuilder({
   groups: GROUPS,
   glyphs: {
     "vm-comp": ICON.vmComp,
+    "vm-double": ICON.vmDouble,
     "vm-regroup": ICON.vmRegroup,
     "vm-quick": ICON.vmQuick,
     "vm-pattern": ICON.vmPattern,
