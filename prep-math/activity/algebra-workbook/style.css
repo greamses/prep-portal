@@ -416,3 +416,22 @@
 /* chapter 9 word problems: the bar model (Maths Workbook modelart.js) and its board */
 .mb-art { margin: 1.5mm 0 2mm; }
 .mb-art svg { display: block; max-width: 100%; height: auto; }
+
+/* ── chapter 10: Pascal's triangle (js/ex-binomial.js) ── */
+.bn-pascal { display: flex; flex-direction: column; align-items: center; gap: 1.2mm; margin: 1.5mm 0 2mm; font: 600 10.5pt/1 "JetBrains Mono", monospace; }
+.bn-row { display: flex; gap: 1.6mm; }
+.bn-c { width: 10mm; text-align: center; }
+.bn-c .wb-answer { width: 10mm; min-width: 0; }
+
+/* ── chapter 11: truth tables and logic gates (js/ex-logic.js) ── */
+.lg-table { border-collapse: collapse; margin: 1.5mm 0 2mm; font: 600 10pt/1 "JetBrains Mono", monospace; }
+.lg-table th, .lg-table td { border: 0.3mm solid #2a2723; padding: 1.2mm 3mm; text-align: center; min-width: 9mm; }
+.lg-table th { background: #f3eee4; }
+.lg-table th.lg-ask { background: #fff3a8; }
+.lg-table .wb-answer { min-width: 8mm; height: 6mm; }
+.lg-art { margin: 1.5mm 0 1mm; }
+.lg-art svg { display: block; max-width: 100%; height: auto; }
+.lg-side { display: flex; gap: 6mm; align-items: flex-start; flex-wrap: wrap; }
+
+.bn-eq { font: 600 11pt/2 "JetBrains Mono", monospace; }
+.bn-eq .wb-answer { margin: 0 0.8mm; min-width: 10mm; }

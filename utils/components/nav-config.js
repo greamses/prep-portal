@@ -193,7 +193,7 @@ const NAV_CONFIG = [
         children: [
           { text: "Maths Workbook", href: "/prep-math/activity/maths-workbook/index.html", description: "Place value, sums, division, fractions, time, multiplying, prime factors, bar models" },
           { text: "Geometry Workbook", href: "/prep-math/activity/geometry-workbook/index.html", description: "Angles, polygons, Pythagoras, circles, solids, area" },
-          { text: "Algebra Workbook", href: "/prep-math/activity/algebra-workbook/index.html", description: "Basic ideas, the bar model, the balance scale, identities, graphs, simultaneous equations" },
+          { text: "Algebra Workbook", href: "/prep-math/activity/algebra-workbook/index.html", description: "Basic ideas, the bar model, the balance scale, graphs, simultaneous equations, binomials, logic" },
           { text: "Statistics Workbook", href: "/prep-math/activity/statistics-workbook/index.html", description: "Pictograms, bar charts, line graphs, pie charts, scatter graphs" },
           { text: "Mental Maths Workbook", href: "/prep-math/activity/vedic-maths-workbook/index.html", description: "Mental-maths tricks: skill development with steps, or timed drills — complements, doubles, squares, roots, Trachtenberg" },
           { text: "JavaScript Workbook", href: "/prep-math/activity/js-workbook/index.html", description: "Learn to code: data types and variables, with an editor and a console" },

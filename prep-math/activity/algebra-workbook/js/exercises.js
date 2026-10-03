@@ -45,6 +45,10 @@
      ex-det.js         chapter 9: the determinant method for two unknowns
      ex-matrix.js      chapter 9: Cramer's rule and Gaussian elimination for
                        three and four unknowns
+     ex-binomial.js    chapter 10, the binomial expansion — Pascal's triangle,
+                       (a + b)ⁿ, (x + k)ⁿ, and one term by nCr
+     ex-logic.js       chapter 11, logic — truth tables (NOT, AND, OR,
+                       compound, if-then) and logic gates
 
    THE ORDER IS THE BOOK. The words come first because every later instruction
    is written in them: "swap x for a number" means nothing to a child who has
@@ -68,6 +72,8 @@ import { TW_GROUPS, TW_EXERCISES } from "./ex-two.js";
 import { DT_GROUPS, DT_EXERCISES } from "./ex-det.js";
 import { SY_GROUPS, SY_EXERCISES } from "./ex-systems.js";
 import { MX_GROUPS, MX_EXERCISES } from "./ex-matrix.js";
+import { BN_GROUPS, BN_EXERCISES } from "./ex-binomial.js";
+import { LG_GROUPS, LG_EXERCISES } from "./ex-logic.js";
 import { RT_GROUPS, RT_EXERCISES } from "./ex-remainder.js";
 import { AP_GROUPS, AP_EXERCISES } from "./ex-laws.js";
 import { FN_GROUPS, FN_EXERCISES } from "./ex-func.js";
@@ -80,11 +86,11 @@ import { SQ2_GROUPS, SQ2_EXERCISES } from "./ex-square.js";
 export { LEVELS, levelOf } from "./poly.js";
 export { HELP, helpOf } from "./organiser.js";
 
-export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...RT_GROUPS, ...AP_GROUPS, ...FN_GROUPS, ...SQ_GROUPS, ...UG_GROUPS, ...GR_GROUPS, ...SQ2_GROUPS, ...QG_GROUPS, ...TW_GROUPS, ...SY_GROUPS, ...DT_GROUPS, ...MX_GROUPS];
+export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...RT_GROUPS, ...AP_GROUPS, ...FN_GROUPS, ...SQ_GROUPS, ...UG_GROUPS, ...GR_GROUPS, ...SQ2_GROUPS, ...QG_GROUPS, ...TW_GROUPS, ...SY_GROUPS, ...DT_GROUPS, ...MX_GROUPS, ...BN_GROUPS, ...LG_GROUPS];
 
-export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...RT_EXERCISES, ...AP_EXERCISES, ...FN_EXERCISES, ...SQ_EXERCISES, ...UG_EXERCISES, ...GR_EXERCISES, ...SQ2_EXERCISES, ...QG_EXERCISES, ...TW_EXERCISES, ...SY_EXERCISES, ...DT_EXERCISES, ...MX_EXERCISES];
+export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...RT_EXERCISES, ...AP_EXERCISES, ...FN_EXERCISES, ...SQ_EXERCISES, ...UG_EXERCISES, ...GR_EXERCISES, ...SQ2_EXERCISES, ...QG_EXERCISES, ...TW_EXERCISES, ...SY_EXERCISES, ...DT_EXERCISES, ...MX_EXERCISES, ...BN_EXERCISES, ...LG_EXERCISES];
 
-/** Which chapter an exercise belongs to: 1 to 9. */
+/** Which chapter an exercise belongs to: 1 to 11. */
 const CHAPTER = new Map([
   ...BM_GROUPS.map((g) => [g.id, 2]),
   ...BS_GROUPS.map((g) => [g.id, 3]),
@@ -94,6 +100,7 @@ const CHAPTER = new Map([
   ...UG_GROUPS.map((g) => [g.id, 7]), ...GR_GROUPS.map((g) => [g.id, 7]),
   ...SQ2_GROUPS.map((g) => [g.id, 8]), ...QG_GROUPS.map((g) => [g.id, 8]),
   ...[...TW_GROUPS, ...SY_GROUPS, ...DT_GROUPS, ...MX_GROUPS].map((g) => [g.id, 9]),
+  ...BN_GROUPS.map((g) => [g.id, 10]), ...LG_GROUPS.map((g) => [g.id, 11]),
 ]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 

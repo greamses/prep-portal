@@ -20,6 +20,8 @@ const CHAPTERS = {
   7: "Chapter 7: Graphs of functions",
   8: "Chapter 8: Completing the square",
   9: "Chapter 9: Simultaneous equations",
+  10: "Chapter 10: The binomial expansion",
+  11: "Chapter 11: Logic",
 };
 
 const chaptersOn = (o) => [...new Set((o.chosen || [])

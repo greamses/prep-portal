@@ -186,6 +186,22 @@ export const ICON = {
       `<rect x="13" y="16" width="8" height="4" rx="1.2" fill="${LOUD}"/>`
   ),
 
+  /* ── chapters 10 and 11 ── */
+  /* Pascal's triangle: rows of dots, one more each row. */
+  bnPascal: svg(
+    [[12, 4]].concat([[8, 10], [16, 10]], [[4, 16], [12, 16], [20, 16]]).map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="2.4" fill="${i === 4 ? LOUD : i === 0 ? GOLD : PAPER}"/>`).join("") +
+      `<rect x="2" y="19.6" width="20" height="2.2" rx="1.1" fill="${QUIET}"/>`
+  ),
+  /* A truth table: a grid with one column loud. */
+  lgTruth: svg(
+    [4, 9.6, 15.2].flatMap((x, i) => [4, 9, 14, 19].map((y) => `<rect x="${x}" y="${y}" width="4.8" height="3.8" rx="0.8" fill="${i === 2 ? LOUD : PAPER}"/>`)).join("")
+  ),
+  /* An AND gate with its wires. */
+  lgGate: svg(
+    bar(2, 8, 7, 8, 1.3, QUIET) + bar(2, 16, 7, 16, 1.3, QUIET) + bar(17, 12, 22, 12, 1.3, LOUD) +
+      `<path d="M7 5h5a7 7 0 0 1 0 14H7z" fill="${PAPER}"/>`
+  ),
+
   /* ── chapter 6 ── */
   /* A machine: a box with a hopper, a number going in. */
   fnMachine: svg(
