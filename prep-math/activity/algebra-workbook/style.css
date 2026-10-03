@@ -468,3 +468,10 @@
 /* ── chapter 13: a column vector, in round brackets (js/ex-vectors.js) ── */
 .vc-col { background: none; border-radius: 2.4mm / 50%; padding: 0.8mm 1.8mm; gap: 0.6mm 0; }
 .vc-col .wb-answer { margin: 0.3mm 0; }
+
+/* ── chapter 14: a fraction to fill in — boxes over boxes (js/ex-algfrac.js) ── */
+.af-stack { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 0.6mm; }
+.af-top { border-bottom: 0.4mm solid #2a2723; padding: 0 1.2mm 0.8mm; line-height: 1.5; }
+.af-bot { padding: 0.8mm 1.2mm 0; line-height: 1.5; }
+.af-stack .wb-answer { min-width: 10mm; width: 10mm; height: 7.5mm; vertical-align: middle; }
+.af-eq { line-height: 3.2; }

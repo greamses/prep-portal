@@ -24,6 +24,7 @@ const CHAPTERS = {
   11: "Chapter 11: Logic",
   12: "Chapter 12: Matrices",
   13: "Chapter 13: Vectors",
+  14: "Chapter 14: Algebraic fractions",
 };
 
 const chaptersOn = (o) => [...new Set((o.chosen || [])

@@ -66,6 +66,7 @@ export const SY_GROUPS = [
   { id: "sy-sub", label: "Substitution", blurb: "One equation says what a letter is — put it into the other." },
   { id: "sy-elim", label: "Elimination", blurb: "Match one letter's numbers, then add or take away and it is gone." },
   { id: "sy-graph", label: "The graphical method", blurb: "Each equation is a line; the answer is where they cross." },
+  { id: "sy-real", label: "Real-world problems", blurb: "Money, ages, digits, boats, shapes, mixtures: find the pair of equations in the story." },
 ];
 
 /* ═══ SUBSTITUTION ═════════════════════════════════════════════════════════*/
@@ -644,10 +645,141 @@ const grHowMany = {
   },
 };
 
+/* ═══ REAL-WORLD PROBLEMS ══════════════════════════════════════════════════
+   The same pair of equations, found in a story: each kind is its own section,
+   so the SETTING-UP is learnt one situation at a time. Every story gives two
+   facts about two unknowns; the answer key shows the pair of equations. */
+
+const naira = (n) => `₦${n.toLocaleString("en-NG")}`;
+
+/** One real-world section: a story maker returning { text, labels, vals, eqs }. */
+function realWorld(id, { label, blurb, heading, instruction, example, exampleSay }, maker) {
+  return {
+    id, group: "sy-real", label, blurb, heading,
+    instruction: () => instruction,
+    cols: 1,
+    defaultCount: 3,
+    make: (r, o) => { for (;;) { const s = maker(r, tier(o)); if (s) return s; } },
+    render: (item) => ask(item.text) + `<div class="mb-art">${blankModelSvg({ h: 30 })}</div>` +
+      eq(item.labels.map((l) => `${l} ${box()}`).join(" &nbsp;&nbsp; ")),
+    worked: () => worked(ask(example) + say(exampleSay)),
+    key: (item) => item.vals.map((v) => want.num(v)),
+    answer: (item) => [`${item.eqs}: ${item.labels.map((l, i) => `${l} ${item.vals[i]}`).join(", ")}`],
+  };
+}
+
+const rwMoney = realWorld("sy-rw-money", {
+  label: "Notes and coins",
+  blurb: "How many of each, from the count and the value.",
+  heading: "Real-world: counting money",
+  instruction: "Two facts: how MANY notes there are altogether, and how much they are WORTH altogether. Let x and y be " +
+    "the numbers of each note. The count gives x + y = …; the value gives (worth of one) × x + (worth of the other) × y = ….",
+  example: "A purse holds 12 notes, some ₦500 and some ₦200, worth ₦4,200 in all. How many of each?",
+  exampleSay: "x + y = 12 and 500x + 200y = 4200. From the first, y = 12 − x: 500x + 2400 − 200x = 4200, so 300x = 1800, " +
+    "x = 6. Six ₦500 notes and six ₦200 notes.",
+}, (r, t) => {
+  const [a, b] = r.pick([[500, 200], [1000, 500], [200, 100], [1000, 200], [500, 100]]);
+  const x = r.int(2, t === "gentle" ? 8 : 15), y = r.int(2, t === "gentle" ? 8 : 15);
+  return { text: `A purse holds ${x + y} notes, some ${naira(a)} and some ${naira(b)}, worth ${naira(a * x + b * y)} in all. How many of each note are there?`,
+    labels: [`${naira(a)} notes:`, `${naira(b)} notes:`], vals: [x, y], eqs: `x + y = ${x + y}, ${a}x + ${b}y = ${a * x + b * y}` };
+});
+
+const rwAges = realWorld("sy-rw-ages", {
+  label: "Ages",
+  blurb: "Now, and so many years ago or from now.",
+  heading: "Real-world: ages",
+  instruction: "Let the two ages NOW be x and y. A sentence about now is one equation. A sentence about the past or the " +
+    "future is another — but take the years off (or add them on) BOTH ages first.",
+  example: "A father is 4 times as old as his son. In 6 years he will be 3 times as old. How old is each now?",
+  exampleSay: "x = 4y, and x + 6 = 3(y + 6). So 4y + 6 = 3y + 18, y = 12 and x = 48.",
+}, (r, t) => {
+  const k = r.int(3, 5), m = k - 1;
+  /* x = k y now; in n years x + n = m (y + n)  →  y (k − m) = n (m − 1) */
+  const n = r.int(2, t === "gentle" ? 6 : 12);
+  const y = n * (m - 1);
+  if (y < 4 || y > 20) return null;
+  const x = k * y;
+  if (r.chance(0.5)) return { text: `A mother is ${k} times as old as her daughter. In ${n} years she will be ${m} times as old. How old is each of them now?`,
+    labels: ["mother:", "daughter:"], vals: [x, y], eqs: `x = ${k}y, x + ${n} = ${m}(y + ${n})` };
+  const d = r.int(3, 9), sum = x + y;
+  void d;
+  return { text: `A father and his son are ${sum} years old together. The father is ${k} times as old as the son. How old is each?`,
+    labels: ["father:", "son:"], vals: [x, y], eqs: `x + y = ${sum}, x = ${k}y` };
+});
+
+const rwDigits = realWorld("sy-rw-digits", {
+  label: "Two-digit numbers",
+  blurb: "Tens digit x and ones digit y: the number is 10x + y.",
+  heading: "Real-world: the digits of a number",
+  instruction: "A two-digit number with tens digit x and ones digit y is worth 10x + y — NOT x + y. Turned round it is " +
+    "10y + x. One sentence is about the digits themselves; the other about the two numbers.",
+  example: "The digits of a two-digit number add to 9. Reversing the digits makes the number 27 bigger. What is the number?",
+  exampleSay: "x + y = 9, and (10y + x) − (10x + y) = 27, so 9y − 9x = 27, y − x = 3. Adding: 2y = 12, y = 6, x = 3. The number is 36.",
+}, (r) => {
+  const x = r.int(1, 8), y = r.int(x + 1, 9);
+  return { text: `The digits of a two-digit number add up to ${x + y}. When the digits are reversed, the number is ${9 * (y - x)} bigger. Find the two digits.`,
+    labels: ["tens digit:", "ones digit:"], vals: [x, y], eqs: `x + y = ${x + y}, 9y − 9x = ${9 * (y - x)}` };
+});
+
+const rwBoat = realWorld("sy-rw-boat", {
+  label: "With and against the current",
+  blurb: "Downstream the speeds add; upstream they take away.",
+  heading: "Real-world: boats and wind",
+  instruction: "Let b be the boat's own speed in still water and c the speed of the current. Going DOWNSTREAM the " +
+    "river helps: the speed is b + c. Going UPSTREAM it hinders: b − c. Speed is distance ÷ time, so each journey " +
+    "gives one equation.",
+  example: "A boat goes 36 km downstream in 2 hours and 24 km upstream in 2 hours. Find its speed in still water and the speed of the current.",
+  exampleSay: "b + c = 36 ÷ 2 = 18 and b − c = 24 ÷ 2 = 12. Adding: 2b = 30, b = 15. So c = 3.",
+}, (r, t) => {
+  const c = r.int(1, t === "gentle" ? 4 : 6), b = c + r.int(3, 12);
+  const t1 = r.int(2, 4), t2 = r.int(2, 4);
+  return { text: `A boat goes ${(b + c) * t1} km downstream in ${t1} hours, and ${(b - c) * t2} km upstream in ${t2} hours. Find the boat's speed in still water and the speed of the current, in km/h.`,
+    labels: ["boat:", "current:"], vals: [b, c], eqs: `b + c = ${b + c}, b − c = ${b - c}` };
+});
+
+const rwShape = realWorld("sy-rw-shape", {
+  label: "Perimeters and lengths",
+  blurb: "A rectangle: its perimeter, and how its sides compare.",
+  heading: "Real-world: shapes",
+  instruction: "Let the length be x and the width y. The perimeter gives 2x + 2y = …. The other sentence compares the " +
+    "two sides — “3 longer than”, “twice as long as” — and that is the second equation.",
+  example: "A rectangle's perimeter is 30 cm. Its length is 3 cm more than its width. Find the length and the width.",
+  exampleSay: "2x + 2y = 30, so x + y = 15; and x = y + 3. So 2y + 3 = 15, y = 6 and x = 9.",
+}, (r, t) => {
+  const y = r.int(3, t === "gentle" ? 9 : 20), d = r.int(1, 8);
+  if (r.chance(0.5)) { const x = y + d; return { text: `A rectangular field has a perimeter of ${2 * (x + y)} m. Its length is ${d} m more than its width. Find the length and the width.`,
+    labels: ["length (m):", "width (m):"], vals: [x, y], eqs: `2x + 2y = ${2 * (x + y)}, x = y + ${d}` }; }
+  const k = r.int(2, 3), x = k * y;
+  return { text: `A rectangle is ${k === 2 ? "twice" : "three times"} as long as it is wide, and its perimeter is ${2 * (x + y)} cm. Find the length and the width.`,
+    labels: ["length (cm):", "width (cm):"], vals: [x, y], eqs: `2x + 2y = ${2 * (x + y)}, x = ${k}y` };
+});
+
+const rwMix = realWorld("sy-rw-mix", {
+  label: "Mixtures and tickets",
+  blurb: "Two kinds, a total amount and a total cost.",
+  heading: "Real-world: mixing two kinds",
+  instruction: "Two kinds of thing are put together. One equation counts HOW MUCH there is of the two together; the " +
+    "other counts what it COSTS (or weighs, or scores). Let x and y be the amounts of each kind.",
+  example: "A trader mixes rice at ₦900 a kg with rice at ₦600 a kg to make 20 kg worth ₦15,000. How much of each?",
+  exampleSay: "x + y = 20 and 900x + 600y = 15000. With y = 20 − x: 300x + 12000 = 15000, so x = 10 and y = 10.",
+  hardest: true,
+}, (r, t) => {
+  if (r.chance(0.5)) {
+    const [a, b] = r.pick([[900, 600], [1200, 800], [700, 500], [1500, 1000]]);
+    const x = r.int(3, t === "middle" ? 12 : 25), y = r.int(3, t === "middle" ? 12 : 25);
+    return { text: `A trader mixes rice at ${naira(a)} a kg with rice at ${naira(b)} a kg to make ${x + y} kg worth ${naira(a * x + b * y)}. How many kilograms of each does she use?`,
+      labels: [`at ${naira(a)} (kg):`, `at ${naira(b)} (kg):`], vals: [x, y], eqs: `x + y = ${x + y}, ${a}x + ${b}y = ${a * x + b * y}` };
+  }
+  const a = r.int(4, 10) * 100, b = r.int(1, 3) * 100;
+  const x = r.int(20, 120), y = r.int(20, 150);
+  return { text: `${x + y} tickets were sold for a school play: adults' at ${naira(a)} and children's at ${naira(b)}. The takings were ${naira(a * x + b * y)}. How many of each ticket were sold?`,
+    labels: ["adults':", "children's:"], vals: [x, y], eqs: `x + y = ${x + y}, ${a}x + ${b}y = ${a * x + b * y}` };
+});
+
 /* Every graphical problem has the bar model board under it on screen
    (folded to one button, never printed): the same pair can be drawn as bars
    as well as lines. utils/components/workbook/barmodel.js */
 const BOARD = '<div class="mb-art"><div class="mb-board mb-board--screen" data-barmodel="1" data-fold="1"></div></div>';
 const withBoard = (ex) => ({ ...ex, render: (item, o) => ex.render(item, o) + BOARD });
 
-export const SY_EXERCISES = [subReady, subMake, subWord, elDirect, elOne, elBoth, elWord, ...[grTables, grRead, grDrawBoth, grHowMany].map(withBoard)];
+export const SY_EXERCISES = [subReady, subMake, subWord, elDirect, elOne, elBoth, elWord, ...[grTables, grRead, grDrawBoth, grHowMany].map(withBoard), rwMoney, rwAges, rwDigits, rwBoat, rwShape, rwMix];

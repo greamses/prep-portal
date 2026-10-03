@@ -170,6 +170,11 @@ export const ICON = {
       `<rect x="14.4" y="4" width="5.2" height="5" rx="1.4" fill="${LOUD}"/>` + `<rect x="5" y="15" width="5.2" height="5" rx="1.4" fill="${LOUD}"/>` +
       bar(16.8, 10.4, 8.8, 13.6, 1.4, GOLD)
   ),
+  /* Real-world problems: a boat on the water, and two unknowns. */
+  syReal: svg(
+    `<path d="M3 15h18l-3 5H6z" fill="${LOUD}"/>` + `<path d="M12 4v10M12 4l6 8h-6z" fill="${GOLD}" stroke="${QUIET}" stroke-width="1.2" stroke-linejoin="round"/>` +
+      `<rect x="3" y="4" width="4" height="4" rx="1" fill="${PAPER}"/>` + `<rect x="3" y="9.6" width="4" height="4" rx="1" fill="${PAPER}"/>`
+  ),
   /* Elimination: two lines added, and the bottom one is gone. */
   syElim: svg(
     `<rect x="3" y="3.4" width="18" height="4.4" rx="1.4" fill="${PAPER}"/>` + `<rect x="3" y="9.8" width="18" height="4.4" rx="1.4" fill="${PAPER}"/>` +
@@ -223,6 +228,24 @@ export const ICON = {
     bar(2, 8, 7, 8, 1.3, QUIET) + bar(2, 16, 7, 16, 1.3, QUIET) + bar(17, 12, 22, 12, 1.3, LOUD) +
       `<path d="M7 5h5a7 7 0 0 1 0 14H7z" fill="${PAPER}"/>`
   ),
+
+  /* ── chapter 14: algebraic fractions ── */
+  /* A fraction: something over something. */
+  afFrac: svg(`<rect x="6" y="3.4" width="12" height="6" rx="1.4" fill="${LOUD}"/>` + bar(4, 12, 20, 12, 1.8, QUIET) + `<rect x="6" y="14.6" width="12" height="6" rx="1.4" fill="${PAPER}"/>`),
+  /* Cancelling: the shared factor struck out top and bottom. */
+  afCancel: svg(`<rect x="4" y="3.4" width="7" height="6" rx="1.4" fill="${PAPER}"/><rect x="13" y="3.4" width="7" height="6" rx="1.4" fill="${GOLD}"/>` + bar(4, 12, 20, 12, 1.8, QUIET) +
+    `<rect x="4" y="14.6" width="7" height="6" rx="1.4" fill="${PAPER}"/><rect x="13" y="14.6" width="7" height="6" rx="1.4" fill="${GOLD}"/>` + bar(12.4, 10, 20.6, 2.8, 1.4, LOUD) + bar(12.4, 21.2, 20.6, 14, 1.4, LOUD)),
+  /* Multiplying two fractions. */
+  afTimes: svg(`<rect x="2.4" y="5" width="6" height="4" rx="1" fill="${LOUD}"/><rect x="2.4" y="15" width="6" height="4" rx="1" fill="${PAPER}"/>` + bar(2, 12, 8.8, 12, 1.4, QUIET) +
+    bar(10.4, 10.2, 13.6, 13.8, 1.3, GOLD) + bar(13.6, 10.2, 10.4, 13.8, 1.3, GOLD) +
+    `<rect x="15.6" y="5" width="6" height="4" rx="1" fill="${LOUD}"/><rect x="15.6" y="15" width="6" height="4" rx="1" fill="${PAPER}"/>` + bar(15.2, 12, 22, 12, 1.4, QUIET)),
+  /* Adding: two fractions and a plus. */
+  afAdd: svg(`<rect x="2.4" y="5" width="6" height="4" rx="1" fill="${LOUD}"/><rect x="2.4" y="15" width="6" height="4" rx="1" fill="${PAPER}"/>` + bar(2, 12, 8.8, 12, 1.4, QUIET) +
+    bar(10.2, 12, 13.8, 12, 1.3, GOLD) + bar(12, 10.2, 12, 13.8, 1.3, GOLD) +
+    `<rect x="15.6" y="5" width="6" height="4" rx="1" fill="${LOUD}"/><rect x="15.6" y="15" width="6" height="4" rx="1" fill="${PAPER}"/>` + bar(15.2, 12, 22, 12, 1.4, QUIET)),
+  /* An equation with a fraction in it. */
+  afSolve: svg(`<rect x="2.4" y="5" width="7" height="4" rx="1" fill="${LOUD}"/><rect x="2.4" y="15" width="7" height="4" rx="1" fill="${PAPER}"/>` + bar(2, 12, 9.8, 12, 1.4, QUIET) +
+    bar(11.6, 10.6, 15, 10.6, 1.2, QUIET) + bar(11.6, 13.4, 15, 13.4, 1.2, QUIET) + `<circle cx="19" cy="12" r="3" fill="${GOLD}"/>`),
 
   /* ── chapter 13: vectors ── */
   /* An arrow across squared paper. */
