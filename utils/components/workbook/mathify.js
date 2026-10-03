@@ -414,7 +414,8 @@ export function mathify(root) {
     el.replaceChildren(pic, src);
     set++;
   });
-  const isBox = (n) => !!n && n.nodeType === 1 && (n.classList.contains("wb-answer") || n.classList.contains("wb-tick"));
+  /* an answer box — or a block that stands where a number would (a matrix: .wb-mathbox) */
+  const isBox = (n) => !!n && n.nodeType === 1 && (n.classList.contains("wb-answer") || n.classList.contains("wb-tick") || n.classList.contains("wb-mathbox"));
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode: (t) => {
       if (!t.nodeValue || !/[0-9½¼¾⅓⅔πxyzn√=+−×÷±()⁰¹²³⁴-⁹~∧∨⇒⇔]/.test(t.nodeValue)) return NodeFilter.FILTER_REJECT;

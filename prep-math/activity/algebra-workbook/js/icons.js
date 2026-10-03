@@ -219,6 +219,28 @@ export const ICON = {
       `<path d="M7 5h5a7 7 0 0 1 0 14H7z" fill="${PAPER}"/>`
   ),
 
+  /* ── chapter 12: matrices ── */
+  /* A matrix: four numbers in square brackets. */
+  mtBasics: svg(
+    `<path d="M7 3H3v18h4M17 3h4v18h-4" fill="none" stroke="${QUIET}" stroke-width="1.8" stroke-linejoin="round"/>` +
+      [[8, 7], [13, 7], [8, 13.4], [13, 13.4]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="3.4" height="3.4" rx="0.9" fill="${i === 0 ? LOUD : PAPER}"/>`).join("")
+  ),
+  /* Multiplying: a row picked out against a column. */
+  mtMult: svg(
+    `<rect x="2.4" y="5" width="10" height="3.6" rx="1.2" fill="${LOUD}"/>` + `<rect x="2.4" y="11" width="10" height="3.6" rx="1.2" fill="${PAPER}"/>` +
+      `<rect x="15.4" y="4" width="3.6" height="16" rx="1.2" fill="${GOLD}"/>` + `<circle cx="7.4" cy="18.6" r="1.6" fill="${QUIET}"/>`
+  ),
+  /* The inverse: a matrix and the one that undoes it. */
+  mtInverse: svg(
+    `<rect x="2.6" y="6" width="8" height="12" rx="1.6" fill="${PAPER}"/>` + `<rect x="13.4" y="6" width="8" height="12" rx="1.6" fill="${LOUD}"/>` +
+      bar(9.4, 3.4, 14.6, 3.4, 1.4, GOLD) + bar(9.4, 20.6, 14.6, 20.6, 1.4, GOLD)
+  ),
+  /* Using them: a matrix, a column, an answer. */
+  mtUse: svg(
+    `<rect x="2.4" y="6" width="8" height="12" rx="1.6" fill="${PAPER}"/>` + `<rect x="12" y="6" width="3.4" height="12" rx="1.2" fill="${LOUD}"/>` +
+      bar(17, 10.6, 21.4, 10.6, 1.3, QUIET) + bar(17, 13.6, 21.4, 13.6, 1.3, QUIET)
+  ),
+
   /* ── chapter 6 ── */
   /* A machine: a box with a hopper, a number going in. */
   fnMachine: svg(

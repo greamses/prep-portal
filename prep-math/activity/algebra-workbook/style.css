@@ -443,3 +443,24 @@
 .qd-area td { border: 0.35mm solid #2a2723; padding: 2mm 3mm; text-align: center; min-width: 20mm; background: #fffdf8; }
 .qd-area tr:nth-child(2) td:first-of-type { background: #bfe3ff; }
 .qd-area .wb-answer { min-width: 9mm; }
+
+/* ── chapter 12: a matrix in square brackets (js/ex-matrices.js) ──
+   the bracket is two upright rules with a short foot at each end */
+.mt-mat {
+  display: inline-grid;
+  gap: 0.8mm 3.6mm;
+  padding: 0.8mm 2.4mm;
+  vertical-align: middle;
+  text-align: center;
+  line-height: 1.25;
+  border-left: 0.4mm solid #2a2723;
+  border-right: 0.4mm solid #2a2723;
+  background:
+    linear-gradient(#2a2723, #2a2723) left top / 1.6mm 0.4mm no-repeat,
+    linear-gradient(#2a2723, #2a2723) left bottom / 1.6mm 0.4mm no-repeat,
+    linear-gradient(#2a2723, #2a2723) right top / 1.6mm 0.4mm no-repeat,
+    linear-gradient(#2a2723, #2a2723) right bottom / 1.6mm 0.4mm no-repeat;
+}
+.mt-c { min-width: 5mm; }
+.mt-mat .wb-answer { min-width: 10mm; width: 10mm; height: 7.5mm; vertical-align: middle; }
+.mt-eq { line-height: 2.4; }

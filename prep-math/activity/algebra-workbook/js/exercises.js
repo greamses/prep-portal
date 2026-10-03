@@ -52,6 +52,9 @@
                        (a + b)ⁿ, (x + k)ⁿ, and one term by nCr
      ex-logic.js       chapter 11, logic — truth tables (NOT, AND, OR,
                        compound, if-then) and logic gates
+     ex-matrices.js    chapter 12, matrices — order, adding, a number times,
+                       transpose, multiplying, determinant, adjoint, inverse,
+                       dividing, cofactors, and solving equations with them
 
    THE ORDER IS THE BOOK. The words come first because every later instruction
    is written in them: "swap x for a number" means nothing to a child who has
@@ -77,6 +80,7 @@ import { SY_GROUPS, SY_EXERCISES } from "./ex-systems.js";
 import { MX_GROUPS, MX_EXERCISES } from "./ex-matrix.js";
 import { BN_GROUPS, BN_EXERCISES } from "./ex-binomial.js";
 import { LG_GROUPS, LG_EXERCISES } from "./ex-logic.js";
+import { MT_GROUPS, MT_EXERCISES } from "./ex-matrices.js";
 import { RT_GROUPS, RT_EXERCISES } from "./ex-remainder.js";
 import { AP_GROUPS, AP_EXERCISES } from "./ex-laws.js";
 import { FN_GROUPS, FN_EXERCISES } from "./ex-func.js";
@@ -90,11 +94,11 @@ import { SQ2_GROUPS, SQ2_EXERCISES } from "./ex-square.js";
 export { LEVELS, levelOf } from "./poly.js";
 export { HELP, helpOf } from "./organiser.js";
 
-export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...RT_GROUPS, ...AP_GROUPS, ...FN_GROUPS, ...SQ_GROUPS, ...UG_GROUPS, ...GR_GROUPS, ...QD_FACTOR_GROUPS, ...SQ2_GROUPS, ...QD_MORE_GROUPS, ...QG_GROUPS, ...TW_GROUPS, ...SY_GROUPS, ...DT_GROUPS, ...MX_GROUPS, ...BN_GROUPS, ...LG_GROUPS];
+export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...RT_GROUPS, ...AP_GROUPS, ...FN_GROUPS, ...SQ_GROUPS, ...UG_GROUPS, ...GR_GROUPS, ...QD_FACTOR_GROUPS, ...SQ2_GROUPS, ...QD_MORE_GROUPS, ...QG_GROUPS, ...TW_GROUPS, ...SY_GROUPS, ...DT_GROUPS, ...MX_GROUPS, ...BN_GROUPS, ...LG_GROUPS, ...MT_GROUPS];
 
-export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...RT_EXERCISES, ...AP_EXERCISES, ...FN_EXERCISES, ...SQ_EXERCISES, ...UG_EXERCISES, ...GR_EXERCISES, ...QD_FACTOR_EXERCISES, ...SQ2_EXERCISES, ...QD_MORE_EXERCISES, ...QG_EXERCISES, ...TW_EXERCISES, ...SY_EXERCISES, ...DT_EXERCISES, ...MX_EXERCISES, ...BN_EXERCISES, ...LG_EXERCISES];
+export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...RT_EXERCISES, ...AP_EXERCISES, ...FN_EXERCISES, ...SQ_EXERCISES, ...UG_EXERCISES, ...GR_EXERCISES, ...QD_FACTOR_EXERCISES, ...SQ2_EXERCISES, ...QD_MORE_EXERCISES, ...QG_EXERCISES, ...TW_EXERCISES, ...SY_EXERCISES, ...DT_EXERCISES, ...MX_EXERCISES, ...BN_EXERCISES, ...LG_EXERCISES, ...MT_EXERCISES];
 
-/** Which chapter an exercise belongs to: 1 to 11. */
+/** Which chapter an exercise belongs to: 1 to 12. */
 const CHAPTER = new Map([
   ...BM_GROUPS.map((g) => [g.id, 2]),
   ...BS_GROUPS.map((g) => [g.id, 3]),
@@ -105,6 +109,7 @@ const CHAPTER = new Map([
   ...[...QD_FACTOR_GROUPS, ...SQ2_GROUPS, ...QD_MORE_GROUPS, ...QG_GROUPS].map((g) => [g.id, 8]),
   ...[...TW_GROUPS, ...SY_GROUPS, ...DT_GROUPS, ...MX_GROUPS].map((g) => [g.id, 9]),
   ...BN_GROUPS.map((g) => [g.id, 10]), ...LG_GROUPS.map((g) => [g.id, 11]),
+  ...MT_GROUPS.map((g) => [g.id, 12]),
 ]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 
