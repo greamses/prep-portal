@@ -37,9 +37,10 @@
    ========================================================================== */
 
 const W = 600;
-const PITCH = 80;      // one row: a brace's room, the bar, a brace's room
 const BAR = 26;
-const PAD = 32;        // from the row's top to its bar
+const GAP = 8;         // between two stacked bars with nothing between them
+const ROOM = 30;       // what a brace and its words need over or under a bar
+const LEVEL = 22;      // and each further brace stacked on the same side
 const SNAP = 5;
 const CATCH = 9;       // how near an end must come to catch another
 const TONES = ["#bfe3ff", "#fff3a8", "#d6f0cf", "#ffd9cf", "#fffdf8"];
@@ -49,7 +50,6 @@ const GREY = "#6f685f";
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const clone = (m) => JSON.parse(JSON.stringify(m));
 const blank = () => ({ bars: [], braces: [] });
-const yOf = (row) => row * PITCH + PAD;
 
 function curly(x0, x1, y, dir) {
   const h = 9 * dir;
@@ -120,9 +120,38 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
 
   const rows = () => Math.max(3, ...model.bars.map((b) => b.row + 2));
 
+  /* Rows STACK CLOSE: a row only makes room over or under its bar for the
+     braces it actually has, so plain bars sit one just under the other, the
+     way they are drawn on paper. */
+  let tops = [];
+  let height = 0;
+  function layout() {
+    const spots = braceSpots(model);
+    tops = [];
+    let y = 8;
+    for (let r = 0; r < rows(); r++) {
+      const room = (at) => {
+        const mine = spots.filter((s) => s.row === r && s.at === at);
+        return mine.length ? ROOM + LEVEL * Math.max(...mine.map((s) => s.level)) : 0;
+      };
+      y += room("above");
+      tops[r] = y;
+      y += BAR + room("below") + GAP;
+    }
+    height = y + 4;
+  }
+  const yOf = (row) => (row < tops.length ? tops[row] : tops[tops.length - 1] + (row - tops.length + 1) * (BAR + GAP));
+  /** The row whose bar is nearest to a bar top at y — or the next empty one. */
+  const rowAt = (y) => {
+    let best = 0;
+    for (let r = 0; r <= tops.length; r++) if (Math.abs(yOf(r) - y) < Math.abs(yOf(best) - y)) best = r;
+    return best;
+  };
+
   /* ── drawing ─────────────────────────────────────────────────────────── */
   function paint() {
-    const H = rows() * PITCH;
+    layout();
+    const H = height;
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     let out = "";
     for (let r = 0; r < rows(); r++) {
@@ -264,7 +293,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
       return;
     }
     e.preventDefault();
-    drag = { b, from: p, x: b.x, row: b.row, w: b.w, grip: !!grip, before: clone(model), moved: false, add: several || e.shiftKey };
+    drag = { b, from: p, x: b.x, row: b.row, top: yOf(b.row), w: b.w, grip: !!grip, before: clone(model), moved: false, add: several || e.shiftKey };
     svg.setPointerCapture(e.pointerId);
   });
   svg.addEventListener("pointermove", (e) => {
@@ -281,7 +310,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
       /* the right end can catch too, when the left has nothing near it */
       const right = caught(b.x + b.w, b.id);
       if (right !== snap(b.x + b.w) && Math.abs(right - (b.x + b.w)) < CATCH) b.x = Math.max(0, right - b.w);
-      b.row = Math.max(0, Math.min(rows(), Math.round(drag.row + dy / PITCH)));
+      b.row = Math.min(rows(), rowAt(drag.top + dy));
     }
     paint();
   });

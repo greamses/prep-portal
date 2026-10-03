@@ -35,7 +35,7 @@ export const TONE = { a: "#bfe3ff", b: "#fff3a8", c: "#d6f0cf", d: "#ffd9cf", q:
 
 const f = (n) => (+n).toFixed(2);
 const BAR_H = 11;
-const GAP = 3;
+const GAP = 2;
 const BRACE = 9;      // the room a brace and its words take over or under a row
 const PAPER = 150;
 const UNKNOWN_MM = 24;
