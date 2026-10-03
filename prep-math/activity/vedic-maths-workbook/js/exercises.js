@@ -16,6 +16,8 @@
                     and cubes, read off in two looks
      ex-check.js    chapter 5, dividing by 9 with running totals, digit sums,
                     and casting out nines to check a product
+     ex-trach.js    chapter 6, the Trachtenberg system — × 12, 6, 7, 5, 9
+                    and 8, one digit at a time from the right
 
    THE ORDER IS THE BOOK: complements first, because every "near a base"
    trick after them starts by finding one; each trick met first where nothing
@@ -31,11 +33,12 @@ import { QK_GROUPS, QK_EXERCISES } from "./ex-quick.js";
 import { SQ_GROUPS, SQ_EXERCISES } from "./ex-squares.js";
 import { RT_GROUPS, RT_EXERCISES } from "./ex-roots.js";
 import { CK_GROUPS, CK_EXERCISES } from "./ex-check.js";
+import { TR_GROUPS, TR_EXERCISES } from "./ex-trach.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
-export const GROUPS = [...CM_GROUPS, ...QK_GROUPS, ...SQ_GROUPS, ...RT_GROUPS, ...CK_GROUPS];
-export const EXERCISES = [...CM_EXERCISES, ...QK_EXERCISES, ...SQ_EXERCISES, ...RT_EXERCISES, ...CK_EXERCISES];
+export const GROUPS = [...CM_GROUPS, ...QK_GROUPS, ...SQ_GROUPS, ...RT_GROUPS, ...CK_GROUPS, ...TR_GROUPS];
+export const EXERCISES = [...CM_EXERCISES, ...QK_EXERCISES, ...SQ_EXERCISES, ...RT_EXERCISES, ...CK_EXERCISES, ...TR_EXERCISES];
 
 /** Which chapter an exercise belongs to. */
 const CHAPTER = new Map([
@@ -44,6 +47,7 @@ const CHAPTER = new Map([
   ...SQ_GROUPS.map((g) => [g.id, 3]),
   ...RT_GROUPS.map((g) => [g.id, 4]),
   ...CK_GROUPS.map((g) => [g.id, 5]),
+  ...TR_GROUPS.map((g) => [g.id, 6]),
 ]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 

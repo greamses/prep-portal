@@ -16,6 +16,7 @@ const CHAPTERS = {
   3: "Chapter 3: Squares",
   4: "Chapter 4: Square roots and cube roots",
   5: "Chapter 5: Dividing and checking",
+  6: "Chapter 6: The Trachtenberg system",
 };
 
 const chaptersOn = (o) => [...new Set((o.chosen || [])

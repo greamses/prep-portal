@@ -191,7 +191,7 @@ const NAV_CONFIG = [
         icon: I.workbooks,
         description: "Print them, or do them on screen",
         children: [
-          { text: "Maths Workbook", href: "/prep-math/activity/maths-workbook/index.html", description: "Place value, sums, division, fractions, time, multiplying, prime factors" },
+          { text: "Maths Workbook", href: "/prep-math/activity/maths-workbook/index.html", description: "Place value, sums, division, fractions, time, multiplying, prime factors, bar models" },
           { text: "Geometry Workbook", href: "/prep-math/activity/geometry-workbook/index.html", description: "Angles, polygons, Pythagoras, circles, solids, area" },
           { text: "Algebra Workbook", href: "/prep-math/activity/algebra-workbook/index.html", description: "Basic ideas, the bar model, the balance scale, identities" },
           { text: "Statistics Workbook", href: "/prep-math/activity/statistics-workbook/index.html", description: "Pictograms, bar charts, line graphs, pie charts, scatter graphs" },

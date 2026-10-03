@@ -52,6 +52,7 @@ mountBuilder({
     "vm-roots": ICON.vmRoots,
     "vm-divide": ICON.vmDivide,
     "vm-check": ICON.vmCheck,
+    "vm-trach": ICON.vmTrach,
   },
   icons: ICON,
   title: "Vedic Maths Workbook",

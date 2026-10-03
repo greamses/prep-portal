@@ -1421,3 +1421,8 @@ thead .pv-chart__side {
   font-weight: 700;
 }
 .pf-euc__in.wb-answer { width: 12mm; height: 8mm; }
+
+/* ── chapter 9: the bar model (js/modelart.js) ───────────────────────────── */
+.mb-story { font-size: 10.5pt; line-height: 1.5; }
+.mb-art { margin: 2mm 0 2.5mm; }
+.mb-art svg { display: block; max-width: 100%; height: auto; }

@@ -14,6 +14,8 @@
      ex-fractions.js   what a fraction is, and adding the ones that match
      ex-time.js        counting in fives, and then telling the time
      ex-multiply.js    multiplying, from equal groups up to long multiplication
+     ex-models.js      the Singapore bar model: part–whole, comparison, part
+                       to part, part to whole, and word problems drawn by hand
      ex-primes.js      what a number is MADE of: grouping blocks, primes and
                        composites, factors, factor trees, the ladder, and the
                        index form that counts a number's factors for you
@@ -44,6 +46,7 @@ import { FRAC_GROUPS, FRAC_EXERCISES } from "./ex-fractions.js";
 import { TIME_GROUPS, TIME_EXERCISES } from "./ex-time.js";
 import { MUL_GROUPS, MUL_EXERCISES } from "./ex-multiply.js";
 import { PRIME_GROUPS, PRIME_EXERCISES } from "./ex-primes.js";
+import { MODEL_GROUPS, MODEL_EXERCISES } from "./ex-models.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./ex-remainder.js";
 export { placesFor };
@@ -64,6 +67,8 @@ export const GROUPS = [
   ...MUL_GROUPS,
   /* and prime factors after that, for the same reason */
   ...PRIME_GROUPS,
+  /* and the bar model's word problems after that */
+  ...MODEL_GROUPS,
 ];
 
 /* Everything outside place value counts and writes in ordinary numerals, so it
@@ -83,6 +88,7 @@ export const EXERCISES = [
   ...tenOnly(TIME_EXERCISES),
   ...tenOnly(MUL_EXERCISES),
   ...tenOnly(PRIME_EXERCISES),
+  ...tenOnly(MODEL_EXERCISES),
 ];
 
 /**
@@ -100,6 +106,7 @@ const CHAPTER = new Map([
   ...TIME_GROUPS.map((g) => [g.id, 6]),
   ...MUL_GROUPS.map((g) => [g.id, 7]),
   ...PRIME_GROUPS.map((g) => [g.id, 8]),
+  ...MODEL_GROUPS.map((g) => [g.id, 9]),
 ]);
 /* Place value is the first chapter, so it is what is left over. */
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;

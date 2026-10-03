@@ -215,6 +215,32 @@ export const ICON = {
   ),
 
   /* Two rings overlapping, and the part that belongs to both. */
+  /* ── chapter 9: the bar model ── */
+  /* one bar cut into two parts, the whole bracketed under it */
+  mbWhole: svg(
+    `<rect x="2.6" y="5" width="11" height="7" rx="1" fill="${PAPER}"/><rect x="13.6" y="5" width="7.8" height="7" rx="1" fill="${LEAF}"/>` +
+      bar(2.6, 17, 21.4, 17, 1.6, QUIET) + bar(2.6, 14.6, 2.6, 17, 1.4, QUIET) + bar(21.4, 14.6, 21.4, 17, 1.4, QUIET)
+  ),
+  /* two bars lined up, the longer one's extra loud */
+  mbCompare: svg(
+    `<rect x="2.6" y="4" width="11" height="6.4" rx="1" fill="${PAPER}"/>` +
+      `<rect x="2.6" y="13.6" width="11" height="6.4" rx="1" fill="${PAPER}"/><rect x="13.6" y="13.6" width="7.8" height="6.4" rx="1" fill="${LOUD}"/>`
+  ),
+  /* three equal units against one */
+  mbUnits: svg(
+    [2.6, 9, 15.4].map((x) => `<rect x="${x}" y="4" width="6" height="6.4" rx="1" fill="${GOLD}"/>`).join("") +
+      `<rect x="2.6" y="13.6" width="6" height="6.4" rx="1" fill="${GOLD}"/>`
+  ),
+  /* a bar of five units, three of them shaded */
+  mbFraction: svg(
+    [2.6, 6.4, 10.2].map((x) => `<rect x="${x}" y="8.6" width="3.6" height="6.8" rx="0.8" fill="${LOUD}"/>`).join("") +
+      [14, 17.8].map((x) => `<rect x="${x}" y="8.6" width="3.6" height="6.8" rx="0.8" fill="${PAPER}"/>`).join("")
+  ),
+  /* a pencil over an empty dashed strip: draw your own */
+  mbWord: svg(
+    `<rect x="2.6" y="12.4" width="18.8" height="7" rx="1.2" fill="none" stroke="${QUIET}" stroke-width="1.2" stroke-dasharray="2 1.6"/>` +
+      `<path d="M5 9.8 15.8 2.6l2.6 2.6L7.6 12.4H5z" fill="${GOLD}"/><path d="M15.8 2.6l2.6 2.6 1.4-1.4-2.6-2.6z" fill="${LOUD}"/>`
+  ),
   pfHcf: svg(
     `<circle cx="9" cy="12" r="7.4" fill="${PAPER}" opacity="0.55"/>` +
       `<circle cx="15" cy="12" r="7.4" fill="${LEAF}" opacity="0.55"/>` +

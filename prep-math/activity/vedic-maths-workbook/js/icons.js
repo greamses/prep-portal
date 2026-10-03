@@ -12,6 +12,11 @@ const cell = (x, y, w, h, fill, rx = 1.2) => `<rect x="${x}" y="${y}" width="${w
 
 export const ICON = {
   ...BASE,
+  /* A row of digit boxes with an arrow running right to left over them. */
+  vmTrach: svg(
+    cell(2.6, 11, 5, 7.4, PAPER) + cell(9.5, 11, 5, 7.4, PAPER) + cell(16.4, 11, 5, 7.4, GOLD) +
+      `<path d="M20.4 6.4H6.2" stroke="${LOUD}" stroke-width="2" stroke-linecap="round"/><path d="M3.4 6.4 7.6 3.6v5.6z" fill="${LOUD}"/>`
+  ),
   /* A bar nearly full, and the little piece that would fill it: a complement. */
   vmComp: svg(
     cell(2.6, 8.6, 14.4, 6.8, PAPER, 1.6) + cell(18, 8.6, 3.4, 6.8, LOUD, 1.2) + bar(17.5, 5, 17.5, 19, 1.2, QUIET)

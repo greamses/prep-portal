@@ -22,6 +22,7 @@ const CHAPTERS = {
   5: "Chapter 5: Fractions", 6: "Chapter 6: Counting in fives and telling the time",
   7: "Chapter 7: Multiplying",
   8: "Chapter 8: Prime factors",
+  9: "Chapter 9: Bar models and word problems",
 };
 
 /** The chapters the chosen exercises actually come from, in order. */
