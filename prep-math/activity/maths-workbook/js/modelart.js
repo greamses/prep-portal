@@ -156,3 +156,53 @@ export function blankModelSvg({ w = 150, h = 32 } = {}) {
 
 /** n equal units, each a box of value 1 in a tone. */
 export const units = (n, tone = "a", label = "") => Array.from({ length: n }, () => ({ text: label, value: 1, tone }));
+
+/* ── the same model as a board to build on (utils/components/workbook/barmodel.js) ──
+   Board units are 600 across. A run of equal units in one colour becomes ONE
+   bar cut into units — unless a brace starts or stops inside the run, which
+   splits it there so the brace still has bars to hang on. The total down the
+   side of stacked rows has no place on the board and is left to the picture. */
+const BOARD_W = 560;
+const TONE_INDEX = { a: 0, b: 1, c: 2, d: 3, q: 4 };
+
+export function boardFrom(rows, { over = null, cap = 7 } = {}) {
+  const braces = rows.map(bracesOf);
+  if (over) braces[0].above.push(over);
+  const unknowns = Math.max(...rows.map((r) => r.parts.filter((p) => p.value == null).length));
+  const known = Math.max(...rows.map((r) => r.parts.filter((p) => p.value != null).reduce((s, p) => s + p.value, 0)));
+  const unknownW = unknowns ? Math.min(96, (BOARD_W * (known ? 0.45 : 0.95)) / unknowns) : 0;
+  const unit = known ? Math.min(cap * 4, (BOARD_W - unknowns * unknownW) / known) : 0;
+
+  const model = { bars: [], braces: [] };
+  let id = 1;
+  rows.forEach((row, r) => {
+    const { above, below } = braces[r];
+    const cuts = new Set([...above, ...below].flatMap((b) => [b.from, b.to]));
+    const barOf = [];            // part index → bar id
+    let x = 0, run = null;
+    row.parts.forEach((p, i) => {
+      const w = p.value == null ? unknownW : p.value * unit;
+      const tone = TONE_INDEX[p.tone || (p.value == null ? "b" : "a")] ?? 0;
+      const joins = run && p.value === 1 && run.unitOf === 1 && run.tone === tone && !cuts.has(i);
+      if (joins) {
+        run.w += w; run.n += 1; run.labels.push(p.text || "");
+      } else {
+        run = { id: id++, x: Math.round(x), row: r, w, n: 1, tone, labels: [p.text || ""], unitOf: p.value };
+        model.bars.push(run);
+      }
+      barOf[i] = run.id;
+      x += w;
+    });
+    [...above.map((b) => ({ ...b, at: "above" })), ...below.map((b) => ({ ...b, at: "below" }))].forEach((b) => {
+      model.braces.push({ id: id++, ids: [...new Set(barOf.slice(b.from, b.to))], at: b.at, text: b.text });
+    });
+  });
+  model.bars.forEach((b) => { b.w = Math.round(b.w); delete b.unitOf; });
+  return model;
+}
+
+/** A folded board under a printed model, starting from that model. Screen only. */
+export function boardUnder(rows, opts) {
+  const start = JSON.stringify(boardFrom(rows, opts)).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  return `<div class="mb-board mb-board--screen" data-barmodel="1" data-fold="1" data-start="${start}"></div>`;
+}

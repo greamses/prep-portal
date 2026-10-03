@@ -26,18 +26,23 @@
 
      [data-barmodel]   the strip to build in; what was printed in it comes back
                        on dispose()
+     [data-start]      a model to begin from (JSON) — the printed picture, so
+                       "From the picture" puts it on the board to be broken,
+                       labelled and moved about
+     [data-fold]       a board under a printed picture: it waits folded to one
+                       button until it is wanted (or already has work on it)
 
    The model is plain data — { bars: [{ id, x, row, w, n, tone, labels }],
    braces: [{ id, ids, at, text }] } in board units, 600 across.
    ========================================================================== */
 
 const W = 600;
-const PITCH = 74;      // one row: a brace's room, the bar, a brace's room
+const PITCH = 80;      // one row: a brace's room, the bar, a brace's room
 const BAR = 26;
-const PAD = 24;        // from the row's top to its bar
+const PAD = 32;        // from the row's top to its bar
 const SNAP = 5;
 const CATCH = 9;       // how near an end must come to catch another
-const TONES = ["#bfe3ff", "#fff3a8", "#d6f0cf", "#ffd9cf"];
+const TONES = ["#bfe3ff", "#fff3a8", "#d6f0cf", "#ffd9cf", "#fffdf8"];
 const INK = "#2a2723";
 const GREY = "#6f685f";
 
@@ -86,9 +91,16 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
   let cutting = false;
   let seq = 1 + Math.max(0, ...model.bars.map((b) => b.id), ...model.braces.map((b) => b.id));
 
+  let start = null;
+  try { start = el.dataset.start ? JSON.parse(el.dataset.start) : null; } catch { start = null; }
+  const foldable = el.hasAttribute("data-fold");
+
   el.classList.add("is-building");
+  el.classList.toggle("is-folded", foldable && !model.bars.length);
   el.innerHTML =
+    (foldable ? `<button type="button" class="pp-btn wb-tint-2 mbb-open">Build the model on a board</button>` : "") +
     `<div class="mbb-tools" role="toolbar" aria-label="Bar model tools">` +
+    (start ? `<button type="button" class="pp-btn wb-tint-3" data-t="copy" title="Put the printed model on the board">From the picture</button>` : "") +
     `<button type="button" class="pp-btn wb-tint-2" data-t="new">New bar</button>` +
     `<button type="button" class="pp-btn wb-tint-1" data-t="less" title="Fewer equal units">Units −</button>` +
     `<button type="button" class="pp-btn wb-tint-1" data-t="more" title="Cut into more equal units">Units +</button>` +
@@ -98,6 +110,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
     `<button type="button" class="pp-btn wb-tint-2" data-t="tone">Colour</button>` +
     `<button type="button" class="pp-btn wb-tint-3" data-t="many" aria-pressed="false" title="Taps add bars to the picking">Pick several</button>` +
     `<button type="button" class="pp-btn wb-tint-4" data-t="del">Delete</button>` +
+    (foldable ? `<button type="button" class="pp-btn wb-tint-1" data-t="fold" title="Fold the board away">Close</button>` : "") +
     `</div>` +
     `<div class="mbb-board"><svg class="mbb-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>` +
     `<p class="mbb-hint">Double-click a bar or a brace to write on it. Drag a bar to move it, its right edge to stretch it.</p>`;
@@ -174,9 +187,23 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
   }
 
   /* ── tools ───────────────────────────────────────────────────────────── */
+  el.querySelector(".mbb-open")?.addEventListener("click", () => { el.classList.remove("is-folded"); paint(); });
+
   tools.addEventListener("click", (e) => {
     const t = e.target.closest("[data-t]")?.dataset.t;
     if (!t) return;
+    if (t === "fold") { el.classList.add("is-folded"); return; }
+    if (t === "copy") {
+      change(() => {
+        /* fresh ids after whatever is already there, so Undo can take it off */
+        const map = new Map();
+        const at = model.bars.length ? Math.max(...model.bars.map((b) => b.row)) + 1 : 0;
+        start.bars.forEach((b) => { const id = seq++; map.set(b.id, id); model.bars.push({ ...clone(b), id, row: b.row + at }); });
+        start.braces.forEach((br) => model.braces.push({ ...clone(br), id: seq++, ids: br.ids.map((i) => map.get(i)) }));
+        picked.clear();
+      });
+      return;
+    }
     if (t === "cut") { cutting = !cutting; paint(); return; }
     if (t === "many") { several = !several; paint(); return; }
     if (t === "new") {

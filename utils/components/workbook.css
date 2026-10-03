@@ -2870,3 +2870,12 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   font: 700 14px/1 "JetBrains Mono", monospace; text-align: center;
   color: #2a2723; background: #fff; border: 2px solid #2f6ea8; border-radius: 4px;
 }
+
+/* a board under a printed model: on screen only, and folded to one button
+   until it is wanted */
+.mb-board--screen:not(.is-building) { display: none; }
+.mb-board--screen.is-building { margin-top: 2mm; }
+.mb-board.is-folded > :not(.mbb-open) { display: none; }
+.mb-board:not(.is-folded) > .mbb-open { display: none; }
+.mbb-open { font: 700 8pt/1.2 var(--font-body, system-ui, sans-serif); padding: 1.2mm 2.6mm; min-height: 0; }
+@media print { .mb-board--screen { display: none !important; } }
