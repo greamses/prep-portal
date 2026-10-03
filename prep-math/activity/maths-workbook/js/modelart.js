@@ -161,11 +161,12 @@ export const units = (n, tone = "a", label = "") => Array.from({ length: n }, ()
    Board units are 600 across. A run of equal units in one colour becomes ONE
    bar cut into units — unless a brace starts or stops inside the run, which
    splits it there so the brace still has bars to hang on. The total down the
-   side of stacked rows has no place on the board and is left to the picture. */
+   side of stacked rows comes across as a brace beside every bar. Row names
+   are left to the picture. */
 const BOARD_W = 560;
 const TONE_INDEX = { a: 0, b: 1, c: 2, d: 3, q: 4 };
 
-export function boardFrom(rows, { over = null, cap = 7 } = {}) {
+export function boardFrom(rows, { over = null, total = null, cap = 7 } = {}) {
   const braces = rows.map(bracesOf);
   if (over) braces[0].above.push(over);
   const unknowns = Math.max(...rows.map((r) => r.parts.filter((p) => p.value == null).length));
@@ -197,6 +198,7 @@ export function boardFrom(rows, { over = null, cap = 7 } = {}) {
       model.braces.push({ id: id++, ids: [...new Set(barOf.slice(b.from, b.to))], at: b.at, text: b.text });
     });
   });
+  if (total != null && model.bars.length) model.braces.push({ id: id++, ids: model.bars.map((b) => b.id), at: "side", text: String(total) });
   model.bars.forEach((b) => { b.w = Math.round(b.w); delete b.unitOf; });
   return model;
 }

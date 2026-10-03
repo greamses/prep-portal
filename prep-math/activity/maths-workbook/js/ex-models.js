@@ -404,7 +404,7 @@ const KINDS = [partWhole, comparison, ratio, fraction, percent, degrees];
 const draw = (p) => art(modelSvg(p.rows, { total: p.total ?? null, over: p.over ?? null, cap: p.cap ?? 7 }));
 /* a question's picture, with a board under it on screen to rebuild it on */
 const drawWithBoard = (p) => art(modelSvg(p.rows, { total: p.total ?? null, over: p.over ?? null, cap: p.cap ?? 7 }) +
-  boardUnder(p.rows, { over: p.over ?? null, cap: p.cap ?? 7 }));
+  boardUnder(p.rows, { over: p.over ?? null, total: p.total ?? null, cap: p.cap ?? 7 }));
 
 /** One exercise per kind: the story, its model drawn, the answers. */
 function section(id, group, maker, { label, blurb, heading, instruction, example, exampleSay }) {

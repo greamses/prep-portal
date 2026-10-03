@@ -12,6 +12,9 @@
      Units + / −    cut the bar into equal units (fifths, ten 10 % units …)
      Cut            tap a bar where it should break: it comes apart in two
      Over / Under   a curly brace over or under the picked bars, with words
+     Beside         a curly brace down the right of the picked bars — the
+                    total of two or more STACKED bars, which no one row can
+                    carry over or under it
      Colour         the bar's colour, round the four
      Delete         the picked bars, and the braces that hung on them
 
@@ -36,7 +39,8 @@
    braces: [{ id, ids, at, text }] } in board units, 600 across.
    ========================================================================== */
 
-const W = 600;
+const W = 600;         // how far a bar may reach
+const VIEW = 680;      // and the board, with room at the right for a total beside
 const BAR = 26;
 const GAP = 8;         // between two stacked bars with nothing between them
 const ROOM = 30;       // what a brace and its words need over or under a bar
@@ -50,6 +54,15 @@ const GREY = "#6f685f";
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const clone = (m) => JSON.parse(JSON.stringify(m));
 const blank = () => ({ bars: [], braces: [] });
+
+/** A brace standing up at x from y0 to y1, its point to the right. */
+function curlySide(x, y0, y1) {
+  const h = 9;
+  const m = (y0 + y1) / 2;
+  const r = Math.min(6, (y1 - y0) / 5);
+  return `M${x} ${y0}Q${x + h / 2} ${y0} ${x + h / 2} ${y0 + r}V${m - r}Q${x + h / 2} ${m} ${x + h} ${m}` +
+    `Q${x + h / 2} ${m} ${x + h / 2} ${m + r}V${y1 - r}Q${x + h / 2} ${y1} ${x} ${y1}`;
+}
 
 function curly(x0, x1, y, dir) {
   const h = 9 * dir;
@@ -68,6 +81,14 @@ function braceSpots(model) {
     if (!bars.length) return;
     const x0 = Math.min(...bars.map((b) => b.x));
     const x1 = Math.max(...bars.map((b) => b.x + b.w));
+    if (br.at === "side") {
+      const r0 = Math.min(...bars.map((b) => b.row)), r1 = Math.max(...bars.map((b) => b.row));
+      const level = spots.filter((s) => s.at === "side" && s.r0 <= r1 && r0 <= s.r1).length;
+      /* clear of EVERY bar in the rows it spans, not just the picked ones */
+      const end = Math.max(x1, ...model.bars.filter((b) => b.row >= r0 && b.row <= r1).map((b) => b.x + b.w));
+      spots.push({ br, x0, x1: end, r0, r1, at: "side", level });
+      return;
+    }
     const row = br.at === "above" ? Math.min(...bars.map((b) => b.row)) : Math.max(...bars.map((b) => b.row));
     /* a second brace on the same side of the same row, overlapping, goes a
        step further out */
@@ -107,6 +128,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
     `<button type="button" class="pp-btn wb-tint-3" data-t="cut" aria-pressed="false" title="Tap a bar where it should break">Cut</button>` +
     `<button type="button" class="pp-btn wb-tint-4" data-t="above" title="A brace over the picked bars">Brace over</button>` +
     `<button type="button" class="pp-btn wb-tint-4" data-t="below" title="A brace under the picked bars">Brace under</button>` +
+    `<button type="button" class="pp-btn wb-tint-4" data-t="side" title="A total down the right of the picked (stacked) bars">Brace beside</button>` +
     `<button type="button" class="pp-btn wb-tint-2" data-t="tone">Colour</button>` +
     `<button type="button" class="pp-btn wb-tint-3" data-t="many" aria-pressed="false" title="Taps add bars to the picking">Pick several</button>` +
     `<button type="button" class="pp-btn wb-tint-4" data-t="del">Delete</button>` +
@@ -152,10 +174,10 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
   function paint() {
     layout();
     const H = height;
-    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("viewBox", `0 0 ${VIEW} ${H}`);
     let out = "";
     for (let r = 0; r < rows(); r++) {
-      out += `<line x1="0" x2="${W}" y1="${yOf(r) + BAR}" y2="${yOf(r) + BAR}" stroke="${GREY}" stroke-width="0.6" stroke-dasharray="2 6" opacity="0.35"/>`;
+      out += `<line x1="0" x2="${VIEW}" y1="${yOf(r) + BAR}" y2="${yOf(r) + BAR}" stroke="${GREY}" stroke-width="0.6" stroke-dasharray="2 6" opacity="0.35"/>`;
     }
     model.bars.forEach((b) => {
       const y = yOf(b.row);
@@ -173,6 +195,16 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
         `</g>`;
     });
     braceSpots(model).forEach((s) => {
+      if (s.at === "side") {
+        const x = s.x1 + 6 + s.level * 46;
+        const y0 = yOf(s.r0), y1 = yOf(s.r1) + BAR;
+        const m = (y0 + y1) / 2;
+        out += `<g class="mbb-brace" data-brace="${s.br.id}">` +
+          `<path d="${curlySide(x, y0, y1)}" fill="none" stroke="${GREY}" stroke-width="1.4"/>` +
+          `<rect x="${x + 8}" y="${m - 12}" width="70" height="22" fill="transparent"/>` +
+          `<text x="${x + 13}" y="${m + 5}" font-size="13" font-weight="700" fill="${s.br.text ? INK : GREY}">${esc(s.br.text || "…")}</text></g>`;
+        return;
+      }
       const y = s.at === "above" ? yOf(s.row) - 3 - s.level * 22 : yOf(s.row) + BAR + 3 + s.level * 22;
       const dir = s.at === "above" ? -1 : 1;
       const ty = s.at === "above" ? y - 12 : y + 21;
@@ -211,7 +243,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
   /** The point under the pointer, in board units. */
   function at(e) {
     const r = svg.getBoundingClientRect();
-    const k = W / r.width;
+    const k = VIEW / r.width;
     return { x: (e.clientX - r.left) * k, y: (e.clientY - r.top) * k };
   }
 
@@ -255,7 +287,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
       change(() => bars.forEach((b) => { b.tone = (b.tone + 1) % TONES.length; }));
     } else if (t === "del") {
       change(() => { model.bars = model.bars.filter((b) => !picked.has(b.id)); picked.clear(); });
-    } else if (t === "above" || t === "below") {
+    } else if (t === "above" || t === "below" || t === "side") {
       const br = { id: seq++, ids: bars.map((b) => b.id), at: t, text: "" };
       change(() => model.braces.push(br));
       editBrace(br.id);
@@ -360,7 +392,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
     el.querySelector(".mbb-write")?.remove();
     const r = svg.getBoundingClientRect();
     const br = board.getBoundingClientRect();
-    const k = r.width / W;
+    const k = r.width / VIEW;
     const input = document.createElement("input");
     input.type = "text";
     input.className = "mbb-write";
@@ -393,6 +425,14 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
   function editBrace(id) {
     const s = braceSpots(model).find((x) => x.br.id === id);
     if (!s) return;
+    if (s.at === "side") {
+      const x = s.x1 + 6 + s.level * 46;
+      inputAt(Math.min(VIEW - 40, x + 48), (yOf(s.r0) + yOf(s.r1) + BAR) / 2, 80, s.br.text, (v) => change(() => {
+        const br = model.braces.find((b) => b.id === id);
+        if (br) br.text = v;
+      }));
+      return;
+    }
     const y = s.at === "above" ? yOf(s.row) - 3 - s.level * 22 - 16 : yOf(s.row) + BAR + 3 + s.level * 22 + 16;
     inputAt((s.x0 + s.x1) / 2, y, Math.min(160, s.x1 - s.x0), s.br.text, (v) => change(() => {
       const br = model.braces.find((x) => x.id === id);
