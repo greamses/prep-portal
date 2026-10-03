@@ -354,6 +354,11 @@ export const ICON = {
       `<rect x="2.6" y="15" width="6.2" height="5" fill="${LEAF}"/>` +
       `<path d="M7 10.6 17 13.4M17 10.6 7 13.4" stroke="${LOUD}" stroke-width="1.6" stroke-linecap="round"/>`
   ),
+  /* Bits and bulbs: four LEDs on a board, two of them lit. */
+  nbBulbs: svg(
+    `<rect x="2" y="14" width="20" height="6" rx="1.4" fill="${PAPER}"/>` +
+      [4.6, 9.5, 14.4, 19.3].map((x, i) => `<circle cx="${x}" cy="8.6" r="2.3" fill="${i === 0 || i === 3 ? LOUD : QUIET}"/><path d="M${x} 11v4" stroke="${QUIET}" stroke-width="1"/>`).join("")
+  ),
   /* Number bases: groups of two — a pair, a pair of pairs — and the ones. */
   nbBases: svg(
     `<rect x="2.4" y="5" width="9" height="14" rx="1.6" fill="${PAPER}"/>` +

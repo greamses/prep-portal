@@ -213,6 +213,11 @@ export const ICON = {
   lgTruth: svg(
     [4, 9.6, 15.2].flatMap((x, i) => [4, 9, 14, 19].map((y) => `<rect x="${x}" y="${y}" width="4.8" height="3.8" rx="0.8" fill="${i === 2 ? LOUD : PAPER}"/>`)).join("")
   ),
+  /* Build the logic path: a switch, a gate, and a bulb that is lit. */
+  lgBuild: svg(
+    bar(2, 12, 8, 12, 1.3, QUIET) + bar(14, 12, 17, 12, 1.3, GOLD) + `<path d="M8 7.4h3.2a4.6 4.6 0 0 1 0 9.2H8z" fill="${LOUD}"/>` +
+      `<circle cx="19.4" cy="12" r="3" fill="${GOLD}"/>` + `<rect x="2" y="4" width="5" height="2.6" rx="1.3" fill="${PAPER}"/>`
+  ),
   /* An AND gate with its wires. */
   lgGate: svg(
     bar(2, 8, 7, 8, 1.3, QUIET) + bar(2, 16, 7, 16, 1.3, QUIET) + bar(17, 12, 22, 12, 1.3, LOUD) +

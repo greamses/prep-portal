@@ -133,6 +133,7 @@ mountBuilder({
     "model-pwf": ICON.mbFraction,
     "model-word": ICON.mbWord,
     "nb-bases": ICON.nbBases,
+    "nb-bulbs": ICON.nbBulbs,
     "pf-lcm": ICON.pfLcm,
     "pf-venn": ICON.pfVenn,
     "pf-words": ICON.pfWords,

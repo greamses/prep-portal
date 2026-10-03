@@ -107,6 +107,12 @@ export const want = {
       teaching the opposite of the lesson. What the child READS off it is
       marked, in the boxes beside it. Covers no places. */
   chance: ({ says = "" } = {}) => ({ kind: "chance", says }),
+  /** A logic path built from gates (logicboard.js): right when the bulb does
+      what `target` says for every setting of the switches — whichever gates
+      were used. */
+  gates: ({ layout, target, nth = 0, says = "" }) => ({ kind: "gates", layout, target, nth, says }),
+  /** A row of bit bulbs (bits.js): right when the lit bulbs show `value`. */
+  bits: ({ value, nth = 0, says = "" }) => ({ kind: "bits", value, nth, says }),
 };
 
 /* ── judging, shared by the page and the Node checks ─────────────────────────*/
@@ -210,7 +216,7 @@ export function judge(entry, values) {
 export const placesOf = (entry) =>
   entry.kind === "set" ? entry.vs.length
     : entry.kind === "pair" ? 2
-      : ["draw", "colour", "match", "pen", "stick", "picto", "bars", "dots", "machine", "tiles", "code", "chance", "split", "strike", "tree"].includes(entry.kind) ? 0 : 1;
+      : ["draw", "colour", "match", "pen", "stick", "picto", "bars", "dots", "machine", "tiles", "code", "chance", "split", "strike", "tree", "gates", "bits"].includes(entry.kind) ? 0 : 1;
 
 /** n/d in lowest terms, as it is written: "1/6", "0", "1". */
 function lowest(n, d) {
@@ -244,6 +250,8 @@ export function sayWant(entry, tickLabels = []) {
     case "dots": return entry.says || "";
     case "machine": return entry.says || "";
     case "tiles": return entry.says || "";
+    case "gates": return entry.says || "a circuit that lights the bulb as the table says";
+    case "bits": return entry.says || `the bulbs for ${entry.value}`;
     case "code": return entry.says || (entry.prints || []).join(" · ");
     case "chance": return entry.says || "";
     case "split": return entry.says || "both bars cut to the same parts";

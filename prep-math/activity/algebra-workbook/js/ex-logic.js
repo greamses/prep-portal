@@ -17,6 +17,20 @@
      name the gate         (Middle+) its table says which: AND, OR, NAND, NOR
                            or XOR
 
+   And then the gates are BUILT with (the shared logicboard.js): switches, a
+   bulb, wires with empty places, and a tray of gates to drag into them.
+
+     meet the gates        drop one in, flip the switches, write its table
+     which gate?           a table to match with one gate
+     combine them          only AND, OR and NOT in the tray: NOT-AND, NOT-OR,
+                           a NOT on one input
+     three switches        (Middle+) two gates in a row, from an expression
+                           (Stretch: from the table alone)
+
+   A built circuit is marked by what it DOES — its whole truth table — so any
+   gates that light the bulb as asked are right. Every gate has one colour
+   everywhere: in the tray, on the board, and in the printed circuits.
+
    Truth-table cells are typed T or F (true/false and 1/0 are taken too); gate
    outputs are typed 0 or 1. The gates are drawn with the usual symbols
    (gateart below): AND a D, OR a shield, NOT a triangle, and a small circle
@@ -25,6 +39,7 @@
 
 import { levelOf } from "./poly.js";
 import { want } from "/utils/components/workbook/want.js";
+import { GATES as PIECES, gatesBoardHtml, tableOf, settings } from "/utils/components/workbook/logicboard.js";
 
 const box = () => `<span class="wb-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
@@ -62,6 +77,7 @@ function truthTable(heads, rows, asked) {
 export const LG_GROUPS = [
   { id: "lg-truth", chapter: "Chapter 11 · Logic", label: "Truth tables", blurb: "NOT, AND, OR — and every way the parts can come out." },
   { id: "lg-gates", label: "Logic gates", blurb: "The same rules in wires: 1 is on, 0 is off." },
+  { id: "lg-build", label: "Build the logic path", blurb: "Drag gates into the circuit, flip the switches, light the bulb." },
 ];
 
 /* ═══ NOT, AND, OR ═════════════════════════════════════════════════════════*/
@@ -201,12 +217,14 @@ const GATE = {
 
 /** One gate's symbol, its output at (x + 22, y). */
 function gateSym(kind, x, y) {
-  const s = 'stroke="#2a2723" stroke-width="0.5" fill="#fffdf8"';
+  /* each gate in its own colour, the same as the pieces on the board */
+  const P = PIECES[kind] || { col: "#2a2723", tint: "#fffdf8" };
+  const s = `stroke="${P.col}" stroke-width="0.6" fill="${P.tint}"`;
   const bubble = (cx) => `<circle cx="${cx}" cy="${y}" r="1.3" ${s}/>`;
   if (kind === "NOT") return `<path d="M${x} ${y - 5}L${x + 16} ${y}L${x} ${y + 5}Z" ${s}/>` + bubble(x + 17.3);
   const and = `<path d="M${x} ${y - 7}H${x + 9}A7 7 0 0 1 ${x + 9} ${y + 7}H${x}Z" ${s}/>`;
   const or = `<path d="M${x} ${y - 7}Q${x + 12} ${y - 7} ${x + 18} ${y}Q${x + 12} ${y + 7} ${x} ${y + 7}Q${x + 4} ${y} ${x} ${y - 7}Z" ${s}/>`;
-  const xor = `<path d="M${x - 2.4} ${y - 7}Q${x + 1.6} ${y} ${x - 2.4} ${y + 7}" fill="none" stroke="#2a2723" stroke-width="0.5"/>`;
+  const xor = `<path d="M${x - 2.4} ${y - 7}Q${x + 1.6} ${y} ${x - 2.4} ${y + 7}" fill="none" stroke="${P.col}" stroke-width="0.6"/>`;
   if (kind === "AND") return and;
   if (kind === "NAND") return and + bubble(x + 17.3);
   if (kind === "OR") return or;
@@ -216,7 +234,7 @@ function gateSym(kind, x, y) {
 const outX = (kind, x) => x + (kind === "NAND" ? 18.6 : kind === "NOR" ? 20.6 : kind === "NOT" ? 18.6 : kind === "AND" ? 16 : 18);
 const wire = (x1, y1, x2, y2) => `<path d="M${x1} ${y1}H${(x1 + x2) / 2}V${y2}H${x2}" fill="none" stroke="#2a2723" stroke-width="0.45"/>`;
 const lab = (x, y, t, anchor = "end", w = 700) => `<text x="${x}" y="${y + 1.3}" text-anchor="${anchor}" font-family="JetBrains Mono, monospace" font-size="3.6" font-weight="${w}" fill="#2a2723">${t}</text>`;
-const gname = (kind, x, y) => `<text x="${x + 7}" y="${y + 1.1}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="2.4" fill="#6f685f">${kind}</text>`;
+const gname = (kind, x, y) => `<text x="${x + 7}" y="${y + 1.1}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="2.4" font-weight="800" fill="${(PIECES[kind] || {}).col || "#6f685f"}">${kind}</text>`;
 
 /**
  * A circuit: { g1, g2?, not? } — g1 joins A and B; g2 (if any) joins that
@@ -358,4 +376,164 @@ const lgName = {
   },
 };
 
-export const LG_EXERCISES = [lgBasic, lgCompound, lgImplies, lgOut, lgTable, lgName];
+
+/* ═══ BUILD THE LOGIC PATH ═════════════════════════════════════════════════*/
+
+/** The gates in the tray, by level. */
+const trayOf = (o) => (tier(o) === "gentle" ? ["AND", "OR", "NOT"] : tier(o) === "middle" ? ["AND", "OR", "NOT", "XOR", "NAND", "NOR"] : ["AND", "OR", "NOT", "XOR", "NAND", "NOR", "XNOR"]);
+const twoWire = (tray) => tray.filter((g) => PIECES[g].two);
+
+/** The table a circuit must match: the switches' columns, and Q given or to fill. */
+function targetTable(layout, target, { fill = false } = {}) {
+  const rows = settings(layout);
+  const names = Object.keys(rows[0]);
+  const body = rows.map((sw, i) => `<tr>${names.map((n) => `<td>${sw[n]}</td>`).join("")}<td>${fill ? box() : target[i]}</td></tr>`).join("");
+  return `<table class="lg-table"><thead><tr>${names.map((n) => `<th>${n}</th>`).join("")}<th class="lg-ask">Q</th></tr></thead><tbody>${body}</tbody></table>`;
+}
+/** What a two-switch table says in words. */
+const WORDS2 = {
+  "0001": "only when BOTH switches are on", "0111": "when AT LEAST ONE switch is on", "1110": "unless both switches are on",
+  "1000": "only when both switches are OFF", "0110": "when exactly ONE switch is on", "1001": "when the two switches are the SAME",
+  "0100": "only when A is off and B is on", "0010": "only when A is on and B is off", "1011": "unless A is off and B is on",
+  "1101": "unless A is on and B is off", "0011": "whenever A is on", "0101": "whenever B is on", "1100": "whenever A is off", "1010": "whenever B is off",
+};
+const board = (layout, tray) => gatesBoardHtml({ layout, palette: tray });
+
+const lbMeet = {
+  id: "lb-meet",
+  group: "lg-build",
+  label: "Meet the gates",
+  blurb: "Drop a gate in, flip the switches, write what the bulb does.",
+  heading: "Build it: meet the gates",
+  instruction: () =>
+    "Each gate has its own colour. Put the named gate into the empty place — on screen, drag it from the tray " +
+    "(or tap it, then tap the place); on paper, draw it. Then try every setting of the two switches and write " +
+    "what the bulb does: 1 for ON, 0 for off.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o) {
+    const tray = trayOf(o);
+    return { tray, g: r.pick(twoWire(tray)) };
+  },
+  render(item) {
+    return ask(`Put in the <strong>${item.g}</strong> gate, then fill in its table.`) +
+      `<div class="lg-side">${board("one", item.tray)}${targetTable("one", null, { fill: true })}</div>`;
+  },
+  worked() {
+    return worked(say("With the AND gate in: both switches off, the bulb is off (0). Only A on: off. Only B on: off. " +
+      "Both on: the bulb lights (1). So Q is 0, 0, 0, 1."));
+  },
+  key(item) {
+    const target = tableOf("one", { g1: item.g });
+    return [want.gates({ layout: "one", target, says: `the ${item.g} gate` }), ...target.map((v) => want.num(v))];
+  },
+  answer(item) {
+    return [`${item.g}: Q = ${tableOf("one", { g1: item.g }).join(" ")}`];
+  },
+};
+
+const lbFind = {
+  id: "lb-find",
+  group: "lg-build",
+  label: "Which gate lights it like this?",
+  blurb: "A table to match: find the one gate that does it.",
+  heading: "Build it: match the table",
+  instruction: () =>
+    "The table says what the bulb must do for each setting of the switches. Find the ONE gate that does exactly " +
+    "that: put a gate in, flip the switches, and compare with the table. Change the gate until every row agrees.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o) {
+    const tray = trayOf(o);
+    return { tray, g: r.pick(twoWire(tray)) };
+  },
+  render(item) {
+    const target = tableOf("one", { g1: item.g });
+    return ask(`The bulb must light ${WORDS2[target.join("")]}.`) +
+      `<div class="lg-side">${board("one", item.tray)}${targetTable("one", target)}</div>`;
+  },
+  key(item) {
+    const target = tableOf("one", { g1: item.g });
+    return [want.gates({ layout: "one", target, says: `the ${item.g} gate` })];
+  },
+  answer(item) {
+    return [item.g];
+  },
+};
+
+const BASIC = ["AND", "OR", "NOT"];
+
+const lbCombine = {
+  id: "lb-combine",
+  group: "lg-build",
+  label: "Combine AND, OR and NOT",
+  blurb: "Only three gates in the tray: make the others from them.",
+  heading: "Build it: two gates together",
+  instruction: () =>
+    "Now the tray has only AND, OR and NOT — but two places. A NOT after a gate turns its answer over; a NOT " +
+    "before it turns one switch over. (A one-wire place may be left empty: then it is just a wire.) Build a path " +
+    "that lights the bulb exactly as the table says, and test every row with the switches.",
+  cols: 1,
+  defaultCount: 2,
+  make(r) {
+    const layout = r.pick(["then-not", "not-in"]);
+    const g = r.pick(["AND", "OR"]);
+    const slots = layout === "then-not" ? { g1: g, g2: "NOT" } : { g1: "NOT", g2: g };
+    return { layout, slots };
+  },
+  render(item) {
+    const target = tableOf(item.layout, item.slots);
+    return ask(`The bulb must light ${WORDS2[target.join("")]}.`) +
+      `<div class="lg-side">${board(item.layout, BASIC)}${targetTable(item.layout, target)}</div>`;
+  },
+  worked() {
+    return worked(say("“Only when both switches are OFF”: an OR gives 1 when at least one is on — the exact opposite. " +
+      "So put an OR first and a NOT after it: the NOT turns every answer over."));
+  },
+  key(item) {
+    const target = tableOf(item.layout, item.slots);
+    return [want.gates({ layout: item.layout, target, says: Object.values(item.slots).join(" then ") })];
+  },
+  answer(item) {
+    return [item.layout === "then-not" ? `${item.slots.g1}, then NOT` : `NOT on A, then ${item.slots.g2}`];
+  },
+};
+
+const lbThree = {
+  id: "lb-three",
+  group: "lg-build",
+  label: "Three switches, two gates",
+  blurb: "One gate feeds the next: (A AND B) OR C.",
+  heading: "Build it: three switches",
+  hardest: true,
+  instruction: () =>
+    "Three switches and two gates in a row: the first gate takes A and B, and its answer goes into the second " +
+    "gate with C. Build the path, test it with the switches, and then answer the question about one setting. " +
+    "At Stretch there is no expression — only the table to match.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o) {
+    const pool = twoWire(trayOf(o));
+    const slots = { g1: r.pick(pool), g2: r.pick(pool) };
+    const sw = { A: r.int(0, 1), B: r.int(0, 1), C: r.int(0, 1) };
+    return { tray: trayOf(o), slots, sw, bare: tier(o) === "stretch" };
+  },
+  render(item) {
+    const { slots, sw } = item;
+    const target = tableOf("two", slots);
+    const lead = item.bare ? "Build a path that matches the table." : `Build Q = (A ${slots.g1} B) ${slots.g2} C.`;
+    return ask(lead) + `<div class="lg-side">${board("two", item.tray)}${item.bare ? targetTable("two", target) : ""}</div>` +
+      ask(`With A = ${sw.A}, B = ${sw.B} and C = ${sw.C}, Q = ${box()}`);
+  },
+  key(item) {
+    const target = tableOf("two", item.slots);
+    const k = item.sw.A * 4 + item.sw.B * 2 + item.sw.C;
+    return [want.gates({ layout: "two", target, says: `(A ${item.slots.g1} B) ${item.slots.g2} C` }), want.num(target[k])];
+  },
+  answer(item) {
+    const target = tableOf("two", item.slots);
+    return [`(A ${item.slots.g1} B) ${item.slots.g2} C; Q = ${target[item.sw.A * 4 + item.sw.B * 2 + item.sw.C]}`];
+  },
+};
+
+export const LG_EXERCISES = [lgBasic, lgCompound, lgImplies, lgOut, lgTable, lgName, lbMeet, lbFind, lbCombine, lbThree];

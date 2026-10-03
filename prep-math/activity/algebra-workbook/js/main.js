@@ -71,6 +71,7 @@ mountBuilder({
     "bn-binomial": ICON.bnPascal,
     "lg-truth": ICON.lgTruth,
     "lg-gates": ICON.lgGate,
+    "lg-build": ICON.lgBuild,
     "mt-basics": ICON.mtBasics,
     "mt-mult": ICON.mtMult,
     "mt-inverse": ICON.mtInverse,

@@ -31,6 +31,8 @@ import { makeFoldable, unFoldable, foldAlong } from "./fold.js";
 import { mountBalance } from "./balance.js";
 import { mountBarModel } from "./barmodel.js";
 import { mountSameDiff } from "./samediff.js";
+import { mountGates, circuitRight } from "./logicboard.js";
+import { mountBits, bitsRight } from "./bits.js";
 import { mountPicto, rowRight } from "./picto.js";
 import { mountBars, barsRight } from "./barbuild.js";
 import { mountDots, dotsRight } from "./dotplot.js";
@@ -163,6 +165,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.regroup ||= {};  // which shape a number's blocks are pushed into
     r.model ||= {};    // bar models built on a board
     r.slide ||= {};    // how far a same-difference bar has been slid
+    r.gates ||= {};    // logic paths: which gate is in which place, and the switches
+    r.bits ||= {};     // bit bulbs: which are lit
     r.asks ||= {};     // what was written over a printed model's "?"
     return r;
   };
@@ -358,6 +362,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       if (e.kind === "dots") makeDotsLive(node, idx, e);
       if (e.kind === "machine") makeMachineLive(node, idx, e);
       if (e.kind === "tiles") makeTilesLive(node, idx, e);
+      if (e.kind === "gates") makeGatesLive(node, idx, e);
+      if (e.kind === "bits") makeBitsLive(node, idx, e);
       if (e.kind === "code") makeCodeLive(node, idx, e);
       if (e.kind === "split") makeSplitLive(node, idx, e);
       if (e.kind === "tree") makeTreeLive(node, idx, e);
@@ -401,6 +407,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("[data-regroup]").forEach((c) => { c.__wbRegroup?.dispose(); c.__wbRegroup = null; });
     node.querySelectorAll("[data-barmodel]").forEach((c) => { c.__wbModel?.dispose(); c.__wbModel = null; });
     node.querySelectorAll("[data-samediff]").forEach((c) => { c.__wbSlide?.dispose(); c.__wbSlide = null; });
+    node.querySelectorAll(".lb-wrap").forEach((c) => { c.querySelector(":scope > .wb-drawbar")?.remove(); c.__wbGates?.dispose(); c.__wbGates = null; });
+    node.querySelectorAll("[data-bits]").forEach((c) => { c.__wbBits?.dispose(); c.__wbBits = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("svg [data-ask]").forEach((t) => { if (t.__wbAsk) { t.textContent = "?"; t.classList.remove("is-said"); t.__wbAsk = null; } });
     node.querySelectorAll(".wb-askin").forEach((n) => n.remove());
     node.querySelectorAll("[data-roll]").forEach((c) => { c.__wbChance?.dispose(); c.__wbChance = null; });
@@ -749,6 +757,47 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       });
       input.addEventListener("blur", () => finish(true));
     });
+  }
+
+  /* ── a logic path, built from gates and tested with switches ────────────
+     logicboard.js does the dragging, the switches and the bulb; this keeps
+     the circuit with the question, makes each gate moved one Undo step, and
+     Clear empties the places. */
+  function makeGatesLive(node, idx, e) {
+    const k = e.nth || 0;
+    const wrap = node.querySelectorAll(".lb-wrap")[k];
+    if (!wrap) return;
+    wrap.classList.add("wb-drawhost");
+    wrap.__wbGates = mountGates(wrap.querySelector("[data-gates]"), {
+      saved: rec(idx).gates[k] || null,
+      onChange: (now, before) => {
+        rec(idx).gates[k] = now;
+        step(wrap, () => { rec(idx).gates[k] = before; wrap.__wbGates?.set(before); dirty(node); save(); });
+        dirty(node);
+        save();
+      },
+    });
+    drawbar(wrap, () => { delete rec(idx).gates[k]; wrap.__wbGates?.clear(); dirty(node); save(); });
+  }
+
+  /* ── bit bulbs, lit by tapping ──────────────────────────────────────────
+     bits.js lights and darkens them; this keeps which are lit, makes each tap
+     one Undo step, and Clear puts them all out. */
+  function makeBitsLive(node, idx, e) {
+    const k = e.nth || 0;
+    const el = node.querySelectorAll("[data-bits]")[k];
+    if (!el) return;
+    el.classList.add("wb-drawhost");
+    el.__wbBits = mountBits(el, {
+      saved: rec(idx).bits[k] || null,
+      onChange: (now, before) => {
+        rec(idx).bits[k] = now;
+        step(el, () => { rec(idx).bits[k] = before; el.__wbBits?.set(before); dirty(node); save(); });
+        dirty(node);
+        save();
+      },
+    });
+    drawbar(el, () => { delete rec(idx).bits[k]; el.__wbBits?.clear(); dirty(node); save(); });
   }
 
   /* ── a pictogram, built by tapping ─────────────────────────────────────
@@ -2254,6 +2303,25 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
           if (ok < n) allRight = false;
           return;
         }
+        if (entry.kind === "gates") {
+          /* right when the bulb does what the table says — whichever gates */
+          const wrap = node.querySelectorAll(".lb-wrap")[entry.nth || 0];
+          const ok = circuitRight(entry.layout, rec(idx).gates[entry.nth || 0]?.slots, entry.target);
+          wrap?.classList.remove("is-right", "is-wrong");
+          wrap?.classList.add(ok ? "is-right" : "is-wrong");
+          if (wrap) wrap.dataset.want = sayWant(entry);
+          total++; if (ok) right++; else allRight = false;
+          return;
+        }
+        if (entry.kind === "bits") {
+          const el = node.querySelectorAll("[data-bits]")[entry.nth || 0];
+          const ok = bitsRight(rec(idx).bits[entry.nth || 0], entry.value);
+          el?.classList.remove("is-right", "is-wrong");
+          el?.classList.add(ok ? "is-right" : "is-wrong");
+          if (el) el.dataset.want = sayWant(entry);
+          total++; if (ok) right++; else allRight = false;
+          return;
+        }
         if (entry.kind === "tiles") {
           /* the square is finished when every place holds its own tile */
           const wrap = node.querySelectorAll("[data-tiles]")[entry.nth || 0];
@@ -2436,7 +2504,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
      Clear starts the drill again. */
   const clock = bar.querySelector(".wb-livebar__clock");
   let drill = null;
-  const NOT_TIMED = ["free", "pen", "stick", "colour", "picto", "bars", "dots", "machine", "tiles", "code", "match", "draw", "split", "strike", "tree", "chance", "pair"];
+  const NOT_TIMED = ["free", "pen", "stick", "colour", "picto", "bars", "dots", "machine", "tiles", "code", "match", "draw", "split", "strike", "tree", "chance", "pair", "gates", "bits"];
 
   /** Every place, in page order, with what it takes to judge it on its own. */
   function drillPlaces() {

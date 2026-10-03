@@ -13,12 +13,19 @@
      taking away           (Middle+) a column too small borrows ONE b, not ten
      base to base          (Stretch) through base ten: there, then back out
 
+   BITS AND BULBS — a breadboard of LEDs to tap on screen, colour on paper:
+     read the bulbs        lit worths added up
+     light a number        the biggest worth that fits, then the next
+     octal in threes       (Middle+) one octal digit is exactly three bulbs
+     read octal            (Middle+) each three bulbs is one digit
+
    A number in base b is written with a small b after it: 1011₂. Answers in a
    base are typed as their digits.
    ========================================================================== */
 
 import { want } from "/utils/components/workbook/want.js";
 import { levelOf } from "./ex-remainder.js";
+import { bitsHtml } from "/utils/components/workbook/bits.js";
 
 const box = () => `<span class="wb-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
@@ -43,6 +50,7 @@ const digitsOf = (o, b) => (b === 2 ? (tier(o) === "gentle" ? 4 : tier(o) === "m
 
 export const NB_GROUPS = [
   { id: "nb-bases", chapter: "Chapter 10 · Number bases", label: "Number bases", blurb: "Counting in twos, fives, eights: changing base, and sums in a base." },
+  { id: "nb-bulbs", label: "Bits and bulbs", blurb: "A breadboard of LEDs: lit is 1, dark is 0." },
 ];
 
 /* ═══ place values ═════════════════════════════════════════════════════════*/
@@ -290,4 +298,123 @@ const nbConvert = {
   },
 };
 
-export const NB_EXERCISES = [nbPlaces, nbTo10, nbFrom10, nbAdd, nbSub, nbConvert];
+/* ═══ BITS AND BULBS ═══════════════════════════════════════════════════════
+   A row of LEDs on a breadboard (the shared utils/components/workbook/bits.js):
+   lit is 1, dark is 0, and each is worth what is printed under it. */
+
+const bulbCount = (o) => (tier(o) === "gentle" ? 4 : tier(o) === "middle" ? 6 : 8);
+
+const bbRead = {
+  id: "nb-bulb-read",
+  group: "nb-bulbs",
+  label: "Read the bulbs",
+  blurb: "Add up what the lit bulbs are worth.",
+  heading: "Bits and bulbs: reading a number",
+  instruction: () =>
+    "Each bulb is one BIT — a binary digit. A lit bulb is 1 and counts what is written under it; a dark bulb is 0 " +
+    "and counts nothing. Add the worths of the lit bulbs to read the number, and write the bits out as a binary " +
+    "number.",
+  cols: 1,
+  defaultCount: 3,
+  make(r, o) {
+    const n = bulbCount(o);
+    return { n, v: r.int(2 ** (n - 1), 2 ** n - 1) };
+  },
+  render(item) {
+    return bitsHtml({ n: item.n, lit: item.v }) +
+      ask(`in binary: <span class="nb-wide">${box()}</span>${baseOf(2)} &nbsp; in base ten: ${box()}`);
+  },
+  worked() {
+    return worked(bitsHtml({ n: 4, lit: 13 }) +
+      say("The bulbs worth 8, 4 and 1 are lit: 8 + 4 + 1 = 13. The bits, left to right, are 1101."));
+  },
+  key: (item) => [want.text(inBase(item.v, 2)), want.num(item.v)],
+  answer: (item) => [`${inBase(item.v, 2)} = ${item.v}`],
+};
+
+const bbLight = {
+  id: "nb-bulb-light",
+  group: "nb-bulbs",
+  label: "Light the bulbs for a number",
+  blurb: "Take the biggest worth that fits, then the next …",
+  heading: "Bits and bulbs: showing a number",
+  instruction: () =>
+    "Start with the bulb worth most. If its worth fits into the number, LIGHT it and take its worth away; if not, " +
+    "leave it dark. Go on to the next bulb with what is left. On screen, tap a bulb to light it (tap again to put " +
+    "it out); on paper, colour the lit ones. Then write the bits.",
+  cols: 1,
+  defaultCount: 3,
+  make(r, o) {
+    const n = bulbCount(o);
+    return { n, v: r.int(3, 2 ** n - 1) };
+  },
+  render(item) {
+    return ask(`Show <strong>${item.v}</strong> on the bulbs.`) + bitsHtml({ n: item.n }) +
+      ask(`${item.v}${sub(10)} = <span class="nb-wide">${box()}</span>${baseOf(2)}`);
+  },
+  worked() {
+    return worked(ask("Show <strong>11</strong>.") + bitsHtml({ n: 4, lit: 11 }) +
+      say("8 fits into 11: light it, 3 left. 4 does not fit into 3: dark. 2 fits: light it, 1 left. 1 fits: light it. 1011."));
+  },
+  key: (item) => [want.bits({ value: item.v, says: `${inBase(item.v, 2).padStart(item.n, "0")} lit` }), want.text(inBase(item.v, 2), inBase(item.v, 2).padStart(item.n, "0"))],
+  answer: (item) => [`${item.v} = ${inBase(item.v, 2)}`],
+};
+
+const bbOctal = {
+  id: "nb-bulb-octal",
+  group: "nb-bulbs",
+  label: "Octal on the bulbs",
+  blurb: "One octal digit is exactly three bulbs: 4, 2, 1.",
+  heading: "Bits and bulbs: octal in threes",
+  hardest: true,
+  instruction: () =>
+    "Octal (base 8) is used with computers because ONE octal digit is exactly THREE bits. The bulbs stand in " +
+    "threes, each three worth 4, 2 and 1: light each octal digit on its own three bulbs. The whole row is then " +
+    "the number in binary — no dividing needed.",
+  cols: 1,
+  defaultCount: 3,
+  make(r, o) {
+    const digits = tier(o) === "middle" ? 2 : 3;
+    return { digits, v: r.int(8 ** (digits - 1), 8 ** digits - 1) };
+  },
+  render(item) {
+    return ask(`Show ${shown(item.v, 8)} on the bulbs.`) + bitsHtml({ n: 3 * item.digits, mode: "octal" }) +
+      ask(`${shown(item.v, 8)} = <span class="nb-wide">${box()}</span>${baseOf(2)}`);
+  },
+  worked() {
+    return worked(ask(`Show ${shown(46, 8)}.`) + bitsHtml({ n: 6, mode: "octal", lit: 46 }) +
+      say("The 5 is 4 + 1: light the 4 and the 1 of the first three (101). The 6 is 4 + 2: light the 4 and the 2 of " +
+        "the second three (110). Together: 101110."));
+  },
+  key(item) {
+    const bin = inBase(item.v, 2);
+    return [want.bits({ value: item.v, says: `${bin.padStart(3 * item.digits, "0")} lit` }), want.text(bin, bin.padStart(3 * item.digits, "0"))];
+  },
+  answer: (item) => [`${inBase(item.v, 8)} base 8 = ${inBase(item.v, 2)} base 2`],
+};
+
+const bbToOctal = {
+  id: "nb-bulb-tooctal",
+  group: "nb-bulbs",
+  label: "Read the bulbs in octal",
+  blurb: "Each three bulbs is one octal digit.",
+  heading: "Bits and bulbs: reading octal",
+  hardest: true,
+  instruction: () =>
+    "The bulbs are in threes, each three worth 4, 2, 1. Add up the lit worths in EACH three: that is one octal " +
+    "digit. Write the digits side by side for the octal number, and then work out the number in base ten.",
+  cols: 1,
+  defaultCount: 3,
+  make(r, o) {
+    const digits = tier(o) === "middle" ? 2 : 3;
+    return { digits, v: r.int(8 ** (digits - 1), 8 ** digits - 1) };
+  },
+  render(item) {
+    return bitsHtml({ n: 3 * item.digits, mode: "octal", lit: item.v }) +
+      ask(`in octal: <span class="nb-wide">${box()}</span>${baseOf(8)} &nbsp; in base ten: ${box()}`);
+  },
+  key: (item) => [want.text(inBase(item.v, 8)), want.num(item.v)],
+  answer: (item) => [`${inBase(item.v, 8)} base 8 = ${item.v}`],
+};
+
+export const NB_EXERCISES = [nbPlaces, nbTo10, nbFrom10, nbAdd, nbSub, nbConvert, bbRead, bbLight, bbOctal, bbToOctal];
