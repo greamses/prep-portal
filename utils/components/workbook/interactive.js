@@ -463,15 +463,16 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         l.setAttribute("x2", b[0]); l.setAttribute("y2", b[1]);
         /* a clock face: a line to the inner ring is the hour hand, to the
            outer ring the minute hand */
-        const hand = draw.hands ? (Math.max(ln[0], ln[1]) > 12 ? " wb-draw__line--minute" : " wb-draw__line--hour") : "";
+        const hand = draw.hands ? (Math.max(ln[0], ln[1]) > (pts.length - 1) / 2 ? " wb-draw__line--minute" : " wb-draw__line--hour") : "";
         l.setAttribute("class", `wb-draw__line${hand}`);
         g.appendChild(l);
       });
-      if (!draw.free) pts.forEach((p) => {
+      if (!draw.free) pts.forEach((p, i) => {
         const c = document.createElementNS(NS, "circle");
         /* a grid where every corner is a snap point gets small spots: full-size
-           ones would touch each other and hide the squares */
-        c.setAttribute("cx", p[0]); c.setAttribute("cy", p[1]); c.setAttribute("r", svg.dataset.grid ? 0.55 : 1.6);
+           ones would touch each other and hide the squares. So does a clock
+           face, with a point for every minute mark on each of its two rings. */
+        c.setAttribute("cx", p[0]); c.setAttribute("cy", p[1]); c.setAttribute("r", svg.dataset.grid || (draw.hands && i > 0) ? 0.5 : 1.6);
         c.setAttribute("class", "wb-draw__spot");
         g.appendChild(c);
       });

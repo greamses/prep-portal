@@ -106,11 +106,14 @@ export function clockSvg(h, m, { hands = true, fives = false, label = "", mm = 0
      the numbers in proportion to the face. */
   const out = mm || size;
   /* Where hands can be drawn on a blank face, for the on-screen layer: the
-     centre, then twelve points on an inner ring (the SHORT hour hand) and
-     twelve on an outer ring (the LONG minute hand), 1 to 12 in order. */
+     centre, then SIXTY points on an inner ring (the SHORT hour hand) and sixty
+     on an outer ring (the LONG minute hand) — one for every minute mark, 1 to
+     60 in order. Sixty, not twelve, because THE HOUR HAND DOES NOT WAIT AT ITS
+     NUMBER: it creeps one minute mark on for every 12 minutes that pass, and
+     a hand that could only be drawn to a number could not be drawn right. */
   let spots = "";
   if (!hands) {
-    const ring = (rr) => Array.from({ length: 12 }, (_, i) => pt((i + 1) * 30, rr, c, c).map((v) => v.toFixed(2)).join(","));
+    const ring = (rr) => Array.from({ length: 60 }, (_, i) => pt((i + 1) * 6, rr, c, c).map((v) => v.toFixed(2)).join(","));
     spots = ` data-pts="${[`${c},${c}`, ...ring(R * 0.5), ...ring(R * 0.84)].join(" ")}"`;
   }
   return (

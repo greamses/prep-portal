@@ -329,23 +329,29 @@ const anyTime = readOne(
  * Where the two hands have to end up, and how to mark them.
  *
  * Ruled from the centre: the long hand out to the outer ring of points, the
- * short hand to the inner. Past the half hour the short hand stands between
- * two numbers, so either of them is allowed — a hand drawn to a point cannot
- * say "three-quarters of the way to four".
+ * short hand to the inner — sixty points on each, one for every minute mark
+ * (clock.js). THE HOUR HAND IS NOT FIXED AT ITS NUMBER: it moves one minute
+ * mark on for every 12 minutes past the hour, so at half past three it is
+ * 2½ marks beyond the 3 and must be drawn there. Where that falls between two
+ * marks (12 does not go into the minutes), the mark either side is right.
  */
 function handsKey(h, m) {
-  const minute = 12 + ((m / 5) % 12 || 12);
+  const minute = 60 + (m % 60 || 60);
   const hour = (h % 12) || 12;
-  const hours = new Set([hour]);
-  if (m >= 30) hours.add((h % 12) + 1);
+  const on = (h % 12) * 5 + m / 12;                       // minute marks round from the 12
+  const hours = new Set([Math.floor(on), Math.ceil(on)].map((v) => v % 60 || 60));
+  const marks = m / 12;
+  const where = m === 0 ? `on the ${hour}`
+    : Number.isInteger(marks) ? `${marks} small mark${marks === 1 ? "" : "s"} past the ${hour}`
+      : `${Math.floor(marks)} or ${Math.ceil(marks)} small marks past the ${hour}`;
   return want.draw({
     on: "svg.mt-clock",
     hands: true,
-    says: `long hand to the ${(m / 5) % 12 || 12}, short hand to the ${hour}${m >= 30 ? ` or ${(h % 12) + 1}` : ""}`,
+    says: `long hand to the ${(m / 5) % 12 || 12}, short hand ${where}`,
     check(lines) {
       const ends = lines.map(([a, b]) => (a === 0 ? b : b === 0 ? a : -1));
       if (ends.length !== 2 || ends.includes(-1)) return false;
-      return ends.includes(minute) && ends.some((e) => e <= 12 && hours.has(e));
+      return ends.includes(minute) && ends.some((e) => e <= 60 && hours.has(e));
     },
   });
 }
@@ -400,7 +406,8 @@ const setHalf = setOne(
   "Long hand straight down, and the short hand only halfway there.",
   "Make the clock say it",
   () =>
-    "The long hand goes straight down to the 6. The short hand does NOT sit on " +
+    "The long hand goes straight down to the 6. The short hand moves too — one small mark " +
+    "for every 12 minutes — so by half past it has gone 2½ marks. It does NOT sit on " +
     "the number — half an hour has gone by, so it is halfway to the next one."
 );
 setHalf.worked = () =>
@@ -450,7 +457,8 @@ const drawTime = {
   heading: "Draw the hands on the clock",
   instruction: () =>
     "Draw the two hands to show the time. Remember: the hour hand is SHORT and " +
-    "the minute hand is LONG, and past half past the hour hand is nearly at the next number.",
+    "the minute hand is LONG. The hour hand does not wait at its number — it moves on one small " +
+    "mark for every 12 minutes, so past half past it is nearly at the next number.",
   cols: 2,
   defaultCount: 6,
   make: makeTime("any"),

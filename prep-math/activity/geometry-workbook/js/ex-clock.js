@@ -118,7 +118,8 @@ const ckOther = {
   blurb: "The hour hand has moved on: half a degree every minute.",
   heading: "Clock angles: at any time",
   instruction: () =>
-    "The hour hand does not wait at its number: in 60 minutes it creeps 30°, which is ½° every minute. So at h:m " +
+    "The hour hand does not wait at its number: in 60 minutes it creeps 30°, which is ½° every minute — one small " +
+    "minute mark (6°) for every 12 minutes. So at h:m " +
     "the hour hand is at 30 × h + ½ × m degrees from the 12, and the minute hand at 6 × m. Take one from the " +
     "other; if it is more than 180°, take it from 360°.",
   cols: 1,
