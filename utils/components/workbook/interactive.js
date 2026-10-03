@@ -165,7 +165,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.regroup ||= {};  // which shape a number's blocks are pushed into
     r.model ||= {};    // bar models built on a board
     r.slide ||= {};    // how far a same-difference bar has been slid
-    r.gates ||= {};    // logic paths: which gate is in which place, and the switches
+    r.gates ||= {};    // logic circuits: the parts on the workspace, the wires, and the switches
     r.bits ||= {};     // bit bulbs: which are lit
     r.asks ||= {};     // what was written over a printed model's "?"
     return r;
@@ -2306,7 +2306,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         if (entry.kind === "gates") {
           /* right when the bulb does what the table says — whichever gates */
           const wrap = node.querySelectorAll(".lb-wrap")[entry.nth || 0];
-          const ok = circuitRight(entry.layout, rec(idx).gates[entry.nth || 0]?.slots, entry.target);
+          const ok = circuitRight(entry.layout, rec(idx).gates[entry.nth || 0], entry.target);
           wrap?.classList.remove("is-right", "is-wrong");
           wrap?.classList.add(ok ? "is-right" : "is-wrong");
           if (wrap) wrap.dataset.want = sayWant(entry);

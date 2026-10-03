@@ -77,7 +77,7 @@ function truthTable(heads, rows, asked) {
 export const LG_GROUPS = [
   { id: "lg-truth", chapter: "Chapter 11 · Logic", label: "Truth tables", blurb: "NOT, AND, OR — and every way the parts can come out." },
   { id: "lg-gates", label: "Logic gates", blurb: "The same rules in wires: 1 is on, 0 is off." },
-  { id: "lg-build", label: "Build the logic path", blurb: "Drag gates into the circuit, flip the switches, light the bulb." },
+  { id: "lg-build", label: "Build and wire the circuit", blurb: "Lay the gates out, wire them yourself, flip the switches, light the bulb." },
 ];
 
 /* ═══ NOT, AND, OR ═════════════════════════════════════════════════════════*/
@@ -403,12 +403,14 @@ const lbMeet = {
   id: "lb-meet",
   group: "lg-build",
   label: "Meet the gates",
-  blurb: "Drop a gate in, flip the switches, write what the bulb does.",
+  blurb: "Wire one gate between the switches and the bulb; write what the bulb does.",
   heading: "Build it: meet the gates",
   instruction: () =>
-    "Each gate has its own colour. Put the named gate into the empty place — on screen, drag it from the tray " +
-    "(or tap it, then tap the place); on paper, draw it. Then try every setting of the two switches and write " +
-    "what the bulb does: 1 for ON, 0 for off.",
+    "The workspace has two toggle switches and a bulb, and nothing joins them. On screen: drag the named gate " +
+    "from the tray onto the workspace, then WIRE it — drag from the pin on the right of each switch to a pin on " +
+    "the left of the gate, and from the gate's right pin to the bulb. (Tap a wire to cut it; tap a switch to " +
+    "flip it.) On paper, draw the gate and the wires. Then try every setting of the switches and write what the " +
+    "bulb does: 1 for ON, 0 for off.",
   cols: 1,
   defaultCount: 2,
   make(r, o) {
@@ -416,11 +418,11 @@ const lbMeet = {
     return { tray, g: r.pick(twoWire(tray)) };
   },
   render(item) {
-    return ask(`Put in the <strong>${item.g}</strong> gate, then fill in its table.`) +
+    return ask(`Wire in the <strong>${item.g}</strong> gate, then fill in its table.`) +
       `<div class="lg-side">${board("one", item.tray)}${targetTable("one", null, { fill: true })}</div>`;
   },
   worked() {
-    return worked(say("With the AND gate in: both switches off, the bulb is off (0). Only A on: off. Only B on: off. " +
+    return worked(say("With the AND gate wired between the switches and the bulb: both switches off, the bulb is off (0). Only A on: off. Only B on: off. " +
       "Both on: the bulb lights (1). So Q is 0, 0, 0, 1."));
   },
   key(item) {
@@ -440,7 +442,8 @@ const lbFind = {
   heading: "Build it: match the table",
   instruction: () =>
     "The table says what the bulb must do for each setting of the switches. Find the ONE gate that does exactly " +
-    "that: put a gate in, flip the switches, and compare with the table. Change the gate until every row agrees.",
+    "that: wire a gate between the switches and the bulb, flip the switches, and compare with the table. Swap " +
+    "the gate — drag the old one off the workspace — until every row agrees.",
   cols: 1,
   defaultCount: 2,
   make(r, o) {
@@ -467,12 +470,13 @@ const lbCombine = {
   id: "lb-combine",
   group: "lg-build",
   label: "Combine AND, OR and NOT",
-  blurb: "Only three gates in the tray: make the others from them.",
+  blurb: "Only AND, OR and NOT in the tray: wire two together to make the others.",
   heading: "Build it: two gates together",
   instruction: () =>
-    "Now the tray has only AND, OR and NOT — but two places. A NOT after a gate turns its answer over; a NOT " +
-    "before it turns one switch over. (A one-wire place may be left empty: then it is just a wire.) Build a path " +
-    "that lights the bulb exactly as the table says, and test every row with the switches.",
+    "Now the tray has only AND, OR and NOT, and one gate is not enough. A NOT wired AFTER a gate turns its " +
+    "answer over; a NOT wired BEFORE it turns one switch over. Lay out the gates you need, wire them so the " +
+    "bulb lights exactly as the table says, and test every row with the switches. Any circuit that matches " +
+    "the table is right.",
   cols: 1,
   defaultCount: 2,
   make(r) {
@@ -488,7 +492,7 @@ const lbCombine = {
   },
   worked() {
     return worked(say("“Only when both switches are OFF”: an OR gives 1 when at least one is on — the exact opposite. " +
-      "So put an OR first and a NOT after it: the NOT turns every answer over."));
+      "So wire both switches into an OR, the OR into a NOT, and the NOT into the bulb: the NOT turns every answer over."));
   },
   key(item) {
     const target = tableOf(item.layout, item.slots);
@@ -507,9 +511,9 @@ const lbThree = {
   heading: "Build it: three switches",
   hardest: true,
   instruction: () =>
-    "Three switches and two gates in a row: the first gate takes A and B, and its answer goes into the second " +
-    "gate with C. Build the path, test it with the switches, and then answer the question about one setting. " +
-    "At Stretch there is no expression — only the table to match.",
+    "Three switches and two gates: wire A and B into the first gate, then wire that gate's output and C into " +
+    "the second gate, and the second gate into the bulb. Test it with the switches, and then answer the " +
+    "question about one setting. At Stretch there is no expression — only the table to match.",
   cols: 1,
   defaultCount: 2,
   make(r, o) {
@@ -521,7 +525,7 @@ const lbThree = {
   render(item) {
     const { slots, sw } = item;
     const target = tableOf("two", slots);
-    const lead = item.bare ? "Build a path that matches the table." : `Build Q = (A ${slots.g1} B) ${slots.g2} C.`;
+    const lead = item.bare ? "Build and wire a circuit that matches the table." : `Build Q = (A ${slots.g1} B) ${slots.g2} C.`;
     return ask(lead) + `<div class="lg-side">${board("two", item.tray)}${item.bare ? targetTable("two", target) : ""}</div>` +
       ask(`With A = ${sw.A}, B = ${sw.B} and C = ${sw.C}, Q = ${box()}`);
   },
