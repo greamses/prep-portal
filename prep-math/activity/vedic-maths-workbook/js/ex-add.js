@@ -9,15 +9,26 @@
      adding with it       + 98 is + 100 − 2
      taking away with it  − 98 is − 100 + 2
 
+   and then two ways to take away with NO regrouping at all, however many
+   noughts are in the way:
+
+     same difference      slide both numbers up the number line by the same
+                          amount until the one taken away is round — the
+                          difference does not move: 503 − 278 = 525 − 300
+     easy regroupers      split the top number into one made of 9s and the
+                          rest: 503 = 499 + 4, and 499 − 278 never borrows
+
    These come first in the book because the rest of it leans on them: every
    "near a base" trick later starts by finding a complement.
    ========================================================================== */
 
 import { want } from "/utils/components/workbook/want.js";
+import { sameDiffFigure, borrows } from "/utils/components/workbook/samediff.js";
 import { ask, big, worked, say, tier, step, steps, strip } from "./common.js";
 
 export const CM_GROUPS = [
   { id: "vm-comp", chapter: "Chapter 1 · Adding and taking away", label: "Complements", blurb: "How far short of 10, 100 or 1000 — then the round number does the work." },
+  { id: "vm-regroup", label: "Taking away without regrouping", blurb: "Slide to a round number, or split off the nines — and nothing borrows." },
 ];
 
 /* ═══ the complement: all from 9 and the last from 10 ══════════════════════*/
@@ -131,4 +142,94 @@ const subc = {
   },
 };
 
-export const CM_EXERCISES = [nine, addc, subc];
+/* ═══ taking away with no regrouping ═══════════════════════════════════════*/
+
+const lenOf = (o) => ({ gentle: 2, middle: 3, stretch: 4 })[tier(o)];
+const owes = (a, b) => borrows(a, b).filter(Boolean).length;
+
+const same = {
+  id: "vm-same",
+  group: "vm-regroup",
+  label: "Same difference",
+  blurb: "Slide both numbers up together until the one taken away is round.",
+  heading: "Same difference: slide to a round number",
+  instruction: () =>
+    "A take-away is the DISTANCE between two numbers on the number line. Move both numbers up by the same amount and the distance stays the same. So slide them up until the number being taken away is a round number — then nothing needs regrouping. On screen, drag the difference bar and watch the column sum change.",
+  cols: 1,
+  defaultCount: 4,
+  make(r, o) {
+    const n = lenOf(o);
+    const unit = 10 ** (n - 1);
+    const need = n === 2 ? 1 : 2;
+    for (;;) {
+      const b = r.int(unit + 1, 7 * unit);
+      if (b % unit === 0) continue;
+      const a = r.int(b + 2, 10 ** n - 1);
+      if (owes(a, b) < need) continue;
+      const R = Math.ceil(b / unit) * unit;
+      if (String(a + (R - b)).length > n) continue;
+      return { a, b, R, goal: R - b };
+    }
+  },
+  render(item) {
+    const { a, b, R, goal } = item;
+    return big(`${a} − ${b}`) + sameDiffFigure(a, b, { goal }) +
+      steps(step(`slide both up until ${b} is ${R}: up by`), step(`then ${a} becomes`), step(`and that − ${R} =`));
+  },
+  worked() {
+    return worked(big("503 − 278") + sameDiffFigure(503, 278, { goal: 22 }) +
+      ask("278 is 22 short of 300, so slide both up 22: " + strip("503 + 22", "278 + 22") + " → " + strip("525", "300") + ", and 525 − 300 = 225") +
+      say("503 − 278 borrows twice. 525 − 300 borrows never — and it is the same distance, so the same answer: 225."));
+  },
+  key(item) {
+    return [want.num(item.goal), want.num(item.a + item.goal), want.num(item.a - item.b)];
+  },
+  answer(item) {
+    const { a, b, R, goal } = item;
+    return [`up ${goal}: ${a + goal} − ${R} = ${a - b}`];
+  },
+};
+
+const split = {
+  id: "vm-split",
+  group: "vm-regroup",
+  label: "Split into easy regroupers",
+  blurb: "503 = 499 + 4: take from the nines, then add the rest back.",
+  heading: "Easy regroupers: split off the nines",
+  instruction: () =>
+    "Noughts in the top number make a take-away borrow again and again. Split the top number instead: the number just under its round hundreds (or tens, or thousands), which ends in nines, and what is left over. Take away from the nines number — a 9 never needs to borrow — then add the left-over back on.",
+  cols: 1,
+  defaultCount: 4,
+  make(r, o) {
+    const n = lenOf(o);
+    const unit = 10 ** (n - 1);
+    const tail = n === 2 ? 4 : n === 3 ? 19 : 39;
+    for (;;) {
+      const L = r.int(2, 9);
+      const a = L * unit + r.int(0, tail);
+      const b = r.int(unit + 1, L * unit - 2);
+      if (owes(a, b) < 1 || b % 10 === 0) continue;
+      const nines = L * unit - 1;
+      return { a, b, nines, rest: a - nines };
+    }
+  },
+  render(item) {
+    const { a, b } = item;
+    return big(`${a} − ${b}`) +
+      steps(step(`${a} splits into a nines number`), step("and the rest"), step(`the nines number − ${b} =`), step("+ the rest ="));
+  },
+  worked() {
+    return worked(big("503 − 278") +
+      ask("503 = " + strip("499", "+ 4") + "; " + strip("499 − 278", "+ 4") + " → " + strip("221", "+ 4") + " = 225") +
+      say("499 is the nines number just under 500, and 503 is 4 more. 499 − 278 is 221 with no borrowing at all. Then the 4 goes back on: 225."));
+  },
+  key(item) {
+    return [want.num(item.nines), want.num(item.rest), want.num(item.nines - item.b), want.num(item.a - item.b)];
+  },
+  answer(item) {
+    const { a, b, nines, rest } = item;
+    return [`${a} = ${nines} + ${rest}; ${nines} − ${b} = ${nines - b}, + ${rest} = ${a - b}`];
+  },
+};
+
+export const CM_EXERCISES = [nine, addc, subc, same, split];

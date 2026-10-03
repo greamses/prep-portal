@@ -2879,3 +2879,23 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .mb-board:not(.is-folded) > .mbb-open { display: none; }
 .mbb-open { font: 700 8pt/1.2 var(--font-body, system-ui, sans-serif); padding: 1.2mm 2.6mm; min-height: 0; }
 @media print { .mb-board--screen { display: none !important; } }
+
+/* ── the same-difference slider (samediff.js) ───────────────────────────────
+   A number line with the difference as a bar, and the column sum beside it. */
+.wb-samediff { margin: 1.5mm 0 2mm; }
+.wb-samediff .sd-body { display: flex; align-items: center; gap: 5mm; flex-wrap: wrap; }
+.wb-samediff .sd-line { display: block; max-width: 100%; height: auto; }
+.sd-cols { font: 700 12pt/1 "JetBrains Mono", monospace; color: #2a2723; }
+.sd-row { display: flex; }
+.sd-row--take { border-bottom: 0.4mm solid #2a2723; padding-bottom: 1mm; }
+.sd-sign, .sd-cell { display: inline-block; width: 5.5mm; text-align: center; padding: 0.6mm 0; }
+.sd-cell.is-owe { color: #c0453f; }
+.sd-say { margin: 1.2mm 0 0; font: 700 8pt/1.2 var(--font-body, system-ui, sans-serif); }
+.sd-say.is-easy { color: #3f8f4f; }
+.sd-say.is-owe { color: #c0453f; }
+.wb-samediff.is-live [data-sd-bar] { cursor: grab; }
+.wb-samediff.is-live .sd-line { touch-action: none; user-select: none; -webkit-user-select: none; }
+.sd-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 1.2mm; margin-top: 1.2mm; }
+.sd-tools .pp-btn { font: 700 8pt/1.2 var(--font-body, system-ui, sans-serif); padding: 1mm 2.2mm; min-height: 0; }
+.sd-moved { min-width: 34mm; text-align: center; font: 700 8pt/1.2 var(--font-body, system-ui, sans-serif); color: #6f685f; }
+@media print { .sd-tools, .sd-say { display: none !important; } }

@@ -12,6 +12,8 @@ const cell = (x, y, w, h, fill, rx = 1.2) => `<rect x="${x}" y="${y}" width="${w
 
 export const ICON = {
   ...BASE,
+  /* taking away without regrouping: a difference bar riding a number line */
+  vmRegroup: svg(`<rect x="2" y="15" width="20" height="2.4" rx="1.2" fill="${PAPER}"/>` + cell(6, 6, 11, 6.5, LOUD) + `<path d="M3.5 9.2h2M17.5 9.2h2" stroke="${LOUD}" stroke-width="1.6" stroke-linecap="round"/>`),
   /* The Trachtenberg stages: two digit boxes, painted by what they hold —
      both even (quiet blue), both odd (loud), one of each. */
   vmTrEven: svg(cell(3, 6, 7.6, 12, PAPER) + cell(13.4, 6, 7.6, 12, PAPER) + `<circle cx="6.8" cy="12" r="1.6" fill="#fff"/><circle cx="17.2" cy="12" r="1.6" fill="#fff"/>`),

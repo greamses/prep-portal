@@ -4,8 +4,9 @@
    The engine, the builder and the answer key read this file and nothing else.
 
      ex-add.js      chapter 1, adding and taking away — complements (all from
-                    9 and the last from 10), and adding or taking away a number
-                    just under a round one
+                    9 and the last from 10), adding or taking away a number
+                    just under a round one, and taking away with no
+                    regrouping: same difference (a slider) and easy regroupers
      ex-quick.js    chapter 2, multiplying in your head — × 11, × 5 / 25 / 50,
                     same front with units making 10, vertically and crosswise,
                     and multiplying near a base

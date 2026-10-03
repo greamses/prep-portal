@@ -30,6 +30,7 @@ import { mountCounters } from "./counters.js";
 import { makeFoldable, unFoldable, foldAlong } from "./fold.js";
 import { mountBalance } from "./balance.js";
 import { mountBarModel } from "./barmodel.js";
+import { mountSameDiff } from "./samediff.js";
 import { mountPicto, rowRight } from "./picto.js";
 import { mountBars, barsRight } from "./barbuild.js";
 import { mountDots, dotsRight } from "./dotplot.js";
@@ -161,6 +162,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.strike ||= {};   // the numbers struck out of a grid
     r.regroup ||= {};  // which shape a number's blocks are pushed into
     r.model ||= {};    // bar models built on a board
+    r.slide ||= {};    // how far a same-difference bar has been slid
     r.asks ||= {};     // what was written over a printed model's "?"
     return r;
   };
@@ -336,6 +338,15 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        it with — working, not marked, like the balance */
     node.querySelectorAll("[data-barmodel]").forEach((el, k) => makeBarModelLive(node, idx, el, k));
 
+    /* a same-difference bar slides along its number line, and the column sum
+       beside it follows — working, never marked */
+    node.querySelectorAll("[data-samediff]").forEach((el, k) => {
+      el.__wbSlide = mountSameDiff(el, {
+        saved: rec(idx).slide[k] ?? null,
+        onChange: (now) => { rec(idx).slide[k] = now; save(); },
+      });
+    });
+
     /* a printed model's "?" can be written over: double-click it */
     makeAsksLive(node, idx);
 
@@ -389,6 +400,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("[data-strike]").forEach((c) => { c.__wbStrike?.dispose(); c.__wbStrike = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-regroup]").forEach((c) => { c.__wbRegroup?.dispose(); c.__wbRegroup = null; });
     node.querySelectorAll("[data-barmodel]").forEach((c) => { c.__wbModel?.dispose(); c.__wbModel = null; });
+    node.querySelectorAll("[data-samediff]").forEach((c) => { c.__wbSlide?.dispose(); c.__wbSlide = null; });
     node.querySelectorAll("svg [data-ask]").forEach((t) => { if (t.__wbAsk) { t.textContent = "?"; t.classList.remove("is-said"); t.__wbAsk = null; } });
     node.querySelectorAll(".wb-askin").forEach((n) => n.remove());
     node.querySelectorAll("[data-roll]").forEach((c) => { c.__wbChance?.dispose(); c.__wbChance = null; });
