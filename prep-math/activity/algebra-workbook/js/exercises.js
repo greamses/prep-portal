@@ -29,10 +29,15 @@
                        square of tiles with a corner missing, filled by hand
                        (the shared utils/components/workbook/tiles.js), then
                        halve-and-square in writing, and solving with it
+     ex-understand.js  chapter 7 opens: understanding graphs — coordinates read
+                       and plotted, the quadrants, a real-life journey graph
      ex-graphs.js      chapter 7, graphs of functions — rule → table → points
                        (tapped, the shared dotplot.js), ruling the line, reading
                        it, gradient and intercept, solving with graphs, and a
                        first curve (drawn by gridart.js)
+     ex-quadgraph.js   chapter 8's last section: quadratics solved by graph —
+                       the U plotted, its roots and turning point, = k with a
+                       line, a line and the curve, and how many roots
      ex-two.js         chapter 9, simultaneous equations, opens with TWO of
                        chapter 3's balances at once: substitution by hand
      ex-systems.js     chapter 9: substitution, elimination and the graphical
@@ -67,15 +72,17 @@ import { RT_GROUPS, RT_EXERCISES } from "./ex-remainder.js";
 import { AP_GROUPS, AP_EXERCISES } from "./ex-laws.js";
 import { FN_GROUPS, FN_EXERCISES } from "./ex-func.js";
 import { SQ_GROUPS, SQ_EXERCISES } from "./ex-seq.js";
+import { UG_GROUPS, UG_EXERCISES } from "./ex-understand.js";
 import { GR_GROUPS, GR_EXERCISES } from "./ex-graphs.js";
+import { QG_GROUPS, QG_EXERCISES } from "./ex-quadgraph.js";
 import { SQ2_GROUPS, SQ2_EXERCISES } from "./ex-square.js";
 
 export { LEVELS, levelOf } from "./poly.js";
 export { HELP, helpOf } from "./organiser.js";
 
-export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...RT_GROUPS, ...AP_GROUPS, ...FN_GROUPS, ...SQ_GROUPS, ...GR_GROUPS, ...SQ2_GROUPS, ...TW_GROUPS, ...SY_GROUPS, ...DT_GROUPS, ...MX_GROUPS];
+export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...RT_GROUPS, ...AP_GROUPS, ...FN_GROUPS, ...SQ_GROUPS, ...UG_GROUPS, ...GR_GROUPS, ...SQ2_GROUPS, ...QG_GROUPS, ...TW_GROUPS, ...SY_GROUPS, ...DT_GROUPS, ...MX_GROUPS];
 
-export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...RT_EXERCISES, ...AP_EXERCISES, ...FN_EXERCISES, ...SQ_EXERCISES, ...GR_EXERCISES, ...SQ2_EXERCISES, ...TW_EXERCISES, ...SY_EXERCISES, ...DT_EXERCISES, ...MX_EXERCISES];
+export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...RT_EXERCISES, ...AP_EXERCISES, ...FN_EXERCISES, ...SQ_EXERCISES, ...UG_EXERCISES, ...GR_EXERCISES, ...SQ2_EXERCISES, ...QG_EXERCISES, ...TW_EXERCISES, ...SY_EXERCISES, ...DT_EXERCISES, ...MX_EXERCISES];
 
 /** Which chapter an exercise belongs to: 1 to 9. */
 const CHAPTER = new Map([
@@ -84,7 +91,8 @@ const CHAPTER = new Map([
   ...RT_GROUPS.map((g) => [g.id, 4]),
   ...AP_GROUPS.map((g) => [g.id, 5]),
   ...FN_GROUPS.map((g) => [g.id, 6]), ...SQ_GROUPS.map((g) => [g.id, 6]),
-  ...GR_GROUPS.map((g) => [g.id, 7]), ...SQ2_GROUPS.map((g) => [g.id, 8]),
+  ...UG_GROUPS.map((g) => [g.id, 7]), ...GR_GROUPS.map((g) => [g.id, 7]),
+  ...SQ2_GROUPS.map((g) => [g.id, 8]), ...QG_GROUPS.map((g) => [g.id, 8]),
   ...[...TW_GROUPS, ...SY_GROUPS, ...DT_GROUPS, ...MX_GROUPS].map((g) => [g.id, 9]),
 ]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;

@@ -258,6 +258,11 @@ export const ICON = {
     bar(4, 3, 4, 21, 1.4, QUIET) + bar(3, 20, 21, 20, 1.4, QUIET) + bar(5, 18, 20, 5, 1.6, LOUD) + bar(5, 7, 20, 16, 1.6, PAPER) +
       `<circle cx="12.4" cy="11.6" r="2.4" fill="${GOLD}"/>`
   ),
+  /* Two axes and a lettered point: reading a graph at all. */
+  grKnow: svg(
+    bar(4, 3, 4, 21, 1.4, QUIET) + bar(3, 20, 21, 20, 1.4, QUIET) +
+      bar(13.6, 20, 13.6, 9.2, 1, PAPER) + bar(4, 9.2, 13.6, 9.2, 1, PAPER) + `<circle cx="13.6" cy="9.2" r="2.6" fill="${LOUD}"/>`
+  ),
   /* A U-shaped curve. */
   grCurve: svg(
     bar(4, 3, 4, 21, 1.4, QUIET) + bar(3, 20, 21, 20, 1.4, QUIET) + `<path d="M6 4c2 12 4 14 6.5 14S17 16 19 4" fill="none" stroke="${LOUD}" stroke-width="2" stroke-linecap="round"/>`

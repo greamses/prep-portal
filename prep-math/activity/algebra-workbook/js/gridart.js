@@ -56,7 +56,7 @@ function clipLine(l, x0, x1, y0, y1) {
  *   cell     millimetres per unit
  *   lines    [{ m, c } | { x }, name?]
  *   curve    { fn, name? }
- *   pts      [[x, y], …] dots
+ *   pts      [[x, y], …] dots — [x, y, "A"] lettered
  *   build    tap-to-plot targets;  rule   snap points to rule between
  *   title
  */
@@ -111,7 +111,11 @@ export function planeSvg({ x: [x0, x1], y: [y0, y1], cell = 4.4, lines = [], cur
     body += `<path d="${d}" fill="none" stroke="${COLS[0]}" stroke-width="0.6"/>`;
   }
 
-  pts.forEach(([x, y]) => { body += `<circle cx="${f(X(x))}" cy="${f(Y(y))}" r="0.9" fill="${INK}"/>`; });
+  /* a dot may carry a letter ([x, y, "A"]), set just above and right of it */
+  pts.forEach(([x, y, name]) => {
+    body += `<circle cx="${f(X(x))}" cy="${f(Y(y))}" r="0.9" fill="${INK}"/>`;
+    if (name) body += text(X(x) + 1.3, Y(y) - 1.8, name, { size: 3, weight: 800, col: COLS[1], anchor: "start" });
+  });
 
   let attrs = "";
   if (build) {

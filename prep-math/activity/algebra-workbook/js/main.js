@@ -89,6 +89,8 @@ mountBuilder({
     "gr-read": ICON.grRead,
     "gr-mc": ICON.grMc,
     "gr-solve": ICON.grSolve,
+    "gr-know": ICON.grKnow,
+    "qg-graph": ICON.grCurve,
     "gr-curve": ICON.grCurve,
     "cs-tiles": ICON.csTiles,
     "cs-write": ICON.csWrite,

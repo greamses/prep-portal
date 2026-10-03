@@ -84,7 +84,8 @@ export function gridFor(pts, { pad = 1 } = {}) {
 export const cellFor = (g) => { const h = g.y[1] - g.y[0]; return h > 20 ? 3.2 : h > 16 ? 3.6 : 4.4; };
 
 export const GR_GROUPS = [
-  { id: "gr-plot", chapter: "Chapter 7 · Graphs of functions", label: "Rule, table, points", blurb: "Work out y for each x, and plot every (x, y)." },
+  /* the chapter now opens with Understanding graphs (ex-understand.js) */
+  { id: "gr-plot", label: "Rule, table, points", blurb: "Work out y for each x, and plot every (x, y)." },
   { id: "gr-line", label: "Drawing the line", blurb: "The points of y = mx + c line up: rule the line through them." },
   { id: "gr-read", label: "Reading a graph", blurb: "y from x, x from y, and where the line crosses the axes." },
   { id: "gr-mc", label: "Gradient and intercept", blurb: "Up m for every 1 across, crossing the y axis at c: y = mx + c." },
