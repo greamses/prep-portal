@@ -153,6 +153,16 @@ export const ICON = {
       `<rect x="9.4" y="2.6" width="5.2" height="3.4" rx="1" fill="${LOUD}"/>`
   ),
 
+  /* A determinant: four numbers in a square between two upright bars — one
+     diagonal loud, the other quiet, the two products it is made of. */
+  determinant: svg(
+    bar(3.4, 3.4, 3.4, 20.6, 1.8, QUIET) + bar(20.6, 3.4, 20.6, 20.6, 1.8, QUIET) +
+      `<rect x="6.6" y="5.6" width="4.6" height="4.6" rx="1.1" fill="${LOUD}"/>` +
+      `<rect x="12.8" y="5.6" width="4.6" height="4.6" rx="1.1" fill="${PAPER}"/>` +
+      `<rect x="6.6" y="13.8" width="4.6" height="4.6" rx="1.1" fill="${PAPER}"/>` +
+      `<rect x="12.8" y="13.8" width="4.6" height="4.6" rx="1.1" fill="${LOUD}"/>`
+  ),
+
   /* ── chapter 6 ── */
   /* A machine: a box with a hopper, a number going in. */
   fnMachine: svg(

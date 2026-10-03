@@ -372,3 +372,27 @@
 .sq-row { display: flex; align-items: flex-end; gap: 5mm; flex-wrap: wrap; margin: 1.5mm 0 2mm; }
 .sq-one { display: flex; flex-direction: column; align-items: center; }
 .sq-fig { display: block; }
+
+/* ── The determinant method (js/ex-det.js) ──────────────────────────────────
+   A determinant is four numbers in a square between two upright bars. Kept a
+   grid so each number stays in its corner, and kept out of MathJax's way. */
+.dt-pair { margin: 1mm 0 1.5mm; }
+.dt-pair .wb-ask { margin: 0.6mm 0; }
+.dt-row { display: flex; flex-wrap: wrap; gap: 4mm 9mm; align-items: center; margin: 2mm 0 1mm; }
+.dt-sq { display: inline-flex; align-items: center; gap: 1.6mm; white-space: nowrap; }
+.dt-name { font-style: italic; }
+.dt-det {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  gap: 0.8mm 4mm;
+  padding: 0.6mm 2mm;
+  border-left: 0.45mm solid currentColor;
+  border-right: 0.45mm solid currentColor;
+  vertical-align: middle;
+  line-height: 1.25;
+}
+.dt-det__c { text-align: center; min-width: 4mm; }
+.dt-det .wb-answer { min-width: 9mm; }
+/* D, Dx, Dy: set to match MathJax's italic letters beside them. */
+.dt-name { font-family: "Times New Roman", "Cambria", serif; font-style: italic; font-size: 1.12em; }
+.dt-name sub { font-size: 0.68em; }
