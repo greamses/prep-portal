@@ -78,6 +78,7 @@ mountBuilder({
     "pb-not": ICON.pbNot,
     "pb-two": ICON.pbTwo,
     "pb-tree": ICON.pbTree,
+    "pb-table": ICON.pbTable,
     "pc-count": ICON.pcCount,
     "pc-perm": ICON.pcPerm,
     "pc-more": ICON.pcMore,

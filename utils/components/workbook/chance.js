@@ -7,8 +7,9 @@
    rollable on screen:
 
      on paper   a die (or two), a card, and a tally chart with empty boxes
-     on screen  a sticky note that says ROLL, the die turning, and the tally
-                filling itself in as the rolls come — sixty rolls in a minute
+     on screen  a sticky note that says ROLL — one throw each press, the die
+                turning — and a tally the child keeps by clicking the space
+                beside what came up
 
    The experiment is NOT marked. It cannot be: the whole point is that it comes
    out differently every time. What is marked is what the child reads OFF it —
@@ -136,12 +137,38 @@ export const waysToMake = (total) =>
 
 const DICE_ICON = `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="3.2" y="3.2" width="17.6" height="17.6" rx="4" fill="#fffdf8" stroke="#2a2723" stroke-width="2"/><circle cx="8.4" cy="8.4" r="1.8" fill="#2a2723"/><circle cx="15.6" cy="15.6" r="1.8" fill="#2a2723"/><circle cx="12" cy="12" r="1.8" fill="#2a2723"/></svg>`;
 
+/** Tally marks for a count: bundles of five (four strokes and a strike), then the odd ones. */
+export function tallySvg(n) {
+  if (!n) return "";
+  let x = 0, out = "";
+  const stroke = `stroke="#2a2723" stroke-width="1.1" stroke-linecap="round"`;
+  for (let left = n; left > 0; left -= 5) {
+    const k = Math.min(4, left);
+    for (let i = 0; i < k; i++) out += `<path d="M${(x + 1.5 + i * 2.6).toFixed(1)} 1.5V10.5" ${stroke}/>`;
+    if (left >= 5) out += `<path d="M${x.toFixed(1)} 9L${(x + 10.8).toFixed(1)} 3" ${stroke}/>`;
+    x += (left >= 5 ? 10.8 : k * 2.6) + 3.2;
+  }
+  const w = Math.max(4, x - 3.2 + 1.5);
+  return `<svg class="ch-marks" viewBox="0 0 ${w.toFixed(1)} 12" width="${(w * 0.42).toFixed(1)}mm" height="5mm" role="img" aria-label="${n} tally mark${n === 1 ? "" : "s"}">${out}</svg>`;
+}
+
 /**
- * A rolling die (or two), with the tally that fills itself.
+ * A die (or two) that is rolled ONE THROW AT A TIME, and a tally chart the
+ * child keeps by hand.
  *
- *   div.ch-roll[data-roll][data-dice="1|2"][data-rolls="60"]
+ *   div.ch-roll[data-roll][data-dice="1|2"]
  *     div.ch-roll__stage   the dice
- *     table.ch-tally       a row per outcome, its count, and a bar
+ *     table.ch-tally       a row per outcome: the space for its tally marks,
+ *                          and how many there are
+ *
+ *   Roll           one throw. The die turns and shows what came up.
+ *   the tally      CLICK THE SPACE beside a face (or a total) to put one
+ *                  mark there — the child records the throw, the page does
+ *                  not. Shift-click (or right-click) rubs the last one out.
+ *
+ * The page never tallies for the child: recording what happened IS the
+ * experiment. It does count the throws, and says so beside the marks made, so
+ * a throw that was not written down shows.
  *
  * `roll()` uses Math.random deliberately: an experiment that came out the same
  * every time would teach the opposite of the lesson. The SEED belongs to the
@@ -150,36 +177,42 @@ const DICE_ICON = `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="
 export function mountChance(wrap, { saved = null, onChange = () => {} } = {}) {
   const printed = wrap.innerHTML;
   const dice = Number(wrap.dataset.dice) || 1;
-  const perPress = Number(wrap.dataset.rolls) || 1;
   const faces = dice === 2 ? sumTable().flat() : [1, 2, 3, 4, 5, 6];
   const outcomes = [...new Set(faces)].sort((a, b) => a - b);
 
-  let state = saved && saved.counts ? { ...saved } : { counts: {}, rolls: 0, last: null };
+  const blank = () => ({ counts: {}, rolls: 0, last: null });
+  const copy = (s) => ({ counts: { ...s.counts }, rolls: s.rolls || 0, last: s.last ? [...s.last] : null });
+  let state = saved && saved.counts ? copy(saved) : blank();
 
   wrap.classList.add("is-live");
   wrap.innerHTML =
     `<div class="ch-roll__bar">` +
-    `<button class="ch-btn" type="button" data-act="roll">${DICE_ICON}<b>Roll${perPress > 1 ? ` ${perPress}` : ""}</b></button>` +
+    `<button class="ch-btn" type="button" data-act="roll">${DICE_ICON}<b>Roll</b></button>` +
     `<button class="ch-btn ch-btn--quiet" type="button" data-act="clear"><b>Start again</b></button>` +
     `<span class="ch-count" data-count></span></div>` +
     `<div class="ch-roll__stage"></div>` +
-    `<table class="ch-tally"><thead><tr><th>${dice === 2 ? "Total" : "Face"}</th><th>How many</th><th></th></tr></thead>` +
+    `<table class="ch-tally"><thead><tr><th>${dice === 2 ? "Total" : "Face"}</th><th>Tally — click to mark</th><th>How many</th></tr></thead>` +
     `<tbody></tbody></table>`;
 
   const stage = wrap.querySelector(".ch-roll__stage");
   const body = wrap.querySelector(".ch-tally tbody");
   const count = wrap.querySelector("[data-count]");
+  const marksIn = () => outcomes.reduce((t, o) => t + (state.counts[o] || 0), 0);
 
   const paint = () => {
-    const most = Math.max(1, ...outcomes.map((o) => state.counts[o] || 0));
     body.innerHTML = outcomes.map((o) => {
       const n = state.counts[o] || 0;
-      return `<tr><th>${o}</th><td>${n || ""}</td>` +
-        `<td class="ch-bar"><span style="width:${((n / most) * 100).toFixed(1)}%"></span></td></tr>`;
+      return `<tr><th>${o}</th><td class="ch-tap" data-o="${o}" tabindex="0" title="Click to put a tally mark beside ${o}">${tallySvg(n)}</td>` +
+        `<td class="ch-n">${n || ""}</td></tr>`;
     }).join("");
-    count.textContent = state.rolls ? `${state.rolls} roll${state.rolls === 1 ? "" : "s"}` : "";
+    const marks = marksIn();
+    count.textContent = state.rolls || marks
+      ? `${state.rolls} roll${state.rolls === 1 ? "" : "s"} · ${marks} tally mark${marks === 1 ? "" : "s"}`
+      : "Roll, then click the space beside what came up.";
+    count.classList.toggle("is-behind", (state.rolls || marks) && marks !== state.rolls);
     stage.innerHTML = (state.last || Array.from({ length: dice }, () => 0))
-      .map((f) => dieSvg(f, { mm: dice === 2 ? 14 : 18 })).join("");
+      .map((f) => dieSvg(f, { mm: dice === 2 ? 14 : 18 })).join("") +
+      (state.last && dice === 2 ? `<b class="ch-total">= ${state.last[0] + state.last[1]}</b>` : "");
   };
 
   let spinning = false;
@@ -194,42 +227,68 @@ export function mountChance(wrap, { saved = null, onChange = () => {} } = {}) {
       stage.innerHTML = Array.from({ length: dice }, () => dieSvg(1 + Math.floor(Math.random() * 6), { mm: dice === 2 ? 14 : 18 })).join("");
       if (++ticks < 6) return;
       clearInterval(shake);
-      const before = { counts: { ...state.counts }, rolls: state.rolls, last: state.last };
-      for (let i = 0; i < perPress; i++) {
-        const thrown = Array.from({ length: dice }, () => 1 + Math.floor(Math.random() * 6));
-        const key = dice === 2 ? thrown[0] + thrown[1] : thrown[0];
-        state.counts[key] = (state.counts[key] || 0) + 1;
-        state.rolls++;
-        state.last = thrown;
-      }
+      const before = copy(state);
+      state.last = Array.from({ length: dice }, () => 1 + Math.floor(Math.random() * 6));
+      state.rolls++;
       wrap.classList.remove("is-rolling");
       spinning = false;
       paint();
-      onChange({ counts: { ...state.counts }, rolls: state.rolls, last: state.last }, before);
+      onChange(copy(state), before);
     }, 60);
   };
 
-  const clear = () => {
-    const before = { counts: { ...state.counts }, rolls: state.rolls, last: state.last };
-    state = { counts: {}, rolls: 0, last: null };
+  /** One tally mark more (or, rubbing out, one fewer) beside this outcome. */
+  const mark = (o, by = 1) => {
+    const n = (state.counts[o] || 0) + by;
+    if (n < 0) return;
+    const before = copy(state);
+    state.counts[o] = n;
     paint();
-    onChange({ ...state }, before);
+    onChange(copy(state), before);
+  };
+
+  const clear = () => {
+    const before = copy(state);
+    state = blank();
+    paint();
+    onChange(copy(state), before);
   };
 
   const onClick = (e) => {
     if (e.target.closest('[data-act="roll"]')) roll();
-    if (e.target.closest('[data-act="clear"]')) clear();
+    else if (e.target.closest('[data-act="clear"]')) clear();
+    else {
+      const cell = e.target.closest(".ch-tap");
+      if (cell) mark(cell.dataset.o, e.shiftKey ? -1 : 1);
+    }
+  };
+  const onMenu = (e) => {
+    const cell = e.target.closest(".ch-tap");
+    if (!cell) return;
+    e.preventDefault();
+    mark(cell.dataset.o, -1);
+  };
+  const onKey = (e) => {
+    const cell = e.target.closest?.(".ch-tap");
+    if (!cell) return;
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); mark(cell.dataset.o, 1); }
+    if (e.key === "Backspace" || e.key === "Delete") { e.preventDefault(); mark(cell.dataset.o, -1); }
   };
   wrap.addEventListener("click", onClick);
+  wrap.addEventListener("contextmenu", onMenu);
+  wrap.addEventListener("keydown", onKey);
   paint();
 
   return {
-    state: () => ({ counts: { ...state.counts }, rolls: state.rolls, last: state.last }),
+    state: () => copy(state),
     roll,
-    set(next) { state = next && next.counts ? { ...next } : { counts: {}, rolls: 0, last: null }; paint(); },
+    mark,
+    set(next) { state = next && next.counts ? copy(next) : blank(); paint(); },
     clear,
     dispose() {
       wrap.removeEventListener("click", onClick);
+      wrap.removeEventListener("contextmenu", onMenu);
+      wrap.removeEventListener("keydown", onKey);
       wrap.classList.remove("is-live", "is-rolling");
       wrap.innerHTML = printed;
     },
@@ -311,11 +370,11 @@ export function rollHtml({ dice = 1, rolls = 10, outcomes = null, label = "" } =
   /* `ch-write`, not `wb-cell`: the tally is the experiment's own record —
      filled in by hand on paper, filled by the component on screen — and it
      is never marked, so it must not count as an answer place. */
-  const rows = list.map((o) => `<tr><th>${o}</th><td class="ch-write"></td><td class="ch-bar"></td></tr>`).join("");
+  const rows = list.map((o) => `<tr><th>${o}</th><td class="ch-write ch-write--tally"></td><td class="ch-write"></td></tr>`).join("");
   return `<div class="ch-roll wb-nomath" data-roll="1" data-dice="${dice}" data-rolls="${rolls}"` +
     `${label ? ` aria-label="${label}"` : ""}>` +
     `<div class="ch-roll__stage">${Array.from({ length: dice }, () => dieSvg(0, { mm: dice === 2 ? 14 : 18 })).join("")}</div>` +
-    `<table class="ch-tally"><thead><tr><th>${dice === 2 ? "Total" : "Face"}</th><th>How many</th><th></th></tr></thead>` +
+    `<table class="ch-tally"><thead><tr><th>${dice === 2 ? "Total" : "Face"}</th><th>Tally</th><th>How many</th></tr></thead>` +
     `<tbody>${rows}</tbody></table></div>`;
 }
 

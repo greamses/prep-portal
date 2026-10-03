@@ -2584,8 +2584,14 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   height: 5mm;
   border-bottom: 0.3mm solid #b8b0a3;
 }
-.ch-bar { width: 42mm; }
-.ch-bar span { display: block; height: 3.2mm; border-radius: 1.6mm; background: #bfe3ff; }
+.ch-write--tally { min-width: 46mm; }
+/* on screen the tally is kept by hand: the space beside a face is clicked */
+.ch-tap { min-width: 46mm; height: 7mm; cursor: pointer; border-bottom: 0.3mm solid #b8b0a3; border-radius: 0.8mm; user-select: none; -webkit-user-select: none; }
+.ch-tap:hover, .ch-tap:focus-visible { background: #fff7c7; outline: none; }
+.ch-marks { display: block; }
+.ch-n { min-width: 12mm; font-weight: 700; font-family: "JetBrains Mono", ui-monospace, monospace; }
+.ch-total { font: 700 12pt/1 "JetBrains Mono", ui-monospace, monospace; }
+.ch-count.is-behind { color: #b3541e; font-weight: 700; }
 
 .ch-card { display: block; }
 .ch-pack { display: flex; gap: 2.4mm; align-items: flex-start; min-height: 32mm; }

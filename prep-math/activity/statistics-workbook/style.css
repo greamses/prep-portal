@@ -44,16 +44,56 @@
 .sw-option > b { font-size: 11pt; }
 
 /* ── chapter 6: probability trees (js/ex-tree.js) ───────────────────────────
-   the branches are an SVG; every label is HTML laid over it at a percentage
-   of the tree's size, so a branch can carry an answer box */
+   THE FACTOR TREE'S DRESS (maths-workbook/style.css, .ft-*): round nodes with
+   a dark rim joined by thin grey branches, a colour for each row. A NODE
+   holds an OUTCOME and stretches into a pill when the outcome is long; a
+   branch's PROBABILITY is plain type beside it, never in a node. Measured in
+   millimetres, so the tree is the same size on paper and on screen. */
 .pt-tree { position: relative; margin: 2mm 0 2.5mm; max-width: 100%; }
-/* the tree's own drawing only — not the typeset fractions laid over it */
-.pt-tree > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pt-lines { position: absolute; top: 0; left: 0; }
+.pt-lines line { stroke: #8f887c; stroke-width: 0.4; }
+.pt-lines .pt-dots { stroke-dasharray: 0.8 1.2; }
+.pt-node {
+  position: absolute; transform: translate(-50%, -50%);
+  display: grid; place-items: center;
+  min-width: 12.8mm; height: 12.8mm; padding: 0 2.6mm; box-sizing: border-box;
+  border: 0.45mm solid #2a2723; border-radius: 6.4mm; background: #fffdf8;
+  font: 700 11pt/1 "JetBrains Mono", ui-monospace, monospace; color: #2a2723; white-space: nowrap;
+}
+.pt-row0 { background: #fff3c4; }
+.pt-row1 { background: #e6f3ff; }
+.pt-row2 { background: #eaf8e4; }
+.pt-row3 { background: #f6ebff; }
+.pt-node.is-top { background: #ffe9a8; border-width: 0.6mm; font-size: 8pt; padding: 0 1.2mm; }
+/* a node to be named: dashed, like an empty circle of the factor tree, and
+   the answer written straight into it */
+.pt-node.is-empty { border-style: dashed; border-color: #8f887c; background: #fffdf8; padding: 0 1.4mm; }
+.pt-node.is-empty .wb-answer,
+.pt-node.is-empty .wb-in {
+  min-width: 9mm; width: 9mm; height: 8mm; margin: 0; padding: 0; border: 0; background: transparent;
+  font: inherit; text-align: center; box-shadow: none;
+}
+.pt-node.pt-row3.is-empty .wb-answer,
+.pt-node.pt-row3.is-empty .wb-in { min-width: 16mm; width: 16mm; }
 .pt-lab {
   position: absolute; transform: translate(-50%, -50%);
-  font: 600 13pt/1 "JetBrains Mono", monospace; color: #2a2723;
-  background: #fffdf8; padding: 0 0.6mm; white-space: nowrap;
+  font: 600 12pt/1 "JetBrains Mono", ui-monospace, monospace; color: #2a2723;
+  background: #fffdf8; padding: 0 0.8mm; border-radius: 1mm; white-space: nowrap;
 }
 .pt-lab .wb-answer { min-width: 11mm; height: 6.5mm; }
-.pt-node { background: #fffdf8; font-size: 10.5pt; padding: 0.5mm 1.2mm; border-radius: 50%; }
-.pt-end { background: transparent; }
+.pt-end {
+  position: absolute; transform: translate(-50%, -50%);
+  font: 600 12pt/1 "JetBrains Mono", ui-monospace, monospace; color: #2a2723; white-space: nowrap;
+}
+.pt-end .wb-answer { min-width: 13mm; height: 7mm; }
+.pt-head {
+  position: absolute; transform: translate(-50%, -50%);
+  font: 800 6.5pt/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0.06em; text-transform: uppercase;
+  color: #6b645a; white-space: nowrap;
+}
+
+/* ── probability tables ───────────────────────────────────────────────────── */
+.pb-table td, .pb-table th { text-align: center; min-width: 9mm; }
+.pb-table tbody td:first-child { background: #fff3a8; font-weight: 700; }
+.pb-table .pb-total { background: #f3eee4; font-weight: 700; }
+.pb-table td .wb-answer { width: 14mm; }

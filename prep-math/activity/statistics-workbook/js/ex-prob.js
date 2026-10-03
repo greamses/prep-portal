@@ -204,7 +204,7 @@ const pbDie = {
 
 /* ═══ 3. roll it and see ═══════════════════════════════════════════════════*/
 
-const rollsFor = (o) => ({ gentle: 10, middle: 30, stretch: 60 }[tier(o)] || 10);
+const rollsFor = (o) => ({ gentle: 12, middle: 24, stretch: 36 }[tier(o)] || 10);
 
 const pbRoll = {
   id: "pb-roll",
@@ -213,8 +213,8 @@ const pbRoll = {
   blurb: "The experiment, and how near it lands to the theory.",
   heading: "Roll it and see",
   instruction: (o) =>
-    `Roll the die ${rollsFor(o)} times and tally what comes up. On screen the Roll note does it for you and fills ` +
-    "the chart in. Then count: how many were sixes? That many out of your rolls is the <b>relative frequency</b> — " +
+    `Roll the die ${rollsFor(o)} times and tally what comes up: one throw, one mark. On screen, press Roll for each throw, ` +
+    "then click the space beside the face that came up to put its tally mark there. Then count: how many were sixes? That many out of your rolls is the <b>relative frequency</b> — " +
     "what actually happened, not what should happen. A few rolls can be miles out; keep rolling and it creeps " +
     "towards the theory.",
   cols: 1,

@@ -227,6 +227,13 @@ export const ICON = {
     `<rect x="7.4" y="8" width="9.2" height="8" rx="4" fill="${GOLD}"/>` +
       `<circle cx="4" cy="12" r="2.2" fill="${QUIET}"/><circle cx="10" cy="12" r="2.2" fill="${LOUD}"/><circle cx="14" cy="12" r="2.2" fill="${LOUD}"/><circle cx="20" cy="12" r="2.2" fill="${QUIET}"/>`
   ),
+  /* A probability table: a grid with its headings along the top and down the side, one cell wanted. */
+  pbTable: svg(
+    `<rect x="2.6" y="3.6" width="18.8" height="16.8" rx="2" fill="${PAPER}"/>` +
+      `<rect x="2.6" y="3.6" width="18.8" height="5" rx="2" fill="${GOLD}"/><rect x="2.6" y="3.6" width="5.6" height="16.8" rx="2" fill="${GOLD}"/>` +
+      `<rect x="9.4" y="9.8" width="5" height="4.4" rx="1" fill="#fff"/><rect x="15.4" y="9.8" width="5" height="4.4" rx="1" fill="${LOUD}"/>` +
+      `<rect x="9.4" y="15.2" width="5" height="4.4" rx="1" fill="#fff"/><rect x="15.4" y="15.2" width="5" height="4.4" rx="1" fill="#fff"/>`
+  ),
   /* A probability tree: one point, two branches, four ends. */
   pbTree: svg(
     [[3, 12, 11, 6], [3, 12, 11, 18], [11, 6, 20, 3], [11, 6, 20, 9], [11, 18, 20, 15], [11, 18, 20, 21]]
