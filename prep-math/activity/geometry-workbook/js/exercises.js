@@ -110,6 +110,8 @@ import { CO_GROUPS, CO_EXERCISES } from "./ex-constructions.js";
 import { AR_GROUPS, AR_EXERCISES } from "./ex-area.js";
 import { PR_GROUPS, PR_EXERCISES } from "./ex-props.js";
 import { PC_GROUPS, PC_EXERCISES } from "./ex-parts.js";
+import { CK_GROUPS, CK_EXERCISES } from "./ex-clock.js";
+import { TG_GROUPS, TG_EXERCISES } from "./ex-trig.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
@@ -131,6 +133,8 @@ export const GROUPS = [
   ...AR_GROUPS,
   ...PR_GROUPS,
   ...PC_GROUPS,
+  ...CK_GROUPS,
+  ...TG_GROUPS,
 ];
 
 export const EXERCISES = [
@@ -152,9 +156,11 @@ export const EXERCISES = [
   ...AR_EXERCISES,
   ...PR_EXERCISES,
   ...PC_EXERCISES,
+  ...CK_EXERCISES,
+  ...TG_EXERCISES,
 ];
 
-/** Which chapter an exercise belongs to: 1 to 12. */
+/** Which chapter an exercise belongs to: 1 to 14. */
 const CHAPTER = new Map([
   ...ANGLE_GROUPS.map((g) => [g.id, 2]),
   ...TRI_GROUPS.map((g) => [g.id, 3]),
@@ -172,6 +178,8 @@ const CHAPTER = new Map([
   ...AR_GROUPS.map((g) => [g.id, 10]),
   ...PR_GROUPS.map((g) => [g.id, 11]),
   ...PC_GROUPS.map((g) => [g.id, 12]),
+  ...CK_GROUPS.map((g) => [g.id, 13]),
+  ...TG_GROUPS.map((g) => [g.id, 14]),
 ]);
 /* Lines and angles is the first chapter now, so it is what is left over. */
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;

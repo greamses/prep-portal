@@ -598,4 +598,15 @@ export const ICON = {
       `<path d="M12 12H3l9 9.4z" fill="${LEAF}"/>` +
       `<path d="M12 12h9l-9 9.4z" fill="${LOUD}"/>`
   ),
+  /* ── chapter 13: a clock face with its hands; a compass with a direction ── */
+  ckClock: svg(
+    `<circle cx="12" cy="12" r="9.4" fill="${PAPER}"/>` + bar(12, 12, 12, 6, 1.6, LOUD) + bar(12, 12, 16.6, 14.4, 1.6, QUIET) + `<circle cx="12" cy="12" r="1.5" fill="${GOLD}"/>`
+  ),
+  brBearing: svg(
+    bar(12, 21, 12, 3.6, 1.4, QUIET) + bar(3.6, 12, 20.4, 12, 1.4, QUIET) + `<path d="M12 2l-2.4 4h4.8z" fill="${QUIET}"/>` +
+      bar(12, 12, 18.4, 6.4, 1.9, LOUD) + `<circle cx="12" cy="12" r="1.7" fill="${GOLD}"/>`
+  ),
+  /* ── chapter 14: a right-angled triangle with its angle marked; and one with a side wanted ── */
+  tgRatio: svg(`<path d="M3 19h17V6z" fill="${PAPER}"/>` + `<path d="M3 19h6.4a6.6 6.6 0 0 0-1.3-3.8z" fill="${LOUD}"/>` + `<rect x="16.4" y="15.4" width="3.6" height="3.6" fill="${GOLD}"/>`),
+  tgUse: svg(`<path d="M3 19h17V6z" fill="${PAPER}"/>` + bar(20, 19, 20, 6, 2.2, LOUD) + `<path d="M3 19h6.4a6.6 6.6 0 0 0-1.3-3.8z" fill="${GOLD}"/>`),
 };

@@ -18,6 +18,7 @@ const CHAPTERS = {
   7: "Chapter 7: Circle theorems", 8: "Chapter 8: Pyramids and prisms",
   9: "Chapter 9: Constructions", 10: "Chapter 10: Area and perimeter of triangles",
   11: "Chapter 11: Properties of polygons", 12: "Chapter 12: Parts of a circle",
+  13: "Chapter 13: Clock angles and bearings", 14: "Chapter 14: Sine, cosine and tangent",
 };
 
 export const SUBJECT = {
