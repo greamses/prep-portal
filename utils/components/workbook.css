@@ -2833,3 +2833,40 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   color: var(--ink);
   white-space: nowrap;
 }
+
+/* ── a bar model built on a board (barmodel.js) ─────────────────────────────
+   The strip a word problem leaves to draw in, on screen: a row of tools, then
+   the board. Undo and Clear sit at the top right as on every figure, so the
+   tools leave them room. */
+.mb-board.is-building { display: block; width: 100%; max-width: 160mm; }
+.mbb-tools { display: flex; flex-wrap: wrap; gap: 1.2mm; padding-right: 22mm; margin-bottom: 1.5mm; }
+.mbb-tools .pp-btn { font: 700 8pt/1.2 var(--font-body, system-ui, sans-serif); padding: 1.2mm 2.4mm; min-height: 0; }
+.mbb-tools [aria-pressed="true"] { outline: 2px solid #d1495b; outline-offset: 1px; }
+.mbb-board {
+  position: relative;
+  border: 0.3mm dashed #8a837a;
+  border-radius: 1.5mm;
+  background: #fffdf8;
+}
+.mbb-svg { display: block; width: 100%; height: auto; touch-action: none; user-select: none; -webkit-user-select: none; }
+.mbb-body { cursor: grab; }
+.mbb-board.is-cutting .mbb-body { cursor: crosshair; }
+.mbb-grip { cursor: ew-resize; }
+.mbb-brace { cursor: text; }
+.mbb-write {
+  position: absolute; z-index: 3; height: 28px; padding: 0 6px; box-sizing: border-box;
+  font: 700 14px/1 "JetBrains Mono", monospace; text-align: center;
+  color: #2a2723; background: #fff; border: 2px solid #2f6ea8; border-radius: 4px;
+}
+.mbb-hint { margin: 1mm 0 0; font: 7.5pt/1.4 var(--font-body, system-ui, sans-serif); color: #6f685f; }
+.mbb-hint.is-loud { color: #c0453f; font-weight: 700; }
+@media print { .mbb-tools, .mbb-hint { display: none !important; } }
+
+/* a printed model's "?", written over (double-click) */
+.wb-live svg [data-ask].is-askable { cursor: text; }
+.wb-live svg [data-ask].is-said { fill: #2f6ea8; }
+.wb-askin {
+  position: absolute; z-index: 3; height: 28px; padding: 0 6px; box-sizing: border-box;
+  font: 700 14px/1 "JetBrains Mono", monospace; text-align: center;
+  color: #2a2723; background: #fff; border: 2px solid #2f6ea8; border-radius: 4px;
+}

@@ -29,6 +29,7 @@ import { mountBoard } from "/utils/components/boards/sheet.js";
 import { mountCounters } from "./counters.js";
 import { makeFoldable, unFoldable, foldAlong } from "./fold.js";
 import { mountBalance } from "./balance.js";
+import { mountBarModel } from "./barmodel.js";
 import { mountPicto, rowRight } from "./picto.js";
 import { mountBars, barsRight } from "./barbuild.js";
 import { mountDots, dotsRight } from "./dotplot.js";
@@ -159,6 +160,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.tree ||= {};     // factor trees, grown or dragged into place
     r.strike ||= {};   // the numbers struck out of a grid
     r.regroup ||= {};  // which shape a number's blocks are pushed into
+    r.model ||= {};    // bar models built on a board
+    r.asks ||= {};     // what was written over a printed model's "?"
     return r;
   };
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
@@ -329,6 +332,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        and what the child WRITES about it is the answer. */
     node.querySelectorAll("[data-regroup]").forEach((el, k) => makeRegroupLive(node, idx, el, k));
 
+    /* a strip left to draw a bar model in becomes a board of bars to build
+       it with — working, not marked, like the balance */
+    node.querySelectorAll("[data-barmodel]").forEach((el, k) => makeBarModelLive(node, idx, el, k));
+
+    /* a printed model's "?" can be written over: double-click it */
+    makeAsksLive(node, idx);
+
     (keyOf(node) || []).forEach((e) => {
       if (e.kind === "draw") { const svg = drawSvg(node, e); if (svg) makeDrawable(node, idx, svg, e); }
       if (e.kind === "colour") makeColourable(node, idx, e);
@@ -378,6 +388,9 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("[data-tree]").forEach((c) => { c.__wbTree?.dispose(); c.__wbTree = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-strike]").forEach((c) => { c.__wbStrike?.dispose(); c.__wbStrike = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-regroup]").forEach((c) => { c.__wbRegroup?.dispose(); c.__wbRegroup = null; });
+    node.querySelectorAll("[data-barmodel]").forEach((c) => { c.__wbModel?.dispose(); c.__wbModel = null; });
+    node.querySelectorAll("svg [data-ask]").forEach((t) => { if (t.__wbAsk) { t.textContent = "?"; t.classList.remove("is-said"); t.__wbAsk = null; } });
+    node.querySelectorAll(".wb-askin").forEach((n) => n.remove());
     node.querySelectorAll("[data-roll]").forEach((c) => { c.__wbChance?.dispose(); c.__wbChance = null; });
     node.querySelectorAll("[data-pack]").forEach((c) => { c.__wbPack?.dispose(); c.__wbPack = null; });
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
@@ -642,6 +655,87 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       svg.__wbBal?.reset();
       say("");
       save();
+    });
+  }
+
+  /* ── a bar model, built ─────────────────────────────────────────────────
+     barmodel.js does the dragging, stretching, cutting and writing; this
+     keeps the model with the question, makes each change one Undo step, and
+     Clear empties the board. */
+  function makeBarModelLive(node, idx, el, k) {
+    const host = el.closest(".mb-art") || el.parentElement;
+    host.classList.add("wb-drawhost");
+    el.__wbModel = mountBarModel(el, {
+      saved: rec(idx).model[k] || null,
+      onChange: (now, before) => {
+        rec(idx).model[k] = now;
+        step(host, () => { rec(idx).model[k] = before; el.__wbModel?.set(before); save(); });
+        save();
+      },
+    });
+    drawbar(host, () => { delete rec(idx).model[k]; el.__wbModel?.clear(); save(); });
+  }
+
+  /* ── a printed model's "?", written over ────────────────────────────────
+     Double-click the "?" in a bar (or on a brace) and it opens as a box; what
+     is written there stands in the picture instead. It is the child's
+     working, not an answer: the answer boxes under the model are marked. */
+  function makeAsksLive(node, idx) {
+    const asks = [...node.querySelectorAll(".wb-item__body svg [data-ask]")];
+    asks.forEach((t, k) => {
+      t.__wbAsk = true;
+      const said = rec(idx).asks[k];
+      if (said) { t.textContent = said; t.classList.add("is-said"); }
+      t.classList.add("is-askable");
+    });
+    if (!asks.length || node.__wbAsksBound) return;
+    node.__wbAsksBound = true;
+    node.addEventListener("dblclick", (e) => {
+      const t = e.target.closest?.("svg [data-ask]");
+      if (!t || !t.__wbAsk) return;
+      const all = [...node.querySelectorAll(".wb-item__body svg [data-ask]")];
+      const k = all.indexOf(t);
+      const host = t.closest(".mb-art, .wb-art") || t.closest("svg").parentElement;
+      if (getComputedStyle(host).position === "static") host.style.position = "relative";
+      host.querySelector(":scope > .wb-askin")?.remove();
+      const hr = host.getBoundingClientRect();
+      const tr = t.getBoundingClientRect();
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "wb-askin";
+      input.autocomplete = "off";
+      input.spellcheck = false;
+      input.setAttribute("aria-label", "what the question mark is");
+      input.value = rec(idx).asks[k] || "";
+      const w = Math.max(56, tr.width + 30);
+      input.style.left = `${tr.left - hr.left + tr.width / 2 - w / 2}px`;
+      input.style.top = `${tr.top - hr.top + tr.height / 2 - 14}px`;
+      input.style.width = `${w}px`;
+      host.appendChild(input);
+      input.focus();
+      let over = false;
+      const finish = (keep) => {
+        if (over) return;
+        over = true;
+        const v = input.value.trim().slice(0, 12);
+        input.remove();
+        if (!keep) return;
+        const before = rec(idx).asks[k] || "";
+        if (v === before) return;
+        const put = (val) => {
+          if (val) rec(idx).asks[k] = val; else delete rec(idx).asks[k];
+          t.textContent = val || "?";
+          t.classList.toggle("is-said", !!val);
+          save();
+        };
+        put(v);
+        step(host, () => put(before));
+      };
+      input.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") { ev.preventDefault(); finish(true); }
+        if (ev.key === "Escape") finish(false);
+      });
+      input.addEventListener("blur", () => finish(true));
     });
   }
 
