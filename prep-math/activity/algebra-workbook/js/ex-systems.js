@@ -387,6 +387,99 @@ const elBoth = {
   },
 };
 
+/* word problems where the two sentences share one amount (or a sum and a
+   difference): line the bars up and the difference between the rows IS the
+   elimination */
+const EL_STORIES = [
+  (r, t) => {
+    /* same number of rulers in both: take one row from the other */
+    const pen = r.int(t === "gentle" ? 4 : 6, t === "gentle" ? 12 : 30) * 10, ruler = r.int(2, t === "gentle" ? 8 : 20) * 10;
+    const k = r.int(1, 3), a = k + r.int(1, 3), c = k;
+    const n = r.int(1, 3);
+    return {
+      text: `${a} pens and ${n} ruler${n > 1 ? "s" : ""} cost ₦${a * pen + n * ruler}. ${c} pen${c > 1 ? "s" : ""} and ${n} ruler${n > 1 ? "s" : ""} cost ₦${c * pen + n * ruler}. What does a pen cost, and a ruler?`,
+      labels: ["pen (₦):", "ruler (₦):"], vals: [pen, ruler],
+      steps: `the rulers match: take away, ${a - c} pen${a - c > 1 ? "s" : ""} = ₦${(a - c) * pen}`,
+    };
+  },
+  (r, t) => {
+    /* a sum and a difference: add the two sentences */
+    const small = r.int(t === "gentle" ? 5 : 12, t === "gentle" ? 30 : 90), d = r.int(2, t === "gentle" ? 15 : 40);
+    const big = small + d;
+    return {
+      text: `Two numbers add up to ${small + big}. Their difference is ${d}. What are the two numbers?`,
+      labels: ["the bigger:", "the smaller:"], vals: [big, small],
+      steps: `add: 2 × bigger = ${small + big} + ${d} = ${2 * big}`,
+    };
+  },
+  (r, t) => {
+    /* the same number of adults: take away */
+    const adult = r.int(3, t === "gentle" ? 10 : 20) * 100, child = r.int(1, t === "gentle" ? 5 : 10) * 100;
+    if (child >= adult) return null;
+    const a = r.int(1, 3), c1 = r.int(3, 6), c2 = r.int(1, c1 - 1);
+    return {
+      text: `${a} adult${a > 1 ? "s" : ""} and ${c1} children pay ₦${a * adult + c1 * child} at the zoo. ${a} adult${a > 1 ? "s" : ""} and ${c2} child${c2 > 1 ? "ren" : ""} pay ₦${a * adult + c2 * child}. What is the price for an adult, and for a child?`,
+      labels: ["adult (₦):", "child (₦):"], vals: [adult, child],
+      steps: `the adults match: take away, ${c1 - c2} child${c1 - c2 > 1 ? "ren" : ""} = ₦${(c1 - c2) * child}`,
+    };
+  },
+  (r, t) => {
+    /* one sentence must be multiplied first */
+    const mango = r.int(2, t === "gentle" ? 8 : 15) * 10, orange = r.int(1, t === "gentle" ? 6 : 12) * 10;
+    const k = r.int(2, 3), m = r.int(1, 2), o2 = r.int(1, 3);
+    const extra = r.int(1, 3);
+    return {
+      text: `${m} mango${m > 1 ? "es" : ""} and ${o2} orange${o2 > 1 ? "s" : ""} cost ₦${m * mango + o2 * orange}. ${k * m + extra} mangoes and ${k * o2} oranges cost ₦${(k * m + extra) * mango + k * o2 * orange}. What does a mango cost, and an orange?`,
+      labels: ["mango (₦):", "orange (₦):"], vals: [mango, orange],
+      steps: `× ${k} the first sentence so the oranges match, then take away: ${extra} mango${extra > 1 ? "es" : ""} = ₦${extra * mango}`,
+    };
+  },
+];
+
+const elWord = {
+  id: "sy-el-word",
+  group: "sy-elim",
+  label: "Word problems by elimination",
+  blurb: "Two sentences sharing one amount: line the bars up, take away.",
+  heading: "Elimination in a story",
+  instruction: () =>
+    "Draw each sentence as a row of bars, the things they share lined up first. Where the rows match, the " +
+    "difference between them is just the extra bars — that is elimination: take one equation from the other " +
+    "(or add them, for a sum and a difference). If nothing matches yet, multiply one sentence first. On screen " +
+    "the space is a board of bars to build the model with.",
+  cols: 1,
+  defaultCount: 3,
+  make(r, o) {
+    const t = tier(o);
+    for (;;) {
+      const s = EL_STORIES[r.int(0, EL_STORIES.length - 1)](r, t);
+      if (s) return s;
+    }
+  },
+  render(item) {
+    return ask(item.text) + `<div class="mb-art">${blankModelSvg({ h: 40 })}</div>` +
+      eq(item.labels.map((l) => `${l} ${box()}`).join(" &nbsp;&nbsp; "));
+  },
+  worked() {
+    const ruler = { text: "ruler", value: 30, tone: "c" };
+    const pen = { text: "pen", value: 50, tone: "a" };
+    return worked(ask("3 pens and 2 rulers cost ₦210. 1 pen and 2 rulers cost ₦110. What does each cost?") +
+      `<div class="mb-art">${modelSvg([
+        { parts: [ruler, ruler, pen, pen, pen], says: "₦210" },
+        { parts: [ruler, ruler, pen], says: "₦110", above: [] },
+      ], { cap: 0.5 })}</div>` +
+      say("Line the rulers up: both rows have 2 rulers and a pen, and the top row has 2 pens more. So the 2 " +
+        "extra pens are the difference: ₦210 − ₦110 = ₦100, and a pen is ₦50. Then 1 pen and 2 rulers: 50 + 2 " +
+        "rulers = 110, so 2 rulers are ₦60 and a ruler is ₦30."));
+  },
+  key(item) {
+    return item.vals.map((v) => want.num(v));
+  },
+  answer(item) {
+    return [`${item.steps}: ${item.labels.map((l, i) => `${l} ${item.vals[i]}`).join(", ")}`];
+  },
+};
+
 /* ═══ THE GRAPHICAL METHOD ═════════════════════════════════════════════════*/
 
 /** Two lines y = mx + c that cross at a whole-number point on a small grid. */
@@ -551,4 +644,4 @@ const grHowMany = {
   },
 };
 
-export const SY_EXERCISES = [subReady, subMake, subWord, elDirect, elOne, elBoth, grTables, grRead, grDrawBoth, grHowMany];
+export const SY_EXERCISES = [subReady, subMake, subWord, elDirect, elOne, elBoth, elWord, grTables, grRead, grDrawBoth, grHowMany];
