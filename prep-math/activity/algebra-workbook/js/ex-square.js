@@ -43,8 +43,9 @@ const half = (n) => (Number.isInteger(n / 2) ? String(n / 2) : String(n / 2));
 const sideOf = (r, o) => r.int(1, { gentle: 3, middle: 4, stretch: 5 }[tier(o)] || 3);
 
 export const SQ2_GROUPS = [
-  { id: "cs-tiles", chapter: "Chapter 8 · Completing the square", label: "The square in the tiles", blurb: "x² and two strips, and a corner waiting to be filled." },
-  { id: "cs-write", label: "Writing it down", blurb: "Halve the middle number, square it — and that is the corner." },
+  /* chapter 8 is all of quadratics now and opens with factorisation (ex-quadratics.js) */
+  { id: "cs-tiles", label: "Completing the square: the tiles", blurb: "x² and two strips, and a corner waiting to be filled." },
+  { id: "cs-write", label: "Completing the square: writing it down", blurb: "Halve the middle number, square it — and that is the corner." },
 ];
 
 /* ═══ 1. read a square that is already made ════════════════════════════════*/

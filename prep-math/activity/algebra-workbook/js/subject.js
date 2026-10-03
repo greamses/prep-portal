@@ -18,7 +18,7 @@ const CHAPTERS = {
   5: "Chapter 5: Properties and identities",
   6: "Chapter 6: Functions",
   7: "Chapter 7: Graphs of functions",
-  8: "Chapter 8: Completing the square",
+  8: "Chapter 8: Quadratic equations",
   9: "Chapter 9: Simultaneous equations",
   10: "Chapter 10: The binomial expansion",
   11: "Chapter 11: Logic",

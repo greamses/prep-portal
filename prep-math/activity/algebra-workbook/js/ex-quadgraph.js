@@ -74,7 +74,7 @@ function gridAround(h, f, extra = []) {
 }
 
 export const QG_GROUPS = [
-  { id: "qg-graph", label: "Solving quadratics with graphs", blurb: "The U crosses the x axis at the roots; a line y = k at the answers to = k." },
+  { id: "qg-graph", label: "The graphical method", blurb: "The U crosses the x axis at the roots; a line y = k at the answers to = k." },
 ];
 
 /* ═══ table and plot ═══════════════════════════════════════════════════════*/

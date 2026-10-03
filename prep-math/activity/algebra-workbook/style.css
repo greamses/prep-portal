@@ -435,3 +435,10 @@
 
 .bn-eq { font: 600 11pt/2 "JetBrains Mono", monospace; }
 .bn-eq .wb-answer { margin: 0 0.8mm; min-width: 10mm; }
+
+/* ── chapter 8: the area box of two brackets (js/ex-quadratics.js) ── */
+.qd-area { border-collapse: collapse; margin: 1.5mm 0 2mm; font: 600 10.5pt/1 "JetBrains Mono", monospace; }
+.qd-area th { padding: 1.2mm 3mm; color: #6b645a; font-weight: 700; }
+.qd-area td { border: 0.35mm solid #2a2723; padding: 2mm 3mm; text-align: center; min-width: 20mm; background: #fffdf8; }
+.qd-area tr:nth-child(2) td:first-of-type { background: #bfe3ff; }
+.qd-area .wb-answer { min-width: 9mm; }

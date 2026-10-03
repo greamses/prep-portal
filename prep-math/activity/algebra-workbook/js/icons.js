@@ -186,6 +186,23 @@ export const ICON = {
       `<rect x="13" y="16" width="8" height="4" rx="1.2" fill="${LOUD}"/>`
   ),
 
+  /* ── chapter 8: the other ways to solve a quadratic ── */
+  /* Factorisation: the area box, four pieces. */
+  qdFactor: svg(
+    `<rect x="3" y="3" width="11" height="11" rx="1.4" fill="${LOUD}"/>` + `<rect x="15.4" y="3" width="5.6" height="11" rx="1.2" fill="${PAPER}"/>` +
+      `<rect x="3" y="15.4" width="11" height="5.6" rx="1.2" fill="${PAPER}"/>` + `<rect x="15.4" y="15.4" width="5.6" height="5.6" rx="1.2" fill="${GOLD}"/>`
+  ),
+  /* The formula: a fraction bar with a plus-or-minus over it. */
+  qdFormula: svg(
+    bar(3, 14, 21, 14, 1.6, QUIET) + bar(8, 6, 16, 6, 1.6, LOUD) + bar(12, 2.6, 12, 9.4, 1.6, LOUD) + bar(8, 11, 16, 11, 1.4, LOUD) +
+      `<rect x="8.4" y="16.6" width="7.2" height="4.6" rx="1.2" fill="${PAPER}"/>`
+  ),
+  /* Po-Shen Loh: two roots the same distance either side of the middle. */
+  qdLoh: svg(
+    bar(2, 12, 22, 12, 1.4, QUIET) + bar(12, 6, 12, 18, 1.4, GOLD) +
+      `<circle cx="5.4" cy="12" r="2.8" fill="${LOUD}"/><circle cx="18.6" cy="12" r="2.8" fill="${LOUD}"/>`
+  ),
+
   /* ── chapters 10 and 11 ── */
   /* Pascal's triangle: rows of dots, one more each row. */
   bnPascal: svg(

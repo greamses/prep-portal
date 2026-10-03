@@ -25,6 +25,9 @@
                        machine fed with the PLACE of a term (growing patterns
                        drawn by seqart.js, the rule built as a train, the 50th
                        term, and whether a number is in the sequence at all)
+     ex-quadratics.js  chapter 8, quadratic equations: factorisation (the
+                       chapter opens with it), the formula, and Po-Shen Loh's
+                       method — each built up a step at a time
      ex-square.js      chapter 8, completing the square — the picture first: a
                        square of tiles with a corner missing, filled by hand
                        (the shared utils/components/workbook/tiles.js), then
@@ -81,14 +84,15 @@ import { SQ_GROUPS, SQ_EXERCISES } from "./ex-seq.js";
 import { UG_GROUPS, UG_EXERCISES } from "./ex-understand.js";
 import { GR_GROUPS, GR_EXERCISES } from "./ex-graphs.js";
 import { QG_GROUPS, QG_EXERCISES } from "./ex-quadgraph.js";
+import { QD_FACTOR_GROUPS, QD_FACTOR_EXERCISES, QD_MORE_GROUPS, QD_MORE_EXERCISES } from "./ex-quadratics.js";
 import { SQ2_GROUPS, SQ2_EXERCISES } from "./ex-square.js";
 
 export { LEVELS, levelOf } from "./poly.js";
 export { HELP, helpOf } from "./organiser.js";
 
-export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...RT_GROUPS, ...AP_GROUPS, ...FN_GROUPS, ...SQ_GROUPS, ...UG_GROUPS, ...GR_GROUPS, ...SQ2_GROUPS, ...QG_GROUPS, ...TW_GROUPS, ...SY_GROUPS, ...DT_GROUPS, ...MX_GROUPS, ...BN_GROUPS, ...LG_GROUPS];
+export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...RT_GROUPS, ...AP_GROUPS, ...FN_GROUPS, ...SQ_GROUPS, ...UG_GROUPS, ...GR_GROUPS, ...QD_FACTOR_GROUPS, ...SQ2_GROUPS, ...QD_MORE_GROUPS, ...QG_GROUPS, ...TW_GROUPS, ...SY_GROUPS, ...DT_GROUPS, ...MX_GROUPS, ...BN_GROUPS, ...LG_GROUPS];
 
-export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...RT_EXERCISES, ...AP_EXERCISES, ...FN_EXERCISES, ...SQ_EXERCISES, ...UG_EXERCISES, ...GR_EXERCISES, ...SQ2_EXERCISES, ...QG_EXERCISES, ...TW_EXERCISES, ...SY_EXERCISES, ...DT_EXERCISES, ...MX_EXERCISES, ...BN_EXERCISES, ...LG_EXERCISES];
+export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...RT_EXERCISES, ...AP_EXERCISES, ...FN_EXERCISES, ...SQ_EXERCISES, ...UG_EXERCISES, ...GR_EXERCISES, ...QD_FACTOR_EXERCISES, ...SQ2_EXERCISES, ...QD_MORE_EXERCISES, ...QG_EXERCISES, ...TW_EXERCISES, ...SY_EXERCISES, ...DT_EXERCISES, ...MX_EXERCISES, ...BN_EXERCISES, ...LG_EXERCISES];
 
 /** Which chapter an exercise belongs to: 1 to 11. */
 const CHAPTER = new Map([
@@ -98,7 +102,7 @@ const CHAPTER = new Map([
   ...AP_GROUPS.map((g) => [g.id, 5]),
   ...FN_GROUPS.map((g) => [g.id, 6]), ...SQ_GROUPS.map((g) => [g.id, 6]),
   ...UG_GROUPS.map((g) => [g.id, 7]), ...GR_GROUPS.map((g) => [g.id, 7]),
-  ...SQ2_GROUPS.map((g) => [g.id, 8]), ...QG_GROUPS.map((g) => [g.id, 8]),
+  ...[...QD_FACTOR_GROUPS, ...SQ2_GROUPS, ...QD_MORE_GROUPS, ...QG_GROUPS].map((g) => [g.id, 8]),
   ...[...TW_GROUPS, ...SY_GROUPS, ...DT_GROUPS, ...MX_GROUPS].map((g) => [g.id, 9]),
   ...BN_GROUPS.map((g) => [g.id, 10]), ...LG_GROUPS.map((g) => [g.id, 11]),
 ]);
@@ -111,6 +115,7 @@ export function exerciseById(id) {
 /** Why an exercise cannot run under these settings, or null. */
 export function unavailable(ex, o) {
   if (ex.hardest && o.level === "gentle") return "needs Middle or Stretch";
+  if (ex.minLevel === "stretch" && o.level !== "stretch") return "needs Stretch";
   return null;
 }
 
