@@ -26,6 +26,7 @@ import { planeSvg, pointOf } from "./gridart.js";
 import { grCross, gridFor, cellFor, yEq } from "./ex-graphs.js";
 import { levelOf } from "./poly.js";
 import { want } from "/utils/components/workbook/want.js";
+import { modelSvg, blankModelSvg } from "/prep-math/activity/maths-workbook/js/modelart.js";
 
 const box = () => `<span class="wb-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
@@ -206,9 +207,10 @@ const subWord = {
   blurb: "One sentence says what one thing is in terms of the other.",
   heading: "Substitution in a story",
   instruction: () =>
-    "Give each unknown a letter. One sentence tells you what one of them is in terms of the other — that is " +
-    "your y = …. The other sentence is the second equation. Substitute, solve, and answer in the story's own " +
-    "words.",
+    "Draw it first: a bar for each unknown, the bigger one as the smaller one and its extra. Then give the " +
+    "smaller one a letter. One sentence tells you what the other is in terms of it — that is your y = …. The " +
+    "other sentence is the second equation. Substitute, solve, and answer in the story's own words. On screen " +
+    "the space is a board of bars to build the model with.",
   cols: 1,
   defaultCount: 3,
   make(r, o) {
@@ -216,10 +218,17 @@ const subWord = {
     return STORIES[r.int(0, STORIES.length - 1)](r, t);
   },
   render(item) {
-    return ask(item.text) + eq(item.labels.map((l) => `${l} ${box()}`).join(" &nbsp;&nbsp; "));
+    /* room to draw the bar model — on screen, the bar model board
+       (utils/components/workbook/barmodel.js) */
+    return ask(item.text) + `<div class="mb-art">${blankModelSvg({ h: 36 })}</div>` +
+      eq(item.labels.map((l) => `${l} ${box()}`).join(" &nbsp;&nbsp; "));
   },
   worked() {
     return worked(ask("A pen costs ₦20 more than a pencil. 2 pens and 3 pencils cost ₦290. How much is each?") +
+      `<div class="mb-art">${modelSvg([
+        { name: "pencil", parts: [{ text: "p", value: 50, tone: "a" }] },
+        { name: "pen", parts: [{ text: "p", value: 50, tone: "a" }, { text: "20", value: 20, tone: "c" }] },
+      ], { cap: 1.2 })}</div>` +
       say("Let a pencil be p. Then a pen is p + 20. So 2(p + 20) + 3p = 290: 5p + 40 = 290, 5p = 250, p = 50. " +
         "A pencil is ₦50 and a pen ₦70. Check: 2 × 70 + 3 × 50 = 290."));
   },

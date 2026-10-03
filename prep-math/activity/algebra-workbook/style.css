@@ -412,3 +412,7 @@
 .ge-c { text-align: center; min-width: 5mm; }
 .ge-c--rhs { border-left: 0.3mm solid #2a2723; padding-left: 2.5mm; }
 .ge-mat .wb-answer { min-width: 9mm; }
+
+/* chapter 9 word problems: the bar model (Maths Workbook modelart.js) and its board */
+.mb-art { margin: 1.5mm 0 2mm; }
+.mb-art svg { display: block; max-width: 100%; height: auto; }
