@@ -28,7 +28,7 @@
 
 import { want } from "/utils/components/workbook/want.js";
 import { sameDiffFigure, borrows } from "/utils/components/workbook/samediff.js";
-import { modelSvg } from "/prep-math/activity/maths-workbook/js/modelart.js";
+import { modelSvg, boardUnder } from "/prep-math/activity/maths-workbook/js/modelart.js";
 import { ask, big, worked, say, tier, step, steps, strip } from "./common.js";
 
 export const CM_GROUPS = [
@@ -150,6 +150,8 @@ const subc = {
 
 /* ═══ doubles and near doubles, as bar models ═══════════════════════════════*/
 
+/* the picture, and on screen a folded board under it to build the model on
+   ("From the picture" copies it there) — utils/components/workbook/barmodel.js */
 const model = (html) => `<div class="mb-art vm-model">${html}</div>`;
 /** n split into its front place and the rest: 47 → 40 and 7, 236 → 200 and 36. */
 function front(n) {
@@ -179,7 +181,7 @@ const dbl = {
   render(item) {
     const { n, top, rest } = item;
     const row = () => ({ parts: [{ text: String(top), value: top, tone: "a" }, { text: String(rest), value: rest, tone: "c" }] });
-    return big(`${n} + ${n}`) + model(modelSvg([row(), row()], { total: "?", cap: 7 })) +
+    return big(`${n} + ${n}`) + model(modelSvg([row(), row()], { total: "?", cap: 7 }) + boardUnder([row(), row()], { total: "?", cap: 7 })) +
       steps(step(`double ${top} =`), step(`double ${rest} =`), step("together ="));
   },
   worked() {
@@ -219,7 +221,7 @@ const ndbl = {
       { parts: [{ text: String(small), value: small, tone: "a" }] },
       { parts: [{ text: String(small), value: small, tone: "a" }, { text: "", value: d, tone: "c" }], below: [{ from: 1, to: 2, text: `+${d}` }] },
     ];
-    return big(`${a} + ${b}`) + model(modelSvg(rows, { total: "?", cap: 7 })) +
+    return big(`${a} + ${b}`) + model(modelSvg(rows, { total: "?", cap: 7 }) + boardUnder(rows, { total: "?", cap: 7 })) +
       steps(step(`double ${small} =`), step(`and the extra ${d}: total =`));
   },
   worked() {
