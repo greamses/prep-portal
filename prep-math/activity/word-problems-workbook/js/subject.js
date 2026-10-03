@@ -21,7 +21,7 @@ const CHAPTERS = {
   8: "Chapter 8: Arrangements and selections",
   9: "Chapter 9: Probability trees",
   10: "Chapter 10: Percentages",
-  11: "Chapter 11: The remainder theorem",
+  11: "Chapter 11: Remainders",
 };
 
 const chaptersOn = (o) => [...new Set((o.chosen || [])

@@ -55,7 +55,7 @@ const sound = (p, signed) => !!p && p.ans.every(([, v]) => (Array.isArray(v) ? v
  * A section: a bank of templates of one kind of problem.
  *   templates   [(r, tier) => P(...) | null]   null = "try again"
  *   board       give the working room the bar model board
- *   signed      answers may be zero or negative (the remainder theorem)
+ *   signed      answers may be zero or negative (a remainder of 0)
  */
 export function bank(id, group, { label, blurb, heading, instruction, example, solution, count = 3, board = false, signed = false }, templates) {
   return {

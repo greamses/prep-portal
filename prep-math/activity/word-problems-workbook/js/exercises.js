@@ -7,8 +7,8 @@
                ratio (compound, squared and cubed)
      ex-b.js   chapters 5 to 8: algebraic fractions, systems of equations,
                sequence and series, arrangements and selections
-     ex-c.js   chapters 9 to 11: probability trees, percentages, the
-               remainder theorem
+     ex-c.js   chapters 9 to 11: probability trees, percentages, remainders
+               (cycles: days of the week, repeating patterns, units digits)
 
    Every section is a BANK of story templates (common.js), each making its
    problem from the answer. The level picks which templates are in play:

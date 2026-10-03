@@ -5,9 +5,9 @@
                             that do not affect each other
      10 Percentages         one change after another and changes undone;
                             profit and loss; marks, votes and populations
-     11 Remainder theorem   the remainder itself; an unknown coefficient; two
-                            unknowns, and the remainder on dividing by a
-                            quadratic
+     11 Remainders          where in a cycle: the day of the week after so
+                            many days, the colour picked after so many turns,
+                            and the units digit of a power
 
    Probabilities are fractions, and any equal fraction is right. Every
    problem is made from its answer (common.js).
@@ -18,7 +18,7 @@ import { bank, P, gcd, naira, names } from "./common.js";
 export const C_GROUPS = [
   { id: "wp-prob", chapter: "Chapter 9 · Probability trees", label: "Probability trees", blurb: "Multiply along a path; add the paths you want." },
   { id: "wp-pct", chapter: "Chapter 10 · Percentages", label: "Percentages", blurb: "Changes one after another, profit and loss, marks and votes." },
-  { id: "wp-rem", chapter: "Chapter 11 · Remainder theorem", label: "Remainder theorem", blurb: "The remainder on dividing by (x − a) is f(a)." },
+  { id: "wp-rem", chapter: "Chapter 11 · Remainders", label: "Remainders", blurb: "The remainder says where in a cycle you are: days, patterns, units digits." },
 ];
 
 /* ═══ 9 · PROBABILITY TREES ════════════════════════════════════════════════*/
@@ -146,81 +146,100 @@ const pcMarks = bank("wp-pc-marks", "wp-pct", {
     return P(`${A}'s income is ${p}% more than ${B}'s. By what percentage is ${B}'s income less than ${A}'s? (Give a fraction if it is not whole.)`, [["%:", [n / g, d / g]]], `${p} ÷ ${100 + p} × 100`); },
 ]);
 
-/* ═══ 11 · REMAINDER THEOREM ═══════════════════════════════════════════════*/
+/* ═══ 11 · REMAINDERS ══════════════════════════════════════════════════════
+   Not the algebra theorem: the remainder as the thing that says WHERE IN A
+   CYCLE you are. Days of the week go round in 7, a pattern of colours in as
+   many as there are colours, the last digit of a power in 1, 2 or 4. Divide
+   by the length of the cycle, throw the whole turns away, and count on by
+   what is left. */
 
-/** A letter or a short expression said outright to the typesetter. */
-const M = (tex) => `<span data-tex="${tex}">${tex}</span>`;
-const sg = (v) => (v < 0 ? `−${-v}` : String(v));
-/** x³ + ax² + bx + c as written. */
-function cubic([p, a, b, c], names2 = {}) {
-  const t = (k, pw, nm) => {
-    if (nm) return ` + ${nm}x${pw === 2 ? "²" : ""}`.replace("x", pw === 0 ? "" : "x");
-    if (k === 0) return "";
-    const size = Math.abs(k) === 1 && pw > 0 ? "" : String(Math.abs(k));
-    return ` ${k < 0 ? "−" : "+"} ${size}${pw === 2 ? "x²" : pw === 1 ? "x" : ""}`;
-  };
-  return `${p === 1 ? "" : p}x³${t(a, 2, names2.a)}${t(b, 1, names2.b)}${t(c, 0, names2.c)}`;
-}
-const at = ([p, a, b, c], x) => p * x ** 3 + a * x * x + b * x + c;
-/** (x − a) as written: (x − 2), (x + 3). */
-const div = (a) => `(x ${a < 0 ? "+" : "−"} ${Math.abs(a)})`;
-const coefs = (r, t) => [1, r.int(-4, 5), r.int(-6, 7), r.int(-9, 9)].map((v, i) => (i && t === "gentle" ? Math.abs(v) : v));
-const roots = (r, t) => r.pick(t === "gentle" ? [1, 2, 3] : [-3, -2, -1, 1, 2, 3]);
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const mod = (a, m) => ((a % m) + m) % m;
+const powmod = (a, n, m) => { let x = 1; for (let i = 0; i < n; i++) x = (x * a) % m; return x; };
+/** How long the last digits of a's powers take to come round again. */
+const cycleOf = (a, m = 10) => { const first = a % m; let x = first, k = 1; while ((x = (x * a) % m) !== first) k++; return k; };
+/** 1st, 2nd, 3rd, 24th. */
+const nth = (n) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th"}`;
+/** A count that is NOT a whole number of turns, so there is a remainder to use. */
+const count = (r, lo, hi, cycle) => { for (;;) { const n = r.int(lo, hi); if (n % cycle) return n; } };
 
-const rmFind = bank("wp-rm-find", "wp-rem", {
-  label: "The remainder",
-  blurb: "Dividing by (x − a) leaves f(a): put a in for x.",
-  heading: "The remainder theorem",
-  instruction: "When a polynomial f(x) is divided by (x − a), the remainder is f(a): put a in for x and work it out. " +
-    "Mind the sign — dividing by (x + 2) means a is −2. If the remainder is 0, (x − a) is a FACTOR.",
-  example: "Find the remainder when x³ − 2x² + 3x − 4 is divided by (x − 2).",
-  solution: "f(2) = 8 − 8 + 6 − 4 = 2. The remainder is 2.",
-  signed: true,
+const rmDays = bank("wp-rm-days", "wp-rem", {
+  label: "Days, months and the clock",
+  blurb: "Seven days make a week: only the remainder moves the day on.",
+  heading: "Remainders: the calendar and the clock",
+  instruction: "The days of the week come round every 7 days, so a whole number of weeks changes nothing. Divide the " +
+    "number of days by 7 and keep only the REMAINDER: count on that many days (or back, for days ago). The same " +
+    "works for months (12 in a cycle) and for a 12-hour clock.",
+  example: "Today is Tuesday. What day of the week will it be 765 days from now?",
+  solution: "765 ÷ 7 = 109 remainder 2. The 109 weeks bring us back to Tuesday; 2 days on is Thursday.",
 }, [
-  (r, t) => { const f = coefs(r, t), a = roots(r, t); return P(`Find the remainder when ${cubic(f)} is divided by ${div(a)}.`, [["remainder:", at(f, a)]], `f(${sg(a)})`); },
-  (r, t) => { const a = roots(r, t), b = r.int(-3, 4), c = r.int(-4, 5); /* (x − a)(x² + bx + c) + R */ const R = r.int(1, 9);
-    const f = [1, b - a, c - a * b, -a * c + R]; return P(`${M("f(x)")} = ${cubic(f)}. Find ${M(`f(${a})`)}, the remainder when ${M("f(x)")} is divided by ${div(a)}.`, [["remainder:", R]], `f(${sg(a)}) = ${R}`); },
-  (r, t) => { if (t === "gentle") return null; const f = [2, r.int(-4, 5), r.int(-6, 7), r.int(-9, 9)], a = roots(r, t); return P(`Find the remainder when ${cubic(f)} is divided by ${div(a)}.`, [["remainder:", at(f, a)]], `f(${sg(a)})`); },
+  (r, t) => { const d = r.int(0, 6), n = count(r, t === "gentle" ? 20 : 100, t === "gentle" ? 100 : 1000, 7);
+    return P(`Today is ${DAYS[d]}. What day of the week will it be ${n} days from now?`, [["day:", DAYS[mod(d + n, 7)]]], `${n} ÷ 7 leaves ${n % 7}: count on ${n % 7}`); },
+  (r, t) => { if (t === "gentle") return null; const d = r.int(0, 6), n = count(r, 100, 1000, 7);
+    return P(`Today is ${DAYS[d]}. What day of the week was it ${n} days ago?`, [["day:", DAYS[mod(d - n, 7)]]], `${n} ÷ 7 leaves ${n % 7}: count back ${n % 7}`); },
+  (r) => { const m = r.int(0, 11), n = count(r, 20, 200, 12);
+    return P(`It is ${MONTHS[m]} now. Which month will it be ${n} months from now?`, [["month:", MONTHS[mod(m + n, 12)]]], `${n} ÷ 12 leaves ${n % 12}: count on ${n % 12}`); },
+  (r) => { const h = r.int(1, 12), n = count(r, 30, 500, 12); const now = mod(h + n, 12) || 12;
+    return P(`A 12-hour clock shows ${h} o'clock. What hour will it show ${n} hours from now?`, [["o'clock:", now]], `${n} ÷ 12 leaves ${n % 12}: count on ${n % 12}`); },
+  (r, t) => { if (t === "gentle") return null; const d = r.int(0, 6), leap = r.chance(0.4);
+    return P(`${leap ? "A leap year (366 days)" : "A year of 365 days"} begins on a ${DAYS[d]}. On what day of the week does the NEXT year begin?`, [["day:", DAYS[mod(d + (leap ? 366 : 365), 7)]]], `${leap ? 366 : 365} ÷ 7 leaves ${leap ? 2 : 1}`); },
+  (r, t) => { if (t !== "stretch") return null; const d = r.int(0, 6), a = r.pick([2, 3, 10]), k = r.int(5, 12); const left = powmod(a, k, 7);
+    return P(`Today is ${DAYS[d]}. What day of the week will it be ${a}^${k} days from now? (Find the remainder without working the power out: the remainders of the powers of ${a} repeat.)`, [["day:", DAYS[mod(d + left, 7)]]], `${a}^${k} leaves ${left} on dividing by 7`); },
 ]);
 
-const rmK = bank("wp-rm-k", "wp-rem", {
-  label: "An unknown coefficient",
-  blurb: "The remainder is given: f(a) = remainder is an equation in k.",
-  heading: "Finding an unknown coefficient",
-  instruction: "The polynomial has an unknown number k in it. Put a in for x: f(a) is an expression in k, and it must " +
-    "equal the remainder you are told (0 if (x − a) is a factor). Solve that equation for k.",
-  example: "(x − 2) is a factor of x³ + kx² − 4x + 4. Find k.",
-  solution: "f(2) = 8 + 4k − 8 + 4 = 4k + 4, and it must be 0. So k = −1.",
+const COLOURS3 = ["red", "yellow", "blue", "white", "pink", "purple"];
+const WORDS = ["LAGOS", "KANO", "ABUJA", "MATHS", "PRIZE", "SCHOOL", "NIGERIA"];
+
+const rmCycle = bank("wp-rm-cycle", "wp-rem", {
+  label: "Patterns that repeat",
+  blurb: "Whose turn, which colour, which letter — after a great many.",
+  heading: "Remainders: where in the pattern?",
+  instruction: "A pattern that repeats is a cycle. Count how many things are in ONE turn of it, divide the position " +
+    "you are asked about by that number, and keep the REMAINDER: a remainder of 1 is the first thing in the " +
+    "pattern, 2 the second, and so on. A remainder of 0 means a turn has just finished — it is the LAST thing.",
+  example: "Three friends pick flowers in turn, and the colours go red, yellow, blue, red, yellow, blue, … What colour is the 100th flower picked?",
+  solution: "The pattern is 3 long. 100 ÷ 3 = 33 remainder 1, so the 100th flower is the 1st colour of the pattern: red.",
   signed: true,
 }, [
-  (r, t) => { const a = roots(r, t), k = r.int(-5, 6), b = r.int(-6, 7), c0 = r.int(-9, 9); const f = [1, k, b, c0]; const R = at(f, a);
-    /* make it a factor: move R into the constant */ const f2 = [1, k, b, c0 - R];
-    return P(`${div(a)} is a factor of ${cubic(f2, { a: "k" })}. Find ${M("k")}.`, [[`${M("k")} =`, k]], `f(${sg(a)}) = 0`); },
-  (r, t) => { const a = roots(r, t), k = r.int(-5, 6), b0 = r.int(-4, 5), c = r.int(-9, 9); const f = [1, b0, k, c];
-    return P(`When ${cubic(f, { b: "k" })} is divided by ${div(a)} the remainder is ${sg(at(f, a))}. Find ${M("k")}.`, [[`${M("k")} =`, k]], `f(${sg(a)}) = ${sg(at(f, a))}`); },
-  (r, t) => { if (t === "gentle") return null; const a = roots(r, t), k = r.int(-9, 9), a0 = r.int(-4, 5), b = r.int(-6, 7); const f = [1, a0, b, k];
-    return P(`When ${cubic(f, { c: "k" })} is divided by ${div(a)} the remainder is ${sg(at(f, a))}. Find ${M("k")}.`, [[`${M("k")} =`, k]], `f(${sg(a)}) = ${sg(at(f, a))}`); },
+  (r, t) => { const k = t === "gentle" ? 3 : r.int(3, 5); const cols = COLOURS3.slice(0, k); const who = names(r, 3); const n = r.int(t === "gentle" ? 20 : 50, t === "gentle" ? 80 : 400);
+    return P(`${who[0]}, ${who[1]} and ${who[2]} pick flowers one after another, and the colours picked go ${cols.join(", ")}, in that order, again and again. What colour is the ${nth(n)} flower picked?`, [["colour:", cols[mod(n - 1, k)]]], `${n} ÷ ${k} leaves ${n % k}`); },
+  (r, t) => { const who = names(r, t === "gentle" ? 3 : r.int(3, 5)); const k = who.length; const n = r.int(30, 300);
+    return P(`${who.slice(0, -1).join(", ")} and ${who[k - 1]} take turns, in that order, to pick a flower from a basket. Who picks the ${nth(n)} flower?`, [["name:", who[mod(n - 1, k)]]], `${n} ÷ ${k} leaves ${n % k}`); },
+  (r) => { const w = r.pick(WORDS); const n = r.int(30, 500);
+    return P(`The word ${w} is written again and again without a break: ${w}${w}${w}… What is the ${nth(n)} letter written?`, [["letter:", w[mod(n - 1, w.length)]]], `${n} ÷ ${w.length} leaves ${n % w.length}`); },
+  (r, t) => { if (t === "gentle") return null; const c = r.int(5, 12), n = r.int(50, 500);
+    return P(`${c} children sit in a circle, numbered 1 to ${c}. A count starts at child 1 and goes round and round the circle. Which child is counted ${nth(n)}?`, [["child:", mod(n - 1, c) + 1]], `${n} ÷ ${c} leaves ${n % c}${n % c ? "" : ": the last child"}`); },
+  (r, t) => { if (t === "gentle") return null; const n = r.int(20, 200);
+    return P(`1/7 = 0.142857142857…, the six digits 142857 repeating for ever. What is the ${nth(n)} digit after the decimal point?`, [["digit:", Number("142857"[mod(n - 1, 6)])]], `${n} ÷ 6 leaves ${n % 6}`); },
+  (r, t) => { if (t !== "stretch") return null; const a = r.int(2, 3), b = r.int(1, 2), k = a + b; const n = count(r, 40, 300, k); const full = Math.floor(n / k), left = n % k;
+    return P(`Beads are threaded in the pattern ${a} red, ${b} blue, ${a} red, ${b} blue, … How many of the first ${n} beads are red?`, [["red beads:", full * a + Math.min(left, a)]], `${full} whole turns and ${left} more beads`); },
 ]);
 
-const rmTwo = bank("wp-rm-two", "wp-rem", {
-  label: "Two unknowns, and dividing by a quadratic",
-  blurb: "Two remainders give two equations.",
-  heading: "Two conditions at once",
-  instruction: "Two remainders are two equations: put each a in for x. Solve the pair for the two unknowns. And when a " +
-    "polynomial is divided by a QUADRATIC (x − a)(x − b), the remainder is linear, px + q: it must give the right " +
-    "remainders at x = a and at x = b, which again is two equations.",
-  example: "f(x) leaves remainder 5 when divided by (x − 1) and 2 when divided by (x + 2). Find the remainder when f(x) is divided by (x − 1)(x + 2).",
-  solution: "Let it be px + q. At x = 1: p + q = 5. At x = −2: −2p + q = 2. Subtracting: 3p = 3, p = 1, and q = 4. The remainder is x + 4.",
+const rmUnits = bank("wp-rm-units", "wp-rem", {
+  label: "The units digit of a power",
+  blurb: "Last digits go round in a cycle of 1, 2 or 4.",
+  heading: "Remainders: units digits",
+  instruction: "The UNITS digit of a product depends only on the units digits multiplied. So the units digits of the " +
+    "powers of a number go round in a short cycle: for 2 it is 2, 4, 8, 6, 2, 4, 8, 6, … — four long. Divide the " +
+    "power by the length of the cycle and use the REMAINDER to pick the digit (a remainder of 0 is the last of " +
+    "the cycle). For a product of powers, find each units digit and multiply them.",
+  example: "What is the units digit of 7^83?",
+  solution: "The units digits of the powers of 7 go 7, 9, 3, 1 and repeat: a cycle of 4. 83 ÷ 4 leaves 3, so it is the 3rd in the cycle: 3.",
   signed: true,
-  count: 2,
 }, [
-  (r) => { const a1 = r.pick([1, 2]), a2 = r.pick([-1, -2]); const p = r.int(-4, 5), q = r.int(-6, 7), c = r.int(-6, 6); const f = [1, p, q, c];
-    return P(`${cubic(f, { a: "p", b: "q" })} leaves remainder ${sg(at(f, a1))} when divided by ${div(a1)} and ${sg(at(f, a2))} when divided by ${div(a2)}. Find ${M("p")} and ${M("q")}.`, [[`${M("p")} =`, p], [`${M("q")} =`, q]], `f(${a1}) and f(${sg(a2)})`); },
-  (r) => { const a1 = r.pick([1, 2, 3]), a2 = r.pick([-1, -2, -3]); const p = r.int(-4, 5), q = r.int(-9, 9); if (p === 0) return null;
-    return P(`${M("f(x)")} leaves remainder ${sg(p * a1 + q)} when divided by ${div(a1)} and ${sg(p * a2 + q)} when divided by ${div(a2)}. The remainder when ${M("f(x)")} is divided by ${div(a1)}${div(a2)} is ${M("px + q")}. Find ${M("p")} and ${M("q")}.`, [[`${M("p")} =`, p], [`${M("q")} =`, q]], `${a1 === 1 ? "" : a1}p + q = ${sg(p * a1 + q)}; ${a2 === -1 ? "−" : sg(a2)}p + q = ${sg(p * a2 + q)}`); },
-  (r) => { const a1 = r.pick([1, 2]), a2 = r.pick([-1, -2, 3]); if (a1 === a2) return null; const m = r.int(-3, 4); /* (x − a1)(x − a2)(x − m): both factors */
-    const s1 = a1 + a2 + m, s2 = a1 * a2 + a1 * m + a2 * m, s3 = a1 * a2 * m; const f = [1, -s1, s2, -s3];
-    return P(`${div(a1)} and ${div(a2)} are both factors of ${cubic(f, { a: "p", b: "q" })}. Find ${M("p")} and ${M("q")}.`, [[`${M("p")} =`, -s1], [`${M("q")} =`, s2]], `f(${a1}) = 0 and f(${sg(a2)}) = 0`); },
+  (r, t) => { if (t !== "gentle") return null; const a = r.int(11, 99), b = r.int(11, 99), c = r.int(11, 99);
+    return P(`Without multiplying out, what is the units digit of ${a} × ${b} × ${c}?`, [["units digit:", ((a % 10) * (b % 10) * (c % 10)) % 10]], `${a % 10} × ${b % 10} × ${c % 10}`); },
+  (r, t) => { const a = r.pick(t === "gentle" ? [2, 3, 4, 7, 8, 9] : [2, 3, 7, 8, 12, 13, 17, 18, 23, 27]); const n = r.int(t === "gentle" ? 10 : 30, t === "gentle" ? 40 : 300);
+    return P(`What is the units digit of ${a}^${n}?`, [["units digit:", powmod(a, n, 10)]], `cycle of ${cycleOf(a)}; ${n} ÷ ${cycleOf(a)} leaves ${n % cycleOf(a)}`); },
+  (r, t) => { if (t === "gentle") return null; const [a, b] = [r.pick([2, 3, 7, 8]), r.pick([3, 4, 7, 9])]; if (a === b) return null; const m = r.int(15, 120), n = r.int(15, 120);
+    return P(`What is the units digit of ${a}^${m} × ${b}^${n}?`, [["units digit:", (powmod(a, m, 10) * powmod(b, n, 10)) % 10]], `${powmod(a, m, 10)} × ${powmod(b, n, 10)}`); },
+  (r, t) => { if (t === "gentle") return null; const a = r.pick([2, 3, 7, 8]), n = r.int(20, 200);
+    return P(`What is the remainder when ${a}^${n} is divided by 5?`, [["remainder:", powmod(a, n, 5)]], `the remainders go round in ${cycleOf(a, 5)}; ${n} ÷ ${cycleOf(a, 5)} leaves ${n % cycleOf(a, 5)}`); },
+  (r, t) => { if (t !== "stretch") return null; const [a, b] = [r.pick([2, 3, 7, 8]), r.pick([4, 9, 3, 7])]; if (a === b) return null; const m = r.int(30, 200), n = r.int(30, 200);
+    return P(`What is the units digit of ${a}^${m} + ${b}^${n}?`, [["units digit:", (powmod(a, m, 10) + powmod(b, n, 10)) % 10]], `${powmod(a, m, 10)} + ${powmod(b, n, 10)}`); },
+  (r, t) => { if (t !== "stretch") return null; const a = r.pick([2, 3, 4, 5]), n = r.int(20, 150);
+    return P(`What is the remainder when ${a}^${n} is divided by 7?`, [["remainder:", powmod(a, n, 7)]], `the remainders go round in ${cycleOf(a, 7)}; ${n} ÷ ${cycleOf(a, 7)} leaves ${n % cycleOf(a, 7)}`); },
 ]);
 
-export const C_EXERCISES = [pbWith, pbWithout, pbIndep, pcChange, pcProfit, pcMarks, rmFind, rmK, rmTwo];
+export const C_EXERCISES = [pbWith, pbWithout, pbIndep, pcChange, pcProfit, pcMarks, rmDays, rmCycle, rmUnits];
