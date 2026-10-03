@@ -1,0 +1,34 @@
+/* ============================================================================
+   Vedic Maths Workbook — what THIS workbook draws
+   ----------------------------------------------------------------------------
+   The paper, the bench and every mark a child writes into come from
+   /utils/components/workbook.css. What is left here is the question line, the
+   steps of a trick set one under the other, and the STRIP — an answer's parts
+   side by side, joined by bars, the way the trick assembles it. Fixed hex
+   colours, like the rest of the paper: it prints the same in either theme.
+   ========================================================================== */
+
+.wb-sheet .wb-ask { font-size: 10.5pt; }
+
+/* the question itself, a size up from the steps under it */
+.wb-sheet .vm-q { font-size: 12.5pt; font-weight: 600; margin: 0 0 1.2mm; }
+
+/* the steps of a trick: what to do, and its box, one per line */
+.vm-steps { display: flex; flex-direction: column; gap: 1.6mm; margin: 0.5mm 0 1mm 3mm; }
+.vm-step { display: flex; align-items: center; gap: 2.5mm; font-size: 10.5pt; flex-wrap: wrap; }
+.vm-step__what { color: #4a463f; }
+.vm-step .wb-answer { min-width: 18mm; }
+
+/* the strip: parts in cells, joined by bars */
+.vm-strip {
+  display: inline-flex;
+  align-items: stretch;
+  vertical-align: middle;
+  border: 0.3mm solid #2a2723;
+  border-radius: 1.2mm;
+  background: #fffbe6;
+  font-size: 10.5pt;
+  white-space: nowrap;
+}
+.vm-strip__part { padding: 0.6mm 2.4mm; }
+.vm-strip__bar { width: 0.35mm; background: #2a2723; color: transparent; overflow: hidden; }
