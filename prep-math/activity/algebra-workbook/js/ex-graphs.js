@@ -15,7 +15,8 @@
                              matched to their equations; (Middle+) x = a and
                              y = b, lines straight up and straight across
      solving with graphs     (Middle+) where the line meets y = k solves
-                             mx + c = k; where two lines cross solves both
+                             mx + c = k (where two lines cross, a PAIR of
+                             equations, is chapter 9, the graphical method)
      a curve                 (Middle+) y = x² + c: the same table and points,
                              and they do NOT line up — a U with a lowest point
 
@@ -80,14 +81,14 @@ export function gridFor(pts, { pad = 1 } = {}) {
     y: [Math.min(0, ...ys) - (Math.min(...ys) < 0 ? pad : 0), Math.max(1, ...ys) + pad],
   };
 }
-const cellFor = (g) => { const h = g.y[1] - g.y[0]; return h > 20 ? 3.2 : h > 16 ? 3.6 : 4.4; };
+export const cellFor = (g) => { const h = g.y[1] - g.y[0]; return h > 20 ? 3.2 : h > 16 ? 3.6 : 4.4; };
 
 export const GR_GROUPS = [
   { id: "gr-plot", chapter: "Chapter 7 · Graphs of functions", label: "Rule, table, points", blurb: "Work out y for each x, and plot every (x, y)." },
   { id: "gr-line", label: "Drawing the line", blurb: "The points of y = mx + c line up: rule the line through them." },
   { id: "gr-read", label: "Reading a graph", blurb: "y from x, x from y, and where the line crosses the axes." },
   { id: "gr-mc", label: "Gradient and intercept", blurb: "Up m for every 1 across, crossing the y axis at c: y = mx + c." },
-  { id: "gr-solve", label: "Solving with graphs", blurb: "Where the line meets y = k; where two lines cross." },
+  { id: "gr-solve", label: "Solving with graphs", blurb: "Where the line meets y = k. (Where two lines cross is chapter 9.)" },
   { id: "gr-curve", label: "A curved graph", blurb: "y = x² + c: the points do not line up — a U." },
 ];
 
@@ -384,7 +385,7 @@ const grSolve = {
   },
 };
 
-const grCross = {
+export const grCross = {
   id: "gr-cross",
   group: "gr-solve",
   label: "Where two lines cross",
@@ -472,7 +473,8 @@ export const GR_EXERCISES = [
   grDraw,
   grRead,
   grGrad, grMatch, grSpecial,
-  grSolve, grCross,
+  /* where two lines cross moved to chapter 9, the graphical method */
+  grSolve,
   grCurve,
 ];
 

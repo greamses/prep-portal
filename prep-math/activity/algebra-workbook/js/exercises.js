@@ -11,11 +11,6 @@
      ex-balance.js     chapter 3, the balance scale — the same equations as a
                        level scale, where the MOVE is what is being taught
                        (balanceart.js)
-     ex-two.js         chapter 3's last section: TWO of the chapter's own
-                       balances at once — two equations, solved by swapping a
-                       bag for what the other scale says it is worth
-     ex-det.js         after it, the same pairs solved by the determinant
-                       method (Cramer's rule): D, Dx and Dy, and D = 0
      ex-remainder.js   chapter 4, the polynomial remainder theorem — moved here
                        whole from the page it used to be (drawn by organiser.js
                        and poly.js)
@@ -38,6 +33,13 @@
                        (tapped, the shared dotplot.js), ruling the line, reading
                        it, gradient and intercept, solving with graphs, and a
                        first curve (drawn by gridart.js)
+     ex-two.js         chapter 9, simultaneous equations, opens with TWO of
+                       chapter 3's balances at once: substitution by hand
+     ex-systems.js     chapter 9: substitution, elimination and the graphical
+                       method (two lines, where they cross)
+     ex-det.js         chapter 9: the determinant method for two unknowns
+     ex-matrix.js      chapter 9: Cramer's rule and Gaussian elimination for
+                       three and four unknowns
 
    THE ORDER IS THE BOOK. The words come first because every later instruction
    is written in them: "swap x for a number" means nothing to a child who has
@@ -59,6 +61,8 @@ import { BM_GROUPS, BM_EXERCISES } from "./ex-bars.js";
 import { BS_GROUPS, BS_EXERCISES } from "./ex-balance.js";
 import { TW_GROUPS, TW_EXERCISES } from "./ex-two.js";
 import { DT_GROUPS, DT_EXERCISES } from "./ex-det.js";
+import { SY_GROUPS, SY_EXERCISES } from "./ex-systems.js";
+import { MX_GROUPS, MX_EXERCISES } from "./ex-matrix.js";
 import { RT_GROUPS, RT_EXERCISES } from "./ex-remainder.js";
 import { AP_GROUPS, AP_EXERCISES } from "./ex-laws.js";
 import { FN_GROUPS, FN_EXERCISES } from "./ex-func.js";
@@ -69,19 +73,19 @@ import { SQ2_GROUPS, SQ2_EXERCISES } from "./ex-square.js";
 export { LEVELS, levelOf } from "./poly.js";
 export { HELP, helpOf } from "./organiser.js";
 
-export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...TW_GROUPS, ...DT_GROUPS, ...RT_GROUPS, ...AP_GROUPS, ...FN_GROUPS, ...SQ_GROUPS, ...GR_GROUPS, ...SQ2_GROUPS];
+export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...RT_GROUPS, ...AP_GROUPS, ...FN_GROUPS, ...SQ_GROUPS, ...GR_GROUPS, ...SQ2_GROUPS, ...TW_GROUPS, ...SY_GROUPS, ...DT_GROUPS, ...MX_GROUPS];
 
-export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...TW_EXERCISES, ...DT_EXERCISES, ...RT_EXERCISES, ...AP_EXERCISES, ...FN_EXERCISES, ...SQ_EXERCISES, ...GR_EXERCISES, ...SQ2_EXERCISES];
+export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...RT_EXERCISES, ...AP_EXERCISES, ...FN_EXERCISES, ...SQ_EXERCISES, ...GR_EXERCISES, ...SQ2_EXERCISES, ...TW_EXERCISES, ...SY_EXERCISES, ...DT_EXERCISES, ...MX_EXERCISES];
 
-/** Which chapter an exercise belongs to: 1 to 5. */
+/** Which chapter an exercise belongs to: 1 to 9. */
 const CHAPTER = new Map([
   ...BM_GROUPS.map((g) => [g.id, 2]),
-  ...BS_GROUPS.map((g) => [g.id, 3]), ...TW_GROUPS.map((g) => [g.id, 3]),
-  ...DT_GROUPS.map((g) => [g.id, 3]),
+  ...BS_GROUPS.map((g) => [g.id, 3]),
   ...RT_GROUPS.map((g) => [g.id, 4]),
   ...AP_GROUPS.map((g) => [g.id, 5]),
   ...FN_GROUPS.map((g) => [g.id, 6]), ...SQ_GROUPS.map((g) => [g.id, 6]),
   ...GR_GROUPS.map((g) => [g.id, 7]), ...SQ2_GROUPS.map((g) => [g.id, 8]),
+  ...[...TW_GROUPS, ...SY_GROUPS, ...DT_GROUPS, ...MX_GROUPS].map((g) => [g.id, 9]),
 ]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 

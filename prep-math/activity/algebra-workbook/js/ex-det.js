@@ -1,5 +1,5 @@
 /* ============================================================================
-   Algebra Workbook — CHAPTER 3, after the two scales: THE DETERMINANT METHOD
+   Algebra Workbook — CHAPTER 9, after the three methods: THE DETERMINANT METHOD
    ----------------------------------------------------------------------------
    The two scales solve a pair of equations by swapping what one knows into the
    other. The determinant method (Cramer's rule) solves the same pair with no
@@ -92,7 +92,7 @@ function makePair(r, o) {
 }
 
 export const DT_GROUPS = [
-  { id: "dt-det", label: "The determinant method", blurb: "The same pairs again, solved with three squares of numbers and two divisions." },
+  { id: "dt-det", label: "The determinant method (two unknowns)", blurb: "The same pairs again, solved with three squares of numbers and two divisions." },
 ];
 
 /* ═══ one square ═══════════════════════════════════════════════════════════*/

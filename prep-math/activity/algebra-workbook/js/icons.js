@@ -163,6 +163,29 @@ export const ICON = {
       `<rect x="12.8" y="13.8" width="4.6" height="4.6" rx="1.1" fill="${LOUD}"/>`
   ),
 
+  /* ── chapter 9 ── */
+  /* Substitution: a letter's tile carried into the other line's slot. */
+  sySub: svg(
+    `<rect x="3" y="4" width="18" height="5" rx="1.6" fill="${PAPER}"/>` + `<rect x="3" y="15" width="18" height="5" rx="1.6" fill="${PAPER}"/>` +
+      `<rect x="14.4" y="4" width="5.2" height="5" rx="1.4" fill="${LOUD}"/>` + `<rect x="5" y="15" width="5.2" height="5" rx="1.4" fill="${LOUD}"/>` +
+      bar(16.8, 10.4, 8.8, 13.6, 1.4, GOLD)
+  ),
+  /* Elimination: two lines added, and the bottom one is gone. */
+  syElim: svg(
+    `<rect x="3" y="3.4" width="18" height="4.4" rx="1.4" fill="${PAPER}"/>` + `<rect x="3" y="9.8" width="18" height="4.4" rx="1.4" fill="${PAPER}"/>` +
+      bar(3, 16.6, 21, 16.6, 1.4, QUIET) + `<rect x="3" y="18.4" width="8" height="3.6" rx="1.2" fill="${LOUD}"/>`
+  ),
+  /* Cramer's rule, grown: a 3 x 3 square between bars. */
+  mxCramer: svg(
+    bar(3, 3, 3, 21, 1.6, QUIET) + bar(21, 3, 21, 21, 1.6, QUIET) +
+      [5.6, 10.4, 15.2].flatMap((x, i) => [5.6, 10.4, 15.2].map((y, j) => `<rect x="${x}" y="${y}" width="3.4" height="3.4" rx="0.9" fill="${i === j ? LOUD : PAPER}"/>`)).join("")
+  ),
+  /* Gaussian elimination: the staircase. */
+  mxGauss: svg(
+    `<rect x="3" y="4" width="18" height="4" rx="1.2" fill="${PAPER}"/>` + `<rect x="8" y="10" width="13" height="4" rx="1.2" fill="${PAPER}"/>` +
+      `<rect x="13" y="16" width="8" height="4" rx="1.2" fill="${LOUD}"/>`
+  ),
+
   /* ── chapter 6 ── */
   /* A machine: a box with a hopper, a number going in. */
   fnMachine: svg(

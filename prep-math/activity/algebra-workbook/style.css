@@ -396,3 +396,19 @@
 /* D, Dx, Dy: set to match MathJax's italic letters beside them. */
 .dt-name { font-family: "Times New Roman", "Cambria", serif; font-style: italic; font-size: 1.12em; }
 .dt-name sub { font-size: 0.68em; }
+
+/* ── chapter 9: the augmented matrix of Gaussian elimination (ex-matrix.js) ──
+   the coefficients, a bar before the answers, between two bars. A
+   determinant of any size uses .dt-det with its column count inline. */
+.ge-mat {
+  display: inline-grid;
+  gap: 0.8mm 3.5mm;
+  padding: 0.6mm 2mm;
+  vertical-align: middle;
+  border-left: 0.4mm solid #2a2723;
+  border-right: 0.4mm solid #2a2723;
+  font-family: "JetBrains Mono", monospace;
+}
+.ge-c { text-align: center; min-width: 5mm; }
+.ge-c--rhs { border-left: 0.3mm solid #2a2723; padding-left: 2.5mm; }
+.ge-mat .wb-answer { min-width: 9mm; }

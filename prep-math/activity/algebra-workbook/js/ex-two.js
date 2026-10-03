@@ -1,5 +1,5 @@
 /* ============================================================================
-   Algebra Workbook — CHAPTER 3, last section: TWO scales at once
+   Algebra Workbook — CHAPTER 9 opens: TWO scales at once
    ----------------------------------------------------------------------------
    One balance is one equation. Two balances are two, and a pair of equations
    with two letters in them is solved the way the rest of this chapter works —
@@ -38,7 +38,7 @@ const pair = (A, B) => art(A) + art(B);
 const answers = () => eq(`x = ${box()} &nbsp;&nbsp; y = ${box()}`);
 
 export const TW_GROUPS = [
-  { id: "bs-two", label: "Two scales at once", blurb: "Two equations: solve one scale, then swap what it knows into the other." },
+  { id: "bs-two", chapter: "Chapter 9 · Simultaneous equations", label: "Two scales at once", blurb: "Two equations: solve one scale, then swap what it knows into the other." },
 ];
 
 /* ═══ what one scale already knows ═════════════════════════════════════════*/
@@ -148,7 +148,7 @@ const twSystem = {
   instruction: () =>
     "Scale B has a y bag alone on a pan: it says a y bag weighs the same as what is on the other pan — an x " +
     "bag and a weight. Swap the y bag on Scale A for exactly that, and Scale A is all x bags and weights. " +
-    "Solve it the way the chapter does, then go back to Scale B for y. A piece and its opposite — a 3 and a " +
+    "Solve it the way chapter 3 does, then go back to Scale B for y. A piece and its opposite — a 3 and a " +
     "−3, an x bag and a minus x bag — cancel when they are put together, and leave nothing.",
   cols: 1,
   defaultCount: 2,

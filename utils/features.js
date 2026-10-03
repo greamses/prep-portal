@@ -114,7 +114,7 @@ export const FEATURES = [
          subscriber's pages (server/routes/workbooks.js). */
       { id: "maths-workbook", label: "Maths Workbook (printable — place value, words, sums, remainders, fractions, time, multiplying)", path: "/prep-math/activity/maths-workbook" },
       { id: "geometry-workbook", label: "Geometry Workbook (printable — lines and angles through to parts of a circle)", path: "/prep-math/activity/geometry-workbook" },
-      { id: "algebra-workbook", label: "Algebra Workbook (printable — basic concepts, the bar model, the balance scale, the remainder theorem, properties and identities)", path: "/prep-math/activity/algebra-workbook" },
+      { id: "algebra-workbook", label: "Algebra Workbook (printable — basic concepts, the bar model, the balance scale, the remainder theorem, properties and identities, functions, graphs, completing the square, simultaneous equations incl. Cramer and Gaussian elimination)", path: "/prep-math/activity/algebra-workbook" },
       { id: "statistics-workbook", label: "Statistics Workbook (printable — pictograms: sorting, tallies, keys, building one, problems)", path: "/prep-math/activity/statistics-workbook" },
       { id: "js-workbook", label: "JavaScript Workbook (printable — data types and variables, with an editor and a console that runs the programs)", path: "/prep-math/activity/js-workbook" },
       { id: "vedic-maths-workbook", label: "Mental Maths Workbook (printable — skill development or 5-second drills: complements, doubles, no-regrouping take-aways, × 11, vertically and crosswise, six squaring tricks, roots, ÷ 9, casting out nines, Trachtenberg)", path: "/prep-math/activity/vedic-maths-workbook" },
