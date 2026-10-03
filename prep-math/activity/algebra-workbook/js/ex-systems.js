@@ -644,4 +644,10 @@ const grHowMany = {
   },
 };
 
-export const SY_EXERCISES = [subReady, subMake, subWord, elDirect, elOne, elBoth, elWord, grTables, grRead, grDrawBoth, grHowMany];
+/* Every graphical problem has the bar model board under it on screen
+   (folded to one button, never printed): the same pair can be drawn as bars
+   as well as lines. utils/components/workbook/barmodel.js */
+const BOARD = '<div class="mb-art"><div class="mb-board mb-board--screen" data-barmodel="1" data-fold="1"></div></div>';
+const withBoard = (ex) => ({ ...ex, render: (item, o) => ex.render(item, o) + BOARD });
+
+export const SY_EXERCISES = [subReady, subMake, subWord, elDirect, elOne, elBoth, elWord, ...[grTables, grRead, grDrawBoth, grHowMany].map(withBoard)];
