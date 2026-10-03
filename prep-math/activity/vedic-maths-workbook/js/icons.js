@@ -12,6 +12,11 @@ const cell = (x, y, w, h, fill, rx = 1.2) => `<rect x="${x}" y="${y}" width="${w
 
 export const ICON = {
   ...BASE,
+  /* The Trachtenberg stages: two digit boxes, painted by what they hold —
+     both even (quiet blue), both odd (loud), one of each. */
+  vmTrEven: svg(cell(3, 6, 7.6, 12, PAPER) + cell(13.4, 6, 7.6, 12, PAPER) + `<circle cx="6.8" cy="12" r="1.6" fill="#fff"/><circle cx="17.2" cy="12" r="1.6" fill="#fff"/>`),
+  vmTrOdd: svg(cell(3, 6, 7.6, 12, LOUD) + cell(13.4, 6, 7.6, 12, LOUD) + `<circle cx="6.8" cy="12" r="1.6" fill="#fff"/><circle cx="17.2" cy="12" r="1.6" fill="#fff"/>`),
+  vmTrMix: svg(cell(3, 6, 7.6, 12, PAPER) + cell(13.4, 6, 7.6, 12, LOUD) + `<circle cx="6.8" cy="12" r="1.6" fill="#fff"/><circle cx="17.2" cy="12" r="1.6" fill="#fff"/>`),
   /* A row of digit boxes with an arrow running right to left over them. */
   vmTrach: svg(
     cell(2.6, 11, 5, 7.4, PAPER) + cell(9.5, 11, 5, 7.4, PAPER) + cell(16.4, 11, 5, 7.4, GOLD) +
