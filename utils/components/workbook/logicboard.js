@@ -13,9 +13,17 @@
                       of a gate or of the bulb). Or tap one pin, then the other.
                       An output may feed many wires; an input takes one.
      cut a wire       tap it
-     flip a switch    tap it: down is 0, up is 1 — a wire carrying 1 glows
-     the bulb         lights (1), stays dark (0), or shows ? while nothing
-                      reaches it
+     flip a switch    tap it. A switch wears the POWER SIGN, a 1 inside a 0:
+                      off, the 0 glows red and the 1 is dark; on, the 1 glows
+                      green and the 0 goes dark. A wire carrying 1 glows.
+     the output       a bulb lights (1), stays dark (0), or shows ? while
+                      nothing reaches it
+     exchange         an input may be a power switch or a PRESS switch; the
+                      output a bulb, a SPEAKER or a FAN. Drag one of these
+                      from the tray onto the switch or the output it is to
+                      replace (or tap it, then tap the part): it takes that
+                      part's place, wires and all. What a part LOOKS like
+                      never changes what the circuit does.
 
    On paper the same board is printed with the switches and the bulb on it and
    the gates beside it: the child draws the gates and the wires.
@@ -168,22 +176,47 @@ function gateWithLegs(kind) {
 }
 const chip = (kind) => `<svg viewBox="-17 -8.5 34 17" aria-hidden="true">${gateWithLegs(kind)}</svg>`;
 
-/** A toggle switch: a plate, a lever thrown down (0) or up (1), one leg out. */
-function switchSvg(name, on) {
-  const tipY = on ? -5.6 : 5.6;
-  return `<path d="M6.5 0H15" ${LEAD}/>` +
-    `<rect x="-7" y="-7.5" width="13.5" height="15" rx="1.6" fill="#d9d4c9" stroke="${INK}" stroke-width="0.5"/>` +
-    `<circle cx="-4.6" cy="-5.2" r="0.7" fill="#8a837a"/><circle cx="4.1" cy="5.2" r="0.7" fill="#8a837a"/>` +
-    `<circle cx="-0.3" cy="0" r="3" fill="#8f979e" stroke="${INK}" stroke-width="0.45"/>` +
-    `<path d="M-0.3 0L-0.3 ${tipY}" stroke="${on ? "#3d8a4a" : "#5d646b"}" stroke-width="2.3" stroke-linecap="round"/>` +
-    `<circle cx="-0.3" cy="${tipY}" r="1.7" fill="${on ? "#58b368" : "#c9ced3"}" stroke="${INK}" stroke-width="0.45"/>` +
-    `<text x="4" y="-3.6" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="2.6" font-weight="700" fill="${INK}">1</text>` +
-    `<text x="-4.4" y="5.2" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="2.6" font-weight="700" fill="${INK}">0</text>` +
-    `<text x="-10.5" y="1.6" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="4.6" font-weight="800" fill="${INK}">${name}</text>`;
+const MONO = `font-family="JetBrains Mono, monospace"`;
+const tag = (x, y, text, size = 4.6) => `<text x="${x}" y="${y}" text-anchor="middle" ${MONO} font-size="${size}" font-weight="800" fill="${INK}">${text}</text>`;
+
+/* What an input and an output may look like. The look is dress only. */
+export const INPUT_LOOKS = ["power", "press"];
+export const OUTPUT_LOOKS = ["bulb", "speaker", "fan"];
+const LOOK_NAME = { power: "power switch", press: "press switch", bulb: "bulb", speaker: "speaker", fan: "fan" };
+const RED_ON = "#f0443e", GREEN_ON = "#35c759", DARK = "#4b5057";
+
+/**
+ * A POWER SWITCH: the power sign, a 1 standing in a 0.
+ *   off   the 0 glows red, the 1 is dark
+ *   on    the 1 glows green, the 0 is dark
+ */
+function powerSvg(on) {
+  const ring = "M-2.5 -3.3A4.4 4.4 0 1 0 2.5 -3.3";
+  const zero = on ? DARK : RED_ON, one = on ? GREEN_ON : DARK;
+  return `<path d="M7 0H15" ${LEAD}/>` +
+    `<rect x="-7" y="-7" width="14" height="14" rx="3" fill="#24272b" stroke="${INK}" stroke-width="0.5"/>` +
+    (on ? `<path d="M0 -5.6V-0.6" stroke="${GREEN_ON}" stroke-width="3.4" stroke-linecap="round" opacity="0.3"/>`
+      : `<path d="${ring}" fill="none" stroke="${RED_ON}" stroke-width="3.4" stroke-linecap="round" opacity="0.3"/>`) +
+    `<path d="${ring}" fill="none" stroke="${zero}" stroke-width="1.5" stroke-linecap="round"/>` +
+    `<path d="M0 -5.6V-0.6" stroke="${one}" stroke-width="1.5" stroke-linecap="round"/>`;
 }
-/** A lamp: glass, filament and a screw cap; one leg in. q is 1, 0 or null. */
-function bulbSvg(q) {
-  const on = q === 1;
+/** A PRESS SWITCH: a round cap on a plate — up and red (0), pressed in and green (1). */
+function pressSvg(on) {
+  return `<path d="M7 0H15" ${LEAD}/>` +
+    `<rect x="-7" y="-7" width="14" height="14" rx="2" fill="#d9d4c9" stroke="${INK}" stroke-width="0.5"/>` +
+    `<circle cx="-4.9" cy="-4.9" r="0.6" fill="#8a837a"/><circle cx="4.9" cy="4.9" r="0.6" fill="#8a837a"/>` +
+    `<circle cx="0" cy="0" r="5" fill="#2a2d31" stroke="${INK}" stroke-width="0.45"/>` +
+    (on ? `<circle cx="0" cy="0" r="5" fill="${GREEN_ON}" opacity="0.3"/><circle cx="0" cy="0" r="3.5" fill="${GREEN_ON}" stroke="#1f8a3b" stroke-width="0.45"/>`
+      : `<circle cx="0" cy="0.9" r="4.1" fill="#8f2622"/><circle cx="0" cy="-0.3" r="4.1" fill="${RED_ON}" stroke="#8f2622" stroke-width="0.45"/><path d="M-2.2 -2.2A3.2 3.2 0 0 1 1 -3.3" fill="none" stroke="#fff" stroke-width="0.6" stroke-linecap="round" opacity="0.7"/>`);
+}
+const inputSvg = (look, on) => (look === "press" ? pressSvg(on) : powerSvg(on));
+function switchSvg(name, on, look) {
+  return inputSvg(look, on) + tag(-10.6, 1.6, name) +
+    `<text x="0" y="11.2" text-anchor="middle" ${MONO} font-size="2.9" font-weight="700" fill="${on ? "#1f8a3b" : "#b3261e"}">${on ? 1 : 0}</text>`;
+}
+
+/** A lamp: glass, filament and a screw cap. */
+function lampSvg(on) {
   const glass = on ? "#ffd84a" : "#f7f4ec";
   return `<path d="M-15 0H-6.5V5.4H-2.7" ${LEAD}/>` +
     (on ? `<circle cx="0" cy="-2.6" r="10.5" fill="#ffd84a" opacity="0.28"/><circle cx="0" cy="-2.6" r="8" fill="#ffd84a" opacity="0.35"/>` : "") +
@@ -191,10 +224,33 @@ function bulbSvg(q) {
     `<path d="M-1.5 3.4V-0.6L-0.8 -2.6L0 -0.9L0.8 -2.6L1.5 -0.6V3.4" fill="none" stroke="${on ? "#b85c00" : "#8a837a"}" stroke-width="0.4" stroke-linejoin="round"/>` +
     `<rect x="-2.7" y="3.4" width="5.4" height="4" rx="0.5" fill="#a9afb5" stroke="${INK}" stroke-width="0.45"/>` +
     `<path d="M-2.7 4.8H2.7M-2.7 6.1H2.7" stroke="${INK}" stroke-width="0.3"/>` +
-    `<path d="M-1.4 7.4H1.4L0.8 8.6H-0.8Z" fill="${INK}"/>` +
-    `<text x="9.2" y="-1.2" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="4.4" font-weight="800" fill="${INK}">Q</text>` +
-    `<text x="9.2" y="4" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="3.6" font-weight="700" fill="${on ? "#b97f00" : "#6f685f"}">${q == null ? "?" : q}</text>`;
+    `<path d="M-1.4 7.4H1.4L0.8 8.6H-0.8Z" fill="${INK}"/>`;
 }
+/** A speaker: a box and a cone; sounding, rings of sound leave it. */
+function speakerSvg(on) {
+  const wave = (r) => `<path d="M${4.2 + r * 0.5} ${-r}A${r * 1.25} ${r * 1.25} 0 0 1 ${4.2 + r * 0.5} ${r}" fill="none" stroke="#d98c00" stroke-width="0.7" stroke-linecap="round"/>`;
+  return `<path d="M-15 0H-6.4" ${LEAD}/>` +
+    `<rect x="-6.4" y="-3.2" width="4" height="6.4" rx="0.6" fill="#5d646b" stroke="${INK}" stroke-width="0.45"/>` +
+    `<path d="M-2.4 -3.2L3 -7.2V7.2L-2.4 3.2Z" fill="${on ? "#ffd84a" : "#c9ced3"}" stroke="${INK}" stroke-width="0.45" stroke-linejoin="round"/>` +
+    (on ? `<g class="lb-sound">${wave(2.4)}${wave(4.4)}${wave(6.4)}</g>` : `<path d="M5 -2.6L8.4 2.6M8.4 -2.6L5 2.6" stroke="#8a837a" stroke-width="0.6" stroke-linecap="round"/>`);
+}
+/** A fan: three blades in a guard; running, it spins. */
+function fanSvg(on) {
+  const blade = (a) => `<path d="M0 0C-2.6 -1.6 -3 -5.4 0 -6.6C2.2 -5.6 2 -2.2 0 0Z" fill="${on ? "#58a6e0" : "#aeb6bd"}" stroke="${INK}" stroke-width="0.35" stroke-linejoin="round" transform="rotate(${a})"/>`;
+  return `<path d="M-15 0H-7.6" ${LEAD}/>` +
+    `<circle cx="0" cy="0" r="7.6" fill="#f7f4ec" stroke="${INK}" stroke-width="0.5"/>` +
+    `<g class="${on ? "lb-spin" : ""}">${blade(0)}${blade(120)}${blade(240)}<circle cx="0" cy="0" r="1.3" fill="${INK}"/></g>` +
+    `<path d="M-2.2 7.3L-3.4 9H3.4L2.2 7.3" fill="#a9afb5" stroke="${INK}" stroke-width="0.4" stroke-linejoin="round"/>`;
+}
+const outputSvg = (look, on) => (look === "speaker" ? speakerSvg(on) : look === "fan" ? fanSvg(on) : lampSvg(on));
+/** The output with its name and what it is doing. q is 1, 0 or null. */
+function bulbSvg(q, look) {
+  const on = q === 1;
+  return outputSvg(look, on) + tag(11.6, -1.2, "Q", 4.4) +
+    `<text x="11.6" y="4" text-anchor="middle" ${MONO} font-size="3.6" font-weight="700" fill="${on ? "#b97f00" : "#6f685f"}">${q == null ? "?" : q}</text>`;
+}
+/** A look as a chip for the tray. */
+const lookChip = (look) => `<svg viewBox="-17 -10 34 20" aria-hidden="true">${INPUT_LOOKS.includes(look) ? inputSvg(look, false) : outputSvg(look, false)}</svg>`;
 
 /** Where a part's pins are, on the workspace. */
 function pinsOf(p) {
@@ -210,9 +266,9 @@ const cable = (a, b) => { const d = Math.max(9, Math.abs(b.x - a.x) * 0.5); retu
 function scene(st, { live = null, armed = null, rubber = null, lifted = null } = {}) {
   let parts = "", wires = "", pins = "";
   for (const p of st.parts) {
-    const body = p.kind === "SW" ? switchSvg(p.id, st.sw[p.id] === 1) : p.kind === "BULB" ? bulbSvg(live ? live.Q ?? null : null) : gateWithLegs(p.kind);
+    const body = p.kind === "SW" ? switchSvg(p.id, st.sw[p.id] === 1, p.look) : p.kind === "BULB" ? bulbSvg(live ? live.Q ?? null : null, p.look) : gateWithLegs(p.kind);
     parts += `<g class="lb-part${lifted === p.id ? " is-lifted" : ""}" data-part="${p.id}" data-kind="${p.kind}" transform="translate(${p.x} ${p.y})">` +
-      `<rect x="-15" y="-9" width="30" height="18" fill="transparent"/>${body}</g>`;
+      `<rect x="-15" y="-9.5" width="30" height="21" fill="transparent"/>${body}</g>`;
     for (const q of pinsOf(p)) {
       const key = `${p.id}:${q.pin}`;
       pins += `<g class="lb-pin${armed === key ? " is-armed" : ""}" data-pin="${key}">` +
@@ -265,6 +321,9 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
   wrap.classList.add("is-live");
   const tray = wrap.querySelector(".lb-tray");
   tray.classList.remove("lb-tray--print");
+  /* after the gates: what an input and the output may be exchanged for */
+  tray.insertAdjacentHTML("beforeend", `<span class="lb-tray__gap" aria-hidden="true"></span>` +
+    [...INPUT_LOOKS, ...OUTPUT_LOOKS].map((k) => `<span class="lb-chip lb-chip--look" data-look="${k}" title="${LOOK_NAME[k]}">${lookChip(k)}</span>`).join(""));
   const board = wrap.querySelector(".lb-board");
   const svg = board.querySelector(".lb-space");
   svg.removeAttribute("aria-hidden");
@@ -276,14 +335,15 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
   function paint() {
     const live = runBuilt(st, st.sw);
     svg.innerHTML = scene(st, { live, armed, rubber: drag?.rubber || null, lifted: drag?.kind === "part" && drag.moved ? drag.id : null });
-    tray.querySelectorAll(".lb-chip").forEach((c) => c.classList.toggle("is-held", held === c.dataset.gate));
+    tray.querySelectorAll(".lb-chip").forEach((c) => c.classList.toggle("is-held", held === (c.dataset.gate || `look:${c.dataset.look}`)));
     board.classList.toggle("is-placing", !!held);
     if (flashing) return;
     const q = live.Q ?? null;
-    say.textContent = held ? `Tap the workspace where the ${held} gate should go.`
+    say.textContent = held && held.startsWith("look:") ? `Tap the ${INPUT_LOOKS.includes(held.slice(5)) ? "switch" : "output"} the ${LOOK_NAME[held.slice(5)]} is to replace.`
+      : held ? `Tap the workspace where the ${held} gate should go.`
       : armed ? "Now tap the pin this wire goes to."
         : q == null ? "Drag gates onto the workspace, then drag from pin to pin to wire them. Tap a wire to cut it; drag a gate off to remove it."
-          : `Switches ${names.map((n) => `${n} = ${st.sw[n]}`).join(", ")}: the bulb is ${q ? "ON (1)" : "off (0)"}.`;
+          : `Switches ${names.map((n) => `${n} = ${st.sw[n]}`).join(", ")}: the ${outName()} is ${q ? "ON (1)" : "off (0)"}.`;
   }
   let flashing = 0;
   function flash(text) {
@@ -312,6 +372,15 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
     while (st.parts.some((p) => p.id === `g${n}`)) n++;
     change(() => { st.parts.push({ id: `g${n}`, kind, ...clamp(where) }); held = null; });
   }
+  const outName = () => st.parts.find((p) => p.id === "Q")?.look || "bulb";
+  /** Exchange a switch or the output for another kind: same place, same wires. */
+  function exchange(id, look) {
+    const p = st.parts.find((q) => q.id === id);
+    const fits = p && (p.kind === "SW" ? INPUT_LOOKS : p.kind === "BULB" ? OUTPUT_LOOKS : []).includes(look);
+    if (!fits) { held = null; flash(INPUT_LOOKS.includes(look) ? `A ${LOOK_NAME[look]} goes in place of a switch: drop it on A or B.` : `A ${LOOK_NAME[look]} goes in place of the output: drop it on Q.`); return; }
+    if ((p.look || (p.kind === "SW" ? "power" : "bulb")) === look) { held = null; paint(); return; }
+    change(() => { p.look = look; held = null; });
+  }
   function removePart(id) {
     change(() => { st.parts = st.parts.filter((p) => p.id !== id); st.wires = st.wires.filter((w) => w.from !== id && w.to !== id); });
   }
@@ -335,7 +404,7 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
     const c = e.target.closest?.(".lb-chip");
     if (c && tray.contains(c)) {
       e.preventDefault();
-      drag = { kind: "new", gate: c.dataset.gate, x: e.clientX, y: e.clientY, ghost: null, moved: false };
+      drag = { kind: "new", gate: c.dataset.gate || null, look: c.dataset.look || null, x: e.clientX, y: e.clientY, ghost: null, moved: false };
       return;
     }
     if (!board.contains(e.target)) return;
@@ -349,11 +418,15 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
       drag = { kind: "wire", pin: pin.dataset.pin, a, x: e.clientX, y: e.clientY, moved: false, rubber: null };
     } else if (wire) {
       drag = { kind: "cut", i: Number(wire.dataset.wire), x: e.clientX, y: e.clientY, moved: false };
+    } else if (part && held && held.startsWith("look:")) {
+      exchange(part.dataset.part, held.slice(5));
     } else if (part) {
       e.preventDefault();
       const p = st.parts.find((q) => q.id === part.dataset.part);
       const m = at(e);
       drag = { kind: "part", id: p.id, dx: p.x - m.x, dy: p.y - m.y, x: e.clientX, y: e.clientY, moved: false, before: clone(st) };
+    } else if (held && held.startsWith("look:")) {
+      exchange(null, held.slice(5));
     } else if (held) {
       addGate(held, at(e));
     } else if (armed) {
@@ -369,8 +442,7 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
       if (!drag.ghost) {
         const g = document.createElement("span");
         g.className = "lb-chip lb-ghost";
-        g.dataset.gate = drag.gate;
-        g.innerHTML = chip(drag.gate);
+        g.innerHTML = drag.look ? lookChip(drag.look) : chip(drag.gate);
         document.body.appendChild(g);
         drag.ghost = g;
       }
@@ -394,9 +466,17 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
     drag = null;
     d.ghost?.remove();
     if (d.kind === "new") {
-      if (!d.moved) { held = held === d.gate ? null : d.gate; armed = null; paint(); return; }
+      const what = d.look ? `look:${d.look}` : d.gate;
+      if (!d.moved) { held = held === what ? null : what; armed = null; paint(); return; }
       const m = at(e);
-      if (m.inside) addGate(d.gate, m); else paint();
+      if (d.look) {
+        /* dropped on the switch or the output it replaces — or the nearest one that it fits */
+        const under = document.elementFromPoint(e.clientX, e.clientY)?.closest?.("[data-part]")?.dataset.part || null;
+        const role = INPUT_LOOKS.includes(d.look) ? "SW" : "BULB";
+        const near = m.inside ? st.parts.filter((p) => p.kind === role).sort((a, b) => Math.hypot(a.x - m.x, a.y - m.y) - Math.hypot(b.x - m.x, b.y - m.y))[0] : null;
+        const hit = st.parts.find((p) => p.id === under && p.kind === role) || (near && Math.hypot(near.x - m.x, near.y - m.y) < 18 ? near : null);
+        exchange(hit ? hit.id : under, d.look);
+      } else if (m.inside) addGate(d.gate, m); else paint();
     } else if (d.kind === "wire") {
       const other = pinUnder(e);
       if (d.moved) {

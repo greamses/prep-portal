@@ -406,7 +406,8 @@ const lbMeet = {
   blurb: "Wire one gate between the switches and the bulb; write what the bulb does.",
   heading: "Build it: meet the gates",
   instruction: () =>
-    "The workspace has two toggle switches and a bulb, and nothing joins them. On screen: drag the named gate " +
+    "The workspace has two power switches (red 0 is off, green 1 is on) and a bulb, and nothing joins them. " +
+    "You may exchange a switch for a press switch, or the bulb for a speaker or a fan, by dragging one from the tray onto it. On screen: drag the named gate " +
     "from the tray onto the workspace, then WIRE it — drag from the pin on the right of each switch to a pin on " +
     "the left of the gate, and from the gate's right pin to the bulb. (Tap a wire to cut it; tap a switch to " +
     "flip it.) On paper, draw the gate and the wires. Then try every setting of the switches and write what the " +
