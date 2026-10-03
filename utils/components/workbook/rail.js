@@ -468,6 +468,8 @@ export function mountBuilder(cfg) {
         blocks: cfg.interactive.blocks || null,
         /* …and its place-value chart, on the same terms as the blocks. */
         chart: cfg.interactive.chart || null,
+        /* a workbook that is a speed drill on screen (the Vedic Maths one) */
+        timed: cfg.interactive.timed || null,
       });
     }
 

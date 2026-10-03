@@ -69,9 +69,15 @@ const SVGNS = "http://www.w3.org/2000/svg";
  *                  watching live is watching
  *                  (the assignment player sends it to the teacher)
  *     locked       interactive for good: no "Back to paper" (the player)
+ *     timed        { seconds } — a SPEED DRILL: every answer place has that
+ *                  long, one at a time in page order. A right answer locks
+ *                  and the cursor jumps to the next place at once; a place
+ *                  whose time runs out is marked wrong and left behind. The
+ *                  paper is marked when the last place is done. (The Vedic
+ *                  Maths Workbook: a trick is only a trick if it is quick.)
  *   → { afterRender(key) }   call after every rebuild of the paper
  */
-export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "", blocks = null, chart = null, onCheck = null, onProgress = null, locked = false }) {
+export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "", blocks = null, chart = null, onCheck = null, onProgress = null, locked = false, timed = null }) {
   let live = false;
   let key = null;
   let store = {};                     // itemIndex -> { v: [...], lines: [...] }
@@ -96,6 +102,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     <button type="button" class="pp-btn wb-tint-5 wb-labelbtn" data-act="htu" aria-pressed="false" hidden>H T U</button>
     <button type="button" class="pp-btn wb-tint-4" data-act="clear"></button>
     <button type="button" class="pp-btn wb-tint-2" data-act="show" hidden></button>
+    <span class="wb-livebar__clock" hidden></span>
     <span class="wb-livebar__score" role="status"></span>
     <button type="button" class="pp-btn" data-act="check"></button>`;
   toolbar.after(bar);
@@ -2306,9 +2313,150 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     faceOf(showBtn, UI.eye(), "Show the answers");
     score.textContent = "";
     items().forEach((node, i) => { deaden(node); enliven(node, i); });
+    sheet.querySelectorAll(".is-drill-done").forEach((n) => n.classList.remove("is-drill-done", "is-right", "is-wrong"));
     /* the store went with it, so the margins are empty now and have to be
        painted again to show it */
     paintAllScribbles();
+    if (timed) startDrill();
+  }
+
+  /* ── the speed drill (timed) ──────────────────────────────────────────────
+     Every answer place on the paper, in page order, gets `timed.seconds`. The
+     clock runs on the place the child is at — it is THEIR place, so it runs
+     only while the cursor is in it, and stops if they leave the paper. A right
+     answer locks the place, goes green and moves the cursor on at once; a
+     place whose time is up is marked wrong, locked, and the drill moves on.
+     After the last place the whole paper is marked and scored as usual.
+     Clear starts the drill again. */
+  const clock = bar.querySelector(".wb-livebar__clock");
+  let drill = null;
+  const NOT_TIMED = ["free", "pen", "stick", "colour", "picto", "bars", "dots", "machine", "tiles", "code", "match", "draw", "split", "strike", "tree", "chance", "pair"];
+
+  /** Every place, in page order, with what it takes to judge it on its own. */
+  function drillPlaces() {
+    const out = [];
+    items().forEach((node, idx) => {
+      const entries = keyOf(node);
+      if (!entries) return;
+      const slots = slotsOf(node);
+      let s = 0;
+      entries.forEach((entry) => {
+        const n = ["free", "pen", "stick"].includes(entry.kind) ? 0 : placesOf(entry);
+        if (!NOT_TIMED.includes(entry.kind)) {
+          const group = slots.slice(s, s + n);
+          group.forEach((slot, k) => out.push({ node, idx, slot, entry, group, k }));
+        }
+        s += n;
+      });
+    });
+    return out;
+  }
+
+  const placeRight = (p) => !!judge(p.entry, p.group.map(valueOf))[p.k];
+  const inputOf = (p) => p.slot.querySelector("input.wb-in");
+
+  function stopDrill() {
+    if (!drill) return;
+    cancelAnimationFrame(drill.raf);
+    sheet.querySelectorAll(".is-drill-now").forEach((n) => n.classList.remove("is-drill-now"));
+    sheet.style.removeProperty("--wb-drill");
+    drill = null;
+    clock.hidden = true;
+  }
+
+  function startDrill() {
+    stopDrill();
+    if (!timed || !live) return;
+    const list = drillPlaces();
+    if (!list.length) return;
+    drill = { list, at: -1, left: timed.seconds * 1000, last: 0, raf: 0, inTime: 0 };
+    clock.hidden = false;
+    list.forEach((p) => {
+      const input = inputOf(p);
+      if (input && !input.__wbDrill) {
+        input.__wbDrill = true;
+        input.addEventListener("input", () => {
+          if (drill && drill.list[drill.at] === p && placeRight(p)) passPlace(true);
+        });
+        input.addEventListener("focus", () => {
+          if (!drill || p.slot.classList.contains("is-drill-done")) return;
+          const i = drill.list.indexOf(p);
+          if (i >= 0 && i !== drill.at) goPlace(i);
+        });
+      }
+      if (p.slot.classList.contains("wb-tick") && !p.slot.__wbDrill) {
+        p.slot.__wbDrill = true;
+        p.slot.addEventListener("click", () => {
+          if (drill && drill.list[drill.at] === p) setTimeout(() => { if (drill && placeRight(p)) passPlace(true); }, 0);
+        });
+      }
+    });
+    clock.textContent = `${timed.seconds} s for each answer`;
+    const first = list.findIndex((p) => !p.slot.classList.contains("is-drill-done"));
+    if (first >= 0) goPlace(first);
+  }
+
+  function goPlace(i) {
+    if (!drill) return;
+    sheet.querySelectorAll(".is-drill-now").forEach((n) => n.classList.remove("is-drill-now"));
+    drill.at = i;
+    drill.left = timed.seconds * 1000;
+    drill.last = 0;
+    const p = drill.list[i];
+    if (!p) { finishDrill(); return; }
+    p.slot.classList.add("is-drill-now");
+    const target = inputOf(p) || p.slot.querySelector(".wb-tick__one");
+    if (target && document.activeElement !== target) {
+      target.focus({ preventScroll: true });
+      target.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+    run();
+  }
+
+  /** The clock ticks only while the child is at the place. */
+  function run() {
+    if (!drill) return;
+    cancelAnimationFrame(drill.raf);
+    const tick = (now) => {
+      if (!drill) return;
+      const p = drill.list[drill.at];
+      const here = p && p.slot.contains(document.activeElement) && document.hasFocus();
+      if (here) {
+        if (drill.last) drill.left -= now - drill.last;
+        drill.last = now;
+      } else drill.last = 0;
+      const left = Math.max(0, drill.left);
+      sheet.style.setProperty("--wb-drill", String(left / (timed.seconds * 1000)));
+      clock.textContent = `${Math.ceil(left / 1000)} s · ${drill.at + 1} of ${drill.list.length}`;
+      if (drill.left <= 0) { passPlace(false); return; }
+      drill.raf = requestAnimationFrame(tick);
+    };
+    drill.raf = requestAnimationFrame(tick);
+  }
+
+  function passPlace(ok) {
+    if (!drill) return;
+    cancelAnimationFrame(drill.raf);
+    const p = drill.list[drill.at];
+    p.slot.classList.remove("is-drill-now", "is-right", "is-wrong");
+    p.slot.classList.add("is-drill-done", ok ? "is-right" : "is-wrong");
+    if (!ok) p.slot.dataset.want = sayWant(p.entry);
+    if (ok) drill.inTime++;
+    const input = inputOf(p);
+    if (input) input.readOnly = true;
+    p.slot.querySelectorAll(".wb-tick__one").forEach((o) => { o.onclick = null; o.tabIndex = -1; });
+    const next = drill.list.findIndex((q, j) => j > drill.at && !q.slot.classList.contains("is-drill-done"));
+    if (next < 0) { finishDrill(); return; }
+    goPlace(next);
+  }
+
+  function finishDrill() {
+    const done = drill;
+    stopDrill();
+    if (!done) return;
+    check();
+    clock.hidden = false;
+    clock.textContent = `${done.inTime} of ${done.list.length} in time`;
   }
 
   /* ── the sidebar: everything there is to reach for ───────────────────────
@@ -3386,9 +3534,12 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     const labelled = !!sheet.querySelector(".wb-fig");
     bar.querySelectorAll(".wb-labelbtn").forEach((b) => { b.hidden = !labelled; });
     keyPages(true);
+    if (timed) startDrill();
   }
 
   function leave() {
+    stopDrill();
+    sheet.querySelectorAll(".is-drill-done").forEach((n) => n.classList.remove("is-drill-done"));
     live = false;
     sheet.classList.remove("wb-live");
     faceOf(toggle, UI.pen(), "Make interactive");
@@ -3428,6 +3579,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       wireKeys();
       items().forEach((node, i) => enliven(node, i));
       keyPages(true);
+      if (timed) startDrill();
     },
     isLive: () => live,
     enter: () => { if (!live) enter(); },

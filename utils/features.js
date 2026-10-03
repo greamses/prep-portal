@@ -117,7 +117,7 @@ export const FEATURES = [
       { id: "algebra-workbook", label: "Algebra Workbook (printable — basic concepts, the bar model, the balance scale, the remainder theorem, properties and identities)", path: "/prep-math/activity/algebra-workbook" },
       { id: "statistics-workbook", label: "Statistics Workbook (printable — pictograms: sorting, tallies, keys, building one, problems)", path: "/prep-math/activity/statistics-workbook" },
       { id: "js-workbook", label: "JavaScript Workbook (printable — data types and variables, with an editor and a console that runs the programs)", path: "/prep-math/activity/js-workbook" },
-      { id: "vedic-maths-workbook", label: "Vedic Maths Workbook (printable — × 11, squares ending in 5, vertically and crosswise, near a base, ÷ 9, casting out nines)", path: "/prep-math/activity/vedic-maths-workbook" },
+      { id: "vedic-maths-workbook", label: "Vedic Maths Workbook (printable — complements, × 11, vertically and crosswise, six squaring tricks, square and cube roots, ÷ 9, casting out nines; a 5-second drill on screen)", path: "/prep-math/activity/vedic-maths-workbook" },
       { id: "polygon-angles", label: "Polygon Angles", path: "/prep-math/activity/polygon-angles" },
       { id: "pythagoras", label: "Pythagoras (squares on the sides)", path: "/prep-math/activity/pythagoras" },
       { id: "surface-area", label: "Surface Area", path: "/prep-math/activity/surface-area" },

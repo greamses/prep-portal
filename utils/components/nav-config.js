@@ -195,7 +195,7 @@ const NAV_CONFIG = [
           { text: "Geometry Workbook", href: "/prep-math/activity/geometry-workbook/index.html", description: "Angles, polygons, Pythagoras, circles, solids, area" },
           { text: "Algebra Workbook", href: "/prep-math/activity/algebra-workbook/index.html", description: "Basic ideas, the bar model, the balance scale, identities" },
           { text: "Statistics Workbook", href: "/prep-math/activity/statistics-workbook/index.html", description: "Pictograms, bar charts, line graphs, pie charts, scatter graphs" },
-          { text: "Vedic Maths Workbook", href: "/prep-math/activity/vedic-maths-workbook/index.html", description: "Mental-maths tricks: × 11, squares ending in 5, near a base, casting out nines" },
+          { text: "Vedic Maths Workbook", href: "/prep-math/activity/vedic-maths-workbook/index.html", description: "Mental-maths tricks as a timed drill: complements, squares, roots, casting out nines" },
           { text: "JavaScript Workbook", href: "/prep-math/activity/js-workbook/index.html", description: "Learn to code: data types and variables, with an editor and a console" },
         ],
       },

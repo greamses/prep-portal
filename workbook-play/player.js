@@ -175,6 +175,7 @@ async function start() {
     refit: fit,
     protractor: LIVE.protractor,
     places: LIVE.places || "",
+    timed: LIVE.timed || null,
     locked: true,
     /* as they work: how far along, for whoever is watching */
     onProgress: ({ filled, total }) => {

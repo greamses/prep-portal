@@ -3,35 +3,47 @@
    ----------------------------------------------------------------------------
    The engine, the builder and the answer key read this file and nothing else.
 
-     ex-quick.js   chapter 1, multiplying in your head — × 11, × 5 / 25 / 50,
-                   squares ending in 5, same front with units making 10, and
-                   vertically and crosswise
-     ex-base.js    chapter 2, working from a base — all from 9 and the last
-                   from 10, multiplying near a base, squares near a base, and
-                   dividing by 9
-     ex-check.js   chapter 3, checking an answer — digit sums, and casting
-                   out nines to check a product
+     ex-add.js      chapter 1, adding and taking away — complements (all from
+                    9 and the last from 10), and adding or taking away a number
+                    just under a round one
+     ex-quick.js    chapter 2, multiplying in your head — × 11, × 5 / 25 / 50,
+                    same front with units making 10, vertically and crosswise,
+                    and multiplying near a base
+     ex-squares.js  chapter 3, squares — every squaring trick together: ending
+                    in 5, ending in 1, starting with 1, same digits, near 50,
+                    near 100
+     ex-roots.js    chapter 4, square roots and cube roots of perfect squares
+                    and cubes, read off in two looks
+     ex-check.js    chapter 5, dividing by 9 with running totals, digit sums,
+                    and casting out nines to check a product
 
-   THE ORDER IS THE BOOK: each trick is a PATTERN, met first where nothing
-   carries, so the pattern itself can be seen; the checking chapter comes last
-   because by then there are fast answers worth checking. A new chapter is new
-   group entries and a new ex-file, and nothing else.
+   THE ORDER IS THE BOOK: complements first, because every "near a base"
+   trick after them starts by finding one; each trick met first where nothing
+   carries, so the pattern itself can be seen; checking last, because by then
+   there are fast answers worth checking. A new chapter is new group entries
+   and a new ex-file, and nothing else.
+
+   On screen the whole paper is a SPEED DRILL — see LIVE in subject.js.
    ========================================================================== */
 
+import { CM_GROUPS, CM_EXERCISES } from "./ex-add.js";
 import { QK_GROUPS, QK_EXERCISES } from "./ex-quick.js";
-import { BS_GROUPS, BS_EXERCISES } from "./ex-base.js";
+import { SQ_GROUPS, SQ_EXERCISES } from "./ex-squares.js";
+import { RT_GROUPS, RT_EXERCISES } from "./ex-roots.js";
 import { CK_GROUPS, CK_EXERCISES } from "./ex-check.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
-export const GROUPS = [...QK_GROUPS, ...BS_GROUPS, ...CK_GROUPS];
-export const EXERCISES = [...QK_EXERCISES, ...BS_EXERCISES, ...CK_EXERCISES];
+export const GROUPS = [...CM_GROUPS, ...QK_GROUPS, ...SQ_GROUPS, ...RT_GROUPS, ...CK_GROUPS];
+export const EXERCISES = [...CM_EXERCISES, ...QK_EXERCISES, ...SQ_EXERCISES, ...RT_EXERCISES, ...CK_EXERCISES];
 
 /** Which chapter an exercise belongs to. */
 const CHAPTER = new Map([
-  ...QK_GROUPS.map((g) => [g.id, 1]),
-  ...BS_GROUPS.map((g) => [g.id, 2]),
-  ...CK_GROUPS.map((g) => [g.id, 3]),
+  ...CM_GROUPS.map((g) => [g.id, 1]),
+  ...QK_GROUPS.map((g) => [g.id, 2]),
+  ...SQ_GROUPS.map((g) => [g.id, 3]),
+  ...RT_GROUPS.map((g) => [g.id, 4]),
+  ...CK_GROUPS.map((g) => [g.id, 5]),
 ]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 

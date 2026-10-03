@@ -14,12 +14,12 @@ import { onAdmin } from "/utils/components/workbook/admin.js";
 
 const $ = (id) => document.getElementById(id);
 
-/* A first visit starts with the friendliest three: × 11, squares ending in 5,
-   and taking away from 100. */
+/* A first visit starts with the friendliest three: complements, × 11, and
+   squares ending in 5. */
 const STARTER = {
+  "vm-nine": 8,
   "vm-eleven": 6,
   "vm-sq5": 6,
-  "vm-nine": 8,
 };
 
 function fillMenu(id, table) {
@@ -44,9 +44,12 @@ mountBuilder({
   store: "vm-workbook-v1",
   groups: GROUPS,
   glyphs: {
+    "vm-comp": ICON.vmComp,
     "vm-quick": ICON.vmQuick,
     "vm-pattern": ICON.vmPattern,
     "vm-base": ICON.vmBase,
+    "vm-squares": ICON.vmSquares,
+    "vm-roots": ICON.vmRoots,
     "vm-divide": ICON.vmDivide,
     "vm-check": ICON.vmCheck,
   },

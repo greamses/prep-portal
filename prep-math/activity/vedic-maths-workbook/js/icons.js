@@ -12,6 +12,19 @@ const cell = (x, y, w, h, fill, rx = 1.2) => `<rect x="${x}" y="${y}" width="${w
 
 export const ICON = {
   ...BASE,
+  /* A bar nearly full, and the little piece that would fill it: a complement. */
+  vmComp: svg(
+    cell(2.6, 8.6, 14.4, 6.8, PAPER, 1.6) + cell(18, 8.6, 3.4, 6.8, LOUD, 1.2) + bar(17.5, 5, 17.5, 19, 1.2, QUIET)
+  ),
+  /* A square split into its left and right parts. */
+  vmSquares: svg(
+    cell(3.4, 3.4, 17.2, 17.2, PAPER, 2) + cell(3.4, 3.4, 10.4, 10.4, GOLD, 2) + cell(14.8, 14.8, 5.8, 5.8, LOUD, 1.4)
+  ),
+  /* The root sign over a number. */
+  vmRoots: svg(
+    `<path d="M2.6 13.4 5.4 12l3 6.6L13 3.4h8.4" fill="none" stroke="${LOUD}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>` +
+      cell(13.6, 8, 7.6, 10.6, PAPER, 1.4)
+  ),
   /* Two ends with the middle dropped in between them: × 11. */
   vmQuick: svg(
     cell(2.6, 8, 5.4, 8, PAPER) + cell(16, 8, 5.4, 8, PAPER) +

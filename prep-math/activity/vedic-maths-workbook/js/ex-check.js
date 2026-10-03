@@ -1,5 +1,5 @@
 /* ============================================================================
-   Vedic Maths Workbook — CHAPTER 3 · Checking an answer
+   Vedic Maths Workbook — CHAPTER 5 · Dividing by 9, and checking an answer
    ----------------------------------------------------------------------------
    A trick that is fast is only worth having if a slip can be caught. The digit
    sum (keep adding the digits until one is left) survives every + and ×: the
@@ -14,11 +14,53 @@
    ========================================================================== */
 
 import { want } from "/utils/components/workbook/want.js";
-import { ask, big, worked, say, tier, step, steps, tick, root, digits } from "./common.js";
+import { ask, big, worked, say, tier, step, steps, tick, root, digits, strip } from "./common.js";
 
 export const CK_GROUPS = [
-  { id: "vm-check", chapter: "Chapter 3 · Checking an answer", label: "Digit sums", blurb: "Add the digits until one is left — then check a product with it." },
+  { id: "vm-divide", chapter: "Chapter 5 · Dividing and checking", label: "Dividing by 9", blurb: "The first digit, then running totals." },
+  { id: "vm-check", label: "Digit sums", blurb: "Add the digits until one is left — then check a product with it." },
 ];
+
+/* ═══ dividing by 9 ═════════════════════════════════════════════════════════*/
+
+const div9 = {
+  id: "vm-div9",
+  group: "vm-divide",
+  label: "Divide by 9",
+  blurb: "The first digit starts the answer; the running total is the remainder.",
+  heading: "Dividing by 9 with running totals",
+  instruction: () =>
+    "Write the first digit: it starts the answer. Add it to the next digit and write that, and so on — each new digit of the answer is the running total so far. The last running total (adding in the last digit) is the remainder. If the remainder is 9 or more, take 9 off it and add 1 to the answer.",
+  cols: 2,
+  defaultCount: 6,
+  make(r, o) {
+    const t = tier(o);
+    for (;;) {
+      const n = t === "gentle" ? r.int(11, 88) : t === "middle" ? r.int(101, 499) : r.int(1001, 3999);
+      const sum = String(n).split("").reduce((s, d) => s + Number(d), 0);
+      if (t === "gentle" && sum >= 9) continue; // the remainder never needs fixing
+      if (n % 9 === 0 && t !== "stretch") continue;
+      return { n };
+    }
+  },
+  render(item) {
+    return big(`${item.n} ÷ 9`) + steps(step("answer:"), step("remainder:"));
+  },
+  worked(o) {
+    if (tier(o) === "gentle") return worked(big("23 ÷ 9") + ask("The first digit 2 is the answer; 2 + 3 = 5 is the remainder: 2 remainder 5.") +
+      say("Check: 9 × 2 is 18, and 18 + 5 is 23."));
+    return worked(big("132 ÷ 9") + ask(strip("1", "1 + 3", "1 + 3 + 2") + " → " + strip("1", "4", "6") + " → 14 remainder 6") +
+      say("Running totals: 1, then 1 + 3 = 4, then 4 + 2 = 6. The last one is the remainder, so 132 ÷ 9 is 14 remainder 6. Check: 9 × 14 is 126, and 126 + 6 is 132."));
+  },
+  key(item) {
+    return [want.num(Math.floor(item.n / 9)), want.num(item.n % 9)];
+  },
+  answer(item) {
+    return [`${item.n} ÷ 9 = ${Math.floor(item.n / 9)} remainder ${item.n % 9}`];
+  },
+};
+
+
 
 /* ═══ the digit sum ════════════════════════════════════════════════════════*/
 
@@ -105,4 +147,4 @@ const check = {
   },
 };
 
-export const CK_EXERCISES = [sum, check];
+export const CK_EXERCISES = [div9, sum, check];

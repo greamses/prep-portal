@@ -1,7 +1,7 @@
 /* ============================================================================
-   Vedic Maths Workbook — CHAPTER 1 · Multiplying in your head
+   Vedic Maths Workbook — CHAPTER 2 · Multiplying in your head
    ----------------------------------------------------------------------------
-   Five tricks, easiest first. Each one is a pattern the answer ALWAYS has, so
+   Five tricks, easiest first (every squaring trick is in chapter 3). Each one is a pattern the answer ALWAYS has, so
    every question is set out as the trick's own steps — the parts it makes,
    then the answer they join into — and the steps are marked as well as the
    answer: a child who gets the parts right and joins them wrongly has learnt
@@ -9,19 +9,21 @@
 
      × 11                 the neighbours added, set between the ends
      × 5, × 25, × 50      a nought or two on, then halve or quarter
-     squares ending in 5  by one more than the one before (Ekādhikena Pūrvena)
      same tens, units     the tens digit times one more, then the units
      making 10            multiplied — the same sutra again
      vertically and       two-digit times two-digit in three small products
      crosswise            (Ūrdhva-Tiryagbhyām)
+     near a base          cross-subtract, then multiply how far each is from
+                          10, 100 or 1000 (Nikhilam)
    ========================================================================== */
 
 import { want } from "/utils/components/workbook/want.js";
 import { ask, big, worked, say, tier, step, steps, strip, pad } from "./common.js";
 
 export const QK_GROUPS = [
-  { id: "vm-quick", chapter: "Chapter 1 · Multiplying in your head", label: "Quick multipliers", blurb: "× 11, × 5 and × 25 — a pattern instead of a sum." },
-  { id: "vm-pattern", label: "Patterns in products", blurb: "Squares ending in 5, units that make 10, and vertically and crosswise." },
+  { id: "vm-quick", chapter: "Chapter 2 · Multiplying in your head", label: "Quick multipliers", blurb: "× 11, × 5 and × 25 — a pattern instead of a sum." },
+  { id: "vm-pattern", label: "Patterns in products", blurb: "Units that make 10, and vertically and crosswise." },
+  { id: "vm-base", label: "Near a base", blurb: "97 × 96: how far from 100 each is, then cross-subtract." },
 ];
 
 /* ═══ × 11 ═════════════════════════════════════════════════════════════════*/
@@ -113,40 +115,6 @@ const fives = {
   },
 };
 
-/* ═══ squares ending in 5 ══════════════════════════════════════════════════*/
-
-const sq5 = {
-  id: "vm-sq5",
-  group: "vm-pattern",
-  label: "Squares ending in 5",
-  blurb: "By one more than the one before (Ekādhikena Pūrvena).",
-  heading: "Squares ending in 5 — by one more than the one before",
-  instruction: () =>
-    "To square a number ending in 5, take the number in front of the 5 and multiply it by ONE MORE than itself. Then write 25 after it. That is the whole trick — the sutra is called Ekādhikena Pūrvena, “by one more than the one before”.",
-  cols: 2,
-  defaultCount: 6,
-  make(r, o, k, i) {
-    const t = tier(o);
-    const pool = t === "gentle" ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : t === "middle" ? [3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [9, 10, 11, 12, 13, 14, 15, 19, 20, 25];
-    const front = pool[(r.int(0, pool.length - 1) + i * 3) % pool.length];
-    return { front, n: front * 10 + 5 };
-  },
-  render(item) {
-    const { front, n } = item;
-    return big(`${n}²`) + steps(step(`${front} × ${front + 1} =`), step(`so ${n}² =`));
-  },
-  worked() {
-    return worked(big("35²") + ask(strip("3 × 4", "25") + " → " + strip("12", "25") + " = 1225") +
-      say("The number in front of the 5 is 3. One more than 3 is 4, and 3 × 4 is 12. Put 25 after it: 1225."));
-  },
-  key(item) {
-    return [want.num(item.front * (item.front + 1)), want.num(item.n * item.n)];
-  },
-  answer(item) {
-    return [`${item.front} × ${item.front + 1} = ${item.front * (item.front + 1)}`, `${item.n}² = ${item.n * item.n}`];
-  },
-};
-
 /* ═══ same tens, units that make 10 ════════════════════════════════════════*/
 
 const tens = {
@@ -231,4 +199,58 @@ const cross = {
   },
 };
 
-export const QK_EXERCISES = [eleven, fives, sq5, tens, cross];
+/* ═══ multiplying near a base ══════════════════════════════════════════════*/
+
+function nearPair(r, t) {
+  if (t === "gentle") {
+    // base 10, both below, the product of the gaps a single digit
+    for (;;) { const x = r.int(6, 9), y = r.int(6, 9); if ((10 - x) * (10 - y) <= 9) return { B: 10, x, y }; }
+  }
+  if (t === "middle") return { B: 100, x: r.int(88, 99), y: r.int(88, 99) };
+  return r.int(0, 1)
+    ? { B: 100, x: r.int(101, 112), y: r.int(101, 109) }
+    : { B: 1000, x: r.int(988, 999), y: r.int(985, 999) };
+}
+
+const near = {
+  id: "vm-near",
+  group: "vm-base",
+  label: "Multiply near a base",
+  blurb: "97 × 96: how far below 100 each is, then cross-subtract.",
+  heading: "Multiplying numbers near a base",
+  instruction: (o) =>
+    "Write how far each number is from the base (10, 100 or 1000). Left part: take one number's gap from the OTHER number (cross-subtract)" +
+    (tier(o) === "stretch" ? " — or add it, when both are above the base." : ".") +
+    " Right part: multiply the two gaps, and write it with as many digits as the base has noughts. Join the parts.",
+  cols: 1,
+  defaultCount: 4,
+  make(r, o) {
+    const { B, x, y } = nearPair(r, tier(o));
+    const dx = x - B, dy = y - B; // negative when below the base
+    const places = String(B).length - 1;
+    return { B, x, y, dx, dy, left: x + dy, right: dx * dy, places };
+  },
+  render(item) {
+    const { B, x, y, dx, dy } = item;
+    const how = (n, d) => `${n} is ${Math.abs(d)} ${d < 0 ? "below" : "above"} ${B}`;
+    return big(`${x} × ${y}`) + ask(`${how(x, dx)}; ${how(y, dy)}.`) + steps(
+      step(`left: ${x} ${dy < 0 ? "−" : "+"} ${Math.abs(dy)} =`),
+      step(`right: ${Math.abs(dx)} × ${Math.abs(dy)} =`),
+      step("the answer:"),
+    );
+  },
+  worked(o) {
+    if (tier(o) === "gentle") return worked(big("8 × 7") + ask("8 is 2 below 10; 7 is 3 below 10. " + strip("8 − 3", "2 × 3") + " → " + strip("5", "6") + " = 56") +
+      say("Cross-subtract: 8 − 3 (or 7 − 2) is 5. Multiply the gaps: 2 × 3 is 6. Join them: 56."));
+    return worked(big("97 × 96") + ask("97 is 3 below 100; 96 is 4 below. " + strip("97 − 4", "3 × 4") + " → " + strip("93", "12") + " = 9312") +
+      say("Cross-subtract: 97 − 4 is 93. Multiply the gaps: 3 × 4 is 12 — two digits, because 100 has two noughts. Join them: 9312."));
+  },
+  key(item) {
+    return [want.num(item.left), want.num(item.right), want.num(item.x * item.y)];
+  },
+  answer(item) {
+    return [`${item.left} | ${pad(item.right, item.places)}`, `${item.x} × ${item.y} = ${item.x * item.y}`];
+  },
+};
+
+export const QK_EXERCISES = [eleven, fives, tens, cross, near];

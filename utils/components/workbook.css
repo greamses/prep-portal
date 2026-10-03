@@ -2807,3 +2807,29 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
     border-radius: 0.8mm;
   }
 }
+
+/* ── the speed drill (interactive.js, `timed`) ─────────────────────────────
+   The place the clock is running on is ringed, and a bar under it drains as
+   its seconds go (--wb-drill runs 1 → 0, set on the sheet). */
+.wb-live .is-drill-now { position: relative; box-shadow: 0 0 0 0.6mm #e0a52b; }
+.wb-live .is-drill-now::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1.4mm;
+  height: 0.8mm;
+  width: calc(var(--wb-drill, 1) * 100%);
+  border-radius: 0.4mm;
+  background: #e0a52b;
+  pointer-events: none;
+}
+.wb-livebar__clock {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-primary) 30%, transparent);
+  color: var(--ink);
+  white-space: nowrap;
+}

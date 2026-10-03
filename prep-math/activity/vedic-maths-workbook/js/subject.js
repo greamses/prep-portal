@@ -11,9 +11,11 @@ import { EXERCISES, levelOf, helpOf, unavailable, exerciseById, chapterOf } from
 export const WORKBOOK = { id: "vedic-maths-workbook", label: "Vedic Maths Workbook", style: "/prep-math/activity/vedic-maths-workbook/style.css" };
 
 const CHAPTERS = {
-  1: "Chapter 1: Multiplying in your head",
-  2: "Chapter 2: Working from a base",
-  3: "Chapter 3: Checking an answer",
+  1: "Chapter 1: Adding and taking away",
+  2: "Chapter 2: Multiplying in your head",
+  3: "Chapter 3: Squares",
+  4: "Chapter 4: Square roots and cube roots",
+  5: "Chapter 5: Dividing and checking",
 };
 
 const chaptersOn = (o) => [...new Set((o.chosen || [])
@@ -45,5 +47,8 @@ export const SUBJECT = {
   },
 };
 
-/* Done on screen: every step typed, every tick ticked, all of it marked. */
-export const LIVE = {};
+/* Done on screen, the paper is a SPEED DRILL: 5 seconds for every number,
+   one box at a time; a right answer moves the cursor straight on to the next
+   box. A trick is only a trick if it is quick. (The engine's `timed` option,
+   /utils/components/workbook/interactive.js.) */
+export const LIVE = { timed: { seconds: 5 } };
