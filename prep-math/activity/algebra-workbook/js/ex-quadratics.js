@@ -30,7 +30,7 @@
                                where the middle is a half
 
    Every equation is made from its roots, so each step comes out exactly.
-   Lines with boxes are kept out of MathJax (as chapter 10's are).
+   Every line is typeset; an operator that runs into a box keeps its space.
    ========================================================================== */
 
 import { levelOf } from "./poly.js";
@@ -38,7 +38,7 @@ import { want } from "/utils/components/workbook/want.js";
 
 const box = () => `<span class="wb-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
-const eq = (html) => `<p class="wb-ask ap-eq bn-eq wb-nomath">${html}</p>`;
+const eq = (html) => `<p class="wb-ask ap-eq bn-eq">${html}</p>`;
 const tick = (...opts) =>
   `<span class="wb-tick">${opts.map((t) => `<span class="wb-tick__one"><span class="wb-box"></span>${t}</span>`).join("")}</span>`;
 const worked = (body) => `<div class="wb-worked"><p class="wb-worked__tag">One done for you</p>${body}</div>`;
@@ -82,7 +82,7 @@ export const QD_MORE_GROUPS = [
 /** The area box of (x + p)(x + q): four pieces. Cells are text or boxes. */
 function areaBox(p, q, cells) {
   const h = (k) => (k === null ? "x" : `${k < 0 ? "−" : "+"} ${Math.abs(k)}`);
-  return `<table class="qd-area wb-nomath"><tbody>` +
+  return `<table class="qd-area"><tbody>` +
     `<tr><th></th><th>x</th><th>${h(q)}</th></tr>` +
     `<tr><th>x</th><td>${cells[0]}</td><td>${cells[1]}</td></tr>` +
     `<tr><th>${h(p)}</th><td>${cells[2]}</td><td>${cells[3]}</td></tr></tbody></table>`;
@@ -131,11 +131,11 @@ const fcNumbers = {
     "To undo the multiplying you need the two numbers back. Start from the PRODUCT — list the pairs that multiply " +
     "to it — and pick the pair whose SUM is right. A minus product means one of each sign; a plus product with a " +
     "minus sum means both are minus. Write the smaller number first.",
-  cols: 1,
+  cols: 2,
   defaultCount: 6,
   make: (r, o) => twoNumbers(r, o),
   render(item) {
-    return eq(`product ${num(item.p * item.q)}, sum ${num(item.p + item.q)}: &nbsp; ${box()} and ${box()}`);
+    return eq(`product ${num(item.p * item.q)}, sum ${num(item.p + item.q)}: &nbsp; <span class="wb-keep">${box()} and ${box()}</span>`);
   },
   worked() {
     return worked(eq("product 6, sum 5: &nbsp; 2 and 3") +
@@ -285,7 +285,7 @@ const fmName = {
     "Write the equation as ax² + bx + c = 0, with everything on the left and the x² term positive. Then a is the " +
     "number in front of x², b the number in front of x, and c the number on its own — each WITH its sign. A term " +
     "that is missing has 0; x² alone has a = 1.",
-  cols: 1,
+  cols: 2,
   defaultCount: 6,
   make(r, o) {
     const t = tier(o);
@@ -377,7 +377,7 @@ const fmPieces = {
   },
   render(item) {
     return eq(`${quadText(item.a, item.b, item.c)} = 0`) +
-      eq(`−b = ${box()} &nbsp; b² − 4ac = ${box()} &nbsp; √ of it = ${box()} &nbsp; 2a = ${box()}`) +
+      eq(`−b = ${box()} &nbsp; b² − 4ac = ${box()} &nbsp; √(b² − 4ac) = ${box()} &nbsp; 2a = ${box()}`) +
       eq(`x = ${box()} or x = ${box()}`);
   },
   worked() {
@@ -402,7 +402,7 @@ const fmSolve = {
   instruction: () =>
     "Name a, b and c, put them into x = (−b ± √(b² − 4ac)) ÷ 2a, and work both answers out. Write the smaller root " +
     "first; a root that is a fraction is written like 3/2. Check one root by putting it back into the equation.",
-  cols: 1,
+  cols: 2,
   defaultCount: 4,
   make(r, o) {
     for (;;) { const q = withRoots(r, o); if (q.disc > 0) return q; }

@@ -22,9 +22,9 @@ import { want } from "/utils/components/workbook/want.js";
 
 const box = () => `<span class="wb-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
-/* the expansions are kept out of MathJax: raised figures (x³) and boxes sit
-   evenly in plain text, where typeset maths squeezes them together */
-const eq = (html) => `<p class="wb-ask ap-eq bn-eq wb-nomath">${html}</p>`;
+/* a line of working with boxes in it: roomy, and typeset like the rest
+   (mathify.js spaces an operator that runs into a box) */
+const eq = (html) => `<p class="wb-ask ap-eq bn-eq">${html}</p>`;
 const worked = (body) => `<div class="wb-worked"><p class="wb-worked__tag">One done for you</p>${body}</div>`;
 const say = (html) => `<p class="wb-ask wb-worked__say">${html}</p>`;
 const tier = (o) => levelOf(o).id;
@@ -32,6 +32,8 @@ const num = (n) => (n < 0 ? `−${-n}` : String(n));
 
 const SUP = "⁰¹²³⁴⁵⁶⁷⁸⁹";
 const sup = (n) => String(n).split("").map((d) => SUP[d]).join("");
+const SUB = "₀₁₂₃₄₅₆₇₈₉";
+const sub = (n) => String(n).split("").map((d) => SUB[d]).join("");
 /** x to a power as written: 1, x, x², x³ … */
 const pow = (letter, n) => (n === 0 ? "" : n === 1 ? letter : `${letter}${sup(n)}`);
 
@@ -56,7 +58,7 @@ function pascalHtml(n, gaps) {
   for (let k = 0; k <= n; k++) {
     out += `<div class="bn-row">${row(k).map((v, j) => `<span class="bn-c">${gaps.has(`${k},${j}`) ? box() : v}</span>`).join("")}</div>`;
   }
-  return `<div class="bn-pascal wb-nomath">${out}</div>`;
+  return `<div class="bn-pascal">${out}</div>`;
 }
 
 const bnPascal = {
@@ -192,7 +194,7 @@ const bnTerm = {
   },
   render(item) {
     const { n, r: rr, k } = item;
-    return eq(`In (x ${k < 0 ? "−" : "+"} ${Math.abs(k)})${sup(n)}: &nbsp; ${sup(n)}C<sub>${rr}</sub> = ${box()} &nbsp;&nbsp; the term in ${pow("x", n - rr) || "x⁰"} is ${box()}${pow("x", n - rr)}`);
+    return eq(`In (x ${k < 0 ? "−" : "+"} ${Math.abs(k)})${sup(n)}: &nbsp; ${sup(n)}C${sub(rr)} = ${box()} &nbsp;&nbsp; the term in ${pow("x", n - rr) || "x⁰"} is ${box()}${pow("x", n - rr)}`);
   },
   worked() {
     return worked(eq("In (x + 2)⁵, the term in x³") +

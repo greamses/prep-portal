@@ -16,6 +16,20 @@
    (next to a number or an operator: 3x, x + 4, a : b), or one of x, y, z, n on
    its own. "a triangle" and "corner A" are left alone.
 
+   AT AN ANSWER BOX. "x² + ▢x + ▢" is three pieces of text with boxes between
+   them, and each piece is set on its own. An operator at the edge of a piece
+   — the "+" before a box, the "=" after one — is told it carries on ({} on
+   that side), so it keeps the space an operator has in the middle of a sum.
+   A lone operator between two boxes is set too.
+
+   RAISED AND LOWERED FIGURES written as characters — x⁴, 1011₂, ⁵C₂, xⁿ⁻ʳ —
+   are read as powers and subscripts, however many figures long.
+
+   SAYING IT OUTRIGHT. What the scanner cannot guess is written with its TeX
+   beside it: <span data-tex="D_{x}">Dx</span>, <span data-tex="p \\land q">p ∧ q</span>.
+   The words inside are what is shown until MathJax arrives, and what a screen
+   reader and the marker read afterwards. It is set even inside `.wb-nomath`.
+
    WHERE IT DOES NOT LOOK. Inside drawings (the figures set their own labels),
    answer boxes, the question numbers and section letters, and anything marked
    `.wb-nomath` / `[data-nomath]` — a written board or a place-value chart
@@ -92,13 +106,27 @@ export function whenMath(fn) {
 /* ── finding the mathematics ───────────────────────────────────────────── */
 
 const OPS = { "+": "+", "−": "-", "–": "-", "×": "\\times ", "÷": "\\div ", "=": "=", "≈": "\\approx ", "<": "<", ">": ">",
-  "≤": "\\le ", "≥": "\\ge ", ":": ":", "≠": "\\ne " };
+  "≤": "\\le ", "≥": "\\ge ", ":": ":", "≠": "\\ne ",
+  "±": "\\pm ",
+  /* logic: not, and, or, if-then, if-and-only-if */
+  "~": "{\\sim}", "∧": "\\land ", "∨": "\\lor ", "⇒": "\\Rightarrow ", "⇔": "\\Leftrightarrow " };
 /* not "·": on this paper it is the separator between phrases ("6 sides · π as
    22/7"), and multiplication is always written × */
-const SUP = { "²": "2", "³": "3" };
+/* figures and letters written raised or lowered, as characters */
+const SUP = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "ⁿ": "n", "ʳ": "r", "ᵖ": "p", "⁻": "-", "⁺": "+" };
+const SUB = { "₀": "0", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6", "₇": "7", "₈": "8", "₉": "9", "ᵣ": "r", "ₙ": "n" };
+/** A run of such characters from j: [the plain figures, where it ends]. */
+function runOf(map, s, j) {
+  let k = j, out = "";
+  while (k < s.length && s[k] in map) { out += map[s[k]]; k++; }
+  return [out, k];
+}
 const VULGAR = { "½": "\\tfrac{1}{2}", "¼": "\\tfrac{1}{4}", "¾": "\\tfrac{3}{4}", "⅓": "\\tfrac{1}{3}", "⅔": "\\tfrac{2}{3}" };
 const LONE = new Set(["x", "y", "z", "n"]);
-const isLetter = (c) => !!c && /\p{L}/u.test(c);
+/* letters after a number that are an ending or a unit, never a product */
+const NOT_ALGEBRA = new Set(["st", "nd", "rd", "th", "cm", "mm", "km", "kg", "mg", "ml", "cl", "am", "pm", "hr", "min", "sec", "kph", "mph"]);
+/* a raised or lowered letter (ⁿ, ᵣ) is a power or a subscript, not part of a word */
+const isLetter = (c) => !!c && /\p{L}/u.test(c) && !(c in SUP) && !(c in SUB);
 const isDigit = (c) => !!c && c >= "0" && c <= "9";
 
 /**
@@ -106,7 +134,7 @@ const isDigit = (c) => !!c && c >= "0" && c <= "9";
  * A scanner rather than one regular expression, because what a letter IS
  * depends on what is next to it.
  */
-export function splitMath(s) {
+export function splitMath(s, { boxBefore = false, boxAfter = false } = {}) {
   const out = [];
   let plain = "";
   let i = 0;
@@ -138,8 +166,15 @@ export function splitMath(s) {
       if (k - j <= 3 && !isLetter(s[k]) && !isDigit(s[k])) {
         const before = s.slice(0, j).trimEnd();
         const after = s.slice(k).trimStart();
-        const opBefore = !before || /[=+−×(]$/.test(before);
-        const opAfter = !after || /^[=+−×)]/.test(after);
+        /* …or a number hard against them (4ab), or a power straight after (ab³) */
+        const realBefore = !before || /[=+−×(]$/.test(before);
+        const realAfter = /^[=+−×)]/.test(after) || s[k] in SUP;
+        /* letters leaning on a number need a REAL operator or power after
+           them — "4ab + …", "4ab³" — or the end of the text, unless they
+           spell an ending or a unit: never "3rd" or "5cm" */
+        const word = s.slice(j, k);
+        const opBefore = realBefore || (isDigit(s[j - 1]) && (realAfter || (!after && !NOT_ALGEBRA.has(word))));
+        const opAfter = !after || realAfter;
         if (opBefore && opAfter && (before || after)) return ["var", s.slice(j, k), s.slice(j, k), k];
       }
     }
@@ -151,7 +186,16 @@ export function splitMath(s) {
     if (c in OPS) return ["op", c, OPS[c], j + 1];
     if (c === "-" && (isDigit(s[j + 1]) || s[j + 1] === " ") && (j === 0 || s[j - 1] === " " || isDigit(s[j - 1]))) return ["op", c, "-", j + 1];
     if (c === "/") return ["slash", c, "/", j + 1];
-    if (c in SUP) return ["sup", c, `^{${SUP[c]}}`, j + 1];
+    if (c in SUP) {
+      const [up, k] = runOf(SUP, s, j);
+      /* ⁵C₂ — a raised figure BEFORE its letter: n choose r */
+      if (s[k] === "C" && s[k + 1] in SUB) {
+        const [down, e] = runOf(SUB, s, k + 1);
+        return ["num", s.slice(j, e), `{}^{${up}}C_{${down}}`, e];
+      }
+      return ["sup", s.slice(j, k), `^{${up}}`, k];
+    }
+    if (c in SUB) { const [down, k] = runOf(SUB, s, j); return ["sup", s.slice(j, k), `_{${down}}`, k]; }
     if (c === "^" && isDigit(s[j + 1])) { let k = j + 1; while (isDigit(s[k])) k++; return ["sup", s.slice(j, k), `^{${s.slice(j + 1, k)}}`, k]; }
     if (c === "°") return ["deg", c, "^{\\circ}", j + 1];
     if (c === "(" ) return ["open", c, "(", j + 1];
@@ -168,7 +212,7 @@ export function splitMath(s) {
        after an answer box, as in "(x + ▢)(x − ▢)" */
     const atStart = !s.slice(0, i).trim();
     if (!first || (first[0] === "close" && !atStart) || first[0] === "sup" || first[0] === "deg" || first[0] === "slash" || first[0] === "post" ||
-        (first[0] === "op" && !["−", "-", "=", "<", ">", "≈", "≤", "≥", "≠"].includes(first[1]))) {
+        (first[0] === "op" && !["−", "-", "=", "<", ">", "≈", "≤", "≥", "≠", "~"].includes(first[1]))) {
       plain += s[i];
       i++;
       continue;
@@ -224,7 +268,12 @@ export function splitMath(s) {
     }
     const end = toks[toks.length - 1][3];
     if (plain) { out.push({ math: false, text: plain }); plain = ""; }
-    out.push({ math: true, text: s.slice(i, end), tex: texOf(toks) });
+    /* an operator at the edge of the text, with an answer box beyond it,
+       carries on into the box: {} keeps its spacing */
+    let tex = texOf(toks);
+    if (boxAfter && atEnd && toks[toks.length - 1][0] === "op") tex += "{}";
+    if (boxBefore && atStart && toks[0][0] === "op") tex = "{}" + tex;
+    out.push({ math: true, text: s.slice(i, end), tex });
     i = end;
   }
   if (plain) out.push({ math: false, text: plain });
@@ -350,23 +399,53 @@ function svgFor(tex) {
  */
 export function mathify(root) {
   if (!mathReady() || !root) return 0;
+  let set = 0;
+  /* what was said outright: [data-tex] */
+  root.querySelectorAll("[data-tex]:not(.wb-m)").forEach((el) => {
+    if (el.closest("svg")) return;
+    const svg = svgFor(el.dataset.tex);
+    if (!svg) return;
+    const pic = svg.cloneNode(true);
+    pic.setAttribute("aria-hidden", "true");
+    const src = document.createElement("span");
+    src.className = "wb-m__src";
+    src.textContent = el.textContent;
+    el.classList.add("wb-m");
+    el.replaceChildren(pic, src);
+    set++;
+  });
+  const isBox = (n) => !!n && n.nodeType === 1 && (n.classList.contains("wb-answer") || n.classList.contains("wb-tick"));
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode: (t) => {
-      if (!t.nodeValue || !/[0-9½¼¾⅓⅔πxyzn√=+−×÷()]/.test(t.nodeValue)) return NodeFilter.FILTER_REJECT;
+      if (!t.nodeValue || !/[0-9½¼¾⅓⅔πxyzn√=+−×÷±()⁰¹²³⁴-⁹~∧∨⇒⇔]/.test(t.nodeValue)) return NodeFilter.FILTER_REJECT;
       return t.parentElement?.closest(SKIP) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
     },
   });
   const texts = [];
   while (walker.nextNode()) texts.push(walker.currentNode);
-  let set = 0;
   for (const t of texts) {
     /* a bracket on its own between two answer boxes — "▢(▢x + ▢)" — is part of
        the expression either side of it, and is set like it */
     const lone = /^(\s*)([()]+)(\s*)$/.exec(t.nodeValue);
+    const before = isBox(t.previousSibling), after = isBox(t.nextSibling);
+    /* …and so is a lone operator between two boxes — "▢ + ▢", "▢ = ▢" — or
+       between a formula already set and its box: "D =" then a box */
+    const setBefore = t.previousSibling?.nodeType === 1 && t.previousSibling.classList.contains("wb-m");
+    const between = (before || setBefore) && after ? /^(\s*)([+−×÷=])(\s*)$/.exec(t.nodeValue) : null;
     const parts = lone
       ? [lone[1] && { math: false, text: lone[1] }, { math: true, text: lone[2], tex: lone[2] }, lone[3] && { math: false, text: lone[3] }].filter(Boolean)
-      : splitMath(t.nodeValue);
+      : between ? [{ math: true, text: between[2], tex: `{}${OPS[between[2]]}{}` }, { math: false, text: "\u00A0" }]
+        : splitMath(t.nodeValue, { boxBefore: before, boxAfter: after });
     if (!parts.some((p) => p.math)) continue;
+    /* A LINE MAY WRAP, BUT NOT THERE. "x =" belongs with the box it runs into,
+       and a box with the x it is the number in front of: the space between an
+       operator and its box does not break, and a formula hard against a box is
+       joined to it (a word joiner). So a long line breaks between its groups —
+       "a = ▢" and "b = ▢" — never inside one. */
+    const last = parts[parts.length - 1], prev2 = parts[parts.length - 2];
+    if (after && !last.math && !last.text.trim() && prev2?.math && prev2.tex.endsWith("{}")) last.text = "\u00A0";
+    else if (after && last.math) parts.push({ math: false, text: "\u2060" });
+    if (before && parts[0].math) parts.unshift({ math: false, text: "\u2060" });
     const frag = document.createDocumentFragment();
     for (const p of parts) {
       if (!p.math) { frag.appendChild(document.createTextNode(p.text)); continue; }

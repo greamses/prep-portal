@@ -78,7 +78,7 @@ function treeHtml(bag, labels, { ends = false } = {}) {
     over += place([p[0] + 6, p[1]], `<b>${[bag.s1, bag.s2][k >> 1]}${[bag.s1, bag.s2][k % 2]}</b>`, " pt-node");
     if (ends) over += place([p[0] + 24, p[1]], labels[6 + k], " pt-end");
   });
-  return `<div class="pt-tree wb-nomath" style="width:${W}mm;height:${H}mm">` +
+  return `<div class="pt-tree" style="width:${W}mm;height:${H}mm">` +
     `<svg viewBox="0 0 ${W} ${H}" width="${W}mm" height="${H}mm" aria-hidden="true">${svg}</svg>${over}</div>`;
 }
 

@@ -2899,3 +2899,15 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .sd-tools .pp-btn { font: 700 8pt/1.2 var(--font-body, system-ui, sans-serif); padding: 1mm 2.2mm; min-height: 0; }
 .sd-moved { min-width: 34mm; text-align: center; font: 700 8pt/1.2 var(--font-body, system-ui, sans-serif); color: #6f685f; }
 @media print { .sd-tools, .sd-say { display: none !important; } }
+
+/* ── typeset maths at an answer box, and lines that wrap ────────────────────
+   A formula hard against a box gets a hair of room; a line of working wraps
+   instead of running off the paper (mathify.js keeps "x =" with its box, so
+   the break falls between groups); and a table or figure never spills out of
+   its column. */
+.wb-answer + .wb-m, .wb-m + .wb-answer { margin-left: 0.12em; }
+.wb-sheet .wb-item__body .wb-ask { white-space: normal; overflow-wrap: break-word; }
+.wb-sheet .wb-item__body table { max-width: 100%; }
+.wb-sheet .wb-item__body { overflow-wrap: break-word; }
+/* things a workbook says must stay on one line together */
+.wb-keep { white-space: nowrap; }

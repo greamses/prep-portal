@@ -49,10 +49,14 @@ const OPS = {
 const ROWS2 = [[true, true], [true, false], [false, true], [false, false]];
 
 /** A truth table: given columns filled, asked columns as boxes. */
+const TEX = { "~": "{\\sim}", "∧": "\\land ", "∨": "\\lor ", "⇒": "\\Rightarrow ", "⇔": "\\Leftrightarrow " };
+/** A heading as the typesetter is to set it: its signs swapped for their TeX. */
+const head = (h) => `<span data-tex="${[...h].map((c) => TEX[c] ?? c).join("")}">${h}</span>`;
+
 function truthTable(heads, rows, asked) {
-  const th = heads.map((h, i) => `<th${asked.includes(i) ? ' class="lg-ask"' : ""}>${h}</th>`).join("");
+  const th = heads.map((h, i) => `<th${asked.includes(i) ? ' class="lg-ask"' : ""}>${head(h)}</th>`).join("");
   const body = rows.map((r) => `<tr>${r.map((v, i) => `<td>${asked.includes(i) ? box() : TF(v)}</td>`).join("")}</tr>`).join("");
-  return `<table class="lg-table wb-nomath"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table>`;
+  return `<table class="lg-table"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
 export const LG_GROUPS = [

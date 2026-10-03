@@ -60,14 +60,14 @@ const mul = (P, Q) => P.map((row) => Q[0].map((_, j) => row.reduce((s, a, k) => 
 function detHtml(M, label = "") {
   const n = M.length;
   const cells = M.flat().map((v) => `<span class="dt-det__c">${typeof v === "number" ? num(v) : v}</span>`).join("");
-  return `<span class="dt-sq">${label}<span class="dt-det wb-nomath" style="grid-template-columns: repeat(${n}, auto)">${cells}</span></span>`;
+  return `<span class="dt-sq">${label}<span class="dt-det" style="grid-template-columns: repeat(${n}, auto)">${cells}</span></span>`;
 }
 /** An augmented matrix: the coefficients, a bar, the answers — in brackets. */
 function augHtml(M, b) {
   const n = M[0].length;
   const cell = (v, rhs) => `<span class="ge-c${rhs ? " ge-c--rhs" : ""}">${typeof v === "number" ? num(v) : v}</span>`;
   const cells = M.map((row, i) => row.map((v) => cell(v, false)).join("") + cell(b[i], true)).join("");
-  return `<span class="ge-mat wb-nomath" style="grid-template-columns: repeat(${n}, auto) auto">${cells}</span>`;
+  return `<span class="ge-mat" style="grid-template-columns: repeat(${n}, auto) auto">${cells}</span>`;
 }
 /** One term of an equation. */
 function term(k, letter, first) {
@@ -82,7 +82,8 @@ function equation(row, rhs) {
   return `${s || "0"} = ${num(rhs)}`;
 }
 const system = (M, b) => `<div class="dt-pair">${M.map((row, i) => eq(`(${i + 1}) &nbsp; ${equation(row, b[i])}`)).join("")}</div>`;
-const D = (sub = "") => `<span class="dt-name wb-nomath">D${sub ? `<sub>${sub}</sub>` : ""}</span>`;
+/* D, Dx, Dy …: said outright to the typesetter (it would set "Dx" as D times x) */
+const D = (sub = "") => `<span class="dt-name" data-tex="D${sub ? `_{${sub}}` : ""}">D${sub ? `<sub>${sub}</sub>` : ""}</span>`;
 const solveBoxes = (n) => eq(LETTERS.slice(0, n).map((l) => `${l} = ${box()}`).join(" &nbsp;&nbsp; "));
 
 /* ── making systems ────────────────────────────────────────────────────── */

@@ -31,7 +31,9 @@ const sub = (n) => String(n).split("").map((d) => SUB[d]).join("");
 /** n written in base b, as its digits. */
 export const inBase = (n, b) => n.toString(b);
 /** n in base b with its little base: 1011₂ (base ten gets ₁₀). */
-const shown = (n, b) => `<span class="nb-n">${inBase(n, b)}${sub(b)}</span>`;
+const shown = (n, b) => `<span class="nb-n" data-tex="${inBase(n, b)}_{${b}}">${inBase(n, b)}${sub(b)}</span>`;
+/** The little base on its own, after an answer box: ▢₁₀. */
+const baseOf = (b) => `<span data-tex="{}_{${b}}">${sub(b)}</span>`;
 
 /** The bases a level uses. */
 const basesOf = (o) => (tier(o) === "gentle" ? [2, 5] : tier(o) === "middle" ? [2, 3, 4, 5, 8] : [2, 3, 4, 5, 6, 7, 8, 9]);
@@ -63,7 +65,7 @@ const nbPlaces = {
   render(item) {
     const b = item.b;
     return ask(`Base ${b}: the value of each column`) +
-      `<table class="nb-table wb-nomath"><tbody><tr><td>${b}³</td><td>${b}²</td><td>${b}</td><td>1</td></tr>` +
+      `<table class="nb-table"><tbody><tr><td>${b}³</td><td>${b}²</td><td>${b}</td><td>1</td></tr>` +
       `<tr><td>${box()}</td><td>${box()}</td><td>${box()}</td><td>1</td></tr></tbody></table>`;
   },
   worked() {
@@ -100,8 +102,8 @@ const nbTo10 = {
     const k = ds.length;
     const cols = ds.map((d, i) => `<td>${d} × ${item.b ** (k - 1 - i)}</td>`).join("");
     return ask(`${shown(item.n, item.b)} in base ten:`) +
-      `<table class="nb-table wb-nomath"><tbody><tr>${cols}</tr><tr>${ds.map(() => `<td>${box()}</td>`).join("")}</tr></tbody></table>` +
-      ask(`added: ${box()}${sub(10)}`);
+      `<table class="nb-table"><tbody><tr>${cols}</tr><tr>${ds.map(() => `<td>${box()}</td>`).join("")}</tr></tbody></table>` +
+      ask(`added: ${box()}${baseOf(10)}`);
   },
   worked() {
     return worked(ask("1011₂: &nbsp; 1 × 8 + 0 × 4 + 1 × 2 + 1 × 1 = 8 + 0 + 2 + 1 = 11₁₀") +
@@ -142,8 +144,8 @@ const nbFrom10 = {
   render(item) {
     const rows = item.steps.map(([v], i) => `<tr><td>${item.b}</td><td>${i === 0 ? v : box()}</td><td>remainder ${box()}</td></tr>`).join("");
     return ask(`${item.n}${sub(10)} in base ${item.b}:`) +
-      `<table class="nb-div wb-nomath"><tbody>${rows}<tr><td></td><td>0</td><td></td></tr></tbody></table>` +
-      ask(`so ${item.n}${sub(10)} = <span class="nb-wide">${box()}</span>${sub(item.b)}`);
+      `<table class="nb-div"><tbody>${rows}<tr><td></td><td>0</td><td></td></tr></tbody></table>` +
+      ask(`so ${item.n}${sub(10)} = <span class="nb-wide">${box()}</span>${baseOf(item.b)}`);
   },
   worked() {
     return worked(ask("13₁₀ in base 2: 13 ÷ 2 = 6 r 1; 6 ÷ 2 = 3 r 0; 3 ÷ 2 = 1 r 1; 1 ÷ 2 = 0 r 1") +
@@ -274,7 +276,7 @@ const nbConvert = {
     return { b, c, n: withDigits(r, b, digitsOf(o, b) - (b === 2 ? 1 : 0)) };
   },
   render(item) {
-    return ask(`${shown(item.n, item.b)} = <span class="nb-wide">${box()}</span>${sub(10)} = <span class="nb-wide">${box()}</span>${sub(item.c)}`);
+    return ask(`${shown(item.n, item.b)} = <span class="nb-wide">${box()}</span>${baseOf(10)} = <span class="nb-wide">${box()}</span>${baseOf(item.c)}`);
   },
   worked() {
     return worked(ask("212₃ = 2 × 9 + 1 × 3 + 2 = 23₁₀; 23 ÷ 5 = 4 r 3, 4 ÷ 5 = 0 r 4, so 23₁₀ = 43₅") +

@@ -47,10 +47,11 @@
    the branches are an SVG; every label is HTML laid over it at a percentage
    of the tree's size, so a branch can carry an answer box */
 .pt-tree { position: relative; margin: 2mm 0 2.5mm; max-width: 100%; }
-.pt-tree svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* the tree's own drawing only — not the typeset fractions laid over it */
+.pt-tree > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .pt-lab {
   position: absolute; transform: translate(-50%, -50%);
-  font: 600 10pt/1 "JetBrains Mono", monospace; color: #2a2723;
+  font: 600 13pt/1 "JetBrains Mono", monospace; color: #2a2723;
   background: #fffdf8; padding: 0 0.6mm; white-space: nowrap;
 }
 .pt-lab .wb-answer { min-width: 11mm; height: 6.5mm; }

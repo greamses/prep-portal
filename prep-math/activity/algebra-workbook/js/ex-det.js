@@ -45,7 +45,7 @@ const value = ([[p, q], [r, s]]) => p * s - q * r;
 function square(rows, name = "") {
   const cells = rows.flat().map((v) => `<span class="dt-det__c">${typeof v === "number" ? num(v) : v}</span>`).join("");
   const label = name ? `${name} = ` : "";
-  return `<span class="dt-sq">${label}<span class="dt-det wb-nomath">${cells}</span></span>`;
+  return `<span class="dt-sq">${label}<span class="dt-det">${cells}</span></span>`;
 }
 
 /** One term of an equation: 3x, −x, + 2y, − 5y … */
@@ -60,7 +60,7 @@ const pairOf = ({ a, b, c, d, e, f }) =>
 
 /* D, Dx and Dy, written one way everywhere: a serif italic D with its letter
    below, kept out of MathJax's way (it would set "Dx" as D times x). */
-const name = (sub) => `<span class="dt-name wb-nomath">D${sub ? `<sub>${sub}</sub>` : ""}</span>`;
+const name = (sub) => `<span class="dt-name" data-tex="D${sub ? `_{${sub}}` : ""}">D${sub ? `<sub>${sub}</sub>` : ""}</span>`;
 const D = name("");
 const Dx = name("x");
 const Dy = name("y");

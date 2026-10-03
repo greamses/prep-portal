@@ -347,7 +347,8 @@
 .ap-table { border-collapse: collapse; margin: 2mm 0 2.5mm; font-size: 11pt; }
 .ap-table th, .ap-table td { border: 0.3mm solid #2a2723; padding: 1.2mm 3mm; text-align: center; min-width: 18mm; }
 .ap-table th { background: #fff3a8; white-space: nowrap; font-weight: 700; }
-.wb-sheet .ap-eq { white-space: nowrap; }
+/* an equation wraps between its groups, never inside one (mathify.js) */
+.wb-sheet .ap-eq { white-space: normal; }
 
 /* ── chapter 6: functions ────────────────────────────────────────────────────
    The machine itself is the shared one (workbook.css .fm-*); here only its
@@ -433,7 +434,7 @@
 .lg-art svg { display: block; max-width: 100%; height: auto; }
 .lg-side { display: flex; gap: 6mm; align-items: flex-start; flex-wrap: wrap; }
 
-.bn-eq { font: 600 11pt/2 "JetBrains Mono", monospace; }
+.bn-eq { line-height: 2.3; }
 .bn-eq .wb-answer { margin: 0 0.8mm; min-width: 10mm; }
 
 /* ── chapter 8: the area box of two brackets (js/ex-quadratics.js) ── */
