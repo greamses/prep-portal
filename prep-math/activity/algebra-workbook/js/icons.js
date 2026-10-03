@@ -219,6 +219,21 @@ export const ICON = {
       `<path d="M7 5h5a7 7 0 0 1 0 14H7z" fill="${PAPER}"/>`
   ),
 
+  /* ── chapter 13: vectors ── */
+  /* An arrow across squared paper. */
+  vcBasics: svg(
+    bar(4, 19, 16.4, 7.4, 2, LOUD) + `<path d="M20.6 3.6l-7.2 1.6 5.6 5.6z" fill="${LOUD}"/>` + `<circle cx="4" cy="19" r="2" fill="${QUIET}"/>`
+  ),
+  /* Length: the arrow as the long side of a right-angled triangle. */
+  vcLength: svg(
+    bar(4, 19, 20, 19, 1.5, QUIET) + bar(20, 19, 20, 6, 1.5, QUIET) + bar(4, 19, 20, 6, 2, LOUD) + `<rect x="16" y="15" width="4" height="4" fill="${GOLD}"/>`
+  ),
+  /* Resultant: two arrows nose to tail and the one that does both. */
+  vcMore: svg(
+    bar(3, 19, 12, 8, 1.7, PAPER) + bar(12, 8, 21, 13, 1.7, PAPER) + bar(3, 19, 21, 13, 1.9, LOUD) +
+      `<circle cx="3" cy="19" r="1.8" fill="${QUIET}"/><circle cx="21" cy="13" r="1.8" fill="${GOLD}"/>`
+  ),
+
   /* ── chapter 12: matrices ── */
   /* A matrix: four numbers in square brackets. */
   mtBasics: svg(

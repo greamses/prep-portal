@@ -432,7 +432,8 @@ export function mathify(root) {
     /* …and so is a lone operator between two boxes — "▢ + ▢", "▢ = ▢" — or
        between a formula already set and its box: "D =" then a box */
     const setBefore = t.previousSibling?.nodeType === 1 && t.previousSibling.classList.contains("wb-m");
-    const between = (before || setBefore) && after ? /^(\s*)([+−×÷=])(\s*)$/.exec(t.nodeValue) : null;
+    const setAfter = t.nextSibling?.nodeType === 1 && t.nextSibling.classList.contains("wb-m");
+    const between = (before || setBefore) && (after || setAfter) ? /^(\s*)([+−×÷=])(\s*)$/.exec(t.nodeValue) : null;
     const parts = lone
       ? [lone[1] && { math: false, text: lone[1] }, { math: true, text: lone[2], tex: lone[2] }, lone[3] && { math: false, text: lone[3] }].filter(Boolean)
       : between ? [{ math: true, text: between[2], tex: `{}${OPS[between[2]]}{}` }, { math: false, text: "\u00A0" }]

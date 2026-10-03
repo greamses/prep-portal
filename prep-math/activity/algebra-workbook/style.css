@@ -464,3 +464,7 @@
 .mt-c { min-width: 5mm; }
 .mt-mat .wb-answer { min-width: 10mm; width: 10mm; height: 7.5mm; vertical-align: middle; }
 .mt-eq { line-height: 2.4; }
+
+/* ── chapter 13: a column vector, in round brackets (js/ex-vectors.js) ── */
+.vc-col { background: none; border-radius: 2.4mm / 50%; padding: 0.8mm 1.8mm; gap: 0.6mm 0; }
+.vc-col .wb-answer { margin: 0.3mm 0; }
