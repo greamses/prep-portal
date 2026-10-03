@@ -77,6 +77,7 @@ mountBuilder({
     "pb-cards": ICON.pbCards,
     "pb-not": ICON.pbNot,
     "pb-two": ICON.pbTwo,
+    "pb-tree": ICON.pbTree,
   },
   icons: ICON,
   title: "Statistics Workbook",

@@ -212,4 +212,11 @@ export const ICON = {
       `<rect x="12.4" y="8" width="10" height="10" rx="2.6" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.5"/>` +
       face(15.4, 11, 1.5, GOLD) + face(19.4, 15, 1.5, GOLD)
   ),
+  /* A probability tree: one point, two branches, four ends. */
+  pbTree: svg(
+    [[3, 12, 11, 6], [3, 12, 11, 18], [11, 6, 20, 3], [11, 6, 20, 9], [11, 18, 20, 15], [11, 18, 20, 21]]
+      .map(([a, b, c, d]) => `<path d="M${a} ${b}L${c} ${d}" stroke="${QUIET}" stroke-width="1.5" stroke-linecap="round"/>`).join("") +
+      `<circle cx="3" cy="12" r="2" fill="${LOUD}"/><circle cx="11" cy="6" r="1.8" fill="${GOLD}"/><circle cx="11" cy="18" r="1.8" fill="${GOLD}"/>` +
+      [3, 9, 15, 21].map((y) => `<circle cx="20" cy="${y}" r="1.5" fill="${LOUD}"/>`).join("")
+  ),
 };

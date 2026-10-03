@@ -22,6 +22,9 @@ export const want = {
   steps: (v) => ({ kind: "steps", v }),
   /** Words: any of these, ignoring case, spaces and ° signs. */
   text: (...accept) => ({ kind: "text", accept }),
+  /** A fraction n/d: ANY equal fraction is right (6/36, 1/6, 2/12), and a
+      whole number when it is one (6/6 = 1). Shown and filled in lowest terms. */
+  frac: (n, d) => ({ kind: "frac", n, d }),
   /** One place that must mention every one of these numbers. */
   nums: (...vs) => ({ kind: "nums", vs }),
   /** Several places that between them hold these values, in any order. */
@@ -155,6 +158,13 @@ export function judge(entry, values) {
       const t = normText(values[0]);
       return [t !== "" && entry.accept.some((a) => normText(a) === t)];
     }
+    case "frac": {
+      const t = String(values[0] ?? "").replace(MINUS, "-").replace(/\s/g, "");
+      const m = t.match(/^(-?\d+)(?:\/(\d+))?$/);
+      if (!m) return [false];
+      const a = Number(m[1]), b = m[2] === undefined ? 1 : Number(m[2]);
+      return [b !== 0 && a * entry.d === b * entry.n];
+    }
     case "nums": {
       const got = numbersIn(values[0]);
       return [entry.vs.every((v) => got.includes(v))];
@@ -202,12 +212,21 @@ export const placesOf = (entry) =>
     : entry.kind === "pair" ? 2
       : ["draw", "colour", "match", "pen", "stick", "picto", "bars", "dots", "machine", "tiles", "code", "chance", "split", "strike", "tree"].includes(entry.kind) ? 0 : 1;
 
+/** n/d in lowest terms, as it is written: "1/6", "0", "1". */
+function lowest(n, d) {
+  const g = (a, b) => (b ? g(b, a % b) : Math.abs(a));
+  const k = g(n, d) || 1;
+  const [p, q] = [n / k, d / k];
+  return q === 1 ? String(p) : `${p}/${q}`;
+}
+
 /** The right answer, written for a person. Tick rows name their option. */
 export function sayWant(entry, tickLabels = []) {
   switch (entry.kind) {
     case "num": return entry.tol ? `${entry.v} (±${entry.tol})` : String(entry.v);
     case "steps": return entry.v === 0 ? "0 (flat)" : `${Math.abs(entry.v)} ${entry.v > 0 ? "up" : "down"}`;
     case "text": return entry.accept[0];
+    case "frac": return lowest(entry.n, entry.d);
     case "nums": return entry.vs.join(" and ");
     case "set": return entry.vs.join(", ");
     case "tick": return tickLabels[entry.i] || `option ${entry.i + 1}`;
@@ -238,6 +257,7 @@ export function rightValues(entry) {
     case "num": return [String(entry.v)];
     case "steps": return [entry.v === 0 ? "0" : `${Math.abs(entry.v)} ${entry.v > 0 ? "up" : "down"}`];
     case "text": return [entry.accept[0]];
+    case "frac": return [lowest(entry.n, entry.d)];
     case "nums": return [entry.vs.join(" and ")];
     case "set": return entry.vs.map(String);
     case "tick": return [entry.i];
