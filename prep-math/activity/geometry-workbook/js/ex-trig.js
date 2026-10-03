@@ -1,5 +1,5 @@
 /* ============================================================================
-   Geometry Workbook — CHAPTER 14: SINE, COSINE AND TANGENT
+   Geometry Workbook — CHAPTER 15: SINE, COSINE AND TANGENT
    ----------------------------------------------------------------------------
    In a right-angled triangle, once an angle is fixed the SHAPE is fixed, so
    the sides are always in the same proportion. Those proportions have names.
@@ -75,7 +75,7 @@ const TIDY = [
 const NAME = { opp: "opposite", adj: "adjacent", hyp: "hypotenuse" };
 
 export const TG_GROUPS = [
-  { id: "tg-ratio", chapter: "Chapter 14 · Sine, cosine and tangent", label: "The three ratios", blurb: "Opposite, adjacent, hypotenuse — and the three ways to divide them." },
+  { id: "tg-ratio", chapter: "Chapter 15 · Sine, cosine and tangent", label: "The three ratios", blurb: "Opposite, adjacent, hypotenuse — and the three ways to divide them." },
   { id: "tg-use", label: "Using the ratios", blurb: "Find a side, find an angle, and solve a story." },
 ];
 

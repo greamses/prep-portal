@@ -1,13 +1,21 @@
 /* ============================================================================
-   Geometry Workbook — CHAPTER 13: CLOCK ANGLES AND BEARINGS
+   Geometry Workbook — CHAPTER 13: CLOCK ANGLES, and CHAPTER 14: BEARINGS
    ----------------------------------------------------------------------------
    Two places where a whole turn of 360° is put to work.
 
    CLOCK ANGLES — the face is 12 equal parts of 30°, and 60 minutes of 6°
      between the marks      from one hour mark to another: 30° each
-     on the hour            the angle between the hands at 4 o'clock
-     at other times         the hour hand has moved on too: ½° every minute
+     o'clock                the angle between the hands at 4 o'clock
+     half past              the minute hand on the 6; the hour hand 15° past
+                            its number
+     quarter past and to    the minute hand on the 3 or the 9; the hour hand
+                            7½° or 22½° past its number
+     any minute             the hour hand ½° past its number for every minute
      how far a hand turns   the minute hand 6° a minute; the hour hand ½°
+
+   THE HOUR HAND IS NEVER LEFT ON ITS NUMBER once the minutes have moved: it
+   goes one small minute mark (6°) for every 12 minutes, and the face is drawn
+   with all sixty marks so that this can be seen.
 
    BEARINGS — a direction as an angle: from NORTH, CLOCKWISE, three figures
      read a bearing         the line's angle from the nearest compass arm,
@@ -42,6 +50,12 @@ function clockSvg({ h = null, m = 0, marks = null }) {
   const R = 20, C = 23;
   const at = (deg, r) => [C + r * Math.sin((deg * Math.PI) / 180), C - r * Math.cos((deg * Math.PI) / 180)];
   let s = `<circle cx="${C}" cy="${C}" r="${R}" fill="#fffdf8" stroke="${INK}" stroke-width="0.6"/>`;
+  /* every minute mark: the hour hand moves one of these for every 12 minutes */
+  for (let k = 0; k < 60; k++) {
+    if (k % 5 === 0) continue;
+    const [a, b] = at(k * 6, R), [c, d] = at(k * 6, R - 0.8);
+    s += `<line x1="${f(a)}" y1="${f(b)}" x2="${f(c)}" y2="${f(d)}" stroke="${INK}" stroke-width="0.22"/>`;
+  }
   for (let k = 1; k <= 12; k++) {
     const [x, y] = at(k * 30, R - 3.6);
     const hot = marks && marks.includes(k);
@@ -66,9 +80,17 @@ export function handsAngle(h, m) {
 const timeText = (h, m) => (m === 0 ? `${h} o'clock` : `${h}:${String(m).padStart(2, "0")}`);
 
 export const CK_GROUPS = [
-  { id: "ck-clock", chapter: "Chapter 13 · Clock angles and bearings", label: "Clock angles", blurb: "Twelve parts of 30°: the angle between the hands." },
-  { id: "br-bearing", label: "Bearings", blurb: "From north, clockwise, in three figures." },
+  { id: "ck-clock", chapter: "Chapter 13 · Clock angles", label: "Clock angles", blurb: "O'clock, half past, the quarters, and any minute: the angle between the hands." },
 ];
+export const BG_GROUPS = [
+  { id: "br-bearing", chapter: "Chapter 14 · Bearings", label: "Bearings", blurb: "From north, clockwise, in three figures." },
+];
+
+/** The three boxes every "where are the hands" question asks for. */
+const handsAsk = (it) => side(art(clockSvg({ h: it.h, m: it.m })),
+  ask(`At ${timeText(it.h, it.m)}:`) + ask(`hour hand at ${box()}° &nbsp; minute hand at ${box()}°`) + ask(`angle between them: ${box()}°`));
+const handsKey = (it) => [want.num((it.h % 12) * 30 + it.m / 2), want.num(it.m * 6), want.num(handsAngle(it.h, it.m))];
+const handsAnswer = (it) => [`hour ${(it.h % 12) * 30 + it.m / 2}°, minute ${it.m * 6}°: ${handsAngle(it.h, it.m)}°`];
 
 const ckMarks = {
   id: "ck-marks",
@@ -95,9 +117,9 @@ const ckMarks = {
 const ckHour = {
   id: "ck-hour",
   group: "ck-clock",
-  label: "The hands on the hour",
+  label: "O'clock angles",
   blurb: "At 4 o'clock the hands are 4 gaps apart.",
-  heading: "Clock angles: on the hour",
+  heading: "Clock angles: o'clock",
   instruction: () =>
     "On the hour the minute hand points at 12 and the hour hand at the hour. Count the gaps between them and " +
     "multiply by 30° — and give the SMALLER angle: after 6 o'clock it is shorter to go the other way round " +
@@ -111,12 +133,53 @@ const ckHour = {
   answer: (it) => [`${handsAngle(it.h, 0)}°`],
 };
 
+const ckHalf = {
+  id: "ck-half",
+  group: "ck-clock",
+  label: "Half past angles",
+  blurb: "Minute hand on the 6; hour hand 15° past its number.",
+  heading: "Clock angles: half past",
+  instruction: () =>
+    "At half past, the minute hand is on the 6: 180° round from the 12. The hour hand is NOT on its number any " +
+    "more — in half an hour it has gone HALFWAY to the next number, 15° on. So at half past h it stands at " +
+    "30 × h + 15 degrees. Take one from the other for the angle between them.",
+  cols: 1,
+  defaultCount: 3,
+  make: (r) => ({ h: r.int(1, 12), m: 30 }),
+  render: handsAsk,
+  worked: () => worked(side(art(clockSvg({ h: 3, m: 30 })),
+    say("At 3:30 the hour hand is at 30 × 3 + 15 = 105°, halfway from the 3 to the 4, and the minute hand at 180°. The angle between them is 180° − 105° = 75°."))),
+  key: handsKey,
+  answer: handsAnswer,
+};
+
+const ckQuarter = {
+  id: "ck-quarter",
+  group: "ck-clock",
+  label: "Quarter past and quarter to angles",
+  blurb: "Minute hand on the 3 or the 9; hour hand 7½° or 22½° past.",
+  heading: "Clock angles: quarter past and quarter to",
+  instruction: () =>
+    "At quarter past, the minute hand is on the 3 (90°) and the hour hand has gone a quarter of the way to the " +
+    "next number: 7½° past its own. At quarter TO, the minute hand is on the 9 (270°) and the hour hand is " +
+    "three-quarters of the way on: 22½° past the hour that is ending. (Quarter to 5 is 4:45 — the hour hand is " +
+    "22½° past the 4.) If the difference is more than 180°, take it from 360°.",
+  cols: 1,
+  defaultCount: 4,
+  make: (r, o, k, i) => ({ h: r.int(1, 12), m: i % 2 ? 45 : 15 }),
+  render: handsAsk,
+  worked: () => worked(side(art(clockSvg({ h: 4, m: 45 })),
+    say("Quarter past 2 (2:15): hour hand 60 + 7½ = 67½°, minute hand 90°; the angle is 22½°. Quarter to 5 (4:45): hour hand 120 + 22½ = 142½°, minute hand 270°; the angle is 127½°."))),
+  key: handsKey,
+  answer: handsAnswer,
+};
+
 const ckOther = {
   id: "ck-other",
   group: "ck-clock",
-  label: "The hands at other times",
-  blurb: "The hour hand has moved on: half a degree every minute.",
-  heading: "Clock angles: at any time",
+  label: "Any-minute angles",
+  blurb: "The hour hand moves on half a degree every minute.",
+  heading: "Clock angles: at any minute",
   instruction: () =>
     "The hour hand does not wait at its number: in 60 minutes it creeps 30°, which is ½° every minute — one small " +
     "minute mark (6°) for every 12 minutes. So at h:m " +
@@ -126,16 +189,16 @@ const ckOther = {
   defaultCount: 3,
   make(r, o) {
     const t = tier(o);
-    const mins = t === "gentle" ? [30] : t === "middle" ? [20, 30, 40, 10] : [10, 20, 30, 40, 50, 12, 24, 36, 48];
-    return { h: r.int(1, 12), m: r.pick(mins) };
+    /* Gentle: the tens. Middle: the fives and the twelves (a whole minute mark
+       for the hour hand). Stretch: any minute at all. */
+    const mins = t === "gentle" ? [10, 20, 40, 50] : t === "middle" ? [5, 10, 20, 25, 35, 40, 50, 55, 12, 24, 36, 48] : null;
+    for (;;) { const m = mins ? r.pick(mins) : r.int(1, 59); if (m % 15) return { h: r.int(1, 12), m }; }
   },
-  render(it) {
-    return side(art(clockSvg({ h: it.h, m: it.m })),
-      ask(`At ${timeText(it.h, it.m)}:`) + ask(`hour hand at ${box()}° &nbsp; minute hand at ${box()}°`) + ask(`angle between them: ${box()}°`));
-  },
-  worked: () => worked(say("At 3:30 the hour hand is at 30 × 3 + ½ × 30 = 105°, and the minute hand at 6 × 30 = 180°. The angle between them is 180° − 105° = 75°.")),
-  key: (it) => [want.num((it.h % 12) * 30 + it.m / 2), want.num(it.m * 6), want.num(handsAngle(it.h, it.m))],
-  answer: (it) => [`hour ${(it.h % 12) * 30 + it.m / 2}°, minute ${it.m * 6}°: ${handsAngle(it.h, it.m)}°`],
+  render: handsAsk,
+  worked: () => worked(side(art(clockSvg({ h: 7, m: 24 })),
+    say("At 7:24 the hour hand is at 30 × 7 + ½ × 24 = 222° — two small marks past the 7, one for each 12 minutes — and the minute hand at 6 × 24 = 144°. The angle between them is 222° − 144° = 78°."))),
+  key: handsKey,
+  answer: handsAnswer,
 };
 
 const ckTurn = {
@@ -294,4 +357,5 @@ const brBetween = {
   answer: (it) => [`${it.v}°`],
 };
 
-export const CK_EXERCISES = [ckMarks, ckHour, ckOther, ckTurn, brRead, brCompass, brBack, brBetween];
+export const CK_EXERCISES = [ckMarks, ckHour, ckHalf, ckQuarter, ckOther, ckTurn];
+export const BG_EXERCISES = [brRead, brCompass, brBack, brBetween];

@@ -609,4 +609,7 @@ export const ICON = {
   /* ── chapter 14: a right-angled triangle with its angle marked; and one with a side wanted ── */
   tgRatio: svg(`<path d="M3 19h17V6z" fill="${PAPER}"/>` + `<path d="M3 19h6.4a6.6 6.6 0 0 0-1.3-3.8z" fill="${LOUD}"/>` + `<rect x="16.4" y="15.4" width="3.6" height="3.6" fill="${GOLD}"/>`),
   tgUse: svg(`<path d="M3 19h17V6z" fill="${PAPER}"/>` + bar(20, 19, 20, 6, 2.2, LOUD) + `<path d="M3 19h6.4a6.6 6.6 0 0 0-1.3-3.8z" fill="${GOLD}"/>`),
+  /* ── chapter 16: a line of sight above the level line (and one below it); a tower sighted from the ground ── */
+  elMeaning: svg(bar(3, 12, 21, 12, 1.4, QUIET) + bar(3, 12, 19.6, 4.6, 1.9, LOUD) + bar(3, 12, 19.6, 19.4, 1.9, PAPER) + `<circle cx="3.6" cy="12" r="2" fill="${GOLD}"/>`),
+  elUse: svg(`<rect x="16.4" y="3.6" width="4.6" height="16.4" rx="1" fill="${PAPER}"/>` + bar(2.6, 20, 21.4, 20, 1.6, QUIET) + bar(3.4, 19.4, 17.6, 4.6, 1.9, LOUD) + `<circle cx="3.6" cy="19.4" r="1.9" fill="${GOLD}"/>`),
 };

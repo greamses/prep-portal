@@ -137,6 +137,8 @@ mountBuilder({
     "br-bearing": ICON.brBearing,
     "tg-ratio": ICON.tgRatio,
     "tg-use": ICON.tgUse,
+    "el-meaning": ICON.elMeaning,
+    "el-use": ICON.elUse,
     "pc-lines": ICON.pcLines,
     "pc-regions": ICON.pcRegions,
     "pc-arcs": ICON.pcArcs,
