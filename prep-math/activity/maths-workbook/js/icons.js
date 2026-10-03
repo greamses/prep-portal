@@ -354,4 +354,11 @@ export const ICON = {
       `<rect x="2.6" y="15" width="6.2" height="5" fill="${LEAF}"/>` +
       `<path d="M7 10.6 17 13.4M17 10.6 7 13.4" stroke="${LOUD}" stroke-width="1.6" stroke-linecap="round"/>`
   ),
+  /* Number bases: groups of two — a pair, a pair of pairs — and the ones. */
+  nbBases: svg(
+    `<rect x="2.4" y="5" width="9" height="14" rx="1.6" fill="${PAPER}"/>` +
+      `<rect x="13.4" y="5" width="4.4" height="14" rx="1.4" fill="${LEAF}"/>` +
+      `<rect x="19.6" y="13" width="2.6" height="6" rx="1" fill="${LOUD}"/>` +
+      `<path d="M2.4 12h9M6.9 5v14" stroke="#fffdf8" stroke-width="1"/>`
+  ),
 };

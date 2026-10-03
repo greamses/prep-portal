@@ -1426,3 +1426,17 @@ thead .pv-chart__side {
 .mb-story { font-size: 10.5pt; line-height: 1.5; }
 .mb-art { margin: 2mm 0 2.5mm; }
 .mb-art svg { display: block; max-width: 100%; height: auto; }
+
+/* ── chapter 10: number bases (js/ex-bases.js) ── */
+.nb-n { font-family: "JetBrains Mono", monospace; font-weight: 700; }
+.nb-hint { font-size: 8.5pt; color: #6b645a; }
+.nb-table, .nb-div, .nb-sum { border-collapse: collapse; margin: 1mm 0 2mm; font: 600 10.5pt/1.2 "JetBrains Mono", monospace; }
+.nb-table td { border: 0.3mm solid #2a2723; padding: 1.2mm 2.6mm; text-align: center; }
+.nb-div td { padding: 1mm 2.4mm; }
+.nb-div td:first-child { border-right: 0.35mm solid #2a2723; text-align: right; }
+.nb-div tr:not(:last-child) td:nth-child(2) { border-bottom: 0.35mm solid #2a2723; }
+.nb-sum td { width: 9mm; height: 8mm; text-align: center; }
+.nb-sum__ans td { border-top: 0.4mm solid #2a2723; }
+.nb-sum .wb-answer { min-width: 8mm; width: 8mm; }
+.nb-table .wb-answer { min-width: 14mm; width: 14mm; }
+.nb-wide .wb-answer { min-width: 26mm; }

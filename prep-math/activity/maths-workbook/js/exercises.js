@@ -14,6 +14,8 @@
      ex-fractions.js   what a fraction is, and adding the ones that match
      ex-time.js        counting in fives, and then telling the time
      ex-multiply.js    multiplying, from equal groups up to long multiplication
+     ex-bases.js       number bases: place values, to and from base ten,
+                       adding and taking away in a base, base to base
      ex-models.js      the Singapore bar model: part–whole, comparison, part
                        to part, part to whole, and word problems drawn by hand
      ex-primes.js      what a number is MADE of: grouping blocks, primes and
@@ -47,6 +49,7 @@ import { TIME_GROUPS, TIME_EXERCISES } from "./ex-time.js";
 import { MUL_GROUPS, MUL_EXERCISES } from "./ex-multiply.js";
 import { PRIME_GROUPS, PRIME_EXERCISES } from "./ex-primes.js";
 import { MODEL_GROUPS, MODEL_EXERCISES } from "./ex-models.js";
+import { NB_GROUPS, NB_EXERCISES } from "./ex-bases.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./ex-remainder.js";
 export { placesFor };
@@ -69,6 +72,7 @@ export const GROUPS = [
   ...PRIME_GROUPS,
   /* and the bar model's word problems after that */
   ...MODEL_GROUPS,
+  ...NB_GROUPS,
 ];
 
 /* Everything outside place value counts and writes in ordinary numerals, so it
@@ -89,6 +93,8 @@ export const EXERCISES = [
   ...tenOnly(MUL_EXERCISES),
   ...tenOnly(PRIME_EXERCISES),
   ...tenOnly(MODEL_EXERCISES),
+  /* number bases do their own bases: the base dial (chapter 1) does not touch them */
+  ...NB_EXERCISES,
 ];
 
 /**
@@ -107,6 +113,7 @@ const CHAPTER = new Map([
   ...MUL_GROUPS.map((g) => [g.id, 7]),
   ...PRIME_GROUPS.map((g) => [g.id, 8]),
   ...MODEL_GROUPS.map((g) => [g.id, 9]),
+  ...NB_GROUPS.map((g) => [g.id, 10]),
 ]);
 /* Place value is the first chapter, so it is what is left over. */
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
@@ -125,6 +132,7 @@ export function exerciseById(id) {
 export function unavailable(ex, o) {
   if (ex.tenOnly && o.base !== 10) return "base ten only";
   if (ex.hardest && o.level === "gentle") return "needs Middle or Stretch";
+  if (ex.minLevel === "stretch" && o.level !== "stretch") return "needs Stretch";
   return null;
 }
 
