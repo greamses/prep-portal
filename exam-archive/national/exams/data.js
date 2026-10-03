@@ -1031,15 +1031,19 @@ function targetUrl() {
   return `../question/question.html?${params.toString()}`;
 }
 
-// ── Competition papers are opened by invitation ───────────────────────
-// Only the admin sees the Competitions tab, and nobody else can open a
-// competition paper without a link the admin made for it. Such a link is the
+// ── Competition papers: premium, or by invitation ─────────────────────
+// The admin and PREMIUM users see the Competitions tab and can open any
+// competition paper. Anyone else needs a link the admin made. Such a link is the
 // paper's ordinary URL plus `k`, a code naming a `paperShares/{code}` document
 // that records which paper it is for; /utils/competition-gate.js checks the two
 // agree before the question page shows anything. One code per paper: copying
 // the link again hands back the same one, so withdrawing it (deleting the
-// document) withdraws every copy that was sent.
+// document) withdraws every copy that was sent. Making and withdrawing those
+// links is the admin's alone (the rules let nobody else write a share): a
+// premium user's Copy link is the paper's plain URL, which opens for another
+// premium user.
 const ADMIN_EMAIL = "eemadanyel@gmail.com";
+let compIsAdmin = false;
 
 function newShareCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
@@ -1111,7 +1115,7 @@ function syncWithdraw() {
 // Ask once per picked paper whether a link is out for it.
 let compLinkAsked = null;
 function refreshCompLink() {
-  if (!withdrawBtn || activeCat !== "competition" || beginBtn.disabled) { syncWithdraw(); return; }
+  if (!withdrawBtn || !compIsAdmin || activeCat !== "competition" || beginBtn.disabled) { syncWithdraw(); return; }
   const key = compPaperKey();
   if (compLinkAsked === key) { syncWithdraw(); return; }
   compLinkAsked = key;
@@ -1181,7 +1185,7 @@ if (shareBtn) {
     if (shareBtn.disabled) return;
     let rel;
     try {
-      rel = activeCat === "competition" ? await compShareUrl() : targetUrl();
+      rel = activeCat === "competition" && compIsAdmin ? await compShareUrl() : targetUrl();
     } catch (e) {
       console.error("[builder] could not make the share link:", e);
       setStatus("Could not make the link — try again.", false);
@@ -1339,14 +1343,17 @@ document.querySelectorAll(".cat-tab").forEach((btn) => {
 // ── Bootstrap ──────────────────────────────────────────────────────
 // Tabs: National (exam) · International (exam) · Class (the old "practice" tab,
 // relabelled). Competitions (third-party papers: Scholastic, ANMC) is shown to
-// the admin alone, who shares a paper by link — see compShareUrl() above.
+// the admin and to premium users; the admin can also share a paper by link
+// with someone who is neither — see compShareUrl() above.
 const compTab = document.querySelector('.cat-tab[data-tab="competition"]');
 document.querySelectorAll(".cat-tab").forEach((b) => {
   if (b.dataset.tab === "competition") b.style.display = "none";
   if (b.dataset.tab === "practice") b.textContent = "Class"; // the per-class practice tab
 });
-ppCurrentUser().then((user) => {
-  if (!compTab || !user || user.email !== ADMIN_EMAIL) return;
+ppCurrentUser().then(async (user) => {
+  if (!compTab || !user) return;
+  compIsAdmin = user.email === ADMIN_EMAIL;
+  if (!compIsAdmin && !(await isPickerPremium())) return;
   compTab.style.display = "";
   // Arrived by a ?cat=competition link — land on it now it is known to be theirs.
   if (initialCat === "competition" && activeCat !== "competition") compTab.click();

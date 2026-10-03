@@ -1,8 +1,10 @@
 /*
  * competition-gate.js — who may open a competition paper (Scholastic, ANMC).
  *
- * The competition papers are not on general release. The admin can open any of
- * them; everyone else needs a link the admin made for that exact paper (the
+ * The competition papers are not on general release. The admin and PREMIUM
+ * users can open any of them (premium is `isPremium` on users/{uid}, the same
+ * flag every premium page reads); everyone else needs a link the admin made for
+ * that exact paper (the
  * Exam Builder's "Copy link" on the Competitions tab). Such a link carries a
  * code, `k`, which names a `paperShares/{code}` document recording the paper it
  * was made for. No code, a code for a different paper, or a code the admin has
@@ -51,6 +53,22 @@ function block(title, message, loginHref) {
   else document.addEventListener("DOMContentLoaded", paint);
 }
 
+// Not premium and no link: say both ways in.
+function blockWithPlans() {
+  block("This paper is for premium members", "Competition papers open with a premium plan, or with a link from your teacher.");
+  const add = () => {
+    const box = document.querySelector("body > div > div");
+    if (!box || box.querySelector("[data-plans]")) return;
+    const a = document.createElement("a");
+    a.href = "/subscribe.html#plans";
+    a.dataset.plans = "1";
+    a.textContent = "See plans";
+    a.style.cssText = "display:inline-block;margin:.25rem;padding:.6rem 1.1rem;border-radius:999px;background:#f4c95d;color:#2a2723;text-decoration:none;font-weight:700";
+    box.insertBefore(a, box.querySelector("a"));
+  };
+  if (document.body) add(); else document.addEventListener("DOMContentLoaded", add);
+}
+
 // Resolves with the signed-in user, or null if there is none (or auth stalls).
 function currentUser() {
   return new Promise((resolve) => {
@@ -72,9 +90,18 @@ async function decide() {
   }
   if (user.email === ADMIN_EMAIL) { reveal(); return; }
 
+  /* a premium user needs no link. A failed read is not a "no": it falls
+     through to the link check, so the page still fails closed. */
+  try {
+    const me = await getDoc(doc(db, "users", user.uid));
+    if (me.exists() && me.data().isPremium === true) { reveal(); return; }
+  } catch (e) {
+    console.warn("[competition-gate] could not read the profile:", e);
+  }
+
   const code = (qp.get("k") || "").trim();
   if (!/^[A-Za-z0-9]{6,32}$/.test(code)) {
-    block("This paper is not open", "Competition papers are opened by invitation. Ask your teacher for a link.");
+    blockWithPlans();
     return;
   }
   try {
