@@ -44,7 +44,12 @@
      - with words HIGHLIGHTED, those words become the equation, set at once;
      - while it is being typed, the equation is shown SET just under the box,
        changing with every key — the built-up form beside the linear one;
-     - the key again (or Enter, Tab, Escape, or a press elsewhere) sets it.
+     - the key again (or Tab, Escape, or a press elsewhere) sets it.
+
+   AN EQUATION MAY RUN TO SEVERAL LINES — a solution is worked a line at a
+   time. Enter inside the box starts a new line (Enter on an empty last line
+   finishes, the way leaving a list does), and the lines are set one under
+   another with their = signs in a column.
 
    The `?` key beside it opens the card of signs: every shape and symbol that
    can be typed, each SET by the same typesetter from the same translation, so
@@ -324,7 +329,7 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
        `x^2 + 1`, press the key, and it is mathematics. (Press it to open it
        again, like any other.) */
     if (picked && !tex) {
-      const eq = mathNode(toTeX(picked), document, picked);
+      const eq = mathNode(texOf(picked), document, picked);
       r.insertNode(eq);
       caretAfter(eq);
       harvest();
@@ -333,6 +338,38 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
 
     r.insertNode(eqBox(tex));
     caretIn(openEq());
+    harvest();
+  }
+
+  /** What was typed in the box: the zero-width mark that holds an empty last line open is not part of it. */
+  const typedIn = (box) => box.textContent.replace(/\u200B/g, "");
+
+  /**
+   * The TeX of what was typed. One line is one equation; several are set one
+   * under another, lined up on their first = (or on their left, without one).
+   */
+  function texOf(typed) {
+    const lines = typed.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (lines.length < 2) return toTeX(lines[0] || "");
+    return `\\begin{aligned}${lines.map((l) => { const t = toTeX(l); return t.includes("=") ? t.replace("=", "&=") : `&${t}`; }).join(" \\\\ ")}\\end{aligned}`;
+  }
+
+  /** A new line inside the equation being typed. */
+  function breakLine(box) {
+    const sel = window.getSelection();
+    let r = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+    if (!r || !box.contains(r.commonAncestorContainer)) { caretIn(box); r = sel.getRangeAt(0); }
+    r.deleteContents();
+    /* a line break at the very end shows nothing until something follows it,
+       so an empty last line is held open by a mark of no width */
+    const node = document.createTextNode("\n\u200B");
+    r.insertNode(node);
+    const at = document.createRange();
+    at.setStart(node, 1);
+    at.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(at);
+    box.normalize();
     harvest();
   }
 
@@ -355,10 +392,10 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
   let fromKey = false;
   function showLive() {
     const box = openEq();
-    const typed = box ? box.textContent.trim() : "";
+    const typed = box ? typedIn(box).trim() : "";
     if (!box || !typed) { live.hidden = true; live.replaceChildren(); return; }
     let shown = null;
-    try { shown = mathNode(toTeX(typed), document, typed); } catch { shown = null; }
+    try { shown = mathNode(texOf(typed), document, typed); } catch { shown = null; }
     if (!shown) { live.hidden = true; return; }
     shown.removeAttribute("title");
     live.replaceChildren(shown);
@@ -383,11 +420,11 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
   function setEquation() {
     const box = openEq();
     if (!box) return false;
-    const typed = box.textContent.trim();
+    const typed = typedIn(box).trim();
     live.hidden = true;
     live.replaceChildren();
     if (!typed) { box.remove(); harvest(); return true; }
-    const eq = mathNode(toTeX(typed), document, typed);
+    const eq = mathNode(texOf(typed), document, typed);
     box.replaceWith(eq);
     caretAfter(eq);
     harvest();
@@ -489,7 +526,13 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
    * and learnt from. A palette that pasted \frac{1}{2} would teach nothing.
    */
   function typeIntoEquation(text) {
-    if (!openEq()) insertEquation();
+    if (!openEq()) {
+      /* a sign pressed with no equation open opens one AT THE CARET for it —
+         never turning whatever happens to be highlighted into the equation */
+      const s = window.getSelection();
+      if (s && s.rangeCount && inPaper()) s.collapseToEnd();
+      insertEquation();
+    }
     const box = openEq();
     if (!box) return;
     paper.focus();
@@ -616,6 +659,14 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     /* Inside one, the keys that mean "done" set it and stay on the note. Escape
        especially: it must not close a note you were only halfway through
        writing an equation on. */
+    if (openEq() && e.key === "Enter" && !(e.ctrlKey || e.metaKey)) {
+      /* Enter is a new line of the working; on an empty last line it finishes */
+      e.preventDefault();
+      e.stopPropagation();
+      const box = openEq();
+      if (/\n\s*$/.test(typedIn(box)) || !typedIn(box).trim()) setEquation(); else breakLine(box);
+      return;
+    }
     if (openEq() && ["Enter", "Tab", "Escape"].includes(e.key)) {
       e.preventDefault();
       e.stopPropagation();
