@@ -11,7 +11,7 @@ import {
   blocksArt, schotyArt, suanpanArt, sorobanArt,
   placeValueArt, multiplyArt, divideArt, tilesArt, frameArt, numberCardArt,
   longDivideArt, shortDivideArt, columnAddArt, columnTimesArt, crissArt,
-  fractionArt, balanceArt,
+  fractionArt, balanceArt, noteArt,
 } from "./illustrations.js";
 
 export const GROUPS = [
@@ -273,6 +273,25 @@ export const GROUPS = [
           "find the number you are dividing inside the square, and its two " +
           "edges are what you divided by and what you got.",
         art: divideArt,
+      },
+    ],
+  },
+  {
+    id: "notes",
+    label: "Notes",
+    icon: "note",
+    blurb: "Paper to write on, stuck anywhere on the canvas.",
+    tools: [
+      {
+        id: "sticky-note",
+        kind: "note",
+        label: "Sticky Note",
+        short: "Note",
+        blurb:
+          "A sticky note that lands on the canvas ready to be written on: words, " +
+          "numbers and equations, in bold or colour, on any of six papers. Drag " +
+          "it beside the thing it is about; double-tap to write on it again.",
+        art: noteArt,
       },
     ],
   },

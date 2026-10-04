@@ -270,6 +270,18 @@ export function numberCardArt() {
   );
 }
 
+/** A sticky note with a few lines written on it, and its strip of tape. */
+export function noteArt() {
+  const line = (y, w) => `<rect x="30" y="${y}" width="${w}" height="3.4" rx="1.7" fill="rgba(42,39,35,.62)"/>`;
+  return svg(
+    `<rect x="24" y="12" width="72" height="58" rx="3" fill="#fff3a8"
+       stroke="${LINE}" stroke-width="1.4" transform="rotate(-3 60 41)"/>` +
+    `<rect x="46" y="7" width="28" height="8" rx="1" fill="rgba(255,255,255,.6)"
+       stroke="rgba(0,0,0,.12)" stroke-width="0.8" transform="rotate(-5 60 11)"/>` +
+    `<g transform="rotate(-3 60 41)">${line(26, 44)}${line(36, 56)}${line(46, 36)}${line(56, 50)}</g>`
+  );
+}
+
 /**
  * The bus stop, mid-working: the answer coming along the top, what has been
  * taken away underneath, and the next number brought down beside what was left.

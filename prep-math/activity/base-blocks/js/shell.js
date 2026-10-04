@@ -188,7 +188,7 @@ export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onTile, onOwn, on
           <button class="bb-piece" type="button" data-tool="${t.id}"
             ${off ? `disabled title="A ${t.short.toLowerCase()} only counts in base ten. Change the base back, or use the schoty."` : ""}>
             <i class="bb-piece__swatch bb-swatch--${
-              t.kind === "abacus" ? "rod" : t.kind === "card" ? "card" : "flat"
+              t.kind === "abacus" ? "rod" : t.kind === "card" || t.kind === "note" ? "card" : "flat"
             }"></i>
             <span>${t.short}</span>
           </button>`;

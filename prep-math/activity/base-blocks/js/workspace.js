@@ -581,6 +581,12 @@ function placeTool(tool) {
     seedBlocks();
     return;
   }
+  if (tool.kind === "note") {
+    /* the same note the rail's Note key drags out: it lands in the middle of
+       what is being looked at, with the caret already in it */
+    dropNote({});
+    return;
+  }
   if (tool.kind === "tile") {
     /* The Tiles card is a door to the family, not one tile: which piece you
        want is the only question, and the panel is where it is asked. */

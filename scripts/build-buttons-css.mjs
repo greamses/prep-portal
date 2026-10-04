@@ -40,7 +40,13 @@ const TOOLS = [
 ];
 
 // Not buttons, or must not be paper. `.pp-plain` is the opt-out.
-const SKIP = [".pp-plain", ".pp-select-trigger", ".pp-receipt", "svg *", '[class*="blockly"]', ...BARE, ...TOOLS];
+// THE NOTE EDITOR's own keys — the pens, swatches and chips of a sticky note
+// being written on (utils/components/sticky-note-editor.js). They are the tools
+// of ONE note and are drawn small and flat on its bar; dressed as notes
+// themselves they became a pad of notes stuck to a note.
+const NOTE_KEYS = ['[class*="pp-note__"]'];
+
+const SKIP = [".pp-plain", ".pp-select-trigger", ".pp-receipt", "svg *", '[class*="blockly"]', ...BARE, ...TOOLS, ...NOTE_KEYS];
 
 // Already notes, each with its own `transform` tilt and tape — a second tilt
 // would double it. A new note class that tilts itself belongs here.
