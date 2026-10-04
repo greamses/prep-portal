@@ -2,20 +2,24 @@
    Mental Maths Workbook — PREPBOT EXPLAINS each trick
    ----------------------------------------------------------------------------
    Learning with PrepBot (/prep-math/mental-math) is where a trick is TAUGHT:
-   the mascot talks it through, a line at a time. This brings that teacher
-   onto the workbook. On a Skill development paper every section opens with a
-   strip that says "PrepBot explains …"; tapped, PrepBot comes up beside the
-   paper and talks the trick through — what to do, then the example worked on
-   the page, which is ringed while it speaks.
+   PrepBot stands in a TV, and the trick is animated on the screen while it
+   talks. PrepBot never explains without its TV. This brings that set onto
+   the workbook. On a Skill development paper every section opens with a
+   strip that says "PrepBot explains …"; tapped, the TV comes up over the
+   paper, the curtain opens, and PrepBot talks the trick through a step at a
+   time — first the rule, a line to a card, then the example worked on the
+   page, built up on the screen piece by piece as it is explained.
 
-   IT IS THE SAME PREPBOT. The character is the one shared module
-   (/prep-math/mental-math/shared/prepbot-teacher.js): its typewriter bubble,
-   its beep or talking voice, its menu. Its "Ask" button opens the site's real
-   chat. Nothing here draws a bot of its own.
+   IT IS THE SAME SET AND THE SAME PREPBOT: /prep-math/mental-math/shared/
+   prepbot-tv.js (the TV, its controls, the stepping) and prepbot-teacher.js
+   (the character, its voice, its menu, its Ask button into the real chat).
+   Nothing here draws a TV or a bot of its own; this file only says what goes
+   on the screen.
 
-   What it SAYS is the section's own words — its instruction and the "one
-   done for you" — so a trick's explanation can never drift from its paper.
-   A trick that also has a full animated lesson links to it (LESSONS).
+   What it SAYS and SHOWS is the section's own — its instruction, and the
+   "one done for you" taken from the paper itself — so a trick's explanation
+   can never drift from its paper. A trick that also has a full animated
+   lesson links to it (LESSONS).
 
    Drills papers have no strip: a drill is against the clock.
    ========================================================================== */
@@ -48,88 +52,166 @@ const FACE = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="11.2" y="1.6"
   `<path d="M8.6 15.6Q12 17.8 15.4 15.6" fill="none" stroke="#2a2723" stroke-width="1.2" stroke-linecap="round"/></svg>`;
 const PLAY = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.4" fill="#2a2723"/><path d="M9.6 7.4v9.2l7.6-4.6z" fill="#fffdf8"/></svg>`;
 
-/** The strip that opens a section: PrepBot, the trick's name, and "listen". */
+/** The strip that opens a section: PrepBot, the trick's name, and "watch". */
 export function explainStrip(ex, opts) {
-  const lines = [
-    ...linesOf(typeof ex.instruction === "function" ? ex.instruction(opts) : ex.instruction),
-    ...(ex.worked ? workedLines(ex.worked(opts)) : []),
-  ];
+  const rule = linesOf(typeof ex.instruction === "function" ? ex.instruction(opts) : ex.instruction);
+  const done = ex.worked ? workedLines(ex.worked(opts)) : [];
   const lesson = LESSONS[ex.id];
-  return `<div class="vm-video has-video" data-explain="${esc(JSON.stringify(lines))}" data-title="${esc(ex.label)}" tabindex="0">` +
+  return `<div class="vm-video has-video" data-explain="${esc(JSON.stringify({ rule, done }))}" data-title="${esc(ex.label)}" tabindex="0">` +
     `<span class="vm-video__bot">${FACE}</span>` +
     `<span class="vm-video__say"><b>PrepBot explains</b><em>${esc(ex.label)}</em></span>` +
     (lesson ? `<a class="vm-video__more" href="${lesson}" target="_blank" rel="noopener">The full lesson</a>` : "") +
-    `<span class="vm-video__go">${PLAY}<i>Listen</i></span></div>`;
+    `<span class="vm-video__go">${PLAY}<i>Watch</i></span></div>`;
 }
 
-/* ── the teacher: one for the page, brought up by any strip ──────────────── */
+/* ── what goes on the TV's screen ──────────────────────────────────────── */
 
-let teacher = null;
-let booting = null;
-let playing = null;      // the strip PrepBot is explaining now
-
-async function boot() {
-  if (teacher) return teacher;
-  if (booting) return booting;
-  booting = (async () => {
-    if (!document.querySelector('link[href$="prepbot-teacher.css"]')) {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = "/prep-math/mental-math/shared/prepbot-teacher.css";
-      document.head.appendChild(link);
+/**
+ * The worked example as it stands on the paper, taken apart into the PIECES
+ * that come onto the screen one after another: each step of a list of steps,
+ * each part of a strip, and anything else whole. The words under it are left
+ * out — PrepBot says those.
+ */
+function figureOf(worked) {
+  if (!worked) return null;
+  const fig = worked.cloneNode(true);
+  fig.classList.remove("is-explaining");
+  fig.querySelectorAll(".wb-worked__tag, .wb-worked__say, .wb-drawbar").forEach((n) => n.remove());
+  const pieces = [];
+  /* A line with strips in it — "8 is 2 below 10. [8 − 3 | 2 × 3] → [5 | 6] = 56" — comes on in
+     turns: the words before a strip, then each strip (with the arrow or sign in front of it),
+     then what follows. Each turn is wrapped so that it can be brought on by itself. */
+  const inTurns = (line) => {
+    const turns = [];
+    let run = [];
+    const flush = (extra) => {
+      const nodes = extra ? [...run, extra] : run;
+      run = [];
+      if (!nodes.some((n) => n.nodeType === 1 || n.textContent.trim())) return;
+      const wrap = line.ownerDocument.createElement("span");
+      wrap.className = "vm-tv__turn";
+      nodes[0].parentNode.insertBefore(wrap, nodes[0]);
+      nodes.forEach((n) => wrap.appendChild(n));
+      turns.push(wrap);
+    };
+    for (const n of [...line.childNodes]) {
+      if (n.nodeType === 1 && n.matches(".vm-strip")) {
+        const lead = run.map((x) => x.textContent).join("").trim();
+        if (lead.length > 3) { flush(); flush(n); } else flush(n);      // a short lead (an arrow, a sign) rides in with its strip
+      } else run.push(n);
     }
-    const [{ PrepbotTeacher }, fb] = await Promise.all([
-      import("/prep-math/mental-math/shared/prepbot-teacher.js"),
-      import("/firebase-init.js").catch(() => ({})),
-    ]);
-    const root = document.createElement("div");
-    root.id = "vm-prepbot";
-    root.className = "mm-prepbot vm-prepbot";
-    root.innerHTML =
-      `<div class="mm-prepbot-bubble mm-prepbot-bubble--speech mm-prepbot-bubble--hidden" aria-hidden="true"><p></p></div>` +
-      `<div class="mm-prepbot-avatar-wrap"><div class="mm-prepbot-menu">` +
-      `<button class="mm-prepbot-menu-btn" data-b="ask" type="button" title="Ask PrepBot a question" aria-label="Ask PrepBot a question"></button>` +
-      `<button class="mm-prepbot-menu-btn" data-b="voice" type="button" title="Beep or talking voice" aria-label="Toggle beep or talking voice"></button>` +
-      `<button class="mm-prepbot-menu-btn" data-b="sleep" type="button" title="Sleep" aria-label="Sleep PrepBot"></button>` +
-      `<button class="mm-prepbot-menu-btn" data-b="poke" type="button" title="Wiggle" aria-label="Wiggle PrepBot"></button>` +
-      `</div><div class="mm-prepbot-avatar" aria-hidden="true"></div></div>`;
-    document.body.appendChild(root);
-    const b = (k) => root.querySelector(`[data-b="${k}"]`);
-    teacher = new PrepbotTeacher({ root, boundsEl: document.body, auth: fb.auth || null, menu: { ask: b("ask"), voice: b("voice"), sleep: b("sleep"), poke: b("poke") } });
-    import("https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm")
-      .then((m) => { teacher.gsap = m.default || m.gsap || m; teacher.scheduleIdle(); })
-      .catch(() => { /* no idle animation; everything else still works */ });
-    return teacher;
-  })();
-  return booting;
+    flush();
+    return turns;
+  };
+  const walk = (el, depth) => {
+    for (const child of [...el.children]) {
+      if (child.querySelector(":scope > .vm-strip")) { pieces.push(...inTurns(child)); continue; }
+      const split = depth < 3 && child.children.length > 1 &&
+        (child.matches(".vm-steps, .wb-side, .gw-side, .sw-side") || ![...child.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()));
+      if (split && !child.matches("svg, table, mjx-container, .wb-m, .vm-strip")) walk(child, depth + 1);
+      else pieces.push(child);
+    }
+  };
+  walk(fig, 0);
+  if (!pieces.length) return null;
+  pieces.forEach((n, i) => { n.classList.add("vm-tv__piece"); n.dataset.piece = String(i); });
+  return { html: fig.innerHTML, count: pieces.length };
 }
 
-function settle() {
-  document.querySelectorAll(".is-explaining").forEach((n) => n.classList.remove("is-explaining"));
-  if (playing) { const i = playing.querySelector(".vm-video__go i"); if (i) i.textContent = "Listen"; playing.classList.remove("is-playing"); }
-  playing = null;
+/** Size the figure to the screen: as big as fits above PrepBot. */
+function fit(stage) {
+  const fig = stage.querySelector(".vm-tv__fig");
+  if (!fig) return;
+  fig.style.transform = "none";
+  const w = fig.offsetWidth, h = fig.offsetHeight;
+  if (!w || !h) return;
+  const k = Math.min((stage.clientWidth * 0.92) / w, (stage.clientHeight * 0.66) / h, 2.4);
+  fig.style.transform = `translateX(-50%) scale(${k.toFixed(3)})`;
 }
+
+let tvOpen = false;
 
 async function explain(strip) {
-  const t = await boot();
-  if (playing === strip) { t.stop(); settle(); t.hide(); return; }
-  t.stop();
-  settle();
-  let lines = [];
-  try { lines = JSON.parse(strip.dataset.explain); } catch { /* nothing to say */ }
-  if (!lines.length) return;
-  playing = strip;
+  if (tvOpen) return;
+  let rule = [], done = [];
+  try { ({ rule = [], done = [] } = JSON.parse(strip.dataset.explain)); } catch { /* nothing to say */ }
+  if (!rule.length && !done.length) return;
+  const next = strip.nextElementSibling;
+  const figure = figureOf(next && next.classList.contains("wb-worked") ? next : null);
+
+  const build = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"><div class="vm-tv__card pp-sticky pp-sticky--c1" hidden></div>` +
+      (figure ? `<div class="wb-sheet vm-tv__paper" hidden><div class="vm-tv__fig">${figure.html}</div></div>` : "") + `</div>`;
+    fit(stage);
+  };
+  const card = (stage) => stage.querySelector(".vm-tv__card");
+  const paper = (stage) => stage.querySelector(".vm-tv__paper");
+
+  const steps = [
+    /* the rule, a line to a card */
+    ...rule.map((say, i) => ({
+      say,
+      show(stage, { gsap, instant }) {
+        const c = card(stage);
+        c.hidden = false;
+        if (paper(stage)) paper(stage).hidden = true;
+        c.className = `vm-tv__card pp-sticky pp-sticky--c${i % 6}`;
+        c.textContent = say;
+        if (!instant && gsap) gsap.fromTo(c, { scale: 0.7, opacity: 0, rotation: -4 }, { scale: 1, opacity: 1, rotation: i % 2 ? 1.2 : -1.2, duration: 0.45, ease: "back.out(1.6)" });
+      },
+    })),
+    /* the one done for you, built up piece by piece — or, with no picture, a card again */
+    ...done.map((say, j) => ({
+      say,
+      show(stage, { gsap, instant }) {
+        const c = card(stage), pp = paper(stage);
+        if (!pp) {
+          c.hidden = false;
+          c.className = `vm-tv__card pp-sticky pp-sticky--c${(rule.length + j) % 6}`;
+          c.textContent = say;
+          if (!instant && gsap) gsap.fromTo(c, { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(1.6)" });
+          return;
+        }
+        c.hidden = true;
+        pp.hidden = false;
+        fit(stage);
+        const upto = Math.ceil(((j + 1) * figure.count) / done.length);
+        const fresh = [...pp.querySelectorAll(".vm-tv__piece:not(.is-on)")].filter((n) => Number(n.dataset.piece) < upto);
+        fresh.forEach((n) => n.classList.add("is-on"));
+        if (!instant && gsap && fresh.length) gsap.fromTo(fresh, { opacity: 0, y: 14, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)", stagger: 0.18 });
+      },
+    })),
+  ];
+  if (figure && !done.length && steps.length) {
+    /* a picture with nothing said under it: it comes up whole with the last line of the rule */
+    const last = steps[steps.length - 1], before = last.show;
+    last.show = (stage, how) => { before(stage, how); paper(stage).hidden = false; paper(stage).querySelectorAll(".vm-tv__piece").forEach((n) => n.classList.add("is-on")); card(stage).classList.add("is-small"); fit(stage); };
+  }
+
+  tvOpen = true;
   strip.classList.add("is-playing");
-  strip.querySelector(".vm-video__go i").textContent = "Stop";
-  /* ring the example PrepBot is talking about: the worked one under the strip */
-  let next = strip.nextElementSibling;
-  if (next && next.classList.contains("wb-worked")) next.classList.add("is-explaining");
-  strip.scrollIntoView({ block: "center", behavior: "smooth" });
-  t.show();
-  t.speak(lines.map((text) => ({ text, mode: "speech" })));
-  const mine = strip;
-  try { await t.narrationDone; } catch { /* stopped */ }
-  if (playing === mine) settle();
+  try {
+    const { openTv } = await import("/prep-math/mental-math/shared/prepbot-tv.js");
+    const tv = await openTv({ title: strip.dataset.title || "", build, steps });
+    const refit = () => { const st = document.querySelector(".mm-tv-overlay [data-tv='stage']"); if (st) fit(st); };
+    window.addEventListener("resize", refit);
+    document.addEventListener("fullscreenchange", refit);
+    /* the strip is free again when the set is switched off */
+    const watch = new MutationObserver(() => {
+      if (document.querySelector(".mm-tv-overlay")) return;
+      watch.disconnect();
+      window.removeEventListener("resize", refit);
+      document.removeEventListener("fullscreenchange", refit);
+      tvOpen = false;
+      strip.classList.remove("is-playing");
+    });
+    watch.observe(document.body, { childList: true });
+    void tv;
+  } catch (err) {
+    tvOpen = false;
+    strip.classList.remove("is-playing");
+    console.error("PrepBot's TV could not be opened", err);
+  }
 }
 
 if (typeof document !== "undefined" && !document.__vmExplain) {

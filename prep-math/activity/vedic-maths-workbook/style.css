@@ -63,13 +63,29 @@
 .vm-video__go { flex: none; display: flex; align-items: center; gap: 1.6mm; font-weight: 700; }
 .vm-video__go svg { width: 7mm; height: 7mm; }
 .vm-video__go i { font-style: normal; font-size: 8.5pt; }
-/* the example PrepBot is talking about */
-.wb-worked.is-explaining { outline: 0.6mm solid #e0a100; outline-offset: 1mm; border-radius: 1.5mm; }
+@media print { .vm-video__go, .vm-video__more { display: none !important; } .vm-video { background: none; } }
 
-/* the teacher itself is the shared one; this page only says where it stands */
-/* over the opened workbook (10041) and its panels (10070), under the chat (10080) */
-#vm-prepbot.vm-prepbot { position: fixed; left: 18px; bottom: 18px; z-index: 10078; align-items: flex-start; }
-.vm-prepbot .mm-prepbot-bubble { max-width: min(300px, 70vw); width: auto; }
-.vm-prepbot .mm-prepbot-avatar { width: 64px; height: 64px; }
-.vm-prepbot .mm-prepbot-menu { right: auto; left: -8px; }
-@media print { .vm-prepbot, .vm-video__go, .vm-video__more { display: none !important; } .vm-video { background: none; } }
+/* ── what PrepBot's TV shows for a trick (js/explain.js) ──────────────────────
+   The set itself is the shared one (mental-math/shared/prepbot-tv.css). On its
+   screen: a sticky-note CARD for each line of the rule, then the worked
+   example from the paper, each PIECE of it coming on as PrepBot gets to it. */
+/* the card stands in the middle of the screen, above PrepBot: placed by the
+   grid, not by a transform — its transform is the animation's */
+.vm-tv { position: absolute; inset: 0; display: grid; place-items: center; padding: 9% 7% 24%; box-sizing: border-box; }
+.vm-tv__card.pp-sticky {
+  width: min(100%, 540px); padding: 1rem 1.2rem 1.1rem; box-sizing: border-box;
+  font-family: "Shantell Sans", "Segoe Print", cursive; font-weight: 600;
+  font-size: clamp(0.85rem, 2.1vw, 1.25rem); line-height: 1.4; color: #14130f; text-align: center;
+}
+.vm-tv__card.is-small { align-self: start; font-size: clamp(0.7rem, 1.4vw, 0.9rem); padding: 0.5rem 0.8rem; }
+/* the paper's own dress (.wb-sheet) so the example looks as it does on the page — but not its page width */
+.vm-tv__paper.wb-sheet { position: absolute; inset: 0; width: auto; display: block; gap: 0; }
+.vm-tv__fig {
+  position: absolute; left: 50%; top: 13%; width: max-content; max-width: 150mm;
+  transform-origin: top center; padding: 2.5mm 4mm; border-radius: 2mm;
+  background: #fffdf8; box-shadow: 0 1mm 3mm rgba(20, 19, 15, 0.18);
+}
+.vm-tv__card.pp-sticky[hidden], .vm-tv__paper.wb-sheet[hidden] { display: none; }
+.vm-tv__turn { display: inline-block; }
+.vm-tv__piece { opacity: 0; }
+.vm-tv__piece.is-on { opacity: 1; }
