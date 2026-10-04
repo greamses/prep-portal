@@ -2930,12 +2930,10 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .lb-tray { align-items: center; }
 .lb-tray__gap { width: 0.3mm; height: 9mm; background: #b8ae98; margin: 0 1.2mm; }
 .lb-chip--look { width: 20mm; height: 12mm; }
-/* a fan that is running turns; a speaker that is sounding throbs */
-.lb-spin { transform-box: fill-box; transform-origin: center; animation: lb-spin 0.7s linear infinite; }
-@keyframes lb-spin { to { transform: rotate(360deg); } }
+/* a speaker that is sounding throbs (the fan is turned by its own SVG, about its hub) */
 .lb-sound { animation: lb-sound 0.5s ease-in-out infinite alternate; }
 @keyframes lb-sound { from { opacity: 0.35; } to { opacity: 1; } }
-@media print { .lb-spin, .lb-sound { animation: none; } }
+@media print { .lb-sound { animation: none; } }
 .lb-wrap.is-live .lb-tray .lb-chip.is-held { outline: 0.6mm solid #e0a100; outline-offset: 0.6mm; }
 .lb-board {
   position: relative; max-width: 100%; border: 0.3mm solid #b8ae98; border-radius: 1.5mm;

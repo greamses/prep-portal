@@ -121,6 +121,37 @@ export const builtTable = (layout, st) => settings(layout).map((sw) => runBuilt(
 /** Does the built circuit do what the target column says, on every row? */
 export const circuitRight = (layout, st, target) => builtTable(layout, st).every((v, i) => v === target[i]);
 
+/* ── the speaker's own voice ───────────────────────────────────────────────
+   One audio context for the page, made the first time a speaker has to sound
+   (which is always after a tap, so the browser allows it). Each board holds
+   its own tone: a soft 440 Hz buzz that fades in and out rather than clicking. */
+let audio = null;
+function toneOn() {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    audio ||= new AC();
+    if (audio.state === "suspended") audio.resume();
+    const osc = audio.createOscillator(), gain = audio.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = 440;
+    gain.gain.setValueAtTime(0, audio.currentTime);
+    gain.gain.linearRampToValueAtTime(0.07, audio.currentTime + 0.04);
+    osc.connect(gain).connect(audio.destination);
+    osc.start();
+    return { osc, gain };
+  } catch { return null; }
+}
+function toneOff(t) {
+  if (!t || !audio) return;
+  try {
+    t.gain.gain.cancelScheduledValues(audio.currentTime);
+    t.gain.gain.setValueAtTime(t.gain.gain.value, audio.currentTime);
+    t.gain.gain.linearRampToValueAtTime(0, audio.currentTime + 0.05);
+    t.osc.stop(audio.currentTime + 0.08);
+  } catch { /* already stopped */ }
+}
+
 /** The workspace as it starts: the switches down the left, the bulb on the right. */
 function fresh(layout) {
   const ins = LAYOUTS[layout].inputs;
@@ -180,9 +211,9 @@ const MONO = `font-family="JetBrains Mono, monospace"`;
 const tag = (x, y, text, size = 4.6) => `<text x="${x}" y="${y}" text-anchor="middle" ${MONO} font-size="${size}" font-weight="800" fill="${INK}">${text}</text>`;
 
 /* What an input and an output may look like. The look is dress only. */
-export const INPUT_LOOKS = ["power", "press"];
+export const INPUT_LOOKS = ["power", "toggle", "press"];
 export const OUTPUT_LOOKS = ["bulb", "speaker", "fan"];
-const LOOK_NAME = { power: "power switch", press: "press switch", bulb: "bulb", speaker: "speaker", fan: "fan" };
+const LOOK_NAME = { power: "power switch", toggle: "toggle switch", press: "press switch", bulb: "bulb", speaker: "speaker", fan: "fan" };
 const RED_ON = "#f0443e", GREEN_ON = "#35c759", DARK = "#4b5057";
 
 /**
@@ -209,7 +240,21 @@ function pressSvg(on) {
     (on ? `<circle cx="0" cy="0" r="5" fill="${GREEN_ON}" opacity="0.3"/><circle cx="0" cy="0" r="3.5" fill="${GREEN_ON}" stroke="#1f8a3b" stroke-width="0.45"/>`
       : `<circle cx="0" cy="0.9" r="4.1" fill="#8f2622"/><circle cx="0" cy="-0.3" r="4.1" fill="${RED_ON}" stroke="#8f2622" stroke-width="0.45"/><path d="M-2.2 -2.2A3.2 3.2 0 0 1 1 -3.3" fill="none" stroke="#fff" stroke-width="0.6" stroke-linecap="round" opacity="0.7"/>`);
 }
-const inputSvg = (look, on) => (look === "press" ? pressSvg(on) : powerSvg(on));
+/**
+ * A TOGGLE SWITCH, in the power switch's dress: a dark body with a track, the
+ * knob slid to the 0 end and red when off, to the 1 end and green when on.
+ */
+function toggleSvg(on) {
+  const x = on ? 2.9 : -2.9, lit = on ? GREEN_ON : RED_ON;
+  return `<path d="M7 0H15" ${LEAD}/>` +
+    `<rect x="-7" y="-7" width="14" height="14" rx="3" fill="#24272b" stroke="${INK}" stroke-width="0.5"/>` +
+    `<rect x="-5.6" y="-2.9" width="11.2" height="5.8" rx="2.9" fill="#111315" stroke="${DARK}" stroke-width="0.4"/>` +
+    `<circle cx="${x}" cy="0" r="4" fill="${lit}" opacity="0.3"/>` +
+    `<circle cx="${x}" cy="0" r="2.5" fill="${lit}" stroke="#fffdf8" stroke-width="0.45"/>` +
+    `<text x="-3.9" y="6" text-anchor="middle" ${MONO} font-size="2.5" font-weight="800" fill="${on ? DARK : RED_ON}">0</text>` +
+    `<text x="3.9" y="6" text-anchor="middle" ${MONO} font-size="2.5" font-weight="800" fill="${on ? GREEN_ON : DARK}">1</text>`;
+}
+const inputSvg = (look, on) => (look === "press" ? pressSvg(on) : look === "toggle" ? toggleSvg(on) : powerSvg(on));
 function switchSvg(name, on, look) {
   return inputSvg(look, on) + tag(-10.6, 1.6, name) +
     `<text x="0" y="11.2" text-anchor="middle" ${MONO} font-size="2.9" font-weight="700" fill="${on ? "#1f8a3b" : "#b3261e"}">${on ? 1 : 0}</text>`;
@@ -226,7 +271,7 @@ function lampSvg(on) {
     `<path d="M-2.7 4.8H2.7M-2.7 6.1H2.7" stroke="${INK}" stroke-width="0.3"/>` +
     `<path d="M-1.4 7.4H1.4L0.8 8.6H-0.8Z" fill="${INK}"/>`;
 }
-/** A speaker: a box and a cone; sounding, rings of sound leave it. */
+/** A speaker: a box and a cone; sounding, rings of sound leave it — and it is heard (toneOn). */
 function speakerSvg(on) {
   const wave = (r) => `<path d="M${4.2 + r * 0.5} ${-r}A${r * 1.25} ${r * 1.25} 0 0 1 ${4.2 + r * 0.5} ${r}" fill="none" stroke="#d98c00" stroke-width="0.7" stroke-linecap="round"/>`;
   return `<path d="M-15 0H-6.4" ${LEAD}/>` +
@@ -239,7 +284,8 @@ function fanSvg(on) {
   const blade = (a) => `<path d="M0 0C-2.6 -1.6 -3 -5.4 0 -6.6C2.2 -5.6 2 -2.2 0 0Z" fill="${on ? "#58a6e0" : "#aeb6bd"}" stroke="${INK}" stroke-width="0.35" stroke-linejoin="round" transform="rotate(${a})"/>`;
   return `<path d="M-15 0H-7.6" ${LEAD}/>` +
     `<circle cx="0" cy="0" r="7.6" fill="#f7f4ec" stroke="${INK}" stroke-width="0.5"/>` +
-    `<g class="${on ? "lb-spin" : ""}">${blade(0)}${blade(120)}${blade(240)}<circle cx="0" cy="0" r="1.3" fill="${INK}"/></g>` +
+    /* turned by the SVG itself, about the hub at (0, 0): a CSS turn goes about the middle of the blades' box, which is not the hub, and the fan wobbles */
+    `<g>${on ? `<animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="0.28s" repeatCount="indefinite"/>` : ""}${blade(0)}${blade(120)}${blade(240)}<circle cx="0" cy="0" r="1.3" fill="${INK}"/></g>` +
     `<path d="M-2.2 7.3L-3.4 9H3.4L2.2 7.3" fill="#a9afb5" stroke="${INK}" stroke-width="0.4" stroke-linejoin="round"/>`;
 }
 const outputSvg = (look, on) => (look === "speaker" ? speakerSvg(on) : look === "fan" ? fanSvg(on) : lampSvg(on));
@@ -332,8 +378,17 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
   wrap.appendChild(say);
 
   const names = Object.keys(st.sw);
+  /* a speaker that is ON is heard: the tone runs for as long as it is */
+  let tone = null;
+  function sound(on) {
+    if (on && !tone) tone = toneOn();
+    else if (!on && tone) { toneOff(tone); tone = null; }
+  }
+  const hush = () => sound(false);
+  document.addEventListener("visibilitychange", hush);
   function paint() {
     const live = runBuilt(st, st.sw);
+    sound(live.Q === 1 && st.parts.find((p) => p.id === "Q")?.look === "speaker");
     svg.innerHTML = scene(st, { live, armed, rubber: drag?.rubber || null, lifted: drag?.kind === "part" && drag.moved ? drag.id : null });
     tray.querySelectorAll(".lb-chip").forEach((c) => c.classList.toggle("is-held", held === (c.dataset.gate || `look:${c.dataset.look}`)));
     board.classList.toggle("is-placing", !!held);
@@ -527,6 +582,8 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
       window.removeEventListener("pointerup", up);
       window.removeEventListener("keydown", key);
       clearTimeout(flashing);
+      hush();
+      document.removeEventListener("visibilitychange", hush);
       wrap.classList.remove("is-live");
       wrap.innerHTML = printed;
     },
