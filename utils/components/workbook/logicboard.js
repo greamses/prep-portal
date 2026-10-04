@@ -12,7 +12,10 @@
                       right of a switch or gate) to a pin that takes (the left
                       of a gate or of the bulb). Or tap one pin, then the other.
                       An output may feed many wires; an input takes one.
-     cut a wire       tap it
+     unplug a wire    take hold of the end at the pin it goes INTO and pull:
+                      let go over another input pin and it is plugged in
+                      there; let go anywhere else and the wire is gone.
+     cut a wire       or just tap it
      flip a switch    tap it. A switch wears the POWER SIGN, a 1 inside a 0:
                       off, the 0 glows red and the 1 is dark; on, the 1 glows
                       green and the 0 goes dark. A wire carrying 1 glows.
@@ -354,7 +357,7 @@ const pinAt = (st, id, pin) => { const p = st.parts.find((q) => q.id === id); re
 const cable = (a, b) => { const d = Math.max(9, Math.abs(b.x - a.x) * 0.5); return `M${a.x} ${a.y}C${a.x + d} ${a.y} ${b.x - d} ${b.y} ${b.x} ${b.y}`; };
 
 /** Everything on the workspace. `live`: the values, when it is being tested. */
-function scene(st, { live = null, armed = null, rubber = null, lifted = null } = {}) {
+function scene(st, { live = null, armed = null, rubber = null, lifted = null, pulled = -1 } = {}) {
   let parts = "", wires = "", pins = "";
   for (const p of st.parts) {
     const body = p.kind === "SW" ? switchSvg(p.id, st.sw[p.id] === 1, p.look) : p.kind === "BULB" ? bulbSvg(live ? live.Q ?? null : null, p.look)
@@ -371,7 +374,7 @@ function scene(st, { live = null, armed = null, rubber = null, lifted = null } =
   }
   st.wires.forEach((w, i) => {
     const a = pinAt(st, w.from, "out"), b = pinAt(st, w.to, w.pin);
-    if (!a || !b) return;
+    if (!a || !b || i === pulled) return;      // a wire being pulled out is drawn as the loose one
     const hot = live && live[w.from] === 1;
     const d = cable(a, b);
     wires += `<g class="lb-wire${hot ? " is-hot" : ""}" data-wire="${i}">` +
@@ -437,7 +440,7 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
   function paint() {
     const live = runBuilt(st, st.sw);
     sound(live.Q === 1 && st.parts.find((p) => p.id === "Q")?.look === "speaker");
-    svg.innerHTML = scene(st, { live, armed, rubber: drag?.rubber || null, lifted: drag?.kind === "part" && drag.moved ? drag.id : null });
+    svg.innerHTML = scene(st, { live, armed, rubber: drag?.rubber || null, lifted: drag?.kind === "part" && drag.moved ? drag.id : null, pulled: drag?.kind === "wire" && drag.moved && drag.pull != null ? drag.pull : -1 });
     tray.querySelectorAll(".lb-chip").forEach((c) => c.classList.toggle("is-held", held === (c.dataset.gate || `look:${c.dataset.look}`)));
     board.classList.toggle("is-placing", !!held);
     if (flashing) return;
@@ -447,7 +450,7 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
       : `Tap the output the ${LOOK_NAME[held.slice(5)]} is to replace.`)
       : held ? `Tap the workspace where the ${held === "DISP" ? "display" : `${held} gate`} should go.`
       : armed ? "Now tap the pin this wire goes to."
-        : q == null ? "Drag gates onto the workspace, then drag from pin to pin to wire them. Tap a wire to cut it; drag a gate off to remove it."
+        : q == null ? "Drag gates onto the workspace, then drag from pin to pin to wire them. Pull a wire's end off its pin (or tap the wire) to disconnect it; drag a gate off to remove it."
           : `Switches ${names.map((n) => `${n} = ${st.sw[n]}`).join(", ")}: the ${outName()} is ${q ? "ON (1)" : "off (0)"}.`;
   }
   let flashing = 0;
@@ -545,7 +548,9 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
       e.preventDefault();
       const [id, p] = pin.dataset.pin.split(":");
       const a = pinAt(st, id, p === "out" ? "out" : Number(p));
-      drag = { kind: "wire", pin: pin.dataset.pin, a, x: e.clientX, y: e.clientY, moved: false, rubber: null };
+      /* an input pin with a wire already in it: pulling it takes hold of THAT wire's end */
+      const pull = p === "out" ? -1 : st.wires.findIndex((w) => w.to === id && w.pin === Number(p));
+      drag = { kind: "wire", pin: pin.dataset.pin, a, x: e.clientX, y: e.clientY, moved: false, rubber: null, pull: pull >= 0 ? pull : null };
     } else if (wire) {
       drag = { kind: "cut", i: Number(wire.dataset.wire), x: e.clientX, y: e.clientY, moved: false };
     } else if (part && held && held.startsWith("look:")) {
@@ -582,7 +587,8 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
     } else if (drag.kind === "wire") {
       const m = at(e);
       const out = drag.pin.endsWith(":out");
-      drag.rubber = out ? { a: drag.a, b: m } : { a: m, b: drag.a };
+      drag.rubber = drag.pull != null ? { a: pinAt(st, st.wires[drag.pull].from, "out"), b: m }
+        : out ? { a: drag.a, b: m } : { a: m, b: drag.a };
       paint();
     } else if (drag.kind === "part") {
       const m = at(e);
@@ -611,7 +617,21 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
       } else if (m.inside) addGate(d.gate, m); else paint();
     } else if (d.kind === "wire") {
       const other = pinUnder(e);
-      if (d.moved) {
+      if (d.moved && d.pull != null) {
+        /* the end of a wire, pulled off its pin: into another input pin, or away altogether */
+        armed = null;
+        const w = st.wires[d.pull];
+        if (other === d.pin) { paint(); return; }                  // put back where it was
+        const [tid, tpin] = (other || "").split(":");
+        change(() => {
+          st.wires.splice(d.pull, 1);
+          /* judged with the old wire already out: it must not count as a loop against itself */
+          if (other && tpin !== "out" && tid !== w.from && !feeds(tid, w.from)) {
+            st.wires = st.wires.filter((x) => !(x.to === tid && x.pin === Number(tpin)));
+            st.wires.push({ from: w.from, to: tid, pin: Number(tpin) });
+          }
+        });
+      } else if (d.moved) {
         armed = null;
         if (other && other !== d.pin) connect(d.pin, other); else paint();
       } else if (armed && armed !== d.pin) {
