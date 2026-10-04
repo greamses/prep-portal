@@ -67,25 +67,19 @@
 
 /* ── what PrepBot's TV shows for a trick (js/explain.js) ──────────────────────
    The set itself is the shared one (mental-math/shared/prepbot-tv.css). On its
-   screen: a sticky-note CARD for each line of the rule, then the worked
-   example from the paper, each PIECE of it coming on as PrepBot gets to it. */
-/* the card stands in the middle of the screen, above PrepBot: placed by the
-   grid, not by a transform — its transform is the animation's */
-.vm-tv { position: absolute; inset: 0; display: grid; place-items: center; padding: 9% 7% 24%; box-sizing: border-box; }
-.vm-tv__card.pp-sticky {
-  width: min(100%, 540px); padding: 1rem 1.2rem 1.1rem; box-sizing: border-box;
-  font-family: "Shantell Sans", "Segoe Print", cursive; font-weight: 600;
-  font-size: clamp(0.85rem, 2.1vw, 1.25rem); line-height: 1.4; color: #14130f; text-align: center;
+   screen: NUMBER TILES — sticky notes with a number or a sum on them — that
+   fly out of the sum at the top, turn over into what they come to, and close
+   up into the answer. A tile is placed by its middle, in hundredths of the
+   screen; --u is one hundredth of the screen's width, so the tiles grow with
+   the set (and in full screen). */
+.vm-tv { position: absolute; inset: 0; --u: 8px; }
+.vm-t { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; }
+.vm-t__in {
+  display: inline-block; padding: calc(var(--u) * 0.9) calc(var(--u) * 1.6);
+  font-family: "JetBrains Mono", ui-monospace, monospace; font-weight: 800;
+  font-size: calc(var(--u) * 3.3); line-height: 1; color: #14130f;
 }
-.vm-tv__card.is-small { align-self: start; font-size: clamp(0.7rem, 1.4vw, 0.9rem); padding: 0.5rem 0.8rem; }
-/* the paper's own dress (.wb-sheet) so the example looks as it does on the page — but not its page width */
-.vm-tv__paper.wb-sheet { position: absolute; inset: 0; width: auto; display: block; gap: 0; }
-.vm-tv__fig {
-  position: absolute; left: 50%; top: 13%; width: max-content; max-width: 150mm;
-  transform-origin: top center; padding: 2.5mm 4mm; border-radius: 2mm;
-  background: #fffdf8; box-shadow: 0 1mm 3mm rgba(20, 19, 15, 0.18);
-}
-.vm-tv__card.pp-sticky[hidden], .vm-tv__paper.wb-sheet[hidden] { display: none; }
-.vm-tv__turn { display: inline-block; }
-.vm-tv__piece { opacity: 0; }
-.vm-tv__piece.is-on { opacity: 1; }
+.vm-t__in.pp-sticky { border-radius: calc(var(--u) * 0.5); }
+.vm-t--l .vm-t__in { font-size: calc(var(--u) * 4.6); padding: calc(var(--u) * 1) calc(var(--u) * 1.9); }
+.vm-t--s .vm-t__in { font-size: calc(var(--u) * 2.1); }
+.vm-t__in--bare { padding: 0; color: #2a2723; font-weight: 700; }
