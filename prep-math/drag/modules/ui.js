@@ -37,7 +37,7 @@ function ensureAlertModal() {
 .pp-modal-title{font-family:var(--font-display,'Unbounded',sans-serif);font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ink,#2a2723);}
 .pp-modal-body{font-size:13px;line-height:1.65;color:var(--ink,#2a2723);margin:0;padding:18px 20px 16px;word-break:break-word;}
 .pp-modal-ftr{display:flex;justify-content:flex-end;padding:0 20px 18px;}
-.pp-modal-ok-btn{position:relative;font-family:"Shantell Sans","Segoe Print","Bradley Hand",cursive;font-size:0.85rem;font-weight:700;letter-spacing:0;text-transform:none;padding:0.6rem 1.15rem 0.65rem;cursor:pointer;background:var(--pp-note-bg,#fff3a8);border:0;border-radius:2px;color:#14130f;transition:transform .2s ease;box-shadow:0 1px 1px rgba(20,19,15,.1),5px 8px 12px -4px rgba(20,19,15,.3);transform:rotate(-2deg);}
+.pp-modal-ok-btn{position:relative;font-family:"Shantell Sans","Segoe Print","Bradley Hand",cursive;font-size:0.85rem;font-weight:700;letter-spacing:0;text-transform:none;padding:0.6rem 1.15rem 0.65rem;cursor:pointer;background:var(--pp-note-bg,#fff3a8);border:0;border-radius:0;color:#14130f;transition:transform .2s ease;box-shadow:0 1px 1px rgba(20,19,15,.1),5px 8px 12px -4px rgba(20,19,15,.3);transform:rotate(-2deg);}
 .pp-modal-ok-btn:hover{transform:rotate(-2deg) translateY(-2px);}
 .pp-modal-box.type-warn  .pp-modal-hd{border-bottom-color:color-mix(in srgb,var(--accent-primary,#f4c95d) 60%,transparent);}
 .pp-modal-box.type-error .pp-modal-hd{border-bottom-color:color-mix(in srgb,var(--accent-danger,#f07a7a) 60%,transparent);}

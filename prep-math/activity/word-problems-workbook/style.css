@@ -14,7 +14,7 @@
 .wp-room {
   height: 30mm;
   margin: 1.5mm 0 2mm;
-  border-radius: 1.5mm;
+  border-radius: 0;
   background: repeating-linear-gradient(to bottom, transparent 0 7.3mm, #ddd8cc 7.3mm 7.5mm);
 }
 

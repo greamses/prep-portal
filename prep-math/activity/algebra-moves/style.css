@@ -118,7 +118,7 @@
   color: #14130f;
   background: var(--pp-note-bg, #fff3a8);
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow:
     0 1px 1px rgba(20, 19, 15, 0.1),
     5px 9px 14px -5px rgba(20, 19, 15, 0.34);
@@ -168,7 +168,7 @@
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
-  border-radius: 2px;
+  border-radius: 0;
 }
 .am-card__btn:hover:not(:disabled) { color: var(--ink); background: rgba(20, 19, 15, 0.1); }
 /* An arrow with nothing to do stays where it is and goes quiet, so the pair
@@ -576,7 +576,7 @@
   color: var(--ink);
   background: var(--surface-primary);
   border: var(--border-subtle);
-  border-radius: 2px;
+  border-radius: 0;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: transform 0.1s ease, box-shadow 0.14s ease, background 0.14s ease;
@@ -744,7 +744,7 @@
   width: 100%;
   padding: 0.42rem 0.5rem;
   border: var(--border-subtle);
-  border-radius: 2px;
+  border-radius: 0;
   background: var(--surface-primary);
   color: var(--ink);
   font-family: var(--font-mono);

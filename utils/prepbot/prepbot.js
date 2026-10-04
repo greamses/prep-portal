@@ -198,7 +198,7 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
           Once signed in, PrepBot is powered by AI — no extra API key needed.
         </p>
         <button id="retry-key-check" type="button"
-          style="margin-top:8px;padding:8px 16px;border:2px solid var(--ink);background:var(--accent-primary);color:var(--text-on-accent);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;border-radius:10px;">
+          style="margin-top:8px;padding:8px 16px;border:2px solid var(--ink);background:var(--accent-primary);color:var(--text-on-accent);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;border-radius:0;">
           I've Signed In — Retry
         </button>
       </div>`;

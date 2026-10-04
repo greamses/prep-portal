@@ -1277,7 +1277,7 @@ const Quiz = (() => {
       media = document.createElement("iframe");
       media.src = url; media.allowFullscreen = true;
     }
-    media.style.cssText = "width:100%; aspect-ratio:16/9; height:auto; border:0; border-radius:12px; background:#000;";
+    media.style.cssText = "width:100%; aspect-ratio:16/9; height:auto; border:0; border-radius:0; background:#000;";
     wrap.appendChild(media);
     // A plain link — shown on print (where the embed can't play) and as a fallback.
     const link = document.createElement("a");

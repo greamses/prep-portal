@@ -18,7 +18,7 @@
   position: relative;
   width: 100%;
   background: var(--ink);
-  border-radius: 22px;
+  border-radius: 0;
   padding: 12px 12px 0;
   box-shadow: var(--shadow-lg);
 }
@@ -27,7 +27,7 @@
   position: relative;
   aspect-ratio: 16 / 9;
   background: var(--surface-secondary);
-  border-radius: 12px;
+  border-radius: 0;
   overflow: hidden;
   box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.28);
 }
@@ -164,7 +164,7 @@
   width: clamp(1.6rem, 5vw, 2.4rem);
   height: clamp(1.6rem, 5vw, 2.4rem);
   padding: 0;
-  border-radius: 4px;
+  border-radius: 0;
   font-family: var(--font-display);
   font-weight: var(--weight-black, 900);
   font-size: clamp(1rem, 3.4vw, 1.6rem);
@@ -274,7 +274,7 @@
   height: 14px;
   margin-top: -2px;
   background: var(--ink);
-  border-radius: 999px;
+  border-radius: 0;
   box-shadow: var(--shadow-md);
 }
 

@@ -26,7 +26,7 @@
 .gp-lesson__tab {
   font-family: var(--gp-sans); font-size: 0.56rem; font-weight: 800;
   text-transform: uppercase; letter-spacing: 0.06em; color: #fff;
-  padding: 0.26rem 0.6rem; border-radius: 6px;
+  padding: 0.26rem 0.6rem; border-radius: 0;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.25), transparent 60%);
 }
 .gp-lesson__focus { font-family: var(--gp-body); font-size: 0.58rem; font-weight: 700; color: var(--gp-c); }
@@ -39,7 +39,7 @@
 /* ── TINY CORNER ASIDES (boxed callouts) ──────────────────────────────── */
 .gp-mini {
   border: 1.5px solid var(--gp-c, #0055ff);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--gp-c-soft, rgba(0,85,255,0.08));
   padding: 0.4rem 0.5rem;
   break-inside: avoid;
@@ -88,7 +88,7 @@
 .gp-tvid__btn {
   appearance: none; border: 0; cursor: pointer;
   font-family: var(--gp-sans); font-size: 0.66rem; font-weight: 800;
-  color: #14130f; background: #ffe500; padding: 0.5rem 0.9rem; border-radius: 8px;
+  color: #14130f; background: #ffe500; padding: 0.5rem 0.9rem; border-radius: 0;
   box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
 }
 .gp-tvid__btn:hover { transform: translateY(-1px); }
@@ -109,7 +109,7 @@
 /* ── REAL-WORLD block (flows inside a lesson column) ──────────────────── */
 .gp-rw {
   position: relative; margin: 0.3rem 0 0;
-  border: 1.5px solid rgba(0,0,0,0.12); border-radius: 9px;
+  border: 1.5px solid rgba(0,0,0,0.12); border-radius: 0;
   background: #fff; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);
   padding: 0.9rem 0.5rem 0.55rem; break-inside: avoid;
 }
@@ -118,10 +118,10 @@
   display: inline-flex; align-items: center;
   font-family: var(--gp-sans); font-size: 0.5rem; font-weight: 800; text-transform: uppercase;
   color: #fff; background: linear-gradient(180deg, #2bbd6e, #0f8243);
-  padding: 0.22rem 0.55rem; border-radius: 6px 6px 0 0; box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+  padding: 0.22rem 0.55rem; border-radius: 0; box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
 }
 .gp-rw__tab .gp-ico { width: 0.9em; height: 0.9em; }
-.gp-rw__photo { position: relative; border-radius: 6px; overflow: hidden; aspect-ratio: 16/9; }
+.gp-rw__photo { position: relative; border-radius: 0; overflow: hidden; aspect-ratio: 16/9; }
 .gp-rw__photo img { width: 100%; height: 100%; object-fit: cover; }
 .gp-rw__photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.7)), linear-gradient(120deg, var(--gp-c), transparent 60%); mix-blend-mode: multiply; }
 .gp-rw__cap { position: absolute; left: 0.4rem; right: 0.4rem; bottom: 0.3rem; z-index: 2; font-family: var(--gp-sans); font-size: 0.62rem; font-weight: 900; color: #fff; text-shadow: 0 1px 5px rgba(0,0,0,0.6); }
@@ -141,7 +141,7 @@
   background: var(--hl, #ffe500) !important;
   color: #14130f !important;
   padding: 0.05em 0.4em !important;
-  border-radius: 0.35em !important;
+  border-radius: 0 !important;
   font-family: var(--gp-body) !important;
   font-weight: 700 !important;
   font-size: 0.62rem !important;
@@ -158,7 +158,7 @@
 
 /* small, colourful menu (override select.css full-width) */
 .pp-select-menu { width: max-content !important; max-width: 240px !important; right: auto !important; min-width: 84px !important; padding: 0.3rem !important; }
-.pp-select-menu .pp-select-item { font-size: 0.66rem !important; padding: 0.32rem 0.6rem !important; border-radius: 6px; }
+.pp-select-menu .pp-select-item { font-size: 0.66rem !important; padding: 0.32rem 0.6rem !important; border-radius: 0; }
 .pp-select-menu .pp-select-item:nth-child(3n+1):hover,
 .pp-select-menu .pp-select-item:nth-child(3n+1).active { background: #2a7dff; color: #fff; }
 .pp-select-menu .pp-select-item:nth-child(3n+2):hover,
@@ -258,7 +258,7 @@
 .gp-mini--rw { --gp-c: #128a4b; --gp-c-soft: rgba(18,138,75,0.07); }
 .gp-mini--rw .gp-mini__title { color: #128a4b; }
 .gp-mini--rw .gp-rw__photo {
-  position: relative; border-radius: 6px; overflow: hidden;
+  position: relative; border-radius: 0; overflow: hidden;
   aspect-ratio: 16/9; margin: 0.2rem 0 0.3rem;
 }
 .gp-mini--rw .gp-rw__photo img { width: 100%; height: 100%; object-fit: cover; }

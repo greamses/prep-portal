@@ -36,7 +36,7 @@
   color: #14130f;
   background: var(--pp-note-bg, #fff3a8);
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow:
     0 1px 1px rgba(20, 19, 15, 0.1),
     5px 8px 12px -4px rgba(20, 19, 15, 0.3);
@@ -203,7 +203,7 @@ button.ghost {
   flex-shrink: 0;
   width: 20px;
   height: 20px;
-  border-radius: 4px;
+  border-radius: 0;
   border: 2px solid rgba(20, 19, 15, 0.55);
   background: rgba(255, 255, 255, 0.5);
   color: #14130f;
@@ -360,7 +360,7 @@ button.pp-btn,
   color: #14130f;
   background: var(--pp-note-bg, #fff3a8);
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   padding: 0.55rem 1rem 0.6rem;
   cursor: pointer;
   text-decoration: none;
@@ -544,7 +544,7 @@ button.pp-btn,
   background: transparent;
   color: var(--ink, #2a2723);
   border: var(--border-subtle, 1px solid rgba(42, 39, 35, 0.12));
-  border-radius: 10px;
+  border-radius: 0;
   box-shadow: none;
   transform: none;
   /* not `inherit`: a parent that is itself a note would hand down the marker

@@ -10,7 +10,7 @@
   right: 0;
   background: var(--surface-primary);
   border: var(--border-subtle);
-  border-radius: 20px;
+  border-radius: 0;
   box-shadow: var(--shadow-lg);
   min-width: 210px;
   padding: 0.5rem;
@@ -40,7 +40,7 @@
   text-decoration: none;
   background: transparent;
   border: 0;
-  border-radius: 13px;
+  border-radius: 0;
   cursor: pointer;
   text-align: left;
   width: 100%;

@@ -248,7 +248,7 @@ analogStyle.innerHTML = `
     font-weight: 700;
     font-size: 0.85rem;
     cursor: pointer;
-    border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+    border-radius: 0;
     text-transform: uppercase;
     transition: transform 0.1s, background-color 0.2s;
   }

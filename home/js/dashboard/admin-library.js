@@ -162,7 +162,7 @@ function injectStyles() {
   s.textContent = `
     .al-sub { font-size:.76rem; color: var(--text-secondary,#6b655c); margin:0 0 .9rem; line-height:1.5; }
     .al-list { max-height: 46vh; overflow-y: auto; display:flex; flex-direction:column; gap:.35rem; }
-    .al-teacher { display:flex; align-items:center; gap:.55rem; padding:.5rem .6rem; border-radius:10px;
+    .al-teacher { display:flex; align-items:center; gap:.55rem; padding:.5rem .6rem; border-radius:0;
       cursor:pointer; background: var(--surface-secondary,#f4f0e8);
       border:2px solid color-mix(in srgb, var(--ink) 10%, transparent); }
     .al-teacher:hover { border-color: color-mix(in srgb, var(--ink) 24%, transparent); }

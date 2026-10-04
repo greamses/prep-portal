@@ -75,11 +75,11 @@ html, body, #app {
 }
 .loader-bar-bg {
   width: 240px; height: 4px; background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px; overflow: hidden; margin-bottom: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 0; overflow: hidden; margin-bottom: 14px;
 }
 .loader-bar-fill {
   height: 100%; width: 0%;
-  background: linear-gradient(90deg, #39e0ff, #8ace8a); border-radius: 999px;
+  background: linear-gradient(90deg, #39e0ff, #8ace8a); border-radius: 0;
   animation: loaderBar 2.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 @keyframes loaderBar { 0% { width: 0%; } 40% { width: 55%; } 80% { width: 82%; } 100% { width: 92%; } }
@@ -98,7 +98,7 @@ html, body, #app {
 .hud-card {
   background: rgba(10, 14, 22, 0.55);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 7px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 0; padding: 7px 13px;
   display: flex; flex-direction: column; align-items: center; min-width: 72px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
@@ -117,7 +117,7 @@ html, body, #app {
   top: max(12px, env(safe-area-inset-top));
   left: 50%; transform: translateX(-50%) translateY(-6px);
   display: flex; align-items: baseline; gap: 8px; z-index: 11;
-  padding: 6px 16px; border-radius: 999px;
+  padding: 6px 16px; border-radius: 0;
   background: rgba(10, 14, 22, 0.55);
   -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 210, 77, 0.3);
@@ -145,7 +145,7 @@ html, body, #app {
   position: absolute;
   top: max(12px, env(safe-area-inset-top));
   right: max(12px, env(safe-area-inset-right));
-  width: 44px; height: 44px; border-radius: 12px;
+  width: 44px; height: 44px; border-radius: 0;
   background: rgba(10, 14, 22, 0.55);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -160,7 +160,7 @@ html, body, #app {
   position: absolute;
   top: max(12px, env(safe-area-inset-top));
   right: calc(max(12px, env(safe-area-inset-right)) + 52px);
-  width: 44px; height: 44px; border-radius: 12px;
+  width: 44px; height: 44px; border-radius: 0;
   background: rgba(10, 14, 22, 0.55);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -177,7 +177,7 @@ html, body, #app {
   width: 250px; padding: 14px; z-index: 24;
   background: rgba(14, 18, 26, 0.86);
   -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 0;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
   display: flex; flex-direction: column; gap: 12px;
   opacity: 0; transform: translateY(-8px) scale(0.97); pointer-events: none;
@@ -188,7 +188,7 @@ html, body, #app {
 .set-title, .set-check span { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; color: #c5cdd8; }
 .seg { display: flex; gap: 6px; }
 .seg button {
-  flex: 1; padding: 8px 4px; border-radius: 10px;
+  flex: 1; padding: 8px 4px; border-radius: 0;
   font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
   text-transform: uppercase; color: #c5cdd8;
   background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
@@ -254,7 +254,7 @@ html, body, #app {
   background: rgba(10, 14, 22, 0.5);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 7px 14px; border-radius: 999px;
+  padding: 7px 14px; border-radius: 0;
   font-family: 'Orbitron', monospace; font-size: 10px; letter-spacing: 0.06em; color: #c5cdd8;
   pointer-events: none; opacity: 1; transition: opacity 0.6s ease;
   white-space: nowrap; max-width: 62vw; overflow: hidden; text-overflow: ellipsis; z-index: 12;

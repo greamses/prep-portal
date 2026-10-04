@@ -331,7 +331,7 @@
   background: var(--accent-primary, #f0cf6e);
   border: 2px solid var(--ink, #efece3);
   box-shadow: 4px 4px 0 var(--ink, #efece3);
-  border-radius: 10px;
+  border-radius: 0;
   cursor: pointer;
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
@@ -409,7 +409,7 @@ body,
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 8px 14px;
   display: none;
   flex-direction: column;
@@ -439,7 +439,7 @@ body,
   );
   pointer-events: none;
   z-index: 2;
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 .hud-label {
@@ -612,7 +612,7 @@ body,
   position: relative;
   width: 26px;
   height: 180px;
-  border-radius: 13px;
+  border-radius: 0;
   background: rgba(10, 12, 16, 0.55);
   border: 1.5px solid rgba(255, 255, 255, 0.14);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 0 18px rgba(0, 0, 0, 0.5);
@@ -627,7 +627,7 @@ body,
   right: 2px;
   bottom: 2px;
   height: 0%;
-  border-radius: 11px;
+  border-radius: 0;
   background: linear-gradient(180deg, #ff4d4d 0%, #ffb347 45%, #ffd84a 70%, #6ee7b7 100%);
   box-shadow: 0 0 18px rgba(255, 200, 80, 0.5);
   transition: height 0.06s linear;
@@ -709,7 +709,7 @@ body,
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 8px 14px;
-  border-radius: 999px;
+  border-radius: 0;
   font-family: 'Orbitron', monospace;
   font-size: 11px;
   letter-spacing: 0.08em;

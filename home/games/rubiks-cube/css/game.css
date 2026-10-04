@@ -60,7 +60,7 @@ body.cube-active .ticker {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   line-height: 1.35;
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow:
     0 1px 1px rgba(20, 19, 15, 0.1),
     5px 8px 12px -4px rgba(20, 19, 15, 0.3);
@@ -194,7 +194,7 @@ body.cube-active .ticker {
   width: fit-content;
   gap: 6px;
   padding: 6px;
-  border-radius: 999px;
+  border-radius: 0;
   border: var(--border);
   background: var(--surface-primary);
   box-shadow: var(--shadow-md);
@@ -207,7 +207,7 @@ body.cube-active .ticker {
   cursor: pointer;
   touch-action: manipulation;
   padding: 0.7rem clamp(0.85rem, 4vw, 1.8rem);
-  border-radius: 999px;
+  border-radius: 0;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: clamp(0.9rem, 2.2vw, 1.1rem);
@@ -242,7 +242,7 @@ body.cube-active .ticker {
   left: 50%;
   transform: translateX(-50%) translateY(-4px);
   padding: 5px 11px;
-  border-radius: 9px;
+  border-radius: 0;
   background: var(--ink);
   color: var(--bg);
   font-family: var(--font-display);
@@ -317,7 +317,7 @@ button:focus-visible > .hover-word {
   cursor: pointer;
   touch-action: manipulation;
   padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: 0;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 0.72rem;
@@ -349,7 +349,7 @@ button:focus-visible > .hover-word {
   width: 100%;
   padding: 9px 11px;
   border: var(--border);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--surface-secondary);
   color: var(--ink);
   cursor: pointer;
@@ -473,7 +473,7 @@ button:focus-visible > .hover-word {
   flex: 0 0 auto;
   width: 44px;
   height: 44px;
-  border-radius: 9px;
+  border-radius: 0;
   background: radial-gradient(120% 120% at 50% 0%, #fffdf8, #e9e3d7);
   object-fit: contain;
 }
@@ -540,7 +540,7 @@ button:focus-visible > .hover-word {
 
 .state-thumb {
   display: block;
-  border-radius: 9px;
+  border-radius: 0;
   overflow: hidden;
   background: radial-gradient(120% 120% at 50% 0%, #fffdf8 0%, #e9e3d7 100%);
   aspect-ratio: 1;
@@ -707,7 +707,7 @@ button:focus-visible > .hover-word {
   background: var(--accent-success);
   color: var(--ink);
   border: var(--border);
-  border-radius: 16px;
+  border-radius: 0;
   padding: 10px 18px;
   box-shadow: var(--shadow-lg);
   font-size: 0.86rem;
@@ -786,7 +786,7 @@ button:focus-visible > .hover-word {
   font-weight: 600;
   font-size: 0.86rem;
   padding: 6px 16px;
-  border-radius: 999px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--surface-primary) 82%, transparent);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
@@ -840,7 +840,7 @@ button:focus-visible > .hover-word {
   background: rgba(0, 112, 243, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.15);
   padding: 8px 18px;
-  border-radius: 999px;
+  border-radius: 0;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
   opacity: 0;
   transform: translateY(-8px);
@@ -986,7 +986,7 @@ button:focus-visible > .hover-word {
   right: 14%;
   top: 11%;
   height: 38%;
-  border-radius: 999px;
+  border-radius: 0;
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.6),
@@ -1100,7 +1100,7 @@ button:focus-visible > .hover-word {
   letter-spacing: 0.04em;
   color: #fff;
   background: var(--accent-success);
-  border-radius: 6px;
+  border-radius: 0;
   padding: 1px 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
@@ -1118,7 +1118,7 @@ button:focus-visible > .hover-word {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   padding: 7px 14px;
-  border-radius: 999px;
+  border-radius: 0;
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 0.66rem;
@@ -1313,7 +1313,7 @@ button:focus-visible > .hover-word {
   position: relative;
   width: min(92vw, 520px);
   aspect-ratio: 4 / 3;
-  border-radius: 18px;
+  border-radius: 0;
   overflow: hidden;
   background: #000;
   box-shadow: var(--shadow-lg);
@@ -1361,7 +1361,7 @@ button:focus-visible > .hover-word {
   height: 38px;
   padding: 0;
   appearance: none;
-  border-radius: 9px;
+  border-radius: 0;
   border: var(--border);
   background: var(--surface-secondary);
   display: grid;
@@ -1429,7 +1429,7 @@ button:focus-visible > .hover-word {
   gap: 14px;
   padding: 18px;
   border: var(--border);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--surface-primary);
   box-shadow: var(--shadow-lg);
 }
@@ -1483,7 +1483,7 @@ button:focus-visible > .hover-word {
 .scan-swatch {
   width: 30px;
   height: 30px;
-  border-radius: 999px;
+  border-radius: 50%;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
 }
 .scan-swatch.selected {
@@ -1499,7 +1499,7 @@ button:focus-visible > .hover-word {
 .scan-cell {
   width: 42px;
   height: 42px;
-  border-radius: 8px;
+  border-radius: 0;
   color: var(--text-secondary);
   font-family: var(--font-display);
   font-weight: 800;
@@ -1571,7 +1571,7 @@ button:focus-visible > .hover-word {
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: var(--border);
-  border-radius: 18px;
+  border-radius: 0;
   box-shadow: var(--shadow-md);
   /* draggable (from any non-button area) */
   cursor: grab;
@@ -1601,7 +1601,7 @@ button:focus-visible > .hover-word {
   width: 34px;
   height: 34px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--surface-secondary);
   color: var(--ink);
   cursor: pointer;
@@ -1618,7 +1618,7 @@ button:focus-visible > .hover-word {
 .solve-ctrl-play {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--accent-success);
   color: var(--text-on-accent);
 }
@@ -1743,7 +1743,7 @@ button:focus-visible > .hover-word {
   flex: 0 0 auto;
   width: 54px;
   height: 54px;
-  border-radius: 9px;
+  border-radius: 0;
   background: radial-gradient(120% 120% at 50% 0%, #fffdf8, #e9e3d7);
   object-fit: contain;
   display: block;
@@ -1779,7 +1779,7 @@ button:focus-visible > .hover-word {
   display: block;
   margin-top: 4px;
   padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.45);
   border: 1px dashed rgba(20, 19, 15, 0.3);
   font-family: var(--font-mono);
@@ -1809,7 +1809,7 @@ button:focus-visible > .hover-word {
   display: inline-block;
   padding: 1px 4px;
   margin: 1px 1px;
-  border-radius: 5px;
+  border-radius: 0;
 }
 .cap-alg .tok.cur {
   background: #14130f;
@@ -1896,7 +1896,7 @@ button:focus-visible > .hover-word {
   gap: 8px;
   padding: 10px 13px;
   border: var(--border);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--surface-primary);
   cursor: pointer;
   box-shadow: var(--shadow-sm);
@@ -1975,7 +1975,7 @@ button:focus-visible > .hover-word {
   flex: 0 0 auto;
   width: 46px;
   height: 46px;
-  border-radius: 9px;
+  border-radius: 0;
   overflow: hidden;
   background: radial-gradient(120% 120% at 50% 0%, #fffdf8 0%, #e9e3d7 100%);
 }
@@ -2019,7 +2019,7 @@ button:focus-visible > .hover-word {
   display: block;
   margin-top: 6px;
   padding: 5px 8px;
-  border-radius: 8px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--accent-success) 14%, var(--surface-primary));
   border: 1px dashed color-mix(in srgb, var(--accent-success) 45%, transparent);
   font-family: var(--font-mono);

@@ -284,7 +284,7 @@ body.drill-nav-hidden .site-nav { display: none; }
 .pp-lobby-code-value button {
   background: var(--pp-note-bg, #fff39a);
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow:
     0 1px 1px rgba(20, 19, 15, 0.1),
     5px 8px 12px -4px rgba(20, 19, 15, 0.3);
@@ -494,7 +494,7 @@ tbody .drill-grid-th { border-right-width: 2px; }
 }
 .drill-bars-answer {
   margin-top: 0.4rem;
-  border-radius: 3px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--ink) 5%, transparent);
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 22%, transparent);
   transition: background-color 0.15s ease;
@@ -534,7 +534,7 @@ tbody .drill-grid-th { border-right-width: 2px; }
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   background: hsl(var(--bar-hue, 40) 78% 80%);
   box-shadow: inset 0 0 0 1px hsl(var(--bar-hue, 40) 38% 38%);
   color: #14130f;

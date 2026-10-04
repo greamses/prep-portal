@@ -209,7 +209,7 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   width: 100%;
   aspect-ratio: 1;
   border: 2px solid var(--ink);
-  border-radius: 4px;
+  border-radius: 0;
   overflow: hidden;
   background: var(--border-subtle);
   gap: 1px;
@@ -344,7 +344,7 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 .tangram-grid {
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--surface-secondary, var(--app-bg));
   box-shadow: inset 0 0 0 2px var(--ink);
   overflow: hidden;
@@ -421,12 +421,12 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   padding: clamp(6px, 2vw, 12px);
   background: color-mix(in srgb, var(--ink) 7%, var(--surface-secondary, var(--app-bg)));
   border-width: 2.5px;
-  border-radius: 8px;
+  border-radius: 0;
   overflow: visible;
 }
 .slider-tile {
   border: 2px solid var(--ink);
-  border-radius: 6px;
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
   /* the slide itself is a Web Animation (see game.js's slideTile) */
 }
@@ -486,7 +486,7 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   padding: clamp(10px, 3vw, 16px);
   background: color-mix(in srgb, var(--ink) 7%, var(--surface-secondary, var(--app-bg)));
   border-width: 2.5px;
-  border-radius: 8px;
+  border-radius: 0;
   overflow: visible;
 }
 .jigsaw-cell {
@@ -503,7 +503,7 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   position: absolute;
   inset: 7%;
   border: 1.5px dashed color-mix(in srgb, var(--ink) 28%, transparent);
-  border-radius: 6px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--ink) 5%, transparent);
 }
 .jigsaw-cell.is-filled { cursor: default; }
@@ -537,7 +537,7 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   width: min(430px, 100%);
   margin: 0 auto 1rem;
   aspect-ratio: 1;
-  border-radius: 10px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--ink) 5%, transparent);
   border: 1.5px dashed color-mix(in srgb, var(--ink) 18%, transparent);
 }
@@ -600,7 +600,7 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   aspect-ratio: 1000 / 812;
   background: color-mix(in srgb, var(--ink) 7%, var(--surface-secondary, var(--app-bg)));
   border-width: 2.5px;
-  border-radius: 8px;
+  border-radius: 0;
   overflow: hidden;
   touch-action: none; /* dragging a piece must never scroll the page */
 }
@@ -710,7 +710,7 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   color: var(--ink);
   background: color-mix(in srgb, var(--app-bg) 82%, transparent);
   border: 1.5px solid color-mix(in srgb, var(--ink) 30%, transparent);
-  border-radius: 6px;
+  border-radius: 0;
   cursor: pointer;
 }
 .mapjig-fs:hover { background: var(--app-bg); }
@@ -733,7 +733,7 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 .mapjig-legend-item i {
   width: 12px;
   height: 12px;
-  border-radius: 2px;
+  border-radius: 0;
   border: 1px solid color-mix(in srgb, var(--ink) 40%, transparent);
   flex: 0 0 auto;
 }
@@ -828,7 +828,7 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 .pp-lobby-code-value button {
   background: var(--pp-note-bg, #fff39a);
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow:
     0 1px 1px rgba(20, 19, 15, 0.1),
     5px 8px 12px -4px rgba(20, 19, 15, 0.3);

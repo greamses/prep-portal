@@ -43,13 +43,13 @@
 
     label { display:block; font-size:.62rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
       margin:.5rem 0 .3rem; color:var(--text-secondary); font-family:var(--font-mono); }
-    input { width:100%; box-sizing:border-box; padding:.6rem .75rem; border-radius:2px; font-family:var(--font-mono); font-size:.85rem;
+    input { width:100%; box-sizing:border-box; padding:.6rem .75rem; border-radius:0; font-family:var(--font-mono); font-size:.85rem;
       border: var(--border); background: var(--surface-primary); color: var(--ink); }
     input:focus { outline:2px solid color-mix(in srgb, var(--accent-secondary) 55%, transparent); outline-offset:1px; }
 
     /* Stats grid */
     .pt-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.8rem; }
-    .pt-stat { background: var(--surface-secondary); border:var(--border-subtle); border-radius:2px; padding:.85rem .95rem; }
+    .pt-stat { background: var(--surface-secondary); border:var(--border-subtle); border-radius:0; padding:.85rem .95rem; }
     .pt-stat .k { font-size:.56rem; text-transform:uppercase; letter-spacing:.07em; color:var(--text-secondary); }
     .pt-stat .v { font-family:var(--font-display); font-size:1.2rem; font-weight:var(--weight-black,900); margin-top:.25rem;
       font-variant-numeric:tabular-nums; color:var(--ink); }
@@ -80,7 +80,7 @@
 
     /* copy button */
     .pt-copy { font-family:var(--font-mono); font-size:.62rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em;
-      padding:.3rem .6rem; border:var(--border-subtle); border-radius:2px; background:var(--surface-primary); color:var(--text-secondary); cursor:pointer; }
+      padding:.3rem .6rem; border:var(--border-subtle); border-radius:0; background:var(--surface-primary); color:var(--text-secondary); cursor:pointer; }
     .pt-copy:hover { color:var(--ink); }
   </style>
     <link rel="stylesheet" href="/utils/components/sticky-ui.css" />

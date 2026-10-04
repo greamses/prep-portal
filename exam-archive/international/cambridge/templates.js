@@ -324,7 +324,7 @@ export function renderQuestionsHTML(svgs) {
         <div class="question-card">
             <h3>16. Mystery Numbers</h3>
             <p>\\(\\square\\) and \\(\\bigcirc\\) are different <strong>\\(2\\)-digit numbers</strong>, multiples of \\(10\\).</p>
-            <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px;">
+            <div style="background: var(--light-bg); padding: 15px; border-radius: 0; text-align: center; margin-bottom: 15px;">
                 <span style="font-size: 1.5rem; font-weight: bold;">\\(\\square \\times \\bigcirc = 5400\\)</span>
             </div>
             <div class="input-row" style="justify-content: center; gap: 2rem;">
@@ -344,7 +344,7 @@ export function renderQuestionsHTML(svgs) {
             </div>
             <div class="question-group">
                 <label>Explain how you know:</label>
-                <textarea rows="3" style="width:100%; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px;" placeholder="Write your explanation here..."></textarea>
+                <textarea rows="3" style="width:100%; border: 1px solid var(--border-color); border-radius: 0; padding: 10px;" placeholder="Write your explanation here..."></textarea>
             </div>
         </div>
 
@@ -386,11 +386,11 @@ export function renderQuestionsHTML(svgs) {
             <h3>20. Digit Cards</h3>
             <p>Here are five digit cards.</p>
             <div class="input-row" style="gap: 15px; margin: 15px 0; font-size: 1.2rem; justify-content: center;">
-                <span style="border:1px solid var(--border-color); border-radius:4px; padding:8px 16px; background:var(--light-bg); box-shadow: 1px 1px 3px rgba(0,0,0,0.1);">0</span>
-                <span style="border:1px solid var(--border-color); border-radius:4px; padding:8px 16px; background:var(--light-bg); box-shadow: 1px 1px 3px rgba(0,0,0,0.1);">2</span>
-                <span style="border:1px solid var(--border-color); border-radius:4px; padding:8px 16px; background:var(--light-bg); box-shadow: 1px 1px 3px rgba(0,0,0,0.1);">4</span>
-                <span style="border:1px solid var(--border-color); border-radius:4px; padding:8px 16px; background:var(--light-bg); box-shadow: 1px 1px 3px rgba(0,0,0,0.1);">5</span>
-                <span style="border:1px solid var(--border-color); border-radius:4px; padding:8px 16px; background:var(--light-bg); box-shadow: 1px 1px 3px rgba(0,0,0,0.1);">8</span>
+                <span style="border:1px solid var(--border-color); border-radius:0; padding:8px 16px; background:var(--light-bg); box-shadow: 1px 1px 3px rgba(0,0,0,0.1);">0</span>
+                <span style="border:1px solid var(--border-color); border-radius:0; padding:8px 16px; background:var(--light-bg); box-shadow: 1px 1px 3px rgba(0,0,0,0.1);">2</span>
+                <span style="border:1px solid var(--border-color); border-radius:0; padding:8px 16px; background:var(--light-bg); box-shadow: 1px 1px 3px rgba(0,0,0,0.1);">4</span>
+                <span style="border:1px solid var(--border-color); border-radius:0; padding:8px 16px; background:var(--light-bg); box-shadow: 1px 1px 3px rgba(0,0,0,0.1);">5</span>
+                <span style="border:1px solid var(--border-color); border-radius:0; padding:8px 16px; background:var(--light-bg); box-shadow: 1px 1px 3px rgba(0,0,0,0.1);">8</span>
             </div>
             <p>Use four of these cards to make this statement correct. No card can be used twice.</p>
             
@@ -413,7 +413,7 @@ export function renderQuestionsHTML(svgs) {
         <div class="question-card">
             <h3>21. Cherry Masses</h3>
             <p>Katie measures the mass of \\(15\\) different cherries. Results in grams:</p>
-            <p style="font-family: monospace; font-size: 1.1rem; background: var(--light-bg); padding: 15px; border-radius: 5px; text-align: center; letter-spacing: 3px; word-wrap: break-word;">
+            <p style="font-family: monospace; font-size: 1.1rem; background: var(--light-bg); padding: 15px; border-radius: 0; text-align: center; letter-spacing: 3px; word-wrap: break-word;">
                 10 12 9 11 9 6 15 12 13 11 11 10 12 14
             </p>
             <div class="question-content" style="margin-top: 15px;">

@@ -544,7 +544,7 @@ function injectStyles() {
   s.id = "dbc-styles";
   s.textContent = `
     /* The whole panel reads as a sticky note: pastel paper, tape, a little tilt. */
-    .db-calendar-panel { position: relative; background: #bfe3ff; border: 0; border-radius: 4px;
+    .db-calendar-panel { position: relative; background: #bfe3ff; border: 0; border-radius: 0;
       box-shadow: 0 1px 1px rgba(20,19,15,.1), 5px 10px 16px -6px rgba(20,19,15,.28);
       transform: rotate(-0.7deg); overflow: visible; }
     .db-calendar-panel::before { content:""; position:absolute; top:-10px; left:50%; width:84px; height:20px;
@@ -554,7 +554,7 @@ function injectStyles() {
     .dbc { font-family: var(--font-mono, monospace); }
     .dbc-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:.6rem; }
     .dbc-title { font-family: var(--font-display, sans-serif); font-size:1rem; color:#14130f; }
-    .dbc-nav { width:30px; height:30px; border-radius:9px; cursor:pointer; font-size:1.1rem; line-height:1;
+    .dbc-nav { width:30px; height:30px; border-radius:0; cursor:pointer; font-size:1.1rem; line-height:1;
       border: 1px solid rgba(20,19,15,.18); background: rgba(255,255,255,.55); color:#14130f; }
     .dbc-nav:hover { background: rgba(255,255,255,.85); }
 
@@ -569,7 +569,7 @@ function injectStyles() {
     .dbc-pad { background: rgba(20,19,15,.025); }
     .dbc-num { font-size:.64rem; color: rgba(20,19,15,.6); font-weight:700; align-self:flex-end;
       padding:1px 2px; line-height:1; }
-    .dbc-today .dbc-num { background:#e07a5f; color:#fff; border-radius:999px; min-width:17px; height:17px;
+    .dbc-today .dbc-num { background:#e07a5f; color:#fff; border-radius:0; min-width:17px; height:17px;
       display:inline-flex; align-items:center; justify-content:center; padding:0; }
     .dbc-drop { cursor:pointer; }
     .dbc-over { background: rgba(255,255,255,.5); box-shadow: inset 0 0 0 2px #6fb7e8; }
@@ -577,7 +577,7 @@ function injectStyles() {
 
     /* Each event is a little push-pinned sticky note. */
     .dbc-note { position:relative; display:block; background:var(--n,#ffe27a); color:#14130f;
-      border-radius:3px; padding:10px 5px 4px; font-size:.56rem; line-height:1.2; cursor:pointer;
+      border-radius:0; padding:10px 5px 4px; font-size:.56rem; line-height:1.2; cursor:pointer;
       transform: rotate(var(--tilt,0deg)); transform-origin:50% 0;
       box-shadow: 0 1px 2px rgba(20,19,15,.22), inset 0 0 0 .5px rgba(255,255,255,.25);
       transition: transform .12s ease, box-shadow .12s ease; }
@@ -591,11 +591,11 @@ function injectStyles() {
 
     /* Hover / click details popover (its own little pinned note). */
     .dbc-pop { position:fixed; z-index:100003; width:210px; background:#fffdf8; color:#2a2723;
-      border-radius:8px; padding:16px 14px 13px; font-family: var(--font-mono, monospace);
+      border-radius:0; padding:16px 14px 13px; font-family: var(--font-mono, monospace);
       box-shadow: 0 12px 32px rgba(20,19,15,.3); }
     .dbc-pop-pin { position:absolute; top:-7px; left:50%; transform:translateX(-50%); line-height:0;
       filter: drop-shadow(0 1px 1px rgba(20,19,15,.3)); }
-    .dbc-pop-bar { height:5px; border-radius:999px; margin:0 0 9px; }
+    .dbc-pop-bar { height:5px; border-radius:0; margin:0 0 9px; }
     .dbc-pop-title { font-family: var(--font-display, sans-serif); font-size:.95rem; margin:0 0 .25rem; color:#14130f; }
     .dbc-pop-when { font-size:.68rem; color: var(--text-secondary,#6b655c); margin:0 0 .55rem; font-weight:700; }
     .dbc-pop-list { margin:0; display:grid; gap:.3rem; }
@@ -605,7 +605,7 @@ function injectStyles() {
     .dbc-pop-notes { font-size:.7rem; color: var(--text-secondary,#6b655c); margin:.6rem 0 0; line-height:1.4;
       border-top:1px dashed rgba(20,19,15,.16); padding-top:.5rem; white-space:pre-wrap; }
     .dbc-pop-actions { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.8rem; }
-    .dbc-pop-actions button { flex:1; min-width:64px; padding:.4rem; border-radius:8px; cursor:pointer;
+    .dbc-pop-actions button { flex:1; min-width:64px; padding:.4rem; border-radius:0; cursor:pointer;
       font-family:inherit; font-size:.66rem; }
     .dbc-pop-edit { border:1px solid rgba(20,19,15,.22); background: var(--surface-secondary,#f4f0e8); color:#14130f; }
     .dbc-pop-edit:hover { background: var(--surface-tertiary,#e9e2d4); }
@@ -618,12 +618,12 @@ function injectStyles() {
     /* Admin teacher palette. */
     .dbc-palette { margin-top:.8rem; padding-top:.7rem; border-top:1px dashed rgba(20,19,15,.2); }
     .dbc-palette-top { display:flex; align-items:center; justify-content:space-between; gap:.6rem; margin-bottom:.4rem; }
-    .dbc-roster-btn { font-size:.62rem; padding:.28rem .7rem; border-radius:999px; cursor:pointer; white-space:nowrap;
+    .dbc-roster-btn { font-size:.62rem; padding:.28rem .7rem; border-radius:0; cursor:pointer; white-space:nowrap;
       border:1px solid rgba(20,19,15,.25); background: rgba(255,255,255,.6); color:#14130f; font-family:inherit; }
     .dbc-roster-btn:hover { background: rgba(255,255,255,.9); }
     .dbc-palette-lbl { font-size:.62rem; color: rgba(20,19,15,.6); display:block; }
     .dbc-chips { display:flex; flex-wrap:wrap; gap:.4rem; }
-    .dbc-teacher { font-size:.66rem; padding:.25rem .6rem; border-radius:999px; cursor:grab; user-select:none;
+    .dbc-teacher { font-size:.66rem; padding:.25rem .6rem; border-radius:0; cursor:grab; user-select:none;
       background: var(--accent-secondary, #6fb7e8); color: var(--text-on-accent, #fff); box-shadow: var(--shadow-sm, 0 1px 3px rgba(42,39,35,.16)); }
     .dbc-teacher:active { cursor:grabbing; }
     .dbc-palette-empty { font-size:.66rem; color: rgba(20,19,15,.5); }
@@ -632,24 +632,24 @@ function injectStyles() {
     .dbc-modal { position:fixed; inset:0; z-index:100002; display:flex; align-items:center; justify-content:center; padding:1rem; }
     .dbc-modal__bd { position:absolute; inset:0; background: rgba(42,39,35,.5); }
     .dbc-modal__card { position:relative; width:min(380px,100%); background: var(--surface-primary,#fffdf8); color: var(--ink,#2a2723);
-      border: var(--border-subtle, 1px solid rgba(42,39,35,.14)); border-radius:16px; box-shadow: var(--shadow-xl, 0 18px 40px rgba(42,39,35,.2));
+      border: var(--border-subtle, 1px solid rgba(42,39,35,.14)); border-radius:0; box-shadow: var(--shadow-xl, 0 18px 40px rgba(42,39,35,.2));
       padding:1.3rem; font-family: var(--font-mono, monospace); max-height:90vh; overflow:auto; }
     .dbc-modal__card h3 { font-family: var(--font-display, sans-serif); font-size:1.05rem; margin:0 0 .2rem; }
     .dbc-modal__sub { font-size:.68rem; color: var(--text-secondary,#6b655c); margin:0 0 .9rem; }
     .dbc-field { display:block; font-size:.66rem; color: var(--text-secondary,#6b655c); margin-bottom:.7rem; }
     .dbc-field-2 { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
-    .dbc-field select, .dbc-field input, .dbc-field textarea { width:100%; box-sizing:border-box; margin-top:.25rem; padding:.5rem .6rem; border-radius:10px; font-family:inherit;
+    .dbc-field select, .dbc-field input, .dbc-field textarea { width:100%; box-sizing:border-box; margin-top:.25rem; padding:.5rem .6rem; border-radius:0; font-family:inherit;
       font-size:.85rem; border: var(--border-subtle, 1px solid rgba(42,39,35,.16)); background: var(--surface-secondary,#f4f0e8); color: var(--ink,#2a2723); }
     .dbc-field textarea { resize:vertical; min-height:2.4em; }
     .dbc-roster-body { margin:.2rem 0 .9rem; }
     .dbc-rlist { display:flex; flex-direction:column; gap:.35rem; max-height:200px; overflow:auto; margin-bottom:.7rem; }
     .dbc-rrow { display:flex; align-items:center; justify-content:space-between; gap:.5rem; padding:.4rem .6rem;
-      border-radius:10px; background: var(--surface-secondary,#f4f0e8); font-size:.78rem; }
+      border-radius:0; background: var(--surface-secondary,#f4f0e8); font-size:.78rem; }
     .dbc-rname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .dbc-rx { border:none; background:transparent; color: var(--text-tertiary,#9a948a); cursor:pointer; font-size:1.1rem; line-height:1; padding:0 .2rem; }
     .dbc-rx:hover { color: var(--accent-danger,#e07a5f); }
     .dbc-radd { display:flex; gap:.5rem; }
-    .dbc-radd select { flex:1; min-width:0; padding:.5rem .6rem; border-radius:10px; font-family:inherit; font-size:.8rem;
+    .dbc-radd select { flex:1; min-width:0; padding:.5rem .6rem; border-radius:0; font-family:inherit; font-size:.8rem;
       border: var(--border-subtle, 1px solid rgba(42,39,35,.16)); background: var(--surface-secondary,#f4f0e8); color: var(--ink,#2a2723); }
     .dbc-radd .btn { white-space:nowrap; }
     .dbc-modal__row { display:flex; gap:.6rem; margin-top:.3rem; }

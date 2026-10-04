@@ -46,7 +46,7 @@
   display: flex;
   gap: 0.3rem;
   background: var(--surface-primary);
-  border-radius: 16px;
+  border-radius: 0;
   padding: 0.35rem 0.45rem;
   box-shadow: var(--shadow-md);
   opacity: 0;
@@ -98,7 +98,7 @@
   max-width: 148px;
   background: var(--bubble-bg);
   color: #14130f;
-  border-radius: 12px;
+  border-radius: 0;
   padding: 0.38rem 0.55rem;
   box-shadow: var(--shadow-md);
   position: relative;
@@ -133,7 +133,7 @@
 }
 
 /* Thinking tail — a trail of shrinking circles, like a thought bubble */
-.mm-prepbot-bubble--thinking { border-radius: 20px; }
+.mm-prepbot-bubble--thinking { border-radius: 0; }
 .mm-prepbot-bubble--thinking::after,
 .mm-prepbot-bubble--thinking::before {
   content: "";

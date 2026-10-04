@@ -30,7 +30,7 @@
   width: 42px;
   height: 42px;
   padding: 0;
-  border-radius: 10px;
+  border-radius: 0;
   cursor: pointer;
   color: #eef4fb;
   background: rgba(14, 26, 40, 0.5);

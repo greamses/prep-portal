@@ -277,7 +277,7 @@ body::before {
   gap: 0.4rem;
   padding: 0.3rem 0.75rem;
   border: var(--border-subtle);
-  border-radius: 99px;
+  border-radius: 0;
   font-family: var(--font-mono);
   font-size: var(--text-mono-xs);
   font-weight: var(--weight-bold);
@@ -481,7 +481,7 @@ body::before {
   height: 18px;
   border: var(--border-subtle);
   background: var(--bg);
-  border-radius: 3px;
+  border-radius: 0;
   cursor: pointer;
   position: relative;
   box-shadow: var(--shadow-sm);
@@ -1070,12 +1070,12 @@ body::before {
   justify-content: flex-end;
   gap: 0.75rem;
   background: var(--surface-secondary);
-  border-radius: 0 0 calc(var(--radius-sm) - 2px) calc(var(--radius-sm) - 2px);
+  border-radius: 0;
 }
 
 .brutal-btn-flat {
   border: var(--border-subtle);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--surface-primary);
   padding: 0.5rem 1.25rem;
   font-family: var(--font-mono);
@@ -1216,7 +1216,7 @@ body::before {
   display: inline-block;
   padding: 1px 5px;
   border: var(--border-subtle);
-  border-radius: 3px;
+  border-radius: 0;
   font-family: var(--font-mono);
   font-size: var(--text-body-xxs);
   font-weight: var(--weight-bold);
@@ -1309,7 +1309,7 @@ body::before {
   letter-spacing: 0.03em;
   color: var(--accent-secondary);
   border: 1.5px solid color-mix(in srgb, var(--accent-secondary) 45%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   padding: 0.1rem 0.5rem;
   width: fit-content;
 }
@@ -1343,7 +1343,7 @@ body::before {
   display: inline-flex;
   flex: 0 0 auto;
   border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   overflow: hidden;
   background: var(--surface-secondary);
 }
@@ -1373,7 +1373,7 @@ body::before {
   margin-top: 0.5rem;
   padding: 0.5rem 0.7rem;
   border: 1.5px dashed color-mix(in srgb, var(--ink) 14%, transparent);
-  border-radius: 10px;
+  border-radius: 0;
 }
 .fo-part {
   display: inline-flex;

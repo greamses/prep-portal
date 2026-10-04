@@ -99,14 +99,14 @@ function injectStyles() {
   .imgadm-pop {
     position: fixed; z-index: 10000; width: 260px; max-width: calc(100vw - 24px);
     background: var(--surface-primary, #fff); color: var(--ink, #14130f);
-    border: 1.5px solid var(--border-subtle, #ddd); border-radius: 12px;
+    border: 1.5px solid var(--border-subtle, #ddd); border-radius: 0;
     box-shadow: 0 12px 34px rgba(20,19,15,.3); padding: 12px; font-family: var(--font-mono, monospace);
   }
   .imgadm-pop h4 { margin: 0 0 8px; font-size: .8rem; font-family: var(--font-display, inherit); }
   .imgadm-pop input[type=text] { width: 100%; box-sizing: border-box; padding: .45rem .5rem; font-size: .78rem;
-    border: 1.5px solid var(--border-subtle, #ccc); border-radius: 8px; background: var(--app-bg, #fff); color: inherit; }
+    border: 1.5px solid var(--border-subtle, #ccc); border-radius: 0; background: var(--app-bg, #fff); color: inherit; }
   .imgadm-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-  .imgadm-btn { font: 600 .74rem var(--font-mono, monospace); padding: .4rem .7rem; border-radius: 999px; border: 0; cursor: pointer;
+  .imgadm-btn { font: 600 .74rem var(--font-mono, monospace); padding: .4rem .7rem; border-radius: 0; border: 0; cursor: pointer;
     background: var(--accent-secondary, #f4c95d); color: #14130f; }
   .imgadm-btn.ghost { background: none; border: 1.5px solid var(--border-subtle, #ccc); color: var(--text-secondary, #666); }
   .imgadm-note { margin: 8px 0 0; font-size: .68rem; color: var(--text-tertiary, #999); min-height: 1em; }

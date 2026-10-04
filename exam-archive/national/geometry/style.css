@@ -323,7 +323,7 @@ body.geo-nav-hidden .site-nav { display: none; }
 .pp-lobby-code-value button {
   background: var(--pp-note-bg, #fff39a);
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow:
     0 1px 1px rgba(20, 19, 15, 0.1),
     5px 8px 12px -4px rgba(20, 19, 15, 0.3);

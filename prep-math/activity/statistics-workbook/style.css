@@ -31,7 +31,7 @@
 /* the raw answers, to be gone through once and crossed off */
 .sw-list {
   font-size: 11pt; line-height: 1.9; margin: 1mm 0 2mm;
-  padding: 2mm 3mm; border: 0.3mm dashed #8a837a; border-radius: 1.5mm;
+  padding: 2mm 3mm; border: 0.3mm dashed #8a837a; border-radius: 0;
 }
 
 /* a table and a pictogram beside it: each keeps its size, and they wrap */
@@ -78,7 +78,7 @@
 .pt-lab {
   position: absolute; transform: translate(-50%, -50%);
   font: 600 12pt/1 "JetBrains Mono", ui-monospace, monospace; color: #2a2723;
-  background: #fffdf8; padding: 0 0.8mm; border-radius: 1mm; white-space: nowrap;
+  background: #fffdf8; padding: 0 0.8mm; border-radius: 0; white-space: nowrap;
 }
 .pt-lab .wb-answer { min-width: 11mm; height: 6.5mm; }
 .pt-end {

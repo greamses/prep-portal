@@ -80,7 +80,7 @@ body {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: none;
-  border-radius: 2px;
+  border-radius: 0;
   transform: rotate(-2deg);
   box-shadow:
     0 1px 1px rgba(20, 19, 15, 0.1),
@@ -642,7 +642,7 @@ body.bb-locked { overflow: hidden; }
   place-items: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 0;
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 0.72rem;
@@ -662,7 +662,7 @@ body.bb-locked { overflow: hidden; }
   height: 1.15rem;
   padding: 0;
   border: 1px solid rgba(20, 19, 15, 0.3);
-  border-radius: 3px;
+  border-radius: 0;
   cursor: pointer;
   transform: rotate(-3deg);
 }
@@ -1136,7 +1136,7 @@ body.bb-locked { overflow: hidden; }
   color: var(--ink);
   background: var(--surface-secondary, rgba(0, 0, 0, 0.05));
   border: var(--border-subtle);
-  border-radius: 5px;
+  border-radius: 0;
   white-space: nowrap;
 }
 
@@ -1323,7 +1323,7 @@ body.bb-locked { overflow: hidden; }
   padding: 0 0.35rem;
   background: var(--surface-primary);
   border: var(--border-subtle);
-  border-radius: 7px;
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
   color: var(--ink);
   font-family: var(--font-mono);
@@ -1361,7 +1361,7 @@ body.bb-locked { overflow: hidden; }
   height: 32px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 0;
   background: transparent;
   color: var(--ink);
   cursor: pointer;
@@ -1381,7 +1381,7 @@ body.bb-locked { overflow: hidden; }
   left: 50%;
   transform: translateX(-50%);
   padding: 0.12rem 0.34rem;
-  border-radius: 5px;
+  border-radius: 0;
   background: var(--ink);
   color: var(--surface-primary);
   font-family: var(--font-mono);
@@ -1453,7 +1453,7 @@ body.bb-locked { overflow: hidden; }
   padding: 0.28rem 0.4rem;
   background: var(--surface-secondary);
   border: var(--border-subtle);
-  border-radius: 8px;
+  border-radius: 0;
   color: var(--ink);
   font-family: var(--font-mono);
   font-size: var(--text-mono-sm, 0.8rem);
@@ -1488,7 +1488,7 @@ body.bb-locked { overflow: hidden; }
 .bb-sheetpanel__base {
   flex: 0 0 auto;
   padding: 0.1rem 0.34rem;
-  border-radius: 5px;
+  border-radius: 0;
   background: var(--surface-secondary);
   color: var(--text-secondary);
   font-family: var(--font-mono);
@@ -1516,7 +1516,7 @@ body.bb-locked { overflow: hidden; }
   height: 30px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--surface-secondary);
   color: var(--ink);
   cursor: pointer;
@@ -1558,7 +1558,7 @@ body.bb-locked { overflow: hidden; }
 .bb-cells__box {
   padding: 0;
   border: 2px solid var(--accent-secondary);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--surface-primary);
   color: var(--ink);
   font-family: var(--font-mono);
@@ -1583,7 +1583,7 @@ body.bb-locked { overflow: hidden; }
   justify-content: center;
   padding: 0;
   border: 2px solid var(--accent-primary);
-  border-radius: 7px;
+  border-radius: 0;
   background: var(--surface-primary);
   color: var(--ink);
   font-family: var(--font-mono);
@@ -1615,7 +1615,7 @@ body.bb-locked { overflow: hidden; }
 /* Where it is going. Invisible until the digit is over it, because the cell is
    already outlined on the page underneath. */
 .bb-cells__drop {
-  border-radius: 7px;
+  border-radius: 0;
   border: 2px dashed transparent;
   pointer-events: none;
   transition: background 0.12s ease, border-color 0.12s ease;
@@ -1645,7 +1645,7 @@ body.bb-locked { overflow: hidden; }
   pointer-events: none;
   outline: 2px dashed var(--accent-secondary);
   outline-offset: 3px;
-  border-radius: 4px;
+  border-radius: 0;
 }
 .bb-pickkit[hidden] { display: none; }
 
@@ -1667,7 +1667,7 @@ body.bb-locked { overflow: hidden; }
   left: 12px;
   right: 34px;
   height: 12px;
-  border-radius: 4px 4px 0 0;
+  border-radius: 0;
   cursor: grab;
   touch-action: none;
 }
@@ -1680,7 +1680,7 @@ body.bb-locked { overflow: hidden; }
   height: 18px;
   display: grid;
   place-items: center;
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--accent-danger, #f07a7a);
   cursor: pointer;
 }
@@ -1693,7 +1693,7 @@ body.bb-locked { overflow: hidden; }
   bottom: -5px;
   width: 16px;
   height: 16px;
-  border-radius: 0 0 4px 0;
+  border-radius: 0;
   clip-path: polygon(100% 0, 100% 100%, 0 100%);
   cursor: nwse-resize;
   touch-action: none;
@@ -1744,7 +1744,7 @@ body.bb-locked { overflow: hidden; }
   color: var(--ink, #2a2723);
   background: none;
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   cursor: pointer;
   opacity: 0.5;
 }
@@ -1763,7 +1763,7 @@ body.bb-locked { overflow: hidden; }
   padding: 0.35rem;
   background: var(--surface-primary, #fffdf8);
   border: 1.5px solid var(--border-subtle-color, rgba(42, 39, 35, 0.16));
-  border-radius: 0.55rem;
+  border-radius: 0;
   box-shadow: 0 10px 26px -8px rgba(20, 19, 15, 0.34);
 }
 .bb-stack__fly[hidden] { display: none; }
@@ -1794,7 +1794,7 @@ body.bb-locked { overflow: hidden; }
   height: 32px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 0;
   background: transparent;
   color: var(--ink);
   cursor: pointer;
@@ -1823,7 +1823,7 @@ body.bb-locked { overflow: hidden; }
   left: 50%;
   transform: translateX(-50%);
   padding: 0.12rem 0.34rem;
-  border-radius: 5px;
+  border-radius: 0;
   background: var(--ink);
   color: var(--surface-primary);
   font-family: var(--font-mono);

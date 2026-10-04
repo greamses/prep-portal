@@ -936,7 +936,7 @@ if (saveImgBtn) {
       ? paraBlocksList.querySelectorAll(".para-img-input")
       : [];
     const IMG_STYLE =
-      "width:100%;max-width:100%;height:auto;border-radius:8px;margin:1.25rem 0;display:block;";
+      "width:100%;max-width:100%;height:auto;border-radius:0;margin:1.25rem 0;display:block;";
     let newContent = "";
     blocks.forEach((block, idx) => {
       newContent += block.outerHTML;

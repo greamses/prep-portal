@@ -125,7 +125,7 @@ body {
   line-height: 1.5;
   color: #14130f;
   background: #fff39a;
-  border-radius: 3px;
+  border-radius: 0;
   padding: 0.95rem 1.5rem 1.05rem;
   transform: rotate(-2.5deg);
   box-shadow:
@@ -171,7 +171,7 @@ body {
   border: 2px solid color-mix(in srgb, var(--tile) 50%, transparent);
   box-shadow: var(--shadow-sm);
   padding: 0.4rem 0.7rem;
-  border-radius: 13px;
+  border-radius: 0;
   transition: transform var(--duration-smooth, 0.25s) var(--ease-bounce, ease);
 }
 .hero-stat strong {
@@ -211,7 +211,7 @@ body {
   padding: clamp(1.2rem, 3vw, 1.8rem);
   background: var(--surface-primary);
   border: 2px solid color-mix(in srgb, var(--tile) 35%, transparent);
-  border-radius: clamp(16px, 2.5vw, 22px);
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
   animation: fadeUp 0.5s var(--ease-default, ease) both;
 }
@@ -227,7 +227,7 @@ body {
   width: 30px;
   height: 30px;
   flex-shrink: 0;
-  border-radius: 999px;
+  border-radius: 50%;
   background: var(--tile);
   color: var(--tile-ink, #fff);
   font-family: var(--font-display);
@@ -253,7 +253,7 @@ body {
   display: none;
   width: 22px;
   height: 22px;
-  border-radius: 999px;
+  border-radius: 50%;
   background: color-mix(in srgb, var(--accent-success) 16%, transparent);
 }
 .step-done::before {
@@ -333,7 +333,7 @@ body {
   color: var(--ink);
   background: var(--surface-secondary, var(--bg));
   border: 2px solid color-mix(in srgb, var(--tile) 30%, transparent);
-  border-radius: 12px;
+  border-radius: 0;
   outline: none;
   transition: border-color var(--duration-smooth, 0.25s) ease,
     box-shadow var(--duration-smooth, 0.25s) ease;
@@ -354,7 +354,7 @@ body {
   padding: 0.55rem 0.85rem;
   background: var(--surface-secondary, var(--bg));
   border: 2px solid color-mix(in srgb, var(--tile) 30%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   font-family: var(--font-mono);
   font-size: 0.74rem;
   font-weight: 600;
@@ -398,7 +398,7 @@ body {
 .chip-count {
   margin-left: 0.15rem;
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 0.62rem;
   font-weight: 700;
   background: color-mix(in srgb, var(--ink) 12%, transparent);
@@ -425,7 +425,7 @@ body {
   width: 15px;
   height: 15px;
   border: 1.8px solid currentColor;
-  border-radius: 5px;
+  border-radius: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -470,7 +470,7 @@ body {
   padding: 0.6rem 0.95rem;
   background: var(--surface-secondary, var(--bg));
   border: 2px solid color-mix(in srgb, var(--tile) 35%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 0.66rem;
@@ -513,7 +513,7 @@ body {
   max-width: 16rem;
   background: var(--surface-primary);
   border: 2px solid color-mix(in srgb, var(--tile) 35%, transparent);
-  border-radius: 16px;
+  border-radius: 0;
   box-shadow: var(--shadow-lg);
   z-index: 100;
   max-height: 320px;
@@ -532,7 +532,7 @@ body {
   white-space: nowrap;
   cursor: pointer;
   color: var(--ink);
-  border-radius: 999px;
+  border-radius: 0;
   transition: background 0.1s, transform 0.1s, color 0.1s;
 }
 .csel-item:hover,
@@ -562,7 +562,7 @@ body {
   color: var(--text-secondary);
   background: var(--surface-primary);
   border: 2px solid color-mix(in srgb, var(--ink) 15%, transparent);
-  border-radius: 20px;
+  border-radius: 0;
   padding: 0.4rem 1rem;
   cursor: pointer;
   transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.18s;
@@ -592,7 +592,7 @@ body {
   padding: clamp(1.1rem, 3vw, 1.6rem) clamp(1.3rem, 3vw, 1.8rem);
   background: var(--surface-primary);
   border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
-  border-radius: clamp(18px, 3vw, 26px);
+  border-radius: 0;
   box-shadow: var(--shadow-md);
 }
 
@@ -623,7 +623,7 @@ body {
   min-height: clamp(46px, 9vw, 54px);
   padding: 0 clamp(1.2rem, 3vw, 1.8rem);
   border: none;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--accent-primary);
   color: var(--ink);
   font-family: var(--font-display);
@@ -675,7 +675,7 @@ body {
   min-height: clamp(46px, 9vw, 54px);
   padding: 0 clamp(1rem, 2.5vw, 1.3rem);
   border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--surface-primary);
   color: var(--ink);
   font-family: var(--font-mono);
@@ -747,7 +747,7 @@ body {
   width: 40px;
   height: 23px;
   flex-shrink: 0;
-  border-radius: 999px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--ink) 14%, transparent);
   border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
   transition: background 0.2s, border-color 0.2s;
@@ -796,7 +796,7 @@ body {
 .fmt-lock {
   margin-left: 0.4rem;
   padding: 0.05rem 0.34rem;
-  border-radius: 999px;
+  border-radius: 0;
   font-family: var(--font-mono);
   font-size: 0.56rem;
   font-weight: 800;
@@ -865,7 +865,7 @@ body {
   color: var(--ink);
   background: var(--surface-secondary, var(--bg));
   border: 2px solid color-mix(in srgb, var(--ink) 15%, transparent);
-  border-radius: 12px;
+  border-radius: 0;
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
@@ -1011,7 +1011,7 @@ body {
   color: #14130f;
   background: var(--pp-note-bg, #fff3a8);
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   padding: 0.55rem 0.85rem 0.6rem;
   cursor: pointer;
   box-shadow:
@@ -1065,7 +1065,7 @@ body {
   width: 13px;
   height: 13px;
   border: 2px solid rgba(20, 19, 15, 0.45);
-  border-radius: 3px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.55);
   flex-shrink: 0;
 }
@@ -1079,7 +1079,7 @@ body {
   font-size: 0.66rem;
   color: rgba(20, 19, 15, 0.62);
   background: rgba(255, 255, 255, 0.55);
-  border-radius: 999px;
+  border-radius: 0;
   padding: 0.05rem 0.35rem;
 }
 .custom-chip.checked .chip-count { color: rgba(20, 19, 15, 0.8); }
@@ -1103,7 +1103,7 @@ body {
   color: #14130f;
   background: var(--pp-note-bg, #fff3a8);
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   padding: 0.5rem 0.9rem 0.55rem;
   cursor: pointer;
   box-shadow:
@@ -1149,7 +1149,7 @@ body {
   color: #14130f;
   background: var(--pp-note-bg, #fff3a8);
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   padding: 0.65rem 1.15rem 0.7rem;
   cursor: pointer;
   box-shadow:
@@ -1248,7 +1248,7 @@ body {
   background: var(--surface-secondary);
   border: 0;
   border-bottom: 2px solid var(--border-subtle);
-  border-radius: 2px 2px 0 0;
+  border-radius: 0;
   padding: 0.55rem 0.7rem;
   width: min(260px, 100%);
   margin-bottom: 0.6rem;
@@ -1303,7 +1303,7 @@ body {
   color: #14130f;
   background: var(--pp-note-bg, #fff3a8);
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   padding: 0.45rem 0.85rem 0.5rem;
   box-shadow:
     0 1px 1px rgba(20, 19, 15, 0.1),

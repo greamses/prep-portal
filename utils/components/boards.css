@@ -57,7 +57,7 @@ select.bd-sum__in { cursor: pointer; }
   color: var(--bd-ink);
   background: var(--bd-paper);
   border: 1.5px solid rgba(42, 39, 35, 0.35);
-  border-radius: 0.3rem;
+  border-radius: 0;
 }
 .bd-sum__in:focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 1px; }
 .bd-sum__sign {
@@ -79,7 +79,7 @@ select.bd-sum__in { cursor: pointer; }
   padding: 0.6rem 0.4rem;
   background: var(--bd-paper);
   border: 1.5px solid rgba(42, 39, 35, 0.18);
-  border-radius: 0.4rem;
+  border-radius: 0;
   overflow-x: auto;
 }
 
@@ -128,7 +128,7 @@ select.bd-sum__in { cursor: pointer; }
   height: 0;
   margin-bottom: 0.16rem;
   border-bottom: 2px solid var(--bd-ink);
-  border-radius: 2px;
+  border-radius: 0;
 }
 .bd-underline { border-bottom-color: var(--bd-done); }
 
@@ -136,7 +136,7 @@ select.bd-sum__in { cursor: pointer; }
 .bd-bracket {
   border-left: 2px solid var(--bd-ink);
   border-top: 2px solid var(--bd-ink);
-  border-top-left-radius: 3px;
+  border-top-left-radius: 0;
   pointer-events: none;
 }
 
@@ -195,7 +195,7 @@ select.bd-sum__in { cursor: pointer; }
   color: var(--bd-ink);
   background: rgba(111, 183, 232, 0.16);
   border: 2px dashed var(--bd-accent);
-  border-radius: 0.25rem;
+  border-radius: 0;
 }
 .bd-in:focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 1px; }
 /* and the box for one of those: part of a cell, hugging the gap it goes in.
@@ -230,7 +230,7 @@ select.bd-sum__in { cursor: pointer; }
   color: var(--bd-ink);
   background: #fff3a8;
   border: 1.5px solid var(--bd-ink);
-  border-radius: 0.25rem;
+  border-radius: 0;
   cursor: grab;
 }
 .bd-bring em {

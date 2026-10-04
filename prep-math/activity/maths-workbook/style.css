@@ -421,7 +421,7 @@ thead .pv-chart__side {
 .ms-col__stop {
   border-left: 0.5mm solid #2a2723;
   border-top: 0.5mm solid #2a2723;
-  border-top-left-radius: 1.2mm;
+  border-top-left-radius: 0;
   margin-bottom: 1mm;
   pointer-events: none;
 }
@@ -454,7 +454,7 @@ thead .pv-chart__side {
   height: 6.4mm;
   background: #fffdf8;
   border: 0.35mm dashed #8f887c;
-  border-radius: 0.6mm;
+  border-radius: 0;
 }
 /* and one already written, for the worked example */
 .mm-cross__said { font-size: 10.5pt; color: #2a6ca8; }
@@ -466,7 +466,7 @@ thead .pv-chart__side {
   height: 5mm;
   background: #fffdf8;
   border: 0.3mm dashed #8f887c;
-  border-radius: 0.6mm;
+  border-radius: 0;
 }
 .mm-cross__carried { font-size: 8.5pt; color: #2a6ca8; }
 /* the answer, under the line */
@@ -477,7 +477,7 @@ thead .pv-chart__side {
   margin: 0 0.8mm;
   background: #fffdf8;
   border: 0.4mm solid #2a2723;
-  border-radius: 0.6mm;
+  border-radius: 0;
 }
 .mm-cross__said--ans { font-size: 15pt; color: #2a2723; }
 .mm-cross__rule {
@@ -550,7 +550,7 @@ thead .pv-chart__side {
   margin: 0 0.6mm;
   background: #fffdf8;
   border: 0.35mm dashed #8f887c;
-  border-radius: 0.6mm;
+  border-radius: 0;
 }
 
 /* ── dividing with a flag ──────────────────────────────────────────────────
@@ -628,7 +628,7 @@ thead .pv-chart__side {
 .wb-live .ms-col__mark.is-bringable {
   cursor: grab;
   touch-action: none;
-  border-radius: 1mm;
+  border-radius: 0;
 }
 .wb-live .ms-col__mark.is-bringable:hover {
   background: rgba(42, 108, 168, 0.1);
@@ -679,7 +679,7 @@ thead .pv-chart__side {
   margin: 1.4mm 0.5mm 2.2mm;
   background: #fffdf8;
   border: 0.4mm solid #2a2723;
-  border-radius: 0.6mm;
+  border-radius: 0;
 }
 
 /* ── the column ────────────────────────────────────────────────────────────
@@ -824,7 +824,7 @@ thead .pv-chart__side {
   font-size: 8.5pt;
 }
 .mt-key__one { display: inline-flex; align-items: center; gap: 2mm; }
-.mt-key__hand { display: inline-block; border-radius: 1mm; }
+.mt-key__hand { display: inline-block; border-radius: 0; }
 .mt-key__hand--hour { width: 8mm; height: 2.4mm; background: #c0453f; }
 .mt-key__hand--min { width: 14mm; height: 1.1mm; background: #2f6ea8; }
 
@@ -850,7 +850,7 @@ thead .pv-chart__side {
   color: #2a2723;
   background: #fffdf8;
   border: 0.6mm solid #2a2723;
-  border-radius: 1.6mm;
+  border-radius: 0;
 }
 .mt-digital__colon { font-weight: 700; padding: 0 0.4mm; }
 /* The two boxes the figures are written into, sized to the figures that would
@@ -1086,7 +1086,7 @@ thead .pv-chart__side {
   min-height: 8.6mm;
   padding: 0.6mm;
   border: 0.3mm solid #cfc8bb;
-  border-radius: 1.2mm;
+  border-radius: 0;
   background: #fffdf8;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 10pt;
@@ -1175,7 +1175,7 @@ thead .pv-chart__side {
   text-align: center;
   color: #1d4f7c;
 }
-.ft-in:focus { outline: none; background: #eef4fb; border-radius: 1mm; }
+.ft-in:focus { outline: none; background: #eef4fb; border-radius: 0; }
 /* ON PAPER: the numbers that go into the top circle, printed under the tree.
    On screen they swing out of whichever circle is tapped, so this row is put
    away — two lists of the same numbers in two places is one too many. */
@@ -1318,7 +1318,7 @@ thead .pv-chart__side {
   width: 9mm;
   height: 8mm;
   border: 0.4mm solid #2a2723;
-  border-radius: 2mm;
+  border-radius: 0;
   background: #fff3a8;
   color: #2a2723;
   cursor: pointer;
@@ -1341,7 +1341,7 @@ thead .pv-chart__side {
   top: 3.2mm;
   transform: translateX(-50%);
   padding: 0 1.2mm;
-  border-radius: 1mm;
+  border-radius: 0;
   background: #fffdf8;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 9.5pt;
@@ -1363,7 +1363,7 @@ thead .pv-chart__side {
   width: 11mm;
   height: 8mm;
   border: 0.35mm dashed #8f887c;
-  border-radius: 1mm;
+  border-radius: 0;
   background: #fffdf8;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 10pt;

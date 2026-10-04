@@ -284,7 +284,7 @@ body {
   text-transform: uppercase;
   letter-spacing: .08em;
   border: var(--border);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--off);
   color: var(--ink);
   white-space: nowrap;
@@ -371,7 +371,7 @@ body {
   border: var(--border);
   box-shadow: var(--shadow-lg);
   background: var(--bg);
-  border-radius: 16px;
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -467,7 +467,7 @@ body {
   color: var(--ink);
   background: var(--off);
   border: var(--border);
-  border-radius: 10px;
+  border-radius: 0;
   outline: none;
   transition: background .15s, box-shadow .2s;
 }
@@ -606,7 +606,7 @@ body {
 
 .csel-panel::-webkit-scrollbar-thumb {
   background: var(--ink);
-  border-radius: 4px;
+  border-radius: 0;
 }
 
 .csel.open .csel-panel {
@@ -667,7 +667,7 @@ body {
   max-width: 320px;
   border: var(--border);
   box-shadow: 4px 4px 0 var(--ink);
-  border-radius: 12px;
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -733,7 +733,7 @@ body {
 ════════════════════════════════════════════════════ */
 .qbuilder {
   border: var(--border);
-  border-radius: 12px;
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -768,7 +768,7 @@ body {
   letter-spacing: .08em;
   padding: 9px 16px;
   border: 2px solid var(--yellow);
-  border-radius: 7px;
+  border-radius: 0;
   background: transparent;
   color: var(--yellow);
   cursor: pointer;
@@ -880,7 +880,7 @@ body {
   letter-spacing: .08em;
   padding: 8px 14px;
   border: var(--border);
-  border-radius: 7px;
+  border-radius: 0;
   background: var(--bg);
   color: var(--ink);
   cursor: pointer;
@@ -924,7 +924,7 @@ body {
   color: var(--ink);
   background: var(--off);
   border: var(--border);
-  border-radius: 8px;
+  border-radius: 0;
   outline: none;
   resize: none;
   line-height: var(--leading-relaxed);
@@ -974,7 +974,7 @@ body {
   color: var(--ink);
   background: var(--off);
   border: var(--border);
-  border-radius: 8px;
+  border-radius: 0;
   outline: none;
   text-align: center;
   transition: background .15s, box-shadow .2s;
@@ -1038,7 +1038,7 @@ body {
 
 .setup-card {
   border: var(--border);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--bg);
   padding: var(--padding-md);
   overflow: hidden;
@@ -1325,7 +1325,7 @@ body {
 ════════════════════════════════════════════════════ */
 .topic-picker {
   background: var(--bg);
-  border-radius: 12px;
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -1416,7 +1416,7 @@ body {
   gap: 7px;
   padding: 9px 15px;
   border: var(--border);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--off);
   font-family: var(--font-mono);
   font-size: 12px;
@@ -1477,7 +1477,7 @@ body {
   height: 16px;
   flex-shrink: 0;
   border: 2px solid currentColor;
-  border-radius: 2px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1593,7 +1593,7 @@ body {
   text-transform: uppercase;
   padding: 14px 26px;
   border: var(--border);
-  border-radius: 8px;
+  border-radius: 0;
   cursor: pointer;
   transition: transform .1s, box-shadow .1s, background .12s, color .12s;
   white-space: nowrap;
@@ -1707,7 +1707,7 @@ body {
   border: var(--border);
   background: var(--bg);
   box-shadow: 10px 10px 0 var(--ink);
-  border-radius: 16px;
+  border-radius: 0;
   transform: translateY(18px);
   transition: transform .25s var(--ease-bounce);
   overflow: hidden;
@@ -3023,7 +3023,7 @@ body {
   display: none;
   background: #1a1a1a;
   padding: 5px;
-  border-radius: 6px;
+  border-radius: 0;
   z-index: 10000;
   gap: 4px;
   border: 2px solid #000;
@@ -3039,7 +3039,7 @@ body {
   font-family: 'JetBrains Mono';
   font-size: 12px;
   font-weight: bold;
-  border-radius: 3px;
+  border-radius: 0;
 }
 
 #text-format-toolbar button:hover {
@@ -3183,7 +3183,7 @@ mjx-container {
   font-size: 1rem;
   background: rgba(0, 85, 255, 0.05);
   padding: 0 2px;
-  border-radius: 2px;
+  border-radius: 0;
 }
 
 /* Make display math stand out */
@@ -3265,7 +3265,7 @@ body { background-image: none; }
   line-height: 1.5;
   color: #14130f;
   background: #fff39a;
-  border-radius: 3px;
+  border-radius: 0;
   padding: 0.95rem 1.5rem 1.05rem;
   transform: rotate(-2.5deg);
   box-shadow:
@@ -3308,7 +3308,7 @@ body { background-image: none; }
   border: 2px solid color-mix(in srgb, var(--tile, var(--accent-secondary)) 50%, transparent);
   box-shadow: var(--shadow-sm);
   padding: 0.4rem 0.7rem;
-  border-radius: 13px;
+  border-radius: 0;
   transition: transform var(--transition-smooth, 0.25s) var(--ease-bounce, ease);
 }
 .hero-stat strong {
@@ -3325,7 +3325,7 @@ body { background-image: none; }
 /* ── Setup box → soft rounded paper card; dashed inner dividers ── */
 .setup-box {
   border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
-  border-radius: clamp(16px, 2.5vw, 22px);
+  border-radius: 0;
   box-shadow: var(--shadow-md);
   background: var(--surface-primary);
 }
@@ -3338,7 +3338,7 @@ body { background-image: none; }
 .step-num {
   background: var(--accent-secondary);
   color: var(--text-on-accent, #fff);
-  border-radius: 999px;
+  border-radius: 0;
   transform: rotate(-6deg);
   box-shadow: var(--shadow-sm);
 }
@@ -3349,7 +3349,7 @@ body { background-image: none; }
 .name-input {
   border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
   background: var(--surface-secondary);
-  border-radius: 12px;
+  border-radius: 0;
 }
 .name-input:focus {
   background: var(--surface-primary);
@@ -3364,7 +3364,7 @@ body { background-image: none; }
 
 /* ── Buttons → soft pills with blurred shadows (no hard offsets) ── */
 .btn {
-  border-radius: 999px;
+  border-radius: 0;
   border: none;
   box-shadow: var(--shadow-sm);
 }
@@ -3400,7 +3400,7 @@ body { background-image: none; }
   --tile: var(--accent-secondary);
   background: var(--surface-primary);
   border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
-  border-radius: clamp(16px, 2.5vw, 22px);
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
 }
 .topic-picker-hdr { border-bottom: 1px dashed var(--ruled); }
@@ -3409,7 +3409,7 @@ body { background-image: none; }
 /* Count badge → soft tinted pill */
 .topic-count-badge {
   border: 2px solid color-mix(in srgb, var(--tile) 45%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--surface-secondary);
   box-shadow: var(--shadow-sm);
   font-size: 1.05rem;
@@ -3422,7 +3422,7 @@ body { background-image: none; }
   border: 2px solid color-mix(in srgb, var(--tile) 30%, transparent);
   background: var(--surface-secondary);
   color: var(--ink);
-  border-radius: 999px;
+  border-radius: 0;
   overflow: visible;
   transition:
     transform var(--transition-smooth, 0.2s) var(--ease-bounce, ease),
@@ -3439,7 +3439,7 @@ body { background-image: none; }
   color: var(--text-on-accent, #fff);
   border-color: var(--tile);
 }
-.topic-chip-check { border-radius: 5px; }
+.topic-chip-check { border-radius: 0; }
 .topic-chip.writing-link {
   --tile: var(--accent-secondary);
   background: var(--accent-secondary); color: var(--text-on-accent, #fff); border-color: var(--accent-secondary);
@@ -3454,7 +3454,7 @@ body { background-image: none; }
 /* Footer + actions → soft */
 .topic-clear-btn {
   border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--surface-primary);
   color: var(--text-secondary);
 }
@@ -3467,7 +3467,7 @@ body { background-image: none; }
 /* ── Question-count segmented control → soft sticker tiles ── */
 .qcount-row {
   border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
-  border-radius: 16px;
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
 }
 .qcount-tile {
@@ -3485,7 +3485,7 @@ body { background-image: none; }
 /* ── Question builder card ── */
 .qbuilder {
   border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
-  border-radius: clamp(16px, 2.5vw, 22px);
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
   background: var(--surface-primary);
 }
@@ -3498,7 +3498,7 @@ body { background-image: none; }
 .qbuilder-title { color: var(--ink); }
 .autogen-all-btn {
   border: 2px solid color-mix(in srgb, var(--accent-primary) 55%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--accent-primary);
   color: var(--ink);
   box-shadow: var(--shadow-sm);
@@ -3514,13 +3514,13 @@ body { background-image: none; }
 .q-slot-num {
   background: var(--accent-secondary);
   color: var(--text-on-accent, #fff);
-  border-radius: 12px;
+  border-radius: 0;
   transform: rotate(-6deg);
   box-shadow: var(--shadow-sm);
 }
 .q-autogen-btn {
   border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--surface-primary);
   color: var(--ink);
   box-shadow: var(--shadow-sm);
@@ -3533,13 +3533,13 @@ body { background-image: none; }
 }
 .compulsory-star {
   border: 2px solid color-mix(in srgb, var(--ink) 18%, transparent);
-  border-radius: 8px;
+  border-radius: 0;
   color: var(--text-secondary);
 }
 .q-slot-ta {
   border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
   background: var(--surface-secondary);
-  border-radius: 12px;
+  border-radius: 0;
 }
 .q-slot-ta:focus {
   background: var(--surface-primary);
@@ -3547,7 +3547,7 @@ body { background-image: none; }
 }
 .q-slot-editor {
   border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--surface-secondary);
 }
 .q-slot-editor:focus {
@@ -3576,7 +3576,7 @@ body { background-image: none; }
 
 .modal-wrap {
   border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
-  border-radius: clamp(16px, 2.5vw, 22px);
+  border-radius: 0;
   box-shadow: var(--shadow-xl);
 }
 .modal-body { background: var(--app-bg); }
@@ -3651,7 +3651,7 @@ body { background-image: none; }
   color: var(--text-on-accent, #2a2723);
   background: var(--accent-primary);
   padding: 0.32rem 0.62rem;
-  border-radius: 999px;
+  border-radius: 0;
 }
 .mhdr-close {
   flex-shrink: 0;
@@ -3686,7 +3686,7 @@ body { background-image: none; }
 /* "Watch video" → soft pill */
 .paper-video-btn {
   border: 2px solid color-mix(in srgb, var(--accent-secondary) 45%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--surface-primary);
   color: var(--accent-secondary);
   box-shadow: var(--shadow-sm);

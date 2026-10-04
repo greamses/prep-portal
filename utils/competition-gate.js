@@ -35,7 +35,7 @@ function reveal() {
 function block(title, message, loginHref) {
   const paint = () => {
     const link = (href, label, primary) =>
-      `<a href="${href}" style="display:inline-block;margin:.25rem;padding:.6rem 1.1rem;border-radius:999px;` +
+      `<a href="${href}" style="display:inline-block;margin:.25rem;padding:.6rem 1.1rem;border-radius:0;` +
       (primary ? "background:#f4c95d;" : "background:#fffdf8;border:2px solid rgba(42,39,35,.14);") +
       `color:#2a2723;text-decoration:none;font-weight:700">${label}</a>`;
     document.body.innerHTML =
@@ -63,7 +63,7 @@ function blockWithPlans() {
     a.href = "/subscribe.html#plans";
     a.dataset.plans = "1";
     a.textContent = "See plans";
-    a.style.cssText = "display:inline-block;margin:.25rem;padding:.6rem 1.1rem;border-radius:999px;background:#f4c95d;color:#2a2723;text-decoration:none;font-weight:700";
+    a.style.cssText = "display:inline-block;margin:.25rem;padding:.6rem 1.1rem;border-radius:0;background:#f4c95d;color:#2a2723;text-decoration:none;font-weight:700";
     box.insertBefore(a, box.querySelector("a"));
   };
   if (document.body) add(); else document.addEventListener("DOMContentLoaded", add);

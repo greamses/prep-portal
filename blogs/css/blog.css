@@ -36,7 +36,7 @@ html {
   padding: 1.25rem;
   background: var(--surface-primary);
   border: var(--border-subtle);
-  border-radius: 16px;
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-wrap: nowrap;
@@ -103,7 +103,7 @@ html {
   font-family: var(--font-mono);
   font-size: var(--text-mono-md);
   border: var(--border-subtle);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--surface-secondary);
   color: var(--ink);
   transition:
@@ -243,7 +243,7 @@ html {
   color: var(--ink);
   white-space: nowrap;
   border: var(--border-subtle);
-  border-radius: 999px;
+  border-radius: 0;
 }
 
 .sci-math {
@@ -333,7 +333,7 @@ html {
   font-weight: var(--weight-bold);
   text-transform: uppercase;
   border: var(--border-subtle);
-  border-radius: 999px;
+  border-radius: 0;
   color: var(--text-tertiary);
   background: var(--surface-secondary);
 }
@@ -438,7 +438,7 @@ body:has(.single-post-view.active) nav {
   object-fit: cover;
   margin: 1rem 0 1.75rem;
   border: var(--border-subtle);
-  border-radius: 18px;
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
   display: block;
 }
@@ -500,7 +500,7 @@ body:has(.single-post-view.active) nav {
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
   border: var(--border-subtle);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--surface-secondary);
   cursor: pointer;
   color: var(--ink);
@@ -539,7 +539,7 @@ body:has(.single-post-view.active) nav {
   background: var(--surface-secondary);
   padding: 1.25rem;
   border: var(--border-subtle);
-  border-radius: 16px;
+  border-radius: 0;
 }
 
 .resource-links-heading {
@@ -569,7 +569,7 @@ body:has(.single-post-view.active) nav {
 
 .resource-card {
   border: var(--border-subtle);
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--surface-primary);
   text-decoration: none;
   color: var(--ink);
@@ -946,7 +946,7 @@ body:has(.embed-overlay.active) {
   background: #111;
   color: var(--accent-primary);
   border: 1px solid #333;
-  border-radius: 4px;
+  border-radius: 0;
   font-family: var(--font-mono);
 }
 
@@ -972,7 +972,7 @@ body:has(.embed-overlay.active) {
   width: 100%;
   height: auto;
   border: var(--border-subtle);
-  border-radius: 16px;
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
   margin: 1.25rem 0;
   display: block;
@@ -1019,7 +1019,7 @@ body:has(.embed-overlay.active) {
   font-style: italic;
   background: var(--surface-secondary);
   border-left: 4px solid var(--accent-primary);
-  border-radius: 0 12px 12px 0;
+  border-radius: 0;
 }
 
 .single-post-body table {
@@ -1056,7 +1056,7 @@ body:has(.embed-overlay.active) {
   margin: 1.25rem 0;
   overflow-x: auto;
   border: var(--border-subtle);
-  border-radius: 14px;
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
   font-size: var(--text-mono-base);
   white-space: pre;
@@ -1100,7 +1100,7 @@ body:has(.embed-overlay.active) {
   margin-top: 0.75rem;
   font-style: italic;
   border-left: 3px solid var(--accent-warning);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border-radius: 0;
 }
 
 .single-post-body .MathJax {
@@ -1127,7 +1127,7 @@ body:has(.embed-overlay.active) {
   background: var(--surface-primary);
   color: var(--ink);
   border: var(--border-subtle);
-  border-radius: 999px;
+  border-radius: 0;
   cursor: pointer;
   z-index: 1001;
   display: inline-flex;
@@ -1184,7 +1184,7 @@ body:has(.embed-overlay.active) {
 
 .comment-item {
   border: var(--border-subtle);
-  border-radius: 14px;
+  border-radius: 0;
   margin-bottom: 1rem;
   background: var(--surface-secondary);
   overflow: hidden;
@@ -1242,7 +1242,7 @@ body:has(.embed-overlay.active) {
   text-transform: uppercase;
   border: var(--border-subtle);
   background: var(--surface-primary);
-  border-radius: 999px;
+  border-radius: 0;
   cursor: pointer;
   color: var(--text-secondary);
   transition: all var(--duration-fast) var(--ease-default);
@@ -1338,7 +1338,7 @@ body:has(.embed-overlay.active) {
   text-transform: uppercase;
   border: var(--border-subtle);
   background: var(--surface-primary);
-  border-radius: 999px;
+  border-radius: 0;
   cursor: pointer;
   color: var(--text-secondary);
   transition: all var(--duration-fast) var(--ease-default);
@@ -1373,7 +1373,7 @@ body:has(.embed-overlay.active) {
   padding: 0.25rem 0.45rem;
   border: var(--border-subtle);
   background: var(--surface-primary);
-  border-radius: 999px;
+  border-radius: 0;
   cursor: pointer;
   color: var(--text-secondary);
   transition: all var(--duration-fast) var(--ease-default);
@@ -1398,7 +1398,7 @@ body:has(.embed-overlay.active) {
   font-family: var(--font-mono);
   font-size: var(--text-body);
   border: var(--border-subtle);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--surface-primary);
   color: var(--ink);
   resize: vertical;
@@ -1429,7 +1429,7 @@ body:has(.embed-overlay.active) {
   background: var(--accent-primary);
   color: var(--text-on-accent);
   border: none;
-  border-radius: 999px;
+  border-radius: 0;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: all var(--duration-fast) var(--ease-default);
@@ -1455,7 +1455,7 @@ body:has(.embed-overlay.active) {
   padding: 0.5rem 0.85rem;
   background: none;
   border: var(--border-subtle);
-  border-radius: 999px;
+  border-radius: 0;
   cursor: pointer;
   color: var(--text-secondary);
   transition: all var(--duration-fast) var(--ease-default);
@@ -1474,13 +1474,13 @@ body:has(.embed-overlay.active) {
   text-align: center;
   padding: 1.5rem;
   border: 1px dashed color-mix(in srgb, var(--ink) 18%, transparent);
-  border-radius: 14px;
+  border-radius: 0;
 }
 
 .add-comment-form {
   margin-top: 1.5rem;
   border: var(--border-subtle);
-  border-radius: 16px;
+  border-radius: 0;
   padding: 1.25rem;
   background: var(--surface-secondary);
 }
@@ -1502,7 +1502,7 @@ body:has(.embed-overlay.active) {
   font-family: var(--font-mono);
   font-size: var(--text-body);
   border: var(--border-subtle);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--surface-primary);
   color: var(--ink);
   resize: vertical;
@@ -1529,7 +1529,7 @@ body:has(.embed-overlay.active) {
   background: var(--accent-primary);
   color: var(--text-on-accent);
   border: none;
-  border-radius: 999px;
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
   transition: all var(--duration-fast) var(--ease-default);
 }
@@ -1553,7 +1553,7 @@ body:has(.embed-overlay.active) {
   padding: 1rem;
   text-align: center;
   border: 1px dashed color-mix(in srgb, var(--ink) 18%, transparent);
-  border-radius: 14px;
+  border-radius: 0;
   margin-top: 1rem;
 }
 
@@ -1599,7 +1599,7 @@ body:has(.embed-overlay.active) {
   margin: 1.6rem auto 0.4rem;
   padding: 0.7rem 1.5rem;
   border: 2px solid var(--border, rgba(42, 39, 35, 0.14));
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--surface, #fffdf8);
   color: var(--text-primary, #2a2723);
   font-family: var(--font-mono);
@@ -1677,7 +1677,7 @@ body:has(.embed-overlay.active) {
   font-weight: var(--weight-semibold);
   padding: 0.7rem 1.5rem;
   border: none;
-  border-radius: 999px;
+  border-radius: 0;
   z-index: 2001;
   transition: transform var(--duration-normal) var(--ease-default);
   max-width: calc(100vw - 2rem);

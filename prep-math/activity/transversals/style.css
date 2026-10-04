@@ -786,7 +786,7 @@ header {
   background: color-mix(in srgb, var(--accent-secondary) 16%, var(--surface-primary));
   color: var(--accent-secondary);
   border: 1.5px solid color-mix(in srgb, var(--accent-secondary) 35%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   padding: 4px 12px;
   letter-spacing: 0.06em;
   font-size: 0.58rem;
@@ -797,7 +797,7 @@ header {
 .canvas-section { background: var(--app-bg); }
 .canvas-frame {
   border: var(--border-subtle);
-  border-radius: clamp(14px, 2vw, 20px);
+  border-radius: 0;
   background: var(--surface-primary);
   box-shadow: var(--shadow-md);
 }
@@ -844,7 +844,7 @@ header {
   background: color-mix(in srgb, var(--accent-secondary) 10%, var(--surface-primary));
   border: 1.5px solid color-mix(in srgb, var(--accent-secondary) 30%, transparent);
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: 0;
   margin-bottom: 6px;
 }
 
@@ -859,13 +859,13 @@ header {
 .anim-panel {
   background: var(--surface-primary);
   border: var(--border-subtle);
-  border-radius: 16px;
+  border-radius: 0;
   box-shadow: var(--shadow-lg);
   backdrop-filter: blur(8px);
 }
 .anim-mode-btn {
   border: 1.5px solid color-mix(in srgb, var(--ink) 12%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--surface-secondary);
   color: var(--ink);
 }
@@ -887,14 +887,14 @@ header {
 .fab { background: var(--accent-secondary); color: #fff; border: none; }
 
 /* ── Soft modal ── */
-.modal { border: var(--border-subtle); border-radius: 18px; box-shadow: var(--shadow-xl); }
+.modal { border: var(--border-subtle); border-radius: 0; box-shadow: var(--shadow-xl); }
 .modal-header {
   background: var(--surface-primary);
   color: var(--ink);
   border-bottom: var(--border-subtle);
 }
 .modal-close { color: var(--text-secondary); }
-.ctrl-group { border: var(--border-subtle); border-radius: 14px; }
+.ctrl-group { border: var(--border-subtle); border-radius: 0; }
 .ctrl-group-label {
   background: color-mix(in srgb, var(--accent-primary) 22%, var(--surface-primary));
   border-bottom: var(--border-subtle);

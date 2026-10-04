@@ -23,8 +23,8 @@ const chatbotcss = `
     --_faint:    var(--text-tertiary,   #9a948a);
     --_border:   var(--border,          2px solid #2a2723);
     --_border-s: var(--border-subtle,   1px solid rgba(42,39,35,0.12));
-    --_r:        var(--radius-sm,       12px);
-    --_r-lg:     18px;
+    --_r:        0;
+    --_r-lg:     0;
     --_ease:     var(--ease-in-out,     cubic-bezier(0.16,1,0.3,1));
     --_sh-sm:    var(--shadow-sm,       0 2px 5px rgba(42,39,35,0.10));
     --_sh-md:    var(--shadow-md,       0 4px 11px rgba(42,39,35,0.12));
@@ -312,7 +312,7 @@ const chatbotcss = `
     height: 30px;
     background: none;
     border: var(--_border-s);
-    border-radius: 8px;
+    border-radius: 0;
     cursor: pointer;
     color: var(--_muted);
     display: flex;
@@ -346,7 +346,7 @@ const chatbotcss = `
 .chat-usage-track {
     flex: 1;
     height: 5px;
-    border-radius: 99px;
+    border-radius: 0;
     background: var(--_surface);
     overflow: hidden;
 }
@@ -354,7 +354,7 @@ const chatbotcss = `
     display: block;
     height: 100%;
     width: 0%;
-    border-radius: 99px;
+    border-radius: 0;
     background: var(--_accent);
     transition: width 0.4s var(--_ease);
 }
@@ -423,7 +423,7 @@ const chatbotcss = `
 .byuk-switch { display: flex; align-items: center; gap: 10px; cursor: pointer; }
 .byuk-switch input { position: absolute; opacity: 0; pointer-events: none; }
 .byuk-switch-track {
-    width: 38px; height: 22px; border-radius: 99px;
+    width: 38px; height: 22px; border-radius: 0;
     background: var(--_surface); border: var(--_border-s);
     position: relative; transition: background 0.2s; flex-shrink: 0;
 }
@@ -446,7 +446,7 @@ const chatbotcss = `
 }
 .byuk-select, .byuk-key-input {
     font-family: var(--_f-mono); font-size: 0.72rem;
-    padding: 8px 10px; border: var(--_border-s); border-radius: 9px;
+    padding: 8px 10px; border: var(--_border-s); border-radius: 0;
     background: var(--_surface); color: var(--_ink);
 }
 .byuk-select { cursor: pointer; }
@@ -456,7 +456,7 @@ const chatbotcss = `
 .byuk-save {
     font-family: var(--_f-display); font-size: 0.64rem; font-weight: 700;
     text-transform: uppercase; padding: 8px 14px; border: 2px solid var(--_ink);
-    border-radius: 9px; background: var(--_accent); color: var(--_on-accent);
+    border-radius: 0; background: var(--_accent); color: var(--_on-accent);
     cursor: pointer;
 }
 .byuk-save:disabled { opacity: 0.6; cursor: default; }
@@ -474,7 +474,7 @@ const chatbotcss = `
 }
 .byuk-video {
     position: relative; width: 100%; aspect-ratio: 16 / 9;
-    border-radius: 10px; overflow: hidden; border: var(--_border-s);
+    border-radius: 0; overflow: hidden; border: var(--_border-s);
     background: var(--_surface);
 }
 .byuk-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
@@ -526,7 +526,7 @@ const chatbotcss = `
 .chat-context-clear {
     background: none;
     border: 1px solid color-mix(in srgb, var(--_on-accent) 35%, transparent);
-    border-radius: 6px;
+    border-radius: 0;
     color: color-mix(in srgb, var(--_on-accent) 75%, transparent);
     cursor: pointer;
     font-size: 13px;
@@ -579,7 +579,7 @@ const chatbotcss = `
 }
 
 .prepbot-qpills-scroll::-webkit-scrollbar { height: 3px; }
-.prepbot-qpills-scroll::-webkit-scrollbar-thumb { background: var(--_ink); border-radius: 99px; }
+.prepbot-qpills-scroll::-webkit-scrollbar-thumb { background: var(--_ink); border-radius: 0; }
 
 .prepbot-pill {
     font-family: var(--_f-mono);
@@ -616,7 +616,7 @@ const chatbotcss = `
     height: 30px;
     min-width: 30px;
     border: var(--_border);
-    border-radius: 8px;
+    border-radius: 0;
     background: var(--_bg);
     color: var(--_ink);
     font-family: var(--_f-mono);
@@ -722,7 +722,7 @@ const chatbotcss = `
 
 .chat-messages::-webkit-scrollbar { width: 4px; }
 .chat-messages::-webkit-scrollbar-track { background: transparent; }
-.chat-messages::-webkit-scrollbar-thumb { background: var(--_ink); border-radius: 99px; opacity: 0.3; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--_ink); border-radius: 0; opacity: 0.3; }
 
 /* ── Paint/blob window background (mirrors the home hero paint) ── */
 .pb-paint {
@@ -806,10 +806,10 @@ const chatbotcss = `
     font-size: 0.72rem;
     line-height: 1.6;
     padding: 10px 14px;
-    border-radius: 4px 12px 12px 12px;
+    border-radius: 0;
 }
 
-.msg.user .msg-bubble.pp-sticky { --pp-note-tilt: 1deg; border-radius: 12px 4px 12px 12px; }
+.msg.user .msg-bubble.pp-sticky { --pp-note-tilt: 1deg; border-radius: 0; }
 .msg.bot  .msg-bubble.pp-sticky { --pp-note-tilt: -1deg; }
 
 /* Typewriter caret while a reply is streaming in */
@@ -835,7 +835,7 @@ const chatbotcss = `
     background: var(--_surface);
     padding: 2px 5px;
     border: var(--_border-s);
-    border-radius: 5px;
+    border-radius: 0;
     display: inline-block;
 }
 
@@ -853,7 +853,7 @@ const chatbotcss = `
     color: var(--_accent);
     background: rgba(0,85,255,0.08);
     padding: 2px 5px;
-    border-radius: 4px;
+    border-radius: 0;
 }
 
 /* ── Typing indicator ── */
@@ -893,7 +893,7 @@ const chatbotcss = `
 .speaker-btn {
     background: none;
     border: var(--_border);
-    border-radius: 8px;
+    border-radius: 0;
     cursor: pointer;
     color: var(--_accent);
     padding: 5px;
@@ -919,7 +919,7 @@ const chatbotcss = `
 .soundwave span {
     width: 3px;
     background: var(--_accent);
-    border-radius: 2px;
+    border-radius: 0;
     animation: pb-wave 1s infinite ease-in-out;
 }
 
@@ -981,7 +981,7 @@ const chatbotcss = `
     border-top: var(--_border);
     flex-shrink: 0;
     background: var(--_bg);
-    border-radius: 0 0 var(--_r-lg) var(--_r-lg);
+    border-radius: 0;
 }
 
 .chat-input-wrap {
@@ -1052,7 +1052,7 @@ const chatbotcss = `
     height: 34px;
     background: transparent;
     border: none;
-    border-radius: 9px;
+    border-radius: 0;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1151,7 +1151,7 @@ const chatbotcss = `
 .qbubbles-close {
     background: none;
     border: var(--_border);
-    border-radius: 8px;
+    border-radius: 0;
     cursor: pointer;
     color: var(--_ink);
     width: 24px;
@@ -1172,7 +1172,7 @@ const chatbotcss = `
     width: 32px;
     height: 32px;
     border: var(--_border);
-    border-radius: 8px;
+    border-radius: 0;
     background: var(--_surface);
     color: var(--_ink);
     font-family: var(--_f-mono);
@@ -1206,7 +1206,7 @@ const chatbotcss = `
     justify-content: space-between;
     z-index: 10;
     border-top: var(--_border);
-    border-radius: 0 0 var(--_r-lg) var(--_r-lg);
+    border-radius: 0;
 }
 
 .chat-clear-bar.visible { display: flex; }
@@ -1230,7 +1230,7 @@ const chatbotcss = `
     letter-spacing: 0.07em;
     padding: 6px 12px;
     border: var(--_border);
-    border-radius: 8px;
+    border-radius: 0;
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
     background: transparent;
@@ -1346,7 +1346,7 @@ const chatbotcss = `
 .chat-video-close {
     background: none;
     border: 1px solid color-mix(in srgb, var(--_bg) 28%, transparent);
-    border-radius: 6px;
+    border-radius: 0;
     color: color-mix(in srgb, var(--_bg) 60%, transparent);
     cursor: pointer;
     width: 24px; height: 24px;
@@ -1415,7 +1415,7 @@ const chatbotcss = `
     padding: 8px 10px;
     background: rgba(20, 19, 15, 0.84);
     color: #fff;
-    border-radius: 8px;
+    border-radius: 0;
     opacity: 0;
     transform: translateY(4px);
     transition: opacity 0.18s ease, transform 0.18s ease;
@@ -1440,7 +1440,7 @@ const chatbotcss = `
     font-size: 0.52rem;
     background: rgba(255,255,255,0.16);
     border: 1px solid rgba(255,255,255,0.26);
-    border-radius: 4px;
+    border-radius: 0;
     padding: 1px 5px;
     line-height: 1.5;
 }
@@ -1467,7 +1467,7 @@ const chatbotcss = `
         top: calc(var(--nav-height, 3.875rem) + 6px);
         height: auto;
         max-height: none;
-        border-radius: 0 0 var(--_r) var(--_r);
+        border-radius: 0;
         border-top-left-radius: 0;
         border-top-right-radius: 0;
         transform: translateY(12px) scale(0.98);

@@ -44,12 +44,12 @@ function injectStyles() {
     .cc-modal { position: fixed; inset: 0; z-index: 100001; display: flex; align-items: center; justify-content: center; padding: 1rem; }
     .cc-modal__bd { position: absolute; inset: 0; background: rgba(42,39,35,.5); }
     .cc-modal__card { position: relative; width: min(420px,100%); background: var(--surface-primary,#fffdf8);
-      color: var(--ink,#2a2723); border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent); border-radius: 18px;
+      color: var(--ink,#2a2723); border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent); border-radius: 0;
       box-shadow: var(--shadow-xl,0 18px 40px rgba(42,39,35,.18)); padding: 1.4rem; font-family: var(--font-mono,monospace); }
     .cc-modal__card h3 { font-family: var(--font-display,sans-serif); font-size: 1.05rem; margin: 0 0 .6rem; }
     .cc-code { font-family: var(--font-display,sans-serif); font-weight: 900; font-size: 1.8rem; letter-spacing: .14em;
-      color: var(--accent-secondary,#6fb7e8); text-align: center; padding: .6rem; background: var(--surface-secondary,#f4f0e8); border-radius: 12px; }
-    .cc-modal__card input { width:100%; box-sizing:border-box; padding:.6rem .75rem; border-radius:10px; font-family:inherit;
+      color: var(--accent-secondary,#6fb7e8); text-align: center; padding: .6rem; background: var(--surface-secondary,#f4f0e8); border-radius: 0; }
+    .cc-modal__card input { width:100%; box-sizing:border-box; padding:.6rem .75rem; border-radius:0; font-family:inherit;
       font-size:.9rem; border:2px solid color-mix(in srgb, var(--ink) 14%, transparent); background: var(--surface-secondary,#f4f0e8); color: var(--ink,#2a2723); text-transform: uppercase; letter-spacing:.1em; }
     .cc-row { display:flex; gap:.6rem; margin-top:1rem; }
     .cc-msg { font-size:.74rem; margin-top:.6rem; min-height:1em; color: var(--text-secondary,#6b655c); }
@@ -60,7 +60,7 @@ function injectStyles() {
     .cc-rev__hd strong { font-family: var(--font-display,sans-serif); font-size:.95rem; flex:1; }
     .cc-rev__x { border:none; background:var(--surface-secondary,#f4f0e8); width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:1.2rem; line-height:1; color:var(--text-secondary); }
     .cc-rev__body { overflow-y:auto; padding:.8rem 1.2rem 1.2rem; }
-    .cc-rev__sub { border:2px solid color-mix(in srgb, var(--ink) 12%, transparent); border-radius:12px; padding:.6rem .8rem; margin-bottom:.7rem; background:var(--surface-secondary,#f4f0e8); }
+    .cc-rev__sub { border:2px solid color-mix(in srgb, var(--ink) 12%, transparent); border-radius:0; padding:.6rem .8rem; margin-bottom:.7rem; background:var(--surface-secondary,#f4f0e8); }
     .cc-rev__sub > summary { display:flex; align-items:center; gap:.6rem; cursor:pointer; list-style:none; font-size:.82rem; }
     .cc-rev__sub > summary::-webkit-details-marker { display:none; }
     .cc-rev__name { font-weight:700; flex:1; }
@@ -69,7 +69,7 @@ function injectStyles() {
     .cc-rev__qh { display:flex; align-items:center; gap:.5rem; font-family:var(--font-display,sans-serif); font-weight:700; font-size:.74rem; }
     .cc-rev__qt { font-size:.82rem; margin:.3rem 0; }
     .cc-rev__lbl { font-size:.58rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text-secondary); margin-top:.5rem; }
-    .cc-rev__ans { font-family:"Caveat",cursive; font-size:1.05rem; background:var(--surface-primary,#fffdf8); border-radius:8px; padding:.4rem .6rem; margin-top:.2rem; }
+    .cc-rev__ans { font-family:"Caveat",cursive; font-size:1.05rem; background:var(--surface-primary,#fffdf8); border-radius:0; padding:.4rem .6rem; margin-top:.2rem; }
     .cc-rev__fb { font-size:.78rem; line-height:1.5; color:var(--ink); }
     .cc-rev__missed { margin:.2rem 0 0; padding-left:1.1rem; font-size:.76rem; color:var(--text-secondary); }`;
   document.head.appendChild(s);
@@ -121,7 +121,7 @@ async function fillStudentStats(layout, assignments) {
       perf.innerHTML = s.subjects.map((x) => `
         <div style="margin:.45rem 0">
           <div style="display:flex;justify-content:space-between;font-size:.72rem"><span>${esc(x.name)}</span><span>${x.pct}%</span></div>
-          <div style="height:8px;background:var(--surface-secondary);border-radius:999px;overflow:hidden;margin-top:.25rem">
+          <div style="height:8px;background:var(--surface-secondary);border-radius:0;overflow:hidden;margin-top:.25rem">
             <div style="height:100%;width:${x.pct}%;background:var(--accent-success)"></div>
           </div>
         </div>`).join("");

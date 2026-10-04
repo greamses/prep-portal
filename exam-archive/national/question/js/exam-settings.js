@@ -162,7 +162,7 @@
         .es-modal {
             background: var(--surface-primary, #fffdf8);
             border: var(--border-subtle, 1px solid rgba(42,39,35,.12));
-            border-radius: 22px;
+            border-radius: 0;
             box-shadow: var(--shadow-xl, 0 20px 50px rgba(42,39,35,.2));
             width: min(460px, 100%);
             max-height: 90dvh;
@@ -193,14 +193,14 @@
         }
         .es-row {
             display: flex; align-items: center; justify-content: space-between;
-            padding: .72rem 1rem; border-radius: 14px; cursor: pointer;
+            padding: .72rem 1rem; border-radius: 0; cursor: pointer;
             gap: .9rem; user-select: none;
             transition: background .12s;
         }
         .es-row:hover { background: var(--surface-secondary, #f4f0e8); }
         .es-row-left { display: flex; align-items: center; gap: .7rem; flex: 1; min-width: 0; }
         .es-icon {
-            width: 38px; height: 38px; flex-shrink: 0; border-radius: 11px;
+            width: 38px; height: 38px; flex-shrink: 0; border-radius: 0;
             background: var(--surface-secondary, #f4f0e8);
             display: flex; align-items: center; justify-content: center;
         }
@@ -215,7 +215,7 @@
             color: var(--text-secondary, #6b655c); margin-top: .1rem; display: block;
         }
         .es-track {
-            width: 44px; height: 25px; border-radius: 999px; flex-shrink: 0;
+            width: 44px; height: 25px; border-radius: 0; flex-shrink: 0;
             background: var(--surface-tertiary, #ddd8ce);
             border: 1px solid rgba(42,39,35,.12);
             position: relative;

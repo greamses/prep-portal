@@ -116,7 +116,7 @@
 
   /* ── Border Radius ───────────────────────── */
   --radius-none: 0;
-  --radius-sm: min(12px, 30%);
+  --radius-sm: 0;
 }
 
 /* ── DARK THEME ─────────────────────────────────────────── */
@@ -709,14 +709,14 @@ small {
   background-color: var(--surface-secondary);
   background-clip: padding-box;
   border: 3px solid transparent;
-  border-radius: 999px;
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb {
   background-color: var(--text-secondary);
   background-clip: padding-box;
   border: 3px solid transparent;
-  border-radius: 999px;
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {

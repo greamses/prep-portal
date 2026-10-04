@@ -76,7 +76,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 0;
   cursor: pointer;
   color: var(--dr-text);
   background: var(--dr-glass);
@@ -101,7 +101,7 @@
   align-items: center;
   gap: 9px;
   padding: 0.5rem 0.9rem;
-  border-radius: 4px;
+  border-radius: 0;
   color: var(--dr-text);
   font-family: "Oswald", var(--dr-font);
   font-weight: 700;
@@ -118,7 +118,7 @@
 .dr-stat {
   display: flex; flex-direction: column; align-items: center;
   padding: 0.4rem 0.8rem;
-  border-radius: 4px;
+  border-radius: 0;
   min-width: 74px;
 }
 .dr-stat-k { font: 600 0.6rem var(--dr-font); letter-spacing: 0.14em; color: var(--dr-muted); }
@@ -133,7 +133,7 @@
   justify-self: center;
   width: min(380px, 46vw);
   height: 46px;
-  border-radius: 5px;
+  border-radius: 0;
   padding: 2px 6px;
 }
 .dr-compass { width: 100%; height: 100%; display: block; }
@@ -145,7 +145,7 @@
   top: 74px;
   width: 190px;
   padding: 0.75rem 0.9rem;
-  border-radius: 6px;
+  border-radius: 0;
   color: var(--dr-text);
   font-family: var(--dr-font);
 }
@@ -164,7 +164,7 @@
 .dr-hint {
   margin-top: 0.55rem;
   padding: 0.35rem 0.5rem;
-  border-radius: 4px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.08);
   font: 700 0.72rem var(--dr-font);
   color: var(--dr-text);
@@ -187,14 +187,14 @@
 .dr-readout {
   display: flex; justify-content: space-between; align-items: center;
   padding: 0.4rem 0.7rem;
-  border-radius: 4px;
+  border-radius: 0;
   font-family: var(--dr-font);
 }
 .dr-readout-k { font: 600 0.6rem var(--dr-font); letter-spacing: 0.12em; color: var(--dr-muted); }
 .dr-readout-v { font: 700 0.95rem var(--dr-font); color: var(--dr-text); }
 .dr-radar {
   width: 150px; height: 150px;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 4px;
 }
 
@@ -285,7 +285,7 @@
 .dr-end-card {
   text-align: center;
   padding: 1.8rem 2.2rem;
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--dr-glass);
   border: var(--dr-hairline);
   box-shadow: 0 20px 60px rgba(0, 20, 40, 0.5);
@@ -302,7 +302,7 @@
   background: var(--dr-amber);
   border: none;
   padding: 0.6rem 1.6rem;
-  border-radius: 6px;
+  border-radius: 0;
   cursor: pointer;
 }
 .dr-btn:hover { filter: brightness(1.06); }
@@ -318,19 +318,19 @@
 .dr-loader-card {
   width: min(380px, 86vw);
   padding: 1.5rem 1.6rem;
-  border-radius: 10px;
+  border-radius: 0;
   background: rgba(20, 34, 50, 0.6);
   border: var(--dr-hairline);
   font-family: var(--dr-font);
   color: var(--dr-text);
 }
 .dr-load-head { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; }
-.dr-load-tag { font: 700 0.62rem var(--dr-font); color: #0b1420; background: var(--dr-amber); padding: 2px 6px; border-radius: 3px; }
+.dr-load-tag { font: 700 0.62rem var(--dr-font); color: #0b1420; background: var(--dr-amber); padding: 2px 6px; border-radius: 0; }
 .dr-load-title { font: 700 0.95rem "Oswald", var(--dr-font); letter-spacing: 0.1em; }
 .dr-load-blink { animation: dr-blink 1s steps(2) infinite; color: var(--dr-amber); }
 @keyframes dr-blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
 .dr-bar { display: flex; gap: 3px; margin-bottom: 0.6rem; }
-.dr-seg { flex: 1; height: 8px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); transition: background 0.2s; }
+.dr-seg { flex: 1; height: 8px; border-radius: 0; background: rgba(255, 255, 255, 0.1); transition: background 0.2s; }
 .dr-seg.on { background: var(--dr-amber); }
 .dr-load-status { display: flex; gap: 8px; font: 600 0.72rem var(--dr-font); color: var(--dr-muted); margin-bottom: 0.8rem; }
 .dr-load-sep { color: rgba(255, 255, 255, 0.3); }
@@ -370,7 +370,7 @@
 
   .dr-compass-wrap { width: min(260px, 42vw); height: 34px; padding: 1px 4px; }
 
-  .dr-card { top: 46px; left: 8px; width: 108px; padding: 0.4rem 0.5rem; border-radius: 5px; }
+  .dr-card { top: 46px; left: 8px; width: 108px; padding: 0.4rem 0.5rem; border-radius: 0; }
   .dr-card-head { margin-bottom: 0.2rem; }
   #dr-card-num { font-size: 0.56rem; }
   .dr-card-tag { font-size: 0.44rem; }

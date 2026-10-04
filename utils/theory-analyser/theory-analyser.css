@@ -333,7 +333,7 @@
 
 .rp-ok {
   background: rgba(0, 165, 80, .14);
-  border-radius: 2px;
+  border-radius: 0;
   padding: 0 2px;
   outline: 1.5px solid rgba(0, 165, 80, .3);
 }
@@ -930,7 +930,7 @@
 
 .rp-ok {
   background: rgba(0, 165, 80, .14);
-  border-radius: 2px;
+  border-radius: 0;
   padding: 0 2px;
   outline: 1.5px solid rgba(0, 165, 80, .3);
   -webkit-print-color-adjust: exact;

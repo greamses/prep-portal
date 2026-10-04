@@ -180,7 +180,7 @@
   background: var(--fb-hl);
   color: var(--fb-hl-ink);
   padding: 0 1.4cqw;
-  border-radius: 0.6cqw;
+  border-radius: 0;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }

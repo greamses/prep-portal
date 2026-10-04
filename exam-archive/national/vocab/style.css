@@ -584,7 +584,7 @@ body.vocab-nav-hidden .site-nav { display: none; }
 .pp-lobby-code-value button {
   background: var(--pp-note-bg, #fff39a);
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow:
     0 1px 1px rgba(20, 19, 15, 0.1),
     5px 8px 12px -4px rgba(20, 19, 15, 0.3);
@@ -751,7 +751,7 @@ body.vocab-nav-hidden .site-nav { display: none; }
 }
 .vocab-clue-el {
   aspect-ratio: 1;
-  border-radius: 2px;
+  border-radius: 0;
   background: var(--el-bg, #eee);
   opacity: 0.55;
 }
@@ -778,7 +778,7 @@ body.vocab-nav-hidden .site-nav { display: none; }
   width: 92px;
   height: 92px;
   padding: 6px 8px;
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--el-bg, #eee);
   color: #14130f;
   box-shadow: 0 1px 1px rgba(20,19,15,.1), 3px 5px 9px -3px rgba(20,19,15,.3);
@@ -806,7 +806,7 @@ body.vocab-nav-hidden .site-nav { display: none; }
   display: grid;
   grid-template-rows: auto 1fr auto;
   padding: 2px 3px;
-  border-radius: 3px;
+  border-radius: 0;
   background: var(--el-bg, #eee);
   color: #14130f;
   cursor: help;
@@ -840,7 +840,7 @@ body.vocab-nav-hidden .site-nav { display: none; }
   width: max-content;
   max-width: 220px;
   padding: 0.5rem 0.65rem;
-  border-radius: 6px;
+  border-radius: 0;
   background: #14130f;
   color: #fff;
   font-family: var(--font-body, sans-serif);
@@ -951,7 +951,7 @@ body.vocab-nav-hidden .site-nav { display: none; }
   align-items: center;
   gap: 0.55rem;
   padding: 0.5rem 1rem;
-  border-radius: 6px;
+  border-radius: 0;
   background: #ffe9a8;
   color: #14130f;
   box-shadow: 0 1px 1px rgba(20,19,15,.1), 3px 5px 9px -3px rgba(20,19,15,.3);
@@ -979,7 +979,7 @@ body.vocab-nav-hidden .site-nav { display: none; }
   width: max-content;
   max-width: 240px;
   padding: 0.5rem 0.65rem;
-  border-radius: 6px;
+  border-radius: 0;
   background: #14130f;
   color: #fff;
   font-family: var(--font-body, sans-serif);
@@ -1335,7 +1335,7 @@ body.vocab-nav-hidden .site-nav { display: none; }
 .vocab-clue-structure {
   width: min(240px, 74vw);
   background: #fff;
-  border-radius: 10px;
+  border-radius: 0;
   padding: 8px;
   box-shadow: 0 1px 4px rgba(20, 19, 15, 0.16);
 }

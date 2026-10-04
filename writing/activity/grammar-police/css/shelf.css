@@ -80,7 +80,7 @@
 .shelf-plank {
   width: calc(100% + 2rem);
   height: 5px;
-  border-radius: 3px;
+  border-radius: 0;
   background: var(--ink);
   opacity: 0.88;
   box-shadow: 0 8px 16px -7px rgba(0, 0, 0, 0.4);
@@ -136,7 +136,7 @@
   width: clamp(100px, 18vw, 140px);
   height: clamp(136px, 24vw, 190px);
   position: relative;
-  border-radius: 2px 7px 7px 2px;
+  border-radius: 0;
   overflow: hidden;
   background: #0a0230;
   border: 2px solid #0a0a0a;
@@ -308,6 +308,6 @@
   background: var(--accent-primary);
   color: var(--ink);
   border: 1.5px solid var(--ink);
-  border-radius: 20px;
+  border-radius: 0;
   box-shadow: 2px 2px 0 var(--ink);
 }

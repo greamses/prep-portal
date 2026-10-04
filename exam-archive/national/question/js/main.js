@@ -15,7 +15,7 @@ videoStyles.textContent = `
     
     .video-search-panel {
         background: var(--surface);
-        border-radius: 16px;
+        border-radius: 0;
         border: 1px solid var(--border);
         overflow: hidden;
         animation: slideDown 0.2s ease;
@@ -51,7 +51,7 @@ videoStyles.textContent = `
         cursor: pointer;
         color: var(--text-secondary);
         padding: 4px 8px;
-        border-radius: 8px;
+        border-radius: 0;
         transition: all 0.2s;
     }
     
@@ -82,7 +82,7 @@ videoStyles.textContent = `
         display: flex;
         gap: 12px;
         background: var(--surface-elevated);
-        border-radius: 12px;
+        border-radius: 0;
         overflow: hidden;
         transition: transform 0.2s, box-shadow 0.2s;
         cursor: pointer;
@@ -200,7 +200,7 @@ videoStyles.textContent = `
         background: var(--blue);
         color: white;
         border: none;
-        border-radius: 20px;
+        border-radius: 0;
         font-size: 12px;
         cursor: pointer;
     }
@@ -208,7 +208,7 @@ videoStyles.textContent = `
     .video-iframe-embed {
         width: 100%;
         height: 200px;
-        border-radius: 8px;
+        border-radius: 0;
         border: none;
     }
 `;

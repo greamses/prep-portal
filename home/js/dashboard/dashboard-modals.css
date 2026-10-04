@@ -41,7 +41,7 @@
   background: var(--surface-primary, #fffdf8);
   color: var(--ink, #2a2723);
   border: var(--border-subtle, 1px solid rgba(42, 39, 35, 0.14));
-  border-radius: 18px;
+  border-radius: 0;
   box-shadow: var(--shadow-xl, 0 18px 40px rgba(42, 39, 35, 0.2));
   transform: translateY(14px) scale(0.98);
   transition: transform var(--duration-slow, 0.25s) var(--ease-default, ease);
@@ -123,7 +123,7 @@
   height: 44px;
   padding: 0 0.8rem;
   border: var(--border-subtle, 1px solid rgba(42, 39, 35, 0.16));
-  border-radius: 10px;
+  border-radius: 0;
   font-family: inherit;
   font-size: 0.9rem;
   background: var(--surface-secondary, #f4f0e8);
@@ -155,7 +155,7 @@
   height: 48px;
   background: var(--accent-primary, #f4b740);
   border: none;
-  border-radius: 12px;
+  border-radius: 0;
   font-family: var(--font-display, sans-serif);
   font-weight: 700;
   font-size: 0.92rem;

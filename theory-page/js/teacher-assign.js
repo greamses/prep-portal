@@ -58,13 +58,13 @@ function injectStyles() {
       justify-content: center; padding: 1rem; background: rgba(42,39,35,.5); }
     .ta-assign__card { width: min(440px, 100%); background: var(--surface-primary, #fffdf8);
       color: var(--ink, #2a2723); border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
-      border-radius: 18px; box-shadow: var(--shadow-xl, 0 18px 40px rgba(42,39,35,.18));
+      border-radius: 0; box-shadow: var(--shadow-xl, 0 18px 40px rgba(42,39,35,.18));
       padding: 1.5rem 1.4rem; font-family: var(--font-mono, monospace); }
     .ta-assign__card h3 { font-family: var(--font-display, sans-serif); font-size: 1.1rem; margin: 0 0 .3rem; }
     .ta-assign__sub { font-size: .76rem; color: var(--text-secondary, #6b655c); margin: 0 0 1rem; line-height: 1.5; }
     .ta-assign__card label { display:block; font-size:.62rem; font-weight:600; text-transform:uppercase;
       letter-spacing:.06em; color: var(--text-secondary,#6b655c); margin:.3rem 0 .3rem; }
-    .ta-assign__card input { width:100%; box-sizing:border-box; padding:.6rem .75rem; border-radius:10px;
+    .ta-assign__card input { width:100%; box-sizing:border-box; padding:.6rem .75rem; border-radius:0;
       font-family:inherit; font-size:.85rem; border:2px solid color-mix(in srgb, var(--ink) 14%, transparent);
       background: var(--surface-secondary,#f4f0e8); color: var(--ink,#2a2723); }
     .ta-assign__row { display:flex; gap:.6rem; margin-top:1rem; }

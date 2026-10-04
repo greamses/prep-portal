@@ -160,7 +160,7 @@ ${B} {
   color: #14130f;
   background: var(--pp-note-bg, var(--pp-auto-bg));
   border-color: transparent;
-  border-radius: 2px;
+  border-radius: 0;
   outline: 0;
   box-shadow:
     0 1px 1px rgba(20, 19, 15, 0.1),

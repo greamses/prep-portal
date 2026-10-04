@@ -77,7 +77,7 @@
   width: 7.5mm;
   height: 7.5mm;
   border: 0;
-  border-radius: 0.5mm;
+  border-radius: 50%;
   background: var(--rt-note, #fff3a8);
   color: #14130f;
   font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;

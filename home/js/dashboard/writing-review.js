@@ -267,7 +267,7 @@ function injectStyles() {
     .wr-lbl { display:block; font-size:.6rem; text-transform:uppercase; letter-spacing:.06em;
       color:var(--text-secondary,#6b655c); margin:.6rem 0 .25rem; }
     .wr-lbl--inline { display:inline; margin:0; }
-    .wr-rev textarea, .wr-rev input[type=number] { width:100%; box-sizing:border-box; padding:.45rem .6rem; border-radius:9px;
+    .wr-rev textarea, .wr-rev input[type=number] { width:100%; box-sizing:border-box; padding:.45rem .6rem; border-radius:0;
       font-family:inherit; font-size:.78rem; line-height:1.5; background:var(--surface-primary,#fffdf8); color:var(--ink,#2a2723);
       border:2px solid color-mix(in srgb, var(--ink) 12%, transparent); text-transform:none; letter-spacing:normal; }
     .wr-actions { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; margin-top:.7rem; }

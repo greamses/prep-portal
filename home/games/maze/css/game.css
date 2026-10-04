@@ -84,7 +84,7 @@
   align-items: center;
   gap: 8px;
   padding: 0.5rem 0.95rem;
-  border-radius: 3px;
+  border-radius: 0;
   color: var(--mz-text);
   font-family: "Oswald", var(--mz-font);
   font-weight: 600;
@@ -99,7 +99,7 @@
   align-items: center;
   gap: 6px;
   padding: 0.46rem 0.95rem;
-  border-radius: 3px;
+  border-radius: 0;
   border-color: rgba(240, 168, 104, 0.45);
   color: var(--mz-amber);
   font-family: "Oswald", var(--mz-font);
@@ -127,7 +127,7 @@
   transform: translateX(-50%);
   max-width: calc(100% - 28px);
   padding: 0.46rem 1rem;
-  border-radius: 999px;
+  border-radius: 0;
   color: var(--mz-text);
   font-family: var(--mz-font);
   font-size: 0.82rem;
@@ -144,7 +144,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   padding: 0.7rem 1.5rem;
-  border-radius: 3px;
+  border-radius: 0;
   color: var(--mz-amber);
   font-family: "Oswald", var(--mz-font);
   font-weight: 600;
@@ -170,7 +170,7 @@
   right: 16px;
   width: 156px;
   height: 156px;
-  border-radius: 3px;
+  border-radius: 0;
   border-color: rgba(240, 168, 104, 0.4);
   pointer-events: none;
 }
@@ -338,7 +338,7 @@
 .maze-riddle[hidden] { display: none; }
 .mz-riddle-card {
   padding: 1rem 1.1rem 1.1rem;
-  border-radius: 10px;
+  border-radius: 0;
   background-color: #4a3119;
   background-image:
     repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.20) 0 1px, transparent 1px 4px),
@@ -370,7 +370,7 @@
   flex: 1 1 auto;
   min-width: 0;
   padding: 0.55rem 0.75rem;
-  border-radius: 6px;
+  border-radius: 0;
   border: 2px solid #2c1d10;
   background: #271a0e;
   color: #ecd9b0;
@@ -382,7 +382,7 @@
 .mz-riddle-go {
   flex-shrink: 0;
   padding: 0.55rem 1rem;
-  border-radius: 6px;
+  border-radius: 0;
   border: 2px solid #2c1d10;
   background: #7d5832;
   color: #fff;
@@ -416,7 +416,7 @@
 .mz-set-card {
   width: min(90vw, 340px);
   padding: 1.1rem 1.2rem 1.3rem;
-  border-radius: 10px;
+  border-radius: 0;
   background-color: #4a3119;
   background-image:
     repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.2) 0 1px, transparent 1px 4px),
@@ -454,7 +454,7 @@
 .mz-set-row select {
   flex: 0 0 auto;
   padding: 0.34rem 0.5rem;
-  border-radius: 6px;
+  border-radius: 0;
   border: 2px solid #2c1d10;
   background: #271a0e;
   color: #ecd9b0;
@@ -464,7 +464,7 @@
   width: 100%;
   margin-top: 0.4rem;
   padding: 0.6rem;
-  border-radius: 6px;
+  border-radius: 0;
   border: 2px solid #2c1d10;
   background: #7d5832;
   color: #fff;
@@ -498,7 +498,7 @@
     repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.24) 0 2px, transparent 2px 44px),
     linear-gradient(180deg, #5e3f24, #38260f);
   border: 2px solid #20150b;
-  border-radius: 10px;
+  border-radius: 0;
   padding: 1.4rem 1.5rem;
   color: #ecd9b0;
   box-shadow: inset 0 0 0 2px rgba(120, 80, 40, 0.25), 0 24px 60px rgba(0, 0, 0, 0.6);

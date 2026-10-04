@@ -906,7 +906,7 @@ table {
 .content-preview-pane::-webkit-scrollbar-thumb {
   background: var(--ink);
   opacity: 0.3;
-  border-radius: 3px;
+  border-radius: 0;
 }
 
 /* Collapse to single column on small screens */

@@ -30,7 +30,7 @@
   justify-content: center;
   background: rgba(255, 255, 255, 0.08);
   border: 1.5px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
+  border-radius: 0;
   color: #fff;
   cursor: pointer;
   transition: background 0.15s;
@@ -53,7 +53,7 @@
   padding: 0 0.85rem;
   background: rgba(255, 255, 255, 0.08);
   border: 1.5px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
+  border-radius: 0;
   color: #fff;
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 0.72rem;
@@ -159,7 +159,7 @@
   color: rgba(255, 255, 255, 0.55);
   background: rgba(0, 0, 0, 0.35);
   padding: 2px 10px;
-  border-radius: 20px;
+  border-radius: 0;
 }
 
 /* ─── RESPONSIVE ─────────────────────────────────────────── */

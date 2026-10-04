@@ -121,7 +121,7 @@ button,
   color: #14130f;
   background: #fff39a;
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   padding: 0.6rem 1.1rem 0.65rem;
   transform: rotate(-3deg);
   box-shadow:
@@ -170,7 +170,7 @@ button,
     var(--accent-primary) 55%,
     var(--surface-primary)
   );
-  border-radius: 0.16em;
+  border-radius: 0;
   padding: 0 0.1em;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
@@ -302,7 +302,7 @@ button,
   font-weight: var(--weight-semibold);
   background: var(--surface-secondary);
   border: var(--border-subtle);
-  border-radius: 12px;
+  border-radius: 0;
   cursor: pointer;
   transition:
     box-shadow var(--transition-base),
@@ -340,7 +340,7 @@ button,
   z-index: var(--z-nav);
   background: var(--surface-primary);
   border: var(--border-subtle);
-  border-radius: 12px;
+  border-radius: 0;
   max-height: 0;
   overflow: hidden;
   opacity: 0;
@@ -411,7 +411,7 @@ button,
   letter-spacing: var(--tracking-wider);
   background: var(--accent-primary);
   border: none;
-  border-radius: 999px;
+  border-radius: 0;
   cursor: pointer;
   transition:
     transform var(--transition-base),
@@ -450,7 +450,7 @@ button,
   letter-spacing: var(--tracking-wider);
   background: var(--surface-secondary);
   border: var(--border-subtle);
-  border-radius: 999px;
+  border-radius: 0;
   cursor: pointer;
   transition: all var(--transition-base);
   color: var(--ink);
@@ -480,7 +480,7 @@ button,
   letter-spacing: var(--tracking-wide);
   background: var(--surface-secondary);
   border: var(--border-subtle);
-  border-radius: 999px;
+  border-radius: 0;
   cursor: pointer;
   transition: all var(--transition-base);
   color: var(--ink);
@@ -605,7 +605,7 @@ button,
   letter-spacing: 0.06em;
   background: var(--accent-primary);
   border: none;
-  border-radius: 999px;
+  border-radius: 0;
   cursor: pointer;
   transition:
     transform 0.15s ease,
@@ -662,7 +662,7 @@ button,
 .settings-modal-window {
   background: var(--surface-primary, #faf8f5);
   border: var(--border-subtle);
-  border-radius: 20px;
+  border-radius: 0;
   width: 100%;
   max-width: 620px;
   max-height: 88vh;
@@ -688,7 +688,7 @@ button,
   position: sticky;
   top: 0;
   background: var(--surface-primary, #faf8f5);
-  border-radius: 20px 20px 0 0;
+  border-radius: 0;
   z-index: 2;
 }
 .settings-modal-dots {
@@ -733,7 +733,7 @@ button,
   background: none;
   border: none;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 0;
   color: var(--muted, #666);
   flex-shrink: 0;
   transition: all 0.15s ease;
@@ -760,7 +760,7 @@ button,
   margin-bottom: 20px;
   padding: 12px 14px;
   background: rgba(0, 0, 0, 0.025);
-  border-radius: 8px;
+  border-radius: 0;
   border-left: 3px solid var(--yellow, #ffe500);
 }
 .settings-modal-desc strong {
@@ -833,7 +833,7 @@ button,
   letter-spacing: 0.05em;
   background: transparent;
   border: var(--border-subtle);
-  border-radius: 999px;
+  border-radius: 0;
   cursor: pointer;
   color: var(--ink, #0a0a0a);
   transition: all 0.15s ease;
@@ -855,7 +855,7 @@ button,
 }
 .settings-modal-window::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.15);
-  border-radius: 3px;
+  border-radius: 0;
 }
 
 /* Lock body scroll when modal is open */
@@ -871,7 +871,7 @@ body.settings-modal-open {
   justify-content: space-between;
   gap: 0.75rem;
   background: var(--surface-secondary);
-  border-radius: 0 0 20px 20px;
+  border-radius: 0;
 }
 .ft-info {
   font-size: 0.65rem;
@@ -894,7 +894,7 @@ body.settings-modal-open {
   aspect-ratio: 1 / 1;
   background: #fdfbf7;
   border: var(--border-subtle);
-  border-radius: 18px;
+  border-radius: 0;
   box-shadow: var(--shadow-xl);
   overflow: hidden;
 }

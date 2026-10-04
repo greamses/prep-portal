@@ -44,7 +44,7 @@ body {
   gap: 4px;
   margin-top: 0;
   padding: 4px;
-  border-radius: 999px;
+  border-radius: 0;
   border: var(--border-subtle);
   background: var(--surface-secondary);
 }
@@ -53,7 +53,7 @@ body {
   background: none;
   cursor: pointer;
   padding: 0.5rem 1.15rem;
-  border-radius: 999px;
+  border-radius: 0;
   font-family: var(--font-display);
   font-weight: var(--weight-bold);
   font-size: 0.82rem;
@@ -120,7 +120,7 @@ body {
   text-align: left;
   padding: clamp(1.5rem, 3.2vw, 2.25rem);
   border: var(--border-subtle);
-  border-radius: 24px;
+  border-radius: 0;
   background: var(--surface-secondary);
   cursor: pointer;
   box-shadow: var(--shadow-sm);
@@ -215,7 +215,7 @@ body {
   padding: 0.45rem 0.95rem;
   margin-bottom: 1.5rem;
   border: var(--border-subtle);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--surface-secondary);
   color: var(--ink);
   font-family: var(--font-mono);
@@ -262,7 +262,7 @@ body {
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   border: 2px solid color-mix(in srgb, var(--ink) 22%, transparent);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--bg);
   cursor: pointer;
   font-family: var(--font-display);
@@ -288,7 +288,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 2px 5px;
-  border-radius: 3px;
+  border-radius: 0;
 }
 
 /* ─── CARDS GRID ─────────────────────────────────────────── */
@@ -373,7 +373,7 @@ body {
   font-size: 0.74rem;
   line-height: 1;
   color: #1c1a16;
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow:
     0 1px 1px rgba(20, 19, 15, 0.12),
     3px 5px 9px -3px rgba(20, 19, 15, 0.3);
@@ -459,7 +459,7 @@ body {
   background: var(--accent-success);
   color: #fff;
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: 0;
   white-space: nowrap;
 }
 .sp-billing-note {
@@ -518,7 +518,7 @@ body {
   justify-content: center;
   gap: 0.5rem;
   border: 2px solid var(--ink);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-display);
@@ -589,7 +589,7 @@ body {
   gap: 1rem;
   padding: 0.85rem 1.25rem;
   border: var(--border-subtle);
-  border-radius: 16px;
+  border-radius: 0;
   background: var(--surface-secondary);
   box-shadow: var(--shadow-sm);
   margin-bottom: 1.75rem;
@@ -617,7 +617,7 @@ body {
   display: flex;
   align-items: center;
   border: var(--border-subtle);
-  border-radius: 999px;
+  border-radius: 0;
   overflow: hidden;
   background: var(--bg);
 }
@@ -675,7 +675,7 @@ body {
   display: flex;
   gap: 4px;
   padding: 4px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--surface-secondary);
   border: var(--border-subtle);
 }
@@ -686,7 +686,7 @@ body {
   font-weight: var(--weight-bold);
   background: none;
   border: none;
-  border-radius: 999px;
+  border-radius: 0;
   cursor: pointer;
   color: var(--text-secondary);
   transition: background 0.15s ease, color 0.15s ease;
@@ -739,7 +739,7 @@ body {
   background: var(--ink);
   color: var(--bg);
   padding: 0.65rem 1.25rem;
-  border-radius: 999px;
+  border-radius: 0;
   box-shadow: var(--shadow-lg);
   white-space: nowrap;
   z-index: 99999;

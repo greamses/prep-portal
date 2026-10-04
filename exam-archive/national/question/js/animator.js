@@ -201,7 +201,7 @@
         #mathanim-modal {
             width: min(720px, 96vw); max-height: 90vh; display: flex; flex-direction: column;
             overflow: hidden; background: var(--surface-primary, #fffdf8);
-            border: var(--border-subtle, 1px solid rgba(42,39,35,.12)); border-radius: 22px;
+            border: var(--border-subtle, 1px solid rgba(42,39,35,.12)); border-radius: 0;
             box-shadow: var(--shadow-xl, 0 18px 40px rgba(42,39,35,.16));
             transform: translateY(14px) scale(.98);
             transition: transform var(--duration-smooth, .22s) var(--ease-smooth, cubic-bezier(.16,1,.3,1));
@@ -216,7 +216,7 @@
         .mathanim-x {
             display: inline-flex; align-items: center; justify-content: center;
             width: 30px; height: 30px; cursor: pointer;
-            border: var(--border-subtle, 1px solid rgba(42,39,35,.12)); border-radius: 9px;
+            border: var(--border-subtle, 1px solid rgba(42,39,35,.12)); border-radius: 0;
             background: var(--surface-primary, #fffdf8); color: var(--ink, #2a2723);
             box-shadow: var(--shadow-sm, 0 2px 5px rgba(42,39,35,.1));
             transition: transform var(--duration-fast,.12s) ease, box-shadow var(--duration-fast,.12s) ease;
@@ -227,7 +227,7 @@
         .mathanim-pill {
             display: inline-flex; align-items: center; gap: .35rem; cursor: pointer;
             font-family: var(--font-mono, monospace); font-weight: 700; font-size: .64rem;
-            padding: .4rem .7rem; border-radius: 999px;
+            padding: .4rem .7rem; border-radius: 0;
             border: var(--border-subtle, 1px solid rgba(42,39,35,.12));
             background: var(--surface-primary, #fffdf8); color: var(--ink, #2a2723);
             box-shadow: var(--shadow-sm, 0 2px 5px rgba(42,39,35,.1));
@@ -239,7 +239,7 @@
         .mathanim-context { display: flex; flex-direction: column; gap: .7rem; }
         .mathanim-main { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
         .mathanim-qcard, .mathanim-translate {
-            background: var(--surface-secondary, #f4f0e8); border-radius: 12px;
+            background: var(--surface-secondary, #f4f0e8); border-radius: 0;
             padding: .7rem .85rem; border: var(--border-subtle, 1px solid rgba(42,39,35,.12));
         }
         .mathanim-qcard { font-size: .92rem; line-height: 1.5; color: var(--ink, #2a2723); }
@@ -274,7 +274,7 @@
             min-height: 150px; max-height: 48vh;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
             gap: .45rem; overflow-y: auto; scroll-behavior: smooth;
-            border-radius: 14px; background: var(--surface-secondary, #f4f0e8);
+            border-radius: 0; background: var(--surface-secondary, #f4f0e8);
             padding: 1.2rem .8rem; font-size: clamp(1.05rem, 4.2vw, 1.6rem);
         }
         #mathanim-stage.hidden { display: none; }
@@ -309,7 +309,7 @@
             font-family: var(--font-mono, monospace); font-weight: 400;
             font-size: .66rem; line-height: 1.4; letter-spacing: 0;
             color: var(--ink, #2a2723); background: var(--surface-primary, #fffdf8);
-            border: var(--border-subtle, 1px solid rgba(42,39,35,.12)); border-radius: 10px;
+            border: var(--border-subtle, 1px solid rgba(42,39,35,.12)); border-radius: 0;
             box-shadow: var(--shadow-lg, 0 9px 22px rgba(42,39,35,.14));
             padding: .5rem .6rem; text-align: left; white-space: normal;
             opacity: 0; transform: translateY(4px); pointer-events: none;
@@ -329,7 +329,7 @@
         .mathanim-step {
             opacity: 0; transform: translateY(8px);
             transition: opacity .4s ease, transform .4s cubic-bezier(.16,1,.3,1);
-            padding: .5rem .7rem; border-radius: 10px; background: var(--surface-secondary, #f4f0e8);
+            padding: .5rem .7rem; border-radius: 0; background: var(--surface-secondary, #f4f0e8);
         }
         .mathanim-step.in { opacity: 1; transform: none; }
         .mathanim-step mjx-container { margin: 0 !important; }
@@ -344,7 +344,7 @@
         .mathanim-ctrl {
             display: inline-flex; align-items: center; justify-content: center;
             width: 34px; height: 34px; cursor: pointer;
-            border: var(--border-subtle, 1px solid rgba(42,39,35,.12)); border-radius: 10px;
+            border: var(--border-subtle, 1px solid rgba(42,39,35,.12)); border-radius: 0;
             background: var(--surface-primary, #fffdf8); color: var(--ink, #2a2723);
             box-shadow: var(--shadow-sm, 0 2px 5px rgba(42,39,35,.1));
             transition: transform var(--duration-fast,.12s) ease, box-shadow var(--duration-fast,.12s) ease, opacity var(--duration-fast,.12s) ease;
@@ -369,7 +369,7 @@
         .feedback-watch-btn {
             display: inline-flex; align-items: center; gap: .4rem; cursor: pointer;
             font-family: var(--font-mono, monospace); font-weight: 700; font-size: .72rem;
-            padding: .42rem .85rem; border-radius: 999px;
+            padding: .42rem .85rem; border-radius: 0;
             border: var(--border-subtle, 1px solid rgba(42,39,35,.12));
             background: var(--surface-primary, #fffdf8); color: var(--ink, #2a2723);
             box-shadow: var(--shadow-sm, 0 2px 5px rgba(42,39,35,.1));
@@ -389,7 +389,7 @@
         .mathanim-admin__btns { display: flex; gap: .4rem; }
         .mathanim-admin-btn {
             cursor: pointer; font-family: var(--font-mono, monospace); font-weight: 700; font-size: .68rem;
-            padding: .42rem .8rem; border-radius: 999px;
+            padding: .42rem .8rem; border-radius: 0;
             border: var(--border-subtle, 1px solid rgba(42,39,35,.12));
             background: var(--surface-primary, #fffdf8); color: var(--ink, #2a2723);
             box-shadow: var(--shadow-sm, 0 2px 5px rgba(42,39,35,.1));

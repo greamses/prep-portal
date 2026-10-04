@@ -54,7 +54,7 @@
   padding: 6px;
   margin-bottom: 0.85rem;
   border: var(--border-subtle, 1px solid rgba(20, 19, 15, 0.12));
-  border-radius: 0.5rem;
+  border-radius: 0;
   overflow: hidden;
   background: var(--surface-secondary);
 }

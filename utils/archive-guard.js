@@ -55,9 +55,9 @@
         '<h1 style="font-family:Unbounded,system-ui,sans-serif;font-size:1.4rem;margin:0 0 .6rem">This section is unavailable</h1>' +
         '<p style="font-size:.85rem;line-height:1.6;color:#6b655c;margin:0 0 1.2rem">' +
         'The past-paper archive is currently turned off. Try our original, exam-style practice instead.</p>' +
-        '<a href="/theory-page/" style="display:inline-block;margin:.25rem;padding:.6rem 1.1rem;border-radius:999px;' +
+        '<a href="/theory-page/" style="display:inline-block;margin:.25rem;padding:.6rem 1.1rem;border-radius:0;' +
         'background:#f4c95d;color:#2a2723;text-decoration:none;font-weight:700">Practice questions</a>' +
-        '<a href="/" style="display:inline-block;margin:.25rem;padding:.6rem 1.1rem;border-radius:999px;' +
+        '<a href="/" style="display:inline-block;margin:.25rem;padding:.6rem 1.1rem;border-radius:0;' +
         'background:#fffdf8;border:2px solid rgba(42,39,35,.14);color:#2a2723;text-decoration:none;font-weight:700">Home</a>' +
         "</div></div>";
       reveal();

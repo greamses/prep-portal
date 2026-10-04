@@ -37,7 +37,7 @@ export class Economy {
       s.id = 'econ-style';
       s.textContent = `
         #econ-hud{position:fixed;top:16px;right:18px;z-index:25;display:flex;align-items:center;
-          gap:.55rem;padding:.45rem .7rem;border-radius:14px;background:rgba(0,0,0,.45);
+          gap:.55rem;padding:.45rem .7rem;border-radius:0;background:rgba(0,0,0,.45);
           border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(6px);
           font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,.82);font-size:.72rem;}
         #econ-hud .econ-ico{font-size:.95rem;line-height:1;}
@@ -46,7 +46,7 @@ export class Economy {
           box-shadow:0 0 6px #5fcf7a80;transition:background .2s,box-shadow .2s;}
         #econ-hud .pip.broken{background:rgba(255,255,255,.18);box-shadow:none;}
         #econ-hud .econ-spent{opacity:.7;font-size:.66rem;}
-        #econ-toast{position:fixed;top:58px;right:18px;z-index:25;padding:.5rem .85rem;border-radius:12px;
+        #econ-toast{position:fixed;top:58px;right:18px;z-index:25;padding:.5rem .85rem;border-radius:0;
           background:rgba(20,28,38,.9);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(6px);
           font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#fff;opacity:0;transform:translateY(-6px);
           transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;}

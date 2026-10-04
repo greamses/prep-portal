@@ -289,7 +289,7 @@ body {
   font-weight: 600;
   color: var(--text-on-accent);
   background: var(--accent-warning);
-  border-radius: 3px;
+  border-radius: 0;
   padding: 0.4rem 0.6rem;
   max-width: 160px;
   overflow: hidden;
@@ -341,7 +341,7 @@ body {
   position: relative;
   z-index: 2;
   padding: 2.1rem 1.1rem 1.1rem;
-  border-radius: 18px 18px 34px 34px;
+  border-radius: 0;
   background: var(--pouch-bg, var(--badge-subject-1-bg));
   border: var(--border-subtle);
   box-shadow: var(--shadow-sm);
@@ -364,7 +364,7 @@ body {
   left: 12%;
   right: 12%;
   height: 14px;
-  border-radius: 0 0 7px 7px;
+  border-radius: 0;
   background-color: color-mix(in srgb, var(--ink) 10%, transparent);
   background-image: repeating-linear-gradient(
     90deg,
@@ -498,7 +498,7 @@ body {
   font-family: var(--font-mono);
   background: var(--surface-secondary);
   border: 1.5px solid var(--border-subtle);
-  border-radius: 4px;
+  border-radius: 0;
   padding: 0.4rem 0.2rem 0.35rem;
   cursor: not-allowed;
   color: var(--text-tertiary);
@@ -520,7 +520,7 @@ body {
   font-weight: 700;
   color: #fff;
   background: var(--accent-danger);
-  border-radius: 999px;
+  border-radius: 0;
   padding: 1px 5px;
 }
 
@@ -711,7 +711,7 @@ body {
   width: 128px;
   height: 128px;
   object-fit: cover;
-  border-radius: 2px;
+  border-radius: 0;
 }
 
 .flash-text {
@@ -722,7 +722,7 @@ body {
   color: var(--ink);
   margin: 0;
   padding: 0 0.25rem;
-  border-radius: 6px;
+  border-radius: 0;
   outline: none;
 }
 .flash-text[contenteditable="true"] {
@@ -769,7 +769,7 @@ body {
   color: var(--text-secondary);
   background: var(--surface-primary);
   border: 1.5px solid var(--border-subtle);
-  border-radius: 999px;
+  border-radius: 0;
   padding: 0.4rem 0.8rem;
   box-shadow: var(--shadow-sm);
   cursor: pointer;
@@ -823,7 +823,7 @@ body {
   display: flex;
   gap: 0.5rem;
   background: var(--surface-primary);
-  border-radius: 999px;
+  border-radius: 0;
   padding: 0.4rem;
   box-shadow: var(--shadow-md);
   opacity: 0;

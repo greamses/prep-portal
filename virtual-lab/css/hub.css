@@ -52,7 +52,7 @@ body {
   font-weight: 600;
   color: #14130f;
   background: #fff39a;
-  border-radius: 2px;
+  border-radius: 0;
   padding: 0.55rem 1rem 0.6rem;
   transform: rotate(-3deg);
   box-shadow:
@@ -102,7 +102,7 @@ body {
   border: 2px solid color-mix(in srgb, var(--tile) 50%, transparent);
   box-shadow: var(--shadow-sm);
   padding: 0.4rem 0.7rem;
-  border-radius: 13px;
+  border-radius: 0;
   transition: transform var(--duration-smooth) var(--ease-bounce);
 }
 .hub-stat strong {
@@ -266,7 +266,7 @@ body {
   font-size: 0.74rem;
   line-height: 1;
   color: #1c1a16;
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow:
     0 1px 1px rgba(20,19,15,0.12),
     3px 5px 9px -3px rgba(20,19,15,0.28);

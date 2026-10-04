@@ -28,7 +28,7 @@
 .ctrl-group {
   background: var(--surface-primary);
   border: var(--border-subtle);
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow: var(--shadow-md);
   backdrop-filter: none;
 }
@@ -81,7 +81,7 @@
   background: var(--surface-primary);
   color: var(--ink);
   border: var(--border, 2px solid #2a2723);
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
   transition:
     transform var(--transition-base, 0.2s) ease,
@@ -114,7 +114,7 @@
   color: #14130f;
   background: var(--pp-note-bg, #fff3a8);
   border: 0;
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow:
     0 1px 1px rgba(20, 19, 15, 0.1),
     5px 8px 12px -4px rgba(20, 19, 15, 0.3);
@@ -158,7 +158,7 @@ input[type="range"]::-webkit-slider-thumb {
   height: 20px;
   background: var(--accent-primary);
   border: var(--border, 2px solid #2a2723);
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
 }
 input[type="range"]::-webkit-slider-thumb:hover { transform: translateY(-1px) scale(1.06); }
@@ -167,7 +167,7 @@ input[type="range"]::-moz-range-thumb {
   height: 20px;
   background: var(--accent-primary);
   border: var(--border, 2px solid #2a2723);
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
 }
 
@@ -177,12 +177,12 @@ input[type="range"]::-moz-range-thumb {
 .t-track {
   background: var(--surface-secondary);
   border: var(--border-subtle);
-  border-radius: 999px;
+  border-radius: 0;
 }
 .t-thumb {
   background: var(--surface-primary);
   border: var(--border, 2px solid #2a2723);
-  border-radius: 2px;
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
 }
 .toggle input:checked + .t-track { background: var(--accent-success); }

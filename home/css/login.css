@@ -51,7 +51,7 @@
   max-width: 440px;
   background: var(--surface-primary);
   border: var(--border-subtle);
-  border-radius: 26px;
+  border-radius: 0;
   box-shadow: var(--shadow-xl);
   transform: translateY(28px) scale(0.97);
   transition: transform var(--duration-slow) var(--ease-in-out);
@@ -163,7 +163,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 4px;
   background: var(--surface-secondary);
-  border-radius: 999px;
+  border-radius: 0;
   padding: 5px;
   margin: 1.1rem 0 1.3rem;
 }
@@ -171,7 +171,7 @@
 .auth-tab {
   height: 40px;
   border: none;
-  border-radius: 999px;
+  border-radius: 0;
   background: transparent;
   font-family: var(--font-display);
   font-size: 0.8rem;
@@ -276,7 +276,7 @@
   height: 50px;
   padding: 0 1rem;
   border: 1.5px solid rgba(var(--shadow-color), 0.16);
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--bg);
   font-family: var(--font-mono);
   font-size: 0.9rem;
@@ -361,7 +361,7 @@
   padding: 0.85rem 0.4rem;
   background: var(--surface-secondary);
   border: 1.5px solid transparent;
-  border-radius: 16px;
+  border-radius: 0;
   cursor: pointer;
   transition:
     transform var(--duration-fast) var(--ease-default),
@@ -414,7 +414,7 @@
   min-height: 50px;
   padding: 0 1rem;
   border: 1.5px solid rgba(var(--shadow-color), 0.16);
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--bg);
   box-shadow: none;
   font-size: 0.9rem;
@@ -438,7 +438,7 @@
 
 .auth-modal .pp-select-menu {
   border: 1.5px solid rgba(var(--shadow-color), 0.16);
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--surface-primary);
   box-shadow: var(--shadow-lg);
 }
@@ -472,7 +472,7 @@
 .remember-box input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  border-radius: 5px;
+  border-radius: 0;
   accent-color: var(--accent-secondary);
   cursor: pointer;
   flex-shrink: 0;
@@ -499,7 +499,7 @@
   justify-content: center;
   gap: 0.55rem;
   border: none;
-  border-radius: 999px;
+  border-radius: 0;
   font-family: var(--font-display);
   font-size: 0.88rem;
   cursor: pointer;
@@ -574,7 +574,7 @@
 ========================================= */
 @media (max-width: 480px) {
   .auth-modal {
-    border-radius: 20px;
+    border-radius: 0;
   }
 
   .auth-scroll-body {

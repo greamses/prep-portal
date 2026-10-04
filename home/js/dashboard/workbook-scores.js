@@ -221,7 +221,7 @@ function injectStyles() {
     .wbs-code { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em;
       color: var(--text-tertiary, #9a948a); }
     .wbs-new { border: 2px dashed color-mix(in srgb, var(--accent-primary, #ffd76a) 60%, var(--ink));
-      border-radius: 12px; padding: 0.7rem 0.85rem; margin-bottom: 0.7rem;
+      border-radius: 0; padding: 0.7rem 0.85rem; margin-bottom: 0.7rem;
       background: color-mix(in srgb, var(--accent-primary, #ffd76a) 18%, var(--surface-primary, #fffdf8)); }
     .wbs-new__cap { font-family: var(--font-display); font-weight: 900; font-size: 0.8rem; margin: 0 0 0.4rem; }
     .wbs-new__list { list-style: none; margin: 0 0 0.5rem; padding: 0;

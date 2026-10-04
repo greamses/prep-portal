@@ -431,15 +431,15 @@ function injectRefStyles() {
   s.id = "sp-ref-styles";
   s.textContent = `
     .sp-ref { max-width: 460px; margin: 0 auto 1.4rem; padding: .9rem 1rem;
-      border: var(--border-subtle, 1px solid rgba(42,39,35,.12)); border-radius: 14px;
+      border: var(--border-subtle, 1px solid rgba(42,39,35,.12)); border-radius: 0;
       background: var(--surface-primary, #fffdf8); box-shadow: var(--shadow-sm, 0 2px 5px rgba(42,39,35,.08)); }
     .sp-ref__label { display:block; font-family: var(--font-mono, monospace); font-size: .72rem;
       font-weight: 700; color: var(--ink, #2a2723); margin-bottom: .5rem; }
     .sp-ref__row { display:flex; gap:.5rem; }
-    .sp-ref__input { flex:1 1 auto; padding:.55rem .7rem; border-radius:10px; text-transform:uppercase;
+    .sp-ref__input { flex:1 1 auto; padding:.55rem .7rem; border-radius:0; text-transform:uppercase;
       border: var(--border-subtle, 1px solid rgba(42,39,35,.14)); background: var(--surface-secondary,#f4f0e8);
       color: var(--ink,#2a2723); font-family: var(--font-mono, monospace); font-size:.8rem; letter-spacing:.08em; }
-    .sp-ref__btn { padding:.55rem 1rem; border:none; border-radius:10px; cursor:pointer; font-weight:700;
+    .sp-ref__btn { padding:.55rem 1rem; border:none; border-radius:0; cursor:pointer; font-weight:700;
       font-family: var(--font-mono, monospace); font-size:.75rem; background: var(--accent-primary,#f4c95d);
       color: var(--text-on-accent,#2a2723); }
     .sp-ref__btn:disabled { opacity:.6; cursor:default; }
