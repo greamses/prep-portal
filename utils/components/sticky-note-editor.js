@@ -68,6 +68,7 @@ import {
 } from "./sticky-note.js";
 import { mathNode } from "./sticky-math.js";
 import { toTeX, SIGNS } from "./math-linear.js";
+import { enhanceSelect } from "./pp-select.js";
 
 /**
  * @param {object} opts
@@ -560,14 +561,24 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
 
   /* ── the two dropdowns ──────────────────────────────────────────────────── */
 
-  /* Opening a native dropdown blurs the paper and loses the highlight, so the
-     highlight is remembered on the way IN and put back before the change is
-     applied. Native rather than a menu of our own on purpose: it is the control
-     a phone and a screen reader already know how to work. */
+  /* The face and the size are the site's own dropdown — the receipt
+     (pp-select.js over the native <select>, which stays the source of truth:
+     `sel.value` and its `change` work as before). Its trigger and its list are
+     pressed on the bar, and a press on the bar never takes the caret out of the
+     paper, so the highlight is still there when the choice is made; `held` is
+     kept for a native select reached some other way (the keyboard). */
   let held = null;
 
   const fontSel = root.querySelector("[data-set=font]");
   const sizeSel = root.querySelector("[data-set=size]");
+  if (!document.querySelector('link[href*="/utils/components/select.css"]')) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "/utils/components/select.css";
+    document.head.appendChild(link);
+  }
+  enhanceSelect(fontSel, { className: "pp-select--sm pp-note__drop pp-note__drop--font" });
+  enhanceSelect(sizeSel, { className: "pp-select--sm pp-note__drop pp-note__drop--size" });
 
   for (const sel of [fontSel, sizeSel]) {
     sel.addEventListener("focus", () => { if (!held) held = saveSel(); });
