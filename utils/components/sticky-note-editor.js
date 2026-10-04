@@ -112,8 +112,10 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
               aria-haspopup="true"><b></b></button>
     </div>
     <div class="pp-note__pick" hidden></div>
-    <div class="pp-note__signs" hidden role="dialog"
-         aria-label="Every sign you can type in an equation"></div>
+    <div class="pp-note__signs pp-receipt" hidden role="dialog"
+         aria-label="Every sign you can type in an equation">
+      <div class="pp-note__signpaper pp-receipt__paper"><div class="pp-note__signlist"></div></div>
+    </div>
     <div class="pp-note__paper" contenteditable="true" role="textbox" aria-multiline="true"
          aria-label="What the note says" spellcheck="true"></div>
     <div class="pp-note__eqlive" hidden aria-hidden="true"></div>`;
@@ -472,7 +474,11 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
      on the note, from the same translation, so the card cannot drift out of
      step with what the parser actually does. Pressing a row types it for you,
      which is what makes it a palette and not only a list. */
+  /* The card is the site's RECEIPT, whole: the wrapper casts the shadow, the
+     paper carries the torn edge and the punched holes, and the tiles sit in a
+     third element that does the scrolling so the holes stay put. */
   const signsEl = root.querySelector(".pp-note__signs");
+  const signsList = root.querySelector(".pp-note__signlist");
   const signsKey = root.querySelector("[data-do='signs']");
   let signsBuilt = false;
 
@@ -506,7 +512,7 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
         list.appendChild(row);
       }
       box.appendChild(list);
-      signsEl.appendChild(box);
+      signsList.appendChild(box);
     }
   }
 

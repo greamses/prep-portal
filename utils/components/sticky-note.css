@@ -295,14 +295,10 @@
   left: 0;
   /* a GALLERY, as wide as it needs to be whatever the width of the note it
      hangs from: a narrow note used to squeeze it into one ragged column */
-  width: max(100%, 23rem);
-  max-width: min(30rem, 94vw);
+  width: max(100%, 24rem);
+  max-width: min(31rem, 94vw);
   box-sizing: border-box;
   z-index: 5;
-  max-height: 19rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 0 0.6rem 0.7rem;
   background: var(--surface-primary, #fffdf8);
   border: var(--border-subtle, 1px solid rgba(20, 19, 15, 0.14));
   border-radius: var(--radius-sm, 6px);
@@ -310,6 +306,28 @@
   color: var(--ink, #2a2723);
 }
 .pp-note__signs[hidden] { display: none; }
+/* THE RECEIPT (components.css), used whole. Two classes on the wrapper,
+   because .pp-receipt sets position: relative and the later sheet would win. */
+.pp-note__signs.pp-receipt {
+  position: absolute;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.pp-note__signs .pp-note__signpaper {
+  --tooth: 9px;
+  /* room either side for the punched holes, which sit 6px in */
+  padding: 0.75rem 1.15rem 0.85rem;
+}
+/* the tiles scroll in here, so neither the teeth nor the holes slide away */
+.pp-note__signlist {
+  max-height: 18rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 0.2rem 0.2rem;
+}
 
 .pp-note__signset + .pp-note__signset { margin-top: 0.5rem; }
 
@@ -319,9 +337,9 @@
   top: 0;
   z-index: 1;
   display: block;
-  margin: 0 -0.6rem 0.45rem;
-  padding: 0.5rem 0.6rem 0.4rem;
-  background: var(--surface-primary, #fffdf8);
+  margin: 0 -0.2rem 0.5rem;
+  padding: 0.35rem 0.2rem 0.4rem;
+  background: var(--pp-paper, var(--surface-primary, #fffdf8));
   border-bottom: 1px solid var(--border-color, rgba(20, 19, 15, 0.14));
   font-family: var(--font-mono, monospace);
   line-height: 1.35;
