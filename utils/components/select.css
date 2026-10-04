@@ -229,3 +229,43 @@
   bottom: calc(100% + 4px);
   top: auto;
 }
+
+/* ── every dropdown is a receipt (receipt-dropdowns.js) ───────────────────────
+   A native <select> the site swapped for its own dropdown without being asked:
+   it takes the room the select took, not the whole row. */
+.pp-select.pp-select--auto { width: auto; min-width: 7.5rem; max-width: 100%; vertical-align: middle; }
+.pp-select.pp-select--auto[hidden] { display: none; }
+.pp-select.is-disabled { opacity: 0.55; pointer-events: none; }
+/* its list is never narrower than its trigger, and wide enough for its longest choice */
+.pp-select--auto .pp-select-menu.pp-receipt { right: auto; min-width: 100%; width: max-content; max-width: min(24rem, 92vw); }
+
+/* A list a page built by hand, made a receipt where it stands. Its own box is
+   put away — the receipt's paper (components.css, .pp-receipt__paper: the torn
+   edge and the punched holes) is the box now — and the shadow goes on the
+   list itself, outside the paper, because a shadow under the paper's mask
+   would be cut away with it. Where the list sits, and how it opens and shuts,
+   stay the page's own. */
+.pp-menu-receipt {
+  padding: 0 !important;
+  background: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  max-height: none !important;
+  filter: drop-shadow(0 7px 16px rgba(var(--shadow-color, 42, 39, 35), 0.14));
+}
+.pp-menu-receipt > .pp-menu-receipt__paper {
+  --tooth: 8px;
+  /* room either side for the punched holes, which sit 6px in */
+  padding: 0.7rem 1.05rem;
+}
+/* the choices scroll in here, so neither the teeth nor the holes slide away */
+.pp-menu-receipt__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: min(16rem, 60vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
