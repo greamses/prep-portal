@@ -2978,6 +2978,40 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         return () => frame.remove();
       },
     })),
+    /* A NOTE to work on: the site's sticky note (utils/components/sticky-note*),
+       opened as a pad in a panel. Words and — what it is here for — equations,
+       typed the way a word processor types them: 1/2 is a fraction, x^2 a
+       power, and it is shown set as it is typed. Kept for this workbook on
+       this device, so shutting the panel does not lose the working. */
+    {
+      id: "note",
+      label: "Equation note",
+      icon: TOOL_ICONS.note,
+      size: { w: 460, h: 380 },
+      open: async (body) => {
+        needCss("/utils/components/sticky-note.css");
+        body.classList.add("wb-panel__body--bare");
+        const [{ createStickyEditor }, { makeNote }] = await Promise.all([
+          import("/utils/components/sticky-note-editor.js"),
+          import("/utils/components/sticky-note.js"),
+        ]);
+        const KEY = `wb-note:${location.pathname}`;
+        let kept = null;
+        try { kept = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { /* a fresh note */ }
+        const note = makeNote(kept && Array.isArray(kept.runs) ? { runs: kept.runs, paper: kept.paper || 0 } : {});
+        const keep = (n) => { try { localStorage.setItem(KEY, JSON.stringify({ runs: n.runs, paper: n.paper })); } catch { /* storage full or off */ } };
+        let shut = false;
+        const pad = createStickyEditor({
+          host: body,
+          onInput: keep,
+          /* Escape puts the pen down on a note that is stuck somewhere; a pad stays open until its panel is shut */
+          onDone: (n) => { keep(n); if (!shut) setTimeout(() => { if (!shut) pad.open(n); }, 0); },
+        });
+        pad.el.classList.add("pp-note--pad");
+        pad.open(note);
+        return () => { shut = true; pad.close(true); pad.destroy(); };
+      },
+    },
     {
       id: "gm",
       label: "Algebra moves",
@@ -3210,6 +3244,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       asSheet("surface"), asSheet("art"),
     ] },
     { id: "algebra", label: "Algebra", of: [asSheet("gm")] },
+    /* a tool of its own, not folded in behind another: paper to work an equation out on */
+    { id: "note", label: "Notes", of: [asSheet("note")] },
   ]
     .map((f) => ({ ...f, of: f.of.filter(Boolean) }))
     .filter((f) => f.of.length);

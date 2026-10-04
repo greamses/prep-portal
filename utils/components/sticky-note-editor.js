@@ -38,6 +38,14 @@
    \frac{}{} it was turned into. Nothing has to be deleted and retyped to be
    corrected. Raw TeX still goes in untouched, for anyone who prefers it.
 
+   IT BEHAVES AS A WORD PROCESSOR'S EQUATION DOES:
+     - the key (or ALT + =) with nothing highlighted opens a framed box that
+       says "Type equation here." until something is typed;
+     - with words HIGHLIGHTED, those words become the equation, set at once;
+     - while it is being typed, the equation is shown SET just under the box,
+       changing with every key — the built-up form beside the linear one;
+     - the key again (or Enter, Tab, Escape, or a press elsewhere) sets it.
+
    The `?` key beside it opens the card of signs: every shape and symbol that
    can be typed, each SET by the same typesetter from the same translation, so
    the card cannot describe something the parser does not do. Pressing a row
@@ -101,7 +109,8 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     <div class="pp-note__signs" hidden role="dialog"
          aria-label="Every sign you can type in an equation"></div>
     <div class="pp-note__paper" contenteditable="true" role="textbox" aria-multiline="true"
-         aria-label="What the note says" spellcheck="true"></div>`;
+         aria-label="What the note says" spellcheck="true"></div>
+    <div class="pp-note__eqlive" hidden aria-hidden="true"></div>`;
   host.appendChild(root);
 
   const bar = root.querySelector(".pp-note__bar");
@@ -293,6 +302,10 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
    * way people expect this to work, and costs nothing to allow.
    */
   function insertEquation(tex = "") {
+    /* the key is a toggle, as it is in a word processor: pressed while an
+       equation is open, it finishes that one rather than starting another */
+    if (!tex && openEq() && fromKey) { fromKey = false; setEquation(); return; }
+    fromKey = false;
     setEquation(); // one at a time
     paper.focus();
     const sel = window.getSelection();
@@ -307,14 +320,55 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     const picked = String(r.toString() || "").trim();
     r.deleteContents();
 
+    /* Words that were highlighted BECOME the equation, set at once — select
+       `x^2 + 1`, press the key, and it is mathematics. (Press it to open it
+       again, like any other.) */
+    if (picked && !tex) {
+      const eq = mathNode(toTeX(picked), document, picked);
+      r.insertNode(eq);
+      caretAfter(eq);
+      harvest();
+      return;
+    }
+
+    r.insertNode(eqBox(tex));
+    caretIn(openEq());
+    harvest();
+  }
+
+  /** The box an equation is typed in: framed, and saying what it is for while it is empty. */
+  function eqBox(text = "") {
     const box = document.createElement("span");
     box.className = "pp-note__eqbox";
     box.setAttribute("data-eq", "1");
+    box.setAttribute("data-placeholder", "Type equation here.");
     box.setAttribute("spellcheck", "false");
-    box.textContent = tex || picked;
-    r.insertNode(box);
-    caretIn(box);
-    harvest();
+    box.textContent = text;
+    return box;
+  }
+
+  /* ── the equation, SET, under the box it is being typed in ───────────────
+     What a word processor calls building up: the linear form is what is typed,
+     and the professional form is shown beside it at every key, so `1/2` is
+     seen to be a fraction before the box is ever left. */
+  const live = root.querySelector(".pp-note__eqlive");
+  let fromKey = false;
+  function showLive() {
+    const box = openEq();
+    const typed = box ? box.textContent.trim() : "";
+    if (!box || !typed) { live.hidden = true; live.replaceChildren(); return; }
+    let shown = null;
+    try { shown = mathNode(toTeX(typed), document, typed); } catch { shown = null; }
+    if (!shown) { live.hidden = true; return; }
+    shown.removeAttribute("title");
+    live.replaceChildren(shown);
+    live.hidden = false;
+    /* the box's place inside the NOTE: its offsets are measured from the paper
+       (which is positioned, for its tape), and the paper's from the note */
+    let x = 0, y = 0;
+    for (let el = box; el && el !== root; el = el.offsetParent) { x += el.offsetLeft; y += el.offsetTop; }
+    live.style.left = `${Math.max(0, x)}px`;
+    live.style.top = `${y - paper.scrollTop + box.offsetHeight + 6}px`;
   }
 
   /**
@@ -330,6 +384,8 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     const box = openEq();
     if (!box) return false;
     const typed = box.textContent.trim();
+    live.hidden = true;
+    live.replaceChildren();
     if (!typed) { box.remove(); harvest(); return true; }
     const eq = mathNode(toTeX(typed), document, typed);
     box.replaceWith(eq);
@@ -341,11 +397,7 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
   /** Open a set equation again, with what was typed back, to be corrected. */
   function editEquation(el) {
     setEquation();
-    const box = document.createElement("span");
-    box.className = "pp-note__eqbox";
-    box.setAttribute("data-eq", "1");
-    box.setAttribute("spellcheck", "false");
-    box.textContent = el.getAttribute("data-src") || el.getAttribute("data-tex") || "";
+    const box = eqBox(el.getAttribute("data-src") || el.getAttribute("data-tex") || "");
     el.replaceWith(box);
     caretIn(box);
     harvest();
@@ -369,7 +421,7 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
   bar.addEventListener("click", (e) => {
     const key = e.target.closest("[data-do]");
     if (key && key.dataset.do === "signs") { closePick(); toggleSigns(); return; }
-    if (key && key.dataset.do === "math") { closePick(); closeSigns(); insertEquation(); return; }
+    if (key && key.dataset.do === "math") { closePick(); closeSigns(); fromKey = true; insertEquation(); return; }
     if (key) { closePick(); dressSelection(DO[key.dataset.do]); return; }
     const picker = e.target.closest("[data-pick]");
     if (picker) { closeSigns(); openPick(picker.dataset.pick, picker); }
@@ -546,6 +598,7 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
   /* ── reading the paper back ─────────────────────────────────────────────── */
 
   function harvest() {
+    showLive();
     if (!note) return;
     editNote(note, { runs: runsFromDOM(paper) });
     onInput(note);

@@ -43,6 +43,12 @@ const board = (sign) =>
   r(2.6, 14.2, 18.8, 1.9, QUIET, 0.95) + r(9, 17.8, 12, 3.2, LEAF, 1.6);
 
 export const TOOL_ICONS = {
+  /* a sticky note with its strip of tape and an x² written on it: paper to work an equation out on */
+  note: glyph(
+    r(4, 5.6, 16, 15, GOLD, 1.6) + r(8, 3.2, 8, 3.6, PAPER, 1) +
+      `<path d="M7.6 11.2l4.4 5.6M12 11.2l-4.4 5.6" stroke="#14130f" stroke-width="1.7" stroke-linecap="round"/>` +
+      `<path d="M14.2 9.6a1.3 1.3 0 0 1 2.4 0.6c0 1.2-2.4 1.8-2.4 3h2.6" fill="none" stroke="#14130f" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>`
+  ),
   box: glyph(
     r(3, 9, 18, 11.6, WARM, 2) + r(3, 9, 18, 3.4, GOLD, 1.6) +
       `<path d="M8.4 9V6.6a1.6 1.6 0 0 1 1.6-1.6h4a1.6 1.6 0 0 1 1.6 1.6V9h-2.4V7.4h-2.4V9z" fill="${PAPER}"/>` +
