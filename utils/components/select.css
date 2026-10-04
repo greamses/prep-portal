@@ -251,8 +251,9 @@
   border: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  overflow: visible !important;
-  max-height: none !important;
+  /* its max-height and its overflow are LEFT to the page: some pages shut a
+     list by taking its height to nothing, and a list that could not be
+     squeezed shut would lie open, unseen, over whatever is under it */
   filter: drop-shadow(0 7px 16px rgba(var(--shadow-color, 42, 39, 35), 0.14));
 }
 .pp-menu-receipt > .pp-menu-receipt__paper {
@@ -265,7 +266,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  max-height: min(16rem, 60vh);
+  /* shorter than the room any page gives its list, so it is this that scrolls
+     and not the paper */
+  max-height: min(13rem, 50vh);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
