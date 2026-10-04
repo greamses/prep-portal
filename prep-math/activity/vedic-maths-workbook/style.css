@@ -43,38 +43,33 @@
 .vm-model { margin: 1.5mm 0 2mm; }
 .vm-model svg { display: block; max-width: 100%; height: auto; }
 
-/* ── PrepBot's video for a trick (js/videos.js) ───────────────────────────────
+/* ── PrepBot explains a trick (js/explain.js) ─────────────────────────────────
    A strip at the head of every skill section: PrepBot, the trick's name, and
-   the video — or the place kept for one. It prints too, so the paper is the
-   same height whether or not a video has been made yet. */
+   "Listen". Tapped, the site's teaching mascot comes up and talks the trick
+   through, and the worked example it is talking about is ringed. */
 .vm-video {
   display: flex; align-items: center; gap: 3mm;
   margin: 1.5mm 0 2.5mm; padding: 1.6mm 3mm;
-  border: 0.35mm dashed #8a837a; border-radius: 2mm; background: #fffdf8;
-  font-size: 9.5pt; color: #2a2723;
+  border: 0.35mm solid #2a2723; border-radius: 2mm; background: #fff7c7;
+  font-size: 9.5pt; color: #2a2723; cursor: pointer;
 }
-.vm-video.has-video { border-style: solid; border-color: #2a2723; background: #fff7c7; cursor: pointer; }
-.vm-video.has-video:hover, .vm-video.has-video:focus-visible { background: #ffec99; outline: none; }
+.vm-video:hover, .vm-video:focus-visible, .vm-video.is-playing { background: #ffec99; outline: none; }
 .vm-video__bot { flex: none; width: 9mm; height: 9mm; }
 .vm-video__bot svg, .vm-video__go svg { display: block; width: 100%; height: 100%; }
 .vm-video__say { display: flex; flex-direction: column; gap: 0.6mm; min-width: 0; flex: 1 1 auto; }
 .vm-video__say b { font: 800 7pt/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0.08em; text-transform: uppercase; color: #6b645a; }
 .vm-video__say em { font-style: normal; font-weight: 700; }
-.vm-video__go { flex: none; display: flex; align-items: center; gap: 1.6mm; color: #6b645a; }
+.vm-video__more { flex: none; font-size: 8.5pt; color: #2f6ea8; text-decoration: underline; }
+.vm-video__go { flex: none; display: flex; align-items: center; gap: 1.6mm; font-weight: 700; }
 .vm-video__go svg { width: 7mm; height: 7mm; }
 .vm-video__go i { font-style: normal; font-size: 8.5pt; }
-.vm-video.has-video .vm-video__go { color: #2a2723; font-weight: 700; }
+/* the example PrepBot is talking about */
+.wb-worked.is-explaining { outline: 0.6mm solid #e0a100; outline-offset: 1mm; border-radius: 1.5mm; }
 
-/* the player, over the page */
-.vm-player {
-  position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 16px;
-  background: rgba(20, 19, 15, 0.72);
-}
-.vm-player__card { width: min(960px, 100%); background: #fffdf8; border-radius: 14px; overflow: hidden; box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45); }
-.vm-player__bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; color: #2a2723; font-size: 15px; }
-.vm-player__bar .vm-video__bot { width: 30px; height: 30px; }
-.vm-player__bar b { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.vm-player__close { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #2a2723; color: #fffdf8; font-size: 22px; line-height: 1; cursor: pointer; }
-.vm-player__frame { position: relative; aspect-ratio: 16 / 9; background: #000; }
-.vm-player__frame iframe, .vm-player__frame video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-@media print { .vm-player { display: none !important; } }
+/* the teacher itself is the shared one; this page only says where it stands */
+/* over the opened workbook (10041) and its panels (10070), under the chat (10080) */
+#vm-prepbot.vm-prepbot { position: fixed; left: 18px; bottom: 18px; z-index: 10078; align-items: flex-start; }
+.vm-prepbot .mm-prepbot-bubble { max-width: min(300px, 70vw); width: auto; }
+.vm-prepbot .mm-prepbot-avatar { width: 64px; height: 64px; }
+.vm-prepbot .mm-prepbot-menu { right: auto; left: -8px; }
+@media print { .vm-prepbot, .vm-video__go, .vm-video__more { display: none !important; } .vm-video { background: none; } }

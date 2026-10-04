@@ -18,6 +18,14 @@
                       green and the 0 goes dark. A wire carrying 1 glows.
      the output       a bulb lights (1), stays dark (0), or shows ? while
                       nothing reaches it
+     a display        a DECIMAL DISPLAY from the tray reads the wires on its
+                      pins as one binary number (the top pin the biggest:
+                      8 4 2 1) and shows it in decimal. Its − and + take a
+                      pin away or add one: 1 pin to 8.
+     more switches    a switch dropped on empty workspace is an EXTRA input
+                      (D, E, F …) — something to feed a display with. Extras
+                      are not in the question's table: they count as off
+                      when the circuit is marked.
      exchange         an input may be a power switch or a PRESS switch; the
                       output a bulb, a SPEAKER or a FAN. Drag one of these
                       from the tray onto the switch or the output it is to
@@ -95,8 +103,10 @@ export const tableOf = (layout, slots) => settings(layout).map((sw) => runCircui
      wires   [{ from, to, pin }]    from a part's output to input `pin` of another
      sw      { A: 0, B: 1 }         how the switches are set (testing, not answer) */
 
-const insOf = (kind) => (kind === "SW" ? 0 : kind === "BULB" || !GATES[kind].two ? 1 : 2);
-const givesOut = (kind) => kind !== "BULB";
+const MAX_BITS = 8;
+const bitsOf = (p) => Math.min(MAX_BITS, Math.max(1, p.bits || 4));
+const insOf = (p) => (p.kind === "SW" ? 0 : p.kind === "DISP" ? bitsOf(p) : p.kind === "BULB" || !GATES[p.kind].two ? 1 : 2);
+const givesOut = (kind) => kind !== "BULB" && kind !== "DISP";
 
 /** What every part gives for these switches; null where nothing reaches it. */
 export function runBuilt(st, sw) {
@@ -109,7 +119,9 @@ export function runBuilt(st, sw) {
     if (!p || seen.has(id)) return null;
     if (p.kind === "SW") return (memo[id] = sw[id] ? 1 : 0);
     const next = new Set(seen).add(id);
-    const ins = Array.from({ length: insOf(p.kind) }, (_, k) => { const w = feed(id, k); return w ? val(w.from, next) : null; });
+    const ins = Array.from({ length: insOf(p) }, (_, k) => { const w = feed(id, k); return w ? val(w.from, next) : null; });
+    /* a display reads its pins as one binary number, the top pin the biggest; a pin with nothing on it is 0 */
+    if (p.kind === "DISP") return (memo[id] = ins.reduce((n, v) => n * 2 + (v === 1 ? 1 : 0), 0));
     if (ins.some((v) => v == null)) return (memo[id] = null);
     return (memo[id] = p.kind === "BULB" ? ins[0] : GATES[p.kind].two ? GATES[p.kind].fn(ins[0], ins[1]) : GATES[p.kind].fn(ins[0]));
   };
@@ -205,7 +217,39 @@ function gateWithLegs(kind) {
   const legs = (two ? [-3.4, 3.4] : [0]).map((y) => `<path d="M-15 ${y}H${inX}" ${LEAD}/>`).join("") + `<path d="M${outX} 0H15" ${LEAD}/>`;
   return legs + gateSvg(kind);
 }
-const chip = (kind) => `<svg viewBox="-17 -8.5 34 17" aria-hidden="true">${gateWithLegs(kind)}</svg>`;
+const chip = (kind) => (kind === "DISP" ? `<svg viewBox="-17 -10 34 20" aria-hidden="true">${dispSvg({ bits: 2 }, 3, false)}</svg>`
+  : `<svg viewBox="-17 -8.5 34 17" aria-hidden="true">${gateWithLegs(kind)}</svg>`);
+
+/* ── the decimal display ───────────────────────────────────────────────── */
+const PIN_GAP = 4.6;
+const dispH = (p) => Math.max(15, bitsOf(p) * PIN_GAP + 3);
+/** Where pin k of an n-pin display is, up or down from its middle. */
+const dispY = (n, k) => (k - (n - 1) / 2) * PIN_GAP;
+/**
+ * A decimal display: a dark screen showing the number its pins make. Each
+ * pin is marked with what it is worth (8, 4, 2, 1). With `controls`, a − and
+ * a + under it take a pin away or add one.
+ */
+function dispSvg(p, value, controls = true) {
+  const n = bitsOf(p), h = dispH(p);
+  let s = "";
+  for (let k = 0; k < n; k++) {
+    const y = dispY(n, k).toFixed(2);
+    s += `<path d="M-15 ${y}H-9" ${LEAD}/>` +
+      `<text x="-6.6" y="${(+y + 0.95).toFixed(2)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="2.5" font-weight="700" fill="#b8c0c8">${2 ** (n - 1 - k)}</text>`;
+  }
+  const digits = String(value).length;
+  return `<rect x="-9" y="${(-h / 2).toFixed(2)}" width="24" height="${h.toFixed(2)}" rx="1.6" fill="#24272b" stroke="${INK}" stroke-width="0.5"/>` + s +
+    `<rect x="-3.6" y="${(-Math.min(h / 2 - 1.4, 6)).toFixed(2)}" width="17.2" height="${(Math.min(h / 2 - 1.4, 6) * 2).toFixed(2)}" rx="1" fill="#0d1a12"/>` +
+    `<text x="5" y="${digits > 2 ? 2.6 : 3.1}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="${digits > 2 ? 7.4 : 9}" font-weight="800" fill="#4dff88">${value}</text>` +
+    (controls
+      ? `<g class="lb-bits" data-bits="-1"><circle cx="0.6" cy="${(h / 2 + 3.4).toFixed(2)}" r="2.3" fill="#fffdf8" stroke="${INK}" stroke-width="0.45"/><path d="M-0.6 ${(h / 2 + 3.4).toFixed(2)}h2.4" stroke="${INK}" stroke-width="0.6" stroke-linecap="round"/></g>` +
+        `<g class="lb-bits" data-bits="1"><circle cx="6.6" cy="${(h / 2 + 3.4).toFixed(2)}" r="2.3" fill="#fffdf8" stroke="${INK}" stroke-width="0.45"/><path d="M5.4 ${(h / 2 + 3.4).toFixed(2)}h2.4M6.6 ${(h / 2 + 2.2).toFixed(2)}v2.4" stroke="${INK}" stroke-width="0.6" stroke-linecap="round"/></g>` +
+        `<text x="11.4" y="${(h / 2 + 4.3).toFixed(2)}" text-anchor="start" font-family="JetBrains Mono, monospace" font-size="2.4" font-weight="700" fill="#6f685f">pins</text>`
+      : "");
+}
+/** How far a part reaches up and down from its middle: what keeps it on the workspace. */
+const halfOf = (p) => (p.kind === "DISP" ? dispH(p) / 2 + 6.4 : 9.5);
 
 const MONO = `font-family="JetBrains Mono, monospace"`;
 const tag = (x, y, text, size = 4.6) => `<text x="${x}" y="${y}" text-anchor="middle" ${MONO} font-size="${size}" font-weight="800" fill="${INK}">${text}</text>`;
@@ -301,7 +345,8 @@ const lookChip = (look) => `<svg viewBox="-17 -10 34 20" aria-hidden="true">${IN
 /** Where a part's pins are, on the workspace. */
 function pinsOf(p) {
   const out = givesOut(p.kind) ? [{ pin: "out", x: p.x + 15, y: p.y }] : [];
-  const n = insOf(p.kind);
+  const n = insOf(p);
+  if (p.kind === "DISP") return Array.from({ length: n }, (_, k) => ({ pin: k, x: p.x - 15, y: p.y + dispY(n, k) }));
   const ins = n === 2 ? [{ pin: 0, x: p.x - 15, y: p.y - 3.4 }, { pin: 1, x: p.x - 15, y: p.y + 3.4 }] : n === 1 ? [{ pin: 0, x: p.x - 15, y: p.y }] : [];
   return [...ins, ...out];
 }
@@ -312,9 +357,11 @@ const cable = (a, b) => { const d = Math.max(9, Math.abs(b.x - a.x) * 0.5); retu
 function scene(st, { live = null, armed = null, rubber = null, lifted = null } = {}) {
   let parts = "", wires = "", pins = "";
   for (const p of st.parts) {
-    const body = p.kind === "SW" ? switchSvg(p.id, st.sw[p.id] === 1, p.look) : p.kind === "BULB" ? bulbSvg(live ? live.Q ?? null : null, p.look) : gateWithLegs(p.kind);
-    parts += `<g class="lb-part${lifted === p.id ? " is-lifted" : ""}" data-part="${p.id}" data-kind="${p.kind}" transform="translate(${p.x} ${p.y})">` +
-      `<rect x="-15" y="-9.5" width="30" height="21" fill="transparent"/>${body}</g>`;
+    const body = p.kind === "SW" ? switchSvg(p.id, st.sw[p.id] === 1, p.look) : p.kind === "BULB" ? bulbSvg(live ? live.Q ?? null : null, p.look)
+      : p.kind === "DISP" ? dispSvg(p, live ? live[p.id] ?? 0 : 0) : gateWithLegs(p.kind);
+    const hit = p.kind === "DISP" ? `<rect x="-15" y="${(-dispH(p) / 2 - 1).toFixed(2)}" width="31" height="${(dispH(p) + 8).toFixed(2)}" fill="transparent"/>`
+      : `<rect x="-15" y="-9.5" width="30" height="21" fill="transparent"/>`;
+    parts += `<g class="lb-part${lifted === p.id ? " is-lifted" : ""}" data-part="${p.id}" data-kind="${p.kind}" transform="translate(${p.x} ${p.y})">${hit}${body}</g>`;
     for (const q of pinsOf(p)) {
       const key = `${p.id}:${q.pin}`;
       pins += `<g class="lb-pin${armed === key ? " is-armed" : ""}" data-pin="${key}">` +
@@ -369,7 +416,8 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
   tray.classList.remove("lb-tray--print");
   /* after the gates: what an input and the output may be exchanged for */
   tray.insertAdjacentHTML("beforeend", `<span class="lb-tray__gap" aria-hidden="true"></span>` +
-    [...INPUT_LOOKS, ...OUTPUT_LOOKS].map((k) => `<span class="lb-chip lb-chip--look" data-look="${k}" title="${LOOK_NAME[k]}">${lookChip(k)}</span>`).join(""));
+    [...INPUT_LOOKS, ...OUTPUT_LOOKS].map((k) => `<span class="lb-chip lb-chip--look" data-look="${k}" title="${LOOK_NAME[k]}">${lookChip(k)}</span>`).join("") +
+    `<span class="lb-chip lb-chip--look" data-gate="DISP" title="decimal display">${chip("DISP")}</span>`);
   const board = wrap.querySelector(".lb-board");
   const svg = board.querySelector(".lb-space");
   svg.removeAttribute("aria-hidden");
@@ -377,7 +425,7 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
   say.className = "lb-say";
   wrap.appendChild(say);
 
-  const names = Object.keys(st.sw);
+  const names = LAYOUTS[cfg.layout].inputs;
   /* a speaker that is ON is heard: the tone runs for as long as it is */
   let tone = null;
   function sound(on) {
@@ -394,8 +442,10 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
     board.classList.toggle("is-placing", !!held);
     if (flashing) return;
     const q = live.Q ?? null;
-    say.textContent = held && held.startsWith("look:") ? `Tap the ${INPUT_LOOKS.includes(held.slice(5)) ? "switch" : "output"} the ${LOOK_NAME[held.slice(5)]} is to replace.`
-      : held ? `Tap the workspace where the ${held} gate should go.`
+    say.textContent = held && held.startsWith("look:") ? (INPUT_LOOKS.includes(held.slice(5))
+      ? `Tap the switch the ${LOOK_NAME[held.slice(5)]} is to replace — or an empty spot, for an extra switch.`
+      : `Tap the output the ${LOOK_NAME[held.slice(5)]} is to replace.`)
+      : held ? `Tap the workspace where the ${held === "DISP" ? "display" : `${held} gate`} should go.`
       : armed ? "Now tap the pin this wire goes to."
         : q == null ? "Drag gates onto the workspace, then drag from pin to pin to wire them. Tap a wire to cut it; drag a gate off to remove it."
           : `Switches ${names.map((n) => `${n} = ${st.sw[n]}`).join(", ")}: the ${outName()} is ${q ? "ON (1)" : "off (0)"}.`;
@@ -420,12 +470,33 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
     const r = svg.getBoundingClientRect();
     return { x: ((e.clientX - r.left) / r.width) * W, y: ((e.clientY - r.top) / r.height) * H, inside: e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom };
   }
-  const clamp = (p) => ({ x: Math.min(W - 16, Math.max(16, Math.round(p.x * 2) / 2)), y: Math.min(H - 9.5, Math.max(9.5, Math.round(p.y * 2) / 2)) });
+  const clamp = (p, half = 9.5) => ({ x: Math.min(W - 16, Math.max(16, Math.round(p.x * 2) / 2)), y: Math.min(Math.max(half, H - half), Math.max(Math.min(half, H / 2), Math.round(p.y * 2) / 2)) });
+  /* the switches and the output the question came with: they can be moved and exchanged, never removed */
+  const FIXED = new Set([...LAYOUTS[cfg.layout].inputs, "Q"]);
 
   function addGate(kind, where) {
+    const pre = kind === "DISP" ? "d" : "g";
     let n = 1;
-    while (st.parts.some((p) => p.id === `g${n}`)) n++;
-    change(() => { st.parts.push({ id: `g${n}`, kind, ...clamp(where) }); held = null; });
+    while (st.parts.some((p) => p.id === `${pre}${n}`)) n++;
+    const part = kind === "DISP" ? { id: `d${n}`, kind, bits: 4 } : { id: `g${n}`, kind };
+    change(() => { st.parts.push({ ...part, ...clamp(where, halfOf(part)) }); held = null; });
+  }
+  /** An extra switch, to feed a display with: the next free letter. */
+  function addSwitch(look, where) {
+    const id = "DEFGHIJKLMNOP".split("").find((c) => !st.parts.some((p) => p.id === c));
+    if (!id) { held = null; flash("That is as many switches as the workspace holds."); return; }
+    change(() => { st.parts.push({ id, kind: "SW", look, ...clamp(where) }); st.sw[id] = 0; held = null; });
+  }
+  /** A display's pins: one more, or one fewer (and the wire on a pin that goes, goes with it). */
+  function resize(id, by) {
+    const p = st.parts.find((q) => q.id === id);
+    const n = bitsOf(p) + by;
+    if (n < 1 || n > MAX_BITS) { flash(n < 1 ? "A display needs at least one pin." : `A display has at most ${MAX_BITS} pins.`); return; }
+    change(() => {
+      p.bits = n;
+      st.wires = st.wires.filter((w) => !(w.to === id && w.pin >= n));
+      Object.assign(p, clamp(p, halfOf(p)));
+    });
   }
   const outName = () => st.parts.find((p) => p.id === "Q")?.look || "bulb";
   /** Exchange a switch or the output for another kind: same place, same wires. */
@@ -466,7 +537,11 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
     const pin = e.target.closest?.("[data-pin]");
     const wire = e.target.closest?.("[data-wire]");
     const part = e.target.closest?.("[data-part]");
-    if (pin) {
+    const bits = e.target.closest?.("[data-bits]");
+    if (bits && part) {
+      e.preventDefault();
+      resize(part.dataset.part, Number(bits.dataset.bits));
+    } else if (pin) {
       e.preventDefault();
       const [id, p] = pin.dataset.pin.split(":");
       const a = pinAt(st, id, p === "out" ? "out" : Number(p));
@@ -481,7 +556,8 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
       const m = at(e);
       drag = { kind: "part", id: p.id, dx: p.x - m.x, dy: p.y - m.y, x: e.clientX, y: e.clientY, moved: false, before: clone(st) };
     } else if (held && held.startsWith("look:")) {
-      exchange(null, held.slice(5));
+      if (INPUT_LOOKS.includes(held.slice(5))) addSwitch(held.slice(5), at(e));
+      else exchange(null, held.slice(5));
     } else if (held) {
       addGate(held, at(e));
     } else if (armed) {
@@ -511,7 +587,7 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
     } else if (drag.kind === "part") {
       const m = at(e);
       const p = st.parts.find((q) => q.id === drag.id);
-      Object.assign(p, clamp({ x: m.x + drag.dx, y: m.y + drag.dy }));
+      Object.assign(p, clamp({ x: m.x + drag.dx, y: m.y + drag.dy }, halfOf(p)));
       paint();
     }
   };
@@ -530,7 +606,8 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
         const role = INPUT_LOOKS.includes(d.look) ? "SW" : "BULB";
         const near = m.inside ? st.parts.filter((p) => p.kind === role).sort((a, b) => Math.hypot(a.x - m.x, a.y - m.y) - Math.hypot(b.x - m.x, b.y - m.y))[0] : null;
         const hit = st.parts.find((p) => p.id === under && p.kind === role) || (near && Math.hypot(near.x - m.x, near.y - m.y) < 18 ? near : null);
-        exchange(hit ? hit.id : under, d.look);
+        if (!hit && !under && m.inside && role === "SW") addSwitch(d.look, m);
+        else exchange(hit ? hit.id : under, d.look);
       } else if (m.inside) addGate(d.gate, m); else paint();
     } else if (d.kind === "wire") {
       const other = pinUnder(e);
@@ -556,7 +633,7 @@ export function mountGates(el, { saved = null, onChange = () => {} } = {}) {
         return;
       }
       const now = clone(st);
-      if (!at(e).inside && p.kind !== "SW" && p.kind !== "BULB") {
+      if (!at(e).inside && !FIXED.has(p.id)) {
         st = d.before;
         removePart(d.id);
       } else {

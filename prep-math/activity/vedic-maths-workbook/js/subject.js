@@ -7,7 +7,7 @@
    ========================================================================== */
 
 import { EXERCISES, levelOf, modeOf, isDrill, unavailable, exerciseById, chapterOf } from "./exercises.js";
-import { videoStrip } from "./videos.js";
+import { explainStrip } from "./explain.js";
 
 /* Called "Mental Maths" since 2026-10-03; the id and the URL keep the old
    name so saved papers, assignments and links all still open. */
@@ -44,12 +44,12 @@ export const SUBJECT = {
   },
   exercises: EXERCISES,
   unavailable,
-  /* A skill section opens with PrepBot's video for the trick (videos.js) —
-     or the place kept for it — and then the example worked on paper. A drill
-     has neither: it is against the clock. */
+  /* A skill section opens with PrepBot explaining the trick (explain.js: the
+     site's own teaching mascot, saying the section's own words) and then the
+     example worked on paper. A drill has neither: it is against the clock. */
   sectionHead: (section, o) => {
     if (isDrill(o)) return "";
-    return videoStrip(section.ex) + (section.ex.worked ? section.ex.worked(section.opts) : "");
+    return explainStrip(section.ex, section.opts) + (section.ex.worked ? section.ex.worked(section.opts) : "");
   },
 };
 

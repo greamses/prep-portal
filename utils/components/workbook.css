@@ -2930,6 +2930,9 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .lb-tray { align-items: center; }
 .lb-tray__gap { width: 0.3mm; height: 9mm; background: #b8ae98; margin: 0 1.2mm; }
 .lb-chip--look { width: 20mm; height: 12mm; }
+/* the − and + under a display: a pin fewer, a pin more */
+.lb-wrap.is-live .lb-bits { cursor: pointer; }
+.lb-wrap.is-live .lb-bits:hover circle { fill: #fff3a8; }
 /* a speaker that is sounding throbs (the fan is turned by its own SVG, about its hub) */
 .lb-sound { animation: lb-sound 0.5s ease-in-out infinite alternate; }
 @keyframes lb-sound { from { opacity: 0.35; } to { opacity: 1; } }
@@ -2988,3 +2991,9 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
    (the generic .wb-drawhost.is-right svg rule would box each gate and formula) */
 .wb-drawhost.lb-wrap.is-right svg, .wb-drawhost.lb-wrap.is-wrong svg,
 .wb-drawhost.bt-board.is-right svg, .wb-drawhost.bt-board.is-wrong svg { outline: none; }
+
+/* PrepBot's chat sits on every workbook page, OVER the opened workbook (10041) and its rail and panels (10070) */
+#chat-fab-wrap, #chat-fab-restore, #prepbot-popup { z-index: 10080 !important; }
+#chat-window { z-index: 10081 !important; }
+/* … and it is never part of the paper */
+@media print { #prepbot, #chat-fab-wrap, #chat-fab-restore, #chat-window, #prepbot-popup { display: none !important; } }
