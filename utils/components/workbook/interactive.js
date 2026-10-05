@@ -2978,6 +2978,41 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         return () => frame.remove();
       },
     })),
+    /* A TIMES TABLE, looked up: type which table and it is written out —
+       9 gives 9 × 1 to 9 × 10. Any whole number, so the 13 times table is as
+       near as the 3. "To 12" is for the tables learnt that far. */
+    {
+      id: "tables",
+      label: "Times tables",
+      icon: TOOL_ICONS.tables,
+      size: { w: 300, h: 600 },
+      open: (body) => {
+        const tool = document.createElement("div");
+        tool.className = "wb-tool wb-tt";
+        tool.innerHTML =
+          `<label class="wb-tt__ask"><span>Which table?</span><input class="wb-tt__n" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="9" aria-label="Which times table"></label>` +
+          `<label class="wb-tt__to"><input type="checkbox" class="wb-tt__12"> up to × 12</label>` +
+          `<ol class="wb-tt__list" aria-live="polite"></ol>` +
+          `<p class="wb-tt__hint">Type a number and its table appears.</p>`;
+        body.appendChild(tool);
+        const input = tool.querySelector(".wb-tt__n"), to12 = tool.querySelector(".wb-tt__12");
+        const list = tool.querySelector(".wb-tt__list"), hint = tool.querySelector(".wb-tt__hint");
+        const KEY = "wb-times-table";
+        const paint = () => {
+          const n = Math.round(Number(input.value));
+          const ok = input.value.trim() !== "" && Number.isFinite(n) && n >= 0 && n <= 9999;
+          hint.hidden = ok;
+          list.innerHTML = !ok ? "" : Array.from({ length: to12.checked ? 12 : 10 }, (_, i) =>
+            `<li class="wb-tt__row"><span>${n} × ${i + 1}</span><span>=</span><b>${(n * (i + 1)).toLocaleString("en-NG")}</b></li>`).join("");
+          try { localStorage.setItem(KEY, JSON.stringify({ n: ok ? n : "", to12: to12.checked })); } catch { /* not kept */ }
+        };
+        try { const kept = JSON.parse(localStorage.getItem(KEY) || "null"); if (kept) { input.value = kept.n ?? ""; to12.checked = !!kept.to12; } } catch { /* a fresh one */ }
+        input.addEventListener("input", paint);
+        to12.addEventListener("change", paint);
+        paint();
+        setTimeout(() => input.focus(), 0);
+      },
+    },
     /* A NOTE to work on: the site's sticky note (utils/components/sticky-note*),
        opened as a pad in a panel. Words and — what it is here for — equations,
        typed the way a word processor types them: 1/2 is a fraction, x^2 a
@@ -3243,6 +3278,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       asSheet("angles"), asSheet("transversal"), asSheet("pythagoras"),
       asSheet("surface"), asSheet("art"),
     ] },
+    /* a table looked up is its own errand: one key, not folded in behind the boards */
+    { id: "tables", label: "Times tables", of: [asSheet("tables")] },
     { id: "algebra", label: "Algebra", of: [asSheet("gm")] },
     /* a tool of its own, not folded in behind another: paper to work an equation out on */
     { id: "note", label: "Notes", of: [asSheet("note")] },

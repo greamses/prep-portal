@@ -12,6 +12,9 @@ const cell = (x, y, w, h, fill, rx = 1.2) => `<rect x="${x}" y="${y}" width="${w
 
 export const ICON = {
   ...BASE,
+  /* times table secrets: two columns of the same notes, one counting down the page and one counting up */
+  vmTables: svg(cell(4, 3, 6.4, 5, GOLD) + cell(4, 9.5, 6.4, 5, PAPER) + cell(4, 16, 6.4, 5, PAPER) +
+    cell(13.6, 3, 6.4, 5, PAPER) + cell(13.6, 9.5, 6.4, 5, PAPER) + cell(13.6, 16, 6.4, 5, LOUD)),
   /* doubles and near doubles: two bars, the lower one a little longer */
   vmDouble: svg(cell(3, 5, 13, 5.5, PAPER) + cell(3, 13.5, 13, 5.5, PAPER) + cell(16, 13.5, 5, 5.5, LOUD)),
   /* taking away without regrouping: a difference bar riding a number line */

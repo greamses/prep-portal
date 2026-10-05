@@ -83,3 +83,10 @@
 .vm-t--l .vm-t__in { font-size: calc(var(--u) * 4.6); padding: calc(var(--u) * 1) calc(var(--u) * 1.9); }
 .vm-t--s .vm-t__in { font-size: calc(var(--u) * 2.1); }
 .vm-t__in--bare { padding: 0; color: #2a2723; font-weight: 700; }
+
+/* ── chapter 7: the whole of a times table, a row to a sum (js/ex-tables.js) ── */
+.vm-tt { display: grid; grid-template-columns: repeat(2, max-content); grid-auto-flow: column; grid-template-rows: repeat(5, auto); gap: 1.4mm 14mm; margin: 1mm 0 1mm 3mm; }
+.wb-sheet .vm-tt__row { margin: 0; font-size: 12pt; display: flex; align-items: center; gap: 2mm; }
+.vm-tt__sum { min-width: 22mm; }
+.vm-tt__pair { display: inline-flex; gap: 1mm; }
+.vm-tt__pair .wb-answer { min-width: 8mm; width: 8mm; }

@@ -93,7 +93,8 @@ const PLAY = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12
 /** The strip that opens a section: PrepBot, the trick's name, and "watch". */
 export function explainStrip(ex, opts) {
   const rule = linesOf(typeof ex.instruction === "function" ? ex.instruction(opts) : ex.instruction);
-  const scene = sceneOf(ex.worked ? ex.worked(opts) : "");
+  /* a section may name a scene of its own (`tv`): then that is what the TV shows */
+  const scene = ex.tv ? { kind: ex.tv } : sceneOf(ex.worked ? ex.worked(opts) : "");
   const lesson = LESSONS[ex.id];
   return `<div class="vm-video has-video" data-explain="${esc(JSON.stringify({ rule, scene }))}" data-title="${esc(ex.label)}" tabindex="0">` +
     `<span class="vm-video__bot">${FACE}</span>` +
@@ -296,6 +297,51 @@ function textSteps({ rule, scene }) {
   return { build, steps };
 }
 
+/* ── THE NINE TIMES TABLE: count down the page, count up the page ──────────
+   The ten sums in a column. The tens come on one at a time from the TOP,
+   0 to 9; the units come on one at a time from the BOTTOM, 0 to 9. Then each
+   pair closes up into its answer: 09, 18, 27 … 90. */
+function ninesSteps() {
+  const ROWS = 10;
+  const y = (i) => 9.5 + i * 8.6;
+  const X = { sum: 27, tens: 44, units: 51, eq: 37.5 };
+  const build = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    for (let i = 0; i < ROWS; i++) {
+      tile(stage, `s${i}`, `9 × ${i + 1}`, X.sum, y(i), { bare: true, size: "s" });
+      tile(stage, `e${i}`, "=", X.eq, y(i), { bare: true, size: "s" });
+      tile(stage, `t${i}`, String(i), X.tens, y(i), { c: 3, size: "s" });
+      tile(stage, `u${i}`, String(9 - i), X.units, y(i), { c: 0, size: "s" });
+    }
+    tile(stage, "down", "0 to 9, down", X.tens - 1, 96.5, { bare: true, size: "s" });
+    tile(stage, "up", "0 to 9, up", X.units + 12, 96.5, { bare: true, size: "s" });
+  };
+  const all = (fn) => { for (let i = 0; i < ROWS; i++) fn(i); };
+  const steps = [
+    { say: "Here is the secret of the nine times table. First, write the ten sums down the page.",
+      show(stage, how) { const S = acts(stage, how.gsap, how.instant); all((i) => { S.pop(`s${i}`, i * 0.12); S.pop(`e${i}`, i * 0.12); }); } },
+    { say: "Now count from 0 to 9, going DOWN the page. 0, 1, 2, 3, 4, 5, 6, 7, 8, 9.",
+      show(stage, how) { const S = acts(stage, how.gsap, how.instant); all((i) => S.pop(`t${i}`, 0.3 + i * 0.42)); S.pop("down", 0.2); } },
+    { say: "Count from 0 to 9 again, but this time going UP the page. 0, 1, 2, 3, 4, 5, 6, 7, 8, 9.",
+      show(stage, how) { const S = acts(stage, how.gsap, how.instant); all((i) => S.pop(`u${ROWS - 1 - i}`, 0.3 + i * 0.42)); S.pop("up", 0.2); } },
+    { say: "Read across. 9, 18, 27, 36, 45, 54, 63, 72, 81, 90. That is the whole nine times table, and nothing was multiplied.",
+      show(stage, how) {
+        const S = acts(stage, how.gsap, how.instant);
+        S.hide("down"); S.hide("up");
+        all((i) => { S.move(`u${i}`, X.units - 1.2, y(i), i * 0.1); S.pulse(`t${i}`, 0.9 + i * 0.3); S.pulse(`u${i}`, 0.9 + i * 0.3); });
+      } },
+    { say: "Look at the two digits of any answer. They always add up to 9. 1 and 8. 2 and 7. 3 and 6.",
+      show(stage, how) { const S = acts(stage, how.gsap, how.instant); [1, 2, 3].forEach((i, k) => { S.pulse(`t${i}`, 0.4 + k * 0.9); S.pulse(`u${i}`, 0.7 + k * 0.9); }); } },
+    { say: "And the first digit is always one less than the number you multiply by. 9 times 7 starts with 6, and 6 needs 3 to make 9. So 9 times 7 is 63.",
+      show(stage, how) {
+        const S = acts(stage, how.gsap, how.instant);
+        all((i) => { const dim = i === 6 ? 1 : 0.3; S.dim(`s${i}`, dim); S.dim(`e${i}`, dim); S.dim(`t${i}`, dim); S.dim(`u${i}`, dim); });
+        S.pulse("s6", 0.4); S.pulse("t6", 1.2); S.pulse("u6", 2);
+      } },
+  ];
+  return { build, steps };
+}
+
 let tvOpen = false;
 
 async function explain(strip) {
@@ -303,7 +349,8 @@ async function explain(strip) {
   let data = null;
   try { data = JSON.parse(strip.dataset.explain); } catch { /* nothing to show */ }
   if (!data || !data.scene) return;
-  const made = data.scene.kind === "trach" && data.scene.steps.length ? trachSteps(data)
+  const made = data.scene.kind === "nines" ? ninesSteps()
+    : data.scene.kind === "trach" && data.scene.steps.length ? trachSteps(data)
     : data.scene.kind === "strip" && data.scene.expr.length && data.scene.expr.length === data.scene.res.length ? stripSteps(data)
       : textSteps(data);
   if (!made.steps.length) return;

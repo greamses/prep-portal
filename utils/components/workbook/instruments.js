@@ -43,6 +43,14 @@ const board = (sign) =>
   r(2.6, 14.2, 18.8, 1.9, QUIET, 0.95) + r(9, 17.8, 12, 3.2, LEAF, 1.6);
 
 export const TOOL_ICONS = {
+  /* a times table: a multiplication sign over rows of answers */
+  tables: glyph(
+    r(3, 3, 18, 18, PAPER, 0) + r(3, 3, 18, 5.4, GOLD, 0) +
+      `<path d="M10 4.2l4 3M14 4.2l-4 3" stroke="#14130f" stroke-width="1.5" stroke-linecap="round"/>` +
+      r(5.4, 10.4, 5.4, 1.9, "#fff", 0) + r(13.2, 10.4, 5.4, 1.9, "#fff", 0) +
+      r(5.4, 14, 5.4, 1.9, "#fff", 0) + r(13.2, 14, 5.4, 1.9, "#fff", 0) +
+      r(5.4, 17.6, 5.4, 1.9, "#fff", 0) + r(13.2, 17.6, 5.4, 1.9, LOUD, 0)
+  ),
   /* a sticky note with its strip of tape and an x² written on it: paper to work an equation out on */
   note: glyph(
     r(4, 5.6, 16, 15, GOLD, 1.6) + r(8, 3.2, 8, 3.6, PAPER, 1) +

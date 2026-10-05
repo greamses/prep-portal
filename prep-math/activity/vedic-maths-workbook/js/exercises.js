@@ -19,6 +19,8 @@
                     and casting out nines to check a product
      ex-trach.js    chapter 6, the Trachtenberg system — × 12, 6, 7, 5, 9
                     and 8, one digit at a time from the right
+     ex-tables.js   chapter 7, times table secrets — the pattern in each
+                    table that writes it out; the nines first
 
    THE ORDER IS THE BOOK: complements first, because every "near a base"
    trick after them starts by finding one; each trick met first where nothing
@@ -35,6 +37,7 @@ import { SQ_GROUPS, SQ_EXERCISES } from "./ex-squares.js";
 import { RT_GROUPS, RT_EXERCISES } from "./ex-roots.js";
 import { CK_GROUPS, CK_EXERCISES } from "./ex-check.js";
 import { TR_GROUPS, TR_EXERCISES } from "./ex-trach.js";
+import { TT_GROUPS, TT_EXERCISES } from "./ex-tables.js";
 import { SAYS } from "./ex-check.js";
 import { isDrill } from "./levels.js";
 import { want, rightValues } from "/utils/components/workbook/want.js";
@@ -42,8 +45,8 @@ import { tick } from "./common.js";
 
 export { LEVELS, HELP, MODES, levelOf, helpOf, modeOf, isDrill } from "./levels.js";
 
-export const GROUPS = [...CM_GROUPS, ...QK_GROUPS, ...SQ_GROUPS, ...RT_GROUPS, ...CK_GROUPS, ...TR_GROUPS];
-const SKILL = [...CM_EXERCISES, ...QK_EXERCISES, ...SQ_EXERCISES, ...RT_EXERCISES, ...CK_EXERCISES, ...TR_EXERCISES];
+export const GROUPS = [...CM_GROUPS, ...QK_GROUPS, ...SQ_GROUPS, ...RT_GROUPS, ...CK_GROUPS, ...TR_GROUPS, ...TT_GROUPS];
+const SKILL = [...CM_EXERCISES, ...QK_EXERCISES, ...SQ_EXERCISES, ...RT_EXERCISES, ...CK_EXERCISES, ...TR_EXERCISES, ...TT_EXERCISES];
 
 /* ═══ the DRILL form of every exercise ══════════════════════════════════════
    In Drills mode an exercise is its question and one box for the whole
@@ -55,6 +58,8 @@ const DRILL = {
   "vm-root": (it) => ({ q: `the digit root of ${it.n}`, a: null }),
   "vm-div9": (it) => ({ q: `${it.n} ÷ 9`, a: [Math.floor(it.n / 9), it.n % 9], rem: true }),
   "vm-check9": (it) => ({ q: `${it.a} × ${it.b} = ${it.shown} ?`, tick: it.kind }),
+  /* the whole-table section drills as one sum out of the table */
+  "vm-tt9-all": (it) => ({ q: `9 × ${it.n}`, a: [9 * it.n] }),
 };
 const BOX = '<span class="wb-answer vm-whole"></span>';
 
@@ -94,6 +99,7 @@ const CHAPTER = new Map([
   ...RT_GROUPS.map((g) => [g.id, 4]),
   ...CK_GROUPS.map((g) => [g.id, 5]),
   ...TR_GROUPS.map((g) => [g.id, 6]),
+  ...TT_GROUPS.map((g) => [g.id, 7]),
 ]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 
