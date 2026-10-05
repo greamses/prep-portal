@@ -21,7 +21,7 @@
    ========================================================================== */
 
 import { want } from "/utils/components/workbook/want.js";
-import { ask, big, box, worked, say, step, steps, strip } from "./common.js";
+import { ask, big, worked, say, step, steps, strip } from "./common.js";
 
 export const TT_GROUPS = [
   { id: "vm-tables", chapter: "Chapter 7 · Times table secrets", label: "The 9 times table", blurb: "Count down the page, count up the page: 09, 18, 27 …" },
@@ -57,14 +57,20 @@ const nineAll = {
   label: "The whole nine times table",
   blurb: "The tens counted down the page, the units counted up.",
   heading: "The 9 times table — count down, count up",
-  instruction: () => SECRET + " Fill the first box of every row counting down the page, then the second box of every row counting up from the bottom.",
+  instruction: () => SECRET + " It is set out as PrepBot sets it out. Fill the FIRST box of every row, counting 0 to 9 down the page; " +
+    "then the SECOND box of every row, counting 0 to 9 up from the bottom. On screen the boxes open one at a time, in that order.",
   tv: "nines",
   cols: 1,
   defaultCount: 1,
   /* `n` is only for the drill form of the section: one sum out of the table */
   make: (r) => ({ n: r.int(2, 9) }),
-  render: () => `<div class="vm-tt">${Array.from({ length: 10 }, (_, i) =>
-    `<p class="wb-ask vm-tt__row"><span class="vm-tt__sum">9 × ${i + 1} =</span> <span class="vm-tt__pair">${box()}${box()}</span></p>`).join("")}</div>`,
+  /* One column of ten, as on the TV. Each box says WHEN it is filled (data-step):
+     the tens down the page are steps 0 to 9, the units up the page 10 to 19 —
+     and that is the order they open in on screen (data-steps="listed"). */
+  render: () => `<p class="vm-tt__key"><span class="is-t">first box: 0 to 9, down the page</span><span class="is-u">second box: 0 to 9, up the page</span></p>` +
+    `<div class="vm-tt" data-steps="listed">${Array.from({ length: 10 }, (_, i) =>
+      `<p class="wb-ask vm-tt__row"><span class="vm-tt__sum">9 × ${i + 1} =</span> <span class="vm-tt__pair">` +
+      `<span class="wb-answer vm-tt__t" data-step="${i}"></span><span class="wb-answer vm-tt__u" data-step="${19 - i}"></span></span></p>`).join("")}</div>`,
   worked: () => worked(ask("9 × 1 = " + strip("0", "9") + " &nbsp; 9 × 2 = " + strip("1", "8") + " &nbsp; 9 × 3 = " + strip("2", "7")) +
     say("Down the page the first digits go 0, 1, 2 … and up the page the second digits go 0, 1, 2 … so the top rows read 09, 18, 27.")),
   key: () => Array.from({ length: 10 }, (_, i) => [want.num(i), want.num(9 - i)]).flat(),
@@ -72,3 +78,32 @@ const nineAll = {
 };
 
 export const TT_EXERCISES = [nineOne, nineAll];
+
+/* ── one digit to a box, and on to the next ──────────────────────────────────
+   On screen the table's boxes open one at a time (the engine's data-steps).
+   Each holds ONE digit, so the moment it has one the pencil moves to the box
+   that has just opened — tens down the page, then units up it — and the table
+   is filled by typing 0 1 2 … 9, 0 1 2 … 9, exactly as it is counted on the TV. */
+if (typeof document !== "undefined" && !document.__vmTableDigits) {
+  document.__vmTableDigits = true;
+  document.addEventListener("input", (e) => {
+    const input = e.target;
+    const box = input.closest?.(".vm-tt .wb-answer");
+    if (!box) return;
+    if (input.value.length > 1) {
+      /* a second figure typed into a full box replaces the first; said again so the page keeps the one figure */
+      input.value = input.value.slice(-1);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      return;
+    }
+    if (!input.value.trim()) return;
+    const mine = Number(box.dataset.step);
+    setTimeout(() => {
+      const next = [...box.closest(".vm-tt").querySelectorAll(".wb-answer")]
+        .filter((b) => Number(b.dataset.step) > mine && !b.classList.contains("is-waiting"))
+        .sort((x, y) => Number(x.dataset.step) - Number(y.dataset.step))
+        .find((b) => !b.querySelector("input")?.value.trim());
+      next?.querySelector("input")?.focus();
+    }, 40);
+  });
+}

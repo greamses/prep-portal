@@ -104,8 +104,9 @@ export function explainStrip(ex, opts) {
 }
 
 /* ── number tiles on the TV's screen ───────────────────────────────────────
-   A tile is a sticky note with a number (or a sum) on it, placed by its
-   middle at (x, y) in hundredths of the screen. The outer box holds the
+   A tile is a NUMBER (or a sum) standing on the screen by itself — no paper
+   behind it: it is told from its neighbours by its COLOUR (`c`, one of six
+   inks), placed by its middle at (x, y) in hundredths of the screen. The outer box holds the
    place; the inner note is what pops, turns over and pulses. Every move has
    an INSTANT form, because going back a step rebuilds the screen and replays
    what came before at once (prepbot-tv.js). */
@@ -116,7 +117,7 @@ function tile(stage, id, text, x, y, { c = 0, size = "m", bare = false } = {}) {
   box.dataset.t = id;
   box.style.left = `${x}%`;
   box.style.top = `${y}%`;
-  box.innerHTML = `<span class="vm-t__in ${bare ? "vm-t__in--bare" : `pp-sticky pp-sticky--c${c % 6}`}"></span>`;
+  box.innerHTML = `<span class="vm-t__in ${bare ? "vm-t__in--bare" : `vm-t__in--c${c % 6}`}"></span>`;
   box.firstChild.textContent = text;
   box.firstChild.style.opacity = "0";
   stage.querySelector(".vm-tv").appendChild(box);
@@ -151,7 +152,7 @@ function acts(stage, gsap, instant) {
     /** A tile turns over and says something else. */
     flip(id, text, c, delay = 0) {
       const n = inn(id); if (!n) return;
-      const set = () => { n.textContent = text; if (c != null) n.className = `vm-t__in pp-sticky pp-sticky--c${c % 6}`; };
+      const set = () => { n.textContent = text; if (c != null) n.className = `vm-t__in vm-t__in--c${c % 6}`; };
       if (quick) { set(); n.style.opacity = "1"; return; }
       gsap.timeline({ delay }).to(n, { scaleY: 0, duration: 0.18, ease: "power1.in" }).add(set).set(n, { opacity: 1 }).to(n, { scaleY: 1, duration: 0.3, ease: "back.out(2)" });
     },
@@ -304,17 +305,18 @@ function textSteps({ rule, scene }) {
 function ninesSteps() {
   const ROWS = 10;
   const y = (i) => 9.5 + i * 8.6;
-  const X = { sum: 27, tens: 44, units: 51, eq: 37.5 };
+  const X = { sum: 27, tens: 43, units: 47.5, eq: 37.5 };
   const build = (stage) => {
     stage.innerHTML = `<div class="vm-tv"></div>`;
     for (let i = 0; i < ROWS; i++) {
       tile(stage, `s${i}`, `9 × ${i + 1}`, X.sum, y(i), { bare: true, size: "s" });
       tile(stage, `e${i}`, "=", X.eq, y(i), { bare: true, size: "s" });
-      tile(stage, `t${i}`, String(i), X.tens, y(i), { c: 3, size: "s" });
-      tile(stage, `u${i}`, String(9 - i), X.units, y(i), { c: 0, size: "s" });
+      /* the numbers counted DOWN the page in one colour, the numbers counted UP it in another */
+      tile(stage, `t${i}`, String(i), X.tens, y(i), { c: 3 });
+      tile(stage, `u${i}`, String(9 - i), X.units, y(i), { c: 4 });
     }
-    tile(stage, "down", "0 to 9, down", X.tens - 1, 96.5, { bare: true, size: "s" });
-    tile(stage, "up", "0 to 9, up", X.units + 12, 96.5, { bare: true, size: "s" });
+    tile(stage, "down", "0 to 9, down", X.tens - 9, 96.5, { c: 3, size: "s" });
+    tile(stage, "up", "0 to 9, up", X.units + 9, 96.5, { c: 4, size: "s" });
   };
   const all = (fn) => { for (let i = 0; i < ROWS; i++) fn(i); };
   const steps = [
@@ -328,7 +330,7 @@ function ninesSteps() {
       show(stage, how) {
         const S = acts(stage, how.gsap, how.instant);
         S.hide("down"); S.hide("up");
-        all((i) => { S.move(`u${i}`, X.units - 1.2, y(i), i * 0.1); S.pulse(`t${i}`, 0.9 + i * 0.3); S.pulse(`u${i}`, 0.9 + i * 0.3); });
+        all((i) => { S.move(`u${i}`, X.units - 1.6, y(i), i * 0.1); S.pulse(`t${i}`, 0.9 + i * 0.3); S.pulse(`u${i}`, 0.9 + i * 0.3); });
       } },
     { say: "Look at the two digits of any answer. They always add up to 9. 1 and 8. 2 and 7. 3 and 6.",
       show(stage, how) { const S = acts(stage, how.gsap, how.instant); [1, 2, 3].forEach((i, k) => { S.pulse(`t${i}`, 0.4 + k * 0.9); S.pulse(`u${i}`, 0.7 + k * 0.9); }); } },
