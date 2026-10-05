@@ -63,6 +63,7 @@ const DRILL = {
   "vm-tt8-all": (it) => ({ q: `8 × ${it.n}`, a: [8 * it.n] }),
   "vm-tt7-all": (it) => ({ q: `7 × ${it.n}`, a: [7 * it.n] }),
   "vm-tt6-all": (it) => ({ q: `6 × ${it.n}`, a: [6 * it.n] }),
+  "vm-tt5-all": (it) => ({ q: `5 × ${it.n}`, a: [5 * it.n] }),
 };
 const BOX = '<span class="wb-answer vm-whole"></span>';
 

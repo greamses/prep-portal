@@ -37,6 +37,13 @@
        figure: 0, 4, 8, (1)2, (1)6 — and the same again above the line.
        One at a time: 6 is 5 and 1, so five of it and one more of it.
 
+     THE FIVE TIMES TABLE
+       A LINE after every two sums. The tens go two at a time, and each new
+       two starts by saying the last number AGAIN: 0, 1 | 1, 2 | 2, 3 |
+       3, 4 | 4, 5. The units are only ever 0 and 5: 0 in the SECOND row of
+       every two, 5 in the FIRST.
+       One at a time: 5 is half of 10, so ten of it, halved.
+
      A LINE across a table marks where its pattern REPEATS. It is on the
      paper and on the TV.
 
@@ -53,6 +60,7 @@ export const TT_GROUPS = [
   { id: "vm-tables8", label: "The 8 times table", blurb: "Tens to 4 and from 4 again; units up the page in twos." },
   { id: "vm-tables7", label: "The 7 times table", blurb: "Three at a time: say the last ten again, and count the units up in threes." },
   { id: "vm-tables6", label: "The 6 times table", blurb: "Units up the page in fours; one ten in each half comes twice." },
+  { id: "vm-tables5", label: "The 5 times table", blurb: "Two at a time: the last ten said again, and the units only 0 and 5." },
 ];
 
 const SECRET =
@@ -264,7 +272,55 @@ const sixAll = {
   answer: () => tableAnswer(6),
 };
 
-export const TT_EXERCISES = [nineOne, nineAll, eightOne, eightAll, sevenOne, sevenAll, sixOne, sixAll];
+/* ═══ THE FIVES ═══════════════════════════════════════════════════════════*/
+
+const SECRET5 =
+  "Write the ten sums, 5 × 1 to 5 × 10, down the page, and rule a LINE after every two. The TENS go two at a time, " +
+  "and each new two starts by saying the last number AGAIN: 0, 1 — line — 1, 2 — line — 2, 3 — line — 3, 4 — line — " +
+  "4, 5. The UNITS are only ever 0 and 5: 0 goes in the SECOND row of every two, and 5 in the FIRST.";
+
+const fiveOne = {
+  id: "vm-tt5",
+  group: "vm-tables5",
+  label: "Fives, one at a time",
+  blurb: "5 is half of 10: ten of it, halved.",
+  heading: "The 5 times table — ten of it, halved",
+  instruction: () => "5 is half of 10. So five of a number is TEN of it — write a 0 on the end — and then HALF of that.",
+  tv: "fives",
+  cols: 2,
+  defaultCount: 6,
+  make: (r) => ({ n: r.int(2, 10) }),
+  render: ({ n }) => big(`5 × ${n}`) +
+    steps(step(`10 × ${n} =`), step("half of that — the answer:")),
+  worked: () => worked(big("5 × 7") + ask(strip("10 × 7", "÷ 2") + " → " + strip("70", "÷ 2") + " = 35") +
+    say("Ten sevens are 70. Half of 70 is 35. So 5 × 7 is 35.")),
+  key: ({ n }) => [want.num(10 * n), want.num(5 * n)],
+  answer: ({ n }) => [`half of ${10 * n}: 5 × ${n} = ${5 * n}`],
+};
+
+const fiveAll = {
+  id: "vm-tt5-all",
+  group: "vm-tables5",
+  label: "The whole five times table",
+  blurb: "Tens two at a time, the last one said again; units 0 and 5.",
+  heading: "The 5 times table — two at a time",
+  instruction: () => SECRET5 + " It is set out as PrepBot sets it out. Fill the FIRST box of every row going down the page; " +
+    "then the SECOND boxes, the smallest first: 0 in every second row, then 5 in every first row. On screen the boxes " +
+    "open one at a time, in that order.",
+  tv: "fives",
+  cols: 1,
+  defaultCount: 1,
+  make: (r) => ({ n: r.int(2, 9) }),
+  /* the units open smallest first: the five 0s down the page (steps 10 to 14), then the five 5s (15 to 19) */
+  render: () => tableHtml(5, [1, 3, 5, 7], "first box, down the page: 0 1 · 1 2 · 2 3 · 3 4 · 4 5",
+    "second box: 0 in every second row, then 5 in every first row", (i) => (i % 2 ? 10 + (i - 1) / 2 : 15 + i / 2)),
+  worked: () => worked(ask("5 × 1 = " + strip("0", "5") + " &nbsp; 5 × 2 = " + strip("1", "0") + " &nbsp; — the line — &nbsp; 5 × 3 = " + strip("1", "5")) +
+    say("The first digit before the line is 1, and the first digit after it is 1 again. The second digits take turns: 5 in the first row of a pair, 0 in the second.")),
+  key: () => tableKey(5),
+  answer: () => tableAnswer(5),
+};
+
+export const TT_EXERCISES = [nineOne, nineAll, eightOne, eightAll, sevenOne, sevenAll, sixOne, sixAll, fiveOne, fiveAll];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).

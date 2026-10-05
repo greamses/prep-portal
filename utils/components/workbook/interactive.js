@@ -2985,12 +2985,12 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       id: "tables",
       label: "Times tables",
       icon: TOOL_ICONS.tables,
-      size: { w: 300, h: 600 },
+      size: { w: 260, h: 470 },
       open: (body) => {
         const tool = document.createElement("div");
         tool.className = "wb-tool wb-tt";
         tool.innerHTML =
-          `<label class="wb-tt__ask"><span>Which table?</span><input class="wb-tt__n" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="9" aria-label="Which times table"></label>` +
+          `<label class="wb-tt__ask"><span>Which table?</span><input class="wb-tt__n" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="9" aria-label="Which times table"></label>` +
           `<label class="wb-tt__to"><input type="checkbox" class="wb-tt__12"> up to × 12</label>` +
           `<ol class="wb-tt__list" aria-live="polite"></ol>` +
           `<p class="wb-tt__hint">Type a number and its table appears.</p>`;
@@ -2999,6 +2999,9 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         const list = tool.querySelector(".wb-tt__list"), hint = tool.querySelector(".wb-tt__hint");
         const KEY = "wb-times-table";
         const paint = () => {
+          /* a plain box, with no arrows to step it by: figures only */
+          const figures = input.value.replace(/[^0-9]/g, "");
+          if (figures !== input.value) input.value = figures;
           const n = Math.round(Number(input.value));
           const ok = input.value.trim() !== "" && Number.isFinite(n) && n >= 0 && n <= 9999;
           hint.hidden = ok;

@@ -449,6 +449,27 @@ function sixesSteps() {
   return { build: T.build, steps };
 }
 
+/* ── THE FIVE TIMES TABLE: two at a time, a line after each two ──────────── */
+function fivesSteps() {
+  const T = tableStage(5, [1, 3, 5, 7]);
+  const pair = (S, k, at) => { S.pop(`t${2 * k}`, at); S.pop(`t${2 * k + 1}`, at + 0.6); };
+  const steps = [
+    T.step("Here is the secret of the five times table. First, write the ten sums down the page.", (S) => T.sums(S)),
+    T.step("The tens go two at a time. 0, 1.", (S) => pair(S, 0, 0.8)),
+    T.step("Rule a line, and say the last number again. 1, 2.", (S) => { S.pop("k1", 0.2); S.pulse("t1", 0.9); pair(S, 1, 1.5); }),
+    T.step("Another line, and the last number again. 2, 3. Then 3, 4. Then 4, 5.",
+      (S) => { S.pop("k3", 0.2); pair(S, 2, 0.8); S.pop("k5", 2.2); pair(S, 3, 2.8); S.pop("k7", 4.2); pair(S, 4, 4.8); }),
+    T.step("Now the units. There are only two of them, 0 and 5. The smaller first: 0 goes in the SECOND row of every two.",
+      (S) => { [1, 3, 5, 7, 9].forEach((i, k) => S.pop(`u${i}`, 2.6 + k * 0.5)); }),
+    T.step("And 5 goes in the FIRST row of every two.",
+      (S) => { [0, 2, 4, 6, 8].forEach((i, k) => S.pop(`u${i}`, 0.8 + k * 0.5)); }),
+    T.step("Read across. 5, 10, 15, 20, 25, 30, 35, 40, 45, 50. That is the whole five times table.", (S) => T.read(S)),
+    T.step("And for just one of them, remember that 5 is half of 10. For 5 times 7: ten sevens are 70, and half of 70 is 35.",
+      (S) => { T.only(S, [6]); S.pulse("s6", 0.4); S.pulse("t6", 3); S.pulse("u6", 3); }),
+  ];
+  return { build: T.build, steps };
+}
+
 let tvOpen = false;
 
 async function explain(strip) {
@@ -460,6 +481,7 @@ async function explain(strip) {
     : data.scene.kind === "eights" ? eightsSteps()
     : data.scene.kind === "sevens" ? sevensSteps()
     : data.scene.kind === "sixes" ? sixesSteps()
+    : data.scene.kind === "fives" ? fivesSteps()
     : data.scene.kind === "trach" && data.scene.steps.length ? trachSteps(data)
     : data.scene.kind === "strip" && data.scene.expr.length && data.scene.expr.length === data.scene.res.length ? stripSteps(data)
       : textSteps(data);
