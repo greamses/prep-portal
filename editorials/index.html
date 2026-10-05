@@ -59,6 +59,23 @@
     <!-- Lucide icons — used inside the Grammar Police workbook pages -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
       <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+    <style>
+      /* A shelf that is shut stays shut whatever a layout rule says. */
+      .bookcase__shelf[hidden] { display: none !important; }
+      /* ── the workbooks' covers: paper in the site's colours, the subject large ── */
+      .wbk-row { flex-wrap: wrap; gap: 2.6rem clamp(16px, 2.8vw, 30px); }
+      .wbk-book { text-decoration: none; color: inherit; max-width: clamp(110px, 19vw, 150px); }
+      .wbk-cover {
+        display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+        padding: 0.7rem 0.45rem 0.8rem; box-sizing: border-box; color: #14130f; text-align: center;
+      }
+      .wbk-cover--c0 { background: #fff3a8; } .wbk-cover--c1 { background: #bfe3ff; } .wbk-cover--c2 { background: #c8f0c0; }
+      .wbk-cover--c3 { background: #e8c8ff; } .wbk-cover--c4 { background: #ffd7a3; } .wbk-cover--c5 { background: #b8ece2; }
+      .wbk-cover__kicker { font: 800 0.52rem/1 var(--font-mono, monospace); letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.7; }
+      .wbk-cover__art { font: 800 clamp(1.15rem, 3.2vw, 1.7rem)/1.1 var(--font-mono, monospace); letter-spacing: 0.04em; }
+      .wbk-cover__title { font: 900 clamp(0.72rem, 1.9vw, 0.95rem)/1.12 var(--font-display, sans-serif); }
+      .wbk-book .shelf-book-label { font-size: 0.68rem; line-height: 1.3; color: var(--text-secondary); }
+    </style>
   </head>
 
   <body>
@@ -93,22 +110,107 @@
       </header>
 
       <div class="bookcase">
-        <!-- Shelf 1 — the digital issues -->
+        <!-- THE WORKBOOKS — for everyone. Each book is a link to its own page. -->
         <section class="bookcase__shelf">
+          <span class="shelf-pill theme-blue"><strong>6</strong> Math Workbooks</span>
+          <div class="shelf-scene" style="position: relative; z-index: 1">
+            <div class="shelf-row wbk-row" role="list">
+              <a class="shelf-book wbk-book" href="/prep-math/activity/maths-workbook/index.html" role="listitem" aria-label="Open the Maths Workbook">
+                <div class="shelf-book-cover wbk-cover wbk-cover--c0">
+                  <span class="wbk-cover__kicker">Workbook</span>
+                  <span class="wbk-cover__art" aria-hidden="true">1 2 3</span>
+                  <strong class="wbk-cover__title">Maths</strong>
+                </div>
+                <span class="shelf-book-label">Place value, sums, fractions, time</span>
+                <span class="book-sticker">Number</span>
+              </a>
+              <a class="shelf-book wbk-book" href="/prep-math/activity/geometry-workbook/index.html" role="listitem" aria-label="Open the Geometry Workbook">
+                <div class="shelf-book-cover wbk-cover wbk-cover--c1">
+                  <span class="wbk-cover__kicker">Workbook</span>
+                  <span class="wbk-cover__art" aria-hidden="true">△ ○ □</span>
+                  <strong class="wbk-cover__title">Geometry</strong>
+                </div>
+                <span class="shelf-book-label">Angles, shapes, circles, trigonometry</span>
+                <span class="book-sticker">Shape and space</span>
+              </a>
+              <a class="shelf-book wbk-book" href="/prep-math/activity/algebra-workbook/index.html" role="listitem" aria-label="Open the Algebra Workbook">
+                <div class="shelf-book-cover wbk-cover wbk-cover--c2">
+                  <span class="wbk-cover__kicker">Workbook</span>
+                  <span class="wbk-cover__art" aria-hidden="true">x + y</span>
+                  <strong class="wbk-cover__title">Algebra</strong>
+                </div>
+                <span class="shelf-book-label">From the bar model to matrices</span>
+                <span class="book-sticker">Algebra</span>
+              </a>
+              <a class="shelf-book wbk-book" href="/prep-math/activity/statistics-workbook/index.html" role="listitem" aria-label="Open the Statistics Workbook">
+                <div class="shelf-book-cover wbk-cover wbk-cover--c3">
+                  <span class="wbk-cover__kicker">Workbook</span>
+                  <span class="wbk-cover__art" aria-hidden="true">▮ ▮ ▮</span>
+                  <strong class="wbk-cover__title">Statistics</strong>
+                </div>
+                <span class="shelf-book-label">Charts, probability, counting</span>
+                <span class="book-sticker">Data</span>
+              </a>
+              <a class="shelf-book wbk-book" href="/prep-math/activity/vedic-maths-workbook/index.html" role="listitem" aria-label="Open the Mental Maths Workbook">
+                <div class="shelf-book-cover wbk-cover wbk-cover--c4">
+                  <span class="wbk-cover__kicker">Workbook</span>
+                  <span class="wbk-cover__art" aria-hidden="true">9 × 9</span>
+                  <strong class="wbk-cover__title">Mental Maths</strong>
+                </div>
+                <span class="shelf-book-label">Tricks, taught by PrepBot</span>
+                <span class="book-sticker">Mental maths</span>
+              </a>
+              <a class="shelf-book wbk-book" href="/prep-math/activity/word-problems-workbook/index.html" role="listitem" aria-label="Open the Competition Word Problems">
+                <div class="shelf-book-cover wbk-cover wbk-cover--c5">
+                  <span class="wbk-cover__kicker">Workbook</span>
+                  <span class="wbk-cover__art" aria-hidden="true">? = ?</span>
+                  <strong class="wbk-cover__title">Competition Word Problems</strong>
+                </div>
+                <span class="shelf-book-label">Exam word problems, type by type</span>
+                <span class="book-sticker">Competitions</span>
+              </a>
+            </div>
+            <div class="shelf-plank" aria-hidden="true"></div>
+          </div>
+        </section>
+
+        <section class="bookcase__shelf">
+          <span class="shelf-pill theme-green"><strong>1</strong> Science Workbook</span>
+          <div class="shelf-scene" style="position: relative; z-index: 1">
+            <div class="shelf-row wbk-row" role="list">
+              <a class="shelf-book wbk-book" href="/prep-math/activity/js-workbook/index.html" role="listitem" aria-label="Open the JavaScript Workbook">
+                <div class="shelf-book-cover wbk-cover wbk-cover--c2">
+                  <span class="wbk-cover__kicker">Workbook</span>
+                  <span class="wbk-cover__art" aria-hidden="true">{ }</span>
+                  <strong class="wbk-cover__title">JavaScript</strong>
+                </div>
+                <span class="shelf-book-label">Learn to code, with an editor and a console</span>
+                <span class="book-sticker">Computing</span>
+              </a>
+            </div>
+            <div class="shelf-plank" aria-hidden="true"></div>
+          </div>
+        </section>
+
+        <!-- THE BOOKS THAT ARE NOT WORKBOOKS — the magazine issues and the
+             yearbooks. Shut (hidden) until the designated admin signs in; see
+             the script at the foot of the page. -->
+        <!-- the digital issues -->
+        <section class="bookcase__shelf" data-admin-shelf hidden>
           <span class="shelf-pill theme-blue"><strong>3</strong> Issues</span>
           <div id="editions-shelf" class="bookshelf"></div>
         </section>
 
-        <!-- Shelf 2 — the yearbooks -->
-        <section class="bookcase__shelf">
+        <!-- the yearbooks -->
+        <section class="bookcase__shelf" data-admin-shelf hidden>
           <span class="shelf-pill theme-green"><strong>3</strong> Yearbooks</span>
           <div id="yearbook-shelf" class="bookshelf"></div>
         </section>
 
-        <!-- Shelf 3 — the English workbook (Grammar Police). Reuses the shelf +
+        <!-- The English workbook (Grammar Police) — a workbook, so for everyone. Reuses the shelf +
              book engine from /writing/activity/grammar-police; reader modal below. -->
         <section class="bookcase__shelf">
-          <span class="shelf-pill theme-red"><strong>1</strong> Workbook</span>
+          <span class="shelf-pill theme-red"><strong>1</strong> English Workbook</span>
           <div class="shelf-scene" style="position: relative; z-index: 1">
             <div class="shelf-row" role="list">
               <button
@@ -183,19 +285,19 @@
       </div>
     </div>
 
-    <!-- ═══ ADMIN GUARD ═══
-         Editorials is an admin-only area. Non-admins are sent home before
-         any content is shown. The nav link is likewise hidden for everyone
-         except the designated admin (see nav-builder.js / nav-config.js). -->
+    <!-- ═══ WHO SEES WHICH SHELF ═══
+         The bookcase is open to everyone, and so is every WORKBOOK on it. The
+         books that are not workbooks — the magazine issues and the yearbooks —
+         stay shut: their shelves are `hidden` in the markup and are opened
+         only for the designated admin. -->
     <script type="module">
       import { auth } from "/firebase-init.js";
 
       const ADMIN_EMAIL = "eemadanyel@gmail.com";
 
       auth.onAuthStateChanged((user) => {
-        if (!user || user.email !== ADMIN_EMAIL) {
-          window.location.replace("/");
-        }
+        const admin = Boolean(user && user.email === ADMIN_EMAIL);
+        document.querySelectorAll("[data-admin-shelf]").forEach((shelf) => { shelf.hidden = !admin; });
       });
     </script>
 

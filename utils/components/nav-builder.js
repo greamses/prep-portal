@@ -80,7 +80,8 @@ function buildThemeToggle() {
   return btn;
 }
 
-// The single designated admin — controls visibility of `adminOnly` nav items.
+// The single designated admin — controls visibility of `adminOnly` nav items
+// (none at present: Editorials is open, and only its non-workbook shelves are shut — see editorials/index.html).
 const ADMIN_EMAIL = "eemadanyel@gmail.com";
 
 /* =============================================

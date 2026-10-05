@@ -184,22 +184,7 @@ const NAV_CONFIG = [
           { text: "Number Match", href: "/prep-math/activity/number-match/index.html", description: "Match words, tallies and blocks to the number" },
         ],
       },
-      /* The workbooks have grown into a shelf of their own: printable, and
-         done on screen with the answers marked. */
-      {
-        text: "Workbooks",
-        icon: I.workbooks,
-        description: "Print them, or do them on screen",
-        children: [
-          { text: "Maths Workbook", href: "/prep-math/activity/maths-workbook/index.html", description: "Place value, sums, division, fractions, time, multiplying, prime factors, bar models, number bases" },
-          { text: "Geometry Workbook", href: "/prep-math/activity/geometry-workbook/index.html", description: "Angles, polygons, Pythagoras, circles, solids, area" },
-          { text: "Algebra Workbook", href: "/prep-math/activity/algebra-workbook/index.html", description: "From the bar model to quadratics, simultaneous equations, matrices, vectors and logic" },
-          { text: "Statistics Workbook", href: "/prep-math/activity/statistics-workbook/index.html", description: "Pictograms, bar charts, line graphs, pie charts, scatter graphs" },
-          { text: "Mental Maths Workbook", href: "/prep-math/activity/vedic-maths-workbook/index.html", description: "Mental-maths tricks: skill development with steps, or timed drills — complements, doubles, squares, roots, Trachtenberg" },
-          { text: "Competition Word Problems", href: "/prep-math/activity/word-problems-workbook/index.html", description: "Word problems for competitive exams: ages, mixtures, HCF and LCM, ratio, work, systems, series, counting, probability, percentages" },
-          { text: "JavaScript Workbook", href: "/prep-math/activity/js-workbook/index.html", description: "Learn to code: data types and variables, with an editor and a console" },
-        ],
-      },
+      /* The workbooks are books now: they are on the Editorials shelf (below). */
       {
         text: "Learning Tools",
         icon: I.tools,
@@ -221,17 +206,42 @@ const NAV_CONFIG = [
   },
 
   /* =========================
-      EDITORIALS  (admin-only)
-      A single, direct link — hidden from the nav unless the designated admin
-      is signed in. See `adminOnly` handling in nav-builder.js and the
-      `.admin-only` rules in nav.css.
+      EDITORIALS
+      The site's books. The WORKBOOKS are for everyone and are what the nav
+      shows: the maths ones and the science ones, each a link to its own
+      page, and the bookcase where all of them stand. The books that are not
+      workbooks — the magazine issues and the yearbooks — are still for the
+      designated admin alone: they are not in the nav, and the bookcase page
+      keeps their shelves shut for anyone else (editorials/index.html).
   ========================= */
   {
     text: "Editorials",
-    href: "/editorials/index.html",
-    adminOnly: true,
     icon: I.editorial,
-    description: "The digital magazine edition",
+    description: "Workbooks to print, or to do on screen",
+    children: [
+      {
+        text: "Math Workbooks",
+        icon: I.workbooks,
+        description: "Print them, or do them on screen",
+        children: [
+          { text: "Maths Workbook", href: "/prep-math/activity/maths-workbook/index.html", description: "Place value, sums, division, fractions, time, multiplying, prime factors, bar models, number bases" },
+          { text: "Geometry Workbook", href: "/prep-math/activity/geometry-workbook/index.html", description: "Angles, polygons, Pythagoras, circles, solids, area" },
+          { text: "Algebra Workbook", href: "/prep-math/activity/algebra-workbook/index.html", description: "From the bar model to quadratics, simultaneous equations, matrices, vectors and logic" },
+          { text: "Statistics Workbook", href: "/prep-math/activity/statistics-workbook/index.html", description: "Pictograms, bar charts, line graphs, pie charts, scatter graphs" },
+          { text: "Mental Maths Workbook", href: "/prep-math/activity/vedic-maths-workbook/index.html", description: "Mental-maths tricks: skill development with steps, or timed drills — complements, doubles, squares, roots, Trachtenberg" },
+          { text: "Competition Word Problems", href: "/prep-math/activity/word-problems-workbook/index.html", description: "Word problems for competitive exams: ages, mixtures, HCF and LCM, ratio, work, systems, series, counting, probability, percentages" },
+        ],
+      },
+      {
+        text: "Science Workbooks",
+        icon: I.tools,
+        description: "Computing, to begin with",
+        children: [
+          { text: "JavaScript Workbook", href: "/prep-math/activity/js-workbook/index.html", description: "Learn to code: data types and variables, with an editor and a console" },
+        ],
+      },
+      { text: "The Bookcase", href: "/editorials/index.html", icon: I.editorial, description: "Every workbook on its shelf" },
+    ],
   },
 ];
 
