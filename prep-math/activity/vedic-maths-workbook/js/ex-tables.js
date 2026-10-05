@@ -16,15 +16,22 @@
          the whole table   the two columns, counted down and counted up
 
      THE EIGHT TIMES TABLE
-       The units count DOWN IN TWOS, twice over: 8, 6, 4, 2, 0 and again
-       8, 6, 4, 2, 0. The tens count 0, 1, 2, 3, 4 — and then start again
-       FROM THE SAME 4: 4, 5, 6, 7, 8. (The 4 comes twice because five eights
-       is exactly 40, and the next one, 48, has not left the forties.)
+       The tens count 0, 1, 2, 3, 4 down the page; a LINE; and from the same
+       4 again, 4, 5, 6, 7, 8. The units count UP the page in twos from the
+       bottom, 0, 2, 4, 6, 8 — and at the line they start again, 0, 2, 4, 6, 8.
+       (The line is where the pattern repeats: five eights are exactly 40.)
+       One at a time: 8 is 2 × 2 × 2, so double three times.
 
-       And for any one of them: 8 is 2 × 2 × 2, so DOUBLE THREE TIMES.
+     THE SEVEN TIMES TABLE
+       The tens go three at a time, a LINE after each three, and each new
+       three starts by saying the last number AGAIN: 0, 1, 2 | 2, 3, 4 |
+       4, 5, 6 | 7. The units count UP the page from the bottom: 0 for the
+       last row, then in threes above each line — 3, 6, 9 | 2, 5, 8 | 1, 4, 7
+       — each three starting one lower than the last.
+       One at a time: 7 is 5 and 2, so five of it and two of it, added.
 
-         one at a time     8 × 7: 14, 28, 56
-         the whole table   the units in twos, then the tens with the 4 twice
+     A LINE across a table marks where its pattern REPEATS. It is on the
+     paper and on the TV.
 
    On PrepBot's TV the secret is acted out: the ten sums, the tens counting
    down the page, the units counting up it, and the two columns closing into
@@ -36,7 +43,8 @@ import { ask, big, worked, say, step, steps, strip } from "./common.js";
 
 export const TT_GROUPS = [
   { id: "vm-tables", chapter: "Chapter 7 · Times table secrets", label: "The 9 times table", blurb: "Count down the page, count up the page: 09, 18, 27 …" },
-  { id: "vm-tables8", label: "The 8 times table", blurb: "Units in twos — 8, 6, 4, 2, 0 — and the 4 comes twice." },
+  { id: "vm-tables8", label: "The 8 times table", blurb: "Tens to 4 and from 4 again; units up the page in twos." },
+  { id: "vm-tables7", label: "The 7 times table", blurb: "Three at a time: say the last ten again, and count the units up in threes." },
 ];
 
 const SECRET =
@@ -89,12 +97,26 @@ const nineAll = {
   answer: () => [Array.from({ length: 10 }, (_, i) => `${i}${9 - i}`).join(", ")],
 };
 
+/* ═══ a whole table, set out as the TV sets it out ════════════════════════
+   One column of ten sums, a tens box and a units box to a row. The TENS are
+   filled first, down the page (steps 0 to 9); then the UNITS, UP the page
+   from the bottom row (steps 10 to 19). `cuts` are the rows a line is ruled
+   under: where the pattern repeats. */
+function tableHtml(n, cuts, keyT, keyU) {
+  return `<p class="vm-tt__key"><span class="is-t">${keyT}</span><span class="is-u">${keyU}</span></p>` +
+    `<div class="vm-tt" data-steps="listed">${Array.from({ length: 10 }, (_, i) =>
+      `<p class="wb-ask vm-tt__row${cuts.includes(i) ? " vm-tt__row--cut" : ""}"><span class="vm-tt__sum">${n} × ${i + 1} =</span> <span class="vm-tt__pair">` +
+      `<span class="wb-answer vm-tt__t" data-step="${i}"></span><span class="wb-answer vm-tt__u" data-step="${19 - i}"></span></span></p>`).join("")}</div>`;
+}
+const tableKey = (n) => Array.from({ length: 10 }, (_, i) => [want.num(Math.floor((n * (i + 1)) / 10)), want.num((n * (i + 1)) % 10)]).flat();
+const tableAnswer = (n) => [Array.from({ length: 10 }, (_, i) => String(n * (i + 1)).padStart(2, "0")).join(", ")];
+
 /* ═══ THE EIGHTS ══════════════════════════════════════════════════════════*/
 
 const SECRET8 =
-  "Write the ten sums, 8 × 1 to 8 × 10, down the page. The UNITS count down in twos, twice over: 8, 6, 4, 2, 0 and " +
-  "again 8, 6, 4, 2, 0. The TENS count 0, 1, 2, 3, 4 and then start again from the same 4: 4, 5, 6, 7, 8 — the 4 " +
-  "comes twice, for 40 and 48.";
+  "Write the ten sums, 8 × 1 to 8 × 10, down the page, and rule a LINE under 8 × 5. The TENS count 0, 1, 2, 3, 4 down " +
+  "to the line, and below it start again from the same 4: 4, 5, 6, 7, 8. The UNITS count UP the page in twos from " +
+  "the bottom, 0, 2, 4, 6, 8 — and at the line they start again, 0, 2, 4, 6, 8.";
 
 const eightOne = {
   id: "vm-tt8",
@@ -120,27 +142,69 @@ const eightAll = {
   id: "vm-tt8-all",
   group: "vm-tables8",
   label: "The whole eight times table",
-  blurb: "The units in twos, then the tens with the 4 twice.",
-  heading: "The 8 times table — count down in twos",
-  instruction: () => SECRET8 + " It is set out as PrepBot sets it out. Fill the SECOND box of every row first, counting " +
-    "8, 6, 4, 2, 0 down the page twice; then the FIRST box of every row, 0 to 4 and 4 to 8. On screen the boxes open " +
-    "one at a time, in that order.",
+  blurb: "Tens to 4 and from 4 again; units up the page in twos.",
+  heading: "The 8 times table — the line where it repeats",
+  instruction: () => SECRET8 + " It is set out as PrepBot sets it out. Fill the FIRST box of every row going down the page; " +
+    "then the SECOND box of every row going up from the bottom. On screen the boxes open one at a time, in that order.",
   tv: "eights",
   cols: 1,
   defaultCount: 1,
   make: (r) => ({ n: r.int(2, 9) }),
-  /* the units go in first here, down the page (steps 0 to 9); then the tens, down the page (10 to 19) */
-  render: () => `<p class="vm-tt__key"><span class="is-u">second box first: 8, 6, 4, 2, 0 — twice</span><span class="is-t">then the first box: 0 to 4, and 4 to 8</span></p>` +
-    `<div class="vm-tt" data-steps="listed">${Array.from({ length: 10 }, (_, i) =>
-      `<p class="wb-ask vm-tt__row"><span class="vm-tt__sum">8 × ${i + 1} =</span> <span class="vm-tt__pair">` +
-      `<span class="wb-answer vm-tt__t" data-step="${10 + i}"></span><span class="wb-answer vm-tt__u" data-step="${i}"></span></span></p>`).join("")}</div>`,
-  worked: () => worked(ask("8 × 1 = " + strip("0", "8") + " &nbsp; 8 × 2 = " + strip("1", "6") + " &nbsp; 8 × 3 = " + strip("2", "4")) +
-    say("The second digits go 8, 6, 4 … down in twos, and the first digits go 0, 1, 2 … so the top rows read 08, 16, 24.")),
-  key: () => Array.from({ length: 10 }, (_, i) => [want.num(Math.floor((8 * (i + 1)) / 10)), want.num((8 * (i + 1)) % 10)]).flat(),
-  answer: () => [Array.from({ length: 10 }, (_, i) => String(8 * (i + 1)).padStart(2, "0")).join(", ")],
+  render: () => tableHtml(8, [4], "first box, down the page: 0 to 4, the line, 4 to 8", "second box, up the page: 0, 2, 4, 6, 8 — twice"),
+  worked: () => worked(ask("8 × 4 = " + strip("3", "2") + " &nbsp; 8 × 5 = " + strip("4", "0") + " &nbsp; — the line — &nbsp; 8 × 6 = " + strip("4", "8")) +
+    say("Down to the line the first digits reach 4, and under the line they start from 4 again. Coming up the page the second digits reach 8 at the line and start from 0 again above it.")),
+  key: () => tableKey(8),
+  answer: () => tableAnswer(8),
 };
 
-export const TT_EXERCISES = [nineOne, nineAll, eightOne, eightAll];
+/* ═══ THE SEVENS ══════════════════════════════════════════════════════════*/
+
+const SECRET7 =
+  "Write the ten sums, 7 × 1 to 7 × 10, down the page, and rule a LINE under every third one. The TENS go three at a " +
+  "time, and each new three starts by saying the last number AGAIN: 0, 1, 2 — line — 2, 3, 4 — line — 4, 5, 6 — " +
+  "line — 7. The UNITS count UP the page from the bottom: 0 for the last row, then in threes above each line, " +
+  "3, 6, 9 — then starting one lower, 2, 5, 8 — and one lower again, 1, 4, 7.";
+
+const sevenOne = {
+  id: "vm-tt7",
+  group: "vm-tables7",
+  label: "Sevens, one at a time",
+  blurb: "7 is 5 and 2: five of it, and two of it.",
+  heading: "The 7 times table — five of it and two of it",
+  instruction: () => "7 is 5 and 2. So seven of a number is FIVE of it and TWO of it, added together — and fives and twos " +
+    "are the easy tables.",
+  tv: "sevens",
+  cols: 2,
+  defaultCount: 6,
+  make: (r) => ({ n: r.int(2, 10) }),
+  render: ({ n }) => big(`7 × ${n}`) +
+    steps(step(`5 × ${n} =`), step(`2 × ${n} =`), step("add them — the answer:")),
+  worked: () => worked(big("7 × 6") + ask(strip("5 × 6", "2 × 6") + " → " + strip("30", "12") + " = 42") +
+    say("Five sixes are 30 and two sixes are 12. 30 and 12 make 42. So 7 × 6 is 42.")),
+  key: ({ n }) => [want.num(5 * n), want.num(2 * n), want.num(7 * n)],
+  answer: ({ n }) => [`${5 * n} + ${2 * n}: 7 × ${n} = ${7 * n}`],
+};
+
+const sevenAll = {
+  id: "vm-tt7-all",
+  group: "vm-tables7",
+  label: "The whole seven times table",
+  blurb: "Tens in threes, the last one said again; units up the page in threes.",
+  heading: "The 7 times table — three at a time",
+  instruction: () => SECRET7 + " It is set out as PrepBot sets it out. Fill the FIRST box of every row going down the page; " +
+    "then the SECOND box of every row going up from the bottom. On screen the boxes open one at a time, in that order.",
+  tv: "sevens",
+  cols: 1,
+  defaultCount: 1,
+  make: (r) => ({ n: r.int(2, 9) }),
+  render: () => tableHtml(7, [2, 5, 8], "first box, down the page: 0 1 2 · 2 3 4 · 4 5 6 · 7", "second box, up the page: 0 · 3 6 9 · 2 5 8 · 1 4 7"),
+  worked: () => worked(ask("7 × 3 = " + strip("2", "1") + " &nbsp; — the line — &nbsp; 7 × 4 = " + strip("2", "8") + " &nbsp; 7 × 5 = " + strip("3", "5")) +
+    say("The first digit before the line is 2, and the first digit after it is 2 again. Coming up the page the second digits above this line go 2, 5, 8.")),
+  key: () => tableKey(7),
+  answer: () => tableAnswer(7),
+};
+
+export const TT_EXERCISES = [nineOne, nineAll, eightOne, eightAll, sevenOne, sevenAll];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).

@@ -82,6 +82,8 @@
 .vm-t--l .vm-t__in { font-size: calc(var(--u) * 5.6); }
 .vm-t--s .vm-t__in { font-size: calc(var(--u) * 2.3); }
 .vm-t__in--bare { color: #2a2723; font-weight: 700; }
+/* a line ruled across the screen: where a table's pattern repeats */
+.vm-t__line { display: block; height: 0; border-top: calc(var(--u) * 0.32) dashed #2a2723; }
 /* the six inks */
 .vm-t__in--c0 { color: #14130f; }
 .vm-t__in--c1 { color: #7b4fa3; }
@@ -104,6 +106,8 @@
 .vm-tt__pair .vm-tt__u { border-color: #d9632b; box-shadow: inset 0 0 0 0.25mm #d9632b; }
 .vm-tt__pair .vm-tt__t input { color: #2f6ea8; }
 .vm-tt__pair .vm-tt__u input { color: #d9632b; }
+/* a LINE ruled under a row: where the table's pattern repeats */
+.wb-sheet .vm-tt__row--cut { padding-bottom: 1.5mm; margin-bottom: 0.3mm; border-bottom: 0.45mm dashed #2a2723; }
 .vm-tt__key { display: flex; gap: 6mm; margin: 0 0 1.5mm 3mm; font-size: 8.5pt; font-weight: 700; }
 .vm-tt__key .is-t { color: #2f6ea8; }
 .vm-tt__key .is-u { color: #d9632b; }

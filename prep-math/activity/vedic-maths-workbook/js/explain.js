@@ -344,58 +344,85 @@ function ninesSteps() {
   return { build, steps };
 }
 
-/* ── THE EIGHT TIMES TABLE: the units in twos, and the 4 that comes twice ──
-   The ten sums in a column. The units come on first, down the page in twos —
-   8, 6, 4, 2, 0, and again. Then the tens: 0 to 4 down the first five rows,
-   and from the same 4 again down the last five. */
-function eightsSteps() {
+/* ── A TIMES TABLE ON THE SCREEN ───────────────────────────────────────────
+   Ten sums in a column, the tens in one colour and the units in another, and
+   a LINE ruled across wherever the pattern repeats (`cuts`: the rows it goes
+   under). What comes on when is each table's own script. */
+function tableStage(n, cuts = []) {
   const ROWS = 10;
   const y = (i) => 9.5 + i * 8.6;
   const X = { sum: 27, tens: 43, units: 47.5, eq: 37.5 };
   const build = (stage) => {
     stage.innerHTML = `<div class="vm-tv"></div>`;
     for (let i = 0; i < ROWS; i++) {
-      const v = 8 * (i + 1);
-      tile(stage, `s${i}`, `8 × ${i + 1}`, X.sum, y(i), { bare: true, size: "s" });
+      const v = n * (i + 1);
+      tile(stage, `s${i}`, `${n} × ${i + 1}`, X.sum, y(i), { bare: true, size: "s" });
       tile(stage, `e${i}`, "=", X.eq, y(i), { bare: true, size: "s" });
       tile(stage, `t${i}`, String(Math.floor(v / 10)), X.tens, y(i), { c: 3 });
       tile(stage, `u${i}`, String(v % 10), X.units, y(i), { c: 4 });
     }
-    tile(stage, "twos", "down in twos, twice", X.units + 13, 96.5, { c: 4, size: "s" });
-    tile(stage, "four", "the 4 comes twice", X.tens - 11, 96.5, { c: 3, size: "s" });
+    cuts.forEach((i) => {
+      const box = tile(stage, `k${i}`, "", 38, y(i) + 4.3, { bare: true });
+      box.firstChild.className = "vm-t__in vm-t__line";
+      box.firstChild.style.width = "calc(var(--u) * 36)";
+    });
   };
   const all = (fn) => { for (let i = 0; i < ROWS; i++) fn(i); };
+  /** every row dimmed but these */
+  const only = (S, rows) => all((i) => { const d = rows.includes(i) ? 1 : 0.3; S.dim(`s${i}`, d); S.dim(`e${i}`, d); S.dim(`t${i}`, d); S.dim(`u${i}`, d); });
+  /** the ten sums come on */
+  const sums = (S) => all((i) => { S.pop(`s${i}`, i * 0.12); S.pop(`e${i}`, i * 0.12); });
+  /** the pairs close up and are read across */
+  const read = (S) => all((i) => { S.move(`u${i}`, X.units - 1.6, y(i), i * 0.1); S.pulse(`t${i}`, 0.9 + i * 0.3); S.pulse(`u${i}`, 0.9 + i * 0.3); });
+  const step = (say, fn) => ({ say, show(stage, how) { fn(acts(stage, how.gsap, how.instant)); } });
+  return { build, step, sums, read, only };
+}
+
+/* ── THE EIGHT TIMES TABLE: a line under 8 × 5, where it repeats ─────────── */
+function eightsSteps() {
+  const T = tableStage(8, [4]);
   const steps = [
-    { say: "Here is the secret of the eight times table. First, write the ten sums down the page.",
-      show(stage, how) { const S = acts(stage, how.gsap, how.instant); all((i) => { S.pop(`s${i}`, i * 0.12); S.pop(`e${i}`, i * 0.12); }); } },
-    { say: "Start with the units. Count down in twos from 8. 8, 6, 4, 2, 0.",
-      show(stage, how) { const S = acts(stage, how.gsap, how.instant); for (let i = 0; i < 5; i++) S.pop(`u${i}`, 0.9 + i * 0.6); S.pop("twos", 0.3); } },
-    { say: "And the same again. 8, 6, 4, 2, 0.",
-      show(stage, how) { const S = acts(stage, how.gsap, how.instant); for (let i = 5; i < 10; i++) S.pop(`u${i}`, 0.6 + (i - 5) * 0.6); } },
-    { say: "Now the tens. Count from 0 down the first five. 0, 1, 2, 3, 4.",
-      show(stage, how) { const S = acts(stage, how.gsap, how.instant); for (let i = 0; i < 5; i++) S.pop(`t${i}`, 0.9 + i * 0.6); } },
-    { say: "Then start again from the same 4. 4, 5, 6, 7, 8. The 4 comes twice.",
-      show(stage, how) { const S = acts(stage, how.gsap, how.instant); for (let i = 5; i < 10; i++) S.pop(`t${i}`, 0.9 + (i - 5) * 0.6); S.pop("four", 0.3); S.pulse("t4", 3.6); S.pulse("t5", 3.9); } },
-    { say: "Read across. 8, 16, 24, 32, 40, 48, 56, 64, 72, 80. That is the whole eight times table.",
-      show(stage, how) {
-        const S = acts(stage, how.gsap, how.instant);
-        S.hide("twos"); S.hide("four");
-        all((i) => { S.move(`u${i}`, X.units - 1.6, y(i), i * 0.1); S.pulse(`t${i}`, 0.9 + i * 0.3); S.pulse(`u${i}`, 0.9 + i * 0.3); });
-      } },
-    { say: "Why does the 4 come twice? Five eights are exactly 40, and one more eight makes 48, still in the forties.",
-      show(stage, how) {
-        const S = acts(stage, how.gsap, how.instant);
-        all((i) => { const dim = i === 4 || i === 5 ? 1 : 0.3; S.dim(`s${i}`, dim); S.dim(`e${i}`, dim); S.dim(`t${i}`, dim); S.dim(`u${i}`, dim); });
-        S.pulse("t4", 0.6); S.pulse("t5", 1.4);
-      } },
-    { say: "And for just one of them, remember that 8 is 2 times 2 times 2. Double three times. For 8 times 7: 14, 28, 56.",
-      show(stage, how) {
-        const S = acts(stage, how.gsap, how.instant);
-        all((i) => { const dim = i === 6 ? 1 : 0.3; S.dim(`s${i}`, dim); S.dim(`e${i}`, dim); S.dim(`t${i}`, dim); S.dim(`u${i}`, dim); });
-        S.pulse("s6", 0.4); S.pulse("t6", 2.6); S.pulse("u6", 2.6);
-      } },
+    T.step("Here is the secret of the eight times table. First, write the ten sums down the page.", (S) => T.sums(S)),
+    T.step("Start with the tens. Count from 0 down the first five rows. 0, 1, 2, 3, 4.",
+      (S) => { for (let i = 0; i < 5; i++) S.pop(`t${i}`, 0.9 + i * 0.6); }),
+    T.step("Rule a line. Below the line, start again from the same 4. 4, 5, 6, 7, 8.",
+      (S) => { S.pop("k4", 0.2); for (let i = 5; i < 10; i++) S.pop(`t${i}`, 1.4 + (i - 5) * 0.6); S.pulse("t4", 1.2); }),
+    T.step("Now the units. Count UP the page, in twos, starting from the bottom. 0, 2, 4, 6, 8.",
+      (S) => { for (let i = 9; i >= 5; i--) S.pop(`u${i}`, 1.2 + (9 - i) * 0.6); }),
+    T.step("At the line the count starts again. 0, 2, 4, 6, 8.",
+      (S) => { S.pulse("k4", 0.2); for (let i = 4; i >= 0; i--) S.pop(`u${i}`, 0.9 + (4 - i) * 0.6); }),
+    T.step("Read across. 8, 16, 24, 32, 40, 48, 56, 64, 72, 80. That is the whole eight times table.", (S) => T.read(S)),
+    T.step("The line is where the pattern repeats. Five eights are exactly 40, so the next one, 48, is still in the forties.",
+      (S) => { T.only(S, [4, 5]); S.pulse("t4", 0.6); S.pulse("t5", 1.4); }),
+    T.step("And for just one of them, remember that 8 is 2 times 2 times 2. Double three times. For 8 times 7: 14, 28, 56.",
+      (S) => { T.only(S, [6]); S.pulse("s6", 0.4); S.pulse("t6", 2.6); S.pulse("u6", 2.6); }),
   ];
-  return { build, steps };
+  return { build: T.build, steps };
+}
+
+/* ── THE SEVEN TIMES TABLE: three at a time, a line after each three ─────── */
+function sevensSteps() {
+  const T = tableStage(7, [2, 5, 8]);
+  const steps = [
+    T.step("Here is the secret of the seven times table. First, write the ten sums down the page.", (S) => T.sums(S)),
+    T.step("The tens go three at a time. 0, 1, 2.",
+      (S) => { for (let i = 0; i < 3; i++) S.pop(`t${i}`, 0.8 + i * 0.6); }),
+    T.step("Rule a line, and say the last number again. 2, 3, 4.",
+      (S) => { S.pop("k2", 0.2); S.pulse("t2", 1); for (let i = 3; i < 6; i++) S.pop(`t${i}`, 1.5 + (i - 3) * 0.6); }),
+    T.step("Another line, and the last number again. 4, 5, 6. One more line, and 7 for the last row.",
+      (S) => { S.pop("k5", 0.2); S.pulse("t5", 1); for (let i = 6; i < 9; i++) S.pop(`t${i}`, 1.5 + (i - 6) * 0.6); S.pop("k8", 3.6); S.pop("t9", 4.4); }),
+    T.step("Now the units, counting UP the page from the bottom. The last row is 0.", (S) => S.pop("u9", 1.6)),
+    T.step("Above the line, count up in threes. 3, 6, 9.",
+      (S) => { for (let i = 8; i >= 6; i--) S.pop(`u${i}`, 0.9 + (8 - i) * 0.6); }),
+    T.step("Above the next line, start one lower. 2, 5, 8.",
+      (S) => { for (let i = 5; i >= 3; i--) S.pop(`u${i}`, 1.2 + (5 - i) * 0.6); }),
+    T.step("And one lower again. 1, 4, 7.",
+      (S) => { for (let i = 2; i >= 0; i--) S.pop(`u${i}`, 0.9 + (2 - i) * 0.6); }),
+    T.step("Read across. 7, 14, 21, 28, 35, 42, 49, 56, 63, 70. That is the whole seven times table.", (S) => T.read(S)),
+    T.step("And for just one of them, remember that 7 is 5 and 2. For 7 times 6: five sixes are 30, two sixes are 12, and that makes 42.",
+      (S) => { T.only(S, [5]); S.pulse("s5", 0.4); S.pulse("t5", 3); S.pulse("u5", 3); }),
+  ];
+  return { build: T.build, steps };
 }
 
 let tvOpen = false;
@@ -407,6 +434,7 @@ async function explain(strip) {
   if (!data || !data.scene) return;
   const made = data.scene.kind === "nines" ? ninesSteps()
     : data.scene.kind === "eights" ? eightsSteps()
+    : data.scene.kind === "sevens" ? sevensSteps()
     : data.scene.kind === "trach" && data.scene.steps.length ? trachSteps(data)
     : data.scene.kind === "strip" && data.scene.expr.length && data.scene.expr.length === data.scene.res.length ? stripSteps(data)
       : textSteps(data);

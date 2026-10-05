@@ -57,6 +57,7 @@ mountBuilder({
     "vm-check": ICON.vmCheck,
     "vm-tables": ICON.vmTables,
     "vm-tables8": ICON.vmTables8,
+    "vm-tables7": ICON.vmTables8,
     "vm-trach": ICON.vmTrach,
     "vm-tr-even": ICON.vmTrEven,
     "vm-tr-odd": ICON.vmTrOdd,
