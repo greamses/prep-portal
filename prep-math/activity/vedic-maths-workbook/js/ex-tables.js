@@ -30,6 +30,13 @@
        — each three starting one lower than the last.
        One at a time: 7 is 5 and 2, so five of it and two of it, added.
 
+     THE SIX TIMES TABLE
+       A LINE under 6 × 5. The tens go 0, 1, 1, 2, 3 down to the line — the
+       1 comes twice — and from the same 3 below it: 3, 4, 4, 5, 6, the 4
+       twice. The units count UP the page in FOURS, writing only the last
+       figure: 0, 4, 8, (1)2, (1)6 — and the same again above the line.
+       One at a time: 6 is 5 and 1, so five of it and one more of it.
+
      A LINE across a table marks where its pattern REPEATS. It is on the
      paper and on the TV.
 
@@ -45,6 +52,7 @@ export const TT_GROUPS = [
   { id: "vm-tables", chapter: "Chapter 7 · Times table secrets", label: "The 9 times table", blurb: "Count down the page, count up the page: 09, 18, 27 …" },
   { id: "vm-tables8", label: "The 8 times table", blurb: "Tens to 4 and from 4 again; units up the page in twos." },
   { id: "vm-tables7", label: "The 7 times table", blurb: "Three at a time: say the last ten again, and count the units up in threes." },
+  { id: "vm-tables6", label: "The 6 times table", blurb: "Units up the page in fours; one ten in each half comes twice." },
 ];
 
 const SECRET =
@@ -204,7 +212,54 @@ const sevenAll = {
   answer: () => tableAnswer(7),
 };
 
-export const TT_EXERCISES = [nineOne, nineAll, eightOne, eightAll, sevenOne, sevenAll];
+/* ═══ THE SIXES ═══════════════════════════════════════════════════════════*/
+
+const SECRET6 =
+  "Write the ten sums, 6 × 1 to 6 × 10, down the page, and rule a LINE under 6 × 5. The TENS go 0, 1, 1, 2, 3 down to " +
+  "the line — the 1 comes twice — and below it start from the same 3: 3, 4, 4, 5, 6, with the 4 twice. The UNITS " +
+  "count UP the page in FOURS from the bottom, writing only the last figure: 0, 4, 8, then 12 and 16 give 2 and 6 — " +
+  "and at the line they start again, 0, 4, 8, 2, 6.";
+
+const sixOne = {
+  id: "vm-tt6",
+  group: "vm-tables6",
+  label: "Sixes, one at a time",
+  blurb: "6 is 5 and 1: five of it, and one more of it.",
+  heading: "The 6 times table — five of it and one more",
+  instruction: () => "6 is 5 and 1. So six of a number is FIVE of it, and ONE MORE of it. Find five of the number — half of " +
+    "ten of it — and add the number on once.",
+  tv: "sixes",
+  cols: 2,
+  defaultCount: 6,
+  make: (r) => ({ n: r.int(2, 10) }),
+  render: ({ n }) => big(`6 × ${n}`) +
+    steps(step(`5 × ${n} =`), step(`add one more ${n} — the answer:`)),
+  worked: () => worked(big("6 × 7") + ask(strip("5 × 7", "+ 7") + " → " + strip("35", "+ 7") + " = 42") +
+    say("Five sevens are 35. One more seven makes 42. So 6 × 7 is 42.")),
+  key: ({ n }) => [want.num(5 * n), want.num(6 * n)],
+  answer: ({ n }) => [`${5 * n} + ${n}: 6 × ${n} = ${6 * n}`],
+};
+
+const sixAll = {
+  id: "vm-tt6-all",
+  group: "vm-tables6",
+  label: "The whole six times table",
+  blurb: "One ten twice in each half; units up the page in fours.",
+  heading: "The 6 times table — count up in fours",
+  instruction: () => SECRET6 + " It is set out as PrepBot sets it out. Fill the FIRST box of every row going down the page; " +
+    "then the SECOND box of every row going up from the bottom. On screen the boxes open one at a time, in that order.",
+  tv: "sixes",
+  cols: 1,
+  defaultCount: 1,
+  make: (r) => ({ n: r.int(2, 9) }),
+  render: () => tableHtml(6, [4], "first box, down the page: 0 1 1 2 3 · the line · 3 4 4 5 6", "second box, up the page: 0 4 8 2 6 — twice"),
+  worked: () => worked(ask("6 × 4 = " + strip("2", "4") + " &nbsp; 6 × 5 = " + strip("3", "0") + " &nbsp; — the line — &nbsp; 6 × 6 = " + strip("3", "6")) +
+    say("Down to the line the first digits reach 3, and under the line they start from 3 again. Coming up the page in fours the second digits are 0, 4, 8, 2, 6, and above the line 0, 4, 8, 2, 6 again.")),
+  key: () => tableKey(6),
+  answer: () => tableAnswer(6),
+};
+
+export const TT_EXERCISES = [nineOne, nineAll, eightOne, eightAll, sevenOne, sevenAll, sixOne, sixAll];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).

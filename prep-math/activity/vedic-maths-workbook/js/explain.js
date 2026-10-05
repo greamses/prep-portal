@@ -425,6 +425,28 @@ function sevensSteps() {
   return { build: T.build, steps };
 }
 
+/* ── THE SIX TIMES TABLE: a line under 6 × 5; the units up the page in fours ── */
+function sixesSteps() {
+  const T = tableStage(6, [4]);
+  const steps = [
+    T.step("Here is the secret of the six times table. First, write the ten sums down the page.", (S) => T.sums(S)),
+    T.step("Start with the tens, down the first five rows. 0, 1, 1, 2, 3. The 1 comes twice.",
+      (S) => { for (let i = 0; i < 5; i++) S.pop(`t${i}`, 0.9 + i * 0.6); S.pulse("t1", 4.4); S.pulse("t2", 4.7); }),
+    T.step("Rule a line. Below it, start from the same 3. 3, 4, 4, 5, 6. This time the 4 comes twice.",
+      (S) => { S.pop("k4", 0.2); S.pulse("t4", 1.2); for (let i = 5; i < 10; i++) S.pop(`t${i}`, 1.6 + (i - 5) * 0.6); S.pulse("t6", 5.2); S.pulse("t7", 5.5); }),
+    T.step("Now the units. Count UP the page in fours, from the bottom, and write only the last figure. 0, 4, 8, 12, 16. So 0, 4, 8, 2, 6.",
+      (S) => { for (let i = 9; i >= 5; i--) S.pop(`u${i}`, 1.6 + (9 - i) * 0.7); }),
+    T.step("At the line the count starts again. 0, 4, 8, 2, 6.",
+      (S) => { S.pulse("k4", 0.2); for (let i = 4; i >= 0; i--) S.pop(`u${i}`, 0.9 + (4 - i) * 0.6); }),
+    T.step("Read across. 6, 12, 18, 24, 30, 36, 42, 48, 54, 60. That is the whole six times table.", (S) => T.read(S)),
+    T.step("The line is where the pattern repeats. Five sixes are exactly 30, so everything below the line is 30 more than the row above it.",
+      (S) => { T.only(S, [0, 5]); S.pulse("t0", 0.6); S.pulse("u0", 0.6); S.pulse("t5", 1.6); S.pulse("u5", 1.6); }),
+    T.step("And for just one of them, remember that 6 is 5 and 1. For 6 times 7: five sevens are 35, and one more seven makes 42.",
+      (S) => { T.only(S, [6]); S.pulse("s6", 0.4); S.pulse("t6", 3); S.pulse("u6", 3); }),
+  ];
+  return { build: T.build, steps };
+}
+
 let tvOpen = false;
 
 async function explain(strip) {
@@ -435,6 +457,7 @@ async function explain(strip) {
   const made = data.scene.kind === "nines" ? ninesSteps()
     : data.scene.kind === "eights" ? eightsSteps()
     : data.scene.kind === "sevens" ? sevensSteps()
+    : data.scene.kind === "sixes" ? sixesSteps()
     : data.scene.kind === "trach" && data.scene.steps.length ? trachSteps(data)
     : data.scene.kind === "strip" && data.scene.expr.length && data.scene.expr.length === data.scene.res.length ? stripSteps(data)
       : textSteps(data);
