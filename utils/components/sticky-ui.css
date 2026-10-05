@@ -536,11 +536,15 @@ button.pp-btn,
    becomes what it is: a small outlined control.
 
    Buttons with WORDS on them keep the note: a label is something written, and
-   that is what a note is for. */
-.pp-receipt__paper .pp-btn:has(> [data-icon]:only-child),
-.pp-receipt__paper .pp-btn:has(> svg:only-child),
-.pp-receipt__paper button:has(> [data-icon]:only-child),
-.pp-receipt__paper button:has(> svg:only-child) {
+   that is what a note is for.
+
+   CSS cannot see text, so `svg:only-child` is also true of a button holding an
+   icon AND words; button-words.js marks those `pp-worded`, and they keep
+   their note. */
+.pp-receipt__paper .pp-btn:not(.pp-worded):has(> [data-icon]:only-child),
+.pp-receipt__paper .pp-btn:not(.pp-worded):has(> svg:only-child),
+.pp-receipt__paper button:not(.pp-worded):has(> [data-icon]:only-child),
+.pp-receipt__paper button:not(.pp-worded):has(> svg:only-child) {
   background: transparent;
   color: var(--ink, #2a2723);
   border: var(--border-subtle, 1px solid rgba(42, 39, 35, 0.12));
@@ -551,18 +555,18 @@ button.pp-btn,
      face, and these are controls, not writing */
   font-family: var(--font-mono, ui-monospace, monospace);
 }
-.pp-receipt__paper .pp-btn:has(> [data-icon]:only-child)::before,
-.pp-receipt__paper .pp-btn:has(> svg:only-child)::before,
-.pp-receipt__paper button:has(> [data-icon]:only-child)::before,
-.pp-receipt__paper button:has(> svg:only-child)::before {
+.pp-receipt__paper .pp-btn:not(.pp-worded):has(> [data-icon]:only-child)::before,
+.pp-receipt__paper .pp-btn:not(.pp-worded):has(> svg:only-child)::before,
+.pp-receipt__paper button:not(.pp-worded):has(> [data-icon]:only-child)::before,
+.pp-receipt__paper button:not(.pp-worded):has(> svg:only-child)::before {
   /* `content: none` so the tape is never generated, not merely hidden */
   content: none;
   display: none;
 }
-.pp-receipt__paper .pp-btn:has(> [data-icon]:only-child):hover,
-.pp-receipt__paper .pp-btn:has(> svg:only-child):hover,
-.pp-receipt__paper button:has(> [data-icon]:only-child):hover,
-.pp-receipt__paper button:has(> svg:only-child):hover {
+.pp-receipt__paper .pp-btn:not(.pp-worded):has(> [data-icon]:only-child):hover,
+.pp-receipt__paper .pp-btn:not(.pp-worded):has(> svg:only-child):hover,
+.pp-receipt__paper button:not(.pp-worded):has(> [data-icon]:only-child):hover,
+.pp-receipt__paper button:not(.pp-worded):has(> svg:only-child):hover {
   background: var(--surface-secondary, #f4f0e8);
   transform: none;
   box-shadow: var(--shadow-sm);

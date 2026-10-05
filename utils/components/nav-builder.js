@@ -983,4 +983,5 @@ if (document.readyState === "loading") {
 
 /* Every dropdown on the site is a receipt: the nav is on nearly every page,
    so it brings the rule with it (see receipt-dropdowns.js). */
+import("/utils/components/button-words.js").catch(() => { /* an icon-and-words button merely stays plain */ });
 import("/utils/components/receipt-dropdowns.js").catch(() => { /* a page still works with its own dropdowns */ });
