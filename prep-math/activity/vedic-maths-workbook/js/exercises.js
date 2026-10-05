@@ -60,6 +60,7 @@ const DRILL = {
   "vm-check9": (it) => ({ q: `${it.a} × ${it.b} = ${it.shown} ?`, tick: it.kind }),
   /* the whole-table section drills as one sum out of the table */
   "vm-tt9-all": (it) => ({ q: `9 × ${it.n}`, a: [9 * it.n] }),
+  "vm-tt8-all": (it) => ({ q: `8 × ${it.n}`, a: [8 * it.n] }),
 };
 const BOX = '<span class="wb-answer vm-whole"></span>';
 

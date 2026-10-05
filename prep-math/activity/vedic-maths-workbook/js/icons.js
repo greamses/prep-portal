@@ -12,6 +12,9 @@ const cell = (x, y, w, h, fill, rx = 1.2) => `<rect x="${x}" y="${y}" width="${w
 
 export const ICON = {
   ...BASE,
+  /* the eights: one column stepping down in twos, the middle note said twice */
+  vmTables8: svg(cell(4, 3, 6.4, 5, PAPER) + cell(4, 9.5, 6.4, 5, LOUD) + cell(4, 16, 6.4, 5, LOUD) +
+    cell(13.6, 3, 6.4, 5, GOLD) + cell(13.6, 9.5, 6.4, 3.4, GOLD) + cell(13.6, 14.4, 6.4, 2, GOLD)),
   /* times table secrets: two columns of the same notes, one counting down the page and one counting up */
   vmTables: svg(cell(4, 3, 6.4, 5, GOLD) + cell(4, 9.5, 6.4, 5, PAPER) + cell(4, 16, 6.4, 5, PAPER) +
     cell(13.6, 3, 6.4, 5, PAPER) + cell(13.6, 9.5, 6.4, 5, PAPER) + cell(13.6, 16, 6.4, 5, LOUD)),

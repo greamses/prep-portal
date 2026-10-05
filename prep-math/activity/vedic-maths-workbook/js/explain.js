@@ -344,6 +344,60 @@ function ninesSteps() {
   return { build, steps };
 }
 
+/* ── THE EIGHT TIMES TABLE: the units in twos, and the 4 that comes twice ──
+   The ten sums in a column. The units come on first, down the page in twos —
+   8, 6, 4, 2, 0, and again. Then the tens: 0 to 4 down the first five rows,
+   and from the same 4 again down the last five. */
+function eightsSteps() {
+  const ROWS = 10;
+  const y = (i) => 9.5 + i * 8.6;
+  const X = { sum: 27, tens: 43, units: 47.5, eq: 37.5 };
+  const build = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    for (let i = 0; i < ROWS; i++) {
+      const v = 8 * (i + 1);
+      tile(stage, `s${i}`, `8 × ${i + 1}`, X.sum, y(i), { bare: true, size: "s" });
+      tile(stage, `e${i}`, "=", X.eq, y(i), { bare: true, size: "s" });
+      tile(stage, `t${i}`, String(Math.floor(v / 10)), X.tens, y(i), { c: 3 });
+      tile(stage, `u${i}`, String(v % 10), X.units, y(i), { c: 4 });
+    }
+    tile(stage, "twos", "down in twos, twice", X.units + 13, 96.5, { c: 4, size: "s" });
+    tile(stage, "four", "the 4 comes twice", X.tens - 11, 96.5, { c: 3, size: "s" });
+  };
+  const all = (fn) => { for (let i = 0; i < ROWS; i++) fn(i); };
+  const steps = [
+    { say: "Here is the secret of the eight times table. First, write the ten sums down the page.",
+      show(stage, how) { const S = acts(stage, how.gsap, how.instant); all((i) => { S.pop(`s${i}`, i * 0.12); S.pop(`e${i}`, i * 0.12); }); } },
+    { say: "Start with the units. Count down in twos from 8. 8, 6, 4, 2, 0.",
+      show(stage, how) { const S = acts(stage, how.gsap, how.instant); for (let i = 0; i < 5; i++) S.pop(`u${i}`, 0.9 + i * 0.6); S.pop("twos", 0.3); } },
+    { say: "And the same again. 8, 6, 4, 2, 0.",
+      show(stage, how) { const S = acts(stage, how.gsap, how.instant); for (let i = 5; i < 10; i++) S.pop(`u${i}`, 0.6 + (i - 5) * 0.6); } },
+    { say: "Now the tens. Count from 0 down the first five. 0, 1, 2, 3, 4.",
+      show(stage, how) { const S = acts(stage, how.gsap, how.instant); for (let i = 0; i < 5; i++) S.pop(`t${i}`, 0.9 + i * 0.6); } },
+    { say: "Then start again from the same 4. 4, 5, 6, 7, 8. The 4 comes twice.",
+      show(stage, how) { const S = acts(stage, how.gsap, how.instant); for (let i = 5; i < 10; i++) S.pop(`t${i}`, 0.9 + (i - 5) * 0.6); S.pop("four", 0.3); S.pulse("t4", 3.6); S.pulse("t5", 3.9); } },
+    { say: "Read across. 8, 16, 24, 32, 40, 48, 56, 64, 72, 80. That is the whole eight times table.",
+      show(stage, how) {
+        const S = acts(stage, how.gsap, how.instant);
+        S.hide("twos"); S.hide("four");
+        all((i) => { S.move(`u${i}`, X.units - 1.6, y(i), i * 0.1); S.pulse(`t${i}`, 0.9 + i * 0.3); S.pulse(`u${i}`, 0.9 + i * 0.3); });
+      } },
+    { say: "Why does the 4 come twice? Five eights are exactly 40, and one more eight makes 48, still in the forties.",
+      show(stage, how) {
+        const S = acts(stage, how.gsap, how.instant);
+        all((i) => { const dim = i === 4 || i === 5 ? 1 : 0.3; S.dim(`s${i}`, dim); S.dim(`e${i}`, dim); S.dim(`t${i}`, dim); S.dim(`u${i}`, dim); });
+        S.pulse("t4", 0.6); S.pulse("t5", 1.4);
+      } },
+    { say: "And for just one of them, remember that 8 is 2 times 2 times 2. Double three times. For 8 times 7: 14, 28, 56.",
+      show(stage, how) {
+        const S = acts(stage, how.gsap, how.instant);
+        all((i) => { const dim = i === 6 ? 1 : 0.3; S.dim(`s${i}`, dim); S.dim(`e${i}`, dim); S.dim(`t${i}`, dim); S.dim(`u${i}`, dim); });
+        S.pulse("s6", 0.4); S.pulse("t6", 2.6); S.pulse("u6", 2.6);
+      } },
+  ];
+  return { build, steps };
+}
+
 let tvOpen = false;
 
 async function explain(strip) {
@@ -352,6 +406,7 @@ async function explain(strip) {
   try { data = JSON.parse(strip.dataset.explain); } catch { /* nothing to show */ }
   if (!data || !data.scene) return;
   const made = data.scene.kind === "nines" ? ninesSteps()
+    : data.scene.kind === "eights" ? eightsSteps()
     : data.scene.kind === "trach" && data.scene.steps.length ? trachSteps(data)
     : data.scene.kind === "strip" && data.scene.expr.length && data.scene.expr.length === data.scene.res.length ? stripSteps(data)
       : textSteps(data);
