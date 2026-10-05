@@ -25,9 +25,9 @@
      THE SEVEN TIMES TABLE
        The tens go three at a time, a LINE after each three, and each new
        three starts by saying the last number AGAIN: 0, 1, 2 | 2, 3, 4 |
-       4, 5, 6 | 7. The units count UP the page from the bottom: 0 for the
-       last row, then in threes above each line — 3, 6, 9 | 2, 5, 8 | 1, 4, 7
-       — each three starting one lower than the last.
+       4, 5, 6 | 7. The units are counted from the SMALLEST to the BIGGEST,
+       0 to 9: 0 for the last sum; then 1, 2, 3 in the LAST row of each
+       three; 4, 5, 6 in the SECOND rows; 7, 8, 9 in the FIRST rows.
        One at a time: 7 is 5 and 2, so five of it and two of it, added.
 
      THE SIX TIMES TABLE
@@ -108,13 +108,15 @@ const nineAll = {
 /* ═══ a whole table, set out as the TV sets it out ════════════════════════
    One column of ten sums, a tens box and a units box to a row. The TENS are
    filled first, down the page (steps 0 to 9); then the UNITS, UP the page
-   from the bottom row (steps 10 to 19). `cuts` are the rows a line is ruled
-   under: where the pattern repeats. */
-function tableHtml(n, cuts, keyT, keyU) {
+   from the bottom row (steps 10 to 19) — unless the table counts its units
+   another way and says so (`unitStep`: the sevens count theirs 0 to 9,
+   wherever each one stands). `cuts` are the rows a line is ruled under:
+   where the pattern repeats. */
+function tableHtml(n, cuts, keyT, keyU, unitStep = (i) => 19 - i) {
   return `<p class="vm-tt__key"><span class="is-t">${keyT}</span><span class="is-u">${keyU}</span></p>` +
     `<div class="vm-tt" data-steps="listed">${Array.from({ length: 10 }, (_, i) =>
       `<p class="wb-ask vm-tt__row${cuts.includes(i) ? " vm-tt__row--cut" : ""}"><span class="vm-tt__sum">${n} × ${i + 1} =</span> <span class="vm-tt__pair">` +
-      `<span class="wb-answer vm-tt__t" data-step="${i}"></span><span class="wb-answer vm-tt__u" data-step="${19 - i}"></span></span></p>`).join("")}</div>`;
+      `<span class="wb-answer vm-tt__t" data-step="${i}"></span><span class="wb-answer vm-tt__u" data-step="${unitStep(i)}"></span></span></p>`).join("")}</div>`;
 }
 const tableKey = (n) => Array.from({ length: 10 }, (_, i) => [want.num(Math.floor((n * (i + 1)) / 10)), want.num((n * (i + 1)) % 10)]).flat();
 const tableAnswer = (n) => [Array.from({ length: 10 }, (_, i) => String(n * (i + 1)).padStart(2, "0")).join(", ")];
@@ -170,8 +172,8 @@ const eightAll = {
 const SECRET7 =
   "Write the ten sums, 7 × 1 to 7 × 10, down the page, and rule a LINE under every third one. The TENS go three at a " +
   "time, and each new three starts by saying the last number AGAIN: 0, 1, 2 — line — 2, 3, 4 — line — 4, 5, 6 — " +
-  "line — 7. The UNITS count UP the page from the bottom: 0 for the last row, then in threes above each line, " +
-  "3, 6, 9 — then starting one lower, 2, 5, 8 — and one lower again, 1, 4, 7.";
+  "line — 7. The UNITS are counted from the smallest to the biggest, 0 to 9: 0 goes in the last sum; then 1, 2, 3 go " +
+  "in the LAST row of each three; 4, 5, 6 in the SECOND rows; and 7, 8, 9 in the FIRST rows.";
 
 const sevenOne = {
   id: "vm-tt7",
@@ -200,14 +202,17 @@ const sevenAll = {
   blurb: "Tens in threes, the last one said again; units up the page in threes.",
   heading: "The 7 times table — three at a time",
   instruction: () => SECRET7 + " It is set out as PrepBot sets it out. Fill the FIRST box of every row going down the page; " +
-    "then the SECOND box of every row going up from the bottom. On screen the boxes open one at a time, in that order.",
+    "then the SECOND boxes, counting 0 to 9: the last sum, the last rows, the second rows, the first rows. On screen the " +
+    "boxes open one at a time, in that order.",
   tv: "sevens",
   cols: 1,
   defaultCount: 1,
   make: (r) => ({ n: r.int(2, 9) }),
-  render: () => tableHtml(7, [2, 5, 8], "first box, down the page: 0 1 2 · 2 3 4 · 4 5 6 · 7", "second box, up the page: 0 · 3 6 9 · 2 5 8 · 1 4 7"),
+  /* the units open in the order they are counted, 0 to 9: a box's step is 10 and the digit it holds */
+  render: () => tableHtml(7, [2, 5, 8], "first box, down the page: 0 1 2 · 2 3 4 · 4 5 6 · 7",
+    "second box, 0 to 9: the last sum · last rows · second rows · first rows", (i) => 10 + ((7 * (i + 1)) % 10)),
   worked: () => worked(ask("7 × 3 = " + strip("2", "1") + " &nbsp; — the line — &nbsp; 7 × 4 = " + strip("2", "8") + " &nbsp; 7 × 5 = " + strip("3", "5")) +
-    say("The first digit before the line is 2, and the first digit after it is 2 again. Coming up the page the second digits above this line go 2, 5, 8.")),
+    say("The first digit before the line is 2, and the first digit after it is 2 again. The second digits are counted 0 to 9: 1 is in the last row of the first three, 8 and 5 are in the first and second rows of the next.")),
   key: () => tableKey(7),
   answer: () => tableAnswer(7),
 };
