@@ -25,6 +25,11 @@
        its two digits, and write it underneath: 90 81 72 63 54. Those are
        the other five, 9 × 10 back to 9 × 6. Every answer has its flip.
 
+       NINTHS AS DECIMALS (a tip): 1 ÷ 9 = 0.111…, 2 ÷ 9 = 0.222…,
+       7 ÷ 9 = 0.777… — the top number, over and over, because 9 goes into
+       10 once with 1 left, every time. 9 ÷ 9 = 0.999… is exactly 1. And
+       two figures over 99 repeat as a pair: 23 ÷ 99 = 0.232323…
+
      THE EIGHT TIMES TABLE
        The tens count 0, 1, 2, 3, 4 down the page; a LINE; and from the same
        4 again, 4, 5, 6, 7, 8. The units count UP the page in twos from the
@@ -94,6 +99,13 @@
        One at a time: 3 is 2 and 1 — on sticks, up in twos, then the same
        sticks again in ones.
 
+     THE TWO TIMES TABLE
+       A LINE under 2 × 5. The units are the twos themselves: 2, 4, 6, 8,
+       0 — and the same again below the line. The tens are 0 all the way
+       until the units come round to 0: 0, 0, 0, 0, 1 | 1, 1, 1, 1, 2.
+       One at a time: 2 is 1 and 1 — DOUBLE it. On sticks, count them in
+       ones, then the same sticks again, carrying on in ones.
+
      THE GRID — a second trick, by itself, for the THREES and the SEVENS
        Draw a grid, three boxes by three, and count 1 to 9 into it a
        column at a time. For the THREES start at the BOTTOM LEFT and go UP
@@ -137,6 +149,7 @@ export const TT_GROUPS = [
   { id: "vm-tables6", label: "The 6 times table", blurb: "Units in the order 2, 4, 6, 8, 0; one ten in each half comes twice. And a second trick: the diagonals." },
   { id: "vm-tables5", label: "The 5 times table", blurb: "Two at a time: the last ten said again, and the units only 0 and 5." },
   { id: "vm-tables3", label: "The 3 times table", blurb: "Three at a time: the same ten all through a three. And a second trick: the grid." },
+  { id: "vm-tables2", label: "The 2 times table", blurb: "Units 2 4 6 8 0, twice; the ten goes up when the units come round to 0." },
   { id: "vm-secrets", label: "Number secrets", blurb: "The ones tree: 11 × 11 = 121, 111 × 111 = 12321 … every answer a palindrome." },
   { id: "vm-tables4", label: "The 4 times table", blurb: "Tens 0 0 1 1 2 and from 2 again; units 4 8 2 6 0. And a second trick: two W's." },
 ];
@@ -238,6 +251,30 @@ const nineRows = {
     say("9 × 3 is 27. Flip it over and it is 72, which is 9 × 8. The two sums, 3 and 8, are in the same column.")),
   key: () => [...[0, 1, 2, 3, 4].flatMap((j) => [want.num(j), want.num(9 - j)]), ...[0, 1, 2, 3, 4].flatMap((j) => [want.num(9 - j), want.num(j)])],
   answer: () => ["top row: 09, 18, 27, 36, 45; flipped underneath: 90, 81, 72, 63, 54"],
+};
+
+/* NINTHS AS DECIMALS: the top number, over and over. One figure over 9, or two figures over 99. */
+const ninths = {
+  id: "vm-tt9-ninths",
+  group: "vm-tables",
+  label: "Tip: ninths as repeating decimals",
+  blurb: "7 ÷ 9 = 0.777…, 23 ÷ 99 = 0.232323…: the top number, over and over.",
+  heading: "Ninths as decimals — the top number repeats",
+  instruction: () => "Divide by 9 and the answer is a decimal that never ends — but there is nothing to work out. The TOP " +
+    "number just repeats: 1 ÷ 9 = 0.111…, 2 ÷ 9 = 0.222…, 7 ÷ 9 = 0.777… (9 goes into 10 once with 1 left over, every " +
+    "time.) With TWO figures on top, divide by 99 and the PAIR repeats: 23 ÷ 99 = 0.232323… Write what repeats.",
+  tv: "ninths",
+  cols: 2,
+  defaultCount: 6,
+  make: (r) => (r.int(0, 2) ? { n: r.int(1, 8), d: 9 } : { n: r.int(12, 98), d: 99 }),
+  render: ({ n, d }) => big(`${n} ÷ ${d}`) +
+    steps(step(d === 9 ? "the figure that repeats:" : "the two figures that repeat:"),
+      step(`${n} ÷ ${d} = 0.`)),
+  worked: () => worked(big("7 ÷ 9") + ask("7 ÷ 9 = 0." + strip("7", "7", "7", "7") + " …") +
+    say("Sevenths of nine: the 7 repeats. 7 ÷ 9 = 0.7777… for ever. And 23 ÷ 99 would be 0.232323…")),
+  /* the second box takes the first six figures after the point */
+  key: ({ n, d }) => [want.num(n), want.num(Number(String(n).repeat(d === 9 ? 6 : 3)))],
+  answer: ({ n, d }) => [`${n} repeats: ${n} ÷ ${d} = 0.${String(n).repeat(d === 9 ? 6 : 3)}…`],
 };
 
 /* ═══ THE EIGHTS ══════════════════════════════════════════════════════════*/
@@ -731,6 +768,51 @@ const threeGrid = gridEx(3, {
   tens: "0, 0, 0 in the top row; 1, 1, 1 in the middle row; 2, 2, 2 in the bottom row.",
 });
 
+/* ═══ THE TWOS ════════════════════════════════════════════════════════════*/
+
+const twoOne = {
+  id: "vm-tt2",
+  group: "vm-tables2",
+  label: "Twos, one at a time",
+  blurb: "2 is 1 and 1: double it.",
+  heading: "The 2 times table — double it",
+  instruction: () => "2 is 1 and 1. So two of a number is the number, and the number AGAIN: DOUBLE it. With counting sticks: " +
+    "lay out one stick for each of the number, count them IN ONES, then count the SAME sticks again, carrying on IN ONES.",
+  tv: "sticks2",
+  cols: 2,
+  defaultCount: 6,
+  make: (r) => ({ n: r.int(2, 10) }),
+  render: ({ n }) => big(`2 × ${n}`) +
+    steps(step(`${n} + ${n} — the answer:`)),
+  worked: () => worked(big("2 × 7") + ask(strip("7", "+ 7") + " = 14") +
+    say("Two sevens are seven and seven again. 7 and 7 make 14. So 2 × 7 is 14.")),
+  key: ({ n }) => [want.num(2 * n)],
+  answer: ({ n }) => [`${n} + ${n}: 2 × ${n} = ${2 * n}`],
+};
+
+const twoAll = {
+  id: "vm-tt2-all",
+  group: "vm-tables2",
+  label: "The whole two times table",
+  blurb: "Units 2 4 6 8 0, twice; tens 0 0 0 0 1, then 1 1 1 1 2.",
+  heading: "The 2 times table — a line under 2 × 5",
+  instruction: () => "Write the ten sums, 2 × 1 to 2 × 10, down the page, and rule a LINE under 2 × 5. The TENS are 0 all the " +
+    "way down until the last row above the line: 0, 0, 0, 0, 1. Below the line they start from the same 1: 1, 1, 1, 1, 2. " +
+    "The UNITS are the twos themselves: 2, 4, 6, 8, 0 — and the same again below the line. It is set out as PrepBot " +
+    "sets it out. Fill the FIRST box of every row going down the page, then the SECOND box of every row going down the " +
+    "page. On screen the boxes open one at a time, in that order.",
+  tv: "twos",
+  cols: 1,
+  defaultCount: 1,
+  make: (r) => ({ n: r.int(2, 9) }),
+  render: () => tableHtml(2, [4], "first box, down the page: 0 0 0 0 1 · the line · 1 1 1 1 2",
+    "second box, down the page: 2 4 6 8 0 — twice", (i) => 10 + i),
+  worked: () => worked(ask("2 × 4 = " + strip("0", "8") + " &nbsp; 2 × 5 = " + strip("1", "0") + " &nbsp; — the line — &nbsp; 2 × 6 = " + strip("1", "2")) +
+    say("The second digits count in twos: 8, then round to 0, then 2 again. The first digit goes up to 1 just when the second digit comes round to 0.")),
+  key: () => tableKey(2),
+  answer: () => tableAnswer(2),
+};
+
 /* ═══ A NUMBER SECRET: THE ONES TREE ══════════════════════════════════════
    n ones times n ones: count up to n and back down. (To seven ones here: the
    answers for eight and nine are longer than a number box can hold exactly.) */
@@ -758,7 +840,7 @@ const onesTree = {
   answer: ({ n }) => [`${n} ones: ${onesOf(n)} × ${onesOf(n)} = ${treeOf(n)}`],
 };
 
-export const TT_EXERCISES = [nineOne, nineAll, nineSticks, nineRows, eightOne, eightAll, sevenOne, sevenAll, sevenGrid, sevenWheel, sevenths, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW, threeOne, threeAll, threeGrid, onesTree];
+export const TT_EXERCISES = [nineOne, nineAll, nineSticks, nineRows, ninths, eightOne, eightAll, sevenOne, sevenAll, sevenGrid, sevenWheel, sevenths, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW, threeOne, threeAll, threeGrid, twoOne, twoAll, onesTree];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).

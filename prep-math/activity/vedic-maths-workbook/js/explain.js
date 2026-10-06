@@ -619,6 +619,53 @@ function wheelSteps() {
   return { build, steps };
 }
 
+/* ── NINTHS AS DECIMALS: the top number, over and over ──────────────────────
+   THE PLAN:
+     1  1 ÷ 9 is written, and its decimal comes out: 1, 1, 1, 1 …
+     2  WHY: 9 into 10 goes once, 1 left over — and the same again, and again
+     3  2, 3 and 4 ninths: each row is its own top number repeating
+     4  5, 6, 7 and 8 ninths
+     5  9 ninths: 0.999… for ever, which is exactly 1
+     6  two figures on top: over 99 the PAIR repeats — 23 ÷ 99 = 0.232323…
+     7  the rule, with every row's first figure pointed at
+   Left: the nine rows, each in its own ink. Right: the why, and the 99. */
+function ninthsSteps() {
+  const y = (n) => 12 + (n - 1) * 8.4;
+  const dx = (k) => 24 + k * 2.5;
+  const small = (box) => { box.firstChild.style.fontSize = "calc(var(--u) * 3.3)"; return box; };
+  const build = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    for (let n = 1; n <= 9; n++) {
+      tile(stage, `s${n}`, `${n} ÷ 9 = 0.`, 13.5, y(n), { bare: true, size: "s" });
+      for (let k = 0; k < 6; k++) small(tile(stage, `d${n}_${k}`, String(n), dx(k), y(n), { c: n % 6 }));
+      tile(stage, `m${n}`, "…", dx(6) + 0.4, y(n), { bare: true, size: "s" });
+    }
+    small(tile(stage, "one", "= 1", dx(6) + 6.4, y(9), { c: 2 }));
+    [0, 1, 2].forEach((i) => tile(stage, `w${i}`, "10 ÷ 9 = 1, and 1 left over", 62, 14 + i * 8.4, { c: i === 0 ? 0 : 5, size: "s" }));
+    tile(stage, "q99", "23 ÷ 99 = 0.", 54, 46, { bare: true, size: "s" });
+    for (let k = 0; k < 6; k++) small(tile(stage, `e${k}`, "23"[k % 2], 65 + k * 2.5, 46, { c: k % 2 ? 4 : 3 }));
+    tile(stage, "m99", "…", 65 + 6 * 2.5 + 0.4, 46, { bare: true, size: "s" });
+  };
+  const step = (say, fn) => ({ say, show(stage, how) { fn(acts(stage, how.gsap, how.instant)); } });
+  const row = (S, n, at, gap = 0.4) => { S.pop(`s${n}`, Math.max(0, at - 1)); for (let k = 0; k < 6; k++) S.pop(`d${n}_${k}`, at + k * gap); S.pop(`m${n}`, at + 6 * gap); };
+  const steps = [
+    step("Nine has a repeating secret too. Divide 1 by 9. The answer is 0 point 1, 1, 1, 1, 1, and on for ever.", (S) => row(S, 1, 6.6, 0.55)),
+    step("Why? 9 goes into 10 once, and there is 1 left over. Bring down a 0: 10 again. Once, and 1 left over. And again. It never stops.",
+      (S) => { S.pop("w0", 1.4); S.pop("w1", 6.4); S.pop("w2", 9.4); [0, 1, 2].forEach((i) => S.pulse(`w${i}`, 11.4 + i * 0.4)); }),
+    step("Now 2 divided by 9. Just twice as much: 0 point 2, 2, 2. And 3 ninths: 3, 3, 3. And 4 ninths: 4, 4, 4. The top number just repeats.",
+      (S) => { row(S, 2, 3.6); row(S, 3, 7.4); row(S, 4, 10.6); }),
+    step("So 5 ninths is 0 point 5, 5, 5. 6 ninths, 6, 6, 6. 7 ninths, 7, 7, 7. 8 ninths, 8, 8, 8.",
+      (S) => { row(S, 5, 2.2, 0.3); row(S, 6, 5.2, 0.3); row(S, 7, 8.2, 0.3); row(S, 8, 11.2, 0.3); }),
+    step("And 9 ninths? 0 point 9, 9, 9, for ever. But 9 ninths is one whole. So 0.999 going on for ever is exactly 1.",
+      (S) => { row(S, 9, 2.4, 0.4); S.pop("one", 9.6); }),
+    step("What if there are two figures on top? Then divide by 99, and the pair repeats. 23 divided by 99 is 0 point 23, 23, 23.",
+      (S) => { S.pop("q99", 6.2); for (let k = 0; k < 6; k++) S.pop(`e${k}`, 10.4 + k * 0.4); S.pop("m99", 13); }),
+    step("So to turn ninths into a decimal there is nothing to work out. Write the top number, again and again.",
+      (S) => { for (let n = 1; n <= 9; n++) { S.pulse(`s${n}`, 3 + (n - 1) * 0.3); S.pulse(`d${n}_0`, 3.2 + (n - 1) * 0.3); } }),
+  ];
+  return { build, steps };
+}
+
 /* ── THE EIGHT TIMES TABLE: a line under 8 × 5, where it repeats ─────────── */
 function eightsSteps() {
   const T = tableStage(8, [4]);
@@ -816,6 +863,24 @@ function sixdSteps() {
   return { build, steps };
 }
 
+/* ── THE TWO TIMES TABLE: a line under 2 × 5 ─────────────────────────────── */
+function twosSteps() {
+  const T = tableStage(2, [4]);
+  const steps = [
+    T.step("Here is the secret of the two times table. First, write the ten sums down the page.", (S) => T.sums(S)),
+    T.step("Start with the units this time. They are the twos themselves. Count in twos down the page. 2, 4, 6, 8, and round to 0.",
+      (S) => { for (let i = 0; i < 5; i++) S.pop(`u${i}`, 6.6 + i * 0.6); }),
+    T.step("Rule a line. Below the line it is the same again. 2, 4, 6, 8, 0.",
+      (S) => { S.pop("k4", 0.2); for (let i = 5; i < 10; i++) S.pop(`u${i}`, 3.4 + (i - 5) * 0.6); }),
+    T.step("Now the tens. They are 0 all the way down, until the units come round to 0. 0, 0, 0, 0, and then 1.",
+      (S) => { for (let i = 0; i < 5; i++) S.pop(`t${i}`, 6.4 + i * 0.6); S.pulse("u4", 9.4); }),
+    T.step("Below the line, start again from the same 1. 1, 1, 1, 1, and then 2.",
+      (S) => { S.pulse("t4", 0.6); for (let i = 5; i < 10; i++) S.pop(`t${i}`, 3 + (i - 5) * 0.6); S.pulse("u9", 6); }),
+    T.step("Read across. 2, 4, 6, 8, 10, 12, 14, 16, 18, 20. That is the whole two times table.", (S) => T.read(S)),
+  ];
+  return { build: T.build, steps };
+}
+
 /* ── THE THREE TIMES TABLE: three at a time, a line after each three ─────── */
 function threesSteps() {
   const T = tableStage(3, [2, 5, 8]);
@@ -1007,12 +1072,12 @@ function onesTreeSteps() {
    ones for the fours (4 = 5 − 1). No table is on the screen: only the sum,
    the sticks, and the two counts written under them. */
 function countSticksSteps(k) {
-  const base = k === 3 ? 2 : k === 9 ? 10 : 5;       // what the sticks are counted up in first: fives — twos for the threes, tens for the nines
-  const inBase = base === 2 ? "twos" : base === 10 ? "tens" : "fives";
+  const base = k === 2 ? 1 : k === 3 ? 2 : k === 9 ? 10 : 5;       // what the sticks are counted up in first: fives — twos for the threes, tens for the nines
+  const inBase = base === 1 ? "ones" : base === 2 ? "twos" : base === 10 ? "tens" : "fives";
   const d = k - base;                                // what each stick adds the second time round: 1, 2 or −1
   const [N1, N2] = k === 7 ? [6, 3] : [7, 4];        // the two sums that are counted out
   const how = d === 1 ? "carrying on in ones" : d === 2 ? "carrying on in twos" : "going back in ones";
-  const why = k === 9 ? "9 is 10 take away 1" : k === 3 ? "3 is 2 and 1" : d === 1 ? "6 is 5 and 1" : d === 2 ? "7 is 5 and 2" : "4 is 5 take away 1";
+  const why = k === 2 ? "2 is 1 and 1" : k === 9 ? "9 is 10 take away 1" : k === 3 ? "3 is 2 and 1" : d === 1 ? "6 is 5 and 1" : d === 2 ? "7 is 5 and 2" : "4 is 5 take away 1";
   const sx = (i, n) => 50 + (i - (n - 1) / 2) * 7.5;
   const SY = 42, NY = 27, AY = 60, BY = 72;
   const ten = (fn) => { for (let i = 0; i < 10; i++) fn(i); };
@@ -1106,8 +1171,10 @@ async function explain(strip) {
     : data.scene.kind === "nine2" ? nine2Steps()
     : data.scene.kind === "nine1" ? nine1Steps()
     : data.scene.kind === "threes" ? threesSteps()
+    : data.scene.kind === "ninths" ? ninthsSteps()
+    : data.scene.kind === "twos" ? twosSteps()
     : /^grid[37]$/.test(data.scene.kind) ? gridSteps(Number(data.scene.kind.slice(-1)))
-    : /^sticks[3467]$/.test(data.scene.kind) ? countSticksSteps(Number(data.scene.kind.slice(-1)))
+    : /^sticks[23467]$/.test(data.scene.kind) ? countSticksSteps(Number(data.scene.kind.slice(-1)))
     : data.scene.kind === "trach" && data.scene.steps.length ? trachSteps(data)
     : data.scene.kind === "strip" && data.scene.expr.length && data.scene.expr.length === data.scene.res.length ? stripSteps(data)
       : textSteps(data);
