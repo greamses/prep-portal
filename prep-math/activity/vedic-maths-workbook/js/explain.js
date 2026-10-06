@@ -657,6 +657,74 @@ function sixdSteps() {
   return { build, steps };
 }
 
+/* ── THE THREE TIMES TABLE: three at a time, a line after each three ─────── */
+function threesSteps() {
+  const T = tableStage(3, [2, 5, 8]);
+  const steps = [
+    T.step("Here is the secret of the three times table. First, write the ten sums down the page.", (S) => T.sums(S)),
+    T.step("The tens go three at a time, and they are the same all through a three. 0, 0, 0.",
+      (S) => { for (let i = 0; i < 3; i++) S.pop(`t${i}`, 4.6 + i * 0.6); }),
+    T.step("Rule a line, and go up one. 1, 1, 1.",
+      (S) => { S.pop("k2", 0.2); for (let i = 3; i < 6; i++) S.pop(`t${i}`, 2 + (i - 3) * 0.6); }),
+    T.step("Another line. 2, 2, 2. One more line, and 3 for the last row.",
+      (S) => { S.pop("k5", 0.2); for (let i = 6; i < 9; i++) S.pop(`t${i}`, 1.4 + (i - 6) * 0.6); S.pop("k8", 3.6); S.pop("t9", 4.6); }),
+    T.step("Now the units. Count from 0 to 9, smallest to biggest. 0 goes in the last sum.", (S) => S.pop("u9", 4.6)),
+    T.step("1, 2, 3 go in the FIRST row of each three, going up the page.",
+      (S) => { [6, 3, 0].forEach((i, k) => S.pop(`u${i}`, 0.4 + k * 0.7)); }),
+    T.step("4, 5, 6 go in the SECOND rows, going up the page.",
+      (S) => { [7, 4, 1].forEach((i, k) => S.pop(`u${i}`, 0.4 + k * 0.7)); }),
+    T.step("And 7, 8, 9 go in the THIRD rows, going up the page.",
+      (S) => { [8, 5, 2].forEach((i, k) => S.pop(`u${i}`, 0.6 + k * 0.7)); }),
+    T.step("Read across. 3, 6, 9, 12, 15, 18, 21, 24, 27, 30. That is the whole three times table.", (S) => T.read(S)),
+  ];
+  return { build: T.build, steps };
+}
+
+/* ── THE GRID: the second trick of the threes and of the sevens ────────────
+   A grid, three boxes by three. 1 to 9 are counted into it a column at a
+   time — up from the bottom left for the threes; dropped in from the top
+   like Tetris blocks, down from the top right, for the sevens. Read row by
+   row they are the units; the tens go in front row by row; the numbers are
+   read off into a row beneath; and ten of it stands by itself. */
+function gridSteps(k) {
+  const three = k === 3;
+  const cell = (d) => (three ? [2 - ((d - 1) % 3), Math.floor((d - 1) / 3)] : [(d - 1) % 3, 2 - Math.floor((d - 1) / 3)]);   // [row, column] of digit d
+  const cx = (col) => 38 + col * 12, cy = (r) => 20 + r * 17;
+  const digitAt = (r, col) => { for (let d = 1; d <= 9; d++) { const [a, b2] = cell(d); if (a === r && b2 === col) return d; } return 0; };
+  const rx = (i) => 15 + i * 8.7;
+  const build = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    const g = tile(stage, "grid", "", 50, 37, { bare: true });
+    g.firstChild.className = "vm-t__in vm-t__art";
+    g.firstChild.style.width = "calc(var(--u) * 39.4)";
+    g.firstChild.innerHTML = `<svg viewBox="0 0 315 252"><path d="M105 6V246M210 6V246M6 84H309M6 168H309" fill="none" stroke="#2a2723" stroke-width="3.2" stroke-linecap="square"/></svg>`;
+    for (let d = 1; d <= 9; d++) { const [r, col] = cell(d); tile(stage, `u${d}`, String(d), cx(col) + 1.9, cy(r), { c: 4, size: "l" }); }
+    for (let j = 0; j < 9; j++) tile(stage, `t${j}`, String(Math.floor((k * (j + 1)) / 10)), cx(j % 3) - 1.9, cy(Math.floor(j / 3)), { c: 3, size: "l" });
+    for (let j = 0; j < 9; j++) tile(stage, `r${j}`, String(k * (j + 1)), rx(j), 77, { c: 1 });
+    tile(stage, "r9", String(k * 10), 50, 91, { c: 2, size: "l" });
+  };
+  const step = (say, fn) => ({ say, show(stage, how) { fn(acts(stage, how.gsap, how.instant)); } });
+  /** three digits go into their column: popped for the threes, dropped from above for the sevens */
+  const column = (S, from, at0) => { for (let d = from; d < from + 3; d++) { const [, col] = cell(d); const at = at0 + (d - from) * 0.75; if (three) S.pop(`u${d}`, at); else S.fly(`u${d}`, cx(col) + 1.9, -4, at); } };
+  const tensRow = (S, r, at0) => { for (let col = 0; col < 3; col++) { S.pop(`t${r * 3 + col}`, at0 + col * 0.7); S.pulse(`u${digitAt(r, col)}`, at0 + col * 0.7); } };
+  const T = (r) => [0, 1, 2].map((col) => Math.floor((k * (r * 3 + col + 1)) / 10)).join(", ");
+  const steps = [
+    step(`Here is a second trick for the ${k} times table. Draw a grid, three boxes by three.`, (S) => S.pop("grid", 3.4)),
+    step(three ? "Count from 1 to 9. Start at the bottom on the left, and go up. 1, 2, 3."
+      : "Count from 1 to 9, and drop the numbers in like Tetris blocks. Start at the top on the right, and go down. 1, 2, 3.",
+      (S) => column(S, 1, three ? 5.2 : 7.8)),
+    step(three ? "Then up the middle column. 4, 5, 6." : "Then down the middle column. 4, 5, 6.", (S) => column(S, 4, 2.2)),
+    step(three ? "Then up the last column. 7, 8, 9. Those are the units." : "Then down the left column. 7, 8, 9. Those are the units.", (S) => column(S, 7, 2.2)),
+    step(`Now the tens, going across, row by row. In the top row: ${T(0)}.`, (S) => tensRow(S, 0, 5)),
+    step(three ? `In the middle row: ${T(1)}.` : `In the middle row, say the last number again: ${T(1)}.`, (S) => tensRow(S, 1, three ? 1.8 : 3.6)),
+    step(three ? `In the bottom row: ${T(2)}.` : `In the bottom row, the last number again: ${T(2)}.`, (S) => tensRow(S, 2, three ? 1.8 : 3.2)),
+    step(`Read it row by row. ${Array.from({ length: 9 }, (_, j) => k * (j + 1)).join(", ")}.`,
+      (S) => { for (let j = 0; j < 9; j++) { S.pulse(`u${digitAt(Math.floor(j / 3), j % 3)}`, 2 + j * 0.6); S.pop(`r${j}`, 2 + j * 0.6); } }),
+    step(`One more stands by itself, to finish the table. ${k * 10}.`, (S) => S.pop("r9", 3.2)),
+  ];
+  return { build, steps };
+}
+
 /* ── ONE FACT ON COUNTING STICKS: the sixes, the sevens, the fours ─────────
    k × n with n sticks. They are counted UP IN FIVES (5, 10, 15 …), and then
    the SAME sticks are counted again, carrying on from there: in ones for the
@@ -664,10 +732,12 @@ function sixdSteps() {
    ones for the fours (4 = 5 − 1). No table is on the screen: only the sum,
    the sticks, and the two counts written under them. */
 function countSticksSteps(k) {
-  const d = k - 5;                                   // what each stick adds the second time round: 1, 2 or −1
+  const base = k === 3 ? 2 : 5;                      // what the sticks are counted up in first: fives, or twos for the threes
+  const inBase = base === 2 ? "twos" : "fives";
+  const d = k - base;                                // what each stick adds the second time round: 1, 2 or −1
   const [N1, N2] = k === 7 ? [6, 3] : [7, 4];        // the two sums that are counted out
   const how = d === 1 ? "carrying on in ones" : d === 2 ? "carrying on in twos" : "going back in ones";
-  const why = d === 1 ? "6 is 5 and 1" : d === 2 ? "7 is 5 and 2" : "4 is 5 take away 1";
+  const why = k === 3 ? "3 is 2 and 1" : d === 1 ? "6 is 5 and 1" : d === 2 ? "7 is 5 and 2" : "4 is 5 take away 1";
   const sx = (i, n) => 50 + (i - (n - 1) / 2) * 7.5;
   const SY = 42, NY = 27, AY = 60, BY = 72;
   const ten = (fn) => { for (let i = 0; i < 10; i++) fn(i); };
@@ -692,8 +762,8 @@ function countSticksSteps(k) {
       const x = sx(i, n);
       S.put(`st${i}`, { on: i < out ? 1 : 0, x, y: SY, tone: i < more ? "units" : i < fives ? "tens" : "plain" });
       S.put(`n${i}`, { on: i < out ? 1 : 0, x, y: NY });
-      S.put(`a${i}`, { on: i < fives ? 1 : 0, x, y: AY, text: String(5 * (i + 1)) });
-      S.put(`b${i}`, { on: i < more ? 1 : 0, x, y: BY, text: String(5 * n + d * (i + 1)) });
+      S.put(`a${i}`, { on: i < fives ? 1 : 0, x, y: AY, text: String(base * (i + 1)) });
+      S.put(`b${i}`, { on: i < more ? 1 : 0, x, y: BY, text: String(base * n + d * (i + 1)) });
     });
   };
   const sticks = (S, n, at) => { for (let i = 0; i < n; i++) { S.pop(`st${i}`, at + i * 0.48); S.pop(`n${i}`, at + i * 0.48); } };
@@ -705,15 +775,15 @@ function countSticksSteps(k) {
       (S) => { lay(S, N1, { out: 0, q: false }); S.pop("q", 0.5); }),
     step(`For ${k} times ${N1}, lay out ${N1} sticks. ${list(N1, (i) => i + 1)}.`,
       (S) => { lay(S, N1, { out: 0 }); sticks(S, N1, 3.6); }),
-    step(`Count the sticks up in fives. ${list(N1, (i) => 5 * (i + 1))}.`,
+    step(`Count the sticks up in ${inBase}. ${list(N1, (i) => base * (i + 1))}.`,
       (S) => { lay(S, N1); fives(S, N1, 2.6); }),
-    step(`Now count the same sticks again, ${how}. ${list(N1, (i) => 5 * N1 + d * (i + 1))}.`,
+    step(`Now count the same sticks again, ${how}. ${list(N1, (i) => base * N1 + d * (i + 1))}.`,
       (S) => { lay(S, N1, { fives: N1 }); more(S, N1, 3.8); }),
     step(`So ${k} times ${N1} is ${k * N1}.`,
       (S) => { lay(S, N1, { fives: N1, more: N1 }); S.pulse(`b${N1 - 1}`, 0.4); S.pop("ans", 1.2); }),
-    step(`Try another. For ${k} times ${N2}, lay out ${N2} sticks, and count them up in fives. ${list(N2, (i) => 5 * (i + 1))}.`,
+    step(`Try another. For ${k} times ${N2}, lay out ${N2} sticks, and count them up in ${inBase}. ${list(N2, (i) => base * (i + 1))}.`,
       (S) => { lay(S, N2, { out: 0 }); sticks(S, N2, 2.4); fives(S, N2, 7.2); }),
-    step(`Then the same sticks again, ${how}. ${list(N2, (i) => 5 * N2 + d * (i + 1))}. So ${k} times ${N2} is ${k * N2}.`,
+    step(`Then the same sticks again, ${how}. ${list(N2, (i) => base * N2 + d * (i + 1))}. So ${k} times ${N2} is ${k * N2}.`,
       (S) => { lay(S, N2, { fives: N2 }); more(S, N2, 3.6); S.pop("ans", 3.6 + N2 * 0.6 + 1.6); }),
   ];
   return { build, steps };
@@ -755,7 +825,9 @@ async function explain(strip) {
     : data.scene.kind === "fours" ? foursSteps()
     : data.scene.kind === "fourw" ? fourwSteps()
     : data.scene.kind === "sixd" ? sixdSteps()
-    : /^sticks[467]$/.test(data.scene.kind) ? countSticksSteps(Number(data.scene.kind.slice(-1)))
+    : data.scene.kind === "threes" ? threesSteps()
+    : /^grid[37]$/.test(data.scene.kind) ? gridSteps(Number(data.scene.kind.slice(-1)))
+    : /^sticks[3467]$/.test(data.scene.kind) ? countSticksSteps(Number(data.scene.kind.slice(-1)))
     : data.scene.kind === "trach" && data.scene.steps.length ? trachSteps(data)
     : data.scene.kind === "strip" && data.scene.expr.length && data.scene.expr.length === data.scene.res.length ? stripSteps(data)
       : textSteps(data);

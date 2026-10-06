@@ -73,6 +73,27 @@
        first set and 3, 3, 4, 4, 5 in the second: 00 06 12 18 24 ·
        30 36 42 48 54. And 60 stands by itself.
 
+     THE THREE TIMES TABLE
+       A LINE after every three sums. The tens are the same all through a
+       three: 0, 0, 0 | 1, 1, 1 | 2, 2, 2 | 3. The units are counted 0 to
+       9: 0 for the last sum; then 1, 2, 3 in the FIRST row of each three,
+       going UP the page; 4, 5, 6 in the SECOND rows, going up; 7, 8, 9 in
+       the THIRD rows, going up.
+       One at a time: 3 is 2 and 1 — on sticks, up in twos, then the same
+       sticks again in ones.
+
+     THE GRID — a second trick, by itself, for the THREES and the SEVENS
+       Draw a grid, three boxes by three, and count 1 to 9 into it a
+       column at a time. For the THREES start at the BOTTOM LEFT and go UP
+       each column. For the SEVENS drop them in like Tetris blocks: start
+       at the TOP RIGHT and go DOWN each column, working to the left.
+           3 6 9        7 4 1
+           2 5 8        8 5 2
+           1 4 7        9 6 3
+       Read ROW BY ROW and those are the units. The tens go in front row
+       by row: 0 0 0, 1 1 1, 2 2 2 for the threes; 0 1 2, 2 3 4, 4 5 6 for
+       the sevens. Ten of it stands by itself.
+
      ONE FACT OF THE SIXES, SEVENS OR FOURS, ON COUNTING STICKS
        Lay out one stick for each of the number. Count them UP IN FIVES.
        Then count the SAME sticks again, carrying on from there: in ONES
@@ -97,6 +118,7 @@ export const TT_GROUPS = [
   { id: "vm-tables7", label: "The 7 times table", blurb: "Three at a time: say the last ten again, and count the units up in threes." },
   { id: "vm-tables6", label: "The 6 times table", blurb: "Units in the order 2, 4, 6, 8, 0; one ten in each half comes twice. And a second trick: the diagonals." },
   { id: "vm-tables5", label: "The 5 times table", blurb: "Two at a time: the last ten said again, and the units only 0 and 5." },
+  { id: "vm-tables3", label: "The 3 times table", blurb: "Three at a time: the same ten all through a three. And a second trick: the grid." },
   { id: "vm-tables4", label: "The 4 times table", blurb: "Tens 0 0 1 1 2 and from 2 again; units 4 8 2 6 0. And a second trick: two W's." },
 ];
 
@@ -511,7 +533,103 @@ const fourW = {
   answer: () => ["first W, top then bottom: 0, 4, 8, 12, 16; second W: 20, 24, 28, 32, 36; and 40"],
 };
 
-export const TT_EXERCISES = [nineOne, nineAll, nineSticks, eightOne, eightAll, sevenOne, sevenAll, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW];
+/* ═══ THE GRID: a second trick for the threes and the sevens ══════════════
+   1 to 9 are counted into a three-by-three grid a column at a time — up from
+   the bottom left for the threes, down from the top right for the sevens —
+   and read row by row they are the units. */
+/** the digit that stands in row r, column c of k's grid */
+const gridDigit = (k, r, c) => (k === 3 ? 3 * c + (3 - r) : 3 * (2 - c) + r + 1);
+const gridFig = (k) => `<div class="vm-tt vm-tt--w vm-grid" data-steps="listed">${[0, 1, 2].map((r) => [0, 1, 2].map((col) =>
+  `<span class="vm-grid__cell vm-tt__pair"><span class="wb-answer vm-tt__t" data-step="${9 + r * 3 + col}"></span>` +
+  `<span class="wb-answer vm-tt__u" data-step="${gridDigit(k, r, col) - 1}"></span></span>`).join("")).join("")}</div>`;
+const gridEx = (k, { id, group, label, blurb, heading, how, tens }) => ({
+  id, group, label, blurb, heading,
+  instruction: () => `Here is a second trick for the ${k === 3 ? "threes" : "sevens"}. Draw a grid, three boxes by three. Count from 1 ` +
+    `to 9 into it, a column at a time: ${how} Those are the UNITS. Then the TENS, written in front ROW BY ROW: ${tens} ` +
+    `Read row by row: ${Array.from({ length: 9 }, (_, i) => k * (i + 1)).join(", ")}. And ${k * 10} stands by itself. On screen the ` +
+    "boxes open one at a time, in that order.",
+  tv: `grid${k}`,
+  cols: 1,
+  defaultCount: 1,
+  make: (r) => ({ n: r.int(2, 9) }),
+  render: () => `<p class="vm-tt__key"><span class="is-u">second boxes first: 1 to 9, a column at a time</span>` +
+    `<span class="is-t">then the first boxes, row by row</span></p>` + gridFig(k) +
+    ask(`And by itself, to finish the table: ${k} × 10 = ${box()}`),
+  worked: () => worked(ask([0, 1, 2].map((r) => [0, 1, 2].map((col) => gridDigit(k, r, col)).join(" ")).join(" &nbsp; / &nbsp; ") +
+    " &nbsp; → &nbsp; " + [0, 1, 2].map((i) => strip(String(k * (i + 1)).padStart(2, "0"))).join(" ")) +
+    say(`Read the top row: ${[0, 1, 2].map((col) => gridDigit(k, 0, col)).join(", ")}. With the tens in front that is ${[1, 2, 3].map((i) => k * i).join(", ")}.`)),
+  key: () => [...Array.from({ length: 9 }, (_, j) => [want.num(Math.floor((k * (j + 1)) / 10)), want.num((k * (j + 1)) % 10)]).flat(), want.num(k * 10)],
+  answer: () => [`row by row: ${Array.from({ length: 9 }, (_, i) => k * (i + 1)).join(", ")}; and ${k * 10}`],
+});
+
+const sevenGrid = gridEx(7, {
+  id: "vm-tt7-grid",
+  group: "vm-tables7",
+  label: "A second trick: the Tetris grid",
+  blurb: "1 to 9 dropped down the columns from the top right; read row by row.",
+  heading: "The 7 times table — the Tetris grid",
+  how: "drop them in like Tetris blocks — start at the TOP RIGHT and go DOWN, 1, 2, 3; then down the middle column, 4, 5, 6; then down the left, 7, 8, 9.",
+  tens: "0, 1, 2 in the top row; say the last one again, 2, 3, 4 in the middle row; and again, 4, 5, 6 in the bottom row.",
+});
+
+/* ═══ THE THREES ══════════════════════════════════════════════════════════*/
+
+const threeOne = {
+  id: "vm-tt3",
+  group: "vm-tables3",
+  label: "Threes, one at a time",
+  blurb: "3 is 2 and 1: double it, and one more of it.",
+  heading: "The 3 times table — double it and one more",
+  instruction: () => "3 is 2 and 1. So three of a number is DOUBLE it, and ONE MORE of it. With counting sticks: lay out one " +
+    "stick for each of the number, count them UP IN TWOS, then count the SAME sticks again, carrying on IN ONES.",
+  tv: "sticks3",
+  cols: 2,
+  defaultCount: 6,
+  make: (r) => ({ n: r.int(2, 10) }),
+  render: ({ n }) => big(`3 × ${n}`) +
+    steps(step(`2 × ${n} =`), step(`add one more ${n} — the answer:`)),
+  worked: () => worked(big("3 × 7") + ask(strip("2 × 7", "+ 7") + " → " + strip("14", "+ 7") + " = 21") +
+    say("Double 7 is 14. One more seven makes 21. So 3 × 7 is 21.")),
+  key: ({ n }) => [want.num(2 * n), want.num(3 * n)],
+  answer: ({ n }) => [`${2 * n} + ${n}: 3 × ${n} = ${3 * n}`],
+};
+
+const threeAll = {
+  id: "vm-tt3-all",
+  group: "vm-tables3",
+  label: "The whole three times table",
+  blurb: "The same ten all through a three; units counted 0 to 9 up the page.",
+  heading: "The 3 times table — three at a time",
+  instruction: () => "Write the ten sums, 3 × 1 to 3 × 10, down the page, and rule a LINE after every three. The TENS are the " +
+    "same all through a three: 0, 0, 0 — line — 1, 1, 1 — line — 2, 2, 2 — line — 3. The UNITS are counted from 0 to 9: " +
+    "0 goes in the last sum; then 1, 2, 3 go in the FIRST row of each three, going UP the page; 4, 5, 6 in the SECOND " +
+    "rows, going up; and 7, 8, 9 in the THIRD rows, going up. It is set out as PrepBot sets it out. Fill the FIRST box " +
+    "of every row going down the page; then the SECOND boxes, counting 0 to 9. On screen the boxes open one at a time, " +
+    "in that order.",
+  tv: "threes",
+  cols: 1,
+  defaultCount: 1,
+  make: (r) => ({ n: r.int(2, 9) }),
+  /* the units open in the order they are counted, 0 to 9: a box's step is 10 and the digit it holds */
+  render: () => tableHtml(3, [2, 5, 8], "first box, down the page: 0 0 0 · 1 1 1 · 2 2 2 · 3",
+    "second box, 0 to 9: the last sum · first rows up · second rows up · third rows up", (i) => 10 + ((3 * (i + 1)) % 10)),
+  worked: () => worked(ask("3 × 3 = " + strip("0", "9") + " &nbsp; — the line — &nbsp; 3 × 4 = " + strip("1", "2") + " &nbsp; 3 × 5 = " + strip("1", "5")) +
+    say("The first digit is 0 all through the first three, and 1 all through the next. The second digits are counted 0 to 9: 2 is in the first row of the middle three, 5 in its second row, and 9 in the third row of the top three.")),
+  key: () => tableKey(3),
+  answer: () => tableAnswer(3),
+};
+
+const threeGrid = gridEx(3, {
+  id: "vm-tt3-grid",
+  group: "vm-tables3",
+  label: "A second trick: the grid",
+  blurb: "1 to 9 up the columns from the bottom left; read row by row.",
+  heading: "The 3 times table — the grid",
+  how: "start at the BOTTOM LEFT and go UP, 1, 2, 3; then up the middle column, 4, 5, 6; then up the right, 7, 8, 9.",
+  tens: "0, 0, 0 in the top row; 1, 1, 1 in the middle row; 2, 2, 2 in the bottom row.",
+});
+
+export const TT_EXERCISES = [nineOne, nineAll, nineSticks, eightOne, eightAll, sevenOne, sevenAll, sevenGrid, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW, threeOne, threeAll, threeGrid];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).

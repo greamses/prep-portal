@@ -132,3 +132,8 @@
 .vm-t__stick { display: block; width: calc(var(--u) * 1.5); height: calc(var(--u) * 12); background: #e9cf9c; border: calc(var(--u) * 0.26) solid #2a2723; box-sizing: border-box; }
 /* the sixes' diagonals: five pairs of boxes standing where the numbers are written */
 .vm-tt--w .vm-dfig { position: relative; width: 62mm; height: 34mm; margin: 1mm 3mm; }
+/* the grid of the threes and the sevens: three boxes by three, ruled like noughts and crosses */
+.vm-tt.vm-tt--w.vm-grid { display: grid; grid-template-columns: repeat(3, max-content); gap: 0; width: max-content; margin: 3mm 0 4mm 6mm; }
+.vm-grid__cell { padding: 2.4mm 3.4mm; border-right: 0.45mm solid #2a2723; border-bottom: 0.45mm solid #2a2723; }
+.vm-grid__cell:nth-child(3n) { border-right: 0; }
+.vm-grid__cell:nth-child(n + 7) { border-bottom: 0; }
