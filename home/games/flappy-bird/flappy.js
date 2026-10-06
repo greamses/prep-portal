@@ -1,7 +1,7 @@
 // flappy.js — Math Flappy Bird
 //
 // Keep the bird in the air AND keep answering: a flap lifts it (Space, the up
-// arrow, or a tap on the sky), the pipes come at it, and under the sky is a sum
+// arrow, or a tap on the sky), the pipes come at it, and over the sky is a sum
 // from the chosen table with four answers (click one, or press 1–4). A right
 // answer is a point. A wrong answer, a pipe or the ground ends the flight.
 //
@@ -11,9 +11,10 @@
 // number is only wiped — in this mode it is the pipes and the ground that end
 // a flight.
 //
-// The canvas is the whole screen. The sum, the counters and the answers lie
-// over it; the bird flies in the clear band between them (game.top to
-// game.floor), and the answers stand on the ground.
+// The canvas is the whole screen. The sum, the counters, the Sound and Exit
+// icons and the answers lie over it; the bird flies under the sum (game.top)
+// down to the foot of the screen — or, where the answers stretch across its
+// path, as on a phone, down to the ground they stand on (game.floor).
 //
 // Everything on the canvas is drawn here — bird, pipes, clouds — in the theme's
 // own colours, and every sound is a beep made on the spot (see SOUND below).
@@ -179,7 +180,6 @@ function readColors() {
     beak: token('--accent-warning', '#f0a868'),
     wing: token('--accent-danger', '#f07a7a'),
     ink: '#14130f',
-    soil: '#e6dcc0',
   };
 }
 
@@ -246,18 +246,21 @@ function leaveFullscreen() {
 }
 
 // The canvas is as big as CSS makes it — the screen; its bitmap matches the
-// screen's pixels. The flying band is what the sum above and the answers below
-// leave clear (answers standing beside the sky, on a sideways phone, take
-// nothing from its height).
+// screen's pixels.
 function sizeSky() {
   const rect = canvas.getBoundingClientRect();
   const over = topEl.getBoundingClientRect();
-  const under = bottomEl.getBoundingClientRect();
+  const under = choicesEl.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   game.w = rect.width;
   game.h = rect.height;
   game.top = Math.max(0, over.bottom - rect.top);
-  game.floor = under.width >= rect.width * 0.9 ? under.top - rect.top : rect.height;
+  // The answers take the foot of the sky only where they would hide the bird:
+  // on a desktop they sit in the middle, clear of its path, and beside the sky
+  // on a sideways phone; with nothing to press (typing at a keyboard) they are
+  // not there at all.
+  const inBirdsWay = under.height > 0 && under.left - rect.left < rect.width * 0.16 + 70;
+  game.floor = inBirdsWay ? under.top - rect.top - 10 : rect.height;
   if (game.floor - game.top < 80) { game.top = 0; game.floor = rect.height; } // no room left: fly behind them
   game.unit = (game.floor - game.top) / 530;
   canvas.width = Math.round(rect.width * dpr);
@@ -534,12 +537,11 @@ function draw(t) {
     drawCloud(cloud);
   }
   game.pipes.forEach(drawPipe);
-  // Ground: the earth the answers stand on, and a strip of grass along its top.
-  ctx.fillStyle = colors.soil;
-  ctx.fillRect(0, game.floor, game.w, game.h - game.floor);
+  // Ground: grass along the foot of the sky — a strip, or where the answers
+  // stand across it, all of the ground under them.
   ctx.fillStyle = colors.pipe;
   ctx.globalAlpha = 0.55;
-  ctx.fillRect(0, game.floor - 6 * game.unit, game.w, 6 * game.unit);
+  ctx.fillRect(0, game.floor - 6 * game.unit, game.w, game.h - game.floor + 6 * game.unit);
   ctx.globalAlpha = 1;
   drawBird();
 }
@@ -579,15 +581,17 @@ document.addEventListener('keyup', (e) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  // The Sound tick in the play view.
-  const soundTick = document.getElementById('flappy-sound');
-  if (soundTick) {
-    soundTick.checked = soundOn;
-    soundTick.addEventListener('change', () => {
-      soundOn = soundTick.checked;
+  // The speaker icon in the corner of the sky.
+  const soundBtn = document.getElementById('flappy-sound');
+  if (soundBtn) {
+    soundBtn.setAttribute('aria-pressed', String(soundOn));
+    soundBtn.addEventListener('mousedown', (e) => e.preventDefault()); // Space is the flap key, not this button's
+    soundBtn.addEventListener('click', () => {
+      soundOn = !soundOn;
+      soundBtn.setAttribute('aria-pressed', String(soundOn));
       try { localStorage.setItem(SOUND_KEY, soundOn ? 'on' : 'off'); } catch (_) { /* private mode */ }
       if (soundOn) SOUND.right(); // let them hear what they turned on
-      soundTick.blur(); // Space is the flap key, not this box's
+      soundBtn.blur();
     });
   }
 
@@ -601,7 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const onResize = () => { if (game.phase !== 'idle') resizeSky(); };
   if (window.ResizeObserver) {
     const watch = new ResizeObserver(onResize);
-    [sky, document.querySelector('.flappy-top'), document.querySelector('.flappy-bottom')].forEach((el) => watch.observe(el));
+    [sky, document.querySelector('.flappy-top'), document.getElementById('flappy-choices')].forEach((el) => watch.observe(el));
   } else window.addEventListener('resize', onResize);
 });
 

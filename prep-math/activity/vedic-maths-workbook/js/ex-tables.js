@@ -51,12 +51,16 @@
        every two, 5 in the FIRST.
        One at a time: 5 is half of 10, so ten of it, halved.
 
-     THE FOUR TIMES TABLE — THE W
-       Count in twos and write that ALONG a big W: 0, 2, 4, 6, 8. Go across
-       the TOP of the W, then the BOTTOM: 0, 4, 8, 2, 6 — the units of
-       0, 4, 8, 12, 16. Keep counting up and they come round again:
-       20, 24, 28, 32, 36. The tens go up one each time the units get
-       smaller: 0, 0, 1, 1, 2 | 2, 2, 3, 3, 4.
+     THE FOUR TIMES TABLE
+       A LINE under 4 × 5. The tens go 0, 0, 1, 1, 2 down to the line and
+       from the same 2 below it: 2, 2, 3, 3, 4. The units are the fours
+       counted with only the last figure written: 4, 8, 2, 6, 0 — twice.
+
+       A SECOND TRICK, BY ITSELF — THE W. Draw TWO big W's. Count in twos
+       ALONG each: 0, 2, 4, 6, 8 — the units. Then the tens: 0, 0, 0 across
+       the TOP of the first W, 1, 1 across its BOTTOM; 2, 2, 2 across the
+       top of the second, 3, 3 across its bottom. Read top then bottom:
+       00 04 08 12 16 · 20 24 28 32 36. And 40 stands by itself.
 
      A LINE across a table marks where its pattern REPEATS. It is on the
      paper and on the TV.
@@ -76,7 +80,7 @@ export const TT_GROUPS = [
   { id: "vm-tables7", label: "The 7 times table", blurb: "Three at a time: say the last ten again, and count the units up in threes." },
   { id: "vm-tables6", label: "The 6 times table", blurb: "Units in the order 2, 4, 6, 8, 0; one ten in each half comes twice." },
   { id: "vm-tables5", label: "The 5 times table", blurb: "Two at a time: the last ten said again, and the units only 0 and 5." },
-  { id: "vm-tables4", label: "The 4 times table", blurb: "Count in twos along a W; go across the top, then the bottom." },
+  { id: "vm-tables4", label: "The 4 times table", blurb: "Tens 0 0 1 1 2 and from 2 again; units 4 8 2 6 0. And a second trick: two W's." },
 ];
 
 const SECRET =
@@ -366,47 +370,19 @@ const nineSticks = {
   answer: ({ n }) => [`${n - 1} left, ${10 - n} right: 9 × ${n} = ${9 * n}`],
 };
 
-/* ═══ THE FOURS: THE W ════════════════════════════════════════════════════
-   Count in twos ALONG a W — 0, 2, 4, 6, 8 — then go across its TOP and then
-   its BOTTOM: 0, 4, 8, 2, 6, the units of 0, 4, 8, 12, 16. */
-const W_ALONG = ["0", "2", "4", "6", "8"];        // along the stroke: top, bottom, top, bottom, top
-const W_READ = ["0", "4", "8", "2", "6"];         // across the top, then the bottom
-
-const fourW = {
-  id: "vm-tt4-w",
-  group: "vm-tables4",
-  label: "Fours on a W",
-  blurb: "Count in twos along a W; read the top, then the bottom.",
-  heading: "The 4 times table — the W",
-  instruction: () => "Draw a big W. Count in TWOS and write that ALONG the W, from the left: 0, 2, 4, 6, 8. Now go across the " +
-    "TOP of the W, and then the BOTTOM: those are the units of 0, 4, 8, 12 and 16. Keep counting up and they come " +
-    "round again: 20, 24, 28, 32, 36.",
-  tv: "fours",
-  cols: 1,
-  defaultCount: 1,
-  make: (r) => ({ n: r.int(2, 9) }),
-  /* the five boxes stand on the W's points, and are filled along the stroke */
-  render: () => `<div class="vm-wfig">${wSvg()}${W_POINTS.map(([x, y]) =>
-    `<span class="vm-wfig__pt" style="left:${((x / 124) * 100).toFixed(2)}%;top:${((y / 76) * 100).toFixed(2)}%"><span class="wb-answer"></span></span>`).join("")}</div>` +
-    ask(`Across the top, then the bottom, the units are: ${box()} ${box()} ${box()} ${box()} ${box()}`) +
-    ask(`So counting in fours: ${box()} ${box()} ${box()} ${box()} ${box()}`),
-  worked: () => worked(`<div class="vm-art vm-art--w">${wSvg({ labels: W_ALONG })}</div>` +
-    say("Along the W: 0, 2, 4, 6, 8. Across the top: 0, 4, 8. Then the bottom: 2, 6. So counting in fours goes 0, 4, 8, 12, 16 — and then 20, 24, 28, 32, 36.")),
-  key: () => [...W_ALONG, ...W_READ, "0", "4", "8", "12", "16"].map((d) => want.num(Number(d))),
-  answer: () => [`along the W: ${W_ALONG.join(", ")}; top then bottom: ${W_READ.join(", ")}; fours: 0, 4, 8, 12, 16`],
-};
+/* ═══ THE FOURS ═══════════════════════════════════════════════════════════*/
 
 const fourAll = {
   id: "vm-tt4-all",
   group: "vm-tables4",
   label: "The whole four times table",
-  blurb: "Units off the W: 4, 8, 2, 6, 0. Tens 0 0 1 1 2, and from 2 again.",
-  heading: "The 4 times table — units off the W",
+  blurb: "Tens 0 0 1 1 2, and from 2 again; units 4 8 2 6 0, twice.",
+  heading: "The 4 times table — a line under 4 × 5",
   instruction: () => "Write the ten sums, 4 × 1 to 4 × 10, down the page, and rule a LINE under 4 × 5. The TENS go 0, 0, 1, 1, 2 " +
-    "down to the line, and from the same 2 below it: 2, 2, 3, 3, 4. The UNITS come off the W — across the top and then " +
-    "the bottom, starting after the 0: 4, 8, 2, 6, and round to 0 — and the same again below the line. It is set out " +
-    "as PrepBot sets it out. Fill the FIRST box of every row going down the page, then the SECOND box of every row " +
-    "going down the page. On screen the boxes open one at a time, in that order.",
+    "down to the line, and from the same 2 below it: 2, 2, 3, 3, 4. For the UNITS count in fours and write only the " +
+    "last figure: 4, 8, 2, 6, 0 — and the same again below the line. It is set out as PrepBot sets it out. Fill the " +
+    "FIRST box of every row going down the page, then the SECOND box of every row going down the page. On screen the " +
+    "boxes open one at a time, in that order.",
   tv: "fours",
   cols: 1,
   defaultCount: 1,
@@ -414,12 +390,52 @@ const fourAll = {
   render: () => tableHtml(4, [4], "first box, down the page: 0 0 1 1 2 · the line · 2 2 3 3 4",
     "second box, down the page: 4 8 2 6 0 — twice", (i) => 10 + i),
   worked: () => worked(ask("4 × 1 = " + strip("0", "4") + " &nbsp; 4 × 2 = " + strip("0", "8") + " &nbsp; 4 × 3 = " + strip("1", "2")) +
-    say("The second digits come off the W: 4, 8, then 2 and 6 from the bottom, then 0. The first digit goes up one each time the second digit gets smaller.")),
+    say("Counting in fours: 4, 8, 12. Only the last figure goes in the second box: 4, 8, 2. The first digit goes up one each time the second digit gets smaller.")),
   key: () => tableKey(4),
   answer: () => tableAnswer(4),
 };
 
-export const TT_EXERCISES = [nineOne, nineAll, nineSticks, eightOne, eightAll, sevenOne, sevenAll, sixOne, sixAll, fiveOne, fiveAll, fourW, fourAll];
+/* A SECOND TRICK, BY ITSELF: THE TWO W's.
+   Each point of a W holds a number of two figures. Along the stroke the points are top, bottom, top,
+   bottom, top; the UNITS are the twos counted along it (0 2 4 6 8), and the TENS are one figure across the
+   whole top and the next across the whole bottom: 0 and 1 on the first W, 2 and 3 on the second. */
+const W_TOP = (pt) => pt % 2 === 0;
+const wUnit = (pt) => 2 * pt;
+const wTens = (w, pt) => 2 * w + (W_TOP(pt) ? 0 : 1);
+/* when each box is filled: the ten units along the two W's first (0 to 9), then the tens —
+   first W's top, its bottom, second W's top, its bottom (10 to 19) */
+const wUnitStep = (w, pt) => w * 5 + pt;
+const wTensStep = (w, pt) => 10 + w * 5 + (W_TOP(pt) ? pt / 2 : 3 + (pt - 1) / 2);
+const wFig = (w) => `<div class="vm-wfig">${wSvg({ dots: false })}${W_POINTS.map(([x, y], pt) =>
+  `<span class="vm-wfig__pt vm-tt__pair" style="left:${((x / 124) * 100).toFixed(2)}%;top:${((y / 76) * 100).toFixed(2)}%">` +
+  `<span class="wb-answer vm-tt__t" data-step="${wTensStep(w, pt)}"></span><span class="wb-answer vm-tt__u" data-step="${wUnitStep(w, pt)}"></span></span>`).join("")}</div>`;
+
+const fourW = {
+  id: "vm-tt4-w",
+  group: "vm-tables4",
+  label: "A second trick: the two W's",
+  blurb: "Twos along each W for the units; 0 0 0, 1 1, then 2 2 2, 3 3 for the tens.",
+  heading: "The 4 times table — the two W's",
+  instruction: () => "Here is a second trick for the fours. Draw TWO big W's. First the UNITS: count in twos ALONG each W, " +
+    "from the left — 0, 2, 4, 6, 8. Then the TENS, written in front: 0, 0, 0 across the TOP of the first W and 1, 1 " +
+    "across its BOTTOM; 2, 2, 2 across the top of the second W and 3, 3 across its bottom. Read each W across the " +
+    "top and then the bottom: 0, 4, 8, 12, 16 and 20, 24, 28, 32, 36. And 40 stands by itself. On screen the boxes " +
+    "open one at a time, in that order.",
+  tv: "fourw",
+  cols: 1,
+  defaultCount: 1,
+  make: (r) => ({ n: r.int(2, 9) }),
+  render: () => `<p class="vm-tt__key"><span class="is-u">second boxes first: 0 2 4 6 8 along each W</span>` +
+    `<span class="is-t">then the first boxes: 0 0 0 top, 1 1 bottom · 2 2 2 top, 3 3 bottom</span></p>` +
+    `<div class="vm-tt vm-tt--w" data-steps="listed">${wFig(0)}${wFig(1)}</div>` +
+    ask(`And by itself, to finish the table: 4 × 10 = ${box()}`),
+  worked: () => worked(`<div class="vm-art vm-art--w">${wSvg({ labels: ["0", "2", "4", "6", "8"], tens: ["0", "1", "0", "1", "0"] })}</div>` +
+    say("Along the first W the units are 0, 2, 4, 6, 8. The tens are 0 across the top and 1 across the bottom. Top then bottom it reads 0, 4, 8, 12, 16.")),
+  key: () => [...[0, 1].flatMap((w) => W_POINTS.flatMap((_, pt) => [want.num(wTens(w, pt)), want.num(wUnit(pt))])), want.num(40)],
+  answer: () => ["first W, top then bottom: 0, 4, 8, 12, 16; second W: 20, 24, 28, 32, 36; and 40"],
+};
+
+export const TT_EXERCISES = [nineOne, nineAll, nineSticks, eightOne, eightAll, sevenOne, sevenAll, sixOne, sixAll, fiveOne, fiveAll, fourAll, fourW];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).

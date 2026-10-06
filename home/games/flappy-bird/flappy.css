@@ -31,7 +31,7 @@
 }
 
 /* The two bands over the sky let a tap through to it (a tap on the sky is a
-   flap); only what is pressed in them — keys, buttons, the Sound tick — takes
+   flap); only what is pressed in them — keys, the Sound and Exit icons — takes
    the tap for itself. */
 .flappy-top,
 .flappy-bottom {
@@ -41,8 +41,8 @@
   z-index: 1;
   pointer-events: none;
 }
-.flappy-bottom button,
-.flappy-bottom label { pointer-events: auto; }
+.flappy-top button,
+.flappy-bottom button { pointer-events: auto; }
 
 .flappy-top {
   top: 0;
@@ -56,7 +56,40 @@
 
 .flappy-bottom {
   bottom: 0;
-  padding: 0.9rem 1rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
+  padding: 0 1rem calc(0.9rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* The right-hand corner: the best score, then Sound and Exit as icons. */
+.flappy-corner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.flappy-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  padding: 0;
+  color: #14130f;
+}
+.flappy-icon__off,
+.flappy-icon[aria-pressed="false"] .flappy-icon__on { display: none; }
+.flappy-icon[aria-pressed="false"] .flappy-icon__off { display: block; }
+
+/* What the game says, and Play Again, hang under the top band: they are over
+   the sky, and take no height from the flight. */
+.flappy-says {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0 1rem;
 }
 
 /* ── SETUP: the three lines of how-to ─────────────────── */
@@ -159,22 +192,20 @@
 .flappy-choice.is-right { box-shadow: 0 0 0 3px var(--accent-success), 5px 8px 12px -4px rgba(20, 19, 15, 0.3); }
 .flappy-choice.is-wrong { box-shadow: 0 0 0 3px var(--accent-danger), 5px 8px 12px -4px rgba(20, 19, 15, 0.3); }
 
-/* The feedback line has a FIXED height — one line, two on a phone — so a
-   longer message never pushes up into the sky and resizes it mid-flight. */
-.flappy-bottom .pgame-feedback {
-  height: 1.4em;
+/* Written on the sky, which does not change with the theme — fixed colours. */
+.flappy-says .pgame-feedback {
   min-height: 0;
-  margin: 0.6rem 0 0.55rem;
+  margin: 0;
   line-height: 1.4;
-  overflow: hidden;
-  color: #14130f; /* on the drawn ground, which does not change with the theme */
+  color: #14130f;
 }
-.flappy-bottom .pgame-feedback.is-error { color: #a12626; }
+.flappy-says .pgame-feedback.is-error { color: #a12626; }
 
 @media (max-width: 560px) {
   .flappy-top { padding-left: 0.7rem; padding-right: 0.7rem; }
   .flappy-bottom { padding-left: 0.7rem; padding-right: 0.7rem; }
-  .flappy-bottom .pgame-feedback { height: 2.8em; }
+  .flappy-corner { gap: 0.35rem; }
+  .flappy-icon { width: 2rem; height: 2rem; }
   .flappy-choices { gap: 0.4rem; }
   .flappy-choice { font-size: 1.05rem; }
   /* Two rows of digits; delete is the wide key at the end of the second. */
@@ -201,7 +232,4 @@
   .flappy-choices.is-keypad { grid-template-columns: repeat(3, 1fr); gap: 0.35rem; }
   .flappy-key { padding: 0.4rem 0.1rem 0.35rem; }
   .flappy-key[data-key="del"] { grid-column: span 2; }
-  .flappy-bottom .pgame-feedback { height: 4.2em; margin: 0.45rem 0; }
-  .flappy-choices.is-keypad + .pgame-feedback { height: 2.8em; }
-  .flappy-bottom .pp-lobby-actions { gap: 0.5rem; }
 }

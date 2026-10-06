@@ -9,10 +9,12 @@
                 the nines. 9 is 10 − 1: take away the stick at number n, and
                 the sticks to its LEFT are the tens of 9 × n, the sticks to
                 its RIGHT the units.
-     wSvg       a big W — the W METHOD for the FOURS. Count in twos ALONG the
-                W: 0, 2, 4, 6, 8. Then go across the TOP (0, 4, 8) and then
-                the BOTTOM (2, 6): those are the units of 0, 4, 8, 12, 16 —
-                and they come round again for 20, 24, 28, 32, 36.
+     wSvg       a big W — the W TRICK for the FOURS, which takes TWO of them.
+                Count in twos ALONG each W: 0, 2, 4, 6, 8 — the units. Then
+                the tens: 0, 0, 0 across the TOP of the first W and 1, 1
+                across its BOTTOM; 2, 2, 2 across the top of the second and
+                3, 3 across its bottom. Top then bottom, W by W, it reads
+                00 04 08 12 16 · 20 24 28 32 36. 40 stands by itself.
 
    The colours are the table's own two: blue for tens, orange for units.
    ========================================================================== */
@@ -49,17 +51,17 @@ export const W_POINTS = [[14, 14], [38, 62], [62, 14], [86, 62], [110, 14]];
  * A big W.
  *   labels   what stands at its five points, ALONG the stroke (so the bottom
  *            two are labels[1] and labels[3]); "" leaves a point empty
- *   trace    draw the arrow that says "read along it"
+ *   tens     a tens digit to write in front of each of them, in the tens' blue
+ *   dots     false leaves the five rings out (answer boxes stand there instead)
  */
-export function wSvg({ labels = ["", "", "", "", ""], trace = false } = {}) {
+export function wSvg({ labels = ["", "", "", "", ""], tens = ["", "", "", "", ""], dots = true } = {}) {
   const path = W_POINTS.map(([x, y], i) => `${i ? "L" : "M"}${x} ${y}`).join("");
-  let s = `<path d="${path}" fill="none" stroke="${trace ? UNITS.line : INK}" stroke-width="${trace ? 3 : 2.2}" stroke-linejoin="round" stroke-linecap="round"/>`;
-  if (trace) s += `<path d="M103.5 21.5L110 14l1.6 9.6" fill="none" stroke="${UNITS.line}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
-  W_POINTS.forEach(([x, y], i) => {
-    const top = i % 2 === 0;
-    s += `<circle cx="${x}" cy="${y}" r="9.5" fill="${labels[i] === "" ? "#fffdf8" : UNITS.fill}" stroke="${UNITS.line}" stroke-width="1.5"/>`;
-    if (labels[i] !== "") s += `<text x="${x}" y="${y + 4.2}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" font-weight="800" fill="${INK}">${labels[i]}</text>`;
-    void top;
+  let s = `<path d="${path}" fill="none" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  if (dots) W_POINTS.forEach(([x, y], i) => {
+    const t = tens[i] ?? "", u = labels[i] ?? "";
+    s += `<circle cx="${x}" cy="${y}" r="10.5" fill="${u === "" ? "#fffdf8" : "#fff3df"}" stroke="${UNITS.line}" stroke-width="1.5"/>`;
+    if (u !== "" || t !== "") s += `<text x="${x}" y="${y + 4.3}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" font-weight="800">` +
+      `<tspan fill="${TENS.line}">${t}</tspan><tspan fill="${UNITS.line}">${u}</tspan></text>`;
   });
   return `<svg class="vm-w" viewBox="0 0 124 76" role="img" aria-label="A big W with a number at each of its five points">${s}</svg>`;
 }

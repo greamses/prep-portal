@@ -102,7 +102,7 @@
               <li><strong>Choosing:</strong> tap an answer, or press 1 to 4. A wrong one ends the flight.</li>
               <li><strong>Typing:</strong> type the answer after the equals sign. The next sum comes as soon as it is right.</li>
               <li>Every right answer is a point. Fly as long as you can.</li>
-              <li>It beeps. Untick <strong>Sound</strong> under the sky to play in silence.</li>
+              <li>It beeps. Press the speaker in the corner of the sky to play in silence.</li>
             </ul>
           </div>
 
@@ -116,8 +116,8 @@
 
     <!-- ═══ PLAY VIEW — the whole screen ═══
          The sky is the whole screen. Lying over it: the sum between the two
-         counters along the top, and the answers with the buttons under them
-         along the bottom, standing on the ground. -->
+         counters along the top with the Sound and Exit icons, and the
+         answers along the bottom. -->
     <div class="review-bd flappy-play" id="game-modal" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
         <div class="flappy-stage">
@@ -127,21 +127,29 @@
         <div class="flappy-top">
           <span class="pp-sticky pp-sticky--tape pgame-note" id="flappy-score">0 correct</span>
           <p class="flappy-sum" id="flappy-sum" aria-live="polite"></p>
-          <span class="pp-sticky pp-sticky--tape pgame-note" id="flappy-best">best 0</span>
+          <div class="flappy-corner">
+            <span class="pp-sticky pp-sticky--tape pgame-note" id="flappy-best">best 0</span>
+            <!-- Sound and Exit: two icons in the corner of the sky. -->
+            <button class="flappy-icon pp-sticky pp-note-btn pp-sticky--c2" id="flappy-sound" type="button" aria-pressed="true" aria-label="Sound" title="Sound">
+              <svg class="flappy-icon__on" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><path fill="currentColor" d="M3 9h4l5-4v14l-5-4H3zM14.5 8.2a5 5 0 0 1 0 7.6l-1.2-1.5a3 3 0 0 0 0-4.6zM17 5.2a9 9 0 0 1 0 13.6l-1.2-1.5a7 7 0 0 0 0-10.6z"/></svg>
+              <svg class="flappy-icon__off" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><path fill="currentColor" d="M3 9h4l5-4v14l-5-4H3zM15.4 8.6l2.1 2.1 2.1-2.1 1.3 1.3-2.1 2.1 2.1 2.1-1.3 1.3-2.1-2.1-2.1 2.1-1.3-1.3 2.1-2.1-2.1-2.1z"/></svg>
+            </button>
+            <button class="flappy-icon pp-sticky pp-note-btn pp-note-btn--plain" type="button" onclick="closeGame()" aria-label="Exit" title="Exit">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><path fill="currentColor" d="M6.3 4.2 12 9.9l5.7-5.7 2.1 2.1-5.7 5.7 5.7 5.7-2.1 2.1-5.7-5.7-5.7 5.7-2.1-2.1 5.7-5.7-5.7-5.7z"/></svg>
+            </button>
+          </div>
+
+          <!-- Hangs under the band without adding to its height. -->
+          <div class="flappy-says">
+            <p class="pgame-feedback" id="game-feedback"></p>
+            <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="again-btn" type="button" onclick="playAgain()" hidden>Play Again</button>
+          </div>
         </div>
 
+        <!-- The four answers: sticky-note keys, numbered for the keyboard.
+             When the answer is typed on a touch screen, the digits instead. -->
         <div class="flappy-bottom">
-          <!-- The four answers: sticky-note keys, numbered for the keyboard.
-               When the answer is typed, the digits to press instead. -->
           <div class="flappy-choices" id="flappy-choices"></div>
-
-          <p class="pgame-feedback" id="game-feedback"></p>
-
-          <div class="pp-lobby-actions">
-            <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="checkbox" id="flappy-sound" checked /><span>Sound</span></label>
-            <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="again-btn" type="button" onclick="playAgain()" hidden>Play Again</button>
-            <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" type="button" onclick="closeGame()">Exit</button>
-          </div>
         </div>
       </div>
     </div>
