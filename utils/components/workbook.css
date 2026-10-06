@@ -3000,20 +3000,19 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 
 /* ── the Times tables tool on the rail (interactive.js) ───────────────────────
    Which table, and the table written out under it. */
-.wb-tt { display: flex; flex-direction: column; gap: 0.55rem; padding: 0.7rem 0.9rem 0.9rem; font-family: var(--font-mono, "JetBrains Mono", monospace); }
+.wb-tt { display: flex; flex-direction: column; align-items: center; gap: 0.7rem; padding: 0.7rem 0.9rem 0.9rem; font-family: var(--font-mono, "JetBrains Mono", monospace); }
 .wb-tt__ask { display: flex; align-items: center; gap: 0.6rem; font-size: 0.8rem; font-weight: 700; color: var(--ink, #2a2723); }
 .wb-tt__n {
   width: 5.2rem; padding: 0.4rem 0.5rem; border: 2px solid var(--ink, #2a2723); border-radius: 0;
   background: #fff3a8; color: #14130f; font: 800 1.15rem/1 "JetBrains Mono", ui-monospace, monospace; text-align: center;
 }
 .wb-tt__n:focus { outline: 2px solid var(--accent-secondary, #6fb7e8); outline-offset: 2px; }
-.wb-tt__to { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: var(--text-secondary, #6b645a); }
 /* a sum reads as ONE thing — "9 × 7 = 63" — so its three parts stand together
    at the left, not pushed out to the two edges of the panel */
-.wb-tt__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.1rem; width: max-content; max-width: 100%; }
+.wb-tt__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.16rem; width: max-content; max-width: 100%; margin: 0 auto; }
 .wb-tt__row {
-  display: grid; grid-template-columns: max-content max-content max-content; gap: 0.45rem; align-items: baseline;
-  padding: 0.2rem 0.8rem 0.2rem 0.55rem; font-size: 1rem; line-height: 1.35; color: #14130f; background: #fffdf8;
+  display: grid; grid-template-columns: max-content max-content max-content; gap: 0.6rem; align-items: baseline; justify-content: center;
+  padding: 0.3rem 1.1rem; font-size: 1.12rem; line-height: 1.4; color: #14130f; background: #fffdf8;
 }
 /* COLOURFUL: each sum on one of the site's six papers, in turn */
 .wb-tt__row:nth-child(6n + 1) { background: #fff3a8; }
@@ -3022,6 +3021,6 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .wb-tt__row:nth-child(6n + 4) { background: #e8c8ff; }
 .wb-tt__row:nth-child(6n + 5) { background: #ffd7a3; }
 .wb-tt__row:nth-child(6n) { background: #b8ece2; }
-.wb-tt__row b { font-weight: 800; color: #b3261e; }
+.wb-tt__row b { font-weight: 800; color: #14130f; }
 .wb-tt__hint { margin: 0; font-size: 0.74rem; color: var(--text-secondary, #6b645a); }
 .wb-tt__hint[hidden] { display: none; }

@@ -2985,17 +2985,16 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       id: "tables",
       label: "Times tables",
       icon: TOOL_ICONS.tables,
-      size: { w: 260, h: 470 },
+      size: { w: 280, h: 620 },
       open: (body) => {
         const tool = document.createElement("div");
         tool.className = "wb-tool wb-tt";
         tool.innerHTML =
           `<label class="wb-tt__ask"><span>Which table?</span><input class="wb-tt__n" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="9" aria-label="Which times table"></label>` +
-          `<label class="wb-tt__to"><input type="checkbox" class="wb-tt__12"> up to × 12</label>` +
           `<ol class="wb-tt__list" aria-live="polite"></ol>` +
           `<p class="wb-tt__hint">Type a number and its table appears.</p>`;
         body.appendChild(tool);
-        const input = tool.querySelector(".wb-tt__n"), to12 = tool.querySelector(".wb-tt__12");
+        const input = tool.querySelector(".wb-tt__n");
         const list = tool.querySelector(".wb-tt__list"), hint = tool.querySelector(".wb-tt__hint");
         const KEY = "wb-times-table";
         const paint = () => {
@@ -3005,13 +3004,12 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
           const n = Math.round(Number(input.value));
           const ok = input.value.trim() !== "" && Number.isFinite(n) && n >= 0 && n <= 9999;
           hint.hidden = ok;
-          list.innerHTML = !ok ? "" : Array.from({ length: to12.checked ? 12 : 10 }, (_, i) =>
+          list.innerHTML = !ok ? "" : Array.from({ length: 12 }, (_, i) =>
             `<li class="wb-tt__row"><span>${n} × ${i + 1}</span><span>=</span><b>${(n * (i + 1)).toLocaleString("en-NG")}</b></li>`).join("");
-          try { localStorage.setItem(KEY, JSON.stringify({ n: ok ? n : "", to12: to12.checked })); } catch { /* not kept */ }
+          try { localStorage.setItem(KEY, JSON.stringify({ n: ok ? n : "" })); } catch { /* not kept */ }
         };
-        try { const kept = JSON.parse(localStorage.getItem(KEY) || "null"); if (kept) { input.value = kept.n ?? ""; to12.checked = !!kept.to12; } } catch { /* a fresh one */ }
+        try { const kept = JSON.parse(localStorage.getItem(KEY) || "null"); if (kept) input.value = kept.n ?? ""; } catch { /* a fresh one */ }
         input.addEventListener("input", paint);
-        to12.addEventListener("change", paint);
         paint();
         setTimeout(() => input.focus(), 0);
       },
