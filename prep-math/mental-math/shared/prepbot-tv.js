@@ -85,6 +85,8 @@ export async function openTv({ title = "", build = () => {}, steps = [] } = {}) 
   let auth = null;
   try { auth = (await import("/firebase-init.js")).auth || null; } catch { /* the free voice */ }
   const teacher = new PrepbotTeacher({ root: box.querySelector(".mm-prepbot"), boundsEl: screen, auth, menu: { ask: b("ask"), voice: b("voice"), sleep: b("sleep"), poke: b("poke") } });
+  /* the voice changed in the middle of a line: say the step again in the new one */
+  teacher.onVoiceChange = () => { if (!closed && index >= 0) go(index); };
   let gsap = null;
   try {
     const m = await import("https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm");
@@ -124,12 +126,35 @@ export async function openTv({ title = "", build = () => {}, steps = [] } = {}) 
     if (mine === token && !closed && playing) go(index + 1);
   }
 
+  /* Out of sight, out of hearing: when the learner leaves the page (another
+     tab, another app, the phone locked) the lesson stops talking and PrepBot
+     stops fidgeting; back again, a lesson that was playing takes its step up
+     from the start. */
+  let awayPlaying = false;
+  const onVisible = () => {
+    if (closed) return;
+    if (document.hidden) {
+      awayPlaying = playing && index >= 0;
+      playing = false;
+      token++;
+      teacher.stop();
+      teacher.stopIdle();
+      paintControls();
+    } else {
+      teacher.scheduleIdle();
+      if (awayPlaying) { awayPlaying = false; playing = true; go(index); }
+    }
+  };
+  document.addEventListener("visibilitychange", onVisible);
+  window.addEventListener("pagehide", close);
+
   function close() {
     if (closed) return;
     closed = true;
     token++;
-    teacher.stop();
-    teacher.stopIdle?.();
+    teacher.destroy();
+    document.removeEventListener("visibilitychange", onVisible);
+    window.removeEventListener("pagehide", close);
     if (document.fullscreenElement === tv) document.exitFullscreen?.();
     window.removeEventListener("keydown", onKey, true);
     box.remove();

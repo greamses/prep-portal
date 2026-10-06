@@ -65,6 +65,10 @@ export class PrepbotTeacher {
     this.rhythmTimer = null;
     this.boundaryFallbackTimer = null;
     this.talkSafetyTimer = null;
+    this.mouthTimer = null;
+    this.audioEl = null;      // the spoken line that is playing now: only ever one
+    this.lineToken = 0;       // every line said (and every stop) makes a new one; a voice that is not the latest is dumb
+    this.impulse = null;      // the idle bounce / slide / spin that is running now
     this.narrationToken = 0;
     this.narrationDone = Promise.resolve();
     this.currentTalkPromise = Promise.resolve();
@@ -112,6 +116,9 @@ export class PrepbotTeacher {
   _stopBody() {
     const { gsap, avatar, root } = this;
     if (!gsap) return;
+    this.impulse?.kill();
+    this.impulse = null;
+    if (this.bubble) gsap.set(this.bubble, { opacity: 1 });
     gsap.killTweensOf(avatar);
     gsap.killTweensOf(root);
     gsap.set(avatar, { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0 });
@@ -148,8 +155,9 @@ export class PrepbotTeacher {
     const { gsap, avatar } = this;
     return gsap
       .timeline()
-      .to(avatar, { rotation: "+=360", y: -10, duration: 0.5, ease: "back.out(2)" })
-      .to(avatar, { y: 0, duration: 0.25 });
+      .fromTo(avatar, { rotation: 0 }, { rotation: 360, y: -10, duration: 0.5, ease: "back.out(2)" })
+      .to(avatar, { y: 0, duration: 0.25 })
+      .set(avatar, { rotation: 0 });
   }
 
   // The bubble reads oddly floating next to a bouncing/sliding character —
@@ -175,17 +183,25 @@ export class PrepbotTeacher {
     if (!this.gsap) return; // no GSAP yet — the page will re-call this once it's loaded
     clearTimeout(this.idleTimer);
     this.idleTimer = setTimeout(() => {
-      if (!this.isTalking && !this.asleep) this._runImpulse(this._randomImpulse());
+      if (this._mayFidget()) this.impulse = this._runImpulse(this._randomImpulse());
       this.scheduleIdle();
     }, 1800 + Math.random() * 2200);
+  }
+
+  // One impulse at a time, and none while the page is out of sight. A hidden
+  // tab still runs its timers but not its animation frames, so impulses would
+  // pile up unplayed and all go off together on coming back — leaving the
+  // head squashed, flipped or turned on its side.
+  _mayFidget() {
+    return !this.isTalking && !this.asleep && !document.hidden && !this.impulse?.isActive();
   }
 
   stopIdle() { clearTimeout(this.idleTimer); }
 
   /** Fire one random idle impulse on demand (the "poke"/"wiggle" action). */
   poke() {
-    if (!this.gsap || this.isTalking || this.asleep) return;
-    this._runImpulse(this._randomImpulse());
+    if (!this.gsap || !this._mayFidget()) return;
+    this.impulse = this._runImpulse(this._randomImpulse());
   }
 
   /** Toggle sleep: stops idle impulses and closes the eyes (or resumes both). */
@@ -249,24 +265,30 @@ export class PrepbotTeacher {
   // "Talk" mode: actually speak the line aloud. Prefers ElevenLabs (nicer
   // voice); falls back to the browser's built-in Web Speech API (audible
   // this time, unlike the silent timing-only use of it in beep mode).
-  async _talkAloud(text, finish) {
+  async _talkAloud(text, finish, { typeTo, typeOver, alive }) {
+    const total = text.length;
+    const wordCount = Math.max(1, text.trim().split(/\s+/).length);
     const dataUrl = await this._tryElevenLabs(text);
+    if (!alive()) return;      // the learner has moved on while the voice was being fetched: say nothing
     if (dataUrl) {
-      const wordCount = Math.max(1, text.trim().split(/\s+/).length);
       let shapeCursor = 0;
       let beatCount = 0;
-      let mouthTimer = null;
       const audioEl = new Audio(dataUrl);
+      this.audioEl = audioEl;
       audioEl.addEventListener("loadedmetadata", () => {
+        if (!alive()) return;
         const stepMs = Math.max(90, (audioEl.duration * 1000) / (wordCount * 2));
-        mouthTimer = setInterval(() => {
+        this.mouthTimer = setInterval(() => {
           beatCount += 1;
           shapeCursor = 1 + (shapeCursor % (MOUTH_SHAPES.length - 1));
           this.mouth?.setAttribute("d", MOUTH_SHAPES[shapeCursor]);
           this._maybeBlink(beatCount);
         }, stepMs);
+        /* the words are written as far as the voice has got */
+        clearInterval(this.typeTimer);
+        this.typeTimer = setInterval(() => typeTo(total * (audioEl.currentTime / (audioEl.duration || 1)) + 2), 40);
       });
-      const done = () => { clearInterval(mouthTimer); finish(); };
+      const done = () => { if (!alive()) return; clearInterval(this.mouthTimer); finish(); };
       audioEl.addEventListener("ended", done);
       audioEl.addEventListener("error", done);
       audioEl.play().catch(done);
@@ -277,18 +299,26 @@ export class PrepbotTeacher {
       const utter = new SpeechSynthesisUtterance(text);
       let shapeCursor = 0;
       let beatCount = 0;
-      utter.onboundary = () => {
+      let gotBoundary = false;
+      utter.onboundary = (e) => {
+        if (!alive()) return;
+        gotBoundary = true;
         beatCount += 1;
         shapeCursor = 1 + (shapeCursor % (MOUTH_SHAPES.length - 1));
         this.mouth?.setAttribute("d", MOUTH_SHAPES[shapeCursor]);
         this._maybeBlink(beatCount);
+        /* the word being said is written as it is said */
+        const end = text.indexOf(" ", (e.charIndex || 0) + 1);
+        typeTo(end < 0 ? total : end);
       };
       utter.onend = finish;
       utter.onerror = finish;
       speechSynthesis.speak(utter);
-      const wordCount = Math.max(1, text.trim().split(/\s+/).length);
+      /* a voice that reports no word boundaries: write at a reading pace instead */
+      this.boundaryFallbackTimer = setTimeout(() => { if (alive() && !gotBoundary) typeOver(wordCount * 380); }, 700);
       this.talkSafetyTimer = setTimeout(finish, wordCount * 500 + 1500);
     } else {
+      typeOver(wordCount * 300);
       finish();
     }
   }
@@ -298,9 +328,10 @@ export class PrepbotTeacher {
   // boundary events — an estimate of how long the line would take to say,
   // without it actually reading out. Falls back to a fixed ~2-beats/word
   // rhythm if boundary events aren't supported (common on some voices).
-  _beepRhythm(text, finish) {
+  _beepRhythm(text, finish, { typeOver }) {
     const wordCount = Math.max(1, text.trim().split(/\s+/).length);
     const estMs = wordCount * 380 + 300;
+    typeOver(estMs - 150);      // the words are written at the pace the beeps "say" them
     const startedAt = Date.now();
     let shapeCursor = 0;
     let beatCount = 0;
@@ -349,52 +380,69 @@ export class PrepbotTeacher {
     this.talkSafetyTimer = setTimeout(finish, estMs + 500);
   }
 
-  // Two independent clocks: the bubble TEXT can type out as fast as it
-  // likes (pure visual reveal), while the mouth/voice "speech" runs on its
-  // own pace (beep rhythm or real talk). The line only counts as "done"
-  // once BOTH have finished.
+  // One clock: the bubble TEXT is written at the pace the line is SAID —
+  // as far as the recorded voice has played, word by word as the browser's
+  // voice reports them, or evenly over the beeps. The line counts as "done"
+  // once the voice has finished (the text is then all there).
   _speakLine(text) {
     this.isTalking = true;
     this._stopBody();
-    clearInterval(this.typeTimer);
-    clearInterval(this.rhythmTimer);
-    clearTimeout(this.boundaryFallbackTimer);
-    clearTimeout(this.talkSafetyTimer);
-    if (window.speechSynthesis) speechSynthesis.cancel();
+    this._silence();
+    const mine = ++this.lineToken;
+    const alive = () => mine === this.lineToken;
     this.currentTalkResolve?.();
     this.currentTalkPromise = new Promise((resolve) => { this.currentTalkResolve = resolve; });
 
     if (this.text) this.text.textContent = "";
     this.mouth?.setAttribute("d", MOUTH_SHAPES[0]);
 
-    let typingDone = false;
-    let voiceDone = false;
+    const total = text.length;
+    let shown = 0;
     let finished = false;
     const finish = () => {
-      if (finished || !typingDone || !voiceDone) return;
+      if (finished || !alive()) return;
       finished = true;
+      clearInterval(this.typeTimer);
       clearInterval(this.rhythmTimer);
+      clearInterval(this.mouthTimer);
       clearTimeout(this.boundaryFallbackTimer);
       clearTimeout(this.talkSafetyTimer);
+      if (this.text) this.text.textContent = text;
       this.mouth?.setAttribute("d", MOUTH_SHAPES[0]);
       this.isTalking = false;
       this.currentTalkResolve?.();
     };
+    /** the text is written as far as its n-th character (never taken back) */
+    const typeTo = (n) => {
+      if (!alive() || finished) return;
+      const to = Math.max(shown, Math.min(total, Math.round(n)));
+      if (to === shown) return;
+      shown = to;
+      if (this.text) this.text.textContent = text.slice(0, to);
+    };
+    /** the rest of the text is written evenly over `ms` */
+    const typeOver = (ms) => {
+      clearInterval(this.typeTimer);
+      const from = shown, t0 = performance.now();
+      this.typeTimer = setInterval(() => typeTo(from + (total - from) * Math.min(1, (performance.now() - t0) / Math.max(1, ms))), 30);
+    };
 
-    let i = 0;
-    this.typeTimer = setInterval(() => {
-      i += 1;
-      if (this.text) this.text.textContent = text.slice(0, i);
-      if (i >= text.length) {
-        clearInterval(this.typeTimer);
-        typingDone = true;
-        finish();
-      }
-    }, 16);
+    const tools = { typeTo, typeOver, alive };
+    if (this.voiceMode === "talk") this._talkAloud(text, finish, tools);
+    else this._beepRhythm(text, finish, tools);
+  }
 
-    const onVoiceDone = () => { voiceDone = true; finish(); };
-    if (this.voiceMode === "talk") this._talkAloud(text, onVoiceDone);
-    else this._beepRhythm(text, onVoiceDone);
+  // Every sound and every clock of the line being said is stopped: the
+  // recorded voice (an <audio> the browser would otherwise play to its end,
+  // over the top of the next one), the browser's own voice, and the timers.
+  _silence() {
+    clearInterval(this.typeTimer);
+    clearInterval(this.rhythmTimer);
+    clearInterval(this.mouthTimer);
+    clearTimeout(this.boundaryFallbackTimer);
+    clearTimeout(this.talkSafetyTimer);
+    if (this.audioEl) { try { this.audioEl.pause(); this.audioEl.removeAttribute("src"); this.audioEl.load?.(); } catch { /* already gone */ } this.audioEl = null; }
+    if (window.speechSynthesis) speechSynthesis.cancel();
   }
 
   _speakLineAsync(text) {
@@ -437,11 +485,9 @@ export class PrepbotTeacher {
    *  in-flight speak() promise — start a fresh speak() call instead). */
   stop() {
     this.narrationToken++;
-    clearInterval(this.typeTimer);
-    clearInterval(this.rhythmTimer);
-    clearTimeout(this.boundaryFallbackTimer);
-    clearTimeout(this.talkSafetyTimer);
-    if (window.speechSynthesis) speechSynthesis.cancel();
+    this.lineToken++;
+    this._silence();
+    this.mouth?.setAttribute("d", MOUTH_SHAPES[0]);
     this.isTalking = false;
   }
 
@@ -479,7 +525,8 @@ export class PrepbotTeacher {
         this.voiceMode = this.voiceMode === "beep" ? "talk" : "beep";
         voice.innerHTML = this.voiceMode === "beep" ? ICON_TALK_MODE : ICON_BEEP_MODE;
         voice.title = this.voiceMode === "beep" ? "Switch to talking voice" : "Switch to beeps";
-        if (window.speechSynthesis) speechSynthesis.cancel();
+        /* the page says the line again in the new voice, if it knows how; else the old one is cut short */
+        if (this.onVoiceChange) this.onVoiceChange(); else if (window.speechSynthesis) speechSynthesis.cancel();
       });
     }
     if (sleep) {
@@ -515,5 +562,6 @@ export class PrepbotTeacher {
   destroy() {
     this.stop();
     this.stopIdle();
+    this._stopBody();
   }
 }
