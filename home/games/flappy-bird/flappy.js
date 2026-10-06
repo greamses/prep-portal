@@ -5,6 +5,16 @@
 // from the chosen table with four answers (click one, or press 1–4). A right
 // answer is a point. A wrong answer, a pipe or the ground ends the flight.
 //
+// Or the answer is TYPED (the "Answer by" choice on the receipt): the sum is
+// written out to its equals sign, the digits appear after it as they are
+// pressed, and the moment they make the answer the next sum comes up. A wrong
+// number is only wiped — in this mode it is the pipes and the ground that end
+// a flight.
+//
+// The canvas is the whole screen. The sum, the counters and the answers lie
+// over it; the bird flies in the clear band between them (game.top to
+// game.floor), and the answers stand on the ground.
+//
 // Everything on the canvas is drawn here — bird, pipes, clouds — in the theme's
 // own colours, and every sound is a beep made on the spot (see SOUND below).
 // (The game used to load its sprites from an image host that now refuses them,
@@ -22,9 +32,10 @@ const OPERATIONS = {
   div: { label: 'Division', sign: '÷' },
 };
 
-const settings = { operation: 'mul', table: 2 };
+const settings = { operation: 'mul', table: 2, answer: 'choose' };
+const typing = () => settings.answer === 'type';
 
-// A link can arrive with the choice made: flappy.html?op=add&table=4 (the old
+// A link can arrive with the choice made: flappy.html?op=add&table=4&answer=type (the old
 // per-operation pages now redirect here that way).
 (() => {
   const qp = new URLSearchParams(location.search);
@@ -32,6 +43,7 @@ const settings = { operation: 'mul', table: 2 };
   const table = parseInt(qp.get('table'), 10);
   if (OPERATIONS[op]) settings.operation = op;
   if (table >= 2 && table <= 9) settings.table = table;
+  if (qp.get('answer') === 'type') settings.answer = 'type';
 })();
 
 // Each group of sticky-note radios carries data-setting="<key>"; ticking one
@@ -46,28 +58,34 @@ document.querySelectorAll('[data-setting]').forEach((group) => {
 });
 
 // ---------- THE SUMS ----------
-// Each returns { text, answer, choices } — four different positive choices,
-// the answer among them, shuffled.
+// Each returns { text, stem, answer, choices } — four different positive
+// choices, the answer among them, shuffled. `text` is the sum as it is asked
+// with choices; `stem` is the same fact turned so that the answer is what comes
+// after the equals sign, for typing.
 const randInt = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
 
 function makeProblem(op, table) {
-  let text, answer, near;
+  let text, stem, answer, near;
   if (op === 'add') {
     const n = randInt(1, 9);
     answer = table + n;
     text = `${table} + ${n} = ?`;
+    stem = `${table} + ${n} =`;
   } else if (op === 'sub') {
     // "17 − ? = 4": what was taken away to leave the table number.
     answer = randInt(2, 15);
     text = `${answer + table} − ? = ${table}`;
+    stem = `${answer + table} − ${table} =`;
   } else if (op === 'div') {
     // "28 ÷ ? = 4": always a clean division.
     answer = randInt(2, 10);
     text = `${table * answer} ÷ ? = ${table}`;
+    stem = `${table * answer} ÷ ${table} =`;
   } else {
     const n = randInt(1, 12);
     answer = table * n;
     text = `${table} × ${n} = ?`;
+    stem = `${table} × ${n} =`;
     // Near misses for a times table are the neighbouring multiples.
     near = [answer - table, answer + table, answer - 1, answer + 1, answer + 2 * table, answer - 2];
   }
@@ -81,7 +99,7 @@ function makeProblem(op, table) {
   }
   for (let n = answer + 4; choices.length < 4; n++) if (!choices.includes(n)) choices.push(n);
   choices.sort(() => Math.random() - 0.5);
-  return { text, answer, choices };
+  return { text, stem, answer, choices };
 }
 
 // ---------- SOUND ----------
@@ -129,18 +147,20 @@ const game = {
   best: Number(localStorage.getItem(BEST_KEY)) || 0,
   problem: null,
   answerLocked: false,
+  typed: '', // the digits pressed so far, when the answer is typed
   bird: { x: 0, y: 0, v: 0, r: 0 },
   pipes: [],
   clouds: [],
-  w: 0, h: 0, // the sky, in CSS pixels
-  unit: 1, // every length and speed scales with the sky's height
+  w: 0, h: 0, // the canvas — the whole screen — in CSS pixels
+  top: 0, floor: 0, // the band the bird flies in: under the sum, above the answers
+  unit: 1, // every length and speed scales with that band's height
   lastFrame: 0,
   raf: 0,
 };
 
-let canvas, ctx, sumEl, choicesEl, feedbackEl, scoreEl, bestEl, againBtn, colors;
+let canvas, ctx, topEl, bottomEl, sumEl, choicesEl, feedbackEl, scoreEl, bestEl, againBtn, colors;
 
-// Tuned for a 530px-tall sky (the game's original size) and scaled from there,
+// Tuned for a 530px-tall flying band (the game's original size) and scaled from there,
 // in pixels per 1/60 s. Frames are measured, so a 120Hz screen plays the same.
 const GRAVITY = 0.25;
 const FLAP = -3;
@@ -159,6 +179,7 @@ function readColors() {
     beak: token('--accent-warning', '#f0a868'),
     wing: token('--accent-danger', '#f07a7a'),
     ink: '#14130f',
+    soil: '#e6dcc0',
   };
 }
 
@@ -166,6 +187,8 @@ function readColors() {
 function openGame() {
   canvas = document.getElementById('flappy-sky');
   ctx = canvas.getContext('2d');
+  topEl = document.querySelector('.flappy-top');
+  bottomEl = document.querySelector('.flappy-bottom');
   sumEl = document.getElementById('flappy-sum');
   choicesEl = document.getElementById('flappy-choices');
   feedbackEl = document.getElementById('game-feedback');
@@ -186,8 +209,8 @@ function openGame() {
   readColors();
   sizeSky();
   newFlight();
-  // newFlight has just filled the band under the sky (the answers, a line of
-  // feedback), which takes some height back from it — measure again.
+  // newFlight has just filled the band over the ground (the answers, a line
+  // of feedback), which raises the floor — measure again.
   resizeSky();
   cancelAnimationFrame(game.raf);
   game.lastFrame = 0;
@@ -222,13 +245,21 @@ function leaveFullscreen() {
   try { const done = leave.call(document); if (done && done.catch) done.catch(() => {}); } catch (_) { /* already out */ }
 }
 
-// The canvas is as big as CSS makes it; its bitmap matches the screen's pixels.
+// The canvas is as big as CSS makes it — the screen; its bitmap matches the
+// screen's pixels. The flying band is what the sum above and the answers below
+// leave clear (answers standing beside the sky, on a sideways phone, take
+// nothing from its height).
 function sizeSky() {
   const rect = canvas.getBoundingClientRect();
+  const over = topEl.getBoundingClientRect();
+  const under = bottomEl.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   game.w = rect.width;
   game.h = rect.height;
-  game.unit = game.h / 530;
+  game.top = Math.max(0, over.bottom - rect.top);
+  game.floor = under.width >= rect.width * 0.9 ? under.top - rect.top : rect.height;
+  if (game.floor - game.top < 80) { game.top = 0; game.floor = rect.height; } // no room left: fly behind them
+  game.unit = (game.floor - game.top) / 530;
   canvas.width = Math.round(rect.width * dpr);
   canvas.height = Math.round(rect.height * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -236,33 +267,40 @@ function sizeSky() {
 
 // The sky changes size mid-flight more often than it sounds: going fullscreen,
 // a phone's address bar sliding away, a turn of the screen. The flight carries
-// on — everything in it is stretched by the same amount the sky's height was.
+// on — everything in it is stretched by the same amount the flying band was.
 function resizeSky() {
-  const before = game.h;
+  const was = { top: game.top, band: game.floor - game.top };
   sizeSky();
-  if (!before || !game.h || before === game.h) return;
-  const k = game.h / before;
-  game.bird.x *= k; game.bird.y *= k; game.bird.v *= k; game.bird.r = BIRD_RADIUS * game.unit;
-  for (const pipe of game.pipes) { pipe.x *= k; pipe.top *= k; pipe.bottom *= k; }
-  for (const cloud of game.clouds) { cloud.x *= k; cloud.y *= k; }
+  const band = game.floor - game.top;
+  if (!was.band || !band || (was.band === band && was.top === game.top)) return;
+  const k = band / was.band;
+  const y = (v) => game.top + (v - was.top) * k;
+  game.bird.x *= k; game.bird.y = y(game.bird.y); game.bird.v *= k; game.bird.r = BIRD_RADIUS * game.unit;
+  for (const pipe of game.pipes) { pipe.x *= k; pipe.top = y(pipe.top); pipe.bottom = y(pipe.bottom); }
+  for (const cloud of game.clouds) { cloud.x *= k; cloud.y = y(cloud.y); }
 }
+
+// A height up the flying band: 0 is its top, 1 the ground.
+const bandY = (f) => game.top + (game.floor - game.top) * f;
 
 function newFlight() {
   const u = game.unit;
   game.score = 0;
   game.pipes = [];
   game.answerLocked = false;
-  game.bird = { x: Math.max(40 * u, game.w * 0.16), y: game.h * 0.45, v: 0, r: BIRD_RADIUS * u };
+  game.bird = { x: Math.max(40 * u, game.w * 0.16), y: bandY(0.45), v: 0, r: BIRD_RADIUS * u };
   game.clouds = [
-    { x: game.w * 0.15, y: game.h * 0.14, s: 1.0, speed: 0.25 },
-    { x: game.w * 0.62, y: game.h * 0.3, s: 0.75, speed: 0.15 },
-    { x: game.w * 0.9, y: game.h * 0.1, s: 0.6, speed: 0.2 },
+    { x: game.w * 0.15, y: bandY(0.14), s: 1.0, speed: 0.25 },
+    { x: game.w * 0.62, y: bandY(0.3), s: 0.75, speed: 0.15 },
+    { x: game.w * 0.9, y: bandY(0.1), s: 0.6, speed: 0.2 },
   ];
+  choicesEl.innerHTML = '';
+  choicesEl.classList.toggle('is-keypad', typing());
   game.phase = 'ready';
   againBtn.hidden = true;
   updateScore();
   nextProblem();
-  say(`${OPERATIONS[settings.operation].label}, table of ${settings.table}. Tap the sky or press Space to flap.`);
+  say(`${OPERATIONS[settings.operation].label}, table of ${settings.table}. ${typing() ? 'Type each answer. ' : ''}Tap the sky or press Space to flap.`);
 }
 
 function playAgain() {
@@ -274,6 +312,13 @@ function playAgain() {
 function nextProblem() {
   game.problem = makeProblem(settings.operation, settings.table);
   game.answerLocked = false;
+  game.typed = '';
+  if (typing()) {
+    // The sum up to its equals sign, and a space after it for the digits.
+    sumEl.innerHTML = `${game.problem.stem} <span class="flappy-typed" id="flappy-typed"></span>`;
+    if (!choicesEl.firstChild) buildKeypad(); // the same keys serve every sum of a flight
+    return;
+  }
   sumEl.textContent = game.problem.text;
   choicesEl.innerHTML = '';
   game.problem.choices.forEach((value, i) => {
@@ -288,6 +333,54 @@ function nextProblem() {
     key.addEventListener('click', () => answer(value));
     choicesEl.appendChild(key);
   });
+}
+
+// The digits to press, for a screen with no keyboard under it.
+const DELETE_ICON = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><path fill="currentColor" fill-rule="evenodd" d="M8 5h13v14H8l-6-7zm3.1 3.5-1.4 1.4 2.1 2.1-2.1 2.1 1.4 1.4 2.1-2.1 2.1 2.1 1.4-1.4-2.1-2.1 2.1-2.1-1.4-1.4-2.1 2.1z"/></svg>';
+
+function buildKeypad() {
+  ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'del'].forEach((k, i) => {
+    const key = document.createElement('button');
+    key.type = 'button';
+    key.className = `flappy-choice flappy-key pp-sticky pp-note-btn pp-sticky--c${i % 6}`;
+    key.dataset.key = k;
+    key.innerHTML = k === 'del' ? DELETE_ICON : `<span>${k}</span>`;
+    key.setAttribute('aria-label', k === 'del' ? 'Delete' : k);
+    key.addEventListener('mousedown', (e) => e.preventDefault());
+    key.addEventListener('click', () => typeKey(k));
+    choicesEl.appendChild(key);
+  });
+}
+
+// One press of a digit (or of delete) while the answer is typed. The answer is
+// taken the moment the digits make it; as many digits as the answer has that
+// are NOT it are shown wrong for a moment and wiped.
+function typeKey(k) {
+  if (!typing() || game.answerLocked || (game.phase !== 'flying' && game.phase !== 'ready')) return;
+  const typedEl = document.getElementById('flappy-typed');
+  const want = String(game.problem.answer);
+  game.typed = k === 'del' ? game.typed.slice(0, -1) : game.typed + k;
+  typedEl.textContent = game.typed;
+  if (game.typed === want) {
+    game.answerLocked = true;
+    typedEl.classList.add('is-right');
+    SOUND.right();
+    game.score += 1;
+    updateScore();
+    setTimeout(() => { if (game.phase === 'flying' || game.phase === 'ready') nextProblem(); }, 280);
+  } else if (game.typed.length >= want.length) {
+    const asked = game.problem;
+    game.answerLocked = true;
+    typedEl.classList.add('is-wrong');
+    SOUND.wrong();
+    setTimeout(() => {
+      if (game.problem !== asked || game.phase === 'over') return; // a new flight has its own sum
+      game.typed = '';
+      typedEl.textContent = '';
+      typedEl.classList.remove('is-wrong');
+      game.answerLocked = false;
+    }, 380);
+  }
 }
 
 function answer(value) {
@@ -346,7 +439,7 @@ function addPipe() {
   const u = game.unit;
   const gap = PIPE_GAP * u;
   const margin = 50 * u;
-  const top = margin + Math.random() * (game.h - gap - 2 * margin);
+  const top = game.top + margin + Math.random() * (game.floor - game.top - gap - 2 * margin);
   // The first pipe starts part-way across, so a flight is not five seconds of
   // empty sky; the rest come in from the edge.
   game.pipes.push({ x: game.pipes.length || game.score ? game.w : game.w * 0.8, top, bottom: top + gap });
@@ -360,8 +453,8 @@ function step(t) {
   bird.y += bird.v * t;
 
   // The top of the sky is a ceiling, not a wall.
-  if (bird.y - bird.r < 0) { bird.y = bird.r; bird.v = Math.abs(bird.v) * 0.5; }
-  if (bird.y + bird.r > game.h) { bird.y = game.h - bird.r; endFlight('Down on the ground.'); return; }
+  if (bird.y - bird.r < game.top) { bird.y = game.top + bird.r; bird.v = Math.abs(bird.v) * 0.5; }
+  if (bird.y + bird.r > game.floor) { bird.y = game.floor - bird.r; endFlight('Down on the ground.'); return; }
 
   const width = PIPE_WIDTH * u;
   for (const pipe of game.pipes) {
@@ -410,7 +503,7 @@ function drawPipe(pipe) {
   };
   body(0, pipe.top);
   cap(pipe.top - lipH);
-  body(pipe.bottom, game.h - pipe.bottom);
+  body(pipe.bottom, game.floor - pipe.bottom);
   cap(pipe.bottom);
 }
 
@@ -441,10 +534,12 @@ function draw(t) {
     drawCloud(cloud);
   }
   game.pipes.forEach(drawPipe);
-  // Ground: a strip of grass along the foot of the sky.
+  // Ground: the earth the answers stand on, and a strip of grass along its top.
+  ctx.fillStyle = colors.soil;
+  ctx.fillRect(0, game.floor, game.w, game.h - game.floor);
   ctx.fillStyle = colors.pipe;
   ctx.globalAlpha = 0.55;
-  ctx.fillRect(0, game.h - 6 * game.unit, game.w, 6 * game.unit);
+  ctx.fillRect(0, game.floor - 6 * game.unit, game.w, 6 * game.unit);
   ctx.globalAlpha = 1;
   drawBird();
 }
@@ -456,7 +551,7 @@ function frame(now) {
   game.lastFrame = now;
   if (game.phase === 'flying') step(t);
   // Waiting for the first flap, the bird bobs in place.
-  if (game.phase === 'ready') game.bird.y = game.h * 0.45 + Math.sin(now / 260) * 6 * game.unit;
+  if (game.phase === 'ready') game.bird.y = bandY(0.45) + Math.sin(now / 260) * 6 * game.unit;
   draw(t);
   if (game.phase !== 'idle') game.raf = requestAnimationFrame(frame);
 }
@@ -468,11 +563,14 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault(); // no page scroll, no pressing a focused button
     if (e.repeat) return;
     if (game.phase === 'over') playAgain(); else flap();
+  } else if (e.key === 'Escape') {
+    closeGame();
+  } else if (typing()) {
+    if (e.key.length === 1 && e.key >= '0' && e.key <= '9') typeKey(e.key);
+    else if (e.key === 'Backspace') { e.preventDefault(); typeKey('del'); }
   } else if (['1', '2', '3', '4'].includes(e.key)) {
     const key = choicesEl.children[Number(e.key) - 1];
     if (key) answer(Number(key.dataset.value));
-  } else if (e.key === 'Escape') {
-    closeGame();
   }
 });
 // A button is pressed by Space on key-UP — swallow that too while playing.
@@ -498,11 +596,13 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     if (game.phase === 'over') playAgain(); else flap();
   });
-  // Watch the sky itself, not the window: it also changes size when the band
-  // under it does, and no window event fires for that.
+  // Watch the sky and the two bands lying over it, not the window: the flying
+  // band also changes when they do, and no window event fires for that.
   const onResize = () => { if (game.phase !== 'idle') resizeSky(); };
-  if (window.ResizeObserver) new ResizeObserver(onResize).observe(sky);
-  else window.addEventListener('resize', onResize);
+  if (window.ResizeObserver) {
+    const watch = new ResizeObserver(onResize);
+    [sky, document.querySelector('.flappy-top'), document.querySelector('.flappy-bottom')].forEach((el) => watch.observe(el));
+  } else window.addEventListener('resize', onResize);
 });
 
 // ---------- EXPOSE TO GLOBAL ----------

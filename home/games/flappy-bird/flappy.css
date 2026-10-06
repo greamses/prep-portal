@@ -7,8 +7,10 @@
 
 /* ── THE PLAY VIEW IS THE WHOLE SCREEN ────────────────
    The shared overlay is a padded, blurred sheet with a narrow column in the
-   middle. This game wants the opposite: edge to edge, three bands — the sum
-   and counters, the sky, the answers — with the sky taking all that is left. */
+   middle. This game wants the opposite: the sky IS the screen, edge to edge,
+   and the rest lies over it — the sum and counters along the top, the answers
+   along the bottom. flappy.js measures those two and flies the bird between
+   them, with the ground drawn under the answers. */
 .flappy-play.review-bd {
   padding: 0;
   overflow: hidden;
@@ -17,15 +19,33 @@
   backdrop-filter: none;
 }
 #game-modal.flappy-play .review-wrap {
-  display: flex;
-  flex-direction: column;
+  position: relative;
   width: 100%;
   height: 100%;
   margin: 0;
 }
 
+.flappy-stage {
+  position: absolute;
+  inset: 0;
+}
+
+/* The two bands over the sky let a tap through to it (a tap on the sky is a
+   flap); only what is pressed in them — keys, buttons, the Sound tick — takes
+   the tap for itself. */
+.flappy-top,
+.flappy-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.flappy-bottom button,
+.flappy-bottom label { pointer-events: auto; }
+
 .flappy-top {
-  flex: 0 0 auto;
+  top: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -34,16 +54,8 @@
   padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem 0.6rem;
 }
 
-/* The sky's band. The canvas is laid over it rather than sized by it: a
-   canvas has a size of its own (its bitmap) that would fight the flex row. */
-.flappy-stage {
-  position: relative;
-  flex: 1 1 0;
-  min-height: 0;
-}
-
 .flappy-bottom {
-  flex: 0 0 auto;
+  bottom: 0;
   padding: 0.9rem 1rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
 }
 
@@ -67,10 +79,25 @@
   font-size: clamp(1.15rem, 4.2vw, 1.9rem);
   font-weight: 700;
   line-height: 1.2;
-  color: var(--ink);
+  /* Written on the sky, which is a daytime blue in both themes — so a fixed
+     dark, not --ink (that one turns light in the dark theme). */
+  color: #14130f;
   text-align: center;
   white-space: nowrap;
 }
+
+/* Typing: the digits land here, after the equals sign. */
+.flappy-typed {
+  display: inline-block;
+  min-width: 1.7ch;
+  min-height: 1.2em;
+  padding: 0 0.15em;
+  vertical-align: bottom;
+  border-bottom: 3px solid #14130f;
+  text-align: center;
+}
+.flappy-typed.is-right { color: #1c6b34; border-bottom-color: #1c6b34; }
+.flappy-typed.is-wrong { color: #a12626; border-bottom-color: #a12626; }
 
 /* ── THE SKY ──────────────────────────────────────────── */
 /* The colour of the sky is this background; flappy.js draws only what moves
@@ -82,7 +109,6 @@
   width: 100%;
   height: 100%;
   background: linear-gradient(#bfe3f7, #e2f3fb);
-  box-shadow: inset 0 1.5px 0 color-mix(in srgb, var(--ink) 16%, transparent), inset 0 -1.5px 0 color-mix(in srgb, var(--ink) 16%, transparent);
   cursor: pointer;
   touch-action: none; /* a tap here flaps; it never scrolls the page */
   -webkit-tap-highlight-color: transparent;
@@ -118,6 +144,14 @@
   opacity: 0.5;
 }
 .flappy-choice:disabled { cursor: default; }
+
+/* Typing: the same keys, as the ten digits and a delete. */
+.flappy-choices.is-keypad {
+  grid-template-columns: repeat(11, 1fr);
+  gap: 0.4rem;
+  max-width: 700px;
+}
+.flappy-key { padding: 0.6rem 0.1rem 0.55rem; }
 .flappy-choice.is-right { box-shadow: 0 0 0 3px var(--accent-success), 5px 8px 12px -4px rgba(20, 19, 15, 0.3); }
 .flappy-choice.is-wrong { box-shadow: 0 0 0 3px var(--accent-danger), 5px 8px 12px -4px rgba(20, 19, 15, 0.3); }
 
@@ -129,7 +163,9 @@
   margin: 0.6rem 0 0.55rem;
   line-height: 1.4;
   overflow: hidden;
+  color: #14130f; /* on the drawn ground, which does not change with the theme */
 }
+.flappy-bottom .pgame-feedback.is-error { color: #a12626; }
 
 @media (max-width: 560px) {
   .flappy-top { padding-left: 0.7rem; padding-right: 0.7rem; }
@@ -137,29 +173,31 @@
   .flappy-bottom .pgame-feedback { height: 2.8em; }
   .flappy-choices { gap: 0.4rem; }
   .flappy-choice { font-size: 1.05rem; }
+  /* Two rows of digits; delete is the wide key at the end of the second. */
+  .flappy-choices.is-keypad { grid-template-columns: repeat(6, 1fr); }
+  .flappy-key[data-key="del"] { grid-column: span 2; }
 }
 
 /* A phone on its side has width to spare and no height: the answers move to
-   the right of the sky instead of under it, two by two. */
+   the right-hand side of the sky instead of the foot of it, two by two (the
+   digits three by three), and the bird has the screen's whole height. */
 @media (orientation: landscape) and (max-height: 520px) {
-  #game-modal.flappy-play .review-wrap {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 13.5rem;
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-  .flappy-top { grid-column: 1 / -1; padding-top: calc(0.8rem + env(safe-area-inset-top, 0px)); padding-bottom: 0.35rem; }
-  .flappy-stage { grid-column: 1; grid-row: 2; }
+  .flappy-top { right: 13.5rem; padding-top: calc(0.8rem + env(safe-area-inset-top, 0px)); padding-bottom: 0.35rem; }
   .flappy-bottom {
-    grid-column: 2;
-    grid-row: 2;
+    top: 0;
+    left: auto;
+    width: 13.5rem;
     display: flex;
     flex-direction: column;
     justify-content: center;
     padding: 0.5rem 0.7rem;
-    overflow-y: auto;
   }
   .flappy-choices { grid-template-columns: repeat(2, 1fr); gap: 0.45rem; width: 100%; }
   .flappy-choice { padding: 0.55rem 0.2rem 0.5rem; font-size: 1.05rem; }
+  .flappy-choices.is-keypad { grid-template-columns: repeat(3, 1fr); gap: 0.35rem; }
+  .flappy-key { padding: 0.4rem 0.1rem 0.35rem; }
+  .flappy-key[data-key="del"] { grid-column: span 2; }
   .flappy-bottom .pgame-feedback { height: 4.2em; margin: 0.45rem 0; }
+  .flappy-choices.is-keypad + .pgame-feedback { height: 2.8em; }
   .flappy-bottom .pp-lobby-actions { gap: 0.5rem; }
 }

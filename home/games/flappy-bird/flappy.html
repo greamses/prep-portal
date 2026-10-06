@@ -88,10 +88,19 @@
           </div>
 
           <div class="pp-setup-field">
+            <span>The Answers</span>
+            <div class="strip-group" data-label="Answer by" data-setting="answer">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="flappy-answer" value="choose" checked /><span>Choosing</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3"><input type="radio" name="flappy-answer" value="type" /><span>Typing</span></label>
+            </div>
+          </div>
+
+          <div class="pp-setup-field">
             <span>How to Play</span>
             <ul class="flappy-how">
               <li><strong>Flap:</strong> tap the sky, or press Space or the up arrow.</li>
-              <li><strong>Answer:</strong> tap an answer, or press 1 to 4.</li>
+              <li><strong>Choosing:</strong> tap an answer, or press 1 to 4. A wrong one ends the flight.</li>
+              <li><strong>Typing:</strong> type the answer after the equals sign. The next sum comes as soon as it is right.</li>
               <li>Every right answer is a point. Fly as long as you can.</li>
               <li>It beeps. Untick <strong>Sound</strong> under the sky to play in silence.</li>
             </ul>
@@ -106,23 +115,24 @@
     </main>
 
     <!-- ═══ PLAY VIEW — the whole screen ═══
-         Three bands, top to bottom: the sum between the two counters, the sky
-         (which takes every pixel the other two leave), and the answers with
-         the buttons under them. -->
+         The sky is the whole screen. Lying over it: the sum between the two
+         counters along the top, and the answers with the buttons under them
+         along the bottom, standing on the ground. -->
     <div class="review-bd flappy-play" id="game-modal" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
+        <div class="flappy-stage">
+          <canvas class="flappy-sky" id="flappy-sky" aria-label="The sky — tap to flap"></canvas>
+        </div>
+
         <div class="flappy-top">
           <span class="pp-sticky pp-sticky--tape pgame-note" id="flappy-score">0 correct</span>
           <p class="flappy-sum" id="flappy-sum" aria-live="polite"></p>
           <span class="pp-sticky pp-sticky--tape pgame-note" id="flappy-best">best 0</span>
         </div>
 
-        <div class="flappy-stage">
-          <canvas class="flappy-sky" id="flappy-sky" aria-label="The sky — tap to flap"></canvas>
-        </div>
-
         <div class="flappy-bottom">
-          <!-- The four answers: sticky-note keys, numbered for the keyboard. -->
+          <!-- The four answers: sticky-note keys, numbered for the keyboard.
+               When the answer is typed, the digits to press instead. -->
           <div class="flappy-choices" id="flappy-choices"></div>
 
           <p class="pgame-feedback" id="game-feedback"></p>
