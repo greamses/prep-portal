@@ -35,7 +35,7 @@
    Drills papers have no strip: a drill is against the clock.
    ========================================================================== */
 
-import { handsSvg, wSvg } from "./tableart.js";
+import { wSvg } from "./tableart.js";
 
 /* Tricks with a full animated lesson in Learning with PrepBot. */
 const LESSONS = {
@@ -126,6 +126,9 @@ function tile(stage, id, text, x, y, { c = 0, size = "m", bare = false } = {}) {
   return box;
 }
 
+/* what a counting stick is painted: plain wood, the tens' blue, the units' orange */
+const TONES = { plain: ["#e9cf9c", "#2a2723"], tens: ["#bfe3ff", "#2f6ea8"], units: ["#ffd7a3", "#d9632b"] };
+
 function acts(stage, gsap, instant) {
   const box = (id) => stage.querySelector(`[data-t="${id}"]`);
   const inn = (id) => box(id)?.firstChild;
@@ -165,10 +168,27 @@ function acts(stage, gsap, instant) {
       gsap.to(n, { opacity: 0, scale: 0.7, duration: 0.3, delay });
     },
     /** A tile is dimmed, or brought back. */
-    dim(id, to = 0.35) {
+    dim(id, to = 0.35, delay = 0) {
       const n = inn(id); if (!n) return;
       if (quick) { n.style.opacity = String(to); return; }
-      gsap.to(n, { opacity: to, duration: 0.3 });
+      gsap.to(n, { opacity: to, duration: 0.3, delay });
+    },
+    /** A tile is PUT as it must stand when a step begins — at once, whatever it was in the middle of. */
+    put(id, { on = 1, x, y, tone, text } = {}) {
+      const b = box(id), n = inn(id); if (!b) return;
+      if (gsap) { gsap.killTweensOf(n); gsap.killTweensOf(b); gsap.set(n, { scale: 1, scaleY: 1, rotation: 0 }); }
+      n.style.opacity = String(on);
+      if (x != null) { b.style.left = `${x}%`; b.style.top = `${y}%`; }
+      if (tone) { n.style.backgroundColor = TONES[tone][0]; n.style.borderColor = TONES[tone][1]; }
+      if (text != null) n.textContent = text;
+    },
+    /** A stick takes a colour. */
+    paint(id, tone, delay = 0) {
+      const n = inn(id); if (!n) return;
+      const [backgroundColor, borderColor] = TONES[tone];
+      if (quick) { n.style.backgroundColor = backgroundColor; n.style.borderColor = borderColor; return; }
+      gsap.to(n, { backgroundColor, borderColor, duration: 0.25, delay });
+      gsap.fromTo(n, { scale: 1 }, { scale: 1.15, duration: 0.18, delay, yoyo: true, repeat: 1, immediateRender: false });
     },
     /** A tile is pointed at: a little jump. */
     pulse(id, delay = 0) {
@@ -340,34 +360,102 @@ function tableStage(n, cuts = []) {
   return { build, step, sums, read, only, art };
 }
 
-/* ── THE NINE TIMES TABLE: count down the page, count up the page — and the
-   FINGER METHOD after it ──────────────────────────────────────────────── */
+/* ── THE NINE TIMES TABLE: count down the page, count up the page — and then
+   TEN COUNTING STICKS beside it, with which everything is COUNTED OUT:
+     the sticks method   9 is 10 − 1: take away the stick at the number; the
+                         sticks left of the gap are the tens, right the units
+     the digit sum       nine sticks are always left, so the digits make 9
+     one fact            count n sticks, take one away (the tens), and count
+                         on to 9 (the units)
+   Every stick is its own tile, so each is counted, coloured and taken away
+   by itself. A step first PUTS the sticks as they must stand (`lay`), so it
+   plays the same whether it is reached by going on, going back or skipping. */
 function ninesSteps() {
   const T = tableStage(9, []);
+  const sx = (i) => 59.5 + i * 3.6;
+  const SY = 40, NY = 25.5, CY = 55.5, DOWN = 6;
+  const ten = (fn) => { for (let i = 0; i < 10; i++) fn(i); };
   const build = (stage) => {
     T.build(stage);
-    T.art(stage, "h0", handsSvg({}));
-    T.art(stage, "h1", handsSvg({ fold: 7 }));
-    T.art(stage, "h2", handsSvg({ fold: 7, colour: true }));
+    ten((i) => {
+      tile(stage, `st${i}`, "", sx(i), SY, { bare: true }).firstChild.className = "vm-t__in vm-t__stick";
+      tile(stage, `n${i}`, String(i + 1), sx(i), NY, { bare: true, size: "s" });
+      tile(stage, `c${i}`, "", sx(i), CY, { c: 0, size: "s" });
+    });
   };
+  /** The sticks as a step begins. `on(i)` is whether stick i is out, `gone` the stick taken away,
+      `tone(i)` its colour, `count(i)` the [number, ink] counted under it, `nums(i)` whether its own number shows. */
+  const lay = (S, { on = () => true, gone = -1, tone = () => "plain", count = () => null, nums = on } = {}) => ten((i) => {
+    S.put(`st${i}`, { on: !on(i) ? 0 : i === gone ? 0.2 : 1, x: sx(i), y: i === gone ? SY + DOWN : SY, tone: i === gone ? "plain" : tone(i) });
+    S.put(`n${i}`, { on: !nums(i) ? 0 : i === gone ? 0.3 : 1 });
+    const k = i === gone ? null : count(i);
+    S.put(`c${i}`, { on: 0 });
+    if (k) S.flip(`c${i}`, k[0], k[1]);
+  });
+  /** stick i is taken away */
+  const take = (S, i, at) => { S.pulse(`st${i}`, Math.max(0, at - 0.6)); S.move(`st${i}`, sx(i), SY + DOWN, at); S.dim(`st${i}`, 0.2, at); S.dim(`n${i}`, 0.3, at); };
+  /** the sticks in `list` are counted, one at a time: each takes its colour and its number */
+  const tally = (S, list, tone, ink, at, from = 1, gap = 0.48) => list.forEach((i, k) => {
+    if (tone) S.paint(`st${i}`, tone, at + k * gap); else S.pulse(`st${i}`, at + k * gap);
+    S.flip(`c${i}`, String(from + k), ink, at + k * gap);
+  });
+  const left = (g) => Array.from({ length: g }, (_, i) => i);
+  const right = (g) => Array.from({ length: 9 - g }, (_, i) => g + 1 + i);
+  const sides = (g) => (i) => (i < g ? "tens" : "units");
+  /* the digit sum of one row: the stick is already away, and the nine that are left are counted straight across */
+  const sumStep = (say, g, at) => T.step(say, (S) => {
+    T.only(S, [g]);
+    lay(S, { gone: g, tone: sides(g) });
+    tally(S, [...left(g), ...right(g)], null, 0, at);
+    S.pulse(`t${g}`, at + 4.6); S.pulse(`u${g}`, at + 4.9);
+  });
   const steps = [
-    T.step("Here is the secret of the nine times table. First, write the ten sums down the page.", (S) => T.sums(S)),
+    T.step("Here is the secret of the nine times table. First, write the ten sums down the page.", (S) => { lay(S, { on: () => false }); T.sums(S); }),
     T.step("Now count from 0 to 9, going DOWN the page. 0, 1, 2, 3, 4, 5, 6, 7, 8, 9.",
       (S) => { for (let i = 0; i < 10; i++) S.pop(`t${i}`, 0.3 + i * 0.42); }),
     T.step("Count from 0 to 9 again, but this time going UP the page. 0, 1, 2, 3, 4, 5, 6, 7, 8, 9.",
       (S) => { for (let i = 0; i < 10; i++) S.pop(`u${9 - i}`, 0.3 + i * 0.42); }),
     T.step("Read across. 9, 18, 27, 36, 45, 54, 63, 72, 81, 90. That is the whole nine times table, and nothing was multiplied.", (S) => T.read(S)),
-    T.step("Look at the two digits of any answer. They always add up to 9. 1 and 8. 2 and 7. 3 and 6.",
-      (S) => { [1, 2, 3].forEach((i, k) => { S.pulse(`t${i}`, 0.4 + k * 0.9); S.pulse(`u${i}`, 0.7 + k * 0.9); }); }),
-    T.step("And the first digit is always one less than the number you multiply by. 9 times 7 starts with 6, and 6 needs 3 to make 9. So 9 times 7 is 63.",
-      (S) => { T.only(S, [6]); S.pulse("s6", 0.4); S.pulse("t6", 1.2); S.pulse("u6", 2); }),
-    /* the finger method */
-    T.step("There is another way, and you carry it with you: your fingers. Hold up all ten, and number them 1 to 10 from the left.",
-      (S) => { T.only(S, [6]); S.pop("h0", 0.4); }),
-    T.step("For 9 times 7, fold down finger number 7.",
-      (S) => { S.hide("h0"); S.pop("h1", 0.3); S.pulse("s6", 0.5); }),
-    T.step("Count the fingers on the left of it: 6. Those are the tens. Count the fingers on the right: 3. Those are the units. 63.",
-      (S) => { S.hide("h1"); S.pop("h2", 0.2); S.pulse("t6", 2.2); S.pulse("u6", 5); }),
+
+    /* the counting sticks */
+    T.step("Why does it work? 9 is 10 take away 1. So lay out ten counting sticks, and count them. 1, 2, 3, 4, 5, 6, 7, 8, 9, 10.",
+      (S) => { lay(S, { on: () => false }); ten((i) => { S.pop(`st${i}`, 4.6 + i * 0.48); S.pop(`n${i}`, 4.6 + i * 0.48); }); }),
+    T.step("For 9 times 7, take away the stick at number 7.",
+      (S) => { T.only(S, [6]); lay(S); S.pulse("s6", 0.3); take(S, 6, 1.8); }),
+    T.step("Count the sticks on the left of the gap. 1, 2, 3, 4, 5, 6. Six sticks: 6 is the tens.",
+      (S) => { T.only(S, [6]); lay(S, { gone: 6 }); tally(S, left(6), "tens", 3, 2.4); S.pulse("t6", 6.2); }),
+    T.step("Now count the sticks on the right of the gap. 1, 2, 3. Three sticks: 3 is the units. So 9 times 7 is 63.",
+      (S) => {
+        T.only(S, [6]);
+        lay(S, { gone: 6, tone: (i) => (i < 6 ? "tens" : "plain"), count: (i) => (i < 6 ? [String(i + 1), 3] : null) });
+        tally(S, right(6), "units", 4, 2.6); S.pulse("u6", 5); S.pulse("t6", 7.2); S.pulse("u6", 7.5);
+      }),
+    T.step("Try another. For 9 times 4, take away the stick at number 4. On the left: 1, 2, 3. On the right: 1, 2, 3, 4, 5, 6. So 9 times 4 is 36.",
+      (S) => {
+        T.only(S, [3]); lay(S); S.pulse("s3", 0.3); take(S, 3, 2.6);
+        tally(S, left(3), "tens", 3, 5.2); tally(S, right(3), "units", 4, 7.6);
+        S.pulse("t3", 11.4); S.pulse("u3", 11.7);
+      }),
+
+    /* the digit sum, counted */
+    T.step("Look what the sticks show. One stick of the ten is always taken away, so nine sticks are always left. That is why the two digits always add up to 9.",
+      (S) => { T.only(S, [3]); lay(S, { gone: 3, tone: sides(3) }); [...left(3), ...right(3)].forEach((i, k) => S.pulse(`st${i}`, 3.4 + k * 0.2)); }),
+    sumStep("Take 18. 1 stick for the tens, and 8 sticks for the units. Count them all. 1, 2, 3, 4, 5, 6, 7, 8, 9.", 1, 5.2),
+    sumStep("Take 27. 2 sticks and 7 sticks. Count them all. 1, 2, 3, 4, 5, 6, 7, 8, 9.", 2, 3.8),
+    sumStep("Take 54. 5 sticks and 4 sticks. Count them all. 1, 2, 3, 4, 5, 6, 7, 8, 9. Always 9.", 5, 3.8),
+
+    /* one fact, with no table */
+    T.step("So you can get just one fact, with no table. For 9 times 7, count out 7 sticks. 1, 2, 3, 4, 5, 6, 7.",
+      (S) => { T.only(S, [6]); lay(S, { on: () => false }); S.pulse("s6", 2.6); for (let i = 0; i < 7; i++) { S.pop(`st${i}`, 5 + i * 0.48); S.pop(`n${i}`, 5 + i * 0.48); } }),
+    T.step("Take one away, because 9 is one less than 10. Count what is left. 1, 2, 3, 4, 5, 6. One less than 7 is 6: that is the tens.",
+      (S) => { T.only(S, [6]); lay(S, { on: (i) => i < 7 }); take(S, 6, 0.9); tally(S, left(6), "tens", 3, 4.4); S.pulse("t6", 8.6); }),
+    T.step("Now count on from 6 until you reach 9. 7, 8, 9. That took 3 more sticks: 3 is the units. So 9 times 7 is 63.",
+      (S) => {
+        T.only(S, [6]);
+        lay(S, { on: (i) => i < 7, gone: 6, tone: (i) => (i < 6 ? "tens" : "units"), count: (i) => (i < 6 ? [String(i + 1), 3] : null) });
+        [7, 8, 9].forEach((i, k) => { S.pop(`st${i}`, 3.2 + k * 0.55); S.flip(`c${i}`, String(7 + k), 4, 3.2 + k * 0.55); S.flip(`c${i}`, String(k + 1), 4, 6 + k * 0.4); });
+        S.pulse("u6", 7.6); S.pulse("t6", 9.6); S.pulse("u6", 9.9);
+      }),
   ];
   return { build, steps };
 }

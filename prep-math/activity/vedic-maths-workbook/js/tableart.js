@@ -5,9 +5,10 @@
    (explain.js), so the picture a child learns from and the picture they work
    on are the same picture.
 
-     handsSvg   ten fingers, numbered 1 to 10 — the FINGER METHOD for the nines.
-                Fold finger n down: the fingers to its LEFT are the tens of
-                9 × n and the fingers to its RIGHT are the units.
+     sticksSvg  ten counting sticks, numbered 1 to 10 — the STICKS METHOD for
+                the nines. 9 is 10 − 1: take away the stick at number n, and
+                the sticks to its LEFT are the tens of 9 × n, the sticks to
+                its RIGHT the units.
      wSvg       a big W — the W METHOD for the sixes. 2 and 4 at its two
                 bottom points, 6, 8, 0 at its three top points; read ALONG the
                 W from the left and it says 6, 2, 8, 4, 0: the units of
@@ -19,38 +20,26 @@
 const INK = "#2a2723";
 const TENS = { fill: "#bfe3ff", line: "#2f6ea8" };
 const UNITS = { fill: "#ffd7a3", line: "#d9632b" };
-const PLAIN = { fill: "#fffdf8", line: INK };
 const f = (n) => (+n).toFixed(1);
 
-/* a hand, palm towards you: little finger, ring, middle, index, thumb — how tall each stands */
-const TALL = [30, 40, 46, 40, 24];
-
 /**
- * Ten fingers.
- *   fold     the finger that is folded down (1 to 10), or 0 for none
- *   colour   paint the fingers left of the fold as tens and right of it as units
- *   numbers  write 1 to 10 over them
+ * Ten counting sticks.
+ *   take     the stick that is taken away (1 to 10), or 0 for none
+ *   colour   paint the sticks left of it as tens and right of it as units
  */
-export function handsSvg({ fold = 0, colour = false, numbers = true } = {}) {
+export function sticksSvg({ take = 0, colour = false } = {}) {
   let s = "";
-  const hand = (x0, order, first) => {
-    /* the palm */
-    s += `<rect x="${x0}" y="62" width="92" height="26" rx="9" fill="#f4efe2" stroke="${INK}" stroke-width="1.4"/>`;
-    order.forEach((h, k) => {
-      const n = first + k;
-      const x = x0 + 5 + k * 17.4;
-      const down = n === fold;
-      const tone = !colour || !fold ? PLAIN : n < fold ? TENS : n > fold ? UNITS : PLAIN;
-      const tall = down ? 9 : h;
-      s += `<rect x="${f(x)}" y="${f(64 - tall)}" width="13" height="${f(tall + 4)}" rx="6.5" fill="${down ? "#e3ded2" : tone.fill}" ` +
-        `stroke="${down ? "#8a837a" : tone.line}" stroke-width="1.4"${down ? ' stroke-dasharray="2.4 1.8"' : ""}/>`;
-      if (numbers) s += `<text x="${f(x + 6.5)}" y="${f(64 - (down ? 30 : h) - 4)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" font-weight="800" ` +
-        `fill="${down ? "#8a837a" : colour && fold ? tone.line : INK}">${n}</text>`;
-    });
-  };
-  hand(8, TALL, 1);
-  hand(120, [...TALL].reverse(), 6);
-  return `<svg class="vm-hands" viewBox="0 0 220 92" role="img" aria-label="${fold ? `Ten fingers with finger ${fold} folded down` : "Ten fingers, numbered 1 to 10"}">${s}</svg>`;
+  for (let n = 1; n <= 10; n++) {
+    const x = 9 + (n - 1) * 21.5;
+    const gone = n === take;
+    const tone = !colour || !take ? { fill: "#e9cf9c", line: INK } : n < take ? TENS : UNITS;
+    s += gone
+      ? `<rect x="${f(x)}" y="18" width="8" height="42" fill="none" stroke="#8a837a" stroke-width="1.2" stroke-dasharray="2.6 2"/>`
+      : `<rect x="${f(x)}" y="18" width="8" height="42" fill="${tone.fill}" stroke="${tone.line}" stroke-width="1.4"/>`;
+    s += `<text x="${f(x + 4)}" y="12" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" font-weight="800" ` +
+      `fill="${gone ? "#8a837a" : colour && take ? tone.line : INK}">${n}</text>`;
+  }
+  return `<svg class="vm-sticks" viewBox="0 0 220 64" role="img" aria-label="${take ? `Ten counting sticks with stick ${take} taken away` : "Ten counting sticks, numbered 1 to 10"}">${s}</svg>`;
 }
 
 /* where the W's five points are, along the stroke: top, bottom, top, bottom, top */

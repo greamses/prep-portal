@@ -12,9 +12,10 @@
        So for any one of them: the tens digit is ONE LESS than the number
        you multiply by, and the two digits ADD UP TO 9.
 
-       THE FINGER METHOD (optional): hold up ten fingers and fold down the
-       one you multiply by. The fingers to its left are the tens; the
-       fingers to its right are the units.
+       THE COUNTING STICKS (optional): 9 is 10 − 1, so lay out ten sticks
+       and take away the one at the number you multiply by. The sticks to
+       its left are the tens; the sticks to its right are the units. (And
+       nine are always left — which is why the digits add up to 9.)
 
          one at a time     9 × 7: one less than 7 is 6; 6 needs 3 to make 9; 63
          the whole table   the two columns, counted down and counted up
@@ -63,10 +64,10 @@
 
 import { want } from "/utils/components/workbook/want.js";
 import { ask, big, box, worked, say, step, steps, strip } from "./common.js";
-import { handsSvg, wSvg, W_POINTS } from "./tableart.js";
+import { sticksSvg, wSvg, W_POINTS } from "./tableart.js";
 
 export const TT_GROUPS = [
-  { id: "vm-tables", chapter: "Chapter 7 · Times table secrets", label: "The 9 times table", blurb: "Count down the page, count up the page: 09, 18, 27 … And the finger method." },
+  { id: "vm-tables", chapter: "Chapter 7 · Times table secrets", label: "The 9 times table", blurb: "Count down the page, count up the page: 09, 18, 27 … And the counting sticks." },
   { id: "vm-tables8", label: "The 8 times table", blurb: "Tens to 4 and from 4 again; units up the page in twos." },
   { id: "vm-tables7", label: "The 7 times table", blurb: "Three at a time: say the last ten again, and count the units up in threes." },
   { id: "vm-tables6", label: "The 6 times table", blurb: "Units in the order 2, 4, 6, 8, 0; one ten in each half comes twice. And the W." },
@@ -338,24 +339,24 @@ const fiveAll = {
 
 /* ═══ TWO OPTIONAL METHODS, each with a picture ════════════════════════════*/
 
-/* THE FINGER METHOD for the nines: the same answer, read off ten fingers. */
-const nineFingers = {
-  id: "vm-tt9-fingers",
+/* THE COUNTING STICKS for the nines: 9 is 10 − 1, so one of ten sticks is taken away. */
+const nineSticks = {
+  id: "vm-tt9-sticks",
   group: "vm-tables",
-  label: "The finger method (optional)",
-  blurb: "Fold one finger down: tens on its left, units on its right.",
-  heading: "The 9 times table — on your fingers",
-  instruction: () => "Hold up all ten fingers and number them 1 to 10 from the left. To multiply by 9, FOLD DOWN the finger " +
-    "with the number you are multiplying by. The fingers to the LEFT of it are the tens; the fingers to the RIGHT of " +
-    "it are the units.",
+  label: "The counting sticks (optional)",
+  blurb: "9 is 10 − 1: take one stick of ten away. Tens on its left, units on its right.",
+  heading: "The 9 times table — with ten counting sticks",
+  instruction: () => "9 is 10 − 1. So lay out TEN counting sticks, numbered 1 to 10, and TAKE AWAY the stick at the number you " +
+    "are multiplying by. Count the sticks to the LEFT of the gap: those are the tens. Count the sticks to the RIGHT " +
+    "of it: those are the units.",
   tv: "nines",
   cols: 2,
   defaultCount: 4,
   make: (r) => ({ n: r.int(2, 9) }),
-  render: ({ n }) => big(`9 × ${n}`) + `<div class="vm-art">${handsSvg({ fold: n, colour: true })}</div>` +
-    steps(step("fingers to the left:"), step("fingers to the right:"), step("the answer:")),
-  worked: () => worked(big("9 × 7") + `<div class="vm-art">${handsSvg({ fold: 7, colour: true })}</div>` +
-    say("Finger number 7 is folded down. There are 6 fingers to its left and 3 to its right. So 9 × 7 is 63.")),
+  render: ({ n }) => big(`9 × ${n}`) + `<div class="vm-art">${sticksSvg({ take: n, colour: true })}</div>` +
+    steps(step("sticks to the left:"), step("sticks to the right:"), step("the answer:")),
+  worked: () => worked(big("9 × 7") + `<div class="vm-art">${sticksSvg({ take: 7, colour: true })}</div>` +
+    say("The stick at number 7 is taken away. There are 6 sticks to its left and 3 to its right. So 9 × 7 is 63.")),
   key: ({ n }) => [want.num(n - 1), want.num(10 - n), want.num(9 * n)],
   answer: ({ n }) => [`${n - 1} left, ${10 - n} right: 9 × ${n} = ${9 * n}`],
 };
@@ -388,7 +389,7 @@ const sixW = {
   answer: () => [`on the W: ${W_WRITE.join(", ")}; read along it: ${W_READ.join(", ")}`],
 };
 
-export const TT_EXERCISES = [nineOne, nineAll, nineFingers, eightOne, eightAll, sevenOne, sevenAll, sixOne, sixAll, sixW, fiveOne, fiveAll];
+export const TT_EXERCISES = [nineOne, nineAll, nineSticks, eightOne, eightAll, sevenOne, sevenAll, sixOne, sixAll, sixW, fiveOne, fiveAll];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).

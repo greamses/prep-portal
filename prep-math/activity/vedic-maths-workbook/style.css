@@ -114,7 +114,7 @@
 
 /* ── the two pictures of the times-table secrets (js/tableart.js) ─────────── */
 .vm-art { margin: 1mm 0 1.5mm; }
-.vm-art .vm-hands { display: block; width: 62mm; height: auto; }
+.vm-art .vm-sticks { display: block; width: 62mm; height: auto; }
 .vm-art--w .vm-w { display: block; width: 52mm; height: auto; }
 /* the W with a box on each of its points */
 .vm-wfig { position: relative; width: 62mm; margin: 2mm 0 3mm 3mm; }
@@ -125,3 +125,5 @@
 /* on the TV: a picture standing beside the table */
 .vm-t__art { display: block; width: calc(var(--u) * 38); }
 .vm-t__art svg { display: block; width: 100%; height: auto; }
+/* on the TV: a counting stick, one to a tile, so each can be counted, coloured and taken away */
+.vm-t__stick { display: block; width: calc(var(--u) * 1.5); height: calc(var(--u) * 12); background: #e9cf9c; border: calc(var(--u) * 0.26) solid #2a2723; box-sizing: border-box; }
