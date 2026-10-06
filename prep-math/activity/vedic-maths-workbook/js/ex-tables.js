@@ -46,7 +46,9 @@
        One at a time: 7 is 5 and 2, so five of it and two of it, added.
 
        A TIP — WHY 7 IS CALLED THE REVOLVING NUMBER
-       1 ÷ 7 = 0.142857 142857 … — six digits, over and over. Stand them
+       1 ÷ 7 = 0.142857 142857 … — six digits, over and over. They are
+       7 DOUBLED and doubled: 14, 28, 56 — and the 56 becomes 57, because
+       the next double (112) sends its 1 back: 14 28 57. Stand them
        round a wheel: 1, 4, 2, 8, 5, 7. Multiply 142857 by 2, 3, 4, 5 or 6
        and the SAME six digits come back in the SAME order: the wheel has
        only turned. The answers start at the digits in order of size —
@@ -382,7 +384,9 @@ const sevenWheel = {
   label: "Tip: 7, the revolving number",
   blurb: "142857 × 2, 3, 4, 5, 6: the same six digits, the wheel only turned.",
   heading: "Why 7 is called the revolving number",
-  instruction: () => "Divide 1 by 7 and you get 0.142857 142857 … — the same six digits, over and over. Stand them round a " +
+  instruction: () => "Divide 1 by 7 and you get 0.142857 142857 … — the same six digits, over and over. (You can find them by " +
+    "DOUBLING 7: 14, then 28, then 56 — but the next double, 112, is too big for two places, so its 1 goes back and " +
+    "the 56 becomes 57: 14 28 57.) Stand them round a " +
     "spinner wheel: 1, 4, 2, 8, 5, 7. Now multiply 142857 by 2, 3, 4, 5 or 6: the answer is the SAME six digits in the SAME " +
     "order — the wheel has only turned. The answers start at the digits in order of size: × 1 starts at 1, × 2 at 2, " +
     "× 3 at 4, × 4 at 5, × 5 at 7 and × 6 at 8. Spin the arrow to where the answer starts, and read once round the wheel from there.",

@@ -528,6 +528,10 @@ function nine2Steps() {
    THE PLAN, scene by scene:
      1  1 ÷ 7 is written, and its decimal comes out a digit at a time
      2  the same six digits come out again: it never ends
+     2a–c  the same six digits found by DOUBLING 7: 14, 28, 56; one more
+        double, 112, is too big for two places, so its 1 goes back and the
+        56 becomes 57; side by side, 14 28 57. (Written in the space the
+        products will take, and cleared away before the wheel is made.)
      3  the six digits leave the decimal and take their places round a WHEEL,
         each in its own ink, which it keeps for the whole lesson
      4  × 1: the wheel read from the 1 — the number itself
@@ -570,6 +574,12 @@ function wheelSteps() {
       tile(stage, `L${n}`, `142857 × ${n} =`, 13, rowY(n), { bare: true, size: "s" });
       six((k) => tile(stage, `p${n}_${k}`, n === 7 ? "9" : String(WHEEL[(START[n - 1] + k) % 6]), PX(k), rowY(n), { c: n === 7 ? 2 : (START[n - 1] + k) % 6 }));
     }
+    /* the doubling of 7: three doubles, the one too many, and the three pairs side by side */
+    [["7 × 2 =", "14"], ["14 × 2 =", "28"], ["28 × 2 =", "56"], ["56 × 2 =", "112"]].forEach(([q2, a], i) => {
+      tile(stage, `g${i}`, q2, 14, 22 + i * 9.4, { bare: true, size: "s" });
+      tile(stage, `h${i}`, a, i === 3 ? 28.3 : 27, 22 + i * 9.4, { c: [1, 3, 4, 2][i] });
+    });
+    ["14", "28", "57"].forEach((t, i) => tile(stage, `j${i}`, t, 14 + i * 7.4, 66, { c: [1, 3, 4][i], size: "l" }));
     [[0, 3], [1, 4], [2, 5]].forEach(([i, j], k) => tile(stage, `o${k}`, `${WHEEL[i]} + ${WHEEL[j]} = 9`, 11 + k * 15, 90, { c: 2, size: "s" }));
     ["1/7 = 0.142857…", "2/7 = 0.285714…", "3/7 = 0.428571…"].forEach((t, k) => tile(stage, `f${k}`, t, 12 + k * 23, 90, { bare: true, size: "s" }));
   };
@@ -589,8 +599,14 @@ function wheelSteps() {
       (S) => { S.pop("q", 4.2); six((k) => S.pop(`d${k}`, 8.2 + k * 0.6)); }),
     step("Keep dividing, and the same six digits come out again. 1, 4, 2, 8, 5, 7. And again, for ever. It never ends.",
       (S) => { six((k) => S.pop(`d${6 + k}`, 4 + k * 0.6)); S.pop("more", 8.6); }),
+    step("There is a quick way to find those six digits. Start with 7, and keep doubling. Twice 7 is 14. Twice 14 is 28. Twice 28 is 56.",
+      (S) => { [0, 1, 2].forEach((i) => { S.pop(`g${i}`, 6.4 + i * 2); S.pop(`h${i}`, 7.2 + i * 2); }); }),
+    step("Double once more: 112. That is too big for two places. So its 1 goes back to the 56, and makes it 57. And from there the doubling starts over.",
+      (S) => { S.pop("g3", 0.8); S.pop("h3", 1.6); S.pulse("h3", 5); S.pulse("h2", 7.2); S.flip("h2", "57", 4, 7.8); S.dim("g3", 0.3, 9.4); S.dim("h3", 0.3, 9.4); }),
+    step("Write them side by side. 14, 28, 57. 142857. The very same six digits as 1 divided by 7.",
+      (S) => { [0, 1, 2].forEach((i) => { S.pulse(`h${i}`, 1.6 + i * 0.8); S.fly(`j${i}`, 27, 22 + i * 9.4, 1.8 + i * 0.8); }); six((k) => S.pulse(`d${k}`, 7.4 + k * 0.3)); }),
     step("Take those six digits, and stand them round a spinner wheel, in the same order. 1, 4, 2, 8, 5, 7.",
-      (S) => { S.pop("ring", 2.4); six((i) => { S.pulse(`d${i}`, 5.2 + i * 0.7); S.fly(`w${i}`, DX(i), DY, 5.4 + i * 0.7); }); }),
+      (S) => { for (let i = 0; i < 4; i++) { S.hide(`g${i}`); S.hide(`h${i}`); } [0, 1, 2].forEach((i) => S.hide(`j${i}`)); S.pop("ring", 2.4); six((i) => { S.pulse(`d${i}`, 5.2 + i * 0.7); S.fly(`w${i}`, DX(i), DY, 5.4 + i * 0.7); }); }),
     step("Put an arrow on the wheel, pointing at the 1. Read round from there. 1, 4, 2, 8, 5, 7. That is our number: 142857.",
       (S) => times(S, 1, 1.2, 4.4)),
     step("Now multiply it by 2. The answer is 285714. Look: the same six digits, in the same order! Spin the arrow to the 2, and read round. 2, 8, 5, 7, 1, 4.",
