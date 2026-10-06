@@ -62,6 +62,12 @@
        top of the second, 3, 3 across its bottom. Read top then bottom:
        00 04 08 12 16 · 20 24 28 32 36. And 40 stands by itself.
 
+     ONE FACT OF THE SIXES, SEVENS OR FOURS, ON COUNTING STICKS
+       Lay out one stick for each of the number. Count them UP IN FIVES.
+       Then count the SAME sticks again, carrying on from there: in ONES
+       for the sixes (6 = 5 + 1), in TWOS for the sevens (7 = 5 + 2), and
+       going BACK in ones for the fours (4 = 5 − 1).
+
      A LINE across a table marks where its pattern REPEATS. It is on the
      paper and on the TV.
 
@@ -210,8 +216,8 @@ const sevenOne = {
   blurb: "7 is 5 and 2: five of it, and two of it.",
   heading: "The 7 times table — five of it and two of it",
   instruction: () => "7 is 5 and 2. So seven of a number is FIVE of it and TWO of it, added together — and fives and twos " +
-    "are the easy tables.",
-  tv: "sevens",
+    "are the easy tables. With counting sticks: lay out one stick for each of the number, count them UP IN FIVES, then count the SAME sticks again, carrying on IN TWOS.",
+  tv: "sticks7",
   cols: 2,
   defaultCount: 6,
   make: (r) => ({ n: r.int(2, 10) }),
@@ -263,8 +269,9 @@ const sixOne = {
   blurb: "6 is 5 and 1: five of it, and one more of it.",
   heading: "The 6 times table — five of it and one more",
   instruction: () => "6 is 5 and 1. So six of a number is FIVE of it, and ONE MORE of it. Find five of the number — half of " +
-    "ten of it — and add the number on once.",
-  tv: "sixes",
+    "ten of it — and add the number on once. With counting sticks: lay out one stick for each of the number, count " +
+    "them UP IN FIVES, then count the SAME sticks again, carrying on IN ONES.",
+  tv: "sticks6",
   cols: 2,
   defaultCount: 6,
   make: (r) => ({ n: r.int(2, 10) }),
@@ -372,6 +379,27 @@ const nineSticks = {
 
 /* ═══ THE FOURS ═══════════════════════════════════════════════════════════*/
 
+const fourOne = {
+  id: "vm-tt4",
+  group: "vm-tables4",
+  label: "Fours, one at a time",
+  blurb: "4 is 5 take away 1: five of it, less one of it.",
+  heading: "The 4 times table — five of it, less one",
+  instruction: () => "4 is 5 take away 1. So four of a number is FIVE of it, LESS ONE of it. Find five of the number — half of " +
+    "ten of it — and take the number away once. With counting sticks: lay out one stick for each of the number, count " +
+    "them UP IN FIVES, then count the SAME sticks again, going BACK IN ONES.",
+  tv: "sticks4",
+  cols: 2,
+  defaultCount: 6,
+  make: (r) => ({ n: r.int(2, 10) }),
+  render: ({ n }) => big(`4 × ${n}`) +
+    steps(step(`5 × ${n} =`), step(`take one ${n} away — the answer:`)),
+  worked: () => worked(big("4 × 7") + ask(strip("5 × 7", "− 7") + " → " + strip("35", "− 7") + " = 28") +
+    say("Five sevens are 35. One seven less is 28. So 4 × 7 is 28.")),
+  key: ({ n }) => [want.num(5 * n), want.num(4 * n)],
+  answer: ({ n }) => [`${5 * n} − ${n}: 4 × ${n} = ${4 * n}`],
+};
+
 const fourAll = {
   id: "vm-tt4-all",
   group: "vm-tables4",
@@ -435,7 +463,7 @@ const fourW = {
   answer: () => ["first W, top then bottom: 0, 4, 8, 12, 16; second W: 20, 24, 28, 32, 36; and 40"],
 };
 
-export const TT_EXERCISES = [nineOne, nineAll, nineSticks, eightOne, eightAll, sevenOne, sevenAll, sixOne, sixAll, fiveOne, fiveAll, fourAll, fourW];
+export const TT_EXERCISES = [nineOne, nineAll, nineSticks, eightOne, eightAll, sevenOne, sevenAll, sixOne, sixAll, fiveOne, fiveAll, fourOne, fourAll, fourW];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).

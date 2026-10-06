@@ -617,6 +617,68 @@ function fourwSteps() {
   return { build, steps };
 }
 
+/* ── ONE FACT ON COUNTING STICKS: the sixes, the sevens, the fours ─────────
+   k × n with n sticks. They are counted UP IN FIVES (5, 10, 15 …), and then
+   the SAME sticks are counted again, carrying on from there: in ones for the
+   sixes (6 = 5 + 1), in twos for the sevens (7 = 5 + 2), and going BACK in
+   ones for the fours (4 = 5 − 1). No table is on the screen: only the sum,
+   the sticks, and the two counts written under them. */
+function countSticksSteps(k) {
+  const d = k - 5;                                   // what each stick adds the second time round: 1, 2 or −1
+  const [N1, N2] = k === 7 ? [6, 3] : [7, 4];        // the two sums that are counted out
+  const how = d === 1 ? "carrying on in ones" : d === 2 ? "carrying on in twos" : "going back in ones";
+  const why = d === 1 ? "6 is 5 and 1" : d === 2 ? "7 is 5 and 2" : "4 is 5 take away 1";
+  const sx = (i, n) => 50 + (i - (n - 1) / 2) * 7.5;
+  const SY = 42, NY = 27, AY = 60, BY = 72;
+  const ten = (fn) => { for (let i = 0; i < 10; i++) fn(i); };
+  const list = (n, f) => Array.from({ length: n }, (_, i) => f(i)).join(", ");
+  const build = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    tile(stage, "q", "", 50, 11, { c: 0, size: "l" });
+    ten((i) => {
+      tile(stage, `st${i}`, "", 50, SY, { bare: true }).firstChild.className = "vm-t__in vm-t__stick";
+      tile(stage, `n${i}`, String(i + 1), 50, NY, { bare: true, size: "s" });
+      tile(stage, `a${i}`, "", 50, AY, { c: 3 });
+      tile(stage, `b${i}`, "", 50, BY, { c: 4 });
+    });
+    tile(stage, "ans", "", 50, 88, { c: 2, size: "l" });
+  };
+  /** The screen as a step begins: the sum k × n, `out` of its n sticks laid, the first `fives` counted in
+      fives and the first `more` counted the second time, and the answer written or not. */
+  const lay = (S, n, { out = n, fives = 0, more = 0, ans = false, q = true } = {}) => {
+    S.put("q", { on: q ? 1 : 0, text: `${k} × ${n}` });
+    S.put("ans", { on: ans ? 1 : 0, text: `= ${k * n}` });
+    ten((i) => {
+      const x = sx(i, n);
+      S.put(`st${i}`, { on: i < out ? 1 : 0, x, y: SY, tone: i < more ? "units" : i < fives ? "tens" : "plain" });
+      S.put(`n${i}`, { on: i < out ? 1 : 0, x, y: NY });
+      S.put(`a${i}`, { on: i < fives ? 1 : 0, x, y: AY, text: String(5 * (i + 1)) });
+      S.put(`b${i}`, { on: i < more ? 1 : 0, x, y: BY, text: String(5 * n + d * (i + 1)) });
+    });
+  };
+  const sticks = (S, n, at) => { for (let i = 0; i < n; i++) { S.pop(`st${i}`, at + i * 0.48); S.pop(`n${i}`, at + i * 0.48); } };
+  const fives = (S, n, at) => { for (let i = 0; i < n; i++) { S.paint(`st${i}`, "tens", at + i * 0.55); S.pop(`a${i}`, at + i * 0.55); } };
+  const more = (S, n, at) => { for (let i = 0; i < n; i++) { S.paint(`st${i}`, "units", at + i * 0.6); S.pop(`b${i}`, at + i * 0.6); } };
+  const step = (say, fn) => ({ say, show(stage, how2) { fn(acts(stage, how2.gsap, how2.instant)); } });
+  const steps = [
+    step(`Here is how to get one fact of the ${k} times table with counting sticks. ${why}.`,
+      (S) => { lay(S, N1, { out: 0, q: false }); S.pop("q", 0.5); }),
+    step(`For ${k} times ${N1}, lay out ${N1} sticks. ${list(N1, (i) => i + 1)}.`,
+      (S) => { lay(S, N1, { out: 0 }); sticks(S, N1, 3.6); }),
+    step(`Count the sticks up in fives. ${list(N1, (i) => 5 * (i + 1))}.`,
+      (S) => { lay(S, N1); fives(S, N1, 2.6); }),
+    step(`Now count the same sticks again, ${how}. ${list(N1, (i) => 5 * N1 + d * (i + 1))}.`,
+      (S) => { lay(S, N1, { fives: N1 }); more(S, N1, 3.8); }),
+    step(`So ${k} times ${N1} is ${k * N1}.`,
+      (S) => { lay(S, N1, { fives: N1, more: N1 }); S.pulse(`b${N1 - 1}`, 0.4); S.pop("ans", 1.2); }),
+    step(`Try another. For ${k} times ${N2}, lay out ${N2} sticks, and count them up in fives. ${list(N2, (i) => 5 * (i + 1))}.`,
+      (S) => { lay(S, N2, { out: 0 }); sticks(S, N2, 2.4); fives(S, N2, 7.2); }),
+    step(`Then the same sticks again, ${how}. ${list(N2, (i) => 5 * N2 + d * (i + 1))}. So ${k} times ${N2} is ${k * N2}.`,
+      (S) => { lay(S, N2, { fives: N2 }); more(S, N2, 3.6); S.pop("ans", 3.6 + N2 * 0.6 + 1.6); }),
+  ];
+  return { build, steps };
+}
+
 /* ── THE FIVE TIMES TABLE: two at a time, a line after each two ──────────── */
 function fivesSteps() {
   const T = tableStage(5, [1, 3, 5, 7]);
@@ -652,6 +714,7 @@ async function explain(strip) {
     : data.scene.kind === "fives" ? fivesSteps()
     : data.scene.kind === "fours" ? foursSteps()
     : data.scene.kind === "fourw" ? fourwSteps()
+    : /^sticks[467]$/.test(data.scene.kind) ? countSticksSteps(Number(data.scene.kind.slice(-1)))
     : data.scene.kind === "trach" && data.scene.steps.length ? trachSteps(data)
     : data.scene.kind === "strip" && data.scene.expr.length && data.scene.expr.length === data.scene.res.length ? stripSteps(data)
       : textSteps(data);
