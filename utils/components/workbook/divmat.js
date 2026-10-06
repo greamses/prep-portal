@@ -24,6 +24,9 @@
                  "break 1": it becomes ten of the next place
      take back   drag a counter from a group back up to the top row
      put away    drag a counter off the grid
+     undo        the page's own Undo and Clear buttons stand in the grid's corner
+                 (interactive.js `drawbar`): Undo takes back one move, Clear
+                 empties the grid
 
    IT IS NEVER MARKED. It is working: what the child reads off it is written
    in the input grid beside it, and that is what is marked. The grid itself is
@@ -115,8 +118,7 @@ export function mountDivMat(wrap, { saved = null, onChange = null } = {}) {
   tools.innerHTML = `<span></span>` + places.map((p, c) => `<span class="dm-toolcell">`
     + `<button type="button" class="dm-btn" data-deal="${c}">one each</button>`
     + (c < k - 1 ? `<button type="button" class="dm-btn" data-break="${c}" title="Break one into ten ${places[c + 1].v}s">break 1</button>` : "")
-    + `</span>`).join("")
-    + `<span></span><span class="dm-toolcell dm-toolcell--wide"><button type="button" class="dm-btn" data-clear>start again</button></span>`;
+    + `</span>`).join("");
   grid.after(tools);
 
   const many = (n, html) => Array.from({ length: n }, () => html).join("");
@@ -167,7 +169,6 @@ export function mountDivMat(wrap, { saved = null, onChange = null } = {}) {
     const b = e.target.closest("button"); if (!b) return;
     if (b.dataset.deal != null) act(() => moves.round(Number(b.dataset.deal)));
     else if (b.dataset.break != null) act(() => moves.smash(Number(b.dataset.break)));
-    else if (b.dataset.clear != null) act(() => { state = empty(); });
   });
 
   /* ── taking, sharing, breaking: one drag, wherever it starts ──────────────*/

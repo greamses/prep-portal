@@ -323,6 +323,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     /* the counting grid for dividing: counters taken, shared into groups and broken into
        the next place. Working, never marked — the input grid beside it is what is marked. */
     node.querySelectorAll("[data-divmat]").forEach((box, k) => {
+      /* Undo takes back one move — a counter taken, shared, broken or put away; Clear empties the grid */
+      drawbar(box, () => { delete rec(idx).divmat[`m${k}`]; box.__wbDivMat?.clear(); dirty(node); save(); });
       box.__wbDivMat = mountDivMat(box, {
         saved: rec(idx).divmat[`m${k}`] || null,
         onChange: (now, before) => {
@@ -441,7 +443,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("[data-code], [data-try]").forEach((c) => { c.__wbCode?.dispose(); c.__wbCode = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-split]").forEach((c) => { c.__wbSplit?.dispose(); c.__wbSplit = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-counters]").forEach((c) => { c.__wbCounters?.dispose(); c.__wbCounters = null; });
-    node.querySelectorAll("[data-divmat]").forEach((c) => { c.__wbDivMat?.dispose(); c.__wbDivMat = null; });
+    node.querySelectorAll("[data-divmat]").forEach((c) => { c.__wbDivMat?.dispose(); c.__wbDivMat = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-tree]").forEach((c) => { c.__wbTree?.dispose(); c.__wbTree = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-strike]").forEach((c) => { c.__wbStrike?.dispose(); c.__wbStrike = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-regroup]").forEach((c) => { c.__wbRegroup?.dispose(); c.__wbRegroup = null; });

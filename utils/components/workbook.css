@@ -2735,13 +2735,16 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 /* ── the COUNTING GRID for dividing by one figure (workbook/divmat.js) ──────
    A place-value chart of two rows: the number on top, and under it each
    column cut into as many groups as the divisor. */
-.dm-wrap { margin: 2mm 0 3mm; width: fit-content; max-width: 100%; }
+.dm-wrap { position: relative; margin: 2mm 0 3mm; width: fit-content; max-width: 100%; }
+/* Undo and Clear stand in the tray's right-hand end, and the tray keeps clear of them */
+.dm-wrap > .wb-drawbar { top: 1.6mm; right: 1.6mm; }
+.dm-wrap:has(> .wb-drawbar) .dm-tray { padding-right: 24mm; }
 .dm-tray { display: flex; align-items: center; flex-wrap: wrap; gap: 2mm; padding: 1.4mm 2mm; background: #f4f0e8; border: 0.3mm solid #ded8cc; }
 .dm-take { padding: 0; background: none; border: 0; line-height: 0; cursor: grab; touch-action: none; }
 .dm-take svg { display: block; width: 10mm; height: 10mm; }
 .dm-take:focus-visible { outline: 0.5mm solid #f4c95d; outline-offset: 1mm; }
 .dm-tray__say { flex: 1 1 40mm; min-width: 0; font-family: var(--font-mono), monospace; font-size: 7.5pt; line-height: 1.3; color: #6b655c; overflow-wrap: anywhere; }
-.dm-grid { display: grid; grid-template-columns: 22mm repeat(var(--dm-cols, 3), minmax(0, 46mm)); max-width: 100%; margin-top: 1.5mm; border: 0.4mm solid #2a2723; background: #fffdf8; }
+.dm-grid { display: grid; width: fit-content; grid-template-columns: 22mm repeat(var(--dm-cols, 3), minmax(0, 46mm)); max-width: 100%; margin-top: 1.5mm; border: 0.4mm solid #2a2723; background: #fffdf8; }
 .dm-grid > * { min-width: 0; overflow: hidden; border-right: 0.25mm solid #b8b1a4; border-bottom: 0.25mm solid #b8b1a4; }
 .dm-corner { background: #f4f0e8; }
 .dm-head { padding: 1mm 0.5mm; text-align: center; overflow-wrap: anywhere; font-family: var(--font-mono), monospace; font-size: 8pt; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #14130f; }
