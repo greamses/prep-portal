@@ -1447,20 +1447,17 @@ thead .pv-chart__side {
    to a small box beside the next figure. The grid is measured in millimetres
    (ex-pvdiv.js `G`), because the arrows are drawn across it. */
 .pvd { margin: 2mm 0 3mm; width: fit-content; max-width: 100%; }
-.pvd-rule { display: flex; flex-wrap: wrap; gap: 1.2mm 3mm; margin: 0 0 1.6mm; font-family: var(--font-mono), monospace; }
-.pvd-rule__one { display: inline-flex; align-items: baseline; gap: 0; font-size: 9pt; color: #2a2723; }
-.pvd-rule__one b { font-size: 13pt; font-weight: 800; }
-.pvd-rule__one i { font-style: normal; font-weight: 700; }
-.pvd-rule__one em { margin-left: 1.2mm; font-style: normal; font-size: 7pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.8; }
-.pvd-rule__one[data-l="D"], .pvd-rule__one[data-l="D"] b, .pvd-l[data-l="D"] { color: #2e8b46; }
-.pvd-rule__one[data-l="M"], .pvd-rule__one[data-l="M"] b, .pvd-l[data-l="M"] { color: #7b4fa3; }
-.pvd-rule__one[data-l="S"], .pvd-rule__one[data-l="S"] b, .pvd-l[data-l="S"] { color: #d9632b; }
-.pvd-rule__one[data-l="R"], .pvd-rule__one[data-l="R"] b { color: #2a6ca8; }
+/* the rule on a small sticky note beside the grid: D M S R, "Does My Sister Run?" — one ink, no colours */
+.pvd-side { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 3mm 6mm; }
+.pvd-note.pp-sticky { display: flex; flex-direction: column; gap: 0.5mm; width: 31mm; margin: 2.5mm 0 0; padding: 2.6mm 2.6mm 2.4mm; font-family: var(--font-mono), monospace; font-size: 7.5pt; font-weight: 700; line-height: 1.25; color: #14130f; --pp-note-tilt: 2deg; }
+.pvd-note__say { margin-bottom: 0.8mm; font-size: 8pt; font-weight: 800; }
+.pvd-note__one { display: flex; align-items: baseline; gap: 1.4mm; }
+.pvd-note__one b { width: 4mm; font-size: 11pt; font-weight: 800; }
 .pvd-grid { position: relative; display: grid; grid-template-columns: 31mm repeat(var(--pvd-cols, 3), 25mm); grid-template-rows: 6.5mm repeat(4, 10.5mm); border: 0.4mm solid #2a2723; background: #fffdf8; box-sizing: content-box; }
 .pvd-row { display: contents; }
 .pvd-grid > .pvd-name, .pvd-grid > .pvd-head, .pvd-row > * { box-sizing: border-box; min-width: 0; overflow: hidden; border-right: 0.25mm solid #b8b1a4; border-bottom: 0.25mm solid #b8b1a4; }
 .pvd-name { display: flex; align-items: center; gap: 1.2mm; padding: 0 1.4mm; font-family: var(--font-mono), monospace; font-size: 7.5pt; font-weight: 700; line-height: 1.15; color: #2a2723; background: #f4f0e8; }
-.pvd-l { flex: none; font-size: 11pt; font-weight: 800; }
+.pvd-l { flex: none; font-size: 11pt; font-weight: 800; color: #14130f; }
 .pvd-head { display: flex; align-items: center; justify-content: center; font-family: var(--font-mono), monospace; font-size: 7.5pt; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #14130f; }
 /* the same colours as the counters and the counting grid: hundreds green, tens blue, ones yellow */
 .pvd-head[data-kind="100"] { background: #c8f0c0; }

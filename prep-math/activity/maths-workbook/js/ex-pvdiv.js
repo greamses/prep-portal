@@ -62,11 +62,12 @@ const held = (col, row, mode) => col[FIELD[row]] * (mode === "value" ? col.place
 /** what is carried INTO column c: what the column before had left over */
 const carried = (W, c, mode) => W.cols[c - 1].s * (mode === "value" ? W.cols[c - 1].place : 1);
 
-/** The rule, as it is remembered. */
-const ruleStrip = () => `<p class="pvd-rule" aria-label="Divide, Multiply, Subtract, Regroup: Does My Sister Run?">`
-  + [["D", "oes", "Divide"], ["M", "y", "Multiply"], ["S", "ister", "Subtract"], ["R", "un?", "Regroup"]]
-    .map(([l, rest, what]) => `<span class="pvd-rule__one" data-l="${l}"><b>${l}</b><i>${rest}</i><em>${what}</em></span>`).join("")
-  + `</p>`;
+/** The rule, as it is remembered: on a small sticky note that stands beside the grid. */
+const ruleNote = () => `<aside class="pvd-note pp-sticky pp-sticky--tape pp-sticky--c0" aria-label="Divide, Multiply, Subtract, Regroup: Does My Sister Run?">`
+  + `<span class="pvd-note__say">Does My Sister Run?</span>`
+  + [["D", "Divide"], ["M", "Multiply"], ["S", "Subtract"], ["R", "Regroup"]]
+    .map(([l, what]) => `<span class="pvd-note__one"><b>${l}</b>${what}</span>`).join("")
+  + `</aside>`;
 
 /** The arrows that carry what is left over: from each Subtract box up to the small box beside the next figure. */
 function carryArrows(k, mode) {
@@ -103,15 +104,15 @@ function inputGrid(n, d, mode, { answer = false } = {}) {
         + `<span class="pvd-fig">${mode === "value" ? col.digit * col.place : col.digit}</span></span>`).join(""),
   };
   ["divide", "multiply", "subtract"].forEach((r) => {
-    row[r] = () => `<span class="pvd-name"><b class="pvd-l" data-l="${LETTER[r]}">${LETTER[r]}</b>${label[r]}</span>`
+    row[r] = () => `<span class="pvd-name"><b class="pvd-l">${LETTER[r]}</b>${label[r]}</span>`
       + W.cols.map((col, c) => `<span class="pvd-cell" data-row="${r}">${box(held(col, r, mode), c * 4 + STEP[r])}</span>`).join("");
   });
   const body = head + ROWS[mode].map((r) => `<span class="pvd-row pvd-row--${r}">${row[r]()}</span>`).join("");
   const end = answer
     ? `<p class="wb-ask pvd-end">${n} ÷ ${d} = <b>${W.q}</b>${W.r ? ` remainder <b>${W.r}</b>` : ""}</p>`
     : `<p class="wb-ask pvd-end">${n} ÷ ${d} = <span class="wb-answer" data-step="${k * 4}"></span> remainder <span class="wb-answer" data-step="${k * 4 + 1}"></span></p>`;
-  return `<div class="pvd pvd--${mode}" data-steps="listed">${ruleStrip()}`
-    + `<div class="pvd-grid" style="--pvd-cols:${k}">${body}${carryArrows(k, mode)}</div>${end}</div>`;
+  return `<div class="pvd pvd--${mode}" data-steps="listed"><div class="pvd-side">`
+    + `<div class="pvd-grid" style="--pvd-cols:${k}">${body}${carryArrows(k, mode)}</div>${ruleNote()}</div>${end}</div>`;
 }
 
 /** the answers, in the order the boxes stand on the page */
