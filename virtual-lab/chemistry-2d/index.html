@@ -52,14 +52,17 @@
       <svg id="cl-bench" xmlns="http://www.w3.org/2000/svg" role="application" aria-label="The bench. Drag a piece to move it; carry a bottle or a tool to a vessel to use it."></svg>
       <p id="cl-hint" class="cl-hint" hidden>The bench is empty. Take glassware and chemicals from the drawer, or pick a set-up.</p>
 
-      <div class="cl-bar">
-        <button type="button" class="pp-btn cl-note" data-sheet="cl-sheet-setups" aria-pressed="false">Set-ups</button>
-        <button type="button" class="pp-btn cl-note" data-sheet="cl-sheet-notebook" aria-pressed="false">Notebook <b id="cl-count-log"></b></button>
-        <button type="button" class="pp-btn cl-note" data-sheet="cl-sheet-tasks" aria-pressed="false">Things to try <b id="cl-count-tasks"></b></button>
+      <div class="cl-bar" role="toolbar" aria-label="The bench">
+        <a class="cl-ico" href="../index.html" data-ico="back" data-tip="Back to the Virtual Lab" data-tip-side="bottom" aria-label="Back to the Virtual Lab"></a>
+        <button type="button" class="cl-ico" data-sheet="cl-sheet-setups" data-ico="setups" data-tip="Set-ups: a bench laid out ready" data-tip-side="bottom" aria-label="Set-ups" aria-pressed="false"></button>
+        <button type="button" class="cl-ico" data-sheet="cl-sheet-notebook" data-ico="notebook" data-tip="Lab notebook" data-tip-side="bottom" aria-label="Lab notebook" aria-pressed="false"><b id="cl-count-log" class="cl-badge"></b></button>
+        <button type="button" class="cl-ico" data-sheet="cl-sheet-tasks" data-ico="tasks" data-tip="Things to try" data-tip-side="bottom" aria-label="Things to try" aria-pressed="false"><b id="cl-count-tasks" class="cl-badge"></b></button>
         <span class="cl-gap" aria-hidden="true"></span>
-        <span class="cl-label">Pour</span>
-        <button type="button" class="pp-btn cl-note" data-dose="drops">A few drops</button>
-        <button type="button" class="pp-btn cl-note" data-dose="portion">A full measure</button>
+        <button type="button" class="cl-ico" data-dose="drops" data-ico="drops" data-tip="Pour a few drops at a time" data-tip-side="bottom" aria-label="Pour a few drops at a time"></button>
+        <button type="button" class="cl-ico" data-dose="portion" data-ico="measure" data-tip="Pour a full measure at a time" data-tip-side="bottom" aria-label="Pour a full measure at a time"></button>
+        <span class="cl-sep" aria-hidden="true"></span>
+        <button type="button" class="cl-ico" id="cl-clear" data-ico="clear" data-tip="Clear the bench" data-tip-side="bottom" aria-label="Clear the bench"></button>
+        <button type="button" class="cl-ico" id="cl-fs" data-tip="Full screen" data-tip-side="bottom" aria-label="Full screen"></button>
       </div>
 
       <div id="cl-say" class="pp-sticky pp-sticky--c0 pp-sticky--tape" aria-live="polite">
@@ -81,8 +84,8 @@
         <div class="pp-receipt__paper">
           <div class="cl-sheet__head">
             <h2 class="cl-h2">Lab notebook</h2>
-            <button type="button" class="pp-btn cl-note" id="cl-explain">Hide the chemistry</button>
-            <button type="button" class="pp-btn pp-btn--ghost cl-note" id="cl-clear-log">Clear</button>
+            <button type="button" class="cl-ico cl-ico--paper" id="cl-explain" data-tip="Hide the chemistry" aria-label="Hide the chemistry"></button>
+            <button type="button" class="cl-ico cl-ico--paper" id="cl-clear-log" data-ico="wipe" data-tip="Wipe the notebook" aria-label="Wipe the notebook"></button>
             <button type="button" class="cl-sheet__close" aria-label="Close"></button>
           </div>
           <ol id="cl-log" class="cl-log"></ol>
@@ -100,7 +103,6 @@
     <!-- the drawer: everything that can be put on the bench -->
     <aside class="cl-drawer" aria-label="The drawer">
       <header class="cl-drawer__head">
-        <a class="cl-crumb" href="../index.html">Virtual Lab</a>
         <h1 class="cl-title">Chemistry Bench</h1>
         <input id="cl-search" class="cl-search" type="search" placeholder="Find a piece or a chemical" aria-label="Search the drawer" autocomplete="off" />
       </header>

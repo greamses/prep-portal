@@ -154,7 +154,7 @@ const ION_TEX = { Mg: "Mg^2+", Zn: "Zn^2+", Fe2: "Fe^2+", Pb: "Pb^2+", Cu: "Cu^2
 
 // ── a tube ──────────────────────────────────────────────────────────────────
 export function newTube(cap = CAP) {
-  return { cap, vol: 0, aq: {}, metal: {}, deposit: [], solid: {}, ind: [], gas: null, added: [], said: [] };
+  return { cap, temp: 25, vol: 0, aq: {}, metal: {}, deposit: [], solid: {}, ind: [], gas: null, added: [], said: [] };
 }
 export const isEmpty = (t) => t.vol <= EPS && !hasSolids(t) && !t.ind.length;
 const hasSolids = (t) => Object.values(t.metal).some((n) => n > EPS) || Object.values(t.solid).some((n) => n > EPS);
@@ -352,6 +352,14 @@ function act(t, change, { heated = false, adding = null } = {}) {
   const before = snapshot(t);
   change();
   const events = settle(t, heated);
+  // warmth: what the thermometer will read. It cools a little every time the vessel is touched.
+  t.temp = 25 + ((t.temp ?? 25) - 25) * 0.75;
+  if (t.vol > EPS) {
+    const warm = (id, k) => (events.filter((e) => e.id === id).reduce((a, e) => a + e.n, 0) * k) / t.vol;
+    t.temp += warm("neutral", 26) + warm("neutralNH3", 22) + warm("metalAcid", 30) + warm("displace", 16) + warm("oxygen", 14);
+  }
+  if (heated) t.temp = Math.max(t.temp, 82);
+  t.temp = Math.min(100, t.temp);
   const after = snapshot(t);
   const obs = [];
   const flags = [];
@@ -521,6 +529,55 @@ export function rinse(t) {
   return { title: "Emptied and rinsed", obs: [], flags: [] };
 }
 
+/** How much more liquid a vessel will take. */
+export const roomIn = (t) => (t.cap || CAP) - t.vol;
+
+/** Take some of the liquid out (a dropper, or tipping the vessel). What is left stays put. */
+export function takeFrom(t, amount) {
+  const n = Math.min(amount, t.vol);
+  if (n <= EPS) return null;
+  const f = n / t.vol;
+  const s = newTube(n);
+  s.vol = n;
+  s.temp = t.temp ?? 25;
+  s.ind = [...t.ind];
+  s.added = [...t.added];
+  for (const [k, v] of Object.entries(t.aq)) { bump(s.aq, k, v * f); bump(t.aq, k, -v * f); }
+  t.vol -= n;
+  t.gas = null;
+  if (t.vol <= EPS) { t.vol = 0; t.ind = []; t.aq = {}; if (!hasSolids(t)) t.added = []; }
+  return s;
+}
+
+/** Pour a sample (from takeFrom) into a vessel. */
+export function pourIn(t, s, from = "another vessel") {
+  if (s.vol > roomIn(t) + EPS) return { refused: "It is full. Empty it, or use another one." };
+  const wasDry = t.vol <= EPS;
+  const res = act(t, () => {
+    t.gas = null;
+    t.temp = ((t.temp ?? 25) * t.vol + (s.temp ?? 25) * s.vol) / (t.vol + s.vol);
+    t.vol += s.vol;
+    for (const [k, v] of Object.entries(s.aq)) bump(t.aq, k, v);
+    for (const id of s.ind) if (!t.ind.includes(id)) t.ind.push(id);
+    for (const id of s.added) if (!t.added.includes(id)) t.added.push(id);
+  });
+  res.title = `Added liquid from ${from}`;
+  if (wasDry && res.state.look.name !== "colourless") res.obs.push({ text: `The liquid is ${res.state.look.name}.` });
+  return res;
+}
+
+// The colour a salt gives a flame. Sodium's yellow hides the others.
+const FLAME = [
+  ["Na", "sodium", "golden yellow", [255, 196, 40]], ["Cu", "copper", "blue-green", [60, 208, 170]], ["Ba", "barium", "apple green", [156, 224, 90]],
+  ["Ca", "calcium", "brick red", [232, 92, 50]], ["K", "potassium", "lilac", [196, 150, 244]], ["Pb", "lead", "blue-white", [170, 200, 255]],
+];
+/** What a flame-test wire dipped in this liquid will show, or null for no colour. */
+export function flameOf(t) {
+  const sp = speciate(t);
+  const hit = FLAME.find(([ion]) => get(t.aq, ion) > EPS && (get(sp.free, ion) > EPS || ion === "Cu" || ion === "Ca" || ion === "Ba" || ion === "Pb"));
+  return hit ? { ion: hit[0], metal: hit[1], name: hit[2], rgb: hit[3] } : null;
+}
+
 const GAS_NAME = { H2: "hydrogen", CO2: "carbon dioxide", O2: "oxygen", NH3: "ammonia" };
 
 /** A test: "lit" | "glow" | "red" | "blue". */
@@ -559,6 +616,23 @@ export function test(t, tool) {
     } else if (!gas) return { refused: "There is no liquid or gas in there to test." };
     return { title: `Tested with ${paper} litmus paper`, obs, flags, fx: turned ? `litmus-${paper}-${turned}` : `litmus-${paper}-${paper}` };
   }
+  if (tool === "ph" || tool === "meter" || tool === "thermo") {
+    if (t.vol <= EPS) return { refused: "There is no liquid in there to test." };
+    const pH = speciate(t).pH;
+    const kind = pH < 6.5 ? "acidic" : pH > 7.5 ? "alkaline" : "neutral";
+    if (tool === "ph") {
+      const [, c, word] = UNIVERSAL.find(([top]) => pH < top);
+      say(`The pH paper turns ${word}.`, `About pH ${Math.round(pH)}: ${kind}.`);
+      return { title: "Tested with pH paper", obs, flags: ["test:ph"], fx: `ph-${c.join(",")}` };
+    }
+    if (tool === "meter") {
+      say(`The pH meter reads ${pH.toFixed(1)}.`, `The liquid is ${kind}.`);
+      return { title: "Dipped in the pH meter", obs, flags: ["test:ph"], fx: `meter-${pH.toFixed(1)}` };
+    }
+    const T = Math.round(t.temp ?? 25);
+    say(`The thermometer reads ${T} °C.`, T >= 30 ? "Warmer than the room (25 °C)." : "Room temperature.");
+    return { title: "Took the temperature", obs, flags: [`temp:${T}`], fx: `thermo-${T}` };
+  }
   throw new Error(`No such test: ${tool}`);
 }
 export const gasName = (g) => GAS_NAME[g];
@@ -596,6 +670,8 @@ export const TASKS = [
   { id: "displace", text: "Coat a metal with copper.", done: (f) => f.includes("deposit:Cu") },
   { id: "ammonia", text: "Make a gas that turns damp red litmus blue.", done: (f) => f.includes("test:gasblue") },
   { id: "black", text: "Turn a blue precipitate black.", done: (f) => f.includes("heat:CuO") },
+  { id: "flame", text: "Colour a flame brick red.", done: (f) => f.includes("flame:Ca") },
+  { id: "exo", text: "Make a liquid at least 10 °C warmer than the room, and measure it.", done: (f) => f.some((x) => x.startsWith("temp:") && Number(x.slice(5)) >= 35) },
 ];
 
 /** Which tasks this result finishes. */

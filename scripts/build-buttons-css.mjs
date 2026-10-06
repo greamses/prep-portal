@@ -39,7 +39,7 @@ const TOOLS = [
   ".ct-piece",
   /* the chemistry bench: the tiles of its drawer and the rail that sorts them. A
      tile is a picture of a piece of glassware; tape across it made it a note */
-  ".cl-tile", ".cl-cat",
+  ".cl-tile", ".cl-cat", ".cl-ico",
 ];
 
 // Not buttons, or must not be paper. `.pp-plain` is the opt-out.

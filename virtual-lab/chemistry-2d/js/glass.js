@@ -36,6 +36,20 @@ function tubeProfile(R, H) {
   return p;
 }
 const beakerProfile = (R, H) => [[0, R - 7], [-2, R - 2.5], [-7, R], [-H, R]];
+/** A bulb with a neck: a sphere of radius R whose centre is `cy` above the bench (cy < R cuts it flat). */
+function bulb(R, cy, neckR, neckTop) {
+  const p = [];
+  const a0 = cy < R ? Math.acos(cy / R) : 0;
+  const a1 = Math.PI - Math.asin(neckR / R);
+  for (let k = 0; k <= 14; k++) {
+    const a = a0 + ((a1 - a0) * k) / 14;
+    p.push([f1(-(cy - R * Math.cos(a))), f1(R * Math.sin(a))]);
+  }
+  p.push([-neckTop, neckR], [-(neckTop + 3), neckR + 3]);
+  return p;
+}
+/** A measuring cylinder: the tube stands on a foot 8 thick. */
+const cylProfile = (R, H) => [[-8, R - 3], [-10.5, R], [-H, R], [-(H + 3), R + 2.5]];
 
 /** The half-width of a profile at height y. */
 export function rAt(P, y) {
@@ -67,7 +81,18 @@ export const VESSELS = {
   boil: { name: "Boiling tube", cap: 20, profile: tubeProfile(18, 176), fill: 0.86 },
   beaker100: { name: "Beaker (100 mL)", cap: 30, profile: beakerProfile(40, 96), fill: 0.84, flat: true, spout: true, marks: [[20, 0.2], [40, 0.4], [60, 0.6], [80, 0.8]], volume: "100 mL" },
   beaker250: { name: "Beaker (250 mL)", cap: 60, profile: beakerProfile(55, 132), fill: 0.84, flat: true, spout: true, marks: [[50, 0.2], [100, 0.4], [150, 0.6], [200, 0.8]], volume: "250 mL" },
+  beaker500: { name: "Beaker (500 mL)", cap: 100, profile: beakerProfile(68, 150), fill: 0.84, flat: true, spout: true, marks: [[100, 0.2], [200, 0.4], [300, 0.6], [400, 0.8]], volume: "500 mL" },
+  flask100: { name: "Conical flask (100 mL)", cap: 30, profile: [[0, 40], [-3, 44], [-8, 45], [-68, 15], [-78, 13], [-114, 13], [-117, 16]], fill: 0.58, flat: true, marks: [[50, 0.5], [75, 0.75]], volume: "100 mL" },
   flask: { name: "Conical flask (250 mL)", cap: 50, profile: [[0, 54], [-3, 59], [-9, 60], [-92, 19], [-104, 17], [-150, 17], [-153, 20]], fill: 0.6, flat: true, marks: [[100, 0.4], [150, 0.6], [200, 0.8]], volume: "250 mL" },
+  rbf: { name: "Round-bottom flask", cap: 50, profile: bulb(52, 52, 15, 166), fill: 0.5, volume: "250 mL" },
+  fbf: { name: "Flat-bottom flask", cap: 50, profile: bulb(52, 46, 15, 160), fill: 0.5, flat: true, foot: 22, volume: "250 mL" },
+  vol100: { name: "Volumetric flask (100 mL)", cap: 40, profile: bulb(40, 36, 7.5, 178), fill: 0.83, flat: true, foot: 15, ring: -150, volume: "100 mL" },
+  cyl10: { name: "Measuring cylinder (10 mL)", cap: 6, profile: cylProfile(9, 124), fill: 0.86, floor: 8, footR: 24, spout: true, marks: [[2, 0.2], [4, 0.4], [6, 0.6], [8, 0.8]] },
+  cyl100: { name: "Measuring cylinder (100 mL)", cap: 36, profile: cylProfile(16, 196), fill: 0.86, floor: 8, footR: 34, spout: true, marks: [[20, 0.2], [40, 0.4], [60, 0.6], [80, 0.8]] },
+  gasjar: { name: "Gas jar", cap: 60, profile: [[0, 34], [-2, 38], [-6, 40], [-150, 40], [-152, 47], [-156, 47]], fill: 0.86, flat: true },
+  dish: { name: "Evaporating dish", cap: 14, profile: [[0, 20], [-2, 32], [-10, 48], [-26, 59], [-30, 61]], fill: 0.74, flat: true, foot: 18, material: "porcelain" },
+  crucible: { name: "Crucible", cap: 8, profile: [[0, 14], [-2, 17], [-40, 26], [-43, 27]], fill: 0.8, flat: true, foot: 13, material: "porcelain" },
+  watch: { name: "Watch glass", cap: 4, profile: [[0, 10], [-3, 32], [-9, 50], [-12, 55]], fill: 0.7, flat: true, foot: 9 },
 };
 for (const v of Object.values(VESSELS)) {
   v.top = v.profile[v.profile.length - 1][0];
@@ -75,7 +100,12 @@ for (const v of Object.values(VESSELS)) {
   v.rMax = Math.max(...v.profile.map(([, r]) => r));
   v.bbox = { x0: -v.rMax - 6, y0: v.top - 8, x1: v.rMax + 6, y1: 8 };
 }
-const levelOf = (def, t) => (t.vol > 0 ? Math.max(7, -def.top * def.fill * Math.min(1, t.vol / (t.cap || def.cap))) : 0);
+/** How high the liquid stands above the bench (the foot of a cylinder counts). */
+const levelOf = (def, t) => {
+  const fl = def.floor || 0;
+  const inner = -def.top - fl;
+  return t.vol > 0 ? fl + Math.max(Math.min(7, inner * 0.3), inner * def.fill * Math.min(1, t.vol / (t.cap || def.cap))) : 0;
+};
 
 /** The gradients every piece borrows. Put once into the bench's own <svg>. */
 export const DEFS = `
@@ -113,6 +143,10 @@ export const DEFS = `
   <linearGradient id="g-flame" x1="0" x2="0" y1="1" y2="0">
     <stop offset="0" stop-color="#4aa8ff" stop-opacity="0.85"/><stop offset="0.6" stop-color="#6f7cff" stop-opacity="0.5"/><stop offset="1" stop-color="#b08cff" stop-opacity="0.12"/>
   </linearGradient>
+  <linearGradient id="g-porcelain" x1="0" x2="1" y1="0" y2="0">
+    <stop offset="0" stop-color="#fff" stop-opacity="0.82"/><stop offset="0.3" stop-color="#eef1f4" stop-opacity="0.5"/>
+    <stop offset="0.7" stop-color="#dfe4ea" stop-opacity="0.5"/><stop offset="1" stop-color="#fff" stop-opacity="0.78"/>
+  </linearGradient>
   <radialGradient id="g-ember"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.45" stop-color="#ff7a2a"/><stop offset="1" stop-color="#ff3a1a" stop-opacity="0"/></radialGradient>
   <filter id="g-soft" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur stdDeviation="3.2"/></filter>
 </defs>`;
@@ -127,7 +161,7 @@ export function vesselSvg(key, uid, tag = "") {
   const body = outline(P);
   const rimRy = Math.max(2.6, def.rTop * 0.15);
   const marks = (def.marks || []).map(([n, at]) => {
-    const y = f1(def.top * def.fill * at);
+    const y = f1(-((def.floor || 0) + (H - (def.floor || 0)) * def.fill * at));
     const r = rAt(P, y);
     return `<path d="M${f1(r * 0.3)} ${y}H${f1(r * 0.62)}" class="cl-mark"/><text class="cl-mark-n" x="${f1(r * 0.24)}" y="${y + 2.4}" text-anchor="end">${n}</text>`;
   }).join("");
@@ -147,17 +181,18 @@ export function vesselSvg(key, uid, tag = "") {
       <g class="cl-bubbles"></g>
     </g>
     <ellipse class="cl-meniscus" cx="0" cy="0" rx="0" ry="2.4"/>
-    <path d="${body}" fill="url(#g-glass)"/>
+    <path d="${body}" fill="url(#${def.material === "porcelain" ? "g-porcelain" : "g-glass"})"/>
     <path class="cl-g-edge" d="${outline(P, true)}"/>
-    ${def.flat ? `<ellipse class="cl-g-foot" cx="0" cy="-2.5" rx="${f1(P[2][1] * 0.94)}" ry="3.6"/>` : ""}
-    <path class="cl-g-shine" d="${wall(P, -1, 4.5, 0.12, 0.93)}"/>
-    <path class="cl-g-glint" d="${wall(P, 1, 5, 0.2, 0.86)}"/>
+    ${def.footR ? `<path d="M${-def.footR} 0h${def.footR * 2}l-5 ${-def.floor}h${-(def.footR * 2 - 10)}z" fill="url(#g-glass)"/><path class="cl-g-edge" d="M${-def.footR} 0h${def.footR * 2}l-5 ${-def.floor}h${-(def.footR * 2 - 10)}z"/>` : ""}
+    ${def.flat ? `<ellipse class="cl-g-foot" cx="0" cy="-2.5" rx="${f1(def.foot || P[2][1] * 0.94)}" ry="${def.foot ? 2.4 : 3.6}"/>` : ""}
+    ${def.material === "porcelain" ? "" : `<path class="cl-g-shine" d="${wall(P, -1, 4.5, 0.12, 0.93)}"/><path class="cl-g-glint" d="${wall(P, 1, 5, 0.2, 0.86)}"/>`}
+    ${def.ring ? `<path class="cl-mark" d="M${-rAt(P, def.ring)} ${def.ring}H${rAt(P, def.ring)}"/>` : ""}
     ${marks}
-    ${def.volume ? `<text class="cl-mark-v" x="${f1(-rAt(P, def.top * 0.5) * 0.45)}" y="${f1(def.top * (def.fill + 0.06))}">${def.volume}</text>` : ""}
+    ${def.volume ? `<text class="cl-mark-v" x="${def.spout ? f1(-rAt(P, def.top * 0.5) * 0.45) : 0}" y="${f1(def.spout ? def.top * (def.fill + 0.06) : def.top * 0.3)}">${def.volume}</text>` : ""}
     <ellipse class="cl-g-rim" cx="0" cy="${def.top}" rx="${def.rTop + 1.5}" ry="${f1(rimRy)}"/>
     ${spout}
     <g class="cl-wisps"><path d="M-6 ${def.top - 6}q-5-8 0-15t0-15"/><path d="M0 ${def.top - 8}q5-8 0-15t0-15"/><path d="M6 ${def.top - 6}q-5-8 0-15t0-15"/></g>
-    <g class="cl-tagg"><rect x="-9" y="${def.top + 16}" width="18" height="14" rx="2.5"/><text x="0" y="${def.top + 23.5}">${tag}</text></g>
+    <g class="cl-tagg" transform="translate(0 ${H < 60 ? -36 : 0})"><rect x="-9" y="${def.top + 16}" width="18" height="14" rx="2.5"/><text x="0" y="${def.top + 23.5}">${tag}</text></g>
     ${hit(def.bbox)}`;
 }
 
@@ -184,11 +219,12 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1 } = {}) {
 
   const total = stuff.ppt.reduce((a, p) => a + p.n, 0);
   const mix = total ? [0, 1, 2].map((k) => Math.round(stuff.ppt.reduce((a, p) => a + p.rgb[k] * p.n, 0) / total)) : [0, 0, 0];
-  const bed = total ? Math.min(level || 40, 7 + (H * 0.75 * total) / (t.cap || def.cap)) : 0;
+  const fl = def.floor || 0;
+  const bed = total ? Math.min(level ? level - fl : 40, Math.min(7, H * 0.12) + (H * 0.75 * total) / (t.cap || def.cap)) : 0;
   const sed = g.querySelector(".cl-sediment");
   const cloud = g.querySelector(".cl-cloud");
   sed.style.fill = rgba(mix, 0.97);
-  sed.style.transform = `translateY(${H - bed}px)`;
+  sed.style.transform = `translateY(${H - bed - fl}px)`;
   cloud.style.fill = rgba(mix, 0.82);
   cloud.style.transform = `translateY(${H - level}px)`;
   if (fresh && total) {
@@ -200,7 +236,7 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1 } = {}) {
   }
   g.classList.toggle("has-ppt", total > 0);
 
-  const floor = -bed - 2;
+  const floor = -fl - bed - 2;
   const spread = Math.max(6, rAt(P, Math.min(-6, floor - 4)) * 0.72);
   const rnd = scatter(seed);
   const spot = () => [f1((rnd() - 0.5) * 2 * spread), f1(floor - rnd() * 8)];
@@ -240,7 +276,7 @@ export function bubble(g, key, t, lively = 1) {
   const spread = rAt(def.profile, -level * 0.4) * 0.75;
   let html = "";
   for (let k = 0; k < Math.round(12 * lively); k++) {
-    html += `<circle class="cl-bubble" cx="${f1((Math.random() - 0.5) * 2 * spread)}" cy="-6" r="${f1(1.3 + Math.random() * 2.2)}" style="--rise:${-Math.round(level - 5)}px;animation-delay:${(Math.random() * 2.4).toFixed(2)}s"/>`;
+    html += `<circle class="cl-bubble" cx="${f1((Math.random() - 0.5) * 2 * spread)}" cy="${-(def.floor || 0) - 6}" r="${f1(1.3 + Math.random() * 2.2)}" style="--rise:${-Math.round(level - (def.floor || 0) - 5)}px;animation-delay:${(Math.random() * 2.4).toFixed(2)}s"/>`;
   }
   box.innerHTML = html;
   clearTimeout(box._t);
@@ -341,6 +377,13 @@ export function reagentSvg(id, uid) {
 // act = the point of the tool that does the work, in its own space
 export const TOOLS = {
   burner: { name: "Bunsen burner", act: [0, -146], bbox: { x0: -34, y0: -150, x1: 46, y1: 8 } },
+  spirit: { name: "Spirit burner", act: [0, -112], bbox: { x0: -36, y0: -116, x1: 36, y1: 8 } },
+  dropper: { name: "Dropper", act: [0, 0], bbox: { x0: -10, y0: -108, x1: 10, y1: 6 } },
+  thermo: { name: "Thermometer", act: [0, 0], bbox: { x0: -9, y0: -154, x1: 9, y1: 6 } },
+  ph: { name: "pH paper", act: [0, 0], bbox: { x0: -10, y0: -70, x1: 10, y1: 6 } },
+  meter: { name: "pH meter", act: [0, 0], bbox: { x0: -22, y0: -156, x1: 22, y1: 6 } },
+  wire: { name: "Flame-test wire", act: [-34, -58], bbox: { x0: -44, y0: -68, x1: 40, y1: 8 } },
+  waste: { name: "Waste tub", act: [0, -66], bbox: { x0: -62, y0: -78, x1: 62, y1: 8 } },
   lit: { name: "Lighted splint", act: [-34, -58], bbox: { x0: -44, y0: -84, x1: 40, y1: 8 } },
   glow: { name: "Glowing splint", act: [-34, -58], bbox: { x0: -44, y0: -70, x1: 40, y1: 8 } },
   red: { name: "Red litmus paper", act: [0, 0], bbox: { x0: -10, y0: -70, x1: 10, y1: 6 } },
@@ -369,6 +412,41 @@ export function toolSvg(key) {
       </g>
       ${hit(b)}`;
   }
+  if (key === "spirit") {
+    const d = "M-31 0q-5 -24 7 -42q8 -11 13 -14h22q5 3 13 14q12 18 7 42z";
+    return `${shadow(34)}
+      <path d="${d}" fill="rgba(176,128,226,0.38)"/><path d="${d}" fill="url(#g-shade)"/><path d="${d}" fill="url(#g-glass)"/><path class="cl-g-edge" d="${d}"/>
+      <path class="cl-g-shine" d="M-24 -8q-3 -18 5 -32"/>
+      <rect x="-12" y="-67" width="24" height="11" rx="2" fill="url(#g-metal)"/><rect x="-3" y="-76" width="6" height="11" rx="1" fill="#efe6d0"/>
+      <g class="cl-flame"><path d="M0 -112c7 12 11 18 11 26a11 11 0 0 1-22 0c0-8 4-14 11-26z" fill="#ff9a2a" fill-opacity="0.86"/><path d="M0 -97c4 7 6 10 6 15a6 6 0 0 1-12 0c0-5 2-8 6-15z" fill="#ffe27a"/></g>
+      ${hit(b)}`;
+  }
+  if (key === "dropper") {
+    return `<path d="M-1.6 0L-4 -22V-70h8V-22L1.6 0z" fill="#fff" fill-opacity="0.12" stroke="#fff" stroke-opacity="0.65" stroke-width="0.9"/>
+      <path class="cl-drop-liq" d="M-1.1 -2L-2.8 -22V-52h5.6V-22L1.1 -2z" fill="transparent"/>
+      <rect x="-6" y="-77" width="12" height="8" rx="2" fill="#2c3038"/><path d="M-5 -77c-5 -8 -5 -22 0 -27q5 -4 10 0c5 5 5 19 0 27z" fill="url(#g-rubber)"/>${hit(b)}`;
+  }
+  if (key === "thermo") {
+    const ticks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((k) => `<path d="M3.4 ${-26 - k * 11}h${k % 5 === 0 ? 4 : 2.4}" class="cl-mark"/>`).join("");
+    return `<rect x="-3.2" y="-150" width="6.4" height="146" rx="3.2" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.62" stroke-width="0.8"/>
+      <rect class="cl-merc" x="-1.1" y="-53" width="2.2" height="49" fill="#e23b3b"/><circle cx="0" cy="-4" r="4.6" fill="#e23b3b" stroke="#fff" stroke-opacity="0.5" stroke-width="0.7"/>${ticks}${hit(b)}`;
+  }
+  if (key === "meter") {
+    return `<rect x="-2.4" y="-86" width="4.8" height="80" rx="2" fill="url(#g-metal)"/><circle cx="0" cy="-5" r="4.4" fill="#cfe8ff" fill-opacity="0.7" stroke="#fff" stroke-opacity="0.75" stroke-width="0.8"/>
+      <rect x="-20" y="-154" width="40" height="72" rx="6" fill="#2b3340" stroke="#fff" stroke-opacity="0.38"/>
+      <rect x="-15" y="-146" width="30" height="20" rx="2" fill="#b9d7a8"/><text class="cl-lcd" x="0" y="-131.5">--.-</text>
+      <circle cx="-7" cy="-106" r="3.6" fill="#e2574c"/><circle cx="7" cy="-106" r="3.6" fill="#8892a0"/>${hit(b)}`;
+  }
+  if (key === "wire") {
+    return `<path d="M-4 -33L32 -2" stroke="#fff" stroke-opacity="0.4" stroke-width="5.5" stroke-linecap="round"/><path d="M-4 -33L32 -2" stroke="#fff" stroke-opacity="0.75" stroke-width="1" stroke-linecap="round"/>
+      <path d="M-31.5 -56L-4 -33" stroke="#cfd4db" stroke-width="1.5" stroke-linecap="round"/><circle class="cl-loop" cx="-34" cy="-58" r="3.4" fill="transparent" stroke="#cfd4db" stroke-width="1.5"/>${hit(b)}`;
+  }
+  if (key === "waste") {
+    const d = "M-56 -66h112l-10 62a6 6 0 0 1-6 4h-80a6 6 0 0 1-6-4z";
+    return `${shadow(60)}<path d="${d}" fill="#56606e" stroke="#fff" stroke-opacity="0.3"/><path d="${d}" fill="url(#g-shade)"/>
+      <ellipse class="cl-g-rim" cx="0" cy="-66" rx="56" ry="7"/><ellipse cx="0" cy="-66" rx="52" ry="5" fill="#1b1f26"/>
+      <text class="cl-waste-t" x="0" y="-26">WASTE</text>${hit(b)}`;
+  }
   if (key === "lit") {
     return `${splint(`<g class="cl-tip"><circle cx="-34" cy="-62" r="15" fill="url(#g-ember)" opacity="0.55"/>
       <path class="cl-flame" d="M-34 -84c6 9 9 12 9 18a9 9 0 0 1-18 0c0-6 3-9 9-18z" fill="#ff9a2a"/>
@@ -391,16 +469,44 @@ export function splintAfter(end) {
   return "";
 }
 
-// ── the rack ────────────────────────────────────────────────────────────────
-export const RACK = { name: "Test tube rack", slots: [-110, -55, 0, 55, 110], rest: -12, bbox: { x0: -156, y0: -92, x1: 156, y1: 8 } };
-/** In two halves: the back goes behind the tubes, the front in front of them. */
-export function rackSvg() {
-  const holes = RACK.slots.map((x) => `<ellipse cx="${x}" cy="-76" rx="17" ry="4.5" fill="#1d2128" fill-opacity="0.75"/>`).join("");
-  const lips = RACK.slots.map((x) => `<path d="M${x - 17} -76a17 4.5 0 0 0 34 0v5a17 4.5 0 0 1-34 0z" fill="#b98548"/>`).join("");
+// ── things that hold other things ───────────────────────────────────────────
+// slots = where a vessel's foot rests, in the support's own space; fits = which vessels it will take
+export const SUPPORTS = {
+  rack: { name: "Test tube rack", slots: [-110, -55, 0, 55, 110].map((x) => [x, -12]), fits: (d) => Boolean(d.rack), bbox: { x0: -156, y0: -92, x1: 156, y1: 8 } },
+  tripod: { name: "Tripod and gauze", slots: [[0, -158]], fits: (d) => Boolean(d.flat), bbox: { x0: -64, y0: -164, x1: 64, y1: 8 } },
+  stand: { name: "Retort stand and clamp", slots: [[44, -150]], fits: (d) => !d.material && !d.floor && d.rMax <= 60, bbox: { x0: -56, y0: -336, x1: 80, y1: 8 } },
+};
+/** In two halves: the back goes behind what it holds, the front in front of it. */
+export function supportSvg(key) {
+  const b = SUPPORTS[key].bbox;
+  if (key === "tripod") {
+    return {
+      back: `${shadow(62)}
+        <path d="M-42 -150L-56 0M42 -150L56 0M0 -150V-8" stroke="#8d96a3" stroke-width="5" stroke-linecap="round" fill="none"/>
+        <path d="M-41 -150L-55 0M43 -150L57 0" stroke="#fff" stroke-opacity="0.3" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+        <ellipse cx="0" cy="-150" rx="46" ry="6" fill="none" stroke="#aab2bd" stroke-width="4"/>
+        <rect x="-54" y="-158" width="108" height="5" rx="1" fill="#7d8691"/><path d="M-50 -155.5h100" stroke="#fff" stroke-opacity="0.25" stroke-dasharray="2 3"/>
+        <rect x="-27" y="-159" width="54" height="6" rx="2" fill="#e9e6df"/>${hit(b)}`,
+      front: "",
+    };
+  }
+  if (key === "stand") {
+    return {
+      back: `${shadow(62)}
+        <rect x="-52" y="-12" width="130" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/>
+        <rect x="-37" y="-332" width="7" height="322" rx="3" fill="url(#g-metal)"/>
+        <rect x="-24" y="-266" width="56" height="6" rx="3" fill="url(#g-metal)"/>
+        <rect x="-43" y="-272" width="20" height="18" rx="3" fill="#5b6470" stroke="#fff" stroke-opacity="0.25"/><circle cx="-33" cy="-263" r="3" fill="#aab2bd"/>${hit(b)}`,
+      front: `<rect x="26" y="-268" width="36" height="10" rx="5" fill="#aab2bd"/><rect x="26" y="-268" width="36" height="3" rx="1.5" fill="#fff" fill-opacity="0.35"/>`,
+    };
+  }
+  const xs = SUPPORTS.rack.slots.map(([x]) => x);
+  const holes = xs.map((x) => `<ellipse cx="${x}" cy="-76" rx="17" ry="4.5" fill="#1d2128" fill-opacity="0.75"/>`).join("");
+  const lips = xs.map((x) => `<path d="M${x - 17} -76a17 4.5 0 0 0 34 0v5a17 4.5 0 0 1-34 0z" fill="#b98548"/>`).join("");
   return {
     back: `${shadow(150)}
       <rect x="-150" y="-84" width="10" height="84" rx="2" fill="#a87438"/><rect x="140" y="-84" width="10" height="84" rx="2" fill="#a87438"/>
-      <rect x="-152" y="-84" width="304" height="14" rx="3" fill="url(#g-wood)"/>${holes}${hit(RACK.bbox)}`,
+      <rect x="-152" y="-84" width="304" height="14" rx="3" fill="url(#g-wood)"/>${holes}${hit(b)}`,
     front: `${lips}<rect x="-154" y="-14" width="308" height="16" rx="4" fill="url(#g-wood)"/><rect x="-154" y="-14" width="308" height="3" rx="1.5" fill="#fff" fill-opacity="0.18"/>`,
   };
 }
@@ -412,7 +518,7 @@ export function thumb(kind, key) {
   if (kind === "vessel") { inner = vesselSvg(key, uid); b = VESSELS[key].bbox; }
   else if (kind === "reagent") { inner = reagentSvg(key, uid); b = { x0: -38, y0: -126, x1: 38, y1: 8 }; }
   else if (kind === "tool") { inner = toolSvg(key); b = TOOLS[key].bbox; }
-  else { const r = rackSvg(); inner = r.back + r.front; b = RACK.bbox; }
+  else { const r = supportSvg(key); inner = r.back + r.front; b = SUPPORTS[key].bbox; }
   return `<svg viewBox="${b.x0 - 4} ${b.y0 - 4} ${b.x1 - b.x0 + 8} ${b.y1 - b.y0 + 8}" aria-hidden="true">${inner}</svg>`;
 }
 

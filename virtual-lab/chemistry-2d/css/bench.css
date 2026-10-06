@@ -29,12 +29,17 @@ html body {
   --bench-line: rgba(255, 255, 255, 0.09);
   --bench-tile: #2c313b;
   position: fixed;
-  inset: 76px 0 0 0;
+  inset: 0;
   z-index: 1;
   display: flex;
   font-family: var(--font-mono);
   background: var(--bench-2);
 }
+
+/* The bench always has the whole window: the site's bar is put away on this
+   page (the arrow at the top left leads back), and the first touch asks the
+   browser for the whole screen as well. */
+.site-nav, .pp-page-paint { display: none !important; }
 
 /* ── the bench ─────────────────────────────────────────────────────────── */
 .cl-benchwrap {
@@ -91,6 +96,13 @@ html body {
 .cl-paper { stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.8; transition: fill 0.8s ease 0.3s; }
 .cl-paper--red { fill: #de5a52; }
 .cl-paper--blue { fill: #4f84d6; }
+.cl-paper--ph { fill: #ecd98c; }
+.cl-lcd { fill: #1f2a1c; font: 700 11px var(--font-mono); text-anchor: middle; }
+.cl-waste-t { fill: #fff; fill-opacity: 0.6; font: 700 11px var(--font-mono); letter-spacing: 0.14em; text-anchor: middle; }
+.cl-merc { transition: y 0.8s ease, height 0.8s ease; }
+.cl-drop-liq, .cl-loop { transition: fill 0.3s; }
+.cl-item.is-coloured .cl-flame path:first-child { fill: var(--flame); fill-opacity: 0.92; }
+.cl-item.is-target .cl-flame { filter: brightness(1.25); }
 .cl-item[data-end="blue"] .cl-paper { fill: #4f84d6; }
 .cl-item[data-end="red"] .cl-paper { fill: #de5a52; }
 .cl-tip { transition: opacity 0.2s; }
@@ -123,9 +135,40 @@ html body {
 @keyframes cl-flash { 0% { filter: brightness(2.2); } 100% { filter: none; } }
 
 /* ── what floats over the bench ────────────────────────────────────────── */
-.cl-bar { position: absolute; top: 14px; left: 14px; right: 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 0.7rem 0.75rem; pointer-events: none; }
+.cl-bar { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; align-items: center; flex-wrap: wrap; gap: 0.45rem; pointer-events: none; }
 .cl-bar > * { pointer-events: auto; }
 .cl-gap { flex: 1; }
+.cl-sep { width: 1px; height: 26px; margin: 0 0.2rem; background: var(--bench-line); }
+
+/* every control on the bench is an icon: a plain dark key, lit when it is on
+   (not a sticky note — see TOOLS in scripts/build-buttons-css.mjs) */
+.cl-ico {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  color: var(--bench-ink);
+  background: var(--bench-tile);
+  border: 1px solid var(--bench-line);
+  border-radius: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.cl-ico:hover { background: #3a4150; border-color: rgba(255, 255, 255, 0.34); transform: translateY(-1px); }
+.cl-ico:active { transform: translateY(0); }
+.cl-ico:focus-visible { outline: 2px solid var(--accent-secondary); outline-offset: 2px; }
+.cl-ico.is-on, .cl-ico[aria-pressed="true"] { background: #454d5d; border-color: var(--accent-primary); box-shadow: inset 0 -3px 0 var(--accent-primary), 0 2px 6px rgba(0, 0, 0, 0.28); }
+.cl-ico svg { display: block; pointer-events: none; }
+.cl-badge { position: absolute; top: -6px; right: -7px; min-width: 17px; padding: 1px 4px; font: 700 0.56rem var(--font-mono); line-height: 1.35; text-align: center; color: #2a2723; background: #f4c95d; }
+.cl-badge:empty { display: none; }
+/* the same key on paper: the notebook's own, and the little menu's */
+.cl-ico--paper { width: 34px; height: 34px; color: var(--ink); background: var(--surface-secondary); border: var(--border-subtle); box-shadow: none; }
+.cl-ico--paper:hover { background: var(--surface-primary); border-color: var(--text-tertiary); }
 .cl-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bench-dim); }
 .cl-note { font-size: 0.74rem; padding: 0.3rem 0.7rem 0.36rem; }
 .cl-note b { font-family: var(--font-mono); font-weight: 700; font-size: 0.66rem; opacity: 0.7; }
@@ -163,7 +206,7 @@ html body {
 .cl-menu p { margin: 0; }
 .cl-menu__name { font-family: var(--font-display); font-weight: 700; font-size: 0.78rem; }
 .cl-menu__holds { margin-top: 0.25rem !important; font-size: 0.68rem; line-height: 1.45; color: var(--text-secondary); }
-.cl-menu__row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.7rem; }
+.cl-menu__row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
 
 /* sheets: the notebook, the list of things to try, the set-ups */
 .cl-sheet.pp-receipt {
@@ -174,7 +217,7 @@ html body {
   display: block;
   width: min(430px, calc(100% - 28px));
 }
-.cl-sheet .pp-receipt__paper { display: flex; flex-direction: column; max-height: calc(100vh - 76px - 96px); padding: 1.2rem 1.35rem 1.3rem; color: var(--ink); }
+.cl-sheet .pp-receipt__paper { display: flex; flex-direction: column; max-height: calc(100vh - 96px); padding: 1.2rem 1.35rem 1.3rem; color: var(--ink); }
 .cl-sheet__head { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 0.6rem; margin-bottom: 0.8rem; }
 .cl-sheet__head .cl-h2 { margin: 0 auto 0 0; }
 .cl-sheet__close { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; background: none; border: 0; cursor: pointer; }
@@ -212,9 +255,7 @@ html body {
 /* ── the drawer ────────────────────────────────────────────────────────── */
 .cl-drawer { display: flex; flex-direction: column; width: 318px; flex-shrink: 0; background: var(--bench-2); border-left: 1px solid var(--bench-line); color: var(--bench-ink); }
 .cl-drawer__head { padding: 0.8rem 0.9rem 0.75rem; border-bottom: 1px solid var(--bench-line); }
-.cl-crumb { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bench-dim); text-decoration: none; }
-.cl-crumb:hover { color: var(--bench-ink); }
-.cl-title { margin: 0.15rem 0 0.6rem; font-family: var(--font-display); font-weight: var(--weight-black, 900); font-size: 1.05rem; letter-spacing: var(--tracking-tight, -0.02em); line-height: 1.1; color: var(--bench-ink); }
+.cl-title { margin: 0 0 0.6rem; font-family: var(--font-display); font-weight: var(--weight-black, 900); font-size: 1.05rem; letter-spacing: var(--tracking-tight, -0.02em); line-height: 1.1; color: var(--bench-ink); }
 .cl-search { width: 100%; padding: 0.45rem 0.6rem; font: 500 0.74rem var(--font-mono); color: var(--bench-ink); background: var(--bench-tile); border: 1px solid var(--bench-line); border-radius: 0; }
 .cl-search::placeholder { color: var(--bench-dim); }
 .cl-search:focus { outline: 2px solid var(--accent-secondary); outline-offset: 1px; }
@@ -243,7 +284,6 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
   .cl-stage { flex-direction: column; }
   .cl-drawer { width: 100%; height: 38%; border-left: 0; border-top: 1px solid var(--bench-line); }
   .cl-drawer__head { display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.6rem; }
-  .cl-crumb { display: none; }
   .cl-title { margin: 0; font-size: 0.8rem; white-space: nowrap; }
   .cl-rail { width: 66px; padding: 0.3rem 0.2rem; overflow-y: auto; }
   .cl-cat { padding: 0.4rem 0.1rem; }
@@ -251,11 +291,11 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
   .cl-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
   .cl-tile { min-height: 96px; }
   .cl-tile svg { height: 50px; }
-  .cl-bar { top: 10px; left: 10px; right: 10px; gap: 0.6rem 0.55rem; }
-  .cl-gap, .cl-label { display: none; }
-  .cl-note { font-size: 0.66rem; padding: 0.25rem 0.5rem 0.3rem; }
+  .cl-bar { top: 8px; left: 8px; right: 8px; gap: 0.3rem; }
+  .cl-ico { width: 36px; height: 36px; }
+  .cl-sep { display: none; }
   .cl-benchwrap #cl-say { bottom: 8px; padding: 0.4rem 0.8rem 0.5rem; }
   #cl-say-text { font-size: 0.76rem; }
   .cl-sheet.pp-receipt { top: 8px; left: 8px; width: calc(100% - 16px); }
-  .cl-sheet .pp-receipt__paper { max-height: calc(62vh - 76px - 30px); }
+  .cl-sheet .pp-receipt__paper { max-height: calc(62vh - 30px); }
 }
