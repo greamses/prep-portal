@@ -86,11 +86,11 @@ function sceneOf(html) {
   return { kind: "text", q, done };
 }
 
-const FACE = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="11.2" y="1.6" width="1.6" height="3.4" rx="0.8" fill="#2a2723"/><circle cx="12" cy="2" r="1.5" fill="#f0443e"/>` +
+export const FACE = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="11.2" y="1.6" width="1.6" height="3.4" rx="0.8" fill="#2a2723"/><circle cx="12" cy="2" r="1.5" fill="#f0443e"/>` +
   `<rect x="3" y="5" width="18" height="14.6" rx="4.4" fill="#bfe3ff" stroke="#2a2723" stroke-width="1.2"/>` +
   `<circle cx="8.6" cy="11.4" r="2.1" fill="#2a2723"/><circle cx="15.4" cy="11.4" r="2.1" fill="#2a2723"/><circle cx="9.2" cy="10.8" r="0.7" fill="#fff"/><circle cx="16" cy="10.8" r="0.7" fill="#fff"/>` +
   `<path d="M8.6 15.6Q12 17.8 15.4 15.6" fill="none" stroke="#2a2723" stroke-width="1.2" stroke-linecap="round"/></svg>`;
-const PLAY = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.4" fill="#2a2723"/><path d="M9.6 7.4v9.2l7.6-4.6z" fill="#fffdf8"/></svg>`;
+export const PLAY = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.4" fill="#2a2723"/><path d="M9.6 7.4v9.2l7.6-4.6z" fill="#fffdf8"/></svg>`;
 
 /** The strip that opens a section: PrepBot, the trick's name, and "watch". */
 export function explainStrip(ex, opts) {
@@ -113,7 +113,7 @@ export function explainStrip(ex, opts) {
    an INSTANT form, because going back a step rebuilds the screen and replays
    what came before at once (prepbot-tv.js). */
 
-function tile(stage, id, text, x, y, { c = 0, size = "m", bare = false } = {}) {
+export function tile(stage, id, text, x, y, { c = 0, size = "m", bare = false } = {}) {
   const box = document.createElement("div");
   box.className = `vm-t vm-t--${size}`;
   box.dataset.t = id;
@@ -129,7 +129,7 @@ function tile(stage, id, text, x, y, { c = 0, size = "m", bare = false } = {}) {
 /* what a counting stick is painted: plain wood, the tens' blue, the units' orange */
 const TONES = { plain: ["#e9cf9c", "#2a2723"], tens: ["#bfe3ff", "#2f6ea8"], units: ["#ffd7a3", "#d9632b"] };
 
-function acts(stage, gsap, instant) {
+export function acts(stage, gsap, instant) {
   const box = (id) => stage.querySelector(`[data-t="${id}"]`);
   const inn = (id) => box(id)?.firstChild;
   const quick = instant || !gsap;

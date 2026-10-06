@@ -2736,19 +2736,19 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
    A place-value chart of two rows: the number on top, and under it each
    column cut into as many groups as the divisor. */
 .dm-wrap { margin: 2mm 0 3mm; width: fit-content; max-width: 100%; }
-.dm-tray { display: flex; align-items: center; gap: 2mm; padding: 1.4mm 2mm; background: #f4f0e8; border: 0.3mm solid #ded8cc; }
+.dm-tray { display: flex; align-items: center; flex-wrap: wrap; gap: 2mm; padding: 1.4mm 2mm; background: #f4f0e8; border: 0.3mm solid #ded8cc; }
 .dm-take { padding: 0; background: none; border: 0; line-height: 0; cursor: grab; touch-action: none; }
 .dm-take svg { display: block; width: 10mm; height: 10mm; }
 .dm-take:focus-visible { outline: 0.5mm solid #f4c95d; outline-offset: 1mm; }
-.dm-tray__say { font-family: var(--font-mono), monospace; font-size: 7.5pt; color: #6b655c; }
-.dm-grid { display: grid; grid-template-columns: 22mm repeat(var(--dm-cols, 3), 46mm); margin-top: 1.5mm; border: 0.4mm solid #2a2723; background: #fffdf8; }
-.dm-grid > * { border-right: 0.25mm solid #b8b1a4; border-bottom: 0.25mm solid #b8b1a4; }
+.dm-tray__say { flex: 1 1 40mm; min-width: 0; font-family: var(--font-mono), monospace; font-size: 7.5pt; line-height: 1.3; color: #6b655c; overflow-wrap: anywhere; }
+.dm-grid { display: grid; grid-template-columns: 22mm repeat(var(--dm-cols, 3), minmax(0, 46mm)); max-width: 100%; margin-top: 1.5mm; border: 0.4mm solid #2a2723; background: #fffdf8; }
+.dm-grid > * { min-width: 0; overflow: hidden; border-right: 0.25mm solid #b8b1a4; border-bottom: 0.25mm solid #b8b1a4; }
 .dm-corner { background: #f4f0e8; }
-.dm-head { padding: 1mm; text-align: center; font-family: var(--font-mono), monospace; font-size: 8pt; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #14130f; }
+.dm-head { padding: 1mm 0.5mm; text-align: center; overflow-wrap: anywhere; font-family: var(--font-mono), monospace; font-size: 8pt; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #14130f; }
 .dm-head[data-kind="100"] { background: #c8f0c0; }
 .dm-head[data-kind="10"] { background: #bfe3ff; }
 .dm-head[data-kind="1"] { background: #fff3a8; }
-.dm-rowname { display: flex; align-items: center; padding: 1mm 1.4mm; font-family: var(--font-mono), monospace; font-size: 7.5pt; font-weight: 700; line-height: 1.25; color: #2a2723; background: #f4f0e8; }
+.dm-rowname { display: flex; align-items: center; overflow-wrap: anywhere; padding: 1mm 1.4mm; font-family: var(--font-mono), monospace; font-size: 7.5pt; font-weight: 700; line-height: 1.25; color: #2a2723; background: #f4f0e8; }
 .dm-top { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 0.6mm; min-height: 20mm; padding: 1.2mm; touch-action: none; }
 .dm-share { display: grid; grid-template-columns: repeat(var(--dm-across, 3), 1fr); gap: 0; min-height: 24mm; }
 .dm-group { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 0.4mm; min-height: 12mm; padding: 0.8mm; border: 0.25mm dashed #8a837a; cursor: pointer; touch-action: none; }
@@ -2759,12 +2759,12 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .dm-group .dm-disc svg { width: 4.6mm; height: 4.6mm; }
 .dm-ghost { position: fixed; z-index: 9999; margin: -5mm 0 0 -5mm; line-height: 0; pointer-events: none; filter: drop-shadow(0 1mm 1.4mm rgba(20, 19, 15, 0.3)); }
 .dm-ghost svg { display: block; width: 10mm; height: 10mm; }
-.dm-tools { display: grid; grid-template-columns: 22mm repeat(var(--dm-cols, 3), 46mm); margin-top: 1.2mm; row-gap: 1mm; }
-.dm-toolcell { display: flex; flex-wrap: wrap; gap: 1mm; padding: 0 1mm; }
+.dm-tools { display: grid; grid-template-columns: 22mm repeat(var(--dm-cols, 3), minmax(0, 46mm)); max-width: 100%; margin-top: 1.2mm; row-gap: 1mm; }
+.dm-toolcell { display: flex; flex-wrap: wrap; gap: 1mm; min-width: 0; padding: 0 1mm; }
 .dm-toolcell--wide { grid-column: 2 / -1; }
-.dm-btn { font-family: var(--font-mono), monospace; font-size: 7pt; font-weight: 700; padding: 0.6mm 1.4mm; cursor: pointer; }
+.dm-btn { max-width: 100%; font-family: var(--font-mono), monospace; font-size: 7pt; font-weight: 700; line-height: 1.15; padding: 0.6mm 1.4mm; white-space: normal; cursor: pointer; }
 .dm-btn:disabled { opacity: 0.4; cursor: default; }
-.dm-read { margin: 1.2mm 0 0; min-height: 4mm; font-family: var(--font-mono), monospace; font-size: 8.5pt; font-weight: 700; color: #2a6ca8; }
+.dm-read { margin: 1.2mm 0 0; min-height: 4mm; max-width: 160mm; overflow-wrap: anywhere; font-family: var(--font-mono), monospace; font-size: 8.5pt; font-weight: 700; color: #2a6ca8; }
 /* on paper the grid is empty — the counters are drawn in it by hand */
 @media print { .dm-read, .dm-tools { display: none; } }
 

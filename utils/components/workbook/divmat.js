@@ -37,6 +37,9 @@ const FILL = { 100: "#8fd39a", 10: "#6fb7e8", 1: "#f4c95d" };
 const EDGE = { 100: "#3f8f4f", 10: "#2a6ca8", 1: "#c9922f" };
 const PLACES = [{ v: 100, name: "Hundreds" }, { v: 10, name: "Tens" }, { v: 1, name: "Ones" }];
 
+/* the divisor in words: a figure in a label is typeset as a sum, and pulls the label apart */
+const WORDS = ["", "", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+
 /** the places a number of k figures has, biggest first */
 export const placesFor = (k) => PLACES.slice(3 - Math.max(1, Math.min(3, k)));
 
@@ -70,7 +73,7 @@ export function divMat({ n, d }) {
     + places.map((p) => `<span class="dm-head" data-kind="${p.v}">${p.name}</span>`).join("")
     + `<span class="dm-rowname">The number</span>`
     + places.map((p, c) => `<div class="dm-top" data-col="${c}"></div>`).join("")
-    + `<span class="dm-rowname">Shared into ${d}&nbsp;groups</span>`
+    + `<span class="dm-rowname">Shared into ${WORDS[d] || d} groups</span>`
     + places.map((p, c) => `<div class="dm-share" data-col="${c}" style="--dm-across:${across}">`
       + Array.from({ length: d }, (_, g) => `<div class="dm-group" data-col="${c}" data-g="${g}"${odd && g === d - 1 ? ' style="grid-column:span 2"' : ""}></div>`).join("") + `</div>`).join("")
     + `</div>`
@@ -111,7 +114,7 @@ export function mountDivMat(wrap, { saved = null, onChange = null } = {}) {
   tools.style.setProperty("--dm-cols", String(k));
   tools.innerHTML = `<span></span>` + places.map((p, c) => `<span class="dm-toolcell">`
     + `<button type="button" class="dm-btn" data-deal="${c}">one each</button>`
-    + (c < k - 1 ? `<button type="button" class="dm-btn" data-break="${c}">break 1 into ten ${places[c + 1].v}s</button>` : "")
+    + (c < k - 1 ? `<button type="button" class="dm-btn" data-break="${c}" title="Break one into ten ${places[c + 1].v}s">break 1</button>` : "")
     + `</span>`).join("")
     + `<span></span><span class="dm-toolcell dm-toolcell--wide"><button type="button" class="dm-btn" data-clear>start again</button></span>`;
   grid.after(tools);

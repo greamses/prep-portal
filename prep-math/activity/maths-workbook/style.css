@@ -1442,28 +1442,81 @@ thead .pv-chart__side {
 .nb-wide .wb-answer { min-width: 26mm; }
 
 /* ── place value division and box division: the INPUT GRID (js/ex-pvdiv.js) ──
-   A column for every figure of the number and a row for every part of the
-   rule. The names of the rows stand down the left. */
+   A column for every figure of the number and a row for Divide, Multiply and
+   Subtract. REGROUP has no row: what is left over is carried along an arrow
+   to a small box beside the next figure. The grid is measured in millimetres
+   (ex-pvdiv.js `G`), because the arrows are drawn across it. */
 .pvd { margin: 2mm 0 3mm; width: fit-content; max-width: 100%; }
-.pvd-grid { display: grid; grid-template-columns: 30mm repeat(var(--pvd-cols, 3), 24mm); border: 0.4mm solid #2a2723; background: #fffdf8; }
-.pvd-grid > *, .pvd-quot > *, .pvd-boxrow > * { border-right: 0.25mm solid #b8b1a4; border-bottom: 0.25mm solid #b8b1a4; }
-.pvd-quot, .pvd-boxrow { display: contents; }
-.pvd-name { display: flex; align-items: center; padding: 1mm 1.6mm; font-family: var(--font-mono), monospace; font-size: 8pt; font-weight: 700; color: #2a2723; background: #f4f0e8; }
-.pvd-head { padding: 1mm; text-align: center; font-family: var(--font-mono), monospace; font-size: 8pt; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #14130f; background: #bfe3ff; }
+.pvd-rule { display: flex; flex-wrap: wrap; gap: 1.2mm 3mm; margin: 0 0 1.6mm; font-family: var(--font-mono), monospace; }
+.pvd-rule__one { display: inline-flex; align-items: baseline; gap: 0; font-size: 9pt; color: #2a2723; }
+.pvd-rule__one b { font-size: 13pt; font-weight: 800; }
+.pvd-rule__one i { font-style: normal; font-weight: 700; }
+.pvd-rule__one em { margin-left: 1.2mm; font-style: normal; font-size: 7pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.8; }
+.pvd-rule__one[data-l="D"], .pvd-rule__one[data-l="D"] b, .pvd-l[data-l="D"] { color: #2e8b46; }
+.pvd-rule__one[data-l="M"], .pvd-rule__one[data-l="M"] b, .pvd-l[data-l="M"] { color: #7b4fa3; }
+.pvd-rule__one[data-l="S"], .pvd-rule__one[data-l="S"] b, .pvd-l[data-l="S"] { color: #d9632b; }
+.pvd-rule__one[data-l="R"], .pvd-rule__one[data-l="R"] b { color: #2a6ca8; }
+.pvd-grid { position: relative; display: grid; grid-template-columns: 31mm repeat(var(--pvd-cols, 3), 25mm); grid-template-rows: 6.5mm repeat(4, 10.5mm); border: 0.4mm solid #2a2723; background: #fffdf8; box-sizing: content-box; }
+.pvd-row { display: contents; }
+.pvd-grid > .pvd-name, .pvd-grid > .pvd-head, .pvd-row > * { box-sizing: border-box; min-width: 0; overflow: hidden; border-right: 0.25mm solid #b8b1a4; border-bottom: 0.25mm solid #b8b1a4; }
+.pvd-name { display: flex; align-items: center; gap: 1.2mm; padding: 0 1.4mm; font-family: var(--font-mono), monospace; font-size: 7.5pt; font-weight: 700; line-height: 1.15; color: #2a2723; background: #f4f0e8; }
+.pvd-l { flex: none; font-size: 11pt; font-weight: 800; }
+.pvd-head { display: flex; align-items: center; justify-content: center; font-family: var(--font-mono), monospace; font-size: 7.5pt; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #14130f; }
 /* the same colours as the counters and the counting grid: hundreds green, tens blue, ones yellow */
 .pvd-head[data-kind="100"] { background: #c8f0c0; }
 .pvd-head[data-kind="10"] { background: #bfe3ff; }
 .pvd-head[data-kind="1"] { background: #fff3a8; }
-.pvd-cell { display: flex; align-items: center; justify-content: center; min-height: 9.5mm; padding: 0.8mm; font-family: var(--font-mono), monospace; font-size: 12pt; font-weight: 700; color: #14130f; }
+.pvd-cell { display: flex; align-items: center; justify-content: center; gap: 0.7mm; padding: 0 1.9mm; font-family: var(--font-mono), monospace; font-size: 12pt; font-weight: 700; color: #14130f; }
 .pvd-cell--given { background: #fff9dc; }
-.pvd-cell--done { color: #2a6ca8; }
-.pvd-cell--none { background: repeating-linear-gradient(135deg, #f4f0e8 0 1.2mm, #fffdf8 1.2mm 2.4mm); }
-.wb-sheet .pvd-cell .wb-answer { min-width: 0; width: 100%; height: 7.6mm; margin: 0; }
+.pvd-fig { font-weight: 800; }
+.pvd-plus { font-style: normal; font-size: 9pt; color: #2a6ca8; }
+.pvd-done { color: #2a6ca8; }
+.pvd-done.pvd-carry { font-size: 10pt; }
+.wb-sheet .pvd-cell .wb-answer { flex: 1 1 auto; min-width: 0; width: auto; height: 7.6mm; margin: 0; }
 .pvd-cell .wb-answer input { text-align: center; }
+/* the small box a carry is written in: beside the figure it makes its tens with */
+.wb-sheet .pvd-cell .wb-answer.pvd-carry { flex: none; width: 6.4mm; height: 6.6mm; border-color: #2a6ca8; }
+.wb-sheet .pvd--value .pvd-cell .wb-answer.pvd-carry { width: 10.6mm; }
+.pvd-cell .pvd-carry input { color: #2a6ca8; font-size: 10pt; padding: 0; }
+.pvd-cell.has-carry { padding-left: 3.2mm; padding-right: 1.2mm; }
+.pvd--digit .pvd-cell.has-carry { gap: 0.3mm; }
+/* the arrows that carry what is left over, drawn over the grid */
+.pvd-arrows { position: absolute; left: 0; top: 0; pointer-events: none; }
 /* the box: the answer stands on top, and the number sits inside the box with the divisor at its door */
-.pvd--digit .pvd-quot > .pvd-cell { background: #eef7ff; border-bottom: 0.7mm solid #2a2723; }
-.pvd--digit .pvd-quot > .pvd-name { border-bottom: 0.7mm solid #2a2723; }
-.pvd--digit .pvd-boxrow > .pvd-name { justify-content: flex-end; border-right: 0.7mm solid #2a2723; background: #fffdf8; }
+.pvd--digit .pvd-row--divide > .pvd-cell { background: #eef7ff; }
+.pvd--digit .pvd-row--divide > * { border-bottom: 0.7mm solid #2a2723; }
+.pvd--digit .pvd-row--number > .pvd-name { justify-content: flex-end; border-right: 0.7mm solid #2a2723; background: #fffdf8; }
 .pvd-by { font-size: 14pt; padding-right: 1mm; }
 .pvd-end { margin: 2.5mm 0 0; }
 .wb-sheet .pvd-end .wb-answer { min-width: 16mm; }
+
+/* ── PrepBot's video strip, and the pieces on its TV (js/divvideo.js) ────────
+   The strip and the number tiles are the Mental Maths Workbook's (its
+   explain.js makes them); these are the same rules, for this page. A tile is
+   placed by its middle in hundredths of the screen, and --u is one hundredth
+   of the screen's width. */
+.vm-video { display: flex; align-items: center; gap: 3mm; margin: 1.5mm 0 2.5mm; padding: 1.6mm 3mm; border: 0.35mm solid #2a2723; background: #fff7c7; font-size: 9.5pt; color: #2a2723; cursor: pointer; }
+.vm-video:hover, .vm-video:focus-visible, .vm-video.is-playing { background: #ffec99; outline: none; }
+.vm-video__bot { flex: none; width: 9mm; height: 9mm; }
+.vm-video__bot svg, .vm-video__go svg { display: block; width: 100%; height: 100%; }
+.vm-video__say { display: flex; flex-direction: column; gap: 0.6mm; min-width: 0; flex: 1 1 auto; }
+.vm-video__say b { font: 800 7pt/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0.08em; text-transform: uppercase; color: #6b645a; }
+.vm-video__say em { font-style: normal; font-weight: 700; }
+.vm-video__go { flex: none; display: flex; align-items: center; gap: 1.6mm; font-weight: 700; }
+.vm-video__go svg { width: 7mm; height: 7mm; }
+.vm-video__go i { font-style: normal; font-size: 8.5pt; }
+@media print { .vm-video { display: none !important; } }
+.vm-tv { position: absolute; inset: 0; --u: 8px; }
+.vm-t { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; }
+.vm-t__in { display: inline-block; padding: 0 calc(var(--u) * 0.5); font-family: "JetBrains Mono", ui-monospace, monospace; font-weight: 800; font-size: calc(var(--u) * 4.2); line-height: 1.1; color: #14130f; }
+.vm-t--l .vm-t__in { font-size: calc(var(--u) * 5.6); }
+.vm-t--s .vm-t__in { font-size: calc(var(--u) * 2.3); }
+.vm-t__in--bare { color: #2a2723; font-weight: 700; }
+.vm-t__in--c0 { color: #14130f; }
+.vm-t__in--c1 { color: #7b4fa3; }
+.vm-t__in--c2 { color: #2e8b46; }
+.vm-t__in--c3 { color: #2f6ea8; }
+.vm-t__in--c4 { color: #d9632b; }
+.vm-t__in--c5 { color: #1f8a8a; }
+.vm-t__art { display: block; padding: 0; }
+.vm-t__art svg { display: block; width: 100%; height: auto; }

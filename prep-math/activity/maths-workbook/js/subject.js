@@ -84,9 +84,11 @@ export const SUBJECT = {
     /* The protractor is not an example, it is the instrument the questions
        tell you to cut out — so it prints at every level of help. A page that
        says "cut out the protractor" and has no protractor on it is broken. */
-    if (section.ex.alwaysWorked) return section.ex.worked(section.opts);
-    if (helpOf(o).id === "show" && section.ex.worked) return section.ex.worked(section.opts);
-    return "";
+    /* PrepBot's video, where a section has one, opens it whatever the level of help */
+    const video = section.ex.video ? section.ex.video(section.opts) : "";
+    if (section.ex.alwaysWorked) return video + section.ex.worked(section.opts);
+    if (helpOf(o).id === "show" && section.ex.worked) return video + section.ex.worked(section.opts);
+    return video;
   },
 };
 
