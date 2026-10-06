@@ -23,7 +23,7 @@
    gases that left. That is what a student writes down, so that is what is said.
    ========================================================================== */
 
-export const CAP = 12;          // portions of liquid a test tube holds
+export const CAP = 12;          // portions of liquid a test tube holds (other glassware passes its own to newTube)
 export const SOLID_CAP = 6;     // equivalents of solid a tube will take
 export const TUBE_NAMES = ["A", "B", "C", "D", "E"];
 export const DOSES = { drops: 0.25, portion: 1 };
@@ -153,8 +153,8 @@ export const SOLID = {
 const ION_TEX = { Mg: "Mg^2+", Zn: "Zn^2+", Fe2: "Fe^2+", Pb: "Pb^2+", Cu: "Cu^2+", Ag: "Ag^+" };
 
 // ── a tube ──────────────────────────────────────────────────────────────────
-export function newTube() {
-  return { vol: 0, aq: {}, metal: {}, deposit: [], solid: {}, ind: [], gas: null, added: [], said: [] };
+export function newTube(cap = CAP) {
+  return { cap, vol: 0, aq: {}, metal: {}, deposit: [], solid: {}, ind: [], gas: null, added: [], said: [] };
 }
 export const isEmpty = (t) => t.vol <= EPS && !hasSolids(t) && !t.ind.length;
 const hasSolids = (t) => Object.values(t.metal).some((n) => n > EPS) || Object.values(t.solid).some((n) => n > EPS);
@@ -459,7 +459,7 @@ function act(t, change, { heated = false, adding = null } = {}) {
     }
   }
   if (sum("neutral") + sum("neutralNH3") >= 0.5 - EPS) {
-    say("The tube feels warmer.", "Neutralisation gives out heat. An acid and an alkali make a salt and water.", has("neutral") ? "H^+(aq) + OH^-(aq) -> H2O(l)" : "NH3(aq) + H^+(aq) -> NH4^+(aq)");
+    say("It feels warmer.", "Neutralisation gives out heat. An acid and an alkali make a salt and water.", has("neutral") ? "H^+(aq) + OH^-(aq) -> H2O(l)" : "NH3(aq) + H^+(aq) -> NH4^+(aq)");
     flags.push("neutral");
   } else if (has("neutral") || has("neutralNH3")) flags.push("neutral");
 
@@ -479,10 +479,10 @@ export function add(t, id, dose = "portion") {
   const r = BY_ID[id];
   if (!r) throw new Error(`No such reagent: ${id}`);
   const amount = r.kind === "solution" ? DOSES[dose] ?? 1 : 1;
-  if (r.kind === "solution" && t.vol + amount > CAP + EPS) return { refused: "The tube is full. Rinse it out, or use another tube." };
-  if (r.kind === "solid" && solidTotal(t) + 1 > SOLID_CAP + EPS) return { refused: "There is enough solid in this tube already." };
-  if (r.kind === "indicator" && t.vol <= EPS) return { refused: "Put a liquid in the tube first, then add the indicator." };
-  if (r.kind === "indicator" && t.ind.includes(id)) return { refused: `There is ${r.name} in this tube already.` };
+  if (r.kind === "solution" && t.vol + amount > (t.cap || CAP) + EPS) return { refused: "It is full. Empty it, or use another one." };
+  if (r.kind === "solid" && solidTotal(t) + 1 > SOLID_CAP + EPS) return { refused: "There is enough solid in there already." };
+  if (r.kind === "indicator" && t.vol <= EPS) return { refused: "Put a liquid in first, then add the indicator." };
+  if (r.kind === "indicator" && t.ind.includes(id)) return { refused: `There is ${r.name} in there already.` };
 
   const wasDry = t.vol <= EPS;
   const res = act(t, () => {
@@ -508,7 +508,7 @@ export function add(t, id, dose = "portion") {
 
 /** Hold the tube in the flame. */
 export function heat(t) {
-  if (isEmpty(t)) return { refused: "There is nothing in this tube to heat." };
+  if (isEmpty(t)) return { refused: "There is nothing in there to heat." };
   if (t.vol <= EPS) return { refused: "Add a liquid first: these solids do not change in a Bunsen flame." };
   const res = act(t, () => { t.gas = null; }, { heated: true });
   res.title = "Heated gently";
@@ -517,8 +517,8 @@ export function heat(t) {
 
 /** Empty the tube down the sink. */
 export function rinse(t) {
-  Object.assign(t, newTube());
-  return { title: "Rinsed out", obs: [], flags: [] };
+  Object.assign(t, newTube(t.cap));
+  return { title: "Emptied and rinsed", obs: [], flags: [] };
 }
 
 const GAS_NAME = { H2: "hydrogen", CO2: "carbon dioxide", O2: "oxygen", NH3: "ammonia" };
@@ -547,16 +547,16 @@ export function test(t, tool) {
     const paper = tool;
     let turned = null;
     if (gas) {
-      if (gas === "NH3" && paper === "red") { say("At the mouth of the tube, the damp red litmus turns blue.", "Ammonia is an alkaline gas. This is the test for it."); flags.push("test:gasblue"); turned = "blue"; }
-      else if (gas === "CO2" && paper === "blue") { say("At the mouth of the tube, the damp blue litmus turns faintly red.", "Carbon dioxide is a weakly acidic gas."); turned = "red"; }
-      else say(`At the mouth of the tube, the damp ${paper} litmus does not change.`, gas === "H2" || gas === "O2" ? `The gas is neutral.` : undefined);
+      if (gas === "NH3" && paper === "red") { say("At the mouth, the damp red litmus turns blue.", "Ammonia is an alkaline gas. This is the test for it."); flags.push("test:gasblue"); turned = "blue"; }
+      else if (gas === "CO2" && paper === "blue") { say("At the mouth, the damp blue litmus turns faintly red.", "Carbon dioxide is a weakly acidic gas."); turned = "red"; }
+      else say(`At the mouth, the damp ${paper} litmus does not change.`, gas === "H2" || gas === "O2" ? `The gas is neutral.` : undefined);
     }
     if (t.vol > EPS) {
       const pH = speciate(t).pH;
       if (paper === "blue" && pH < 6.6) { say("Dipped in the liquid, the blue litmus turns red.", "The liquid is acidic."); flags.push("test:acid"); turned = "red"; }
       else if (paper === "red" && pH > 7.4) { say("Dipped in the liquid, the red litmus turns blue.", "The liquid is alkaline."); flags.push("test:alkali"); turned = "blue"; }
       else say(`Dipped in the liquid, the ${paper} litmus stays ${paper}.`, pH > 6.6 && pH < 7.4 ? "Neither paper changes in a neutral liquid." : paper === "red" ? "Red litmus only changes in an alkali." : "Blue litmus only changes in an acid.");
-    } else if (!gas) return { refused: "There is no liquid or gas in this tube to test." };
+    } else if (!gas) return { refused: "There is no liquid or gas in there to test." };
     return { title: `Tested with ${paper} litmus paper`, obs, flags, fx: turned ? `litmus-${paper}-${turned}` : `litmus-${paper}-${paper}` };
   }
   throw new Error(`No such test: ${tool}`);

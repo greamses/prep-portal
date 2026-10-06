@@ -10,7 +10,7 @@ not a tutorial — open the files for detail.
 | `index.html`, `css/hub.css` | The hub / landing page that links out to each subject lab. |
 | `shared/` | Code and assets used by every lab. |
 | `chemistry/` | The chemistry lab (the only fully built-out subject). |
-| `chemistry-2d/` | The test-tube bench: a flat, drawn chemistry lab (no Three.js). `js/chem.js` is the chemistry and nothing else (pure, runs under node: reagents, precipitates, complexes, the reactivity series, the observations); `js/draw.js` draws the rack, bottles and short films in SVG; `js/main.js` joins them to the page and keeps the notebook. Add a reagent in `REAGENTS`, a precipitate in `PPT`; a thing to try in `TASKS`. |
+| `chemistry-2d/` | The test-tube bench: a flat, drawn chemistry lab (no Three.js). `js/chem.js` is the chemistry and nothing else (pure, runs under node: reagents, precipitates, complexes, the reactivity series, the observations); `js/glass.js` draws every piece (vessels from a profile, bottles, burner, splints, rack) as realistic glass on a dark slate; `js/main.js` is the open bench and its drawer — any piece dragged out and stood anywhere, and one rule: carry a thing to a vessel to use it on that vessel. Add a reagent in `REAGENTS`, a precipitate in `PPT`; a thing to try in `TASKS`. |
 | `physics/`, `biology/` | Placeholder labs — they mirror the chemistry folder layout but currently contain only an `index.html` + `css/`. Their `js/` subfolders (`objects/`, `simulation/`, `effects/`, `data/`, `ui/`) are empty scaffolds waiting to be filled in the same shape as chemistry. |
 
 ## `shared/` — cross-lab building blocks

@@ -37,9 +37,9 @@ const TOOLS = [
      about. It answers to the keyboard, so it is a button as far as the browser
      is concerned, and paper and tape on it made it a note worth 10 */
   ".ct-piece",
-  /* the chemistry bench: bottles on a shelf and the tests beside the rack. A
-     bottle is a drawing of a bottle; tape across its stopper made it a note */
-  ".cl-bottle", ".cl-tool",
+  /* the chemistry bench: the tiles of its drawer and the rail that sorts them. A
+     tile is a picture of a piece of glassware; tape across it made it a note */
+  ".cl-tile", ".cl-cat",
 ];
 
 // Not buttons, or must not be paper. `.pp-plain` is the opt-out.

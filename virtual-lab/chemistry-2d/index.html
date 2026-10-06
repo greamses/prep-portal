@@ -46,68 +46,69 @@
 
   <nav class="site-nav" data-nav="main"></nav>
 
-  <main class="cl-wrap">
-    <header class="cl-head">
-      <a class="cl-crumb" href="../index.html">Virtual Lab</a>
-      <h1 class="cl-title">Chemistry Bench</h1>
-    </header>
+  <main class="cl-stage">
+    <!-- the bench: an open slate anything can stand on -->
+    <div class="cl-benchwrap" id="cl-benchwrap">
+      <svg id="cl-bench" xmlns="http://www.w3.org/2000/svg" role="application" aria-label="The bench. Drag a piece to move it; carry a bottle or a tool to a vessel to use it."></svg>
+      <p id="cl-hint" class="cl-hint" hidden>The bench is empty. Take glassware and chemicals from the drawer, or pick a set-up.</p>
 
-    <div class="cl-stage">
-      <!-- the drawn thing: the rack, the tests, and the notebook of what was seen -->
-      <div class="cl-left">
-        <div id="cl-say" class="pp-sticky pp-sticky--c0 pp-sticky--tape" aria-live="polite">
-          <span id="cl-say-tag" class="cl-say__tag">Chemistry bench</span>
-          <p id="cl-say-text">Pick a tube, then tap a bottle on the shelf. Watch what happens, test it, and write down what you see.</p>
-        </div>
-
-        <div id="cl-bench-box"></div>
-        <p id="cl-holds" aria-live="polite"></p>
-
-        <div class="cl-card cl-kit pp-receipt">
-          <div class="pp-receipt__paper">
-            <div id="cl-tools" class="cl-tools" role="toolbar" aria-label="Tests for the tube in hand"></div>
-            <div class="cl-measure">
-              <span class="cl-label">Measure</span>
-              <button type="button" class="pp-btn cl-note" data-dose="drops">A few drops</button>
-              <button type="button" class="pp-btn cl-note" data-dose="portion">A full measure</button>
-              <span class="cl-gap" aria-hidden="true"></span>
-              <button type="button" class="pp-btn pp-btn--ghost cl-note" id="cl-rinse-all">Rinse all five</button>
-            </div>
-          </div>
-        </div>
-
-        <div id="cl-notebook" class="cl-card pp-receipt">
-          <div class="pp-receipt__paper">
-            <div class="cl-card__head">
-              <h2 class="cl-h2">Lab notebook</h2>
-              <button type="button" class="pp-btn cl-note" id="cl-explain">Hide the chemistry</button>
-              <button type="button" class="pp-btn pp-btn--ghost cl-note" id="cl-clear-log">Clear</button>
-            </div>
-            <ol id="cl-log" class="cl-log"></ol>
-          </div>
-        </div>
+      <div class="cl-bar">
+        <button type="button" class="pp-btn cl-note" data-sheet="cl-sheet-setups" aria-pressed="false">Set-ups</button>
+        <button type="button" class="pp-btn cl-note" data-sheet="cl-sheet-notebook" aria-pressed="false">Notebook <b id="cl-count-log"></b></button>
+        <button type="button" class="pp-btn cl-note" data-sheet="cl-sheet-tasks" aria-pressed="false">Things to try <b id="cl-count-tasks"></b></button>
+        <span class="cl-gap" aria-hidden="true"></span>
+        <span class="cl-label">Pour</span>
+        <button type="button" class="pp-btn cl-note" data-dose="drops">A few drops</button>
+        <button type="button" class="pp-btn cl-note" data-dose="portion">A full measure</button>
       </div>
 
-      <!-- what goes in: the shelf, and what to try with it -->
-      <aside class="cl-right">
-        <div class="cl-card cl-shelfbox pp-receipt">
-          <div class="pp-receipt__paper">
-            <h2 class="cl-h2">The shelf</h2>
-            <div id="cl-shelf"></div>
-          </div>
-        </div>
+      <div id="cl-say" class="pp-sticky pp-sticky--c0 pp-sticky--tape" aria-live="polite">
+        <span id="cl-say-tag" class="cl-say__tag">Chemistry bench</span>
+        <p id="cl-say-text">Carry a bottle to a test tube and hold it there to pour. Hold a splint or litmus at the mouth to test; put the burner underneath to heat.</p>
+      </div>
 
-        <div class="cl-card cl-trybox pp-receipt">
-          <div class="pp-receipt__paper">
-            <div class="cl-card__head">
-              <h2 class="cl-h2">Things to try</h2>
-              <span id="cl-score" class="pp-pill pp-pill--ok pp-pill--static"></span>
-            </div>
-            <ul id="cl-tasks" class="cl-tasks"></ul>
-          </div>
+      <div id="cl-menu" class="cl-menu" hidden></div>
+
+      <section id="cl-sheet-setups" class="cl-sheet pp-receipt" hidden>
+        <div class="pp-receipt__paper">
+          <div class="cl-sheet__head"><h2 class="cl-h2">Set-ups</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>
+          <p class="cl-sheet__lead">A set-up clears the bench and lays out what an experiment needs.</p>
+          <ul id="cl-setups" class="cl-setups"></ul>
         </div>
-      </aside>
+      </section>
+
+      <section id="cl-sheet-notebook" class="cl-sheet pp-receipt" hidden>
+        <div class="pp-receipt__paper">
+          <div class="cl-sheet__head">
+            <h2 class="cl-h2">Lab notebook</h2>
+            <button type="button" class="pp-btn cl-note" id="cl-explain">Hide the chemistry</button>
+            <button type="button" class="pp-btn pp-btn--ghost cl-note" id="cl-clear-log">Clear</button>
+            <button type="button" class="cl-sheet__close" aria-label="Close"></button>
+          </div>
+          <ol id="cl-log" class="cl-log"></ol>
+        </div>
+      </section>
+
+      <section id="cl-sheet-tasks" class="cl-sheet pp-receipt" hidden>
+        <div class="pp-receipt__paper">
+          <div class="cl-sheet__head"><h2 class="cl-h2">Things to try</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>
+          <ul id="cl-tasks" class="cl-tasks"></ul>
+        </div>
+      </section>
     </div>
+
+    <!-- the drawer: everything that can be put on the bench -->
+    <aside class="cl-drawer" aria-label="The drawer">
+      <header class="cl-drawer__head">
+        <a class="cl-crumb" href="../index.html">Virtual Lab</a>
+        <h1 class="cl-title">Chemistry Bench</h1>
+        <input id="cl-search" class="cl-search" type="search" placeholder="Find a piece or a chemical" aria-label="Search the drawer" autocomplete="off" />
+      </header>
+      <div class="cl-drawer__body">
+        <nav id="cl-rail" class="cl-rail" aria-label="Kinds of thing"></nav>
+        <div id="cl-grid" class="cl-grid"></div>
+      </div>
+    </aside>
   </main>
 
   <script src="/utils/components/nav-builder.js" type="module"></script>
