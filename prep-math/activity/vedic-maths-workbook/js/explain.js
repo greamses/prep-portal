@@ -682,6 +682,111 @@ function ninthsSteps() {
   return { build, steps };
 }
 
+/* ── MULTIPLYING BY 9, 99, 999 …: one lesson for each of the three cases ────
+   THE PLAN (the same for each case, with two sums counted out):
+     the sum is written                      (top, large)
+     WHY: the nines are one less than 10…0   (a line under the sum)
+     each piece of working is written on its own row — what is being
+       done on the left, what it comes to on the right, in its own ink
+     the pieces drop to the bottom row and close up into the answer
+     then a second, bigger sum the same way
+   Every step first PUTS the screen as it must stand (`lay`), so going back
+   or skipping lands on the right picture. */
+const BY9 = {
+  same: {
+    intro: "Here is how to multiply by nines, when the number has as many digits as there are nines.",
+    sums: [
+      { q: "47 × 99", why: "99 = 100 − 1, so 47 hundreds, less 47", whySay: "99 is one less than 100. So 47 times 99 is 47 hundreds, take away one 47.",
+        rows: [["47 − 1 =", "46", 3, "Take one from 47. 46. That is the front of the answer."],
+          ["99 − 46 =", "53", 4, "Now take 46 from the nines. 4 from 9 is 5. 6 from 9 is 3. 53. That is the back."]],
+        parts: [0, 1], answer: "4653", end: "Put them together. 46, 53. So 47 times 99 is 4653." },
+      { q: "368 × 999", why: "999 = 1000 − 1", whySay: "Try a bigger one. 368 times 999. Three digits, three nines.",
+        rows: [["368 − 1 =", "367", 3, "One less than 368 is 367. The front."],
+          ["999 − 367 =", "632", 4, "Take 367 from the nines. 3 from 9, 6. 6 from 9, 3. 7 from 9, 2. 632. The back."]],
+        parts: [0, 1], answer: "367632", end: "367, 632. So 368 times 999 is 367632." },
+    ],
+  },
+  fewer: {
+    intro: "Here is how to multiply by nines, when the number has fewer digits than there are nines.",
+    sums: [
+      { q: "7 × 999", why: "999 = 1000 − 1, so 7 thousands, less 7", whySay: "999 is one less than 1000. So 7 times 999 is 7 thousands, take away one 7.",
+        rows: [["7 − 1 =", "6", 3, "Take one from 7. 6. That is the front."],
+          ["places left over:", "99", 2, "999 has three nines, but 7 has only one digit. So two places are left over in the middle. Fill them with nines. 99."],
+          ["9 − 6 =", "3", 4, "Now take the 6 from 9. 3. That is the back."]],
+        parts: [0, 1, 2], answer: "6993", end: "Put them together. 6, 99, 3. So 7 times 999 is 6993." },
+      { q: "47 × 9999", why: "9999 = 10000 − 1", whySay: "Try a bigger one. 47 times 9999. Two digits, but four nines.",
+        rows: [["47 − 1 =", "46", 3, "One less than 47 is 46. The front."],
+          ["places left over:", "99", 2, "Four nines, two digits: two places left over. Fill them with nines. 99."],
+          ["99 − 46 =", "53", 4, "Take 46 from 99. 53. The back."]],
+        parts: [0, 1, 2], answer: "469953", end: "46, 99, 53. So 47 times 9999 is 469953." },
+    ],
+  },
+  more: {
+    intro: "Here is how to multiply by nines, when the number has more digits than there are nines.",
+    sums: [
+      { q: "123 × 99", why: "two nines: cut off two digits — 1 | 23", whySay: "There are two nines. So cut off the last two digits of the number. 1, and 23.",
+        rows: [["1 + 1 =", "2", 1, "Take the part in front, the 1, and add one. 2."],
+          ["123 − 2 =", "121", 3, "Take that from the whole number. 123 take away 2 is 121. That is the front."],
+          ["100 − 23 =", "77", 4, "Now the part we cut off. What does 23 need to make 100? 77. That is the back."]],
+        parts: [1, 2], answer: "12177", end: "Put them together. 121, 77. So 123 times 99 is 12177." },
+      { q: "4567 × 99", why: "two nines: cut off two digits — 45 | 67", whySay: "Try a bigger one. 4567 times 99. Two nines, so cut off two digits. 45, and 67.",
+        rows: [["45 + 1 =", "46", 1, "One more than 45 is 46."],
+          ["4567 − 46 =", "4521", 3, "4567 take away 46 is 4521. The front."],
+          ["100 − 67 =", "33", 4, "67 needs 33 to make 100. The back."]],
+        parts: [1, 2], answer: "452133", end: "4521, 33. So 4567 times 99 is 452133." },
+    ],
+  },
+};
+function by9Steps(kind) {
+  const plan = BY9[kind];
+  const RY = (i) => 36 + i * 11.5, AY = 82;
+  /* where the pieces of the answer stand when they have closed up: side by side, centred */
+  const partX = (sum) => { const w = sum.parts.map((i) => sum.rows[i][1].length * 3.5 + 1.2); const total = w.reduce((a, b2) => a + b2, 0); let x = 44 - total / 2; return w.map((wi) => { const cx = x + wi / 2; x += wi; return cx; }); };
+  const build = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    plan.sums.forEach((sum, e) => {
+      tile(stage, `q${e}`, sum.q, 40, 11, { c: 0, size: "l" });
+      tile(stage, `y${e}`, sum.why, 40, 22.5, { bare: true, size: "s" });
+      sum.rows.forEach(([what, val, ink], i) => {
+        tile(stage, `l${e}_${i}`, what, 24, RY(i), { bare: true, size: "s" });
+        tile(stage, `v${e}_${i}`, val, 46, RY(i), { c: ink, size: "l" });
+      });
+      const xs = partX(sum);
+      sum.parts.forEach((ri, k) => tile(stage, `a${e}_${k}`, sum.rows[ri][1], xs[k], AY, { c: sum.rows[ri][2], size: "l" }));
+      tile(stage, `eq${e}`, "=", xs[0] - (sum.rows[sum.parts[0]][1].length * 3.5) / 2 - 4, AY, { bare: true, size: "l" });
+    });
+  };
+  /** The screen as a step begins: sum e, with its why, its first `rows` rows and its answer out or not. */
+  const lay = (S, e, { why = false, rows = 0, answer = false } = {}) => plan.sums.forEach((sum, k) => {
+    const on = k === e;
+    S.put(`q${k}`, { on: on ? 1 : 0 });
+    S.put(`y${k}`, { on: on && why ? 1 : 0 });
+    sum.rows.forEach((_, i) => { S.put(`l${k}_${i}`, { on: on && i < rows ? 1 : 0 }); S.put(`v${k}_${i}`, { on: on && i < rows ? 1 : 0 }); });
+    const xs = partX(sum);
+    sum.parts.forEach((_, j) => S.put(`a${k}_${j}`, { on: on && answer ? 1 : 0, x: xs[j], y: AY }));
+    S.put(`eq${k}`, { on: on && answer ? 1 : 0 });
+  });
+  const step = (say, fn) => ({ say, show(stage, how) { fn(acts(stage, how.gsap, how.instant)); } });
+  const words = (t) => t.trim().split(/\s+/).length;
+  const steps = [];
+  plan.sums.forEach((sum, e) => {
+    if (e === 0) steps.push(step(`${plan.intro} ${sum.q.replace("×", "times")}.`, (S) => { lay(S, 0); S.put("q0", { on: 0 }); S.pop("q0", words(plan.intro) * 0.36); }));
+    steps.push(step(sum.whySay, (S) => { lay(S, e); if (e > 0) { S.put(`q${e}`, { on: 0 }); S.pop(`q${e}`, 1.4); } S.pop(`y${e}`, e > 0 ? 3.4 : 2.6); }));
+    sum.rows.forEach(([, , , say], i) => steps.push(step(say, (S) => {
+      lay(S, e, { why: true, rows: i });
+      S.pop(`l${e}_${i}`, 0.5);
+      S.pop(`v${e}_${i}`, Math.min(6, 1 + words(say) * 0.22));
+    })));
+    steps.push(step(sum.end, (S) => {
+      lay(S, e, { why: true, rows: sum.rows.length });
+      sum.parts.forEach((ri, k) => { S.pulse(`v${e}_${ri}`, 0.6 + k * 0.7); S.fly(`a${e}_${k}`, 46, RY(ri), 0.9 + k * 0.7); });
+      S.pop(`eq${e}`, 1.4 + sum.parts.length * 0.7);
+      sum.parts.forEach((_, k) => S.pulse(`a${e}_${k}`, 3.6 + sum.parts.length * 0.7 + k * 0.25));
+    }));
+  });
+  return { build, steps };
+}
+
 /* ── THE EIGHT TIMES TABLE: a line under 8 × 5, where it repeats ─────────── */
 function eightsSteps() {
   const T = tableStage(8, [4]);
@@ -1187,6 +1292,7 @@ async function explain(strip) {
     : data.scene.kind === "nine2" ? nine2Steps()
     : data.scene.kind === "nine1" ? nine1Steps()
     : data.scene.kind === "threes" ? threesSteps()
+    : /^by9(same|fewer|more)$/.test(data.scene.kind) ? by9Steps(data.scene.kind.slice(3))
     : data.scene.kind === "ninths" ? ninthsSteps()
     : data.scene.kind === "twos" ? twosSteps()
     : /^grid[37]$/.test(data.scene.kind) ? gridSteps(Number(data.scene.kind.slice(-1)))

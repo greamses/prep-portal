@@ -30,6 +30,17 @@
        10 once with 1 left, every time. 9 ÷ 9 = 0.999… is exactly 1. And
        two figures over 99 repeat as a pair: 23 ÷ 99 = 0.232323…
 
+     MULTIPLYING BY 9, 99, 999, 9999 — because each is one less than 10,
+     100, 1000: so many tens (hundreds, thousands) of the number, less one
+     of it. Three cases, by how the number's digits compare with the nines:
+       SAME number of digits     47 × 99: one less, 46; take that from the
+                                 nines, 53; 4653
+       FEWER digits than nines   7 × 999: one less, 6; nines to fill the
+                                 places left over, 99; then 9 − 6 = 3; 6993
+       MORE digits than nines    123 × 99: cut off as many digits as there
+                                 are nines, 1 | 23; 123 − (1 + 1) = 121;
+                                 100 − 23 = 77; 12177
+
      THE EIGHT TIMES TABLE
        The tens count 0, 1, 2, 3, 4 down the page; a LINE; and from the same
        4 again, 4, 5, 6, 7, 8. The units count UP the page in twos from the
@@ -146,6 +157,7 @@ import { sticksSvg, wSvg, W_POINTS, wheelSvg } from "./tableart.js";
 
 export const TT_GROUPS = [
   { id: "vm-tables", chapter: "Chapter 7 · Times table secrets", label: "The 9 times table", blurb: "Count down the page, count up the page: 09, 18, 27 … And the counting sticks." },
+  { id: "vm-by9s", label: "Multiplying by 9, 99, 999", blurb: "One less in front, what is left of the nines behind: 47 × 99 = 4653." },
   { id: "vm-tables8", label: "The 8 times table", blurb: "Tens to 4 and from 4 again; units up the page in twos." },
   { id: "vm-tables7", label: "The 7 times table", blurb: "Three at a time: say the last ten again, and count the units up in threes." },
   { id: "vm-tables6", label: "The 6 times table", blurb: "Units in the order 2, 4, 6, 8, 0; one ten in each half comes twice. And a second trick: the diagonals." },
@@ -277,6 +289,78 @@ const ninths = {
   /* the second box takes the first six figures after the point */
   key: ({ n, d }) => [want.num(n), want.num(Number(String(n).repeat(d === 9 ? 6 : 3)))],
   answer: ({ n, d }) => [`${n} repeats: ${n} ÷ ${d} = 0.${String(n).repeat(d === 9 ? 6 : 3)}…`],
+};
+
+/* ═══ MULTIPLYING BY 9, 99, 999, 9999 ════════════════════════════════════*/
+const nines = (k) => Number("9".repeat(k));
+
+const by9Same = {
+  id: "vm-by9-same",
+  group: "vm-by9s",
+  label: "By nines: the same number of digits",
+  blurb: "47 × 99: one less, 46; taken from the nines, 53; 4653.",
+  heading: "Multiplying by 9s — as many digits as nines",
+  instruction: () => "99 is one less than 100, so 47 × 99 is 47 hundreds, less one 47. When the number has AS MANY DIGITS " +
+    "as there are nines, there is nothing to carry: the FRONT of the answer is ONE LESS than the number, and the BACK " +
+    "is that front TAKEN FROM THE NINES. 47 × 99: one less is 46; 99 − 46 is 53; the answer is 4653.",
+  tv: "by9same",
+  cols: 2,
+  defaultCount: 6,
+  make: (r) => { const k = r.int(1, 3); return { k, n: r.int(k === 1 ? 2 : 10 ** (k - 1) + 1, 10 ** k - 1) }; },
+  render: ({ n, k }) => big(`${n} × ${nines(k)}`) +
+    steps(step(`one less than ${n}:`), step(`take that from ${nines(k)}:`), step("put together — the answer:")),
+  worked: () => worked(big("47 × 99") + ask(strip("47 − 1", "99 − 46") + " → " + strip("46", "53") + " = 4653") +
+    say("One less than 47 is 46: the front. 46 from 99 is 53: the back. So 47 × 99 is 4653.")),
+  key: ({ n, k }) => [want.num(n - 1), want.num(10 ** k - n), want.num(n * nines(k))],
+  answer: ({ n, k }) => [`${n - 1} | ${String(10 ** k - n).padStart(k, "0")}: ${n} × ${nines(k)} = ${n * nines(k)}`],
+};
+
+const by9Fewer = {
+  id: "vm-by9-fewer",
+  group: "vm-by9s",
+  label: "By nines: fewer digits than nines",
+  blurb: "7 × 999: one less, 6; nines for the gap, 99; then 3: 6993.",
+  heading: "Multiplying by 9s — fewer digits than nines",
+  instruction: () => "When the number has FEWER digits than there are nines, the front and the back are found the same way — " +
+    "ONE LESS than the number, and that taken from as many nines as the number has digits — but there are places left " +
+    "over in the middle. FILL THEM WITH NINES. 7 × 999: one less is 6; two places are left, 99; 9 − 6 is 3; 6993.",
+  tv: "by9fewer",
+  cols: 2,
+  defaultCount: 6,
+  make: (r) => { const m = r.int(1, 2); return { m, k: m + r.int(1, 2), n: r.int(m === 1 ? 2 : 11, 10 ** m - 1) }; },
+  render: ({ n, k, m }) => big(`${n} × ${nines(k)}`) +
+    steps(step(`one less than ${n}:`), step("the nines that fill the middle:"), step(`the first answer taken from ${nines(m)}:`), step("put together — the answer:")),
+  worked: () => worked(big("7 × 999") + ask(strip("7 − 1", "two places", "9 − 6") + " → " + strip("6", "99", "3") + " = 6993") +
+    say("One less than 7 is 6. 999 has three nines and 7 has one digit, so two places are left: 99. 6 from 9 is 3. So 7 × 999 is 6993.")),
+  key: ({ n, k, m }) => [want.num(n - 1), want.num(nines(k - m)), want.num(10 ** m - n), want.num(n * nines(k))],
+  answer: ({ n, k, m }) => [`${n - 1} | ${nines(k - m)} | ${String(10 ** m - n).padStart(m, "0")}: ${n} × ${nines(k)} = ${n * nines(k)}`],
+};
+
+const by9More = {
+  id: "vm-by9-more",
+  group: "vm-by9s",
+  label: "By nines: more digits than nines",
+  blurb: "123 × 99: 1 | 23; 123 − 2 = 121; 100 − 23 = 77; 12177.",
+  heading: "Multiplying by 9s — more digits than nines",
+  instruction: () => "When the number has MORE digits than there are nines, CUT OFF as many digits from its end as there are " +
+    "nines. Add ONE to the part in front, and take that from the WHOLE number: that is the front of the answer. The " +
+    "back is what the cut-off part needs to make 10, 100 or 1000. 123 × 99: cut 1 | 23; 1 + 1 = 2; 123 − 2 = 121; " +
+    "23 needs 77 to make 100; the answer is 12177.",
+  tv: "by9more",
+  cols: 2,
+  defaultCount: 6,
+  make: (r) => {
+    const k = r.int(1, 2), m = k + r.int(1, 2);
+    let n = r.int(10 ** (m - 1) + 1, 10 ** m - 1);
+    if (n % 10 ** k === 0) n += 1;                 // the cut-off part is never nothing
+    return { k, n };
+  },
+  render: ({ n, k }) => { const head = Math.floor(n / 10 ** k), tail = n % 10 ** k; return big(`${n} × ${nines(k)}`) +
+    steps(step(`one more than ${head}:`), step(`${n} take away that:`), step(`what ${String(tail).padStart(k, "0")} needs to make ${10 ** k}:`), step("put together — the answer:")); },
+  worked: () => worked(big("123 × 99") + ask(strip("1 + 1", "123 − 2", "100 − 23") + " → " + strip("2", "121", "77") + " = 12177") +
+    say("Two nines, so cut off two digits: 1 and 23. One more than 1 is 2. 123 − 2 is 121: the front. 23 needs 77 to make 100: the back. So 123 × 99 is 12177.")),
+  key: ({ n, k }) => { const head = Math.floor(n / 10 ** k), tail = n % 10 ** k; return [want.num(head + 1), want.num(n - head - 1), want.num(10 ** k - tail), want.num(n * nines(k))]; },
+  answer: ({ n, k }) => { const head = Math.floor(n / 10 ** k), tail = n % 10 ** k; return [`${n - head - 1} | ${String(10 ** k - tail).padStart(k, "0")}: ${n} × ${nines(k)} = ${n * nines(k)}`]; },
 };
 
 /* ═══ THE EIGHTS ══════════════════════════════════════════════════════════*/
@@ -844,7 +928,7 @@ const onesTree = {
   answer: ({ n }) => [`${n} ones: ${onesOf(n)} × ${onesOf(n)} = ${treeOf(n)}`],
 };
 
-export const TT_EXERCISES = [nineOne, nineAll, nineSticks, nineRows, ninths, eightOne, eightAll, sevenOne, sevenAll, sevenGrid, sevenWheel, sevenths, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW, threeOne, threeAll, threeGrid, twoOne, twoAll, onesTree];
+export const TT_EXERCISES = [nineOne, nineAll, nineSticks, nineRows, ninths, by9Same, by9Fewer, by9More, eightOne, eightAll, sevenOne, sevenAll, sevenGrid, sevenWheel, sevenths, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW, threeOne, threeAll, threeGrid, twoOne, twoAll, onesTree];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).
