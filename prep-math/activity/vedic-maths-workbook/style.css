@@ -111,3 +111,17 @@
 .vm-tt__key { display: flex; gap: 6mm; margin: 0 0 1.5mm 3mm; font-size: 8.5pt; font-weight: 700; }
 .vm-tt__key .is-t { color: #2f6ea8; }
 .vm-tt__key .is-u { color: #d9632b; }
+
+/* ── the two pictures of the times-table secrets (js/tableart.js) ─────────── */
+.vm-art { margin: 1mm 0 1.5mm; }
+.vm-art .vm-hands { display: block; width: 62mm; height: auto; }
+.vm-art--w .vm-w { display: block; width: 52mm; height: auto; }
+/* the W with a box on each of its points */
+.vm-wfig { position: relative; width: 62mm; margin: 2mm 0 3mm 3mm; }
+.vm-wfig .vm-w { display: block; width: 100%; height: auto; }
+.vm-wfig__pt { position: absolute; display: block; width: 8.5mm; height: 8.5mm; margin: -4.25mm 0 0 -4.25mm; line-height: 0; }
+.wb-sheet .vm-wfig .vm-wfig__pt .wb-answer { display: block; box-sizing: border-box; min-width: 0; width: 8.5mm; height: 8.5mm; margin: 0; padding: 0; border-radius: 50%; border-color: #d9632b; background: #fffdf8; overflow: hidden; }
+.wb-sheet .vm-wfig .vm-wfig__pt .wb-answer input { width: 100%; height: 100%; padding: 0; text-align: center; }
+/* on the TV: a picture standing beside the table */
+.vm-t__art { display: block; width: calc(var(--u) * 38); }
+.vm-t__art svg { display: block; width: 100%; height: auto; }

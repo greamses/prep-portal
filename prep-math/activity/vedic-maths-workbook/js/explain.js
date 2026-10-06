@@ -35,6 +35,8 @@
    Drills papers have no strip: a drill is against the clock.
    ========================================================================== */
 
+import { handsSvg, wSvg } from "./tableart.js";
+
 /* Tricks with a full animated lesson in Learning with PrepBot. */
 const LESSONS = {
   "vm-eleven": "/prep-math/mental-math/times-eleven/index.html",
@@ -298,52 +300,6 @@ function textSteps({ rule, scene }) {
   return { build, steps };
 }
 
-/* ── THE NINE TIMES TABLE: count down the page, count up the page ──────────
-   The ten sums in a column. The tens come on one at a time from the TOP,
-   0 to 9; the units come on one at a time from the BOTTOM, 0 to 9. Then each
-   pair closes up into its answer: 09, 18, 27 … 90. */
-function ninesSteps() {
-  const ROWS = 10;
-  const y = (i) => 9.5 + i * 8.6;
-  const X = { sum: 27, tens: 43, units: 47.5, eq: 37.5 };
-  const build = (stage) => {
-    stage.innerHTML = `<div class="vm-tv"></div>`;
-    for (let i = 0; i < ROWS; i++) {
-      tile(stage, `s${i}`, `9 × ${i + 1}`, X.sum, y(i), { bare: true, size: "s" });
-      tile(stage, `e${i}`, "=", X.eq, y(i), { bare: true, size: "s" });
-      /* the numbers counted DOWN the page in one colour, the numbers counted UP it in another */
-      tile(stage, `t${i}`, String(i), X.tens, y(i), { c: 3 });
-      tile(stage, `u${i}`, String(9 - i), X.units, y(i), { c: 4 });
-    }
-    tile(stage, "down", "0 to 9, down", X.tens - 9, 96.5, { c: 3, size: "s" });
-    tile(stage, "up", "0 to 9, up", X.units + 9, 96.5, { c: 4, size: "s" });
-  };
-  const all = (fn) => { for (let i = 0; i < ROWS; i++) fn(i); };
-  const steps = [
-    { say: "Here is the secret of the nine times table. First, write the ten sums down the page.",
-      show(stage, how) { const S = acts(stage, how.gsap, how.instant); all((i) => { S.pop(`s${i}`, i * 0.12); S.pop(`e${i}`, i * 0.12); }); } },
-    { say: "Now count from 0 to 9, going DOWN the page. 0, 1, 2, 3, 4, 5, 6, 7, 8, 9.",
-      show(stage, how) { const S = acts(stage, how.gsap, how.instant); all((i) => S.pop(`t${i}`, 0.3 + i * 0.42)); S.pop("down", 0.2); } },
-    { say: "Count from 0 to 9 again, but this time going UP the page. 0, 1, 2, 3, 4, 5, 6, 7, 8, 9.",
-      show(stage, how) { const S = acts(stage, how.gsap, how.instant); all((i) => S.pop(`u${ROWS - 1 - i}`, 0.3 + i * 0.42)); S.pop("up", 0.2); } },
-    { say: "Read across. 9, 18, 27, 36, 45, 54, 63, 72, 81, 90. That is the whole nine times table, and nothing was multiplied.",
-      show(stage, how) {
-        const S = acts(stage, how.gsap, how.instant);
-        S.hide("down"); S.hide("up");
-        all((i) => { S.move(`u${i}`, X.units - 1.6, y(i), i * 0.1); S.pulse(`t${i}`, 0.9 + i * 0.3); S.pulse(`u${i}`, 0.9 + i * 0.3); });
-      } },
-    { say: "Look at the two digits of any answer. They always add up to 9. 1 and 8. 2 and 7. 3 and 6.",
-      show(stage, how) { const S = acts(stage, how.gsap, how.instant); [1, 2, 3].forEach((i, k) => { S.pulse(`t${i}`, 0.4 + k * 0.9); S.pulse(`u${i}`, 0.7 + k * 0.9); }); } },
-    { say: "And the first digit is always one less than the number you multiply by. 9 times 7 starts with 6, and 6 needs 3 to make 9. So 9 times 7 is 63.",
-      show(stage, how) {
-        const S = acts(stage, how.gsap, how.instant);
-        all((i) => { const dim = i === 6 ? 1 : 0.3; S.dim(`s${i}`, dim); S.dim(`e${i}`, dim); S.dim(`t${i}`, dim); S.dim(`u${i}`, dim); });
-        S.pulse("s6", 0.4); S.pulse("t6", 1.2); S.pulse("u6", 2);
-      } },
-  ];
-  return { build, steps };
-}
-
 /* ── A TIMES TABLE ON THE SCREEN ───────────────────────────────────────────
    Ten sums in a column, the tens in one colour and the units in another, and
    a LINE ruled across wherever the pattern repeats (`cuts`: the rows it goes
@@ -368,6 +324,12 @@ function tableStage(n, cuts = []) {
     });
   };
   const all = (fn) => { for (let i = 0; i < ROWS; i++) fn(i); };
+  /** a picture to stand beside the table: put on the stage hidden, and brought on like any number */
+  const art = (stage, id, html) => {
+    const box = tile(stage, id, "", 76, 36, { bare: true });
+    box.firstChild.className = "vm-t__in vm-t__art";
+    box.firstChild.innerHTML = html;
+  };
   /** every row dimmed but these */
   const only = (S, rows) => all((i) => { const d = rows.includes(i) ? 1 : 0.3; S.dim(`s${i}`, d); S.dim(`e${i}`, d); S.dim(`t${i}`, d); S.dim(`u${i}`, d); });
   /** the ten sums come on */
@@ -375,7 +337,39 @@ function tableStage(n, cuts = []) {
   /** the pairs close up and are read across */
   const read = (S) => all((i) => { S.move(`u${i}`, X.units - 1.6, y(i), i * 0.1); S.pulse(`t${i}`, 0.9 + i * 0.3); S.pulse(`u${i}`, 0.9 + i * 0.3); });
   const step = (say, fn) => ({ say, show(stage, how) { fn(acts(stage, how.gsap, how.instant)); } });
-  return { build, step, sums, read, only };
+  return { build, step, sums, read, only, art };
+}
+
+/* ── THE NINE TIMES TABLE: count down the page, count up the page — and the
+   FINGER METHOD after it ──────────────────────────────────────────────── */
+function ninesSteps() {
+  const T = tableStage(9, []);
+  const build = (stage) => {
+    T.build(stage);
+    T.art(stage, "h0", handsSvg({}));
+    T.art(stage, "h1", handsSvg({ fold: 7 }));
+    T.art(stage, "h2", handsSvg({ fold: 7, colour: true }));
+  };
+  const steps = [
+    T.step("Here is the secret of the nine times table. First, write the ten sums down the page.", (S) => T.sums(S)),
+    T.step("Now count from 0 to 9, going DOWN the page. 0, 1, 2, 3, 4, 5, 6, 7, 8, 9.",
+      (S) => { for (let i = 0; i < 10; i++) S.pop(`t${i}`, 0.3 + i * 0.42); }),
+    T.step("Count from 0 to 9 again, but this time going UP the page. 0, 1, 2, 3, 4, 5, 6, 7, 8, 9.",
+      (S) => { for (let i = 0; i < 10; i++) S.pop(`u${9 - i}`, 0.3 + i * 0.42); }),
+    T.step("Read across. 9, 18, 27, 36, 45, 54, 63, 72, 81, 90. That is the whole nine times table, and nothing was multiplied.", (S) => T.read(S)),
+    T.step("Look at the two digits of any answer. They always add up to 9. 1 and 8. 2 and 7. 3 and 6.",
+      (S) => { [1, 2, 3].forEach((i, k) => { S.pulse(`t${i}`, 0.4 + k * 0.9); S.pulse(`u${i}`, 0.7 + k * 0.9); }); }),
+    T.step("And the first digit is always one less than the number you multiply by. 9 times 7 starts with 6, and 6 needs 3 to make 9. So 9 times 7 is 63.",
+      (S) => { T.only(S, [6]); S.pulse("s6", 0.4); S.pulse("t6", 1.2); S.pulse("u6", 2); }),
+    /* the finger method */
+    T.step("There is another way, and you carry it with you: your fingers. Hold up all ten, and number them 1 to 10 from the left.",
+      (S) => { T.only(S, [6]); S.pop("h0", 0.4); }),
+    T.step("For 9 times 7, fold down finger number 7.",
+      (S) => { S.hide("h0"); S.pop("h1", 0.3); S.pulse("s6", 0.5); }),
+    T.step("Count the fingers on the left of it: 6. Those are the tens. Count the fingers on the right: 3. Those are the units. 63.",
+      (S) => { S.hide("h1"); S.pop("h2", 0.2); S.pulse("t6", 2.2); S.pulse("u6", 5); }),
+  ];
+  return { build, steps };
 }
 
 /* ── THE EIGHT TIMES TABLE: a line under 8 × 5, where it repeats ─────────── */
@@ -436,17 +430,34 @@ function sixesSteps() {
       (S) => { for (let i = 0; i < 5; i++) S.pop(`t${i}`, 0.9 + i * 0.6); S.pulse("t1", 4.4); S.pulse("t2", 4.7); }),
     T.step("Rule a line. Below it, start from the same 3. 3, 4, 4, 5, 6. This time the 4 comes twice.",
       (S) => { S.pop("k4", 0.2); S.pulse("t4", 1.2); for (let i = 5; i < 10; i++) S.pop(`t${i}`, 1.6 + (i - 5) * 0.6); S.pulse("t6", 5.2); S.pulse("t7", 5.5); }),
-    T.step("Now the units. Count UP the page in fours, from the bottom, and write only the last figure. 0, 4, 8, 12, 16. So 0, 4, 8, 2, 6.",
-      (S) => { for (let i = 9; i >= 5; i--) S.pop(`u${i}`, 1.6 + (9 - i) * 0.7); }),
-    T.step("At the line the count starts again. 0, 4, 8, 2, 6.",
-      (S) => { S.pulse("k4", 0.2); for (let i = 4; i >= 0; i--) S.pop(`u${i}`, 0.9 + (4 - i) * 0.6); }),
+    /* the units are the even numbers, written in order — 2 4 6 8 0 — each beside its own sum */
+    T.step("Now the units. They are the even numbers, and they are written in order: 2, 4, 6, 8, 0. 2 goes beside 6 times 2, and 4 beside 6 times 4.",
+      (S) => { S.pop("u1", 4.2); S.pop("u3", 6.4); }),
+    T.step("6 goes at the top, beside 6 times 1. 8 goes beside 6 times 3. And 0 beside 6 times 5.",
+      (S) => { S.pop("u0", 1.2); S.pop("u2", 3.2); S.pop("u4", 5); }),
+    T.step("Below the line it is the same again. 2, 4, 6, 8, 0.",
+      (S) => { S.pulse("k4", 0.2); [6, 8, 5, 7, 9].forEach((i, k) => S.pop(`u${i}`, 1.4 + k * 0.6)); }),
     T.step("Read across. 6, 12, 18, 24, 30, 36, 42, 48, 54, 60. That is the whole six times table.", (S) => T.read(S)),
     T.step("The line is where the pattern repeats. Five sixes are exactly 30, so everything below the line is 30 more than the row above it.",
       (S) => { T.only(S, [0, 5]); S.pulse("t0", 0.6); S.pulse("u0", 0.6); S.pulse("t5", 1.6); S.pulse("u5", 1.6); }),
     T.step("And for just one of them, remember that 6 is 5 and 1. For 6 times 7: five sevens are 35, and one more seven makes 42.",
       (S) => { T.only(S, [6]); S.pulse("s6", 0.4); S.pulse("t6", 3); S.pulse("u6", 3); }),
+    /* the W method */
+    T.step("Here is another way to remember the units: the W. Draw a big W.",
+      (S) => { T.only(S, [0, 1, 2, 3, 4]); S.pop("w0", 0.4); }),
+    T.step("Write 2 and 4 at its two bottom points. Then 6, 8 and 0 at its three top points. 2, 4, 6, 8, 0.",
+      (S) => { S.hide("w0", 0.9); S.pop("w1", 1); S.hide("w1", 4.6); S.pop("w2", 4.7); }),
+    T.step("Now read along the W, from the left. 6, 2, 8, 4, 0. Those are the units of the first five sums, and the W starts again under the line.",
+      (S) => { S.hide("w2"); S.pop("w3", 0.2); for (let i = 0; i < 5; i++) S.pulse(`u${i}`, 2.2 + i * 0.6); }),
   ];
-  return { build: T.build, steps };
+  const build = (stage) => {
+    T.build(stage);
+    T.art(stage, "w0", wSvg());
+    T.art(stage, "w1", wSvg({ labels: ["", "2", "", "4", ""] }));
+    T.art(stage, "w2", wSvg({ labels: ["6", "2", "8", "4", "0"] }));
+    T.art(stage, "w3", wSvg({ labels: ["6", "2", "8", "4", "0"], trace: true }));
+  };
+  return { build, steps };
 }
 
 /* ── THE FIVE TIMES TABLE: two at a time, a line after each two ──────────── */

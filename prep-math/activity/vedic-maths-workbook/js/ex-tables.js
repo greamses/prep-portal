@@ -12,6 +12,10 @@
        So for any one of them: the tens digit is ONE LESS than the number
        you multiply by, and the two digits ADD UP TO 9.
 
+       THE FINGER METHOD (optional): hold up ten fingers and fold down the
+       one you multiply by. The fingers to its left are the tens; the
+       fingers to its right are the units.
+
          one at a time     9 × 7: one less than 7 is 6; 6 needs 3 to make 9; 63
          the whole table   the two columns, counted down and counted up
 
@@ -33,8 +37,13 @@
      THE SIX TIMES TABLE
        A LINE under 6 × 5. The tens go 0, 1, 1, 2, 3 down to the line — the
        1 comes twice — and from the same 3 below it: 3, 4, 4, 5, 6, the 4
-       twice. The units count UP the page in FOURS, writing only the last
-       figure: 0, 4, 8, (1)2, (1)6 — and the same again above the line.
+       twice. The units are the even numbers, written IN ORDER — 2, 4, 6,
+       8, 0 — each in its own row: 2 beside 6 × 2, 4 beside 6 × 4, 6 beside
+       6 × 1, 8 beside 6 × 3, 0 beside 6 × 5; and the same again below the
+       line.
+       THE W METHOD (optional): draw a big W, write 2 and 4 at its bottom
+       points and 6, 8, 0 at its top points, and read ALONG the W:
+       6, 2, 8, 4, 0 — the units, in table order.
        One at a time: 6 is 5 and 1, so five of it and one more of it.
 
      THE FIVE TIMES TABLE
@@ -53,13 +62,14 @@
    ========================================================================== */
 
 import { want } from "/utils/components/workbook/want.js";
-import { ask, big, worked, say, step, steps, strip } from "./common.js";
+import { ask, big, box, worked, say, step, steps, strip } from "./common.js";
+import { handsSvg, wSvg, W_POINTS } from "./tableart.js";
 
 export const TT_GROUPS = [
-  { id: "vm-tables", chapter: "Chapter 7 · Times table secrets", label: "The 9 times table", blurb: "Count down the page, count up the page: 09, 18, 27 …" },
+  { id: "vm-tables", chapter: "Chapter 7 · Times table secrets", label: "The 9 times table", blurb: "Count down the page, count up the page: 09, 18, 27 … And the finger method." },
   { id: "vm-tables8", label: "The 8 times table", blurb: "Tens to 4 and from 4 again; units up the page in twos." },
   { id: "vm-tables7", label: "The 7 times table", blurb: "Three at a time: say the last ten again, and count the units up in threes." },
-  { id: "vm-tables6", label: "The 6 times table", blurb: "Units up the page in fours; one ten in each half comes twice." },
+  { id: "vm-tables6", label: "The 6 times table", blurb: "Units in the order 2, 4, 6, 8, 0; one ten in each half comes twice. And the W." },
   { id: "vm-tables5", label: "The 5 times table", blurb: "Two at a time: the last ten said again, and the units only 0 and 5." },
 ];
 
@@ -230,8 +240,11 @@ const sevenAll = {
 const SECRET6 =
   "Write the ten sums, 6 × 1 to 6 × 10, down the page, and rule a LINE under 6 × 5. The TENS go 0, 1, 1, 2, 3 down to " +
   "the line — the 1 comes twice — and below it start from the same 3: 3, 4, 4, 5, 6, with the 4 twice. The UNITS " +
-  "count UP the page in FOURS from the bottom, writing only the last figure: 0, 4, 8, then 12 and 16 give 2 and 6 — " +
-  "and at the line they start again, 0, 4, 8, 2, 6.";
+  "are the even numbers, written IN ORDER — 2, 4, 6, 8, 0 — each in its own row: 2 beside 6 × 2, 4 beside 6 × 4, " +
+  "6 beside 6 × 1, 8 beside 6 × 3, and 0 beside 6 × 5. Below the line it is the same again.";
+
+/* Where each unit goes when they are written 2, 4, 6, 8, 0: the row within a half (0 to 4) → its turn. */
+const SIX_TURN = [2, 0, 3, 1, 4];
 
 const sixOne = {
   id: "vm-tt6",
@@ -260,14 +273,17 @@ const sixAll = {
   blurb: "One ten twice in each half; units up the page in fours.",
   heading: "The 6 times table — count up in fours",
   instruction: () => SECRET6 + " It is set out as PrepBot sets it out. Fill the FIRST box of every row going down the page; " +
-    "then the SECOND box of every row going up from the bottom. On screen the boxes open one at a time, in that order.",
+    "then the SECOND boxes in the order 2, 4, 6, 8, 0, above the line and then below it. On screen the boxes open one at " +
+    "a time, in that order.",
   tv: "sixes",
   cols: 1,
   defaultCount: 1,
   make: (r) => ({ n: r.int(2, 9) }),
-  render: () => tableHtml(6, [4], "first box, down the page: 0 1 1 2 3 · the line · 3 4 4 5 6", "second box, up the page: 0 4 8 2 6 — twice"),
+  /* the units open in the order they are written, 2 4 6 8 0, the top half and then the bottom */
+  render: () => tableHtml(6, [4], "first box, down the page: 0 1 1 2 3 · the line · 3 4 4 5 6",
+    "second box, in the order 2 4 6 8 0 — twice", (i) => 10 + (i < 5 ? 0 : 5) + SIX_TURN[i % 5]),
   worked: () => worked(ask("6 × 4 = " + strip("2", "4") + " &nbsp; 6 × 5 = " + strip("3", "0") + " &nbsp; — the line — &nbsp; 6 × 6 = " + strip("3", "6")) +
-    say("Down to the line the first digits reach 3, and under the line they start from 3 again. Coming up the page in fours the second digits are 0, 4, 8, 2, 6, and above the line 0, 4, 8, 2, 6 again.")),
+    say("Down to the line the first digits reach 3, and under the line they start from 3 again. The second digits are the even numbers 2, 4, 6, 8, 0, each written beside its own sum — and the same five again under the line.")),
   key: () => tableKey(6),
   answer: () => tableAnswer(6),
 };
@@ -320,7 +336,59 @@ const fiveAll = {
   answer: () => tableAnswer(5),
 };
 
-export const TT_EXERCISES = [nineOne, nineAll, eightOne, eightAll, sevenOne, sevenAll, sixOne, sixAll, fiveOne, fiveAll];
+/* ═══ TWO OPTIONAL METHODS, each with a picture ════════════════════════════*/
+
+/* THE FINGER METHOD for the nines: the same answer, read off ten fingers. */
+const nineFingers = {
+  id: "vm-tt9-fingers",
+  group: "vm-tables",
+  label: "The finger method (optional)",
+  blurb: "Fold one finger down: tens on its left, units on its right.",
+  heading: "The 9 times table — on your fingers",
+  instruction: () => "Hold up all ten fingers and number them 1 to 10 from the left. To multiply by 9, FOLD DOWN the finger " +
+    "with the number you are multiplying by. The fingers to the LEFT of it are the tens; the fingers to the RIGHT of " +
+    "it are the units.",
+  tv: "nines",
+  cols: 2,
+  defaultCount: 4,
+  make: (r) => ({ n: r.int(2, 9) }),
+  render: ({ n }) => big(`9 × ${n}`) + `<div class="vm-art">${handsSvg({ fold: n, colour: true })}</div>` +
+    steps(step("fingers to the left:"), step("fingers to the right:"), step("the answer:")),
+  worked: () => worked(big("9 × 7") + `<div class="vm-art">${handsSvg({ fold: 7, colour: true })}</div>` +
+    say("Finger number 7 is folded down. There are 6 fingers to its left and 3 to its right. So 9 × 7 is 63.")),
+  key: ({ n }) => [want.num(n - 1), want.num(10 - n), want.num(9 * n)],
+  answer: ({ n }) => [`${n - 1} left, ${10 - n} right: 9 × ${n} = ${9 * n}`],
+};
+
+/* THE W METHOD for the sixes: the units, read along a W. */
+const W_ORDER = [1, 3, 0, 2, 4];                 // the points in the order they are written: bottom two, then top three
+const W_WRITE = ["2", "4", "6", "8", "0"];
+const W_READ = ["6", "2", "8", "4", "0"];        // along the stroke: the units of 6 × 1 to 6 × 5
+
+const sixW = {
+  id: "vm-tt6-w",
+  group: "vm-tables6",
+  label: "The W method (optional)",
+  blurb: "2 and 4 at the bottom, 6, 8, 0 at the top: read along the W.",
+  heading: "The 6 times table — the W",
+  instruction: () => "Draw a big W. Write the even numbers on it IN ORDER: 2 and 4 at its two BOTTOM points, then 6, 8 and " +
+    "0 at its three TOP points. Now read ALONG the W, from the left: those are the units of 6 × 1, 6 × 2, 6 × 3, " +
+    "6 × 4 and 6 × 5 — and of the next five, over again.",
+  tv: "sixes",
+  cols: 1,
+  defaultCount: 1,
+  make: (r) => ({ n: r.int(2, 9) }),
+  /* the five boxes stand on the W's points, and are filled in the order the numbers are written */
+  render: () => `<div class="vm-wfig">${wSvg()}${W_ORDER.map((pt) =>
+    `<span class="vm-wfig__pt" style="left:${((W_POINTS[pt][0] / 124) * 100).toFixed(2)}%;top:${((W_POINTS[pt][1] / 76) * 100).toFixed(2)}%"><span class="wb-answer"></span></span>`).join("")}</div>` +
+    ask(`Read along the W. The units of 6 × 1 to 6 × 5 are: ${box()} ${box()} ${box()} ${box()} ${box()}`),
+  worked: () => worked(`<div class="vm-art vm-art--w">${wSvg({ labels: W_READ, trace: true })}</div>` +
+    say("2 and 4 at the bottom, 6, 8 and 0 at the top. Along the W from the left: 6, 2, 8, 4, 0 — so 6 × 1 ends in 6, 6 × 2 in 2, 6 × 3 in 8, 6 × 4 in 4 and 6 × 5 in 0.")),
+  key: () => [...W_WRITE, ...W_READ].map((d) => want.num(Number(d))),
+  answer: () => [`on the W: ${W_WRITE.join(", ")}; read along it: ${W_READ.join(", ")}`],
+};
+
+export const TT_EXERCISES = [nineOne, nineAll, nineFingers, eightOne, eightAll, sevenOne, sevenAll, sixOne, sixAll, sixW, fiveOne, fiveAll];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).
