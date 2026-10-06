@@ -617,6 +617,46 @@ function fourwSteps() {
   return { build, steps };
 }
 
+/* ── THE SIXES' SECOND TRICK: THE DIAGONALS, and 60 by itself ──────────────
+   Twos are counted stepping down a diagonal — 0, 2, 4 — then from the top
+   again down a second — 6, 8. Twice. Read row by row (0 6 / 2 8 / 4) those
+   are the units; the tens go in front the same way, 0 0 1 1 2 and 3 3 4 4 5;
+   and the numbers are read off into a row beneath. No table is on screen. */
+function sixdSteps() {
+  const WRITE = [0, 2, 4, 6, 8], READ = [0, 6, 2, 8, 4];
+  const OFF = { 0: [0, 0], 2: [7, 11], 4: [14, 22], 6: [14, 0], 8: [21, 11] };
+  const ORG = [[14, 13], [54, 29]];
+  const at = (w, u) => [ORG[w][0] + OFF[u][0], ORG[w][1] + OFF[u][1]];
+  const rx = (i) => 9 + i * 8.6;
+  const build = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    [0, 1].forEach((w) => WRITE.forEach((u) => {
+      const [x, y] = at(w, u);
+      tile(stage, `u${w}_${u}`, String(u), x, y, { c: 4, size: "l" });
+      tile(stage, `t${w}_${u}`, String(Math.floor((30 * w + 6 * READ.indexOf(u)) / 10)), x - 3.7, y, { c: 3, size: "l" });
+    }));
+    for (let i = 0; i < 10; i++) tile(stage, `r${i}`, String(6 * i), rx(i), 77, { c: i < 5 ? 3 : 1 });
+    tile(stage, "r10", "60", 50, 91, { c: 2, size: "l" });
+  };
+  const step = (say, fn) => ({ say, show(stage, how) { fn(acts(stage, how.gsap, how.instant)); } });
+  const units = (S, w, list, at0, gap = 0.65) => list.forEach((u, k) => S.pop(`u${w}_${u}`, at0 + k * gap));
+  const tens = (S, w, at0) => READ.forEach((u, k) => { S.pop(`t${w}_${u}`, at0 + k * 0.7); S.pulse(`u${w}_${u}`, at0 + k * 0.7); });
+  const steps = [
+    step("Here is a second trick for the six times table: the diagonals. Start with 0.", (S) => S.pop("u0_0", 3.8)),
+    step("Count in twos, stepping down a diagonal. 0, 2, 4.", (S) => { S.pulse("u0_0", 2.8); units(S, 0, [2, 4], 3.4); }),
+    step("Go back to the top, beside the 0, and carry on down a second diagonal. 6, 8.", (S) => units(S, 0, [6, 8], 5)),
+    step("Now do it all again, for a second set. 0, 2, 4. 6, 8.", (S) => units(S, 1, WRITE, 3.4)),
+    step("Those are the units. Read them row by row. 0, 6. 2, 8. 4.",
+      (S) => READ.forEach((u, k) => { S.pulse(`u0_${u}`, 3.6 + k * 0.7); S.pulse(`u1_${u}`, 3.6 + k * 0.7); })),
+    step("Now the tens, going the same way, row by row. In the first set: 0, 0. 1, 1. 2.", (S) => tens(S, 0, 5.2)),
+    step("In the second set: 3, 3. 4, 4. 5.", (S) => tens(S, 1, 1.8)),
+    step("Read the first set, row by row. 0, 6, 12, 18, 24.", (S) => { for (let i = 0; i < 5; i++) { S.pulse(`u0_${READ[i]}`, 3 + i * 0.6); S.pop(`r${i}`, 3 + i * 0.6); } }),
+    step("And the second set the same way. 30, 36, 42, 48, 54.", (S) => { for (let i = 0; i < 5; i++) { S.pulse(`u1_${READ[i]}`, 2.6 + i * 0.6); S.pop(`r${5 + i}`, 2.6 + i * 0.6); } }),
+    step("One more stands by itself, to finish the table. 60.", (S) => S.pop("r10", 3.2)),
+  ];
+  return { build, steps };
+}
+
 /* ── ONE FACT ON COUNTING STICKS: the sixes, the sevens, the fours ─────────
    k × n with n sticks. They are counted UP IN FIVES (5, 10, 15 …), and then
    the SAME sticks are counted again, carrying on from there: in ones for the
@@ -714,6 +754,7 @@ async function explain(strip) {
     : data.scene.kind === "fives" ? fivesSteps()
     : data.scene.kind === "fours" ? foursSteps()
     : data.scene.kind === "fourw" ? fourwSteps()
+    : data.scene.kind === "sixd" ? sixdSteps()
     : /^sticks[467]$/.test(data.scene.kind) ? countSticksSteps(Number(data.scene.kind.slice(-1)))
     : data.scene.kind === "trach" && data.scene.steps.length ? trachSteps(data)
     : data.scene.kind === "strip" && data.scene.expr.length && data.scene.expr.length === data.scene.res.length ? stripSteps(data)

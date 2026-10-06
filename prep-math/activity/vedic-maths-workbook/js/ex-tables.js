@@ -62,6 +62,17 @@
        top of the second, 3, 3 across its bottom. Read top then bottom:
        00 04 08 12 16 · 20 24 28 32 36. And 40 stands by itself.
 
+     THE SIXES' SECOND TRICK, BY ITSELF — THE DIAGONALS
+       Count in twos stepping DOWN A DIAGONAL: 0, 2, 4. Go back to the top,
+       beside the 0, and carry on down a second diagonal: 6, 8.
+              0     6
+                 2     8
+                    4
+       Do it twice. Read ROW BY ROW — 0 6, 2 8, 4 — and those are the
+       units. The tens go the same way, row by row: 0, 0, 1, 1, 2 in the
+       first set and 3, 3, 4, 4, 5 in the second: 00 06 12 18 24 ·
+       30 36 42 48 54. And 60 stands by itself.
+
      ONE FACT OF THE SIXES, SEVENS OR FOURS, ON COUNTING STICKS
        Lay out one stick for each of the number. Count them UP IN FIVES.
        Then count the SAME sticks again, carrying on from there: in ONES
@@ -84,7 +95,7 @@ export const TT_GROUPS = [
   { id: "vm-tables", chapter: "Chapter 7 · Times table secrets", label: "The 9 times table", blurb: "Count down the page, count up the page: 09, 18, 27 … And the counting sticks." },
   { id: "vm-tables8", label: "The 8 times table", blurb: "Tens to 4 and from 4 again; units up the page in twos." },
   { id: "vm-tables7", label: "The 7 times table", blurb: "Three at a time: say the last ten again, and count the units up in threes." },
-  { id: "vm-tables6", label: "The 6 times table", blurb: "Units in the order 2, 4, 6, 8, 0; one ten in each half comes twice." },
+  { id: "vm-tables6", label: "The 6 times table", blurb: "Units in the order 2, 4, 6, 8, 0; one ten in each half comes twice. And a second trick: the diagonals." },
   { id: "vm-tables5", label: "The 5 times table", blurb: "Two at a time: the last ten said again, and the units only 0 and 5." },
   { id: "vm-tables4", label: "The 4 times table", blurb: "Tens 0 0 1 1 2 and from 2 again; units 4 8 2 6 0. And a second trick: two W's." },
 ];
@@ -305,6 +316,43 @@ const sixAll = {
   answer: () => tableAnswer(6),
 };
 
+/* THE SIXES' SECOND TRICK, BY ITSELF: THE DIAGONALS.
+   Five numbers to a set, WRITTEN 0 2 4 down one diagonal and 6 8 down the next, and READ row by row:
+   0 6 / 2 8 / 4. The units are written first; then the tens, in reading order. */
+const DG_WRITE = [0, 2, 4, 6, 8];                                  // the order the units are written in
+const DG_AT = { 0: [9, 16], 2: [32, 50], 4: [55, 84], 6: [55, 16], 8: [78, 50] };   // where each stands, in hundredths of the figure
+const DG_READ = [0, 6, 2, 8, 4];                                   // the order they are read in: row by row
+const dgValue = (w, u) => 30 * w + 6 * DG_READ.indexOf(u);         // the number that unit ends up in
+const dgFig = (w) => `<div class="vm-dfig">${DG_WRITE.map((u, k) =>
+  `<span class="vm-wfig__pt vm-tt__pair" style="left:${DG_AT[u][0]}%;top:${DG_AT[u][1]}%">` +
+  `<span class="wb-answer vm-tt__t" data-step="${10 + w * 5 + DG_READ.indexOf(u)}"></span>` +
+  `<span class="wb-answer vm-tt__u" data-step="${w * 5 + k}"></span></span>`).join("")}</div>`;
+
+const sixDiag = {
+  id: "vm-tt6-diag",
+  group: "vm-tables6",
+  label: "A second trick: the diagonals",
+  blurb: "0 2 4 down one diagonal, 6 8 down the next; read row by row.",
+  heading: "The 6 times table — the diagonals",
+  instruction: () => "Here is a second trick for the sixes. Count in twos, stepping DOWN A DIAGONAL: 0, 2, 4. Go back to the " +
+    "top, beside the 0, and carry on down a second diagonal: 6, 8. Do that twice. Those are the UNITS. Then the TENS, " +
+    "written in front ROW BY ROW: 0, 0, then 1, 1, then 2 in the first set; 3, 3, then 4, 4, then 5 in the second. " +
+    "Read each set row by row: 0, 6, 12, 18, 24 and 30, 36, 42, 48, 54. And 60 stands by itself. On screen the boxes " +
+    "open one at a time, in that order.",
+  tv: "sixd",
+  cols: 1,
+  defaultCount: 1,
+  make: (r) => ({ n: r.int(2, 9) }),
+  render: () => `<p class="vm-tt__key"><span class="is-u">second boxes first: 0 2 4 down, then 6 8 down — in each set</span>` +
+    `<span class="is-t">then the first boxes, row by row: 0 0 · 1 1 · 2, then 3 3 · 4 4 · 5</span></p>` +
+    `<div class="vm-tt vm-tt--w" data-steps="listed">${dgFig(0)}${dgFig(1)}</div>` +
+    ask(`And by itself, to finish the table: 6 × 10 = ${box()}`),
+  worked: () => worked(ask("0 &nbsp; 6 &nbsp; / &nbsp; 2 &nbsp; 8 &nbsp; / &nbsp; 4 &nbsp; → &nbsp; " + strip("00", "06") + " " + strip("12", "18") + " " + strip("24")) +
+    say("Down the first diagonal: 0, 2, 4. Down the second: 6, 8. Row by row that reads 0, 6, 2, 8, 4. With the tens 0, 0, 1, 1, 2 in front: 0, 6, 12, 18, 24.")),
+  key: () => [...[0, 1].flatMap((w) => DG_WRITE.flatMap((u) => [want.num(Math.floor(dgValue(w, u) / 10)), want.num(u)])), want.num(60)],
+  answer: () => ["first set, row by row: 0, 6, 12, 18, 24; second set: 30, 36, 42, 48, 54; and 60"],
+};
+
 /* ═══ THE FIVES ═══════════════════════════════════════════════════════════*/
 
 const SECRET5 =
@@ -463,7 +511,7 @@ const fourW = {
   answer: () => ["first W, top then bottom: 0, 4, 8, 12, 16; second W: 20, 24, 28, 32, 36; and 40"],
 };
 
-export const TT_EXERCISES = [nineOne, nineAll, nineSticks, eightOne, eightAll, sevenOne, sevenAll, sixOne, sixAll, fiveOne, fiveAll, fourOne, fourAll, fourW];
+export const TT_EXERCISES = [nineOne, nineAll, nineSticks, eightOne, eightAll, sevenOne, sevenAll, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).

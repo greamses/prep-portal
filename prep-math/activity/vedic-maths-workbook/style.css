@@ -130,3 +130,5 @@
 .vm-t__art svg { display: block; width: 100%; height: auto; }
 /* on the TV: a counting stick, one to a tile, so each can be counted, coloured and taken away */
 .vm-t__stick { display: block; width: calc(var(--u) * 1.5); height: calc(var(--u) * 12); background: #e9cf9c; border: calc(var(--u) * 0.26) solid #2a2723; box-sizing: border-box; }
+/* the sixes' diagonals: five pairs of boxes standing where the numbers are written */
+.vm-tt--w .vm-dfig { position: relative; width: 62mm; height: 34mm; margin: 1mm 3mm; }
