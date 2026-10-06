@@ -9,10 +9,10 @@
                 the nines. 9 is 10 − 1: take away the stick at number n, and
                 the sticks to its LEFT are the tens of 9 × n, the sticks to
                 its RIGHT the units.
-     wSvg       a big W — the W METHOD for the sixes. 2 and 4 at its two
-                bottom points, 6, 8, 0 at its three top points; read ALONG the
-                W from the left and it says 6, 2, 8, 4, 0: the units of
-                6 × 1 to 6 × 5 (and of 6 × 6 to 6 × 10, over again).
+     wSvg       a big W — the W METHOD for the FOURS. Count in twos ALONG the
+                W: 0, 2, 4, 6, 8. Then go across the TOP (0, 4, 8) and then
+                the BOTTOM (2, 6): those are the units of 0, 4, 8, 12, 16 —
+                and they come round again for 20, 24, 28, 32, 36.
 
    The colours are the table's own two: blue for tens, orange for units.
    ========================================================================== */

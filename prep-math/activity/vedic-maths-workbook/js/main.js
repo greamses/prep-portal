@@ -60,6 +60,7 @@ mountBuilder({
     "vm-tables7": ICON.vmTables8,
     "vm-tables6": ICON.vmTables8,
     "vm-tables5": ICON.vmTables8,
+    "vm-tables4": ICON.vmTables8,
     "vm-trach": ICON.vmTrach,
     "vm-tr-even": ICON.vmTrEven,
     "vm-tr-odd": ICON.vmTrOdd,

@@ -530,21 +530,39 @@ function sixesSteps() {
       (S) => { T.only(S, [0, 5]); S.pulse("t0", 0.6); S.pulse("u0", 0.6); S.pulse("t5", 1.6); S.pulse("u5", 1.6); }),
     T.step("And for just one of them, remember that 6 is 5 and 1. For 6 times 7: five sevens are 35, and one more seven makes 42.",
       (S) => { T.only(S, [6]); S.pulse("s6", 0.4); S.pulse("t6", 3); S.pulse("u6", 3); }),
-    /* the W method */
-    T.step("Here is another way to remember the units: the W. Draw a big W.",
-      (S) => { T.only(S, [0, 1, 2, 3, 4]); S.pop("w0", 0.4); }),
-    T.step("Write 2 and 4 at its two bottom points. Then 6, 8 and 0 at its three top points. 2, 4, 6, 8, 0.",
-      (S) => { S.hide("w0", 0.9); S.pop("w1", 1); S.hide("w1", 4.6); S.pop("w2", 4.7); }),
-    T.step("Now read along the W, from the left. 6, 2, 8, 4, 0. Those are the units of the first five sums, and the W starts again under the line.",
-      (S) => { S.hide("w2"); S.pop("w3", 0.2); for (let i = 0; i < 5; i++) S.pulse(`u${i}`, 2.2 + i * 0.6); }),
   ];
+  return { build: T.build, steps };
+}
+
+/* ── THE FOUR TIMES TABLE: the W ─────────────────────────────────────────
+   Count in twos ALONG a W (0, 2, 4, 6, 8); go across its top, then its
+   bottom (0, 4, 8, 2, 6): the units of 0, 4, 8, 12, 16, and round again. */
+function foursSteps() {
+  const T = tableStage(4, [4]);
+  const ALONG = ["0", "2", "4", "6", "8"];
   const build = (stage) => {
     T.build(stage);
-    T.art(stage, "w0", wSvg());
-    T.art(stage, "w1", wSvg({ labels: ["", "2", "", "4", ""] }));
-    T.art(stage, "w2", wSvg({ labels: ["6", "2", "8", "4", "0"] }));
-    T.art(stage, "w3", wSvg({ labels: ["6", "2", "8", "4", "0"], trace: true }));
+    /* the W as it stands after each number is written on it: w0 is bare, w5 is full */
+    for (let k = 0; k <= 5; k++) T.art(stage, `w${k}`, wSvg({ labels: ALONG.map((d, i) => (i < k ? d : "")) }));
   };
+  const w = (S, k) => { for (let j = 0; j <= 5; j++) S.put(`w${j}`, { on: j === k ? 1 : 0 }); };
+  const steps = [
+    T.step("Here is the secret of the four times table. First, write the ten sums down the page.", (S) => { w(S, -1); T.sums(S); }),
+    T.step("Now draw a big W.", (S) => { w(S, -1); S.pop("w0", 0.6); }),
+    T.step("Remember how to count in twos? Write that along the W. 0, 2, 4, 6, 8.",
+      (S) => { w(S, 0); for (let k = 1; k <= 5; k++) { S.dim(`w${k - 1}`, 0, 3.4 + k * 0.6); S.dim(`w${k}`, 1, 3.4 + k * 0.6); } }),
+    T.step("Now go across the top of the W. 0, 4, 8. The 0 is where we start. 4 is the units of 4 times 1, and 8 is the units of 4 times 2.",
+      (S) => { w(S, 5); S.pop("u0", 5.4); S.pop("u1", 8.2); }),
+    T.step("Then go across the bottom. 2, 6. Those are the units of 4 times 3 and 4 times 4.",
+      (S) => { w(S, 5); S.pop("u2", 1.6); S.pop("u3", 2.4); }),
+    T.step("Keep counting up, and the W comes round again. 0, 4, 8, 2, 6, and 0.",
+      (S) => { w(S, 5); S.pop("k4", 0.4); [4, 5, 6, 7, 8, 9].forEach((i, k) => S.pop(`u${i}`, 2.8 + k * 0.55)); }),
+    T.step("Now the tens. They go up by one each time the units get smaller. 0, 0, 1, 1, 2.",
+      (S) => { w(S, 5); for (let i = 0; i < 5; i++) S.pop(`t${i}`, 4.4 + i * 0.6); }),
+    T.step("Below the line, start again from the same 2. 2, 2, 3, 3, 4.",
+      (S) => { w(S, 5); S.pulse("t4", 0.6); for (let i = 5; i < 10; i++) S.pop(`t${i}`, 2.6 + (i - 5) * 0.6); }),
+    T.step("Read across. 4, 8, 12, 16, 20, 24, 28, 32, 36, 40. That is the whole four times table.", (S) => { w(S, 5); T.read(S); }),
+  ];
   return { build, steps };
 }
 
@@ -581,6 +599,7 @@ async function explain(strip) {
     : data.scene.kind === "sevens" ? sevensSteps()
     : data.scene.kind === "sixes" ? sixesSteps()
     : data.scene.kind === "fives" ? fivesSteps()
+    : data.scene.kind === "fours" ? foursSteps()
     : data.scene.kind === "trach" && data.scene.steps.length ? trachSteps(data)
     : data.scene.kind === "strip" && data.scene.expr.length && data.scene.expr.length === data.scene.res.length ? stripSteps(data)
       : textSteps(data);
