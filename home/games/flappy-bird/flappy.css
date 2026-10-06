@@ -217,7 +217,7 @@
    the right-hand side of the sky instead of the foot of it, two by two (the
    digits three by three), and the bird has the screen's whole height. */
 @media (orientation: landscape) and (max-height: 520px) {
-  .flappy-top { right: 13.5rem; padding-top: calc(0.8rem + env(safe-area-inset-top, 0px)); padding-bottom: 0.35rem; }
+  .flappy-top { padding-top: calc(0.8rem + env(safe-area-inset-top, 0px)); padding-bottom: 0.35rem; }
   .flappy-bottom {
     top: 0;
     left: auto;
