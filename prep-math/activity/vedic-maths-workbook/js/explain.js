@@ -35,6 +35,7 @@
    Drills papers have no strip: a drill is against the clock.
    ========================================================================== */
 
+import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
 import { wSvg, WHEEL, spinnerDisc, spinnerArrow } from "./tableart.js";
 
 /* Tricks with a full animated lesson in Learning with PrepBot. */
@@ -98,11 +99,13 @@ export function explainStrip(ex, opts) {
   /* a section may name a scene of its own (`tv`): then that is what the TV shows */
   const scene = ex.tv ? { kind: ex.tv } : sceneOf(ex.worked ? ex.worked(opts) : "");
   const lesson = LESSONS[ex.id];
-  return `<div class="vm-video has-video" data-explain="${esc(JSON.stringify({ rule, scene }))}" data-title="${esc(ex.label)}" tabindex="0">` +
-    `<span class="vm-video__bot">${FACE}</span>` +
-    `<span class="vm-video__say"><b>PrepBot explains</b><em>${esc(ex.label)}</em></span>` +
+  /* No strip and no words: PrepBot itself, and a play button. What it will explain is its tooltip. */
+  return `<div class="vm-video vm-video--icon has-video" data-explain="${esc(JSON.stringify({ rule, scene }))}" data-title="${esc(ex.label)}" ` +
+    `tabindex="0" aria-label="Watch PrepBot explain: ${esc(ex.label)}" title="Watch PrepBot explain: ${esc(ex.label)}">` +
+    `<span class="vm-video__bot">${ICON_PREPBOT}</span>` +
+    `<span class="vm-video__go">${PLAY}</span>` +
     (lesson ? `<a class="vm-video__more" href="${lesson}" target="_blank" rel="noopener">The full lesson</a>` : "") +
-    `<span class="vm-video__go">${PLAY}<i>Watch</i></span></div>`;
+    `</div>`;
 }
 
 /* ── number tiles on the TV's screen ───────────────────────────────────────

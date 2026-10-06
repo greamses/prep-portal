@@ -32,17 +32,18 @@
    then plays its own change, so going back or skipping lands exactly.
    ========================================================================== */
 
-import { tile, acts, FACE, PLAY } from "/prep-math/activity/vedic-maths-workbook/js/explain.js";
+import { tile, acts, PLAY } from "/prep-math/activity/vedic-maths-workbook/js/explain.js";
+import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
 import { divWork } from "./divwork.js";
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 
-/** The strip that opens a section: PrepBot, the method's name, and "Watch". */
+/** What opens a section: PrepBot itself and a play button — no strip, no words (the method's name is the tooltip). */
 export const videoStrip = (mode, label) =>
-  `<div class="vm-video has-video" data-divvideo="${mode}" data-title="${esc(label)}" tabindex="0">`
-  + `<span class="vm-video__bot">${FACE}</span>`
-  + `<span class="vm-video__say"><b>PrepBot explains</b><em>${esc(label)}, with counters</em></span>`
-  + `<span class="vm-video__go">${PLAY}<i>Watch</i></span></div>`;
+  `<div class="vm-video vm-video--icon has-video" data-divvideo="${mode}" data-title="${esc(label)}" tabindex="0" `
+  + `aria-label="Watch PrepBot explain: ${esc(label)}" title="Watch PrepBot explain: ${esc(label)}">`
+  + `<span class="vm-video__bot">${ICON_PREPBOT}</span>`
+  + `<span class="vm-video__go">${PLAY}</span></div>`;
 
 const FILL = { 100: "#8fd39a", 10: "#6fb7e8", 1: "#f4c95d" };
 const EDGE = { 100: "#3f8f4f", 10: "#2a6ca8", 1: "#c9922f" };

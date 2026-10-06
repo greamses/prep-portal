@@ -151,3 +151,15 @@
 .vm-wheel__arrow { transform-box: view-box; transform-origin: 50% 50%; transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15); }
 .vm-wheel__hint { margin: 0 0 1.5mm; font-size: 8pt; color: #6b645a; }
 @media print { .vm-wheel__hint { display: none; } .vm-wheel__arrow { transition: none; } }
+
+/* PrepBot and a play button, with no strip behind them: what opens a section's video */
+.vm-video.vm-video--icon { display: flex; align-items: flex-end; gap: 1.6mm; width: fit-content; margin: 1.5mm 0 2.5mm; padding: 0; border: 0; background: none; }
+.vm-video.vm-video--icon:hover, .vm-video.vm-video--icon:focus-visible, .vm-video.vm-video--icon.is-playing { background: none; }
+.vm-video--icon .vm-video__bot { width: 15mm; height: 15mm; transition: transform 0.18s ease; }
+.vm-video--icon .vm-video__go { margin-bottom: 0.6mm; }
+.vm-video--icon .vm-video__go svg { width: 8.5mm; height: 8.5mm; transition: transform 0.18s ease; }
+.vm-video--icon:hover .vm-video__bot, .vm-video--icon:focus-visible .vm-video__bot { transform: translateY(-0.8mm) rotate(-4deg); }
+.vm-video--icon:hover .vm-video__go svg, .vm-video--icon:focus-visible .vm-video__go svg, .vm-video--icon.is-playing .vm-video__go svg { transform: scale(1.12); }
+.vm-video--icon:focus-visible { outline: 0.5mm solid #f4c95d; outline-offset: 1.2mm; }
+.vm-video--icon .vm-video__more { align-self: center; margin-left: 2mm; }
+@media print { .vm-video.vm-video--icon { display: none !important; } }
