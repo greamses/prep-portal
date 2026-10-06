@@ -81,6 +81,7 @@ export class PrepbotTeacher {
 
     this._wireMenu(menu);
     this._wireAvatarToggle();
+    this._wireKeys(menu);
   }
 
   /* ── audio ─────────────────────────────────────────────────────────────── */
@@ -520,11 +521,11 @@ export class PrepbotTeacher {
     }
     if (voice) {
       voice.innerHTML = ICON_TALK_MODE;
-      voice.title = "Switch to talking voice";
+      voice.title = "Switch to talking voice (V)";
       voice.addEventListener("click", () => {
         this.voiceMode = this.voiceMode === "beep" ? "talk" : "beep";
         voice.innerHTML = this.voiceMode === "beep" ? ICON_TALK_MODE : ICON_BEEP_MODE;
-        voice.title = this.voiceMode === "beep" ? "Switch to talking voice" : "Switch to beeps";
+        voice.title = `${this.voiceMode === "beep" ? "Switch to talking voice" : "Switch to beeps"} (V)`;
         /* the page says the line again in the new voice, if it knows how; else the old one is cut short */
         if (this.onVoiceChange) this.onVoiceChange(); else if (window.speechSynthesis) speechSynthesis.cancel();
       });
@@ -533,7 +534,7 @@ export class PrepbotTeacher {
       sleep.innerHTML = ICON_SLEEP;
       sleep.addEventListener("click", () => {
         this.sleep(!this.asleep);
-        sleep.title = this.asleep ? "Wake" : "Sleep";
+        sleep.title = `${this.asleep ? "Wake" : "Sleep"} (S)`;
         sleep.innerHTML = this.asleep ? ICON_WAKE : ICON_SLEEP;
       });
     }
@@ -541,6 +542,31 @@ export class PrepbotTeacher {
       poke.innerHTML = ICON_WIGGLE;
       poke.addEventListener("click", () => this.poke());
     }
+  }
+
+  /* ── keyboard shortcuts for the menu ──────────────────────────────────────
+     A ask · V voice · S sleep / wake · W wiggle. Each presses the menu's own
+     button, so a key does exactly what a tap does. Only while this PrepBot is
+     on the screen, never while something is being typed, and never with Ctrl,
+     Alt or the Cmd key held (those belong to the browser). */
+  _wireKeys({ ask, voice, sleep, poke } = {}) {
+    const KEYS = { a: ask, v: voice, s: sleep, w: poke };
+    const NAMES = { a: "A", v: "V", s: "S", w: "W" };
+    Object.entries(KEYS).forEach(([k, b]) => {
+      if (!b) return;
+      if (b.title && !/\([A-Z]\)$/.test(b.title)) b.title = `${b.title} (${NAMES[k]})`;
+      b.setAttribute("aria-keyshortcuts", NAMES[k]);
+    });
+    this._onKey = (e) => {
+      if (e.ctrlKey || e.altKey || e.metaKey || e.repeat) return;
+      const b = KEYS[(e.key || "").toLowerCase()];
+      if (!b || !this.root?.isConnected || !this.root.offsetParent) return;
+      const t = e.target;
+      if (t?.closest?.("input, textarea, select, [contenteditable=''], [contenteditable='true']")) return;
+      e.preventDefault();
+      b.click();
+    };
+    document.addEventListener("keydown", this._onKey);
   }
 
   // Interacting with PrepBot (hover, or tap on touch) reveals its icon menu —
@@ -560,6 +586,7 @@ export class PrepbotTeacher {
   }
 
   destroy() {
+    if (this._onKey) document.removeEventListener("keydown", this._onKey);
     this.stop();
     this.stopIdle();
     this._stopBody();

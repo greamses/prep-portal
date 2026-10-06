@@ -64,12 +64,12 @@ export async function openTv({ title = "", build = () => {}, steps = [] } = {}) 
     `</div>` +
     `<div class="mm-tv-panel"><span class="mm-tv-light" aria-hidden="true"></span><span class="mm-tv-title">${title}</span>` +
     `<div class="mm-tv-btns">` +
-    `<button class="mm-tv-btn" data-tv="prev" type="button" aria-label="Previous step">${ICON_PREV}</button>` +
-    `<button class="mm-tv-btn mm-tv-btn--play" data-tv="play" type="button" aria-label="Play or pause"><span>${ICON_PAUSE}</span></button>` +
-    `<button class="mm-tv-btn" data-tv="next" type="button" aria-label="Next step">${ICON_NEXT}</button>` +
+    `<button class="mm-tv-btn" data-tv="prev" type="button" aria-label="Previous step" title="Previous step (Left arrow)" aria-keyshortcuts="ArrowLeft">${ICON_PREV}</button>` +
+    `<button class="mm-tv-btn mm-tv-btn--play" data-tv="play" type="button" aria-label="Play or pause" title="Play or pause (Space)" aria-keyshortcuts="Space"><span>${ICON_PAUSE}</span></button>` +
+    `<button class="mm-tv-btn" data-tv="next" type="button" aria-label="Next step" title="Next step (Right arrow)" aria-keyshortcuts="ArrowRight">${ICON_NEXT}</button>` +
     `</div>` +
-    `<button class="mm-tv-btn" data-tv="full" type="button" aria-label="Fullscreen">${ICON_FULLSCREEN}</button>` +
-    `<button class="mm-tv-btn" data-tv="close" type="button" aria-label="Turn the TV off">${ICON_CLOSE}</button>` +
+    `<button class="mm-tv-btn" data-tv="full" type="button" aria-label="Fullscreen" title="Full screen (F)" aria-keyshortcuts="F">${ICON_FULLSCREEN}</button>` +
+    `<button class="mm-tv-btn" data-tv="close" type="button" aria-label="Turn the TV off" title="Turn the TV off (Esc)" aria-keyshortcuts="Escape">${ICON_CLOSE}</button>` +
     `</div></div>` +
     `<div class="mm-tv-stand" aria-hidden="true"><div class="mm-tv-stand-neck"></div><div class="mm-tv-stand-base"></div></div>` +
     `</div>`;
@@ -168,6 +168,7 @@ export async function openTv({ title = "", build = () => {}, steps = [] } = {}) 
     else if (e.key === "ArrowRight") { playing = false; go(index + 1); }
     else if (e.key === "ArrowLeft") { playing = false; go(index - 1); }
     else if (e.key === " " && !e.target.closest?.("input, textarea, button")) { e.preventDefault(); toggle(); }
+    else if ((e.key === "f" || e.key === "F") && !e.ctrlKey && !e.metaKey && !e.altKey && !e.target.closest?.("input, textarea")) { e.preventDefault(); q("full").click(); }
   };
   function toggle() {
     playing = !playing;
