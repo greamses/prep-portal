@@ -44,6 +44,7 @@ import { PLACE_GROUPS, PLACE_EXERCISES, placesFor } from "./ex-place.js";
 import { WORD_GROUPS, WORD_EXERCISES } from "./ex-words.js";
 import { SUM_GROUPS, SUM_EXERCISES } from "./ex-sums.js";
 import { REM_GROUPS, REM_EXERCISES } from "./ex-remainder.js";
+import { PVDIV_EXERCISES } from "./ex-pvdiv.js";
 import { FRAC_GROUPS, FRAC_EXERCISES } from "./ex-fractions.js";
 import { TIME_GROUPS, TIME_EXERCISES } from "./ex-time.js";
 import { MUL_GROUPS, MUL_EXERCISES } from "./ex-multiply.js";
@@ -88,6 +89,8 @@ export const EXERCISES = [
   ...WORD_EXERCISES,
   ...tenOnly(SUM_EXERCISES),
   ...tenOnly(REM_EXERCISES),
+  /* place value division and box division: their groups stand inside REM_GROUPS */
+  ...tenOnly(PVDIV_EXERCISES),
   ...tenOnly(FRAC_EXERCISES),
   ...tenOnly(TIME_EXERCISES),
   ...tenOnly(MUL_EXERCISES),

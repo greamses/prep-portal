@@ -1440,3 +1440,30 @@ thead .pv-chart__side {
 .nb-sum .wb-answer { min-width: 8mm; width: 8mm; }
 .nb-table .wb-answer { min-width: 14mm; width: 14mm; }
 .nb-wide .wb-answer { min-width: 26mm; }
+
+/* ── place value division and box division: the INPUT GRID (js/ex-pvdiv.js) ──
+   A column for every figure of the number and a row for every part of the
+   rule. The names of the rows stand down the left. */
+.pvd { margin: 2mm 0 3mm; width: fit-content; max-width: 100%; }
+.pvd-grid { display: grid; grid-template-columns: 30mm repeat(var(--pvd-cols, 3), 24mm); border: 0.4mm solid #2a2723; background: #fffdf8; }
+.pvd-grid > *, .pvd-quot > *, .pvd-boxrow > * { border-right: 0.25mm solid #b8b1a4; border-bottom: 0.25mm solid #b8b1a4; }
+.pvd-quot, .pvd-boxrow { display: contents; }
+.pvd-name { display: flex; align-items: center; padding: 1mm 1.6mm; font-family: var(--font-mono), monospace; font-size: 8pt; font-weight: 700; color: #2a2723; background: #f4f0e8; }
+.pvd-head { padding: 1mm; text-align: center; font-family: var(--font-mono), monospace; font-size: 8pt; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #14130f; background: #bfe3ff; }
+/* the same colours as the counters and the counting grid: hundreds green, tens blue, ones yellow */
+.pvd-head[data-kind="100"] { background: #c8f0c0; }
+.pvd-head[data-kind="10"] { background: #bfe3ff; }
+.pvd-head[data-kind="1"] { background: #fff3a8; }
+.pvd-cell { display: flex; align-items: center; justify-content: center; min-height: 9.5mm; padding: 0.8mm; font-family: var(--font-mono), monospace; font-size: 12pt; font-weight: 700; color: #14130f; }
+.pvd-cell--given { background: #fff9dc; }
+.pvd-cell--done { color: #2a6ca8; }
+.pvd-cell--none { background: repeating-linear-gradient(135deg, #f4f0e8 0 1.2mm, #fffdf8 1.2mm 2.4mm); }
+.wb-sheet .pvd-cell .wb-answer { min-width: 0; width: 100%; height: 7.6mm; margin: 0; }
+.pvd-cell .wb-answer input { text-align: center; }
+/* the box: the answer stands on top, and the number sits inside the box with the divisor at its door */
+.pvd--digit .pvd-quot > .pvd-cell { background: #eef7ff; border-bottom: 0.7mm solid #2a2723; }
+.pvd--digit .pvd-quot > .pvd-name { border-bottom: 0.7mm solid #2a2723; }
+.pvd--digit .pvd-boxrow > .pvd-name { justify-content: flex-end; border-right: 0.7mm solid #2a2723; background: #fffdf8; }
+.pvd-by { font-size: 14pt; padding-right: 1mm; }
+.pvd-end { margin: 2.5mm 0 0; }
+.wb-sheet .pvd-end .wb-answer { min-width: 16mm; }

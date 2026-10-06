@@ -101,6 +101,8 @@ mountBuilder({
     group: ICON.ring,
     write: ICON.sentence,
     bridge: ICON.bar,
+    "pv-div": ICON.bar,
+    "box-div": ICON.bar,
     bars: ICON.frac,
     "frac-what": ICON.pie,
     "frac-add": ICON.frac,

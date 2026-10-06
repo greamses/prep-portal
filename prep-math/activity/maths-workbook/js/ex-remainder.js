@@ -49,6 +49,9 @@ export const REM_GROUPS = [
   { id: "group", chapter: "Chapter 4 · Dividing and remainders", label: "Group them", blurb: "A pile of things and a pencil. Ring the groups; count what is over." },
   { id: "write", label: "Write it down", blurb: "The same picture as a sentence, with every part named." },
   { id: "bridge", label: "What is left over", blurb: "The hinge: the remainder becomes a fraction of one more group." },
+  /* dividing by one figure with counters and a chart: ex-pvdiv.js */
+  { id: "pv-div", label: "Place value division", blurb: "Counters on a chart: share each place, break what is left, and write the VALUES." },
+  { id: "box-div", label: "Box division", blurb: "The same sharing, with only the DIGITS written and the answer on top of the box." },
   { id: "short", label: "Short division", blurb: "The bus stop: divide one figure at a time and carry what is left over into the next." },
   { id: "long", label: "Long division", blurb: "The working written out: how many times it goes, multiply back, take away, bring the next one down." },
   { id: "flag", label: "Flag short division", blurb: "By the first figure of the divisor, with the rest taken off crosswise — one line a step, the working in your head." },
