@@ -105,6 +105,10 @@ console.log(typeof age);`, file: "types.js", out: 1 }), css: WB_CSS };
     const { LAB_SCENES } = await import("/virtual-lab/js/scenes.js");
     return { svg: LAB_SCENES.chemistry() };
   },
+  tubes: async () => {
+    const { LAB_SCENES } = await import("/virtual-lab/js/scenes.js");
+    return { svg: LAB_SCENES.chemistry2d() };
+  },
   bench: async () => {
     const { LAB_SCENES } = await import("/virtual-lab/js/scenes.js");
     return { svg: LAB_SCENES.biology() };
@@ -157,6 +161,7 @@ export const BANDS = [
     tag: "Science",
     cards: [
       { art: "lab", title: "Virtual Chemistry Lab", tag: "Chemistry", line: "Mix reagents, run a titration, watch it react on a real bench.", href: "/virtual-lab/chemistry/index.html" },
+      { art: "tubes", title: "Chemistry Bench", tag: "Reactions", line: "Test tubes, a shelf of reagents, and a notebook of what you saw.", href: "/virtual-lab/chemistry-2d/index.html" },
       { art: "bench", title: "Physics & Biology benches", tag: "Physics", line: "Pendulums, springs, cells and slides — being built now.", href: "/virtual-lab/index.html" },
       { art: "blogs", title: "Science & study blogs", tag: "Reading", line: "Animals, plants, the human body, and how to revise them.", href: "/blogs/index.html" },
     ],

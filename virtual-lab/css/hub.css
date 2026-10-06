@@ -148,6 +148,7 @@ body {
 
 /* Per-lab tile color (drives scene tint, pill borders, arrow color) */
 .lab-card--chemistry { --tile: var(--accent-secondary); }
+.lab-card--bench     { --tile: var(--accent-purple); }
 .lab-card--physics   { --tile: var(--accent-warning); }
 .lab-card--biology   { --tile: var(--accent-success); }
 

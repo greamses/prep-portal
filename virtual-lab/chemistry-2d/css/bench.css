@@ -1,0 +1,313 @@
+/* ============================================================================
+   CHEMISTRY BENCH — the page's own sheet
+   ----------------------------------------------------------------------------
+   Paper, notes and receipts come from components.css; every colour here is a
+   theme.css token. The only colours that are not tokens are the chemicals'
+   own, and those are set by draw.js from chem.js — a copper(II) solution is
+   blue in the dark theme too.
+   ========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--app-bg);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  min-height: 100vh;
+}
+[hidden] { display: none !important; }
+/* theme.css puts overflow-x: hidden on html AND body. On body that makes body
+   its own scroll box, and nothing can then be sticky to the window — the rack
+   could not stay pinned on a phone. html keeps its clip, so the page still
+   cannot scroll sideways; only body lets go. */
+html body { overflow-x: visible; }
+
+.cl-wrap {
+  font-family: var(--font-mono);
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.1rem clamp(0.75rem, 3vw, 2rem) 4rem;
+}
+
+.cl-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.3rem 0.9rem; margin-bottom: 1.4rem; }
+.cl-crumb {
+  font-size: var(--text-mono-xs, 0.68rem);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-bottom: 2px solid var(--accent-secondary);
+}
+.cl-crumb:hover { color: var(--ink); }
+.cl-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--weight-black, 900);
+  font-size: clamp(1.3rem, 3.4vw, 1.9rem);
+  letter-spacing: var(--tracking-tight, -0.02em);
+  line-height: var(--leading-tight, 1.05);
+}
+
+/* one column on a phone; the rack on the left and the notebook on the right from 900px */
+.cl-stage { display: flex; flex-direction: column; gap: 1.3rem; }
+.cl-left, .cl-right { display: flex; flex-direction: column; gap: 1.3rem; min-width: 0; }
+@media (min-width: 900px) {
+  .cl-stage { flex-direction: row; align-items: flex-start; gap: 1.8rem; }
+  .cl-left { flex: 1.3; }
+  .cl-right { flex: 1; }
+}
+/* On a phone the two columns dissolve into one run — rack, tests, shelf,
+   notebook, things to try — and the rack stays pinned under the nav, so the
+   tube is still in sight while a thumb is down on the shelf. */
+@media (max-width: 899px) {
+  .cl-left, .cl-right { display: contents; }
+  #cl-say { order: 1; }
+  #cl-bench-box { order: 2; position: sticky; top: 76px; z-index: 5; background: var(--app-bg); box-shadow: 0 8px 10px -8px rgba(var(--shadow-color), 0.35); }
+  #cl-holds { order: 3; }
+  .cl-kit { order: 4; }
+  .cl-shelfbox { order: 5; }
+  #cl-notebook { order: 6; }
+  .cl-trybox { order: 7; }
+}
+
+/* ── the note that says what was just seen ─────────────────────────────── */
+.cl-left #cl-say {
+  display: block;
+  align-self: center;
+  width: min(100%, 640px);
+  padding: 0.75rem 1.2rem 0.85rem;
+  text-align: center;
+  --pp-note-tilt: -0.6deg;
+}
+.cl-say__tag {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-bottom: 3px;
+}
+#cl-say-text { margin: 0; font-size: 0.95rem; line-height: 1.4; }
+#cl-say.is-no { --pp-note-bg: #ffd9d6; }
+@media (prefers-reduced-motion: no-preference) {
+  #cl-say.is-new #cl-say-text, #cl-say.is-no #cl-say-text { animation: cl-say 0.35s ease-out; }
+}
+@keyframes cl-say { from { opacity: 0; transform: translateY(4px); } }
+
+/* ── the rack ──────────────────────────────────────────────────────────── */
+#cl-bench-box { width: 100%; max-width: 640px; align-self: center; }
+#cl-bench { display: block; width: 100%; height: auto; overflow: visible; user-select: none; -webkit-user-select: none; }
+
+.cl-shadow { fill: var(--ink); opacity: 0.07; }
+.cl-rack { fill: var(--accent-warning); }
+.cl-rack--post { opacity: 0.6; }
+.cl-rack--bar { opacity: 0.45; }
+.cl-rack--base { opacity: 0.9; }
+
+.cl-tube { cursor: pointer; outline: none; }
+.cl-hit { fill: transparent; }
+.cl-glass-back { fill: var(--surface-primary); opacity: 0.55; }
+.cl-glass { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linejoin: round; }
+.cl-rim { fill: var(--surface-primary); stroke: var(--ink); stroke-width: 1.4; }
+.cl-shine { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; opacity: 0.45; }
+
+.cl-liquid, .cl-sediment, .cl-cloud { transition: transform 0.6s ease, fill 0.7s ease; }
+.cl-cloud { opacity: 0; }
+.cl-tube:not(.has-ppt) .cl-sediment { opacity: 0; }
+.cl-sediment.is-pale { stroke: var(--text-tertiary); stroke-width: 0.8; }
+
+.cl-pick { fill: var(--accent-danger); opacity: 0; transition: opacity 0.15s; }
+.cl-tube.is-sel .cl-pick { opacity: 1; }
+.cl-letter-bg { fill: var(--surface-primary); stroke: var(--text-tertiary); stroke-width: 1; transition: fill 0.15s; }
+.cl-letter { font-family: var(--font-display); font-weight: 700; font-size: 12px; fill: var(--ink); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.cl-tube.is-sel .cl-letter-bg { fill: var(--accent-primary); stroke: var(--ink); stroke-width: 1.6; }
+.cl-tube.is-sel .cl-letter { fill: var(--text-on-accent); }
+.cl-tube.is-sel .cl-glass { stroke-width: 2.2; }
+.cl-tube.is-over .cl-letter-bg { fill: var(--accent-success); }
+.cl-tube.is-over .cl-glass { stroke: var(--accent-success); stroke-width: 2.6; }
+.cl-tube:focus-visible .cl-letter-bg { stroke: var(--accent-secondary); stroke-width: 3; }
+.cl-tube:hover .cl-glass-back { opacity: 0.8; }
+
+.cl-tube__body { transition: transform 0.35s ease; }
+.cl-tube.is-heating .cl-tube__body { transform: translateY(-34px); }
+.cl-tube.is-heating .cl-pick { opacity: 0; }
+
+.cl-wisps { opacity: 0; }
+.cl-wisps path { fill: none; stroke: var(--text-tertiary); stroke-width: 2; stroke-linecap: round; }
+.cl-tube.has-gas .cl-wisps { opacity: 0.6; }
+.cl-bubble { fill: #fff; fill-opacity: 0.75; stroke: var(--text-tertiary); stroke-width: 0.5; opacity: 0; }
+.cl-fx { pointer-events: none; }
+.cl-stream, .cl-dropin, .cl-splint__after, .cl-paper { transform-box: fill-box; }
+.cl-paper { stroke: var(--ink); stroke-width: 0.8; }
+.cl-paper--from-red { fill: var(--accent-danger); }
+.cl-paper--from-blue { fill: var(--accent-secondary); }
+.cl-splint__after { opacity: 0; transform-origin: center; }
+.cl-splint--pop .cl-splint__after, .cl-splint--out .cl-splint__after, .cl-splint--bright .cl-splint__after, .cl-splint--relight .cl-splint__after { opacity: 1; }
+.cl-splint--pop .cl-splint__tip, .cl-splint--out .cl-splint__tip, .cl-splint--bright .cl-splint__tip, .cl-splint--relight .cl-splint__tip { opacity: 0; }
+.cl-paper--from-red.cl-paper--to-blue { fill: var(--accent-secondary); }
+.cl-paper--from-blue.cl-paper--to-red { fill: var(--accent-danger); }
+
+/* The films. Without motion the end of each film is simply shown (above). */
+@media (prefers-reduced-motion: no-preference) {
+  .cl-cloud.is-settling { animation: cl-cloud 2.6s ease-out; }
+  .cl-sediment.is-settling { animation: cl-settle 2.6s ease-in; }
+  .cl-bubble { animation: cl-rise 1.5s linear 2 both; }
+  .cl-tube.has-gas .cl-wisps path { animation: cl-wisp 1.8s ease-in-out infinite; }
+  .cl-tube.has-gas .cl-wisps path:nth-child(2) { animation-delay: 0.5s; }
+  .cl-tube.has-gas .cl-wisps path:nth-child(3) { animation-delay: 1s; }
+  .cl-flame { animation: cl-flicker 0.22s ease-in-out infinite alternate; }
+  .cl-stream { transform-origin: top; animation: cl-stream 0.7s ease-in both; }
+  .cl-dropin { animation: cl-dropin 0.7s ease-in both; }
+  .cl-splint { animation: cl-splint-in 0.4s ease-out both; }
+  .cl-splint--pop .cl-splint__tip, .cl-splint--out .cl-splint__tip, .cl-splint--bright .cl-splint__tip, .cl-splint--relight .cl-splint__tip { animation: cl-fade-out 0.2s 0.8s both; opacity: 1; }
+  .cl-splint--out .cl-splint__after, .cl-splint--bright .cl-splint__after, .cl-splint--relight .cl-splint__after { animation: cl-fade-in 0.3s 0.85s both; }
+  .cl-splint--pop .cl-splint__after { animation: cl-pop 0.6s 0.8s both; }
+  .cl-paper { animation: cl-paper-in 0.4s ease-out both; }
+  .cl-paper--from-red.cl-paper--to-blue { animation: cl-paper-in 0.4s ease-out both, cl-to-blue 0.8s 0.7s both; }
+  .cl-paper--from-blue.cl-paper--to-red { animation: cl-paper-in 0.4s ease-out both, cl-to-red 0.8s 0.7s both; }
+}
+@keyframes cl-cloud { 0% { opacity: 0.9; } 100% { opacity: 0; } }
+@keyframes cl-settle { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes cl-rise { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(var(--rise, -80px)); } }
+@keyframes cl-wisp { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10px); } }
+@keyframes cl-flicker { from { opacity: 0.82; } to { opacity: 1; } }
+@keyframes cl-stream { 0% { transform: scaleY(0); opacity: 1; } 55% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+@keyframes cl-dropin { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(210px); opacity: 0; } }
+@keyframes cl-splint-in { from { transform: translate(34px, -26px); opacity: 0; } }
+@keyframes cl-fade-out { to { opacity: 0; } }
+@keyframes cl-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cl-pop { 0% { opacity: 0; transform: scale(0.3); } 35% { opacity: 1; transform: scale(1.15); } 100% { opacity: 0; transform: scale(1.5); } }
+@keyframes cl-paper-in { from { transform: translateY(-22px); opacity: 0; } }
+@keyframes cl-to-blue { from { fill: var(--accent-danger); } to { fill: var(--accent-secondary); } }
+@keyframes cl-to-red { from { fill: var(--accent-secondary); } to { fill: var(--accent-danger); } }
+
+#cl-holds {
+  margin: -0.6rem 0 0;
+  text-align: center;
+  font-size: var(--text-mono-sm, 0.76rem);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  min-height: 1.5em;
+}
+#cl-holds b { color: var(--ink); }
+.cl-holds__vol { white-space: nowrap; color: var(--text-tertiary); }
+
+/* ── receipts ──────────────────────────────────────────────────────────── */
+.cl-card.pp-receipt { display: block; width: 100%; }
+.cl-card .pp-receipt__paper { padding: 1.3rem 1.4rem 1.4rem; }
+.cl-card__head { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem 0.7rem; margin-bottom: 0.8rem; }
+.cl-card__head .cl-h2 { margin-right: auto; }
+.cl-h2 {
+  margin: 0 0 0.7rem;
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold, 700);
+  font-size: 0.95rem;
+  letter-spacing: var(--tracking-tight, -0.02em);
+}
+.cl-card__head .cl-h2 { margin-bottom: 0; }
+.cl-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); }
+.cl-note { font-size: 0.74rem; padding: 0.3rem 0.7rem 0.36rem; }
+
+/* the tools: a rail, not a pad of notes — plain tiles (see TOOLS in build-buttons-css.mjs) */
+.cl-tools { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.cl-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.65rem 0.4rem 0.5rem;
+  font: 600 0.7rem var(--font-mono);
+  color: var(--ink);
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  border-radius: 0;
+  cursor: pointer;
+  transition: transform var(--transition-base, 0.15s), box-shadow var(--transition-base, 0.15s);
+}
+.cl-tool:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.cl-tool:active { transform: translateY(0); }
+.cl-tool:focus-visible, .cl-bottle:focus-visible { outline: 2px solid var(--accent-secondary); outline-offset: 2px; }
+.cl-tool svg { flex-shrink: 0; }
+.cl-measure { display: flex; align-items: center; flex-wrap: wrap; gap: 0.7rem 0.8rem; margin-top: 1.1rem; }
+.cl-gap { flex: 1; }
+
+/* the shelf */
+#cl-shelf { display: flex; flex-wrap: wrap; gap: 0.8rem 1.1rem; }
+.cl-group { min-width: 0; }
+.cl-group__name {
+  margin: 0 0 0.35rem;
+  font: 700 0.6rem var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  border-bottom: 3px solid color-mix(in srgb, var(--accent-warning) 55%, transparent);
+  padding-bottom: 0.25rem;
+}
+.cl-group__row { display: flex; flex-wrap: wrap; gap: 0.15rem; }
+.cl-bottle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 66px;
+  padding: 0.3rem 0.1rem 0.25rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0;
+  color: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform var(--transition-base, 0.15s), background var(--transition-base, 0.15s);
+}
+.cl-bottle:hover { background: var(--surface-secondary); transform: translateY(-3px); }
+.cl-bottle:active { transform: translateY(0); }
+.cl-bottle svg { width: 32px; height: 38px; display: block; pointer-events: none; }
+.cl-bottle__formula { font: 700 0.66rem var(--font-mono); line-height: 1.2; }
+.cl-bottle__formula:empty { display: none; }
+.cl-bottle__formula sub { font-size: 0.7em; line-height: 0; }
+.cl-bottle__name { font: 500 0.54rem var(--font-mono); line-height: 1.2; color: var(--text-secondary); text-align: center; }
+.cl-b-glass { fill: var(--surface-secondary); stroke: var(--text-tertiary); stroke-width: 1.2; }
+.cl-b-label { fill: var(--surface-primary); opacity: 0.9; }
+
+.cl-ghost { position: fixed; left: 0; top: 0; z-index: 10000; width: 44px; pointer-events: none; filter: drop-shadow(0 6px 8px rgba(var(--shadow-color), 0.3)); rotate: -18deg; }
+.cl-ghost svg { width: 44px; height: 53px; display: block; }
+body.cl-dragging { cursor: grabbing; user-select: none; }
+
+/* ── the notebook ──────────────────────────────────────────────────────── */
+.cl-log { list-style: none; margin: 0; padding: 0 0.2rem 0 0; max-height: 46vh; min-height: 7rem; overflow-y: auto; }
+.cl-entry { padding: 0.65rem 0; border-top: 1px dashed color-mix(in srgb, var(--ink) 22%, transparent); }
+.cl-entry:first-child { border-top: 0; padding-top: 0; }
+.cl-entry--none { color: var(--text-secondary); font-size: var(--text-mono-sm, 0.76rem); line-height: 1.5; }
+.cl-entry p { margin: 0; }
+.cl-entry__head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.45rem; font-size: 0.66rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); }
+.cl-entry__tube { font-family: var(--font-display); font-weight: 700; font-size: 0.66rem; color: var(--text-on-accent); background: var(--accent-primary); padding: 0.05rem 0.4rem; }
+.cl-entry__times { color: var(--text-tertiary); }
+.cl-obs { margin-top: 0.35rem !important; font-size: 0.82rem; font-weight: 600; line-height: 1.45; }
+.cl-why sub, .cl-why sup { font-size: 0.72em; line-height: 0; }
+.cl-why { margin-top: 0.2rem !important; font-size: 0.72rem; line-height: 1.5; color: var(--text-secondary); padding-left: 0.6rem; border-left: 3px solid color-mix(in srgb, var(--accent-secondary) 60%, transparent); }
+.cl-eq { display: block; margin-top: 0.15rem; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.cl-eq sub, .cl-eq sup { font-size: 0.72em; line-height: 0; }
+#cl-notebook.is-plain .cl-why { display: none; }
+
+/* ── things to try ─────────────────────────────────────────────────────── */
+.cl-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.cl-task { display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.76rem; line-height: 1.45; }
+.cl-task__box { flex-shrink: 0; width: 18px; height: 18px; margin-top: 1px; border: 1.5px solid var(--text-tertiary); background: var(--surface-secondary); display: inline-flex; align-items: center; justify-content: center; }
+.cl-task.is-done { color: var(--text-secondary); }
+.cl-task.is-done .cl-task__box { border-color: var(--accent-success); }
+@media (prefers-reduced-motion: no-preference) {
+  .cl-task.is-fresh .cl-task__box { animation: cl-tick 0.5s cubic-bezier(0.34, 1.6, 0.64, 1); }
+}
+@keyframes cl-tick { from { transform: scale(0.3); } }
+
+@media (max-width: 520px) {
+  .cl-card .pp-receipt__paper { padding: 1.2rem 1.15rem 1.3rem; }
+  .cl-bottle { width: 62px; }
+  #cl-say-text { font-size: 0.86rem; }
+  .cl-gap { display: none; }
+}

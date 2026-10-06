@@ -112,7 +112,34 @@ const biology = () => `
   <line x1="30" y1="72" x2="40" y2="72" stroke="var(--accent-warning)" stroke-width="1.5" opacity="0.5"/>
 </svg>`;
 
-export const LAB_SCENES = { chemistry, physics, biology };
+/* The test-tube bench (chemistry-2d): the rack as the page itself draws it. */
+const tube = (x, liquid, top, bed) => `
+  <rect x="${x - 11}" y="34" width="22" height="98" rx="11" fill="var(--bg)" opacity="0.9"/>
+  <path d="M${x - 11} ${top}h22v${121 - top}a11 11 0 0 1-22 0z" fill="${liquid}" opacity="0.75"/>
+  ${bed ? `<path d="M${x - 11} 112h22v9a11 11 0 0 1-22 0z" fill="${bed}"/>` : ""}
+  <rect x="${x - 11}" y="34" width="22" height="98" rx="11" stroke="var(--accent-secondary)" stroke-width="1.5" opacity="0.35"/>
+  <rect x="${x - 14}" y="30" width="28" height="6" rx="3" fill="var(--accent-secondary)" opacity="0.5"/>`;
+
+const chemistry2d = () => `
+<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" fill="none" role="img" aria-label="A rack of five test tubes: precipitates, a fizzing tube and coloured solutions">
+  <ellipse cx="160" cy="158" rx="135" ry="9" fill="var(--ink)" opacity="0.07"/>
+  <rect x="44" y="84" width="232" height="9" rx="4" fill="var(--accent-warning)" opacity="0.4"/>
+  ${tube(72, "var(--accent-secondary)", 78, "var(--accent-secondary)")}
+  ${tube(116, "var(--accent-primary)", 70, "var(--accent-primary)")}
+  ${tube(160, "var(--accent-success)", 62)}
+  ${tube(204, "var(--accent-danger)", 82)}
+  ${tube(248, "var(--accent-purple)", 72, "var(--surface-primary)")}
+  <circle cx="200" cy="112" r="3" fill="#fff" opacity="0.7"/><circle cx="208" cy="100" r="2.4" fill="#fff" opacity="0.65"/>
+  <circle cx="201" cy="90" r="2" fill="#fff" opacity="0.6"/><circle cx="207" cy="70" r="2" fill="var(--accent-danger)" opacity="0.4"/>
+  <circle cx="203" cy="56" r="1.6" fill="var(--accent-danger)" opacity="0.3"/>
+  <rect x="36" y="134" width="248" height="13" rx="6" fill="var(--accent-warning)" opacity="0.8"/>
+  <rect x="38" y="80" width="8" height="58" rx="3" fill="var(--accent-warning)" opacity="0.55"/>
+  <rect x="274" y="80" width="8" height="58" rx="3" fill="var(--accent-warning)" opacity="0.55"/>
+  <path d="M290 30v-10m0 10h-10m10 0h10m-10 0v10" stroke="var(--accent-secondary)" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+  <path d="M30 24l3 6 6.5 1-4.7 4.4 1.2 6.4-6-3.2-6 3.2 1.2-6.4L20.5 31l6.5-1z" fill="var(--accent-primary)"/>
+</svg>`;
+
+export const LAB_SCENES = { chemistry, chemistry2d, physics, biology };
 
 /** Fill every `[data-scene]` on the page with its bench. */
 export function paintScenes(root = document) {

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Chemistry Bench — Virtual Lab — Prep Portal</title>
+  <meta name="description" content="A test-tube chemistry bench: add acids, alkalis, salts and metals, heat them, test the gases with a splint and litmus, and write down what you see. Precipitates, displacement, neutralisation and the tests for ions." />
+
+  <!-- Page access gate: feature "virtual-lab" -->
+  <script type="module" src="/utils/auth/premium-guard.js"></script>
+  <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#6fb7e8" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;500;600;700&family=Shantell+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app":       "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+        "firebase/auth":      "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+        "firebase/storage":   "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+      }
+    }
+  </script>
+
+  <script src="/utils/components/loader.js"></script>
+
+  <link rel="stylesheet" href="/utils/components/nav.css" />
+  <link rel="stylesheet" href="/utils/components/components.css" />
+  <link rel="stylesheet" href="css/bench.css" />
+  <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+</head>
+<body>
+
+  <div id="loader">
+    <div id="loader-wrapper">
+      <div class="logo-cluster"></div>
+    </div>
+    <div class="loader-word"><span>Chemistry Bench</span></div>
+    <div class="loader-bar"></div>
+  </div>
+
+  <nav class="site-nav" data-nav="main"></nav>
+
+  <main class="cl-wrap">
+    <header class="cl-head">
+      <a class="cl-crumb" href="../index.html">Virtual Lab</a>
+      <h1 class="cl-title">Chemistry Bench</h1>
+    </header>
+
+    <div class="cl-stage">
+      <!-- the drawn thing: the rack, the tests, and the notebook of what was seen -->
+      <div class="cl-left">
+        <div id="cl-say" class="pp-sticky pp-sticky--c0 pp-sticky--tape" aria-live="polite">
+          <span id="cl-say-tag" class="cl-say__tag">Chemistry bench</span>
+          <p id="cl-say-text">Pick a tube, then tap a bottle on the shelf. Watch what happens, test it, and write down what you see.</p>
+        </div>
+
+        <div id="cl-bench-box"></div>
+        <p id="cl-holds" aria-live="polite"></p>
+
+        <div class="cl-card cl-kit pp-receipt">
+          <div class="pp-receipt__paper">
+            <div id="cl-tools" class="cl-tools" role="toolbar" aria-label="Tests for the tube in hand"></div>
+            <div class="cl-measure">
+              <span class="cl-label">Measure</span>
+              <button type="button" class="pp-btn cl-note" data-dose="drops">A few drops</button>
+              <button type="button" class="pp-btn cl-note" data-dose="portion">A full measure</button>
+              <span class="cl-gap" aria-hidden="true"></span>
+              <button type="button" class="pp-btn pp-btn--ghost cl-note" id="cl-rinse-all">Rinse all five</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="cl-notebook" class="cl-card pp-receipt">
+          <div class="pp-receipt__paper">
+            <div class="cl-card__head">
+              <h2 class="cl-h2">Lab notebook</h2>
+              <button type="button" class="pp-btn cl-note" id="cl-explain">Hide the chemistry</button>
+              <button type="button" class="pp-btn pp-btn--ghost cl-note" id="cl-clear-log">Clear</button>
+            </div>
+            <ol id="cl-log" class="cl-log"></ol>
+          </div>
+        </div>
+      </div>
+
+      <!-- what goes in: the shelf, and what to try with it -->
+      <aside class="cl-right">
+        <div class="cl-card cl-shelfbox pp-receipt">
+          <div class="pp-receipt__paper">
+            <h2 class="cl-h2">The shelf</h2>
+            <div id="cl-shelf"></div>
+          </div>
+        </div>
+
+        <div class="cl-card cl-trybox pp-receipt">
+          <div class="pp-receipt__paper">
+            <div class="cl-card__head">
+              <h2 class="cl-h2">Things to try</h2>
+              <span id="cl-score" class="pp-pill pp-pill--ok pp-pill--static"></span>
+            </div>
+            <ul id="cl-tasks" class="cl-tasks"></ul>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="/utils/components/nav-builder.js" type="module"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

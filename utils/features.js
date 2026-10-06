@@ -46,7 +46,7 @@ export const FEATURES = [
   {
     id: "virtual-lab",
     label: "Virtual Lab",
-    desc: "3D chemistry, physics & biology simulations",
+    desc: "3D chemistry lab, the test-tube chemistry bench, physics & biology",
     group: "Learning Labs",
     default: "premium",
     paths: ["/virtual-lab"],

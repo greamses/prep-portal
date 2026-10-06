@@ -177,10 +177,11 @@ export const SITE_PAGES = [
     href: "/virtual-lab/index.html",
     category: "science",
     overview: true,
-    blurb: "3D virtual science lab — chemistry, biology and physics, first- or third-person.",
+    blurb: "Virtual science lab — a walk-around 3D chemistry lab, a test-tube chemistry bench, biology and physics.",
     keywords: ["virtual lab", "science lab", "3d lab"],
   },
   { id: "virtual-lab-chemistry", title: "Virtual Chemistry Lab", href: "/virtual-lab/chemistry/index.html", category: "science", blurb: "Mix reagents and run experiments in 3D.", keywords: ["chemistry lab", "chemistry", "reagents", "mix chemicals", "experiment"] },
+  { id: "virtual-lab-chemistry-2d", title: "Chemistry Bench", href: "/virtual-lab/chemistry-2d/index.html", category: "science", blurb: "Test-tube chemistry: precipitates, gases, displacement and the tests for ions, with a lab notebook.", keywords: ["chemistry bench", "test tube", "precipitate", "qualitative analysis", "test for ions", "litmus", "2d chemistry lab", "reactivity series"] },
   { id: "virtual-lab-biology", title: "Virtual Biology Lab", href: "/virtual-lab/biology/index.html", category: "science", blurb: "3D biology lab.", keywords: ["biology lab", "biology"] },
   { id: "virtual-lab-physics", title: "Virtual Physics Lab", href: "/virtual-lab/physics/index.html", category: "science", blurb: "3D physics lab.", keywords: ["physics lab", "physics"] },
 
