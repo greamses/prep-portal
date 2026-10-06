@@ -35,7 +35,7 @@
    Drills papers have no strip: a drill is against the clock.
    ========================================================================== */
 
-import { wSvg } from "./tableart.js";
+import { wSvg, WHEEL } from "./tableart.js";
 
 /* Tricks with a full animated lesson in Learning with PrepBot. */
 const LESSONS = {
@@ -370,7 +370,7 @@ function tableStage(n, cuts = []) {
    Every stick is its own tile, so each is counted, coloured and taken away
    by itself. A step first PUTS the sticks as they must stand (`lay`), so it
    plays the same whether it is reached by going on, going back or skipping. */
-function ninesSteps() {
+function ninesSteps(part) {
   const T = tableStage(9, []);
   const sx = (i) => 59.5 + i * 3.6;
   const SY = 40, NY = 25.5, CY = 55.5, DOWN = 6;
@@ -456,6 +456,147 @@ function ninesSteps() {
         [7, 8, 9].forEach((i, k) => { S.pop(`st${i}`, 3.2 + k * 0.55); S.flip(`c${i}`, String(7 + k), 4, 3.2 + k * 0.55); S.flip(`c${i}`, String(k + 1), 4, 6 + k * 0.4); });
         S.pulse("u6", 7.6); S.pulse("t6", 9.6); S.pulse("u6", 9.9);
       }),
+  ];
+  /* Three lessons are cut from the one script. The sticks' lesson and the single fact are
+     shown with the table already written beside them: their first step writes it at once. */
+  const written = steps.slice(0, 4);
+  const after = (list) => [{
+    say: list[0].say,
+    show(stage, how) { written.forEach((st) => st.show(stage, { gsap: how.gsap, instant: true })); list[0].show(stage, how); },
+  }, ...list.slice(1)];
+  if (part === "table") return { build, steps: written };
+  if (part === "sticks") return { build, steps: after(steps.slice(4, 13)) };
+  if (part === "one") return { build, steps: after(steps.slice(13)) };
+  return { build, steps };
+}
+
+/* ── THE NINES' SECOND TRICK: TWO ROWS, every answer FLIPPED ────────────────
+   The first five answers are written in a row — tens counting up, units
+   counting down. Then each one is flipped: its two digits cross over as they
+   drop to the row underneath, each keeping its own colour, and the five
+   flips are the other five answers, 9 × 10 back to 9 × 6. */
+function nine2Steps() {
+  const cx = (j) => 18 + j * 16;
+  const TY = 30, BY = 60, D = 1.9;
+  const five = (fn) => { for (let j = 0; j < 5; j++) fn(j); };
+  const build = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    five((j) => {
+      tile(stage, `s${j}`, `9 × ${j + 1}`, cx(j), TY - 13, { bare: true, size: "s" });
+      tile(stage, `t${j}`, String(j), cx(j) - D, TY, { c: 3, size: "l" });
+      tile(stage, `u${j}`, String(9 - j), cx(j) + D, TY, { c: 4, size: "l" });
+      /* the flip: the unit comes down to the front, the ten comes down to the back */
+      tile(stage, `a${j}`, String(9 - j), cx(j) - D, BY, { c: 4, size: "l" });
+      tile(stage, `b${j}`, String(j), cx(j) + D, BY, { c: 3, size: "l" });
+      tile(stage, `z${j}`, `9 × ${10 - j}`, cx(j), BY + 13, { bare: true, size: "s" });
+    });
+  };
+  const step = (say, fn) => ({ say, show(stage, how) { fn(acts(stage, how.gsap, how.instant)); } });
+  /** answer j is flipped: its two digits cross over on the way down */
+  const flip = (S, j, at) => {
+    S.pulse(`t${j}`, at); S.pulse(`u${j}`, at);
+    S.fly(`a${j}`, cx(j) + D, TY, at + 0.35); S.fly(`b${j}`, cx(j) - D, TY, at + 0.35);
+  };
+  const steps = [
+    step("Here is a second trick for the nine times table: two rows. Start with the first five sums, in a row.",
+      (S) => five((j) => S.pop(`s${j}`, 4.4 + j * 0.3))),
+    step("The first digits count up. 0, 1, 2, 3, 4.", (S) => five((j) => S.pop(`t${j}`, 1.8 + j * 0.55))),
+    step("The second digits count down. 9, 8, 7, 6, 5. So the row reads 9, 18, 27, 36, 45.",
+      (S) => five((j) => { S.pop(`u${j}`, 2 + j * 0.55); S.pulse(`t${j}`, 6.6 + j * 0.5); S.pulse(`u${j}`, 6.6 + j * 0.5); })),
+    step("Now flip the first one over. Swap its two digits, and write it underneath. 09 flips to 90.", (S) => flip(S, 0, 3.4)),
+    step("Flip the next. 18 flips to 81.", (S) => flip(S, 1, 1.2)),
+    step("And the rest the same way. 27 flips to 72. 36 flips to 63. 45 flips to 54.",
+      (S) => { flip(S, 2, 2); flip(S, 3, 4.2); flip(S, 4, 6.4); }),
+    step("Those are the other five answers. 90 is 9 times 10. 81 is 9 times 9. 72 is 9 times 8. 63 is 9 times 7. 54 is 9 times 6.",
+      (S) => five((j) => { S.pop(`z${j}`, 2.6 + j * 1.9); S.pulse(`a${j}`, 2.6 + j * 1.9); S.pulse(`b${j}`, 2.6 + j * 1.9); })),
+    step("Read along the top row, and back along the bottom. 9, 18, 27, 36, 45. 54, 63, 72, 81, 90. Every answer has its flip.",
+      (S) => {
+        five((j) => { S.pulse(`t${j}`, 3.6 + j * 0.55); S.pulse(`u${j}`, 3.6 + j * 0.55); });
+        five((j) => { S.pulse(`a${4 - j}`, 6.8 + j * 0.55); S.pulse(`b${4 - j}`, 6.8 + j * 0.55); });
+      }),
+  ];
+  return { build, steps };
+}
+
+/* ── WHY 7 IS THE REVOLVING NUMBER: the wheel of 142857 ─────────────────────
+   THE PLAN, scene by scene:
+     1  1 ÷ 7 is written, and its decimal comes out a digit at a time
+     2  the same six digits come out again: it never ends
+     3  the six digits leave the decimal and take their places round a WHEEL,
+        each in its own ink, which it keeps for the whole lesson
+     4  × 1: the wheel read from the 1 — the number itself
+     5–9  × 2 … × 6: a ring moves to the digit the answer starts at; the
+        wheel is read once round from there, and each digit read drops into
+        the answer in its own ink — so every answer is seen to be the same
+        colours in the same order, only turned
+     10 the first digits of the six answers: 1 2 4 5 7 8, in order of size
+     11 opposite digits of the wheel make 9: 1+8, 4+5, 2+7
+     12 × 7: the wheel stops — 999999
+     13 the sevenths: 1/7, 2/7, 3/7 are the same wheel
+   Along the top: the decimal. Right: the wheel under it. Left: the seven
+   products, one to a row. Everything only ever comes ON (or moves), so a
+   step reached by going back is rebuilt exactly. */
+function wheelSteps() {
+  const CX = 64, CY = 46, RX = 11, RY = 19.5;                                   // the wheel, in hundredths of the screen (it is round on a 16:9 screen)
+  const at = (i) => { const a = ((-90 + i * 60) * Math.PI) / 180; return [CX + RX * Math.cos(a), CY + RY * Math.sin(a)]; };
+  const DX = (k) => 45 + k * 2.9, DY = 8;                                     // the decimal's digits
+  const rowY = (n) => 20 + (n - 1) * 9.3;                                     // the products
+  const PX = (k) => 27 + k * 3.2;
+  const START = [0, 2, 1, 4, 5, 3];                                           // where × 1 … × 6 start, as places on the wheel (digits 1 2 4 5 7 8)
+  const six = (fn) => { for (let i = 0; i < 6; i++) fn(i); };
+  const build = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    tile(stage, "q", "1 ÷ 7 = 0.", 30.5, DY, { bare: true });
+    for (let k = 0; k < 12; k++) tile(stage, `d${k}`, String(WHEEL[k % 6]), DX(k), DY, { c: k % 6 });
+    tile(stage, "more", "…", DX(12) + 0.8, DY, { bare: true });
+    const ring = tile(stage, "ring", "", CX, CY, { bare: true });
+    ring.firstChild.className = "vm-t__in vm-t__art";
+    ring.firstChild.style.width = "calc(var(--u) * 14)";
+    ring.firstChild.innerHTML = `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="#8a837a" stroke-width="2.2" stroke-dasharray="6 5"/>` +
+      `<path d="M76 13l14 4.5-9.5 11" fill="none" stroke="#8a837a" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+    const mk = tile(stage, "mk", "", ...at(0), { bare: true });
+    mk.firstChild.className = "vm-t__in vm-t__ring";
+    six((i) => tile(stage, `w${i}`, String(WHEEL[i]), ...at(i), { c: i, size: "l" }));
+    for (let n = 1; n <= 7; n++) {
+      tile(stage, `L${n}`, `142857 × ${n} =`, 13, rowY(n), { bare: true, size: "s" });
+      six((k) => tile(stage, `p${n}_${k}`, n === 7 ? "9" : String(WHEEL[(START[n - 1] + k) % 6]), PX(k), rowY(n), { c: n === 7 ? 2 : (START[n - 1] + k) % 6 }));
+    }
+    [[0, 3], [1, 4], [2, 5]].forEach(([i, j], k) => tile(stage, `o${k}`, `${WHEEL[i]} + ${WHEEL[j]} = 9`, 11 + k * 15, 90, { c: 2, size: "s" }));
+    ["1/7 = 0.142857…", "2/7 = 0.285714…", "3/7 = 0.428571…"].forEach((t, k) => tile(stage, `f${k}`, t, 12 + k * 23, 90, { bare: true, size: "s" }));
+  };
+  const step = (say, fn) => ({ say, show(stage, how) { fn(acts(stage, how.gsap, how.instant)); } });
+  /** 142857 × n: the ring goes to where the answer starts, and the wheel is read once round into the row */
+  const times = (S, n, ringAt, readAt, gap = 0.62) => {
+    const s0 = START[n - 1];
+    S.pop(`L${n}`, 0.3);
+    S.move("mk", ...at(s0), ringAt); S.pop("mk", ringAt);
+    six((k) => { S.pulse(`w${(s0 + k) % 6}`, readAt + k * gap); S.pop(`p${n}_${k}`, readAt + k * gap + 0.1); });
+  };
+  const steps = [
+    step("Seven is called the revolving number. To see why, divide 1 by 7. The answer is a decimal. 0 point 1, 4, 2, 8, 5, 7.",
+      (S) => { S.pop("q", 4.2); six((k) => S.pop(`d${k}`, 8.2 + k * 0.6)); }),
+    step("Keep dividing, and the same six digits come out again. 1, 4, 2, 8, 5, 7. And again, for ever. It never ends.",
+      (S) => { six((k) => S.pop(`d${6 + k}`, 4 + k * 0.6)); S.pop("more", 8.6); }),
+    step("Take those six digits, and stand them round a wheel, in the same order. 1, 4, 2, 8, 5, 7.",
+      (S) => { S.pop("ring", 2.4); six((i) => { S.pulse(`d${i}`, 5.2 + i * 0.7); S.fly(`w${i}`, DX(i), DY, 5.4 + i * 0.7); }); }),
+    step("Read the wheel from the 1, going round with the arrow. 1, 4, 2, 8, 5, 7. That is our number: 142857.",
+      (S) => times(S, 1, 1.2, 4.4)),
+    step("Now multiply it by 2. The answer is 285714. Look: the same six digits, in the same order! Start at the 2, and read round. 2, 8, 5, 7, 1, 4.",
+      (S) => times(S, 2, 8.6, 11.4)),
+    step("Multiply by 3. Start at the 4 this time, and read round. 4, 2, 8, 5, 7, 1. 428571. The wheel has only turned.",
+      (S) => times(S, 3, 1.6, 4.4)),
+    step("Multiply by 4. Start at the 5. 5, 7, 1, 4, 2, 8. 571428.", (S) => times(S, 4, 1.4, 3.4)),
+    step("Multiply by 5. Start at the 7. 7, 1, 4, 2, 8, 5. 714285.", (S) => times(S, 5, 1.4, 3.4)),
+    step("Multiply by 6. Start at the 8. 8, 5, 7, 1, 4, 2. 857142. Six answers, and never a new digit. That is why seven revolves.",
+      (S) => times(S, 6, 1.4, 3.4)),
+    step("How do you know where to start? Look at the first digit of each answer. 1, 2, 4, 5, 7, 8. They go up in order of size. The next answer starts at the next biggest digit.",
+      (S) => { S.hide("mk"); for (let n = 1; n <= 6; n++) S.pulse(`p${n}_0`, 6.2 + (n - 1) * 0.7); }),
+    step("Here is another secret of the wheel. Digits that face each other across it always make 9. 1 and 8. 4 and 5. 2 and 7.",
+      (S) => { S.hide("mk"); [[0, 3], [1, 4], [2, 5]].forEach(([i, j], k) => { const t = 7.4 + k * 1.5; S.pulse(`w${i}`, t); S.pulse(`w${j}`, t + 0.2); S.pop(`o${k}`, t + 0.3); }); }),
+    step("So what happens when you multiply by 7 itself? The wheel stops turning, and every digit becomes a 9. 999999.",
+      (S) => { [0, 1, 2].forEach((k) => S.hide(`o${k}`)); S.pop("L7", 4.4); six((k) => S.pop(`p7_${k}`, 8.6 + k * 0.4)); six((i) => S.pulse(`w${i}`, 8.6 + i * 0.4)); }),
+    step("And that is why sevenths are easy. One seventh is 0 point 142857. Two sevenths start at the 2: 285714. Three sevenths start at the 4: 428571. Always the same wheel, only turned. Seven, the revolving number.",
+      (S) => { [0, 1, 2].forEach((k) => S.hide(`o${k}`)); S.pop("f0", 3.6); S.pop("f1", 7.4); S.pop("f2", 11.6); six((i) => S.pulse(`w${i}`, 16 + i * 0.3)); }),
   ];
   return { build, steps };
 }
@@ -725,6 +866,28 @@ function gridSteps(k) {
   return { build, steps };
 }
 
+/* ── ONE NINE FACT: the table's own way, and then the sticks counted in tens ──
+   Two lessons end to end on one set. The first three steps are the end of
+   the nines' table lesson (count the sticks, take one away, count on to 9),
+   with the table already written; then the screen is cleared for the sticks
+   counted UP IN TENS and BACK IN ONES. A step of the second part builds its
+   own screen the first time one is shown (going back rebuilds from the top). */
+function nine1Steps() {
+  const N = ninesSteps("one"), C = countSticksSteps(9);
+  const second = C.steps.map((st, i) => ({
+    say: i === 0 ? st.say.replace("Here is how", "Here is another way") : st.say,
+    show(stage, how) {
+      if (stage.dataset.part !== "sticks") {
+        C.build(stage);
+        stage.dataset.part = "sticks";
+        stage.querySelector(".vm-tv").style.setProperty("--u", `${stage.clientWidth / 100}px`);
+      }
+      st.show(stage, how);
+    },
+  }));
+  return { build: (stage) => { delete stage.dataset.part; N.build(stage); }, steps: [...N.steps, ...second] };
+}
+
 /* ── ONE FACT ON COUNTING STICKS: the sixes, the sevens, the fours ─────────
    k × n with n sticks. They are counted UP IN FIVES (5, 10, 15 …), and then
    the SAME sticks are counted again, carrying on from there: in ones for the
@@ -732,12 +895,12 @@ function gridSteps(k) {
    ones for the fours (4 = 5 − 1). No table is on the screen: only the sum,
    the sticks, and the two counts written under them. */
 function countSticksSteps(k) {
-  const base = k === 3 ? 2 : 5;                      // what the sticks are counted up in first: fives, or twos for the threes
-  const inBase = base === 2 ? "twos" : "fives";
+  const base = k === 3 ? 2 : k === 9 ? 10 : 5;       // what the sticks are counted up in first: fives — twos for the threes, tens for the nines
+  const inBase = base === 2 ? "twos" : base === 10 ? "tens" : "fives";
   const d = k - base;                                // what each stick adds the second time round: 1, 2 or −1
   const [N1, N2] = k === 7 ? [6, 3] : [7, 4];        // the two sums that are counted out
   const how = d === 1 ? "carrying on in ones" : d === 2 ? "carrying on in twos" : "going back in ones";
-  const why = k === 3 ? "3 is 2 and 1" : d === 1 ? "6 is 5 and 1" : d === 2 ? "7 is 5 and 2" : "4 is 5 take away 1";
+  const why = k === 9 ? "9 is 10 take away 1" : k === 3 ? "3 is 2 and 1" : d === 1 ? "6 is 5 and 1" : d === 2 ? "7 is 5 and 2" : "4 is 5 take away 1";
   const sx = (i, n) => 50 + (i - (n - 1) / 2) * 7.5;
   const SY = 42, NY = 27, AY = 60, BY = 72;
   const ten = (fn) => { for (let i = 0; i < 10; i++) fn(i); };
@@ -817,7 +980,9 @@ async function explain(strip) {
   let data = null;
   try { data = JSON.parse(strip.dataset.explain); } catch { /* nothing to show */ }
   if (!data || !data.scene) return;
-  const made = data.scene.kind === "nines" ? ninesSteps()
+  const made = data.scene.kind === "nines" ? ninesSteps("table")
+    : data.scene.kind === "nine-sticks" ? ninesSteps("sticks")
+    : data.scene.kind === "wheel7" ? wheelSteps()
     : data.scene.kind === "eights" ? eightsSteps()
     : data.scene.kind === "sevens" ? sevensSteps()
     : data.scene.kind === "sixes" ? sixesSteps()
@@ -825,6 +990,8 @@ async function explain(strip) {
     : data.scene.kind === "fours" ? foursSteps()
     : data.scene.kind === "fourw" ? fourwSteps()
     : data.scene.kind === "sixd" ? sixdSteps()
+    : data.scene.kind === "nine2" ? nine2Steps()
+    : data.scene.kind === "nine1" ? nine1Steps()
     : data.scene.kind === "threes" ? threesSteps()
     : /^grid[37]$/.test(data.scene.kind) ? gridSteps(Number(data.scene.kind.slice(-1)))
     : /^sticks[3467]$/.test(data.scene.kind) ? countSticksSteps(Number(data.scene.kind.slice(-1)))

@@ -209,8 +209,22 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     return slot.querySelector("input, textarea")?.value ?? "";
   }
 
+  /* An answer box is not a form field: the browser and its password manager are told to keep
+     their saved names, emails and addresses out of it. */
+  const noAutofill = (input) => {
+    input.autocomplete = "off";
+    input.setAttribute("autocorrect", "off");
+    input.setAttribute("autocapitalize", "off");
+    input.setAttribute("data-form-type", "other");
+    input.setAttribute("data-lpignore", "true");
+    input.setAttribute("data-1p-ignore", "true");
+    input.setAttribute("data-bwignore", "true");
+  };
+
   function enliven(node, idx) {
     const r = rec(idx);
+    let wants = [];
+    try { wants = keyOf(node) || []; } catch { /* a section with no key: every box takes words */ }
     slotsOf(node).forEach((slot, k) => {
       slot.classList.add("is-live");
       if (slot.classList.contains("wb-tick")) {
@@ -238,8 +252,18 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       const roomy = slot.classList.contains("wb-line--write");
       const input = document.createElement(roomy ? "textarea" : "input");
       input.className = "wb-in";
-      if (roomy) input.rows = 2; else input.type = "text";
-      input.autocomplete = "off";
+      /* A box that wants a NUMBER is a number box: a browser offers nothing saved to one — no
+         email, no name — and a phone brings up its figures. (Its stepper arrows are hidden in
+         workbook.css, and neither the arrow keys nor the mouse wheel change what was typed.) */
+      const figures = !roomy && wants[k]?.kind === "num";
+      if (roomy) input.rows = 2; else input.type = figures ? "number" : "text";
+      if (figures) {
+        input.step = "any";
+        input.inputMode = "decimal";
+        input.addEventListener("keydown", (e) => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); });
+        input.addEventListener("wheel", (e) => { if (document.activeElement === input) e.preventDefault(); }, { passive: false });
+      }
+      noAutofill(input);
       input.spellcheck = false;
       input.setAttribute("aria-label", "answer");
       input.value = r.v[k] ?? "";

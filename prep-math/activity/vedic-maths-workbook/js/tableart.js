@@ -65,3 +65,22 @@ export function wSvg({ labels = ["", "", "", "", ""], tens = ["", "", "", "", ""
   });
   return `<svg class="vm-w" viewBox="0 0 124 76" role="img" aria-label="A big W with a number at each of its five points">${s}</svg>`;
 }
+
+/* the six digits of one seventh, in the order they stand round the wheel, and the ink each keeps */
+export const WHEEL = [1, 4, 2, 8, 5, 7];
+export const WHEEL_INK = ["#14130f", "#7b4fa3", "#2e8b46", "#2f6ea8", "#d9632b", "#1f8a8a"];
+
+/**
+ * The REVOLVING WHEEL of seven: 1 4 2 8 5 7 round a ring, read clockwise.
+ *   start    the digit a reading starts at (it is ringed), or 0 for none
+ */
+export function wheelSvg({ start = 0 } = {}) {
+  let s = `<circle cx="50" cy="50" r="24" fill="none" stroke="#8a837a" stroke-width="1.4" stroke-dasharray="3 2.4"/>` +
+    `<path d="M66 28.5l7.6 3.2-5.6 5.8" fill="none" stroke="#8a837a" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>`;
+  WHEEL.forEach((d, i) => {
+    const a = ((-90 + i * 60) * Math.PI) / 180, x = 50 + 38 * Math.cos(a), y = 50 + 38 * Math.sin(a);
+    if (d === start) s += `<circle cx="${f(x)}" cy="${f(y)}" r="9" fill="#fff3a8" stroke="${INK}" stroke-width="1.3"/>`;
+    s += `<text x="${f(x)}" y="${f(y + 5)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="14" font-weight="800" fill="${WHEEL_INK[i]}">${d}</text>`;
+  });
+  return `<svg class="vm-wheel" viewBox="0 0 100 100" role="img" aria-label="The digits 1, 4, 2, 8, 5, 7 round a wheel, read clockwise">${s}</svg>`;
+}

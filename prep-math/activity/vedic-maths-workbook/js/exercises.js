@@ -69,6 +69,7 @@ const DRILL = {
   "vm-tt3-all": (it) => ({ q: `3 × ${it.n}`, a: [3 * it.n] }),
   "vm-tt3-grid": (it) => ({ q: `3 × ${it.n}`, a: [3 * it.n] }),
   "vm-tt7-grid": (it) => ({ q: `7 × ${it.n}`, a: [7 * it.n] }),
+  "vm-tt9-rows": (it) => ({ q: `9 × ${it.n}`, a: [9 * it.n] }),
   "vm-tt4-w": (it) => ({ q: `4 × ${it.n}`, a: [4 * it.n] }),
 };
 const BOX = '<span class="wb-answer vm-whole"></span>';

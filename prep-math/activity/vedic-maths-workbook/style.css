@@ -137,3 +137,12 @@
 .vm-grid__cell { padding: 2.4mm 3.4mm; border-right: 0.45mm solid #2a2723; border-bottom: 0.45mm solid #2a2723; }
 .vm-grid__cell:nth-child(3n) { border-right: 0; }
 .vm-grid__cell:nth-child(n + 7) { border-bottom: 0; }
+/* the nines' two rows: five answers across, and each one flipped underneath */
+.vm-tt.vm-tt--w.vm-rows { display: grid; grid-template-columns: repeat(5, max-content); gap: 7mm 6mm; width: max-content; margin: 3mm 0 4mm 4mm; }
+.vm-rows__cell { display: flex; flex-direction: column; align-items: center; gap: 1.2mm; }
+.vm-rows__sum { font-size: 9pt; font-weight: 700; color: #6b645a; }
+.wb-sheet .vm-tt--w.vm-rows .vm-tt__pair .wb-answer { min-width: 7.6mm; width: 7.6mm; }
+/* the revolving wheel of seven */
+.vm-art--wheel .vm-wheel { display: block; width: 34mm; height: auto; }
+/* on the TV: the ring that marks where a reading of the wheel starts */
+.vm-t__ring { display: block; width: calc(var(--u) * 6.4); height: calc(var(--u) * 6.4); padding: 0; border: calc(var(--u) * 0.4) solid #2a2723; border-radius: 50%; background: rgba(255, 243, 168, 0.75); box-sizing: border-box; }

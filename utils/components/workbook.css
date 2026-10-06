@@ -1681,6 +1681,10 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
    a page done on screen is laid out as the page that prints. */
 
 .wb-live .is-live:not(.wb-tick) { position: relative; }
+/* a number box with no stepper arrows: it is written in, not stepped */
+.wb-live .wb-in[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.wb-live .wb-in[type="number"]::-webkit-inner-spin-button,
+.wb-live .wb-in[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .wb-live .wb-in {
   position: absolute;
   inset: 0;

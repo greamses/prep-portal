@@ -20,6 +20,11 @@
          one at a time     9 × 7: one less than 7 is 6; 6 needs 3 to make 9; 63
          the whole table   the two columns, counted down and counted up
 
+       THE TWO ROWS (a second trick, by itself): write the first five
+       answers in a row — 09 18 27 36 45 — then FLIP each one over, swap
+       its two digits, and write it underneath: 90 81 72 63 54. Those are
+       the other five, 9 × 10 back to 9 × 6. Every answer has its flip.
+
      THE EIGHT TIMES TABLE
        The tens count 0, 1, 2, 3, 4 down the page; a LINE; and from the same
        4 again, 4, 5, 6, 7, 8. The units count UP the page in twos from the
@@ -34,6 +39,13 @@
        0 to 9: 0 for the last sum; then 1, 2, 3 in the LAST row of each
        three; 4, 5, 6 in the SECOND rows; 7, 8, 9 in the FIRST rows.
        One at a time: 7 is 5 and 2, so five of it and two of it, added.
+
+       A TIP — WHY 7 IS CALLED THE REVOLVING NUMBER
+       1 ÷ 7 = 0.142857 142857 … — six digits, over and over. Stand them
+       round a wheel: 1, 4, 2, 8, 5, 7. Multiply 142857 by 2, 3, 4, 5 or 6
+       and the SAME six digits come back in the SAME order: the wheel has
+       only turned. The answers start at the digits in order of size —
+       1, 2, 4, 5, 7, 8. Opposite digits make 9, and × 7 is 999999.
 
      THE SIX TIMES TABLE
        A LINE under 6 × 5. The tens go 0, 1, 1, 2, 3 down to the line — the
@@ -110,7 +122,7 @@
 
 import { want } from "/utils/components/workbook/want.js";
 import { ask, big, box, worked, say, step, steps, strip } from "./common.js";
-import { sticksSvg, wSvg, W_POINTS } from "./tableart.js";
+import { sticksSvg, wSvg, W_POINTS, wheelSvg } from "./tableart.js";
 
 export const TT_GROUPS = [
   { id: "vm-tables", chapter: "Chapter 7 · Times table secrets", label: "The 9 times table", blurb: "Count down the page, count up the page: 09, 18, 27 … And the counting sticks." },
@@ -133,8 +145,9 @@ const nineOne = {
   label: "Nines, one at a time",
   blurb: "One less for the tens; what makes 9 for the units.",
   heading: "The 9 times table — one less, and what makes 9",
-  instruction: () => SECRET,
-  tv: "nines",
+  instruction: () => SECRET + " With counting sticks: 9 is 10 take away 1, so lay out one stick for each of the number, " +
+    "count them UP IN TENS, then count the SAME sticks again, going BACK IN ONES.",
+  tv: "nine1",
   cols: 2,
   defaultCount: 6,
   make: (r) => ({ n: r.int(2, 10) }),
@@ -187,6 +200,38 @@ function tableHtml(n, cuts, keyT, keyU, unitStep = (i) => 19 - i) {
 }
 const tableKey = (n) => Array.from({ length: 10 }, (_, i) => [want.num(Math.floor((n * (i + 1)) / 10)), want.num((n * (i + 1)) % 10)]).flat();
 const tableAnswer = (n) => [Array.from({ length: 10 }, (_, i) => String(n * (i + 1)).padStart(2, "0")).join(", ")];
+
+/* THE NINES' TWO ROWS: the first five answers in a row, and each one FLIPPED underneath.
+   A flipped box keeps the colour of the digit that came down into it, so the swap is seen. */
+const rowsCell = (sum, a, b2, flip) => `<span class="vm-rows__cell"><span class="vm-rows__sum">${sum}</span>` +
+  `<span class="vm-tt__pair"><span class="wb-answer ${flip ? "vm-tt__u" : "vm-tt__t"}" data-step="${a}"></span>` +
+  `<span class="wb-answer ${flip ? "vm-tt__t" : "vm-tt__u"}" data-step="${b2}"></span></span></span>`;
+
+const nineRows = {
+  id: "vm-tt9-rows",
+  group: "vm-tables",
+  label: "A second trick: the two rows",
+  blurb: "09 18 27 36 45 — and each one flipped underneath: 90 81 72 63 54.",
+  heading: "The 9 times table — two rows, and every answer flipped",
+  instruction: () => "Here is a second trick for the nines. Write the first five answers in a ROW: the first digits count up, " +
+    "0, 1, 2, 3, 4, and the second digits count down, 9, 8, 7, 6, 5. Now FLIP each answer over — swap its two digits — " +
+    "and write it UNDERNEATH: 09 flips to 90, 18 to 81, 27 to 72, 36 to 63, 45 to 54. Those are the other five answers, " +
+    "from 9 × 10 back to 9 × 6. On screen the boxes open one at a time, in that order.",
+  tv: "nine2",
+  cols: 1,
+  defaultCount: 1,
+  make: (r) => ({ n: r.int(2, 9) }),
+  /* top row: the five tens (steps 0 to 4), then the five units (5 to 9); bottom row: each flip, pair by pair (10 to 19) */
+  render: () => `<p class="vm-tt__key"><span class="is-t">top row: 0 1 2 3 4, then 9 8 7 6 5</span>` +
+    `<span class="is-u">bottom row: each answer flipped over</span></p>` +
+    `<div class="vm-tt vm-tt--w vm-rows" data-steps="listed">` +
+    [0, 1, 2, 3, 4].map((j) => rowsCell(`9 × ${j + 1}`, j, 5 + j, false)).join("") +
+    [0, 1, 2, 3, 4].map((j) => rowsCell(`9 × ${10 - j}`, 10 + 2 * j, 11 + 2 * j, true)).join("") + `</div>`,
+  worked: () => worked(ask("9 × 3 = " + strip("2", "7") + " &nbsp; flipped &nbsp; " + strip("7", "2") + " = 9 × 8") +
+    say("9 × 3 is 27. Flip it over and it is 72, which is 9 × 8. The two sums, 3 and 8, are in the same column.")),
+  key: () => [...[0, 1, 2, 3, 4].flatMap((j) => [want.num(j), want.num(9 - j)]), ...[0, 1, 2, 3, 4].flatMap((j) => [want.num(9 - j), want.num(j)])],
+  answer: () => ["top row: 09, 18, 27, 36, 45; flipped underneath: 90, 81, 72, 63, 54"],
+};
 
 /* ═══ THE EIGHTS ══════════════════════════════════════════════════════════*/
 
@@ -282,6 +327,31 @@ const sevenAll = {
     say("The first digit before the line is 2, and the first digit after it is 2 again. The second digits are counted 0 to 9: 1 is in the last row of the first three, 8 and 5 are in the first and second rows of the next.")),
   key: () => tableKey(7),
   answer: () => tableAnswer(7),
+};
+
+/* A TIP: WHY 7 IS THE REVOLVING NUMBER — the wheel of 142857. */
+const WHEEL_START = [1, 2, 4, 5, 7, 8];          // where 142857 × 1, × 2 … × 6 start on the wheel: the digits in order of size
+
+const sevenWheel = {
+  id: "vm-tt7-wheel",
+  group: "vm-tables7",
+  label: "Tip: 7, the revolving number",
+  blurb: "142857 × 2, 3, 4, 5, 6: the same six digits, the wheel only turned.",
+  heading: "Why 7 is called the revolving number",
+  instruction: () => "Divide 1 by 7 and you get 0.142857 142857 … — the same six digits, over and over. Stand them round a " +
+    "wheel: 1, 4, 2, 8, 5, 7. Now multiply 142857 by 2, 3, 4, 5 or 6: the answer is the SAME six digits in the SAME " +
+    "order — the wheel has only turned. The answers start at the digits in order of size: × 1 starts at 1, × 2 at 2, " +
+    "× 3 at 4, × 4 at 5, × 5 at 7 and × 6 at 8. Find where to start, and read once round the wheel.",
+  tv: "wheel7",
+  cols: 2,
+  defaultCount: 4,
+  make: (r) => ({ n: r.int(2, 6) }),
+  render: ({ n }) => big(`142857 × ${n}`) + `<div class="vm-art vm-art--wheel">${wheelSvg()}</div>` +
+    steps(step("it starts at the digit:"), step("read once round — the answer:")),
+  worked: () => worked(big("142857 × 3") + `<div class="vm-art vm-art--wheel">${wheelSvg({ start: 4 })}</div>` +
+    say("In order of size the digits are 1, 2, 4, 5, 7, 8. The third is 4, so × 3 starts at 4. Read round the wheel: 4, 2, 8, 5, 7, 1. So 142857 × 3 is 428571.")),
+  key: ({ n }) => [want.num(WHEEL_START[n - 1]), want.num(142857 * n)],
+  answer: ({ n }) => [`starts at ${WHEEL_START[n - 1]}: 142857 × ${n} = ${142857 * n}`],
 };
 
 /* ═══ THE SIXES ═══════════════════════════════════════════════════════════*/
@@ -435,7 +505,7 @@ const nineSticks = {
   instruction: () => "9 is 10 − 1. So lay out TEN counting sticks, numbered 1 to 10, and TAKE AWAY the stick at the number you " +
     "are multiplying by. Count the sticks to the LEFT of the gap: those are the tens. Count the sticks to the RIGHT " +
     "of it: those are the units.",
-  tv: "nines",
+  tv: "nine-sticks",
   cols: 2,
   defaultCount: 4,
   make: (r) => ({ n: r.int(2, 9) }),
@@ -629,7 +699,7 @@ const threeGrid = gridEx(3, {
   tens: "0, 0, 0 in the top row; 1, 1, 1 in the middle row; 2, 2, 2 in the bottom row.",
 });
 
-export const TT_EXERCISES = [nineOne, nineAll, nineSticks, eightOne, eightAll, sevenOne, sevenAll, sevenGrid, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW, threeOne, threeAll, threeGrid];
+export const TT_EXERCISES = [nineOne, nineAll, nineSticks, nineRows, eightOne, eightAll, sevenOne, sevenAll, sevenGrid, sevenWheel, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW, threeOne, threeAll, threeGrid];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).
