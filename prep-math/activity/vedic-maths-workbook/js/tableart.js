@@ -106,5 +106,5 @@ export function spinnerArrow() {
 export function wheelSvg({ start = 0 } = {}) {
   const turn = 60 * Math.max(0, WHEEL.indexOf(start));
   return `<svg class="vm-wheel" viewBox="0 0 200 200" role="img" aria-label="A spinner wheel with the digits 1, 4, 2, 8, 5, 7 clockwise, its arrow at the ${start || 1}">` +
-    `${spinnerDisc()}<g transform="rotate(${turn} 100 100)">${spinnerArrow()}</g></svg>`;
+    `${spinnerDisc()}<g class="vm-wheel__arrow" data-turn="${turn}" style="transform:rotate(${turn}deg)">${spinnerArrow()}</g></svg>`;
 }

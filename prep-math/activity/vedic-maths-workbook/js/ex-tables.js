@@ -354,11 +354,36 @@ const sevenWheel = {
   defaultCount: 4,
   make: (r) => ({ n: r.int(2, 6) }),
   render: ({ n }) => big(`142857 × ${n}`) + `<div class="vm-art vm-art--wheel">${wheelSvg()}</div>` +
+    `<p class="vm-wheel__hint">Tap a slice, or drag the arrow, to spin it there.</p>` +
     steps(step("the arrow spins to the digit:"), step("read once round — the answer:")),
   worked: () => worked(big("142857 × 3") + `<div class="vm-art vm-art--wheel">${wheelSvg({ start: 4 })}</div>` +
     say("In order of size the digits are 1, 2, 4, 5, 7, 8. The third is 4, so × 3 starts at 4. Read round the wheel: 4, 2, 8, 5, 7, 1. So 142857 × 3 is 428571.")),
   key: ({ n }) => [want.num(WHEEL_START[n - 1]), want.num(142857 * n)],
   answer: ({ n }) => [`starts at ${WHEEL_START[n - 1]}: 142857 × ${n} = ${142857 * n}`],
+};
+
+/* …and after it, the SEVENTHS as decimals: the same spinner, read once round after "0." */
+const sevenths = {
+  id: "vm-tt7-sevenths",
+  group: "vm-tables7",
+  label: "Sevenths as decimals",
+  blurb: "3 ÷ 7 = 0.428571…: spin to the start, and read once round.",
+  heading: "Sevenths as decimals — the same wheel",
+  instruction: () => "Every seventh is the SAME six digits, going round and round for ever: only the start changes. " +
+    "1 ÷ 7 = 0.142857…, starting at the 1. For 2 ÷ 7 spin the arrow to the 2; for 3 ÷ 7 to the 4; for 4 ÷ 7 to the 5; " +
+    "for 5 ÷ 7 to the 7; for 6 ÷ 7 to the 8 — the digits in order of size. Then read ONCE round the wheel and write " +
+    "the six digits after the point.",
+  tv: "wheel7",
+  cols: 2,
+  defaultCount: 4,
+  make: (r) => ({ n: r.int(1, 6) }),
+  render: ({ n }) => big(`${n} ÷ 7`) + `<div class="vm-art vm-art--wheel">${wheelSvg()}</div>` +
+    `<p class="vm-wheel__hint">Tap a slice, or drag the arrow, to spin it there.</p>` +
+    steps(step("the arrow spins to the digit:"), step(`the six digits that repeat: ${n} ÷ 7 = 0.`)),
+  worked: () => worked(big("3 ÷ 7") + `<div class="vm-art vm-art--wheel">${wheelSvg({ start: 4 })}</div>` +
+    say("Three sevenths: the third digit in order of size is 4, so spin to the 4. Read round: 4, 2, 8, 5, 7, 1. So 3 ÷ 7 = 0.428571, and then the same six digits again, for ever.")),
+  key: ({ n }) => [want.num(WHEEL_START[n - 1]), want.num(142857 * n)],
+  answer: ({ n }) => [`starts at ${WHEEL_START[n - 1]}: ${n} ÷ 7 = 0.${142857 * n}…`],
 };
 
 /* ═══ THE SIXES ═══════════════════════════════════════════════════════════*/
@@ -733,7 +758,7 @@ const onesTree = {
   answer: ({ n }) => [`${n} ones: ${onesOf(n)} × ${onesOf(n)} = ${treeOf(n)}`],
 };
 
-export const TT_EXERCISES = [nineOne, nineAll, nineSticks, nineRows, eightOne, eightAll, sevenOne, sevenAll, sevenGrid, sevenWheel, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW, threeOne, threeAll, threeGrid, onesTree];
+export const TT_EXERCISES = [nineOne, nineAll, nineSticks, nineRows, eightOne, eightAll, sevenOne, sevenAll, sevenGrid, sevenWheel, sevenths, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW, threeOne, threeAll, threeGrid, onesTree];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).
@@ -762,4 +787,35 @@ if (typeof document !== "undefined" && !document.__vmTableDigits) {
       next?.querySelector("input")?.focus();
     }, 40);
   });
+}
+
+/* ═══ the spinner's arrow turns where it is put ═══════════════════════════
+   On screen the arrow of a printed spinner (tableart.js wheelSvg) is the
+   child's to turn: tap a slice and it spins there; press and drag and it
+   follows the finger, settling on the nearest slice when let go. It always
+   goes round the short way. */
+if (typeof document !== "undefined" && !document.__vmWheelSpin) {
+  document.__vmWheelSpin = true;
+  let held = null;
+  const aim = (svg, e, snap) => {
+    const arrow = svg.querySelector(".vm-wheel__arrow"); if (!arrow) return;
+    const r = svg.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    if (Math.hypot(dx, dy) < r.width * 0.06) return;            // on the hub: no direction to point in
+    let want = (Math.atan2(dy, dx) * 180) / Math.PI + 90;       // 0 is straight up, at the 1
+    if (snap) want = Math.round(want / 60) * 60;
+    const now = Number(arrow.dataset.turn) || 0;
+    const to = now + ((((want - now) % 360) + 540) % 360) - 180; // the short way round from where it is
+    arrow.dataset.turn = String(to);
+    arrow.style.transition = snap ? "" : "none";
+    arrow.style.transform = `rotate(${to}deg)`;
+  };
+  document.addEventListener("pointerdown", (e) => {
+    const svg = e.target.closest?.("svg.vm-wheel"); if (!svg) return;
+    held = svg; aim(svg, e, false); e.preventDefault();
+  });
+  document.addEventListener("pointermove", (e) => { if (held) aim(held, e, false); });
+  const drop = (e) => { if (!held) return; aim(held, e, true); held = null; };
+  document.addEventListener("pointerup", drop);
+  document.addEventListener("pointercancel", () => { held = null; });
 }
