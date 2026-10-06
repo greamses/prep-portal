@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Circle Theorems — Drag and See</title>
+
+    <!-- Page access gate: feature "prep-math-activities", part "circle-theorems" -->
+    <script type="module" src="/utils/auth/premium-guard.js"></script>
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+    <meta
+      name="description"
+      content="Eight circle theorems you can drag: move the points round the circle and watch the angle at the centre stay twice the angle at the circumference, the angle in a semicircle stay 90 degrees, and the rest — then see why, and find the missing angle."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/utils/components/setup.css" />
+    <link rel="stylesheet" href="/utils/components/game-tabs.css" />
+    <style>
+      /* =========================================================
+         Circle Theorems studio.
+         The paper, the notes and the torn receipts come from
+         components.css; every colour is a theme.css token, so the
+         figure follows the theme and dark mode.
+         ========================================================= */
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: var(--app-bg);
+        font-family: var(--font-mono);
+        color: var(--ink);
+      }
+      .pp-page-paint { opacity: 0.15; }
+      [data-theme="dark"] .pp-page-paint { opacity: 0.1; }
+
+      /* the figure fills the space between the note at the top and the receipt at the bottom */
+      #stage {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 196px 16px 178px;
+        box-sizing: border-box;
+      }
+      #figure { width: 100%; height: 100%; max-width: 900px; overflow: visible; touch-action: none; user-select: none; }
+
+      #page-top {
+        position: relative;
+        z-index: 20;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #page-top .builder-tabs { pointer-events: auto; }
+
+      /* the commentary: the theorem, with the live numbers — a sticky note */
+      #explanation-overlay {
+        margin: 14px auto 0;
+        padding: 0.8rem 1.4rem 0.9rem;
+        width: min(90%, 660px);
+        box-sizing: border-box;
+        text-align: center;
+        --pp-note-tilt: -0.5deg;
+        pointer-events: auto;
+      }
+      #explanation-overlay p { margin: 0; font-size: 0.93rem; line-height: 1.45; font-weight: 600; }
+      #explanation-overlay .fact { margin-top: 0.35rem; font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; }
+      #explanation-overlay .fact b { font-weight: 800; }
+      #explanation-overlay .step-tag {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: var(--tracking-wider, 0.14em);
+        text-transform: uppercase;
+        opacity: 0.55;
+        margin-bottom: 4px;
+      }
+
+      /* ── the figure ─────────────────────────────────────────────────────── */
+      .ct-circle { fill: var(--surface-primary, #fffdf8); fill-opacity: 0.55; stroke: var(--ink); stroke-width: 1.3; }
+      .ct-seg { stroke-linecap: round; fill: none; }
+      .ct-seg.chord { stroke: var(--ink); stroke-width: 1.2; }
+      .ct-seg.diameter { stroke: var(--ink); stroke-width: 1.5; }
+      .ct-seg.radius { stroke: var(--accent-secondary, #6fb7e8); stroke-width: 1.4; }
+      .ct-seg.tangent { stroke: var(--accent-danger, #f07a7a); stroke-width: 1.5; }
+      .ct-seg.aux { stroke: var(--text-secondary, #6b645a); stroke-width: 0.9; stroke-dasharray: 3 2.4; }
+      .ct-ang path.wedge { stroke-width: 0.9; fill-opacity: 0.42; }
+      .ct-ang.a1 path.wedge { fill: var(--accent-warning, #f0a868); stroke: var(--accent-warning, #f0a868); }
+      .ct-ang.a2 path.wedge { fill: var(--accent-secondary, #6fb7e8); stroke: var(--accent-secondary, #6fb7e8); }
+      .ct-ang.a3 path.wedge { fill: var(--accent-success, #7cc47c); stroke: var(--accent-success, #7cc47c); }
+      .ct-ang.a4 path.wedge { fill: var(--accent-purple, #b48ce8); stroke: var(--accent-purple, #b48ce8); }
+      .ct-label { font-family: var(--font-mono); font-size: 6.2px; font-weight: 800; fill: var(--ink); paint-order: stroke; stroke: var(--app-bg, #fffdf8); stroke-width: 2.2px; stroke-linejoin: round; text-anchor: middle; dominant-baseline: central; }
+      .ct-label.ask { fill: var(--accent-danger, #d9632b); font-size: 7.4px; }
+      .ct-name { font-family: var(--font-mono); font-size: 7.5px; font-weight: 800; fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
+      .ct-right { fill: none; stroke: var(--ink); stroke-width: 0.9; }
+      .ct-pt { fill: var(--ink); }
+      .ct-handle { fill: var(--accent-primary, #f4c95d); stroke: var(--ink); stroke-width: 1.1; cursor: grab; }
+      .ct-hit { fill: transparent; cursor: grab; }
+      .ct-drag:hover .ct-handle, .ct-drag.is-held .ct-handle { fill: var(--accent-warning, #f0a868); }
+      .ct-drag.is-held { cursor: grabbing; }
+      /* a proof step lights what it talks about; the rest steps back */
+      #figure.is-lit [data-part]:not(.is-lit) { opacity: 0.16; }
+      #figure [data-part] { transition: opacity 0.25s; }
+
+      /* ── the receipt at the bottom: the eight theorems, and what to do with one ── */
+      #controls {
+        position: fixed;
+        bottom: max(2.5%, env(safe-area-inset-bottom, 0px));
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(94%, 780px);
+        z-index: 20;
+      }
+      #controls .pp-receipt__paper { display: flex; flex-direction: column; gap: 0.7rem; padding: 0.95rem 1.2rem 1rem; }
+      .ct-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.55rem 0.5rem; }
+      .ct-chip { font-size: 0.7rem; padding: 0.3rem 0.6rem 0.35rem; }
+      .ct-chip.is-on { outline: 2px solid var(--ink); outline-offset: 2px; }
+      .ct-mode { font-size: 0.74rem; padding: 0.32rem 0.75rem 0.38rem; }
+      .ct-mode.is-on { outline: 2px solid var(--ink); outline-offset: 2px; }
+      .ct-tool { font-size: 0.72rem; padding: 0.3rem 0.65rem 0.36rem; }
+      .ct-ask { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 700; }
+      .ct-ask input { width: 5.2rem; padding: 0.3rem 0.45rem; font: 700 0.9rem var(--font-mono); border: 2px solid var(--ink); background: var(--surface-primary); color: var(--ink); text-align: center; }
+      .ct-ask input::-webkit-inner-spin-button, .ct-ask input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+      .ct-ask input { -moz-appearance: textfield; appearance: textfield; }
+      .ct-sep { width: 1px; height: 1.4rem; background: var(--border-subtle, rgba(42, 39, 35, 0.2)); }
+      [hidden] { display: none !important; }
+
+      @media (max-width: 640px) {
+        #stage { padding: 214px 8px 236px; }
+        #explanation-overlay { padding: 0.65rem 1rem 0.75rem; }
+        #explanation-overlay p { font-size: 0.82rem; }
+        .ct-chip { font-size: 0.62rem; }
+      }
+    </style>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>Circle Theorems</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div id="stage">
+      <svg id="figure" viewBox="-122 -112 244 224" preserveAspectRatio="xMidYMid meet" role="img" aria-label="The circle and the theorem's figure"></svg>
+    </div>
+
+    <div id="page-top">
+      <!-- One nav link, every geometry studio: the bar is filled by geometry-tabs.js -->
+      <div class="builder-tabs builder-tabs--float" data-tabs="geometry"></div>
+
+      <div id="explanation-overlay" class="pp-sticky pp-sticky--c0 pp-sticky--tape" aria-live="polite">
+        <span class="step-tag" id="step-tag">Circle theorems</span>
+        <p id="text-content">Drawing the circle…</p>
+        <p class="fact" id="fact"></p>
+      </div>
+    </div>
+
+    <div id="controls" class="pp-receipt">
+      <div class="pp-receipt__paper">
+        <div class="ct-row" id="chips" role="tablist" aria-label="The theorem"></div>
+        <div class="ct-row">
+          <button type="button" class="pp-btn ct-mode" data-mode="explore" title="Drag the points and watch (E)">Explore</button>
+          <button type="button" class="pp-btn ct-mode" data-mode="why" title="Why it is true, a step at a time (W)">Why?</button>
+          <button type="button" class="pp-btn ct-mode" data-mode="quiz" title="Find the missing angle (Q)">Find it</button>
+          <span class="ct-sep" aria-hidden="true"></span>
+          <span id="why-tools" hidden>
+            <button type="button" class="pp-btn ct-tool" id="prev" title="The step before (Left arrow)">Back</button>
+            <button type="button" class="pp-btn ct-tool" id="next" title="The next step (Right arrow)">Next</button>
+          </span>
+          <span id="quiz-tools" class="ct-ask" hidden>
+            <label for="answer" id="ask-label">?</label>
+            <input id="answer" type="number" step="any" inputmode="decimal" autocomplete="off" aria-describedby="ask-label" />
+            <button type="button" class="pp-btn ct-tool" id="check" title="Check (Enter)">Check</button>
+            <button type="button" class="pp-btn ct-tool" id="another" title="Another one (N)">Another</button>
+          </span>
+          <button type="button" class="pp-btn ct-tool" id="reset" title="Put the points back (R)">Start again</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/utils/components/loader.js"></script>
+    <script type="module" src="/utils/components/nav-builder.js"></script>
+    <script type="module" src="/utils/components/geometry-tabs.js"></script>
+    <script type="module" src="./index.js"></script>
+  </body>
+</html>

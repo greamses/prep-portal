@@ -122,6 +122,7 @@ export const FEATURES = [
       { id: "polygon-angles", label: "Polygon Angles", path: "/prep-math/activity/polygon-angles" },
       { id: "pythagoras", label: "Pythagoras (squares on the sides)", path: "/prep-math/activity/pythagoras" },
       { id: "surface-area", label: "Surface Area", path: "/prep-math/activity/surface-area" },
+      { id: "circle-theorems", label: "Circle Theorems (drag the points, see why, find the angle)", path: "/prep-math/activity/circle-theorems" },
       { id: "transversals", label: "Transversals", path: "/prep-math/activity/transversals" },
       { id: "number-match", label: "Number Match (match every way of writing a number to the numeral)", path: "/prep-math/activity/number-match" },
     ],

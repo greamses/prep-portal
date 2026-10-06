@@ -19,6 +19,7 @@ export const GEOMETRY_TABS = [
   { text: "Transversals",   href: "/prep-math/activity/transversals/index.html" },
   { text: "Pythagoras",     href: "/prep-math/activity/pythagoras/index.html" },
   { text: "Surface Area",   href: "/prep-math/activity/surface-area/index.html" },
+  { text: "Circle Theorems", href: "/prep-math/activity/circle-theorems/index.html" },
 ];
 
 /* A tab is current when the page sits in its folder, so /pythagoras/ and
