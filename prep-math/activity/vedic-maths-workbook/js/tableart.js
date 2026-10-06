@@ -66,21 +66,45 @@ export function wSvg({ labels = ["", "", "", "", ""], tens = ["", "", "", "", ""
   return `<svg class="vm-w" viewBox="0 0 124 76" role="img" aria-label="A big W with a number at each of its five points">${s}</svg>`;
 }
 
-/* the six digits of one seventh, in the order they stand round the wheel, and the ink each keeps */
+/* the six digits of one seventh, in the order they stand round the wheel, the ink each keeps,
+   and the paper of its slice of the spinner */
 export const WHEEL = [1, 4, 2, 8, 5, 7];
 export const WHEEL_INK = ["#14130f", "#7b4fa3", "#2e8b46", "#2f6ea8", "#d9632b", "#1f8a8a"];
+export const WHEEL_PAPER = ["#fff3a8", "#e8c8ff", "#c8f0c0", "#bfe3ff", "#ffd7a3", "#b8ece2"];
+
+/* ── THE SPINNER of seven ────────────────────────────────────────────────
+   A wheel of six coloured slices, 1 4 2 8 5 7 clockwise from the top, with
+   a pin at every join and an ARROW on a hub in the middle. The arrow spins
+   to the digit an answer starts at. Drawn in two layers, so that the TV can
+   turn the arrow by itself: the disc, and the arrow (pointing straight up —
+   at the 1 — until it is turned). Both are 200 by 200, centred on 100, 100. */
+const P = (deg, r) => { const a = (deg * Math.PI) / 180; return [100 + r * Math.cos(a), 100 + r * Math.sin(a)]; };
+
+/** the disc: `digits` false leaves the six figures off (the TV stands its own on the slices) */
+export function spinnerDisc({ digits = true } = {}) {
+  let s = `<circle cx="100" cy="100" r="98" fill="#2a2723"/>`;
+  WHEEL.forEach((d, i) => {
+    const [x0, y0] = P(-120 + i * 60, 91), [x1, y1] = P(-60 + i * 60, 91);
+    s += `<path d="M100 100L${f(x0)} ${f(y0)}A91 91 0 0 1 ${f(x1)} ${f(y1)}Z" fill="${WHEEL_PAPER[i]}" stroke="#2a2723" stroke-width="2.2" stroke-linejoin="round"/>`;
+    if (digits) { const [x, y] = P(-90 + i * 60, 64); s += `<text x="${f(x)}" y="${f(y + 11)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="32" font-weight="800" fill="${WHEEL_INK[i]}">${d}</text>`; }
+  });
+  for (let i = 0; i < 6; i++) { const [x, y] = P(-120 + i * 60, 94.5); s += `<circle cx="${f(x)}" cy="${f(y)}" r="3.4" fill="#fffdf8" stroke="#2a2723" stroke-width="1"/>`; }
+  return s;
+}
+
+/** the arrow on its hub, pointing straight up */
+export function spinnerArrow() {
+  return `<path d="M100 66L112 93H88Z" fill="#d93a2b" stroke="#2a2723" stroke-width="2.4" stroke-linejoin="round"/>` +
+    `<path d="M94 90H106V118H94Z" fill="#d93a2b" stroke="#2a2723" stroke-width="2.4" stroke-linejoin="round"/>` +
+    `<circle cx="100" cy="100" r="13" fill="#2a2723"/><circle cx="100" cy="100" r="5" fill="#fffdf8"/>`;
+}
 
 /**
- * The REVOLVING WHEEL of seven: 1 4 2 8 5 7 round a ring, read clockwise.
- *   start    the digit a reading starts at (it is ringed), or 0 for none
+ * The whole spinner, as it is printed.
+ *   start    the digit the arrow points at (1, 2, 4, 5, 7 or 8); 0 leaves the arrow pointing at the 1
  */
 export function wheelSvg({ start = 0 } = {}) {
-  let s = `<circle cx="50" cy="50" r="24" fill="none" stroke="#8a837a" stroke-width="1.4" stroke-dasharray="3 2.4"/>` +
-    `<path d="M66 28.5l7.6 3.2-5.6 5.8" fill="none" stroke="#8a837a" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>`;
-  WHEEL.forEach((d, i) => {
-    const a = ((-90 + i * 60) * Math.PI) / 180, x = 50 + 38 * Math.cos(a), y = 50 + 38 * Math.sin(a);
-    if (d === start) s += `<circle cx="${f(x)}" cy="${f(y)}" r="9" fill="#fff3a8" stroke="${INK}" stroke-width="1.3"/>`;
-    s += `<text x="${f(x)}" y="${f(y + 5)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="14" font-weight="800" fill="${WHEEL_INK[i]}">${d}</text>`;
-  });
-  return `<svg class="vm-wheel" viewBox="0 0 100 100" role="img" aria-label="The digits 1, 4, 2, 8, 5, 7 round a wheel, read clockwise">${s}</svg>`;
+  const turn = 60 * Math.max(0, WHEEL.indexOf(start));
+  return `<svg class="vm-wheel" viewBox="0 0 200 200" role="img" aria-label="A spinner wheel with the digits 1, 4, 2, 8, 5, 7 clockwise, its arrow at the ${start || 1}">` +
+    `${spinnerDisc()}<g transform="rotate(${turn} 100 100)">${spinnerArrow()}</g></svg>`;
 }

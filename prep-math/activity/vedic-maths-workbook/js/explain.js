@@ -35,7 +35,7 @@
    Drills papers have no strip: a drill is against the clock.
    ========================================================================== */
 
-import { wSvg, WHEEL } from "./tableart.js";
+import { wSvg, WHEEL, spinnerDisc, spinnerArrow } from "./tableart.js";
 
 /* Tricks with a full animated lesson in Learning with PrepBot. */
 const LESSONS = {
@@ -181,6 +181,12 @@ function acts(stage, gsap, instant) {
       if (x != null) { b.style.left = `${x}%`; b.style.top = `${y}%`; }
       if (tone) { n.style.backgroundColor = TONES[tone][0]; n.style.borderColor = TONES[tone][1]; }
       if (text != null) n.textContent = text;
+    },
+    /** A tile is turned to an angle: the spinner's arrow. */
+    turn(id, deg, delay = 0, duration = 1.3) {
+      const n = inn(id); if (!n) return;
+      if (quick) { if (gsap) gsap.set(n, { rotation: deg }); else n.style.transform = `rotate(${deg}deg)`; return; }
+      gsap.to(n, { rotation: deg, duration, delay, ease: "power3.out" });
     },
     /** A stick takes a colour. */
     paint(id, tone, delay = 0) {
@@ -525,11 +531,12 @@ function nine2Steps() {
      3  the six digits leave the decimal and take their places round a WHEEL,
         each in its own ink, which it keeps for the whole lesson
      4  × 1: the wheel read from the 1 — the number itself
-     5–9  × 2 … × 6: a ring moves to the digit the answer starts at; the
-        wheel is read once round from there, and each digit read drops into
-        the answer in its own ink — so every answer is seen to be the same
-        colours in the same order, only turned
-     10 the first digits of the six answers: 1 2 4 5 7 8, in order of size
+     5–9  × 2 … × 6: the spinner's ARROW spins round to the digit the answer
+        starts at; the wheel is read once round from there, and each digit
+        read drops into the answer in its own ink — so every answer is seen
+        to be the same colours in the same order, only turned
+     10 the arrow visits the starts in order of size — 1, 2, 4, 5, 7, 8 — as
+        the first digit of each answer is pointed at
      11 opposite digits of the wheel make 9: 1+8, 4+5, 2+7
      12 × 7: the wheel stops — 999999
      13 the sevenths: 1/7, 2/7, 3/7 are the same wheel
@@ -537,7 +544,7 @@ function nine2Steps() {
    products, one to a row. Everything only ever comes ON (or moves), so a
    step reached by going back is rebuilt exactly. */
 function wheelSteps() {
-  const CX = 64, CY = 46, RX = 11, RY = 19.5;                                   // the wheel, in hundredths of the screen (it is round on a 16:9 screen)
+  const CX = 63, CY = 47, RX = 9.4, RY = 16.7;                                   // the wheel, in hundredths of the screen (it is round on a 16:9 screen)
   const at = (i) => { const a = ((-90 + i * 60) * Math.PI) / 180; return [CX + RX * Math.cos(a), CY + RY * Math.sin(a)]; };
   const DX = (k) => 45 + k * 2.9, DY = 8;                                     // the decimal's digits
   const rowY = (n) => 20 + (n - 1) * 9.3;                                     // the products
@@ -549,14 +556,16 @@ function wheelSteps() {
     tile(stage, "q", "1 ÷ 7 = 0.", 30.5, DY, { bare: true });
     for (let k = 0; k < 12; k++) tile(stage, `d${k}`, String(WHEEL[k % 6]), DX(k), DY, { c: k % 6 });
     tile(stage, "more", "…", DX(12) + 0.8, DY, { bare: true });
-    const ring = tile(stage, "ring", "", CX, CY, { bare: true });
-    ring.firstChild.className = "vm-t__in vm-t__art";
-    ring.firstChild.style.width = "calc(var(--u) * 14)";
-    ring.firstChild.innerHTML = `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="#8a837a" stroke-width="2.2" stroke-dasharray="6 5"/>` +
-      `<path d="M76 13l14 4.5-9.5 11" fill="none" stroke="#8a837a" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
-    const mk = tile(stage, "mk", "", ...at(0), { bare: true });
-    mk.firstChild.className = "vm-t__in vm-t__ring";
+    /* the spinner: its disc, and over it the arrow, which is turned by itself */
+    const layer = (id, inner) => {
+      const box = tile(stage, id, "", CX, CY, { bare: true });
+      box.firstChild.className = "vm-t__in vm-t__art";
+      box.firstChild.style.width = "calc(var(--u) * 31)";
+      box.firstChild.innerHTML = `<svg viewBox="0 0 200 200">${inner}</svg>`;
+    };
+    layer("ring", spinnerDisc({ digits: false }));
     six((i) => tile(stage, `w${i}`, String(WHEEL[i]), ...at(i), { c: i, size: "l" }));
+    layer("arrow", spinnerArrow());
     for (let n = 1; n <= 7; n++) {
       tile(stage, `L${n}`, `142857 × ${n} =`, 13, rowY(n), { bare: true, size: "s" });
       six((k) => tile(stage, `p${n}_${k}`, n === 7 ? "9" : String(WHEEL[(START[n - 1] + k) % 6]), PX(k), rowY(n), { c: n === 7 ? 2 : (START[n - 1] + k) % 6 }));
@@ -565,11 +574,14 @@ function wheelSteps() {
     ["1/7 = 0.142857…", "2/7 = 0.285714…", "3/7 = 0.428571…"].forEach((t, k) => tile(stage, `f${k}`, t, 12 + k * 23, 90, { bare: true, size: "s" }));
   };
   const step = (say, fn) => ({ say, show(stage, how) { fn(acts(stage, how.gsap, how.instant)); } });
-  /** 142857 × n: the ring goes to where the answer starts, and the wheel is read once round into the row */
-  const times = (S, n, ringAt, readAt, gap = 0.62) => {
+  /* The arrow only ever spins clockwise, and always by at least one whole turn: for × n it
+     has gone n − 1 times round, and then on to the place the answer starts at. */
+  const angle = (n) => 360 * (n - 1) + 60 * START[n - 1];
+  /** 142857 × n: the arrow spins to where the answer starts, and the wheel is read once round into the row */
+  const times = (S, n, spinAt, readAt, gap = 0.62) => {
     const s0 = START[n - 1];
     S.pop(`L${n}`, 0.3);
-    S.move("mk", ...at(s0), ringAt); S.pop("mk", ringAt);
+    if (n === 1) S.pop("arrow", spinAt); else S.turn("arrow", angle(n), spinAt);
     six((k) => { S.pulse(`w${(s0 + k) % 6}`, readAt + k * gap); S.pop(`p${n}_${k}`, readAt + k * gap + 0.1); });
   };
   const steps = [
@@ -577,22 +589,28 @@ function wheelSteps() {
       (S) => { S.pop("q", 4.2); six((k) => S.pop(`d${k}`, 8.2 + k * 0.6)); }),
     step("Keep dividing, and the same six digits come out again. 1, 4, 2, 8, 5, 7. And again, for ever. It never ends.",
       (S) => { six((k) => S.pop(`d${6 + k}`, 4 + k * 0.6)); S.pop("more", 8.6); }),
-    step("Take those six digits, and stand them round a wheel, in the same order. 1, 4, 2, 8, 5, 7.",
+    step("Take those six digits, and stand them round a spinner wheel, in the same order. 1, 4, 2, 8, 5, 7.",
       (S) => { S.pop("ring", 2.4); six((i) => { S.pulse(`d${i}`, 5.2 + i * 0.7); S.fly(`w${i}`, DX(i), DY, 5.4 + i * 0.7); }); }),
-    step("Read the wheel from the 1, going round with the arrow. 1, 4, 2, 8, 5, 7. That is our number: 142857.",
+    step("Put an arrow on the wheel, pointing at the 1. Read round from there. 1, 4, 2, 8, 5, 7. That is our number: 142857.",
       (S) => times(S, 1, 1.2, 4.4)),
-    step("Now multiply it by 2. The answer is 285714. Look: the same six digits, in the same order! Start at the 2, and read round. 2, 8, 5, 7, 1, 4.",
+    step("Now multiply it by 2. The answer is 285714. Look: the same six digits, in the same order! Spin the arrow to the 2, and read round. 2, 8, 5, 7, 1, 4.",
       (S) => times(S, 2, 8.6, 11.4)),
-    step("Multiply by 3. Start at the 4 this time, and read round. 4, 2, 8, 5, 7, 1. 428571. The wheel has only turned.",
+    step("Multiply by 3. Spin the arrow to the 4 this time, and read round. 4, 2, 8, 5, 7, 1. 428571. The wheel has only turned.",
       (S) => times(S, 3, 1.6, 4.4)),
-    step("Multiply by 4. Start at the 5. 5, 7, 1, 4, 2, 8. 571428.", (S) => times(S, 4, 1.4, 3.4)),
-    step("Multiply by 5. Start at the 7. 7, 1, 4, 2, 8, 5. 714285.", (S) => times(S, 5, 1.4, 3.4)),
-    step("Multiply by 6. Start at the 8. 8, 5, 7, 1, 4, 2. 857142. Six answers, and never a new digit. That is why seven revolves.",
+    step("Multiply by 4. Spin to the 5. 5, 7, 1, 4, 2, 8. 571428.", (S) => times(S, 4, 1.4, 3.4)),
+    step("Multiply by 5. Spin to the 7. 7, 1, 4, 2, 8, 5. 714285.", (S) => times(S, 5, 1.4, 3.4)),
+    step("Multiply by 6. Spin to the 8. 8, 5, 7, 1, 4, 2. 857142. Six answers, and never a new digit. That is why seven revolves.",
       (S) => times(S, 6, 1.4, 3.4)),
-    step("How do you know where to start? Look at the first digit of each answer. 1, 2, 4, 5, 7, 8. They go up in order of size. The next answer starts at the next biggest digit.",
-      (S) => { S.hide("mk"); for (let n = 1; n <= 6; n++) S.pulse(`p${n}_0`, 6.2 + (n - 1) * 0.7); }),
+    step("How do you know where to spin to? Watch the arrow, and the first digit of each answer. 1, then 2, then 4, 5, 7, 8. They go up in order of size. The next answer starts at the next biggest digit.",
+      (S) => {
+        for (let n = 1; n <= 6; n++) {
+          const t = 6.4 + (n - 1) * 1.1;
+          S.turn("arrow", 2160 + 60 * START[n - 1], t, 0.7);
+          S.pulse(`w${START[n - 1]}`, t + 0.6); S.pulse(`p${n}_0`, t + 0.6);
+        }
+      }),
     step("Here is another secret of the wheel. Digits that face each other across it always make 9. 1 and 8. 4 and 5. 2 and 7.",
-      (S) => { S.hide("mk"); [[0, 3], [1, 4], [2, 5]].forEach(([i, j], k) => { const t = 7.4 + k * 1.5; S.pulse(`w${i}`, t); S.pulse(`w${j}`, t + 0.2); S.pop(`o${k}`, t + 0.3); }); }),
+      (S) => { [[0, 3], [1, 4], [2, 5]].forEach(([i, j], k) => { const t = 7.4 + k * 1.5; S.pulse(`w${i}`, t); S.pulse(`w${j}`, t + 0.2); S.pop(`o${k}`, t + 0.3); }); }),
     step("So what happens when you multiply by 7 itself? The wheel stops turning, and every digit becomes a 9. 999999.",
       (S) => { [0, 1, 2].forEach((k) => S.hide(`o${k}`)); S.pop("L7", 4.4); six((k) => S.pop(`p7_${k}`, 8.6 + k * 0.4)); six((i) => S.pulse(`w${i}`, 8.6 + i * 0.4)); }),
     step("And that is why sevenths are easy. One seventh is 0 point 142857. Two sevenths start at the 2: 285714. Three sevenths start at the 4: 428571. Always the same wheel, only turned. Seven, the revolving number.",
@@ -888,6 +906,100 @@ function nine1Steps() {
   return { build: (stage) => { delete stage.dataset.part; N.build(stage); }, steps: [...N.steps, ...second] };
 }
 
+/* ── THE ONES TREE: n ones times n ones, every answer a palindrome ─────────
+   THE PLAN, in two screens.
+   Screen one, the TREE: nine rows, 1 × 1 down to 111111111 × 111111111. The
+   sums stand on the left; each answer is written a figure at a time, counted
+   UP in blue to a green top figure and back DOWN in orange, and centred, so
+   the answers widen row by row into a tree.
+     1–4   one row a step, each counted out, for 1, 2, 3 and 4 ones
+     5     the rule: count the ones, count up to it and back down
+     6–8   the rows for 5 and 6, 7 and 8, then 9 ones
+     9     PALINDROME: the bottom row's figures pulse in mirror pairs, the
+           outermost first, closing on the 9
+     10    the tree: the top figure of every row, down the trunk
+   Screen two, WHY: 111 × 111 the long way — three copies of 111, each one
+   place along; the columns hold one, two, three, two, one 1s; added, 12321.
+     11–14 the sum, the three copies, the columns added one at a time, the answer
+   The second screen builds itself the first time one of its steps is shown. */
+function onesTreeSteps() {
+  const ROWS = 9;
+  const y = (k) => 12 + (k - 1) * 9.1;
+  const digits = (k) => Array.from({ length: 2 * k - 1 }, (_, i) => (i < k ? i + 1 : 2 * k - 1 - i));
+  const dx = (k, j) => 56 + (j - (2 * k - 2) / 2) * 1.86;
+  const ink = (k, j) => (j < k - 1 ? 3 : j === k - 1 ? 2 : 4);
+  const build = (stage) => {
+    delete stage.dataset.part;
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    for (let k = 1; k <= ROWS; k++) {
+      tile(stage, `s${k}`, `${"1".repeat(k)} × ${"1".repeat(k)}`, 20, y(k), { bare: true, size: "s" });
+      tile(stage, `e${k}`, "=", 37, y(k), { bare: true, size: "s" });
+      digits(k).forEach((d, j) => { tile(stage, `d${k}_${j}`, String(d), dx(k, j), y(k), { c: ink(k, j) }).firstChild.style.fontSize = "calc(var(--u) * 3)"; });
+    }
+  };
+  const step = (say, fn) => ({ say, show(stage, how) { fn(acts(stage, how.gsap, how.instant)); } });
+  /** row k is written: its sum, then its answer a figure at a time */
+  const row = (S, k, at, gap = 0.5) => {
+    S.pop(`s${k}`, Math.max(0, at - 1.2)); S.pop(`e${k}`, Math.max(0, at - 1.2));
+    digits(k).forEach((_, j) => S.pop(`d${k}_${j}`, at + j * gap));
+    return at + (2 * k - 1) * gap;
+  };
+  const tree = [
+    step("Here is a number secret: the ones tree. Start with 1 times 1. That is 1.", (S) => row(S, 1, 5.6)),
+    step("Now 11 times 11. It is 121. Count up to 2, and back down. 1, 2, 1.", (S) => row(S, 2, 6.4, 0.6)),
+    step("111 times 111. Three ones, so count up to 3 and back down. 1, 2, 3, 2, 1. 12321.", (S) => row(S, 3, 6.2, 0.55)),
+    step("1111 times 1111. Four ones. 1, 2, 3, 4, 3, 2, 1.", (S) => row(S, 4, 4, 0.5)),
+    step("Do you see the rule? Count the ones in one of the numbers. Then count up to that number, and back down again.",
+      (S) => { [1, 2, 3, 4].forEach((k, i) => { S.pulse(`s${k}`, 3 + i * 0.5); S.pulse(`d${k}_${k - 1}`, 6.4 + i * 0.5); }); }),
+    step("Five ones: up to 5 and back. Six ones: up to 6 and back.", (S) => { const t = row(S, 5, 1.6, 0.3); row(S, 6, t + 1.2, 0.3); }),
+    step("Seven ones: up to 7 and back. Eight ones: up to 8 and back.", (S) => { const t = row(S, 7, 1.6, 0.26); row(S, 8, t + 1.2, 0.26); }),
+    step("And nine ones: all the way up to 9, and all the way back down. 1, 2, 3, 4, 5, 6, 7, 8, 9, 8, 7, 6, 5, 4, 3, 2, 1.",
+      (S) => row(S, 9, 5.6, 0.44)),
+    step("Read any answer forwards. Now read it backwards. It is the same! A number like that is called a palindrome. The left side is the mirror of the right.",
+      (S) => { for (let j = 0; j < 9; j++) { const t = 6 + j * 0.55; S.pulse(`d9_${j}`, t); S.pulse(`d9_${16 - j}`, t); } }),
+    step("And each answer is two figures wider than the one above it. So they stand like a tree, with the biggest figure of each row down its trunk. 1, 2, 3, 4, 5, 6, 7, 8, 9.",
+      (S) => { for (let k = 1; k <= ROWS; k++) S.pulse(`d${k}_${k - 1}`, 9.4 + (k - 1) * 0.5); }),
+  ];
+
+  /* screen two: 111 × 111, the long way */
+  const col = (cI) => 42 + cI * 4.4;
+  const build2 = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    const line = (id, yy) => { const box = tile(stage, id, "", col(2), yy, { bare: true }); box.firstChild.className = "vm-t__in vm-t__line"; box.firstChild.style.width = "calc(var(--u) * 27)"; box.firstChild.style.borderTopStyle = "solid"; };
+    [2, 3, 4].forEach((cI, i) => tile(stage, `a${i}`, "1", col(cI), 14, { c: 0, size: "l" }));
+    tile(stage, "x", "×", col(0) - 3, 26, { bare: true, size: "l" });
+    [2, 3, 4].forEach((cI, i) => tile(stage, `b${i}`, "1", col(cI), 26, { c: [4, 5, 1][i], size: "l" }));
+    line("l1", 33.5);
+    /* the three copies: the one made by the right-hand 1 first, each next one a place along */
+    [[2, 3, 4], [1, 2, 3], [0, 1, 2]].forEach((cols, r) => cols.forEach((cI, i) => tile(stage, `c${r}_${i}`, "1", col(cI), 42 + r * 11, { c: [1, 5, 4][r], size: "l" })));
+    line("l2", 71.5);
+    [1, 2, 3, 2, 1].forEach((d, cI) => tile(stage, `r${cI}`, String(d), col(cI), 80, { c: cI < 2 ? 3 : cI === 2 ? 2 : 4, size: "l" }));
+  };
+  /* which copies have a 1 in column c: [copy, place in it] */
+  const inCol = (cI) => [[2, 3, 4], [1, 2, 3], [0, 1, 2]].map((cols, r) => [r, cols.indexOf(cI)]).filter(([, i]) => i >= 0);
+  const why = [
+    step("Why does it work? Let us multiply 111 by 111 the long way.",
+      (S) => { [0, 1, 2].forEach((i) => S.pop(`a${i}`, 3.4 + i * 0.25)); S.pop("x", 4.6); [0, 1, 2].forEach((i) => S.pop(`b${i}`, 4.8 + i * 0.25)); S.pop("l1", 5.8); }),
+    step("Each 1 underneath makes one copy of 111. And each copy is moved one place along.",
+      (S) => { [2, 1, 0].forEach((bi, r) => { const t = 1.4 + r * 2; S.pulse(`b${bi}`, t); [0, 1, 2].forEach((i) => S.pop(`c${r}_${i}`, t + 0.4 + i * 0.2)); }); S.pop("l2", 7.8); }),
+    step("Now add down the columns, from the right. One 1. Two 1s. Three 1s. Then two again. Then one.",
+      (S) => { [4, 3, 2, 1, 0].forEach((cI, k) => { const t = 4.6 + k * 1.25; inCol(cI).forEach(([r, i]) => S.pulse(`c${r}_${i}`, t)); S.pop(`r${cI}`, t + 0.4); }); }),
+    step("1, 2, 3, 2, 1. Up to 3 and back down, because three copies overlap in the middle. That is the ones tree: 111 times 111 is 12321.",
+      (S) => { [0, 1, 2, 3, 4].forEach((cI) => S.pulse(`r${cI}`, 0.4 + cI * 0.5)); }),
+  ].map((st) => ({
+    say: st.say,
+    show(stage, how) {
+      if (stage.dataset.part !== "why") {
+        build2(stage);
+        stage.dataset.part = "why";
+        stage.querySelector(".vm-tv").style.setProperty("--u", `${stage.clientWidth / 100}px`);
+      }
+      st.show(stage, how);
+    },
+  }));
+  return { build, steps: [...tree, ...why] };
+}
+
 /* ── ONE FACT ON COUNTING STICKS: the sixes, the sevens, the fours ─────────
    k × n with n sticks. They are counted UP IN FIVES (5, 10, 15 …), and then
    the SAME sticks are counted again, carrying on from there: in ones for the
@@ -983,6 +1095,7 @@ async function explain(strip) {
   const made = data.scene.kind === "nines" ? ninesSteps("table")
     : data.scene.kind === "nine-sticks" ? ninesSteps("sticks")
     : data.scene.kind === "wheel7" ? wheelSteps()
+    : data.scene.kind === "onestree" ? onesTreeSteps()
     : data.scene.kind === "eights" ? eightsSteps()
     : data.scene.kind === "sevens" ? sevensSteps()
     : data.scene.kind === "sixes" ? sixesSteps()

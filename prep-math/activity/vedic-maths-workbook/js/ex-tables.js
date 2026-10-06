@@ -112,6 +112,12 @@
        for the sixes (6 = 5 + 1), in TWOS for the sevens (7 = 5 + 2), and
        going BACK in ones for the fours (4 = 5 − 1).
 
+     A NUMBER SECRET — THE ONES TREE (palindromes)
+       1 × 1 = 1, 11 × 11 = 121, 111 × 111 = 12321, 1111 × 1111 = 1234321 …
+       Count the ones; count UP to that number and back DOWN. Every answer
+       reads the same forwards and backwards — a PALINDROME — and each is
+       two figures wider than the last, so they stand as a tree.
+
      A LINE across a table marks where its pattern REPEATS. It is on the
      paper and on the TV.
 
@@ -131,6 +137,7 @@ export const TT_GROUPS = [
   { id: "vm-tables6", label: "The 6 times table", blurb: "Units in the order 2, 4, 6, 8, 0; one ten in each half comes twice. And a second trick: the diagonals." },
   { id: "vm-tables5", label: "The 5 times table", blurb: "Two at a time: the last ten said again, and the units only 0 and 5." },
   { id: "vm-tables3", label: "The 3 times table", blurb: "Three at a time: the same ten all through a three. And a second trick: the grid." },
+  { id: "vm-secrets", label: "Number secrets", blurb: "The ones tree: 11 × 11 = 121, 111 × 111 = 12321 … every answer a palindrome." },
   { id: "vm-tables4", label: "The 4 times table", blurb: "Tens 0 0 1 1 2 and from 2 again; units 4 8 2 6 0. And a second trick: two W's." },
 ];
 
@@ -339,15 +346,15 @@ const sevenWheel = {
   blurb: "142857 × 2, 3, 4, 5, 6: the same six digits, the wheel only turned.",
   heading: "Why 7 is called the revolving number",
   instruction: () => "Divide 1 by 7 and you get 0.142857 142857 … — the same six digits, over and over. Stand them round a " +
-    "wheel: 1, 4, 2, 8, 5, 7. Now multiply 142857 by 2, 3, 4, 5 or 6: the answer is the SAME six digits in the SAME " +
+    "spinner wheel: 1, 4, 2, 8, 5, 7. Now multiply 142857 by 2, 3, 4, 5 or 6: the answer is the SAME six digits in the SAME " +
     "order — the wheel has only turned. The answers start at the digits in order of size: × 1 starts at 1, × 2 at 2, " +
-    "× 3 at 4, × 4 at 5, × 5 at 7 and × 6 at 8. Find where to start, and read once round the wheel.",
+    "× 3 at 4, × 4 at 5, × 5 at 7 and × 6 at 8. Spin the arrow to where the answer starts, and read once round the wheel from there.",
   tv: "wheel7",
   cols: 2,
   defaultCount: 4,
   make: (r) => ({ n: r.int(2, 6) }),
   render: ({ n }) => big(`142857 × ${n}`) + `<div class="vm-art vm-art--wheel">${wheelSvg()}</div>` +
-    steps(step("it starts at the digit:"), step("read once round — the answer:")),
+    steps(step("the arrow spins to the digit:"), step("read once round — the answer:")),
   worked: () => worked(big("142857 × 3") + `<div class="vm-art vm-art--wheel">${wheelSvg({ start: 4 })}</div>` +
     say("In order of size the digits are 1, 2, 4, 5, 7, 8. The third is 4, so × 3 starts at 4. Read round the wheel: 4, 2, 8, 5, 7, 1. So 142857 × 3 is 428571.")),
   key: ({ n }) => [want.num(WHEEL_START[n - 1]), want.num(142857 * n)],
@@ -699,7 +706,34 @@ const threeGrid = gridEx(3, {
   tens: "0, 0, 0 in the top row; 1, 1, 1 in the middle row; 2, 2, 2 in the bottom row.",
 });
 
-export const TT_EXERCISES = [nineOne, nineAll, nineSticks, nineRows, eightOne, eightAll, sevenOne, sevenAll, sevenGrid, sevenWheel, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW, threeOne, threeAll, threeGrid];
+/* ═══ A NUMBER SECRET: THE ONES TREE ══════════════════════════════════════
+   n ones times n ones: count up to n and back down. (To seven ones here: the
+   answers for eight and nine are longer than a number box can hold exactly.) */
+const onesOf = (n) => "1".repeat(n);
+const treeOf = (n) => Array.from({ length: 2 * n - 1 }, (_, i) => (i < n ? i + 1 : 2 * n - 1 - i)).join("");
+
+const onesTree = {
+  id: "vm-ones-tree",
+  group: "vm-secrets",
+  label: "The palindromic ones tree",
+  blurb: "111 × 111 = 12321: count up to the number of ones, and back down.",
+  heading: "The ones tree — every answer a palindrome",
+  instruction: () => "Multiply a row of ones by itself. 1 × 1 = 1. 11 × 11 = 121. 111 × 111 = 12321. COUNT THE ONES in one of " +
+    "the numbers; then count UP to that number and back DOWN again. Every answer reads the same forwards and backwards: " +
+    "it is a PALINDROME. And each answer is two figures wider than the one before, so together they stand like a tree.",
+  tv: "onestree",
+  cols: 2,
+  defaultCount: 4,
+  make: (r) => ({ n: r.int(2, 7) }),
+  render: ({ n }) => big(`${onesOf(n)} × ${onesOf(n)}`) +
+    steps(step("how many ones in each number:"), step("up to it and back down — the answer:")),
+  worked: () => worked(big("1111 × 1111") + ask(strip("1", "2", "3", "4", "3", "2", "1")) +
+    say("There are 4 ones. Count up to 4 and back down: 1, 2, 3, 4, 3, 2, 1. So 1111 × 1111 is 1234321.")),
+  key: ({ n }) => [want.num(n), want.num(Number(treeOf(n)))],
+  answer: ({ n }) => [`${n} ones: ${onesOf(n)} × ${onesOf(n)} = ${treeOf(n)}`],
+};
+
+export const TT_EXERCISES = [nineOne, nineAll, nineSticks, nineRows, eightOne, eightAll, sevenOne, sevenAll, sevenGrid, sevenWheel, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW, threeOne, threeAll, threeGrid, onesTree];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).
