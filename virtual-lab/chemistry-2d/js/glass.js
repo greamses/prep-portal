@@ -77,28 +77,69 @@ function wall(P, side, inset, from, to) {
 // ── vessels ─────────────────────────────────────────────────────────────────
 // cap = portions of liquid it holds; fill = how far up the glass "full" comes
 export const VESSELS = {
-  tube: { name: "Test tube", cap: 12, profile: tubeProfile(13, 150), fill: 0.86, rack: true },
-  boil: { name: "Boiling tube", cap: 20, profile: tubeProfile(18, 176), fill: 0.86 },
-  beaker100: { name: "Beaker (100 mL)", cap: 30, profile: beakerProfile(40, 96), fill: 0.84, flat: true, spout: true, marks: [[20, 0.2], [40, 0.4], [60, 0.6], [80, 0.8]], volume: "100 mL" },
-  beaker250: { name: "Beaker (250 mL)", cap: 60, profile: beakerProfile(55, 132), fill: 0.84, flat: true, spout: true, marks: [[50, 0.2], [100, 0.4], [150, 0.6], [200, 0.8]], volume: "250 mL" },
-  beaker500: { name: "Beaker (500 mL)", cap: 100, profile: beakerProfile(68, 150), fill: 0.84, flat: true, spout: true, marks: [[100, 0.2], [200, 0.4], [300, 0.6], [400, 0.8]], volume: "500 mL" },
-  flask100: { name: "Conical flask (100 mL)", cap: 30, profile: [[0, 40], [-3, 44], [-8, 45], [-68, 15], [-78, 13], [-114, 13], [-117, 16]], fill: 0.58, flat: true, marks: [[50, 0.5], [75, 0.75]], volume: "100 mL" },
-  flask: { name: "Conical flask (250 mL)", cap: 50, profile: [[0, 54], [-3, 59], [-9, 60], [-92, 19], [-104, 17], [-150, 17], [-153, 20]], fill: 0.6, flat: true, marks: [[100, 0.4], [150, 0.6], [200, 0.8]], volume: "250 mL" },
-  rbf: { name: "Round-bottom flask", cap: 50, profile: bulb(52, 52, 15, 166), fill: 0.5, volume: "250 mL" },
-  fbf: { name: "Flat-bottom flask", cap: 50, profile: bulb(52, 46, 15, 160), fill: 0.5, flat: true, foot: 22, volume: "250 mL" },
-  vol100: { name: "Volumetric flask (100 mL)", cap: 40, profile: bulb(40, 36, 7.5, 178), fill: 0.83, flat: true, foot: 15, ring: -150, volume: "100 mL" },
-  cyl10: { name: "Measuring cylinder (10 mL)", cap: 6, profile: cylProfile(9, 124), fill: 0.86, floor: 8, footR: 24, spout: true, marks: [[2, 0.2], [4, 0.4], [6, 0.6], [8, 0.8]] },
-  cyl100: { name: "Measuring cylinder (100 mL)", cap: 36, profile: cylProfile(16, 196), fill: 0.86, floor: 8, footR: 34, spout: true, marks: [[20, 0.2], [40, 0.4], [60, 0.6], [80, 0.8]] },
-  gasjar: { name: "Gas jar", cap: 60, profile: [[0, 34], [-2, 38], [-6, 40], [-150, 40], [-152, 47], [-156, 47]], fill: 0.86, flat: true },
-  dish: { name: "Evaporating dish", cap: 14, profile: [[0, 20], [-2, 32], [-10, 48], [-26, 59], [-30, 61]], fill: 0.74, flat: true, foot: 18, material: "porcelain" },
-  crucible: { name: "Crucible", cap: 8, profile: [[0, 14], [-2, 17], [-40, 26], [-43, 27]], fill: 0.8, flat: true, foot: 13, material: "porcelain" },
-  watch: { name: "Watch glass", cap: 4, profile: [[0, 10], [-3, 32], [-9, 50], [-12, 55]], fill: 0.7, flat: true, foot: 9 },
+  tube: { name: "Test tube", cap: 12, g: 18, profile: tubeProfile(13, 150), fill: 0.86, rack: true },
+  boil: { name: "Boiling tube", cap: 25, g: 30, profile: tubeProfile(18, 176), fill: 0.86 },
+  beaker100: { name: "Beaker (100 mL)", cap: 50, g: 48, profile: beakerProfile(40, 96), fill: 0.84, flat: true, spout: true, marks: [[20, 0.2], [40, 0.4], [60, 0.6], [80, 0.8]], volume: "100 mL" },
+  beaker250: { name: "Beaker (250 mL)", cap: 125, g: 96, profile: beakerProfile(55, 132), fill: 0.84, flat: true, spout: true, marks: [[50, 0.2], [100, 0.4], [150, 0.6], [200, 0.8]], volume: "250 mL" },
+  beaker500: { name: "Beaker (500 mL)", cap: 250, g: 180, profile: beakerProfile(68, 150), fill: 0.84, flat: true, spout: true, marks: [[100, 0.2], [200, 0.4], [300, 0.6], [400, 0.8]], volume: "500 mL" },
+  flask100: { name: "Conical flask (100 mL)", cap: 50, g: 52, profile: [[0, 40], [-3, 44], [-8, 45], [-68, 15], [-78, 13], [-114, 13], [-117, 16]], fill: 0.58, flat: true, marks: [[50, 0.5], [75, 0.75]], volume: "100 mL" },
+  flask: { name: "Conical flask (250 mL)", cap: 125, g: 104, profile: [[0, 54], [-3, 59], [-9, 60], [-92, 19], [-104, 17], [-150, 17], [-153, 20]], fill: 0.6, flat: true, marks: [[100, 0.4], [150, 0.6], [200, 0.8]], volume: "250 mL" },
+  rbf: { name: "Round-bottom flask", cap: 125, g: 92, profile: bulb(52, 52, 15, 166), fill: 0.5, volume: "250 mL" },
+  fbf: { name: "Flat-bottom flask", cap: 125, g: 96, profile: bulb(52, 46, 15, 160), fill: 0.5, flat: true, foot: 22, volume: "250 mL" },
+  vol100: { name: "Volumetric flask (100 mL)", cap: 50, g: 58, profile: bulb(40, 36, 7.5, 178), fill: 0.83, flat: true, foot: 15, ring: -150, volume: "100 mL" },
+  cyl10: { name: "Measuring cylinder (10 mL)", cap: 5, g: 24, profile: cylProfile(9, 124), fill: 0.86, floor: 8, footR: 24, spout: true, marks: [[2, 0.2], [4, 0.4], [6, 0.6], [8, 0.8]] },
+  cyl100: { name: "Measuring cylinder (100 mL)", cap: 50, g: 110, profile: cylProfile(16, 196), fill: 0.86, floor: 8, footR: 34, spout: true, marks: [[20, 0.2], [40, 0.4], [60, 0.6], [80, 0.8]] },
+  gasjar: { name: "Gas jar", cap: 150, g: 210, profile: [[0, 34], [-2, 38], [-6, 40], [-150, 40], [-152, 47], [-156, 47]], fill: 0.86, flat: true },
+  dish: { name: "Evaporating dish", cap: 30, g: 62, profile: [[0, 20], [-2, 32], [-10, 48], [-26, 59], [-30, 61]], fill: 0.74, flat: true, foot: 18, material: "porcelain" },
+  crucible: { name: "Crucible", cap: 10, g: 24, profile: [[0, 14], [-2, 17], [-40, 26], [-43, 27]], fill: 0.8, flat: true, foot: 13, material: "porcelain" },
+  mortar: { name: "Mortar and pestle", cap: 30, g: 240, profile: [[0, 26], [-3, 35], [-12, 46], [-40, 58], [-46, 60]], fill: 0.7, flat: true, foot: 24, material: "porcelain",
+    front: `<path d="M12 -30L46 -88" stroke="#eef1f4" stroke-width="10" stroke-linecap="round"/><path d="M14 -30L47 -86" stroke="#fff" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="-28" r="8" fill="#e3e7ec"/>`,
+    box: { x0: -66, y0: -98, x1: 66, y1: 8 } },
+  burette: {
+    name: "Burette (50 mL)", cap: 25, g: 0, fixed: true, profile: [[-196, 2.5], [-204, 7], [-470, 7], [-473, 9]], floor: 196, fill: 0.96, shadow: 78,
+    slots: [[0, 0]], slotFits: (d) => Boolean(d.flat) && !d.fixed && -d.top <= 162, box: { x0: -116, y0: -486, x1: 44, y1: 8 },
+    back: `<rect x="-112" y="-12" width="152" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/>
+      <rect x="-84" y="-484" width="7" height="474" rx="3" fill="url(#g-metal)"/>
+      <rect x="-80" y="-368" width="70" height="6" rx="3" fill="url(#g-metal)"/><rect x="-80" y="-262" width="70" height="6" rx="3" fill="url(#g-metal)"/>
+      <rect x="-90" y="-374" width="20" height="18" rx="3" fill="#5b6470" stroke="#fff" stroke-opacity="0.25"/><rect x="-90" y="-268" width="20" height="18" rx="3" fill="#5b6470" stroke="#fff" stroke-opacity="0.25"/>`,
+    front: `<rect x="-15" y="-371" width="30" height="12" rx="5" fill="#aab2bd"/><rect x="-15" y="-265" width="30" height="12" rx="5" fill="#aab2bd"/>
+      <path d="M-2.5 -184L-1.1 -164h2.2L2.5 -184z" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.65" stroke-width="0.8"/>
+      ${(() => { let m = ""; for (let n = 0; n <= 50; n++) { const y = (-462 + (n / 50) * 258).toFixed(1); const w = n % 10 === 0 ? 7 : n % 5 === 0 ? 5 : 3; m += `<path class="cl-mark" d="M${-w} ${y}H0"/>`; if (n % 10 === 0) m += `<text class="cl-mark-n" x="-9.5" y="${(Number(y) + 2.4).toFixed(1)}" text-anchor="end">${n}</text>`; } return m; })()}
+      <text class="cl-read" x="16" y="-318"></text>`,
+    over: `<g class="cl-tap"><rect x="-6" y="-196" width="12" height="12" rx="2.5" fill="#dfe6ee" stroke="#fff" stroke-opacity="0.6" stroke-width="0.7"/><rect class="cl-tap-key" x="-17" y="-193" width="34" height="6" rx="3" fill="#3d7fd0"/><rect x="-26" y="-208" width="52" height="38" fill="transparent"/></g>`,
+  },
+  still: {
+    name: "Distillation set", cap: 125, g: 0, fixed: true, still: true, lift: 150, floor: 150, fill: 0.5, shadow: 70,
+    profile: bulb(46, 46, 13, 150).map(([y, r]) => [y - 150, r]),
+    slots: [[262, 0]], slotFits: (d) => Boolean(d.flat) && !d.fixed && -d.top <= 166, box: { x0: -84, y0: -384, x1: 290, y1: 8 },
+    back: `<rect x="-80" y="-12" width="124" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/>
+      <rect x="-68" y="-344" width="7" height="334" rx="3" fill="url(#g-metal)"/><rect x="-64" y="-272" width="54" height="6" rx="3" fill="url(#g-metal)"/>
+      <rect x="-74" y="-278" width="20" height="18" rx="3" fill="#5b6470" stroke="#fff" stroke-opacity="0.25"/>
+      <rect x="112" y="-12" width="90" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/><rect x="170" y="-262" width="7" height="252" rx="3" fill="url(#g-metal)"/>
+      <rect x="150" y="-238" width="24" height="6" rx="3" fill="url(#g-metal)"/>
+      <ellipse class="cl-ground" cx="150" cy="1" rx="70" ry="6" filter="url(#g-soft)"/>`,
+    front: `<rect x="-17" y="-275" width="34" height="12" rx="5" fill="#aab2bd"/>
+      <path d="M12 -291L36 -287" stroke="#fff" stroke-opacity="0.6" stroke-width="9" stroke-linecap="round"/><path d="M12 -291L36 -287" stroke="#2f3540" stroke-width="6.4" stroke-linecap="round"/>
+      <g transform="translate(34 -287) rotate(23.3)">
+        <rect x="0" y="-4" width="232" height="8" rx="4" fill="#fff" fill-opacity="0.1" stroke="#fff" stroke-opacity="0.6" stroke-width="0.9"/>
+        <rect x="34" y="-12" width="166" height="24" rx="9" fill="rgba(110,176,255,0.2)" stroke="#fff" stroke-opacity="0.62" stroke-width="1.1"/>
+        <rect x="34" y="-12" width="166" height="24" rx="9" fill="url(#g-glass)" opacity="0.6"/>
+        <path d="M44 -8H190" stroke="#fff" stroke-opacity="0.45" stroke-width="2" stroke-linecap="round"/>
+        <rect x="170" y="11" width="7" height="12" rx="2" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.6" stroke-width="0.8"/><rect x="56" y="-23" width="7" height="12" rx="2" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.6" stroke-width="0.8"/>
+        <rect x="118" y="-15" width="14" height="30" rx="5" fill="#aab2bd"/>
+      </g>
+      <path d="M246 -196q14 5 16 22" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="7" stroke-linecap="round"/><path d="M246 -196q14 5 16 22" fill="none" stroke="#2f3540" stroke-width="4.6" stroke-linecap="round"/>
+      <path d="M-11 -309h22l-2.5 12h-17z" fill="#c0563c" stroke="#fff" stroke-opacity="0.25" stroke-width="0.7"/>
+      <rect x="-2.6" y="-380" width="5.2" height="96" rx="2.6" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.62" stroke-width="0.8"/><rect x="-0.9" y="-350" width="1.8" height="62" fill="#e23b3b"/><circle cx="0" cy="-287" r="3" fill="#e23b3b"/>
+      <text class="cl-read" x="12" y="-352"></text>`,
+  },
+  watch: { name: "Watch glass", cap: 5, g: 20, profile: [[0, 10], [-3, 32], [-9, 50], [-12, 55]], fill: 0.7, flat: true, foot: 9 },
 };
 for (const v of Object.values(VESSELS)) {
   v.top = v.profile[v.profile.length - 1][0];
   v.rTop = v.profile[v.profile.length - 1][1];
   v.rMax = Math.max(...v.profile.map(([, r]) => r));
-  v.bbox = { x0: -v.rMax - 6, y0: v.top - 8, x1: v.rMax + 6, y1: 8 };
+  v.bbox = v.box || { x0: -v.rMax - 6, y0: v.top - 8, x1: v.rMax + 6, y1: 8 };
 }
 /** How high the liquid stands above the bench (the foot of a cylinder counts). */
 const levelOf = (def, t) => {
@@ -167,7 +208,8 @@ export function vesselSvg(key, uid, tag = "") {
   }).join("");
   const spout = def.spout ? `<path class="cl-g-edge" d="M${-def.rTop + 2} ${def.top + 1}q-9 -3 -10 -7q8 1 13 3"/>` : "";
   return `
-    ${shadow(R + 8)}
+    ${shadow(def.shadow || R + 8)}
+    ${def.back || ""}
     <clipPath id="clip-${uid}"><path d="${body}"/></clipPath>
     <path d="${body}" fill="#fff" fill-opacity="0.03"/>
     <g clip-path="url(#clip-${uid})">
@@ -193,7 +235,9 @@ export function vesselSvg(key, uid, tag = "") {
     ${spout}
     <g class="cl-wisps"><path d="M-6 ${def.top - 6}q-5-8 0-15t0-15"/><path d="M0 ${def.top - 8}q5-8 0-15t0-15"/><path d="M6 ${def.top - 6}q-5-8 0-15t0-15"/></g>
     <g class="cl-tagg" transform="translate(0 ${H < 60 ? -36 : 0})"><rect x="-9" y="${def.top + 16}" width="18" height="14" rx="2.5"/><text x="0" y="${def.top + 23.5}">${tag}</text></g>
-    ${hit(def.bbox)}`;
+    ${def.front || ""}
+    ${hit(def.bbox)}
+    ${def.over || ""}`;
 }
 
 function scatter(seed) {
@@ -211,7 +255,7 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1 } = {}) {
   const level = levelOf(def, t);
 
   g.querySelector(".cl-liquidg").style.transform = `translateY(${H - level}px)`;
-  g.querySelector(".cl-liquid").style.fill = rgba(lk.rgb, Math.max(lk.a, 0.24));
+  g.querySelector(".cl-liquid").style.fill = rgba(lk.rgb, Math.max(lk.a, 0.32));       // clear water still has to be seen
   const men = g.querySelector(".cl-meniscus");
   men.setAttribute("cy", f1(-level));
   men.setAttribute("rx", level ? f1(Math.max(0, rAt(P, -level) - 1.2)) : 0);
@@ -384,6 +428,13 @@ export const TOOLS = {
   meter: { name: "pH meter", act: [0, 0], bbox: { x0: -22, y0: -156, x1: 22, y1: 6 } },
   wire: { name: "Flame-test wire", act: [-34, -58], bbox: { x0: -44, y0: -68, x1: 40, y1: 8 } },
   waste: { name: "Waste tub", act: [0, -66], bbox: { x0: -62, y0: -78, x1: 62, y1: 8 } },
+  pipette: { name: "Pipette (25 mL) and filler", act: [0, 0], bbox: { x0: -12, y0: -190, x1: 12, y1: 6 } },
+  funnel: { name: "Funnel and filter paper", act: [0, 0], bbox: { x0: -40, y0: -66, x1: 40, y1: 34 } },
+  bung: { name: "Rubber stopper", act: [0, 0], bbox: { x0: -16, y0: -12, x1: 16, y1: 12 } },
+  tubing: { name: "Stopper and delivery tube", act: [0, 0], bbox: { x0: -18, y0: -52, x1: 36, y1: 12 } },
+  trough: { name: "Trough and gas jar", act: [44, -196], bbox: { x0: -118, y0: -216, x1: 118, y1: 8 } },
+  holder: { name: "Test tube holder", act: [0, 0], bbox: { x0: -40, y0: -40, x1: 40, y1: 8 } },
+  tongs: { name: "Crucible tongs", act: [0, 0], bbox: { x0: -44, y0: -34, x1: 44, y1: 8 } },
   lit: { name: "Lighted splint", act: [-34, -58], bbox: { x0: -44, y0: -84, x1: 40, y1: 8 } },
   glow: { name: "Glowing splint", act: [-34, -58], bbox: { x0: -44, y0: -70, x1: 40, y1: 8 } },
   red: { name: "Red litmus paper", act: [0, 0], bbox: { x0: -10, y0: -70, x1: 10, y1: 6 } },
@@ -447,6 +498,47 @@ export function toolSvg(key) {
       <ellipse class="cl-g-rim" cx="0" cy="-66" rx="56" ry="7"/><ellipse cx="0" cy="-66" rx="52" ry="5" fill="#1b1f26"/>
       <text class="cl-waste-t" x="0" y="-26">WASTE</text>${hit(b)}`;
   }
+  if (key === "pipette") {
+    return `<path d="M-1.4 0L-2.6 -20V-64q-6 -6 -6 -22t6 -22V-150h5.200V-108q6 6 6 22t-6 22V-20L1.4 0z" fill="#fff" fill-opacity="0.12" stroke="#fff" stroke-opacity="0.65" stroke-width="0.9"/>
+      <path class="cl-drop-liq" d="M-1 -2L-1.8 -20V-63q-5.4 -6 -5.4 -23t5.4 -23V-128h3.6V-109q5.4 6 5.4 23t-5.4 23V-20L1 -2z" fill="transparent"/>
+      <path class="cl-mark" d="M-2.6 -130h5.2"/>
+      <rect x="-5" y="-154" width="10" height="7" rx="2" fill="#2c3038"/><path d="M-5 -152c-8 -8 -8 -26 0 -34q5 -4 10 0c8 8 8 26 0 34z" fill="url(#g-rubber)"/>${hit(b)}`;
+  }
+  if (key === "funnel") {
+    const d = "M-36 -58L-4.5 -12V30h9V-12L36 -58";
+    return `<path d="${d}z" fill="url(#g-glass)"/><path d="M-31 -56L0 -15L31 -56z" fill="#f6f3ea" fill-opacity="0.92"/>
+      <path d="M0 -15L-31 -56" stroke="#cfc8b6" stroke-width="0.8"/><path d="M0 -15L10 -56" stroke="#cfc8b6" stroke-width="0.8"/>
+      <path class="cl-residue" d="M-15 -35L0 -16L15 -35q-15 7 -30 0z" fill="transparent"/>
+      <path class="cl-g-edge" d="${d}"/><ellipse class="cl-g-rim" cx="0" cy="-58" rx="36" ry="5"/><path class="cl-g-shine" d="M-30 -52L-8 -18"/>${hit(b)}`;
+  }
+  if (key === "bung") return `<path d="M-13 -8h26l-3.5 16h-19z" fill="#c0563c" stroke="#fff" stroke-opacity="0.3" stroke-width="0.8"/><path d="M-10 -5h6l-1.5 10" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="1.6" stroke-linecap="round"/>${hit(b)}`;
+  if (key === "tubing") {
+    return `<path d="M0 8V-34q0 -8 8 -8h22" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="5" stroke-linecap="round"/><path d="M0 8V-34q0 -8 8 -8h22" fill="none" stroke="#2f3540" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M-13 -8h26l-3.5 16h-19z" fill="#c0563c" stroke="#fff" stroke-opacity="0.3" stroke-width="0.8"/>${hit(b)}`;
+  }
+  if (key === "trough") {
+    const tank = "M-112 -72h224v66a6 6 0 0 1-6 6h-212a6 6 0 0 1-6-6z";
+    const jar = "M24 -16V-188q0 -8 8 -8h24q8 0 8 8V-16";
+    return `${shadow(118)}
+      <path d="${tank}" fill="#fff" fill-opacity="0.03"/>
+      <rect x="-110" y="-54" width="220" height="50" fill="rgba(120,176,232,0.3)"/><rect x="-110" y="-54" width="220" height="50" fill="url(#g-shade)"/>
+      <path d="M-96 -84V-30h128q10 0 12 10" fill="none" stroke="#fff" stroke-opacity="0.5" stroke-width="4" stroke-linecap="round"/>
+      <rect x="16" y="-16" width="56" height="8" rx="2" fill="#fff" fill-opacity="0.28"/>
+      <path d="${jar}z" fill="#fff" fill-opacity="0.03"/>
+      <rect class="cl-jar-water" x="25" y="-194" width="38" height="140" fill="rgba(120,176,232,0.42)"/>
+      <g class="cl-bubbles"></g>
+      <path d="${jar}z" fill="url(#g-glass)"/><path class="cl-g-edge" d="${jar}"/><path class="cl-g-shine" d="M29 -180V-70"/>
+      <path d="${tank}" fill="url(#g-glass)" opacity="0.7"/><path class="cl-g-edge" d="${tank}"/><path d="M-110 -54h220" stroke="#fff" stroke-opacity="0.35" stroke-width="1"/>
+      <text class="cl-read" x="72" y="-176"></text>${hit(b)}`;
+  }
+  if (key === "holder") {
+    return `<path d="M-34 -4L30 -30" stroke="#c9975a" stroke-width="7" stroke-linecap="round"/><path d="M-34 -14L30 -34" stroke="#b98548" stroke-width="7" stroke-linecap="round"/>
+      <ellipse cx="-6" cy="-19" rx="6" ry="9" fill="none" stroke="#aab2bd" stroke-width="2.4"/><path d="M26 -40q10 6 4 16" fill="none" stroke="#aab2bd" stroke-width="3" stroke-linecap="round"/>${hit(b)}`;
+  }
+  if (key === "tongs") {
+    return `<path d="M-40 -2L6 -18q14 -6 30 -4" fill="none" stroke="#aab2bd" stroke-width="4" stroke-linecap="round"/><path d="M-40 -26L6 -14q14 6 30 -2" fill="none" stroke="#8d96a3" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="-2" cy="-16" r="3.4" fill="#5b6470"/><circle cx="-40" cy="-2" r="5" fill="none" stroke="#aab2bd" stroke-width="3"/><circle cx="-40" cy="-26" r="5" fill="none" stroke="#8d96a3" stroke-width="3"/>${hit(b)}`;
+  }
   if (key === "lit") {
     return `${splint(`<g class="cl-tip"><circle cx="-34" cy="-62" r="15" fill="url(#g-ember)" opacity="0.55"/>
       <path class="cl-flame" d="M-34 -84c6 9 9 12 9 18a9 9 0 0 1-18 0c0-6 3-9 9-18z" fill="#ff9a2a"/>
@@ -473,8 +565,9 @@ export function splintAfter(end) {
 // slots = where a vessel's foot rests, in the support's own space; fits = which vessels it will take
 export const SUPPORTS = {
   rack: { name: "Test tube rack", slots: [-110, -55, 0, 55, 110].map((x) => [x, -12]), fits: (d) => Boolean(d.rack), bbox: { x0: -156, y0: -92, x1: 156, y1: 8 } },
-  tripod: { name: "Tripod and gauze", slots: [[0, -158]], fits: (d) => Boolean(d.flat), bbox: { x0: -64, y0: -164, x1: 64, y1: 8 } },
-  stand: { name: "Retort stand and clamp", slots: [[44, -150]], fits: (d) => !d.material && !d.floor && d.rMax <= 60, bbox: { x0: -56, y0: -336, x1: 80, y1: 8 } },
+  tripod: { name: "Tripod and gauze", slots: [[0, -158]], fits: (d) => Boolean(d.flat) && !d.fixed, bbox: { x0: -64, y0: -164, x1: 64, y1: 8 } },
+  balance: { name: "Electronic balance", slots: [[0, -40]], fits: (d) => !d.fixed, bbox: { x0: -78, y0: -50, x1: 78, y1: 8 } },
+  stand: { name: "Retort stand and clamp", slots: [[44, -150]], fits: (d) => !d.material && !d.floor && !d.fixed && d.rMax <= 60, bbox: { x0: -56, y0: -336, x1: 80, y1: 8 } },
 };
 /** In two halves: the back goes behind what it holds, the front in front of it. */
 export function supportSvg(key) {
@@ -487,6 +580,18 @@ export function supportSvg(key) {
         <ellipse cx="0" cy="-150" rx="46" ry="6" fill="none" stroke="#aab2bd" stroke-width="4"/>
         <rect x="-54" y="-158" width="108" height="5" rx="1" fill="#7d8691"/><path d="M-50 -155.5h100" stroke="#fff" stroke-opacity="0.25" stroke-dasharray="2 3"/>
         <rect x="-27" y="-159" width="54" height="6" rx="2" fill="#e9e6df"/>${hit(b)}`,
+      front: "",
+    };
+  }
+  if (key === "balance") {
+    return {
+      back: `${shadow(76)}
+        <path d="M-74 0v-22q0 -8 8 -8h132q8 0 8 8v22z" fill="#3a424e" stroke="#fff" stroke-opacity="0.28"/>
+        <path d="M-74 0v-22q0 -8 8 -8h132q8 0 8 8v22z" fill="url(#g-shade)" opacity="0.6"/>
+        <rect x="-7" y="-40" width="14" height="10" fill="url(#g-metal)"/>
+        <ellipse cx="0" cy="-40" rx="60" ry="7.5" fill="#8d96a3"/><ellipse cx="0" cy="-41.5" rx="57" ry="6" fill="#d5dbe2"/>
+        <rect x="-34" y="-25" width="68" height="19" rx="2" fill="#b9d7a8"/><text class="cl-lcd" x="0" y="-11">0.00 g</text>
+        <circle cx="52" cy="-15" r="4" fill="#e2574c"/><circle cx="-52" cy="-15" r="4" fill="#8892a0"/>${hit(b)}`,
       front: "",
     };
   }

@@ -97,6 +97,15 @@ html body {
 .cl-paper--red { fill: #de5a52; }
 .cl-paper--blue { fill: #4f84d6; }
 .cl-paper--ph { fill: #ecd98c; }
+.cl-read { fill: #f4c95d; font: 700 12px var(--font-mono); paint-order: stroke; stroke: #272c35; stroke-width: 3px; }
+.cl-tap { cursor: pointer; }
+.cl-tap-key { transition: fill 0.15s; transform-box: fill-box; transform-origin: center; transition: transform 0.15s; }
+.cl-tap:hover .cl-tap-key { fill: #6fb7e8; }
+.cl-item.is-open .cl-tap-key { transform: rotate(90deg); fill: #f4c95d; }
+.cl-link { fill: none; stroke: #d98a3a; stroke-width: 5.5; stroke-linecap: round; opacity: 0.92; pointer-events: none; }
+.cl-jar-water { transition: y 0.8s ease, height 0.8s ease; }
+.cl-residue { transition: fill 0.5s; }
+.cl-tile .cl-read { display: none; }
 .cl-lcd { fill: #1f2a1c; font: 700 11px var(--font-mono); text-anchor: middle; }
 .cl-waste-t { fill: #fff; fill-opacity: 0.6; font: 700 11px var(--font-mono); letter-spacing: 0.14em; text-anchor: middle; }
 .cl-merc { transition: y 0.8s ease, height 0.8s ease; }

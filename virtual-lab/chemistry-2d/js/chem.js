@@ -148,13 +148,14 @@ export const SOLID = {
   CaCO3: { name: "marble chips", rgb: [238, 236, 228] },
   CuO: { name: "copper(II) oxide", rgb: [38, 36, 36] },
   MnO2: { name: "manganese(IV) oxide", rgb: [52, 46, 44] },
+  crystals: { name: "crystals", rgb: [244, 244, 240] },      // what is left when the water has boiled away; coloured by t.crystal
 };
 
 const ION_TEX = { Mg: "Mg^2+", Zn: "Zn^2+", Fe2: "Fe^2+", Pb: "Pb^2+", Cu: "Cu^2+", Ag: "Ag^+" };
 
 // ── a tube ──────────────────────────────────────────────────────────────────
 export function newTube(cap = CAP) {
-  return { cap, temp: 25, vol: 0, aq: {}, metal: {}, deposit: [], solid: {}, ind: [], gas: null, added: [], said: [] };
+  return { cap, temp: 25, extra: 0, vol: 0, aq: {}, metal: {}, deposit: [], solid: {}, ind: [], gas: null, added: [], said: [] };
 }
 export const isEmpty = (t) => t.vol <= EPS && !hasSolids(t) && !t.ind.length;
 const hasSolids = (t) => Object.values(t.metal).some((n) => n > EPS) || Object.values(t.solid).some((n) => n > EPS);
@@ -360,6 +361,13 @@ function act(t, change, { heated = false, adding = null } = {}) {
   }
   if (heated) t.temp = Math.max(t.temp, 82);
   t.temp = Math.min(100, t.temp);
+  // mass: what a balance will read. A gas that leaves takes its mass with it;
+  // a solid that dissolves hands its mass to the liquid.
+  for (const e of events) {
+    const k = e.id === "metalAcid" ? EQ_MASS[e.m] - 1 : e.id === "marble" ? 50 - 22 : e.id === "oxide" ? 39.8 : e.id === "carbonate" || e.id === "hydrolysis" || e.id === "bakeCarbonate" ? -22
+      : e.id === "oxygen" ? -16 : e.id === "ammonia" ? -17 : e.id === "reduceFe3" ? EQ_MASS[e.m] : e.id === "displace" ? EQ_MASS[e.m] - EQ_MASS[e.low] : e.id === "bakeHydroxide" ? -39.8 - 9 : 0;
+    t.extra = (t.extra || 0) + k * e.n * 0.01;
+  }
   const after = snapshot(t);
   const obs = [];
   const flags = [];
@@ -486,16 +494,18 @@ function act(t, change, { heated = false, adding = null } = {}) {
 export function add(t, id, dose = "portion") {
   const r = BY_ID[id];
   if (!r) throw new Error(`No such reagent: ${id}`);
-  const amount = r.kind === "solution" ? DOSES[dose] ?? 1 : 1;
+  const amount = r.kind === "solution" ? (typeof dose === "number" ? dose : DOSES[dose] ?? 1) : 1;
   if (r.kind === "solution" && t.vol + amount > (t.cap || CAP) + EPS) return { refused: "It is full. Empty it, or use another one." };
   if (r.kind === "solid" && solidTotal(t) + 1 > SOLID_CAP + EPS) return { refused: "There is enough solid in there already." };
   if (r.kind === "indicator" && t.vol <= EPS) return { refused: "Put a liquid in first, then add the indicator." };
   if (r.kind === "indicator" && t.ind.includes(id)) return { refused: `There is ${r.name} in there already.` };
 
   const wasDry = t.vol <= EPS;
+  const crystals = r.kind === "solution" && get(t.solid, "crystals") > EPS;
   const res = act(t, () => {
     t.gas = null;
     if (r.kind === "solution") {
+      undry(t);
       t.vol += amount;
       for (const [k, n] of Object.entries(r.adds)) bump(t.aq, k, n * amount);
     } else if (r.kind === "solid") {
@@ -505,8 +515,9 @@ export function add(t, id, dose = "portion") {
     if (!t.added.includes(id)) t.added.push(id);
   }, { adding: r });
 
-  const how = r.kind === "solution" ? (dose === "drops" ? "a few drops of " : "") : r.kind === "indicator" ? "a few drops of " : "";
+  const how = r.kind === "solution" ? (dose === "drops" || dose <= 0.25 ? "a few drops of " : "") : r.kind === "indicator" ? "a few drops of " : "";
   res.title = `Added ${how}${r.name}`;
+  if (crystals) res.obs = [{ text: "The crystals dissolve." }, ...res.obs.filter((o) => o.text !== "No visible change.")];
   if (wasDry && r.kind === "solution" && res.state.look.name !== "colourless") {
     if (res.obs.length) res.obs.push({ text: `The liquid is ${res.state.look.name}.` });
     else res.obs.push({ text: `${cap(r.name)} is ${res.state.look.name}.` });
@@ -529,6 +540,90 @@ export function rinse(t) {
   return { title: "Emptied and rinsed", obs: [], flags: [] };
 }
 
+// ── weighing, filtering, boiling away, collecting ────────────────────────────────
+// Grams per equivalent, for the balance. One portion of liquid is 2 cm3 and weighs 2 g.
+const EQ_MASS = { Mg: 12.2, Zn: 32.7, Fe: 27.9, Pb: 103.6, Cu: 31.8, Ag: 107.9, CaCO3: 50, CuO: 39.8, MnO2: 87 };
+const SALT_IONS = ["Cu", "Fe2", "Fe3", "Zn", "Al", "Pb", "Ca", "Ba", "Ag", "Mg", "Na", "K", "NH4"];
+const saltIn = (t) => SALT_IONS.reduce((a, k) => a + get(t.aq, k), 0);
+
+/** What the contents of a vessel weigh, in grams (the glass is the drawing's business). */
+export function massOf(t) {
+  let m = 2 * t.vol + (t.extra || 0);
+  for (const [k, n] of Object.entries(t.metal)) m += n * EQ_MASS[k] * 0.01;
+  for (const [k, n] of Object.entries(t.solid)) m += k === "crystals" ? 0.1 * saltIn(t) : n * EQ_MASS[k] * 0.01;
+  return Math.max(0, m);
+}
+
+/** Liquid has come back to a vessel that had boiled dry: the crystals are solution again. */
+function undry(t) {
+  delete t.solid.crystals;
+  delete t.crystal;
+}
+
+/**
+ * Boil water away: `n` portions of it, and nothing that was dissolved.
+ * dry = let it go all the way, leaving crystals (an evaporating dish);
+ * otherwise a little is always left (a distillation flask must not boil dry).
+ */
+export function boilOff(t, n, { dry = false } = {}) {
+  const was = look(t);
+  const take = dry ? Math.min(n, t.vol) : Math.min(n, Math.max(0, t.vol - Math.max(1, (t.cap || CAP) * 0.04)));
+  if (take <= EPS) return { gone: 0 };
+  t.vol -= take;
+  t.gas = null;
+  if (t.vol > EPS) return { gone: take };
+  t.vol = 0;
+  t.ind = [];
+  const salt = saltIn(t);
+  if (salt <= EPS) { t.aq = {}; return { gone: take, dried: true, colour: null }; }
+  const colour = was.name === "colourless" || was.name === "empty" ? "white" : was.name.replace("pale ", "");
+  t.solid.crystals = Math.min(4, Math.max(1.5, salt));
+  t.crystal = colour === "white" ? [244, 244, 240] : was.rgb;
+  return { gone: take, dried: true, colour };
+}
+
+/** A filter paper: the precipitate is taken out of a sample and handed back as the residue. */
+export function filterOut(s) {
+  const parts = {};
+  for (const [c, a, k] of [...SALTS_FIRST, ...SALTS_LAST]) parts[k] = [c, a];
+  for (const [m, k] of HYDROXIDES) parts[k] = [m, "OH"];
+  const out = [];
+  for (const [key, n] of Object.entries(speciate(s).ppt)) {
+    const [c, a] = parts[key];
+    bump(s.aq, c, -n);
+    if (a === "OH") {
+      const fromOH = Math.min(n, get(s.aq, "OH"));
+      bump(s.aq, "OH", -fromOH);
+      if (n - fromOH > EPS) { bump(s.aq, "NH3", -(n - fromOH)); bump(s.aq, "NH4", n - fromOH); }
+    } else bump(s.aq, a, -n);
+    out.push({ key, n, rgb: PPT[key].rgb, colour: PPT[key].colour, name: PPT[key].name, formula: PPT[key].formula });
+  }
+  return out;
+}
+
+/** A measured amount of a reagent straight from its bottle (a pipette, a dropper). */
+export function sampleOf(id, n) {
+  const r = BY_ID[id];
+  const s = newTube(n);
+  s.vol = n;
+  for (const [k, v] of Object.entries(r.adds)) bump(s.aq, k, v * n);
+  s.added = [id];
+  return s;
+}
+
+const GAS_FROM = { carbonate: "CO2", marble: "CO2", hydrolysis: "CO2", bakeCarbonate: "CO2", metalAcid: "H2", oxygen: "O2", ammonia: "NH3" };
+/** The gas an action gave off and how much (in equivalents; 12 cm3 each), or null. */
+export function gasMade(res) {
+  let gas = null, n = 0;
+  for (const e of res.events || []) {
+    const g = GAS_FROM[e.id];
+    if (!g) continue;
+    if (g !== gas) { gas = g; n = 0; }
+    n += e.n;
+  }
+  return gas ? { gas, n } : null;
+}
+
 /** How much more liquid a vessel will take. */
 export const roomIn = (t) => (t.cap || CAP) - t.vol;
 
@@ -542,6 +637,8 @@ export function takeFrom(t, amount) {
   s.temp = t.temp ?? 25;
   s.ind = [...t.ind];
   s.added = [...t.added];
+  s.extra = (t.extra || 0) * f;
+  t.extra = (t.extra || 0) * (1 - f);
   for (const [k, v] of Object.entries(t.aq)) { bump(s.aq, k, v * f); bump(t.aq, k, -v * f); }
   t.vol -= n;
   t.gas = null;
@@ -553,8 +650,11 @@ export function takeFrom(t, amount) {
 export function pourIn(t, s, from = "another vessel") {
   if (s.vol > roomIn(t) + EPS) return { refused: "It is full. Empty it, or use another one." };
   const wasDry = t.vol <= EPS;
+  const crystals = get(t.solid, "crystals") > EPS;
   const res = act(t, () => {
     t.gas = null;
+    undry(t);
+    t.extra = (t.extra || 0) + (s.extra || 0);
     t.temp = ((t.temp ?? 25) * t.vol + (s.temp ?? 25) * s.vol) / (t.vol + s.vol);
     t.vol += s.vol;
     for (const [k, v] of Object.entries(s.aq)) bump(t.aq, k, v);
@@ -562,6 +662,7 @@ export function pourIn(t, s, from = "another vessel") {
     for (const id of s.added) if (!t.added.includes(id)) t.added.push(id);
   });
   res.title = `Added liquid from ${from}`;
+  if (crystals) res.obs = [{ text: "The crystals dissolve." }, ...res.obs.filter((o) => o.text !== "No visible change.")];
   if (wasDry && res.state.look.name !== "colourless") res.obs.push({ text: `The liquid is ${res.state.look.name}.` });
   return res;
 }
@@ -641,7 +742,7 @@ export const gasName = (g) => GAS_NAME[g];
 export function sediment(t, sp = speciate(t)) {
   const ppt = Object.entries(sp.ppt).map(([key, n]) => ({ key, n, rgb: PPT[key].rgb }));
   const metal = Object.entries(t.metal).filter(([, n]) => n > EPS).map(([key, n]) => ({ key, n, rgb: METAL[key].rgb, deposit: t.deposit.includes(key) }));
-  const solid = Object.entries(t.solid).filter(([, n]) => n > EPS).map(([key, n]) => ({ key, n, rgb: SOLID[key].rgb }));
+  const solid = Object.entries(t.solid).filter(([, n]) => n > EPS).map(([key, n]) => ({ key, n, rgb: key === "crystals" && t.crystal ? t.crystal : SOLID[key].rgb }));
   return { ppt, metal, solid };
 }
 
@@ -672,6 +773,11 @@ export const TASKS = [
   { id: "black", text: "Turn a blue precipitate black.", done: (f) => f.includes("heat:CuO") },
   { id: "flame", text: "Colour a flame brick red.", done: (f) => f.includes("flame:Ca") },
   { id: "exo", text: "Make a liquid at least 10 °C warmer than the room, and measure it.", done: (f) => f.some((x) => x.startsWith("temp:") && Number(x.slice(5)) >= 35) },
+  { id: "titrate", text: "Titrate: run acid from a burette into an alkali until phenolphthalein just loses its pink.", done: (f, t) => f.includes("by:burette") && f.includes("colour:colourless") && t.ind.includes("phph") },
+  { id: "filter", text: "Filter a precipitate out of a liquid.", done: (f) => f.includes("filtered") },
+  { id: "collect", text: "Collect a gas over water.", done: (f) => f.includes("collected") },
+  { id: "distil", text: "Distil clear water out of a coloured solution.", done: (f) => f.includes("distilled") },
+  { id: "crystals", text: "Evaporate a solution to leave crystals.", done: (f) => f.includes("crystals") },
 ];
 
 /** Which tasks this result finishes. */
