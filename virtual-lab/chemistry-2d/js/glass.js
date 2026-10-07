@@ -108,6 +108,33 @@ export const VESSELS = {
       <text class="cl-read" x="16" y="-318"></text>`,
     over: `<g class="cl-tap"><rect x="-6" y="-196" width="12" height="12" rx="2.5" fill="#dfe6ee" stroke="#fff" stroke-opacity="0.6" stroke-width="0.7"/><rect class="cl-tap-key" x="-17" y="-193" width="34" height="6" rx="3" fill="#3d7fd0"/><rect x="-26" y="-208" width="52" height="38" fill="transparent"/></g>`,
   },
+  sepfunnel: {
+    name: "Separating funnel", cap: 50, g: 0, fixed: true, floor: 200, fill: 0.86, shadow: 70,
+    profile: [[-200, 3], [-214, 7], [-262, 36], [-302, 45], [-334, 38], [-352, 15], [-374, 13], [-377, 16]],
+    slots: [[0, 0]], slotFits: (d) => Boolean(d.flat) && !d.fixed && -d.top <= 162, box: { x0: -112, y0: -398, x1: 60, y1: 8 },
+    back: `<rect x="-108" y="-12" width="150" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/>
+      <rect x="-82" y="-380" width="7" height="370" rx="3" fill="url(#g-metal)"/>
+      <rect x="-78" y="-282" width="46" height="6" rx="3" fill="url(#g-metal)"/><rect x="-88" y="-288" width="20" height="18" rx="3" fill="#5b6470" stroke="#fff" stroke-opacity="0.25"/>
+      <ellipse cx="0" cy="-279" rx="40" ry="6" fill="none" stroke="#aab2bd" stroke-width="4"/>`,
+    front: `<path d="M-40 -279a40 6 0 0 0 80 0" fill="none" stroke="#c3cad3" stroke-width="4"/>
+      <path d="M-2.5 -186L-1.2 -166h2.4L2.5 -186z" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.65" stroke-width="0.8"/>
+      <path d="M-10 -391h20l-2.5 14h-15z" fill="url(#g-frost)" stroke="#fff" stroke-opacity="0.6" stroke-width="0.7"/><rect x="-13" y="-399" width="26" height="9" rx="3" fill="url(#g-frost)"/>`,
+    over: `<g class="cl-tap"><rect x="-6" y="-200" width="12" height="14" rx="2.5" fill="#dfe6ee" stroke="#fff" stroke-opacity="0.6" stroke-width="0.7"/><rect class="cl-tap-key" x="-17" y="-196" width="34" height="6" rx="3" fill="#3d7fd0"/><rect x="-26" y="-212" width="52" height="40" fill="transparent"/></g>`,
+  },
+  cell: {
+    name: "Electrolysis cell", cap: 125, g: 0, fixed: true, profile: beakerProfile(62, 124), fill: 0.84, flat: true, shadow: 110,
+    box: { x0: -72, y0: -170, x1: 190, y1: 8 },
+    back: `<path d="M-26 -164V-180H112V-58" fill="none" stroke="#3b3f46" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M26 -164V-172H140V-58" fill="none" stroke="#c0453a" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="92" y="-62" width="92" height="62" rx="5" fill="#3a424e" stroke="#fff" stroke-opacity="0.28"/><rect x="92" y="-62" width="92" height="62" rx="5" fill="url(#g-shade)" opacity="0.6"/>
+      <circle cx="112" cy="-58" r="5" fill="#23272e" stroke="#fff" stroke-opacity="0.4"/><circle cx="140" cy="-58" r="5" fill="#c0453a" stroke="#fff" stroke-opacity="0.4"/>
+      <text class="cl-pole" x="112" y="-38">−</text><text class="cl-pole" x="140" y="-38">+</text><text class="cl-waste-t" x="138" y="-10" font-size="8">6 V d.c.</text>
+      <rect x="-30" y="-164" width="8" height="150" rx="2" fill="#30343b" stroke="#fff" stroke-opacity="0.22" stroke-width="0.7"/><rect x="22" y="-164" width="8" height="150" rx="2" fill="#30343b" stroke="#fff" stroke-opacity="0.22" stroke-width="0.7"/>
+      <rect class="cl-coat" x="-31.5" y="-100" width="11" height="86" rx="2.5" fill="transparent"/>`,
+    front: `<rect x="-52" y="-132" width="104" height="9" rx="2" fill="#6b7480" stroke="#fff" stroke-opacity="0.25" stroke-width="0.7"/>
+      <text class="cl-pole" x="-26" y="-142">−</text><text class="cl-pole" x="26" y="-142">+</text>`,
+    over: `<g class="cl-press" data-press="power"><rect x="158" y="-52" width="20" height="30" rx="3" fill="#23272e" stroke="#fff" stroke-opacity="0.45"/><rect class="cl-switch" x="161" y="-49" width="14" height="12" rx="2" fill="#e2574c"/><rect x="150" y="-60" width="38" height="46" fill="transparent"/></g>`,
+  },
   still: {
     name: "Distillation set", cap: 125, g: 0, fixed: true, still: true, lift: 150, floor: 150, fill: 0.5, shadow: 70,
     profile: bulb(46, 46, 13, 150).map(([y, r]) => [y - 150, r]),
@@ -213,6 +240,7 @@ export function vesselSvg(key, uid, tag = "") {
     <clipPath id="clip-${uid}"><path d="${body}"/></clipPath>
     <path d="${body}" fill="#fff" fill-opacity="0.03"/>
     <g clip-path="url(#clip-${uid})">
+      <rect class="cl-oil" x="${-R}" y="${def.top}" width="${R * 2}" height="${H}" transform="translate(0 ${H})"/>
       <g class="cl-liquidg">
         <rect class="cl-liquid" x="${-R}" y="${def.top}" width="${R * 2}" height="${H}"/>
         <rect x="${-R}" y="${def.top}" width="${R * 2}" height="${H}" fill="url(#g-shade)"/>
@@ -252,13 +280,19 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1 } = {}) {
   const sp = speciate(t);
   const lk = look(t, sp);
   const stuff = sediment(t, sp);
-  const level = levelOf(def, t);
+  // oil floats: the two layers share the height in the proportion they are there
+  const oil = t.oil || 0;
+  const top = levelOf(def, { vol: t.vol + oil, cap: t.cap });
+  const level = oil > 0 ? (t.vol > 0 ? (def.floor || 0) + (top - (def.floor || 0)) * (t.vol / (t.vol + oil)) : 0) : top;
+  const oilEl = g.querySelector(".cl-oil");
+  oilEl.removeAttribute("transform");
+  oilEl.style.transform = `translateY(${H - (oil > 0 ? top : 0)}px)`;
 
   g.querySelector(".cl-liquidg").style.transform = `translateY(${H - level}px)`;
   g.querySelector(".cl-liquid").style.fill = rgba(lk.rgb, Math.max(lk.a, 0.32));       // clear water still has to be seen
   const men = g.querySelector(".cl-meniscus");
-  men.setAttribute("cy", f1(-level));
-  men.setAttribute("rx", level ? f1(Math.max(0, rAt(P, -level) - 1.2)) : 0);
+  men.setAttribute("cy", f1(-top));
+  men.setAttribute("rx", top ? f1(Math.max(0, rAt(P, -top) - 1.2)) : 0);
   men.style.fill = rgba(lk.rgb.map((v) => Math.round(v + (255 - v) * 0.45)), Math.min(0.9, lk.a + 0.25));
 
   const total = stuff.ppt.reduce((a, p) => a + p.n, 0);
@@ -308,7 +342,7 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1 } = {}) {
   }
   g.querySelector(".cl-solids").innerHTML = html;
   g.classList.toggle("has-gas", Boolean(t.gas));
-  return { sp, look: lk, level };
+  return { sp, look: lk, level: top };
 }
 
 /** A burst of bubbles up through the liquid. */
@@ -433,6 +467,9 @@ export const TOOLS = {
   bung: { name: "Rubber stopper", act: [0, 0], bbox: { x0: -16, y0: -12, x1: 16, y1: 12 } },
   tubing: { name: "Stopper and delivery tube", act: [0, 0], bbox: { x0: -18, y0: -52, x1: 36, y1: 12 } },
   trough: { name: "Trough and gas jar", act: [44, -196], bbox: { x0: -118, y0: -216, x1: 118, y1: 8 } },
+  syringe: { name: "Gas syringe", act: [0, -128], bbox: { x0: -108, y0: -156, x1: 150, y1: 8 } },
+  up: { name: "Gas tube, mouth down (upward delivery)", act: [0, -100], bbox: { x0: -70, y0: -276, x1: 30, y1: 8 } },
+  down: { name: "Gas jar, mouth up (downward delivery)", act: [0, -160], bbox: { x0: -46, y0: -186, x1: 46, y1: 8 } },
   holder: { name: "Test tube holder", act: [0, 0], bbox: { x0: -40, y0: -40, x1: 40, y1: 8 } },
   tongs: { name: "Crucible tongs", act: [0, 0], bbox: { x0: -44, y0: -34, x1: 44, y1: 8 } },
   lit: { name: "Lighted splint", act: [-34, -58], bbox: { x0: -44, y0: -84, x1: 40, y1: 8 } },
@@ -531,6 +568,39 @@ export function toolSvg(key) {
       <path d="${tank}" fill="url(#g-glass)" opacity="0.7"/><path class="cl-g-edge" d="${tank}"/><path d="M-110 -54h220" stroke="#fff" stroke-opacity="0.35" stroke-width="1"/>
       <text class="cl-read" x="72" y="-176"></text>${hit(b)}`;
   }
+  if (key === "syringe") {
+    let ticks = "";
+    for (let n = 0; n <= 100; n += 10) ticks += `<path class="cl-mark" d="M${-86 + n * 1.04} -118v${n % 50 === 0 ? -7 : -4}"/>${n % 50 === 0 ? `<text class="cl-mark-n" x="${-86 + n * 1.04}" y="-108" text-anchor="middle">${n}</text>` : ""}`;
+    return `${shadow(76)}
+      <rect x="-60" y="-12" width="130" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/><rect x="48" y="-170" width="7" height="160" rx="3" fill="url(#g-metal)"/>
+      <rect x="-20" y="-131" width="72" height="6" rx="3" fill="url(#g-metal)"/>
+      <g class="cl-plunger"><rect x="-88" y="-134" width="128" height="12" rx="2" fill="#fff" fill-opacity="0.2" stroke="#fff" stroke-opacity="0.5" stroke-width="0.8"/><rect x="-90" y="-137" width="6" height="18" rx="2" fill="#dfe6ee"/><rect x="38" y="-142" width="6" height="28" rx="2" fill="#dfe6ee"/></g>
+      <rect x="-92" y="-138" width="116" height="20" rx="4" fill="url(#g-glass)"/><rect class="cl-g-edge" x="-92" y="-138" width="116" height="20" rx="4"/>
+      <rect x="-104" y="-131" width="13" height="6" rx="2" fill="#fff" fill-opacity="0.16" stroke="#fff" stroke-opacity="0.6" stroke-width="0.8"/>
+      <rect x="-30" y="-141" width="14" height="26" rx="5" fill="#aab2bd"/>${ticks}
+      <text class="cl-read" x="-60" y="-146">0 cm³</text>${hit(b)}`;
+  }
+  if (key === "up") {
+    const tube = "M-15 -100V-244a15 15 0 0 1 30 0V-100";
+    return `${shadow(46)}
+      <rect x="-66" y="-12" width="92" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/><rect x="-56" y="-272" width="7" height="262" rx="3" fill="url(#g-metal)"/>
+      <rect x="-52" y="-193" width="40" height="6" rx="3" fill="url(#g-metal)"/>
+      <path d="M-2 -70V-214" stroke="#fff" stroke-opacity="0.55" stroke-width="4" stroke-linecap="round"/><path d="M-2 -70V-214" stroke="#2f3540" stroke-width="2" stroke-linecap="round"/>
+      <path class="cl-gasfill" d="${tube}z" fill="#fff" fill-opacity="0"/>
+      <path d="${tube}z" fill="url(#g-glass)"/><path class="cl-g-edge" d="${tube}"/><ellipse class="cl-g-rim" cx="0" cy="-100" rx="16.5" ry="3"/><path class="cl-g-shine" d="M-10 -236V-120"/>
+      <rect x="-21" y="-196" width="42" height="12" rx="5" fill="#aab2bd"/>
+      <text class="cl-read" x="22" y="-226"></text>${hit(b)}`;
+  }
+  if (key === "down") {
+    const jar = "M-40 -156V-8a6 6 0 0 0 6 6h68a6 6 0 0 0 6-6V-156";
+    return `${shadow(48)}
+      <path d="M-2 -182V-22" stroke="#fff" stroke-opacity="0.55" stroke-width="4" stroke-linecap="round"/><path d="M-2 -182V-22" stroke="#2f3540" stroke-width="2" stroke-linecap="round"/>
+      <path class="cl-gasfill" d="${jar}z" fill="#fff" fill-opacity="0"/>
+      <path d="${jar}z" fill="url(#g-glass)"/><path class="cl-g-edge" d="${jar}"/><path class="cl-g-shine" d="M-34 -146V-30"/>
+      <rect x="-48" y="-160" width="96" height="6" rx="2" fill="#fff" fill-opacity="0.16" stroke="#fff" stroke-opacity="0.7" stroke-width="0.9"/>
+      <rect x="6" y="-166" width="46" height="6" rx="1" fill="#d9c9a0" transform="rotate(-4 28 -163)"/>
+      <text class="cl-read" x="-38" y="-166"></text>${hit(b)}`;
+  }
   if (key === "holder") {
     return `<path d="M-34 -4L30 -30" stroke="#c9975a" stroke-width="7" stroke-linecap="round"/><path d="M-34 -14L30 -34" stroke="#b98548" stroke-width="7" stroke-linecap="round"/>
       <ellipse cx="-6" cy="-19" rx="6" ry="9" fill="none" stroke="#aab2bd" stroke-width="2.4"/><path d="M26 -40q10 6 4 16" fill="none" stroke="#aab2bd" stroke-width="3" stroke-linecap="round"/>${hit(b)}`;
@@ -591,7 +661,8 @@ export function supportSvg(key) {
         <rect x="-7" y="-40" width="14" height="10" fill="url(#g-metal)"/>
         <ellipse cx="0" cy="-40" rx="60" ry="7.5" fill="#8d96a3"/><ellipse cx="0" cy="-41.5" rx="57" ry="6" fill="#d5dbe2"/>
         <rect x="-34" y="-25" width="68" height="19" rx="2" fill="#b9d7a8"/><text class="cl-lcd" x="0" y="-11">0.00 g</text>
-        <circle cx="52" cy="-15" r="4" fill="#e2574c"/><circle cx="-52" cy="-15" r="4" fill="#8892a0"/>${hit(b)}`,
+        <circle cx="-52" cy="-15" r="4" fill="#8892a0"/>${hit(b)}
+        <g class="cl-press" data-press="tare"><circle cx="52" cy="-15" r="8.5" fill="#e2574c" stroke="#fff" stroke-opacity="0.55"/><text class="cl-press-t" x="52" y="-11.5">T</text></g>`,
       front: "",
     };
   }

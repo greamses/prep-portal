@@ -98,7 +98,16 @@ html body {
 .cl-paper--blue { fill: #4f84d6; }
 .cl-paper--ph { fill: #ecd98c; }
 .cl-read { fill: #f4c95d; font: 700 12px var(--font-mono); paint-order: stroke; stroke: #272c35; stroke-width: 3px; }
-.cl-tap { cursor: pointer; }
+.cl-tap, .cl-press { cursor: pointer; }
+.cl-press:hover circle, .cl-press:hover .cl-switch { filter: brightness(1.25); }
+.cl-press-t { fill: #fff; font: 700 9px var(--font-mono); text-anchor: middle; pointer-events: none; }
+.cl-switch { transition: transform 0.12s, fill 0.12s; }
+.cl-item.is-open .cl-switch { transform: translateY(14px); fill: #8fe08f; }
+.cl-pole { fill: #fff; fill-opacity: 0.8; font: 700 12px var(--font-mono); text-anchor: middle; }
+.cl-oil { fill: rgba(232, 200, 90, 0.78); transition: transform 0.6s ease; }
+.cl-plunger { transition: transform 0.8s ease; }
+.cl-gasfill { transition: fill-opacity 0.8s ease; }
+.cl-tile .cl-oil { display: none; }
 .cl-tap-key { transition: fill 0.15s; transform-box: fill-box; transform-origin: center; transition: transform 0.15s; }
 .cl-tap:hover .cl-tap-key { fill: #6fb7e8; }
 .cl-item.is-open .cl-tap-key { transform: rotate(90deg); fill: #f4c95d; }

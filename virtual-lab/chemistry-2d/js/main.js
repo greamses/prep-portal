@@ -30,7 +30,7 @@
    layout and the notebook.
    ========================================================================== */
 
-import { REAGENTS, TASKS, newTube, add, heat, rinse, test, tasksDone, reagent, chemHtml, isEmpty, look, takeFrom, pourIn, roomIn, flameOf, massOf, boilOff, filterOut, sampleOf, gasMade } from "./chem.js";
+import { REAGENTS, TASKS, newTube, add, heat, rinse, test, tasksDone, reagent, chemHtml, isEmpty, look, takeFrom, pourIn, roomIn, flameOf, massOf, boilOff, filterOut, sampleOf, gasMade, takeBottom, electrolyse } from "./chem.js";
 import { DEFS, VESSELS, TOOLS, SUPPORTS, vesselSvg, paintVessel, bubble, reagentSvg, toolSvg, splintAfter, supportSvg, thumb, colourOf, mouthOf } from "./glass.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
@@ -45,8 +45,17 @@ const HEAT = { burner: 150, spirit: 116 };            // how far above its foot 
 const MOUTH = ["lit", "glow"];                        // held at the mouth
 const TAKES = { dropper: 0.5, pipette: 12.5 };        // portions drawn up (a portion is 2 cm3)
 const STAYS = ["funnel", "bung", "tubing"];           // fitted into a mouth, and left there
-const IDLE = ["waste", "trough", "holder", "tongs"];  // never used ON anything
-const JAR = 8;                                        // equivalents of gas the gas jar holds (96 cm3)
+const IDLE = ["waste", "trough", "syringe", "up", "down", "holder", "tongs"];   // never used ON anything
+// Where a gas can be piped to. cap = equivalents it holds (12 cm3 each); inlet = where the rubber tube
+// joins; mouth = where a splint is held; test = whether what is in it can be tested there.
+const COLLECT = {
+  trough: { cap: 8, inlet: [-96, -84], mouth: [44, -196], rim: 20, test: true, name: "gas jar" },
+  syringe: { cap: 8.34, inlet: [-104, -128], mouth: [0, -128], rim: 0, test: false, name: "gas syringe" },
+  up: { cap: 4, inlet: [-2, -70], mouth: [0, -100], rim: 18, test: true, name: "upturned tube" },
+  down: { cap: 6, inlet: [-2, -182], mouth: [0, -160], rim: 30, test: true, name: "gas jar" },
+};
+const LIGHT = ["H2", "NH3"];                           // less dense than air: they rise
+const GAS = { H2: "hydrogen", CO2: "carbon dioxide", O2: "oxygen", NH3: "ammonia" };
 const NS = "http://www.w3.org/2000/svg";
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
@@ -85,7 +94,8 @@ const CATS = [
 // other words a student might search by
 const ALSO = {
   stand: "clamp stand boss", burette: "titration", pipette: "titration", still: "distillation condenser liebig", balance: "weighing scale mass",
-  trough: "gas collection over water pneumatic", tubing: "delivery tube bung", bung: "bung cork", funnel: "filtration filter", burner: "bunsen heat",
+  trough: "gas collection over water pneumatic", syringe: "gas volume measure", up: "upward delivery downward displacement of air ammonia hydrogen", down: "downward delivery upward displacement of air carbon dioxide",
+  sepfunnel: "separating separation immiscible oil", cell: "electrolysis electrodes battery power cathode anode", tubing: "delivery tube bung", bung: "bung cork", funnel: "filtration filter", burner: "bunsen heat",
   spirit: "alcohol lamp heat", flask: "erlenmeyer", flask100: "erlenmeyer", cyl10: "graduated", cyl100: "graduated", dish: "basin", tripod: "gauze", holder: "tongs peg", waste: "sink bin",
 };
 const CATALOG = [
@@ -110,6 +120,10 @@ const PRESETS = [
   { id: "filter", name: "Filtration", about: "Make a precipitate in the beaker, then pour it through the filter paper.", vessels: ["beaker100", "flask", "beaker100"], fit: [["funnel", 1]], liquids: ["cuso4", "naoh", "bacl2", "znso4"], tools: ["waste"] },
   { id: "gases", name: "Making and testing gases", about: "Hydrogen, carbon dioxide, oxygen and ammonia, and the test for each.", vessels: ["boil", "boil", "boil", "boil"], liquids: ["hcl", "h2o2", "nh4cl", "naoh", "mg", "zn", "caco3", "mno2"], tools: ["burner", "lit", "glow", "red", "blue"] },
   { id: "collect", name: "Collecting a gas", about: "The flask is piped to a gas jar full of water. Put a solid in, then the acid, and test what collects.", vessels: ["flask"], fit: [["tubing", 0]], liquids: ["hcl", "h2o2", "zn", "caco3", "mno2"], tools: ["trough", "lit", "glow"] },
+  { id: "syringe", name: "Measuring a gas", about: "The flask is piped to a gas syringe. Add a metal, then acid, and read the volume.", vessels: ["flask"], fit: [["tubing", 0]], liquids: ["hcl", "h2so4", "mg", "zn", "caco3"], tools: ["syringe"] },
+  { id: "ammonia", name: "Collecting ammonia", about: "Ammonia is lighter than air and dissolves in water, so it is collected in a dry, upturned tube. Add both solutions, then heat.", vessels: ["boil"], fit: [["tubing", 0]], liquids: ["nh4cl", "naoh"], tools: ["up", "burner", "red"] },
+  { id: "separate", name: "Separating oil and water", about: "Pour both liquids into the funnel, then press the tap to run off the lower layer.", tall: true, vessels: ["beaker100", "sepfunnel", "@beaker100"], liquids: ["water", "oil", "cuso4"], tools: ["waste"] },
+  { id: "electro", name: "Electrolysis", about: "Pour a solution into the cell and hold down the red switch. Watch each rod.", tall: true, vessels: ["cell"], liquids: ["cuso4", "nacl", "h2so4", "ki", "water", "ui"], tools: ["waste"] },
   { id: "distil", name: "Distillation", about: "Pour a coloured solution into the flask and heat it. Clear water comes over into the receiver.", tall: true, vessels: ["beaker100", "still", "@flask100"], liquids: ["cuso4", "nacl", "water"], tools: ["burner", "waste"] },
   { id: "crystal", name: "Evaporating to crystals", about: "Heat a solution in the dish on the tripod until the water has gone. Weigh what is left.", vessels: ["beaker100"], stands: [["tripod", "dish"], ["balance", "watch"]], liquids: ["cuso4", "nacl", "caco3", "mg"], tools: ["burner", "waste"] },
   { id: "metals", name: "Reactivity of metals", about: "Four metals, an acid, and the solutions of four metal salts.", rack: 5, liquids: ["hcl", "cuso4", "feso4", "znso4", "agno3", "mg", "zn", "fe", "cu"], tools: ["lit", "waste"] },
@@ -142,6 +156,9 @@ const byId = (id) => state.items.find((it) => it.id === id);
 const vessels = () => state.items.filter((it) => it.kind === "vessel");
 const heaters = () => state.items.filter((it) => it.kind === "tool" && HEAT[it.key]);
 const tools = (key) => state.items.filter((it) => it.kind === "tool" && it.key === key);
+const collectors = () => state.items.filter((it) => it.kind === "tool" && COLLECT[it.key]);
+/** The collector a delivery tube leads to: the nearest one. */
+const collectorFor = (tube) => collectors().reduce((best, c) => (!best || Math.hypot(c.x - tube.x, c.y - tube.y) < Math.hypot(best.x - tube.x, best.y - tube.y) ? c : best), null);
 const fittedTo = (v, key) => state.items.find((a) => a.on === v.id && (!key || a.key === key));
 const inSlot = (host) => vessels().find((v) => v.rack && v.rack[0] === host.id);
 
@@ -195,7 +212,7 @@ function mount(it) {
     L.front.appendChild(node.front);
   }
   // supports, the trough and the tall fixed sets go behind everything that can stand on or in front of them
-  const behind = it.kind === "rack" || it.key === "trough" || (it.kind === "vessel" && VESSELS[it.key].fixed);
+  const behind = it.kind === "rack" || Boolean(COLLECT[it.key]) || (it.kind === "vessel" && VESSELS[it.key].fixed);
   (behind ? L.back : L.items).appendChild(g);
   place(it);
   if (it.kind === "vessel") paint(it);
@@ -222,12 +239,15 @@ function dress(it) {
   if (TAKES[it.key]) g.querySelector(".cl-drop-liq").style.fill = it.sample ? `rgba(${it.rgb || [200, 224, 240]},0.9)` : "transparent";
   if (it.key === "wire") g.querySelector(".cl-loop").style.fill = it.sample ? "#f2f6fb" : "transparent";
   if (it.key === "funnel") g.querySelector(".cl-residue").style.fill = it.residue ? `rgb(${it.residue})` : "transparent";
-  if (it.key === "trough") {
-    const n = it.gas ? it.gas.n : 0, f = Math.min(1, n / JAR);
-    const w = g.querySelector(".cl-jar-water");
-    w.setAttribute("y", -194 + f * 140);
-    w.setAttribute("height", 140 * (1 - f));
-    g.querySelector(".cl-read").textContent = n ? `${Math.round(n * 12)} cm³` : "";
+  if (COLLECT[it.key]) {
+    const n = it.gas ? it.gas.n : 0, f = Math.min(1, n / COLLECT[it.key].cap);
+    if (it.key === "trough") {
+      const w = g.querySelector(".cl-jar-water");
+      w.setAttribute("y", -194 + f * 140);
+      w.setAttribute("height", 140 * (1 - f));
+    } else if (it.key === "syringe") g.querySelector(".cl-plunger").style.transform = `translateX(${(f * 104).toFixed(1)}px)`;
+    else g.querySelector(".cl-gasfill").setAttribute("fill-opacity", (f * 0.16).toFixed(3));
+    g.querySelector(".cl-read").textContent = n || it.key === "syringe" ? `${Math.round(n * 12)} cm\u00b3` : "";
   }
 }
 /** The numbers that pieces show: a burette's reading, a still's thermometer, a balance. */
@@ -237,18 +257,20 @@ function readouts() {
     if (!g) continue;
     if (it.key === "burette") g.querySelector(".cl-read").textContent = it.t.vol > 0 ? `${((it.t.cap - it.t.vol) * 2).toFixed(2)} cm³` : "";
     else if (it.key === "still") g.querySelector(".cl-read").textContent = it.t.vol > 0 ? `${Math.round(it.t.temp ?? 25)} °C` : "";
+    else if (it.key === "cell") g.querySelector(".cl-coat").setAttribute("fill", it.t.plated === "Cu" ? "#b9683e" : it.t.plated === "Ag" ? "#d9dde2" : "transparent");
     else if (it.kind === "rack" && it.key === "balance") {
       const v = inSlot(it);
       let m = 0;
       if (v) m = VESSELS[v.key].g + massOf(v.t) + (fittedTo(v, "funnel") ? 34 : 0) + (fittedTo(v, "bung") ? 6 : 0) + (fittedTo(v, "tubing") ? 14 : 0);
-      g.querySelector(".cl-lcd").textContent = `${m.toFixed(2)} g`;
+      it.gross = m;
+      g.querySelector(".cl-lcd").textContent = `${(m - (it.tare || 0)).toFixed(2)} g`;
     }
   }
 }
 
 // ── what stands on what ─────────────────────────────────────────────────────
-const mouth = (o) => (o.kind === "vessel" ? { x: o.x, y: o.y + VESSELS[o.key].top } : o.kind === "reagent" ? { x: o.x, y: o.y - mouthOf(o.key) } : o.key === "trough" ? { x: o.x + 44, y: o.y - 196 } : { x: o.x, y: o.y - 66 });
-const rimOf = (o) => (o.kind === "vessel" ? VESSELS[o.key].rTop : o.kind === "reagent" ? 12 : o.key === "trough" ? 20 : 50);
+const mouth = (o) => (o.kind === "vessel" ? { x: o.x, y: o.y + VESSELS[o.key].top } : o.kind === "reagent" ? { x: o.x, y: o.y - mouthOf(o.key) } : COLLECT[o.key] ? { x: o.x + COLLECT[o.key].mouth[0], y: o.y + COLLECT[o.key].mouth[1] } : { x: o.x, y: o.y - 66 });
+const rimOf = (o) => (o.kind === "vessel" ? VESSELS[o.key].rTop : o.kind === "reagent" ? 12 : COLLECT[o.key] ? COLLECT[o.key].rim : 50);
 /** Everything with a slot a vessel can stand in: racks, stands, a balance, under a burette or a condenser. */
 const hosts = () => state.items.filter((o) => o.kind === "rack" || (o.kind === "vessel" && VESSELS[o.key].slots));
 const hostDef = (o) => (o.kind === "rack" ? SUPPORTS[o.key] : { slots: VESSELS[o.key].slots, fits: VESSELS[o.key].slotFits });
@@ -284,16 +306,18 @@ function snap(it) {
   }
   return false;
 }
-/** The rubber tube from every fitted delivery tube to the trough. */
+/** The rubber tube from every fitted delivery tube to whatever it leads to. */
 function drawLinks() {
-  const tr = tools("trough")[0];
-  L.links.innerHTML = tr
-    ? tools("tubing").filter((t) => t.on && nodes[t.id]).map((t) => {
-        const a = { x: t.x + 30, y: t.y - 42 }, b = { x: tr.x - 96, y: tr.y - 84 };
-        const sag = Math.max(40, Math.abs(b.x - a.x) * 0.25);
-        return `<path class="cl-link" d="M${a.x} ${a.y}C${a.x + sag} ${a.y - 10} ${b.x} ${b.y - sag} ${b.x} ${b.y}"/>`;
-      }).join("")
-    : "";
+  L.links.innerHTML = tools("tubing").filter((t) => t.on && nodes[t.id]).map((t) => {
+    const c = collectorFor(t);
+    if (!c) return "";
+    const [ix, iy] = COLLECT[c.key].inlet;
+    const a = { x: t.x + 30, y: t.y - 42 }, b = { x: c.x + ix, y: c.y + iy };
+    const sag = Math.max(40, Math.abs(b.x - a.x) * 0.25);
+    // into a trough the tube comes down from above; into the others it comes up from below, or in from the side
+    const end = c.key === "trough" || c.key === "down" ? `${b.x} ${b.y - sag}` : c.key === "up" ? `${b.x} ${b.y + sag}` : `${b.x - sag} ${b.y}`;
+    return `<path class="cl-link" d="M${a.x} ${a.y}C${a.x + sag} ${a.y - 10} ${end} ${b.x} ${b.y}"/>`;
+  }).join("");
 }
 
 /** The next free letter for a vessel's label. */
@@ -464,17 +488,37 @@ function gasFlow(v, res) {
     res.obs.push({ text: "The gas pushes the stopper out.", why: "A gas takes up far more room than the solid and liquid it came from. Never stopper a vessel that is making a gas." });
     return;
   }
-  const tr = fittedTo(v, "tubing") && tools("trough")[0];
-  if (!tr) return;
-  if (g.gas === "NH3") {
-    res.obs.push({ text: "Nothing collects in the gas jar.", why: "Ammonia is very soluble in water, so it dissolves in the trough. It has to be collected in a dry, upturned tube instead." });
+  const tube = fittedTo(v, "tubing");
+  const c = tube && collectorFor(tube);
+  if (!c) return;
+  // each way of collecting suits some gases and not others
+  if (c.key === "trough" && g.gas === "NH3") {
+    res.obs.push({ text: "Nothing collects in the gas jar.", why: "Ammonia is very soluble in water, so it dissolves in the trough. Collect it in a dry, upturned tube instead." });
     return;
   }
-  tr.gas = { k: g.gas, n: Math.min(JAR, (tr.gas && tr.gas.k === g.gas ? tr.gas.n : 0) + g.n) };
-  dress(tr);
-  bubble(nodes[tr.id].g, "gasjar", { vol: 60, cap: 150 }, 1);
-  nodes[tr.id].g.querySelector(".cl-bubbles").setAttribute("transform", "translate(44 -20)");
-  res.obs.push({ text: `Bubbles rise through the water into the gas jar: ${Math.round(tr.gas.n * 12)} cm³ collected.`, why: "Collection over water: the gas pushes the water down out of the jar. It works for gases that do not dissolve much." });
+  if (c.key === "up" && !LIGHT.includes(g.gas)) {
+    res.obs.push({ text: "Nothing stays in the upturned tube.", why: `${cap1(GAS[g.gas])} is denser than air, so it falls straight out of an upturned tube. Collect it in a jar with its mouth up, or over water.` });
+    return;
+  }
+  if (c.key === "down" && LIGHT.includes(g.gas)) {
+    res.obs.push({ text: "Nothing stays in the jar.", why: `${cap1(GAS[g.gas])} is less dense than air, so it rises straight out of an open jar. Collect it in an upturned tube${g.gas === "H2" ? ", or over water" : ""}.` });
+    return;
+  }
+  c.gas = { k: g.gas, n: Math.min(COLLECT[c.key].cap, (c.gas && c.gas.k === g.gas ? c.gas.n : 0) + g.n) };
+  dress(c);
+  const vol = Math.round(c.gas.n * 12);
+  if (c.key === "trough") {
+    bubble(nodes[c.id].g, "gasjar", { vol: 60, cap: 150 }, 1);
+    nodes[c.id].g.querySelector(".cl-bubbles").setAttribute("transform", "translate(44 -20)");
+    res.obs.push({ text: `Bubbles rise through the water into the gas jar: ${vol} cm\u00b3 collected.`, why: "Collection over water: the gas pushes the water down out of the jar. It works for gases that do not dissolve much." });
+  } else if (c.key === "syringe") {
+    res.obs.push({ text: `The plunger of the gas syringe is pushed out. It reads ${vol} cm\u00b3.`, why: "A gas syringe measures the volume of a gas directly, whatever the gas is." });
+    res.flags.push("measured");
+  } else if (c.key === "up") {
+    res.obs.push({ text: "The gas rises into the upturned tube and pushes the air out at the bottom.", why: `Upward delivery: ${GAS[g.gas]} is less dense than air, so it collects at the top of the tube.` });
+  } else {
+    res.obs.push({ text: "The gas sinks into the jar and pushes the air out at the top.", why: `Downward delivery: ${GAS[g.gas]} is denser than air, so it collects at the bottom of the jar.` });
+  }
   res.flags.push("collected");
 }
 
@@ -526,12 +570,12 @@ function targetOf(it) {
   if (HEAT[it.key]) {
     return nearest(vessels(), (v) => {
       const def = VESSELS[v.key], foot = v.y - (def.lift || 0), dx = Math.abs(it.x - v.x), tip = it.y - HEAT[it.key];
-      return v.key !== "burette" && dx < Math.min(def.rMax, 60) + 26 && tip > foot - 40 && tip < foot + 90 ? dx : -1;
+      return v.key !== "burette" && dx < Math.min(def.rMax, 60) + 26 && tip > foot - 84 && tip < foot + 90 ? dx : -1;
     });
   }
   // what is offered to: vessels always; the gas jar to splints and litmus; a bottle to an empty dropper or pipette
   const list = [...vessels()];
-  if (MOUTH.includes(it.key) || it.key === "red" || it.key === "blue") list.push(...tools("trough"));
+  if (MOUTH.includes(it.key) || it.key === "red" || it.key === "blue") list.push(...collectors().filter((c) => COLLECT[c.key].test));
   if (TAKES[it.key] && !it.sample) list.push(...state.items.filter((o) => o.kind === "reagent" && reagent(o.key).kind === "solution"));
   const atTip = MOUTH.includes(it.key) || it.key === "wire";
   return nearest(list, (o) => {
@@ -647,13 +691,15 @@ function use(it, v) {
     return false;
   }
   // ── a splint or litmus at the gas jar ──
-  if (v.key === "trough") {
+  if (COLLECT[v.key]) {
     const jar = { ...newTube(), gas: v.gas ? v.gas.k : null };
+    const where = COLLECT[v.key].name;
     const res = test(jar, it.key);
-    if (res.refused) { say("There is no gas in the jar to test yet.", v, "no"); return false; }
+    if (res.refused) { say(`There is no gas in the ${where} to test yet.`, v, "no"); return false; }
     showTest(it, res);
     if (!jar.gas && v.gas) { v.gas = null; dress(v); }       // hydrogen is burnt in the test
-    record({ ...v, tag: "jar", t: jar }, { ...res, title: res.title.replace("at the mouth", "at the gas jar") });
+    res.flags.push(`at:${v.key}`);
+    record({ ...v, tag: v.key === "up" ? "tube" : "jar", t: jar }, { ...res, title: res.title.replace("at the mouth", `at the ${where}`) });
     return false;
   }
   // ── a dropper or pipette, filling from a bottle ──
@@ -788,16 +834,35 @@ function resetTool(it) {
   if (it.key === "thermo") { q(".cl-merc").setAttribute("y", -53); q(".cl-merc").setAttribute("height", 49); }
 }
 
-// ── the burette's tap: the one thing that is pressed ────────────────────────
+// ── things that are pressed: a tap, a balance's tare key, a power switch ─────
 let tap = null;
 function runTap(bur) {
+  const sep = bur.key === "sepfunnel";
   const v = inSlot(bur) || nearest(vessels().filter((o) => o !== bur && !VESSELS[o.key].fixed), (o) => {
     const dx = Math.abs(o.x - bur.x);
     return dx < VESSELS[o.key].rTop + 6 && Math.abs(o.y - bur.y) < 40 && -VESSELS[o.key].top <= 164 ? dx : -1;
   });
-  if (bur.t.vol <= 0) { say("The burette is empty. Fill it from a bottle: carry the bottle to the top.", bur, "no"); return false; }
-  if (!v) { say("Stand a flask under the burette first.", bur, "no"); return false; }
+  if (isEmpty(bur.t)) { say(sep ? "The separating funnel is empty. Pour the mixture in at the top." : "The burette is empty. Fill it from a bottle: carry the bottle to the top.", bur, "no"); return false; }
+  if (!v) { say(`Stand a beaker or a flask under the ${sep ? "funnel" : "burette"} first.`, bur, "no"); return false; }
+  if (sep) {
+    const n = state.dose === "drops" ? 0.25 : 1.5;
+    if (roomIn(v.t) < n) { say("It is full. Stand an empty beaker under the funnel.", v, "no"); return false; }
+    const out = takeBottom(bur.t, n);
+    const c = out.layer === "oil" ? [232, 200, 90] : out.s.vol > 0 ? look(out.s).rgb : [200, 224, 240];
+    const res = deliver(v, out.s, "the separating funnel", c);
+    if (!res) return false;
+    paint(bur);
+    drops([bur.x, bur.y - 164], v._surface, c, 2.4);
+    if (out.last) {
+      const done = { title: "Ran off the lower layer", obs: [{ text: "The last of the lower layer has run out. Only the oil is left in the funnel.", why: "The two liquids do not mix, and the denser one sinks. Running it out through the tap leaves the other behind: that is how a separating funnel separates them." }], flags: ["separated"] };
+      record(bur, done);
+      return false;                                         // the tap is closed at the boundary
+    }
+    save();
+    return true;
+  }
   const n = Math.min(state.dose === "drops" ? 1 / 16 : 0.5, bur.t.vol);
+  if (n <= 0) { say("There is only oil in the burette. Empty it.", bur, "no"); return false; }
   if (roomIn(v.t) < n - 1e-6) { say("The flask is full. Empty it, or use another one.", v, "no"); return false; }
   const c = look(bur.t).rgb;
   const res = deliver(v, takeFrom(bur.t, n), "the burette", c, "by:burette");
@@ -805,14 +870,38 @@ function runTap(bur) {
   paint(bur);
   drops([bur.x, bur.y - 162], v._surface, c, 2.2);
   const seen = res.obs.map((o) => o.text).filter((t) => t !== "No visible change.").join(" ");
-  say(`${seen ? `${seen} ` : ""}The burette reads ${((bur.t.cap - bur.t.vol) * 2).toFixed(2)} cm³.`, v);
+  say(`${seen ? `${seen} ` : ""}The burette reads ${((bur.t.cap - bur.t.vol) * 2).toFixed(2)} cm\u00b3.`, v);
   save();
   return true;
 }
-function startTap(bur) {
+/** One moment of current through the electrolysis cell. */
+function runCell(cell) {
+  const res = electrolyse(cell.t, Math.max(0.5, cell.t.vol / 20));
+  if (res.refused) { say(res.refused, cell, "no"); return false; }
+  paint(cell);
+  if (res.flags.length) bubble(nodes[cell.id].g, "cell", cell.t, 1.4);
+  record(cell, res);
+  return res.flags.length > 0;
+}
+/** A press on something that is not carried. Returns true if it was one. */
+function press(e, it) {
+  const key = e.target.closest("[data-press]");
+  if (e.target.closest(".cl-tap")) { startTap(it, runTap); return true; }
+  if (!key) return false;
+  if (key.dataset.press === "power") { startTap(it, runCell, 900); return true; }
+  if (key.dataset.press === "tare") {
+    select(null);
+    it.tare = it.gross && Math.abs((it.tare || 0) - it.gross) > 1e-9 ? it.gross : 0;
+    save();
+    say(it.tare ? "Tared: the balance reads zero with this on the pan. What you add now is weighed on its own." : "The balance is back to reading everything on the pan.");
+    return true;
+  }
+  return false;
+}
+function startTap(bur, run, every) {
   select(null);
   nodes[bur.id].g.classList.add("is-open");
-  const go = () => { if (!runTap(bur)) return stopTap(); tap.timer = setTimeout(go, state.dose === "drops" ? 240 : 320); };
+  const go = () => { if (!run(bur)) return stopTap(); tap.timer = setTimeout(go, every || (state.dose === "drops" ? 240 : 320)); };
   tap = { bur, timer: null };
   go();
 }
@@ -836,7 +925,7 @@ function startDrag(it, e, fromDrawer = false) {
     sx: it.x, sy: it.y, rack: it.rack || null, on: it.on || null, moved: fromDrawer, used: false, sits: false, over: null, timer: null,
     riders: ridersOf(it),
   };
-  const behind = it.kind === "rack" || it.key === "trough" || (it.kind === "vessel" && VESSELS[it.key].fixed);
+  const behind = it.kind === "rack" || Boolean(COLLECT[it.key]) || (it.kind === "vessel" && VESSELS[it.key].fixed);
   if (!behind) (it.kind === "vessel" ? L.items : L.fx).appendChild(nodes[it.id].g);
   glide(it, false);
   drag.riders.forEach((v) => glide(v, false));
@@ -883,7 +972,7 @@ svg.addEventListener("pointerdown", (e) => {
   const g = e.target.closest("[data-item]");
   if (!g) return select(null);
   e.preventDefault();
-  if (e.target.closest(".cl-tap")) return startTap(byId(g.dataset.item));
+  if (press(e, byId(g.dataset.item))) return;
   startDrag(byId(g.dataset.item), e);
 });
 
@@ -957,7 +1046,7 @@ window.addEventListener("pointerup", (e) => {
     glide(it, true);
     place(it);
     say(it.key === "funnel" ? `The funnel and its filter paper are in ${plain(d.over)}. Whatever is poured in now is filtered.`
-      : it.key === "tubing" ? (tools("trough").length ? `${cap1(plain(d.over))} is piped to the gas jar. Any gas it makes from now on is collected.` : `The delivery tube is in ${plain(d.over)}. Put a trough and gas jar on the bench to collect the gas.`)
+      : it.key === "tubing" ? (collectors().length ? `${cap1(plain(d.over))} is piped to the ${COLLECT[collectorFor(it).key].name}. Any gas it makes from now on goes there.` : `The delivery tube is in ${plain(d.over)}. Put a gas jar, a gas syringe or a collecting tube on the bench.`)
       : `${cap1(plain(d.over))} is stoppered.`, d.over);
   } else if (d.sits) {
     // a vessel left over a flame stays there
@@ -1009,11 +1098,15 @@ function select(it) {
     can = !isEmpty(it.t);
     holds = can ? `Holds ${it.t.vol > 0 ? `${cm3(it.t.vol)}: ` : ""}${esc(it.t.added.map((id) => reagent(id).name).join(", "))}.` : "Empty.";
     if (it.key === "burette") holds += " Press the blue tap to run it out. Hold it down to keep it running.";
+    if (it.key === "sepfunnel") holds += " Press the blue tap to run out the lower layer. It stops by itself when that layer has gone.";
+    if (it.key === "cell") holds += " Pour a solution in, then hold down the red switch to pass a current.";
     if (it.key === "still") holds += " Fill the flask, stand a receiver under the condenser, and put a burner underneath.";
   } else if (it.sample) { can = true; holds = it.key === "wire" ? "Dipped, ready for the flame." : `Holding ${cm3(it.sample.vol)} of liquid.`; }
+  else if (it.key === "syringe") { can = Boolean(it.gas); holds = it.gas ? `${Math.round(it.gas.n * 12)} cm\u00b3 of gas in the syringe.` : "Pipe a flask to it with the delivery tube. The plunger moves out as gas is made."; }
+  else if (it.key === "up" || it.key === "down") { can = Boolean(it.gas); holds = it.gas ? "There is gas in it. Test it with a splint or damp litmus." : it.key === "up" ? "For gases less dense than air (hydrogen, ammonia). Pipe a flask to it with the delivery tube." : "For gases denser than air (carbon dioxide, oxygen). Pipe a flask to it with the delivery tube."; }
   else if (it.key === "trough") { can = Boolean(it.gas); holds = it.gas ? `${Math.round(it.gas.n * 12)} cm³ of gas in the jar. Test it with a splint.` : "The jar is full of water. Pipe a stoppered flask to it with the delivery tube."; }
   else if (it.key === "funnel") { can = Boolean(it.residue); holds = it.residue ? "There is residue in the filter paper." : "A clean filter paper. Put it in the mouth of a flask."; }
-  else if (it.key === "balance") holds = "Stand a vessel on the pan. It reads the glass and whatever is in it.";
+  else if (it.key === "balance") holds = "Stand a vessel on the pan. Press the red T to tare: the reading goes to zero, so what you add next is weighed alone.";
   else if (it.key === "tripod") holds = "Stand a beaker or a dish on the gauze, and a burner underneath.";
   else if (it.key === "stand") holds = "Let a tube or flask go at the clamp and it is held there, with room for a burner underneath.";
   const tip = it.kind === "vessel" ? "Empty and rinse it" : it.key === "funnel" ? "Fresh filter paper" : "Empty it";

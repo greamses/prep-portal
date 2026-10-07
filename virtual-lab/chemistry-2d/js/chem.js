@@ -63,6 +63,8 @@ export const REAGENTS = [
 
   { id: "water", group: "other", kind: "solution", name: "distilled water", formula: "H2O", adds: {} },
   { id: "h2o2", group: "other", kind: "solution", name: "hydrogen peroxide solution", formula: "H2O2", adds: { H2O2: 1 } },
+  // the one liquid that does not mix with the rest: it is kept apart, as t.oil, and floats
+  { id: "oil", group: "other", kind: "solution", name: "cooking oil", formula: "Oil", adds: {}, oil: true },
 
   { id: "mg", group: "solid", kind: "solid", name: "magnesium ribbon", formula: "Mg", metal: { Mg: 2 } },
   { id: "zn", group: "solid", kind: "solid", name: "zinc granules", formula: "Zn", metal: { Zn: 2 } },
@@ -155,9 +157,9 @@ const ION_TEX = { Mg: "Mg^2+", Zn: "Zn^2+", Fe2: "Fe^2+", Pb: "Pb^2+", Cu: "Cu^2
 
 // ── a tube ──────────────────────────────────────────────────────────────────
 export function newTube(cap = CAP) {
-  return { cap, temp: 25, extra: 0, vol: 0, aq: {}, metal: {}, deposit: [], solid: {}, ind: [], gas: null, added: [], said: [] };
+  return { cap, temp: 25, extra: 0, oil: 0, vol: 0, aq: {}, metal: {}, deposit: [], solid: {}, ind: [], gas: null, added: [], said: [] };
 }
-export const isEmpty = (t) => t.vol <= EPS && !hasSolids(t) && !t.ind.length;
+export const isEmpty = (t) => t.vol <= EPS && !(t.oil > EPS) && !hasSolids(t) && !t.ind.length;
 const hasSolids = (t) => Object.values(t.metal).some((n) => n > EPS) || Object.values(t.solid).some((n) => n > EPS);
 const solidTotal = (t) => [...Object.values(t.metal), ...Object.values(t.solid)].reduce((a, b) => a + b, 0);
 
@@ -224,6 +226,7 @@ const TINT = [
   ["free", "Fe2", [156, 204, 140], 1.5, "pale green"],
   ["free", "Fe3", [214, 150, 44], 3.2, "yellow-brown"],
   ["cx", "CuNH3", [28, 52, 190], 7, "deep blue"],
+  ["free", "I2", [150, 84, 30], 5, "brown"],
 ];
 const UNIVERSAL = [
   [2.5, [226, 54, 44], "red"], [4.5, [240, 138, 36], "orange"], [6.5, [240, 208, 30], "yellow"], [7.5, [76, 176, 80], "green"],
@@ -495,7 +498,16 @@ export function add(t, id, dose = "portion") {
   const r = BY_ID[id];
   if (!r) throw new Error(`No such reagent: ${id}`);
   const amount = r.kind === "solution" ? (typeof dose === "number" ? dose : DOSES[dose] ?? 1) : 1;
-  if (r.kind === "solution" && t.vol + amount > (t.cap || CAP) + EPS) return { refused: "It is full. Empty it, or use another one." };
+  if (r.kind === "solution" && amount > roomIn(t) + EPS) return { refused: "It is full. Empty it, or use another one." };
+  if (r.oil) {
+    const first = !(t.oil > EPS);
+    t.oil = (t.oil || 0) + amount;
+    if (!t.added.includes(id)) t.added.push(id);
+    const obs = t.vol > EPS
+      ? [{ text: first ? "The oil does not mix with the liquid. It floats on top as a separate, pale yellow layer." : "The layer of oil on top gets deeper.", why: "Oil and water are immiscible: they do not dissolve in each other. Oil is the less dense, so it is the upper layer." }]
+      : [{ text: "Cooking oil is a pale yellow liquid." }];
+    return { title: `Added ${r.name}`, obs, flags: ["oil"], events: [], state: { look: look(t) } };
+  }
   if (r.kind === "solid" && solidTotal(t) + 1 > SOLID_CAP + EPS) return { refused: "There is enough solid in there already." };
   if (r.kind === "indicator" && t.vol <= EPS) return { refused: "Put a liquid in first, then add the indicator." };
   if (r.kind === "indicator" && t.ind.includes(id)) return { refused: `There is ${r.name} in there already.` };
@@ -548,7 +560,7 @@ const saltIn = (t) => SALT_IONS.reduce((a, k) => a + get(t.aq, k), 0);
 
 /** What the contents of a vessel weigh, in grams (the glass is the drawing's business). */
 export function massOf(t) {
-  let m = 2 * t.vol + (t.extra || 0);
+  let m = 2 * t.vol + 1.84 * (t.oil || 0) + (t.extra || 0);
   for (const [k, n] of Object.entries(t.metal)) m += n * EQ_MASS[k] * 0.01;
   for (const [k, n] of Object.entries(t.solid)) m += k === "crystals" ? 0.1 * saltIn(t) : n * EQ_MASS[k] * 0.01;
   return Math.max(0, m);
@@ -624,38 +636,135 @@ export function gasMade(res) {
   return gas ? { gas, n } : null;
 }
 
+// ── electrolysis ────────────────────────────────────────────────────────────
+/**
+ * Pass a current through the liquid for a moment, between two carbon rods.
+ * The school rules: at the negative rod a metal below hydrogen (copper, silver) is
+ * plated out, otherwise hydrogen comes off; at the positive rod a halide gives the
+ * halogen, otherwise oxygen. What is left behind changes too — brine goes alkaline,
+ * copper(II) sulfate goes acidic and loses its blue.
+ */
+export function electrolyse(t, n = 1) {
+  if (t.vol <= EPS) return { refused: "There is nothing in the cell. Pour in a solution first." };
+  const free = speciate(t).free;
+  const ions = Object.entries(free).filter(([k, v]) => v > EPS && !["NH3", "H2O2", "I2"].includes(k));
+  if (!ions.length) return { title: "Switched on the current", obs: [{ text: "Nothing happens at either rod.", why: "Pure water has almost no ions in it, so it barely conducts. Add an acid, an alkali or a salt." }], flags: [], events: [] };
+  const before = look(t);
+  const obs = [], flags = [];
+  const say = (text, why, eq) => obs.push({ text, why, eq });
+
+  // the negative rod (cathode): reduction
+  const metal = get(free, "Ag") > EPS ? "Ag" : get(free, "Cu") > EPS ? "Cu" : null;
+  if (metal) {
+    const m = Math.min(n, free[metal]);
+    bump(t.aq, metal, -m);
+    t.plated = metal;
+    t.extra = (t.extra || 0) - m * EQ_MASS[metal] * 0.01 * 0;      // the plate stays in the cell: no mass leaves
+    say(metal === "Cu" ? "A pink-brown coating of copper grows on the negative rod." : "Silvery crystals of silver grow on the negative rod.",
+      `${metal === "Cu" ? "Copper" : "Silver"} is below hydrogen in the reactivity series, so its ions are discharged in preference to hydrogen ions.`,
+      metal === "Cu" ? "Cu^2+(aq) + 2e^- -> Cu(s)" : "Ag^+(aq) + e^- -> Ag(s)");
+    flags.push(`electro:${metal}`);
+  } else {
+    if (get(t.aq, "H") > EPS) bump(t.aq, "H", -Math.min(n, t.aq.H));
+    else bump(t.aq, "OH", n);                                      // water is reduced: hydroxide is left behind
+    say("Bubbles of a colourless gas stream off the negative rod.", "Hydrogen. The metal in solution is above hydrogen in the reactivity series, so hydrogen ions from the water are discharged instead.", "2H^+(aq) + 2e^- -> H2(g)");
+    flags.push("electro:H2");
+    t.extra = (t.extra || 0) - n * 0.01;
+  }
+  // the positive rod (anode): oxidation
+  const halide = get(free, "I") > EPS ? "I" : get(free, "Cl") > EPS ? "Cl" : null;
+  if (halide === "I") {
+    const m = Math.min(n, free.I);
+    bump(t.aq, "I", -m);
+    bump(t.aq, "I2", m);
+    say("A brown colour spreads from the positive rod.", "Iodide ions are discharged as iodine, which is brown in solution.", "2I^-(aq) -> I2(aq) + 2e^-");
+    flags.push("electro:I2");
+  } else if (halide === "Cl") {
+    const m = Math.min(n, free.Cl);
+    bump(t.aq, "Cl", -m);
+    say("Bubbles of a pale green gas with a swimming-pool smell come off the positive rod.", "Chlorine. From a concentrated chloride solution, chloride ions are discharged in preference to hydroxide ions.", "2Cl^-(aq) -> Cl2(g) + 2e^-");
+    flags.push("electro:Cl2");
+    t.extra = (t.extra || 0) - m * 0.355;
+  } else {
+    if (get(t.aq, "OH") > EPS) bump(t.aq, "OH", -Math.min(n, t.aq.OH));
+    else bump(t.aq, "H", n);                                       // water is oxidised: acid is left behind
+    say("Bubbles of a colourless gas come off the positive rod, about half as fast.", "Oxygen. Sulfate and nitrate ions are not discharged; hydroxide ions from the water are.", "4OH^-(aq) -> 2H2O(l) + O2(g) + 4e^-");
+    flags.push("electro:O2");
+    t.extra = (t.extra || 0) - n * 0.08;
+  }
+  t.gas = null;
+  // an acid and an alkali made at the two rods meet in the middle
+  const k = Math.min(get(t.aq, "H"), get(t.aq, "OH"));
+  if (k > EPS) { bump(t.aq, "H", -k); bump(t.aq, "OH", -k); }
+  const after = look(t);
+  if (after.name !== before.name) { say(`The liquid turns ${after.name}.`); flags.push(`colour:${after.name}`); }
+  return { title: "Switched on the current", obs, flags, events: [] };
+}
+
 /** How much more liquid a vessel will take. */
-export const roomIn = (t) => (t.cap || CAP) - t.vol;
+export const roomIn = (t) => (t.cap || CAP) - t.vol - (t.oil || 0);
 
 /** Take some of the liquid out (a dropper, or tipping the vessel). What is left stays put. */
 export function takeFrom(t, amount) {
-  const n = Math.min(amount, t.vol);
+  // tipped or sucked up, both layers come together, in the proportion they are there
+  const total = t.vol + (t.oil || 0);
+  const n = Math.min(amount, total);
   if (n <= EPS) return null;
-  const f = n / t.vol;
+  const f = n / total;
   const s = newTube(n);
-  s.vol = n;
+  s.vol = t.vol * f;
+  s.oil = (t.oil || 0) * f;
   s.temp = t.temp ?? 25;
   s.ind = [...t.ind];
   s.added = [...t.added];
   s.extra = (t.extra || 0) * f;
   t.extra = (t.extra || 0) * (1 - f);
   for (const [k, v] of Object.entries(t.aq)) { bump(s.aq, k, v * f); bump(t.aq, k, -v * f); }
-  t.vol -= n;
+  t.vol -= s.vol;
+  t.oil = (t.oil || 0) - s.oil;
+  if (t.oil <= EPS) t.oil = 0;
   t.gas = null;
-  if (t.vol <= EPS) { t.vol = 0; t.ind = []; t.aq = {}; if (!hasSolids(t)) t.added = []; }
+  if (t.vol <= EPS) { t.vol = 0; t.ind = []; t.aq = {}; if (!hasSolids(t)) t.added = t.oil > EPS ? ["oil"] : []; }
   return s;
+}
+
+/**
+ * Run liquid out of the BOTTOM (the tap of a separating funnel): the lower, watery layer
+ * comes first and the oil only when that has gone. Returns { s, layer, last }.
+ */
+export function takeBottom(t, n) {
+  if (t.vol > EPS) {
+    const oil = t.oil || 0;
+    t.oil = 0;
+    const s = takeFrom(t, Math.min(n, t.vol));
+    t.oil = oil;
+    if (oil > EPS && !t.added.includes("oil")) t.added.push("oil");
+    s.added = s.added.filter((id) => id !== "oil");
+    return { s, layer: "water", last: t.vol <= EPS && oil > EPS };
+  }
+  if (t.oil > EPS) {
+    const m = Math.min(n, t.oil);
+    const s = newTube(m);
+    s.oil = m;
+    s.added = ["oil"];
+    t.oil -= m;
+    if (t.oil <= EPS) { t.oil = 0; t.added = t.added.filter((id) => id !== "oil"); }
+    return { s, layer: "oil", last: false };
+  }
+  return null;
 }
 
 /** Pour a sample (from takeFrom) into a vessel. */
 export function pourIn(t, s, from = "another vessel") {
-  if (s.vol > roomIn(t) + EPS) return { refused: "It is full. Empty it, or use another one." };
+  if (s.vol + (s.oil || 0) > roomIn(t) + EPS) return { refused: "It is full. Empty it, or use another one." };
   const wasDry = t.vol <= EPS;
   const crystals = get(t.solid, "crystals") > EPS;
   const res = act(t, () => {
     t.gas = null;
     undry(t);
     t.extra = (t.extra || 0) + (s.extra || 0);
-    t.temp = ((t.temp ?? 25) * t.vol + (s.temp ?? 25) * s.vol) / (t.vol + s.vol);
+    if (t.vol + s.vol > EPS) t.temp = ((t.temp ?? 25) * t.vol + (s.temp ?? 25) * s.vol) / (t.vol + s.vol);
+    t.oil = (t.oil || 0) + (s.oil || 0);
     t.vol += s.vol;
     for (const [k, v] of Object.entries(s.aq)) bump(t.aq, k, v);
     for (const id of s.ind) if (!t.ind.includes(id)) t.ind.push(id);
@@ -778,6 +887,10 @@ export const TASKS = [
   { id: "collect", text: "Collect a gas over water.", done: (f) => f.includes("collected") },
   { id: "distil", text: "Distil clear water out of a coloured solution.", done: (f) => f.includes("distilled") },
   { id: "crystals", text: "Evaporate a solution to leave crystals.", done: (f) => f.includes("crystals") },
+  { id: "separate", text: "Separate oil from water with a separating funnel.", done: (f) => f.includes("separated") },
+  { id: "plate", text: "Plate a carbon rod with copper by electrolysis.", done: (f) => f.includes("electro:Cu") },
+  { id: "syringe", text: "Measure the volume of a gas with a gas syringe.", done: (f) => f.includes("measured") },
+  { id: "updraft", text: "Collect ammonia in a dry, upturned tube and test it.", done: (f) => f.includes("test:gasblue") && f.includes("at:up") },
 ];
 
 /** Which tasks this result finishes. */
