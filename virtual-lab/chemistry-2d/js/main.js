@@ -1356,6 +1356,7 @@ function use(it, v) {
     if (res && hadSand && (it.t.solid.sand || 0) > 0 && !state.seen.includes("decanted:" + it.id)) {
       state.seen.push("decanted:" + it.id);
       noteFlags(["decanted"]);
+      if (actor.onRecord) actor.onRecord(["decanted"], it);
       say("The clear liquid pours off and the sand stays where it settled: that is decanting.", it);
     }
     save();
@@ -2489,6 +2490,14 @@ const actor = {
     noteFlags([`fitted:${tool.key}`]);
     save();
   },
+  /** Take a fitted thing off again (a funnel out of a flask) and put it down. */
+  async lift(tool, x, y) {
+    tool.on = null;
+    await this.move(tool, x, y, 460);
+    dress(tool);
+  },
+  /** Stand and watch (a chromatogram running). */
+  async wait(ms) { await pause(ms); },
   async flame(burner, level) {
     burner.flame = level;
     dress(burner);

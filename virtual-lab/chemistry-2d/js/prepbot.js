@@ -183,6 +183,168 @@ export const LESSONS = [
       await say("The water has boiled away, and blue crystals are left. Only the water can leave: the salt stays behind.");
     },
   },
+  // ── the separating techniques ──
+  // (laid out across the bench: `at` squeezes the layout on a narrow screen)
+  {
+    id: "sandsalt",
+    name: "Sand from salt",
+    about: "Dissolve, filter, evaporate: three techniques, one after another.",
+    need: ["dissolved:salt", "filtered", "crystals"],
+    steps: [
+      { text: "Tip some of the sand and salt mixture (in Solids) into a beaker.", done: (seen) => seen.has("added:sandsalt") },
+      { text: "Pour in distilled water. The salt dissolves; the sand does not.", done: (seen) => seen.has("dissolved:salt") },
+      { text: "Stir with a glass rod, so that the sand is carried in the water.", done: (seen) => seen.has("swirled") },
+      { text: "Fit a funnel in a flask, and let a filter paper go at the funnel.", done: (seen, b) => b.fitted("paper") },
+      { text: "Pour the mixture through the funnel. The sand is caught by the paper.", done: (seen) => seen.has("filtered") },
+      { text: "Stand an evaporating dish on a tripod. Lift the funnel out of the flask and pour the filtrate into the dish.", done: (seen, b) => b.count("vessel", "dish") > 0 && b.count("rack", "tripod") > 0 },
+      { text: "Light a burner and hold it under the dish until the water has gone.", done: (seen) => seen.has("crystals") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Sand and salt, mixed. How do we get each one back? We use what is different about them.");
+      const bk = await b.take("vessel", "beaker100", at(120), b.BASE);
+      const mix = await b.take("reagent", "sandsalt", at(0), b.TOP + 22);
+      const w = await b.take("reagent", "water", at(120), b.TOP);
+      await b.uncap(mix);
+      await b.pour(mix, bk);
+      await say("Some of the mixture goes into a beaker.");
+      await b.uncap(w);
+      await b.pour(w, bk, 3);
+      await say("Now water. Salt dissolves in water. Sand does not: look at it lying on the bottom.");
+      const rod = await b.take("tool", "rod", at(250), b.BASE);
+      await b.hold(rod, bk, 1300);
+      await say("I stir it, so the sand is carried in the water when I pour.");
+      const fl = await b.take("vessel", "flask100", at(360), b.BASE);
+      const fu = await b.take("tool", "funnel", at(360), b.BASE - 220);
+      await b.fit(fu, fl);
+      const fp = await b.take("tool", "paper", at(470), b.BASE);
+      await b.fit(fp, fu);
+      await say("A funnel in a flask, and a filter paper folded into the funnel.");
+      await b.pour(bk, fl, 12);
+      await say("The sand cannot pass through the paper. It is the residue. The salt solution runs through: the filtrate.");
+      const tp = await b.take("rack", "tripod", at(600), b.BASE + 20);
+      const dish = await b.take("vessel", "dish", at(600), b.BASE - 140);
+      await b.into(dish, tp, 0);
+      await b.lift(fu, at(470), b.BASE - 30);
+      await b.pour(fl, dish, 6);
+      await say("The filtrate goes into an evaporating dish on a tripod.");
+      const bn = await b.take("tool", "burner", at(740), b.BASE + 20);
+      await b.flame(bn, 3);
+      await b.heat(bn, dish);
+      await say("The water has boiled away and white salt is left. Dissolving, filtering, evaporating: sand in the paper, salt in the dish.");
+    },
+  },
+  {
+    id: "decant",
+    name: "Decanting",
+    about: "Pour a liquid off a solid that has settled.",
+    need: ["decanted"],
+    steps: [
+      { text: "Tip sand (in Solids) into a beaker.", done: (seen) => seen.has("added:sand") },
+      { text: "Pour in distilled water. Do not stir: leave the sand on the bottom.", done: (seen) => seen.has("added:water") },
+      { text: "Take a second beaker.", done: (seen, b) => b.count("vessel", "beaker") > 1 },
+      { text: "Carry the first beaker to the second and pour the water off. The sand stays behind.", done: (seen) => seen.has("decanted") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Sometimes there is no need for a filter. If the solid has settled, the liquid can simply be poured off it.");
+      const bk = await b.take("vessel", "beaker250", at(140), b.BASE);
+      const sd = await b.take("reagent", "sand", at(0), b.TOP + 22);
+      const w = await b.take("reagent", "water", at(120), b.TOP);
+      await b.uncap(sd);
+      await b.pour(sd, bk);
+      await b.uncap(w);
+      await b.pour(w, bk, 4);
+      await say("Sand and water. I do not stir. The sand is heavy and lies on the bottom.");
+      const b2 = await b.take("vessel", "beaker250", at(380), b.BASE);
+      await say("A second beaker, to take the water.");
+      await b.pour(bk, b2, 3);
+      await say("The water pours off and the sand stays where it was. That is decanting. It is quick, but a little water is always left with the sand.");
+    },
+  },
+  {
+    id: "magnet",
+    name: "Iron from sulfur",
+    about: "A magnet picks one substance out of a mixture.",
+    need: ["magnet"],
+    steps: [
+      { text: "Take an evaporating dish.", done: (seen, b) => b.count("vessel", "dish") > 0 },
+      { text: "Tip iron filings and sulfur powder (both in Solids) into the dish.", done: (seen) => seen.has("added:fe") && seen.has("added:sulfur") },
+      { text: "Take the horseshoe magnet from Equipment.", done: (seen, b) => b.count("tool", "magnet") > 0 },
+      { text: "Hold the magnet over the dish. The iron jumps to it.", done: (seen) => seen.has("magnet") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Grey iron filings and yellow sulfur powder, stirred together. They are mixed, but they have not joined.");
+      const dish = await b.take("vessel", "dish", at(200), b.BASE);
+      const fe = await b.take("reagent", "fe", at(0), b.TOP + 22);
+      const su = await b.take("reagent", "sulfur", at(120), b.TOP + 22);
+      await b.uncap(fe);
+      await b.pour(fe, dish);
+      await b.uncap(su);
+      await b.pour(su, dish);
+      await say("Both go into a dish. Each still has its own properties, and one of iron's is that a magnet pulls it.");
+      const mg = await b.take("tool", "magnet", at(380), b.BASE);
+      await b.hold(mg, dish, 1500);
+      await say("The iron jumps to the magnet and the sulfur is left. Nothing has changed into anything else. That is how we know it was only a mixture.");
+    },
+  },
+  {
+    id: "sublime",
+    name: "Iodine from sand",
+    about: "A solid that turns straight to vapour leaves the other one behind.",
+    need: ["sublimed"],
+    steps: [
+      { text: "Take a dry boiling tube.", done: (seen, b) => b.count("vessel", "boil") > 0 },
+      { text: "Tip iodine crystals and sand (both in Solids) into it.", done: (seen) => seen.has("added:iodine") && seen.has("added:sand") },
+      { text: "Take a burner and press its plus key to light it.", done: (seen, b) => b.lit() },
+      { text: "Hold the burner under the tube, and watch the top of the glass.", done: (seen) => seen.has("sublimed") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Dark iodine crystals mixed with sand. Water will not help us here. Heat will.");
+      const tb = await b.take("vessel", "boil", at(200), b.BASE);
+      const io = await b.take("reagent", "iodine", at(0), b.TOP + 22);
+      const sd = await b.take("reagent", "sand", at(120), b.TOP + 22);
+      await b.uncap(io);
+      await b.pour(io, tb);
+      await b.uncap(sd);
+      await b.pour(sd, tb);
+      await say("Both go into a dry boiling tube. No water at all.");
+      const bn = await b.take("tool", "burner", at(380), b.BASE + 20);
+      await b.flame(bn, 2);
+      await say("A gentle flame under the tube. Watch the glass near the top.");
+      await b.heat(bn, tb);
+      await say("Purple vapour, and then dark shiny crystals on the cool glass. Iodine goes straight from solid to vapour and back: it sublimes. The sand has not moved.");
+    },
+  },
+  {
+    id: "chroma",
+    name: "The dyes in black ink",
+    about: "Paper chromatography pulls an ink apart into its colours.",
+    need: ["chroma"],
+    steps: [
+      { text: "Take a 100 mL beaker.", done: (seen, b) => b.count("vessel", "beaker100") > 0 },
+      { text: "Pour in a LITTLE distilled water: one measure, no more.", done: (seen) => seen.has("added:water") },
+      { text: "Take the chromatography paper from Equipment and let it go at the mouth of the beaker.", done: (seen, b) => b.fitted("chroma") },
+      { text: "Watch the water climb the paper. If the ink washes off, there was too much water: take a fresh strip from its note.", done: (seen) => seen.has("chroma") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Black ink looks like one colour. Is it? Paper chromatography will tell us.");
+      const bk = await b.take("vessel", "beaker100", at(200), b.BASE);
+      const w = await b.take("reagent", "water", at(40), b.TOP);
+      await b.uncap(w);
+      await b.pour(w, bk, 1);
+      await say("A little water in a beaker. Only a little: it must not reach the ink.");
+      const cp = await b.take("tool", "chroma", at(380), b.BASE - 120);
+      await say("A strip of paper with a spot of black ink on a pencil line. Pencil, because pencil does not run.");
+      await b.fit(cp, bk);
+      await say("The rod lies across the beaker and the paper just touches the water. Now we wait, and watch the water climb.");
+      await b.wait(7600);
+      await say("Three spots: blue, red and yellow. Black ink is a mixture of dyes, and each one is carried a different distance. Measure them from the pencil line to find each Rf value.");
+    },
+  },
 ];
 
 class Stopped extends Error {}
