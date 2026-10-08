@@ -67,6 +67,12 @@ function outline(P, open = false) {
   return open ? `M${left.reverse().join("L")}L${right.reverse().join("L")}` : `M${left.join("L")}L${right.join("L")}z`;
 }
 /** A line that follows one wall, a little inside it: the shine on the glass. */
+/** A strip between two insets of one wall: a highlight with some width to it. */
+function band(P, side, a, b, from, to) {
+  const outer = wall(P, side, a, from, to).slice(1).split("L");
+  const inner = wall(P, side, b, from, to).slice(1).split("L").reverse();
+  return `M${outer.join("L")}L${inner.join("L")}z`;
+}
 function wall(P, side, inset, from, to) {
   const top = P[P.length - 1][0];
   const lo = top * to, hi = top * from;          // up is negative: lo is the higher end
@@ -144,16 +150,25 @@ const levelOf = (def, t) => {
 export const DEFS = `
 <defs>
   <linearGradient id="g-glass" x1="0" x2="1" y1="0" y2="0">
-    <stop offset="0" stop-color="#fff" stop-opacity="0.26"/><stop offset="0.14" stop-color="#fff" stop-opacity="0.06"/>
-    <stop offset="0.55" stop-color="#fff" stop-opacity="0.02"/><stop offset="0.86" stop-color="#fff" stop-opacity="0.08"/>
-    <stop offset="1" stop-color="#fff" stop-opacity="0.24"/>
+    <stop offset="0" stop-color="#fff" stop-opacity="0.5"/><stop offset="0.035" stop-color="#fff" stop-opacity="0.16"/>
+    <stop offset="0.085" stop-color="#000" stop-opacity="0.2"/><stop offset="0.2" stop-color="#fff" stop-opacity="0"/>
+    <stop offset="0.5" stop-color="#fff" stop-opacity="0.04"/><stop offset="0.8" stop-color="#fff" stop-opacity="0"/>
+    <stop offset="0.905" stop-color="#000" stop-opacity="0.18"/><stop offset="0.96" stop-color="#fff" stop-opacity="0.12"/>
+    <stop offset="1" stop-color="#fff" stop-opacity="0.46"/>
+  </linearGradient>
+  <linearGradient id="g-streak" x1="0" x2="0" y1="0" y2="1">
+    <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.1" stop-color="#fff" stop-opacity="0.8"/>
+    <stop offset="0.62" stop-color="#fff" stop-opacity="0.34"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="g-base" x1="0" x2="0" y1="0" y2="1">
+    <stop offset="0" stop-color="#fff" stop-opacity="0.05"/><stop offset="0.7" stop-color="#fff" stop-opacity="0.2"/><stop offset="1" stop-color="#fff" stop-opacity="0.42"/>
   </linearGradient>
   <linearGradient id="g-amber" x1="0" x2="1" y1="0" y2="0">
     <stop offset="0" stop-color="#b8782c" stop-opacity="0.85"/><stop offset="0.3" stop-color="#7a4718" stop-opacity="0.72"/>
     <stop offset="0.7" stop-color="#6a3c12" stop-opacity="0.74"/><stop offset="1" stop-color="#a86a24" stop-opacity="0.86"/>
   </linearGradient>
   <linearGradient id="g-shade" x1="0" x2="1" y1="0" y2="0">
-    <stop offset="0" stop-color="#000" stop-opacity="0.28"/><stop offset="0.3" stop-color="#000" stop-opacity="0"/>
+    <stop offset="0" stop-color="#000" stop-opacity="0.4"/><stop offset="0.08" stop-color="#000" stop-opacity="0.2"/><stop offset="0.3" stop-color="#000" stop-opacity="0"/>
     <stop offset="0.48" stop-color="#fff" stop-opacity="0.16"/><stop offset="0.7" stop-color="#000" stop-opacity="0"/>
     <stop offset="1" stop-color="#000" stop-opacity="0.3"/>
   </linearGradient>
@@ -192,25 +207,30 @@ export function vesselSvg(key, uid, tag = "") {
   const def = VESSELS[key];
   const P = def.profile, R = def.rMax, H = -def.top;
   const body = outline(P);
-  const rimRy = Math.max(2.6, def.rTop * 0.15);
+  const glassy = def.material !== "porcelain";
+  const rimRx = def.rTop + 1.5, rimRy = Math.max(2.6, def.rTop * 0.15);
+  const k = Math.min(1, def.rTop / 14);                   // a narrow tube has narrow highlights
   const marks = (def.marks || []).map(([n, at]) => {
     const y = f1(-((def.floor || 0) + (H - (def.floor || 0)) * def.fill * at));
     const r = rAt(P, y);
-    return `<path d="M${f1(r * 0.3)} ${y}H${f1(r * 0.62)}" class="cl-mark"/><text class="cl-mark-n" x="${f1(r * 0.24)}" y="${y + 2.4}" text-anchor="end">${n}</text>`;
+    return `<path d="M${f1(r * 0.3)} ${y}H${f1(r * 0.62)}" class="cl-mark"/><path d="M${f1(r * 0.46)} ${f1(y + (def.top * def.fill * 0.1))}H${f1(r * 0.62)}" class="cl-mark" opacity="0.6"/><text class="cl-mark-n" x="${f1(r * 0.24)}" y="${y + 2.4}" text-anchor="end">${n}</text>`;
   }).join("");
   const spout = def.spout ? `<path class="cl-g-edge" d="M${-def.rTop + 2} ${def.top + 1}q-9 -3 -10 -7q8 1 13 3"/>` : "";
+  const footPath = def.flat && !def.foot && glassy ? outline(P.filter(([y]) => y >= -7).concat([[-5, P[2][1]]])) : "";
   return `
     ${shadow(def.shadow || R + 8)}
+    ${glassy && !def.fixed ? `<ellipse cx="${f1(R * 0.25)}" cy="4" rx="${f1(R * 0.62)}" ry="2.6" fill="#fff" fill-opacity="0.07"/>` : ""}
     ${def.back || ""}
     <clipPath id="clip-${uid}"><path d="${body}"/></clipPath>
-    <path d="${body}" fill="#fff" fill-opacity="0.03"/>
+    <path d="${body}" fill="#fff" fill-opacity="0.025"/>
     <g clip-path="url(#clip-${uid})">
       <g class="cl-level">
         <rect class="cl-oil" x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}" transform="translate(0 ${H})"/>
         <g class="cl-liquidg">
           <rect class="cl-liquid" x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}"/>
           <rect class="cl-lshade" x="${-R}" y="${def.top}" width="${R * 2}" height="${H}" fill="url(#g-shade)"/>
-          <rect x="${-R * 4}" y="${def.top}" width="${R * 8}" height="2.2" fill="#fff" fill-opacity="0.28"/>
+          <rect x="${-R * 4}" y="${def.top}" width="${R * 8}" height="2.4" fill="#fff" fill-opacity="0.34"/>
+          <rect x="${-R * 4}" y="${def.top + 2.4}" width="${R * 8}" height="5" fill="#000" fill-opacity="0.1"/>
         </g>
         <rect class="cl-cloud" x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}"/>
       </g>
@@ -219,18 +239,20 @@ export function vesselSvg(key, uid, tag = "") {
       <g class="cl-bubbles"></g>
     </g>
     <ellipse class="cl-meniscus" cx="0" cy="0" rx="0" ry="2.4"/>
-    <path d="${body}" fill="url(#${def.material === "porcelain" ? "g-porcelain" : "g-glass"})"/>
+    <path d="${body}" fill="url(#${glassy ? "g-glass" : "g-porcelain"})"/>
+    ${glassy ? `<path d="${band(P, -1, 3.2 * k, 7.8 * k, 0.1, 0.94)}" fill="url(#g-streak)"/><path d="${band(P, 1, 5 * k, 13 * k, 0.16, 0.9)}" fill="#fff" fill-opacity="0.07"/><path class="cl-g-spark" d="${wall(P, -1, 3 * k, 0.9, 0.97)}"/>` : ""}
     <path class="cl-g-edge" d="${outline(P, true)}"/>
-    ${def.material === "porcelain" || def.rMax < 12 ? "" : `<path class="cl-g-inner" d="${outline(P.map(([y, r]) => [Math.min(y, def.flat ? -4.5 : -2.6), Math.max(0, r - 2.6)]), true)}"/>`}
-    ${def.flat && !def.foot && !def.material ? `<path d="M${-f1(P[2][1] - 2.6)} -4.5H${f1(P[2][1] - 2.6)}" stroke="#fff" stroke-opacity="0.3" stroke-width="1"/><path d="${outline(P.filter(([y]) => y >= -7).concat([[-4.5, P[2][1]]]))}" fill="#fff" fill-opacity="0.1"/>` : ""}
-    <path class="cl-g-spark" d="${wall(P, -1, 3, 0.9, 0.97)}"/>
-    ${def.footR ? `<path d="M${-def.footR} 0h${def.footR * 2}l-5 ${-def.floor}h${-(def.footR * 2 - 10)}z" fill="url(#g-glass)"/><path class="cl-g-edge" d="M${-def.footR} 0h${def.footR * 2}l-5 ${-def.floor}h${-(def.footR * 2 - 10)}z"/>` : ""}
+    ${!glassy || def.rMax < 12 ? "" : `<path class="cl-g-inner" d="${outline(P.map(([y, r]) => [Math.min(y, def.flat ? -5 : -2.6), Math.max(0, r - 2.6)]), true)}"/>`}
+    ${footPath ? `<path d="${footPath}" fill="url(#g-base)"/><path d="M${f1(-(P[2][1] - 2.6))} -5H${f1(P[2][1] - 2.6)}" stroke="#fff" stroke-opacity="0.34" stroke-width="1"/><path d="M${f1(-P[0][1] + 3)} -0.8H${f1(P[0][1] - 3)}" stroke="#fff" stroke-opacity="0.7" stroke-width="1.2" stroke-linecap="round"/>` : ""}
+    ${def.footR ? `<path d="M${-def.footR} 0h${def.footR * 2}l-5 ${-def.floor}h${-(def.footR * 2 - 10)}z" fill="url(#g-base)"/><path class="cl-g-edge" d="M${-def.footR} 0h${def.footR * 2}l-5 ${-def.floor}h${-(def.footR * 2 - 10)}z"/>` : ""}
     ${def.flat ? `<ellipse class="cl-g-foot" cx="0" cy="-2.5" rx="${f1(def.foot || P[2][1] * 0.94)}" ry="${def.foot ? 2.4 : 3.6}"/>` : ""}
-    ${def.material === "porcelain" ? "" : `<path class="cl-g-shine" d="${wall(P, -1, 4.5, 0.12, 0.93)}"/><path class="cl-g-glint" d="${wall(P, 1, 5, 0.2, 0.86)}"/>`}
+    ${!def.flat && glassy && !def.floor ? `<path d="M${f1(-P[4][1])} ${P[4][0]}Q0 ${f1(P[0][0] + 1.5)} ${f1(P[4][1])} ${P[4][0]}" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="2.2" stroke-linecap="round"/>` : ""}
     ${def.ring ? `<path class="cl-mark" d="M${-rAt(P, def.ring)} ${def.ring}H${rAt(P, def.ring)}"/>` : ""}
     ${marks}
     ${def.volume ? `<text class="cl-mark-v" x="${def.spout ? f1(-rAt(P, def.top * 0.5) * 0.45) : 0}" y="${f1(def.spout ? def.top * (def.fill + 0.06) : def.top * 0.3)}">${def.volume}</text>` : ""}
-    <ellipse class="cl-g-rim" cx="0" cy="${def.top}" rx="${def.rTop + 1.5}" ry="${f1(rimRy)}"/>
+    ${def.spout && def.marks && R > 30 ? `<text class="cl-mark-b" x="${f1(-R * 0.42)}" y="${f1(def.top * 0.2)}">PREP</text>` : ""}
+    <ellipse class="cl-g-rim" cx="0" cy="${def.top}" rx="${rimRx}" ry="${f1(rimRy)}"/>
+    ${glassy && def.rTop > 9 ? `<ellipse class="cl-g-lip" cx="0" cy="${f1(def.top + 0.5)}" rx="${f1(rimRx - 2.6)}" ry="${f1(Math.max(1.2, rimRy - 1.5))}"/><path class="cl-g-rimhi" d="M${f1(-rimRx * 0.72)} ${f1(def.top + rimRy * 0.7)}Q0 ${f1(def.top + rimRy * 1.5)} ${f1(rimRx * 0.72)} ${f1(def.top + rimRy * 0.7)}"/>` : ""}
     ${spout}
     <g class="cl-wisps"><path d="M-6 ${def.top - 6}q-5-8 0-15t0-15"/><path d="M0 ${def.top - 8}q5-8 0-15t0-15"/><path d="M6 ${def.top - 6}q-5-8 0-15t0-15"/></g>
     <g class="cl-tagg" transform="translate(0 ${H < 60 ? -36 : 0})"><rect x="-9" y="${def.top + 16}" width="18" height="14" rx="2.5"/><text x="0" y="${def.top + 23.5}">${tag}</text></g>
@@ -369,7 +391,7 @@ function formula(f) {
   return f.replace(/([A-Za-z)])(\d+)/g, `$1<tspan dy="2.6" font-size="70%">$2</tspan><tspan dy="-2.6">​</tspan>`);
 }
 const label = (text, y, w, h, size) =>
-  `<rect class="cl-label" x="${-w / 2}" y="${y}" width="${w}" height="${h}" rx="4"/>` +
+  `<rect class="cl-label" x="${-w / 2}" y="${y}" width="${w}" height="${h}" rx="4"/><rect x="${-w / 2}" y="${y}" width="${w}" height="${h}" rx="4" fill="url(#g-shade)" opacity="0.4"/>` +
   `<text class="cl-label-t" x="0" y="${y + h / 2 + size * 0.36}" font-size="${size}">${text}</text>`;
 
 /** How far a bottle's mouth is above its base: the point it pours from. */
@@ -399,7 +421,7 @@ export function reagentSvg(id, uid, capped = false) {
       </g>
       <path d="${outline(JAR)}" fill="url(#g-glass)"/>
       <path class="cl-g-edge" d="${outline(JAR, true)}"/>
-      <path class="cl-g-shine" d="${wall(JAR, -1, 5, 0.1, 0.72)}"/>
+      <path d="${band(JAR, -1, 3.6, 9, 0.1, 0.72)}" fill="url(#g-streak)"/><path d="${band(JAR, 1, 5, 13, 0.2, 0.72)}" fill="#fff" fill-opacity="0.07"/>
 ${capped ? CAPS.jar(-83) : ""}
       ${label(formula(r.formula), -30, 46, 20, size)}
       ${hit({ x0: -36, y0: -96, x1: 36, y1: 8 })}`;
@@ -413,7 +435,7 @@ ${capped ? CAPS.jar(-83) : ""}
       <rect x="-2.2" y="-70" width="4.4" height="58" rx="2" fill="#fff" fill-opacity="0.16" stroke="#fff" stroke-opacity="0.5" stroke-width="0.7"/>
       <path d="${outline(DROPPER)}" fill="url(#g-glass)"/>
       <path class="cl-g-edge" d="${outline(DROPPER, true)}"/>
-      <path class="cl-g-shine" d="${wall(DROPPER, -1, 4, 0.1, 0.62)}"/>
+      <path d="${band(DROPPER, -1, 3, 7, 0.1, 0.62)}" fill="url(#g-streak)"/><path d="${band(DROPPER, 1, 5, 13, 0.2, 0.62)}" fill="#fff" fill-opacity="0.07"/>
       <g class="cl-stopper"><rect x="-11" y="-80" width="22" height="10" rx="2" fill="#2c3038" stroke="#fff" stroke-opacity="0.25" stroke-width="0.6"/><path d="M-6 -80c-5 -8 -6 -24 0 -30q6 -5 12 0c6 6 5 22 0 30z" fill="url(#g-rubber)"/></g>
       ${label(SHORT[id], -32, 34, 15, 8.4)}
       ${hit({ x0: -26, y0: -114, x1: 26, y1: 8 })}`;
@@ -427,7 +449,7 @@ ${capped ? CAPS.jar(-83) : ""}
     <ellipse cx="0" cy="-58" rx="29.5" ry="2.2" fill="#fff" fill-opacity="${amber ? 0.1 : 0.28}"/>
     <path d="${outline(BOTTLE)}" fill="url(#${amber ? "g-amber" : "g-glass"})"/>
     <path class="cl-g-edge" d="${outline(BOTTLE, true)}"/>
-    <path class="cl-g-shine" d="${wall(BOTTLE, -1, 5, 0.08, 0.66)}"/>
+    <path d="${band(BOTTLE, -1, 3.6, 9, 0.08, 0.66)}" fill="url(#g-streak)"/><path d="${band(BOTTLE, 1, 5, 13, 0.2, 0.66)}" fill="#fff" fill-opacity="0.07"/>
     <ellipse class="cl-g-foot" cx="0" cy="-2.5" rx="27" ry="3"/>
 ${capped ? CAPS.bottle(-103) : ""}
     ${label(formula(r.formula), -50, 50, 26, size)}
@@ -449,7 +471,7 @@ export const TOOLS = {
   funnel: { name: "Funnel and filter paper", act: [0, 0], bbox: { x0: -40, y0: -66, x1: 40, y1: 34 } },
   bung: { name: "Rubber stopper", act: [0, 0], bbox: { x0: -16, y0: -12, x1: 16, y1: 12 } },
   tubing: { name: "Stopper and delivery tube", act: [0, 0], bbox: { x0: -18, y0: -52, x1: 36, y1: 12 } },
-  syringe: { name: "Gas syringe", act: [0, -128], bbox: { x0: -108, y0: -156, x1: 150, y1: 8 } },
+  syringe: { name: "Gas syringe", act: [0, -10], bbox: { x0: -108, y0: -36, x1: 150, y1: 8 } },
   condenser: { name: "Liebig condenser", act: [0, 0], bbox: { x0: -8, y0: -22, x1: 240, y1: 122 } },
   electrode: { name: "Carbon electrode", act: [0, 0], bbox: { x0: -9, y0: -30, x1: 9, y1: 104 } },
   power: { name: "Power pack (6 V)", act: [0, 0], bbox: { x0: -50, y0: -70, x1: 50, y1: 8 } },
@@ -482,7 +504,9 @@ export function toolSvg(key, it = {}) {
         <path d="M-8.5 -98C-14 -116 -4 -130 0 -148C4 -130 14 -116 8.5 -98z" fill="url(#g-flame)"/>
         <path d="M-4.5 -98C-6 -108 -1.5 -114 0 -122C1.5 -114 6 -108 4.5 -98z" fill="#d6f0ff" fill-opacity="0.92"/>
       </g>
-      ${hit(b)}`;
+      ${hit(b)}
+      <g class="cl-press" data-press="down"><circle cx="-18" cy="-7" r="7.5" fill="#23272e" stroke="#fff" stroke-opacity="0.55"/><path d="M-21 -7h7" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></g>
+      <g class="cl-press" data-press="up"><circle cx="18" cy="-7" r="7.5" fill="#23272e" stroke="#fff" stroke-opacity="0.55"/><path d="M14 -7h7M18 -10.500v7" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></g>`;
   }
   if (key === "spirit") {
     const d = "M-31 0q-5 -24 7 -42q8 -11 13 -14h22q5 3 13 14q12 18 7 42z";
@@ -491,7 +515,9 @@ export function toolSvg(key, it = {}) {
       <path class="cl-g-shine" d="M-24 -8q-3 -18 5 -32"/>
       <rect x="-12" y="-67" width="24" height="11" rx="2" fill="url(#g-metal)"/><rect x="-3" y="-76" width="6" height="11" rx="1" fill="#efe6d0"/>
       <g class="cl-flame"><path d="M0 -112c7 12 11 18 11 26a11 11 0 0 1-22 0c0-8 4-14 11-26z" fill="#ff9a2a" fill-opacity="0.86"/><path d="M0 -97c4 7 6 10 6 15a6 6 0 0 1-12 0c0-5 2-8 6-15z" fill="#ffe27a"/></g>
-      ${hit(b)}`;
+      ${hit(b)}
+      <g class="cl-press" data-press="down"><circle cx="-16" cy="-7" r="7.5" fill="#23272e" stroke="#fff" stroke-opacity="0.55"/><path d="M-19 -7h7" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></g>
+      <g class="cl-press" data-press="up"><circle cx="16" cy="-7" r="7.5" fill="#23272e" stroke="#fff" stroke-opacity="0.55"/><path d="M12 -7h7M16 -10.500v7" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></g>`;
   }
   if (key === "dropper") {
     return `<path d="M-1.6 0L-4 -22V-70h8V-22L1.6 0z" fill="#fff" fill-opacity="0.12" stroke="#fff" stroke-opacity="0.65" stroke-width="0.9"/>
@@ -563,15 +589,14 @@ export function toolSvg(key, it = {}) {
   }
   if (key === "syringe") {
     let ticks = "";
-    for (let n = 0; n <= 100; n += 10) ticks += `<path class="cl-mark" d="M${-86 + n * 1.04} -118v${n % 50 === 0 ? -7 : -4}"/>${n % 50 === 0 ? `<text class="cl-mark-n" x="${-86 + n * 1.04}" y="-108" text-anchor="middle">${n}</text>` : ""}`;
-    return `${shadow(76)}
-      <rect x="-60" y="-12" width="130" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/><rect x="48" y="-170" width="7" height="160" rx="3" fill="url(#g-metal)"/>
-      <rect x="-20" y="-131" width="72" height="6" rx="3" fill="url(#g-metal)"/>
-      <g class="cl-plunger"><rect x="-88" y="-134" width="128" height="12" rx="2" fill="#fff" fill-opacity="0.2" stroke="#fff" stroke-opacity="0.5" stroke-width="0.8"/><rect x="-90" y="-137" width="6" height="18" rx="2" fill="#dfe6ee"/><rect x="38" y="-142" width="6" height="28" rx="2" fill="#dfe6ee"/></g>
-      <rect x="-92" y="-138" width="116" height="20" rx="4" fill="url(#g-glass)"/><rect class="cl-g-edge" x="-92" y="-138" width="116" height="20" rx="4"/>
-      <rect x="-104" y="-131" width="13" height="6" rx="2" fill="#fff" fill-opacity="0.16" stroke="#fff" stroke-opacity="0.6" stroke-width="0.8"/>
-      <rect x="-30" y="-141" width="14" height="26" rx="5" fill="#aab2bd"/>${ticks}
-      <text class="cl-read" x="-60" y="-146">0 cm³</text>${hit(b)}`;
+    for (let n = 0; n <= 100; n += 10) ticks += `<path class="cl-mark" d="M${-86 + n * 1.04} -20v${n % 50 === 0 ? 8 : 5}"/>${n % 50 === 0 ? `<text class="cl-mark-n" x="${-86 + n * 1.04}" y="-23" text-anchor="middle">${n}</text>` : ""}`;
+    return `${shadow(64)}
+      <g class="cl-plunger"><rect x="-88" y="-16" width="128" height="12" rx="2" fill="#fff" fill-opacity="0.2" stroke="#fff" stroke-opacity="0.5" stroke-width="0.8"/><rect x="-90" y="-19" width="6" height="18" rx="2" fill="#dfe6ee"/><rect x="38" y="-24" width="6" height="28" rx="2" fill="#dfe6ee"/></g>
+      <rect x="-92" y="-20" width="116" height="20" rx="4" fill="url(#g-glass)"/><rect class="cl-g-edge" x="-92" y="-20" width="116" height="20" rx="4"/>
+      <rect x="-86" y="-17" width="104" height="3" rx="1.5" fill="#fff" fill-opacity="0.45"/>
+      <rect x="22" y="-23" width="6" height="26" rx="2" fill="#fff" fill-opacity="0.18" stroke="#fff" stroke-opacity="0.6" stroke-width="0.8"/>
+      <rect x="-104" y="-13" width="13" height="6" rx="2" fill="#fff" fill-opacity="0.16" stroke="#fff" stroke-opacity="0.6" stroke-width="0.8"/>${ticks}
+      <text class="cl-read" x="60" y="-28">0 cm\u00b3</text>${hit(b)}`;
   }
   if (key === "holder") {
     return `<path d="M-34 -4L30 -30" stroke="#c9975a" stroke-width="7" stroke-linecap="round"/><path d="M-34 -14L30 -34" stroke="#b98548" stroke-width="7" stroke-linecap="round"/>

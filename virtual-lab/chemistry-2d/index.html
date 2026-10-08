@@ -65,10 +65,13 @@
         <button type="button" class="cl-ico" id="cl-fs" data-tip="Full screen" data-tip-side="bottom" aria-label="Full screen"></button>
       </div>
 
+      <!-- the sticky note: it pops up when something is SEEN to happen, and for nothing else -->
       <div id="cl-say" class="pp-sticky pp-sticky--c0 pp-sticky--tape" aria-live="polite">
-        <span id="cl-say-tag" class="cl-say__tag">Chemistry bench</span>
-        <p id="cl-say-text">Take what you need from the drawer and set it up yourself. Pull the stopper out of a bottle before you pour. Tap a piece for its handles.</p>
+        <span id="cl-say-tag" class="cl-say__tag">Observation</span>
+        <p id="cl-say-text"></p>
       </div>
+      <!-- help, hints and refusals: a small line that comes and goes -->
+      <p id="cl-toast" class="cl-toast" role="status" hidden></p>
 
       <!-- a chosen piece: its name, a handle that turns it, a handle for what can be set on it -->
       <p id="cl-name" class="cl-name" hidden></p>

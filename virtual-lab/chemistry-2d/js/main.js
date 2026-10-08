@@ -46,6 +46,8 @@ const PLUGS = ["funnel", "bung", "tubing"];           // one of these to a mouth
 const IDLE = ["waste", "syringe", "power", "holder", "tongs"];                 // never used ON anything
 const LIGHT = ["H2", "NH3"];                          // less dense than air: they rise
 const GAS = { H2: "hydrogen", CO2: "carbon dioxide", O2: "oxygen", NH3: "ammonia" };
+const FLAME = ["off", "low", "medium", "roaring"];     // a burner's it.flame, 0 to 3
+const lit = (b) => (b.flame || 0) > 0;
 const CLAMP = -262;                                   // where a stand's clamp starts, above its foot
 const NS = "http://www.w3.org/2000/svg";
 const $ = (id) => document.getElementById(id);
@@ -54,7 +56,7 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 const prose = (s) => esc(s).replace(/\{([^}]+)\}/g, (_, f) => chemHtml(f));
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const cap1 = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-const cm3 = (portions) => `${(portions * 2).toFixed(portions * 2 >= 10 ? 0 : 1)} cm³`;
+const cm3 = (portions) => `${(portions * 2).toFixed(portions * 2 >= 10 ? 0 : 1)} cm\u00b3`;
 
 // ── icons: every control on the bench is one ────────────────────────────────
 const glyph = (inner, size = 20) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true">${inner}</svg>`;
@@ -109,15 +111,15 @@ const plain = (v) => (v.kind === "vessel" ? `${VESSELS[v.key].name.replace(/ \(.
 // ── guides: what an experiment needs and what to do. They put nothing out. ───
 const GUIDES = [
   { name: "Test-tube reactions", needs: "test tube rack, test tubes, bottles of solutions", steps: ["Stand tubes in the rack.", "Pull the stopper out of a bottle, carry the bottle to a tube and hold it there to pour.", "Add a second solution and watch. Switch to drops to add a little at a time, then in excess."] },
-  { name: "Titration", needs: "retort stand, burette, conical flask, pipette, an acid, an alkali, phenolphthalein", steps: ["Slide the stand's clamp up by its yellow boss and let the burette go at the clamp.", "Fill the burette: carry the acid to its top.", "Pipette 25 cm³ of alkali into the flask (the pipette fills straight from the bottle) and add the indicator.", "Stand the flask under the burette and press the blue tap. Near the end, switch to drops."] },
+  { name: "Titration", needs: "retort stand, burette, conical flask, pipette, an acid, an alkali, phenolphthalein", steps: ["Slide the stand's clamp up by its yellow boss and let the burette go at the clamp.", "Fill the burette: carry the acid to its top.", "Pipette 25 cm\u00b3 of alkali into the flask (the pipette fills straight from the bottle) and add the indicator.", "Stand the flask under the burette and press the blue tap. Near the end, switch to drops."] },
   { name: "Filtration", needs: "two beakers or a flask, funnel and filter paper, two solutions that give a precipitate", steps: ["Make the precipitate in a beaker.", "Let the funnel go at the mouth of the other vessel: it stays there.", "Pour the mixture in. The solid stays in the paper."] },
   { name: "Collecting a gas over water", needs: "flask, stopper and delivery tube, trough, gas jar, distilled water, a metal or marble, an acid", steps: ["Fill the trough from the water bottle.", "Let an empty gas jar go in the trough: it turns over and fills with water.", "Fit the delivery tube in the flask and drag its orange end to the gas jar.", "Put the solid and then the acid in the flask. Lift the jar out to test the gas."] },
   { name: "Other ways to collect a gas", needs: "delivery tube, gas syringe, or a boiling tube", steps: ["Lead the tube's end to a gas syringe to measure any gas.", "For a gas lighter than air (hydrogen, ammonia), turn an empty tube upside down from its menu and lead the tube up into it.", "For a gas denser than air (carbon dioxide), lead the tube down into an upright jar."] },
-  { name: "Distillation", needs: "retort stand, distilling flask, Liebig condenser, a beaker, a burner, a lighted splint, a coloured solution", steps: ["Clamp the distilling flask high enough for a burner to go underneath.", "Push the condenser onto the flask's side arm.", "Stand a beaker under the condenser's lower end.", "Pour the solution in, light the burner with the splint, and hold it under the flask."] },
-  { name: "Evaporating to crystals", needs: "tripod and gauze, evaporating dish, burner, lighted splint, a salt solution, balance", steps: ["Stand the dish on the tripod and pour the solution in.", "Light the burner and hold it underneath until the water has gone.", "Weigh the dish on the balance. The red T sets the reading to zero."] },
+  { name: "Distillation", needs: "retort stand, distilling flask, Liebig condenser, a beaker, a burner, a coloured solution", steps: ["Clamp the distilling flask high enough for a burner to go underneath.", "Push the condenser onto the flask's side arm.", "Stand a beaker under the condenser's lower end.", "Pour the solution in, turn the burner up with its + key, and hold it under the flask."] },
+  { name: "Evaporating to crystals", needs: "tripod and gauze, evaporating dish, burner, lighted splint, a salt solution, balance", steps: ["Stand the dish on the tripod and pour the solution in.", "Turn the burner up with its + key and hold it underneath until the water has gone.", "Weigh the dish on the balance. The red T sets the reading to zero."] },
   { name: "Separating oil and water", needs: "retort stand, separating funnel, two beakers, cooking oil, water", steps: ["Hang the separating funnel in the clamp and stand a beaker under it.", "Pour in water, then oil. They settle into two layers.", "Press the tap. It shuts itself when the lower layer has run out."] },
   { name: "Electrolysis", needs: "beaker, two carbon electrodes, power pack, a solution", steps: ["Pour the solution into the beaker.", "Let each carbon rod go at the beaker's mouth: they hang in the liquid.", "Put the power pack on the bench: it wires itself to the rods.", "Hold down the red switch and watch each rod."] },
-  { name: "Flame tests", needs: "burner, lighted splint, flame-test wire, salt solutions in tubes", steps: ["Light the burner.", "Dip the wire in a solution, then hold it in the flame."] },
+  { name: "Flame tests", needs: "burner, lighted splint, flame-test wire, salt solutions in tubes", steps: ["Turn the burner up with its + key.", "Dip the wire in a solution, then hold it in the flame."] },
   { name: "Pouring by hand", needs: "any two vessels", steps: ["Tap a vessel to select it, then drag the round arrow above it to tilt it.", "Tilt far enough and it pours on whatever is underneath, so have the other vessel there first."] },
 ];
 
@@ -165,7 +167,7 @@ function fitWorld() {
   // the icons and the note float over the bench; on a phone they take a good part of it
   const k = H / r.height;
   TOP = Math.round(Math.max(200, (document.querySelector(".cl-bar").getBoundingClientRect().bottom - r.top) * k + 138));
-  BASE = Math.round(clamp(($("cl-say").getBoundingClientRect().top - r.top) * k - 14, TOP + 180, 600));
+  BASE = clamp(620, TOP + 180, 640);
   state.items.forEach((it) => { keepIn(it); place(it); });
   drawLinks();
   showHandles();
@@ -191,7 +193,7 @@ function screenOf(x, y) {
   return pt.matrixTransform(svg.getScreenCTM());
 }
 
-const isBehind = (it) => it.kind === "rack" || it.key === "syringe" || it.key === "trough";
+const isBehind = (it) => it.kind === "rack" || it.key === "trough";
 function mount(it) {
   const g = document.createElementNS(NS, "g");
   g.setAttribute("class", `cl-item cl-item--${it.kind}`);
@@ -267,12 +269,12 @@ function dress(it) {
   if (TAKES[it.key]) g.querySelector(".cl-drop-liq").style.fill = it.sample ? `rgba(${it.rgb || [200, 224, 240]},0.9)` : "transparent";
   if (it.key === "wire") g.querySelector(".cl-loop").style.fill = it.sample ? "#f2f6fb" : "transparent";
   if (it.key === "funnel") g.querySelector(".cl-residue").style.fill = it.residue ? `rgb(${it.residue})` : "transparent";
-  if (HEAT[it.key]) g.classList.toggle("is-unlit", !it.lit);
+  if (HEAT[it.key]) { g.classList.toggle("is-unlit", !lit(it)); g.style.setProperty("--fl", [1, 0.62, 0.86, 1.14][it.flame || 0]); }
   if (it.key === "electrode") g.querySelector(".cl-coat").setAttribute("fill", it.coat === "Cu" ? "#b9683e" : it.coat === "Ag" ? "#d9dde2" : "transparent");
   if (it.key === "syringe") {
     const n2 = it.gas ? it.gas.n : 0;
     g.querySelector(".cl-plunger").style.transform = `translateX(${(Math.min(1, n2 / 8.34) * 104).toFixed(1)}px)`;
-    g.querySelector(".cl-read").textContent = `${Math.round(n2 * 12)} cm³`;
+    g.querySelector(".cl-read").textContent = `${Math.round(n2 * 12)} cm\u00b3`;
   }
   if (it.kind === "rack" && it.key === "stand") {
     const t = `translateY(${it.clamp ?? CLAMP}px)`;
@@ -285,7 +287,7 @@ function readouts() {
   for (const it of state.items) {
     const g = nodes[it.id] && nodes[it.id].g;
     if (!g) continue;
-    if (it.key === "burette") g.querySelector(".cl-read").textContent = it.t.vol > 0 ? `${((it.t.cap - it.t.vol) * 2).toFixed(2)} cm³` : "";
+    if (it.key === "burette") g.querySelector(".cl-read").textContent = it.t.vol > 0 ? `${((it.t.cap - it.t.vol) * 2).toFixed(2)} cm\u00b3` : "";
     else if (it.kind === "rack" && it.key === "balance") {
       const v = vessels().find((o) => o.rack && o.rack[0] === it.id);
       let m = 0;
@@ -300,7 +302,7 @@ function readouts() {
 function mouth(o) {
   if (o.kind === "vessel") return o.flip ? { x: o.x, y: o.y } : { x: o.x, y: o.y + VESSELS[o.key].top };
   if (o.kind === "reagent") return { x: o.x, y: o.y - mouthOf(o.key) };
-  if (o.key === "syringe") return { x: o.x - 104, y: o.y - 128 };
+  if (o.key === "syringe") return { x: o.x - 104, y: o.y - 10 };
   return { x: o.x, y: o.y - 66 };
 }
 const rimOf = (o) => (o.kind === "vessel" ? VESSELS[o.key].rTop : o.kind === "reagent" ? 12 : 50);
@@ -332,7 +334,7 @@ function ridersOf(it, out = []) {
 function follow(it, smooth = true) {
   for (const o of state.items) {
     if (o.on === it.id) { const m = seat(it, o); o.x = m.x; o.y = m.y; }
-    else if (o.rack && o.rack[0] === it.id) { const [sx, sy] = slotAt(it, o.rack[1], VESSELS[o.key]); o.x = it.x + sx; o.y = it.y + sy; }
+    else if (o.rack && o.rack[0] === it.id) { const [sx, sy] = o.key === "syringe" ? [78, (it.clamp ?? CLAMP) + 9] : slotAt(it, o.rack[1], VESSELS[o.key]); o.x = it.x + sx; o.y = it.y + sy; }
     else continue;
     glide(o, smooth);
     place(o);
@@ -347,7 +349,7 @@ function snap(it) {
     const S = hostDef(host);
     if (!S.fits(def)) continue;
     if (it.flip && !(VESSELS[host.key] && VESSELS[host.key].upturns)) continue;      // an upturned tube only stands in a trough
-    const taken = new Set(vessels().filter((v) => v !== it && v.rack && v.rack[0] === host.id).map((v) => v.rack[1]));
+    const taken = new Set(state.items.filter((v) => v !== it && v.rack && v.rack[0] === host.id).map((v) => v.rack[1]));
     for (let i = 0; i < S.slots.length; i++) {
       if (taken.has(i)) continue;
       const [sx, sy] = slotAt(host, i, def);
@@ -372,11 +374,24 @@ function snap(it) {
   return false;
 }
 
+/** A gas syringe let go at a free clamp is held there, level. */
+function clampSyringe(it) {
+  for (const st of state.items.filter((o) => o.kind === "rack" && o.key === "stand")) {
+    if (state.items.some((o) => o !== it && o.rack && o.rack[0] === st.id)) continue;
+    const c = st.clamp ?? CLAMP;
+    if (Math.abs(it.x - 34 - (st.x + 44)) > 60 || Math.abs(it.y - 10 - (st.y + c)) > 60) continue;
+    it.rack = [st.id, 0];
+    it.x = st.x + 78;
+    it.y = st.y + c + 9;
+    return true;
+  }
+  return false;
+}
 /** Where a delivery tube's free end is. */
 function endOf(tube) {
   const o = tube.to && byId(tube.to);
   if (!o) return { x: tube.x + (tube.ex ?? 96), y: tube.y + (tube.ey ?? 30), dir: "free" };
-  if (o.key === "syringe") return { x: o.x - 104, y: o.y - 128, dir: "side" };
+  if (o.key === "syringe") return { x: o.x - 104, y: o.y - 10, dir: "side" };
   if (o.flip) return { x: o.x, y: o.y - 12, dir: "up" };
   return { x: o.x, y: o.y + VESSELS[o.key].top + 26, dir: "down" };
 }
@@ -404,7 +419,7 @@ function drawLinks() {
     const v = rod.on && byId(rod.on);
     const wired = v && rodsIn(v).length === 2 && tools("power").some((p) => cellFor(p) === v);
     const t = nodes[rod.id] && nodes[rod.id].g.querySelector(".cl-pole");
-    if (t) t.textContent = wired ? (rod.side < 0 ? "−" : "+") : "";
+    if (t) t.textContent = wired ? (rod.side < 0 ? "\u2212" : "+") : "";
   }
 }
 /** The beaker a power pack is wired to: the nearest one with two carbon rods in it. */
@@ -488,14 +503,29 @@ function clearBench() {
   save();
 }
 
-// ── the note that says what was just seen ───────────────────────────────────
-function say(text, v = null, kind = "") {
-  $("cl-say-tag").textContent = v ? nameOf(v) : "Chemistry bench";
+// ── two voices: the sticky note pops up for an OBSERVATION and nothing else;
+//    help, hints and refusals are a small line that comes and goes ──
+let noteTimer = 0, helpTimer = 0;
+function tell(text, v = null) {
+  $("cl-say-tag").textContent = v ? nameOf(v) : "Observation";
   $("cl-say-text").textContent = text;
   const note = $("cl-say");
-  note.classList.remove("is-new", "is-no");
+  note.classList.remove("is-new");
   void note.offsetWidth;
-  note.classList.add(kind === "no" ? "is-no" : "is-new");
+  note.classList.add("is-shown", "is-new");
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(() => note.classList.remove("is-shown"), 9000);
+}
+function say(text, v = null, kind = "") {
+  const t = $("cl-toast");
+  t.textContent = text;
+  t.hidden = false;
+  t.classList.toggle("is-no", kind === "no");
+  t.classList.remove("is-new");
+  void t.offsetWidth;
+  t.classList.add("is-new");
+  clearTimeout(helpTimer);
+  helpTimer = setTimeout(() => (t.hidden = true), 5600);
 }
 
 /** Write an action down. Gas that came off goes wherever the vessel is piped to first. */
@@ -510,7 +540,10 @@ function record(v, res) {
   state.done.push(...fresh);
   renderLog();
   renderTasks(fresh);
-  say(res.obs.map((o) => o.text).join(" ") || `${res.title}.`, v.kind ? v : null);
+  const seen = res.obs.map((o) => o.text).join(" ");
+  // "nothing happened" is worth a line, not a note
+  if (seen && seen !== "No visible change.") tell(seen, v.kind ? v : null);
+  else if (seen) say(seen);
   save();
 }
 /** A gas has come off in v. Where does it go? */
@@ -536,7 +569,7 @@ function gasFlow(v, res) {
   if (c.key === "syringe") {
     c.gas = { k: g.gas, n: Math.min(8.34, (c.gas && c.gas.k === g.gas ? c.gas.n : 0) + g.n) };
     dress(c);
-    res.obs.push({ text: `The plunger of the gas syringe is pushed out. It reads ${Math.round(c.gas.n * 12)} cm³.`, why: "A gas syringe measures the volume of a gas directly, whatever the gas is." });
+    res.obs.push({ text: `The plunger of the gas syringe is pushed out. It reads ${Math.round(c.gas.n * 12)} cm\u00b3.`, why: "A gas syringe measures the volume of a gas directly, whatever the gas is." });
     res.flags.push("measured", "collected:any");
     return;
   }
@@ -550,7 +583,7 @@ function gasFlow(v, res) {
     if (g.gas === "NH3") { res.obs.push({ text: "Nothing collects in the jar.", why: "Ammonia is very soluble in water, so it dissolves in the trough. Collect it in a dry, upturned tube instead." }); return; }
     keep();
     bubble(nodes[c.id].g, c.key, { vol: c.t.cap * 0.5, cap: c.t.cap }, 1);
-    res.obs.push({ text: `Bubbles rise through the water into ${plain(c)}: ${Math.round(c.jar.n * 12)} cm³ collected.`, why: "Collection over water: the gas pushes the water down out of the jar. It works for gases that do not dissolve much." });
+    res.obs.push({ text: `Bubbles rise through the water into ${plain(c)}: ${Math.round(c.jar.n * 12)} cm\u00b3 collected.`, why: "Collection over water: the gas pushes the water down out of the jar. It works for gases that do not dissolve much." });
     res.flags.push("collected");
   } else if (c.flip) {
     if (!LIGHT.includes(g.gas)) { res.obs.push({ text: `Nothing stays in ${plain(c)}.`, why: `${cap1(name)} is denser than air, so it falls straight out of an upturned tube. Lead the tube down into an upright jar, or collect it over water.` }); return; }
@@ -645,7 +678,7 @@ function targetOf(it) {
   // an open bottle to an empty dropper or pipette
   const atGas = MOUTH.includes(it.key) || it.key === "red" || it.key === "blue";
   const list = atGas ? [...vessels()] : [...open()];
-  if (it.key === "lit") list.push(...heaters().filter((b) => !b.lit));
+  if (it.key === "lit") list.push(...heaters().filter((b) => !lit(b)));
   if (TAKES[it.key] && !it.sample) list.push(...state.items.filter((o) => o.kind === "reagent" && reagent(o.key).kind === "solution" && !reagent(o.key).oil));
   const atTip = MOUTH.includes(it.key) || it.key === "wire";
   return nearest(list, (o) => {
@@ -764,7 +797,7 @@ function use(it, v) {
   }
   // ── a lighted splint, at a burner ──
   if (HEAT[v.key] && it.key === "lit") {
-    v.lit = true;
+    v.flame = 1;
     dress(v);
     say(`The ${nameOf(v).toLowerCase()} is lit.`);
     save();
@@ -772,7 +805,7 @@ function use(it, v) {
   }
   // ── the wire, in a flame ──
   if (it.key === "wire" && v.kind === "tool") {
-    if (!v.lit) { say("The burner is not lit. Hold a lighted splint to it.", null, "no"); return false; }
+    if (!lit(v)) { say("The burner is not lit. Turn it up with its + key.", null, "no"); return false; }
     const f = it.sample.f;
     const g = nodes[v.id].g;
     if (f) {
@@ -870,7 +903,8 @@ function showTest(it, res) {
 }
 /** Heat a vessel. A distilling flask sends water over; a dish boils down to crystals. Returns true to go on heating. */
 function warm(heater, v) {
-  if (!heater.lit) { say(`The ${nameOf(heater).toLowerCase()} is not lit. Hold a lighted splint to it, or light it from its menu.`, null, "no"); return false; }
+  if (!lit(heater)) { say(`The ${nameOf(heater).toLowerCase()} is not lit. Turn it up with its + key, or hold a lighted splint to it.`, null, "no"); return false; }
+  const power = [0, 0.6, 1, 1.6][heater.flame];             // a bigger flame boils things away faster
   const def = VESSELS[v.key];
   const res = heat(v.t);
   if (res.refused) { say(res.refused, v, "no"); return false; }
@@ -880,13 +914,13 @@ function warm(heater, v) {
     noNone();
     const cond = fittedTo(v, "condenser");
     if (!cond) {
-      const w = boilOff(v.t, def.cap * 0.06);
+      const w = boilOff(v.t, def.cap * 0.06 * power);
       if (w.gone > 0) { res.obs.push({ text: "The liquid boils, and steam pours out of the side arm into the room.", why: "Push a condenser onto the side arm: it cools the steam back to water so that it can be collected." }); more = true; } else res.obs.push({ text: "Stop heating: the flask must not boil dry." });
     } else {
       const out = { x: cond.x + 229, y: cond.y + 114 };
       const recv = below(out.x, out.y, v);
       const coloured = look(v.t).name !== "colourless";
-      const w = boilOff(v.t, Math.min(def.cap * 0.1, recv ? roomIn(recv.t) : def.cap));
+      const w = boilOff(v.t, Math.min(def.cap * 0.1 * power, recv ? roomIn(recv.t) : def.cap));
       if (w.gone <= 0) res.obs.push({ text: recv && roomIn(recv.t) < 1 ? `${cap1(plain(recv))} is full. Empty it before you distil any more.` : "Stop heating: the flask must not boil dry." });
       else if (!recv) { fx(`<circle class="cl-dropin" cx="${out.x}" cy="${out.y}" r="2.6" fill="rgb(200,224,240)" style="--fall:${H - out.y}px"/>`, 900); res.obs.push({ text: "The liquid boils. Clear drops run down the condenser and fall on the bench.", why: "Stand a beaker under the lower end of the condenser to catch the distillate." }); more = true; }
       else {
@@ -903,7 +937,7 @@ function warm(heater, v) {
       }
     }
   } else if (def.material === "porcelain" || v.key === "watch") {
-    const w = boilOff(v.t, Math.max(1, def.cap * 0.3), { dry: true });
+    const w = boilOff(v.t, Math.max(1, def.cap * 0.3 * power), { dry: true });
     noNone();
     if (w.dried) {
       res.obs.push(w.colour ? { text: `The last of the water boils away. ${cap1(w.colour)} crystals are left behind.`, why: "Evaporation: only the water leaves. The dissolved salt cannot boil off, so it is left as a solid." } : { text: "The water boils away and nothing is left behind.", why: "There was nothing dissolved in it." });
@@ -960,7 +994,8 @@ function runTap(bur) {
   paint(bur);
   drops([bur.x, bur.y], v._surface, c, 2.2);
   const seen = res.obs.map((o) => o.text).filter((t) => t !== "No visible change.").join(" ");
-  say(`${seen ? `${seen} ` : ""}The burette reads ${((bur.t.cap - bur.t.vol) * 2).toFixed(2)} cm³.`, v);
+  const reads = `The burette reads ${((bur.t.cap - bur.t.vol) * 2).toFixed(2)} cm\u00b3.`;
+  if (seen) tell(`${seen} ${reads}`, v); else say(reads);
   save();
   return true;
 }
@@ -997,7 +1032,13 @@ function press(e, it) {
   const key = e.target.closest("[data-press]");
   if (!key) return false;
   const what = key.dataset.press;
-  if (what === "power") startTap(it, runCell, 900);
+  if (what === "up" || what === "down") {
+    select(null);
+    it.flame = clamp((it.flame || 0) + (what === "up" ? 1 : -1), 0, 3);
+    dress(it);
+    say(lit(it) ? `${nameOf(it)}: a ${FLAME[it.flame]} flame.` : `The ${nameOf(it).toLowerCase()} is out.`);
+    save();
+  } else if (what === "power") startTap(it, runCell, 900);
   else if (what === "clamp") { select(null); slide = { it, y0: world(e).y, c0: it.clamp ?? CLAMP }; }
   else if (what === "tare") {
     select(null);
@@ -1166,7 +1207,7 @@ window.addEventListener("pointermove", (e) => {
   it.y = w.y + drag.dy;
   keepIn(it);
   for (const v of drag.riders) { v.x += it.x - ox; v.y += it.y - oy; place(v); }
-  if (it.kind === "vessel") it.rack = null;
+  if (it.kind === "vessel" || it.key === "syringe") it.rack = null;
   if (it.on) it.on = null;
 
   const target = targetOf(it);
@@ -1279,7 +1320,7 @@ window.addEventListener("pointerup", (e) => {
       if (it.kind === "tool") setTimeout(() => resetTool(it), 2200);
     }, it.kind === "tool" ? 1100 : 380);
   } else {
-    if (it.kind === "vessel" && snap(it)) glide(it, true);
+    if ((it.kind === "vessel" && snap(it)) || (it.key === "syringe" && clampSyringe(it))) glide(it, true);
     front();
     place(it);
     if (it.kind === "vessel") paint(it);
@@ -1351,7 +1392,7 @@ function openMenu(it) {
   let slider = "";
   if (it.kind === "vessel") {
     const def = VESSELS[it.key];
-    if (isEmpty(it.t)) lines.push(it.flip ? (it.jar ? `Holds about ${Math.round(it.jar.n * 12)} cm³ of gas.` : overWater(it) ? "Upside down, and full of water. Lead a delivery tube to it." : "Upside down, with only air in it.") : it.t.gas ? "No liquid, but there is a gas in it. Test it." : "Empty.");
+    if (isEmpty(it.t)) lines.push(it.flip ? (it.jar ? `Holds about ${Math.round(it.jar.n * 12)} cm\u00b3 of gas.` : overWater(it) ? "Upside down, and full of water. Lead a delivery tube to it." : "Upside down, with only air in it.") : it.t.gas ? "No liquid, but there is a gas in it. Test it." : "Empty.");
     else {
       const tot = it.t.vol + (it.t.oil || 0);
       lines.push(`Holds ${tot > 0 ? `${cm3(tot)}: ` : ""}${esc(it.t.added.map((id) => reagent(id).name).join(", "))}.`);
@@ -1367,13 +1408,13 @@ function openMenu(it) {
     lines.push(capOf(it.key) && fittedTo(it, "cap") ? "Stoppered. Drag the stopper off before you pour." : r.kind === "indicator" ? "Carry it to a liquid and it drips a little in." : "Open. Carry it to a vessel and hold it there, or select it and turn it.");
     if (r.kind === "solution" && Object.keys(r.adds).length) {
       const k = it.k || 1;
-      slider = `<label class="cl-range"><span>Concentration <b id="cl-k">${k.toFixed(2)}</b> mol/dm³</span><input type="range" min="0.25" max="2" step="0.25" value="${k}" data-act="strength" aria-label="Concentration"></label>`;
+      slider = `<label class="cl-range"><span>Concentration <b id="cl-k">${k.toFixed(2)}</b> mol/dm\u00b3</span><input type="range" min="0.25" max="2" step="0.25" value="${k}" data-act="strength" aria-label="Concentration"></label>`;
     }
   } else if (HEAT[it.key]) {
-    lines.push(it.lit ? "Lit. Hold it under a vessel, or carry a vessel over the flame." : "Not lit. Hold a lighted splint to it, or light it here.");
-    act("light", it.lit ? "Put it out" : "Light it", ICON.fire);
+    lines.push(lit(it) ? `Lit: a ${FLAME[it.flame]} flame. Its \u2212 and + keys turn it down and up. Hold it under a vessel, or carry a vessel over the flame.` : "Not lit. Press its + key to light it and turn it up.");
+    act("light", lit(it) ? "Put it out" : "Light it", ICON.fire);
   } else if (it.sample) { lines.push(it.key === "wire" ? "Dipped, ready for the flame." : `Holding ${cm3(it.sample.vol + (it.sample.oil || 0))} of liquid.`); act("empty", "Empty it", ICON.empty); }
-  else if (it.key === "syringe") { lines.push(it.gas ? `${Math.round(it.gas.n * 12)} cm³ of gas.` : "Drag the orange end of a delivery tube to its nozzle."); if (it.gas) act("empty", "Push the plunger back in", ICON.empty); }
+  else if (it.key === "syringe") { lines.push(it.gas ? `${Math.round(it.gas.n * 12)} cm\u00b3 of gas.` : "Let it go at a stand's clamp to hold it level, then drag the orange end of a delivery tube to its nozzle."); if (it.gas) act("empty", "Push the plunger back in", ICON.empty); }
   else if (it.key === "funnel") { lines.push(it.residue ? "There is residue in the filter paper." : "Let it go at the mouth of a flask or beaker."); if (it.residue) act("empty", "Fresh filter paper", ICON.empty); }
   else if (it.key === "tubing") lines.push(it.on ? "Drag the orange end to a gas jar, a gas syringe or a tube." : "Let it go at the mouth of the flask that makes the gas.");
   else if (it.key === "electrode") lines.push("Let it go at the mouth of a beaker. Two are needed, and a power pack.");
@@ -1406,7 +1447,7 @@ $("cl-menu").addEventListener("click", (e) => {
   const it = selected;
   const what = b.dataset.act;
   if (what === "remove") return removeItem(it);
-  if (what === "light") { it.lit = !it.lit; dress(it); say(it.lit ? `The ${nameOf(it).toLowerCase()} is lit.` : `The ${nameOf(it).toLowerCase()} is out.`); }
+  if (what === "light") { it.flame = lit(it) ? 0 : 2; dress(it); say(lit(it) ? `The ${nameOf(it).toLowerCase()} is lit.` : `The ${nameOf(it).toLowerCase()} is out.`); }
   else if (what === "flip") { it.flip = !it.flip; it.jar = null; it.t.gas = null; glide(it, true); place(it); paint(it); say(it.flip ? `${cap1(plain(it))} is upside down. A gas lighter than air will stay in it.` : `${cap1(plain(it))} is the right way up.`, it); }
   else if (it.kind === "vessel") {
     const res = rinse(it.t);
