@@ -204,25 +204,88 @@ export class PrepbotTeacher {
 
   /** Fire one random idle impulse on demand (the "poke"/"wiggle" action). */
   poke() {
-    if (!this.gsap || !this._mayFidget()) return;
+    if (this.asleep || !this.gsap || !this._mayFidget()) return;
     this.impulse = this._runImpulse(this._randomImpulse());
   }
 
   /** Toggle sleep: stops idle impulses and closes the eyes (or resumes both). */
+  /** Asleep, PrepBot does NOTHING: it says nothing, shows no bubble, makes no move. It only
+   *  breathes and snores (a "z z z" over its head, and a soft snore when sound is on). Anything
+   *  said to it while it sleeps is simply not said: speak() comes straight back. It wakes when
+   *  it is told to (its Sleep key, S) or when it is ASKED for something — A, M, a lesson started. */
   sleep(on) {
+    on = Boolean(on);
+    if (on === this.asleep) return;
     this.asleep = on;
-    if (!this.gsap) return;
+    this.root?.classList.toggle("mm-prepbot--asleep", on);
+    this._syncSleepBtn();
     if (on) {
+      this.stop();                               // whatever it was saying, it stops
+      this.hide();
+      if (this.text) this.text.textContent = "";
+      this.avatarWrap?.classList.remove("is-menu-open");
       clearTimeout(this.idleTimer);
-      this.gsap.killTweensOf(this.avatar);
-      this.gsap.killTweensOf(this.root);
-      this.gsap.set(this.avatar, { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0 });
-      this.gsap.set(this.root, { x: 0 });
-      if (this.eyes.length) this.gsap.set(this.eyes, { scaleY: 0.15 });
+      this._stopBody();
+      if (this.gsap) {
+        this.gsap.killTweensOf(this.avatar);
+        this.gsap.killTweensOf(this.root);
+        this.gsap.set(this.avatar, { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0 });
+        this.gsap.set(this.root, { x: 0 });
+        if (this.eyes.length) this.gsap.set(this.eyes, { clearProps: "transform" });   // the CSS closes them
+      }
+      if (this.avatarWrap && !this.zzz) {
+        this.zzz = document.createElement("span");
+        this.zzz.className = "mm-prepbot-zzz";
+        this.zzz.setAttribute("aria-hidden", "true");
+        this.zzz.innerHTML = "<i>z</i><i>z</i><i>z</i>";
+        this.avatarWrap.appendChild(this.zzz);
+      }
+      this._snoreTimer = setInterval(() => this._snore(), 3600);
+      this._snore();
     } else {
-      if (this.eyes.length) this.gsap.set(this.eyes, { scaleY: 1 });
+      clearInterval(this._snoreTimer);
+      this._snoreTimer = null;
+      this.zzz?.remove();
+      this.zzz = null;
+      if (this.gsap && this.eyes.length) this.gsap.set(this.eyes, { scaleY: 1 });
       this.scheduleIdle();
     }
+  }
+  wake() { this.sleep(false); }
+  _syncSleepBtn() {
+    const b = this._sleepBtn;
+    if (!b) return;
+    b.title = `${this.asleep ? "Wake" : "Sleep"} (S)`;
+    b.innerHTML = this.asleep ? ICON_WAKE : ICON_SLEEP;
+  }
+  /** One snore: a low rattle on the breath in, a faint whistle on the breath out. Quiet, and only if the page has sound. */
+  _snore() {
+    const ctx = this.audioCtx;
+    if (!this.asleep || !ctx || ctx.state !== "running" || document.hidden) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(58, now);
+    osc.frequency.linearRampToValueAtTime(74, now + 0.6);
+    osc.frequency.linearRampToValueAtTime(52, now + 1.2);
+    lp.type = "lowpass";
+    lp.frequency.value = 240;
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.045, now + 0.5);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 1.25);
+    osc.connect(lp).connect(g).connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 1.3);
+    const wh = ctx.createOscillator(), g2 = ctx.createGain();
+    wh.type = "sine";
+    wh.frequency.setValueAtTime(620, now + 1.6);
+    wh.frequency.exponentialRampToValueAtTime(380, now + 2.5);
+    g2.gain.setValueAtTime(0.0001, now + 1.6);
+    g2.gain.exponentialRampToValueAtTime(0.012, now + 1.9);
+    g2.gain.exponentialRampToValueAtTime(0.0001, now + 2.6);
+    wh.connect(g2).connect(ctx.destination);
+    wh.start(now + 1.6);
+    wh.stop(now + 2.7);
   }
 
   // A quick blink every few beats, shared by all three "talking" paths.
@@ -462,6 +525,8 @@ export class PrepbotTeacher {
    *  to a caller-tracked index (e.g. a lesson step number) instead of the
    *  teacher's own running tally. */
   speak(lines, { colorSeed } = {}) {
+    // asleep, nothing is said: whoever is waiting for the line to end is let go at once
+    if (this.asleep) { this.narrationToken++; this.narrationDone = Promise.resolve(); return this.narrationDone; }
     const list = Array.isArray(lines) ? lines : [{ text: lines, mode: "speech" }];
     const token = ++this.narrationToken;
     let resolveDone;
@@ -495,7 +560,7 @@ export class PrepbotTeacher {
     this.isTalking = false;
   }
 
-  show() { this.bubble?.classList.remove("mm-prepbot-bubble--hidden"); }
+  show() { if (!this.asleep) this.bubble?.classList.remove("mm-prepbot-bubble--hidden"); }
   hide() { this.bubble?.classList.add("mm-prepbot-bubble--hidden"); }
 
   /* ── ask ───────────────────────────────────────────────────────────────── */
@@ -503,6 +568,7 @@ export class PrepbotTeacher {
       the big side window). A page that did not load the chat itself gets it
       now, without the chat's own launcher: here PrepBot is the launcher. */
   async openChat() {
+    this.wake();                 // it has been asked for something
     if (!window.PrepBot) {
       document.documentElement.classList.add("pb-no-fab");
       try { await import("/utils/prepbot/prepbot.js"); } catch { return; }
@@ -621,12 +687,9 @@ export class PrepbotTeacher {
       });
     }
     if (sleep) {
+      this._sleepBtn = sleep;
       sleep.innerHTML = ICON_SLEEP;
-      sleep.addEventListener("click", () => {
-        this.sleep(!this.asleep);
-        sleep.title = `${this.asleep ? "Wake" : "Sleep"} (S)`;
-        sleep.innerHTML = this.asleep ? ICON_WAKE : ICON_SLEEP;
-      });
+      sleep.addEventListener("click", () => this.sleep(!this.asleep));
     }
     if (poke) {
       poke.innerHTML = ICON_WIGGLE;
@@ -651,7 +714,7 @@ export class PrepbotTeacher {
     this._onKey = (e) => {
       if (e.ctrlKey || e.altKey || e.metaKey || e.repeat) return;
       const k = (e.key || "").toLowerCase();
-      const direct = { a: () => this.openChat(), m: () => this.listen(), t: () => this.toggleBubble() }[k];
+      const direct = { a: () => this.openChat(), m: () => this.listen(), t: () => { if (!this.asleep) this.toggleBubble(); }, s: this._sleepBtn ? null : () => this.sleep(!this.asleep) }[k];
       const b = KEYS[k];
       if ((!b && !direct) || this.skipKeys.includes(k) || !this.root?.isConnected || !this.root.offsetParent) return;
       const t = e.target;
@@ -679,6 +742,7 @@ export class PrepbotTeacher {
   }
 
   destroy() {
+    clearInterval(this._snoreTimer);
     if (this._onKey) document.removeEventListener("keydown", this._onKey);
     this.stop();
     this.stopIdle();

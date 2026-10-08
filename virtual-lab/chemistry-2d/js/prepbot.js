@@ -410,6 +410,7 @@ export async function initPrepbot(bench) {
   stopKey.addEventListener("click", () => { stop(); teacher.show(); teacher.speak([{ text: "Stopped. Carry on yourself, or pick another experiment.", mode: "speech" }]); });
 
   async function play(lesson) {
+    teacher.wake();
     stop();
     const mine = ++token;
     turn = null;
@@ -453,6 +454,7 @@ export async function initPrepbot(bench) {
   }
   function help() {
     if (bench.isBusy()) return;
+    teacher.wake();
     let text;
     if (turn) {
       const { i } = nextOf(turn);

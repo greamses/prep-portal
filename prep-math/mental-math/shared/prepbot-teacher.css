@@ -147,3 +147,23 @@
 
 /* T puts the speech bubble away (the voice carries on) and brings it back */
 .mm-prepbot--quiet .mm-prepbot-bubble { visibility: hidden; opacity: 0; }
+
+/* ── asleep: nothing but breathing and snoring ───────────────────────────── */
+.mm-prepbot--asleep .mm-prepbot-bubble { visibility: hidden !important; opacity: 0 !important; }
+.mm-prepbot--asleep .mm-bot-eye { transform-box: fill-box; transform-origin: center; transform: scaleY(0.12); }
+.mm-prepbot--asleep .mm-prepbot-avatar { filter: saturate(0.6) brightness(0.92); }
+.mm-prepbot-zzz { position: absolute; right: -4px; top: -6px; width: 34px; height: 34px; pointer-events: none; }
+.mm-prepbot-zzz i { position: absolute; left: 0; bottom: 0; font: 800 0.72rem "Shantell Sans", "Segoe Print", cursive; font-style: normal; color: var(--accent-secondary, #6fb7e8); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .mm-prepbot--asleep .mm-prepbot-avatar { animation: mm-breathe 3.6s ease-in-out infinite; transform-origin: 50% 100%; }
+  .mm-prepbot-zzz i { animation: mm-zzz 3.6s ease-out infinite; }
+  .mm-prepbot-zzz i:nth-child(2) { animation-delay: 1.2s; }
+  .mm-prepbot-zzz i:nth-child(3) { animation-delay: 2.4s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mm-prepbot-zzz i { opacity: 0.9; }
+  .mm-prepbot-zzz i:nth-child(2) { transform: translate(9px, -10px) scale(1.25); }
+  .mm-prepbot-zzz i:nth-child(3) { transform: translate(18px, -21px) scale(1.5); }
+}
+@keyframes mm-breathe { 0%, 100% { transform: scale(1, 1); } 45% { transform: scale(1.04, 1.06); } 60% { transform: scale(1.04, 1.06); } }
+@keyframes mm-zzz { 0% { opacity: 0; transform: translate(0, 0) scale(0.7); } 15% { opacity: 1; } 70% { opacity: 0.9; } 100% { opacity: 0; transform: translate(22px, -30px) scale(1.7) rotate(12deg); } }
