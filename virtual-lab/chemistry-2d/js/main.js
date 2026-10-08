@@ -42,8 +42,8 @@ let TOP = 215;                     // and where the first row of bottles stands:
 const HEAT = { burner: 150, spirit: 116 };            // how far above its foot a burner's flame reaches
 const MOUTH = ["lit", "glow"];                        // held at the mouth
 const TAKES = { dropper: 0.5, pipette: 12.5 };        // portions drawn up (a portion is 2 cm3)
-const STAYS = ["funnel", "paper", "chroma", "bung", "tubing", "cap", "condenser", "electrode"];   // fitted, and left there
-const PLUGS = ["funnel", "bung", "tubing"];           // one of these to a mouth
+const STAYS = ["funnel", "paper", "chroma", "bung", "bung1", "tubing", "cap", "condenser", "electrode"];   // fitted, and left there
+const PLUGS = ["funnel", "bung", "bung1"];            // one of these to a mouth (a delivery tube goes in a one-hole stopper)
 const IDLE = ["waste", "syringe", "power", "holder", "tongs"];                 // never used ON anything
 const LIGHT = ["H2", "NH3"];                          // less dense than air: they rise
 const GAS = { H2: "hydrogen", CO2: "carbon dioxide", O2: "oxygen", NH3: "ammonia" };
@@ -95,7 +95,7 @@ const CATS = [
 // other words a student might search by
 const ALSO = {
   stand: "clamp stand boss", burette: "titration", pipette: "titration", distflask: "distillation side arm", condenser: "distillation liebig", balance: "weighing scale mass tare",
-  trough: "gas collection over water pneumatic", tubing: "delivery tube bung", bung: "bung cork", funnel: "filtration filter", paper: "filtration filter", magnet: "magnetic separation iron filings", chroma: "chromatography ink dyes separation", burner: "bunsen heat", syringe: "gas volume measure",
+  trough: "gas collection over water pneumatic", tubing: "delivery tube glass rubber tubing gas", bung: "bung cork", bung1: "bung cork holed bored delivery", funnel: "filtration filter", paper: "filtration filter", magnet: "magnetic separation iron filings", chroma: "chromatography ink dyes separation", burner: "bunsen heat", syringe: "gas volume measure",
   spirit: "alcohol lamp heat", flask: "erlenmeyer", flask100: "erlenmeyer", cyl10: "graduated", cyl100: "graduated", dish: "basin", tripod: "gauze", holder: "tongs peg", waste: "sink bin",
   sepfunnel: "separating separation immiscible oil", electrode: "electrolysis carbon rod graphite cathode anode", power: "electrolysis battery cell supply", gasjar: "gas collection",
 };
@@ -140,6 +140,12 @@ const vessels = () => state.items.filter((it) => it.kind === "vessel");
 const heaters = () => state.items.filter((it) => it.kind === "tool" && HEAT[it.key]);
 const tools = (key) => state.items.filter((it) => it.kind === "tool" && it.key === key);
 const fittedTo = (v, key) => state.items.find((a) => a.on === v.id && (!key || a.key === key));
+/** Whatever is stopping a vessel's mouth: a solid stopper, or one with a hole. */
+const stopperOf = (v) => fittedTo(v, "bung") || fittedTo(v, "bung1");
+/** The delivery tube that leads out of a vessel: the one pushed through its stopper. */
+const tubeOf = (v) => { const s = fittedTo(v, "bung1"); return s ? fittedTo(s, "tubing") : null; };
+/** …and the vessel a delivery tube leads out of, if its stopper is in one. */
+const vesselOfTube = (t) => { const s = t.on && byId(t.on); const v = s && s.on && byId(s.on); return v && v.kind === "vessel" ? v : null; };
 const plugIn = (v) => state.items.find((a) => a.on === v.id && PLUGS.includes(a.key));
 const rodsIn = (v) => state.items.filter((a) => a.on === v.id && a.key === "electrode").sort((a, b) => (a.side || 0) - (b.side || 0));
 const hostOf = (v) => (v.rack ? byId(v.rack[0]) : null);
@@ -212,6 +218,11 @@ function mount(it) {
 /** How far up a piece its turning point is (it turns about its middle). */
 const pivotOf = (it) => (it.kind === "vessel" ? VESSELS[it.key].top / 2 : -mouthOf(it.key) / 2);
 function place(it, transform) {
+  if ((it.key === "bung" || it.key === "bung1") && nodes[it.id]) {
+    // a stopper is the width of the neck it is in
+    const h = it.on != null && byId(it.on);
+    nodes[it.id].g.style.setProperty("--k", h && h.kind === "vessel" ? clamp(VESSELS[h.key].rTop / 12.5, 0.62, 1.7).toFixed(2) : "1");
+  }
   if (it.key === "paper" && nodes[it.id]) nodes[it.id].g.classList.toggle("is-cone", it.on != null);
   const n = nodes[it.id];
   if (!n) return;
@@ -491,7 +502,7 @@ function mouth(o) {
 const rimOf = (o) => (o.kind === "vessel" ? VESSELS[o.key].rTop : o.kind === "reagent" ? 12 : 50);
 /** Where a fitted thing sits on its host: a condenser on the side arm, carbon rods left and right, anything else in the mouth. */
 function seat(host, it) {
-  if (it.key === "paper") return { x: host.x, y: host.y };
+  if (it.key === "paper" || it.key === "tubing") return { x: host.x, y: host.y };
   if (it.key === "condenser") { const [ax, ay] = VESSELS[host.key].arm; return { x: host.x + ax, y: host.y + ay }; }
   const m = mouth(host);
   if (it.key === "electrode") return { x: m.x + (it.side || -1) * Math.min(VESSELS[host.key].rTop * 0.5, 30), y: m.y };
@@ -572,25 +583,110 @@ function clampSyringe(it) {
   }
   return false;
 }
+// ── the rubber tube of a delivery tube ──────────────────────────────────────
+// It is a real length of rubber: a chain of short links, each pulled down by its weight
+// and held to its neighbours, pinned to the glass at one end and to wherever it has been
+// led at the other. So it hangs in a curve, swings when either end is moved, lies on the
+// bench where it reaches it, and will not stretch: led too far, it pulls out.
+const HOSE_LEN = 470, HOSE_N = 22;
+const hoses = new Map();          // tubing id → { p: [{ x, y, px, py }], gas: time until which gas is seen passing }
+let hosing = 0, hoseStill = 0;
+const hoseStart = (t) => ({ x: t.x + 38, y: t.y - 56 });
 /** Where a delivery tube's free end is. */
 function endOf(tube) {
   const o = tube.to && byId(tube.to);
-  if (!o) return { x: tube.x + (tube.ex ?? 96), y: tube.y + (tube.ey ?? 30), dir: "free" };
+  if (!o) return { x: tube.x + (tube.ex ?? 150), y: tube.y + (tube.ey ?? 44), dir: "free" };
   if (o.key === "syringe") return { x: o.x - 104, y: o.y - 10, dir: "side" };
   if (o.flip) return { x: o.x, y: o.y - 12, dir: "up" };
   return { x: o.x, y: o.y + VESSELS[o.key].top + 26, dir: "down" };
 }
+function hoseOf(t) {
+  let h = hoses.get(t.id);
+  if (!h) {
+    const a = hoseStart(t), b = endOf(t);
+    h = { p: Array.from({ length: HOSE_N + 1 }, (_, i) => { const x = a.x + ((b.x - a.x) * i) / HOSE_N, y = a.y + ((b.y - a.y) * i) / HOSE_N + Math.sin((Math.PI * i) / HOSE_N) * 50; return { x, y, px: x, py: y }; }), gas: 0 };
+    hoses.set(t.id, h);
+    for (let k = 0; k < 120; k++) hoseStep(t, h);           // let it hang before it is first seen
+  }
+  return h;
+}
+/** One moment of the tube's life. Returns how much it moved. */
+function hoseStep(t, h) {
+  const a = hoseStart(t), b = endOf(t), seg = HOSE_LEN / HOSE_N, P = h.p, N = HOSE_N;
+  let moved = 0;
+  for (const q of P) {
+    const vx = (q.x - q.px) * 0.93, vy = (q.y - q.py) * 0.93;
+    q.px = q.x; q.py = q.y;
+    q.x += vx; q.y += vy + 0.42;                             // its own weight
+    moved += Math.abs(vx) + Math.abs(vy);
+  }
+  // where it is held: on the glass (and coming straight off it), and at the far end (going straight in)
+  const pin = new Map([[0, a], [1, { x: a.x + seg * 0.92, y: a.y }], [N, b]]);
+  if (b.dir === "down") pin.set(N - 1, { x: b.x, y: b.y - seg * 0.92 });
+  else if (b.dir === "up") pin.set(N - 1, { x: b.x, y: b.y + seg * 0.92 });
+  else if (b.dir === "side") pin.set(N - 1, { x: b.x - seg * 0.92, y: b.y });
+  for (let pass = 0; pass < 16; pass++) {
+    for (const [i, at] of pin) { P[i].x = at.x; P[i].y = at.y; }
+    for (let i = 0; i < N; i++) {
+      const p = P[i], q = P[i + 1], dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy) || 0.001;
+      const off = (d - seg) / d, wp = pin.has(i) ? 0 : 1, wq = pin.has(i + 1) ? 0 : 1;
+      if (!wp && !wq) continue;
+      p.x += dx * off * (wp / (wp + wq)); p.y += dy * off * (wp / (wp + wq));
+      q.x -= dx * off * (wq / (wp + wq)); q.y -= dy * off * (wq / (wp + wq));
+    }
+    for (const q of P) if (q.y > H - 5) { q.y = H - 5; q.x += (q.px - q.x) * 0.35; }      // it lies on the bench, and drags
+  }
+  return moved;
+}
+/** Gas is passing down this tube: for a moment it is seen to. */
+function hoseGas(t) { hoseOf(t).gas = performance.now() + 2600; hoseWake(); }
+function hoseWake() { hoseStill = 0; if (!hosing) hosing = requestAnimationFrame(hoseTick); }
+function hoseTick() {
+  hosing = 0;
+  let moved = 0, busy = false;
+  for (const t of tools("tubing")) {
+    if (!nodes[t.id]) continue;
+    const h = hoseOf(t);
+    moved += hoseStep(t, h) + hoseStep(t, h);
+    if (h.gas > performance.now()) busy = true;
+    // pulled further than it is long: it comes out of whatever it was led to
+    const a = hoseStart(t), b = endOf(t);
+    if (t.to && Math.hypot(b.x - a.x, b.y - a.y) > HOSE_LEN * 1.02) {
+      t.to = null;
+      t.ex = a.x + ((b.x - a.x) * 0.8 * HOSE_LEN) / Math.hypot(b.x - a.x, b.y - a.y) - t.x;
+      t.ey = a.y + 60 - t.y;
+      say("The rubber tube has pulled out: it will not stretch that far. Bring the two closer together.", null, "no");
+      save();
+    }
+  }
+  drawLinks(true);
+  hoseStill = moved < 0.6 ? hoseStill + 1 : 0;
+  if (busy || hoseStill < 40) hosing = requestAnimationFrame(hoseTick);
+}
+function hoseSvg(t) {
+  const h = hoseOf(t), P = h.p, b = endOf(t), f = (n) => n.toFixed(1);
+  // a smooth line through the links: each link is the handle of a curve between the midpoints either side
+  let d = `M${f(P[0].x)} ${f(P[0].y)}L${f((P[0].x + P[1].x) / 2)} ${f((P[0].y + P[1].y) / 2)}`;
+  for (let i = 1; i < P.length - 1; i++) d += `Q${f(P[i].x)} ${f(P[i].y)} ${f((P[i].x + P[i + 1].x) / 2)} ${f((P[i].y + P[i + 1].y) / 2)}`;
+  const e = P[P.length - 1], e1 = P[P.length - 2];
+  d += `L${f(e.x)} ${f(e.y)}`;
+  // a short glass jet in the far end, pointing the way the tube arrives
+  const n = Math.hypot(e.x - e1.x, e.y - e1.y) || 1, ux = (e.x - e1.x) / n, uy = (e.y - e1.y) / n;
+  const jet = `M${f(e.x - ux * 2)} ${f(e.y - uy * 2)}L${f(e.x + ux * 13)} ${f(e.y + uy * 13)}`;
+  const gas = h.gas > performance.now() ? `<path class="cl-hose__gas" d="${d}" stroke-dashoffset="${f(-(performance.now() / 9) % 40)}"/>` : "";
+  return `<path class="cl-hose__edge" d="${d}"/><path class="cl-hose" d="${d}"/><path class="cl-hose__hi" d="${d}" transform="translate(-0.8 -1.5)"/>${gas}
+    <path class="cl-jet" d="${jet}"/><path class="cl-jet__bore" d="${jet}"/>
+    <g class="cl-end${b.dir === "free" ? " is-free" : ""}" data-end="${t.id}"><circle cx="${f(e.x + ux * 6)}" cy="${f(e.y + uy * 6)}" r="17" fill="transparent"/><circle class="cl-end__dot" cx="${f(e.x + ux * 6)}" cy="${f(e.y + uy * 6)}" r="9"/></g>`;
+}
 /** Rubber tubing and wires: the things that join two pieces. */
-function drawLinks() {
+function drawLinks(fromTick = false) {
   let html = "";
   for (const t of tools("tubing")) {
     if (!nodes[t.id]) continue;
-    const a = { x: t.x + 30, y: t.y - 42 }, b = endOf(t);
-    const sag = Math.max(36, Math.abs(b.x - a.x) * 0.25);
-    const c2 = b.dir === "down" ? `${b.x} ${b.y - sag - 30}` : b.dir === "up" ? `${b.x} ${b.y + sag + 30}` : b.dir === "side" ? `${b.x - sag} ${b.y}` : `${b.x - 20} ${b.y - 30}`;
-    html += `<path class="cl-link" d="M${a.x} ${a.y}C${a.x + sag} ${a.y - 6} ${c2} ${b.x} ${b.y}"/>`;
-    html += `<g class="cl-end${b.dir === "free" ? " is-free" : ""}" data-end="${t.id}"><circle cx="${b.x}" cy="${b.y}" r="16" fill="transparent"/><circle class="cl-end__dot" cx="${b.x}" cy="${b.y}" r="6.5"/></g>`;
+    html += hoseSvg(t);
   }
+  for (const id of hoses.keys()) if (!byId(id)) hoses.delete(id);
+  if (!fromTick && tools("tubing").length) hoseWake();
   for (const p of tools("power")) {
     const v = cellFor(p);
     if (!v) continue;
@@ -742,7 +838,12 @@ function record(v, res) {
   else if (seen) say(seen);
   save();
 }
-/** A gas has come off in v. Where does it go? */
+/**
+ * A gas has come off in v. Where does it go?
+ * A solid stopper is blown out. A one-hole stopper lets it out by the hole, or down the delivery
+ * tube that is in the hole. From an OPEN vessel it goes into the room — but a reaction goes on
+ * fizzing for a few seconds, so a stopper and tube fitted quickly still catch most of it (catchPuff).
+ */
 function gasFlow(v, res) {
   const g = gasMade(res);
   if (!g) return;
@@ -754,14 +855,30 @@ function gasFlow(v, res) {
     keepIn(bung);
     glide(bung, true);
     place(bung);
-    res.obs.push({ text: "The gas pushes the stopper out.", why: "A gas takes up far more room than the solid and liquid it came from. Never stopper a vessel that is making a gas." });
+    res.obs.push({ text: "The gas pushes the stopper out.", why: "A gas takes up far more room than the solid and liquid it came from. Never stopper a vessel that is making a gas, unless the stopper has a tube through it." });
     return;
   }
-  const tube = fittedTo(v, "tubing");
-  if (!tube) return;
+  if (!fittedTo(v, "bung1")) { v.puff = { gas: g.gas, n: g.n, at: Date.now() }; return; }
+  routeGas(v, g, res);
+}
+/** The stopper and tube have just been fitted to a vessel that is still fizzing: what is still coming off goes down the tube. */
+function catchPuff(v) {
+  const p = v && v.puff, tube = v && tubeOf(v);
+  if (!p || !tube || !tube.to) return;
+  const age = (Date.now() - p.at) / 1000;
+  v.puff = null;
+  if (age > 10) return;
+  const res = { title: "Stoppered while it was still fizzing", obs: [], flags: [], events: [] };
+  routeGas(v, { gas: p.gas, n: p.n * (age < 3 ? 1 : 1 - (age - 3) / 7) }, res);
+  if (res.obs.length) record(v, res);
+}
+function routeGas(v, g, res) {
+  const tube = tubeOf(v);
+  if (!tube) { res.obs.push({ text: "The gas escapes through the hole in the stopper.", why: "The hole is for a delivery tube. Push one into it, and lead its rubber tube to where the gas is to be collected." }); return; }
+  hoseGas(tube);
   const c = tube.to && byId(tube.to);
   const name = GAS[g.gas];
-  if (!c) { res.obs.push({ text: "The gas comes out of the open end of the delivery tube and is lost.", why: "Drag the orange end of the tube to a gas jar, a gas syringe or a collecting tube." }); return; }
+  if (!c) { res.obs.push({ text: "The gas comes out of the open end of the rubber tube and is lost.", why: "Drag the end of the rubber tube to a gas jar, a gas syringe or a collecting tube." }); return; }
   if (c.key === "syringe") {
     c.gas = { k: g.gas, n: Math.min(8.34, (c.gas && c.gas.k === g.gas ? c.gas.n : 0) + g.n) };
     dress(c);
@@ -860,6 +977,12 @@ function targetOf(it) {
     return nearest(open().filter((v) => { const d = VESSELS[v.key]; return !d.fixed && d.rTop >= 28 && -d.top >= 90 && rodsIn(v).length < 2; }), (v) => {
       const m = mouth(v), dx = Math.abs(it.x - m.x);
       return dx < VESSELS[v.key].rTop + 20 && Math.abs(it.y - m.y) < 70 ? dx : -1;
+    });
+  }
+  if (it.key === "tubing") {
+    return nearest(tools("bung1").filter((s) => !fittedTo(s, "tubing")), (s) => {
+      const dx = Math.abs(it.x - s.x), dy = Math.abs(it.y - s.y);
+      return dx < 36 && dy < 70 ? dx + dy * 0.2 : -1;
     });
   }
   if (it.key === "chroma") {
@@ -1142,10 +1265,11 @@ const drops = (from, to, c, r = 2.6, spread = 0) => fx([0, 1, 2].map((k) => `<ci
 
 /** How much goes in at a time: a few drops, or a twelfth of what the vessel holds. */
 const measure = (v) => (state.dose === "drops" ? 0.25 : Math.max(1, VESSELS[v.key].cap / 12));
-/** A plain stopper is in the way. (A delivery tube's stopper has a second hole, for a funnel.) */
+/** A stopper is in the way. */
 function stoppered(v) {
-  if (!fittedTo(v, "bung")) return false;
-  say("Take the stopper out first.", v, "no");
+  const s = stopperOf(v);
+  if (!s) return false;
+  say(s.key === "bung1" ? "The stopper is in the way. Take it out, pour, and put it straight back: a reaction goes on fizzing for a few seconds, and the tube will still catch the gas." : "Take the stopper out first.", v, "no");
   return true;
 }
 /** A bottle with its stopper still in pours nothing. */
@@ -1558,13 +1682,13 @@ function pourTick() {
   const over = Math.abs(it.tilt || 0) - pourAngle(it);
   if (over < 0) return;
   const isBottle = it.kind === "reagent";
-  if (isBottle ? fittedTo(it, "cap") : fittedTo(it, "bung")) { if (!turn.told) { turn.told = true; isBottle ? capped(it) : stoppered(it); } return; }
+  if (isBottle ? fittedTo(it, "cap") : stopperOf(it)) { if (!turn.told) { turn.told = true; isBottle ? capped(it) : stoppered(it); } return; }
   if (!isBottle && it.t.vol + (it.t.oil || 0) <= 0) return;
   const lip = lipOf(it);
   const v = below(lip.x, lip.y, it);
   const c = isBottle ? colourOf(it.key) : look(it.t).rgb;
   const speed = 1 + Math.min(2, over / 25);
-  if (v && !fittedTo(v, "bung")) {
+  if (v && !stopperOf(v)) {
     const n = (isBottle ? Math.max(0.5, VESSELS[v.key].cap / 30) : Math.min(it.t.vol + (it.t.oil || 0), Math.max(0.5, it.t.cap / 30))) * speed;
     const m = Math.min(n, roomIn(v.t));
     if (m <= 1e-6) { if (!turn.told) { turn.told = true; say("It is full, and running over.", v, "no"); } return; }
@@ -1684,9 +1808,12 @@ window.addEventListener("pointermove", (e) => {
     return;
   }
   if (endDrag) {
-    const w = world(e);
-    endDrag.ex = w.x - endDrag.x;
-    endDrag.ey = w.y - endDrag.y;
+    const w = world(e), a = hoseStart(endDrag);
+    let dx = w.x - a.x, dy = w.y - a.y;
+    const far = Math.hypot(dx, dy), max = HOSE_LEN * 0.96;
+    if (far > max) { dx *= max / far; dy *= max / far; }
+    endDrag.ex = a.x + dx - endDrag.x;
+    endDrag.ey = clamp(a.y + dy, 40, H - 8) - endDrag.y;
     drawLinks();
     return;
   }
@@ -1753,16 +1880,20 @@ window.addEventListener("pointerup", (e) => {
     const t = endDrag;
     endDrag = null;
     const p = endOf(t);
-    const host = t.on && byId(t.on);
+    const host = vesselOfTube(t);
     const c = nearest([...tools("syringe"), ...vessels().filter((v) => v !== host && !VESSELS[v.key].tap)], (o) => {
       const m = mouth(o), d = Math.hypot(m.x - p.x, m.y - p.y);
       return d < (o.key === "syringe" ? 50 : VESSELS[o.key].rTop + 46) ? d : -1;
     });
     if (c) {
       t.to = c.id;
+      const a0 = hoseStart(t), b0 = endOf(t);
+      if (Math.hypot(b0.x - a0.x, b0.y - a0.y) > HOSE_LEN) { t.to = null; say("The rubber tube will not reach that far. Bring the two closer together.", null, "no"); drawLinks(); save(); return; }
       noteFlags(["piped", c.flip && !overWater(c) ? "piped:up" : "piped:other"]);
       say(c.key === "syringe" ? "The delivery tube leads to the gas syringe." : overWater(c) ? `The delivery tube leads under ${plain(c)}, over water.` : c.flip ? `The delivery tube leads up into ${plain(c)}: right for a gas lighter than air.` : `The delivery tube leads down into ${plain(c)}: right for a gas denser than air.`);
+      catchPuff(host);
     }
+    drawLinks();
     save();
     return;
   }
@@ -1818,7 +1949,8 @@ window.addEventListener("pointerup", (e) => {
     say(it.key === "funnel" ? (fittedTo(it, "paper") ? `The funnel is in ${where}, with its filter paper. Whatever is poured in now is filtered.` : `The funnel is in ${where}. It needs a filter paper: let one go at the funnel.`)
       : it.key === "chroma" ? `The strip hangs in ${where} from its rod.`
       : it.key === "paper" ? `The filter paper is folded into a cone and opened out in the funnel: three layers on one side, one on the other. ${host.on ? "Whatever is poured in now is filtered." : "Stand the funnel in the mouth of a flask."}`
-      : it.key === "tubing" ? `The delivery tube is in ${where}. Drag its orange end to where the gas should go.`
+      : it.key === "tubing" ? `The delivery tube is pushed through the stopper. Drag the end of its rubber tube to where the gas should go.`
+      : it.key === "bung1" ? `The one-hole stopper is in ${where}.${fittedTo(it, "tubing") ? "" : " Push a delivery tube into its hole."}`
       : it.key === "cap" ? `The ${it.v === "drop" ? "dropper" : "stopper"} is back in the ${reagent(host.key).name}.`
       : it.key === "condenser" ? `The condenser is on the side arm of ${where}. Stand a beaker under its lower end.`
       : it.key === "electrode" ? (rodsIn(host).length === 2 ? (tools("power").length ? `Both carbon rods are in ${where} and wired to the power pack. Hold down its red switch.` : `Both carbon rods are in ${where}. Put a power pack on the bench.`) : `One carbon rod is in ${where}. It needs a second.`)
@@ -1826,6 +1958,8 @@ window.addEventListener("pointerup", (e) => {
     dress(it);
     if (it.key === "paper") foldIn(it);
     if (it.key === "chroma") runChroma(it);
+    if (it.key === "bung1") catchPuff(host);
+    if (it.key === "tubing") catchPuff(vesselOfTube(it));
   } else if (d.sits) {
     // a vessel left over a flame stays there
     it.x = d.over.x;
@@ -1959,7 +2093,9 @@ function openMenu(it) {
   }
   else if (it.key === "funnel") lines.push(fittedTo(it, "paper") ? (it.on ? "Paper in, and sitting in a vessel: ready to filter." : "Paper in. Let the funnel go at the mouth of a flask or beaker.") : "Plain glass. It needs a filter paper: let one go at the funnel.");
   else if (it.key === "paper") { lines.push(it.residue ? "There is residue in the paper: the solid that could not pass through." : it.on ? "Folded in half, in half again, and opened into a cone in the funnel." : "A flat disc of filter paper. Let it go at a funnel and it is folded into a cone."); if (it.residue || it.wet) act("empty", "A fresh filter paper", ICON.empty); }
-  else if (it.key === "tubing") lines.push(it.on ? "Drag the orange end to a gas jar, a gas syringe or a tube." : "Let it go at the mouth of the flask that makes the gas.");
+  else if (it.key === "tubing") lines.push(it.on ? "Glass through the stopper, rubber on the glass. Drag the end of the rubber tube to a gas jar, a gas syringe or a collecting tube: it will not stretch." : "A bent glass tube with a length of rubber tube on it. Push it into the hole of a one-hole stopper.");
+  else if (it.key === "bung1") lines.push(fittedTo(it, "tubing") ? "Bored through, with a delivery tube in the hole." : "Bored through for a delivery tube. With nothing in the hole, a gas simply escapes by it.");
+  else if (it.key === "bung") lines.push("Solid rubber. A vessel that is making a gas will blow it out.");
   else if (it.key === "electrode") lines.push("Let it go at the mouth of a beaker. Two are needed, and a power pack.");
   else if (it.key === "power") lines.push(cellFor(it) ? "Wired up. Hold down the red switch." : "It wires itself to a beaker with two carbon electrodes in it.");
   else if (it.key === "condenser") lines.push(it.on ? "Cold water runs through the jacket. Stand a beaker under the lower end." : "Push it onto the side arm of a distilling flask.");
@@ -2346,6 +2482,9 @@ const actor = {
     place(tool);
     dress(tool);
     if (tool.key === "chroma") runChroma(tool);
+    if (tool.key === "bung1") catchPuff(v);
+    if (tool.key === "tubing") catchPuff(vesselOfTube(tool));
+    drawLinks();
     if (tool.key === "paper") { foldIn(tool); await pause(FOLD_MS); }
     noteFlags([`fitted:${tool.key}`]);
     save();
@@ -2446,6 +2585,15 @@ if (restored) {
   state.items.filter((it) => it.kind === "reagent" && !state.items.some((c) => c.key === "cap" && c.of === it.id)).forEach((it) => {
     const m = mouth(it);
     addItem("tool", "cap", m.x, m.y, { v: capOf(it.key), on: it.id, of: it.id, rgb: colourOf(it.key) });
+  });
+}
+if (restored) {
+  state.items.filter((t) => t.key === "tubing" && t.on && byId(t.on) && byId(t.on).kind === "vessel").forEach((t) => {
+    const v = byId(t.on), mo = mouth(v);
+    const s = addItem("tool", "bung1", mo.x, mo.y, { on: v.id });
+    t.on = s.id; t.x = s.x; t.y = s.y;
+    place(s); place(t);
+    save();
   });
 }
 if (restored && !state.papers) {

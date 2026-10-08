@@ -323,7 +323,7 @@ export async function initPrepbot(bench) {
   const EXTRA = {
     tube: ["test tube", "tube"], flask: ["conical flask", "flask"], cyl100: ["measuring cylinder", "cylinder"], distflask: ["distillation flask"],
     rack: ["rack"], stand: ["retort stand", "clamp stand", "stand", "clamp", "retort"], balance: ["balance", "scale", "weighing balance"],
-    burner: ["burner", "bunsen"], spirit: ["spirit lamp"], tubing: ["delivery tube"], bung: ["stopper", "bung", "cork"], lit: ["splint"], blue: ["litmus paper", "litmus"],
+    burner: ["burner", "bunsen"], spirit: ["spirit lamp"], tubing: ["delivery tube"], bung: ["stopper", "bung", "cork"], bung1: ["one hole stopper", "holed stopper", "stopper with a hole"], lit: ["splint"], blue: ["litmus paper", "litmus"],
     electrode: ["electrode", "carbon rod"], power: ["power pack", "battery", "power supply"], rod: ["glass rod", "stirring rod", "stirrer"], wire: ["flame test wire", "wire"],
     condenser: ["condenser"], funnel: ["funnel"], water: ["water"], hcl: ["acid"], naoh: ["alkali"], nh3: ["ammonia solution", "ammonia"],
     unk: ["unknown salt", "unknown", "sample x"], caco3: ["calcium carbonate", "marble"], mno2: ["manganese dioxide", "manganese oxide"], h2o2: ["hydrogen peroxide", "peroxide"], oil: ["oil"],
@@ -444,6 +444,14 @@ export async function initPrepbot(bench) {
         const v = named(right || "").find((r) => (tool && tool.c.key === "paper" ? r.c.key === "funnel" : r.c.kind === "vessel"));
         if (!tool || !v) return `I did not understand "${text}".`;
         const dst = await ensure(v);
+        if (tool.c.key === "tubing") {
+          // a delivery tube goes through a one-hole stopper, and the stopper in the vessel
+          const holed = stock.find((k) => k.key === "bung1");
+          const st = bench.pieces().find((it) => it.key === "bung1" && it.on === dst.id) || (await bench.bring(holed));
+          if (st.on !== dst.id) await bench.fit(st, dst);
+          await bench.fit(await ensure(tool), st);
+          return "";
+        }
         await bench.fit(await ensure(tool), dst);
         return "";
       }
@@ -491,7 +499,7 @@ export async function initPrepbot(bench) {
     title: "the Chemistry Bench",
     get actions() {
       return `You are the tutor on this bench and you can work it yourself. Commands (pieces by the exact names in the drawer lists; a vessel already on the bench by its name and letter, e.g. "test tube A"):
-get <how many> <piece> | open <bottle> (pulls its stopper) | pour <bottle or vessel> into <vessel> (add "2 measures" for more) | light burner | flame <0-3> | put out burner | heat <vessel> (boils until nothing more happens) | test <lighted splint, glowing splint, red litmus paper, blue litmus paper, pH paper or thermometer> in <vessel> | fit <filter funnel, stopper, delivery tube, condenser or electrode> on <vessel> | fit filter paper on filter funnel (a funnel filters nothing without its paper) | clear (empties the bench) | guide | notebook | results (opens the student's own results table and graph) | calculator | drawer show | drawer hide | practical <id> (chooses it and opens its guide; ids: ${bench.practicals().map((e) => e.id).join(", ")}) | demo <id> (you do the whole experiment, then the student repeats it; ids: ${LESSONS.map((l) => l.id).join(", ")}).
+get <how many> <piece> | open <bottle> (pulls its stopper) | pour <bottle or vessel> into <vessel> (add "2 measures" for more) | light burner | flame <0-3> | put out burner | heat <vessel> (boils until nothing more happens) | test <lighted splint, glowing splint, red litmus paper, blue litmus paper, pH paper or thermometer> in <vessel> | fit <filter funnel, rubber stopper, one-hole stopper, delivery tube, condenser or electrode> on <vessel> (a delivery tube is put through a one-hole stopper for you) | fit filter paper on filter funnel (a funnel filters nothing without its paper) | clear (empties the bench) | guide | notebook | results (opens the student's own results table and graph) | calculator | drawer show | drawer hide | practical <id> (chooses it and opens its guide; ids: ${bench.practicals().map((e) => e.id).join(", ")}) | demo <id> (you do the whole experiment, then the student repeats it; ids: ${LESSONS.map((l) => l.id).join(", ")}).
 A piece that is not on the bench yet is taken from the drawer when a command needs it. Do one small thing at a time when teaching, and ask the student what they see.`;
     },
     act,

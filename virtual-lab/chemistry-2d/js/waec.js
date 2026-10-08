@@ -142,10 +142,10 @@ export const EXPERIMENTS = [
   {
     id: "gas-h2", group: "gas", title: "Hydrogen: prepare, collect over water, test",
     task: "Prepare hydrogen by the action of dilute hydrochloric acid on zinc. Collect the gas over water and carry out the test for hydrogen.",
-    needs: "conical flask, stopper and delivery tube, trough, gas jar, distilled water, zinc, dilute hydrochloric acid, a lighted splint",
+    needs: "conical flask, one-hole stopper, delivery tube, trough, gas jar, distilled water, zinc, dilute hydrochloric acid, a lighted splint",
     steps: [
       { text: "Fill the trough with water and let an empty gas jar go in it: it turns over and fills.", need: ["in:trough:water"] },
-      { text: "Fit the delivery tube in the flask and drag its orange end to the gas jar.", need: [] , test: (seen) => seen.has("piped") },
+      { text: "Push the delivery tube into the one-hole stopper and drag the end of its rubber tube to the gas jar. Have it ready: the stopper goes into the flask as soon as the acid is in.", need: [] , test: (seen) => seen.has("piped") },
       { text: "Put zinc in the flask, then the acid. Gas collects in the jar.", need: ["collected"] },
       { text: "Lift the jar out and hold a lighted splint at its mouth.", need: ["test:pop"] },
     ],
@@ -174,7 +174,7 @@ export const EXPERIMENTS = [
   {
     id: "gas-nh3", group: "gas", title: "Ammonia: prepare, collect, test",
     task: "Prepare ammonia by warming ammonium chloride solution with sodium hydroxide solution. Collect it by upward delivery and test it.",
-    needs: "boiling tube, stopper and delivery tube, a second boiling tube, ammonium chloride and sodium hydroxide solutions, a burner, red litmus paper",
+    needs: "boiling tube, one-hole stopper, delivery tube, a second boiling tube, ammonium chloride and sodium hydroxide solutions, a burner, red litmus paper",
     steps: [
       { text: "Turn an empty boiling tube upside down from its menu, and lead the delivery tube from the other one up into it.", need: [], test: (seen) => seen.has("piped:up") },
       { text: "Put both solutions in the first tube and warm it.", need: ["gas:NH3"] },
@@ -335,7 +335,7 @@ export const HOWTO = [
   "Take pieces from the drawer: tap a tile, or drag it onto the bench. Drag a piece back onto the drawer to put it away.",
   "Pull the stopper out of a bottle before pouring. Carry the bottle to a vessel and hold it there.",
   "Let a vessel go at a rack, a tripod, a clamp or a balance pan and it stands there. Slide a stand's clamp by its yellow boss.",
-  "Let a funnel, a stopper, a delivery tube, a condenser or a carbon rod go at a mouth or a joint and it stays there. A filter paper goes in a funnel.",
+  "Let a funnel, a stopper, a condenser or a carbon rod go at a mouth or a joint and it stays there. A filter paper goes in a funnel, and a delivery tube in the hole of a one-hole stopper.",
   "A burette and a measuring cylinder are read by eye: choose one and a lens shows its scale. Read the bottom of the meniscus and type the reading into its menu.",
   "Tap a piece for two handles: one tilts it (tilt far enough and it pours), the other opens what can be done with it.",
   "A burner's + and − keys light it and turn it up and down. A burette's blue tap is pressed.",

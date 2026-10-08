@@ -228,6 +228,9 @@ export const DEFS = `
   <linearGradient id="g-case" x1="0" x2="0" y1="0" y2="1">
     <stop offset="0" stop-color="#f6f7f9"/><stop offset="0.5" stop-color="#dfe3e8"/><stop offset="1" stop-color="#b4bac3"/>
   </linearGradient>
+  <linearGradient id="g-bung" x1="0" x2="1" y1="0" y2="0">
+    <stop offset="0" stop-color="#7c3220"/><stop offset="0.28" stop-color="#d06a4e"/><stop offset="0.62" stop-color="#b04e35"/><stop offset="1" stop-color="#6f2b1b"/>
+  </linearGradient>
   <linearGradient id="g-psu" x1="0" x2="0" y1="0" y2="1">
     <stop offset="0" stop-color="#5a6675"/><stop offset="0.12" stop-color="#465160"/><stop offset="1" stop-color="#2b323c"/>
   </linearGradient>
@@ -563,8 +566,9 @@ export const TOOLS = {
   paper: { name: "Filter paper", act: [0, 0], bbox: { x0: -34, y0: -62, x1: 34, y1: 6 } },
   magnet: { name: "Horseshoe magnet", act: [0, 0], bbox: { x0: -24, y0: -64, x1: 24, y1: 8 } },
   chroma: { name: "Chromatography paper", act: [0, 0], bbox: { x0: -42, y0: -10, x1: 42, y1: 108 } },
-  bung: { name: "Rubber stopper", act: [0, 0], bbox: { x0: -16, y0: -12, x1: 16, y1: 12 } },
-  tubing: { name: "Stopper and delivery tube", act: [0, 0], bbox: { x0: -18, y0: -52, x1: 36, y1: 12 } },
+  bung: { name: "Rubber stopper", act: [0, 0], bbox: { x0: -18, y0: -14, x1: 18, y1: 13 } },
+  bung1: { name: "One-hole stopper", act: [0, 0], bbox: { x0: -18, y0: -14, x1: 18, y1: 13 } },
+  tubing: { name: "Delivery tube", act: [0, 0], bbox: { x0: -12, y0: -66, x1: 46, y1: 22 } },
   syringe: { name: "Gas syringe", act: [0, -11], bbox: { x0: -110, y0: -40, x1: 150, y1: 8 } },
   condenser: { name: "Liebig condenser", act: [0, 0], bbox: { x0: -8, y0: -22, x1: 240, y1: 122 } },
   electrode: { name: "Carbon electrode", act: [0, 0], bbox: { x0: -9, y0: -30, x1: 9, y1: 104 } },
@@ -704,10 +708,31 @@ export function toolSvg(key, it = {}) {
         <g class="pf-wedge"><path class="pf" d="M0 0H26A26 26 0 0 1 0 26z"/><path class="pf pf-layer" d="M0 0L18.4 18.4A26 26 0 0 1 0 26z"/><path class="pf pf-crease" d="M0 0H26M0 0V26"/></g>
       </g>${hit(b)}`;
   }
-  if (key === "bung") return `<path d="M-13 -8h26l-3.5 16h-19z" fill="#c0563c" stroke="#fff" stroke-opacity="0.3" stroke-width="0.8"/><path d="M-10 -5h6l-1.5 10" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="1.6" stroke-linecap="round"/>${hit(b)}`;
+  if (key === "bung" || key === "bung1") {
+    // a rubber stopper: a tapered plug with a flat top, the mould line round it, a sheen down one
+    // side. The one-hole kind is bored through for a glass tube. (.cl-bung-body is widened or
+    // narrowed by main.js to fit the neck it is pushed into.)
+    return `<g class="cl-bung-body">
+        <path d="M-9.5 9a9.5 2.4 0 0 0 19 0L13 -9H-13z" fill="url(#g-bung)" stroke="#5b2416" stroke-width="0.7" stroke-linejoin="round"/>
+        <path d="M-12.3 -5.500h24.600M-11.2 0h22.400M-10.3 5h20.6" stroke="#4a1c10" stroke-opacity="0.22" stroke-width="0.5"/>
+        <path d="M-10.6 -6L-8 8" stroke="#fff" stroke-opacity="0.42" stroke-width="1.7" stroke-linecap="round"/>
+        <ellipse cx="0" cy="-9" rx="13" ry="3" fill="#cf6a4d" stroke="#5b2416" stroke-width="0.6"/>
+        <ellipse cx="-2" cy="-9.6" rx="8.5" ry="1.5" fill="#fff" fill-opacity="0.2"/>
+        ${key === "bung1" ? `<ellipse cx="0" cy="-9" rx="3.6" ry="1.2" fill="#190c08"/><path d="M-3.6 -9a3.6 1.2 0 0 0 7.2 0" fill="none" stroke="#e9967d" stroke-opacity="0.7" stroke-width="0.5"/>` : ""}
+      </g>${hit(b)}`;
+  }
   if (key === "tubing") {
-    return `<path d="M0 8V-34q0 -8 8 -8h22" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="5" stroke-linecap="round"/><path d="M0 8V-34q0 -8 8 -8h22" fill="none" stroke="#2f3540" stroke-width="2.6" stroke-linecap="round"/>
-      <path d="M-13 -8h26l-3.5 16h-19z" fill="#c0563c" stroke="#fff" stroke-opacity="0.3" stroke-width="0.8"/>${hit(b)}`;
+    // glass tubing bent at a right angle: one leg goes down through the stopper, the other takes
+    // the rubber tube, which is pushed a little way over it. The rubber tube itself is drawn by
+    // main.js, because it hangs and swings.
+    const run = "M0 18V-42Q0 -56 14 -56H36";
+    return `<path d="${run}" fill="none" stroke="#fff" stroke-opacity="0.78" stroke-width="5.4" stroke-linecap="butt" stroke-linejoin="round"/>
+      <path d="${run}" fill="none" stroke="#2a313b" stroke-width="3.4" stroke-linecap="butt" stroke-linejoin="round"/>
+      <path d="${run}" fill="none" stroke="#9fc4e0" stroke-opacity="0.16" stroke-width="3.4"/>
+      <path d="M-1.3 16V-42Q-1.3 -57.3 14 -57.300H34" fill="none" stroke="#fff" stroke-opacity="0.85" stroke-width="0.9" stroke-linecap="round"/>
+      <ellipse cx="0" cy="18" rx="2.7" ry="0.9" fill="none" stroke="#fff" stroke-opacity="0.8" stroke-width="0.7"/>
+      <rect x="29" y="-60.2" width="10" height="8.4" rx="2.6" fill="#8a4f1f"/><rect x="29" y="-60.2" width="10" height="8.4" rx="2.6" fill="url(#g-shade)" opacity="0.5"/>
+      <path d="M30.5 -58.600h7" stroke="#fff" stroke-opacity="0.4" stroke-width="1" stroke-linecap="round"/>${hit(b)}`;
   }
   if (key === "cap") return `${CAPS[it.v || "bottle"](0, it.rgb)}${hit(CAP_BOX[it.v || "bottle"])}`;
   if (key === "condenser") {
