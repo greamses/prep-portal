@@ -326,7 +326,7 @@ html body {
 .cl-act svg { width: 15px; height: 15px; flex-shrink: 0; }
 .cl-act:hover, .cl-act:focus-visible { background: #fff; transform: translate(-1px, -1px); box-shadow: 3px 3px 0 rgba(20, 19, 15, 0.26); }
 .cl-act:active { transform: translate(1px, 1px); box-shadow: none; }
-.cl-act[data-act="remove"] { margin-left: auto; background: none; border-style: dashed; box-shadow: none; }
+.cl-menu__hint { display: block; font: 600 0.62rem var(--font-mono); letter-spacing: 0.02em; opacity: 0.6; }
 .cl-menu .cl-range { color: rgba(20, 19, 15, 0.8); font-family: var(--font-mono); }
 .cl-menu .cl-range b { color: #14130f; }
 /* equations: on the observation note and in the notebook */
@@ -606,3 +606,8 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 .cl-item.is-iodine .cl-wisps path { stroke: #9a5fc4; stroke-opacity: 0.75; stroke-width: 4.2; }
 @media (prefers-reduced-motion: no-preference) { .cl-item.is-iodine .cl-wisps path { animation: cl-wisp 1.4s ease-in-out infinite; } }
 .cl-tile .cl-sublimate, .cl-tile .cl-beard { display: none; }
+
+/* a piece carried over the drawer is going back into it */
+.cl-drawer { position: relative; }
+.cl-drawer.is-home::after { content: "Let go to put it away"; position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; padding: 1rem; font: 700 0.8rem var(--font-mono); letter-spacing: 0.04em; text-align: center; color: #14130f; background: rgba(244, 201, 93, 0.9); border: 3px dashed #14130f; pointer-events: none; }
+.cl-item.is-leaving { opacity: 0.45; }

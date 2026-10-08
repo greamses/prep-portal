@@ -332,7 +332,7 @@ export function stepDone(step, seen) {
 
 /** What every experiment relies on: how the bench is worked. Shown when no experiment has been chosen. */
 export const HOWTO = [
-  "Take pieces from the drawer: tap a tile, or drag it onto the bench.",
+  "Take pieces from the drawer: tap a tile, or drag it onto the bench. Drag a piece back onto the drawer to put it away.",
   "Pull the stopper out of a bottle before pouring. Carry the bottle to a vessel and hold it there.",
   "Let a vessel go at a rack, a tripod, a clamp or a balance pan and it stands there. Slide a stand's clamp by its yellow boss.",
   "Let a funnel, a stopper, a delivery tube, a condenser or a carbon rod go at a mouth or a joint and it stays there. A filter paper goes in a funnel.",

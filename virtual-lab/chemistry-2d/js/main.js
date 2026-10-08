@@ -1578,6 +1578,13 @@ let tileDrag = null;
 let swallow = false;
 let endDrag = null;                // the free end of a delivery tube, being led somewhere
 
+/** Is the hand over the drawer? (Shut, the drawer is nowhere, and nothing can be dropped in it.) */
+function overDrawer(e) {
+  const el = document.querySelector(".cl-drawer");
+  if (!el || document.querySelector(".cl-stage").classList.contains("is-shut")) return false;
+  const r = el.getBoundingClientRect();
+  return r.width > 0 && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+}
 function startDrag(it, e, fromDrawer = false) {
   const w = world(e);
   drag = {
@@ -1684,6 +1691,15 @@ window.addEventListener("pointermove", (e) => {
     // lifted out of a trough, an upturned jar is the right way up again, with whatever gas is in it
     if (it.kind === "vessel" && it.flip && it.rack) { it.flip = false; paint(it); }
   }
+  // carried over the drawer, a piece is on its way back into it: let go there and it is put away
+  if (!overDrawer(e)) drag.left = true;            // a piece just taken OUT of the drawer is not on its way back until it has left it
+  const home = overDrawer(e) && it.key !== "cap" && (!drag.fromDrawer || Boolean(drag.left));
+  if (home !== Boolean(drag.home)) {
+    drag.home = home;
+    document.querySelector(".cl-drawer").classList.toggle("is-home", home);
+    nodes[it.id].g.classList.toggle("is-leaving", home);
+    drag.riders.forEach((v) => nodes[v.id] && nodes[v.id].g.classList.toggle("is-leaving", home));
+  }
   const w = world(e);
   const ox = it.x, oy = it.y;
   it.x = w.x + drag.dx;
@@ -1749,6 +1765,16 @@ window.addEventListener("pointerup", (e) => {
   tileDrag = null;
   document.body.classList.remove("cl-dragging");
 
+  document.querySelector(".cl-drawer").classList.remove("is-home");
+  if (nodes[it.id]) nodes[it.id].g.classList.remove("is-leaving");
+  d.riders.forEach((v) => nodes[v.id] && nodes[v.id].g.classList.remove("is-leaving"));
+  // let go over the drawer: back it goes (a stopper is not put away without its bottle)
+  if (d.moved && it.key !== "cap" && overDrawer(e) && (!d.fromDrawer || d.left)) {
+    if (d.over) { nodes[d.over.id] && nodes[d.over.id].g.classList.remove("is-target"); }
+    removeItem(it);
+    if (!d.fromDrawer) say(`${cap1(nameOf(it).replace(/ [A-Z]$/, ""))} is back in the drawer.`);
+    return;
+  }
   if (d.fromDrawer) {
     const r = wrap.getBoundingClientRect();
     if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return removeItem(it);
@@ -1931,7 +1957,7 @@ function openMenu(it) {
   else if (it.kind === "rack" && it.key === "balance") lines.push("Stand a vessel on the pan. The red TARE key sets the reading to zero.");
   else if (it.kind === "rack" && it.key === "tripod") lines.push("Stand a beaker or a dish on the gauze, and hold a lit burner underneath.");
   else if (it.kind === "rack" && it.key === "stand") lines.push("Slide the clamp by its yellow boss. Let a tube, a flask, a burette or a separating funnel go at the clamp and it is held.");
-  if (it.key !== "cap") act("remove", "Put it away", ICON.away);
+  if (it.key !== "cap") lines.push(`<span class="cl-menu__hint">Drag it onto the drawer to put it away.</span>`);
   menu.className = `cl-menu pp-sticky pp-sticky--tape pp-sticky--c${{ vessel: 3, reagent: 0, tool: 2, rack: 4 }[it.kind] ?? 0}`;
   menu.innerHTML = `<p class="cl-menu__name">${esc(nameOf(it))}</p>${lines.map((l) => `<p class="cl-menu__holds">${l}</p>`).join("")}${slider}<div class="cl-menu__row">${acts.join("")}</div>`;
   menu.hidden = false;
