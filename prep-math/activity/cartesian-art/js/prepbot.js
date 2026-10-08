@@ -25,8 +25,9 @@
 
 import {
   state, subscribe, setCursor, addPoint, toggleClosed, startNewShape,
-  setStroke, setFill, setView, setShapes, activeShape,
+  setStroke, setFill, setView, setShapes, activeShape, deleteLastPoint, transformPoints,
 } from "./state.js";
+import { BUILTIN_PUZZLES } from "./builtin-puzzles.js";
 import { normalizeShapes } from "./thumb.js";
 import { openPickerForPrepbot } from "./library.js";
 import { PrepbotTeacher } from "/prep-math/mental-math/shared/prepbot-teacher.js";
@@ -260,6 +261,61 @@ function stop() {
   if ($widget) $widget.hidden = true;
 }
 
+/* ── the tutor has the run of the studio ──────────────────────────────────
+   teacher.control(): the chat's replies can plot points, start and close
+   shapes, colour them, move them (reflect, translate, rotate, enlarge), draw a
+   whole picture from the library, and clear the page. Everything goes through
+   state.js, the same as a learner's own keys. */
+const COLOURS = {
+  red: "#e5484d", orange: "#f76b15", yellow: "#f5d90a", green: "#30a46c", blue: "#3b82f6", purple: "#8e4ec6", pink: "#e93d82",
+  brown: "#8b5a2b", black: "#14130f", white: "#ffffff", grey: "#8b8d98", gray: "#8b8d98", gold: "#d4a017", sky: "#7dd3fc", none: null, "no": null,
+};
+const colourOf = (a) => { const s = String(a).trim().toLowerCase(); if (/^#[0-9a-f]{3,8}$/.test(s)) return s; const k = Object.keys(COLOURS).find((n) => s.includes(n)); return k === undefined ? undefined : COLOURS[k]; };
+const pairs = (a) => [...String(a).matchAll(/(-?\d+)\s*,\s*(-?\d+)/g)].map((m) => ({ x: Number(m[1]), y: Number(m[2]) }));
+/** Make sure a point can be seen: widen the square window if it falls outside. */
+function reach(pts) {
+  const g = state.grid;
+  if (pts.every((p) => p.x >= g.xMin && p.x <= g.xMax && p.y >= g.yMin && p.y <= g.yMax)) return;
+  const all = [...pts, ...state.shapes.flatMap((s) => s.points)];
+  fitViewTo([{ points: all }]);
+}
+function describeStudio() {
+  const shapes = state.shapes.filter((s) => s.points.length);
+  const g = state.grid;
+  return `The student is in Cartesian Art, a studio for drawing pictures by plotting points on the coordinate plane. A cursor is steered about the plane and a point is marked where it stands; marked points join up in order to make a shape.
+NOW: the plane shows x from ${g.xMin} to ${g.xMax} and y from ${g.yMin} to ${g.yMax}. The cursor is at (${state.cursor.x}, ${state.cursor.y}).
+${shapes.length ? shapes.slice(0, 8).map((s, i) => `Shape ${i + 1}${s === activeShape() ? " (being drawn)" : ""}: ${s.points.slice(0, 24).map((p) => `(${p.x}, ${p.y})`).join(" ")}${s.points.length > 24 ? " ..." : ""}${s.closed ? ", closed" : ", open"}${s.fillColor ? `, filled ${s.fillColor}` : ""}`).join("\n") : "Nothing has been plotted yet."}
+Pictures in the library: ${BUILTIN_PUZZLES.map((b) => b.title).join(", ")}.`;
+}
+function takeControl() {
+  const stroll = async (pts, mark) => {
+    reach(pts);
+    for (const p of pts) { setCursor(p.x, p.y); await delay(260); if (mark) { addPoint(); await delay(140); } }
+  };
+  teacher.control({
+    title: "the Cartesian Art studio",
+    context: describeStudio,
+    intro: "You are the tutor in this studio and you can draw on the plane yourself. Coordinates are whole numbers, written x,y. Plot a few points at a time and say each one, so the student reads them with you.",
+    commands: {
+      plot: { use: "plot <x,y> <x,y> ...", does: "walks the cursor to each point in turn and marks it, joining them into the shape being drawn", direct: true, run: async (a) => { const pts = pairs(a); if (!pts.length) return "Which points?"; await stroll(pts, true); return ""; } },
+      move: { use: "move <x,y>", does: "moves the cursor there without marking", direct: true, run: async (a) => { const pts = pairs(a); if (!pts.length) return "Move where?"; await stroll(pts.slice(0, 1), false); return ""; } },
+      "new shape": { use: "new shape", does: "starts a fresh shape; the last one is kept", direct: true, run: () => { if (activeShape().points.length) startNewShape(); return ""; } },
+      close: { use: "close", does: "joins the last point back to the first", direct: true, run: () => { const s = activeShape(); if (s.points.length < 3) return "A shape needs three points before it can close."; if (!s.closed) toggleClosed(); return ""; } },
+      undo: { use: "undo", does: "takes away the last point marked", direct: true, run: () => { deleteLastPoint(); return ""; } },
+      outline: { use: "outline <colour>", does: "colours the line of the shape being drawn", run: (a) => { const col = colourOf(a); if (col === undefined) return `I do not have the colour "${a}".`; setStroke(col); return ""; } },
+      fill: { use: "fill <colour | none>", does: "fills the shape being drawn (red, orange, yellow, green, blue, purple, pink, brown, black, white, grey, gold, sky, or a #hex)", run: (a) => { const col = colourOf(a); if (col === undefined) return `I do not have the colour "${a}".`; setFill(col); return ""; } },
+      reflect: { use: "reflect <x-axis | y-axis>", does: "reflects every shape in that axis", direct: true, run: (a) => { if (/y/i.test(a)) transformPoints((x, y) => ({ x: -x, y })); else if (/x/i.test(a)) transformPoints((x, y) => ({ x, y: -y })); else return "In which axis?"; return ""; } },
+      translate: { use: "translate <dx,dy>", does: "slides every shape dx right and dy up", direct: true, run: (a) => { const [d] = pairs(a); if (!d) return "By how much?"; transformPoints((x, y) => ({ x: x + d.x, y: y + d.y })); return ""; } },
+      rotate: { use: "rotate <90 | 180 | 270>", does: "turns every shape anticlockwise about the origin", direct: true, run: (a) => { const q = ((Math.round(Number((/-?\d+/.exec(a) || [NaN])[0]) / 90) % 4) + 4) % 4; if (Number.isNaN(q)) return "By what angle?"; const f = [(x, y) => ({ x, y }), (x, y) => ({ x: -y, y: x }), (x, y) => ({ x: -x, y: -y }), (x, y) => ({ x: y, y: -x })][q]; transformPoints(f); return ""; } },
+      enlarge: { use: "enlarge <scale factor>", does: "enlarges every shape from the origin by a whole-number scale factor", direct: true, run: (a) => { const k = Number((/-?\d+/.exec(a) || [NaN])[0]); if (!k) return "By what scale factor?"; transformPoints((x, y) => ({ x: x * k, y: y * k })); return ""; } },
+      window: { use: "window <n>", does: "shows the plane from -n to n on both axes", run: (a) => { const n = Math.abs(Number((/\d+/.exec(a) || [0])[0])); if (!n) return "How far out?"; setView(-n, n, -n, n, true); return ""; } },
+      clear: { use: "clear", does: "wipes the whole page", direct: true, run: () => { token++; setShapes([]); setCursor(0, 0); return ""; } },
+      draw: { use: "draw <picture>", does: "draws a whole picture from the library, point by point (names are in the context)", run: (a) => { const want = a.toLowerCase().trim(); const pic = BUILTIN_PUZZLES.find((b) => b.title.toLowerCase() === want) || BUILTIN_PUZZLES.find((b) => b.title.toLowerCase().includes(want) || want.includes(b.title.toLowerCase())); if (!pic) return `There is no picture called "${a}".`; const shapes = normalizeShapes(pic); if (!shapes.length) return `"${pic.title}" has nothing to draw.`; running = true; setShapes([]); runDrawing({ title: pic.title, shapes }); return ""; } },
+      stop: { use: "stop", does: "stops a drawing that is under way", direct: true, run: () => { token++; teacher.stop(); return ""; } },
+    },
+  });
+}
+
 /* ── settings modal (gear FAB): mode + movement type ──────────────────── */
 function initSettings(scope) {
   const btn = scope.querySelector("#ca-prepbot-settings-btn");
@@ -340,6 +396,7 @@ export function initPrepbot(scope = document) {
     .catch(() => {});
 
   initSettings(scope);
+  takeControl();
 
   fabBtn.addEventListener("click", () => {
     const on = !fabBtn.classList.contains("is-active");

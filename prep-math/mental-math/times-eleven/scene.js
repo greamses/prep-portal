@@ -180,6 +180,7 @@ let firstPassDone = false;
 // micro-steps share one panel line (the ghost-in / plus / etc. steps carry no
 // equation of their own), so this maps step index → panel line index.
 let hlNodeIndex = [0];
+let currentScene = null;   // the number on the screen, worked out: what the tutor is asked about
 // Ghosts are deliberately see-through copies (the neighbour digits being
 // added), so they read as helpers, not real tiles.
 const GHOST_OPACITY = 0.5;
@@ -647,6 +648,7 @@ function buildStageDOM(s) {
 
 async function loadScene(n) {
   const s = makeScene(n);
+  currentScene = s;
   if (scrubber) scrubber.destroy();
   teacher.stop();
   stopGuidedPlay();
@@ -800,6 +802,34 @@ document.addEventListener("keydown", (e) => {
     if (autoPlaying) stopGuidedPlay();
     else guidedPlay();
   }
+});
+
+// ── the tutor has the run of the lesson ─────────────────────────────────
+// teacher.control(): the chat's replies can put any 2- to 4-digit number on
+// the screen, step the working forwards and back, play it through, and open
+// the practice round. They work the same scrubber the buttons do.
+function describeLesson() {
+  const c = currentScene;
+  if (!c) return "The student is on the x 11 mental-maths trick.";
+  const sums = c.digits.slice(0, -1).map((d, i) => `${d} + ${c.digits[i + 1]} = ${c.raw[i + 1]}`).join(", ");
+  return `The student is on the x 11 mental-maths trick: ${CASE_INFO[activeCase].title}. ${CASE_INFO[activeCase].sub}
+ON THE SCREEN: ${c.n} x 11. Digits ${c.digits.join(", ")}. Keep the first digit (${c.digits[0]}) and the last (${c.digits[c.k - 1]}); between them go the sums of neighbours: ${sums}.${c.hasCarry ? " A sum of 10 or more keeps its ones digit and carries 1 to the left." : " No sum reaches 10, so nothing is carried."} Answer: ${c.answer}.
+The working is shown in ${scrubber ? scrubber.total : 4} steps, from splitting the digits to the answer; it is on step ${scrubber ? scrubber.index : 0}${sceneRevealed ? "" : ", and the curtain has not opened yet"}. Example numbers on this page: ${CASE_INFO[activeCase].examples.join(", ")}.`;
+}
+teacher.control({
+  title: "the x 11 trick",
+  context: describeLesson,
+  intro: "You are the tutor on this lesson and you can run the screen yourself. Show a number, step through it, and ask the student to predict the next digit before you step.",
+  commands: {
+    show: { use: "show <a number from 10 to 9999>", does: "puts that number x 11 on the screen, ready to step through", run: async (a) => { const n = Number((/\d+/.exec(a) || [NaN])[0]); if (!(n >= 10 && n <= 9999)) return "Give me a number from 10 to 9999."; setActiveExample(n); await loadScene(n); return ""; } },
+    next: { use: "next", does: "does the next step of the working and says it", direct: true, run: async () => { if (!scrubber) return "Nothing is loaded yet."; stopGuidedPlay(); await revealIfNeeded(); await scrubber.next(); await teacher.narrationDone; return ""; } },
+    back: { use: "back", does: "goes back one step", direct: true, run: async () => { if (!scrubber) return "Nothing is loaded yet."; stopGuidedPlay(); await revealIfNeeded(); await scrubber.prev(); return ""; } },
+    step: { use: "step <number>", does: "jumps straight to that step (0 is the start, the last step is the answer; the context says how many there are)", run: async (a) => { const i = Number((/\d+/.exec(a) || [NaN])[0]); if (!scrubber || !(i >= 0 && i <= scrubber.total)) return "Which step?"; stopGuidedPlay(); await revealIfNeeded(); scrubber.seek(i); return ""; } },
+    play: { use: "play", does: "plays the whole working through, saying each step", direct: true, run: () => { if (!scrubber) return "Nothing is loaded yet."; if (!autoPlaying) { firstPassDone = true; guidedPlay(); } return ""; } },
+    pause: { use: "pause", does: "stops the playing after the step it is on", direct: true, run: () => { stopGuidedPlay(); return ""; } },
+    restart: { use: "restart", does: "goes back to the start of this number", direct: true, run: async () => { if (!scrubber) return "Nothing is loaded yet."; stopGuidedPlay(); await revealIfNeeded(); scrubber.seek(0); return ""; } },
+    practice: { use: "practice", does: "opens the practice round, where the student answers on their own", direct: true, run: () => { stopGuidedPlay(); document.getElementById("mmPracticeBtn")?.click(); return ""; } },
+  },
 });
 
 async function boot() {

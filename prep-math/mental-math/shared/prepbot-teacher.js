@@ -515,6 +515,53 @@ export class PrepbotTeacher {
     window.PrepBot.open({ compact: true, anchor: this.avatarWrap || this.root });
   }
 
+  /** Give this tutor the run of its page: what it knows, and what it can do.
+   *    title     how the chat names the page ("the Polygon Angles explorer")
+   *    context   () => text: what is on the page right now
+   *    intro     a sentence or two for the AI about teaching here
+   *    commands  { verb: { use, does, run(args), direct? } }
+   *              `use` is how the command is written ("sides <3-12>"), `does`
+   *              what it does. `run` carries it out and returns nothing, or a
+   *              sentence saying why it could not. `direct: true` lets a
+   *              learner's own plain order ("sides 8") run without the AI.
+   *  The chat (utils/prepbot) puts the commands in the AI's instructions, takes
+   *  the [DO: a; b] line out of its reply and hands it to `act` here. */
+  control({ title, context, intro = "", commands = {} } = {}) {
+    const verbs = Object.keys(commands).sort((a, b) => b.length - a.length);
+    const verbOf = (text) => { const low = text.toLowerCase(); return verbs.find((v) => low === v || low.startsWith(`${v} `)); };
+    const page = (window.__prepbotPage = window.__prepbotPage || {});
+    if (title) page.title = title;
+    if (context) page.context = context;
+    Object.defineProperty(page, "actions", {
+      configurable: true,
+      get: () => `${intro} Commands: ${Object.values(commands).map((c) => `${c.use} (${c.does})`).join(" | ")}.`.trim(),
+    });
+    page.act = async (list) => {
+      const notes = [];
+      for (const raw of [].concat(list).slice(0, 16)) {
+        const text = String(raw).trim();
+        const verb = verbOf(text);
+        if (!verb) { notes.push(`I do not know how to "${text}".`); continue; }
+        try { const note = await commands[verb].run(text.slice(verb.length).trim()); if (note) notes.push(note); }
+        catch { notes.push(`I could not ${text}.`); }
+      }
+      return notes.join(" ");
+    };
+    const mine = page.handle;
+    page.handle = async (text) => {
+      if (mine) { const own = await mine(text); if (own) return own; }
+      if (/\?\s*$/.test(text)) return null;
+      const plain = String(text).replace(/^\s*(?:please\s+|prepbot,?\s+|can you\s+|could you\s+|now\s+)*/i, "").replace(/[.!]+\s*$/, "").trim();
+      const verb = verbOf(plain);
+      if (!verb || !commands[verb].direct) return null;
+      let note = "no";
+      try { note = await commands[verb].run(plain.slice(verb.length).trim()); } catch { /* the AI's, then */ }
+      return note ? null : "Done. Tell me what you notice.";
+    };
+    if (!page.say) page.say = (text) => this.sayReply(text);
+    return page;
+  }
+
   /** M: open the small window and listen. What is heard is sent as the question. */
   async listen() {
     await this.openChat();

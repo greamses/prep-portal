@@ -621,11 +621,38 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition();
     recognition.lang = "en-NG";
-    recognition.onstart = () => micBtn.classList.add("mic-active");
-    recognition.onend = () => micBtn.classList.remove("mic-active");
+    // Listen to the WHOLE instruction: the words appear in the box as they are
+    // heard, and it is sent once, when the speaker has been quiet for a moment
+    // (or presses the microphone again) — never on the first word.
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    const QUIET_MS = 1700;
+    const ANDROID = /Android/i.test(navigator.userAgent);
+    let listening = false, heard = "", quietTimer = null;
+    const stopListening = () => { clearTimeout(quietTimer); try { recognition.stop(); } catch (_) { /* not started */ } };
+    recognition.onstart = () => { listening = true; heard = ""; micBtn.classList.add("mic-active"); };
     recognition.onresult = (e) => {
-      input.value = e.results[0][0].transcript;
-      sendMessage();
+      // Android's Chrome repeats everything so far in each result; elsewhere the results are pieces to join.
+      const parts = Array.from(e.results).map((r) => r[0].transcript);
+      heard = (ANDROID ? parts[parts.length - 1] : parts.join(" ")).replace(/ +/g, " ").trim();
+      input.value = heard;
+      updateWordCount();
+      clearTimeout(quietTimer);
+      quietTimer = setTimeout(stopListening, QUIET_MS);
+    };
+    recognition.onerror = () => { clearTimeout(quietTimer); };
+    recognition.onend = () => {
+      clearTimeout(quietTimer);
+      micBtn.classList.remove("mic-active");
+      const said = listening && heard;
+      listening = false;
+      heard = "";
+      if (said) { input.value = said; sendMessage(); }
+    };
+    // the microphone key: start listening, or, while listening, finish and send
+    recognition.toggle = () => {
+      if (listening) { stopListening(); return; }
+      try { recognition.start(); } catch (_) { /* already starting */ }
     };
   }
 
@@ -2073,7 +2100,7 @@ If (and only if) you're pointing the student to one specific page from the site 
 
   sendBtn.onclick = () => sendMessage();
   micBtn.onclick = () => {
-    if (recognition && isKeySet()) recognition.start();
+    if (recognition && isKeySet()) recognition.toggle();
   };
   input.onkeydown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -2269,7 +2296,7 @@ If (and only if) you're pointing the student to one specific page from the site 
     listen: () => {
       const start = Date.now();
       (function wait() {
-        if (micBtn && !micBtn.disabled && recognition) { try { micBtn.click(); } catch (_) { /* already listening */ } return; }
+        if (micBtn && !micBtn.disabled && recognition) { if (!micBtn.classList.contains("mic-active")) micBtn.click(); return; }
         if (Date.now() - start < 3000) setTimeout(wait, 80);
       })();
     },
