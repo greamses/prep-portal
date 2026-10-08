@@ -193,9 +193,12 @@ const hostOf = (v) => (v.rack ? byId(v.rack[0]) : null);
 /** An upturned jar standing in a trough with water in it: gas can be collected over the water. */
 const overWater = (v) => { const h = v.flip && hostOf(v); return Boolean(h && h.key === "trough" && h.t.vol >= h.t.cap * 0.12); };
 
+let ticking = false;
 function save() {
   readouts();
   drawLinks();
+  // a piece may have been put in place, or taken away: the guide to a setting-up practical follows
+  if (!ticking && typeof noteFlags === "function" && state.exp) { ticking = true; try { noteFlags([]); } catch { /* the guide is not up yet */ } finally { ticking = false; } }
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* private mode */ }
 }
 
@@ -2321,26 +2324,64 @@ const ion = (t) => t.replace(/([A-Za-z])(\d)/g, (_, a, d) => a + (SUB[d] || d)).
 const expNow = () => EXPERIMENTS.find((e) => e.id === state.exp) || null;
 
 /** Something has been done: tick whatever steps of the chosen practical it completes. */
-function noteFlags(flags) {
+// What is standing on what, for the setting-up practicals (waec.js steps with `check`).
+const hostKeyOf = (v) => { const h = v.rack && hostOf(v); return h ? h.key : ""; };
+const Q = {
+  count: (kind, key) => state.items.filter((it) => it.kind === kind && it.key.startsWith(key)).length,
+  /** a vessel of this kind held in a stand's clamp */
+  clamped: (key) => vessels().some((v) => v.key.startsWith(key) && hostKeyOf(v) === "stand"),
+  syringeClamped: () => tools("syringe").some((s) => { const h = s.rack && byId(s.rack[0]); return h && h.key === "stand"; }),
+  anyOn: (hostKey) => vessels().some((v) => hostKeyOf(v) === hostKey),
+  fitted: (toolKey, hostKey) => tools(toolKey).some((t) => { const h = t.on && byId(t.on); return h && (!hostKey || h.key.startsWith(hostKey)); }),
+  paperIn: () => tools("paper").some((p) => { const f = p.on && byId(p.on); return Boolean(f && f.on); }),
+  holds: (key) => vessels().some((v) => v.key.startsWith(key) && v.t.vol + (v.t.oil || 0) > 0),
+  /** something stands under the tip of a burette or a separating funnel */
+  under: (topKey) => vessels().some((v) => v.key === topKey && hostKeyOf(v) === "stand" && below(v.x, v.y, v, 90)),
+  lit: () => heaters().some((h) => lit(h)),
+  litUnder: (key) => vessels().some((v) => v.key.startsWith(key) && heaters().some((h) => lit(h) && Math.abs(h.x - v.x) < 48 && h.y > v.y - 20 && h.y - v.y < 280)),
+  litUnderHost: (hostKey) => state.items.some((s) => s.kind === "rack" && s.key === hostKey && heaters().some((h) => lit(h) && Math.abs(h.x - s.x) < 40 && Math.abs(h.y - s.y) < 40)),
+  troughReady: () => vessels().some((v) => v.key === "trough" && v.t.vol >= v.t.cap * 0.5),
+  jarOverWater: () => vessels().some((v) => v.flip && overWater(v)),
+  upturned: (key) => vessels().some((v) => v.key.startsWith(key) && v.flip && !overWater(v)),
+  stoppered: (key) => vessels().some((v) => v.key.startsWith(key) && fittedTo(v, "bung1")),
+  tubeIn: (key) => vessels().some((v) => v.key.startsWith(key) && tubeOf(v)),
+  /** the delivery tube of some vessel has been led: "water" (under a jar over water), "up", "down", "syringe" */
+  leads: (how) => tools("tubing").some((t) => {
+    const c = t.to && byId(t.to);
+    if (!c || !vesselOfTube(t)) return false;
+    return how === "syringe" ? c.key === "syringe" : how === "water" ? Boolean(overWater(c)) : how === "up" ? Boolean(c.flip) && !overWater(c) : !c.flip && c.key !== "syringe";
+  }),
+  rods: () => vessels().some((v) => rodsIn(v).length === 2),
+  wired: () => tools("power").some((p) => cellFor(p)),
+  /** a vessel stands under the lower end of a fitted condenser */
+  receiver: () => tools("condenser").some((c) => { const f = c.on && byId(c.on); return Boolean(f && below(c.x + 229, c.y + 114, f)); }),
+};
+/**
+ * Something has been done, or something has been moved: tick whatever steps of the chosen
+ * practical are now done. (A setting-up step is ticked only while the piece is in place.)
+ */
+function noteFlags(flags = []) {
   const exp = expNow();
-  if (!exp || !flags.length) return;
+  if (!exp) return;
   const seen = new Set(state.seen);
-  const before = exp.steps.map((st) => stepDone(st, seen));
-  flags.forEach((f) => seen.add(f));
-  state.seen = [...seen];
-  const after = exp.steps.map((st) => stepDone(st, seen));
-  const fresh = after.map((d, i) => d && !before[i]);
-  if (!fresh.some(Boolean)) return;
+  if (flags.length) { flags.forEach((f) => seen.add(f)); state.seen = [...seen]; }
+  const was = state.ticks && state.ticks.id === exp.id ? state.ticks.done : exp.steps.map(() => false);
+  const after = exp.steps.map((st) => stepDone(st, seen, Q));
+  if (after.every((d, i) => d === Boolean(was[i]))) return;
+  const fresh = after.map((d, i) => d && !was[i]);
+  state.ticks = { id: exp.id, done: after };
   renderGuide(fresh);
+  if (!fresh.some(Boolean)) return;
   if (after.every(Boolean)) {
     if (!state.done.includes(exp.id)) state.done.push(exp.id);
     renderExperiments();
-    say(`Practical complete: ${exp.title}.`);
+    say(`${exp.group === "setup" ? "Set up correctly" : "Practical complete"}: ${exp.title.replace(/^Set up: /, "")}.`);
   } else say(`Step ${after.filter(Boolean).length} of ${exp.steps.length} done.`);
 }
 function choose(id) {
   state.exp = id;
   state.seen = [];
+  state.ticks = null;
   renderExperiments();
   renderGuide();
   save();
@@ -2370,7 +2411,7 @@ function renderGuide(fresh = []) {
   }
   const seen = new Set(state.seen);
   const steps = exp.steps.map((st, i) => {
-    const done = stepDone(st, seen);
+    const done = stepDone(st, seen, Q);
     return `<li class="cl-task${done ? " is-done" : ""}${fresh[i] ? " is-fresh" : ""}"><span class="cl-task__box">${done ? UI.check(16) : ""}</span><span>${chemHtml(st.text)}</span></li>`;
   }).join("");
   const answer = exp.unknown ? `<div class="cl-answer">
@@ -2379,7 +2420,7 @@ function renderGuide(fresh = []) {
       <button type="button" class="cl-ico cl-ico--paper" data-guide="check" data-tip="Check my answer" aria-label="Check my answer">${UI.check(18)}</button>
       <button type="button" class="cl-ico cl-ico--paper" data-guide="fresh" data-tip="Give me a new sample X" aria-label="Give me a new sample X">${UI.refresh(18)}</button>
     </div>` : "";
-  const all = exp.steps.every((st) => stepDone(st, seen));
+  const all = exp.steps.every((st) => stepDone(st, seen, Q));
   box.innerHTML = `<li class="cl-guide">
     <div class="cl-guide__head"><h3>${esc(exp.title)}</h3><button type="button" class="cl-ico cl-ico--paper" data-guide="again" data-tip="Start this practical again" aria-label="Start this practical again">${UI.again(18)}</button></div>
     <p class="cl-guide__task">${chemHtml(exp.task)}</p>
@@ -2498,7 +2539,7 @@ const actor = {
     const exp = expNow();
     if (!exp) return null;
     const seen = new Set(state.seen);
-    const did = exp.steps.map((st) => stepDone(st, seen));
+    const did = exp.steps.map((st) => stepDone(st, seen, Q));
     const i = did.indexOf(false, did.lastIndexOf(true) + 1);
     if (i < 0) return { title: exp.title, done: true };
     return { title: exp.title, text: exp.steps[i].text, n: i + 1, of: exp.steps.length };

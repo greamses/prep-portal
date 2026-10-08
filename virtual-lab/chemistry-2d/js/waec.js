@@ -19,11 +19,17 @@
              own `test(seen)` says so.
      record  what a candidate would write down or work out
 
+   A SETTING-UP practical is about the apparatus, not the chemistry: its steps
+   have `check(q)` in place of `need`. `q` is the bench itself, asked what is
+   standing on what (main.js `Q`), so a step is ticked while the piece is
+   really in place and unticked if it is taken away again.
+
    The GUIDE on the bench is always the guide to the experiment that has been
    chosen: its task, what it needs, and these steps ticking off as they are done.
    ========================================================================== */
 
 export const GROUPS = [
+  { id: "setup", label: "Setting up apparatus" },
   { id: "vol", label: "Volumetric analysis" },
   { id: "qual", label: "Qualitative analysis" },
   { id: "gas", label: "Preparing and testing gases" },
@@ -44,6 +50,118 @@ export const ANIONS = ["SO4^2-", "Cl^-", "NO3^-", "CO3^2-"];
 const hot = (seen) => [...seen].some((f) => f.startsWith("temp:") && Number(f.slice(5)) >= 30);
 
 export const EXPERIMENTS = [
+  // ── setting up apparatus: from one burner to a whole distillation ──
+  {
+    id: "setup-heat", group: "setup", title: "Set up: heating on a tripod and gauze",
+    task: "Set up the apparatus for heating a liquid in an evaporating dish.",
+    needs: "tripod and gauze, evaporating dish (or a beaker), Bunsen burner",
+    steps: [
+      { text: "Stand a tripod and gauze on the bench.", check: (q) => q.count("rack", "tripod") > 0 },
+      { text: "Let an evaporating dish or a beaker go on the gauze: it stands there.", check: (q) => q.anyOn("tripod") },
+      { text: "Take a Bunsen burner and press its + key to light it.", check: (q) => q.lit() },
+      { text: "Put the lit burner on the bench under the gauze, in the middle.", check: (q) => q.litUnderHost("tripod") },
+    ],
+    record: "The gauze spreads the heat so that the glass or porcelain is not heated at one point and cracked. The burner stands directly under the middle of the gauze. A dish is never filled more than half full: a boiling liquid spits.",
+  },
+  {
+    id: "setup-filter", group: "setup", title: "Set up: filtration",
+    task: "Set up the apparatus for filtering a mixture of a solid and a liquid.",
+    needs: "conical flask, filter funnel, filter paper, a beaker to pour from",
+    steps: [
+      { text: "Stand a conical flask on the bench: it will collect the filtrate.", check: (q) => q.count("vessel", "flask") > 0 },
+      { text: "Let a filter funnel go at the mouth of the flask.", check: (q) => q.fitted("funnel", "flask") },
+      { text: "Let a filter paper go at the funnel. It is folded in half, in half again, and opened into a cone.", check: (q) => q.paperIn() },
+      { text: "Have a beaker beside it, ready to pour the mixture from.", check: (q) => q.count("vessel", "beaker") > 0 },
+    ],
+    record: "The paper is folded in quarters and opened so that there are three thicknesses on one side and one on the other. It must sit below the rim of the funnel, and the liquid is never poured above the top of the paper, or it runs down outside it unfiltered.",
+  },
+  {
+    id: "setup-titration", group: "setup", title: "Set up: a titration",
+    task: "Set up the apparatus for an acid-alkali titration, ready for the first reading.",
+    needs: "retort stand and clamp, burette, conical flask, pipette, an acid, an alkali",
+    steps: [
+      { text: "Stand a retort stand on the bench and slide its clamp well up the rod (drag the yellow boss).", check: (q) => q.count("rack", "stand") > 0 },
+      { text: "Let a burette go at the clamp: it hangs upright.", check: (q) => q.clamped("burette") },
+      { text: "Fill the burette: pull the stopper out of the acid and carry the bottle to the top of the burette.", check: (q) => q.holds("burette") },
+      { text: "Stand a conical flask on the bench directly under the tip of the burette.", check: (q) => q.under("burette") },
+      { text: "Have a pipette on the bench, for measuring the alkali into the flask.", check: (q) => q.count("tool", "pipette") > 0 },
+    ],
+    record: "The burette is clamped upright so that its scale can be read at eye level, and its tip is just inside the neck of the flask so that nothing is lost. Before the first reading the tap is run for a moment to fill the tip and drive out the air bubble.",
+  },
+  {
+    id: "setup-sepfunnel", group: "setup", title: "Set up: a separating funnel",
+    task: "Set up the apparatus for separating two liquids that do not mix.",
+    needs: "retort stand and clamp, separating funnel, beaker",
+    steps: [
+      { text: "Stand a retort stand on the bench.", check: (q) => q.count("rack", "stand") > 0 },
+      { text: "Let a separating funnel go at the clamp: it cannot stand up on its own.", check: (q) => q.clamped("sepfunnel") },
+      { text: "Stand a beaker on the bench directly under the tap.", check: (q) => q.under("sepfunnel") },
+    ],
+    record: "The stopper is taken out of the top before the tap is opened, or the liquid will not run. The lower layer is run into one beaker and the tap closed at the boundary; the upper layer is then run into a second beaker.",
+  },
+  {
+    id: "setup-electrolysis", group: "setup", title: "Set up: an electrolysis cell",
+    task: "Set up a cell for the electrolysis of a solution.",
+    needs: "beaker (250 mL), two carbon electrodes, power pack, a salt solution",
+    steps: [
+      { text: "Pour a salt solution into a 250 mL beaker: this is the electrolyte.", check: (q) => q.holds("beaker") },
+      { text: "Let a carbon electrode go at the mouth of the beaker. It hangs in the solution.", check: (q) => q.fitted("electrode", "beaker") },
+      { text: "Fit a second electrode. The two must not touch.", check: (q) => q.rods() },
+      { text: "Put a power pack on the bench. It wires itself to the two electrodes.", check: (q) => q.wired() },
+    ],
+    record: "The electrode joined to the negative terminal is the cathode and the one joined to the positive terminal is the anode. The electrodes must dip into the electrolyte and must not touch, or the current takes the short way and nothing is electrolysed.",
+  },
+  {
+    id: "setup-water", group: "setup", title: "Set up: collecting a gas over water",
+    task: "Set up the apparatus for preparing a gas and collecting it over water.",
+    needs: "conical flask, one-hole stopper, delivery tube, trough, gas jar, distilled water",
+    steps: [
+      { text: "Stand a trough on the bench and fill it at least half full with distilled water.", check: (q) => q.troughReady() },
+      { text: "Let an empty gas jar go in the trough. It turns over and stands full of water.", check: (q) => q.jarOverWater() },
+      { text: "Stand a conical flask beside the trough and let a one-hole stopper go at its mouth.", check: (q) => q.stoppered("flask") },
+      { text: "Push a delivery tube into the hole of the stopper.", check: (q) => q.tubeIn("flask") },
+      { text: "Drag the end of the rubber tube to the gas jar, so that it leads under the jar.", check: (q) => q.leads("water") },
+    ],
+    record: "The jar is filled with water and turned over so that it holds no air: every bubble that rises into it is the gas. This works for gases that do not dissolve much in water, such as hydrogen and oxygen, and not for ammonia. The reagents go into the flask last, and the stopper straight back in.",
+  },
+  {
+    id: "setup-upward", group: "setup", title: "Set up: upward delivery of a gas",
+    task: "Set up the apparatus for collecting a gas that is less dense than air and soluble in water.",
+    needs: "retort stand and clamp, two boiling tubes, one-hole stopper, delivery tube",
+    steps: [
+      { text: "Stand a retort stand on the bench and let a boiling tube go at its clamp.", check: (q) => q.clamped("boil") },
+      { text: "Let a one-hole stopper go at the mouth of the clamped tube, and push a delivery tube into it.", check: (q) => q.tubeIn("boil") },
+      { text: "Take a second boiling tube and turn it upside down (it is in the tube's own note).", check: (q) => q.upturned("boil") },
+      { text: "Drag the end of the rubber tube up into the upturned tube.", check: (q) => q.leads("up") },
+    ],
+    record: "A gas less dense than air, such as ammonia or hydrogen, rises: it collects at the top of an upturned vessel and pushes the air out at the bottom. Ammonia cannot be collected over water, because it dissolves in it.",
+  },
+  {
+    id: "setup-syringe", group: "setup", title: "Set up: measuring a gas with a syringe",
+    task: "Set up the apparatus for measuring the volume of gas given off in a reaction.",
+    needs: "retort stand and clamp, gas syringe, conical flask, one-hole stopper, delivery tube",
+    steps: [
+      { text: "Stand a retort stand on the bench.", check: (q) => q.count("rack", "stand") > 0 },
+      { text: "Let a gas syringe go at the clamp, so that it is held level.", check: (q) => q.syringeClamped() },
+      { text: "Stand a conical flask on the bench and let a one-hole stopper go at its mouth.", check: (q) => q.stoppered("flask") },
+      { text: "Push a delivery tube into the hole of the stopper.", check: (q) => q.tubeIn("flask") },
+      { text: "Drag the end of the rubber tube to the nozzle of the syringe.", check: (q) => q.leads("syringe") },
+    ],
+    record: "The syringe is clamped level so that its plunger moves freely and the weight of the plunger does not squeeze or stretch the gas. Every joint must be airtight. The plunger is pushed right in before the reaction is started, so that the reading starts at nought.",
+  },
+  {
+    id: "setup-distil", group: "setup", title: "Set up: a distillation",
+    task: "Set up the apparatus for simple distillation of a solution.",
+    needs: "retort stand and clamp, distilling flask, Liebig condenser, beaker, Bunsen burner",
+    steps: [
+      { text: "Stand a retort stand on the bench and slide its clamp up the rod.", check: (q) => q.count("rack", "stand") > 0 },
+      { text: "Let a distilling flask go at the clamp. It is held by its neck, clear of the bench.", check: (q) => q.clamped("distflask") },
+      { text: "Push a Liebig condenser onto the side arm of the flask. It slopes down, away from the flask.", check: (q) => q.fitted("condenser", "distflask") },
+      { text: "Stand a beaker on the bench under the lower end of the condenser: the receiver.", check: (q) => q.receiver() },
+      { text: "Take a Bunsen burner, light it, and put it on the bench under the flask.", check: (q) => q.litUnder("distflask") },
+    ],
+    record: "Cooling water goes IN at the lower end of the condenser jacket and OUT at the upper end, so that the jacket stays full and the coldest water meets the last of the vapour. The condenser slopes downward so that the distillate runs into the receiver. The bulb of a thermometer, when one is used, is level with the side arm, where it reads the temperature of the vapour that is passing over. The flask is never heated dry.",
+  },
   // ── volumetric analysis ──
   {
     id: "titr-strong", group: "vol", title: "Titration: acid against alkali",
@@ -324,7 +442,8 @@ export const EXPERIMENTS = [
 ];
 
 /** Is this step done, given the flags seen so far? */
-export function stepDone(step, seen) {
+export function stepDone(step, seen, q) {
+  if (step.check) { try { return Boolean(q && step.check(q)); } catch { return false; } }
   if (step.test) return step.test(seen);
   if (step.any) return step.any.some((set) => set.every((f) => seen.has(f)));
   return step.need.every((f) => seen.has(f));
