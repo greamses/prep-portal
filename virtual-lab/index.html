@@ -54,7 +54,7 @@
 
       <div class="hub-stats">
         <span class="hub-stat" style="--tile:var(--accent-secondary)">
-          <strong>4</strong> labs
+          <strong>2</strong> labs
         </span>
         <span class="hub-stat" style="--tile:var(--accent-success)">
           <strong>Free</strong> access
@@ -76,7 +76,7 @@
       <span class="lab-note lab-note--available">Available now!</span>
       <div class="lab-card__paper">
         <!-- Big scene illustration -->
-        <div class="lab-card__scene" data-scene="chemistry"></div>
+        <div class="lab-card__scene lab-card__scene--shot"><img src="chemistry/thumb.jpg" width="1280" height="640" alt="Inside the 3D chemistry lab: benches, stools, a blackboard and glassware" loading="lazy" /></div>
         <div class="lab-card__content">
           <h2 class="lab-card__title">Chemistry Lab</h2>
           <p class="lab-card__desc">Mix solutions, observe reactions and titrations with 3D glassware on a real bench.</p>
@@ -92,7 +92,7 @@
     <a href="chemistry-2d/index.html" class="lab-card lab-card--bench">
       <span class="lab-note lab-note--available">New!</span>
       <div class="lab-card__paper">
-        <div class="lab-card__scene" data-scene="chemistry2d"></div>
+        <div class="lab-card__scene lab-card__scene--shot"><img src="chemistry-2d/thumb.jpg" width="1280" height="640" alt="The chemistry bench: reagent bottles, a rack of test tubes, a burette over a flask, a beaker and a burner" loading="lazy" /></div>
         <div class="lab-card__content">
           <h2 class="lab-card__title">Chemistry Bench</h2>
           <p class="lab-card__desc">An open bench and a drawer of glassware and chemicals: set up your own experiment, pour, heat and test, and a notebook writes down what you see.</p>
@@ -104,32 +104,6 @@
       </div>
     </a>
 
-    <!-- ── Physics ── -->
-    <a href="physics/index.html" class="lab-card lab-card--physics lab-card--soon">
-      <span class="lab-note lab-note--soon">Coming soon</span>
-      <div class="lab-card__paper">
-        <div class="lab-card__scene" data-scene="physics"></div>
-        <div class="lab-card__content">
-          <h2 class="lab-card__title">Physics Lab</h2>
-          <p class="lab-card__desc">Pendulums, springs, ramps and force simulations with real-time measurement.</p>
-          <span class="lab-go lab-go--muted">In development</span>
-        </div>
-      </div>
-    </a>
-
-    <!-- ── Biology ── -->
-    <a href="biology/index.html" class="lab-card lab-card--biology lab-card--soon">
-      <span class="lab-note lab-note--soon">Coming soon</span>
-      <div class="lab-card__paper">
-        <div class="lab-card__scene" data-scene="biology"></div>
-        <div class="lab-card__content">
-          <h2 class="lab-card__title">Biology Lab</h2>
-          <p class="lab-card__desc">Cell models, microscopy specimens and live specimen study in 3D.</p>
-          <span class="lab-go lab-go--muted">In development</span>
-        </div>
-      </div>
-    </a>
-
   </main>
 
   <script type="module">
@@ -137,6 +111,5 @@
     document.querySelector('.hub-paint').innerHTML = heroPaint();
   </script>
   <script src="/utils/components/nav-builder.js" type="module"></script>
-  <script type="module" src="js/scenes.js"></script>
 </body>
 </html>

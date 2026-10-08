@@ -28,7 +28,7 @@
    ========================================================================== */
 
 import { REAGENTS, TASKS, newTube, add, heat, rinse, test, tasksDone, reagent, chemHtml, isEmpty, look, takeFrom, pourIn, roomIn, flameOf, massOf, boilOff, filterOut, sampleOf, gasMade, takeBottom, electrolyse } from "./chem.js";
-import { DEFS, VESSELS, TOOLS, SUPPORTS, vesselSvg, paintVessel, bubble, reagentSvg, toolSvg, splintAfter, supportSvg, thumb, colourOf, mouthOf, capOf } from "./glass.js";
+import { DEFS, VESSELS, TOOLS, SUPPORTS, vesselSvg, paintVessel, bubble, reagentSvg, toolSvg, splintAfter, supportSvg, thumb, colourOf, mouthOf, capOf, CAP_BOX } from "./glass.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
 
@@ -103,8 +103,8 @@ const CATALOG = [
 ];
 const REAGENT_BOX = { solution: { x0: -35, y0: -125, x1: 35, y1: 8 }, solid: { x0: -36, y0: -96, x1: 36, y1: 8 }, indicator: { x0: -26, y0: -114, x1: 26, y1: 8 } };
 
-const boxOf = (it) => (it.kind === "vessel" ? VESSELS[it.key].bbox : it.kind === "tool" ? TOOLS[it.key].bbox : it.kind === "rack" ? SUPPORTS[it.key].bbox : REAGENT_BOX[reagent(it.key).kind]);
-const nameOf = (it) => (it.kind === "vessel" ? `${VESSELS[it.key].name} ${it.tag}` : it.key === "cap" ? "Stopper" : CATALOG.find((c) => c.kind === it.kind && c.key === it.key).name);
+const boxOf = (it) => (it.key === "cap" ? CAP_BOX[it.v || "bottle"] : it.kind === "vessel" ? VESSELS[it.key].bbox : it.kind === "tool" ? TOOLS[it.key].bbox : it.kind === "rack" ? SUPPORTS[it.key].bbox : REAGENT_BOX[reagent(it.key).kind]);
+const nameOf = (it) => (it.kind === "vessel" ? `${VESSELS[it.key].name} ${it.tag}` : it.key === "cap" ? (it.v === "drop" ? "Dropper" : "Stopper") : CATALOG.find((c) => c.kind === it.kind && c.key === it.key).name);
 /** "test tube A", for the middle of a sentence. */
 const plain = (v) => (v.kind === "vessel" ? `${VESSELS[v.key].name.replace(/ \(.*/, "").toLowerCase()} ${v.tag}` : nameOf(v).toLowerCase());
 
@@ -463,7 +463,7 @@ function addItem(kind, key, x, y, extra = {}) {
   // a bottle comes with its stopper in: a piece of its own, to be pulled out
   if (kind === "reagent" && capOf(key)) {
     const m = mouth(it);
-    addItem("tool", "cap", m.x, m.y, { v: capOf(key), on: it.id, of: it.id });
+    addItem("tool", "cap", m.x, m.y, { v: capOf(key), on: it.id, of: it.id, rgb: colourOf(key) });
   }
   renderDrawer();
   $("cl-hint").hidden = true;
@@ -630,6 +630,7 @@ function targetOf(it) {
     });
   }
   if (it.kind === "reagent") {
+    if (reagent(it.key).kind === "indicator") return null;      // its dropper is what goes to the liquid
     const b = boxOf(it), cy = it.y + (b.y0 + b.y1) / 2;
     return nearest(open(), (v) => {
       const m = mouth(v), dx = Math.abs(it.x - m.x);
@@ -638,6 +639,15 @@ function targetOf(it) {
   }
   // ── tools ──
   if (IDLE.includes(it.key)) return null;
+  if (it.key === "cap" && it.v === "drop") {
+    // back into its own bottle, or over a liquid to drip a little in
+    const own = byId(it.of);
+    if (own && !fittedTo(own, "cap")) { const m = mouth(own); if (Math.abs(it.x - m.x) < 30 && Math.abs(it.y - m.y) < 56) return own; }
+    return nearest(open(), (v) => {
+      const m = mouth(v), dx = Math.abs(it.x - m.x), tip = it.y + 58;
+      return dx < VESSELS[v.key].rTop + 26 && tip > m.y - 50 && tip < m.y + 90 ? dx : -1;
+    });
+  }
   if (it.key === "cap") {
     return nearest(state.items.filter((o) => o.kind === "reagent" && capOf(o.key) === it.v && !fittedTo(o, "cap")), (o) => {
       const m = mouth(o), dx = Math.abs(it.x - m.x);
@@ -692,7 +702,8 @@ const tipping = (it, at) => `translate(${at.x + 6}px, ${at.y - 10}px) rotate(-10
 
 /** How a thing is held while it is being used on `v`. */
 function poseOn(it, v) {
-  if (STAYS.includes(it.key)) { const s = seat(v, { ...it, side: sideFor(v, it) }); return `translate(${s.x}px, ${s.y}px)`; }
+  if (fitsOn(it, v)) { const s = seat(v, { ...it, side: sideFor(v, it) }); return `translate(${s.x}px, ${s.y}px)`; }
+  if (it.key === "cap") { const m = mouth(v); return `translate(${m.x}px, ${m.y - 62}px)`; }      // a dropper, held over a liquid
   const m = HEAT[v.key] && it.key === "lit" ? { x: v.x, y: v.y - HEAT[v.key] + 46 } : mouth(v);
   if (it.kind === "vessel") return HEAT[v.key] ? `translate(${v.x}px, ${v.y - HEAT[v.key]}px)` : tipping(it, m);
   if (it.kind === "reagent") return reagent(it.key).kind === "indicator" ? `translate(${m.x}px, ${m.y - 24}px)` : tipping(it, m);
@@ -705,6 +716,8 @@ function poseOn(it, v) {
   if (TAKES[it.key]) return `translate(${m.x}px, ${m.y + (it.sample ? -4 : deep)}px)`;
   return `translate(${m.x}px, ${m.y + (v.flip ? 44 : 18)}px)`;
 }
+/** Is this a thing being FITTED to that (and left there), rather than used on it? A dropper over a liquid is being used. */
+const fitsOn = (it, target) => STAYS.includes(it.key) && !(it.key === "cap" && target.kind === "vessel");
 /** Which side of a beaker a carbon rod goes: the first on the left, the second on the right. */
 const sideFor = (v, it) => (it.key !== "electrode" ? 0 : rodsIn(v).some((r) => r !== it && r.side < 0) ? 1 : -1);
 
@@ -794,6 +807,17 @@ function use(it, v) {
     if (res) stream(mouth(v), v._surface, c);
     save();
     return Boolean(res) && it.t.vol + (it.t.oil || 0) > 0;
+  }
+  // ── a dropper from an indicator bottle, over a liquid ──
+  if (it.key === "cap") {
+    const bottle = byId(it.of);
+    if (!bottle) return false;
+    const res = add(v.t, bottle.key);
+    if (res.refused) { say(res.refused, v, "no"); return false; }
+    const m = mouth(v), painted = paint(v);
+    drops([m.x, m.y - 4], v.y - Math.max(painted.level, 10), colourOf(bottle.key));
+    record(v, res);
+    return false;
   }
   // ── a lighted splint, at a burner ──
   if (HEAT[v.key] && it.key === "lit") {
@@ -1051,7 +1075,8 @@ function press(e, it) {
 
 // ── turning a piece by hand: tilt it far enough and it pours ────────────────
 let turn = null;
-const canTurn = (it) => (it.kind === "vessel" && !VESSELS[it.key].fixed && !it.flip) || (it.kind === "reagent" && reagent(it.key).kind !== "indicator");
+// a bottle with its stopper in does not tip; a dropper bottle never does
+const canTurn = (it) => (it.kind === "vessel" && !VESSELS[it.key].fixed && !it.flip) || (it.kind === "reagent" && reagent(it.key).kind !== "indicator" && !fittedTo(it, "cap"));
 /** The angle at which a tilted piece starts to pour: a full beaker sooner than a nearly empty one. */
 function pourAngle(it) {
   if (it.kind === "reagent") return 62;
@@ -1119,6 +1144,8 @@ function leave() {
   if (drag.over.kind === "vessel") place(drag.over);
   if (drag.it.kind === "vessel") paint(drag.it);
   drag.over = null;
+  drag.shut = false;
+  drag.told = false;
   drag.sits = false;
   drag.go = null;
 }
@@ -1126,12 +1153,15 @@ function enter(target) {
   const { it } = drag;
   drag.over = target;
   // some things, once put there, stay: a vessel over a flame, and anything that is fitted
-  drag.sits = (it.kind === "vessel" && Boolean(HEAT[target.key])) || STAYS.includes(it.key);
+  drag.sits = (it.kind === "vessel" && Boolean(HEAT[target.key])) || fitsOn(it, target);
+  // a stoppered bottle is only being carried past: it does not tip, it just says why it will not pour
+  drag.shut = it.kind === "reagent" && Boolean(fittedTo(it, "cap"));
+  if (drag.shut) { nodes[target.id].g.classList.add("is-target"); drag.go = () => { if (drag && drag.over === target && !drag.told) { drag.told = true; capped(it); } }; drag.wait = 420; drag.timer = setTimeout(drag.go, 420); return; }
   glide(it, true);
   if (!drag.sits) nodes[it.id].g.classList.add("is-using");
   nodes[target.id].g.classList.add("is-target");
   place(it, poseOn(it, target));
-  if (STAYS.includes(it.key)) return;
+  if (fitsOn(it, target)) return;
   if (it.kind === "vessel" && !HEAT[target.key] && target.key !== "waste") paint(it, { tilt: -108 });
   if (HEAT[it.key]) {
     // no room under it: the vessel is lifted into the flame instead
@@ -1215,7 +1245,7 @@ window.addEventListener("pointermove", (e) => {
     leave();
     if (target) enter(target);
   }
-  if (!drag.over) { glide(it, false); place(it); }
+  if (!drag.over || drag.shut) { glide(it, false); place(it); }
   else if (!drag.used && drag.go) {
     // still on the way past: nothing happens until the hand has come to rest
     clearTimeout(drag.timer);
@@ -1270,8 +1300,9 @@ window.addEventListener("pointerup", (e) => {
   }
   if (!d.moved) return select(it);
 
-  const fits = STAYS.includes(it.key);
-  if (d.over && !d.used && !fits) { d.used = true; use(it, d.over); }         // let go at once: that is one measure
+  const fits = Boolean(d.over) && fitsOn(it, d.over);
+  if (d.over && !d.used && !fits && !d.shut) { d.used = true; use(it, d.over); }   // let go at once: that is one measure
+  if (d.shut && d.over && !d.told) capped(it);
   if (d.over) {
     const o = d.over;
     nodes[o.id].g.classList.remove("is-target");
@@ -1294,7 +1325,7 @@ window.addEventListener("pointerup", (e) => {
     const where = plain(host);
     say(it.key === "funnel" ? `The funnel and its filter paper are in ${where}. Whatever is poured in now is filtered.`
       : it.key === "tubing" ? `The delivery tube is in ${where}. Drag its orange end to where the gas should go.`
-      : it.key === "cap" ? `The stopper is back in the ${reagent(host.key).name}.`
+      : it.key === "cap" ? `The ${it.v === "drop" ? "dropper" : "stopper"} is back in the ${reagent(host.key).name}.`
       : it.key === "condenser" ? `The condenser is on the side arm of ${where}. Stand a beaker under its lower end.`
       : it.key === "electrode" ? (rodsIn(host).length === 2 ? (tools("power").length ? `Both carbon rods are in ${where} and wired to the power pack. Hold down its red switch.` : `Both carbon rods are in ${where}. Put a power pack on the bench.`) : `One carbon rod is in ${where}. It needs a second.`)
       : `${cap1(where)} is stoppered.`, host.kind === "vessel" ? host : null);
@@ -1310,6 +1341,9 @@ window.addEventListener("pointerup", (e) => {
     setTimeout(() => {
       if (!nodes[it.id]) return;
       it.x = d.sx; it.y = d.sy; it.rack = d.rack;
+      // a dropper taken straight from its bottle goes straight back into it
+      const home = d.on && byId(d.on);
+      if (home && !fittedTo(home, it.key)) { it.on = home.id; const m = seat(home, it); it.x = m.x; it.y = m.y; }
       if (d.fromDrawer) [it.x, it.y] = freeSpot(it);
       front();
       glide(it, true);
@@ -1325,7 +1359,7 @@ window.addEventListener("pointerup", (e) => {
     place(it);
     if (it.kind === "vessel") paint(it);
     follow(it);
-    if (it.key === "cap" && d.on) say("The stopper is out. The bottle will pour now.");
+    if (it.key === "cap" && d.on) say(it.v === "drop" ? "The dropper is out. Carry it to a liquid and hold it there." : "The stopper is out. The bottle will pour now.");
   }
   save();
 });
@@ -1405,7 +1439,7 @@ function openMenu(it) {
     if (def.invert && isEmpty(it.t) && !it.rack && !fittedTo(it)) act("flip", it.flip ? "Turn it the right way up" : "Turn it upside down", ICON.flip);
   } else if (it.kind === "reagent") {
     const r = reagent(it.key);
-    lines.push(capOf(it.key) && fittedTo(it, "cap") ? "Stoppered. Drag the stopper off before you pour." : r.kind === "indicator" ? "Carry it to a liquid and it drips a little in." : "Open. Carry it to a vessel and hold it there, or select it and turn it.");
+    lines.push(r.kind === "indicator" ? (fittedTo(it, "cap") ? "Pull the dropper out and carry it to a liquid." : "Its dropper is out. Let the dropper go at the bottle to put it back.") : fittedTo(it, "cap") ? "Stoppered. Drag the stopper off before you pour: it will not tip with the stopper in." : "Open. Carry it to a vessel and hold it there, or select it and turn it.");
     if (r.kind === "solution" && Object.keys(r.adds).length) {
       const k = it.k || 1;
       slider = `<label class="cl-range"><span>Concentration <b id="cl-k">${k.toFixed(2)}</b> mol/dm\u00b3</span><input type="range" min="0.25" max="2" step="0.25" value="${k}" data-act="strength" aria-label="Concentration"></label>`;
@@ -1606,7 +1640,14 @@ window.addEventListener("keydown", (e) => {
 $("cl-rot").innerHTML = ICON.turn;
 $("cl-dots").innerHTML = ICON.dots;
 fitWorld();
-if (restored) state.items.forEach((it) => { keepIn(it); mount(it); });
+if (restored) {
+  state.items.forEach((it) => { keepIn(it); mount(it); });
+  // a bench saved before droppers pulled out: give each dropper bottle its dropper
+  state.items.filter((it) => it.kind === "reagent" && !state.items.some((c) => c.key === "cap" && c.of === it.id)).forEach((it) => {
+    const m = mouth(it);
+    addItem("tool", "cap", m.x, m.y, { v: capOf(it.key), on: it.id, of: it.id, rgb: colourOf(it.key) });
+  });
+}
 $("cl-hint").hidden = state.items.length > 0;
 readouts();
 drawLinks();

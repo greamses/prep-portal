@@ -400,10 +400,17 @@ export const mouthOf = (id) => (reagent(id).kind === "solid" ? 83 : reagent(id).
 // A stopper, drawn with its seat (where it meets the mouth) at y. On the bench it is its own piece.
 const CAPS = {
   bottle: (y) => `<g class="cl-stopper" transform="translate(0 ${y})"><path d="M-10 3h20l1.5 -9h-23z" fill="url(#g-frost)"/><rect x="-16" y="-19" width="32" height="14" rx="3.5" fill="url(#g-frost)" stroke="#fff" stroke-opacity="0.7" stroke-width="0.8"/><path d="M-11 -15v6" stroke="#fff" stroke-opacity="0.8" stroke-width="1.6" stroke-linecap="round"/></g>`,
+  // a dropper: the collar that sits on the bottle, the rubber teat above it, the glass tube that reaches down inside
+  drop: (y, rgb = [226, 232, 238]) => `<g class="cl-stopper" transform="translate(0 ${y})">
+      <path d="M-2.2 0V50L-1 58h2L2.2 50V0z" fill="#fff" fill-opacity="0.16" stroke="#fff" stroke-opacity="0.6" stroke-width="0.7"/>
+      <path d="M-1.3 22V50L-0.6 56h1.2L1.3 50V22z" fill="rgb(${rgb})" fill-opacity="0.9"/>
+      <rect x="-11" y="-9" width="22" height="10" rx="2" fill="#2c3038" stroke="#fff" stroke-opacity="0.25" stroke-width="0.6"/>
+      <path d="M-6 -9c-5 -8 -6 -24 0 -30q6 -5 12 0c6 6 5 22 0 30z" fill="url(#g-rubber)"/><path d="M-3 -34q-3 8 -1 20" fill="none" stroke="#fff" stroke-opacity="0.4" stroke-width="1.4" stroke-linecap="round"/></g>`,
   jar: (y) => `<g class="cl-stopper" transform="translate(0 ${y})"><path d="M-20 3h40l-2 9h-36z" fill="url(#g-frost)" transform="translate(0 0)"/><rect x="-27" y="-10" width="54" height="11" rx="3.5" fill="url(#g-frost)" stroke="#fff" stroke-opacity="0.7" stroke-width="0.8"/></g>`,
 };
-/** Which stopper a reagent's container takes, or null (a dropper bottle keeps its dropper). */
-export const capOf = (id) => (reagent(id).kind === "solid" ? "jar" : reagent(id).kind === "solution" ? "bottle" : null);
+/** Which stopper a reagent's container takes: a glass stopper, a jar's lid, or a dropper bottle's dropper. */
+export const capOf = (id) => (reagent(id).kind === "solid" ? "jar" : reagent(id).kind === "solution" ? "bottle" : "drop");
+export const CAP_BOX = { bottle: { x0: -20, y0: -22, x1: 20, y1: 8 }, jar: { x0: -30, y0: -14, x1: 30, y1: 16 }, drop: { x0: -13, y0: -44, x1: 13, y1: 62 } };
 
 export function reagentSvg(id, uid, capped = false) {
   const r = reagent(id);
@@ -432,11 +439,10 @@ ${capped ? CAPS.jar(-83) : ""}
       <clipPath id="clip-${uid}"><path d="${outline(DROPPER)}"/></clipPath>
       <path d="${outline(DROPPER)}" fill="#fff" fill-opacity="0.03"/>
       <g clip-path="url(#clip-${uid})"><rect x="-22" y="-40" width="44" height="42" fill="${rgba(DROPPER_FILL[id], id === "phph" ? 0.3 : 0.85)}"/><rect x="-22" y="-40" width="44" height="42" fill="url(#g-shade)"/></g>
-      <rect x="-2.2" y="-70" width="4.4" height="58" rx="2" fill="#fff" fill-opacity="0.16" stroke="#fff" stroke-opacity="0.5" stroke-width="0.7"/>
       <path d="${outline(DROPPER)}" fill="url(#g-glass)"/>
       <path class="cl-g-edge" d="${outline(DROPPER, true)}"/>
       <path d="${band(DROPPER, -1, 3, 7, 0.1, 0.62)}" fill="url(#g-streak)"/><path d="${band(DROPPER, 1, 5, 13, 0.2, 0.62)}" fill="#fff" fill-opacity="0.07"/>
-      <g class="cl-stopper"><rect x="-11" y="-80" width="22" height="10" rx="2" fill="#2c3038" stroke="#fff" stroke-opacity="0.25" stroke-width="0.6"/><path d="M-6 -80c-5 -8 -6 -24 0 -30q6 -5 12 0c6 6 5 22 0 30z" fill="url(#g-rubber)"/></g>
+      ${capped ? CAPS.drop(-71, DROPPER_FILL[id]) : ""}
       ${label(SHORT[id], -32, 34, 15, 8.4)}
       ${hit({ x0: -26, y0: -114, x1: 26, y1: 8 })}`;
   }
@@ -563,7 +569,7 @@ export function toolSvg(key, it = {}) {
     return `<path d="M0 8V-34q0 -8 8 -8h22" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="5" stroke-linecap="round"/><path d="M0 8V-34q0 -8 8 -8h22" fill="none" stroke="#2f3540" stroke-width="2.6" stroke-linecap="round"/>
       <path d="M-13 -8h26l-3.5 16h-19z" fill="#c0563c" stroke="#fff" stroke-opacity="0.3" stroke-width="0.8"/>${hit(b)}`;
   }
-  if (key === "cap") return `${CAPS[it.v || "bottle"](0)}${hit(TOOLS.cap.bbox)}`;
+  if (key === "cap") return `${CAPS[it.v || "bottle"](0, it.rgb)}${hit(CAP_BOX[it.v || "bottle"])}`;
   if (key === "condenser") {
     // drawn from the joint that pushes onto a flask's side arm, sloping down to the outlet
     return `<g transform="rotate(23.3)">

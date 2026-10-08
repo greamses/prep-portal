@@ -100,19 +100,9 @@ const SHOT = {
     return { html: codeHtml({ src: `let age = 14;
 console.log(typeof age);`, file: "types.js", out: 1 }), css: WB_CSS };
   },
-  /* the lab hub's own bench, now that the scene lives in a module */
-  lab: async () => {
-    const { LAB_SCENES } = await import("/virtual-lab/js/scenes.js");
-    return { svg: LAB_SCENES.chemistry() };
-  },
-  tubes: async () => {
-    const { LAB_SCENES } = await import("/virtual-lab/js/scenes.js");
-    return { svg: LAB_SCENES.chemistry2d() };
-  },
-  bench: async () => {
-    const { LAB_SCENES } = await import("/virtual-lab/js/scenes.js");
-    return { svg: LAB_SCENES.biology() };
-  },
+  /* the labs show themselves: a screenshot of each, taken from the lab (virtual-lab/<lab>/thumb.jpg) */
+  lab: async () => ({ img: "/virtual-lab/chemistry/thumb.jpg", alt: "Inside the 3D chemistry lab" }),
+  tubes: async () => ({ img: "/virtual-lab/chemistry-2d/thumb.jpg", alt: "The chemistry bench, set up for a titration" }),
   /* the map the jigsaw drops its 37 states into */
   map: async () => {
     const { mapFrameSvg } = await import("/exam-archive/national/puzzles/js/mapjig.js");
@@ -161,8 +151,7 @@ export const BANDS = [
     tag: "Science",
     cards: [
       { art: "lab", title: "Virtual Chemistry Lab", tag: "Chemistry", line: "Mix reagents, run a titration, watch it react on a real bench.", href: "/virtual-lab/chemistry/index.html" },
-      { art: "tubes", title: "Chemistry Bench", tag: "Reactions", line: "Test tubes, a shelf of reagents, and a notebook of what you saw.", href: "/virtual-lab/chemistry-2d/index.html" },
-      { art: "bench", title: "Physics & Biology benches", tag: "Physics", line: "Pendulums, springs, cells and slides — being built now.", href: "/virtual-lab/index.html" },
+      { art: "tubes", title: "Chemistry Bench", tag: "Reactions", line: "An open bench and a drawer of glassware: set up your own experiment.", href: "/virtual-lab/chemistry-2d/index.html" },
       { art: "blogs", title: "Science & study blogs", tag: "Reading", line: "Animals, plants, the human body, and how to revise them.", href: "/blogs/index.html" },
     ],
   },
@@ -269,6 +258,8 @@ export async function drawShot(frame) {
     const art = await make();
     if (art.icon) {
       frame.innerHTML = `<span class="shot__icon">${art.icon}</span>`;
+    } else if (art.img) {
+      frame.innerHTML = `<img src="${art.img}" alt="${art.alt || ""}" loading="lazy" />`;
     } else if (art.svg) {
       frame.innerHTML = art.svg;
     } else if (art.html) {

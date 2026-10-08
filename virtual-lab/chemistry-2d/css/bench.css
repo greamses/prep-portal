@@ -104,8 +104,6 @@ html body {
 .cl-item.is-sel .cl-paper { stroke: #f4c95d; stroke-width: 1.5; }
 .cl-item.is-target .cl-g-rim { stroke: #8fe08f; stroke-opacity: 1; stroke-width: 2.4; }
 .cl-stopper { transition: opacity 0.15s; }
-.cl-item.is-using .cl-stopper { opacity: 0; }
-.cl-item[data-rk="indicator"].is-using .cl-stopper { opacity: 1; }
 
 /* tools */
 .cl-paper { stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.8; transition: fill 0.8s ease 0.3s; }

@@ -205,6 +205,10 @@ body {
   display: block;
 }
 
+/* a card's picture is a real screenshot of its lab: it fills the frame edge to edge */
+.lab-card__scene--shot { padding: 0; background: #272c35; }
+.lab-card__scene--shot img { display: block; width: 100%; height: auto; aspect-ratio: 2 / 1; object-fit: cover; }
+
 /* ── Content area ── */
 .lab-card__content {
   display: flex;
