@@ -1502,6 +1502,24 @@ const chatbotcss = `
         font-size: 0.5rem;
     }
 }
+
+/* ══════════════════════════════════════════════════════
+   THE SMALL WINDOW — the same chat, opened beside the PrepBot teacher
+   (its A key). Placed and sized by placeCompact() in prepbot.js.
+   ══════════════════════════════════════════════════════ */
+#chat-window.pb-compact {
+    right: auto !important;
+    bottom: auto !important;
+    max-height: none !important;
+    transform: translateY(10px) scale(0.97) !important;
+    transform-origin: bottom right;
+}
+#chat-window.pb-compact.open { transform: none !important; }
+#chat-window.pb-compact .chat-context-banner { display: none; }
+/* a page whose only way into the chat is its PrepBot teacher has no launcher */
+.pb-no-fab #chat-fab-wrap,
+.pb-no-fab #chat-fab-restore,
+.pb-no-fab #prepbot-popup { display: none !important; }
 `;
 
 export default chatbotcss;

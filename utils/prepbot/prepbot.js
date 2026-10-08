@@ -364,10 +364,20 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
         break;
       }
     }
+    // A page that knows itself better than its text does (the chemistry bench:
+    // what is in the drawer, what is standing on the bench) says so here.
+    let limit = 1500;
+    const page = window.__prepbotPage;
+    if (page && typeof page.context === "function") {
+      try {
+        const own = String(page.context() || "").trim();
+        if (own) { scrapedText = own; limit = 3600; }
+      } catch (_) { /* fall back to the page's text */ }
+    }
     return {
       mode: "study",
-      title: document.querySelector("h1")?.innerText || "this lesson",
-      content: scrapedText.substring(0, 1500),
+      title: page?.title || document.querySelector("h1")?.innerText || "this lesson",
+      content: scrapedText.substring(0, limit),
       explanation: "",
       totalQs: 0,
       qNum: 0,
@@ -1103,6 +1113,15 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
   async function tryHandleNavigation(text) {
     const t = text.trim().toLowerCase();
 
+    // A page that can DO what is asked (the chemistry bench fetches a piece
+    // from its drawer) answers first, with no AI call.
+    const page = window.__prepbotPage;
+    if (page && typeof page.handle === "function") {
+      let own = null;
+      try { own = await page.handle(text); } catch (_) { own = null; }
+      if (own) { await appendMessage("bot", String(own)); return true; }
+    }
+
     const qn = parseQuizNav(t);
     if (qn) {
       const qd = getQuizData();
@@ -1790,8 +1809,50 @@ If (and only if) you're pointing the student to one specific page from the site 
   }
   function goSubscribe() { window.location.href = "/subscribe.html#plans"; }
 
+  /* The SMALL window: the same chat, opened beside whatever asked for it (the
+     PrepBot teacher's A key) instead of filling the side of the screen. */
+  let compactAnchor = null;
+  let wantCompact = null;
+  function placeCompact() {
+    if (!compactAnchor || !win.classList.contains("pb-compact")) return;
+    const a = compactAnchor.getBoundingClientRect();
+    const vw = window.innerWidth, vh = window.innerHeight, m = 8, gap = 10;
+    const w = Math.min(340, vw - 2 * m), h = Math.min(440, vh - 2 * m);
+    let left = a.left + a.width / 2 > vw / 2 ? a.right - w : a.left;
+    let top = a.top - h - gap;
+    if (top < m) {
+      if (a.bottom + gap + h <= vh - m) top = a.bottom + gap;
+      else {
+        // no room above or below: stand beside it
+        top = vh - m - h;
+        left = a.left - gap - w >= m ? a.left - gap - w : a.right + gap;
+      }
+    }
+    left = Math.max(m, Math.min(left, vw - m - w));
+    top = Math.max(m, Math.min(top, vh - m - h));
+    win.style.left = `${Math.round(left)}px`;
+    win.style.top = `${Math.round(top)}px`;
+    win.style.width = `${w}px`;
+    win.style.height = `${h}px`;
+  }
+  function clearCompact() {
+    win.classList.remove("pb-compact");
+    ["left", "top", "width", "height"].forEach((k) => (win.style[k] = ""));
+    compactAnchor = null;
+  }
+  window.addEventListener("resize", placeCompact);
+
   function toggleChat(force) {
     const isOpen = force !== undefined ? force : !win.classList.contains("open");
+    if (isOpen && !win.classList.contains("open")) {
+      if (wantCompact) { compactAnchor = wantCompact; win.classList.add("pb-compact"); placeCompact(); }
+      else clearCompact();
+    }
+    wantCompact = null;
+    if (!isOpen && win.classList.contains("pb-compact")) {
+      // keep its place while it fades, then become the ordinary window again
+      setTimeout(() => { if (!win.classList.contains("open")) clearCompact(); }, 320);
+    }
     if (isOpen) {
       // Confirm asynchronously and bounce if the user isn't entitled.
       prepbotVerdict().then((v) => {
@@ -2158,8 +2219,17 @@ If (and only if) you're pointing the student to one specific page from the site 
      it a starter question. The current question/options/answer/explanation are
      already folded into the system context inside sendMessage(), so callers only
      supply the ask. */
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && win.classList.contains("open") && win.classList.contains("pb-compact")) toggleChat(false);
+  });
   window.PrepBot = {
-    open: () => toggleChat(true),
+    /** open()  the ordinary window;  open({ compact: true, anchor: el })  the small one, beside `el`. */
+    open: (opts) => {
+      wantCompact = opts && opts.compact && opts.anchor ? opts.anchor : null;
+      toggleChat(true);
+    },
+    close: () => toggleChat(false),
+    isOpen: () => win.classList.contains("open"),
     ask: (text) => {
       toggleChat(true);
       if (!text) return;

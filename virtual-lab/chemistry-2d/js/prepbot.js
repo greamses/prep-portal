@@ -190,13 +190,14 @@ export async function initPrepbot(bench) {
     <div class="mm-prepbot-bubble mm-prepbot-bubble--speech mm-prepbot-bubble--hidden" aria-hidden="true"><p></p></div>
     <div class="mm-prepbot-avatar-wrap">
       <div class="mm-prepbot-menu">
-        <button class="mm-prepbot-menu-btn" data-b="ask" type="button" title="Ask PrepBot a question" aria-label="Ask PrepBot a question"></button>
+        <button class="mm-prepbot-menu-btn" data-b="ask" type="button" title="Ask PrepBot: where is a piece, or have it fetched" aria-label="Ask PrepBot a question"></button>
         <button class="mm-prepbot-menu-btn" data-b="voice" type="button" title="Beep or talking voice" aria-label="Toggle beep or talking voice"></button>
         <button class="mm-prepbot-menu-btn" data-b="sleep" type="button" title="Sleep" aria-label="Sleep PrepBot"></button>
         <button class="mm-prepbot-menu-btn" data-b="poke" type="button" title="Wiggle" aria-label="Wiggle PrepBot"></button>
       </div>
       <div class="mm-prepbot-avatar" aria-hidden="true"></div>
     </div>
+    <button type="button" class="cl-ico cl-bot-ask" data-tip="Ask PrepBot a question, or have a piece fetched (A)" aria-label="Ask PrepBot a question">A</button>
     <button type="button" class="cl-ico cl-bot-help" data-tip="Stuck? PrepBot says what to do next (H)" aria-label="Help: what do I do next?">H</button>
     <button type="button" class="cl-ico cl-bot-stop" data-tip="Stop PrepBot" aria-label="Stop PrepBot" hidden>${UI.close(16)}</button>`;
   wrap.appendChild(root);
@@ -302,12 +303,111 @@ export async function initPrepbot(bench) {
     teacher.speak([{ text, mode: "speech" }], { colorSeed: lines++ });
   }
   root.querySelector(".cl-bot-help").addEventListener("click", help);
+  root.querySelector(".cl-bot-ask").addEventListener("click", () => teacher.openChat());
   window.addEventListener("keydown", (e) => {
     if (e.key !== "h" && e.key !== "H") return;
     if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
     e.preventDefault();
     help();
   });
+
+  // ── A: the site's PrepBot chat, as a small window beside PrepBot ──
+  // (the window itself is the shared teacher's; this is only what the BENCH
+  // tells it.) The chat asks the page first: "where is the burette?" and "get
+  // me a beaker" are answered here, by pointing into the drawer or by taking
+  // the piece out — no AI needed. Everything else goes to the AI, which is told
+  // what the drawer holds and what is standing on the bench.
+  const norm = (s) => ` ${String(s).toLowerCase().replace(/(\d)([a-z])/g, "$1 $2").replace(/[^a-z0-9]+/g, " ").trim()} `;
+  const EXTRA = {
+    tube: ["test tube", "tube"], flask: ["conical flask", "flask"], cyl100: ["measuring cylinder", "cylinder"], distflask: ["distillation flask"],
+    rack: ["rack"], stand: ["retort stand", "clamp stand", "stand", "clamp", "retort"], balance: ["balance", "scale", "weighing balance"],
+    burner: ["burner", "bunsen"], spirit: ["spirit lamp"], tubing: ["delivery tube"], bung: ["stopper", "bung", "cork"], lit: ["splint"], blue: ["litmus paper", "litmus"],
+    electrode: ["electrode", "carbon rod"], power: ["power pack", "battery", "power supply"], rod: ["glass rod", "stirring rod", "stirrer"], wire: ["flame test wire", "wire"],
+    condenser: ["condenser"], funnel: ["filter paper", "filter funnel"], water: ["water"], hcl: ["acid"], naoh: ["alkali"], nh3: ["ammonia solution", "ammonia"],
+    unk: ["unknown salt", "unknown", "sample x"], caco3: ["calcium carbonate", "marble"], mno2: ["manganese dioxide", "manganese oxide"], h2o2: ["hydrogen peroxide", "peroxide"], oil: ["oil"],
+    mg: ["magnesium"], zn: ["zinc"], fe: ["iron"], cu: ["copper"], cuo: ["copper oxide"],
+  };
+  const stock = bench.catalog();
+  const words = [];
+  stock.forEach((c, order) => {
+    const set = new Set([c.name, c.name.replace(/\(.*?\)/g, " "), c.name.replace(/ and .*/, ""), ...(EXTRA[c.key] || [])]);
+    if (c.kind === "reagent") {
+      const bare = c.name.replace(/^dilute |^aqueous | solution$/gi, "");
+      set.add(bare);
+      set.add(bare.replace(/\((ii|iii|iv)\)/i, " "));
+      set.add(c.formula.replace(/[^A-Za-z0-9]/g, ""));
+    }
+    [...set].map((w) => norm(w).trim()).filter((w) => w.length > 1).forEach((w) => words.push({ w, c, order }));
+  });
+  words.sort((x, y) => y.w.length - x.w.length || x.order - y.order);
+  const COUNT = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
+  const sizes = (c) => c.name.match(/\d+/g) || [];
+  const family = (c) => c.name.replace(/\(.*?\)/g, "").trim();
+  /** Every piece named in a sentence, with how many: [{ c, n }]. The longest name wins a word it shares. */
+  function named(text) {
+    const whole = norm(text);
+    let rest = whole;
+    const out = [];
+    for (const { w, c } of words) {
+      if (out.some((o) => o.c === c)) continue;
+      const hit = new RegExp(` ${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(e?s)? `).exec(rest);
+      if (!hit) continue;
+      // "a 250 mL beaker": the size may be said before the name, so look for it anywhere in the sentence
+      const kin = stock.filter((k) => k.kind === c.kind && family(k) === family(c));
+      const sized = kin.find((k) => sizes(k).length && sizes(k).every((d) => whole.includes(` ${d} `)));
+      const pick = sized && !sizes(c).every((d) => whole.includes(` ${d} `)) ? sized : c;
+      // "two test tubes", "3 250 mL beakers": the word just before the name, sizes aside
+      const before = rest.slice(0, hit.index).trim().split(" ");
+      while (before.length && (before[before.length - 1] === "ml" || sizes(pick).includes(before[before.length - 1]))) before.pop();
+      const word = before.pop() || "";
+      const said = COUNT[word] || (word.length === 1 && "123456".includes(word) ? Number(word) : 0);
+      if (!out.some((o) => o.c === pick)) out.push({ c: pick, n: said || 1 });
+      rest = `${rest.slice(0, hit.index)} # ${rest.slice(hit.index + hit[0].length)}`;
+    }
+    return out;
+  }
+  const FETCH = /\b(get|give|bring|fetch|pass|hand|grab|take out|put|place|add|i need|i want|can i have|may i have|could i have|let me have)\b/i;
+  const WHERE = /\b(where|find|locate|look for|looking for|which (part|tab|section|drawer)|can ?not find|can't find|cant find)\b/i;
+  const listOf = (cs) => cs.map(({ c, n }) => (n > 1 ? `${n} × ${c.name.toLowerCase()}` : c.name.toLowerCase())).join(cs.length > 2 ? ", " : " and ");
+  let lastAsked = [];
+  window.__prepbotPage = {
+    title: "the Chemistry Bench",
+    context() {
+      const parts = ["Glassware", "Equipment", "Liquids", "Solids"].map((p) => `${p}: ${stock.filter((c) => c.part === p).map((c) => c.name + (c.formula && c.formula.length > 1 && c.kind === "reagent" ? ` (${c.formula})` : "")).join(", ")}.`).join("\n");
+      const on = bench.standing();
+      const exp = bench.chosen();
+      const step = bench.nextStep();
+      return `The student is on the Chemistry Bench, a 2D chemistry lab on this site. Nothing is set up for them: they take loose pieces from the DRAWER on the right and assemble the experiment themselves.
+THE DRAWER has four parts (the rail on its left edge), and a search box at the top. An arrow on the edge of the bench hides and shows the drawer.
+${parts}
+HOW THE BENCH WORKS: drag a piece to move it. Carry a bottle or a tool to a vessel and hold it there to use it. A bottle will not pour until its stopper is pulled out. Let a funnel, stopper, delivery tube, condenser or electrode go at a mouth and it stays fitted. Burners are lit and turned up with the + key on their base. A burette or a separating funnel hangs in the retort stand's clamp. A chosen piece shows a handle to tilt it and a "..." menu. The icons at the top left are: the Guide to the chosen practical, the lab notebook, the list of WAEC practicals, and PrepBot's demonstrations. Pressing H gives the next step.
+ON THE BENCH NOW: ${on.length ? on.join(", ") : "nothing"}.
+${exp ? `CHOSEN PRACTICAL: ${exp.title}. Task: ${exp.task} It needs: ${exp.needs}.${step && !step.done ? ` Next step: ${step.text}` : ""}` : "No practical has been chosen."}
+YOU CAN FETCH PIECES: if the student wants a piece, tell them to type "get me" and its name (for example "get me a 250 mL beaker and sodium hydroxide") and it is put on the bench for them. Only name pieces that are in the drawer lists above.`;
+    },
+    async handle(text) {
+      let found = named(text);
+      const fetch = FETCH.test(text), where = WHERE.test(text);
+      if (!found.length && lastAsked.length && /^\s*(yes|ok|okay|please|yes please|get it|bring it|get them|bring them|fetch it|do it)\b/i.test(text)) return give(lastAsked);
+      if (!found.length || (!fetch && !where)) return null;      // a real question: the AI's
+      if (where) {
+        lastAsked = found;
+        bench.point(found[0].c);
+        const lines = found.map(({ c }) => `${c.name} is in the drawer under ${c.part}.`);
+        return `${lines.join(" ")} I have opened that part of the drawer and marked ${found.length > 1 ? "the first one" : "it"}. Shall I put ${found.length > 1 ? "them" : "it"} on the bench for you? Say "get it".`;
+      }
+      return give(found);
+    },
+  };
+  async function give(cs) {
+    if (bench.isBusy()) return "Let me finish this experiment first, then ask me again.";
+    lastAsked = [];
+    const got = cs.slice(0, 6);
+    let room = 8;       // never more than a benchful at once
+    for (const { c, n } of got) for (let i = 0; i < n && room > 0; i++, room--) await bench.bring(c);
+    const bottles = got.some(({ c }) => c.kind === "reagent");
+    return `Here you are: ${listOf(got)}. ${got.length > 1 || got[0].n > 1 ? "They are" : "It is"} on the bench now.${bottles ? " Pull the stopper out of a bottle before you pour from it." : ""}`;
+  }
 
   const list = document.getElementById("cl-bot-list");
   const turnBox = document.getElementById("cl-bot-turn");
@@ -338,6 +438,6 @@ export async function initPrepbot(bench) {
   // a first hello, only on an empty bench
   if (bench.isEmptyBench()) {
     teacher.show();
-    teacher.speak([{ text: "Hello! Press my picture at the top and I will do an experiment for you to copy. Stuck at any time? Press H.", mode: "speech" }]);
+    teacher.speak([{ text: "Hello! Press my picture at the top and I will do an experiment for you to copy. Stuck? Press H. To ask me anything, or have me fetch a piece, press A.", mode: "speech" }]);
   }
 }

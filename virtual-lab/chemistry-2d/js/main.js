@@ -1791,6 +1791,31 @@ const actor = {
   open: (key) => state.items.some((it) => it.kind === "reagent" && it.key === key && !fittedTo(it, "cap")),
   fitted: (key) => state.items.some((it) => it.key === key && it.on != null),
   lit: () => state.items.some((it) => (it.key === "burner" || it.key === "spirit") && it.flame > 0),
+  // for the chat (A): what the drawer holds, where it is, and fetching it
+  catalog: () => CATALOG.map((c) => ({ ...c, part: CATS.find((k) => k.id === c.cat).label, formula: c.kind === "reagent" ? reagent(c.key).formula : "", also: ALSO[c.key] || "" })),
+  standing: () => state.items.filter((it) => it.key !== "cap").map((it) => plain(it)),
+  chosen: () => { const e = expNow(); return e ? { title: e.title, task: e.task, needs: e.needs } : null; },
+  /** Take a piece out of the drawer for the learner and stand it in a free place. */
+  async bring(c) {
+    const n = state.items.filter((it) => it.key !== "cap").length;
+    const x = 120 + ((n * 97) % Math.max(200, W - 260));
+    const it = await this.take(c.kind, c.key, x, c.kind === "reagent" ? TOP + (c.cat === "solid" ? 22 : 0) : BASE);
+    $("cl-hint").hidden = true;
+    if (it) flash(it);
+    return it;
+  },
+  /** Open the drawer at the part that holds a piece, and mark the piece. */
+  point(c) {
+    setDrawer(false);
+    $("cl-search").value = "";
+    state.cat = c.cat;
+    renderDrawer();
+    const tile = document.querySelector(`.cl-tile[data-kind="${c.kind}"][data-key="${c.key}"]`);
+    if (!tile) return;
+    tile.scrollIntoView({ block: "center" });
+    tile.classList.add("is-found");
+    setTimeout(() => tile.classList.remove("is-found"), 4200);
+  },
   /** The step of the chosen practical to do now; null when none has been chosen. */
   nextStep() {
     const exp = expNow();

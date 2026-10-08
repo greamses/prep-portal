@@ -495,6 +495,20 @@ export class PrepbotTeacher {
   show() { this.bubble?.classList.remove("mm-prepbot-bubble--hidden"); }
   hide() { this.bubble?.classList.add("mm-prepbot-bubble--hidden"); }
 
+  /* ── ask ───────────────────────────────────────────────────────────────── */
+  /** The site's real PrepBot chat, as a SMALL window beside this PrepBot (never
+      the big side window). A page that did not load the chat itself gets it
+      now, without the chat's own launcher: here PrepBot is the launcher. */
+  async openChat() {
+    if (!window.PrepBot) {
+      document.documentElement.classList.add("pb-no-fab");
+      try { await import("/utils/prepbot/prepbot.js"); } catch { return; }
+    }
+    if (!window.PrepBot) return;
+    this.hide();
+    window.PrepBot.open({ compact: true, anchor: this.avatarWrap || this.root });
+  }
+
   /* ── menu ──────────────────────────────────────────────────────────────── */
   // Bare-glyph hover menu: "Ask" opens the site's real, AI-backed PrepBot
   // chat (utils/prepbot/prepbot.js) — the bubble/thinking narration above is
@@ -504,20 +518,7 @@ export class PrepbotTeacher {
   _wireMenu({ ask, voice, sleep, poke } = {}) {
     if (ask) {
       ask.innerHTML = ICON_ASK;
-      ask.addEventListener("click", () => {
-        document.getElementById("chat-fab")?.click();
-        // The site chat's mic button (utils/prepbot/prepbot.js) already has
-        // full speech-recognition → auto-send wiring — no need to duplicate
-        // that pipeline here. It stays disabled for a beat after the chat
-        // first opens, so poll briefly rather than assuming it's enabled.
-        const start = Date.now();
-        (function waitForMic() {
-          const micBtn = document.getElementById("chat-mic");
-          if (micBtn && !micBtn.disabled) { micBtn.click(); return; }
-          if (Date.now() - start > 3000) return; // give up quietly — chat is still open either way
-          setTimeout(waitForMic, 80);
-        })();
-      });
+      ask.addEventListener("click", () => this.openChat());
     }
     if (voice) {
       voice.innerHTML = ICON_TALK_MODE;
