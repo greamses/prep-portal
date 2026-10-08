@@ -159,6 +159,125 @@ export const SOLID = {
 
 const ION_TEX = { Mg: "Mg^2+", Zn: "Zn^2+", Fe2: "Fe^2+", Pb: "Pb^2+", Cu: "Cu^2+", Ag: "Ag^+" };
 
+// ── the WHOLE equation ──────────────────────────────────────────────────────
+// Every change already has its ionic equation. A candidate is also asked for the full,
+// balanced equation with state symbols, and that depends on WHICH bottles the ions came
+// out of: copper(II) sulfate with sodium hydroxide, or copper(II) sulfate with ammonia.
+// So it is built: the formula of each salt from the charges of its two ions, and the
+// numbers in front found by trying them (they are never bigger than 6).
+const CHARGE = { H: 1, Na: 1, K: 1, NH4: 1, Ag: 1, Cu: 2, Fe2: 2, Fe3: 3, Zn: 2, Al: 3, Pb: 2, Ca: 2, Ba: 2, Mg: 2, Cl: -1, NO3: -1, OH: -1, I: -1, SO4: -2, CO3: -2 };
+const WRITTEN = { Fe2: "Fe", Fe3: "Fe" };
+const MANY_ATOMS = new Set(["NH4", "SO4", "NO3", "OH", "CO3"]);
+const hcf = (a, b) => (b ? hcf(b, a % b) : a);
+/** How many of each ion in one formula unit: Al and SO4 → { Al: 2, SO4: 3 }. */
+function unitOf(cat, an) {
+  const p = CHARGE[cat], n = -CHARGE[an], g = hcf(p, n);
+  return { [cat]: n / g, [an]: p / g };
+}
+/** The formula of the compound of two ions: Al2(SO4)3, (NH4)2SO4, HCl, H2O. */
+function formulaOf(cat, an) {
+  if (cat === "H" && an === "OH") return "H2O";
+  const u = unitOf(cat, an);
+  const part = (ion) => { const s = WRITTEN[ion] || ion, k = u[ion]; return k === 1 ? s : MANY_ATOMS.has(ion) ? `(${s})${k}` : `${s}${k}`; };
+  return part(cat) + part(an);
+}
+const PARTS = Object.fromEntries([...SALTS_FIRST, ...SALTS_LAST].map(([cat, an, key]) => [key, [cat, an]]).concat(HYDROXIDES.map(([cat, key]) => [key, [cat, "OH"]])));
+const thing = (formula, state) => (n) => `${n > 1 ? n : ""}${formula}(${state})`;
+const salt = (side, cat, an, state) => ({ side, counts: unitOf(cat, an), write: thing(formulaOf(cat, an), state) });
+/** Balance: the smallest whole numbers that leave the same of everything on both sides. */
+function balance(species) {
+  const kinds = [...new Set(species.flatMap((s) => Object.keys(s.counts)))];
+  const n = species.map(() => 1);
+  let best = null;
+  const tryFrom = (i) => {
+    if (i === species.length) {
+      if (kinds.every((k) => species.reduce((sum, s, j) => sum + s.side * n[j] * (s.counts[k] || 0), 0) === 0)) {
+        const total = n.reduce((a, b) => a + b, 0);
+        if (!best || total < best.total) best = { total, n: n.slice() };
+      }
+      return;
+    }
+    for (let v = 1; v <= 6; v++) { n[i] = v; tryFrom(i + 1); }
+  };
+  tryFrom(0);
+  if (!best) return undefined;
+  const side = (d) => species.map((s, j) => (s.side === d ? s.write(best.n[j]) : null)).filter(Boolean).join(" + ");
+  return `${side(-1)} -> ${side(1)}`;
+}
+/** The bottle an ion came out of: the one just used if it has it, else the last that did. Never sample X. */
+function bottleOf(t, adding, ion) {
+  if (t.added.includes("unk") && BY_ID.unk.adds[ion]) return null;          // that would give X away
+  const ids = [...t.added.filter((id) => !adding || id !== adding.id), ...(adding && t.added.includes(adding.id) ? [adding.id] : [])].reverse();
+  const id = ids.find((k) => k !== "unk" && BY_ID[k].adds && BY_ID[k].adds[ion]);
+  if (!id) return null;
+  const ions = Object.keys(BY_ID[id].adds);
+  return { id, cat: ions.find((k) => CHARGE[k] > 0), an: ions.find((k) => CHARGE[k] < 0) };
+}
+const WATER = { side: 1, counts: { H: 1, OH: 1 }, write: thing("H2O", "l") };
+const FIZZED = { side: 1, counts: { H: 2, CO3: 1 }, write: (n) => `${n > 1 ? n : ""}H2O(l) + ${n > 1 ? n : ""}CO2(g)` };
+/** The full equation for one kind of change in tube t, or nothing if it cannot honestly be written. */
+function whole(t, adding, kind, x, y) {
+  try {
+    const from = (ion) => bottleOf(t, adding, ion);
+    const acid = () => { const a = from("H"); return a && a.an ? a : null; };
+    if (kind === "ppt") {
+      const [cat, an] = PARTS[x] || [];
+      if (!cat || x === "Ag2O") return undefined;
+      const one = from(cat);
+      if (!one || !one.an) return undefined;
+      if (an === "OH" && !from("OH")) {
+        // aqueous ammonia: it is the water that gives up the hydroxide
+        if (!t.added.includes("nh3")) return undefined;
+        return balance([salt(-1, cat, one.an, "aq"), { side: -1, counts: { NH4: 1, OH: 1 }, write: (n) => `${n > 1 ? n : ""}NH3(aq) + ${n > 1 ? n : ""}H2O(l)` }, salt(1, cat, "OH", "s"), salt(1, "NH4", one.an, "aq")]);
+      }
+      const two = from(an);
+      if (!two || !two.cat || two.id === one.id) return undefined;
+      return balance([salt(-1, cat, one.an, "aq"), salt(-1, two.cat, an, "aq"), salt(1, cat, an, "s"), salt(1, two.cat, one.an, "aq")]);
+    }
+    const a = acid();
+    if (kind === "neutral") {
+      const b = from("OH");
+      return a && b ? balance([salt(-1, "H", a.an, "aq"), salt(-1, b.cat, "OH", "aq"), salt(1, b.cat, a.an, "aq"), WATER]) : undefined;
+    }
+    if (!a) {
+      if (kind !== "displace") return undefined;
+    }
+    if (kind === "neutralNH3") {
+      const k = -CHARGE[a.an];
+      return balance([{ side: -1, counts: { NH3: 1 }, write: thing("NH3", "aq") }, salt(-1, "H", a.an, "aq"), { side: 1, counts: { NH3: k, H: k, [a.an]: 1 }, write: thing(formulaOf("NH4", a.an), "aq") }]);
+    }
+    if (kind === "metalAcid") {
+      const M = METAL[x];
+      return balance([{ side: -1, counts: { [M.ion]: 1 }, write: thing(M.sym, "s") }, salt(-1, "H", a.an, "aq"), salt(1, M.ion, a.an, "aq"), { side: 1, counts: { H: 2 }, write: thing("H2", "g") }]);
+    }
+    if (kind === "carbonate") {
+      const cb = from("CO3");
+      return cb ? balance([salt(-1, cb.cat, "CO3", "aq"), salt(-1, "H", a.an, "aq"), salt(1, cb.cat, a.an, "aq"), FIZZED]) : undefined;
+    }
+    if (kind === "marble") return balance([salt(-1, "Ca", "CO3", "s"), salt(-1, "H", a.an, "aq"), salt(1, "Ca", a.an, "aq"), FIZZED]);
+    if (kind === "oxide") return balance([{ side: -1, counts: { Cu: 1, O: 1 }, write: thing("CuO", "s") }, salt(-1, "H", a.an, "aq"), salt(1, "Cu", a.an, "aq"), { side: 1, counts: { H: 2, O: 1 }, write: thing("H2O", "l") }]);
+    if (kind === "displace") {
+      const hi = METAL[x], lo = METAL[y], s = from(lo.ion);
+      return s && s.an ? balance([{ side: -1, counts: { [hi.ion]: 1 }, write: thing(hi.sym, "s") }, salt(-1, lo.ion, s.an, "aq"), salt(1, hi.ion, s.an, "aq"), { side: 1, counts: { [lo.ion]: 1 }, write: thing(lo.sym, "s") }]) : undefined;
+    }
+    if (kind === "dissolve") {
+      const [cat, an] = PARTS[x] || [];
+      if (!cat || x === "Ag2O") return undefined;
+      if (an === "OH") return balance([salt(-1, cat, "OH", "s"), salt(-1, "H", a.an, "aq"), salt(1, cat, a.an, "aq"), WATER]);
+      if (an === "CO3") return balance([salt(-1, cat, "CO3", "s"), salt(-1, "H", a.an, "aq"), salt(1, cat, a.an, "aq"), FIZZED]);
+    }
+  } catch { /* no equation is better than a wrong one */ }
+  return undefined;
+}
+/** A precipitate going back into an acid, as ions: turned round from the equation that made it. */
+function ionicDissolve(p) {
+  let m = /^(\S+)\(aq\) \+ (\d*)OH\^-\(aq\) -> (\S+)\(s\)$/.exec(p.eq || "");
+  if (m) return `${m[3]}(s) + ${m[2]}H^+(aq) -> ${m[1]}(aq) + ${m[2]}H2O(l)`;
+  m = /^(\d*)(\S+)\(aq\) \+ CO3\^2-\(aq\) -> (\S+)\(s\)$/.exec(p.eq || "");
+  if (m) return `${m[3]}(s) + 2H^+(aq) -> ${m[1]}${m[2]}(aq) + H2O(l) + CO2(g)`;
+  return undefined;
+}
+
 // ── a tube ──────────────────────────────────────────────────────────────────
 export function newTube(cap = CAP) {
   return { cap, temp: 25, extra: 0, oil: 0, vol: 0, aq: {}, metal: {}, deposit: [], solid: {}, ind: [], gas: null, added: [], said: [] };
@@ -378,27 +497,28 @@ function act(t, change, { heated = false, adding = null } = {}) {
   const after = snapshot(t);
   const obs = [];
   const flags = [];
-  const say = (text, why, eq) => obs.push({ text, why, eq });
+  const say = (text, why, eq, full) => obs.push({ text, why, eq, full });
+  const W = (kind, x, y) => whole(t, adding, kind, x, y);
   const has = (id) => events.some((e) => e.id === id);
   const sum = (id) => events.filter((e) => e.id === id).reduce((a, e) => a + e.n, 0);
 
   // gases and other one-way changes, in the order a student would notice them
-  if (has("carbonate")) { say(`Fizzing. ${FIZZ}`, "The acid destroys the carbonate ion; the gas is carbon dioxide.", "CO3^2-(aq) + 2H^+(aq) -> H2O(l) + CO2(g)"); flags.push("gas:CO2"); }
+  if (has("carbonate")) { say(`Fizzing. ${FIZZ}`, "The acid destroys the carbonate ion; the gas is carbon dioxide.", "CO3^2-(aq) + 2H^+(aq) -> H2O(l) + CO2(g)", W("carbonate")); flags.push("gas:CO2"); }
   if (has("marble")) {
     const left = get(t.solid, "CaCO3") > EPS;
-    say(`The marble chips fizz${left ? "" : " and dissolve away"}. ${FIZZ}`, "Calcium carbonate reacts with the acid; the gas is carbon dioxide.", "CaCO3(s) + 2H^+(aq) -> Ca^2+(aq) + H2O(l) + CO2(g)");
+    say(`The marble chips fizz${left ? "" : " and dissolve away"}. ${FIZZ}`, "Calcium carbonate reacts with the acid; the gas is carbon dioxide.", "CaCO3(s) + 2H^+(aq) -> Ca^2+(aq) + H2O(l) + CO2(g)", W("marble"));
     flags.push("gas:CO2");
   }
-  if (has("hydrolysis")) { say(`Fizzing. ${FIZZ}`, "Iron(III) and aluminium carbonates do not exist: the hydroxide comes down and carbon dioxide escapes."); flags.push("gas:CO2"); }
+  if (has("hydrolysis")) { say(`Fizzing. ${FIZZ}`, "Iron(III) and aluminium carbonates do not exist: the hydroxide comes down and carbon dioxide escapes.", t.added.includes("also4") && !t.added.includes("fecl3") ? "2Al^3+(aq) + 3CO3^2-(aq) + 3H2O(l) -> 2Al(OH)3(s) + 3CO2(g)" : "2Fe^3+(aq) + 3CO3^2-(aq) + 3H2O(l) -> 2Fe(OH)3(s) + 3CO2(g)"); flags.push("gas:CO2"); }
   for (const e of events.filter((x) => x.id === "metalAcid")) {
     if (obs.some((o) => o.metal === e.m)) continue;
     const M = METAL[e.m];
     const gone = get(t.metal, e.m) <= EPS;
-    obs.push({ metal: e.m, text: `The ${M.name} ${WITH_ACID[e.m]}${gone ? " and dissolves away" : ""}. ${FIZZ}`, why: `${cap(M.name)} is above hydrogen in the reactivity series, so it displaces hydrogen from the acid.`, eq: `${M.sym}(s) + 2H^+(aq) -> ${ION_TEX[M.ion]}(aq) + H2(g)` });
+    obs.push({ metal: e.m, text: `The ${M.name} ${WITH_ACID[e.m]}${gone ? " and dissolves away" : ""}. ${FIZZ}`, why: `${cap(M.name)} is above hydrogen in the reactivity series, so it displaces hydrogen from the acid.`, eq: `${M.sym}(s) + 2H^+(aq) -> ${ION_TEX[M.ion]}(aq) + H2(g)`, full: W("metalAcid", e.m) });
     flags.push("gas:H2");
   }
   if (has("oxygen")) { say(`Rapid fizzing. ${FIZZ} The black powder is still there at the end.`, "Manganese(IV) oxide is a catalyst: it speeds up the breakdown of hydrogen peroxide and is not used up. The gas is oxygen.", "2H2O2(aq) -> 2H2O(l) + O2(g)"); flags.push("gas:O2"); }
-  if (has("oxide")) say("The black powder dissolves in the acid.", "Copper(II) oxide is a base: it reacts with the acid to give a copper(II) salt and water.", "CuO(s) + 2H^+(aq) -> Cu^2+(aq) + H2O(l)");
+  if (has("oxide")) say("The black powder dissolves in the acid.", "Copper(II) oxide is a base: it reacts with the acid to give a copper(II) salt and water.", "CuO(s) + 2H^+(aq) -> Cu^2+(aq) + H2O(l)", W("oxide"));
   for (const e of events.filter((x) => x.id === "reduceFe3")) {
     if (flags.includes("reduceFe3")) break;
     say(`The ${METAL[e.m].name} slowly dissolves.`, `${cap(METAL[e.m].name)} reduces iron(III) ions to iron(II) ions.`, `${METAL[e.m].sym}(s) + 2Fe^3+(aq) -> ${ION_TEX[METAL[e.m].ion]}(aq) + 2Fe^2+(aq)`);
@@ -412,7 +532,8 @@ function act(t, change, { heated = false, adding = null } = {}) {
     say(
       gone ? `${cap(an(lo.coat))} ${lo.coat} solid forms as the ${hi.name} dissolves away.` : `${cap(an(lo.coat))} ${lo.coat} coating forms on the ${hi.name}.`,
       `${cap(hi.name)} is more reactive than ${lo.name}, so it displaces ${lo.name} from the solution.`,
-      `${hi.sym}(s) + ${k > 1 ? k : ""}${ION_TEX[lo.ion]}(aq) -> ${ION_TEX[hi.ion]}(aq) + ${k > 1 ? k : ""}${lo.sym}(s)`
+      `${hi.sym}(s) + ${k > 1 ? k : ""}${ION_TEX[lo.ion]}(aq) -> ${ION_TEX[hi.ion]}(aq) + ${k > 1 ? k : ""}${lo.sym}(s)`,
+      W("displace", e.m, e.low)
     );
     flags.push(`deposit:${e.low}`);
   }
@@ -448,12 +569,12 @@ function act(t, change, { heated = false, adding = null } = {}) {
     const p = PPT[key];
     if (now > was + EPS) {
       if (explained.has(key) && was <= EPS) continue;
-      say(was <= EPS ? `${cap(an(p.colour))} ${p.colour} precipitate forms.` : `More of the ${p.colour} precipitate forms.`, `The precipitate is ${p.name}, {${p.formula}}, which is insoluble.`, p.eq);
+      say(was <= EPS ? `${cap(an(p.colour))} ${p.colour} precipitate forms.` : `More of the ${p.colour} precipitate forms.`, `The precipitate is ${p.name}, {${p.formula}}, which is insoluble.`, p.eq, W("ppt", key));
       flags.push(`ppt:${key}`);
     } else if (now < was - EPS && !explained.has(key)) {
       const byAcid = has("neutral") || has("neutralNH3") || has("carbonate");
       const how = byAcid ? " in the acid" : "";
-      say(now <= EPS ? `The ${p.colour} precipitate dissolves${how}.` : `Some of the ${p.colour} precipitate dissolves${how}.`, byAcid ? `${cap(p.name)} is a base, so the acid reacts with it and it goes back into solution.` : undefined);
+      say(now <= EPS ? `The ${p.colour} precipitate dissolves${how}.` : `Some of the ${p.colour} precipitate dissolves${how}.`, byAcid ? `${cap(p.name)} is a base, so the acid reacts with it and it goes back into solution.` : undefined, byAcid ? ionicDissolve(p) : undefined, byAcid ? W("dissolve", key) : undefined);
       flags.push(`gone:${key}`);
     }
   }
@@ -482,7 +603,7 @@ function act(t, change, { heated = false, adding = null } = {}) {
     }
   }
   if (sum("neutral") + sum("neutralNH3") >= 0.5 - EPS) {
-    say("It feels warmer.", "Neutralisation gives out heat. An acid and an alkali make a salt and water.", has("neutral") ? "H^+(aq) + OH^-(aq) -> H2O(l)" : "NH3(aq) + H^+(aq) -> NH4^+(aq)");
+    say("It feels warmer.", "Neutralisation gives out heat. An acid and an alkali make a salt and water.", has("neutral") ? "H^+(aq) + OH^-(aq) -> H2O(l)" : "NH3(aq) + H^+(aq) -> NH4^+(aq)", W(has("neutral") ? "neutral" : "neutralNH3"));
     flags.push("neutral");
   } else if (has("neutral") || has("neutralNH3")) flags.push("neutral");
 
@@ -493,7 +614,7 @@ function act(t, change, { heated = false, adding = null } = {}) {
       say("No visible change.", idle ? `${cap(METAL[idle].name)} is below hydrogen in the reactivity series, so it cannot displace hydrogen from a dilute acid.` : undefined);
     }
   }
-  return { obs: obs.map(({ text, why, eq }) => ({ text, why, eq })), flags, events, state: after };
+  return { obs: obs.map(({ text, why, eq, full }) => ({ text, why, eq, full })), flags, events, state: after };
 }
 
 // ── the things a student can do ─────────────────────────────────────────────
@@ -818,8 +939,8 @@ export function test(t, tool) {
     const paper = tool;
     let turned = null;
     if (gas) {
-      if (gas === "NH3" && paper === "red") { say("At the mouth, the damp red litmus turns blue.", "Ammonia is an alkaline gas. This is the test for it."); flags.push("test:gasblue"); turned = "blue"; }
-      else if (gas === "CO2" && paper === "blue") { say("At the mouth, the damp blue litmus turns faintly red.", "Carbon dioxide is a weakly acidic gas."); turned = "red"; }
+      if (gas === "NH3" && paper === "red") { say("At the mouth, the damp red litmus turns blue.", "Ammonia is an alkaline gas. This is the test for it.", "NH3(g) + H2O(l) -> NH4^+(aq) + OH^-(aq)"); flags.push("test:gasblue"); turned = "blue"; }
+      else if (gas === "CO2" && paper === "blue") { say("At the mouth, the damp blue litmus turns faintly red.", "Carbon dioxide is a weakly acidic gas.", "CO2(g) + H2O(l) -> H2CO3(aq)"); turned = "red"; }
       else say(`At the mouth, the damp ${paper} litmus does not change.`, gas === "H2" || gas === "O2" ? `The gas is neutral.` : undefined);
     }
     if (t.vol > EPS) {

@@ -72,7 +72,7 @@ const ICON = {
   fs: UI.expand(20),
   fsOff: UI.shrink(20),
   empty: glyph(`<path d="M3.4 5.6 13 2.8l.6 2-1.3.4 3.2 11a2.6 2.6 0 0 1-1.8 3.2l-4 1.2a2.6 2.6 0 0 1-3.2-1.8L3.3 7.8 2 8.2z" fill="var(--text-tertiary)" transform="rotate(-38 9 12)"/><path d="M18.6 13.4s2.6 3 2.6 4.8a2.6 2.6 0 0 1-5.2 0c0-1.8 2.6-4.8 2.6-4.800z" fill="var(--accent-secondary)"/>`),
-  away: UI.close(18),
+  away: UI.box(18),
   eye: UI.eye(18),
   eyeOff: UI.eyeOff(18),
   wipe: UI.eraser(18),
@@ -622,15 +622,22 @@ function clearBench() {
 // ── two voices: the sticky note pops up for an OBSERVATION and nothing else;
 //    help, hints and refusals are a small line that comes and goes ──
 let noteTimer = 0, helpTimer = 0;
-function tell(text, v = null) {
+/** The equations of what has just been seen: the whole one, and the ionic one under it. */
+function equationsHtml(obs) {
+  const seen = new Set();
+  return obs.filter((o) => (o.full || o.eq) && !seen.has(o.full || o.eq) && seen.add(o.full || o.eq)).slice(0, 3).map((o) => `<span class="cl-eqn">${chemHtml(o.full || o.eq)}</span>${o.full && o.eq ? `<span class="cl-eqn cl-eqn--ion"><i>ionic</i>${chemHtml(o.eq)}</span>` : ""}`).join("");
+}
+function tell(text, v = null, eqs = "") {
   $("cl-say-tag").textContent = v ? nameOf(v) : "Observation";
   $("cl-say-text").textContent = text;
+  $("cl-say-eq").innerHTML = eqs;
+  $("cl-say-eq").hidden = !eqs;
   const note = $("cl-say");
   note.classList.remove("is-new");
   void note.offsetWidth;
   note.classList.add("is-shown", "is-new");
   clearTimeout(noteTimer);
-  noteTimer = setTimeout(() => note.classList.remove("is-shown"), 9000);
+  noteTimer = setTimeout(() => note.classList.remove("is-shown"), eqs ? 14000 : 9000);
 }
 function say(text, v = null, kind = "") {
   const t = $("cl-toast");
@@ -661,7 +668,8 @@ function record(v, res) {
   const seen = res.obs.map((o) => o.text).join(" ");
   if (actor.onRecord) actor.onRecord(res.flags || [], v);
   // "nothing happened" is worth a line, not a note
-  if (seen && seen !== "No visible change.") tell(seen, v.kind ? v : null);
+  const secret = Boolean(v.t && v.t.added && v.t.added.includes("unk"));
+  if (seen && seen !== "No visible change.") tell(seen, v.kind ? v : null, state.explain && !secret ? equationsHtml(res.obs) : "");
   else if (seen) say(seen);
   save();
 }
@@ -1766,7 +1774,8 @@ function openMenu(it) {
   const menu = $("cl-menu");
   const lines = [];
   const acts = [];
-  const act = (id, tip, icon) => acts.push(`<button type="button" class="cl-ico cl-ico--paper" data-act="${id}" data-tip="${tip}" aria-label="${tip}">${icon}</button>`);
+  const SHORT = { empty: "Empty", swirl: "Swirl", flip: "Turn over", light: "Light", remove: "Put away" };
+  const act = (id, tip, icon) => acts.push(`<button type="button" class="cl-act" data-act="${id}" aria-label="${tip}">${icon}<span>${id === "light" && /out/i.test(tip) ? "Put out" : id === "empty" && /fresh|plunger/i.test(tip) ? (/fresh/i.test(tip) ? "Fresh paper" : "Push in") : SHORT[id] || tip}</span></button>`);
   let slider = "";
   if (it.kind === "vessel") {
     const def = VESSELS[it.key];
@@ -1806,6 +1815,7 @@ function openMenu(it) {
   else if (it.kind === "rack" && it.key === "tripod") lines.push("Stand a beaker or a dish on the gauze, and hold a lit burner underneath.");
   else if (it.kind === "rack" && it.key === "stand") lines.push("Slide the clamp by its yellow boss. Let a tube, a flask, a burette or a separating funnel go at the clamp and it is held.");
   if (it.key !== "cap") act("remove", "Put it away", ICON.away);
+  menu.className = `cl-menu pp-sticky pp-sticky--tape pp-sticky--c${{ vessel: 3, reagent: 0, tool: 2, rack: 4 }[it.kind] ?? 0}`;
   menu.innerHTML = `<p class="cl-menu__name">${esc(nameOf(it))}</p>${lines.map((l) => `<p class="cl-menu__holds">${l}</p>`).join("")}${slider}<div class="cl-menu__row">${acts.join("")}</div>`;
   menu.hidden = false;
   const r = $("cl-dots").getBoundingClientRect();
@@ -1903,7 +1913,7 @@ function renderLog() {
         <p class="cl-entry__head"><span class="cl-entry__tube">${esc(e.tag)}</span>${esc(e.title)}${e.times > 1 ? ` <span class="cl-entry__times">&times; ${e.times}</span>` : ""}</p>
         ${e.obs.map((o) => `
           <p class="cl-obs">${esc(o.text)}</p>
-          ${!e.secret && (o.why || o.eq) ? `<p class="cl-why">${o.why ? prose(o.why) : ""}${o.eq ? `<span class="cl-eq">${chemHtml(o.eq)}</span>` : ""}</p>` : ""}`).join("")}
+          ${!e.secret && (o.why || o.eq || o.full) ? `<p class="cl-why">${o.why ? prose(o.why) : ""}${o.full ? `<span class="cl-eq">${chemHtml(o.full)}</span>` : ""}${o.eq ? `<span class="cl-eq${o.full ? " cl-eq--ion" : ""}">${o.full ? "<i>ionic</i>" : ""}${chemHtml(o.eq)}</span>` : ""}</p>` : ""}`).join("")}
       </li>`).join("")
     : `<li class="cl-entry cl-entry--none">Nothing written yet. Whatever you see happen is written down here.</li>`;
   $("cl-sheet-notebook").classList.toggle("is-plain", !state.explain);

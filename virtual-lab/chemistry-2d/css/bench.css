@@ -306,20 +306,35 @@ html body {
 .cl-range { display: block; margin-top: 0.6rem; font-size: 0.68rem; color: var(--text-secondary); }
 .cl-range b { color: var(--ink); }
 .cl-range input { display: block; width: 100%; margin-top: 0.3rem; accent-color: var(--accent-secondary); }
-.cl-menu {
+/* what a piece has to say for itself: a sticky note beside it, its actions written out */
+.cl-benchwrap .cl-menu.pp-sticky {
   position: absolute;
   z-index: 6;
-  max-width: 250px;
-  padding: 0.6rem 0.75rem 0.7rem;
-  background: var(--surface-primary);
-  color: var(--ink);
-  border: var(--border-subtle);
-  box-shadow: var(--shadow-lg);
+  display: block;
+  width: max-content;
+  max-width: 264px;
+  padding: 0.85rem 0.9rem 0.8rem;
+  --pp-note-tilt: -1.2deg;
+  transform-origin: 20% 0;
 }
+.cl-menu[hidden] { display: none !important; }
 .cl-menu p { margin: 0; }
-.cl-menu__name { font-family: var(--font-display); font-weight: 700; font-size: 0.78rem; }
-.cl-menu__holds { margin-top: 0.25rem !important; font-size: 0.68rem; line-height: 1.45; color: var(--text-secondary); }
-.cl-menu__row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+.cl-menu__name { font-size: 0.92rem; font-weight: 700; line-height: 1.2; padding-bottom: 0.3rem; border-bottom: 1.5px dashed rgba(20, 19, 15, 0.3); }
+.cl-menu__holds { margin-top: 0.4rem !important; font-size: 0.8rem; line-height: 1.36; color: rgba(20, 19, 15, 0.86); }
+.cl-menu__row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.7rem; }
+.cl-act { display: inline-flex; align-items: center; gap: 0.32rem; padding: 0.24rem 0.55rem 0.26rem 0.4rem; font: 700 0.68rem var(--font-mono); letter-spacing: 0.02em; color: #14130f; background: rgba(255, 255, 255, 0.5); border: 1.5px solid #14130f; border-radius: 0; box-shadow: 2px 2px 0 rgba(20, 19, 15, 0.22); cursor: pointer; transform: none; }
+.cl-act svg { width: 15px; height: 15px; flex-shrink: 0; }
+.cl-act:hover, .cl-act:focus-visible { background: #fff; transform: translate(-1px, -1px); box-shadow: 3px 3px 0 rgba(20, 19, 15, 0.26); }
+.cl-act:active { transform: translate(1px, 1px); box-shadow: none; }
+.cl-act[data-act="remove"] { margin-left: auto; background: none; border-style: dashed; box-shadow: none; }
+.cl-menu .cl-range { color: rgba(20, 19, 15, 0.8); font-family: var(--font-mono); }
+.cl-menu .cl-range b { color: #14130f; }
+/* equations: on the observation note and in the notebook */
+.cl-say__eq { margin: 0.4rem 0 0; padding-top: 0.35rem; border-top: 1.5px dashed rgba(20, 19, 15, 0.28); }
+.cl-eqn { display: block; font: 700 0.84rem var(--font-mono); line-height: 1.5; overflow-wrap: anywhere; }
+.cl-eqn--ion, .cl-eq--ion { font-weight: 500; font-size: 0.74rem; opacity: 0.82; }
+.cl-eqn i, .cl-eq i { margin-right: 0.45rem; font: 700 0.56rem var(--font-mono); font-style: normal; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; }
+.cl-eqn sub, .cl-eqn sup { font-size: 0.7em; line-height: 0; }
 
 /* PrepBot: the shared teacher, standing at the bottom right of the bench it works on */
 .cl-prepbot { position: absolute; right: 14px; bottom: 14px; z-index: 6; align-items: flex-end; pointer-events: none; }

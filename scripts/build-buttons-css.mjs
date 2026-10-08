@@ -43,7 +43,7 @@ const TOOLS = [
   ".cl-tile", ".cl-cat", ".cl-ico", ".cl-try",
   /* the bench's calculator has a calculator's keys, and its results table has a
      small cross on each row and column: paper on either made them unusable */
-  ".cl-key", ".cl-cut",
+  ".cl-key", ".cl-cut", ".cl-act",
 ];
 
 // Not buttons, or must not be paper. `.pp-plain` is the opt-out.
