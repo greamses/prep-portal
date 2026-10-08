@@ -39,8 +39,11 @@ export class PrepbotTeacher {
    *   Omit to always use the free Web Speech API / silent beep rhythm.
    * @param {object} [opts.menu] - optional menu button elements: { ask, voice, sleep, poke }.
    *   Omit any of them to skip wiring that button (the page's markup just leaves it out).
+   * @param {string[]} [opts.skipKeys] - letters this page already uses for something
+   *   else (e.g. ["t"]), which the tutor then leaves alone.
    */
-  constructor({ root, boundsEl, auth, menu = {} } = {}) {
+  constructor({ root, boundsEl, auth, menu = {}, skipKeys = [] } = {}) {
+    this.skipKeys = skipKeys.map((k) => String(k).toLowerCase());
     this.root = root;
     this.boundsEl = boundsEl || root?.offsetParent || document.body;
     this.auth = auth || null;
@@ -505,8 +508,47 @@ export class PrepbotTeacher {
       try { await import("/utils/prepbot/prepbot.js"); } catch { return; }
     }
     if (!window.PrepBot) return;
+    // The chat's answers are said by THIS PrepBot, in the voice it teaches in.
+    const page = (window.__prepbotPage = window.__prepbotPage || {});
+    if (!page.say) page.say = (text) => this.sayReply(text);
     this.hide();
     window.PrepBot.open({ compact: true, anchor: this.avatarWrap || this.root });
+  }
+
+  /** M: open the small window and listen. What is heard is sent as the question. */
+  async listen() {
+    await this.openChat();
+    window.PrepBot?.listen?.();
+  }
+
+  /** Say a chat reply aloud: plain words (no maths markup), and not a whole essay. */
+  sayReply(text) {
+    let plain = String(text || "")
+      .replace(/\\[()[\]]/g, " ").replace(/\$\$?/g, " ").replace(/[*_`#>]+/g, "").replace(/\s+/g, " ").trim();
+    if (!plain) return;
+    if (plain.length > 360) {
+      const cut = plain.slice(0, 360);
+      const end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("? "), cut.lastIndexOf("! "));
+      plain = end > 120 ? cut.slice(0, end + 1) : `${cut.slice(0, cut.lastIndexOf(" "))}…`;
+    }
+    this.speak([{ text: plain, mode: "speech" }]);
+  }
+
+  /** T: put the speech bubble away, or bring it back. The voice carries on either way. */
+  toggleBubble(force) {
+    this.quiet = force !== undefined ? Boolean(force) : !this.quiet;
+    this.root?.classList.toggle("mm-prepbot--quiet", this.quiet);
+    if (!this.quiet) this.show();
+  }
+
+  /** The keys, as a line PrepBot can say when it introduces itself. */
+  keysLine() {
+    const skip = this.skipKeys || [];
+    const parts = [];
+    if (!skip.includes("a")) parts.push("A to ask me anything");
+    if (!skip.includes("m")) parts.push("M to talk to me");
+    if (!skip.includes("t")) parts.push("T to hide or show my words");
+    return parts.length ? `Press ${parts.join(", ").replace(/, ([^,]*)$/, parts.length > 1 ? " and $1" : ", $1")}.` : "";
   }
 
   /* ── menu ──────────────────────────────────────────────────────────────── */
@@ -546,8 +588,9 @@ export class PrepbotTeacher {
   }
 
   /* ── keyboard shortcuts for the menu ──────────────────────────────────────
-     A ask · V voice · S sleep / wake · W wiggle. Each presses the menu's own
-     button, so a key does exactly what a tap does. Only while this PrepBot is
+     A ask · M microphone · T speech bubble on / off · V voice · S sleep / wake ·
+     W wiggle. V, S and W press the menu's own button, so a key does exactly
+     what a tap does; A, M and T need no button and work on every page. Only while this PrepBot is
      on the screen, never while something is being typed, and never with Ctrl,
      Alt or the Cmd key held (those belong to the browser). */
   _wireKeys({ ask, voice, sleep, poke } = {}) {
@@ -560,12 +603,14 @@ export class PrepbotTeacher {
     });
     this._onKey = (e) => {
       if (e.ctrlKey || e.altKey || e.metaKey || e.repeat) return;
-      const b = KEYS[(e.key || "").toLowerCase()];
-      if (!b || !this.root?.isConnected || !this.root.offsetParent) return;
+      const k = (e.key || "").toLowerCase();
+      const direct = { a: () => this.openChat(), m: () => this.listen(), t: () => this.toggleBubble() }[k];
+      const b = KEYS[k];
+      if ((!b && !direct) || this.skipKeys.includes(k) || !this.root?.isConnected || !this.root.offsetParent) return;
       const t = e.target;
       if (t?.closest?.("input, textarea, select, [contenteditable=''], [contenteditable='true']")) return;
       e.preventDefault();
-      b.click();
+      if (direct) direct(); else b.click();
     };
     document.addEventListener("keydown", this._onKey);
   }

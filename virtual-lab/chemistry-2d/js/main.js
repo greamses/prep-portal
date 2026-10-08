@@ -1795,6 +1795,12 @@ const actor = {
   catalog: () => CATALOG.map((c) => ({ ...c, part: CATS.find((k) => k.id === c.cat).label, formula: c.kind === "reagent" ? reagent(c.key).formula : "", also: ALSO[c.key] || "" })),
   standing: () => state.items.filter((it) => it.key !== "cap").map((it) => plain(it)),
   chosen: () => { const e = expNow(); return e ? { title: e.title, task: e.task, needs: e.needs } : null; },
+  // for the tutor's commands: the pieces themselves, the practicals, the drawer
+  pieces: () => state.items.filter((it) => it.key !== "cap"),
+  capOn: (bottle) => Boolean(fittedTo(bottle, "cap")),
+  practicals: () => EXPERIMENTS.map((e) => ({ id: e.id, title: e.title })),
+  pick(id) { if (!EXPERIMENTS.some((e) => e.id === id)) return false; choose(id); if ($("cl-sheet-setups").hidden) openSheet("cl-sheet-setups"); return true; },
+  drawer(open) { setDrawer(!open); },
   /** Take a piece out of the drawer for the learner and stand it in a free place. */
   async bring(c) {
     const n = state.items.filter((it) => it.key !== "cap").length;

@@ -630,6 +630,9 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
   }
 
   function speak(text, btn) {
+    // On a page with a PrepBot tutor, the tutor says it: one voice all through.
+    const tutor = window.__prepbotPage;
+    if (tutor && typeof tutor.say === "function") { tutor.say(text); return; }
     synth.cancel();
     const cleanText = text.replace(/\\\(|\\\)|\\\[|\\\]/g, "");
     const utter = new SpeechSynthesisUtterance(cleanText);
@@ -1119,7 +1122,11 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
     if (page && typeof page.handle === "function") {
       let own = null;
       try { own = await page.handle(text); } catch (_) { own = null; }
-      if (own) { await appendMessage("bot", String(own)); return true; }
+      if (own) {
+        await appendMessage("bot", String(own));
+        try { page.say?.(String(own)); } catch (_) { /* silent */ }
+        return true;
+      }
     }
 
     const qn = parseQuizNav(t);
@@ -1274,8 +1281,15 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
       ? `\nRELEVANT SITE PAGES (use these exact URLs, don't invent others):\n${siteMatches.map((p) => `- ${p.title} (${p.href}): ${p.blurb}`).join("\n")}\n`
       : "";
 
+    // A PrepBot tutor has the run of its page: the page lists the commands it
+    // will carry out, and the reply may end with them (see parseDoTag).
+    const tutorPage = window.__prepbotPage;
+    const doSection = tutorPage && tutorPage.actions && typeof tutorPage.act === "function"
+      ? `\nYOU CONTROL THIS PAGE. ${String(tutorPage.actions)}\nWhen the student asks you to do something on the page, or doing it teaches better than describing it, DO it: say in a short sentence what you are doing, and put on a line of its own: [DO: command; command; command]. Use only the commands listed, spelled exactly. Never show a command to the student any other way.\n`
+      : "";
+
     const systemPrompt = `You are ${BOT_NAME}, the built-in AI tutor for ${SITE_INFO.name} — ${SITE_INFO.tagline}. Be encouraging and concise.
-${siteSection}
+${siteSection}${doSection}
 ${contextSection}${ragSection}${siteMatchSection}
 
 RULES: Explain step by step with clear numbered steps and brief reasoning, in simple ${userProficiency}-level language. No emojis. Use LaTeX only for equations — \\(...\\) inline, \\[...\\] block — never for ordinary words. When asked what this site does, what's available, or where to find something, answer from the site knowledge above — never invent a page or URL that isn't listed there.
@@ -1365,11 +1379,21 @@ If (and only if) you're pointing the student to one specific page from the site 
         return;
       }
 
-      const { cleanReply: afterSuggestions, chips } = parseSuggestions(fullText || "Connection error. Please try again.");
+      const { cleanReply: afterDo, commands } = parseDoTag(fullText || "Connection error. Please try again.");
+      const { cleanReply: afterSuggestions, chips } = parseSuggestions(afterDo);
       const { cleanReply, go } = parseGoTag(afterSuggestions);
       botUI.bubble.innerHTML = formatMessageHTML(cleanReply);
       addSpeakerFooter(botUI.bubble, cleanReply);
       await typesetMath(botUI.wrap);
+
+      // The tutor says the reply in its own voice, and does what it said it would.
+      const tutor = window.__prepbotPage;
+      if (tutor) {
+        try { tutor.say?.(cleanReply); } catch (_) { /* silent */ }
+        if (commands.length && typeof tutor.act === "function") {
+          Promise.resolve().then(() => tutor.act(commands)).then((note) => { if (note) appendMessage("bot", String(note)); }).catch(() => {});
+        }
+      }
 
       lastBotReply = cleanReply;
       history.push(
@@ -1414,6 +1438,18 @@ If (and only if) you're pointing the student to one specific page from the site 
   // Parses the AI's optional [GO: "/url"|"Label"] tag. Only trusted if the
   // URL is one we actually listed in the RELEVANT SITE PAGES / overview
   // block (see sendMessage) — a hallucinated path is dropped, never shown.
+  // Pulls the tutor's [DO: a; b; c] lines out of a reply: the text without
+  // them, and the commands in order. The page (window.__prepbotPage.act)
+  // decides what each one means.
+  function parseDoTag(raw) {
+    const commands = [];
+    const cleanReply = String(raw).replace(/\n?\[DO:\s*([^\]]*)\]/gi, (_, body) => {
+      body.split(";").map((c) => c.trim()).filter(Boolean).forEach((c) => commands.push(c));
+      return "";
+    }).trimEnd();
+    return { cleanReply, commands };
+  }
+
   function parseGoTag(raw) {
     const pattern = /\[GO:\s*"([^"]+)"\s*\|\s*"([^"]+)"\]\s*$/i;
     const match = raw.match(pattern);
@@ -1694,7 +1730,7 @@ If (and only if) you're pointing the student to one specific page from the site 
     return { wrap, bubble: wrap.querySelector(".msg-bubble") };
   }
 
-  const stripSuggestionsTail = (s) => s.replace(/\n?\[SUGGESTIONS:[\s\S]*$/i, "");
+  const stripSuggestionsTail = (s) => s.replace(/\n?\[DO:[^\]]*(\]|$)/gi, "").replace(/\n?\[SUGGESTIONS:[\s\S]*$/i, "");
 
   // Typewriter: reveal queued stream text at a steady, smooth pace (decoupled
   // from network chunk timing) with a blinking caret. Catches up when a big
@@ -2229,6 +2265,14 @@ If (and only if) you're pointing the student to one specific page from the site 
       toggleChat(true);
     },
     close: () => toggleChat(false),
+    /** Start listening (the chat's own microphone: what is heard is sent as a question). */
+    listen: () => {
+      const start = Date.now();
+      (function wait() {
+        if (micBtn && !micBtn.disabled && recognition) { try { micBtn.click(); } catch (_) { /* already listening */ } return; }
+        if (Date.now() - start < 3000) setTimeout(wait, 80);
+      })();
+    },
     isOpen: () => win.classList.contains("open"),
     ask: (text) => {
       toggleChat(true);

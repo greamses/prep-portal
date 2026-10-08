@@ -66,7 +66,7 @@ function mount() {
   /* The bubble starts hidden (the shared markup tucks it away for the menu),
      so anything that speaks has to bring it back first. */
   teacher.show();
-  teacher.speak([{ text: "Drag a corner, or change the sides. Tap me to ask anything.", mode: "speech" }]);
+  teacher.speak([{ text: `Drag a corner, or change the sides. ${teacher.keysLine()}`, mode: "speech" }]);
 }
 
 /* Say what the shape is once it settles. Called from script.js on any change

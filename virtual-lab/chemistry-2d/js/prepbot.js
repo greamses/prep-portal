@@ -197,8 +197,6 @@ export async function initPrepbot(bench) {
       </div>
       <div class="mm-prepbot-avatar" aria-hidden="true"></div>
     </div>
-    <button type="button" class="cl-ico cl-bot-ask" data-tip="Ask PrepBot a question, or have a piece fetched (A)" aria-label="Ask PrepBot a question">A</button>
-    <button type="button" class="cl-ico cl-bot-help" data-tip="Stuck? PrepBot says what to do next (H)" aria-label="Help: what do I do next?">H</button>
     <button type="button" class="cl-ico cl-bot-stop" data-tip="Stop PrepBot" aria-label="Stop PrepBot" hidden>${UI.close(16)}</button>`;
   wrap.appendChild(root);
   const q = (k) => root.querySelector(`[data-b="${k}"]`);
@@ -301,9 +299,8 @@ export async function initPrepbot(bench) {
     }
     teacher.show();
     teacher.speak([{ text, mode: "speech" }], { colorSeed: lines++ });
+    return text;
   }
-  root.querySelector(".cl-bot-help").addEventListener("click", help);
-  root.querySelector(".cl-bot-ask").addEventListener("click", () => teacher.openChat());
   window.addEventListener("keydown", (e) => {
     if (e.key !== "h" && e.key !== "H") return;
     if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
@@ -343,7 +340,8 @@ export async function initPrepbot(bench) {
   const COUNT = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
   const sizes = (c) => c.name.match(/\d+/g) || [];
   const family = (c) => c.name.replace(/\(.*?\)/g, "").trim();
-  /** Every piece named in a sentence, with how many: [{ c, n }]. The longest name wins a word it shares. */
+  /** Every piece named in a sentence, in the order said: [{ c, n, tag }] — how many,
+      and the letter that follows a vessel's name ("test tube B"). The longest name wins a word it shares. */
   function named(text) {
     const whole = norm(text);
     let rest = whole;
@@ -361,17 +359,133 @@ export async function initPrepbot(bench) {
       while (before.length && (before[before.length - 1] === "ml" || sizes(pick).includes(before[before.length - 1]))) before.pop();
       const word = before.pop() || "";
       const said = COUNT[word] || (word.length === 1 && "123456".includes(word) ? Number(word) : 0);
-      if (!out.some((o) => o.c === pick)) out.push({ c: pick, n: said || 1 });
-      rest = `${rest.slice(0, hit.index)} # ${rest.slice(hit.index + hit[0].length)}`;
+      const after = rest.slice(hit.index + hit[0].length).split(" ")[0] || "";
+      const tag = pick.kind === "vessel" && /^[a-z]$/.test(after) ? after.toUpperCase() : "";
+      if (!out.some((o) => o.c === pick)) out.push({ c: pick, n: said || 1, tag, at: hit.index });
+      rest = `${rest.slice(0, hit.index)} ${"#".repeat(Math.max(1, hit[0].length - 2))} ${rest.slice(hit.index + hit[0].length)}`;
     }
-    return out;
+    return out.sort((x, y) => x.at - y.at);
   }
+
+  // ── the tutor's hands, by word ──
+  // One command at a time: "get 2 test tube", "pour copper(II) sulfate solution into
+  // test tube A", "light burner", "heat beaker B", "test blue litmus paper in test
+  // tube A", "fit funnel on conical flask", "clear", "practical gas-h2", "demo
+  // hydrogen". The AI's [DO: …] line and a learner's own plain order both end here.
+  /** The piece on the bench that a name means; taken from the drawer if it is not there yet. */
+  async function ensure(ref) {
+    const all = bench.pieces();
+    if (ref.tag) { const byTag = all.find((it) => it.kind === "vessel" && it.tag === ref.tag); if (byTag) return byTag; }
+    const mine = all.filter((it) => it.kind === ref.c.kind && it.key === ref.c.key);
+    if (mine.length) return mine[mine.length - 1];
+    if (!ref.tag && ref.c.kind === "vessel") { const kin = all.filter((it) => it.kind === "vessel" && family(stock.find((k) => k.kind === "vessel" && k.key === it.key)) === family(ref.c)); if (kin.length) return kin[kin.length - 1]; }
+    return bench.bring(ref.c);
+  }
+  const VERB = /^(get|bring|fetch|take out|pour|add|open|uncap|unstopper|light|flame|turn up|turn down|put out|turn off|heat|warm|boil|test|dip|hold|fit|clear|practical|demo|show|guide|notebook|drawer|help)\b/i;
+  async function command(raw) {
+    const text = String(raw).trim();
+    const verb = (VERB.exec(text) || [""])[0].toLowerCase();
+    const args = text.slice(verb.length).trim();
+    const [left, right] = args.split(/\s+(?:into|in|to|onto|on|under|at)\s+(?!.*\s(?:into|in|to|onto|on|under|at)\s)/i);
+    switch (verb) {
+      case "get": case "bring": case "fetch": case "take out": {
+        const got = named(args);
+        if (!got.length) return `I could not find "${args}" in the drawer.`;
+        let room = 8;
+        for (const { c, n } of got) for (let i = 0; i < n && room > 0; i++, room--) await bench.bring(c);
+        return "";
+      }
+      case "open": case "uncap": case "unstopper": {
+        for (const ref of named(args)) { const it = await ensure(ref); if (it.kind === "reagent") await bench.uncap(it); }
+        return "";
+      }
+      case "pour": case "add": {
+        const from = named(left || "")[0], into = named(right || "")[0];
+        if (!from || !into) return `I did not understand "${text}".`;
+        const dst = await ensure(into);
+        const src = await ensure(from);
+        if (src === dst) return "";
+        if (src.kind === "reagent" && bench.capOn(src)) await bench.uncap(src);
+        const times = Math.min(6, Number((/(\d+)\s*(measure|portion|time)/i.exec(text) || [])[1]) || from.n || 1);
+        await bench.pour(src, dst, times);
+        return "";
+      }
+      case "light": case "flame": case "turn up": case "turn down": case "put out": case "turn off": {
+        const ref = named(args).find((r) => r.c.key === "burner" || r.c.key === "spirit") || { c: stock.find((k) => k.key === "burner"), n: 1, tag: "" };
+        const bn = await ensure(ref);
+        const level = /put out|turn off/.test(verb) ? 0 : verb === "turn down" ? 1 : Number((/\b([0-3])\b/.exec(args) || [])[1] || (verb === "turn up" ? 3 : 2));
+        await bench.flame(bn, level);
+        return "";
+      }
+      case "heat": case "warm": case "boil": {
+        const v = named(args).find((r) => r.c.kind === "vessel");
+        if (!v) return `I did not understand "${text}".`;
+        const dst = await ensure(v);
+        const bn = await ensure({ c: stock.find((k) => k.key === "burner"), n: 1, tag: "" });
+        if (!(bn.flame > 0)) await bench.flame(bn, 2);
+        await bench.heat(bn, dst);
+        return "";
+      }
+      case "test": case "dip": case "hold": {
+        const tool = named(left || "").find((r) => r.c.kind === "tool"), v = named(right || "").find((r) => r.c.kind === "vessel");
+        if (!tool || !v) return `I did not understand "${text}".`;
+        const dst = await ensure(v);
+        await bench.hold(await ensure(tool), dst, 1500);
+        return "";
+      }
+      case "fit": {
+        const tool = named(left || "").find((r) => r.c.kind === "tool"), v = named(right || "").find((r) => r.c.kind === "vessel");
+        if (!tool || !v) return `I did not understand "${text}".`;
+        const dst = await ensure(v);
+        await bench.fit(await ensure(tool), dst);
+        return "";
+      }
+      case "clear": bench.clear(); return "";
+      case "practical": return bench.pick(args.toLowerCase().trim()) ? "" : `There is no practical called "${args}".`;
+      case "demo": case "show": {
+        const l = LESSONS.find((x) => x.id === args.toLowerCase().trim());
+        if (!l) return `I have no demonstration called "${args}".`;
+        setTimeout(() => play(l), 600);
+        return "";
+      }
+      case "guide": bench.openSheet("cl-sheet-setups"); return "";
+      case "notebook": bench.openSheet("cl-sheet-notebook"); return "";
+      case "drawer": bench.drawer(!/hide|close|shut|away/i.test(args)); return "";
+      case "help": help(); return "";
+      default: return `I do not know how to "${text}".`;
+    }
+  }
+  /** Carry out a list of commands, one after another, as PrepBot (the bench is its own meanwhile). */
+  async function act(commands) {
+    if (bench.isBusy()) return "Let me finish this experiment first, then ask me again.";
+    const mine = ++token;
+    const notes = [];
+    bench.busy(true);
+    try {
+      for (const cmd of [].concat(commands).slice(0, 14)) {
+        if (mine !== token) break;
+        try { const note = await command(cmd); if (note) notes.push(note); } catch { notes.push(`I could not ${cmd}.`); }
+      }
+    } finally {
+      if (mine === token) bench.busy(false);
+    }
+    return notes.join(" ");
+  }
+
   const FETCH = /\b(get|give|bring|fetch|pass|hand|grab|take out|put|place|add|i need|i want|can i have|may i have|could i have|let me have)\b/i;
   const WHERE = /\b(where|find|locate|look for|looking for|which (part|tab|section|drawer)|can ?not find|can't find|cant find)\b/i;
   const listOf = (cs) => cs.map(({ c, n }) => (n > 1 ? `${n} × ${c.name.toLowerCase()}` : c.name.toLowerCase())).join(cs.length > 2 ? ", " : " and ");
   let lastAsked = [];
+  // a learner's own order, said plainly enough to carry out without asking the AI
+  const ORDER = /^\s*(?:please\s+|prepbot,?\s+|can you\s+|could you\s+|now\s+)*(pour|add|light|turn up|turn down|put out|turn off|heat|warm|boil|uncap|unstopper|fit|dip|clear)\b/i;
   window.__prepbotPage = {
     title: "the Chemistry Bench",
+    get actions() {
+      return `You are the tutor on this bench and you can work it yourself. Commands (pieces by the exact names in the drawer lists; a vessel already on the bench by its name and letter, e.g. "test tube A"):
+get <how many> <piece> | open <bottle> (pulls its stopper) | pour <bottle or vessel> into <vessel> (add "2 measures" for more) | light burner | flame <0-3> | put out burner | heat <vessel> (boils until nothing more happens) | test <lighted splint, glowing splint, red litmus paper, blue litmus paper, pH paper or thermometer> in <vessel> | fit <funnel, stopper, delivery tube, condenser or electrode> on <vessel> | clear (empties the bench) | guide | notebook | drawer show | drawer hide | practical <id> (chooses it and opens its guide; ids: ${bench.practicals().map((e) => e.id).join(", ")}) | demo <id> (you do the whole experiment, then the student repeats it; ids: ${LESSONS.map((l) => l.id).join(", ")}).
+A piece that is not on the bench yet is taken from the drawer when a command needs it. Do one small thing at a time when teaching, and ask the student what they see.`;
+    },
+    act,
     context() {
       const parts = ["Glassware", "Equipment", "Liquids", "Solids"].map((p) => `${p}: ${stock.filter((c) => c.part === p).map((c) => c.name + (c.formula && c.formula.length > 1 && c.kind === "reagent" ? ` (${c.formula})` : "")).join(", ")}.`).join("\n");
       const on = bench.standing();
@@ -386,6 +500,12 @@ ${exp ? `CHOSEN PRACTICAL: ${exp.title}. Task: ${exp.task} It needs: ${exp.needs
 YOU CAN FETCH PIECES: if the student wants a piece, tell them to type "get me" and its name (for example "get me a 250 mL beaker and sodium hydroxide") and it is put on the bench for them. Only name pieces that are in the drawer lists above.`;
     },
     async handle(text) {
+      if (/^\s*(help|what next|what now|what do i do|what should i do|i am stuck|i'm stuck|im stuck|next step)\b/i.test(text)) return help() || null;
+      if (ORDER.test(text) && !/\?\s*$/.test(text) && (!/^\W*(?:\w+\W+)*?(pour|add)\b/i.test(text) || /\s(into|to|in|onto|on)\s/i.test(text))) {
+        const cmd = text.replace(/^\s*(?:please\s+|prepbot,?\s+|can you\s+|could you\s+|now\s+)*/i, "").replace(/\b(the|a|an|some|please|for me)\b/gi, " ").replace(/[.!]+\s*$/, "").replace(/\s+/g, " ").trim();
+        const note = await act([cmd]);
+        return note || "Done. Watch what happens, and tell me what you see.";
+      }
       let found = named(text);
       const fetch = FETCH.test(text), where = WHERE.test(text);
       if (!found.length && lastAsked.length && /^\s*(yes|ok|okay|please|yes please|get it|bring it|get them|bring them|fetch it|do it)\b/i.test(text)) return give(lastAsked);
@@ -438,6 +558,6 @@ YOU CAN FETCH PIECES: if the student wants a piece, tell them to type "get me" a
   // a first hello, only on an empty bench
   if (bench.isEmptyBench()) {
     teacher.show();
-    teacher.speak([{ text: "Hello! Press my picture at the top and I will do an experiment for you to copy. Stuck? Press H. To ask me anything, or have me fetch a piece, press A.", mode: "speech" }]);
+    teacher.speak([{ text: `Hello! I am your tutor on this bench. Press my picture at the top and I will do an experiment for you to copy. Press H when you are stuck, and I will say what to do next. ${teacher.keysLine()} Ask me for a piece, or tell me what to do, and I will do it.`, mode: "speech" }]);
   }
 }

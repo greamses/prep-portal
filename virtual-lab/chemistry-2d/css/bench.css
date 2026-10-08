@@ -311,13 +311,8 @@ html body {
 .cl-prepbot .mm-prepbot-bubble p { font-size: 0.84rem; line-height: 1.4; }
 /* the observation note keeps clear of PrepBot's corner */
 @media (min-width: 821px) { .cl-benchwrap #cl-say { left: 42%; width: min(54%, 560px); } }
-/* beside PrepBot: the H key (what do I do next?) and, while it is working, the key that stops it */
-.cl-bot-help, .cl-bot-ask, .cl-bot-stop { position: absolute; bottom: 6px; width: 30px; height: 30px; }
-.cl-bot-help, .cl-bot-ask { font: 700 0.8rem var(--font-mono); }
-.cl-bot-help { right: 66px; }
-.cl-bot-ask { right: 102px; }
-.cl-bot-stop { right: 138px; }
-.cl-stage.is-bot .cl-bot-help, .cl-stage.is-bot .cl-bot-ask { display: none; }
+/* beside PrepBot while it is working: the key that stops it. (Its other keys - H, A, M, T - are said, not shown.) */
+.cl-bot-stop { position: absolute; right: 66px; bottom: 6px; width: 30px; height: 30px; }
 /* the piece PrepBot has just pointed to in the drawer */
 .cl-tile.is-found { outline: 2px solid var(--accent-primary); outline-offset: -2px; animation: cl-found 0.7s ease-in-out 5; }
 @keyframes cl-found { 50% { outline-color: transparent; } }

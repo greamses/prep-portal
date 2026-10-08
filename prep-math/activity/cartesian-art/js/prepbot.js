@@ -311,6 +311,7 @@ export function initPrepbot(scope = document) {
   if (!$widget || !fabBtn) return;
 
   teacher = new PrepbotTeacher({
+    skipKeys: ["t"],        // T is the studio's transform mode
     root: $widget,
     boundsEl: scope.querySelector("#ca-studio"),
     auth,
