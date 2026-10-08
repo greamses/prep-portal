@@ -27,7 +27,7 @@
    notebook.
    ========================================================================== */
 
-import { REAGENTS, newTube, add, heat, rinse, test, speciate, setUnknown, reagent, chemHtml, isEmpty, look, takeFrom, pourIn, roomIn, flameOf, massOf, boilOff, filterOut, sampleOf, gasMade, takeBottom, electrolyse } from "./chem.js";
+import { REAGENTS, newTube, add, heat, rinse, test, speciate, magnetOut, setUnknown, reagent, chemHtml, isEmpty, look, takeFrom, pourIn, roomIn, flameOf, massOf, boilOff, filterOut, sampleOf, gasMade, takeBottom, electrolyse } from "./chem.js";
 import { DEFS, VESSELS, TOOLS, SUPPORTS, vesselSvg, paintVessel, bubble, reagentSvg, toolSvg, splintAfter, supportSvg, thumb, colourOf, mouthOf, capOf, CAP_BOX } from "./glass.js";
 import { EXPERIMENTS, GROUPS, UNKNOWNS, CATIONS, ANIONS, HOWTO, stepDone } from "./waec.js";
 import { UI } from "/utils/components/ui-icons.js";
@@ -42,7 +42,7 @@ let TOP = 215;                     // and where the first row of bottles stands:
 const HEAT = { burner: 150, spirit: 116 };            // how far above its foot a burner's flame reaches
 const MOUTH = ["lit", "glow"];                        // held at the mouth
 const TAKES = { dropper: 0.5, pipette: 12.5 };        // portions drawn up (a portion is 2 cm3)
-const STAYS = ["funnel", "paper", "bung", "tubing", "cap", "condenser", "electrode"];   // fitted, and left there
+const STAYS = ["funnel", "paper", "chroma", "bung", "tubing", "cap", "condenser", "electrode"];   // fitted, and left there
 const PLUGS = ["funnel", "bung", "tubing"];           // one of these to a mouth
 const IDLE = ["waste", "syringe", "power", "holder", "tongs"];                 // never used ON anything
 const LIGHT = ["H2", "NH3"];                          // less dense than air: they rise
@@ -95,7 +95,7 @@ const CATS = [
 // other words a student might search by
 const ALSO = {
   stand: "clamp stand boss", burette: "titration", pipette: "titration", distflask: "distillation side arm", condenser: "distillation liebig", balance: "weighing scale mass tare",
-  trough: "gas collection over water pneumatic", tubing: "delivery tube bung", bung: "bung cork", funnel: "filtration filter", paper: "filtration filter", burner: "bunsen heat", syringe: "gas volume measure",
+  trough: "gas collection over water pneumatic", tubing: "delivery tube bung", bung: "bung cork", funnel: "filtration filter", paper: "filtration filter", magnet: "magnetic separation iron filings", chroma: "chromatography ink dyes separation", burner: "bunsen heat", syringe: "gas volume measure",
   spirit: "alcohol lamp heat", flask: "erlenmeyer", flask100: "erlenmeyer", cyl10: "graduated", cyl100: "graduated", dish: "basin", tripod: "gauze", holder: "tongs peg", waste: "sink bin",
   sepfunnel: "separating separation immiscible oil", electrode: "electrolysis carbon rod graphite cathode anode", power: "electrolysis battery cell supply", gasjar: "gas collection",
 };
@@ -227,6 +227,7 @@ function place(it, transform) {
 }
 function paint(it, opts = {}) {
   const g = nodes[it.id].g;
+  g.classList.toggle("has-sublimate", (it.t.sublimate || 0) > 0);
   const out = paintVessel(g, it.key, it.t, { seed: Number(it.id.slice(1)) + 1, tilt: it.tilt || 0, ...opts });
   if (it.flip) {
     // an upturned jar over water is full of the trough's water, less whatever gas has pushed it down
@@ -262,6 +263,27 @@ function dress(it) {
   const g = n.g;
   if (TAKES[it.key]) g.querySelector(".cl-drop-liq").style.fill = it.sample ? `rgba(${it.rgb || [200, 224, 240]},0.9)` : "transparent";
   if (it.key === "wire") g.querySelector(".cl-loop").style.fill = it.sample ? "#f2f6fb" : "transparent";
+  if (it.key === "magnet") g.classList.toggle("has-filings", Boolean(it.sample));
+  if (it.key === "chroma") {
+    const ink = INKS[it.ink || "black"], p = it.washed ? 0 : it.p || 0;
+    const front = 100 - (100 - FRONT_Y) * p;
+    g.querySelector(".cl-ink").style.fill = `rgb(${ink.rgb})`;
+    g.querySelector(".cl-ink").style.opacity = it.washed ? 0.12 : Math.max(0.1, 1 - p * 1.6);
+    const wet = g.querySelector(".cl-wetfront");
+    wet.setAttribute("y", front.toFixed(1));
+    wet.setAttribute("height", (100 - front).toFixed(1));
+    g.querySelector(".cl-front").setAttribute("d", `M-12 ${front.toFixed(1)}H12`);
+    g.querySelectorAll(".cl-dye").forEach((d, i) => {
+      const dye = ink.dyes[i];
+      if (!dye) { d.setAttribute("opacity", 0); return; }
+      // a spot cannot be ahead of the water that carries it
+      const y = Math.max(front + 3, 86 - dye[2] * (86 - FRONT_Y) * p);
+      d.setAttribute("cy", y.toFixed(1));
+      d.setAttribute("ry", (3.6 + p * 2.4).toFixed(1));
+      d.style.fill = `rgb(${dye[1]})`;
+      d.setAttribute("opacity", Math.min(0.9, p * 4).toFixed(2));
+    });
+  }
   if (it.key === "paper") {
     g.classList.toggle("is-cone", it.on != null);
     g.querySelector(".cl-residue").style.fill = it.residue ? `rgb(${it.residue})` : "transparent";
@@ -294,6 +316,53 @@ function readouts() {
     }
   }
   lens();
+}
+
+// ── paper chromatography ────────────────────────────────────────────────────
+// The strip hangs in a beaker from a rod across its mouth. With a LITTLE water in the
+// beaker (enough to touch the paper, not enough to reach the ink) the water climbs the
+// paper and carries each dye of the ink a different distance. Distances are in mm from the
+// pencil line, so that Rf can be worked out: spot ÷ solvent front.
+const FRONT_Y = 12;                // where the water stops: 74 mm above the pencil line
+const INKS = {
+  black: { name: "black", rgb: [28, 28, 34], dyes: [["blue", [58, 110, 200], 0.84], ["red", [214, 60, 70], 0.55], ["yellow", [232, 196, 40], 0.27]] },
+  green: { name: "green", rgb: [40, 120, 70], dyes: [["blue", [58, 110, 200], 0.84], ["yellow", [232, 196, 40], 0.27]] },
+  purple: { name: "purple", rgb: [108, 60, 140], dyes: [["blue", [58, 110, 200], 0.84], ["red", [214, 60, 70], 0.55]] },
+  orange: { name: "orange", rgb: [226, 120, 40], dyes: [["red", [214, 60, 70], 0.55], ["yellow", [232, 196, 40], 0.27]] },
+};
+const running = new Map();          // strip id → its animation frame
+function runChroma(paper) {
+  const host = byId(paper.on);
+  if (!host || paper.p >= 1 || paper.washed || running.has(paper.id)) return;
+  const def = VESSELS[host.key];
+  if (host.t.vol + (host.t.oil || 0) <= 0) { say("The strip hangs in an empty beaker. Pour in a LITTLE water: enough to touch the bottom of the paper, but not to reach the ink spot."); return; }
+  const depth = -def.top - Math.abs(Number(nodes[host.id].g.querySelector(".cl-meniscus").getAttribute("cy")));   // from the rim down to the water
+  if (depth > 100) { say("The water does not reach the paper yet. Add a little more."); return; }
+  if (depth < 88) {
+    paper.washed = true;
+    dress(paper);
+    record(host, { title: "Hung a chromatography strip in the water", obs: [{ text: "The water covers the ink spot, and the ink just washes off into the water. Nothing separates.", why: "The spot must start ABOVE the water, so that the water has to climb the paper past it. Take a fresh strip and use less water." }], flags: ["chroma:washed"] });
+    return;
+  }
+  const t0 = performance.now() - (paper.p || 0) * 9000;
+  const step = (now) => {
+    if (!nodes[paper.id] || paper.on == null) { running.delete(paper.id); return; }
+    paper.p = Math.min(1, (now - t0) / 9000);
+    dress(paper);
+    if (paper.p < 1) { running.set(paper.id, requestAnimationFrame(step)); return; }
+    running.delete(paper.id);
+    const ink = INKS[paper.ink || "black"], run = 86 - FRONT_Y;
+    record(host, {
+      title: `Ran a chromatogram of ${ink.name} ink`,
+      obs: [
+        { text: `The water climbs the paper and carries the ink up with it. The ${ink.name} ink separates into ${ink.dyes.length} spots: ${ink.dyes.map((d) => d[0]).join(", ")}.`, why: "The ink is a mixture of dyes. Each is carried a different distance: the more soluble a dye is in the water and the less it clings to the paper, the further it travels." },
+        { text: `From the pencil line: solvent front ${run} mm; ${ink.dyes.map((d) => `${d[0]} ${Math.round(d[2] * run)} mm`).join(", ")}.`, why: "Rf = distance moved by the spot ÷ distance moved by the solvent front. It is always less than 1, and it identifies the dye." },
+      ],
+      flags: ["chroma"],
+    });
+  };
+  say("The water has reached the paper and is climbing it. Watch the ink.");
+  running.set(paper.id, requestAnimationFrame(step));
 }
 
 // ── a filter paper is FOLDED into its cone ──────────────────────────────────
@@ -793,6 +862,13 @@ function targetOf(it) {
       return dx < VESSELS[v.key].rTop + 20 && Math.abs(it.y - m.y) < 70 ? dx : -1;
     });
   }
+  if (it.key === "chroma") {
+    // the rod lies across the mouth of a beaker, and the strip hangs inside
+    return nearest(open().filter((v) => { const d = VESSELS[v.key]; return !d.fixed && d.rTop >= 26 && -d.top >= 90 && !fittedTo(v, "chroma") && !plugIn(v); }), (v) => {
+      const mo = mouth(v), dx = Math.abs(it.x - mo.x);
+      return dx < VESSELS[v.key].rTop + 24 && Math.abs(it.y - mo.y) < 70 ? dx : -1;
+    });
+  }
   if (it.key === "paper") {
     // a filter paper goes in a funnel, and nowhere else
     return nearest(tools("funnel").filter((f) => !fittedTo(f, "paper")), (f) => {
@@ -1054,8 +1130,11 @@ function swirl(v, by = "hand") {
   const push = () => { if (!nodes[v.id] || n > 12) return; kick(v, (n % 2 ? -1 : 1) * (70 - n * 4)); n++; setTimeout(push, 130); };
   push();
   setTimeout(() => nodes[v.id] && nodes[v.id].g.classList.remove("is-swirling"), 1900);
+  const sandy = (v.t.solid.sand || 0) > 0 && v.t.vol > 0;
+  if (sandy) v.t.susp = true;
   const cloudy = Object.keys(speciate(v.t).ppt).length > 0;
   if (cloudy) paint(v, { fresh: true });
+  if (sandy && !cloudy) { record(v, { title: by === "rod" ? "Stirred with a glass rod" : "Swirled", obs: [{ text: "The sand is stirred up through the water. Poured now, it goes over with the liquid.", why: "Sand does not dissolve: stirring only spreads it through the water for a while. Left alone it settles, and the water can be poured off it." }], flags: ["swirled"] }); return; }
   record(v, { title: by === "rod" ? "Stirred with a glass rod" : "Swirled", obs: cloudy ? [{ text: "The precipitate is stirred up through the liquid, and slowly settles again.", why: "A precipitate is a solid that does not dissolve: stirring spreads it out but cannot make it go into solution." }] : [], flags: ["swirled"] });
   if (!cloudy) say(v.t.vol > 0 ? "The liquid swirls round and mixes." : "There is no liquid in it to swirl.");
 }
@@ -1104,6 +1183,8 @@ function deliver(v, s, from, c, flag) {
   if (res.flags.some((f) => f.startsWith("gas:"))) bubble(nodes[v.id].g, v.key, v.t);
   if (c) v._surface = v.y - Math.max(painted.level, 10);
   record(v, res);
+  const strip = fittedTo(v, "chroma");
+  if (strip) setTimeout(() => nodes[strip.id] && runChroma(strip), 700);
   return res;
 }
 /** Pour a measure from an open bottle into v. */
@@ -1117,6 +1198,8 @@ function pourReagent(bottle, v, amount) {
   v._surface = v.y - Math.max(painted.level, 10);
   if (res.flags.some((f) => f.startsWith("gas:"))) bubble(nodes[v.id].g, v.key, v.t, res.flags.includes("gas:O2") ? 1.8 : 1);
   record(v, res);
+  const strip = fittedTo(v, "chroma");
+  if (strip) setTimeout(() => nodes[strip.id] && runChroma(strip), 700);
   return res;
 }
 
@@ -1141,9 +1224,16 @@ function use(it, v) {
     if (n <= 0) return false;
     if (roomIn(v.t) < n - 1e-6) { say("It is full. Empty it, or use another one.", v, "no"); return false; }
     const c = look(it.t).rgb;
-    const res = deliver(v, takeFrom(it.t, n), plain(it), c);
+    const hadSand = (it.t.solid.sand || 0) > 0;
+    const part = takeFrom(it.t, n);
+    const res = deliver(v, part, plain(it), c);
     paint(it, { tilt: -108 });
     if (res) stream(v, c, viscOf(it));
+    if (res && hadSand && (it.t.solid.sand || 0) > 0 && !state.seen.includes("decanted:" + it.id)) {
+      state.seen.push("decanted:" + it.id);
+      noteFlags(["decanted"]);
+      say("The clear liquid pours off and the sand stays where it settled: that is decanting.", it);
+    }
     save();
     return Boolean(res) && it.t.vol + (it.t.oil || 0) > 0;
   }
@@ -1238,6 +1328,17 @@ function use(it, v) {
     return false;
   }
   if (it.key === "rod") { swirl(v, "rod"); return false; }
+  if (it.key === "magnet") {
+    if (it.sample) { say("The magnet is already bearded with filings. Wipe them off first: it is in the magnet's own note.", null, "no"); return false; }
+    const rest = Object.keys(v.t.solid).filter((k) => (v.t.solid[k] || 0) > 0).map((k) => ({ sand: "sand", rocksalt: "salt", S: "sulfur", I2: "iodine", CaCO3: "marble", CuO: "copper(II) oxide", MnO2: "manganese(IV) oxide", crystals: "crystals" }[k]));
+    const got = magnetOut(v.t);
+    if (!got) { say(isEmpty(v.t) ? "There is nothing in there." : "Nothing in there is pulled to the magnet.", v); return false; }
+    it.sample = { fe: got };
+    dress(it);
+    paint(v);
+    record(v, { title: "Held a magnet over it", obs: [{ text: `The iron filings jump up and cling to the poles of the magnet.${rest.length ? ` The ${rest.join(" and ")} ${rest.length > 1 ? "are" : "is"} left behind.` : ""}`, why: "Iron is magnetic. Sulfur, sand and salt are not. In a MIXTURE each substance keeps its own properties, so a magnet takes the iron out and changes nothing." }], flags: ["magnet"] });
+    return false;
+  }
   if (it.key === "wire") {
     if (v.t.vol <= 0) { say("There is no liquid in there to dip the wire in.", v, "no"); return false; }
     it.sample = { f: flameOf(v.t), vid: v.id, tag: v.tag };
@@ -1273,6 +1374,14 @@ function warm(heater, v) {
   const def = VESSELS[v.key];
   const res = heat(v.t);
   if (res.refused) { say(res.refused, v, "no"); return false; }
+  if (res.flags.includes("sublimed")) {
+    const gv = nodes[v.id].g;
+    gv.classList.add("is-iodine");
+    setTimeout(() => nodes[v.id] && nodes[v.id].g.classList.remove("is-iodine"), 6000);
+    paint(v);
+    record(v, res);
+    return false;
+  }
   let more = false;
   const noNone = () => { res.obs = res.obs.filter((o) => !/No other change/.test(o.text)); };
   if (def.arm) {
@@ -1671,6 +1780,7 @@ window.addEventListener("pointerup", (e) => {
     place(it);
     const where = plain(host);
     say(it.key === "funnel" ? (fittedTo(it, "paper") ? `The funnel is in ${where}, with its filter paper. Whatever is poured in now is filtered.` : `The funnel is in ${where}. It needs a filter paper: let one go at the funnel.`)
+      : it.key === "chroma" ? `The strip hangs in ${where} from its rod.`
       : it.key === "paper" ? `The filter paper is folded into a cone and opened out in the funnel: three layers on one side, one on the other. ${host.on ? "Whatever is poured in now is filtered." : "Stand the funnel in the mouth of a flask."}`
       : it.key === "tubing" ? `The delivery tube is in ${where}. Drag its orange end to where the gas should go.`
       : it.key === "cap" ? `The ${it.v === "drop" ? "dropper" : "stopper"} is back in the ${reagent(host.key).name}.`
@@ -1679,6 +1789,7 @@ window.addEventListener("pointerup", (e) => {
       : `${cap1(where)} is stoppered.`, host.kind === "vessel" ? host : null);
     dress(it);
     if (it.key === "paper") foldIn(it);
+    if (it.key === "chroma") runChroma(it);
   } else if (d.sits) {
     // a vessel left over a flame stays there
     it.x = d.over.x;
@@ -1774,8 +1885,8 @@ function openMenu(it) {
   const menu = $("cl-menu");
   const lines = [];
   const acts = [];
-  const SHORT = { empty: "Empty", swirl: "Swirl", flip: "Turn over", light: "Light", remove: "Put away" };
-  const act = (id, tip, icon) => acts.push(`<button type="button" class="cl-act" data-act="${id}" aria-label="${tip}">${icon}<span>${id === "light" && /out/i.test(tip) ? "Put out" : id === "empty" && /fresh|plunger/i.test(tip) ? (/fresh/i.test(tip) ? "Fresh paper" : "Push in") : SHORT[id] || tip}</span></button>`);
+  const SHORT = { empty: "Empty", swirl: "Swirl", flip: "Turn over", light: "Light", remove: "Put away", ink: "Another ink" };
+  const act = (id, tip, icon) => acts.push(`<button type="button" class="cl-act" data-act="${id}" aria-label="${tip}">${icon}<span>${id === "light" && /out/i.test(tip) ? "Put out" : id === "empty" && /fresh|plunger|wipe/i.test(tip) ? (/strip/i.test(tip) ? "Fresh strip" : /fresh/i.test(tip) ? "Fresh paper" : /wipe/i.test(tip) ? "Wipe off" : "Push in") : SHORT[id] || tip}</span></button>`);
   let slider = "";
   if (it.kind === "vessel") {
     const def = VESSELS[it.key];
@@ -1804,6 +1915,12 @@ function openMenu(it) {
     act("light", lit(it) ? "Put it out" : "Light it", ICON.fire);
   } else if (it.sample) { if (scaleOf(it)) slider = readingBox(it); lines.push(it.key === "wire" ? "Dipped, ready for the flame." : `Holding ${cm3(it.sample.vol + (it.sample.oil || 0))} of liquid.`); act("empty", "Empty it", ICON.empty); }
   else if (it.key === "syringe") { lines.push(it.gas ? `${Math.round(it.gas.n * 12)} cm\u00b3 of gas.` : "Let it go at a stand's clamp to hold it level, then drag the orange end of a delivery tube to its nozzle."); if (it.gas) act("empty", "Push the plunger back in", ICON.empty); }
+  else if (it.key === "magnet") { lines.push(it.sample ? "Iron filings cling to both poles." : "Hold it over a mixture. Only iron is pulled to it."); if (it.sample) act("empty", "Wipe the filings off", ICON.empty); }
+  else if (it.key === "chroma") {
+    lines.push(`A spot of ${INKS[it.ink || "black"].name} ink on the pencil line. ${it.washed ? "The ink has washed off: take a fresh strip." : it.p >= 1 ? "Run: measure each spot, and the solvent front, from the pencil line." : it.on ? "It needs a little water in the beaker: touching the paper, below the ink." : "Let it go at the mouth of a beaker and the rod lies across the rim."}`);
+    act("ink", "Another ink", ICON.swirl);
+    if (it.p || it.washed) act("empty", "A fresh strip", ICON.empty);
+  }
   else if (it.key === "funnel") lines.push(fittedTo(it, "paper") ? (it.on ? "Paper in, and sitting in a vessel: ready to filter." : "Paper in. Let the funnel go at the mouth of a flask or beaker.") : "Plain glass. It needs a filter paper: let one go at the funnel.");
   else if (it.key === "paper") { lines.push(it.residue ? "There is residue in the paper: the solid that could not pass through." : it.on ? "Folded in half, in half again, and opened into a cone in the funnel." : "A flat disc of filter paper. Let it go at a funnel and it is folded into a cone."); if (it.residue || it.wet) act("empty", "A fresh filter paper", ICON.empty); }
   else if (it.key === "tubing") lines.push(it.on ? "Drag the orange end to a gas jar, a gas syringe or a tube." : "Let it go at the mouth of the flask that makes the gas.");
@@ -1839,6 +1956,7 @@ $("cl-menu").addEventListener("click", (e) => {
   const what = b.dataset.act;
   if (what === "remove") return removeItem(it);
   if (what === "read") { checkReading(it, $("cl-reading").value); return; }
+  if (what === "ink") { const names = Object.keys(INKS); it.ink = names[(names.indexOf(it.ink || "black") + 1) % names.length]; it.p = 0; it.washed = false; cancelAnimationFrame(running.get(it.id)); running.delete(it.id); dress(it); if (it.on != null) runChroma(it); save(); select(it); openMenu(it); return; }
   if (what === "swirl") { $("cl-menu").hidden = true; swirl(it); return; }
   if (what === "light") { it.flame = lit(it) ? 0 : 2; dress(it); say(lit(it) ? `The ${nameOf(it).toLowerCase()} is lit.` : `The ${nameOf(it).toLowerCase()} is out.`); }
   else if (what === "flip") { it.flip = !it.flip; it.jar = null; it.t.gas = null; glide(it, true); place(it); paint(it); say(it.flip ? `${cap1(plain(it))} is upside down. A gas lighter than air will stay in it.` : `${cap1(plain(it))} is the right way up.`, it); }
@@ -1848,7 +1966,12 @@ $("cl-menu").addEventListener("click", (e) => {
     nodes[it.id].g.querySelector(".cl-bubbles").innerHTML = "";
     paint(it);
     record(it, res);
-  } else { it.sample = null; it.gas = null; it.residue = null; it.wet = null; dress(it); }
+  } else {
+    it.sample = null; it.gas = null; it.residue = null; it.wet = null;
+    if (it.key === "chroma") { it.p = 0; it.washed = false; cancelAnimationFrame(running.get(it.id)); running.delete(it.id); }
+    dress(it);
+    if (it.key === "chroma" && it.on != null) runChroma(it);
+  }
   save();
   select(it);
 });
@@ -2186,6 +2309,7 @@ const actor = {
     tool.on = v.id;
     place(tool);
     dress(tool);
+    if (tool.key === "chroma") runChroma(tool);
     if (tool.key === "paper") { foldIn(tool); await pause(FOLD_MS); }
     noteFlags([`fitted:${tool.key}`]);
     save();

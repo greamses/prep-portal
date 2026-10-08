@@ -594,3 +594,15 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 @keyframes pf-left { 0%, 27% { opacity: 0; transform: scaleX(1); } 28%, 33% { opacity: 1; transform: scaleX(1); fill: #f7f4ec; } 42% { transform: scaleX(0.02); fill: #d9d3c2; } 52% { opacity: 1; transform: scaleX(-1); fill: #ece7da; } 54%, 100% { opacity: 0; transform: scaleX(-1); } }
 @keyframes pf-wedge { 0%, 53% { opacity: 0; transform: translate(0, 0) rotate(0deg) scale(1); } 54%, 60% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); } 80% { opacity: 1; transform: translate(0, 22px) rotate(-135deg) scale(1.1); } 94% { opacity: 1; transform: translate(0, 77px) rotate(-135deg) scale(1.42, 1.5); } 100% { opacity: 0; transform: translate(0, 77px) rotate(-135deg) scale(1.42, 1.5); } }
 @keyframes pf-cone { 0%, 92% { opacity: 0; } 100% { opacity: 1; } }
+
+/* ── the separating techniques ─────────────────────────────────────────── */
+.cl-beard { display: none; }
+.cl-item.has-filings .cl-beard { display: inline; }
+.cl-pole-n { fill: #23272e; font: 700 6px var(--font-mono); text-anchor: middle; }
+.cl-mm { fill: #7c7868; font: 500 3.6px var(--font-mono); text-anchor: end; }
+.cl-sublimate { display: none; }
+.cl-item.has-sublimate .cl-sublimate { display: inline; }
+.cl-item.is-iodine .cl-wisps { opacity: 0.95; }
+.cl-item.is-iodine .cl-wisps path { stroke: #9a5fc4; stroke-opacity: 0.75; stroke-width: 4.2; }
+@media (prefers-reduced-motion: no-preference) { .cl-item.is-iodine .cl-wisps path { animation: cl-wisp 1.4s ease-in-out infinite; } }
+.cl-tile .cl-sublimate, .cl-tile .cl-beard { display: none; }

@@ -287,6 +287,7 @@ export function vesselSvg(key, uid, tag = "") {
     ${marks}
     ${def.volume ? `<text class="cl-mark-v" x="${def.spout ? f1(-rAt(P, def.top * 0.5) * 0.45) : 0}" y="${f1(def.spout ? def.top * (def.fill + 0.06) : def.top * 0.3)}">${def.volume}</text>` : ""}
     ${def.spout && def.marks && R > 30 ? `<text class="cl-mark-b" x="${f1(-R * 0.42)}" y="${f1(def.top * 0.2)}">PREP</text>` : ""}
+    <g class="cl-sublimate">${[0.06, 0.1, 0.15, 0.19, 0.24].map((at, i) => { const y = def.top * (1 - at), r = Math.max(2, rAt(P, y) - 2.4), s = i % 2 ? 1 : -1; return `<path d="M${f1(s * r)} ${f1(y)}l${-s * 3.2} -2.400l${-s * 1.6} 3l${s * 2.4} 2.400z" fill="#2c2233" stroke="#b9a8d8" stroke-opacity="0.8" stroke-width="0.5"/><path d="M${f1(-s * r)} ${f1(y + 5)}l${s * 2.6} -2l${s * 1.4} 2.600l${-s * 2} 2z" fill="#3a2d45" stroke="#b9a8d8" stroke-opacity="0.7" stroke-width="0.5"/>`; }).join("")}</g>
     <ellipse class="cl-g-rim" cx="0" cy="${def.top}" rx="${rimRx}" ry="${f1(rimRy)}"/>
     ${glassy && def.rTop > 9 ? `<ellipse class="cl-g-lip" cx="0" cy="${f1(def.top + 0.5)}" rx="${f1(rimRx - 2.6)}" ry="${f1(Math.max(1.2, rimRy - 1.5))}"/><path class="cl-g-rimhi" d="M${f1(-rimRx * 0.72)} ${f1(def.top + rimRy * 0.7)}Q0 ${f1(def.top + rimRy * 1.5)} ${f1(rimRx * 0.72)} ${f1(def.top + rimRy * 0.7)}"/>` : ""}
     ${spout}
@@ -423,6 +424,7 @@ const AMBER = ["agno3", "h2o2", "ki"];        // kept in brown glass, away from 
 const SOLID_FILL = {
   mg: [198, 202, 206], zn: [150, 158, 166], fe: [84, 84, 90], cu: [190, 106, 62],
   caco3: [238, 236, 228], cuo: [38, 36, 36], mno2: [58, 50, 48],
+  sandsalt: [226, 208, 172], sand: [214, 186, 132], sulfur: [236, 214, 74], iodine: [58, 46, 66],
 };
 const DROPPER_FILL = { ui: [76, 176, 80], phph: [226, 232, 238], mo: [240, 140, 40] };
 const SHORT = { ui: "Univ.", phph: "Phph", mo: "M.O." };
@@ -471,7 +473,7 @@ export const CAP_BOX = { bottle: { x0: -20, y0: -22, x1: 20, y1: 8 }, jar: { x0:
 
 export function reagentSvg(id, uid, capped = false) {
   const r = reagent(id);
-  const size = r.formula.length <= 4 ? 12.5 : r.formula.length <= 6 ? 10.5 : 8.6;
+  const size = r.formula.length <= 4 ? 12.5 : r.formula.length <= 6 ? 10.5 : r.formula.length <= 8 ? 8.6 : 7;
   if (r.kind === "solid") {
     const fill = rgba(SOLID_FILL[id]);
     return `
@@ -533,6 +535,8 @@ export const TOOLS = {
   pipette: { name: "Pipette (25 mL) and filler", act: [0, 0], bbox: { x0: -12, y0: -190, x1: 12, y1: 6 } },
   funnel: { name: "Filter funnel", act: [0, 0], bbox: { x0: -40, y0: -66, x1: 40, y1: 34 } },
   paper: { name: "Filter paper", act: [0, 0], bbox: { x0: -34, y0: -62, x1: 34, y1: 6 } },
+  magnet: { name: "Horseshoe magnet", act: [0, 0], bbox: { x0: -24, y0: -64, x1: 24, y1: 8 } },
+  chroma: { name: "Chromatography paper", act: [0, 0], bbox: { x0: -42, y0: -10, x1: 42, y1: 108 } },
   bung: { name: "Rubber stopper", act: [0, 0], bbox: { x0: -16, y0: -12, x1: 16, y1: 12 } },
   tubing: { name: "Stopper and delivery tube", act: [0, 0], bbox: { x0: -18, y0: -52, x1: 36, y1: 12 } },
   syringe: { name: "Gas syringe", act: [0, -11], bbox: { x0: -110, y0: -40, x1: 150, y1: 8 } },
@@ -753,6 +757,35 @@ export function toolSvg(key, it = {}) {
   if (key === "rod") {
     return `<path d="M-34 -58L40 2" stroke="#fff" stroke-opacity="0.16" stroke-width="6" stroke-linecap="round"/><path d="M-34 -58L40 2" stroke="url(#g-streak)" stroke-width="5" stroke-linecap="round" opacity="0.5"/>
       <path d="M-34 -58L40 2" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="0.9" stroke-linecap="round" transform="translate(-1.6 2)"/><path d="M-34 -58L40 2" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="0.9" stroke-linecap="round" transform="translate(1.6 -2)"/>${hit(b)}`;
+  }
+  if (key === "magnet") {
+    // a horseshoe magnet, poles down: red enamel, bare steel pole pieces, and the beard of
+    // filings it picks up
+    const beard = [-15, -11, -8, 8, 11, 15].map((x, i) => `<path d="M${x} 0l${(i % 3) - 1} ${5 + (i % 2) * 3}M${x + 1.5} 0l${1 - (i % 3)} ${7 - (i % 2) * 2}M${x - 1.5} 0l${(i % 2) - 0.5} 6" stroke="#3a3d44" stroke-width="1.1" stroke-linecap="round"/>`).join("");
+    return `<ellipse cx="0" cy="2" rx="22" ry="3.5" fill="#000" fill-opacity="0.3" filter="url(#g-soft)"/>
+      <path d="M-18 -12V-40a18 18 0 0 1 36 0V-12H7V-40a7 7 0 0 0 -14 0V-12z" fill="#c8382f" stroke="#7a1f19" stroke-width="0.8"/>
+      <path d="M-18 -12V-40a18 18 0 0 1 36 0V-12H7V-40a7 7 0 0 0 -14 0V-12z" fill="url(#g-shade)" opacity="0.55"/>
+      <path d="M-15.5 -14V-40a15.5 15.5 0 0 1 11 -14.8" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="1.6" stroke-linecap="round"/>
+      <rect x="-18" y="-12" width="11" height="12" fill="url(#g-metal)" stroke="#4a515b" stroke-width="0.6"/><rect x="7" y="-12" width="11" height="12" fill="url(#g-metal)" stroke="#4a515b" stroke-width="0.6"/>
+      <text class="cl-pole-n" x="-12.5" y="-3">N</text><text class="cl-pole-n" x="12.5" y="-3">S</text>
+      <g class="cl-beard">${beard}</g>${hit(b)}`;
+  }
+  if (key === "chroma") {
+    // a strip of chromatography paper hung from a glass rod laid across a beaker: a pencil line
+    // near the bottom with the ink spot on it, and millimetres marked up the edge to measure by
+    let rule = "";
+    for (let mm = 0; mm <= 80; mm += 5) rule += `<path d="M${mm % 10 === 0 ? 7 : 9} ${86 - mm}H12" stroke="#8d8672" stroke-width="0.5"/>${mm % 20 === 0 && mm ? `<text class="cl-mm" x="5.5" y="${88 - mm}">${mm}</text>` : ""}`;
+    return `<rect x="-38" y="-5" width="76" height="5" rx="2.5" fill="url(#g-glass-v)" stroke="#fff" stroke-opacity="0.7" stroke-width="0.7"/><rect x="-36" y="-4.2" width="72" height="1.1" rx="0.5" fill="#fff" fill-opacity="0.7"/>
+      <path d="M-12 -5.500V100H12V-5.500q-12 -4 -24 0z" fill="#f7f4ec" stroke="#cfc8b6" stroke-width="0.6"/>
+      <path d="M-12 -5.500V100H12V-5.500q-12 -4 -24 0z" fill="url(#g-paper-sheen)" opacity="0.7"/>
+      <clipPath id="cp-${it && it.id ? it.id : "tile"}"><rect x="-12" y="0" width="24" height="100"/></clipPath>
+      <g clip-path="url(#cp-${it && it.id ? it.id : "tile"})">
+        <rect class="cl-wetfront" x="-12" y="100" width="24" height="0" fill="#5b7fa8" fill-opacity="0.2"/>
+        <ellipse class="cl-dye" data-n="0" cx="0" cy="86" rx="5" ry="3.6" opacity="0"/><ellipse class="cl-dye" data-n="1" cx="0" cy="86" rx="5" ry="3.6" opacity="0"/><ellipse class="cl-dye" data-n="2" cx="0" cy="86" rx="5" ry="3.6" opacity="0"/>
+        <path class="cl-front" d="M-12 100H12" stroke="#5b7fa8" stroke-opacity="0.75" stroke-width="0.9"/>
+      </g>
+      <path d="M-12 86H12" stroke="#7c7868" stroke-width="0.6" stroke-dasharray="1.5 1.2"/>
+      <circle class="cl-ink" cx="0" cy="86" r="3" fill="#1c1c22"/>${rule}${hit(b)}`;
   }
   if (key === "holder") {
     // the wooden kind: two beech arms hinged like a clothes peg on a coiled steel spring, a round

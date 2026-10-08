@@ -75,6 +75,11 @@ export const REAGENTS = [
   { id: "caco3", group: "solid", kind: "solid", name: "marble chips", formula: "CaCO3", solid: { CaCO3: 2 } },
   { id: "cuo", group: "solid", kind: "solid", name: "copper(II) oxide", formula: "CuO", solid: { CuO: 1 } },
   { id: "mno2", group: "solid", kind: "solid", name: "manganese(IV) oxide", formula: "MnO2", solid: { MnO2: 1 } },
+  // mixtures, and the things that make them, for the separating techniques
+  { id: "sandsalt", group: "solid", kind: "solid", name: "sand and salt mixture", formula: "Sand+Salt", solid: { sand: 1.5, rocksalt: 1 } },
+  { id: "sand", group: "solid", kind: "solid", name: "sand", formula: "SiO2", solid: { sand: 1.5 } },
+  { id: "sulfur", group: "solid", kind: "solid", name: "sulfur powder", formula: "S", solid: { S: 1.5 } },
+  { id: "iodine", group: "solid", kind: "solid", name: "iodine crystals", formula: "I2", solid: { I2: 1 } },
 
   { id: "ui", group: "indicator", kind: "indicator", name: "universal indicator", formula: "UI" },
   { id: "phph", group: "indicator", kind: "indicator", name: "phenolphthalein", formula: "Ph" },
@@ -154,6 +159,10 @@ export const SOLID = {
   CaCO3: { name: "marble chips", rgb: [238, 236, 228] },
   CuO: { name: "copper(II) oxide", rgb: [38, 36, 36] },
   MnO2: { name: "manganese(IV) oxide", rgb: [52, 46, 44] },
+  sand: { name: "sand", rgb: [214, 186, 132] },
+  rocksalt: { name: "salt", rgb: [246, 246, 242] },
+  S: { name: "sulfur", rgb: [236, 214, 74] },
+  I2: { name: "iodine", rgb: [58, 46, 66] },
   crystals: { name: "crystals", rgb: [244, 244, 240] },      // what is left when the water has boiled away; coloured by t.crystal
 };
 
@@ -396,6 +405,11 @@ function settle(t, heated) {
     const did = (e) => { ev.push(e); moved = true; };
     let n;
 
+    // physical changes, which the separating techniques turn on: salt dissolves in water (sand does
+    // not), and iodine heated dry goes straight to vapour and comes back as crystals on cooler glass
+    if (t.vol > EPS && (n = get(t.solid, "rocksalt")) > EPS) { delete t.solid.rocksalt; bump(aq, "Na", n * 2); bump(aq, "Cl", n * 2); did({ id: "dissolveSalt", n }); }
+    if (heated && t.vol <= EPS && (n = get(t.solid, "I2")) > EPS) { delete t.solid.I2; t.sublimate = (t.sublimate || 0) + n; did({ id: "sublime", n }); }
+
     if ((n = Math.min(get(aq, "H"), get(aq, "OH"))) > EPS) { bump(aq, "H", -n); bump(aq, "OH", -n); did({ id: "neutral", n }); }
     if ((n = Math.min(get(aq, "H"), get(aq, "NH3"))) > EPS) { bump(aq, "H", -n); bump(aq, "NH3", -n); bump(aq, "NH4", n); did({ id: "neutralNH3", n }); }
     // an ammonium salt and an alkali: ammonia is set free in the solution (and driven off by heat)
@@ -502,6 +516,15 @@ function act(t, change, { heated = false, adding = null } = {}) {
   const has = (id) => events.some((e) => e.id === id);
   const sum = (id) => events.filter((e) => e.id === id).reduce((a, e) => a + e.n, 0);
 
+  if (has("dissolveSalt")) {
+    say(get(t.solid, "sand") > EPS ? "The salt dissolves in the water. The sand does not: it sinks to the bottom." : "The salt dissolves in the water.", "Salt is soluble in water and sand is not. That one difference is what lets them be separated.", "NaCl(s) -> Na^+(aq) + Cl^-(aq)");
+    flags.push("dissolved:salt");
+  }
+  if (has("sublime")) {
+    const rest = Object.keys(t.solid).filter((k) => get(t.solid, k) > EPS).map((k) => SOLID[k].name);
+    say(`Purple vapour fills the tube. Shiny, dark grey crystals form on the cooler glass near the top.${rest.length ? ` The ${rest.join(" and ")} ${rest.length > 1 ? "are" : "is"} left at the bottom, unchanged.` : ""}`, "Iodine sublimes: heated, the solid turns straight to vapour without melting, and the vapour turns straight back to solid where the glass is cool.", "I2(s) -> I2(g)");
+    flags.push("sublimed");
+  }
   // gases and other one-way changes, in the order a student would notice them
   if (has("carbonate")) { say(`Fizzing. ${FIZZ}`, "The acid destroys the carbonate ion; the gas is carbon dioxide.", "CO3^2-(aq) + 2H^+(aq) -> H2O(l) + CO2(g)", W("carbonate")); flags.push("gas:CO2"); }
   if (has("marble")) {
@@ -665,10 +688,20 @@ export function add(t, id, dose = "portion", strength = 1) {
 /** Hold the tube in the flame. */
 export function heat(t) {
   if (isEmpty(t)) return { refused: "There is nothing in there to heat." };
-  if (t.vol <= EPS) return { refused: "Add a liquid first: these solids do not change in a Bunsen flame." };
+  if (t.vol <= EPS && !(get(t.solid, "I2") > EPS)) return { refused: (t.sublimate || 0) > 0 ? "The iodine has all sublimed. The crystals are on the glass near the top." : "Add a liquid first: these solids do not change in a Bunsen flame." };
   const res = act(t, () => { t.gas = null; }, { heated: true });
   res.title = "Heated gently";
   return res;
+}
+
+/** A magnet over the tube: the iron comes out on it. Returns how much. */
+export function magnetOut(t) {
+  const n = get(t.metal, "Fe");
+  if (n <= EPS) return 0;
+  delete t.metal.Fe;
+  t.deposit = t.deposit.filter((k) => k !== "Fe");
+  if (isEmpty(t)) t.added = [];
+  return n;
 }
 
 /** Empty the tube down the sink. */
@@ -679,7 +712,7 @@ export function rinse(t) {
 
 // ── weighing, filtering, boiling away, collecting ────────────────────────────────
 // Grams per equivalent, for the balance. One portion of liquid is 2 cm3 and weighs 2 g.
-const EQ_MASS = { Mg: 12.2, Zn: 32.7, Fe: 27.9, Pb: 103.6, Cu: 31.8, Ag: 107.9, CaCO3: 50, CuO: 39.8, MnO2: 87 };
+const EQ_MASS = { Mg: 12.2, Zn: 32.7, Fe: 27.9, Pb: 103.6, Cu: 31.8, Ag: 107.9, CaCO3: 50, CuO: 39.8, MnO2: 87, sand: 30, rocksalt: 29.2, S: 16, I2: 127 };
 const SALT_IONS = ["Cu", "Fe2", "Fe3", "Zn", "Al", "Pb", "Ca", "Ba", "Ag", "Mg", "Na", "K", "NH4"];
 const saltIn = (t) => SALT_IONS.reduce((a, k) => a + get(t.aq, k), 0);
 
@@ -735,6 +768,9 @@ export function filterOut(s) {
     } else bump(s.aq, a, -n);
     out.push({ key, n, rgb: PPT[key].rgb, colour: PPT[key].colour, name: PPT[key].name, formula: PPT[key].formula });
   }
+  // sand carried over in the liquid is stopped by the paper too
+  const sand = get(s.solid || {}, "sand");
+  if (sand > EPS) { out.push({ key: "sand", n: sand, rgb: SOLID.sand.rgb, colour: "sandy-brown", name: "sand", formula: "SiO2" }); delete s.solid.sand; }
   return out;
 }
 
@@ -845,6 +881,8 @@ export function takeFrom(t, amount) {
   s.extra = (t.extra || 0) * f;
   t.extra = (t.extra || 0) * (1 - f);
   for (const [k, v] of Object.entries(t.aq)) { bump(s.aq, k, v * f); bump(t.aq, k, -v * f); }
+  // sand that has just been stirred up goes over with the liquid; left to settle, it stays behind
+  if (t.susp && get(t.solid, "sand") > EPS) { const k = t.solid.sand * f; s.solid.sand = k; bump(t.solid, "sand", -k); if (t.solid.sand <= EPS) delete t.solid.sand; }
   t.vol -= s.vol;
   t.oil = (t.oil || 0) - s.oil;
   if (t.oil <= EPS) t.oil = 0;
@@ -892,6 +930,7 @@ export function pourIn(t, s, from = "another vessel") {
     t.oil = (t.oil || 0) + (s.oil || 0);
     t.vol += s.vol;
     for (const [k, v] of Object.entries(s.aq)) bump(t.aq, k, v);
+    for (const [k, v] of Object.entries(s.solid || {})) if (v > EPS) bump(t.solid, k, v);
     for (const id of s.ind) if (!t.ind.includes(id)) t.ind.push(id);
     for (const id of s.added) if (!t.added.includes(id)) t.added.push(id);
   });

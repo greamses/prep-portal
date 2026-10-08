@@ -194,6 +194,59 @@ export const EXPERIMENTS = [
     record: "Residue: copper(II) hydroxide. Filtrate: sodium sulfate solution. Filtration separates an insoluble solid from a liquid.",
   },
   {
+    id: "sandsalt", group: "sep", title: "Sand and salt: dissolve, filter, evaporate",
+    task: "You are given a mixture of sand and common salt. Obtain a dry sample of each.",
+    needs: "beaker, glass rod, conical flask, filter funnel, filter paper, evaporating dish, tripod and gauze, a burner, distilled water, the sand and salt mixture (in Solids)",
+    steps: [
+      { text: "Tip some of the mixture into a beaker and add distilled water. The salt dissolves; the sand does not.", need: ["dissolved:salt"] },
+      { text: "Stir with the glass rod (or swirl the beaker) so that the sand is carried in the water.", need: ["swirled"] },
+      { text: "Fit a funnel and a filter paper in a flask, and pour the mixture through. The sand is the residue.", need: ["filtered"] },
+      { text: "Pour the filtrate into an evaporating dish on a tripod and heat it until the water has gone. The salt is left.", need: ["crystals"] },
+    ],
+    record: "Three techniques in a row: dissolving (salt is soluble, sand is not), filtration (the insoluble sand is the residue, the salt solution the filtrate) and evaporation (the water leaves, the salt crystallises).",
+  },
+  {
+    id: "decant", group: "sep", title: "Decanting",
+    task: "Separate sand from water without a filter.",
+    needs: "two beakers, sand (in Solids), distilled water",
+    steps: [
+      { text: "Tip sand into a beaker and add water. Do NOT stir: let the sand lie on the bottom.", need: ["added:sand"], test: (seen) => seen.has("added:sand") && seen.has("added:water") },
+      { text: "Carry the beaker to a second beaker and pour the water off gently. The sand stays behind.", need: ["decanted"] },
+    ],
+    record: "Decanting pours a liquid off a solid that has settled. It is quick, but less complete than filtering: some liquid always stays with the solid.",
+  },
+  {
+    id: "magnet", group: "sep", title: "Magnetic separation: iron and sulfur",
+    task: "Separate a mixture of iron filings and sulfur powder.",
+    needs: "evaporating dish or watch glass, iron filings and sulfur powder (in Solids), a horseshoe magnet",
+    steps: [
+      { text: "Tip iron filings and sulfur powder into the same dish: a grey and yellow mixture.", need: ["added:fe", "added:sulfur"] },
+      { text: "Hold the magnet over the mixture. The iron jumps to it; the sulfur does not.", need: ["magnet"] },
+    ],
+    record: "A magnet separates a magnetic substance from the others in a mixture. It works only because iron and sulfur have NOT combined: heated together they form iron(II) sulfide, a compound, which a magnet cannot separate.",
+  },
+  {
+    id: "sublime", group: "sep", title: "Sublimation: iodine from sand",
+    task: "Separate iodine from a mixture of iodine crystals and sand.",
+    needs: "boiling tube, iodine crystals and sand (in Solids), a burner",
+    steps: [
+      { text: "Tip iodine crystals and sand into a dry boiling tube.", need: ["added:iodine", "added:sand"] },
+      { text: "Light a burner and hold it under the tube. Purple vapour rises, and crystals form on the cool glass above.", need: ["sublimed"] },
+    ],
+    record: "A solid that sublimes turns straight to vapour when heated and straight back to solid on cooling, so it leaves behind a solid that does not. Ammonium chloride can be separated from common salt in the same way.",
+  },
+  {
+    id: "chroma", group: "sep", title: "Paper chromatography of an ink",
+    task: "Find out how many dyes there are in black ink, and work out the Rf value of each.",
+    needs: "beaker (100 mL), chromatography paper (in Equipment), distilled water",
+    steps: [
+      { text: "Pour a LITTLE water into a 100 mL beaker: one measure, no more.", need: ["in:beaker100:water"] },
+      { text: "Let the chromatography strip go at the mouth of the beaker. Its rod lies across the rim and the paper hangs in the water, with the ink spot above the surface.", need: ["fitted:chroma"] },
+      { text: "Watch the water climb. When it stops, read the distances in the notebook.", need: ["chroma"] },
+    ],
+    record: "Rf = distance moved by the spot ÷ distance moved by the solvent front, both measured from the pencil line. Use the calculator, and put the values in a results table. The line is drawn in pencil because pencil does not dissolve and run.",
+  },
+  {
     id: "evaporate", group: "sep", title: "Evaporation to crystals",
     task: "Obtain a solid sample of copper(II) sulfate from its solution by evaporation.",
     needs: "tripod and gauze, evaporating dish, a burner, copper(II) sulfate solution",
