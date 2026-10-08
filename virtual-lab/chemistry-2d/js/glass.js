@@ -77,8 +77,8 @@ function wall(P, side, inset, from, to) {
 // ── vessels ─────────────────────────────────────────────────────────────────
 // cap = portions of liquid it holds; fill = how far up the glass "full" comes
 export const VESSELS = {
-  tube: { name: "Test tube", cap: 12, g: 18, profile: tubeProfile(13, 150), fill: 0.86, rack: true },
-  boil: { name: "Boiling tube", cap: 25, g: 30, profile: tubeProfile(18, 176), fill: 0.86 },
+  tube: { name: "Test tube", cap: 12, g: 18, profile: tubeProfile(13, 150), fill: 0.86, rack: true, invert: 1.5 },
+  boil: { name: "Boiling tube", cap: 25, g: 30, profile: tubeProfile(18, 176), fill: 0.86, invert: 3 },
   beaker100: { name: "Beaker (100 mL)", cap: 50, g: 48, profile: beakerProfile(40, 96), fill: 0.84, flat: true, spout: true, marks: [[20, 0.2], [40, 0.4], [60, 0.6], [80, 0.8]], volume: "100 mL" },
   beaker250: { name: "Beaker (250 mL)", cap: 125, g: 96, profile: beakerProfile(55, 132), fill: 0.84, flat: true, spout: true, marks: [[50, 0.2], [100, 0.4], [150, 0.6], [200, 0.8]], volume: "250 mL" },
   beaker500: { name: "Beaker (500 mL)", cap: 250, g: 180, profile: beakerProfile(68, 150), fill: 0.84, flat: true, spout: true, marks: [[100, 0.2], [200, 0.4], [300, 0.6], [400, 0.8]], volume: "500 mL" },
@@ -89,76 +89,40 @@ export const VESSELS = {
   vol100: { name: "Volumetric flask (100 mL)", cap: 50, g: 58, profile: bulb(40, 36, 7.5, 178), fill: 0.83, flat: true, foot: 15, ring: -150, volume: "100 mL" },
   cyl10: { name: "Measuring cylinder (10 mL)", cap: 5, g: 24, profile: cylProfile(9, 124), fill: 0.86, floor: 8, footR: 24, spout: true, marks: [[2, 0.2], [4, 0.4], [6, 0.6], [8, 0.8]] },
   cyl100: { name: "Measuring cylinder (100 mL)", cap: 50, g: 110, profile: cylProfile(16, 196), fill: 0.86, floor: 8, footR: 34, spout: true, marks: [[20, 0.2], [40, 0.4], [60, 0.6], [80, 0.8]] },
-  gasjar: { name: "Gas jar", cap: 150, g: 210, profile: [[0, 34], [-2, 38], [-6, 40], [-150, 40], [-152, 47], [-156, 47]], fill: 0.86, flat: true },
+  gasjar: { name: "Gas jar", invert: 8, cap: 150, g: 210, profile: [[0, 34], [-2, 38], [-6, 40], [-150, 40], [-152, 47], [-156, 47]], fill: 0.86, flat: true },
   dish: { name: "Evaporating dish", cap: 30, g: 62, profile: [[0, 20], [-2, 32], [-10, 48], [-26, 59], [-30, 61]], fill: 0.74, flat: true, foot: 18, material: "porcelain" },
   crucible: { name: "Crucible", cap: 10, g: 24, profile: [[0, 14], [-2, 17], [-40, 26], [-43, 27]], fill: 0.8, flat: true, foot: 13, material: "porcelain" },
   mortar: { name: "Mortar and pestle", cap: 30, g: 240, profile: [[0, 26], [-3, 35], [-12, 46], [-40, 58], [-46, 60]], fill: 0.7, flat: true, foot: 24, material: "porcelain",
     front: `<path d="M12 -30L46 -88" stroke="#eef1f4" stroke-width="10" stroke-linecap="round"/><path d="M14 -30L47 -86" stroke="#fff" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="-28" r="8" fill="#e3e7ec"/>`,
     box: { x0: -66, y0: -98, x1: 66, y1: 8 } },
+  // A burette and a separating funnel cannot stand up: clamp them in a retort stand. The tap is pressed.
   burette: {
-    name: "Burette (50 mL)", cap: 25, g: 0, fixed: true, profile: [[-196, 2.5], [-204, 7], [-470, 7], [-473, 9]], floor: 196, fill: 0.96, shadow: 78,
-    slots: [[0, 0]], slotFits: (d) => Boolean(d.flat) && !d.fixed && -d.top <= 162, box: { x0: -116, y0: -486, x1: 44, y1: 8 },
-    back: `<rect x="-112" y="-12" width="152" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/>
-      <rect x="-84" y="-484" width="7" height="474" rx="3" fill="url(#g-metal)"/>
-      <rect x="-80" y="-368" width="70" height="6" rx="3" fill="url(#g-metal)"/><rect x="-80" y="-262" width="70" height="6" rx="3" fill="url(#g-metal)"/>
-      <rect x="-90" y="-374" width="20" height="18" rx="3" fill="#5b6470" stroke="#fff" stroke-opacity="0.25"/><rect x="-90" y="-268" width="20" height="18" rx="3" fill="#5b6470" stroke="#fff" stroke-opacity="0.25"/>`,
-    front: `<rect x="-15" y="-371" width="30" height="12" rx="5" fill="#aab2bd"/><rect x="-15" y="-265" width="30" height="12" rx="5" fill="#aab2bd"/>
-      <path d="M-2.5 -184L-1.1 -164h2.2L2.5 -184z" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.65" stroke-width="0.8"/>
-      ${(() => { let m = ""; for (let n = 0; n <= 50; n++) { const y = (-462 + (n / 50) * 258).toFixed(1); const w = n % 10 === 0 ? 7 : n % 5 === 0 ? 5 : 3; m += `<path class="cl-mark" d="M${-w} ${y}H0"/>`; if (n % 10 === 0) m += `<text class="cl-mark-n" x="-9.5" y="${(Number(y) + 2.4).toFixed(1)}" text-anchor="end">${n}</text>`; } return m; })()}
-      <text class="cl-read" x="16" y="-318"></text>`,
-    over: `<g class="cl-tap"><rect x="-6" y="-196" width="12" height="12" rx="2.5" fill="#dfe6ee" stroke="#fff" stroke-opacity="0.6" stroke-width="0.7"/><rect class="cl-tap-key" x="-17" y="-193" width="34" height="6" rx="3" fill="#3d7fd0"/><rect x="-26" y="-208" width="52" height="38" fill="transparent"/></g>`,
+    name: "Burette (50 mL)", cap: 25, g: 0, fixed: true, tap: true, grip: 70, profile: [[-36, 2.5], [-44, 7], [-310, 7], [-313, 9]], floor: 36, fill: 0.972, shadow: 12,
+    box: { x0: -26, y0: -322, x1: 26, y1: 6 },
+    front: `<path d="M-2.5 -24L-1.1 0h2.2L2.5 -24z" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.65" stroke-width="0.8"/>
+      ${(() => { let m = ""; for (let n = 0; n <= 50; n++) { const y = (-302 + (n / 50) * 258).toFixed(1); const w = n % 10 === 0 ? 7 : n % 5 === 0 ? 5 : 3; m += `<path class="cl-mark" d="M${-w} ${y}H0"/>`; if (n % 10 === 0) m += `<text class="cl-mark-n" x="-9.5" y="${(Number(y) + 2.4).toFixed(1)}" text-anchor="end">${n}</text>`; } return m; })()}
+      <text class="cl-read" x="14" y="-200"></text>`,
+    over: `<g class="cl-tap"><rect x="-6" y="-37" width="12" height="13" rx="2.5" fill="#dfe6ee" stroke="#fff" stroke-opacity="0.6" stroke-width="0.7"/><rect class="cl-tap-key" x="-17" y="-33.5" width="34" height="6" rx="3" fill="#3d7fd0"/><rect x="-26" y="-50" width="52" height="40" fill="transparent"/></g>`,
   },
   sepfunnel: {
-    name: "Separating funnel", cap: 50, g: 0, fixed: true, floor: 200, fill: 0.86, shadow: 70,
-    profile: [[-200, 3], [-214, 7], [-262, 36], [-302, 45], [-334, 38], [-352, 15], [-374, 13], [-377, 16]],
-    slots: [[0, 0]], slotFits: (d) => Boolean(d.flat) && !d.fixed && -d.top <= 162, box: { x0: -112, y0: -398, x1: 60, y1: 8 },
-    back: `<rect x="-108" y="-12" width="150" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/>
-      <rect x="-82" y="-380" width="7" height="370" rx="3" fill="url(#g-metal)"/>
-      <rect x="-78" y="-282" width="46" height="6" rx="3" fill="url(#g-metal)"/><rect x="-88" y="-288" width="20" height="18" rx="3" fill="#5b6470" stroke="#fff" stroke-opacity="0.25"/>
-      <ellipse cx="0" cy="-279" rx="40" ry="6" fill="none" stroke="#aab2bd" stroke-width="4"/>`,
-    front: `<path d="M-40 -279a40 6 0 0 0 80 0" fill="none" stroke="#c3cad3" stroke-width="4"/>
-      <path d="M-2.5 -186L-1.2 -166h2.4L2.5 -186z" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.65" stroke-width="0.8"/>
-      <path d="M-10 -391h20l-2.5 14h-15z" fill="url(#g-frost)" stroke="#fff" stroke-opacity="0.6" stroke-width="0.7"/><rect x="-13" y="-399" width="26" height="9" rx="3" fill="url(#g-frost)"/>`,
-    over: `<g class="cl-tap"><rect x="-6" y="-200" width="12" height="14" rx="2.5" fill="#dfe6ee" stroke="#fff" stroke-opacity="0.6" stroke-width="0.7"/><rect class="cl-tap-key" x="-17" y="-196" width="34" height="6" rx="3" fill="#3d7fd0"/><rect x="-26" y="-212" width="52" height="40" fill="transparent"/></g>`,
+    name: "Separating funnel", cap: 50, g: 0, fixed: true, tap: true, grip: 150, floor: 30, fill: 0.86, shadow: 30,
+    profile: [[-30, 3], [-44, 7], [-92, 36], [-132, 45], [-164, 38], [-182, 15], [-204, 13], [-207, 16]],
+    box: { x0: -50, y0: -232, x1: 50, y1: 6 },
+    front: `<path d="M-2.5 -17L-1.2 0h2.4L2.5 -17z" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.65" stroke-width="0.8"/>
+      <path d="M-10 -221h20l-2.5 14h-15z" fill="url(#g-frost)" stroke="#fff" stroke-opacity="0.6" stroke-width="0.7"/><rect x="-13" y="-229" width="26" height="9" rx="3" fill="url(#g-frost)"/>`,
+    over: `<g class="cl-tap"><rect x="-6" y="-31" width="12" height="14" rx="2.5" fill="#dfe6ee" stroke="#fff" stroke-opacity="0.6" stroke-width="0.7"/><rect class="cl-tap-key" x="-17" y="-27" width="34" height="6" rx="3" fill="#3d7fd0"/><rect x="-26" y="-44" width="52" height="40" fill="transparent"/></g>`,
   },
-  cell: {
-    name: "Electrolysis cell", cap: 125, g: 0, fixed: true, profile: beakerProfile(62, 124), fill: 0.84, flat: true, shadow: 110,
-    box: { x0: -72, y0: -170, x1: 190, y1: 8 },
-    back: `<path d="M-26 -164V-180H112V-58" fill="none" stroke="#3b3f46" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M26 -164V-172H140V-58" fill="none" stroke="#c0453a" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
-      <rect x="92" y="-62" width="92" height="62" rx="5" fill="#3a424e" stroke="#fff" stroke-opacity="0.28"/><rect x="92" y="-62" width="92" height="62" rx="5" fill="url(#g-shade)" opacity="0.6"/>
-      <circle cx="112" cy="-58" r="5" fill="#23272e" stroke="#fff" stroke-opacity="0.4"/><circle cx="140" cy="-58" r="5" fill="#c0453a" stroke="#fff" stroke-opacity="0.4"/>
-      <text class="cl-pole" x="112" y="-38">−</text><text class="cl-pole" x="140" y="-38">+</text><text class="cl-waste-t" x="138" y="-10" font-size="8">6 V d.c.</text>
-      <rect x="-30" y="-164" width="8" height="150" rx="2" fill="#30343b" stroke="#fff" stroke-opacity="0.22" stroke-width="0.7"/><rect x="22" y="-164" width="8" height="150" rx="2" fill="#30343b" stroke="#fff" stroke-opacity="0.22" stroke-width="0.7"/>
-      <rect class="cl-coat" x="-31.5" y="-100" width="11" height="86" rx="2.5" fill="transparent"/>`,
-    front: `<rect x="-52" y="-132" width="104" height="9" rx="2" fill="#6b7480" stroke="#fff" stroke-opacity="0.25" stroke-width="0.7"/>
-      <text class="cl-pole" x="-26" y="-142">−</text><text class="cl-pole" x="26" y="-142">+</text>`,
-    over: `<g class="cl-press" data-press="power"><rect x="158" y="-52" width="20" height="30" rx="3" fill="#23272e" stroke="#fff" stroke-opacity="0.45"/><rect class="cl-switch" x="161" y="-49" width="14" height="12" rx="2" fill="#e2574c"/><rect x="150" y="-60" width="38" height="46" fill="transparent"/></g>`,
+  // the flask a distillation starts in: a side arm for the vapour to leave by
+  distflask: {
+    name: "Distilling flask", cap: 125, g: 96, profile: bulb(46, 46, 13, 152), fill: 0.5, grip: 22, volume: "250 mL", arm: [72, -108],
+    box: { x0: -52, y0: -164, x1: 78, y1: 8 },
+    front: `<path d="M12 -128L72 -108" stroke="#fff" stroke-opacity="0.62" stroke-width="9" stroke-linecap="round"/><path d="M12 -128L72 -108" stroke="#2f3540" stroke-width="6.4" stroke-linecap="round"/><path d="M16 -129.500L68 -112" stroke="#fff" stroke-opacity="0.35" stroke-width="1.2" stroke-linecap="round"/>`,
   },
-  still: {
-    name: "Distillation set", cap: 125, g: 0, fixed: true, still: true, lift: 150, floor: 150, fill: 0.5, shadow: 70,
-    profile: bulb(46, 46, 13, 150).map(([y, r]) => [y - 150, r]),
-    slots: [[262, 0]], slotFits: (d) => Boolean(d.flat) && !d.fixed && -d.top <= 166, box: { x0: -84, y0: -384, x1: 290, y1: 8 },
-    back: `<rect x="-80" y="-12" width="124" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/>
-      <rect x="-68" y="-344" width="7" height="334" rx="3" fill="url(#g-metal)"/><rect x="-64" y="-272" width="54" height="6" rx="3" fill="url(#g-metal)"/>
-      <rect x="-74" y="-278" width="20" height="18" rx="3" fill="#5b6470" stroke="#fff" stroke-opacity="0.25"/>
-      <rect x="112" y="-12" width="90" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/><rect x="170" y="-262" width="7" height="252" rx="3" fill="url(#g-metal)"/>
-      <rect x="150" y="-238" width="24" height="6" rx="3" fill="url(#g-metal)"/>
-      <ellipse class="cl-ground" cx="150" cy="1" rx="70" ry="6" filter="url(#g-soft)"/>`,
-    front: `<rect x="-17" y="-275" width="34" height="12" rx="5" fill="#aab2bd"/>
-      <path d="M12 -291L36 -287" stroke="#fff" stroke-opacity="0.6" stroke-width="9" stroke-linecap="round"/><path d="M12 -291L36 -287" stroke="#2f3540" stroke-width="6.4" stroke-linecap="round"/>
-      <g transform="translate(34 -287) rotate(23.3)">
-        <rect x="0" y="-4" width="232" height="8" rx="4" fill="#fff" fill-opacity="0.1" stroke="#fff" stroke-opacity="0.6" stroke-width="0.9"/>
-        <rect x="34" y="-12" width="166" height="24" rx="9" fill="rgba(110,176,255,0.2)" stroke="#fff" stroke-opacity="0.62" stroke-width="1.1"/>
-        <rect x="34" y="-12" width="166" height="24" rx="9" fill="url(#g-glass)" opacity="0.6"/>
-        <path d="M44 -8H190" stroke="#fff" stroke-opacity="0.45" stroke-width="2" stroke-linecap="round"/>
-        <rect x="170" y="11" width="7" height="12" rx="2" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.6" stroke-width="0.8"/><rect x="56" y="-23" width="7" height="12" rx="2" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.6" stroke-width="0.8"/>
-        <rect x="118" y="-15" width="14" height="30" rx="5" fill="#aab2bd"/>
-      </g>
-      <path d="M246 -196q14 5 16 22" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="7" stroke-linecap="round"/><path d="M246 -196q14 5 16 22" fill="none" stroke="#2f3540" stroke-width="4.6" stroke-linecap="round"/>
-      <path d="M-11 -309h22l-2.5 12h-17z" fill="#c0563c" stroke="#fff" stroke-opacity="0.25" stroke-width="0.7"/>
-      <rect x="-2.6" y="-380" width="5.2" height="96" rx="2.6" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.62" stroke-width="0.8"/><rect x="-0.9" y="-350" width="1.8" height="62" fill="#e23b3b"/><circle cx="0" cy="-287" r="3" fill="#e23b3b"/>
-      <text class="cl-read" x="12" y="-352"></text>`,
+  // filled with water, an upturned jar stands in it to collect a gas
+  trough: {
+    name: "Trough", cap: 300, g: 480, profile: beakerProfile(118, 78), fill: 0.82, flat: true, shadow: 124,
+    slots: [[46, -12]], slotFits: (d) => Boolean(d.invert), upturns: true,
+    back: `<rect x="14" y="-12" width="64" height="9" rx="2" fill="#fff" fill-opacity="0.2" stroke="#fff" stroke-opacity="0.35" stroke-width="0.7"/>`,
   },
   watch: { name: "Watch glass", cap: 5, g: 20, profile: [[0, 10], [-3, 32], [-9, 50], [-12, 55]], fill: 0.7, flat: true, foot: 9 },
 };
@@ -166,6 +130,7 @@ for (const v of Object.values(VESSELS)) {
   v.top = v.profile[v.profile.length - 1][0];
   v.rTop = v.profile[v.profile.length - 1][1];
   v.rMax = Math.max(...v.profile.map(([, r]) => r));
+  v.grip = v.grip ?? Math.min(40, -v.top * 0.25);     // how far below its rim a clamp takes hold
   v.bbox = v.box || { x0: -v.rMax - 6, y0: v.top - 8, x1: v.rMax + 6, y1: 8 };
 }
 /** How high the liquid stands above the bench (the foot of a cylinder counts). */
@@ -240,12 +205,15 @@ export function vesselSvg(key, uid, tag = "") {
     <clipPath id="clip-${uid}"><path d="${body}"/></clipPath>
     <path d="${body}" fill="#fff" fill-opacity="0.03"/>
     <g clip-path="url(#clip-${uid})">
-      <rect class="cl-oil" x="${-R}" y="${def.top}" width="${R * 2}" height="${H}" transform="translate(0 ${H})"/>
-      <g class="cl-liquidg">
-        <rect class="cl-liquid" x="${-R}" y="${def.top}" width="${R * 2}" height="${H}"/>
-        <rect x="${-R}" y="${def.top}" width="${R * 2}" height="${H}" fill="url(#g-shade)"/>
+      <g class="cl-level">
+        <rect class="cl-oil" x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}" transform="translate(0 ${H})"/>
+        <g class="cl-liquidg">
+          <rect class="cl-liquid" x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}"/>
+          <rect class="cl-lshade" x="${-R}" y="${def.top}" width="${R * 2}" height="${H}" fill="url(#g-shade)"/>
+          <rect x="${-R * 4}" y="${def.top}" width="${R * 8}" height="2.2" fill="#fff" fill-opacity="0.28"/>
+        </g>
+        <rect class="cl-cloud" x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}"/>
       </g>
-      <rect class="cl-cloud" x="${-R}" y="${def.top}" width="${R * 2}" height="${H}"/>
       <rect class="cl-sediment" x="${-R}" y="${def.top}" width="${R * 2}" height="${H}"/>
       <g class="cl-solids"></g>
       <g class="cl-bubbles"></g>
@@ -253,6 +221,9 @@ export function vesselSvg(key, uid, tag = "") {
     <ellipse class="cl-meniscus" cx="0" cy="0" rx="0" ry="2.4"/>
     <path d="${body}" fill="url(#${def.material === "porcelain" ? "g-porcelain" : "g-glass"})"/>
     <path class="cl-g-edge" d="${outline(P, true)}"/>
+    ${def.material === "porcelain" || def.rMax < 12 ? "" : `<path class="cl-g-inner" d="${outline(P.map(([y, r]) => [Math.min(y, def.flat ? -4.5 : -2.6), Math.max(0, r - 2.6)]), true)}"/>`}
+    ${def.flat && !def.foot && !def.material ? `<path d="M${-f1(P[2][1] - 2.6)} -4.5H${f1(P[2][1] - 2.6)}" stroke="#fff" stroke-opacity="0.3" stroke-width="1"/><path d="${outline(P.filter(([y]) => y >= -7).concat([[-4.5, P[2][1]]]))}" fill="#fff" fill-opacity="0.1"/>` : ""}
+    <path class="cl-g-spark" d="${wall(P, -1, 3, 0.9, 0.97)}"/>
     ${def.footR ? `<path d="M${-def.footR} 0h${def.footR * 2}l-5 ${-def.floor}h${-(def.footR * 2 - 10)}z" fill="url(#g-glass)"/><path class="cl-g-edge" d="M${-def.footR} 0h${def.footR * 2}l-5 ${-def.floor}h${-(def.footR * 2 - 10)}z"/>` : ""}
     ${def.flat ? `<ellipse class="cl-g-foot" cx="0" cy="-2.5" rx="${f1(def.foot || P[2][1] * 0.94)}" ry="${def.foot ? 2.4 : 3.6}"/>` : ""}
     ${def.material === "porcelain" ? "" : `<path class="cl-g-shine" d="${wall(P, -1, 4.5, 0.12, 0.93)}"/><path class="cl-g-glint" d="${wall(P, 1, 5, 0.2, 0.86)}"/>`}
@@ -274,7 +245,7 @@ function scatter(seed) {
 }
 
 /** Paint a vessel from its chemistry. `fresh` = a precipitate has just come down. */
-export function paintVessel(g, key, t, { fresh = false, seed = 1 } = {}) {
+export function paintVessel(g, key, t, { fresh = false, seed = 1, tilt = 0 } = {}) {
   const def = VESSELS[key];
   const P = def.profile, H = -def.top;
   const sp = speciate(t);
@@ -287,6 +258,10 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1 } = {}) {
   const oilEl = g.querySelector(".cl-oil");
   oilEl.removeAttribute("transform");
   oilEl.style.transform = `translateY(${H - (oil > 0 ? top : 0)}px)`;
+  const lev = g.querySelector(".cl-level");
+  lev.style.transformOrigin = `0px ${-top}px`;
+  lev.style.transform = tilt ? `rotate(${-tilt}deg)` : "";
+  g.classList.toggle("is-tilted", Boolean(tilt));
 
   g.querySelector(".cl-liquidg").style.transform = `translateY(${H - level}px)`;
   g.querySelector(".cl-liquid").style.fill = rgba(lk.rgb, Math.max(lk.a, 0.32));       // clear water still has to be seen
@@ -400,7 +375,15 @@ const label = (text, y, w, h, size) =>
 /** How far a bottle's mouth is above its base: the point it pours from. */
 export const mouthOf = (id) => (reagent(id).kind === "solid" ? 83 : reagent(id).kind === "indicator" ? 71 : 103);
 
-export function reagentSvg(id, uid) {
+// A stopper, drawn with its seat (where it meets the mouth) at y. On the bench it is its own piece.
+const CAPS = {
+  bottle: (y) => `<g class="cl-stopper" transform="translate(0 ${y})"><path d="M-10 3h20l1.5 -9h-23z" fill="url(#g-frost)"/><rect x="-16" y="-19" width="32" height="14" rx="3.5" fill="url(#g-frost)" stroke="#fff" stroke-opacity="0.7" stroke-width="0.8"/><path d="M-11 -15v6" stroke="#fff" stroke-opacity="0.8" stroke-width="1.6" stroke-linecap="round"/></g>`,
+  jar: (y) => `<g class="cl-stopper" transform="translate(0 ${y})"><path d="M-20 3h40l-2 9h-36z" fill="url(#g-frost)" transform="translate(0 0)"/><rect x="-27" y="-10" width="54" height="11" rx="3.5" fill="url(#g-frost)" stroke="#fff" stroke-opacity="0.7" stroke-width="0.8"/></g>`,
+};
+/** Which stopper a reagent's container takes, or null (a dropper bottle keeps its dropper). */
+export const capOf = (id) => (reagent(id).kind === "solid" ? "jar" : reagent(id).kind === "solution" ? "bottle" : null);
+
+export function reagentSvg(id, uid, capped = false) {
   const r = reagent(id);
   const size = r.formula.length <= 4 ? 12.5 : r.formula.length <= 6 ? 10.5 : 8.6;
   if (r.kind === "solid") {
@@ -417,7 +400,7 @@ export function reagentSvg(id, uid) {
       <path d="${outline(JAR)}" fill="url(#g-glass)"/>
       <path class="cl-g-edge" d="${outline(JAR, true)}"/>
       <path class="cl-g-shine" d="${wall(JAR, -1, 5, 0.1, 0.72)}"/>
-      <g class="cl-stopper"><path d="M-20 -80h40l-2 9h-36z" fill="url(#g-frost)"/><rect x="-27" y="-93" width="54" height="11" rx="3.5" fill="url(#g-frost)" stroke="#fff" stroke-opacity="0.7" stroke-width="0.8"/></g>
+${capped ? CAPS.jar(-83) : ""}
       ${label(formula(r.formula), -30, 46, 20, size)}
       ${hit({ x0: -36, y0: -96, x1: 36, y1: 8 })}`;
   }
@@ -446,7 +429,7 @@ export function reagentSvg(id, uid) {
     <path class="cl-g-edge" d="${outline(BOTTLE, true)}"/>
     <path class="cl-g-shine" d="${wall(BOTTLE, -1, 5, 0.08, 0.66)}"/>
     <ellipse class="cl-g-foot" cx="0" cy="-2.5" rx="27" ry="3"/>
-    <g class="cl-stopper"><path d="M-10 -100h20l1.5 -9h-23z" fill="url(#g-frost)"/><rect x="-16" y="-122" width="32" height="14" rx="3.5" fill="url(#g-frost)" stroke="#fff" stroke-opacity="0.7" stroke-width="0.8"/><path d="M-11 -118v6" stroke="#fff" stroke-opacity="0.8" stroke-width="1.6" stroke-linecap="round"/></g>
+${capped ? CAPS.bottle(-103) : ""}
     ${label(formula(r.formula), -50, 50, 26, size)}
     ${hit({ x0: -35, y0: -125, x1: 35, y1: 8 })}`;
 }
@@ -466,10 +449,11 @@ export const TOOLS = {
   funnel: { name: "Funnel and filter paper", act: [0, 0], bbox: { x0: -40, y0: -66, x1: 40, y1: 34 } },
   bung: { name: "Rubber stopper", act: [0, 0], bbox: { x0: -16, y0: -12, x1: 16, y1: 12 } },
   tubing: { name: "Stopper and delivery tube", act: [0, 0], bbox: { x0: -18, y0: -52, x1: 36, y1: 12 } },
-  trough: { name: "Trough and gas jar", act: [44, -196], bbox: { x0: -118, y0: -216, x1: 118, y1: 8 } },
   syringe: { name: "Gas syringe", act: [0, -128], bbox: { x0: -108, y0: -156, x1: 150, y1: 8 } },
-  up: { name: "Gas tube, mouth down (upward delivery)", act: [0, -100], bbox: { x0: -70, y0: -276, x1: 30, y1: 8 } },
-  down: { name: "Gas jar, mouth up (downward delivery)", act: [0, -160], bbox: { x0: -46, y0: -186, x1: 46, y1: 8 } },
+  condenser: { name: "Liebig condenser", act: [0, 0], bbox: { x0: -8, y0: -22, x1: 240, y1: 122 } },
+  electrode: { name: "Carbon electrode", act: [0, 0], bbox: { x0: -9, y0: -30, x1: 9, y1: 104 } },
+  power: { name: "Power pack (6 V)", act: [0, 0], bbox: { x0: -50, y0: -70, x1: 50, y1: 8 } },
+  cap: { name: "Stopper", act: [0, 0], bbox: { x0: -28, y0: -22, x1: 28, y1: 14 }, hidden: true },
   holder: { name: "Test tube holder", act: [0, 0], bbox: { x0: -40, y0: -40, x1: 40, y1: 8 } },
   tongs: { name: "Crucible tongs", act: [0, 0], bbox: { x0: -44, y0: -34, x1: 44, y1: 8 } },
   lit: { name: "Lighted splint", act: [-34, -58], bbox: { x0: -44, y0: -84, x1: 40, y1: 8 } },
@@ -483,7 +467,7 @@ const splint = (tip) => `
   <path d="M-34 -58L-20 -46" stroke="#3a2a1c" stroke-width="5" stroke-linecap="round"/>
   ${tip}`;
 
-export function toolSvg(key) {
+export function toolSvg(key, it = {}) {
   const b = TOOLS[key].bbox;
   if (key === "burner") {
     return `
@@ -553,20 +537,29 @@ export function toolSvg(key) {
     return `<path d="M0 8V-34q0 -8 8 -8h22" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="5" stroke-linecap="round"/><path d="M0 8V-34q0 -8 8 -8h22" fill="none" stroke="#2f3540" stroke-width="2.6" stroke-linecap="round"/>
       <path d="M-13 -8h26l-3.5 16h-19z" fill="#c0563c" stroke="#fff" stroke-opacity="0.3" stroke-width="0.8"/>${hit(b)}`;
   }
-  if (key === "trough") {
-    const tank = "M-112 -72h224v66a6 6 0 0 1-6 6h-212a6 6 0 0 1-6-6z";
-    const jar = "M24 -16V-188q0 -8 8 -8h24q8 0 8 8V-16";
-    return `${shadow(118)}
-      <path d="${tank}" fill="#fff" fill-opacity="0.03"/>
-      <rect x="-110" y="-54" width="220" height="50" fill="rgba(120,176,232,0.3)"/><rect x="-110" y="-54" width="220" height="50" fill="url(#g-shade)"/>
-      <path d="M-96 -84V-30h128q10 0 12 10" fill="none" stroke="#fff" stroke-opacity="0.5" stroke-width="4" stroke-linecap="round"/>
-      <rect x="16" y="-16" width="56" height="8" rx="2" fill="#fff" fill-opacity="0.28"/>
-      <path d="${jar}z" fill="#fff" fill-opacity="0.03"/>
-      <rect class="cl-jar-water" x="25" y="-194" width="38" height="140" fill="rgba(120,176,232,0.42)"/>
-      <g class="cl-bubbles"></g>
-      <path d="${jar}z" fill="url(#g-glass)"/><path class="cl-g-edge" d="${jar}"/><path class="cl-g-shine" d="M29 -180V-70"/>
-      <path d="${tank}" fill="url(#g-glass)" opacity="0.7"/><path class="cl-g-edge" d="${tank}"/><path d="M-110 -54h220" stroke="#fff" stroke-opacity="0.35" stroke-width="1"/>
-      <text class="cl-read" x="72" y="-176"></text>${hit(b)}`;
+  if (key === "cap") return `${CAPS[it.v || "bottle"](0)}${hit(TOOLS.cap.bbox)}`;
+  if (key === "condenser") {
+    // drawn from the joint that pushes onto a flask's side arm, sloping down to the outlet
+    return `<g transform="rotate(23.3)">
+        <rect x="-4" y="-5" width="16" height="10" rx="2" fill="#c0563c" stroke="#fff" stroke-opacity="0.25" stroke-width="0.7"/>
+        <rect x="6" y="-4" width="226" height="8" rx="4" fill="#fff" fill-opacity="0.1" stroke="#fff" stroke-opacity="0.6" stroke-width="0.9"/>
+        <rect x="36" y="-12" width="166" height="24" rx="9" fill="rgba(110,176,255,0.2)" stroke="#fff" stroke-opacity="0.62" stroke-width="1.1"/>
+        <rect x="36" y="-12" width="166" height="24" rx="9" fill="url(#g-glass)" opacity="0.6"/>
+        <path d="M46 -8H192" stroke="#fff" stroke-opacity="0.45" stroke-width="2" stroke-linecap="round"/>
+        <rect x="172" y="11" width="7" height="12" rx="2" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.6" stroke-width="0.8"/><rect x="58" y="-23" width="7" height="12" rx="2" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.6" stroke-width="0.8"/>
+      </g>
+      <path d="M213 92q14 5 16 22" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="7" stroke-linecap="round"/><path d="M213 92q14 5 16 22" fill="none" stroke="#2f3540" stroke-width="4.6" stroke-linecap="round"/>${hit(b)}`;
+  }
+  if (key === "electrode") {
+    return `<rect x="-4" y="-18" width="8" height="118" rx="2" fill="#30343b" stroke="#fff" stroke-opacity="0.25" stroke-width="0.7"/><rect x="-2.5" y="-16" width="1.6" height="112" fill="#fff" fill-opacity="0.14"/>
+      <rect class="cl-coat" x="-5.5" y="26" width="11" height="74" rx="2.5" fill="transparent"/>
+      <rect x="-6" y="-28" width="12" height="11" rx="2" fill="#aab2bd" stroke="#fff" stroke-opacity="0.4" stroke-width="0.7"/><text class="cl-pole" x="0" y="-34"></text>${hit(b)}`;
+  }
+  if (key === "power") {
+    return `${shadow(48)}<rect x="-46" y="-56" width="92" height="56" rx="5" fill="#3a424e" stroke="#fff" stroke-opacity="0.28"/><rect x="-46" y="-56" width="92" height="56" rx="5" fill="url(#g-shade)" opacity="0.6"/>
+      <rect x="-19" y="-66" width="10" height="12" rx="2" fill="#23272e" stroke="#fff" stroke-opacity="0.4"/><rect x="9" y="-66" width="10" height="12" rx="2" fill="#c0453a" stroke="#fff" stroke-opacity="0.4"/>
+      <text class="cl-pole" x="-14" y="-34">−</text><text class="cl-pole" x="14" y="-34">+</text><text class="cl-waste-t" x="-10" y="-9" font-size="8">6 V d.c.</text>${hit(b)}
+      <g class="cl-press" data-press="power"><rect x="22" y="-46" width="18" height="30" rx="3" fill="#23272e" stroke="#fff" stroke-opacity="0.45"/><rect class="cl-switch" x="25" y="-43" width="12" height="12" rx="2" fill="#e2574c"/><rect x="14" y="-54" width="34" height="46" fill="transparent"/></g>`;
   }
   if (key === "syringe") {
     let ticks = "";
@@ -579,27 +572,6 @@ export function toolSvg(key) {
       <rect x="-104" y="-131" width="13" height="6" rx="2" fill="#fff" fill-opacity="0.16" stroke="#fff" stroke-opacity="0.6" stroke-width="0.8"/>
       <rect x="-30" y="-141" width="14" height="26" rx="5" fill="#aab2bd"/>${ticks}
       <text class="cl-read" x="-60" y="-146">0 cm³</text>${hit(b)}`;
-  }
-  if (key === "up") {
-    const tube = "M-15 -100V-244a15 15 0 0 1 30 0V-100";
-    return `${shadow(46)}
-      <rect x="-66" y="-12" width="92" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/><rect x="-56" y="-272" width="7" height="262" rx="3" fill="url(#g-metal)"/>
-      <rect x="-52" y="-193" width="40" height="6" rx="3" fill="url(#g-metal)"/>
-      <path d="M-2 -70V-214" stroke="#fff" stroke-opacity="0.55" stroke-width="4" stroke-linecap="round"/><path d="M-2 -70V-214" stroke="#2f3540" stroke-width="2" stroke-linecap="round"/>
-      <path class="cl-gasfill" d="${tube}z" fill="#fff" fill-opacity="0"/>
-      <path d="${tube}z" fill="url(#g-glass)"/><path class="cl-g-edge" d="${tube}"/><ellipse class="cl-g-rim" cx="0" cy="-100" rx="16.5" ry="3"/><path class="cl-g-shine" d="M-10 -236V-120"/>
-      <rect x="-21" y="-196" width="42" height="12" rx="5" fill="#aab2bd"/>
-      <text class="cl-read" x="22" y="-226"></text>${hit(b)}`;
-  }
-  if (key === "down") {
-    const jar = "M-40 -156V-8a6 6 0 0 0 6 6h68a6 6 0 0 0 6-6V-156";
-    return `${shadow(48)}
-      <path d="M-2 -182V-22" stroke="#fff" stroke-opacity="0.55" stroke-width="4" stroke-linecap="round"/><path d="M-2 -182V-22" stroke="#2f3540" stroke-width="2" stroke-linecap="round"/>
-      <path class="cl-gasfill" d="${jar}z" fill="#fff" fill-opacity="0"/>
-      <path d="${jar}z" fill="url(#g-glass)"/><path class="cl-g-edge" d="${jar}"/><path class="cl-g-shine" d="M-34 -146V-30"/>
-      <rect x="-48" y="-160" width="96" height="6" rx="2" fill="#fff" fill-opacity="0.16" stroke="#fff" stroke-opacity="0.7" stroke-width="0.9"/>
-      <rect x="6" y="-166" width="46" height="6" rx="1" fill="#d9c9a0" transform="rotate(-4 28 -163)"/>
-      <text class="cl-read" x="-38" y="-166"></text>${hit(b)}`;
   }
   if (key === "holder") {
     return `<path d="M-34 -4L30 -30" stroke="#c9975a" stroke-width="7" stroke-linecap="round"/><path d="M-34 -14L30 -34" stroke="#b98548" stroke-width="7" stroke-linecap="round"/>
@@ -635,9 +607,10 @@ export function splintAfter(end) {
 // slots = where a vessel's foot rests, in the support's own space; fits = which vessels it will take
 export const SUPPORTS = {
   rack: { name: "Test tube rack", slots: [-110, -55, 0, 55, 110].map((x) => [x, -12]), fits: (d) => Boolean(d.rack), bbox: { x0: -156, y0: -92, x1: 156, y1: 8 } },
-  tripod: { name: "Tripod and gauze", slots: [[0, -158]], fits: (d) => Boolean(d.flat) && !d.fixed, bbox: { x0: -64, y0: -164, x1: 64, y1: 8 } },
-  balance: { name: "Electronic balance", slots: [[0, -40]], fits: (d) => !d.fixed, bbox: { x0: -78, y0: -50, x1: 78, y1: 8 } },
-  stand: { name: "Retort stand and clamp", slots: [[44, -150]], fits: (d) => !d.material && !d.floor && !d.fixed && d.rMax <= 60, bbox: { x0: -56, y0: -336, x1: 80, y1: 8 } },
+  tripod: { name: "Tripod and gauze", slots: [[0, -158]], fits: (d) => Boolean(d.flat) && !d.fixed && d.rMax < 90, bbox: { x0: -64, y0: -164, x1: 64, y1: 8 } },
+  balance: { name: "Electronic balance", slots: [[0, -40]], fits: (d) => !d.fixed && d.rMax < 90, bbox: { x0: -78, y0: -50, x1: 78, y1: 8 } },
+  // its one slot is wherever the clamp has been slid to (main.js works the height out for each vessel)
+  stand: { name: "Retort stand and clamp", slots: [[44, 0]], clamp: [-340, -110], fits: (d) => !d.material && d.rMax <= 60 && !d.upturns, bbox: { x0: -56, y0: -376, x1: 80, y1: 8 } },
 };
 /** In two halves: the back goes behind what it holds, the front in front of it. */
 export function supportSvg(key) {
@@ -670,10 +643,10 @@ export function supportSvg(key) {
     return {
       back: `${shadow(62)}
         <rect x="-52" y="-12" width="130" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/>
-        <rect x="-37" y="-332" width="7" height="322" rx="3" fill="url(#g-metal)"/>
-        <rect x="-24" y="-266" width="56" height="6" rx="3" fill="url(#g-metal)"/>
-        <rect x="-43" y="-272" width="20" height="18" rx="3" fill="#5b6470" stroke="#fff" stroke-opacity="0.25"/><circle cx="-33" cy="-263" r="3" fill="#aab2bd"/>${hit(b)}`,
-      front: `<rect x="26" y="-268" width="36" height="10" rx="5" fill="#aab2bd"/><rect x="26" y="-268" width="36" height="3" rx="1.5" fill="#fff" fill-opacity="0.35"/>`,
+        <rect x="-37" y="-372" width="7" height="362" rx="3" fill="url(#g-metal)"/>${hit(b)}
+        <g class="cl-clampg"><rect x="-24" y="-4" width="56" height="6" rx="3" fill="url(#g-metal)"/>
+          <g class="cl-press" data-press="clamp"><rect x="-44" y="-10" width="22" height="18" rx="3" fill="#6b7480" stroke="#f4c95d" stroke-opacity="0.85" stroke-width="1"/><path d="M-33 -6v10M-36 -3l3 -3 3 3M-36 1l3 3 3 -3" fill="none" stroke="#fff" stroke-opacity="0.85" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="-52" y="-18" width="38" height="34" fill="transparent"/></g></g>`,
+      front: `<g class="cl-clampg"><rect x="26" y="-6" width="36" height="10" rx="5" fill="#aab2bd"/><rect x="26" y="-6" width="36" height="3" rx="1.5" fill="#fff" fill-opacity="0.35"/></g>`,
     };
   }
   const xs = SUPPORTS.rack.slots.map(([x]) => x);
@@ -692,7 +665,7 @@ export function thumb(kind, key) {
   const uid = `th-${kind}-${key}`;
   let inner, b;
   if (kind === "vessel") { inner = vesselSvg(key, uid); b = VESSELS[key].bbox; }
-  else if (kind === "reagent") { inner = reagentSvg(key, uid); b = { x0: -38, y0: -126, x1: 38, y1: 8 }; }
+  else if (kind === "reagent") { inner = reagentSvg(key, uid, true); b = { x0: -38, y0: -126, x1: 38, y1: 8 }; }
   else if (kind === "tool") { inner = toolSvg(key); b = TOOLS[key].bbox; }
   else { const r = supportSvg(key); inner = r.back + r.front; b = SUPPORTS[key].bbox; }
   return `<svg viewBox="${b.x0 - 4} ${b.y0 - 4} ${b.x1 - b.x0 + 8} ${b.y1 - b.y0 + 8}" aria-hidden="true">${inner}</svg>`;

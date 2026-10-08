@@ -50,11 +50,11 @@
     <!-- the bench: an open slate anything can stand on -->
     <div class="cl-benchwrap" id="cl-benchwrap">
       <svg id="cl-bench" xmlns="http://www.w3.org/2000/svg" role="application" aria-label="The bench. Drag a piece to move it; carry a bottle or a tool to a vessel to use it."></svg>
-      <p id="cl-hint" class="cl-hint" hidden>The bench is empty. Take glassware and chemicals from the drawer, or pick a set-up.</p>
+      <p id="cl-hint" class="cl-hint" hidden>The bench is empty. Take glassware, equipment and chemicals from the drawer and set up your own experiment. The guides, top left, say what each one needs.</p>
 
       <div class="cl-bar" role="toolbar" aria-label="The bench">
         <a class="cl-ico" href="../index.html" data-ico="back" data-tip="Back to the Virtual Lab" data-tip-side="bottom" aria-label="Back to the Virtual Lab"></a>
-        <button type="button" class="cl-ico" data-sheet="cl-sheet-setups" data-ico="setups" data-tip="Set-ups: a bench laid out ready" data-tip-side="bottom" aria-label="Set-ups" aria-pressed="false"></button>
+        <button type="button" class="cl-ico" data-sheet="cl-sheet-setups" data-ico="setups" data-tip="Guides: what an experiment needs, and how to set it up" data-tip-side="bottom" aria-label="Guides" aria-pressed="false"></button>
         <button type="button" class="cl-ico" data-sheet="cl-sheet-notebook" data-ico="notebook" data-tip="Lab notebook" data-tip-side="bottom" aria-label="Lab notebook" aria-pressed="false"><b id="cl-count-log" class="cl-badge"></b></button>
         <button type="button" class="cl-ico" data-sheet="cl-sheet-tasks" data-ico="tasks" data-tip="Things to try" data-tip-side="bottom" aria-label="Things to try" aria-pressed="false"><b id="cl-count-tasks" class="cl-badge"></b></button>
         <span class="cl-gap" aria-hidden="true"></span>
@@ -67,15 +67,21 @@
 
       <div id="cl-say" class="pp-sticky pp-sticky--c0 pp-sticky--tape" aria-live="polite">
         <span id="cl-say-tag" class="cl-say__tag">Chemistry bench</span>
-        <p id="cl-say-text">Carry a bottle to a test tube and hold it there to pour. Hold a splint or litmus at the mouth to test; put the burner underneath to heat.</p>
+        <p id="cl-say-text">Take what you need from the drawer and set it up yourself. Pull the stopper out of a bottle before you pour. Tap a piece for its handles.</p>
       </div>
 
+      <!-- a chosen piece: its name, a handle that turns it, a handle for what can be set on it -->
+      <p id="cl-name" class="cl-name" hidden></p>
+      <div id="cl-handles" hidden>
+        <button type="button" class="cl-ico cl-ico--round" id="cl-rot" data-tip="Drag to tilt it. Tilt far enough and it pours." aria-label="Tilt it"></button>
+        <button type="button" class="cl-ico cl-ico--round" id="cl-dots" data-tip="What can be done with it" aria-label="What can be done with it"></button>
+      </div>
       <div id="cl-menu" class="cl-menu" hidden></div>
 
       <section id="cl-sheet-setups" class="cl-sheet pp-receipt" hidden>
         <div class="pp-receipt__paper">
-          <div class="cl-sheet__head"><h2 class="cl-h2">Set-ups</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>
-          <p class="cl-sheet__lead">A set-up clears the bench and lays out what an experiment needs.</p>
+          <div class="cl-sheet__head"><h2 class="cl-h2">Guides</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>
+          <p class="cl-sheet__lead">Nothing is set up for you. Each guide says what an experiment needs and what to do with it.</p>
           <ul id="cl-setups" class="cl-setups"></ul>
         </div>
       </section>

@@ -494,7 +494,7 @@ function act(t, change, { heated = false, adding = null } = {}) {
 
 // ── the things a student can do ─────────────────────────────────────────────
 /** Add a reagent. `dose` is "drops" or "portion" (solutions only). */
-export function add(t, id, dose = "portion") {
+export function add(t, id, dose = "portion", strength = 1) {
   const r = BY_ID[id];
   if (!r) throw new Error(`No such reagent: ${id}`);
   const amount = r.kind === "solution" ? (typeof dose === "number" ? dose : DOSES[dose] ?? 1) : 1;
@@ -519,7 +519,7 @@ export function add(t, id, dose = "portion") {
     if (r.kind === "solution") {
       undry(t);
       t.vol += amount;
-      for (const [k, n] of Object.entries(r.adds)) bump(t.aq, k, n * amount);
+      for (const [k, n] of Object.entries(r.adds)) bump(t.aq, k, n * amount * strength);
     } else if (r.kind === "solid") {
       for (const [k, n] of Object.entries(r.metal || {})) bump(t.metal, k, n);
       for (const [k, n] of Object.entries(r.solid || {})) bump(t.solid, k, n);
@@ -614,11 +614,11 @@ export function filterOut(s) {
 }
 
 /** A measured amount of a reagent straight from its bottle (a pipette, a dropper). */
-export function sampleOf(id, n) {
+export function sampleOf(id, n, strength = 1) {
   const r = BY_ID[id];
   const s = newTube(n);
   s.vol = n;
-  for (const [k, v] of Object.entries(r.adds)) bump(s.aq, k, v * n);
+  for (const [k, v] of Object.entries(r.adds)) bump(s.aq, k, v * n * strength);
   s.added = [id];
   return s;
 }
@@ -891,6 +891,7 @@ export const TASKS = [
   { id: "plate", text: "Plate a carbon rod with copper by electrolysis.", done: (f) => f.includes("electro:Cu") },
   { id: "syringe", text: "Measure the volume of a gas with a gas syringe.", done: (f) => f.includes("measured") },
   { id: "updraft", text: "Collect ammonia in a dry, upturned tube and test it.", done: (f) => f.includes("test:gasblue") && f.includes("at:up") },
+  { id: "spill", text: "Pour from one vessel into another by tilting it, without spilling a drop.", done: (f) => f.includes("tilted") },
 ];
 
 /** Which tasks this result finishes. */

@@ -63,6 +63,17 @@ html body {
 .cl-g-edge { fill: none; stroke: #fff; stroke-opacity: 0.62; stroke-width: 1.3; stroke-linejoin: round; stroke-linecap: round; }
 .cl-g-shine { fill: none; stroke: #fff; stroke-opacity: 0.5; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .cl-g-glint { fill: none; stroke: #fff; stroke-opacity: 0.14; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.cl-g-inner { fill: none; stroke: #fff; stroke-opacity: 0.2; stroke-width: 0.9; stroke-linejoin: round; }
+.cl-g-spark { fill: none; stroke: #fff; stroke-opacity: 0.85; stroke-width: 2.6; stroke-linecap: round; }
+.cl-item.is-tilted .cl-meniscus, .cl-item.is-tilted .cl-lshade { opacity: 0; }
+.cl-item.is-unlit .cl-flame { opacity: 0; animation: none; }
+.cl-end { cursor: grab; }
+.cl-end__dot { fill: #d98a3a; stroke: #fff; stroke-opacity: 0.8; stroke-width: 1.4; }
+.cl-end.is-free .cl-end__dot { fill: #f4c95d; }
+.cl-wire { fill: none; stroke-width: 3.2; stroke-linecap: round; pointer-events: none; }
+.cl-wire.is-neg { stroke: #3b3f46; }
+.cl-wire.is-pos { stroke: #c0453a; }
+.cl-puddle { transform-box: fill-box; transform-origin: center; }
 .cl-g-rim { fill: #fff; fill-opacity: 0.08; stroke: #fff; stroke-opacity: 0.8; stroke-width: 1.2; }
 .cl-g-foot { fill: none; stroke: #fff; stroke-opacity: 0.24; stroke-width: 1; }
 .cl-mark { stroke: #fff; stroke-opacity: 0.62; stroke-width: 0.9; fill: none; }
@@ -211,6 +222,14 @@ html body {
 }
 @keyframes cl-say { from { opacity: 0; transform: translateY(4px); } }
 
+.cl-name { position: absolute; top: 64px; right: 16px; margin: 0; font: 600 0.74rem var(--font-mono); color: var(--bench-ink); opacity: 0.85; pointer-events: none; text-align: right; }
+#cl-handles > .cl-ico { position: absolute; z-index: 5; }
+.cl-ico--round { width: 34px; height: 34px; border-radius: 50%; background: #f4f6f8; border-color: #f4f6f8; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4); }
+.cl-ico--round:hover { background: #fff; border-color: #fff; }
+#cl-rot { cursor: grab; touch-action: none; }
+.cl-range { display: block; margin-top: 0.6rem; font-size: 0.68rem; color: var(--text-secondary); }
+.cl-range b { color: var(--ink); }
+.cl-range input { display: block; width: 100%; margin-top: 0.3rem; accent-color: var(--accent-secondary); }
 .cl-menu {
   position: absolute;
   z-index: 6;
@@ -242,8 +261,13 @@ html body {
 .cl-sheet__lead { margin: 0 0 0.9rem; font-size: 0.74rem; line-height: 1.5; color: var(--text-secondary); }
 .cl-h2 { font-family: var(--font-display); font-weight: var(--weight-bold, 700); font-size: 0.95rem; letter-spacing: var(--tracking-tight, -0.02em); }
 
+.cl-guide h3 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 0.8rem; }
+.cl-guide__needs { margin: 0.3rem 0 0; font-size: 0.7rem; line-height: 1.45; color: var(--text-secondary); }
+.cl-guide ol { margin: 0.35rem 0 0; padding-left: 1.1rem; font-size: 0.74rem; line-height: 1.5; }
+.cl-guide { padding-bottom: 0.8rem; border-bottom: 1px dashed color-mix(in srgb, var(--ink) 22%, transparent); }
+.cl-guide:last-child { border-bottom: 0; }
 .cl-setups { list-style: none; margin: 0; padding: 0.3rem 0 0; display: flex; flex-direction: column; gap: 0.95rem; overflow-y: auto; }
-.cl-setups li { display: flex; flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+.cl-setups > li { display: block; }
 .cl-setups span { font-size: 0.7rem; line-height: 1.45; color: var(--text-secondary); }
 
 .cl-log { list-style: none; margin: 0; padding: 0 0.3rem 0 0; min-height: 5rem; overflow-y: auto; }
