@@ -1,3 +1,4 @@
+@import url("/prep-math/mental-math/shared/prepbot-teacher.css");
 /* ============================================================================
    CHEMISTRY BENCH — the page's own sheet
    ----------------------------------------------------------------------------
@@ -268,6 +269,30 @@ html body {
 .cl-menu__name { font-family: var(--font-display); font-weight: 700; font-size: 0.78rem; }
 .cl-menu__holds { margin-top: 0.25rem !important; font-size: 0.68rem; line-height: 1.45; color: var(--text-secondary); }
 .cl-menu__row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+
+/* PrepBot: the shared teacher, standing at the bottom left of the bench it works on */
+.cl-prepbot { position: absolute; left: 14px; bottom: 14px; z-index: 6; align-items: flex-start; pointer-events: none; }
+.cl-prepbot > * { pointer-events: auto; }
+.cl-prepbot .mm-prepbot-bubble { width: min(300px, 62vw); max-width: none; }
+.cl-prepbot .mm-prepbot-avatar { width: 56px; height: 56px; }
+.cl-prepbot .mm-prepbot-bubble p { font-size: 0.84rem; line-height: 1.4; }
+/* the observation note keeps clear of PrepBot's corner */
+@media (min-width: 821px) { .cl-benchwrap #cl-say { left: 60%; width: min(54%, 560px); } }
+.cl-bot-stop { position: absolute; left: 66px; bottom: 6px; width: 30px; height: 30px; }
+.cl-ico--bot svg { display: block; }
+/* while PrepBot is doing an experiment the bench is PrepBot's: nothing else can be picked up */
+.cl-stage.is-bot .cl-drawer, .cl-stage.is-bot .cl-bar > :not(#cl-fs):not(.cl-gap) { pointer-events: none; opacity: 0.45; }
+.cl-stage.is-bot .cl-item { cursor: default; }
+.cl-lesson { display: flex; gap: 0.7rem; align-items: flex-start; padding-bottom: 0.8rem; border-bottom: 1px dashed color-mix(in srgb, var(--ink) 22%, transparent); }
+.cl-lesson:last-child { border-bottom: 0; }
+.cl-lesson h3 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; gap: 0.35rem; }
+.cl-lesson p { margin: 0.2rem 0 0; font-size: 0.7rem; line-height: 1.45; color: var(--text-secondary); }
+.cl-lesson ol { margin: 0.3rem 0 0; padding-left: 1.1rem; font-size: 0.74rem; line-height: 1.5; }
+.cl-lesson .cl-lesson__turn { font-weight: 700; color: var(--ink); }
+.cl-lesson.is-turn { background: color-mix(in srgb, var(--accent-primary) 16%, transparent); margin: 0 -0.5rem; padding: 0.5rem 0.5rem 0.8rem; }
+.cl-lesson__play { flex-shrink: 0; }
+.cl-lesson__play svg { width: 16px; height: 16px; }
+.cl-lesson__done { display: inline-flex; }
 
 /* sheets: the notebook, the list of things to try, the set-ups */
 .cl-sheet.pp-receipt {

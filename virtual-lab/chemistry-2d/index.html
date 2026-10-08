@@ -57,6 +57,7 @@
         <button type="button" class="cl-ico" data-sheet="cl-sheet-setups" data-ico="setups" data-tip="Guides: what an experiment needs, and how to set it up" data-tip-side="bottom" aria-label="Guides" aria-pressed="false"></button>
         <button type="button" class="cl-ico" data-sheet="cl-sheet-notebook" data-ico="notebook" data-tip="Lab notebook" data-tip-side="bottom" aria-label="Lab notebook" aria-pressed="false"><b id="cl-count-log" class="cl-badge"></b></button>
         <button type="button" class="cl-ico" data-sheet="cl-sheet-tasks" data-ico="tasks" data-tip="Things to try" data-tip-side="bottom" aria-label="Things to try" aria-pressed="false"><b id="cl-count-tasks" class="cl-badge"></b></button>
+        <button type="button" class="cl-ico cl-ico--bot" id="cl-bot" data-sheet="cl-sheet-bot" data-tip="PrepBot does an experiment for you to copy" data-tip-side="bottom" aria-label="PrepBot's experiments" aria-pressed="false"></button>
         <span class="cl-gap" aria-hidden="true"></span>
         <button type="button" class="cl-ico" data-dose="drops" data-ico="drops" data-tip="Pour a few drops at a time" data-tip-side="bottom" aria-label="Pour a few drops at a time"></button>
         <button type="button" class="cl-ico" data-dose="portion" data-ico="measure" data-tip="Pour a full measure at a time" data-tip-side="bottom" aria-label="Pour a full measure at a time"></button>
@@ -86,6 +87,14 @@
           <div class="cl-sheet__head"><h2 class="cl-h2">Guides</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>
           <p class="cl-sheet__lead">Nothing is set up for you. Each guide says what an experiment needs and what to do with it.</p>
           <ul id="cl-setups" class="cl-setups"></ul>
+        </div>
+      </section>
+
+      <section id="cl-sheet-bot" class="cl-sheet pp-receipt" hidden>
+        <div class="pp-receipt__paper">
+          <div class="cl-sheet__head"><h2 class="cl-h2">PrepBot shows you</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>
+          <p class="cl-sheet__lead">PrepBot does the experiment on this bench with the real pieces, then clears it. After that it is your turn.</p>
+          <ul id="cl-bot-list" class="cl-setups"></ul>
         </div>
       </section>
 

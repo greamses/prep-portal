@@ -541,6 +541,7 @@ function record(v, res) {
   renderLog();
   renderTasks(fresh);
   const seen = res.obs.map((o) => o.text).join(" ");
+  if (actor.onRecord) actor.onRecord(res.flags || [], v);
   // "nothing happened" is worth a line, not a note
   if (seen && seen !== "No visible change.") tell(seen, v.kind ? v : null);
   else if (seen) say(seen);
@@ -1180,7 +1181,7 @@ function enter(target) {
 }
 
 svg.addEventListener("pointerdown", (e) => {
-  if (e.button > 0) return;
+  if (e.button > 0 || botBusy) return;
   const end = e.target.closest("[data-end]");
   if (end) { e.preventDefault(); select(null); endDrag = byId(end.dataset.end); endDrag.to = null; return; }
   const w = world(e);
@@ -1523,7 +1524,7 @@ $("cl-search").addEventListener("input", renderDrawer);
 // a tile: tap to put the piece out; with a mouse, drag it to where it should stand
 $("cl-grid").addEventListener("pointerdown", (e) => {
   const b = e.target.closest(".cl-tile");
-  if (!b || e.pointerType === "touch" || e.button !== 0) return;
+  if (botBusy || !b || e.pointerType === "touch" || e.button !== 0) return;
   tileDrag = { kind: b.dataset.kind, key: b.dataset.key, x: e.clientX, y: e.clientY };
 });
 function tileMove(e) {
@@ -1537,6 +1538,7 @@ function tileMove(e) {
   startDrag(it, e, true);
 }
 $("cl-grid").addEventListener("click", (e) => {
+  if (botBusy) return;
   const b = e.target.closest(".cl-tile");
   if (swallow) { swallow = false; return; }
   if (!b) return;
@@ -1597,6 +1599,119 @@ function renderDose() {
   });
 }
 document.querySelectorAll("[data-dose]").forEach((b) => b.addEventListener("click", () => { state.dose = b.dataset.dose; renderDose(); save(); }));
+
+// ── PrepBot's hands ─────────────────────────────────────────────────────────
+// PrepBot (prepbot.js) does experiments LIVE, with the real pieces. These are
+// the same things a learner's hand does — take, move, pull a stopper, carry
+// and pour, hold a splint, fit a funnel, turn a burner up — done by a script,
+// each one taking a moment so that it can be watched.
+let botBusy = false;
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+const actor = {
+  onRecord: null,
+  get W() { return W; },
+  get BASE() { return BASE; },
+  get TOP() { return TOP; },
+  isBusy: () => botBusy,
+  isEmptyBench: () => state.items.length === 0,
+  busy(on) { botBusy = on; document.querySelector(".cl-stage").classList.toggle("is-bot", on); if (on) select(null); },
+  clear() { clearBench(); },
+  openSheet(id) { if ($(id).hidden) openSheet(id); },
+  closeSheets() { openSheet(null); },
+  /** Take a piece out of the drawer: it comes in from the drawer's side and goes to its place. */
+  async take(kind, key, x, y) {
+    const it = addItem(kind, key, W - 70, 330) || state.items.find((o) => o.kind === kind && o.key === key);
+    await pause(140);
+    await this.move(it, x, y);
+    return it;
+  },
+  async move(it, x, y, ms = 520) {
+    raise(it);
+    it.x = x;
+    it.y = y;
+    keepIn(it);
+    glide(it, true);
+    place(it);
+    follow(it);
+    const t0 = Date.now();
+    while (Date.now() - t0 < ms) { drawLinks(); await pause(60); }
+    save();
+  },
+  /** Stand a vessel in a slot of a rack, a tripod, a clamp, a balance. */
+  async into(v, host, slot = 0) {
+    const [sx, sy] = slotAt(host, slot, VESSELS[v.key]);
+    await this.move(v, host.x + sx, host.y + sy, 420);
+    v.rack = [host.id, slot];
+    save();
+  },
+  /** Pull the stopper (or the dropper) out and put it down beside the bottle. */
+  async uncap(bottle) {
+    const cap = fittedTo(bottle, "cap");
+    if (!cap) return;
+    cap.on = null;
+    await this.move(cap, bottle.x + 54, bottle.y + (cap.v === "drop" ? -62 : cap.v === "jar" ? -16 : -8), 420);
+  },
+  /** Carry a bottle or a vessel to another vessel and pour `times` measures. */
+  async pour(src, v, times = 1) {
+    raise(src, src.kind === "vessel" ? L.items : L.fx);
+    glide(src, true);
+    nodes[v.id].g.classList.add("is-target");
+    place(src, poseOn(src, v));
+    if (src.kind === "vessel") paint(src, { tilt: -108 });
+    await pause(520);
+    for (let i = 0; i < times; i++) {
+      const more = use(src, v);
+      await pause(780);
+      if (!more) break;
+    }
+    nodes[v.id] && nodes[v.id].g.classList.remove("is-target");
+    raise(src);
+    place(src);
+    if (src.kind === "vessel") paint(src);
+    await pause(380);
+    save();
+  },
+  /** Hold a tool to a vessel (a splint at its mouth, litmus in it), then put it back. */
+  async hold(tool, v, ms = 1400) {
+    raise(tool, L.fx);
+    glide(tool, true);
+    place(tool, poseOn(tool, v));
+    await pause(520);
+    use(tool, v);
+    await pause(ms);
+    raise(tool);
+    place(tool);
+    await pause(420);
+    setTimeout(() => resetTool(tool), 1800);
+  },
+  /** Fit a funnel, a stopper, a delivery tube, a condenser or a carbon rod to a vessel. */
+  async fit(tool, v) {
+    if (tool.key === "electrode") tool.side = sideFor(v, tool);
+    const m = seat(v, tool);
+    await this.move(tool, m.x, m.y, 460);
+    tool.on = v.id;
+    save();
+  },
+  async flame(burner, level) {
+    burner.flame = level;
+    dress(burner);
+    flash(burner);
+    await pause(500);
+    save();
+  },
+  /** Hold a lit burner under a vessel until there is nothing more to boil off. */
+  async heat(burner, v) {
+    const home = [burner.x, burner.y];
+    await this.move(burner, v.x, Math.min(v.y + HEAT[burner.key], H - 8), 520);
+    for (let i = 0; i < 12; i++) {
+      await pause(820);
+      if (!use(burner, v)) break;
+    }
+    await pause(600);
+    await this.move(burner, home[0], home[1], 520);
+  },
+};
+import("./prepbot.js").then((m) => m.initPrepbot(actor)).catch((e) => console.warn("PrepBot did not load", e));
 
 // ── the whole screen ────────────────────────────────────────────────────────
 // The page always fills the window (the site's bar is put away on this page).
