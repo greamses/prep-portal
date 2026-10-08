@@ -337,6 +337,7 @@ export const HOWTO = [
   "Let a vessel go at a rack, a tripod, a clamp or a balance pan and it stands there. Slide a stand's clamp by its yellow boss.",
   "Let a funnel, a stopper, a condenser or a carbon rod go at a mouth or a joint and it stays there. A filter paper goes in a funnel, and a delivery tube in the hole of a one-hole stopper.",
   "A test tube holder grips a tube by its neck, and tongs take a crucible or a dish by its rim: let the tool go at the piece, then carry it by the tool. Over a lit burner it is heated.",
+  "What you see happen comes up on a yellow note and is written in the notebook. Tap the note to put it away; its key on the bar (or the O key) hides the note altogether, and brings the last one back.",
   "A burette and a measuring cylinder are read by eye: choose one and a lens shows its scale. Read the bottom of the meniscus and type the reading into its menu.",
   "Tap a piece for two handles: one tilts it (tilt far enough and it pours), the other opens what can be done with it.",
   "A burner's + and − keys light it and turn it up and down. A burette's blue tap is pressed.",

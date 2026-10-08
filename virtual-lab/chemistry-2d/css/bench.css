@@ -287,7 +287,7 @@ html body {
   visibility: hidden;
   transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s 0.3s;
 }
-.cl-benchwrap #cl-say.is-shown { opacity: 1; visibility: visible; transform: translateX(-50%) rotate(-0.5deg); transition: opacity 0.3s ease, transform 0.3s ease; }
+.cl-benchwrap #cl-say.is-shown { pointer-events: auto; cursor: pointer; opacity: 1; visibility: visible; transform: translateX(-50%) rotate(-0.5deg); transition: opacity 0.3s ease, transform 0.3s ease; }
 .cl-toast {
   position: absolute;
   left: 50%;

@@ -88,6 +88,7 @@ const ICON = {
   flip: UI.upDown(18),
   swirl: UI.loop(18),
   fire: UI.fire(18),
+  note: glyph(`<path d="M4 3h16v12l-6 6H4z" fill="var(--accent-primary)"/><path d="M14 21v-6h6z" fill="var(--text-tertiary)"/><path d="M7.5 8h9M7.5 11.5h6" stroke="#14130f" stroke-opacity="0.6" stroke-width="1.6" stroke-linecap="round"/>`),
   table: UI.plot(20),
   calc: UI.keypad(20),
 };
@@ -828,7 +829,7 @@ function clearBench() {
 
 // ── two voices: the sticky note pops up for an OBSERVATION and nothing else;
 //    help, hints and refusals are a small line that comes and goes ──
-let noteTimer = 0, helpTimer = 0;
+let noteTimer = 0, helpTimer = 0, noteHeld = false;
 /** The equations of what has just been seen: the whole one, and the ionic one under it. */
 function equationsHtml(obs) {
   const seen = new Set();
@@ -839,12 +840,33 @@ function tell(text, v = null, eqs = "") {
   $("cl-say-text").textContent = text;
   $("cl-say-eq").innerHTML = eqs;
   $("cl-say-eq").hidden = !eqs;
+  noteHeld = true;                  // there is an observation to show
+  if (state.notes === false) return;            // put away by the learner: it is in the notebook, and comes back when asked for
+  showNote(eqs ? 14000 : 9000);
+}
+/** Bring the observation note up, for a while. */
+function showNote(ms = 12000) {
   const note = $("cl-say");
   note.classList.remove("is-new");
   void note.offsetWidth;
   note.classList.add("is-shown", "is-new");
   clearTimeout(noteTimer);
-  noteTimer = setTimeout(() => note.classList.remove("is-shown"), eqs ? 14000 : 9000);
+  noteTimer = setTimeout(() => note.classList.remove("is-shown"), ms);
+}
+/** The learner hides or shows the observation note (its key on the bar, the O key, or a tap on the note itself). */
+function setNotes(on) {
+  state.notes = on;
+  const b = $("cl-note-key");
+  const tip = on ? "Hide the observation note (O)" : "Show the observation note (O)";
+  b.setAttribute("aria-pressed", String(on));
+  b.classList.toggle("is-on", on);
+  b.dataset.tip = tip;
+  b.setAttribute("aria-label", tip);
+  clearTimeout(noteTimer);
+  if (!on) $("cl-say").classList.remove("is-shown");
+  else if (noteHeld) showNote();
+  else say("The observation note is on. It comes up whenever something is seen to happen.");
+  save();
 }
 function say(text, v = null, kind = "") {
   const t = $("cl-toast");
@@ -2627,8 +2649,19 @@ document.addEventListener("webkitfullscreenchange", onFull);
 window.addEventListener("keydown", (e) => {
   if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
   if (e.key === "Escape") { select(null); openSheet(null); }
+  else if ((e.key === "o" || e.key === "O") && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); setNotes(state.notes === false); }
   else if ((e.key === "Delete" || e.key === "Backspace") && selected && selected.key !== "cap") { e.preventDefault(); removeItem(selected); }
 });
+
+// ── the observation note, put away and brought back ──
+$("cl-note-key").addEventListener("click", () => setNotes(state.notes === false));
+$("cl-say").addEventListener("click", () => { clearTimeout(noteTimer); $("cl-say").classList.remove("is-shown"); });
+{
+  const on = state.notes !== false, b = $("cl-note-key");
+  b.setAttribute("aria-pressed", String(on));
+  b.classList.toggle("is-on", on);
+  b.dataset.tip = on ? "Hide the observation note (O)" : "Show the observation note (O)";
+}
 
 // ── the drawer's arrow ──────────────────────────────────────────────────────
 const DRAWER_KEY = "chem-bench-drawer";
