@@ -747,13 +747,13 @@ export const PAGES = [
     section: "labs",
     name: "Chemistry Lab (3D)",
     title: "3D Virtual Chemistry Lab: Titration & Reactions Online",
-    desc: "A 3D virtual chemistry lab. Walk up to the bench, pick up the glassware, mix solutions, run a titration and observe the reactions, in first or third person.",
+    desc: "A 3D virtual chemistry lab. Walk up to the bench, pick up the glassware, mix solutions, run a titration and observe the reactions, all in first person.",
     intro:
       "A chemistry laboratory you can walk around. Pick up burettes, pipettes and flasks from a real bench, mix solutions and watch what happens. It is the nearest thing to being in the lab, for the times you cannot be.",
     points: [
       "Acid-base titration with 3D glassware",
       "Mix solutions and observe the reactions",
-      "First-person and third-person views",
+      "First-person view, with your own hands on the glassware",
     ],
   },
   {

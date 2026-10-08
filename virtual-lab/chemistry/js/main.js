@@ -13,7 +13,6 @@ import { StorageRoom }         from './StorageRoom.js';
 import { Boundary }            from './lab/Boundary.js';
 import { Economy }             from './lab/Economy.js';
 import { Hands }               from './lab/Hands.js';
-import { PlayerAvatar }        from './lab/PlayerAvatar.js';
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
 
@@ -68,30 +67,12 @@ function finishLoading() {
 setTimeout(finishLoading, 9000);
 
 // ── Player rig ────────────────────────────────────────────────────────────────
-// The controlled "player" is a logical head node, NOT the render camera. Movement,
-// look and collision drive `head`; each frame the camera is derived from it:
-//   • first-person  → camera sits exactly on the head (you see the hands)
-//   • third-person  → camera tracks behind the head, COD-style (you see the body)
-// Decoupling them lets us pull the camera back in TPV without confusing the
-// movement/collision code, which keeps reading the head.
-const head = new THREE.Object3D();
-scene.add(head);
-
-// Hands own the held-object holder; the economy gates glassware breakage. The
-// avatar is the player's body, shown only in third-person. All are player-global
-// (they persist across rooms), so they live here, not in a room.
+// The player IS the camera: movement, look and collision drive it directly, and
+// the hands (with the held-object holder between them) are its children. Hands
+// and the economy are player-global (they persist across rooms), so they live
+// here, not in a room.
 const hands   = new Hands(camera, { onReady: finishLoading });
-const avatar  = new PlayerAvatar(scene);
 const economy = new Economy({ max: 3, cost: 5, currency: '$' });
-
-// You ARE the avatar now: it's your body in both views (first-person mounts the
-// camera at its face so you see its own arms; third-person chases behind). Held
-// glassware rides a chest anchor on the avatar in BOTH views. The standalone
-// Hands model is demoted to a future "teacher" pointer — parked (hidden) for now.
-avatar.handAnchor.add(hands.holder);
-hands.holder.position.set(0, 0, 0);
-hands.holder.rotation.set(0, 0, 0);
-hands.holder.scale.setScalar(1);
 
 // ── Rooms ─────────────────────────────────────────────────────────────────────
 // Each room is a lazily-built, self-contained module. The manager keeps the
@@ -102,7 +83,6 @@ const rooms = new RoomManager(scene, { camera, holder: hands.holder, economy, po
 rooms.register('chemistry', (scn, ctx) => new ChemistryRoom(scn, ctx));
 rooms.register('storage',   (scn, ctx) => new StorageRoom(scn, ctx));
 const startRoom = rooms.start('chemistry');
-head.position.copy(startRoom.spawn);
 camera.position.copy(startRoom.spawn);
 
 // The shared wall + connecting door between the two rooms. Owned by neither room
@@ -112,30 +92,11 @@ const boundary = new Boundary(scene, { gate: portalDoor });
 // ── Controls ──────────────────────────────────────────────────────────────────
 // Colliders come from the active rooms and are refreshed each frame; the room
 // bounds are generous because walls (real colliders) keep the player contained.
-const controls = new FirstPersonControls(head, canvas, {
+const controls = new FirstPersonControls(camera, canvas, {
   colliders : rooms.colliders,
   roomMin   : new THREE.Vector3(-40, 0, -40),
   roomMax   : new THREE.Vector3( 40, 0,  40),
 });
-
-// ── View mode (first / third person) ───────────────────────────────────────────
-// TPV is a Call-of-Duty-style chase cam: the camera is locked behind the head, so
-// turning the view turns the body and the camera follows — it is NOT a free orbit.
-const CAM_DIST = 2.6, CAM_UP = 0.45, CAM_SHOULDER = 0.3;
-const EYE_FWD  = 0.2;    // first-person camera sits this far in front of the face
-let tpv = false;
-
-function setViewMode(toTpv) {
-  if (tpv === toTpv) return;
-  tpv = toTpv;
-  const btn = document.getElementById('btn-view');
-  if (btn) { btn.classList.toggle('on', tpv); btn.textContent = tpv ? '3rd' : '1st'; }
-}
-function toggleViewMode() { setViewMode(!tpv); }
-
-document.addEventListener('keydown', e => { if (e.code === 'KeyV' && !e.repeat) toggleViewMode(); });
-const viewBtn = document.getElementById('btn-view');
-if (viewBtn) viewBtn.addEventListener('touchstart', e => { e.preventDefault(); toggleViewMode(); }, { passive: false });
 
 const joystick = new VirtualJoystick(controls, {
   backHref: '../index.html',
@@ -199,7 +160,6 @@ const flameControls = document.getElementById('flame-controls');   // mobile +/-
 const REACH         = 1.8;   // must be close to an object before it's interactable
 
 let _activeTarget = null;
-let carrying = false;             // is the player holding a pickup right now
 
 function checkInteraction() {
   // Active room(s) + the always-present boundary door.
@@ -208,18 +168,15 @@ function checkInteraction() {
   // While holding something, keep it as the target so E always drops it —
   // even when you're not looking at anything.
   const held = interactables.find(i => i.held);
-  carrying = !!held;
 
   let target = null;
   if (held) {
     target = held;
   } else {
-    // Cast through the screen-centre crosshair (works in both views). Measure the
-    // hit's distance from the PLAYER (head), not the camera — in third-person the
-    // camera sits metres behind, so a camera-distance check would never be in reach.
+    // Cast through the screen-centre crosshair.
     raycaster.setFromCamera({ x: 0, y: 0 }, camera);
     const hits = raycaster.intersectObjects(interactables.map(i => i.mesh), true);
-    if (hits.length > 0 && head.position.distanceTo(hits[0].point) < REACH) {
+    if (hits.length > 0 && hits[0].distance < REACH) {
       const hitObj = hits[0].object;
       target = interactables.find(i => i.mesh === hitObj || i.mesh.getObjectById(hitObj.id) !== undefined);
       // Skip pickups that are mid-fall / shattered (not grabbable right now)
@@ -249,12 +206,9 @@ function checkInteraction() {
   if (changed) controls.setInteractTarget(target);
 }
 
-// Clench the hand when the player actually grabs something; in third-person the
-// whole body plays the reach/opening gesture instead.
+// Clench the hand when the player actually grabs something.
 function tryGrabPulse() {
-  if (!_activeTarget) return;
-  hands.pulseGrab();
-  if (tpv) avatar.triggerOpen();
+  if (_activeTarget) hands.pulseGrab();
 }
 
 document.addEventListener('keydown', e => {
@@ -379,64 +333,10 @@ function handClearance() {
   return Infinity;
 }
 
-// ── Camera placement per view mode ──────────────────────────────────────────────
-
-const _camRay   = new THREE.Ray();
-const _camHit   = new THREE.Vector3();
-const _boomDir  = new THREE.Vector3();
-const _sideDir  = new THREE.Vector3();
-const _camEuler = new THREE.Euler(0, 0, 0, 'YXZ');
-
-// Keep the chase camera from poking through walls/furniture: shorten the boom to
-// the nearest collider along the head→camera ray.
-function chaseDistance(from, dir, want) {
-  let best = want;
-  for (const box of controls.colliders) {
-    if (_camRay.set(from, dir).intersectBox(box, _camHit)) {
-      const d = from.distanceTo(_camHit);
-      if (d < best) best = d;
-    }
-  }
-  return Math.max(0.45, best - 0.2);
-}
-
-function placeCamera(speed) {
-  _camEuler.setFromQuaternion(head.quaternion);             // YXZ → .y = yaw
-  const yaw = _camEuler.y;
-
-  // The avatar is your body in BOTH views: stand it under the head, face the look
-  // yaw, animate by movement speed / carry state.
-  avatar.setPosition(head.position.x, head.position.z);
-  avatar.setFacingYaw(yaw);
-  avatar.setLocomotion(speed, carrying);
-
-  if (!tpv) {
-    // First-person: sit the camera just in front of the avatar's face (so we don't
-    // see inside its head) and look where the player looks. Its own arms swing
-    // into view when it reaches / carries.
-    _boomDir.set(-Math.sin(yaw), 0, -Math.cos(yaw));        // forward (head faces −Z at yaw 0)
-    camera.position.copy(head.position).addScaledVector(_boomDir, EYE_FWD);
-    camera.quaternion.copy(head.quaternion);
-    return;
-  }
-  // Third-person (COD chase cam). Position the boom using YAW ONLY so pitching to
-  // look up/down never swings the camera into the ceiling or floor; then orient
-  // the camera along the FULL look direction, so the centre crosshair aims exactly
-  // where the player looks (and you can pitch down onto a bench to target things).
-  _boomDir.set(Math.sin(yaw), 0, Math.cos(yaw));            // directly behind the head
-  _sideDir.set(Math.cos(yaw), 0, -Math.sin(yaw));           // the head's right (shoulder offset)
-  const dist = chaseDistance(head.position, _boomDir, CAM_DIST);
-  camera.position.copy(head.position)
-    .addScaledVector(_boomDir, dist)
-    .addScaledVector(_sideDir, CAM_SHOULDER);
-  camera.position.y += CAM_UP;
-  camera.quaternion.copy(head.quaternion);                  // look where the player looks
-}
-
 // ── Loop ──────────────────────────────────────────────────────────────────────
 
 const clock = new THREE.Clock();
-const _prevPos = new THREE.Vector3().copy(head.position);
+const _prevPos = new THREE.Vector3().copy(camera.position);
 let _frame = 0;
 
 renderer.setAnimationLoop(() => {
@@ -445,23 +345,19 @@ renderer.setAnimationLoop(() => {
 
   // Resolve the active room set, tick its contents, and feed its colliders to
   // the controls before moving the player.
-  rooms.update(delta, head.position);
+  rooms.update(delta, camera.position);
   boundary.update(delta);
   controls.colliders = [...rooms.colliders, ...boundary.colliders];
 
   controls.update(delta);
-  const dxz    = Math.hypot(head.position.x - _prevPos.x, head.position.z - _prevPos.z);
-  const speed  = dxz / Math.max(delta, 1e-4);
-  const moving = dxz > 1e-3;
-  _prevPos.copy(head.position);
+  const moving = Math.hypot(camera.position.x - _prevPos.x, camera.position.z - _prevPos.z) > 1e-3;
+  _prevPos.copy(camera.position);
 
   checkInteraction();
-  placeCamera(speed);
 
-  const entered = overlay.classList.contains('hidden');
-  hands.group.visible = false;        // standalone "teacher" hand — parked for now
-  avatar.setVisible(entered);          // the avatar is your body in BOTH views
+  // The clearance ray walks the whole scene, so only recast every few frames.
+  if (_frame % 3 === 0) hands.setClearance(handClearance());
+  hands.update(delta, moving);
 
-  avatar.update(delta);
   composer.render();
 });

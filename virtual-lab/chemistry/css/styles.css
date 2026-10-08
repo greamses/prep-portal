@@ -376,20 +376,6 @@ html, body {
   font-size: 0.85rem;
 }
 
-.btn-view {
-  /* Top-right, next to the focus button */
-  top: 20px; right: 76px;
-  width: 46px; height: 46px;
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 700;
-  font-size: 0.72rem;
-}
-.btn-view.on {
-  background: rgba(124,196,124,0.5);
-  border-color: rgba(124,196,124,0.95);
-  color: #fff;
-}
-
 /* Flame trim buttons — stacked above the zoom button, shown only near a burner */
 #flame-controls {
   position: absolute;
