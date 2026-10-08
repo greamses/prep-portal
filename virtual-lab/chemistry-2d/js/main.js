@@ -1362,10 +1362,19 @@ function showTest(it, res) {
   const g = nodes[it.id].g;
   const [, a, b] = res.fx.split("-");
   if (MOUTH.includes(it.key)) { g.querySelector(".cl-after").innerHTML = splintAfter(res.fx); g.dataset.end = res.fx; }
-  else if (it.key === "ph") g.querySelector(".cl-paper").style.fill = `rgb(${a})`;
+  else if (it.key === "ph") dipPaper(g, `rgb(${a})`);
   else if (it.key === "meter") g.querySelector(".cl-lcd").textContent = a;
   else if (it.key === "thermo") { const len = 22 + Number(a) * 1.1; const col = g.querySelector(".cl-merc"); col.setAttribute("y", -4 - len); col.setAttribute("height", len); }
-  else g.dataset.end = b;
+  else dipPaper(g, b === it.key ? "" : b === "blue" ? "#4f84d6" : "#de5a52");
+}
+/** A strip of test paper has touched something: the end darkens as it wets, and its new colour (if it has one) creeps up from there. */
+function dipPaper(g, colour) {
+  const turn = g.querySelector(".cl-turn");
+  if (!turn) return;
+  turn.style.fill = colour || "transparent";
+  g.classList.remove("is-dipped");
+  void g.getBoundingClientRect();
+  g.classList.add("is-dipped");
 }
 /** Heat a vessel. A distilling flask sends water over; a dish boils down to crystals. Returns true to go on heating. */
 function warm(heater, v) {
@@ -1431,7 +1440,8 @@ function resetTool(it) {
   delete g.dataset.end;
   const q = (s) => g.querySelector(s);
   if (q(".cl-after")) q(".cl-after").innerHTML = "";
-  if (it.key === "ph") q(".cl-paper").style.fill = "";
+  g.classList.remove("is-dipped");
+  if (q(".cl-turn")) q(".cl-turn").style.fill = "transparent";
   if (it.key === "meter") q(".cl-lcd").textContent = "--.-";
   if (it.key === "thermo") { q(".cl-merc").setAttribute("y", -53); q(".cl-merc").setAttribute("height", 49); }
 }

@@ -208,6 +208,11 @@ export const DEFS = `
   </linearGradient>
   <radialGradient id="g-ember"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.45" stop-color="#ff7a2a"/><stop offset="1" stop-color="#ff3a1a" stop-opacity="0"/></radialGradient>
   <filter id="g-soft" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur stdDeviation="3.2"/></filter>
+  <filter id="g-cloud" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="4.2"/></filter>
+  <linearGradient id="g-feather" x1="0" x2="0" y1="0" y2="1">
+    <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.42" stop-color="#fff" stop-opacity="0.9"/><stop offset="1" stop-color="#fff"/>
+  </linearGradient>
+  <mask id="m-feather" maskContentUnits="objectBoundingBox"><rect width="1" height="1" fill="url(#g-feather)"/></mask>
   <filter id="g-fibre" x="0" y="0" width="100%" height="100%">
     <feTurbulence type="fractalNoise" baseFrequency="0.9 0.35" numOctaves="2" seed="7" result="n"/>
     <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.42  0 0 0 0 0.34  0 0 0 -1.5 0.82"/>
@@ -266,6 +271,12 @@ export function vesselSvg(key, uid, tag = "") {
           <rect class="cl-lshade" x="${-R}" y="${def.top}" width="${R * 2}" height="${H}" fill="url(#g-shade)"/>
           <rect x="${-R * 4}" y="${def.top}" width="${R * 8}" height="2.4" fill="#fff" fill-opacity="0.34"/>
           <rect x="${-R * 4}" y="${def.top + 2.4}" width="${R * 8}" height="5" fill="#000" fill-opacity="0.1"/>
+          <clipPath id="under-${uid}"><rect x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}"/></clipPath>
+          <g class="cl-bloom" clip-path="url(#under-${uid})">
+            <ellipse class="cl-bloom__a" cx="0" cy="${def.top}" rx="${f1(R * 1.7)}" ry="${f1(H * 1.15)}" filter="url(#g-cloud)" style="transform-origin: 0px ${def.top}px"/>
+            <ellipse class="cl-bloom__b" cx="${f1(-def.rTop * 0.22)}" cy="${def.top}" rx="${f1(Math.max(3, def.rTop * 0.2))}" ry="${f1(H * 0.9)}" filter="url(#g-cloud)" style="transform-origin: ${f1(-def.rTop * 0.22)}px ${def.top}px"/>
+            <ellipse class="cl-bloom__c" cx="${f1(def.rTop * 0.26)}" cy="${def.top}" rx="${f1(Math.max(2.4, def.rTop * 0.15))}" ry="${f1(H * 0.7)}" filter="url(#g-cloud)" style="transform-origin: ${f1(def.rTop * 0.26)}px ${def.top}px"/>
+          </g>
           <g class="cl-vortex"><ellipse cx="0" cy="${def.top + 9}" rx="${f1(def.rTop * 0.72)}" ry="3.6"/><ellipse cx="0" cy="${def.top + 22}" rx="${f1(def.rTop * 0.5)}" ry="3"/><ellipse cx="0" cy="${def.top + 36}" rx="${f1(def.rTop * 0.3)}" ry="2.4"/></g>
         </g>
         <rect class="cl-cloud" x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}"/>
@@ -323,7 +334,22 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1, tilt = 0 } = {
   g.classList.toggle("is-tilted", Boolean(tilt));
 
   g.querySelector(".cl-liquidg").style.transform = `translateY(${H - level}px)`;
-  g.querySelector(".cl-liquid").style.fill = rgba(lk.rgb, Math.max(lk.a, 0.32));       // clear water still has to be seen
+  // A liquid does not change colour all at once. Where the colour really is different from the
+  // one showing (an indicator going in, an end point reached), the new colour BLOOMS: a cloud
+  // spreads from the surface and streaks sink through the old colour, which then follows it.
+  const fillNow = rgba(lk.rgb, Math.max(lk.a, 0.32));       // clear water still has to be seen
+  const shown = (g.dataset.rgb || "").split(",").map(Number);
+  const far = shown.length === 3 ? Math.abs(shown[0] - lk.rgb[0]) + Math.abs(shown[1] - lk.rgb[1]) + Math.abs(shown[2] - lk.rgb[2]) : 0;
+  const bloom = g.querySelector(".cl-bloom");
+  if (bloom && t.vol > 0 && far > 46) {
+    bloom.style.fill = rgba(lk.rgb, Math.max(lk.a, 0.5));
+    g.classList.remove("is-blooming");
+    void g.getBoundingClientRect();
+    g.classList.add("is-blooming");
+    bloom.firstElementChild.onanimationend = () => g.classList.remove("is-blooming");
+  } else if (t.vol <= 0) g.classList.remove("is-blooming");
+  g.dataset.rgb = t.vol > 0 ? lk.rgb.join(",") : "";
+  g.querySelector(".cl-liquid").style.fill = fillNow;
   const men = g.querySelector(".cl-meniscus");
   men.setAttribute("cy", f1(-top));
   men.setAttribute("rx", top ? f1(Math.max(0, rAt(P, -top) - 1.2)) : 0);
@@ -822,6 +848,8 @@ export function toolSvg(key, it = {}) {
     return `${splint(`<g class="cl-tip"><circle cx="-34" cy="-58" r="13" fill="url(#g-ember)" opacity="0.8"/><circle cx="-34" cy="-58" r="3.6" fill="#ffb24a"/></g><g class="cl-after"></g>`)}${hit(b)}`;
   }
   return `<rect class="cl-paper cl-paper--${key}" x="-7" y="-64" width="14" height="64" rx="1.2"/>
+    <rect class="cl-turn" x="-7" y="-40" width="14" height="40" mask="url(#m-feather)"/>
+    <rect class="cl-wet" x="-7" y="-34" width="14" height="34" mask="url(#m-feather)"/>
     <rect x="-7" y="-64" width="14" height="64" rx="1.2" fill="url(#g-shade)" opacity="0.5"/>${hit(b)}`;
 }
 

@@ -93,6 +93,10 @@ html body {
 /* what is in the glass */
 .cl-liquidg { transition: transform 0.6s ease; }
 .cl-liquid { transition: fill 0.7s ease; }
+/* a new colour coming into a liquid: see paintVessel() */
+.cl-bloom { pointer-events: none; }
+.cl-bloom ellipse { opacity: 0; }
+.cl-item.is-blooming .cl-liquid { transition: fill 1.7s ease-in 1s; }
 .cl-sediment, .cl-cloud { transition: transform 0.6s ease, fill 0.7s ease; }
 .cl-cloud { opacity: 0; }
 .cl-item:not(.has-ppt) .cl-sediment { opacity: 0; }
@@ -144,7 +148,13 @@ html body {
 .cl-stopper { transition: opacity 0.15s; }
 
 /* tools */
-.cl-paper { stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.8; transition: fill 0.8s ease 0.3s; }
+.cl-paper { stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.8; }
+/* test paper: wetted at the end, and the colour it turns creeping up from there */
+.cl-turn, .cl-wet { opacity: 0; transform-box: fill-box; transform-origin: 50% 100%; pointer-events: none; }
+.cl-turn { fill: transparent; }
+.cl-wet { fill: #1c2430; }
+.cl-item.is-dipped .cl-turn { opacity: 1; }
+.cl-item.is-dipped .cl-wet { opacity: 0.2; }
 .cl-paper--red { fill: #de5a52; }
 .cl-paper--blue { fill: #4f84d6; }
 .cl-paper--ph { fill: #ecd98c; }
@@ -172,8 +182,6 @@ html body {
 .cl-drop-liq, .cl-loop { transition: fill 0.3s; }
 .cl-item.is-coloured .cl-flame path:first-child { fill: var(--flame); fill-opacity: 0.92; }
 .cl-item.is-target .cl-flame { filter: brightness(1.25); }
-.cl-item[data-end="blue"] .cl-paper { fill: #4f84d6; }
-.cl-item[data-end="red"] .cl-paper { fill: #de5a52; }
 .cl-tip { transition: opacity 0.2s; }
 .cl-item[data-end="pop"] .cl-tip, .cl-item[data-end="out"] .cl-tip, .cl-item[data-end="bright"] .cl-tip, .cl-item[data-end="relight"] .cl-tip { opacity: 0; }
 .cl-after, .cl-stream, .cl-dropin { transform-box: fill-box; }
@@ -611,3 +619,17 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 .cl-drawer { position: relative; }
 .cl-drawer.is-home::after { content: "Let go to put it away"; position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; padding: 1rem; font: 700 0.8rem var(--font-mono); letter-spacing: 0.04em; text-align: center; color: #14130f; background: rgba(244, 201, 93, 0.9); border: 3px dashed #14130f; pointer-events: none; }
 .cl-item.is-leaving { opacity: 0.45; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .cl-item.is-blooming .cl-bloom__a { animation: cl-bloom-a 2.9s cubic-bezier(0.3, 0.1, 0.4, 1) both; }
+  .cl-item.is-blooming .cl-bloom__b { animation: cl-bloom-b 2.3s ease-in 0.12s both; }
+  .cl-item.is-blooming .cl-bloom__c { animation: cl-bloom-b 2.5s ease-in 0.4s both; }
+  .cl-item.is-dipped .cl-wet { animation: cl-wet-in 0.7s ease-out both; }
+  .cl-item.is-dipped .cl-turn { animation: cl-creep 2.6s cubic-bezier(0.25, 0.6, 0.3, 1) 0.25s both; }
+}
+/* the cloud: small and strong where the colour went in, then wider and deeper until it fills the liquid */
+@keyframes cl-bloom-a { 0% { transform: scale(0.05, 0.03); opacity: 0.95; } 18% { transform: scale(0.24, 0.16); opacity: 0.95; } 60% { transform: scale(0.72, 0.62); opacity: 0.88; } 92% { transform: scale(1.1, 1); opacity: 0.9; } 100% { transform: scale(1.1, 1); opacity: 0; } }
+/* the streaks: thin threads of the new colour sinking through the old, wavering, then lost in the cloud */
+@keyframes cl-bloom-b { 0% { transform: scale(0.5, 0.02) translateX(0); opacity: 0; } 12% { opacity: 0.9; } 45% { transform: scale(1, 0.6) translateX(2px); opacity: 0.8; } 75% { transform: scale(1.6, 0.95) translateX(-2px); opacity: 0.45; } 100% { transform: scale(2.6, 1) translateX(0); opacity: 0; } }
+@keyframes cl-wet-in { from { opacity: 0; transform: scaleY(0.5); } to { opacity: 0.2; transform: scaleY(1); } }
+@keyframes cl-creep { 0% { opacity: 0; transform: scaleY(0.35); } 30% { opacity: 0.4; transform: scaleY(0.6); } 70% { opacity: 0.85; transform: scaleY(0.9); } 100% { opacity: 1; transform: scaleY(1); } }
