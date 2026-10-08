@@ -641,3 +641,7 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 @keyframes cl-bloom-b { 0% { transform: scale(0.5, 0.02) translateX(0); opacity: 0; } 12% { opacity: 0.9; } 45% { transform: scale(1, 0.6) translateX(2px); opacity: 0.8; } 75% { transform: scale(1.6, 0.95) translateX(-2px); opacity: 0.45; } 100% { transform: scale(2.6, 1) translateX(0); opacity: 0; } }
 @keyframes cl-wet-in { from { opacity: 0; transform: scaleY(0.5); } to { opacity: 0.2; transform: scaleY(1); } }
 @keyframes cl-creep { 0% { opacity: 0; transform: scaleY(0.35); } 30% { opacity: 0.4; transform: scaleY(0.6); } 70% { opacity: 0.85; transform: scaleY(0.9); } 100% { opacity: 1; transform: scaleY(1); } }
+
+/* a heading over each kind of demonstration on PrepBot's sheet */
+.cl-cards__head { grid-column: 1 / -1; margin: 0.3rem 0 -0.4rem; font: 700 0.6rem var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary); }
+.cl-cards__head:first-child { margin-top: 0; }

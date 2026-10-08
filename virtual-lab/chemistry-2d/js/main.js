@@ -199,6 +199,7 @@ function save() {
   drawLinks();
   // a piece may have been put in place, or taken away: the guide to a setting-up practical follows
   if (!ticking && typeof noteFlags === "function" && state.exp) { ticking = true; try { noteFlags([]); } catch { /* the guide is not up yet */ } finally { ticking = false; } }
+  if (!ticking) { ticking = true; try { if (actor.onChange) actor.onChange(); } catch { /* PrepBot is not up yet */ } finally { ticking = false; } }
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* private mode */ }
 }
 
@@ -275,6 +276,8 @@ function place(it, transform) {
     t = `translate(${it.x}px, ${it.y}px)`;
     // upturned: it.y is where the MOUTH is, and the closed end is above it
     if (it.flip) t += ` rotate(180deg) translate(0px, ${-VESSELS[it.key].top}px)`;
+    // a stopper in an upturned tube is upside down with it
+    else if ((it.key === "bung" || it.key === "bung1") && it.on != null && byId(it.on) && byId(it.on).flip) t += " rotate(180deg)";
     else if (it.tilt) { const c = pivotOf(it); t += ` translate(0px, ${c}px) rotate(${it.tilt}deg) translate(0px, ${-c}px)`; }
   }
   n.g.style.transform = t;
@@ -588,7 +591,7 @@ function snap(it) {
     if (host === it) continue;
     const S = hostDef(host);
     if (!S.fits(def)) continue;
-    if (it.flip && !(VESSELS[host.key] && VESSELS[host.key].upturns)) continue;      // an upturned tube only stands in a trough
+    if (it.flip && !(VESSELS[host.key] && VESSELS[host.key].upturns) && !(host.kind === "rack" && host.key === "stand")) continue;      // an upturned tube stands in a trough, or is held in a clamp
     const taken = new Set(state.items.filter((v) => v !== it && v.rack && v.rack[0] === host.id).map((v) => v.rack[1]));
     for (let i = 0; i < S.slots.length; i++) {
       if (taken.has(i)) continue;
@@ -1073,7 +1076,9 @@ function targetOf(it) {
     });
   }
   if (PLUGS.includes(it.key)) {
-    return nearest(open().filter((v) => !VESSELS[v.key].tap && !plugIn(v)), (v) => {
+    // a stopper also goes in the mouth of an upturned tube (which is underneath); a funnel does not
+    const mouths = it.key === "funnel" ? open() : vessels().filter((v) => !overWater(v));
+    return nearest(mouths.filter((v) => !VESSELS[v.key].tap && !plugIn(v)), (v) => {
       const m = mouth(v), dx = Math.abs(it.x - m.x);
       return dx < VESSELS[v.key].rTop + 34 && Math.abs(it.y - m.y) < 64 ? dx : -1;
     });
@@ -2165,7 +2170,15 @@ function openMenu(it) {
     if (def.arm) lines.push(fittedTo(it, "condenser") ? "Heat it, with a beaker under the condenser's lower end." : "Push a condenser onto the side arm.");
     if (def.upturns) lines.push("Fill it with water, then let an empty gas jar go in it.");
     if (!def.fixed && !it.flip && it.t.vol > 0) act("swirl", "Swirl it", ICON.swirl);
-    if (def.invert && isEmpty(it.t) && !it.rack && !fittedTo(it)) act("flip", it.flip ? "Turn it the right way up" : "Turn it upside down", ICON.flip);
+    if (def.invert) {
+      // it can be turned over empty, standing free or held in a clamp, and with a stopper in it
+      const host = it.rack && hostOf(it), inClamp = host && host.kind === "rack" && host.key === "stand";
+      const busy = state.items.some((o) => o.on === it.id && o.key !== "bung" && !(o.key === "bung1" && !fittedTo(o, "tubing")));
+      if (!isEmpty(it.t)) lines.push("Empty it before turning it upside down.");
+      else if (host && !inClamp) lines.push("Lift it out before turning it upside down. (In a retort clamp it can be turned over where it is.)");
+      else if (busy) lines.push("Take out what is fitted in it before turning it over. A stopper can stay in.");
+      else act("flip", it.flip ? "Turn it the right way up" : "Turn it upside down", ICON.flip);
+    }
   } else if (it.kind === "reagent") {
     const r = reagent(it.key);
     lines.push(r.kind === "indicator" ? (fittedTo(it, "cap") ? "Pull the dropper out and carry it to a liquid." : "Its dropper is out. Let the dropper go at the bottle to put it back.") : fittedTo(it, "cap") ? "Stoppered. Drag the stopper off before you pour: it will not tip with the stopper in." : "Open. Carry it to a vessel and hold it there, or select it and turn it.");
@@ -2230,7 +2243,7 @@ $("cl-menu").addEventListener("click", (e) => {
   if (what === "ink") { const names = Object.keys(INKS); it.ink = names[(names.indexOf(it.ink || "black") + 1) % names.length]; it.p = 0; it.washed = false; cancelAnimationFrame(running.get(it.id)); running.delete(it.id); dress(it); if (it.on != null) runChroma(it); save(); select(it); openMenu(it); return; }
   if (what === "swirl") { $("cl-menu").hidden = true; swirl(it); return; }
   if (what === "light") { it.flame = lit(it) ? 0 : 2; dress(it); say(lit(it) ? `The ${nameOf(it).toLowerCase()} is lit.` : `The ${nameOf(it).toLowerCase()} is out.`); }
-  else if (what === "flip") { it.flip = !it.flip; it.jar = null; it.t.gas = null; glide(it, true); place(it); paint(it); say(it.flip ? `${cap1(plain(it))} is upside down. A gas lighter than air will stay in it.` : `${cap1(plain(it))} is the right way up.`, it); }
+  else if (what === "flip") { it.flip = !it.flip; if (!fittedTo(it, "bung")) { it.jar = null; it.t.gas = null; } glide(it, true); place(it); paint(it); follow(it); say(it.flip ? `${cap1(plain(it))} is upside down. A gas lighter than air will stay in it. A stopper can be pushed into its mouth from below.` : `${cap1(plain(it))} is the right way up.`, it); }
   else if (it.kind === "vessel") {
     const res = rinse(it.t);
     it.jar = null;
@@ -2632,6 +2645,55 @@ const actor = {
     await this.move(tool, x, y, 460);
     dress(tool);
   },
+  /** Slide a retort stand's clamp up or down its rod. */
+  async slide(stand, to) {
+    stand.clamp = clamp(to, SUPPORTS.stand.clamp[0], SUPPORTS.stand.clamp[1]);
+    dress(stand);
+    follow(stand);
+    flash(stand);
+    await pause(520);
+    save();
+  },
+  /** Hold a gas syringe level in a stand's clamp. */
+  async clampSyringe(sy, stand) {
+    await this.move(sy, stand.x + 78, stand.y + (stand.clamp ?? CLAMP) + 9, 460);
+    sy.rack = [stand.id, 0];
+    follow(stand);
+    save();
+  },
+  /** Turn an empty tube upside down. */
+  async flip(v) {
+    v.flip = true;
+    v.jar = null;
+    glide(v, true);
+    place(v);
+    paint(v);
+    follow(v);
+    await pause(520);
+    save();
+  },
+  /** Let an empty gas jar go in a trough: it turns over and stands there. */
+  async upturnIn(jar, trough) {
+    jar.flip = true;
+    jar.jar = null;
+    await this.into(jar, trough, 0);
+    place(jar);
+    paint(jar);
+    save();
+  },
+  /** Lead the end of a delivery tube's rubber to a collector. */
+  async lead(tube, target) {
+    const e = endOf(tube), m = mouth(target), a = { x: e.x - tube.x, y: e.y - tube.y }, z = { x: m.x - tube.x, y: m.y - tube.y };
+    for (let i = 1; i <= 12; i++) { tube.ex = a.x + ((z.x - a.x) * i) / 12; tube.ey = a.y + ((z.y - a.y) * i) / 12; drawLinks(); await pause(45); }
+    tube.to = target.id;
+    drawLinks();
+    await pause(500);
+    save();
+  },
+  // the setting-up practicals, as PrepBot sees them
+  setupSteps: (id) => { const e = EXPERIMENTS.find((x) => x.id === id); return e ? e.steps.map((st) => ({ text: st.text, done: stepDone(st, new Set(), Q) })) : []; },
+  setupDone(id) { const s = this.setupSteps(id); return s.length > 0 && s.every((x) => x.done); },
+  onChange: null,
   /** Stand and watch (a chromatogram running). */
   async wait(ms) { await pause(ms); },
   async flame(burner, level) {

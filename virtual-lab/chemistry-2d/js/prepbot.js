@@ -24,6 +24,13 @@
 import { PrepbotTeacher } from "/prep-math/mental-math/shared/prepbot-teacher.js";
 import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
 import { UI } from "/utils/components/ui-icons.js";
+import { EXPERIMENTS } from "./waec.js";
+
+/* A SETTING-UP lesson is the demonstration of a setting-up practical (waec.js, group "setup").
+   The learner's turn is that practical's own steps, and it is done when every piece is in
+   place: nothing is written in the notebook when a clamp is slid or a flask stood under a tip,
+   so the bench is asked (bench.setupSteps) instead of the notebook being read. */
+const setupSteps = (id) => (EXPERIMENTS.find((e) => e.id === id) || { steps: [] }).steps.map((st, i) => ({ text: st.text, done: (seen, b) => Boolean((b.setupSteps(id)[i] || {}).done) }));
 
 const DONE_KEY = "chem-bench-bot-done";
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
@@ -345,6 +352,210 @@ export const LESSONS = [
       await say("Three spots: blue, red and yellow. Black ink is a mixture of dyes, and each one is carried a different distance. Measure them from the pencil line to find each Rf value.");
     },
   },
+  // ── setting up apparatus ──
+  {
+    id: "setup-heat", setup: "setup-heat", group: "Setting up apparatus",
+    name: "Set up: tripod, gauze and burner",
+    about: "The gauze spreads the heat, and the burner stands under its middle.",
+    need: [], steps: setupSteps("setup-heat"),
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Before anything is heated, the apparatus has to be right. This is the simplest: a tripod, a gauze and a burner.");
+      const tp = await b.take("rack", "tripod", at(240), b.BASE + 20);
+      await say("The tripod stands firmly on the bench with the gauze on top. The gauze spreads the heat, so the glass is not heated at one point.");
+      const dish = await b.take("vessel", "dish", at(240), b.BASE - 140);
+      await b.into(dish, tp, 0);
+      await say("What is to be heated stands in the middle of the gauze.");
+      const bn = await b.take("tool", "burner", at(430), b.BASE + 17);
+      await b.flame(bn, 2);
+      await say("The burner is lit away from the apparatus, and only then moved under it.");
+      await b.move(bn, tp.x, b.BASE + 17, 700);
+      await say("Directly under the middle. That is the whole set-up.");
+    },
+  },
+  {
+    id: "setup-filter", setup: "setup-filter", group: "Setting up apparatus",
+    name: "Set up: filtration",
+    about: "A funnel in a flask, and a paper folded into the funnel.",
+    need: [], steps: setupSteps("setup-filter"),
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("To filter, three things: something to catch the liquid, a funnel, and a filter paper.");
+      const fl = await b.take("vessel", "flask100", at(240), b.BASE);
+      await say("A conical flask will catch the filtrate.");
+      const fu = await b.take("tool", "funnel", at(240), b.BASE - 220);
+      await b.fit(fu, fl);
+      await say("The funnel sits in the mouth of the flask.");
+      const fp = await b.take("tool", "paper", at(380), b.BASE);
+      await b.fit(fp, fu);
+      await say("The paper is folded in half, in half again, and opened into a cone: three layers on one side, one on the other.");
+      await b.take("vessel", "beaker100", at(430), b.BASE);
+      await say("And a beaker to pour the mixture from. Never pour above the top of the paper.");
+    },
+  },
+  {
+    id: "setup-titration", setup: "setup-titration", group: "Setting up apparatus",
+    name: "Set up: a titration",
+    about: "The burette hangs upright in a clamp with the flask under its tip.",
+    need: [], steps: setupSteps("setup-titration"),
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("A titration needs a burette that hangs dead upright, with a flask under it.");
+      const st = await b.take("rack", "stand", at(200), b.BASE + 20);
+      await b.slide(st, -330);
+      await say("A retort stand. I slide its clamp well up the rod: a burette is long.");
+      const bu = await b.take("vessel", "burette", at(360), b.BASE - 60);
+      await b.into(bu, st, 0);
+      await say("The burette goes in the clamp, upright, with its scale facing me.");
+      const acid = await b.take("reagent", "hcl", at(400), b.TOP);
+      await b.uncap(acid);
+      await b.pour(acid, bu, 3);
+      await say("It is filled from the top. Its scale is read downwards, from nought at the top.");
+      await b.take("vessel", "flask100", st.x + 44, b.BASE + 14);
+      await say("The conical flask stands directly under the tip, so that nothing is lost.");
+      await b.take("tool", "pipette", at(520), b.BASE + 10);
+      await say("And a pipette, to measure the alkali into the flask. Now it is ready for the first reading.");
+    },
+  },
+  {
+    id: "setup-sepfunnel", setup: "setup-sepfunnel", group: "Setting up apparatus",
+    name: "Set up: a separating funnel",
+    about: "Held in a clamp, with a beaker under the tap.",
+    need: [], steps: setupSteps("setup-sepfunnel"),
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("A separating funnel cannot stand up on its own. It has to be held.");
+      const st = await b.take("rack", "stand", at(220), b.BASE + 20);
+      await b.slide(st, -235);
+      const fu = await b.take("vessel", "sepfunnel", at(400), b.BASE - 60);
+      await b.into(fu, st, 0);
+      await say("So it hangs in the clamp of a retort stand, tap downwards.");
+      await b.take("vessel", "beaker100", st.x + 44, b.BASE + 20);
+      await say("A beaker stands under the tap. Remember: the stopper comes out of the top before the tap is opened, or nothing will run.");
+    },
+  },
+  {
+    id: "setup-electrolysis", setup: "setup-electrolysis", group: "Setting up apparatus",
+    name: "Set up: an electrolysis cell",
+    about: "Two electrodes in the solution, not touching, wired to a supply.",
+    need: [], steps: setupSteps("setup-electrolysis"),
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("To pass a current through a solution we build a cell.");
+      const v = await b.take("vessel", "beaker250", at(240), b.BASE);
+      const cu = await b.take("reagent", "cuso4", at(40), b.TOP);
+      await b.uncap(cu);
+      await b.pour(cu, v, 6);
+      await say("The solution to be electrolysed is the electrolyte. It goes in a beaker.");
+      const e1 = await b.take("tool", "electrode", at(180), b.BASE - 220);
+      await b.fit(e1, v);
+      const e2 = await b.take("tool", "electrode", at(300), b.BASE - 220);
+      await b.fit(e2, v);
+      await say("Two carbon electrodes dip into it. They must not touch each other.");
+      await b.take("tool", "power", at(480), b.BASE);
+      await b.move(v, v.x, v.y, 120);
+      await say("The power pack is wired to them. The electrode on the negative terminal is the cathode; the one on the positive is the anode.");
+    },
+  },
+  {
+    id: "setup-water", setup: "setup-water", group: "Setting up apparatus",
+    name: "Set up: collecting a gas over water",
+    about: "A jar full of water, upturned in a trough, with the tube led under it.",
+    need: [], steps: setupSteps("setup-water"),
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("This is the apparatus for a gas that does not dissolve much in water, such as hydrogen or oxygen.");
+      const tr = await b.take("vessel", "trough", at(520), b.BASE + 20);
+      const w = await b.take("reagent", "water", at(420), b.TOP);
+      await b.uncap(w);
+      await b.pour(w, tr, 6);
+      await say("A trough, at least half full of water.");
+      const jar = await b.take("vessel", "gasjar", at(520), b.BASE - 160);
+      await b.upturnIn(jar, tr);
+      await say("The gas jar is filled with water and turned over in the trough. There is no air in it now, only water.");
+      const fl = await b.take("vessel", "flask", at(140), b.BASE + 20);
+      const st = await b.take("tool", "bung1", at(260), b.BASE - 60);
+      await b.fit(st, fl);
+      await say("The gas will be made in this flask. A stopper with one hole goes in its mouth.");
+      const tu = await b.take("tool", "tubing", at(260), b.BASE - 200);
+      await b.fit(tu, st);
+      await say("The glass of the delivery tube is pushed through the hole.");
+      await b.lead(tu, jar);
+      await say("And the rubber tube is led under the mouth of the jar. Each bubble that rises will push water out of the jar.");
+    },
+  },
+  {
+    id: "setup-upward", setup: "setup-upward", group: "Setting up apparatus",
+    name: "Set up: upward delivery",
+    about: "A gas lighter than air is caught in an upturned tube.",
+    need: [], steps: setupSteps("setup-upward"),
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Ammonia dissolves in water, so it cannot be collected over water. But it is lighter than air.");
+      const sd = await b.take("rack", "stand", at(140), b.BASE + 20);
+      await b.slide(sd, -250);
+      const v = await b.take("vessel", "boil", at(300), b.BASE - 40);
+      await b.into(v, sd, 0);
+      await say("The tube the gas is made in is held in a clamp.");
+      const st = await b.take("tool", "bung1", at(320), b.BASE - 20);
+      await b.fit(st, v);
+      const tu = await b.take("tool", "tubing", at(320), b.BASE - 240);
+      await b.fit(tu, st);
+      await say("A one-hole stopper, with a delivery tube through it.");
+      const v2 = await b.take("vessel", "boil", at(460), b.BASE - 90);
+      await b.flip(v2);
+      await say("A second, dry tube is turned upside down.");
+      await b.lead(tu, v2);
+      await say("The delivery tube leads up into it. The light gas rises to the top and pushes the air out at the bottom.");
+    },
+  },
+  {
+    id: "setup-syringe", setup: "setup-syringe", group: "Setting up apparatus",
+    name: "Set up: a gas syringe",
+    about: "The syringe is clamped level and joined to the flask.",
+    need: [], steps: setupSteps("setup-syringe"),
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("To measure how much gas a reaction gives, we use a gas syringe.");
+      const sd = await b.take("rack", "stand", at(520), b.BASE + 20);
+      await b.slide(sd, -230);
+      const sy = await b.take("tool", "syringe", at(600), b.BASE - 60);
+      await b.clampSyringe(sy, sd);
+      await say("It is clamped level, so that the plunger slides freely and its weight does not squeeze the gas.");
+      const fl = await b.take("vessel", "flask", at(160), b.BASE + 20);
+      const st = await b.take("tool", "bung1", at(280), b.BASE - 60);
+      await b.fit(st, fl);
+      const tu = await b.take("tool", "tubing", at(280), b.BASE - 200);
+      await b.fit(tu, st);
+      await say("The flask has a one-hole stopper and a delivery tube.");
+      await b.lead(tu, sy);
+      await say("The rubber tube goes on the nozzle of the syringe. Every joint must be airtight, and the plunger starts pushed right in.");
+    },
+  },
+  {
+    id: "setup-distil", setup: "setup-distil", group: "Setting up apparatus",
+    name: "Set up: a distillation",
+    about: "Flask in a clamp, condenser sloping down, receiver under it, burner beneath.",
+    need: [], steps: setupSteps("setup-distil"),
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Distillation has the most apparatus of all. We build it from the flask outwards.");
+      const st = await b.take("rack", "stand", at(120), b.BASE + 20);
+      await say("A retort stand first.");
+      const fl = await b.take("vessel", "distflask", at(300), b.BASE - 40);
+      await b.into(fl, st, 0);
+      await say("The distilling flask is held in the clamp by its neck, clear of the bench, so that a burner can go under it.");
+      const co = await b.take("tool", "condenser", at(460), b.BASE - 240);
+      await b.fit(co, fl);
+      await say("The Liebig condenser pushes onto the side arm and slopes downwards. Cold water goes in at the bottom of its jacket and out at the top.");
+      await b.take("vessel", "beaker100", co.x + 229, b.BASE + 20);
+      await say("A beaker under its lower end is the receiver: the distillate drips into it.");
+      const bn = await b.take("tool", "burner", at(360), b.BASE + 20);
+      await b.flame(bn, 2);
+      await b.move(bn, fl.x, b.BASE + 20, 700);
+      await say("Last, a lit burner under the flask. Now it is ready, and the flask must never be heated dry.");
+    },
+  },
 ];
 
 class Stopped extends Error {}
@@ -432,18 +643,27 @@ export async function initPrepbot(bench) {
   }
 
   // what the learner does is written in the notebook; PrepBot reads it over their shoulder
+  // a set-up has no result to write down: PrepBot looks at the bench each time something is moved
+  bench.onChange = () => {
+    if (!turn || !turn.lesson.setup || bench.isBusy()) return;
+    if (!bench.setupDone(turn.lesson.setup)) { if (!turnBox.hidden) renderList(); return; }
+    finish("You have set it up! Every piece is where it should be.");
+  };
   bench.onRecord = (flags) => {
-    if (!turn || bench.isBusy()) return;
+    if (!turn || bench.isBusy() || turn.lesson.setup) return;
     flags.forEach((f) => turn.seen.add(f));
     if (!turn.lesson.need.every((f) => turn.seen.has(f))) { renderList(); return; }
+    finish("You did it! That is exactly what I got.");
+  };
+  function finish(praise) {
     const { lesson } = turn;
     turn = null;
     if (!done.includes(lesson.id)) { done.push(lesson.id); try { localStorage.setItem(DONE_KEY, JSON.stringify(done)); } catch { /* private mode */ } }
     renderList();
     teacher.show();
-    teacher.speak([{ text: `You did it! That is exactly what I got. ${lesson.about}`, mode: "speech" }], { colorSeed: lines++ });
+    teacher.speak([{ text: `${praise} ${lesson.about}`, mode: "speech" }], { colorSeed: lines++ });
     teacher.poke?.();
-  };
+  }
 
   // ── stuck? H, or the H key beside PrepBot ──
   /** The step of the learner's turn to do now: the first one not done after the last one that is. */
@@ -714,10 +934,14 @@ YOU CAN FETCH PIECES: if the student wants a piece, tell them to type "get me" a
   const list = document.getElementById("cl-bot-list");
   const turnBox = document.getElementById("cl-bot-turn");
   function renderList() {
-    list.innerHTML = LESSONS.map((l, n) => {
+    const kindOf = (l) => l.group || (["sandsalt", "decant", "magnet", "sublime", "chroma", "filter", "crystals"].includes(l.id) ? "Separating mixtures" : "Reactions and tests");
+    const order = ["Setting up apparatus", "Reactions and tests", "Separating mixtures"];
+    const sorted = LESSONS.slice().sort((x, y) => order.indexOf(kindOf(x)) - order.indexOf(kindOf(y)));
+    list.innerHTML = sorted.map((l, n) => {
       const mine = turn && turn.lesson === l;
-      return `<li class="cl-card pp-sticky pp-sticky--c${n % 6}${mine ? " is-on" : ""}">
-        <img src="shots/bot-${l.id}.jpg" alt="" width="400" height="250" loading="lazy" />
+      const head = n === 0 || kindOf(sorted[n - 1]) !== kindOf(l) ? `<li class="cl-cards__head">${esc(kindOf(l))}</li>` : "";
+      return `${head}<li class="cl-card pp-sticky pp-sticky--c${n % 6}${mine ? " is-on" : ""}">
+        <img src="shots/${l.setup || `bot-${l.id}`}.jpg" alt="" width="400" height="250" loading="lazy" />
         <h3>${esc(l.name)}${done.includes(l.id) ? `<span class="cl-card__done">${UI.check(14)}</span>` : ""}</h3>
         <p>${esc(l.about)}</p>
         <button type="button" class="cl-try" data-lesson="${l.id}" aria-label="Try: ${esc(l.name)}. PrepBot does it first.">${mine ? "Try again" : "Try"}</button>
