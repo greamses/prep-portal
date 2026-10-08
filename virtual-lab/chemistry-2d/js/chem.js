@@ -61,6 +61,8 @@ export const REAGENTS = [
   { id: "ki", group: "salt", kind: "solution", name: "potassium iodide solution", formula: "KI", adds: { K: 1, I: 1 } },
   { id: "nh4cl", group: "salt", kind: "solution", name: "ammonium chloride solution", formula: "NH4Cl", adds: { NH4: 1, Cl: 1 } },
 
+  // the unknown of the qualitative-analysis question: main.js decides which salt it is (setUnknown)
+  { id: "unk", group: "other", kind: "solution", name: "sample X", formula: "X", adds: {} },
   { id: "water", group: "other", kind: "solution", name: "distilled water", formula: "H2O", adds: {} },
   { id: "h2o2", group: "other", kind: "solution", name: "hydrogen peroxide solution", formula: "H2O2", adds: { H2O2: 1 } },
   // the one liquid that does not mix with the rest: it is kept apart, as t.oil, and floats
@@ -80,6 +82,8 @@ export const REAGENTS = [
 ];
 const BY_ID = Object.fromEntries(REAGENTS.map((r) => [r.id, r]));
 export const reagent = (id) => BY_ID[id];
+/** Make sample X a solution of this salt. */
+export function setUnknown(saltId) { BY_ID.unk.adds = { ...BY_ID[saltId].adds }; }
 
 // ── precipitates ────────────────────────────────────────────────────────────
 // colour = the word a student writes; rgb = what the drawing uses.
@@ -863,40 +867,4 @@ export function chemHtml(s) {
     .replace(/([A-Za-z)\]])(\d+)/g, "$1<sub>$2</sub>")
     .replace(/<sup>(\d*)-<\/sup>/g, "<sup>$1−</sup>")
     .replace(/->/g, "→");
-}
-
-// ── things to try ───────────────────────────────────────────────────────────
-// done(flags, tube, sp, look): true once the student has made it happen.
-export const TASKS = [
-  { id: "blue-ppt", text: "Make a pale blue precipitate.", done: (f) => f.includes("ppt:CuOH") },
-  { id: "pop", text: "Make a gas that burns with a squeaky pop.", done: (f) => f.includes("test:pop") },
-  { id: "out", text: "Make a gas that puts out a lighted splint.", done: (f) => f.includes("test:out") },
-  { id: "relight", text: "Relight a glowing splint.", done: (f) => f.includes("test:relight") },
-  { id: "neutral", text: "Neutralise an acid exactly: turn universal indicator green.", done: (f, t, sp) => t.ind.includes("ui") && sp.pH === 7 && (t.added.includes("hcl") || t.added.includes("h2so4")) && (t.added.includes("naoh") || t.added.includes("nh3")) },
-  { id: "amphoteric", text: "Make a white precipitate, then dissolve it in excess sodium hydroxide.", done: (f) => ["ZnOH4", "AlOH4", "PbOH4"].some((c) => f.includes(`cx:${c}`)) },
-  { id: "deep-blue", text: "Make a deep blue solution.", done: (f, t, sp, lk) => lk.name === "deep blue" },
-  { id: "yellow-ppt", text: "Make a bright yellow precipitate.", done: (f) => f.includes("ppt:PbI2") },
-  { id: "sulfate", text: "Make a white precipitate that will not dissolve in acid.", done: (f, t, sp) => ["BaSO4", "AgCl", "PbSO4"].some((k) => sp.ppt[k]) && sp.free.H > 0.9 },
-  { id: "displace", text: "Coat a metal with copper.", done: (f) => f.includes("deposit:Cu") },
-  { id: "ammonia", text: "Make a gas that turns damp red litmus blue.", done: (f) => f.includes("test:gasblue") },
-  { id: "black", text: "Turn a blue precipitate black.", done: (f) => f.includes("heat:CuO") },
-  { id: "flame", text: "Colour a flame brick red.", done: (f) => f.includes("flame:Ca") },
-  { id: "exo", text: "Make a liquid at least 10 °C warmer than the room, and measure it.", done: (f) => f.some((x) => x.startsWith("temp:") && Number(x.slice(5)) >= 35) },
-  { id: "titrate", text: "Titrate: run acid from a burette into an alkali until phenolphthalein just loses its pink.", done: (f, t) => f.includes("by:burette") && f.includes("colour:colourless") && t.ind.includes("phph") },
-  { id: "filter", text: "Filter a precipitate out of a liquid.", done: (f) => f.includes("filtered") },
-  { id: "collect", text: "Collect a gas over water.", done: (f) => f.includes("collected") },
-  { id: "distil", text: "Distil clear water out of a coloured solution.", done: (f) => f.includes("distilled") },
-  { id: "crystals", text: "Evaporate a solution to leave crystals.", done: (f) => f.includes("crystals") },
-  { id: "separate", text: "Separate oil from water with a separating funnel.", done: (f) => f.includes("separated") },
-  { id: "plate", text: "Plate a carbon rod with copper by electrolysis.", done: (f) => f.includes("electro:Cu") },
-  { id: "syringe", text: "Measure the volume of a gas with a gas syringe.", done: (f) => f.includes("measured") },
-  { id: "updraft", text: "Collect ammonia in a dry, upturned tube and test it.", done: (f) => f.includes("test:gasblue") && f.includes("at:up") },
-  { id: "spill", text: "Pour from one vessel into another by tilting it, without spilling a drop.", done: (f) => f.includes("tilted") },
-];
-
-/** Which tasks this result finishes. */
-export function tasksDone(res, t) {
-  const sp = speciate(t);
-  const lk = look(t, sp);
-  return TASKS.filter((task) => task.done(res.flags || [], t, sp, lk)).map((task) => task.id);
 }

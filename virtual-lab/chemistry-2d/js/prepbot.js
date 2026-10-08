@@ -15,23 +15,31 @@
      run({ say, b })  the demonstration — `say` speaks a line and waits for it;
                       `b` is the bench's own hands (main.js `actor`)
      need             the notebook flags that mean the learner has done it too
-     turn             the steps, in words, shown while it is the learner's turn
+     steps            the learner's turn, one step at a time: { text, done }.
+                      `done(seen, b)` looks at the flags seen so far and at
+                      what is standing on the bench. A learner who is stuck
+                      presses H, and PrepBot says the first step not yet done.
    ========================================================================== */
 
 import { PrepbotTeacher } from "/prep-math/mental-math/shared/prepbot-teacher.js";
-import { ICON_PREPBOT, ICON_PLAY } from "/prep-math/mental-math/shared/icons.js";
+import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
 import { UI } from "/utils/components/ui-icons.js";
 
 const DONE_KEY = "chem-bench-bot-done";
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
-const LESSONS = [
+export const LESSONS = [
   {
     id: "precipitate",
     name: "Making a precipitate",
     about: "Two clear solutions meet and a solid appears.",
     need: ["ppt:CuOH"],
-    turn: ["Stand a test tube in a rack.", "Take out copper(II) sulfate and sodium hydroxide, and pull out both stoppers.", "Pour a measure of copper(II) sulfate into the tube, then a measure of sodium hydroxide."],
+    steps: [
+      { text: "Take a test tube from Glassware and stand it in a rack.", done: (seen, b) => b.count("vessel", "tube") > 0 },
+      { text: "Take copper(II) sulfate and sodium hydroxide from Liquids, and pull the stopper out of each bottle.", done: (seen, b) => b.open("cuso4") && b.open("naoh") },
+      { text: "Carry the copper(II) sulfate bottle to the mouth of the test tube and hold it there until it pours.", done: (seen) => seen.has("added:cuso4") },
+      { text: "Now pour sodium hydroxide into the same tube, and watch for the solid.", done: (seen) => seen.has("ppt:CuOH") },
+    ],
     async run({ say, b }) {
       await say("Let us make a precipitate: a solid that appears when two solutions are mixed.");
       const rack = await b.take("rack", "rack", 250, b.BASE);
@@ -57,7 +65,13 @@ const LESSONS = [
     name: "Acid or alkali?",
     about: "Litmus paper tells an acid from an alkali.",
     need: ["test:acid", "test:alkali"],
-    turn: ["Put an acid in one test tube and an alkali in another.", "Dip blue litmus paper in the acid.", "Dip red litmus paper in the alkali."],
+    steps: [
+      { text: "Stand two test tubes in a rack.", done: (seen, b) => b.count("vessel", "tube") > 1 },
+      { text: "Pull the stopper out of dilute hydrochloric acid and pour some into the first tube.", done: (seen) => seen.has("added:hcl") },
+      { text: "Pull the stopper out of sodium hydroxide and pour some into the second tube.", done: (seen) => seen.has("added:naoh") },
+      { text: "Take blue litmus paper from Equipment and hold it in the acid.", done: (seen) => seen.has("test:acid") },
+      { text: "Take red litmus paper and hold it in the alkali.", done: (seen) => seen.has("test:alkali") },
+    ],
     async run({ say, b }) {
       await say("How do you tell an acid from an alkali? They can look exactly the same. Litmus paper knows.");
       const rack = await b.take("rack", "rack", 250, b.BASE);
@@ -85,7 +99,12 @@ const LESSONS = [
     name: "Making hydrogen",
     about: "A metal in an acid gives a gas that burns with a pop.",
     need: ["test:pop"],
-    turn: ["Put some zinc in a boiling tube.", "Pour dilute hydrochloric acid on it.", "While it fizzes, hold a lighted splint at the mouth of the tube."],
+    steps: [
+      { text: "Take a boiling tube from Glassware.", done: (seen, b) => b.count("vessel", "boil") > 0 },
+      { text: "Take zinc from Solids, pull its lid off and tip some into the boiling tube.", done: (seen) => seen.has("added:zn") },
+      { text: "Pull the stopper out of dilute hydrochloric acid and pour it on the zinc.", done: (seen) => seen.has("added:hcl") },
+      { text: "While it fizzes, take a lighted splint from Equipment and hold it at the mouth of the tube.", done: (seen) => seen.has("test:pop") },
+    ],
     async run({ say, b }) {
       await say("Some metals fizz in an acid. Let us find out what the gas is.");
       const tube = await b.take("vessel", "boil", 300, b.BASE);
@@ -107,7 +126,12 @@ const LESSONS = [
     name: "Filtering",
     about: "A funnel and filter paper take a solid out of a liquid.",
     need: ["filtered"],
-    turn: ["Make a precipitate in a beaker.", "Let a funnel go at the mouth of a flask: it stays there.", "Carry the beaker to the funnel and hold it there to pour."],
+    steps: [
+      { text: "Take a beaker from Glassware.", done: (seen, b) => b.count("vessel", "beaker") > 0 },
+      { text: "Pour copper(II) sulfate and then sodium hydroxide into the beaker to make the precipitate.", done: (seen) => seen.has("ppt:CuOH") },
+      { text: "Take a conical flask and a funnel. Let the funnel go at the mouth of the flask: it stays there.", done: (seen, b) => b.fitted("funnel") },
+      { text: "Carry the beaker to the funnel and hold it there until it pours.", done: (seen) => seen.has("filtered") },
+    ],
     async run({ say, b }) {
       await say("A precipitate floats about in its liquid. Filtering takes it out.");
       const bk = await b.take("vessel", "beaker100", 250, b.BASE);
@@ -131,7 +155,12 @@ const LESSONS = [
     name: "Crystals from a solution",
     about: "Boil the water away and the salt is left.",
     need: ["crystals"],
-    turn: ["Stand an evaporating dish on a tripod.", "Pour in some copper(II) sulfate solution.", "Turn a burner up with its + key and hold it under the dish until the water has gone."],
+    steps: [
+      { text: "Take a tripod and an evaporating dish, and stand the dish on the tripod.", done: (seen, b) => b.count("vessel", "dish") > 0 && b.count("rack", "tripod") > 0 },
+      { text: "Pull the stopper out of copper(II) sulfate and pour some into the dish.", done: (seen) => seen.has("added:cuso4") },
+      { text: "Take a burner from Equipment and press its plus key to light it.", done: (seen, b) => b.lit() },
+      { text: "Hold the burner under the dish, and keep it there until all the water has gone.", done: (seen) => seen.has("crystals") },
+    ],
     async run({ say, b }) {
       await say("There is a solid hidden in every salt solution. Let us get it back.");
       const tp = await b.take("rack", "tripod", 330, b.BASE + 20);
@@ -168,6 +197,7 @@ export async function initPrepbot(bench) {
       </div>
       <div class="mm-prepbot-avatar" aria-hidden="true"></div>
     </div>
+    <button type="button" class="cl-ico cl-bot-help" data-tip="Stuck? PrepBot says what to do next (H)" aria-label="Help: what do I do next?">H</button>
     <button type="button" class="cl-ico cl-bot-stop" data-tip="Stop PrepBot" aria-label="Stop PrepBot" hidden>${UI.close(16)}</button>`;
   wrap.appendChild(root);
   const q = (k) => root.querySelector(`[data-b="${k}"]`);
@@ -223,11 +253,10 @@ export async function initPrepbot(bench) {
     bench.clear();
     try {
       await lesson.run({ say: (t) => speak(t, mine), b: hands(mine) });
-      await speak("Now it is your turn. I will clear the bench. Take the same things from the drawer and do what I did. I am watching.", mine);
+      await speak("Now it is your turn. I will clear the bench. Take the same things from the drawer and do what I did. If you get stuck, press H and I will tell you what to do next.", mine);
       bench.clear();
       turn = { lesson, seen: new Set() };
       renderList();
-      bench.openSheet("cl-sheet-bot");
     } catch (e) {
       if (!(e instanceof Stopped)) throw e;
     } finally {
@@ -239,7 +268,7 @@ export async function initPrepbot(bench) {
   bench.onRecord = (flags) => {
     if (!turn || bench.isBusy()) return;
     flags.forEach((f) => turn.seen.add(f));
-    if (!turn.lesson.need.every((f) => turn.seen.has(f))) return;
+    if (!turn.lesson.need.every((f) => turn.seen.has(f))) { renderList(); return; }
     const { lesson } = turn;
     turn = null;
     if (!done.includes(lesson.id)) { done.push(lesson.id); try { localStorage.setItem(DONE_KEY, JSON.stringify(done)); } catch { /* private mode */ } }
@@ -249,17 +278,55 @@ export async function initPrepbot(bench) {
     teacher.poke?.();
   };
 
+  // ── stuck? H, or the H key beside PrepBot ──
+  /** The step of the learner's turn to do now: the first one not done after the last one that is. */
+  function nextOf(t) {
+    const did = t.lesson.steps.map((st) => Boolean(st.done(t.seen, bench)));
+    const i = did.indexOf(false, did.lastIndexOf(true) + 1);
+    return { did, i };
+  }
+  function help() {
+    if (bench.isBusy()) return;
+    let text;
+    if (turn) {
+      const { i } = nextOf(turn);
+      const st = turn.lesson.steps[i];
+      text = st ? `${i === 0 ? "Start here." : `Step ${i + 1}.`} ${st.text}` : "You have done every step. Look at what is in front of you: is it what I got?";
+    } else {
+      const p = bench.nextStep();
+      text = !p ? "Nothing has been chosen yet. Open the practicals, or press my picture at the top, and press Try on one of the cards."
+        : p.done ? `You have finished ${p.title}. Choose another practical when you are ready.`
+        : `${p.n === 1 ? "Start here." : `Step ${p.n} of ${p.of}.`} ${p.text}`;
+    }
+    teacher.show();
+    teacher.speak([{ text, mode: "speech" }], { colorSeed: lines++ });
+  }
+  root.querySelector(".cl-bot-help").addEventListener("click", help);
+  window.addEventListener("keydown", (e) => {
+    if (e.key !== "h" && e.key !== "H") return;
+    if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+    e.preventDefault();
+    help();
+  });
+
   const list = document.getElementById("cl-bot-list");
+  const turnBox = document.getElementById("cl-bot-turn");
   function renderList() {
-    list.innerHTML = LESSONS.map((l) => {
+    list.innerHTML = LESSONS.map((l, n) => {
       const mine = turn && turn.lesson === l;
-      return `<li class="cl-lesson${mine ? " is-turn" : ""}">
-        <button type="button" class="cl-ico cl-ico--paper cl-lesson__play" data-lesson="${l.id}" data-tip="${mine ? "Watch it again" : "Watch PrepBot do it"}" aria-label="Watch PrepBot do: ${esc(l.name)}">${ICON_PLAY}</button>
-        <div><h3>${esc(l.name)}${done.includes(l.id) ? `<span class="cl-lesson__done">${UI.check(14)}</span>` : ""}</h3>
-          <p>${esc(l.about)}</p>
-          ${mine ? `<p class="cl-lesson__turn">Your turn:</p><ol>${l.turn.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>` : ""}</div>
+      return `<li class="cl-card pp-sticky pp-sticky--c${n % 6}${mine ? " is-on" : ""}">
+        <img src="shots/bot-${l.id}.jpg" alt="" width="400" height="250" loading="lazy" />
+        <h3>${esc(l.name)}${done.includes(l.id) ? `<span class="cl-card__done">${UI.check(14)}</span>` : ""}</h3>
+        <p>${esc(l.about)}</p>
+        <button type="button" class="cl-try" data-lesson="${l.id}" aria-label="Try: ${esc(l.name)}. PrepBot does it first.">${mine ? "Try again" : "Try"}</button>
       </li>`;
     }).join("");
+    turnBox.hidden = !turn;
+    if (!turn) return;
+    const { did, i } = nextOf(turn);
+    turnBox.innerHTML = `<h3>Your turn: ${esc(turn.lesson.name)}</h3>
+      <ol>${turn.lesson.steps.map((st, k) => `<li class="${did[k] ? "is-done" : k === i ? "is-next" : ""}">${esc(st.text)}</li>`).join("")}</ol>
+      <p>Stuck? Press <kbd>H</kbd> and PrepBot tells you what to do next.</p>`;
   }
   list.addEventListener("click", (e) => {
     const b = e.target.closest("[data-lesson]");
@@ -271,6 +338,6 @@ export async function initPrepbot(bench) {
   // a first hello, only on an empty bench
   if (bench.isEmptyBench()) {
     teacher.show();
-    teacher.speak([{ text: "Hello! Press my picture at the top and I will do an experiment for you to copy.", mode: "speech" }]);
+    teacher.speak([{ text: "Hello! Press my picture at the top and I will do an experiment for you to copy. Stuck at any time? Press H.", mode: "speech" }]);
   }
 }

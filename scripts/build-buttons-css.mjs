@@ -38,8 +38,9 @@ const TOOLS = [
      is concerned, and paper and tape on it made it a note worth 10 */
   ".ct-piece",
   /* the chemistry bench: the tiles of its drawer and the rail that sorts them. A
-     tile is a picture of a piece of glassware; tape across it made it a note */
-  ".cl-tile", ".cl-cat", ".cl-ico",
+     tile is a picture of a piece of glassware; tape across it made it a note.
+     The Try key sits ON a note (an experiment's card): paper on paper vanished */
+  ".cl-tile", ".cl-cat", ".cl-ico", ".cl-try",
 ];
 
 // Not buttons, or must not be paper. `.pp-plain` is the opt-out.

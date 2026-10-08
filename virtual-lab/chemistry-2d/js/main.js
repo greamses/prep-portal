@@ -27,8 +27,9 @@
    notebook.
    ========================================================================== */
 
-import { REAGENTS, TASKS, newTube, add, heat, rinse, test, tasksDone, reagent, chemHtml, isEmpty, look, takeFrom, pourIn, roomIn, flameOf, massOf, boilOff, filterOut, sampleOf, gasMade, takeBottom, electrolyse } from "./chem.js";
+import { REAGENTS, newTube, add, heat, rinse, test, speciate, setUnknown, reagent, chemHtml, isEmpty, look, takeFrom, pourIn, roomIn, flameOf, massOf, boilOff, filterOut, sampleOf, gasMade, takeBottom, electrolyse } from "./chem.js";
 import { DEFS, VESSELS, TOOLS, SUPPORTS, vesselSvg, paintVessel, bubble, reagentSvg, toolSvg, splintAfter, supportSvg, thumb, colourOf, mouthOf, capOf, CAP_BOX } from "./glass.js";
+import { EXPERIMENTS, GROUPS, UNKNOWNS, CATIONS, ANIONS, HOWTO, stepDone } from "./waec.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
 
@@ -78,6 +79,7 @@ const ICON = {
   turn: UI.rotateRight(18),
   dots: glyph(`<circle cx="5" cy="12" r="2.4" fill="var(--accent-secondary)"/><circle cx="12" cy="12" r="2.4" fill="var(--accent-primary)"/><circle cx="19" cy="12" r="2.4" fill="var(--accent-danger)"/>`, 18),
   flip: UI.upDown(18),
+  swirl: UI.loop(18),
   fire: UI.fire(18),
 };
 
@@ -108,23 +110,9 @@ const nameOf = (it) => (it.kind === "vessel" ? `${VESSELS[it.key].name} ${it.tag
 /** "test tube A", for the middle of a sentence. */
 const plain = (v) => (v.kind === "vessel" ? `${VESSELS[v.key].name.replace(/ \(.*/, "").toLowerCase()} ${v.tag}` : nameOf(v).toLowerCase());
 
-// ── guides: what an experiment needs and what to do. They put nothing out. ───
-const GUIDES = [
-  { name: "Test-tube reactions", needs: "test tube rack, test tubes, bottles of solutions", steps: ["Stand tubes in the rack.", "Pull the stopper out of a bottle, carry the bottle to a tube and hold it there to pour.", "Add a second solution and watch. Switch to drops to add a little at a time, then in excess."] },
-  { name: "Titration", needs: "retort stand, burette, conical flask, pipette, an acid, an alkali, phenolphthalein", steps: ["Slide the stand's clamp up by its yellow boss and let the burette go at the clamp.", "Fill the burette: carry the acid to its top.", "Pipette 25 cm\u00b3 of alkali into the flask (the pipette fills straight from the bottle) and add the indicator.", "Stand the flask under the burette and press the blue tap. Near the end, switch to drops."] },
-  { name: "Filtration", needs: "two beakers or a flask, funnel and filter paper, two solutions that give a precipitate", steps: ["Make the precipitate in a beaker.", "Let the funnel go at the mouth of the other vessel: it stays there.", "Pour the mixture in. The solid stays in the paper."] },
-  { name: "Collecting a gas over water", needs: "flask, stopper and delivery tube, trough, gas jar, distilled water, a metal or marble, an acid", steps: ["Fill the trough from the water bottle.", "Let an empty gas jar go in the trough: it turns over and fills with water.", "Fit the delivery tube in the flask and drag its orange end to the gas jar.", "Put the solid and then the acid in the flask. Lift the jar out to test the gas."] },
-  { name: "Other ways to collect a gas", needs: "delivery tube, gas syringe, or a boiling tube", steps: ["Lead the tube's end to a gas syringe to measure any gas.", "For a gas lighter than air (hydrogen, ammonia), turn an empty tube upside down from its menu and lead the tube up into it.", "For a gas denser than air (carbon dioxide), lead the tube down into an upright jar."] },
-  { name: "Distillation", needs: "retort stand, distilling flask, Liebig condenser, a beaker, a burner, a coloured solution", steps: ["Clamp the distilling flask high enough for a burner to go underneath.", "Push the condenser onto the flask's side arm.", "Stand a beaker under the condenser's lower end.", "Pour the solution in, turn the burner up with its + key, and hold it under the flask."] },
-  { name: "Evaporating to crystals", needs: "tripod and gauze, evaporating dish, burner, lighted splint, a salt solution, balance", steps: ["Stand the dish on the tripod and pour the solution in.", "Turn the burner up with its + key and hold it underneath until the water has gone.", "Weigh the dish on the balance. The red T sets the reading to zero."] },
-  { name: "Separating oil and water", needs: "retort stand, separating funnel, two beakers, cooking oil, water", steps: ["Hang the separating funnel in the clamp and stand a beaker under it.", "Pour in water, then oil. They settle into two layers.", "Press the tap. It shuts itself when the lower layer has run out."] },
-  { name: "Electrolysis", needs: "beaker, two carbon electrodes, power pack, a solution", steps: ["Pour the solution into the beaker.", "Let each carbon rod go at the beaker's mouth: they hang in the liquid.", "Put the power pack on the bench: it wires itself to the rods.", "Hold down the red switch and watch each rod."] },
-  { name: "Flame tests", needs: "burner, lighted splint, flame-test wire, salt solutions in tubes", steps: ["Turn the burner up with its + key.", "Dip the wire in a solution, then hold it in the flame."] },
-  { name: "Pouring by hand", needs: "any two vessels", steps: ["Tap a vessel to select it, then drag the round arrow above it to tilt it.", "Tilt far enough and it pours on whatever is underneath, so have the other vessel there first."] },
-];
-
 // ── what is remembered between visits ───────────────────────────────────────
-const state = { items: [], n: 0, dose: "portion", explain: true, done: [], log: [], cat: "glass" };
+// exp = the practical that has been chosen; seen = what has been done towards it; unknown = which salt sample X is
+const state = { items: [], n: 0, dose: "portion", explain: true, done: [], log: [], cat: "glass", exp: null, seen: [], unknown: null };
 let restored = false;
 try {
   const saved = JSON.parse(localStorage.getItem(KEY) || "null");
@@ -135,6 +123,9 @@ try {
     restored = true;
   }
 } catch { /* a bad save is just a fresh bench */ }
+
+if (!UNKNOWNS.some((u) => u.id === state.unknown)) state.unknown = UNKNOWNS[Math.floor(Math.random() * UNKNOWNS.length)].id;
+setUnknown(state.unknown);
 
 // ── the bench ───────────────────────────────────────────────────────────────
 const wrap = $("cl-benchwrap");
@@ -367,6 +358,7 @@ function snap(it) {
       it.rack = [host.id, i];
       it.x = host.x + sx;
       it.y = host.y + sy;
+      if (host.kind === "rack" && host.key === "stand") setTimeout(() => noteFlags([`clamped:${it.key}`]), 0);
       if (up) { paint(it); say(overWater(it) ? `${cap1(plain(it))} is upside down in the trough, full of water. Lead a delivery tube to it.` : "The jar is upside down in the trough, but there is no water to hold in it. Fill the trough.", it); }
       return true;
     }
@@ -534,12 +526,14 @@ function record(v, res) {
   const last = state.log[0];
   const same = last && last.id === v.id && last.title === res.title && JSON.stringify(last.obs) === JSON.stringify(res.obs);
   if (same) last.times = (last.times || 1) + 1;
-  else state.log.unshift({ id: v.id, tag: v.tag, title: res.title, obs: res.obs });
+  else state.log.unshift({ id: v.id, tag: v.tag, title: res.title, obs: res.obs, secret: Boolean(v.t && v.t.added && v.t.added.includes("unk")) });
   state.log.length = Math.min(state.log.length, LOG_MAX);
-  const fresh = tasksDone(res, v.t).filter((id) => !state.done.includes(id));
-  state.done.push(...fresh);
+  if (v.kind === "vessel" && v.t.vol > 0) {
+    const sp = speciate(v.t);
+    if (sp.ppt.BaSO4 && (sp.free.H || 0) > 0.4) res.flags.push("acidproof:BaSO4");
+  }
   renderLog();
-  renderTasks(fresh);
+  noteFlags(res.flags || []);
   const seen = res.obs.map((o) => o.text).join(" ");
   if (actor.onRecord) actor.onRecord(res.flags || [], v);
   // "nothing happened" is worth a line, not a note
@@ -691,7 +685,7 @@ function targetOf(it) {
   const list = atGas ? [...vessels()] : [...open()];
   if (it.key === "lit") list.push(...heaters().filter((b) => !lit(b)));
   if (TAKES[it.key] && !it.sample) list.push(...state.items.filter((o) => o.kind === "reagent" && reagent(o.key).kind === "solution" && !reagent(o.key).oil));
-  const atTip = MOUTH.includes(it.key) || it.key === "wire";
+  const atTip = MOUTH.includes(it.key) || it.key === "wire" || it.key === "rod";
   return nearest(list, (o) => {
     const m = HEAT[o.key] ? { x: o.x, y: o.y - HEAT[o.key] + 46 } : mouth(o), r = HEAT[o.key] ? 8 : rimOf(o);
     if (atTip) { const dx = Math.abs(it.x - 34 - m.x), tip = it.y - 58; return dx < r + 32 && tip > m.y - 80 && tip < m.y + 60 ? dx : -1; }
@@ -712,7 +706,7 @@ function poseOn(it, v) {
   if (it.key === "wire" && v.kind === "tool") return `translate(${v.x + 34}px, ${v.y - HEAT[v.key] + 26 + 58}px)`;
   const deep = v.kind === "vessel" && !v.flip ? Math.min((-VESSELS[v.key].top - (VESSELS[v.key].floor || 0)) * 0.62, 96) : v.kind === "reagent" ? 52 : 14;
   if (MOUTH.includes(it.key)) return `translate(${m.x + 34}px, ${m.y + 54 + (v.flip ? 8 : 0)}px)`;
-  if (it.key === "wire") return `translate(${m.x + 34}px, ${m.y + 58 + deep}px)`;
+  if (it.key === "wire" || it.key === "rod") return `translate(${m.x + 34}px, ${m.y + 58 + deep}px)`;
   if (it.key === "thermo" || it.key === "meter") return `translate(${m.x}px, ${m.y + deep}px)`;
   if (TAKES[it.key]) return `translate(${m.x}px, ${m.y + (it.sample ? -4 : deep)}px)`;
   return `translate(${m.x}px, ${m.y + (v.flip ? 44 : 18)}px)`;
@@ -728,7 +722,78 @@ function fx(html, ms = 900) {
   L.fx.appendChild(g);
   setTimeout(() => g.remove(), ms);
 }
-const stream = (m, to, c) => fx(`<rect class="cl-stream" x="${m.x + 3.5}" y="${m.y - 10}" width="5" height="${Math.max(24, to - m.y + 10)}" rx="2.5" fill="rgba(${c},0.85)"/>`, 720);
+const flows = {};
+/**
+ * Liquid running from `a` to `b`. Called again and again while the pouring goes on, it is one
+ * stream that bends as the lip moves; left alone for a moment, it thins away. `dir` is the way
+ * the lip faces (-1 left, 1 right): the stream leaves that way before it falls.
+ */
+function flow(key, a, b, c, dir = -1) {
+  let f = flows[key];
+  if (!f) {
+    const g = document.createElementNS(NS, "g");
+    g.setAttribute("class", "cl-flow");
+    g.innerHTML = `<path class="cl-flow__body"/><path class="cl-flow__run"/><path class="cl-flow__shine"/><g class="cl-flow__splash"></g>`;
+    L.fx.appendChild(g);
+    f = flows[key] = { g };
+  }
+  const drop = Math.max(8, b.y - a.y);
+  const out = dir * Math.min(22, drop * 0.3);
+  const d = `M${a.x.toFixed(1)} ${a.y.toFixed(1)}C${(a.x + out).toFixed(1)} ${(a.y + 2).toFixed(1)} ${b.x.toFixed(1)} ${(a.y + drop * 0.35).toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
+  const [body, run, shine, splash] = f.g.children;
+  body.setAttribute("d", d);
+  body.style.stroke = `rgba(${c},0.86)`;
+  run.setAttribute("d", d);
+  shine.setAttribute("d", d);
+  splash.innerHTML = [0, 1, 2].map(() => `<circle class="cl-splash" cx="${(b.x + (Math.random() - 0.5) * 8).toFixed(1)}" cy="${b.y.toFixed(1)}" r="${(1 + Math.random() * 1.4).toFixed(1)}" fill="rgba(${c},0.9)" style="--sx:${((Math.random() - 0.5) * 26).toFixed(0)}px;--sy:${(-6 - Math.random() * 12).toFixed(0)}px"/>`).join("");
+  f.g.classList.remove("is-ending");
+  clearTimeout(f.timer);
+  f.timer = setTimeout(() => {
+    f.g.classList.add("is-ending");
+    setTimeout(() => { f.g.remove(); if (flows[key] === f) delete flows[key]; }, 280);
+  }, 940);
+}
+const stream = (m, to, c) => flow("pour", { x: m.x + 6, y: m.y - 10 }, { x: m.x, y: to }, c, -1);
+
+// ── liquid has weight: it lags behind a vessel that is moved, and rocks until it settles ──
+const waves = new Map();           // item id → { a: the surface's tilt in degrees, w: how fast it is turning }
+let waving = 0;
+/** Give the liquid in a piece a push. */
+function kick(it, push) {
+  if (!nodes[it.id] || !nodes[it.id].g.querySelector(".cl-level")) return;
+  const wv = waves.get(it.id) || { a: 0, w: 0 };
+  wv.w = clamp(wv.w + push, -260, 260);
+  waves.set(it.id, wv);
+  if (!waving) waving = requestAnimationFrame(rock);
+}
+function rock() {
+  waving = 0;
+  const dt = 1 / 60;
+  for (const [id, wv] of waves) {
+    const n = nodes[id];
+    wv.w += (-150 * wv.a - 5.2 * wv.w) * dt;      // a spring, lightly damped: about two rocks a second, gone in a second and a half
+    wv.a = clamp(wv.a + wv.w * dt, -24, 24);
+    const done = !n || (Math.abs(wv.a) < 0.05 && Math.abs(wv.w) < 0.6);
+    if (n) n.g.querySelector(".cl-level").style.rotate = done ? "" : `${wv.a.toFixed(2)}deg`;
+    if (done) waves.delete(id);
+  }
+  if (waves.size) waving = requestAnimationFrame(rock);
+}
+/** Swirl a vessel: it is moved in a small circle and the liquid goes round after it. */
+function swirl(v, by = "hand") {
+  const g = nodes[v.id].g;
+  g.classList.remove("is-swirling");
+  void g.getBoundingClientRect();
+  g.classList.add("is-swirling");
+  let n = 0;
+  const push = () => { if (!nodes[v.id] || n > 12) return; kick(v, (n % 2 ? -1 : 1) * (70 - n * 4)); n++; setTimeout(push, 130); };
+  push();
+  setTimeout(() => nodes[v.id] && nodes[v.id].g.classList.remove("is-swirling"), 1900);
+  const cloudy = Object.keys(speciate(v.t).ppt).length > 0;
+  if (cloudy) paint(v, { fresh: true });
+  record(v, { title: by === "rod" ? "Stirred with a glass rod" : "Swirled", obs: cloudy ? [{ text: "The precipitate is stirred up through the liquid, and slowly settles again.", why: "A precipitate is a solid that does not dissolve: stirring spreads it out but cannot make it go into solution." }] : [], flags: ["swirled"] });
+  if (!cloudy) say(v.t.vol > 0 ? "The liquid swirls round and mixes." : "There is no liquid in it to swirl.");
+}
 const drops = (from, to, c, r = 2.6, spread = 0) => fx([0, 1, 2].map((k) => `<circle class="cl-dropin" cx="${from[0] + (k - 1) * spread}" cy="${from[1]}" r="${r}" fill="rgb(${c})" style="--fall:${Math.round(to - from[1])}px;animation-delay:${k * 0.13}s"/>`).join(""), 1000);
 
 /** How much goes in at a time: a few drops, or a twelfth of what the vessel holds. */
@@ -765,6 +830,7 @@ function deliver(v, s, from, c, flag) {
     res.flags.push("filtered");
   }
   const painted = paint(v, { fresh: res.flags.some((f) => f.startsWith("ppt:")) });
+  kick(v, (Math.random() < 0.5 ? -1 : 1) * 26);
   if (res.flags.some((f) => f.startsWith("gas:"))) bubble(nodes[v.id].g, v.key, v.t);
   if (c) v._surface = v.y - Math.max(painted.level, 10);
   record(v, res);
@@ -775,7 +841,9 @@ function pourReagent(bottle, v, amount) {
   const r = reagent(bottle.key);
   const res = add(v.t, bottle.key, r.kind === "solution" ? amount : state.dose, bottle.k || 1);
   if (res.refused) { say(res.refused, v, "no"); return null; }
+  res.flags.push(`added:${bottle.key}`, `in:${v.key}:${bottle.key}`);
   const painted = paint(v, { fresh: res.flags.some((f) => f.startsWith("ppt:")) });
+  kick(v, (Math.random() < 0.5 ? -1 : 1) * 26);
   v._surface = v.y - Math.max(painted.level, 10);
   if (res.flags.some((f) => f.startsWith("gas:"))) bubble(nodes[v.id].g, v.key, v.t, res.flags.includes("gas:O2") ? 1.8 : 1);
   record(v, res);
@@ -815,6 +883,7 @@ function use(it, v) {
     if (!bottle) return false;
     const res = add(v.t, bottle.key);
     if (res.refused) { say(res.refused, v, "no"); return false; }
+    res.flags.push(`ind:${bottle.key}`);
     const m = mouth(v), painted = paint(v);
     drops([m.x, m.y - 4], v.y - Math.max(painted.level, 10), colourOf(bottle.key));
     record(v, res);
@@ -890,7 +959,7 @@ function use(it, v) {
     }
     if (stoppered(v)) return false;
     const c = it.rgb || [200, 224, 240];
-    const res = deliver(v, it.sample, `the ${what}`, c);
+    const res = deliver(v, it.sample, `the ${what}`, c, it.key === "pipette" ? `pipetted:${(it.sample.added || []).join("+")}` : null);
     if (!res) return false;
     drops([m.x, m.y - 2], v._surface, c);
     it.sample = null;
@@ -898,6 +967,7 @@ function use(it, v) {
     save();
     return false;
   }
+  if (it.key === "rod") { swirl(v, "rod"); return false; }
   if (it.key === "wire") {
     if (v.t.vol <= 0) { say("There is no liquid in there to dip the wire in.", v, "no"); return false; }
     it.sample = { f: flameOf(v.t), vid: v.id, tag: v.tag };
@@ -970,7 +1040,8 @@ function warm(heater, v) {
     } else if (w.gone > 0) { res.obs.push({ text: "The liquid boils and there is less of it." }); more = true; }
   }
   paint(v);
-  bubble(nodes[v.id].g, v.key, v.t, res.flags.some((f) => f.startsWith("gas:")) ? 1.3 : 0.5);
+  bubble(nodes[v.id].g, v.key, v.t, res.flags.some((f) => f.startsWith("gas:")) ? 1.5 : 0.9, { steam: true });
+  kick(v, (Math.random() < 0.5 ? -1 : 1) * 14);
   record(v, res);
   return more;
 }
@@ -1019,6 +1090,7 @@ function runTap(bur) {
   paint(bur);
   drops([bur.x, bur.y], v._surface, c, 2.2);
   const seen = res.obs.map((o) => o.text).filter((t) => t !== "No visible change.").join(" ");
+  if (res.flags.some((f) => f.startsWith("colour:"))) noteFlags(["endpoint"]);
   const reads = `The burette reads ${((bur.t.cap - bur.t.vol) * 2).toFixed(2)} cm\u00b3.`;
   if (seen) tell(`${seen} ${reads}`, v); else say(reads);
   save();
@@ -1033,7 +1105,7 @@ function runCell(p) {
   paint(v);
   const [neg] = rodsIn(v);
   if (v.t.plated) { neg.coat = v.t.plated; dress(neg); }
-  if (res.flags.length) bubble(nodes[v.id].g, v.key, v.t, 1.4);
+  if (res.flags.length) bubble(nodes[v.id].g, v.key, v.t, 1.2, { xs: rodsIn(v).filter((r) => !(r.side < 0 && v.t.plated)).map((r) => r.x - v.x) });
   record(v, res);
   return res.flags.length > 0;
 }
@@ -1109,12 +1181,13 @@ function pourTick() {
     if (m <= 1e-6) { if (!turn.told) { turn.told = true; say("It is full, and running over.", v, "no"); } return; }
     const res = isBottle ? pourReagent(it, v, m) : deliver(v, takeFrom(it.t, m), plain(it), c, turn.spilt ? null : "tilted");
     if (!isBottle) paint(it);
-    if (res) fx(`<rect class="cl-stream" x="${lip.x - 2.5}" y="${lip.y}" width="5" height="${Math.max(16, v._surface - lip.y)}" rx="2.5" fill="rgba(${c},0.85)"/>`, 520);
+    if (res) { const m = mouth(v), r = VESSELS[v.key].rTop - 3; flow("tilt", lip, { x: clamp(lip.x + Math.sign(it.tilt) * 8, m.x - r, m.x + r), y: v._surface }, c, Math.sign(it.tilt)); }
     return;
   }
   // nothing underneath: it goes on the bench
   if (!isBottle) { takeFrom(it.t, Math.max(0.5, it.t.cap / 30) * speed); paint(it); }
-  fx(`<rect class="cl-stream" x="${lip.x - 2.5}" y="${lip.y}" width="5" height="${H - lip.y}" rx="2.5" fill="rgba(${c},0.85)"/><ellipse class="cl-puddle" cx="${lip.x}" cy="${H - 6}" rx="46" ry="6" fill="rgba(${c},0.5)"/>`, 900);
+  flow("tilt", lip, { x: lip.x + Math.sign(it.tilt) * 14, y: H - 8 }, c, Math.sign(it.tilt));
+  fx(`<ellipse class="cl-puddle" cx="${lip.x + Math.sign(it.tilt) * 14}" cy="${H - 6}" rx="46" ry="6" fill="rgba(${c},0.5)"/>`, 900);
   if (!turn.spilt) { turn.spilt = true; say("It is pouring onto the bench! Hold it over a vessel before you tilt it.", isBottle ? null : it, "no"); }
   save();
 }
@@ -1237,7 +1310,8 @@ window.addEventListener("pointermove", (e) => {
   it.x = w.x + drag.dx;
   it.y = w.y + drag.dy;
   keepIn(it);
-  for (const v of drag.riders) { v.x += it.x - ox; v.y += it.y - oy; place(v); }
+  for (const v of drag.riders) { v.x += it.x - ox; v.y += it.y - oy; place(v); kick(v, -(it.x - ox) * 3.4); }
+  kick(it, -(it.x - ox) * 3.4);
   if (it.kind === "vessel" || it.key === "syringe") it.rack = null;
   if (it.on) it.on = null;
 
@@ -1281,6 +1355,7 @@ window.addEventListener("pointerup", (e) => {
     });
     if (c) {
       t.to = c.id;
+      noteFlags(["piped", c.flip && !overWater(c) ? "piped:up" : "piped:other"]);
       say(c.key === "syringe" ? "The delivery tube leads to the gas syringe." : overWater(c) ? `The delivery tube leads under ${plain(c)}, over water.` : c.flip ? `The delivery tube leads up into ${plain(c)}: right for a gas lighter than air.` : `The delivery tube leads down into ${plain(c)}: right for a gas denser than air.`);
     }
     save();
@@ -1317,6 +1392,7 @@ window.addEventListener("pointerup", (e) => {
     const host = d.over;
     if (it.key === "electrode") it.side = sideFor(host, it);
     it.on = host.id;
+    noteFlags([`fitted:${it.key}`]);
     const m = seat(host, it);
     it.x = m.x;
     it.y = m.y;
@@ -1437,6 +1513,7 @@ function openMenu(it) {
     if (def.tap) lines.push("It cannot stand up: let it go at the clamp of a retort stand. Press the blue tap to run it out.");
     if (def.arm) lines.push(fittedTo(it, "condenser") ? "Heat it, with a beaker under the condenser's lower end." : "Push a condenser onto the side arm.");
     if (def.upturns) lines.push("Fill it with water, then let an empty gas jar go in it.");
+    if (!def.fixed && !it.flip && it.t.vol > 0) act("swirl", "Swirl it", ICON.swirl);
     if (def.invert && isEmpty(it.t) && !it.rack && !fittedTo(it)) act("flip", it.flip ? "Turn it the right way up" : "Turn it upside down", ICON.flip);
   } else if (it.kind === "reagent") {
     const r = reagent(it.key);
@@ -1482,6 +1559,7 @@ $("cl-menu").addEventListener("click", (e) => {
   const it = selected;
   const what = b.dataset.act;
   if (what === "remove") return removeItem(it);
+  if (what === "swirl") { $("cl-menu").hidden = true; swirl(it); return; }
   if (what === "light") { it.flame = lit(it) ? 0 : 2; dress(it); say(lit(it) ? `The ${nameOf(it).toLowerCase()} is lit.` : `The ${nameOf(it).toLowerCase()} is out.`); }
   else if (what === "flip") { it.flip = !it.flip; it.jar = null; it.t.gas = null; glide(it, true); place(it); paint(it); say(it.flip ? `${cap1(plain(it))} is upside down. A gas lighter than air will stay in it.` : `${cap1(plain(it))} is the right way up.`, it); }
   else if (it.kind === "vessel") {
@@ -1555,7 +1633,7 @@ function renderLog() {
         <p class="cl-entry__head"><span class="cl-entry__tube">${esc(e.tag)}</span>${esc(e.title)}${e.times > 1 ? ` <span class="cl-entry__times">&times; ${e.times}</span>` : ""}</p>
         ${e.obs.map((o) => `
           <p class="cl-obs">${esc(o.text)}</p>
-          ${o.why || o.eq ? `<p class="cl-why">${o.why ? prose(o.why) : ""}${o.eq ? `<span class="cl-eq">${chemHtml(o.eq)}</span>` : ""}</p>` : ""}`).join("")}
+          ${!e.secret && (o.why || o.eq) ? `<p class="cl-why">${o.why ? prose(o.why) : ""}${o.eq ? `<span class="cl-eq">${chemHtml(o.eq)}</span>` : ""}</p>` : ""}`).join("")}
       </li>`).join("")
     : `<li class="cl-entry cl-entry--none">Nothing written yet. Whatever you see happen is written down here.</li>`;
   $("cl-sheet-notebook").classList.toggle("is-plain", !state.explain);
@@ -1566,16 +1644,106 @@ function renderLog() {
   ex.setAttribute("aria-label", tip);
   $("cl-count-log").textContent = state.log.length || "";
 }
-function renderTasks(fresh = []) {
-  $("cl-tasks").innerHTML = TASKS.map((t) => {
-    const done = state.done.includes(t.id);
-    return `<li class="cl-task${done ? " is-done" : ""}${fresh.includes(t.id) ? " is-fresh" : ""}"><span class="cl-task__box">${done ? UI.check(16) : ""}</span><span>${esc(t.text)}</span></li>`;
-  }).join("");
-  $("cl-count-tasks").textContent = `${state.done.length}/${TASKS.length}`;
+/** Ions for a plain-text choice: Cu^2+ as Cu\u00b2\u207a. */
+const SUP = { "+": "\u207a", "-": "\u207b", 2: "\u00b2", 3: "\u00b3" }, SUB = { 2: "\u2082", 3: "\u2083", 4: "\u2084" };
+const ion = (t) => t.replace(/([A-Za-z])(\d)/g, (_, a, d) => a + (SUB[d] || d)).replace(/\^(\d?)([+-])/, (_, d, sg) => (d ? SUP[d] : "") + SUP[sg]);
+const expNow = () => EXPERIMENTS.find((e) => e.id === state.exp) || null;
+
+/** Something has been done: tick whatever steps of the chosen practical it completes. */
+function noteFlags(flags) {
+  const exp = expNow();
+  if (!exp || !flags.length) return;
+  const seen = new Set(state.seen);
+  const before = exp.steps.map((st) => stepDone(st, seen));
+  flags.forEach((f) => seen.add(f));
+  state.seen = [...seen];
+  const after = exp.steps.map((st) => stepDone(st, seen));
+  const fresh = after.map((d, i) => d && !before[i]);
+  if (!fresh.some(Boolean)) return;
+  renderGuide(fresh);
+  if (after.every(Boolean)) {
+    if (!state.done.includes(exp.id)) state.done.push(exp.id);
+    renderExperiments();
+    say(`Practical complete: ${exp.title}.`);
+  } else say(`Step ${after.filter(Boolean).length} of ${exp.steps.length} done.`);
 }
-$("cl-setups").innerHTML = GUIDES.map((g) =>
-  `<li class="cl-guide"><h3>${esc(g.name)}</h3><p class="cl-guide__needs">You need: ${esc(g.needs)}.</p><ol>${g.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol></li>`
-).join("");
+function choose(id) {
+  state.exp = id;
+  state.seen = [];
+  renderExperiments();
+  renderGuide();
+  save();
+}
+/** The practicals: the things to try, each a note with a picture of its bench. */
+function renderExperiments() {
+  let n = 0;
+  $("cl-tasks").innerHTML = GROUPS.map((g) => `
+    <li class="cl-expgroup"><h3>${esc(g.label)}</h3><ul class="cl-cards">${EXPERIMENTS.filter((e) => e.group === g.id).map((e) => {
+      const done = state.done.includes(e.id), on = e.id === state.exp;
+      return `<li class="cl-card pp-sticky pp-sticky--c${n++ % 6}${on ? " is-on" : ""}">
+        <img src="shots/${e.id}.jpg" alt="" width="400" height="250" loading="lazy" />
+        <h3>${esc(e.title)}${done ? `<span class="cl-card__done">${UI.check(14)}</span>` : ""}</h3>
+        <button type="button" class="cl-try" data-exp="${e.id}" aria-label="Try: ${esc(e.title)}">${on ? "Open guide" : "Try"}</button>
+      </li>`;
+    }).join("")}</ul></li>`).join("");
+  $("cl-count-tasks").textContent = `${state.done.filter((id) => EXPERIMENTS.some((e) => e.id === id)).length}/${EXPERIMENTS.length}`;
+}
+/** The guide: always the guide to the practical that has been chosen. */
+function renderGuide(fresh = []) {
+  const exp = expNow();
+  const box = $("cl-setups");
+  if (!exp) {
+    box.innerHTML = `<li class="cl-guide"><p class="cl-guide__needs">No practical has been chosen yet. Pick one from the list of practicals (the tick icon, top left) and its guide appears here.</p>
+      <h3>How the bench works</h3><ol>${HOWTO.map((t) => `<li>${chemHtml(t)}</li>`).join("")}</ol></li>`;
+    return;
+  }
+  const seen = new Set(state.seen);
+  const steps = exp.steps.map((st, i) => {
+    const done = stepDone(st, seen);
+    return `<li class="cl-task${done ? " is-done" : ""}${fresh[i] ? " is-fresh" : ""}"><span class="cl-task__box">${done ? UI.check(16) : ""}</span><span>${chemHtml(st.text)}</span></li>`;
+  }).join("");
+  const answer = exp.unknown ? `<div class="cl-answer">
+      <label>Cation <select id="cl-cation" class="cl-select" data-native><option value="">?</option>${CATIONS.map((c) => `<option value="${c}">${ion(c)}</option>`).join("")}</select></label>
+      <label>Anion <select id="cl-anion" class="cl-select" data-native><option value="">?</option>${ANIONS.map((c) => `<option value="${c}">${ion(c)}</option>`).join("")}</select></label>
+      <button type="button" class="cl-ico cl-ico--paper" data-guide="check" data-tip="Check my answer" aria-label="Check my answer">${UI.check(18)}</button>
+      <button type="button" class="cl-ico cl-ico--paper" data-guide="fresh" data-tip="Give me a new sample X" aria-label="Give me a new sample X">${UI.refresh(18)}</button>
+    </div>` : "";
+  const all = exp.steps.every((st) => stepDone(st, seen));
+  box.innerHTML = `<li class="cl-guide">
+    <div class="cl-guide__head"><h3>${esc(exp.title)}</h3><button type="button" class="cl-ico cl-ico--paper" data-guide="again" data-tip="Start this practical again" aria-label="Start this practical again">${UI.again(18)}</button></div>
+    <p class="cl-guide__task">${chemHtml(exp.task)}</p>
+    <p class="cl-guide__needs">You need: ${chemHtml(exp.needs)}.</p>
+    <ul class="cl-tasks cl-guide__steps">${steps}</ul>${answer}
+    ${all ? `<p class="cl-guide__record"><b>To record:</b> ${chemHtml(exp.record)}</p>` : ""}
+  </li>`;
+}
+$("cl-tasks").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-exp]");
+  if (!b) return;
+  if (b.dataset.exp !== state.exp) choose(b.dataset.exp);
+  openSheet("cl-sheet-setups");
+});
+$("cl-setups").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-guide]");
+  if (!b) return;
+  const what = b.dataset.guide;
+  if (what === "again") { choose(state.exp); return; }
+  if (what === "fresh") {
+    state.items.filter((it) => it.kind === "reagent" && it.key === "unk").forEach(removeItem);
+    const others = UNKNOWNS.filter((u) => u.id !== state.unknown);
+    state.unknown = others[Math.floor(Math.random() * others.length)].id;
+    setUnknown(state.unknown);
+    choose("unknown");
+    renderDrawer();
+    say("A new sample X is in the drawer, under Liquids. Rinse out anything left from the old one.");
+    return;
+  }
+  const u = UNKNOWNS.find((x) => x.id === state.unknown);
+  const cat = $("cl-cation").value, an = $("cl-anion").value;
+  if (!cat || !an) { say("Choose a cation and an anion first.", null, "no"); return; }
+  if (cat === u.cation && an === u.anion) { noteFlags(["unknown:right"]); say(`Correct. X is ${reagent(u.id).name}.`); save(); }
+  else say(cat === u.cation ? "The cation is right. Look again at the tests for the anion." : an === u.anion ? "The anion is right. Look again at what sodium hydroxide and ammonia did." : "Neither ion is right yet. Go back over your observations.", null, "no");
+});
 
 function openSheet(id) {
   document.querySelectorAll(".cl-sheet").forEach((s) => (s.hidden = s.id !== id || !s.hidden));
@@ -1618,6 +1786,21 @@ const actor = {
   clear() { clearBench(); },
   openSheet(id) { if ($(id).hidden) openSheet(id); },
   closeSheets() { openSheet(null); },
+  // what is standing on the bench, for PrepBot's help
+  count: (kind, key) => state.items.filter((it) => it.kind === kind && it.key.startsWith(key)).length,
+  open: (key) => state.items.some((it) => it.kind === "reagent" && it.key === key && !fittedTo(it, "cap")),
+  fitted: (key) => state.items.some((it) => it.key === key && it.on != null),
+  lit: () => state.items.some((it) => (it.key === "burner" || it.key === "spirit") && it.flame > 0),
+  /** The step of the chosen practical to do now; null when none has been chosen. */
+  nextStep() {
+    const exp = expNow();
+    if (!exp) return null;
+    const seen = new Set(state.seen);
+    const did = exp.steps.map((st) => stepDone(st, seen));
+    const i = did.indexOf(false, did.lastIndexOf(true) + 1);
+    if (i < 0) return { title: exp.title, done: true };
+    return { title: exp.title, text: exp.steps[i].text, n: i + 1, of: exp.steps.length };
+  },
   /** Take a piece out of the drawer: it comes in from the drawer's side and goes to its place. */
   async take(kind, key, x, y) {
     const it = addItem(kind, key, W - 70, 330) || state.items.find((o) => o.kind === kind && o.key === key);
@@ -1751,6 +1934,25 @@ window.addEventListener("keydown", (e) => {
   else if ((e.key === "Delete" || e.key === "Backspace") && selected && selected.key !== "cap") { e.preventDefault(); removeItem(selected); }
 });
 
+// ── the drawer's arrow ──────────────────────────────────────────────────────
+const DRAWER_KEY = "chem-bench-drawer";
+function setDrawer(shut) {
+  document.querySelector(".cl-stage").classList.toggle("is-shut", shut);
+  const b = $("cl-drawer-key");
+  const tip = shut ? "Show the drawer" : "Hide the drawer";
+  b.dataset.tip = tip;
+  b.setAttribute("aria-label", tip);
+  b.setAttribute("aria-expanded", String(!shut));
+  try { localStorage.setItem(DRAWER_KEY, shut ? "shut" : "open"); } catch { /* private mode */ }
+}
+$("cl-drawer-key").innerHTML = UI.chevronRight(18);
+$("cl-drawer-key").addEventListener("click", () => setDrawer(!document.querySelector(".cl-stage").classList.contains("is-shut")));
+{
+  let was = "open";
+  try { was = localStorage.getItem(DRAWER_KEY) || "open"; } catch { /* private mode */ }
+  if (was === "shut") setDrawer(true);
+}
+
 // ── go ──────────────────────────────────────────────────────────────────────
 $("cl-rot").innerHTML = ICON.turn;
 $("cl-dots").innerHTML = ICON.dots;
@@ -1768,7 +1970,8 @@ readouts();
 drawLinks();
 renderDrawer();
 renderLog();
-renderTasks();
+renderExperiments();
+renderGuide();
 renderDose();
 onFull();
 mountTooltips();
