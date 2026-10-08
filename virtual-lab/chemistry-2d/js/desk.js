@@ -23,12 +23,43 @@ import { UI } from "/utils/components/ui-icons.js";
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 const num = (s) => { const v = Number(String(s).trim().replace(",", ".").replace("−", "-")); return String(s).trim() === "" || !Number.isFinite(v) ? null : v; };
 
+/* A cell that starts with "=" is worked out from the others IN ITS ROW, named by their
+   column letters: "=B-C" is this row's column B less its column C. Only sums: + − × ÷ and
+   brackets. It is given to as many decimal places as the readings it was made from. */
+const LETTERS = "ABCDEFGH";
+function worked(raw, row, depth = 0) {
+  const text = String(raw).trim();
+  if (!text.startsWith("=")) return null;
+  if (depth > 8) return { err: true };
+  let places = 0, blank = false;
+  const keys = [];
+  for (const ch of text.slice(1).replace(/\s+/g, "").replace(/\u00d7/g, "*").replace(/\u00f7/g, "/").replace(/\u2212/g, "-").toUpperCase()) {
+    const j = LETTERS.indexOf(ch);
+    if (j >= 0) {
+      if (j >= row.length) return { err: true };
+      const inner = worked(row[j], row, depth + 1);
+      if (inner && inner.err) return inner;
+      const cell = inner ? inner.text : String(row[j]).trim().replace(",", ".");
+      if (cell === "") { blank = true; continue; }
+      const v = Number(cell);
+      if (!Number.isFinite(v)) return { err: true };
+      places = Math.max(places, (cell.split(".")[1] || "").length);
+      keys.push("(", ...(v < 0 ? ["neg"] : []), ...String(Math.abs(v)).split(""), ")");
+    } else if ("0123456789.+-*/()".includes(ch)) keys.push(ch);
+    else return { err: true };
+  }
+  if (blank) return { text: "" };            // not all the readings are in yet
+  try { return { text: evaluate(keys).toFixed(Math.min(places, 6)) }; } catch { return { err: true }; }
+}
+/** What a cell SHOWS: its own text, or what it works out to. */
+const shownIn = (row, j) => { const w = worked(row[j], row); return w ? (w.err ? "?" : w.text) : row[j]; };
+
 const TEMPLATES = {
   blank: { name: "Blank table", cols: ["", ""], rows: [["", ""], ["", ""], ["", ""], ["", ""]] },
   titration: {
     name: "Titration",
     cols: ["Titration", "Final burette reading / cm³", "Initial burette reading / cm³", "Volume of acid used / cm³"],
-    rows: [["Rough", "", "", ""], ["1st", "", "", ""], ["2nd", "", "", ""], ["3rd", "", "", ""]],
+    rows: [["Rough", "", "", "=B-C"], ["1st", "", "", "=B-C"], ["2nd", "", "", "=B-C"], ["3rd", "", "", "=B-C"]],
   },
   heat: { name: "Temperature against volume", cols: ["Volume added / cm³", "Temperature / °C"], rows: [["0", ""], ["5", ""], ["10", ""], ["15", ""], ["20", ""], ["25", ""]] },
   gas: { name: "Gas collected against time", cols: ["Time / s", "Volume of gas / cm³"], rows: [["0", ""], ["30", ""], ["60", ""], ["90", ""], ["120", ""]] },
@@ -42,8 +73,8 @@ export function initDesk({ state, save, say }) {
   const plot = document.getElementById("cl-graph");
 
   function renderTable() {
-    const head = T.cols.map((c, j) => `<th><input class="cl-cell cl-cell--head" data-col="${j}" value="${esc(c)}" placeholder="Heading / unit" aria-label="Heading of column ${j + 1}" />${T.cols.length > 1 ? `<button type="button" class="cl-cut" data-cut-col="${j}" data-tip="Remove this column" aria-label="Remove column ${j + 1}">${UI.close(10)}</button>` : ""}</th>`).join("");
-    const body = T.rows.map((r, i) => `<tr>${r.map((v, j) => `<td><input class="cl-cell" data-row="${i}" data-col="${j}" value="${esc(v)}" inputmode="decimal" aria-label="Row ${i + 1}, column ${j + 1}" /></td>`).join("")}<td class="cl-cutcell">${T.rows.length > 1 ? `<button type="button" class="cl-cut" data-cut-row="${i}" data-tip="Remove this row" aria-label="Remove row ${i + 1}">${UI.close(10)}</button>` : ""}</td></tr>`).join("");
+    const head = T.cols.map((c, j) => `<th><i>${LETTERS[j]}</i><input class="cl-cell cl-cell--head" data-col="${j}" value="${esc(c)}" placeholder="Heading / unit" aria-label="Heading of column ${j + 1}" />${T.cols.length > 1 ? `<button type="button" class="cl-cut" data-cut-col="${j}" data-tip="Remove this column" aria-label="Remove column ${j + 1}">${UI.close(10)}</button>` : ""}</th>`).join("");
+    const body = T.rows.map((r, i) => `<tr>${r.map((v, j) => `<td><input class="cl-cell${String(v).trim().startsWith("=") ? " is-sum" : ""}" data-row="${i}" data-col="${j}" value="${esc(shownIn(r, j))}" aria-label="Row ${i + 1}, column ${LETTERS[j]}${String(v).trim().startsWith("=") ? ", worked out" : ""}" /></td>`).join("")}<td class="cl-cutcell">${T.rows.length > 1 ? `<button type="button" class="cl-cut" data-cut-row="${i}" data-tip="Remove this row" aria-label="Remove row ${i + 1}">${UI.close(10)}</button>` : ""}</td></tr>`).join("");
     box.innerHTML = `<table class="cl-results"><thead><tr>${head}<th class="cl-cutcell"></th></tr></thead><tbody>${body}</tbody></table>`;
     const opts = (sel) => T.cols.map((c, j) => `<option value="${j}"${j === sel ? " selected" : ""}>${esc(c || `Column ${j + 1}`)}</option>`).join("");
     document.getElementById("cl-gx").innerHTML = opts(T.gx);
@@ -53,7 +84,7 @@ export function initDesk({ state, save, say }) {
   }
 
   function renderGraph() {
-    const pts = T.rows.map((r) => [num(r[T.gx] ?? ""), num(r[T.gy] ?? "")]).filter((p) => p[0] !== null && p[1] !== null);
+    const pts = T.rows.map((r) => [num(shownIn(r, T.gx) ?? ""), num(shownIn(r, T.gy) ?? "")]).filter((p) => p[0] !== null && p[1] !== null);
     const note = document.getElementById("cl-gnote");
     if (pts.length < 2 || T.gx === T.gy) {
       plot.innerHTML = "";
@@ -107,9 +138,33 @@ export function initDesk({ state, save, say }) {
     if (c.dataset.row === undefined) {
       T.cols[j] = c.value;
       document.querySelectorAll(`#cl-gx option[value="${j}"], #cl-gy option[value="${j}"]`).forEach((o) => (o.textContent = c.value || `Column ${j + 1}`));
-    } else T.rows[Number(c.dataset.row)][j] = c.value;
+    } else {
+      const i = Number(c.dataset.row);
+      T.rows[i][j] = c.value;
+      c.classList.toggle("is-sum", c.value.trim().startsWith("="));
+      refreshRow(i, c);
+    }
     renderGraph();
     save();
+  });
+  /** The worked-out cells of a row show their answers, except the one being typed in. */
+  function refreshRow(i, typing) {
+    box.querySelectorAll(`.cl-cell[data-row="${i}"]`).forEach((cell) => {
+      if (cell === typing || cell === document.activeElement) return;
+      const j = Number(cell.dataset.col);
+      if (String(T.rows[i][j]).trim().startsWith("=")) cell.value = shownIn(T.rows[i], j);
+    });
+  }
+  // in a worked-out cell, the sum is what is edited and the answer is what is left showing
+  box.addEventListener("focusin", (e) => {
+    const c = e.target.closest(".cl-cell.is-sum");
+    if (c && c.dataset.row !== undefined) { c.value = T.rows[Number(c.dataset.row)][Number(c.dataset.col)]; c.select(); }
+  });
+  box.addEventListener("focusout", (e) => {
+    const c = e.target.closest(".cl-cell");
+    if (!c || c.dataset.row === undefined) return;
+    const i = Number(c.dataset.row), j = Number(c.dataset.col);
+    if (String(T.rows[i][j]).trim().startsWith("=")) c.value = shownIn(T.rows[i], j);
   });
   // Enter goes down a row, like a spreadsheet; the last row makes a new one
   box.addEventListener("keydown", (e) => {
@@ -151,7 +206,7 @@ export function initDesk({ state, save, say }) {
     e.target.value = "";
     if (!t) return;
     Object.assign(T, structuredClone({ cols: t.cols, rows: t.rows }), { gx: 0, gy: Math.min(1, t.cols.length - 1) });
-    if (t === TEMPLATES.titration) { T.gx = 1; T.gy = 3; }
+    if (t === TEMPLATES.titration) { T.gx = 0; T.gy = 0; }      // a titration is averaged, not plotted: no graph until two columns are chosen
     renderTable();
     save();
   });

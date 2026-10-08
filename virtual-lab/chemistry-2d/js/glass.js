@@ -223,6 +223,12 @@ export const DEFS = `
   <linearGradient id="g-case" x1="0" x2="0" y1="0" y2="1">
     <stop offset="0" stop-color="#f6f7f9"/><stop offset="0.5" stop-color="#dfe3e8"/><stop offset="1" stop-color="#b4bac3"/>
   </linearGradient>
+  <linearGradient id="g-psu" x1="0" x2="0" y1="0" y2="1">
+    <stop offset="0" stop-color="#5a6675"/><stop offset="0.12" stop-color="#465160"/><stop offset="1" stop-color="#2b323c"/>
+  </linearGradient>
+  <radialGradient id="g-knob" cx="0.35" cy="0.3" r="0.8">
+    <stop offset="0" stop-color="#f1f4f7"/><stop offset="0.45" stop-color="#8f98a4"/><stop offset="1" stop-color="#3b424c"/>
+  </radialGradient>
   <linearGradient id="g-lcd" x1="0" x2="0" y1="0" y2="1">
     <stop offset="0" stop-color="#9fb58c"/><stop offset="0.25" stop-color="#c9dbb4"/><stop offset="1" stop-color="#bcd0a6"/>
   </linearGradient>
@@ -657,6 +663,15 @@ export function toolSvg(key, it = {}) {
         <path d="M5 -50.600q1 -2.4 3.4 -2.600M15 -52q1 -2 3 -2.2" stroke="#a9a18c" stroke-width="0.7" fill="none"/>
         <path d="M-30 -55Q0 -48 30 -55" fill="none" stroke="#fff" stroke-opacity="0.9" stroke-width="0.9"/>
         <path d="M-30 -55A30 5 0 0 1 30 -55" fill="none" stroke="#c9c2af" stroke-width="0.7"/>
+      </g>
+      <g class="cl-paper-fold" transform="translate(0 -92)">
+        <path class="pf pf-under" d="M-26 0A26 26 0 0 0 26 0z"/>
+        <path class="pf pf-over" d="M-26 0A26 26 0 0 1 26 0z"/>
+        <path class="pf pf-crease pf-crease1" d="M-26 0H26"/>
+        <path class="pf pf-right" d="M0 0H26A26 26 0 0 1 0 26z"/>
+        <path class="pf pf-left" d="M0 0H-26A26 26 0 0 0 0 26z"/>
+        <path class="pf pf-crease pf-crease2" d="M0 0V26"/>
+        <g class="pf-wedge"><path class="pf" d="M0 0H26A26 26 0 0 1 0 26z"/><path class="pf pf-layer" d="M0 0L18.4 18.4A26 26 0 0 1 0 26z"/><path class="pf pf-crease" d="M0 0H26M0 0V26"/></g>
       </g>${hit(b)}`;
   }
   if (key === "bung") return `<path d="M-13 -8h26l-3.5 16h-19z" fill="#c0563c" stroke="#fff" stroke-opacity="0.3" stroke-width="0.8"/><path d="M-10 -5h6l-1.5 10" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="1.6" stroke-linecap="round"/>${hit(b)}`;
@@ -689,10 +704,33 @@ export function toolSvg(key, it = {}) {
       <rect x="-6" y="-28" width="12" height="11" rx="2" fill="#aab2bd" stroke="#fff" stroke-opacity="0.4" stroke-width="0.7"/><text class="cl-pole" x="0" y="-34"></text>${hit(b)}`;
   }
   if (key === "power") {
-    return `${shadow(48)}<rect x="-46" y="-56" width="92" height="56" rx="5" fill="#3a424e" stroke="#fff" stroke-opacity="0.28"/><rect x="-46" y="-56" width="92" height="56" rx="5" fill="url(#g-shade)" opacity="0.6"/>
-      <rect x="-19" y="-66" width="10" height="12" rx="2" fill="#23272e" stroke="#fff" stroke-opacity="0.4"/><rect x="9" y="-66" width="10" height="12" rx="2" fill="#c0453a" stroke="#fff" stroke-opacity="0.4"/>
-      <text class="cl-pole" x="-14" y="-34">−</text><text class="cl-pole" x="14" y="-34">+</text><text class="cl-waste-t" x="-10" y="-9" font-size="8">6 V d.c.</text>${hit(b)}
-      <g class="cl-press" data-press="power"><rect x="22" y="-46" width="18" height="30" rx="3" fill="#23272e" stroke="#fff" stroke-opacity="0.45"/><rect class="cl-switch" x="25" y="-43" width="12" height="12" rx="2" fill="#e2574c"/><rect x="14" y="-54" width="34" height="46" fill="transparent"/></g>`;
+    // a bench low-voltage supply: a pressed-steel case with cooling slots, a red LED read-out, a
+    // voltage knob, a rocker switch, and two 4 mm binding posts on top (black −, red +) that the leads go to
+    const slots = [-49, -44, -39, -34, -29, -24].map((y) => `<rect x="-43" y="${y}" width="15" height="2.2" rx="1.1" fill="#0c0e11"/><rect x="-43" y="${y + 2.2}" width="15" height="0.6" fill="#fff" fill-opacity="0.14"/>`).join("");
+    const ticks = [-130, -95, -60, -25, 10, 45].map((d, i) => `<path d="M0 -10.500V-13" transform="translate(-9 -17) rotate(${d})" stroke="#cfd5dc" stroke-width="${i === 2 ? 1.3 : 0.8}"/>`).join("");
+    const post = (x, col, dark) => `<rect x="${x - 6}" y="-59" width="12" height="4" rx="1" fill="url(#g-metal)"/><rect x="${x - 4.5}" y="-69" width="9" height="11" rx="1.5" fill="${col}"/>
+      <rect x="${x - 4.5}" y="-69" width="9" height="11" rx="1.5" fill="url(#g-shade)" opacity="0.5"/>
+      <path d="M${x - 3} -68V-59M${x - 1} -68V-59M${x + 1} -68V-59M${x + 3} -68V-59" stroke="${dark}" stroke-width="0.7"/>
+      <ellipse cx="${x}" cy="-69" rx="4.5" ry="1.4" fill="${col}" stroke="#fff" stroke-opacity="0.45" stroke-width="0.6"/><circle cx="${x}" cy="-69" r="1.3" fill="#0c0e11"/>`;
+    return `${shadow(54)}
+      <rect x="-42" y="-2" width="14" height="4" rx="1.5" fill="#14171b"/><rect x="28" y="-2" width="14" height="4" rx="1.5" fill="#14171b"/>
+      <rect x="-48" y="-56" width="96" height="55" rx="3" fill="url(#g-psu)" stroke="#fff" stroke-opacity="0.32" stroke-width="0.8"/>
+      <rect x="-48" y="-56" width="96" height="3" rx="1.5" fill="#fff" fill-opacity="0.2"/><rect x="-48" y="-5" width="96" height="4" fill="#000" fill-opacity="0.25"/>
+      <rect x="-48" y="-56" width="96" height="55" rx="3" fill="url(#g-shade)" opacity="0.45"/>
+      <circle cx="-45" cy="-53" r="1" fill="#0c0e11"/><circle cx="45" cy="-53" r="1" fill="#0c0e11"/><circle cx="-45" cy="-4" r="1" fill="#0c0e11"/><circle cx="45" cy="-4" r="1" fill="#0c0e11"/>
+      ${slots}
+      <rect x="-24" y="-50" width="40" height="17" rx="1.5" fill="#0a0c0f" stroke="#5b6470" stroke-width="0.8"/><rect x="-22.5" y="-48.5" width="37" height="14" rx="1" fill="#1c0b0b"/>
+      <text class="cl-psu cl-psu--ghost" x="5" y="-37.5">88.8</text><text class="cl-psu cl-psu--off" x="5" y="-37.5">0.0</text><text class="cl-psu cl-psu--on" x="5" y="-37.5">6.0</text><text class="cl-psu-u" x="10.5" y="-37.5">V</text>
+      <rect x="-22.5" y="-48.5" width="37" height="4" fill="#fff" fill-opacity="0.07"/>
+      ${ticks}
+      <circle cx="-9" cy="-17" r="8.4" fill="#0c0e11"/><circle cx="-9" cy="-17" r="7.2" fill="url(#g-knob)"/><circle cx="-9" cy="-17" r="7.2" fill="none" stroke="#fff" stroke-opacity="0.25" stroke-width="0.6"/>
+      <path d="M-9 -17L-12.6 -23" stroke="#f4c95d" stroke-width="1.6" stroke-linecap="round"/><circle cx="-9" cy="-17" r="2.2" fill="#23272e"/>
+      <text class="cl-plate cl-plate--l" x="-9" y="-4.5">VOLTS d.c.</text><text class="cl-plate cl-plate--l" x="-35.5" y="-13">PREP</text><text class="cl-plate cl-plate--l" x="-35.5" y="-8">LV-6</text>
+      <text class="cl-plate cl-plate--l" x="7" y="-22">2 A max</text>
+      ${post(-14, "#23272e", "#000")}${post(14, "#c0453a", "#7a241c")}${hit(b)}
+      <g class="cl-press" data-press="power"><rect x="21" y="-48" width="20" height="33" rx="2" fill="#0c0e11" stroke="#5b6470" stroke-width="0.8"/><rect x="23" y="-46" width="16" height="29" rx="1.5" fill="#1d2127"/>
+        <rect class="cl-switch" x="24.5" y="-44.5" width="13" height="12.5" rx="1.5" fill="#e2574c"/><path d="M27 -9.500h8" stroke="#cfd5dc" stroke-width="0.8"/><text class="cl-plate cl-plate--l" x="31" y="-5">ON</text>
+        <rect x="14" y="-54" width="34" height="46" fill="transparent"/></g>`;
   }
   if (key === "syringe") {
     // a glass barrel lying on its side: shaded across, an ellipse where each end is seen, a plunger with a ground-glass head
@@ -717,12 +755,29 @@ export function toolSvg(key, it = {}) {
       <path d="M-34 -58L40 2" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="0.9" stroke-linecap="round" transform="translate(-1.6 2)"/><path d="M-34 -58L40 2" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="0.9" stroke-linecap="round" transform="translate(1.6 -2)"/>${hit(b)}`;
   }
   if (key === "holder") {
-    return `<path d="M-34 -4L30 -30" stroke="#c9975a" stroke-width="7" stroke-linecap="round"/><path d="M-34 -14L30 -34" stroke="#b98548" stroke-width="7" stroke-linecap="round"/>
-      <ellipse cx="-6" cy="-19" rx="6" ry="9" fill="none" stroke="#aab2bd" stroke-width="2.4"/><path d="M26 -40q10 6 4 16" fill="none" stroke="#aab2bd" stroke-width="3" stroke-linecap="round"/>${hit(b)}`;
+    // the wooden kind: two beech arms hinged like a clothes peg on a coiled steel spring, a round
+    // notch cut in the jaws for the tube, lying on the bench
+    return `<ellipse cx="0" cy="-1" rx="40" ry="4" fill="#000" fill-opacity="0.32" filter="url(#g-soft)"/>
+      <path d="M-40 -9.500q-2 -1 -1 -3.500l1 -1.500h49l6 2.500h22q3 0 3 3v2.500q0 2.5 -3 2.500h-74q-3 0 -4 -2z" fill="url(#g-wood)" stroke="#6f4a1e" stroke-width="0.7"/>
+      <path d="M-38 -11.500h74M-36 -8.500h70" stroke="#7d5425" stroke-opacity="0.45" stroke-width="0.5"/><path d="M-39 -13.500h47" stroke="#fff" stroke-opacity="0.4" stroke-width="0.8"/>
+      <path d="M-40 -30q-2 1 -2 3l1 2.500l49 9l6 -3.500l22 4q3 0.5 3.5 -2.200l0.4 -2.200q0.4 -2.6 -2.5 -3.200l-73 -13.400q-3 -0.6 -4.4 1z" fill="url(#g-wood)" stroke="#6f4a1e" stroke-width="0.7"/>
+      <path d="M-38 -27.500l72 13M-37 -30.500l70 12.8" stroke="#7d5425" stroke-opacity="0.45" stroke-width="0.5"/><path d="M-38 -32l72 13.2" stroke="#fff" stroke-opacity="0.45" stroke-width="0.8"/>
+      <circle cx="29" cy="-12.5" r="5.2" fill="#262b33"/><path d="M24 -13.500a5.2 5.2 0 0 1 9.5 -2" fill="none" stroke="#6f4a1e" stroke-width="0.8"/><path d="M24.5 -10a5.2 5.2 0 0 0 9 0.5" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="0.7"/>
+      <path d="M-16 -3.500V-12M-16 -29.500V-23" stroke="#5d6570" stroke-width="2.6" stroke-linecap="round"/><path d="M-16 -3.500V-12M-16 -29.500V-23" stroke="#e2e7ee" stroke-width="1.2" stroke-linecap="round"/>
+      ${[-20, -17, -14, -11].map((x) => `<ellipse cx="${x}" cy="-19" rx="2.2" ry="5.6" fill="none" stroke="#5d6570" stroke-width="2.2"/><ellipse cx="${x}" cy="-19" rx="2.2" ry="5.6" fill="none" stroke="#dfe5ec" stroke-width="1"/>`).join("")}
+      <path d="M-22 -22.500q1 -3 3 -3" fill="none" stroke="#fff" stroke-opacity="0.8" stroke-width="0.7" stroke-linecap="round"/>${hit(b)}`;
   }
   if (key === "tongs") {
-    return `<path d="M-40 -2L6 -18q14 -6 30 -4" fill="none" stroke="#aab2bd" stroke-width="4" stroke-linecap="round"/><path d="M-40 -26L6 -14q14 6 30 -2" fill="none" stroke="#8d96a3" stroke-width="4" stroke-linecap="round"/>
-      <circle cx="-2" cy="-16" r="3.4" fill="#5b6470"/><circle cx="-40" cy="-2" r="5" fill="none" stroke="#aab2bd" stroke-width="3"/><circle cx="-40" cy="-26" r="5" fill="none" stroke="#8d96a3" stroke-width="3"/>${hit(b)}`;
+    // nickel-plated steel, like long scissors: two finger bows, a riveted joint, arms that
+    // bow out and come back to a pair of curved jaws that close round a crucible
+    const armA = "M-34 -22.500C-24 -20 -14 -17 -6 -16C8 -14 20 -6.5 30 -8.500C35 -9.5 38 -12.5 40 -15";
+    const armB = "M-34 -9.500C-24 -12 -14 -15 -6 -16C8 -18 20 -25.5 30 -23.500C35 -22.5 38 -19.5 40 -17";
+    const steel = (d, w = 3.6) => `<path d="${d}" fill="none" stroke="#4a515b" stroke-width="${w + 1.4}" stroke-linecap="round"/><path d="${d}" fill="none" stroke="#b9c1cb" stroke-width="${w}" stroke-linecap="round"/><path d="${d}" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="${(w * 0.28).toFixed(1)}" stroke-linecap="round" transform="translate(0 -0.9)"/>`;
+    const bow = (cy) => `<ellipse cx="-38.5" cy="${cy}" rx="5.4" ry="4.6" fill="none" stroke="#4a515b" stroke-width="4.4"/><ellipse cx="-38.5" cy="${cy}" rx="5.4" ry="4.6" fill="none" stroke="#b9c1cb" stroke-width="3"/><path d="M-43 ${cy - 2.5}a5.4 4.6 0 0 1 8 -1.5" fill="none" stroke="#fff" stroke-opacity="0.8" stroke-width="0.9" stroke-linecap="round"/>`;
+    return `<ellipse cx="0" cy="-2" rx="42" ry="4" fill="#000" fill-opacity="0.3" filter="url(#g-soft)"/>
+      ${bow(-8)}${steel(armB)}${bow(-24)}${steel(armA)}
+      <circle cx="-6" cy="-16" r="4.2" fill="#4a515b"/><circle cx="-6" cy="-16" r="3.3" fill="url(#g-knob)"/><circle cx="-7" cy="-17" r="1.1" fill="#fff" fill-opacity="0.8"/>
+      <path d="M36 -11.500q3 -1.5 4 -3.500M36 -20.500q3 1.5 4 3.5" fill="none" stroke="#4a515b" stroke-width="1" stroke-linecap="round"/>${hit(b)}`;
   }
   if (key === "lit") {
     return `${splint(`<g class="cl-tip"><circle cx="-34" cy="-62" r="15" fill="url(#g-ember)" opacity="0.55"/>

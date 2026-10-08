@@ -125,6 +125,7 @@ html body {
 .cl-lens__arm { stroke: #f4c95d; stroke-opacity: 0.7; stroke-width: 1; stroke-dasharray: 3 3; fill: none; }
 .cl-lens__scale path { stroke: #f2f5f9; stroke-width: 1.3; fill: none; }
 .cl-lens__scale text { fill: #f2f5f9; font: 700 10px var(--font-mono); paint-order: stroke; stroke: #232a33; stroke-width: 2.4px; }
+.cl-lens__scale .cl-lens__ring { stroke-width: 1.8; }
 .cl-lens__eye { stroke: #f4c95d; stroke-width: 1; stroke-dasharray: 4 3; fill: none; }
 .cl-lens__note { fill: #f4c95d; font: 600 9px var(--font-mono); text-anchor: middle; paint-order: stroke; stroke: #272c35; stroke-width: 3px; }
 .cl-reading__row { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.3rem; }
@@ -541,3 +542,40 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 .cl-key--x:hover { color: #fff; background: rgba(255, 255, 255, 0.12); }
 .cl-stage.is-bot .cl-calc { pointer-events: none; }
 @media (max-width: 820px) { .cl-calc { width: 236px; } .cl-key--num, .cl-key--eq, .cl-key--del { height: 28px; } }
+
+/* a results cell that is worked out from the others in its row */
+.cl-cell.is-sum { font-style: italic; background: color-mix(in srgb, var(--accent-primary) 14%, transparent); }
+.cl-cell.is-sum:focus { font-style: normal; }
+.cl-results th i { position: absolute; top: 1px; left: 3px; font: 700 0.5rem var(--font-mono); font-style: normal; color: var(--text-tertiary); pointer-events: none; }
+
+/* the power pack's read-out: red figures, lit only while the switch is held down */
+.cl-psu { fill: #ff4a3d; font: 700 11px var(--font-mono); text-anchor: end; letter-spacing: 0.3px; }
+.cl-psu--ghost { fill-opacity: 0.1; }
+.cl-psu--on { display: none; filter: drop-shadow(0 0 1.5px #ff4a3d); }
+.cl-psu--off { fill-opacity: 0.55; }
+.cl-item.is-open .cl-psu--on { display: inline; }
+.cl-item.is-open .cl-psu--off { display: none; }
+.cl-psu-u { fill: #ff4a3d; fill-opacity: 0.8; font: 700 5.5px var(--font-mono); text-anchor: middle; }
+.cl-plate--l { fill: #cfd5dc; fill-opacity: 0.8; }
+
+/* ── the filter paper being folded (2.6 s; started by foldIn() in main.js) ──
+   0-28%   the disc: its far half is folded down over the near half
+   28-54%  the half-disc: its left half is folded over the right
+   54-100% the quarter is turned point down, carried into the funnel and opened  */
+.cl-paper-fold { display: none; pointer-events: none; }
+.cl-item.is-folding .cl-paper-fold { display: inline; }
+.cl-item.is-folding .cl-paper-cone { animation: pf-cone 2.6s linear both; }
+.pf { fill: #f7f4ec; stroke: #cfc8b6; stroke-width: 0.7; stroke-linejoin: round; }
+.pf-layer { fill: #e6e0d0; }
+.pf-crease { fill: none; stroke: #a9a18c; stroke-width: 0.8; stroke-dasharray: 2.5 2; }
+.pf-over { animation: pf-over 2.6s linear both; }
+.pf-under, .pf-crease1 { animation: pf-stage1 2.6s linear both; }
+.pf-left { animation: pf-left 2.6s linear both; }
+.pf-right, .pf-crease2 { animation: pf-stage2 2.6s linear both; }
+.pf-wedge { animation: pf-wedge 2.6s cubic-bezier(0.4, 0, 0.2, 1) both; }
+@keyframes pf-over { 0%, 6% { transform: scaleY(1); fill: #f7f4ec; } 16% { transform: scaleY(0.02); fill: #d9d3c2; } 26% { transform: scaleY(-1); fill: #ece7da; opacity: 1; } 28%, 100% { transform: scaleY(-1); opacity: 0; } }
+@keyframes pf-stage1 { 0%, 27% { opacity: 1; } 28%, 100% { opacity: 0; } }
+@keyframes pf-stage2 { 0%, 27% { opacity: 0; } 28%, 53% { opacity: 1; } 54%, 100% { opacity: 0; } }
+@keyframes pf-left { 0%, 27% { opacity: 0; transform: scaleX(1); } 28%, 33% { opacity: 1; transform: scaleX(1); fill: #f7f4ec; } 42% { transform: scaleX(0.02); fill: #d9d3c2; } 52% { opacity: 1; transform: scaleX(-1); fill: #ece7da; } 54%, 100% { opacity: 0; transform: scaleX(-1); } }
+@keyframes pf-wedge { 0%, 53% { opacity: 0; transform: translate(0, 0) rotate(0deg) scale(1); } 54%, 60% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); } 80% { opacity: 1; transform: translate(0, 22px) rotate(-135deg) scale(1.1); } 94% { opacity: 1; transform: translate(0, 77px) rotate(-135deg) scale(1.42, 1.5); } 100% { opacity: 0; transform: translate(0, 77px) rotate(-135deg) scale(1.42, 1.5); } }
+@keyframes pf-cone { 0%, 92% { opacity: 0; } 100% { opacity: 1; } }

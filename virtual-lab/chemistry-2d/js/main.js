@@ -296,6 +296,22 @@ function readouts() {
   lens();
 }
 
+// ── a filter paper is FOLDED into its cone ──────────────────────────────────
+// Let go at a funnel, the disc is folded in half, in half again, turned point down and
+// opened: three thicknesses on one side, one on the other. (glass.js draws the stages,
+// bench.css times them; here the film is only started and, when it is over, put away.)
+const FOLD_MS = 2600;
+const folding = new Map();        // paper id → the timer that ends its film
+function foldIn(paper) {
+  const n = nodes[paper.id];
+  if (!n || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  n.g.classList.remove("is-folding");
+  void n.g.getBoundingClientRect();
+  n.g.classList.add("is-folding");
+  clearTimeout(folding.get(paper.id));
+  folding.set(paper.id, setTimeout(() => nodes[paper.id] && nodes[paper.id].g.classList.remove("is-folding"), FOLD_MS));
+}
+
 // ── reading a scale: the lens ───────────────────────────────────────────────
 // A burette and a measuring cylinder do not say what they hold. A chosen one shows a
 // lens on its liquid surface: the scale, magnified, and the curve of the meniscus. The
@@ -304,32 +320,53 @@ const SCALES = {
   burette: { per: 0.1, label: 1, down: true, dp: 2, tol: 0.06, value: (it) => (it.t.cap - it.t.vol) * 2 },
   cyl10: { per: 0.1, label: 1, down: false, dp: 1, tol: 0.06, value: (it) => (it.t.vol + (it.t.oil || 0)) * 2 },
   cyl100: { per: 1, label: 10, down: false, dp: 0, tol: 0.6, value: (it) => (it.t.vol + (it.t.oil || 0)) * 2 },
+  // Two pieces have no scale, only ONE etched line: they hold their volume when the bottom of
+  // the meniscus sits on it, and not otherwise. The lens shows the line and where the liquid is.
+  vol100: { per: 1, mark: 100, down: false, dp: 0, tol: 0.6, near: 9, value: (it) => (it.t.vol + (it.t.oil || 0)) * 2 },
+  pipette: { per: 1, mark: 25, down: false, dp: 0, tol: 0.6, value: (it) => (it.sample.vol + (it.sample.oil || 0)) * 2, at: -130, half: 14 },
 };
-const scaleOf = (it) => (it && it.kind === "vessel" && SCALES[it.key] && it.t.vol + (it.t.oil || 0) > 0 && !it.tilt ? SCALES[it.key] : null);
+/** The scale a piece can be read by, just now: it has to hold liquid, stand upright, and (with one mark) be near it. */
+function scaleOf(it) {
+  const sc = it && SCALES[it.key];
+  if (!sc) return null;
+  if (it.kind === "vessel" ? it.t.vol + (it.t.oil || 0) <= 0 || it.tilt : !it.sample) return null;
+  if (sc.near && Math.abs(sc.value(it) - sc.mark) > sc.near) return null;
+  return sc;
+}
 let lensEl = null;
 function lens() {
   const it = selected, sc = scaleOf(it);
   if (!sc || !nodes[it.id] || drag) { if (lensEl) { lensEl.remove(); lensEl = null; } return; }
   if (!lensEl) { lensEl = document.createElementNS(NS, "g"); lensEl.setAttribute("class", "cl-lens"); }
   L.fx.appendChild(lensEl);
-  const R = 68, PX = 6;                                   // the lens, and how far apart two small divisions are drawn
+  const R = 68, PX = 6;                                    // the lens, and how far apart two small divisions are drawn
   const v = sc.value(it);
-  const surface = it.y + Number(nodes[it.id].g.querySelector(".cl-meniscus").getAttribute("cy"));
+  const hw = sc.half || 30;                                // half the width of the glass, as the lens shows it
+  const surface = it.y + (sc.at ?? Number(nodes[it.id].g.querySelector(".cl-meniscus").getAttribute("cy")));
   const side = it.x + 150 > W - 20 ? -1 : 1;
   const cx = it.x + side * 112, cy = clamp(surface, TOP - 60, H - R - 22);
-  const c = look(it.t).rgb;
-  const first = Math.floor(v / sc.per) - 7;
+  const c = it.kind === "vessel" ? look(it.t).rgb : it.rgb || [200, 224, 240];
+  const alpha = it.kind === "vessel" ? Math.max(look(it.t).a, 0.42) : 0.7;
+  const yOf = (tv) => ((tv - v) / sc.per) * PX * (sc.down ? 1 : -1);
   let ticks = "";
-  for (let k = first; k <= first + 15; k++) {
-    const tv = k * sc.per;
-    if (tv < -1e-9) continue;
-    const y = ((tv - v) / sc.per) * PX * (sc.down ? 1 : -1);
-    if (Math.abs(y) > R) continue;
-    const whole = Math.abs(tv / sc.label - Math.round(tv / sc.label)) < 1e-6;
-    const half = Math.abs((tv / sc.label) * 2 - Math.round((tv / sc.label) * 2)) < 1e-6;
-    ticks += `<path d="M-30 ${y.toFixed(1)}H${whole ? 6 : half ? -6 : -16}"/>`;
-    if (whole) ticks += `<text x="12" y="${(y + 3.6).toFixed(1)}">${Math.round(tv / sc.label) * sc.label}</text>`;
+  if (sc.mark) {
+    // one line, right round the glass
+    const y = yOf(sc.mark);
+    if (Math.abs(y) < R) ticks = `<path class="cl-lens__ring" d="M${-hw} ${y.toFixed(1)}H${hw}"/><text x="0" y="${(y - 5).toFixed(1)}" text-anchor="middle">${sc.mark}</text>`;
+  } else {
+    const first = Math.floor(v / sc.per) - 13;
+    for (let k = first; k <= first + 27; k++) {
+      const tv = k * sc.per;
+      if (tv < -1e-9) continue;
+      const y = yOf(tv);
+      if (Math.abs(y) > R) continue;
+      const whole = Math.abs(tv / sc.label - Math.round(tv / sc.label)) < 1e-6;
+      const half = Math.abs((tv / sc.label) * 2 - Math.round((tv / sc.label) * 2)) < 1e-6;
+      ticks += `<path d="M-30 ${y.toFixed(1)}H${whole ? 6 : half ? -6 : -16}"/>`;
+      if (whole) ticks += `<text x="12" y="${(y + 3.6).toFixed(1)}">${Math.round(tv / sc.label) * sc.label}</text>`;
+    }
   }
+  const dip = hw * 0.27;
   const uid = `lens-${it.id}`;
   lensEl.setAttribute("transform", `translate(${cx.toFixed(1)} ${cy.toFixed(1)})`);
   lensEl.innerHTML = `<path class="cl-lens__arm" d="M${(-side * R).toFixed(1)} 0L${(it.x - cx).toFixed(1)} ${(surface - cy).toFixed(1)}"/>
@@ -337,34 +374,41 @@ function lens() {
     <clipPath id="${uid}"><circle r="${R}"/></clipPath>
     <g clip-path="url(#${uid})">
       <rect x="${-R}" y="${-R}" width="${R * 2}" height="${R * 2}" fill="#232a33"/>
-      <rect x="-30" y="${-R}" width="60" height="${R * 2}" fill="#fff" fill-opacity="0.06"/>
-      <path d="M-30 -8Q0 8 30 -8V${R}H-30z" fill="rgba(${c},${Math.max(look(it.t).a, 0.42)})"/>
-      <path d="M-30 -8Q0 8 30 -8V-4.500Q0 11.5 -30 -4.500z" fill="#000" fill-opacity="0.24"/>
-      <path d="M-30 -8Q0 8 30 -8" fill="none" stroke="#fff" stroke-opacity="0.9" stroke-width="1.3"/>
-      <rect x="-30" y="${-R}" width="5" height="${R * 2}" fill="url(#g-shine-v)" opacity="0.7"/>
-      <path d="M-30 ${-R}V${R}M30 ${-R}V${R}" stroke="#fff" stroke-opacity="0.7" stroke-width="1.4"/>
+      <rect x="${-hw}" y="${-R}" width="${hw * 2}" height="${R * 2}" fill="#fff" fill-opacity="0.06"/>
+      <path d="M${-hw} ${-dip}Q0 ${dip} ${hw} ${-dip}V${R}H${-hw}z" fill="rgba(${c},${alpha})"/>
+      <path d="M${-hw} ${-dip}Q0 ${dip} ${hw} ${-dip}V${-dip + 3.5}Q0 ${dip + 3.5} ${-hw} ${-dip + 3.5}z" fill="#000" fill-opacity="0.24"/>
+      <path d="M${-hw} ${-dip}Q0 ${dip} ${hw} ${-dip}" fill="none" stroke="#fff" stroke-opacity="0.9" stroke-width="1.3"/>
+      <rect x="${-hw}" y="${-R}" width="5" height="${R * 2}" fill="url(#g-shine-v)" opacity="0.7"/>
+      <path d="M${-hw} ${-R}V${R}M${hw} ${-R}V${R}" stroke="#fff" stroke-opacity="0.7" stroke-width="1.4"/>
       <g class="cl-lens__scale">${ticks}</g>
-      <path class="cl-lens__eye" d="M32 0H${R}"/>
+      <path class="cl-lens__eye" d="M${hw + 2} 0H${R}"/>
     </g>
     <circle r="${R}" fill="none" stroke="url(#g-metal)" stroke-width="4.5"/><circle r="${R - 2.6}" fill="none" stroke="#fff" stroke-opacity="0.28" stroke-width="0.8"/>
     <path d="M${-R * 0.72} ${-R * 0.5}A${R * 0.9} ${R * 0.9} 0 0 1 ${-R * 0.2} ${-R * 0.86}" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="2.4" stroke-linecap="round"/>
-    <text class="cl-lens__note" y="${R + 17}">read the bottom of the curve</text>`;
+    <text class="cl-lens__note" y="${R + 17}">${sc.mark ? "the curve must sit on the line" : "read the bottom of the curve"}</text>`;
 }
 /** A reading has been typed in: is it what the scale says? */
 function checkReading(it, typed) {
   const sc = scaleOf(it);
   if (!sc) return;
   const got = Number(String(typed).replace(",", "."));
-  if (!Number.isFinite(got)) { say("Type the number you read off the scale.", it, "no"); return; }
+  if (!Number.isFinite(got)) { say("Type the number you read off the scale.", it.kind === "vessel" ? it : null, "no"); return; }
   const real = sc.value(it);
   const off = got - real;
+  const where = it.kind === "vessel" ? it : null;
+  if (sc.mark && Math.abs(real - sc.mark) > sc.tol) {
+    // with one mark there is nothing to read until the liquid is ON it
+    say(`The bottom of the meniscus is ${real < sc.mark ? "below" : "above"} the line, so it does not hold ${sc.mark} cm\u00b3 yet. ${real < sc.mark ? "Add distilled water a few drops at a time until the curve sits on the line." : "It is overfilled: empty it and make it up again."}`, where, "no");
+    return;
+  }
   if (Math.abs(off) <= sc.tol) {
     noteFlags([`read:${it.key}`]);
-    state.log.unshift({ id: it.id, tag: it.tag, title: `Read ${plain(it)}`, obs: [{ text: `Reading: ${got.toFixed(sc.dp)} cm\u00b3.`, why: `Read at eye level, at the bottom of the meniscus. The scale says ${real.toFixed(2)} cm\u00b3.` }] });
+    state.log.unshift({ id: it.id, tag: it.tag || "", title: `Read ${plain(it)}`, obs: [{ text: `Reading: ${got.toFixed(sc.dp)} cm\u00b3.`, why: sc.mark ? `The bottom of the meniscus sits on the line, so it holds exactly ${sc.mark} cm\u00b3.` : `Read at eye level, at the bottom of the meniscus. The scale says ${real.toFixed(2)} cm\u00b3.` }] });
     renderLog();
-    say(`Good reading: ${got.toFixed(sc.dp)} cm\u00b3. It is written in the notebook.`, it);
-  } else if (Math.abs(off) <= sc.tol * 4) say(`Close, but look again. Read the BOTTOM of the curve, and count the small divisions: each one is ${sc.per} cm\u00b3.`, it, "no");
-  else say(sc.down ? "Not yet. A burette is numbered from the top down: the numbers get bigger going down." : `Not yet. Find the numbered line just below the liquid, then count up the small divisions: each one is ${sc.per} cm\u00b3.`, it, "no");
+    say(`Good reading: ${got.toFixed(sc.dp)} cm\u00b3. It is written in the notebook.`, where);
+  } else if (sc.mark) say(`The curve is sitting on the line. What volume is this piece made to hold? It is marked on the glass.`, where, "no");
+  else if (Math.abs(off) <= sc.tol * 4) say(`Close, but look again. Read the BOTTOM of the curve, and count the small divisions: each one is ${sc.per} cm\u00b3.`, where, "no");
+  else say(sc.down ? "Not yet. A burette is numbered from the top down: the numbers get bigger going down." : `Not yet. Find the numbered line just below the liquid, then count up the small divisions: each one is ${sc.per} cm\u00b3.`, where, "no");
   save();
 }
 
@@ -828,7 +872,7 @@ const viscOf = (it) => (it.kind === "reagent" ? THICK[it.key] ?? 0.04 : it.t && 
  * pouring goes on; left alone, the last of it falls and the stream is gone. `dir` is the way
  * the lip faces (-1 left, 1 right).
  */
-function flow(key, a, b, c, dir = -1, mu = 0.04) {
+function flow(key, a, b, c, dir = -1, mu = 0.04, thin = 1) {
   let f = flows[key];
   if (!f) {
     const g = document.createElementNS(NS, "g");
@@ -837,7 +881,7 @@ function flow(key, a, b, c, dir = -1, mu = 0.04) {
     L.fx.appendChild(g);
     f = flows[key] = { g, parts: [], spray: [], fizz: [], rings: [0.3, 0], owed: 0, hits: 0, t: 0 };
   }
-  Object.assign(f, { a, b, c, dir, mu, until: performance.now() + 900 });
+  Object.assign(f, { a, b, c, dir, mu, thin, until: performance.now() + (thin < 1 ? 520 : 900) });
   if (!flowing) { flowAt = performance.now(); flowing = requestAnimationFrame(flowTick); }
 }
 function flowTick(now) {
@@ -856,7 +900,7 @@ function flowTick(now) {
         f.owed -= 1;
         // a bottle does not pour evenly: air has to get in as the liquid gets out, so the
         // stream swells and narrows, and the swellings travel down it (a thick liquid, less)
-        const glug = 1 + (1 - mu) * (0.2 * Math.sin(f.t * 15) + 0.1 * Math.sin(f.t * 37 + 1));
+        const glug = f.thin < 1 ? 1 : 1 + (1 - mu) * (0.2 * Math.sin(f.t * 15) + 0.1 * Math.sin(f.t * 37 + 1));      // a tap runs evenly
         f.parts.push({ ax: f.a.x, ay: f.a.y, bx: f.b.x, fall: Math.max(10, f.b.y - f.a.y), x: f.a.x, y: f.a.y, vy: 40 * (1 - 0.6 * mu), k: glug, ph: Math.random() * 6.28 });
       }
     }
@@ -894,11 +938,11 @@ function flowTick(now) {
     // draw: from the lip downwards, the newest parcel first
     const pts = f.parts.slice().reverse().map((p) => ({ x: p.x, y: p.y, v: p.vy, k: p.k, u: p.u || 0 }));
     if (on && pts.length) pts.unshift({ x: f.a.x, y: f.a.y, v: 40, k: pts[0].k, u: 0 });
-    const w0 = 8.4 * (1 + 0.5 * mu);
+    const w0 = 8.4 * (1 + 0.5 * mu) * f.thin;
     // the same amount passes every point each second, so where it goes faster it is narrower;
     // just at the lip it is still a flat sheet, wider than the round stream it gathers into
     const width = (p) => w0 * p.k * clamp(Math.sqrt(140 / Math.max(140, p.v)), 0.34 + 0.4 * mu, 1) * (1 + 0.45 * Math.max(0, 1 - p.u * 9));
-    const gapMax = 11 + 60 * mu;
+    const gapMax = 11 + 60 * mu + (f.thin < 1 ? 5 : 0);
     const strands = [];
     let cur = [];
     pts.forEach((p, i) => {
@@ -954,6 +998,12 @@ function flowTick(now) {
     if (!on && !f.parts.length && !f.spray.length && !f.fizz.length) { f.g.remove(); delete flows[key]; }
   }
   if (Object.keys(flows).length) flowing = requestAnimationFrame(flowTick);
+}
+/** From the tip of a burette or a separating funnel, straight down into `v`: a thin, even thread. */
+function tapStream(bur, v, c, mu) {
+  const key = `tap-${bur.id}`;
+  flow(key, { x: bur.x, y: bur.y + 1 }, { x: bur.x, y: Math.max(bur.y + 12, v._surface) }, c, 1, mu, 0.34);
+  flows[key].floor = v.y - (VESSELS[v.key].floor || 0);
 }
 /** A bottle or a vessel held tipped at the mouth of `v`: out over the lip, and down in an arc. */
 function stream(v, c, mu) {
@@ -1285,7 +1335,7 @@ function runTap(bur) {
     const res = deliver(v, out.s, "the separating funnel", c);
     if (!res) return false;
     paint(bur);
-    drops([bur.x, bur.y], v._surface, c, 2.4);
+    if (state.dose === "drops") drops([bur.x, bur.y], v._surface, c, 2.4); else tapStream(bur, v, c, out.layer === "oil" ? 0.9 : 0.04);
     if (out.last) {
       record(bur, { title: "Ran off the lower layer", obs: [{ text: "The last of the lower layer has run out. Only the oil is left in the funnel.", why: "The two liquids do not mix, and the denser one sinks. Running it out through the tap leaves the other behind: that is how a separating funnel separates them." }], flags: ["separated"] });
       return false;                                         // the tap is closed at the boundary
@@ -1300,7 +1350,7 @@ function runTap(bur) {
   const res = deliver(v, takeFrom(bur.t, n), "the burette", c, "by:burette");
   if (!res) return false;
   paint(bur);
-  drops([bur.x, bur.y], v._surface, c, 2.2);
+  if (state.dose === "drops") drops([bur.x, bur.y], v._surface, c, 2.2); else tapStream(bur, v, c, 0.04);
   const seen = res.obs.map((o) => o.text).filter((t) => t !== "No visible change.").join(" ");
   if (res.flags.some((f) => f.startsWith("colour:"))) noteFlags(["endpoint"]);
   const reads = `The burette reads ${((bur.t.cap - bur.t.vol) * 2).toFixed(2)} cm\u00b3.`;
@@ -1620,6 +1670,7 @@ window.addEventListener("pointerup", (e) => {
       : it.key === "electrode" ? (rodsIn(host).length === 2 ? (tools("power").length ? `Both carbon rods are in ${where} and wired to the power pack. Hold down its red switch.` : `Both carbon rods are in ${where}. Put a power pack on the bench.`) : `One carbon rod is in ${where}. It needs a second.`)
       : `${cap1(where)} is stoppered.`, host.kind === "vessel" ? host : null);
     dress(it);
+    if (it.key === "paper") foldIn(it);
   } else if (d.sits) {
     // a vessel left over a flame stays there
     it.x = d.over.x;
@@ -1709,6 +1760,7 @@ $("cl-dots").addEventListener("click", () => {
   openMenu(selected);
 });
 
+const readingBox = (it) => `<label class="cl-range cl-reading"><span>Your reading, from the lens (cm\u00b3)</span><span class="cl-reading__row"><input type="number" inputmode="decimal" step="${SCALES[it.key].dp === 0 ? 1 : SCALES[it.key].dp === 1 ? 0.1 : 0.05}" min="0" id="cl-reading" autocomplete="off" /><button type="button" class="cl-ico cl-ico--paper" data-act="read" data-tip="Check my reading" aria-label="Check my reading">${UI.check(18)}</button></span></label>`;
 function openMenu(it) {
   if (!it) return;
   const menu = $("cl-menu");
@@ -1725,7 +1777,7 @@ function openMenu(it) {
       if (it.t.vol > 0) lines.push(`${Math.round(it.t.temp ?? 25)} °C.`);
       act("empty", "Empty and rinse it", ICON.empty);
     }
-    if (scaleOf(it)) slider = `<label class="cl-range cl-reading"><span>Your reading, from the lens (cm\u00b3)</span><span class="cl-reading__row"><input type="number" inputmode="decimal" step="${SCALES[it.key].dp === 0 ? 1 : SCALES[it.key].dp === 1 ? 0.1 : 0.05}" min="0" id="cl-reading" autocomplete="off" /><button type="button" class="cl-ico cl-ico--paper" data-act="read" data-tip="Check my reading" aria-label="Check my reading">${UI.check(18)}</button></span></label>`;
+    if (scaleOf(it)) slider = readingBox(it);
     if (def.tap) lines.push("It cannot stand up: let it go at the clamp of a retort stand. Press the blue tap to run it out.");
     if (def.arm) lines.push(fittedTo(it, "condenser") ? "Heat it, with a beaker under the condenser's lower end." : "Push a condenser onto the side arm.");
     if (def.upturns) lines.push("Fill it with water, then let an empty gas jar go in it.");
@@ -1741,7 +1793,7 @@ function openMenu(it) {
   } else if (HEAT[it.key]) {
     lines.push(lit(it) ? `Lit: a ${FLAME[it.flame]} flame. Its \u2212 and + keys turn it down and up. Hold it under a vessel, or carry a vessel over the flame.` : "Not lit. Press its + key to light it and turn it up.");
     act("light", lit(it) ? "Put it out" : "Light it", ICON.fire);
-  } else if (it.sample) { lines.push(it.key === "wire" ? "Dipped, ready for the flame." : `Holding ${cm3(it.sample.vol + (it.sample.oil || 0))} of liquid.`); act("empty", "Empty it", ICON.empty); }
+  } else if (it.sample) { if (scaleOf(it)) slider = readingBox(it); lines.push(it.key === "wire" ? "Dipped, ready for the flame." : `Holding ${cm3(it.sample.vol + (it.sample.oil || 0))} of liquid.`); act("empty", "Empty it", ICON.empty); }
   else if (it.key === "syringe") { lines.push(it.gas ? `${Math.round(it.gas.n * 12)} cm\u00b3 of gas.` : "Let it go at a stand's clamp to hold it level, then drag the orange end of a delivery tube to its nozzle."); if (it.gas) act("empty", "Push the plunger back in", ICON.empty); }
   else if (it.key === "funnel") lines.push(fittedTo(it, "paper") ? (it.on ? "Paper in, and sitting in a vessel: ready to filter." : "Paper in. Let the funnel go at the mouth of a flask or beaker.") : "Plain glass. It needs a filter paper: let one go at the funnel.");
   else if (it.key === "paper") { lines.push(it.residue ? "There is residue in the paper: the solid that could not pass through." : it.on ? "Folded in half, in half again, and opened into a cone in the funnel." : "A flat disc of filter paper. Let it go at a funnel and it is folded into a cone."); if (it.residue || it.wet) act("empty", "A fresh filter paper", ICON.empty); }
@@ -2124,6 +2176,7 @@ const actor = {
     tool.on = v.id;
     place(tool);
     dress(tool);
+    if (tool.key === "paper") { foldIn(tool); await pause(FOLD_MS); }
     noteFlags([`fitted:${tool.key}`]);
     save();
   },
