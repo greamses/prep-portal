@@ -14,11 +14,24 @@
  *   aud = <projectId>
  *   signed with the X.509 certs at the identitytoolkit publicKeys endpoint.
  *
- * Only top-level HTML navigations are gated — assets (js/css/img/fonts), /api,
- * and the public pages (home, blogs, editorials, privacy, terms, subscribe,
- * auth) always pass through. On ANY unexpected error the request is allowed
+ * Only top-level HTML navigations are gated — assets (js/css/img/fonts) and
+ * /api always pass through. On ANY unexpected error the request is allowed
  * through (fail-open) so the gate can never take the site down again; only a
  * cleanly-evaluated "no valid session" results in the login redirect.
+ *
+ * WHICH pages are gated is a generated table (GATED, below), written by
+ * scripts/seo.mjs: every HTML page that is not in the SEO registry
+ * (scripts/seo/pages.mjs). Three things follow from gating by table rather
+ * than by "everything except a few prefixes":
+ *   · A page in the registry answers 200 to a signed-out visitor — and so to a
+ *     search crawler. Its own client guard then shows that visitor the page's
+ *     description and a sign-in button instead of the activity, so the address
+ *     can be indexed without the activity being opened up.
+ *   · A path that is no page at all falls through to the real 404. It used to
+ *     be redirected to the login, which search engines read as thousands of
+ *     "soft 404" duplicates of the home page.
+ *   · A NEW private page is only gated once  node scripts/seo.mjs  has been
+ *     run (npm run deploy runs it). Its client guard covers it meanwhile.
  */
 
 export const config = {
@@ -33,29 +46,42 @@ const ISSUER = `https://session.firebase.google.com/${PROJECT_ID}`;
 const CERT_URL =
   "https://www.googleapis.com/identitytoolkit/v3/relyingparty/publicKeys";
 
-const PUBLIC_EXACT = new Set([
-  "/", "/index.html", "/privacy.html", "/terms.html", "/subscribe.html", "/about.html",
+/* seo:routes */
+const GATED = new Set([
+  "/activity.html",
+  "/admin-cbt-edit.html",
+  "/admin-cbt.html",
+  "/admin-partners.html",
+  "/admin/settings",
+  "/blogs/auto",
+  "/dashboard.html",
+  "/flashcards/library.html",
+  "/home/js/dashboard",
+  "/logo/logo.html",
+  "/partner.html",
+  "/prep-math/activity/algebra-moves/api.html",
+  "/prep-math/manim-lab",
+  "/prep-math/manim-lab/morph-test.html",
+  "/tools/organ-tracer",
+  "/virtual-lab/biology",
+  "/virtual-lab/physics",
+  "/workbook-play",
+  "/writing/activity/grammar-police",
+  "/writing/trainer.html",
 ]);
-const PUBLIC_PREFIXES = [
-  "/blogs", "/editorials", "/utils/auth",
-  // SEO: these are marketing/landing + listing pages that should be crawlable
-  // and browsable without an account. Any actual paid AI action inside them
-  // (theory grading) is separately enforced server-side in server/routes/ai.js
-  // (isPremiumUser → 402), so opening the page itself up to anonymous visitors
-  // doesn't bypass the premium gate.
-  //
-  // /writing is deliberately NOT here any more. Its lessons, wall charts and
-  // model texts are the paid product whether or not anybody presses Submit, so
-  // the page is premium-gated whole (utils/auth/premium-guard.js on
-  // writing/index.html). Short task links (/w/CODE) are gated by the same
-  // omission, and the login redirect carries ?next= so the student lands back
-  // on the task they were sent.
-  "/exam-archive", "/theory-page", "/prep-math",
-];
+/* /seo:routes */
 
-function isPublic(path) {
-  if (PUBLIC_EXACT.has(path)) return true;
-  return PUBLIC_PREFIXES.some((p) => path === p || path.startsWith(p + "/"));
+// Gated whatever the table says: rewritten short links (a writing task, an
+// assigned workbook — /w/CODE, /wb/CODE have no file of their own) and the
+// admin tree. The login redirect carries ?next= so a student lands back on the
+// task they were sent.
+const GATED_PREFIXES = ["/w", "/wb", "/admin"];
+
+function isGated(path) {
+  // "/x/", "/x/index.html" and "/x" are one page.
+  const p = path.replace(/\/index\.html$/, "").replace(/\/+$/, "") || "/";
+  if (GATED.has(p)) return true;
+  return GATED_PREFIXES.some((pre) => p === pre || p.startsWith(pre + "/"));
 }
 
 function readCookie(request, name) {
@@ -199,7 +225,7 @@ export default async function middleware(request) {
     const accept = request.headers.get("accept") || "";
     if (!accept.includes("text/html")) return;
 
-    if (isPublic(path)) return;
+    if (!isGated(path)) return;
 
     const cookie = readCookie(request, "__session");
     if (cookie) {

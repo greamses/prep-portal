@@ -65,7 +65,29 @@ const reveal = () => veil.remove();
 // still gates the AI endpoints and the login middleware still gates the page.
 const veilTimeout = setTimeout(reveal, 6000);
 
+// A page in the SEO registry carries a description of itself (#pp-about,
+// written by scripts/seo.mjs). A signed-out visitor is shown THAT, with a
+// sign-in button, rather than being bounced to the home page: a search crawler
+// is a signed-out visitor too, and a page that only ever redirects can never
+// be listed. Pages without the block keep the plain redirect.
+function showAbout() {
+  const about = document.getElementById("pp-about");
+  if (!about) return false;
+  const next = encodeURIComponent(location.pathname + location.search);
+  about.querySelectorAll("[data-pp-login]").forEach((a) => {
+    a.href = "/index.html?login=1&next=" + next;
+  });
+  veil.textContent = "";
+  veil.style.display = "block";
+  veil.style.overflow = "auto";
+  veil.style.font = "";
+  about.hidden = false;
+  veil.appendChild(about);
+  return true;
+}
+
 function toLogin() {
+  if (showAbout()) return;
   const next = encodeURIComponent(location.pathname + location.search);
   location.replace("/index.html?login=1&next=" + next);
 }

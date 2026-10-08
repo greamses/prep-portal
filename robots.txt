@@ -1,12 +1,15 @@
 # Prep Portal — https://www.prepportal.com.ng
-# Allow all crawlers full access to public content (incl. JS/CSS needed to
-# render the pages). Only the signed-in app area and the API are kept out.
+#
+# Everything a page needs in order to render is crawlable: scripts, styles and
+# the sign-in guards in /utils/auth/ (blocking those made Google render the
+# activity pages without their description). Private pages are kept out of the
+# index with a `noindex` tag and the X-Robots-Tag header, NOT with a Disallow
+# here — a crawler that is not allowed to fetch a page can never read its
+# noindex. Only the API is off limits.
 
 User-agent: *
 Allow: /
-Disallow: /dashboard.html
 Disallow: /api/
-Disallow: /utils/auth/
 
 Sitemap: https://www.prepportal.com.ng/sitemap.xml
 Sitemap: https://www.prepportal.com.ng/sitemap-blogs.xml

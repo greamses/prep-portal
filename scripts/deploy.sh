@@ -30,6 +30,13 @@ DEFAULT_ZONE_ID="d00c024daea9b2b2206bc8891662210f" # prepportal.com.ng
 echo "🔖 Versioning module URLs…"
 node scripts/version-assets.mjs
 
+# Search engines: head tags, the "about" block, sitemap.xml and the
+# middleware's gated-route table all come from scripts/seo/pages.mjs. Run it
+# here so a page added since the last deploy is in the sitemap (or, if it is
+# private, behind the login gate) before it ships.
+echo "🔎 Writing SEO tags, sitemap and gated routes…"
+node scripts/seo.mjs
+
 # The stamping above REWRITES index.html. If those rewrites are still sitting
 # uncommitted when we deploy, production ends up serving the PREVIOUS deploy's
 # import map — new code behind old hashed URLs, one deploy behind for ever.
