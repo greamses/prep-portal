@@ -45,6 +45,13 @@ const TAKES = { dropper: 0.5, pipette: 12.5 };        // portions drawn up (a po
 const STAYS = ["funnel", "paper", "chroma", "bung", "bung1", "tubing", "cap", "condenser", "electrode"];   // fitted, and left there
 const PLUGS = ["funnel", "bung", "bung1"];            // one of these to a mouth (a delivery tube goes in a one-hole stopper)
 const IDLE = ["waste", "syringe", "power", "holder", "tongs"];                 // never used ON anything
+// Things that PICK UP: a test tube holder grips a tube by its neck, tongs take a crucible or a
+// dish by its rim. The piece is then carried by the tool (it is the tool's rider, `held`), and
+// carried over a flame it is heated there. jaw = where the grip is, in the tool's own drawing.
+const GRIPS = {
+  holder: { jaw: [29, -12.5], takes: (key) => key === "tube" || key === "boil", says: "its neck" },
+  tongs: { jaw: [40, -16], takes: (key) => key === "crucible" || key === "dish" || key === "watch", says: "its rim" },
+};
 const LIGHT = ["H2", "NH3"];                          // less dense than air: they rise
 const GAS = { H2: "hydrogen", CO2: "carbon dioxide", O2: "oxygen", NH3: "ammonia" };
 const FLAME = ["off", "low", "medium", "roaring"];     // a burner's it.flame, 0 to 3
@@ -146,6 +153,39 @@ const stopperOf = (v) => fittedTo(v, "bung") || fittedTo(v, "bung1");
 const tubeOf = (v) => { const s = fittedTo(v, "bung1"); return s ? fittedTo(s, "tubing") : null; };
 /** …and the vessel a delivery tube leads out of, if its stopper is in one. */
 const vesselOfTube = (t) => { const s = t.on && byId(t.on); const v = s && s.on && byId(s.on); return v && v.kind === "vessel" ? v : null; };
+/** What a holder or a pair of tongs is carrying. */
+const loadOf = (tool) => state.items.find((o) => o.held === tool.id) || null;
+/** Where a vessel hangs when a gripping tool at (x, y) has hold of it. */
+function hangsAt(tool, v, x = tool.x, y = tool.y) {
+  const [jx, jy] = GRIPS[tool.key].jaw, def = VESSELS[v.key];
+  return tool.key === "holder" ? { x: x + jx, y: y + jy - 20 - def.top } : { x: x + jx + def.rTop - 5, y: y + jy - 2 - def.top };
+}
+/** The piece a gripping tool could take hold of, where it is now. */
+function grabbable(tool) {
+  if (loadOf(tool)) return null;
+  const [jx, jy] = GRIPS[tool.key].jaw;
+  // generous: anywhere on the piece will do, and the nearest one wins
+  return nearest(vessels().filter((v) => GRIPS[tool.key].takes(v.key) && !v.held && !v.flip), (v) => {
+    const def = VESSELS[v.key], x = tool.x + jx, y = tool.y + jy;
+    if (Math.abs(x - v.x) > def.rMax + 26 || y < v.y + def.top - 30 || y > v.y + 14) return -1;
+    const gx = tool.key === "holder" ? v.x : v.x - def.rTop + 5, gy = tool.key === "holder" ? v.y + def.top + 20 : v.y + def.top + 2;
+    return Math.hypot(x - gx, y - gy);
+  });
+}
+function grab(tool, v) {
+  v.rack = null;
+  v.held = tool.id;
+  // the tool closes on the piece where the piece is: it is the tool that moves the last little way
+  const at = hangsAt(tool, v, 0, 0);
+  tool.x = v.x - at.x;
+  tool.y = v.y - at.y;
+  glide(tool, true);
+  place(tool);
+  raise(tool);
+  say(`The ${nameOf(tool).toLowerCase()} ${tool.key === "tongs" ? "have" : "has"} ${plain(v)} by ${GRIPS[tool.key].says}. Carry it by the ${tool.key === "tongs" ? "tongs" : "holder"}: over a lit burner it is heated. Drag the piece itself away to let go.`);
+  noteFlags([`held:${v.key}`]);
+  save();
+}
 const plugIn = (v) => state.items.find((a) => a.on === v.id && PLUGS.includes(a.key));
 const rodsIn = (v) => state.items.filter((a) => a.on === v.id && a.key === "electrode").sort((a, b) => (a.side || 0) - (b.side || 0));
 const hostOf = (v) => (v.rack ? byId(v.rack[0]) : null);
@@ -521,7 +561,7 @@ function slotAt(host, i, def) {
 function ridersOf(it, out = []) {
   for (const o of state.items) {
     if (o === it || out.includes(o)) continue;
-    if ((o.rack && o.rack[0] === it.id) || o.on === it.id) { out.push(o); ridersOf(o, out); }
+    if ((o.rack && o.rack[0] === it.id) || o.on === it.id || o.held === it.id) { out.push(o); ridersOf(o, out); }
   }
   return out;
 }
@@ -529,6 +569,7 @@ function ridersOf(it, out = []) {
 function follow(it, smooth = true) {
   for (const o of state.items) {
     if (o.on === it.id) { const m = seat(it, o); o.x = m.x; o.y = m.y; }
+    else if (o.held === it.id) { const at = hangsAt(it, o); o.x = at.x; o.y = at.y; }
     else if (o.rack && o.rack[0] === it.id) { const [sx, sy] = o.key === "syringe" ? [78, (it.clamp ?? CLAMP) + 9] : slotAt(it, o.rack[1], VESSELS[o.key]); o.x = it.x + sx; o.y = it.y + sy; }
     else continue;
     glide(o, smooth);
@@ -758,6 +799,7 @@ function removeItem(it) {
   state.items.forEach((o) => {
     if (o.rack && o.rack[0] === it.id) { o.rack = null; if (o.flip) { o.flip = false; place(o); paint(o); } }
     if (o.on === it.id) o.on = null;
+    if (o.held === it.id) o.held = null;
     if (o.to === it.id) o.to = null;
   });
   state.items.filter((o) => o.key === "cap" && o.of === it.id).forEach(removeItem);     // a bottle takes its stopper with it
@@ -951,6 +993,12 @@ function targetOf(it) {
     });
   }
   // ── tools ──
+  if (GRIPS[it.key]) {
+    // carrying something: the only thing it can be taken to is a flame
+    const v = loadOf(it);
+    if (!v) return null;
+    return heaters().find((b) => Math.abs(v.x - b.x) < 34 && Math.abs(v.y - (b.y - HEAT[b.key])) < 52) || null;
+  }
   if (IDLE.includes(it.key)) return null;
   if (it.key === "cap" && it.v === "drop") {
     // back into its own bottle, or over a liquid to drip a little in
@@ -1035,6 +1083,7 @@ const tipping = (it, at) => `translate(${at.x + 6}px, ${at.y - 10}px) rotate(-10
 
 /** How a thing is held while it is being used on `v`. */
 function poseOn(it, v) {
+  if (GRIPS[it.key]) return `translate(${it.x}px, ${it.y}px)`;                // a tool with something in its grip stays in the hand
   if (fitsOn(it, v)) { const s = seat(v, { ...it, side: sideFor(v, it) }); return `translate(${s.x}px, ${s.y}px)`; }
   if (it.key === "cap") { const m = mouth(v); return `translate(${m.x}px, ${m.y - 62}px)`; }      // a dropper, held over a liquid
   const m = HEAT[v.key] && it.key === "lit" ? { x: v.x, y: v.y - HEAT[v.key] + 46 } : mouth(v);
@@ -1332,6 +1381,11 @@ function pourReagent(bottle, v, amount) {
  * (a bottle goes on pouring), false when once is all there is.
  */
 function use(it, v) {
+  // ── a holder or tongs with something in its grip, held in a flame ──
+  if (GRIPS[it.key]) {
+    const held = loadOf(it);
+    return held && HEAT[v.key] ? warm(v, held) : false;
+  }
   // ── a vessel is the thing being carried ──
   if (it.kind === "vessel") {
     if (HEAT[v.key]) return warm(v, it);
@@ -1846,7 +1900,17 @@ window.addEventListener("pointermove", (e) => {
   for (const v of drag.riders) { v.x += it.x - ox; v.y += it.y - oy; place(v); kick(v, -(it.x - ox) * 3.4); }
   kick(it, -(it.x - ox) * 3.4);
   if (it.kind === "vessel" || it.key === "syringe") it.rack = null;
+  if (it.held) it.held = null;                       // pulled out of the holder or the tongs
   if (it.on) it.on = null;
+  if (GRIPS[it.key]) {
+    // an empty holder or tongs: show what it would take hold of here
+    const c = grabbable(it);
+    if (c !== (drag.grab || null)) {
+      if (drag.grab && nodes[drag.grab.id]) nodes[drag.grab.id].g.classList.remove("is-target");
+      drag.grab = c;
+      if (c) nodes[c.id].g.classList.add("is-target");
+    }
+  }
 
   const target = targetOf(it);
   if (target !== drag.over) {
@@ -1989,6 +2053,9 @@ window.addEventListener("pointerup", (e) => {
     if ((it.kind === "vessel" && snap(it)) || (it.key === "syringe" && clampSyringe(it))) glide(it, true);
     front();
     place(it);
+    if (d.grab && nodes[d.grab.id]) { nodes[d.grab.id].g.classList.remove("is-target"); if (!loadOf(it) && !d.grab.held) grab(it, d.grab); }
+    // a delivery tube let go at a vessel that has no stopper for it
+    if (it.key === "tubing" && it.on == null && open().some((v) => { const mo = mouth(v); return Math.abs(it.x - mo.x) < VESSELS[v.key].rTop + 30 && Math.abs(it.y - mo.y) < 70; })) say("A delivery tube goes through a one-hole stopper. Fit a one-hole stopper in the mouth first, then push the tube into its hole.", null, "no");
     if (it.kind === "vessel") paint(it);
     follow(it);
     if (it.key === "cap" && d.on) say(it.v === "drop" ? "The dropper is out. Carry it to a liquid and hold it there." : "The stopper is out. The bottle will pour now.");
@@ -2056,7 +2123,7 @@ function openMenu(it) {
   const menu = $("cl-menu");
   const lines = [];
   const acts = [];
-  const SHORT = { empty: "Empty", swirl: "Swirl", flip: "Turn over", light: "Light", remove: "Put away", ink: "Another ink" };
+  const SHORT = { empty: "Empty", swirl: "Swirl", flip: "Turn over", light: "Light", remove: "Put away", ink: "Another ink", drop: "Let go" };
   const act = (id, tip, icon) => acts.push(`<button type="button" class="cl-act" data-act="${id}" aria-label="${tip}">${icon}<span>${id === "light" && /out/i.test(tip) ? "Put out" : id === "empty" && /fresh|plunger|wipe/i.test(tip) ? (/strip/i.test(tip) ? "Fresh strip" : /fresh/i.test(tip) ? "Fresh paper" : /wipe/i.test(tip) ? "Wipe off" : "Push in") : SHORT[id] || tip}</span></button>`);
   let slider = "";
   if (it.kind === "vessel") {
@@ -2086,6 +2153,11 @@ function openMenu(it) {
     act("light", lit(it) ? "Put it out" : "Light it", ICON.fire);
   } else if (it.sample) { if (scaleOf(it)) slider = readingBox(it); lines.push(it.key === "wire" ? "Dipped, ready for the flame." : `Holding ${cm3(it.sample.vol + (it.sample.oil || 0))} of liquid.`); act("empty", "Empty it", ICON.empty); }
   else if (it.key === "syringe") { lines.push(it.gas ? `${Math.round(it.gas.n * 12)} cm\u00b3 of gas.` : "Let it go at a stand's clamp to hold it level, then drag the orange end of a delivery tube to its nozzle."); if (it.gas) act("empty", "Push the plunger back in", ICON.empty); }
+  else if (GRIPS[it.key]) {
+    const held = loadOf(it);
+    lines.push(held ? `Holding ${plain(held)} by ${GRIPS[it.key].says}. Carry it over a lit burner to heat it.` : it.key === "holder" ? "Let it go at the neck of a test tube or a boiling tube and it grips it." : "Let them go at the rim of a crucible, an evaporating dish or a watch glass and they take hold of it.");
+    if (held) act("drop", "Let go", ICON.flip);
+  }
   else if (it.key === "magnet") { lines.push(it.sample ? "Iron filings cling to both poles." : "Hold it over a mixture. Only iron is pulled to it."); if (it.sample) act("empty", "Wipe the filings off", ICON.empty); }
   else if (it.key === "chroma") {
     lines.push(`A spot of ${INKS[it.ink || "black"].name} ink on the pencil line. ${it.washed ? "The ink has washed off: take a fresh strip." : it.p >= 1 ? "Run: measure each spot, and the solvent front, from the pencil line." : it.on ? "It needs a little water in the beaker: touching the paper, below the ink." : "Let it go at the mouth of a beaker and the rod lies across the rim."}`);
@@ -2129,6 +2201,7 @@ $("cl-menu").addEventListener("click", (e) => {
   const what = b.dataset.act;
   if (what === "remove") return removeItem(it);
   if (what === "read") { checkReading(it, $("cl-reading").value); return; }
+  if (what === "drop") { const held = loadOf(it); if (held) { held.held = null; say(`${cap1(plain(held))} is let go.`); } save(); select(it); return; }
   if (what === "ink") { const names = Object.keys(INKS); it.ink = names[(names.indexOf(it.ink || "black") + 1) % names.length]; it.p = 0; it.washed = false; cancelAnimationFrame(running.get(it.id)); running.delete(it.id); dress(it); if (it.on != null) runChroma(it); save(); select(it); openMenu(it); return; }
   if (what === "swirl") { $("cl-menu").hidden = true; swirl(it); return; }
   if (what === "light") { it.flame = lit(it) ? 0 : 2; dress(it); say(lit(it) ? `The ${nameOf(it).toLowerCase()} is lit.` : `The ${nameOf(it).toLowerCase()} is out.`); }

@@ -568,7 +568,7 @@ export const TOOLS = {
   chroma: { name: "Chromatography paper", act: [0, 0], bbox: { x0: -42, y0: -10, x1: 42, y1: 108 } },
   bung: { name: "Rubber stopper", act: [0, 0], bbox: { x0: -18, y0: -14, x1: 18, y1: 13 } },
   bung1: { name: "One-hole stopper", act: [0, 0], bbox: { x0: -18, y0: -14, x1: 18, y1: 13 } },
-  tubing: { name: "Delivery tube", act: [0, 0], bbox: { x0: -12, y0: -66, x1: 46, y1: 22 } },
+  tubing: { name: "Delivery tube", act: [0, 0], bbox: { x0: -12, y0: -66, x1: 46, y1: -13 } },
   syringe: { name: "Gas syringe", act: [0, -11], bbox: { x0: -110, y0: -40, x1: 150, y1: 8 } },
   condenser: { name: "Liebig condenser", act: [0, 0], bbox: { x0: -8, y0: -22, x1: 240, y1: 122 } },
   electrode: { name: "Carbon electrode", act: [0, 0], bbox: { x0: -9, y0: -30, x1: 9, y1: 104 } },
@@ -726,13 +726,15 @@ export function toolSvg(key, it = {}) {
     // the rubber tube, which is pushed a little way over it. The rubber tube itself is drawn by
     // main.js, because it hangs and swings.
     const run = "M0 18V-42Q0 -56 14 -56H36";
-    return `<path d="${run}" fill="none" stroke="#fff" stroke-opacity="0.78" stroke-width="5.4" stroke-linecap="butt" stroke-linejoin="round"/>
+    // (only the hand-hold above the stopper takes the pointer: the leg that goes down through the
+    // stopper must not, or the stopper under it could never be picked up)
+    return `<g pointer-events="none"><path d="${run}" fill="none" stroke="#fff" stroke-opacity="0.78" stroke-width="5.4" stroke-linecap="butt" stroke-linejoin="round"/>
       <path d="${run}" fill="none" stroke="#2a313b" stroke-width="3.4" stroke-linecap="butt" stroke-linejoin="round"/>
       <path d="${run}" fill="none" stroke="#9fc4e0" stroke-opacity="0.16" stroke-width="3.4"/>
-      <path d="M-1.3 16V-42Q-1.3 -57.3 14 -57.300H34" fill="none" stroke="#fff" stroke-opacity="0.85" stroke-width="0.9" stroke-linecap="round"/>
+      <path d="M-1.3 16V-42Q-1.3 -57.3 14 -57.3H34" fill="none" stroke="#fff" stroke-opacity="0.85" stroke-width="0.9" stroke-linecap="round"/>
       <ellipse cx="0" cy="18" rx="2.7" ry="0.9" fill="none" stroke="#fff" stroke-opacity="0.8" stroke-width="0.7"/>
       <rect x="29" y="-60.2" width="10" height="8.4" rx="2.6" fill="#8a4f1f"/><rect x="29" y="-60.2" width="10" height="8.4" rx="2.6" fill="url(#g-shade)" opacity="0.5"/>
-      <path d="M30.5 -58.600h7" stroke="#fff" stroke-opacity="0.4" stroke-width="1" stroke-linecap="round"/>${hit(b)}`;
+      <path d="M30.5 -58.6h7" stroke="#fff" stroke-opacity="0.4" stroke-width="1" stroke-linecap="round"/></g>${hit(b)}`;
   }
   if (key === "cap") return `${CAPS[it.v || "bottle"](0, it.rgb)}${hit(CAP_BOX[it.v || "bottle"])}`;
   if (key === "condenser") {
