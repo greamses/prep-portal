@@ -124,12 +124,13 @@ export const LESSONS = [
   {
     id: "filter",
     name: "Filtering",
-    about: "A funnel and filter paper take a solid out of a liquid.",
+    about: "A funnel with a filter paper in it takes a solid out of a liquid.",
     need: ["filtered"],
     steps: [
       { text: "Take a beaker from Glassware.", done: (seen, b) => b.count("vessel", "beaker") > 0 },
       { text: "Pour copper(II) sulfate and then sodium hydroxide into the beaker to make the precipitate.", done: (seen) => seen.has("ppt:CuOH") },
-      { text: "Take a conical flask and a funnel. Let the funnel go at the mouth of the flask: it stays there.", done: (seen, b) => b.fitted("funnel") },
+      { text: "Take a conical flask and a filter funnel. Let the funnel go at the mouth of the flask: it stays there.", done: (seen, b) => b.fitted("funnel") },
+      { text: "Take a filter paper and let it go at the funnel. It folds into a cone and sits inside.", done: (seen, b) => b.fitted("paper") },
       { text: "Carry the beaker to the funnel and hold it there until it pours.", done: (seen) => seen.has("filtered") },
     ],
     async run({ say, b }) {
@@ -145,7 +146,11 @@ export const LESSONS = [
       const fl = await b.take("vessel", "flask", 500, b.BASE);
       const fu = await b.take("tool", "funnel", 620, b.BASE - 60);
       await b.fit(fu, fl);
-      await say("A funnel with filter paper sits in the mouth of a flask.");
+      await say("A glass funnel sits in the mouth of a flask.");
+      const fp = await b.take("tool", "paper", 700, b.BASE);
+      await say("This is a filter paper: a flat disc. It is folded in half, then in half again, and opened into a cone.");
+      await b.fit(fp, fu);
+      await say("The cone sits in the funnel, three layers of paper on one side and one on the other.");
       await b.pour(bk, fl, 6);
       await say("The blue solid cannot get through the paper. It stays behind: that is the residue. The clear liquid in the flask is the filtrate.");
     },
@@ -320,7 +325,7 @@ export async function initPrepbot(bench) {
     rack: ["rack"], stand: ["retort stand", "clamp stand", "stand", "clamp", "retort"], balance: ["balance", "scale", "weighing balance"],
     burner: ["burner", "bunsen"], spirit: ["spirit lamp"], tubing: ["delivery tube"], bung: ["stopper", "bung", "cork"], lit: ["splint"], blue: ["litmus paper", "litmus"],
     electrode: ["electrode", "carbon rod"], power: ["power pack", "battery", "power supply"], rod: ["glass rod", "stirring rod", "stirrer"], wire: ["flame test wire", "wire"],
-    condenser: ["condenser"], funnel: ["filter paper", "filter funnel"], water: ["water"], hcl: ["acid"], naoh: ["alkali"], nh3: ["ammonia solution", "ammonia"],
+    condenser: ["condenser"], funnel: ["funnel"], water: ["water"], hcl: ["acid"], naoh: ["alkali"], nh3: ["ammonia solution", "ammonia"],
     unk: ["unknown salt", "unknown", "sample x"], caco3: ["calcium carbonate", "marble"], mno2: ["manganese dioxide", "manganese oxide"], h2o2: ["hydrogen peroxide", "peroxide"], oil: ["oil"],
     mg: ["magnesium"], zn: ["zinc"], fe: ["iron"], cu: ["copper"], cuo: ["copper oxide"],
   };
@@ -381,7 +386,7 @@ export async function initPrepbot(bench) {
     if (!ref.tag && ref.c.kind === "vessel") { const kin = all.filter((it) => it.kind === "vessel" && family(stock.find((k) => k.kind === "vessel" && k.key === it.key)) === family(ref.c)); if (kin.length) return kin[kin.length - 1]; }
     return bench.bring(ref.c);
   }
-  const VERB = /^(get|bring|fetch|take out|pour|add|open|uncap|unstopper|light|flame|turn up|turn down|put out|turn off|heat|warm|boil|test|dip|hold|fit|clear|practical|demo|show|guide|notebook|drawer|help)\b/i;
+  const VERB = /^(get|bring|fetch|take out|pour|add|open|uncap|unstopper|light|flame|turn up|turn down|put out|turn off|heat|warm|boil|test|dip|hold|fit|clear|practical|demo|show|guide|notebook|results|table|graph|calculator|drawer|help)\b/i;
   async function command(raw) {
     const text = String(raw).trim();
     const verb = (VERB.exec(text) || [""])[0].toLowerCase();
@@ -434,7 +439,8 @@ export async function initPrepbot(bench) {
         return "";
       }
       case "fit": {
-        const tool = named(left || "").find((r) => r.c.kind === "tool"), v = named(right || "").find((r) => r.c.kind === "vessel");
+        const tool = named(left || "").find((r) => r.c.kind === "tool");
+        const v = named(right || "").find((r) => (tool && tool.c.key === "paper" ? r.c.key === "funnel" : r.c.kind === "vessel"));
         if (!tool || !v) return `I did not understand "${text}".`;
         const dst = await ensure(v);
         await bench.fit(await ensure(tool), dst);
@@ -448,6 +454,8 @@ export async function initPrepbot(bench) {
         setTimeout(() => play(l), 600);
         return "";
       }
+      case "results": case "table": case "graph": bench.openSheet("cl-sheet-table"); return "";
+      case "calculator": bench.calculator?.(true); return "";
       case "guide": bench.openSheet("cl-sheet-setups"); return "";
       case "notebook": bench.openSheet("cl-sheet-notebook"); return "";
       case "drawer": bench.drawer(!/hide|close|shut|away/i.test(args)); return "";
@@ -482,7 +490,7 @@ export async function initPrepbot(bench) {
     title: "the Chemistry Bench",
     get actions() {
       return `You are the tutor on this bench and you can work it yourself. Commands (pieces by the exact names in the drawer lists; a vessel already on the bench by its name and letter, e.g. "test tube A"):
-get <how many> <piece> | open <bottle> (pulls its stopper) | pour <bottle or vessel> into <vessel> (add "2 measures" for more) | light burner | flame <0-3> | put out burner | heat <vessel> (boils until nothing more happens) | test <lighted splint, glowing splint, red litmus paper, blue litmus paper, pH paper or thermometer> in <vessel> | fit <funnel, stopper, delivery tube, condenser or electrode> on <vessel> | clear (empties the bench) | guide | notebook | drawer show | drawer hide | practical <id> (chooses it and opens its guide; ids: ${bench.practicals().map((e) => e.id).join(", ")}) | demo <id> (you do the whole experiment, then the student repeats it; ids: ${LESSONS.map((l) => l.id).join(", ")}).
+get <how many> <piece> | open <bottle> (pulls its stopper) | pour <bottle or vessel> into <vessel> (add "2 measures" for more) | light burner | flame <0-3> | put out burner | heat <vessel> (boils until nothing more happens) | test <lighted splint, glowing splint, red litmus paper, blue litmus paper, pH paper or thermometer> in <vessel> | fit <filter funnel, stopper, delivery tube, condenser or electrode> on <vessel> | fit filter paper on filter funnel (a funnel filters nothing without its paper) | clear (empties the bench) | guide | notebook | results (opens the student's own results table and graph) | calculator | drawer show | drawer hide | practical <id> (chooses it and opens its guide; ids: ${bench.practicals().map((e) => e.id).join(", ")}) | demo <id> (you do the whole experiment, then the student repeats it; ids: ${LESSONS.map((l) => l.id).join(", ")}).
 A piece that is not on the bench yet is taken from the drawer when a command needs it. Do one small thing at a time when teaching, and ask the student what they see.`;
     },
     act,
@@ -494,7 +502,7 @@ A piece that is not on the bench yet is taken from the drawer when a command nee
       return `The student is on the Chemistry Bench, a 2D chemistry lab on this site. Nothing is set up for them: they take loose pieces from the DRAWER on the right and assemble the experiment themselves.
 THE DRAWER has four parts (the rail on its left edge), and a search box at the top. An arrow on the edge of the bench hides and shows the drawer.
 ${parts}
-HOW THE BENCH WORKS: drag a piece to move it. Carry a bottle or a tool to a vessel and hold it there to use it. A bottle will not pour until its stopper is pulled out. Let a funnel, stopper, delivery tube, condenser or electrode go at a mouth and it stays fitted. Burners are lit and turned up with the + key on their base. A burette or a separating funnel hangs in the retort stand's clamp. A chosen piece shows a handle to tilt it and a "..." menu. The icons at the top left are: the Guide to the chosen practical, the lab notebook, the list of WAEC practicals, and PrepBot's demonstrations. Pressing H gives the next step.
+HOW THE BENCH WORKS: drag a piece to move it. Carry a bottle or a tool to a vessel and hold it there to use it. A bottle will not pour until its stopper is pulled out. Let a funnel, stopper, delivery tube, condenser or electrode go at a mouth and it stays fitted. Burners are lit and turned up with the + key on their base. A burette or a separating funnel hangs in the retort stand's clamp. A chosen piece shows a handle to tilt it and a "..." menu. The icons at the top left are: the Guide to the chosen practical, the lab notebook, the list of WAEC practicals, the Results table (the student rules their own table and can plot a graph of any two columns, with a line of best fit), a scientific calculator, and PrepBot's demonstrations. A burette and a measuring cylinder are READ BY EYE: choosing one shows a lens on the meniscus, and the reading is typed into the piece's menu. A funnel filters only with a filter paper in it; the paper is a separate piece. Pressing H gives the next step.
 ON THE BENCH NOW: ${on.length ? on.join(", ") : "nothing"}.
 ${exp ? `CHOSEN PRACTICAL: ${exp.title}. Task: ${exp.task} It needs: ${exp.needs}.${step && !step.done ? ` Next step: ${step.text}` : ""}` : "No practical has been chosen."}
 YOU CAN FETCH PIECES: if the student wants a piece, tell them to type "get me" and its name (for example "get me a 250 mL beaker and sodium hydroxide") and it is put on the bench for them. Only name pieces that are in the drawer lists above.`;

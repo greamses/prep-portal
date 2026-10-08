@@ -186,10 +186,10 @@ export const EXPERIMENTS = [
   {
     id: "filter", group: "sep", title: "Filtration",
     task: "Prepare a precipitate of copper(II) hydroxide and separate it from the solution by filtration. Name the residue and the filtrate.",
-    needs: "beaker, conical flask, funnel and filter paper, copper(II) sulfate solution, sodium hydroxide solution",
+    needs: "beaker, conical flask, filter funnel, filter paper, copper(II) sulfate solution, sodium hydroxide solution",
     steps: [
       { text: "Make the precipitate in the beaker.", need: ["ppt:CuOH"] },
-      { text: "Let the funnel go at the mouth of the flask, then pour the mixture through it.", need: ["filtered"] },
+      { text: "Let the funnel go at the mouth of the flask, and a filter paper go at the funnel. Then pour the mixture through it.", need: ["filtered"] },
     ],
     record: "Residue: copper(II) hydroxide. Filtrate: sodium sulfate solution. Filtration separates an insoluble solid from a liquid.",
   },
@@ -282,7 +282,8 @@ export const HOWTO = [
   "Take pieces from the drawer: tap a tile, or drag it onto the bench.",
   "Pull the stopper out of a bottle before pouring. Carry the bottle to a vessel and hold it there.",
   "Let a vessel go at a rack, a tripod, a clamp or a balance pan and it stands there. Slide a stand's clamp by its yellow boss.",
-  "Let a funnel, a stopper, a delivery tube, a condenser or a carbon rod go at a mouth or a joint and it stays there.",
+  "Let a funnel, a stopper, a delivery tube, a condenser or a carbon rod go at a mouth or a joint and it stays there. A filter paper goes in a funnel.",
+  "A burette and a measuring cylinder are read by eye: choose one and a lens shows its scale. Read the bottom of the meniscus and type the reading into its menu.",
   "Tap a piece for two handles: one tilts it (tilt far enough and it pours), the other opens what can be done with it.",
   "A burner's + and − keys light it and turn it up and down. A burette's blue tap is pressed.",
 ];

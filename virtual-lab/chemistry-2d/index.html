@@ -75,6 +75,8 @@
         <button type="button" class="cl-ico" data-sheet="cl-sheet-setups" data-ico="setups" data-tip="Guide to the practical you have chosen" data-tip-side="bottom" aria-label="Guide" aria-pressed="false"></button>
         <button type="button" class="cl-ico" data-sheet="cl-sheet-notebook" data-ico="notebook" data-tip="Lab notebook" data-tip-side="bottom" aria-label="Lab notebook" aria-pressed="false"><b id="cl-count-log" class="cl-badge"></b></button>
         <button type="button" class="cl-ico" data-sheet="cl-sheet-tasks" data-ico="tasks" data-tip="Practicals: choose one to do" data-tip-side="bottom" aria-label="Practicals" aria-pressed="false"><b id="cl-count-tasks" class="cl-badge"></b></button>
+        <button type="button" class="cl-ico" data-sheet="cl-sheet-table" data-ico="table" data-tip="Results: your own table, and a graph of it" data-tip-side="bottom" aria-label="Results table and graph" aria-pressed="false"></button>
+        <button type="button" class="cl-ico" id="cl-calc-key" data-ico="calc" data-tip="Scientific calculator" data-tip-side="bottom" aria-label="Scientific calculator" aria-pressed="false"></button>
         <button type="button" class="cl-ico cl-ico--bot" id="cl-bot" data-sheet="cl-sheet-bot" data-tip="PrepBot does an experiment for you to copy" data-tip-side="bottom" aria-label="PrepBot's experiments" aria-pressed="false"></button>
         <span class="cl-gap" aria-hidden="true"></span>
         <button type="button" class="cl-ico" data-dose="drops" data-ico="drops" data-tip="Pour a few drops at a time" data-tip-side="bottom" aria-label="Pour a few drops at a time"></button>
@@ -101,6 +103,8 @@
         <button type="button" class="cl-ico cl-ico--round" id="cl-dots" data-tip="What can be done with it" aria-label="What can be done with it"></button>
       </div>
       <div id="cl-menu" class="cl-menu" hidden></div>
+      <!-- the scientific calculator: carried about by its top edge -->
+      <div id="cl-calc" class="cl-calc" role="group" aria-label="Scientific calculator" hidden></div>
 
       <section id="cl-sheet-setups" class="cl-sheet pp-receipt" hidden>
         <div class="pp-receipt__paper">
@@ -128,6 +132,30 @@
             <button type="button" class="cl-sheet__close" aria-label="Close"></button>
           </div>
           <ol id="cl-log" class="cl-log"></ol>
+        </div>
+      </section>
+
+      <section id="cl-sheet-table" class="cl-sheet cl-sheet--wide pp-receipt" hidden>
+        <div class="pp-receipt__paper">
+          <div class="cl-sheet__head"><h2 class="cl-h2">Results</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>
+          <p class="cl-sheet__lead">Rule your own table: type a heading and its unit at the top of each column, then your readings. Any two columns can be plotted.</p>
+          <div class="cl-results-scroll">
+            <div id="cl-table-tools" class="cl-table-tools">
+              <button type="button" class="cl-ico cl-ico--paper" data-table="row" data-tip="Add a row" aria-label="Add a row"></button>
+              <button type="button" class="cl-ico cl-ico--paper" data-table="col" data-tip="Add a column" aria-label="Add a column"></button>
+              <button type="button" class="cl-ico cl-ico--paper" data-table="wipe" data-tip="Rub out the readings" aria-label="Rub out the readings"></button>
+              <select id="cl-template" class="cl-select" data-native aria-label="Start from a ready-ruled table"></select>
+            </div>
+            <div id="cl-table"></div>
+            <h3 class="cl-h3">Graph</h3>
+            <div class="cl-graph-tools">
+              <label>Across <select id="cl-gx" class="cl-select" data-native></select></label>
+              <label>Up <select id="cl-gy" class="cl-select" data-native></select></label>
+              <label>Draw <select id="cl-gfit" class="cl-select" data-native><option value="line">line of best fit</option><option value="join">points joined</option><option value="none">points only</option></select></label>
+            </div>
+            <svg id="cl-graph" class="cl-graph" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Graph of the chosen columns" hidden></svg>
+            <p id="cl-gnote" class="cl-gnote"></p>
+          </div>
         </div>
       </section>
 

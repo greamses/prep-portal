@@ -109,14 +109,32 @@ html body {
 .cl-item.is-swirling .cl-vortex { opacity: 1; }
 .cl-item.is-steaming .cl-wisps { opacity: 0.85; }
 .cl-item.is-steaming .cl-wisps path { stroke-width: 3.2; stroke-opacity: 0.4; }
-/* the running stream */
-.cl-flow { pointer-events: none; transition: opacity 0.26s; }
-.cl-flow.is-ending { opacity: 0; }
-.cl-flow path { fill: none; stroke-linecap: round; }
-.cl-flow__body { stroke-width: 5.6; }
-.cl-flow__run { stroke: #fff; stroke-opacity: 0.22; stroke-width: 3.4; stroke-dasharray: 10 14; }
-.cl-flow__shine { stroke: #fff; stroke-opacity: 0.5; stroke-width: 1.2; transform: translateX(-1.3px); }
-.cl-splash { transform-box: fill-box; }
+/* the running stream: drawn each frame by flowTick() in main.js */
+.cl-flow { pointer-events: none; }
+.cl-flow__body { stroke-width: 0.9; stroke-linejoin: round; }
+.cl-flow__core { fill: none; stroke: #fff; stroke-opacity: 0.2; stroke-linecap: round; stroke-linejoin: round; }
+.cl-flow__plume { fill: #fff; fill-opacity: 0.2; }
+.cl-flow__fizz circle { fill: #fff; fill-opacity: 0.3; stroke: #fff; stroke-opacity: 0.8; stroke-width: 0.5; }
+.cl-flow__shine { fill: none; stroke: #fff; stroke-opacity: 0.55; stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; }
+.cl-flow__ring { fill: none; stroke: #fff; stroke-width: 1; }
+/* a filter paper: flat on the bench, a cone in a funnel */
+.cl-paper-cone, .cl-item.is-cone .cl-paper-flat { display: none; }
+.cl-item.is-cone .cl-paper-cone { display: inline; }
+/* the lens on a burette or a measuring cylinder */
+.cl-lens { pointer-events: none; }
+.cl-lens__arm { stroke: #f4c95d; stroke-opacity: 0.7; stroke-width: 1; stroke-dasharray: 3 3; fill: none; }
+.cl-lens__scale path { stroke: #f2f5f9; stroke-width: 1.3; fill: none; }
+.cl-lens__scale text { fill: #f2f5f9; font: 700 10px var(--font-mono); paint-order: stroke; stroke: #232a33; stroke-width: 2.4px; }
+.cl-lens__eye { stroke: #f4c95d; stroke-width: 1; stroke-dasharray: 4 3; fill: none; }
+.cl-lens__note { fill: #f4c95d; font: 600 9px var(--font-mono); text-anchor: middle; paint-order: stroke; stroke: #272c35; stroke-width: 3px; }
+.cl-reading__row { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.3rem; }
+.cl-range.cl-reading input { flex: 1; min-width: 0; margin: 0; padding: 0.3rem 0.4rem; font: 600 0.8rem var(--font-mono); color: var(--ink); background: var(--surface-primary); border: var(--border-subtle); border-radius: 0; }
+/* the balance: liquid-crystal digits, with the ghost of the unlit segments behind them */
+.cl-lcd.cl-lcd--bal, .cl-lcd.cl-lcd--ghost { text-anchor: end; font: 700 10.5px var(--font-mono); letter-spacing: 0.4px; }
+.cl-lcd.cl-lcd--ghost { fill: #1f2a1c; fill-opacity: 0.09; }
+.cl-lcd-u { fill: #1f2a1c; font: 700 6.5px var(--font-mono); text-anchor: middle; }
+.cl-plate { fill: #5d6570; font: 600 3.2px var(--font-mono); text-anchor: middle; letter-spacing: 0.3px; }
+.cl-press-t--s { font-size: 5.6px; letter-spacing: 0.4px; }
 
 /* states */
 .cl-item.is-sel .cl-g-edge { stroke: #f4c95d; stroke-opacity: 1; stroke-width: 1.8; }
@@ -169,7 +187,6 @@ html body {
   .cl-item.is-swirling { animation: cl-swirl 0.46s linear 4; }
   .cl-item.is-swirling .cl-vortex ellipse { animation: cl-spin 0.5s linear infinite; }
   .cl-item.is-steaming .cl-wisps path { animation: cl-wisp 1.5s ease-in-out infinite; }
-  .cl-flow__run { animation: cl-run 0.32s linear infinite; }
   .cl-splash { animation: cl-splash 0.5s ease-out both; }
   .cl-item.has-gas .cl-wisps path { animation: cl-wisp 1.8s ease-in-out infinite; }
   .cl-item.has-gas .cl-wisps path:nth-child(2) { animation-delay: 0.5s; }
@@ -460,3 +477,67 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
   .cl-stage.is-shut .cl-drawer-key svg { transform: rotate(-90deg); }
   .cl-sheet .pp-receipt__paper { max-height: calc(62vh - 30px); }
 }
+
+/* ── the results table and its graph ───────────────────────────────────── */
+.cl-sheet.cl-sheet--wide.pp-receipt { width: min(560px, calc(100% - 28px)); }
+.cl-results-scroll { overflow-y: auto; min-height: 0; padding-right: 0.2rem; }
+.cl-table-tools, .cl-graph-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 0.45rem 0.7rem; margin-bottom: 0.6rem; font-size: 0.7rem; color: var(--text-secondary); }
+.cl-table-tools .is-col svg { transform: rotate(90deg); }
+.cl-table-tools .cl-select { margin-left: auto; max-width: 13rem; }
+.cl-graph-tools .cl-select { max-width: 9.5rem; }
+.cl-h3 { margin: 1rem 0 0.5rem; font-family: var(--font-display); font-weight: 700; font-size: 0.8rem; }
+#cl-table { overflow-x: auto; }
+.cl-results { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.cl-results th, .cl-results td { position: relative; padding: 0; border: 1.5px solid var(--ink); background: var(--surface-primary); }
+.cl-results th { background: var(--surface-secondary); }
+.cl-results .cl-cutcell { width: 22px; border: 0; background: none; }
+.cl-cell { display: block; width: 100%; min-width: 0; padding: 0.38rem 0.4rem; font: 500 0.78rem var(--font-mono); color: var(--ink); background: none; border: 0; border-radius: 0; text-align: center; }
+.cl-cell--head { font-weight: 700; font-size: 0.7rem; padding-right: 1.1rem; }
+.cl-cell:focus { outline: 2px solid var(--accent-secondary); outline-offset: -2px; background: color-mix(in srgb, var(--accent-secondary) 12%, transparent); }
+.cl-cut { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; padding: 0; color: var(--text-tertiary); background: none; border: 0; border-radius: 0; cursor: pointer; opacity: 0.55; }
+.cl-cut:hover, .cl-cut:focus-visible { opacity: 1; color: var(--accent-danger); }
+.cl-results th .cl-cut { position: absolute; top: 50%; right: 2px; margin-top: -8px; }
+.cl-graph { display: block; width: 100%; height: auto; background: #fbfaf4; border: 1.5px solid var(--ink); }
+.cl-g-paper { fill: #fdfcf6; }
+.cl-g-fine { stroke: #7fb7a4; stroke-opacity: 0.32; stroke-width: 0.5; fill: none; }
+.cl-g-bold { stroke: #4f9c84; stroke-opacity: 0.6; stroke-width: 0.8; fill: none; }
+.cl-g-axis { stroke: #14130f; stroke-width: 1.6; fill: none; }
+.cl-g-num { fill: #14130f; font: 500 9px var(--font-mono); }
+.cl-g-label { fill: #14130f; font: 700 10px var(--font-mono); }
+.cl-g-line { stroke: #c2372f; stroke-width: 1.6; fill: none; stroke-linejoin: round; }
+.cl-g-point { stroke: #14130f; stroke-width: 1.6; stroke-linecap: round; fill: none; }
+.cl-gnote { margin: 0.5rem 0 0; font-size: 0.72rem; line-height: 1.45; color: var(--text-secondary); }
+
+/* ── the scientific calculator ─────────────────────────────────────────── */
+.cl-calc { position: absolute; z-index: 8; width: 264px; padding: 0 12px 14px; color: #e9edf2; background: linear-gradient(160deg, #3a414c 0%, #262b33 46%, #1b1f25 100%); border: 1px solid #0d0f12; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -3px 0 rgba(0, 0, 0, 0.45), 0 18px 34px -10px rgba(0, 0, 0, 0.7), 0 3px 0 #0b0d10; user-select: none; touch-action: none; }
+.cl-calc:focus { outline: none; }
+.cl-calc:focus-visible { outline: 2px solid #f4c95d; outline-offset: 2px; }
+.cl-calc__top { display: flex; align-items: center; gap: 0.5rem; padding: 9px 0 8px; cursor: grab; }
+.cl-calc__top:active { cursor: grabbing; }
+.cl-calc__brand { font: 700 0.62rem var(--font-display); letter-spacing: 0.08em; color: #dfe4ea; }
+.cl-calc__brand b { font: 500 0.56rem var(--font-mono); letter-spacing: 0.02em; color: #9aa3ae; }
+.cl-calc__solar { display: flex; gap: 1px; margin-left: auto; padding: 2px; background: #0c0e11; box-shadow: inset 0 1px 2px #000; }
+.cl-calc__solar i { display: block; width: 13px; height: 11px; background: linear-gradient(180deg, #4a2f2a, #2a1b22 60%, #3a2630); }
+.cl-calc__lcd { padding: 5px 9px 7px; color: #1a2416; background: linear-gradient(180deg, #a9bc95 0%, #c7d8b3 22%, #bccfa7 100%); border: 3px solid #0e1114; box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.42); }
+.cl-calc__flags { display: flex; gap: 0.5rem; height: 10px; font: 700 0.5rem var(--font-mono); }
+.cl-calc__flags span { opacity: 0.1; }
+.cl-calc__flags span.is-on { opacity: 1; }
+.cl-calc__expr { height: 1.15rem; overflow: hidden; white-space: nowrap; font: 500 0.78rem var(--font-mono); line-height: 1.15rem; }
+.cl-calc__out { height: 1.9rem; overflow: hidden; white-space: nowrap; text-align: right; font: 700 1.36rem var(--font-mono); line-height: 1.9rem; letter-spacing: 0.02em; }
+.cl-calc__fn { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px 5px; margin-top: 9px; }
+.cl-calc__cell { display: flex; flex-direction: column; }
+.cl-calc__cell em { height: 11px; font: 600 0.5rem var(--font-mono); font-style: normal; line-height: 11px; text-align: center; color: #f4c95d; opacity: 0.75; }
+.cl-calc.is-shift .cl-calc__cell em { opacity: 1; text-shadow: 0 0 6px rgba(244, 201, 93, 0.7); }
+.cl-calc__num { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
+.cl-key { display: inline-flex; align-items: center; justify-content: center; min-width: 0; padding: 0; font: 700 0.62rem var(--font-mono); line-height: 1; color: #f2f5f8; border: 0; border-radius: 0; cursor: pointer; transform: none; transition: transform 0.05s, box-shadow 0.05s; }
+.cl-key--fn, .cl-key--shift { height: 22px; background: linear-gradient(180deg, #5b6470, #3b424c); box-shadow: 0 2px 0 #14171b, inset 0 1px 0 rgba(255, 255, 255, 0.28); }
+.cl-key--shift { color: #1b1f25; background: linear-gradient(180deg, #f8d877, #d9a93a); }
+.cl-key--num, .cl-key--eq, .cl-key--del { height: 32px; font-size: 0.86rem; color: #14171b; background: linear-gradient(180deg, #f4f6f8, #c9cfd6); box-shadow: 0 3px 0 #14171b, inset 0 1px 0 #fff; }
+.cl-key--del { color: #fff; background: linear-gradient(180deg, #ef7a5e, #c9462f); box-shadow: 0 3px 0 #14171b, inset 0 1px 0 rgba(255, 255, 255, 0.4); font-size: 0.7rem; }
+.cl-key--eq { color: #fff; background: linear-gradient(180deg, #5f9be0, #2f6cba); box-shadow: 0 3px 0 #14171b, inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+.cl-key:active { transform: translateY(2px); box-shadow: 0 0 0 #14171b, inset 0 1px 3px rgba(0, 0, 0, 0.4); }
+.cl-key:focus-visible { outline: 2px solid #f4c95d; outline-offset: 1px; }
+.cl-key--x { width: 20px; height: 20px; color: #c9d0d8; background: none; box-shadow: none; }
+.cl-key--x:hover { color: #fff; background: rgba(255, 255, 255, 0.12); }
+.cl-stage.is-bot .cl-calc { pointer-events: none; }
+@media (max-width: 820px) { .cl-calc { width: 236px; } .cl-key--num, .cl-key--eq, .cl-key--del { height: 28px; } }

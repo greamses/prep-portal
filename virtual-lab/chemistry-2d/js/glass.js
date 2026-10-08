@@ -106,8 +106,7 @@ export const VESSELS = {
     name: "Burette (50 mL)", cap: 25, g: 0, fixed: true, tap: true, grip: 70, profile: [[-36, 2.5], [-44, 7], [-310, 7], [-313, 9]], floor: 36, fill: 0.972, shadow: 12,
     box: { x0: -26, y0: -322, x1: 26, y1: 6 },
     front: `<path d="M-2.5 -24L-1.1 0h2.2L2.5 -24z" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.65" stroke-width="0.8"/>
-      ${(() => { let m = ""; for (let n = 0; n <= 50; n++) { const y = (-302 + (n / 50) * 258).toFixed(1); const w = n % 10 === 0 ? 7 : n % 5 === 0 ? 5 : 3; m += `<path class="cl-mark" d="M${-w} ${y}H0"/>`; if (n % 10 === 0) m += `<text class="cl-mark-n" x="-9.5" y="${(Number(y) + 2.4).toFixed(1)}" text-anchor="end">${n}</text>`; } return m; })()}
-      <text class="cl-read" x="14" y="-200"></text>`,
+      ${(() => { let m = ""; for (let n = 0; n <= 50; n++) { const y = (-302 + (n / 50) * 258).toFixed(1); const w = n % 10 === 0 ? 7 : n % 5 === 0 ? 5 : 3; m += `<path class="cl-mark" d="M${-w} ${y}H0"/>`; if (n % 10 === 0) m += `<text class="cl-mark-n" x="-9.5" y="${(Number(y) + 2.4).toFixed(1)}" text-anchor="end">${n}</text>`; } return m; })()}`,
     over: `<g class="cl-tap"><rect x="-6" y="-37" width="12" height="13" rx="2.5" fill="#dfe6ee" stroke="#fff" stroke-opacity="0.6" stroke-width="0.7"/><rect class="cl-tap-key" x="-17" y="-33.5" width="34" height="6" rx="3" fill="#3d7fd0"/><rect x="-26" y="-50" width="52" height="40" fill="transparent"/></g>`,
   },
   sepfunnel: {
@@ -209,6 +208,24 @@ export const DEFS = `
   </linearGradient>
   <radialGradient id="g-ember"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.45" stop-color="#ff7a2a"/><stop offset="1" stop-color="#ff3a1a" stop-opacity="0"/></radialGradient>
   <filter id="g-soft" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur stdDeviation="3.2"/></filter>
+  <filter id="g-fibre" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9 0.35" numOctaves="2" seed="7" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.42  0 0 0 0 0.34  0 0 0 -1.5 0.82"/>
+    <feComposite in2="SourceGraphic" operator="in"/>
+  </filter>
+  <linearGradient id="g-paper-sheen" x1="0" x2="1" y1="0" y2="0">
+    <stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="0.4" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#6d6654" stop-opacity="0.28"/>
+  </linearGradient>
+  <linearGradient id="g-steel" x1="0" x2="1" y1="0" y2="0">
+    <stop offset="0" stop-color="#7f8894"/><stop offset="0.18" stop-color="#e9edf2"/><stop offset="0.42" stop-color="#b3bbc6"/>
+    <stop offset="0.62" stop-color="#f4f6f9"/><stop offset="0.85" stop-color="#a4adb9"/><stop offset="1" stop-color="#6d7581"/>
+  </linearGradient>
+  <linearGradient id="g-case" x1="0" x2="0" y1="0" y2="1">
+    <stop offset="0" stop-color="#f6f7f9"/><stop offset="0.5" stop-color="#dfe3e8"/><stop offset="1" stop-color="#b4bac3"/>
+  </linearGradient>
+  <linearGradient id="g-lcd" x1="0" x2="0" y1="0" y2="1">
+    <stop offset="0" stop-color="#9fb58c"/><stop offset="0.25" stop-color="#c9dbb4"/><stop offset="1" stop-color="#bcd0a6"/>
+  </linearGradient>
 </defs>`;
 
 const shadow = (rx) => `<ellipse class="cl-ground" cx="0" cy="1" rx="${rx}" ry="6" filter="url(#g-soft)"/>`;
@@ -508,7 +525,8 @@ export const TOOLS = {
   wire: { name: "Flame-test wire", act: [-34, -58], bbox: { x0: -44, y0: -68, x1: 40, y1: 8 } },
   waste: { name: "Waste tub", act: [0, -66], bbox: { x0: -62, y0: -78, x1: 62, y1: 8 } },
   pipette: { name: "Pipette (25 mL) and filler", act: [0, 0], bbox: { x0: -12, y0: -190, x1: 12, y1: 6 } },
-  funnel: { name: "Funnel and filter paper", act: [0, 0], bbox: { x0: -40, y0: -66, x1: 40, y1: 34 } },
+  funnel: { name: "Filter funnel", act: [0, 0], bbox: { x0: -40, y0: -66, x1: 40, y1: 34 } },
+  paper: { name: "Filter paper", act: [0, 0], bbox: { x0: -34, y0: -62, x1: 34, y1: 6 } },
   bung: { name: "Rubber stopper", act: [0, 0], bbox: { x0: -16, y0: -12, x1: 16, y1: 12 } },
   tubing: { name: "Stopper and delivery tube", act: [0, 0], bbox: { x0: -18, y0: -52, x1: 36, y1: 12 } },
   syringe: { name: "Gas syringe", act: [0, -11], bbox: { x0: -110, y0: -40, x1: 150, y1: 8 } },
@@ -603,16 +621,43 @@ export function toolSvg(key, it = {}) {
       <path d="M-5 -154c-8 -8 -8 -26 0 -34q5 -4 10 0c8 8 8 26 0 34z" fill="url(#g-rubber)"/><path d="M-3 -182q-4 10 -1 22" fill="none" stroke="#fff" stroke-opacity="0.45" stroke-width="1.5" stroke-linecap="round"/>${hit(b)}`;
   }
   if (key === "funnel") {
-    const d = "M-36 -58L-4.5 -12V30h9V-12L36 -58";
+    // plain glass: a cone at sixty degrees and a stem cut on the slant. The paper is a piece of its own.
+    const d = "M-36 -58L-4.5 -12V26l9 4V-12L36 -58";
     return `<path d="${d}z" fill="#fff" fill-opacity="0.03"/>
       <ellipse cx="0" cy="-58" rx="36" ry="6" fill="#fff" fill-opacity="0.05"/>
-      <path d="M-31 -56Q0 -50 31 -56L0 -15z" fill="#f6f3ea" fill-opacity="0.94"/><path d="M-31 -56Q0 -50 31 -56L0 -15z" fill="url(#g-shade)" opacity="0.35"/>
-      <path d="M0 -15L-31 -56M0 -15L10 -53" stroke="#cfc8b6" stroke-width="0.8" fill="none"/>
-      <path class="cl-residue" d="M-15 -35L0 -16L15 -35q-15 7 -30 0z" fill="transparent"/>
+      <path d="M-36 -58A36 6 0 0 1 36 -58" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="0.9"/>
       <path d="${d}z" fill="url(#g-glass)"/><path class="cl-g-edge" d="${d}"/>
-      <path d="M-31 -54L-9 -22" stroke="url(#g-streak)" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M-2.6 -8V26" stroke="#fff" stroke-opacity="0.65" stroke-width="1" stroke-linecap="round"/>
-      <ellipse class="cl-g-rim" cx="0" cy="-58" rx="36" ry="6"/><ellipse class="cl-g-lip" cx="0" cy="-57.4" rx="33" ry="4.4"/>
-      <path class="cl-g-rimhi" d="M-26 -53.500Q0 -49 26 -53.5"/><ellipse cx="0" cy="30" rx="4.5" ry="1.3" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="0.8"/>${hit(b)}`;
+      <path d="M-30 -55.500L-6 -18" stroke="#fff" stroke-opacity="0.5" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M-2.6 -10V22" stroke="#fff" stroke-opacity="0.55" stroke-width="1" stroke-linecap="round"/>
+      <path d="M22 -50.500L7 -25" stroke="#fff" stroke-opacity="0.14" stroke-width="3" stroke-linecap="round"/>
+      <path d="M-36 -58A36 6 0 0 0 36 -58" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="1.3"/>${hit(b)}`;
+  }
+  if (key === "paper") {
+    // FLAT: a disc lying on the bench, creased where it was folded in half and in half again.
+    // CONE: opened out of that quarter fold: one thickness on one side, three on the other,
+    // which is why one side is whiter and stiffer and shows the stepped edges of the layers.
+    const cone = "M-30 -55Q0 -48 30 -55L0 -15z";
+    return `<g class="cl-paper-flat">
+        <ellipse cx="1" cy="-3" rx="31" ry="7.5" fill="#000" fill-opacity="0.28" filter="url(#g-soft)"/>
+        <ellipse cx="0" cy="-6" rx="30" ry="7.5" fill="#f7f4ec"/><ellipse cx="0" cy="-6" rx="30" ry="7.5" fill="url(#g-paper-sheen)"/>
+        <ellipse cx="0" cy="-6" rx="30" ry="7.5" filter="url(#g-fibre)" opacity="0.5"/>
+        <path d="M-30 -6H30M0 -13.500V1.5" stroke="#b9b29f" stroke-opacity="0.75" stroke-width="0.7"/>
+        <path d="M-29 -5H29M1 -13V1" stroke="#fff" stroke-opacity="0.7" stroke-width="0.5"/>
+        <ellipse cx="0" cy="-6" rx="30" ry="7.5" fill="none" stroke="#d6d0bf" stroke-width="0.6"/>
+      </g>
+      <g class="cl-paper-cone">
+        <path d="M-30 -55A30 5 0 0 1 30 -55Q0 -48 -30 -55z" fill="#d9d3c2"/>
+        <path d="${cone}" fill="#f7f4ec"/><path d="${cone}" fill="url(#g-paper-sheen)"/>
+        <path d="M5 -50.600Q18 -52 30 -55L0 -15z" fill="#ebe6d8"/><path d="M15 -52Q23 -53.2 30 -55L0 -15z" fill="#e0dac9"/>
+        <path d="${cone}" filter="url(#g-fibre)" opacity="0.55"/>
+        <path class="cl-wet" d="M-22 -46Q0 -40 22 -46L0 -15z" fill="transparent"/>
+        <path class="cl-residue" d="M-13 -33Q0 -27 13 -33L0 -15.500z" fill="transparent"/>
+        <path d="M0 -15L5 -50.600M0 -15L15 -52" stroke="#bdb5a0" stroke-width="0.7" fill="none"/>
+        <path d="M0 -15L-30 -55" stroke="#fff" stroke-opacity="0.8" stroke-width="0.8"/>
+        <path d="M5 -50.600q1 -2.4 3.4 -2.600M15 -52q1 -2 3 -2.2" stroke="#a9a18c" stroke-width="0.7" fill="none"/>
+        <path d="M-30 -55Q0 -48 30 -55" fill="none" stroke="#fff" stroke-opacity="0.9" stroke-width="0.9"/>
+        <path d="M-30 -55A30 5 0 0 1 30 -55" fill="none" stroke="#c9c2af" stroke-width="0.7"/>
+      </g>${hit(b)}`;
   }
   if (key === "bung") return `<path d="M-13 -8h26l-3.5 16h-19z" fill="#c0563c" stroke="#fff" stroke-opacity="0.3" stroke-width="0.8"/><path d="M-10 -5h6l-1.5 10" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="1.6" stroke-linecap="round"/>${hit(b)}`;
   if (key === "tubing") {
@@ -706,7 +751,7 @@ export function splintAfter(end) {
 export const SUPPORTS = {
   rack: { name: "Test tube rack", slots: [-110, -55, 0, 55, 110].map((x) => [x, -12]), fits: (d) => Boolean(d.rack), bbox: { x0: -156, y0: -92, x1: 156, y1: 8 } },
   tripod: { name: "Tripod and gauze", slots: [[0, -158]], fits: (d) => Boolean(d.flat) && !d.fixed && d.rMax < 90, bbox: { x0: -64, y0: -164, x1: 64, y1: 8 } },
-  balance: { name: "Electronic balance", slots: [[0, -40]], fits: (d) => !d.fixed && d.rMax < 90, bbox: { x0: -78, y0: -50, x1: 78, y1: 8 } },
+  balance: { name: "Electronic balance", slots: [[0, -46]], fits: (d) => !d.fixed && d.rMax < 90, bbox: { x0: -84, y0: -58, x1: 84, y1: 8 } },
   // its one slot is wherever the clamp has been slid to (main.js works the height out for each vessel)
   stand: { name: "Retort stand and clamp", slots: [[44, 0]], clamp: [-340, -110], fits: (d) => !d.material && d.rMax <= 60 && !d.upturns, bbox: { x0: -56, y0: -376, x1: 80, y1: 8 } },
 };
@@ -725,15 +770,31 @@ export function supportSvg(key) {
     };
   }
   if (key === "balance") {
+    // a top-pan electronic balance: a low moulded case, a dark control panel with a liquid-crystal
+    // window, a brushed steel pan on its post, a levelling bubble, and the TARE key
+    const brush = [-48, -36, -24, -12, 0, 12, 24, 36, 48].map((x) => `<path d="M${x} -51.400q${-x * 0.04} 5.6 ${-x * 0.02} 11" stroke="#fff" stroke-opacity="0.22" stroke-width="0.6" fill="none"/>`).join("");
     return {
-      back: `${shadow(76)}
-        <path d="M-74 0v-22q0 -8 8 -8h132q8 0 8 8v22z" fill="#3a424e" stroke="#fff" stroke-opacity="0.28"/>
-        <path d="M-74 0v-22q0 -8 8 -8h132q8 0 8 8v22z" fill="url(#g-shade)" opacity="0.6"/>
-        <rect x="-7" y="-40" width="14" height="10" fill="url(#g-metal)"/>
-        <ellipse cx="0" cy="-40" rx="60" ry="7.5" fill="#8d96a3"/><ellipse cx="0" cy="-41.5" rx="57" ry="6" fill="#d5dbe2"/>
-        <rect x="-34" y="-25" width="68" height="19" rx="2" fill="#b9d7a8"/><text class="cl-lcd" x="0" y="-11">0.00 g</text>
-        <circle cx="-52" cy="-15" r="4" fill="#8892a0"/>${hit(b)}
-        <g class="cl-press" data-press="tare"><circle cx="52" cy="-15" r="8.5" fill="#e2574c" stroke="#fff" stroke-opacity="0.55"/><text class="cl-press-t" x="52" y="-11.5">T</text></g>`,
+      back: `${shadow(86)}
+        <rect x="-70" y="-3" width="16" height="4" rx="1.5" fill="#1d2127"/><rect x="54" y="-3" width="16" height="4" rx="1.5" fill="#1d2127"/>
+        <path d="M-82 -3v-17q0 -4 4 -5l12 -11h132l12 11q4 1 4 5v17z" fill="url(#g-case)" stroke="#fff" stroke-opacity="0.55" stroke-width="0.8"/>
+        <path d="M-66 -36h132l12 11h-156z" fill="#fbfcfd"/><path d="M-66 -36h132l12 11h-156z" fill="url(#g-shade)" opacity="0.18"/>
+        <path d="M-78 -25h156" stroke="#9aa1ab" stroke-width="0.7"/><path d="M-82 -3h164" stroke="#7d848e" stroke-width="1"/>
+        <rect x="-76" y="-23" width="152" height="18" rx="2" fill="#262b33"/><rect x="-76" y="-23" width="152" height="2" fill="#fff" fill-opacity="0.08"/>
+        <rect x="-44" y="-21" width="72" height="14" rx="1.5" fill="#11151a"/>
+        <rect x="-42.5" y="-19.8" width="69" height="11.6" rx="1" fill="url(#g-lcd)"/>
+        <text class="cl-lcd cl-lcd--ghost" x="18" y="-10.6">888.88</text>
+        <text class="cl-lcd cl-lcd--bal" x="18" y="-10.6">0.00</text><text class="cl-lcd-u" x="24" y="-10.6">g</text>
+        <circle cx="-60" cy="-14" r="5" fill="#10141a"/><circle cx="-60" cy="-14" r="4.2" fill="#bfe29a"/><circle cx="-60" cy="-14" r="4.2" fill="url(#g-shade)" opacity="0.4"/>
+        <circle cx="-60" cy="-14" r="2" fill="none" stroke="#1d2a14" stroke-opacity="0.6" stroke-width="0.4"/><circle cx="-59.5" cy="-14.4" r="1.5" fill="#fff" fill-opacity="0.85"/>
+        <circle cx="70" cy="-18.5" r="1.3" fill="#5fe08a"/><text class="cl-plate" x="70" y="-8">ON</text>
+        <text class="cl-plate" x="-8" y="-27.6">PREP  PB-602   Max 600 g   d = 0.01 g</text>
+        <rect x="-6" y="-46" width="12" height="11" fill="url(#g-metal)"/><ellipse cx="0" cy="-36" rx="13" ry="2.4" fill="#8c95a1"/>
+        <path d="M-64 -46a64 8.5 0 0 0 128 0v3a64 8.5 0 0 1 -128 0z" fill="#6f7884"/>
+        <ellipse cx="0" cy="-46" rx="64" ry="8.5" fill="url(#g-steel)"/>
+        <ellipse cx="0" cy="-46" rx="58" ry="6.8" fill="#fff" fill-opacity="0.16"/>${brush}
+        <ellipse cx="0" cy="-46" rx="64" ry="8.5" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="0.9"/>
+        <ellipse cx="0" cy="-46" rx="58" ry="6.8" fill="none" stroke="#5d6570" stroke-opacity="0.45" stroke-width="0.6"/>${hit(b)}
+        <g class="cl-press" data-press="tare"><rect x="34" y="-20.5" width="28" height="13" rx="2.5" fill="#e2574c" stroke="#fff" stroke-opacity="0.5" stroke-width="0.7"/><rect x="35" y="-19.5" width="26" height="4" rx="2" fill="#fff" fill-opacity="0.2"/><text class="cl-press-t cl-press-t--s" x="48" y="-11.3">TARE</text></g>`,
       front: "",
     };
   }

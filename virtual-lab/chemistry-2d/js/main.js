@@ -42,7 +42,7 @@ let TOP = 215;                     // and where the first row of bottles stands:
 const HEAT = { burner: 150, spirit: 116 };            // how far above its foot a burner's flame reaches
 const MOUTH = ["lit", "glow"];                        // held at the mouth
 const TAKES = { dropper: 0.5, pipette: 12.5 };        // portions drawn up (a portion is 2 cm3)
-const STAYS = ["funnel", "bung", "tubing", "cap", "condenser", "electrode"];   // fitted, and left there
+const STAYS = ["funnel", "paper", "bung", "tubing", "cap", "condenser", "electrode"];   // fitted, and left there
 const PLUGS = ["funnel", "bung", "tubing"];           // one of these to a mouth
 const IDLE = ["waste", "syringe", "power", "holder", "tongs"];                 // never used ON anything
 const LIGHT = ["H2", "NH3"];                          // less dense than air: they rise
@@ -81,6 +81,8 @@ const ICON = {
   flip: UI.upDown(18),
   swirl: UI.loop(18),
   fire: UI.fire(18),
+  table: UI.plot(20),
+  calc: UI.keypad(20),
 };
 
 // ── the drawer's catalogue ──────────────────────────────────────────────────
@@ -93,7 +95,7 @@ const CATS = [
 // other words a student might search by
 const ALSO = {
   stand: "clamp stand boss", burette: "titration", pipette: "titration", distflask: "distillation side arm", condenser: "distillation liebig", balance: "weighing scale mass tare",
-  trough: "gas collection over water pneumatic", tubing: "delivery tube bung", bung: "bung cork", funnel: "filtration filter", burner: "bunsen heat", syringe: "gas volume measure",
+  trough: "gas collection over water pneumatic", tubing: "delivery tube bung", bung: "bung cork", funnel: "filtration filter", paper: "filtration filter", burner: "bunsen heat", syringe: "gas volume measure",
   spirit: "alcohol lamp heat", flask: "erlenmeyer", flask100: "erlenmeyer", cyl10: "graduated", cyl100: "graduated", dish: "basin", tripod: "gauze", holder: "tongs peg", waste: "sink bin",
   sepfunnel: "separating separation immiscible oil", electrode: "electrolysis carbon rod graphite cathode anode", power: "electrolysis battery cell supply", gasjar: "gas collection",
 };
@@ -210,6 +212,7 @@ function mount(it) {
 /** How far up a piece its turning point is (it turns about its middle). */
 const pivotOf = (it) => (it.kind === "vessel" ? VESSELS[it.key].top / 2 : -mouthOf(it.key) / 2);
 function place(it, transform) {
+  if (it.key === "paper" && nodes[it.id]) nodes[it.id].g.classList.toggle("is-cone", it.on != null);
   const n = nodes[it.id];
   if (!n) return;
   let t = transform;
@@ -259,7 +262,11 @@ function dress(it) {
   const g = n.g;
   if (TAKES[it.key]) g.querySelector(".cl-drop-liq").style.fill = it.sample ? `rgba(${it.rgb || [200, 224, 240]},0.9)` : "transparent";
   if (it.key === "wire") g.querySelector(".cl-loop").style.fill = it.sample ? "#f2f6fb" : "transparent";
-  if (it.key === "funnel") g.querySelector(".cl-residue").style.fill = it.residue ? `rgb(${it.residue})` : "transparent";
+  if (it.key === "paper") {
+    g.classList.toggle("is-cone", it.on != null);
+    g.querySelector(".cl-residue").style.fill = it.residue ? `rgb(${it.residue})` : "transparent";
+    g.querySelector(".cl-wet").style.fill = it.wet ? `rgba(${it.wet},0.3)` : "transparent";
+  }
   if (HEAT[it.key]) { g.classList.toggle("is-unlit", !lit(it)); g.style.setProperty("--fl", [1, 0.62, 0.86, 1.14][it.flame || 0]); }
   if (it.key === "electrode") g.querySelector(".cl-coat").setAttribute("fill", it.coat === "Cu" ? "#b9683e" : it.coat === "Ag" ? "#d9dde2" : "transparent");
   if (it.key === "syringe") {
@@ -278,15 +285,87 @@ function readouts() {
   for (const it of state.items) {
     const g = nodes[it.id] && nodes[it.id].g;
     if (!g) continue;
-    if (it.key === "burette") g.querySelector(".cl-read").textContent = it.t.vol > 0 ? `${((it.t.cap - it.t.vol) * 2).toFixed(2)} cm\u00b3` : "";
-    else if (it.kind === "rack" && it.key === "balance") {
+    if (it.kind === "rack" && it.key === "balance") {
       const v = vessels().find((o) => o.rack && o.rack[0] === it.id);
       let m = 0;
       if (v) m = VESSELS[v.key].g + massOf(v.t) + state.items.filter((a) => a.on === v.id).length * 12;
       it.gross = m;
-      g.querySelector(".cl-lcd").textContent = `${(m - (it.tare || 0)).toFixed(2)} g`;
+      g.querySelector(".cl-lcd--bal").textContent = (m - (it.tare || 0)).toFixed(2);
     }
   }
+  lens();
+}
+
+// ── reading a scale: the lens ───────────────────────────────────────────────
+// A burette and a measuring cylinder do not say what they hold. A chosen one shows a
+// lens on its liquid surface: the scale, magnified, and the curve of the meniscus. The
+// reading is taken by eye at the BOTTOM of the curve, and typed into the piece's menu.
+const SCALES = {
+  burette: { per: 0.1, label: 1, down: true, dp: 2, tol: 0.06, value: (it) => (it.t.cap - it.t.vol) * 2 },
+  cyl10: { per: 0.1, label: 1, down: false, dp: 1, tol: 0.06, value: (it) => (it.t.vol + (it.t.oil || 0)) * 2 },
+  cyl100: { per: 1, label: 10, down: false, dp: 0, tol: 0.6, value: (it) => (it.t.vol + (it.t.oil || 0)) * 2 },
+};
+const scaleOf = (it) => (it && it.kind === "vessel" && SCALES[it.key] && it.t.vol + (it.t.oil || 0) > 0 && !it.tilt ? SCALES[it.key] : null);
+let lensEl = null;
+function lens() {
+  const it = selected, sc = scaleOf(it);
+  if (!sc || !nodes[it.id] || drag) { if (lensEl) { lensEl.remove(); lensEl = null; } return; }
+  if (!lensEl) { lensEl = document.createElementNS(NS, "g"); lensEl.setAttribute("class", "cl-lens"); }
+  L.fx.appendChild(lensEl);
+  const R = 68, PX = 6;                                   // the lens, and how far apart two small divisions are drawn
+  const v = sc.value(it);
+  const surface = it.y + Number(nodes[it.id].g.querySelector(".cl-meniscus").getAttribute("cy"));
+  const side = it.x + 150 > W - 20 ? -1 : 1;
+  const cx = it.x + side * 112, cy = clamp(surface, TOP - 60, H - R - 22);
+  const c = look(it.t).rgb;
+  const first = Math.floor(v / sc.per) - 7;
+  let ticks = "";
+  for (let k = first; k <= first + 15; k++) {
+    const tv = k * sc.per;
+    if (tv < -1e-9) continue;
+    const y = ((tv - v) / sc.per) * PX * (sc.down ? 1 : -1);
+    if (Math.abs(y) > R) continue;
+    const whole = Math.abs(tv / sc.label - Math.round(tv / sc.label)) < 1e-6;
+    const half = Math.abs((tv / sc.label) * 2 - Math.round((tv / sc.label) * 2)) < 1e-6;
+    ticks += `<path d="M-30 ${y.toFixed(1)}H${whole ? 6 : half ? -6 : -16}"/>`;
+    if (whole) ticks += `<text x="12" y="${(y + 3.6).toFixed(1)}">${Math.round(tv / sc.label) * sc.label}</text>`;
+  }
+  const uid = `lens-${it.id}`;
+  lensEl.setAttribute("transform", `translate(${cx.toFixed(1)} ${cy.toFixed(1)})`);
+  lensEl.innerHTML = `<path class="cl-lens__arm" d="M${(-side * R).toFixed(1)} 0L${(it.x - cx).toFixed(1)} ${(surface - cy).toFixed(1)}"/>
+    <circle r="${R + 5}" fill="#11151a" fill-opacity="0.7"/>
+    <clipPath id="${uid}"><circle r="${R}"/></clipPath>
+    <g clip-path="url(#${uid})">
+      <rect x="${-R}" y="${-R}" width="${R * 2}" height="${R * 2}" fill="#232a33"/>
+      <rect x="-30" y="${-R}" width="60" height="${R * 2}" fill="#fff" fill-opacity="0.06"/>
+      <path d="M-30 -8Q0 8 30 -8V${R}H-30z" fill="rgba(${c},${Math.max(look(it.t).a, 0.42)})"/>
+      <path d="M-30 -8Q0 8 30 -8V-4.500Q0 11.5 -30 -4.500z" fill="#000" fill-opacity="0.24"/>
+      <path d="M-30 -8Q0 8 30 -8" fill="none" stroke="#fff" stroke-opacity="0.9" stroke-width="1.3"/>
+      <rect x="-30" y="${-R}" width="5" height="${R * 2}" fill="url(#g-shine-v)" opacity="0.7"/>
+      <path d="M-30 ${-R}V${R}M30 ${-R}V${R}" stroke="#fff" stroke-opacity="0.7" stroke-width="1.4"/>
+      <g class="cl-lens__scale">${ticks}</g>
+      <path class="cl-lens__eye" d="M32 0H${R}"/>
+    </g>
+    <circle r="${R}" fill="none" stroke="url(#g-metal)" stroke-width="4.5"/><circle r="${R - 2.6}" fill="none" stroke="#fff" stroke-opacity="0.28" stroke-width="0.8"/>
+    <path d="M${-R * 0.72} ${-R * 0.5}A${R * 0.9} ${R * 0.9} 0 0 1 ${-R * 0.2} ${-R * 0.86}" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="2.4" stroke-linecap="round"/>
+    <text class="cl-lens__note" y="${R + 17}">read the bottom of the curve</text>`;
+}
+/** A reading has been typed in: is it what the scale says? */
+function checkReading(it, typed) {
+  const sc = scaleOf(it);
+  if (!sc) return;
+  const got = Number(String(typed).replace(",", "."));
+  if (!Number.isFinite(got)) { say("Type the number you read off the scale.", it, "no"); return; }
+  const real = sc.value(it);
+  const off = got - real;
+  if (Math.abs(off) <= sc.tol) {
+    noteFlags([`read:${it.key}`]);
+    state.log.unshift({ id: it.id, tag: it.tag, title: `Read ${plain(it)}`, obs: [{ text: `Reading: ${got.toFixed(sc.dp)} cm\u00b3.`, why: `Read at eye level, at the bottom of the meniscus. The scale says ${real.toFixed(2)} cm\u00b3.` }] });
+    renderLog();
+    say(`Good reading: ${got.toFixed(sc.dp)} cm\u00b3. It is written in the notebook.`, it);
+  } else if (Math.abs(off) <= sc.tol * 4) say(`Close, but look again. Read the BOTTOM of the curve, and count the small divisions: each one is ${sc.per} cm\u00b3.`, it, "no");
+  else say(sc.down ? "Not yet. A burette is numbered from the top down: the numbers get bigger going down." : `Not yet. Find the numbered line just below the liquid, then count up the small divisions: each one is ${sc.per} cm\u00b3.`, it, "no");
+  save();
 }
 
 // ── what stands on what, and what is fitted to what ─────────────────────────
@@ -299,6 +378,7 @@ function mouth(o) {
 const rimOf = (o) => (o.kind === "vessel" ? VESSELS[o.key].rTop : o.kind === "reagent" ? 12 : 50);
 /** Where a fitted thing sits on its host: a condenser on the side arm, carbon rods left and right, anything else in the mouth. */
 function seat(host, it) {
+  if (it.key === "paper") return { x: host.x, y: host.y };
   if (it.key === "condenser") { const [ax, ay] = VESSELS[host.key].arm; return { x: host.x + ax, y: host.y + ay }; }
   const m = mouth(host);
   if (it.key === "electrode") return { x: m.x + (it.side || -1) * Math.min(VESSELS[host.key].rTop * 0.5, 30), y: m.y };
@@ -661,6 +741,13 @@ function targetOf(it) {
       return dx < VESSELS[v.key].rTop + 20 && Math.abs(it.y - m.y) < 70 ? dx : -1;
     });
   }
+  if (it.key === "paper") {
+    // a filter paper goes in a funnel, and nowhere else
+    return nearest(tools("funnel").filter((f) => !fittedTo(f, "paper")), (f) => {
+      const dx = Math.abs(it.x - f.x), dy = Math.abs(it.y - (f.y - 28));
+      return dx < 52 && dy < 76 ? dx : -1;
+    });
+  }
   if (PLUGS.includes(it.key)) {
     return nearest(open().filter((v) => !VESSELS[v.key].tap && !plugIn(v)), (v) => {
       const m = mouth(v), dx = Math.abs(it.x - m.x);
@@ -722,38 +809,158 @@ function fx(html, ms = 900) {
   L.fx.appendChild(g);
   setTimeout(() => g.remove(), ms);
 }
+// ── liquid in the air ───────────────────────────────────────────────────────
+// A stream is a line of PARCELS of liquid. Each is let go at the lip and then belongs to
+// gravity: it speeds up as it falls, so the stream stretches and thins on the way down
+// (the same volume passing every second, going faster, must be narrower), and where the
+// parcels have drawn too far apart it breaks into drops. Where it lands it throws up
+// droplets that fly and fall on their own, and rings spread on the surface.
+// VISCOSITY (mu, 0 water … 1 a thick oil) holds a liquid back: it falls slower, as a
+// fatter rope that does not break or splash, wavers as it lands and heaps up a little.
+const GRAV = 2300;                 // bench units a second, each second
 const flows = {};
+let flowing = 0, flowAt = 0;
+const THICK = { oil: 0.9, h2so4: 0.24, h2o2: 0.08 };
+const OIL_RGB = [226, 196, 92];
+const viscOf = (it) => (it.kind === "reagent" ? THICK[it.key] ?? 0.04 : it.t && it.t.oil > 0 ? 0.9 : 0.04);
 /**
- * Liquid running from `a` to `b`. Called again and again while the pouring goes on, it is one
- * stream that bends as the lip moves; left alone for a moment, it thins away. `dir` is the way
- * the lip faces (-1 left, 1 right): the stream leaves that way before it falls.
+ * Liquid running from the lip `a` to the surface at `b`. Called again and again while the
+ * pouring goes on; left alone, the last of it falls and the stream is gone. `dir` is the way
+ * the lip faces (-1 left, 1 right).
  */
-function flow(key, a, b, c, dir = -1) {
+function flow(key, a, b, c, dir = -1, mu = 0.04) {
   let f = flows[key];
   if (!f) {
     const g = document.createElementNS(NS, "g");
     g.setAttribute("class", "cl-flow");
-    g.innerHTML = `<path class="cl-flow__body"/><path class="cl-flow__run"/><path class="cl-flow__shine"/><g class="cl-flow__splash"></g>`;
+    g.innerHTML = `<path class="cl-flow__plume"/><g class="cl-flow__fizz"></g><ellipse class="cl-flow__ring"/><ellipse class="cl-flow__ring"/><path class="cl-flow__heap"/><path class="cl-flow__body"/><path class="cl-flow__core"/><path class="cl-flow__shine"/><g class="cl-flow__drops"></g>`;
     L.fx.appendChild(g);
-    f = flows[key] = { g };
+    f = flows[key] = { g, parts: [], spray: [], fizz: [], rings: [0.3, 0], owed: 0, hits: 0, t: 0 };
   }
-  const drop = Math.max(8, b.y - a.y);
-  const out = dir * Math.min(22, drop * 0.3);
-  const d = `M${a.x.toFixed(1)} ${a.y.toFixed(1)}C${(a.x + out).toFixed(1)} ${(a.y + 2).toFixed(1)} ${b.x.toFixed(1)} ${(a.y + drop * 0.35).toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
-  const [body, run, shine, splash] = f.g.children;
-  body.setAttribute("d", d);
-  body.style.stroke = `rgba(${c},0.86)`;
-  run.setAttribute("d", d);
-  shine.setAttribute("d", d);
-  splash.innerHTML = [0, 1, 2].map(() => `<circle class="cl-splash" cx="${(b.x + (Math.random() - 0.5) * 8).toFixed(1)}" cy="${b.y.toFixed(1)}" r="${(1 + Math.random() * 1.4).toFixed(1)}" fill="rgba(${c},0.9)" style="--sx:${((Math.random() - 0.5) * 26).toFixed(0)}px;--sy:${(-6 - Math.random() * 12).toFixed(0)}px"/>`).join("");
-  f.g.classList.remove("is-ending");
-  clearTimeout(f.timer);
-  f.timer = setTimeout(() => {
-    f.g.classList.add("is-ending");
-    setTimeout(() => { f.g.remove(); if (flows[key] === f) delete flows[key]; }, 280);
-  }, 940);
+  Object.assign(f, { a, b, c, dir, mu, until: performance.now() + 900 });
+  if (!flowing) { flowAt = performance.now(); flowing = requestAnimationFrame(flowTick); }
 }
-const stream = (m, to, c) => flow("pour", { x: m.x + 6, y: m.y - 10 }, { x: m.x, y: to }, c, -1);
+function flowTick(now) {
+  flowing = 0;
+  const dt = Math.min(0.034, Math.max(0.001, (now - flowAt) / 1000));
+  flowAt = now;
+  for (const [key, f] of Object.entries(flows)) {
+    const on = now < f.until;
+    const mu = f.mu;
+    const g = GRAV * (1 - 0.55 * mu), drag = 5.5 * mu;
+    const [plume, fizzEl, ring1, ring2, heap, body, core, shine, dropsEl] = f.g.children;
+    f.t += dt;
+    if (on) {
+      f.owed += dt * 120;
+      while (f.owed >= 1) {
+        f.owed -= 1;
+        // a bottle does not pour evenly: air has to get in as the liquid gets out, so the
+        // stream swells and narrows, and the swellings travel down it (a thick liquid, less)
+        const glug = 1 + (1 - mu) * (0.2 * Math.sin(f.t * 15) + 0.1 * Math.sin(f.t * 37 + 1));
+        f.parts.push({ ax: f.a.x, ay: f.a.y, bx: f.b.x, fall: Math.max(10, f.b.y - f.a.y), x: f.a.x, y: f.a.y, vy: 40 * (1 - 0.6 * mu), k: glug, ph: Math.random() * 6.28 });
+      }
+    }
+    // fall
+    for (const p of f.parts) {
+      p.vy += (g - drag * p.vy) * dt;
+      p.y += p.vy * dt;
+      const u = clamp((p.y - p.ay) / p.fall, 0, 1);
+      // sideways it keeps the speed it left with, so across goes as the square root of down: a parabola
+      p.u = u;
+      p.x = p.ax + (p.bx - p.ax) * Math.sqrt(u) + (mu > 0.5 ? Math.sin(now * 0.016 + p.ph * 0.2) * 2.6 * u * u : 0);
+    }
+    // land
+    let hitV = 0;
+    while (f.parts.length && f.parts[0].y >= f.parts[0].ay + f.parts[0].fall) {
+      const p = f.parts.shift();
+      f.hits++;
+      hitV = p.vy;
+      const hard = clamp(p.vy / 620, 0.25, 1.7) * (1 - mu);
+      if (mu < 0.5 && f.hits % 2 === 0) {
+        // the crown: droplets thrown up and out, the harder the liquid lands
+        const s = Math.random() < 0.5 ? -1 : 1;
+        f.spray.push({ x: p.bx + s * (1 + Math.random() * 5), y: p.ay + p.fall, vx: s * (25 + Math.random() * 110) * hard, vy: -(110 + Math.random() * 230) * hard, r: 0.9 + Math.random() * 1.9, life: 0 });
+      }
+      if (mu < 0.5 && f.hits % 3 === 0) {
+        // and air carried under: bubbles that go down with the jet and then rise
+        f.fizz.push({ x: p.bx + (Math.random() - 0.5) * 9, y: p.ay + p.fall + 3, vy: 60 + Math.random() * 110 * hard, r: 0.8 + Math.random() * 1.6, life: 0 });
+      }
+    }
+    for (const d of f.spray) { d.vy += GRAV * 0.8 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.life += dt; }
+    f.spray = f.spray.filter((d) => d.life < 0.7 && d.y < f.b.y + 3);
+    for (const q of f.fizz) { q.vy -= 420 * dt; q.y += q.vy * dt; q.x += Math.sin(q.life * 22 + q.r * 9) * 0.4; q.life += dt; }
+    const bed = f.floor ?? f.b.y + 26;          // the bottom of what it is falling into
+    f.fizz = f.fizz.filter((q) => q.life < 0.75 && q.y > f.b.y + 1 && q.y < bed - 2);
+    // draw: from the lip downwards, the newest parcel first
+    const pts = f.parts.slice().reverse().map((p) => ({ x: p.x, y: p.y, v: p.vy, k: p.k, u: p.u || 0 }));
+    if (on && pts.length) pts.unshift({ x: f.a.x, y: f.a.y, v: 40, k: pts[0].k, u: 0 });
+    const w0 = 8.4 * (1 + 0.5 * mu);
+    // the same amount passes every point each second, so where it goes faster it is narrower;
+    // just at the lip it is still a flat sheet, wider than the round stream it gathers into
+    const width = (p) => w0 * p.k * clamp(Math.sqrt(140 / Math.max(140, p.v)), 0.34 + 0.4 * mu, 1) * (1 + 0.45 * Math.max(0, 1 - p.u * 9));
+    const gapMax = 11 + 60 * mu;
+    const strands = [];
+    let cur = [];
+    pts.forEach((p, i) => {
+      if (i && Math.hypot(p.x - pts[i - 1].x, p.y - pts[i - 1].y) > gapMax) { strands.push(cur); cur = []; }
+      cur.push(p);
+    });
+    if (cur.length) strands.push(cur);
+    let d = "", mid = "", hi = "", blobs = "";
+    for (const s of strands) {
+      if (s.length < 3) {
+        // a parcel on its own is a drop, drawn out along the way it is falling
+        for (const p of s) { const r = width(p) * 0.6; blobs += `<ellipse cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" rx="${r.toFixed(1)}" ry="${(r * clamp(1 + p.v / 800, 1, 2)).toFixed(1)}"/>`; }
+        continue;
+      }
+      const left = [], right = [];
+      s.forEach((p, i) => {
+        const q = s[Math.min(s.length - 1, i + 1)], o = s[Math.max(0, i - 1)];
+        const tx = q.x - o.x, ty = q.y - o.y, n = Math.hypot(tx, ty) || 1, h = width(p) / 2;
+        left.push(`${(p.x - (ty / n) * h).toFixed(1)} ${(p.y + (tx / n) * h).toFixed(1)}`);
+        right.push(`${(p.x + (ty / n) * h).toFixed(1)} ${(p.y - (tx / n) * h).toFixed(1)}`);
+      });
+      const end = s[s.length - 1], er = width(end) / 2;
+      d += `M${left.join("L")}A${er.toFixed(1)} ${er.toFixed(1)} 0 0 0 ${right[right.length - 1]}L${right.reverse().join("L")}z`;
+      mid += `M${s.map((p) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join("L")}`;
+      hi += `M${s.map((p) => `${(p.x - width(p) * 0.26).toFixed(1)} ${p.y.toFixed(1)}`).join("L")}`;
+    }
+    const dark = f.c.map((n) => Math.round(n * 0.55));
+    body.setAttribute("d", d);
+    body.style.fill = `rgba(${f.c},${0.8 + 0.16 * mu})`;
+    body.style.stroke = `rgba(${dark},0.75)`;          // glass-clear liquid is darkest at its edges, where the light is bent away
+    core.setAttribute("d", mid);
+    core.style.strokeWidth = (w0 * 0.3).toFixed(1);
+    shine.setAttribute("d", hi);
+    dropsEl.innerHTML = blobs + f.spray.map((s) => `<circle cx="${s.x.toFixed(1)}" cy="${s.y.toFixed(1)}" r="${s.r.toFixed(1)}" opacity="${(1 - s.life / 0.7).toFixed(2)}"/>`).join("");
+    dropsEl.style.fill = `rgba(${f.c},0.94)`;
+    fizzEl.innerHTML = f.fizz.map((q) => `<circle cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="${q.r.toFixed(1)}" opacity="${(1 - q.life / 0.75).toFixed(2)}"/>`).join("");
+    // where it lands: a pale jet driven under, rings on a thin liquid, a small heap on a thick one
+    const landing = f.hits > 0 && (on || f.parts.length > 0);
+    if (hitV) f.deep = Math.min(clamp(hitV / 30, 6, 30) * (1 - 0.7 * mu), Math.max(0, (bed - f.b.y) / 2.2));
+    const dp = landing ? f.deep || 0 : 0, pw = w0 * 0.9;
+    plume.setAttribute("d", dp > 2 ? `M${(f.b.x - pw).toFixed(1)} ${f.b.y.toFixed(1)}Q${f.b.x.toFixed(1)} ${(f.b.y + dp * 2.1).toFixed(1)} ${(f.b.x + pw).toFixed(1)} ${f.b.y.toFixed(1)}z` : "");
+    f.rings = f.rings.map((t, i) => (landing || t > 0 ? (t + dt / (0.5 + 0.6 * mu)) % 1 : i ? 0 : 0.5));
+    [ring1, ring2].forEach((el, i) => {
+      const t = f.rings[i];
+      el.setAttribute("cx", f.b.x.toFixed(1));
+      el.setAttribute("cy", f.b.y.toFixed(1));
+      el.setAttribute("rx", (4 + t * 26 * (1 - 0.5 * mu)).toFixed(1));
+      el.setAttribute("ry", (1 + t * 3.8).toFixed(1));
+      el.style.opacity = landing ? ((1 - t) * 0.7 * (1 - 0.5 * mu)).toFixed(2) : "0";
+    });
+    heap.setAttribute("d", landing && mu > 0.5 ? `M${(f.b.x - 11).toFixed(1)} ${(f.b.y + 0.5).toFixed(1)}q11 -9 22 0z` : "");
+    heap.style.fill = `rgba(${f.c},0.95)`;
+    if (!on && !f.parts.length && !f.spray.length && !f.fizz.length) { f.g.remove(); delete flows[key]; }
+  }
+  if (Object.keys(flows).length) flowing = requestAnimationFrame(flowTick);
+}
+/** A bottle or a vessel held tipped at the mouth of `v`: out over the lip, and down in an arc. */
+function stream(v, c, mu) {
+  const m = mouth(v), reach = Math.min(16, VESSELS[v.key].rTop * 0.5);
+  flow("pour", { x: m.x + 7, y: m.y - 11 }, { x: m.x - reach, y: v._surface }, c, -1, mu);
+  flows.pour.floor = v.y - (VESSELS[v.key].floor || 0);
+}
 
 // ── liquid has weight: it lags behind a vessel that is moved, and rocks until it settles ──
 const waves = new Map();           // item id → { a: the surface's tilt in degrees, w: how fast it is turning }
@@ -818,13 +1025,18 @@ function capped(bottle) {
 function deliver(v, s, from, c, flag) {
   if (roomIn(v.t) < s.vol + (s.oil || 0) - 1e-6) { say("It is full. Empty it, or use another one.", v, "no"); return null; }
   const funnel = fittedTo(v, "funnel");
-  const residue = funnel ? filterOut(s) : [];
+  const paper = funnel && fittedTo(funnel, "paper");
+  let cloudy = false;
+  if (funnel && !paper) { try { cloudy = Object.keys(speciate(s).ppt).length > 0; } catch { cloudy = false; } }
+  const residue = paper ? filterOut(s) : [];
   const res = pourIn(v.t, s, from);
   if (flag) res.flags.push(flag);
+  if (paper) { paper.wet = c || [200, 224, 240]; dress(paper); }
+  if (cloudy) say("There is no filter paper in the funnel, so the solid runs straight through with the liquid.", v, "no");
   if (residue.length) {
     const big = residue.reduce((a, b) => (b.n > a.n ? b : a));
-    funnel.residue = big.rgb;
-    dress(funnel);
+    paper.residue = big.rgb;
+    dress(paper);
     res.obs.unshift({ text: `${cap1(big.colour)} solid is left behind in the filter paper. The liquid that runs through is clear.`, why: `Filtration: the residue is ${big.name}, {${big.formula}}, which is insoluble and too big to pass through the paper. What runs through is the filtrate.` });
     res.obs = res.obs.filter((o) => o.text !== "No visible change.");
     res.flags.push("filtered");
@@ -873,7 +1085,7 @@ function use(it, v) {
     const c = look(it.t).rgb;
     const res = deliver(v, takeFrom(it.t, n), plain(it), c);
     paint(it, { tilt: -108 });
-    if (res) stream(mouth(v), v._surface, c);
+    if (res) stream(v, c, viscOf(it));
     save();
     return Boolean(res) && it.t.vol + (it.t.oil || 0) > 0;
   }
@@ -935,8 +1147,8 @@ function use(it, v) {
     const r = reagent(it.key);
     const res = pourReagent(it, v, measure(v));
     if (!res) return false;
-    const c = colourOf(it.key);
-    if (r.kind === "solution") stream(m, v._surface, c);
+    const c = it.key === "oil" ? OIL_RGB : colourOf(it.key);
+    if (r.kind === "solution") stream(v, c, viscOf(it));
     else if (r.kind === "indicator") drops([m.x, m.y - 26], v._surface, c);
     else drops([m.x + 6, m.y - 10], v._surface, c, 3.4, 5);
     return r.kind !== "indicator";
@@ -1181,12 +1393,12 @@ function pourTick() {
     if (m <= 1e-6) { if (!turn.told) { turn.told = true; say("It is full, and running over.", v, "no"); } return; }
     const res = isBottle ? pourReagent(it, v, m) : deliver(v, takeFrom(it.t, m), plain(it), c, turn.spilt ? null : "tilted");
     if (!isBottle) paint(it);
-    if (res) { const m = mouth(v), r = VESSELS[v.key].rTop - 3; flow("tilt", lip, { x: clamp(lip.x + Math.sign(it.tilt) * 8, m.x - r, m.x + r), y: v._surface }, c, Math.sign(it.tilt)); }
+    if (res) { const m = mouth(v), r = VESSELS[v.key].rTop - 3; flow("tilt", lip, { x: clamp(lip.x + Math.sign(it.tilt) * 8, m.x - r, m.x + r), y: v._surface }, c, Math.sign(it.tilt), viscOf(it)); flows.tilt.floor = v.y - (VESSELS[v.key].floor || 0); }
     return;
   }
   // nothing underneath: it goes on the bench
   if (!isBottle) { takeFrom(it.t, Math.max(0.5, it.t.cap / 30) * speed); paint(it); }
-  flow("tilt", lip, { x: lip.x + Math.sign(it.tilt) * 14, y: H - 8 }, c, Math.sign(it.tilt));
+  flow("tilt", lip, { x: lip.x + Math.sign(it.tilt) * 14, y: H - 8 }, c, Math.sign(it.tilt), viscOf(it));
   fx(`<ellipse class="cl-puddle" cx="${lip.x + Math.sign(it.tilt) * 14}" cy="${H - 6}" rx="46" ry="6" fill="rgba(${c},0.5)"/>`, 900);
   if (!turn.spilt) { turn.spilt = true; say("It is pouring onto the bench! Hold it over a vessel before you tilt it.", isBottle ? null : it, "no"); }
   save();
@@ -1400,12 +1612,14 @@ window.addEventListener("pointerup", (e) => {
     glide(it, true);
     place(it);
     const where = plain(host);
-    say(it.key === "funnel" ? `The funnel and its filter paper are in ${where}. Whatever is poured in now is filtered.`
+    say(it.key === "funnel" ? (fittedTo(it, "paper") ? `The funnel is in ${where}, with its filter paper. Whatever is poured in now is filtered.` : `The funnel is in ${where}. It needs a filter paper: let one go at the funnel.`)
+      : it.key === "paper" ? `The filter paper is folded into a cone and opened out in the funnel: three layers on one side, one on the other. ${host.on ? "Whatever is poured in now is filtered." : "Stand the funnel in the mouth of a flask."}`
       : it.key === "tubing" ? `The delivery tube is in ${where}. Drag its orange end to where the gas should go.`
       : it.key === "cap" ? `The ${it.v === "drop" ? "dropper" : "stopper"} is back in the ${reagent(host.key).name}.`
       : it.key === "condenser" ? `The condenser is on the side arm of ${where}. Stand a beaker under its lower end.`
       : it.key === "electrode" ? (rodsIn(host).length === 2 ? (tools("power").length ? `Both carbon rods are in ${where} and wired to the power pack. Hold down its red switch.` : `Both carbon rods are in ${where}. Put a power pack on the bench.`) : `One carbon rod is in ${where}. It needs a second.`)
       : `${cap1(where)} is stoppered.`, host.kind === "vessel" ? host : null);
+    dress(it);
   } else if (d.sits) {
     // a vessel left over a flame stays there
     it.x = d.over.x;
@@ -1474,6 +1688,7 @@ function select(it) {
   $("cl-menu").hidden = true;
   if (it) nodes[it.id].g.classList.add("is-sel");
   showHandles();
+  lens();
 }
 $("cl-rot").addEventListener("pointerdown", (e) => {
   const it = selected;
@@ -1510,6 +1725,7 @@ function openMenu(it) {
       if (it.t.vol > 0) lines.push(`${Math.round(it.t.temp ?? 25)} °C.`);
       act("empty", "Empty and rinse it", ICON.empty);
     }
+    if (scaleOf(it)) slider = `<label class="cl-range cl-reading"><span>Your reading, from the lens (cm\u00b3)</span><span class="cl-reading__row"><input type="number" inputmode="decimal" step="${SCALES[it.key].dp === 0 ? 1 : SCALES[it.key].dp === 1 ? 0.1 : 0.05}" min="0" id="cl-reading" autocomplete="off" /><button type="button" class="cl-ico cl-ico--paper" data-act="read" data-tip="Check my reading" aria-label="Check my reading">${UI.check(18)}</button></span></label>`;
     if (def.tap) lines.push("It cannot stand up: let it go at the clamp of a retort stand. Press the blue tap to run it out.");
     if (def.arm) lines.push(fittedTo(it, "condenser") ? "Heat it, with a beaker under the condenser's lower end." : "Push a condenser onto the side arm.");
     if (def.upturns) lines.push("Fill it with water, then let an empty gas jar go in it.");
@@ -1527,13 +1743,14 @@ function openMenu(it) {
     act("light", lit(it) ? "Put it out" : "Light it", ICON.fire);
   } else if (it.sample) { lines.push(it.key === "wire" ? "Dipped, ready for the flame." : `Holding ${cm3(it.sample.vol + (it.sample.oil || 0))} of liquid.`); act("empty", "Empty it", ICON.empty); }
   else if (it.key === "syringe") { lines.push(it.gas ? `${Math.round(it.gas.n * 12)} cm\u00b3 of gas.` : "Let it go at a stand's clamp to hold it level, then drag the orange end of a delivery tube to its nozzle."); if (it.gas) act("empty", "Push the plunger back in", ICON.empty); }
-  else if (it.key === "funnel") { lines.push(it.residue ? "There is residue in the filter paper." : "Let it go at the mouth of a flask or beaker."); if (it.residue) act("empty", "Fresh filter paper", ICON.empty); }
+  else if (it.key === "funnel") lines.push(fittedTo(it, "paper") ? (it.on ? "Paper in, and sitting in a vessel: ready to filter." : "Paper in. Let the funnel go at the mouth of a flask or beaker.") : "Plain glass. It needs a filter paper: let one go at the funnel.");
+  else if (it.key === "paper") { lines.push(it.residue ? "There is residue in the paper: the solid that could not pass through." : it.on ? "Folded in half, in half again, and opened into a cone in the funnel." : "A flat disc of filter paper. Let it go at a funnel and it is folded into a cone."); if (it.residue || it.wet) act("empty", "A fresh filter paper", ICON.empty); }
   else if (it.key === "tubing") lines.push(it.on ? "Drag the orange end to a gas jar, a gas syringe or a tube." : "Let it go at the mouth of the flask that makes the gas.");
   else if (it.key === "electrode") lines.push("Let it go at the mouth of a beaker. Two are needed, and a power pack.");
   else if (it.key === "power") lines.push(cellFor(it) ? "Wired up. Hold down the red switch." : "It wires itself to a beaker with two carbon electrodes in it.");
   else if (it.key === "condenser") lines.push(it.on ? "Cold water runs through the jacket. Stand a beaker under the lower end." : "Push it onto the side arm of a distilling flask.");
   else if (it.key === "cap") lines.push("Put it back by letting it go at the bottle's mouth.");
-  else if (it.kind === "rack" && it.key === "balance") lines.push("Stand a vessel on the pan. The red T sets the reading to zero.");
+  else if (it.kind === "rack" && it.key === "balance") lines.push("Stand a vessel on the pan. The red TARE key sets the reading to zero.");
   else if (it.kind === "rack" && it.key === "tripod") lines.push("Stand a beaker or a dish on the gauze, and hold a lit burner underneath.");
   else if (it.kind === "rack" && it.key === "stand") lines.push("Slide the clamp by its yellow boss. Let a tube, a flask, a burette or a separating funnel go at the clamp and it is held.");
   if (it.key !== "cap") act("remove", "Put it away", ICON.away);
@@ -1559,6 +1776,7 @@ $("cl-menu").addEventListener("click", (e) => {
   const it = selected;
   const what = b.dataset.act;
   if (what === "remove") return removeItem(it);
+  if (what === "read") { checkReading(it, $("cl-reading").value); return; }
   if (what === "swirl") { $("cl-menu").hidden = true; swirl(it); return; }
   if (what === "light") { it.flame = lit(it) ? 0 : 2; dress(it); say(lit(it) ? `The ${nameOf(it).toLowerCase()} is lit.` : `The ${nameOf(it).toLowerCase()} is out.`); }
   else if (what === "flip") { it.flip = !it.flip; it.jar = null; it.t.gas = null; glide(it, true); place(it); paint(it); say(it.flip ? `${cap1(plain(it))} is upside down. A gas lighter than air will stay in it.` : `${cap1(plain(it))} is the right way up.`, it); }
@@ -1568,7 +1786,7 @@ $("cl-menu").addEventListener("click", (e) => {
     nodes[it.id].g.querySelector(".cl-bubbles").innerHTML = "";
     paint(it);
     record(it, res);
-  } else { it.sample = null; it.gas = null; it.residue = null; dress(it); }
+  } else { it.sample = null; it.gas = null; it.residue = null; it.wet = null; dress(it); }
   save();
   select(it);
 });
@@ -1904,6 +2122,9 @@ const actor = {
     const m = seat(v, tool);
     await this.move(tool, m.x, m.y, 460);
     tool.on = v.id;
+    place(tool);
+    dress(tool);
+    noteFlags([`fitted:${tool.key}`]);
     save();
   },
   async flame(burner, level) {
@@ -1984,6 +2205,14 @@ $("cl-drawer-key").addEventListener("click", () => setDrawer(!document.querySele
   if (was === "shut") setDrawer(true);
 }
 
+// ── the desk: the results table, its graph, and the calculator (desk.js) ────
+import("./desk.js").then((d) => {
+  const desk = d.initDesk({ state, save, say });
+  actor.calculator = (on) => desk.toggleCalc(on);
+  const bars = (d) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="${d}" fill="none" stroke="var(--text-tertiary)" stroke-width="2.2" stroke-linecap="round"/><path d="M18 14v8M14 18h8" fill="none" stroke="var(--accent-success)" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+  document.querySelectorAll("[data-table]").forEach((b) => { b.innerHTML = { row: bars("M3 5h18M3 11h18M3 17h7"), col: bars("M5 3v18M11 3v18M17 3v7"), wipe: UI.eraser(16) }[b.dataset.table]; });
+}).catch((e) => console.warn("The desk did not load", e));
+
 // ── go ──────────────────────────────────────────────────────────────────────
 $("cl-rot").innerHTML = ICON.turn;
 $("cl-dots").innerHTML = ICON.dots;
@@ -1996,6 +2225,10 @@ if (restored) {
     addItem("tool", "cap", m.x, m.y, { v: capOf(it.key), on: it.id, of: it.id, rgb: colourOf(it.key) });
   });
 }
+if (restored && !state.papers) {
+  state.items.filter((it) => it.key === "funnel").forEach((f) => addItem("tool", "paper", f.x, f.y, { on: f.id }));
+}
+state.papers = true;
 $("cl-hint").hidden = state.items.length > 0;
 readouts();
 drawLinks();

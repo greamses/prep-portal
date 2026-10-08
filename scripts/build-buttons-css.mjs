@@ -41,6 +41,9 @@ const TOOLS = [
      tile is a picture of a piece of glassware; tape across it made it a note.
      The Try key sits ON a note (an experiment's card): paper on paper vanished */
   ".cl-tile", ".cl-cat", ".cl-ico", ".cl-try",
+  /* the bench's calculator has a calculator's keys, and its results table has a
+     small cross on each row and column: paper on either made them unusable */
+  ".cl-key", ".cl-cut",
 ];
 
 // Not buttons, or must not be paper. `.pp-plain` is the opt-out.
