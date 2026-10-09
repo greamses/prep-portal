@@ -78,6 +78,7 @@ export function initAssign({ bench, lessons, play, act, say, hooks }) {
     $("cl-class-set").disabled = !key.dataset.ok;
     fillChoices();
     listSet();
+    listSaved();
   });
 
   $("cl-class-set").addEventListener("click", async () => {
@@ -110,6 +111,58 @@ export function initAssign({ bench, lessons, play, act, say, hooks }) {
     } catch (e) { msg.textContent = e.message || "It could not be set."; }
     btn.disabled = false;
   });
+
+  // ── the teacher's own experiments, kept: built with the bench's own pieces, saved, opened again ──
+  let openId = null;         // the saved experiment that is on the bench now (saving again saves over it)
+  $("cl-class-save").addEventListener("click", async () => {
+    const snap = bench.snapshot();
+    if (!snap.items.length) { msg.textContent = "The bench is empty. Set the experiment out first, then save it."; return; }
+    if (!title.value.trim()) { msg.textContent = "Give it a title first."; title.focus(); return; }
+    const steps = $("cl-class-steps").value.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 12);
+    msg.textContent = "Saving…";
+    try {
+      const d = await benchApi("POST", "/api/bench/saved", { id: openId || undefined, title: title.value.trim(), note: note.value.trim(), steps, bench: snap });
+      openId = d.id;
+      msg.textContent = "Saved. It is in My saved experiments, below.";
+      listSaved();
+    } catch (e) { msg.textContent = e.message || "It could not be saved."; }
+  });
+  async function listSaved() {
+    const box = $("cl-class-saved");
+    box.textContent = "";
+    let d;
+    try { d = await benchApi("GET", "/api/bench/saved"); } catch { return; }
+    if (!d.saved.length) { box.appendChild(el("p", "cl-sheet__lead", "None yet.")); return; }
+    for (const x of d.saved) {
+      const li = el("li", "cl-class__item");
+      li.appendChild(el("h4", null, x.title));
+      li.appendChild(el("p", "cl-class__meta", `${x.pieces} piece${x.pieces === 1 ? "" : "s"} on the bench · ${x.steps} step${x.steps === 1 ? "" : "s"}${x.id === openId ? " · on the bench now" : ""}`));
+      const open = el("button", "cl-try", "Put it on the bench"); open.type = "button";
+      open.addEventListener("click", async () => {
+        try {
+          const full = await benchApi("GET", `/api/bench/saved/${x.id}`);
+          bench.loadBench(full.bench.items);
+          openId = full.id;
+          what.value = "own:";
+          sync(false);
+          title.value = full.title; title.dataset.auto = "";
+          note.value = full.note || "";
+          $("cl-class-steps").value = (full.steps || []).join("\n");
+          msg.textContent = `"${full.title}" is on the bench. Change it and save again, or set it for your class.`;
+          listSaved();
+        } catch (e) { msg.textContent = e.message || "It could not be opened."; }
+      });
+      const del = el("button", "cl-try", "Delete"); del.type = "button";
+      del.addEventListener("click", async () => {
+        if (del.dataset.sure !== "1") { del.dataset.sure = "1"; del.textContent = "Delete it for good?"; return; }
+        try { await benchApi("DELETE", `/api/bench/saved/${x.id}`); if (openId === x.id) openId = null; listSaved(); } catch (e) { msg.textContent = e.message || "It could not be deleted."; }
+      });
+      const row = el("div", "cl-class__keys");
+      row.append(open, del);
+      li.appendChild(row);
+      box.appendChild(li);
+    }
+  }
 
   /** What this teacher has set, and who has done it. */
   async function listSet() {

@@ -42,7 +42,7 @@ const TOOLS = [
   ".pu-piece",
   /* the chemistry bench: the tiles of its drawer and the rail that sorts them. A
      tile is a picture of a piece of glassware; tape across it made it a note.
-     The Try key sits ON a note (an experiment's card): paper on paper vanished */
+     (The Try key is a note now: bench.css dresses it, paler where it sits on a card.) */
   ".cl-tile", ".cl-cat", ".cl-ico", ".cl-try",
   /* the bench's calculator has a calculator's keys, and its results table has a
      small cross on each row and column: paper on either made them unusable */

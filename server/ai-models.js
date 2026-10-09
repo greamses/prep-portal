@@ -4,7 +4,10 @@
  */
 
 const GEMINI_MODELS = [
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-pro:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent',

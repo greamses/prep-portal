@@ -17,6 +17,15 @@
  *   GET  /api/bench/a/:code            the assignment, to do
  *   POST /api/bench/a/:code/result     { done, total, notes }
  *
+ * A teacher's OWN experiments are kept as well, whether or not they are set for
+ * anyone: built on the bench with its own pieces, given steps, and saved to be
+ * opened again, changed, or set for a class later.
+ *
+ *   POST   /api/bench/saved            { title, note, steps, bench, id? }   save (or save over)
+ *   GET    /api/bench/saved            the teacher's saved experiments
+ *   GET    /api/bench/saved/:id        one of them, to put back on the bench
+ *   DELETE /api/bench/saved/:id
+ *
  * The same shape as a workbook assignment (routes/workbooks.js), and it uses
  * the same class roster, the same "assigned to me" list and the same teacher
  * notices, so a practical turns up on both dashboards with everything else.
@@ -166,6 +175,74 @@ module.exports = function () {
     } catch (err) {
       console.error("[/api/bench/assigned]", err.message);
       res.status(500).json({ error: "Could not list them." });
+    }
+  });
+
+  // ── a teacher's own experiments, kept ──
+  const text = (v, max) => String(v || "").replace(/[<>&`]/g, "").trim().slice(0, max);
+  const savedId = (s) => typeof s === "string" && /^[A-Za-z0-9]{6,40}$/.test(s);
+  router.post("/saved", authenticate, async (req, res) => {
+    try {
+      const e = await eligibility(req);
+      if (!e.teacher) return res.status(403).json({ error: "Only teachers can save experiments." });
+      const b = req.body || {};
+      const bench = cleanBench(b.bench);
+      if (!bench) return res.status(400).json({ error: "Set the bench out first: there is nothing on it to save, or something on it could not be saved." });
+      const title = text(b.title, 80);
+      if (!title) return res.status(400).json({ error: "Give it a title." });
+      const steps = Array.isArray(b.steps) ? b.steps.slice(0, 12).map((s) => text(s, 200)).filter(Boolean) : [];
+      const col = db().collection("benchExperiments");
+      let ref;
+      if (savedId(b.id)) {
+        ref = col.doc(b.id);
+        const was = await ref.get();
+        if (!was.exists || was.data().teacherUid !== req.user.uid) return res.status(404).json({ error: "That saved experiment is not yours to change." });
+      } else {
+        const mine = await col.where("teacherUid", "==", req.user.uid).limit(81).get();
+        if (mine.size > 80) return res.status(400).json({ error: "You have 80 saved experiments. Delete one you no longer use." });
+        ref = col.doc();
+      }
+      await ref.set({ title, note: text(b.note, 800), steps, bench, teacherUid: req.user.uid, updatedAt: stamp() }, { merge: true });
+      res.json({ ok: true, id: ref.id });
+    } catch (err) {
+      console.error("[/api/bench/saved]", err.message);
+      res.status(500).json({ error: "Could not save it." });
+    }
+  });
+  router.get("/saved", authenticate, async (req, res) => {
+    try {
+      const snap = await db().collection("benchExperiments").where("teacherUid", "==", req.user.uid).limit(80).get();
+      const list = snap.docs.map((d) => { const x = d.data(); return { id: d.id, title: x.title, steps: (x.steps || []).length, pieces: x.bench && x.bench.items ? x.bench.items.length : 0, updatedAt: ms(x.updatedAt) }; })
+        .sort((x, y) => y.updatedAt - x.updatedAt);
+      res.json({ ok: true, saved: list });
+    } catch (err) {
+      console.error("[/api/bench/saved list]", err.message);
+      res.status(500).json({ error: "Could not list them." });
+    }
+  });
+  router.get("/saved/:id", authenticate, async (req, res) => {
+    try {
+      if (!savedId(req.params.id)) return res.status(404).json({ error: "No such experiment." });
+      const snap = await db().collection("benchExperiments").doc(req.params.id).get();
+      if (!snap.exists || (snap.data().teacherUid !== req.user.uid && !isAdmin(req))) return res.status(404).json({ error: "No such experiment." });
+      const x = snap.data();
+      res.json({ ok: true, id: snap.id, title: x.title, note: x.note || "", steps: x.steps || [], bench: x.bench });
+    } catch (err) {
+      console.error("[/api/bench/saved get]", err.message);
+      res.status(500).json({ error: "Could not open it." });
+    }
+  });
+  router.delete("/saved/:id", authenticate, async (req, res) => {
+    try {
+      if (!savedId(req.params.id)) return res.status(404).json({ error: "No such experiment." });
+      const ref = db().collection("benchExperiments").doc(req.params.id);
+      const snap = await ref.get();
+      if (!snap.exists || snap.data().teacherUid !== req.user.uid) return res.status(404).json({ error: "No such experiment." });
+      await ref.delete();
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[/api/bench/saved delete]", err.message);
+      res.status(500).json({ error: "Could not delete it." });
     }
   });
 

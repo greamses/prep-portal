@@ -33,7 +33,7 @@ const MAX_LEN = 15;
 // Same providers, same keys, same fallback order as the site itself
 // (server/ai-models.js). Gemini's free tier runs out of road long before 84
 // topics are done, so Groq's 70B carries the run; pass --provider to force one.
-const GEMINI_MODEL = 'gemini-3.5-flash';
+const GEMINI_MODEL = 'gemini-3.8-flash';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
 

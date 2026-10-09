@@ -141,14 +141,15 @@ export const VESSELS = {
   // a model volcano: a clay cone with a small bottle hidden in its crater. What goes in is not seen
   // again until it comes out over the top.
   volcano: {
-    name: "Model volcano", cap: 20, g: 600, floor: 70, fill: 0.86, shadow: 104, material: "porcelain", noVeil: true,
-    profile: [[-70, 12], [-72, 15], [-132, 15], [-134, 18], [-138, 18]],
-    box: { x0: -106, y0: -146, x1: 106, y1: 8 },
-    front: `<path d="M-100 0L-24 -134q24 -7 48 0L100 0z" fill="#7a5238"/><path d="M-100 0L-24 -134q24 -7 48 0L100 0z" fill="url(#g-shade)" opacity="0.75"/>
-      <path d="M-24 -134q24 -7 48 0q-24 7 -48 0z" fill="#2a1c16"/><ellipse cx="0" cy="-134" rx="19" ry="3.4" fill="#170f0c"/>
-      <path d="M-58 -70l10 -26M-30 -52l6 -40M30 -60l-8 -34M62 -58l-12 -30M-78 -22l14 -24M80 -18l-14 -30M2 -30l-4 -44" stroke="#4d3222" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-      <path d="M-66 -30l8 -16M40 -24l-6 -22M-12 -84l4 -22" stroke="#a37856" stroke-width="1.6" stroke-linecap="round" fill="none" opacity="0.7"/>
-      <path d="M-100 0h200" stroke="#3b2619" stroke-width="2"/>`,
+    name: "Model volcano", cap: 20, g: 600, floor: 104, fill: 0.86, shadow: 122, material: "porcelain", noVeil: true,
+    profile: [[-104, 12], [-106, 15], [-166, 15], [-168, 18], [-172, 18]],
+    cone: { h: 168, r0: 24, r1: 118 },        // the mountain itself: how high its crater is, and how wide it is there and at the foot
+    box: { x0: -124, y0: -182, x1: 124, y1: 8 },
+    front: `<path d="M-118 0L-24 -168q24 -7 48 0L118 0z" fill="#7a5238"/><path d="M-118 0L-24 -168q24 -7 48 0L118 0z" fill="url(#g-shade)" opacity="0.75"/>
+      <path d="M-24 -168q24 -7 48 0q-24 7 -48 0z" fill="#2a1c16"/><ellipse cx="0" cy="-168" rx="19" ry="3.4" fill="#170f0c"/>
+      <path d="M-68 -86l12 -34M-36 -64l8 -52M36 -74l-10 -44M74 -72l-14 -38M-92 -28l16 -30M94 -22l-16 -38M2 -38l-4 -58M-50 -18l8 -26M56 -14l-8 -30" stroke="#4d3222" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+      <path d="M-78 -38l10 -20M48 -30l-8 -28M-14 -104l4 -28M22 -120l-4 -22" stroke="#a37856" stroke-width="1.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+      <path d="M-118 0h236" stroke="#3b2619" stroke-width="2"/>`,
   },
   watch: { name: "Watch glass", cap: 5, g: 20, profile: [[0, 10], [-3, 32], [-9, 50], [-12, 55]], fill: 0.7, flat: true, foot: 9 },
 };

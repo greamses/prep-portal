@@ -81,15 +81,17 @@ export const EXPERIMENTS = [
   {
     id: "setup-titration", group: "setup", title: "Set up: a titration",
     task: "Set up the apparatus for an acid-alkali titration, ready for the first reading.",
-    needs: "retort stand and clamp, burette, conical flask, pipette, an acid, an alkali",
+    needs: "retort stand and clamp, burette, conical flask, pipette, an acid, an alkali, an indicator",
+    kit: "stand burette pipette flask100 hcl naoh phph",
     steps: [
       { text: "Stand a retort stand on the bench and slide its clamp well up the rod (drag the yellow boss).", check: (q) => q.count("rack", "stand") > 0 },
       { text: "Let a burette go at the clamp: it hangs upright.", check: (q) => q.clamped("burette") },
       { text: "Fill the burette: pull the stopper out of the acid and carry the bottle to the top of the burette.", check: (q) => q.holds("burette") },
-      { text: "Let a conical flask go on the base of the stand: it stands there, directly under the tip of the burette.", check: (q) => q.under("burette") },
-      { text: "Have a pipette on the bench, for measuring the alkali into the flask.", check: (q) => q.count("tool", "pipette") > 0 },
+      { text: "Measure the alkali into a conical flask with the pipette: hold the pipette in the open bottle to fill it, then over the flask to empty it.", check: (q) => q.holds("flask") },
+      { text: "Add two drops of indicator to the flask: pull the dropper out of its bottle and hold it over the flask.", check: (q) => q.indicated("flask") },
+      { text: "Let the flask go on the base of the stand: it stands there, directly under the tip of the burette.", check: (q) => q.under("burette") },
     ],
-    record: "The burette is clamped upright so that its scale can be read at eye level, and its tip is just inside the neck of the flask so that nothing is lost. Before the first reading the tap is run for a moment to fill the tip and drive out the air bubble.",
+    record: "The alkali is measured with a pipette because the amount must be known exactly; the indicator shows the end point. The burette is clamped upright so that its scale can be read at eye level, and its tip is just inside the neck of the flask so that nothing is lost. Before the first reading the tap is run for a moment to fill the tip and drive out the air bubble.",
   },
   {
     id: "setup-sepfunnel", group: "setup", title: "Set up: a separating funnel",

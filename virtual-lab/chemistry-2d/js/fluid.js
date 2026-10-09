@@ -114,6 +114,8 @@ function spawnPuff(K, x, y, w, push = 1) {
  * @param {number[]} o.rgb    the colour of the liquid
  * @param {boolean} o.soapy   a lasting foam, or only a liquid full of gas
  * @param {number} [o.amount] how much comes out (1 = a good eruption)
+ * @param {number} [o.jet]    thrown up out of the mouth at about this speed (a volcano), not just pushed over the rim
+ * @param {boolean} [o.face]  what comes down lands on the FRONT of the thing and runs down it in streams (a mountain seen from the front), not only down its two edges
  */
 export function erupt(o) {
   if (!layer) return;
@@ -183,12 +185,21 @@ function tick(now) {
         p.y += p.vy * dt;
         p.x += (F.x + p.off * F.rIn * 0.8 - p.x) * Math.min(1, dt * 2);
         if (p.y < F.rim - p.r * 0.4) { p.state = "over"; p.vx = p.side * rnd(14, 38) * (0.5 + push); p.vy *= 0.5; }
+      } else if (p.state === "face") {
+        // on the front of the mountain: it runs down in its own stream, widening with the slope, slower as it cools
+        const top = (F.soapy ? 40 + 60 * push : 120) * p.slip;
+        p.vy += (top - p.vy) * Math.min(1, dt * 2.4);
+        p.y += p.vy * dt;
+        const want = F.x + p.u * F.outer(Math.min(F.floor, p.y)) * 0.9 + Math.sin(p.y * 0.045 + p.wind) * 5;
+        p.x += (want - p.x) * Math.min(1, dt * 5);
+        if (p.y >= F.floor - p.r * 0.55) { p.state = "floor"; p.y = F.floor - p.r * 0.55; p.side = p.u < 0 ? -1 : 1; p.vx = p.side * rnd(4, 22); }
       } else if (p.state === "over") {
-        // above the rim: it has almost no weight, so it is shouldered sideways by what comes after
-        p.vy += (F.soapy ? 46 : 260) * dt;
-        p.vx *= 1 - Math.min(1, dt * (F.soapy ? 1.1 : 0.4));
+        // above the rim: thrown up, it comes down as anything does; only pushed out, it has almost no weight and is shouldered sideways by what comes after
+        p.vy += (p.jet ? 430 : F.soapy ? 46 : 260) * dt;
+        p.vx *= 1 - Math.min(1, dt * (p.jet ? 0.5 : F.soapy ? 1.1 : 0.4));
         p.x += p.vx * dt;
         p.y += p.vy * dt;
+        if (F.face && p.vy > 0 && p.y >= F.rim + 2) { p.state = "face"; p.vy = Math.min(p.vy, 60); continue; }
         const edge = F.outer(Math.min(F.floor, Math.max(F.rim, p.y)));
         if (p.y > F.rim && Math.abs(p.x - F.x) >= edge - p.r * 0.3) { p.state = "wall"; p.vy = Math.max(8, p.vy * 0.4); }
         else if (p.y > F.rim + 2 && Math.abs(p.x - F.x) < edge) { p.y = F.rim + 2; p.vy = 0; p.vx += p.side * 30 * dt; }      // it cannot fall back through the glass
@@ -231,6 +242,22 @@ function spawnFoam(F) {
     el, state: "in", off, side: off < 0 ? -1 : 1, x: F.x + off * F.rIn * 0.8, y: F.surface, vx: 0, vy: -30, r: full * 0.35, full,
     age: 0, keep: F.soapy ? rnd(5.5, 10.5) : rnd(0.9, 2), slip: rnd(0.55, 1.15), thick: rnd(0, 0.9),
   };
+  if (F.face) {
+    // the streams it runs down in: five of them, fanning out from the crater
+    const lane = [-0.72, -0.36, 0, 0.34, 0.7][Math.floor(Math.random() * 5)];
+    p.u = lane + rnd(-0.1, 0.1);
+    p.wind = lane * 9;
+    p.keep += 2;
+  }
+  // thrown clear of the mouth while the gas is still coming hard (less and less as it dies down)
+  if (F.jet && Math.random() < 0.75 * Math.exp(-F.t / 1.6) + 0.1) {
+    p.jet = true;
+    p.state = "over";
+    p.y = F.rim;
+    p.vy = -F.jet * rnd(0.45, 1) * (0.55 + 0.45 * Math.exp(-F.t / 1.4));
+    p.vx = rnd(-1, 1) * F.jet * 0.2;
+    p.r = full * 0.6;
+  }
   // the cells of the foam: a few of its bubbles are big enough to be seen as bubbles
   if (F.soapy && Math.random() < 0.55) {
     p.cell = document.createElementNS(NS, "circle");

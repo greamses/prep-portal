@@ -146,12 +146,16 @@
               <p class="cl-sheet__lead">Your students start with the bench exactly as it is now: every piece, and whatever is in it. Set it out first, then write their steps here.</p>
               <label for="cl-class-steps">Steps for your students, one on each line</label>
               <textarea id="cl-class-steps" class="cl-search" rows="5" maxlength="2000"></textarea>
+              <button type="button" id="cl-class-save" class="cl-try">Save this experiment</button>
             </div>
             <label for="cl-class-note">A note to your students (optional)</label>
             <textarea id="cl-class-note" class="cl-search" rows="2" maxlength="800"></textarea>
             <button type="button" id="cl-class-set" class="cl-try">Set it</button>
             <div id="cl-class-msg" class="cl-class__msg" aria-live="polite"></div>
           </div>
+          <h3 class="cl-h3">My saved experiments</h3>
+          <p class="cl-sheet__lead">Build an experiment on the bench with any of its pieces, write its steps, and save it. Open it again to change it or to set it for a class.</p>
+          <ul id="cl-class-saved" class="cl-class__list"></ul>
           <h3 class="cl-h3">Set so far</h3>
           <ul id="cl-class-list" class="cl-class__list"></ul>
         </div>

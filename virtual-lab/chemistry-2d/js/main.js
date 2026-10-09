@@ -893,16 +893,20 @@ function catchInBalloon(v, bal) {
   inflate(bal, { gas: p.gas, n: p.n * (age < 4 ? 1 : 1 - (age - 4) / 8) }, res);
   record(v, res);
 }
+/** Where liquid falling into a vessel is last seen: at the surface of what is in it, or, where the inside is hidden (a model volcano), as it goes into the mouth. */
+const surfaceY = (v, level) => (VESSELS[v.key].noVeil ? v.y + VESSELS[v.key].top + 3 : v.y - Math.max(level, 10));
 /** Foam (or a model volcano's lava) is forced out of a vessel: over the rim, down the outside, onto the bench (fluid.js). */
 function erupt(v) {
   if (!nodes[v.id]) return;
-  const def = VESSELS[v.key], m = mouth(v), cone = v.key === "volcano";
+  const def = VESSELS[v.key], m = mouth(v), cone = def.cone;
   // the outside of the vessel at a given height: that is what the foam clings to as it creeps down
-  const outer = cone ? (y) => 24 + clamp((y - (v.y - 134)) / 134, 0, 1) * 76 : (y) => rAt(def.profile, clamp(y - v.y, def.top, -1)) + 1.5;
+  const outer = cone ? (y) => cone.r0 + clamp((y - (v.y - cone.h)) / cone.h, 0, 1) * (cone.r1 - cone.r0) : (y) => rAt(def.profile, clamp(y - v.y, def.top, -1)) + 1.5;
   foamOut({
     x: v.x, rim: m.y, floor: v.y, rIn: Math.max(4, def.rTop - 3), outer,
     surface: cone ? m.y + 10 : v.y - Math.max(v._level || 0, (def.floor || 0) + 6),
-    rgb: look(v.t).rgb, soapy: (v.t.aq.Soap || 0) > 0, amount: clamp(def.rTop / 15, 0.6, 1.7),
+    rgb: look(v.t).rgb, soapy: (v.t.aq.Soap || 0) > 0, amount: cone ? 1.9 : clamp(def.rTop / 15, 0.6, 1.7),
+    // a volcano throws its lava high, and it runs down the FACE of the mountain towards you
+    jet: cone ? 400 : 0, face: Boolean(cone),
   });
   kick(v, 40);
 }
@@ -1977,7 +1981,7 @@ function deliver(v, s, from, c, flag) {
   const painted = paint(v, { fresh: res.flags.some((f) => f.startsWith("ppt:")) });
   kick(v, (Math.random() < 0.5 ? -1 : 1) * 26);
   if (res.flags.some((f) => f.startsWith("gas:"))) bubble(nodes[v.id].g, v.key, v.t);
-  if (c) v._surface = v.y - Math.max(painted.level, 10);
+  if (c) v._surface = surfaceY(v, painted.level);
   record(v, res);
   const strip = fittedTo(v, "chroma");
   if (strip) setTimeout(() => nodes[strip.id] && runChroma(strip), 700);
@@ -2061,7 +2065,7 @@ function tapRun(s) {
       res.flags.push("added:water", `in:${v.key}:water`);
       const painted = paint(v, { fresh: res.flags.some((f) => f.startsWith("ppt:")) });
       kick(v, (Math.random() < 0.5 ? -1 : 1) * 18);
-      v._surface = v.y - Math.max(painted.level, 10);
+      v._surface = surfaceY(v, painted.level);
       if (res.flags.some((f) => f.startsWith("gas:"))) bubble(nodes[v.id].g, v.key, v.t);
       const quiet = res.obs.every((o) => o.text === "No visible change.");
       if (!quiet || tp.filled !== v.id) { tp.filled = v.id; record(v, quiet ? { ...res, obs: [] } : res); } else noteFlags(res.flags);
@@ -2137,7 +2141,7 @@ function pourReagent(bottle, v, amount) {
   res.flags.push(`added:${bottle.key}`, `in:${v.key}:${bottle.key}`);
   const painted = paint(v, { fresh: res.flags.some((f) => f.startsWith("ppt:")) });
   kick(v, (Math.random() < 0.5 ? -1 : 1) * 26);
-  v._surface = v.y - Math.max(painted.level, 10);
+  v._surface = surfaceY(v, painted.level);
   if (res.flags.some((f) => f.startsWith("gas:"))) bubble(nodes[v.id].g, v.key, v.t, res.flags.includes("gas:O2") ? 1.8 : 1);
   record(v, res);
   const strip = fittedTo(v, "chroma");
@@ -3509,6 +3513,7 @@ const Q = {
   fitted: (toolKey, hostKey) => tools(toolKey).some((t) => { const h = t.on && byId(t.on); return h && (!hostKey || h.key.startsWith(hostKey)); }),
   paperIn: () => tools("paper").some((p) => { const f = p.on && byId(p.on); return Boolean(f && f.on); }),
   holds: (key) => vessels().some((v) => v.key.startsWith(key) && v.t.vol + (v.t.oil || 0) > 0),
+  indicated: (key) => vessels().some((v) => v.key.startsWith(key) && v.t.ind.length > 0),
   /** something stands under the tip of a burette or a separating funnel */
   under: (topKey) => vessels().some((v) => v.key === topKey && hostKeyOf(v) === "stand" && below(v.x, v.y, v, 90)),
   lit: () => heaters().some((h) => lit(h)),

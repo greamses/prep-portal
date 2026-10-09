@@ -402,9 +402,14 @@ html body {
 .cl-card p { margin: 0; font-size: 0.68rem; line-height: 1.35; color: rgba(20, 19, 15, 0.72); }
 .cl-card__done { display: inline-flex; flex-shrink: 0; margin: 1px 0 0 auto; }
 .cl-card.is-on { outline: 2.5px solid #14130f; outline-offset: 2px; }
-.cl-try { align-self: flex-start; margin-top: auto; padding: 0.22rem 0.75rem 0.26rem; font: 700 0.74rem var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: #fffdf6; background: #14130f; border: 0; border-radius: 0; box-shadow: 2px 3px 0 rgba(20, 19, 15, 0.28); cursor: pointer; transform: none; }
-.cl-try:hover, .cl-try:focus-visible { background: #3a3830; transform: translate(-1px, -1px); }
-.cl-try:active { transform: translate(1px, 2px); box-shadow: none; }
+/* The keys on the sheets (Try, Set it, Start, Hand it in) are small sticky notes. On an experiment's
+   card, which is a note itself, the key is a paler note so that paper does not vanish on paper. */
+.cl-try { align-self: flex-start; display: inline-block; margin-top: auto; padding: 0.3rem 0.85rem 0.36rem; font: 700 0.82rem "Shantell Sans", "Segoe Print", "Bradley Hand", cursive; letter-spacing: 0.01em; text-transform: none; text-decoration: none; color: #14130f; background: #fff3a8; border: 0; border-radius: 0; box-shadow: 1px 2px 0 rgba(20, 19, 15, 0.22), 3px 6px 10px rgba(20, 19, 15, 0.18); cursor: pointer; transform: rotate(-1.4deg); transition: transform 0.12s, box-shadow 0.12s; }
+.cl-card .cl-try { background: #fffdf6; }
+.cl-card:nth-child(even) .cl-try { transform: rotate(1.2deg); }
+.cl-try:hover, .cl-try:focus-visible { transform: rotate(0deg) translateY(-2px); box-shadow: 1px 3px 0 rgba(20, 19, 15, 0.22), 4px 10px 14px rgba(20, 19, 15, 0.22); }
+.cl-try:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(20, 19, 15, 0.22); }
+.cl-try:disabled { opacity: 0.55; cursor: default; }
 
 /* sheets: the notebook, the list of things to try, the set-ups */
 .cl-sheet.pp-receipt {
@@ -795,3 +800,5 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 .cl-wisps { display: none; }
 .cl-bub__c { fill: rgba(255, 255, 255, 0.06); stroke-opacity: 0.6; stroke-width: 0.5; }
 .cl-foam { fill: rgba(255, 255, 255, 0.2); stroke-opacity: 0.55; stroke-width: 0.45; }
+.cl-class__keys { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.35rem; }
+.cl-class__keys .cl-try { margin-top: 0; font-size: 0.74rem; }

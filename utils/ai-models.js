@@ -12,6 +12,9 @@
 
 // ── Gemini ─────────────────────────────────────────────────────────────────
 
+// LATEST (checked 2026-10-09 against ai.google.dev): Flash = gemini-3.8-flash, Flash-Lite =
+// gemini-3.5-flash-lite. The newest Flash leads the default chain; the older ones follow as fallbacks.
+//
 // NOTE ON FREE-TIER ACCESS (as of Apr 2026): Google made every Gemini
 // "Pro" model (2.5 Pro, 3 Pro, 3.1 Pro Preview, 3.5 Pro) paid-only — a
 // free API key gets 403 Forbidden from all of them. Only Flash and
@@ -21,8 +24,11 @@
 // GEMINI_SKIP_STATUSES) so a free-tier key gracefully falls through to
 // the Flash models instead of failing outright.
 export const GEMINI_MODELS = [
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-pro:generateContent',
@@ -35,6 +41,9 @@ export const GEMINI_MODELS = [
 ];
 
 export const GEMINI_MODELS_UI = [
+  { label: 'Gemini 3.8 Flash',      provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent' },
+  { label: 'Gemini 3.7 Flash',      provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent' },
+  { label: 'Gemini 3.6 Flash',      provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent' },
   { label: 'Gemini 3.1 Flash-Lite', provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent' },
   { label: 'Gemini 3.5 Flash-Lite', provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent' },
   { label: 'Gemini 3.5 Flash',      provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent' },
@@ -65,6 +74,9 @@ export const GEMINI_MODELS_QUALITY_FIRST = [
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-pro:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent',

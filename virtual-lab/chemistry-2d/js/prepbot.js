@@ -27,6 +27,7 @@ import { UI } from "/utils/components/ui-icons.js";
 import { EXPERIMENTS, GROUPS, stepDone } from "./waec.js";
 import { PROCEDURES } from "./procedures.js";
 import { groqGenerate, groqText, geminiGenerate, geminiText } from "/utils/ai-client.js";
+import { GEMINI_MODELS_QUALITY_FIRST } from "/utils/ai-models.js";
 import { initAssign } from "./assign.js";
 
 /* A SETTING-UP lesson is the demonstration of a setting-up practical (waec.js, group "setup").
@@ -967,7 +968,7 @@ export const LESSONS = [
   {
     id: "setup-titration", setup: "setup-titration", group: "Setting up apparatus",
     name: "Set up: a titration",
-    about: "The burette hangs upright in a clamp with the flask under its tip.",
+    about: "The burette is clamped and filled, the alkali is pipetted into the flask with its indicator, and the flask stands under the tip.",
     need: [], steps: setupSteps("setup-titration"),
     async run({ say, b }) {
       const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
@@ -982,11 +983,19 @@ export const LESSONS = [
       await b.uncap(acid);
       await b.pour(acid, bu, 3);
       await say("It is filled from the top. Its scale is read downwards, from nought at the top.");
-      const cf = await b.take("vessel", "flask100", st.x + 160, b.BASE);
+      const cf = await b.take("vessel", "flask100", at(560), b.BASE);
+      const alk = await b.take("reagent", "naoh", at(520), b.TOP);
+      const pip = await b.take("tool", "pipette", at(660), b.BASE + 10);
+      await b.uncap(alk);
+      await say("Now the alkali. It has to be measured exactly, so it is drawn up in a pipette: 25.0 cubic centimetres, no more and no less.");
+      await b.hold(pip, alk, 1100);
+      await b.hold(pip, cf, 1300);
+      await say("The pipette empties into a clean conical flask.");
+      const ind = await b.take("reagent", "phph", at(630), b.TOP);
+      await b.drip(ind, cf);
+      await say("Two drops of indicator. Phenolphthalein is pink in the alkali, and will lose its colour at the end point.");
       await b.into(cf, st, 1);
-      await say("The conical flask stands on the base of the stand, directly under the tip, so that nothing is lost.");
-      await b.take("tool", "pipette", at(520), b.BASE + 10);
-      await say("And a pipette, to measure the alkali into the flask. Now it is ready for the first reading.");
+      await say("The flask stands on the base of the stand, directly under the tip of the burette, so that nothing is lost. Now it is complete, and ready for the first reading.");
     },
   },
   {
@@ -1671,11 +1680,15 @@ ${["Glassware", "Equipment", "Liquids", "Solids"].map((p) => `${p}: ${stock.filt
     return { say: String(o.say || "").slice(0, 400), do: (Array.isArray(o.do) ? o.do : []).map((c) => String(c).trim()).filter(Boolean).slice(0, 6), done: Boolean(o.done) };
   }
   async function askStage(system, prompt) {
-    try { return parseStage(groqText(await groqGenerate({ system, prompt, json: true, temperature: 0.2, maxTokens: 500 }))); }
-    catch (e) {
+    // Gemini's newest model first (it plans a method better); Groq's biggest behind it
+    try {
+      const data = await geminiGenerate({ models: GEMINI_MODELS_QUALITY_FIRST, body: { systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 600, responseMimeType: "application/json" } } });
+      const st = parseStage(geminiText(data));
+      if (st) return st;
+      throw new Error("no stage in the reply");
+    } catch (e) {
       console.warn("PrepBot: first AI did not answer", e.message);
-      const data = await geminiGenerate({ body: { systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 500, responseMimeType: "application/json" } } });
-      return parseStage(geminiText(data));
+      return parseStage(groqText(await groqGenerate({ system, prompt, json: true, temperature: 0.2, maxTokens: 500 })));
     }
   }
   /** Do an experiment the lists do not have. Resolves to what PrepBot concluded. */
