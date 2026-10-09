@@ -75,7 +75,7 @@ html body {
 .cl-flame { transform-box: fill-box; transform-origin: 50% 100%; transform: scale(var(--fl, 1)); transition: transform 0.25s ease; }
 .cl-g-inner { fill: none; stroke: #fff; stroke-opacity: 0.2; stroke-width: 0.9; stroke-linejoin: round; }
 .cl-g-spark { fill: none; stroke: #fff; stroke-opacity: 0.85; stroke-width: 2.6; stroke-linecap: round; }
-.cl-item.is-tilted .cl-meniscus, .cl-item.is-tilted .cl-lshade { opacity: 0; }
+.cl-item.is-tilted .cl-meniscus, .cl-item.is-tilted .cl-glint { opacity: 0; }
 .cl-item.is-unlit .cl-flame { opacity: 0; animation: none; }
 .cl-end { cursor: grab; }
 .cl-end__dot { fill: transparent; stroke: #f4c95d; stroke-opacity: 0; stroke-width: 1.4; stroke-dasharray: 3 3; }
@@ -109,7 +109,9 @@ html body {
 /* the meniscus: a bright line where the surface catches the light, a darker band under it */
 .cl-men-hi { fill: none; stroke: #fff; stroke-opacity: 0.82; stroke-width: 1.1; stroke-linecap: round; }
 .cl-men-lo { fill: none; stroke: #000; stroke-opacity: 0.2; stroke-linecap: round; }
-.cl-meniscus { stroke: #fff; stroke-opacity: 0.35; stroke-width: 0.6; }
+.cl-meniscus { stroke: #fff; stroke-opacity: 0.4; stroke-width: 0.6; }
+.cl-glint { fill: #fff; fill-opacity: 0.38; pointer-events: none; }
+.cl-tile .cl-glint { display: none; }
 .cl-item:not(.has-ppt) .cl-sediment { opacity: 0; }
 .cl-wisps { opacity: 0; }
 .cl-wisps path { fill: none; stroke: #fff; stroke-opacity: 0.55; stroke-width: 2; stroke-linecap: round; }
@@ -667,3 +669,7 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 }
 @keyframes cl-hum { 0%, 100% { translate: 0 0; } 25% { translate: 0.5px 0; } 75% { translate: -0.5px 0.3px; } }
 @keyframes cl-whirl { 0% { transform: translateX(-14px); opacity: 0.2; } 50% { opacity: 0.8; } 100% { transform: translateX(14px); opacity: 0.2; } }
+
+/* what is left in a bottle or a jar: its contents sink as they are used (main.js sets --drop) */
+.cl-stock { transform: translateY(var(--drop, 0px)); transition: transform 0.5s ease; }
+.cl-tile .cl-stock { transform: none; }

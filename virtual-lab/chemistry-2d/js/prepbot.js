@@ -451,8 +451,9 @@ export const LESSONS = [
       await b.uncap(acid);
       await b.pour(acid, bu, 3);
       await say("It is filled from the top. Its scale is read downwards, from nought at the top.");
-      await b.take("vessel", "flask100", st.x + 44, b.BASE + 14);
-      await say("The conical flask stands directly under the tip, so that nothing is lost.");
+      const cf = await b.take("vessel", "flask100", st.x + 160, b.BASE);
+      await b.into(cf, st, 1);
+      await say("The conical flask stands on the base of the stand, directly under the tip, so that nothing is lost.");
       await b.take("tool", "pipette", at(520), b.BASE + 10);
       await say("And a pipette, to measure the alkali into the flask. Now it is ready for the first reading.");
     },
@@ -470,8 +471,9 @@ export const LESSONS = [
       const fu = await b.take("vessel", "sepfunnel", at(400), b.BASE - 60);
       await b.into(fu, st, 0);
       await say("So it hangs in the clamp of a retort stand, tap downwards.");
-      await b.take("vessel", "beaker100", st.x + 44, b.BASE + 20);
-      await say("A beaker stands under the tap. Remember: the stopper comes out of the top before the tap is opened, or nothing will run.");
+      const bk = await b.take("vessel", "beaker100", st.x + 160, b.BASE);
+      await b.into(bk, st, 1);
+      await say("A beaker stands on the base, under the tap. Remember: the stopper comes out of the top before the tap is opened, or nothing will run.");
     },
   },
   {

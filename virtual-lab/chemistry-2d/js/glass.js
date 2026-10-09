@@ -228,6 +228,16 @@ export const DEFS = `
   <linearGradient id="g-case" x1="0" x2="0" y1="0" y2="1">
     <stop offset="0" stop-color="#f6f7f9"/><stop offset="0.5" stop-color="#dfe3e8"/><stop offset="1" stop-color="#b4bac3"/>
   </linearGradient>
+  <linearGradient id="g-liq-x" x1="0" x2="1" y1="0" y2="0">
+    <stop offset="0" stop-color="#000" stop-opacity="0.34"/><stop offset="0.1" stop-color="#000" stop-opacity="0.14"/><stop offset="0.3" stop-color="#fff" stop-opacity="0.07"/>
+    <stop offset="0.5" stop-color="#fff" stop-opacity="0"/><stop offset="0.82" stop-color="#000" stop-opacity="0.1"/><stop offset="1" stop-color="#000" stop-opacity="0.36"/>
+  </linearGradient>
+  <linearGradient id="g-liq-y" x1="0" x2="0" y1="0" y2="1">
+    <stop offset="0" stop-color="#fff" stop-opacity="0.06"/><stop offset="0.25" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.2"/>
+  </linearGradient>
+  <linearGradient id="g-liq-under" x1="0" x2="0" y1="0" y2="1">
+    <stop offset="0" stop-color="#fff" stop-opacity="0.34"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </linearGradient>
   <linearGradient id="g-bung" x1="0" x2="1" y1="0" y2="0">
     <stop offset="0" stop-color="#7c3220"/><stop offset="0.28" stop-color="#d06a4e"/><stop offset="0.62" stop-color="#b04e35"/><stop offset="1" stop-color="#6f2b1b"/>
   </linearGradient>
@@ -244,6 +254,11 @@ export const DEFS = `
 
 const shadow = (rx) => `<ellipse class="cl-ground" cx="0" cy="1" rx="${rx}" ry="6" filter="url(#g-soft)"/>`;
 const hit = (b) => `<rect class="cl-hit" x="${b.x0}" y="${b.y0}" width="${b.x1 - b.x0}" height="${b.y1 - b.y0}"/>`;
+
+/** How thick a vessel's wall is drawn, and how thick its base. */
+const wallOf = (def) => (def.rMax < 12 ? 1.5 : def.material === "porcelain" ? 3 : 2.4);
+/** The INSIDE of a vessel: its profile, less the thickness of the glass. Liquid is clipped to this, so a rim of clear glass shows round it. */
+const insideOf = (def) => { const w = wallOf(def), base = def.floor ? 0 : def.flat ? -4.2 : -w; return def.profile.map(([y, r]) => [Math.min(y, base), Math.max(0, r - w)]); };
 
 /** A vessel: glass, a place for liquid, sediment, solids and bubbles behind it. */
 export function vesselSvg(key, uid, tag = "") {
@@ -264,14 +279,20 @@ export function vesselSvg(key, uid, tag = "") {
     ${shadow(def.shadow || R + 8)}
     ${glassy && !def.fixed ? `<ellipse cx="${f1(R * 0.25)}" cy="4" rx="${f1(R * 0.62)}" ry="2.6" fill="#fff" fill-opacity="0.07"/>` : ""}
     ${def.back || ""}
-    <clipPath id="clip-${uid}"><path d="${body}"/></clipPath>
+    <clipPath id="clip-${uid}"><path d="${outline(insideOf(def))}"/></clipPath>
+    <clipPath id="liq-${uid}"><path class="cl-liq-clip" d=""/></clipPath>
     <path d="${body}" fill="#fff" fill-opacity="0.025"/>
     <g clip-path="url(#clip-${uid})">
       <g class="cl-level">
         <rect class="cl-oil" x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}" transform="translate(0 ${H})"/>
         <g class="cl-liquidg">
           <path class="cl-liquid" d=""/>
-          <rect class="cl-lshade" x="${-R}" y="${def.top + 4}" width="${R * 2}" height="${H}" fill="url(#g-shade)"/>
+          <g class="cl-lshade" clip-path="url(#liq-${uid})">
+            <rect x="${-R}" y="${def.top}" width="${R * 2}" height="${H}" fill="url(#g-liq-x)"/>
+            <rect x="${-R}" y="${def.top}" width="${R * 2}" height="${H}" fill="url(#g-liq-y)"/>
+            <rect x="${-R}" y="${def.top + 3.6}" width="${R * 2}" height="7" fill="url(#g-liq-under)"/>
+            ${R > 11 ? `<rect x="${f1(-R * 0.66)}" y="${def.top + 9}" width="${f1(Math.max(1.6, R * 0.1))}" height="${H}" rx="${f1(Math.max(0.8, R * 0.05))}" fill="#fff" fill-opacity="0.17"/><rect x="${f1(R * 0.52)}" y="${def.top + 12}" width="${f1(Math.max(1, R * 0.05))}" height="${H}" rx="1" fill="#fff" fill-opacity="0.08"/>` : ""}
+          </g>
           <path class="cl-men-lo" d=""/><path class="cl-men-hi" d=""/>
           <clipPath id="under-${uid}"><rect x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}"/></clipPath>
           <g class="cl-bloom" clip-path="url(#under-${uid})">
@@ -287,7 +308,7 @@ export function vesselSvg(key, uid, tag = "") {
       <g class="cl-solids"></g>
       <g class="cl-bubbles"></g>
     </g>
-    <ellipse class="cl-meniscus" cx="0" cy="0" rx="0" ry="2.4"/>
+    <ellipse class="cl-meniscus" cx="0" cy="0" rx="0" ry="2.4"/><ellipse class="cl-glint" cx="0" cy="0" rx="0" ry="0"/>
     <path d="${body}" fill="url(#${glassy ? "g-glass" : "g-porcelain"})"/>
     ${glassy ? `<path d="${band(P, -1, 3.2 * k, 7.8 * k, 0.1, 0.94)}" fill="url(#g-streak)"/><path d="${band(P, 1, 5 * k, 13 * k, 0.16, 0.9)}" fill="#fff" fill-opacity="0.07"/><path class="cl-g-spark" d="${wall(P, -1, 3 * k, 0.9, 0.97)}"/>` : ""}
     <path class="cl-g-edge" d="${outline(P, true)}"/>
@@ -324,7 +345,7 @@ export function veilSvg(key, uid) {
   const glassy = def.material !== "porcelain";
   const k = Math.min(1, def.rTop / 14);
   const rimRx = def.rTop + 1.5, rimRy = Math.max(2.6, def.rTop * 0.15);
-  return `<clipPath id="vclip-${uid}"><path d="${body}"/></clipPath>
+  return `<clipPath id="vclip-${uid}"><path d="${outline(insideOf(def))}"/></clipPath>
     <g clip-path="url(#vclip-${uid})"><path class="cl-veil__liq" d="" style="display:none"/></g>
     <path d="${body}" fill="url(#${glassy ? "g-glass" : "g-porcelain"})" opacity="${glassy ? 0.75 : 1}"/>
     ${glassy ? `<path d="${band(P, -1, 3.2 * k, 7.8 * k, 0.1, 0.94)}" fill="url(#g-streak)"/><path class="cl-g-spark" d="${wall(P, -1, 3 * k, 0.9, 0.97)}"/>` : ""}
@@ -383,11 +404,17 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1, tilt = 0 } = {
   // narrow tube the two curls meet and the whole surface is a curve. Along it there is a bright
   // line (the surface catching the light) with a darker band just under it (light bent away),
   // and the far edge of the surface shows through the glass as a flattened ellipse.
-  const rxS = top ? Math.max(2, rAt(P, -top) - 1.2) : def.rMax;
+  // LIQUID IN GLASS. The liquid is the shape of the INSIDE of the vessel, so the wall and the thick
+  // base show as clear glass round it. It is darker towards each side, where the eye looks through
+  // more of it, and a little deeper in colour lower down; a pale streak of light runs down through
+  // it; just under the surface there is a bright band (the surface seen from below reflects like a
+  // mirror); and the surface itself is seen from slightly above, as a paler ellipse with a glint.
+  const rxS = top ? Math.max(2, rAt(P, -top) - wallOf(def)) : def.rMax;
   const curl = Math.min(rxS * 0.92, 9), dip = Math.min(3.4, Math.max(1.2, curl * 0.4));
   const y0 = def.top, y1 = def.top + dip;
   const edge = `M${f1(-rxS)} ${y0}C${f1(-rxS + curl * 0.16)} ${f1(y0 + dip * 0.82)} ${f1(-rxS + curl * 0.5)} ${f1(y1)} ${f1(-rxS + curl)} ${f1(y1)}H${f1(rxS - curl)}C${f1(rxS - curl * 0.5)} ${f1(y1)} ${f1(rxS - curl * 0.16)} ${f1(y0 + dip * 0.82)} ${f1(rxS)} ${y0}`;
   g.querySelector(".cl-liquid").setAttribute("d", `M${-def.rMax * 4} ${y0}H${f1(-rxS)}${edge.slice(edge.indexOf("C"))}H${def.rMax * 4}V${y0 + H * 4}H${-def.rMax * 4}z`);
+  g.querySelector(".cl-liq-clip").setAttribute("d", g.querySelector(".cl-liquid").getAttribute("d"));
   g.querySelector(".cl-men-hi").setAttribute("d", edge);
   const lo = g.querySelector(".cl-men-lo");
   lo.setAttribute("d", edge);
@@ -395,8 +422,14 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1, tilt = 0 } = {
   lo.style.strokeWidth = rxS < 14 ? "2.6" : "1.9";
   const men = g.querySelector(".cl-meniscus");
   men.setAttribute("cy", f1(-top));
-  men.setAttribute("rx", top ? f1(Math.max(0, rAt(P, -top) - 1.2)) : 0);
-  men.setAttribute("ry", f1(rxS < 14 ? 0.6 : Math.min(4.6, rxS * 0.085)));
+  const ryS = rxS < 14 ? 0.6 : Math.min(6, rxS * 0.1);
+  men.setAttribute("rx", top ? f1(rxS) : 0);
+  men.setAttribute("ry", f1(ryS));
+  const glint = g.querySelector(".cl-glint");
+  glint.setAttribute("cx", f1(-rxS * 0.42));
+  glint.setAttribute("cy", f1(-top - ryS * 0.15));
+  glint.setAttribute("rx", top && rxS >= 14 ? f1(rxS * 0.24) : 0);
+  glint.setAttribute("ry", f1(ryS * 0.32));
   men.style.fill = rgba(lk.rgb.map((v) => Math.round(v + (255 - v) * 0.45)), Math.min(0.9, lk.a + 0.25));
 
   const total = stuff.ppt.reduce((a, p) => a + p.n, 0);
@@ -553,9 +586,9 @@ export function reagentSvg(id, uid, capped = false) {
       <clipPath id="clip-${uid}"><path d="${outline(JAR)}"/></clipPath>
       <path d="${outline(JAR)}" fill="#fff" fill-opacity="0.03"/>
       <g clip-path="url(#clip-${uid})">
-        <path d="M-34 0V-30q10-9 22-4t22-5 24 3V0z" fill="${fill}"/>
+        <g class="cl-stock"><path d="M-34 0V-30q10-9 22-4t22-5 24 3V0z" fill="${fill}"/>
         <path d="M-34 0V-30q10-9 22-4t22-5 24 3V0z" fill="url(#g-shade)"/>
-        <circle cx="-14" cy="-37" r="3" fill="${fill}"/><circle cx="12" cy="-41" r="2.4" fill="${fill}"/><circle cx="2" cy="-36" r="2" fill="${fill}"/>
+        <circle cx="-14" cy="-37" r="3" fill="${fill}"/><circle cx="12" cy="-41" r="2.4" fill="${fill}"/><circle cx="2" cy="-36" r="2" fill="${fill}"/></g>
       </g>
       <path d="${outline(JAR)}" fill="url(#g-glass)"/>
       <path class="cl-g-edge" d="${outline(JAR, true)}"/>
@@ -569,7 +602,7 @@ ${capped ? CAPS.jar(-83) : ""}
       ${shadow(26)}
       <clipPath id="clip-${uid}"><path d="${outline(DROPPER)}"/></clipPath>
       <path d="${outline(DROPPER)}" fill="#fff" fill-opacity="0.03"/>
-      <g clip-path="url(#clip-${uid})"><rect x="-22" y="-40" width="44" height="42" fill="${rgba(DROPPER_FILL[id], id === "phph" ? 0.3 : 0.85)}"/><rect x="-22" y="-40" width="44" height="42" fill="url(#g-shade)"/></g>
+      <g clip-path="url(#clip-${uid})"><g class="cl-stock"><rect x="-22" y="-40" width="44" height="84" fill="${rgba(DROPPER_FILL[id], id === "phph" ? 0.3 : 0.85)}"/><rect x="-22" y="-40" width="44" height="1.6" fill="#fff" fill-opacity="0.35"/></g><rect x="-22" y="-40" width="44" height="42" fill="url(#g-shade)"/></g>
       <path d="${outline(DROPPER)}" fill="url(#g-glass)"/>
       <path class="cl-g-edge" d="${outline(DROPPER, true)}"/>
       <path d="${band(DROPPER, -1, 3, 7, 0.1, 0.62)}" fill="url(#g-streak)"/><path d="${band(DROPPER, 1, 5, 13, 0.2, 0.62)}" fill="#fff" fill-opacity="0.07"/>
@@ -582,8 +615,8 @@ ${capped ? CAPS.jar(-83) : ""}
     ${shadow(36)}
     <clipPath id="clip-${uid}"><path d="${outline(BOTTLE)}"/></clipPath>
     <path d="${outline(BOTTLE)}" fill="#fff" fill-opacity="0.03"/>
-    <g clip-path="url(#clip-${uid})"><g class="cl-level" style="transform-origin:0px -58px"><rect x="-128" y="-58" width="256" height="240" fill="${liquidOf(id)}"/><rect x="-128" y="-58" width="256" height="2.2" fill="#fff" fill-opacity="0.3"/></g><rect x="-32" y="-58" width="64" height="60" fill="url(#g-shade)"/></g>
-    <ellipse cx="0" cy="-58" rx="29.5" ry="2.2" fill="#fff" fill-opacity="${amber ? 0.1 : 0.28}"/>
+    <g clip-path="url(#clip-${uid})"><g class="cl-stock"><g class="cl-level" style="transform-origin:0px -58px"><rect x="-128" y="-58" width="256" height="240" fill="${liquidOf(id)}"/><rect x="-128" y="-58" width="256" height="2.2" fill="#fff" fill-opacity="0.3"/><rect x="-128" y="-55.8" width="256" height="4" fill="#000" fill-opacity="0.12"/></g></g><rect x="-32" y="-58" width="64" height="60" fill="url(#g-shade)"/></g>
+    <ellipse class="cl-stock" cx="0" cy="-58" rx="29.5" ry="2.2" fill="#fff" fill-opacity="${amber ? 0.1 : 0.28}"/>
     <path d="${outline(BOTTLE)}" fill="url(#${amber ? "g-amber" : "g-glass"})"/>
     <path class="cl-g-edge" d="${outline(BOTTLE, true)}"/>
     <path d="${band(BOTTLE, -1, 3.6, 9, 0.08, 0.66)}" fill="url(#g-streak)"/><path d="${band(BOTTLE, 1, 5, 13, 0.2, 0.66)}" fill="#fff" fill-opacity="0.07"/>
@@ -884,29 +917,32 @@ export function toolSvg(key, it = {}) {
       <circle class="cl-ink" cx="0" cy="86" r="3" fill="#1c1c22"/>${rule}${hit(b)}`;
   }
   if (key === "holder") {
-    // the wooden kind: two beech arms hinged like a clothes peg on a coiled steel spring, a round
-    // notch cut in the jaws for the tube, lying on the bench
+    // the wooden kind: two beech arms hinged like a clothes peg on a coiled steel spring. It is seen
+    // gripping: the FAR arm is behind what it holds and the NEAR arm in front of it, so the tube
+    // stands between the jaws. (After the <!--front--> mark = drawn after the piece that is held.)
     return `<ellipse cx="0" cy="-1" rx="40" ry="4" fill="#000" fill-opacity="0.32" filter="url(#g-soft)"/>
+      <path d="M-40 -30q-2 1 -2 3l1 2.500l49 9l6 -3.500l22 4q3 0.5 3.5 -2.200l0.4 -2.200q0.4 -2.6 -2.5 -3.200l-73 -13.400q-3 -0.6 -4.4 1z" fill="#a8763d" stroke="#5d3d18" stroke-width="0.7"/>
+      <path d="M-38 -27.500l72 13M-37 -30.500l70 12.8" stroke="#6b461c" stroke-opacity="0.5" stroke-width="0.5"/>
+      <path d="M-16 -29.500V-23" stroke="#4a515b" stroke-width="2.6" stroke-linecap="round"/>${hit(b)}<!--front-->
       <path d="M-40 -9.500q-2 -1 -1 -3.500l1 -1.500h49l6 2.500h22q3 0 3 3v2.500q0 2.5 -3 2.500h-74q-3 0 -4 -2z" fill="url(#g-wood)" stroke="#6f4a1e" stroke-width="0.7"/>
-      <path d="M-38 -11.500h74M-36 -8.500h70" stroke="#7d5425" stroke-opacity="0.45" stroke-width="0.5"/><path d="M-39 -13.500h47" stroke="#fff" stroke-opacity="0.4" stroke-width="0.8"/>
-      <path d="M-40 -30q-2 1 -2 3l1 2.500l49 9l6 -3.500l22 4q3 0.5 3.5 -2.200l0.4 -2.200q0.4 -2.6 -2.5 -3.200l-73 -13.400q-3 -0.6 -4.4 1z" fill="url(#g-wood)" stroke="#6f4a1e" stroke-width="0.7"/>
-      <path d="M-38 -27.500l72 13M-37 -30.500l70 12.8" stroke="#7d5425" stroke-opacity="0.45" stroke-width="0.5"/><path d="M-38 -32l72 13.2" stroke="#fff" stroke-opacity="0.45" stroke-width="0.8"/>
-      <circle cx="29" cy="-12.5" r="5.2" fill="#262b33"/><path d="M24 -13.500a5.2 5.2 0 0 1 9.5 -2" fill="none" stroke="#6f4a1e" stroke-width="0.8"/><path d="M24.5 -10a5.2 5.2 0 0 0 9 0.5" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="0.7"/>
-      <path d="M-16 -3.500V-12M-16 -29.500V-23" stroke="#5d6570" stroke-width="2.6" stroke-linecap="round"/><path d="M-16 -3.500V-12M-16 -29.500V-23" stroke="#e2e7ee" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M-38 -11.500h74M-36 -8.500h70" stroke="#7d5425" stroke-opacity="0.45" stroke-width="0.5"/><path d="M-39 -13.500h47" stroke="#fff" stroke-opacity="0.45" stroke-width="0.8"/>
+      <path d="M22 -13.800q7 -5.5 14 0" fill="none" stroke="#6f4a1e" stroke-width="0.9"/><path d="M23 -13q6 -3.8 12 0" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="0.7"/>
+      <path d="M-16 -3.500V-12" stroke="#5d6570" stroke-width="2.6" stroke-linecap="round"/><path d="M-16 -3.500V-12" stroke="#e2e7ee" stroke-width="1.2" stroke-linecap="round"/>
       ${[-20, -17, -14, -11].map((x) => `<ellipse cx="${x}" cy="-19" rx="2.2" ry="5.6" fill="none" stroke="#5d6570" stroke-width="2.2"/><ellipse cx="${x}" cy="-19" rx="2.2" ry="5.6" fill="none" stroke="#dfe5ec" stroke-width="1"/>`).join("")}
-      <path d="M-22 -22.500q1 -3 3 -3" fill="none" stroke="#fff" stroke-opacity="0.8" stroke-width="0.7" stroke-linecap="round"/>${hit(b)}`;
+      <path d="M-22 -22.500q1 -3 3 -3" fill="none" stroke="#fff" stroke-opacity="0.8" stroke-width="0.7" stroke-linecap="round"/>`;
   }
   if (key === "tongs") {
-    // nickel-plated steel, like long scissors: two finger bows, a riveted joint, arms that
-    // bow out and come back to a pair of curved jaws that close round a crucible
+    // nickel-plated steel, like long scissors: two finger bows, a riveted joint, arms that bow out
+    // and come back to a pair of curved jaws. One arm passes BEHIND the rim it grips and the other
+    // in front of it (after the <!--front--> mark).
     const armA = "M-34 -22.500C-24 -20 -14 -17 -6 -16C8 -14 20 -6.5 30 -8.500C35 -9.5 38 -12.5 40 -15";
     const armB = "M-34 -9.500C-24 -12 -14 -15 -6 -16C8 -18 20 -25.5 30 -23.500C35 -22.5 38 -19.5 40 -17";
-    const steel = (d, w = 3.6) => `<path d="${d}" fill="none" stroke="#4a515b" stroke-width="${w + 1.4}" stroke-linecap="round"/><path d="${d}" fill="none" stroke="#b9c1cb" stroke-width="${w}" stroke-linecap="round"/><path d="${d}" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="${(w * 0.28).toFixed(1)}" stroke-linecap="round" transform="translate(0 -0.9)"/>`;
-    const bow = (cy) => `<ellipse cx="-38.5" cy="${cy}" rx="5.4" ry="4.6" fill="none" stroke="#4a515b" stroke-width="4.4"/><ellipse cx="-38.5" cy="${cy}" rx="5.4" ry="4.6" fill="none" stroke="#b9c1cb" stroke-width="3"/><path d="M-43 ${cy - 2.5}a5.4 4.6 0 0 1 8 -1.5" fill="none" stroke="#fff" stroke-opacity="0.8" stroke-width="0.9" stroke-linecap="round"/>`;
+    const steel = (d, w, body) => `<path d="${d}" fill="none" stroke="#3f454e" stroke-width="${w + 1.4}" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${body}" stroke-width="${w}" stroke-linecap="round"/><path d="${d}" fill="none" stroke="#fff" stroke-opacity="${body === "#b9c1cb" ? 0.75 : 0.4}" stroke-width="${(w * 0.28).toFixed(1)}" stroke-linecap="round" transform="translate(0 -0.9)"/>`;
+    const bow = (cy, body) => `<ellipse cx="-38.5" cy="${cy}" rx="5.4" ry="4.6" fill="none" stroke="#3f454e" stroke-width="4.4"/><ellipse cx="-38.5" cy="${cy}" rx="5.4" ry="4.6" fill="none" stroke="${body}" stroke-width="3"/><path d="M-43 ${cy - 2.5}a5.4 4.6 0 0 1 8 -1.5" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="0.9" stroke-linecap="round"/>`;
     return `<ellipse cx="0" cy="-2" rx="42" ry="4" fill="#000" fill-opacity="0.3" filter="url(#g-soft)"/>
-      ${bow(-8)}${steel(armB)}${bow(-24)}${steel(armA)}
-      <circle cx="-6" cy="-16" r="4.2" fill="#4a515b"/><circle cx="-6" cy="-16" r="3.3" fill="url(#g-knob)"/><circle cx="-7" cy="-17" r="1.1" fill="#fff" fill-opacity="0.8"/>
-      <path d="M36 -11.500q3 -1.5 4 -3.500M36 -20.500q3 1.5 4 3.5" fill="none" stroke="#4a515b" stroke-width="1" stroke-linecap="round"/>${hit(b)}`;
+      ${bow(-24, "#8f98a4")}${steel(armA, 3.6, "#8f98a4")}${hit(b)}<!--front-->
+      ${bow(-8, "#b9c1cb")}${steel(armB, 3.6, "#b9c1cb")}
+      <circle cx="-6" cy="-16" r="4.2" fill="#4a515b"/><circle cx="-6" cy="-16" r="3.3" fill="url(#g-knob)"/><circle cx="-7" cy="-17" r="1.1" fill="#fff" fill-opacity="0.8"/>`;
   }
   if (key === "lit") {
     return `${splint(`<g class="cl-tip"><circle cx="-34" cy="-62" r="15" fill="url(#g-ember)" opacity="0.55"/>
@@ -941,7 +977,8 @@ export const SUPPORTS = {
   tripod: { name: "Tripod and gauze", slots: [[0, -158]], fits: (d) => Boolean(d.flat) && !d.fixed && d.rMax < 90, bbox: { x0: -64, y0: -164, x1: 64, y1: 8 } },
   balance: { name: "Electronic balance", slots: [[0, -46]], fits: (d) => !d.fixed && d.rMax < 90, bbox: { x0: -84, y0: -58, x1: 84, y1: 8 } },
   // its one slot is wherever the clamp has been slid to (main.js works the height out for each vessel)
-  stand: { name: "Retort stand and clamp", slots: [[44, 0]], clamp: [-452, -110], fits: (d) => !d.material && d.rMax <= 60 && !d.upturns, bbox: { x0: -56, y0: -486, x1: 80, y1: 8 } },
+  // slot 0 is the clamp (main.js works its height out); slot 1 is the base plate, under the clamp
+  stand: { name: "Retort stand and clamp", slots: [[44, 0], [44, -12]], clamp: [-452, -110], fits: (d) => !d.material && d.rMax <= 60 && !d.upturns, bbox: { x0: -56, y0: -486, x1: 80, y1: 8 } },
 };
 /** In two halves: the back goes behind what it holds, the front in front of it. */
 export function supportSvg(key) {

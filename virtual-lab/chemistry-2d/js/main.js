@@ -193,10 +193,23 @@ const hostOf = (v) => (v.rack ? byId(v.rack[0]) : null);
 /** An upturned jar standing in a trough with water in it: gas can be collected over the water. */
 const overWater = (v) => { const h = v.flip && hostOf(v); return Boolean(h && h.key === "trough" && h.t.vol >= h.t.cap * 0.12); };
 
+/** A burette or a separating funnel whose tip is down inside the neck of the flask under it is drawn before the flask, so that the tip is seen through the glass and not on top of it. */
+function tipsIn() {
+  for (const top of vessels().filter((v) => VESSELS[v.key].tap && nodes[v.id])) {
+    const v = below(top.x, top.y, top, 90);
+    if (!v || !nodes[v.id] || top.y < mouth(v).y - 1) continue;
+    const a = nodes[top.id], bn = nodes[v.id];
+    if (a.g.parentNode !== L.items || bn.g.parentNode !== L.items) continue;
+    if (a.g.compareDocumentPosition(bn.g) & Node.DOCUMENT_POSITION_FOLLOWING) continue;      // already behind it
+    L.items.insertBefore(a.g, bn.g);
+    if (a.veil) L.items.insertBefore(a.veil, bn.g);
+  }
+}
 let ticking = false;
 function save() {
   readouts();
   drawLinks();
+  tipsIn();
   // a piece may have been put in place, or taken away: the guide to a setting-up practical follows
   if (!ticking && typeof noteFlags === "function" && state.exp) { ticking = true; try { noteFlags([]); } catch { /* the guide is not up yet */ } finally { ticking = false; } }
   if (!ticking) { ticking = true; try { if (actor.onChange) actor.onChange(); } catch { /* PrepBot is not up yet */ } finally { ticking = false; } }
@@ -246,7 +259,17 @@ function mount(it) {
   const node = (nodes[it.id] = { g });
   if (it.kind === "vessel") g.innerHTML = vesselSvg(it.key, it.id, it.tag);
   else if (it.kind === "reagent") { g.innerHTML = reagentSvg(it.key, it.id); g.dataset.rk = reagent(it.key).kind; }
-  else if (it.kind === "tool") g.innerHTML = toolSvg(it.key, it);
+  else if (it.kind === "tool") {
+    // a tool that grips is drawn in two halves, and what it holds goes between them
+    const art = toolSvg(it.key, it), cut = art.indexOf("<!--front-->");
+    g.innerHTML = cut < 0 ? art : art.slice(0, cut);
+    if (cut >= 0) {
+      node.front = document.createElementNS(NS, "g");
+      node.front.setAttribute("class", "cl-item-front");
+      node.front.innerHTML = art.slice(cut + 12);
+      node.near = true;                     // its front lives in the same layer, just after what it holds
+    }
+  }
   else {
     const r = supportSvg(it.key);
     g.innerHTML = r.back;
@@ -256,6 +279,7 @@ function mount(it) {
     L.front.appendChild(node.front);
   }
   (isBehind(it) ? L.back : L.items).appendChild(g);
+  if (node.near) L.items.appendChild(node.front);
   if (it.kind === "vessel" && !isBehind(it)) {
     // its front wall and liquid, once more, over whatever is put inside it (see veilSvg)
     node.veil = document.createElementNS(NS, "g");
@@ -323,12 +347,23 @@ function paint(it, opts = {}) {
 /** Bring a piece to the front of its layer, and whatever is fitted to it in front of that. */
 function raise(it, layer = L.items) {
   if (!nodes[it.id] || isBehind(it)) return;
-  // something fitted INTO a piece is drawn with that piece: after its back, before its front
+  // a thing fitted INTO a piece, or HELD by a tool, is drawn with it: the whole stack goes up together
   let root = it;
-  while (layer === L.items && root.on != null && byId(root.on) && nodes[root.on] && !isBehind(byId(root.on))) root = byId(root.on);
-  const put = (o) => { layer.appendChild(nodes[o.id].g); state.items.filter((c) => c.on === o.id && nodes[c.id]).forEach(put); };
+  while (layer === L.items) {
+    const up = root.on != null ? byId(root.on) : root.held ? byId(root.held) : null;
+    if (!up || !nodes[up.id] || isBehind(up)) break;
+    root = up;
+  }
+  // back of the piece, what is fitted in it, its own front; and for a gripping tool: far jaw, what it holds, near jaw
+  const put = (o) => {
+    const n = nodes[o.id];
+    layer.appendChild(n.g);
+    state.items.filter((c) => c.on === o.id && nodes[c.id]).forEach(put);
+    if (n.veil) layer.appendChild(n.veil);
+    state.items.filter((c) => c.held === o.id && nodes[c.id]).forEach(put);
+    if (n.near) layer.appendChild(n.front);
+  };
   put(root);
-  if (nodes[root.id].veil) layer.appendChild(nodes[root.id].veil);
 }
 /** A tool held in a vessel goes INSIDE it for as long as it is there: behind the vessel's front. */
 function tuck(tool, v) {
@@ -352,6 +387,7 @@ function dress(it) {
   const g = n.g;
   if (TAKES[it.key]) g.querySelector(".cl-drop-liq").style.fill = it.sample ? `rgba(${it.rgb || [200, 224, 240]},0.9)` : "transparent";
   if (it.key === "wire") g.querySelector(".cl-loop").style.fill = it.sample ? "#f2f6fb" : "transparent";
+  if (it.kind === "reagent") g.style.setProperty("--drop", `${((1 - leftIn(it) / fullOf(it)) * DROP[reagent(it.key).kind]).toFixed(1)}px`);
   if (it.key === "magnet") g.classList.toggle("has-filings", Boolean(it.sample));
   if (it.key === "chroma") {
     const ink = INKS[it.ink || "black"], p = it.washed ? 0 : it.p || 0;
@@ -592,7 +628,7 @@ const hostDef = (o) => (o.kind === "rack" ? SUPPORTS[o.key] : { slots: VESSELS[o
 /** Where slot i of a host is, for a given vessel. A clamp holds a vessel by its neck, so tall and short hang differently. */
 function slotAt(host, i, def) {
   const [sx, sy] = hostDef(host).slots[i];
-  if (host.kind === "rack" && host.key === "stand") return [sx, (host.clamp ?? CLAMP) - 1 - def.top - def.grip];
+  if (host.kind === "rack" && host.key === "stand" && i === 0) return [sx, (host.clamp ?? CLAMP) - 1 - def.top - def.grip];
   return [sx, sy];
 }
 /** Whatever rides on `it`: vessels in its slots, things fitted to it, and whatever rides on those. */
@@ -626,6 +662,8 @@ function snap(it) {
     const taken = new Set(state.items.filter((v) => v !== it && v.rack && v.rack[0] === host.id).map((v) => v.rack[1]));
     for (let i = 0; i < S.slots.length; i++) {
       if (taken.has(i)) continue;
+      // a stand's base plate takes only what can stand on it: flat-bottomed, and the right way up
+      if (host.kind === "rack" && host.key === "stand" && i === 1 && !(def.flat && !it.flip)) continue;
       const [sx, sy] = slotAt(host, i, def);
       const up = VESSELS[host.key] && VESSELS[host.key].upturns;
       // a jar going into a trough is judged by where its middle is; everything else by its foot
@@ -641,7 +679,7 @@ function snap(it) {
       it.rack = [host.id, i];
       it.x = host.x + sx;
       it.y = host.y + sy;
-      if (host.kind === "rack" && host.key === "stand") setTimeout(() => noteFlags([`clamped:${it.key}`]), 0);
+      if (host.kind === "rack" && host.key === "stand" && i === 0) setTimeout(() => noteFlags([`clamped:${it.key}`]), 0);
       if (up) { paint(it); say(overWater(it) ? `${cap1(plain(it))} is upside down in the trough, full of water. Lead a delivery tube to it.` : "The jar is upside down in the trough, but there is no water to hold in it. Fill the trough.", it); }
       return true;
     }
@@ -853,7 +891,7 @@ function flash(it) {
   g.classList.add("is-flash");
 }
 function clearBench() {
-  Object.values(nodes).forEach((n) => { n.g.remove(); if (n.front) n.front.remove(); });
+  Object.values(nodes).forEach((n) => { n.g.remove(); if (n.front) n.front.remove(); if (n.veil) n.veil.remove(); });
   for (const k of Object.keys(nodes)) delete nodes[k];
   state.items = [];
   L.fx.innerHTML = "";
@@ -1348,6 +1386,52 @@ function stream(v, c, mu) {
   flows.pour.walls = wallsOf(v);
 }
 
+// ── shaking ─────────────────────────────────────────────────────────────────
+// A vessel moved quickly to and fro in the hand is being SHAKEN. How hard is the hand's own
+// speed: the faster the mouse, the further the liquid is thrown and the more it froths. Let go,
+// it has been mixed: a precipitate or sand is thrown up through it, a pellet is broken up.
+function shakeWatch(v, dx, dy) {
+  const now = performance.now();
+  const s = (drag.shake = drag.shake || { t: now, dir: [0, 0], flips: [], speed: 0, fx: 0, peak: 0, v });
+  const dt = Math.max(8, now - s.t);
+  s.t = now;
+  s.speed = s.speed * 0.72 + ((Math.hypot(dx, dy) / dt) * 1000) * 0.28;          // bench units a second, smoothed
+  [dx, dy].forEach((d, k) => {
+    if (Math.abs(d) < 1.2) return;
+    const way = Math.sign(d);
+    if (s.dir[k] && way !== s.dir[k] && s.speed > 240) s.flips.push(now);      // the hand has turned back on itself, at speed
+    s.dir[k] = way;
+  });
+  s.flips = s.flips.filter((t) => now - t < 900);
+  if (s.flips.length < 3 || v.t.vol + (v.t.oil || 0) <= 0 || !nodes[v.id]) return;
+  const hard = clamp(s.speed / 850, 0.25, 1.7);
+  s.peak = Math.max(s.peak, hard);
+  kick(v, (way0(dx) || (Math.random() < 0.5 ? -1 : 1)) * -150 * hard);
+  if (now - s.fx > 300) {
+    s.fx = now;
+    bubble(nodes[v.id].g, v.key, v.t, 0.4 + hard * 1.4);
+    if (Object.keys(speciate(v.t).ppt).length) paint(v, { fresh: true });
+  }
+}
+const way0 = (d) => (Math.abs(d) < 0.5 ? 0 : Math.sign(d));
+/** It has been shaken, and put down. */
+function shaken(v, hard) {
+  if (!nodes[v.id] || v.t.vol + (v.t.oil || 0) <= 0) return;
+  v.t.packed = false;
+  v._poured = false;
+  const sandy = (v.t.solid.sand || 0) > 0 && v.t.vol > 0;
+  if (sandy) v.t.susp = true;
+  const cloudy = Object.keys(speciate(v.t).ppt).length > 0;
+  if (cloudy) paint(v, { fresh: true });
+  const oily = (v.t.oil || 0) > 0 && v.t.vol > 0;
+  const text = cloudy ? "Shaken: the precipitate is thrown up all through the liquid, and slowly settles again."
+    : sandy ? "Shaken: the sand is thrown up through the water. Poured now, it goes over with the liquid."
+    : oily ? "Shaken: the oil breaks into droplets all through the water, then rises and gathers on top again." : "";
+  const why = cloudy || sandy ? "Shaking mixes, but it cannot make an insoluble solid dissolve. Left alone it settles." : oily ? "Oil and water do not mix. Shaking only breaks the oil into droplets for a while: an emulsion that separates again." : undefined;
+  record(v, { title: hard > 0.9 ? "Shaken hard" : "Shaken", obs: text ? [{ text, why }] : [], flags: ["swirled", "shaken"] });
+  if (!text) say(hard > 0.9 ? "Shaken hard: it is thoroughly mixed." : "Shaken gently: the liquid is mixed. Shake faster to mix it harder.", v);
+}
+
 // ── liquid has weight: it lags behind a vessel that is moved, and rocks until it settles ──
 const waves = new Map();           // item id → { a: the surface's tilt in degrees, w: how fast it is turning }
 let waving = 0;
@@ -1394,6 +1478,26 @@ function swirl(v, by = "hand") {
 }
 const drops = (from, to, c, r = 2.6, spread = 0) => fx([0, 1, 2].map((k) => `<circle class="cl-dropin" cx="${from[0] + (k - 1) * spread}" cy="${from[1]}" r="${r}" fill="rgb(${c})" style="--fall:${Math.round(to - from[1])}px;animation-delay:${k * 0.13}s"/>`).join(""), 1000);
 
+// ── a bottle holds only so much ─────────────────────────────────────────────
+// What is poured out of a bottle is no longer in it: its level falls as the vessel's rises, and
+// an empty bottle pours nothing until it is refilled (from its own note). A solution bottle
+// holds 250 cm³ (125 portions), a jar twelve spatula measures, an indicator bottle thirty squirts.
+const FULL = { solution: 125, solid: 12, indicator: 30 };
+const DROP = { solution: 58, solid: 37, indicator: 41 };          // how far the contents sink in the drawing, full to empty
+const fullOf = (it) => FULL[reagent(it.key).kind];
+const leftIn = (it) => it.left ?? fullOf(it);
+function takeStock(it, n) {
+  it.left = Math.max(0, leftIn(it) - n);
+  if (it.left < 1e-6) it.left = 0;
+  dress(it);
+}
+/** An empty bottle says so. */
+function ranOut(bottle) {
+  if (leftIn(bottle) > 1e-6) return false;
+  say(`The ${reagent(bottle.key).name} has run out. Refill the ${reagent(bottle.key).kind === "solid" ? "jar" : "bottle"}: it is in its own note.`, null, "no");
+  flash(bottle);
+  return true;
+}
 /** How much goes in at a time: a few drops, or a twelfth of what the vessel holds. */
 const measure = (v) => (state.dose === "drops" ? 0.25 : Math.max(1, VESSELS[v.key].cap / 12));
 /** A stopper is in the way. */
@@ -1445,8 +1549,11 @@ function deliver(v, s, from, c, flag) {
 /** Pour a measure from an open bottle into v. */
 function pourReagent(bottle, v, amount) {
   const r = reagent(bottle.key);
+  if (ranOut(bottle)) return null;
+  if (r.kind === "solution") amount = Math.min(amount, leftIn(bottle));          // the last of it
   const res = add(v.t, bottle.key, r.kind === "solution" ? amount : state.dose, bottle.k || 1);
   if (res.refused) { say(res.refused, v, "no"); return null; }
+  takeStock(bottle, r.kind === "solution" ? amount : 1);
   res.flags.push(`added:${bottle.key}`, `in:${v.key}:${bottle.key}`);
   const painted = paint(v, { fresh: res.flags.some((f) => f.startsWith("ppt:")) });
   kick(v, (Math.random() < 0.5 ? -1 : 1) * 26);
@@ -1509,8 +1616,10 @@ function use(it, v) {
   if (it.key === "cap") {
     const bottle = byId(it.of);
     if (!bottle) return false;
+    if (ranOut(bottle)) return false;
     const res = add(v.t, bottle.key);
     if (res.refused) { say(res.refused, v, "no"); return false; }
+    takeStock(bottle, 1);
     res.flags.push(`ind:${bottle.key}`);
     const m = mouth(v), painted = paint(v);
     drops([m.x, m.y - 4], v.y - Math.max(painted.level, 10), colourOf(bottle.key));
@@ -1548,10 +1657,13 @@ function use(it, v) {
   // ── a dropper or pipette, filling from a bottle ──
   if (v.kind === "reagent") {
     if (capped(v)) return false;
-    it.sample = sampleOf(v.key, TAKES[it.key], v.k || 1);
+    if (ranOut(v)) return false;
+    const drawn = Math.min(TAKES[it.key], leftIn(v));
+    it.sample = sampleOf(v.key, drawn, v.k || 1);
+    takeStock(v, drawn);
     it.rgb = colourOf(v.key);
     dress(it);
-    say(`The ${nameOf(it).replace(/ \(.*/, "").toLowerCase()} is holding ${cm3(TAKES[it.key])} of ${reagent(v.key).name}. Carry it to a vessel.`);
+    say(`The ${nameOf(it).replace(/ \(.*/, "").toLowerCase()} is holding ${cm3(drawn)} of ${reagent(v.key).name}. Carry it to a vessel.`);
     save();
     return false;
   }
@@ -1901,6 +2013,7 @@ function pourTick() {
     return;
   }
   // nothing underneath: it goes on the bench
+  if (isBottle) { if (leftIn(it) <= 1e-6) { if (!turn.told) { turn.told = true; ranOut(it); } return; } takeStock(it, 2 * speed); }
   if (!isBottle) { takeFrom(it.t, Math.max(0.5, it.t.cap / 30) * speed); paint(it); }
   flow("tilt", lip, { x: lip.x + Math.sign(it.tilt) * 14, y: H - 8 }, c, Math.sign(it.tilt), viscOf(it));
   flows.tilt.walls = null;
@@ -2051,6 +2164,8 @@ window.addEventListener("pointermove", (e) => {
   keepIn(it);
   for (const v of drag.riders) { v.x += it.x - ox; v.y += it.y - oy; place(v); kick(v, -(it.x - ox) * 3.4); }
   kick(it, -(it.x - ox) * 3.4);
+  if (it.kind === "vessel" && !drag.over) shakeWatch(it, it.x - ox, it.y - oy);
+  else if (GRIPS[it.key] && loadOf(it)) shakeWatch(loadOf(it), it.x - ox, it.y - oy);
   if (it.kind === "vessel" || it.key === "syringe") it.rack = null;
   if (it.held) it.held = null;                       // pulled out of the holder or the tongs
   if (it.on) it.on = null;
@@ -2148,6 +2263,7 @@ window.addEventListener("pointerup", (e) => {
   }
   if (!d.moved) return select(it);
 
+  if (d.shake && d.shake.peak) shaken(d.shake.v, d.shake.peak);
   const fits = Boolean(d.over) && fitsOn(it, d.over);
   if (d.over && !d.used && !fits && !d.shut) { d.used = true; use(it, d.over); }   // let go at once: that is one measure
   if (d.shut && d.over && !d.told) capped(it);
@@ -2297,7 +2413,7 @@ function openMenu(it) {
   const menu = $("cl-menu");
   const lines = [];
   const acts = [];
-  const SHORT = { empty: "Empty", swirl: "Swirl", flip: "Turn over", light: "Light", remove: "Put away", ink: "Another ink", drop: "Let go" };
+  const SHORT = { empty: "Empty", swirl: "Swirl", flip: "Turn over", light: "Light", remove: "Put away", ink: "Another ink", drop: "Let go", refill: "Refill" };
   const act = (id, tip, icon) => acts.push(`<button type="button" class="cl-act" data-act="${id}" aria-label="${tip}">${icon}<span>${id === "light" && /out/i.test(tip) ? "Put out" : id === "empty" && /fresh|plunger|wipe/i.test(tip) ? (/strip/i.test(tip) ? "Fresh strip" : /fresh/i.test(tip) ? "Fresh paper" : /wipe/i.test(tip) ? "Wipe off" : "Push in") : SHORT[id] || tip}</span></button>`);
   let slider = "";
   if (it.kind === "vessel") {
@@ -2316,7 +2432,7 @@ function openMenu(it) {
     if (!def.fixed && !it.flip && it.t.vol > 0) act("swirl", "Swirl it", ICON.swirl);
     if (def.invert) {
       // it can be turned over empty, standing free or held in a clamp, and with a stopper in it
-      const host = it.rack && hostOf(it), inClamp = host && host.kind === "rack" && host.key === "stand";
+      const host = it.rack && hostOf(it), inClamp = host && host.kind === "rack" && host.key === "stand" && it.rack[1] === 0;
       const busy = state.items.some((o) => o.on === it.id && o.key !== "bung" && !(o.key === "bung1" && !fittedTo(o, "tubing")));
       if (!isEmpty(it.t)) lines.push("Empty it before turning it upside down.");
       else if (host && !inClamp) lines.push("Lift it out before turning it upside down. (In a retort clamp it can be turned over where it is.)");
@@ -2326,6 +2442,9 @@ function openMenu(it) {
   } else if (it.kind === "reagent") {
     const r = reagent(it.key);
     lines.push(r.kind === "indicator" ? (fittedTo(it, "cap") ? "Pull the dropper out and carry it to a liquid." : "Its dropper is out. Let the dropper go at the bottle to put it back.") : fittedTo(it, "cap") ? "Stoppered. Drag the stopper off before you pour: it will not tip with the stopper in." : "Open. Carry it to a vessel and hold it there, or select it and turn it.");
+    const left = leftIn(it), full = fullOf(it);
+    lines.push(left <= 1e-6 ? `<b>Empty.</b> Refill it to go on using it.` : r.kind === "solution" ? `${cm3(left)} left of ${cm3(full)}.` : r.kind === "solid" ? `About ${Math.round(left)} of ${full} measures left.` : `About ${Math.round(left)} of ${full} squirts left.`);
+    if (left < full - 1e-6) act("refill", "Refill it", ICON.measure);
     if (r.kind === "solution" && Object.keys(r.adds).length) {
       const k = it.k || 1;
       slider = `<label class="cl-range"><span>Concentration <b id="cl-k">${k.toFixed(2)}</b> mol/dm\u00b3</span><input type="range" min="0.25" max="2" step="0.25" value="${k}" data-act="strength" aria-label="Concentration"></label>`;
@@ -2384,6 +2503,7 @@ $("cl-menu").addEventListener("click", (e) => {
   const what = b.dataset.act;
   if (what === "remove") return removeItem(it);
   if (what === "read") { checkReading(it, $("cl-reading").value); return; }
+  if (what === "refill") { it.left = fullOf(it); dress(it); flash(it); say(`The ${reagent(it.key).name} is full again.`); save(); select(it); return; }
   if (what === "drop") { const held = loadOf(it); if (held) { held.held = null; say(`${cap1(plain(held))} is let go.`); } save(); select(it); return; }
   if (what === "ink") { const names = Object.keys(INKS); it.ink = names[(names.indexOf(it.ink || "black") + 1) % names.length]; it.p = 0; it.washed = false; cancelAnimationFrame(running.get(it.id)); running.delete(it.id); dress(it); if (it.on != null) runChroma(it); save(); select(it); openMenu(it); return; }
   if (what === "swirl") { $("cl-menu").hidden = true; swirl(it); return; }
@@ -2487,7 +2607,7 @@ const hostKeyOf = (v) => { const h = v.rack && hostOf(v); return h ? h.key : "";
 const Q = {
   count: (kind, key) => state.items.filter((it) => it.kind === kind && it.key.startsWith(key)).length,
   /** a vessel of this kind held in a stand's clamp */
-  clamped: (key) => vessels().some((v) => v.key.startsWith(key) && hostKeyOf(v) === "stand"),
+  clamped: (key) => vessels().some((v) => v.key.startsWith(key) && hostKeyOf(v) === "stand" && v.rack[1] === 0),
   syringeClamped: () => tools("syringe").some((s) => { const h = s.rack && byId(s.rack[0]); return h && h.key === "stand"; }),
   anyOn: (hostKey) => vessels().some((v) => hostKeyOf(v) === hostKey),
   fitted: (toolKey, hostKey) => tools(toolKey).some((t) => { const h = t.on && byId(t.on); return h && (!hostKey || h.key.startsWith(hostKey)); }),
@@ -2738,6 +2858,7 @@ const actor = {
   },
   /** Carry a bottle or a vessel to another vessel and pour `times` measures. */
   async pour(src, v, times = 1) {
+    if (src.kind === "reagent" && leftIn(src) < fullOf(src) * 0.4) { src.left = fullOf(src); dress(src); }
     raise(src, src.kind === "vessel" ? L.items : L.fx);
     glide(src, true);
     nodes[v.id].g.classList.add("is-target");

@@ -83,7 +83,7 @@ export const EXPERIMENTS = [
       { text: "Stand a retort stand on the bench and slide its clamp well up the rod (drag the yellow boss).", check: (q) => q.count("rack", "stand") > 0 },
       { text: "Let a burette go at the clamp: it hangs upright.", check: (q) => q.clamped("burette") },
       { text: "Fill the burette: pull the stopper out of the acid and carry the bottle to the top of the burette.", check: (q) => q.holds("burette") },
-      { text: "Stand a conical flask on the bench directly under the tip of the burette.", check: (q) => q.under("burette") },
+      { text: "Let a conical flask go on the base of the stand: it stands there, directly under the tip of the burette.", check: (q) => q.under("burette") },
       { text: "Have a pipette on the bench, for measuring the alkali into the flask.", check: (q) => q.count("tool", "pipette") > 0 },
     ],
     record: "The burette is clamped upright so that its scale can be read at eye level, and its tip is just inside the neck of the flask so that nothing is lost. Before the first reading the tap is run for a moment to fill the tip and drive out the air bubble.",
@@ -95,7 +95,7 @@ export const EXPERIMENTS = [
     steps: [
       { text: "Stand a retort stand on the bench.", check: (q) => q.count("rack", "stand") > 0 },
       { text: "Let a separating funnel go at the clamp: it cannot stand up on its own.", check: (q) => q.clamped("sepfunnel") },
-      { text: "Stand a beaker on the bench directly under the tap.", check: (q) => q.under("sepfunnel") },
+      { text: "Let a beaker go on the base of the stand, directly under the tap.", check: (q) => q.under("sepfunnel") },
     ],
     record: "The stopper is taken out of the top before the tap is opened, or the liquid will not run. The lower layer is run into one beaker and the tap closed at the boundary; the upper layer is then run into a second beaker.",
   },
@@ -464,9 +464,10 @@ export function stepDone(step, seen, q) {
 /** What every experiment relies on: how the bench is worked. Shown when no experiment has been chosen. */
 export const HOWTO = [
   "Take pieces from the drawer: tap a tile, or drag it onto the bench. Drag a piece back onto the drawer to put it away.",
-  "Pull the stopper out of a bottle before pouring. Carry the bottle to a vessel and hold it there.",
+  "Pull the stopper out of a bottle before pouring. Carry the bottle to a vessel and hold it there. What is poured out is gone from the bottle: when one runs out, refill it from its own note.",
   "Let a vessel go at a rack, a tripod, a clamp or a balance pan and it stands there. Slide a stand's clamp by its yellow boss.",
   "Let a funnel, a stopper, a condenser or a carbon rod go at a mouth or a joint and it stays there. A filter paper goes in a funnel, and a delivery tube in the hole of a one-hole stopper.",
+  "Move a vessel quickly to and fro to shake it: the faster the hand, the harder it is shaken and the better it mixes.",
   "A lit burner put under a vessel stays there and goes on heating it. Turn it down or off with its \u2212 key, or drag it away.",
   "A test tube holder grips a tube by its neck, and tongs take a crucible or a dish by its rim: let the tool go at the piece, then carry it by the tool. Over a lit burner it is heated.",
   "What you see happen comes up on a yellow note and is written in the notebook. Tap the note to put it away; its key on the bar (or the O key) hides the note altogether, and brings the last one back.",
