@@ -658,18 +658,17 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 .cl-cards__head { grid-column: 1 / -1; margin: 0.3rem 0 -0.4rem; font: 700 0.6rem var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary); }
 .cl-cards__head:first-child { margin-top: 0; }
 
-/* ── the centrifuge ────────────────────────────────────────────────────── */
-.cl-lid, .cl-rpm--on { display: none; }
-.is-spinning .cl-lid, .is-spinning .cl-rpm--on { display: inline; }
-.is-spinning .cl-rpm--off { display: none; }
+/* ── the centrifuge, and the stop-watch ────────────────────────────────── */
+.cl-lid, .cl-rpm--on, .cl-halt { display: none; }
+.is-spinning .cl-lid, .is-spinning .cl-rpm--on, .is-spinning .cl-halt { display: inline; }
+.is-spinning .cl-rpm--off, .is-spinning .cl-go { display: none; }
+.is-spinning .cl-gokey { fill: #c0392b; }
 .cl-rpm { font-size: 9px; }
+.cl-blur { fill: none; stroke: #dfe6ee; stroke-opacity: 0.5; stroke-width: 9; opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
   .cl-item-front.is-spinning, .cl-item.is-spinning { animation: cl-hum 0.09s linear infinite; }
-  .is-spinning .cl-whirl { animation: cl-whirl 0.22s linear infinite; }
 }
 @keyframes cl-hum { 0%, 100% { translate: 0 0; } 25% { translate: 0.5px 0; } 75% { translate: -0.5px 0.3px; } }
-@keyframes cl-whirl { 0% { transform: translateX(-14px); opacity: 0.2; } 50% { opacity: 0.8; } 100% { transform: translateX(14px); opacity: 0.2; } }
-
-/* what is left in a bottle or a jar: its contents sink as they are used (main.js sets --drop) */
-.cl-stock { transform: translateY(var(--drop, 0px)); transition: transform 0.5s ease; }
-.cl-tile .cl-stock { transform: none; }
+.cl-watch-t, .cl-watch-ghost { fill: #1f2a1c; font: 700 7.4px var(--font-mono); text-anchor: end; letter-spacing: 0.2px; }
+.cl-watch-ghost { fill-opacity: 0.08; }
+.cl-item.is-running .cl-watch-t { fill: #0b3d1a; }

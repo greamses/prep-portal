@@ -44,7 +44,7 @@ const MOUTH = ["lit", "glow"];                        // held at the mouth
 const TAKES = { dropper: 0.5, pipette: 12.5 };        // portions drawn up (a portion is 2 cm3)
 const STAYS = ["funnel", "paper", "chroma", "bung", "bung1", "tubing", "cap", "condenser", "electrode"];   // fitted, and left there
 const PLUGS = ["funnel", "bung", "bung1"];            // one of these to a mouth (a delivery tube goes in a one-hole stopper)
-const IDLE = ["waste", "syringe", "power", "holder", "tongs"];                 // never used ON anything
+const IDLE = ["waste", "syringe", "power", "holder", "tongs", "watch"];                 // never used ON anything
 // Things that PICK UP: a test tube holder grips a tube by its neck, tongs take a crucible or a
 // dish by its rim. The piece is then carried by the tool (it is the tool's rider, `held`), and
 // carried over a flame it is heated there. jaw = where the grip is, in the tool's own drawing.
@@ -103,7 +103,7 @@ const CATS = [
 // other words a student might search by
 const ALSO = {
   stand: "clamp stand boss", burette: "titration", pipette: "titration", distflask: "distillation side arm", condenser: "distillation liebig", balance: "weighing scale mass tare",
-  trough: "gas collection over water pneumatic", tubing: "delivery tube glass rubber tubing gas", bung: "bung cork", bung1: "bung cork holed bored delivery", funnel: "filtration filter", paper: "filtration filter", magnet: "magnetic separation iron filings", centrifuge: "centrifugation spin separate precipitate pellet supernatant", chroma: "chromatography ink dyes separation", burner: "bunsen heat", syringe: "gas volume measure",
+  trough: "gas collection over water pneumatic", tubing: "delivery tube glass rubber tubing gas", bung: "bung cork", bung1: "bung cork holed bored delivery", funnel: "filtration filter", paper: "filtration filter", magnet: "magnetic separation iron filings", centrifuge: "centrifugation spin separate precipitate pellet supernatant", watch: "stopwatch timer clock time seconds", chroma: "chromatography ink dyes separation", burner: "bunsen heat", syringe: "gas volume measure",
   spirit: "alcohol lamp heat", flask: "erlenmeyer", flask100: "erlenmeyer", cyl10: "graduated", cyl100: "graduated", dish: "basin", tripod: "gauze", holder: "tongs peg", waste: "sink bin",
   sepfunnel: "separating separation immiscible oil", electrode: "electrolysis carbon rod graphite cathode anode", power: "electrolysis battery cell supply", gasjar: "gas collection",
 };
@@ -388,6 +388,7 @@ function dress(it) {
   if (TAKES[it.key]) g.querySelector(".cl-drop-liq").style.fill = it.sample ? `rgba(${it.rgb || [200, 224, 240]},0.9)` : "transparent";
   if (it.key === "wire") g.querySelector(".cl-loop").style.fill = it.sample ? "#f2f6fb" : "transparent";
   if (it.kind === "reagent") g.style.setProperty("--drop", `${((1 - leftIn(it) / fullOf(it)) * DROP[reagent(it.key).kind]).toFixed(1)}px`);
+  if (it.key === "watch") watchFace(it);
   if (it.key === "magnet") g.classList.toggle("has-filings", Boolean(it.sample));
   if (it.key === "chroma") {
     const ink = INKS[it.ink || "black"], p = it.washed ? 0 : it.p || 0;
@@ -1852,37 +1853,101 @@ setInterval(() => {
 
 // ── a centrifuge ────────────────────────────────────────────────────────────
 // Tubes stand in its four wells. It must be BALANCED before it will run: every tube needs
-// another opposite it holding about the same amount (a tube of water will do).
+// another opposite it holding about the same amount (a tube of water will do). START sets
+// the rotor going: it is seen to pick up speed under the lid, the tubes swinging outwards as
+// they go round. It runs until STOP is pressed (or half a minute has gone), and it takes
+// TIME to work: ten seconds at speed packs the solid down; less leaves the liquid cloudy.
+// That is what the stop-watch is for.
+const SPIN_FULL = 17;              // radians a second, at 3000 rev/min as the dial has it
+const SPIN_NEEDS = 10;             // seconds, start to stop, for the solid to be packed
+const spins = new Map();           // centrifuge id → { t0, last, speed, angle, stopAt, tubes }
 function spinCentrifuge(c) {
   const n = nodes[c.id];
-  if (!n || c.spinning) return false;
+  if (!n) return false;
+  if (spins.has(c.id)) { stopCentrifuge(c); return true; }
   const inWell = (i) => vessels().find((v) => v.rack && v.rack[0] === c.id && v.rack[1] === i) || null;
   const tubes = [0, 1, 2, 3].map(inWell);
   if (!tubes.some(Boolean)) { say("The centrifuge is empty. Let a test tube go at one of its wells.", null, "no"); return false; }
-  for (const [a, b] of [[0, 3], [1, 2]]) {
-    const x = tubes[a], y = tubes[b];
+  for (const [x1, x2] of [[0, 3], [1, 2]]) {
+    const x = tubes[x1], y = tubes[x2];
     if (Boolean(x) !== Boolean(y)) { say("It is not balanced, and will not run. Put a second test tube in the well OPPOSITE, with the same amount of water in it.", null, "no"); flash(c); return false; }
     if (x && y && Math.abs(x.t.vol + (x.t.oil || 0) - (y.t.vol + (y.t.oil || 0))) > 1.05) { say(`It is not balanced: ${plain(x)} and ${plain(y)} do not hold the same amount. Make them level.`, null, "no"); flash(c); return false; }
   }
-  if (tubes.some((v) => v && stopperOf(v))) { /* stoppered is fine */ }
-  c.spinning = true;
   select(null);
+  const now = performance.now();
+  const sp = { t0: now, last: now, speed: 0, angle: 0, stopAt: 0, tubes };
+  spins.set(c.id, sp);
   for (const el of [n.g, n.front]) el.classList.add("is-spinning");
-  say("The lid is down and it is spinning at 3000 revolutions a minute.");
-  setTimeout(() => {
-    c.spinning = false;
-    if (!nodes[c.id]) return;
-    for (const el of [n.g, n.front]) el.classList.remove("is-spinning");
-    for (const v of tubes.filter(Boolean)) {
-      if (!nodes[v.id]) continue;
-      const res = centrifuge(v.t);
-      paint(v);
-      record(v, res);
-    }
-    save();
-  }, 3400);
+  // the tubes are in the rotor now, under the lid: the ones standing in the wells are put out of sight
+  for (const v of tubes.filter(Boolean)) for (const el of [nodes[v.id].g, nodes[v.id].veil]) if (el) el.style.visibility = "hidden";
+  n.front.querySelector(".cl-rotor").innerHTML = tubes.map((v, i) => {
+    if (!v) return "";
+    const lk = look(v.t), solid = Object.keys(speciate(v.t).ppt).length > 0;
+    return `<g data-i="${i}"><rect x="-5.5" y="-4" width="11" height="30" rx="5.5" fill="#dfe6ee" fill-opacity="0.3" stroke="#fff" stroke-opacity="0.85" stroke-width="0.8"/><rect x="-4.3" y="6" width="8.6" height="19" rx="4.3" fill="rgba(${lk.rgb},${Math.max(lk.a, 0.5)})"/>${solid ? `<rect x="-4.3" y="18" width="8.6" height="7" rx="3.5" fill="#fff" fill-opacity="0.35"/>` : ""}</g>`;
+  }).join("");
+  say(`It is running. It takes time: leave it at least ${SPIN_NEEDS} seconds (time it with the stop-watch), then press STOP.`);
+  requestAnimationFrame((t) => spinTick(c, t));
   return true;
 }
+function stopCentrifuge(c) {
+  const sp = spins.get(c.id);
+  if (sp && !sp.stopAt) { sp.stopAt = performance.now(); say("STOP: the rotor is slowing down. Wait for it."); }
+}
+function spinTick(c, now) {
+  const sp = spins.get(c.id), n = nodes[c.id];
+  if (!sp) return;
+  if (!n) { spins.delete(c.id); return; }
+  const dt = Math.min(0.05, (now - sp.last) / 1000);
+  sp.last = now;
+  if (!sp.stopAt && now - sp.t0 > 30000) stopCentrifuge(c);
+  sp.speed += ((sp.stopAt ? 0 : SPIN_FULL) - sp.speed) * Math.min(1, dt * (sp.stopAt ? 1.5 : 1.1));      // it takes a while to get up to speed, and to stop
+  sp.angle += sp.speed * dt;
+  const k = sp.speed / SPIN_FULL;
+  const rotor = n.front.querySelector(".cl-rotor");
+  const stubs = [...rotor.children].map((el) => ({ el, th: sp.angle + (Number(el.dataset.i) * Math.PI) / 2 }));
+  // the far ones first, so that the near ones pass in front of them
+  stubs.sort((x, y) => Math.sin(x.th) - Math.sin(y.th)).forEach(({ el, th }) => {
+    rotor.appendChild(el);
+    const depth = Math.sin(th);
+    // going round, a tube swings OUT from the axis: the faster, the nearer to lying flat
+    el.setAttribute("transform", `translate(${(Math.cos(th) * 50).toFixed(1)} ${(-136 + depth * 7).toFixed(1)}) scale(${(0.86 + depth * 0.14).toFixed(2)}) rotate(${(-Math.cos(th) * k * 62).toFixed(1)})`);
+    el.setAttribute("opacity", (1 - k * 0.45).toFixed(2));
+  });
+  n.front.querySelector(".cl-blur").style.opacity = Math.max(0, k - 0.35).toFixed(2);
+  n.front.querySelector(".cl-rpm--on").textContent = String(Math.round((k * 3000) / 50) * 50);
+  if (sp.stopAt && sp.speed < 0.35) { spinDone(c, sp); return; }
+  requestAnimationFrame((t) => spinTick(c, t));
+}
+function spinDone(c, sp) {
+  spins.delete(c.id);
+  const n = nodes[c.id];
+  if (n) { for (const el of [n.g, n.front]) el.classList.remove("is-spinning"); n.front.querySelector(".cl-rotor").innerHTML = ""; }
+  const secs = (sp.stopAt - sp.t0) / 1000;
+  for (const v of sp.tubes.filter(Boolean)) {
+    if (!nodes[v.id]) continue;
+    for (const el of [nodes[v.id].g, nodes[v.id].veil]) if (el) el.style.visibility = "";
+    const solid = Object.keys(speciate(v.t).ppt).length > 0 || (v.t.solid.sand || 0) > 0;
+    let res;
+    if (secs >= SPIN_NEEDS || !solid) res = centrifuge(v.t);
+    else res = { title: `Centrifuged for ${Math.round(secs)} s`, obs: [{ text: `It was spun for only ${Math.round(secs)} seconds. Some of the solid has come down, but the liquid is still cloudy.`, why: `A fine solid needs time at full speed to be thrown to the bottom. Run it for at least ${SPIN_NEEDS} seconds: use the stop-watch.` }], flags: ["spun:short"] };
+    if (secs >= SPIN_NEEDS && solid) res.title = `Centrifuged for ${Math.round(secs)} s`;
+    paint(v);
+    record(v, res);
+  }
+  save();
+}
+
+// ── the stop-watch ──────────────────────────────────────────────────────────
+// Its crown starts and stops it; the small red key sets it back to nought.
+const watchMs = (w) => (w.acc || 0) + (w.run ? Date.now() - w.run : 0);
+function watchFace(w) {
+  const n = nodes[w.id];
+  if (!n) return;
+  const ms = watchMs(w), min = Math.floor(ms / 60000), s = Math.floor(ms / 1000) % 60, tenth = Math.floor(ms / 100) % 10;
+  n.g.querySelector(".cl-watch-t").textContent = `${String(min).padStart(2, "0")}:${String(s).padStart(2, "0")}.${tenth}`;
+  n.g.classList.toggle("is-running", Boolean(w.run));
+}
+setInterval(() => { for (const w of tools("watch")) if (w.run) watchFace(w); }, 100);
 
 // ── things that are pressed: a tap, a power switch, a tare key ──────────────
 let tap = null;
@@ -1964,6 +2029,12 @@ function press(e, it) {
     save();
   } else if (what === "power") startTap(it, runCell, 900);
   else if (what === "spin") spinCentrifuge(it);
+  else if (what === "watch") {
+    select(null);
+    if (it.run) { it.acc = watchMs(it); it.run = null; say(`Stopped at ${(it.acc / 1000).toFixed(1)} seconds.`); } else { it.run = Date.now(); say("The stop-watch is running. Press its crown again to stop it."); }
+    watchFace(it);
+    save();
+  } else if (what === "watchreset") { select(null); it.acc = 0; it.run = null; watchFace(it); save(); }
   else if (what === "clamp") { select(null); slide = { it, y0: world(e).y, c0: it.clamp ?? CLAMP }; }
   else if (what === "tare") {
     select(null);
@@ -2100,6 +2171,10 @@ svg.addEventListener("pointerdown", (e) => {
   const w = world(e);
   const tapped = vessels().find((v) => { const d = VESSELS[v.key]; return d.tap && Math.abs(w.x - v.x) < 24 && w.y > v.y - d.floor - 14 && w.y < v.y - d.floor + 24; });
   if (tapped) { e.preventDefault(); startTap(tapped, runTap); return; }
+  // a centrifuge's START key is on its front, and a tube standing in the well above is drawn over it:
+  // it too is found by where it is
+  const spun = state.items.find((c) => c.kind === "rack" && c.key === "centrifuge" && w.x > c.x + 34 && w.x < c.x + 72 && w.y > c.y - 58 && w.y < c.y - 28);
+  if (spun) { e.preventDefault(); spinCentrifuge(spun); return; }
   const g = e.target.closest("[data-item]");
   if (!g) return select(null);
   e.preventDefault();
@@ -2459,6 +2534,7 @@ function openMenu(it) {
     lines.push(held ? `Holding ${plain(held)} by ${GRIPS[it.key].says}. Carry it over a lit burner to heat it.` : it.key === "holder" ? "Let it go at the neck of a test tube or a boiling tube and it grips it." : "Let them go at the rim of a crucible, an evaporating dish or a watch glass and they take hold of it.");
     if (held) act("drop", "Let go", ICON.flip);
   }
+  else if (it.key === "watch") lines.push(it.run ? "Running. Press its crown to stop it." : `Reads ${(watchMs(it) / 1000).toFixed(1)} s. Press the crown on top to start and stop it; the small red key sets it back to nought.`);
   else if (it.key === "magnet") { lines.push(it.sample ? "Iron filings cling to both poles." : "Hold it over a mixture. Only iron is pulled to it."); if (it.sample) act("empty", "Wipe the filings off", ICON.empty); }
   else if (it.key === "chroma") {
     lines.push(`A spot of ${INKS[it.ink || "black"].name} ink on the pencil line. ${it.washed ? "The ink has washed off: take a fresh strip." : it.p >= 1 ? "Run: measure each spot, and the solvent front, from the pencil line." : it.on ? "It needs a little water in the beaker: touching the paper, below the ink." : "Let it go at the mouth of a beaker and the rod lies across the rim."}`);
@@ -2475,7 +2551,7 @@ function openMenu(it) {
   else if (it.key === "condenser") lines.push(it.on ? "Cold water runs through the jacket. Stand a beaker under the lower end." : "Push it onto the side arm of a distilling flask.");
   else if (it.key === "cap") lines.push("Put it back by letting it go at the bottle's mouth.");
   else if (it.kind === "rack" && it.key === "balance") lines.push("Stand a vessel on the pan. The red TARE key sets the reading to zero.");
-  else if (it.kind === "rack" && it.key === "centrifuge") lines.push("Stand test tubes in its wells, each with another OPPOSITE holding the same amount, and press the green START key. It will not run out of balance.");
+  else if (it.kind === "rack" && it.key === "centrifuge") lines.push(`Stand test tubes in its wells, each with another OPPOSITE holding the same amount, and press START. It will not run out of balance. Leave it running at least ${SPIN_NEEDS} seconds, then press STOP.`);
   else if (it.kind === "rack" && it.key === "tripod") lines.push("Stand a beaker or a dish on the gauze, and hold a lit burner underneath.");
   else if (it.kind === "rack" && it.key === "stand") lines.push("Slide the clamp by its yellow boss. Let a tube, a flask, a burette or a separating funnel go at the clamp and it is held.");
   if (it.key !== "cap") lines.push(`<span class="cl-menu__hint">Drag it onto the drawer to put it away.</span>`);
@@ -2914,11 +2990,22 @@ const actor = {
     dress(tool);
   },
   inHost: (hostKey) => Q.inHost(hostKey),
-  /** Run a centrifuge and wait for it to stop. */
-  async spin(c) {
-    if (!spinCentrifuge(c)) return false;
-    await pause(4200);
+  /** Run a centrifuge for long enough, stop it, and wait for the rotor to come to rest. */
+  async spin(c, secs = 10.6) {
+    if (spins.has(c.id) || !spinCentrifuge(c)) return false;
+    await pause(secs * 1000);
+    stopCentrifuge(c);
+    for (let i = 0; i < 80 && spins.has(c.id); i++) await pause(100);
+    await pause(400);
     return true;
+  },
+  /** Start or stop a stop-watch, or set it back to nought. */
+  async watch(w, on) {
+    if (on === "reset") { w.acc = 0; w.run = null; } else if (on && !w.run) w.run = Date.now(); else if (!on && w.run) { w.acc = watchMs(w); w.run = null; }
+    watchFace(w);
+    flash(w);
+    await pause(300);
+    save();
   },
   /** Slide a retort stand's clamp up or down its rod. */
   async slide(stand, to) {
@@ -3089,6 +3176,7 @@ if (restored) {
     save();
   });
 }
+state.items.forEach((it) => { delete it.spinning; });
 if (restored && !state.papers) {
   state.items.filter((it) => it.key === "funnel").forEach((f) => addItem("tool", "paper", f.x, f.y, { on: f.id }));
 }

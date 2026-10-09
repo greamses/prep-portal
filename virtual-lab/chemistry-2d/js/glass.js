@@ -228,6 +228,7 @@ export const DEFS = `
   <linearGradient id="g-case" x1="0" x2="0" y1="0" y2="1">
     <stop offset="0" stop-color="#f6f7f9"/><stop offset="0.5" stop-color="#dfe3e8"/><stop offset="1" stop-color="#b4bac3"/>
   </linearGradient>
+  <clipPath id="cf-rotor"><rect x="-80" y="-200" width="160" height="78"/></clipPath>
   <linearGradient id="g-liq-x" x1="0" x2="1" y1="0" y2="0">
     <stop offset="0" stop-color="#000" stop-opacity="0.34"/><stop offset="0.1" stop-color="#000" stop-opacity="0.14"/><stop offset="0.3" stop-color="#fff" stop-opacity="0.07"/>
     <stop offset="0.5" stop-color="#fff" stop-opacity="0"/><stop offset="0.82" stop-color="#000" stop-opacity="0.1"/><stop offset="1" stop-color="#000" stop-opacity="0.36"/>
@@ -640,6 +641,7 @@ export const TOOLS = {
   pipette: { name: "Pipette (25 mL) and filler", act: [0, 0], bbox: { x0: -12, y0: -190, x1: 12, y1: 6 } },
   funnel: { name: "Filter funnel", act: [0, 0], bbox: { x0: -40, y0: -66, x1: 40, y1: 34 } },
   paper: { name: "Filter paper", act: [0, 0], bbox: { x0: -34, y0: -62, x1: 34, y1: 6 } },
+  watch: { name: "Stop-watch", act: [0, 0], bbox: { x0: -27, y0: -70, x1: 27, y1: 6 } },
   magnet: { name: "Horseshoe magnet", act: [0, 0], bbox: { x0: -24, y0: -64, x1: 24, y1: 8 } },
   chroma: { name: "Chromatography paper", act: [0, 0], bbox: { x0: -42, y0: -10, x1: 42, y1: 108 } },
   bung: { name: "Rubber stopper", act: [0, 0], bbox: { x0: -18, y0: -14, x1: 18, y1: 13 } },
@@ -887,6 +889,22 @@ export function toolSvg(key, it = {}) {
     return `<path d="M-34 -58L40 2" stroke="#fff" stroke-opacity="0.16" stroke-width="6" stroke-linecap="round"/><path d="M-34 -58L40 2" stroke="url(#g-streak)" stroke-width="5" stroke-linecap="round" opacity="0.5"/>
       <path d="M-34 -58L40 2" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="0.9" stroke-linecap="round" transform="translate(-1.6 2)"/><path d="M-34 -58L40 2" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="0.9" stroke-linecap="round" transform="translate(1.6 -2)"/>${hit(b)}`;
   }
+  if (key === "watch") {
+    // a hand stop-watch: a round case with a crown that starts and stops it, a small key that
+    // sets it back to nought, and figures that read minutes : seconds . tenths
+    return `<ellipse cx="0" cy="2" rx="22" ry="3.5" fill="#000" fill-opacity="0.3" filter="url(#g-soft)"/>
+      <path d="M-4 -56q-8 -8 4 -10q12 2 4 10" fill="none" stroke="#8f98a4" stroke-width="1.6"/>
+      <circle cx="0" cy="-26" r="25" fill="#2b313a" stroke="#fff" stroke-opacity="0.3" stroke-width="0.8"/>
+      <circle cx="0" cy="-26" r="25" fill="url(#g-shade)" opacity="0.5"/>
+      <circle cx="0" cy="-26" r="21" fill="#e9ecef"/><circle cx="0" cy="-26" r="21" fill="none" stroke="#5d6570" stroke-width="0.8"/>
+      ${Array.from({ length: 12 }, (_, i) => `<path d="M0 -45.500V-${i % 3 === 0 ? 42 : 43.5}" transform="rotate(${i * 30} 0 -26)" stroke="#2b313a" stroke-width="${i % 3 === 0 ? 1.3 : 0.7}"/>`).join("")}
+      <rect x="-17" y="-33" width="34" height="14" rx="1.5" fill="#11151a"/><rect x="-16" y="-32" width="32" height="12" rx="1" fill="url(#g-lcd)"/>
+      <text class="cl-watch-ghost" x="15" y="-22.4">88:88.8</text><text class="cl-watch-t" x="15" y="-22.4">00:00.0</text>
+      <text class="cl-plate" x="0" y="-11" style="font-size:3.4px">min : s</text>
+      <path d="M-13 -44a25 25 0 0 1 8 -5.5" fill="none" stroke="#fff" stroke-opacity="0.5" stroke-width="1.6" stroke-linecap="round"/>${hit(b)}
+      <g class="cl-press" data-press="watch"><rect x="-6" y="-60" width="12" height="10" rx="2" fill="url(#g-metal)" stroke="#4a515b" stroke-width="0.6"/><path d="M-4 -58v6M-1.3 -58v6M1.3 -58v6M4 -58v6" stroke="#4a515b" stroke-width="0.5"/><rect x="-11" y="-66" width="22" height="18" fill="transparent"/></g>
+      <g class="cl-press" data-press="watchreset"><rect x="14" y="-52" width="9" height="7" rx="2" fill="#c0453a" stroke="#fff" stroke-opacity="0.4" stroke-width="0.6" transform="rotate(38 18.5 -48.5)"/><rect x="10" y="-58" width="18" height="16" fill="transparent"/></g>`;
+  }
   if (key === "magnet") {
     // a horseshoe magnet, poles down: red enamel, bare steel pole pieces, and the beard of
     // filings it picks up
@@ -973,7 +991,7 @@ export function splintAfter(end) {
 export const SUPPORTS = {
   rack: { name: "Test tube rack", slots: [-110, -55, 0, 55, 110].map((x) => [x, -12]), fits: (d) => Boolean(d.rack), bbox: { x0: -156, y0: -92, x1: 156, y1: 8 } },
   // four tubes at a time, two and two opposite each other: (0, 3) and (1, 2) are the pairs
-  centrifuge: { name: "Centrifuge", slots: [-48, -16, 16, 48].map((x) => [x, -6]), fits: (d) => Boolean(d.rack), bbox: { x0: -86, y0: -150, x1: 86, y1: 8 } },
+  centrifuge: { name: "Centrifuge", slots: [-48, -16, 16, 48].map((x) => [x, -6]), fits: (d) => Boolean(d.rack), bbox: { x0: -86, y0: -172, x1: 86, y1: 8 } },
   tripod: { name: "Tripod and gauze", slots: [[0, -158]], fits: (d) => Boolean(d.flat) && !d.fixed && d.rMax < 90, bbox: { x0: -64, y0: -164, x1: 64, y1: 8 } },
   balance: { name: "Electronic balance", slots: [[0, -46]], fits: (d) => !d.fixed && d.rMax < 90, bbox: { x0: -84, y0: -58, x1: 84, y1: 8 } },
   // its one slot is wherever the clamp has been slid to (main.js works the height out for each vessel)
@@ -1046,11 +1064,13 @@ export function supportSvg(key) {
         <rect x="-18" y="-58" width="40" height="17" rx="1.5" fill="#0a0c0f" stroke="#5b6470" stroke-width="0.8"/>
         <text class="cl-psu cl-psu--ghost" x="18" y="-45">8888</text><text class="cl-psu cl-rpm cl-rpm--off" x="18" y="-45">0</text><text class="cl-psu cl-rpm cl-rpm--on" x="18" y="-45">3000</text>
         <text class="cl-plate cl-plate--l" x="2" y="-33">rev / min</text>
-        <rect x="36" y="-56" width="34" height="26" rx="3" fill="#2f9e5b" stroke="#fff" stroke-opacity="0.5" stroke-width="0.8"/><rect x="38" y="-54" width="30" height="7" rx="2.5" fill="#fff" fill-opacity="0.22"/>
-        <text class="cl-press-t cl-press-t--s" x="53" y="-39">START</text>
+        <rect class="cl-gokey" x="36" y="-56" width="34" height="26" rx="3" fill="#2f9e5b" stroke="#fff" stroke-opacity="0.5" stroke-width="0.8"/><rect x="38" y="-54" width="30" height="7" rx="2.5" fill="#fff" fill-opacity="0.22"/>
+        <text class="cl-press-t cl-press-t--s cl-go" x="53" y="-39">START</text><text class="cl-press-t cl-press-t--s cl-halt" x="53" y="-39">STOP</text>
         <text class="cl-plate" x="0" y="-78" style="font-size:4.2px">PREP  CF-4   balance the tubes</text>
-        <g class="cl-lid"><path d="M-74 -124q0 -40 74 -40t74 40z" fill="#aab8c8" fill-opacity="0.5" stroke="#fff" stroke-opacity="0.7" stroke-width="1"/><path d="M-60 -130q8 -22 40 -27" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="2.4" stroke-linecap="round"/><rect x="-10" y="-168" width="20" height="6" rx="3" fill="#59626e"/>
-          <path class="cl-whirl" d="M-56 -136h30M-10 -146h44M20 -134h34M-40 -150h22" stroke="#fff" stroke-opacity="0.55" stroke-width="1.6" stroke-linecap="round"/></g>`,
+        <g class="cl-lid"><ellipse cx="0" cy="-128" rx="70" ry="8" fill="#12161b" fill-opacity="0.55"/>
+          <ellipse class="cl-blur" cx="0" cy="-131" rx="52" ry="8.4"/><g clip-path="url(#cf-rotor)"><g class="cl-rotor"></g></g>
+          <rect x="-4" y="-140" width="8" height="12" rx="2" fill="url(#g-metal)"/><ellipse cx="0" cy="-140" rx="7" ry="2.2" fill="#aab2bd"/>
+          <path d="M-74 -124q0 -40 74 -40t74 40z" fill="#aab8c8" fill-opacity="0.2" stroke="#fff" stroke-opacity="0.7" stroke-width="1"/><path d="M-60 -130q8 -22 40 -27" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="2.4" stroke-linecap="round"/><rect x="-10" y="-168" width="20" height="6" rx="3" fill="#59626e"/></g>`,
     };
   }
   if (key === "stand") {

@@ -361,7 +361,7 @@ export const LESSONS = [
       { text: "Take a test tube and make a precipitate in it: a measure of copper(II) sulfate, then one of sodium hydroxide.", done: (seen) => seen.has("ppt:CuOH") },
       { text: "Take a second test tube and pour two measures of distilled water into it, to balance the first.", done: (seen) => seen.has("added:water") },
       { text: "Take the centrifuge from Equipment. Stand the two tubes in wells OPPOSITE each other: the two outside wells.", done: (seen, b) => b.count("rack", "centrifuge") > 0 && b.inHost("centrifuge") >= 2 },
-      { text: "Press the green START key and wait for it to stop.", done: (seen) => seen.has("spun") },
+      { text: "Take the stop-watch. Press START on the centrifuge and the crown of the stop-watch. After at least 10 seconds press STOP, and wait for the rotor to come to rest.", done: (seen) => seen.has("spun") },
       { text: "Lift the tube out and pour the clear liquid off the pellet into an empty test tube.", done: (seen) => seen.has("supernatant") },
     ],
     async run({ say, b }) {
@@ -384,8 +384,12 @@ export const LESSONS = [
       await b.into(t1, cf, 0);
       await b.into(t2, cf, 3);
       await say("They go in wells opposite each other. A centrifuge out of balance shakes itself to pieces, so it will not run until it is balanced.");
+      const sw = await b.take("tool", "watch", at(590), b.BASE);
+      await say("It takes time, so I time it with a stop-watch. Watch the tubes swing out as the rotor picks up speed.");
+      await b.watch(sw, true);
       await b.spin(cf);
-      await say("Spun. The solid is packed into a pellet at the bottom, and the liquid above is clear.");
+      await b.watch(sw, false);
+      await say("Ten seconds, and stop. The solid is packed into a pellet at the bottom, and the liquid above is clear.");
       const t3 = await b.take("vessel", "tube", at(660), b.BASE);
       await b.move(t1, at(580), b.BASE, 500);
       await b.pour(t1, t3, 3);
@@ -754,7 +758,7 @@ export async function initPrepbot(bench) {
     condenser: ["condenser"], funnel: ["funnel"], water: ["water"], hcl: ["acid"], naoh: ["alkali"], nh3: ["ammonia solution", "ammonia"],
     unk: ["unknown salt", "unknown", "sample x"], caco3: ["calcium carbonate", "marble"], mno2: ["manganese dioxide", "manganese oxide"], h2o2: ["hydrogen peroxide", "peroxide"], oil: ["oil"],
     mg: ["magnesium"], zn: ["zinc"], fe: ["iron"], cu: ["copper"], cuo: ["copper oxide"],
-    sandsalt: ["sand and salt", "salt and sand", "mixture"], sulfur: ["sulphur powder", "sulphur", "sulfur"], iodine: ["iodine"], magnet: ["magnet"], centrifuge: ["centrifuge"], chroma: ["chromatography paper", "chromatography strip", "chromatography"],
+    sandsalt: ["sand and salt", "salt and sand", "mixture"], sulfur: ["sulphur powder", "sulphur", "sulfur"], iodine: ["iodine"], magnet: ["magnet"], centrifuge: ["centrifuge"], watch: ["stop watch", "stopwatch", "timer"], chroma: ["chromatography paper", "chromatography strip", "chromatography"],
   };
   const stock = bench.catalog();
   const words = [];

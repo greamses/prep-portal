@@ -367,14 +367,14 @@ export const EXPERIMENTS = [
   {
     id: "centrifuge", group: "sep", title: "Centrifugation",
     task: "Separate a fine precipitate from its liquid by centrifuging, and pour off the clear liquid.",
-    needs: "three test tubes, centrifuge (in Equipment), copper(II) sulfate solution, sodium hydroxide solution, distilled water",
+    needs: "three test tubes, centrifuge and stop-watch (both in Equipment), copper(II) sulfate solution, sodium hydroxide solution, distilled water",
     steps: [
       { text: "Make a precipitate in a test tube: a measure of copper(II) sulfate, then a measure of sodium hydroxide.", need: [], test: (seen) => [...seen].some((f) => f.startsWith("ppt:")) },
       { text: "Stand the tube in a well of the centrifuge. In the well OPPOSITE stand a second test tube holding the same amount of water (two measures), to balance it.", check: (q) => q.inHost("centrifuge") >= 2 },
-      { text: "Press the green START key. The lid closes and it spins.", need: ["spun"] },
+      { text: "Press START on the centrifuge and the crown of the stop-watch together. Watch the rotor go round. After at least 10 seconds press STOP, and wait for it to come to rest.", need: ["spun"] },
       { text: "Lift the tube out and pour the clear liquid off the pellet into an empty test tube.", need: ["supernatant"] },
     ],
-    record: "A centrifuge separates a solid from a liquid by spinning: the denser solid is thrown to the bottom of the tube as a pellet, and the clear liquid above it, the supernatant, is poured off. It is used when the solid is too fine to settle or to filter. The tubes are always balanced in opposite pairs, or the spinning rotor shakes itself to pieces.",
+    record: "A centrifuge separates a solid from a liquid by spinning: the denser solid is thrown to the bottom of the tube as a pellet, and the clear liquid above it, the supernatant, is poured off. It is used when the solid is too fine to settle or to filter, and it takes time: stopped too soon, the liquid is still cloudy. The tubes are always balanced in opposite pairs, or the spinning rotor shakes itself to pieces.",
   },
   {
     id: "evaporate", group: "sep", title: "Evaporation to crystals",
