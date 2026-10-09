@@ -125,15 +125,17 @@
         </div>
       </section>
 
-      <section id="cl-sheet-notebook" class="cl-sheet pp-receipt" hidden>
-        <div class="pp-receipt__paper">
-          <div class="cl-sheet__head">
-            <h2 class="cl-h2">Lab notebook</h2>
-            <button type="button" class="cl-ico cl-ico--paper" id="cl-explain" data-tip="Hide the chemistry" aria-label="Hide the chemistry"></button>
-            <button type="button" class="cl-ico cl-ico--paper" id="cl-clear-log" data-ico="wipe" data-tip="Wipe the notebook" aria-label="Wipe the notebook"></button>
-            <button type="button" class="cl-sheet__close" aria-label="Close"></button>
-          </div>
-          <ol id="cl-log" class="cl-log"></ol>
+      <section id="cl-sheet-notebook" class="cl-sheet cl-book" hidden>
+        <div class="cl-book__cover">
+          <h2 class="cl-h2">Lab notebook</h2>
+          <button type="button" class="cl-ico cl-ico--paper" id="cl-explain" data-tip="Hide the chemistry" aria-label="Hide the chemistry"></button>
+          <button type="button" class="cl-ico cl-ico--paper" id="cl-new-page" data-tip="Start a new page" aria-label="Start a new page"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6zM14 3.5V8h4.5zM12 11h2v3h3v2h-3v3h-2v-3H9v-2h3z" fill="currentColor" fill-rule="evenodd"/></svg></button>
+          <button type="button" class="cl-ico cl-ico--paper" id="cl-clear-log" data-ico="clear" data-tip="Tear this page out" aria-label="Tear this page out"></button>
+          <button type="button" class="cl-sheet__close" aria-label="Close"></button>
+        </div>
+        <div class="cl-book__stack">
+          <svg class="cl-book__rings" viewBox="0 0 420 26" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <article id="cl-leaf" class="cl-leaf"></article>
         </div>
       </section>
 

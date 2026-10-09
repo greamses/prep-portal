@@ -168,6 +168,7 @@ export const EXPERIMENTS = [
     id: "titr-strong", group: "vol", title: "Titration: acid against alkali",
     task: "A is dilute hydrochloric acid. B is sodium hydroxide solution. Put A into the burette and titrate it against 25.0 cm³ portions of B, using phenolphthalein as indicator. Record the volume of A used.",
     needs: "retort stand, burette, pipette, conical flask, dilute hydrochloric acid, sodium hydroxide solution, phenolphthalein",
+    kit: "stand burette pipette flask100 hcl naoh phph",
     steps: [
       { text: "Slide the stand's clamp up and let the burette go at it, so that it hangs.", need: ["clamped:burette"] },
       { text: "Fill the burette with A: pull the stopper out of the acid and carry the bottle to the top of the burette.", need: ["in:burette:hcl"] },
@@ -181,6 +182,7 @@ export const EXPERIMENTS = [
     id: "titr-carbonate", group: "vol", title: "Titration: acid against sodium carbonate",
     task: "A is dilute hydrochloric acid. C is sodium carbonate solution. Titrate 25.0 cm³ portions of C with A, using methyl orange as indicator. Record the volume of A used.",
     needs: "retort stand, burette, pipette, conical flask, dilute hydrochloric acid, sodium carbonate solution, methyl orange",
+    kit: "stand burette pipette flask100 hcl na2co3 mo",
     steps: [
       { text: "Clamp the burette in the retort stand.", need: ["clamped:burette"] },
       { text: "Fill the burette with A.", need: ["in:burette:hcl"] },
@@ -195,6 +197,7 @@ export const EXPERIMENTS = [
     id: "cations-naoh", group: "qual", title: "Cations: sodium hydroxide solution",
     task: "Put about 2 cm³ of each of copper(II) sulfate, iron(II) sulfate, iron(III) chloride and zinc sulfate solutions into separate test tubes. To each add sodium hydroxide solution in drops, and then in excess. Record your observations.",
     needs: "test tube rack, four test tubes, the four salt solutions, sodium hydroxide solution",
+    kit: "rack tube*4 cuso4 feso4 fecl3 znso4 naoh",
     steps: [
       { text: "Copper(II) sulfate with a few drops of NaOH(aq).", need: ["ppt:CuOH"] },
       { text: "Iron(II) sulfate with a few drops of NaOH(aq).", need: ["ppt:Fe2OH"] },
@@ -209,6 +212,7 @@ export const EXPERIMENTS = [
     id: "cations-nh3", group: "qual", title: "Cations: aqueous ammonia",
     task: "To about 2 cm³ portions of copper(II) sulfate, zinc sulfate and aluminium sulfate solutions in separate test tubes, add aqueous ammonia in drops and then in excess. Record your observations.",
     needs: "test tube rack, three test tubes, the three salt solutions, aqueous ammonia",
+    kit: "rack tube*3 cuso4 znso4 also4 nh3",
     steps: [
       { text: "Copper(II) sulfate with a few drops of NH3(aq).", need: ["ppt:CuOH"] },
       { text: "NH3(aq) in excess: the precipitate dissolves to a deep blue solution.", need: ["cx:CuNH3"] },
@@ -221,6 +225,7 @@ export const EXPERIMENTS = [
     id: "anions", group: "qual", title: "Tests for anions",
     task: "Carry out the test for a sulfate, a chloride and a carbonate, using zinc sulfate solution, sodium chloride solution and sodium carbonate solution. Record your observations and inferences.",
     needs: "test tubes and rack, the three solutions, barium chloride solution, silver nitrate solution, dilute hydrochloric acid, aqueous ammonia, a lighted splint",
+    kit: "rack tube*3 znso4 nacl na2co3 bacl2 agno3 hcl nh3 lit",
     steps: [
       { text: "Sulfate: add barium chloride solution to zinc sulfate. A white precipitate.", need: ["ppt:BaSO4"] },
       { text: "Then add dilute hydrochloric acid in excess: the precipitate stays.", need: ["acidproof:BaSO4"] },
@@ -328,6 +333,7 @@ export const EXPERIMENTS = [
     id: "decant", group: "sep", title: "Decanting",
     task: "Separate sand from water without a filter.",
     needs: "two beakers, sand (in Solids), distilled water",
+    kit: "beaker250*2 sand water",
     steps: [
       { text: "Tip sand into a beaker and add water. Do NOT stir: let the sand lie on the bottom.", need: ["added:sand"], test: (seen) => seen.has("added:sand") && seen.has("added:water") },
       { text: "Carry the beaker to a second beaker and pour the water off gently. The sand stays behind.", need: ["decanted"] },
@@ -348,6 +354,7 @@ export const EXPERIMENTS = [
     id: "sublime", group: "sep", title: "Sublimation: iodine from sand",
     task: "Separate iodine from a mixture of iodine crystals and sand.",
     needs: "boiling tube, iodine crystals and sand (in Solids), a burner",
+    kit: "boil iodine sand burner holder",
     steps: [
       { text: "Tip iodine crystals and sand into a dry boiling tube.", need: ["added:iodine", "added:sand"] },
       { text: "Light a burner and hold it under the tube. Purple vapour rises, and crystals form on the cool glass above.", need: ["sublimed"] },
@@ -369,6 +376,7 @@ export const EXPERIMENTS = [
     id: "centrifuge", group: "sep", title: "Centrifugation",
     task: "Separate a fine precipitate from its liquid by centrifuging, and pour off the clear liquid.",
     needs: "three test tubes, centrifuge and stop-watch (both in Equipment), copper(II) sulfate solution, sodium hydroxide solution, distilled water",
+    kit: "tube*3 centrifuge stopwatch cuso4 naoh water",
     steps: [
       { text: "Make a precipitate in a test tube: a measure of copper(II) sulfate, then a measure of sodium hydroxide.", need: [], test: (seen) => [...seen].some((f) => f.startsWith("ppt:")) },
       { text: "Stand the tube in a well of the centrifuge. In the well OPPOSITE stand a second test tube holding the same amount of water (two measures), to balance it.", check: (q) => q.inHost("centrifuge") >= 2 },
@@ -425,6 +433,7 @@ export const EXPERIMENTS = [
     id: "displace", group: "more", title: "Displacement and the reactivity series",
     task: "Add zinc to copper(II) sulfate solution, and copper to silver nitrate solution. Record your observations and place the three metals in order of reactivity.",
     needs: "two test tubes or beakers, zinc, copper turnings, copper(II) sulfate solution, silver nitrate solution",
+    kit: "rack tube*2 zn cu cuso4 agno3",
     steps: [
       { text: "Zinc in copper(II) sulfate solution: a red-brown coating, and the blue fades.", need: ["deposit:Cu"] },
       { text: "Copper in silver nitrate solution: silvery crystals, and the liquid turns blue.", need: ["deposit:Ag"] },
@@ -445,6 +454,7 @@ export const EXPERIMENTS = [
     id: "flame", group: "more", title: "Flame tests",
     task: "Carry out flame tests on solutions of sodium chloride, calcium chloride and copper(II) sulfate. Record the colour each gives.",
     needs: "a burner, flame-test wire, the three solutions in test tubes",
+    kit: "burner wire rack tube*3 nacl cacl2 cuso4",
     steps: [
       { text: "Sodium chloride: dip the wire, then hold it in the flame.", need: ["flame:Na"] },
       { text: "Calcium chloride.", need: ["flame:Ca"] },
@@ -476,9 +486,23 @@ export const EXPERIMENTS = [
     record: "Water is less dense than the acid and lies on top of it. The heat of mixing is given out in that thin layer of water, which boils at once and throws hot acid out. The rule: add acid to water, never water to acid.",
   },
   {
+    id: "conc-metal", group: "safe", title: "Copper and concentrated sulfuric acid",
+    task: "Show that concentrated sulfuric acid is an oxidising agent: hot, it attacks a metal that dilute acid cannot touch.",
+    needs: "two boiling tubes, copper turnings (in Solids), dilute and concentrated sulfuric acid, a burner, a holder, blue litmus paper",
+    kit: "boil*2 cu h2so4 ch2so4 burner holder blue",
+    steps: [
+      { text: "Put copper in a boiling tube and add DILUTE sulfuric acid. Nothing happens, even on heating.", need: ["added:cu", "added:h2so4"] },
+      { text: "Put copper in a dry boiling tube and add CONCENTRATED sulfuric acid. Cold, nothing happens.", need: ["added:ch2so4"] },
+      { text: "Heat the tube. The copper is attacked and a choking gas comes off.", need: ["gas:SO2"] },
+      { text: "Hold damp blue litmus at the mouth: it turns red.", need: ["test:so2"] },
+    ],
+    record: "Cu(s) + 2H2SO4(l) → CuSO4(aq) + SO2(g) + 2H2O(l). Copper is below hydrogen and never gives hydrogen with an acid. Hot concentrated sulfuric acid oxidises it instead, and is reduced to sulfur dioxide, an acidic gas.",
+  },
+  {
     id: "char", group: "safe", title: "Concentrated sulfuric acid chars paper",
     task: "Show that concentrated sulfuric acid is corrosive, and that the dilute acid does not do the same.",
     needs: "two test tubes, strips of paper (in Equipment), concentrated and dilute sulfuric acid",
+    kit: "rack tube*2 slip h2so4 ch2so4",
     steps: [
       { text: "Pour concentrated sulfuric acid into one test tube and dilute sulfuric acid into another.", need: ["added:ch2so4", "added:h2so4"] },
       { text: "Dip a strip of paper in the dilute acid. It only gets wet.", need: ["slip:dilute"] },
@@ -498,6 +522,7 @@ export function stepDone(step, seen, q) {
 
 /** What every experiment relies on: how the bench is worked. Shown when no experiment has been chosen. */
 export const HOWTO = [
+  "PrepBot can set any practical out for you: press PrepBot, set it up in the guide, or ask it (press A) to set up the experiment you want.",
   "Take pieces from the drawer: tap a tile, or drag it onto the bench. Drag a piece back onto the drawer to put it away.",
   "Pull the stopper out of a bottle before pouring. Carry the bottle to a vessel and hold it there. What is poured out is gone from the bottle: when one runs out, refill it from its own note.",
   "Bottles marked CONC. in red are concentrated. Pour a concentrated acid INTO water, never water onto the acid. A strip of plain paper (in Equipment) shows what the concentrated acid does to anything it touches.",

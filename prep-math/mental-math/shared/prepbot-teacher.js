@@ -718,7 +718,7 @@ export class PrepbotTeacher {
       const b = KEYS[k];
       if ((!b && !direct) || this.skipKeys.includes(k) || !this.root?.isConnected || !this.root.offsetParent) return;
       const t = e.target;
-      if (t?.closest?.("input, textarea, select, [contenteditable=''], [contenteditable='true']")) return;
+      if (t?.isContentEditable || t?.closest?.("input, textarea, select, [contenteditable=''], [contenteditable='true']")) return;
       e.preventDefault();
       if (direct) direct(); else b.click();
     };

@@ -34,7 +34,8 @@ import { UI } from "/utils/components/ui-icons.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
 
 const KEY = "chem-bench-v3";
-const LOG_MAX = 40;
+const PAGE_MAX = 14;          // entries to a page of the notebook; the next one goes overleaf
+const BOOK_MAX = 40;          // pages in the notebook
 const H = 720;                     // the bench is always 720 units tall; its width follows the window
 let W = 1100;
 let BASE = 600;                    // where a piece taken from the drawer first stands: clear of the note along the bottom
@@ -44,7 +45,7 @@ const MOUTH = ["lit", "glow"];                        // held at the mouth
 const TAKES = { dropper: 0.5, pipette: 12.5 };        // portions drawn up (a portion is 2 cm3)
 const STAYS = ["funnel", "paper", "chroma", "bung", "bung1", "tubing", "cap", "condenser", "electrode"];   // fitted, and left there
 const PLUGS = ["funnel", "bung", "bung1"];            // one of these to a mouth (a delivery tube goes in a one-hole stopper)
-const IDLE = ["waste", "syringe", "power", "holder", "tongs", "watch"];                 // never used ON anything
+const IDLE = ["waste", "syringe", "power", "holder", "tongs", "stopwatch"];                 // never used ON anything
 // Things that PICK UP: a test tube holder grips a tube by its neck, tongs take a crucible or a
 // dish by its rim. The piece is then carried by the tool (it is the tool's rider, `held`), and
 // carried over a flame it is heated there. jaw = where the grip is, in the tool's own drawing.
@@ -53,7 +54,7 @@ const GRIPS = {
   tongs: { jaw: [40, -16], takes: (key) => key === "crucible" || key === "dish" || key === "watch", says: "its rim" },
 };
 const LIGHT = ["H2", "NH3"];                          // less dense than air: they rise
-const GAS = { H2: "hydrogen", CO2: "carbon dioxide", O2: "oxygen", NH3: "ammonia" };
+const GAS = { H2: "hydrogen", CO2: "carbon dioxide", O2: "oxygen", NH3: "ammonia", SO2: "sulfur dioxide" };
 const FLAME = ["off", "low", "medium", "roaring"];     // a burner's it.flame, 0 to 3
 const lit = (b) => (b.flame || 0) > 0;
 const CLAMP = -262;                                   // where a stand's clamp starts, above its foot
@@ -122,12 +123,17 @@ const plain = (v) => (v.kind === "vessel" ? `${VESSELS[v.key].name.replace(/ \(.
 
 // ── what is remembered between visits ───────────────────────────────────────
 // exp = the practical that has been chosen; seen = what has been done towards it; unknown = which salt sample X is
-const state = { items: [], n: 0, dose: "portion", explain: true, done: [], log: [], cat: "glass", exp: null, seen: [], unknown: null };
+// book = the lab notebook: pages of entries, oldest first; page = the one that is open
+const state = { items: [], n: 0, dose: "portion", explain: true, done: [], book: [], page: 0, cat: "glass", exp: null, seen: [], unknown: null };
 let restored = false;
 try {
   const saved = JSON.parse(localStorage.getItem(KEY) || "null");
   if (saved && Array.isArray(saved.items)) {
     Object.assign(state, saved);
+    state.items.forEach((it) => { if (it.kind === "tool" && it.key === "watch") it.key = "stopwatch"; });      // (the stop-watch once shared a key with the watch glass)
+    // the notebook was one long list, newest first: it becomes the first page of the book
+    if (!Array.isArray(state.book)) state.book = Array.isArray(saved.log) && saved.log.length ? [{ title: "Earlier notes", exp: null, date: "", entries: saved.log.slice().reverse() }] : [];
+    delete state.log;
     state.items = state.items.filter((it) => (it.kind === "vessel" ? VESSELS[it.key] : it.kind === "tool" ? TOOLS[it.key] : it.kind === "rack" ? SUPPORTS[it.key] : reagent(it.key)));
     state.items.forEach((it) => { delete it.tilt; if (it.t) it.t = { ...newTube(), ...it.t, cap: VESSELS[it.key].cap }; });
     restored = true;
@@ -407,7 +413,7 @@ function dress(it) {
     g.style.setProperty("--drop", `${((1 - leftIn(it) / fullOf(it)) * DROP[reagent(it.key).kind]).toFixed(1)}px`);
     poolIn(it, n.poured ?? (it.tilt || 0));
   }
-  if (it.key === "watch") watchFace(it);
+  if (it.key === "stopwatch") watchFace(it);
   if (it.key === "magnet") g.classList.toggle("has-filings", Boolean(it.sample));
   if (it.key === "chroma") {
     const ink = INKS[it.ink || "black"], p = it.washed ? 0 : it.p || 0;
@@ -617,7 +623,7 @@ function checkReading(it, typed) {
   }
   if (Math.abs(off) <= sc.tol) {
     noteFlags([`read:${it.key}`]);
-    state.log.unshift({ id: it.id, tag: it.tag || "", title: `Read ${plain(it)}`, obs: [{ text: `Reading: ${got.toFixed(sc.dp)} cm\u00b3.`, why: sc.mark ? `The bottom of the meniscus sits on the line, so it holds exactly ${sc.mark} cm\u00b3.` : `Read at eye level, at the bottom of the meniscus. The scale says ${real.toFixed(2)} cm\u00b3.` }] });
+    write({ id: it.id, tag: it.tag || "", title: `Read ${plain(it)}`, obs: [{ text: `Reading: ${got.toFixed(sc.dp)} cm\u00b3.`, why: sc.mark ? `The bottom of the meniscus sits on the line, so it holds exactly ${sc.mark} cm\u00b3.` : `Read at eye level, at the bottom of the meniscus. The scale says ${real.toFixed(2)} cm\u00b3.` }] });
     renderLog();
     say(`Good reading: ${got.toFixed(sc.dp)} cm\u00b3. It is written in the notebook.`, where);
   } else if (sc.mark) say(`The curve is sitting on the line. What volume is this piece made to hold? It is marked on the glass.`, where, "no");
@@ -1000,6 +1006,7 @@ function spit(v, calm = false) {
       { duration: (calm ? 1800 : 700) + Math.random() * 800, delay: Math.random() * (calm ? 900 : 650), easing: "ease-out", fill: "both" });
   }
   setTimeout(() => g.remove(), 3200);
+  if (!calm) for (let i = 0; i < 5; i++) { const side = i % 2 ? 1 : -1; fx(`<ellipse class="cl-puddle" cx="${(v.x + side * (def.rMax + 18 + Math.random() * 70)).toFixed(0)}" cy="${H - 6}" rx="${(5 + Math.random() * 9).toFixed(0)}" ry="2.2" fill="rgba(230,240,248,0.45)"/>`, 5200); }
   if (!calm) { kick(v, 44); setTimeout(() => nodes[v.id] && kick(v, -36), 240); setTimeout(() => nodes[v.id] && kick(v, 30), 520); }
 }
 function record(v, res) {
@@ -1008,11 +1015,10 @@ function record(v, res) {
     if (res.flags.includes("dilute:wrong")) spit(v);
     else if (res.flags.includes("dilute:right")) spit(v, true);
   }
-  const last = state.log[0];
+  const entries = lastPage().entries, last = entries[entries.length - 1];
   const same = last && last.id === v.id && last.title === res.title && JSON.stringify(last.obs) === JSON.stringify(res.obs);
-  if (same) last.times = (last.times || 1) + 1;
-  else state.log.unshift({ id: v.id, tag: v.tag, title: res.title, obs: res.obs, secret: Boolean(v.t && v.t.added && v.t.added.includes("unk")) });
-  state.log.length = Math.min(state.log.length, LOG_MAX);
+  if (same) { last.times = (last.times || 1) + 1; state.page = state.book.length - 1; }
+  else write({ id: v.id, tag: v.tag, title: res.title, obs: res.obs.map((o) => ({ ...o })), secret: Boolean(v.t && v.t.added && v.t.added.includes("unk")) });
   if (v.kind === "vessel" && v.t.vol > 0) {
     const sp = speciate(v.t);
     if (sp.ppt.BaSO4 && (sp.free.H || 0) > 0.4) res.flags.push("acidproof:BaSO4");
@@ -2020,7 +2026,7 @@ function watchFace(w) {
   n.g.querySelector(".cl-watch-t").textContent = `${String(min).padStart(2, "0")}:${String(s).padStart(2, "0")}.${tenth}`;
   n.g.classList.toggle("is-running", Boolean(w.run));
 }
-setInterval(() => { for (const w of tools("watch")) if (w.run) watchFace(w); }, 100);
+setInterval(() => { for (const w of tools("stopwatch")) if (w.run) watchFace(w); }, 100);
 
 // ── things that are pressed: a tap, a power switch, a tare key ──────────────
 let tap = null;
@@ -2136,9 +2142,9 @@ function lipOf(it) {
 }
 function pourTick() {
   if (!turn) return;
-  const { it } = turn;
-  if (GRIPS[it.key]) return;                      // a holder or tongs is only being turned: nothing pours
+  let { it } = turn;
   turn.timer = setTimeout(pourTick, 260);
+  if (GRIPS[it.key]) { it = loadOf(it); if (!it) return; }      // a holder or tongs turned too far: what it holds pours
   const over = Math.abs(it.tilt || 0) - pourAngle(it);
   if (over < 0) return;
   const isBottle = it.kind === "reagent";
@@ -2350,7 +2356,13 @@ window.addEventListener("pointerup", (e) => {
     clearTimeout(turn.timer);
     turn = null;
     if (GRIPS[it.key]) {
-      // a holder or tongs STAYS as it was turned, and so does what it holds
+      // a holder or tongs STAYS as it was turned, and so does what it holds (eased back, if need be,
+      // to where what it holds no longer runs out)
+      const held = loadOf(it);
+      if (held && !stopperOf(held) && held.t.vol + (held.t.oil || 0) > 0) {
+        const most = pourAngle(held) - 3;
+        if (Math.abs(it.tilt || 0) > most) { it.tilt = Math.round(Math.sign(it.tilt) * most); glide(it, true); place(it); }
+      }
       follow(it);
       save();
       setTimeout(() => { if (nodes[it.id]) select(it); }, 280);
@@ -2616,7 +2628,7 @@ function openMenu(it) {
     lines.push(held ? `Holding ${plain(held)} by ${GRIPS[it.key].says}. Carry it over a lit burner to heat it. The round handle above tilts it, and what it holds.` : it.key === "holder" ? "Let it go at the neck of a test tube or a boiling tube and it grips it." : "Let them go at the rim of a crucible, an evaporating dish or a watch glass and they take hold of it.");
     if (held) act("drop", "Let go", ICON.flip);
   }
-  else if (it.key === "watch") lines.push(it.run ? "Running. Press its crown to stop it." : `Reads ${(watchMs(it) / 1000).toFixed(1)} s. Press the crown on top to start and stop it; the small red key sets it back to nought.`);
+  else if (it.key === "stopwatch") lines.push(it.run ? "Running. Press its crown to stop it." : `Reads ${(watchMs(it) / 1000).toFixed(1)} s. Press the crown on top to start and stop it; the small red key sets it back to nought.`);
   else if (it.key === "magnet") { lines.push(it.sample ? "Iron filings cling to both poles." : "Hold it over a mixture. Only iron is pulled to it."); if (it.sample) act("empty", "Wipe the filings off", ICON.empty); }
   else if (it.key === "chroma") {
     lines.push(`A spot of ${INKS[it.ink || "black"].name} ink on the pencil line. ${it.washed ? "The ink has washed off: take a fresh strip." : it.p >= 1 ? "Run: measure each spot, and the solvent front, from the pencil line." : it.on ? "It needs a little water in the beaker: touching the paper, below the ink." : "Let it go at the mouth of a beaker and the rod lies across the rim."}`);
@@ -2735,24 +2747,90 @@ $("cl-grid").addEventListener("click", (e) => {
 });
 
 // ── the notebook, things to try, guides ─────────────────────────────────────
-function renderLog() {
-  const list = $("cl-log");
-  list.innerHTML = state.log.length
-    ? state.log.map((e) => `
-      <li class="cl-entry">
-        <p class="cl-entry__head"><span class="cl-entry__tube">${esc(e.tag)}</span>${esc(e.title)}${e.times > 1 ? ` <span class="cl-entry__times">&times; ${e.times}</span>` : ""}</p>
-        ${e.obs.map((o) => `
-          <p class="cl-obs">${esc(o.text)}</p>
-          ${!e.secret && (o.why || o.eq || o.full) ? `<p class="cl-why">${o.why ? prose(o.why) : ""}${o.full ? `<span class="cl-eq">${chemHtml(o.full)}</span>` : ""}${o.eq ? `<span class="cl-eq${o.full ? " cl-eq--ion" : ""}">${o.full ? "<i>ionic</i>" : ""}${chemHtml(o.eq)}</span>` : ""}</p>` : ""}`).join("")}
+// ── the lab notebook: a spiral pad. Each experiment starts a new page; pages turn over the top ──
+const today = () => new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+const blankPage = (title, exp = null) => ({ title, exp, date: today(), entries: [] });
+/** The page being written on: the last one in the book. */
+function lastPage() {
+  if (!state.book.length) { const e = EXPERIMENTS.find((x) => x.id === state.exp); state.book.push(blankPage(e ? e.title : "Free work", state.exp)); }
+  return state.book[state.book.length - 1];
+}
+/** Write an entry down. A full page is turned, and the writing goes on overleaf. */
+function write(entry) {
+  let p = lastPage();
+  if (p.entries.length >= PAGE_MAX) { state.book.push(blankPage(`${p.title.replace(/ \(continued\)$/, "")} (continued)`, p.exp)); p = lastPage(); }
+  p.entries.push(entry);
+  if (state.book.length > BOOK_MAX) state.book.splice(0, state.book.length - BOOK_MAX);
+  state.page = state.book.length - 1;
+}
+/** A new experiment: a new page (a page with nothing on it yet is simply given the new heading). */
+function turnPage(title, exp = null) {
+  const p = lastPage();
+  const was = state.page;
+  if (p.entries.length) state.book.push(blankPage(title, exp));
+  else Object.assign(p, { title, exp, date: today() });
+  state.page = state.book.length - 1;
+  renderLog(state.page > was ? 1 : 0);
+}
+const CHEV = (d) => `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}" fill="currentColor"/></svg>`;
+const leafBusy = () => { const a = document.activeElement; return Boolean(a && a.closest && a.closest("#cl-leaf") && (a.isContentEditable || a.tagName === "INPUT")); };
+let leafDirty = false;
+function leafHtml() {
+  const n = state.book.length, i = state.page, p = state.book[i], lastOne = i === n - 1;
+  const entries = p.entries.length
+    ? p.entries.map((e, k) => `
+      <li class="cl-entry${e.own ? " cl-entry--own" : ""}" data-k="${k}">
+        <p class="cl-entry__head">${e.tag ? `<span class="cl-entry__tube">${esc(e.tag)}</span>` : ""}<span>${esc(e.title)}</span>${e.times > 1 ? ` <span class="cl-entry__times">&times; ${e.times}</span>` : ""}<button type="button" class="cl-ico cl-rub" data-rub data-tip="Rub this note out" aria-label="Rub this note out">${UI.eraser(13)}</button></p>
+        ${e.obs.map((o, j) => `
+          <p class="cl-obs${o.mine ? " is-mine" : ""}" contenteditable="plaintext-only" spellcheck="false" data-j="${j}">${esc(o.text)}</p>
+          ${!e.secret && !o.mine && (o.why || o.eq || o.full) ? `<p class="cl-why">${o.why ? prose(o.why) : ""}${o.full ? `<span class="cl-eq">${chemHtml(o.full)}</span>` : ""}${o.eq ? `<span class="cl-eq${o.full ? " cl-eq--ion" : ""}">${o.full ? "<i>ionic</i>" : ""}${chemHtml(o.eq)}</span>` : ""}</p>` : ""}`).join("")}
       </li>`).join("")
-    : `<li class="cl-entry cl-entry--none">Nothing written yet. Whatever you see happen is written down here.</li>`;
-  $("cl-sheet-notebook").classList.toggle("is-plain", !state.explain);
+    : `<li class="cl-entry cl-entry--none">${lastOne ? "Nothing written yet. Whatever you see happen is written down here. Click a note to correct it." : "Nothing was written on this page."}</li>`;
+  return `<header class="cl-leaf__head"><h3 class="cl-leaf__title" contenteditable="plaintext-only" spellcheck="false" data-title>${esc(p.title)}</h3><span class="cl-leaf__date">${esc(p.date || "")}</span></header>
+    <ol id="cl-log" class="cl-log">${entries}</ol>
+    <form class="cl-own" id="cl-own" autocomplete="off"><input id="cl-own-text" type="text" maxlength="220" placeholder="Write a note of your own, then Enter" aria-label="Write a note of your own" /></form>
+    <footer class="cl-leaf__foot">
+      <button type="button" class="cl-ico cl-ico--paper" data-flip="-1" data-tip="The page before" aria-label="The page before"${i === 0 ? " disabled" : ""}>${CHEV("M15.5 4.5 8 12l7.5 7.5 1.8-1.8L11.600 12l5.700-5.700z")}</button>
+      <span>Page ${i + 1} of ${n}</span>
+      <button type="button" class="cl-ico cl-ico--paper" data-flip="1" data-tip="The next page" aria-label="The next page"${lastOne ? " disabled" : ""}>${CHEV("M8.500 4.500 16 12l-7.500 7.500-1.800-1.800L12.400 12 6.700 6.300z")}</button>
+    </footer>`;
+}
+/** Draw the open page. `dir`: 1 = a page has been turned on (the old one flips up over the spiral), -1 = turned back (the earlier one comes down), 0 = no turning. */
+function renderLog(dir = 0) {
+  lastPage();
+  state.page = clamp(state.page ?? state.book.length - 1, 0, state.book.length - 1);
+  const leaf = $("cl-leaf"), sheet = $("cl-sheet-notebook");
+  $("cl-count-log").textContent = lastPage().entries.length || "";
+  sheet.classList.toggle("is-plain", !state.explain);
   const ex = $("cl-explain");
   const tip = state.explain ? "Hide the chemistry" : "Show the chemistry";
   ex.innerHTML = state.explain ? ICON.eye : ICON.eyeOff;
   ex.dataset.tip = tip;
   ex.setAttribute("aria-label", tip);
-  $("cl-count-log").textContent = state.log.length || "";
+  if (!dir && leafBusy()) { leafDirty = true; return; }             // a note is being corrected: it is not written over
+  leafDirty = false;
+  const draw = () => { leaf.innerHTML = leafHtml(); const list = $("cl-log"); if (state.page === state.book.length - 1) list.scrollTop = list.scrollHeight; };
+  const still = !dir || sheet.hidden || matchMedia("(prefers-reduced-motion: reduce)").matches;
+  leaf.parentNode.querySelectorAll(".cl-leaf--ghost").forEach((el) => el.remove());
+  if (still) { draw(); return; }
+  const ghostOf = () => { const gh = leaf.cloneNode(true); gh.removeAttribute("id"); gh.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id")); gh.classList.add("cl-leaf--ghost"); gh.setAttribute("aria-hidden", "true"); return gh; };
+  if (dir > 0) {
+    // the page that was open lifts off and goes over the top; the new one is underneath it
+    const gh = ghostOf();
+    draw();
+    leaf.parentNode.appendChild(gh);
+    gh.classList.add(dir === 2 ? "is-torn" : "is-up");
+    gh.addEventListener("animationend", () => gh.remove(), { once: true });
+  } else {
+    // the earlier page comes back down over the one that was open
+    const old = leaf.innerHTML;
+    draw();
+    const gh = ghostOf();
+    leaf.innerHTML = old;
+    leaf.parentNode.appendChild(gh);
+    gh.classList.add("is-down");
+    gh.addEventListener("animationend", () => { draw(); gh.remove(); }, { once: true });
+  }
 }
 /** Ions for a plain-text choice: Cu^2+ as Cu\u00b2\u207a. */
 const SUP = { "+": "\u207a", "-": "\u207b", 2: "\u00b2", 3: "\u00b3" }, SUB = { 2: "\u2082", 3: "\u2083", 4: "\u2084" };
@@ -2819,6 +2897,8 @@ function choose(id) {
   state.exp = id;
   state.seen = [];
   state.ticks = null;
+  const picked = EXPERIMENTS.find((e) => e.id === id);
+  if (picked) turnPage(picked.title, id);
   renderExperiments();
   renderGuide();
   save();
@@ -2862,6 +2942,7 @@ function renderGuide(fresh = []) {
     <div class="cl-guide__head"><h3>${esc(exp.title)}</h3><button type="button" class="cl-ico cl-ico--paper" data-guide="again" data-tip="Start this practical again" aria-label="Start this practical again">${UI.again(18)}</button></div>
     <p class="cl-guide__task">${chemHtml(exp.task)}</p>
     <p class="cl-guide__needs">You need: ${chemHtml(exp.needs)}.</p>
+    <button type="button" class="cl-try" data-guide="setup">PrepBot, set it up</button>
     <ul class="cl-tasks cl-guide__steps">${steps}</ul>${answer}
     ${all ? `<p class="cl-guide__record"><b>To record:</b> ${chemHtml(exp.record)}</p>` : ""}
   </li>`;
@@ -2877,6 +2958,13 @@ $("cl-setups").addEventListener("click", (e) => {
   if (!b) return;
   const what = b.dataset.guide;
   if (what === "again") { choose(state.exp); return; }
+  if (what === "setup") {
+    const page = window.__prepbotPage;
+    if (!page || botBusy) { say("PrepBot is busy. Ask again when it has finished.", null, "no"); return; }
+    openSheet(null);
+    page.act([`setup ${state.exp}`]);
+    return;
+  }
   if (what === "fresh") {
     state.items.filter((it) => it.kind === "reagent" && it.key === "unk").forEach(removeItem);
     const others = UNKNOWNS.filter((u) => u.id !== state.unknown);
@@ -2899,12 +2987,65 @@ function openSheet(id) {
   document.querySelectorAll("[data-sheet]").forEach((b) => b.setAttribute("aria-pressed", String(!$(b.dataset.sheet).hidden)));
 }
 document.querySelectorAll("[data-ico]").forEach((b) => b.insertAdjacentHTML("afterbegin", ICON[b.dataset.ico]));
+// the notebook's spiral: a wire loop through a punched hole, all the way across
+document.querySelector(".cl-book__rings").innerHTML = Array.from({ length: 21 }, (_, i) => { const x = 12 + i * 19.8; return `<ellipse cx="${x}" cy="19" rx="3.4" ry="2.6" fill="#1b2230"/><path d="M${x} 19C${x - 5} 12 ${x - 4} 3 ${x + 1} 3s4 8 0 15" fill="none" stroke="#2c323d" stroke-width="3" stroke-linecap="round"/><path d="M${x} 19C${x - 5} 12 ${x - 4} 3 ${x + 1} 3s4 8 0 15" fill="none" stroke="#c9d0da" stroke-width="1.5" stroke-linecap="round"/>`; }).join("");
 document.querySelectorAll("[data-sheet]").forEach((b) => b.addEventListener("click", () => openSheet(b.dataset.sheet)));
 document.querySelectorAll(".cl-sheet__close").forEach((b) => { b.innerHTML = UI.close(14); b.addEventListener("click", () => openSheet(null)); });
 $("cl-explain").addEventListener("click", () => { state.explain = !state.explain; renderLog(); save(); });
-$("cl-clear-log").addEventListener("click", () => { state.log = []; renderLog(); save(); });
+// the notebook's own keys: tear the open page out, start a new one, turn the pages, correct and rub out
+$("cl-clear-log").addEventListener("click", () => {
+  if (state.book.length > 1) state.book.splice(state.page, 1); else state.book[0].entries = [];
+  state.page = Math.min(state.page, state.book.length - 1);
+  renderLog(2);
+  save();
+});
+$("cl-new-page").addEventListener("click", () => { const e = expNow(); turnPage(e ? e.title : "Free work", state.exp); save(); });
+{
+  const leaf = $("cl-leaf");
+  leaf.addEventListener("click", (e) => {
+    const flip = e.target.closest("[data-flip]");
+    if (flip) { const to = clamp(state.page + Number(flip.dataset.flip), 0, state.book.length - 1); if (to !== state.page) { const dir = to > state.page ? 1 : -1; state.page = to; renderLog(dir); save(); } return; }
+    const rub = e.target.closest("[data-rub]");
+    if (rub) {
+      const li = rub.closest(".cl-entry");
+      state.book[state.page].entries.splice(Number(li.dataset.k), 1);
+      li.classList.add("is-rubbed");
+      setTimeout(() => { renderLog(); save(); }, 260);
+    }
+  });
+  // a note is corrected where it stands; rubbed right out, it is gone
+  leaf.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.isContentEditable) { e.preventDefault(); e.target.blur(); } });
+  leaf.addEventListener("focusout", (e) => {
+    const el = e.target, p = state.book[state.page];
+    if (el.isContentEditable && p) {
+      const text = el.textContent.replace(/\s+/g, " ").trim();
+      if (el.dataset.title != null) p.title = text || "Untitled";
+      else {
+        const entry = p.entries[Number(el.closest(".cl-entry").dataset.k)], o = entry && entry.obs[Number(el.dataset.j)];
+        if (o && text !== o.text) {
+          if (text) { o.text = text; o.mine = true; }
+          else { entry.obs.splice(Number(el.dataset.j), 1); if (!entry.obs.length) p.entries.splice(p.entries.indexOf(entry), 1); }
+        }
+      }
+      save();
+    }
+    setTimeout(() => { if (!leafBusy()) renderLog(); }, 0);
+  });
+  leaf.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const box = $("cl-own-text"), text = box.value.replace(/\s+/g, " ").trim();
+    if (!text) return;
+    state.page = state.book.length - 1;
+    write({ id: null, tag: "", title: "My note", own: true, obs: [{ text, mine: true }] });
+    box.blur();
+    renderLog();
+    save();
+    $("cl-own-text").focus();
+  });
+}
 $("cl-clear").addEventListener("click", () => {
   clearBench();
+  if (lastPage().entries.length) { const e = expNow(); turnPage(e ? e.title : "Free work", state.exp); }
   say("The bench is clear. Take what you want from the drawer and set it up.");
 });
 
@@ -2933,6 +3074,10 @@ const actor = {
   isEmptyBench: () => state.items.length === 0,
   busy(on) { botBusy = on; document.querySelector(".cl-stage").classList.toggle("is-bot", on); if (on) select(null); },
   clear() { clearBench(); },
+  /** Start a new page of the notebook under this heading. */
+  page(title) { turnPage(title, state.exp); save(); },
+  /** Is there room on this support for a vessel, and where? (-1: none) */
+  freeSlot(host) { const n = (SUPPORTS[host.key].slots || []).length || 1; for (let i = 0; i < n; i++) if (!state.items.some((o) => o.rack && o.rack[0] === host.id && o.rack[1] === i)) return i; return -1; },
   openSheet(id) { if ($(id).hidden) openSheet(id); },
   closeSheets() { openSheet(null); },
   // what is standing on the bench, for PrepBot's help
@@ -2947,7 +3092,7 @@ const actor = {
   // for the tutor's commands: the pieces themselves, the practicals, the drawer
   pieces: () => state.items.filter((it) => it.key !== "cap"),
   capOn: (bottle) => Boolean(fittedTo(bottle, "cap")),
-  practicals: () => EXPERIMENTS.map((e) => ({ id: e.id, title: e.title })),
+  practicals: () => EXPERIMENTS.map((e) => ({ id: e.id, title: e.title, needs: e.needs, task: e.task, kit: e.kit || "" })),
   pick(id) { if (!EXPERIMENTS.some((e) => e.id === id)) return false; choose(id); if ($("cl-sheet-setups").hidden) openSheet("cl-sheet-setups"); return true; },
   drawer(open) { setDrawer(!open); },
   /** Take a piece out of the drawer for the learner and stand it in a free place. */

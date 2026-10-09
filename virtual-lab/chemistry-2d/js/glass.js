@@ -643,7 +643,7 @@ export const TOOLS = {
   pipette: { name: "Pipette (25 mL) and filler", act: [0, 0], bbox: { x0: -12, y0: -190, x1: 12, y1: 6 } },
   funnel: { name: "Filter funnel", act: [0, 0], bbox: { x0: -40, y0: -66, x1: 40, y1: 34 } },
   paper: { name: "Filter paper", act: [0, 0], bbox: { x0: -34, y0: -62, x1: 34, y1: 6 } },
-  watch: { name: "Stop-watch", act: [0, 0], bbox: { x0: -27, y0: -70, x1: 27, y1: 6 } },
+  stopwatch: { name: "Stop-watch", act: [0, 0], bbox: { x0: -27, y0: -70, x1: 27, y1: 6 } },
   magnet: { name: "Horseshoe magnet", act: [0, 0], bbox: { x0: -24, y0: -64, x1: 24, y1: 8 } },
   chroma: { name: "Chromatography paper", act: [0, 0], bbox: { x0: -42, y0: -10, x1: 42, y1: 108 } },
   bung: { name: "Rubber stopper", act: [0, 0], bbox: { x0: -18, y0: -14, x1: 18, y1: 13 } },
@@ -891,7 +891,7 @@ export function toolSvg(key, it = {}) {
     return `<path d="M-34 -58L40 2" stroke="#fff" stroke-opacity="0.16" stroke-width="6" stroke-linecap="round"/><path d="M-34 -58L40 2" stroke="url(#g-streak)" stroke-width="5" stroke-linecap="round" opacity="0.5"/>
       <path d="M-34 -58L40 2" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="0.9" stroke-linecap="round" transform="translate(-1.6 2)"/><path d="M-34 -58L40 2" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="0.9" stroke-linecap="round" transform="translate(1.6 -2)"/>${hit(b)}`;
   }
-  if (key === "watch") {
+  if (key === "stopwatch") {
     // a hand stop-watch: a round case with a crown that starts and stops it, a small key that
     // sets it back to nought, and figures that read minutes : seconds . tenths
     return `<ellipse cx="0" cy="2" rx="22" ry="3.5" fill="#000" fill-opacity="0.3" filter="url(#g-soft)"/>

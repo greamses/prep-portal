@@ -421,7 +421,18 @@ function settle(t, heated) {
     if ((n = Math.min(get(aq, "H"), get(aq, "CO3"))) > EPS) { bump(aq, "H", -n); bump(aq, "CO3", -n); t.gas = "CO2"; did({ id: "carbonate", n }); }
     if ((n = Math.min(get(aq, "H"), get(t.solid, "CaCO3"))) > EPS) { bump(aq, "H", -n); bump(t.solid, "CaCO3", -n); bump(aq, "Ca", n); t.gas = "CO2"; did({ id: "marble", n }); }
     if ((n = Math.min(get(aq, "H"), get(t.solid, "CuO"))) > EPS) { bump(aq, "H", -n); bump(t.solid, "CuO", -n); bump(aq, "Cu", n); did({ id: "oxide", n }); }
-    for (const m of ["Mg", "Zn", "Fe"]) {
+    // UNDILUTED concentrated sulfuric acid is not an ordinary acid: there is hardly any water in it,
+    // so hardly any hydrogen ions. Cold, it leaves metals alone (iron is made passive). Hot, it is an
+    // oxidising agent: it attacks even copper, and is itself reduced to sulfur dioxide.
+    const oily = t.neat === "ch2so4" && t.vol > EPS;
+    if (oily && heated) {
+      for (const m of ["Mg", "Zn", "Fe", "Cu"]) {
+        if (pass === 0 && (n = Math.min(get(t.metal, m), 0.2, get(aq, "H") / 2, get(aq, "SO4"))) > EPS) {
+          bump(t.metal, m, -n); bump(aq, "H", -2 * n); bump(aq, "SO4", -n); bump(aq, METAL[m].ion, n); t.gas = "SO2"; did({ id: "metalConc", n, m });
+        }
+      }
+    }
+    for (const m of oily ? [] : ["Mg", "Zn", "Fe"]) {
       if ((n = Math.min(get(t.metal, m), get(aq, "H"))) > EPS) {
         bump(t.metal, m, -n); bump(aq, "H", -n); bump(aq, METAL[m].ion, n); t.gas = "H2"; did({ id: "metalAcid", n, m });
       }
@@ -544,6 +555,12 @@ function act(t, change, { heated = false, adding = null } = {}) {
     obs.push({ metal: e.m, text: `The ${M.name} ${WITH_ACID[e.m]}${gone ? " and dissolves away" : ""}. ${FIZZ}`, why: `${cap(M.name)} is above hydrogen in the reactivity series, so it displaces hydrogen from the acid.`, eq: `${M.sym}(s) + 2H^+(aq) -> ${ION_TEX[M.ion]}(aq) + H2(g)`, full: W("metalAcid", e.m) });
     flags.push("gas:H2");
   }
+  for (const e of events.filter((x) => x.id === "metalConc")) {
+    if (obs.some((o) => o.metal === e.m)) continue;
+    const M = METAL[e.m];
+    obs.push({ metal: e.m, text: `The ${M.name} is attacked by the hot acid${get(t.metal, e.m) <= EPS ? " and dissolves away" : ""}. A colourless gas with a sharp, choking smell comes off.`, why: "Hot concentrated sulfuric acid is an oxidising agent. It oxidises the metal and is itself reduced to sulfur dioxide. No hydrogen is formed.", eq: `${M.sym}(s) + 2H2SO4(l) -> ${M.sym}SO4(aq) + SO2(g) + 2H2O(l)` });
+    flags.push("gas:SO2");
+  }
   if (has("oxygen")) { say(`Rapid fizzing. ${FIZZ} The black powder is still there at the end.`, "Manganese(IV) oxide is a catalyst: it speeds up the breakdown of hydrogen peroxide and is not used up. The gas is oxygen.", "2H2O2(aq) -> 2H2O(l) + O2(g)"); flags.push("gas:O2"); }
   if (has("oxide")) say("The black powder dissolves in the acid.", "Copper(II) oxide is a base: it reacts with the acid to give a copper(II) salt and water.", "CuO(s) + 2H^+(aq) -> Cu^2+(aq) + H2O(l)", W("oxide"));
   for (const e of events.filter((x) => x.id === "reduceFe3")) {
@@ -635,7 +652,9 @@ function act(t, change, { heated = false, adding = null } = {}) {
   } else if (has("neutral") || has("neutralNH3")) flags.push("neutral");
 
   if (!obs.length && !before.empty) {
+    const cold = t.neat === "ch2so4" && ["Fe", "Mg", "Zn", "Cu"].find((m) => get(t.metal, m) > EPS);
     if (heated) say("The liquid gets hot. No other change.");
+    else if (cold) say("No visible change.", cold === "Fe" ? "Cold concentrated sulfuric acid makes iron passive: a thin, tight layer forms on the metal and protects it. Heat it and the acid attacks." : `Cold concentrated sulfuric acid has almost no water in it, so it has very few hydrogen ions and does not act as an ordinary acid: no hydrogen comes off the ${METAL[cold].name}. Heat it and it attacks the metal as an oxidising agent.`);
     else {
       const idle = ["Cu", "Ag", "Pb"].find((m) => get(t.metal, m) > EPS && get(after.sp.free, "H") > EPS && !t.deposit.includes(m));
       say("No visible change.", idle ? `${cap(METAL[idle].name)} is below hydrogen in the reactivity series, so it cannot displace hydrogen from a dilute acid.` : undefined);
@@ -671,6 +690,8 @@ export function add(t, id, dose = "portion", strength = 1) {
   const res = act(t, () => {
     t.gas = null;
     if (r.kind === "solution") {
+      if (wasDry) t.neat = r.conc && r.group === "acid" ? id : null;
+      else if (id !== neat) t.neat = null;
       undry(t);
       t.vol += amount;
       for (const [k, n] of Object.entries(r.adds)) bump(t.aq, k, n * amount * strength);
@@ -693,6 +714,7 @@ export function add(t, id, dose = "portion", strength = 1) {
       t.neat = null;
       t.temp = 100;
       first({ text: "It hisses, boils and spits violently. Steam rushes off and drops of hot acid are thrown out of the vessel.", why: `${r.id === "water" ? "Water" : "The watery liquid"} is less dense than concentrated sulfuric acid, so it lies on top of it. Mixing gives out a great deal of heat, all of it in that thin layer, which boils at once and throws acid out. NEVER add water to a concentrated acid.` }, "dilute:wrong");
+      takeFrom(t, t.vol * 0.18);
     } else if (id === "ch2so4" && !neat) {
       // the acid INTO water: it sinks and mixes, and the heat is shared by all the water
       t.temp = Math.min(92, (t.temp ?? 25) + (70 * amount) / t.vol);
@@ -717,7 +739,8 @@ export function add(t, id, dose = "portion", strength = 1) {
 export function heat(t) {
   if (isEmpty(t)) return { refused: "There is nothing in there to heat." };
   if (t.vol <= EPS && !(get(t.solid, "I2") > EPS)) return { refused: (t.sublimate || 0) > 0 ? "The iodine has all sublimed. The crystals are on the glass near the top." : "Add a liquid first: these solids do not change in a Bunsen flame." };
-  const res = act(t, () => { t.gas = null; }, { heated: true });
+  // (sulfur dioxide is dense: it lies in the tube after the heating stops, and can still be tested)
+  const res = act(t, () => { if (t.gas !== "SO2") t.gas = null; }, { heated: true });
   res.title = "Heated gently";
   return res;
 }
@@ -826,7 +849,7 @@ export function sampleOf(id, n, strength = 1) {
   return s;
 }
 
-const GAS_FROM = { carbonate: "CO2", marble: "CO2", hydrolysis: "CO2", bakeCarbonate: "CO2", metalAcid: "H2", oxygen: "O2", ammonia: "NH3" };
+const GAS_FROM = { carbonate: "CO2", marble: "CO2", hydrolysis: "CO2", bakeCarbonate: "CO2", metalAcid: "H2", metalConc: "SO2", oxygen: "O2", ammonia: "NH3" };
 /** The gas an action gave off and how much (in equivalents; 12 cm3 each), or null. */
 export function gasMade(res) {
   let gas = null, n = 0;
@@ -1007,7 +1030,7 @@ export function flameOf(t) {
   return hit ? { ion: hit[0], metal: hit[1], name: hit[2], rgb: hit[3] } : null;
 }
 
-const GAS_NAME = { H2: "hydrogen", CO2: "carbon dioxide", O2: "oxygen", NH3: "ammonia" };
+const GAS_NAME = { H2: "hydrogen", CO2: "carbon dioxide", O2: "oxygen", NH3: "ammonia", SO2: "sulfur dioxide" };
 
 /** A test: "lit" | "glow" | "red" | "blue". */
 export function test(t, tool) {
@@ -1020,6 +1043,7 @@ export function test(t, tool) {
     else if (gas === "CO2") { say("The flame goes out.", "Carbon dioxide does not burn and does not let things burn in it."); flags.push("test:out"); fx = "out"; }
     else if (gas === "O2") { say("The splint burns much more brightly.", "Oxygen. Things burn far better in it than in air."); flags.push("test:bright"); fx = "bright"; }
     else if (gas === "NH3") { say("The flame goes out.", "Ammonia does not burn in air. Test it with damp red litmus instead."); fx = "out"; }
+    else if (gas === "SO2") { say("The flame goes out.", "Sulfur dioxide does not burn and does not let things burn in it. Test it with damp blue litmus."); flags.push("test:out"); fx = "out"; }
     else { say("The splint carries on burning. No gas is coming off."); fx = "burn"; }
     return { title: "Held a lighted splint at the mouth", obs, flags, fx };
   }
@@ -1034,6 +1058,7 @@ export function test(t, tool) {
     let turned = null;
     if (gas) {
       if (gas === "NH3" && paper === "red") { say("At the mouth, the damp red litmus turns blue.", "Ammonia is an alkaline gas. This is the test for it.", "NH3(g) + H2O(l) -> NH4^+(aq) + OH^-(aq)"); flags.push("test:gasblue"); turned = "blue"; }
+      else if (gas === "SO2" && paper === "blue") { say("At the mouth, the damp blue litmus turns red.", "Sulfur dioxide is an acidic gas: it dissolves in the water on the paper to make sulfurous acid.", "SO2(g) + H2O(l) -> H2SO3(aq)"); turned = "red"; flags.push("test:so2"); }
       else if (gas === "CO2" && paper === "blue") { say("At the mouth, the damp blue litmus turns faintly red.", "Carbon dioxide is a weakly acidic gas.", "CO2(g) + H2O(l) -> H2CO3(aq)"); turned = "red"; }
       else say(`At the mouth, the damp ${paper} litmus does not change.`, gas === "H2" || gas === "O2" ? `The gas is neutral.` : undefined);
     }
