@@ -96,7 +96,7 @@ service cloud.firestore {
     // than denied in a match of their own.
     function isServerOnly(col) {
       return col in ['paymentEvents', 'workbookPrints', 'workbookOrders', 'workbookAssignments',
-                     'tutor-bookings', 'tutorOrders', 'benchRefills', 'benchRefillOrders',
+                     'tutor-bookings', 'tutorOrders', 'benchRefills', 'benchRefillOrders', 'benchAssignments',
                      'partners', 'referralCodes', 'earnings', 'payouts'];
     }
 

@@ -74,6 +74,11 @@ export const REAGENTS = [
   { id: "clw", group: "other", kind: "solution", name: "chlorine water", formula: "Cl2", adds: { Cl2: 1 } },
   { id: "brw", group: "other", kind: "solution", name: "bromine water", formula: "Br2", adds: { Br2: 1 } },
   { id: "i2aq", group: "other", kind: "solution", name: "iodine solution", formula: "I2", adds: { I2: 1 } },
+  // from the kitchen cupboard, for the experiments young children do
+  { id: "vinegar", group: "other", kind: "solution", name: "vinegar", formula: "Vinegar", adds: { H: 1, Ac: 1 } },
+  { id: "lemonj", group: "other", kind: "solution", name: "lemon juice", formula: "Lemon", adds: { H: 1, Cit: 1 } },
+  { id: "soap", group: "other", kind: "solution", name: "washing-up liquid", formula: "Soap", adds: { Soap: 1 } },
+  { id: "dye", group: "other", kind: "solution", name: "red food colouring", formula: "Red", adds: { Dye: 1 } },
   // the one liquid that does not mix with the rest: it is kept apart, as t.oil, and floats
   { id: "oil", group: "other", kind: "solution", name: "cooking oil", formula: "Oil", adds: {}, oil: true },
 
@@ -93,6 +98,9 @@ export const REAGENTS = [
   { id: "sand", group: "solid", kind: "solid", name: "sand", formula: "SiO2", solid: { sand: 1.5 } },
   { id: "sulfur", group: "solid", kind: "solid", name: "sulfur powder", formula: "S", solid: { S: 1.5 } },
   { id: "iodine", group: "solid", kind: "solid", name: "iodine crystals", formula: "I2", solid: { I2: 1 } },
+  { id: "bicarb", group: "solid", kind: "solid", name: "baking soda", formula: "NaHCO3", solid: { NaHCO3: 3 } },
+  { id: "salt", group: "solid", kind: "solid", name: "table salt", formula: "NaCl", solid: { rocksalt: 3 } },
+  { id: "yeast", group: "solid", kind: "solid", name: "dried yeast", formula: "Yeast", solid: { yeast: 1 } },
   // something for the blender: dried hibiscus (zobo), whose red colouring is an indicator
   { id: "zobo", group: "solid", kind: "solid", name: "hibiscus petals (zobo)", formula: "Zobo", solid: { petals: 1 } },
 
@@ -198,6 +206,8 @@ export const SOLID = {
   rocksalt: { name: "salt", rgb: [246, 246, 242] },
   S: { name: "sulfur", rgb: [236, 214, 74] },
   I2: { name: "iodine", rgb: [58, 46, 66] },
+  NaHCO3: { name: "baking soda", rgb: [248, 248, 244] },
+  yeast: { name: "yeast", rgb: [198, 168, 120] },
   petals: { name: "hibiscus petals", rgb: [116, 22, 44] },
   pulp: { name: "petal pulp", rgb: [98, 30, 48] },
   crystals: { name: "crystals", rgb: [244, 244, 240] },      // what is left when the water has boiled away; coloured by t.crystal
@@ -211,9 +221,10 @@ const ION_TEX = { K: "K^+", Na: "Na^+", Ca: "Ca^2+", Mg: "Mg^2+", Zn: "Zn^2+", F
 // out of: copper(II) sulfate with sodium hydroxide, or copper(II) sulfate with ammonia.
 // So it is built: the formula of each salt from the charges of its two ions, and the
 // numbers in front found by trying them (they are never bigger than 6).
-const CHARGE = { H: 1, Na: 1, K: 1, NH4: 1, Ag: 1, Cu: 2, Fe2: 2, Fe3: 3, Zn: 2, Al: 3, Pb: 2, Ca: 2, Ba: 2, Mg: 2, Cl: -1, Br: -1, NO3: -1, OH: -1, I: -1, SO4: -2, CO3: -2 };
+const CHARGE = { H: 1, Na: 1, K: 1, NH4: 1, Ag: 1, Cu: 2, Fe2: 2, Fe3: 3, Zn: 2, Al: 3, Pb: 2, Ca: 2, Ba: 2, Mg: 2, Cl: -1, Br: -1, Ac: -1, Cit: -1, NO3: -1, OH: -1, I: -1, SO4: -2, CO3: -2 };
 const WRITTEN = { Fe2: "Fe", Fe3: "Fe" };
 const MANY_ATOMS = new Set(["NH4", "SO4", "NO3", "OH", "CO3"]);
+const WEAK = ["Ac", "Cit"];            // the anions of the weak acids of the kitchen: ethanoic (vinegar) and citric (lemon juice)
 const hcf = (a, b) => (b ? hcf(b, a % b) : a);
 /** How many of each ion in one formula unit: Al and SO4 → { Al: 2, SO4: 3 }. */
 function unitOf(cat, an) {
@@ -281,6 +292,7 @@ function whole(t, adding, kind, x, y) {
       return balance([salt(-1, cat, one.an, "aq"), salt(-1, two.cat, an, "aq"), salt(1, cat, an, "s"), salt(1, two.cat, one.an, "aq")]);
     }
     const a = acid();
+    if (a && WEAK.includes(a.an)) return undefined;        // vinegar and lemon juice: the ionic equation says it, and their formulas would only confuse
     if (kind === "neutral") {
       const b = from("OH");
       return a && b ? balance([salt(-1, "H", a.an, "aq"), salt(-1, b.cat, "OH", "aq"), salt(1, b.cat, a.an, "aq"), WATER]) : undefined;
@@ -377,7 +389,7 @@ export function speciate(t) {
 function pHof(t, f, cx, ppt = {}) {
   if (t.vol <= EPS) return null;
   const conc = (n) => (0.1 * n) / t.vol;         // bench solutions are about 0.1 mol/dm3
-  if (get(f, "H") > EPS) return clamp(-Math.log10(conc(f.H)), 0, 6.5);
+  if (get(f, "H") > EPS) { const p = clamp(-Math.log10(conc(f.H)), 0, 6.5); return WEAK.some((k) => get(f, k) > EPS) ? Math.max(2.4, p) : p; }      // a weak acid is never as sour as its amount suggests
   if (get(f, "OH") > EPS) return clamp(14 + Math.log10(conc(f.OH)), 7.5, 14);
   if (ppt.CaOH) return 12;                       // limewater: calcium hydroxide is slightly soluble, and what dissolves is a strong alkali
   if (cx.ZnOH4 || cx.AlOH4 || cx.PbOH4) return 12;
@@ -399,6 +411,7 @@ const TINT = [
   ["cx", "CuNH3", [28, 52, 190], 7, "deep blue"],
   ["free", "I2", [150, 84, 30], 5, "brown"],
   ["free", "Br2", [226, 132, 30], 3, "orange"],
+  ["free", "Dye", [216, 34, 48], 9, "red"],
   ["free", "Cl2", [206, 226, 140], 0.45, "very pale green"],
 ];
 /** Hibiscus colouring is an indicator: what it looks like at this pH. */
@@ -483,6 +496,7 @@ function settle(t, heated) {
     if ((n = Math.min(get(aq, "NH4"), get(aq, "OH"))) > EPS) { bump(aq, "NH4", -n); bump(aq, "OH", -n); bump(aq, "NH3", n); moved = true; }
     if ((n = Math.min(get(aq, "H"), get(aq, "CO3"))) > EPS) { bump(aq, "H", -n); bump(aq, "CO3", -n); t.gas = "CO2"; did({ id: "carbonate", n }); }
     if ((n = Math.min(get(aq, "H"), get(t.solid, "CaCO3"))) > EPS) { bump(aq, "H", -n); bump(t.solid, "CaCO3", -n); bump(aq, "Ca", n); t.gas = "CO2"; did({ id: "marble", n }); }
+    if ((n = Math.min(get(aq, "H"), get(t.solid, "NaHCO3"))) > EPS) { bump(aq, "H", -n); bump(t.solid, "NaHCO3", -n); bump(aq, "Na", n); t.gas = "CO2"; did({ id: "bicarb", n }); }
     if ((n = Math.min(get(aq, "H"), get(t.solid, "CuO"))) > EPS) { bump(aq, "H", -n); bump(t.solid, "CuO", -n); bump(aq, "Cu", n); did({ id: "oxide", n }); }
     // UNDILUTED concentrated sulfuric acid is not an ordinary acid: there is hardly any water in it,
     // so hardly any hydrogen ions. Cold, it leaves metals alone (iron is made passive). Hot, it is an
@@ -529,7 +543,7 @@ function settle(t, heated) {
         }
       }
     }
-    if (get(aq, "H2O2") > EPS && get(t.solid, "MnO2") > EPS) { n = aq.H2O2; delete aq.H2O2; t.gas = "O2"; did({ id: "oxygen", n }); }
+    if (get(aq, "H2O2") > EPS && (get(t.solid, "MnO2") > EPS || get(t.solid, "yeast") > EPS)) { n = aq.H2O2; delete aq.H2O2; t.gas = "O2"; did({ id: "oxygen", n, by: get(t.solid, "MnO2") > EPS ? "MnO2" : "yeast" }); }
 
     if (heated) {
       const sp = speciate(t);
@@ -575,14 +589,14 @@ function act(t, change, { heated = false, adding = null } = {}) {
   t.temp = 25 + ((t.temp ?? 25) - 25) * 0.75;
   if (t.vol > EPS) {
     const warm = (id, k) => (events.filter((e) => e.id === id).reduce((a, e) => a + e.n, 0) * k) / t.vol;
-    t.temp += warm("neutral", 26) + warm("neutralNH3", 22) + warm("metalAcid", 30) + warm("metalWater", 44) + warm("displace", 16) + warm("oxygen", 14) + warm("halogen", 3);
+    t.temp += warm("neutral", 26) + warm("neutralNH3", 22) + warm("metalAcid", 30) + warm("metalWater", 44) + warm("displace", 16) + warm("oxygen", 14) + warm("halogen", 3) - warm("bicarb", 5);
   }
   if (heated) t.temp = Math.max(t.temp, 82);
   t.temp = Math.min(100, t.temp);
   // mass: what a balance will read. A gas that leaves takes its mass with it;
   // a solid that dissolves hands its mass to the liquid.
   for (const e of events) {
-    const k = e.id === "metalAcid" || e.id === "metalWater" ? EQ_MASS[e.m] - 1 : e.id === "marble" ? 50 - 22 : e.id === "oxide" ? 39.8 : e.id === "carbonate" || e.id === "hydrolysis" || e.id === "bakeCarbonate" ? -22
+    const k = e.id === "metalAcid" || e.id === "metalWater" ? EQ_MASS[e.m] - 1 : e.id === "marble" ? 50 - 22 : e.id === "oxide" ? 39.8 : e.id === "bicarb" ? 84 - 44 : e.id === "carbonate" || e.id === "hydrolysis" || e.id === "bakeCarbonate" ? -22
       : e.id === "oxygen" ? -16 : e.id === "ammonia" ? -17 : e.id === "reduceFe3" ? EQ_MASS[e.m] : e.id === "displace" ? EQ_MASS[e.m] - EQ_MASS[e.low] : e.id === "bakeHydroxide" ? -39.8 - 9 : 0;
     t.extra = (t.extra || 0) + k * e.n * 0.01;
   }
@@ -652,7 +666,15 @@ function act(t, change, { heated = false, adding = null } = {}) {
     obs.push({ metal: e.m, text: `The ${M.name} is attacked by the hot acid${get(t.metal, e.m) <= EPS ? " and dissolves away" : ""}. A colourless gas with a sharp, choking smell comes off.`, why: "Hot concentrated sulfuric acid is an oxidising agent. It oxidises the metal and is itself reduced to sulfur dioxide. No hydrogen is formed.", eq: `${M.sym}(s) + 2H2SO4(l) -> ${M.sym}SO4(aq) + SO2(g) + 2H2O(l)` });
     flags.push("gas:SO2");
   }
-  if (has("oxygen")) { say(`Rapid fizzing. ${FIZZ} The black powder is still there at the end.`, "Manganese(IV) oxide is a catalyst: it speeds up the breakdown of hydrogen peroxide and is not used up. The gas is oxygen.", "2H2O2(aq) -> 2H2O(l) + O2(g)"); flags.push("gas:O2"); }
+  if (has("bicarb")) {
+    say(`The baking soda fizzes up at once in a rush of bubbles${get(t.solid, "NaHCO3") > EPS ? "" : " and is all used up"}. The vessel feels a little colder.`, "Baking soda is sodium hydrogencarbonate. An acid sets carbon dioxide gas free from it. This reaction takes heat IN, which is why it feels cold.", "HCO3^-(aq) + H^+(aq) -> H2O(l) + CO2(g)");
+    flags.push("gas:CO2");
+  }
+  if (has("oxygen")) {
+    if (events.find((x) => x.id === "oxygen").by === "yeast") say(`Rapid fizzing. ${FIZZ} The liquid gets warm.`, "Yeast is alive, and makes a catalyst of its own (an enzyme called catalase) that breaks hydrogen peroxide down very quickly. The gas is oxygen.", "2H2O2(aq) -> 2H2O(l) + O2(g)");
+    else say(`Rapid fizzing. ${FIZZ} The black powder is still there at the end.`, "Manganese(IV) oxide is a catalyst: it speeds up the breakdown of hydrogen peroxide and is not used up. The gas is oxygen.", "2H2O2(aq) -> 2H2O(l) + O2(g)");
+    flags.push("gas:O2");
+  }
   if (has("oxide")) say("The black powder dissolves in the acid.", "Copper(II) oxide is a base: it reacts with the acid to give a copper(II) salt and water.", "CuO(s) + 2H^+(aq) -> Cu^2+(aq) + H2O(l)", W("oxide"));
   for (const e of events.filter((x) => x.id === "reduceFe3")) {
     if (flags.includes("reduceFe3")) break;
@@ -676,6 +698,16 @@ function act(t, change, { heated = false, adding = null } = {}) {
   if (has("bakeHydroxide")) { say("The pale blue precipitate turns black.", "Heat decomposes copper(II) hydroxide to black copper(II) oxide.", "Cu(OH)2(s) -> CuO(s) + H2O(l)"); flags.push("heat:CuO"); }
   if (has("bakeCarbonate")) { say("The blue-green precipitate turns black.", "Heat decomposes copper(II) carbonate to black copper(II) oxide and carbon dioxide.", "CuCO3(s) -> CuO(s) + CO2(g)"); flags.push("heat:CuO", "gas:CO2"); }
 
+  if (events.some((e) => GAS_FROM[e.id])) {
+    if (get(t.aq, "Soap") > EPS) {
+      say("The bubbles are caught in the soap. A thick foam swells up, climbs out of the vessel and pours down its sides.", "Soap makes a skin round every bubble of gas, so the bubbles do not burst: they pile up as foam, which takes far more room than the liquid it came from.");
+      flags.push("foam");
+    }
+    if ((t.oil || 0) > EPS && t.vol > EPS) {
+      say("Bubbles of gas rise through the oil, each carrying a blob of the coloured watery liquid up with it. At the top the gas escapes and the blob sinks back.", "Oil and water do not mix, and the watery liquid is the denser. A bubble of gas clinging to a blob makes it light enough to rise: when the bubble bursts, the blob falls again.");
+      flags.push("lava");
+    }
+  }
   // complexes: a precipitate going back into solution
   const explained = new Set();
   if (has("bakeHydroxide")) explained.add("CuOH");
@@ -943,7 +975,7 @@ export function rinse(t) {
 // ── weighing, filtering, boiling away, collecting ────────────────────────────────
 // Grams per equivalent, for the balance. One portion of liquid is 2 cm3 and weighs 2 g.
 const FINE = ["sand", "pulp"];        // solids fine enough to be carried in a stirred liquid, and stopped by a filter paper
-const EQ_MASS = { K: 39.1, Na: 23, Ca: 20, petals: 12, pulp: 12, Mg: 12.2, Zn: 32.7, Fe: 27.9, Pb: 103.6, Cu: 31.8, Ag: 107.9, CaCO3: 50, CuO: 39.8, MnO2: 87, sand: 30, rocksalt: 29.2, S: 16, I2: 127 };
+const EQ_MASS = { NaHCO3: 84, yeast: 10, K: 39.1, Na: 23, Ca: 20, petals: 12, pulp: 12, Mg: 12.2, Zn: 32.7, Fe: 27.9, Pb: 103.6, Cu: 31.8, Ag: 107.9, CaCO3: 50, CuO: 39.8, MnO2: 87, sand: 30, rocksalt: 29.2, S: 16, I2: 127 };
 const SALT_IONS = ["Cu", "Fe2", "Fe3", "Zn", "Al", "Pb", "Ca", "Ba", "Ag", "Mg", "Na", "K", "NH4"];
 const saltIn = (t) => SALT_IONS.reduce((a, k) => a + get(t.aq, k), 0);
 
@@ -1017,7 +1049,7 @@ export function sampleOf(id, n, strength = 1) {
   return s;
 }
 
-const GAS_FROM = { metalWater: "H2", carbonate: "CO2", marble: "CO2", hydrolysis: "CO2", bakeCarbonate: "CO2", metalAcid: "H2", metalConc: "SO2", oxygen: "O2", ammonia: "NH3" };
+const GAS_FROM = { bicarb: "CO2", metalWater: "H2", carbonate: "CO2", marble: "CO2", hydrolysis: "CO2", bakeCarbonate: "CO2", metalAcid: "H2", metalConc: "SO2", oxygen: "O2", ammonia: "NH3" };
 /** The gas an action gave off and how much (in equivalents; 12 cm3 each), or null. */
 export function gasMade(res) {
   let gas = null, n = 0;
@@ -1041,7 +1073,7 @@ export function gasMade(res) {
 export function electrolyse(t, n = 1) {
   if (t.vol <= EPS) return { refused: "There is nothing in the cell. Pour in a solution first." };
   const free = speciate(t).free;
-  const ions = Object.entries(free).filter(([k, v]) => v > EPS && !["NH3", "H2O2", "I2", "Br2", "Cl2", "Anth"].includes(k));
+  const ions = Object.entries(free).filter(([k, v]) => v > EPS && !["NH3", "H2O2", "I2", "Br2", "Cl2", "Anth", "Dye", "Soap"].includes(k));
   if (!ions.length) return { title: "Switched on the current", obs: [{ text: "Nothing happens at either rod.", why: "Pure water has almost no ions in it, so it barely conducts. Add an acid, an alkali or a salt." }], flags: [], events: [] };
   const before = look(t);
   const obs = [], flags = [];
@@ -1099,6 +1131,15 @@ export function electrolyse(t, n = 1) {
   const after = look(t);
   if (after.name !== before.name) { say(`The liquid turns ${after.name}.`); flags.push(`colour:${after.name}`); }
   return { title: "Switched on the current", obs, flags, events: [] };
+}
+
+/**
+ * How dense the liquid is, in g/cm3: water is 1, and salt dissolved in it makes it denser.
+ * (It is what decides whether an egg or a lemon floats.)
+ */
+export function densityOf(t) {
+  if (t.vol <= EPS) return 0;
+  return 1 + (t.added.includes("salt") || t.added.includes("sandsalt") ? 0.06 * Math.min(4, (get(t.aq, "Na") + get(t.aq, "Cl")) / t.vol) : 0);
 }
 
 /** How much more liquid a vessel will take. */

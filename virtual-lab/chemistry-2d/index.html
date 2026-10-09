@@ -79,6 +79,7 @@
         <button type="button" class="cl-ico" data-sheet="cl-sheet-table" data-ico="table" data-tip="Results: your own table, and a graph of it" data-tip-side="bottom" aria-label="Results table and graph" aria-pressed="false"></button>
         <button type="button" class="cl-ico" id="cl-calc-key" data-ico="calc" data-tip="Scientific calculator" data-tip-side="bottom" aria-label="Scientific calculator" aria-pressed="false"></button>
         <button type="button" class="cl-ico cl-ico--bot" id="cl-bot" data-sheet="cl-sheet-bot" data-tip="PrepBot does an experiment for you to copy" data-tip-side="bottom" aria-label="PrepBot's experiments" aria-pressed="false"></button>
+        <button type="button" class="cl-ico" id="cl-assign-key" data-ico="tasks" data-tip="The practical your teacher has set" data-tip-side="bottom" aria-label="The practical your teacher has set" hidden><b class="cl-count">!</b></button>
         <span class="cl-gap" aria-hidden="true"></span>
         <button type="button" class="cl-ico" data-zoom="out" data-ico="zoomOut" data-tip="Zoom out (-)" data-tip-side="bottom" aria-label="Zoom out"></button>
         <button type="button" class="cl-ico" data-zoom="fit" data-ico="zoomFit" data-tip="See the whole bench (0)" data-tip-side="bottom" aria-label="See the whole bench"></button>
@@ -125,8 +126,49 @@
           <div class="cl-sheet__head"><h2 class="cl-h2">PrepBot shows you</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>
           <p class="cl-sheet__lead">Press Try on a card. PrepBot does the experiment on this bench with the real pieces, then clears it, and it is your turn.</p>
           <a id="cl-bot-plans" class="cl-try" href="/subscribe.html#plans" hidden>PrepBot is for premium members: see the plans</a>
+          <button type="button" id="cl-bot-class" class="cl-try" hidden>Teachers: set a practical for your class</button>
           <div id="cl-bot-turn" class="cl-turn" hidden></div>
           <ul id="cl-bot-list" class="cl-cards"></ul>
+        </div>
+      </section>
+
+      <!-- a teacher sets a practical for PrepBot to teach their class -->
+      <section id="cl-sheet-class" class="cl-sheet pp-receipt" hidden>
+        <div class="pp-receipt__paper">
+          <div class="cl-sheet__head"><h2 class="cl-h2">Set for my class</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>
+          <p class="cl-sheet__lead">Choose what PrepBot is to teach. Your students open the link, PrepBot teaches it (they do not need to be premium), and what each of them did comes back here and to your dashboard.</p>
+          <div class="cl-class">
+            <label for="cl-class-what">What PrepBot teaches</label>
+            <select id="cl-class-what" class="cl-search"></select>
+            <label for="cl-class-title">Title</label>
+            <input id="cl-class-title" class="cl-search" type="text" maxlength="80" autocomplete="off" />
+            <div id="cl-class-own" hidden>
+              <p class="cl-sheet__lead">Your students start with the bench exactly as it is now: every piece, and whatever is in it. Set it out first, then write their steps here.</p>
+              <label for="cl-class-steps">Steps for your students, one on each line</label>
+              <textarea id="cl-class-steps" class="cl-search" rows="5" maxlength="2000"></textarea>
+            </div>
+            <label for="cl-class-note">A note to your students (optional)</label>
+            <textarea id="cl-class-note" class="cl-search" rows="2" maxlength="800"></textarea>
+            <button type="button" id="cl-class-set" class="cl-try">Set it</button>
+            <div id="cl-class-msg" class="cl-class__msg" aria-live="polite"></div>
+          </div>
+          <h3 class="cl-h3">Set so far</h3>
+          <ul id="cl-class-list" class="cl-class__list"></ul>
+        </div>
+      </section>
+
+      <!-- a student has been set a practical -->
+      <section id="cl-sheet-assign" class="cl-sheet pp-receipt" hidden>
+        <div class="pp-receipt__paper">
+          <div class="cl-sheet__head"><h2 class="cl-h2">Your practical</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>
+          <h3 id="cl-assign-title" class="cl-h3"></h3>
+          <p id="cl-assign-by" class="cl-sheet__lead"></p>
+          <p id="cl-assign-note" class="cl-turn" hidden></p>
+          <p id="cl-assign-how" class="cl-sheet__lead"></p>
+          <ol id="cl-assign-steps" class="cl-class__steps"></ol>
+          <p id="cl-assign-state" class="cl-class__msg" aria-live="polite"></p>
+          <button type="button" id="cl-assign-start" class="cl-try">Start</button>
+          <button type="button" id="cl-assign-hand" class="cl-try" hidden>Hand it in</button>
         </div>
       </section>
 

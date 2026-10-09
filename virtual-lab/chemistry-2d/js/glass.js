@@ -138,6 +138,18 @@ export const VESSELS = {
     front: `<rect x="-3.500" y="-54" width="7" height="8" fill="#8b929b"/><g class="cl-blades"><path d="M-15 -51L15 -57" stroke="#d5dbe3" stroke-width="2.6" stroke-linecap="round"/><path d="M-13 -58L13 -50" stroke="#aeb6c0" stroke-width="2.2" stroke-linecap="round"/></g>`,
     over: `<g class="cl-press" data-press="blend"><rect class="cl-switch" x="-19" y="-31" width="38" height="17" rx="3" fill="#3d7fd0" stroke="#fff" stroke-opacity="0.55" stroke-width="0.8"/><text class="cl-press-t cl-press-t--s" x="0" y="-20">BLEND</text></g>`,
   },
+  // a model volcano: a clay cone with a small bottle hidden in its crater. What goes in is not seen
+  // again until it comes out over the top.
+  volcano: {
+    name: "Model volcano", cap: 20, g: 600, floor: 70, fill: 0.86, shadow: 104, material: "porcelain", noVeil: true,
+    profile: [[-70, 12], [-72, 15], [-132, 15], [-134, 18], [-138, 18]],
+    box: { x0: -106, y0: -146, x1: 106, y1: 8 },
+    front: `<path d="M-100 0L-24 -134q24 -7 48 0L100 0z" fill="#7a5238"/><path d="M-100 0L-24 -134q24 -7 48 0L100 0z" fill="url(#g-shade)" opacity="0.75"/>
+      <path d="M-24 -134q24 -7 48 0q-24 7 -48 0z" fill="#2a1c16"/><ellipse cx="0" cy="-134" rx="19" ry="3.4" fill="#170f0c"/>
+      <path d="M-58 -70l10 -26M-30 -52l6 -40M30 -60l-8 -34M62 -58l-12 -30M-78 -22l14 -24M80 -18l-14 -30M2 -30l-4 -44" stroke="#4d3222" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+      <path d="M-66 -30l8 -16M40 -24l-6 -22M-12 -84l4 -22" stroke="#a37856" stroke-width="1.6" stroke-linecap="round" fill="none" opacity="0.7"/>
+      <path d="M-100 0h200" stroke="#3b2619" stroke-width="2"/>`,
+  },
   watch: { name: "Watch glass", cap: 5, g: 20, profile: [[0, 10], [-3, 32], [-9, 50], [-12, 55]], fill: 0.7, flat: true, foot: 9 },
 };
 for (const v of Object.values(VESSELS)) {
@@ -539,6 +551,7 @@ const JAR = [[0, 26], [-2, 30], [-7, 32], [-56, 32], [-64, 25], [-68, 22], [-77,
 const DROPPER = [[0, 16], [-2, 19], [-6, 21], [-46, 21], [-54, 14], [-58, 10], [-66, 10], [-68, 12], [-71, 12]];
 const AMBER = ["agno3", "h2o2", "ki"];        // kept in brown glass, away from the light
 const SOLID_FILL = {
+  bicarb: [248, 248, 244], salt: [246, 246, 242], yeast: [198, 168, 120],
   k: [206, 208, 214], na: [214, 216, 220], ca: [176, 178, 180], zobo: [116, 22, 44],
   mg: [198, 202, 206], zn: [150, 158, 166], fe: [84, 84, 90], cu: [190, 106, 62],
   caco3: [238, 236, 228], cuo: [38, 36, 36], mno2: [58, 50, 48],
@@ -652,6 +665,10 @@ export const TOOLS = {
   meter: { name: "pH meter", act: [0, 0], bbox: { x0: -22, y0: -156, x1: 22, y1: 6 } },
   wire: { name: "Flame-test wire", act: [-34, -58], bbox: { x0: -44, y0: -68, x1: 40, y1: 8 } },
   waste: { name: "Waste tub", act: [0, -66], bbox: { x0: -62, y0: -78, x1: 62, y1: 8 } },
+  balloon: { name: "Balloon", act: [0, 0], bbox: { x0: -34, y0: -84, x1: 34, y1: 8 } },
+  lemon: { name: "Lemon", act: [0, 0], bbox: { x0: -26, y0: -36, x1: 26, y1: 6 } },
+  peeled: { name: "Peeled lemon", act: [0, 0], bbox: { x0: -24, y0: -34, x1: 24, y1: 6 } },
+  egg: { name: "Egg", act: [0, 0], bbox: { x0: -18, y0: -40, x1: 18, y1: 6 } },
   cloth: { name: "Drying cloth", act: [0, -10], bbox: { x0: -30, y0: -34, x1: 30, y1: 6 } },
   pipette: { name: "Pipette (25 mL) and filler", act: [0, 0], bbox: { x0: -12, y0: -190, x1: 12, y1: 6 } },
   funnel: { name: "Filter funnel", act: [0, 0], bbox: { x0: -40, y0: -66, x1: 40, y1: 34 } },
@@ -737,6 +754,32 @@ export function toolSvg(key, it = {}) {
   if (key === "wire") {
     return `<path d="M-4 -33L32 -2" stroke="#fff" stroke-opacity="0.4" stroke-width="5.5" stroke-linecap="round"/><path d="M-4 -33L32 -2" stroke="#fff" stroke-opacity="0.75" stroke-width="1" stroke-linecap="round"/>
       <path d="M-31.5 -56L-4 -33" stroke="#cfd4db" stroke-width="1.5" stroke-linecap="round"/><circle class="cl-loop" cx="-34" cy="-58" r="3.4" fill="transparent" stroke="#cfd4db" stroke-width="1.5"/>${hit(b)}`;
+  }
+  if (key === "balloon") {
+    // limp until a gas fills it: main.js sets --puff as it swells
+    return `<g class="cl-balloon"><path d="M0 -8c-26 -4 -32 -34 -22 -52c8 -15 36 -15 44 0c10 18 4 48 -22 52z" fill="#e2483d" stroke="#8f211b" stroke-width="0.9"/><path d="M-13 -52q-6 12 -2 24" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round"/></g>
+      <path d="M-7 4h14l-2 -12h-10z" fill="#c9382e" stroke="#8f211b" stroke-width="0.8"/><rect x="-9" y="2" width="18" height="4" rx="2" fill="#a82a22"/>
+      ${hit(b)}`;
+  }
+  if (key === "lemon") {
+    return `<ellipse class="cl-sh" cx="0" cy="-1" rx="20" ry="3" fill="#000" fill-opacity="0.3" filter="url(#g-soft)"/>
+      <path d="M-22 -15q4 -16 22 -16t22 16q3 0 4 2q-1 2 -4 2q-4 14 -22 14t-22 -14q-3 0 -4 -2q1 -2 4 -2z" fill="#f2d232" stroke="#b8961a" stroke-width="0.9"/>
+      <path d="M-13 -22q8 -6 18 -4" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="2.4" stroke-linecap="round"/>
+      <circle cx="-6" cy="-10" r="0.8" fill="#c9a71e"/><circle cx="6" cy="-14" r="0.8" fill="#c9a71e"/><circle cx="10" cy="-6" r="0.8" fill="#c9a71e"/><circle cx="-12" cy="-16" r="0.8" fill="#c9a71e"/>
+      ${hit(b)}`;
+  }
+  if (key === "peeled") {
+    return `<ellipse class="cl-sh" cx="0" cy="-1" rx="18" ry="3" fill="#000" fill-opacity="0.3" filter="url(#g-soft)"/>
+      <ellipse cx="0" cy="-14" rx="20" ry="14" fill="#f6ecb0" stroke="#cdbf74" stroke-width="0.9"/>
+      <path d="M0 -28v28M-10 -26q-6 12 0 24M10 -26q6 12 0 24" fill="none" stroke="#d8cc86" stroke-width="1.1"/>
+      <path d="M-12 -20q6 -5 12 -4" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="2" stroke-linecap="round"/>
+      ${hit(b)}`;
+  }
+  if (key === "egg") {
+    return `<ellipse class="cl-sh" cx="0" cy="-1" rx="14" ry="2.800" fill="#000" fill-opacity="0.3" filter="url(#g-soft)"/>
+      <path d="M0 -36c9 0 15 12 15 21a15 15 0 0 1-30 0c0 -9 6 -21 15 -21z" fill="#f3e6d2" stroke="#c4ae8c" stroke-width="0.9"/>
+      <path d="M-7 -26q4 -6 9 -5" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="2.2" stroke-linecap="round"/>
+      ${hit(b)}`;
   }
   if (key === "cloth") {
     // a folded cotton cloth, for drying glass

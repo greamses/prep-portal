@@ -37,6 +37,7 @@ export const GROUPS = [
   { id: "sep", label: "Separating mixtures" },
   { id: "more", label: "Energy and electricity" },
   { id: "safe", label: "Concentrated acids and safety" },
+  { id: "fun", label: "Fun science, with things from the kitchen" },
 ];
 
 /** The salts sample X may be, and the ions a candidate has to name. */
@@ -568,6 +569,79 @@ export const EXPERIMENTS = [
     ],
     record: "Concentrated sulfuric acid is a dehydrating agent: it takes the elements of water out of the cellulose in paper and leaves carbon, C6H10O5(s) → 6C(s) + 5H2O(l). It chars cloth, wood, sugar and skin in the same way.",
   },
+  // ── fun science: the experiments young children do, with things from the kitchen ──
+  {
+    id: "volcano", group: "fun", title: "Make a volcano erupt",
+    task: "Make the model volcano erupt with red, foaming lava.",
+    needs: "model volcano (in Glassware), baking soda (in Solids), washing-up liquid, red food colouring and vinegar (in Liquids)",
+    kit: "volcano bicarb soap dye vinegar",
+    steps: [
+      { text: "Tip baking soda into the crater of the volcano.", need: ["added:bicarb"] },
+      { text: "Add red food colouring and a squirt of washing-up liquid.", need: ["added:dye", "added:soap"] },
+      { text: "Now pour in the vinegar, and stand back.", need: ["erupt"] },
+    ],
+    record: "Vinegar is an acid. Baking soda fizzes in an acid and gives off a gas, carbon dioxide. The soap catches the gas in bubbles, so it comes out as foam, and the colouring makes the foam look like lava. A real volcano is not a chemical reaction: its lava is melted rock, pushed out by gas.",
+  },
+  {
+    id: "balloon", group: "fun", title: "Blow up a balloon without blowing",
+    task: "Inflate a balloon using vinegar and baking soda.",
+    needs: "conical flask (100 mL), balloon (in Equipment), vinegar (in Liquids), baking soda (in Solids)",
+    kit: "flask100 balloon vinegar bicarb",
+    steps: [
+      { text: "Pour vinegar into the conical flask.", need: ["in:flask100:vinegar"] },
+      { text: "Tip in baking soda. It fizzes at once.", need: ["gas:CO2"] },
+      { text: "Quickly stretch the balloon over the mouth of the flask: let it go at the mouth.", need: ["balloon:up"] },
+    ],
+    record: "The fizzing is a gas, carbon dioxide, being made. A gas takes up far more room than the powder and the liquid it came from. With the balloon over the mouth it has nowhere else to go, so it blows the balloon up.",
+  },
+  {
+    id: "lemon", group: "fun", title: "The floating lemon",
+    task: "Find out whether a lemon floats, and what happens when it is peeled.",
+    needs: "beaker (500 mL), water (from the tap, or distilled), a lemon and a peeled lemon (in Equipment)",
+    kit: "beaker500 water lemon peeled",
+    steps: [
+      { text: "Half fill a big beaker with water.", need: ["in:beaker500:water"] },
+      { text: "Let the whole lemon go into the water.", need: ["float:lemon"] },
+      { text: "Take it out, and let the peeled lemon go in.", need: ["sink:peeled"] },
+    ],
+    record: "The lemon with its peel on floats, and the peeled lemon sinks. The peel is full of tiny pockets of air, like a life-jacket: with them the lemon is less dense than water. Without them it is denser than water, so it sinks.",
+  },
+  {
+    id: "egg", group: "fun", title: "The egg that floats",
+    task: "Make an egg float in water.",
+    needs: "beaker (250 mL), water, an egg (in Equipment), table salt (in Solids), a glass rod",
+    kit: "beaker250 water egg salt rod",
+    steps: [
+      { text: "Put water in the beaker and let the egg go into it. It sinks.", need: ["sink:egg"] },
+      { text: "Tip in table salt, a spoonful at a time, and swirl or stir. Keep adding salt.", need: ["dissolved:salt"] },
+      { text: "Watch the egg: when there is enough salt in the water, it rises and floats.", need: ["float:egg"] },
+    ],
+    record: "An egg is a little denser than fresh water, so it sinks. Salt dissolved in the water makes the water denser. When the salt water is denser than the egg, it holds the egg up. That is why it is easier to float in the sea than in a river.",
+  },
+  {
+    id: "toothpaste", group: "fun", title: "Elephant's toothpaste",
+    task: "Make a tower of foam shoot out of a measuring cylinder.",
+    needs: "measuring cylinder (100 mL), hydrogen peroxide solution, washing-up liquid and red food colouring (in Liquids), dried yeast (in Solids)",
+    kit: "cyl100 h2o2 soap dye yeast",
+    steps: [
+      { text: "Pour hydrogen peroxide solution into the measuring cylinder.", need: ["in:cyl100:h2o2"] },
+      { text: "Add washing-up liquid and red food colouring.", need: ["added:soap", "added:dye"] },
+      { text: "Tip in the yeast.", need: ["foam"] },
+    ],
+    record: "Hydrogen peroxide slowly breaks down into water and oxygen. Yeast makes it happen all at once. The soap catches the oxygen in bubbles, and the foam is squeezed up and out of the narrow cylinder like toothpaste from a tube. The cylinder gets warm: the reaction gives out heat.",
+  },
+  {
+    id: "lava", group: "fun", title: "A lava lamp",
+    task: "Make coloured blobs rise and fall through oil.",
+    needs: "measuring cylinder (100 mL), vinegar, red food colouring and cooking oil (in Liquids), baking soda (in Solids)",
+    kit: "cyl100 vinegar dye oil bicarb",
+    steps: [
+      { text: "Pour vinegar into the cylinder and colour it red.", need: ["in:cyl100:vinegar", "added:dye"] },
+      { text: "Pour cooking oil on top. It floats: two layers.", need: ["in:cyl100:oil"] },
+      { text: "Tip in baking soda. It falls through the oil and fizzes when it reaches the vinegar.", need: ["lava"] },
+    ],
+    record: "Oil and water do not mix, and oil floats because it is less dense. The baking soda fizzes in the vinegar and makes bubbles of gas. Each bubble carries a blob of red liquid up through the oil. At the top the gas escapes, and the blob, heavy again, sinks back.",
+  },
 ];
 
 /** Is this step done, given the flags seen so far? */
@@ -580,6 +654,9 @@ export function stepDone(step, seen, q) {
 
 /** What every experiment relies on: how the bench is worked. Shown when no experiment has been chosen. */
 export const HOWTO = [
+  "Ask PrepBot (press A) to DO an experiment and it will, so long as the drawer holds what it needs, even one that is in no list. It says what it is doing, and then tells you what was really seen.",
+  "Fun science: a model volcano, a balloon, a lemon and an egg are in the drawer, with baking soda, vinegar, washing-up liquid and food colouring. A lemon or an egg let go at the mouth of a beaker drops into the water; a balloon let go at the mouth of a flask stretches over it.",
+  "Teachers: open PrepBot's experiments and choose Set a practical for your class. Your students get a link, PrepBot teaches them, and what each one did comes back to you.",
   "PrepBot can set any practical out for you: press PrepBot, set it up in the guide, or ask it (press A) to set up the experiment you want.",
   "Take pieces from the drawer: tap a tile, or drag it onto the bench. Drag a piece back onto the drawer to put it away.",
   "Pull the stopper out of a bottle before pouring. Carry the bottle to a vessel and hold it there. What is poured out is gone from the bottle: when one runs out, refill it from its own note. A bottle pours a full measure: for a few drops, fill the dropper from it.",

@@ -114,7 +114,7 @@ function mount() {
     <div class="mm-prepbot-avatar-wrap">
       <div class="mm-prepbot-menu" id="paBotMenu">
         <button class="mm-prepbot-menu-btn" id="paBotAsk" type="button" title="Ask PrepBot a question" aria-label="Ask PrepBot a question"></button>
-        <button class="mm-prepbot-menu-btn" id="paBotVoice" type="button" title="Beep or talking voice" aria-label="Toggle beep or talking voice"></button>
+        <button class="mm-prepbot-menu-btn" id="paBotVoice" type="button" title="Mute or speak" aria-label="Mute PrepBot, or let it speak"></button>
         <button class="mm-prepbot-menu-btn" id="paBotSleep" type="button" title="Sleep" aria-label="Sleep PrepBot"></button>
         <button class="mm-prepbot-menu-btn" id="paBotPoke" type="button" title="Wiggle" aria-label="Wiggle PrepBot"></button>
       </div>

@@ -20,8 +20,7 @@
 
 import {
   ICON_ASK, ICON_SLEEP, ICON_WAKE, ICON_WIGGLE,
-  ICON_TALK_MODE, ICON_BEEP_MODE, ICON_PREPBOT, MOUTH_SHAPES,
-} from "./icons.js";
+  ICON_TALK_MODE, ICON_BEEP_MODE, ICON_PREPBOT, MOUTH_SHAPES, ICON_MUTE_MODE } from "./icons.js";
 
 // Same pastel set as --pp-note-bg (components.css) — the bubble cycles
 // through these so it reads as "multicoloured" rather than a single card.
@@ -57,7 +56,10 @@ export class PrepbotTeacher {
     this.eyes = this.avatar?.querySelectorAll(".mm-bot-eye") || [];
     this.mouth = this.avatar?.querySelector(".mm-bot-mouth") || null;
 
-    this.voiceMode = "beep"; // 'beep' | 'talk'
+    // PrepBot either SPEAKS or is MUTE (the words are still written in the bubble, at a reading pace).
+    // Speaking is how it starts; a learner who has muted it stays muted on every page.
+    this.voiceMode = "talk"; // 'talk' | 'mute'
+    try { if (localStorage.getItem("prepbot-voice") === "mute") this.voiceMode = "mute"; } catch { /* private mode */ }
     this.asleep = false;
     this.isTalking = false;
     this.idleTimer = null;
@@ -390,7 +392,7 @@ export class PrepbotTeacher {
     }
   }
 
-  // "Beep" mode (default): the mouth/beep rhythm is timed by *silently*
+  // MUTE: nothing is heard. The mouth and the writing are timed by *silently*
   // invoking the Web Speech API (volume 0) and reacting to its per-word
   // boundary events — an estimate of how long the line would take to say,
   // without it actually reading out. Falls back to a fixed ~2-beats/word
@@ -405,8 +407,7 @@ export class PrepbotTeacher {
     const beat = () => {
       beatCount += 1;
       shapeCursor = 1 + (shapeCursor % (MOUTH_SHAPES.length - 1));
-      this.mouth?.setAttribute("d", MOUTH_SHAPES[shapeCursor]);
-      this._beep();
+      this.mouth?.setAttribute("d", MOUTH_SHAPES[shapeCursor]);      // (muted: the mouth moves and nothing is heard)
       this._maybeBlink(beatCount);
     };
 
@@ -676,12 +677,19 @@ export class PrepbotTeacher {
       ask.addEventListener("click", () => this.openChat());
     }
     if (voice) {
-      voice.innerHTML = ICON_TALK_MODE;
-      voice.title = "Switch to talking voice (V)";
+      // (the key shows what pressing it switches TO)
+      const dress = () => {
+        const muted = this.voiceMode === "mute";
+        voice.innerHTML = muted ? ICON_TALK_MODE : ICON_MUTE_MODE;
+        voice.title = `${muted ? "Speak" : "Mute"} (V)`;
+        voice.setAttribute("aria-label", muted ? "PrepBot is muted. Let it speak" : "PrepBot is speaking. Mute it");
+        voice.setAttribute("aria-pressed", String(muted));
+      };
+      dress();
       voice.addEventListener("click", () => {
-        this.voiceMode = this.voiceMode === "beep" ? "talk" : "beep";
-        voice.innerHTML = this.voiceMode === "beep" ? ICON_TALK_MODE : ICON_BEEP_MODE;
-        voice.title = `${this.voiceMode === "beep" ? "Switch to talking voice" : "Switch to beeps"} (V)`;
+        this.voiceMode = this.voiceMode === "mute" ? "talk" : "mute";
+        try { localStorage.setItem("prepbot-voice", this.voiceMode); } catch { /* private mode */ }
+        dress();
         /* the page says the line again in the new voice, if it knows how; else the old one is cut short */
         if (this.onVoiceChange) this.onVoiceChange(); else if (window.speechSynthesis) speechSynthesis.cancel();
       });

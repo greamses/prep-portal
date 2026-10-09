@@ -27,7 +27,7 @@
    notebook.
    ========================================================================== */
 
-import { REAGENTS, newTube, add, heat, rinse, test, speciate, magnetOut, centrifuge, setUnknown, reagent, chemHtml, isEmpty, look, takeFrom, pourIn, roomIn, flameOf, massOf, boilOff, filterOut, sampleOf, gasMade, takeBottom, electrolyse, blend } from "./chem.js";
+import { REAGENTS, newTube, add, heat, rinse, test, speciate, magnetOut, centrifuge, setUnknown, reagent, chemHtml, isEmpty, look, takeFrom, pourIn, roomIn, flameOf, massOf, boilOff, filterOut, sampleOf, gasMade, takeBottom, electrolyse, blend, densityOf } from "./chem.js";
 import { DEFS, VESSELS, TOOLS, SUPPORTS, rAt, vesselSvg, veilSvg, paintVessel, bubble, reagentSvg, toolSvg, splintAfter, supportSvg, thumb, colourOf, mouthOf, capOf, CAP_BOX } from "./glass.js";
 import { EXPERIMENTS, GROUPS, UNKNOWNS, CATIONS, ANIONS, HOWTO, stepDone } from "./waec.js";
 import { UI } from "/utils/components/ui-icons.js";
@@ -44,8 +44,15 @@ let TOP = 215;                     // and where the first row of bottles stands:
 const HEAT = { burner: 150, spirit: 116 };            // how far above its foot a burner's flame reaches
 const MOUTH = ["lit", "glow"];                        // held at the mouth
 const TAKES = { dropper: 0.5, pipette: 12.5 };        // portions drawn up (a portion is 2 cm3)
-const STAYS = ["funnel", "paper", "chroma", "bung", "bung1", "tubing", "cap", "condenser", "electrode"];   // fitted, and left there
-const PLUGS = ["funnel", "bung", "bung1"];            // one of these to a mouth (a delivery tube goes in a one-hole stopper)
+const STAYS = ["funnel", "paper", "chroma", "bung", "bung1", "tubing", "cap", "condenser", "electrode", "balloon", "lemon", "peeled", "egg"];   // fitted, and left there
+// Things that are dropped INTO a liquid, and float or sink in it: how dense each is (g/cm3; water is 1).
+const FLOATERS = { lemon: 0.96, peeled: 1.02, egg: 1.045 };
+const FLOAT_WHY = {
+  lemon: ["The peel of a lemon is full of tiny pockets of air, like a life-jacket. With them the whole lemon is a little less dense than water, so it floats.", "(no liquid)"],
+  peeled: ["Without its peel the lemon has lost its pockets of air. What is left is a little denser than water, so it sinks.", "Salt water is denser than fresh water, and now denser than the peeled lemon, so it pushes the lemon up."],
+  egg: ["An egg is a little denser than fresh water, so it sinks.", "Salt dissolved in the water makes the water denser. When the water is denser than the egg, it holds the egg up."],
+};
+const PLUGS = ["funnel", "bung", "bung1", "balloon"];            // one of these to a mouth (a delivery tube goes in a one-hole stopper)
 const IDLE = ["waste", "sink", "syringe", "power", "holder", "tongs", "stopwatch"];
 const DRAINS = ["waste", "sink"];
 /** Where a liquid may be poured away: the sink (a basin things stand in) or the waste tub. */
@@ -111,7 +118,7 @@ const CATS = [
 // other words a student might search by
 const ALSO = {
   stand: "clamp stand boss", burette: "titration", pipette: "titration", distflask: "distillation side arm", condenser: "distillation liebig", balance: "weighing scale mass tare",
-  trough: "gas collection over water pneumatic", tubing: "delivery tube glass rubber tubing gas", bung: "bung cork", bung1: "bung cork holed bored delivery", funnel: "filtration filter", paper: "filtration filter", magnet: "magnetic separation iron filings", centrifuge: "centrifugation spin separate precipitate pellet supernatant", stopwatch: "stopwatch timer clock time seconds", blender: "liquidiser mixer blend extract grind", zobo: "hibiscus roselle sorrel petals flower indicator", clw: "halogen bleach", brw: "halogen", i2aq: "halogen", k: "alkali metal", na: "alkali metal", chroma: "chromatography ink dyes separation", burner: "bunsen heat", syringe: "gas volume measure",
+  trough: "gas collection over water pneumatic", tubing: "delivery tube glass rubber tubing gas", bung: "bung cork", bung1: "bung cork holed bored delivery", funnel: "filtration filter", paper: "filtration filter", magnet: "magnetic separation iron filings", centrifuge: "centrifugation spin separate precipitate pellet supernatant", bicarb: "baking soda sodium bicarbonate hydrogencarbonate kitchen", vinegar: "ethanoic acetic acid kitchen", lemonj: "citric acid kitchen", soap: "detergent dish liquid foam kitchen", dye: "food colour color kitchen", salt: "sodium chloride kitchen", yeast: "kitchen catalyst", volcano: "eruption kids fun", balloon: "inflate gas kids fun", lemon: "float sink density kids fun", peeled: "float sink density kids fun", egg: "float sink density salt kids fun", stopwatch: "stopwatch timer clock time seconds", blender: "liquidiser mixer blend extract grind", zobo: "hibiscus roselle sorrel petals flower indicator", clw: "halogen bleach", brw: "halogen", i2aq: "halogen", k: "alkali metal", na: "alkali metal", chroma: "chromatography ink dyes separation", burner: "bunsen heat", syringe: "gas volume measure",
   spirit: "alcohol lamp heat", flask: "erlenmeyer", flask100: "erlenmeyer", cyl10: "graduated", cyl100: "graduated", dish: "basin", tripod: "gauze", holder: "tongs peg", waste: "sink bin",
   sepfunnel: "separating separation immiscible oil", electrode: "electrolysis carbon rod graphite cathode anode", power: "electrolysis battery cell supply", gasjar: "gas collection",
 };
@@ -345,7 +352,7 @@ function mount(it) {
   }
   (isBehind(it) ? L.back : L.items).appendChild(g);
   if (node.near) L.items.appendChild(node.front);
-  if (it.kind === "vessel" && !isBehind(it)) {
+  if (it.kind === "vessel" && !isBehind(it) && !VESSELS[it.key].noVeil) {
     // its front wall and liquid, once more, over whatever is put inside it (see veilSvg)
     node.veil = document.createElementNS(NS, "g");
     node.veil.setAttribute("class", "cl-veil");
@@ -451,6 +458,8 @@ function paint(it, opts = {}) {
     veil.style.display = wet ? "" : "none";
     if (wet) { veil.setAttribute("d", g.querySelector(".cl-liquid").getAttribute("d") || ""); veil.style.transform = lg.style.transform; veil.style.fill = `rgba(${rgb},0.34)`; }
   }
+  it._level = out.level;
+  if (state.items.some((o) => o.on === it.id && FLOATERS[o.key])) setTimeout(() => nodes[it.id] && refloat(it), 0);
   // a trough's water is also what stands in the jar upturned in it
   if (it.key === "trough") vessels().filter((v) => v.flip && v.rack && v.rack[0] === it.id && nodes[v.id]).forEach((v) => paint(v));
   return out;
@@ -503,6 +512,7 @@ function dress(it) {
     poolIn(it, n.poured ?? (it.tilt || 0));
   }
   if (it.key === "stopwatch") watchFace(it);
+  if (it.key === "balloon") g.style.setProperty("--puff", (0.42 + 0.58 * Math.min(1, (it.gas || 0) / 3)).toFixed(2));
   if (it.key === "magnet") g.classList.toggle("has-filings", Boolean(it.sample));
   if (it.key === "chroma") {
     const ink = INKS[it.ink || "black"], p = it.washed ? 0 : it.p || 0;
@@ -732,10 +742,93 @@ const rimOf = (o) => (o.kind === "vessel" ? VESSELS[o.key].rTop : o.kind === "re
 /** Where a fitted thing sits on its host: a condenser on the side arm, carbon rods left and right, anything else in the mouth. */
 function seat(host, it) {
   if (it.key === "paper" || it.key === "tubing") return { x: host.x, y: host.y };
+  if (FLOATERS[it.key]) {
+    // afloat, most of it is under the surface; sunk, it lies on the bottom
+    const def = VESSELS[host.key], bed = host.y - (def.floor || 0) - 5;
+    return { x: host.x, y: floats(host, it) ? Math.min(bed, host.y - (host._level || 0) + 22) : bed };
+  }
   if (it.key === "condenser") { const [ax, ay] = VESSELS[host.key].arm; return { x: host.x + ax, y: host.y + ay }; }
   const m = mouth(host);
   if (it.key === "electrode") return { x: m.x + (it.side || -1) * Math.min(VESSELS[host.key].rTop * 0.5, 30), y: m.y };
   return m;
+}
+const floats = (host, it) => host.t.vol > 0 && densityOf(host.t) > FLOATERS[it.key] + 1e-6;
+/** A lemon or an egg has gone into a vessel, or the liquid under one has changed: does it float? Said once each time the answer changes. */
+function refloat(host, fresh = null) {
+  for (const o of state.items.filter((x) => x.on === host.id && FLOATERS[x.key])) {
+    const up = floats(host, o), was = o.afloat;
+    const m = seat(host, o);
+    o.x = m.x;
+    o.y = m.y;
+    glide(o, true);
+    place(o);
+    if (o !== fresh && was === up) continue;
+    o.afloat = up;
+    const name = nameOf(o).toLowerCase(), why = FLOAT_WHY[o.key];
+    const res = !(host.t.vol > 0)
+      ? { title: `Put the ${name} in`, obs: [{ text: `The ${name} sits on the bottom. There is no water in there for it to float in.` }], flags: [] }
+      : up ? { title: o === fresh ? `Put the ${name} in` : `Watched the ${name}`, obs: [{ text: o === fresh ? `The ${name} floats.` : `The ${name} rises off the bottom and floats.`, why: o.key === "lemon" ? why[0] : why[1] }], flags: [`float:${o.key}`] }
+      : { title: o === fresh ? `Put the ${name} in` : `Watched the ${name}`, obs: [{ text: `The ${name} sinks to the bottom.`, why: o.key === "lemon" ? "The liquid is less dense than the lemon." : why[0] }], flags: [`sink:${o.key}`] };
+    kick(host, 30);
+    record(host, res);
+  }
+}
+/** Gas is coming off under a balloon that has been stretched over the mouth: it fills. */
+function inflate(bal, g, res) {
+  bal.gas = Math.min(4, (bal.gas || 0) + g.n);
+  dress(bal);
+  res.obs.push({ text: bal.gas > 2.5 ? "The balloon swells up tight and stands on the flask." : "The balloon stands up and swells as the gas fills it.", why: `The ${GAS[g.gas] || "gas"} has nowhere to go but into the balloon. A gas takes up far more room than the solid and liquid it was made from, so it pushes the rubber out.` });
+  res.flags.push("balloon:up");
+}
+/** A balloon has just been stretched over a vessel that is still fizzing: it catches what is still coming off. */
+function catchInBalloon(v, bal) {
+  const p = v && v.puff;
+  if (!p) return;
+  const age = (Date.now() - p.at) / 1000;
+  v.puff = null;
+  if (age > 12) return;
+  const res = { title: "Stretched a balloon over the mouth", obs: [], flags: [], events: [] };
+  inflate(bal, { gas: p.gas, n: p.n * (age < 4 ? 1 : 1 - (age - 4) / 8) }, res);
+  record(v, res);
+}
+/** Foam (or a model volcano's lava) swells out of the mouth and runs down the outside. */
+function erupt(v) {
+  if (!nodes[v.id]) return;
+  const def = VESSELS[v.key], m = mouth(v), lk = look(v.t), NSS = "http://www.w3.org/2000/svg";
+  const cone = v.key === "volcano";
+  const soapy = (v.t.aq.Soap || 0) > 0;
+  const rgb = lk.rgb.map((c) => Math.round(c + (255 - c) * (soapy ? 0.3 : 0.12)));
+  const g = document.createElementNS(NSS, "g");
+  g.setAttribute("pointer-events", "none");
+  L.fx.appendChild(g);
+  const drop = cone ? 132 : -def.top - (def.floor || 0);
+  for (let i = 0; i < (soapy ? 70 : 44); i++) {
+    const c = document.createElementNS(NSS, "circle");
+    const side = i % 2 ? 1 : -1, r = (soapy ? 5 : 3) + Math.random() * (soapy ? 7 : 4);
+    c.setAttribute("cx", (m.x + (Math.random() - 0.5) * def.rTop).toFixed(1));
+    c.setAttribute("cy", (m.y + 2).toFixed(1));
+    c.setAttribute("r", r.toFixed(1));
+    c.setAttribute("fill", `rgb(${rgb})`);
+    c.setAttribute("fill-opacity", soapy ? 0.92 : 0.85);
+    c.setAttribute("stroke", "#fff");
+    c.setAttribute("stroke-opacity", soapy ? 0.55 : 0.2);
+    c.setAttribute("stroke-width", "0.8");
+    g.appendChild(c);
+    const up = 10 + Math.random() * (soapy ? 34 : 60), far = Math.random();
+    const out = side * (def.rTop + 4 + Math.random() * 8);
+    const endX = cone ? side * (22 + far * 74) : side * (def.rMax + 4 + Math.random() * 10), endY = cone ? 18 + far * (drop - 22) : drop * (0.25 + far * 0.75);
+    c.animate([
+      { transform: "translate(0px, 0px) scale(0.3)", opacity: 0 },
+      { transform: `translate(${(out * 0.4).toFixed(0)}px, ${(-up).toFixed(0)}px) scale(1)`, opacity: 1, offset: 0.18 },
+      { transform: `translate(${out.toFixed(0)}px, ${(-up * 0.3).toFixed(0)}px) scale(1.1)`, opacity: 1, offset: 0.34 },
+      { transform: `translate(${endX.toFixed(0)}px, ${endY.toFixed(0)}px) scale(${soapy ? 1 : 0.7})`, opacity: 1 },
+    ], { duration: 2800 + Math.random() * 2400, delay: Math.random() * 1700, easing: "ease-out", fill: "both" });
+  }
+  // the foam lies where it ran for a while, then sinks away
+  g.style.transition = "opacity 2.2s";
+  setTimeout(() => { g.style.opacity = "0"; }, 12000);
+  setTimeout(() => g.remove(), 14400);
+  kick(v, 40);
 }
 /** Everything with a slot a vessel can stand in. */
 const hosts = () => state.items.filter((o) => o.kind === "rack" || (o.kind === "vessel" && VESSELS[o.key].slots));
@@ -1062,7 +1155,9 @@ function setNotes(on) {
   else say("The observation note is on. It comes up whenever something is seen to happen.");
   save();
 }
+let refuseHook = null;      // PrepBot, while it is working: told whenever the bench will not do something, and why
 function say(text, v = null, kind = "") {
+  if (kind === "no" && refuseHook) refuseHook(text);
   const t = $("cl-toast");
   t.textContent = text;
   t.hidden = false;
@@ -1121,6 +1216,8 @@ function skate(v, m) {
 function record(v, res) {
   if (v.kind === "vessel") gasFlow(v, res);
   if (v.kind === "vessel" && res.flags && nodes[v.id]) {
+    // foam climbs out of anything; a model volcano erupts with whatever gas is made in it
+    if (res.flags.includes("foam") || (v.key === "volcano" && res.flags.some((f) => f.startsWith("gas:")))) { res.flags.push("erupt"); erupt(v); }
     if (res.flags.includes("dilute:wrong")) spit(v);
     else if (res.flags.includes("dilute:right") || res.flags.includes("fumes")) spit(v, true);
     const skater = ["K", "Na"].find((m) => res.flags.includes(`water:${m}`));
@@ -1164,6 +1261,8 @@ function gasFlow(v, res) {
     res.obs.push({ text: "The gas pushes the stopper out.", why: "A gas takes up far more room than the solid and liquid it came from. Never stopper a vessel that is making a gas, unless the stopper has a tube through it." });
     return;
   }
+  const bal = fittedTo(v, "balloon");
+  if (bal) { inflate(bal, g, res); return; }
   if (!fittedTo(v, "bung1")) { v.puff = { gas: g.gas, n: g.n, at: Date.now() }; return; }
   routeGas(v, g, res);
 }
@@ -1331,6 +1430,10 @@ function targetOf(it) {
   }
   // what is offered to: open vessels; upturned ones too, to a splint or litmus; an unlit burner to a lighted splint;
   // an open bottle to an empty dropper or pipette
+  const atMouth = (v) => { const m = mouth(v), dx = Math.abs(it.x - m.x); return dx < rimOf(v) + 28 && it.y > m.y - 60 && it.y < m.y + 110 ? dx : -1; };
+  // a balloon stretches over a NARROW mouth; a lemon or an egg goes into a WIDE one
+  if (it.key === "balloon") return nearest(open().filter((v) => { const d = VESSELS[v.key]; return d.rTop <= 24 && !d.tap && !d.noVeil && !plugIn(v); }), atMouth);
+  if (FLOATERS[it.key]) return nearest(open().filter((v) => { const d = VESSELS[v.key]; return d.rTop >= 34 && !d.fixed && !d.slots && !plugIn(v); }), atMouth);
   const atGas = MOUTH.includes(it.key) || it.key === "red" || it.key === "blue";
   const list = atGas ? [...vessels()] : [...open()];
   if (it.key === "lit") list.push(...heaters().filter((b) => !lit(b)));
@@ -2769,7 +2872,11 @@ window.addEventListener("pointermove", (e) => {
   else if (GRIPS[it.key] && loadOf(it)) shakeWatch(loadOf(it), it.x - ox, it.y - oy);
   if (it.kind === "vessel" || it.key === "syringe") it.rack = null;
   if (it.held) { it.held = null; it.tilt = 0; paint(it); }                       // pulled out of the holder or the tongs
-  if (it.on) it.on = null;
+  if (it.on) {
+    it.on = null;
+    if (it.key === "balloon" && it.gas) { it.gas = 0; dress(it); say("Pulled off, the balloon lets its gas go and hangs limp again."); }
+    if (FLOATERS[it.key]) { it.afloat = undefined; L.items.appendChild(nodes[it.id].g); }
+  }
   if (GRIPS[it.key]) {
     // an empty holder or tongs: show what it would take hold of here
     const c = grabbable(it);
@@ -2914,6 +3021,8 @@ window.addEventListener("pointerup", (e) => {
     front();
     glide(it, true);
     place(it);
+    if (FLOATERS[it.key]) { if (nodes[host.id].veil) L.items.insertBefore(nodes[it.id].g, nodes[host.id].veil); refloat(host, it); save(); return; }
+    if (it.key === "balloon") { say(`The balloon is stretched over the mouth of ${plain(host)}. Any gas made in there now goes into it.`, host); catchInBalloon(host, it); dress(it); save(); return; }
     const where = plain(host);
     say(it.key === "funnel" ? (fittedTo(it, "paper") ? `The funnel is in ${where}, with its filter paper. Whatever is poured in now is filtered.` : `The funnel is in ${where}. It needs a filter paper: let one go at the funnel.`)
       : it.key === "chroma" ? `The strip hangs in ${where} from its rod.`
@@ -3043,6 +3152,7 @@ function openMenu(it) {
     if (it.film && isEmpty(it.t)) lines.push(it.film.dirty ? (it.film.wet ? "Drops of the last liquid are still on the glass. Rinse it: stand it under the sink's tap, turn the tap on, shake it, and pour the water away." : "A dried stain of the last liquid is on the glass. Rinse it under the sink's tap.") : "Clean, but wet. Dry it over a flame, or push the cloth into it and rub.");
     if (scaleOf(it)) slider = readingBox(it);
     if (def.tap) lines.push("It cannot stand up: let it go at the clamp of a retort stand. Press the blue tap to run it out.");
+    if (it.key === "volcano") lines.push("Tip baking soda into the crater, add a squirt of washing-up liquid and some red colouring, then pour in vinegar.");
     if (it.key === "blender") lines.push("Put in something soft and a liquid, then press BLEND on its base. Tilt it to pour out by the spout.");
     if (def.arm) lines.push(fittedTo(it, "condenser") ? "Heat it, with a beaker under the condenser's lower end." : "Push a condenser onto the side arm.");
     if (def.upturns) lines.push("Fill it with water, then let an empty gas jar go in it.");
@@ -3334,6 +3444,7 @@ function noteFlags(flags = []) {
   if (after.every((d, i) => d === Boolean(was[i]))) return;
   const fresh = after.map((d, i) => d && !was[i]);
   state.ticks = { id: exp.id, done: after };
+  if (actor.onTick) setTimeout(() => actor.onTick && actor.onTick(), 0);
   renderGuide(fresh);
   if (!fresh.some(Boolean)) return;
   if (after.every(Boolean)) {
@@ -3508,6 +3619,7 @@ function renderDose() {
 document.querySelectorAll("[data-dose]").forEach((b) => b.addEventListener("click", () => { state.dose = b.dataset.dose; renderDose(); save(); }));
 
 // ── PrepBot's hands ─────────────────────────────────────────────────────────
+let assignedNow = false;
 // PrepBot (prepbot.js) does experiments LIVE, with the real pieces. These are
 // the same things a learner's hand does — take, move, pull a stopper, carry
 // and pour, hold a splint, fit a funnel, turn a burner up — done by a script,
@@ -3582,7 +3694,38 @@ const actor = {
   /** A demonstration uses bottles of its own: the learner's stock is not touched by it. */
   demo(on) { demoMode = Boolean(on); },
   /** PrepBot is for premium members (not withheld while that is still being found out). */
-  botAllowed: () => account.bot !== false,
+  // (a practical a teacher has SET is taught by PrepBot to any student, premium or not)
+  botAllowed: () => account.bot !== false || assignedNow,
+  assigned(on) { assignedNow = Boolean(on); },
+  toast(text) { say(text); },
+  /** The bench as it stands, as plain data (what a teacher sets for a class). */
+  snapshot() { return JSON.parse(JSON.stringify({ items: state.items.map(({ _level, _surface, _poured, puff, ...it }) => it) })); },
+  /** Put a saved bench on the bench, in place of whatever is there. */
+  loadBench(items) {
+    clearBench();
+    view.k = 1; view.x = 0; view.y = 0;
+    applyView();
+    state.items = JSON.parse(JSON.stringify(items));
+    state.n = Math.max(state.n || 0, ...state.items.map((it) => Number(String(it.id).slice(1)) || 0));
+    for (const it of state.items) { try { mount(it); } catch (e) { console.warn("bench: could not place", it.key, e); } }
+    state.items = state.items.filter((it) => nodes[it.id]);
+    state.items.forEach((it) => follow(it, false));
+    $("cl-hint").hidden = state.items.length > 0;
+    drawLinks();
+    renderDrawer();
+    save();
+    seeAll();
+  },
+  /** How far through the chosen practical: { done, total }. */
+  progress() {
+    const exp = expNow();
+    if (!exp) return { done: 0, total: 0 };
+    const seen = new Set(state.seen);
+    const did = exp.steps.map((st) => stepDone(st, seen, Q));
+    return { done: did.filter(Boolean).length, total: did.length };
+  },
+  onTick: null,
+  set onRefuse(f) { refuseHook = f; },
   async take(kind, key, x, y) {
     const it = addItem(kind, key, W - 70, 330) || state.items.find((o) => o.kind === kind && o.key === key);
     if (demoMode && it && it.kind === "reagent") { it.demo = true; it.left = fullOf(it); dress(it); }
@@ -3626,6 +3769,7 @@ const actor = {
     if (src.kind === "vessel") paint(src, { tilt: -108 });
     await pause(520);
     for (let i = 0; i < times; i++) {
+      if (src.kind === "reagent" && src.demo && leftIn(src) < fullOf(src) * 0.45) { src.left = fullOf(src); dress(src); }      // (nor part of the way through a big vessel)
       const more = use(src, v);
       await pause(780);
       if (!more) break;
@@ -3660,6 +3804,8 @@ const actor = {
     place(tool);
     dress(tool);
     if (tool.key === "chroma") runChroma(tool);
+    if (FLOATERS[tool.key]) { if (nodes[v.id].veil) L.items.insertBefore(nodes[tool.id].g, nodes[v.id].veil); refloat(v, tool); }
+    if (tool.key === "balloon") catchInBalloon(v, tool);
     if (tool.key === "bung1") catchPuff(v);
     if (tool.key === "tubing") catchPuff(vesselOfTube(tool));
     drawLinks();
@@ -3688,6 +3834,24 @@ const actor = {
     await this.uncap(bottle);
     const cap = state.items.find((o) => o.key === "cap" && o.of === bottle.id);
     if (cap) await this.hold(cap, v, 1100);
+  },
+  /** Swirl a vessel where it stands. */
+  async swirl(v) { swirl(v); await pause(2000); },
+  /** Open the tap of a burette or a separating funnel `times` times (a burette: 1 cm3 each; with `drops`, a drop at a time). */
+  async run(bur, times = 1, drops = false) {
+    const was = state.dose;
+    state.dose = drops ? "drops" : "portion";
+    nodes[bur.id].g.classList.add("is-open");
+    try { for (let i = 0; i < times; i++) { if (!runTap(bur)) break; await pause(drops ? 240 : 320); } } finally { state.dose = was; if (nodes[bur.id]) nodes[bur.id].g.classList.remove("is-open"); }
+    await pause(400);
+  },
+  /** Pass the current from a power pack for a few moments. */
+  async current(pack, times = 3) {
+    for (let i = 0; i < times; i++) { if (!runCell(pack)) break; await pause(900); }
+  },
+  /** The last things written in the notebook, newest last: what was done to what, and what was seen. */
+  recent(n = 8) {
+    return lastPage().entries.slice(-n).filter((e) => !e.secret).map((e) => `${e.title}${e.tag ? ` (${e.tag})` : ""}: ${(e.obs || []).map((o) => o.text).join(" ") || "nothing to see"}`);
   },
   /** Turn a vessel over by its handle and hold it there until it has run out (or `ms` has gone), then stand it up again. */
   async tip(v, deg = 112, ms = 9000) {

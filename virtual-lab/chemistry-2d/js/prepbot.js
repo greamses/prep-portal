@@ -25,6 +25,7 @@ import { PrepbotTeacher } from "/prep-math/mental-math/shared/prepbot-teacher.js
 import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { EXPERIMENTS } from "./waec.js";
+import { initAssign } from "./assign.js";
 
 /* A SETTING-UP lesson is the demonstration of a setting-up practical (waec.js, group "setup").
    The learner's turn is that practical's own steps, and it is done when every piece is in
@@ -650,6 +651,194 @@ export const LESSONS = [
     },
   },
   {
+    id: "volcano",
+    name: "Make a volcano erupt",
+    group: "Fun science",
+    about: "Baking soda, vinegar, a squirt of soap and some red colouring: foaming lava pours down the mountain.",
+    need: ["erupt"],
+    steps: [
+      { text: "Take the model volcano from Glassware and tip baking soda (in Solids) into its crater.", done: (seen) => seen.has("added:bicarb") },
+      { text: "Add red food colouring and washing-up liquid (in Liquids).", done: (seen) => seen.has("added:dye") && seen.has("added:soap") },
+      { text: "Pour in the vinegar.", done: (seen) => seen.has("erupt") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Let us make a volcano erupt. Everything we need comes from the kitchen.");
+      const vo = await b.take("vessel", "volcano", at(360), b.BASE);
+      const bs = await b.take("reagent", "bicarb", at(40), b.TOP + 22);
+      await b.uncap(bs);
+      await b.pour(bs, vo);
+      await say("First, baking soda goes into the crater.");
+      const dy = await b.take("reagent", "dye", at(150), b.TOP);
+      const so = await b.take("reagent", "soap", at(250), b.TOP);
+      await b.uncap(dy);
+      await b.pour(dy, vo);
+      await b.uncap(so);
+      await b.pour(so, vo);
+      await say("Red colouring to make it look like lava, and a squirt of washing-up liquid to make it foam.");
+      const vi = await b.take("reagent", "vinegar", at(620), b.TOP);
+      await b.uncap(vi);
+      await say("Now the vinegar. Watch the top of the mountain!");
+      await b.pour(vi, vo, 3);
+      await b.wait(4200);
+      await say("It erupts! Vinegar is an acid, and baking soda fizzes in an acid: it gives off a gas. The soap catches the gas in bubbles, and out it comes as foam.");
+    },
+  },
+  {
+    id: "balloon",
+    name: "Blow up a balloon without blowing",
+    group: "Fun science",
+    about: "The gas from vinegar and baking soda fills a balloon stretched over a flask.",
+    need: ["balloon:up"],
+    steps: [
+      { text: "Take a conical flask (100 mL) and pour vinegar (in Liquids) into it.", done: (seen) => seen.has("added:vinegar") },
+      { text: "Tip in baking soda (in Solids).", done: (seen) => seen.has("gas:CO2") },
+      { text: "Quickly let the balloon (in Equipment) go at the mouth of the flask.", done: (seen) => seen.has("balloon:up") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Can a balloon be blown up with no one blowing into it? Watch.");
+      const fl = await b.take("vessel", "flask100", at(330), b.BASE);
+      const vi = await b.take("reagent", "vinegar", at(60), b.TOP);
+      const bs = await b.take("reagent", "bicarb", at(180), b.TOP + 22);
+      const ba = await b.take("tool", "balloon", at(520), b.BASE);
+      await b.uncap(vi);
+      await b.pour(vi, fl, 3);
+      await say("Vinegar in the flask, and a balloon ready beside it.");
+      await b.uncap(bs);
+      await b.pour(bs, fl);
+      await b.fit(ba, fl);
+      await b.wait(1800);
+      await say("In goes the baking soda, and the balloon goes straight over the mouth. The fizzing makes a gas, and the gas has nowhere to go but into the balloon.");
+    },
+  },
+  {
+    id: "lemon",
+    name: "The floating lemon",
+    group: "Fun science",
+    about: "A lemon floats. Peel it, and it sinks. The secret is in the peel.",
+    need: ["float:lemon", "sink:peeled"],
+    steps: [
+      { text: "Take a beaker (500 mL) and half fill it with water.", done: (seen) => seen.has("added:water") },
+      { text: "Let the lemon (in Equipment) go into the water.", done: (seen) => seen.has("float:lemon") },
+      { text: "Take the lemon out and let the peeled lemon go in.", done: (seen) => seen.has("sink:peeled") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Does a lemon float or sink? And does it matter if it has its peel on?");
+      const bk = await b.take("vessel", "beaker500", at(330), b.BASE);
+      const w = await b.take("reagent", "water", at(60), b.TOP);
+      await b.uncap(w);
+      await b.pour(w, bk, 6);
+      const le = await b.take("tool", "lemon", at(560), b.BASE);
+      const pe = await b.take("tool", "peeled", at(650), b.BASE);
+      await say("A big beaker of water, a lemon, and a lemon with its peel taken off.");
+      await b.fit(le, bk);
+      await b.wait(1200);
+      await say("The whole lemon floats.");
+      await b.lift(le, at(560), b.BASE);
+      await b.fit(pe, bk);
+      await b.wait(1200);
+      await say("The peeled lemon sinks! The peel is full of tiny pockets of air, like a life-jacket. Take it off, and the lemon is heavier than the water it pushes aside.");
+    },
+  },
+  {
+    id: "egg",
+    name: "The egg that floats",
+    group: "Fun science",
+    about: "An egg sinks in water. Add enough salt and it rises and floats.",
+    need: ["sink:egg", "float:egg"],
+    steps: [
+      { text: "Take a beaker (250 mL), put water in it, and let the egg (in Equipment) go in.", done: (seen) => seen.has("sink:egg") },
+      { text: "Tip in table salt (in Solids), a spoonful at a time.", done: (seen) => seen.has("dissolved:salt") },
+      { text: "Keep adding salt until the egg floats.", done: (seen) => seen.has("float:egg") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("An egg sinks in water. Can we make it float without touching it?");
+      const bk = await b.take("vessel", "beaker250", at(330), b.BASE);
+      const w = await b.take("reagent", "water", at(60), b.TOP);
+      await b.uncap(w);
+      await b.pour(w, bk, 5);
+      const eg = await b.take("tool", "egg", at(540), b.BASE);
+      await b.fit(eg, bk);
+      await b.wait(1000);
+      await say("In plain water the egg goes straight to the bottom.");
+      const sa = await b.take("reagent", "salt", at(180), b.TOP + 22);
+      await b.uncap(sa);
+      await b.pour(sa, bk, 2);
+      await say("Salt goes in, and dissolves. Not enough yet.");
+      await b.pour(sa, bk, 3);
+      await b.wait(1600);
+      await say("There it goes! Salt makes the water denser. When the water is denser than the egg, it holds the egg up. That is why you float so easily in the sea.");
+    },
+  },
+  {
+    id: "toothpaste",
+    name: "Elephant's toothpaste",
+    group: "Fun science",
+    about: "Yeast, soap and hydrogen peroxide: a tower of foam shoots out of the cylinder.",
+    need: ["foam"],
+    steps: [
+      { text: "Take a measuring cylinder (100 mL) and pour hydrogen peroxide solution into it.", done: (seen) => seen.has("added:h2o2") },
+      { text: "Add washing-up liquid and red food colouring.", done: (seen) => seen.has("added:soap") && seen.has("added:dye") },
+      { text: "Tip in dried yeast (in Solids).", done: (seen) => seen.has("foam") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("This one is called elephant's toothpaste. You will see why.");
+      const cy = await b.take("vessel", "cyl100", at(360), b.BASE);
+      const hp = await b.take("reagent", "h2o2", at(40), b.TOP);
+      const so = await b.take("reagent", "soap", at(150), b.TOP);
+      const dy = await b.take("reagent", "dye", at(260), b.TOP);
+      await b.uncap(hp);
+      await b.pour(hp, cy, 4);
+      await b.uncap(so);
+      await b.pour(so, cy);
+      await b.uncap(dy);
+      await b.pour(dy, cy);
+      await say("Hydrogen peroxide, washing-up liquid, and some colouring, in a tall narrow cylinder.");
+      const ye = await b.take("reagent", "yeast", at(620), b.TOP + 22);
+      await b.uncap(ye);
+      await say("Now the yeast.");
+      await b.pour(ye, cy);
+      await b.wait(4200);
+      await say("Whoosh! The yeast makes the hydrogen peroxide give up its oxygen all at once. The soap catches the oxygen in bubbles, and the foam is squeezed out like toothpaste from a tube.");
+    },
+  },
+  {
+    id: "lava",
+    name: "A lava lamp",
+    group: "Fun science",
+    about: "Coloured blobs ride up through oil on bubbles of gas, and sink back again.",
+    need: ["lava"],
+    steps: [
+      { text: "Take a measuring cylinder (100 mL). Pour in vinegar and add red food colouring.", done: (seen) => seen.has("added:vinegar") && seen.has("added:dye") },
+      { text: "Pour cooking oil on top.", done: (seen) => seen.has("added:oil") },
+      { text: "Tip in baking soda (in Solids).", done: (seen) => seen.has("lava") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Oil and water do not mix. That is what makes a lava lamp work.");
+      const cy = await b.take("vessel", "cyl100", at(360), b.BASE);
+      const vi = await b.take("reagent", "vinegar", at(40), b.TOP);
+      const dy = await b.take("reagent", "dye", at(150), b.TOP);
+      const oi = await b.take("reagent", "oil", at(260), b.TOP);
+      await b.uncap(vi);
+      await b.pour(vi, cy, 2);
+      await b.uncap(dy);
+      await b.pour(dy, cy);
+      await b.uncap(oi);
+      await b.pour(oi, cy, 5);
+      await say("Red vinegar at the bottom, and oil floating on top of it: two layers.");
+      const bs = await b.take("reagent", "bicarb", at(620), b.TOP + 22);
+      await b.uncap(bs);
+      await b.pour(bs, cy);
+      await b.wait(2600);
+      await say("The baking soda sinks through the oil and fizzes in the vinegar. Each bubble of gas carries a red blob up with it. At the top the gas escapes, and the blob sinks back down.");
+    },
+  },
+  {
     id: "washing",
     name: "Washing glassware at the sink",
     about: "Pour away, rinse under the tap, shake, pour again, and dry. A vessel that was only emptied is not clean.",
@@ -951,7 +1140,7 @@ export async function initPrepbot(bench) {
     <div class="mm-prepbot-avatar-wrap">
       <div class="mm-prepbot-menu">
         <button class="mm-prepbot-menu-btn" data-b="ask" type="button" title="Ask PrepBot: where is a piece, or have it fetched" aria-label="Ask PrepBot a question"></button>
-        <button class="mm-prepbot-menu-btn" data-b="voice" type="button" title="Beep or talking voice" aria-label="Toggle beep or talking voice"></button>
+        <button class="mm-prepbot-menu-btn" data-b="voice" type="button" title="Mute or speak" aria-label="Mute PrepBot, or let it speak"></button>
         <button class="mm-prepbot-menu-btn" data-b="sleep" type="button" title="Sleep" aria-label="Sleep PrepBot"></button>
         <button class="mm-prepbot-menu-btn" data-b="poke" type="button" title="Wiggle" aria-label="Wiggle PrepBot"></button>
       </div>
@@ -1002,6 +1191,7 @@ export async function initPrepbot(bench) {
   }
   stopKey.addEventListener("click", () => { stop(); teacher.show(); teacher.speak([{ text: "Stopped. Carry on yourself, or pick another experiment.", mode: "speech" }]); });
 
+  const hooks = {};       // what a practical set for a class wants to be told (assign.js)
   /** PrepBot is for premium members. The bench and its practicals are free without it. */
   const LOCKED = "I am part of the premium plan. The bench and every practical on it are free: open the guide for the steps. Subscribe, and I will demonstrate, set things up and help you when you are stuck.";
   function locked() {
@@ -1060,6 +1250,7 @@ export async function initPrepbot(bench) {
     renderList();
     teacher.show();
     teacher.speak([{ text: `${praise} ${lesson.about}`, mode: "speech" }], { colorSeed: lines++ });
+    if (hooks.lessonDone) setTimeout(() => hooks.lessonDone(lesson), 2600);
     teacher.poke?.();
   }
 
@@ -1110,6 +1301,7 @@ export async function initPrepbot(bench) {
     electrode: ["electrode", "carbon rod"], power: ["power pack", "battery", "power supply"], rod: ["glass rod", "stirring rod", "stirrer"], wire: ["flame test wire", "wire"],
     condenser: ["condenser"], funnel: ["funnel"], water: ["water"], hcl: ["acid"], naoh: ["alkali"], nh3: ["ammonia solution", "ammonia"],
     unk: ["unknown salt", "unknown", "sample x"], caco3: ["calcium carbonate", "marble"], mno2: ["manganese dioxide", "manganese oxide"], h2o2: ["hydrogen peroxide", "peroxide"], oil: ["oil"], ch2so4: ["concentrated sulfuric acid", "conc sulfuric acid", "concentrated acid", "conc acid"], chcl: ["concentrated hydrochloric acid", "conc hydrochloric acid"], cnaoh: ["concentrated sodium hydroxide", "conc sodium hydroxide", "concentrated alkali"], slip: ["strip of paper", "plain paper", "paper strip"],
+    bicarb: ["baking soda", "bicarbonate of soda", "sodium bicarbonate", "sodium hydrogencarbonate", "bicarb"], soap: ["washing up liquid", "dish soap", "detergent", "soap"], dye: ["food colouring", "food coloring", "food colour", "colouring"], salt: ["table salt", "salt"], yeast: ["yeast"], lemonj: ["lemon juice"], volcano: ["volcano"], balloon: ["balloon"], peeled: ["peeled lemon"], lemon: ["lemon"], egg: ["egg"],
     mg: ["magnesium"], zn: ["zinc"], fe: ["iron"], cu: ["copper"], cuo: ["copper oxide"],
     sandsalt: ["sand and salt", "salt and sand", "mixture"], sulfur: ["sulphur powder", "sulphur", "sulfur"], iodine: ["iodine"], magnet: ["magnet"], centrifuge: ["centrifuge"], stopwatch: ["stop watch", "stopwatch", "timer"], watch: ["watch glass"], holder: ["test tube holder", "holder"], sink: ["sink", "tap", "basin"], cloth: ["cloth", "rag", "towel", "duster"], tongs: ["tongs"], tripod: ["tripod"], dish: ["evaporating dish", "evaporating basin", "dish"], chroma: ["chromatography paper", "chromatography strip", "chromatography"],
   };
@@ -1170,14 +1362,100 @@ export async function initPrepbot(bench) {
     if (!ref.tag && ref.c.kind === "vessel") { const kin = all.filter((it) => it.kind === "vessel" && family(stock.find((k) => k.kind === "vessel" && k.key === it.key)) === family(ref.c)); if (kin.length) return kin[kin.length - 1]; }
     return bench.bring(ref.c);
   }
-  const VERB = /^(set ?up|assemble|prepare|stand|clamp|place|put|get|bring|fetch|take out|pour|add|open|uncap|unstopper|light|flame|turn up|turn down|put out|turn off|heat|warm|boil|test|dip|hold|fit|clear|practical|demo|show|guide|notebook|results|table|graph|calculator|drawer|help)\b/i;
+  const VERB = /^(set ?up|assemble|prepare|say|wait|shake|swirl|stir|drip|drop|blend|tap|rinse|empty|tip|dry|rub|wipe|spin|centrifuge|run|titrate|current|electrolyse|switch on|upturn|invert|flip|lead|stand|clamp|place|put|get|bring|fetch|take out|pour|add|open|uncap|unstopper|light|flame|turn up|turn down|put out|turn off|heat|warm|boil|test|dip|hold|fit|clear|practical|demo|show|guide|notebook|results|table|graph|calculator|drawer|help)\b/i;
   async function command(raw) {
     const text = String(raw).trim();
     const verb = (VERB.exec(text) || [""])[0].toLowerCase();
     const args = text.slice(verb.length).trim();
     const [left, right] = args.split(/\s+(?:into|in|to|onto|on|under|at)\s+(?!.*\s(?:into|in|to|onto|on|under|at)\s)/i);
+    const piece = (key) => ({ c: stock.find((k) => k.key === key), n: 1, tag: "" });
+    const vesselIn = (s) => named(s || "").find((r) => r.c.kind === "vessel");
+    /** A sink on the bench (brought out if there is none), for anything that is poured away or washed. */
+    const sinkNow = () => ensure(piece("sink"));
     switch (verb.replace(/\s+/g, "")) {
       case "setup": case "assemble": case "prepare": return setUp(args);
+      // what the tutor says ALOUD on the bench while it works: one short sentence
+      case "say": await speak(args.replace(/^["'“]|["'”]$/g, ""), actToken); return "";
+      case "wait": await bench.wait(Math.min(15, Math.max(0.5, Number((/[\d.]+/.exec(args) || [2])[0]))) * 1000); return "";
+      case "shake": case "swirl": case "stir": {
+        const v = vesselIn(args);
+        if (!v) return `I did not understand "${text}".`;
+        const it = await ensure(v);
+        if (verb === "shake") await bench.shake(it); else await bench.swirl(it);
+        return "";
+      }
+      case "drip": case "drop": {
+        // an indicator, by its own dropper
+        const from = named(left || "").find((r) => r.c.kind === "reagent"), into = vesselIn(right);
+        if (!from || !into) return `I did not understand "${text}".`;
+        const dst = await ensure(into), src = await ensure(from);
+        if (src.rk !== "indicator" && !/indicator|phenolphthalein|methyl orange/i.test(from.c.name)) return command(`pour ${args}`);
+        await bench.drip(src, dst);
+        return "";
+      }
+      case "blend": {
+        const bl = await ensure(piece("blender"));
+        await bench.blend(bl);
+        return "";
+      }
+      case "tap": case "rinse": {
+        // water from the sink's tap into a vessel: it is stood under the nozzle first
+        const v = vesselIn(args);
+        if (!v) return `I did not understand "${text}".`;
+        const it = await ensure(v), sink = await sinkNow();
+        await bench.into(it, sink, 0);
+        await bench.tap(sink, Math.min(8, Math.max(1, Number((/(\d+(?:\.\d+)?)\s*s/i.exec(args) || [0, 2.4])[1]))) * 1000);
+        if (verb === "rinse") { await bench.shake(it); await bench.tip(it, -112); }
+        return "";
+      }
+      case "empty": case "tip": {
+        // poured away down the sink, by tilting it there
+        const v = vesselIn(args);
+        if (!v) return `I did not understand "${text}".`;
+        const it = await ensure(v), sink = await sinkNow();
+        await bench.into(it, sink, 1);
+        await bench.tip(it, -112);
+        return "";
+      }
+      case "dry": case "rub": case "wipe": {
+        const v = vesselIn(args);
+        if (!v) return `I did not understand "${text}".`;
+        const it = await ensure(v), cloth = await ensure(piece("cloth"));
+        if (it.rack) { it.rack = null; await bench.move(it, it.x + 190, bench.BASE, 420); }
+        await bench.rub(cloth, it);
+        return "";
+      }
+      case "spin": case "centrifuge": {
+        const cf = await ensure(piece("centrifuge"));
+        return (await bench.spin(cf)) ? "" : "The centrifuge would not run: it needs test tubes in wells opposite each other, holding the same amount.";
+      }
+      case "run": case "titrate": {
+        const v = named(args).find((r) => r.c.key === "burette" || r.c.key === "sepfunnel");
+        if (!v) return `I did not understand "${text}".`;
+        const n = Math.min(40, Number((/(\d+)/.exec(args.replace(/\(.*?\)/g, "")) || [0, 4])[1]) || 4);
+        await bench.run(await ensure(v), n, /drop/i.test(args));
+        return "";
+      }
+      case "current": case "electrolyse": case "switchon": {
+        const pack = await ensure(piece("power"));
+        await bench.current(pack, 3);
+        return "";
+      }
+      case "upturn": case "invert": case "flip": {
+        const v = vesselIn(left || args);
+        if (!v) return `I did not understand "${text}".`;
+        const it = await ensure(v), host = named(right || "").find((r) => r.c.key === "trough");
+        if (host) await bench.upturnIn(it, await ensure(host)); else await bench.flip(it);
+        return "";
+      }
+      case "lead": {
+        // the rubber end of a delivery tube, to the vessel that collects the gas
+        const v = vesselIn(right || args);
+        const tube = bench.pieces().find((it) => it.key === "tubing");
+        if (!v || !tube) return tube ? `I did not understand "${text}".` : "There is no delivery tube fitted yet.";
+        await bench.lead(tube, await ensure(v));
+        return "";
+      }
       case "stand": case "clamp": case "place": case "put": {
         // a vessel on a rack, a tripod or a stand; anything else that is "put" somewhere is fitted there
         const what = named(left || "")[0], where = named(right || "")[0];
@@ -1187,6 +1465,8 @@ export async function initPrepbot(bench) {
         if (v.kind !== "vessel") return `Only glassware stands on ${where.c.name.toLowerCase()}.`;
         const slot = bench.freeSlot(host);
         if (slot < 0) return `There is no room left on the ${where.c.name.toLowerCase()}.`;
+        // a burette or a separating funnel hangs high, so that a flask can stand on the base under its tip
+        if (host.key === "stand" && slot === 0 && (v.key === "burette" || v.key === "sepfunnel")) await bench.slide(host, v.key === "burette" ? -330 : -235);
         await bench.into(v, host, slot);
         return "";
       }
@@ -1208,6 +1488,7 @@ export async function initPrepbot(bench) {
         const dst = await ensure(into);
         const src = await ensure(from);
         if (src === dst) return "";
+        if (src.kind === "reagent" && /indicator|phenolphthalein|methyl orange/i.test(from.c.name)) { await bench.drip(src, dst); return ""; }
         if (src.kind === "reagent" && bench.capOn(src)) await bench.uncap(src);
         const times = Math.min(6, Number((/(\d+)\s*(measure|portion|time)/i.exec(text) || [])[1]) || from.n || 1);
         await bench.pour(src, dst, times);
@@ -1332,7 +1613,7 @@ export async function initPrepbot(bench) {
     const hasRack = all.some((c) => c.kind === "rack" && c.key === "rack");
     const inRack = (c) => hasRack && c.kind === "vessel" && (c.key === "tube" || c.key === "boil");
     const WIDE = { rack: 340, centrifuge: 200, stand: 210, tripod: 150, trough: 300, balance: 200, condenser: 260, syringe: 260 };
-    const widthOf = (c) => WIDE[c.key] || (/^(beaker|flask|rbf|fbf|distflask|gasjar|dish|vol|sepfunnel|mortar|blender)/.test(c.key) ? 130 : 84);
+    const widthOf = (c) => WIDE[c.key] || (/^(beaker|flask|rbf|fbf|distflask|gasjar|dish|vol|sepfunnel|mortar|blender|volcano)/.test(c.key) ? 130 : 84);
     const row = (cs, y) => {
       const total = cs.reduce((s, c) => s + widthOf(c), 0), room = bench.W - 200, k = Math.min(1, room / Math.max(1, total));
       let x = 100 + Math.max(0, (room - total * k) / 2);
@@ -1358,16 +1639,24 @@ export async function initPrepbot(bench) {
     if (bench.isBusy()) return "Let me finish this experiment first, then ask me again.";
     const mine = ++token;
     actToken = mine;
-    const notes = [];
+    const notes = [], refused = [];
     bench.busy(true);
+    bench.onRefuse = (why) => { if (!refused.includes(why)) refused.push(why); };
     try {
-      for (const cmd of [].concat(commands).slice(0, 24)) {
+      for (const cmd of [].concat(commands).slice(0, 60)) {
         if (mine !== token) break;
         try { const note = await command(cmd); if (note) notes.push(note); } catch (e) { if (e instanceof Stopped) break; console.warn("PrepBot:", cmd, e); notes.push(`I could not ${cmd}.`); }
       }
     } finally {
+      bench.onRefuse = null;
       if (mine === token) bench.busy(false);
     }
+    // what the bench would not do, in its own words: the tutor's next reply can put it right
+    if (refused.length) notes.push(`The bench refused: ${refused.slice(0, 4).join(" | ")}`);
+    // what was actually SEEN, read back from the notebook, so that the student (and the tutor's next reply) has the real result
+    const did = [].concat(commands).filter((c) => !/^(say|wait|get|bring|fetch|open|uncap|clear|guide|notebook|drawer|results|calculator)\b/i.test(c)).length;
+    const seen = did ? bench.recent(Math.min(8, did)).filter((line) => !/nothing to see$|No visible change\.$/.test(line)) : [];
+    if (seen.length) notes.push(`What was seen: ${seen.slice(-5).join(" | ")}`);
     return notes.join(" ");
   }
 
@@ -1382,6 +1671,8 @@ export async function initPrepbot(bench) {
     get actions() {
       return `You are the tutor on this bench and you can work it yourself. Commands (pieces by the exact names in the drawer lists; a vessel already on the bench by its name and letter, e.g. "test tube A"):
 get <how many> <piece> | open <bottle> (pulls its stopper) | pour <bottle or vessel> into <vessel> (add "2 measures" for more) | light burner | flame <0-3> | put out burner | heat <vessel> (boils until nothing more happens) | test <lighted splint, glowing splint, red litmus paper, blue litmus paper, pH paper or thermometer> in <vessel> | fit <filter funnel, rubber stopper, one-hole stopper, delivery tube, condenser or electrode> on <vessel> (a delivery tube is put through a one-hole stopper for you) | fit filter paper on filter funnel (a funnel filters nothing without its paper) | clear (empties the bench) | guide | notebook | results (opens the student's own results table and graph) | calculator | drawer show | drawer hide | practical <id> (chooses it and opens its guide; ids: ${bench.practicals().map((e) => e.id).join(", ")}) | demo <id> (you do the whole experiment, then the student repeats it; ids: ${LESSONS.map((l) => l.id).join(", ")}).
+MORE HANDS: say <one short sentence> (you say it aloud on the bench, in step with what you are doing) | wait <seconds> | shake <vessel> | swirl <vessel> | drip <indicator> into <vessel> (a few drops from its dropper) | blend (runs the blender) | tap <vessel> (stands it in the sink and runs water into it from the tap; add "5 s" for longer) | empty <vessel> (tilts it over the sink to pour it away) | rinse <vessel> (tap, shake, pour away: it is then clean) | dry <vessel> (rubs it with the cloth) | spin (runs the centrifuge; the tubes must already stand in wells opposite each other) | run burette 5 (opens its tap five times, 1 cm3 each; "run burette 3 drops" for single drops) (first clamp it: "stand burette on retort stand", fill it by pouring into it, and "stand conical flask on retort stand" puts the flask on the base, under its tip) | run separating funnel 3 | current (passes current from the power pack through the cell) | upturn <gas jar> in trough | flip <test tube or boiling tube> (upside down, to collect a light gas) | lead to <vessel> (leads the delivery tube's rubber end to the collector).
+DOING AN EXPERIMENT YOURSELF: when the student asks you to do, show, demonstrate or carry out an experiment, do it, whatever it is, so long as the drawer lists hold what it needs. If it is one of the demo ids, use "demo <id>". Otherwise work it out from your own chemistry and write the whole thing as ONE [DO: ...] line: start with "clear", then get, stand, fit and pour in the order a careful chemist would, with a "say" before each stage telling the student what you are about to do and what to watch for. Use the real method: the right vessel, sensible amounts (a test tube takes about 6 measures), acid into water, heat only what should be heated, test a gas while it is still coming off. Up to 60 commands. Do NOT state the result in advance as if you had seen it: the bench works the chemistry out, and what was really seen is shown to the student after your commands have run and is given to you under RECENTLY SEEN on your next turn, so explain the result then. If the drawer lacks something the experiment needs, say exactly what is missing, and offer the nearest experiment that can be done with what is there. Never pretend a piece or a chemical exists.
 SETTING UP: "setup <practical id>" clears the bench and lays out (or, for the setup- ids, assembles) one of these practicals: ${practicals.map((e) => `${e.id} = ${e.title}`).join("; ")}. "stand <vessel> on <rack, tripod or retort stand>" puts glassware on a support. If the student asks for an experiment that is NOT in that list, set it up yourself, one command for each piece (get, stand, fit, pour), using only what the drawer lists hold. If something it needs is not in the drawer, say which thing, and use the nearest thing the drawer does hold or say that it cannot be done here.
 A piece that is not on the bench yet is taken from the drawer when a command needs it. Do one small thing at a time when teaching, and ask the student what they see.`;
     },
@@ -1397,6 +1688,7 @@ ${parts}
 The practicals include a group called Setting up apparatus (ids beginning setup-): heating on a tripod, filtration, titration, a separating funnel, an electrolysis cell, collecting a gas over water, upward delivery, a gas syringe, and distillation. In those the steps tick as each piece is put in the right place.
 HOW THE BENCH WORKS: drag a piece to move it; drag it onto the drawer to put it away. Carry a bottle or a tool to a vessel and hold it there to use it. A bottle will not pour until its stopper is pulled out. Let a funnel, stopper, delivery tube, condenser or electrode go at a mouth and it stays fitted. Burners are lit and turned up with the + key on their base. A burette or a separating funnel hangs in the retort stand's clamp. A chosen piece shows a handle to tilt it and a "..." menu. The icons at the top left are: the Guide to the chosen practical, the lab notebook, the list of WAEC practicals, the Results table (the student rules their own table and can plot a graph of any two columns, with a line of best fit), a scientific calculator, and PrepBot's demonstrations. A burette and a measuring cylinder are READ BY EYE: choosing one shows a lens on the meniscus, and the reading is typed into the piece's menu. A funnel filters only with a filter paper in it; the paper is a separate piece. A delivery tube is pushed through a ONE-HOLE STOPPER, which goes in the vessel; the end of its rubber tube is dragged to the collector. A test tube holder (let go at a tube's neck) and crucible tongs (let go at the rim of a crucible or dish) pick the piece up, so that it can be carried and held in a flame. Pressing H gives the next step.
 ON THE BENCH NOW: ${on.length ? on.join(", ") : "nothing"}.
+RECENTLY SEEN (from the notebook, newest last): ${bench.recent(8).join(" | ") || "nothing yet"}.
 ${exp ? `CHOSEN PRACTICAL: ${exp.title}. Task: ${exp.task} It needs: ${exp.needs}.${step && !step.done ? ` Next step: ${step.text}` : ""}` : "No practical has been chosen."}
 YOU CAN FETCH PIECES: if the student wants a piece, tell them to type "get me" and its name (for example "get me a 250 mL beaker and sodium hydroxide") and it is put on the bench for them. Only name pieces that are in the drawer lists above.`;
     },
@@ -1441,8 +1733,9 @@ YOU CAN FETCH PIECES: if the student wants a piece, tell them to type "get me" a
   const turnBox = document.getElementById("cl-bot-turn");
   function renderList() {
     const kindOf = (l) => l.group || (["sandsalt", "decant", "magnet", "sublime", "chroma", "centrifuge", "filter", "crystals"].includes(l.id) ? "Separating mixtures" : "Reactions and tests");
-    const order = ["Setting up apparatus", "Reactions and tests", "Separating mixtures"];
-    const sorted = LESSONS.slice().sort((x, y) => order.indexOf(kindOf(x)) - order.indexOf(kindOf(y)));
+    const order = ["Fun science", "Reactions and tests", "Reactivity of metals and non-metals", "Separating mixtures", "Concentrated acids and safety", "Setting up apparatus"];
+    const rank = (l) => { const i = order.indexOf(kindOf(l)); return i < 0 ? order.length : i; };
+    const sorted = LESSONS.slice().sort((x, y) => rank(x) - rank(y));
     list.innerHTML = sorted.map((l, n) => {
       const mine = turn && turn.lesson === l;
       const head = n === 0 || kindOf(sorted[n - 1]) !== kindOf(l) ? `<li class="cl-cards__head">${esc(kindOf(l))}</li>` : "";
@@ -1466,6 +1759,11 @@ YOU CAN FETCH PIECES: if the student wants a piece, tell them to type "get me" a
   });
   renderList();
   document.getElementById("cl-bot").insertAdjacentHTML("afterbegin", ICON_PREPBOT.replace("<svg ", '<svg width="26" height="26" '));
+
+  // practicals a teacher sets for a class, and the ones a student has been set
+  try {
+    initAssign({ bench, lessons: LESSONS, play, act, hooks, say: (text) => { teacher.wake(); teacher.show(); teacher.speak([{ text, mode: "speech" }], { colorSeed: lines++ }); } });
+  } catch (e) { console.warn("PrepBot: class practicals did not start", e); }
 
   // a first hello, only on an empty bench
   if (bench.isEmptyBench()) {

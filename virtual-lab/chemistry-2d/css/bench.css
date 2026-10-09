@@ -768,3 +768,25 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 .is-running .cl-tapflow { display: inline; }
 .cl-tapkey { transform-box: fill-box; transform-origin: center; transition: transform 0.18s; }
 .is-running .cl-tapkey { transform: rotate(90deg); }
+
+/* a balloon swells from the neck as gas fills it */
+.cl-balloon { transform-box: fill-box; transform-origin: 50% 100%; transform: scale(var(--puff, 0.42)); transition: transform 0.9s ease-out; }
+
+/* practicals set for a class */
+.cl-class { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
+.cl-class label { font: 700 0.66rem var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary); margin-top: 0.35rem; }
+.cl-class textarea { resize: vertical; min-height: 2.6rem; line-height: 1.45; }
+.cl-class #cl-class-own { display: flex; flex-direction: column; gap: 0.35rem; }
+.cl-class #cl-class-own[hidden] { display: none; }
+.cl-class .cl-try, #cl-sheet-assign .cl-try { margin-top: 0.6rem; }
+.cl-class__msg { font-size: 0.74rem; line-height: 1.5; color: var(--text-secondary); margin: 0.4rem 0 0; word-break: break-word; }
+.cl-class__done { margin: 0 0 0.3rem; }
+.cl-class__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.7rem; }
+.cl-class__item { padding: 0.55rem 0.65rem; border-left: 3px solid var(--accent-secondary); background: color-mix(in srgb, var(--accent-secondary) 10%, transparent); }
+.cl-class__item h4 { margin: 0; font: 700 0.82rem var(--font-body, inherit); }
+.cl-class__meta, .cl-class__none { margin: 0.15rem 0 0.3rem; font-size: 0.7rem; color: var(--text-secondary); }
+.cl-class__row summary { cursor: pointer; font-size: 0.76rem; padding: 0.15rem 0; }
+.cl-class__notes { margin: 0.2rem 0 0.4rem 0.9rem; font-size: 0.7rem; line-height: 1.5; white-space: pre-wrap; color: var(--text-secondary); }
+.cl-class__steps { margin: 0 0 0.6rem; padding-left: 1.2rem; font-size: 0.78rem; line-height: 1.55; }
+.cl-class__steps label { cursor: pointer; }
+.cl-class .cl-search { color: #14130f; background: #fffdf6; border: 1px solid rgba(20, 19, 15, 0.28); font-size: 0.78rem; }

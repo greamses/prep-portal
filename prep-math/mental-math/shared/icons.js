@@ -63,6 +63,12 @@ export const ICON_TALK_MODE = svg(
   `<path d="M17.6 6.6a7.4 7.4 0 0 1 0 10.8" fill="none" stroke="var(--accent-warning)" stroke-width="1.8" stroke-linecap="round"/>`,
 );
 
+// Mute: the same speaker with a danger-coloured slash where the waves were.
+export const ICON_MUTE_MODE = svg(
+  `<path d="M4 9.4h2.7l3.8-3.2a0.8 0.8 0 0 1 1.32 0.6v10.4a0.8 0.8 0 0 1-1.32 0.6L6.700 14.6H4a1 1 0 0 1-1-1v-3.200a1 1 0 0 1 1-1z" fill="var(--accent-secondary)"/>` +
+  `<path d="M15.200 9.2l5 5.600M20.200 9.2l-5 5.600" fill="none" stroke="var(--accent-danger)" stroke-width="2" stroke-linecap="round"/>`,
+);
+
 export const ICON_BEEP_MODE = svg(
   `<circle cx="12" cy="12" r="3" fill="var(--accent-secondary)"/>` +
   `<path d="M4.2 12h2.4M17.4 12h2.4M6.9 6.2l1.7 1.7M15.4 15.9l1.7 1.7M6.9 17.8l1.7-1.7M15.4 8.1l1.7-1.7" fill="none" stroke="var(--accent-secondary)" stroke-width="1.8" stroke-linecap="round"/>`,

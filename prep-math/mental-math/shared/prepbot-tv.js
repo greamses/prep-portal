@@ -57,7 +57,7 @@ export async function openTv({ title = "", build = () => {}, steps = [] } = {}) 
     `<div class="mm-prepbot-bubble mm-prepbot-bubble--speech" aria-hidden="true"><p></p></div>` +
     `<div class="mm-prepbot-avatar-wrap"><div class="mm-prepbot-menu">` +
     `<button class="mm-prepbot-menu-btn" data-b="ask" type="button" title="Ask PrepBot a question" aria-label="Ask PrepBot a question"></button>` +
-    `<button class="mm-prepbot-menu-btn" data-b="voice" type="button" title="Beep or talking voice" aria-label="Toggle beep or talking voice"></button>` +
+    `<button class="mm-prepbot-menu-btn" data-b="voice" type="button" title="Mute or speak" aria-label="Mute PrepBot, or let it speak"></button>` +
     `<button class="mm-prepbot-menu-btn" data-b="sleep" type="button" title="Sleep" aria-label="Sleep PrepBot"></button>` +
     `<button class="mm-prepbot-menu-btn" data-b="poke" type="button" title="Wiggle" aria-label="Wiggle PrepBot"></button>` +
     `</div><div class="mm-prepbot-avatar" aria-hidden="true"></div></div></div>` +

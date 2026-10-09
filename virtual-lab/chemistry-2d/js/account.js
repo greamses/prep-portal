@@ -46,6 +46,9 @@ async function api(method, path, body) {
   return d;
 }
 
+/** Ask the bench's own server routes (/api/bench/...) as the signed-in user. */
+export const benchApi = (method, path, body) => api(method, path, body);
+
 let unwatch = null;
 auth.onAuthStateChanged(async (user) => {
   if (unwatch) { unwatch(); unwatch = null; }
