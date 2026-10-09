@@ -19,14 +19,14 @@
 import {
   PER_BILL, COINS, BILLS, PIECES, bill, writeAmount, sayAmount, payWith,
   changeFrom, roundUpPiece, coinSvg, billSvg, pieceSvg, moneySvg, currencySvg,
-  purse, mountPurse, heldTotal, sayHeld,
+  purse, mountPurse, heldTotal, sayHeld, markSvg, priceHtml,
 } from "/utils/components/workbook/purse.js";
 
 /* one place for the exercises to ask for money from */
 export {
   PER_BILL, COINS, BILLS, PIECES, bill, writeAmount, sayAmount, payWith,
   changeFrom, roundUpPiece, coinSvg, billSvg, pieceSvg, moneySvg, currencySvg,
-  purse, mountPurse, heldTotal, sayHeld,
+  purse, mountPurse, heldTotal, sayHeld, markSvg, priceHtml,
 };
 
 const INK = "#2a2723";
@@ -90,27 +90,124 @@ export function tagSvg(price, { was = null, off = null } = {}) {
   const wide = was != null;
   return `<span class="mo-tag${wide ? " mo-tag--sale" : ""}">`
     + (off != null ? `<b class="mo-tag__off">${off}% off</b>` : "")
-    + (was != null ? `<s class="mo-tag__was">${writeAmount(was)}</s>` : "")
-    + `<b class="mo-tag__now">${writeAmount(price)}</b>`
+    + (was != null ? `<s class="mo-tag__was">${priceHtml(was)}</s>` : "")
+    + `<b class="mo-tag__now">${priceHtml(price)}</b>`
     + `</span>`;
+}
+
+/* ── the store ─────────────────────────────────────────────────────────────
+   THE SHOP IS LAID OUT THE WAY A SHOP IS LAID OUT ON A SCREEN: a grid of
+   product cards, each one a picture on its own panel, the thing's name under
+   it, the price in the place a price goes, and how many are in the basket.
+
+   It was a row of little drawings with a tag hung under each, which is a
+   SHELF — and a shelf is not what a child has ever bought anything from. The
+   whole point of the chapter is that these are sums grown-ups actually do, so
+   the page should look like the place they actually do them. */
+
+/**
+ * One product card. `n` is how many are in the basket; leave it null for a
+ * card that is only showing a price.
+ */
+export function productCard(l, { n = null, tag = null } = {}) {
+  return `<article class="mo-card">`
+    + `<div class="mo-card__shot">${goodSvg(l.good, { mm: 17, colour: l.colour || 0 })}</div>`
+    + `<div class="mo-card__body">`
+    + `<h4 class="mo-card__name">${goodName(l.good)}</h4>`
+    + (tag || `<p class="mo-card__price">${priceHtml(l.price)}</p>`)
+    + (n == null ? "" : `<p class="mo-card__qty"><span>In the basket</span><b>${n}</b></p>`)
+    + `</div></article>`;
+}
+
+/** The storefront: every product on the page, in a grid. */
+export function storeHtml(lines, { withQty = true } = {}) {
+  return `<div class="mo-store" role="list">`
+    + lines.map((l) => productCard(l, { n: withQty ? l.n : null })).join("")
+    + `</div>`;
 }
 
 /* ── the bank ──────────────────────────────────────────────────────────────*/
 
 /**
- * THE BANK, drawn: a front with columns, a door and a sign. It is a picture of
- * a place money is left, which is the thing a child has to believe before
- * interest means anything — the money goes somewhere, stays there, and comes
- * back bigger.
+ * THE BANK, drawn as a bank is built: a stepped plinth, a colonnade of fluted
+ * columns standing on their own bases and carrying their own capitals, a
+ * proper entablature — architrave, frieze, dentils, cornice — and a pediment
+ * over it with the house emblem alone in the tympanum.
+ *
+ * THE NAME IS CUT INTO THE FRIEZE, which is where a bank's name goes and the
+ * only band tall enough to hold it. In the pediment it printed straight
+ * through the emblem.
+ *
+ * It is drawn in STONE, not in poster paint. A bank is the most solemn
+ * building a child ever walks past, and that solemnity is the whole reason the
+ * picture is here: money left in it stays there and comes back bigger, and
+ * nobody believes that of a yellow triangle on sticks.
  */
 export function bankSvg({ mm = 36, name = "PREP BANK" } = {}) {
-  const col = (x) => `<rect x="${x}" y="30" width="6" height="26" fill="#fffdf8" stroke="${INK}" stroke-width="1.4"/>`;
-  return `<svg class="mo-bank" viewBox="0 0 96 72" width="${mm}mm" height="${mm * 0.75}mm" role="img" aria-label="the bank">`
-    + `<path d="M4 30 48 8l44 22z" fill="#f4c95d" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`
-    + col(14) + col(28) + col(42) + col(56) + col(70)
-    + `<rect x="2" y="56" width="92" height="8" fill="#e8dfcc" stroke="${INK}" stroke-width="2"/>`
-    + `<rect x="38" y="38" width="20" height="18" fill="#6fb7e8" stroke="${INK}" stroke-width="1.4"/>`
-    + `<text x="48" y="24" text-anchor="middle" fill="${INK}" font-size="8" font-weight="800" letter-spacing="0.6">${name}</text>`
+  const STONE = "#efe9dd";
+  const SHADE = "#d9d1c1";
+  const DEEP = "#b9ae99";
+
+  /* A COLUMN: base, fluted shaft, capital, abacus. The flutes are what make it
+     a column rather than a post. It hangs off the architrave above it, so the
+     whole order moves together if the entablature ever moves. */
+  const column = (x) => {
+    const flute = [3.4, 6, 8.6]
+      .map((o) => `<path d="M${x + o} 55v28" stroke="${DEEP}" stroke-width="0.7" opacity="0.65"/>`)
+      .join("");
+    return `<rect x="${x + 0.6}" y="55" width="10.8" height="28" fill="${STONE}"/>`
+      + flute
+      + `<rect x="${x + 0.6}" y="55" width="10.8" height="28" fill="none" stroke="${DEEP}" stroke-width="0.6"/>`
+      /* capital, and the abacus that carries the architrave */
+      + `<rect x="${x - 1}" y="51.6" width="14" height="3.6" fill="${STONE}" stroke="${DEEP}" stroke-width="0.6"/>`
+      + `<rect x="${x - 0.2}" y="49" width="12.4" height="2.8" fill="${SHADE}" stroke="${DEEP}" stroke-width="0.5"/>`
+      /* base */
+      + `<rect x="${x - 1}" y="83" width="14" height="4" fill="${STONE}" stroke="${DEEP}" stroke-width="0.6"/>`;
+  };
+
+  /* THE DENTILS under the cornice — the row of little blocks that says
+     "classical" faster than any other detail. */
+  let dentils = "";
+  for (let x = 12; x < 148; x += 7.4) {
+    dentils += `<rect x="${x}" y="35.8" width="4.2" height="3.2" fill="${SHADE}"/>`;
+  }
+
+  /* THE STEPS, each one WIDER than the one above it, which is what makes a
+     flight of steps read as a flight and not as a stack of slabs. */
+  const steps = [0, 1, 2]
+    .map((i) => `<rect x="${14 - i * 5}" y="${87 + i * 4.6}" width="${132 + i * 10}" height="4.8"`
+      + ` fill="${i % 2 ? SHADE : STONE}" stroke="${DEEP}" stroke-width="0.6"/>`)
+    .join("");
+
+  return `<svg class="mo-bank" viewBox="0 0 160 108" width="${mm}mm" height="${(mm * 0.675).toFixed(2)}mm"`
+    + ` role="img" aria-label="the bank">`
+    /* the pediment, and the shade under its rake that gives it depth */
+    + `<path d="M6 32 80 5l74 27z" fill="${STONE}" stroke="${DEEP}" stroke-width="1.2" stroke-linejoin="round"/>`
+    + `<path d="M14 30 80 10l66 20z" fill="${SHADE}" opacity="0.5"/>`
+    /* the emblem, alone in the tympanum, where a pediment carries its device */
+    + `<g transform="translate(80 21.5) scale(1.45)">`
+    + [0, 1, 2, 3, 4].map((i) => {
+      const a = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+      return `<circle cx="${(Math.cos(a) * 2.5).toFixed(2)}" cy="${(Math.sin(a) * 2.5).toFixed(2)}" r="1.75" fill="${DEEP}"/>`;
+    }).join("")
+    + `<circle cx="0" cy="0" r="1.15" fill="${DEEP}" opacity="0.5"/>`
+    + `</g>`
+    /* the entablature, top down: cornice, dentils, frieze, architrave */
+    + `<rect x="2" y="31.4" width="156" height="4.4" fill="${STONE}" stroke="${DEEP}" stroke-width="0.7"/>`
+    + dentils
+    + `<rect x="6" y="39" width="148" height="7" fill="${STONE}" stroke="${DEEP}" stroke-width="0.6"/>`
+    + `<text x="80" y="43.4" text-anchor="middle" dominant-baseline="central" fill="${DEEP}"`
+    + ` font-size="5.4" font-weight="800" letter-spacing="2.6">${name}</text>`
+    + `<rect x="6" y="46" width="148" height="3" fill="${SHADE}" stroke="${DEEP}" stroke-width="0.5"/>`
+    /* the dark of the portico behind the columns */
+    + `<rect x="10" y="49" width="140" height="38" fill="#6b6150" opacity="0.18"/>`
+    + [12, 37, 62, 87, 112, 137].map(column).join("")
+    /* the doorway, standing in the shade between the middle columns */
+    + `<rect x="68" y="60" width="24" height="27" fill="#5d7f96"/>`
+    + `<path d="M68 60a12 12 0 0 1 24 0z" fill="#7fa3bb"/>`
+    + `<path d="M80 51v36M68 68h24" stroke="${STONE}" stroke-width="0.8" opacity="0.6"/>`
+    + `<rect x="68" y="60" width="24" height="27" fill="none" stroke="${DEEP}" stroke-width="0.8"/>`
+    + steps
     + `</svg>`;
 }
 
@@ -128,16 +225,19 @@ export function tillHtml(lines, { answer = false, paid = null, box = () => "" } 
     return `<tr>`
       + `<td class="mo-till__what">${goodSvg(l.good, { mm: 9, colour: l.colour || 0 })}<span>${goodName(l.good)}</span></td>`
       + `<td class="mo-till__n">${l.n}</td>`
-      + `<td class="mo-till__each">${writeAmount(l.price)}</td>`
-      + `<td class="mo-till__line">${answer ? `<b>${writeAmount(line)}</b>` : box()}</td>`
+      + `<td class="mo-till__each">${priceHtml(l.price)}</td>`
+      + `<td class="mo-till__line">${answer ? `<b>${priceHtml(line)}</b>` : box()}</td>`
       + `</tr>`;
   }).join("");
   const total = lines.reduce((t, l) => t + l.n * l.price, 0);
   const foot = `<tr class="mo-till__total"><td colspan="3">Total to pay</td>`
-    + `<td>${answer ? `<b>${writeAmount(total)}</b>` : box()}</td></tr>`
-    + (paid == null ? "" : `<tr class="mo-till__change"><td colspan="3">Paid ${writeAmount(paid)} — change</td>`
-      + `<td>${answer ? `<b>${writeAmount(paid - total)}</b>` : box()}</td></tr>`);
-  return `<table class="mo-till"><thead><tr><th>What</th><th>How many</th><th>Each</th><th>Comes to</th></tr></thead>`
+    + `<td>${answer ? `<b>${priceHtml(total)}</b>` : box()}</td></tr>`
+    + (paid == null ? "" : `<tr class="mo-till__change"><td colspan="3">Paid ${priceHtml(paid)} — change</td>`
+      + `<td>${answer ? `<b>${priceHtml(paid - total)}</b>` : box()}</td></tr>`);
+  /* the cart's own heading, because this is the order and not a worksheet
+     table that happens to have things in it */
+  return `<table class="mo-till"><caption class="mo-till__cap">Your order</caption>`
+    + `<thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Comes to</th></tr></thead>`
     + `<tbody>${rows}${foot}</tbody></table>`;
 }
 

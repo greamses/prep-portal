@@ -33,9 +33,9 @@
    ========================================================================== */
 
 import {
-  writeAmount, sayAmount, moneySvg, currencySvg, payWith, totalOf, percentOf,
+  sayAmount, moneySvg, currencySvg, payWith, totalOf, percentOf,
   simpleInterest, compoundYears, roundUpPiece, goodSvg, goodName, GOOD_NAMES,
-  tagSvg, tillHtml, bankSvg, purse, PER_BILL,
+  tagSvg, tillHtml, bankSvg, purse, priceHtml, storeHtml, productCard, PER_BILL,
 } from "./money.js";
 import { trainHtml } from "/utils/components/workbook/machine.js";
 import { levelOf } from "./ex-remainder.js";
@@ -161,7 +161,7 @@ const handful = {
         + `${sayAmount(1270)} — written 12.70.`));
   },
   key(item) { return [money(item.coins)]; },
-  answer(item) { return [writeAmount(item.coins)]; },
+  answer(item) { return [priceHtml(item.coins)]; },
 };
 
 const makeIt = {
@@ -180,13 +180,13 @@ const makeIt = {
     return { coins: r.int(t === "gentle" ? 110 : 165, t === "gentle" ? 800 : t === "middle" ? 2400 : 7500) };
   },
   render(item) {
-    return lead(`<b>${writeAmount(item.coins)}</b>`)
+    return lead(`<b>${priceHtml(item.coins)}</b>`)
       /* On screen the money is REAL: take the pieces out of the tray and lay
          them out until the purse says what the question says. On paper the
          tray is a tray and the space under it is somewhere to draw. Either
          way the counting is the child's — the purse says what is lying there
          and nothing else. */
-      + purse({ say: `take out ${writeAmount(item.coins)}`, mm: 34 })
+      + purse({ say: `take out ${priceHtml(item.coins)}`, mm: 34 })
       + ask(`How many pieces? ${box()}`)
       /* a LINE and not a box: a list of pieces is writing, and a box the size
          of an answer tells a child to put one thing in it */
@@ -194,7 +194,7 @@ const makeIt = {
   },
   worked() {
     const pieces = payWith(1385);
-    return worked(lead(`<b>${writeAmount(1385)}</b>`)
+    return worked(lead(`<b>${priceHtml(1385)}</b>`)
       + art(moneySvg(1385))
       + say(`A 10 prepbill leaves 3.85. A 2 prepbill leaves 1.85. A 1 prepbill leaves 0.85. `
         + `Then 50, 20, 10 and 5 prepcoins. ${pieces.length} pieces.`));
@@ -224,17 +224,17 @@ const oneLine = {
     return { good: r.pick(GOOD_NAMES), colour: r.int(0, 5), n: howMany(r, o), price: priceOf(r, o) };
   },
   render(item) {
-    return art(`<span class="mo-shelf__one">${goodSvg(item.good, { mm: 16, colour: item.colour })}${tagSvg(item.price)}</span>`)
-      + ask(`${item.n} ${goodName(item.good)}${item.n === 1 ? "" : "s"} at ${writeAmount(item.price)} each.`)
+    return storeHtml([item], { withQty: false })
+      + ask(`${item.n} ${goodName(item.good)}${item.n === 1 ? "" : "s"} at ${priceHtml(item.price)} each.`)
       + ask(`That comes to ${box()}`);
   },
   worked() {
-    return worked(art(`<span class="mo-shelf__one">${goodSvg("apple", { mm: 16, colour: 2 })}${tagSvg(150)}</span>`)
+    return worked(storeHtml([{ good: "apple", colour: 2, price: 150 }], { withQty: false })
       + say("4 apples at 1.50 each. 4 × 1.50: four lots of one prepbill is 4.00, "
         + "four lots of fifty prepcoins is 200 prepcoins, which is 2.00. Altogether 6.00."));
   },
   key(item) { return [money(item.n * item.price)]; },
-  answer(item) { return [`${item.n} × ${writeAmount(item.price)} = ${writeAmount(item.n * item.price)}`]; },
+  answer(item) { return [`${item.n} × ${priceHtml(item.price)} = ${priceHtml(item.n * item.price)}`]; },
 };
 
 const atTheTill = {
@@ -253,15 +253,13 @@ const atTheTill = {
     return { lines, paid: roundUpPiece(totalOf(lines)) };
   },
   render(item) {
-    return `<div class="mo-shelf">${item.lines
-      .map((l) => `<span class="mo-shelf__one">${goodSvg(l.good, { mm: 14, colour: l.colour })}${tagSvg(l.price)}</span>`)
-      .join("")}</div>`
+    return storeHtml(item.lines)
       + tillHtml(item.lines, { paid: item.paid, box })
       /* and the money to pay with: lay out what was handed over, take the
          price off it, and what is left on the mat IS the change. A child who
          has counted change out of a purse has done the subtraction with their
          hands before they do it in the box above. */
-      + purse({ say: `pay with ${writeAmount(item.paid)}, and count the change`, mm: 34 });
+      + purse({ say: `pay with ${priceHtml(item.paid)}, and count the change`, mm: 34 });
   },
   worked() {
     const lines = [
@@ -280,7 +278,7 @@ const atTheTill = {
   },
   answer(item) {
     const t = totalOf(item.lines);
-    return [`total ${writeAmount(t)}, change ${writeAmount(item.paid - t)}`];
+    return [`total ${priceHtml(t)}, change ${priceHtml(item.paid - t)}`];
   },
 };
 
@@ -301,14 +299,13 @@ const oneTag = {
     return { good: r.pick(GOOD_NAMES), colour: r.int(0, 5), was: saleWas(r, o, off), off };
   },
   render(item) {
-    return art(`<span class="mo-shelf__one">${goodSvg(item.good, { mm: 16, colour: item.colour })}`
-      + `${tagSvg(item.was)}</span>`)
+    return storeHtml([{ ...item, price: item.was }], { withQty: false })
       + ask(`The shop takes <b>${item.off}%</b> off.`)
       + ask(`What comes off? ${box()}`)
       + ask(`So the sale price is ${box()}`);
   },
   worked() {
-    return worked(art(`<span class="mo-shelf__one">${goodSvg("shirt", { mm: 16, colour: 4 })}${tagSvg(2000, { was: null })}</span>`)
+    return worked(storeHtml([{ good: "shirt", colour: 4, price: 2000 }], { withQty: false })
       + say("25% off 20.00. A quarter of 20.00 is 5.00, so 5.00 comes off. "
         + "20.00 − 5.00 = 15.00 — and the new tag should say 15.00."));
   },
@@ -318,7 +315,7 @@ const oneTag = {
   },
   answer(item) {
     const off = percentOf(item.was, item.off);
-    return [`${item.off}% of ${writeAmount(item.was)} is ${writeAmount(off)}; sale price ${writeAmount(item.was - off)}`];
+    return [`${item.off}% of ${priceHtml(item.was)} is ${priceHtml(off)}; sale price ${priceHtml(item.was - off)}`];
   },
 };
 
@@ -345,14 +342,12 @@ const checkTheShop = {
     return { good: r.pick(GOOD_NAMES), colour: r.int(0, 5), was, off, shown, right };
   },
   render(item) {
-    return art(`<span class="mo-shelf__one">${goodSvg(item.good, { mm: 16, colour: item.colour })}`
-      + `${tagSvg(item.shown, { was: item.was, off: item.off })}</span>`)
+    return `<div class="mo-store">` + productCard(item, { tag: tagSvg(item.shown, { was: item.was, off: item.off }) }) + `</div>`
       + ask(`What should the new price be? ${box()}`)
       + ask(`Has the shop got it right — yes or no? ${box()}`);
   },
   worked() {
-    return worked(art(`<span class="mo-shelf__one">${goodSvg("book", { mm: 16, colour: 1 })}`
-      + `${tagSvg(600, { was: 800, off: 10 })}</span>`)
+    return worked(`<div class="mo-store">` + productCard({ good: "book", colour: 1 }, { tag: tagSvg(600, { was: 800, off: 10 }) }) + `</div>`
       + say("10% of 8.00 is 0.80, so the sale price should be 7.20. The tag says 6.00. "
         + "No — the shop has taken too much off, which is lucky for you and bad for them."));
   },
@@ -360,7 +355,7 @@ const checkTheShop = {
     return [money(item.right), want.words(item.shown === item.right ? "yes" : "no")];
   },
   answer(item) {
-    return [`${writeAmount(item.right)} — the tag is ${item.shown === item.right ? "right" : "wrong"}`];
+    return [`${priceHtml(item.right)} — the tag is ${item.shown === item.right ? "right" : "wrong"}`];
   },
 };
 
@@ -397,7 +392,7 @@ const simple = {
   render(item) {
     const oneYear = percentOf(item.principal, item.rate);
     return art(bankSvg())
-      + lead(`<b>${writeAmount(item.principal)}</b> is paid in at <b>${item.rate}%</b> a year, `
+      + lead(`<b>${priceHtml(item.principal)}</b> is paid in at <b>${item.rate}%</b> a year, `
         + `and left for <b>${item.years} years</b>.`)
       + art(interestTrain(item.rate))
       + ask(`One year's interest: ${box()}`)
@@ -419,7 +414,7 @@ const simple = {
   },
   answer(item) {
     const all = simpleInterest(item.principal, item.rate, item.years);
-    return [`interest ${writeAmount(all)}, back ${writeAmount(item.principal + all)}`];
+    return [`interest ${priceHtml(all)}, back ${priceHtml(item.principal + all)}`];
   },
 };
 
@@ -444,10 +439,10 @@ const compound = {
   },
   render(item) {
     const rows = Array.from({ length: item.years }, (_, i) =>
-      `<tr><td>Year ${i + 1}</td><td>${i === 0 ? writeAmount(item.principal) : box()}</td>`
+      `<tr><td>Year ${i + 1}</td><td>${i === 0 ? priceHtml(item.principal) : box()}</td>`
       + `<td>${box()}</td><td>${box()}</td></tr>`).join("");
     return art(bankSvg({ name: "PREP BANK" }))
-      + lead(`<b>${writeAmount(item.principal)}</b> is paid in at <b>${item.rate}%</b> a year `
+      + lead(`<b>${priceHtml(item.principal)}</b> is paid in at <b>${item.rate}%</b> a year `
         + `and LEFT THERE for <b>${item.years} years</b>.`)
       + art(interestTrain(item.rate))
       + `<table class="mo-years"><thead><tr><th>Year</th><th>In the bank</th>`
@@ -457,8 +452,8 @@ const compound = {
   worked() {
     const yrs = compoundYears(10000, 10, 3);
     const rows = yrs.map((y) =>
-      `<tr><td>Year ${y.year}</td><td>${writeAmount(y.start)}</td>`
-      + `<td><b>${writeAmount(y.earned)}</b></td><td><b>${writeAmount(y.end)}</b></td></tr>`).join("");
+      `<tr><td>Year ${y.year}</td><td>${priceHtml(y.start)}</td>`
+      + `<td><b>${priceHtml(y.earned)}</b></td><td><b>${priceHtml(y.end)}</b></td></tr>`).join("");
     return worked(lead("<b>100.00</b> paid in at <b>10%</b> a year, left for <b>3 years</b>.")
       + `<table class="mo-years"><thead><tr><th>Year</th><th>In the bank</th>`
       + `<th>Interest it earns</th><th>Comes to</th></tr></thead><tbody>${rows}</tbody></table>`
@@ -479,8 +474,8 @@ const compound = {
   },
   answer(item) {
     const yrs = compoundYears(item.principal, item.rate, item.years);
-    return [`${writeAmount(yrs.at(-1).end)} (simple interest would give `
-      + `${writeAmount(item.principal + simpleInterest(item.principal, item.rate, item.years))})`];
+    return [`${priceHtml(yrs.at(-1).end)} (simple interest would give `
+      + `${priceHtml(item.principal + simpleInterest(item.principal, item.rate, item.years))})`];
   },
 };
 
@@ -503,7 +498,7 @@ const atTheTillTax = {
   },
   render(item) {
     const t = totalOf(item.lines);
-    return `<p class="wb-ask wb-ask--lead">The shopping comes to <b>${writeAmount(t)}</b>.</p>`
+    return `<p class="wb-ask wb-ask--lead">The shopping comes to <b>${priceHtml(t)}</b>.</p>`
       + ask(`Tax is <b>${item.rate}%</b> of that. The tax is ${box()}`)
       + ask(`So there is ${box()} to pay altogether.`);
   },
@@ -521,7 +516,7 @@ const atTheTillTax = {
   answer(item) {
     const t = totalOf(item.lines);
     const tax = percentOf(t, item.rate);
-    return [`tax ${writeAmount(tax)}, to pay ${writeAmount(t + tax)}`];
+    return [`tax ${priceHtml(tax)}, to pay ${priceHtml(t + tax)}`];
   },
 };
 
@@ -541,7 +536,7 @@ const offTheWage = {
     return { wage: bills * 100, rate: r.pick(tier(o) === "gentle" ? [10, 50] : [5, 10, 20, 25]) };
   },
   render(item) {
-    return lead(`A month's wage is <b>${writeAmount(item.wage)}</b>, and <b>${item.rate}%</b> of it is taken in tax.`)
+    return lead(`A month's wage is <b>${priceHtml(item.wage)}</b>, and <b>${item.rate}%</b> of it is taken in tax.`)
       + ask(`The tax is ${box()}`)
       + ask(`So the take-home pay is ${box()}`);
   },
@@ -557,7 +552,7 @@ const offTheWage = {
   },
   answer(item) {
     const tax = percentOf(item.wage, item.rate);
-    return [`tax ${writeAmount(tax)}, take home ${writeAmount(item.wage - tax)}`];
+    return [`tax ${priceHtml(tax)}, take home ${priceHtml(item.wage - tax)}`];
   },
 };
 

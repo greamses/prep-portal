@@ -100,60 +100,203 @@ export function roundUpPiece(coins) {
   return PIECES[0];
 }
 
-/* ── the pieces, drawn ─────────────────────────────────────────────────────*/
+
+/* ── the mark ──────────────────────────────────────────────────────────────
+   A CURRENCY HAS A MARK, NOT A WORD WRITTEN OUT. Nobody prints "five dollars"
+   across a five-dollar bill: it carries a $ and a 5, and the word is only ever
+   said out loud. So the money here carries a mark too, and the words come off
+   the pieces.
+
+   The major unit — the prepbill — is a P struck through twice, which is how
+   almost every currency mark is built: a letter with a bar through it. The
+   minor unit — the prepcoin — is its small c, struck once.
+
+   Both are DRAWN and never typed. A made-up currency has no character in any
+   font, and an empty box where the mark should be is worse than no mark. */
+const MARK = {
+  bill: '<path d="M6.2 3.2v13.6M6.2 3.2h4.4a3.6 3.6 0 0 1 0 7.2H6.2" fill="none"'
+    + ' stroke="CC" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<path d="M2.6 7.4h10.6M2.6 11h10.6" fill="none" stroke="CC" stroke-width="1.5" stroke-linecap="round"/>',
+  /* The minor mark is struck VERTICALLY, the way ¢ is. Struck across, a c with
+     a bar through it is a €, and a currency whose small change reads as euros
+     is a currency that teaches the wrong thing. */
+  coin: '<path d="M12.6 6.4a4.9 4.9 0 1 0 0 8" fill="none" stroke="CC"'
+    + ' stroke-width="2.6" stroke-linecap="round"/>'
+    + '<path d="M7.9 3.4v13.8" fill="none" stroke="CC" stroke-width="1.5" stroke-linecap="round"/>',
+};
+
+/** The mark on its own, to set beside a number. */
+export function markSvg(kind = "bill", { em = 1, fill = "currentColor" } = {}) {
+  return `<svg class="mo-mark" viewBox="0 0 16 20" width="${(0.8 * em).toFixed(2)}em"`
+    + ` height="${em}em" role="img" aria-label="${kind === "bill" ? "prepbills" : "prepcoins"}">`
+    + MARK[kind].replaceAll("CC", fill) + `</svg>`;
+}
+
+/** An amount written the way money is written: the mark, then the figures. */
+export const priceHtml = (coins) =>
+  `<span class="mo-amt">${markSvg("bill", { em: 0.92 })}${writeAmount(coins)}</span>`;
+
+/* ── what is printed on the money ──────────────────────────────────────────*/
+
+/* THE HOUSE EMBLEM — the site's own flower, five petals round a middle. Real
+   money carries a crest, because a crest is the one thing on a note that says
+   who stands behind it. */
+const EMBLEM = (c) => {
+  const pet = [0, 1, 2, 3, 4].map((i) => {
+    const a = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+    return `<circle cx="${(Math.cos(a) * 2.5).toFixed(2)}" cy="${(Math.sin(a) * 2.5).toFixed(2)}"`
+      + ` r="1.75" fill="${c}"/>`;
+  }).join("");
+  return `${pet}<circle cx="0" cy="0" r="1.15" fill="${c}" opacity="0.5"/>`;
+};
+
+/* GUILLOCHE — the fine engine-turned line work that makes a banknote look like
+   a banknote. It is a rosette: one closed curve swung round a circle so that it
+   folds over itself. It is the single cheapest thing that stops a coloured
+   rectangle reading as a label. */
+function rosette(cx, cy, r, c, { petals = 11, squash = 0.36, rings = 3, w = 0.28 } = {}) {
+  let out = "";
+  for (let k = 0; k < rings; k++) {
+    const rr = r * (1 - k * 0.2);
+    const pts = [];
+    for (let i = 0; i <= 200; i++) {
+      const t = (i / 200) * Math.PI * 2;
+      const rad = rr * (1 - squash + squash * Math.cos(petals * t + k * 0.6));
+      pts.push(`${(cx + rad * Math.cos(t)).toFixed(2)},${(cy + rad * Math.sin(t)).toFixed(2)}`);
+    }
+    out += `<polyline points="${pts.join(" ")}" fill="none" stroke="${c}" stroke-width="${w}" opacity="0.5"/>`;
+  }
+  return out;
+}
+
+/** The fine wavy ruling across a note's field. */
+function ruling(x, y, w, h, c, lines = 8) {
+  let out = "";
+  for (let i = 0; i < lines; i++) {
+    const yy = (y + (h / (lines - 1)) * i).toFixed(2);
+    const amp = (1.4 + (i % 3) * 0.5).toFixed(2);
+    let d = `M${x} ${yy}`;
+    for (let s = 0; s < w; s += 12) d += ` q3 -${amp} 6 0 q3 ${amp} 6 0`;
+    out += `<path d="${d}" fill="none" stroke="${c}" stroke-width="0.26" opacity="0.4"/>`;
+  }
+  return out;
+}
 
 /* Each denomination its own colour and its own size, the way real money is
    told apart at a glance — and bigger is worth more, which is a lie real
-   currencies also tell and children find helpful. */
+   currencies also tell and children find helpful. The note faces are paler
+   than they were: a note is mostly PAPER with ink drawn on it, and a slab of
+   saturated colour is what made them read as plastic counters. */
 const COIN_FACE = { 1: "#d9a97a", 2: "#cb9360", 5: "#e3bc85", 10: "#c7ced5", 20: "#aab5c0", 50: "#f4c95d" };
 const COIN_EDGE = { 1: "#a97a4e", 2: "#9c6a3c", 5: "#b18e58", 10: "#98a2ac", 20: "#7f8b97", 50: "#c9922f" };
-const BILL_FACE = { 1: "#9fd9a4", 2: "#bfe0b0", 5: "#9ed2f2", 10: "#f5c094", 20: "#d6bdf3", 50: "#f7dc96", 100: "#f0a9ac" };
+const BILL_FACE = { 1: "#dcefdd", 2: "#e4eed2", 5: "#d9eafb", 10: "#fbe6d2", 20: "#eae0fa", 50: "#fdf1d4", 100: "#fadfdf" };
 const BILL_EDGE = { 1: "#3f8f4f", 2: "#5a8f3f", 5: "#2a6ca8", 10: "#c9752f", 20: "#7a56a8", 50: "#c9922f", 100: "#c0453f" };
 
 const COIN_MM = { 1: 7.4, 2: 8.2, 5: 9, 10: 9.8, 20: 10.6, 50: 11.4 };
 const BILL_MM = { 1: 17, 2: 17.5, 5: 18, 10: 19, 20: 20, 50: 21, 100: 22 };
 
 /**
- * ONE PREPCOIN, drawn: a milled disc with its worth on it. The word is on the
- * coin because a coin that only says "5" is a counter, not money.
+ * ONE PREPCOIN: a struck disc. A milled edge, a raised rim, a ring of beads, a
+ * rosette struck into the field, the house emblem and the figure with its mark
+ * — everything a real coin has and nothing it does not. The word is not on it
+ * any more, because the mark is.
  */
 export function coinSvg(value, { mm = 0 } = {}) {
   const d = mm || COIN_MM[value] || 9;
   const face = COIN_FACE[value] || "#d9d9d9";
   const edge = COIN_EDGE[value] || "#999";
-  return `<svg class="mo-piece mo-piece--coin" viewBox="0 0 40 40" width="${d}mm" height="${d}mm"`
+  /* the milling: the fine flutes round the edge of a struck coin */
+  let mill = "";
+  for (let i = 0; i < 60; i++) {
+    const a = (i / 60) * Math.PI * 2;
+    mill += `<path d="M${(32 + 29.2 * Math.cos(a)).toFixed(2)} ${(32 + 29.2 * Math.sin(a)).toFixed(2)}`
+      + `L${(32 + 31.5 * Math.cos(a)).toFixed(2)} ${(32 + 31.5 * Math.sin(a)).toFixed(2)}"`
+      + ` stroke="${edge}" stroke-width="1.15" stroke-linecap="round"/>`;
+  }
+  const cFs = String(value).length >= 2 ? 21 : 26;
+  const cNumW = String(value).length * cFs * 0.6;
+  const cMs = 0.62;
+  const cLeft = 32 - (cNumW + 1.6 + 16 * cMs) / 2;
+  /* the beading inside the rim, as a struck coin carries */
+  let beads = "";
+  for (let i = 0; i < 36; i++) {
+    const a = (i / 36) * Math.PI * 2;
+    beads += `<circle cx="${(32 + 24.6 * Math.cos(a)).toFixed(2)}" cy="${(32 + 24.6 * Math.sin(a)).toFixed(2)}"`
+      + ` r="0.82" fill="${edge}" opacity="0.6"/>`;
+  }
+  return `<svg class="mo-piece mo-piece--coin" viewBox="0 0 64 64" width="${d}mm" height="${d}mm"`
     + ` role="img" aria-label="${value} prepcoin${value === 1 ? "" : "s"}">`
-    + `<circle cx="20" cy="20" r="18.6" fill="${edge}"/>`
-    + `<circle cx="20" cy="20" r="16.2" fill="${face}" stroke="${edge}" stroke-width="1"/>`
-    + `<text x="20" y="19.4" text-anchor="middle" dominant-baseline="central" fill="${INK}"`
-    + ` font-size="17" font-weight="800" font-family="JetBrains Mono, ui-monospace, monospace">${value}</text>`
-    + `<text x="20" y="31" text-anchor="middle" dominant-baseline="central" fill="${INK}"`
-    + ` font-size="5.4" font-weight="700" letter-spacing="0.2">PREPCOIN${value === 1 ? "" : "S"}</text>`
+    + mill
+    + `<circle cx="32" cy="32" r="29.8" fill="${edge}"/>`
+    + `<circle cx="32" cy="32" r="27.2" fill="${face}"/>`
+    + rosette(32, 32, 21, edge, { petals: 9, squash: 0.26, rings: 2, w: 0.34 })
+    + beads
+    + `<g transform="translate(32 16.5)">${EMBLEM(edge)}</g>`
+    /* the figure and its mark, measured and centred together — a 50 set from a
+       fixed point ran into its own mark */
+    + `<text x="${cLeft.toFixed(1)}" y="36.5" dominant-baseline="central" fill="${INK}"`
+    + ` font-size="${cFs}" font-weight="800" font-family="JetBrains Mono, ui-monospace, monospace">${value}</text>`
+    + `<g transform="translate(${(cLeft + cNumW + 1.6).toFixed(1)} ${(36.5 - 10 * cMs).toFixed(1)}) scale(${cMs})">`
+    + `${MARK.coin.replaceAll("CC", INK)}</g>`
+    /* the laurel a struck coin carries under its figure */
+    + `<path d="M20 47.5q12 7 24 0" fill="none" stroke="${edge}" stroke-width="1.1" opacity="0.75"/>`
+    + `<path d="M23 49.6q9 4.6 18 0" fill="none" stroke="${edge}" stroke-width="0.8" opacity="0.5"/>`
     + `</svg>`;
 }
 
 /**
- * ONE PREPBILL, drawn: a note with its worth in two corners the way a note
- * carries it, so it can be read from a handful held fanned out.
+ * ONE PREPBILL: a note, built the way a note is built — an engraved field, a
+ * rosette where the watermark goes, the emblem in a medallion, the figure
+ * large with its mark, the figure again in two corners so it reads from a
+ * fanned handful, a security strip and a serial number.
+ *
+ * The serial is worked out FROM the denomination, so the same note is always
+ * the same note, and a child who notices that is right to.
  */
 export function billSvg(value, { mm = 0 } = {}) {
   const w = mm || BILL_MM[value] || 19;
   const face = BILL_FACE[value] || "#e4e4e4";
   const edge = BILL_EDGE[value] || "#777";
-  return `<svg class="mo-piece mo-piece--bill" viewBox="0 0 64 32" width="${w}mm" height="${w / 2}mm"`
+  const serial = `PP ${String((value * 7919) % 100000).padStart(5, "0")}`;
+  /* THE FIGURE AND ITS MARK ARE SET AS ONE, right-aligned in the panel and
+     MEASURED — the mark sized to the figure, the figure sized to how many
+     figures it has. Placed at fixed points instead, a 100 grew out through
+     the edge of the note and the mark printed on top of the 1. */
+  const digits = String(value).length;
+  const fs = digits >= 3 ? 18 : 25;
+  const numW = digits * fs * 0.6;
+  const ms = (fs / 25) * 0.95;
+  const markX = 137 - (16 * ms + 2.5 + numW);
+  return `<svg class="mo-piece mo-piece--bill" viewBox="0 0 144 72" width="${w}mm" height="${(w / 2).toFixed(2)}mm"`
     + ` role="img" aria-label="${value} prepbill${value === 1 ? "" : "s"}">`
-    + `<rect x="0.8" y="0.8" width="62.4" height="30.4" fill="${face}" stroke="${edge}" stroke-width="1.6"/>`
-    + `<rect x="4" y="4" width="56" height="24" fill="none" stroke="${edge}" stroke-width="0.7" stroke-dasharray="2.4 1.8"/>`
-    + `<circle cx="32" cy="16" r="8.4" fill="none" stroke="${edge}" stroke-width="0.9"/>`
-    + `<text x="32" y="16" text-anchor="middle" dominant-baseline="central" fill="${INK}"`
-    + ` font-size="12" font-weight="800" font-family="JetBrains Mono, ui-monospace, monospace">${value}</text>`
-    + `<text x="10.6" y="9.6" text-anchor="middle" dominant-baseline="central" fill="${INK}" font-size="7" font-weight="800">${value}</text>`
-    + `<text x="53.4" y="23" text-anchor="middle" dominant-baseline="central" fill="${INK}" font-size="7" font-weight="800">${value}</text>`
-    + `<text x="32" y="27.4" text-anchor="middle" dominant-baseline="central" fill="${INK}"`
-    + ` font-size="4.6" font-weight="700" letter-spacing="0.3">PREPBILL${value === 1 ? "" : "S"}</text>`
+    + `<rect x="0.9" y="0.9" width="142.2" height="70.2" fill="${face}" stroke="${edge}" stroke-width="1.8"/>`
+    + ruling(6, 13, 132, 46, edge, 9)
+    + `<rect x="4.6" y="4.6" width="134.8" height="62.8" fill="none" stroke="${edge}" stroke-width="0.9" opacity="0.85"/>`
+    + `<rect x="7.6" y="7.6" width="128.8" height="56.8" fill="none" stroke="${edge}" stroke-width="0.35" opacity="0.55"/>`
+    /* the watermark, left, where a portrait would be */
+    + rosette(36, 36, 22, edge, { petals: 13, squash: 0.34, rings: 3 })
+    + `<circle cx="36" cy="36" r="13.6" fill="${face}" opacity="0.78"/>`
+    + `<circle cx="36" cy="36" r="13.6" fill="none" stroke="${edge}" stroke-width="0.8"/>`
+    + `<circle cx="36" cy="36" r="11.4" fill="none" stroke="${edge}" stroke-width="0.35" opacity="0.7"/>`
+    + `<g transform="translate(36 36) scale(1.62)">${EMBLEM(edge)}</g>`
+    /* the security strip */
+    + `<path d="M86 3v66" stroke="${edge}" stroke-width="2.2" stroke-dasharray="4.5 3" opacity="0.45"/>`
+    /* who stands behind it */
+    + `<text x="111" y="16" text-anchor="middle" fill="${edge}" font-size="6.2" font-weight="800"`
+    + ` letter-spacing="1">PREP PORTAL</text>`
+    /* the figure, large, with its mark */
+    + `<g transform="translate(${markX.toFixed(1)} ${(39 - 10 * ms).toFixed(1)}) scale(${ms.toFixed(3)})">`
+    + `${MARK.bill.replaceAll("CC", INK)}</g>`
+    + `<text x="137" y="39" text-anchor="end" dominant-baseline="central" fill="${INK}"`
+    + ` font-size="${fs}" font-weight="800" font-family="JetBrains Mono, ui-monospace, monospace">${value}</text>`
+    /* and again in the corners, for a hand of notes held fanned */
+    + `<text x="15.5" y="13.5" text-anchor="middle" dominant-baseline="central" fill="${INK}" font-size="9" font-weight="800">${value}</text>`
+    + `<text x="128" y="62" text-anchor="middle" dominant-baseline="central" fill="${INK}" font-size="9" font-weight="800">${value}</text>`
+    /* the serial, as every note carries */
+    + `<text x="56" y="64.5" fill="${edge}" font-size="5.4" font-weight="700"`
+    + ` font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.95">${serial}</text>`
     + `</svg>`;
 }
-
 /** Whichever kind of piece this is. */
 export const pieceSvg = (p, opts) => (p.kind === "bill" ? billSvg(p.value, opts) : coinSvg(p.value, opts));
 

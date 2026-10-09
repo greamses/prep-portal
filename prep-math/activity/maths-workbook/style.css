@@ -1545,12 +1545,55 @@ thead .pv-chart__side {
 .mo-hand--all { max-width: 150mm; }
 .mo-piece { flex: 0 0 auto; }
 
-/* ── the shelf ──────────────────────────────────────────────────────────── */
+/* ── the store ──────────────────────────────────────────────────────────────
+   A GRID OF PRODUCT CARDS, the way a shop looks on a screen: a picture on its
+   own panel, the name under it, the price where a price goes, and how many are
+   in the basket. It was a row of drawings with a tag hung under each, which is
+   a SHELF — and a shelf is not where a child has ever bought anything. */
 
-.mo-shelf { display: flex; flex-wrap: wrap; justify-content: center; gap: 4mm 6mm; margin: 2mm 0 3mm; }
-/* a thing and its tag, the tag UNDER it the way a shelf label sits under the
-   goods — never beside, or a long name pushes the tag onto the next line */
-.mo-shelf__one { display: inline-flex; flex-direction: column; align-items: center; gap: 1mm; }
+.mo-store {
+  display: grid;
+  gap: 3mm;
+  grid-template-columns: repeat(auto-fill, minmax(38mm, 1fr));
+  margin: 2mm 0 3mm;
+}
+.mo-card {
+  display: flex;
+  flex-direction: column;
+  background: #fffdf8;
+  border: 0.35mm solid rgba(42, 39, 35, 0.3);
+}
+/* the shot: the picture on its own tinted panel, as a listing has */
+.mo-card__shot {
+  display: grid;
+  place-items: center;
+  padding: 2.5mm 2mm;
+  background: #f6f2e9;
+  border-bottom: 0.3mm solid rgba(42, 39, 35, 0.18);
+}
+.mo-card__body { display: flex; flex-direction: column; gap: 0.8mm; padding: 2mm 2.4mm 2.4mm; }
+.mo-card__name { margin: 0; font-size: 8.5pt; font-weight: 700; line-height: 1.25; color: #2a2723; }
+.mo-card__price { margin: 0; font-family: var(--font-mono, monospace); font-size: 12pt; font-weight: 800; color: #2a2723; }
+/* how many are in the basket: the one number on the card the question is
+   really about, so it is ruled off from the price above it */
+.mo-card__qty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2mm;
+  margin: 0.6mm 0 0;
+  padding-top: 1.2mm;
+  border-top: 0.25mm dashed rgba(42, 39, 35, 0.3);
+  font-size: 7.5pt;
+  color: #6b655c;
+}
+.mo-card__qty b { font-family: var(--font-mono, monospace); font-size: 11pt; color: #2a2723; }
+
+/* THE MARK, set against a figure. It sits on the text's own baseline and takes
+   its colour, so a price reads as one thing and not as a picture beside a
+   number. */
+.mo-amt { display: inline-flex; align-items: baseline; gap: 0.18em; white-space: nowrap; }
+.mo-amt .mo-mark { align-self: center; position: relative; top: 0.04em; }
 
 /* THE PRICE TAG. A sale tag carries both prices, and the old one is struck
    through: a child who cannot see what it WAS cannot check what it is now. */
@@ -1568,6 +1611,11 @@ thead .pv-chart__side {
 /* ── the till ───────────────────────────────────────────────────────────── */
 
 .mo-till { width: 100%; border-collapse: collapse; margin: 2mm 0; font-size: 10pt; }
+/* the order, not a table that happens to have things in it */
+.mo-till__cap {
+  caption-side: top; text-align: left; padding: 0 0 1.2mm;
+  font-size: 7.5pt; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #6b655c;
+}
 .mo-till th {
   padding: 1mm 2mm; text-align: left;
   font-size: 7.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
