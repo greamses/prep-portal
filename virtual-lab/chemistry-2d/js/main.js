@@ -379,6 +379,15 @@ function place(it, transform) {
   n.g.style.transform = t;
   if (n.front) n.front.style.transform = t;
   if (n.veil) n.veil.style.transform = t;
+  // A SHADOW lies on the bench. It does not turn with the piece that casts it: the turn is undone for
+  // it (and for an upturned piece it is moved to the end that is now down). A piece lifted and tipped
+  // to pour is off the bench altogether, and casts none.
+  const sh = n.g.querySelector(".cl-sh");
+  if (sh) {
+    const posed = Boolean(transform) && /rotate\(/.test(transform), c = pivotOf(it);
+    sh.style.display = posed ? "none" : "";
+    sh.style.transform = transform ? "" : it.flip ? `translate(0px, ${VESSELS[it.key].top}px)` : it.tilt ? `translate(0px, ${c}px) rotate(${-it.tilt}deg) translate(0px, ${-c}px)` : "";
+  }
   if (it.kind === "reagent") {
     // tipped at a mouth to pour (the pose is handed in), or turned by its handle
     const held = transform && /rotate\((-?[\d.]+)deg\)/.exec(transform);
@@ -1785,7 +1794,7 @@ function tipOut(it, n) {
     if (rinsed && it.rinse.shook) {
       it.dregs = null;
       it.film = { rgb: [206, 228, 244], wet: true, dirty: false };
-      noteFlags(["washed"]);
+      tellBot(["washed"], it);
       say(`${cap1(plain(it))} is rinsed clean. It is still wet: dry it over a flame, or push the cloth into it and rub.`, it);
     } else {
       it.dregs = takeFrom(it.t, Math.min(0.1, tot * 0.04));
@@ -1892,20 +1901,20 @@ function wash(it, sink) {
   paint(it);
   const x = sink.x - 18, y = sink.y - 252;
   fx(`<path class="cl-tapwater" d="M${x} ${y}V${sink.y - 68}" fill="none" stroke="rgba(190,222,246,0.85)" stroke-width="5" stroke-linecap="round"/><path class="cl-tapwater" d="M${x - 1} ${y}V${sink.y - 68}" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="1.2"/>`, 1300);
-  noteFlags(["washed"]);
+  tellBot(["washed"], it);
   say(`${cap1(plain(it))} is washed. It is clean but wet: dry it over a flame, or with the cloth.`, it);
   save();
 }
 /** Dry a wet vessel: over a flame (drops that were never washed off dry to a stain) or with the cloth. */
 function dry(it, how) {
   if (!it.film) return false;
-  if (how === "cloth") { const was = it.film.dirty; it.film = null; it.dregs = null; paint(it); noteFlags(["dried"]); say(was ? `${cap1(plain(it))} is wiped out and dry. Rinsed first, it would be cleaner.` : `${cap1(plain(it))} is clean and dry.`, it); save(); return true; }
+  if (how === "cloth") { const was = it.film.dirty; it.film = null; it.dregs = null; paint(it); tellBot(["dried"], it); say(was ? `${cap1(plain(it))} is wiped out and dry. Rinsed first, it would be cleaner.` : `${cap1(plain(it))} is clean and dry.`, it); save(); return true; }
   if (!it.film.wet) return false;
   if (it.film.dirty) { it.film = { ...it.film, wet: false }; paint(it); say("The drops dry on the glass and leave a stain. Wash it under the tap first.", it, "no"); save(); return true; }
   it.film = null;
   paint(it);
   spit(it, true);
-  noteFlags(["dried"]);
+  tellBot(["dried"], it);
   say(`The water is driven off. ${cap1(plain(it))} is clean and dry.`, it);
   save();
   return true;
@@ -2531,8 +2540,12 @@ function pourTick() {
     tipOut(it, Math.max(0.5, it.t.cap / 30) * speed);
     if (it.t.vol + (it.t.oil || 0) <= 1e-6) tipSolids(it);
     paint(it);
-    flow("tilt", lip, { x: lip.x + Math.sign(it.tilt) * 6, y: drain.y - 66 }, c, Math.sign(it.tilt), viscOf(it));
-    flows.tilt.walls = null;
+    // (it is seen falling as far as the rim; a vessel tipped where it stands IN the sink pours behind the front wall, out of sight)
+    if (lip.y < drain.y - 70) {
+      flow("tilt", lip, { x: lip.x + Math.sign(it.tilt) * 6, y: drain.y - 66 }, c, Math.sign(it.tilt), viscOf(it));
+      flows.tilt.floor = drain.y - 66;
+      flows.tilt.walls = null;
+    }
     save();
     return;
   }
@@ -3309,6 +3322,8 @@ const Q = {
  * Something has been done, or something has been moved: tick whatever steps of the chosen
  * practical are now done. (A setting-up step is ticked only while the piece is in place.)
  */
+/** Something worth ticking off has happened that is not written in the notebook: the guide and PrepBot are both told. */
+function tellBot(flags, it) { noteFlags(flags); if (actor.onRecord) actor.onRecord(flags, it); }
 function noteFlags(flags = []) {
   const exp = expNow();
   if (!exp) return;
@@ -3673,6 +3688,70 @@ const actor = {
     await this.uncap(bottle);
     const cap = state.items.find((o) => o.key === "cap" && o.of === bottle.id);
     if (cap) await this.hold(cap, v, 1100);
+  },
+  /** Turn a vessel over by its handle and hold it there until it has run out (or `ms` has gone), then stand it up again. */
+  async tip(v, deg = 112, ms = 9000) {
+    select(null);
+    raise(v);
+    glide(v, false);
+    turn = { it: v, px: 0, py: 0, timer: null, told: true, spilt: true };
+    for (let a = 0; a < Math.abs(deg); a += 7) { v.tilt = Math.sign(deg) * a; place(v); paint(v); await pause(28); }
+    v.tilt = deg;
+    place(v);
+    paint(v);
+    pourTick();
+    const t0 = Date.now();
+    while (Date.now() - t0 < ms && v.t.vol + (v.t.oil || 0) > 0) await pause(120);
+    await pause(500);
+    if (turn) clearTimeout(turn.timer);
+    turn = null;
+    v.tilt = 0;
+    glide(v, true);
+    place(v);
+    paint(v);
+    follow(v);
+    save();
+    await pause(450);
+  },
+  /** Turn a sink's tap on for `ms`, then off. */
+  async tap(sink, ms = 2400) {
+    if (!taps.has(sink.id)) toggleTap(sink);
+    await pause(ms);
+    stopSinkTap(sink);
+    await pause(350);
+  },
+  /** Shake a vessel to and fro where it is. */
+  async shake(v) {
+    const x0 = v.x;
+    glide(v, false);
+    for (let i = 0; i < 9; i++) { v.x = x0 + (i % 2 ? 26 : -26); place(v); follow(v, false); kick(v, (i % 2 ? -1 : 1) * 190); if (i % 3 === 0 && v.t.vol > 0) bubble(nodes[v.id].g, v.key, v.t, 1.2); await pause(95); }
+    v.x = x0;
+    glide(v, true);
+    place(v);
+    follow(v);
+    shaken(v, 1.2);
+    await pause(500);
+  },
+  /** Push the cloth into a vessel and rub it about until the glass is dry; then put the cloth back. */
+  async rub(cloth, v) {
+    const def = VESSELS[v.key], n = nodes[cloth.id], vn = nodes[v.id];
+    raise(v);
+    if (vn.veil) L.items.insertBefore(n.g, vn.veil); else raise(cloth, L.fx);
+    glide(cloth, true);
+    const top = v.y + def.top + 16, low = v.y - (def.floor || 0) - 8;
+    for (let i = 0; i < 12; i++) {
+      const y = top + (low - top) * (i % 4) / 3, r = Math.max(0, rAt(def.profile, y - v.y) - 9);
+      place(cloth, `translate(${(v.x + (i % 2 ? r : -r)).toFixed(1)}px, ${(y + 8).toFixed(1)}px) scale(${clamp((r + 6) / 30, 0.34, 0.85).toFixed(2)})`);
+      const film = vn.g.querySelector(".cl-film");
+      if (film) film.style.opacity = (1 - (i + 1) / 12).toFixed(2);
+      await pause(210);
+    }
+    const film = vn.g.querySelector(".cl-film");
+    if (film) film.style.opacity = "";
+    dry(v, "cloth");
+    raise(cloth);
+    place(cloth);
+    await pause(420);
   },
   /** Run a blender and wait for its blades to stop. */
   async blend(v) {

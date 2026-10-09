@@ -650,6 +650,45 @@ export const LESSONS = [
     },
   },
   {
+    id: "washing",
+    name: "Washing glassware at the sink",
+    about: "Pour away, rinse under the tap, shake, pour again, and dry. A vessel that was only emptied is not clean.",
+    need: ["washed", "dried"],
+    steps: [
+      { text: "Take the sink from Equipment. Tilt the used vessel over it by its handle and pour the liquid away.", done: (seen, b) => b.count("rack", "sink") > 0 },
+      { text: "Stand the vessel in the sink under the tap and press the tap's blue key. Press it again when there is enough water.", done: (seen) => seen.has("added:water") },
+      { text: "Shake the vessel: move it quickly to and fro.", done: (seen) => seen.has("shaken") },
+      { text: "Tilt it over the sink and pour the water away.", done: (seen) => seen.has("washed") },
+      { text: "Take the drying cloth, push it into the vessel and rub it about.", done: (seen) => seen.has("dried") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("A vessel that has only been emptied is not clean. Here is how glassware is washed up.");
+      const sink = await b.take("rack", "sink", at(470), b.BASE + 30);
+      const bk = await b.take("vessel", "beaker100", at(150), b.BASE);
+      const cu = await b.take("reagent", "cuso4", at(20), b.TOP);
+      await b.uncap(cu);
+      await b.pour(cu, bk, 3);
+      await say("A beaker with some copper(II) sulfate solution left in it.");
+      await b.into(bk, sink, 1);
+      await say("It stands in the sink. Nothing is ever poured on the bench.");
+      await b.tip(bk, -112);
+      await say("Tilted over, the liquid runs away down the sink. But look at the glass: blue drops are still clinging to it. Whatever went in next would be mixed with them.");
+      await b.into(bk, sink, 0);
+      await say("So it goes under the tap, and the tap is turned on.");
+      await b.tap(sink, 2400);
+      await say("That is enough water. The tap is turned off: water is not left running.");
+      await b.shake(bk);
+      await say("Now it is shaken, so that the water goes all round the inside of the glass and takes the drops with it.");
+      await b.tip(bk, -112);
+      await say("The rinse water is poured away. The beaker is clean now, but it is wet.");
+      const cl = await b.take("tool", "cloth", at(740), b.BASE);
+      await b.move(bk, at(640), b.BASE, 500);
+      await b.rub(cl, bk);
+      await say("A clean cloth is pushed in and rubbed about until the glass is dry. A wet vessel can also be dried over a flame. Clean and dry: ready for the next experiment.");
+    },
+  },
+  {
     id: "centrifuge",
     name: "Centrifuging",
     about: "Spinning packs a fine solid into a pellet, and the clear liquid is poured off.",

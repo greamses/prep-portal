@@ -262,7 +262,7 @@ export const DEFS = `
   </linearGradient>
 </defs>`;
 
-const shadow = (rx) => `<ellipse class="cl-ground" cx="0" cy="1" rx="${rx}" ry="6" filter="url(#g-soft)"/>`;
+const shadow = (rx) => `<ellipse class="cl-ground cl-sh" cx="0" cy="1" rx="${rx}" ry="6" filter="url(#g-soft)"/>`;
 const hit = (b) => `<rect class="cl-hit" x="${b.x0}" y="${b.y0}" width="${b.x1 - b.x0}" height="${b.y1 - b.y0}"/>`;
 
 /** How thick a vessel's wall is drawn, and how thick its base. */
@@ -740,7 +740,7 @@ export function toolSvg(key, it = {}) {
   }
   if (key === "cloth") {
     // a folded cotton cloth, for drying glass
-    return `<ellipse cx="0" cy="-1" rx="30" ry="3.4" fill="#000" fill-opacity="0.3" filter="url(#g-soft)"/>
+    return `<ellipse class="cl-sh" cx="0" cy="-1" rx="30" ry="3.4" fill="#000" fill-opacity="0.3" filter="url(#g-soft)"/>
       <path d="M-27 -3q-2 -9 2 -17q10 -6 24 -5t26 3q4 9 1 19q-12 4 -26 3t-27 -3z" fill="#e8dcc4" stroke="#8a7a58" stroke-width="0.7"/>
       <path d="M-24 -19q11 -5 23 -4t25 3q-10 5 -24 4t-24 -3z" fill="#f6eeda" stroke="#8a7a58" stroke-width="0.6"/>
       <path d="M-22 -9q22 5 45 0M-23 -5q23 5 46 0" fill="none" stroke="#b9a981" stroke-width="0.6"/>
@@ -962,7 +962,7 @@ export function toolSvg(key, it = {}) {
     // the wooden kind: two beech arms hinged like a clothes peg on a coiled steel spring. It is seen
     // gripping: the FAR arm is behind what it holds and the NEAR arm in front of it, so the tube
     // stands between the jaws. (After the <!--front--> mark = drawn after the piece that is held.)
-    return `<ellipse cx="0" cy="-1" rx="40" ry="4" fill="#000" fill-opacity="0.32" filter="url(#g-soft)"/>
+    return `<ellipse class="cl-sh" cx="0" cy="-1" rx="40" ry="4" fill="#000" fill-opacity="0.32" filter="url(#g-soft)"/>
       <path d="M-40 -30q-2 1 -2 3l1 2.500l49 9l6 -3.500l22 4q3 0.5 3.5 -2.200l0.4 -2.200q0.4 -2.6 -2.5 -3.200l-73 -13.400q-3 -0.6 -4.4 1z" fill="#a8763d" stroke="#5d3d18" stroke-width="0.7"/>
       <path d="M-38 -27.500l72 13M-37 -30.500l70 12.8" stroke="#6b461c" stroke-opacity="0.5" stroke-width="0.5"/>
       <ellipse cx="-25.5" cy="-25.6" rx="1.9" ry="1.2" fill="#24160a"/><path d="M-19 -22.5L-25.5 -25.6" stroke="#4a515b" stroke-width="2.2"/><path d="M-19 -22.5L-25.5 -25.6" stroke="#cfd5dc" stroke-width="0.8"/>${hit(b)}<!--front-->
