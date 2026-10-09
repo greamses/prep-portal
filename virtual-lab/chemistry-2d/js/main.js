@@ -28,7 +28,7 @@
    ========================================================================== */
 
 import { REAGENTS, newTube, add, heat, rinse, test, speciate, magnetOut, setUnknown, reagent, chemHtml, isEmpty, look, takeFrom, pourIn, roomIn, flameOf, massOf, boilOff, filterOut, sampleOf, gasMade, takeBottom, electrolyse } from "./chem.js";
-import { DEFS, VESSELS, TOOLS, SUPPORTS, vesselSvg, paintVessel, bubble, reagentSvg, toolSvg, splintAfter, supportSvg, thumb, colourOf, mouthOf, capOf, CAP_BOX } from "./glass.js";
+import { DEFS, VESSELS, TOOLS, SUPPORTS, vesselSvg, veilSvg, paintVessel, bubble, reagentSvg, toolSvg, splintAfter, supportSvg, thumb, colourOf, mouthOf, capOf, CAP_BOX } from "./glass.js";
 import { EXPERIMENTS, GROUPS, UNKNOWNS, CATIONS, ANIONS, HOWTO, stepDone } from "./waec.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
@@ -256,6 +256,13 @@ function mount(it) {
     L.front.appendChild(node.front);
   }
   (isBehind(it) ? L.back : L.items).appendChild(g);
+  if (it.kind === "vessel" && !isBehind(it)) {
+    // its front wall and liquid, once more, over whatever is put inside it (see veilSvg)
+    node.veil = document.createElementNS(NS, "g");
+    node.veil.setAttribute("class", "cl-veil");
+    node.veil.innerHTML = veilSvg(it.key, it.id);
+    L.items.appendChild(node.veil);
+  }
   place(it);
   if (it.kind === "vessel") paint(it);
   dress(it);
@@ -282,6 +289,7 @@ function place(it, transform) {
   }
   n.g.style.transform = t;
   if (n.front) n.front.style.transform = t;
+  if (n.veil) n.veil.style.transform = t;
 }
 function paint(it, opts = {}) {
   const g = nodes[it.id].g;
@@ -291,12 +299,22 @@ function paint(it, opts = {}) {
     // an upturned jar over water is full of the trough's water, less whatever gas has pushed it down
     const def = VESSELS[it.key], Hh = -def.top, liq = g.querySelector(".cl-liquidg");
     if (overWater(it)) {
+      liq.style.display = "";
       const f = it.jar ? Math.min(1, it.jar.n / def.invert) : 0;
       liq.style.transform = `translateY(${-(Hh * f).toFixed(1)}px)`;
       const c = look(hostOf(it).t);
       g.querySelector(".cl-liquid").style.fill = `rgba(${c.rgb},${Math.max(c.a, 0.32)})`;
     } else liq.style.transform = `translateY(${Hh}px)`;
     g.querySelector(".cl-meniscus").setAttribute("rx", 0);
+  }
+  // the liquid in the vessel's front (drawn over what is inside it): the same level, a lighter wash
+  const veil = nodes[it.id].veil && nodes[it.id].veil.querySelector(".cl-veil__liq");
+  if (veil) {
+    const lg = g.querySelector(".cl-liquidg");
+    const rgb = (g.dataset.rgb || "").split(",");
+    const wet = lg.style.display !== "none" && rgb.length === 3 && !it.tilt;
+    veil.style.display = wet ? "" : "none";
+    if (wet) { veil.style.transform = lg.style.transform; veil.style.fill = `rgba(${rgb},0.34)`; }
   }
   // a trough's water is also what stands in the jar upturned in it
   if (it.key === "trough") vessels().filter((v) => v.flip && v.rack && v.rack[0] === it.id && nodes[v.id]).forEach((v) => paint(v));
@@ -305,14 +323,27 @@ function paint(it, opts = {}) {
 /** Bring a piece to the front of its layer, and whatever is fitted to it in front of that. */
 function raise(it, layer = L.items) {
   if (!nodes[it.id] || isBehind(it)) return;
-  layer.appendChild(nodes[it.id].g);
-  state.items.filter((o) => o.on === it.id).forEach((o) => raise(o, layer));
+  // something fitted INTO a piece is drawn with that piece: after its back, before its front
+  let root = it;
+  while (layer === L.items && root.on != null && byId(root.on) && nodes[root.on] && !isBehind(byId(root.on))) root = byId(root.on);
+  const put = (o) => { layer.appendChild(nodes[o.id].g); state.items.filter((c) => c.on === o.id && nodes[c.id]).forEach(put); };
+  put(root);
+  if (nodes[root.id].veil) layer.appendChild(nodes[root.id].veil);
+}
+/** A tool held in a vessel goes INSIDE it for as long as it is there: behind the vessel's front. */
+function tuck(tool, v) {
+  const n = nodes[v.id];
+  if (!n || !n.veil || tool.kind !== "tool" || HEAT[tool.key] || MOUTH.includes(tool.key) || GRIPS[tool.key] || tool.key === "magnet" || v.flip) return false;
+  raise(v);
+  L.items.insertBefore(nodes[tool.id].g, n.veil);
+  return true;
 }
 function glide(it, on = true) {
   const n = nodes[it.id];
   if (!n) return;
   n.g.classList.toggle("is-gliding", on);
   if (n.front) n.front.classList.toggle("is-gliding", on);
+  if (n.veil) n.veil.classList.toggle("is-gliding", on);
 }
 /** A piece shows the state it is in: what a dropper holds, whether a burner is lit, where a clamp is. */
 function dress(it) {
@@ -800,7 +831,7 @@ function addItem(kind, key, x, y, extra = {}) {
 }
 function removeItem(it) {
   const n = nodes[it.id];
-  if (n) { n.g.remove(); if (n.front) n.front.remove(); }
+  if (n) { n.g.remove(); if (n.front) n.front.remove(); if (n.veil) n.veil.remove(); }
   delete nodes[it.id];
   state.items = state.items.filter((o) => o !== it);
   state.items.forEach((o) => {
@@ -1209,17 +1240,28 @@ function flowTick(now) {
       if (mu < 0.5 && f.hits % 2 === 0) {
         // the crown: droplets thrown up and out, the harder the liquid lands
         const s = Math.random() < 0.5 ? -1 : 1;
-        f.spray.push({ x: p.bx + s * (1 + Math.random() * 5), y: p.ay + p.fall, vx: s * (25 + Math.random() * 110) * hard, vy: -(110 + Math.random() * 230) * hard, r: 0.9 + Math.random() * 1.9, life: 0 });
+        f.spray.push({ x: p.bx + s * (1 + Math.random() * 5), y: p.ay + p.fall, vx: s * (30 + Math.random() * 150) * hard, vy: -(130 + Math.random() * 260) * hard, r: 0.9 + Math.random() * 2, life: 0 });
       }
       if (mu < 0.5 && f.hits % 3 === 0) {
         // and air carried under: bubbles that go down with the jet and then rise
         f.fizz.push({ x: p.bx + (Math.random() - 0.5) * 9, y: p.ay + p.fall + 3, vy: 60 + Math.random() * 110 * hard, r: 0.8 + Math.random() * 1.6, life: 0 });
       }
     }
-    for (const d of f.spray) { d.vy += GRAV * 0.8 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.life += dt; }
+    const box = f.walls;                                 // the glass it is falling into, if it is falling into any
+    for (const d of f.spray) {
+      d.vy += GRAV * 0.8 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.life += dt;
+      if (!box) continue;
+      // a droplet meets the wall and runs back; none of it leaves by the mouth
+      const up = clamp((box.surface - d.y) / Math.max(1, box.surface - box.rim), 0, 1);
+      const half = Math.max(2, box.half + (box.rimHalf - box.half) * up - d.r - 1);
+      if (d.x < box.x - half) { d.x = box.x - half; d.vx = Math.abs(d.vx) * 0.3; d.vy *= 0.6; }
+      else if (d.x > box.x + half) { d.x = box.x + half; d.vx = -Math.abs(d.vx) * 0.3; d.vy *= 0.6; }
+      if (d.y < box.rim + 5) { d.y = box.rim + 5; d.vy = Math.abs(d.vy) * 0.2; }
+    }
     f.spray = f.spray.filter((d) => d.life < 0.7 && d.y < f.b.y + 3);
     for (const q of f.fizz) { q.vy -= 420 * dt; q.y += q.vy * dt; q.x += Math.sin(q.life * 22 + q.r * 9) * 0.4; q.life += dt; }
     const bed = f.floor ?? f.b.y + 26;          // the bottom of what it is falling into
+    if (box) for (const q of f.fizz) q.x = clamp(q.x, box.x - box.half + q.r + 1, box.x + box.half - q.r - 1);
     f.fizz = f.fizz.filter((q) => q.life < 0.75 && q.y > f.b.y + 1 && q.y < bed - 2);
     // draw: from the lip downwards, the newest parcel first
     const pts = f.parts.slice().reverse().map((p) => ({ x: p.x, y: p.y, v: p.vy, k: p.k, u: p.u || 0 }));
@@ -1275,7 +1317,7 @@ function flowTick(now) {
       const t = f.rings[i];
       el.setAttribute("cx", f.b.x.toFixed(1));
       el.setAttribute("cy", f.b.y.toFixed(1));
-      el.setAttribute("rx", (4 + t * 26 * (1 - 0.5 * mu)).toFixed(1));
+      el.setAttribute("rx", Math.min(box ? Math.max(3, Math.min(box.x + box.half - f.b.x, f.b.x - (box.x - box.half)) - 1) : 99, 4 + t * 26 * (1 - 0.5 * mu)).toFixed(1));
       el.setAttribute("ry", (1 + t * 3.8).toFixed(1));
       el.style.opacity = landing ? ((1 - t) * 0.7 * (1 - 0.5 * mu)).toFixed(2) : "0";
     });
@@ -1285,17 +1327,25 @@ function flowTick(now) {
   }
   if (Object.keys(flows).length) flowing = requestAnimationFrame(flowTick);
 }
+/** The inside of a vessel, as far as a splash is concerned: where the liquid is, how wide, and where the mouth is. */
+function wallsOf(v) {
+  const def = VESSELS[v.key], n = nodes[v.id];
+  const rx = n ? Number(n.g.querySelector(".cl-meniscus").getAttribute("rx")) : 0;
+  return { x: v.x, half: rx > 2 ? rx : def.rTop - 2, rimHalf: def.rTop - 2, rim: v.y + def.top, surface: v._surface ?? v.y - 8 };
+}
 /** From the tip of a burette or a separating funnel, straight down into `v`: a thin, even thread. */
 function tapStream(bur, v, c, mu) {
   const key = `tap-${bur.id}`;
   flow(key, { x: bur.x, y: bur.y + 1 }, { x: bur.x, y: Math.max(bur.y + 12, v._surface) }, c, 1, mu, 0.34);
   flows[key].floor = v.y - (VESSELS[v.key].floor || 0);
+  flows[key].walls = wallsOf(v);
 }
 /** A bottle or a vessel held tipped at the mouth of `v`: out over the lip, and down in an arc. */
 function stream(v, c, mu) {
   const m = mouth(v), reach = Math.min(16, VESSELS[v.key].rTop * 0.5);
   flow("pour", { x: m.x + 7, y: m.y - 11 }, { x: m.x - reach, y: v._surface }, c, -1, mu);
   flows.pour.floor = v.y - (VESSELS[v.key].floor || 0);
+  flows.pour.walls = wallsOf(v);
 }
 
 // ── liquid has weight: it lags behind a vessel that is moved, and rocks until it settles ──
@@ -1779,12 +1829,13 @@ function pourTick() {
     if (m <= 1e-6) { if (!turn.told) { turn.told = true; say("It is full, and running over.", v, "no"); } return; }
     const res = isBottle ? pourReagent(it, v, m) : deliver(v, takeFrom(it.t, m), plain(it), c, turn.spilt ? null : "tilted");
     if (!isBottle) paint(it);
-    if (res) { const m = mouth(v), r = VESSELS[v.key].rTop - 3; flow("tilt", lip, { x: clamp(lip.x + Math.sign(it.tilt) * 8, m.x - r, m.x + r), y: v._surface }, c, Math.sign(it.tilt), viscOf(it)); flows.tilt.floor = v.y - (VESSELS[v.key].floor || 0); }
+    if (res) { const m = mouth(v), r = VESSELS[v.key].rTop - 3; flow("tilt", lip, { x: clamp(lip.x + Math.sign(it.tilt) * 8, m.x - r, m.x + r), y: v._surface }, c, Math.sign(it.tilt), viscOf(it)); flows.tilt.floor = v.y - (VESSELS[v.key].floor || 0); flows.tilt.walls = wallsOf(v); }
     return;
   }
   // nothing underneath: it goes on the bench
   if (!isBottle) { takeFrom(it.t, Math.max(0.5, it.t.cap / 30) * speed); paint(it); }
   flow("tilt", lip, { x: lip.x + Math.sign(it.tilt) * 14, y: H - 8 }, c, Math.sign(it.tilt), viscOf(it));
+  flows.tilt.walls = null;
   fx(`<ellipse class="cl-puddle" cx="${lip.x + Math.sign(it.tilt) * 14}" cy="${H - 6}" rx="46" ry="6" fill="rgba(${c},0.5)"/>`, 900);
   if (!turn.spilt) { turn.spilt = true; say("It is pouring onto the bench! Hold it over a vessel before you tilt it.", isBottle ? null : it, "no"); }
   save();
@@ -1822,6 +1873,7 @@ function leave() {
   nodes[drag.over.id].g.classList.remove("is-target");
   if (drag.over.kind === "vessel") place(drag.over);
   if (drag.it.kind === "vessel") paint(drag.it);
+  if (drag.tucked) { L.fx.appendChild(nodes[drag.it.id].g); drag.tucked = false; }       // out of the vessel, and in the hand again
   drag.over = null;
   drag.shut = false;
   drag.told = false;
@@ -1840,6 +1892,7 @@ function enter(target) {
   if (!drag.sits) nodes[it.id].g.classList.add("is-using");
   nodes[target.id].g.classList.add("is-target");
   place(it, poseOn(it, target));
+  drag.tucked = target.kind === "vessel" && tuck(it, target);
   if (fitsOn(it, target)) return;
   if (it.kind === "vessel" && !HEAT[target.key] && target.key !== "waste") paint(it, { tilt: -108 });
   if (HEAT[it.key]) {
@@ -2615,6 +2668,7 @@ const actor = {
     raise(tool, L.fx);
     glide(tool, true);
     place(tool, poseOn(tool, v));
+    if (v.kind === "vessel") tuck(tool, v);
     await pause(520);
     use(tool, v);
     await pause(ms);

@@ -312,6 +312,27 @@ export function vesselSvg(key, uid, tag = "") {
     ${def.over || ""}`;
 }
 
+/**
+ * The front of a vessel: the liquid and the front wall, once more, to be drawn OVER whatever
+ * has been put inside it (a stopper in the neck, a delivery tube, carbon rods, a thermometer).
+ * Without it those things are painted on top of the glass and look as if they were stuck to
+ * the front. main.js keeps this just after the vessel and its fittings in the drawing order.
+ */
+export function veilSvg(key, uid) {
+  const def = VESSELS[key];
+  const P = def.profile, R = def.rMax, H = -def.top;
+  const body = outline(P);
+  const glassy = def.material !== "porcelain";
+  const k = Math.min(1, def.rTop / 14);
+  const rimRx = def.rTop + 1.5, rimRy = Math.max(2.6, def.rTop * 0.15);
+  return `<clipPath id="vclip-${uid}"><path d="${body}"/></clipPath>
+    <g clip-path="url(#vclip-${uid})"><rect class="cl-veil__liq" x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}" style="display:none"/></g>
+    <path d="${body}" fill="url(#${glassy ? "g-glass" : "g-porcelain"})" opacity="${glassy ? 0.75 : 1}"/>
+    ${glassy ? `<path d="${band(P, -1, 3.2 * k, 7.8 * k, 0.1, 0.94)}" fill="url(#g-streak)"/><path class="cl-g-spark" d="${wall(P, -1, 3 * k, 0.9, 0.97)}"/>` : ""}
+    <path class="cl-g-edge" d="${outline(P, true)}"/>
+    <path class="cl-g-rimfront" d="M${f1(-rimRx)} ${def.top}A${f1(rimRx)} ${f1(rimRy)} 0 0 0 ${f1(rimRx)} ${def.top}"/>`;
+}
+
 function scatter(seed) {
   let s = seed * 9301 + 49297;
   return () => ((s = (s * 9301 + 49297) % 233280), s / 233280);
@@ -331,6 +352,11 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1, tilt = 0 } = {
   const oilEl = g.querySelector(".cl-oil");
   oilEl.removeAttribute("transform");
   oilEl.style.transform = `translateY(${H - (oil > 0 ? top : 0)}px)`;
+  // (the liquid, the oil and the cloud are sheets parked just under the vessel when there is none:
+  // turned or tipped, a parked sheet came into view and an empty vessel looked full)
+  oilEl.style.display = oil > 0 ? "" : "none";
+  g.querySelector(".cl-liquidg").style.display = t.vol > 0 ? "" : "none";
+  g.querySelector(".cl-cloud").style.display = t.vol > 0 ? "" : "none";
   const lev = g.querySelector(".cl-level");
   lev.style.transformOrigin = `0px ${-top}px`;
   lev.style.transform = tilt ? `rotate(${-tilt}deg)` : "";
@@ -896,7 +922,7 @@ export const SUPPORTS = {
   tripod: { name: "Tripod and gauze", slots: [[0, -158]], fits: (d) => Boolean(d.flat) && !d.fixed && d.rMax < 90, bbox: { x0: -64, y0: -164, x1: 64, y1: 8 } },
   balance: { name: "Electronic balance", slots: [[0, -46]], fits: (d) => !d.fixed && d.rMax < 90, bbox: { x0: -84, y0: -58, x1: 84, y1: 8 } },
   // its one slot is wherever the clamp has been slid to (main.js works the height out for each vessel)
-  stand: { name: "Retort stand and clamp", slots: [[44, 0]], clamp: [-340, -110], fits: (d) => !d.material && d.rMax <= 60 && !d.upturns, bbox: { x0: -56, y0: -376, x1: 80, y1: 8 } },
+  stand: { name: "Retort stand and clamp", slots: [[44, 0]], clamp: [-452, -110], fits: (d) => !d.material && d.rMax <= 60 && !d.upturns, bbox: { x0: -56, y0: -486, x1: 80, y1: 8 } },
 };
 /** In two halves: the back goes behind what it holds, the front in front of it. */
 export function supportSvg(key) {
@@ -945,7 +971,8 @@ export function supportSvg(key) {
     return {
       back: `${shadow(62)}
         <rect x="-52" y="-12" width="130" height="12" rx="2.5" fill="#4a525e" stroke="#fff" stroke-opacity="0.22"/>
-        <rect x="-37" y="-372" width="7" height="362" rx="3" fill="url(#g-metal)"/>${hit(b)}
+        <rect x="-37" y="-482" width="7" height="472" rx="3" fill="url(#g-metal)"/><rect x="-36" y="-480" width="1.6" height="466" fill="#fff" fill-opacity="0.35"/>
+        <rect x="-41" y="-16" width="15" height="6" rx="1.5" fill="#39404a" stroke="#fff" stroke-opacity="0.2"/>${hit(b)}
         <g class="cl-clampg"><rect x="-24" y="-4" width="56" height="6" rx="3" fill="url(#g-metal)"/>
           <g class="cl-press" data-press="clamp"><rect x="-44" y="-10" width="22" height="18" rx="3" fill="#6b7480" stroke="#f4c95d" stroke-opacity="0.85" stroke-width="1"/><path d="M-33 -6v10M-36 -3l3 -3 3 3M-36 1l3 3 3 -3" fill="none" stroke="#fff" stroke-opacity="0.85" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="-52" y="-18" width="38" height="34" fill="transparent"/></g></g>`,
       front: `<g class="cl-clampg"><rect x="26" y="-6" width="36" height="10" rx="5" fill="#aab2bd"/><rect x="26" y="-6" width="36" height="3" rx="1.5" fill="#fff" fill-opacity="0.35"/></g>`,
