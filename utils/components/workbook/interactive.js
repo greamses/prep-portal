@@ -27,6 +27,7 @@ import { needCss, openPanel } from "./panels.js";
 import { BOARDS } from "/utils/components/boards/index.js";
 import { mountBoard } from "/utils/components/boards/sheet.js";
 import { mountCounters } from "./counters.js";
+import { mountPurse } from "./purse.js";
 import { mountDivMat } from "./divmat.js";
 import { makeFoldable, unFoldable, foldAlong } from "./fold.js";
 import { mountBalance } from "./balance.js";
@@ -161,6 +162,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.chance ||= {};   // dice rolled, and cards drawn
     r.split ||= {};    // fraction bars cut to the same denominator
     r.counters ||= {}; // tens and ones taken out and pushed about
+    r.purse ||= {};    // prepbills and prepcoins taken out of the tray
     r.divmat ||= {};   // counting grids: the number, and its counters shared into groups
     r.tree ||= {};     // factor trees, grown or dragged into place
     r.strike ||= {};   // the numbers struck out of a grid
@@ -320,6 +322,20 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       });
     });
 
+    /* the purse: prepbills and prepcoins taken out of the tray and laid out to
+       pay with. Working, never marked — counting money is the skill, so it says
+       what is lying there, and what the child does with that goes in a box. */
+    node.querySelectorAll("[data-purse]").forEach((box, k) => {
+      box.__wbPurse = mountPurse(box, {
+        saved: rec(idx).purse[`p${k}`] || null,
+        onChange: (now, before) => {
+          rec(idx).purse[`p${k}`] = now;
+          step(box, () => { rec(idx).purse[`p${k}`] = before; box.__wbPurse?.set(before); dirty(node); save(); });
+          dirty(node); save();
+        },
+      });
+    });
+
     /* the counting grid for dividing: counters taken, shared into groups and broken into
        the next place. Working, never marked — the input grid beside it is what is marked. */
     node.querySelectorAll("[data-divmat]").forEach((box, k) => {
@@ -443,6 +459,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("[data-code], [data-try]").forEach((c) => { c.__wbCode?.dispose(); c.__wbCode = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-split]").forEach((c) => { c.__wbSplit?.dispose(); c.__wbSplit = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-counters]").forEach((c) => { c.__wbCounters?.dispose(); c.__wbCounters = null; });
+    node.querySelectorAll("[data-purse]").forEach((c) => { c.__wbPurse?.dispose(); c.__wbPurse = null; });
     node.querySelectorAll("[data-divmat]").forEach((c) => { c.__wbDivMat?.dispose(); c.__wbDivMat = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-tree]").forEach((c) => { c.__wbTree?.dispose(); c.__wbTree = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-strike]").forEach((c) => { c.__wbStrike?.dispose(); c.__wbStrike = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });

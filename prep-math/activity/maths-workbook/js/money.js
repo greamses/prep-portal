@@ -1,175 +1,35 @@
 /* ============================================================================
-   Maths Workbook — the money: PREPCOINS and PREPBILLS
+   Maths Workbook — the shop, the bank and the till
    ----------------------------------------------------------------------------
-   A currency of our own, built the way real ones are built, so that everything
-   a child learns handling it transfers to the money in their pocket.
+   THE MONEY ITSELF IS NOT HERE. PrepCoins and PrepBills live in
+   /utils/components/workbook/purse.js, with the purse a child takes them out
+   of on screen, because both halves of the chapter need them: the paper draws
+   the pieces and the purse hands them over. They are re-exported through this
+   file so the exercises have one place to ask for money from.
 
-   ONE HUNDRED PREPCOINS MAKE ONE PREPBILL. That is the only fact to learn, and
-   it is the fact that makes a price a decimal: 4.50 is four bills and fifty
-   coins, and the point between them is the same point as on the digit-shift
-   card (utils/components/workbook/shift.js) and in the written sums.
+   What IS here is everything the money is spent on — the goods on the shelf,
+   the price tags, the till they are added up at, the bank they are paid into,
+   and the percentage that a discount, a rate of interest and a tax all are.
 
-   THE DENOMINATIONS ARE THE 1-2-5 SERIES, which is what almost every currency
-   on earth uses and is not an accident: with 1, 2, 5 at each power of ten you
-   can pay any amount with at most three pieces per power, and greedy change —
-   take the biggest that fits, again and again — is always the fewest pieces.
-   `payWith` relies on that, and `fewestCheck` in the scratchpad proves it.
-
-     prepcoins   1  2  5  10  20  50
-     prepbills   1  2  5  10  20  50  100
-
-   EVERY AMOUNT IN THIS FILE IS A WHOLE NUMBER OF PREPCOINS. Money in floating
-   point is money that loses a coin: 0.1 + 0.2 is not 0.3 and a till that says
-   so is a till nobody trusts. Prices, totals, discounts, interest — all of it
-   is integer prepcoins, and only `writeAmount` ever puts the point in.
+   EVERY AMOUNT IS A WHOLE NUMBER OF PREPCOINS, here as there. A worksheet
+   whose answer key is out by a coin teaches a child they are wrong when they
+   are right.
    ========================================================================== */
 
+import {
+  PER_BILL, COINS, BILLS, PIECES, bill, writeAmount, sayAmount, payWith,
+  changeFrom, roundUpPiece, coinSvg, billSvg, pieceSvg, moneySvg, currencySvg,
+  purse, mountPurse, heldTotal, sayHeld,
+} from "/utils/components/workbook/purse.js";
+
+/* one place for the exercises to ask for money from */
+export {
+  PER_BILL, COINS, BILLS, PIECES, bill, writeAmount, sayAmount, payWith,
+  changeFrom, roundUpPiece, coinSvg, billSvg, pieceSvg, moneySvg, currencySvg,
+  purse, mountPurse, heldTotal, sayHeld,
+};
+
 const INK = "#2a2723";
-const FAINT = "rgba(42,39,35,.3)";
-
-/** Prepcoins in one prepbill. The whole currency hangs off this one number. */
-export const PER_BILL = 100;
-
-export const COINS = [1, 2, 5, 10, 20, 50];
-export const BILLS = [1, 2, 5, 10, 20, 50, 100];
-
-/** Every piece there is, biggest first — in prepcoins, so they are comparable. */
-export const PIECES = BILLS.map((b) => b * PER_BILL).concat(COINS).sort((a, b) => b - a);
-
-/** Bills, as a number of prepcoins. */
-export const bill = (n) => n * PER_BILL;
-
-/* ── writing an amount ─────────────────────────────────────────────────────*/
-
-/** 450 → "4.50". Money is always written to the coin, even when it is round. */
-export function writeAmount(coins) {
-  const n = Math.round(coins);
-  const sign = n < 0 ? "−" : "";
-  const a = Math.abs(n);
-  return `${sign}${Math.floor(a / PER_BILL)}.${String(a % PER_BILL).padStart(2, "0")}`;
-}
-
-/** 450 → "4 prepbills and 50 prepcoins" — the amount said out loud. */
-export function sayAmount(coins) {
-  const n = Math.abs(Math.round(coins));
-  const b = Math.floor(n / PER_BILL);
-  const c = n % PER_BILL;
-  const bs = `${b} prepbill${b === 1 ? "" : "s"}`;
-  const cs = `${c} prepcoin${c === 1 ? "" : "s"}`;
-  if (!b) return cs;
-  if (!c) return bs;
-  return `${bs} and ${cs}`;
-}
-
-/* ── paying ────────────────────────────────────────────────────────────────*/
-
-/**
- * The FEWEST pieces that make an amount — biggest first, as anybody pays.
- * → [{ value, kind }] where kind is "bill" or "coin", one entry per piece.
- */
-export function payWith(coins) {
-  let left = Math.round(coins);
-  const out = [];
-  for (const p of PIECES) {
-    while (left >= p) {
-      out.push({ value: p >= PER_BILL ? p / PER_BILL : p, kind: p >= PER_BILL ? "bill" : "coin" });
-      left -= p;
-    }
-  }
-  return out;
-}
-
-/** What is handed back when `paid` covers `price`. */
-export const changeFrom = (paid, price) => payWith(Math.max(0, paid - price));
-
-/**
- * The smallest sensible note or coin a shopper would hand over for an amount —
- * the next piece up, so there is change to count. That is the question worth
- * asking: nobody learns anything from paying the exact money.
- */
-export function roundUpPiece(coins) {
-  const n = Math.round(coins);
-  for (const p of [...PIECES].reverse()) if (p >= n) return p;
-  return PIECES[0];
-}
-
-/* ── the pieces, drawn ─────────────────────────────────────────────────────*/
-
-/* Each denomination its own colour and its own size, the way real money is
-   told apart at a glance — and bigger is worth more, which is a lie real
-   currencies also tell and children find helpful. */
-const COIN_FACE = { 1: "#d9a97a", 2: "#cb9360", 5: "#e3bc85", 10: "#c7ced5", 20: "#aab5c0", 50: "#f4c95d" };
-const COIN_EDGE = { 1: "#a97a4e", 2: "#9c6a3c", 5: "#b18e58", 10: "#98a2ac", 20: "#7f8b97", 50: "#c9922f" };
-const BILL_FACE = { 1: "#9fd9a4", 2: "#bfe0b0", 5: "#9ed2f2", 10: "#f5c094", 20: "#d6bdf3", 50: "#f7dc96", 100: "#f0a9ac" };
-const BILL_EDGE = { 1: "#3f8f4f", 2: "#5a8f3f", 5: "#2a6ca8", 10: "#c9752f", 20: "#7a56a8", 50: "#c9922f", 100: "#c0453f" };
-
-const COIN_MM = { 1: 7.4, 2: 8.2, 5: 9, 10: 9.8, 20: 10.6, 50: 11.4 };
-const BILL_MM = { 1: 17, 2: 17.5, 5: 18, 10: 19, 20: 20, 50: 21, 100: 22 };
-
-/**
- * ONE PREPCOIN, drawn: a milled disc with its worth on it. The word is on the
- * coin because a coin that only says "5" is a counter, not money.
- */
-export function coinSvg(value, { mm = 0 } = {}) {
-  const d = mm || COIN_MM[value] || 9;
-  const face = COIN_FACE[value] || "#d9d9d9";
-  const edge = COIN_EDGE[value] || "#999";
-  return `<svg class="mo-piece mo-piece--coin" viewBox="0 0 40 40" width="${d}mm" height="${d}mm"`
-    + ` role="img" aria-label="${value} prepcoin${value === 1 ? "" : "s"}">`
-    + `<circle cx="20" cy="20" r="18.6" fill="${edge}"/>`
-    + `<circle cx="20" cy="20" r="16.2" fill="${face}" stroke="${edge}" stroke-width="1"/>`
-    + `<text x="20" y="19.4" text-anchor="middle" dominant-baseline="central" fill="${INK}"`
-    + ` font-size="17" font-weight="800" font-family="JetBrains Mono, ui-monospace, monospace">${value}</text>`
-    + `<text x="20" y="31" text-anchor="middle" dominant-baseline="central" fill="${INK}"`
-    + ` font-size="5.4" font-weight="700" letter-spacing="0.2">PREPCOIN${value === 1 ? "" : "S"}</text>`
-    + `</svg>`;
-}
-
-/**
- * ONE PREPBILL, drawn: a note with its worth in two corners the way a note
- * carries it, so it can be read from a handful held fanned out.
- */
-export function billSvg(value, { mm = 0 } = {}) {
-  const w = mm || BILL_MM[value] || 19;
-  const face = BILL_FACE[value] || "#e4e4e4";
-  const edge = BILL_EDGE[value] || "#777";
-  return `<svg class="mo-piece mo-piece--bill" viewBox="0 0 64 32" width="${w}mm" height="${w / 2}mm"`
-    + ` role="img" aria-label="${value} prepbill${value === 1 ? "" : "s"}">`
-    + `<rect x="0.8" y="0.8" width="62.4" height="30.4" fill="${face}" stroke="${edge}" stroke-width="1.6"/>`
-    + `<rect x="4" y="4" width="56" height="24" fill="none" stroke="${edge}" stroke-width="0.7" stroke-dasharray="2.4 1.8"/>`
-    + `<circle cx="32" cy="16" r="8.4" fill="none" stroke="${edge}" stroke-width="0.9"/>`
-    + `<text x="32" y="16" text-anchor="middle" dominant-baseline="central" fill="${INK}"`
-    + ` font-size="12" font-weight="800" font-family="JetBrains Mono, ui-monospace, monospace">${value}</text>`
-    + `<text x="10.6" y="9.6" text-anchor="middle" dominant-baseline="central" fill="${INK}" font-size="7" font-weight="800">${value}</text>`
-    + `<text x="53.4" y="23" text-anchor="middle" dominant-baseline="central" fill="${INK}" font-size="7" font-weight="800">${value}</text>`
-    + `<text x="32" y="27.4" text-anchor="middle" dominant-baseline="central" fill="${INK}"`
-    + ` font-size="4.6" font-weight="700" letter-spacing="0.3">PREPBILL${value === 1 ? "" : "S"}</text>`
-    + `</svg>`;
-}
-
-/** Whichever kind of piece this is. */
-export const pieceSvg = (p, opts) => (p.kind === "bill" ? billSvg(p.value, opts) : coinSvg(p.value, opts));
-
-/**
- * A HANDFUL: the pieces that make an amount, laid out biggest first, notes
- * before coins the way they come out of a purse.
- */
-export function moneySvg(coins, { max = 14 } = {}) {
-  const pieces = payWith(coins);
-  const shown = pieces.slice(0, max);
-  const over = pieces.length - shown.length;
-  return `<span class="mo-hand">${shown.map((p) => pieceSvg(p)).join("")}`
-    + (over ? `<span class="mo-hand__more">+${over} more</span>` : "")
-    + `</span>`;
-}
-
-/** One of each piece there is — the currency itself, for the chart. */
-export function currencySvg() {
-  return `<span class="mo-hand mo-hand--all">`
-    + BILLS.map((b) => billSvg(b)).join("")
-    + COINS.map((c) => coinSvg(c)).join("")
-    + `</span>`;
-}
 
 /* ── the shop ──────────────────────────────────────────────────────────────*/
 

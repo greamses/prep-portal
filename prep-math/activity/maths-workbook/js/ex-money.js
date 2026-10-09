@@ -35,7 +35,7 @@
 import {
   writeAmount, sayAmount, moneySvg, currencySvg, payWith, totalOf, percentOf,
   simpleInterest, compoundYears, roundUpPiece, goodSvg, goodName, GOOD_NAMES,
-  tagSvg, tillHtml, bankSvg, PER_BILL,
+  tagSvg, tillHtml, bankSvg, purse, PER_BILL,
 } from "./money.js";
 import { trainHtml } from "/utils/components/workbook/machine.js";
 import { levelOf } from "./ex-remainder.js";
@@ -177,6 +177,12 @@ const makeIt = {
   },
   render(item) {
     return lead(`<b>${writeAmount(item.coins)}</b>`)
+      /* On screen the money is REAL: take the pieces out of the tray and lay
+         them out until the purse says what the question says. On paper the
+         tray is a tray and the space under it is somewhere to draw. Either
+         way the counting is the child's — the purse says what is lying there
+         and nothing else. */
+      + purse({ say: `take out ${writeAmount(item.coins)}`, mm: 34 })
       + ask(`How many pieces? ${box()}`)
       /* a LINE and not a box: a list of pieces is writing, and a box the size
          of an answer tells a child to put one thing in it */
@@ -246,7 +252,12 @@ const atTheTill = {
     return `<div class="mo-shelf">${item.lines
       .map((l) => `<span class="mo-shelf__one">${goodSvg(l.good, { mm: 14, colour: l.colour })}${tagSvg(l.price)}</span>`)
       .join("")}</div>`
-      + tillHtml(item.lines, { paid: item.paid, box });
+      + tillHtml(item.lines, { paid: item.paid, box })
+      /* and the money to pay with: lay out what was handed over, take the
+         price off it, and what is left on the mat IS the change. A child who
+         has counted change out of a purse has done the subtraction with their
+         hands before they do it in the box above. */
+      + purse({ say: `pay with ${writeAmount(item.paid)}, and count the change`, mm: 34 });
   },
   worked() {
     const lines = [
@@ -351,9 +362,17 @@ const checkTheShop = {
 
 /* ═══ the bank — simple interest ═══════════════════════════════════════════*/
 
-/** The rule a bank does to your money, written as a train of jobs. */
-const interestTrain = (rate, inVal) =>
-  trainHtml({ given: [`*${rate}`, "/100"], inVal, outVal: null });
+/**
+ * The rule a bank does to your money, written as a train of jobs.
+ *
+ * The IN card is left EMPTY on purpose. A train whose IN is already filled in
+ * is a picture; one that is empty is a machine you can use — the workbook's
+ * interactive mode mounts any `data-ride` train (machine.js), so a child types
+ * a number on the card and drags it through × rate ÷ 100 a coach at a time,
+ * which is what a rate of interest is. On paper it is the same picture with a
+ * space to write the money in.
+ */
+const interestTrain = (rate) => trainHtml({ given: [`*${rate}`, "/100"], inVal: null, outVal: null });
 
 const simple = {
   id: "mo-simple",
@@ -376,7 +395,7 @@ const simple = {
     return art(bankSvg())
       + lead(`<b>${writeAmount(item.principal)}</b> is paid in at <b>${item.rate}%</b> a year, `
         + `and left for <b>${item.years} years</b>.`)
-      + art(interestTrain(item.rate, writeAmount(item.principal)))
+      + art(interestTrain(item.rate))
       + ask(`One year's interest: ${box()}`)
       + ask(`${item.years} years' interest: ${box()}`)
       + ask(`So altogether the bank hands back ${box()}`)
@@ -385,7 +404,7 @@ const simple = {
   worked() {
     return worked(art(bankSvg())
       + lead("<b>100.00</b> is paid in at <b>5%</b> a year, and left for <b>3 years</b>.")
-      + art(interestTrain(5, "100.00"))
+      + art(interestTrain(5))
       + say("5% of 100.00 — 100.00 × 5 ÷ 100 — is 5.00 of interest in one year. "
         + "Three years is 3 × 5.00 = 15.00. The bank hands back 100.00 + 15.00 = 115.00."));
   },
@@ -426,7 +445,7 @@ const compound = {
     return art(bankSvg({ name: "PREP BANK" }))
       + lead(`<b>${writeAmount(item.principal)}</b> is paid in at <b>${item.rate}%</b> a year `
         + `and LEFT THERE for <b>${item.years} years</b>.`)
-      + art(interestTrain(item.rate, null))
+      + art(interestTrain(item.rate))
       + `<table class="mo-years"><thead><tr><th>Year</th><th>In the bank</th>`
       + `<th>Interest it earns</th><th>Comes to</th></tr></thead><tbody>${rows}</tbody></table>`
       + ask(`After ${item.years} years the bank hands back ${box()}`);

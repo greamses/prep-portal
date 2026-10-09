@@ -37,6 +37,9 @@ const TOOLS = [
      about. It answers to the keyboard, so it is a button as far as the browser
      is concerned, and paper and tape on it made it a note worth 10 */
   ".ct-piece",
+  /* and money on the purse's mat, for exactly the same reason: a prepbill with
+     a sticky note stuck to it and a degree of tilt is not a prepbill */
+  ".pu-piece",
   /* the chemistry bench: the tiles of its drawer and the rail that sorts them. A
      tile is a picture of a piece of glassware; tape across it made it a note.
      The Try key sits ON a note (an experiment's card): paper on paper vanished */

@@ -3176,3 +3176,47 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   .wb-shift__fig, .wb-shift__hold { font-size: 1.05rem; }
   .wb-shift__read { font-size: 1.2rem; }
 }
+
+/* ── the purse (workbook/purse.js) ───────────────────────────────────────────
+   The same shape as the counters' mat, because it is the same idea: a tray you
+   take from and a space to lay things out on. The tray has two rows — notes
+   along the top, coins under them, the way a purse empties — because thirteen
+   pieces on one line is a line nobody reads. */
+.pu-wrap { margin: 2mm 0 3mm; width: fit-content; max-width: 100%; }
+.pu-tray {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1mm;
+  padding: 1.6mm 2mm;
+  background: #f4f0e8; border: 0.3mm solid #ded8cc;
+}
+.pu-tray__row { display: flex; flex-wrap: wrap; align-items: center; gap: 1.6mm; line-height: 0; }
+.pu-take { padding: 0; background: none; border: 0; line-height: 0; cursor: pointer; }
+.pu-take:focus-visible { outline: 0.5mm solid #f4c95d; outline-offset: 1mm; }
+.pu-tray__say { font-family: var(--font-mono), monospace; font-size: 7.5pt; color: #6b655c; }
+
+/* the space the money is laid out on — squared paper, like the counters' mat */
+.pu-mat {
+  position: relative;
+  width: 118mm; max-width: 100%;
+  height: var(--pu-h, 40mm);
+  margin-top: 1.5mm;
+  background:
+    radial-gradient(circle at 1mm 1mm, rgba(42, 39, 35, 0.12) 0.25mm, transparent 0.3mm) 0 0 / 6mm 6mm;
+  border: 0.35mm dashed #b8b1a4;
+  touch-action: none;
+}
+.pu-piece { position: absolute; line-height: 0; cursor: grab; user-select: none; }
+.pu-piece.is-held { cursor: grabbing; filter: drop-shadow(0 1mm 1.4mm rgba(20, 19, 15, 0.3)); z-index: 3; }
+.pu-piece:focus-visible { outline: 0.5mm solid #f4c95d; outline-offset: 0.6mm; }
+
+/* what is lying there — counting money IS the skill, so it says so */
+.pu-read {
+  margin: 1mm 0 0;
+  font: 700 9.5pt/1.4 var(--font-mono), monospace;
+  color: #14130f;
+}
+.pu-wrap.is-empty .pu-read { color: #6b655c; font-weight: 400; }
+
+/* on paper the tray and the space are somewhere to put real money, or to draw */
+@media print {
+  .pu-read { color: #6b655c; font-weight: 400; }
+}
