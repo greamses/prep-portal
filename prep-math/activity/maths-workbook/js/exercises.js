@@ -56,6 +56,41 @@ import { MONEY_GROUPS, MONEY_EXERCISES } from "./ex-money.js";
 export { LEVELS, HELP, levelOf, helpOf } from "./ex-remainder.js";
 export { placesFor };
 
+/**
+ * Which chapter an exercise belongs to, one per family.
+ *
+ * The rail shows one chapter at a time behind a row of tabs — the first group
+ * of each family carries `chapter`, and the rest follow it — and the cover
+ * names the chapters the paper was actually built from (subject.js).
+ *
+ * THIS IS WHERE A CHAPTER'S NUMBER IS DECIDED. Moving a family means changing
+ * it here and in the CHAPTERS names in subject.js, and nowhere else.
+ */
+const CHAPTER = new Map([
+  ...WORD_GROUPS.map((g) => [g.id, 2]),
+  ...SUM_GROUPS.map((g) => [g.id, 3]),
+  ...REM_GROUPS.map((g) => [g.id, 4]),
+  ...FRAC_GROUPS.map((g) => [g.id, 5]),
+  ...TIME_GROUPS.map((g) => [g.id, 6]),
+  ...MUL_GROUPS.map((g) => [g.id, 7]),
+  ...PRIME_GROUPS.map((g) => [g.id, 8]),
+  ...MODEL_GROUPS.map((g) => [g.id, 9]),
+  ...NB_GROUPS.map((g) => [g.id, 10]),
+  ...MONEY_GROUPS.map((g) => [g.id, 11]),
+]);
+/* Place value is the first chapter, so it is what is left over. */
+export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
+
+/* THE NUMBER IN THE TAB'S NAME IS STAMPED FROM THAT MAP, not typed beside it.
+   A family writes "Chapter 8 · Multiplying" on its first group and the map
+   says 7, and those are the same fact written twice — which is how multiplying
+   came to wear an 8 on its tab while its cover said 7, for a month, with prime
+   factors wearing an 8 as well. The map wins and the label is restamped here,
+   so a family that moves only has to move in one place. */
+const numbered = (g) => (g.chapter
+  ? { ...g, chapter: g.chapter.replace(/^Chapter\s+\d+/, `Chapter ${CHAPTER.get(g.id) || 1}`) }
+  : g);
+
 /* The families, in teaching order. The place-value groups keep the plain names
    they were written with; the later families carry their letter in the label
    because they were built as separate papers and the letter is how the child
@@ -67,8 +102,8 @@ export const GROUPS = [
   ...REM_GROUPS,
   ...FRAC_GROUPS,
   ...TIME_GROUPS,
-  /* Added after the seven as chapter 8, so no chapter already printed on a
-     paper changes its number. */
+  /* Added after the first six so that no chapter already printed on a paper
+     changes its number — the map above is what decides it. */
   ...MUL_GROUPS,
   /* and prime factors after that, for the same reason */
   ...PRIME_GROUPS,
@@ -78,7 +113,7 @@ export const GROUPS = [
   /* and money last, where the arithmetic of every chapter before it is put to
      work on sums a grown-up actually does */
   ...MONEY_GROUPS,
-];
+].map(numbered);
 
 /* Everything outside place value counts and writes in ordinary numerals, so it
    is base ten whether it says so or not. Marked here rather than on each entry:
@@ -104,28 +139,6 @@ export const EXERCISES = [
   ...NB_EXERCISES,
   ...tenOnly(MONEY_EXERCISES),
 ];
-
-/**
- * Which chapter an exercise belongs to: 1 to 7, one per family.
- *
- * The rail shows one chapter at a time behind a row of tabs — the first group
- * of each family carries `chapter`, and the rest follow it — and the cover
- * names the chapters the paper was actually built from (subject.js).
- */
-const CHAPTER = new Map([
-  ...WORD_GROUPS.map((g) => [g.id, 2]),
-  ...SUM_GROUPS.map((g) => [g.id, 3]),
-  ...REM_GROUPS.map((g) => [g.id, 4]),
-  ...FRAC_GROUPS.map((g) => [g.id, 5]),
-  ...TIME_GROUPS.map((g) => [g.id, 6]),
-  ...MUL_GROUPS.map((g) => [g.id, 7]),
-  ...PRIME_GROUPS.map((g) => [g.id, 8]),
-  ...MODEL_GROUPS.map((g) => [g.id, 9]),
-  ...NB_GROUPS.map((g) => [g.id, 10]),
-  ...MONEY_GROUPS.map((g) => [g.id, 11]),
-]);
-/* Place value is the first chapter, so it is what is left over. */
-export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 
 export function exerciseById(id) {
   return EXERCISES.find((e) => e.id === id) || null;

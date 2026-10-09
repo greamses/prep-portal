@@ -851,15 +851,16 @@ export const PAGES = [
   {
     file: "editorials/index.html",
     section: "read",
-    name: "The Bookcase",
-    title: "The Bookcase: Printable Maths & Science Workbooks",
-    desc: "Every Prep Portal workbook on one shelf: Maths, Geometry, Algebra, Statistics, Mental Maths, Competition Word Problems and JavaScript. Print them or work on screen.",
+    name: "Our Workshop",
+    title: "Our Workshop: Maths & Science Workbooks You Work In",
+    desc: "Not a shelf of PDFs. Every workbook here builds its own exercises, fresh each time, with an answer key — work them on screen and they mark as you go, or print them for paper.",
     intro:
-      "The Bookcase is where the workbooks live. Each one generates fresh, printable exercises with an answer key, and can also be worked on screen and marked as you go.",
+      "Our Workshop is where the workbooks are made. Nothing here is a finished file waiting to be downloaded: every book writes its own exercises, new ones every time it is opened, and an answer key with them. Work a book on screen and it marks you as you go; print it when you want paper.",
     points: [
       "Maths, Geometry, Algebra and Statistics workbooks",
       "Mental Maths and Competition Word Problems",
       "A JavaScript workbook with a code editor on the page",
+      "Worked on screen and marked, or printed with an answer key",
     ],
     access: "free",
     priority: "0.7",

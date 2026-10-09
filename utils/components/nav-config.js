@@ -209,10 +209,12 @@ const NAV_CONFIG = [
       EDITORIALS
       The site's books. The WORKBOOKS are for everyone and are what the nav
       shows: the maths ones and the science ones, each a link to its own
-      page, and the bookcase where all of them stand. The books that are not
-      workbooks — the magazine issues and the yearbooks — are still for the
-      designated admin alone: they are not in the nav, and the bookcase page
-      keeps their shelves shut for anyone else (editorials/index.html).
+      page, and OUR WORKSHOP where all of them stand. They are not a shelf of
+      PDFs and the name should not suggest one: a workbook here writes its own
+      exercises and marks them. The books that are not workbooks — the magazine
+      issues and the yearbooks — are still for the designated admin alone: they
+      are not in the nav, and the workshop page keeps their shelves shut for
+      anyone else (editorials/index.html).
   ========================= */
   {
     text: "Editorials",
@@ -240,7 +242,7 @@ const NAV_CONFIG = [
           { text: "JavaScript Workbook", href: "/prep-math/activity/js-workbook/index.html", description: "Learn to code: data types and variables, with an editor and a console" },
         ],
       },
-      { text: "The Bookcase", href: "/editorials/index.html", icon: I.editorial, description: "Every workbook on its shelf" },
+      { text: "Our Workshop", href: "/editorials/index.html", icon: I.editorial, description: "Every workbook in one place — worked on screen, or printed" },
     ],
   },
 ];

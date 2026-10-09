@@ -118,7 +118,11 @@ const theMoney = {
     + "4.50 means four prepbills and fifty prepcoins.",
   cols: 1,
   defaultCount: 1,
-  alwaysWorked: true,
+  /* NOT `alwaysWorked`: that prints the section head's WORKED block at every
+     level of help, and so it is only for an exercise that HAS one — it calls
+     `worked()` with no guard (subject.js sectionHead) and a section without
+     one takes the whole paper down with it. The chart is the question here,
+     so it is simply what this exercise renders. */
   make() { return {}; },
   /* A CHART, not a question — it is the money itself, printed to be looked at
      and kept. `alwaysWorked` puts it on the page at every help level, for the
