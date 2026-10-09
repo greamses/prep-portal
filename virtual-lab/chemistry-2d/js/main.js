@@ -3435,6 +3435,7 @@ const Q = {
 /** Something worth ticking off has happened that is not written in the notebook: the guide and PrepBot are both told. */
 function tellBot(flags, it) { noteFlags(flags); if (actor.onRecord) actor.onRecord(flags, it); }
 function noteFlags(flags = []) {
+  if (flags.length && actor.onFlags) actor.onFlags(flags);      // (PrepBot hears every flag, whether or not a practical is chosen)
   const exp = expNow();
   if (!exp) return;
   const seen = new Set(state.seen);
@@ -3657,7 +3658,8 @@ const actor = {
   pieces: () => state.items.filter((it) => it.key !== "cap"),
   capOn: (bottle) => Boolean(fittedTo(bottle, "cap")),
   practicals: () => EXPERIMENTS.map((e) => ({ id: e.id, title: e.title, needs: e.needs, task: e.task, kit: e.kit || "" })),
-  pick(id) { if (!EXPERIMENTS.some((e) => e.id === id)) return false; choose(id); if ($("cl-sheet-setups").hidden) openSheet("cl-sheet-setups"); return true; },
+  /** Choose a practical. Its guide opens, unless `quiet` (PrepBot is about to do it, and needs the bench in view). */
+  pick(id, quiet = false) { if (!EXPERIMENTS.some((e) => e.id === id)) return false; choose(id); if (!quiet && $("cl-sheet-setups").hidden) openSheet("cl-sheet-setups"); return true; },
   drawer(open) { setDrawer(!open); },
   /** Take a piece out of the drawer for the learner and stand it in a free place. */
   async bring(c) {
@@ -3725,6 +3727,9 @@ const actor = {
     return { done: did.filter(Boolean).length, total: did.length };
   },
   onTick: null,
+  onFlags: null,
+  /** Where the lower end of a fitted condenser is: a receiver stands under it. */
+  condenserEnd() { const co = state.items.find((o) => o.key === "condenser" && o.on != null); return co ? { x: co.x + 229, y: BASE + 20 } : null; },
   set onRefuse(f) { refuseHook = f; },
   async take(kind, key, x, y) {
     const it = addItem(kind, key, W - 70, 330) || state.items.find((o) => o.kind === kind && o.key === key);
@@ -3750,6 +3755,7 @@ const actor = {
     const [sx, sy] = slotAt(host, slot, VESSELS[v.key]);
     await this.move(v, host.x + sx, host.y + sy, 420);
     v.rack = [host.id, slot];
+    if (host.kind === "rack" && host.key === "stand" && slot === 0) noteFlags([`clamped:${v.key}`]);
     save();
   },
   /** Pull the stopper (or the dropper) out and put it down beside the bottle. */
@@ -3803,6 +3809,7 @@ const actor = {
     tool.on = v.id;
     place(tool);
     dress(tool);
+    noteFlags([`fitted:${tool.key}`]);
     if (tool.key === "chroma") runChroma(tool);
     if (FLOATERS[tool.key]) { if (nodes[v.id].veil) L.items.insertBefore(nodes[tool.id].g, nodes[v.id].veil); refloat(v, tool); }
     if (tool.key === "balloon") catchInBalloon(v, tool);
@@ -3974,6 +3981,7 @@ const actor = {
     for (let i = 1; i <= 12; i++) { tube.ex = a.x + ((z.x - a.x) * i) / 12; tube.ey = a.y + ((z.y - a.y) * i) / 12; drawLinks(); await pause(45); }
     tube.to = target.id;
     drawLinks();
+    noteFlags(["piped", target.flip && !overWater(target) ? "piped:up" : "piped:other"]);
     await pause(500);
     save();
   },

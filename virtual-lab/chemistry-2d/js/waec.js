@@ -242,6 +242,7 @@ export const EXPERIMENTS = [
     id: "ammonium", group: "qual", title: "Test for the ammonium ion",
     task: "To about 2 cm³ of ammonium chloride solution add sodium hydroxide solution and warm. Test any gas given off with damp red litmus paper.",
     needs: "boiling tube, ammonium chloride solution, sodium hydroxide solution, a burner, red litmus paper",
+    kit: "boil nh4cl naoh burner red",
     steps: [
       { text: "Put ammonium chloride solution and sodium hydroxide solution in the tube.", need: ["in:boil:nh4cl"], any: [["in:boil:nh4cl"], ["in:tube:nh4cl"]] },
       { text: "Turn the burner up and warm the tube. A gas with a sharp smell comes off.", need: ["gas:NH3"] },
@@ -253,6 +254,7 @@ export const EXPERIMENTS = [
     id: "unknown", group: "qual", title: "Identify an unknown salt",
     task: "X is a solution of a single salt. Carry out tests on portions of X to identify the cation and the anion present. Record each test, observation and inference.",
     needs: "sample X (in Liquids), test tubes and rack, sodium hydroxide solution, aqueous ammonia, barium chloride solution, silver nitrate solution, dilute hydrochloric acid, a burner and red litmus",
+    kit: "rack tube*4 unk naoh nh3 bacl2 agno3 hcl burner red",
     unknown: true,
     steps: [
       { text: "Put portions of X in several test tubes. Note its colour.", need: ["in:tube:unk"] },
@@ -269,6 +271,7 @@ export const EXPERIMENTS = [
     id: "gas-h2", group: "gas", title: "Hydrogen: prepare, collect over water, test",
     task: "Prepare hydrogen by the action of dilute hydrochloric acid on zinc. Collect the gas over water and carry out the test for hydrogen.",
     needs: "conical flask, one-hole stopper, delivery tube, trough, gas jar, distilled water, zinc, dilute hydrochloric acid, a lighted splint",
+    kit: "trough gasjar flask100 bung1 tubing water zn hcl lit",
     steps: [
       { text: "Fill the trough with water and let an empty gas jar go in it: it turns over and fills.", need: ["in:trough:water"] },
       { text: "Push the delivery tube into the one-hole stopper and drag the end of its rubber tube to the gas jar. Have it ready: the stopper goes into the flask as soon as the acid is in.", need: [] , test: (seen) => seen.has("piped") },
@@ -281,6 +284,7 @@ export const EXPERIMENTS = [
     id: "gas-co2", group: "gas", title: "Carbon dioxide: prepare and test",
     task: "Prepare carbon dioxide by the action of dilute hydrochloric acid on marble chips. Test the gas with a lighted splint and with damp blue litmus paper.",
     needs: "boiling tube or flask, marble chips, dilute hydrochloric acid, a lighted splint, blue litmus paper",
+    kit: "boil caco3 hcl lit blue",
     steps: [
       { text: "Put marble chips in the vessel and pour the acid on them.", need: ["gas:CO2"] },
       { text: "While it fizzes, hold a lighted splint at the mouth: it goes out.", need: ["test:out"] },
@@ -291,6 +295,7 @@ export const EXPERIMENTS = [
     id: "gas-o2", group: "gas", title: "Oxygen: prepare and test",
     task: "Prepare oxygen by the catalytic decomposition of hydrogen peroxide solution using manganese(IV) oxide. Carry out the test for oxygen.",
     needs: "boiling tube or flask, hydrogen peroxide solution, manganese(IV) oxide, a glowing splint",
+    kit: "boil h2o2 mno2 glow",
     steps: [
       { text: "Put hydrogen peroxide solution in the vessel, then add manganese(IV) oxide.", need: ["gas:O2"] },
       { text: "Hold a glowing splint at the mouth: it relights.", need: ["test:relight"] },
@@ -301,6 +306,7 @@ export const EXPERIMENTS = [
     id: "gas-nh3", group: "gas", title: "Ammonia: prepare, collect, test",
     task: "Prepare ammonia by warming ammonium chloride solution with sodium hydroxide solution. Collect it by upward delivery and test it.",
     needs: "boiling tube, one-hole stopper, delivery tube, a second boiling tube, ammonium chloride and sodium hydroxide solutions, a burner, red litmus paper",
+    kit: "boil*2 bung1 tubing nh4cl naoh burner red",
     steps: [
       { text: "Turn an empty boiling tube upside down from its menu, and lead the delivery tube from the other one up into it.", need: [], test: (seen) => seen.has("piped:up") },
       { text: "Put both solutions in the first tube and warm it.", need: ["gas:NH3"] },
@@ -420,6 +426,7 @@ export const EXPERIMENTS = [
     id: "evaporate", group: "sep", title: "Evaporation to crystals",
     task: "Obtain a solid sample of copper(II) sulfate from its solution by evaporation.",
     needs: "tripod and gauze, evaporating dish, a burner, copper(II) sulfate solution",
+    kit: "tripod dish burner cuso4",
     steps: [
       { text: "Stand the dish on the tripod and pour the solution in.", need: ["in:dish:cuso4"] },
       { text: "Turn the burner up and hold it under the dish until the water has gone.", need: ["crystals"] },
@@ -430,6 +437,7 @@ export const EXPERIMENTS = [
     id: "distil", group: "sep", title: "Simple distillation",
     task: "Set up the apparatus for simple distillation and use it to obtain water from copper(II) sulfate solution.",
     needs: "retort stand, distilling flask, Liebig condenser, beaker, a burner, copper(II) sulfate solution",
+    kit: "stand distflask condenser beaker100 burner cuso4",
     steps: [
       { text: "Clamp the distilling flask high enough for a burner to go under it.", need: ["clamped:distflask"] },
       { text: "Push the condenser onto the side arm and stand a beaker under its lower end.", need: [], test: (seen) => seen.has("fitted:condenser") },
@@ -441,6 +449,7 @@ export const EXPERIMENTS = [
     id: "sepfunnel", group: "sep", title: "Separating two liquids that do not mix",
     task: "Separate a mixture of cooking oil and water using a separating funnel.",
     needs: "retort stand, separating funnel, beaker, cooking oil, distilled water",
+    kit: "stand sepfunnel beaker100 water oil",
     steps: [
       { text: "Hang the separating funnel in the clamp, with a beaker under it.", need: ["clamped:sepfunnel"] },
       { text: "Pour in water and then oil. They settle into two layers.", need: ["in:sepfunnel:oil"] },
@@ -467,6 +476,7 @@ export const EXPERIMENTS = [
     id: "heat", group: "more", title: "Heat of neutralisation",
     task: "Measure the temperature rise when dilute hydrochloric acid is added to an equal volume of sodium hydroxide solution.",
     needs: "beaker, thermometer, dilute hydrochloric acid, sodium hydroxide solution",
+    kit: "beaker100 thermo naoh hcl",
     steps: [
       { text: "Put sodium hydroxide solution in a beaker and take its temperature.", need: [], test: (seen) => [...seen].some((f) => f.startsWith("temp:")) },
       { text: "Add an equal amount of the acid.", need: ["neutral"] },
@@ -503,6 +513,7 @@ export const EXPERIMENTS = [
     id: "electrolysis", group: "more", title: "Electrolysis with carbon electrodes",
     task: "Electrolyse copper(II) sulfate solution, and then concentrated sodium chloride solution, using carbon electrodes. State what is formed at each electrode.",
     needs: "beaker, two carbon electrodes, power pack, copper(II) sulfate solution, sodium chloride solution",
+    kit: "beaker250 electrode*2 power cuso4 nacl",
     steps: [
       { text: "Hang both carbon rods in a beaker of copper(II) sulfate solution and hold down the power pack's switch.", need: ["electro:Cu"] },
       { text: "Empty the beaker, pour in sodium chloride solution, and pass the current again.", need: ["electro:Cl2"] },

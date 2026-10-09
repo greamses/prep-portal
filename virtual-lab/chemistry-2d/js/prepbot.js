@@ -24,7 +24,9 @@
 import { PrepbotTeacher } from "/prep-math/mental-math/shared/prepbot-teacher.js";
 import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
 import { UI } from "/utils/components/ui-icons.js";
-import { EXPERIMENTS } from "./waec.js";
+import { EXPERIMENTS, GROUPS, stepDone } from "./waec.js";
+import { PROCEDURES } from "./procedures.js";
+import { groqGenerate, groqText, geminiGenerate, geminiText } from "/utils/ai-client.js";
 import { initAssign } from "./assign.js";
 
 /* A SETTING-UP lesson is the demonstration of a setting-up practical (waec.js, group "setup").
@@ -1202,12 +1204,15 @@ export async function initPrepbot(bench) {
     bench.openSheet("cl-sheet-bot");
     return true;
   }
+  /** While PrepBot works on the bench, the chat window is out of the way. */
+  const closeChat = () => { try { window.PrepBot?.close?.(); } catch { /* no chat open */ } };
   async function play(lesson) {
     if (locked()) return;
     teacher.wake();
     stop();
     const mine = ++token;
     turn = null;
+    closeChat();
     bench.closeSheets();
     bench.busy(true);
     stopKey.hidden = false;
@@ -1219,6 +1224,7 @@ export async function initPrepbot(bench) {
       await speak("Now it is your turn. I will clear the bench. Take the same things from the drawer and do what I did. If you get stuck, press H and I will tell you what to do next.", mine);
       bench.demo(false);
       bench.clear();
+      if (lesson.practical) bench.pick(lesson.practical, true);      // its guide ticks as well, but is not thrown open
       bench.page(`My turn: ${lesson.name}`);
       turn = { lesson, seen: new Set() };
       renderList();
@@ -1237,10 +1243,14 @@ export async function initPrepbot(bench) {
     if (!bench.setupDone(turn.lesson.setup)) { if (!turnBox.hidden) renderList(); return; }
     finish("You have set it up! Every piece is where it should be.");
   };
-  bench.onRecord = (flags) => {
+  bench.onRecord = bench.onFlags = (flags) => {
     if (!turn || bench.isBusy() || turn.lesson.setup) return;
+    const before = turn.seen.size;
     flags.forEach((f) => turn.seen.add(f));
-    if (!turn.lesson.need.every((f) => turn.seen.has(f))) { renderList(); return; }
+    if (turn.seen.size === before) return;
+    // (a practical done from its own steps is finished when every one of them is; a lesson, when its results are in)
+    const all = turn.lesson.practical ? turn.lesson.steps.every((st) => st.done(turn.seen, bench)) : turn.lesson.need.every((f) => turn.seen.has(f));
+    if (!all) { renderList(); return; }
     finish("You did it! That is exactly what I got.");
   };
   function finish(praise) {
@@ -1358,11 +1368,12 @@ export async function initPrepbot(bench) {
     const all = bench.pieces();
     if (ref.tag) { const byTag = all.find((it) => it.kind === "vessel" && it.tag === ref.tag); if (byTag) return byTag; }
     const mine = all.filter((it) => it.kind === ref.c.kind && it.key === ref.c.key);
-    if (mine.length) return mine[mine.length - 1];
+    // (asked for a second carbon rod, the one already hanging in the beaker is not it)
+    if (mine.length) return [...mine].reverse().find((it) => it.on == null) || mine[mine.length - 1];
     if (!ref.tag && ref.c.kind === "vessel") { const kin = all.filter((it) => it.kind === "vessel" && family(stock.find((k) => k.kind === "vessel" && k.key === it.key)) === family(ref.c)); if (kin.length) return kin[kin.length - 1]; }
     return bench.bring(ref.c);
   }
-  const VERB = /^(set ?up|assemble|prepare|say|wait|shake|swirl|stir|drip|drop|blend|tap|rinse|empty|tip|dry|rub|wipe|spin|centrifuge|run|titrate|current|electrolyse|switch on|upturn|invert|flip|lead|stand|clamp|place|put|get|bring|fetch|take out|pour|add|open|uncap|unstopper|light|flame|turn up|turn down|put out|turn off|heat|warm|boil|test|dip|hold|fit|clear|practical|demo|show|guide|notebook|results|table|graph|calculator|drawer|help)\b/i;
+  const VERB = /^(experiment|pipette|flame ?test|receiver|set ?up|assemble|prepare|say|wait|shake|swirl|stir|drip|drop|blend|tap|rinse|empty|tip|dry|rub|wipe|spin|centrifuge|run|titrate|current|electrolyse|switch on|upturn|invert|flip|lead|stand|clamp|place|put|get|bring|fetch|take out|pour|add|open|uncap|unstopper|light|flame|turn up|turn down|put out|turn off|heat|warm|boil|test|dip|hold|fit|clear|practical|demo|show|guide|notebook|results|table|graph|calculator|drawer|help)\b/i;
   async function command(raw) {
     const text = String(raw).trim();
     const verb = (VERB.exec(text) || [""])[0].toLowerCase();
@@ -1376,6 +1387,33 @@ export async function initPrepbot(bench) {
       case "setup": case "assemble": case "prepare": return setUp(args);
       // what the tutor says ALOUD on the bench while it works: one short sentence
       case "say": await speak(args.replace(/^["'“]|["'”]$/g, ""), actToken); return "";
+      case "pipette": {
+        // 25.0 cm3 drawn up from a bottle and run into a vessel
+        const from = named(left || "").find((r) => r.c.kind === "reagent"), into = vesselIn(right);
+        if (!from || !into) return `I did not understand "${text}".`;
+        const dst = await ensure(into), src = await ensure(from), pip = await ensure(piece("pipette"));
+        if (bench.capOn(src)) await bench.uncap(src);
+        await bench.hold(pip, src, 1100);
+        await bench.hold(pip, dst, 1300);
+        return "";
+      }
+      case "flametest": {
+        // the wire is dipped in the liquid, then held in the flame
+        const v = vesselIn(args);
+        if (!v) return `I did not understand "${text}".`;
+        const dst = await ensure(v), wire = await ensure(piece("wire")), bn = await ensure(piece("burner"));
+        if (!(bn.flame > 0)) await bench.flame(bn, 2);
+        await bench.hold(wire, dst, 900);
+        await bench.hold(wire, bn, 2400);
+        return "";
+      }
+      case "receiver": {
+        // a beaker goes under the lower end of the condenser
+        const v = vesselIn(args), end = bench.condenserEnd();
+        if (!v || !end) return end ? `I did not understand "${text}".` : "There is no condenser fitted yet.";
+        await bench.move(await ensure(v), end.x, end.y, 520);
+        return "";
+      }
       case "wait": await bench.wait(Math.min(15, Math.max(0.5, Number((/[\d.]+/.exec(args) || [2])[0]))) * 1000); return "";
       case "shake": case "swirl": case "stir": {
         const v = vesselIn(args);
@@ -1490,7 +1528,7 @@ export async function initPrepbot(bench) {
         if (src === dst) return "";
         if (src.kind === "reagent" && /indicator|phenolphthalein|methyl orange/i.test(from.c.name)) { await bench.drip(src, dst); return ""; }
         if (src.kind === "reagent" && bench.capOn(src)) await bench.uncap(src);
-        const times = Math.min(6, Number((/(\d+)\s*(measure|portion|time)/i.exec(text) || [])[1]) || from.n || 1);
+        const times = Math.min(12, Number((/(\d+)\s*(measure|portion|time)/i.exec(text) || [])[1]) || from.n || 1);
         await bench.pour(src, dst, times);
         return "";
       }
@@ -1520,6 +1558,12 @@ export async function initPrepbot(bench) {
       case "fit": {
         const tool = named(left || "").find((r) => r.c.kind === "tool");
         const v = named(right || "").find((r) => (tool && tool.c.key === "paper" ? r.c.key === "funnel" : r.c.kind === "vessel"));
+        if (tool && tool.c.key === "tubing" && !v && /stopper|bung/i.test(right || "")) {
+          // the delivery tube into its stopper, wherever the stopper is: on the bench, or already in a mouth
+          const st = bench.pieces().find((it) => it.key === "bung1") || (await bench.bring(stock.find((k) => k.key === "bung1")));
+          await bench.fit(await ensure(tool), st);
+          return "";
+        }
         if (!tool || !v) return `I did not understand "${text}".`;
         const dst = await ensure(v);
         if (tool.c.key === "tubing") {
@@ -1533,6 +1577,7 @@ export async function initPrepbot(bench) {
         await bench.fit(await ensure(tool), dst);
         return "";
       }
+      case "experiment": { const what = args; setTimeout(() => aiExperiment(what).catch((e) => console.warn("PrepBot:", e)), 400); return ""; }
       case "clear": bench.clear(); return "";
       case "practical": return bench.pick(args.toLowerCase().trim()) ? "" : `There is no practical called "${args}".`;
       case "demo": case "show": {
@@ -1556,6 +1601,148 @@ export async function initPrepbot(bench) {
   // that its steps tick. The nine apparatus set-ups are ASSEMBLED, by the same hands that demonstrate
   // them. Anything the drawer does not hold is said, not guessed at.
   const practicals = bench.practicals();
+  // THE WHOLE OF EVERY PRACTICAL. A practical with no hand-written demonstration above has its full
+  // method in procedures.js. Each becomes a lesson like the others: PrepBot lays its pieces out and
+  // does it one step at a time, saying what it is doing; then the student's turn is the practical's
+  // own steps.
+  for (const exp of EXPERIMENTS) {
+    const script = PROCEDURES[exp.id];
+    if (!script || LESSONS.some((l) => l.id === exp.id)) continue;
+    LESSONS.push({
+      id: exp.id,
+      name: exp.title,
+      practical: exp.id,
+      group: (GROUPS.find((g) => g.id === exp.group) || {}).label || "Reactions and tests",
+      about: exp.record.split(/(?<=\.)\s/)[0],
+      need: [],
+      steps: exp.steps.map((st, i) => ({ text: st.text, done: (seen, b) => (st.check ? Boolean((b.setupSteps(exp.id)[i] || {}).done) : stepDone(st, seen)) })),
+      async run({ say, b }) {
+        const { have } = kitFor(practicals.find((e) => e.id === exp.id));
+        await layOut(have, b);
+        for (const line of script) {
+          await b.wait(60);                                  // (a stopped demonstration stops here)
+          if (/^say\s/i.test(line)) { await say(line.slice(4)); continue; }
+          const note = await command(line);
+          if (note) console.warn("PrepBot:", exp.id, line, "→", note);
+        }
+      },
+    });
+  }
+  /** The demonstration a sentence means: by its id, or by the words of its name. */
+  function lessonFor(text) {
+    const said = norm(String(text)).trim();
+    const byId = LESSONS.find((l) => said === l.id || said.split(/\s+/).includes(l.id));
+    if (byId) return byId;
+    const want = wordsOf(said);
+    if (!want.length) return null;
+    let best = null, top = 0;
+    for (const l of LESSONS) {
+      const name = wordsOf(`${l.name} ${l.id.replace(/-/g, " ")}`), about = wordsOf(l.about || "");
+      // ("wash" is "washing", "titrate" is "titration": the first four letters decide)
+      const like = (t, w) => t === w || (w.length >= 4 && t.length >= 4 && t.slice(0, 4) === w.slice(0, 4));
+      const score = want.reduce((a, w) => a + (name.some((t) => like(t, w)) ? 2 : about.includes(w) ? 0.5 : 0), 0) / want.length;
+      if (score > top) { top = score; best = l; }
+    }
+    return top >= 1.2 ? best : null;
+  }
+
+  // ── an experiment that is in no list: the AI does it, ONE STAGE AT A TIME ──
+  // It is asked for one small stage (a sentence to say, and a few commands), the bench does it, and
+  // what was really seen (and anything the bench refused) goes back with the next question. So it
+  // works from results, not from a guess at them, and a small model has only a small thing to get
+  // right each time.
+  const STAGES = 16;
+  const RULES = () => `You are PrepBot, a chemistry teacher doing an experiment for a student on a virtual laboratory bench, with your own hands. You work ONE SMALL STAGE at a time.
+Reply with ONLY a JSON object: {"say": "...", "do": ["command", "command"], "done": false}
+- "say": one or two short sentences for the student. Before a stage: what you are about to do and what to watch for. After a result has come back: what it shows. Plain words, no symbols.
+- "do": 1 to 5 commands for this stage, from the COMMANDS below, spelled exactly, pieces named exactly as in the DRAWER. A vessel on the bench is named with its letter, for example "test tube A".
+- When the experiment is finished, reply {"say": "<what was seen and what it proves>", "do": [], "done": true}.
+- If the DRAWER does not hold something the experiment needs, reply done:true and say exactly what is missing and which experiment like it could be done here instead.
+- NEVER describe a result you have not been shown under SEEN. If the bench REFUSED a command, put it right in your next stage.
+- Work as a careful chemist: the right vessel, small amounts (a test tube holds 12 measures; 2 is a normal portion), acid into water, test a gas at once while it is still coming off.
+COMMANDS:
+get <piece> | stand <vessel> on <test tube rack, tripod, retort stand or sink> | pour <bottle, jar or vessel> into <vessel> [N measures] | drip <indicator> into <vessel> | pipette <bottle> into <vessel> | shake <vessel> | swirl <vessel> | light burner | heat <vessel> | test <lighted splint | glowing splint | red litmus paper | blue litmus paper | pH paper | thermometer | strip of paper> in <vessel> | flametest <vessel> | fit <filter funnel | filter paper | rubber stopper | one-hole stopper | delivery tube | condenser | carbon electrode | balloon | lemon | egg> on <vessel> | lead to <vessel> | upturn <gas jar> in trough | flip <test tube or boiling tube> | run burette <N> | run separating funnel <N> | current | spin | blend | tap <vessel> | empty <vessel> | rinse <vessel> | dry <vessel> | wait <seconds>
+DRAWER:
+${["Glassware", "Equipment", "Liquids", "Solids"].map((p) => `${p}: ${stock.filter((c) => c.part === p).map((c) => c.name).join("; ")}.`).join("\n")}`;
+  function parseStage(raw) {
+    let o = null;
+    try { o = JSON.parse(raw); } catch { const m = /\{[\s\S]*\}/.exec(String(raw)); if (m) { try { o = JSON.parse(m[0]); } catch { /* not JSON */ } } }
+    if (!o || typeof o !== "object") return null;
+    return { say: String(o.say || "").slice(0, 400), do: (Array.isArray(o.do) ? o.do : []).map((c) => String(c).trim()).filter(Boolean).slice(0, 6), done: Boolean(o.done) };
+  }
+  async function askStage(system, prompt) {
+    try { return parseStage(groqText(await groqGenerate({ system, prompt, json: true, temperature: 0.2, maxTokens: 500 }))); }
+    catch (e) {
+      console.warn("PrepBot: first AI did not answer", e.message);
+      const data = await geminiGenerate({ body: { systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 500, responseMimeType: "application/json" } } });
+      return parseStage(geminiText(data));
+    }
+  }
+  /** Do an experiment the lists do not have. Resolves to what PrepBot concluded. */
+  async function aiExperiment(ask) {
+    if (locked()) return LOCKED;
+    if (bench.isBusy()) return "Let me finish this experiment first, then ask me again.";
+    teacher.wake();
+    stop();
+    const mine = ++token;
+    actToken = mine;
+    turn = null;
+    closeChat();
+    bench.closeSheets();
+    bench.busy(true);
+    stopKey.hidden = false;
+    bench.clear();
+    bench.demo(true);
+    bench.page(`PrepBot does: ${ask.slice(0, 60)}`);
+    const system = RULES(), log = [];
+    let last = "";
+    try {
+      await speak("Let me work out how to do that with what is in the drawer.", mine);
+      for (let n = 1; n <= STAGES; n++) {
+        if (mine !== token) throw new Stopped();
+        const prompt = `EXPERIMENT ASKED FOR: ${ask}\n${log.length ? `STAGES DONE SO FAR:\n${log.join("\n")}` : "Nothing has been done yet. The bench is empty."}\nON THE BENCH NOW: ${bench.standing().join(", ") || "nothing"}.\nStage ${n} of at most ${STAGES}. Give the next stage${n >= STAGES - 1 ? " (this must be the last: finish with done true)" : ""}.`;
+        let st = null;
+        try { st = await askStage(system, prompt); } catch (e) { console.warn("PrepBot: the AI did not answer", e.message); }
+        if (mine !== token) throw new Stopped();
+        if (!st) { last = "I could not reach my chemistry notes just now. Try again in a moment, or pick an experiment from my list."; await speak(last, mine); break; }
+        if (st.say) { last = st.say; await speak(st.say, mine); }
+        if (st.done || !st.do.length) break;
+        if (st.do.join(";") === (log.lastDo || "")) { last = "I am going round in circles, so I will stop here."; await speak(last, mine); break; }
+        log.lastDo = st.do.join(";");
+        const refused = [], notes = [];
+        bench.onRefuse = (why) => { if (!refused.includes(why)) refused.push(why); };
+        for (const cmd of st.do) {
+          if (mine !== token) throw new Stopped();
+          if (/^(clear|demo|show|practical|set ?up)\b/i.test(cmd)) continue;                 // one experiment, on this bench
+          try { const note = await command(cmd); if (note) notes.push(note); } catch (e) { if (e instanceof Stopped) throw e; console.warn("PrepBot:", cmd, e); notes.push(`"${cmd}" could not be done.`); }
+        }
+        bench.onRefuse = null;
+        const seen = bench.recent(st.do.length + 1).filter((l) => !/nothing to see$/.test(l)).slice(-4);
+        log.push(`${n}. DID: ${st.do.join("; ")}\n   SEEN: ${seen.join(" | ") || "nothing visible"}${refused.length || notes.length ? `\n   REFUSED: ${[...refused, ...notes].join(" | ")}` : ""}`);
+      }
+    } catch (e) {
+      if (!(e instanceof Stopped)) throw e;
+    } finally {
+      bench.onRefuse = null;
+      bench.demo(false);
+      if (mine === token) { bench.busy(false); stopKey.hidden = true; }
+    }
+    return last;
+  }
+  /** "Do the flame tests", "show me how to make hydrogen", "demonstrate rusting": one of mine, or the AI's. */
+  const DO_IT = /^\s*(?:please\s+|prepbot,?\s+|can you\s+|could you\s+|will you\s+|now\s+|i want you to\s+|i want to see\s+|let me see\s+)*(do|show me how to|show me|show|demonstrate|carry out|perform|conduct|teach me how to|teach me|try)\b(.*)$/i;
+  function doExperiment(text) {
+    const m = DO_IT.exec(text);
+    if (!m || /^\s*(you|we|i|they|it|not)\b/i.test(m[2]) || /^\s*(what|why|how|when|where|which|who)\b/i.test(text)) return null;
+    const rest = m[2].replace(/\b(for me|please|the experiment on|an experiment on|experiment on|the practical on|how to|experiment|practical|demonstration|the|a|an|me|us|it again|again)\b/gi, " ").replace(/[.!?]+\s*$/, "").replace(/\s+/g, " ").trim();
+    if (rest.length < 3) return null;
+    if (!bench.botAllowed()) return LOCKED;
+    if (bench.isBusy()) return "Let me finish this experiment first, then ask me again.";
+    const lesson = lessonFor(rest);
+    if (lesson) { setTimeout(() => play(lesson), 250); return `Watch the bench: I will do "${lesson.name}" now, one step at a time. Then it is your turn.`; }
+    setTimeout(() => aiExperiment(rest).catch((e) => console.warn("PrepBot:", e)), 250);
+    return "That one is not on my list, so I will work it out and do it on the bench, one stage at a time. Watch.";
+  }
   const wordsOf = (s) => norm(s).trim().split(" ").filter((w) => w.length > 2 && !["the", "and", "for", "with", "experiment", "practical", "set", "this", "that", "please", "test", "tests"].includes(w));
   /** The practical a sentence means: by its id, or by the words of its title. */
   function practicalFor(text) {
@@ -1589,26 +1776,10 @@ export async function initPrepbot(bench) {
     }
     return { have, missing };
   }
-  let actToken = 0;
-  async function setUp(args) {
-    const exp = practicalFor(args) || (/^\s*(it|this|that|the experiment|the practical)?\s*$/i.test(args) ? practicals.find((e) => e.title === (bench.chosen() || {}).title) : null);
-    if (!exp) return `I do not have a practical called "${args}". Tell me the pieces you want and I will get them.`;
-    const mine = actToken;
-    bench.closeSheets();
-    bench.clear();
-    bench.pick(exp.id);
-    bench.closeSheets();
-    const lesson = LESSONS.find((l) => l.setup === exp.id);
-    if (lesson) {
-      // an apparatus: build it, piece by piece
-      await lesson.run({ say: (t) => speak(t, mine), b: hands(mine) });
-      return `${exp.title} is ready.`;
-    }
-    const { have, missing } = kitFor(exp);
-    if (!have.length) return `I could not work out what ${exp.title} needs.`;
-    await speak(`I will set out what ${exp.title} needs.`, mine);
+  /** Lay a practical's pieces out in two rows (bottles behind, glassware in front), tubes in their rack, bottles open. */
+  async function layOut(have, h) {
     // laid out in two rows: bottles and jars along the back, glassware and equipment along the front
-    const h = hands(mine), all = [];
+    const all = [];
     for (const { c, n } of have) for (let i = 0; i < n && all.length < 18; i++) all.push(c);
     const hasRack = all.some((c) => c.kind === "rack" && c.key === "rack");
     const inRack = (c) => hasRack && c.kind === "vessel" && (c.key === "tube" || c.key === "boil");
@@ -1626,8 +1797,29 @@ export async function initPrepbot(bench) {
     for (const c of all.filter(inRack)) { const it = await h.take(c.kind, c.key, rackAt.x, bench.BASE - 30); if (it) out.push(it); }
     // tubes go in the rack; bottles are opened, ready to pour
     const rack = out.find((it) => it.kind === "rack" && it.key === "rack");
-    if (rack) for (const t of out.filter((it) => it.kind === "vessel" && (it.key === "tube" || it.key === "boil"))) { const slot = bench.freeSlot(rack); if (slot >= 0) await hands(mine).into(t, rack, slot); }
-    for (const it of out.filter((x) => x.kind === "reagent")) if (bench.capOn(it)) await hands(mine).uncap(it);
+    if (rack) for (const t of out.filter((it) => it.kind === "vessel" && (it.key === "tube" || it.key === "boil"))) { const slot = bench.freeSlot(rack); if (slot >= 0) await h.into(t, rack, slot); }
+    for (const it of out.filter((x) => x.kind === "reagent")) if (bench.capOn(it)) await h.uncap(it);
+    return out;
+  }
+  let actToken = 0;
+  async function setUp(args) {
+    const exp = practicalFor(args) || (/^\s*(it|this|that|the experiment|the practical)?\s*$/i.test(args) ? practicals.find((e) => e.title === (bench.chosen() || {}).title) : null);
+    if (!exp) return `I do not have a practical called "${args}". Tell me the pieces you want and I will get them.`;
+    const mine = actToken;
+    closeChat();
+    bench.closeSheets();
+    bench.clear();
+    bench.pick(exp.id, true);
+    const lesson = LESSONS.find((l) => l.setup === exp.id);
+    if (lesson) {
+      // an apparatus: build it, piece by piece
+      await lesson.run({ say: (t) => speak(t, mine), b: hands(mine) });
+      return `${exp.title} is ready.`;
+    }
+    const { have, missing } = kitFor(exp);
+    if (!have.length) return `I could not work out what ${exp.title} needs.`;
+    await speak(`I will set out what ${exp.title} needs.`, mine);
+    await layOut(have, hands(mine));
     const first = (bench.nextStep() || {}).text;
     const told = `Everything for ${exp.title} is on the bench${missing.length ? `, except ${missing.join(", ")}, which the drawer does not hold` : ""}. ${first ? `Start here. ${first}` : ""} Press H whenever you want the next step.`;
     await speak(told, mine);
@@ -1639,6 +1831,7 @@ export async function initPrepbot(bench) {
     if (bench.isBusy()) return "Let me finish this experiment first, then ask me again.";
     const mine = ++token;
     actToken = mine;
+    closeChat();
     const notes = [], refused = [];
     bench.busy(true);
     bench.onRefuse = (why) => { if (!refused.includes(why)) refused.push(why); };
@@ -1672,7 +1865,7 @@ export async function initPrepbot(bench) {
       return `You are the tutor on this bench and you can work it yourself. Commands (pieces by the exact names in the drawer lists; a vessel already on the bench by its name and letter, e.g. "test tube A"):
 get <how many> <piece> | open <bottle> (pulls its stopper) | pour <bottle or vessel> into <vessel> (add "2 measures" for more) | light burner | flame <0-3> | put out burner | heat <vessel> (boils until nothing more happens) | test <lighted splint, glowing splint, red litmus paper, blue litmus paper, pH paper or thermometer> in <vessel> | fit <filter funnel, rubber stopper, one-hole stopper, delivery tube, condenser or electrode> on <vessel> (a delivery tube is put through a one-hole stopper for you) | fit filter paper on filter funnel (a funnel filters nothing without its paper) | clear (empties the bench) | guide | notebook | results (opens the student's own results table and graph) | calculator | drawer show | drawer hide | practical <id> (chooses it and opens its guide; ids: ${bench.practicals().map((e) => e.id).join(", ")}) | demo <id> (you do the whole experiment, then the student repeats it; ids: ${LESSONS.map((l) => l.id).join(", ")}).
 MORE HANDS: say <one short sentence> (you say it aloud on the bench, in step with what you are doing) | wait <seconds> | shake <vessel> | swirl <vessel> | drip <indicator> into <vessel> (a few drops from its dropper) | blend (runs the blender) | tap <vessel> (stands it in the sink and runs water into it from the tap; add "5 s" for longer) | empty <vessel> (tilts it over the sink to pour it away) | rinse <vessel> (tap, shake, pour away: it is then clean) | dry <vessel> (rubs it with the cloth) | spin (runs the centrifuge; the tubes must already stand in wells opposite each other) | run burette 5 (opens its tap five times, 1 cm3 each; "run burette 3 drops" for single drops) (first clamp it: "stand burette on retort stand", fill it by pouring into it, and "stand conical flask on retort stand" puts the flask on the base, under its tip) | run separating funnel 3 | current (passes current from the power pack through the cell) | upturn <gas jar> in trough | flip <test tube or boiling tube> (upside down, to collect a light gas) | lead to <vessel> (leads the delivery tube's rubber end to the collector).
-DOING AN EXPERIMENT YOURSELF: when the student asks you to do, show, demonstrate or carry out an experiment, do it, whatever it is, so long as the drawer lists hold what it needs. If it is one of the demo ids, use "demo <id>". Otherwise work it out from your own chemistry and write the whole thing as ONE [DO: ...] line: start with "clear", then get, stand, fit and pour in the order a careful chemist would, with a "say" before each stage telling the student what you are about to do and what to watch for. Use the real method: the right vessel, sensible amounts (a test tube takes about 6 measures), acid into water, heat only what should be heated, test a gas while it is still coming off. Up to 60 commands. Do NOT state the result in advance as if you had seen it: the bench works the chemistry out, and what was really seen is shown to the student after your commands have run and is given to you under RECENTLY SEEN on your next turn, so explain the result then. If the drawer lacks something the experiment needs, say exactly what is missing, and offer the nearest experiment that can be done with what is there. Never pretend a piece or a chemical exists.
+DOING AN EXPERIMENT YOURSELF: when the student asks you to do, show, demonstrate or carry out an experiment, do it, whatever it is, so long as the drawer lists hold what it needs. If it is one of the demo ids, use "demo <id>" and nothing else. If it is in no list, the simplest way is the single command "experiment <what was asked for, in a few words>": the bench then does it one stage at a time. Or work it out from your own chemistry and write the whole thing as ONE [DO: ...] line: start with "clear", then get, stand, fit and pour in the order a careful chemist would, with a "say" before each stage telling the student what you are about to do and what to watch for. Use the real method: the right vessel, sensible amounts (a test tube takes about 6 measures), acid into water, heat only what should be heated, test a gas while it is still coming off. Up to 60 commands. Do NOT state the result in advance as if you had seen it: the bench works the chemistry out, and what was really seen is shown to the student after your commands have run and is given to you under RECENTLY SEEN on your next turn, so explain the result then. If the drawer lacks something the experiment needs, say exactly what is missing, and offer the nearest experiment that can be done with what is there. Never pretend a piece or a chemical exists.
 SETTING UP: "setup <practical id>" clears the bench and lays out (or, for the setup- ids, assembles) one of these practicals: ${practicals.map((e) => `${e.id} = ${e.title}`).join("; ")}. "stand <vessel> on <rack, tripod or retort stand>" puts glassware on a support. If the student asks for an experiment that is NOT in that list, set it up yourself, one command for each piece (get, stand, fit, pour), using only what the drawer lists hold. If something it needs is not in the drawer, say which thing, and use the nearest thing the drawer does hold or say that it cannot be done here.
 A piece that is not on the bench yet is taken from the drawer when a command needs it. Do one small thing at a time when teaching, and ask the student what they see.`;
     },
@@ -1701,6 +1894,7 @@ YOU CAN FETCH PIECES: if the student wants a piece, tell them to type "get me" a
         if (!rest ? bench.chosen() : practicalFor(rest)) return (await act([`setup ${rest}`])) || "It is set up.";
       }
       if (/^\s*(help|what next|what now|what do i do|what should i do|i am stuck|i'm stuck|im stuck|next step)\b/i.test(text)) return help() || null;
+      { const told = doExperiment(text); if (told) return told; }
       if (ORDER.test(text) && !/\?\s*$/.test(text) && (!/^\W*(?:\w+\W+)*?(pour|add)\b/i.test(text) || /\s(into|to|in|onto|on)\s/i.test(text))) {
         const cmd = text.replace(/^\s*(?:please\s+|prepbot,?\s+|can you\s+|could you\s+|now\s+)*/i, "").replace(/\b(the|a|an|some|please|for me)\b/gi, " ").replace(/[.!]+\s*$/, "").replace(/\s+/g, " ").trim();
         const note = await act([cmd]);
@@ -1733,14 +1927,14 @@ YOU CAN FETCH PIECES: if the student wants a piece, tell them to type "get me" a
   const turnBox = document.getElementById("cl-bot-turn");
   function renderList() {
     const kindOf = (l) => l.group || (["sandsalt", "decant", "magnet", "sublime", "chroma", "centrifuge", "filter", "crystals"].includes(l.id) ? "Separating mixtures" : "Reactions and tests");
-    const order = ["Fun science", "Reactions and tests", "Reactivity of metals and non-metals", "Separating mixtures", "Concentrated acids and safety", "Setting up apparatus"];
+    const order = ["Fun science", "Reactions and tests", "Volumetric analysis", "Qualitative analysis", "Preparing and testing gases", "Reactivity of metals and non-metals", "Separating mixtures", "Energy and electricity", "Concentrated acids and safety", "Setting up apparatus"];
     const rank = (l) => { const i = order.indexOf(kindOf(l)); return i < 0 ? order.length : i; };
     const sorted = LESSONS.slice().sort((x, y) => rank(x) - rank(y));
     list.innerHTML = sorted.map((l, n) => {
       const mine = turn && turn.lesson === l;
       const head = n === 0 || kindOf(sorted[n - 1]) !== kindOf(l) ? `<li class="cl-cards__head">${esc(kindOf(l))}</li>` : "";
       return `${head}<li class="cl-card pp-sticky pp-sticky--c${n % 6}${mine ? " is-on" : ""}">
-        <img src="shots/${l.setup || `bot-${l.id}`}.jpg" alt="" width="400" height="250" loading="lazy" />
+        <img src="shots/${l.setup || (l.practical ? l.id : `bot-${l.id}`)}.jpg" alt="" width="400" height="250" loading="lazy" />
         <h3>${esc(l.name)}${done.includes(l.id) ? `<span class="cl-card__done">${UI.check(14)}</span>` : ""}</h3>
         <p>${esc(l.about)}</p>
         <button type="button" class="cl-try" data-lesson="${l.id}" aria-label="Try: ${esc(l.name)}. PrepBot does it first.">${mine ? "Try again" : "Try"}</button>
