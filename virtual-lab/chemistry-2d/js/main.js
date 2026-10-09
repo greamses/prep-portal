@@ -251,7 +251,7 @@ const FAR = 60000;                 // the bench runs on to left and right, as fa
 function applyView() {
   const w = W / view.k, h = H / view.k;
   view.x = clamp(view.x, -FAR, FAR);
-  view.y = clamp(view.y, Math.min(0, H - h), Math.max(0, H - h));
+  view.y = clamp(view.y, -FAR, Math.max(0, H - h));      // upward without end; downward only as far as the bench top
   svg.setAttribute("viewBox", `${view.x.toFixed(1)} ${view.y.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
   wrap.classList.add("is-zoomed");
   const out = document.querySelector('[data-zoom="out"]'), fit = document.querySelector('[data-zoom="fit"]'), into = document.querySelector('[data-zoom="in"]');
@@ -274,8 +274,9 @@ function seeAll() {
   const its = state.items.filter((o) => nodes[o.id]);
   if (!its.length) { view.k = 1; view.x = 0; view.y = 0; return applyView(); }
   const x0 = Math.min(...its.map((o) => o.x + boxOf(o).x0)) - 60, x1 = Math.max(...its.map((o) => o.x + boxOf(o).x1)) + 60;
-  if (x0 >= 0 && x1 <= W) { view.k = 1; view.x = 0; view.y = 0; return applyView(); }
-  view.k = clamp(W / (x1 - x0), ZOOM[0], 1);
+  const y0 = Math.min(...its.map((o) => o.y + boxOf(o).y0)) - 60;
+  if (x0 >= 0 && x1 <= W && y0 >= 0) { view.k = 1; view.x = 0; view.y = 0; return applyView(); }
+  view.k = clamp(Math.min(W / (x1 - x0), H / (H - y0)), ZOOM[0], 1);
   view.x = (x0 + x1) / 2 - W / view.k / 2;
   view.y = H - H / view.k;            // the bench top stays along the bottom of the window
   applyView();
@@ -298,7 +299,7 @@ function keepIn(it) {
   it.x = clamp(it.x, -FAR, FAR);
   // a long thing (a pipette, a burette) may poke off the top of the bench: it has to reach into a bottle, or hang in a clamp
   const tall = it.kind === "tool" || (it.kind === "vessel" && VESSELS[it.key].fixed);
-  it.y = clamp(it.y, Math.min(tall ? Math.min(-b.y0 + 4, 80) : -b.y0 + 4, H - 10), H - 10);
+  it.y = clamp(it.y, -FAR, H - 10);          // as high as you like above the bench top, never below it
 }
 /** A pointer's place on the bench, in bench units; and a bench point's place on the screen. */
 function world(e) {
@@ -643,7 +644,7 @@ function lens() {
   const hw = sc.half || 30;                                // half the width of the glass, as the lens shows it
   const surface = it.y + (sc.at ?? Number(nodes[it.id].g.querySelector(".cl-meniscus").getAttribute("cy")));
   const side = it.x + 150 > view.x + W / view.k - 20 ? -1 : 1;
-  const cx = it.x + side * 112, cy = clamp(surface, TOP - 60, H - R - 22);
+  const cx = it.x + side * 112, cy = clamp(surface, view.y + 90, Math.min(H, view.y + H / view.k) - R - 22);
   const c = it.kind === "vessel" ? look(it.t).rgb : it.rgb || [200, 224, 240];
   const alpha = it.kind === "vessel" ? Math.max(look(it.t).a, 0.42) : 0.7;
   const yOf = (tv) => ((tv - v) / sc.per) * PX * (sc.down ? 1 : -1);
@@ -950,8 +951,10 @@ function freeSpot(it) {
   const rows = it.kind === "reagent" ? [TOP, TOP + 150, TOP + 295] : it.kind === "tool" ? [BASE, 460, 330] : [BASE, 430];
   // (in the part of the bench that is in the window now)
   const left = view.x, right = view.x + W / view.k;
-  for (const y of rows) for (let x = left - b.x0 + 14; x < right - b.x1 - 4; x += 12) if (!overlaps(it, x, y)) return [x, y];
-  return [(left + right) / 2 + (Math.random() - 0.5) * 200, 420];
+  // (and at the height that is in the window: looking high above the bench, new pieces arrive up there)
+  const up = Math.min(0, view.y + H / view.k - H);
+  for (const y0 of rows) { const y = y0 + up; for (let x = left - b.x0 + 14; x < right - b.x1 - 4; x += 12) if (!overlaps(it, x, y)) return [x, y]; }
+  return [(left + right) / 2 + (Math.random() - 0.5) * 200, 420 + up];
 }
 
 function addItem(kind, key, x, y, extra = {}) {
@@ -2718,7 +2721,7 @@ window.addEventListener("pointermove", (e) => {
     const far = Math.hypot(dx, dy), max = HOSE_LEN * 0.96;
     if (far > max) { dx *= max / far; dy *= max / far; }
     endDrag.ex = a.x + dx - endDrag.x;
-    endDrag.ey = clamp(a.y + dy, 40, H - 8) - endDrag.y;
+    endDrag.ey = clamp(a.y + dy, -FAR, H - 8) - endDrag.y;
     drawLinks();
     return;
   }

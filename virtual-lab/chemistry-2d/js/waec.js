@@ -585,7 +585,7 @@ export const HOWTO = [
   "Pull the stopper out of a bottle before pouring. Carry the bottle to a vessel and hold it there. What is poured out is gone from the bottle: when one runs out, refill it from its own note. A bottle pours a full measure: for a few drops, fill the dropper from it.",
   "Nothing is poured on the bench, and nothing is poured away for you. Take the sink from Equipment and tilt the vessel over it. An emptied vessel still has drops of the last liquid in it.",
   "To wash a vessel, stand it in the sink under the tap and press the tap's blue key. Turn the tap off, shake the vessel, and tilt it to pour the water away. Then dry it over a flame, or push the cloth into it and rub.",
-  "The bench goes on to left and right. Drag the empty bench to walk along it, zoom out to see more of it, and press the middle zoom key to see everything at once.",
+  "The bench goes on to left and right, and there is no end to the room above it. Drag the empty bench to move about, zoom out to see more, and press the middle zoom key to see everything at once.",
   "The blender (in Glassware) cuts soft things up in a liquid: press BLEND on its base. It mixes; it cannot make an insoluble solid dissolve.",
   "Bottles marked CONC. in red are concentrated. Pour a concentrated acid INTO water, never water onto the acid. A strip of plain paper (in Equipment) shows what the concentrated acid does to anything it touches.",
   "Let a vessel go at a rack, a tripod, a clamp or a balance pan and it stands there. Slide a stand's clamp by its yellow boss.",
