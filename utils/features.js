@@ -46,10 +46,21 @@ export const FEATURES = [
   {
     id: "virtual-lab",
     label: "Virtual Lab",
-    desc: "The 3D chemistry lab and the chemistry bench",
+    desc: "The 3D chemistry lab",
     group: "Learning Labs",
     default: "premium",
     paths: ["/virtual-lab"],
+  },
+  {
+    // The bench and its practicals are free. PrepBot on it is the "prepbot"
+    // feature's "bench" part; refills of its stock bottles are sold in packs
+    // (server/lib/bench-refills.js).
+    id: "chemistry-bench",
+    label: "Chemistry Bench",
+    desc: "The 2D bench and its practicals (PrepBot on it and bottle refills are gated separately)",
+    group: "Learning Labs",
+    default: "free",
+    paths: ["/virtual-lab/chemistry-2d"],
   },
   {
     id: "theory",
@@ -169,6 +180,7 @@ export const FEATURES = [
       { id: "chat", label: "Chat" },
       { id: "voice", label: "Voice (ElevenLabs read-aloud)" },
       { id: "images", label: "Character images (PrepBot draws your avatar)" },
+      { id: "bench", label: "Chemistry Bench tutor (demonstrations, set-ups and help)" },
     ],
   },
   {

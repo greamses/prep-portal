@@ -758,6 +758,7 @@ export const PAGES = [
   },
   {
     file: "virtual-lab/chemistry-2d/index.html",
+    access: "login",
     section: "labs",
     name: "Chemistry Bench",
     title: "Chemistry Bench: Build Your Own Experiment Online",

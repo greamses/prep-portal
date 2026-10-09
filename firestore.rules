@@ -96,8 +96,15 @@ service cloud.firestore {
     // than denied in a match of their own.
     function isServerOnly(col) {
       return col in ['paymentEvents', 'workbookPrints', 'workbookOrders', 'workbookAssignments',
-                     'tutor-bookings', 'tutorOrders',
+                     'tutor-bookings', 'tutorOrders', 'benchRefills', 'benchRefillOrders',
                      'partners', 'referralCodes', 'earnings', 'payouts'];
+    }
+
+    // Chemistry Bench: how much is left in each of a learner's stock bottles. Their
+    // own record (the refills that fill a bottle again are counted by the server,
+    // in benchRefills, which no browser can write).
+    match /benchStock/{uid} {
+      allow read, write: if isLoggedIn() && request.auth.uid == uid;
     }
 
     // Tutor bookings are written by the server from a verified Paystack charge

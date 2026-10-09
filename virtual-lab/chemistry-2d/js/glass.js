@@ -640,6 +640,8 @@ export const TOOLS = {
   meter: { name: "pH meter", act: [0, 0], bbox: { x0: -22, y0: -156, x1: 22, y1: 6 } },
   wire: { name: "Flame-test wire", act: [-34, -58], bbox: { x0: -44, y0: -68, x1: 40, y1: 8 } },
   waste: { name: "Waste tub", act: [0, -66], bbox: { x0: -62, y0: -78, x1: 62, y1: 8 } },
+  sink: { name: "Sink and tap", act: [0, -66], bbox: { x0: -112, y0: -168, x1: 112, y1: 8 } },
+  cloth: { name: "Drying cloth", act: [0, -10], bbox: { x0: -30, y0: -34, x1: 30, y1: 6 } },
   pipette: { name: "Pipette (25 mL) and filler", act: [0, 0], bbox: { x0: -12, y0: -190, x1: 12, y1: 6 } },
   funnel: { name: "Filter funnel", act: [0, 0], bbox: { x0: -40, y0: -66, x1: 40, y1: 34 } },
   paper: { name: "Filter paper", act: [0, 0], bbox: { x0: -34, y0: -62, x1: 34, y1: 6 } },
@@ -724,6 +726,31 @@ export function toolSvg(key, it = {}) {
   if (key === "wire") {
     return `<path d="M-4 -33L32 -2" stroke="#fff" stroke-opacity="0.4" stroke-width="5.5" stroke-linecap="round"/><path d="M-4 -33L32 -2" stroke="#fff" stroke-opacity="0.75" stroke-width="1" stroke-linecap="round"/>
       <path d="M-31.5 -56L-4 -33" stroke="#cfd4db" stroke-width="1.5" stroke-linecap="round"/><circle class="cl-loop" cx="-34" cy="-58" r="3.4" fill="transparent" stroke="#cfd4db" stroke-width="1.5"/>${hit(b)}`;
+  }
+  if (key === "sink") {
+    // a white fireclay laboratory sink standing on the bench, with a swan-neck tap over it
+    const neck = "M-74 -66V-126q0 -30 28 -30t28 30v8";
+    return `<ellipse cx="0" cy="-1" rx="112" ry="6" fill="#000" fill-opacity="0.34" filter="url(#g-soft)"/>
+      <path d="M-104 -66h208v58a8 8 0 0 1-8 8h-192a8 8 0 0 1-8-8z" fill="#e4e8ec" stroke="#8d96a3" stroke-width="0.8"/>
+      <path d="M-104 -66h208v58a8 8 0 0 1-8 8h-192a8 8 0 0 1-8-8z" fill="url(#g-shade)" opacity="0.8"/>
+      <path d="M-98 -58h10v50h-10z" fill="#fff" fill-opacity="0.35"/>
+      <path d="M-108 -72h216v8h-216z" fill="#f4f6f8" stroke="#8d96a3" stroke-width="0.7"/>
+      <ellipse cx="0" cy="-68" rx="92" ry="5.5" fill="#59616d"/><ellipse cx="0" cy="-66.5" rx="86" ry="3.6" fill="#343a44"/>
+      <circle cx="0" cy="-66" r="3.2" fill="#14171c"/>
+      <path d="${neck}" fill="none" stroke="#4a515b" stroke-width="10" stroke-linecap="butt"/><path d="${neck}" fill="none" stroke="#b9c1cb" stroke-width="7.6"/><path d="${neck}" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="1.6" transform="translate(-1.6 0)"/>
+      <rect x="-81" y="-74" width="14" height="6" fill="#8f98a4" stroke="#4a515b" stroke-width="0.6"/>
+      <rect x="-22.5" y="-120" width="9" height="5" fill="#8f98a4" stroke="#4a515b" stroke-width="0.6"/>
+      <path d="M-74 -104h-16" stroke="#4a515b" stroke-width="6.4" stroke-linecap="round"/><path d="M-74 -104h-16" stroke="#c9d0d8" stroke-width="4.4" stroke-linecap="round"/><circle cx="-91" cy="-104" r="4.6" fill="#3d7fd6" stroke="#1f4f96" stroke-width="0.7"/>
+      ${hit(b)}`;
+  }
+  if (key === "cloth") {
+    // a folded cotton cloth, for drying glass
+    return `<ellipse cx="0" cy="-1" rx="30" ry="3.4" fill="#000" fill-opacity="0.3" filter="url(#g-soft)"/>
+      <path d="M-27 -3q-2 -9 2 -17q10 -6 24 -5t26 3q4 9 1 19q-12 4 -26 3t-27 -3z" fill="#e8dcc4" stroke="#8a7a58" stroke-width="0.7"/>
+      <path d="M-24 -19q11 -5 23 -4t25 3q-10 5 -24 4t-24 -3z" fill="#f6eeda" stroke="#8a7a58" stroke-width="0.6"/>
+      <path d="M-22 -9q22 5 45 0M-23 -5q23 5 46 0" fill="none" stroke="#b9a981" stroke-width="0.6"/>
+      <path d="M-25 -13q24 6 49 0" fill="none" stroke="#c0564e" stroke-width="1.6" stroke-opacity="0.75"/>
+      ${hit(b)}`;
   }
   if (key === "waste") {
     const d = "M-56 -66h112l-10 62a6 6 0 0 1-6 4h-80a6 6 0 0 1-6-4z";

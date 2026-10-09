@@ -353,39 +353,128 @@ export const LESSONS = [
     },
   },
   {
-    id: "acid-water",
-    name: "Acid to water, never water to acid",
+    id: "acid-to-water",
+    name: "Diluting an acid: acid to water",
     group: "Concentrated acids and safety",
-    about: "Which liquid is poured into which, and what concentrated sulfuric acid does to paper.",
-    need: ["dilute:right", "dilute:wrong", "charred"],
+    about: "The acid is poured into the water, a little at a time. It gets hot, and stays calm.",
+    need: ["dilute:right"],
     steps: [
-      { text: "Half fill a beaker with distilled water, then pour concentrated sulfuric acid (in Acids, marked CONC.) into it. It gets hot and stays calm.", done: (seen) => seen.has("dilute:right") },
-      { text: "Pour concentrated sulfuric acid into an empty boiling tube, then pour water onto it. It spits.", done: (seen) => seen.has("dilute:wrong") },
-      { text: "Pour concentrated sulfuric acid into a dry test tube and dip a strip of paper (in Equipment) in it. The paper chars.", done: (seen) => seen.has("charred") },
+      { text: "Half fill a beaker with distilled water.", done: (seen) => seen.has("added:water") },
+      { text: "Pour concentrated sulfuric acid (in Liquids, marked CONC.) into the water, a measure at a time.", done: (seen) => seen.has("dilute:right") },
     ],
     async run({ say, b }) {
       const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
-      await say("Concentrated sulfuric acid is the most dangerous bottle on this bench. There is one rule for diluting it, and I will show why.");
-      const bk = await b.take("vessel", "beaker250", at(120), b.BASE);
-      const w = await b.take("reagent", "water", at(0), b.TOP);
-      const ac = await b.take("reagent", "ch2so4", at(110), b.TOP);
+      await say("Concentrated sulfuric acid is the most dangerous bottle on this bench. There is one rule for diluting it.");
+      const bk = await b.take("vessel", "beaker250", at(160), b.BASE);
+      const w = await b.take("reagent", "water", at(40), b.TOP);
+      const ac = await b.take("reagent", "ch2so4", at(150), b.TOP);
+      const th = await b.take("tool", "thermo", at(330), b.BASE);
       await b.uncap(w);
       await b.pour(w, bk, 4);
       await say("First the water. Plenty of it.");
+      await b.hold(th, bk, 1500);
+      await say("Room temperature, to begin with.");
       await b.uncap(ac);
       await b.pour(ac, bk);
-      await say("Now the acid, into the water, a little at a time. It is heavy and oily: it sinks and mixes. The beaker gets hot, but nothing boils. Acid to water.");
-      const bt = await b.take("vessel", "boil", at(330), b.BASE);
-      await b.pour(ac, bt);
-      await say("Now the wrong way round. Acid first, in a dry tube. Watch the mouth of the tube.");
+      await say("Now the acid, into the water. It is heavy and oily: it sinks, and it mixes as it goes.");
+      await b.pour(ac, bk);
+      await b.hold(th, bk, 1500);
+      await say("The beaker is hot, but nothing boils and nothing spits. The heat is shared by all that water. Acid to water, always.");
+    },
+  },
+  {
+    id: "water-to-acid",
+    name: "Water to acid: why it is never done",
+    group: "Concentrated acids and safety",
+    about: "Water poured onto concentrated acid floats, boils at once and throws the acid out.",
+    need: ["dilute:wrong"],
+    steps: [
+      { text: "Pour a measure of concentrated sulfuric acid into an empty, dry boiling tube.", done: (seen) => seen.has("conc") },
+      { text: "Pour distilled water onto the acid, and watch the mouth of the tube.", done: (seen) => seen.has("dilute:wrong") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Now the wrong way round. On this bench it is safe to find out what happens. In a real laboratory it is not.");
+      const bt = await b.take("vessel", "boil", at(200), b.BASE);
+      const ac = await b.take("reagent", "ch2so4", at(60), b.TOP);
+      const w = await b.take("reagent", "water", at(170), b.TOP);
+      await b.uncap(ac);
+      await b.pour(ac, bt, 2);
+      await say("The acid first, in a dry tube. Colourless, and as thick as oil.");
+      await b.uncap(w);
+      await say("Now water, on top of it. Watch the mouth of the tube.");
       await b.pour(w, bt);
-      await say("It spits. The water floats on the acid, boils in an instant and throws hot acid out. In a real laboratory that is on your hands and face. Never water to acid.");
-      const tb = await b.take("vessel", "tube", at(470), b.BASE);
-      await b.pour(ac, tb);
-      const slip = await b.take("tool", "slip", at(560), b.BASE);
-      await say("One more thing. A strip of plain white paper, dipped in the concentrated acid.");
-      await b.hold(slip, tb, 3200);
-      await say("Black. The acid has pulled the water out of the paper and left carbon. It does that to skin as well. That is what corrosive means.");
+      await say("It spits. Water is lighter than the acid, so it floats. All the heat is made in that thin layer, which boils in an instant and throws hot acid out. That would be on your hands and your face. Never water to acid.");
+    },
+  },
+  {
+    id: "char",
+    name: "Concentrated sulfuric acid chars paper",
+    group: "Concentrated acids and safety",
+    about: "The concentrated acid takes the water out of paper and leaves carbon. The dilute acid only wets it.",
+    need: ["slip:dilute", "charred"],
+    steps: [
+      { text: "Pour dilute sulfuric acid into one test tube and concentrated sulfuric acid into another.", done: (seen) => seen.has("added:h2so4") && seen.has("added:ch2so4") },
+      { text: "Dip a strip of paper (in Equipment) in the dilute acid.", done: (seen) => seen.has("slip:dilute") },
+      { text: "Dip a fresh strip in the concentrated acid.", done: (seen) => seen.has("charred") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("The same acid, dilute and concentrated, and a strip of plain white paper.");
+      const rack = await b.take("rack", "rack", at(230), b.BASE);
+      const t1 = await b.take("vessel", "tube", at(180), b.BASE - 30);
+      await b.into(t1, rack, 1);
+      const t2 = await b.take("vessel", "tube", at(290), b.BASE - 30);
+      await b.into(t2, rack, 3);
+      const dil = await b.take("reagent", "h2so4", at(120), b.TOP);
+      const con = await b.take("reagent", "ch2so4", at(240), b.TOP);
+      await b.uncap(dil);
+      await b.pour(dil, t1, 3);
+      await b.uncap(con);
+      await b.pour(con, t2, 3);
+      const slip = await b.take("tool", "slip", at(470), b.BASE);
+      await say("First the dilute acid.");
+      await b.hold(slip, t1, 2400);
+      await say("The paper is wet, and that is all.");
+      await b.wait(2600);
+      await say("A fresh strip, and the concentrated acid.");
+      await b.hold(slip, t2, 3400);
+      await say("Black. The acid has pulled the hydrogen and oxygen out of the paper as water, and what is left is carbon. It does the same to cloth and to skin. That is what corrosive means.");
+    },
+  },
+  {
+    id: "conc-metal",
+    name: "Copper and concentrated sulfuric acid",
+    group: "Concentrated acids and safety",
+    about: "Hot concentrated sulfuric acid attacks copper and gives sulfur dioxide, never hydrogen.",
+    need: ["gas:SO2", "test:so2"],
+    steps: [
+      { text: "Clamp a dry boiling tube in a retort stand and put copper turnings (in Solids) in it.", done: (seen) => seen.has("added:cu") },
+      { text: "Pour concentrated sulfuric acid on the copper. Cold, nothing happens.", done: (seen) => seen.has("added:ch2so4") },
+      { text: "Light a burner and heat the tube.", done: (seen) => seen.has("gas:SO2") },
+      { text: "Hold blue litmus paper at the mouth of the tube.", done: (seen) => seen.has("test:so2") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Copper never gives hydrogen with an acid. It is below hydrogen in the reactivity series. But concentrated sulfuric acid has another way of attacking it.");
+      const st = await b.take("rack", "stand", at(260), b.BASE);
+      const bt = await b.take("vessel", "boil", at(260), b.BASE - 120);
+      await b.into(bt, st);
+      const cu = await b.take("reagent", "cu", at(60), b.TOP + 22);
+      const ac = await b.take("reagent", "ch2so4", at(170), b.TOP);
+      await b.uncap(cu);
+      await b.pour(cu, bt);
+      await b.uncap(ac);
+      await b.pour(ac, bt, 2);
+      await say("Copper, and the cold concentrated acid. Nothing happens: there is almost no water in the acid, so it has hardly any hydrogen ions.");
+      const bu = await b.take("tool", "burner", at(470), b.BASE);
+      await b.flame(bu, 2);
+      await say("Now I heat it.");
+      await b.heat(bu, bt);
+      await say("The copper is attacked, the liquid turns blue, and a gas with a sharp, choking smell comes off. Hot, the acid is an oxidising agent.");
+      const bl = await b.take("tool", "blue", at(560), b.BASE);
+      await b.hold(bl, bt, 2200);
+      await say("Damp blue litmus turns red at the mouth of the tube. An acidic gas: sulfur dioxide. No hydrogen at all.");
     },
   },
   {
@@ -394,8 +483,8 @@ export const LESSONS = [
     about: "Spinning packs a fine solid into a pellet, and the clear liquid is poured off.",
     need: ["supernatant"],
     steps: [
-      { text: "Take a test tube and make a precipitate in it: a measure of copper(II) sulfate, then one of sodium hydroxide.", done: (seen) => seen.has("ppt:CuOH") },
-      { text: "Take a second test tube and pour two measures of distilled water into it, to balance the first.", done: (seen) => seen.has("added:water") },
+      { text: "Take a test tube and make a precipitate in it: three measures of copper(II) sulfate, then three of sodium hydroxide.", done: (seen) => seen.has("ppt:CuOH") },
+      { text: "Take a second test tube and pour six measures of distilled water into it, to balance the first.", done: (seen) => seen.has("added:water") },
       { text: "Take the centrifuge from Equipment. Stand the two tubes in wells OPPOSITE each other: the two outside wells.", done: (seen, b) => b.count("rack", "centrifuge") > 0 && b.inHost("centrifuge") >= 2 },
       { text: "Take the stop-watch. Press START on the centrifuge and the crown of the stop-watch. After at least 10 seconds press STOP, and wait for the rotor to come to rest.", done: (seen) => seen.has("spun") },
       { text: "Lift the tube out and pour the clear liquid off the pellet into an empty test tube.", done: (seen) => seen.has("supernatant") },
@@ -407,14 +496,14 @@ export const LESSONS = [
       const cu = await b.take("reagent", "cuso4", at(0), b.TOP);
       const na = await b.take("reagent", "naoh", at(110), b.TOP);
       await b.uncap(cu);
-      await b.pour(cu, t1);
+      await b.pour(cu, t1, 3);
       await b.uncap(na);
-      await b.pour(na, t1);
-      await say("A pale blue precipitate, hanging in the liquid.");
+      await b.pour(na, t1, 3);
+      await say("A pale blue precipitate, hanging in the liquid. The tube is half full.");
       const t2 = await b.take("vessel", "tube", at(220), b.BASE);
       const w = await b.take("reagent", "water", at(220), b.TOP);
       await b.uncap(w);
-      await b.pour(w, t2, 2);
+      await b.pour(w, t2, 6);
       await say("A second tube with the same amount of water. It is there only to balance the first.");
       const cf = await b.take("rack", "centrifuge", at(440), b.BASE + 10);
       await b.into(t1, cf, 0);
@@ -702,7 +791,18 @@ export async function initPrepbot(bench) {
   }
   stopKey.addEventListener("click", () => { stop(); teacher.show(); teacher.speak([{ text: "Stopped. Carry on yourself, or pick another experiment.", mode: "speech" }]); });
 
+  /** PrepBot is for premium members. The bench and its practicals are free without it. */
+  const LOCKED = "I am part of the premium plan. The bench and every practical on it are free: open the guide for the steps. Subscribe, and I will demonstrate, set things up and help you when you are stuck.";
+  function locked() {
+    if (bench.botAllowed()) return false;
+    teacher.wake();
+    teacher.show();
+    teacher.speak([{ text: LOCKED, mode: "speech" }], { colorSeed: lines++ });
+    bench.openSheet("cl-sheet-bot");
+    return true;
+  }
   async function play(lesson) {
+    if (locked()) return;
     teacher.wake();
     stop();
     const mine = ++token;
@@ -711,10 +811,12 @@ export async function initPrepbot(bench) {
     bench.busy(true);
     stopKey.hidden = false;
     bench.clear();
+    bench.demo(true);
     bench.page(`PrepBot shows: ${lesson.name}`);
     try {
       await lesson.run({ say: (t) => speak(t, mine), b: hands(mine) });
       await speak("Now it is your turn. I will clear the bench. Take the same things from the drawer and do what I did. If you get stuck, press H and I will tell you what to do next.", mine);
+      bench.demo(false);
       bench.clear();
       bench.page(`My turn: ${lesson.name}`);
       turn = { lesson, seen: new Set() };
@@ -722,6 +824,7 @@ export async function initPrepbot(bench) {
     } catch (e) {
       if (!(e instanceof Stopped)) throw e;
     } finally {
+      bench.demo(false);
       if (mine === token) { bench.busy(false); stopKey.hidden = true; }
     }
   }
@@ -757,6 +860,7 @@ export async function initPrepbot(bench) {
     return { did, i };
   }
   function help() {
+    if (locked()) return LOCKED;
     if (bench.isBusy()) return;
     teacher.wake();
     let text;
@@ -796,7 +900,7 @@ export async function initPrepbot(bench) {
     condenser: ["condenser"], funnel: ["funnel"], water: ["water"], hcl: ["acid"], naoh: ["alkali"], nh3: ["ammonia solution", "ammonia"],
     unk: ["unknown salt", "unknown", "sample x"], caco3: ["calcium carbonate", "marble"], mno2: ["manganese dioxide", "manganese oxide"], h2o2: ["hydrogen peroxide", "peroxide"], oil: ["oil"], ch2so4: ["concentrated sulfuric acid", "conc sulfuric acid", "concentrated acid", "conc acid"], chcl: ["concentrated hydrochloric acid", "conc hydrochloric acid"], cnaoh: ["concentrated sodium hydroxide", "conc sodium hydroxide", "concentrated alkali"], slip: ["strip of paper", "plain paper", "paper strip"],
     mg: ["magnesium"], zn: ["zinc"], fe: ["iron"], cu: ["copper"], cuo: ["copper oxide"],
-    sandsalt: ["sand and salt", "salt and sand", "mixture"], sulfur: ["sulphur powder", "sulphur", "sulfur"], iodine: ["iodine"], magnet: ["magnet"], centrifuge: ["centrifuge"], stopwatch: ["stop watch", "stopwatch", "timer"], watch: ["watch glass"], holder: ["test tube holder", "holder"], tongs: ["tongs"], tripod: ["tripod"], dish: ["evaporating dish", "evaporating basin", "dish"], chroma: ["chromatography paper", "chromatography strip", "chromatography"],
+    sandsalt: ["sand and salt", "salt and sand", "mixture"], sulfur: ["sulphur powder", "sulphur", "sulfur"], iodine: ["iodine"], magnet: ["magnet"], centrifuge: ["centrifuge"], stopwatch: ["stop watch", "stopwatch", "timer"], watch: ["watch glass"], holder: ["test tube holder", "holder"], sink: ["sink", "tap", "basin"], cloth: ["cloth", "rag", "towel", "duster"], tongs: ["tongs"], tripod: ["tripod"], dish: ["evaporating dish", "evaporating basin", "dish"], chroma: ["chromatography paper", "chromatography strip", "chromatography"],
   };
   const stock = bench.catalog();
   const words = [];
@@ -1039,6 +1143,7 @@ export async function initPrepbot(bench) {
   }
   /** Carry out a list of commands, one after another, as PrepBot (the bench is its own meanwhile). */
   async function act(commands) {
+    if (locked()) return LOCKED;
     if (bench.isBusy()) return "Let me finish this experiment first, then ask me again.";
     const mine = ++token;
     actToken = mine;
@@ -1085,6 +1190,7 @@ ${exp ? `CHOSEN PRACTICAL: ${exp.title}. Task: ${exp.task} It needs: ${exp.needs
 YOU CAN FETCH PIECES: if the student wants a piece, tell them to type "get me" and its name (for example "get me a 250 mL beaker and sodium hydroxide") and it is put on the bench for them. Only name pieces that are in the drawer lists above.`;
     },
     async handle(text) {
+      if (!bench.botAllowed()) return LOCKED;
       // "set up the titration", "prepare the hydrogen experiment for me", "set it up"
       const su = /\b(set(?:ting)? (?:it |this |that |me )?up|setup|assemble|prepare|lay out|arrange)\b(.*)$/i.exec(text);
       if (su && !/\bhow\b|\bwhy\b|\?\s*$/i.test(text)) {

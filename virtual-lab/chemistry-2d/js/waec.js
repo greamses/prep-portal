@@ -196,8 +196,8 @@ export const EXPERIMENTS = [
   {
     id: "cations-naoh", group: "qual", title: "Cations: sodium hydroxide solution",
     task: "Put about 2 cm³ of each of copper(II) sulfate, iron(II) sulfate, iron(III) chloride and zinc sulfate solutions into separate test tubes. To each add sodium hydroxide solution in drops, and then in excess. Record your observations.",
-    needs: "test tube rack, four test tubes, the four salt solutions, sodium hydroxide solution",
-    kit: "rack tube*4 cuso4 feso4 fecl3 znso4 naoh",
+    needs: "test tube rack, four test tubes, a dropper, the four salt solutions, sodium hydroxide solution",
+    kit: "rack tube*4 dropper cuso4 feso4 fecl3 znso4 naoh",
     steps: [
       { text: "Copper(II) sulfate with a few drops of NaOH(aq).", need: ["ppt:CuOH"] },
       { text: "Iron(II) sulfate with a few drops of NaOH(aq).", need: ["ppt:Fe2OH"] },
@@ -211,8 +211,8 @@ export const EXPERIMENTS = [
   {
     id: "cations-nh3", group: "qual", title: "Cations: aqueous ammonia",
     task: "To about 2 cm³ portions of copper(II) sulfate, zinc sulfate and aluminium sulfate solutions in separate test tubes, add aqueous ammonia in drops and then in excess. Record your observations.",
-    needs: "test tube rack, three test tubes, the three salt solutions, aqueous ammonia",
-    kit: "rack tube*3 cuso4 znso4 also4 nh3",
+    needs: "test tube rack, three test tubes, a dropper, the three salt solutions, aqueous ammonia",
+    kit: "rack tube*3 dropper cuso4 znso4 also4 nh3",
     steps: [
       { text: "Copper(II) sulfate with a few drops of NH3(aq).", need: ["ppt:CuOH"] },
       { text: "NH3(aq) in excess: the precipitate dissolves to a deep blue solution.", need: ["cx:CuNH3"] },
@@ -524,7 +524,8 @@ export function stepDone(step, seen, q) {
 export const HOWTO = [
   "PrepBot can set any practical out for you: press PrepBot, set it up in the guide, or ask it (press A) to set up the experiment you want.",
   "Take pieces from the drawer: tap a tile, or drag it onto the bench. Drag a piece back onto the drawer to put it away.",
-  "Pull the stopper out of a bottle before pouring. Carry the bottle to a vessel and hold it there. What is poured out is gone from the bottle: when one runs out, refill it from its own note.",
+  "Pull the stopper out of a bottle before pouring. Carry the bottle to a vessel and hold it there. What is poured out is gone from the bottle: when one runs out, refill it from its own note. A bottle pours a full measure: for a few drops, fill the dropper from it.",
+  "Nothing is poured on the bench. Take the sink from Equipment: carry a vessel to it to pour it away, and again to wash it under the tap. An emptied vessel still has drops of the last liquid in it until it is washed. Dry it over a flame or with the cloth.",
   "Bottles marked CONC. in red are concentrated. Pour a concentrated acid INTO water, never water onto the acid. A strip of plain paper (in Equipment) shows what the concentrated acid does to anything it touches.",
   "Let a vessel go at a rack, a tripod, a clamp or a balance pan and it stands there. Slide a stand's clamp by its yellow boss.",
   "Let a funnel, a stopper, a condenser or a carbon rod go at a mouth or a joint and it stays there. A filter paper goes in a funnel, and a delivery tube in the hole of a one-hole stopper.",

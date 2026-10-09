@@ -25,6 +25,7 @@ const admin = require("firebase-admin");
 const { authenticate } = require("../middleware/auth");
 const prints = require("../lib/workbook-prints");
 const tutors = require("../lib/tutor-bookings");
+const refills = require("../lib/bench-refills");
 
 // Paystack plan code → our plan metadata (mirrors payment-manager.js PLANS).
 // priceKobo is what one charge of the plan costs; monthlyEqKobo is the
@@ -123,6 +124,7 @@ module.exports = function () {
        for one must never grant premium (see lib/workbook-prints.js). */
     if (meta.kind === prints.KIND) return { applied: false, premium: false };
     if (meta.kind === tutors.KIND) return { applied: false, premium: false, rejected: "That payment was for tutoring sessions, not a plan." };
+    if (meta.kind === refills.KIND) return { applied: false, premium: false, rejected: "That payment was for Chemistry Bench refills, not a plan." };
     const email = (tx.customer && tx.customer.email) || meta.email || null;
     const uid = await resolveUid(meta.uid, email);
     if (!uid) { console.warn("[payments] no uid for ref", reference); return { applied: false, premium: false }; }
@@ -295,6 +297,55 @@ module.exports = function () {
     }
   });
 
+  // ── Chemistry Bench refills (lib/bench-refills.js) ───────────
+  // balance: how many are left · order: the server prices a pack · verify: the
+  // pack is added from a charge we checked · use: one refill is spent.
+  // The admin has no count: an admin's refill is always granted.
+  const isAdmin = (req) => !!req.user && !!req.user.email && req.user.email === process.env.ADMIN_EMAIL;
+  router.get("/bench/balance", authenticate, async (req, res) => {
+    try {
+      if (isAdmin(req)) return res.json({ ok: true, left: null, unlimited: true });
+      res.json({ ok: true, left: await refills.balance(req.user.uid), unlimited: false, pack: refills.PACK });
+    } catch (e) {
+      console.error("[/api/payments/bench/balance]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+  router.post("/bench/order", authenticate, async (req, res) => {
+    try {
+      const order = await refills.openOrder({ uid: req.user.uid, email: req.user.email });
+      res.json({ ok: true, ...order, email: req.user.email || null });
+    } catch (e) {
+      console.error("[/api/payments/bench/order]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+  router.post("/bench/verify", authenticate, async (req, res) => {
+    try {
+      const reference = req.body && req.body.reference;
+      if (!reference) return res.status(400).json({ error: "reference required" });
+      const tx = await paystackVerify(reference);
+      if (!tx) return res.status(400).json({ ok: false, error: "Payment not found." });
+      const out = await refills.applyRefillCharge(tx, req.user.uid);
+      if (!out.ok) return res.status(400).json(out);
+      res.json(out);
+    } catch (e) {
+      console.error("[/api/payments/bench/verify]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+  router.post("/bench/use", authenticate, async (req, res) => {
+    try {
+      if (isAdmin(req)) return res.json({ ok: true, left: null, unlimited: true });
+      const out = await refills.useOne(req.user.uid);
+      if (!out.ok) return res.status(402).json(out);
+      res.json(out);
+    } catch (e) {
+      console.error("[/api/payments/bench/use]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // ── POST /api/payments/apply-code ───────────────────────────
   // A learner attaches a partner's referral code to their account before paying.
   // Locked once a commission has been paid, to stop code-swapping after the fact.
@@ -333,6 +384,9 @@ module.exports = function () {
            with the subscription — but it must still not be read as a plan. */
         if (prints.isPrintCharge(event.data)) {
           console.warn("[payments] ignoring a legacy workbook-print charge:", event.data.reference);
+        } else if (refills.isRefillCharge(event.data)) {
+          const out = await refills.applyRefillCharge(event.data);
+          if (!out.ok) console.warn("[payments] bench refills not added:", event.data.reference, out.error);
         } else if (tutors.isTutorCharge(event.data)) {
           const out = await tutors.applyTutorCharge(event.data);
           if (!out.ok) console.warn("[payments] tutor booking not made:", event.data.reference, out.error);

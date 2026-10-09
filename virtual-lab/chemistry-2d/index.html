@@ -80,8 +80,12 @@
         <button type="button" class="cl-ico" id="cl-calc-key" data-ico="calc" data-tip="Scientific calculator" data-tip-side="bottom" aria-label="Scientific calculator" aria-pressed="false"></button>
         <button type="button" class="cl-ico cl-ico--bot" id="cl-bot" data-sheet="cl-sheet-bot" data-tip="PrepBot does an experiment for you to copy" data-tip-side="bottom" aria-label="PrepBot's experiments" aria-pressed="false"></button>
         <span class="cl-gap" aria-hidden="true"></span>
-        <button type="button" class="cl-ico" data-dose="drops" data-ico="drops" data-tip="Pour a few drops at a time" data-tip-side="bottom" aria-label="Pour a few drops at a time"></button>
-        <button type="button" class="cl-ico" data-dose="portion" data-ico="measure" data-tip="Pour a full measure at a time" data-tip-side="bottom" aria-label="Pour a full measure at a time"></button>
+        <button type="button" class="cl-ico" data-zoom="out" data-ico="zoomOut" data-tip="Zoom out (-)" data-tip-side="bottom" aria-label="Zoom out"></button>
+        <button type="button" class="cl-ico" data-zoom="fit" data-ico="zoomFit" data-tip="See the whole bench (0)" data-tip-side="bottom" aria-label="See the whole bench"></button>
+        <button type="button" class="cl-ico" data-zoom="in" data-ico="zoomIn" data-tip="Zoom in (+). Then drag the empty bench to move about." data-tip-side="bottom" aria-label="Zoom in"></button>
+        <span class="cl-sep" aria-hidden="true"></span>
+        <button type="button" class="cl-ico" data-dose="drops" data-ico="drops" data-tip="A tap or a tipped vessel gives a few drops at a time. (A stock bottle cannot: use the dropper.)" data-tip-side="bottom" aria-label="A few drops at a time"></button>
+        <button type="button" class="cl-ico" data-dose="portion" data-ico="measure" data-tip="A full measure at a time" data-tip-side="bottom" aria-label="A full measure at a time"></button>
         <span class="cl-sep" aria-hidden="true"></span>
         <button type="button" class="cl-ico" id="cl-clear" data-ico="clear" data-tip="Clear the bench" data-tip-side="bottom" aria-label="Clear the bench"></button>
         <button type="button" class="cl-ico" id="cl-fs" data-tip="Full screen" data-tip-side="bottom" aria-label="Full screen"></button>
@@ -120,6 +124,7 @@
         <div class="pp-receipt__paper">
           <div class="cl-sheet__head"><h2 class="cl-h2">PrepBot shows you</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>
           <p class="cl-sheet__lead">Press Try on a card. PrepBot does the experiment on this bench with the real pieces, then clears it, and it is your turn.</p>
+          <a id="cl-bot-plans" class="cl-try" href="/subscribe.html#plans" hidden>PrepBot is for premium members: see the plans</a>
           <div id="cl-bot-turn" class="cl-turn" hidden></div>
           <ul id="cl-bot-list" class="cl-cards"></ul>
         </div>
@@ -188,7 +193,7 @@
   <script src="/utils/components/nav-builder.js" type="module"></script>
   <script type="module" src="js/main.js"></script>
     <!-- seo:about -->
-    <section id="pp-about" class="pp-about" data-access="premium" hidden>
+    <section id="pp-about" class="pp-about" data-access="login" hidden>
       <nav class="pp-about-crumbs" aria-label="Breadcrumb">
         <a href="/">Home</a> <span aria-hidden="true">/</span> <a href="/virtual-lab/">Virtual labs</a> <span aria-hidden="true">/</span> <span aria-current="page">Chemistry Bench</span>
       </nav>
@@ -200,10 +205,9 @@
         <li>Separating funnel, gas syringe, gas collection and an electrolysis cell</li>
         <li>Observations written down as you work, the way a practical paper wants them</li>
       </ul>
-      <p class="pp-about-note">Chemistry Bench opens with a Prep Portal plan. Sign in to continue, or see what a plan includes.</p>
+      <p class="pp-about-note">Chemistry Bench is free to use with a Prep Portal account. Sign in or create one to start.</p>
       <p class="pp-about-actions">
         <a class="pp-about-btn pp-about-btn--main" data-pp-login href="/index.html?login=1&amp;next=%2Fvirtual-lab%2Fchemistry-2d%2F">Sign in or create an account</a>
-        <a class="pp-about-btn" href="/subscribe.html#plans">See the plans</a>
       </p>
       <h2 class="pp-about-more">More virtual labs</h2>
       <ul class="pp-about-links">

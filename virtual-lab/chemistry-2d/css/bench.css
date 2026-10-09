@@ -736,3 +736,16 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 @keyframes cl-leaf-torn { 0% { transform: none; opacity: 1; } 30% { transform: translate(4px, 6px) rotate(1.5deg); opacity: 1; } 100% { transform: translate(70px, 60px) rotate(9deg); opacity: 0; } }
 
 .cl-guide .cl-try { margin: 0.55rem 0 0.7rem; }
+
+/* zooming and panning; water from the sink's tap; what is poured away */
+.cl-benchwrap.is-zoomed #cl-bench { cursor: grab; }
+.cl-benchwrap.is-panning #cl-bench { cursor: grabbing; }
+.cl-ico[disabled] { opacity: 0.35; pointer-events: none; }
+.cl-tapwater { stroke-dasharray: 9 5; animation: cl-tapwater 0.22s linear infinite; }
+@keyframes cl-tapwater { to { stroke-dashoffset: -14; } }
+.cl-run { stroke-dasharray: 260; stroke-dashoffset: 260; animation: cl-run 0.6s ease-in forwards; }
+@keyframes cl-run { 60% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: -260; opacity: 0; } }
+.cl-tile .cl-film { display: none; }
+
+#cl-bot-plans { display: inline-block; margin: 0 0 0.9rem; text-decoration: none; }
+#cl-bot-plans[hidden] { display: none; }
