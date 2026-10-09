@@ -3067,3 +3067,112 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .wb-tt__row b { font-weight: 800; color: #14130f; }
 .wb-tt__hint { margin: 0; font-size: 0.74rem; color: var(--text-secondary, #6b645a); }
 .wb-tt__hint[hidden] { display: none; }
+
+/* ── the digit-shift card on the rail (workbook/shift.js) ─────────────────────
+   A board of places, the figures standing in them, and a decimal point that
+   does not move. The headings and the point are the BOARD; only `.wb-shift__
+   track` ever moves, which is the whole claim the tool is making.
+
+   Three layers in one lane, all on the same nine columns, so a figure, the
+   nought holding its old place and the heading above them cannot drift apart:
+     holds   the noughts that hold an empty place — fixed, faint
+     track   the figures themselves — slides
+     point   the line between the units and the tenths — fixed */
+.wb-shift {
+  --sh-cols: 9;
+  display: flex; flex-direction: column; gap: 0.7rem;
+  /* pinned to the panel, the way .wb-tool pins the chart — an explicit 100% of
+     a definite panel, not `max-width`, which measures against a parent that has
+     already grown */
+  width: 100%; min-width: 0; box-sizing: border-box;
+  padding: 0.8rem 0.7rem 0.9rem;
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+}
+/* every column the same width, however long its heading is: a place is a place */
+.wb-shift__heads, .wb-shift__holds, .wb-shift__track { min-width: 0; }
+.wb-shift__head, .wb-shift__fig, .wb-shift__hold { min-width: 0; overflow: hidden; }
+
+/* the sum across the top */
+.wb-shift__sum { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center; gap: 0.5rem 0.7rem; }
+.wb-shift__field { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary, #6b655c); }
+.wb-shift__n, .wb-shift__p {
+  width: 6.4rem; padding: 0.34rem 0.45rem;
+  border: 2px solid var(--ink, #2a2723); border-radius: 0;
+  background: #fff3a8; color: #14130f;
+  font: 800 1.05rem/1 "JetBrains Mono", ui-monospace, monospace; text-align: center;
+}
+.wb-shift__p { width: 3.6rem; }
+.wb-shift__n:focus, .wb-shift__p:focus { outline: 2px solid var(--accent-secondary, #6fb7e8); outline-offset: 2px; }
+.wb-shift__ops { display: flex; gap: 0.3rem; }
+.wb-shift__op {
+  width: 2.1rem; height: 2.1rem; padding: 0;
+  border: 2px solid var(--ink, #2a2723); border-radius: 0;
+  background: #fffdf8; color: #14130f; font: 800 1.1rem/1 "JetBrains Mono", ui-monospace, monospace;
+  cursor: pointer;
+}
+/* which sum is being done is not a subtle difference */
+.wb-shift__op[aria-pressed="true"] { background: var(--accent-secondary, #6fb7e8); color: #14130f; }
+
+/* the board */
+.wb-shift__board { border: 2px solid var(--ink, #2a2723); background: #fffdf8; }
+.wb-shift__heads, .wb-shift__holds, .wb-shift__track {
+  display: grid; grid-template-columns: repeat(var(--sh-cols), 1fr);
+}
+.wb-shift__head {
+  display: grid; place-items: center;
+  padding: 0.22rem 0.1rem;
+  background: var(--sh-fill); color: #14130f;
+  font-size: 0.56rem; font-weight: 800; letter-spacing: 0.02em;
+  border-right: 1px solid rgba(42, 39, 35, 0.18);
+}
+.wb-shift__head:last-child { border-right: 0; }
+
+.wb-shift__lane {
+  position: relative; overflow: hidden;
+  height: 3rem; cursor: grab; touch-action: pan-y;
+  border-top: 2px solid var(--ink, #2a2723);
+  /* the columns the figures stand in, drawn faintly behind them */
+  background-image: repeating-linear-gradient(
+    to right, transparent, transparent calc(100% / var(--sh-cols) - 1px),
+    rgba(42, 39, 35, 0.12) calc(100% / var(--sh-cols) - 1px), rgba(42, 39, 35, 0.12) calc(100% / var(--sh-cols)));
+}
+.wb-shift__lane.is-held { cursor: grabbing; }
+.wb-shift__lane:focus-visible { outline: 2px solid var(--accent-secondary, #6fb7e8); outline-offset: -2px; }
+.wb-shift__holds, .wb-shift__track { position: absolute; inset: 0; }
+/* the figures slide home rather than jumping, except while a finger is on them */
+.wb-shift__track { transition: transform 180ms ease; will-change: transform; }
+.wb-shift__track.is-dragging { transition: none; }
+.wb-shift__fig, .wb-shift__hold {
+  display: grid; place-items: center;
+  font: 800 1.3rem/1 "JetBrains Mono", ui-monospace, monospace; color: #14130f;
+}
+/* A NOUGHT THAT IS ONLY HOLDING THE PLACE — faint, because it counts nothing.
+   The same hand the written boards use for a place-holding nought. */
+.wb-shift__hold { color: rgba(42, 39, 35, 0.34); font-weight: 700; }
+
+/* the point: on the line between the units and the tenths, and it never moves */
+.wb-shift__point {
+  position: absolute; top: 0; bottom: 0; width: 0;
+  border-left: 2px solid var(--accent-danger, #c0453f);
+}
+.wb-shift__point::after {
+  content: ""; position: absolute; left: -4px; bottom: 0.3rem;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent-danger, #c0453f);
+}
+
+/* what it reads, and what it is telling you */
+.wb-shift__read { margin: 0; text-align: center; font-size: 1.5rem; font-weight: 800; color: #14130f; letter-spacing: 0.02em; }
+.wb-shift__say { margin: 0; min-height: 2.6em; font-size: 0.76rem; line-height: 1.5; text-align: center; color: var(--text-primary, #2a2723); font-family: var(--font-body, system-ui, sans-serif); }
+.wb-shift__say.is-ok { color: var(--accent-success, #3f8f4f); font-weight: 700; }
+.wb-shift__say.is-no { color: var(--accent-danger, #c0453f); }
+
+.wb-shift__moves { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; }
+.wb-shift__moves .pp-btn { font-size: 0.72rem; }
+.wb-shift__go { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+@media (max-width: 420px) {
+  .wb-shift__head { font-size: 0.48rem; }
+  .wb-shift__fig, .wb-shift__hold { font-size: 1.05rem; }
+  .wb-shift__read { font-size: 1.2rem; }
+}

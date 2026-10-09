@@ -3020,6 +3020,27 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         return () => frame.remove();
       },
     })),
+    /* THE DIGIT SHIFT: × and ÷ by a power of ten, done by sliding the figures
+       across the places while the point stays where it is. The method lives in
+       workbook/shift.js; this only opens it and keeps what it was showing. */
+    {
+      id: "shift",
+      label: "Multiply and divide by ten",
+      icon: TOOL_ICONS.shift,
+      size: { w: 480, h: 440 },
+      open: async (body) => {
+        body.classList.add("wb-panel__body--bare");
+        const { mountShift } = await import("/utils/components/workbook/shift.js");
+        const KEY = "wb-shift";
+        let kept = null;
+        try { kept = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { /* a fresh one */ }
+        const card = mountShift(body, {
+          saved: kept,
+          onChange: (s) => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* not kept */ } },
+        });
+        return () => card.destroy();
+      },
+    },
     /* A TIMES TABLE, looked up: type which table and it is written out —
        9 gives 9 × 1 to 9 × 10. Any whole number, so the 13 times table is as
        near as the 3. "To 12" is for the tables learnt that far. */
@@ -3316,7 +3337,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        which is right here in the same family, and a second copy of them in a
        panel of its own was one more thing to keep working for no more that a
        child could do with it. */
-    { id: "count", label: "Counting", of: [asSheet("chart"), asSheet("bench")] },
+    /* Place value, in its three forms: the chart to stand a number in, the
+       canvas to build one out of blocks, and the shift card to watch one move
+       across the places when it is multiplied by ten. */
+    { id: "count", label: "Counting", of: [asSheet("chart"), asSheet("shift"), asSheet("bench")] },
     { id: "shapes", label: "Shapes and graphs", of: [
       asSheet("angles"), asSheet("transversal"), asSheet("pythagoras"),
       asSheet("surface"), asSheet("art"),

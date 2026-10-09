@@ -97,6 +97,16 @@ export const TOOL_ICONS = {
       `<path d="M8 9.6 14.4 16 12 18.4H9.2l-5-5z" fill="${PAPER}"/>` +
       r(9.2, 19.4, 11.6, 2, QUIET, 1)
   ),
+  /* the digit shift: a row of places, a figure moved one along, and the point
+     standing still in red where it always stands */
+  shift: glyph(
+    r(2.4, 7.2, 19.2, 9.6, PAPER, 0) +
+      r(2.4, 7.2, 19.2, 2.6, GOLD, 0) +
+      `<path d="M12.6 13.2h5.4M15.8 11.4l2.6 1.8-2.6 1.8" fill="none" stroke="#14130f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>` +
+      r(4.4, 11.6, 3.2, 3.2, "#fff", 0) +
+      `<circle cx="10.6" cy="15.4" r="1.5" fill="${LOUD}"/>` +
+      `<path d="M10.6 7.2v4.4" stroke="${LOUD}" stroke-width="1.6" stroke-linecap="round"/>`
+  ),
   chart: glyph(
     r(2.8, 4.4, 18.4, 15.2, PAPER, 1.8) +
       `<path d="M2.8 6.2a1.8 1.8 0 0 1 1.8-1.8h14.8a1.8 1.8 0 0 1 1.8 1.8v3.2H2.8z" fill="${GOLD}"/>` +
