@@ -30,6 +30,7 @@
 import { REAGENTS, newTube, add, heat, rinse, test, speciate, magnetOut, centrifuge, setUnknown, reagent, chemHtml, isEmpty, look, takeFrom, pourIn, roomIn, flameOf, massOf, boilOff, filterOut, sampleOf, gasMade, takeBottom, electrolyse, blend, densityOf } from "./chem.js";
 import { DEFS, VESSELS, TOOLS, SUPPORTS, rAt, vesselSvg, veilSvg, paintVessel, bubble, reagentSvg, toolSvg, splintAfter, supportSvg, thumb, colourOf, mouthOf, capOf, CAP_BOX } from "./glass.js";
 import { EXPERIMENTS, GROUPS, UNKNOWNS, CATIONS, ANIONS, HOWTO, stepDone } from "./waec.js";
+import { initFluid, setVapour, puff, erupt as foamOut, FLUID_DEFS } from "./fluid.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { account, onAccount, useRefill, buyRefills, keepStock, PACK } from "./account.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
@@ -46,7 +47,7 @@ const MOUTH = ["lit", "glow"];                        // held at the mouth
 const TAKES = { dropper: 0.5, pipette: 12.5 };        // portions drawn up (a portion is 2 cm3)
 const STAYS = ["funnel", "paper", "chroma", "bung", "bung1", "tubing", "cap", "condenser", "electrode", "balloon", "lemon", "peeled", "egg"];   // fitted, and left there
 // Things that are dropped INTO a liquid, and float or sink in it: how dense each is (g/cm3; water is 1).
-const FLOATERS = { lemon: 0.96, peeled: 1.02, egg: 1.045 };
+const FLOATERS = { lemon: 0.955, peeled: 1.05, egg: 1.045 };
 const FLOAT_WHY = {
   lemon: ["The peel of a lemon is full of tiny pockets of air, like a life-jacket. With them the whole lemon is a little less dense than water, so it floats.", "(no liquid)"],
   peeled: ["Without its peel the lemon has lost its pockets of air. What is left is a little denser than water, so it sinks.", "Salt water is denser than fresh water, and now denser than the peeled lemon, so it pushes the lemon up."],
@@ -164,8 +165,9 @@ setUnknown(state.unknown);
 // ── the bench ───────────────────────────────────────────────────────────────
 const wrap = $("cl-benchwrap");
 const svg = $("cl-bench");
-svg.innerHTML = `${DEFS}<g id="L-back"></g><g id="L-items"></g><g id="L-front"></g><g id="L-links"></g><g id="L-fx"></g>`;
+svg.innerHTML = `${DEFS}<defs>${FLUID_DEFS}</defs><g id="L-back"></g><g id="L-items"></g><g id="L-front"></g><g id="L-links"></g><g id="L-fx"></g>`;
 const L = { back: $("L-back"), items: $("L-items"), front: $("L-front"), links: $("L-links"), fx: $("L-fx") };
+initFluid(L.fx);
 const nodes = {};                  // item id → { g, front? }
 const byId = (id) => state.items.find((it) => it.id === id);
 const vessels = () => state.items.filter((it) => it.kind === "vessel");
@@ -436,7 +438,7 @@ function paint(it, opts = {}) {
       if (film.dataset.sig !== sig) { film.dataset.sig = sig; film.innerHTML = filmSvg(it); }
     } else if (film) film.remove();
   }
-  const out = paintVessel(g, it.key, it.t, { seed: Number(it.id.slice(1)) + 1, tilt: it.tilt || 0, ...opts });
+  const out = paintVessel(g, it.key, it.t, { seed: Number(it.id.slice(1)) + 1, tilt: it.tilt || 0, extra: displacedIn(it), ...opts });
   if (it.flip) {
     // an upturned jar over water is full of the trough's water, less whatever gas has pushed it down
     const def = VESSELS[it.key], Hh = -def.top, liq = g.querySelector(".cl-liquidg");
@@ -742,36 +744,136 @@ const rimOf = (o) => (o.kind === "vessel" ? VESSELS[o.key].rTop : o.kind === "re
 /** Where a fitted thing sits on its host: a condenser on the side arm, carbon rods left and right, anything else in the mouth. */
 function seat(host, it) {
   if (it.key === "paper" || it.key === "tubing") return { x: host.x, y: host.y };
-  if (FLOATERS[it.key]) {
-    // afloat, most of it is under the surface; sunk, it lies on the bottom
-    const def = VESSELS[host.key], bed = host.y - (def.floor || 0) - 5;
-    return { x: host.x, y: floats(host, it) ? Math.min(bed, host.y - (host._level || 0) + 22) : bed };
-  }
+  // (a lemon or an egg in a liquid is wherever its own weight and the liquid's push have taken it: floatTick)
+  if (FLOATERS[it.key]) return { x: host.x + (it.fx || 0), y: host.y + (it.fy ?? VESSELS[host.key].top - 4) };
   if (it.key === "condenser") { const [ax, ay] = VESSELS[host.key].arm; return { x: host.x + ax, y: host.y + ay }; }
   const m = mouth(host);
   if (it.key === "electrode") return { x: m.x + (it.side || -1) * Math.min(VESSELS[host.key].rTop * 0.5, 30), y: m.y };
   return m;
 }
-const floats = (host, it) => host.t.vol > 0 && densityOf(host.t) > FLOATERS[it.key] + 1e-6;
-/** A lemon or an egg has gone into a vessel, or the liquid under one has changed: does it float? Said once each time the answer changes. */
+// ── floating and sinking ────────────────────────────────────────────────────
+// A thing in a liquid is pulled down by its weight and pushed up by the weight of the liquid it has
+// pushed aside (Archimedes). So each one is MOVED, frame by frame, by those two forces and by the
+// drag of the liquid on it:
+//   - it falls from the hand, hits the surface, is braked hard by the water and makes the surface rock;
+//   - a thing less dense than the liquid comes back up, bobs, and settles with just so much of itself
+//     under the surface that the liquid it displaces weighs what it does (a lemon, at 0.96, floats
+//     with nearly all of it under);
+//   - a thing a little denser sinks slowly; one a little less dense rises slowly: salt stirred into
+//     the water under an egg lifts it off the bottom, not at once but as the water gets denser;
+//   - and the liquid it pushes aside has to go somewhere: the level in the vessel rises by the volume
+//     that is under the surface.
+// h: its height on the bench; vol: its volume, in portions of liquid (2 cm3 each).
+const FLOAT_BODY = { lemon: { h: 30, vol: 46 }, peeled: { h: 28, vol: 36 }, egg: { h: 36, vol: 27 } };
+const FALL = 1500;                 // how fast things fall here, in bench units a second, each second
+const afloat = new Set();          // the ones still moving
+let floatRaf = 0, floatLast = 0;
+/** How much liquid the things in a vessel are pushing aside, in portions: the level stands that much higher. */
+const displacedIn = (host) => state.items.reduce((sum, o) => (o.on === host.id && FLOATERS[o.key] ? sum + FLOAT_BODY[o.key].vol * (o.ff || 0) : sum), 0);
+/** A lemon or an egg has gone into a vessel (fresh), or the liquid in one has changed: its things are set moving again. */
 function refloat(host, fresh = null) {
   for (const o of state.items.filter((x) => x.on === host.id && FLOATERS[x.key])) {
-    const up = floats(host, o), was = o.afloat;
-    const m = seat(host, o);
-    o.x = m.x;
-    o.y = m.y;
-    glide(o, true);
-    place(o);
-    if (o !== fresh && was === up) continue;
-    o.afloat = up;
-    const name = nameOf(o).toLowerCase(), why = FLOAT_WHY[o.key];
-    const res = !(host.t.vol > 0)
-      ? { title: `Put the ${name} in`, obs: [{ text: `The ${name} sits on the bottom. There is no water in there for it to float in.` }], flags: [] }
-      : up ? { title: o === fresh ? `Put the ${name} in` : `Watched the ${name}`, obs: [{ text: o === fresh ? `The ${name} floats.` : `The ${name} rises off the bottom and floats.`, why: o.key === "lemon" ? why[0] : why[1] }], flags: [`float:${o.key}`] }
-      : { title: o === fresh ? `Put the ${name} in` : `Watched the ${name}`, obs: [{ text: `The ${name} sinks to the bottom.`, why: o.key === "lemon" ? "The liquid is less dense than the lemon." : why[0] }], flags: [`sink:${o.key}`] };
-    kick(host, 30);
-    record(host, res);
+    if (o === fresh) {
+      // let go just above the rim, a little off the middle, and not quite level
+      const room = Math.max(0, VESSELS[host.key].rTop - 26);
+      Object.assign(o, { fy: VESSELS[host.key].top - 6, fv: 60, fx: (Math.random() - 0.5) * room, fa: (Math.random() - 0.5) * 16, fw: 0, ff: 0, wet: false, afloat: undefined, calm: 0 });
+    }
+    if (o.fy == null) Object.assign(o, { fy: -(VESSELS[host.key].floor || 0) - 5, fv: 0, fx: 0, fa: 0, fw: 0, ff: 0 });      // (a saved bench: it starts where it lay)
+    o.calm = 0;
+    afloat.add(o);
   }
+  if (afloat.size && !floatRaf) { floatLast = performance.now(); floatRaf = requestAnimationFrame(floatTick); }
+}
+function floatTick(now) {
+  floatRaf = 0;
+  const dt = Math.min(0.033, (now - floatLast) / 1000);
+  floatLast = now;
+  for (const o of [...afloat]) {
+    const host = o.on != null && byId(o.on);
+    if (!host || !nodes[o.id] || !nodes[host.id]) { afloat.delete(o); continue; }
+    const def = VESSELS[host.key], body = FLOAT_BODY[o.key], rho = FLOATERS[o.key];
+    const bed = -(def.floor || 0) - 5;                       // where its underside rests, measured from the vessel's foot
+    const wet = host.t.vol > 0;
+    const surface = -(host._level || 0);
+    const f = wet ? clamp((o.fy - surface) / body.h, 0, 1) : 0;      // how much of it is under the surface
+    const rhoL = wet ? densityOf(host.t) : 0;
+    // weight, less the upthrust; then the drag of the liquid (mostly as the square of the speed), or of the air
+    let acc = FALL * (1 - (f * rhoL) / rho);
+    acc -= f > 0 ? (1.1 * o.fv + 0.006 * o.fv * Math.abs(o.fv)) * (0.35 + 0.65 * f) : 0.2 * o.fv;
+    const v0 = o.fv;
+    o.fv += acc * dt;
+    o.fy += o.fv * dt;
+    if (wet && f > 0.03 && !o.wet) {
+      // through the surface: the water is thrown up, and rocks
+      o.wet = true;
+      if (v0 > 150) { splash(host, o, v0); kick(host, (Math.random() < 0.5 ? -1 : 1) * clamp(v0 * 0.12, 14, 70)); o.fw += (Math.random() - 0.5) * 220; }
+    } else if (f === 0) o.wet = false;
+    let onBed = false;
+    if (o.fy >= bed) { o.fy = bed; if (o.fv > 0) { if (o.fv > 90 && !wet) o.fw += (Math.random() - 0.5) * 160; o.fv = -o.fv * (wet ? 0.12 : 0.28); } onBed = acc >= 0; }
+    // it rocks about its middle, and the liquid stills it
+    o.fw += (-70 * o.fa - (f > 0 ? 5 : 2.2) * o.fw) * dt;
+    o.fa += o.fw * dt;
+    o.ff = f;
+    o.x = host.x + (o.fx || 0);
+    o.y = host.y + o.fy;
+    place(o, `translate(${o.x.toFixed(1)}px, ${o.y.toFixed(1)}px) translate(0px, ${-body.h / 2}px) rotate(${o.fa.toFixed(1)}deg) translate(0px, ${body.h / 2}px)`);
+    // the liquid it has pushed aside: the level follows it
+    if (Math.abs(f - (o.fp ?? -1)) > 0.015) { o.fp = f; paint(host); }
+    const still = Math.abs(o.fv) < 4 && (onBed || Math.abs(acc) < 40) && Math.abs(o.fa) < 0.5 && Math.abs(o.fw) < 4;
+    o.calm = still ? (o.calm || 0) + dt : 0;
+    if (o.calm > 0.45) { afloat.delete(o); o.fv = 0; settled(host, o, onBed); }
+  }
+  if (afloat.size) floatRaf = requestAnimationFrame(floatTick);
+}
+/** Lifted out of the liquid: what it was pushing aside falls back, and the level with it. */
+function unfloat(it, host) {
+  afloat.delete(it);
+  Object.assign(it, { afloat: undefined, ff: 0, fp: null, fy: null, fa: 0, fv: 0 });
+  if (nodes[it.id]) L.items.appendChild(nodes[it.id].g);
+  if (host && nodes[host.id]) { paint(host); kick(host, 24); }
+}
+/** It has come to rest. If that is news (it floats now and did not, or the other way), it is written down. */
+function settled(host, o, onBed) {
+  const how = !(host.t.vol > 0) ? "dry" : onBed ? "sink" : "float";
+  if (o.afloat === how) return;
+  const first = o.afloat === undefined;
+  o.afloat = how;
+  const name = nameOf(o).toLowerCase(), why = FLOAT_WHY[o.key];
+  const under = Math.round((o.ff || 0) * 100);
+  const res = how === "dry"
+    ? { title: `Put the ${name} in`, obs: [{ text: `The ${name} drops to the bottom. There is no water in there for it to float in.` }], flags: [] }
+    : how === "float" ? { title: first ? `Put the ${name} in` : `Watched the ${name}`, obs: [{ text: first ? `The ${name} goes under, comes back up, bobs, and floats${under > 90 ? " with only its top above the surface" : under < 60 ? " high in the liquid" : ""}. The level of the liquid has risen.` : `The ${name} lifts off the bottom, rises slowly and floats.`, why: `${o.key === "lemon" ? why[0] : why[1]} A floating thing sinks in just far enough to push aside its own weight of liquid.` }], flags: [`float:${o.key}`] }
+    : { title: first ? `Put the ${name} in` : `Watched the ${name}`, obs: [{ text: `The ${name} sinks to the bottom. The level of the liquid has risen.`, why: `${o.key === "lemon" ? "The liquid is less dense than the lemon." : why[0]} A sunken thing pushes aside its own VOLUME of liquid, which is why the level rises.` }], flags: [`sink:${o.key}`] };
+  record(host, res);
+  save();
+}
+/** Something has dropped through the surface: drops are thrown up, and fall back. */
+function splash(host, o, speed) {
+  const NSS = "http://www.w3.org/2000/svg", lk = look(host.t), y = host.y - (host._level || 0), n = clamp(Math.round(speed / 45), 4, 12);
+  const g = document.createElementNS(NSS, "g");
+  g.setAttribute("pointer-events", "none");
+  L.fx.appendChild(g);
+  const rim = VESSELS[host.key].rTop - 4;
+  for (let i = 0; i < n; i++) {
+    const c = document.createElementNS(NSS, "ellipse");
+    const side = i % 2 ? 1 : -1, x0 = o.x + side * (8 + Math.random() * 10), up = (0.25 + Math.random() * 0.5) * Math.min(70, speed * 0.16), out = side * (4 + Math.random() * 20);
+    c.setAttribute("cx", clamp(x0, host.x - rim, host.x + rim).toFixed(1));
+    c.setAttribute("cy", y.toFixed(1));
+    c.setAttribute("rx", (0.9 + Math.random() * 1.1).toFixed(1));
+    c.setAttribute("ry", (1.6 + Math.random() * 1.6).toFixed(1));
+    c.setAttribute("fill", `rgba(${lk.rgb.map((v) => Math.round(v + (255 - v) * 0.5))},0.85)`);
+    c.style.transformBox = "fill-box";
+    c.style.transformOrigin = "center";
+    g.appendChild(c);
+    // thrown up, slowed by its weight, and down again: a parabola
+    const T = 420 + up * 6;
+    c.animate([
+      { transform: "translate(0px, 0px)", opacity: 0.9, easing: "cubic-bezier(0.2, 0.7, 0.4, 1)" },
+      { transform: `translate(${(out * 0.5).toFixed(1)}px, ${(-up).toFixed(1)}px)`, opacity: 0.9, offset: 0.5, easing: "cubic-bezier(0.6, 0, 0.8, 0.3)" },
+      { transform: `translate(${out.toFixed(1)}px, 2px)`, opacity: 0.2 },
+    ], { duration: T, fill: "both" });
+  }
+  setTimeout(() => g.remove(), 1400);
 }
 /** Gas is coming off under a balloon that has been stretched over the mouth: it fills. */
 function inflate(bal, g, res) {
@@ -791,43 +893,17 @@ function catchInBalloon(v, bal) {
   inflate(bal, { gas: p.gas, n: p.n * (age < 4 ? 1 : 1 - (age - 4) / 8) }, res);
   record(v, res);
 }
-/** Foam (or a model volcano's lava) swells out of the mouth and runs down the outside. */
+/** Foam (or a model volcano's lava) is forced out of a vessel: over the rim, down the outside, onto the bench (fluid.js). */
 function erupt(v) {
   if (!nodes[v.id]) return;
-  const def = VESSELS[v.key], m = mouth(v), lk = look(v.t), NSS = "http://www.w3.org/2000/svg";
-  const cone = v.key === "volcano";
-  const soapy = (v.t.aq.Soap || 0) > 0;
-  const rgb = lk.rgb.map((c) => Math.round(c + (255 - c) * (soapy ? 0.3 : 0.12)));
-  const g = document.createElementNS(NSS, "g");
-  g.setAttribute("pointer-events", "none");
-  L.fx.appendChild(g);
-  const drop = cone ? 132 : -def.top - (def.floor || 0);
-  for (let i = 0; i < (soapy ? 70 : 44); i++) {
-    const c = document.createElementNS(NSS, "circle");
-    const side = i % 2 ? 1 : -1, r = (soapy ? 5 : 3) + Math.random() * (soapy ? 7 : 4);
-    c.setAttribute("cx", (m.x + (Math.random() - 0.5) * def.rTop).toFixed(1));
-    c.setAttribute("cy", (m.y + 2).toFixed(1));
-    c.setAttribute("r", r.toFixed(1));
-    c.setAttribute("fill", `rgb(${rgb})`);
-    c.setAttribute("fill-opacity", soapy ? 0.92 : 0.85);
-    c.setAttribute("stroke", "#fff");
-    c.setAttribute("stroke-opacity", soapy ? 0.55 : 0.2);
-    c.setAttribute("stroke-width", "0.8");
-    g.appendChild(c);
-    const up = 10 + Math.random() * (soapy ? 34 : 60), far = Math.random();
-    const out = side * (def.rTop + 4 + Math.random() * 8);
-    const endX = cone ? side * (22 + far * 74) : side * (def.rMax + 4 + Math.random() * 10), endY = cone ? 18 + far * (drop - 22) : drop * (0.25 + far * 0.75);
-    c.animate([
-      { transform: "translate(0px, 0px) scale(0.3)", opacity: 0 },
-      { transform: `translate(${(out * 0.4).toFixed(0)}px, ${(-up).toFixed(0)}px) scale(1)`, opacity: 1, offset: 0.18 },
-      { transform: `translate(${out.toFixed(0)}px, ${(-up * 0.3).toFixed(0)}px) scale(1.1)`, opacity: 1, offset: 0.34 },
-      { transform: `translate(${endX.toFixed(0)}px, ${endY.toFixed(0)}px) scale(${soapy ? 1 : 0.7})`, opacity: 1 },
-    ], { duration: 2800 + Math.random() * 2400, delay: Math.random() * 1700, easing: "ease-out", fill: "both" });
-  }
-  // the foam lies where it ran for a while, then sinks away
-  g.style.transition = "opacity 2.2s";
-  setTimeout(() => { g.style.opacity = "0"; }, 12000);
-  setTimeout(() => g.remove(), 14400);
+  const def = VESSELS[v.key], m = mouth(v), cone = v.key === "volcano";
+  // the outside of the vessel at a given height: that is what the foam clings to as it creeps down
+  const outer = cone ? (y) => 24 + clamp((y - (v.y - 134)) / 134, 0, 1) * 76 : (y) => rAt(def.profile, clamp(y - v.y, def.top, -1)) + 1.5;
+  foamOut({
+    x: v.x, rim: m.y, floor: v.y, rIn: Math.max(4, def.rTop - 3), outer,
+    surface: cone ? m.y + 10 : v.y - Math.max(v._level || 0, (def.floor || 0) + 6),
+    rgb: look(v.t).rgb, soapy: (v.t.aq.Soap || 0) > 0, amount: clamp(def.rTop / 15, 0.6, 1.7),
+  });
   kick(v, 40);
 }
 /** Everything with a slot a vessel can stand in. */
@@ -1173,11 +1249,14 @@ function say(text, v = null, kind = "") {
 /** Water has gone onto concentrated acid: steam, and drops of acid thrown out of the vessel. (`calm`: only the warmth is seen.) */
 function spit(v, calm = false) {
   const def = VESSELS[v.key], y0 = v.y + def.top + 8, NS = "http://www.w3.org/2000/svg";
+  // the steam is a plume of vapour (fluid.js); only the DROPS of acid are thrown
+  puff("steam", v.x, v.y + def.top, def.rTop * 0.8, calm ? 9 : 46);
+  if (calm) return;
   const g = document.createElementNS(NS, "g");
   g.setAttribute("pointer-events", "none");
   L.fx.appendChild(g);
-  for (let i = 0; i < (calm ? 6 : 34); i++) {
-    const steam = calm || i % 3 === 0;
+  for (let i = 0; i < 24; i++) {
+    const steam = false;
     const c = document.createElementNS(NS, "circle");
     c.setAttribute("cx", (v.x + (Math.random() - 0.5) * def.rTop * 1.4).toFixed(1));
     c.setAttribute("cy", y0);
@@ -1219,7 +1298,8 @@ function record(v, res) {
     // foam climbs out of anything; a model volcano erupts with whatever gas is made in it
     if (res.flags.includes("foam") || (v.key === "volcano" && res.flags.some((f) => f.startsWith("gas:")))) { res.flags.push("erupt"); erupt(v); }
     if (res.flags.includes("dilute:wrong")) spit(v);
-    else if (res.flags.includes("dilute:right") || res.flags.includes("fumes")) spit(v, true);
+    else if (res.flags.includes("dilute:right")) spit(v, true);
+    else if (res.flags.includes("fumes")) puff("fumes", v.x, v.y + VESSELS[v.key].top, VESSELS[v.key].rTop * 0.8, 16);
     const skater = ["K", "Na"].find((m) => res.flags.includes(`water:${m}`));
     if (skater) skate(v, skater);
   }
@@ -1700,6 +1780,28 @@ function shaken(v, hard) {
   record(v, { title: hard > 0.9 ? "Shaken hard" : "Shaken", obs: text ? [{ text, why }] : [], flags: ["swirled", "shaken"] });
   if (!text) say(v.rinse ? "Shaken: the water has been all round the inside of the glass. Now pour it away into the sink." : hard > 0.9 ? "Shaken hard: it is thoroughly mixed." : "Shaken gently: the liquid is mixed. Shake faster to mix it harder.", v);
 }
+
+// ── vapour ──────────────────────────────────────────────────────────────────
+// Steam over a boiling liquid, the mist over a fuming acid, iodine's violet vapour: the vessel says
+// what it is giving off, and fluid.js moves the vapour. A colourless gas is only a faint shimmer:
+// it is the bubbles in the liquid that show it is there.
+const steaming = new Set();
+setInterval(() => {
+  const now = new Set();
+  for (const v of vessels()) {
+    const n = nodes[v.id];
+    if (!n || v.flip || stopperOf(v) || fittedTo(v, "balloon") || fittedTo(v, "bung") || (drag && drag.it === v && drag.over)) continue;
+    const c = n.g.classList;
+    const kind = c.contains("is-iodine") ? "iodine" : c.contains("is-steaming") ? "steam" : v.t.neat === "chcl" && v.t.vol > 0 ? "fumes" : c.contains("has-gas") ? "gas" : null;
+    if (!kind) continue;
+    const m = mouth(v);
+    setVapour(v.id, kind, m.x, m.y - 1, VESSELS[v.key].rTop * 0.8);
+    now.add(v.id);
+  }
+  for (const id of steaming) if (!now.has(id)) setVapour(id, null);
+  steaming.clear();
+  now.forEach((id) => steaming.add(id));
+}, 240);
 
 // ── liquid has weight: it lags behind a vessel that is moved, and rocks until it settles ──
 const waves = new Map();           // item id → { a: the surface's tilt in degrees, w: how fast it is turning }
@@ -2873,9 +2975,10 @@ window.addEventListener("pointermove", (e) => {
   if (it.kind === "vessel" || it.key === "syringe") it.rack = null;
   if (it.held) { it.held = null; it.tilt = 0; paint(it); }                       // pulled out of the holder or the tongs
   if (it.on) {
+    const was = byId(it.on);
     it.on = null;
     if (it.key === "balloon" && it.gas) { it.gas = 0; dress(it); say("Pulled off, the balloon lets its gas go and hangs limp again."); }
-    if (FLOATERS[it.key]) { it.afloat = undefined; L.items.appendChild(nodes[it.id].g); }
+    if (FLOATERS[it.key]) unfloat(it, was);
   }
   if (GRIPS[it.key]) {
     // an empty holder or tongs: show what it would take hold of here
@@ -3822,7 +3925,9 @@ const actor = {
   },
   /** Take a fitted thing off again (a funnel out of a flask) and put it down. */
   async lift(tool, x, y) {
+    const was = tool.on != null && byId(tool.on);
     tool.on = null;
+    if (FLOATERS[tool.key]) unfloat(tool, was);
     await this.move(tool, x, y, 460);
     dress(tool);
   },

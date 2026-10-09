@@ -790,3 +790,8 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 .cl-class__steps { margin: 0 0 0.6rem; padding-left: 1.2rem; font-size: 0.78rem; line-height: 1.55; }
 .cl-class__steps label { cursor: pointer; }
 .cl-class .cl-search { color: #14130f; background: #fffdf6; border: 1px solid rgba(20, 19, 15, 0.28); font-size: 0.78rem; }
+
+/* Vapour is moved by fluid.js: the three drawn wisps are gone. Bubbles are thin-walled and nearly clear. */
+.cl-wisps { display: none; }
+.cl-bub__c { fill: rgba(255, 255, 255, 0.06); stroke-opacity: 0.6; stroke-width: 0.5; }
+.cl-foam { fill: rgba(255, 255, 255, 0.2); stroke-opacity: 0.55; stroke-width: 0.45; }

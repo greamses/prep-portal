@@ -736,11 +736,11 @@ export const LESSONS = [
       const pe = await b.take("tool", "peeled", at(650), b.BASE);
       await say("A big beaker of water, a lemon, and a lemon with its peel taken off.");
       await b.fit(le, bk);
-      await b.wait(1200);
+      await b.wait(4200);
       await say("The whole lemon floats.");
       await b.lift(le, at(560), b.BASE);
       await b.fit(pe, bk);
-      await b.wait(1200);
+      await b.wait(3600);
       await say("The peeled lemon sinks! The peel is full of tiny pockets of air, like a life-jacket. Take it off, and the lemon is heavier than the water it pushes aside.");
     },
   },
@@ -764,14 +764,14 @@ export const LESSONS = [
       await b.pour(w, bk, 5);
       const eg = await b.take("tool", "egg", at(540), b.BASE);
       await b.fit(eg, bk);
-      await b.wait(1000);
+      await b.wait(3200);
       await say("In plain water the egg goes straight to the bottom.");
       const sa = await b.take("reagent", "salt", at(180), b.TOP + 22);
       await b.uncap(sa);
       await b.pour(sa, bk, 2);
       await say("Salt goes in, and dissolves. Not enough yet.");
       await b.pour(sa, bk, 3);
-      await b.wait(1600);
+      await b.wait(4200);
       await say("There it goes! Salt makes the water denser. When the water is denser than the egg, it holds the egg up. That is why you float so easily in the sea.");
     },
   },

@@ -381,7 +381,7 @@ function scatter(seed) {
 }
 
 /** Paint a vessel from its chemistry. `fresh` = a precipitate has just come down. */
-export function paintVessel(g, key, t, { fresh = false, seed = 1, tilt = 0 } = {}) {
+export function paintVessel(g, key, t, { fresh = false, seed = 1, tilt = 0, extra = 0 } = {}) {
   const def = VESSELS[key];
   const P = def.profile, H = -def.top;
   const sp = speciate(t);
@@ -389,7 +389,8 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1, tilt = 0 } = {
   const stuff = sediment(t, sp);
   // oil floats: the two layers share the height in the proportion they are there
   const oil = t.oil || 0;
-  const top = levelOf(def, { vol: t.vol + oil, cap: t.cap });
+  // (extra: liquid pushed aside by something floating or sunk in it. The level stands that much higher.)
+  const top = levelOf(def, { vol: t.vol + oil + (t.vol + oil > 0 ? extra : 0), cap: t.cap });
   const level = oil > 0 ? (t.vol > 0 ? (def.floor || 0) + (top - (def.floor || 0)) * (t.vol / (t.vol + oil)) : 0) : top;
   const oilEl = g.querySelector(".cl-oil");
   oilEl.removeAttribute("transform");
@@ -521,18 +522,24 @@ export function bubble(g, key, t, lively = 1, { xs = null, steam = false } = {})
   const fl = def.floor || 0;
   const spread = rAt(def.profile, -fl - (level - fl) * 0.35) * 0.78;
   const top = level - fl - 4;
-  const count = Math.round(16 * lively);
+  // Bubbles do not appear all over a liquid. They grow at a few places on the solid (a scratch, an
+  // edge) and leave each one in a string, one after another. Most are tiny. A big bubble rises
+  // faster than a small one, and wanders more on the way up.
+  const count = Math.round(18 * lively);
+  const sites = xs || Array.from({ length: Math.max(2, Math.min(7, Math.round(2 + lively * 2.5))) }, () => (Math.random() - 0.5) * 2 * spread);
   let html = "";
   for (let k = 0; k < count; k++) {
-    const x = xs ? xs[k % xs.length] + (Math.random() - 0.5) * 7 : (Math.random() - 0.5) * 2 * spread;
-    const r = 1 + Math.random() * 2.4 * Math.min(1.4, lively);
-    const rise = (0.9 + Math.random() * 0.9) / Math.min(1.6, 0.7 + lively * 0.4);
-    html += `<g class="cl-bub" style="--rise:${-Math.round(top)}px;--t:${rise.toFixed(2)}s;--d:${(Math.random() * 2.8).toFixed(2)}s"><circle class="cl-bub__c" cx="${f1(x)}" cy="${-fl - 5}" r="${f1(r)}" style="--w:${f1((Math.random() - 0.5) * 9)}px"/></g>`;
+    const x = sites[k % sites.length] + (Math.random() - 0.5) * (xs ? 6 : 3.5);
+    const r = 0.55 + Math.random() ** 2.4 * 2.5 * Math.min(1.35, 0.6 + lively * 0.5);
+    const rise = Math.max(0.5, (1.9 - r * 0.34) / Math.min(1.6, 0.75 + lively * 0.35));
+    html += `<g class="cl-bub" style="--rise:${-Math.round(top)}px;--t:${rise.toFixed(2)}s;--d:${((k / count) * 2.4 + Math.random() * 0.5).toFixed(2)}s"><circle class="cl-bub__c" cx="${f1(x)}" cy="${-fl - 5}" r="${f1(r)}" style="--w:${f1((Math.random() - 0.5) * (2 + r * 3.2))}px"/></g>`;
   }
   if (lively >= 1) {
-    const wr = rAt(def.profile, -level) - 2;
-    for (let k = 0; k < Math.round(7 * lively); k++) {
-      html += `<circle class="cl-foam" cx="${f1((Math.random() - 0.5) * 2 * wr)}" cy="${f1(-level - Math.random() * 3.5 * lively)}" r="${f1(1.4 + Math.random() * 2.2)}" style="--d:${(Math.random() * 1.6).toFixed(2)}s"/>`;
+    // the froth where they break: small, and thickest against the glass, where the surface holds them
+    const wr = rAt(def.profile, -level) - 2.5;
+    for (let k = 0; k < Math.round(9 * lively); k++) {
+      const edge = Math.random() < 0.6 ? (Math.random() < 0.5 ? -1 : 1) * wr * (0.72 + Math.random() * 0.28) : (Math.random() - 0.5) * 2 * wr;
+      html += `<circle class="cl-foam" cx="${f1(edge)}" cy="${f1(-level - Math.random() * 1.6 * lively)}" r="${f1(0.7 + Math.random() * 1.3)}" style="--d:${(Math.random() * 1.8).toFixed(2)}s"/>`;
     }
   }
   box.innerHTML = html;
