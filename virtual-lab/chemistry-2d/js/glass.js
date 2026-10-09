@@ -616,14 +616,15 @@ ${capped ? CAPS.jar(-83) : ""}
     ${shadow(36)}
     <clipPath id="clip-${uid}"><path d="${outline(BOTTLE)}"/></clipPath>
     <path d="${outline(BOTTLE)}" fill="#fff" fill-opacity="0.03"/>
-    <g clip-path="url(#clip-${uid})"><g class="cl-stock"><g class="cl-level" style="transform-origin:0px -58px"><rect x="-128" y="-58" width="256" height="240" fill="${liquidOf(id)}"/><rect x="-128" y="-58" width="256" height="2.2" fill="#fff" fill-opacity="0.3"/><rect x="-128" y="-55.8" width="256" height="4" fill="#000" fill-opacity="0.12"/></g></g><rect x="-32" y="-58" width="64" height="60" fill="url(#g-shade)"/></g>
-    <ellipse class="cl-stock" cx="0" cy="-58" rx="29.5" ry="2.2" fill="#fff" fill-opacity="${amber ? 0.1 : 0.28}"/>
+    <g clip-path="url(#clip-${uid})"><g class="cl-pool"><g class="cl-level" style="transform-origin:0px -58px"><rect x="-160" y="-58" width="320" height="300" fill="${liquidOf(id)}"/><rect x="-160" y="-58" width="320" height="2.2" fill="#fff" fill-opacity="0.34"/><rect x="-160" y="-55.8" width="320" height="4" fill="#000" fill-opacity="0.12"/></g></g><rect x="-32" y="-58" width="64" height="60" fill="url(#g-shade)"/></g>
+    <ellipse class="cl-pool-top" cx="0" cy="-58" rx="29.5" ry="2.2" fill="#fff" fill-opacity="${amber ? 0.1 : 0.28}"/>
     <path d="${outline(BOTTLE)}" fill="url(#${amber ? "g-amber" : "g-glass"})"/>
     <path class="cl-g-edge" d="${outline(BOTTLE, true)}"/>
     <path d="${band(BOTTLE, -1, 3.6, 9, 0.08, 0.66)}" fill="url(#g-streak)"/><path d="${band(BOTTLE, 1, 5, 13, 0.2, 0.66)}" fill="#fff" fill-opacity="0.07"/>
     <ellipse class="cl-g-foot" cx="0" cy="-2.5" rx="27" ry="3"/>
 ${capped ? CAPS.bottle(-103) : ""}
     ${label(formula(r.formula), -50, 50, 26, size)}
+    ${r.conc ? `<rect x="-25" y="-23" width="50" height="9.5" fill="#c8322b"/><text x="0" y="-16" text-anchor="middle" font-size="6.6" font-weight="700" letter-spacing="0.8" fill="#fff" font-family="Arial, sans-serif">CONC.</text>` : ""}
     ${hit({ x0: -35, y0: -125, x1: 35, y1: 8 })}`;
 }
 
@@ -635,6 +636,7 @@ export const TOOLS = {
   dropper: { name: "Dropper", act: [0, 0], bbox: { x0: -10, y0: -108, x1: 10, y1: 6 } },
   thermo: { name: "Thermometer", act: [0, 0], bbox: { x0: -9, y0: -154, x1: 9, y1: 6 } },
   ph: { name: "pH paper", act: [0, 0], bbox: { x0: -10, y0: -70, x1: 10, y1: 6 } },
+  slip: { name: "Strip of paper", act: [0, 0], bbox: { x0: -10, y0: -70, x1: 10, y1: 6 } },
   meter: { name: "pH meter", act: [0, 0], bbox: { x0: -22, y0: -156, x1: 22, y1: 6 } },
   wire: { name: "Flame-test wire", act: [-34, -58], bbox: { x0: -44, y0: -68, x1: 40, y1: 8 } },
   waste: { name: "Waste tub", act: [0, -66], bbox: { x0: -62, y0: -78, x1: 62, y1: 8 } },
@@ -941,11 +943,12 @@ export function toolSvg(key, it = {}) {
     return `<ellipse cx="0" cy="-1" rx="40" ry="4" fill="#000" fill-opacity="0.32" filter="url(#g-soft)"/>
       <path d="M-40 -30q-2 1 -2 3l1 2.500l49 9l6 -3.500l22 4q3 0.5 3.5 -2.200l0.4 -2.200q0.4 -2.6 -2.5 -3.200l-73 -13.400q-3 -0.6 -4.4 1z" fill="#a8763d" stroke="#5d3d18" stroke-width="0.7"/>
       <path d="M-38 -27.500l72 13M-37 -30.500l70 12.8" stroke="#6b461c" stroke-opacity="0.5" stroke-width="0.5"/>
-      <path d="M-16 -29.500V-23" stroke="#4a515b" stroke-width="2.6" stroke-linecap="round"/>${hit(b)}<!--front-->
+      <ellipse cx="-25.5" cy="-25.6" rx="1.9" ry="1.2" fill="#24160a"/><path d="M-19 -22.5L-25.5 -25.6" stroke="#4a515b" stroke-width="2.2"/><path d="M-19 -22.5L-25.5 -25.6" stroke="#cfd5dc" stroke-width="0.8"/>${hit(b)}<!--front-->
       <path d="M-40 -9.500q-2 -1 -1 -3.500l1 -1.500h49l6 2.500h22q3 0 3 3v2.500q0 2.5 -3 2.500h-74q-3 0 -4 -2z" fill="url(#g-wood)" stroke="#6f4a1e" stroke-width="0.7"/>
       <path d="M-38 -11.500h74M-36 -8.500h70" stroke="#7d5425" stroke-opacity="0.45" stroke-width="0.5"/><path d="M-39 -13.500h47" stroke="#fff" stroke-opacity="0.45" stroke-width="0.8"/>
       <path d="M22 -13.800q7 -5.5 14 0" fill="none" stroke="#6f4a1e" stroke-width="0.9"/><path d="M23 -13q6 -3.8 12 0" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="0.7"/>
-      <path d="M-16 -3.500V-12" stroke="#5d6570" stroke-width="2.6" stroke-linecap="round"/><path d="M-16 -3.500V-12" stroke="#e2e7ee" stroke-width="1.2" stroke-linecap="round"/>
+      <ellipse cx="-6.5" cy="-8.8" rx="2.1" ry="1.3" fill="#24160a"/><path d="M-8.4 -8.6a2.1 1.3 0 0 0 3.9 0" fill="none" stroke="#f0d2a0" stroke-opacity="0.75" stroke-width="0.5"/>
+      <path d="M-12 -15.5L-6.7 -9" stroke="#5d6570" stroke-width="2.3"/><path d="M-12 -15.5L-6.7 -9" stroke="#e2e7ee" stroke-width="1"/>
       ${[-20, -17, -14, -11].map((x) => `<ellipse cx="${x}" cy="-19" rx="2.2" ry="5.6" fill="none" stroke="#5d6570" stroke-width="2.2"/><ellipse cx="${x}" cy="-19" rx="2.2" ry="5.6" fill="none" stroke="#dfe5ec" stroke-width="1"/>`).join("")}
       <path d="M-22 -22.500q1 -3 3 -3" fill="none" stroke="#fff" stroke-opacity="0.8" stroke-width="0.7" stroke-linecap="round"/>`;
   }

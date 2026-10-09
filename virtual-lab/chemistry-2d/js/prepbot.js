@@ -353,6 +353,42 @@ export const LESSONS = [
     },
   },
   {
+    id: "acid-water",
+    name: "Acid to water, never water to acid",
+    group: "Concentrated acids and safety",
+    about: "Which liquid is poured into which, and what concentrated sulfuric acid does to paper.",
+    need: ["dilute:right", "dilute:wrong", "charred"],
+    steps: [
+      { text: "Half fill a beaker with distilled water, then pour concentrated sulfuric acid (in Acids, marked CONC.) into it. It gets hot and stays calm.", done: (seen) => seen.has("dilute:right") },
+      { text: "Pour concentrated sulfuric acid into an empty boiling tube, then pour water onto it. It spits.", done: (seen) => seen.has("dilute:wrong") },
+      { text: "Pour concentrated sulfuric acid into a dry test tube and dip a strip of paper (in Equipment) in it. The paper chars.", done: (seen) => seen.has("charred") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Concentrated sulfuric acid is the most dangerous bottle on this bench. There is one rule for diluting it, and I will show why.");
+      const bk = await b.take("vessel", "beaker250", at(120), b.BASE);
+      const w = await b.take("reagent", "water", at(0), b.TOP);
+      const ac = await b.take("reagent", "ch2so4", at(110), b.TOP);
+      await b.uncap(w);
+      await b.pour(w, bk, 4);
+      await say("First the water. Plenty of it.");
+      await b.uncap(ac);
+      await b.pour(ac, bk);
+      await say("Now the acid, into the water, a little at a time. It is heavy and oily: it sinks and mixes. The beaker gets hot, but nothing boils. Acid to water.");
+      const bt = await b.take("vessel", "boil", at(330), b.BASE);
+      await b.pour(ac, bt);
+      await say("Now the wrong way round. Acid first, in a dry tube. Watch the mouth of the tube.");
+      await b.pour(w, bt);
+      await say("It spits. The water floats on the acid, boils in an instant and throws hot acid out. In a real laboratory that is on your hands and face. Never water to acid.");
+      const tb = await b.take("vessel", "tube", at(470), b.BASE);
+      await b.pour(ac, tb);
+      const slip = await b.take("tool", "slip", at(560), b.BASE);
+      await say("One more thing. A strip of plain white paper, dipped in the concentrated acid.");
+      await b.hold(slip, tb, 3200);
+      await say("Black. The acid has pulled the water out of the paper and left carbon. It does that to skin as well. That is what corrosive means.");
+    },
+  },
+  {
     id: "centrifuge",
     name: "Centrifuging",
     about: "Spinning packs a fine solid into a pellet, and the clear liquid is poured off.",
@@ -756,7 +792,7 @@ export async function initPrepbot(bench) {
     burner: ["burner", "bunsen"], spirit: ["spirit lamp"], tubing: ["delivery tube"], bung: ["stopper", "bung", "cork"], bung1: ["one hole stopper", "holed stopper", "stopper with a hole"], lit: ["splint"], blue: ["litmus paper", "litmus"],
     electrode: ["electrode", "carbon rod"], power: ["power pack", "battery", "power supply"], rod: ["glass rod", "stirring rod", "stirrer"], wire: ["flame test wire", "wire"],
     condenser: ["condenser"], funnel: ["funnel"], water: ["water"], hcl: ["acid"], naoh: ["alkali"], nh3: ["ammonia solution", "ammonia"],
-    unk: ["unknown salt", "unknown", "sample x"], caco3: ["calcium carbonate", "marble"], mno2: ["manganese dioxide", "manganese oxide"], h2o2: ["hydrogen peroxide", "peroxide"], oil: ["oil"],
+    unk: ["unknown salt", "unknown", "sample x"], caco3: ["calcium carbonate", "marble"], mno2: ["manganese dioxide", "manganese oxide"], h2o2: ["hydrogen peroxide", "peroxide"], oil: ["oil"], ch2so4: ["concentrated sulfuric acid", "conc sulfuric acid", "concentrated acid", "conc acid"], chcl: ["concentrated hydrochloric acid", "conc hydrochloric acid"], cnaoh: ["concentrated sodium hydroxide", "conc sodium hydroxide", "concentrated alkali"], slip: ["strip of paper", "plain paper", "paper strip"],
     mg: ["magnesium"], zn: ["zinc"], fe: ["iron"], cu: ["copper"], cuo: ["copper oxide"],
     sandsalt: ["sand and salt", "salt and sand", "mixture"], sulfur: ["sulphur powder", "sulphur", "sulfur"], iodine: ["iodine"], magnet: ["magnet"], centrifuge: ["centrifuge"], watch: ["stop watch", "stopwatch", "timer"], chroma: ["chromatography paper", "chromatography strip", "chromatography"],
   };

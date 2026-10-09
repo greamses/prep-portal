@@ -35,6 +35,7 @@ export const GROUPS = [
   { id: "gas", label: "Preparing and testing gases" },
   { id: "sep", label: "Separating mixtures" },
   { id: "more", label: "Energy and electricity" },
+  { id: "safe", label: "Concentrated acids and safety" },
 ];
 
 /** The salts sample X may be, and the ions a candidate has to name. */
@@ -451,6 +452,40 @@ export const EXPERIMENTS = [
     ],
     record: "Sodium golden yellow, calcium brick red, copper blue-green. Clean the wire between tests: sodium's yellow hides the others.",
   },
+
+  // ── concentrated acids: which is poured into which, and what the acid does to paper ──
+  {
+    id: "acid-to-water", group: "safe", title: "Diluting an acid: acid to water",
+    task: "Dilute concentrated sulfuric acid the safe way, and measure how hot it gets.",
+    needs: "beaker, thermometer, distilled water, concentrated sulfuric acid (in Acids)",
+    steps: [
+      { text: "Half fill a beaker with distilled water and take its temperature.", need: ["added:water"], test: (seen) => seen.has("added:water") && [...seen].some((f) => f.startsWith("temp:")) },
+      { text: "Pour concentrated sulfuric acid INTO the water, one measure at a time.", need: ["dilute:right"] },
+      { text: "Take the temperature again: the liquid is hot, but it stayed calm.", need: [], test: hot },
+    ],
+    record: "Diluting concentrated sulfuric acid is strongly exothermic. The acid is always added to the water, slowly and with stirring: it is the denser liquid, so it sinks and mixes, and the heat is shared by all the water.",
+  },
+  {
+    id: "water-to-acid", group: "safe", title: "Water to acid: why it is never done",
+    task: "See what happens when water is poured onto concentrated sulfuric acid. On this bench it is safe to find out.",
+    needs: "boiling tube or beaker, concentrated sulfuric acid (in Acids), distilled water",
+    steps: [
+      { text: "Pour a measure of concentrated sulfuric acid into an empty, dry vessel.", need: ["conc"] },
+      { text: "Now pour distilled water onto the acid, and watch the mouth of the vessel.", need: ["dilute:wrong"] },
+    ],
+    record: "Water is less dense than the acid and lies on top of it. The heat of mixing is given out in that thin layer of water, which boils at once and throws hot acid out. The rule: add acid to water, never water to acid.",
+  },
+  {
+    id: "char", group: "safe", title: "Concentrated sulfuric acid chars paper",
+    task: "Show that concentrated sulfuric acid is corrosive, and that the dilute acid does not do the same.",
+    needs: "two test tubes, strips of paper (in Equipment), concentrated and dilute sulfuric acid",
+    steps: [
+      { text: "Pour concentrated sulfuric acid into one test tube and dilute sulfuric acid into another.", need: ["added:ch2so4", "added:h2so4"] },
+      { text: "Dip a strip of paper in the dilute acid. It only gets wet.", need: ["slip:dilute"] },
+      { text: "Dip a fresh strip in the concentrated acid. It turns black.", need: ["charred"] },
+    ],
+    record: "Concentrated sulfuric acid is a dehydrating agent: it takes the elements of water out of the cellulose in paper and leaves carbon, C6H10O5(s) → 6C(s) + 5H2O(l). It chars cloth, wood, sugar and skin in the same way.",
+  },
 ];
 
 /** Is this step done, given the flags seen so far? */
@@ -465,6 +500,7 @@ export function stepDone(step, seen, q) {
 export const HOWTO = [
   "Take pieces from the drawer: tap a tile, or drag it onto the bench. Drag a piece back onto the drawer to put it away.",
   "Pull the stopper out of a bottle before pouring. Carry the bottle to a vessel and hold it there. What is poured out is gone from the bottle: when one runs out, refill it from its own note.",
+  "Bottles marked CONC. in red are concentrated. Pour a concentrated acid INTO water, never water onto the acid. A strip of plain paper (in Equipment) shows what the concentrated acid does to anything it touches.",
   "Let a vessel go at a rack, a tripod, a clamp or a balance pan and it stands there. Slide a stand's clamp by its yellow boss.",
   "Let a funnel, a stopper, a condenser or a carbon rod go at a mouth or a joint and it stays there. A filter paper goes in a funnel, and a delivery tube in the hole of a one-hole stopper.",
   "Move a vessel quickly to and fro to shake it: the faster the hand, the harder it is shaken and the better it mixes.",

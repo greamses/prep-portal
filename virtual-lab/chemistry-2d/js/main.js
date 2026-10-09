@@ -159,7 +159,16 @@ const loadOf = (tool) => state.items.find((o) => o.held === tool.id) || null;
 /** Where a vessel hangs when a gripping tool at (x, y) has hold of it. */
 function hangsAt(tool, v, x = tool.x, y = tool.y) {
   const [jx, jy] = GRIPS[tool.key].jaw, def = VESSELS[v.key];
-  return tool.key === "holder" ? { x: x + jx, y: y + jy - 20 - def.top } : { x: x + jx + def.rTop - 5, y: y + jy - 2 - def.top };
+  const tilt = tool.tilt || 0, r = (tilt * Math.PI) / 180, cos = Math.cos(r), sin = Math.sin(r);
+  const turn = (px, py) => [px * cos - py * sin, px * sin + py * cos];
+  // where the jaw is, the tool having been turned about its own middle
+  const pt = pivotOf(tool), [ax, ay] = turn(jx, jy - pt);
+  const jawX = x + ax, jawY = y + pt + ay;
+  // the point of the piece that is in the jaw: a tube's neck, a dish's near rim. The piece is turned
+  // with the tool (about ITS middle), and put where that point comes to the jaw.
+  const [qx, qy] = tool.key === "holder" ? [0, def.top + 20] : [-(def.rTop - 5), def.top + 2];
+  const pv = def.top / 2, [bx, by] = turn(qx, qy - pv);
+  return { x: jawX - bx, y: jawY - pv - by, tilt };
 }
 /** The piece a gripping tool could take hold of, where it is now. */
 function grabbable(tool) {
@@ -176,6 +185,7 @@ function grabbable(tool) {
 function grab(tool, v) {
   v.rack = null;
   v.held = tool.id;
+  tool.tilt = 0;                    // it takes hold level, and is tilted afterwards
   // the tool closes on the piece where the piece is: it is the tool that moves the last little way
   const at = hangsAt(tool, v, 0, 0);
   tool.x = v.x - at.x;
@@ -292,7 +302,7 @@ function mount(it) {
   dress(it);
 }
 /** How far up a piece its turning point is (it turns about its middle). */
-const pivotOf = (it) => (it.kind === "vessel" ? VESSELS[it.key].top / 2 : -mouthOf(it.key) / 2);
+const pivotOf = (it) => (it.kind === "vessel" ? VESSELS[it.key].top / 2 : it.kind === "tool" ? -14 : -mouthOf(it.key) / 2);
 function place(it, transform) {
   if ((it.key === "bung" || it.key === "bung1") && nodes[it.id]) {
     // a stopper is the width of the neck it is in
@@ -314,6 +324,12 @@ function place(it, transform) {
   n.g.style.transform = t;
   if (n.front) n.front.style.transform = t;
   if (n.veil) n.veil.style.transform = t;
+  if (it.kind === "reagent") {
+    // tipped at a mouth to pour (the pose is handed in), or turned by its handle
+    const held = transform && /rotate\((-?[\d.]+)deg\)/.exec(transform);
+    n.poured = held ? Number(held[1]) : null;
+    poolIn(it, n.poured ?? (it.tilt || 0));
+  }
 }
 function paint(it, opts = {}) {
   const g = nodes[it.id].g;
@@ -387,7 +403,10 @@ function dress(it) {
   const g = n.g;
   if (TAKES[it.key]) g.querySelector(".cl-drop-liq").style.fill = it.sample ? `rgba(${it.rgb || [200, 224, 240]},0.9)` : "transparent";
   if (it.key === "wire") g.querySelector(".cl-loop").style.fill = it.sample ? "#f2f6fb" : "transparent";
-  if (it.kind === "reagent") g.style.setProperty("--drop", `${((1 - leftIn(it) / fullOf(it)) * DROP[reagent(it.key).kind]).toFixed(1)}px`);
+  if (it.kind === "reagent") {
+    g.style.setProperty("--drop", `${((1 - leftIn(it) / fullOf(it)) * DROP[reagent(it.key).kind]).toFixed(1)}px`);
+    poolIn(it, n.poured ?? (it.tilt || 0));
+  }
   if (it.key === "watch") watchFace(it);
   if (it.key === "magnet") g.classList.toggle("has-filings", Boolean(it.sample));
   if (it.key === "chroma") {
@@ -644,7 +663,7 @@ function ridersOf(it, out = []) {
 function follow(it, smooth = true) {
   for (const o of state.items) {
     if (o.on === it.id) { const m = seat(it, o); o.x = m.x; o.y = m.y; }
-    else if (o.held === it.id) { const at = hangsAt(it, o); o.x = at.x; o.y = at.y; }
+    else if (o.held === it.id) { const at = hangsAt(it, o); o.x = at.x; o.y = at.y; if ((o.tilt || 0) !== at.tilt) { o.tilt = at.tilt; if (nodes[o.id]) paint(o); } }
     else if (o.rack && o.rack[0] === it.id) { const [sx, sy] = o.key === "syringe" ? [78, (it.clamp ?? CLAMP) + 9] : slotAt(it, o.rack[1], VESSELS[o.key]); o.x = it.x + sx; o.y = it.y + sy; }
     else continue;
     glide(o, smooth);
@@ -957,8 +976,38 @@ function say(text, v = null, kind = "") {
 }
 
 /** Write an action down. Gas that came off goes wherever the vessel is piped to first. */
+/** Water has gone onto concentrated acid: steam, and drops of acid thrown out of the vessel. (`calm`: only the warmth is seen.) */
+function spit(v, calm = false) {
+  const def = VESSELS[v.key], y0 = v.y + def.top + 8, NS = "http://www.w3.org/2000/svg";
+  const g = document.createElementNS(NS, "g");
+  g.setAttribute("pointer-events", "none");
+  L.fx.appendChild(g);
+  for (let i = 0; i < (calm ? 6 : 34); i++) {
+    const steam = calm || i % 3 === 0;
+    const c = document.createElementNS(NS, "circle");
+    c.setAttribute("cx", (v.x + (Math.random() - 0.5) * def.rTop * 1.4).toFixed(1));
+    c.setAttribute("cy", y0);
+    c.setAttribute("r", (steam ? 7 + Math.random() * 7 : 1.3 + Math.random() * 1.9).toFixed(1));
+    c.setAttribute("fill", steam ? "#fff" : "#eaf2f9");
+    c.setAttribute("fill-opacity", steam ? (calm ? 0.08 : 0.17) : 0.9);
+    c.style.transformBox = "fill-box";
+    c.style.transformOrigin = "center";
+    g.appendChild(c);
+    const dx = (Math.random() - 0.5) * (steam ? 70 : 210), up = steam ? 110 + Math.random() * 70 : 50 + Math.random() * 100;
+    c.animate(steam
+      ? [{ transform: "translate(0px, 0px) scale(0.6)", opacity: 1 }, { transform: `translate(${dx.toFixed(0)}px, ${(-up).toFixed(0)}px) scale(2.3)`, opacity: 0 }]
+      : [{ transform: "translate(0px, 0px)", opacity: 1 }, { transform: `translate(${(dx * 0.5).toFixed(0)}px, ${(-up).toFixed(0)}px)`, opacity: 1, offset: 0.42, easing: "ease-in" }, { transform: `translate(${dx.toFixed(0)}px, ${(30 + Math.random() * 70).toFixed(0)}px)`, opacity: 0 }],
+      { duration: (calm ? 1800 : 700) + Math.random() * 800, delay: Math.random() * (calm ? 900 : 650), easing: "ease-out", fill: "both" });
+  }
+  setTimeout(() => g.remove(), 3200);
+  if (!calm) { kick(v, 44); setTimeout(() => nodes[v.id] && kick(v, -36), 240); setTimeout(() => nodes[v.id] && kick(v, 30), 520); }
+}
 function record(v, res) {
   if (v.kind === "vessel") gasFlow(v, res);
+  if (v.kind === "vessel" && res.flags && nodes[v.id]) {
+    if (res.flags.includes("dilute:wrong")) spit(v);
+    else if (res.flags.includes("dilute:right")) spit(v, true);
+  }
   const last = state.log[0];
   const same = last && last.id === v.id && last.title === res.title && JSON.stringify(last.obs) === JSON.stringify(res.obs);
   if (same) last.times = (last.times || 1) + 1;
@@ -1220,7 +1269,7 @@ function fx(html, ms = 900) {
 const GRAV = 2300;                 // bench units a second, each second
 const flows = {};
 let flowing = 0, flowAt = 0;
-const THICK = { oil: 0.9, h2so4: 0.24, h2o2: 0.08 };
+const THICK = { oil: 0.9, ch2so4: 0.6, cnaoh: 0.2, h2so4: 0.12, h2o2: 0.08 };
 const OIL_RGB = [226, 196, 92];
 const viscOf = (it) => (it.kind === "reagent" ? THICK[it.key] ?? 0.04 : it.t && it.t.oil > 0 ? 0.9 : 0.04);
 /**
@@ -1482,8 +1531,8 @@ const drops = (from, to, c, r = 2.6, spread = 0) => fx([0, 1, 2].map((k) => `<ci
 // ── a bottle holds only so much ─────────────────────────────────────────────
 // What is poured out of a bottle is no longer in it: its level falls as the vessel's rises, and
 // an empty bottle pours nothing until it is refilled (from its own note). A solution bottle
-// holds 250 cm³ (125 portions), a jar twelve spatula measures, an indicator bottle thirty squirts.
-const FULL = { solution: 125, solid: 12, indicator: 30 };
+// holds 100 cm³ (50 portions), a jar twelve spatula measures, an indicator bottle thirty squirts.
+const FULL = { solution: 50, solid: 12, indicator: 30 };
 const DROP = { solution: 58, solid: 37, indicator: 41 };          // how far the contents sink in the drawing, full to empty
 const fullOf = (it) => FULL[reagent(it.key).kind];
 const leftIn = (it) => it.left ?? fullOf(it);
@@ -1491,6 +1540,29 @@ function takeStock(it, n) {
   it.left = Math.max(0, leftIn(it) - n);
   if (it.left < 1e-6) it.left = 0;
   dress(it);
+}
+/**
+ * Lay the liquid in a bottle: level with the bench whichever way the bottle is tipped (so tipped
+ * to pour it runs to the neck, as it does), and as deep as there is liquid left. `tilt` is the
+ * angle the bottle is drawn at.
+ */
+function poolIn(it, tilt = it.tilt || 0) {
+  const n = nodes[it.id];
+  const pool = n && n.g.querySelector(".cl-pool");
+  if (!pool) return;
+  const f = clamp(leftIn(it) / fullOf(it), 0, 1);
+  // the liquid's own sheet has its top edge at y = -58; it is turned back by the bottle's angle about
+  // the middle of the bottle, and slid so that the right share of the bottle is under it
+  const lean = Math.abs(Math.sin((tilt * Math.PI) / 180));
+  const span = 58 + 20 * lean;                              // how deep the bottle is, measured straight down, at this angle
+  const off = (0.5 - f) * span + (f <= 0 ? 60 : 0);
+  pool.style.transform = `translate(0px, -29px) rotate(${-tilt}deg) translate(0px, ${(58 + off).toFixed(1)}px)`;
+  // it is seen to move when some of it goes
+  if (n.poolF != null && Math.abs(n.poolF - f) > 1e-6) { n.g.classList.remove("is-slosh"); void n.g.getBoundingClientRect(); n.g.classList.add("is-slosh"); }
+  n.poolF = f;
+  n.g.classList.toggle("is-tipped", Math.abs(tilt) > 30);
+  const top = n.g.querySelector(".cl-pool-top");
+  if (top) { top.style.transform = `translateY(${((1 - f) * 58).toFixed(1)}px)`; top.style.opacity = Math.abs(tilt) > 3 || f <= 0 ? "0" : ""; }
 }
 /** An empty bottle says so. */
 function ranOut(bottle) {
@@ -1744,12 +1816,13 @@ function showTest(it, res) {
   const [, a, b] = res.fx.split("-");
   if (MOUTH.includes(it.key)) { g.querySelector(".cl-after").innerHTML = splintAfter(res.fx); g.dataset.end = res.fx; }
   else if (it.key === "ph") dipPaper(g, `rgb(${a})`);
+  else if (it.key === "slip") { dipPaper(g, a === "char" ? "#17120d" : ""); if (a === "char") freshLater(it, 9000); }
   else if (it.key === "meter") g.querySelector(".cl-lcd").textContent = a;
   else if (it.key === "thermo") { const len = 22 + Number(a) * 1.1; const col = g.querySelector(".cl-merc"); col.setAttribute("y", -4 - len); col.setAttribute("height", len); }
   else dipPaper(g, b === it.key ? "" : b === "blue" ? "#4f84d6" : "#de5a52");
 }
 /** A strip of test paper has touched something: the end darkens as it wets, and its new colour (if it has one) creeps up from there. */
-const PAPERS = ["red", "blue", "ph"];
+const PAPERS = ["red", "blue", "ph", "slip"];
 const freshening = new Map();
 /** A used strip is thrown away and a fresh one taken: the paper is its own colour again. */
 function freshLater(it, ms = 2600) {
@@ -2048,7 +2121,7 @@ function press(e, it) {
 // ── turning a piece by hand: tilt it far enough and it pours ────────────────
 let turn = null;
 // a bottle with its stopper in does not tip; a dropper bottle never does
-const canTurn = (it) => (it.kind === "vessel" && !VESSELS[it.key].fixed && !it.flip) || (it.kind === "reagent" && reagent(it.key).kind !== "indicator" && !fittedTo(it, "cap"));
+const canTurn = (it) => Boolean(GRIPS[it.key]) || (it.kind === "vessel" && !VESSELS[it.key].fixed && !it.flip && !it.held) || (it.kind === "reagent" && reagent(it.key).kind !== "indicator" && !fittedTo(it, "cap"));
 /** The angle at which a tilted piece starts to pour: a full beaker sooner than a nearly empty one. */
 function pourAngle(it) {
   if (it.kind === "reagent") return 62;
@@ -2064,6 +2137,7 @@ function lipOf(it) {
 function pourTick() {
   if (!turn) return;
   const { it } = turn;
+  if (GRIPS[it.key]) return;                      // a holder or tongs is only being turned: nothing pours
   turn.timer = setTimeout(pourTick, 260);
   const over = Math.abs(it.tilt || 0) - pourAngle(it);
   if (over < 0) return;
@@ -2186,8 +2260,9 @@ window.addEventListener("pointermove", (e) => {
   if (turn) {
     // the handle is dragged round the piece's middle
     const a = (Math.atan2(e.clientX - turn.px, -(e.clientY - turn.py)) * 180) / Math.PI;
-    turn.it.tilt = Math.abs(a) < 4 ? 0 : clamp(Math.round(a), -180, 180);
+    turn.it.tilt = Math.abs(a) < 4 ? 0 : GRIPS[turn.it.key] ? clamp(Math.round(a), -75, 75) : clamp(Math.round(a), -180, 180);
     place(turn.it);
+    if (GRIPS[turn.it.key]) follow(turn.it, false);
     if (turn.it.kind === "vessel") paint(turn.it);
     const h = $("cl-rot");
     h.style.left = `${e.clientX - wrap.getBoundingClientRect().left - 17}px`;
@@ -2242,7 +2317,7 @@ window.addEventListener("pointermove", (e) => {
   if (it.kind === "vessel" && !drag.over) shakeWatch(it, it.x - ox, it.y - oy);
   else if (GRIPS[it.key] && loadOf(it)) shakeWatch(loadOf(it), it.x - ox, it.y - oy);
   if (it.kind === "vessel" || it.key === "syringe") it.rack = null;
-  if (it.held) it.held = null;                       // pulled out of the holder or the tongs
+  if (it.held) { it.held = null; it.tilt = 0; paint(it); }                       // pulled out of the holder or the tongs
   if (it.on) it.on = null;
   if (GRIPS[it.key]) {
     // an empty holder or tongs: show what it would take hold of here
@@ -2274,6 +2349,13 @@ window.addEventListener("pointerup", (e) => {
     const { it } = turn;
     clearTimeout(turn.timer);
     turn = null;
+    if (GRIPS[it.key]) {
+      // a holder or tongs STAYS as it was turned, and so does what it holds
+      follow(it);
+      save();
+      setTimeout(() => { if (nodes[it.id]) select(it); }, 280);
+      return;
+    }
     // let go right over (past 165°), an empty tube or jar STAYS upside down; anything else stands up again
     const over = Math.abs(it.tilt || 0) >= 165 && it.kind === "vessel" && VESSELS[it.key].invert && isEmpty(it.t) && !it.rack && !state.items.some((o) => o.on === it.id && o.key !== "bung" && !(o.key === "bung1" && !fittedTo(o, "tubing")));
     it.tilt = 0;
@@ -2531,7 +2613,7 @@ function openMenu(it) {
   else if (it.key === "syringe") { lines.push(it.gas ? `${Math.round(it.gas.n * 12)} cm\u00b3 of gas.` : "Let it go at a stand's clamp to hold it level, then drag the orange end of a delivery tube to its nozzle."); if (it.gas) act("empty", "Push the plunger back in", ICON.empty); }
   else if (GRIPS[it.key]) {
     const held = loadOf(it);
-    lines.push(held ? `Holding ${plain(held)} by ${GRIPS[it.key].says}. Carry it over a lit burner to heat it.` : it.key === "holder" ? "Let it go at the neck of a test tube or a boiling tube and it grips it." : "Let them go at the rim of a crucible, an evaporating dish or a watch glass and they take hold of it.");
+    lines.push(held ? `Holding ${plain(held)} by ${GRIPS[it.key].says}. Carry it over a lit burner to heat it. The round handle above tilts it, and what it holds.` : it.key === "holder" ? "Let it go at the neck of a test tube or a boiling tube and it grips it." : "Let them go at the rim of a crucible, an evaporating dish or a watch glass and they take hold of it.");
     if (held) act("drop", "Let go", ICON.flip);
   }
   else if (it.key === "watch") lines.push(it.run ? "Running. Press its crown to stop it." : `Reads ${(watchMs(it) / 1000).toFixed(1)} s. Press the crown on top to start and stop it; the small red key sets it back to nought.`);
@@ -2580,7 +2662,7 @@ $("cl-menu").addEventListener("click", (e) => {
   if (what === "remove") return removeItem(it);
   if (what === "read") { checkReading(it, $("cl-reading").value); return; }
   if (what === "refill") { it.left = fullOf(it); dress(it); flash(it); say(`The ${reagent(it.key).name} is full again.`); save(); select(it); return; }
-  if (what === "drop") { const held = loadOf(it); if (held) { held.held = null; say(`${cap1(plain(held))} is let go.`); } save(); select(it); return; }
+  if (what === "drop") { const held = loadOf(it); if (held) { held.held = null; held.tilt = 0; glide(held, true); place(held); paint(held); say(`${cap1(plain(held))} is let go.`); } save(); select(it); return; }
   if (what === "ink") { const names = Object.keys(INKS); it.ink = names[(names.indexOf(it.ink || "black") + 1) % names.length]; it.p = 0; it.washed = false; cancelAnimationFrame(running.get(it.id)); running.delete(it.id); dress(it); if (it.on != null) runChroma(it); save(); select(it); openMenu(it); return; }
   if (what === "swirl") { $("cl-menu").hidden = true; swirl(it); return; }
   if (what === "light") { it.flame = lit(it) ? 0 : 2; dress(it); say(lit(it) ? `The ${nameOf(it).toLowerCase()} is lit.` : `The ${nameOf(it).toLowerCase()} is out.`); }

@@ -171,6 +171,7 @@ html body {
 .cl-paper--red { fill: #de5a52; }
 .cl-paper--blue { fill: #4f84d6; }
 .cl-paper--ph { fill: #ecd98c; }
+.cl-paper--slip { fill: #f3efe4; }
 .cl-read { fill: #f4c95d; font: 700 12px var(--font-mono); paint-order: stroke; stroke: #272c35; stroke-width: 3px; }
 .cl-tap, .cl-press { cursor: pointer; }
 .cl-press:hover circle, .cl-press:hover .cl-switch { filter: brightness(1.25); }
@@ -672,3 +673,12 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 .cl-watch-t, .cl-watch-ghost { fill: #1f2a1c; font: 700 7.4px var(--font-mono); text-anchor: end; letter-spacing: 0.2px; }
 .cl-watch-ghost { fill-opacity: 0.08; }
 .cl-item.is-running .cl-watch-t { fill: #0b3d1a; }
+
+/* a bottle's liquid, laid level by poolIn(); it laps while the bottle is tipped and slops when some goes */
+.cl-pool { transition: transform 0.24s ease; }
+.cl-pool-top { transition: transform 0.4s ease, opacity 0.2s; }
+.cl-tile .cl-pool { transform: none !important; }
+.cl-item.is-tipped .cl-pool .cl-level { animation: cl-lap 0.9s ease-in-out infinite alternate; }
+.cl-item.is-slosh .cl-pool .cl-level { animation: cl-slosh 0.7s ease-out; }
+@keyframes cl-slosh { 0% { transform: rotate(0deg); } 20% { transform: rotate(5deg); } 45% { transform: rotate(-3.5deg); } 70% { transform: rotate(1.8deg); } 100% { transform: rotate(0deg); } }
+@keyframes cl-lap { from { transform: rotate(-1.6deg); } to { transform: rotate(1.6deg); } }

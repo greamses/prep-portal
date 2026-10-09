@@ -43,8 +43,12 @@ export const GROUPS = [
 export const REAGENTS = [
   { id: "hcl", group: "acid", kind: "solution", name: "dilute hydrochloric acid", formula: "HCl", adds: { H: 1, Cl: 1 } },
   { id: "h2so4", group: "acid", kind: "solution", name: "dilute sulfuric acid", formula: "H2SO4", adds: { H: 1, SO4: 1 } },
+  // concentrated: several times as much in every measure, and (the sulfuric) hardly any water in it
+  { id: "ch2so4", group: "acid", kind: "solution", name: "concentrated sulfuric acid", formula: "H2SO4", adds: { H: 6, SO4: 6 }, conc: true },
+  { id: "chcl", group: "acid", kind: "solution", name: "concentrated hydrochloric acid", formula: "HCl", adds: { H: 5, Cl: 5 }, conc: true },
 
   { id: "naoh", group: "alkali", kind: "solution", name: "sodium hydroxide solution", formula: "NaOH", adds: { Na: 1, OH: 1 } },
+  { id: "cnaoh", group: "alkali", kind: "solution", name: "concentrated sodium hydroxide solution", formula: "NaOH", adds: { Na: 5, OH: 5 }, conc: true },
   { id: "nh3", group: "alkali", kind: "solution", name: "aqueous ammonia", formula: "NH3", adds: { NH3: 1 } },
 
   { id: "cuso4", group: "salt", kind: "solution", name: "copper(II) sulfate solution", formula: "CuSO4", adds: { Cu: 1, SO4: 1 } },
@@ -662,6 +666,7 @@ export function add(t, id, dose = "portion", strength = 1) {
   if (r.kind === "indicator" && t.ind.includes(id)) return { refused: `There is ${r.name} in there already.` };
 
   const wasDry = t.vol <= EPS;
+  const neat = !wasDry && t.neat ? t.neat : null;             // undiluted concentrated acid is what is in there
   const crystals = r.kind === "solution" && get(t.solid, "crystals") > EPS;
   const res = act(t, () => {
     t.gas = null;
@@ -676,6 +681,28 @@ export function add(t, id, dose = "portion", strength = 1) {
     if (!t.added.includes(id)) t.added.push(id);
   }, { adding: r });
 
+  if (r.kind === "solution") {
+    const first = (o, ...flags) => { res.obs = [o, ...res.obs.filter((x) => x.text !== "No visible change.")]; res.flags.push(...flags); };
+    if (wasDry) {
+      t.neat = r.conc && r.group === "acid" ? id : null;
+      if (id === "ch2so4") first({ text: "Concentrated sulfuric acid is a colourless, oily liquid. It pours slowly.", why: "It is very corrosive: it is handled a little at a time, with goggles on." }, "conc");
+      else if (id === "chcl") first({ text: "Concentrated hydrochloric acid is colourless. It fumes in the air.", why: "The fumes are hydrogen chloride gas coming out of the solution." }, "conc");
+    } else if (id === neat) { /* more of the same acid: still undiluted */ }
+    else if (neat === "ch2so4" && !r.conc) {
+      // WATER (or anything watery) onto the acid: it floats, boils at once and throws acid out
+      t.neat = null;
+      t.temp = 100;
+      first({ text: "It hisses, boils and spits violently. Steam rushes off and drops of hot acid are thrown out of the vessel.", why: `${r.id === "water" ? "Water" : "The watery liquid"} is less dense than concentrated sulfuric acid, so it lies on top of it. Mixing gives out a great deal of heat, all of it in that thin layer, which boils at once and throws acid out. NEVER add water to a concentrated acid.` }, "dilute:wrong");
+    } else if (id === "ch2so4" && !neat) {
+      // the acid INTO water: it sinks and mixes, and the heat is shared by all the water
+      t.temp = Math.min(92, (t.temp ?? 25) + (70 * amount) / t.vol);
+      first({ text: "The vessel gets hot, but the liquid stays calm. The acid sinks through the water and mixes with it.", why: "Diluting concentrated sulfuric acid is strongly exothermic. Added slowly TO water, the dense acid sinks and the heat is spread through a large amount of water, so nothing boils. Always add acid to water." }, "dilute:right");
+      t.neat = null;
+    } else {
+      if (neat === "chcl" && !r.conc) first({ text: "It gets a little warm and stops fuming." });
+      t.neat = null;
+    }
+  }
   const how = r.kind === "solution" ? (dose === "drops" || dose <= 0.25 ? "a few drops of " : "") : r.kind === "indicator" ? "a few drops of " : "";
   res.title = `Added ${how}${r.name}`;
   if (crystals) res.obs = [{ text: "The crystals dissolve." }, ...res.obs.filter((o) => o.text !== "No visible change.")];
@@ -891,6 +918,7 @@ export function takeFrom(t, amount) {
   s.vol = t.vol * f;
   s.oil = (t.oil || 0) * f;
   s.temp = t.temp ?? 25;
+  s.neat = t.neat || null;
   s.ind = [...t.ind];
   s.added = [...t.added];
   s.extra = (t.extra || 0) * f;
@@ -948,6 +976,7 @@ export function pourIn(t, s, from = "another vessel") {
   const wasDry = t.vol <= EPS;
   const crystals = get(t.solid, "crystals") > EPS;
   t.packed = false;
+  t.neat = wasDry ? s.neat || null : t.neat && t.neat === s.neat ? t.neat : null;
   const res = act(t, () => {
     t.gas = null;
     undry(t);
@@ -1015,6 +1044,16 @@ export function test(t, tool) {
       else say(`Dipped in the liquid, the ${paper} litmus stays ${paper}.`, pH > 6.6 && pH < 7.4 ? "Neither paper changes in a neutral liquid." : paper === "red" ? "Red litmus only changes in an alkali." : "Blue litmus only changes in an acid.");
     } else if (!gas) return { refused: "There is no liquid or gas in there to test." };
     return { title: `Tested with ${paper} litmus paper`, obs, flags, fx: turned ? `litmus-${paper}-${turned}` : `litmus-${paper}-${paper}` };
+  }
+  if (tool === "slip") {
+    if (t.vol <= EPS) return { refused: "There is no liquid in there to dip it in." };
+    if (get(t.aq, "SO4") / t.vol >= 3 && get(t.aq, "H") / t.vol >= 3) {
+      say("Where the acid touches it the paper goes brown, then black, and begins to fall apart. It looks burnt, though nothing was lit.", "Concentrated sulfuric acid is a dehydrating agent. Paper is cellulose, a carbohydrate: the acid pulls hydrogen and oxygen out of it as water and leaves black carbon. It does the same to cloth and to skin, which is why it is so corrosive.", "C6H10O5(s) -> 6C(s) + 5H2O(l)");
+      return { title: "Dipped a strip of paper", obs, flags: ["charred"], fx: "slip-char" };
+    }
+    const sour = speciate(t).pH < 3;
+    say("The paper gets wet. It does not change colour.", sour ? "A dilute acid does not char paper. There is too much water in it for it to take any more out of the paper." : undefined);
+    return { title: "Dipped a strip of paper", obs, flags: [sour ? "slip:dilute" : "slip:wet"], fx: "slip-wet" };
   }
   if (tool === "ph" || tool === "meter" || tool === "thermo") {
     if (t.vol <= EPS) return { refused: "There is no liquid in there to test." };
