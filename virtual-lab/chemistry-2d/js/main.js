@@ -384,7 +384,7 @@ function place(it, transform) {
   // to pour is off the bench altogether, and casts none.
   const sh = n.g.querySelector(".cl-sh");
   if (sh) {
-    const posed = Boolean(transform) && /rotate\(/.test(transform), c = pivotOf(it);
+    const posed = Boolean(transform) && /rotate\(/.test(transform), c = it.tilt && it.kind !== "rack" ? pivotOf(it) : 0;      // (a rack is never turned)
     sh.style.display = posed ? "none" : "";
     sh.style.transform = transform ? "" : it.flip ? `translate(0px, ${VESSELS[it.key].top}px)` : it.tilt ? `translate(0px, ${c}px) rotate(${-it.tilt}deg) translate(0px, ${-c}px)` : "";
   }
