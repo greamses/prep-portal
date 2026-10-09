@@ -365,6 +365,18 @@ export const EXPERIMENTS = [
     record: "Rf = distance moved by the spot ÷ distance moved by the solvent front, both measured from the pencil line. Use the calculator, and put the values in a results table. The line is drawn in pencil because pencil does not dissolve and run.",
   },
   {
+    id: "centrifuge", group: "sep", title: "Centrifugation",
+    task: "Separate a fine precipitate from its liquid by centrifuging, and pour off the clear liquid.",
+    needs: "three test tubes, centrifuge (in Equipment), copper(II) sulfate solution, sodium hydroxide solution, distilled water",
+    steps: [
+      { text: "Make a precipitate in a test tube: a measure of copper(II) sulfate, then a measure of sodium hydroxide.", need: [], test: (seen) => [...seen].some((f) => f.startsWith("ppt:")) },
+      { text: "Stand the tube in a well of the centrifuge. In the well OPPOSITE stand a second test tube holding the same amount of water (two measures), to balance it.", check: (q) => q.inHost("centrifuge") >= 2 },
+      { text: "Press the green START key. The lid closes and it spins.", need: ["spun"] },
+      { text: "Lift the tube out and pour the clear liquid off the pellet into an empty test tube.", need: ["supernatant"] },
+    ],
+    record: "A centrifuge separates a solid from a liquid by spinning: the denser solid is thrown to the bottom of the tube as a pellet, and the clear liquid above it, the supernatant, is poured off. It is used when the solid is too fine to settle or to filter. The tubes are always balanced in opposite pairs, or the spinning rotor shakes itself to pieces.",
+  },
+  {
     id: "evaporate", group: "sep", title: "Evaporation to crystals",
     task: "Obtain a solid sample of copper(II) sulfate from its solution by evaporation.",
     needs: "tripod and gauze, evaporating dish, a burner, copper(II) sulfate solution",
@@ -455,6 +467,7 @@ export const HOWTO = [
   "Pull the stopper out of a bottle before pouring. Carry the bottle to a vessel and hold it there.",
   "Let a vessel go at a rack, a tripod, a clamp or a balance pan and it stands there. Slide a stand's clamp by its yellow boss.",
   "Let a funnel, a stopper, a condenser or a carbon rod go at a mouth or a joint and it stays there. A filter paper goes in a funnel, and a delivery tube in the hole of a one-hole stopper.",
+  "A lit burner put under a vessel stays there and goes on heating it. Turn it down or off with its \u2212 key, or drag it away.",
   "A test tube holder grips a tube by its neck, and tongs take a crucible or a dish by its rim: let the tool go at the piece, then carry it by the tool. Over a lit burner it is heated.",
   "What you see happen comes up on a yellow note and is written in the notebook. Tap the note to put it away; its key on the bar (or the O key) hides the note altogether, and brings the last one back.",
   "A burette and a measuring cylinder are read by eye: choose one and a lens shows its scale. Read the bottom of the meniscus and type the reading into its menu.",

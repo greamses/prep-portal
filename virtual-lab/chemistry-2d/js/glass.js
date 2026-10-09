@@ -270,10 +270,9 @@ export function vesselSvg(key, uid, tag = "") {
       <g class="cl-level">
         <rect class="cl-oil" x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}" transform="translate(0 ${H})"/>
         <g class="cl-liquidg">
-          <rect class="cl-liquid" x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}"/>
-          <rect class="cl-lshade" x="${-R}" y="${def.top}" width="${R * 2}" height="${H}" fill="url(#g-shade)"/>
-          <rect x="${-R * 4}" y="${def.top}" width="${R * 8}" height="2.4" fill="#fff" fill-opacity="0.34"/>
-          <rect x="${-R * 4}" y="${def.top + 2.4}" width="${R * 8}" height="5" fill="#000" fill-opacity="0.1"/>
+          <path class="cl-liquid" d=""/>
+          <rect class="cl-lshade" x="${-R}" y="${def.top + 4}" width="${R * 2}" height="${H}" fill="url(#g-shade)"/>
+          <path class="cl-men-lo" d=""/><path class="cl-men-hi" d=""/>
           <clipPath id="under-${uid}"><rect x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}"/></clipPath>
           <g class="cl-bloom" clip-path="url(#under-${uid})">
             <ellipse class="cl-bloom__a" cx="0" cy="${def.top}" rx="${f1(R * 1.7)}" ry="${f1(H * 1.15)}" filter="url(#g-cloud)" style="transform-origin: 0px ${def.top}px"/>
@@ -326,7 +325,7 @@ export function veilSvg(key, uid) {
   const k = Math.min(1, def.rTop / 14);
   const rimRx = def.rTop + 1.5, rimRy = Math.max(2.6, def.rTop * 0.15);
   return `<clipPath id="vclip-${uid}"><path d="${body}"/></clipPath>
-    <g clip-path="url(#vclip-${uid})"><rect class="cl-veil__liq" x="${-R * 4}" y="${def.top}" width="${R * 8}" height="${H * 4}" style="display:none"/></g>
+    <g clip-path="url(#vclip-${uid})"><path class="cl-veil__liq" d="" style="display:none"/></g>
     <path d="${body}" fill="url(#${glassy ? "g-glass" : "g-porcelain"})" opacity="${glassy ? 0.75 : 1}"/>
     ${glassy ? `<path d="${band(P, -1, 3.2 * k, 7.8 * k, 0.1, 0.94)}" fill="url(#g-streak)"/><path class="cl-g-spark" d="${wall(P, -1, 3 * k, 0.9, 0.97)}"/>` : ""}
     <path class="cl-g-edge" d="${outline(P, true)}"/>
@@ -379,15 +378,32 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1, tilt = 0 } = {
   } else if (t.vol <= 0) g.classList.remove("is-blooming");
   g.dataset.rgb = t.vol > 0 ? lk.rgb.join(",") : "";
   g.querySelector(".cl-liquid").style.fill = fillNow;
+  // THE MENISCUS. Water wets glass, so where the surface meets the wall it climbs a little: seen
+  // from the side the surface is level across the middle and curls UP at each wall, and in a
+  // narrow tube the two curls meet and the whole surface is a curve. Along it there is a bright
+  // line (the surface catching the light) with a darker band just under it (light bent away),
+  // and the far edge of the surface shows through the glass as a flattened ellipse.
+  const rxS = top ? Math.max(2, rAt(P, -top) - 1.2) : def.rMax;
+  const curl = Math.min(rxS * 0.92, 9), dip = Math.min(3.4, Math.max(1.2, curl * 0.4));
+  const y0 = def.top, y1 = def.top + dip;
+  const edge = `M${f1(-rxS)} ${y0}C${f1(-rxS + curl * 0.16)} ${f1(y0 + dip * 0.82)} ${f1(-rxS + curl * 0.5)} ${f1(y1)} ${f1(-rxS + curl)} ${f1(y1)}H${f1(rxS - curl)}C${f1(rxS - curl * 0.5)} ${f1(y1)} ${f1(rxS - curl * 0.16)} ${f1(y0 + dip * 0.82)} ${f1(rxS)} ${y0}`;
+  g.querySelector(".cl-liquid").setAttribute("d", `M${-def.rMax * 4} ${y0}H${f1(-rxS)}${edge.slice(edge.indexOf("C"))}H${def.rMax * 4}V${y0 + H * 4}H${-def.rMax * 4}z`);
+  g.querySelector(".cl-men-hi").setAttribute("d", edge);
+  const lo = g.querySelector(".cl-men-lo");
+  lo.setAttribute("d", edge);
+  lo.setAttribute("transform", `translate(0 ${rxS < 14 ? 2.2 : 1.8})`);
+  lo.style.strokeWidth = rxS < 14 ? "2.6" : "1.9";
   const men = g.querySelector(".cl-meniscus");
   men.setAttribute("cy", f1(-top));
   men.setAttribute("rx", top ? f1(Math.max(0, rAt(P, -top) - 1.2)) : 0);
+  men.setAttribute("ry", f1(rxS < 14 ? 0.6 : Math.min(4.6, rxS * 0.085)));
   men.style.fill = rgba(lk.rgb.map((v) => Math.round(v + (255 - v) * 0.45)), Math.min(0.9, lk.a + 0.25));
 
   const total = stuff.ppt.reduce((a, p) => a + p.n, 0);
   const mix = total ? [0, 1, 2].map((k) => Math.round(stuff.ppt.reduce((a, p) => a + p.rgb[k] * p.n, 0) / total)) : [0, 0, 0];
   const fl = def.floor || 0;
-  const bed = total ? Math.min(level ? level - fl : 40, Math.min(7, H * 0.12) + (H * 0.75 * total) / (t.cap || def.cap)) : 0;
+  // (a centrifuged solid is a pellet: half the depth of one that has only settled)
+  const bed = total ? Math.min(level ? level - fl : 40, Math.min(7, H * 0.12) + (H * 0.75 * total) / (t.cap || def.cap)) * (t.packed ? 0.5 : 1) : 0;
   const sed = g.querySelector(".cl-sediment");
   const cloud = g.querySelector(".cl-cloud");
   sed.style.fill = rgba(mix, 0.97);
@@ -402,6 +418,7 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1, tilt = 0 } = {
     }
   }
   g.classList.toggle("has-ppt", total > 0);
+  g.classList.toggle("is-packed", Boolean(t.packed));
 
   const floor = -fl - bed - 2;
   const spread = Math.max(6, rAt(P, Math.min(-6, floor - 4)) * 0.72);
@@ -919,6 +936,8 @@ export function splintAfter(end) {
 // slots = where a vessel's foot rests, in the support's own space; fits = which vessels it will take
 export const SUPPORTS = {
   rack: { name: "Test tube rack", slots: [-110, -55, 0, 55, 110].map((x) => [x, -12]), fits: (d) => Boolean(d.rack), bbox: { x0: -156, y0: -92, x1: 156, y1: 8 } },
+  // four tubes at a time, two and two opposite each other: (0, 3) and (1, 2) are the pairs
+  centrifuge: { name: "Centrifuge", slots: [-48, -16, 16, 48].map((x) => [x, -6]), fits: (d) => Boolean(d.rack), bbox: { x0: -86, y0: -150, x1: 86, y1: 8 } },
   tripod: { name: "Tripod and gauze", slots: [[0, -158]], fits: (d) => Boolean(d.flat) && !d.fixed && d.rMax < 90, bbox: { x0: -64, y0: -164, x1: 64, y1: 8 } },
   balance: { name: "Electronic balance", slots: [[0, -46]], fits: (d) => !d.fixed && d.rMax < 90, bbox: { x0: -84, y0: -58, x1: 84, y1: 8 } },
   // its one slot is wherever the clamp has been slid to (main.js works the height out for each vessel)
@@ -965,6 +984,36 @@ export function supportSvg(key) {
         <ellipse cx="0" cy="-46" rx="58" ry="6.8" fill="none" stroke="#5d6570" stroke-opacity="0.45" stroke-width="0.6"/>${hit(b)}
         <g class="cl-press" data-press="tare"><rect x="34" y="-20.5" width="28" height="13" rx="2.5" fill="#e2574c" stroke="#fff" stroke-opacity="0.5" stroke-width="0.7"/><rect x="35" y="-19.5" width="26" height="4" rx="2" fill="#fff" fill-opacity="0.2"/><text class="cl-press-t cl-press-t--s" x="48" y="-11.3">TARE</text></g>`,
       front: "",
+    };
+  }
+  if (key === "centrifuge") {
+    // a bench centrifuge, seen from the front: tubes drop into four wells in the top (their lower
+    // halves are inside, behind the case), a lid closes over them while it spins, and the panel
+    // has a speed dial, a run light and the green START key
+    const wells = [-48, -16, 16, 48].map((x) => `<ellipse cx="${x}" cy="-128" rx="17" ry="4.5" fill="#12161b"/>`).join("");
+    const lips = [-48, -16, 16, 48].map((x) => `<path d="M${x - 17} -128a17 4.5 0 0 0 34 0v4a17 4.5 0 0 1 -34 0z" fill="#8c95a1"/>`).join("");
+    return {
+      back: `${shadow(88)}
+        <path d="M-80 0v-112q0 -16 16 -16h128q16 0 16 16v112z" fill="#3d4652" stroke="#fff" stroke-opacity="0.25"/>
+        <ellipse cx="0" cy="-128" rx="78" ry="9" fill="#59626e"/>${wells}${hit(b)}
+        <g class="cl-press" data-press="spin"><rect x="34" y="-58" width="38" height="30" fill="transparent"/></g>`,
+      front: `${lips}
+        <path d="M-80 0v-108q0 -16 16 -16h128q16 0 16 16v108z" fill="url(#g-case)" stroke="#fff" stroke-opacity="0.5" stroke-width="0.8"/>
+        <path d="M-80 0v-108q0 -16 16 -16h128q16 0 16 16v108z" fill="url(#g-shade)" opacity="0.35"/>
+        <path d="M-78 -112q0 -10 14 -10h128q14 0 14 10" fill="none" stroke="#fff" stroke-opacity="0.8" stroke-width="1"/>
+        <rect x="-70" y="-3" width="18" height="5" rx="1.5" fill="#1d2127"/><rect x="52" y="-3" width="18" height="5" rx="1.5" fill="#1d2127"/>
+        <rect x="-72" y="-68" width="144" height="50" rx="3" fill="#262b33"/><rect x="-72" y="-68" width="144" height="2.5" fill="#fff" fill-opacity="0.1"/>
+        <circle cx="-44" cy="-43" r="15" fill="#0c0e11"/><circle cx="-44" cy="-43" r="12.5" fill="url(#g-knob)"/><path d="M-44 -43l6 -9" stroke="#f4c95d" stroke-width="2" stroke-linecap="round"/>
+        ${[-150, -110, -70, -30, 10, 50].map((d) => `<path d="M0 -17.500V-20.5" transform="translate(-44 -43) rotate(${d})" stroke="#cfd5dc" stroke-width="0.9"/>`).join("")}
+        <text class="cl-plate cl-plate--l" x="-44" y="-22">SPEED</text>
+        <rect x="-18" y="-58" width="40" height="17" rx="1.5" fill="#0a0c0f" stroke="#5b6470" stroke-width="0.8"/>
+        <text class="cl-psu cl-psu--ghost" x="18" y="-45">8888</text><text class="cl-psu cl-rpm cl-rpm--off" x="18" y="-45">0</text><text class="cl-psu cl-rpm cl-rpm--on" x="18" y="-45">3000</text>
+        <text class="cl-plate cl-plate--l" x="2" y="-33">rev / min</text>
+        <rect x="36" y="-56" width="34" height="26" rx="3" fill="#2f9e5b" stroke="#fff" stroke-opacity="0.5" stroke-width="0.8"/><rect x="38" y="-54" width="30" height="7" rx="2.5" fill="#fff" fill-opacity="0.22"/>
+        <text class="cl-press-t cl-press-t--s" x="53" y="-39">START</text>
+        <text class="cl-plate" x="0" y="-78" style="font-size:4.2px">PREP  CF-4   balance the tubes</text>
+        <g class="cl-lid"><path d="M-74 -124q0 -40 74 -40t74 40z" fill="#aab8c8" fill-opacity="0.5" stroke="#fff" stroke-opacity="0.7" stroke-width="1"/><path d="M-60 -130q8 -22 40 -27" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="2.4" stroke-linecap="round"/><rect x="-10" y="-168" width="20" height="6" rx="3" fill="#59626e"/>
+          <path class="cl-whirl" d="M-56 -136h30M-10 -146h44M20 -134h34M-40 -150h22" stroke="#fff" stroke-opacity="0.55" stroke-width="1.6" stroke-linecap="round"/></g>`,
     };
   }
   if (key === "stand") {

@@ -352,6 +352,46 @@ export const LESSONS = [
       await say("Three spots: blue, red and yellow. Black ink is a mixture of dyes, and each one is carried a different distance. Measure them from the pencil line to find each Rf value.");
     },
   },
+  {
+    id: "centrifuge",
+    name: "Centrifuging",
+    about: "Spinning packs a fine solid into a pellet, and the clear liquid is poured off.",
+    need: ["supernatant"],
+    steps: [
+      { text: "Take a test tube and make a precipitate in it: a measure of copper(II) sulfate, then one of sodium hydroxide.", done: (seen) => seen.has("ppt:CuOH") },
+      { text: "Take a second test tube and pour two measures of distilled water into it, to balance the first.", done: (seen) => seen.has("added:water") },
+      { text: "Take the centrifuge from Equipment. Stand the two tubes in wells OPPOSITE each other: the two outside wells.", done: (seen, b) => b.count("rack", "centrifuge") > 0 && b.inHost("centrifuge") >= 2 },
+      { text: "Press the green START key and wait for it to stop.", done: (seen) => seen.has("spun") },
+      { text: "Lift the tube out and pour the clear liquid off the pellet into an empty test tube.", done: (seen) => seen.has("supernatant") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Some precipitates are too fine to settle and too fine to filter. For those there is the centrifuge.");
+      const t1 = await b.take("vessel", "tube", at(120), b.BASE);
+      const cu = await b.take("reagent", "cuso4", at(0), b.TOP);
+      const na = await b.take("reagent", "naoh", at(110), b.TOP);
+      await b.uncap(cu);
+      await b.pour(cu, t1);
+      await b.uncap(na);
+      await b.pour(na, t1);
+      await say("A pale blue precipitate, hanging in the liquid.");
+      const t2 = await b.take("vessel", "tube", at(220), b.BASE);
+      const w = await b.take("reagent", "water", at(220), b.TOP);
+      await b.uncap(w);
+      await b.pour(w, t2, 2);
+      await say("A second tube with the same amount of water. It is there only to balance the first.");
+      const cf = await b.take("rack", "centrifuge", at(440), b.BASE + 10);
+      await b.into(t1, cf, 0);
+      await b.into(t2, cf, 3);
+      await say("They go in wells opposite each other. A centrifuge out of balance shakes itself to pieces, so it will not run until it is balanced.");
+      await b.spin(cf);
+      await say("Spun. The solid is packed into a pellet at the bottom, and the liquid above is clear.");
+      const t3 = await b.take("vessel", "tube", at(660), b.BASE);
+      await b.move(t1, at(580), b.BASE, 500);
+      await b.pour(t1, t3, 3);
+      await say("The clear liquid, the supernatant, pours off and the pellet stays behind. That is centrifugation.");
+    },
+  },
   // ── setting up apparatus ──
   {
     id: "setup-heat", setup: "setup-heat", group: "Setting up apparatus",
@@ -712,7 +752,7 @@ export async function initPrepbot(bench) {
     condenser: ["condenser"], funnel: ["funnel"], water: ["water"], hcl: ["acid"], naoh: ["alkali"], nh3: ["ammonia solution", "ammonia"],
     unk: ["unknown salt", "unknown", "sample x"], caco3: ["calcium carbonate", "marble"], mno2: ["manganese dioxide", "manganese oxide"], h2o2: ["hydrogen peroxide", "peroxide"], oil: ["oil"],
     mg: ["magnesium"], zn: ["zinc"], fe: ["iron"], cu: ["copper"], cuo: ["copper oxide"],
-    sandsalt: ["sand and salt", "salt and sand", "mixture"], sulfur: ["sulphur powder", "sulphur", "sulfur"], iodine: ["iodine"], magnet: ["magnet"], chroma: ["chromatography paper", "chromatography strip", "chromatography"],
+    sandsalt: ["sand and salt", "salt and sand", "mixture"], sulfur: ["sulphur powder", "sulphur", "sulfur"], iodine: ["iodine"], magnet: ["magnet"], centrifuge: ["centrifuge"], chroma: ["chromatography paper", "chromatography strip", "chromatography"],
   };
   const stock = bench.catalog();
   const words = [];
@@ -934,7 +974,7 @@ YOU CAN FETCH PIECES: if the student wants a piece, tell them to type "get me" a
   const list = document.getElementById("cl-bot-list");
   const turnBox = document.getElementById("cl-bot-turn");
   function renderList() {
-    const kindOf = (l) => l.group || (["sandsalt", "decant", "magnet", "sublime", "chroma", "filter", "crystals"].includes(l.id) ? "Separating mixtures" : "Reactions and tests");
+    const kindOf = (l) => l.group || (["sandsalt", "decant", "magnet", "sublime", "chroma", "centrifuge", "filter", "crystals"].includes(l.id) ? "Separating mixtures" : "Reactions and tests");
     const order = ["Setting up apparatus", "Reactions and tests", "Separating mixtures"];
     const sorted = LESSONS.slice().sort((x, y) => order.indexOf(kindOf(x)) - order.indexOf(kindOf(y)));
     list.innerHTML = sorted.map((l, n) => {

@@ -647,6 +647,7 @@ export function add(t, id, dose = "portion", strength = 1) {
   if (!r) throw new Error(`No such reagent: ${id}`);
   const amount = r.kind === "solution" ? (typeof dose === "number" ? dose : DOSES[dose] ?? 1) : 1;
   if (r.kind === "solution" && amount > roomIn(t) + EPS) return { refused: "It is full. Empty it, or use another one." };
+  t.packed = false;               // anything added stirs a pellet up again
   if (r.oil) {
     const first = !(t.oil > EPS);
     t.oil = (t.oil || 0) + amount;
@@ -692,6 +693,20 @@ export function heat(t) {
   const res = act(t, () => { t.gas = null; }, { heated: true });
   res.title = "Heated gently";
   return res;
+}
+
+/** Spin a tube in a centrifuge. Returns what is seen, and packs any solid into a pellet. */
+export function centrifuge(t) {
+  if (t.vol <= EPS) return { title: "Centrifuged", obs: [{ text: "There is no liquid in it to spin." }], flags: [] };
+  const solid = Object.keys(speciate(t).ppt).length > 0 || get(t.solid, "sand") > EPS;
+  if (!solid) return { title: "Centrifuged", obs: [{ text: "Nothing separates: there is no solid in the liquid." }], flags: ["spun:clear"] };
+  t.packed = true;
+  t.susp = false;
+  return {
+    title: "Centrifuged",
+    obs: [{ text: "The solid is packed into a tight pellet at the bottom of the tube. The liquid above it is clear.", why: "Spinning throws the denser solid outwards, to the bottom of the tube, with many times the pull of gravity, so even a fine precipitate that would take hours to settle comes down in seconds. The clear liquid above is the supernatant: it can be poured off the pellet." }],
+    flags: ["spun"],
+  };
 }
 
 /** A magnet over the tube: the iron comes out on it. Returns how much. */
@@ -883,6 +898,16 @@ export function takeFrom(t, amount) {
   for (const [k, v] of Object.entries(t.aq)) { bump(s.aq, k, v * f); bump(t.aq, k, -v * f); }
   // sand that has just been stirred up goes over with the liquid; left to settle, it stays behind
   if (t.susp && get(t.solid, "sand") > EPS) { const k = t.solid.sand * f; s.solid.sand = k; bump(t.solid, "sand", -k); if (t.solid.sand <= EPS) delete t.solid.sand; }
+  if (t.packed) {
+    // centrifuged: the precipitate is a pellet at the bottom, and it stays there. What goes
+    // over is the clear liquid; whatever of the solid's ions the sample took is put back.
+    const had = { ...s.aq };
+    filterOut(s);
+    for (const k of new Set([...Object.keys(had), ...Object.keys(s.aq)])) {
+      const back = (had[k] || 0) - get(s.aq, k);
+      if (Math.abs(back) > EPS) bump(t.aq, k, back);
+    }
+  }
   t.vol -= s.vol;
   t.oil = (t.oil || 0) - s.oil;
   if (t.oil <= EPS) t.oil = 0;
@@ -922,6 +947,7 @@ export function pourIn(t, s, from = "another vessel") {
   if (s.vol + (s.oil || 0) > roomIn(t) + EPS) return { refused: "It is full. Empty it, or use another one." };
   const wasDry = t.vol <= EPS;
   const crystals = get(t.solid, "crystals") > EPS;
+  t.packed = false;
   const res = act(t, () => {
     t.gas = null;
     undry(t);

@@ -104,6 +104,12 @@ html body {
 .cl-item.is-blooming .cl-liquid { transition: fill 1.7s ease-in 1s; }
 .cl-sediment, .cl-cloud { transition: transform 0.6s ease, fill 0.7s ease; }
 .cl-cloud { opacity: 0; }
+/* a precipitate that has only settled leaves the liquid a little cloudy; centrifuged, it is clear */
+.cl-item.has-ppt:not(.is-packed) .cl-cloud { opacity: 0.16; }
+/* the meniscus: a bright line where the surface catches the light, a darker band under it */
+.cl-men-hi { fill: none; stroke: #fff; stroke-opacity: 0.82; stroke-width: 1.1; stroke-linecap: round; }
+.cl-men-lo { fill: none; stroke: #000; stroke-opacity: 0.2; stroke-linecap: round; }
+.cl-meniscus { stroke: #fff; stroke-opacity: 0.35; stroke-width: 0.6; }
 .cl-item:not(.has-ppt) .cl-sediment { opacity: 0; }
 .cl-wisps { opacity: 0; }
 .cl-wisps path { fill: none; stroke: #fff; stroke-opacity: 0.55; stroke-width: 2; stroke-linecap: round; }
@@ -226,7 +232,7 @@ html body {
 @keyframes cl-spin { to { stroke-dashoffset: -30; } }
 @keyframes cl-run { to { stroke-dashoffset: -24; } }
 @keyframes cl-splash { 0% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: var(--sx, 8px) var(--sy, -10px); } }
-@keyframes cl-cloud { 0% { opacity: 0.9; } 100% { opacity: 0; } }
+@keyframes cl-cloud { 0% { opacity: 0.9; } 100% { opacity: 0.16; } }
 @keyframes cl-settle { 0% { opacity: 0; } 100% { opacity: 1; } }
 @keyframes cl-rise { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(var(--rise, -60px)); } }
 @keyframes cl-wisp { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10px); } }
@@ -649,3 +655,15 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 /* a heading over each kind of demonstration on PrepBot's sheet */
 .cl-cards__head { grid-column: 1 / -1; margin: 0.3rem 0 -0.4rem; font: 700 0.6rem var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary); }
 .cl-cards__head:first-child { margin-top: 0; }
+
+/* ── the centrifuge ────────────────────────────────────────────────────── */
+.cl-lid, .cl-rpm--on { display: none; }
+.is-spinning .cl-lid, .is-spinning .cl-rpm--on { display: inline; }
+.is-spinning .cl-rpm--off { display: none; }
+.cl-rpm { font-size: 9px; }
+@media (prefers-reduced-motion: no-preference) {
+  .cl-item-front.is-spinning, .cl-item.is-spinning { animation: cl-hum 0.09s linear infinite; }
+  .is-spinning .cl-whirl { animation: cl-whirl 0.22s linear infinite; }
+}
+@keyframes cl-hum { 0%, 100% { translate: 0 0; } 25% { translate: 0.5px 0; } 75% { translate: -0.5px 0.3px; } }
+@keyframes cl-whirl { 0% { transform: translateX(-14px); opacity: 0.2; } 50% { opacity: 0.8; } 100% { transform: translateX(14px); opacity: 0.2; } }
