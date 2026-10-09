@@ -24,6 +24,7 @@ const CHAPTERS = {
   8: "Chapter 8: Prime factors",
   9: "Chapter 9: Bar models and word problems",
   10: "Chapter 10: Number bases",
+  11: "Chapter 11: Money",
 };
 
 /** The chapters the chosen exercises actually come from, in order. */

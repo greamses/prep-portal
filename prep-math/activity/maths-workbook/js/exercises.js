@@ -51,6 +51,7 @@ import { MUL_GROUPS, MUL_EXERCISES } from "./ex-multiply.js";
 import { PRIME_GROUPS, PRIME_EXERCISES } from "./ex-primes.js";
 import { MODEL_GROUPS, MODEL_EXERCISES } from "./ex-models.js";
 import { NB_GROUPS, NB_EXERCISES } from "./ex-bases.js";
+import { MONEY_GROUPS, MONEY_EXERCISES } from "./ex-money.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./ex-remainder.js";
 export { placesFor };
@@ -74,6 +75,9 @@ export const GROUPS = [
   /* and the bar model's word problems after that */
   ...MODEL_GROUPS,
   ...NB_GROUPS,
+  /* and money last, where the arithmetic of every chapter before it is put to
+     work on sums a grown-up actually does */
+  ...MONEY_GROUPS,
 ];
 
 /* Everything outside place value counts and writes in ordinary numerals, so it
@@ -98,6 +102,7 @@ export const EXERCISES = [
   ...tenOnly(MODEL_EXERCISES),
   /* number bases do their own bases: the base dial (chapter 1) does not touch them */
   ...NB_EXERCISES,
+  ...tenOnly(MONEY_EXERCISES),
 ];
 
 /**
@@ -117,6 +122,7 @@ const CHAPTER = new Map([
   ...PRIME_GROUPS.map((g) => [g.id, 8]),
   ...MODEL_GROUPS.map((g) => [g.id, 9]),
   ...NB_GROUPS.map((g) => [g.id, 10]),
+  ...MONEY_GROUPS.map((g) => [g.id, 11]),
 ]);
 /* Place value is the first chapter, so it is what is left over. */
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;

@@ -1529,3 +1529,71 @@ thead .pv-chart__side {
 .vm-video--icon:focus-visible { outline: 0.5mm solid #f4c95d; outline-offset: 1.2mm; }
 .vm-video--icon .vm-video__more { align-self: center; margin-left: 2mm; }
 @media print { .vm-video.vm-video--icon { display: none !important; } }
+
+/* ── CHAPTER 11 · money (js/money.js, js/ex-money.js) ────────────────────────
+   Prepcoins and prepbills, a shelf with price tags, a till to add up and a
+   bank. Everything here is paper-sized in mm: the pieces have to come off a
+   printer at a size a child can tell apart, and a coin that is 12px on a screen
+   is a smudge on A4. */
+
+.mo-art { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2mm; margin: 1.5mm 0 2mm; }
+
+/* a handful of money, laid out as it comes out of a purse */
+.mo-hand { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1.4mm; }
+.mo-hand__more { font-size: 8pt; color: rgba(42, 39, 35, 0.6); }
+/* the currency chart: the notes on one line, the coins under them */
+.mo-hand--all { max-width: 150mm; }
+.mo-piece { flex: 0 0 auto; }
+
+/* ── the shelf ──────────────────────────────────────────────────────────── */
+
+.mo-shelf { display: flex; flex-wrap: wrap; justify-content: center; gap: 4mm 6mm; margin: 2mm 0 3mm; }
+/* a thing and its tag, the tag UNDER it the way a shelf label sits under the
+   goods — never beside, or a long name pushes the tag onto the next line */
+.mo-shelf__one { display: inline-flex; flex-direction: column; align-items: center; gap: 1mm; }
+
+/* THE PRICE TAG. A sale tag carries both prices, and the old one is struck
+   through: a child who cannot see what it WAS cannot check what it is now. */
+.mo-tag {
+  display: inline-flex; flex-direction: column; align-items: center;
+  padding: 0.8mm 2.4mm;
+  background: #fffdf8; border: 0.4mm solid #2a2723;
+  font-family: var(--font-mono, "JetBrains Mono", monospace); line-height: 1.25;
+}
+.mo-tag__now { font-size: 11pt; font-weight: 800; color: #2a2723; }
+.mo-tag__was { font-size: 8pt; color: rgba(42, 39, 35, 0.55); }
+.mo-tag__off { font-size: 7.5pt; font-weight: 800; color: #c0453f; letter-spacing: 0.02em; }
+.mo-tag--sale { border-color: #c0453f; border-width: 0.5mm; }
+
+/* ── the till ───────────────────────────────────────────────────────────── */
+
+.mo-till { width: 100%; border-collapse: collapse; margin: 2mm 0; font-size: 10pt; }
+.mo-till th {
+  padding: 1mm 2mm; text-align: left;
+  font-size: 7.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+  color: rgba(42, 39, 35, 0.6); border-bottom: 0.4mm solid #2a2723;
+}
+.mo-till td { padding: 1.4mm 2mm; border-bottom: 0.2mm solid rgba(42, 39, 35, 0.25); vertical-align: middle; }
+.mo-till__what { display: flex; align-items: center; gap: 2mm; }
+.mo-till__n, .mo-till__each { font-family: var(--font-mono, monospace); text-align: right; width: 18mm; }
+.mo-till__line { width: 26mm; }
+/* the two rows that are not a line of shopping */
+.mo-till__total td, .mo-till__change td { font-weight: 800; border-bottom: 0; }
+.mo-till__total td:first-child, .mo-till__change td:first-child { text-align: right; }
+.mo-till__total td { border-top: 0.4mm solid #2a2723; }
+
+/* ── the bank, year by year ─────────────────────────────────────────────── */
+
+.mo-years { width: 100%; border-collapse: collapse; margin: 2mm 0; font-size: 10pt; }
+.mo-years th {
+  padding: 1mm 2mm; text-align: left;
+  font-size: 7.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+  color: rgba(42, 39, 35, 0.6); border-bottom: 0.4mm solid #2a2723;
+}
+.mo-years td { padding: 1.6mm 2mm; border-bottom: 0.2mm solid rgba(42, 39, 35, 0.25); }
+.mo-years td:first-child { font-weight: 800; width: 20mm; }
+
+@media (max-width: 520px) {
+  .mo-till, .mo-years { font-size: 9pt; }
+  .mo-till__n, .mo-till__each { width: 14mm; }
+}
