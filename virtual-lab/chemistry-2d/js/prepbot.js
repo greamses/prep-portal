@@ -478,6 +478,178 @@ export const LESSONS = [
     },
   },
   {
+    id: "metal-water",
+    name: "Metals and cold water",
+    group: "Reactivity of metals and non-metals",
+    about: "Sodium skates on water, potassium catches fire, calcium fizzes and magnesium does nothing.",
+    need: ["water:Na", "water:K", "water:Ca", "nowater:Mg"],
+    steps: [
+      { text: "Put water in a small beaker and add a small piece of sodium (in Solids).", done: (seen) => seen.has("water:Na") },
+      { text: "Add two drops of phenolphthalein to that beaker.", done: (seen) => seen.has("water:Na") && seen.has("colour:pink") },
+      { text: "A fresh beaker of water, and a small piece of potassium.", done: (seen) => seen.has("water:K") },
+      { text: "A fresh beaker of water, and calcium.", done: (seen) => seen.has("water:Ca") },
+      { text: "A fresh beaker of water, and magnesium ribbon.", done: (seen) => seen.has("nowater:Mg") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Four metals and plain cold water. The more reactive the metal, the more it has to say.");
+      const w = await b.take("reagent", "water", at(0), b.TOP);
+      await b.uncap(w);
+      const bks = [];
+      for (let i = 0; i < 4; i++) { const bk = await b.take("vessel", "beaker100", at(130 + i * 150), b.BASE); await b.pour(w, bk, 3); bks.push(bk); }
+      await say("Four beakers, each with the same amount of water.");
+      const mg = await b.take("reagent", "mg", at(110), b.TOP + 22);
+      await b.uncap(mg);
+      await b.pour(mg, bks[0]);
+      await say("Magnesium first. Nothing. Left for a long time it gives a few bubbles, and that is all.");
+      const ca = await b.take("reagent", "ca", at(220), b.TOP + 22);
+      await b.uncap(ca);
+      await b.pour(ca, bks[1]);
+      await say("Calcium sinks and fizzes steadily. The water goes cloudy: that is calcium hydroxide, which hardly dissolves.");
+      const na = await b.take("reagent", "na", at(330), b.TOP + 22);
+      await b.uncap(na);
+      await b.pour(na, bks[2]);
+      await b.wait(3200);
+      await say("Sodium floats, melts into a silver ball and skates about, hissing, until it is gone. The gas is hydrogen.");
+      const ph = await b.take("reagent", "phph", at(560), b.TOP);
+      await b.drip(ph, bks[2]);
+      await say("Phenolphthalein turns pink. What the sodium left in the water is an alkali: sodium hydroxide.");
+      const k = await b.take("reagent", "k", at(440), b.TOP + 22);
+      await b.uncap(k);
+      await b.pour(k, bks[3]);
+      await b.wait(2600);
+      await say("Potassium catches fire at once, with a lilac flame. So the order of reactivity is potassium, sodium, calcium, magnesium.");
+    },
+  },
+  {
+    id: "metal-acid",
+    name: "Metals and dilute acid",
+    group: "Reactivity of metals and non-metals",
+    about: "Magnesium fizzes fast, zinc steadily, iron slowly, and copper not at all.",
+    need: ["fizz:Mg", "fizz:Zn", "fizz:Fe", "noacid:Cu", "test:pop"],
+    steps: [
+      { text: "Stand four test tubes in a rack. Put magnesium, zinc, iron and copper (in Solids) in one each.", done: (seen) => ["mg", "zn", "fe", "cu"].every((m) => seen.has(`added:${m}`)) },
+      { text: "Pour dilute hydrochloric acid on the magnesium, the zinc and the iron, and compare the fizzing.", done: (seen) => seen.has("fizz:Mg") && seen.has("fizz:Zn") && seen.has("fizz:Fe") },
+      { text: "Pour the acid on the copper: nothing happens.", done: (seen) => seen.has("noacid:Cu") },
+      { text: "Add more acid to a tube that still has metal in it and hold a lighted splint at its mouth while it fizzes.", done: (seen) => seen.has("test:pop") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("The same acid on four metals. How fast each one fizzes puts them in order.");
+      const rack = await b.take("rack", "rack", at(300), b.BASE);
+      const tubes = [];
+      for (let i = 0; i < 4; i++) { const t = await b.take("vessel", "tube", at(200 + i * 60), b.BASE - 30); await b.into(t, rack, i); tubes.push(t); }
+      const ids = ["mg", "zn", "fe", "cu"];
+      for (let i = 0; i < 4; i++) { const jar = await b.take("reagent", ids[i], at(i * 105), b.TOP + 22); await b.uncap(jar); await b.pour(jar, tubes[i]); }
+      await say("Magnesium, zinc, iron and copper, one in each tube.");
+      const hcl = await b.take("reagent", "hcl", at(470), b.TOP);
+      await b.uncap(hcl);
+      await b.pour(hcl, tubes[0], 2);
+      await say("Magnesium fizzes fast.");
+      await b.pour(hcl, tubes[1], 2);
+      await say("Zinc fizzes steadily.");
+      await b.pour(hcl, tubes[2], 2);
+      await say("Iron fizzes slowly, and the liquid turns pale green.");
+      await b.pour(hcl, tubes[3], 2);
+      await say("Copper does nothing at all. It is below hydrogen in the reactivity series, so it cannot push hydrogen out of the acid.");
+      const lit = await b.take("tool", "lit", at(640), b.BASE);
+      await b.pour(hcl, tubes[1], 1);
+      await b.hold(lit, tubes[1], 1700);
+      await say("A squeaky pop: the gas is hydrogen. In order of reactivity: magnesium, zinc, iron, copper.");
+    },
+  },
+  {
+    id: "halogens",
+    name: "Which halogen displaces which",
+    group: "Reactivity of metals and non-metals",
+    about: "Chlorine pushes out bromine and iodine. Bromine pushes out only iodine.",
+    need: ["halogen:Cl>Br", "halogen:Cl>I", "halogen:Br>I", "nohalogen:Br>Cl"],
+    steps: [
+      { text: "Pour potassium bromide solution into a test tube and add chlorine water (in Liquids).", done: (seen) => seen.has("halogen:Cl>Br") },
+      { text: "Pour potassium iodide solution into a second tube and add chlorine water.", done: (seen) => seen.has("halogen:Cl>I") },
+      { text: "Pour potassium iodide solution into a third tube and add bromine water.", done: (seen) => seen.has("halogen:Br>I") },
+      { text: "Pour sodium chloride solution into a fourth tube and add bromine water.", done: (seen) => seen.has("nohalogen:Br>Cl") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Metals are not the only elements with an order of reactivity. Here are three non-metals: chlorine, bromine and iodine.");
+      const rack = await b.take("rack", "rack", at(300), b.BASE);
+      const tubes = [];
+      for (let i = 0; i < 4; i++) { const t = await b.take("vessel", "tube", at(200 + i * 60), b.BASE - 30); await b.into(t, rack, i); tubes.push(t); }
+      const kbr = await b.take("reagent", "kbr", at(0), b.TOP);
+      const ki = await b.take("reagent", "ki", at(105), b.TOP);
+      const nacl = await b.take("reagent", "nacl", at(210), b.TOP);
+      for (const x of [kbr, ki, nacl]) await b.uncap(x);
+      await b.pour(kbr, tubes[0], 2);
+      await b.pour(ki, tubes[1], 2);
+      await b.pour(ki, tubes[2], 2);
+      await b.pour(nacl, tubes[3], 2);
+      await say("Potassium bromide, potassium iodide twice, and sodium chloride. All four are colourless.");
+      const cl = await b.take("reagent", "clw", at(470), b.TOP);
+      const br = await b.take("reagent", "brw", at(575), b.TOP);
+      await b.uncap(cl);
+      await b.pour(cl, tubes[0], 2);
+      await say("Chlorine water into the bromide: orange. That is bromine, pushed out of its salt by chlorine.");
+      await b.pour(cl, tubes[1], 2);
+      await say("Chlorine water into the iodide: brown. That is iodine. Chlorine displaces both.");
+      await b.uncap(br);
+      await b.pour(br, tubes[2], 2);
+      await say("Bromine water into the iodide: brown again. Bromine displaces iodine.");
+      await b.pour(br, tubes[3], 2);
+      await say("Bromine water into the chloride: only the bromine's own orange. Nothing happens, because bromine is less reactive than chlorine. The order is chlorine, bromine, iodine.");
+    },
+  },
+  {
+    id: "indicator",
+    name: "An indicator from hibiscus petals",
+    about: "A blender and a filter get the red colouring out of zobo petals. It is red in acid and green in alkali.",
+    need: ["extract", "petal:acid", "petal:alkali"],
+    steps: [
+      { text: "Take the blender from Glassware. Tip in hibiscus petals (in Solids) and pour in distilled water.", done: (seen) => seen.has("added:zobo") && seen.has("in:blender:water") },
+      { text: "Press BLEND on the base of the blender.", done: (seen) => seen.has("extract") },
+      { text: "Fit a funnel and a filter paper in a flask and pour the mixture through.", done: (seen) => seen.has("filtered") },
+      { text: "Pour some of the red filtrate into a test tube and add dilute hydrochloric acid.", done: (seen) => seen.has("petal:acid") },
+      { text: "Pour some into a second test tube and add sodium hydroxide solution.", done: (seen) => seen.has("petal:alkali") },
+    ],
+    async run({ say, b }) {
+      const at = (n) => 110 + n * Math.min(1, (b.W - 240) / 780);
+      await say("Litmus comes from a plant. So can our own indicator: dried hibiscus petals, the ones zobo is made from.");
+      const bl = await b.take("vessel", "blender", at(120), b.BASE);
+      const zo = await b.take("reagent", "zobo", at(0), b.TOP + 22);
+      const w = await b.take("reagent", "water", at(120), b.TOP);
+      await b.uncap(zo);
+      await b.pour(zo, bl, 2);
+      await b.uncap(w);
+      await b.pour(w, bl, 5);
+      await say("Petals and water in the jug of a blender.");
+      await b.blend(bl);
+      await say("The blades break the petals open and the red colouring goes into the water. The pulp is still floating in it.");
+      const fl = await b.take("vessel", "flask", at(330), b.BASE);
+      const fu = await b.take("tool", "funnel", at(430), b.BASE - 60);
+      await b.fit(fu, fl);
+      const fp = await b.take("tool", "paper", at(430), b.BASE);
+      await b.fit(fp, fu);
+      await b.pour(bl, fl, 8);
+      await say("Filtering holds the pulp back. The clear red filtrate is the extract.");
+      await b.lift(fu, at(430), b.BASE);
+      const rack = await b.take("rack", "rack", at(640), b.BASE);
+      const t1 = await b.take("vessel", "tube", at(590), b.BASE - 30);
+      await b.into(t1, rack, 1);
+      const t2 = await b.take("vessel", "tube", at(700), b.BASE - 30);
+      await b.into(t2, rack, 3);
+      await b.pour(fl, t1, 3);
+      await b.pour(fl, t2, 3);
+      const hcl = await b.take("reagent", "hcl", at(560), b.TOP);
+      const naoh = await b.take("reagent", "naoh", at(670), b.TOP);
+      await b.uncap(hcl);
+      await b.pour(hcl, t1, 1);
+      await say("With an acid it is bright red.");
+      await b.uncap(naoh);
+      await b.pour(naoh, t2, 1);
+      await say("With an alkali it turns green. One colour in acid, another in alkali: that is an indicator, and we made it ourselves.");
+    },
+  },
+  {
     id: "centrifuge",
     name: "Centrifuging",
     about: "Spinning packs a fine solid into a pellet, and the clear liquid is poured off.",
@@ -1121,7 +1293,7 @@ export async function initPrepbot(bench) {
     const hasRack = all.some((c) => c.kind === "rack" && c.key === "rack");
     const inRack = (c) => hasRack && c.kind === "vessel" && (c.key === "tube" || c.key === "boil");
     const WIDE = { rack: 340, centrifuge: 200, stand: 210, tripod: 150, trough: 300, balance: 200, condenser: 260, syringe: 260 };
-    const widthOf = (c) => WIDE[c.key] || (/^(beaker|flask|rbf|fbf|distflask|gasjar|dish|vol|sepfunnel|mortar)/.test(c.key) ? 130 : 84);
+    const widthOf = (c) => WIDE[c.key] || (/^(beaker|flask|rbf|fbf|distflask|gasjar|dish|vol|sepfunnel|mortar|blender)/.test(c.key) ? 130 : 84);
     const row = (cs, y) => {
       const total = cs.reduce((s, c) => s + widthOf(c), 0), room = bench.W - 200, k = Math.min(1, room / Math.max(1, total));
       let x = 100 + Math.max(0, (room - total * k) / 2);

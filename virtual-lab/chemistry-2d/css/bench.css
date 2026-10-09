@@ -749,3 +749,22 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 
 #cl-bot-plans { display: inline-block; margin: 0 0 0.9rem; text-decoration: none; }
 #cl-bot-plans[hidden] { display: none; }
+
+/* a blender: the blades are a blur and the whole thing hums while it runs */
+.cl-blades { transform-box: fill-box; transform-origin: center; }
+.is-blending .cl-blades { animation: cl-blade 0.07s linear infinite; }
+.is-blending .cl-switch { fill: #c0392b; }
+.cl-item.is-blending .cl-vortex { opacity: 1; }
+@keyframes cl-blade { 0% { transform: scaleX(1); opacity: 1; } 50% { transform: scaleX(-0.3); opacity: 0.5; } 100% { transform: scaleX(1); opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) {
+  .cl-item.is-blending { animation: cl-hum 0.08s linear infinite; }
+  .cl-item.is-blending .cl-vortex ellipse { animation: cl-spin 0.3s linear infinite; }
+}
+.cl-lilac { transform-box: fill-box; transform-origin: 50% 100%; animation: cl-lilac 0.16s ease-in-out infinite alternate; }
+@keyframes cl-lilac { to { transform: scale(0.8, 1.2); } }
+
+/* the sink's tap: its key turns, and the water is seen while it runs */
+.cl-tapflow { display: none; }
+.is-running .cl-tapflow { display: inline; }
+.cl-tapkey { transform-box: fill-box; transform-origin: center; transition: transform 0.18s; }
+.is-running .cl-tapkey { transform: rotate(90deg); }

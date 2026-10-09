@@ -63,15 +63,24 @@ export const REAGENTS = [
   { id: "na2co3", group: "salt", kind: "solution", name: "sodium carbonate solution", formula: "Na2CO3", adds: { Na: 1, CO3: 1 } },
   { id: "nacl", group: "salt", kind: "solution", name: "sodium chloride solution", formula: "NaCl", adds: { Na: 1, Cl: 1 } },
   { id: "ki", group: "salt", kind: "solution", name: "potassium iodide solution", formula: "KI", adds: { K: 1, I: 1 } },
+  { id: "kbr", group: "salt", kind: "solution", name: "potassium bromide solution", formula: "KBr", adds: { K: 1, Br: 1 } },
   { id: "nh4cl", group: "salt", kind: "solution", name: "ammonium chloride solution", formula: "NH4Cl", adds: { NH4: 1, Cl: 1 } },
 
   // the unknown of the qualitative-analysis question: main.js decides which salt it is (setUnknown)
   { id: "unk", group: "other", kind: "solution", name: "sample X", formula: "X", adds: {} },
   { id: "water", group: "other", kind: "solution", name: "distilled water", formula: "H2O", adds: {} },
   { id: "h2o2", group: "other", kind: "solution", name: "hydrogen peroxide solution", formula: "H2O2", adds: { H2O2: 1 } },
+  // the halogens, as they are met at a school bench: dissolved in water
+  { id: "clw", group: "other", kind: "solution", name: "chlorine water", formula: "Cl2", adds: { Cl2: 1 } },
+  { id: "brw", group: "other", kind: "solution", name: "bromine water", formula: "Br2", adds: { Br2: 1 } },
+  { id: "i2aq", group: "other", kind: "solution", name: "iodine solution", formula: "I2", adds: { I2: 1 } },
   // the one liquid that does not mix with the rest: it is kept apart, as t.oil, and floats
   { id: "oil", group: "other", kind: "solution", name: "cooking oil", formula: "Oil", adds: {}, oil: true },
 
+  // the three that react with cold water: a piece no bigger than a grain of rice
+  { id: "k", group: "solid", kind: "solid", name: "potassium", formula: "K", metal: { K: 0.5 } },
+  { id: "na", group: "solid", kind: "solid", name: "sodium", formula: "Na", metal: { Na: 0.5 } },
+  { id: "ca", group: "solid", kind: "solid", name: "calcium granules", formula: "Ca", metal: { Ca: 1 } },
   { id: "mg", group: "solid", kind: "solid", name: "magnesium ribbon", formula: "Mg", metal: { Mg: 2 } },
   { id: "zn", group: "solid", kind: "solid", name: "zinc granules", formula: "Zn", metal: { Zn: 2 } },
   { id: "fe", group: "solid", kind: "solid", name: "iron filings", formula: "Fe", metal: { Fe: 2 } },
@@ -84,6 +93,8 @@ export const REAGENTS = [
   { id: "sand", group: "solid", kind: "solid", name: "sand", formula: "SiO2", solid: { sand: 1.5 } },
   { id: "sulfur", group: "solid", kind: "solid", name: "sulfur powder", formula: "S", solid: { S: 1.5 } },
   { id: "iodine", group: "solid", kind: "solid", name: "iodine crystals", formula: "I2", solid: { I2: 1 } },
+  // something for the blender: dried hibiscus (zobo), whose red colouring is an indicator
+  { id: "zobo", group: "solid", kind: "solid", name: "hibiscus petals (zobo)", formula: "Zobo", solid: { petals: 1 } },
 
   { id: "ui", group: "indicator", kind: "indicator", name: "universal indicator", formula: "UI" },
   { id: "phph", group: "indicator", kind: "indicator", name: "phenolphthalein", formula: "Ph" },
@@ -108,6 +119,7 @@ export const PPT = {
   MgOH: { formula: "Mg(OH)2", name: "magnesium hydroxide", colour: "white", rgb: WHITE, eq: "Mg^2+(aq) + 2OH^-(aq) -> Mg(OH)2(s)" },
   Ag2O: { formula: "Ag2O", name: "silver oxide", colour: "brown", rgb: [104, 76, 52], eq: "2Ag^+(aq) + 2OH^-(aq) -> Ag2O(s) + H2O(l)" },
   AgCl: { formula: "AgCl", name: "silver chloride", colour: "white", rgb: WHITE, eq: "Ag^+(aq) + Cl^-(aq) -> AgCl(s)" },
+  AgBr: { formula: "AgBr", name: "silver bromide", colour: "cream", rgb: [240, 234, 204], eq: "Ag^+(aq) + Br^-(aq) -> AgBr(s)" },
   AgI: { formula: "AgI", name: "silver iodide", colour: "pale yellow", rgb: [236, 226, 150], eq: "Ag^+(aq) + I^-(aq) -> AgI(s)" },
   BaSO4: { formula: "BaSO4", name: "barium sulfate", colour: "white", rgb: WHITE, eq: "Ba^2+(aq) + SO4^2-(aq) -> BaSO4(s)" },
   PbI2: { formula: "PbI2", name: "lead(II) iodide", colour: "bright yellow", rgb: [244, 208, 34], eq: "Pb^2+(aq) + 2I^-(aq) -> PbI2(s)" },
@@ -124,7 +136,7 @@ export const PPT = {
 };
 
 // Order matters only where two things want the same ion: the least soluble first.
-const SALTS_FIRST = [["Ag", "I", "AgI"], ["Ag", "Cl", "AgCl"], ["Ba", "SO4", "BaSO4"], ["Pb", "I", "PbI2"], ["Pb", "SO4", "PbSO4"]];
+const SALTS_FIRST = [["Ag", "I", "AgI"], ["Ag", "Br", "AgBr"], ["Ag", "Cl", "AgCl"], ["Ba", "SO4", "BaSO4"], ["Pb", "I", "PbI2"], ["Pb", "SO4", "PbSO4"]];
 // [cation, precipitate, does aqueous ammonia bring it down too?]
 const HYDROXIDES = [
   ["Fe3", "Fe3OH", true], ["Al", "AlOH", true], ["Cu", "CuOH", true], ["Zn", "ZnOH", true], ["Pb", "PbOH", true],
@@ -149,8 +161,13 @@ const COMPLEX_ORDER = ["ZnOH4", "AlOH4", "PbOH4", "CuNH3", "ZnNH3", "AgONH3", "A
 
 // ── metals ──────────────────────────────────────────────────────────────────
 // Most reactive first. A metal pushes out of solution any metal below it.
-export const SERIES = ["Mg", "Zn", "Fe", "Pb", "Cu", "Ag"];
+export const SERIES = ["K", "Na", "Ca", "Mg", "Zn", "Fe", "Pb", "Cu", "Ag"];
+// The ones that react with cold water, most violent first. They never lie in a liquid long enough to displace anything.
+const WATER_METALS = ["K", "Na", "Ca"];
 export const METAL = {
+  K: { ion: "K", name: "potassium", sym: "K", charge: 1, rgb: [206, 208, 214], coat: "grey" },
+  Na: { ion: "Na", name: "sodium", sym: "Na", charge: 1, rgb: [214, 216, 220], coat: "grey" },
+  Ca: { ion: "Ca", name: "calcium", sym: "Ca", charge: 2, rgb: [176, 178, 180], coat: "grey" },
   Mg: { ion: "Mg", name: "magnesium", sym: "Mg", charge: 2, rgb: [198, 202, 206], coat: "grey" },
   Zn: { ion: "Zn", name: "zinc", sym: "Zn", charge: 2, rgb: [150, 158, 166], coat: "grey" },
   Fe: { ion: "Fe2", name: "iron", sym: "Fe", charge: 2, rgb: [84, 84, 90], coat: "dark grey" },
@@ -159,6 +176,20 @@ export const METAL = {
   Ag: { ion: "Ag", name: "silver", sym: "Ag", charge: 1, rgb: [204, 208, 214], coat: "silvery-grey" },
 };
 const WITH_ACID = { Mg: "fizzes quickly", Zn: "fizzes steadily", Fe: "fizzes slowly" };
+const WITH_WATER = {
+  K: ["The potassium melts into a silvery ball, darts about on the surface and catches fire at once: it burns with a lilac flame, and is gone in a few seconds with a small crack.", "Potassium is the most reactive of these metals. The reaction gives out so much heat that the hydrogen catches fire, and the potassium colours the flame lilac. Potassium hydroxide is left in the water."],
+  Na: ["The sodium floats, melts into a silvery ball and skates about on the surface, hissing and getting smaller until it is gone.", "Sodium is less dense than water, and the heat of the reaction melts it. The hissing is hydrogen coming off. Sodium hydroxide is left in the water."],
+  Ca: ["The calcium sinks and fizzes steadily. Bubbles of a colourless gas rise from it.", "Calcium reacts with cold water steadily, not violently: it is less reactive than sodium. Calcium hydroxide is only slightly soluble, so most of it shows as a white cloudiness."],
+};
+const NO_WATER = {
+  Mg: "Magnesium reacts only very slowly with cold water: a few bubbles on the ribbon after many minutes. It reacts quickly with steam.",
+  Zn: "Zinc does not react with cold water. Red-hot, it reacts with steam.",
+  Fe: "Iron does not react with cold water on its own (it rusts slowly, with air). Red-hot, it reacts with steam.",
+  Cu: "Copper does not react with water, nor with steam.",
+};
+// The halogens, as what they are in solution and what they leave behind: [molecule, ion, name]
+const HALOGEN = { Cl2: ["Cl", "chlorine"], Br2: ["Br", "bromine"], I2: ["I", "iodine"] };
+const HALIDE_NAME = { Cl: "chloride", Br: "bromide", I: "iodide" };
 export const SOLID = {
   CaCO3: { name: "marble chips", rgb: [238, 236, 228] },
   CuO: { name: "copper(II) oxide", rgb: [38, 36, 36] },
@@ -167,10 +198,12 @@ export const SOLID = {
   rocksalt: { name: "salt", rgb: [246, 246, 242] },
   S: { name: "sulfur", rgb: [236, 214, 74] },
   I2: { name: "iodine", rgb: [58, 46, 66] },
+  petals: { name: "hibiscus petals", rgb: [116, 22, 44] },
+  pulp: { name: "petal pulp", rgb: [98, 30, 48] },
   crystals: { name: "crystals", rgb: [244, 244, 240] },      // what is left when the water has boiled away; coloured by t.crystal
 };
 
-const ION_TEX = { Mg: "Mg^2+", Zn: "Zn^2+", Fe2: "Fe^2+", Pb: "Pb^2+", Cu: "Cu^2+", Ag: "Ag^+" };
+const ION_TEX = { K: "K^+", Na: "Na^+", Ca: "Ca^2+", Mg: "Mg^2+", Zn: "Zn^2+", Fe2: "Fe^2+", Pb: "Pb^2+", Cu: "Cu^2+", Ag: "Ag^+" };
 
 // ── the WHOLE equation ──────────────────────────────────────────────────────
 // Every change already has its ionic equation. A candidate is also asked for the full,
@@ -178,7 +211,7 @@ const ION_TEX = { Mg: "Mg^2+", Zn: "Zn^2+", Fe2: "Fe^2+", Pb: "Pb^2+", Cu: "Cu^2
 // out of: copper(II) sulfate with sodium hydroxide, or copper(II) sulfate with ammonia.
 // So it is built: the formula of each salt from the charges of its two ions, and the
 // numbers in front found by trying them (they are never bigger than 6).
-const CHARGE = { H: 1, Na: 1, K: 1, NH4: 1, Ag: 1, Cu: 2, Fe2: 2, Fe3: 3, Zn: 2, Al: 3, Pb: 2, Ca: 2, Ba: 2, Mg: 2, Cl: -1, NO3: -1, OH: -1, I: -1, SO4: -2, CO3: -2 };
+const CHARGE = { H: 1, Na: 1, K: 1, NH4: 1, Ag: 1, Cu: 2, Fe2: 2, Fe3: 3, Zn: 2, Al: 3, Pb: 2, Ca: 2, Ba: 2, Mg: 2, Cl: -1, Br: -1, NO3: -1, OH: -1, I: -1, SO4: -2, CO3: -2 };
 const WRITTEN = { Fe2: "Fe", Fe3: "Fe" };
 const MANY_ATOMS = new Set(["NH4", "SO4", "NO3", "OH", "CO3"]);
 const hcf = (a, b) => (b ? hcf(b, a % b) : a);
@@ -338,16 +371,18 @@ export function speciate(t) {
 
   for (const k of Object.keys(ppt)) if (ppt[k] <= EPS) delete ppt[k];
   for (const k of Object.keys(f)) if (f[k] <= EPS) delete f[k];
-  return { ppt, cx, free: f, pH: pHof(t, f, cx) };
+  return { ppt, cx, free: f, pH: pHof(t, f, cx, ppt) };
 }
 
-function pHof(t, f, cx) {
+function pHof(t, f, cx, ppt = {}) {
   if (t.vol <= EPS) return null;
   const conc = (n) => (0.1 * n) / t.vol;         // bench solutions are about 0.1 mol/dm3
   if (get(f, "H") > EPS) return clamp(-Math.log10(conc(f.H)), 0, 6.5);
   if (get(f, "OH") > EPS) return clamp(14 + Math.log10(conc(f.OH)), 7.5, 14);
+  if (ppt.CaOH) return 12;                       // limewater: calcium hydroxide is slightly soluble, and what dissolves is a strong alkali
   if (cx.ZnOH4 || cx.AlOH4 || cx.PbOH4) return 12;
   if (cx.CuNH3 || cx.ZnNH3 || cx.AgONH3 || cx.AgClNH3) return 10;
+  if (get(f, "Cl2") > EPS) return 3;             // chlorine water is acidic: Cl2 + H2O gives HCl and HOCl
   if (get(f, "NH3") > EPS) return clamp(11 + 0.5 * Math.log10(f.NH3 / t.vol), 9.5, 11.5);
   if (get(f, "CO3") > EPS) return clamp(11 + 0.5 * Math.log10(f.CO3 / t.vol), 9.5, 11.5);
   if (get(f, "Fe3") > EPS || get(f, "Al") > EPS) return 3;
@@ -363,7 +398,11 @@ const TINT = [
   ["free", "Fe3", [214, 150, 44], 3.2, "yellow-brown"],
   ["cx", "CuNH3", [28, 52, 190], 7, "deep blue"],
   ["free", "I2", [150, 84, 30], 5, "brown"],
+  ["free", "Br2", [226, 132, 30], 3, "orange"],
+  ["free", "Cl2", [206, 226, 140], 0.45, "very pale green"],
 ];
+/** Hibiscus colouring is an indicator: what it looks like at this pH. */
+const petalColour = (pH) => (pH < 3.5 ? [[226, 40, 66], "bright red"] : pH < 7.6 ? [[164, 26, 62], "deep red"] : pH < 13 ? [[58, 128, 84], "green"] : [[150, 152, 58], "yellow-green"]);
 const UNIVERSAL = [
   [2.5, [226, 54, 44], "red"], [4.5, [240, 138, 36], "orange"], [6.5, [240, 208, 30], "yellow"], [7.5, [76, 176, 80], "green"],
   [9.5, [44, 150, 190], "blue-green"], [11.5, [52, 96, 208], "blue"], [15, [106, 52, 150], "violet"],
@@ -387,6 +426,10 @@ export function look(t, sp = speciate(t)) {
     a = Math.max(a, 0.72);
     name = word;
   };
+  if (get(sp.free, "Anth") > EPS) {
+    const [c, word] = petalColour(sp.pH);
+    over(c, Math.min(0.9, 1 - Math.exp((-6 * sp.free.Anth) / t.vol)), word);
+  }
   if (t.ind.includes("ui")) {
     const [, c, word] = UNIVERSAL.find(([top]) => sp.pH < top);
     over(c, 0.85, word);
@@ -414,7 +457,27 @@ function settle(t, heated) {
     if (t.vol > EPS && (n = get(t.solid, "rocksalt")) > EPS) { delete t.solid.rocksalt; bump(aq, "Na", n * 2); bump(aq, "Cl", n * 2); did({ id: "dissolveSalt", n }); }
     if (heated && t.vol <= EPS && (n = get(t.solid, "I2")) > EPS) { delete t.solid.I2; t.sublimate = (t.sublimate || 0) + n; did({ id: "sublime", n }); }
 
+    // potassium, sodium and calcium react with the WATER itself, whatever is dissolved in it: an
+    // alkali and hydrogen. (So sodium in copper(II) sulfate gives a blue precipitate, not copper.)
+    for (const m of WATER_METALS) {
+      if (t.vol > EPS && (n = get(t.metal, m)) > EPS) {
+        const acid = get(aq, "H") > EPS;
+        delete t.metal[m]; bump(aq, METAL[m].ion, n); bump(aq, "OH", n); t.gas = "H2"; did({ id: "metalWater", n, m, acid });
+      }
+    }
     if ((n = Math.min(get(aq, "H"), get(aq, "OH"))) > EPS) { bump(aq, "H", -n); bump(aq, "OH", -n); did({ id: "neutral", n }); }
+    // a halogen takes the electrons of the halide of any halogen below it in the group
+    for (const [hi, lo] of [["Cl2", "I"], ["Cl2", "Br"], ["Br2", "I"]]) {
+      if ((n = Math.min(get(aq, hi), get(aq, lo))) > EPS) {
+        bump(aq, hi, -n); bump(aq, HALOGEN[hi][0], n); bump(aq, lo, -n); bump(aq, `${lo}2`, n); did({ id: "halogen", n, hi, lo });
+      }
+    }
+    // chlorine and bromine oxidise iron(II) to iron(III) too
+    for (const hi of ["Cl2", "Br2"]) {
+      if ((n = Math.min(get(aq, hi), get(aq, "Fe2") / 2)) > EPS) {
+        bump(aq, hi, -n); bump(aq, HALOGEN[hi][0], n); bump(aq, "Fe2", -2 * n); bump(aq, "Fe3", 3 * n); did({ id: "oxFe2", n, hi });
+      }
+    }
     if ((n = Math.min(get(aq, "H"), get(aq, "NH3"))) > EPS) { bump(aq, "H", -n); bump(aq, "NH3", -n); bump(aq, "NH4", n); did({ id: "neutralNH3", n }); }
     // an ammonium salt and an alkali: ammonia is set free in the solution (and driven off by heat)
     if ((n = Math.min(get(aq, "NH4"), get(aq, "OH"))) > EPS) { bump(aq, "NH4", -n); bump(aq, "OH", -n); bump(aq, "NH3", n); moved = true; }
@@ -512,14 +575,14 @@ function act(t, change, { heated = false, adding = null } = {}) {
   t.temp = 25 + ((t.temp ?? 25) - 25) * 0.75;
   if (t.vol > EPS) {
     const warm = (id, k) => (events.filter((e) => e.id === id).reduce((a, e) => a + e.n, 0) * k) / t.vol;
-    t.temp += warm("neutral", 26) + warm("neutralNH3", 22) + warm("metalAcid", 30) + warm("displace", 16) + warm("oxygen", 14);
+    t.temp += warm("neutral", 26) + warm("neutralNH3", 22) + warm("metalAcid", 30) + warm("metalWater", 44) + warm("displace", 16) + warm("oxygen", 14) + warm("halogen", 3);
   }
   if (heated) t.temp = Math.max(t.temp, 82);
   t.temp = Math.min(100, t.temp);
   // mass: what a balance will read. A gas that leaves takes its mass with it;
   // a solid that dissolves hands its mass to the liquid.
   for (const e of events) {
-    const k = e.id === "metalAcid" ? EQ_MASS[e.m] - 1 : e.id === "marble" ? 50 - 22 : e.id === "oxide" ? 39.8 : e.id === "carbonate" || e.id === "hydrolysis" || e.id === "bakeCarbonate" ? -22
+    const k = e.id === "metalAcid" || e.id === "metalWater" ? EQ_MASS[e.m] - 1 : e.id === "marble" ? 50 - 22 : e.id === "oxide" ? 39.8 : e.id === "carbonate" || e.id === "hydrolysis" || e.id === "bakeCarbonate" ? -22
       : e.id === "oxygen" ? -16 : e.id === "ammonia" ? -17 : e.id === "reduceFe3" ? EQ_MASS[e.m] : e.id === "displace" ? EQ_MASS[e.m] - EQ_MASS[e.low] : e.id === "bakeHydroxide" ? -39.8 - 9 : 0;
     t.extra = (t.extra || 0) + k * e.n * 0.01;
   }
@@ -548,9 +611,37 @@ function act(t, change, { heated = false, adding = null } = {}) {
     flags.push("gas:CO2");
   }
   if (has("hydrolysis")) { say(`Fizzing. ${FIZZ}`, "Iron(III) and aluminium carbonates do not exist: the hydroxide comes down and carbon dioxide escapes.", t.added.includes("also4") && !t.added.includes("fecl3") ? "2Al^3+(aq) + 3CO3^2-(aq) + 3H2O(l) -> 2Al(OH)3(s) + 3CO2(g)" : "2Fe^3+(aq) + 3CO3^2-(aq) + 3H2O(l) -> 2Fe(OH)3(s) + 3CO2(g)"); flags.push("gas:CO2"); }
+  for (const e of events.filter((x) => x.id === "metalWater")) {
+    if (flags.includes(`water:${e.m}`)) continue;
+    const M = METAL[e.m], [text, why] = WITH_WATER[e.m], k = M.charge === 1 ? 2 : 1;
+    obs.push({
+      text: e.acid ? `${text} With the acid it is more violent still.` : text,
+      why: e.acid ? `${why} In an acid it is far more violent than in water: this is never done at a school bench.` : why,
+      eq: `${k > 1 ? k : ""}${M.sym}(s) + 2H2O(l) -> ${k > 1 ? k : ""}${ION_TEX[M.ion]}(aq) + 2OH^-(aq) + H2(g)`,
+      full: `${k > 1 ? k : ""}${M.sym}(s) + 2H2O(l) -> ${k > 1 ? `2${M.sym}OH` : `${M.sym}(OH)2`}(aq) + H2(g)`,
+    });
+    flags.push(`water:${e.m}`, "gas:H2");
+    if (e.m === "K") flags.push("burn:K");
+  }
+  for (const e of events.filter((x) => x.id === "halogen")) {
+    const tag = `halogen:${e.hi.slice(0, -1)}>${e.lo}`;
+    if (flags.includes(tag)) continue;
+    const [ion, hi] = HALOGEN[e.hi], lo = HALOGEN[`${e.lo}2`][1];
+    obs.push({
+      text: e.lo === "I" ? "The liquid turns to a brown solution." : "The liquid turns to an orange solution.",
+      why: `${cap(hi)} is more reactive than ${lo}, so it displaces ${lo} from the ${HALIDE_NAME[e.lo]}. The colour is the ${lo} set free.`,
+      eq: `${e.hi}(aq) + 2${e.lo}^-(aq) -> 2${ion}^-(aq) + ${e.lo}2(aq)`,
+    });
+    flags.push(tag);
+  }
+  if (has("oxFe2")) {
+    say("The pale green of the iron(II) solution turns to a yellow-brown solution.", "The halogen is an oxidising agent: it oxidises iron(II) ions to iron(III) ions and is itself reduced to halide ions.", events.find((x) => x.id === "oxFe2").hi === "Cl2" ? "2Fe^2+(aq) + Cl2(aq) -> 2Fe^3+(aq) + 2Cl^-(aq)" : "2Fe^2+(aq) + Br2(aq) -> 2Fe^3+(aq) + 2Br^-(aq)");
+    flags.push("oxFe2");
+  }
   for (const e of events.filter((x) => x.id === "metalAcid")) {
     if (obs.some((o) => o.metal === e.m)) continue;
     const M = METAL[e.m];
+    flags.push(`fizz:${e.m}`);
     const gone = get(t.metal, e.m) <= EPS;
     obs.push({ metal: e.m, text: `The ${M.name} ${WITH_ACID[e.m]}${gone ? " and dissolves away" : ""}. ${FIZZ}`, why: `${cap(M.name)} is above hydrogen in the reactivity series, so it displaces hydrogen from the acid.`, eq: `${M.sym}(s) + 2H^+(aq) -> ${ION_TEX[M.ion]}(aq) + H2(g)`, full: W("metalAcid", e.m) });
     flags.push("gas:H2");
@@ -636,12 +727,30 @@ function act(t, change, { heated = false, adding = null } = {}) {
     }
   }
 
+  // a halogen with the halide of one ABOVE it: nothing happens, and the colour is only its own
+  let ownColour = false;
+  if (!has("halogen")) {
+    for (const [lo, hiIon] of [["I2", "Br"], ["I2", "Cl"], ["Br2", "Cl"]]) {
+      const tag = `nohalogen:${lo.slice(0, -1)}>${hiIon}`;
+      if (get(after.sp.free, lo) <= EPS || get(after.sp.free, hiIon) <= EPS || t.said.includes(tag)) continue;
+      if (get(before.sp.free, lo) > EPS && get(before.sp.free, hiIon) > EPS) continue;
+      t.said.push(tag);
+      const loName = HALOGEN[lo][1], hiName = HALOGEN[`${hiIon}2`][1];
+      say(`The liquid is ${after.look.name}: the colour of the ${loName} itself, made a little paler. There is no reaction.`, `${cap(loName)} is less reactive than ${hiName}, so it cannot displace ${hiName} from the ${HALIDE_NAME[hiIon]}.`);
+      flags.push(tag);
+      ownColour = true;
+      break;
+    }
+  }
   // the colour of the liquid
-  if (after.vol > EPS && before.look.name !== after.look.name && !obs.some((o) => o.text.includes(`${after.look.name} solution`))) {
+  if (!ownColour && after.vol > EPS && before.look.name !== after.look.name && !obs.some((o) => o.text.includes(`${after.look.name} solution`))) {
     const ind = adding && adding.kind === "indicator";
     if (before.vol > EPS || ind) {
       const pH = after.sp.pH;
-      const why = t.ind.length && pH != null ? (t.ind.includes("ui") ? `Universal indicator: about pH ${Math.round(pH)}, ${pH < 6.5 ? "acidic" : pH > 7.5 ? "alkaline" : "neutral"}.` : undefined) : undefined;
+const petal = !t.ind.length && get(after.sp.free, "Anth") > EPS && get(before.sp.free, "Anth") > EPS;
+      const why = t.ind.length && pH != null ? (t.ind.includes("ui") ? `Universal indicator: about pH ${Math.round(pH)}, ${pH < 6.5 ? "acidic" : pH > 7.5 ? "alkaline" : "neutral"}.` : undefined)
+        : petal ? "The red colouring of hibiscus is a natural indicator: red in an acid, green in an alkali." : undefined;
+      if (petal) flags.push(`petal:${pH < 6.5 ? "acid" : pH > 7.5 ? "alkali" : "neutral"}`);
       say(ind ? `The indicator turns the liquid ${after.look.name}.` : `The liquid turns ${after.look.name}.`, why);
       flags.push(`colour:${after.look.name}`);
     }
@@ -656,8 +765,18 @@ function act(t, change, { heated = false, adding = null } = {}) {
     if (heated) say("The liquid gets hot. No other change.");
     else if (cold) say("No visible change.", cold === "Fe" ? "Cold concentrated sulfuric acid makes iron passive: a thin, tight layer forms on the metal and protects it. Heat it and the acid attacks." : `Cold concentrated sulfuric acid has almost no water in it, so it has very few hydrogen ions and does not act as an ordinary acid: no hydrogen comes off the ${METAL[cold].name}. Heat it and it attacks the metal as an oxidising agent.`);
     else {
-      const idle = ["Cu", "Ag", "Pb"].find((m) => get(t.metal, m) > EPS && get(after.sp.free, "H") > EPS && !t.deposit.includes(m));
-      say("No visible change.", idle ? `${cap(METAL[idle].name)} is below hydrogen in the reactivity series, so it cannot displace hydrogen from a dilute acid.` : undefined);
+      const free = after.sp.free;
+      const idle = ["Cu", "Ag", "Pb"].find((m) => get(t.metal, m) > EPS && get(free, "H") > EPS && !t.deposit.includes(m));
+      // a metal lying in a solution of a metal ABOVE it in the series
+      const lying = SERIES.filter((m) => get(t.metal, m) > EPS && !t.deposit.includes(m));
+      const under = !idle && lying.map((m) => [m, SERIES.slice(0, SERIES.indexOf(m)).reverse().find((x) => get(free, METAL[x].ion) > EPS)]).find(([, x]) => x);
+      const inWater = !idle && !under && t.vol > EPS && !Object.keys(free).length && lying.find((m) => NO_WATER[m]);
+      if (idle) flags.push(`noacid:${idle}`);
+      if (under) flags.push(`nodisplace:${under[0]}<${under[1]}`);
+      if (inWater) flags.push(`nowater:${inWater}`);
+      say("No visible change.", idle ? `${cap(METAL[idle].name)} is below hydrogen in the reactivity series, so it cannot displace hydrogen from a dilute acid.`
+        : under ? `${cap(METAL[under[0]].name)} is less reactive than ${METAL[under[1]].name}, so it cannot displace ${METAL[under[1]].name} from the solution.`
+        : inWater ? NO_WATER[inWater] : undefined);
     }
   }
   return { obs: obs.map(({ text, why, eq, full }) => ({ text, why, eq, full })), flags, events, state: after };
@@ -707,7 +826,7 @@ export function add(t, id, dose = "portion", strength = 1) {
     if (wasDry) {
       t.neat = r.conc && r.group === "acid" ? id : null;
       if (id === "ch2so4") first({ text: "Concentrated sulfuric acid is a colourless, oily liquid. It pours slowly.", why: "It is very corrosive: it is handled a little at a time, with goggles on." }, "conc");
-      else if (id === "chcl") first({ text: "Concentrated hydrochloric acid is colourless. It fumes in the air.", why: "The fumes are hydrogen chloride gas coming out of the solution." }, "conc");
+      else if (id === "chcl") first({ text: "Concentrated hydrochloric acid is colourless. It fumes in the air.", why: "The fumes are hydrogen chloride gas coming out of the solution. It meets the damp air and makes a mist of tiny drops of acid." }, "conc", "fumes");
     } else if (id === neat) { /* more of the same acid: still undiluted */ }
     else if (neat === "ch2so4" && !r.conc) {
       // WATER (or anything watery) onto the acid: it floats, boils at once and throws acid out
@@ -721,7 +840,19 @@ export function add(t, id, dose = "portion", strength = 1) {
       first({ text: "The vessel gets hot, but the liquid stays calm. The acid sinks through the water and mixes with it.", why: "Diluting concentrated sulfuric acid is strongly exothermic. Added slowly TO water, the dense acid sinks and the heat is spread through a large amount of water, so nothing boils. Always add acid to water." }, "dilute:right");
       t.neat = null;
     } else {
-      if (neat === "chcl" && !r.conc) first({ text: "It gets a little warm and stops fuming." });
+      const quiet = res.obs.every((o) => o.text === "No visible change." || o.text === "The crystals dissolve.");
+      const MILD = "Hydrogen chloride gives out most of its heat when it first dissolves, and concentrated hydrochloric acid is already about two-thirds water. Diluting it further gives out only a little more, so it warms but does not boil or spit. Concentrated sulfuric acid is different: it has almost no water in it. The rule is the same for both: add acid to water.";
+      if (neat === "chcl" && !r.conc) {
+        // water onto concentrated hydrochloric acid: a puff of fumes and some warmth, and that is all
+        t.temp = Math.min(70, (t.temp ?? 25) + (22 * amount) / t.vol);
+        first({ text: "A puff of white fumes comes off and the vessel gets warm. Then the fuming stops. It does not boil or spit.", why: MILD }, "dilute:hcl", "fumes");
+      } else if (id === "chcl" && quiet) {
+        t.temp = Math.min(70, (t.temp ?? 25) + (22 * amount) / t.vol);
+        first({ text: "The vessel gets warm. The acid stops fuming as it goes into the water.", why: MILD }, "dilute:hcl");
+      } else if (id === "cnaoh" && quiet) {
+        t.temp = Math.min(70, (t.temp ?? 25) + (16 * amount) / t.vol);
+        first({ text: "The vessel gets warm.", why: "Diluting a concentrated alkali gives out heat too. Dissolving solid sodium hydroxide gives out a great deal more." }, "dilute:alkali");
+      }
       t.neat = null;
     }
   }
@@ -748,7 +879,7 @@ export function heat(t) {
 /** Spin a tube in a centrifuge. Returns what is seen, and packs any solid into a pellet. */
 export function centrifuge(t) {
   if (t.vol <= EPS) return { title: "Centrifuged", obs: [{ text: "There is no liquid in it to spin." }], flags: [] };
-  const solid = Object.keys(speciate(t).ppt).length > 0 || get(t.solid, "sand") > EPS;
+  const solid = Object.keys(speciate(t).ppt).length > 0 || FINE.some((k) => get(t.solid, k) > EPS);
   if (!solid) return { title: "Centrifuged", obs: [{ text: "Nothing separates: there is no solid in the liquid." }], flags: ["spun:clear"] };
   t.packed = true;
   t.susp = false;
@@ -757,6 +888,40 @@ export function centrifuge(t) {
     obs: [{ text: "The solid is packed into a tight pellet at the bottom of the tube. The liquid above it is clear.", why: "Spinning throws the denser solid outwards, to the bottom of the tube, with many times the pull of gravity, so even a fine precipitate that would take hours to settle comes down in seconds. The clear liquid above is the supernatant: it can be poured off the pellet." }],
     flags: ["spun"],
   };
+}
+
+/**
+ * Run a blender on what is in its jug. Blades cut soft things up and beat liquids together;
+ * they do not make anything dissolve that would not have dissolved anyway.
+ */
+export function blend(t) {
+  if (isEmpty(t)) return { refused: "The jug is empty. Put something in it first." };
+  const obs = [], flags = ["blended"];
+  const say = (text, why) => obs.push({ text, why });
+  t.packed = false;
+  const hard = [...Object.keys(t.metal).filter((k) => get(t.metal, k) > EPS).map((k) => METAL[k].name), ...["CaCO3", "sand"].filter((k) => get(t.solid, k) > EPS).map((k) => SOLID[k].name)];
+  if (t.vol <= EPS && !(t.oil > EPS)) {
+    say(get(t.solid, "petals") > EPS ? "The blades chop the dry petals into small pieces. Nothing else happens: there is no liquid for the colour to go into." : "The blades rattle the dry solid about. Nothing mixes without a liquid.");
+    return { title: "Blended", obs, flags };
+  }
+  const petals = get(t.solid, "petals");
+  if (petals > EPS && t.vol > EPS) {
+    delete t.solid.petals;
+    bump(t.solid, "pulp", petals);
+    bump(t.aq, "Anth", petals * 8);
+    say(`The petals are cut to a fine pulp and the liquid turns ${look(t).name}.`, "Blending breaks open the cells of the petals, so the red colouring inside them goes into the water. The pulp does not dissolve: filter it off, and the clear red liquid is an indicator.");
+    flags.push("extract");
+  }
+  if (FINE.some((k) => get(t.solid, k) > EPS)) t.susp = true;
+  if (get(t.solid, "sand") > EPS && t.vol > EPS) say("The sand is whirled up through the water. It does not dissolve, and settles again when the blades stop.");
+  if (Object.keys(speciate(t).ppt).length) say("The precipitate is whipped up through the liquid. It does not dissolve.", "Mixing harder cannot make an insoluble solid dissolve.");
+  if (t.oil > EPS && t.vol > EPS) {
+    say("The oil is beaten into tiny droplets and the whole liquid turns milky. Left to stand, the droplets rise and the two layers come back.", "An emulsion: one liquid spread through another as fine droplets. Oil and water still do not dissolve in each other, so without something to hold the droplets apart they join up again.");
+    flags.push("emulsion");
+  }
+  if (hard.length) say(`The ${hard[0]} only rattles against the blades.`, "A blender is for soft things. Hard solids are crushed in a mortar.");
+  if (!obs.length) say("The liquid is whirled round and thoroughly mixed.");
+  return { title: "Blended", obs, flags };
 }
 
 /** A magnet over the tube: the iron comes out on it. Returns how much. */
@@ -777,7 +942,8 @@ export function rinse(t) {
 
 // ── weighing, filtering, boiling away, collecting ────────────────────────────────
 // Grams per equivalent, for the balance. One portion of liquid is 2 cm3 and weighs 2 g.
-const EQ_MASS = { Mg: 12.2, Zn: 32.7, Fe: 27.9, Pb: 103.6, Cu: 31.8, Ag: 107.9, CaCO3: 50, CuO: 39.8, MnO2: 87, sand: 30, rocksalt: 29.2, S: 16, I2: 127 };
+const FINE = ["sand", "pulp"];        // solids fine enough to be carried in a stirred liquid, and stopped by a filter paper
+const EQ_MASS = { K: 39.1, Na: 23, Ca: 20, petals: 12, pulp: 12, Mg: 12.2, Zn: 32.7, Fe: 27.9, Pb: 103.6, Cu: 31.8, Ag: 107.9, CaCO3: 50, CuO: 39.8, MnO2: 87, sand: 30, rocksalt: 29.2, S: 16, I2: 127 };
 const SALT_IONS = ["Cu", "Fe2", "Fe3", "Zn", "Al", "Pb", "Ca", "Ba", "Ag", "Mg", "Na", "K", "NH4"];
 const saltIn = (t) => SALT_IONS.reduce((a, k) => a + get(t.aq, k), 0);
 
@@ -836,6 +1002,8 @@ export function filterOut(s) {
   // sand carried over in the liquid is stopped by the paper too
   const sand = get(s.solid || {}, "sand");
   if (sand > EPS) { out.push({ key: "sand", n: sand, rgb: SOLID.sand.rgb, colour: "sandy-brown", name: "sand", formula: "SiO2" }); delete s.solid.sand; }
+  const pulp = get(s.solid || {}, "pulp");
+  if (pulp > EPS) { out.push({ key: "pulp", n: pulp, rgb: SOLID.pulp.rgb, colour: "dark red", name: "the pulp of the petals", formula: "plant fibre" }); delete s.solid.pulp; }
   return out;
 }
 
@@ -849,7 +1017,7 @@ export function sampleOf(id, n, strength = 1) {
   return s;
 }
 
-const GAS_FROM = { carbonate: "CO2", marble: "CO2", hydrolysis: "CO2", bakeCarbonate: "CO2", metalAcid: "H2", metalConc: "SO2", oxygen: "O2", ammonia: "NH3" };
+const GAS_FROM = { metalWater: "H2", carbonate: "CO2", marble: "CO2", hydrolysis: "CO2", bakeCarbonate: "CO2", metalAcid: "H2", metalConc: "SO2", oxygen: "O2", ammonia: "NH3" };
 /** The gas an action gave off and how much (in equivalents; 12 cm3 each), or null. */
 export function gasMade(res) {
   let gas = null, n = 0;
@@ -873,7 +1041,7 @@ export function gasMade(res) {
 export function electrolyse(t, n = 1) {
   if (t.vol <= EPS) return { refused: "There is nothing in the cell. Pour in a solution first." };
   const free = speciate(t).free;
-  const ions = Object.entries(free).filter(([k, v]) => v > EPS && !["NH3", "H2O2", "I2"].includes(k));
+  const ions = Object.entries(free).filter(([k, v]) => v > EPS && !["NH3", "H2O2", "I2", "Br2", "Cl2", "Anth"].includes(k));
   if (!ions.length) return { title: "Switched on the current", obs: [{ text: "Nothing happens at either rod.", why: "Pure water has almost no ions in it, so it barely conducts. Add an acid, an alkali or a salt." }], flags: [], events: [] };
   const before = look(t);
   const obs = [], flags = [];
@@ -898,13 +1066,19 @@ export function electrolyse(t, n = 1) {
     t.extra = (t.extra || 0) - n * 0.01;
   }
   // the positive rod (anode): oxidation
-  const halide = get(free, "I") > EPS ? "I" : get(free, "Cl") > EPS ? "Cl" : null;
+  const halide = get(free, "I") > EPS ? "I" : get(free, "Br") > EPS ? "Br" : get(free, "Cl") > EPS ? "Cl" : null;
   if (halide === "I") {
     const m = Math.min(n, free.I);
     bump(t.aq, "I", -m);
     bump(t.aq, "I2", m);
     say("A brown colour spreads from the positive rod.", "Iodide ions are discharged as iodine, which is brown in solution.", "2I^-(aq) -> I2(aq) + 2e^-");
     flags.push("electro:I2");
+  } else if (halide === "Br") {
+    const m = Math.min(n, free.Br);
+    bump(t.aq, "Br", -m);
+    bump(t.aq, "Br2", m);
+    say("An orange colour spreads from the positive rod.", "Bromide ions are discharged as bromine, which is orange in solution.", "2Br^-(aq) -> Br2(aq) + 2e^-");
+    flags.push("electro:Br2");
   } else if (halide === "Cl") {
     const m = Math.min(n, free.Cl);
     bump(t.aq, "Cl", -m);
@@ -948,7 +1122,7 @@ export function takeFrom(t, amount) {
   t.extra = (t.extra || 0) * (1 - f);
   for (const [k, v] of Object.entries(t.aq)) { bump(s.aq, k, v * f); bump(t.aq, k, -v * f); }
   // sand that has just been stirred up goes over with the liquid; left to settle, it stays behind
-  if (t.susp && get(t.solid, "sand") > EPS) { const k = t.solid.sand * f; s.solid.sand = k; bump(t.solid, "sand", -k); if (t.solid.sand <= EPS) delete t.solid.sand; }
+  if (t.susp) for (const key of FINE) { if (get(t.solid, key) > EPS) { const k = t.solid[key] * f; s.solid[key] = k; bump(t.solid, key, -k); } }
   if (t.packed) {
     // centrifuged: the precipitate is a pellet at the bottom, and it stays there. What goes
     // over is the clear liquid; whatever of the solid's ions the sample took is put back.
@@ -1061,6 +1235,10 @@ export function test(t, tool) {
       else if (gas === "SO2" && paper === "blue") { say("At the mouth, the damp blue litmus turns red.", "Sulfur dioxide is an acidic gas: it dissolves in the water on the paper to make sulfurous acid.", "SO2(g) + H2O(l) -> H2SO3(aq)"); turned = "red"; flags.push("test:so2"); }
       else if (gas === "CO2" && paper === "blue") { say("At the mouth, the damp blue litmus turns faintly red.", "Carbon dioxide is a weakly acidic gas.", "CO2(g) + H2O(l) -> H2CO3(aq)"); turned = "red"; }
       else say(`At the mouth, the damp ${paper} litmus does not change.`, gas === "H2" || gas === "O2" ? `The gas is neutral.` : undefined);
+    }
+    if (t.vol > EPS && get(t.aq, "Cl2") / t.vol > 0.05) {
+      say(paper === "blue" ? "Dipped in the liquid, the blue litmus turns red, and then white." : "Dipped in the liquid, the red litmus turns white.", "Chlorine water is acidic, and it bleaches: chlorine reacts with water to give hydrochloric acid and chloric(I) acid, which takes the colour out of dyes. This is the test for chlorine.", "Cl2(aq) + H2O(l) -> HCl(aq) + HOCl(aq)");
+      return { title: `Tested with ${paper} litmus paper`, obs, flags: ["test:bleach"], fx: `litmus-${paper}-white` };
     }
     if (t.vol > EPS) {
       const pH = speciate(t).pH;

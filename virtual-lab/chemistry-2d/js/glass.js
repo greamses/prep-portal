@@ -129,6 +129,15 @@ export const VESSELS = {
     slots: [[46, -12]], slotFits: (d) => Boolean(d.invert), upturns: true,
     back: `<rect x="14" y="-12" width="64" height="9" rx="2" fill="#fff" fill-opacity="0.2" stroke="#fff" stroke-opacity="0.35" stroke-width="0.7"/>`,
   },
+  // a jug on a motor: the blades in its floor cut soft things up and beat liquids together
+  blender: {
+    name: "Blender", cap: 150, g: 900, floor: 46, fill: 0.8, shadow: 48, spout: true,
+    profile: [[-46, 24], [-48, 27], [-54, 29], [-150, 44], [-152, 47], [-156, 47]],
+    box: { x0: -56, y0: -168, x1: 68, y1: 8 },
+    back: `<path d="M-42 0h84l-10 -40h-64z" fill="#2b2f37"/><path d="M-42 0h84l-10 -40h-64z" fill="url(#g-shade)" opacity="0.5"/><path d="M-32 -40h64l-4 -6h-56z" fill="#16181d"/><rect x="-44" y="-3.500" width="88" height="3.500" fill="#111317"/><path d="M-38 -5l8 -33" stroke="#fff" stroke-opacity="0.16" stroke-width="2" stroke-linecap="round"/><path d="M43 -140h16v64H33" fill="none" stroke="#dfe6ee" stroke-opacity="0.5" stroke-width="6.5" stroke-linejoin="round"/><path d="M43 -140h16v64H33" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="1"/>`,
+    front: `<rect x="-3.500" y="-54" width="7" height="8" fill="#8b929b"/><g class="cl-blades"><path d="M-15 -51L15 -57" stroke="#d5dbe3" stroke-width="2.6" stroke-linecap="round"/><path d="M-13 -58L13 -50" stroke="#aeb6c0" stroke-width="2.2" stroke-linecap="round"/></g>`,
+    over: `<g class="cl-press" data-press="blend"><rect class="cl-switch" x="-19" y="-31" width="38" height="17" rx="3" fill="#3d7fd0" stroke="#fff" stroke-opacity="0.55" stroke-width="0.8"/><text class="cl-press-t cl-press-t--s" x="0" y="-20">BLEND</text></g>`,
+  },
   watch: { name: "Watch glass", cap: 5, g: 20, profile: [[0, 10], [-3, 32], [-9, 50], [-12, 55]], fill: 0.7, flat: true, foot: 9 },
 };
 for (const v of Object.values(VESSELS)) {
@@ -477,6 +486,8 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1, tilt = 0 } = {
     for (let k = 0; k < count; k++) {
       const [x, y] = spot();
       if (s.key === "CaCO3") html += `<path d="M${x - 5} ${y + 3}l2-7 6-1 3 6-4 4z" fill="${fill}" stroke="#9aa0a8" stroke-width="0.6"/>`;
+      else if (s.key === "petals") html += `<path d="M${x - 6} ${y + 3}q1-9 7-9q6 3 4 9q-6 3-11 0z" fill="${fill}" stroke="#e0607c" stroke-opacity="0.5" stroke-width="0.6" transform="rotate(${Math.round(rnd() * 80 - 40)} ${x} ${y})"/>`;
+      else if (s.key === "pulp") html += `<circle cx="${x}" cy="${y + 3}" r="${f1(1 + rnd() * 1.2)}" fill="${fill}"/><circle cx="${f1(Number(x) + 4)}" cy="${f1(Number(y) + 4)}" r="${f1(0.8 + rnd())}" fill="${fill}"/>`;
       else html += `<circle cx="${x}" cy="${y + 2}" r="${f1(2 + rnd() * 2)}" fill="${fill}" stroke="#fff" stroke-opacity="0.18" stroke-width="0.5"/>`;
     }
   }
@@ -528,6 +539,7 @@ const JAR = [[0, 26], [-2, 30], [-7, 32], [-56, 32], [-64, 25], [-68, 22], [-77,
 const DROPPER = [[0, 16], [-2, 19], [-6, 21], [-46, 21], [-54, 14], [-58, 10], [-66, 10], [-68, 12], [-71, 12]];
 const AMBER = ["agno3", "h2o2", "ki"];        // kept in brown glass, away from the light
 const SOLID_FILL = {
+  k: [206, 208, 214], na: [214, 216, 220], ca: [176, 178, 180], zobo: [116, 22, 44],
   mg: [198, 202, 206], zn: [150, 158, 166], fe: [84, 84, 90], cu: [190, 106, 62],
   caco3: [238, 236, 228], cuo: [38, 36, 36], mno2: [58, 50, 48],
   sandsalt: [226, 208, 172], sand: [214, 186, 132], sulfur: [236, 214, 74], iodine: [58, 46, 66],
@@ -640,7 +652,6 @@ export const TOOLS = {
   meter: { name: "pH meter", act: [0, 0], bbox: { x0: -22, y0: -156, x1: 22, y1: 6 } },
   wire: { name: "Flame-test wire", act: [-34, -58], bbox: { x0: -44, y0: -68, x1: 40, y1: 8 } },
   waste: { name: "Waste tub", act: [0, -66], bbox: { x0: -62, y0: -78, x1: 62, y1: 8 } },
-  sink: { name: "Sink and tap", act: [0, -66], bbox: { x0: -112, y0: -168, x1: 112, y1: 8 } },
   cloth: { name: "Drying cloth", act: [0, -10], bbox: { x0: -30, y0: -34, x1: 30, y1: 6 } },
   pipette: { name: "Pipette (25 mL) and filler", act: [0, 0], bbox: { x0: -12, y0: -190, x1: 12, y1: 6 } },
   funnel: { name: "Filter funnel", act: [0, 0], bbox: { x0: -40, y0: -66, x1: 40, y1: 34 } },
@@ -726,22 +737,6 @@ export function toolSvg(key, it = {}) {
   if (key === "wire") {
     return `<path d="M-4 -33L32 -2" stroke="#fff" stroke-opacity="0.4" stroke-width="5.5" stroke-linecap="round"/><path d="M-4 -33L32 -2" stroke="#fff" stroke-opacity="0.75" stroke-width="1" stroke-linecap="round"/>
       <path d="M-31.5 -56L-4 -33" stroke="#cfd4db" stroke-width="1.5" stroke-linecap="round"/><circle class="cl-loop" cx="-34" cy="-58" r="3.4" fill="transparent" stroke="#cfd4db" stroke-width="1.5"/>${hit(b)}`;
-  }
-  if (key === "sink") {
-    // a white fireclay laboratory sink standing on the bench, with a swan-neck tap over it
-    const neck = "M-74 -66V-126q0 -30 28 -30t28 30v8";
-    return `<ellipse cx="0" cy="-1" rx="112" ry="6" fill="#000" fill-opacity="0.34" filter="url(#g-soft)"/>
-      <path d="M-104 -66h208v58a8 8 0 0 1-8 8h-192a8 8 0 0 1-8-8z" fill="#e4e8ec" stroke="#8d96a3" stroke-width="0.8"/>
-      <path d="M-104 -66h208v58a8 8 0 0 1-8 8h-192a8 8 0 0 1-8-8z" fill="url(#g-shade)" opacity="0.8"/>
-      <path d="M-98 -58h10v50h-10z" fill="#fff" fill-opacity="0.35"/>
-      <path d="M-108 -72h216v8h-216z" fill="#f4f6f8" stroke="#8d96a3" stroke-width="0.7"/>
-      <ellipse cx="0" cy="-68" rx="92" ry="5.5" fill="#59616d"/><ellipse cx="0" cy="-66.5" rx="86" ry="3.6" fill="#343a44"/>
-      <circle cx="0" cy="-66" r="3.2" fill="#14171c"/>
-      <path d="${neck}" fill="none" stroke="#4a515b" stroke-width="10" stroke-linecap="butt"/><path d="${neck}" fill="none" stroke="#b9c1cb" stroke-width="7.6"/><path d="${neck}" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="1.6" transform="translate(-1.6 0)"/>
-      <rect x="-81" y="-74" width="14" height="6" fill="#8f98a4" stroke="#4a515b" stroke-width="0.6"/>
-      <rect x="-22.5" y="-120" width="9" height="5" fill="#8f98a4" stroke="#4a515b" stroke-width="0.6"/>
-      <path d="M-74 -104h-16" stroke="#4a515b" stroke-width="6.4" stroke-linecap="round"/><path d="M-74 -104h-16" stroke="#c9d0d8" stroke-width="4.4" stroke-linecap="round"/><circle cx="-91" cy="-104" r="4.6" fill="#3d7fd6" stroke="#1f4f96" stroke-width="0.7"/>
-      ${hit(b)}`;
   }
   if (key === "cloth") {
     // a folded cotton cloth, for drying glass
@@ -1019,6 +1014,8 @@ export function splintAfter(end) {
 // ── things that hold other things ───────────────────────────────────────────
 // slots = where a vessel's foot rests, in the support's own space; fits = which vessels it will take
 export const SUPPORTS = {
+  // a basin glassware can stand in, under a tall swan-neck tap: slot 0 is under the nozzle
+  sink: { name: "Sink and tap", slots: [[-18, -40], [70, -40]], fits: (d) => !d.fixed && !d.slots, nozzle: [-18, -254], bbox: { x0: -128, y0: -306, x1: 124, y1: 8 } },
   rack: { name: "Test tube rack", slots: [-110, -55, 0, 55, 110].map((x) => [x, -12]), fits: (d) => Boolean(d.rack), bbox: { x0: -156, y0: -92, x1: 156, y1: 8 } },
   // four tubes at a time, two and two opposite each other: (0, 3) and (1, 2) are the pairs
   centrifuge: { name: "Centrifuge", slots: [-48, -16, 16, 48].map((x) => [x, -6]), fits: (d) => Boolean(d.rack), bbox: { x0: -86, y0: -172, x1: 86, y1: 8 } },
@@ -1031,6 +1028,29 @@ export const SUPPORTS = {
 /** In two halves: the back goes behind what it holds, the front in front of it. */
 export function supportSvg(key) {
   const b = SUPPORTS[key].bbox;
+  if (key === "sink") {
+    // a white fireclay laboratory sink, seen a little from above so that its inside shows: what stands
+    // in it is drawn between the back of the basin and its front wall. The tap is high enough for a
+    // measuring cylinder to stand under it.
+    const neck = "M-92 -100V-262q0 -36 37 -36t37 36v8";
+    return {
+      back: `<ellipse cx="0" cy="-1" rx="122" ry="6" fill="#000" fill-opacity="0.34" filter="url(#g-soft)"/>
+        <path d="M-116 -104h232v70h-232z" fill="#c9cfd6"/><path d="M-116 -104h232v70h-232z" fill="url(#g-shade)" opacity="0.9"/>
+        <path d="M-110 -52h220l6 18h-232z" fill="#b4bbc4"/>
+        <ellipse cx="34" cy="-43" rx="9" ry="3" fill="#59616d"/><ellipse cx="34" cy="-42.500" rx="5.5" ry="1.8" fill="#14171c"/>
+        <path d="M-120 -110h240v8h-240z" fill="#f4f6f8" stroke="#8d96a3" stroke-width="0.7"/>
+        <rect x="-99" y="-116" width="14" height="8" fill="#8f98a4" stroke="#4a515b" stroke-width="0.6"/>
+        <path d="${neck}" fill="none" stroke="#4a515b" stroke-width="10"/><path d="${neck}" fill="none" stroke="#b9c1cb" stroke-width="7.6"/><path d="${neck}" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="1.6" transform="translate(-1.600 0)"/>
+        <rect x="-22.500" y="-258" width="9" height="5" fill="#8f98a4" stroke="#4a515b" stroke-width="0.6"/>
+        <g class="cl-tapflow"><path class="cl-tapwater cl-tapflow__a" d="M-18 -252V-44" fill="none" stroke="rgba(190,222,246,0.85)" stroke-width="5" stroke-linecap="round"/><path class="cl-tapwater cl-tapflow__b" d="M-19 -252V-44" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="1.2"/></g>
+        <rect class="cl-hit" x="-120" y="-112" width="240" height="120"/><rect class="cl-hit" x="-100" y="-300" width="16" height="190"/>
+        <g class="cl-press" data-press="tap"><path d="M-92 -186h-18" stroke="#4a515b" stroke-width="6.4" stroke-linecap="round"/><path d="M-92 -186h-18" stroke="#c9d0d8" stroke-width="4.4" stroke-linecap="round"/><g class="cl-tapkey"><rect x="-116" y="-199" width="7" height="26" rx="3" fill="#3d7fd6" stroke="#1f4f96" stroke-width="0.7"/></g><rect x="-128" y="-204" width="40" height="36" fill="transparent"/></g>`,
+      front: `<path d="M-116 -66h232v58a8 8 0 0 1-8 8h-216a8 8 0 0 1-8-8z" fill="#e4e8ec" stroke="#8d96a3" stroke-width="0.8"/>
+        <path d="M-116 -66h232v58a8 8 0 0 1-8 8h-216a8 8 0 0 1-8-8z" fill="url(#g-shade)" opacity="0.8"/>
+        <path d="M-109 -58h10v50h-10z" fill="#fff" fill-opacity="0.35"/>
+        <path d="M-120 -72h240v8h-240z" fill="#f4f6f8" stroke="#8d96a3" stroke-width="0.7"/>`,
+    };
+  }
   if (key === "tripod") {
     return {
       back: `${shadow(62)}
