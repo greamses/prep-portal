@@ -701,7 +701,7 @@ export const TOOLS = {
   meter: { name: "pH meter", act: [0, 0], bbox: { x0: -22, y0: -156, x1: 22, y1: 6 } },
   wire: { name: "Flame-test wire", act: [-34, -58], bbox: { x0: -44, y0: -68, x1: 40, y1: 8 } },
   waste: { name: "Waste tub", act: [0, -66], bbox: { x0: -62, y0: -78, x1: 62, y1: 8 } },
-  balloon: { name: "Balloon", act: [0, 0], bbox: { x0: -34, y0: -84, x1: 34, y1: 8 } },
+  balloon: { name: "Balloon", act: [0, 0], bbox: { x0: -36, y0: -60, x1: 40, y1: 14 } },
   lemon: { name: "Lemon", act: [0, 0], bbox: { x0: -26, y0: -36, x1: 26, y1: 6 } },
   peeled: { name: "Peeled lemon", act: [0, 0], bbox: { x0: -24, y0: -34, x1: 24, y1: 6 } },
   egg: { name: "Egg", act: [0, 0], bbox: { x0: -18, y0: -40, x1: 18, y1: 6 } },
@@ -733,6 +733,24 @@ const splint = (tip) => `
   <path d="M-34 -58L32 -2" stroke="url(#g-wood)" stroke-width="5" stroke-linecap="round"/>
   <path d="M-34 -58L-20 -46" stroke="#3a2a1c" stroke-width="5" stroke-linecap="round"/>
   ${tip}`;
+
+/**
+ * The body of a balloon that is `p` full (0 limp … 1 tight): its outline, where the light catches
+ * it, how far it has flopped over, and how pale the stretched rubber has gone.
+ */
+export function balloonBody(p) {
+  p = Math.max(0, Math.min(1, p));
+  // limp, it is a small wrinkled bag; full, it is a ball some 13 cm across with a short stem
+  const R = 9 + 60 * p ** 0.8, tall = 1.5 - 0.42 * Math.min(1, p * 2.5), stem = 10 + 5 * p;
+  const cy = -stem - R * tall * 0.92, top = cy - R * tall;
+  const d = `M-4.500 ${-stem + 2}C-5 ${f1(-stem - R * 0.42)} ${f1(-R)} ${f1(cy + R * tall * 0.78)} ${f1(-R)} ${f1(cy)}C${f1(-R)} ${f1(cy - R * tall * 0.6)} ${f1(-R * 0.58)} ${f1(top)} 0 ${f1(top)}S${f1(R)} ${f1(cy - R * tall * 0.6)} ${f1(R)} ${f1(cy)}C${f1(R)} ${f1(cy + R * tall * 0.78)} 5 ${f1(-stem - R * 0.42)} 4.500 ${-stem + 2}z`;
+  const shine = `M${f1(-R * 0.55)} ${f1(cy - R * tall * 0.52)}Q${f1(-R * 0.8)} ${f1(cy - R * tall * 0.1)} ${f1(-R * 0.62)} ${f1(cy + R * tall * 0.3)}`;
+  return {
+    d, shine, lean: Math.round(118 * (1 - Math.min(1, p / 0.16)) ** 1.6),
+    fill: `rgb(${Math.round(217 + 24 * p)},${Math.round(55 + 62 * p)},${Math.round(44 + 60 * p)})`, opacity: (1 - 0.2 * p).toFixed(2),
+    shineW: f1(1.6 + R * 0.06), shineA: (0.3 + 0.35 * p).toFixed(2),
+  };
+}
 
 export function toolSvg(key, it = {}) {
   const b = TOOLS[key].bbox;
@@ -792,9 +810,18 @@ export function toolSvg(key, it = {}) {
       <path d="M-31.5 -56L-4 -33" stroke="#cfd4db" stroke-width="1.5" stroke-linecap="round"/><circle class="cl-loop" cx="-34" cy="-58" r="3.4" fill="transparent" stroke="#cfd4db" stroke-width="1.5"/>${hit(b)}`;
   }
   if (key === "balloon") {
-    // limp until a gas fills it: main.js sets --puff as it swells
-    return `<g class="cl-balloon"><path d="M0 -8c-26 -4 -32 -34 -22 -52c8 -15 36 -15 44 0c10 18 4 48 -22 52z" fill="#e2483d" stroke="#8f211b" stroke-width="0.9"/><path d="M-13 -52q-6 12 -2 24" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round"/></g>
-      <path d="M-7 4h14l-2 -12h-10z" fill="#c9382e" stroke="#8f211b" stroke-width="0.8"/><rect x="-9" y="2" width="18" height="4" rx="2" fill="#a82a22"/>
+    // A rubber balloon. Its NECK is rolled down over the outside of the mouth it is on and grips the
+    // glass under the lip (main.js makes it as wide as that mouth: --k). Empty, the balloon hangs limp
+    // over the side; as gas fills it, it stands up and swells, and the rubber thins and pales as it
+    // stretches. The body is drawn by balloonBody(), from how full it is.
+    return `<path class="cl-bal-body" d="${balloonBody(0).d}" fill="#d9372c" stroke="#8f211b" stroke-width="0.9" stroke-linejoin="round"/>
+      <path class="cl-bal-shine" d="" fill="none" stroke="#fff" stroke-linecap="round"/>
+      <g class="cl-bal-neck">
+        <path d="M-13 9.500V-1.500q0 -2.500 2.500 -3.500l5.500 -6h10l5.500 6q2.500 1 2.500 3.500V9.500z" fill="#c9382e" stroke="#8f211b" stroke-width="0.8" stroke-linejoin="round"/>
+        <path d="M-11 -1v9" stroke="#fff" stroke-opacity="0.32" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M-13 3.500h26M-13 6.500h26" stroke="#8f211b" stroke-opacity="0.35" stroke-width="0.6"/>
+        <rect x="-14.500" y="8.500" width="29" height="3.600" rx="1.800" fill="#a82a22" stroke="#7a1a15" stroke-width="0.6"/>
+      </g>
       ${hit(b)}`;
   }
   if (key === "lemon") {

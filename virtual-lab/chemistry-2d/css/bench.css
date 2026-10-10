@@ -780,7 +780,8 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 .is-running .cl-tapkey { transform: rotate(90deg); }
 
 /* a balloon swells from the neck as gas fills it */
-.cl-balloon { transform-box: fill-box; transform-origin: 50% 100%; transform: scale(var(--puff, 0.42)); transition: transform 0.9s ease-out; }
+.cl-bal-neck { transform: scaleX(var(--k, 1)); }
+.cl-bal-body, .cl-bal-shine { transform-origin: 0px -9px; }
 
 /* practicals set for a class */
 .cl-class { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }

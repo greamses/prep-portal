@@ -28,7 +28,7 @@
    ========================================================================== */
 
 import { REAGENTS, newTube, add, heat, rinse, test, speciate, magnetOut, centrifuge, setUnknown, reagent, chemHtml, isEmpty, look, takeFrom, pourIn, roomIn, flameOf, massOf, boilOff, filterOut, sampleOf, gasMade, takeBottom, electrolyse, blend, densityOf } from "./chem.js";
-import { DEFS, VESSELS, TOOLS, SUPPORTS, rAt, vesselSvg, veilSvg, paintVessel, bubble, reagentSvg, toolSvg, splintAfter, supportSvg, thumb, colourOf, mouthOf, capOf, CAP_BOX, POWDER_JARS } from "./glass.js";
+import { DEFS, VESSELS, TOOLS, SUPPORTS, rAt, vesselSvg, veilSvg, paintVessel, bubble, reagentSvg, toolSvg, splintAfter, supportSvg, thumb, colourOf, mouthOf, capOf, CAP_BOX, POWDER_JARS, balloonBody } from "./glass.js";
 import { EXPERIMENTS, GROUPS, UNKNOWNS, CATIONS, ANIONS, HOWTO, stepDone } from "./waec.js";
 import { initFluid, setVapour, puff, erupt as foamOut, FLUID_DEFS } from "./fluid.js";
 import { UI } from "/utils/components/ui-icons.js";
@@ -368,6 +368,11 @@ function mount(it) {
 /** How far up a piece its turning point is (it turns about its middle). */
 const pivotOf = (it) => (it.kind === "vessel" ? VESSELS[it.key].top / 2 : it.kind === "tool" ? -14 : -mouthOf(it.key) / 2);
 function place(it, transform) {
+  if (it.key === "balloon" && nodes[it.id]) {
+    // its neck is stretched to the width of the mouth it is on (a little wider: it goes over the OUTSIDE of the lip)
+    const h = it.on != null && byId(it.on);
+    nodes[it.id].g.style.setProperty("--k", h && h.kind === "vessel" ? clamp((VESSELS[h.key].rTop + 2.5) / 13, 0.6, 2.1).toFixed(2) : "1");
+  }
   if ((it.key === "bung" || it.key === "bung1") && nodes[it.id]) {
     // a stopper is the width of the neck it is in
     const h = it.on != null && byId(it.on);
@@ -514,7 +519,7 @@ function dress(it) {
     poolIn(it, n.poured ?? (it.tilt || 0));
   }
   if (it.key === "stopwatch") watchFace(it);
-  if (it.key === "balloon") g.style.setProperty("--puff", (0.42 + 0.58 * Math.min(1, (it.gas || 0) / 3)).toFixed(2));
+  if (it.key === "balloon") swell(it);
   if (it.key === "magnet") g.classList.toggle("has-filings", Boolean(it.sample));
   if (it.key === "chroma") {
     const ink = INKS[it.ink || "black"], p = it.washed ? 0 : it.p || 0;
@@ -875,11 +880,48 @@ function splash(host, o, speed) {
   }
   setTimeout(() => g.remove(), 1400);
 }
+// ── a balloon ───────────────────────────────────────────────────────────────
+// How full it is drawn follows how much gas is in it, but not at a jump: rubber stretches as the
+// gas comes in, so the picture eases towards the amount (and sags back when the gas is let out).
+const BALLOON_FULL = 2.6;          // equivalents of gas that blow it up tight (about 60 cm3 here)
+const swelling = new Set();
+let swellRaf = 0, swellLast = 0;
+function swell(bal) {
+  if (bal.shown == null) { bal.shown = Math.min(1, (bal.gas || 0) / BALLOON_FULL); drawBalloon(bal); }
+  swelling.add(bal);
+  if (!swellRaf) { swellLast = performance.now(); swellRaf = requestAnimationFrame(swellTick); }
+}
+function swellTick(now) {
+  swellRaf = 0;
+  const dt = Math.min(0.05, (now - swellLast) / 1000);
+  swellLast = now;
+  for (const bal of [...swelling]) {
+    if (!nodes[bal.id]) { swelling.delete(bal); continue; }
+    const want = Math.min(1, (bal.gas || 0) / BALLOON_FULL), gap = want - bal.shown;
+    // filling is as fast as the gas comes (about a second and a half); emptying is a quick sag
+    bal.shown += gap * Math.min(1, dt * (gap > 0 ? 1.7 : 5));
+    if (Math.abs(gap) < 0.004) { bal.shown = want; swelling.delete(bal); }
+    drawBalloon(bal);
+  }
+  if (swelling.size) swellRaf = requestAnimationFrame(swellTick);
+}
+function drawBalloon(bal) {
+  const g = nodes[bal.id].g, b = balloonBody(bal.shown), body = g.querySelector(".cl-bal-body"), shine = g.querySelector(".cl-bal-shine");
+  if (!body) return;
+  body.setAttribute("d", b.d);
+  body.setAttribute("fill", b.fill);
+  body.setAttribute("fill-opacity", b.opacity);
+  body.style.transform = `rotate(${b.lean}deg)`;
+  shine.setAttribute("d", b.shine);
+  shine.setAttribute("stroke-width", b.shineW);
+  shine.setAttribute("stroke-opacity", b.shineA);
+  shine.style.transform = `rotate(${b.lean}deg)`;
+}
 /** Gas is coming off under a balloon that has been stretched over the mouth: it fills. */
 function inflate(bal, g, res) {
-  bal.gas = Math.min(4, (bal.gas || 0) + g.n);
+  bal.gas = Math.min(BALLOON_FULL * 1.05, (bal.gas || 0) + g.n);
   dress(bal);
-  res.obs.push({ text: bal.gas > 2.5 ? "The balloon swells up tight and stands on the flask." : "The balloon stands up and swells as the gas fills it.", why: `The ${GAS[g.gas] || "gas"} has nowhere to go but into the balloon. A gas takes up far more room than the solid and liquid it was made from, so it pushes the rubber out.` });
+  res.obs.push({ text: bal.gas >= BALLOON_FULL * 0.85 ? "The balloon stands up and swells until it is big and tight, its rubber stretched thin and pale." : bal.gas >= BALLOON_FULL * 0.4 ? "The balloon stands up and swells as the gas fills it." : "The balloon lifts and begins to fill.", why: `The ${GAS[g.gas] || "gas"} has nowhere to go but into the balloon. A gas takes up far more room than the solid and liquid it was made from, so it pushes the rubber out.` });
   res.flags.push("balloon:up");
 }
 /** A balloon has just been stretched over a vessel that is still fizzing: it catches what is still coming off. */
