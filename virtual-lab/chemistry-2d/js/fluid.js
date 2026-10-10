@@ -45,7 +45,7 @@ export const FLUID_DEFS = `
 // burst: how fast it leaves the mouth; spread: how fast a puff grows; drift: how far the air carries it sideways.
 const KINDS = {
   steam: { rgb: "255,255,255", a: 0.26, rate: 30, rise: -26, burst: -46, spread: 12, life: [1.2, 2.2], drift: 12 },
-  gas: { rgb: "255,255,255", a: 0.055, rate: 8, rise: -24, burst: -40, spread: 11, life: [1.4, 2.2], drift: 10 },
+  gas: { rgb: "214,236,255", a: 0.2, rate: 15, rise: -30, burst: -52, spread: 11, life: [1.6, 2.7], drift: 11 },
   fumes: { rgb: "250,250,246", a: 0.11, rate: 7, rise: -6, burst: -18, spread: 13, life: [2, 3.2], drift: 20 },
   iodine: { rgb: "132,70,186", a: 0.4, rate: 18, rise: -7, burst: -30, spread: 10, life: [2.2, 3.4], drift: 9 },
 };

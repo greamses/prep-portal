@@ -803,7 +803,7 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 
 /* Vapour is moved by fluid.js: the three drawn wisps are gone. Bubbles are thin-walled and nearly clear. */
 .cl-wisps { display: none; }
-.cl-bub__c { fill: rgba(255, 255, 255, 0.06); stroke-opacity: 0.6; stroke-width: 0.5; }
+.cl-bub__c { fill: rgba(255, 255, 255, 0.12); stroke-opacity: 0.85; stroke-width: 0.6; }
 .cl-foam { fill: rgba(255, 255, 255, 0.2); stroke-opacity: 0.55; stroke-width: 0.45; }
 .cl-class__keys { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.35rem; }
 .cl-class__keys .cl-try { margin-top: 0; font-size: 0.74rem; }
