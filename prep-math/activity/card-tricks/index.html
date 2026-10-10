@@ -47,6 +47,8 @@
     <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
     <link rel="stylesheet" href="/utils/components/components.css" />
     <link rel="stylesheet" href="/utils/components/setup.css" />
+    <!-- PrepBot, who speaks the table's one line of talk (the shared teacher) -->
+    <link rel="stylesheet" href="/prep-math/mental-math/shared/prepbot-teacher.css" />
     <link rel="stylesheet" href="./style.css" />
 
     <!-- the guards resolve firebase by bare specifier -->
@@ -144,7 +146,20 @@
         <button type="button" class="pp-sticky pp-note-btn pp-sticky--c5 ct-tool" id="ct-full" title="Full screen" aria-label="Full screen"></button>
       </div>
 
-      <p class="ct-say" id="ct-say" role="status" aria-live="polite"></p>
+      <!-- The one line of talk, and PrepBot saying it aloud. PrepBot's own
+           bubble is kept shut: the line beside it IS what it is saying. -->
+      <div class="ct-talk">
+        <div class="mm-prepbot ct-bot" id="ct-bot">
+          <div class="mm-prepbot-bubble mm-prepbot-bubble--speech mm-prepbot-bubble--hidden" aria-hidden="true"><p></p></div>
+          <div class="mm-prepbot-avatar-wrap">
+            <div class="mm-prepbot-menu">
+              <button class="mm-prepbot-menu-btn" data-b="voice" type="button" title="Mute or speak" aria-label="Mute PrepBot, or let it speak"></button>
+            </div>
+            <div class="mm-prepbot-avatar" aria-hidden="true"></div>
+          </div>
+        </div>
+        <p class="ct-say" id="ct-say" role="status" aria-live="polite"></p>
+      </div>
 
       <!-- deal several: opens on a pile that is double-tapped -->
       <form class="ct-ask" id="ct-ask" hidden>

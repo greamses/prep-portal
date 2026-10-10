@@ -27,6 +27,7 @@
 
 import { openTv } from "/prep-math/mental-math/shared/prepbot-tv.js";
 import { faceSvg, backSvg } from "./art.js";
+import { BOT_FINGER } from "./finger.js";
 import { fullDeck, seeded, dealRound, gather, base3, playEleven, valueOf, nameOf } from "./deck.js";
 
 const art = (what) => (what === "back" ? backSvg("red") : what === "blue" ? backSvg("blue") : faceSvg(what, { label: false }));
@@ -152,7 +153,7 @@ const DECK27 = ["7S", "KD", "3C", "9H", "2S", "JC", "5D", "AH", "8C", "4D", "QS"
 const MINE27 = "QH";
 
 const packAt = (i) => [9, 16 + i * 2.85];   // clear of the set's "Step 3 of 21" sticker
-const pileAt = (p, r) => [34 + p * 15, 13 + r * 8.6];
+const pileAt = (p, r) => [34 + p * 15, 19 + r * 7.9];   // room above the piles for PrepBot's hand
 
 /** The real trick, worked for this number: every pack and every deal on the way. */
 function play27(n) {
@@ -217,7 +218,8 @@ function lesson27(n) {
       k.wipe();
       layPiles(k, round.pack, round.dealt, 0);
       k.text("dn", `deal ${r + 1}`, 84, 16, "big");
-      k.text("arrow", "my card is here", pileAt(round.mine, 0)[0], 4, "gold");
+      /* PrepBot's own hand comes down and points at the pile */
+      k.text("arrow", BOT_FINGER, pileAt(round.mine, 0)[0] + 1.6, 6.2, "finger");
     }));
 
     out.push(step(`Now you gather the piles into one pack again. This is where you steer. ${r === 0

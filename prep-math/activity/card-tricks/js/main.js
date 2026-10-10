@@ -25,6 +25,7 @@ import { UI } from "/utils/components/ui-icons.js";
 import { heroPaint } from "/utils/components/nav-icons.js";
 import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
 import { createTable } from "./table.js";
+import { BOT_FINGER } from "./finger.js";
 import { fullDeck, nameOf, base3, dealtInTurn, pileState } from "./deck.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -45,10 +46,46 @@ const table = createTable($("#ct-table"), {
 const guide = () => GUIDES[S.trick];
 const pause = (ms) => wait(table.still ? 0 : ms);
 
+/* ── the line of talk, written and spoken ─────────────────────────────────
+   Whatever is written at the top of the table is SAID, in PrepBot's own
+   voice, by the shared teacher (mental-math/shared/prepbot-teacher.js) — the
+   same PrepBot, the same voice and the same mute key (V) as everywhere else.
+   Its speech bubble is kept shut here: the written line is its words.
+
+   `say` gives back a promise that is kept when the line has been spoken, so
+   a run of lines (the set-up of a trick) can wait for each to finish rather
+   than talk over itself. A line that is merely a reaction does not wait, and
+   a newer line cuts an older one short. */
+
+let teacher = null;
+
+async function mountVoice() {
+  try {
+    const [{ PrepbotTeacher }, fire] = await Promise.all([
+      import("/prep-math/mental-math/shared/prepbot-teacher.js"),
+      import("/firebase-init.js").catch(() => ({})),
+    ]);
+    const root = $("#ct-bot");
+    teacher = new PrepbotTeacher({
+      root, boundsEl: $("#ct-play"), auth: fire.auth || null,
+      menu: { voice: $('[data-b="voice"]', root) },
+      /* no chat, no sleeping and no wandering on a card table: only its voice */
+      skipKeys: ["a", "m", "t", "s", "w"],
+    });
+    teacher.toggleBubble(true);
+    teacher.onVoiceChange = () => teacher.stop();
+  } catch { /* no voice: the line is still written */ }
+}
+
 function say(words = "", tone = "") {
   const el = $("#ct-say");
   el.textContent = words;
   el.dataset.tone = tone;
+  if (!teacher) return Promise.resolve();
+  if (!words || $("#ct-play").hidden) { teacher.stop(); return Promise.resolve(); }
+  /* said as it is written, less the marks a voice trips on */
+  teacher.speak([{ text: words.replace(/…/g, "").replace(/[()]/g, "").trim(), mode: "speech" }]);
+  return Promise.race([teacher.narrationDone.catch(() => {}), wait(table.still ? 0 : 9000)]);
 }
 
 /** Any order at all — for laying a pack out, before the visible shuffle. */
@@ -151,6 +188,8 @@ async function watch() {
   /* the TV is put up on the page, which a full-screen table would hide */
   if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
   closeAsk();
+  /* one PrepBot speaks at a time: the one on the table gives way to the one on the TV */
+  if (teacher) teacher.stop();
   const { openTutorial } = await import("./tutor.js");
   openTutorial(S.trick, S.n);
 }
@@ -183,8 +222,8 @@ const CARD = { wide: [0.14, 0.3], narrow: [0.27, 0.19] };
 const CARD_ROW = { wide: [0.15, 0.36], narrow: [0.29, 0.19] };
 const CARD_TWO = { wide: [0.13, 0.255], narrow: [0.235, 0.165] };
 
-/** The arrow the computer points with. */
-const POINT = `${UI.arrowDown(34)}<b>my card</b>`;
+/** What the computer points with: PrepBot's own hand (finger.js). */
+const POINT = BOT_FINGER;
 
 /* ══ THE TABLE, AND NOTHING ELSE ══════════════════════════════════════════ */
 
@@ -238,12 +277,13 @@ const BASE3 = {
   async intro() {
     const g = S.g;
     const run = S.run;
-    say("I have one of these 27 cards in mind…");
-    await pause(900);
+    await say("I have one of these 27 cards in mind…");
     if (run !== S.run) return;
+    const copied = say("…and this is a copy of it.");
     await makeCopy(g.mine);
+    await copied;
     if (run !== S.run) return;
-    say("…and this is a copy of it. Deal three piles of nine.");
+    say("Deal three piles of nine.");
     g.phase = "pack";
     g.before = table.topFirst(piles()[0]);
   },
@@ -417,29 +457,32 @@ const ELEVEN = {
     table.frozen = true;
     const pack = table.tagged("pack");
 
-    say("Nine cards to one side.");
+    let said = say("Nine cards to one side.");
     await pause(500);
     if (gone()) return;
     const nine = table.take(pack, 9, { spot: "nine", tag: "nine" });
     await pause(900);
+    await said;
     if (gone()) return;
 
     /* which of the nine is nobody's business: it goes to the top of them
        without being shown, and only its copy is seen */
     g.mine = nine.cards[Math.floor(Math.random() * 9)];
     table.send(g.mine, "nine");
-    say("My card is one of these nine. This is a copy of it.");
+    said = say("My card is one of these nine. This is a copy of it.");
     await makeCopy(g.mine);
     if (gone()) return;
     await pause(700);
+    await said;
     if (gone()) return;
 
-    say("Now the other 43 are shuffled.");
+    said = say("Now the other 43 are shuffled.");
     table.canShuffle = true;
     await table.shuffle(pack);
+    await said;
     if (gone()) return;
 
-    say("Cut into seven…");
+    said = say("Cut into seven…");
     const packets = [];
     const sizes = sevenCuts();
     for (let i = 0; i < 7; i++) {
@@ -448,9 +491,10 @@ const ELEVEN = {
       if (gone()) return;
     }
     await pause(600);
+    await said;
     if (gone()) return;
 
-    say("…and stacked on the nine, in any order.");
+    said = say("…and stacked on the nine, in any order.");
     for (const packet of mixed(packets)) {
       await table.stackOnto(packet, nine);
       if (gone()) return;
@@ -458,6 +502,7 @@ const ELEVEN = {
     nine.tag = "pack";
     table.moveTo(nine, "pack");
     await pause(500);
+    await said;
     if (gone()) return;
 
     table.frozen = false;
@@ -609,6 +654,7 @@ function play() {
 
 function leave() {
   S.run += 1;
+  if (teacher) teacher.stop();
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   $("#ct-play").hidden = true;
   document.body.classList.remove("ct-playing");
@@ -631,6 +677,7 @@ function start() {
 
   recall();
   drawSetup();
+  mountVoice();
 
   /* setup */
   $("#ct-setup").addEventListener("change", (e) => {
