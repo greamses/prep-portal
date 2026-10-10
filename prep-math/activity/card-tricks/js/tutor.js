@@ -997,6 +997,205 @@ function lessonFinal3() {
   return out;
 }
 
+/* ══ THE FINAL THREE, WITH THE WHOLE PACK ═════════════════════════════════
+   The second way of doing it: piles of ten, fifteen, fifteen and nine, and
+   the player cuts wherever they like. All 52 cards are on the screen. A pile
+   is a column standing on its bottom card, so cards put on it land on top.
+
+   The cards of the second pile are ringed blue and the third pile pink, all
+   the way through — which is the whole explanation of why the cuts make no
+   difference: every blue card ends up between the same two gold cards. */
+
+const F3B = (() => {
+  const rnd = seeded(52);
+  const all = fullDeck().map((id) => [rnd(), id]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+  /* each pile top first */
+  const p1 = all.slice(0, 10), p2 = all.slice(10, 25), p3 = all.slice(25, 40), p4 = all.slice(40, 49);
+  const mine = all.slice(49);
+  const a = 5, b = 9;                                    // the two cuts of the example
+  const A = [...p2.slice(0, a), mine[0], ...p1];
+  const B = [...p3.slice(0, b), mine[1], ...p2.slice(a)];
+  const C = [...p4, mine[2], ...p3.slice(b)];
+  const stack = [...C, ...B, ...A];
+  const under = stack.slice(4).concat(stack.slice(0, 4));   // four from the top to the bottom
+  const passes = [];
+  let hand = under;
+  while (hand.length > 3) {
+    const out = hand.filter((_, i) => i % 2 === 0);
+    const kept = hand.filter((_, i) => i % 2 === 1).reverse();
+    passes.push({ hand, out, kept });
+    hand = kept;
+  }
+  return { p1, p2, p3, p4, mine, a, b, A, B, C, stack, under, passes, left: hand };
+})();
+
+const wLine = (i) => [9, 16 + i * 1.46];
+const wCol = (p, j, n) => [28 + p * 13, 88 - (n - 1 - j) * 3.5];      // card j from the top, in a pile of n standing at the bottom
+const wKept = (j, n) => [38, 16 + j * (n > 14 ? 2.7 : 4.4)];
+
+function lessonFinal3B() {
+  const out = [];
+  const { p1, p2, p3, p4, mine, a, b, A, B, C, stack, under, passes, left } = F3B;
+  const isMine = (id) => mine.includes(id);
+  const gold = (k) => mine.forEach((id) => k.lit(id));
+  /* which pile a card began in: the second is blue, the third pink, the nine green */
+  const tint = (k, on = true) => stack.forEach((id) => k.band(id, !on ? -1 : p2.includes(id) ? 0 : p3.includes(id) ? 2 : p4.includes(id) ? 1 : -1));
+  const col = (k, list, p, { delay = () => 0, dur = 0.5 } = {}) => list.forEach((id, j) => k.card(id, "back", ...wCol(p, j, list.length), { z: 10 + (list.length - j), delay: delay(j, list.length), dur }));
+  const places = (k, list, at) => list.forEach((id, i) => { if (isMine(id)) k.text(`pl${mine.indexOf(id)}`, String(i + 1), at(i)[0] + 7.5, at(i)[1], "gold"); });
+  const waiting = (k, from = 0) => mine.forEach((id, i) => { if (i >= from) k.card(id, id, 86, 22 + i * 15, { size: "m", z: 300 + i }); });
+  const heads = (k) => [["10", 0], ["15", 1], ["15", 2], ["9", 3]].forEach(([t, p]) => k.text(`h${p}`, t, wCol(p, 0, 1)[0], 96, "small"));
+  const heap = (k, list) => list.forEach((id, i) => k.card(id, "back", 62 + (i % 8) * 0.45, 22 + Math.floor(i / 8) * 0.55, { z: 200 + i, dur: 0 }));
+
+  out.push(step("This is the second way to do the final three, and it uses the whole pack. First I make four piles. Ten cards. Fifteen cards. Fifteen cards. And the nine that are left. I ring the second pile in blue, the third in pink and the nine in green, so that you can see where they go.", (k) => {
+    k.wipe();
+    let n = 0;
+    [p1, p2, p3, p4].forEach((pile, p) => { const from = n; col(k, pile, p, { delay: (j, len) => (from + (len - 1 - j)) * 0.07 }); n += pile.length; });
+    tint(k);
+    heads(k);
+  }));
+
+  out.push(step("You choose any three cards. Here they are. I light them in gold, so that you can follow them.", (k) => {
+    k.wipe();
+    [p1, p2, p3, p4].forEach((pile, p) => col(k, pile, p));
+    tint(k);
+    heads(k);
+    mine.forEach((id, i) => k.card(id, id, 86, 22 + i * 15, { size: "m", z: 300 + i, delay: i * 0.4 }));
+    gold(k);
+  }));
+
+  out.push(step(`Your first card goes face down on the pile of ten. Now you bury it. You tell me how many cards to cut off the second pile. Any number you like. Say you tell me ${SAY[a]}. ${SAY[a][0].toUpperCase() + SAY[a].slice(1)} blue cards come off the second pile, and land on your card.`, (k) => {
+    k.wipe();
+    col(k, [mine[0], ...p1], 0, { delay: (j) => (j === 0 ? 0.4 : 0), dur: 0.8 });
+    col(k, p2, 1); col(k, p3, 2); col(k, p4, 3);
+    col(k, A, 0, { delay: (j) => (j < a ? 4.2 + (a - 1 - j) * 0.25 : 0.4), dur: 0.7 });
+    col(k, p2.slice(a), 1, { delay: () => 4.2 });
+    tint(k); gold(k); waiting(k, 1);
+    k.text("cut", `cut ${a}`, wCol(1, 0, 1)[0], 12, "gold", { delay: 4 });
+  }));
+
+  out.push(step(`Your second card goes on what is left of the second pile. And you bury that one too. This time you say ${SAY[b]}. ${SAY[b][0].toUpperCase() + SAY[b].slice(1)} pink cards come off the third pile, and land on your second card.`, (k) => {
+    k.wipe();
+    col(k, A, 0);
+    col(k, [mine[1], ...p2.slice(a)], 1, { delay: (j) => (j === 0 ? 0.4 : 0), dur: 0.8 });
+    col(k, p3, 2); col(k, p4, 3);
+    col(k, B, 1, { delay: (j) => (j < b ? 4 + (b - 1 - j) * 0.22 : 0.4), dur: 0.7 });
+    col(k, p3.slice(b), 2, { delay: () => 4 });
+    tint(k); gold(k); waiting(k, 2);
+    k.text("cut", `cut ${b}`, wCol(2, 0, 1)[0], 12, "gold", { delay: 3.8 });
+  }));
+
+  out.push(step("Your third card goes on what is left of the third pile. And the nine green cards go on top of it.", (k) => {
+    k.wipe();
+    col(k, A, 0); col(k, B, 1);
+    col(k, [mine[2], ...p3.slice(b)], 2, { delay: (j) => (j === 0 ? 0.4 : 0), dur: 0.8 });
+    col(k, p4, 3);
+    col(k, C, 2, { delay: (j) => (j < 9 ? 3 + (8 - j) * 0.2 : 0.4), dur: 0.7 });
+    tint(k); gold(k);
+  }));
+
+  out.push(step("Now the three piles are put together into one pack. The third pile goes on the second, and both go on the first. I lay the pack in a line. The top of the line is the top of the pack.", (k) => {
+    k.wipe();
+    stack.forEach((id, i) => k.card(id, "back", ...wLine(i), { z: i + 1, delay: (i < C.length ? 2 : i < C.length + B.length ? 1 : 0) * 1 + 0.2, dur: 0.8 }));
+    tint(k); gold(k);
+  }));
+
+  out.push(step("Count down to your cards. Nine green cards, and then your third card: it is card ten. Then fifteen pink cards, and your second card: card twenty six. Then fifteen blue cards, and your first card: card forty two.", (k) => {
+    k.wipe();
+    stack.forEach((id, i) => k.card(id, "back", ...wLine(i), { z: i + 1, dur: 0 }));
+    tint(k); gold(k);
+    places(k, stack, wLine);
+    k.text("g9", "9 green", 30, wLine(4)[1], "small");
+    k.text("p15", "15 pink", 30, wLine(17)[1], "small", { delay: 3 });
+    k.text("b15", "15 blue", 30, wLine(33)[1], "small", { delay: 6 });
+  }));
+
+  out.push(step(`Now here is the clever part. You cut ${SAY[b]} pink cards and ${SAY[a]} blue cards. What if you had cut different numbers? Look at the pink cards. The ones you cut off are above your second card's pile, and the ones you left are below your third card. Either way, every pink card is between those two gold cards. All fifteen, always. The same for the blue. So however you cut, your cards are at ten, twenty six and forty two.`, (k) => {
+    k.wipe();
+    stack.forEach((id, i) => k.card(id, "back", ...wLine(i), { z: i + 1, dur: 0 }));
+    tint(k); gold(k);
+    places(k, stack, wLine);
+    k.text("w1", "cut any number:", 52, 30, "row");
+    k.text("w2", "15 pink are still between", 52, 42, "row", { delay: 1.5 });
+    k.text("w3", "15 blue are still between", 52, 54, "row", { delay: 3 });
+    k.text("w4", "10 · 26 · 42", 52, 70, "big", { delay: 5 });
+  }));
+
+  out.push(step("Four cards go from the top of the pack to the bottom. One, two, three, four. So each of your cards has moved up four places. They are now card six, card twenty two and card thirty eight.", (k) => {
+    k.wipe();
+    stack.forEach((id, i) => k.card(id, "back", ...wLine(i), { z: i + 1, dur: 0 }));
+    under.forEach((id, i) => k.card(id, "back", ...wLine(i), { z: i + 1, delay: i >= 48 ? 0.6 + (i - 48) * 0.5 : 2.8, dur: 0.8 }));
+    tint(k, false); gold(k);
+    places(k, under, wLine);
+  }));
+
+  passes.forEach((pass, t) => {
+    const n = pass.hand.length;
+    const gone = under.filter((id) => !pass.hand.includes(id));
+    const told = pass.kept.map((id, j) => (isMine(id) ? j + 1 : 0)).filter(Boolean);
+    const beat = n > 30 ? 0.14 : n > 16 ? 0.22 : 0.4;
+    out.push(step(`${["Now the dealing. One card face up, one card face down. Up, down, up, down, all the way through the pack. Every face up card is out. The face down cards are kept.",
+      "The kept cards are picked up, and dealt the same way. Up, down, up, down.",
+      "Again, with the cards that are left.",
+      "And one last time."][t]} ${n} cards went in. ${pass.kept.length} are kept. ${pass.kept.length > 3 ? `Your gold cards are now card ${told.join(", card ")}.` : "Three cards. And every one of them is gold."}`, (k) => {
+      k.wipe();
+      heap(k, gone);
+      pass.hand.forEach((id, i) => k.card(id, "back", t ? wKept(i, n)[0] - 29 : wLine(i)[0], t ? 16 + i * (n > 14 ? 2.7 : 4.4) : wLine(i)[1], { z: i + 1, dur: t ? 0.6 : 0 }));
+      pass.hand.forEach((id, i) => {
+        const delay = 1.2 + i * beat;
+        if (i % 2 === 0) k.card(id, id, 62 + ((gone.length + i / 2) % 8) * 0.45, 22 + Math.floor((gone.length + i / 2) / 8) * 0.55, { z: 200 + gone.length + i / 2, delay, dur: 0.4 });
+        else k.card(id, "back", ...wKept(pass.kept.indexOf(id), pass.kept.length), { z: 100 + (pass.kept.length - pass.kept.indexOf(id)), delay, dur: 0.4 });
+      });
+      tint(k, false); gold(k);
+      pass.kept.forEach((id, j) => { if (isMine(id)) k.text(`pl${mine.indexOf(id)}`, String(j + 1), wKept(j, pass.kept.length)[0] + 7.5, wKept(j, pass.kept.length)[1], "gold", { delay: 1.2 + n * beat }); });
+      k.text("kl", "kept", 49, 12, "small");
+      k.text("ol", "out", 63, 12, "small");
+    }));
+  });
+
+  out.push(step(`Turn the three over. ${mine.map((id) => nameOf(id)).join(", ")}. Your three cards, and no others. Out of fifty two.`, (k) => {
+    k.wipe();
+    heap(k, under.filter((id) => !left.includes(id)));
+    left.forEach((id, j) => k.card(id, id, 26 + j * 13, 46, { size: "m", z: 500 + j, delay: j * 0.5, dur: 0.8 }));
+    gold(k);
+    k.text("win", "the final three", 39, 74, "gold", { delay: 1.8 });
+  }));
+
+  /* ── WHY, with the cards ─────────────────────────────────────────────── */
+
+  out.push(step("Why those three? Look at the dealing again. Up, down, up, down. The first card is out. The second is kept. The third is out. The fourth is kept. So the cards in places two, four, six and so on are the ones kept. I ring them in green. The even places survive. And your cards were at six, twenty two and thirty eight. All even.", (k) => {
+    k.wipe();
+    under.forEach((id, i) => { k.card(id, "back", ...wLine(i), { z: i + 1, size: "s" }); k.band(id, i % 2 ? 1 : -1); });
+    gold(k);
+    places(k, under, wLine);
+    k.text("ev", "green = even places = kept", 44, 30, "row");
+    k.text("ev2", "6 · 22 · 38 &nbsp; all even", 44, 44, "gold", { delay: 4 });
+  }));
+
+  passes.slice(1).forEach((pass, t) => {
+    const n = pass.hand.length;
+    const at = pass.hand.map((id, i) => (isMine(id) ? i + 1 : 0)).filter(Boolean);
+    const last = t === passes.length - 2;
+    out.push(step(`${SAY[n] ? SAY[n][0].toUpperCase() + SAY[n].slice(1) : n} cards were kept, and dealing them into a pile turned them upside down. Even so, your cards are at ${at.join(", ")}. Even numbers again. ${last ? "And among six cards the even places are two, four and six. Three places. All three are yours." : "So they are kept again."}`, (k) => {
+      k.wipe();
+      heap(k, under.filter((id) => !pass.hand.includes(id)));
+      pass.hand.forEach((id, i) => { k.card(id, "back", 9, 16 + i * (n > 14 ? 2.7 : 4.4), { z: i + 1 }); k.band(id, i % 2 ? 1 : -1); });
+      gold(k);
+      pass.hand.forEach((id, i) => { if (isMine(id)) k.text(`pl${mine.indexOf(id)}`, String(i + 1), 16.5, 16 + i * (n > 14 ? 2.7 : 4.4), "gold"); });
+      k.text("ev", `${at.join(" · ")} &nbsp; all even`, 40, 30, "gold");
+    }));
+  });
+
+  out.push(step("So that is the whole of it. The piles of ten, fifteen, fifteen and nine put your cards at ten, twenty six and forty two, wherever you cut. Four to the bottom makes that six, twenty two and thirty eight. Then eight, sixteen, twenty four. Then two, six, ten. Then two, four, six. Even places every time, and the even places are the ones that are kept. Now try it at the table, and cut wherever you like.", (k) => {
+    k.wipe();
+    heap(k, under.filter((id) => !left.includes(id)));
+    left.forEach((id, j) => { k.card(id, id, 14 + j * 12, 46, { size: "m", z: 500 + j }); k.band(id, -1); });
+    gold(k);
+    ["10 · 26 · 42", "6 · 22 · 38", "8 · 16 · 24", "2 · 6 · 10", "2 · 4 · 6"].forEach((t, i) => k.text(`s${i}`, t, 86, 16 + i * 11, i === 4 ? "gold" : "row", { delay: i * 0.7 }));
+  }));
+
+  return out;
+}
+
 /* ══ THE TABLE ════════════════════════════════════════════════════════════ */
 
 function lessonTable() {
@@ -1052,10 +1251,10 @@ function lessonTable() {
   ];
 }
 
-const TITLES = { base3: "27 cards", eleven: "Eleven", any: "Any number", odd: "The odd one out", final3: "The final three", final3b: "The final three", free: "The card table" };
+const TITLES = { base3: "27 cards", eleven: "Eleven", any: "Any number", odd: "The odd one out", final3: "The final three: three piles", final3b: "The final three: the whole pack", free: "The card table" };
 
 /** Put PrepBot's TV up, teaching one of the tricks. */
 export function openTutorial(trick, n = 14) {
-  const steps = trick === "base3" ? lesson27(n) : trick === "eleven" ? lessonEleven() : trick === "any" ? lessonAny() : trick === "odd" ? lessonOdd() : trick === "final3" || trick === "final3b" ? lessonFinal3() : lessonTable();
+  const steps = trick === "base3" ? lesson27(n) : trick === "eleven" ? lessonEleven() : trick === "any" ? lessonAny() : trick === "odd" ? lessonOdd() : trick === "final3" ? lessonFinal3() : trick === "final3b" ? lessonFinal3B() : lessonTable();
   return openTv({ title: TITLES[trick] || "Card Tricks", build, steps });
 }

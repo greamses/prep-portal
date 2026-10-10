@@ -1163,7 +1163,7 @@ function openRows(a, b) {
 
 function finalThree(whole) {
   return {
-    name: whole ? "The final three: you cut" : "The final three",
+    name: whole ? "The final three: the whole pack" : "The final three: three piles",
     blurb: "Choose three cards. PrepBot deals until only they are left.",
 
     setup() {
