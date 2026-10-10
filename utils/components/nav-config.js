@@ -182,7 +182,7 @@ const NAV_CONFIG = [
              four sibling entries the reader has to tell apart. */
           { text: "Geometry", href: "/prep-math/activity/polygon-angles/index.html", description: "Angles, transversals, Pythagoras and surface area" },
           { text: "Number Match", href: "/prep-math/activity/number-match/index.html", description: "Match words, tallies and blocks to the number" },
-          { text: "Card Tricks", href: "/prep-math/activity/card-tricks/index.html", description: "A real pack, and three tricks that are sums" },
+          { text: "Card Tricks", href: "/prep-math/activity/card-tricks/index.html", description: "A real pack, and six tricks that are sums" },
         ],
       },
       /* The workbooks are books now: they are on the Editorials shelf (below). */

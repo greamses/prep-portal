@@ -414,6 +414,10 @@ body.ct-playing #chat-fab, body.ct-playing #chat-fab-restore { display: none !im
 .ct-tv__txt--finger { width: 5.2%; max-width: none; padding: 0; background: none; }
 .ct-tv__txt--finger .ct-finger { display: block; width: 100%; height: auto; animation: ct-point-tv 0.9s ease-in-out infinite; filter: drop-shadow(0 2px 4px #000); }
 @keyframes ct-point-tv { 50% { translate: 0 9%; } }
+/* the mats of the four-card lesson: a bar of colour under each place */
+.ct-tv__txt--blue, .ct-tv__txt--pink { width: 10%; height: 0.9em; padding: 0; }
+.ct-tv__txt--blue { background: #6fb7e8; }
+.ct-tv__txt--pink { background: #f29ab5; }
 .ct-tv__txt--tiny { font-size: clamp(0.6rem, 1.7cqw, 0.9rem); color: #f3d977; }
 .mm-tv-inner:has(> .ct-tv) { container-type: inline-size; }
 

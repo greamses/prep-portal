@@ -51,14 +51,16 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const api = {
-    /** Flip deal: a card turns over as it is drawn off a pile, whichever way up it was. */
+    /** Flip deal: a card drawn off a pile turns over as it is put down, whichever way up it was. */
     turn: false,
     /** While the program is doing something of several steps, hands are kept off. */
     frozen: false,
+    /** CHOOSING: when this is set, a press on any card is handed to it (the card, its pile) and nothing is moved. */
+    pick: null,
     canShuffle: true,
     busy: false,
     still,
-    setup, addStack, layout, shuffle, deal, dealOff, where, countOff, send, moveTo, take, stackOnto, flip, unlock,
+    setup, addStack, layout, shuffle, deal, dealOff, where, slide, countOff, send, moveTo, take, stackOnto, flip, unlock,
     lift, settle, setNote, clearNotes, point, tagged, spotStack, activeStack, topFirst,
     get stacks() { return stacks; },
     get cards() { return cards; },
@@ -81,6 +83,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
     drag = null;
     api.busy = false;
     api.frozen = false;
+    api.pick = null;
     spotSpec = spec;
     size = card;
     measure();
@@ -163,8 +166,12 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
     const d = rise();
     const fx = card.fx || {};
     const j = card.fx ? { r: 0, x: 0, y: 0 } : card.j;
-    const x = s.x * geo.W - geo.cw / 2 - i * d * 0.3 + (fx.dx || 0) + j.x;
-    const y = s.y * geo.H - geo.ch / 2 - i * d + (fx.dy || 0) + j.y;
+    /* A pile is a heap, each card a hair above the last — unless it is
+       FANNED: laid out as a column, the first card at the top and a strip of
+       every card showing, so that all of them can be read. */
+    /* … or opened out sideways (fanX), a hand of cards to choose from. */
+    const x = s.x * geo.W - geo.cw / 2 + (s.fanX ? i * s.fanX * geo.cw : s.fan ? 0 : -i * d * 0.3) + (fx.dx || 0) + j.x;
+    const y = s.y * geo.H - geo.ch / 2 + (s.fan ? i * s.fan * geo.ch : s.fanX ? 0 : -i * d) + (fx.dy || 0) + j.y;
     const el = card.el;
     el.style.translate = `${x.toFixed(2)}px ${y.toFixed(2)}px`;
     el.style.rotate = `${((fx.rot || 0) + j.r).toFixed(2)}deg`;
@@ -200,7 +207,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
     stacks.forEach((s) => {
       let el = have.get(s.id);
       have.delete(s.id);
-      const many = s.cards.length > 1 && !s.locked;
+      const many = s.cards.length > 1 && !s.locked && !s.fanX;
       if (!many && !s.note && !s.point) { if (el) el.remove(); return; }
       if (!el) {
         el = document.createElement("div");
@@ -223,7 +230,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
       note.hidden = !s.note;
       note.textContent = s.note ? s.note.text : "";
       note.dataset.tone = s.note ? s.note.tone : "";
-      el.style.translate = `${(s.x * geo.W).toFixed(1)}px ${(s.y * geo.H + geo.ch / 2).toFixed(1)}px`;
+      el.style.translate = `${(s.x * geo.W).toFixed(1)}px ${(s.y * geo.H + geo.ch / 2 + (s.fan ? (s.cards.length - 1) * s.fan * geo.ch : 0)).toFixed(1)}px`;
       el.style.zIndex = String(s.z * 100 + 90);
     });
     have.forEach((el) => el.remove());
@@ -260,6 +267,14 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
   function dropEmpty() {
     stacks = stacks.filter((s) => s.cards.length);
     if (active && !stacks.includes(active)) active = null;
+  }
+
+  /** Slide a pile to one of the program's places, whatever else is there. */
+  function slide(stack, spotId) {
+    stack.mat = spotId;
+    seat(stack);
+    stack.z = ++topZ;
+    layout();
   }
 
   /** Slide a whole pile onto one of the program's places, if nothing is lying there. */
@@ -352,7 +367,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
    * Deal a pile out, top card first, one to each place in turn — the way a
    * dealer does it. `turn` turns each card over as it lands.
    */
-  async function deal(stack, spotIds, { turn = true, gap = 80 } = {}) {
+  async function deal(stack, spotIds, { turn = true, gap = 80, fan = 0 } = {}) {
     const mine = era;
     if (api.busy) return;
     api.busy = true;
@@ -361,6 +376,9 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
       const id = stack.cards[stack.cards.length - 1];
       const card = cards.get(id);
       send(id, spotIds[i % spotIds.length], { up: turn ? !card.up : card.up });
+      /* dealt as columns, if asked: each card lands below the last */
+      const to = spotStack(spotIds[i % spotIds.length]);
+      if (fan && to && to.fan !== fan) { to.fan = fan; layout(); }
       await wait(still ? 0 : gap);
       if (era !== mine) return null;
     }
@@ -602,6 +620,16 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
   }
 
   function down(e) {
+    /* CHOOSING: a press on a card is an answer, not the start of a drag */
+    if (api.pick && !drag) {
+      const chosen = e.target.closest(".ct-card");
+      if (chosen && root.contains(chosen) && !api.busy) {
+        e.preventDefault();
+        const card = cards.get(chosen.dataset.card);
+        if (card && !card.locked) api.pick(card.id, card.stack);
+      }
+      return;
+    }
     if (api.busy || api.frozen || drag) return;
     const gripEl = e.target.closest(".ct-grip");
     const el = gripEl || e.target.closest(".ct-card");
@@ -647,11 +675,11 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
         drag.pulled = drag.kind === "card" && !!from.wasPile;
         from.mat = null;
       }
-      /* FLIP DEAL: the card turns over as it comes out, face up or face down */
-      if (api.turn && drag.pulled) {
-        drag.stack.cards.forEach((id) => { const c = cards.get(id); c.up = !c.up; });
-        drag.flipped = true;
-      }
+      /* FLIP DEAL is settled now, as the card comes off its pile — but the
+         card is not turned until it is put DOWN. In the hand it shows what it
+         showed on the pile, so a card carried face down to the computer's
+         copy is not seen until the two are turned over together. */
+      drag.deal = api.turn && drag.pulled;
       drag.stack.z = ++topZ;
       carry(drag.stack, true);
     }
@@ -692,8 +720,9 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
     }
 
     if (onto) {
-      /* put straight back where it came from: it was never dealt */
-      if (d.flipped && onto === d.origin) moving.cards.forEach((id) => { const c = cards.get(id); c.up = !c.up; });
+      /* dealt onto another pile: it turns over as it lands. Put straight
+         back where it came from, it was never dealt. */
+      if (d.deal && onto !== d.origin) moving.cards.forEach((id) => { const c = cards.get(id); c.up = !c.up; });
       moving.cards.forEach((id) => { const c = cards.get(id); c.stack = onto; c.j = lean(); onto.cards.push(id); });
       /* a pile that has a name keeps it when it is put on another */
       if (moving.tag && !onto.tag) onto.tag = moving.tag;
@@ -701,6 +730,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
       onto.z = ++topZ;
       landed = onto;
     } else {
+      if (d.deal) moving.cards.forEach((id) => { const c = cards.get(id); c.up = !c.up; });
       /* it lies where it was let go, kept on the table */
       const mx = (geo.cw / 2) / geo.W;
       const my = (geo.ch / 2) / geo.H;

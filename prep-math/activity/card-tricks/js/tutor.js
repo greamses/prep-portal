@@ -28,7 +28,7 @@
 import { openTv } from "/prep-math/mental-math/shared/prepbot-tv.js";
 import { faceSvg, backSvg } from "./art.js";
 import { BOT_FINGER } from "./finger.js";
-import { fullDeck, seeded, dealRound, gather, base3, playEleven, valueOf, nameOf } from "./deck.js";
+import { fullDeck, seeded, dealRound, gather, base3, playEleven, valueOf, nameOf, packetCut, packetTurnTop, packetTurnTwo, packetSays } from "./deck.js";
 
 const art = (what) => (what === "back" ? backSvg("red") : what === "blue" ? backSvg("blue") : faceSvg(what, { label: false }));
 const SAY = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven"];
@@ -697,6 +697,306 @@ function lessonAny() {
   return out;
 }
 
+/* ══ THE ODD ONE OUT ══════════════════════════════════════════════════════
+   Four cards in a row: the left end is the top of the packet, the right end
+   the bottom. Every move is played with the same three moves the table uses
+   (deck.js), so the row on the screen is the packet as it really is. */
+
+const FOUR = ["9C", "QH", "4S", "JD"];
+const MINE_ODD = "QH";
+const slotAt = (i) => [24 + i * 15.5, 36];
+
+function lessonOdd() {
+  const out = [];
+  /* the row: each card where it is in the packet, showing what it shows */
+  const row = (k, p, delay = 0, dur = 0.6) => {
+    p.forEach((c, i) => k.card(c.id, c.up ? c.id : "back", ...slotAt(i), { size: "m", z: 20 + i, delay, dur }));
+    k.lit(MINE_ODD);
+  };
+  const ends = (k) => { k.text("top", "top", slotAt(0)[0], 13, "small"); k.text("bot", "bottom", slotAt(3)[0], 13, "small"); };
+  /* the mats under the four places, and what each card on them "says" */
+  const mats = (k, p, delay = 0) => {
+    const says = packetSays(p);
+    p.forEach((c, i) => {
+      k.text(`mat${i}`, "&nbsp;", slotAt(i)[0], 64, i % 2 ? "pink" : "blue");
+      k.text(`say${i}`, says[i] ? "says UP" : "says DOWN", slotAt(i)[0], 74, c.id === MINE_ODD ? "gold" : "small", { delay });
+    });
+  };
+
+  const start = FOUR.map((id) => ({ id, up: true }));
+  const down = FOUR.filter((id) => id !== MINE_ODD).concat(MINE_ODD).map((id) => ({ id, up: false }));
+  const moved = packetCut(down, 1);
+  const ready = packetTurnTop(moved);
+  const MIX = [2, 1, 3];
+  const mixes = [];
+  let p = ready;
+  MIX.forEach((cutAt) => { const cut = packetCut(p, cutAt); const turned = packetTurnTwo(cut); mixes.push({ cutAt, from: p, cut, turned }); p = turned; });
+  const mixed = p;
+  const f1 = packetCut(packetTurnTop(mixed), 1);
+  const f2 = packetCut(f1, 1);
+  const last = packetTurnTop(f2);
+
+  out.push(step("Here are four cards, face up. You choose one of them. Let us say you choose the queen of hearts. I light it in gold, so that you can follow it all the way through.", (k) => {
+    k.wipe();
+    start.forEach((c, i) => k.card(c.id, c.id, ...slotAt(i), { size: "m", z: 20 + i, delay: i * 0.2 }));
+    k.lit(MINE_ODD, true, 1.6);
+  }));
+
+  out.push(step("All four are turned face down. And your card goes to the bottom of the packet. In this row, the left end is the top of the packet, and the right end is the bottom.", (k) => {
+    k.wipe();
+    row(k, start.map((c) => ({ ...c, up: false })));
+    row(k, down, 1.3);
+    ends(k);
+  }));
+
+  out.push(step("Now the first of my two moves. The top card goes to the bottom.", (k) => { k.wipe(); ends(k); row(k, moved, 0.3); }));
+  out.push(step("And the second. The new top card is turned face up. That is all I do. The rest of the mixing is yours.", (k) => { k.wipe(); ends(k); row(k, ready, 0.3); }));
+
+  mixes.forEach((m, t) => {
+    const n = ["", "one card goes", "two cards go", "three cards go"][m.cutAt];
+    out.push(step(`${["Now you mix. You say where to cut. Say you choose two.", "Mix again. This time you say one.", "And once more. You say three."][t]} So ${n} from the top to the bottom. Then the top two are turned over together. Each one shows its other side, and they change places.`, (k) => {
+      k.wipe();
+      ends(k);
+      row(k, m.from, 0, 0);
+      row(k, m.cut, 0.4);
+      row(k, m.turned, 2.2);
+      k.text("what", `cut ${m.cutAt}`, 47, 70, "gold", { delay: 0.4 });
+      k.text("what2", "turn the top two over", 47, 82, "row", { delay: 2.2 });
+    }));
+  });
+
+  out.push(step("You can do that as often as you like. Nobody could say which way up the cards are now. When you have had enough, there are three small moves to finish. The top card is turned over, and goes to the bottom.", (k) => {
+    k.wipe(); ends(k); row(k, mixed, 0, 0); row(k, packetTurnTop(mixed), 0.6); row(k, f1, 1.8);
+  }));
+  out.push(step("The next card goes to the bottom, just as it is.", (k) => { k.wipe(); ends(k); row(k, f2, 0.3); }));
+  out.push(step("And the top card is turned over.", (k) => { k.wipe(); ends(k); row(k, last, 0.3); }));
+
+  const mineUp = last.find((c) => c.id === MINE_ODD).up;
+  out.push(step(`Now look at the four cards. Three of them face one way. One of them faces the other way. Which one? The gold one. ${mineUp ? "It is the only card face up" : "It is the only card face down. Turn it over"}. The queen of hearts. Your card.`, (k) => {
+    k.wipe();
+    row(k, last, 0, 0);
+    k.card(MINE_ODD, MINE_ODD, slotAt(last.findIndex((c) => c.id === MINE_ODD))[0], 36, { size: "m", z: 60, delay: 2.4 });
+    k.text("win", "the odd one out is yours", 47, 72, "gold", { delay: 2.8 });
+  }));
+
+  /* ── WHY, with the cards ─────────────────────────────────────────────── */
+
+  out.push(step("Why does it always work? Go back to the moment before you mixed. Under the four places I put four mats. Blue, pink, blue, pink. Now a pretend game. A card on a blue mat says what it shows. A card on a pink mat says the opposite of what it shows. So a face down card on a pink mat says: up.", (k) => {
+    k.wipe();
+    row(k, ready, 0, 0);
+    mats(k, ready, 1.5);
+  }));
+
+  out.push(step("Read what they say. Up. Up. Down. Up. Three cards say up. Only your gold card says down. Your card is already the odd one out. You just cannot see it yet.", (k) => {
+    k.wipe();
+    row(k, ready, 0, 0);
+    mats(k, ready);
+    k.text("see", "three agree · gold disagrees", 47, 88, "row", { delay: 1.2 });
+  }));
+
+  const t2 = packetTurnTwo(ready);
+  out.push(step("Now turn the top two over together. Watch those two cards. Each one flips. And each one moves onto the other colour of mat. Flipped once, and changed colour once. Two changes undo each other. So both cards still say exactly what they said before.", (k) => {
+    k.wipe();
+    row(k, ready, 0, 0);
+    row(k, t2, 0.8);
+    mats(k, t2, 2);
+    k.text("see", "flip + change colour = says the same", 47, 88, "row", { delay: 2.4 });
+  }));
+
+  const c1 = packetCut(t2, 1);
+  out.push(step("Now cut one card to the bottom. Every card moves one mat along. So every card changes colour. So every card changes what it says, all four together. They said up, up, down, up. Now they say down, down, up, down. Your gold card is still the one that disagrees.", (k) => {
+    k.wipe();
+    row(k, t2, 0, 0);
+    row(k, c1, 0.8);
+    mats(k, c1, 2);
+    k.text("see", "all four change together · gold still disagrees", 47, 88, "row", { delay: 2.4 });
+  }));
+
+  out.push(step("So it does not matter how you cut, or how many times. No mix can change which card is the odd one. My last three moves only turn the pretend game into real turning. And that is why one card ends up facing the other way, and it is always yours. This trick was invented by Bob Hummer, about eighty years ago. Now try it at the table.", (k) => {
+    k.wipe();
+    row(k, last, 0, 0);
+    k.text("see", "one card always disagrees", 47, 72, "gold");
+  }));
+
+  return out;
+}
+
+/* ══ THE FINAL THREE ══════════════════════════════════════════════════════
+   Thirty-three cards, every one on the screen. A pile is a column with its
+   TOP card at the top, so a card dealt onto a pile lands above the one
+   before it. The cards in the hand are a line down the left; the cards kept
+   by an up-down deal are a column in the middle; the ones thrown out are a
+   heap on the right. */
+
+const F3 = (() => {
+  const rnd = seeded(33);
+  const all = fullDeck().map((id) => [rnd(), id]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+  const piles = [0, 1, 2].map((p) => Array.from({ length: 10 }, (_, j) => all[j * 3 + p]));   // in the order dealt
+  const mine = all.slice(30, 33);
+  /* three off the top of each pile (the last three dealt), a chosen card on each seven, stacked, the nine on top */
+  const nine = piles.flatMap((p) => p.slice(7).reverse());
+  const body = [0, 1, 2].flatMap((p) => [mine[p], ...piles[p].slice(0, 7).reverse()]);
+  const stack = nine.slice().reverse().concat(body);      // top first: 9, then card + 7, three times
+  const passes = [];
+  let hand = stack.slice(4);
+  while (hand.length > 3) {
+    const out = hand.filter((_, i) => i % 2 === 0);
+    const kept = hand.filter((_, i) => i % 2 === 1).reverse();   // dealt one on another: the last kept is on top
+    passes.push({ hand, out, kept });
+    hand = kept;
+  }
+  return { all, piles, mine, nine, stack, passes, left: hand };
+})();
+
+const f3Line = (i, n = 33) => [9, 16 + i * (n > 20 ? 2.25 : 4)];
+const f3Pile = (p, row) => [30 + p * 11, 26 + row * 5.6];        // row 0 is the top of the pile
+const f3Kept = (j) => [38, 16 + j * 4.4];
+const f3Out = (i) => [62 + (i % 6) * 0.5, 22 + Math.floor(i / 6) * 0.6];
+
+function lessonFinal3() {
+  const out = [];
+  const { piles, mine, nine, stack, passes, left } = F3;
+  const isMine = (id) => mine.includes(id);
+  const gold = (k) => mine.forEach((id) => k.lit(id));
+  const places = (k, list, at, cls = "gold") => list.forEach((id, i) => { if (isMine(id)) k.text(`pl${mine.indexOf(id)}`, String(i + 1), at(i)[0] + 7.5, at(i)[1], cls); });
+  const line = (k, list, { delay = 0, dur = 0.6, face = "back" } = {}) => list.forEach((id, i) => k.card(id, face === "back" ? "back" : id, ...f3Line(i, list.length), { z: i + 1, delay, dur }));
+  /* the three piles as dealt: `upto` cards of each are down, `taken` have been lifted off the top */
+  const laidPiles = (k, { gap = 0, taken = 0, chosen = false } = {}) => {
+    piles.forEach((pile, p) => pile.forEach((id, j) => {
+      if (j >= 10 - taken) return;
+      k.card(id, "back", ...f3Pile(p, 9 - j), { z: 10 + j, delay: (j * 3 + p) * gap, dur: 0.4 });
+    }));
+    if (chosen) mine.forEach((id, p) => k.card(id, "back", ...f3Pile(p, 2), { z: 40, delay: 0 }));
+  };
+  const nineAside = (k, delay = 0) => nine.forEach((id, i) => k.card(id, "back", 72, 26 + i * 4.4, { z: 60 + i, delay: delay ? delay + Math.floor(i / 3) * 0.8 + (i % 3) * 0.12 : 0 }));
+
+  out.push(step("I deal three piles of ten cards, face down. One, two, three, and round again, until each pile has ten. In each pile, the newest card is on top.", (k) => {
+    k.wipe();
+    laidPiles(k, { gap: 0.13 });
+    ["pile 1", "pile 2", "pile 3"].forEach((t, p) => k.text(`pn${p}`, t, f3Pile(p, 0)[0], 14, "small"));
+  }));
+
+  out.push(step("Now I take three cards off the top of each pile, and put them to one side. Three, and three, and three. That is nine cards. And each pile has seven left.", (k) => {
+    k.wipe();
+    laidPiles(k, { taken: 3 });
+    nineAside(k, 0.6);
+    k.text("n9", "9", 72, 14, "big", { delay: 3 });
+    [0, 1, 2].forEach((p) => k.text(`c7${p}`, "7", f3Pile(p, 0)[0], 14, "big", { delay: 3 }));
+  }));
+
+  out.push(step("You choose any three cards from the rest of the pack. Here they are. I light them in gold, so that you can follow them. They are turned face down, and one goes on top of each pile.", (k) => {
+    k.wipe();
+    laidPiles(k, { taken: 3 });
+    nineAside(k);
+    mine.forEach((id, p) => { k.card(id, id, 86, 22 + p * 14, { z: 90, size: "m", delay: p * 0.3 }); k.card(id, "back", ...f3Pile(p, 2), { z: 40, delay: 3 + p * 0.7, dur: 0.7 }); });
+    gold(k);
+  }));
+
+  out.push(step("Now the piles are put together. The third pile, the second pile on it, the first pile on that, and the nine cards on the very top. Thirty three cards in one stack. I lay it in a line: the top of the line is the top of the stack.", (k) => {
+    k.wipe();
+    stack.forEach((id, i) => k.card(id, "back", ...f3Line(i), { z: i + 1, delay: (i < 9 ? 3 : i < 17 ? 2 : i < 25 ? 1 : 0) * 0.9 + 0.2, dur: 0.7 }));
+    gold(k);
+  }));
+
+  out.push(step("Count down from the top to find your cards. Nine cards, and then your first card: it is card ten. Seven more cards, and your second: card eighteen. Seven more, and your third: card twenty six. They are always at ten, eighteen and twenty six. It does not matter which cards you chose.", (k) => {
+    k.wipe();
+    line(k, stack, { dur: 0 });
+    gold(k);
+    places(k, stack, (i) => f3Line(i));
+    k.text("t9", "9 on top", 30, f3Line(4)[1], "small");
+    k.text("t7a", "7 between", 30, f3Line(13)[1], "small");
+    k.text("t7b", "7 between", 30, f3Line(21)[1], "small");
+  }));
+
+  const after4 = stack.slice(4);
+  out.push(step("Four cards come off the top. One, two, three, four. They are out. So your cards have each moved up four places. They are now card six, card fourteen and card twenty two.", (k) => {
+    k.wipe();
+    stack.slice(0, 4).forEach((id, i) => k.card(id, "back", ...f3Out(i), { z: 200 + i, delay: 0.4 + i * 0.4 }));
+    after4.forEach((id, i) => k.card(id, "back", ...f3Line(i, 29), { z: i + 1, delay: 2.2 }));
+    gold(k);
+    places(k, after4, (i) => f3Line(i, 29));
+  }));
+
+  let thrown = 4;
+  passes.forEach((pass, t) => {
+    const before = thrown;
+    const n = pass.hand.length;
+    const told = pass.kept.map((id, j) => (isMine(id) ? j + 1 : 0)).filter(Boolean);
+    out.push(step(`${["Now the dealing. One card face up, one card face down. Up, down, up, down, all the way through. Every face up card is out. The face down cards are kept, in a pile.",
+      "The kept cards are picked up, and dealt the same way. Up, down, up, down.",
+      "And once more with the cards that are left. Up, down, up, down."][t]} ${n} cards went in. ${pass.kept.length} are kept. ${pass.kept.length > 3 ? `And look where your gold cards are in the kept pile: card ${told.join(", card ")}.` : "Three cards. And every one of them is gold."}`, (k) => {
+      k.wipe();
+      /* what was thrown out before stays in its heap */
+      stack.filter((id) => !pass.hand.includes(id)).forEach((id, i) => k.card(id, i < 4 ? "back" : id, ...f3Out(i), { z: 200 + i, dur: 0 }));
+      /* the hand, as a line … */
+      pass.hand.forEach((id, i) => k.card(id, "back", ...f3Line(i, n), { z: i + 1, dur: t ? 0.6 : 0 }));
+      /* … and dealt off it: up is out, down is kept, each kept card landing above the last */
+      pass.hand.forEach((id, i) => {
+        const delay = 1.2 + i * (n > 20 ? 0.22 : 0.4);
+        if (i % 2 === 0) k.card(id, id, ...f3Out(before + i / 2), { z: 200 + before + i / 2, delay, dur: 0.4 });
+        else k.card(id, "back", ...f3Kept(pass.kept.indexOf(id)), { z: 100 + (pass.kept.length - pass.kept.indexOf(id)), delay, dur: 0.4 });
+      });
+      gold(k);
+      pass.kept.forEach((id, j) => { if (isMine(id)) k.text(`pl${mine.indexOf(id)}`, String(j + 1), f3Kept(j)[0] + 7.5, f3Kept(j)[1], "gold", { delay: 1.2 + n * (n > 20 ? 0.22 : 0.4) }); });
+      k.text("kl", "kept", 49, 12, "small");
+      k.text("ol", "out", 63, 12, "small");
+    }));
+    thrown += pass.out.length;
+  });
+
+  out.push(step(`Turn the three over. ${mine.map((id) => nameOf(id)).join(", ")}. Your three cards, and no others.`, (k) => {
+    k.wipe();
+    stack.filter((id) => !left.includes(id)).forEach((id, i) => k.card(id, i < 4 ? "back" : id, ...f3Out(i), { z: 200 + i, dur: 0 }));
+    left.forEach((id, j) => k.card(id, id, 30 + j * 13, 44, { size: "m", z: 500 + j, delay: j * 0.5, dur: 0.8 }));
+    gold(k);
+    k.text("win", "the final three", 43, 72, "gold", { delay: 1.8 });
+  }));
+
+  /* ── WHY, with the cards ─────────────────────────────────────────────── */
+
+  out.push(step("Why were they the last three? Look at the dealing again, slowly. Up, down, up, down. The first card is thrown out. The second is kept. The third is out. The fourth is kept. So the cards in places two, four, six, eight and so on are kept. I ring those in green. The even places survive.", (k) => {
+    k.wipe();
+    k.gone("x");
+    stack.slice(0, 4).forEach((id, i) => k.card(id, "back", ...f3Out(i), { z: 200 + i, dur: 0 }));
+    after4.forEach((id, i) => { k.card(id, "back", ...f3Line(i, 29), { z: i + 1, size: "s" }); k.band(id, i % 2 ? 1 : -1); });
+    gold(k);
+    places(k, after4, (i) => f3Line(i, 29));
+    k.text("ev", "green = even places = kept", 36, 30, "row");
+  }));
+
+  out.push(step("And where were your cards? Six, fourteen and twenty two. All even numbers. So all three are kept. That is the first deal.", (k) => {
+    k.wipe();
+    stack.slice(0, 4).forEach((id, i) => k.card(id, "back", ...f3Out(i), { z: 200 + i, dur: 0 }));
+    after4.forEach((id, i) => { k.card(id, "back", ...f3Line(i, 29), { z: i + 1 }); k.band(id, i % 2 ? 1 : -1); });
+    gold(k);
+    places(k, after4, (i) => f3Line(i, 29));
+    k.text("ev", "6 · 14 · 22 &nbsp; all even", 38, 30, "gold");
+  }));
+
+  passes.slice(1).forEach((pass, t) => {
+    const n = pass.hand.length;
+    const at = pass.hand.map((id, i) => (isMine(id) ? i + 1 : 0)).filter(Boolean);
+    out.push(step(`${t === 0 ? "Fourteen cards were kept. Dealing them into a pile turned them upside down, so the order is the other way round. Even so," : "Seven cards were kept. Turned upside down again. And"} your cards are at ${at.map((x) => SAY[x] || x).join(", ")}. Even numbers again. ${t === 0 ? "So they are kept again." : "And among seven cards, the even places are two, four and six: just three places. Yours."}`, (k) => {
+      k.wipe();
+      stack.filter((id) => !pass.hand.includes(id)).forEach((id, i) => k.card(id, i < 4 ? "back" : id, ...f3Out(i), { z: 200 + i, dur: 0 }));
+      pass.hand.forEach((id, i) => { k.card(id, "back", ...f3Line(i, n), { z: i + 1 }); k.band(id, i % 2 ? 1 : -1); });
+      gold(k);
+      places(k, pass.hand, (i) => f3Line(i, n));
+      k.text("ev", `${at.join(" · ")} &nbsp; all even`, 38, 30, "gold");
+    }));
+  });
+
+  out.push(step("So that is the whole secret. Ten, eighteen and twenty six. Take four away: six, fourteen, twenty two. Then four, eight, twelve. Then two, four, six. Even places every time, and the even places are the ones that are kept. That is why I took three cards off each pile at the start: it puts your cards exactly where they need to be. Now try it at the table.", (k) => {
+    k.wipe();
+    stack.filter((id) => !left.includes(id)).forEach((id, i) => k.card(id, i < 4 ? "back" : id, ...f3Out(i), { z: 200 + i, dur: 0 }));
+    left.forEach((id, j) => { k.card(id, id, 14 + j * 12, 44, { size: "m", z: 500 + j }); k.band(id, -1); });
+    gold(k);
+    ["10 · 18 · 26", "6 · 14 · 22", "4 · 8 · 12", "2 · 4 · 6"].forEach((t, i) => k.text(`s${i}`, t, 86, 20 + i * 13, i === 3 ? "gold" : "row", { delay: i * 0.7 }));
+  }));
+
+  return out;
+}
+
 /* ══ THE TABLE ════════════════════════════════════════════════════════════ */
 
 function lessonTable() {
@@ -752,10 +1052,10 @@ function lessonTable() {
   ];
 }
 
-const TITLES = { base3: "27 cards", eleven: "Eleven", any: "Any number", free: "The card table" };
+const TITLES = { base3: "27 cards", eleven: "Eleven", any: "Any number", odd: "The odd one out", final3: "The final three", final3b: "The final three", free: "The card table" };
 
 /** Put PrepBot's TV up, teaching one of the tricks. */
 export function openTutorial(trick, n = 14) {
-  const steps = trick === "base3" ? lesson27(n) : trick === "eleven" ? lessonEleven() : trick === "any" ? lessonAny() : lessonTable();
+  const steps = trick === "base3" ? lesson27(n) : trick === "eleven" ? lessonEleven() : trick === "any" ? lessonAny() : trick === "odd" ? lessonOdd() : trick === "final3" || trick === "final3b" ? lessonFinal3() : lessonTable();
   return openTv({ title: TITLES[trick] || "Card Tricks", build, steps });
 }

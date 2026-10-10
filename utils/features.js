@@ -136,7 +136,7 @@ export const FEATURES = [
       { id: "circle-theorems", label: "Circle Theorems (drag the points, see why, find the angle)", path: "/prep-math/activity/circle-theorems" },
       { id: "transversals", label: "Transversals", path: "/prep-math/activity/transversals" },
       { id: "number-match", label: "Number Match (match every way of writing a number to the numeral)", path: "/prep-math/activity/number-match" },
-      { id: "card-tricks", label: "Card Tricks (a real pack on a table; 27 cards in base 3, Eleven, Any Number)", path: "/prep-math/activity/card-tricks" },
+      { id: "card-tricks", label: "Card Tricks (a real pack on a table; 27 cards in base 3, Eleven, Any Number, The Final Three, The Odd One Out)", path: "/prep-math/activity/card-tricks" },
     ],
   },
   {

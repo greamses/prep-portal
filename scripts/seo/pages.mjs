@@ -341,14 +341,15 @@ export const PAGES = [
     file: "prep-math/activity/card-tricks/index.html",
     section: "maths",
     name: "Card Tricks",
-    title: "Card Tricks: Three Maths Tricks With a Real Pack of Cards",
+    title: "Card Tricks: Six Maths Tricks With a Real Pack of Cards",
     desc: "A real pack of cards on a table, and two tricks that are sums underneath: steer a hidden card to any place by counting in base 3, then learn the Eleven trick.",
     intro:
-      "A pack of cards you can pull, stack, turn over and riffle-shuffle, the way hands do. In the 27-card trick the computer keeps a card to itself and you are the magician: deal three piles of nine, gather them, and after three deals its card lies at the number you chose. In Eleven four countdown piles lead you to the one card the computer copied before you began. In Any Number you think of a number from 10 to 19, never say it, and still count your way to the computer's card. PrepBot teaches each trick on its TV, card by card, and shows why it works.",
+      "A pack of cards you can pull, stack, turn over and riffle-shuffle, the way hands do. In the 27-card trick the computer keeps a card to itself and you are the magician: deal three piles of nine, gather them, and after three deals its card lies at the number you chose. In Eleven four countdown piles lead you to the one card the computer copied before you began. In Any Number you think of a number from 10 to 19, never say it, and still count your way to the computer's card. In The Final Three you choose three cards and PrepBot deals the pack away until only they are left. In The Odd One Out you mix four cards any way you like and PrepBot still finds yours. PrepBot teaches each trick on its TV, card by card, and shows why it works.",
     points: [
       "Numbers in base 3: nines, threes and ones",
       "Why every countdown pile and its number make 11",
       "Why a number less the sum of its digits is always 9",
+      "Odd and even places: why the up-down deal leaves your three cards",
       "Drag to deal, tap to turn, and a real riffle shuffle",
       "Works with a finger on a tablet",
     ],

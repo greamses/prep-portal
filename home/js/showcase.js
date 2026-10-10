@@ -141,7 +141,7 @@ export const BANDS = [
       { art: "graph", title: "Graphs of functions", tag: "Graphs", line: "Tap the points, rule the line, read the rule back off it.", href: "/prep-math/activity/algebra-workbook/index.html" },
       { art: "blocks", title: "Manipulatives", tag: "Number", line: "Blocks, abacuses, tiles and charts on one endless table.", href: "/prep-math/activity/base-blocks/index.html" },
       { art: "tally", title: "Number Match", tag: "Number", line: "Every way of writing one number, poured out as notes.", href: "/prep-math/activity/number-match/index.html" },
-      { art: "pack", title: "Card Tricks", tag: "Number", line: "A real pack, and three tricks that turn out to be sums.", href: "/prep-math/activity/card-tricks/index.html" },
+      { art: "pack", title: "Card Tricks", tag: "Number", line: "A real pack, and six tricks that turn out to be sums.", href: "/prep-math/activity/card-tricks/index.html" },
     ],
   },
   {

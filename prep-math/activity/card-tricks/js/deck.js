@@ -151,6 +151,18 @@ export function dealtInTurn(pack, piles) {
     && new Set(got).size === got.length;
 }
 
+/* ── the odd one out (Bob Hummer) ─────────────────────────────────────────
+   A packet is a list, top first, of { id, up }. Three moves: cut some cards
+   from the top to the bottom; turn the top card over; turn the top TWO over
+   together (each shows its other side, and they change places). */
+
+export const packetCut = (p, k) => p.slice(k).concat(p.slice(0, k));
+export const packetTurnTop = (p) => [{ ...p[0], up: !p[0].up }, ...p.slice(1)];
+export const packetTurnTwo = (p) => [{ ...p[1], up: !p[1].up }, { ...p[0], up: !p[0].up }, ...p.slice(2)];
+
+/** What a card "says" if every second place tells the opposite of what it shows. */
+export const packetSays = (p) => p.map((c, i) => (i % 2 ? !c.up : c.up));
+
 /* ── the eleven trick ─────────────────────────────────────────────────────*/
 
 /**
