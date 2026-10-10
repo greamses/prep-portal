@@ -578,6 +578,125 @@ function lessonEleven() {
   return out;
 }
 
+/* ══ ANY NUMBER ═══════════════════════════════════════════════════════════
+   The top twenty cards of the pack, as a line down the left. The pile the
+   player deals is a column in the middle, built from the bottom up — the
+   first card dealt is at the bottom, each next one lands on top — so the
+   pile can be seen turning the cards upside down. The cards counted off it
+   are a column on the right. */
+
+const TOP20 = ["4C", "JD", "7S", "2H", "9D", "KC", "5S", "AH", "8D", "QS", "3D", "10H", "6C", "KS", "2D", "7H", "JC", "4S", "9H", "AD"];
+const MINE_ANY = TOP20[9];
+const lineAt = (i) => [9, 17 + i * 3.85];                 // the pack: place 1 at the top
+const dealtAt = (j, n) => [36, 17 + (n - j) * 3.85 + (20 - n) * 1.9];   // the j-th card dealt, in a pile of n: later ones higher
+const takenAt = (i) => [63, 22 + i * 7.5];
+
+function lessonAny() {
+  const out = [];
+  const line = (k, from = 0) => TOP20.forEach((id, i) => { if (i >= from) k.card(id, "back", ...lineAt(i), { z: i + 1 }); });
+  /* deal n off the line into the pile, one at a time (or all at once) */
+  const deal = (k, n, gap = 0.32) => {
+    for (let j = 1; j <= n; j++) k.card(TOP20[j - 1], "back", ...dealtAt(j, n), { z: 100 + j, delay: (j - 1) * gap, dur: 0.4 });
+    line(k, n);
+    k.lit(MINE_ANY);
+  };
+  /* where the gold card lies in a pile of n, counted from the top */
+  const where = (n) => n - 9;
+  const ORD = ["", "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"];
+  const copy = (k, face = "blue", delay = 0) => k.card("copy", face, 86, 30, { size: "m", z: 700, delay });
+
+  out.push(step("Here is the top of a shuffled pack. I have laid the first twenty cards in a line so that you can see each one. The top of the line is the top of the pack. That is card one.", (k) => {
+    k.wipe();
+    TOP20.forEach((id, i) => k.card(id, "back", ...lineAt(i), { z: i + 1, delay: i * 0.06 }));
+    k.text("top", "card 1", 19, lineAt(0)[1], "small", { delay: 1.3 });
+  }));
+
+  out.push(step("I am thinking of one card. In the real trick you never see which. Here I light it in gold, so that you can follow it. Count down with me. One, two, three, four, five, six, seven, eight, nine, ten. My card is the tenth card. There are nine cards on top of it.", (k) => {
+    k.wipe();
+    line(k);
+    k.count("c", 10, (i) => [18, lineAt(i - 1)[1]], { gap: 0.42, delay: 2.2 });
+    k.lit(MINE_ANY, true, 2.2 + 9 * 0.42);
+    copy(k, "blue", 0.4);
+    k.text("cl", "a copy of my card", 86, 48, "small", { delay: 0.6 });
+  }));
+
+  out.push(step("Now you think of a number, anything from ten to nineteen, and you do not tell me. Let us say you think of fourteen. Deal fourteen cards off the top, one at a time, into a pile. Watch how each card lands on top of the one before it. One, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen, fourteen.", (k) => {
+    k.wipe();
+    copy(k);
+    line(k);
+    k.lit(MINE_ANY);
+    deal(k, 14, 0.42);
+    k.text("num", "14", 36, 6, "big");
+    k.count("dc", 14, (j) => [44.5, dealtAt(j, 14)[1]], { gap: 0.42, delay: 0.2, cls: "tiny" });
+  }));
+
+  out.push(step("Look where my gold card is now. It was the tenth card you dealt. Then four more cards landed on top of it. So, counting from the top of your pile: one, two, three, four, five. It is the fifth card.", (k) => {
+    k.wipe();
+    copy(k);
+    deal(k, 14, 0);
+    k.text("num", "14", 36, 6, "big");
+    k.count("pc", 5, (i) => [44.5, dealtAt(15 - i, 14)[1]], { gap: 0.5, delay: 2.4 });
+  }));
+
+  out.push(step("Now add the two figures of your number. Fourteen is a one and a four. One and four make five. So deal five cards off your pile. One, two, three, four, five. And the fifth one is my gold card.", (k) => {
+    k.wipe();
+    copy(k);
+    deal(k, 14, 0);
+    k.text("num", "14", 36, 6, "big");
+    k.text("add", "1 + 4 = 5", 63, 8, "gold");
+    for (let i = 1; i <= 5; i++) k.card(TOP20[14 - i], "back", ...takenAt(i - 1), { z: 300 + i, delay: 2.2 + (i - 1) * 0.5, dur: 0.4 });
+    k.lit(MINE_ANY);
+    k.count("tc", 5, (i) => [70, takenAt(i - 1)[1]], { gap: 0.5, delay: 2.4, cls: "tiny" });
+  }));
+
+  out.push(step(`Turn it over. It is ${nameOf(MINE_ANY)}. Lay it against my copy, and turn the copy over. The same card. And I never knew your number.`, (k) => {
+    k.wipe();
+    deal(k, 14, 0);
+    for (let i = 1; i <= 4; i++) k.card(TOP20[14 - i], "back", ...takenAt(i - 1), { z: 300 + i });
+    k.card(MINE_ANY, MINE_ANY, 73, 30, { size: "m", z: 900, dur: 0.8 });
+    copy(k, MINE_ANY, 1.4);
+    k.text("win", "a match", 79.5, 50, "gold", { delay: 1.9 });
+  }));
+
+  /* ── WHY, with the cards ─────────────────────────────────────────────── */
+
+  [10, 11, 12].forEach((n, t) => {
+    const first = ["Now, why does it work for every number? Let us try the smallest one, ten. I put the cards back and deal ten.", "Now eleven. Deal eleven.", "Now twelve. Deal twelve."][t];
+    const tell = n === 10
+      ? "My gold card is the tenth card, so it is the very last one you deal. It lands on top. It is the first card of your pile. And the figures of ten are one and nought. One and nought make one. Deal one card, and it is mine."
+      : `This time ${n === 11 ? "one more card" : "two more cards"} land${n === 11 ? "s" : ""} on top of my gold card. So it is the ${ORD[where(n)]} card of your pile. And the figures of ${SAY[n] || n} are one and ${SAY[n - 10]}. One and ${SAY[n - 10]} make ${SAY[where(n)]}. Deal ${SAY[where(n)]}, and you are on my card again.`;
+    out.push(step(`${first} ${tell}`, (k) => {
+      k.wipe();
+      k.gone("copy");
+      line(k);
+      deal(k, n, 0.3);
+      k.text("num", String(n), 36, 6, "big");
+      k.text("pos", `gold is card ${where(n)}`, 63, 30, "row", { delay: n * 0.3 + 0.4 });
+      k.text("add", `1 + ${n - 10} = ${where(n)}`, 63, 44, "gold", { delay: n * 0.3 + 1.6 });
+      /* what was tried before stays written, so the pattern can be seen growing */
+      [10, 11, 12].forEach((m, i) => { if (m < n) k.text(`h${m}`, `${m} → card ${where(m)} → 1 + ${m - 10} = ${where(m)}`, 78, 66 + i * 8, "small"); });
+    }));
+  });
+
+  out.push(step("Do you see it? Every time your number goes up by one, one more card covers my gold card. And every time your number goes up by one, its figures add up to one more. The two climb together, one step at a time. So they always meet on my card.", (k) => {
+    k.wipe();
+    line(k);
+    deal(k, 12, 0);
+    [10, 11, 12, 13, 14, 19].forEach((m, i) => k.text(`h${m}`, `${m} → card ${where(m)} → 1 + ${m - 10} = ${where(m)}`, 72, 14 + i * 12, m === 14 ? "gold" : "row", { delay: i * 0.5 }));
+  }));
+
+  out.push(step("Here is the short way to say it. Take the figures of your number away from the number itself, and you always get nine. Fourteen take away five is nine. Nineteen take away ten is nine. Nine cards were on top of my card at the start. To do this with a real pack, peek at the tenth card before you begin. Now you try it at the table.", (k) => {
+    k.wipe();
+    line(k);
+    deal(k, 12, 0);
+    k.text("n1", "14 − (1 + 4) = 9", 68, 22, "gold");
+    k.text("n2", "19 − (1 + 9) = 9", 68, 38, "gold", { delay: 0.8 });
+    k.text("n3", "always 9", 68, 56, "big", { delay: 1.6 });
+  }));
+
+  return out;
+}
+
 /* ══ THE TABLE ════════════════════════════════════════════════════════════ */
 
 function lessonTable() {
@@ -633,10 +752,10 @@ function lessonTable() {
   ];
 }
 
-const TITLES = { base3: "27 cards", eleven: "Eleven", free: "The card table" };
+const TITLES = { base3: "27 cards", eleven: "Eleven", any: "Any number", free: "The card table" };
 
 /** Put PrepBot's TV up, teaching one of the tricks. */
 export function openTutorial(trick, n = 14) {
-  const steps = trick === "base3" ? lesson27(n) : trick === "eleven" ? lessonEleven() : lessonTable();
+  const steps = trick === "base3" ? lesson27(n) : trick === "eleven" ? lessonEleven() : trick === "any" ? lessonAny() : lessonTable();
   return openTv({ title: TITLES[trick] || "Card Tricks", build, steps });
 }

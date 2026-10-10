@@ -12,6 +12,9 @@
      eleven        you shuffle, the computer lays down a card, and the card
                    you count to is that card. Every pile and its number make
                    eleven, four times over.
+     any number    you think of a number from 10 to 19 and never say it; the
+                   card you count to is the one the computer copied first.
+                   A number less the sum of its figures is always nine.
 
    The computer takes its card where you can watch: a card is drawn out of the
    pack, a blue-backed copy is made on top of it, and the card goes back.
@@ -581,7 +584,128 @@ const ELEVEN = {
   },
 };
 
-const GUIDES = { base3: BASE3, eleven: ELEVEN, free: FREE };
+/* ══ ANY NUMBER ═══════════════════════════════════════════════════════════
+   The player thinks of a number from 10 to 19 and never says it. They deal
+   that many cards into a pile, add the two figures of their number, and deal
+   that many off the pile. The card they land on is the one the computer
+   copied before they had thought of anything.
+
+   Dealing a pile turns it upside down. The computer's card is the TENTH
+   from the top, so in a pile of n cards it lies n − 9 from the top. And the
+   figures of a number from 10 to 19 add up to 1 + (n − 10): n − 9 again.
+   The number cancels itself out. */
+
+const ANY_SPOTS = {
+  wide: [{ id: "pack", x: 0.2, y: 0.53 }, { id: "copy", x: 0.84, y: 0.53 }],
+  narrow: [{ id: "pack", x: 0.26, y: 0.26 }, { id: "copy", x: 0.74, y: 0.26 }],
+};
+
+const ANY = {
+  name: "Any number",
+  blurb: "Think of a number. I already know the card.",
+  setup() {
+    S.g = { kind: "any", phase: "wait", mine: null, shown: null };
+    table.setup({ spots: ANY_SPOTS, card: CARD });
+    table.addStack(mixed(fullDeck()), { spot: "pack" });
+    /* dealt face down, as the trick is done: the card is only seen at the end */
+    table.turn = false;
+    say("");
+  },
+
+  async intro() {
+    const g = S.g;
+    const run = S.run;
+    const gone = () => run !== S.run;
+    g.phase = "staging";
+    table.frozen = true;
+    const pack = table.tagged("pack");
+
+    let said = say("First the pack is shuffled.");
+    table.canShuffle = true;
+    await table.shuffle(pack);
+    await said;
+    if (gone()) return;
+
+    /* the only card looked at: the tenth from the top */
+    g.mine = table.topFirst(pack)[9];
+    said = say("I have one card in mind. This is a copy of it.");
+    await makeCopy(g.mine);
+    await said;
+    if (gone()) return;
+
+    table.frozen = false;
+    g.phase = "play";
+    await say("Think of any number from ten to nineteen. Do not tell me.");
+    if (gone()) return;
+    say("Deal that many cards into a pile. Then add its two figures, and deal that many off the pile.");
+  },
+
+  /* Nothing is counted for the player and nothing is checked on the way:
+     the only thing listened for is a card laid against the copy. */
+  changed(what) {
+    const g = S.g;
+    if (!what || what.type !== "offer" || g.phase !== "play") return;
+    g.shown = confirm(what);
+    g.phase = "done";
+    this.verdict();
+  },
+
+  refused(what) {
+    if (what.why === "shuffle") say("No shuffling now. My card is in its place.", "warn");
+    else if (what.why === "one") say("One card only: the one you think is mine.", "warn");
+    else if (S.g.phase !== "done") say("Mine stays face down. Drag the card you think it is onto it.", "warn");
+  },
+
+  act() {},
+
+  verdict() {
+    const g = S.g;
+    if (g.shown === g.mine) say(`${Name(g.mine)}. A match: you win. And I never knew your number.`, "win");
+    else say(`No match. Mine was ${nameOf(g.mine)}. Deal the cards one at a time, and count again.`, "warn");
+    S.open = true;
+    $("#ct-help").classList.add("is-nudge");
+  },
+
+  canShuffle: () => S.g.phase === "staging",
+
+  dock() {
+    return S.g.phase === "done" ? key("again", UI.again(20), "Do it again") : "";
+  },
+
+  guide() {
+    const g = S.g;
+    const now = { wait: 0, staging: 0, play: 1, done: 5 }[g.phase];
+    const why = `
+      <p>My card is the <b>tenth</b> from the top of the pack. Nine cards lie on it.</p>
+      <p>Dealing cards one at a time into a pile turns them <b>upside down</b>: the first card dealt ends at the bottom, the last on top.</p>
+      <p>Deal ten, and my card is the last one down: it is on <b>top</b>. Deal eleven, and one card covers it: it is <b>second</b>. Twelve: <b>third</b>. Every card past ten puts one more on top of mine.</p>
+      <table class="ct-places">
+        <thead><tr><th>You deal</th><th>Mine is</th><th>Figures add to</th></tr></thead>
+        <tbody>
+          <tr><td>10</td><td>1st</td><td>1 + 0 = <b>1</b></td></tr>
+          <tr><td>11</td><td>2nd</td><td>1 + 1 = <b>2</b></td></tr>
+          <tr><td>14</td><td>5th</td><td>1 + 4 = <b>5</b></td></tr>
+          <tr><td>19</td><td>10th</td><td>1 + 9 = <b>10</b></td></tr>
+        </tbody>
+      </table>
+      <p>The figures of your number climb exactly as my card sinks. Whatever you choose, the two meet. Take the figures of a number from 10 to 19 away from the number itself and you always get <b>9</b>.</p>
+      <p>With a real pack: peek at the tenth card from the top, and you can do this to anybody.</p>`;
+
+    return `<p class="ct-lead">Think of a number and keep it to yourself. The card you count your way to is one I copied before you had thought of anything.</p>
+      ${steps([
+        [UI.shuffle(18), "Watch: the pack is shuffled, and I lay down a copy of one card"],
+        [UI.bulb(18), "Think of any number from 10 to 19. Do not say it"],
+        [UI.cards(18), "Deal that many cards off the pack into a pile, one at a time"],
+        [UI.plus(18), "Add the two figures of your number, and deal that many off your new pile"],
+        [UI.layers(18), "Drag the last card you dealt onto my card. If they match, you win"],
+      ], now)}
+      <p class="ct-hint">Fourteen? Deal 14 cards. Then 1 + 4 = 5, so deal 5 off that pile. To deal several at once, double-tap a pile and type how many.</p>
+      ${secret("The secret: your number cancels itself", why)}
+      ${HANDS}`;
+  },
+};
+
+const GUIDES = { base3: BASE3, eleven: ELEVEN, any: ANY, free: FREE };
 
 /* ── the two screens ──────────────────────────────────────────────────────*/
 
@@ -658,6 +782,11 @@ function leave() {
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   $("#ct-play").hidden = true;
   document.body.classList.remove("ct-playing");
+  /* The cards are cleared off the hidden table. Every card is printed with
+     the same named inks (art.js), and a browser takes a named ink from the
+     first place it finds it: left on a table that is not being shown, the
+     cards there would leave the ones on PrepBot's TV without their colours. */
+  table.setup();
   drawSetup();
 }
 

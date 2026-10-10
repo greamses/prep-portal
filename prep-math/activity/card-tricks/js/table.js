@@ -43,6 +43,11 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
   let active = null;
   let drag = null;
   let lastTap = { stack: null, at: 0 };
+  /* Every time the table is cleared a new ERA begins. A shuffle or a deal
+     that was half way through when that happened belongs to the old one: its
+     cards are gone, and it stops at its next breath instead of reaching for
+     them. */
+  let era = 0;
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const api = {
@@ -68,6 +73,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
    *          of w × the table's width and h × its height
    */
   function setup({ spots: spec = { wide: [], narrow: [] }, card = size } = {}) {
+    era += 1;
     root.innerHTML = "";
     cards.clear();
     stacks = [];
@@ -282,12 +288,14 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
 
   /** Carry one pile over another and set it down on top. */
   async function stackOnto(moving, onto) {
+    const mine = era;
     moving.mat = null;
     moving.x = onto.x;
     moving.y = onto.y - (onto.cards.length * rise()) / geo.H;
     moving.z = ++topZ;
     layout();
     await wait(still ? 0 : 330);
+    if (era !== mine) return null;
     moving.cards.forEach((id) => { const c = cards.get(id); c.stack = onto; c.j = lean(); onto.cards.push(id); });
     if (moving.tag && !onto.tag) onto.tag = moving.tag;
     moving.cards = [];
@@ -296,6 +304,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
     dropEmpty();
     layout();
     await wait(still ? 0 : 110);
+    if (era !== mine) return null;
   }
 
   /** Take one card to one of the program's places, on top of whatever lies there. */
@@ -344,6 +353,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
    * dealer does it. `turn` turns each card over as it lands.
    */
   async function deal(stack, spotIds, { turn = true, gap = 80 } = {}) {
+    const mine = era;
     if (api.busy) return;
     api.busy = true;
     const n = stack.cards.length;
@@ -352,8 +362,10 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
       const card = cards.get(id);
       send(id, spotIds[i % spotIds.length], { up: turn ? !card.up : card.up });
       await wait(still ? 0 : gap);
+      if (era !== mine) return null;
     }
     await wait(still ? 0 : 260);
+    if (era !== mine) return null;
     api.busy = false;
     onChange({ type: "deal" });
   }
@@ -371,6 +383,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
    * goes on counting onto the same pile, unless it has been carried away.
    */
   async function dealOff(stack, n) {
+    const mine = era;
     if (api.busy || api.frozen || stack.locked) return null;
     n = Math.max(0, Math.min(Math.floor(n) || 0, stack.cards.length));
     if (!n) return null;
@@ -404,6 +417,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
       to.z = ++topZ;
       layout();
       await wait(still ? 0 : Math.max(60, 150 - n * 3));
+      if (era !== mine) return null;
     }
     if (to.cards.length > 1) to.wasPile = true;
     dropEmpty();
@@ -419,18 +433,22 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
    * them face up on another. Returns the card that was turned.
    */
   async function countOff(stack, n, toSpot, showSpot) {
+    const mine = era;
     if (api.busy || stack.cards.length < n) return null;
     api.busy = true;
     for (let i = 1; i < n; i++) {
       /* the tab under the counted pile is the count */
       send(stack.cards[stack.cards.length - 1], toSpot);
       await wait(still ? 0 : 190);
+      if (era !== mine) return null;
     }
     const id = stack.cards[stack.cards.length - 1];
     await wait(still ? 0 : 340);
+    if (era !== mine) return null;
     send(id, showSpot, { up: true });
     setNote(spotStack(showSpot), String(n), "ok");
     await wait(still ? 0 : 440);
+    if (era !== mine) return null;
     api.busy = false;
     onChange({ type: "count", card: id });
     return id;
@@ -444,6 +462,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
      the shuffle that happened, not a flourish laid over a random order. */
 
   async function shuffle(stack = activeStack(), rnd = Math.random) {
+    const mine = era;
     if (api.busy || !stack || stack.cards.length < 2) return false;
     if (!api.canShuffle) { onRefuse({ why: "shuffle" }); return false; }
     api.busy = true;
@@ -463,6 +482,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
       before.forEach((id, i) => { cards.get(id).fx = i < at ? null : { dy: -geo.ch * 0.16 }; });
       layout();
       await wait(170);
+      if (era !== mine) return null;
       /* … and the two are held apart, tipped in toward each other, the lower
          half on the left and the upper come down to the table on the right */
       before.forEach((id, i) => {
@@ -471,6 +491,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
       });
       layout();
       await wait(330);
+      if (era !== mine) return null;
       /* let fall, a card at a time and in the order the new pile will have:
          each lands a little to its own side, so the two halves are seen woven */
       stack.cards = order;
@@ -486,11 +507,13 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
       });
       layout(false);
       await wait(n * beat + 260);
+      if (era !== mine) return null;
       /* pushed home and squared */
       root.classList.add("is-squaring");
       order.forEach((id) => { const card = cards.get(id); card.fx = null; card.j = { r: 0, x: 0, y: 0 }; });
       layout();
       await wait(240);
+      if (era !== mine) return null;
       root.classList.remove("is-squaring");
     }
 
@@ -506,6 +529,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
       stack.cards.forEach((id, i) => { cards.get(id).fx = i >= cutAt ? { dx: aside, dy: cutAt * d } : null; });
       layout();
       await wait(300);
+      if (era !== mine) return null;
     }
     stack.cards = stack.cards.slice(cutAt).concat(stack.cards.slice(0, cutAt));
     if (!still) {
@@ -514,13 +538,16 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {}, on
       stack.cards.forEach((id, i) => { cards.get(id).fx = i < lifted ? { dx: aside } : { dy: lifted * d }; });
       layout(false);
       await wait(30);
+      if (era !== mine) return null;
       stack.cards.forEach((id) => { cards.get(id).fx = { dx: aside }; });
       layout();
       await wait(300);
+      if (era !== mine) return null;
       stack.cards.forEach((id) => { const card = cards.get(id); card.fx = null; card.j = lean(); });
     }
     layout();
     await wait(still ? 0 : 300);
+    if (era !== mine) return null;
     root.classList.remove("is-shuffling");
     api.busy = false;
     onChange({ type: "shuffle", stack });
