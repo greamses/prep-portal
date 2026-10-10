@@ -45,12 +45,14 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const api = {
-    /** Turn a card over as it is dealt off a pile. */
+    /** Flip deal: a card turns over as it is drawn off a pile, whichever way up it was. */
     turn: false,
+    /** While the program is doing something of several steps, hands are kept off. */
+    frozen: false,
     canShuffle: true,
     busy: false,
     still,
-    setup, addStack, layout, shuffle, deal, countOff, send, moveTo, flip, unlock,
+    setup, addStack, layout, shuffle, deal, countOff, send, moveTo, take, stackOnto, flip, unlock,
     lift, settle, setNote, clearNotes, point, tagged, spotStack, activeStack, topFirst,
     get stacks() { return stacks; },
     get cards() { return cards; },
@@ -71,6 +73,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
     active = null;
     drag = null;
     api.busy = false;
+    api.frozen = false;
     spotSpec = spec;
     size = card;
     measure();
@@ -259,6 +262,39 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
     seat(stack);
     stack.z = ++topZ;
     layout();
+  }
+
+  /**
+   * Lift the top `n` cards off a pile, as one packet, and set them down as a
+   * pile of their own — on one of the program's places, or where they are.
+   */
+  function take(stack, n, { spot = null, tag = null } = {}) {
+    const ids = stack.cards.splice(stack.cards.length - n, n);
+    const packet = { id: nextStack++, x: stack.x, y: stack.y, mat: spot, tag, cards: ids, z: ++topZ, locked: false, note: null, wasPile: n > 1 };
+    ids.forEach((id) => { cards.get(id).stack = packet; });
+    stacks.push(packet);
+    seat(packet);
+    dropEmpty();
+    layout();
+    return packet;
+  }
+
+  /** Carry one pile over another and set it down on top. */
+  async function stackOnto(moving, onto) {
+    moving.mat = null;
+    moving.x = onto.x;
+    moving.y = onto.y - (onto.cards.length * rise()) / geo.H;
+    moving.z = ++topZ;
+    layout();
+    await wait(still ? 0 : 330);
+    moving.cards.forEach((id) => { const c = cards.get(id); c.stack = onto; c.j = lean(); onto.cards.push(id); });
+    if (moving.tag && !onto.tag) onto.tag = moving.tag;
+    moving.cards = [];
+    onto.z = ++topZ;
+    onto.wasPile = true;
+    dropEmpty();
+    layout();
+    await wait(still ? 0 : 110);
   }
 
   /** Take one card to one of the program's places, on top of whatever lies there. */
@@ -458,7 +494,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
     let best = null;
     let bestD = Infinity;
     stacks.forEach((s) => {
-      if (s === moving || s.locked) return;
+      if (s === moving || (s.locked && !s.accepts)) return;
       const dx = Math.abs(s.x - moving.x) * geo.W;
       const dy = Math.abs(s.y - moving.y) * geo.H;
       if (dx > geo.cw * 0.6 || dy > geo.ch * 0.6) return;
@@ -482,7 +518,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
   }
 
   function down(e) {
-    if (api.busy || drag) return;
+    if (api.busy || api.frozen || drag) return;
     const gripEl = e.target.closest(".ct-grip");
     const el = gripEl || e.target.closest(".ct-card");
     if (!el || !root.contains(el)) return;
@@ -527,6 +563,11 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
         drag.pulled = drag.kind === "card" && !!from.wasPile;
         from.mat = null;
       }
+      /* FLIP DEAL: the card turns over as it comes out, face up or face down */
+      if (api.turn && drag.pulled) {
+        drag.stack.cards.forEach((id) => { const c = cards.get(id); c.up = !c.up; });
+        drag.flipped = true;
+      }
       drag.stack.z = ++topZ;
       carry(drag.stack, true);
     }
@@ -547,13 +588,28 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
     carry(moving, false);
     showTarget(null);
 
-    /* A card is DEALT when it comes off a pile and is put down anywhere else. */
-    const dealt = api.turn && d.kind === "card" && d.pulled;
-    const onto = stackUnder(moving);
+    let onto = stackUnder(moving);
     let landed = moving;
 
+    /* OFFERED: a single card let go over a pile that takes offers is not
+       stacked on it. It is laid beside it, and whoever is listening is told. */
+    if (onto && onto.accepts) {
+      if (moving.cards.length === 1) {
+        moving.x = onto.x + (geo.cw * 0.42 * (onto.x > 0.7 ? -1 : 1)) / geo.W;
+        moving.y = onto.y + (geo.ch * 0.1) / geo.H;
+        moving.z = ++topZ;
+        moving.wasPile = false;
+        layout();
+        onChange({ type: "offer", stack: moving, onto });
+        return;
+      }
+      onRefuse({ why: "one", stack: onto });
+      onto = null;
+    }
+
     if (onto) {
-      if (dealt && onto !== d.origin) moving.cards.forEach((id) => { const c = cards.get(id); c.up = !c.up; });
+      /* put straight back where it came from: it was never dealt */
+      if (d.flipped && onto === d.origin) moving.cards.forEach((id) => { const c = cards.get(id); c.up = !c.up; });
       moving.cards.forEach((id) => { const c = cards.get(id); c.stack = onto; c.j = lean(); onto.cards.push(id); });
       /* a pile that has a name keeps it when it is put on another */
       if (moving.tag && !onto.tag) onto.tag = moving.tag;
@@ -561,7 +617,6 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
       onto.z = ++topZ;
       landed = onto;
     } else {
-      if (dealt) moving.cards.forEach((id) => { const c = cards.get(id); c.up = !c.up; });
       /* it lies where it was let go, kept on the table */
       const mx = (geo.cw / 2) / geo.W;
       const my = (geo.ch / 2) / geo.H;
@@ -577,7 +632,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
   }
 
   function tap(stack) {
-    if (api.busy) return;
+    if (api.busy || api.frozen) return;
     if (stack.locked) { onRefuse({ why: "locked", stack }); return; }
     flip(stack);
   }

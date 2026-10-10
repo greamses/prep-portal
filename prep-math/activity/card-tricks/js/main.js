@@ -31,7 +31,7 @@ const wait = (ms) => new Promise((done) => setTimeout(done, ms));
 const KEEP = "prep-portal:card-tricks";
 const COPY = "copy";   // the computer's own card: a second seven of hearts, from another pack
 
-const S = { trick: "base3", n: 14, open: false, g: null, begun: false };
+const S = { trick: "base3", n: 14, open: false, g: null, begun: false, run: 0 };
 
 const table = createTable($("#ct-table"), {
   onChange: (what) => { guide().changed(what); sync(); },
@@ -73,18 +73,39 @@ function glow(stack) {
  * back to exactly where it was.
  */
 async function drawAndCopy(cardId) {
+  const run = S.run;
   table.busy = true;
   table.lift(cardId, "copy");
   await pause(950);
+  if (run !== S.run) return null;
   const stack = table.addStack([COPY], { spot: "copy", tone: "blue", locked: true, face: cardId });
+  /* it cannot be moved or turned, but a card can be laid against it */
+  stack.accepts = true;
   const el = table.cards.get(COPY).el;
   el.classList.add("is-born");
   await pause(900);
+  if (run !== S.run) return null;
   el.classList.remove("is-born");
   table.settle(cardId);
   await pause(450);
   table.busy = false;
   return stack;
+}
+
+/**
+ * THE CONFIRMATION. The player lays the card they have arrived at against
+ * the computer's copy; the copy is turned over; they match or they do not.
+ * Returns the card that was offered.
+ */
+function confirm(what) {
+  const card = what.stack.cards[0];
+  if (!table.cards.get(card).up) table.flip(what.stack, { quiet: true });
+  const copy = table.cards.get(COPY).stack;
+  copy.accepts = false;
+  table.flip(copy, { quiet: true });
+  table.point(null);
+  glow(null);
+  return card;
 }
 
 /* ── the pieces a guide is written with ───────────────────────────────────*/
@@ -103,7 +124,7 @@ const secret = (title, body) =>
 const HANDS = `<ul class="ct-hands">
   ${row(UI.hand(18), "Drag the top card to pull it off a pile.")}
   ${row(UI.layers(18), "Let it go over a card and it lands on top.")}
-  ${row(UI.refresh(18), "Tap to turn over. A pile turns over together.")}
+  ${row(UI.refresh(18), "Tap to turn over. A pile turns over together. With flip deal on, a card turns as you draw it.")}
   ${row(UI.move(18), "Drag the number under a pile to carry all of it.")}
   ${row(UI.shuffle(18), "Riffles the pile you touched last.")}
 </ul>`;
@@ -168,12 +189,15 @@ const BASE3 = {
 
   async intro() {
     const g = S.g;
+    const run = S.run;
     say("I take one card…");
     await pause(500);
-    const run = drawAndCopy(g.mine);
+    const drawn = drawAndCopy(g.mine);
     await pause(950);
+    if (run !== S.run) return;
     say("…copy it…");
-    await run;
+    await drawn;
+    if (run !== S.run) return;
     say("…and put it back. Deal three piles of nine.");
     g.phase = "pack";
     g.before = table.topFirst(piles()[0]);
@@ -181,11 +205,14 @@ const BASE3 = {
 
   changed(what) {
     const g = S.g;
-    const mine = piles();
-    if (g.phase === "shown") {
-      if (table.cards.get(COPY).up) { g.phase = "done"; this.verdict(); }
+    if (what && what.type === "offer") {
+      if (g.phase === "wait" || g.phase === "done") return;
+      g.shown = confirm(what);
+      g.phase = "done";
+      this.verdict();
       return;
     }
+    const mine = piles();
     if (g.phase !== "pack" && g.phase !== "dealt") return;
 
     if (mine.length === 1 && mine[0].cards.length === 27) {
@@ -211,7 +238,7 @@ const BASE3 = {
       g.ks.push(Math.floor(g.at / 9));
       g.round += 1;
       g.phase = g.round === 3 ? "count" : "pack";
-      say(g.round === 3 ? `Three deals. Now count to ${g.n}.` : `Deal ${g.round + 1} of 3.`);
+      say(g.round === 3 ? `Three deals. Count down to card ${g.n} and drag it onto my card.` : `Deal ${g.round + 1} of 3.`);
       return;
     }
 
@@ -235,7 +262,8 @@ const BASE3 = {
 
   refused(what) {
     if (what.why === "shuffle") say("No shuffling now. It would undo your deals.", "warn");
-    else if (S.g.phase !== "shown") say("Not yet. Find my card first.", "warn");
+    else if (what.why === "one") say("One card only: the one you think is mine.", "warn");
+    else if (S.g.phase !== "done") say("Mine stays face down. Drag the card you think it is onto it.", "warn");
   },
 
   async act(act) {
@@ -246,22 +274,13 @@ const BASE3 = {
       table.moveTo(mine[0], "pack");
       await table.deal(mine[0], ["a", "b", "c"], { turn: true });
     }
-    if (act === "count") {
-      const pack = piles()[0];
-      g.phase = "counting";
-      sync();
-      table.moveTo(pack, "pack");
-      g.shown = await table.countOff(pack, g.n, "off", "show");
-      g.phase = "shown";
-      table.unlock(table.cards.get(COPY).stack);
-      say(`Card ${g.n}. Now tap my card.`);
-    }
   },
 
   verdict() {
     const g = S.g;
-    if (g.shown === g.mine) say(`${Name(g.mine)}, at card ${g.n}. You put it there.`, "win");
-    else say(`Mine was ${nameOf(g.mine)}, lying at card ${g.at + 1}, not ${g.n}.${g.loose ? " A pile was not dealt in turn." : ""}`, "warn");
+    if (g.shown === g.mine) say(`${Name(g.mine)}. A match: you win. You sent it to card ${g.n}.`, "win");
+    else if (g.round === 3) say(`No match. Mine was ${nameOf(g.mine)}, lying at card ${g.at + 1}.${g.loose ? " A pile was not dealt in turn." : ""}`, "warn");
+    else say(`No match. Mine was ${nameOf(g.mine)}.`, "warn");
     S.open = true;
     $("#ct-help").classList.add("is-nudge");
   },
@@ -271,7 +290,6 @@ const BASE3 = {
   dock() {
     const g = S.g;
     if (g.phase === "pack") return key("deal", UI.cards(20), "Deal three piles of nine for me", { text: "3 × 9" });
-    if (g.phase === "count" || g.phase === "counting") return key("count", UI.play(20), `Count to card ${g.n}`, { text: String(g.n), off: g.phase === "counting" });
     if (g.phase === "done") return key("again", UI.again(20), "Do it again");
     return "";
   },
@@ -279,7 +297,7 @@ const BASE3 = {
   guide() {
     const g = S.g;
     const want = base3(g.n);
-    const now = g.phase === "done" ? 5 : g.phase === "shown" ? 4 : g.phase === "count" || g.phase === "counting" ? 3 : g.round;
+    const now = g.phase === "done" ? 5 : g.phase === "count" ? 3 : g.round;
     const dealing = [UI.cards(18), "Deal three piles of nine, then gather them face down"];
     const did = (r) => (g.ks[r] === undefined ? "" : `<em class="${g.ks[r] === want[r] ? "ct-ok" : "ct-no"}">you put ${g.ks[r]}</em>`);
     const m = g.n - 1;
@@ -298,37 +316,112 @@ const BASE3 = {
       <p>Dealing into three divides a card's place by 3. Gathering adds whole piles of 9 on top. After three deals nothing is left of where the card began, only your three choices.</p>
       <p class="ct-hint">Tap each pile to turn it face down before you stack them, and "on top" means on top. Stack them face up and turn the lot, and it is the other way round.</p>`;
 
-    return `<p class="ct-lead">I keep a card. You chose <b>${g.n}</b>. Three deals later my card lies at card ${g.n}, and you put it there.</p>
-      ${steps([dealing, dealing, dealing, [UI.play(18), `Count to card ${g.n}`], [UI.refresh(18), "Tap my card to turn it over"]], now)}
+    return `<p class="ct-lead">I keep a card. You chose <b>${g.n}</b>. Deal and gather three times so that my card lies at card ${g.n}, then prove it.</p>
+      ${steps([dealing, dealing, dealing, [UI.hand(18), `Count down to card ${g.n} yourself, one card at a time`], [UI.layers(18), "Drag that card onto my card. If they match, you win"]], now)}
       ${secret("The secret: counting in threes", why)}
       ${HANDS}`;
   },
 };
 
-/* ══ ELEVEN ═══════════════════════════════════════════════════════════════ */
+/* ══ ELEVEN ═══════════════════════════════════════════════════════════════
+   The set-up is done in the open, so there is nothing up a sleeve:
+
+     nine cards are set to one side;
+     the computer draws one of the nine, copies it, and lays it back ON TOP
+       of the nine;
+     the other 43 are shuffled, cut into seven packets, and the packets are
+       stacked on the nine in any order at all.
+
+   Forty-three cards over it: the computer's card is the 44th, however the
+   43 were shuffled and stacked. The rest is the player's to do. */
 
 const EL_SPOTS = {
   wide: [
-    { id: "pack", x: 0.12, y: 0.31 }, { id: "copy", x: 0.12, y: 0.73 },
-    { id: "off", x: 0.5, y: 0.73 }, { id: "show", x: 0.72, y: 0.73 },
+    { id: "pack", x: 0.12, y: 0.31 }, { id: "nine", x: 0.34, y: 0.31 }, { id: "copy", x: 0.12, y: 0.73 },
+    ...[0, 1, 2, 3, 4, 5, 6].map((i) => ({ id: `k${i}`, x: 0.3 + i * 0.097, y: 0.73 })),
   ],
   narrow: [
-    { id: "pack", x: 0.2, y: 0.23 }, { id: "copy", x: 0.8, y: 0.23 },
-    { id: "off", x: 0.3, y: 0.79 }, { id: "show", x: 0.7, y: 0.79 },
+    { id: "pack", x: 0.18, y: 0.23 }, { id: "nine", x: 0.5, y: 0.23 }, { id: "copy", x: 0.82, y: 0.23 },
+    ...[0, 1, 2, 3, 4, 5, 6].map((i) => (i < 4 ? { id: `k${i}`, x: 0.14 + i * 0.24, y: 0.52 } : { id: `k${i}`, x: 0.26 + (i - 4) * 0.24, y: 0.76 })),
   ],
 };
+
+/** 43 cards as seven packets, none of them thin. */
+function sevenCuts(total = 43, parts = 7, least = 3) {
+  const sizes = Array(parts).fill(least);
+  for (let left = total - parts * least; left > 0; left--) sizes[Math.floor(Math.random() * parts)] += 1;
+  return sizes;
+}
 
 const ELEVEN = {
   name: "Eleven",
   blurb: "Shuffle all you like. I still know.",
   setup() {
-    S.g = { kind: "eleven", phase: "shuffle", mine: null, states: [], sum: 0, shown: null, last: null };
+    S.g = { kind: "eleven", phase: "wait", mine: null, states: [], sum: 0, shown: null };
     table.setup({ spots: EL_SPOTS, card: CARD_TWO });
     table.addStack(mixed(fullDeck()), { spot: "pack" });
     table.turn = true;
     say("");
   },
-  async intro() { say("Shuffle as much as you like. Then press the tick."); },
+
+  async intro() {
+    const g = S.g;
+    const run = S.run;
+    const gone = () => run !== S.run;
+    g.phase = "staging";
+    table.frozen = true;
+    const pack = table.tagged("pack");
+
+    say("Nine cards to one side.");
+    await pause(500);
+    if (gone()) return;
+    const nine = table.take(pack, 9, { spot: "nine", tag: "nine" });
+    await pause(900);
+    if (gone()) return;
+
+    g.mine = nine.cards[Math.floor(Math.random() * 9)];
+    say("I draw one of the nine…");
+    const drawn = drawAndCopy(g.mine);
+    await pause(950);
+    if (gone()) return;
+    say("…copy it…");
+    await drawn;
+    if (gone()) return;
+    table.send(g.mine, "nine");
+    say("…and lay it on top of the nine.");
+    await pause(1100);
+    if (gone()) return;
+
+    say("Now the other 43 are shuffled.");
+    table.canShuffle = true;
+    await table.shuffle(pack);
+    if (gone()) return;
+
+    say("Cut into seven…");
+    const packets = [];
+    const sizes = sevenCuts();
+    for (let i = 0; i < 7; i++) {
+      packets.push(table.take(table.tagged("pack"), sizes[i], { spot: `k${i}` }));
+      await pause(170);
+      if (gone()) return;
+    }
+    await pause(600);
+    if (gone()) return;
+
+    say("…and stacked on the nine, in any order.");
+    for (const packet of mixed(packets)) {
+      await table.stackOnto(packet, nine);
+      if (gone()) return;
+    }
+    nine.tag = "pack";
+    table.moveTo(nine, "pack");
+    await pause(500);
+    if (gone()) return;
+
+    table.frozen = false;
+    g.phase = "deal";
+    say("My card is in there. Over to you: turn a card and say 10.");
+  },
 
   /** The countdown piles: everything the player has laid out, oldest first. */
   laid: () => piles().filter((s) => !s.tag).sort((a, b) => a.id - b.id),
@@ -346,16 +439,21 @@ const ELEVEN = {
 
   changed(what) {
     const g = S.g;
-    if (g.phase === "shown") {
-      if (table.cards.get(COPY).up) { g.phase = "done"; this.verdict(); }
+    if (what && what.type === "offer") {
+      if (g.phase !== "deal" && g.phase !== "ready") return;
+      g.shown = confirm(what);
+      g.phase = "done";
+      this.verdict();
       return;
     }
-    if (g.phase !== "deal" && g.phase !== "sum") return;
-    /* the last card put on a pile — it is the answer when no pile stops */
-    if (what && what.type === "drop" && !what.stack.tag && allUp(what.stack)) {
-      g.last = what.stack.cards[what.stack.cards.length - 1];
-    }
+    if (g.phase !== "deal" && g.phase !== "ready") return;
     g.states = this.read();
+    const finished = (p) => p.state === "match" || p.state === "dead";
+    const done = g.states.length >= 4 && g.states.slice(0, 4).every(finished);
+
+    /* Once the four piles stand, whatever else is laid out is the player
+       counting cards off the pack: the piles keep their numbers, the counted
+       cards get none. */
     const NOTE = {
       open: (p) => [`say ${p.count}`, ""],
       match: (p) => [`stop: ${p.match}`, "ok"],
@@ -365,13 +463,14 @@ const ELEVEN = {
       long: (p) => [`${p.extra} too many`, "warn"],
       down: () => ["face up", "warn"],
     };
-    g.states.forEach((p) => table.setNote(p.s, ...NOTE[p.state](p)));
-    const finished = (p) => p.state === "match" || p.state === "dead";
-    const done = g.states.length === 4 && g.states.every(finished);
-    g.sum = g.states.reduce((t, p) => t + p.match, 0);
-    g.phase = done ? "sum" : "deal";
-    if (done) { say("Four piles. Add the numbers they stopped on."); return; }
-    if (g.states.length > 4) { say("Four piles only. Put the extra cards back.", "warn"); return; }
+    g.states.forEach((p, i) => { if (done && i >= 4) table.setNote(p.s); else table.setNote(p.s, ...NOTE[p.state](p)); });
+    g.sum = g.states.slice(0, 4).reduce((t, p) => t + p.match, 0);
+    g.phase = done ? "ready" : "deal";
+
+    if (done) {
+      say("Four piles. Add their numbers, count that many off the pack, and drag the last one onto my card.");
+      return;
+    }
     const p = g.states.find((x) => !finished(x));
     if (!p) { say(`Pile ${g.states.length + 1}: turn a card and say 10.`); return; }
     say({
@@ -384,104 +483,49 @@ const ELEVEN = {
   },
 
   refused(what) {
-    if (what.why === "shuffle") say("No shuffling now. My card is already down.", "warn");
-    else if (S.g.phase !== "shown") say("Not yet. Count your way to a card first.", "warn");
+    if (what.why === "shuffle") say("No shuffling now. My card is in its place.", "warn");
+    else if (what.why === "one") say("One card only: the one you think is mine.", "warn");
+    else if (S.g.phase !== "done") say("Mine stays face down. Drag the card you think it is onto it.", "warn");
   },
 
-  async act(act, root) {
-    const g = S.g;
-    if (act === "shuffled") {
-      const mine = piles();
-      if (mine.length !== 1 || mine[0].cards.length !== 52 || !allDown(mine[0])) {
-        say("All 52 in one face-down pack first.", "warn");
-        return;
-      }
-      table.moveTo(mine[0], "pack");
-      mine[0].tag = "pack";
-      /* the only card looked at: the ninth from the bottom, the 44th from the top */
-      g.mine = table.topFirst(mine[0])[43];
-      g.phase = "drawing";
-      sync();
-      say("I take one card…");
-      const run = drawAndCopy(g.mine);
-      await pause(950);
-      say("…copy it…");
-      await run;
-      g.phase = "deal";
-      say("…and put it back. Turn a card and say 10.");
-    }
-    if (act === "sum") {
-      const typed = $("#ct-sum", root).value.trim();
-      if (typed === "" || Number(typed) !== g.sum) {
-        say("Add again. Pictures are 10, an ace is 1, an out pile is 0.", "warn");
-        return;
-      }
-      g.phase = "count";
-      say(g.sum ? `${g.sum}. Count ${g.sum} cards off the pack.` : "Nothing to count: it is the last card you put down.");
-    }
-    if (act === "count") {
-      g.phase = "counting";
-      sync();
-      if (g.sum === 0) {
-        /* no pile stopped: 44 cards are down, and the 44th is the last one dealt */
-        g.shown = g.last || g.mine;
-        table.send(g.shown, "show", { up: true });
-      } else {
-        const pack = table.tagged("pack") || piles().sort((a, b) => b.cards.length - a.cards.length)[0];
-        g.shown = await table.countOff(pack, g.sum, "off", "show");
-      }
-      g.phase = "shown";
-      table.unlock(table.cards.get(COPY).stack);
-      say("That is your card. Now tap mine.");
-    }
-  },
+  act() {},
 
   verdict() {
     const g = S.g;
-    if (g.shown === g.mine) say(`${Name(g.mine)}. I laid it down before you turned a card.`, "win");
-    else say(`Mine was ${nameOf(g.mine)}. A pile was miscounted somewhere.`, "warn");
+    if (g.shown === g.mine) say(`${Name(g.mine)}. A match: you win.`, "win");
+    else say(`No match. Mine was ${nameOf(g.mine)}. Check that every pile and its number make 11.`, "warn");
     S.open = true;
     $("#ct-help").classList.add("is-nudge");
   },
 
-  canShuffle: () => S.g.phase === "shuffle",
+  canShuffle: () => S.g.phase === "staging",
 
   dock() {
-    const g = S.g;
-    if (g.phase === "shuffle") return key("shuffle", UI.shuffle(20), "Shuffle", { tone: "c1" }) + key("shuffled", UI.check(20), "I have shuffled");
-    if (g.phase === "sum") {
-      return `<label class="ct-add" title="What the piles add up to">${UI.plus(18)}
-          <input id="ct-sum" class="ct-add__in" type="text" inputmode="numeric" autocomplete="off" maxlength="2" aria-label="What the piles add up to" /></label>
-        ${key("sum", UI.check(20), "Check the sum")}`;
-    }
-    if (g.phase === "count" || g.phase === "counting") {
-      return key("count", UI.play(20), g.sum ? `Count ${g.sum} cards` : "Show the card", { text: g.sum ? String(g.sum) : "", off: g.phase === "counting" });
-    }
-    if (g.phase === "done") return key("again", UI.again(20), "Do it again");
-    return "";
+    return S.g.phase === "done" ? key("again", UI.again(20), "Do it again") : "";
   },
 
   guide() {
     const g = S.g;
-    const now = { shuffle: 0, drawing: 0, deal: 1, sum: 2, count: 3, counting: 3, shown: 4, done: 5 }[g.phase];
-    const rows = (g.states || []).filter((p) => p.state === "match" || p.state === "dead").map((p, i) =>
+    const now = { wait: 0, staging: 0, deal: 1, ready: 2, done: 5 }[g.phase];
+    const rows = (g.states || []).slice(0, 4).filter((p) => p.state === "match" || p.state === "dead").map((p, i) =>
       `<tr><td>${i + 1}</td><td>${p.cards}</td><td>${p.match}</td><td><b>${p.cards + p.match}</b></td></tr>`).join("");
     const why = `
+      <p>My card lies on top of nine cards, with the other 43 over it. However those 43 are shuffled, it is the <b>44th</b> card from the top.</p>
       <p>A pile that stops on 7 has four cards: ten, nine, eight, seven. Four cards and the number 7 make <b>11</b>.</p>
       <p>Stop on 3 and it is eight cards thick: 8 + 3 = <b>11</b>. A pile that is out has eleven cards and counts 0: <b>11</b> again.</p>
       ${rows ? `<table class="ct-places"><thead><tr><th>Pile</th><th>Cards</th><th>Number</th><th>Together</th></tr></thead><tbody>${rows}</tbody></table>` : ""}
-      <p>Four piles: cards turned plus numbers added is 4 × 11 = <b>44</b>, every time. Counting the numbers off takes you to the 44th card.</p>
-      <p>So I looked at one card only: the <b>ninth from the bottom</b>. Glimpse that card in a real pack and you can do this to anybody.</p>`;
+      <p>Four piles: cards turned plus numbers added is 4 × 11 = <b>44</b>, every time. So counting the numbers off the pack always ends on the 44th card.</p>
+      <p>With a real pack: glimpse the <b>ninth card from the bottom</b>, let anyone shuffle the rest, and you can do this to them.</p>`;
 
-    return `<p class="ct-lead">You shuffle. I lay one card down. The card you stop at will be that card.</p>
+    return `<p class="ct-lead">I hide one card in the pack, in front of you. Then the magic is yours to do: find it.</p>
       ${steps([
-        [UI.shuffle(18), "Shuffle, then press the tick"],
+        [UI.shuffle(18), "Watch: nine aside, my card drawn and copied, the rest shuffled and stacked on top"],
         [UI.cards(18), "Turn cards onto a pile, counting down from 10. Stop when the card says your number. Make four piles"],
-        [UI.plus(18), "Add the four numbers"],
-        [UI.play(18), "Count that many off the pack"],
-        [UI.refresh(18), "Tap my card to turn it over"],
+        [UI.plus(18), "Add the four numbers in your head"],
+        [UI.hand(18), "Count that many cards off the pack, one at a time"],
+        [UI.layers(18), "Drag the last one onto my card. If they match, you win"],
       ], now)}
-      <p class="ct-hint">Ace is 1. Jack, Queen and King are 10. Reach 1 with no match? One more card on top, then tap the pile to turn it face down: it is out.</p>
+      <p class="ct-hint">Ace is 1. Jack, Queen and King are 10. Reach 1 with no match? One more card on top, then tap the pile to turn it face down: it is out. If no pile stops at all, your card is the last one you put down.</p>
       ${secret("The secret: every pile makes 11", why)}
       ${HANDS}`;
   },
@@ -539,6 +583,7 @@ async function showGuide(on) {
 }
 
 function begin() {
+  S.run += 1;
   S.open = false;
   S.begun = false;
   guide().setup();
@@ -554,6 +599,7 @@ function play() {
 }
 
 function leave() {
+  S.run += 1;
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   $("#ct-play").hidden = true;
   document.body.classList.remove("ct-playing");
@@ -582,8 +628,8 @@ function start() {
 
   /* the table */
   $("#ct-exit").addEventListener("click", leave);
-  $("#ct-shuffle").addEventListener("click", () => table.shuffle());
-  $("#ct-turn").addEventListener("click", () => { table.turn = !table.turn; sync(); say(table.turn ? "Cards turn over as you deal them." : "Cards stay as they are when you deal them."); });
+  $("#ct-shuffle").addEventListener("click", () => { if (!table.frozen) table.shuffle(); });
+  $("#ct-turn").addEventListener("click", () => { table.turn = !table.turn; sync(); say(table.turn ? "Flip deal is on: a card turns over as you draw it." : "Flip deal is off: a card comes out as it lies."); });
   $("#ct-again").addEventListener("click", () => { if (!table.busy) begin(); });
   $("#ct-help").addEventListener("click", () => showGuide($("#ct-modal").classList.contains("is-min")));
   $("#ct-min").addEventListener("click", () => showGuide(false));
@@ -606,12 +652,8 @@ function start() {
     if (!el || el.disabled || table.busy) return;
     const act = el.dataset.act;
     if (act === "again") { begin(); return; }
-    if (act === "shuffle") { table.shuffle(); return; }
     await guide().act(act, dock);
     sync();
-  });
-  dock.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && e.target.id === "ct-sum") $('[data-act="sum"]', dock).click();
   });
   /* the secret stays open, or shut, through every redraw */
   $("#ct-guide").addEventListener("toggle", (e) => { if (e.target.matches(".ct-secret")) S.open = e.target.open; }, true);
