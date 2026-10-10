@@ -56,7 +56,7 @@ const LAYOUT = {
   10: [...SIDES([0, T, 2 * T, 1]), [1, T / 2], [1, 1 - T / 2]],
 };
 
-const COL_X = [80, 125, 170];
+const COL_X = [82, 125, 168];
 const TOP_Y = 72;
 const BOT_Y = 278;
 
@@ -66,7 +66,7 @@ function pips(id) {
   const ink = inkOf(id);
   if (rank === "A") return pip(suit, W / 2, H / 2, suit === "S" ? 128 : 92, ink);
   return LAYOUT[rank]
-    .map(([c, t]) => pip(suit, COL_X[c], TOP_Y + (BOT_Y - TOP_Y) * t, 50, ink, t > 0.5))
+    .map(([c, t]) => pip(suit, COL_X[c], TOP_Y + (BOT_Y - TOP_Y) * t, 55, ink, t > 0.5))
     .join("");
 }
 
@@ -76,8 +76,8 @@ function corner(id) {
   const ink = inkOf(id);
   const one =
     `<text x="27" y="47" text-anchor="middle" font-family="'Times New Roman', Times, 'Liberation Serif', serif" ` +
-    `font-size="${rank === "10" ? 34 : 40}" font-weight="700" ${rank === "10" ? 'letter-spacing="-3" ' : ""}fill="${ink}">${rank}</text>` +
-    pip(suitOf(id), 27, 70, 25, ink);
+    `font-size="${rank === "10" ? 37 : 44}" font-weight="700" ${rank === "10" ? 'letter-spacing="-3" ' : ""}fill="${ink}">${rank}</text>` +
+    pip(suitOf(id), 27, 73, 27, ink);
   return one + `<g transform="rotate(180 ${W / 2} ${H / 2})">${one}</g>`;
 }
 
@@ -164,10 +164,16 @@ function court(id) {
   );
 }
 
+/* The stock: not flat white. Light falls from the top left, so the card is a
+   shade warmer toward its far corner, with a hairline of shadow along the
+   bottom edge where it stands off the table. */
 const sheet = (inner, label) =>
   `<svg class="ct-art" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" ` +
   `${label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"'}>` +
-  `<rect x="1.5" y="1.5" width="${W - 3}" height="${H - 3}" rx="16" fill="${STOCK}" stroke="#b9b4a8" stroke-width="2"/>` +
+  `<defs><linearGradient id="ct-stock" x1="0" y1="0" x2="1" y2="1">` +
+  `<stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="${STOCK}"/><stop offset="1" stop-color="#efe9dc"/></linearGradient></defs>` +
+  `<rect x="1" y="2.5" width="${W - 2}" height="${H - 3}" rx="13" fill="#8f897c"/>` +
+  `<rect x="1" y="1" width="${W - 2}" height="${H - 3.2}" rx="13" fill="url(#ct-stock)" stroke="#c9c3b6" stroke-width="1.2"/>` +
   `${inner}</svg>`;
 
 /** The face of a card. */
@@ -189,8 +195,9 @@ export function backSvg(tone = "red") {
       `<rect width="18" height="18" fill="${ink}"/>` +
       `<path d="M0 0H18M0 0V18" stroke="${STOCK}" stroke-width="2.4" opacity=".85"/>` +
       `<circle cx="9" cy="9" r="2.2" fill="${STOCK}" opacity=".85"/></pattern></defs>` +
-      `<rect x="15" y="15" width="${W - 30}" height="${H - 30}" rx="8" fill="url(#${pat})"/>` +
-      `<rect x="15" y="15" width="${W - 30}" height="${H - 30}" rx="8" fill="none" stroke="${ink}" stroke-width="5"/>` +
+      `<rect x="14" y="14" width="${W - 28}" height="${H - 28}" rx="7" fill="url(#${pat})"/>` +
+      `<rect x="14" y="14" width="${W - 28}" height="${H - 28}" rx="7" fill="none" stroke="${ink}" stroke-width="5"/>` +
+      `<rect x="23" y="23" width="${W - 46}" height="${H - 46}" rx="4" fill="none" stroke="${STOCK}" stroke-width="2.5"/>` +
       `<ellipse cx="${W / 2}" cy="${H / 2}" rx="46" ry="62" fill="${STOCK}" stroke="${ink}" stroke-width="5"/>` +
       `<path d="${SUIT_PATH.S}" fill="${ink}" transform="translate(${W / 2} ${H / 2 - 2}) scale(64)"/>`,
     "",

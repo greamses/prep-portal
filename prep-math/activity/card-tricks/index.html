@@ -45,6 +45,8 @@
     <!-- the site-wide sheet that dresses the buttons as sticky notes; it owns
          the paper, and this page only adds layout on top -->
     <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/utils/components/setup.css" />
     <link rel="stylesheet" href="./style.css" />
 
     <!-- the guards resolve firebase by bare specifier -->
@@ -76,40 +78,74 @@
     <script type="module" src="/utils/auth/login-guard.js"></script>
     <nav class="site-nav" data-nav="main"></nav>
 
-    <main class="ct-page">
+    <!-- ═══ SETUP ═══ the trick is chosen here; the table is another screen -->
+    <main class="pp-setup ct-setup" id="ct-setup">
       <header class="ct-head">
-        <span class="ct-eyebrow">
-          <span id="ct-eyebrow-icon"></span>
-          Mathematics · Number
-        </span>
-        <h1 class="ct-title">Card Tricks<em>.</em></h1>
+        <div class="ct-eyebrow">Mathematics · Number</div>
+        <h1 class="ct-title">Card Tricks</h1>
+        <p class="ct-sub">A real pack on a bare table, and two tricks that turn out to be sums.</p>
       </header>
 
-      <!-- which trick -->
-      <div class="ct-tabs" id="ct-tabs" role="group" aria-label="Which trick"></div>
+      <div class="pp-setup__receipt pp-receipt">
+        <div class="pp-setup__paper pp-receipt__paper">
+          <p class="pp-setup__title">Trick Settings</p>
 
-      <section class="ct-bar">
-        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c1" id="ct-shuffle"></button>
-        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c3 ct-toggle" id="ct-turn" aria-pressed="false"></button>
-        <button type="button" class="pp-sticky pp-note-btn pp-note-btn--plain" id="ct-again"></button>
-        <p class="ct-say" id="ct-say" role="status" aria-live="polite"></p>
-      </section>
+          <div class="pp-setup-field">
+            <span>The Trick</span>
+            <div class="strip-group" data-label="Choose one">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="ct-trick" value="base3" checked /><span>27 cards</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="ct-trick" value="eleven" /><span>Eleven</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="radio" name="ct-trick" value="free" /><span>Just the table</span></label>
+            </div>
+          </div>
 
-      <!-- the table on the left, whoever you are doing the trick with on the right -->
-      <section class="ct-work" id="ct-work">
-        <!-- what to do now: beside the table, and above it on a phone -->
-        <div class="ct-now" id="ct-now"></div>
+          <div class="pp-setup-field" id="ct-number-field">
+            <span>Your Number</span>
+            <div class="ct-number">
+              <button type="button" class="pp-sticky pp-note-btn pp-sticky--c3 ct-number__key" id="ct-less" aria-label="One less"></button>
+              <b class="ct-number__n" id="ct-n" aria-live="polite">14</b>
+              <button type="button" class="pp-sticky pp-note-btn pp-sticky--c3 ct-number__key" id="ct-more" aria-label="One more"></button>
+            </div>
+            <p class="ct-setup__note">Any place from 1 to 27. My card will end up there.</p>
+          </div>
 
-        <div class="ct-felt">
-          <div class="ct-table" id="ct-table" aria-label="The card table"></div>
+          <button class="ct-start pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0" id="ct-start" type="button">
+            <span>To the table</span>
+          </button>
         </div>
-
-        <!-- the receipt, used whole: the wrapper carries the shadow, the paper its torn edges -->
-        <aside class="pp-receipt ct-guide" aria-label="The trick, step by step">
-          <div class="pp-receipt__paper ct-guide__paper" id="ct-guide"></div>
-        </aside>
-      </section>
+      </div>
     </main>
+
+    <!-- ═══ THE TABLE ═══ the whole screen: cards, a row of icons, one line of talk -->
+    <div class="ct-play" id="ct-play" hidden>
+      <div class="ct-table" id="ct-table" aria-label="The card table"></div>
+
+      <div class="ct-hud" role="toolbar" aria-label="Table">
+        <button type="button" class="pp-sticky pp-note-btn pp-note-btn--plain ct-tool" id="ct-exit" title="Back to the settings" aria-label="Back to the settings"></button>
+        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c1 ct-tool" id="ct-shuffle" title="Shuffle" aria-label="Shuffle"></button>
+        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c3 ct-tool" id="ct-turn" title="Turn cards over as I deal them" aria-label="Turn cards over as I deal them" aria-pressed="false"></button>
+        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c4 ct-tool" id="ct-again" title="Start again" aria-label="Start again"></button>
+        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c0 ct-tool" id="ct-help" title="Instructions" aria-label="Instructions"></button>
+        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c5 ct-tool" id="ct-full" title="Full screen" aria-label="Full screen"></button>
+      </div>
+
+      <p class="ct-say" id="ct-say" role="status" aria-live="polite"></p>
+
+      <!-- whatever there is to press right now -->
+      <div class="ct-dock" id="ct-dock"></div>
+
+      <!-- The instructions: a slip that folds away to its icon. The fold key is
+           a SIBLING of the paper, because the paper's mask clips what is in it. -->
+      <div class="ct-modal is-min" id="ct-modal" role="dialog" aria-labelledby="ct-guide-title" aria-hidden="true">
+        <div class="pp-receipt ct-modal__card">
+          <button type="button" class="pp-sticky pp-note-btn pp-sticky--c4 ct-modal__min" id="ct-min" title="Put the instructions away" aria-label="Put the instructions away"></button>
+          <div class="pp-receipt__paper ct-modal__paper">
+            <h2 class="ct-modal__title" id="ct-guide-title"></h2>
+            <div class="ct-modal__body" id="ct-guide"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script type="module" src="/utils/components/nav-builder.js"></script>
     <script type="module" src="./js/main.js"></script>
