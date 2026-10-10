@@ -87,6 +87,20 @@ export const GEMINI_MODELS_QUALITY_FIRST = [
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',
 ];
 
+// ── What a student may pick in PrepBot, on the site's own keys ─────────────
+// (Key Mode, on their own key, offers everything above.) No paid-only Pro
+// models and only the small Claude: these calls are on the site's bill.
+// `id` is what the browser sends; server/ai-models.js holds the same list and
+// refuses anything not in it. Keep the two in step.
+export const SITE_CHAT_MODELS = [
+  { id: 'gemini:gemini-3.8-flash',      label: 'Gemini 3.8 Flash',      note: 'newest, strongest' },
+  { id: 'gemini:gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash-Lite', note: 'fast' },
+  { id: 'groq:llama-3.3-70b-versatile', label: 'Llama 3.3 70B',         note: 'strong' },
+  { id: 'groq:openai/gpt-oss-120b',     label: 'GPT-OSS 120B',          note: 'strong' },
+  { id: 'groq:llama-3.1-8b-instant',    label: 'Llama 3.1 8B',          note: 'fastest' },
+  { id: 'claude:haiku',                 label: 'Claude Haiku 4.5',      note: 'careful' },
+];
+
 // ── Groq ───────────────────────────────────────────────────────────────────
 
 export const GROQ_MODELS = [

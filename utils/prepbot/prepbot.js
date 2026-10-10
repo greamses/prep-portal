@@ -4,7 +4,7 @@ import { auth, db } from "/firebase-init.js";
 import { doc, getDoc } from "firebase/firestore";
 import { heroPaint } from "/utils/components/nav-icons.js";
 import { UI } from "/utils/components/ui-icons.js";
-import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS } from "/utils/ai-models.js";
+import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS, SITE_CHAT_MODELS } from "/utils/ai-models.js";
 import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSitePageMatch } from "/utils/components/site-map.js";
 
 (function () {
@@ -477,6 +477,7 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
           <div class="chat-header-info"><h4>${BOT_NAME}</h4><div class="chat-status"><span class="chat-status-dot"></span><span>AI & Voice Synced</span></div></div>
         </div>
         <div class="chat-header-actions">
+          <button class="chat-icon-btn chat-icon-btn--multi" id="chat-model-btn" title="Choose which AI model answers">${PB_ICONS.sparkle}</button>
           <button class="chat-icon-btn chat-icon-btn--multi" id="chat-byuk-btn" title="Use your own API key (Key Mode)">${PB_ICONS.key}</button>
           <button class="chat-icon-btn chat-icon-btn--multi" id="chat-clear-btn" title="Clear Chat">${PB_ICONS.trash}</button>
           <button class="chat-icon-btn" id="chat-close">${PB_ICONS.close}</button>
@@ -486,6 +487,19 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
       <div class="chat-usage" id="chat-usage" hidden>
         <div class="chat-usage-track"><i class="chat-usage-fill" id="chat-usage-fill"></i></div>
         <span class="chat-usage-text" id="chat-usage-text"></span>
+      </div>
+
+      <div class="byuk-panel" id="model-panel" hidden>
+        <div class="byuk-head">
+          <span class="byuk-title">${PB_ICONS.sparkle} Model</span>
+          <button class="byuk-close" id="model-close" title="Close">${PB_ICONS.close}</button>
+        </div>
+        <div class="byuk-body">
+          <label class="byuk-field-label" for="chat-model-select">Which model answers</label>
+          <select class="byuk-select" id="chat-model-select"></select>
+          <p class="byuk-note">Automatic uses whichever model is free and quick. Pick one yourself for a stronger or a faster answer. Every model has a limit on how much it will answer in a minute and in a day: when yours is at its limit I will tell you how long it needs, answer with another model meanwhile, and you can switch here.</p>
+          <p class="byuk-note" id="chat-model-limit" hidden></p>
+        </div>
       </div>
 
       <div class="byuk-panel" id="byuk-panel" hidden>
@@ -1341,7 +1355,7 @@ If (and only if) you're pointing the student to one specific page from the site 
           stream: true,
           ...(byukActive()
             ? { byuk: true, provider: byukState.provider, model: byukState.model }
-            : {}),
+            : pickedModel ? { pick: pickedModel } : {}),
         }),
       });
 
@@ -1359,7 +1373,7 @@ If (and only if) you're pointing the student to one specific page from the site 
       const typer = makeTypewriter(botUI.bubble);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let buf = "", fullText = "", unavailable = false, streamErr = "";
+      let buf = "", fullText = "", unavailable = false, streamErr = "", limited = null;
 
       let streaming = true;
       while (streaming) {
@@ -1376,8 +1390,11 @@ If (and only if) you're pointing the student to one specific page from the site 
           if (evt.type === "delta") {
             fullText += evt.text;
             typer.push(evt.text);
+          } else if (evt.type === "limited") {
+            limited = evt;                                    // a model was at its limit; another answered
           } else if (evt.type === "unavailable") {
             fullText = evt.text || "PrepBot is temporarily unavailable.";
+            if (evt.limits && evt.limits.length) fullText = allLimitedText(evt);
             unavailable = true;
             streaming = false;
           } else if (evt.type === "error") {
@@ -1422,6 +1439,7 @@ If (and only if) you're pointing the student to one specific page from the site 
         }
       }
 
+      if (limited) noteLimit(limited);
       lastBotReply = cleanReply;
       history.push(
         { role: "user", content: text },
@@ -1551,6 +1569,64 @@ If (and only if) you're pointing the student to one specific page from the site 
       const res = await fetch(API_USAGE_URL, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) applyUsage(await res.json());
     } catch (_) {}
+  }
+
+  /* ── 18b. WHICH MODEL ANSWERS, AND WHAT HAPPENS AT ITS LIMIT ──
+     The student may pick one of the site's models (SITE_CHAT_MODELS) or leave it
+     on Automatic. Every model will only answer so much in a minute and in a day.
+     When one says "too many requests" the server says which, and for how long,
+     and which model answered instead (or that none could): the student is told,
+     in the chat, how long to wait and that another model can be chosen. */
+  let pickedModel = "";
+  try { pickedModel = localStorage.getItem("prepbot.model") || ""; } catch (_) { /* private mode */ }
+  if (pickedModel && !SITE_CHAT_MODELS.some((m) => m.id === pickedModel)) pickedModel = "";
+  const limitedUntil = {};            // model label → the time (ms) its limit is over
+  let lastLimitNote = 0;
+  function waitWords(secs) {
+    if (!secs || secs < 1) return "";
+    if (secs < 90) return `about ${Math.max(5, Math.round(secs / 5) * 5)} seconds`;
+    if (secs < 5400) return `about ${Math.round(secs / 60)} minutes`;
+    return `about ${Math.round(secs / 3600)} hours`;
+  }
+  function rememberLimits(limits) {
+    for (const l of limits || []) limitedUntil[l.label] = Date.now() + (l.retryAfter || 60) * 1000;
+    renderModelPanel();
+  }
+  /** A model was at its limit and another answered: say so (not on every single reply). */
+  function noteLimit(evt) {
+    rememberLimits(evt.limits);
+    const mine = evt.limits.find((l) => l.picked) || null;
+    if (!mine && Date.now() - lastLimitNote < 120000) return;
+    lastLimitNote = Date.now();
+    const l = mine || evt.limits[0];
+    const wait = waitWords(l.retryAfter);
+    appendMessage("bot", `${l.label} has reached its limit for now${wait ? ` and will be free again in ${wait}` : ""}. ${evt.answeredBy} answered that one instead. You can wait, or choose another model with the star key at the top of this window.`);
+  }
+  /** Nothing could answer because every model was at its limit: how long, and what to do. */
+  function allLimitedText(evt) {
+    rememberLimits(evt.limits);
+    const wait = waitWords(evt.retryAfter);
+    const each = evt.limits.map((l) => `${l.label}${l.retryAfter ? ` (${waitWords(l.retryAfter)})` : ""}`).join(", ");
+    return `Every model I can use is at its limit for the moment: ${each}. ${wait ? `Try again in ${wait}` : "Try again in a minute"}, or turn on Key Mode (the key at the top) to use your own key, which has its own limit.`;
+  }
+  function renderModelPanel() {
+    const sel = document.getElementById("chat-model-select");
+    if (!sel) return;
+    const busy = (label) => (limitedUntil[label] && limitedUntil[label] > Date.now() ? Math.ceil((limitedUntil[label] - Date.now()) / 1000) : 0);
+    sel.innerHTML = `<option value="">Automatic (recommended)</option>` + SITE_CHAT_MODELS.map((m) => {
+      const b = busy(m.label);
+      return `<option value="${m.id}">${m.label} · ${b ? `at its limit, ${waitWords(b)}` : m.note}</option>`;
+    }).join("");
+    sel.value = pickedModel;
+    const note = document.getElementById("chat-model-limit");
+    const now = SITE_CHAT_MODELS.filter((m) => busy(m.label));
+    if (note) { note.hidden = !now.length; note.textContent = now.length ? `At its limit now: ${now.map((m) => `${m.label} (${waitWords(busy(m.label))})`).join(", ")}.` : ""; }
+  }
+  function openModelPanel() {
+    closeByukPanel();
+    const panel = document.getElementById("model-panel");
+    if (panel) panel.hidden = false;
+    renderModelPanel();
   }
 
   /* ── 18c. BYUK PANEL (key mode) ── */
@@ -2042,6 +2118,19 @@ If (and only if) you're pointing the student to one specific page from the site 
   document.getElementById("chat-close").onclick = () => toggleChat(false);
   document.getElementById("chat-clear-btn").onclick = () =>
     document.getElementById("chat-clear-bar").classList.add("visible");
+
+  /* ── the model picker ── */
+  document.getElementById("chat-model-btn").onclick = () => {
+    const panel = document.getElementById("model-panel");
+    if (panel && panel.hidden) openModelPanel(); else if (panel) panel.hidden = true;
+  };
+  document.getElementById("model-close").onclick = () => { document.getElementById("model-panel").hidden = true; };
+  document.getElementById("chat-model-select").onchange = (e) => {
+    pickedModel = e.target.value;
+    try { localStorage.setItem("prepbot.model", pickedModel); } catch (_) { /* private mode */ }
+    const m = SITE_CHAT_MODELS.find((x) => x.id === pickedModel);
+    appendMessage("bot", m ? `${m.label} will answer from now on. If it reaches its limit I will tell you, and another model will answer meanwhile.` : "Back to Automatic: whichever model is free and quick will answer.");
+  };
 
   /* ── BYUK / Key Mode listeners ── */
   document.getElementById("chat-byuk-btn").onclick = () => {

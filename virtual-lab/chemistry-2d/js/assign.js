@@ -37,7 +37,7 @@ export function initAssign({ bench, lessons, play, act, say, hooks }) {
   let doing = null;          // the assignment being done: { a, ticks: Set, handed }
 
   // ══ the teacher ══════════════════════════════════════════════════════════
-  const key = $("cl-bot-class"), sheet = $("cl-sheet-class");
+  const key = $("cl-class-key"), sheet = $("cl-sheet-class");
   let asked = false;
   onAccount((acct) => {
     if (!acct.user || asked) return;
@@ -72,8 +72,29 @@ export function initAssign({ bench, lessons, play, act, say, hooks }) {
   what.addEventListener("change", () => sync(false));
   title.addEventListener("input", () => { title.dataset.auto = ""; });
 
+  // THE STEPS: a box for each, as many as the experiment needs (twelve at most), added and taken away one at a time
+  const stepBox = $("cl-class-steps");
+  const CROSS = '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.500 1.500l7 7M8.500 1.500l-7 7" stroke="currentColor" stroke-width="1.800" stroke-linecap="round"/></svg>';
+  function addStep(text = "", focus = false) {
+    if (stepBox.children.length >= 12) { msg.textContent = "Twelve steps is the most an experiment can have here."; return; }
+    const li = el("li"), box = el("input", "cl-search"), cut = el("button", "cl-cut");
+    box.type = "text"; box.maxLength = 200; box.value = text; box.placeholder = "What the student does"; box.setAttribute("aria-label", "A step");
+    cut.type = "button"; cut.innerHTML = CROSS; cut.setAttribute("aria-label", "Take this step out");
+    cut.addEventListener("click", () => { li.remove(); if (!stepBox.children.length) addStep(); });
+    // Enter in a step makes the next one
+    box.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); const next = li.nextElementSibling; if (next) next.querySelector("input").focus(); else addStep("", true); } });
+    li.append(box, cut);
+    stepBox.appendChild(li);
+    if (focus) box.focus();
+  }
+  const getSteps = () => [...stepBox.querySelectorAll("input")].map((i) => i.value.trim()).filter(Boolean).slice(0, 12);
+  function setSteps(list) { stepBox.textContent = ""; (list && list.length ? list : ["", "", ""]).forEach((t) => addStep(t)); }
+  $("cl-class-addstep").addEventListener("click", () => addStep("", true));
+  setSteps([]);
+
+  // (the key is on the bar: the bench opens the sheet itself; this fills it)
   key.addEventListener("click", () => {
-    bench.openSheet("cl-sheet-class");
+    if (sheet.hidden) return;
     msg.textContent = key.dataset.ok ? "" : key.dataset.why || "Setting practicals for a class needs a subscription.";
     $("cl-class-set").disabled = !key.dataset.ok;
     fillChoices();
@@ -91,8 +112,8 @@ export function initAssign({ bench, lessons, play, act, say, hooks }) {
       const snap = bench.snapshot();
       if (!snap.items.length) { msg.textContent = "The bench is empty. Set out the pieces your students should start with, then set it."; return; }
       body.bench = snap;
-      body.steps = $("cl-class-steps").value.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 12);
-      if (!body.steps.length) { msg.textContent = "Write the steps your students should follow, one on each line."; $("cl-class-steps").focus(); return; }
+      body.steps = getSteps();
+      if (!body.steps.length) { msg.textContent = "Write the steps your students should follow."; stepBox.querySelector("input").focus(); return; }
     }
     const btn = $("cl-class-set");
     btn.disabled = true;
@@ -118,7 +139,7 @@ export function initAssign({ bench, lessons, play, act, say, hooks }) {
     const snap = bench.snapshot();
     if (!snap.items.length) { msg.textContent = "The bench is empty. Set the experiment out first, then save it."; return; }
     if (!title.value.trim()) { msg.textContent = "Give it a title first."; title.focus(); return; }
-    const steps = $("cl-class-steps").value.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 12);
+    const steps = getSteps();
     msg.textContent = "Saving…";
     try {
       const d = await benchApi("POST", "/api/bench/saved", { id: openId || undefined, title: title.value.trim(), note: note.value.trim(), steps, bench: snap });
@@ -147,7 +168,7 @@ export function initAssign({ bench, lessons, play, act, say, hooks }) {
           sync(false);
           title.value = full.title; title.dataset.auto = "";
           note.value = full.note || "";
-          $("cl-class-steps").value = (full.steps || []).join("\n");
+          setSteps(full.steps || []);
           msg.textContent = `"${full.title}" is on the bench. Change it and save again, or set it for your class.`;
           listSaved();
         } catch (e) { msg.textContent = e.message || "It could not be opened."; }

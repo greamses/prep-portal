@@ -405,7 +405,12 @@ html body {
 /* The keys on the sheets (Try, Set it, Start, Hand it in) are small sticky notes. On an experiment's
    card, which is a note itself, the key is a paler note so that paper does not vanish on paper. */
 .cl-try { align-self: flex-start; display: inline-block; margin-top: auto; padding: 0.3rem 0.85rem 0.36rem; font: 700 0.82rem "Shantell Sans", "Segoe Print", "Bradley Hand", cursive; letter-spacing: 0.01em; text-transform: none; text-decoration: none; color: #14130f; background: #fff3a8; border: 0; border-radius: 0; box-shadow: 1px 2px 0 rgba(20, 19, 15, 0.22), 3px 6px 10px rgba(20, 19, 15, 0.18); cursor: pointer; transform: rotate(-1.4deg); transition: transform 0.12s, box-shadow 0.12s; }
-.cl-card .cl-try { background: #fffdf6; }
+.pp-sticky--c0 > .cl-try { background: #bfe3ff; }
+.pp-sticky--c1 > .cl-try { background: #c8f0c0; }
+.pp-sticky--c2 > .cl-try { background: #ffd7a3; }
+.pp-sticky--c3 > .cl-try { background: #fff3a8; }
+.pp-sticky--c4 > .cl-try { background: #b8ece2; }
+.pp-sticky--c5 > .cl-try { background: #e8c8ff; }
 .cl-card:nth-child(even) .cl-try { transform: rotate(1.2deg); }
 .cl-try:hover, .cl-try:focus-visible { transform: rotate(0deg) translateY(-2px); box-shadow: 1px 3px 0 rgba(20, 19, 15, 0.22), 4px 10px 14px rgba(20, 19, 15, 0.22); }
 .cl-try:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(20, 19, 15, 0.22); }
@@ -802,3 +807,11 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 .cl-foam { fill: rgba(255, 255, 255, 0.2); stroke-opacity: 0.55; stroke-width: 0.45; }
 .cl-class__keys { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.35rem; }
 .cl-class__keys .cl-try { margin-top: 0; font-size: 0.74rem; }
+
+/* the steps a teacher writes: one line each, as many as the experiment has */
+.cl-class__stepsbox { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; counter-reset: step; }
+.cl-class__stepsbox li { display: flex; align-items: center; gap: 0.35rem; counter-increment: step; }
+.cl-class__stepsbox li::before { content: counter(step) "."; flex: 0 0 1.4rem; font: 700 0.74rem var(--font-mono); color: var(--text-secondary); text-align: right; }
+.cl-class__stepsbox input { flex: 1 1 auto; min-width: 0; }
+.cl-class__stepsbox .cl-cut { flex: 0 0 auto; width: 1.5rem; height: 1.5rem; display: grid; place-items: center; padding: 0; color: #a3261d; background: transparent; border: 1px solid rgba(20, 19, 15, 0.22); border-radius: 0; cursor: pointer; }
+#cl-class-addstep { margin-top: 0.15rem; font-size: 0.74rem; }

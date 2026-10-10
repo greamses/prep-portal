@@ -79,6 +79,7 @@
         <button type="button" class="cl-ico" data-sheet="cl-sheet-table" data-ico="table" data-tip="Results: your own table, and a graph of it" data-tip-side="bottom" aria-label="Results table and graph" aria-pressed="false"></button>
         <button type="button" class="cl-ico" id="cl-calc-key" data-ico="calc" data-tip="Scientific calculator" data-tip-side="bottom" aria-label="Scientific calculator" aria-pressed="false"></button>
         <button type="button" class="cl-ico cl-ico--bot" id="cl-bot" data-sheet="cl-sheet-bot" data-tip="PrepBot does an experiment for you to copy" data-tip-side="bottom" aria-label="PrepBot's experiments" aria-pressed="false"></button>
+        <button type="button" class="cl-ico" id="cl-class-key" data-sheet="cl-sheet-class" data-tip="Teachers: build, save and set experiments for your class" data-tip-side="bottom" aria-label="Teachers: experiments for my class" aria-pressed="false" hidden><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 1.800 8.200 12 13.400l10.200-5.200z" fill="var(--accent-primary)"/><path d="M6 11.400v4.200c0 1.700 2.700 3 6 3s6-1.300 6-3v-4.200l-6 3.100z" fill="var(--accent-secondary)"/><rect x="20.300" y="8.400" width="1.500" height="6.400" rx="0.750" fill="var(--accent-warning)"/><circle cx="21.050" cy="16" r="1.500" fill="var(--accent-warning)"/></svg></button>
         <button type="button" class="cl-ico" id="cl-assign-key" data-ico="tasks" data-tip="The practical your teacher has set" data-tip-side="bottom" aria-label="The practical your teacher has set" hidden><b class="cl-count">!</b></button>
         <span class="cl-gap" aria-hidden="true"></span>
         <button type="button" class="cl-ico" data-zoom="out" data-ico="zoomOut" data-tip="Zoom out (-)" data-tip-side="bottom" aria-label="Zoom out"></button>
@@ -126,7 +127,7 @@
           <div class="cl-sheet__head"><h2 class="cl-h2">PrepBot shows you</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>
           <p class="cl-sheet__lead">Press Try on a card. PrepBot does the whole experiment on this bench with the real pieces, one step at a time, then clears it, and it is your turn. Or press A and ask it to do any experiment at all.</p>
           <a id="cl-bot-plans" class="cl-try" href="/subscribe.html#plans" hidden>PrepBot is for premium members: see the plans</a>
-          <button type="button" id="cl-bot-class" class="cl-try" hidden>Teachers: set a practical for your class</button>
+
           <div id="cl-bot-turn" class="cl-turn" hidden></div>
           <ul id="cl-bot-list" class="cl-cards"></ul>
         </div>
@@ -144,8 +145,9 @@
             <input id="cl-class-title" class="cl-search" type="text" maxlength="80" autocomplete="off" />
             <div id="cl-class-own" hidden>
               <p class="cl-sheet__lead">Your students start with the bench exactly as it is now: every piece, and whatever is in it. Set it out first, then write their steps here.</p>
-              <label for="cl-class-steps">Steps for your students, one on each line</label>
-              <textarea id="cl-class-steps" class="cl-search" rows="5" maxlength="2000"></textarea>
+              <label id="cl-class-steps-label">Steps for your students, in order</label>
+              <ol id="cl-class-steps" class="cl-class__stepsbox" aria-labelledby="cl-class-steps-label"></ol>
+              <button type="button" id="cl-class-addstep" class="cl-try">Add a step</button>
               <button type="button" id="cl-class-save" class="cl-try">Save this experiment</button>
             </div>
             <label for="cl-class-note">A note to your students (optional)</label>

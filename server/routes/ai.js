@@ -13,7 +13,7 @@ const admin = require("firebase-admin");
 const Anthropic = require("@anthropic-ai/sdk");
 const { authenticate } = require("../middleware/auth");
 const access = require("../lib/access");
-const { GEMINI_MODELS, GROQ_DEFAULT_MODEL, CLAUDE_DEFAULT_MODEL } = require("../ai-models");
+const { GEMINI_MODELS, GROQ_DEFAULT_MODEL, CLAUDE_DEFAULT_MODEL, SITE_CHAT_MODELS } = require("../ai-models");
 
 const GEMINI_BASE_WHITELIST = "https://generativelanguage.googleapis.com/";
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
@@ -172,6 +172,16 @@ module.exports = function () {
     return null;
   }
 
+  /** "12", "7.66s", "2m59.56s", "1h2m" → seconds (0 when it says nothing). */
+  function secondsFrom(v) {
+    if (v == null) return 0;
+    const s = String(v).trim();
+    if (/^[\d.]+$/.test(s)) return Math.ceil(Number(s));
+    let total = 0, hit = false;
+    for (const m of s.matchAll(/([\d.]+)\s*(ms|h|m|s)/g)) { hit = true; total += Number(m[1]) * { h: 3600, m: 60, s: 1, ms: 0.001 }[m[2]]; }
+    return hit ? Math.ceil(total) : 0;
+  }
+
   // ── Streaming helpers (used by POST /chat when { stream:true }) ──────
   // Groq speaks OpenAI-style SSE; we forward each delta.content as it lands.
   async function streamGroqInto({ apiKey, model, system, messages, temperature, max_tokens, onDelta }) {
@@ -190,7 +200,13 @@ module.exports = function () {
         stream_options: { include_usage: true },
       }),
     });
-    if (!r.ok || !r.body) throw new Error(`Groq HTTP ${r.status}`);
+    if (!r.ok || !r.body) {
+      const err = new Error(`Groq HTTP ${r.status}`);
+      err.status = r.status;
+      // "retry-after: 12", or the reset of whichever limit was hit: "7.66s", "2m59.56s"
+      err.retryAfter = secondsFrom(r.headers.get("retry-after")) || Math.max(secondsFrom(r.headers.get("x-ratelimit-reset-requests")), secondsFrom(r.headers.get("x-ratelimit-reset-tokens"))) || 0;
+      throw err;
+    }
     const reader = r.body.getReader();
     const decoder = new TextDecoder();
     let buf = "", usedTokens = 0;
@@ -243,6 +259,7 @@ module.exports = function () {
     };
     const key = apiKey || process.env.GEMINI_API_KEY;
     const urls = modelUrl ? [modelUrl] : GEMINI_CHAT_MODELS;
+    let limited = null;
     for (const url of urls) {
       try {
         const gemRes = await fetch(`${url}?key=${key}`, {
@@ -251,6 +268,12 @@ module.exports = function () {
           body: JSON.stringify(geminiBody),
         });
         if (!gemRes.ok) {
+          if (gemRes.status === 429) {
+            // Google says how long in the body: details[].retryDelay = "34s"
+            let wait = secondsFrom(gemRes.headers.get("retry-after"));
+            try { const j = await gemRes.json(); for (const d of (j.error && j.error.details) || []) if (d.retryDelay) wait = Math.max(wait, secondsFrom(d.retryDelay)); } catch (_) {}
+            limited = { retryAfter: Math.max(wait, (limited && limited.retryAfter) || 0) };
+          }
           if ([404, 429, 503].includes(gemRes.status)) continue;
           break;
         }
@@ -259,7 +282,7 @@ module.exports = function () {
         if (text) return { text, tokens: data.usageMetadata?.totalTokenCount || 0 };
       } catch (_) { continue; }
     }
-    return { text: "", tokens: 0 };
+    return { text: "", tokens: 0, limited };
   }
 
   // NDJSON stream: one JSON object per line — {type:"delta"|"done"|"error"|"unavailable"}.
@@ -341,40 +364,49 @@ module.exports = function () {
       return res.end();
     }
 
-    // ① Groq
-    if (process.env.GROQ_API_KEY) {
+    // THE CHAIN. The model the student picked (if it is one of ours: SITE_CHAT_MODELS) is tried
+    // first; then the usual order, Groq → Claude → Gemini, each skipped if its key is absent.
+    // A model that answers "too many requests" is remembered with how long its limit lasts, and
+    // the browser is told (type "limited"): which model was busy, for how long, and which one
+    // answered instead. If nothing answers, "unavailable" carries the same list.
+    const picked = SITE_CHAT_MODELS[String(req.body.pick || "")] || null;
+    const steps = [];
+    if (picked) steps.push({ ...picked, picked: true });
+    steps.push({ provider: "groq", model, label: "Groq" }, { provider: "claude", label: "Claude" }, { provider: "gemini", label: "Gemini" });
+    const HAS = { groq: process.env.GROQ_API_KEY, claude: process.env.ANTHROPIC_API_KEY, gemini: process.env.GEMINI_API_KEY };
+    const limits = [], tried = new Set();
+    const hitLimit = (st, wait) => limits.push({ label: st.label, provider: st.provider, retryAfter: Math.min(86400, Math.max(0, Math.round(wait || 0))), picked: Boolean(st.picked) });
+    for (const st of steps) {
+      const sig = `${st.provider}:${st.model || ""}`;
+      if (started || !HAS[st.provider] || tried.has(sig)) continue;
+      tried.add(sig);
       try {
-        const tokens = await streamGroqInto({ model, system, messages, temperature, max_tokens, onDelta });
-        if (started) return await finish("groq", tokens);
+        let tokens = 0;
+        if (st.provider === "groq") tokens = await streamGroqInto({ model: st.model, system, messages, temperature, max_tokens, onDelta });
+        else if (st.provider === "claude") tokens = await streamClaudeInto({ model: st.picked ? st.model : undefined, system, messages, max_tokens, onDelta, onAbort: (ab) => res.on("close", ab) });
+        else {
+          const out = await geminiOnce({ system, messages, temperature, max_tokens, modelUrl: st.model ? geminiUrlFor(st.model) : undefined });
+          if (out.text) onDelta(out.text);
+          else if (out.limited) hitLimit(st, out.limited.retryAfter);
+          tokens = out.tokens;
+        }
+        if (started) {
+          if (limits.length) write({ type: "limited", limits, answeredBy: st.label });
+          return await finish(st.provider, tokens);
+        }
       } catch (e) {
         if (started) { write({ type: "error", text: "Stream interrupted. Please try again." }); return res.end(); }
-        console.warn("[/api/ai/chat stream] Groq unavailable:", e.message);
-      }
-    }
-
-    // ② Claude
-    if (!started && process.env.ANTHROPIC_API_KEY) {
-      try {
-        const tokens = await streamClaudeInto({ system, messages, max_tokens, onDelta, onAbort: (ab) => res.on("close", ab) });
-        if (started) return await finish("claude", tokens);
-      } catch (e) {
-        if (started) { write({ type: "error", text: "Stream interrupted. Please try again." }); return res.end(); }
-        console.warn("[/api/ai/chat stream] Claude unavailable:", e.message);
-      }
-    }
-
-    // ③ Gemini (non-streaming, emitted as a single chunk)
-    if (!started && process.env.GEMINI_API_KEY) {
-      try {
-        const { text, tokens } = await geminiOnce({ system, messages, temperature, max_tokens });
-        if (text) { onDelta(text); return await finish("gemini", tokens); }
-      } catch (e) {
-        console.warn("[/api/ai/chat stream] Gemini unavailable:", e.message);
+        if (e.status === 429) hitLimit(st, e.retryAfter || secondsFrom(e.headers && (e.headers["retry-after"] || (e.headers.get && e.headers.get("retry-after")))));
+        console.warn(`[/api/ai/chat stream] ${st.label} unavailable:`, e.message);
       }
     }
 
     if (!started) {
-      write({ type: "unavailable", text: "PrepBot is temporarily unavailable. Please try again in a moment." });
+      const soonest = limits.length ? Math.min(...limits.map((l) => l.retryAfter || 60)) : 0;
+      write({
+        type: "unavailable", limits, retryAfter: soonest,
+        text: limits.length ? "Every model is at its limit for the moment." : "PrepBot is temporarily unavailable. Please try again in a moment.",
+      });
     }
     res.end();
   }

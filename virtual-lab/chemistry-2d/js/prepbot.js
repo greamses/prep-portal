@@ -1679,10 +1679,19 @@ ${["Glassware", "Equipment", "Liquids", "Solids"].map((p) => `${p}: ${stock.filt
     if (!o || typeof o !== "object") return null;
     return { say: String(o.say || "").slice(0, 400), do: (Array.isArray(o.do) ? o.do : []).map((c) => String(c).trim()).filter(Boolean).slice(0, 6), done: Boolean(o.done) };
   }
+  let limitSeen = "";        // a model that said "too many requests" during this experiment
   async function askStage(system, prompt) {
-    // Gemini's newest model first (it plans a method better); Groq's biggest behind it
+    // The student's own choice of model first (the star key in the chat window); else Gemini's newest
+    // (it plans a method better), with Groq's biggest behind it.
+    let pick = "";
+    try { pick = localStorage.getItem("prepbot.model") || ""; } catch { /* private mode */ }
+    if (pick.startsWith("groq:")) {
+      try { return parseStage(groqText(await groqGenerate({ body: { model: pick.slice(5), messages: [{ role: "system", content: system }, { role: "user", content: prompt }], temperature: 0.2, max_tokens: 500, response_format: { type: "json_object" } } }))); }
+      catch (e) { console.warn("PrepBot: the chosen model did not answer", e.message); if (/429/.test(e.message)) limitSeen = pick.slice(5); }
+    }
+    const first = pick.startsWith("gemini:") ? [`https://generativelanguage.googleapis.com/v1beta/models/${pick.slice(7)}:generateContent`] : [];
     try {
-      const data = await geminiGenerate({ models: GEMINI_MODELS_QUALITY_FIRST, body: { systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 600, responseMimeType: "application/json" } } });
+      const data = await geminiGenerate({ models: [...first, ...GEMINI_MODELS_QUALITY_FIRST.filter((u) => !first.includes(u))], body: { systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 600, responseMimeType: "application/json" } } });
       const st = parseStage(geminiText(data));
       if (st) return st;
       throw new Error("no stage in the reply");
@@ -1709,6 +1718,7 @@ ${["Glassware", "Equipment", "Liquids", "Solids"].map((p) => `${p}: ${stock.filt
     bench.page(`PrepBot does: ${ask.slice(0, 60)}`);
     const system = RULES(), log = [];
     let last = "";
+    limitSeen = "";
     try {
       await speak("Let me work out how to do that with what is in the drawer.", mine);
       for (let n = 1; n <= STAGES; n++) {
@@ -1717,7 +1727,8 @@ ${["Glassware", "Equipment", "Liquids", "Solids"].map((p) => `${p}: ${stock.filt
         let st = null;
         try { st = await askStage(system, prompt); } catch (e) { console.warn("PrepBot: the AI did not answer", e.message); }
         if (mine !== token) throw new Stopped();
-        if (!st) { last = "I could not reach my chemistry notes just now. Try again in a moment, or pick an experiment from my list."; await speak(last, mine); break; }
+        if (!st) { last = "The AI models I use are busy or at their limit just now. Wait a minute and ask again, choose another model with the star key in my chat window, or pick an experiment from my list."; await speak(last, mine); break; }
+        if (limitSeen && !log.toldLimit) { log.toldLimit = true; await speak("The model you chose is at its limit for the moment, so another one is helping me with this. You can choose a different model with the star key in my chat window.", mine); }
         if (st.say) { last = st.say; await speak(st.say, mine); }
         if (st.done || !st.do.length) break;
         if (st.do.join(";") === (log.lastDo || "")) { last = "I am going round in circles, so I will stop here."; await speak(last, mine); break; }

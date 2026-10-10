@@ -28,7 +28,7 @@
    ========================================================================== */
 
 import { REAGENTS, newTube, add, heat, rinse, test, speciate, magnetOut, centrifuge, setUnknown, reagent, chemHtml, isEmpty, look, takeFrom, pourIn, roomIn, flameOf, massOf, boilOff, filterOut, sampleOf, gasMade, takeBottom, electrolyse, blend, densityOf } from "./chem.js";
-import { DEFS, VESSELS, TOOLS, SUPPORTS, rAt, vesselSvg, veilSvg, paintVessel, bubble, reagentSvg, toolSvg, splintAfter, supportSvg, thumb, colourOf, mouthOf, capOf, CAP_BOX } from "./glass.js";
+import { DEFS, VESSELS, TOOLS, SUPPORTS, rAt, vesselSvg, veilSvg, paintVessel, bubble, reagentSvg, toolSvg, splintAfter, supportSvg, thumb, colourOf, mouthOf, capOf, CAP_BOX, POWDER_JARS } from "./glass.js";
 import { EXPERIMENTS, GROUPS, UNKNOWNS, CATIONS, ANIONS, HOWTO, stepDone } from "./waec.js";
 import { initFluid, setVapour, puff, erupt as foamOut, FLUID_DEFS } from "./fluid.js";
 import { UI } from "/utils/components/ui-icons.js";
@@ -1852,6 +1852,8 @@ function swirl(v, by = "hand") {
   record(v, { title: by === "rod" ? "Stirred with a glass rod" : "Swirled", obs: cloudy ? [{ text: "The precipitate is stirred up through the liquid, and slowly settles again.", why: "A precipitate is a solid that does not dissolve: stirring spreads it out but cannot make it go into solution." }] : [], flags: ["swirled"] });
   if (!cloudy) say(v.t.vol > 0 ? "The liquid swirls round and mixes." : "There is no liquid in it to swirl.");
 }
+/** A powder tipped from its jar: a thin stream of fine grains, not three lumps. */
+const sprinkle = (from, to, c) => fx(Array.from({ length: 22 }, (_, k) => `<circle class="cl-dropin" cx="${(from[0] + (Math.random() - 0.5) * 9).toFixed(1)}" cy="${from[1]}" r="${(0.6 + Math.random() * 0.7).toFixed(1)}" fill="rgb(${c})" style="--fall:${Math.round(to - from[1])}px;animation-delay:${(k * 0.028 + Math.random() * 0.05).toFixed(2)}s"/>`).join(""), 1500);
 const drops = (from, to, c, r = 2.6, spread = 0) => fx([0, 1, 2].map((k) => `<circle class="cl-dropin" cx="${from[0] + (k - 1) * spread}" cy="${from[1]}" r="${r}" fill="rgb(${c})" style="--fall:${Math.round(to - from[1])}px;animation-delay:${k * 0.13}s"/>`).join(""), 1000);
 
 // ── a bottle holds only so much ─────────────────────────────────────────────
@@ -2261,6 +2263,7 @@ function use(it, v) {
     const c = it.key === "oil" ? OIL_RGB : colourOf(it.key);
     if (r.kind === "solution") stream(v, c, viscOf(it));
     else if (r.kind === "indicator") drops([m.x, m.y - 26], v._surface, c);
+    else if (POWDER_JARS.includes(it.key)) sprinkle([m.x + 6, m.y - 10], v._surface, c);
     else drops([m.x + 6, m.y - 10], v._surface, c, 3.4, 5);
     return r.kind !== "indicator";
   }

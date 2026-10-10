@@ -494,8 +494,18 @@ export function paintVessel(g, key, t, { fresh = false, seed = 1, tilt = 0, extr
       else html += `<circle cx="${x}" cy="${y}" r="${f1(3 + rnd() * 1.6)}" fill="${fill}" stroke="#fff" stroke-opacity="0.25" stroke-width="0.6"/>`;
     }
   }
+  let heaps = 0;
   for (const s of stuff.solid) {
     const fill = rgba(s.rgb);
+    if (POWDER_SOLIDS.includes(s.key)) {
+      // a powder slumps into a low heap on the bottom: wider and a little higher the more there is
+      const w = spread * Math.min(1.3, 0.75 + s.n * 0.2), h = Math.min(18, 5 + s.n * 2.4), base = floor + 2.5, cx = (heaps % 2 ? 1 : -1) * heaps * spread * 0.22;
+      heaps++;
+      const top = (x) => base - h * Math.max(0, 1 - ((x - cx) / w) ** 2) ** 0.8;
+      html += `<path d="M${f1(cx - w)} ${f1(base)}C${f1(cx - w * 0.62)} ${f1(base - h * 1.25)} ${f1(cx - w * 0.2)} ${f1(base - h * 1.05)} ${f1(cx + w * 0.1)} ${f1(base - h)}S${f1(cx + w * 0.8)} ${f1(base - h * 0.5)} ${f1(cx + w)} ${f1(base)}z" fill="${fill}" stroke="#fff" stroke-opacity="0.22" stroke-width="0.6"/>`
+        + grains(rnd, Math.round(10 + s.n * 5), cx - w * 0.9, cx + w * 0.9, top, base);
+      continue;
+    }
     const count = Math.max(2, Math.min(8, Math.round(s.n * 2.5)));
     for (let k = 0; k < count; k++) {
       const [x, y] = spot();
@@ -565,12 +575,27 @@ const SOLID_FILL = {
   caco3: [238, 236, 228], cuo: [38, 36, 36], mno2: [58, 50, 48],
   sandsalt: [226, 208, 172], sand: [214, 186, 132], sulfur: [236, 214, 74], iodine: [58, 46, 66],
 };
+// Which solids are POWDERS (a heap with a smooth, slumped top, made of grains too small to count)
+// and which are pieces (granules, chips, turnings, ribbon). By the jar's reagent, and by what lies in a vessel.
+export const POWDER_JARS = ["cuo", "mno2", "sulfur", "bicarb", "salt", "yeast", "sand", "sandsalt", "fe"];
+const POWDER_SOLIDS = ["CuO", "MnO2", "S", "NaHCO3", "rocksalt", "yeast", "sand"];
+/** Fine grains scattered over a heap: a few lighter, a few darker than the heap itself. */
+function grains(rnd, n, x0, x1, top, base) {
+  let s = "";
+  for (let i = 0; i < n; i++) {
+    const x = x0 + rnd() * (x1 - x0), y = top(x) + rnd() * Math.max(1, base - top(x));
+    s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(0.35 + rnd() * 0.5)}" fill="${i % 3 ? "#fff" : "#000"}" fill-opacity="${i % 3 ? 0.3 : 0.2}"/>`;
+  }
+  return s;
+}
 const DROPPER_FILL = { ui: [76, 176, 80], phph: [226, 232, 238], mo: [240, 140, 40] };
 const SHORT = { ui: "Univ.", phph: "Phph", mo: "M.O." };
 
 /** A reagent's own colour: one portion of it, in a tube. */
+const OIL = [232, 200, 90];
 export function colourOf(id) {
   const r = reagent(id);
+  if (r.oil) return OIL;             // (it is kept apart from the watery liquids, so look() never sees it)
   if (r.kind === "indicator") return DROPPER_FILL[id];
   if (r.kind === "solid") return SOLID_FILL[id];
   const t = newTube();
@@ -578,6 +603,7 @@ export function colourOf(id) {
   return look(t).rgb;
 }
 function liquidOf(id) {
+  if (reagent(id).oil) return rgba(OIL, 0.82);
   const t = newTube();
   add(t, id);
   const lk = look(t);
@@ -622,7 +648,9 @@ export function reagentSvg(id, uid, capped = false) {
       <g clip-path="url(#clip-${uid})">
         <g class="cl-stock"><path d="M-34 0V-30q10-9 22-4t22-5 24 3V0z" fill="${fill}"/>
         <path d="M-34 0V-30q10-9 22-4t22-5 24 3V0z" fill="url(#g-shade)"/>
-        <circle cx="-14" cy="-37" r="3" fill="${fill}"/><circle cx="12" cy="-41" r="2.4" fill="${fill}"/><circle cx="2" cy="-36" r="2" fill="${fill}"/></g>
+        ${POWDER_JARS.includes(id)
+          ? grains(scatter(id.length * 7 + id.charCodeAt(0)), 70, -30, 30, (x) => -33 - 4 * Math.cos(x * 0.09), -2)
+          : `<circle cx="-14" cy="-37" r="3" fill="${fill}"/><circle cx="12" cy="-41" r="2.4" fill="${fill}"/><circle cx="2" cy="-36" r="2" fill="${fill}"/>`}</g>
       </g>
       <path d="${outline(JAR)}" fill="url(#g-glass)"/>
       <path class="cl-g-edge" d="${outline(JAR, true)}"/>
