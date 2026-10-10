@@ -75,10 +75,20 @@ function kit(stage, { gsap, instant }) {
       /* What it is MEANT to show is settled at once; what it shows catches
          up on the way. A card told twice in one step (laid in the line, then
          picked out and turned) therefore ends as the last telling had it. */
-      el.dataset.want = what;
-      const swap = () => { if (el.dataset.want === what && el.dataset.art !== what) { el.dataset.art = what; el.innerHTML = art(what); } };
-      if (fresh || !live) swap();
-      else gsap.delayedCall(delay + dur * 0.4, () => { if (el.isConnected) swap(); });
+      /* A card can be told more than once in a step: dealt FACE UP, and a
+         few seconds later turned face down with the rest of its pile. Each
+         telling happens at its own moment, and a telling never undoes one
+         that was timed after it — so the card is seen face up, and then
+         seen to turn. */
+      const when = live && !fresh ? delay + dur * 0.4 : 0;
+      const swap = () => {
+        if (when < (el.turnedAt || 0)) return;
+        el.turnedAt = when;
+        if (el.dataset.art !== what) { el.dataset.art = what; el.innerHTML = art(what); }
+      };
+      if (!live) { el.turnedAt = 0; swap(); }
+      else if (fresh) swap();
+      else gsap.delayedCall(when, () => { if (el.isConnected) swap(); });
       if (live && !fresh) gsap.delayedCall(delay, () => { el.style.zIndex = String(z + 500); });
       if (live && !fresh) gsap.delayedCall(delay + dur, () => { el.style.zIndex = String(z); });
       else el.style.zIndex = String(z);
@@ -446,7 +456,8 @@ function lessonEleven() {
         const moving = animate && animate(p, r);
         const dead = pile.match === 0 && (p < upto || (turnedDead && lastCard >= 11));
         k.card(id, dead ? "back" : id, ...pileElevenAt(p, r), { z: 100 + r, delay: moving ? moving.delay : 0, dur: 0.45 });
-        if (said && r < 10) k.text(`n${p}-${r}`, String(10 - r), pileElevenAt(p, r)[0] - 4.4, pileElevenAt(p, r)[1], "tiny", { delay: moving ? moving.delay : 0 });
+        /* the number said for each card — and for the card after "one", nought */
+        if (said) k.text(`n${p}-${r}`, String(10 - r), pileElevenAt(p, r)[0] - 4.4, pileElevenAt(p, r)[1], "tiny", { delay: moving ? moving.delay : 0 });
       });
     });
   };
@@ -479,17 +490,19 @@ function lessonEleven() {
     const pile = game.piles[p];
     const said = pile.match
       ? `${telling(pile)}. The card says ${SAY[pile.match]} and you said ${SAY[pile.match]}. A match. This pile stops on ${SAY[pile.match]}.`
-      : `${telling(pile)}. You got all the way down to one, and no card matched. So you put one more card on top, and turn the whole pile face down. That pile is out. It counts nothing.`;
+      : `${telling(pile)}. You got all the way down to one, and no card matched. So you turn one more card, face up like the others, and say nought. Now look at them all: not one card matched its number. So the whole pile is turned face down. That pile is out. It counts nothing.`;
     out.push(step(`${["", "The second pile. Start again at ten.", "The third pile. Ten again.", "The last pile. Ten."][p]} ${p === 3 ? `It is ${what(pile.cards[0])}. You said ten, and it counts ten. A match on the very first card. This pile stops on ten.` : said}`, (k) => {
       k.wipe();
       layRest(k);
       layPiles(k, p, 99, { animate: (pp, r) => (pp === p ? { delay: 0.2 + r * 0.55 } : null), turnedDead: false });
       /* the pile that ran out is turned over once its eleventh card is down */
-      if (!pile.match) pile.cards.forEach((id, r) => k.card(id, "back", ...pileElevenAt(p, r), { z: 100 + r, delay: 0.2 + 11 * 0.55 + 0.4 }));
+      /* every card of it has been dealt FACE UP and counted, the eleventh
+         too; only then, after a look, is the pile turned over */
+      if (!pile.match) pile.cards.forEach((id, r) => k.card(id, "back", ...pileElevenAt(p, r), { z: 100 + r, delay: 0.2 + 11 * 0.55 + 2.4 }));
       else k.lit(pile.cards[pile.cards.length - 1], true, 0.2 + pile.cards.length * 0.55);
       game.piles.forEach((q, i) => { if (i < p && q.match) k.lit(q.cards[q.cards.length - 1]); });
       stops(k, p - 1);
-      k.text(`st${p}`, pile.match ? `stop: ${pile.match}` : "out: 0", pileElevenAt(p, 0)[0], 96, "tiny", { delay: 0.2 + pile.cards.length * 0.55 + 0.5 });
+      k.text(`st${p}`, pile.match ? `stop: ${pile.match}` : "out: 0", pileElevenAt(p, 0)[0], 96, "tiny", { delay: 0.2 + pile.cards.length * 0.55 + (pile.match ? 0.5 : 2.8) });
     }));
   });
 
@@ -499,7 +512,7 @@ function lessonEleven() {
     k.wipe();
     layRest(k);
     layAllPiles(k);
-    k.text("add", sumLine, 60, 4, "gold");
+    k.text("add", sumLine, 30, 64, "gold");
   }));
 
   const rest = S.pack.slice(game.used);
@@ -507,7 +520,7 @@ function lessonEleven() {
     k.wipe();
     layRest(k);
     layAllPiles(k);
-    k.text("add", sumLine, 60, 4, "gold");
+    k.text("add", sumLine, 30, 64, "gold");
     rest.slice(0, game.sum).forEach((id, i) => k.card(id, "back", ...offAt(i), { z: 300 + i, delay: 0.3 + i * 0.22, dur: 0.4 }));
     k.count("oc", game.sum, (i) => [82.5, offAt(i - 1)[1]], { gap: 0.22, delay: 0.5, cls: "tiny" });
   }));

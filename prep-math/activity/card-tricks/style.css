@@ -375,8 +375,13 @@ body.ct-playing #chat-fab, body.ct-playing #chat-fab-restore { display: none !im
 .ct-tv__card.is-b0 { box-shadow: 0 0 0 3px #6fb7e8; }
 .ct-tv__card.is-b1 { box-shadow: 0 0 0 3px #7cc47c; }
 .ct-tv__card.is-b2 { box-shadow: 0 0 0 3px #f29ab5; }
+/* Writing is always IN FRONT of the cards: a sum laid over a pile is read,
+   not hidden under it. A dark slip behind it keeps it readable on a face. */
 .ct-tv__txt {
   position: absolute;
+  z-index: 5000;
+  padding: 0.05em 0.4em;
+  background: rgba(8, 8, 10, 0.72);
   translate: -50% -50%;
   width: max-content;
   max-width: 62%;
