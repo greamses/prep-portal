@@ -108,7 +108,14 @@ const HANDS = `<ul class="ct-hands">
   ${row(UI.shuffle(18), "Riffles the pile you touched last.")}
 </ul>`;
 
-const CARD = { wide: [0.125, 0.185], narrow: [0.23, 0.15] };
+/* How big a card is: the smaller of a share of the table's width and of its
+   height. The 27-card trick is laid out in ONE row, so its cards can be tall. */
+const CARD = { wide: [0.14, 0.3], narrow: [0.27, 0.19] };
+const CARD_ROW = { wide: [0.15, 0.36], narrow: [0.29, 0.19] };
+const CARD_TWO = { wide: [0.13, 0.255], narrow: [0.235, 0.165] };
+
+/** The arrow the computer points with. */
+const POINT = `${UI.arrowDown(34)}<b>my card</b>`;
 
 /* ══ THE TABLE, AND NOTHING ELSE ══════════════════════════════════════════ */
 
@@ -132,16 +139,18 @@ const FREE = {
 
 /* ══ 27 CARDS: A NUMBER IN BASE 3 ═════════════════════════════════════════ */
 
+/* One row on a wide table: the pack, the three piles, the computer's card.
+   The counting is done where the piles were — they are back in the pack by then. */
 const B3_SPOTS = {
   wide: [
-    { id: "pack", x: 0.15, y: 0.37 }, { id: "copy", x: 0.15, y: 0.73 },
-    { id: "a", x: 0.42, y: 0.37 }, { id: "b", x: 0.6, y: 0.37 }, { id: "c", x: 0.78, y: 0.37 },
-    { id: "off", x: 0.5, y: 0.73 }, { id: "show", x: 0.72, y: 0.73 },
+    { id: "pack", x: 0.11, y: 0.53 }, { id: "copy", x: 0.89, y: 0.53 },
+    { id: "a", x: 0.31, y: 0.53 }, { id: "b", x: 0.5, y: 0.53 }, { id: "c", x: 0.69, y: 0.53 },
+    { id: "off", x: 0.37, y: 0.53 }, { id: "show", x: 0.61, y: 0.53 },
   ],
   narrow: [
-    { id: "pack", x: 0.22, y: 0.25 }, { id: "copy", x: 0.78, y: 0.25 },
-    { id: "a", x: 0.2, y: 0.51 }, { id: "b", x: 0.5, y: 0.51 }, { id: "c", x: 0.8, y: 0.51 },
-    { id: "off", x: 0.3, y: 0.76 }, { id: "show", x: 0.7, y: 0.76 },
+    { id: "pack", x: 0.24, y: 0.24 }, { id: "copy", x: 0.76, y: 0.24 },
+    { id: "a", x: 0.18, y: 0.52 }, { id: "b", x: 0.5, y: 0.52 }, { id: "c", x: 0.82, y: 0.52 },
+    { id: "off", x: 0.28, y: 0.8 }, { id: "show", x: 0.72, y: 0.8 },
   ],
 };
 
@@ -151,7 +160,7 @@ const BASE3 = {
   setup() {
     const pack = mixed(fullDeck()).slice(0, 27);
     S.g = { kind: "base3", n: S.n, mine: pack[Math.floor(Math.random() * 27)], round: 0, phase: "wait", before: null, ks: [], at: null, shown: null };
-    table.setup({ spots: B3_SPOTS, card: CARD });
+    table.setup({ spots: B3_SPOTS, card: CARD_ROW });
     table.addStack(pack, { spot: "pack" });
     table.turn = true;
     say("");
@@ -182,7 +191,8 @@ const BASE3 = {
     if (mine.length === 1 && mine[0].cards.length === 27) {
       const pack = mine[0];
       if (g.phase === "pack") {
-        if (allDown(pack)) g.before = table.topFirst(pack);
+        /* the order the pack would be dealt in, whichever way up it is lying */
+        if (allDown(pack) || allUp(pack)) g.before = table.topFirst(pack);
         if (what && what.type === "shuffle") say("Shuffled. My card is still in there.");
         return;
       }
@@ -192,6 +202,7 @@ const BASE3 = {
         return;
       }
       glow(null);
+      table.point(null);
       table.clearNotes();
       /* back to where the pack lives, clear of where the piles are dealt */
       table.moveTo(pack, "pack");
@@ -206,17 +217,19 @@ const BASE3 = {
 
     if (mine.length === 3 && mine.every((s) => s.cards.length === 9)) {
       if (g.phase === "dealt") return;
-      if (!g.before || !dealtInTurn(g.before, mine.map((s) => s.cards))) {
-        g.round = 0;
-        g.ks = [];
-        say("Not dealt one to each pile in turn. Gather up and start the three deals again.", "warn");
-        return;
-      }
+      /* Three piles of nine: the computer ALWAYS says which one its card is
+         in, however they were made. If they were not dealt one to each in
+         turn the count will not come out, and it says that too — but it
+         still points. */
+      const fair = !!g.before && dealtInTurn(g.before, mine.map((s) => s.cards));
+      if (!fair) g.loose = true;
       g.phase = "dealt";
       const pile = mine.find((s) => s.cards.includes(g.mine));
       glow(pile);
-      table.setNote(pile, "mine", "ok");
-      say("My card is in the lit pile. Gather all three, face down.");
+      table.point(pile, POINT);
+      say(fair
+        ? "My card is in this pile. Now gather all three, face down."
+        : "My card is in this pile. (Deal one to each pile in turn, or the count will not work.)", fair ? "" : "warn");
     }
   },
 
@@ -248,7 +261,7 @@ const BASE3 = {
   verdict() {
     const g = S.g;
     if (g.shown === g.mine) say(`${Name(g.mine)}, at card ${g.n}. You put it there.`, "win");
-    else say(`Mine was ${nameOf(g.mine)}, lying at card ${g.at + 1}, not ${g.n}.`, "warn");
+    else say(`Mine was ${nameOf(g.mine)}, lying at card ${g.at + 1}, not ${g.n}.${g.loose ? " A pile was not dealt in turn." : ""}`, "warn");
     S.open = true;
     $("#ct-help").classList.add("is-nudge");
   },
@@ -296,12 +309,12 @@ const BASE3 = {
 
 const EL_SPOTS = {
   wide: [
-    { id: "pack", x: 0.13, y: 0.37 }, { id: "copy", x: 0.13, y: 0.73 },
+    { id: "pack", x: 0.12, y: 0.31 }, { id: "copy", x: 0.12, y: 0.73 },
     { id: "off", x: 0.5, y: 0.73 }, { id: "show", x: 0.72, y: 0.73 },
   ],
   narrow: [
-    { id: "pack", x: 0.2, y: 0.24 }, { id: "copy", x: 0.8, y: 0.24 },
-    { id: "off", x: 0.3, y: 0.77 }, { id: "show", x: 0.7, y: 0.77 },
+    { id: "pack", x: 0.2, y: 0.23 }, { id: "copy", x: 0.8, y: 0.23 },
+    { id: "off", x: 0.3, y: 0.79 }, { id: "show", x: 0.7, y: 0.79 },
   ],
 };
 
@@ -310,7 +323,7 @@ const ELEVEN = {
   blurb: "Shuffle all you like. I still know.",
   setup() {
     S.g = { kind: "eleven", phase: "shuffle", mine: null, states: [], sum: 0, shown: null, last: null };
-    table.setup({ spots: EL_SPOTS, card: { wide: [0.115, 0.185], narrow: [0.21, 0.15] } });
+    table.setup({ spots: EL_SPOTS, card: CARD_TWO });
     table.addStack(mixed(fullDeck()), { spot: "pack" });
     table.turn = true;
     say("");

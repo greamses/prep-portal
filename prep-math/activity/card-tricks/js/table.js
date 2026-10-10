@@ -51,7 +51,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
     busy: false,
     still,
     setup, addStack, layout, shuffle, deal, countOff, send, moveTo, flip, unlock,
-    lift, settle, setNote, clearNotes, tagged, spotStack, activeStack, topFirst,
+    lift, settle, setNote, clearNotes, point, tagged, spotStack, activeStack, topFirst,
     get stacks() { return stacks; },
     get cards() { return cards; },
   };
@@ -121,7 +121,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
     const H = r.height || 1;
     const narrow = W < H * 0.85;
     const [fw, fh] = narrow ? size.narrow : size.wide;
-    const cw = Math.max(54, Math.min(W * fw, H * fh, 190));
+    const cw = Math.max(54, Math.min(W * fw, H * fh, 240));
     geo = { W, H, cw, ch: cw * 1.4, narrow };
     root.classList.toggle("is-narrow", narrow);
     root.style.setProperty("--ct-cw", `${cw}px`);
@@ -191,16 +191,21 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
       let el = have.get(s.id);
       have.delete(s.id);
       const many = s.cards.length > 1 && !s.locked;
-      if (!many && !s.note) { if (el) el.remove(); return; }
+      if (!many && !s.note && !s.point) { if (el) el.remove(); return; }
       if (!el) {
         el = document.createElement("div");
         el.className = "ct-tab";
         el.dataset.stack = String(s.id);
-        el.innerHTML = `<span class="ct-grip"></span><span class="ct-note"></span>`;
+        el.innerHTML = `<span class="ct-grip"></span><span class="ct-note"></span><span class="ct-point" hidden></span>`;
         root.appendChild(el);
       }
       const grip = el.firstChild;
-      const note = el.lastChild;
+      const note = grip.nextSibling;
+      const hand = el.lastChild;
+      hand.hidden = !s.point;
+      if (s.point && hand.dataset.is !== s.point) { hand.dataset.is = s.point; hand.innerHTML = s.point; }
+      /* it stands clear of the top of the pile, however thick the pile is */
+      hand.style.bottom = `${(geo.ch + s.cards.length * rise() + 10).toFixed(1)}px`;
       grip.hidden = !many;
       grip.textContent = String(s.cards.length);
       grip.title = `Carry all ${s.cards.length} cards`;
@@ -355,39 +360,54 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
     const n = stack.cards.length;
     const spread = geo.cw * 0.6;
 
+    /* the mesh: how far a card dropped from one half stands off the middle
+       before the halves are pushed home — what makes a riffle look like one */
+    const mesh = geo.cw * 0.13;
     for (let round = 0; round < 3 && !still; round++) {
       const before = stack.cards.slice();
       const { order, from, cut: at } = riffle(before, rnd);
-      /* held apart: the lower half goes left, the upper comes down to the
-         table on the right */
+      /* cut: the upper half is lifted clear … */
+      before.forEach((id, i) => { cards.get(id).fx = i < at ? null : { dy: -geo.ch * 0.16 }; });
+      layout();
+      await wait(170);
+      /* … and the two are held apart, tipped in toward each other, the lower
+         half on the left and the upper come down to the table on the right */
       before.forEach((id, i) => {
         const left = i < at;
-        cards.get(id).fx = { dx: left ? -spread : spread, dy: left ? 0 : at * d, rot: left ? 8 : -8 };
+        cards.get(id).fx = { dx: left ? -spread : spread, dy: left ? 0 : at * d, rot: left ? 9 : -9 };
       });
       layout();
-      await wait(300);
-      /* and let fall, one card at a time, into the new order */
+      await wait(330);
+      /* let fall, a card at a time and in the order the new pile will have:
+         each lands a little to its own side, so the two halves are seen woven */
       stack.cards = order;
-      const beat = Math.min(26, 520 / n);
+      const beat = Math.max(14, Math.min(30, 760 / n));
       const seen = [0, 0];
       order.forEach((id, i) => {
         const card = cards.get(id);
         const side = from[i];
         /* until its turn it waits in its half, at the height it has there */
         const inHalf = seen[side]++;
-        card.fx = { dx: side ? spread : -spread, dy: (i - inHalf) * d, rot: side ? -8 : 8 };
-        setTimeout(() => { card.fx = null; card.j = lean(); place(card, i); }, i * beat);
+        card.fx = { dx: side ? spread : -spread, dy: (i - inHalf) * d, rot: side ? -9 : 9 };
+        setTimeout(() => { card.fx = { dx: side ? mesh : -mesh, rot: side ? -2.5 : 2.5 }; place(card, i); }, i * beat);
       });
       layout(false);
-      await wait(n * beat + 300);
+      await wait(n * beat + 260);
+      /* pushed home and squared */
+      root.classList.add("is-squaring");
+      order.forEach((id) => { const card = cards.get(id); card.fx = null; card.j = { r: 0, x: 0, y: 0 }; });
+      layout();
+      await wait(240);
+      root.classList.remove("is-squaring");
     }
 
     if (still) {
       for (let i = 0; i < 3; i++) stack.cards = riffle(stack.cards, rnd).order;
     }
 
-    /* the cut: the top packet is lifted off, and goes underneath */
-    const cutAt = 1 + Math.floor(rnd() * (n - 1));
+    /* the cut: the top packet is lifted off, and goes underneath — somewhere
+       near the middle, as a hand does it, not one card off the top */
+    const cutAt = n < 6 ? 1 + Math.floor(rnd() * (n - 1)) : Math.round(n * (0.3 + rnd() * 0.4));
     const aside = geo.cw * 1.1 * (stack.x > 0.6 ? -1 : 1);
     if (!still) {
       stack.cards.forEach((id, i) => { cards.get(id).fx = i >= cutAt ? { dx: aside, dy: cutAt * d } : null; });
@@ -404,10 +424,10 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
       stack.cards.forEach((id) => { cards.get(id).fx = { dx: aside }; });
       layout();
       await wait(300);
-      stack.cards.forEach((id) => { cards.get(id).fx = null; });
+      stack.cards.forEach((id) => { const card = cards.get(id); card.fx = null; card.j = lean(); });
     }
     layout();
-    await wait(still ? 0 : 280);
+    await wait(still ? 0 : 300);
     root.classList.remove("is-shuffling");
     api.busy = false;
     onChange({ type: "shuffle", stack });
@@ -422,7 +442,12 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
     tabs();
   }
   function clearNotes() {
-    stacks.forEach((s) => { s.note = null; });
+    stacks.forEach((s) => { s.note = null; s.point = null; });
+    tabs();
+  }
+  /** Point at one pile, from above, with whatever is handed in (an arrow, a word). */
+  function point(stack, html = "") {
+    stacks.forEach((s) => { s.point = s === stack ? html : null; });
     tabs();
   }
 
