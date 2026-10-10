@@ -23,6 +23,7 @@
 
 import { UI } from "/utils/components/ui-icons.js";
 import { heroPaint } from "/utils/components/nav-icons.js";
+import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
 import { createTable } from "./table.js";
 import { fullDeck, nameOf, base3, dealtInTurn, pileState } from "./deck.js";
 
@@ -31,11 +32,14 @@ const wait = (ms) => new Promise((done) => setTimeout(done, ms));
 const KEEP = "prep-portal:card-tricks";
 const COPY = "copy";   // the computer's own card: a second seven of hearts, from another pack
 
-const S = { trick: "base3", n: 14, open: false, g: null, begun: false, run: 0 };
+/* counts: whether the number of cards is written under each pile. Off unless
+   asked for — counting the cards is part of doing a trick. */
+const S = { trick: "base3", n: 14, counts: false, open: false, g: null, begun: false, run: 0 };
 
 const table = createTable($("#ct-table"), {
   onChange: (what) => { guide().changed(what); sync(); },
   onRefuse: (what) => { guide().refused(what); },
+  onDouble: (stack) => { askHowMany(stack); },
 });
 
 const guide = () => GUIDES[S.trick];
@@ -68,26 +72,21 @@ function glow(stack) {
 }
 
 /**
- * The computer takes its card, where it can be watched: the card is drawn
- * out of the pack face down, a copy is made on top of it, and the card goes
- * back to exactly where it was.
+ * The computer's card. Which card it chose is its own business and is not
+ * shown: a copy of it simply arrives on the table, face down, and stays
+ * there until the player lays a card against it.
  */
-async function drawAndCopy(cardId) {
+async function makeCopy(cardId) {
   const run = S.run;
   table.busy = true;
-  table.lift(cardId, "copy");
-  await pause(950);
-  if (run !== S.run) return null;
   const stack = table.addStack([COPY], { spot: "copy", tone: "blue", locked: true, face: cardId });
   /* it cannot be moved or turned, but a card can be laid against it */
   stack.accepts = true;
   const el = table.cards.get(COPY).el;
   el.classList.add("is-born");
-  await pause(900);
+  await pause(950);
   if (run !== S.run) return null;
   el.classList.remove("is-born");
-  table.settle(cardId);
-  await pause(450);
   table.busy = false;
   return stack;
 }
@@ -108,6 +107,54 @@ function confirm(what) {
   return card;
 }
 
+/* ── dealing several ───────────────────────────────────────────────────────
+   Double-tap a pile and a small box opens on it: type a number, and that
+   many cards are counted off beside it. */
+
+let asking = null;
+
+function askHowMany(stack) {
+  if (stack.cards.length < 2) return;
+  const box = $("#ct-ask");
+  const input = $("#ct-ask-n");
+  const at = table.where(stack);
+  const play = $("#ct-play").getBoundingClientRect();
+  asking = stack;
+  input.value = "";
+  input.max = String(stack.cards.length);
+  /* how many are in the pile is only said if the count is being shown */
+  input.placeholder = S.counts ? `1–${stack.cards.length}` : "how many";
+  box.hidden = false;
+  box.style.left = `${Math.max(90, Math.min(play.width - 90, at.x - play.left))}px`;
+  box.style.top = `${Math.max(60, at.y - play.top)}px`;
+  input.focus();
+}
+
+function closeAsk() {
+  asking = null;
+  $("#ct-ask").hidden = true;
+}
+
+async function dealAsked() {
+  const stack = asking;
+  const n = Number($("#ct-ask-n").value);
+  closeAsk();
+  if (!stack || !table.stacks.includes(stack) || !(n >= 1)) return;
+  await table.dealOff(stack, n);
+}
+
+/* ── PrepBot's lesson ──────────────────────────────────────────────────────
+   The tutorial is PrepBot on its TV, speaking in its own voice, with the
+   cards doing on the screen what it is saying. Loaded only when asked for. */
+
+async function watch() {
+  /* the TV is put up on the page, which a full-screen table would hide */
+  if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
+  closeAsk();
+  const { openTutorial } = await import("./tutor.js");
+  openTutorial(S.trick, S.n);
+}
+
 /* ── the pieces a guide is written with ───────────────────────────────────*/
 
 const row = (icon, words, state = "") => `<li class="${state}"><i>${icon}</i><span>${words}</span></li>`;
@@ -125,7 +172,8 @@ const HANDS = `<ul class="ct-hands">
   ${row(UI.hand(18), "Drag the top card to pull it off a pile.")}
   ${row(UI.layers(18), "Let it go over a card and it lands on top.")}
   ${row(UI.refresh(18), "Tap to turn over. A pile turns over together. With flip deal on, a card turns as you draw it.")}
-  ${row(UI.move(18), "Drag the number under a pile to carry all of it.")}
+  ${row(UI.move(18), "Drag the gold tab under a pile to carry all of it.")}
+  ${row(UI.cards(18), "Double-tap a pile to deal several: type how many.")}
   ${row(UI.shuffle(18), "Riffles the pile you touched last.")}
 </ul>`;
 
@@ -190,15 +238,12 @@ const BASE3 = {
   async intro() {
     const g = S.g;
     const run = S.run;
-    say("I take one card…");
-    await pause(500);
-    const drawn = drawAndCopy(g.mine);
-    await pause(950);
+    say("I have one of these 27 cards in mind…");
+    await pause(900);
     if (run !== S.run) return;
-    say("…copy it…");
-    await drawn;
+    await makeCopy(g.mine);
     if (run !== S.run) return;
-    say("…and put it back. Deal three piles of nine.");
+    say("…and this is a copy of it. Deal three piles of nine.");
     g.phase = "pack";
     g.before = table.topFirst(piles()[0]);
   },
@@ -379,17 +424,14 @@ const ELEVEN = {
     await pause(900);
     if (gone()) return;
 
+    /* which of the nine is nobody's business: it goes to the top of them
+       without being shown, and only its copy is seen */
     g.mine = nine.cards[Math.floor(Math.random() * 9)];
-    say("I draw one of the nine…");
-    const drawn = drawAndCopy(g.mine);
-    await pause(950);
-    if (gone()) return;
-    say("…copy it…");
-    await drawn;
-    if (gone()) return;
     table.send(g.mine, "nine");
-    say("…and lay it on top of the nine.");
-    await pause(1100);
+    say("My card is one of these nine. This is a copy of it.");
+    await makeCopy(g.mine);
+    if (gone()) return;
+    await pause(700);
     if (gone()) return;
 
     say("Now the other 43 are shuffled.");
@@ -420,66 +462,29 @@ const ELEVEN = {
 
     table.frozen = false;
     g.phase = "deal";
-    say("My card is in there. Over to you: turn a card and say 10.");
+    say("My card is in there. Over to you.");
   },
 
-  /** The countdown piles: everything the player has laid out, oldest first. */
-  laid: () => piles().filter((s) => !s.tag).sort((a, b) => a.id - b.id),
-
-  /** How each pile stands, read off the table. */
+  /** The piles the player laid out, oldest first — read only once it is over, for the secret. */
   read() {
-    return this.laid().map((s) => {
+    return piles().filter((s) => !s.tag).sort((a, b) => a.id - b.id).slice(0, 4).map((s) => {
       const n = s.cards.length;
-      /* a pile that ran out is turned face down, eleven cards thick */
-      if (allDown(s)) return n === 11 ? { s, state: "dead", match: 0, cards: n } : { s, state: "down", match: 0, cards: n };
-      if (!allUp(s)) return { s, state: "down", match: 0, cards: n };
-      return { s, cards: n, ...pileState(s.cards) };
+      if (allDown(s) && n === 11) return { state: "dead", match: 0, cards: n };
+      if (!allUp(s)) return { state: "down", match: 0, cards: n };
+      return { cards: n, ...pileState(s.cards) };
     });
   },
 
+  /* The counting down and the adding up are the player's to do: nothing is
+     written under the piles and nothing is said about them. The only thing
+     listened for is a card laid against the copy. */
   changed(what) {
     const g = S.g;
-    if (what && what.type === "offer") {
-      if (g.phase !== "deal" && g.phase !== "ready") return;
-      g.shown = confirm(what);
-      g.phase = "done";
-      this.verdict();
-      return;
-    }
-    if (g.phase !== "deal" && g.phase !== "ready") return;
+    if (!what || what.type !== "offer" || g.phase !== "deal") return;
     g.states = this.read();
-    const finished = (p) => p.state === "match" || p.state === "dead";
-    const done = g.states.length >= 4 && g.states.slice(0, 4).every(finished);
-
-    /* Once the four piles stand, whatever else is laid out is the player
-       counting cards off the pack: the piles keep their numbers, the counted
-       cards get none. */
-    const NOTE = {
-      open: (p) => [`say ${p.count}`, ""],
-      match: (p) => [`stop: ${p.match}`, "ok"],
-      over: (p) => [`${p.extra} too many`, "warn"],
-      cover: () => ["1 more", "warn"],
-      dead: () => ["out: 0", "ok"],
-      long: (p) => [`${p.extra} too many`, "warn"],
-      down: () => ["face up", "warn"],
-    };
-    g.states.forEach((p, i) => { if (done && i >= 4) table.setNote(p.s); else table.setNote(p.s, ...NOTE[p.state](p)); });
-    g.sum = g.states.slice(0, 4).reduce((t, p) => t + p.match, 0);
-    g.phase = done ? "ready" : "deal";
-
-    if (done) {
-      say("Four piles. Add their numbers, count that many off the pack, and drag the last one onto my card.");
-      return;
-    }
-    const p = g.states.find((x) => !finished(x));
-    if (!p) { say(`Pile ${g.states.length + 1}: turn a card and say 10.`); return; }
-    say({
-      open: `The next card is ${p.count}.`,
-      over: "That pile had stopped. Drag the extra back to the pack.",
-      cover: "Down to 1 and no match. One more card, then tap the pile to turn it over.",
-      long: "Too many. Drag the extra back to the pack.",
-      down: "Those cards need to be face up.",
-    }[p.state], p.state === "open" ? "" : "warn");
+    g.shown = confirm(what);
+    g.phase = "done";
+    this.verdict();
   },
 
   refused(what) {
@@ -506,8 +511,8 @@ const ELEVEN = {
 
   guide() {
     const g = S.g;
-    const now = { wait: 0, staging: 0, deal: 1, ready: 2, done: 5 }[g.phase];
-    const rows = (g.states || []).slice(0, 4).filter((p) => p.state === "match" || p.state === "dead").map((p, i) =>
+    const now = { wait: 0, staging: 0, deal: 1, done: 5 }[g.phase];
+    const rows = (g.phase === "done" ? g.states : []).filter((p) => p.state === "match" || p.state === "dead").map((p, i) =>
       `<tr><td>${i + 1}</td><td>${p.cards}</td><td>${p.match}</td><td><b>${p.cards + p.match}</b></td></tr>`).join("");
     const why = `
       <p>My card lies on top of nine cards, with the other 43 over it. However those 43 are shuffled, it is the <b>44th</b> card from the top.</p>
@@ -517,9 +522,9 @@ const ELEVEN = {
       <p>Four piles: cards turned plus numbers added is 4 × 11 = <b>44</b>, every time. So counting the numbers off the pack always ends on the 44th card.</p>
       <p>With a real pack: glimpse the <b>ninth card from the bottom</b>, let anyone shuffle the rest, and you can do this to them.</p>`;
 
-    return `<p class="ct-lead">I hide one card in the pack, in front of you. Then the magic is yours to do: find it.</p>
+    return `<p class="ct-lead">I hide one card in the pack, in front of you. The counting down and the adding up are yours to do. Find it.</p>
       ${steps([
-        [UI.shuffle(18), "Watch: nine aside, my card drawn and copied, the rest shuffled and stacked on top"],
+        [UI.shuffle(18), "Watch: nine cards aside with mine on top of them, the other 43 shuffled, cut in seven and stacked over it"],
         [UI.cards(18), "Turn cards onto a pile, counting down from 10. Stop when the card says your number. Make four piles"],
         [UI.plus(18), "Add the four numbers in your head"],
         [UI.hand(18), "Count that many cards off the pack, one at a time"],
@@ -540,15 +545,17 @@ function recall() {
     const was = JSON.parse(localStorage.getItem(KEEP) || "null") || {};
     if (GUIDES[was.trick]) S.trick = was.trick;
     if (was.n >= 1 && was.n <= 27) S.n = Math.round(was.n);
+    S.counts = was.counts === true;
   } catch { /* a browser that refuses storage still plays perfectly */ }
 }
 function remember() {
-  try { localStorage.setItem(KEEP, JSON.stringify({ trick: S.trick, n: S.n })); } catch { /* the same */ }
+  try { localStorage.setItem(KEEP, JSON.stringify({ trick: S.trick, n: S.n, counts: S.counts })); } catch { /* the same */ }
 }
 
 function drawSetup() {
   document.querySelectorAll('input[name="ct-trick"]').forEach((el) => { el.checked = el.value === S.trick; });
   $("#ct-number-field").hidden = S.trick !== "base3";
+  $("#ct-counts").checked = S.counts;
   $("#ct-n").textContent = String(S.n);
   $("#ct-less").disabled = S.n <= 1;
   $("#ct-more").disabled = S.n >= 27;
@@ -584,6 +591,7 @@ async function showGuide(on) {
 
 function begin() {
   S.run += 1;
+  closeAsk();
   S.open = false;
   S.begun = false;
   guide().setup();
@@ -594,6 +602,7 @@ function begin() {
 function play() {
   remember();
   document.body.classList.add("ct-playing");
+  $("#ct-table").classList.toggle("show-counts", S.counts);
   $("#ct-play").hidden = false;
   begin();
 }
@@ -612,6 +621,11 @@ function start() {
   $("#ct-less").innerHTML = UI.chevronLeft(16);
   $("#ct-more").innerHTML = UI.chevronRight(16);
   $("#ct-min").innerHTML = UI.chevronDown(16);
+  $("#ct-watch-bot").innerHTML = ICON_PREPBOT;
+  $("#ct-tv").innerHTML = ICON_PREPBOT;
+  $("#ct-watch").insertAdjacentHTML("beforeend", UI.play(14));
+  $("#ct-watch").addEventListener("click", watch);
+  $("#ct-tv").addEventListener("click", watch);
   const ICON = { "ct-exit": UI.arrowLeft, "ct-shuffle": UI.shuffle, "ct-turn": UI.refresh, "ct-again": UI.again, "ct-help": UI.doc, "ct-full": UI.expand };
   Object.entries(ICON).forEach(([id, icon]) => { $(`#${id}`).innerHTML = icon(20); });
 
@@ -621,6 +635,7 @@ function start() {
   /* setup */
   $("#ct-setup").addEventListener("change", (e) => {
     if (e.target.name === "ct-trick") { S.trick = e.target.value; drawSetup(); }
+    if (e.target.id === "ct-counts") S.counts = e.target.checked;
   });
   $("#ct-less").addEventListener("click", () => { S.n = Math.max(1, S.n - 1); drawSetup(); });
   $("#ct-more").addEventListener("click", () => { S.n = Math.min(27, S.n + 1); drawSetup(); });
@@ -645,6 +660,12 @@ function start() {
     else $("#ct-play").requestFullscreen().catch(() => {});
   });
   document.addEventListener("fullscreenchange", () => { full.innerHTML = (document.fullscreenElement ? UI.shrink : UI.expand)(20); });
+
+  $("#ct-ask-go").innerHTML = UI.check(18);
+  $("#ct-ask").addEventListener("submit", (e) => { e.preventDefault(); dealAsked(); });
+  $("#ct-ask-n").addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); closeAsk(); } });
+  /* a press anywhere else puts the box away */
+  document.addEventListener("pointerdown", (e) => { if (asking && !e.target.closest("#ct-ask")) closeAsk(); }, true);
 
   const dock = $("#ct-dock");
   dock.addEventListener("click", async (e) => {

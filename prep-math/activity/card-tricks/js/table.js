@@ -31,7 +31,7 @@ import { nameOf, riffle } from "./deck.js";
 const wait = (ms) => new Promise((done) => setTimeout(done, ms));
 const between = (lo, hi) => lo + Math.random() * (hi - lo);
 
-export function createTable(root, { onChange = () => {}, onRefuse = () => {} } = {}) {
+export function createTable(root, { onChange = () => {}, onRefuse = () => {}, onDouble = () => {} } = {}) {
   const cards = new Map();   // id → card
   let stacks = [];           // every pile, even a pile of one
   let spotSpec = { wide: [], narrow: [] };
@@ -42,6 +42,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
   let topZ = 1;
   let active = null;
   let drag = null;
+  let lastTap = { stack: null, at: 0 };
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const api = {
@@ -52,7 +53,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
     canShuffle: true,
     busy: false,
     still,
-    setup, addStack, layout, shuffle, deal, countOff, send, moveTo, take, stackOnto, flip, unlock,
+    setup, addStack, layout, shuffle, deal, dealOff, where, countOff, send, moveTo, take, stackOnto, flip, unlock,
     lift, settle, setNote, clearNotes, point, tagged, spotStack, activeStack, topFirst,
     get stacks() { return stacks; },
     get cards() { return cards; },
@@ -211,7 +212,7 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
       hand.style.bottom = `${(geo.ch + s.cards.length * rise() + 10).toFixed(1)}px`;
       grip.hidden = !many;
       grip.textContent = String(s.cards.length);
-      grip.title = `Carry all ${s.cards.length} cards`;
+      grip.title = "Carry the whole pile";
       grip.classList.toggle("is-active", s === active);
       note.hidden = !s.note;
       note.textContent = s.note ? s.note.text : "";
@@ -355,6 +356,62 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
     await wait(still ? 0 : 260);
     api.busy = false;
     onChange({ type: "deal" });
+  }
+
+  /** Where a pile is on the screen: the middle of its top card, and a card's size. */
+  function where(stack) {
+    const r = root.getBoundingClientRect();
+    return { x: r.left + stack.x * geo.W, y: r.top + stack.y * geo.H - stack.cards.length * rise(), cw: geo.cw, ch: geo.ch };
+  }
+
+  /**
+   * DEAL SEVERAL: count `n` cards off the top of a pile, one at a time, onto
+   * a pile beside it — the way a hand counts cards down. Each is flip-dealt if
+   * flip deal is on, and the last one counted ends up on top. Asking again
+   * goes on counting onto the same pile, unless it has been carried away.
+   */
+  async function dealOff(stack, n) {
+    if (api.busy || api.frozen || stack.locked) return null;
+    n = Math.max(0, Math.min(Math.floor(n) || 0, stack.cards.length));
+    if (!n) return null;
+    api.busy = true;
+    let to = stack.dealtTo;
+    if (!to || !stacks.includes(to) || to.x !== to.hx || to.y !== to.hy) {
+      /* beside the pile, on whichever side has room: toward the middle of
+         the table first, then under it, then the other side, then over it */
+      const mx = (geo.cw / 2) / geo.W;
+      const my = (geo.ch / 2) / geo.H;
+      const sx = (geo.cw * 1.14) / geo.W;
+      const sy = (geo.ch * 1.16) / geo.H;
+      const side = stack.x < 0.5 ? 1 : -1;
+      const free = ([x, y]) => x >= mx && x <= 1 - mx && y >= my && y <= 1 - my
+        && !stacks.some((o) => Math.abs(o.x - x) * geo.W < geo.cw * 0.9 && Math.abs(o.y - y) * geo.H < geo.ch * 0.9);
+      const tries = [[stack.x + side * sx, stack.y], [stack.x, stack.y + sy], [stack.x - side * sx, stack.y], [stack.x, stack.y - sy]];
+      const [x, y] = tries.find(free) || [Math.max(mx, Math.min(1 - mx, tries[0][0])), stack.y];
+      to = { id: nextStack++, x, y, mat: null, tag: null, cards: [], z: ++topZ, locked: false, note: null, wasPile: false };
+      to.hx = to.x;
+      to.hy = to.y;
+      stacks.push(to);
+      stack.dealtTo = to;
+    }
+    for (let i = 0; i < n; i++) {
+      const id = stack.cards.pop();
+      const card = cards.get(id);
+      card.stack = to;
+      to.cards.push(id);
+      if (api.turn) card.up = !card.up;
+      card.j = lean();
+      to.z = ++topZ;
+      layout();
+      await wait(still ? 0 : Math.max(60, 150 - n * 3));
+    }
+    if (to.cards.length > 1) to.wasPile = true;
+    dropEmpty();
+    active = to.cards.length > 1 ? to : active;
+    layout();
+    api.busy = false;
+    onChange({ type: "drop", stack: to });
+    return to;
   }
 
   /**
@@ -634,6 +691,17 @@ export function createTable(root, { onChange = () => {}, onRefuse = () => {} } =
   function tap(stack) {
     if (api.busy || api.frozen) return;
     if (stack.locked) { onRefuse({ why: "locked", stack }); return; }
+    /* A second tap on the same pile, straight after the first, is a DOUBLE
+       tap: the first tap's turn is taken back, and the pile is offered up to
+       be dealt from. */
+    const now = Date.now();
+    if (lastTap.stack === stack && now - lastTap.at < 380) {
+      lastTap = { stack: null, at: 0 };
+      flip(stack);
+      onDouble(stack);
+      return;
+    }
+    lastTap = { stack, at: now };
     flip(stack);
   }
 

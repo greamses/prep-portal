@@ -109,9 +109,23 @@
             <p class="ct-setup__note">Any place from 1 to 27. My card will end up there.</p>
           </div>
 
-          <button class="ct-start pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0" id="ct-start" type="button">
-            <span>To the table</span>
-          </button>
+          <div class="pp-setup-field">
+            <span>The Table</span>
+            <div class="strip-group" data-label="Extras">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="checkbox" id="ct-counts" /><span>Number of cards under each pile</span></label>
+            </div>
+          </div>
+
+          <div class="ct-go">
+            <!-- PrepBot teaches the chosen trick on its TV, in its own voice -->
+            <button class="ct-watch pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="ct-watch" type="button">
+              <span class="ct-watch__bot" id="ct-watch-bot"></span>
+              <span>Watch PrepBot do it</span>
+            </button>
+            <button class="ct-start pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0" id="ct-start" type="button">
+              <span>To the table</span>
+            </button>
+          </div>
         </div>
       </div>
     </main>
@@ -126,10 +140,17 @@
         <button type="button" class="pp-sticky pp-note-btn pp-sticky--c3 ct-tool" id="ct-turn" title="Flip deal: turn each card over as I draw it" aria-label="Flip deal: turn each card over as I draw it" aria-pressed="false"></button>
         <button type="button" class="pp-sticky pp-note-btn pp-sticky--c4 ct-tool" id="ct-again" title="Start again" aria-label="Start again"></button>
         <button type="button" class="pp-sticky pp-note-btn pp-sticky--c0 ct-tool" id="ct-help" title="Instructions" aria-label="Instructions"></button>
+        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c2 ct-tool" id="ct-tv" title="PrepBot shows you how, on its TV" aria-label="PrepBot shows you how, on its TV"></button>
         <button type="button" class="pp-sticky pp-note-btn pp-sticky--c5 ct-tool" id="ct-full" title="Full screen" aria-label="Full screen"></button>
       </div>
 
       <p class="ct-say" id="ct-say" role="status" aria-live="polite"></p>
+
+      <!-- deal several: opens on a pile that is double-tapped -->
+      <form class="ct-ask" id="ct-ask" hidden>
+        <input class="ct-ask__in" id="ct-ask-n" type="number" inputmode="numeric" min="1" step="1" autocomplete="off" aria-label="How many cards to deal" />
+        <button type="submit" class="pp-sticky pp-note-btn pp-sticky--c2 ct-ask__go" id="ct-ask-go" title="Deal them" aria-label="Deal them"></button>
+      </form>
 
       <!-- whatever there is to press right now -->
       <div class="ct-dock" id="ct-dock"></div>
