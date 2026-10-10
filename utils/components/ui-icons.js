@@ -77,6 +77,12 @@ export const UI = {
       `<circle cx="15" cy="7.1" r="3" fill="${LOUD}"/><circle cx="15" cy="7.1" r="1.2" fill="#fff"/>` +
       `<circle cx="8.6" cy="16.9" r="3" fill="${LOUD}"/><circle cx="8.6" cy="16.9" r="1.2" fill="#fff"/>`
   ),
+  /* shuffle: two streams crossing over, as the halves of a pack do */
+  shuffle: svg(
+    `<path d="M2.6 7h3.6c5 0 6.6 10 11.6 10h1" fill="none" stroke="${PAPER}" stroke-width="2.8" stroke-linecap="round"/>` +
+      `<path d="M2.6 17h3.6c5 0 6.6-10 11.6-10h1" fill="none" stroke="${GOLD}" stroke-width="2.8" stroke-linecap="round"/>` +
+      `<path d="M17.4 3.2 22.6 7l-5.2 3.8zM17.4 13.2 22.6 17l-5.2 3.8z" fill="${LOUD}"/>`
+  ),
   /* a deck: one card fanned behind another */
   cards: svg(
     r(9.6, 2.6, 11.6, 15, GOLD, 1.8, ` transform="rotate(10 15.4 10.1)"`) +

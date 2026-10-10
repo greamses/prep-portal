@@ -338,6 +338,21 @@ export const PAGES = [
     ],
   },
   {
+    file: "prep-math/activity/card-tricks/index.html",
+    section: "maths",
+    name: "Card Tricks",
+    title: "Card Tricks: The 27-Card Base 3 Trick and the Eleven Trick",
+    desc: "A real pack of cards on a table, and two tricks that are sums underneath: steer a hidden card to any place by counting in base 3, then learn the Eleven trick.",
+    intro:
+      "A pack of cards you can pull, stack, turn over and riffle-shuffle, the way hands do. In the 27-card trick the computer keeps a card to itself and you are the magician: deal three piles of nine, gather them, and after three deals its card lies at the number you chose. In Eleven you shuffle as much as you like, and the card you count to is the one the computer laid face down before you began. Each trick comes with its secret, worked through with your own cards.",
+    points: [
+      "Numbers in base 3: nines, threes and ones",
+      "Why every countdown pile and its number make 11",
+      "Drag to deal, tap to turn, and a real riffle shuffle",
+      "Works with a finger on a tablet",
+    ],
+  },
+  {
     file: "prep-math/activity/cartesian-art/index.html",
     section: "maths",
     name: "Cartesian Art",

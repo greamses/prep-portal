@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- seo:head -->
+    <!-- Written by scripts/seo.mjs from scripts/seo/pages.mjs. Edit the registry, not this block. -->
+    <title>Card Tricks: The 27-Card Base 3 Trick and the Eleven Trick | Prep Portal</title>
+    <meta name="description" content="A real pack of cards on a table, and two tricks that are sums underneath: steer a hidden card to any place by counting in base 3, then learn the Eleven trick." />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <link rel="canonical" href="https://www.prepportal.com.ng/prep-math/activity/card-tricks/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Prep Portal" />
+    <meta property="og:locale" content="en_NG" />
+    <meta property="og:url" content="https://www.prepportal.com.ng/prep-math/activity/card-tricks/" />
+    <meta property="og:title" content="Card Tricks: The 27-Card Base 3 Trick and the Eleven Trick" />
+    <meta property="og:description" content="A real pack of cards on a table, and two tricks that are sums underneath: steer a hidden card to any place by counting in base 3, then learn the Eleven trick." />
+    <meta property="og:image" content="https://www.prepportal.com.ng/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Card Tricks: The 27-Card Base 3 Trick and the Eleven Trick" />
+    <meta name="twitter:description" content="A real pack of cards on a table, and two tricks that are sums underneath: steer a hidden card to any place by counting in base 3, then learn the Eleven trick." />
+    <meta name="twitter:image" content="https://www.prepportal.com.ng/og-image.png" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":["WebPage","LearningResource"],"@id":"https://www.prepportal.com.ng/prep-math/activity/card-tricks/#page","url":"https://www.prepportal.com.ng/prep-math/activity/card-tricks/","name":"Card Tricks: The 27-Card Base 3 Trick and the Eleven Trick","description":"A real pack of cards on a table, and two tricks that are sums underneath: steer a hidden card to any place by counting in base 3, then learn the Eleven trick.","inLanguage":"en-NG","isPartOf":{"@id":"https://www.prepportal.com.ng/#website"},"provider":{"@id":"https://www.prepportal.com.ng/#org"},"learningResourceType":"Maths activities","teaches":["Numbers in base 3: nines, threes and ones","Why every countdown pile and its number make 11","Drag to deal, tap to turn, and a real riffle shuffle","Works with a finger on a tablet"],"audience":{"@type":"EducationalAudience","educationalRole":"student"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.prepportal.com.ng/"},{"@type":"ListItem","position":2,"name":"Card Tricks","item":"https://www.prepportal.com.ng/prep-math/activity/card-tricks/"}]}]}</script>
+    <link rel="stylesheet" href="/utils/components/about.css" />
+    <!-- /seo:head -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+
+    <!-- Page access gate: feature "prep-math-activities", part "card-tricks" -->
+    <script type="module" src="/utils/auth/premium-guard.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Shantell+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <!-- the site-wide sheet that dresses the buttons as sticky notes; it owns
+         the paper, and this page only adds layout on top -->
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+    <link rel="stylesheet" href="./style.css" />
+
+    <!-- the guards resolve firebase by bare specifier -->
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+  </head>
+
+  <body>
+    <div class="ct-paint" id="ct-paint" aria-hidden="true"></div>
+
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>Cards</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <main class="ct-page">
+      <header class="ct-head">
+        <span class="ct-eyebrow">
+          <span id="ct-eyebrow-icon"></span>
+          Mathematics · Number
+        </span>
+        <h1 class="ct-title">Card Tricks<em>.</em></h1>
+      </header>
+
+      <!-- which trick -->
+      <div class="ct-tabs" id="ct-tabs" role="group" aria-label="Which trick"></div>
+
+      <section class="ct-bar">
+        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c1" id="ct-shuffle"></button>
+        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c3 ct-toggle" id="ct-turn" aria-pressed="false"></button>
+        <button type="button" class="pp-sticky pp-note-btn pp-note-btn--plain" id="ct-again"></button>
+        <p class="ct-say" id="ct-say" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- the table on the left, whoever you are doing the trick with on the right -->
+      <section class="ct-work" id="ct-work">
+        <!-- what to do now: beside the table, and above it on a phone -->
+        <div class="ct-now" id="ct-now"></div>
+
+        <div class="ct-felt">
+          <div class="ct-table" id="ct-table" aria-label="The card table"></div>
+        </div>
+
+        <!-- the receipt, used whole: the wrapper carries the shadow, the paper its torn edges -->
+        <aside class="pp-receipt ct-guide" aria-label="The trick, step by step">
+          <div class="pp-receipt__paper ct-guide__paper" id="ct-guide"></div>
+        </aside>
+      </section>
+    </main>
+
+    <script type="module" src="/utils/components/nav-builder.js"></script>
+    <script type="module" src="./js/main.js"></script>
+    <!-- seo:about -->
+    <section id="pp-about" class="pp-about" data-access="premium" hidden>
+      <nav class="pp-about-crumbs" aria-label="Breadcrumb">
+        <a href="/">Home</a> <span aria-hidden="true">/</span> <span aria-current="page">Card Tricks</span>
+      </nav>
+      <h1 class="pp-about-title">Card Tricks: The 27-Card Base 3 Trick and the Eleven Trick</h1>
+      <p class="pp-about-intro">A pack of cards you can pull, stack, turn over and riffle-shuffle, the way hands do. In the 27-card trick the computer keeps a card to itself and you are the magician: deal three piles of nine, gather them, and after three deals its card lies at the number you chose. In Eleven you shuffle as much as you like, and the card you count to is the one the computer laid face down before you began. Each trick comes with its secret, worked through with your own cards.</p>
+      <ul class="pp-about-points">
+        <li>Numbers in base 3: nines, threes and ones</li>
+        <li>Why every countdown pile and its number make 11</li>
+        <li>Drag to deal, tap to turn, and a real riffle shuffle</li>
+        <li>Works with a finger on a tablet</li>
+      </ul>
+      <p class="pp-about-note">Card Tricks opens with a Prep Portal plan. Sign in to continue, or see what a plan includes.</p>
+      <p class="pp-about-actions">
+        <a class="pp-about-btn pp-about-btn--main" data-pp-login href="/index.html?login=1&amp;next=%2Fprep-math%2Factivity%2Fcard-tricks%2F">Sign in or create an account</a>
+        <a class="pp-about-btn" href="/subscribe.html#plans">See the plans</a>
+      </p>
+      <h2 class="pp-about-more">More maths activities</h2>
+      <ul class="pp-about-links">
+        <li><a href="/prep-math/drag/">Algebra Lab</a></li>
+        <li><a href="/prep-math/graphing/">Graph Predictor</a></li>
+        <li><a href="/prep-math/mental-math/">Mental Math Tricks</a></li>
+        <li><a href="/prep-math/mental-math/times-eleven/">The × 11 Trick</a></li>
+        <li><a href="/prep-math/activity/">Fraction Explorer</a></li>
+        <li><a href="/prep-math/activity/equivalent-fractions/">Equivalent Fractions</a></li>
+        <li><a href="/prep-math/activity/algebra-moves/">Algebra Moves</a></li>
+        <li><a href="/prep-math/activity/base-blocks/">Manipulatives</a></li>
+        <li><a href="/prep-math/activity/number-match/">Number Match</a></li>
+        <li><a href="/prep-math/activity/cartesian-art/">Cartesian Art</a></li>
+        <li><a href="/prep-math/activity/polygon-angles/">Polygon Angles</a></li>
+        <li><a href="/prep-math/activity/transversals/">Transversals</a></li>
+        <li><a href="/prep-math/activity/pythagoras/">Pythagoras</a></li>
+        <li><a href="/prep-math/activity/surface-area/">Surface Area</a></li>
+        <li><a href="/prep-math/activity/circle-theorems/">Circle Theorems</a></li>
+      </ul>
+    </section>
+    <!-- /seo:about -->
+  </body>
+</html>

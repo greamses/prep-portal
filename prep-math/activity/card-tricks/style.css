@@ -1,0 +1,349 @@
+/* ============================================================================
+   CARD TRICKS
+   ----------------------------------------------------------------------------
+   A table of cards and a slip of paper beside it. The table is baize, because
+   white cards on cream paper cannot be seen; everything round it is the
+   site's own paper and notes.
+
+   Two things here are drawings and keep their own inks in both themes: the
+   cards (art.js) and the cloth they lie on. Everything else is tokens.
+   ========================================================================== */
+
+body { overflow-anchor: none; }
+
+.ct-paint { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; opacity: 0.26; }
+.ct-paint svg { width: 100%; height: 100%; display: block; }
+[data-theme="dark"] .ct-paint { opacity: 0.15; }
+
+.ct-page {
+  position: relative;
+  z-index: 1;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 5rem;
+}
+
+/* ── the head ─────────────────────────────────────────────────────────────*/
+
+.ct-head { margin-bottom: 1rem; }
+.ct-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.ct-eyebrow svg { width: 15px; height: 15px; }
+.ct-title {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 4.5vw, 2.4rem);
+  font-weight: 900;
+  color: var(--ink);
+}
+.ct-title em { color: var(--accent-primary); font-style: normal; }
+
+/* ── which trick, and what you can do to the table ────────────────────────*/
+
+.ct-tabs, .ct-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+}
+.ct-tabs { margin: 1rem 0 0.9rem; }
+.ct-bar { margin: 0 0 1.1rem; }
+
+/* a trick not chosen is unbleached paper; the chosen one keeps its colour */
+.ct-tabs .ct-tab:not(.is-on) { --pp-note-bg: #f0ece2; color: #6b645a; }
+.ct-bar .ct-toggle:not(.is-on) { --pp-note-bg: #f0ece2; color: #6b645a; }
+
+.ct-say {
+  flex: 1 1 16rem;
+  margin: 0;
+  min-height: 1.4em;
+  font-family: "Shantell Sans", "Segoe Print", cursive;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+.ct-say[data-tone="win"] { color: var(--ink); font-weight: 700; }
+.ct-say[data-tone="warn"] { color: var(--ink); }
+
+/* ── table left, guide right ──────────────────────────────────────────────*/
+
+.ct-work {
+  display: grid;
+  gap: 1.1rem 1.4rem;
+  align-items: start;
+  grid-template-areas: "now" "table" "guide";
+}
+.ct-now { grid-area: now; font-family: var(--font-mono); }
+.ct-now:empty { display: none; }
+.ct-felt { grid-area: table; }
+.ct-guide { grid-area: guide; }
+@media (min-width: 900px) {
+  .ct-work {
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 23rem);
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "table now" "table guide";
+  }
+}
+
+/* The cloth, in its wooden rail. A drawing of a card table, so it stays
+   green in the dark. */
+.ct-felt {
+  padding: clamp(0.4rem, 1.2vw, 0.8rem);
+  background: #5b4636;
+  box-shadow: var(--shadow-lg);
+}
+.ct-table {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(255, 255, 255, 0.1), transparent 70%),
+    #2f7d57;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25), inset 0 2px 18px rgba(0, 0, 0, 0.3);
+  /* a drag must not scroll the page under the finger */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.ct-table.is-narrow { aspect-ratio: 3 / 4; }
+
+/* ── the marked places ────────────────────────────────────────────────────*/
+
+.ct-mat {
+  position: absolute;
+  width: var(--ct-cw);
+  height: calc(var(--ct-cw) * 1.4);
+  translate: -50% -50%;
+  border: 1.5px dashed rgba(255, 255, 255, 0.34);
+  pointer-events: none;
+}
+.ct-mat.is-over { border-color: #fff3a8; background: rgba(255, 243, 168, 0.14); }
+.ct-mat__label, .ct-mat__note {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  width: max-content;
+  max-width: calc(var(--ct-cw) * 1.6);
+  text-align: center;
+  line-height: 1.15;
+}
+.ct-mat__label {
+  /* clear of a full pack, which stands a fifth of a card above its place */
+  bottom: calc(100% + var(--ct-cw) * 0.2);
+  font-family: var(--font-mono);
+  font-size: clamp(0.5rem, 1.1vw, 0.66rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+.ct-mat__note {
+  top: calc(100% + 1.25rem);
+  font-family: "Shantell Sans", "Segoe Print", cursive;
+  font-size: clamp(0.66rem, 1.5vw, 0.9rem);
+  font-weight: 700;
+  color: #fff;
+  z-index: 9000;
+}
+.ct-mat[data-tone="ok"] .ct-mat__note { color: #c8f0c0; }
+.ct-mat[data-tone="warn"] .ct-mat__note { color: #ffd7a3; }
+
+/* ── a card ───────────────────────────────────────────────────────────────*/
+
+.ct-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--ct-cw);
+  height: calc(var(--ct-cw) * 1.4);
+  perspective: 700px;
+  cursor: grab;
+  outline: none;
+  transition: translate 0.26s cubic-bezier(0.2, 0.8, 0.3, 1), rotate 0.26s ease;
+  will-change: translate;
+}
+.ct-table.is-still .ct-card,
+.ct-table.is-still .ct-grip,
+.ct-card.is-dragging { transition: none; }
+.ct-table.is-shuffling .ct-card { transition-duration: 0.2s; }
+
+.ct-card__in {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform: rotateY(180deg);
+  transition: transform 0.42s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+.ct-card.is-up .ct-card__in { transform: rotateY(0deg); }
+.ct-table.is-still .ct-card__in { transition: none; }
+
+.ct-card__face, .ct-card__back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.ct-card__back { transform: rotateY(180deg); }
+.ct-art { display: block; width: 100%; height: 100%; }
+
+/* the shadow a pile throws is thrown by its bottom card; a card in the hand
+   throws a longer one */
+.ct-card.is-base .ct-art { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.42)); }
+.ct-card.is-dragging { cursor: grabbing; }
+.ct-card.is-dragging.is-base .ct-art { filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.45)); }
+
+.ct-card:focus-visible .ct-art { filter: drop-shadow(0 0 5px #fff3a8) drop-shadow(0 0 2px #fff3a8); }
+/* where a carried card would land */
+.ct-card.is-over .ct-art { filter: drop-shadow(0 0 6px #fff3a8) drop-shadow(0 0 2px #fff3a8); }
+/* the pile the computer's card is in */
+.ct-card.is-mine.is-top .ct-art { filter: drop-shadow(0 0 7px #c8f0c0) drop-shadow(0 0 3px #c8f0c0); }
+
+/* The tab under a pile: how many, and the handle for all of them. */
+.ct-grip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 2.1rem;
+  margin: -0.35rem 0 0 -1.05rem;
+  padding: 0.12rem 0.3rem 0.16rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  color: #14130f;
+  background: #fff3a8;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  cursor: grab;
+  transition: translate 0.26s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.ct-grip.is-active { background: #ffd7a3; }
+.ct-grip.is-dragging { transition: none; cursor: grabbing; }
+.ct-table.is-shuffling .ct-grip { opacity: 0; }
+
+/* ── the guide ────────────────────────────────────────────────────────────*/
+
+.ct-guide.pp-receipt { display: block; }
+.ct-guide .ct-guide__paper { padding: 1.3rem 1.5rem 1.6rem; font-family: var(--font-mono); font-weight: 400; }
+
+.ct-guide__title {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+.ct-guide__lead { margin: 0 0 0.9rem; font-size: 0.88rem; line-height: 1.5; color: var(--text-secondary); }
+
+.ct-steps {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: ct;
+  border-top: var(--border-subtle);
+}
+.ct-steps li {
+  counter-increment: ct;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.34rem 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  border-bottom: var(--border-subtle);
+}
+.ct-steps li::before { content: counter(ct); min-width: 1.1em; font-weight: 700; }
+.ct-steps li.is-done { color: var(--text-secondary); text-decoration: line-through; }
+.ct-steps li.is-now { color: var(--ink); font-weight: 700; background: color-mix(in srgb, var(--accent-primary) 28%, transparent); }
+
+.ct-guide__now { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem; }
+.ct-guide__do { flex-basis: 100%; margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--ink); }
+.ct-guide__hint { flex-basis: 100%; margin: 0; font-size: 0.8rem; line-height: 1.45; color: var(--text-secondary); }
+
+.ct-tips { margin: 0; padding-left: 1.1rem; font-size: 0.88rem; line-height: 1.5; color: var(--ink); }
+.ct-tips li + li { margin-top: 0.45rem; }
+
+/* choosing the number */
+.ct-number { flex-basis: 100%; display: flex; align-items: center; gap: 0.7rem; }
+.ct-number__label, .ct-add label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.ct-number__n {
+  min-width: 2.4ch;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 900;
+  text-align: center;
+  color: var(--ink);
+}
+
+/* the sum */
+.ct-add { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem; }
+.ct-add__in {
+  width: 4.2rem;
+  padding: 0.4rem 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--ink);
+  background: var(--surface-primary);
+  border: var(--border);
+  border-radius: 0;
+}
+
+/* the secret */
+.ct-secret { margin-top: 1.2rem; padding-top: 0.9rem; border-top: var(--border-subtle); }
+.ct-secret summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  font-family: "Shantell Sans", "Segoe Print", cursive;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+  list-style: none;
+}
+.ct-secret summary::-webkit-details-marker { display: none; }
+.ct-secret summary svg { width: 15px; height: 15px; }
+.ct-secret p { margin: 0.7rem 0 0; font-size: 0.86rem; line-height: 1.55; color: var(--ink); }
+.ct-secret .ct-sum { font-family: var(--font-mono); font-weight: 700; }
+.ct-places { width: 100%; margin-top: 0.8rem; border-collapse: collapse; font-size: 0.82rem; }
+.ct-places th, .ct-places td { padding: 0.32rem 0.4rem; text-align: left; border-bottom: var(--border-subtle); }
+.ct-places th {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.ct-places em { font-style: normal; font-size: 0.74rem; margin-left: 0.3rem; }
+.ct-ok { color: color-mix(in srgb, var(--accent-success) 60%, var(--ink)); }
+.ct-no { color: color-mix(in srgb, var(--accent-danger) 65%, var(--ink)); }
+
+@media (max-width: 560px) {
+  .ct-page { padding: 1rem 0.75rem 4rem; }
+  .ct-guide .ct-guide__paper { padding: 1.1rem 1.2rem 1.3rem; }
+}
+
+/* The line the computer speaks on gets longer and shorter. Below the width
+   where it wraps, it keeps room for its longest self, so the table does not
+   jump down the page under a finger that is half way through a deal. */
+@media (max-width: 899px) {
+  .ct-say { flex-basis: 100%; min-height: 4.4em; }
+}

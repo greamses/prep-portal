@@ -69,6 +69,11 @@ const SHOT = {
     const { blocksSvg } = await import("/prep-math/activity/maths-workbook/js/blocks.js");
     return { svg: blocksSvg([4, 3, 2], 10, { maxCells: 34, label: "Base-ten blocks: two hundreds, three tens and four ones" }) };
   },
+  /* three cards out of the Card Tricks pack, fanned */
+  pack: async () => {
+    const { fanSvg } = await import("/prep-math/activity/card-tricks/js/art.js");
+    return { svg: fanSvg(["KS", "7H", "AD"]) };
+  },
   /* tallies — one of the ways Number Match asks you to write a number */
   tally: async () => {
     const { tallySvg } = await import("/prep-math/activity/statistics-workbook/js/pictoart.js");
@@ -136,6 +141,7 @@ export const BANDS = [
       { art: "graph", title: "Graphs of functions", tag: "Graphs", line: "Tap the points, rule the line, read the rule back off it.", href: "/prep-math/activity/algebra-workbook/index.html" },
       { art: "blocks", title: "Manipulatives", tag: "Number", line: "Blocks, abacuses, tiles and charts on one endless table.", href: "/prep-math/activity/base-blocks/index.html" },
       { art: "tally", title: "Number Match", tag: "Number", line: "Every way of writing one number, poured out as notes.", href: "/prep-math/activity/number-match/index.html" },
+      { art: "pack", title: "Card Tricks", tag: "Number", line: "A real pack, and two tricks that turn out to be sums.", href: "/prep-math/activity/card-tricks/index.html" },
     ],
   },
   {
