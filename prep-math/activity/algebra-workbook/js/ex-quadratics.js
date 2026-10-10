@@ -142,7 +142,8 @@ const fcNumbers = {
       say("Pairs that multiply to 6: 1 and 6 (sum 7), 2 and 3 (sum 5) — that one. For product −6 and sum 1: −2 and 3."));
   },
   key(item) {
-    return [want.num(item.p), want.num(item.q)];
+    /* the pair, IN ANY ORDER: "2 and 3" and "3 and 2" are one answer */
+    return [want.set(item.p, item.q)];
   },
   answer(item) {
     return [`${num(item.p)} and ${num(item.q)}`];
@@ -170,7 +171,8 @@ const fcFactorise = {
       say("Product −6, sum −1: the pair is −3 and 2. So (x − 3)(x + 2). Check: x² + 2x − 3x − 6 = x² − x − 6."));
   },
   key(item) {
-    return [want.num(item.p), want.num(item.q)];
+    /* the pair, IN ANY ORDER: "2 and 3" and "3 and 2" are one answer */
+    return [want.set(item.p, item.q)];
   },
   answer(item) {
     return [`${bracket(1, item.p)}${bracket(1, item.q)}`];
@@ -197,12 +199,13 @@ const fcSolve = {
   },
   worked() {
     return worked(eq("x² + 5x + 6 = 0") +
-      say("(x + 2)(x + 3) = 0. Either x + 2 = 0, so x = −2, or x + 3 = 0, so x = −3. Smaller first: x = −3 or x = −2. " +
+      say("(x + 2)(x + 3) = 0. Either x + 2 = 0, so x = −2, or x + 3 = 0, so x = −3. So x = −2 or x = −3 — either way round. " +
         "Check: 9 − 15 + 6 = 0."));
   },
   key(item) {
     const { p, q } = item;
-    return [p, q, -q, -p].map((v) => want.num(v));
+    /* the two brackets in any order, and then the two roots in any order */
+    return [want.set(p, q), want.set(-q, -p)];
   },
   answer(item) {
     return [`${bracket(1, item.p)}${bracket(1, item.q)} = 0; x = ${num(-item.q)} or ${num(-item.p)}`];
@@ -243,10 +246,10 @@ const fcLeading = {
   worked() {
     return worked(eq("2x² + 7x + 3 = 0") +
       say("a × c = 6 and the sum is 7: the numbers are 1 and 6. Split: 2x² + x + 6x + 3 = x(2x + 1) + 3(2x + 1) = " +
-        "(2x + 1)(x + 3). So 2x + 1 = 0 gives x = −1/2, and x + 3 = 0 gives x = −3. Smaller first: −3 or −1/2."));
+        "(2x + 1)(x + 3). So 2x + 1 = 0 gives x = −1/2, and x + 3 = 0 gives x = −3. The two answers are −3 and −1/2, in either order."));
   },
   key(item) {
-    return [want.num(item.a * item.c), want.num(item.u), want.num(item.v), ...item.roots.map(([n, d]) => want.frac(n, d))];
+    return [want.num(item.a * item.c), want.set(item.u, item.v), want.set(...item.roots)];
   },
   answer(item) {
     return [`a × c = ${num(item.a * item.c)}: ${num(item.u)} and ${num(item.v)}; ${bracket(item.a, item.m)}${bracket(1, item.n)} = 0`];
@@ -386,7 +389,8 @@ const fmPieces = {
         "So x = (5 − 1) ÷ 2 = 2 or x = (5 + 1) ÷ 2 = 3."));
   },
   key(item) {
-    return [want.num(-item.b), want.num(item.disc), want.num(Math.sqrt(item.disc)), want.num(2 * item.a), ...item.roots.map(([n, d]) => want.frac(n, d))];
+    return [want.num(-item.b), want.num(item.disc), want.num(Math.sqrt(item.disc)), want.num(2 * item.a),
+      want.set(...item.roots)];
   },
   answer(item) {
     return [`−b = ${num(-item.b)}, disc ${item.disc}, √ = ${Math.sqrt(item.disc)}, 2a = ${2 * item.a}; x = ${item.roots.map(([n, d]) => (d === 1 ? num(n) : `${num(n)}/${d}`)).join(" or ")}`];
@@ -416,7 +420,8 @@ const fmSolve = {
         "or 12 ÷ 4 = 3."));
   },
   key(item) {
-    return item.roots.map(([n, d]) => want.frac(n, d));
+    /* the two solutions, in any order */
+    return [want.set(...item.roots)];
   },
   answer(item) {
     return [`x = ${item.roots.map(([n, d]) => (d === 1 ? num(n) : `${num(n)}/${d}`)).join(" or ")}`];
@@ -513,7 +518,7 @@ const lhSolve = {
         "−6 and multiply to 5."));
   },
   key(item) {
-    return [want.num(item.m), want.num(item.u), want.num(item.m - item.u), want.num(item.m + item.u)];
+    return [want.num(item.m), want.num(item.u), want.set(item.m - item.u, item.m + item.u)];
   },
   answer(item) {
     return [`m = ${num(item.m)}, u = ${item.u}; x = ${num(item.m - item.u)} or ${num(item.m + item.u)}`];
@@ -557,7 +562,7 @@ const lhHarder = {
   key(item) {
     const { a, b, c, r1, r2, gap } = item;
     const first = a === 1 ? [] : [want.num(b), want.num(c)];
-    return [...first, want.frac(r1 + r2, 2), want.frac(gap, 2), want.num(r1), want.num(r2)];
+    return [...first, want.frac(r1 + r2, 2), want.frac(gap, 2), want.set(r1, r2)];
   },
   answer(item) {
     return [`x² ${item.b < 0 ? "−" : "+"} ${Math.abs(item.b)}x ${item.c < 0 ? "−" : "+"} ${Math.abs(item.c)} = 0; m = ${item.r1 + item.r2}/2, u = ${item.gap}/2; x = ${num(item.r1)} or ${num(item.r2)}`];

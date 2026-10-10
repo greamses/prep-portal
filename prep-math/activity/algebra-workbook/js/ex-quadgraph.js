@@ -147,7 +147,8 @@ const qgRoots = {
       "between is 2: the line of symmetry is x = 2, and the bottom of the U is at (2, −1)."));
   },
   key(item) {
-    return [want.num(item.p), want.num(item.q), want.num(item.h), want.num(item.h), want.num(item.k)];
+    /* where it crosses, in either order; then the symmetry line and the turning point */
+    return [want.set(item.p, item.q), want.num(item.h), want.num(item.h), want.num(item.k)];
   },
   answer(item) {
     return [`x = ${num(item.p)} or ${num(item.q)}; x = ${num(item.h)}; (${num(item.h)}, ${num(item.k)})`];
@@ -181,7 +182,7 @@ const qgEqualsK = {
       eq(`${quad(item.b, item.c).replace("y = ", "")} = ${num(item.kk)} when x = ${box()} or x = ${box()}`));
   },
   key(item) {
-    return [want.num(item.s1), want.num(item.s2)];
+    return [want.set(item.s1, item.s2)];
   },
   answer(item) {
     return [`x = ${num(item.s1)} or ${num(item.s2)}`];

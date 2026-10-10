@@ -27,7 +27,17 @@ export const want = {
   frac: (n, d) => ({ kind: "frac", n, d }),
   /** One place that must mention every one of these numbers. */
   nums: (...vs) => ({ kind: "nums", vs }),
-  /** Several places that between them hold these values, in any order. */
+  /**
+   * Several places that between them hold these values, IN ANY ORDER.
+   *
+   * This is what the two solutions of a quadratic are, and the two numbers of a
+   * factor pair: x = 5 and x = −4 is the same answer as x = −4 and x = 5, and
+   * a page that insists on one of them is marking handwriting, not algebra.
+   *
+   * A value may be a whole number or a fraction written `[n, d]`, because the
+   * formula and the ac method both hand back roots like 3/2 — and any equal
+   * fraction is right, as it is for `frac`.
+   */
   set: (...vs) => ({ kind: "set", vs }),
   /** A row of tick boxes; option `i` (from 0) is the right one. */
   tick: (i) => ({ kind: "tick", i }),
@@ -119,6 +129,18 @@ export const want = {
 
 const MINUS = /[−–—]/g;
 
+/** A wanted value as a rational: 5 → 5/1, [3, 2] → 3/2. */
+const asRat = (v) => (Array.isArray(v) ? { n: v[0], d: v[1] } : { n: v, d: 1 });
+
+/** What was typed, as a rational: "−4", "3/2", " 5 " — or null if it is not one. */
+function readRat(s) {
+  const t = String(s ?? "").replace(MINUS, "-").replace(/[\s,]/g, "");
+  const m = t.match(/^(-?\d+)(?:\/(-?\d+))?$/);
+  if (!m) return null;
+  const d = m[2] === undefined ? 1 : Number(m[2]);
+  return d === 0 ? null : { n: Number(m[1]), d };
+}
+
 /** The number in what was typed, or NaN. "60°", " 60 ", "60.0" are all 60. */
 export function parseNum(s) {
   const t = String(s ?? "").replace(MINUS, "-").replace(/[°\s,]/g, "");
@@ -176,12 +198,16 @@ export function judge(entry, values) {
       return [entry.vs.every((v) => got.includes(v))];
     }
     case "set": {
-      const pool = entry.vs.slice();
+      /* Matched as RATIONALS so a set can hold fractions, and matched against a
+         pool that is used up, so "5 and 5" is not two marks for a pair that has
+         only one 5 in it. */
+      const pool = entry.vs.map(asRat);
       return values.map((v) => {
-        const x = parseNum(v);
-        const at = pool.findIndex((p) => p === x);
+        const x = readRat(v);
+        if (!x) return false;
+        const at = pool.findIndex((p) => p && p.n * x.d === x.n * p.d);
         if (at < 0) return false;
-        pool.splice(at, 1);
+        pool[at] = null;
         return true;
       });
     }
@@ -234,7 +260,7 @@ export function sayWant(entry, tickLabels = []) {
     case "text": return entry.accept[0];
     case "frac": return lowest(entry.n, entry.d);
     case "nums": return entry.vs.join(" and ");
-    case "set": return entry.vs.join(", ");
+    case "set": return entry.vs.map((v) => lowest(asRat(v).n, asRat(v).d)).join(", ");
     case "tick": return tickLabels[entry.i] || `option ${entry.i + 1}`;
     case "draw": return entry.says || "";
     case "cell": return entry.v;
@@ -267,7 +293,7 @@ export function rightValues(entry) {
     case "text": return [entry.accept[0]];
     case "frac": return [lowest(entry.n, entry.d)];
     case "nums": return [entry.vs.join(" and ")];
-    case "set": return entry.vs.map(String);
+    case "set": return entry.vs.map((v) => lowest(asRat(v).n, asRat(v).d));
     case "tick": return [entry.i];
     case "cell": return [entry.v];
     case "words": return [entry.accept[0]];
