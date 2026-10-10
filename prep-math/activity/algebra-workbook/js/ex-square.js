@@ -25,6 +25,7 @@
    ========================================================================== */
 
 import { tilesHtml, needsOf } from "/utils/components/workbook/tiles.js";
+import { videoStrip } from "./algvideo.js";
 import { levelOf } from "./poly.js";
 import { want } from "/utils/components/workbook/want.js";
 
@@ -56,6 +57,8 @@ const csSee = {
   label: "Read the finished square",
   blurb: "A square made of tiles: what is its side?",
   heading: "Read the square",
+  /* PrepBot opens the chapter: the whole picture, moving (algvideo.js) */
+  video: () => videoStrip("square", "Completing the square"),
   instruction: () =>
     "The tiles make one big square. Its side is the x tile and the ones beside it: x and however many ones " +
     "lie along the edge. Count what the whole square is made of — one x², the strips, and the corner — and " +

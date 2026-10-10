@@ -32,7 +32,7 @@
    then plays its own change, so going back or skipping lands exactly.
    ========================================================================== */
 
-import { tile, acts, PLAY } from "/prep-math/activity/vedic-maths-workbook/js/explain.js";
+import { tile, art, acts, PLAY } from "/prep-math/activity/vedic-maths-workbook/js/explain.js";
 import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
 import { divWork } from "./divwork.js";
 
@@ -136,13 +136,6 @@ function divScene(mode, n = 472, d = 3) {
         + `<path d="M21 4L30 12L21 20Z" fill="#2f6ea8"/></svg>` };
   };
 
-  const art = (stage, id, x, y, widthU, html) => {
-    const box = tile(stage, id, "", x, y, { bare: true });
-    box.firstChild.className = "vm-t__in vm-t__art";
-    box.firstChild.style.width = `calc(var(--u) * ${widthU})`;
-    box.firstChild.innerHTML = html;
-    return box;
-  };
   const num = (stage, id, text, x, y, c, sizeU = 3.3) => { tile(stage, id, String(text), x, y, { c }).firstChild.style.fontSize = `calc(var(--u) * ${sizeU})`; };
 
   const RULE = [["D", "Does", "Divide"], ["M", "My", "Multiply"], ["S", "Sister", "Subtract"], ["R", "Run?", "Regroup"]];

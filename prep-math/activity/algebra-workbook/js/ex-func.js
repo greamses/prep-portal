@@ -26,6 +26,7 @@ import { levelOf } from "./poly.js";
 import { helpOf } from "./organiser.js";
 import { want } from "/utils/components/workbook/want.js";
 import { opText, runOps, trainHtml } from "/utils/components/workbook/machine.js";
+import { videoStrip } from "./algvideo.js";
 
 const box = () => `<span class="wb-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
@@ -138,6 +139,8 @@ const fnRun = {
   label: "Put numbers through the machine",
   blurb: "Do each job in order, and write what comes out.",
   heading: "Put the numbers through",
+  /* PrepBot opens the chapter: a card really rides the train (algvideo.js) */
+  video: () => videoStrip("train", "Function machines"),
   instruction: (o) =>
     "Each number climbs aboard at IN and rides through the train: every coach does its job to it, in order, " +
     "left to right. What steps off at OUT is its answer." +

@@ -62,8 +62,12 @@ export const SUBJECT = {
    * the top of the page they are on.
    */
   sectionHead: (section, o) => {
-    if (helpOf(o).id !== "show" || !section.ex.worked) return "";
-    return section.ex.worked(section.opts);
+    /* PrepBot's video opens a section WHATEVER the level of help: it is the
+       teaching, not the answer, so a child who has asked for less help on the
+       paper has not asked to be taught less. */
+    const video = section.ex.video ? section.ex.video(section.opts) : "";
+    if (helpOf(o).id !== "show" || !section.ex.worked) return video;
+    return video + section.ex.worked(section.opts);
   },
 };
 

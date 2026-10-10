@@ -129,6 +129,20 @@ export function tile(stage, id, text, x, y, { c = 0, size = "m", bare = false } 
   return box;
 }
 
+/**
+ * A tile that is a DRAWING rather than a number — a counter, a grid, an algebra
+ * tile, a railway coach. `widthU` is its width in `--u`, one hundredth of the
+ * screen's width, and its height follows from the SVG's own aspect; it moves,
+ * flies, dims and hides exactly as a number tile does.
+ */
+export function art(stage, id, x, y, widthU, html) {
+  const box = tile(stage, id, "", x, y, { bare: true });
+  box.firstChild.className = "vm-t__in vm-t__art";
+  box.firstChild.style.width = `calc(var(--u) * ${widthU})`;
+  box.firstChild.innerHTML = html;
+  return box;
+}
+
 /* what a counting stick is painted: plain wood, the tens' blue, the units' orange */
 const TONES = { plain: ["#e9cf9c", "#2a2723"], tens: ["#bfe3ff", "#2f6ea8"], units: ["#ffd7a3", "#d9632b"] };
 
