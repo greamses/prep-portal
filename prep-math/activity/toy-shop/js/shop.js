@@ -37,7 +37,12 @@ export function readAmount(text) {
  * once, here, so that nothing downstream ever has to.
  */
 export async function loadToys(url = "./toys.json") {
-  const res = await fetch(url, { cache: "no-store" });
+  /* `no-store` beats the browser's HTTP cache but not a service worker's, and
+     ours served this file stale-while-revalidate — so a visitor kept the first
+     catalogue they ever loaded and went on being shown toys whose pictures a
+     later deploy had removed. sw.js now treats .json as app code; the stamp is
+     the belt to that pair of braces, for workers already installed. */
+  const res = await fetch(`${url}?t=${Date.now()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`the shop did not answer (${res.status})`);
   const feed = await res.json();
   const products = (feed.products || []).map((p, i) => {

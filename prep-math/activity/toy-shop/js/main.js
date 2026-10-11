@@ -92,7 +92,10 @@ function openTill() {
   const B = bill(lines, rate);
 
   $("ts-till-body").innerHTML = tillHtml(lines, rate);
-  $("ts-pay-body").innerHTML = payHtml(B.total) + purse({ say: `pay with at least ${writeAmount(B.total)}`, mm: 38 });
+  $("ts-pay-body").innerHTML = payHtml(B.total);
+  /* the purse belongs ON the payment receipt, not beside it */
+  $("ts-pay-body").querySelector("[data-purse-slot]").innerHTML =
+    purse({ say: `take out at least ${writeAmount(B.total)}`, mm: 34 });
   $("ts-pay-wrap").hidden = true;
   $("ts-buy").disabled = true;
 

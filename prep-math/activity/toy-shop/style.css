@@ -119,7 +119,8 @@
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   padding: 0.7rem clamp(0.8rem, 4vw, 2rem);
   background: var(--surface-primary, #fffdf8);
-  border-top: 2px solid var(--ink, #2a2723);
+  border-top: 1px solid rgba(42, 39, 35, 0.14);
+  box-shadow: 0 -6px 18px rgba(var(--shadow-color, 42, 39, 35), 0.1);
 }
 .ts-bar__count {
   display: flex; align-items: center; gap: 0.5rem;
@@ -128,58 +129,112 @@
 .ts-bar__count svg { display: block; flex: none; }
 .ts-bar__go[disabled] { opacity: 0.45; pointer-events: none; }
 
-/* ── the till ─────────────────────────────────────────────────────────────*/
+/* ── the bill ─────────────────────────────────────────────────────────────
+   Two receipts side by side on a wide screen — the bill and the payment —
+   and one under the other on a phone. No hard outlines anywhere: the paper's
+   own torn edge is the border, and everything inside is divided by dashed
+   rules in thinned ink, the way a printed receipt is.
+   ------------------------------------------------------------------------*/
 
-.ts-till { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
-.ts-till__cap {
-  caption-side: top; text-align: left; padding: 0 0 0.5rem;
-  font: 800 0.72rem/1 var(--font-mono, monospace); letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--text-secondary, #6b655c);
+.ts-checkout {
+  display: grid; gap: 1.6rem; align-items: start;
+  max-width: 54rem; margin: 0 auto;
 }
-.ts-till th {
-  padding: 0.4rem 0.5rem; text-align: left;
-  font: 800 0.66rem/1.3 var(--font-mono, monospace); letter-spacing: 0.04em;
-  text-transform: uppercase; color: var(--text-secondary, #6b655c);
-  border-bottom: 2px solid var(--ink, #2a2723);
-}
-.ts-till td { padding: 0.5rem; border-bottom: 1px solid rgba(42, 39, 35, 0.22); vertical-align: middle; }
-.ts-till__what { display: flex; align-items: center; gap: 0.5rem; min-width: 8rem; }
-.ts-till__pic { width: 2.1rem; height: 2.1rem; object-fit: cover; flex: none; display: block; }
-.ts-till__n, .ts-till__each, .ts-till__cut { font-family: var(--font-mono, monospace); white-space: nowrap; }
-.ts-till__none { font-size: 0.74rem; color: var(--text-tertiary, #9b9488); }
-.ts-till__sum td { font-weight: 800; border-bottom: 0; }
-.ts-till__sum td:first-child { text-align: right; }
-.ts-till__sum--pay td { border-top: 2px solid var(--ink, #2a2723); font-size: 1rem; }
+@media (min-width: 860px) { .ts-checkout { grid-template-columns: 1fr 1fr; } }
 
-/* the box the child writes in: green when it is right, amber while it is not —
-   never red, because a sum in progress is not a mistake */
+.ts-bill__paper, .ts-pay__paper { padding: 1.5rem 1.6rem 1.7rem; }
+
+.ts-bill__shop, .ts-pay__shop {
+  margin: 0; text-align: center;
+  font: 800 0.82rem/1.3 var(--font-mono, monospace);
+  letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink, #2a2723);
+}
+.ts-bill__sub {
+  margin: 0.3rem 0 0; text-align: center;
+  font: 400 0.68rem/1.4 var(--font-mono, monospace); color: var(--text-tertiary, #9b9488);
+}
+.ts-bill__foot {
+  margin: 1rem 0 0; text-align: center;
+  font: 400 0.66rem/1.4 var(--font-mono, monospace);
+  letter-spacing: 0.06em; color: var(--text-tertiary, #9b9488);
+}
+
+.ts-bill__lines { list-style: none; margin: 1rem 0 0; padding: 0; }
+.ts-line { padding: 0.75rem 0; border-top: 1.5px dashed rgba(42, 39, 35, 0.22); }
+.ts-line:first-child { border-top: 0; }
+
+.ts-line__head {
+  display: flex; align-items: center; gap: 0.55rem; margin: 0 0 0.45rem;
+}
+.ts-line__pic { width: 2.2rem; height: 2.2rem; object-fit: cover; flex: none; display: block; }
+.ts-line__head span {
+  font-family: var(--font-display, Unbounded), sans-serif;
+  font-size: 0.82rem; line-height: 1.25; color: var(--ink, #2a2723);
+}
+.ts-line__sale {
+  margin-left: auto; flex: none;
+  padding: 0.1rem 0.36rem;
+  background: rgba(192, 69, 63, 0.12); color: var(--accent-danger, #c0453f);
+  font: 800 0.64rem/1.5 var(--font-mono, monospace); font-style: normal;
+}
+
+.ts-line__sums, .ts-bill__tot, .ts-pay__sums { margin: 0; }
+
+/* one question: what it is called on the left, the box on the right */
+.ts-ask {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
+  padding: 0.22rem 0;
+}
+.ts-ask dt {
+  font: 400 0.74rem/1.45 var(--font-mono, monospace);
+  color: var(--text-secondary, #6b655c);
+}
+.ts-ask dd { margin: 0; flex: none; }
+.ts-ask.is-less dt { color: var(--accent-danger, #c0453f); }
+.ts-ask.is-net dt { font-weight: 700; color: var(--ink, #2a2723); }
+
+.ts-bill__tot { margin-top: 0.4rem; padding-top: 0.7rem; border-top: 1.5px dashed rgba(42, 39, 35, 0.3); }
+.ts-ask.is-pay {
+  margin-top: 0.35rem; padding-top: 0.6rem;
+  border-top: 1.5px dashed rgba(42, 39, 35, 0.3);
+}
+.ts-ask.is-pay dt {
+  font: 800 0.86rem/1.4 var(--font-display, Unbounded), sans-serif;
+  letter-spacing: 0; color: var(--ink, #2a2723);
+}
+.ts-ask.is-flat dd, .ts-ask.is-flat dd b {
+  font: 800 0.95rem/1.4 var(--font-mono, monospace); color: var(--ink, #2a2723);
+}
+.ts-ask.is-flat dd { color: var(--text-tertiary, #9b9488); }
+.ts-ask.is-flat dd.is-enough b { color: var(--accent-success, #3f8f4f); }
+
+/* The box the child writes in. A filled field with a rule under it, not a
+   black outline — the receipt's own torn edge is the only hard edge on the
+   page. Green when it is right, amber while it is not: a sum in progress is
+   not a mistake, so it is never red. */
 .ts-box {
-  width: 5.4rem; padding: 0.3rem 0.4rem;
-  border: 2px solid var(--ink, #2a2723); border-radius: 0;
-  background: #fffdf8; color: #14130f;
-  font: 800 0.95rem/1 var(--font-mono, monospace); text-align: right;
+  width: 6rem; padding: 0.3rem 0.5rem;
+  background: rgba(42, 39, 35, 0.045);
+  border: 0; border-bottom: 2px solid rgba(42, 39, 35, 0.28);
+  border-radius: 0;
+  color: var(--ink, #2a2723);
+  font: 800 0.95rem/1.3 var(--font-mono, monospace); text-align: right;
+  transition: background 0.14s ease, border-color 0.14s ease;
 }
-.ts-box--wide { width: 7rem; }
+.ts-box::placeholder { color: var(--text-tertiary, #9b9488); font-weight: 400; }
+.ts-box:focus { outline: 0; background: rgba(111, 183, 232, 0.16); border-bottom-color: var(--accent-secondary, #6fb7e8); }
 .ts-box:focus-visible { outline: 2px solid var(--accent-secondary, #6fb7e8); outline-offset: 2px; }
-.ts-box.is-right { background: #d8f0d2; border-color: var(--accent-success, #3f8f4f); }
-.ts-box.is-trying { background: #fff3cf; border-color: #c9922f; }
+.ts-box.is-right { background: rgba(63, 143, 79, 0.14); border-bottom-color: var(--accent-success, #3f8f4f); color: #276b36; }
+.ts-box.is-trying { background: rgba(244, 201, 93, 0.22); border-bottom-color: #c9922f; }
+.ts-ask.is-pay .ts-box { width: 7rem; font-size: 1.05rem; }
 
-/* ── paying ───────────────────────────────────────────────────────────────*/
-
-.ts-pay { display: flex; flex-direction: column; gap: 0.5rem; margin: 0 0 0.8rem; }
-.ts-pay__ask { margin: 0; font-size: 1rem; }
-.ts-pay__ask b { font-family: var(--font-mono, monospace); }
-.ts-pay__held { margin: 0; font: 700 0.88rem/1.4 var(--font-mono, monospace); color: var(--text-secondary, #6b655c); }
-.ts-pay__held.is-enough { color: var(--accent-success, #3f8f4f); }
-.ts-pay__change { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; font-weight: 700; flex-wrap: wrap; }
-.ts-pay__note { margin: 0; font-size: 0.78rem; color: var(--text-tertiary, #9b9488); }
-
-/* On a wide screen the asking and the money sit side by side — the purse's mat
-   is measured in mm for paper, and left alone it leaves half the page blank. */
-#ts-pay-body { display: grid; gap: 0.8rem 2rem; align-items: start; }
-@media (min-width: 900px) { #ts-pay-body { grid-template-columns: minmax(15rem, 21rem) 1fr; } }
-#ts-pay-body .pu-wrap { width: 100%; margin-top: 0; }
-#ts-pay-body .pu-mat { width: 100%; }
+.ts-pay__note {
+  margin: 0.9rem 0 0;
+  font: 400 0.7rem/1.55 var(--font-mono, monospace); color: var(--text-tertiary, #9b9488);
+}
+.ts-pay__purse { margin-top: 0.9rem; }
+.ts-pay__purse .pu-wrap { width: 100%; margin: 0; }
+.ts-pay__purse .pu-mat { width: 100%; }
 
 /* ── the delivery ─────────────────────────────────────────────────────────*/
 
@@ -189,7 +244,6 @@
   height: clamp(9rem, 24vw, 13rem);
   margin: 0 auto 1.5rem; max-width: 46rem;
   background: linear-gradient(#eaf4ff 0%, #eaf4ff 70%, #f1ece0 70%);
-  border: 2px solid var(--ink, #2a2723);
   cursor: pointer;
 }
 .ts-road__line { position: absolute; left: 0; right: 0; bottom: 1.5rem; border-top: 3px dashed rgba(42, 39, 35, 0.3); }
@@ -248,62 +302,12 @@
   .ts-truth { opacity: 1; transform: none; }
 }
 
-/* On a phone seven columns cannot fit, and the page does not scroll sideways
-   (the site clips overflow-x on purpose), so the right-hand half of the bill —
-   including the total — was simply unreachable. Below 700px the table stops
-   being a table: one card per toy, each cell a labelled line. */
-@media (max-width: 700px) {
-  .ts-till, .ts-till tbody, .ts-till tr, .ts-till td { display: block; width: 100%; }
-  .ts-till thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  /* a caption on a table that is no longer a table collapses to the width of
-     its longest word, so it is given one */
-  .ts-till__cap { display: block; width: 100%; padding-bottom: 0.7rem; }
-
-  .ts-till__row {
-    margin: 0 0 0.9rem;
-    border: 2px solid var(--ink, #2a2723);
-    background: var(--surface-primary, #fffdf8);
-  }
-  .ts-till td {
-    display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
-    padding: 0.4rem 0.6rem;
-    border-bottom: 1px solid rgba(42, 39, 35, 0.14);
-  }
-  .ts-till td::before {
-    content: attr(data-lab);
-    font: 800 0.66rem/1.3 var(--font-mono, monospace); letter-spacing: 0.04em;
-    text-transform: uppercase; color: var(--text-secondary, #6b655c);
-  }
-  .ts-till__what {
-    gap: 0.5rem; justify-content: flex-start;
-    padding: 0.5rem 0.6rem;
-    background: #f6f2e9;
-    border-bottom: 2px solid var(--ink, #2a2723);
-    font-weight: 700;
-  }
-  .ts-till__pic { width: 2.3rem; height: 2.3rem; }
-  .ts-till__row td:last-child { border-bottom: 0; }
-
-  /* the three totals keep their wording — it is the question, not a heading —
-     and sit as label-and-box lines under the cards */
-  /* `.ts-till tr` above is the more specific selector, so these rows have to
-     out-specify it to go back to being rows */
-  .ts-till tr.ts-till__sum {
-    display: flex; align-items: center; gap: 0.7rem;
-    padding: 0.5rem 0.6rem;
-    border-bottom: 1px solid rgba(42, 39, 35, 0.14);
-  }
-  /* `width: 100%` above is what makes the per-toy cells full-width lines; here
-     it would make each cell as wide as the whole row, so it is undone */
-  .ts-till tr.ts-till__sum td { display: block; width: auto; padding: 0; border: 0; }
-  .ts-till tr.ts-till__sum td::before { content: none; }
-  .ts-till tr.ts-till__sum td:first-child { flex: 1 1 auto; text-align: left; font-size: 0.82rem; }
-  .ts-till tr.ts-till__sum td:last-child { flex: 0 0 auto; }
-  .ts-till tr.ts-till__sum--pay { border-top: 2px solid var(--ink, #2a2723); border-bottom: 0; }
-  .ts-box { width: 5.2rem; }
-}
-
+/* On a phone the two receipts stack, and the figures come in a little. There is
+   no reflow to do any more: a receipt is one narrow column at every width,
+   which is the point of shaping the bill like one. */
 @media (max-width: 620px) {
-  .ts-till { font-size: 0.8rem; }
-  .ts-box { width: 4.8rem; font-size: 0.88rem; }
+  .ts-bill__paper, .ts-pay__paper { padding: 1.3rem 1.25rem 1.4rem; }
+  .ts-ask dt { font-size: 0.7rem; }
+  .ts-box { width: 5.2rem; font-size: 0.88rem; }
+  .ts-ask.is-pay .ts-box { width: 6rem; }
 }

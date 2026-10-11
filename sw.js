@@ -1,4 +1,4 @@
-const CACHE_NAME = "prepportal-v19";
+const CACHE_NAME = "prepportal-v20";
 const PRECACHE_URLS = [
   "/",
   "/index.html",
@@ -45,7 +45,11 @@ self.addEventListener("activate", (event) => {
 // Revalidate for speed.
 function isAppCode(request) {
   if (request.mode === "navigate") return true;
-  return /\.(?:js|mjs|css)(?:\?|$)/i.test(new URL(request.url).pathname);
+  // JSON counts as app code too. A page's data file is as much a part of a
+  // deploy as its script is, and stale-while-revalidate hands back the copy
+  // from the first visit — which is how the Toy Shop went on listing toys
+  // whose pictures had been removed in a later deploy.
+  return /\.(?:js|mjs|css|json)(?:\?|$)/i.test(new URL(request.url).pathname);
 }
 
 self.addEventListener("fetch", (event) => {
