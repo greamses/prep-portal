@@ -74,6 +74,11 @@ const SHOT = {
     const { fanSvg } = await import("/prep-math/activity/card-tricks/js/art.js");
     return { svg: fanSvg(["KS", "7H", "AD"]) };
   },
+  /* a toy off the Toy Shop's shelf, drawn by the shop's own art module */
+  shop: async () => {
+    const { toySvg } = await import("/prep-math/activity/toy-shop/js/art.js");
+    return { svg: toySvg("teddy", 0) };
+  },
   /* tallies — one of the ways Number Match asks you to write a number */
   tally: async () => {
     const { tallySvg } = await import("/prep-math/activity/statistics-workbook/js/pictoart.js");
@@ -141,6 +146,7 @@ export const BANDS = [
       { art: "graph", title: "Graphs of functions", tag: "Graphs", line: "Tap the points, rule the line, read the rule back off it.", href: "/prep-math/activity/algebra-workbook/index.html" },
       { art: "blocks", title: "Manipulatives", tag: "Number", line: "Blocks, abacuses, tiles and charts on one endless table.", href: "/prep-math/activity/base-blocks/index.html" },
       { art: "tally", title: "Number Match", tag: "Number", line: "Every way of writing one number, poured out as notes.", href: "/prep-math/activity/number-match/index.html" },
+      { art: "shop", title: "The Toy Shop", tag: "Money", line: "Fill a basket, then work the bill, the sale and the tax out yourself.", href: "/prep-math/activity/toy-shop/index.html" },
       { art: "pack", title: "Card Tricks", tag: "Number", line: "A real pack, and six tricks that turn out to be sums.", href: "/prep-math/activity/card-tricks/index.html" },
     ],
   },

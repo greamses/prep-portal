@@ -355,6 +355,21 @@ export const PAGES = [
     ],
   },
   {
+    file: "prep-math/activity/toy-shop/index.html",
+    section: "maths",
+    name: "Toy Shop",
+    title: "The Prep Toy Shop: Work Out a Bill, a Discount and the Tax",
+    desc: "An online toy shop where the till tells you nothing. Fill a basket, then work out every line, the discount, the tax, the total and your change yourself.",
+    intro:
+      "A shop built out of arithmetic. Browse ten toys with their prices and sale tags, put what you like in the basket, and go to the checkout — where nothing is added up for you. You work out what each line comes to, what the sale takes off it, the subtotal, the tax the government charges and the total to pay. Then you pay from a purse of prepbills and prepcoins and say what change should come back. Every price is chosen so that every answer is exact.",
+    points: [
+      "Multiply a price by a quantity, line by line",
+      "Take a percentage off for a sale",
+      "Work out tax at 10% or 20% of a subtotal",
+      "Lay out notes and coins, and count the change",
+    ],
+  },
+  {
     file: "prep-math/activity/cartesian-art/index.html",
     section: "maths",
     name: "Cartesian Art",

@@ -1,0 +1,265 @@
+/* ============================================================================
+   The Prep Toy Shop
+   ----------------------------------------------------------------------------
+   A shop that looks like a shop — a grid of product cards, a sticky basket bar,
+   a checkout that reads as a bill — on the site's paper. Square corners
+   throughout: the house rule is 0 or a true circle, nothing in between.
+   ========================================================================== */
+
+.ts-wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 7rem;
+}
+
+/* ── the head ─────────────────────────────────────────────────────────────*/
+
+.ts-head { text-align: center; margin: 0 auto 1.6rem; max-width: 46rem; }
+.ts-eyebrow {
+  margin: 0 0 0.4rem;
+  font: 700 0.72rem/1 var(--font-mono, "JetBrains Mono", monospace);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary, #6b655c);
+}
+.ts-title { margin: 0 0 0.5rem; font-family: var(--font-display, Unbounded), sans-serif; font-size: clamp(1.7rem, 5vw, 2.7rem); color: var(--ink, #2a2723); }
+.ts-sub { margin: 0; font-size: 0.95rem; line-height: 1.55; color: var(--text-secondary, #6b655c); }
+.ts-sub.is-done { color: var(--accent-success, #3f8f4f); font-weight: 700; }
+.ts-h2 { margin: 2rem 0 0.8rem; font-family: var(--font-display, Unbounded), sans-serif; font-size: 1.25rem; color: var(--ink, #2a2723); }
+
+/* the one settings card */
+.ts-panel { width: fit-content; margin: 0 auto 1.6rem; max-width: 100%; }
+.ts-panel__paper { padding: 1rem 1.3rem; }
+.ts-panel__title { margin: 0 0 0.6rem; font: 800 0.72rem/1 var(--font-mono, monospace); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary, #6b655c); }
+.ts-panel__note { margin: 0.7rem 0 0; max-width: 30rem; font-size: 0.8rem; line-height: 1.5; color: var(--text-secondary, #6b655c); }
+
+/* ── the shelf ────────────────────────────────────────────────────────────*/
+
+.ts-shelf {
+  display: grid; gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(9rem, 20vw, 13rem), 1fr));
+}
+.ts-oops { grid-column: 1 / -1; text-align: center; color: var(--text-secondary, #6b655c); }
+
+.ts-card {
+  position: relative;
+  display: flex; flex-direction: column;
+  background: var(--surface-primary, #fffdf8);
+  border: 2px solid var(--ink, #2a2723);
+}
+.ts-card.is-sale { border-color: var(--accent-danger, #c0453f); }
+.ts-card__flag {
+  position: absolute; top: 0; right: 0; z-index: 2;
+  padding: 0.18rem 0.5rem;
+  background: var(--accent-danger, #c0453f); color: #fffdf8;
+  font: 800 0.68rem/1.4 var(--font-mono, monospace); letter-spacing: 0.04em;
+}
+/* the shot: the toy on its own tinted panel, as a listing has */
+.ts-card__shot {
+  display: grid; place-items: center;
+  padding: 0.9rem;
+  background: #f6f2e9;
+  border-bottom: 1px solid rgba(42, 39, 35, 0.18);
+}
+.ts-card__shot .ts-art { width: clamp(3.6rem, 9vw, 5.2rem); height: auto; display: block; }
+.ts-card__body { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.7rem 0.8rem 0.8rem; flex: 1 1 auto; }
+.ts-card__name { margin: 0; font-size: 0.92rem; font-weight: 700; line-height: 1.25; color: var(--ink, #2a2723); }
+.ts-card__blurb { margin: 0; font-size: 0.74rem; line-height: 1.4; color: var(--text-secondary, #6b655c); flex: 1 1 auto; }
+.ts-card__price { display: flex; align-items: baseline; gap: 0.45rem; margin: 0.25rem 0 0; flex-wrap: wrap; }
+.ts-card__price b { font-family: var(--font-mono, monospace); font-size: 1.05rem; color: var(--ink, #2a2723); }
+.ts-card__price s { font-family: var(--font-mono, monospace); font-size: 0.78rem; color: var(--text-tertiary, #9b9488); }
+.ts-card__stock { margin: 0; font-size: 0.68rem; color: var(--text-tertiary, #9b9488); }
+
+.ts-card__buy { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.45rem; }
+.ts-card__buy .pp-btn { min-width: 2rem; font-family: var(--font-mono, monospace); font-weight: 800; }
+.ts-card__n { min-width: 1.4rem; text-align: center; font: 800 1rem/1 var(--font-mono, monospace); color: var(--ink, #2a2723); }
+
+/* ── the basket bar ───────────────────────────────────────────────────────*/
+
+.ts-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.7rem clamp(0.8rem, 4vw, 2rem);
+  background: var(--surface-primary, #fffdf8);
+  border-top: 2px solid var(--ink, #2a2723);
+}
+.ts-bar__count { font: 700 0.85rem/1 var(--font-mono, monospace); color: var(--ink, #2a2723); }
+.ts-bar__go[disabled] { opacity: 0.45; pointer-events: none; }
+
+/* ── the till ─────────────────────────────────────────────────────────────*/
+
+.ts-till { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.ts-till__cap {
+  caption-side: top; text-align: left; padding: 0 0 0.5rem;
+  font: 800 0.72rem/1 var(--font-mono, monospace); letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-secondary, #6b655c);
+}
+.ts-till th {
+  padding: 0.4rem 0.5rem; text-align: left;
+  font: 800 0.66rem/1.3 var(--font-mono, monospace); letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--text-secondary, #6b655c);
+  border-bottom: 2px solid var(--ink, #2a2723);
+}
+.ts-till td { padding: 0.5rem; border-bottom: 1px solid rgba(42, 39, 35, 0.22); vertical-align: middle; }
+.ts-till__what { display: flex; align-items: center; gap: 0.5rem; min-width: 8rem; }
+.ts-till__what .ts-art { width: 1.8rem; height: auto; flex: none; }
+.ts-till__n, .ts-till__each, .ts-till__cut { font-family: var(--font-mono, monospace); white-space: nowrap; }
+.ts-till__none { font-size: 0.74rem; color: var(--text-tertiary, #9b9488); }
+.ts-till__sum td { font-weight: 800; border-bottom: 0; }
+.ts-till__sum td:first-child { text-align: right; }
+.ts-till__sum--pay td { border-top: 2px solid var(--ink, #2a2723); font-size: 1rem; }
+
+/* the box the child writes in: green when it is right, amber while it is not —
+   never red, because a sum in progress is not a mistake */
+.ts-box {
+  width: 5.4rem; padding: 0.3rem 0.4rem;
+  border: 2px solid var(--ink, #2a2723); border-radius: 0;
+  background: #fffdf8; color: #14130f;
+  font: 800 0.95rem/1 var(--font-mono, monospace); text-align: right;
+}
+.ts-box--wide { width: 7rem; }
+.ts-box:focus-visible { outline: 2px solid var(--accent-secondary, #6fb7e8); outline-offset: 2px; }
+.ts-box.is-right { background: #d8f0d2; border-color: var(--accent-success, #3f8f4f); }
+.ts-box.is-trying { background: #fff3cf; border-color: #c9922f; }
+
+/* ── paying ───────────────────────────────────────────────────────────────*/
+
+.ts-pay { display: flex; flex-direction: column; gap: 0.5rem; margin: 0 0 0.8rem; }
+.ts-pay__ask { margin: 0; font-size: 1rem; }
+.ts-pay__ask b { font-family: var(--font-mono, monospace); }
+.ts-pay__held { margin: 0; font: 700 0.88rem/1.4 var(--font-mono, monospace); color: var(--text-secondary, #6b655c); }
+.ts-pay__held.is-enough { color: var(--accent-success, #3f8f4f); }
+.ts-pay__change { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; font-weight: 700; flex-wrap: wrap; }
+.ts-pay__note { margin: 0; font-size: 0.78rem; color: var(--text-tertiary, #9b9488); }
+
+/* On a wide screen the asking and the money sit side by side — the purse's mat
+   is measured in mm for paper, and left alone it leaves half the page blank. */
+#ts-pay-body { display: grid; gap: 0.8rem 2rem; align-items: start; }
+@media (min-width: 900px) { #ts-pay-body { grid-template-columns: minmax(15rem, 21rem) 1fr; } }
+#ts-pay-body .pu-wrap { width: 100%; margin-top: 0; }
+#ts-pay-body .pu-mat { width: 100%; }
+
+/* ── the delivery ─────────────────────────────────────────────────────────*/
+
+.ts-wrap--done { text-align: center; }
+.ts-road {
+  position: relative; overflow: hidden;
+  height: clamp(9rem, 24vw, 13rem);
+  margin: 0 auto 1.5rem; max-width: 46rem;
+  background: linear-gradient(#eaf4ff 0%, #eaf4ff 70%, #f1ece0 70%);
+  border: 2px solid var(--ink, #2a2723);
+  cursor: pointer;
+}
+.ts-road__line { position: absolute; left: 0; right: 0; bottom: 1.5rem; border-top: 3px dashed rgba(42, 39, 35, 0.3); }
+.ts-road__skip {
+  position: absolute; right: 0.5rem; bottom: 0.3rem; margin: 0;
+  font: 700 0.64rem/1 var(--font-mono, monospace); letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-tertiary, #9b9488);
+}
+.is-opening .ts-road__skip { opacity: 0; }
+
+/* the van: the wheels rest ON the dashed line, which is why its bottom and
+   the line's are set together */
+.ts-road__van {
+  position: absolute; bottom: 1.45rem; left: -45%;
+  width: clamp(8rem, 26vw, 12rem);
+}
+.ts-road__van svg { display: block; width: 100%; height: auto; }
+.is-driving .ts-road__van { animation: ts-drive 2.3s cubic-bezier(0.25, 0.1, 0.2, 1) forwards; }
+@keyframes ts-drive { from { left: -45%; } to { left: 38%; } }
+
+/* the parcel comes off the BACK of the van, which is its left edge */
+.ts-road__parcel {
+  position: absolute; bottom: 1.45rem; left: 20%;
+  width: clamp(3.6rem, 11vw, 5.4rem); opacity: 0;
+}
+.ts-road__parcel svg { display: block; width: 100%; height: auto; }
+.is-dropping .ts-road__parcel { animation: ts-drop 1s cubic-bezier(0.3, 1.4, 0.5, 1) forwards; }
+@keyframes ts-drop {
+  from { opacity: 0; transform: translate(4rem, -2.5rem) rotate(-18deg); }
+  60%  { opacity: 1; }
+  to   { opacity: 1; transform: translate(0, 0) rotate(0); }
+}
+/* and then it is opened — the lid is DRAWN off (art.js PARCEL_OPEN), not faded
+   out: a parcel that dissolves reads as a rendering fault, and the whole joke
+   depends on the child seeing the hole where the toy is not */
+.is-opening .ts-road__parcel { opacity: 1; animation: ts-open 0.55s ease forwards; }
+@keyframes ts-open {
+  0%   { transform: translateY(0) scale(1); }
+  45%  { transform: translateY(-0.35rem) scale(1.08); }
+  100% { transform: translateY(0) scale(1); }
+}
+.is-done .ts-road__van { left: 38%; }
+.is-done .ts-road__parcel { opacity: 1; animation: none; }
+
+.ts-truth { max-width: 38rem; margin: 0 auto; opacity: 0; transform: translateY(0.8rem); }
+.ts-truth.is-in { animation: ts-up 0.5s ease forwards; }
+@keyframes ts-up { to { opacity: 1; transform: none; } }
+.ts-truth__head { margin: 0 0 0.5rem; font-family: var(--font-display, Unbounded), sans-serif; font-size: 1.35rem; color: var(--ink, #2a2723); }
+.ts-truth__say { margin: 0 0 1rem; font-size: 0.95rem; line-height: 1.6; color: var(--text-secondary, #6b655c); }
+.ts-truth__say .mo-amt { color: var(--ink, #2a2723); font-weight: 800; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-road__van, .ts-road__parcel, .ts-truth { animation: none !important; }
+  .ts-road__van { left: 38%; }
+  .ts-road__parcel { opacity: 1; }
+  .ts-truth { opacity: 1; transform: none; }
+}
+
+/* On a phone seven columns cannot fit, and the page does not scroll sideways
+   (the site clips overflow-x on purpose), so the right-hand half of the bill —
+   including the total — was simply unreachable. Below 700px the table stops
+   being a table: one card per toy, each cell a labelled line. */
+@media (max-width: 700px) {
+  .ts-till, .ts-till tbody, .ts-till tr, .ts-till td { display: block; width: 100%; }
+  .ts-till thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  /* a caption on a table that is no longer a table collapses to the width of
+     its longest word, so it is given one */
+  .ts-till__cap { display: block; width: 100%; padding-bottom: 0.7rem; }
+
+  .ts-till__row {
+    margin: 0 0 0.9rem;
+    border: 2px solid var(--ink, #2a2723);
+    background: var(--surface-primary, #fffdf8);
+  }
+  .ts-till td {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid rgba(42, 39, 35, 0.14);
+  }
+  .ts-till td::before {
+    content: attr(data-lab);
+    font: 800 0.66rem/1.3 var(--font-mono, monospace); letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--text-secondary, #6b655c);
+  }
+  .ts-till__what {
+    gap: 0.5rem; justify-content: flex-start;
+    padding: 0.5rem 0.6rem;
+    background: #f6f2e9;
+    border-bottom: 2px solid var(--ink, #2a2723);
+    font-weight: 700;
+  }
+  .ts-till__what .ts-art { width: 1.9rem; }
+  .ts-till__row td:last-child { border-bottom: 0; }
+
+  /* the three totals keep their wording — it is the question, not a heading —
+     and sit as label-and-box lines under the cards */
+  /* `.ts-till tr` above is the more specific selector, so these rows have to
+     out-specify it to go back to being rows */
+  .ts-till tr.ts-till__sum {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid rgba(42, 39, 35, 0.14);
+  }
+  /* `width: 100%` above is what makes the per-toy cells full-width lines; here
+     it would make each cell as wide as the whole row, so it is undone */
+  .ts-till tr.ts-till__sum td { display: block; width: auto; padding: 0; border: 0; }
+  .ts-till tr.ts-till__sum td::before { content: none; }
+  .ts-till tr.ts-till__sum td:first-child { flex: 1 1 auto; text-align: left; font-size: 0.82rem; }
+  .ts-till tr.ts-till__sum td:last-child { flex: 0 0 auto; }
+  .ts-till tr.ts-till__sum--pay { border-top: 2px solid var(--ink, #2a2723); border-bottom: 0; }
+  .ts-box { width: 5.2rem; }
+}
+
+@media (max-width: 620px) {
+  .ts-till { font-size: 0.8rem; }
+  .ts-box { width: 4.8rem; font-size: 0.88rem; }
+}

@@ -1,0 +1,108 @@
+{
+  "shop": "The Prep Toy Shop",
+  "currency": "prepbill",
+  "note": "Prices are in prepbills. 100 prepcoins make 1 prepbill. Every price and every discount here lands on a whole prepcoin on purpose — see js/shop.js.",
+  "taxRates": [10, 20],
+  "products": [
+    {
+      "id": 1,
+      "title": "Teddy Bear",
+      "art": "teddy",
+      "blurb": "Brown, soft, and already named.",
+      "price": 12.50,
+      "discountPercentage": 20,
+      "rating": 4.8,
+      "stock": 9
+    },
+    {
+      "id": 2,
+      "title": "Tin Robot",
+      "art": "robot",
+      "blurb": "Walks three steps, then falls over.",
+      "price": 18.00,
+      "discountPercentage": 25,
+      "rating": 4.4,
+      "stock": 5
+    },
+    {
+      "id": 3,
+      "title": "Paper Kite",
+      "art": "kite",
+      "blurb": "Wants a windy Saturday.",
+      "price": 4.00,
+      "discountPercentage": 0,
+      "rating": 4.1,
+      "stock": 14
+    },
+    {
+      "id": 4,
+      "title": "Wooden Yo-Yo",
+      "art": "yoyo",
+      "blurb": "Goes down easily. Coming up is the skill.",
+      "price": 2.50,
+      "discountPercentage": 20,
+      "rating": 4.6,
+      "stock": 20
+    },
+    {
+      "id": 5,
+      "title": "Little Drum",
+      "art": "drum",
+      "blurb": "Loud. Your family should know.",
+      "price": 15.00,
+      "discountPercentage": 10,
+      "rating": 3.9,
+      "stock": 6
+    },
+    {
+      "id": 6,
+      "title": "Box of Blocks",
+      "art": "blocks",
+      "blurb": "Forty blocks, one box, no instructions.",
+      "price": 9.00,
+      "discountPercentage": 0,
+      "rating": 4.9,
+      "stock": 11
+    },
+    {
+      "id": 7,
+      "title": "Racing Car",
+      "art": "car",
+      "blurb": "Pull it back and let go.",
+      "price": 7.50,
+      "discountPercentage": 20,
+      "rating": 4.5,
+      "stock": 8
+    },
+    {
+      "id": 8,
+      "title": "Rag Doll",
+      "art": "doll",
+      "blurb": "Stitched smile, button eyes.",
+      "price": 11.00,
+      "discountPercentage": 50,
+      "rating": 4.2,
+      "stock": 4
+    },
+    {
+      "id": 9,
+      "title": "Jigsaw Puzzle",
+      "art": "puzzle",
+      "blurb": "Sixty pieces. Fifty-nine, if you are unlucky.",
+      "price": 6.00,
+      "discountPercentage": 25,
+      "rating": 4.3,
+      "stock": 13
+    },
+    {
+      "id": 10,
+      "title": "Clockwork Train",
+      "art": "train",
+      "blurb": "Winds up, goes round, comes back.",
+      "price": 24.00,
+      "discountPercentage": 25,
+      "rating": 4.7,
+      "stock": 3
+    }
+  ]
+}
