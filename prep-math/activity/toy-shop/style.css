@@ -130,93 +130,101 @@
 .ts-bar__go[disabled] { opacity: 0.45; pointer-events: none; }
 
 /* ── the bill ─────────────────────────────────────────────────────────────
-   Two receipts side by side on a wide screen — the bill and the payment —
-   and one under the other on a phone. No hard outlines anywhere: the paper's
-   own torn edge is the border, and everything inside is divided by dashed
-   rules in thinned ink, the way a printed receipt is.
+   Every toy gets its own receipt, and the receipts sit in a grid. One long
+   column meant a basket of six toys was six screens of scrolling with the
+   total off the bottom; as a wall of small receipts the whole shop-full is in
+   view at once. The totals then go on one receipt underneath, which is where
+   a total belongs.
+
+   No hard edges anywhere: the torn top and bottom of the paper are the only
+   ones. Inside, everything is divided by dashed rules in thinned ink.
    ------------------------------------------------------------------------*/
 
-.ts-checkout {
-  display: grid; gap: 1.6rem; align-items: start;
-  max-width: 54rem; margin: 0 auto;
+.ts-bill { max-width: 62rem; margin: 0 auto; }
+
+.ts-bill__grid {
+  display: grid; gap: 1.3rem 1.1rem;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(11rem, 24vw, 15rem), 1fr));
+  align-items: start;
+  margin-bottom: 1.8rem;
 }
-@media (min-width: 860px) { .ts-checkout { grid-template-columns: 1fr 1fr; } }
 
-.ts-bill__paper, .ts-pay__paper { padding: 1.5rem 1.6rem 1.7rem; }
+.ts-item { position: relative; }
+.ts-item__paper { padding: 1rem 1.1rem 1.1rem; }
+/* a receipt whose own figures are all right is quietly marked off, so a wall
+   of them shows at a glance what is left to do */
+.ts-item.is-done { --pp-paper: #f3faf1; }
+.ts-item.is-done .ts-item__name::after {
+  content: "✓"; margin-left: 0.4rem; color: var(--accent-success, #3f8f4f); font-weight: 800;
+}
 
-.ts-bill__shop, .ts-pay__shop {
+.ts-item__sale {
+  position: absolute; top: 0.85rem; left: -0.3rem; z-index: 2;
+  padding: 0.14rem 0.45rem;
+  background: var(--accent-danger, #c0453f); color: #fffdf8;
+  font: 800 0.66rem/1.5 var(--font-mono, monospace);
+  box-shadow: 0 2px 5px rgba(42, 39, 35, 0.22);
+}
+.ts-item__shot { aspect-ratio: 16 / 10; background: #f3efe5; overflow: hidden; margin-bottom: 0.55rem; }
+.ts-item__shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ts-item__name {
+  margin: 0 0 0.5rem; font-family: var(--font-display, Unbounded), sans-serif;
+  font-size: 0.82rem; line-height: 1.3; color: var(--ink, #2a2723);
+}
+.ts-item__sums { margin: 0; padding-top: 0.5rem; border-top: 1.5px dashed rgba(42, 39, 35, 0.22); }
+
+/* the totals, on a receipt of their own */
+.ts-sum { display: block; max-width: 30rem; margin: 0 auto; }
+.ts-sum__paper { padding: 1.4rem 1.6rem 1.5rem; }
+.ts-sum.is-done { --pp-paper: #f3faf1; }
+.ts-sum__shop {
   margin: 0; text-align: center;
-  font: 800 0.82rem/1.3 var(--font-mono, monospace);
+  font: 800 0.8rem/1.3 var(--font-mono, monospace);
   letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink, #2a2723);
 }
-.ts-bill__sub {
-  margin: 0.3rem 0 0; text-align: center;
+.ts-sum__sub {
+  margin: 0.3rem 0 0.9rem; text-align: center;
   font: 400 0.68rem/1.4 var(--font-mono, monospace); color: var(--text-tertiary, #9b9488);
 }
-.ts-bill__foot {
+.ts-sum__tot { margin: 0; padding-top: 0.7rem; border-top: 1.5px dashed rgba(42, 39, 35, 0.3); }
+.ts-sum__foot {
   margin: 1rem 0 0; text-align: center;
   font: 400 0.66rem/1.4 var(--font-mono, monospace);
   letter-spacing: 0.06em; color: var(--text-tertiary, #9b9488);
 }
 
-.ts-bill__lines { list-style: none; margin: 1rem 0 0; padding: 0; }
-.ts-line { padding: 0.75rem 0; border-top: 1.5px dashed rgba(42, 39, 35, 0.22); }
-.ts-line:first-child { border-top: 0; }
+/* ── one question: what it is called, and the box for it ──────────────────*/
 
-.ts-line__head {
-  display: flex; align-items: center; gap: 0.55rem; margin: 0 0 0.45rem;
-}
-.ts-line__pic { width: 2.2rem; height: 2.2rem; object-fit: cover; flex: none; display: block; }
-.ts-line__head span {
-  font-family: var(--font-display, Unbounded), sans-serif;
-  font-size: 0.82rem; line-height: 1.25; color: var(--ink, #2a2723);
-}
-.ts-line__sale {
-  margin-left: auto; flex: none;
-  padding: 0.1rem 0.36rem;
-  background: rgba(192, 69, 63, 0.12); color: var(--accent-danger, #c0453f);
-  font: 800 0.64rem/1.5 var(--font-mono, monospace); font-style: normal;
-}
-
-.ts-line__sums, .ts-bill__tot, .ts-pay__sums { margin: 0; }
-
-/* one question: what it is called on the left, the box on the right */
 .ts-ask {
-  display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 0.7rem;
   padding: 0.22rem 0;
 }
-.ts-ask dt {
-  font: 400 0.74rem/1.45 var(--font-mono, monospace);
-  color: var(--text-secondary, #6b655c);
-}
+.ts-ask dt { font: 400 0.73rem/1.45 var(--font-mono, monospace); color: var(--text-secondary, #6b655c); }
+/* a price must never break across lines: "1 x P12.50" split into three */
+.ts-ask dt .mo-amt { white-space: nowrap; }
 .ts-ask dd { margin: 0; flex: none; }
 .ts-ask.is-less dt { color: var(--accent-danger, #c0453f); }
 .ts-ask.is-net dt { font-weight: 700; color: var(--ink, #2a2723); }
-
-.ts-bill__tot { margin-top: 0.4rem; padding-top: 0.7rem; border-top: 1.5px dashed rgba(42, 39, 35, 0.3); }
 .ts-ask.is-pay {
   margin-top: 0.35rem; padding-top: 0.6rem;
   border-top: 1.5px dashed rgba(42, 39, 35, 0.3);
 }
 .ts-ask.is-pay dt {
-  font: 800 0.86rem/1.4 var(--font-display, Unbounded), sans-serif;
-  letter-spacing: 0; color: var(--ink, #2a2723);
+  font: 800 0.84rem/1.4 var(--font-display, Unbounded), sans-serif; color: var(--ink, #2a2723);
 }
 .ts-ask.is-flat dd, .ts-ask.is-flat dd b {
-  font: 800 0.95rem/1.4 var(--font-mono, monospace); color: var(--ink, #2a2723);
+  font: 800 0.92rem/1.4 var(--font-mono, monospace); color: var(--ink, #2a2723);
 }
-.ts-ask.is-flat dd { color: var(--text-tertiary, #9b9488); }
+.ts-ask.is-flat dd { color: var(--text-tertiary, #9b9488); font-weight: 700; }
 .ts-ask.is-flat dd.is-enough b { color: var(--accent-success, #3f8f4f); }
 
-/* The box the child writes in. A filled field with a rule under it, not a
-   black outline — the receipt's own torn edge is the only hard edge on the
-   page. Green when it is right, amber while it is not: a sum in progress is
-   not a mistake, so it is never red. */
+/* The box the child writes in: a filled field with a rule under it, never a
+   black outline. Green when it is right, amber while it is not — a sum in
+   progress is not a mistake, so it is never red. */
 .ts-box {
-  width: 6rem; padding: 0.3rem 0.5rem;
+  width: 5.6rem; padding: 0.3rem 0.5rem;
   background: rgba(42, 39, 35, 0.045);
-  border: 0; border-bottom: 2px solid rgba(42, 39, 35, 0.28);
-  border-radius: 0;
+  border: 0; border-bottom: 2px solid rgba(42, 39, 35, 0.28); border-radius: 0;
   color: var(--ink, #2a2723);
   font: 800 0.95rem/1.3 var(--font-mono, monospace); text-align: right;
   transition: background 0.14s ease, border-color 0.14s ease;
@@ -226,88 +234,237 @@
 .ts-box:focus-visible { outline: 2px solid var(--accent-secondary, #6fb7e8); outline-offset: 2px; }
 .ts-box.is-right { background: rgba(63, 143, 79, 0.14); border-bottom-color: var(--accent-success, #3f8f4f); color: #276b36; }
 .ts-box.is-trying { background: rgba(244, 201, 93, 0.22); border-bottom-color: #c9922f; }
-.ts-ask.is-pay .ts-box { width: 7rem; font-size: 1.05rem; }
+.ts-ask.is-pay .ts-box { width: 6.6rem; font-size: 1.05rem; }
 
-.ts-pay__note {
+/* ── paying ───────────────────────────────────────────────────────────────*/
+
+.ts-payscreen { max-width: 62rem; margin: 0 auto; }
+.ts-choose { display: flex; justify-content: center; gap: 0.9rem; flex-wrap: wrap; margin-bottom: 1.7rem; }
+
+.ts-cash, .ts-cardpay { display: grid; gap: 1.4rem; align-items: start; }
+/* `display: grid` beats the browser rule that hides [hidden], so the way that
+   is not chosen has to be told to stay away */
+.ts-cash[hidden], .ts-cardpay[hidden] { display: none; }
+@media (min-width: 900px) {
+  .ts-cash { grid-template-columns: 1fr 19rem; }
+  .ts-cardpay { grid-template-columns: 21rem 1fr; }
+}
+
+/* the counter: the money is drawn nearly twice workbook size, because this is
+   a whole screen and the notes are meant to be read and taken hold of */
+.ts-counter .pu-wrap { width: 100%; margin: 0; }
+.ts-counter .pu-mat { width: 100%; }
+.ts-counter .pu-tray { background: #efe9dc; }
+.ts-counter .pu-piece { cursor: grab; }
+.ts-counter .pu-piece.is-held { cursor: grabbing; }
+
+.ts-cash__paper, .ts-gate__paper { padding: 1.3rem 1.4rem 1.4rem; }
+.ts-cash__title {
+  margin: 0 0 0.8rem;
+  font: 800 0.7rem/1.3 var(--font-mono, monospace);
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-secondary, #6b655c);
+}
+.ts-cash__sums, .ts-gate__rows { margin: 0; }
+.ts-cash__note {
   margin: 0.9rem 0 0;
   font: 400 0.7rem/1.55 var(--font-mono, monospace); color: var(--text-tertiary, #9b9488);
 }
-.ts-pay__purse { margin-top: 0.9rem; }
-.ts-pay__purse .pu-wrap { width: 100%; margin: 0; }
-.ts-pay__purse .pu-mat { width: 100%; }
 
-/* ── the delivery ─────────────────────────────────────────────────────────*/
+/* the card, and the gateway that is not one */
+.ts-cardpay__card { filter: drop-shadow(0 10px 22px rgba(var(--shadow-color, 42, 39, 35), 0.26)); }
+.ts-card3 { display: block; width: 100%; height: auto; }
+
+.ts-gate__brand {
+  display: flex; align-items: center; gap: 0.45rem; margin: 0 0 0.2rem;
+  font-family: var(--font-display, Unbounded), sans-serif; font-size: 1.1rem; color: var(--ink, #2a2723);
+}
+.ts-gate__brand svg { display: block; flex: none; }
+.ts-gate__sub {
+  margin: 0 0 1rem;
+  font: 400 0.68rem/1.4 var(--font-mono, monospace);
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary, #9b9488);
+}
+.ts-gate__step { margin-top: 1rem; padding-top: 0.9rem; border-top: 1.5px dashed rgba(42, 39, 35, 0.3); }
+.ts-gate__go { width: 100%; font-weight: 700; }
+.ts-gate__busy { margin: 0; font: 700 0.86rem/1.4 var(--font-mono, monospace); color: var(--text-secondary, #6b655c); }
+.ts-gate__busy i {
+  display: inline-block; width: 0.32rem; height: 0.32rem; margin-left: 0.18rem;
+  background: var(--text-secondary, #6b655c); border-radius: 50%;
+  animation: ts-dot 1s infinite;
+}
+.ts-gate__busy i:nth-child(2) { animation-delay: 0.16s; }
+.ts-gate__busy i:nth-child(3) { animation-delay: 0.32s; }
+@keyframes ts-dot { 0%, 60%, 100% { opacity: 0.25; } 30% { opacity: 1; } }
+
+.ts-gate__ok {
+  display: flex; align-items: center; gap: 0.4rem; margin: 0 0 0.3rem;
+  font: 800 0.9rem/1.4 var(--font-mono, monospace); color: var(--accent-success, #3f8f4f);
+}
+.ts-gate__ok svg { display: block; flex: none; }
+.ts-gate__no { margin: 0 0 0.3rem; font: 800 0.9rem/1.4 var(--font-mono, monospace); color: var(--accent-danger, #c0453f); }
+.ts-gate__hint { margin: 0.5rem 0 0; font: 400 0.72rem/1.55 var(--font-mono, monospace); color: var(--text-tertiary, #9b9488); }
+.ts-gate__warn {
+  margin: 1rem 0 0; padding-top: 0.8rem;
+  border-top: 1.5px dashed rgba(42, 39, 35, 0.22);
+  font: 400 0.68rem/1.55 var(--font-mono, monospace); color: var(--text-tertiary, #9b9488);
+}
+
+/* ── the delivery ─────────────────────────────────────────────────────────
+   A street in depth. Everything behind the van — sky, house, hedge — sits in
+   one layer that is blurred and desaturated, the way a lens throws a
+   background out of focus, and the van is the only thing in focus. That is
+   what stops a drawn street reading as a drawing: the eye is told where to
+   look, and the shapes behind never have to stand up to being examined.
+   ------------------------------------------------------------------------*/
 
 .ts-wrap--done { text-align: center; }
-.ts-road {
+
+.ts-street {
   position: relative; overflow: hidden;
-  height: clamp(9rem, 24vw, 13rem);
-  margin: 0 auto 1.5rem; max-width: 46rem;
-  background: linear-gradient(#eaf4ff 0%, #eaf4ff 70%, #f1ece0 70%);
+  height: clamp(11rem, 30vw, 17rem);
+  margin: 0 auto 1.6rem; max-width: 50rem;
+  background: linear-gradient(#a9cfe9 0%, #cfe6f5 42%, #d8d4cc 42%);
   cursor: pointer;
 }
-.ts-road__line { position: absolute; left: 0; right: 0; bottom: 1.5rem; border-top: 3px dashed rgba(42, 39, 35, 0.3); }
-.ts-road__skip {
-  position: absolute; right: 0.5rem; bottom: 0.3rem; margin: 0;
-  font: 700 0.64rem/1 var(--font-mono, monospace); letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--text-tertiary, #9b9488);
-}
-.is-opening .ts-road__skip { opacity: 0; }
 
-/* the van: the wheels rest ON the dashed line, which is why its bottom and
-   the line's are set together */
-.ts-road__van {
-  position: absolute; bottom: 1.45rem; left: -45%;
-  width: clamp(8rem, 26vw, 12rem);
+.ts-street__back {
+  position: absolute; inset: 0 0 26% 0;
+  filter: blur(3.4px) saturate(0.78) brightness(1.04);
 }
-.ts-road__van svg { display: block; width: 100%; height: auto; }
-.is-driving .ts-road__van { animation: ts-drive 2.3s cubic-bezier(0.25, 0.1, 0.2, 1) forwards; }
-@keyframes ts-drive { from { left: -45%; } to { left: 38%; } }
+.ts-street__sky {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 22% 30% at 20% 26%, rgba(255,255,255,0.95), transparent 70%),
+    radial-gradient(ellipse 16% 22% at 32% 20%, rgba(255,255,255,0.85), transparent 70%),
+    radial-gradient(ellipse 20% 26% at 76% 18%, rgba(255,255,255,0.8), transparent 70%),
+    linear-gradient(#a9cfe9, #d7eaf7 76%, #e4eef4);
+}
 
-/* the parcel comes off the BACK of the van, which is its left edge */
-.ts-road__parcel {
-  position: absolute; bottom: 1.45rem; left: 20%;
-  width: clamp(3.6rem, 11vw, 5.4rem); opacity: 0;
+/* a house, far enough back that it is a few tones and a roofline */
+.ts-street__house {
+  position: absolute; left: 8%; bottom: 0; width: 36%; height: 62%;
+  background: linear-gradient(#e3d6c0, #d6c7ae);
 }
-.ts-road__parcel svg { display: block; width: 100%; height: auto; }
-.is-dropping .ts-road__parcel { animation: ts-drop 1s cubic-bezier(0.3, 1.4, 0.5, 1) forwards; }
-@keyframes ts-drop {
-  from { opacity: 0; transform: translate(4rem, -2.5rem) rotate(-18deg); }
+.ts-street__roof {
+  position: absolute; left: -8%; right: -8%; top: -14%; height: 16%;
+  background: #8f6a52;
+  clip-path: polygon(0 100%, 9% 0, 91% 0, 100% 100%);
+}
+.ts-street__door {
+  position: absolute; left: 13%; bottom: 0; width: 17%; height: 62%;
+  background: linear-gradient(#7b5736, #674628);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.22);
+}
+.ts-street__win {
+  position: absolute; bottom: 26%; width: 16%; height: 34%;
+  background: linear-gradient(#c6e0f0, #9fc2d9);
+  box-shadow: 0 0 0 3px #e3d6c0, inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+.ts-street__win:nth-of-type(3) { left: 42%; }
+.ts-street__win:nth-of-type(4) { left: 70%; }
+
+/* the hedge: overlapping rounds, which blur into foliage */
+.ts-street__hedge {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 26%;
+  background:
+    radial-gradient(circle at 12px 16px, #6f9a5e 0 15px, transparent 16px) 0 0 / 22px 30px repeat-x,
+    radial-gradient(circle at 20px 20px, #80ab6c 0 16px, transparent 17px) 8px 4px / 30px 34px repeat-x,
+    linear-gradient(#6d9a5c, #5c8750);
+}
+
+/* the pavement the parcel is left on, and the road the van is on */
+.ts-street__kerb {
+  position: absolute; left: 0; right: 0; bottom: 26%; height: 11%;
+  background: linear-gradient(#efece6, #d6d2c9);
+}
+.ts-street__road {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 26%;
+  background: linear-gradient(#a7abaf, #8e9397);
+}
+.ts-street__road i {
+  position: absolute; left: 0; right: -40%; top: 46%; height: 4px;
+  background: repeating-linear-gradient(90deg, #f2f1ed 0 34px, transparent 34px 74px);
+  opacity: 0.85;
+}
+.is-driving .ts-street__road i { animation: ts-road 0.5s linear 6; }
+@keyframes ts-road { to { transform: translateX(-74px); } }
+
+.ts-street__van {
+  position: absolute; bottom: 9%; right: -48%;
+  width: clamp(12rem, 40vw, 19rem);
+}
+.ts-street__van svg { display: block; width: 100%; height: auto; }
+.is-driving .ts-street__van { animation: ts-pullup 2.9s cubic-bezier(0.16, 0.7, 0.26, 1) forwards; }
+@keyframes ts-pullup {
+  0%   { right: -48%; }
+  /* it overshoots a hair and settles back, which is what braking looks like */
+  86%  { right: 7%; }
+  93%  { right: 9%; }
+  100% { right: 8%; }
+}
+.is-leaving .ts-street__van { animation: ts-off 2s cubic-bezier(0.45, 0, 0.8, 0.2) forwards; }
+@keyframes ts-off { from { right: 8%; } to { right: 125%; } }
+
+.is-driving .ts-van__wheel { transform-box: fill-box; transform-origin: center; animation: ts-spin 0.42s linear 7; }
+.is-leaving .ts-van__wheel { transform-box: fill-box; transform-origin: center; animation: ts-spin 0.3s linear 7; }
+@keyframes ts-spin { to { transform: rotate(360deg); } }
+
+.ts-street__parcel {
+  position: absolute; left: 14%; bottom: 28%;
+  width: clamp(3rem, 8.5vw, 4.4rem); opacity: 0;
+  filter: drop-shadow(0 4px 7px rgba(42, 39, 35, 0.3));
+}
+.ts-street__parcel svg { display: block; width: 100%; height: auto; }
+.is-dropping .ts-street__parcel { animation: ts-setdown 0.8s cubic-bezier(0.25, 0.9, 0.3, 1) forwards; }
+@keyframes ts-setdown {
+  from { opacity: 0; transform: translate(2.5rem, -1.8rem) scale(0.92); }
   60%  { opacity: 1; }
-  to   { opacity: 1; transform: translate(0, 0) rotate(0); }
+  to   { opacity: 1; transform: none; }
 }
-/* and then it is opened — the lid is DRAWN off (art.js PARCEL_OPEN), not faded
-   out: a parcel that dissolves reads as a rendering fault, and the whole joke
-   depends on the child seeing the hole where the toy is not */
-.is-opening .ts-road__parcel { opacity: 1; animation: ts-open 0.55s ease forwards; }
-@keyframes ts-open {
-  0%   { transform: translateY(0) scale(1); }
-  45%  { transform: translateY(-0.35rem) scale(1.08); }
-  100% { transform: translateY(0) scale(1); }
-}
-.is-done .ts-road__van { left: 38%; }
-.is-done .ts-road__parcel { opacity: 1; animation: none; }
+.is-done .ts-street__parcel { opacity: 1; animation: none; }
+.is-done .ts-street__van { right: 125%; animation: none; }
 
-.ts-truth { max-width: 38rem; margin: 0 auto; opacity: 0; transform: translateY(0.8rem); }
-.ts-truth.is-in { animation: ts-up 0.5s ease forwards; }
+.ts-street__skip {
+  position: absolute; right: 0.6rem; bottom: 0.4rem; margin: 0;
+  font: 700 0.62rem/1 var(--font-mono, monospace); letter-spacing: 0.08em;
+  text-transform: uppercase; color: rgba(255, 255, 255, 0.9);
+}
+.is-leaving .ts-street__skip { opacity: 0; }
+
+/* ── and the praise ───────────────────────────────────────────────────────*/
+
+.ts-well { max-width: 40rem; margin: 0 auto; opacity: 0; transform: translateY(0.8rem); }
+.ts-well.is-in { animation: ts-up 0.5s ease forwards; }
 @keyframes ts-up { to { opacity: 1; transform: none; } }
-.ts-truth__head { margin: 0 0 0.5rem; font-family: var(--font-display, Unbounded), sans-serif; font-size: 1.35rem; color: var(--ink, #2a2723); }
-.ts-truth__say { margin: 0 0 1rem; font-size: 0.95rem; line-height: 1.6; color: var(--text-secondary, #6b655c); }
-.ts-truth__say .mo-amt { color: var(--ink, #2a2723); font-weight: 800; }
+.ts-well__tick { margin: 0 0 0.5rem; line-height: 0; }
+.ts-well__tick svg { display: inline-block; }
+.ts-well__head {
+  margin: 0 0 0.6rem; font-family: var(--font-display, Unbounded), sans-serif;
+  font-size: clamp(1.1rem, 3.4vw, 1.4rem); color: var(--ink, #2a2723);
+}
+.ts-well__say { margin: 0 0 0.8rem; font-size: 0.92rem; line-height: 1.65; color: var(--text-secondary, #6b655c); }
+.ts-well__say .mo-amt { color: var(--ink, #2a2723); font-weight: 800; }
 
 @media (prefers-reduced-motion: reduce) {
-  .ts-road__van, .ts-road__parcel, .ts-truth { animation: none !important; }
-  .ts-road__van { left: 38%; }
-  .ts-road__parcel { opacity: 1; }
-  .ts-truth { opacity: 1; transform: none; }
+  .ts-street__van, .ts-street__parcel, .ts-well, .ts-van__wheel, .ts-street__road i { animation: none !important; }
+  .ts-street__van { right: 8%; }
+  .ts-street__parcel { opacity: 1; }
+  .ts-well { opacity: 1; transform: none; }
 }
 
-/* On a phone the two receipts stack, and the figures come in a little. There is
-   no reflow to do any more: a receipt is one narrow column at every width,
-   which is the point of shaping the bill like one. */
+/* On a phone everything is one column: the item receipts, then the totals,
+   then the counter under its own figures. There is no reflow to do — a
+   receipt is one narrow column at every width, which is the point of shaping
+   a bill like one. */
 @media (max-width: 620px) {
-  .ts-bill__paper, .ts-pay__paper { padding: 1.3rem 1.25rem 1.4rem; }
+  .ts-item__paper, .ts-sum__paper, .ts-cash__paper, .ts-gate__paper { padding: 1.1rem 1.1rem 1.2rem; }
   .ts-ask dt { font-size: 0.7rem; }
-  .ts-box { width: 5.2rem; font-size: 0.88rem; }
-  .ts-ask.is-pay .ts-box { width: 6rem; }
+  .ts-box { width: 5rem; font-size: 0.88rem; }
+  .ts-ask.is-pay .ts-box { width: 5.8rem; }
+  .ts-bill__grid { grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 1rem 0.8rem; }
+  /* an item receipt is too narrow for a label beside a box, so the label goes
+     above it and the box takes the width */
+  .ts-item .ts-ask { flex-direction: column; align-items: stretch; gap: 0.1rem; padding: 0.3rem 0; }
+  .ts-item .ts-ask dd { align-self: stretch; }
+  .ts-item .ts-box { width: 100%; }
 }

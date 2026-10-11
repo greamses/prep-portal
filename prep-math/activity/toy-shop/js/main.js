@@ -15,16 +15,17 @@
    laying them on the counter.
    ========================================================================== */
 
-import { loadToys, makeBasket, bill, writeAmount } from "./shop.js";
-import { tillHtml, wireTill, payHtml, wirePay } from "./till.js";
-import { purse, mountPurse, heldTotal, priceHtml } from "/utils/components/workbook/purse.js";
+import { loadToys, makeBasket, bill } from "./shop.js";
+import { tillHtml, wireTill } from "./till.js";
+import { payHtml, wirePay } from "./pay.js";
+import { priceHtml } from "/utils/components/workbook/purse.js";
 import { toyImg } from "./art.js";
 import { deliver } from "./van.js";
 import { UI } from "/utils/components/ui-icons.js";
 
 const $ = (id) => document.getElementById(id);
 const show = (which) => {
-  ["shop", "till", "done"].forEach((s) => { $(`ts-${s}`).hidden = s !== which; });
+  ["shop", "till", "pay", "done"].forEach((s) => { $(`ts-${s}`).hidden = s !== which; });
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
@@ -84,48 +85,64 @@ function paintBar() {
   $("ts-count").innerHTML = `${UI.cart(21)}<span>${n ? `${n} toy${n === 1 ? "" : "s"} in the basket` : "Your basket is empty"}</span>`;
   $("ts-go").disabled = !n;
 }
-/* ── the till ──────────────────────────────────────────────────────────────*/
+/* ── the bill ──────────────────────────────────────────────────────────────*/
 
 function openTill() {
   const lines = basket.lines;
   if (!lines.length) return;
-  const B = bill(lines, rate);
 
   $("ts-till-body").innerHTML = tillHtml(lines, rate);
-  $("ts-pay-body").innerHTML = payHtml(B.total);
-  /* the purse belongs ON the payment receipt, not beside it */
-  $("ts-pay-body").querySelector("[data-purse-slot]").innerHTML =
-    purse({ say: `take out at least ${writeAmount(B.total)}`, mm: 34 });
-  $("ts-pay-wrap").hidden = true;
-  $("ts-buy").disabled = true;
+  $("ts-topay").disabled = true;
 
   wireTill($("ts-till-body"), {
     onDone: (all) => {
-      $("ts-pay-wrap").hidden = !all;
+      $("ts-topay").disabled = !all;
       $("ts-till-say").textContent = all
-        ? "That is the bill. Now pay it."
-        : "Every box has to be right before the shop will take your money.";
+        ? "That is the bill. Now go and pay it."
+        : "Every figure has to be right before the shop will take your money.";
       $("ts-till-say").classList.toggle("is-done", all);
     },
   });
-
-  const pay = wirePay($("ts-pay-body"), B.total, { onReady: (ok) => { $("ts-buy").disabled = !ok; } });
-  const card = mountPurse($("ts-pay-body").querySelector("[data-purse]"), {
-    onChange: (now) => pay.laid(heldTotal(now)),
-  });
-  $("ts-buy").onclick = () => { card.dispose(); buy(B); };
   show("till");
 }
 
-/* ── and the delivery that is not one ─────────────────────────────────────*/
+/* ── paying, which is a screen of its own ─────────────────────────────────*/
 
-function buy(B) {
+let paying = null;
+
+function openPay() {
+  const lines = basket.lines;
+  if (!lines.length) return;
+  const B = bill(lines, rate);
+
+  if (paying) paying.dispose();
+  $("ts-pay-body").innerHTML = payHtml(B.total);
+  $("ts-buy").disabled = true;
+  paying = wirePay($("ts-pay-body"), B.total, {
+    onReady: (ok, how) => {
+      $("ts-buy").disabled = !ok;
+      $("ts-buy").textContent = how === "card" ? "Pay with the card" : "Hand it over";
+    },
+  });
+  $("ts-buy").onclick = () => {
+    const how = paying.settle();
+    paying.dispose();
+    paying = null;
+    buy(B, how);
+  };
+  show("pay");
+}
+
+/* ── and the delivery ─────────────────────────────────────────────────────*/
+
+function buy(B, how) {
   show("done");
   deliver($("ts-done-body"), {
     spent: priceHtml(B.total),
+    how,
     onDone: () => {
       $("ts-done-body").querySelector("[data-again]").innerHTML =
-        `<button type="button" class="pp-btn" id="ts-again">Go round again</button>`;
+        `<button type="button" class="pp-btn" id="ts-again">Buy something else</button>`;
       $("ts-again").onclick = () => { basket.clear(); show("shop"); };
     },
   });
@@ -160,6 +177,8 @@ async function start() {
   });
   $("ts-go").onclick = openTill;
   $("ts-back").onclick = () => show("shop");
+  $("ts-topay").onclick = openPay;
+  $("ts-pay-back").onclick = () => show("till");
 
   paintShelf();
   paintBar();

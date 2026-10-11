@@ -330,13 +330,17 @@ export function currencySvg() {
  * an empty box — somewhere to put real coins, or to draw them. On screen
  * `mountPurse` makes it work.
  *
- *   say   what the tray is for, in the child's own question's words
- *   mm    how deep the space to lay money out on is
+ *   say    what the tray is for, in the child's own question's words
+ *   mm     how deep the space to lay money out on is
+ *   scale  how big the money itself is. 1 is the workbook's size, chosen to
+ *          print; a screen with a whole page to spare — the Toy Shop's payment
+ *          counter — asks for more, so the notes can actually be read and
+ *          taken hold of with a finger.
  */
-export function purse({ say = "", mm = 40 } = {}) {
+export function purse({ say = "", mm = 40, scale = 1 } = {}) {
   const key = (v, kind) => `<button type="button" class="pu-take pp-plain" data-take="${v}" data-kind="${kind}"`
     + ` aria-label="Take a ${v} ${kind === "bill" ? "prepbill" : "prepcoin"}">`
-    + (kind === "bill" ? billSvg(v, { mm: 13 }) : coinSvg(v, { mm: 7.4 })) + `</button>`;
+    + (kind === "bill" ? billSvg(v, { mm: 13 * scale }) : coinSvg(v, { mm: 7.4 * scale })) + `</button>`;
   return `<div class="pu-wrap" data-purse style="--pu-h:${mm}mm">`
     + `<div class="pu-tray">`
     + `<span class="pu-tray__row">${BILLS.map((v) => key(v, "bill")).join("")}</span>`
@@ -368,7 +372,7 @@ export function sayHeld(pieces) {
  *
  * → { pieces, total(), set(list), clear(), dispose() }
  */
-export function mountPurse(wrap, { saved = null, onChange = null } = {}) {
+export function mountPurse(wrap, { saved = null, onChange = null, scale = 1 } = {}) {
   const matEl = wrap.querySelector("[data-mat]");
   const read = wrap.querySelector("[data-read]");
   let pieces = Array.isArray(saved)
@@ -383,13 +387,19 @@ export function mountPurse(wrap, { saved = null, onChange = null } = {}) {
     matEl.innerHTML = pieces.map((p) => `<div class="pu-piece" data-id="${p.id}"`
       + ` style="left:${p.x}%;top:${p.y}%" tabindex="0" role="button"`
       + ` aria-label="${p.value} ${p.kind === "bill" ? "prepbill" : "prepcoin"}, drag it, or press Delete to put it back">`
-      + (p.kind === "bill" ? billSvg(p.value, { mm: 15 }) : coinSvg(p.value, { mm: 9 }))
+      + (p.kind === "bill" ? billSvg(p.value, { mm: 15 * scale }) : coinSvg(p.value, { mm: 9 * scale }))
       + `</div>`).join("");
     read.textContent = sayHeld(pieces);
     wrap.classList.toggle("is-empty", !pieces.length);
   }
 
-  /* ── taking a piece out of the tray ────────────────────────────────────*/
+  /* ── taking a piece out of the tray ────────────────────────────────────
+     Two ways, because both are natural and people try both: TAP a key and the
+     piece is laid out in the next free place, or DRAG straight off the key
+     onto the mat and it lands where the finger lets go. The drag is the one
+     that feels like money; the tap is the one that is quick when you want
+     eleven of them. A drag suppresses the click that would otherwise follow.
+     ----------------------------------------------------------------------*/
   wrap.querySelectorAll("[data-take]").forEach((b) => {
     b.addEventListener("click", () => {
       const value = Number(b.dataset.take);
@@ -400,12 +410,17 @@ export function mountPurse(wrap, { saved = null, onChange = null } = {}) {
          one step for both, the notes overlapped and a purse of notes read as
          one fat note. */
       const same = pieces.filter((p) => p.kind === kind).length;
-      const [step, perRow, top] = kind === "bill" ? [23, 4, 4] : [13, 6, 46];
+      /* bigger money needs fewer to a row and a wider step, or the first
+         handful lands in one overlapping heap */
+      const base = kind === "bill" ? [23, 4, 4] : [13, 6, 46];
+      const perRow = Math.max(2, Math.round(base[1] / scale));
+      const step = Math.min(base[0] * scale, (92 - base[0] * scale * 0) / perRow);
+      const top = base[2];
       const before = snapshot();
       pieces.push({
         id: seq++, value, kind,
         x: 3 + (same % perRow) * step,
-        y: top + Math.floor(same / perRow) * 16,
+        y: top + Math.floor(same / perRow) * 16 * scale,
       });
       draw();
       tell(before);
@@ -414,6 +429,7 @@ export function mountPurse(wrap, { saved = null, onChange = null } = {}) {
 
   /* ── moving a piece, and putting it back ───────────────────────────────*/
   let drag = null;
+  let fromTray = null;
   const at = (e) => {
     const box = matEl.getBoundingClientRect();
     return {
@@ -421,6 +437,34 @@ export function mountPurse(wrap, { saved = null, onChange = null } = {}) {
       y: Math.max(0, Math.min(80, ((e.clientY - box.top) / box.height) * 100)),
     };
   };
+
+  /* a press on a tray key that turns into a movement becomes a drag of a new
+     piece; a press that does not stays a tap and the click handler has it */
+  wrap.addEventListener("pointerdown", (e) => {
+    const key = e.target.closest("[data-take]");
+    if (!key) return;
+    fromTray = { key, x: e.clientX, y: e.clientY, id: e.pointerId, made: false };
+  });
+
+  wrap.addEventListener("pointermove", (e) => {
+    if (!fromTray || fromTray.made || drag) return;
+    if (Math.hypot(e.clientX - fromTray.x, e.clientY - fromTray.y) < 6) return;
+    fromTray.made = true;
+    const before = snapshot();
+    const p = {
+      id: seq++,
+      value: Number(fromTray.key.dataset.take),
+      kind: fromTray.key.dataset.kind,
+      ...at(e),
+    };
+    pieces.push(p);
+    draw();
+    const el = matEl.querySelector(`[data-id="${p.id}"]`);
+    if (!el) return;
+    drag = { p, el, before };
+    el.classList.add("is-held");
+    try { el.setPointerCapture?.(e.pointerId); } catch { /* it moves without it */ }
+  });
 
   matEl.addEventListener("pointerdown", (e) => {
     const el = e.target.closest(".pu-piece");
@@ -460,6 +504,30 @@ export function mountPurse(wrap, { saved = null, onChange = null } = {}) {
   matEl.addEventListener("pointerup", drop);
   matEl.addEventListener("pointercancel", drop);
 
+  /* a drag that began on a tray key is captured by the piece, so its moves and
+     its release arrive on the window rather than on the mat */
+  const away = (e) => {
+    if (!drag || !fromTray) return;
+    const { x, y } = at(e);
+    drag.p.x = x; drag.p.y = y;
+    drag.el.style.left = `${x}%`;
+    drag.el.style.top = `${y}%`;
+  };
+  const letGo = (e) => {
+    if (fromTray && fromTray.made && drag) drop(e);
+    /* the click that follows a tap is wanted; the one after a drag is not */
+    if (fromTray && fromTray.made) {
+      const key = fromTray.key;
+      const eat = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+      key.addEventListener("click", eat, { capture: true, once: true });
+      setTimeout(() => key.removeEventListener("click", eat, { capture: true }), 0);
+    }
+    fromTray = null;
+  };
+  addEventListener("pointermove", away, { passive: true });
+  addEventListener("pointerup", letGo);
+  addEventListener("pointercancel", letGo);
+
   matEl.addEventListener("keydown", (e) => {
     const el = e.target.closest(".pu-piece");
     if (!el) return;
@@ -478,6 +546,11 @@ export function mountPurse(wrap, { saved = null, onChange = null } = {}) {
     total: () => heldTotal(pieces),
     set(list) { pieces = Array.isArray(list) ? list.map((p) => ({ ...p })) : []; draw(); },
     clear() { pieces = []; draw(); },
-    dispose() { matEl.innerHTML = ""; },
+    dispose() {
+      removeEventListener("pointermove", away);
+      removeEventListener("pointerup", letGo);
+      removeEventListener("pointercancel", letGo);
+      matEl.innerHTML = "";
+    },
   };
 }

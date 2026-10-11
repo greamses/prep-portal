@@ -112,14 +112,30 @@
         </p>
       </header>
 
-      <div class="ts-checkout">
-        <div id="ts-till-body"></div>
-        <div id="ts-pay-wrap" hidden><div id="ts-pay-body"></div></div>
-      </div>
+      <div id="ts-till-body"></div>
 
       <div class="ts-bar">
         <button type="button" class="pp-btn" id="ts-back">Back to the shop</button>
-        <button type="button" class="pp-btn ts-bar__go" id="ts-buy" disabled>Pay and send it</button>
+        <button type="button" class="pp-btn ts-bar__go" id="ts-topay" disabled>Go and pay</button>
+      </div>
+    </main>
+
+    <!-- ═══ PAYING ═════════════════════════════════════════════════════ -->
+    <main class="ts-wrap" id="ts-pay" hidden>
+      <header class="ts-head">
+        <p class="ts-eyebrow">Paying</p>
+        <h1 class="ts-title">How are you paying?</h1>
+        <p class="ts-sub">
+          Count it out on the counter, or put it on your PrepCard. Either way the
+          shop wants to hear the last sum from you.
+        </p>
+      </header>
+
+      <div id="ts-pay-body"></div>
+
+      <div class="ts-bar">
+        <button type="button" class="pp-btn" id="ts-pay-back">Back to the bill</button>
+        <button type="button" class="pp-btn ts-bar__go" id="ts-buy" disabled>Hand it over</button>
       </div>
     </main>
 
@@ -127,7 +143,7 @@
     <main class="ts-wrap ts-wrap--done" id="ts-done" hidden>
       <header class="ts-head">
         <p class="ts-eyebrow">On its way</p>
-        <h1 class="ts-title">Paid</h1>
+        <h1 class="ts-title">Paid, and on the van</h1>
       </header>
       <div id="ts-done-body"></div>
     </main>
