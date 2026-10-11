@@ -303,6 +303,25 @@
 .ts-gate__ok svg { display: block; flex: none; }
 .ts-gate__no { margin: 0 0 0.3rem; font: 800 0.9rem/1.4 var(--font-mono, monospace); color: var(--accent-danger, #c0453f); }
 .ts-gate__hint { margin: 0.5rem 0 0; font: 400 0.72rem/1.55 var(--font-mono, monospace); color: var(--text-tertiary, #9b9488); }
+
+/* the PrepPIN */
+.ts-gate__ask {
+  margin: 0 0 0.6rem;
+  font: 800 0.8rem/1.4 var(--font-display, Unbounded), sans-serif; color: var(--ink, #2a2723);
+}
+.ts-pin { display: flex; align-items: center; gap: 0.6rem; }
+.ts-pin__in {
+  width: 6.4rem; padding: 0.4rem 0.6rem;
+  background: rgba(42, 39, 35, 0.045);
+  border: 0; border-bottom: 2px solid rgba(42, 39, 35, 0.28); border-radius: 0;
+  color: var(--ink, #2a2723);
+  font: 800 1.2rem/1.3 var(--font-mono, monospace);
+  letter-spacing: 0.4em; text-align: center;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+.ts-pin__in:focus { outline: 0; background: rgba(111, 183, 232, 0.16); border-bottom-color: var(--accent-secondary, #6fb7e8); }
+.ts-pin__in:focus-visible { outline: 2px solid var(--accent-secondary, #6fb7e8); outline-offset: 2px; }
+.ts-pin__in.is-trying { background: rgba(244, 201, 93, 0.22); border-bottom-color: #c9922f; }
 .ts-gate__warn {
   margin: 1rem 0 0; padding-top: 0.8rem;
   border-top: 1.5px dashed rgba(42, 39, 35, 0.22);
@@ -442,7 +461,12 @@
   margin: 0 0 0.6rem; font-family: var(--font-display, Unbounded), sans-serif;
   font-size: clamp(1.1rem, 3.4vw, 1.4rem); color: var(--ink, #2a2723);
 }
-.ts-well__say { margin: 0 0 0.8rem; font-size: 0.92rem; line-height: 1.65; color: var(--text-secondary, #6b655c); }
+/* the praise is typed, not written: it is the receipt of what they just did */
+.ts-well__say {
+  margin: 0 0 0.9rem;
+  font: 400 0.82rem/1.75 var(--font-mono, "JetBrains Mono", monospace);
+  color: var(--text-secondary, #6b655c);
+}
 .ts-well__say .mo-amt { color: var(--ink, #2a2723); font-weight: 800; }
 
 @media (prefers-reduced-motion: reduce) {

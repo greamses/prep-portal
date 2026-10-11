@@ -31,6 +31,12 @@ import { UI } from "/utils/components/ui-icons.js";
 const CARD_KEY = "ts-card";
 const CARD_START = 25000; /* 250.00, in prepcoins */
 
+/* The PrepPIN, which is PRINTED ON THE CARD on purpose, and the gateway says
+   why: this card is play money, and a real PIN is never printed anywhere and
+   never typed into a page you did not go to yourself. Deliberately not the
+   last four digits of the card number — that is a habit worth not teaching. */
+const CARD_PIN = "7310";
+
 export function cardBalance() {
   try {
     const v = Number(localStorage.getItem(CARD_KEY));
@@ -80,8 +86,10 @@ export function cardSvg(balance) {
       <text x="24" y="183" font-family="JetBrains Mono, monospace" font-size="21"
             font-weight="700" fill="#fff">${writeAmount(balance)}</text>
 
+      <text x="316" y="160" text-anchor="end" font-family="JetBrains Mono, monospace"
+            font-size="8" letter-spacing="1.6" fill="#9dbad3">PREPPIN</text>
       <text x="316" y="183" text-anchor="end" font-family="JetBrains Mono, monospace"
-            font-size="10" letter-spacing="1.4" fill="#bcd4e8">PREP PORTAL</text>
+            font-size="21" font-weight="700" letter-spacing="2" fill="#fff">${CARD_PIN}</text>
     </svg>`;
 }
 
@@ -128,7 +136,9 @@ export function payHtml(total) {
             </dl>
             <div class="ts-gate__step" data-step></div>
             <p class="ts-gate__warn">This card is not real and no real money can be paid here.
-              Never type a real card number into any page.</p>
+              Its PrepPIN is printed on it because it is play money — a real PIN is never
+              printed anywhere, and you never type a real card number or PIN into a page
+              you did not go to yourself.</p>
           </div>
         </div>
       </section>
@@ -207,9 +217,33 @@ export function wirePay(root, total, { onReady = () => {} } = {}) {
     step.innerHTML = `<button type="button" class="pp-btn ts-gate__go" data-go>Authorise ${writeAmount(total)}</button>`;
   };
 
-  const authorise = () => {
-    step.innerHTML = `<p class="ts-gate__busy">Contacting PrepPay<i></i><i></i><i></i></p>`;
-    timer = setTimeout(() => {
+  const askPin = () => {
+    step.innerHTML = `
+      <p class="ts-gate__ask">Enter your PrepPIN</p>
+      <div class="ts-pin">
+        <input class="ts-pin__in" type="password" inputmode="numeric" maxlength="4"
+               autocomplete="off" data-pin aria-label="Your four digit PrepPIN" placeholder="&#9679;&#9679;&#9679;&#9679;">
+        <button type="button" class="pp-btn" data-pinok>Continue</button>
+      </div>
+      <p class="ts-gate__hint" data-pinsay>It is printed on the front of your card.</p>`;
+    const pin = step.querySelector("[data-pin]");
+    const say = step.querySelector("[data-pinsay]");
+    const tryIt = () => {
+      if (pin.value === CARD_PIN) { approved(); return; }
+      pin.classList.add("is-trying");
+      say.textContent = "That is not the PrepPIN. It is printed on the front of the card.";
+      pin.select();
+    };
+    pin.addEventListener("input", () => {
+      pin.classList.remove("is-trying");
+      if (pin.value.length === 4) tryIt();
+    });
+    pin.addEventListener("keydown", (e) => { if (e.key === "Enter") tryIt(); });
+    step.querySelector("[data-pinok]").addEventListener("click", tryIt);
+    pin.focus();
+  };
+
+  const approved = () => {
       const bal = cardBalance();
       step.innerHTML = `
         <p class="ts-gate__ok">${UI.check(15)}<span>Authorised</span></p>
@@ -229,7 +263,11 @@ export function wirePay(root, total, { onReady = () => {} } = {}) {
         tell();
       });
       left.focus();
-    }, 1100);
+  };
+
+  const authorise = () => {
+    step.innerHTML = `<p class="ts-gate__busy">Contacting PrepPay<i></i><i></i><i></i></p>`;
+    timer = setTimeout(askPin, 950);
   };
 
   step.addEventListener("click", (e) => { if (e.target.closest("[data-go]")) authorise(); });
