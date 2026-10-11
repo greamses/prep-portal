@@ -31,46 +31,86 @@
 .ts-panel__title { margin: 0 0 0.6rem; font: 800 0.72rem/1 var(--font-mono, monospace); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary, #6b655c); }
 .ts-panel__note { margin: 0.7rem 0 0; max-width: 30rem; font-size: 0.8rem; line-height: 1.5; color: var(--text-secondary, #6b655c); }
 
-/* ── the shelf ────────────────────────────────────────────────────────────*/
+/* ── the shelf ────────────────────────────────────────────────────────────
+   Each listing is the site's receipt card (.pp-receipt): the wrapper carries
+   the shadow, the paper carries the torn teeth. The paper's own perforated
+   rails run 6px in from each side, so nothing may sit closer than that — the
+   card's padding is set to clear them.
+   ------------------------------------------------------------------------*/
 
 .ts-shelf {
-  display: grid; gap: 1rem;
-  grid-template-columns: repeat(auto-fill, minmax(clamp(9rem, 20vw, 13rem), 1fr));
+  display: grid; gap: 1.5rem 1.1rem;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(10.5rem, 22vw, 14rem), 1fr));
+  align-items: start;
 }
 .ts-oops { grid-column: 1 / -1; text-align: center; color: var(--text-secondary, #6b655c); }
 
-.ts-card {
-  position: relative;
-  display: flex; flex-direction: column;
-  background: var(--surface-primary, #fffdf8);
-  border: 2px solid var(--ink, #2a2723);
-}
-.ts-card.is-sale { border-color: var(--accent-danger, #c0453f); }
-.ts-card__flag {
-  position: absolute; top: 0; right: 0; z-index: 2;
-  padding: 0.18rem 0.5rem;
-  background: var(--accent-danger, #c0453f); color: #fffdf8;
-  font: 800 0.68rem/1.4 var(--font-mono, monospace); letter-spacing: 0.04em;
-}
-/* the shot: the toy on its own tinted panel, as a listing has */
-.ts-card__shot {
-  display: grid; place-items: center;
-  padding: 0.9rem;
-  background: #f6f2e9;
-  border-bottom: 1px solid rgba(42, 39, 35, 0.18);
-}
-.ts-card__shot .ts-art { width: clamp(3.6rem, 9vw, 5.2rem); height: auto; display: block; }
-.ts-card__body { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.7rem 0.8rem 0.8rem; flex: 1 1 auto; }
-.ts-card__name { margin: 0; font-size: 0.92rem; font-weight: 700; line-height: 1.25; color: var(--ink, #2a2723); }
-.ts-card__blurb { margin: 0; font-size: 0.74rem; line-height: 1.4; color: var(--text-secondary, #6b655c); flex: 1 1 auto; }
-.ts-card__price { display: flex; align-items: baseline; gap: 0.45rem; margin: 0.25rem 0 0; flex-wrap: wrap; }
-.ts-card__price b { font-family: var(--font-mono, monospace); font-size: 1.05rem; color: var(--ink, #2a2723); }
-.ts-card__price s { font-family: var(--font-mono, monospace); font-size: 0.78rem; color: var(--text-tertiary, #9b9488); }
-.ts-card__stock { margin: 0; font-size: 0.68rem; color: var(--text-tertiary, #9b9488); }
+.ts-card { position: relative; transition: transform 0.16s ease, filter 0.16s ease; }
+.ts-card:hover { transform: translateY(-3px); filter: drop-shadow(0 11px 20px rgba(var(--shadow-color, 42, 39, 35), 0.18)); }
+.ts-card.is-in { --pp-paper: #fbf7ec; }
 
-.ts-card__buy { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.45rem; }
-.ts-card__buy .pp-btn { min-width: 2rem; font-family: var(--font-mono, monospace); font-weight: 800; }
-.ts-card__n { min-width: 1.4rem; text-align: center; font: 800 1rem/1 var(--font-mono, monospace); color: var(--ink, #2a2723); }
+.ts-card__paper {
+  display: flex; flex-direction: column; gap: 0.3rem;
+  padding: 1.1rem 1.15rem 1.15rem;
+  height: 100%;
+}
+
+/* the sale flag, torn off the same roll */
+.ts-card__flag {
+  position: absolute; top: 0.95rem; left: -0.3rem; z-index: 2;
+  padding: 0.16rem 0.5rem;
+  background: var(--accent-danger, #c0453f); color: #fffdf8;
+  font: 800 0.7rem/1.45 var(--font-mono, monospace); letter-spacing: 0.03em;
+  box-shadow: 0 2px 5px rgba(42, 39, 35, 0.22);
+}
+
+/* the photograph, on its own paper panel the way a listing shows one */
+.ts-card__shot {
+  display: block; margin: 0 0 0.55rem;
+  aspect-ratio: 1 / 1;
+  background: #f3efe5;
+  overflow: hidden;
+}
+.ts-shot__img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.ts-card__name {
+  margin: 0; font-family: var(--font-display, Unbounded), sans-serif;
+  font-size: 0.9rem; line-height: 1.3; color: var(--ink, #2a2723);
+}
+.ts-card__stars { display: flex; align-items: center; gap: 0.08rem; }
+.ts-card__stars svg { display: block; }
+.ts-card__stars i {
+  margin-left: 0.3rem; font: 700 0.68rem/1 var(--font-mono, monospace);
+  font-style: normal; color: var(--text-tertiary, #9b9488);
+}
+
+/* the description is typed, not written — it is catalogue copy */
+.ts-card__blurb {
+  margin: 0.15rem 0 0;
+  font: 400 0.72rem/1.5 var(--font-mono, "JetBrains Mono", monospace);
+  color: var(--text-secondary, #6b655c);
+  flex: 1 1 auto;
+}
+
+/* the price sits under a dashed rule, where a till roll puts it */
+.ts-card__price {
+  display: flex; align-items: baseline; gap: 0.45rem; flex-wrap: wrap;
+  margin: 0.6rem 0 0; padding-top: 0.55rem;
+  border-top: 1.5px dashed rgba(42, 39, 35, 0.3);
+}
+.ts-card__price b { font-family: var(--font-mono, monospace); font-size: 1.12rem; color: var(--ink, #2a2723); }
+.ts-card__price s { font-family: var(--font-mono, monospace); font-size: 0.78rem; color: var(--text-tertiary, #9b9488); }
+.ts-card__stock { margin: 0.1rem 0 0.6rem; font: 400 0.66rem/1.4 var(--font-mono, monospace); color: var(--text-tertiary, #9b9488); }
+
+/* add to basket, and the stepper it becomes */
+.ts-card__add {
+  display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  width: 100%; font-weight: 700;
+}
+.ts-card__add svg { display: block; flex: none; }
+.ts-step { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.ts-step__k { min-width: 2.2rem; font-family: var(--font-mono, monospace); font-weight: 800; }
+.ts-step__n { font: 800 1.05rem/1 var(--font-mono, monospace); color: var(--ink, #2a2723); }
 
 /* ── the basket bar ───────────────────────────────────────────────────────*/
 
@@ -81,7 +121,11 @@
   background: var(--surface-primary, #fffdf8);
   border-top: 2px solid var(--ink, #2a2723);
 }
-.ts-bar__count { font: 700 0.85rem/1 var(--font-mono, monospace); color: var(--ink, #2a2723); }
+.ts-bar__count {
+  display: flex; align-items: center; gap: 0.5rem;
+  font: 700 0.85rem/1 var(--font-mono, monospace); color: var(--ink, #2a2723);
+}
+.ts-bar__count svg { display: block; flex: none; }
 .ts-bar__go[disabled] { opacity: 0.45; pointer-events: none; }
 
 /* ── the till ─────────────────────────────────────────────────────────────*/
@@ -100,7 +144,7 @@
 }
 .ts-till td { padding: 0.5rem; border-bottom: 1px solid rgba(42, 39, 35, 0.22); vertical-align: middle; }
 .ts-till__what { display: flex; align-items: center; gap: 0.5rem; min-width: 8rem; }
-.ts-till__what .ts-art { width: 1.8rem; height: auto; flex: none; }
+.ts-till__pic { width: 2.1rem; height: 2.1rem; object-fit: cover; flex: none; display: block; }
 .ts-till__n, .ts-till__each, .ts-till__cut { font-family: var(--font-mono, monospace); white-space: nowrap; }
 .ts-till__none { font-size: 0.74rem; color: var(--text-tertiary, #9b9488); }
 .ts-till__sum td { font-weight: 800; border-bottom: 0; }
@@ -237,7 +281,7 @@
     border-bottom: 2px solid var(--ink, #2a2723);
     font-weight: 700;
   }
-  .ts-till__what .ts-art { width: 1.9rem; }
+  .ts-till__pic { width: 2.3rem; height: 2.3rem; }
   .ts-till__row td:last-child { border-bottom: 0; }
 
   /* the three totals keep their wording — it is the question, not a heading —

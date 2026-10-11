@@ -5,6 +5,10 @@
    basket as freely as in any shop; you may not leave the till until you can
    say what the basket costs, to the prepcoin, tax and all.
 
+   Every listing is a receipt (.pp-receipt, the site's torn-paper card), which
+   is what a shop hands you anyway — and it lets the price sit under a dashed
+   rule with the toy's photograph above it, the way a till roll is laid out.
+
    The money is the site's own currency (utils/components/workbook/purse.js) —
    the same prepcoins and prepbills as the Maths Workbook's money chapter, and
    the same purse: you pay by taking real notes and coins out of a tray and
@@ -14,8 +18,9 @@
 import { loadToys, makeBasket, bill, writeAmount } from "./shop.js";
 import { tillHtml, wireTill, payHtml, wirePay } from "./till.js";
 import { purse, mountPurse, heldTotal, priceHtml } from "/utils/components/workbook/purse.js";
-import { toySvg } from "./art.js";
+import { toyImg } from "./art.js";
 import { deliver } from "./van.js";
+import { UI } from "/utils/components/ui-icons.js";
 
 const $ = (id) => document.getElementById(id);
 const show = (which) => {
@@ -29,26 +34,42 @@ const basket = makeBasket(() => { paintShelf(); paintBar(); });
 
 /* ── the shelf ─────────────────────────────────────────────────────────────*/
 
+/** The rating, as a shop writes it: four filled stars and the number. */
+const stars = (n) => {
+  const whole = Math.round(n);
+  return `<span class="ts-card__stars" aria-label="rated ${n} out of 5">`
+    + [1, 2, 3, 4, 5].map((i) => UI.star(i <= whole)(13)).join("")
+    + `<i>${n.toFixed(1)}</i></span>`;
+};
+
 function card(p) {
   const got = basket.countOf(p.id);
   const out = got >= p.stock;
+  /* nothing in the basket yet → one Add button with the trolley on it; once
+     there is one, that button becomes the quantity stepper, the way a shop's
+     listing does */
+  const buy = got
+    ? `<div class="ts-step">
+         <button type="button" class="pp-btn ts-step__k" data-take="${p.id}" aria-label="One fewer ${p.title}">−</button>
+         <span class="ts-step__n" aria-live="polite">${got}</span>
+         <button type="button" class="pp-btn ts-step__k" data-add="${p.id}" aria-label="One more ${p.title}"${out ? " disabled" : ""}>+</button>
+       </div>`
+    : `<button type="button" class="pp-btn ts-card__add" data-add="${p.id}">${UI.cart(17)}<span>Add</span></button>`;
+
   return `
-    <article class="ts-card${p.cut ? " is-sale" : ""}" data-id="${p.id}">
-      ${p.cut ? `<span class="ts-card__flag">${p.cut}% off</span>` : ""}
-      <div class="ts-card__shot">${toySvg(p.art, p.slot)}</div>
-      <div class="ts-card__body">
+    <article class="ts-card pp-receipt${p.cut ? " is-sale" : ""}${got ? " is-in" : ""}" data-id="${p.id}" role="listitem">
+      <div class="pp-receipt__paper ts-card__paper">
+        ${p.cut ? `<span class="ts-card__flag">−${p.cut}%</span>` : ""}
+        <div class="ts-card__shot">${toyImg(p.art, p.title)}</div>
         <h3 class="ts-card__name">${p.title}</h3>
+        ${stars(p.rating)}
         <p class="ts-card__blurb">${p.blurb}</p>
         <p class="ts-card__price">
-          ${p.cut ? `<s>${priceHtml(p.price)}</s>` : ""}
           <b>${priceHtml(p.now)}</b>
+          ${p.cut ? `<s>${priceHtml(p.price)}</s>` : ""}
         </p>
-        <p class="ts-card__stock">${p.stock} in the shop</p>
-        <div class="ts-card__buy">
-          <button type="button" class="pp-btn ts-less" data-take="${p.id}" aria-label="Take one ${p.title} out"${got ? "" : " disabled"}>−</button>
-          <span class="ts-card__n" aria-live="polite">${got}</span>
-          <button type="button" class="pp-btn ts-more" data-add="${p.id}" aria-label="Put one ${p.title} in"${out ? " disabled" : ""}>+</button>
-        </div>
+        <p class="ts-card__stock">${out ? "that is all of them" : `${p.stock - got} left in the shop`}</p>
+        ${buy}
       </div>
     </article>`;
 }
@@ -60,10 +81,9 @@ function paintShelf() {
 
 function paintBar() {
   const n = basket.count;
-  $("ts-count").textContent = n ? `${n} toy${n === 1 ? "" : "s"} in the basket` : "The basket is empty";
+  $("ts-count").innerHTML = `${UI.cart(21)}<span>${n ? `${n} toy${n === 1 ? "" : "s"} in the basket` : "Your basket is empty"}</span>`;
   $("ts-go").disabled = !n;
 }
-
 /* ── the till ──────────────────────────────────────────────────────────────*/
 
 function openTill() {

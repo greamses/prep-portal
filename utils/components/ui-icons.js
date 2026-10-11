@@ -416,6 +416,13 @@ Object.assign(UI, {
   ),
   shield: svg(tri("M12 2.4l8 2.7v6.3c0 5-3.4 8.5-8 10.6-4.6-2.1-8-5.6-8-10.6V5.1z", PAPER) + `<path d="M8.4 12l2.6 2.6 4.8-5" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>`),
   coin: svg(dot(12, 12, 9.6, GOLD) + dot(12, 12, 6.8, WARM) + r(10.9, 7.4, 2.2, 9.2, "#fff", 1.1) + r(8.6, 9.6, 6.8, 1.8, "#fff", 0.9) + r(8.6, 12.6, 6.8, 1.8, "#fff", 0.9)),
+  /* a shopping trolley, for a basket and the shops that use one */
+  cart: svg(
+    `<path d="M2.7 4.4h2.2l1.4 2.9" fill="none" stroke="${GOLD}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>` +
+      tri("M6.4 7.4h14.4l-2 8.2a1.6 1.6 0 0 1-1.55 1.2H9.6a1.6 1.6 0 0 1-1.56-1.22z", PAPER) +
+      r(10.2, 9.3, 1.9, 5.2, "#fff", 0.95) + r(14.1, 9.3, 1.9, 5.2, "#fff", 0.95) +
+      dot(10.3, 19.5, 1.9, WARM) + dot(17.3, 19.5, 1.9, WARM)
+  ),
   /* a star that is simply on — a heading mark, not a rating */
   starOn: UI.star(true),
   /* the annotation tools: draw a box, draw a ring */

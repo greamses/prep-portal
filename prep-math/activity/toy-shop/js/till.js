@@ -23,7 +23,7 @@
 
 import { priceHtml, markSvg } from "/utils/components/workbook/purse.js";
 import { bill, readAmount, percentOf } from "./shop.js";
-import { toySvg } from "./art.js";
+import { toyImg } from "./art.js";
 
 const box = (want, label, wide = false) =>
   `<input class="ts-box${wide ? " ts-box--wide" : ""}" type="text" inputmode="decimal" autocomplete="off"`
@@ -43,7 +43,7 @@ export function tillHtml(lines, rate) {
      with its right-hand half cut off the screen. */
   const rows = B.rows.map((r) => `
     <tr class="ts-till__row">
-      <td class="ts-till__what">${toySvg(r.art, r.slot)}<span>${r.title}</span></td>
+      <td class="ts-till__what">${toyImg(r.art, "", "ts-till__pic")}<span>${r.title}</span></td>
       <td class="ts-till__n" data-lab="How many">${r.n}</td>
       <td class="ts-till__each" data-lab="Each">${priceHtml(r.price)}</td>
       <td data-lab="Comes to">${box(r.gross, `What ${r.n} ${r.title} come to`)}</td>

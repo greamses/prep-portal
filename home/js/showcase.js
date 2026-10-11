@@ -74,11 +74,11 @@ const SHOT = {
     const { fanSvg } = await import("/prep-math/activity/card-tricks/js/art.js");
     return { svg: fanSvg(["KS", "7H", "AD"]) };
   },
-  /* a toy off the Toy Shop's shelf, drawn by the shop's own art module */
-  shop: async () => {
-    const { toySvg } = await import("/prep-math/activity/toy-shop/js/art.js");
-    return { svg: toySvg("teddy", 0) };
-  },
+  /* the Toy Shop's own catalogue photograph of the teddy bear */
+  shop: async () => ({
+    img: "/prep-math/activity/toy-shop/img/teddy.jpg",
+    alt: "A teddy bear from the Prep Toy Shop",
+  }),
   /* tallies — one of the ways Number Match asks you to write a number */
   tally: async () => {
     const { tallySvg } = await import("/prep-math/activity/statistics-workbook/js/pictoart.js");
