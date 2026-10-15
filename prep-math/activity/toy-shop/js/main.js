@@ -173,8 +173,12 @@ let guide = null;
 /** The shared teacher (one class, and it always talks rather than floats). */
 async function getTeacher() {
   if (teacher) return teacher;
-  const [{ PrepbotTeacher }] = await Promise.all([
+  const [{ PrepbotTeacher }, fb] = await Promise.all([
     import("/prep-math/mental-math/shared/prepbot-teacher.js"),
+    /* the premium ElevenLabs voice needs a signed-in user to ask for it
+       (server/routes/tts.js gates it); without one the teacher falls back to
+       the browser's own voice, which is why this may fail quietly */
+    import("/firebase-init.js").catch(() => null),
     import("/utils/components/workbook/panels.js")
       .then(({ needCss }) => needCss("/prep-math/mental-math/shared/prepbot-teacher.css")),
   ]);
@@ -193,6 +197,7 @@ async function getTeacher() {
   teacher = new PrepbotTeacher({
     root,
     boundsEl: document.body,
+    auth: fb?.auth || null,
     menu: { voice: root.querySelector('[data-bot="voice"]'), sleep: root.querySelector('[data-bot="sleep"]') },
   });
   return teacher;
