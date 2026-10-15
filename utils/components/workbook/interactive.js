@@ -3048,16 +3048,26 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       icon: TOOL_ICONS.calculator,
       size: { w: 340, h: 430 },
       open: async (body) => {
+        /* THE SITE'S ONE CALCULATOR — the same machine as the chemistry bench
+           (utils/components/calculator.js), in its paper skin. */
+        needCss("/utils/components/calculator.css");
         body.classList.add("wb-panel__body--bare");
-        const { mountCalculator } = await import("/utils/components/workbook/calculator.js");
+        const { mountCalculator } = await import("/utils/components/calculator.js");
         const KEY = "wb-calc";
         let kept = null;
         try { kept = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { /* a fresh one */ }
-        const calc = mountCalculator(body, {
-          saved: kept,
+        const host = document.createElement("div");
+        host.className = "cl-calc cl-calc--inline";
+        host.tabIndex = 0;
+        body.appendChild(host);
+        mountCalculator(host, {
+          state: kept && typeof kept === "object" ? kept : undefined,
           onChange: (st) => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch { /* not kept */ } },
+          brand: "PREP <b>fx-82</b>",
+          theme: "paper",
         });
-        return () => calc.destroy();
+        host.focus({ preventScroll: true });
+        return () => host.remove();
       },
     },
     /* THE DIGIT SHIFT: × and ÷ by a power of ten, done by sliding the figures

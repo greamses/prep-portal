@@ -41,12 +41,27 @@ const board = (id, label) => ({
 const TOOLS = {
   calculator: {
     label: "Calculator",
-    size: { w: 340, h: 430 },
+    size: { w: 330, h: 530 },
     async open(body) {
+      /* THE SITE'S ONE CALCULATOR — the same machine as the chemistry bench
+         (utils/components/calculator.js), in its paper skin. There is no
+         second calculator to keep in step with this one. */
+      needCss("/utils/components/calculator.css");
       body.classList.add("wb-panel__body--bare");
-      const { mountCalculator } = await import("./calculator.js");
-      const t = mountCalculator(body, kept("wb-calc"));
-      return () => t.destroy();
+      const { mountCalculator } = await import("/utils/components/calculator.js");
+      const host = document.createElement("div");
+      host.className = "cl-calc cl-calc--inline";
+      host.tabIndex = 0;
+      body.appendChild(host);
+      const { saved, onChange } = kept("wb-calc");
+      mountCalculator(host, {
+        state: saved && typeof saved === "object" ? saved : undefined,
+        onChange,
+        brand: "PREP <b>fx-82</b>",
+        theme: "paper",
+      });
+      host.focus({ preventScroll: true });
+      return () => host.remove();
     },
   },
   ...board("column", "Column addition"),

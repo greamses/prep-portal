@@ -1,0 +1,98 @@
+/* ============================================================================
+   THE SCIENTIFIC CALCULATOR — the site's one of them
+   ----------------------------------------------------------------------------
+   Lifted out of the chemistry bench's sheet when the bench and the workbook
+   rail became the same machine (utils/components/calculator.js). The class
+   names keep their `cl-` prefix: that is what this already was, and renaming
+   it would churn a working feature for nothing.
+
+   TWO SKINS. The default is the bench's dark machine, which looks like a
+   calculator left on a lab bench. `--paper` is for the workbook pages, whose
+   whole world is paper and ink — the same keys, the same layout, a lighter
+   case. `--inline` drops the absolute positioning for a calculator that sits
+   in a panel rather than being carried around a bench top.
+   ========================================================================== */
+
+/* ── the scientific calculator ─────────────────────────────────────────── */
+.cl-calc { position: absolute; z-index: 8; width: 264px; padding: 0 12px 14px; color: #e9edf2; background: linear-gradient(160deg, #3a414c 0%, #262b33 46%, #1b1f25 100%); border: 1px solid #0d0f12; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -3px 0 rgba(0, 0, 0, 0.45), 0 18px 34px -10px rgba(0, 0, 0, 0.7), 0 3px 0 #0b0d10; user-select: none; touch-action: none; }
+.cl-calc:focus { outline: none; }
+.cl-calc:focus-visible { outline: 2px solid #f4c95d; outline-offset: 2px; }
+.cl-calc__top { display: flex; align-items: center; gap: 0.5rem; padding: 9px 0 8px; cursor: grab; }
+.cl-calc__top:active { cursor: grabbing; }
+.cl-calc__brand { font: 700 0.62rem var(--font-display); letter-spacing: 0.08em; color: #dfe4ea; }
+.cl-calc__brand b { font: 500 0.56rem var(--font-mono); letter-spacing: 0.02em; color: #9aa3ae; }
+.cl-calc__solar { display: flex; gap: 1px; margin-left: auto; padding: 2px; background: #0c0e11; box-shadow: inset 0 1px 2px #000; }
+.cl-calc__solar i { display: block; width: 13px; height: 11px; background: linear-gradient(180deg, #4a2f2a, #2a1b22 60%, #3a2630); }
+.cl-calc__lcd { padding: 5px 9px 7px; color: #1a2416; background: linear-gradient(180deg, #a9bc95 0%, #c7d8b3 22%, #bccfa7 100%); border: 3px solid #0e1114; box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.42); }
+.cl-calc__flags { display: flex; gap: 0.5rem; height: 10px; font: 700 0.5rem var(--font-mono); }
+.cl-calc__flags span { opacity: 0.1; }
+.cl-calc__flags span.is-on { opacity: 1; }
+.cl-calc__expr { height: 1.15rem; overflow: hidden; white-space: nowrap; font: 500 0.78rem var(--font-mono); line-height: 1.15rem; }
+.cl-calc__out { height: 1.9rem; overflow: hidden; white-space: nowrap; text-align: right; font: 700 1.36rem var(--font-mono); line-height: 1.9rem; letter-spacing: 0.02em; }
+.cl-calc__fn { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px 5px; margin-top: 9px; }
+.cl-calc__cell { display: flex; flex-direction: column; }
+.cl-calc__cell em { height: 11px; font: 600 0.5rem var(--font-mono); font-style: normal; line-height: 11px; text-align: center; color: #f4c95d; opacity: 0.75; }
+.cl-calc.is-shift .cl-calc__cell em { opacity: 1; text-shadow: 0 0 6px rgba(244, 201, 93, 0.7); }
+.cl-calc__num { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
+.cl-key { display: inline-flex; align-items: center; justify-content: center; min-width: 0; padding: 0; font: 700 0.62rem var(--font-mono); line-height: 1; color: #f2f5f8; border: 0; border-radius: 0; cursor: pointer; transform: none; transition: transform 0.05s, box-shadow 0.05s; }
+.cl-key--fn, .cl-key--shift { height: 22px; background: linear-gradient(180deg, #5b6470, #3b424c); box-shadow: 0 2px 0 #14171b, inset 0 1px 0 rgba(255, 255, 255, 0.28); }
+.cl-key--shift { color: #1b1f25; background: linear-gradient(180deg, #f8d877, #d9a93a); }
+.cl-key--num, .cl-key--eq, .cl-key--del { height: 32px; font-size: 0.86rem; color: #14171b; background: linear-gradient(180deg, #f4f6f8, #c9cfd6); box-shadow: 0 3px 0 #14171b, inset 0 1px 0 #fff; }
+.cl-key--del { color: #fff; background: linear-gradient(180deg, #ef7a5e, #c9462f); box-shadow: 0 3px 0 #14171b, inset 0 1px 0 rgba(255, 255, 255, 0.4); font-size: 0.7rem; }
+.cl-key--eq { color: #fff; background: linear-gradient(180deg, #5f9be0, #2f6cba); box-shadow: 0 3px 0 #14171b, inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+.cl-key:active { transform: translateY(2px); box-shadow: 0 0 0 #14171b, inset 0 1px 3px rgba(0, 0, 0, 0.4); }
+.cl-key:focus-visible { outline: 2px solid #f4c95d; outline-offset: 1px; }
+.cl-key--x { width: 20px; height: 20px; color: #c9d0d8; background: none; box-shadow: none; }
+.cl-key--x:hover { color: #fff; background: rgba(255, 255, 255, 0.12); }
+.cl-stage.is-bot .cl-calc { pointer-events: none; }
+@media (max-width: 820px) { .cl-calc { width: 236px; } .cl-key--num, .cl-key--eq, .cl-key--del { height: 28px; } }
+
+/* a results cell that is worked out from the others in its row */
+.cl-cell.is-sum { font-style: italic; background: color-mix(in srgb, var(--accent-primary) 14%, transparent); }
+.cl-cell.is-sum:focus { font-style: normal; }
+.cl-results th i { position: absolute; top: 1px; left: 3px; font: 700 0.5rem var(--font-mono); font-style: normal; color: var(--text-tertiary); pointer-events: none; }
+
+/* the power pack's read-out: red figures, lit only while the switch is held down */
+.cl-psu { fill: #ff4a3d; font: 700 11px var(--font-mono); text-anchor: end; letter-spacing: 0.3px; }
+.cl-psu--ghost { fill-opacity: 0.1; }
+.cl-psu--on { display: none; filter: drop-shadow(0 0 1.5px #ff4a3d); }
+.cl-psu--off { fill-opacity: 0.55; }
+.cl-item.is-open .cl-psu--on { display: inline; }
+.cl-item.is-open .cl-psu--off { display: none; }
+.cl-psu-u { fill: #ff4a3d; fill-opacity: 0.8; font: 700 5.5px var(--font-mono); text-anchor: middle; }
+.cl-plate--l { fill: #cfd5dc; fill-opacity: 0.8; }
+
+/* ── in a panel, not on a bench top ───────────────────────────────────────*/
+.cl-calc--inline {
+  position: static; width: 100%; max-width: 300px;
+  margin: 0 auto; box-shadow: none;
+}
+
+/* ── the paper skin, for the workbook pages ───────────────────────────────*/
+.cl-calc--paper {
+  color: #2a2723;
+  background: linear-gradient(160deg, #fffdf8 0%, #f4f0e8 46%, #e9e3d6 100%);
+  border: 2px solid #2a2723;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 3px 0 #cbc3b2;
+}
+.cl-calc--paper .cl-calc__brand { color: #6b655c; }
+.cl-calc--paper .cl-calc__lcd {
+  color: #1d3a1d;
+  background: #eef3ea;
+  border-color: #cfd6c8;
+  box-shadow: inset 0 2px 5px rgba(42, 39, 35, 0.14);
+}
+.cl-calc--paper .cl-calc__flags { color: #6b7566; }
+.cl-calc--paper .cl-calc__cell em { color: #c9922f; }
+.cl-calc--paper .cl-key {
+  color: #14130f;
+  background: #fffdf8;
+  border: 1.5px solid #2a2723;
+  box-shadow: 0 2px 0 #cbc3b2;
+}
+.cl-calc--paper .cl-key:active { box-shadow: none; transform: translateY(2px); }
+.cl-calc--paper .cl-key--num { background: #fff3a8; }
+.cl-calc--paper .cl-key--eq { background: var(--accent-success, #7cc47c); color: var(--text-on-accent, #14130f); }
+.cl-calc--paper .cl-key--del { background: #f6ded9; }
+.cl-calc--paper .cl-key--shift { background: #d9ecfa; }
+
