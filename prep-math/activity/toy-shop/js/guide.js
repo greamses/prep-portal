@@ -82,8 +82,9 @@ export function planFor(sum) {
     const [a, b] = [times[1], times[2]];
     const [multiplicand, multiplier] = a.length >= b.length ? [a, b] : [b, a];
     return [{
-      lesson: `${multiplier} of them at ${multiplicand} each. Multiplying is adding the same number again `
-        + "and again, and the board does it a figure at a time so you can see the carrying.",
+      lesson: `Right. ${multiplier} of them, and each one is ${multiplicand}. Now you could add ${multiplicand} up `
+        + `${multiplier} times and you would get there — but that is what multiplying IS, done quicker. `
+        + "Let us put it on the board and take it one figure at a time.",
       tool: "times",
       fields: { multiplicand, multiplier },
     }];
@@ -93,8 +94,10 @@ export function planFor(sum) {
     const written = t.replace(/\s+/g, "").replace(/([+\-])/g, " $1 ");
     return [{
       lesson: /-/.test(t)
-        ? "A taking away. Line the points up under each other, and work from the right."
-        : "An adding up. Line the points up under each other, and work from the right.",
+        ? "Now this one is a take-away. And here is the bit everybody gets wrong with money: line the POINTS "
+          + "up, one under the other, not the ends of the numbers. Then start at the right and work left."
+        : "This one is an adding up. Points under points — that is the whole trick with money — and "
+          + "then we start at the right-hand end, same as always.",
       tool: "column",
       fields: { sum: written },
     }];
@@ -102,35 +105,55 @@ export function planFor(sum) {
   return [];
 }
 
-/** The tenth, and what is built out of it. */
+/**
+ * A PERCENTAGE IS A FRACTION, and the fraction says what to divide by.
+ *
+ * "Twenty per cent" tells a child nothing. "A fifth" tells them to share it
+ * into five, which they can picture and which they can do. So the rate is put
+ * in its lowest terms first and the lesson is given in those words: a tenth,
+ * a fifth, a quarter, a half. Ten per cent keeps the shift card, because a
+ * tenth is the one you never divide for — you slide the figures one place.
+ */
+const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+
+/** 20 → { n: 1, d: 5, said: "a fifth" }. */
+export function fractionOf(rate) {
+  const g = gcd(rate, 100) || 1;
+  const n = rate / g;
+  const d = 100 / g;
+  const NAMES = { 2: "half", 3: "third", 4: "quarter", 5: "fifth", 6: "sixth", 8: "eighth",
+    10: "tenth", 20: "twentieth", 25: "twenty-fifth", 50: "fiftieth", 100: "hundredth" };
+  const name = NAMES[d] || `one over ${d}`;
+  const said = n === 1 ? (d === 2 ? "a half" : `a ${name}`) : `${n} ${name}s`;
+  return { n, d, name, said };
+}
+
 export function percentPlan(amount, rate) {
-  if (rate === 25 || rate === 50) {
-    const by = rate === 25 ? 4 : 2;
+  const { n, d, said } = fractionOf(rate);
+
+  /* a tenth is not a division you do — it is a slide, and that is the digit
+     shift card's whole lesson */
+  if (d === 10 && n === 1) {
     return [{
-      lesson: rate === 25
-        ? "Twenty-five per cent is a QUARTER. So this is a division by four, and long division shows every step of it."
-        : "Fifty per cent is a HALF. So this is a division by two.",
-      tool: "longdiv",
-      fields: { dividend: amount, divisor: String(by) },
+      lesson: "Right — ten per cent. Now, ten per cent is a TENTH, and a tenth is the one sum you never "
+        + "have to work out. You just slide every figure one place to the right. The point stays still. Watch.",
+      tool: "shift",
+      fields: { n: amount, power: 1 },
     }];
   }
 
-  /* everything else is built out of one tenth */
-  const tenth = {
-    lesson: "Ten per cent means one tenth, and one tenth is every figure slid ONE place to the right. "
-      + "The point does not move — the figures do.",
-    tool: "shift",
-    fields: { n: amount, power: 1 },
+  const divide = {
+    lesson: `Now ${rate} per cent. Say it to yourself as a fraction, because that is all it is: ${rate} out of `
+      + `a hundred is ${said}. And ${said}? That just means share it into ${d}. So that is what we will do.`,
+    tool: "longdiv",
+    fields: { dividend: amount, divisor: String(d) },
   };
-  if (rate === 10) return [tenth];
+  if (n === 1) return [divide];
 
-  const lots = Math.round(rate / 10);
-  return [tenth, {
-    lesson: `And ${rate} per cent is ${lots === 2 ? "twice" : `${lots} times`} ten per cent, so the tenth is added to itself.`,
+  return [divide, {
+    lesson: `That was ONE ${fractionOf(rate).name}. We want ${n} of them — so now we add it up ${n} times.`,
     tool: "column",
-    /* the tenth is not known until the shift card has found it, so the sum is
-       finished off at the time (see `fill`) */
-    fields: { sum: Array.from({ length: lots }, () => "{tenth}").join(" + ") },
+    fields: { sum: Array.from({ length: n }, () => "{tenth}").join(" + ") },
   }];
 }
 
@@ -224,36 +247,70 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
     return got;
   }
 
-  /** A product or a sum, worked right through on its written board. */
+  /**
+   * THE NEXT FIGURE, worked out rather than revealed.
+   *
+   * A board knows the sum it is working. Asking it "is this the figure?" on a
+   * COPY of its model answers that without touching the real one — so PrepBot
+   * can find the figure, and then TYPE IT IN like anybody else. Pressing the
+   * board's "Show me one" key would have filled the answer in instead, which
+   * is the one thing a tutor must not do: the child has to watch the figures
+   * go in one at a time, and the board has to mark each one.
+   */
+  function nextFigure(board) {
+    const { thing, kind } = board || {};
+    if (!thing || !kind?.answer) return null;
+    for (let d = 0; d <= 99; d += 1) {
+      let copy;
+      try { copy = structuredClone(thing); } catch { return null; }
+      if (kind.answer(copy, String(d)).ok) return String(d);
+    }
+    return null;
+  }
+
+  /** A sum worked right through on its board, a figure at a time, by hand. */
   async function onBoard(job) {
     if (!(await openTool(job.tool))) return "";
-    const board = document.querySelector(`.bd-board--${job.tool}`);
-    if (!board) return "";
+    const el = document.querySelector(`.bd-board--${job.tool}`);
+    if (!el) return "";
     for (const [n, v] of Object.entries(job.fields)) {
-      const field = board.querySelector(`.bd-sum__in[data-n="${n}"]`);
-      if (field) await type(field, v, 110);
+      const field = el.querySelector(`.bd-sum__in[data-n="${n}"]`);
+      if (field) await type(field, v, 160);
     }
-    await press(board.querySelector(".bd-act--set"), 300);
-    /* "Show me one" until the board has nothing left to ask — it writes the
-       working a figure at a time, which is the whole reason to use it */
-    for (let k = 0; k < 40; k++) {
+    await press(el.querySelector(".bd-act--set"), 420);
+
+    const done = () => /^Done/i.test(el.querySelector(".bd-say")?.textContent || "");
+    for (let k = 0; k < 60 && !done(); k += 1) {
       if (stopped) return "";
-      const go = board.querySelector('[data-do="show"]');
-      if (!go || go.disabled) break;
-      go.click();
-      await sleep(80);
-      if (/^Done/i.test(board.querySelector(".bd-say")?.textContent || "")) break;
+      const figure = nextFigure(el.__board);
+      if (figure === null || !el.querySelector(".bd-in")) break;
+      /* One character at a time, into whichever cell still has room in it.
+         A cell is not always one figure wide — a column that has been lent to
+         holds 17 — and the board moves the focus on by itself once a cell is
+         full, so the figure is written the way a hand writes it rather than
+         spread one character per box. */
+      for (const ch of String(figure)) {
+        if (stopped) return "";
+        const cells = [...el.querySelectorAll(".bd-in")];
+        const cell = cells.find((c) => c.value.length < (c.maxLength || 1)) || cells[0];
+        if (!cell) break;
+        cell.focus();
+        cell.value += ch;
+        cell.dispatchEvent(new Event("input", { bubbles: true }));
+        await sleep(110);
+      }
+      await sleep(260);
     }
-    const got = answerFromSay(board.querySelector(".bd-say")?.textContent);
-    await sleep(280);
+    const got = answerFromSay(el.querySelector(".bd-say")?.textContent);
+    await sleep(320);
     await shutTool(job.tool);
     return got;
   }
 
   (async () => {
     /* ── the shelf ──────────────────────────────────────────────────────*/
-    await say("Let me do the shopping once, and you watch what I press. I am going to use this shop, "
-      + "not a picture of it.");
+    await say("Right then. I am going to do the shopping once, and I want you watching what I press — "
+      + "not a picture of a shop, this one, the real one.");
 
     for (const { id, n } of ORDER) {
       const card = document.querySelector(`.ts-card[data-id="${id}"]`);
@@ -274,11 +331,11 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
     const boxes = () => [...document.querySelectorAll("#ts-till-body .ts-box")];
     if (!boxes().length) return;
 
-    await say("Here is the bill, and every figure on it is a box I have to fill in myself. "
-      + "The shop will not tell me one of them.");
-    await say("And I am not doing them in my head, and I am not using a calculator — a calculator "
-      + "would just tell me, and then neither of us would know why. There are proper tools on the rail, "
-      + "and I will pick the right one for every single figure.");
+    await say("And here is the bill. Look at it — every single figure is a box, and not one of them is "
+      + "filled in. This shop will not do a sum for you. That is rather the point of it.");
+    await say("Now. I could reach for a calculator. I am not going to, and I will tell you why: a calculator "
+      + "would just TELL me, and then neither of us would know a thing. There are proper tools down the "
+      + "side there, and we will pick the right one for every figure and do it properly.");
 
     let totalCoins = 0;
     for (const box of boxes()) {
@@ -302,9 +359,9 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
         const fields = fill(move.fields, carried);
         carried = move.tool === "shift" ? await onShift(fields) : await onBoard({ tool: move.tool, fields });
         if (stopped) return;
-        if (carried) await say(`That is ${carried}.`);
+        if (carried) await say(`And there it is — ${carried}.`);
       }
-      if (carried) await say("So that is what goes in the box.", box);
+      if (carried) await say("Good. Into the box it goes, and on we go.", box);
       await type(box, writeAmount(want), 320);
     }
     if (stopped) return;
@@ -313,11 +370,12 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
     const calcKey = document.querySelector('[data-wbtool="calculator"][aria-pressed="true"]');
     if (calcKey) await press(calcKey, 400);
 
-    await say("Every box is right, so the shop will take my money now.", $("ts-topay"));
+    await say("Every box green. The shop is happy, and so am I — now we go and pay.", $("ts-topay"));
     await press($("ts-topay"), 900);
 
     /* ── paying ─────────────────────────────────────────────────────────*/
-    await say("Two ways to pay. I will count it out on the counter, because that is the one with a sum in it.");
+    await say("Two ways to pay here. I am going to count it out on the counter, because that is the one "
+      + "with a sum still left in it — and the sum is the interesting part.");
 
     /* hand over the next whole five prepbills above the bill, in the fewest
        notes — so there is real change to work out rather than none */
@@ -328,7 +386,8 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
       while (owing >= v * PER_BILL) { notes.push(v); owing -= v * PER_BILL; }
     });
     const tray = (v) => document.querySelector(`#ts-pay-body [data-take="${v}"][data-kind="bill"]`);
-    await say(`The bill is ${writeAmount(totalCoins)}, so I will put down ${writeAmount(target)} and take change.`);
+    await say(`The bill is ${writeAmount(totalCoins)}. Now, I am not going to fiddle about counting out the exact `
+      + `money — nobody does. I will put down ${writeAmount(target)}, a round amount, and take my change.`);
     for (const v of notes) {
       if (stopped) return;
       await press(tray(v), 300);
@@ -337,11 +396,11 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
     const chg = document.querySelector("#ts-pay-body [data-change]");
     if (chg) {
       const change = target - totalCoins;
-      await say("And the last sum is the change: what I put down, less what it cost. "
-        + "That is a taking away, so it goes on the adding board like the others.", chg);
+      await say("And the last sum of the day is the change. What I put down, take away what it cost. "
+        + "Same board as before — points under points.", chg);
       const [move] = planFor(`${writeAmount(target)}-${writeAmount(totalCoins)}`);
       const got = move ? await onBoard({ tool: move.tool, fields: move.fields }) : "";
-      if (!stopped) await say(got ? `${got}. That is my change.` : "And that is the change.", chg);
+      if (!stopped) await say(got ? `${got}. That is what should come back to me, and if it does not, I shall say so.` : "And that is the change.", chg);
       await type(chg, writeAmount(change), 260);
     }
     await sleep(300);
@@ -349,13 +408,14 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
 
     const buy = $("ts-buy");
     if (buy && !buy.disabled) {
-      await say("Paid.", buy);
+      await say("Paid. Properly paid — by somebody who knows what it cost.", buy);
       await press(buy, 1200);
     }
 
     /* ── and the van ────────────────────────────────────────────────────*/
-    await say("And that is the whole of it. The van is on its way, and every figure on that bill was worked "
-      + "out by somebody — which from now on is going to be you.");
+    await say("And that is the lot. The van is on its way, and every figure on that bill was worked out by "
+      + "somebody with a pencil and a bit of patience. Next time round, that somebody is you — and you "
+      + "already know where every tool is.");
     spotlight(null);
     onDone();
   })().catch((err) => {

@@ -33,7 +33,11 @@ const board = (id, label) => ({
     async open(body) {
       needCss("/utils/components/boards.css");
       const { mountBoard } = await import("/utils/components/boards/sheet.js");
-      mountBoard(body, { variant: id, base: 10 });
+      /* the mounted board is left on its own element: a board knows the sum it
+         is working and what figure comes next, and a tutor demonstrating on it
+         needs to be able to ask (toy-shop/js/guide.js) */
+      const board = mountBoard(body, { variant: id, base: 10 });
+      if (board?.el) board.el.__board = board;
     },
   },
 });
