@@ -43,6 +43,15 @@ const board = (sign) =>
   r(2.6, 14.2, 18.8, 1.9, QUIET, 0.95) + r(9, 17.8, 12, 3.2, LEAF, 1.6);
 
 export const TOOL_ICONS = {
+  /* the scientific calculator: a screen with a figure on it over a keypad */
+  calculator: glyph(
+    r(4, 2.4, 16, 19.2, PAPER, 1.8) +
+      r(6.2, 4.6, 11.6, 4.4, "#fff", 0.8) +
+      `<path d="M14.6 6h2.2M12 7.6h4.8" stroke="#14130f" stroke-width="1.3" stroke-linecap="round"/>` +
+      r(6.2, 11, 3, 2.4, GOLD, 0.6) + r(10.5, 11, 3, 2.4, GOLD, 0.6) + r(14.8, 11, 3, 2.4, LOUD, 0.6) +
+      r(6.2, 14.6, 3, 2.4, GOLD, 0.6) + r(10.5, 14.6, 3, 2.4, GOLD, 0.6) + r(14.8, 14.6, 3, 6, LEAF, 0.6) +
+      r(6.2, 18.2, 7.3, 2.4, GOLD, 0.6)
+  ),
   /* a times table: a multiplication sign over rows of answers */
   tables: glyph(
     r(3, 3, 18, 18, PAPER, 0) + r(3, 3, 18, 5.4, GOLD, 0) +

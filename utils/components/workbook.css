@@ -3103,15 +3103,45 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 }
 .wb-shift__p { width: 3.6rem; }
 .wb-shift__n:focus, .wb-shift__p:focus { outline: 2px solid var(--accent-secondary, #6fb7e8); outline-offset: 2px; }
-.wb-shift__ops { display: flex; gap: 0.3rem; }
+/* ONE sign, turned over by tapping it. Two signs with one of them lit was a
+   pair of radio buttons wearing arithmetic. */
 .wb-shift__op {
-  width: 2.1rem; height: 2.1rem; padding: 0;
+  width: 2.4rem; height: 2.4rem; padding: 0;
   border: 2px solid var(--ink, #2a2723); border-radius: 0;
-  background: #fffdf8; color: #14130f; font: 800 1.1rem/1 "JetBrains Mono", ui-monospace, monospace;
+  background: var(--accent-secondary, #6fb7e8); color: #14130f;
+  font: 800 1.3rem/1 "JetBrains Mono", ui-monospace, monospace;
   cursor: pointer;
 }
-/* which sum is being done is not a subtle difference */
-.wb-shift__op[aria-pressed="true"] { background: var(--accent-secondary, #6fb7e8); color: #14130f; }
+.wb-shift__op:hover { background: #8fcaf2; }
+
+/* the power of ten, in whichever of its two forms. In INDEX form the box sits
+   up where an exponent sits, against a 10; in VALUE form the 10 steps aside
+   and the box holds the number written out. */
+.wb-shift__pow { display: flex; align-items: flex-start; }
+.wb-shift__ten {
+  padding: 0 0.1rem 0 0.12rem;
+  border: 0; background: none; color: var(--ink, #2a2723);
+  font: 800 1.35rem/2.4rem "JetBrains Mono", ui-monospace, monospace;
+  cursor: pointer;
+}
+.wb-shift__ten:hover { color: var(--accent-secondary, #6fb7e8); }
+.wb-shift__pow[data-form="index"] { flex-direction: row-reverse; }
+.wb-shift__pow[data-form="index"] .wb-shift__p {
+  width: 2.6rem; margin-top: -0.35rem;
+  font-size: 0.86rem; padding: 0.18rem 0.2rem;
+}
+/* Written out in full there is no base to show, so the same control becomes a
+   chip beside the box: tap it for the power. It must not be hidden — it is the
+   only way back. */
+.wb-shift__pow[data-form="value"] .wb-shift__ten {
+  align-self: center; margin-left: 0.4rem;
+  padding: 0.2rem 0.4rem;
+  border: 2px solid var(--ink, #2a2723);
+  background: #fffdf8;
+  font-size: 0.8rem; line-height: 1;
+}
+.wb-shift__pow[data-form="value"] .wb-shift__ten:hover { background: var(--accent-secondary, #6fb7e8); color: #14130f; }
+.wb-shift__pow[data-form="value"] .wb-shift__p { width: 5.2rem; }
 
 /* the board */
 .wb-shift__board { border: 2px solid var(--ink, #2a2723); background: #fffdf8; }
@@ -3219,4 +3249,109 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 /* on paper the tray and the space are somewhere to put real money, or to draw */
 @media print {
   .pu-read { color: #6b655c; font-weight: 400; }
+}
+
+/* ── THE SCIENTIFIC CALCULATOR (workbook/calculator.js) ───────────────────
+   It shows its working: the tape of the last few sums above, the sum being
+   typed in the middle, the answer under it as it is typed. The keys are plain
+   tiles, not sticky notes — a keypad of forty notes is not a calculator
+   (scripts/build-buttons-css.mjs skips .wb-calc__key for that reason).
+   ------------------------------------------------------------------------*/
+.wb-calc { display: flex; flex-direction: column; gap: 0.5rem; min-width: 15rem; }
+
+.wb-calc__screen {
+  display: flex; flex-direction: column; gap: 0.2rem;
+  padding: 0.5rem 0.6rem;
+  background: #eef3ea; border: 2px solid var(--ink, #2a2723);
+}
+.wb-calc__tape {
+  list-style: none; margin: 0 0 0.2rem; padding: 0;
+  max-height: 3.4rem; overflow-y: auto;
+  font: 400 0.68rem/1.5 "JetBrains Mono", ui-monospace, monospace;
+  color: #6b7566;
+}
+.wb-calc__tape li { display: flex; justify-content: space-between; gap: 0.6rem; }
+.wb-calc__tape b { font-weight: 700; color: #3f5a3c; }
+
+.wb-calc__src {
+  width: 100%; padding: 0.22rem 0;
+  border: 0; border-bottom: 2px solid rgba(42, 39, 35, 0.25); border-radius: 0;
+  background: none; color: #14130f;
+  font: 700 1rem/1.3 "JetBrains Mono", ui-monospace, monospace; text-align: right;
+}
+.wb-calc__src:focus { outline: 0; border-bottom-color: var(--accent-secondary, #6fb7e8); }
+.wb-calc__src::placeholder { font-weight: 400; font-size: 0.78rem; color: #8d9689; }
+
+.wb-calc__out {
+  margin: 0; min-height: 1.6rem;
+  font: 800 1.35rem/1.2 "JetBrains Mono", ui-monospace, monospace;
+  text-align: right; color: #1d3a1d; word-break: break-all;
+}
+/* half a sum is not a mistake, so what it cannot read yet is said quietly */
+.wb-calc__out.is-waiting { font-size: 0.72rem; font-weight: 400; color: #8d9689; }
+.wb-calc__out.is-no { font-size: 0.72rem; font-weight: 700; color: var(--accent-danger, #c0453f); }
+.wb-calc__out.is-done { color: var(--accent-success, #3f8f4f); }
+
+.wb-calc__pad { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.28rem; }
+.wb-calc__key {
+  padding: 0.5rem 0.2rem;
+  border: 2px solid var(--ink, #2a2723); border-radius: 0;
+  background: #fffdf8; color: #14130f;
+  font: 700 0.82rem/1 "JetBrains Mono", ui-monospace, monospace;
+  cursor: pointer;
+}
+.wb-calc__key:hover { background: #f1ece0; }
+.wb-calc__key:active { transform: translateY(1px); }
+.wb-calc__key--num { background: #fff3a8; font-size: 0.95rem; font-weight: 800; }
+.wb-calc__key--op { background: #d9ecfa; font-size: 0.95rem; }
+.wb-calc__key--act { background: #f6ded9; font-size: 0.7rem; }
+/* ink on the accent, not white: the theme's green is a pastel and white on it
+   is unreadable (that is what --text-on-accent is for) */
+.wb-calc__key--go {
+  background: var(--accent-success, #7cc47c);
+  color: var(--text-on-accent, #14130f);
+  font-size: 1.15rem; font-weight: 800;
+}
+/* in radians the mode key says so loudly: a right sum in the wrong mode is
+   the commonest wrong answer in school trigonometry */
+.wb-calc.is-rad .wb-calc__key--act[data-k="DEG"] { background: var(--accent-warning, #f4c95d); }
+
+@media (max-width: 420px) {
+  .wb-calc__pad { gap: 0.22rem; }
+  .wb-calc__key { padding: 0.44rem 0.1rem; font-size: 0.74rem; }
+}
+
+/* ── THE SMALL TOOL RAIL (workbook/toolbar.js) ───────────────────────────
+   The workbook's tools on a page that is not a workbook. Same receipt paper
+   as the workbook's own rail, same panels, half the keys — no modes, no
+   instruments, because there is no sheet here to lay one on.
+   ------------------------------------------------------------------------*/
+.wb-tools {
+  position: fixed; top: 50%; transform: translateY(-50%); z-index: 60;
+  filter: drop-shadow(0 6px 14px rgba(var(--shadow-color, 42, 39, 35), 0.16));
+}
+.wb-tools--left { left: 0; }
+.wb-tools--right { right: 0; }
+.wb-tools__paper {
+  --tooth: 10px;
+  display: flex; flex-direction: column; gap: 0.3rem;
+  padding: 0.85rem 0.4rem;
+}
+.wb-tools__btn {
+  display: grid; place-items: center;
+  width: 2.3rem; height: 2.3rem; padding: 0;
+  border: 0; background: none; border-radius: 0;
+  cursor: pointer;
+}
+.wb-tools__btn svg { display: block; }
+.wb-tools__btn:hover { background: rgba(42, 39, 35, 0.08); }
+.wb-tools__btn[aria-pressed="true"] { background: var(--accent-secondary, #6fb7e8); }
+
+/* On a phone it stays a vertical rail — laid along the bottom it sat on top of
+   whatever bar the page already has down there — but it rides a little higher
+   than centre so it clears one. */
+@media (max-width: 620px) {
+  .wb-tools { top: 42%; }
+  .wb-tools__paper { padding: 0.7rem 0.3rem; gap: 0.25rem; }
+  .wb-tools__btn { width: 2rem; height: 2rem; }
 }

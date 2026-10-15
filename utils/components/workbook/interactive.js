@@ -3037,6 +3037,29 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         return () => frame.remove();
       },
     })),
+    /* THE SCIENTIFIC CALCULATOR. It is on the rail with the other working-out
+       tools rather than hidden behind a mode, because a child checking a long
+       sum they have just done by hand is doing the thing this workbook is for.
+       It keeps its tape between openings, so the sums before this one are
+       still there to look at. */
+    {
+      id: "calculator",
+      label: "Calculator",
+      icon: TOOL_ICONS.calculator,
+      size: { w: 340, h: 430 },
+      open: async (body) => {
+        body.classList.add("wb-panel__body--bare");
+        const { mountCalculator } = await import("/utils/components/workbook/calculator.js");
+        const KEY = "wb-calc";
+        let kept = null;
+        try { kept = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { /* a fresh one */ }
+        const calc = mountCalculator(body, {
+          saved: kept,
+          onChange: (st) => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch { /* not kept */ } },
+        });
+        return () => calc.destroy();
+      },
+    },
     /* THE DIGIT SHIFT: × and ÷ by a power of ten, done by sliding the figures
        across the places while the point stays where it is. The method lives in
        workbook/shift.js; this only opens it and keeps what it was showing. */
@@ -3347,7 +3370,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        ONE thing to go to the rail for; which paper you work it on is a choice
        you make after you get there. */
     { id: "work", label: "Working out", of: [
-      asSheet("column"), asSheet("times"), asSheet("criss"),
+      asSheet("calculator"), asSheet("column"), asSheet("times"), asSheet("criss"),
       asSheet("shortdiv"), asSheet("longdiv"), asSheet("fraction"),
     ] },
     /* No abacus of its own: the three frames are on the Manipulatives canvas,

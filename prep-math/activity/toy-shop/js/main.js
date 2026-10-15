@@ -22,6 +22,7 @@ import { priceHtml } from "/utils/components/workbook/purse.js";
 import { toyImg } from "./art.js";
 import { deliver } from "./van.js";
 import { UI } from "/utils/components/ui-icons.js";
+import { mountTools } from "/utils/components/workbook/toolbar.js";
 
 const $ = (id) => document.getElementById(id);
 const show = (which) => {
@@ -179,6 +180,12 @@ async function start() {
   $("ts-back").onclick = () => show("shop");
   $("ts-topay").onclick = openPay;
   $("ts-pay-back").onclick = () => show("till");
+
+  /* The workbook's own tools, on the shop: a calculator to check the bill
+     with, the written boards to do it longhand on, and a note to work on.
+     A child checking a shop bill is doing exactly what the workbook is for,
+     and there is no reason for the site to own two of each tool. */
+  mountTools(document.body, { tools: ["calculator", "column", "times", "shortdiv", "note"] });
 
   paintShelf();
   paintBar();

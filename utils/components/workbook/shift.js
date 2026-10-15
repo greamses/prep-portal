@@ -48,6 +48,28 @@
    the only promise this tool makes. */
 export const MAX_COLS = 13;
 
+/**
+ * A power of ten written out in full: 2 -> "100", -2 -> "0.01". It is the same
+ * arithmetic as a column heading, which is not a coincidence — the value form
+ * of the power IS the place it moves a figure into.
+ */
+export const valueOf = (p) => worthOf(p);
+
+/**
+ * The power a written-out value stands for: "100" -> 2, "0.01" -> -2.
+ * Anything that is not a power of ten comes back null, because there is no
+ * such slide as x 50.
+ */
+export function powerOfValue(text) {
+  const t = String(text ?? "").trim().replace(/[\s,]/g, "");
+  if (!/^0*\d*(\.\d+)?$/.test(t) || t === "" || t === ".") return null;
+  const v = Number(t);
+  if (!Number.isFinite(v) || v <= 0) return null;
+  const p = Math.round(Math.log10(v));
+  /* back the other way, to catch 50 and 99 and 1.5 */
+  return Math.abs(10 ** p - v) < 1e-9 ? p : null;
+}
+
 /** What a place is worth, written out — the heading of its column. */
 export function worthOf(p) {
   if (p >= 0) return String(10 ** p);
@@ -241,15 +263,27 @@ export function mountShift(host, { saved = null, onChange = null } = {}) {
         <input class="wb-shift__n" type="text" inputmode="decimal" autocomplete="off"
                spellcheck="false" maxlength="9" aria-label="The number to slide">
       </label>
-      <div class="wb-shift__ops" role="group" aria-label="Multiply or divide">
-        <button type="button" class="wb-shift__op" data-op="×" aria-pressed="true">×</button>
-        <button type="button" class="wb-shift__op" data-op="÷" aria-pressed="false">÷</button>
+      <!-- ONE sign, turned over by tapping it. Two signs with one lit was a
+           pair of radio buttons wearing arithmetic: a sum has one operator,
+           and turning it over is the thing worth doing to it. -->
+      <div class="wb-shift__field">
+        <span>Sum</span>
+        <button type="button" class="wb-shift__op" aria-label="Multiplying. Tap to divide instead"
+                data-tip="Tap to turn it over">×</button>
       </div>
-      <label class="wb-shift__field wb-shift__field--p">
-        <span>10 to the</span>
-        <input class="wb-shift__p" type="text" inputmode="numeric" autocomplete="off"
-               spellcheck="false" maxlength="2" aria-label="The power of ten, which may be negative">
-      </label>
+
+      <!-- the power of ten, in whichever of its two forms. Tapping it turns
+           10² into 100 and back, which is the other thing worth doing here:
+           the two notations are the same fact and ought to be one control. -->
+      <div class="wb-shift__field">
+        <span class="wb-shift__plab">10 to the</span>
+        <div class="wb-shift__pow" data-form="index">
+          <input class="wb-shift__p" type="text" inputmode="numeric" autocomplete="off"
+                 spellcheck="false" maxlength="6" aria-label="The power of ten, which may be negative">
+          <button type="button" class="wb-shift__ten" aria-label="Written as a power of ten. Tap to write it out in full"
+                  data-tip="Tap to write it out">10</button>
+        </div>
+      </div>
     </div>
 
     <div class="wb-shift__board">
@@ -283,7 +317,7 @@ export function mountShift(host, { saved = null, onChange = null } = {}) {
   const readEl = q(".wb-shift__read");
   const sayEl = q(".wb-shift__say");
 
-  let state = { n: "3.45", op: "×", power: 2, shift: 0 };
+  let state = { n: "3.45", op: "×", power: 2, shift: 0, form: "index" };
   if (saved && typeof saved === "object") state = { ...state, ...saved };
 
   let figs = figuresOf(state.n) || figuresOf("3.45");
@@ -456,33 +490,86 @@ export function mountShift(host, { saved = null, onChange = null } = {}) {
   }
   nIn.addEventListener("input", setNumber);
 
-  pIn.addEventListener("input", () => {
-    /* figures and ONE minus in front of them: the negative powers are the point */
-    const t = pIn.value.replace(/[^0-9-]/g, "").replace(/(?!^)-/g, "");
-    if (t !== pIn.value) pIn.value = t;
-    const n = Number(t);
-    if (t === "" || t === "-" || !Number.isFinite(n)) return;
-    state.power = n;
+  /* ── the sum bar ───────────────────────────────────────────────────────
+     One sign and one power, each turned over by tapping it. */
+
+  const opBtn = q(".wb-shift__op");
+  const powEl = q(".wb-shift__pow");
+  const tenBtn = q(".wb-shift__ten");
+  const pLab = q(".wb-shift__plab");
+
+  /** Put the sign, the power and their labels into the state's clothes. */
+  function dressSum() {
+    opBtn.textContent = state.op;
+    opBtn.setAttribute("aria-label", state.op === "×"
+      ? "Multiplying. Tap to divide instead"
+      : "Dividing. Tap to multiply instead");
+
+    const index = state.form === "index";
+    powEl.dataset.form = state.form;
+    pLab.textContent = index ? "10 to the" : "by";
+    pIn.setAttribute("aria-label", index
+      ? "The power of ten, which may be negative"
+      : "What to multiply or divide by: ten, a hundred, a thousand");
+    pIn.setAttribute("inputmode", index ? "numeric" : "decimal");
+    tenBtn.setAttribute("aria-label", index
+      ? "Written as a power of ten. Tap to write it out in full"
+      : "Written out in full. Tap to write it as a power of ten");
+    tenBtn.dataset.tip = index ? "Tap to write it out" : "Tap for the power";
+    /* In index form the 10 IS the base, standing in front of its exponent. In
+       value form there is no base to show, so the same control becomes the
+       chip that says what it would look like as a power — it must stay on the
+       card either way, or the way back out of value form is hidden. */
+    tenBtn.textContent = index ? "10" : "10ⁿ";
+    pIn.value = index ? String(state.power) : valueOf(state.power);
+  }
+
+  /* tapping the sign turns the sum over */
+  opBtn.addEventListener("click", () => {
+    state.op = state.op === "×" ? "÷" : "×";
+    dressSum();
     layout();
     keep();
   });
 
-  el.querySelectorAll(".wb-shift__op").forEach((b) => {
-    b.addEventListener("click", () => {
-      state.op = b.dataset.op;
-      el.querySelectorAll(".wb-shift__op").forEach((o) =>
-        o.setAttribute("aria-pressed", String(o === b)));
-      layout();
-      keep();
-    });
+  /* tapping the ten turns 10² into 100, and back. The same fact in its two
+     notations, which is most of what this card is teaching. */
+  tenBtn.addEventListener("click", () => {
+    state.form = state.form === "index" ? "value" : "index";
+    dressSum();
+    pIn.focus();
+    keep();
+  });
+
+  pIn.addEventListener("input", () => {
+    if (state.form === "index") {
+      /* figures and ONE minus in front of them: the negative powers are the point */
+      const t = pIn.value.replace(/[^0-9-]/g, "").replace(/(?!^)-/g, "");
+      if (t !== pIn.value) pIn.value = t;
+      const n = Number(t);
+      if (t === "" || t === "-" || !Number.isFinite(n)) return;
+      state.power = n;
+    } else {
+      /* written out in full: figures, a point, and nothing else. A number that
+         is not a power of ten is simply not a slide, so the board waits. */
+      const t = pIn.value.replace(/[^0-9.]/g, "").replace(/(?!^)\.(?=.*\.)/g, "");
+      if (t !== pIn.value) pIn.value = t;
+      const got = powerOfValue(t);
+      if (got === null) {
+        sayEl.textContent = "Ten, a hundred, a thousand — or a tenth, a hundredth. Nothing in between slides.";
+        sayEl.className = "wb-shift__say is-no";
+        return;
+      }
+      state.power = got;
+    }
+    layout();
+    keep();
   });
 
   /* ── start it ──────────────────────────────────────────────────────────── */
 
   nIn.value = state.n;
-  pIn.value = String(state.power);
-  el.querySelectorAll(".wb-shift__op").forEach((o) =>
-    o.setAttribute("aria-pressed", String(o.dataset.op === state.op)));
+  dressSum();
   layout();
 
   const refit = () => draw();

@@ -32,6 +32,8 @@ const BARE = [
 // own sheets draw them, lit when they are the tool in use.
 const TOOLS = [
   ".wb-side__btn", ".wb-side__more", ".wb-side__fam", ".wb-tool", ".bb-tool",
+  /* the same rail, on a page that is not a workbook (workbook/toolbar.js) */
+  ".wb-tools__btn",
   ".bb-kit__btn", ".wb-drawbar .pp-btn",
   /* a counter on the mat: a token worth ten or one, which the child pushes
      about. It answers to the keyboard, so it is a button as far as the browser
@@ -47,6 +49,13 @@ const TOOLS = [
   /* the bench's calculator has a calculator's keys, and its results table has a
      small cross on each row and column: paper on either made them unusable */
   ".cl-key", ".cl-cut", ".cl-act",
+  /* the workbook's scientific calculator, for the same reason: a keypad of
+     forty sticky notes is not a calculator */
+  ".wb-calc__key",
+  /* the digit shift card's base ten. It is a control — tapping it turns 10 into
+     100 and back — but in index form it is also the BASE of the expression it
+     stands in, and a numeral wearing tape does not read as a numeral */
+  ".wb-shift__ten",
 ];
 
 // Not buttons, or must not be paper. `.pp-plain` is the opt-out.
