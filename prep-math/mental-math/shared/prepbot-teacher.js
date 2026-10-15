@@ -51,6 +51,11 @@ export class PrepbotTeacher {
 
     this.bubble = root?.querySelector(".mm-prepbot-bubble") || null;
     this.text = this.bubble?.querySelector("p, [data-bot-text]") || null;
+    /* THE BUBBLE STARTS HIDDEN. An empty speech bubble floating beside the
+       avatar before anything has been said is a label with nothing on it; it
+       appears the moment there is a line to put in it (`speak` calls show())
+       and goes away again with the menu, the chat and sleep. */
+    this.bubble?.classList.add("mm-prepbot-bubble--hidden");
     this.avatarWrap = root?.querySelector(".mm-prepbot-avatar-wrap") || null;
     this.avatar = root?.querySelector(".mm-prepbot-avatar") || null;
     if (this.avatar) this.avatar.innerHTML = ICON_PREPBOT;

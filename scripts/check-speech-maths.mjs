@@ -43,6 +43,24 @@ t("\\sqrt{x+1}", "the square root of (x plus one)");
 t("x \\times y", "x times y");
 t("\\(a^2 + b^2 = c^2\\)", "a squared plus b squared equals c squared");
 
+/* a number the sentence ends on is still a number */
+t("Take 3/4 of 20.", "Take three quarters of twenty.");
+t("It is 15.", "It is fifteen.");
+t("3.45.", "three point four five.");
+t("Step 1 of 7", "Step one of seven");
+
+/* a colon is only a ratio when it is written like one */
+t("the ratio 3:4", "the ratio three to four");
+t("Share 450 in the ratio 4 : 5", "Share four hundred and fifty in the ratio four to five");
+t("The easy one: it is 25.00.", "The easy one: it is twenty-five.");
+t("each is 50: 4 × 50 = 200", "each is fifty: four times fifty equals two hundred");
+
+/* money, which is written with trailing zeros on every line of a bill */
+t("25.00", "twenty-five");
+t("12.50", "twelve point five");
+t("3.45", "three point four five");
+t("0.80", "zero point eight");
+
 /* ── and the prose it must not touch ───────────────────────────────────── */
 t("It's a well-known short-cut.", "It's a well-known short-cut.");
 t("Twenty-one children, and no more.", "Twenty-one children, and no more.");

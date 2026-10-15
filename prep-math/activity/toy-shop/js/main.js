@@ -187,6 +187,18 @@ async function start() {
      and there is no reason for the site to own two of each tool. */
   mountTools(document.body, { tools: ["calculator", "column", "times", "shortdiv", "note"] });
 
+  /* PrepBot works the whole bill through on its TV before the child tries one:
+     two at a price, the sale, the subtotal, the tax, the total, the change
+     counted back. What a real till hides is the ORDER, so the film is mostly
+     about which figure comes before which. */
+  import("/utils/components/workbook/tv-lessons.js")
+    .then(({ lessonStrip }) => {
+      $("ts-learn").innerHTML =
+        `<p class="ts-learn__say">New to this? Watch PrepBot buy something first.</p>`
+        + lessonStrip("shop", "How a shop bill is worked out");
+    })
+    .catch(() => { /* the shop works without the film */ });
+
   paintShelf();
   paintBar();
 }

@@ -1,0 +1,343 @@
+/* ============================================================================
+   TWO OF PREPBOT'S LESSONS: a shop bill, and the box method for ratios
+   ----------------------------------------------------------------------------
+   Both play on the shared teacher's TV (mental-math/shared/prepbot-tv.js) and
+   are built from the same kit as the division and algebra films (vedic
+   explain.js `tile`, `art`, `acts`): a scene is written in hundredths of the
+   screen, and every step first LAYS the screen as it stood before it and then
+   plays only its own change, so stepping back or skipping lands exactly where
+   it should.
+
+   THE SHOP BILL is the Toy Shop's own sum, worked slowly: two at a price, a
+   percentage off, a second line, the subtotal, the tax, the total, and the
+   change counted back into your hand. Every figure arrives one at a time
+   beside the one it came from, because the thing a child cannot see at a real
+   till is the ORDER — what is worked out before what.
+
+   THE BOX METHOD is the one picture that answers every sharing question. A
+   ratio is not two numbers, it is a number of BOXES; count them, find what
+   one box is worth, and multiply back up. Once the boxes are drawn, "how much
+   does each get", "how much more does one get" and "what is the whole" are
+   all the same drawing read three ways — which is why it is worth drawing.
+
+   The strip and the TV plumbing live here once and serve both, rather than
+   being copied per lesson the way the algebra films copy it.
+   ========================================================================== */
+
+import { tile, art, acts, PLAY } from "/prep-math/activity/vedic-maths-workbook/js/explain.js";
+import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
+import { needCss } from "./panels.js";
+
+/* The strip's dress. A page that is not a workbook does not link video.css,
+   and an unstyled strip is not merely plain — it is invisible, which is how
+   the Toy Shop first shipped it. The module brings its own. */
+needCss("/utils/components/workbook/video.css");
+
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+
+/** What opens a lesson: PrepBot and a play button; the name is the tooltip. */
+export const lessonStrip = (kind, label) =>
+  `<div class="vm-video vm-video--icon has-video" data-tvlesson="${esc(kind)}" data-title="${esc(label)}" tabindex="0" `
+  + `aria-label="Watch PrepBot explain: ${esc(label)}" title="Watch PrepBot explain: ${esc(label)}">`
+  + `<span class="vm-video__bot">${ICON_PREPBOT}</span>`
+  + `<span class="vm-video__go">${PLAY}</span></div>`;
+
+/* a hundredth of the screen's HEIGHT, in hundredths of its width (16 : 9) */
+const VH = 0.5625;
+/* `down` turns a distance measured ACROSS the screen into the same distance
+   measured DOWN it — and the result is a percentage of the HEIGHT, so it runs
+   0 to 100 over an argument of 0 to 56.25. Pass it 58 and the tile is below
+   the screen. Two whole lines of the ratio film were laid out off the bottom
+   that way before anyone looked. */
+const down = (w) => w / VH;
+const BOTTOM = 53;                       // the largest argument that still shows
+
+const INK = "#2a2723";
+const num = (stage, id, text, x, y, c, sizeU = 3.3) =>
+  tile(stage, id, String(text), x, y, { c }).firstChild.style.setProperty("font-size", `calc(var(--u) * ${sizeU})`);
+
+const money = (n) => n.toFixed(2);
+
+/* ═══ the shop bill ════════════════════════════════════════════════════════*/
+
+const TEDDY = `<svg viewBox="0 0 64 64">
+  <circle cx="18" cy="16" r="7" fill="#d9a05b"/><circle cx="46" cy="16" r="7" fill="#d9a05b"/>
+  <circle cx="32" cy="24" r="14" fill="#e8b878"/>
+  <ellipse cx="32" cy="29" rx="6.5" ry="5" fill="#f6e7d8"/>
+  <circle cx="27" cy="21" r="1.9" fill="${INK}"/><circle cx="37" cy="21" r="1.9" fill="${INK}"/>
+  <path d="M20 38h24a8 8 0 0 1 8 8v8a6 6 0 0 1-6 6H18a6 6 0 0 1-6-6v-8a8 8 0 0 1 8-8z" fill="#e8b878"/>
+  <ellipse cx="32" cy="48" rx="7" ry="8" fill="#f6e7d8"/></svg>`;
+
+const KITE = `<svg viewBox="0 0 64 64">
+  <path d="M32 4L54 30 32 58 10 30z" fill="#7cc47c" stroke="#3f8f4f" stroke-width="2.5"/>
+  <path d="M32 4v54M10 30h44" stroke="#3f8f4f" stroke-width="2"/></svg>`;
+
+/* the lettering is sized to what the tag has to hold: "20% off" at the price
+   tag's size ran out through the hole the string goes through */
+const TAG = (text, tone) => {
+  const fs = Math.min(24, Math.round(134 / Math.max(1, String(text).length)));
+  return `<svg viewBox="0 0 120 54"><path d="M4 8h92l20 19-20 19H4z" fill="${tone}" stroke="${INK}" stroke-width="3"/>`
+    + `<circle cx="99" cy="27" r="4" fill="#fffdf8" stroke="${INK}" stroke-width="2"/>`
+    + `<text x="48" y="29" text-anchor="middle" dominant-baseline="central" font-family="JetBrains Mono, monospace"`
+    + ` font-size="${fs}" font-weight="800" fill="${INK}">${text}</text></svg>`;
+};
+
+function shopScene() {
+  /* the Toy Shop's own numbers, so the film and the shop agree */
+  const each = 12.5, qty = 2, off = 20;
+  const gross = each * qty;                 // 25.00
+  const ten = gross / 10;                   // 2.50
+  const cut = ten * 2;                      // 5.00
+  const net = gross - cut;                  // 20.00
+  const kEach = 4, kQty = 3, kLine = 12;    // the second line
+  const sub = net + kLine;                  // 32.00
+  const tax = sub / 10;                     // 3.20
+  const total = sub + tax;                  // 35.20
+  const paid = 40;
+  const change = paid - total;              // 4.80
+
+  const LX = 62;                            // where the working is written
+  const line = (i) => down(5.5 + i * 5.5);  // nine lines, all above BOTTOM
+
+  const ids = {
+    lines: ["w0", "w1", "w2", "w3", "w4", "w5", "w6", "w7", "w8"],
+  };
+  const ALL = ["q", "t1", "t2", "tag", "pct", "k1", "k2", "k3", "ktag", ...ids.lines];
+
+  const build = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    num(stage, "q", "What does the basket come to?", 50, down(2.6), 0, 3);
+
+    art(stage, "t1", 9, down(12), 8.5, TEDDY);
+    art(stage, "t2", 18.5, down(12), 8.5, TEDDY);
+    art(stage, "tag", 14, down(20), 12, TAG(money(each), "#fff3a8"));
+    art(stage, "pct", 14, down(27), 12, TAG(`${off}% off`, "#f6c6c2"));
+
+    art(stage, "k1", 8, down(38), 6.4, KITE);
+    art(stage, "k2", 14.5, down(38), 6.4, KITE);
+    art(stage, "k3", 21, down(38), 6.4, KITE);
+    art(stage, "ktag", 14.5, down(46), 11, TAG(money(kEach), "#fff3a8"));
+
+    num(stage, "w0", `${qty} × ${money(each)} = ${money(gross)}`, LX, line(0), 0, 2.7);
+    num(stage, "w1", `10% of ${money(gross)} = ${money(ten)}`, LX, line(1), 3, 2.7);
+    num(stage, "w2", `${off}% = twice that = ${money(cut)}`, LX, line(2), 3, 2.7);
+    num(stage, "w3", `${money(gross)} − ${money(cut)} = ${money(net)}`, LX, line(3), 1, 2.7);
+    num(stage, "w4", `${kQty} × ${money(kEach)} = ${money(kLine)}`, LX, line(4), 2, 2.7);
+    num(stage, "w5", `${money(net)} + ${money(kLine)} = ${money(sub)}`, LX, line(5), 0, 2.7);
+    num(stage, "w6", `tax 10% of ${money(sub)} = ${money(tax)}`, LX, line(6), 3, 2.7);
+    num(stage, "w7", `${money(sub)} + ${money(tax)} = ${money(total)}`, LX, line(7), 4, 2.7);
+    num(stage, "w8", `${money(paid)} − ${money(total)} = ${money(change)}`, LX, line(8), 2, 2.7);
+  };
+
+  const events = [];
+  let on = new Set();
+  const push = (say, { show = [], off: gone = [], play = () => {} } = {}) => {
+    const before = new Set(on);
+    show.forEach((id) => on.add(id));
+    gone.forEach((id) => on.delete(id));
+    events.push({ say, before, show, play });
+  };
+
+  push("Two teddy bears are in the basket, and the shelf says each one is twelve prepbills and fifty.",
+    { show: ["q", "t1", "t2", "tag"] });
+  push(`Two of them, at ${money(each)} each. ${money(each)} and ${money(each)} is ${money(gross)}. `
+    + "Always do the multiplying first, before anything is taken off.",
+    { show: ["w0"], play: (S) => { S.pulse("t1", 0.2); S.pulse("t2", 0.4); } });
+  push(`But the teddies have a sale tag: ${off} per cent off. ${off} per cent OF the ${money(gross)} — not off the shelf price, off the line.`,
+    { show: ["pct"], play: (S) => S.pulse("pct", 0.3) });
+  push(`Ten per cent is the easy one: it is ${money(gross)} with the figures slid one place to the right, which is ${money(ten)}.`,
+    { show: ["w1"] });
+  push(`And ${off} per cent is twice ten per cent. Twice ${money(ten)} is ${money(cut)}. That is what the sale takes off.`,
+    { show: ["w2"], play: (S) => S.pulse("w2", 0.3) });
+  push(`So take it off: ${money(gross)} less ${money(cut)} leaves ${money(net)}. The teddy line is ${money(net)}.`,
+    { show: ["w3"], play: (S) => S.pulse("w3", 0.4) });
+  push(`There are three kites too, at ${money(kEach)} each. Three fours are twelve, so that line is ${money(kLine)}.`,
+    { show: ["k1", "k2", "k3", "ktag", "w4"] });
+  push(`Now add the lines up: ${money(net)} and ${money(kLine)} is ${money(sub)}. That is the subtotal — what the toys cost.`,
+    { show: ["w5"], play: (S) => { S.dim("w0", 0.35, 0.2); S.dim("w1", 0.35, 0.2); S.dim("w2", 0.35, 0.2); } });
+  push(`The tax comes LAST, and it is worked out on the subtotal, not on one toy. Ten per cent of ${money(sub)} is ${money(tax)}.`,
+    { show: ["w6"] });
+  push(`Add it on: ${money(sub)} and ${money(tax)} is ${money(total)}. That is the number to pay.`,
+    { show: ["w7"], play: (S) => S.pulse("w7", 0.4) });
+  push(`Say you hand over ${money(paid)}. The change is ${money(paid)} take away ${money(total)} — which is ${money(change)}.`,
+    { show: ["w8"] });
+  push(`And you can check it the way a shopkeeper does: count UP from ${money(total)}. `
+    + `Eighty makes thirty-six, then thirty-seven, thirty-eight, thirty-nine, forty. Four prepbills and eighty — ${money(change)}.`,
+    { play: (S) => S.pulse("w8", 0.3) });
+
+  const lay = (S, set) => ALL.forEach((id) => S.put(id, { on: set.has(id) ? 1 : 0 }));
+  const steps = events.map((ev) => ({
+    say: ev.say,
+    show(stage, how) {
+      const S = acts(stage, how.gsap, how.instant);
+      lay(S, ev.before);
+      ev.show.forEach((id, j) => { if (!ev.before.has(id)) S.pop(id, 0.3 + j * 0.16); });
+      ev.play(S);
+    },
+  }));
+  return { build, steps };
+}
+
+/* ═══ the box method for ratios ════════════════════════════════════════════*/
+
+const BOX = (fill, label) =>
+  `<svg viewBox="0 0 100 100"><rect x="4" y="4" width="92" height="92" fill="${fill}" stroke="${INK}" stroke-width="5"/>`
+  + (label ? `<text x="50" y="54" text-anchor="middle" dominant-baseline="central" font-family="JetBrains Mono, monospace"`
+    + ` font-size="38" font-weight="800" fill="${INK}">${label}</text>` : "")
+  + `</svg>`;
+
+const BRACE = (w) =>
+  `<svg viewBox="0 0 ${w} 20" preserveAspectRatio="none">`
+  + `<path d="M2 2v7a5 5 0 0 0 5 5h${w / 2 - 14}a5 5 0 0 1 5 5a5 5 0 0 1 5-5h${w / 2 - 14}a5 5 0 0 0 5-5V2"`
+  + ` fill="none" stroke="${INK}" stroke-width="3"/></svg>`;
+
+function ratioScene() {
+  const p = 4, q = 5;                       // the ratio
+  const shares = p + q;                     // 9
+  const one = 50;                           // what one box is worth
+  const whole = shares * one;               // 450
+  const A = "Ada", B = "Bola";
+
+  const W = 7.2;                            // a box, across the screen
+  const GAP = 0.9;
+  const ROW_A = down(15), ROW_B = down(29);
+  const X0 = 10;
+  const boxAt = (i) => X0 + W / 2 + i * (W + GAP);
+
+  const aIds = Array.from({ length: p }, (_, i) => `a${i}`);
+  const bIds = Array.from({ length: q }, (_, i) => `b${i}`);
+  const aFill = Array.from({ length: p }, (_, i) => `af${i}`);
+  const bFill = Array.from({ length: q }, (_, i) => `bf${i}`);
+  const ALL = ["q", "la", "lb", "count", "brace", "whole", "one", "ta", "tb", "check", "diff",
+    ...aIds, ...bIds, ...aFill, ...bFill];
+
+  const build = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    /* the step sticker sits top-left, so the question is set to its right */
+    num(stage, "q", `Share ${whole} in the ratio ${p} : ${q}`, 56, down(2.6), 0, 2.6);
+
+    num(stage, "la", A, X0 - 5, ROW_A, 3, 2.6);
+    num(stage, "lb", B, X0 - 5, ROW_B, 4, 2.6);
+    aIds.forEach((id, i) => art(stage, id, boxAt(i), ROW_A, W, BOX("#bfe3ff", "")));
+    bIds.forEach((id, i) => art(stage, id, boxAt(i), ROW_B, W, BOX("#c8f0c0", "")));
+    aFill.forEach((id, i) => art(stage, id, boxAt(i), ROW_A, W, BOX("#bfe3ff", String(one))));
+    bFill.forEach((id, i) => art(stage, id, boxAt(i), ROW_B, W, BOX("#c8f0c0", String(one))));
+
+    const mid = X0 + (q * (W + GAP)) / 2 - GAP / 2;
+    num(stage, "count", `${p} + ${q} = ${shares} boxes`, 74, down(13), 0, 2.9);
+    art(stage, "brace", mid, down(39), q * (W + GAP), BRACE(300));
+    num(stage, "whole", String(whole), mid, down(46), 2, 3.4);
+    num(stage, "one", `${whole} ÷ ${shares} = ${one} a box`, 74, down(21), 1, 2.9);
+    num(stage, "ta", `${A}: ${p} × ${one} = ${p * one}`, 74, down(29), 3, 2.9);
+    num(stage, "tb", `${B}: ${q} × ${one} = ${q * one}`, 74, down(36), 4, 2.9);
+    num(stage, "check", `${p * one} + ${q * one} = ${whole} ✓`, 74, down(43), 2, 2.7);
+    /* bottom-right is PrepBot's corner; this goes under the brace instead */
+    num(stage, "diff", `one box more = ${one}`, mid, down(52), 1, 2.7);
+  };
+
+  const events = [];
+  let on = new Set();
+  const push = (say, { show = [], off: gone = [], play = () => {} } = {}) => {
+    const before = new Set(on);
+    show.forEach((id) => on.add(id));
+    gone.forEach((id) => on.delete(id));
+    events.push({ say, before, show, play });
+  };
+
+  push(`${A} and ${B} are to share ${whole} in the ratio ${p} to ${q}. `
+    + `Here is the thing to understand first: the ratio does NOT say ${A} gets ${p}. It says ${A} gets ${p} BOXES.`,
+    { show: ["q"] });
+  push(`So draw them. ${p} boxes for ${A} — all exactly the same size, because every box is worth the same.`,
+    { show: ["la", ...aIds], play: (S) => aIds.forEach((id, i) => S.pop(id, 0.3 + i * 0.16)) });
+  push(`And ${q} boxes for ${B}. Same size again. The picture is the ratio.`,
+    { show: ["lb", ...bIds], play: (S) => bIds.forEach((id, i) => S.pop(id, 0.3 + i * 0.16)) });
+  push(`Now count every box on the page: ${p} and ${q} is ${shares}. Nine boxes between them.`,
+    { show: ["count"], play: (S) => [...aIds, ...bIds].forEach((id, i) => S.pulse(id, 0.2 + i * 0.1)) });
+  push(`And all ${shares} of those boxes TOGETHER are the whole ${whole}. That is the sentence the picture gives you, and it is the one worth writing down.`,
+    { show: ["brace", "whole"] });
+  push(`So one box is ${whole} shared into ${shares}: ${whole} ÷ ${shares} = ${one}. `
+    + "Finding one box is the whole method — everything else is multiplying.",
+    { show: ["one"], play: (S) => S.pulse("one", 0.4) });
+  push(`Write ${one} in every box, so you can see it.`,
+    { show: [...aFill, ...bFill], off: [...aIds, ...bIds],
+      play: (S) => [...aFill, ...bFill].forEach((id, i) => S.pop(id, 0.2 + i * 0.12)) });
+  push(`${A} has ${p} boxes, and each is ${one}: ${p} × ${one} = ${p * one}.`,
+    { show: ["ta"], play: (S) => aFill.forEach((id, i) => S.pulse(id, 0.2 + i * 0.12)) });
+  push(`${B} has ${q}: ${q} × ${one} = ${q * one}.`,
+    { show: ["tb"], play: (S) => bFill.forEach((id, i) => S.pulse(id, 0.2 + i * 0.12)) });
+  push(`Check it, every time: ${p * one} and ${q * one} is ${whole} — the amount you started with. If it does not come back, one box was wrong.`,
+    { show: ["check"], play: (S) => S.pulse("check", 0.4) });
+  push(`And now the picture answers questions it was not asked. "How much MORE does ${B} get?" `
+    + `Look: ${B} has one box more than ${A}. One box is ${one}. You do not work it out again.`,
+    { show: ["diff"], play: (S) => { S.pulse(bFill[q - 1], 0.3); S.pulse("diff", 0.6); } });
+  push("That is the box method, and it is the same three moves every time. "
+    + "Turn the ratio into boxes. Find what ONE box is worth. Multiply back up — and check.",
+    { play: (S) => { S.pulse("count", 0.2); S.pulse("one", 0.5); S.pulse("check", 0.8); } });
+
+  const lay = (S, set) => ALL.forEach((id) => S.put(id, { on: set.has(id) ? 1 : 0 }));
+  const steps = events.map((ev) => ({
+    say: ev.say,
+    show(stage, how) {
+      const S = acts(stage, how.gsap, how.instant);
+      lay(S, ev.before);
+      ev.show.forEach((id, j) => { if (!ev.before.has(id)) S.pop(id, 0.3 + j * 0.14); });
+      ev.play(S);
+    },
+  }));
+  return { build, steps };
+}
+
+/* ═══ opening one ══════════════════════════════════════════════════════════*/
+
+const SCENES = { shop: shopScene, ratio: ratioScene };
+let tvOpen = false;
+
+/** Play a lesson by name, with or without a strip to light up while it runs. */
+export async function playLesson(kind, title = "", strip = null) {
+  if (tvOpen) return;
+  const made = (SCENES[kind] || shopScene)();
+  /* the stage is measured in hundredths of its own width, so --u is set when
+     it is built and again whenever the window changes shape */
+  const sized = (stage) => {
+    made.build(stage);
+    stage.querySelector(".vm-tv").style.setProperty("--u", `${stage.clientWidth / 100}px`);
+  };
+  tvOpen = true;
+  strip?.classList.add("is-playing");
+  try {
+    const { openTv } = await import("/prep-math/mental-math/shared/prepbot-tv.js");
+    await openTv({ title, build: sized, steps: made.steps });
+    const refit = () => {
+      const st = document.querySelector(".mm-tv-overlay [data-tv='stage'] .vm-tv");
+      if (st) st.style.setProperty("--u", `${st.parentElement.clientWidth / 100}px`);
+    };
+    window.addEventListener("resize", refit);
+    document.addEventListener("fullscreenchange", refit);
+    const watch = new MutationObserver(() => {
+      if (document.querySelector(".mm-tv-overlay")) return;
+      watch.disconnect();
+      window.removeEventListener("resize", refit);
+      document.removeEventListener("fullscreenchange", refit);
+      tvOpen = false;
+      strip?.classList.remove("is-playing");
+    });
+    watch.observe(document.body, { childList: true });
+  } catch (err) {
+    tvOpen = false;
+    strip?.classList.remove("is-playing");
+    console.error("PrepBot's TV could not be opened", err);
+  }
+}
+
+if (typeof document !== "undefined" && !document.__tvLessons) {
+  document.__tvLessons = true;
+  const open = (e) => {
+    if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+    const strip = e.target.closest?.(".vm-video[data-tvlesson]");
+    if (!strip) return;
+    e.preventDefault();
+    playLesson(strip.dataset.tvlesson, strip.dataset.title || "", strip);
+  };
+  document.addEventListener("click", open);
+  document.addEventListener("keydown", open);
+}

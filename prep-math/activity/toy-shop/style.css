@@ -492,3 +492,14 @@
   .ts-item .ts-ask dd { align-self: stretch; }
   .ts-item .ts-box { width: 100%; }
 }
+
+/* PrepBot's walkthrough, above the shelf */
+.ts-learn {
+  display: flex; align-items: center; justify-content: center; gap: 0.7rem;
+  margin: 0 0 1.4rem;
+}
+.ts-learn__say {
+  margin: 0;
+  font: 400 0.76rem/1.5 var(--font-mono, "JetBrains Mono", monospace);
+  color: var(--text-secondary, #6b655c);
+}

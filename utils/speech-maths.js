@@ -78,7 +78,12 @@ export function sayNumber(text) {
   const sign = m[1] ? "minus " : "";
   const whole = sayWhole(Number(m[2]));
   if (!m[3]) return sign + whole;
-  const after = [...m[3]].map((d) => ONES[Number(d)]).join(" ");
+  /* trailing zeros after the point are not read: 25.00 is "twenty-five", and
+     12.50 is "twelve point five". Nobody says "point zero zero", and money is
+     written with them on every line of a shop bill. */
+  const figs = m[3].replace(/0+$/, "");
+  if (!figs) return sign + whole;
+  const after = [...figs].map((d) => ONES[Number(d)]).join(" ");
   return `${sign}${whole} point ${after}`;
 }
 
@@ -203,8 +208,13 @@ export function sayMaths(text, { numbers = true } = {}) {
      stop swallowed into it, which turned "x²." into "to the power of 2." */
   s = s.replace(/\^\s*(-?\d+(?:\.\d+)?|[A-Za-z]\w*)/g, (_, e) => sayPowerOf(e));
 
-  /* a ratio, and a division written with a slash between names */
-  s = s.replace(/(?<=[A-Za-z0-9)])\s*:\s*(?=[A-Za-z0-9(])/g, " to ");
+  /* A RATIO COLON, AND ONLY A RATIO COLON. A colon between a number and a
+     number is not enough: "each is 50: 4 × 50" is prose introducing the
+     working, and "The easy one: it is" was being read as "one to it is". A
+     ratio is written tight (3:4) or spaced on BOTH sides (4 : 5); a colon
+     with a space only after it is punctuation. */
+  s = s.replace(/(?<=\d):(?=\d)/g, " to ");
+  s = s.replace(/(?<=\d) +: +(?=\d)/g, " to ");
   s = s.replace(/(?<=[A-Za-z0-9)])\s*\/\s*(?=[A-Za-z(])/g, " over ");
 
   /* per cent, which is two words when it is read */
@@ -233,8 +243,10 @@ export function sayMaths(text, { numbers = true } = {}) {
   /* and only now the figures, so that every rule above has had the digits it
      needed to recognise what it was looking at */
   if (numbers) {
-    s = s.replace(/(?<![\w.])\d+(?:\.\d+)?(?![\w.])/g, (n) => sayNumber(n));
-    /* a decimal that ends a sentence: "3.45." has already matched as 3.45 */
+    /* The full stop that ends a sentence is not a decimal point. Refusing any
+       following "." skipped every number a sentence ended on — "of 20." came
+       back with its figures while "= 345" was read properly. */
+    s = s.replace(/(?<![\w.])\d+(?:\.\d+)?(?!\w|\.\d)/g, (n) => sayNumber(n));
   }
 
   return s.replace(/[ \t]{2,}/g, " ").replace(/\s+([,.;:!?])/g, "$1").trim();

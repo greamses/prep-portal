@@ -13,6 +13,7 @@
    ========================================================================== */
 
 import { bank, P, gcd, lcm, low, naira, names, plural } from "./common.js";
+import { lessonStrip } from "/utils/components/workbook/tv-lessons.js";
 
 const RATIOS = [[2, 3], [3, 4], [3, 5], [4, 5], [2, 5], [5, 7], [3, 7], [4, 7], [5, 8], [1, 3], [2, 7]];
 
@@ -252,6 +253,10 @@ const rtPowers = bank("wp-rt-powers", "wp-ratio", {
 ]);
 
 const rtShare = bank("wp-rt-share", "wp-ratio", {
+  /* PrepBot draws the boxes first: a ratio is a number of BOXES, one box is
+     found by dividing, and everything after that is multiplying back up
+     (utils/components/workbook/tv-lessons.js) */
+  video: () => lessonStrip("ratio", "The box method for ratios"),
   label: "Sharing in linked ratios",
   blurb: "A : B and B : C joined through B; incomes and savings.",
   heading: "Sharing: ratios that share a term",
