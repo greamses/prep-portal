@@ -11,8 +11,10 @@
    method. Every product goes on the multiplication board, every sum and
    take-away on the adding board, and a percentage is BUILT: ten per cent is
    one tenth, found on the digit shift card by sliding the figures one place,
-   and twenty per cent is that tenth added to itself. A quarter and a half are
-   long division. Nothing is rushed and nothing is skipped.
+   and every other percentage is said as the fraction it is — a fifth, a
+   quarter, a half — and divided for on long division. Nothing is rushed and
+   nothing is skipped: every figure is spoken before it is written, which is
+   what makes this a lesson rather than a demonstration.
 
    WHY IT IS DONE THIS WAY. A film of a shop teaches a child about the film.
    What they have to learn here is where things are and what order they come
@@ -40,6 +42,10 @@ const ORDER = [{ id: 1, n: 2 }, { id: 3, n: 3 }];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const $ = (id) => document.getElementById(id);
 
+/* The shelf names its toys one at a time — "Teddy Bear" — and PrepBot is
+   buying two of them. It says so out loud, so it says it in English. */
+const plural = (name, n) => (n === 1 ? name : `${name}${/(s|x|z|ch|sh)$/i.test(name) ? "es" : "s"}`);
+
 /** A soft ring around whatever is being talked about. */
 function spotlight(el) {
   document.querySelectorAll(".ts-spot").forEach((n) => n.classList.remove("ts-spot"));
@@ -54,15 +60,16 @@ function spotlight(el) {
  * NOT ON A CALCULATOR. A calculator will do any of these in one press, and a
  * child who watches that learns the press rather than the method. So every
  * figure on this bill is worked on the tool that shows how it is done, and a
- * percentage is built out of a tenth rather than typed in:
+ * percentage is SAID AS ITS FRACTION rather than typed in:
  *
  *     a product          the table multiplication board
  *     a sum or a take-away   the adding board
  *     10% of something   the digit shift card — ten per cent IS one tenth,
  *                        and one tenth is every figure one place to the right
- *     20%, 30% …         that tenth, added to itself on the adding board
+ *     20%                a fifth: long division by 5
  *     25%                a quarter: long division by 4
  *     50%                a half: long division by 2
+ *     30%, 40% …         the fraction divided for once, then added n times
  *
  * → [{ lesson, tool, fields }] — the moves in order, each with the sentence
  *   that says WHY before it happens.
@@ -164,14 +171,21 @@ export const answerFromSay = (text) => {
 
 export function startGuide({ teacher, onDone = () => {} } = {}) {
   let stopped = false;
+  /* counts every figure of the whole walk-through, not of one board, so the
+     wording keeps turning over instead of starting each board on "Right" */
+  let beat = 0;
   const alive = () => !stopped;
 
   /* Everything PrepBot says is said, and WAITED for: the next thing it
      presses happens when it has finished the sentence about it, never over
-     the top of it. */
+     the top of it.
+
+     `el` moves the ring and scrolls to it; LEAVING IT OUT leaves the ring
+     where it was, which is what the figure-by-figure talk on a board wants —
+     passing null explicitly is how the ring is cleared. */
   const say = async (line, el) => {
     if (stopped) return;
-    spotlight(el || null);
+    if (el !== undefined) spotlight(el);
     teacher.speak([{ text: line, mode: "speech" }]);
     try { await teacher.narrationDone; } catch { /* interrupted */ }
     if (!stopped) await sleep(260);
@@ -185,7 +199,14 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
     await sleep(pause);
   };
 
-  const type = async (el, text, pause = 420) => {
+  /* A HAND'S SPEED, not a machine's. The figures used to go in faster than a
+     child could follow — the whole sum was over before they had found the
+     column it was going into. A figure is a thing to be watched being
+     written, so it is written at the speed somebody writes. */
+  const PEN = 330;      // between the characters of one figure
+  const SETTLE = 760;   // after a figure, while the board marks it
+
+  const type = async (el, text, pause = 420, pen = PEN) => {
     if (stopped || !el) return;
     spotlight(el);
     el.focus();
@@ -194,9 +215,22 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
       if (stopped) return;
       el.value += ch;
       el.dispatchEvent(new Event("input", { bubbles: true }));
-      await sleep(42);
+      await sleep(pen);
     }
     await sleep(pause);
+  };
+
+  /* A tool is imported when its key is first pressed, so it is waited FOR
+     rather than waited out: a flat pause is a guess that is wrong on a slow
+     connection, and the first tool of the walk-through is the slow one. */
+  const waitFor = async (sel, ms = 6000) => {
+    for (let k = 0; k < ms / 60; k += 1) {
+      if (stopped) return null;
+      const el = document.querySelector(sel);
+      if (el) return el;
+      await sleep(60);
+    }
+    return null;
   };
 
   /* ── the tools, used for real ─────────────────────────────────────────
@@ -229,20 +263,29 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
    */
   async function onShift({ n, power }) {
     if (!(await openTool("shift"))) return "";
-    const card = document.querySelector(".wb-shift");
+    const card = await waitFor(".wb-shift");
     if (!card) return "";
     const q = (sel) => card.querySelector(sel);
-    await type(q(".wb-shift__n"), n, 200);
+    await say(`So the number goes on the card first — ${n}.`, card);
+    await type(q(".wb-shift__n"), n, 400);
     /* the sign is ONE key that turns over, so it is only pressed if it is
        showing the wrong sum */
-    if (q(".wb-shift__op")?.textContent.trim() !== "÷") await press(q(".wb-shift__op"), 300);
-    await type(q(".wb-shift__p"), String(power), 260);
+    if (q(".wb-shift__op")?.textContent.trim() !== "÷") {
+      await say("And that sign there turns over. I want the dividing one, so I tap it once.");
+      await press(q(".wb-shift__op"), 460);
+    }
+    await say(`By ten, ${power === 1 ? "once" : `${power} times over`} — so a ${power} in the little box.`);
+    await type(q(".wb-shift__p"), String(power), 460);
     for (let k = 0; k < power; k += 1) {
       if (stopped) return "";
-      await press(q('.wb-shift__go[data-go="-1"]'), 620);
+      await say(k === 0
+        ? "Now watch the POINT while I press it. The point does not move — it never does. It is the "
+          + "figures that shift along, one place to the right, and that is all dividing by ten is."
+        : "And again — another place to the right.");
+      await press(q('.wb-shift__go[data-go="-1"]'), 900);
     }
     const got = q(".wb-shift__read")?.textContent?.trim() || "";
-    await sleep(420);
+    await sleep(620);
     await shutTool("shift");
     return got;
   }
@@ -268,22 +311,88 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
     return null;
   }
 
+  /**
+   * WHAT THE BOARD IS ASKING, in the board's own words.
+   *
+   * Every board already phrases its next step as a question a child could be
+   * asked out loud — "2 × 5, and the 1 carried — what goes down?" — and says
+   * where the answer goes. So the tutor does not need a script per board: it
+   * reads the question out, answers it, and only then writes the figure. The
+   * words cannot drift from what the board wants, because they ARE what the
+   * board wants.
+   */
+  const asking = (board) => {
+    try { return board?.kind?.ask?.(board.thing) || {}; } catch { return {}; }
+  };
+
+  /* A figure is never written in silence, and never with the same words twice
+     running — twenty of these go by on one bill, and a tutor who says "Right,"
+     twenty times has stopped being listened to by the third. */
+  const LEAD = ["Right —", "So —", "Next —", "Now then —", "And —", "On we go —", "Then —"];
+  const SAID = [
+    (f, w) => `${f}${w ? `, ${w}` : ""}.`,
+    (f, w) => `That is ${f}${w ? `, and it goes ${w}` : ""}.`,
+    (f, w) => `${f} — ${w ? `${w}, ` : ""}in it goes.`,
+  ];
+  /* a figure brought down has no sum in it at all, and saying so is the point:
+     it is the one step of a long division that is only fetching */
+  const FETCH = [
+    (w) => `Down it comes${w ? `, ${w}` : ""} — there is no sum in that step, you are only fetching it.`,
+    (w) => `So down it comes${w ? `, ${w}` : ""}.`,
+    (w) => `That one I just bring down${w ? `, ${w}` : ""} — nothing to work out, it only moves.`,
+  ];
+  const pick = (list, k) => list[k % list.length];
+  /* the board's question follows a lead-in, so its opening capital would read
+     as a new sentence in the middle of one */
+  const lower = (s) => String(s || "").replace(/^([A-Z])(?=[a-z])/, (m) => m.toLowerCase());
+
   /** A sum worked right through on its board, a figure at a time, by hand. */
   async function onBoard(job) {
     if (!(await openTool(job.tool))) return "";
-    const el = document.querySelector(`.bd-board--${job.tool}`);
+    const el = await waitFor(`.bd-board--${job.tool}`);
     if (!el) return "";
+    await say("The sum goes in first, so the board knows what it is setting out.", el);
     for (const [n, v] of Object.entries(job.fields)) {
       const field = el.querySelector(`.bd-sum__in[data-n="${n}"]`);
-      if (field) await type(field, v, 160);
+      if (field) await type(field, v, 420);
     }
-    await press(el.querySelector(".bd-act--set"), 420);
+    await say("And Set it — which lays the sum out in its columns and then asks me for ONE figure. "
+      + "Not the answer. One figure.");
+    await press(el.querySelector(".bd-act--set"), 760);
 
+    /* queried every time: the board redraws its paper, so a cached node goes
+       stale the first time a figure lands */
     const done = () => /^Done/i.test(el.querySelector(".bd-say")?.textContent || "");
-    for (let k = 0; k < 60 && !done(); k += 1) {
+    for (let k = 0; k < 90 && !done(); k += 1) {
       if (stopped) return "";
+      const a = asking(el.__board);
+      if (a.done) break;
+      beat += 1;
+
+      /* A FIGURE BROUGHT DOWN IS NOT TYPED. It is the one step of a long
+         division with no sum in it, so the board puts a button on the figure
+         itself rather than a box to write in — and a tutor that only knew how
+         to type stopped dead here, three steps into every division, which is
+         why the walk-through was finishing with the remainder instead of the
+         answer. */
+      const bring = el.querySelector(".bd-bring");
+      if (bring) {
+        await say(`${pick(LEAD, beat)} ${lower(a.text) || "bring the next figure down."} `
+          + `${pick(FETCH, beat)(a.where || "")}`);
+        if (stopped) return "";
+        await press(bring, SETTLE);
+        continue;
+      }
+
       const figure = nextFigure(el.__board);
       if (figure === null || !el.querySelector(".bd-in")) break;
+      /* SAID BEFORE IT IS WRITTEN. The board's question, then the answer to
+         it, then the figure goes in — so the child hears the reasoning while
+         the pen is still in the air, rather than watching figures appear and
+         having to guess where they came from. */
+      await say(`${pick(LEAD, beat)} ${lower(a.text) || "what goes down?"} `
+        + `${pick(SAID, beat)(figure, a.where || "")}`);
+      if (stopped) return "";
       /* One character at a time, into whichever cell still has room in it.
          A cell is not always one figure wide — a column that has been lent to
          holds 17 — and the board moves the focus on by itself once a cell is
@@ -297,12 +406,17 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
         cell.focus();
         cell.value += ch;
         cell.dispatchEvent(new Event("input", { bubbles: true }));
-        await sleep(110);
+        await sleep(PEN);
       }
-      await sleep(260);
+      await sleep(SETTLE);
     }
-    const got = answerFromSay(el.querySelector(".bd-say")?.textContent);
-    await sleep(320);
+    /* ONLY A FINISHED BOARD HAS AN ANSWER. The running commentary is full of
+       equals signs — "25 − 25 = 0." is the last subtraction, not the answer —
+       so a board that stopped short hands back nothing rather than its
+       remainder, and PrepBot says nothing instead of something untrue. */
+    const ended = el.querySelector(".bd-say")?.textContent || "";
+    const got = /^Done/i.test(ended) ? answerFromSay(ended) : "";
+    await sleep(520);
     await shutTool(job.tool);
     return got;
   }
@@ -312,10 +426,10 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
     await say("Right then. I am going to do the shopping once, and I want you watching what I press — "
       + "not a picture of a shop, this one, the real one.");
 
-    for (const { id, n } of ORDER) {
+    for (const [i, { id, n }] of ORDER.entries()) {
       const card = document.querySelector(`.ts-card[data-id="${id}"]`);
       const name = card?.querySelector(".ts-card__name")?.textContent?.trim() || "this one";
-      await say(`First, ${n} of the ${name}. I press Add, and then the plus.`, card);
+      await say(`${i ? "Then" : "First"}, ${n} ${plural(name, n)}. I press Add, and then the plus.`, card);
       for (let k = 0; k < n; k++) {
         if (stopped) return;
         await press(document.querySelector(`[data-add="${id}"]`), 420);
