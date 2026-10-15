@@ -265,7 +265,11 @@ async function start() {
      with, the written boards to do it longhand on, and a note to work on.
      A child checking a shop bill is doing exactly what the workbook is for,
      and there is no reason for the site to own two of each tool. */
-  mountTools(document.body, { tools: ["calculator", "column", "times", "shortdiv", "note"] });
+  /* the workbook's own tools, the same ones and in the same order: this is
+     where the sums on the bill actually get done (js/guide.js uses them) */
+  mountTools(document.body, {
+    tools: ["calculator", "column", "times", "criss", "shortdiv", "longdiv", "shift", "note"],
+  });
 
   /* PREPBOT DOES THE SHOPPING, on this page. Not a film of a shop: it presses
      the real Add buttons, opens the real calculator off the rail, types the
