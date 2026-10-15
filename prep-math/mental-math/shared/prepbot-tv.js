@@ -27,6 +27,7 @@
 
 import { PrepbotTeacher } from "./prepbot-teacher.js";
 import { ICON_PLAY, ICON_PAUSE, ICON_PREV, ICON_NEXT, ICON_FULLSCREEN, ICON_CLOSE } from "./icons.js";
+import { UI } from "/utils/components/ui-icons.js";
 
 const css = (href) => {
   if ([...document.styleSheets].some((s) => s.href && s.href.endsWith(href.split("/").pop()))) return;
@@ -68,6 +69,7 @@ export async function openTv({ title = "", build = () => {}, steps = [] } = {}) 
     `<button class="mm-tv-btn mm-tv-btn--play" data-tv="play" type="button" aria-label="Play or pause" title="Play or pause (Space)" aria-keyshortcuts="Space"><span>${ICON_PAUSE}</span></button>` +
     `<button class="mm-tv-btn" data-tv="next" type="button" aria-label="Next step" title="Next step (Right arrow)" aria-keyshortcuts="ArrowRight">${ICON_NEXT}</button>` +
     `</div>` +
+    `<button class="mm-tv-btn" data-tv="save" type="button" aria-label="Download this explanation" title="Download this explanation (D)" aria-keyshortcuts="D">${UI.download(22)}</button>` +
     `<button class="mm-tv-btn" data-tv="full" type="button" aria-label="Fullscreen" title="Full screen (F)" aria-keyshortcuts="F">${ICON_FULLSCREEN}</button>` +
     `<button class="mm-tv-btn" data-tv="close" type="button" aria-label="Turn the TV off" title="Turn the TV off (Esc)" aria-keyshortcuts="Escape">${ICON_CLOSE}</button>` +
     `</div></div>` +
@@ -169,6 +171,7 @@ export async function openTv({ title = "", build = () => {}, steps = [] } = {}) 
     else if (e.key === "ArrowLeft") { playing = false; go(index - 1); }
     else if (e.key === " " && !e.target.closest?.("input, textarea, button")) { e.preventDefault(); toggle(); }
     else if ((e.key === "f" || e.key === "F") && !e.ctrlKey && !e.metaKey && !e.altKey && !e.target.closest?.("input, textarea")) { e.preventDefault(); q("full").click(); }
+    else if ((e.key === "d" || e.key === "D") && !e.ctrlKey && !e.metaKey && !e.altKey && !e.target.closest?.("input, textarea")) { e.preventDefault(); q("save").click(); }
   };
   function toggle() {
     playing = !playing;
@@ -178,6 +181,20 @@ export async function openTv({ title = "", build = () => {}, steps = [] } = {}) 
   q("next").addEventListener("click", () => { playing = false; go(index + 1); });
   q("play").addEventListener("click", toggle);
   q("close").addEventListener("click", close);
+  /* TAKE IT AWAY WITH YOU. The whole explanation, every step in order, as a
+     sheet that prints — so the lesson does not end when the TV goes off. */
+  q("save").addEventListener("click", async () => {
+    const key = q("save");
+    key.disabled = true;
+    try {
+      const { downloadSheet } = await import("./lesson-sheet.js");
+      downloadSheet({ title, steps });
+    } catch (err) {
+      console.error("PrepBot could not make the sheet", err);
+    }
+    key.disabled = false;
+  });
+
   q("full").addEventListener("click", () => { if (document.fullscreenElement) document.exitFullscreen?.(); else tv.requestFullscreen?.(); });
   box.addEventListener("click", (e) => { if (e.target === box) close(); });
   window.addEventListener("keydown", onKey, true);
