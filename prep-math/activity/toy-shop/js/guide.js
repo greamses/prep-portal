@@ -41,6 +41,63 @@ function spotlight(el) {
   el.scrollIntoView({ block: "center", behavior: "smooth" });
 }
 
+/**
+ * Which tool does this sum, and why that one.
+ *
+ * The bill writes each sum the way a calculator takes it (`2x12.50`,
+ * `25.00x20%`, `32.00+3.20`). A calculator will do all of them — but a child
+ * watching a calculator do a multiplication learns nothing about multiplying,
+ * so the sum is sent to the tool that SHOWS the working: the table
+ * multiplication board for a product, the adding board for a sum or a
+ * difference, and the calculator only for the percentages, which no board on
+ * the rail does.
+ */
+export function toolFor(sum) {
+  const t = String(sum || "").trim();
+  if (!t) return null;
+  if (t.includes("%")) return { tool: "calculator", type: t };
+
+  const times = /^([\d.]+)x([\d.]+)$/.exec(t);
+  if (times) {
+    const [a, b] = [times[1], times[2]];
+    /* the board multiplies a number BY a number: the shorter one is what you
+       multiply by, which is how it is said and how it is written */
+    const [multiplicand, multiplier] = a.length >= b.length ? [a, b] : [b, a];
+    return {
+      tool: "times",
+      fields: { multiplicand, multiplier },
+      why: "That is a multiplying, so I will do it on the table board.",
+    };
+  }
+
+  if (/[+\-]/.test(t)) {
+    /* the board reads the house minus as well as the hyphen, and wants the
+       signs spaced the way a person writes them */
+    const written = t.replace(/\s+/g, "").replace(/([+\-])/g, " $1 ");
+    return {
+      tool: "column",
+      fields: { sum: written },
+      why: /-/.test(t)
+        ? "That is a taking away, so it goes on the adding board."
+        : "That is an adding up, so it goes on the adding board.",
+    };
+  }
+  return { tool: "calculator", type: t };
+}
+
+/**
+ * Pull the answer out of what a board says when it has finished
+ * ("Done — 12.50 × 2 = 25.00.").
+ *
+ * The figure is digits with ONE point inside it; the stop at the end of the
+ * sentence is not part of it. A character class of digits-and-dots swallowed
+ * it and handed back "25.00.".
+ */
+export const answerFromSay = (text) => {
+  const m = /=\s*(\d[\d,]*(?:\.\d+)?)/.exec(String(text || "").trim());
+  return m ? m[1] : "";
+};
+
 export function startGuide({ teacher, onDone = () => {} } = {}) {
   let stopped = false;
   const alive = () => !stopped;
@@ -73,10 +130,70 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
       if (stopped) return;
       el.value += ch;
       el.dispatchEvent(new Event("input", { bubbles: true }));
-      await sleep(70);
+      await sleep(42);
     }
     await sleep(pause);
   };
+
+  /* ── the tools, used for real ─────────────────────────────────────────
+     Each of these opens the tool off the rail, works the sum on it, READS
+     THE ANSWER BACK OFF IT, and puts it away. PrepBot is told nothing: the
+     figure that goes in the box is the figure the tool produced, so if a
+     tool were wrong the walk-through would be wrong too, visibly.
+     --------------------------------------------------------------------*/
+
+  const railKey = (id) => document.querySelector(`[data-wbtool="${id}"]`);
+  const openTool = async (id) => {
+    const key = railKey(id);
+    if (!key) return null;
+    if (key.getAttribute("aria-pressed") !== "true") await press(key, 460);
+    return key;
+  };
+  const shutTool = async (id) => {
+    const key = railKey(id);
+    if (key?.getAttribute("aria-pressed") === "true") await press(key, 240);
+  };
+
+  /** A percentage, on the calculator. → what it showed
+      (the argument is NOT called `type`: that is the typing helper above, and
+      shadowing it made this call a string, which threw and silently ended the
+      whole walk-through) */
+  async function onCalculator(expr) {
+    if (!(await openTool("calculator"))) return "";
+    const src = document.querySelector(".wb-calc__src");
+    if (!src) return "";
+    await type(src, expr, 280);
+    await press(document.querySelector(".wb-calc__key--go"), 460);
+    const got = document.querySelector(".wb-calc [data-out]")?.textContent?.trim() || "";
+    await shutTool("calculator");
+    return got;
+  }
+
+  /** A product or a sum, worked right through on its written board. */
+  async function onBoard(job) {
+    if (!(await openTool(job.tool))) return "";
+    const board = document.querySelector(`.bd-board--${job.tool}`);
+    if (!board) return "";
+    for (const [n, v] of Object.entries(job.fields)) {
+      const field = board.querySelector(`.bd-sum__in[data-n="${n}"]`);
+      if (field) await type(field, v, 110);
+    }
+    await press(board.querySelector(".bd-act--set"), 300);
+    /* "Show me one" until the board has nothing left to ask — it writes the
+       working a figure at a time, which is the whole reason to use it */
+    for (let k = 0; k < 40; k++) {
+      if (stopped) return "";
+      const go = board.querySelector('[data-do="show"]');
+      if (!go || go.disabled) break;
+      go.click();
+      await sleep(80);
+      if (/^Done/i.test(board.querySelector(".bd-say")?.textContent || "")) break;
+    }
+    const got = answerFromSay(board.querySelector(".bd-say")?.textContent);
+    await sleep(280);
+    await shutTool(job.tool);
+    return got;
+  }
 
   (async () => {
     /* ── the shelf ──────────────────────────────────────────────────────*/
@@ -104,14 +221,9 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
 
     await say("Here is the bill, and every figure on it is a box I have to fill in myself. "
       + "The shop will not tell me one of them.");
-
-    /* the calculator, off the tool rail — the sums are worked on it in front
-       of the learner, not in PrepBot's head */
-    await say("And I am not doing these in my head. There is a calculator on the rail, so I will use it.",
-      document.querySelector('[data-wbtool="calculator"]'));
-    await press(document.querySelector('[data-wbtool="calculator"]'), 900);
-    const calcSrc = () => document.querySelector(".wb-calc__src");
-    const calcOut = () => document.querySelector(".wb-calc [data-out]");
+    await say("And I am not doing them in my head either. There are tools on the rail, and I am going to "
+      + "pick the right one for each sum — a multiplying board, an adding board, and the calculator "
+      + "for the percentages.");
 
     let totalCoins = 0;
     for (const box of boxes()) {
@@ -121,16 +233,18 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
          counter needs it: PrepBot has to know what it is handing over */
       if (box.closest(".ts-ask.is-pay")) totalCoins = want;
       const label = box.getAttribute("aria-label") || "this one";
-      const sum = box.dataset.sum || "";
+      const job = toolFor(box.dataset.sum || "");
 
-      if (sum && calcSrc()) {
-        await say(`${label}. On the calculator: ${sum}.`, box);
-        await type(calcSrc(), sum, 300);
-        await press(document.querySelector('.wb-calc__key--go'), 500);
-        const got = calcOut()?.textContent?.trim();
-        await say(`It says ${got}. So that is what goes in the box.`, box);
-      } else {
+      if (!job) {
         await say(`${label}.`, box);
+      } else if (job.tool === "calculator") {
+        await say(`${label}. A percentage — that is the calculator's job.`, box);
+        const got = await onCalculator(job.type);
+        await say(got ? `It says ${got}. So that is what goes in the box.` : "And that is the figure.", box);
+      } else {
+        await say(`${label}. ${job.why}`, box);
+        const got = await onBoard(job);
+        await say(got ? `The board says ${got}. Into the box it goes.` : "And that is the figure.", box);
       }
       await type(box, writeAmount(want), 320);
     }
@@ -165,7 +279,10 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
     if (chg) {
       const change = target - totalCoins;
       await say("And the last sum is the change: what I put down, less what it cost. "
-        + `${writeAmount(target)} take away ${writeAmount(totalCoins)}.`, chg);
+        + "That is a taking away, so it goes on the adding board like the others.", chg);
+      const job = toolFor(`${writeAmount(target)}-${writeAmount(totalCoins)}`);
+      const got = job ? await onBoard(job) : "";
+      if (!stopped) await say(got ? `${got}. That is my change.` : "And that is the change.", chg);
       await type(chg, writeAmount(change), 260);
     }
     await sleep(300);
@@ -182,7 +299,12 @@ export function startGuide({ teacher, onDone = () => {} } = {}) {
       + "out by somebody — which from now on is going to be you.");
     spotlight(null);
     onDone();
-  })().catch(() => { /* the learner took over */ });
+  })().catch((err) => {
+    /* A learner taking over rejects nothing — this only fires on a real fault,
+       so it is reported rather than swallowed. Silently ending the walk-through
+       is exactly how a shadowed helper went unnoticed. */
+    if (!stopped) console.error("PrepBot's walk-through stopped early", err);
+  });
 
   return {
     stop() {
