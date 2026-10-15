@@ -27,7 +27,7 @@
    ========================================================================== */
 
 import { priceHtml, writeAmount } from "/utils/components/workbook/purse.js";
-import { bill, readAmount } from "./shop.js";
+import { bill, readAmount, plural, comesTo } from "./shop.js";
 import { toyImg } from "./art.js";
 
 /* `sum` is the arithmetic as it would be typed on a calculator. The box does
@@ -55,10 +55,10 @@ export function tillHtml(lines, rate) {
   const items = B.rows.map((r) => {
     const each = writeAmount(r.price);
     const sums = r.cut
-      ? ask(`${r.n} × ${priceHtml(r.price)}`, r.gross, `What ${r.n} ${r.title} come to before the sale`, "", `${r.n}x${each}`)
+      ? ask(`${r.n} × ${priceHtml(r.price)}`, r.gross, `What ${r.n} ${plural(r.title, r.n)} ${comesTo(r.n)} before the sale`, "", `${r.n}x${each}`)
         + ask(`less ${r.cut}%`, r.off, `What the sale takes off the ${r.title}`, "is-less", `${writeAmount(r.gross)}x${r.cut}%`)
         + ask("after the sale", r.net, `What the ${r.title} line is after the sale`, "is-net", `${writeAmount(r.gross)}-${writeAmount(r.off)}`)
-      : ask(`${r.n} × ${priceHtml(r.price)}`, r.net, `What ${r.n} ${r.title} come to`, "is-net", `${r.n}x${each}`);
+      : ask(`${r.n} × ${priceHtml(r.price)}`, r.net, `What ${r.n} ${plural(r.title, r.n)} ${comesTo(r.n)}`, "is-net", `${r.n}x${each}`);
     return `
       <article class="ts-item pp-receipt">
         <div class="pp-receipt__paper ts-item__paper">

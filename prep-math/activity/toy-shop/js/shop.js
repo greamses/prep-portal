@@ -22,6 +22,21 @@ import { PER_BILL, writeAmount } from "/utils/components/workbook/purse.js";
 /** A percentage of an amount, to the nearest prepcoin. */
 export const percentOf = (coins, rate) => Math.round((coins * rate) / 100);
 
+/**
+ * So many of a toy, named in English.
+ *
+ * The shelf names one toy — "Teddy Bear" — and the bill and PrepBot both talk
+ * about several of it. Both of them SAY it out loud (the bill through the
+ * label a screen reader reads, PrepBot through the voice), so "2 Teddy Bear
+ * come to" will not do. Lives here with the toys rather than in either of
+ * them, so there is one of it.
+ */
+export const plural = (name, n) =>
+  (Number(n) === 1 ? name : `${name}${/(s|x|z|ch|sh)$/i.test(name) ? "es" : "s"}`);
+
+/** …and the verb that goes with it: one toy comes to, two toys come to. */
+export const comesTo = (n) => (Number(n) === 1 ? "comes to" : "come to");
+
 /** What was typed, as prepcoins — or null if it is not an amount. */
 export function readAmount(text) {
   const t = String(text ?? "").trim().replace(/[\s,]/g, "").replace(/[−–]/g, "-");

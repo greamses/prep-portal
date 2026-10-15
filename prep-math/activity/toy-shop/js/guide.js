@@ -34,6 +34,9 @@
    ========================================================================== */
 
 import { writeAmount, BILLS, PER_BILL } from "/utils/components/workbook/purse.js";
+/* naming the toys is the shop's job, not the tutor's — shop.js has the one
+   copy, because the bill says the same words in its labels */
+import { plural } from "./shop.js";
 
 /* what PrepBot buys, and why: one line with a sale on it and one without, so
    the discount step has something to be different from */
@@ -41,10 +44,6 @@ const ORDER = [{ id: 1, n: 2 }, { id: 3, n: 3 }];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const $ = (id) => document.getElementById(id);
-
-/* The shelf names its toys one at a time — "Teddy Bear" — and PrepBot is
-   buying two of them. It says so out loud, so it says it in English. */
-const plural = (name, n) => (n === 1 ? name : `${name}${/(s|x|z|ch|sh)$/i.test(name) ? "es" : "s"}`);
 
 /** A soft ring around whatever is being talked about. */
 function spotlight(el) {
