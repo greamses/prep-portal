@@ -40,9 +40,17 @@ const BRACE = 9;      // the room a brace and its words take over or under a row
 const PAPER = 150;
 const UNKNOWN_MM = 24;
 
-const text = (x, y, s, { anchor = "middle", size = 4.2, weight = 700, ask = false } = {}) =>
+/* `tag` marks what a mark IS — a bar, the number in it, a brace, a row's name.
+   Nothing on paper reads it; a FILM does, so that a bar can be drawn growing
+   and its number written afterwards instead of the whole finished picture
+   being swapped in (utils/components/workbook/tv-lessons.js). */
+const text = (x, y, s, { anchor = "middle", size = 4.2, weight = 700, ask = false, tag = "", row = null } = {}) =>
   `<text x="${f(x)}" y="${f(y)}" text-anchor="${anchor}" font-family="JetBrains Mono, monospace" ` +
-  `font-size="${size}" font-weight="${weight}" fill="${INK}"${ask ? ' data-ask="1"' : ""}>${s}</text>`;
+  `font-size="${size}" font-weight="${weight}" fill="${INK}"${ask ? ' data-ask="1"' : ""}` +
+  `${tag ? ` data-mb="${tag}"` : ""}${row != null ? ` data-mb-row="${row}"` : ""}>${s}</text>`;
+
+/** A brace and its words, as one named node. */
+const group = (key, inner) => `<g data-mb="brace" data-mb-key="${key}">${inner}</g>`;
 
 /** A curly brace from x0 to x1 at y, its point away from the bar (dir 1 down, -1 up). */
 export function curly(x0, x1, y, dir = 1, depth = 2.6) {
@@ -51,7 +59,7 @@ export function curly(x0, x1, y, dir = 1, depth = 2.6) {
   const r = Math.min(1.6, (x1 - x0) / 5);
   return `<path d="M${f(x0)} ${f(y)}Q${f(x0)} ${f(y + h / 2)} ${f(x0 + r)} ${f(y + h / 2)}H${f(m - r)}` +
     `Q${f(m)} ${f(y + h / 2)} ${f(m)} ${f(y + h)}Q${f(m)} ${f(y + h / 2)} ${f(m + r)} ${f(y + h / 2)}` +
-    `H${f(x1 - r)}Q${f(x1)} ${f(y + h / 2)} ${f(x1)} ${f(y)}" fill="none" stroke="${GREY}" stroke-width="0.4"/>`;
+    `H${f(x1 - r)}Q${f(x1)} ${f(y + h / 2)} ${f(x1)} ${f(y)}" fill="none" stroke="${GREY}" stroke-width="0.4" data-mb="bracearc"/>`;
 }
 
 /** The same, standing up: from y0 to y1 at x, its point to the right. */
@@ -61,7 +69,7 @@ function curlyUp(x, y0, y1, depth = 2.6) {
   const h = depth;
   return `<path d="M${f(x)} ${f(y0)}Q${f(x + h / 2)} ${f(y0)} ${f(x + h / 2)} ${f(y0 + r)}V${f(m - r)}` +
     `Q${f(x + h / 2)} ${f(m)} ${f(x + h)} ${f(m)}Q${f(x + h / 2)} ${f(m)} ${f(x + h / 2)} ${f(m + r)}` +
-    `V${f(y1 - r)}Q${f(x + h / 2)} ${f(y1)} ${f(x)} ${f(y1)}" fill="none" stroke="${GREY}" stroke-width="0.4"/>`;
+    `V${f(y1 - r)}Q${f(x + h / 2)} ${f(y1)} ${f(x)} ${f(y1)}" fill="none" stroke="${GREY}" stroke-width="0.4" data-mb="bracearc"/>`;
 }
 
 /**
@@ -113,24 +121,31 @@ export function modelSvg(rows, { total = null, over = null, cap = 7, label = "A 
     if (above.length) y += BRACE;
     const top = y;
     let x = 1 + nameW;
-    if (row.name) out += text(1, top + BAR_H / 2 + 1.5, row.name, { anchor: "start", weight: 600 });
+    if (row.name) out += text(1, top + BAR_H / 2 + 1.5, row.name, { anchor: "start", weight: 600, tag: "name" });
     const starts = [];
     row.parts.forEach((p) => {
       const w = p.value == null ? unknownW : p.value * unit;
       const fill = TONE[p.tone || (p.value == null ? "b" : "a")];
       starts.push(x);
-      out += `<rect x="${f(x)}" y="${f(top)}" width="${f(w)}" height="${BAR_H}" fill="${fill}" stroke="${INK}" stroke-width="0.45"/>`;
-      if (p.text) out += text(x + w / 2, top + BAR_H / 2 + 1.5, p.text, { size: w < 7 ? 3.2 : 4.2, ask: p.text === "?" });
+      out += `<rect x="${f(x)}" y="${f(top)}" width="${f(w)}" height="${BAR_H}" fill="${fill}" stroke="${INK}"`
+        + ` stroke-width="0.45" data-mb="bar" data-mb-row="${r}"/>`;
+      if (p.text) out += text(x + w / 2, top + BAR_H / 2 + 1.5, p.text,
+        { size: w < 7 ? 3.2 : 4.2, ask: p.text === "?", tag: "num", row: r });
       x += w;
     });
     starts.push(x);
-    above.forEach((b) => {
+    /* A brace and the words on it are ONE statement, so they go in one node
+       with a name — which is what lets a film draw this brace and not that one
+       (tv-lessons.js), and costs the paper nothing. */
+    above.forEach((b, i) => {
       const x0 = starts[b.from], x1 = starts[b.to];
-      out += curly(x0, x1, top - 1, -1) + text((x0 + x1) / 2, top - 5, b.text, { size: 3.8, weight: 700, ask: b.text === "?" });
+      out += group(`above-${r}-${i}`, curly(x0, x1, top - 1, -1)
+        + text((x0 + x1) / 2, top - 5, b.text, { size: 3.8, weight: 700, ask: b.text === "?", tag: "bracenum" }));
     });
-    below.forEach((b) => {
+    below.forEach((b, i) => {
       const x0 = starts[b.from], x1 = starts[b.to];
-      out += curly(x0, x1, top + BAR_H + 1, 1) + text((x0 + x1) / 2, top + BAR_H + 7.6, b.text, { size: 3.8, weight: 700, ask: b.text === "?" });
+      out += group(`below-${r}-${i}`, curly(x0, x1, top + BAR_H + 1, 1)
+        + text((x0 + x1) / 2, top + BAR_H + 7.6, b.text, { size: 3.8, weight: 700, ask: b.text === "?", tag: "bracenum" }));
     });
     end = Math.max(end, x);
     if (firstTop == null) firstTop = top;
@@ -140,7 +155,8 @@ export function modelSvg(rows, { total = null, over = null, cap = 7, label = "A 
   let h = y - GAP + 1;
   if (total != null) {
     const x = end + 1.5;
-    out += curlyUp(x, firstTop, lastBottom) + text(x + 4.2, (firstTop + lastBottom) / 2 + 1.5, total, { anchor: "start", ask: total === "?" });
+    out += group("total", curlyUp(x, firstTop, lastBottom)
+      + text(x + 4.2, (firstTop + lastBottom) / 2 + 1.5, total, { anchor: "start", ask: total === "?", tag: "bracenum" }));
     end = x + totalW - 1.5;
   }
   return `<svg class="mb-model" viewBox="0 0 ${f(end + 1)} ${f(h)}" width="${f(end + 1)}mm" height="${f(h)}mm" role="img" aria-label="${label}">${out}</svg>`;

@@ -40,7 +40,39 @@ const css = (href) => {
 
 let open = null;      // the set that is up now: one at a time
 
-export async function openTv({ title = "", build = () => {}, steps = [] } = {}) {
+/**
+ * HOW EVERY LESSON ENDS — once, here, for every film on the site.
+ *
+ * A lesson that finishes with "and that is the method" leaves the child
+ * nowhere to go. So the last word of every film sends them somewhere to do it
+ * themselves, with the address on the screen to read as well as hear. It is
+ * added to the steps rather than written into each scene, because there are
+ * five modules that open this set and the line should not be copied five
+ * times — nor be missing from the sixth.
+ *
+ * It rides along to the printed sheet too (lesson-sheet.js walks the same
+ * steps), which is the one place a child keeps after the TV goes off.
+ */
+const SITE = "prepportal.com.ng";
+const outroStep = () => ({
+  say: "And that is the whole of it. Now, watching me do one is not the same as doing one — "
+    + `you know that. So go to ${SITE} and have a go yourself. There are more of these lessons `
+    + "there, and the exercises that go with every one of them, so you can practise this until it "
+    + "is the easy bit. That is how it stops being something you watched and starts being "
+    + "something you can do.",
+  show(stage) {
+    /* the stage is rebuilt for every step, so this simply adds itself again */
+    const card = document.createElement("div");
+    card.className = "mm-tv-outro";
+    card.innerHTML = `<p class="mm-tv-outro__lead">Practise this yourself at</p>`
+      + `<p class="mm-tv-outro__url">${SITE}</p>`
+      + `<p class="mm-tv-outro__foot">More lessons, and the exercises to go with them</p>`;
+    stage.appendChild(card);
+  },
+});
+
+export async function openTv({ title = "", build = () => {}, steps: told = [] } = {}) {
+  const steps = told.length ? [...told, outroStep()] : told;
   open?.close();
   css("/prep-math/mental-math/shared/prepbot-teacher.css");
   css("/prep-math/mental-math/shared/prepbot-tv.css");

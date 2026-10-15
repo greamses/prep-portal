@@ -310,74 +310,191 @@ function shiftScene() {
 }
 
 /* ═══ the bar model ════════════════════════════════════════════════════════
-   The method the Maths Workbook's chapter 9 is built on, taught in the order
+   The method chapter 9 of the Maths Workbook is built on, taught in the order
    it is actually used: a bar is a thing, cutting it makes the parts, and what
    you are NOT told goes in a box with a question mark.
 
-   The pictures are drawn by the workbook's own `modelSvg`, so the film and
-   the paper cannot disagree about what a bar model looks like — including the
-   rule that matters most on the page: A TOTAL IS NEVER WRITTEN BESIDE A BAR.
-   It is a curly brace over the stretch it covers, because the brace is what
-   says WHAT the total is the total of.
+   DRAWN, NOT REVEALED. Every bar grows from its left edge while the sentence
+   about it is being said, and every number is WRITTEN into its box afterwards,
+   one box at a time. This film used to swap whole finished pictures in and
+   out, which is the one thing a bar-model lesson must not do: with this
+   method the drawing IS the working, so a picture that arrives complete has
+   already done the lesson and left nothing to watch.
+
+   So there is ONE picture per geometry, holding everything it will ever show,
+   and the marks go on a few at a time. Nothing shifts under them — which is
+   what forced the old version to swap pictures, since adding a brace to a
+   model moves every row below it.
+
+   The pictures are drawn by the workbook's own `modelSvg`, so the film and the
+   paper cannot disagree about what a bar model looks like — including the rule
+   that matters most on the page: A TOTAL IS NEVER WRITTEN BESIDE A BAR. It is
+   a curly brace over the stretch it covers, because the brace is what says
+   WHAT the total is the total of. `modelSvg` names its marks (`data-mb`), and
+   that is how a step draws this brace and not that one.
    ------------------------------------------------------------------------*/
+
+/** The marks of a model, addressed the way the drawing names them. */
+const mb = (svg, kind, row = null) => [...(svg
+  ? svg.querySelectorAll(`[data-mb="${kind}"]${row == null ? "" : `[data-mb-row="${row}"]`}`)
+  : [])];
+const braceOf = (svg, key) => (svg ? svg.querySelector(`[data-mb="brace"][data-mb-key="${key}"]`) : null);
+const MARKS = '[data-mb="bar"], [data-mb="num"], [data-mb="name"], [data-mb="brace"]';
+
+/**
+ * THE HAND THAT DRAWS A MODEL: grow a bar, write a number into a box, draw a
+ * brace across what it spans, turn one figure into another.
+ *
+ * Each has a "just be there" form as well, because stepping back rebuilds the
+ * stage and replays every step before the one asked for, instantly — so every
+ * one of these has to be able to arrive without being watched.
+ */
+function hand(gsap, instant) {
+  /* SVG TRANSFORM ORIGINS ARE NOT CSS ONES. Asking for "center center" on a
+     mark inside an SVG leaves a residual translation behind when the tween
+     lands — the braces finished 16 millimetres to the left of the bars they
+     were supposed to span. `svgOrigin` is given in the drawing's OWN
+     coordinates, which is the only way to scale a mark about a point of
+     itself and have it come to rest where it was drawn. */
+  const originOf = (n, at = "center") => {
+    const b = n.getBBox();
+    return `${at === "left" ? b.x : b.x + b.width / 2} ${b.y + b.height / 2}`;
+  };
+  const on = (n) => {
+    if (!n) return;
+    n.style.opacity = "1";
+    if (gsap) gsap.set(n, { scaleX: 1, scaleY: 1, scale: 1, svgOrigin: originOf(n) });
+    /* a brace half-drawn when the learner stepped back */
+    n.querySelectorAll?.("path").forEach((d) => { d.style.strokeDasharray = ""; d.style.strokeDashoffset = ""; });
+    n.querySelectorAll?.("text").forEach((t) => { t.style.opacity = "1"; });
+  };
+  if (instant || !gsap) {
+    return { show: on, grow: on, write: on, draw: on, flip: (n, text) => { if (n) { n.textContent = text; on(n); } } };
+  }
+  return {
+    show: on,
+    /* A BAR IS A LENGTH, so it arrives by GETTING longer — from its left end,
+       the way a hand draws one. This is the thing the lesson is about. */
+    grow(n, delay = 0) {
+      if (!n) return;
+      n.style.opacity = "1";
+      gsap.fromTo(n, { scaleX: 0 },
+        { scaleX: 1, duration: 0.6, delay, ease: "power2.out", svgOrigin: originOf(n, "left") });
+    },
+    /* A NUMBER IS WRITTEN INTO A BOX: it lands in it, one box at a time, in
+       reading order. It does not fade up — that looks like a label appearing,
+       not like somebody writing. */
+    write(n, delay = 0) {
+      if (!n) return;
+      gsap.fromTo(n, { opacity: 0, scale: 0.35 },
+        { opacity: 1, scale: 1, duration: 0.36, delay, ease: "back.out(2.4)", svgOrigin: originOf(n) });
+    },
+    /* A BRACE IS DRAWN ACROSS what is already there, so it is drawn the way a
+       line is drawn: the stroke itself runs from one end to the other, and the
+       words land on it once it has arrived. Nothing is scaled, so nothing can
+       end up spanning the wrong bars. */
+    draw(g, delay = 0) {
+      if (!g) return;
+      g.style.opacity = "1";
+      const path = g.querySelector("path");
+      const label = g.querySelector("text");
+      if (path) {
+        const len = path.getTotalLength();
+        gsap.fromTo(path, { strokeDasharray: len, strokeDashoffset: len }, {
+          strokeDashoffset: 0, duration: 0.55, delay, ease: "power2.out",
+          onComplete() { path.style.strokeDasharray = ""; path.style.strokeDashoffset = ""; },
+        });
+      }
+      if (label) gsap.fromTo(label, { opacity: 0 }, { opacity: 1, duration: 0.3, delay: delay + 0.42 });
+    },
+    /* "?" becoming 12. The box does not empty and refill: the figure turns
+       over in place, so it is plainly the same box being answered. */
+    flip(n, text, delay = 0) {
+      if (!n) return;
+      gsap.timeline({ delay })
+        .set(n, { opacity: 1, svgOrigin: originOf(n) })
+        .to(n, { scaleY: 0, duration: 0.16, ease: "power1.in" })
+        .add(() => { n.textContent = text; })
+        .to(n, { scaleY: 1, duration: 0.3, ease: "back.out(2.2)" });
+    },
+  };
+}
 
 function barScene() {
   const WHOLE = 48;                      // the total in the problem
   const TIMES = 3;                       // Ada has three times as many as Bola
   const unit = WHOLE / (TIMES + 1);      // 12
   const A = "Ada", B = "Bola";
+  const P1 = 20, P2 = WHOLE - P1;        // the two parts of the opening bar
+  const MORE = (TIMES - 1) * unit;       // what the last brace reads
 
-  const box = (text, value, tone) => ({ text, value, tone });
-  const q = (tone) => box("?", unit, tone);
+  const part = (text, value, tone) => ({ text, value, tone });
+  const ask = (tone) => part("?", unit, tone);
 
-  /* the five pictures the film moves between, each the whole model as it
-     stands at that moment */
+  /* One picture per geometry, each holding every mark it will ever show. */
   const PICS = {
-    /* a whole cut into two parts — the idea before the problem */
-    m1: () => modelSvg([{ parts: [box("20", 20, "a"), box("28", 28, "b")], says: String(WHOLE) }],
+    pw: () => modelSvg([{ parts: [part(String(WHOLE), WHOLE, "a")] }], { label: "One bar" }),
+    pc: () => modelSvg([{ parts: [part(String(P1), P1, "a"), part(String(P2), P2, "b")], says: String(WHOLE) }],
       { label: "A bar cut into two parts" }),
-    /* the same, with one part unknown: what you are not told is a box */
-    m2: () => modelSvg([{ parts: [box("20", 20, "a"), box("?", 28, "q")], says: String(WHOLE) }],
-      { label: "A bar with one part unknown" }),
-    /* the problem: one unit against three, braced down the side */
-    m3: () => modelSvg([
-      { name: B, parts: [q("a")] },
-      { name: A, parts: [q("b"), q("b"), q("b")] },
+    pr: () => modelSvg([
+      { name: B, parts: [ask("a")], above: [{ from: 0, to: 1, text: "1 unit" }] },
+      { name: A, parts: [ask("b"), ask("b"), ask("b")],
+        above: [{ from: 1, to: TIMES, text: `${MORE} more` }],
+        below: [{ from: 0, to: TIMES, text: `${TIMES} units` }] },
     ], { total: String(WHOLE), label: "One unit against three" }),
-    /* the units counted */
-    m4: () => modelSvg([
-      { name: B, parts: [q("a")], above: [{ from: 0, to: 1, text: "1 unit" }] },
-      { name: A, parts: [q("b"), q("b"), q("b")], below: [{ from: 0, to: 3, text: "3 units" }] },
-    ], { total: String(WHOLE), label: "The units counted" }),
-    /* one unit found, and written in every box */
-    m5: () => modelSvg([
-      { name: B, parts: [box(String(unit), unit, "a")], says: String(unit) },
-      { name: A, parts: [box(String(unit), unit, "b"), box(String(unit), unit, "b"), box(String(unit), unit, "b")],
-        says: String(TIMES * unit) },
-    ], { total: String(WHOLE), label: "Every box filled in" }),
-    /* and the difference the picture answers without being asked */
-    m6: () => modelSvg([
-      { name: B, parts: [box(String(unit), unit, "a")] },
-      { name: A, parts: [box(String(unit), unit, "q"), box(String(unit), unit, "b"), box(String(unit), unit, "b")],
-        above: [{ from: 1, to: 3, text: `${2 * unit} more` }] },
-    ], { total: String(WHOLE), label: "How many more" }),
   };
-
   const PIC_IDS = Object.keys(PICS);
-  /* the model is wide and its total brace hangs off the right of it, so the
-     working starts clear of BOTH — at 58 wide the brace ran under the sums */
+
+  /* What each stage of a picture puts on the paper, and in what order a hand
+     would put it there. A step names the stages it adds; the stages before it
+     are put straight on. */
+  const STAGES = {
+    "pw.bar": (s, H) => H.grow(mb(s, "bar")[0]),
+    "pw.num": (s, H) => H.write(mb(s, "num")[0]),
+
+    /* the left-hand part is the same stretch of paper the whole bar was, so it
+       is simply there; it is the RIGHT-hand part sweeping across that reads as
+       the cut being made */
+    "pc.cut": (s, H) => { H.show(mb(s, "bar")[0]); H.grow(mb(s, "bar")[1], 0.3); },
+    "pc.nums": (s, H) => mb(s, "num").forEach((n, i) => H.write(n, 0.25 + i * 0.5)),
+    "pc.total": (s, H) => H.draw(braceOf(s, "below-0-0"), 0.25),
+    "pc.ask": (s, H) => H.flip(mb(s, "num")[1], "?", 0.3),
+
+    "pr.bola": (s, H) => {
+      H.write(mb(s, "name")[0]);
+      H.grow(mb(s, "bar", 0)[0], 0.3);
+      H.write(mb(s, "num", 0)[0], 0.9);
+    },
+    "pr.ada": (s, H) => {
+      H.write(mb(s, "name")[1]);
+      mb(s, "bar", 1).forEach((n, i) => H.grow(n, 0.3 + i * 0.45));
+      mb(s, "num", 1).forEach((n, i) => H.write(n, 0.85 + i * 0.45));
+    },
+    "pr.total": (s, H) => H.draw(braceOf(s, "total"), 0.25),
+    "pr.units": (s, H) => { H.draw(braceOf(s, "above-0-0"), 0.2); H.draw(braceOf(s, "below-1-0"), 0.6); },
+    /* THE NUMBER ENTRY the whole lesson is aimed at: every "?" turns into 12,
+       one box after another, so the child sees the unit being carried round
+       the picture rather than an answered picture appearing */
+    "pr.filled": (s, H) => mb(s, "num").forEach((n, i) => H.flip(n, String(unit), 0.25 + i * 0.55)),
+    "pr.more": (s, H) => H.draw(braceOf(s, "above-1-0"), 0.25),
+  };
+  const picOf = (key) => key.split(".")[0];
+
+  const WORK = ["k0", "k1", "k2", "k3", "k4"];
+  const TILES = ["q", "rule", ...PIC_IDS, ...WORK];
   const LX = 77;
   const line = (i) => down(12 + i * 7.6);
-  const WORK = ["k0", "k1", "k2", "k3", "k4"];
-  const ALL = ["q", "rule", ...PIC_IDS, ...WORK];
 
   const build = (stage) => {
     stage.innerHTML = `<div class="vm-tv"></div>`;
     num(stage, "q", `${A} has ${TIMES} times as many as ${B}. Together, ${WHOLE}.`, 50, down(3), 0, 2.6);
-    PIC_IDS.forEach((id) => art(stage, id, 28, down(28), 50, PICS[id]()));
-    num(stage, "rule", "a total is a BRACE, never a number beside a bar", 28, down(48), 1, 2.2);
+    PIC_IDS.forEach((id) => art(stage, id, 31, down(26), 52, PICS[id]()));
+    /* under the bar it is about, and narrow enough to stay on the screen:
+       centred at 31 it ran off the left edge, because the line is some 60
+       units wide at this size */
+    num(stage, "rule", "a total is a BRACE, never a number beside a bar", 36, down(36), 1, 2.0);
 
-    num(stage, "k0", `${1} + ${TIMES} = ${TIMES + 1} units`, LX, line(0), 0, 2.5);
+    num(stage, "k0", `1 + ${TIMES} = ${TIMES + 1} units`, LX, line(0), 0, 2.5);
     num(stage, "k1", `${TIMES + 1} units = ${WHOLE}`, LX, line(1), 2, 2.5);
     num(stage, "k2", `1 unit = ${WHOLE} ÷ ${TIMES + 1} = ${unit}`, LX, line(2), 1, 2.4);
     num(stage, "k3", `${B} = ${unit},  ${A} = ${TIMES} × ${unit} = ${TIMES * unit}`, LX, line(3), 3, 2.2);
@@ -385,57 +502,156 @@ function barScene() {
   };
 
   const events = [];
-  let on = new Set();
-  const push = (say, { show = [], off: gone = [], play = () => {} } = {}) => {
-    const before = new Set(on);
-    show.forEach((id) => on.add(id));
-    gone.forEach((id) => on.delete(id));
-    events.push({ say, before, show, play });
+  let tiles = new Set();
+  let drawn = [];
+  const push = (say, { on = [], off = [], add = [], play = () => {} } = {}) => {
+    const beforeTiles = new Set(tiles);
+    const beforeDrawn = drawn.slice();
+    on.forEach((t) => tiles.add(t));
+    off.forEach((t) => tiles.delete(t));
+    drawn = [...drawn, ...add];
+    events.push({ say, beforeTiles, beforeDrawn, on, off, add, play });
   };
 
-  push("A bar model is one idea. A BAR is a thing — a length of ribbon, a number of stickers, "
-    + "an amount of money — and how long it is, is how much of it there is.",
-    { show: ["m1"] });
-  push(`Here is a whole of ${WHOLE}, cut into two parts: ${20} and ${28}. Cutting a bar does not change it. `
-    + "The parts are still the whole, which is the fact every one of these pictures is built on.");
-  push("Now look at how the total is written. It is NOT a number beside the bar. It is a curly brace "
-    + "UNDER the stretch it covers — and that matters, because the brace is what tells you what "
-    + "the total is the total OF.", { show: ["rule"] });
-  push("And whatever you are not told goes in a box with a question mark in it. The box is still drawn "
-    + "the right size, because you are going to find out what it is.", { show: ["m2"], off: ["m1"] });
+  /* ── what a bar is ─────────────────────────────────────────────────────*/
+  push("Right then, let us start with what a bar actually IS, because every single thing after this "
+    + "comes out of it. A bar is something you have got — a length of ribbon, a pile of stickers, "
+    + "money in a tin. And the LENGTH of the bar is how much of it there is. That is the whole trick: "
+    + "a long bar means a lot, a short bar means a little, and you can see which is which without "
+    + "counting a thing.",
+    { on: ["pw"], add: ["pw.bar"] });
 
-  push(`So here is a real question. ${A} has ${TIMES} times as many stickers as ${B}, and together they `
-    + `have ${WHOLE}. How many has each?`, { show: ["q"], off: ["m2", "rule"] });
-  push(`Start with the SMALLER one, always. ${B} has the fewest, so ${B} is ONE unit — one box, and `
-    + "every other box in the picture will be the same size as it.", { show: ["m3"] });
-  push(`And ${TIMES} times as many means ${TIMES} of that SAME box. Not a longer box — three of them. `
-    + "That is what times as many looks like.");
-  push(`The two of them together are ${WHOLE}, so the brace goes down the side of BOTH rows. `
-    + "One brace, over everything it is the total of.");
-  push(`Now count the boxes: ${B} has 1 and ${A} has ${TIMES}, which is ${TIMES + 1} units altogether.`,
-    { show: ["m4", "k0"], off: ["m3"] });
-  push(`And those ${TIMES + 1} units ARE the ${WHOLE}. That is the sentence the picture hands you, and `
-    + "it is the one worth writing down.", { show: ["k1"] });
-  push(`So one unit is ${WHOLE} shared into ${TIMES + 1}: ${unit}. Finding one unit is the whole method — `
-    + "everything after it is multiplying.", { show: ["k2"], play: (S) => S.pulse("k2", 0.4) });
-  push(`Write ${unit} in every box. ${B} has ${unit}, and ${A} has ${TIMES} of them, which is ${TIMES * unit}.`,
-    { show: ["m5", "k3"], off: ["m4"] });
-  push(`Check it, every time: ${unit} and ${TIMES * unit} is ${WHOLE} — the number you started with. `
-    + "If it does not come back, one unit was wrong.", { show: ["k4"], play: (S) => S.pulse("k4", 0.4) });
-  push(`And now the picture answers a question nobody asked. "How many MORE has ${A}?" `
-    + `Look at it: two boxes more. ${2 * unit}. You do not work it out again — you read it off.`,
-    { show: ["m6"], off: ["m5"], play: (S) => S.pulse("m6", 0.4) });
-  push("That is the bar model, and it is the same three moves every time. Draw what you are told, with "
-    + "the smaller thing as one unit. Find what ONE unit is worth. Multiply back up — and check.",
+  push(`So this bar is ${WHOLE}. ${WHOLE} stickers, let us say. And notice where I have written the `
+    + `${WHOLE} — INSIDE the bar, because the bar IS the ${WHOLE}. They are not two different things. `
+    + "Now watch carefully, because I am going to cut it.",
+    { add: ["pw.num"] });
+
+  push("There. Cut in two. And here is the fact that every one of these pictures rests on, so I want "
+    + `you to say it back to me: cutting a bar does not change how much there is. It was ${WHOLE} `
+    + `before I cut it and it is ${WHOLE} after. The parts together ARE the whole. That never stops `
+    + "being true, and it is the thing that lets you find a part you were never told.",
+    { on: ["pc"], off: ["pw"], add: ["pc.cut"] });
+
+  push(`This part here is ${P1}, so the other one has to be ${P2} — because the two of them have to `
+    + `come home to ${WHOLE}. And look at the LENGTHS while you are there: the ${P2} is visibly longer `
+    + `than the ${P1}, exactly as it ought to be. These pictures are drawn to scale, so a bar model `
+    + "will never tell you a lie about which amount is the bigger one.",
+    { add: ["pc.nums"] });
+
+  push("Now the total, and watch WHERE I put it, because this is the bit people get wrong. It does "
+    + "NOT go in a space next to the bar. It goes on a curly brace underneath, and the brace stretches "
+    + "across exactly the bit it is the total OF. Why does that matter so much? Because a number "
+    + "sitting beside a bar does not tell you what it is counting. The brace does. It says: all of "
+    + `THIS, the whole stretch, comes to ${WHOLE} — and you can see what "this" is.`,
+    { on: ["rule"], add: ["pc.total"] });
+
+  push("And now the only other thing you need before we start. When you are not TOLD a number, you "
+    + "do not leave the box empty and you certainly do not guess — you put a question mark in it, and "
+    + "you still draw the box the right size. That question mark is a promise: I do not know this yet, "
+    + "but I am going to. Honestly, half of getting these right is being willing to draw a box you "
+    + "cannot label.",
+    { add: ["pc.ask"] });
+
+  /* ── a real question ──────────────────────────────────────────────────*/
+  push(`Right. A real question, the sort that turns up in a test. ${A} has ${TIMES} times as many `
+    + `stickers as ${B}, and between the two of them they have ${WHOLE}. How many has each of them? `
+    + "Now, you could sit there and try numbers until a pair of them works. We are not going to do "
+    + "that. We are going to draw it, and then the drawing will simply tell us.",
+    { on: ["q"], off: ["pc", "rule"] });
+
+  push(`Always start with the SMALLER one. ${B} has the fewest, so ${B} gets ONE box — and that box is `
+    + "now our unit, our measuring stick for the whole picture. Every other box I draw will be exactly "
+    + "the same size as this one. That is the decision the entire question hangs on, so say it out "
+    + "loud as you draw it: the smallest one is one unit.",
+    { on: ["pr"], add: ["pr.bola"] });
+
+  push(`And now "${TIMES} times as many" — watch this, because it catches very nearly everybody. It `
+    + `does NOT mean draw ${A} one longer box. It means draw ${TIMES} of ${B}'s box. ${TIMES} of the `
+    + "same, side by side. If you ever catch yourself drawing one long bar for “three times as "
+    + "many”, stop and cut it into three — because in a minute it is the COUNTING of those boxes "
+    + "that does all the work for us.",
+    { add: ["pr.ada"] });
+
+  push(`The two of them together have ${WHOLE}. Together — both rows — so the brace cannot sit on one `
+    + "row, can it? It has to come down the side of BOTH of them. One brace, round everything it is "
+    + `the total of. And if you brace only ${A}'s row, you have just written down something that is `
+    + "not true, and the rest of your working will do as it is told and go wrong.",
+    { add: ["pr.total"] });
+
+  push(`Now count the boxes. ${B} has 1. ${A} has ${TIMES}. One and ${TIMES} is ${TIMES + 1}, so there `
+    + `are ${TIMES + 1} units in this picture altogether — and every one of them is the same size, `
+    + "which is the only reason counting them is allowed at all. I am writing that down, because it is "
+    + "the first real line of working.",
+    { add: ["pr.units"], on: ["k0"] });
+
+  push(`And here is the sentence the picture hands you for nothing: those ${TIMES + 1} units ARE the `
+    + `${WHOLE}. Not roughly the ${WHOLE} — they are it, because between them they cover the whole `
+    + `brace, and the brace says ${WHOLE}. So: ${TIMES + 1} units equals ${WHOLE}. Write that down as `
+    + "well. Everything left to do comes out of that one line.",
+    { on: ["k1"] });
+
+  push(`So if ${TIMES + 1} units are ${WHOLE}, then ONE unit is ${WHOLE} shared into ${TIMES + 1}, `
+    + `which is ${unit}. And that is the method — that is the bar model, right there. Finding what one `
+    + "unit is worth is the mountain; every single thing after it is multiplying. If you can get "
+    + "yourself to “one unit equals”, you have done the hard part.",
+    { on: ["k2"], play: (S) => S.pulse("k2", 0.4) });
+
+  push(`So ${unit} goes in every box. EVERY box — they are all the same size, so they all hold the `
+    + `same. Watch them fill up. ${B} has one of them, so ${B} has ${unit}. ${A} has ${TIMES} of them, `
+    + `so ${A} has ${TIMES} ${unit}s, which is ${TIMES * unit}. And notice what I did NOT do: I did not `
+    + `work ${A}'s out from scratch. I found one unit and multiplied it back up.`,
+    { add: ["pr.filled"], on: ["k3"] });
+
+  push(`Now check it. Every time, and check it against the number you were GIVEN. ${unit} and `
+    + `${TIMES * unit} is ${WHOLE} — which is what the question said the two of them had between them. `
+    + "It comes home. And if it had not come home, then one unit was wrong, and so was everything "
+    + "built on top of it — far better to find that out here than to find it out in the marking.",
+    { on: ["k4"], play: (S) => S.pulse("k4", 0.4) });
+
+  push(`And now the best part. The picture answers questions nobody even asked it. "How many MORE has `
+    + `${A} than ${B}?" Do not work it out again — LOOK at it. ${A} has two boxes more than ${B}, and a `
+    + `box is ${unit}, so it is ${MORE}. You read it straight off the drawing. That is what you get for `
+    + "drawing the thing properly: one picture, and every question about it is already answered on it.",
+    { add: ["pr.more"], play: (S) => S.pulse("k0", 0.1) });
+
+  push("So — three moves, and they are the same three every single time. Draw what you are told, with "
+    + "the smallest thing as one unit. Find what ONE unit is worth. Then multiply back up, and check it "
+    + "comes home. Ribbon, money, stickers, sweets, people on a bus — it genuinely does not matter what "
+    + "the question is about. Bars, count the units, find one unit, multiply back.",
     { play: (S) => { S.pulse("k0", 0.2); S.pulse("k2", 0.5); S.pulse("k4", 0.8); } });
 
-  const lay = (S, set) => ALL.forEach((id) => S.put(id, { on: set.has(id) ? 1 : 0 }));
+  const svgOf = (stage, id) => stage.querySelector(`[data-t="${id}"] svg`);
+
   const steps = events.map((ev) => ({
     say: ev.say,
     show(stage, how) {
       const S = acts(stage, how.gsap, how.instant);
-      lay(S, ev.before);
-      ev.show.forEach((id, j) => { if (!ev.before.has(id)) S.pop(id, 0.3 + j * 0.16); });
+      const already = hand(how.gsap, true);              // the replay: no watching
+      const H = hand(how.gsap, how.instant);             // this step, drawn
+
+      /* the tiles as they stood before this step — and then the ones this
+         step CLEARS, at once rather than fading, because the picture replacing
+         one of them stands in the same place: a bar that fades out from under
+         its replacement is read as two bars */
+      TILES.forEach((id) => S.put(id, { on: ev.beforeTiles.has(id) ? 1 : 0 }));
+      ev.off.forEach((id) => S.put(id, { on: 0 }));
+      /* every mark of every picture off, then the ones already drawn put back
+         at once — the stage is rebuilt for each step, so a "?" that was turned
+         over into a 12 has to be turned over again on the way past */
+      PIC_IDS.forEach((id) => {
+        const svg = svgOf(stage, id);
+        if (svg) svg.querySelectorAll(MARKS).forEach((n) => { n.style.opacity = "0"; });
+      });
+      ev.beforeDrawn.forEach((k) => STAGES[k](svgOf(stage, picOf(k)), already));
+
+      /* and this step's own: a picture is simply switched on, because it is its
+         MARKS that are drawn — popping the whole tile would zoom the model in
+         and bury the one thing worth watching */
+      ev.on.forEach((id, j) => {
+        if (ev.beforeTiles.has(id)) return;
+        if (PICS[id]) S.put(id, { on: 1 }); else S.pop(id, 0.2 + j * 0.12);
+      });
+      ev.add.forEach((k) => STAGES[k](svgOf(stage, picOf(k)), H));
       ev.play(S);
     },
   }));
