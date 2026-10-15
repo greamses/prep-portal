@@ -29,6 +29,9 @@ import { needCss } from "./panels.js";
 /* the card's own place tints and column headings, so the film and the card
    never disagree about what a place is worth */
 import { placeFill, worthOf } from "./shift.js";
+/* the workbook's own bar-model drawing, so the film and the paper cannot
+   disagree about what one looks like (ch 9, and its brace rule) */
+import { modelSvg } from "/prep-math/activity/maths-workbook/js/modelart.js";
 
 /* The strip's dress. A page that is not a workbook does not link video.css,
    and an unstyled strip is not merely plain — it is invisible, which is how
@@ -306,9 +309,142 @@ function shiftScene() {
   return { build, steps };
 }
 
+/* ═══ the bar model ════════════════════════════════════════════════════════
+   The method the Maths Workbook's chapter 9 is built on, taught in the order
+   it is actually used: a bar is a thing, cutting it makes the parts, and what
+   you are NOT told goes in a box with a question mark.
+
+   The pictures are drawn by the workbook's own `modelSvg`, so the film and
+   the paper cannot disagree about what a bar model looks like — including the
+   rule that matters most on the page: A TOTAL IS NEVER WRITTEN BESIDE A BAR.
+   It is a curly brace over the stretch it covers, because the brace is what
+   says WHAT the total is the total of.
+   ------------------------------------------------------------------------*/
+
+function barScene() {
+  const WHOLE = 48;                      // the total in the problem
+  const TIMES = 3;                       // Ada has three times as many as Bola
+  const unit = WHOLE / (TIMES + 1);      // 12
+  const A = "Ada", B = "Bola";
+
+  const box = (text, value, tone) => ({ text, value, tone });
+  const q = (tone) => box("?", unit, tone);
+
+  /* the five pictures the film moves between, each the whole model as it
+     stands at that moment */
+  const PICS = {
+    /* a whole cut into two parts — the idea before the problem */
+    m1: () => modelSvg([{ parts: [box("20", 20, "a"), box("28", 28, "b")], says: String(WHOLE) }],
+      { label: "A bar cut into two parts" }),
+    /* the same, with one part unknown: what you are not told is a box */
+    m2: () => modelSvg([{ parts: [box("20", 20, "a"), box("?", 28, "q")], says: String(WHOLE) }],
+      { label: "A bar with one part unknown" }),
+    /* the problem: one unit against three, braced down the side */
+    m3: () => modelSvg([
+      { name: B, parts: [q("a")] },
+      { name: A, parts: [q("b"), q("b"), q("b")] },
+    ], { total: String(WHOLE), label: "One unit against three" }),
+    /* the units counted */
+    m4: () => modelSvg([
+      { name: B, parts: [q("a")], above: [{ from: 0, to: 1, text: "1 unit" }] },
+      { name: A, parts: [q("b"), q("b"), q("b")], below: [{ from: 0, to: 3, text: "3 units" }] },
+    ], { total: String(WHOLE), label: "The units counted" }),
+    /* one unit found, and written in every box */
+    m5: () => modelSvg([
+      { name: B, parts: [box(String(unit), unit, "a")], says: String(unit) },
+      { name: A, parts: [box(String(unit), unit, "b"), box(String(unit), unit, "b"), box(String(unit), unit, "b")],
+        says: String(TIMES * unit) },
+    ], { total: String(WHOLE), label: "Every box filled in" }),
+    /* and the difference the picture answers without being asked */
+    m6: () => modelSvg([
+      { name: B, parts: [box(String(unit), unit, "a")] },
+      { name: A, parts: [box(String(unit), unit, "q"), box(String(unit), unit, "b"), box(String(unit), unit, "b")],
+        above: [{ from: 1, to: 3, text: `${2 * unit} more` }] },
+    ], { total: String(WHOLE), label: "How many more" }),
+  };
+
+  const PIC_IDS = Object.keys(PICS);
+  /* the model is wide and its total brace hangs off the right of it, so the
+     working starts clear of BOTH — at 58 wide the brace ran under the sums */
+  const LX = 77;
+  const line = (i) => down(12 + i * 7.6);
+  const WORK = ["k0", "k1", "k2", "k3", "k4"];
+  const ALL = ["q", "rule", ...PIC_IDS, ...WORK];
+
+  const build = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    num(stage, "q", `${A} has ${TIMES} times as many as ${B}. Together, ${WHOLE}.`, 50, down(3), 0, 2.6);
+    PIC_IDS.forEach((id) => art(stage, id, 28, down(28), 50, PICS[id]()));
+    num(stage, "rule", "a total is a BRACE, never a number beside a bar", 28, down(48), 1, 2.2);
+
+    num(stage, "k0", `${1} + ${TIMES} = ${TIMES + 1} units`, LX, line(0), 0, 2.5);
+    num(stage, "k1", `${TIMES + 1} units = ${WHOLE}`, LX, line(1), 2, 2.5);
+    num(stage, "k2", `1 unit = ${WHOLE} ÷ ${TIMES + 1} = ${unit}`, LX, line(2), 1, 2.4);
+    num(stage, "k3", `${B} = ${unit},  ${A} = ${TIMES} × ${unit} = ${TIMES * unit}`, LX, line(3), 3, 2.2);
+    num(stage, "k4", `${unit} + ${TIMES * unit} = ${WHOLE} ✓`, LX, line(4), 2, 2.4);
+  };
+
+  const events = [];
+  let on = new Set();
+  const push = (say, { show = [], off: gone = [], play = () => {} } = {}) => {
+    const before = new Set(on);
+    show.forEach((id) => on.add(id));
+    gone.forEach((id) => on.delete(id));
+    events.push({ say, before, show, play });
+  };
+
+  push("A bar model is one idea. A BAR is a thing — a length of ribbon, a number of stickers, "
+    + "an amount of money — and how long it is, is how much of it there is.",
+    { show: ["m1"] });
+  push(`Here is a whole of ${WHOLE}, cut into two parts: ${20} and ${28}. Cutting a bar does not change it. `
+    + "The parts are still the whole, which is the fact every one of these pictures is built on.");
+  push("Now look at how the total is written. It is NOT a number beside the bar. It is a curly brace "
+    + "UNDER the stretch it covers — and that matters, because the brace is what tells you what "
+    + "the total is the total OF.", { show: ["rule"] });
+  push("And whatever you are not told goes in a box with a question mark in it. The box is still drawn "
+    + "the right size, because you are going to find out what it is.", { show: ["m2"], off: ["m1"] });
+
+  push(`So here is a real question. ${A} has ${TIMES} times as many stickers as ${B}, and together they `
+    + `have ${WHOLE}. How many has each?`, { show: ["q"], off: ["m2", "rule"] });
+  push(`Start with the SMALLER one, always. ${B} has the fewest, so ${B} is ONE unit — one box, and `
+    + "every other box in the picture will be the same size as it.", { show: ["m3"] });
+  push(`And ${TIMES} times as many means ${TIMES} of that SAME box. Not a longer box — three of them. `
+    + "That is what times as many looks like.");
+  push(`The two of them together are ${WHOLE}, so the brace goes down the side of BOTH rows. `
+    + "One brace, over everything it is the total of.");
+  push(`Now count the boxes: ${B} has 1 and ${A} has ${TIMES}, which is ${TIMES + 1} units altogether.`,
+    { show: ["m4", "k0"], off: ["m3"] });
+  push(`And those ${TIMES + 1} units ARE the ${WHOLE}. That is the sentence the picture hands you, and `
+    + "it is the one worth writing down.", { show: ["k1"] });
+  push(`So one unit is ${WHOLE} shared into ${TIMES + 1}: ${unit}. Finding one unit is the whole method — `
+    + "everything after it is multiplying.", { show: ["k2"], play: (S) => S.pulse("k2", 0.4) });
+  push(`Write ${unit} in every box. ${B} has ${unit}, and ${A} has ${TIMES} of them, which is ${TIMES * unit}.`,
+    { show: ["m5", "k3"], off: ["m4"] });
+  push(`Check it, every time: ${unit} and ${TIMES * unit} is ${WHOLE} — the number you started with. `
+    + "If it does not come back, one unit was wrong.", { show: ["k4"], play: (S) => S.pulse("k4", 0.4) });
+  push(`And now the picture answers a question nobody asked. "How many MORE has ${A}?" `
+    + `Look at it: two boxes more. ${2 * unit}. You do not work it out again — you read it off.`,
+    { show: ["m6"], off: ["m5"], play: (S) => S.pulse("m6", 0.4) });
+  push("That is the bar model, and it is the same three moves every time. Draw what you are told, with "
+    + "the smaller thing as one unit. Find what ONE unit is worth. Multiply back up — and check.",
+    { play: (S) => { S.pulse("k0", 0.2); S.pulse("k2", 0.5); S.pulse("k4", 0.8); } });
+
+  const lay = (S, set) => ALL.forEach((id) => S.put(id, { on: set.has(id) ? 1 : 0 }));
+  const steps = events.map((ev) => ({
+    say: ev.say,
+    show(stage, how) {
+      const S = acts(stage, how.gsap, how.instant);
+      lay(S, ev.before);
+      ev.show.forEach((id, j) => { if (!ev.before.has(id)) S.pop(id, 0.3 + j * 0.16); });
+      ev.play(S);
+    },
+  }));
+  return { build, steps };
+}
+
 /* ═══ opening one ══════════════════════════════════════════════════════════*/
 
-const SCENES = { ratio: ratioScene, shift: shiftScene };
+const SCENES = { ratio: ratioScene, shift: shiftScene, bar: barScene };
 let tvOpen = false;
 
 /** Play a lesson by name, with or without a strip to light up while it runs. */

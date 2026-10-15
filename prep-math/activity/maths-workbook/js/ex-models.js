@@ -35,6 +35,7 @@
 import { want } from "/utils/components/workbook/want.js";
 import { levelOf } from "./ex-remainder.js";
 import { modelSvg, blankModelSvg, boardUnder, units } from "./modelart.js";
+import { lessonStrip } from "/utils/components/workbook/tv-lessons.js";
 
 const box = () => `<span class="wb-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
@@ -407,9 +408,13 @@ const drawWithBoard = (p) => art(modelSvg(p.rows, { total: p.total ?? null, over
   boardUnder(p.rows, { over: p.over ?? null, total: p.total ?? null, cap: p.cap ?? 7 }));
 
 /** One exercise per kind: the story, its model drawn, the answers. */
-function section(id, group, maker, { label, blurb, heading, instruction, example, exampleSay }) {
+function section(id, group, maker, { label, blurb, heading, instruction, example, exampleSay, film = null }) {
   return {
     id, group, label, blurb, heading,
+    /* PrepBot opens the chapter on its TV: what a bar IS, why a total is a
+       brace and never a number beside a bar, and the three moves that answer
+       every one of these (utils/components/workbook/tv-lessons.js) */
+    ...(film ? { video: () => lessonStrip(film[0], film[1]) } : {}),
     instruction: () => instruction,
     cols: 1,
     defaultCount: 3,
@@ -422,6 +427,7 @@ function section(id, group, maker, { label, blurb, heading, instruction, example
 }
 
 const pw = section("mod-pw", "model-pw", partWhole, {
+  film: ["bar", "Bar models"],
   label: "Part and whole",
   blurb: "Find the whole, or the part that is missing.",
   heading: "Part and whole",
