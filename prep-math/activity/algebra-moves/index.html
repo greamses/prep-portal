@@ -77,6 +77,11 @@
 
     <script type="module" src="/utils/components/nav-builder.js"></script>
     <script type="module" src="./js/main.js"></script>
+      <!-- the workbook tools, on the activity pages too -->
+    <script type="module">
+      import { mountTools } from "/utils/components/workbook/toolbar.js";
+      mountTools(document.body, { tools: ["calculator", "shift", "note"] });
+    </script>
     <!-- seo:about -->
     <section id="pp-about" class="pp-about" data-access="premium" hidden>
       <nav class="pp-about-crumbs" aria-label="Breadcrumb">
@@ -115,10 +120,5 @@
       </ul>
     </section>
     <!-- /seo:about -->
-      <!-- the workbook tools, on the activity pages too -->
-    <script type="module">
-      import { mountTools } from "/utils/components/workbook/toolbar.js";
-      mountTools(document.body, { tools: ["calculator", "shift", "note"] });
-    </script>
-</body>
+  </body>
 </html>

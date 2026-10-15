@@ -824,6 +824,11 @@
         .querySelectorAll(".ca-paint")
         .forEach((el) => (el.innerHTML = heroPaint()));
     </script>
+      <!-- the workbook tools, on the activity pages too -->
+    <script type="module">
+      import { mountTools } from "/utils/components/workbook/toolbar.js";
+      mountTools(document.body, { tools: ["calculator", "note"] });
+    </script>
     <!-- seo:about -->
     <section id="pp-about" class="pp-about" data-access="premium" hidden>
       <nav class="pp-about-crumbs" aria-label="Breadcrumb">
@@ -862,10 +867,5 @@
       </ul>
     </section>
     <!-- /seo:about -->
-      <!-- the workbook tools, on the activity pages too -->
-    <script type="module">
-      import { mountTools } from "/utils/components/workbook/toolbar.js";
-      mountTools(document.body, { tools: ["calculator", "note"] });
-    </script>
-</body>
+  </body>
 </html>
