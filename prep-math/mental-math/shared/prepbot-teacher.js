@@ -315,12 +315,38 @@ export class PrepbotTeacher {
   // see server/routes/tts.js) and returns a data: URL, or null on any
   // failure (no auth wired up, not logged in, key unset, network error,
   // etc.) so the caller falls back to the free Web Speech API.
+  /* ONE VOICE PER LESSON. Firebase restores a signed-in session a moment
+     AFTER the page is up, so `currentUser` is null for the first line or two
+     of a film — which used to mean the lesson opened in the browser's voice
+     and changed to the premium one partway through, mid-explanation. Waiting
+     for auth to settle before deciding is the whole fix; it resolves at once
+     on every line after the first. */
+  _authReady() {
+    if (!this.auth) return Promise.resolve(null);
+    if (!this._authWait) {
+      this._authWait = (async () => {
+        try {
+          if (typeof this.auth.authStateReady === "function") await this.auth.authStateReady();
+          else if (!this.auth.currentUser && typeof this.auth.onAuthStateChanged === "function") {
+            await new Promise((done) => {
+              const stop = this.auth.onAuthStateChanged(() => { stop?.(); done(); });
+              /* never hang a lesson on an auth that is not coming */
+              setTimeout(() => { stop?.(); done(); }, 2500);
+            });
+          }
+        } catch { /* no session to wait for */ }
+        return this.auth.currentUser || null;
+      })();
+    }
+    return this._authWait;
+  }
+
   async _tryElevenLabs(text) {
     if (!this.elevenLabsAvailable || !this.auth) return null;
     if (this.elevenLabsCache.has(text)) return this.elevenLabsCache.get(text);
-    const user = this.auth.currentUser;
+    const user = await this._authReady();
     if (!user) return null;
-    try {
+    const ask = async () => {
       const token = await user.getIdToken();
       const res = await fetch("/api/tts/elevenlabs", {
         method: "POST",
@@ -332,15 +358,23 @@ export class PrepbotTeacher {
         return null;
       }
       const data = await res.json();
-      const url = data.url
-        ? data.url
-        : data.audioContent
-          ? `data:audio/mp3;base64,${data.audioContent}`
-          : null;
+      return data.url || (data.audioContent ? `data:audio/mp3;base64,${data.audioContent}` : null);
+    };
+    try {
+      let url = null;
+      try {
+        url = await ask();
+      } catch {
+        /* A DROPPED REQUEST MUST NOT CHANGE THE VOICE. One flaky line used to
+           be spoken by the browser while the rest of the lesson was spoken by
+           the premium voice, which is far more jarring than a short wait. */
+        if (!this.elevenLabsAvailable) return null;
+        url = await ask();
+      }
       if (url) this.elevenLabsCache.set(text, url); // never re-fetch this line this session
       return url;
     } catch {
-      return null; // transient (network) — leave the endpoint enabled to retry
+      return null; // transient twice over — something has to say the line
     }
   }
 

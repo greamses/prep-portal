@@ -315,16 +315,24 @@ function shiftScene() {
    you are NOT told goes in a box with a question mark.
 
    DRAWN, NOT REVEALED. Every bar grows from its left edge while the sentence
-   about it is being said, and every number is WRITTEN into its box afterwards,
-   one box at a time. This film used to swap whole finished pictures in and
-   out, which is the one thing a bar-model lesson must not do: with this
-   method the drawing IS the working, so a picture that arrives complete has
-   already done the lesson and left nothing to watch.
+   about it is being said, a bar that is cut is CUT — the line comes down
+   through it — and every number is written into its box afterwards, one box
+   at a time. This film used to swap whole finished pictures in and out, which
+   is the one thing a bar-model lesson must not do: with this method the
+   drawing IS the working, so a picture that arrives complete has already done
+   the lesson and left nothing to watch.
 
-   So there is ONE picture per geometry, holding everything it will ever show,
-   and the marks go on a few at a time. Nothing shifts under them — which is
-   what forced the old version to swap pictures, since adding a brace to a
-   model moves every row below it.
+   EVERY PICTURE STANDS IN THE SAME PLACE. Each model is its own drawing with
+   its own height, and a model with names and a total down its side starts its
+   bars 17mm further in than one without — so centring them all on one point
+   made the bars jump sideways and upwards between steps. Each is placed by
+   its OWN first bar instead, so that bar's top-left corner lands on the same
+   spot of the screen in every picture, and the lesson looks like one drawing
+   being added to rather than a slideshow.
+
+   And there is ONE picture per geometry, holding everything it will ever
+   show. Nothing shifts under the marks — which is what forced the old version
+   to swap pictures, since adding a brace to a model moves every row below it.
 
    The pictures are drawn by the workbook's own `modelSvg`, so the film and the
    paper cannot disagree about what a bar model looks like — including the rule
@@ -339,11 +347,40 @@ const mb = (svg, kind, row = null) => [...(svg
   ? svg.querySelectorAll(`[data-mb="${kind}"]${row == null ? "" : `[data-mb-row="${row}"]`}`)
   : [])];
 const braceOf = (svg, key) => (svg ? svg.querySelector(`[data-mb="brace"][data-mb-key="${key}"]`) : null);
-const MARKS = '[data-mb="bar"], [data-mb="num"], [data-mb="name"], [data-mb="brace"]';
+const MARKS = '[data-mb="bar"], [data-mb="num"], [data-mb="name"], [data-mb="brace"], [data-mb="cut"]';
+const SVGNS = "http://www.w3.org/2000/svg";
+
+/* Where the left end and the top edge of EVERY bar sit, in width-units. The
+   bars are not at the left margin: a model with row names keeps them in a
+   column 17mm WIDE of its own bars, and that column has to be on the screen
+   too, or the names run off the edge. */
+const BAR_X = 9;
+const BAR_Y = 20;
+const PIC_W = 47;        // how wide a picture is drawn, in width-units
 
 /**
- * THE HAND THAT DRAWS A MODEL: grow a bar, write a number into a box, draw a
- * brace across what it spans, turn one figure into another.
+ * A model placed by its own first bar rather than by its middle.
+ *
+ * The drawing is read for its viewBox and the corner of its first bar, both of
+ * which are in the markup, so this needs no layout and works at build time.
+ */
+function artAt(stage, id, html, widthU) {
+  const vb = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(html);
+  const bar = /<rect[^>]*data-mb="bar"[^>]*>/.exec(html);
+  const [vw, vh] = vb ? [Number(vb[1]), Number(vb[2])] : [150, 50];
+  const bx = bar ? Number(/ x="([\d.]+)"/.exec(bar[0])?.[1] ?? 0) : 0;
+  const by = bar ? Number(/ y="([\d.]+)"/.exec(bar[0])?.[1] ?? 0) : 0;
+  const k = widthU / vw;                       // width-units per drawing unit
+  const h = vh * k;                            // the tile's height, in width-units
+  /* a tile is centred on its point, so its own middle is half a tile back
+     from where the bar has to land */
+  return art(stage, id, BAR_X + widthU / 2 - bx * k, down(BAR_Y + h / 2 - by * k), widthU, html);
+}
+
+/**
+ * THE HAND THAT DRAWS A MODEL: grow a bar, cut one in two, give a part its own
+ * colour, write a number into a box, draw a brace across what it spans, turn
+ * one figure into another.
  *
  * Each has a "just be there" form as well, because stepping back rebuilds the
  * stage and replays every step before the one asked for, instantly — so every
@@ -360,16 +397,52 @@ function hand(gsap, instant) {
     const b = n.getBBox();
     return `${at === "left" ? b.x : b.x + b.width / 2} ${b.y + b.height / 2}`;
   };
+  /* A MARK MUST END WHERE THE DRAWING PUT IT. GSAP leaves the matrix it was
+     tweening on the element, and an origin it worked out for itself leaves a
+     translation in that matrix — so the figures came to rest five millimetres
+     above the bars they belonged in. Clearing the transform when a tween ends
+     gives the mark back to the drawing, and makes the whole class of mistake
+     impossible rather than merely fixed here. */
+  const settle = (n) => () => gsap.set(n, { clearProps: "transform" });
+  /* and the origin has to be set BEFORE the starting state is applied: a
+     `fromTo` renders its "from" at once, while an origin passed in its "to"
+     only takes effect when the delay runs out, so the two disagree and the
+     difference is baked in as a shift. */
+  const about = (n, at) => gsap.set(n, { svgOrigin: originOf(n, at) });
+
   const on = (n) => {
     if (!n) return;
     n.style.opacity = "1";
-    if (gsap) gsap.set(n, { scaleX: 1, scaleY: 1, scale: 1, svgOrigin: originOf(n) });
-    /* a brace half-drawn when the learner stepped back */
+    n.style.fill = "";
+    if (gsap) { gsap.killTweensOf(n); gsap.set(n, { clearProps: "transform" }); }
+    /* a brace left half-drawn when the learner stepped back */
     n.querySelectorAll?.("path").forEach((d) => { d.style.strokeDasharray = ""; d.style.strokeDashoffset = ""; });
     n.querySelectorAll?.("text").forEach((t) => { t.style.opacity = "1"; });
   };
+  /** The knife line down a bar, made on demand and kept with the drawing. */
+  const knife = (svg, x, y, h) => {
+    let line = svg.querySelector('[data-mb="cut"]');
+    if (!line) {
+      line = document.createElementNS(SVGNS, "line");
+      line.setAttribute("data-mb", "cut");
+      line.setAttribute("stroke", "#2a2723");
+      line.setAttribute("stroke-width", "0.8");
+      line.setAttribute("stroke-linecap", "round");
+      svg.appendChild(line);
+    }
+    line.setAttribute("x1", x); line.setAttribute("x2", x);
+    line.setAttribute("y1", y - 1.6); line.setAttribute("y2", y + h + 1.6);
+    line.style.opacity = "1";
+    return { line, len: h + 3.2 };
+  };
+
   if (instant || !gsap) {
-    return { show: on, grow: on, write: on, draw: on, flip: (n, text) => { if (n) { n.textContent = text; on(n); } } };
+    return {
+      show: on, grow: on, write: on, draw: on, mark: on,
+      tint: (n) => on(n),
+      flip: (n, text) => { if (n) { n.textContent = text; on(n); } },
+      cut: (svg, x, y, h) => { if (svg) knife(svg, x, y, h); },
+    };
   }
   return {
     show: on,
@@ -378,16 +451,42 @@ function hand(gsap, instant) {
     grow(n, delay = 0) {
       if (!n) return;
       n.style.opacity = "1";
+      about(n, "left");
       gsap.fromTo(n, { scaleX: 0 },
-        { scaleX: 1, duration: 0.6, delay, ease: "power2.out", svgOrigin: originOf(n, "left") });
+        { scaleX: 1, duration: 0.6, delay, ease: "power2.out", onComplete: settle(n) });
+    },
+    /* A BAR THAT IS CUT IS CUT. The line comes down through it like a knife,
+       so the child sees the cut being MADE — a bar that merely changes colour
+       in two halves has not been cut in front of anybody. */
+    cut(svg, x, y, h, delay = 0) {
+      if (!svg) return;
+      const { line, len } = knife(svg, x, y, h);
+      gsap.fromTo(line, { strokeDasharray: len, strokeDashoffset: len },
+        { strokeDashoffset: 0, duration: 0.45, delay, ease: "power2.in" });
+    },
+    /* and then each part takes its own colour, one after the other, so they
+       are plainly two things now and not one */
+    tint(n, from, delay = 0) {
+      if (!n) return;
+      n.style.opacity = "1";
+      gsap.fromTo(n, { fill: from }, { fill: n.getAttribute("fill"), duration: 0.45, delay, ease: "power1.inOut" });
+    },
+    /** A mark pointed at: a small, quick swell. */
+    mark(n, delay = 0) {
+      if (!n) return;
+      n.style.opacity = "1";
+      about(n);
+      gsap.fromTo(n, { scale: 1 },
+        { scale: 1.05, duration: 0.22, delay, yoyo: true, repeat: 1, ease: "power1.inOut", onComplete: settle(n) });
     },
     /* A NUMBER IS WRITTEN INTO A BOX: it lands in it, one box at a time, in
        reading order. It does not fade up — that looks like a label appearing,
        not like somebody writing. */
     write(n, delay = 0) {
       if (!n) return;
+      about(n);
       gsap.fromTo(n, { opacity: 0, scale: 0.35 },
-        { opacity: 1, scale: 1, duration: 0.36, delay, ease: "back.out(2.4)", svgOrigin: originOf(n) });
+        { opacity: 1, scale: 1, duration: 0.36, delay, ease: "back.out(2.4)", onComplete: settle(n) });
     },
     /* A BRACE IS DRAWN ACROSS what is already there, so it is drawn the way a
        line is drawn: the stroke itself runs from one end to the other, and the
@@ -411,8 +510,9 @@ function hand(gsap, instant) {
        over in place, so it is plainly the same box being answered. */
     flip(n, text, delay = 0) {
       if (!n) return;
-      gsap.timeline({ delay })
-        .set(n, { opacity: 1, svgOrigin: originOf(n) })
+      about(n);
+      gsap.timeline({ delay, onComplete: settle(n) })
+        .set(n, { opacity: 1 })
         .to(n, { scaleY: 0, duration: 0.16, ease: "power1.in" })
         .add(() => { n.textContent = text; })
         .to(n, { scaleY: 1, duration: 0.3, ease: "back.out(2.2)" });
@@ -422,18 +522,21 @@ function hand(gsap, instant) {
 
 function barScene() {
   const WHOLE = 48;                      // the total in the problem
-  const TIMES = 3;                       // Ada has three times as many as Bola
+  const TIMES = 3;                       // Ben has three times as many as Amy
   const unit = WHOLE / (TIMES + 1);      // 12
-  const A = "Ada", B = "Bola";
+  const A = "Ben", B = "Amy";
   const P1 = 20, P2 = WHOLE - P1;        // the two parts of the opening bar
   const MORE = (TIMES - 1) * unit;       // what the last brace reads
 
   const part = (text, value, tone) => ({ text, value, tone });
   const ask = (tone) => part("?", unit, tone);
 
-  /* One picture per geometry, each holding every mark it will ever show. */
   const PICS = {
-    pw: () => modelSvg([{ parts: [part(String(WHOLE), WHOLE, "a")] }], { label: "One bar" }),
+    /* The whole bar carries the SAME brace underneath as the cut one — never
+       shown, only reserving the room for it — so that the two drawings are
+       the same height and the bar does not hop up the screen at the cut. */
+    pw: () => modelSvg([{ parts: [part(String(WHOLE), WHOLE, "a")],
+      below: [{ from: 0, to: 1, text: String(WHOLE) }] }], { label: "One bar" }),
     pc: () => modelSvg([{ parts: [part(String(P1), P1, "a"), part(String(P2), P2, "b")], says: String(WHOLE) }],
       { label: "A bar cut into two parts" }),
     pr: () => modelSvg([
@@ -447,28 +550,38 @@ function barScene() {
 
   /* What each stage of a picture puts on the paper, and in what order a hand
      would put it there. A step names the stages it adds; the stages before it
-     are put straight on. */
+     are put straight on. `stage` is passed because the cut has to be made at
+     the very place the parts will divide, which only the cut drawing knows. */
   const STAGES = {
     "pw.bar": (s, H) => H.grow(mb(s, "bar")[0]),
     "pw.num": (s, H) => H.write(mb(s, "num")[0]),
-
-    /* the left-hand part is the same stretch of paper the whole bar was, so it
-       is simply there; it is the RIGHT-hand part sweeping across that reads as
-       the cut being made */
-    "pc.cut": (s, H) => { H.show(mb(s, "bar")[0]); H.grow(mb(s, "bar")[1], 0.3); },
-    "pc.nums": (s, H) => mb(s, "num").forEach((n, i) => H.write(n, 0.25 + i * 0.5)),
+    "pw.cut": (s, H, stage) => {
+      const bar = mb(s, "bar")[0];
+      const at = mb(stage.querySelector('[data-t="pc"] svg'), "bar")[1];
+      if (bar && at) H.cut(s, Number(at.getAttribute("x")), Number(bar.getAttribute("y")), Number(bar.getAttribute("height")));
+    },
+    /* two parts now, and they are shown ONE AFTER THE OTHER — the left one
+       pointed at, then the right one taking a colour of its own */
+    "pc.parts": (s, H) => {
+      const [b0, b1] = mb(s, "bar");
+      H.show(b0); H.mark(b0, 0.1);
+      H.show(b1); H.tint(b1, b0.getAttribute("fill"), 0.6);
+    },
+    "pc.nums": (s, H) => mb(s, "num").forEach((n, i) => H.write(n, 0.25 + i * 0.55)),
     "pc.total": (s, H) => H.draw(braceOf(s, "below-0-0"), 0.25),
     "pc.ask": (s, H) => H.flip(mb(s, "num")[1], "?", 0.3),
 
-    "pr.bola": (s, H) => {
+    "pr.amy": (s, H) => {
       H.write(mb(s, "name")[0]);
       H.grow(mb(s, "bar", 0)[0], 0.3);
       H.write(mb(s, "num", 0)[0], 0.9);
     },
-    "pr.ada": (s, H) => {
+    /* three bars, drawn one after the other — which is the point of the step:
+       it is three of the SAME box, not one longer one */
+    "pr.ben": (s, H) => {
       H.write(mb(s, "name")[1]);
-      mb(s, "bar", 1).forEach((n, i) => H.grow(n, 0.3 + i * 0.45));
-      mb(s, "num", 1).forEach((n, i) => H.write(n, 0.85 + i * 0.45));
+      mb(s, "bar", 1).forEach((n, i) => H.grow(n, 0.3 + i * 0.5));
+      mb(s, "num", 1).forEach((n, i) => H.write(n, 0.9 + i * 0.5));
     },
     "pr.total": (s, H) => H.draw(braceOf(s, "total"), 0.25),
     "pr.units": (s, H) => { H.draw(braceOf(s, "above-0-0"), 0.2); H.draw(braceOf(s, "below-1-0"), 0.6); },
@@ -488,11 +601,8 @@ function barScene() {
   const build = (stage) => {
     stage.innerHTML = `<div class="vm-tv"></div>`;
     num(stage, "q", `${A} has ${TIMES} times as many as ${B}. Together, ${WHOLE}.`, 50, down(3), 0, 2.6);
-    PIC_IDS.forEach((id) => art(stage, id, 31, down(26), 52, PICS[id]()));
-    /* under the bar it is about, and narrow enough to stay on the screen:
-       centred at 31 it ran off the left edge, because the line is some 60
-       units wide at this size */
-    num(stage, "rule", "a total is a BRACE, never a number beside a bar", 36, down(36), 1, 2.0);
+    PIC_IDS.forEach((id) => artAt(stage, id, PICS[id](), PIC_W));
+    num(stage, "rule", "a total is a BRACE, never a number beside a bar", 36, down(38), 1, 2.0);
 
     num(stage, "k0", `1 + ${TIMES} = ${TIMES + 1} units`, LX, line(0), 0, 2.5);
     num(stage, "k1", `${TIMES + 1} units = ${WHOLE}`, LX, line(1), 2, 2.5);
@@ -523,14 +633,20 @@ function barScene() {
 
   push(`So this bar is ${WHOLE}. ${WHOLE} stickers, let us say. And notice where I have written the `
     + `${WHOLE} — INSIDE the bar, because the bar IS the ${WHOLE}. They are not two different things. `
-    + "Now watch carefully, because I am going to cut it.",
+    + "Now watch very carefully, because I am going to cut it.",
     { add: ["pw.num"] });
 
-  push("There. Cut in two. And here is the fact that every one of these pictures rests on, so I want "
-    + `you to say it back to me: cutting a bar does not change how much there is. It was ${WHOLE} `
-    + `before I cut it and it is ${WHOLE} after. The parts together ARE the whole. That never stops `
-    + "being true, and it is the thing that lets you find a part you were never told.",
-    { on: ["pc"], off: ["pw"], add: ["pc.cut"] });
+  push("There. Straight down, right through it. Now the cut is the whole point of this lesson, so look "
+    + "hard at what has changed and what has not. The LENGTH has not changed — not a millimetre of it. "
+    + "All I have done is decide where one part stops and the next one starts. That is the only thing "
+    + "cutting a bar ever does.",
+    { add: ["pw.cut"] });
+
+  push("So now I have two parts where I had one thing. This piece on the left. And this piece on the "
+    + "right, which I will give a colour of its own so you can tell them apart at a glance. And here is "
+    + `the fact that every one of these pictures rests on, so say it back to me: the parts together ARE `
+    + `the whole. It was ${WHOLE} before I cut it and it is ${WHOLE} after.`,
+    { on: ["pc"], off: ["pw"], add: ["pc.parts"] });
 
   push(`This part here is ${P1}, so the other one has to be ${P2} — because the two of them have to `
     + `come home to ${WHOLE}. And look at the LENGTHS while you are there: the ${P2} is visibly longer `
@@ -563,14 +679,14 @@ function barScene() {
     + "now our unit, our measuring stick for the whole picture. Every other box I draw will be exactly "
     + "the same size as this one. That is the decision the entire question hangs on, so say it out "
     + "loud as you draw it: the smallest one is one unit.",
-    { on: ["pr"], add: ["pr.bola"] });
+    { on: ["pr"], add: ["pr.amy"] });
 
   push(`And now "${TIMES} times as many" — watch this, because it catches very nearly everybody. It `
-    + `does NOT mean draw ${A} one longer box. It means draw ${TIMES} of ${B}'s box. ${TIMES} of the `
-    + "same, side by side. If you ever catch yourself drawing one long bar for “three times as "
-    + "many”, stop and cut it into three — because in a minute it is the COUNTING of those boxes "
-    + "that does all the work for us.",
-    { add: ["pr.ada"] });
+    + `does NOT mean draw ${A} one longer box. It means draw ${TIMES} of ${B}'s box, and I am drawing `
+    + "them one at a time so you can count them going on. One. Two. Three — three of the same, side by "
+    + "side. If you ever catch yourself drawing one long bar for three times as many, stop and cut it "
+    + "into three, because in a minute it is the COUNTING of those boxes that does all the work.",
+    { add: ["pr.ben"] });
 
   push(`The two of them together have ${WHOLE}. Together — both rows — so the brace cannot sit on one `
     + "row, can it? It has to come down the side of BOTH of them. One brace, round everything it is "
@@ -597,9 +713,9 @@ function barScene() {
     { on: ["k2"], play: (S) => S.pulse("k2", 0.4) });
 
   push(`So ${unit} goes in every box. EVERY box — they are all the same size, so they all hold the `
-    + `same. Watch them fill up. ${B} has one of them, so ${B} has ${unit}. ${A} has ${TIMES} of them, `
-    + `so ${A} has ${TIMES} ${unit}s, which is ${TIMES * unit}. And notice what I did NOT do: I did not `
-    + `work ${A}'s out from scratch. I found one unit and multiplied it back up.`,
+    + `same. Watch them fill up, one at a time. ${B} has one of them, so ${B} has ${unit}. ${A} has `
+    + `${TIMES} of them, so ${A} has ${TIMES} ${unit}s, which is ${TIMES * unit}. And notice what I did `
+    + `NOT do: I did not work ${A}'s out from scratch. I found one unit and multiplied it back up.`,
     { add: ["pr.filled"], on: ["k3"] });
 
   push(`Now check it. Every time, and check it against the number you were GIVEN. ${unit} and `
@@ -642,7 +758,7 @@ function barScene() {
         const svg = svgOf(stage, id);
         if (svg) svg.querySelectorAll(MARKS).forEach((n) => { n.style.opacity = "0"; });
       });
-      ev.beforeDrawn.forEach((k) => STAGES[k](svgOf(stage, picOf(k)), already));
+      ev.beforeDrawn.forEach((k) => STAGES[k](svgOf(stage, picOf(k)), already, stage));
 
       /* and this step's own: a picture is simply switched on, because it is its
          MARKS that are drawn — popping the whole tile would zoom the model in
@@ -651,7 +767,7 @@ function barScene() {
         if (ev.beforeTiles.has(id)) return;
         if (PICS[id]) S.put(id, { on: 1 }); else S.pop(id, 0.2 + j * 0.12);
       });
-      ev.add.forEach((k) => STAGES[k](svgOf(stage, picOf(k)), H));
+      ev.add.forEach((k) => STAGES[k](svgOf(stage, picOf(k)), H, stage));
       ev.play(S);
     },
   }));

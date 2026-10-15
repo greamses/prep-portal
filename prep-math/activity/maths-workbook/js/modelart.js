@@ -52,6 +52,37 @@ const text = (x, y, s, { anchor = "middle", size = 4.2, weight = 700, ask = fals
 /** A brace and its words, as one named node. */
 const group = (key, inner) => `<g data-mb="brace" data-mb-key="${key}">${inner}</g>`;
 
+/**
+ * THE SIZE A NUMBER HAS TO BE TO FIT THE BAR IT IS IN.
+ *
+ * The size used to be chosen from the bar's WIDTH alone — under 7mm take the
+ * small size, otherwise the big one — which says nothing about how many
+ * figures have to go in it. So "120" in a one-unit box was set at the full
+ * size and hung over both ends of its own bar.
+ *
+ * The face is monospaced, so there is no guessing: the width is the count of
+ * figures times the advance. This only ever makes a number SMALLER than the
+ * old rule would have, so every model that already fitted is unchanged.
+ */
+const ADVANCE = 0.6;      // of the font size, per character, in JetBrains Mono
+const AIR = 0.9;          // mm of paper wanted each side of the number
+const fitSize = (s, w, max, min = 2.2) => {
+  const n = String(s ?? "").length || 1;
+  return Math.max(min, Math.min(max, Math.max(0, w - 2 * AIR) / (n * ADVANCE)));
+};
+
+/**
+ * The BASELINE that puts a number's middle on `cy`.
+ *
+ * Text hangs from its baseline, so centring it means dropping that baseline by
+ * half the height of a figure — and that is a share of the FONT SIZE, not the
+ * flat 1.5mm this used to add. The flat figure happened to be right for the
+ * one default size and left every smaller number sitting low in its bar, which
+ * is what "the numbers are not centred" was.
+ */
+const CAP = 0.73;         // height of a figure, as a share of the font size
+const baseline = (cy, size) => cy + (size * CAP) / 2;
+
 /** A curly brace from x0 to x1 at y, its point away from the bar (dir 1 down, -1 up). */
 export function curly(x0, x1, y, dir = 1, depth = 2.6) {
   const h = depth * dir;
@@ -129,8 +160,11 @@ export function modelSvg(rows, { total = null, over = null, cap = 7, label = "A 
       starts.push(x);
       out += `<rect x="${f(x)}" y="${f(top)}" width="${f(w)}" height="${BAR_H}" fill="${fill}" stroke="${INK}"`
         + ` stroke-width="0.45" data-mb="bar" data-mb-row="${r}"/>`;
-      if (p.text) out += text(x + w / 2, top + BAR_H / 2 + 1.5, p.text,
-        { size: w < 7 ? 3.2 : 4.2, ask: p.text === "?", tag: "num", row: r });
+      if (p.text) {
+        const size = fitSize(p.text, w, w < 7 ? 3.2 : 4.2);
+        out += text(x + w / 2, baseline(top + BAR_H / 2, size), p.text,
+          { size, ask: p.text === "?", tag: "num", row: r });
+      }
       x += w;
     });
     starts.push(x);
