@@ -23,6 +23,7 @@ import { toyImg } from "./art.js";
 import { deliver } from "./van.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { mountTools } from "/utils/components/workbook/toolbar.js";
+import { sayLeft, left as walletLeft, unlimited } from "./wallet.js";
 
 const $ = (id) => document.getElementById(id);
 const show = (which) => {
@@ -85,6 +86,21 @@ function paintBar() {
   const n = basket.count;
   $("ts-count").innerHTML = `${UI.cart(21)}<span>${n ? `${n} toy${n === 1 ? "" : "s"} in the basket` : "Your basket is empty"}</span>`;
   $("ts-go").disabled = !n;
+  paintPurse();
+}
+
+/* What there is to spend. A shop where the money never runs out is not a shop
+   — it is a button, and a child who can buy everything never looks at a
+   price. (wallet.js) */
+function paintPurse() {
+  const el = $("ts-purse");
+  if (!el) return;
+  const over = !unlimited() && basket.lines.length
+    && bill(basket.lines, rate).total > walletLeft();
+  el.innerHTML = `<span class="ts-purse__lab">To spend</span>`
+    + `<b class="ts-purse__n">${sayLeft()}</b>`
+    + (over ? `<em class="ts-purse__over">that basket costs more than you have</em>` : "");
+  el.classList.toggle("is-over", over);
 }
 /* ── the bill ──────────────────────────────────────────────────────────────*/
 
@@ -149,6 +165,65 @@ function buy(B, how) {
   });
 }
 
+/* ── PrepBot, and the walk-through it gives ───────────────────────────────*/
+
+let teacher = null;
+let guide = null;
+
+/** The shared teacher (one class, and it always talks rather than floats). */
+async function getTeacher() {
+  if (teacher) return teacher;
+  const [{ PrepbotTeacher }] = await Promise.all([
+    import("/prep-math/mental-math/shared/prepbot-teacher.js"),
+    import("/utils/components/workbook/panels.js")
+      .then(({ needCss }) => needCss("/prep-math/mental-math/shared/prepbot-teacher.css")),
+  ]);
+  const root = document.createElement("div");
+  root.className = "mm-prepbot ts-prepbot";
+  root.innerHTML = `
+    <div class="mm-prepbot-bubble mm-prepbot-bubble--speech mm-prepbot-bubble--hidden" aria-hidden="true"><p></p></div>
+    <div class="mm-prepbot-avatar-wrap">
+      <div class="mm-prepbot-menu">
+        <button class="mm-prepbot-menu-btn" type="button" data-bot="voice" aria-label="Mute PrepBot, or let it speak"></button>
+        <button class="mm-prepbot-menu-btn" type="button" data-bot="sleep" aria-label="Sleep PrepBot"></button>
+      </div>
+      <div class="mm-prepbot-avatar" aria-hidden="true"></div>
+    </div>`;
+  document.body.appendChild(root);
+  teacher = new PrepbotTeacher({
+    root,
+    boundsEl: document.body,
+    menu: { voice: root.querySelector('[data-bot="voice"]'), sleep: root.querySelector('[data-bot="sleep"]') },
+  });
+  return teacher;
+}
+
+async function runGuide() {
+  const t = await getTeacher();
+  guide?.stop();
+  basket.clear();
+  show("shop");
+  const { startGuide } = await import("./guide.js");
+  const key = $("ts-watch");
+  if (key) { key.textContent = "Stop watching"; key.onclick = () => stopGuide(); }
+  guide = startGuide({ teacher: t, onDone: stopGuide });
+}
+
+function stopGuide() {
+  guide?.stop();
+  guide = null;
+  const key = $("ts-watch");
+  if (key) { key.textContent = "Watch PrepBot shop"; key.onclick = () => runGuide(); }
+}
+
+/* the learner taking the shop back stops the walk-through mid-sentence */
+["pointerdown", "keydown"].forEach((ev) =>
+  document.addEventListener(ev, (e) => {
+    if (!guide) return;
+    if (e.target.closest?.("#ts-watch, .mm-prepbot")) return;
+    stopGuide();
+  }, true));
+
 /* ── starting up ───────────────────────────────────────────────────────────*/
 
 async function start() {
@@ -187,17 +262,15 @@ async function start() {
      and there is no reason for the site to own two of each tool. */
   mountTools(document.body, { tools: ["calculator", "column", "times", "shortdiv", "note"] });
 
-  /* PrepBot works the whole bill through on its TV before the child tries one:
-     two at a price, the sale, the subtotal, the tax, the total, the change
-     counted back. What a real till hides is the ORDER, so the film is mostly
-     about which figure comes before which. */
-  import("/utils/components/workbook/tv-lessons.js")
-    .then(({ lessonStrip }) => {
-      $("ts-learn").innerHTML =
-        `<p class="ts-learn__say">New to this? Watch PrepBot buy something first.</p>`
-        + lessonStrip("shop", "How a shop bill is worked out");
-    })
-    .catch(() => { /* the shop works without the film */ });
+  /* PREPBOT DOES THE SHOPPING, on this page. Not a film of a shop: it presses
+     the real Add buttons, opens the real calculator off the rail, types the
+     real sums into the real boxes and pays at the real counter. What a child
+     has to learn here is which button and in what ORDER, and the only place
+     to teach that is the screen they will be using. (js/guide.js) */
+  $("ts-learn").innerHTML =
+    `<p class="ts-learn__say">New to this? Let PrepBot do the shopping once.</p>`
+    + `<button type="button" class="pp-btn" id="ts-watch">Watch PrepBot shop</button>`;
+  $("ts-watch").onclick = () => runGuide();
 
   paintShelf();
   paintBar();

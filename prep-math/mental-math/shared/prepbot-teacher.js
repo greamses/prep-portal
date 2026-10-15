@@ -51,10 +51,17 @@ export class PrepbotTeacher {
 
     this.bubble = root?.querySelector(".mm-prepbot-bubble") || null;
     this.text = this.bubble?.querySelector("p, [data-bot-text]") || null;
-    /* THE BUBBLE STARTS HIDDEN. An empty speech bubble floating beside the
-       avatar before anything has been said is a label with nothing on it; it
-       appears the moment there is a line to put in it (`speak` calls show())
-       and goes away again with the menu, the chat and sleep. */
+    /* THE BUBBLE IS OFF UNLESS IT IS ASKED FOR. PrepBot talks; the written
+       copy of what it is saying is a caption, and a caption over the page the
+       learner is working on is in the way. T turns it on (and the choice is
+       remembered), and `speak` turns it on by itself when there is no voice —
+       muted, the words are all there is, and leaving a learner with neither
+       would be worse than a bubble in the way.
+       It also starts hidden within that: an empty bubble beside the avatar is
+       a label with nothing on it. */
+    this.quiet = true;
+    try { if (localStorage.getItem("prepbot-bubble") === "on") this.quiet = false; } catch { /* private mode */ }
+    this.root?.classList.toggle("mm-prepbot--quiet", this.quiet);
     this.bubble?.classList.add("mm-prepbot-bubble--hidden");
     this.avatarWrap = root?.querySelector(".mm-prepbot-avatar-wrap") || null;
     this.avatar = root?.querySelector(".mm-prepbot-avatar") || null;
@@ -555,6 +562,8 @@ export class PrepbotTeacher {
         if (token !== this.narrationToken) break;
         const line = list[j];
         const seed = colorSeed !== undefined ? colorSeed : this._autoColorTick++;
+        /* with no voice, the bubble is the only way the line is delivered */
+        this.root?.classList.toggle("mm-prepbot--quiet", this.quiet && !this._mustWrite());
         if (this.bubble) {
           this.bubble.style.setProperty("--bubble-bg", BUBBLE_COLORS[(seed + j) % BUBBLE_COLORS.length]);
           this.bubble.classList.toggle("mm-prepbot-bubble--speech", line.mode !== "thinking");
@@ -670,8 +679,12 @@ export class PrepbotTeacher {
   toggleBubble(force) {
     this.quiet = force !== undefined ? Boolean(force) : !this.quiet;
     this.root?.classList.toggle("mm-prepbot--quiet", this.quiet);
+    try { localStorage.setItem("prepbot-bubble", this.quiet ? "off" : "on"); } catch { /* not kept */ }
     if (!this.quiet) this.show();
   }
+
+  /** Whether the words have to be written: muted, they are all there is. */
+  _mustWrite() { return this.voiceMode === "mute"; }
 
   /** The keys, as a line PrepBot can say when it introduces itself. */
   keysLine() {

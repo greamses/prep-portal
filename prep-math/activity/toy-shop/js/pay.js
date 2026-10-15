@@ -23,13 +23,13 @@
 
 import { priceHtml, writeAmount, purse, mountPurse, heldTotal } from "/utils/components/workbook/purse.js";
 import { readAmount } from "./shop.js";
+import { left as walletLeft, spend as walletSpend, unlimited, sayLeft } from "./wallet.js";
 import { UI } from "/utils/components/ui-icons.js";
 
-/* What the card has on it, kept between visits. It is play money, and it is
-   put back to its starting amount when it runs out, because being stuck with
-   an empty card is not a lesson. */
-const CARD_KEY = "ts-card";
-const CARD_START = 25000; /* 250.00, in prepcoins */
+/* THE CARD AND THE COUNTER DRAW ON THE SAME PURSE (wallet.js): a free visitor
+   has a hundred prepbills to spend in this shop and a subscriber has no limit.
+   A child who could pay cash after the card ran out would have learnt the
+   wrong thing about both. */
 
 /* The PrepPIN, which is PRINTED ON THE CARD on purpose, and the gateway says
    why: this card is play money, and a real PIN is never printed anywhere and
@@ -37,19 +37,7 @@ const CARD_START = 25000; /* 250.00, in prepcoins */
    last four digits of the card number — that is a habit worth not teaching. */
 const CARD_PIN = "7310";
 
-export function cardBalance() {
-  try {
-    const v = Number(localStorage.getItem(CARD_KEY));
-    return Number.isFinite(v) && v > 0 ? v : CARD_START;
-  } catch {
-    return CARD_START;
-  }
-}
-
-export function setCardBalance(v) {
-  const left = Math.max(0, Math.round(v));
-  try { localStorage.setItem(CARD_KEY, String(left || CARD_START)); } catch { /* not kept */ }
-}
+export const cardBalance = () => walletLeft();
 
 /* ── the card itself ──────────────────────────────────────────────────────*/
 
@@ -84,7 +72,7 @@ export function cardSvg(balance) {
       <text x="24" y="160" font-family="JetBrains Mono, monospace" font-size="8"
             letter-spacing="1.6" fill="#9dbad3">ON THE CARD</text>
       <text x="24" y="183" font-family="JetBrains Mono, monospace" font-size="21"
-            font-weight="700" fill="#fff">${writeAmount(balance)}</text>
+            font-weight="700" fill="#fff">${Number.isFinite(balance) ? writeAmount(balance) : "unlimited"}</text>
 
       <text x="316" y="160" text-anchor="end" font-family="JetBrains Mono, monospace"
             font-size="8" letter-spacing="1.6" fill="#9dbad3">PREPPIN</text>
@@ -205,11 +193,11 @@ export function wirePay(root, total, { onReady = () => {} } = {}) {
 
   const offer = () => {
     const bal = cardBalance();
-    if (bal < total) {
+    if (bal < total) {   /* Infinity is never less than a bill */
       step.innerHTML = `
-        <p class="ts-gate__no">Not enough on the card.</p>
-        <p class="ts-gate__hint">It has ${writeAmount(bal)} on it and the bill is ${writeAmount(total)}.
-          Pay with cash instead, or go back and take something out of the basket.</p>`;
+        <p class="ts-gate__no">Not enough left to spend.</p>
+        <p class="ts-gate__hint">There is ${writeAmount(bal)} in the purse and the bill is ${writeAmount(total)}.
+          Go back and take something out of the basket — or subscribe, and the purse never runs out.</p>`;
       cardOk = false;
       tell();
       return;
@@ -245,6 +233,15 @@ export function wirePay(root, total, { onReady = () => {} } = {}) {
 
   const approved = () => {
       const bal = cardBalance();
+      /* a subscriber's card has no figure to take anything from, so it is
+         simply authorised — the sum below only exists when there is one */
+      if (!Number.isFinite(bal)) {
+        step.innerHTML = `<p class="ts-gate__ok">${UI.check(15)}<span>Authorised</span></p>`
+          + `<p class="ts-gate__hint">Your card has no limit, so there is nothing left to work out.</p>`;
+        cardOk = true;
+        tell();
+        return;
+      }
       step.innerHTML = `
         <p class="ts-gate__ok">${UI.check(15)}<span>Authorised</span></p>
         <div class="ts-ask is-pay"><dt>${writeAmount(bal)} less ${writeAmount(total)} leaves</dt>
@@ -275,8 +272,9 @@ export function wirePay(root, total, { onReady = () => {} } = {}) {
 
   return {
     /** Called once the shop has actually been paid. → how it was paid. */
+    /** Paid: the purse pays, whichever way it was handed over. */
     settle() {
-      if (how === "card") setCardBalance(cardBalance() - total);
+      walletSpend(total);
       return how;
     },
     dispose() { clearTimeout(timer); money.dispose(); },

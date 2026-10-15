@@ -8,11 +8,10 @@
    plays only its own change, so stepping back or skipping lands exactly where
    it should.
 
-   THE SHOP BILL is the Toy Shop's own sum, worked slowly: two at a price, a
-   percentage off, a second line, the subtotal, the tax, the total, and the
-   change counted back into your hand. Every figure arrives one at a time
-   beside the one it came from, because the thing a child cannot see at a real
-   till is the ORDER — what is worked out before what.
+   (There was a shop-bill film here too. It is gone: the Toy Shop teaches that
+   one by PREPBOT WORKING THE REAL SHOP — pressing its buttons, opening its
+   calculator, typing in its boxes — which teaches where things are as well as
+   what order they come in. See toy-shop/js/guide.js.)
 
    THE BOX METHOD is the one picture that answers every sharing question. A
    ratio is not two numbers, it is a number of BOXES; count them, find what
@@ -60,126 +59,6 @@ const num = (stage, id, text, x, y, c, sizeU = 3.3) =>
   tile(stage, id, String(text), x, y, { c }).firstChild.style.setProperty("font-size", `calc(var(--u) * ${sizeU})`);
 
 const money = (n) => n.toFixed(2);
-
-/* ═══ the shop bill ════════════════════════════════════════════════════════*/
-
-const TEDDY = `<svg viewBox="0 0 64 64">
-  <circle cx="18" cy="16" r="7" fill="#d9a05b"/><circle cx="46" cy="16" r="7" fill="#d9a05b"/>
-  <circle cx="32" cy="24" r="14" fill="#e8b878"/>
-  <ellipse cx="32" cy="29" rx="6.5" ry="5" fill="#f6e7d8"/>
-  <circle cx="27" cy="21" r="1.9" fill="${INK}"/><circle cx="37" cy="21" r="1.9" fill="${INK}"/>
-  <path d="M20 38h24a8 8 0 0 1 8 8v8a6 6 0 0 1-6 6H18a6 6 0 0 1-6-6v-8a8 8 0 0 1 8-8z" fill="#e8b878"/>
-  <ellipse cx="32" cy="48" rx="7" ry="8" fill="#f6e7d8"/></svg>`;
-
-const KITE = `<svg viewBox="0 0 64 64">
-  <path d="M32 4L54 30 32 58 10 30z" fill="#7cc47c" stroke="#3f8f4f" stroke-width="2.5"/>
-  <path d="M32 4v54M10 30h44" stroke="#3f8f4f" stroke-width="2"/></svg>`;
-
-/* the lettering is sized to what the tag has to hold: "20% off" at the price
-   tag's size ran out through the hole the string goes through */
-const TAG = (text, tone) => {
-  const fs = Math.min(24, Math.round(134 / Math.max(1, String(text).length)));
-  return `<svg viewBox="0 0 120 54"><path d="M4 8h92l20 19-20 19H4z" fill="${tone}" stroke="${INK}" stroke-width="3"/>`
-    + `<circle cx="99" cy="27" r="4" fill="#fffdf8" stroke="${INK}" stroke-width="2"/>`
-    + `<text x="48" y="29" text-anchor="middle" dominant-baseline="central" font-family="JetBrains Mono, monospace"`
-    + ` font-size="${fs}" font-weight="800" fill="${INK}">${text}</text></svg>`;
-};
-
-function shopScene() {
-  /* the Toy Shop's own numbers, so the film and the shop agree */
-  const each = 12.5, qty = 2, off = 20;
-  const gross = each * qty;                 // 25.00
-  const ten = gross / 10;                   // 2.50
-  const cut = ten * 2;                      // 5.00
-  const net = gross - cut;                  // 20.00
-  const kEach = 4, kQty = 3, kLine = 12;    // the second line
-  const sub = net + kLine;                  // 32.00
-  const tax = sub / 10;                     // 3.20
-  const total = sub + tax;                  // 35.20
-  const paid = 40;
-  const change = paid - total;              // 4.80
-
-  const LX = 62;                            // where the working is written
-  const line = (i) => down(5.5 + i * 5.5);  // nine lines, all above BOTTOM
-
-  const ids = {
-    lines: ["w0", "w1", "w2", "w3", "w4", "w5", "w6", "w7", "w8"],
-  };
-  const ALL = ["q", "t1", "t2", "tag", "pct", "k1", "k2", "k3", "ktag", ...ids.lines];
-
-  const build = (stage) => {
-    stage.innerHTML = `<div class="vm-tv"></div>`;
-    num(stage, "q", "What does the basket come to?", 50, down(2.6), 0, 3);
-
-    art(stage, "t1", 9, down(12), 8.5, TEDDY);
-    art(stage, "t2", 18.5, down(12), 8.5, TEDDY);
-    art(stage, "tag", 14, down(20), 12, TAG(money(each), "#fff3a8"));
-    art(stage, "pct", 14, down(27), 12, TAG(`${off}% off`, "#f6c6c2"));
-
-    art(stage, "k1", 8, down(38), 6.4, KITE);
-    art(stage, "k2", 14.5, down(38), 6.4, KITE);
-    art(stage, "k3", 21, down(38), 6.4, KITE);
-    art(stage, "ktag", 14.5, down(46), 11, TAG(money(kEach), "#fff3a8"));
-
-    num(stage, "w0", `${qty} × ${money(each)} = ${money(gross)}`, LX, line(0), 0, 2.7);
-    num(stage, "w1", `10% of ${money(gross)} = ${money(ten)}`, LX, line(1), 3, 2.7);
-    num(stage, "w2", `${off}% = twice that = ${money(cut)}`, LX, line(2), 3, 2.7);
-    num(stage, "w3", `${money(gross)} − ${money(cut)} = ${money(net)}`, LX, line(3), 1, 2.7);
-    num(stage, "w4", `${kQty} × ${money(kEach)} = ${money(kLine)}`, LX, line(4), 2, 2.7);
-    num(stage, "w5", `${money(net)} + ${money(kLine)} = ${money(sub)}`, LX, line(5), 0, 2.7);
-    num(stage, "w6", `tax 10% of ${money(sub)} = ${money(tax)}`, LX, line(6), 3, 2.7);
-    num(stage, "w7", `${money(sub)} + ${money(tax)} = ${money(total)}`, LX, line(7), 4, 2.7);
-    num(stage, "w8", `${money(paid)} − ${money(total)} = ${money(change)}`, LX, line(8), 2, 2.7);
-  };
-
-  const events = [];
-  let on = new Set();
-  const push = (say, { show = [], off: gone = [], play = () => {} } = {}) => {
-    const before = new Set(on);
-    show.forEach((id) => on.add(id));
-    gone.forEach((id) => on.delete(id));
-    events.push({ say, before, show, play });
-  };
-
-  push("Two teddy bears are in the basket, and the shelf says each one is twelve prepbills and fifty.",
-    { show: ["q", "t1", "t2", "tag"] });
-  push(`Two of them, at ${money(each)} each. ${money(each)} and ${money(each)} is ${money(gross)}. `
-    + "Always do the multiplying first, before anything is taken off.",
-    { show: ["w0"], play: (S) => { S.pulse("t1", 0.2); S.pulse("t2", 0.4); } });
-  push(`But the teddies have a sale tag: ${off} per cent off. ${off} per cent OF the ${money(gross)} — not off the shelf price, off the line.`,
-    { show: ["pct"], play: (S) => S.pulse("pct", 0.3) });
-  push(`Ten per cent is the easy one: it is ${money(gross)} with the figures slid one place to the right, which is ${money(ten)}.`,
-    { show: ["w1"] });
-  push(`And ${off} per cent is twice ten per cent. Twice ${money(ten)} is ${money(cut)}. That is what the sale takes off.`,
-    { show: ["w2"], play: (S) => S.pulse("w2", 0.3) });
-  push(`So take it off: ${money(gross)} less ${money(cut)} leaves ${money(net)}. The teddy line is ${money(net)}.`,
-    { show: ["w3"], play: (S) => S.pulse("w3", 0.4) });
-  push(`There are three kites too, at ${money(kEach)} each. Three fours are twelve, so that line is ${money(kLine)}.`,
-    { show: ["k1", "k2", "k3", "ktag", "w4"] });
-  push(`Now add the lines up: ${money(net)} and ${money(kLine)} is ${money(sub)}. That is the subtotal — what the toys cost.`,
-    { show: ["w5"], play: (S) => { S.dim("w0", 0.35, 0.2); S.dim("w1", 0.35, 0.2); S.dim("w2", 0.35, 0.2); } });
-  push(`The tax comes LAST, and it is worked out on the subtotal, not on one toy. Ten per cent of ${money(sub)} is ${money(tax)}.`,
-    { show: ["w6"] });
-  push(`Add it on: ${money(sub)} and ${money(tax)} is ${money(total)}. That is the number to pay.`,
-    { show: ["w7"], play: (S) => S.pulse("w7", 0.4) });
-  push(`Say you hand over ${money(paid)}. The change is ${money(paid)} take away ${money(total)} — which is ${money(change)}.`,
-    { show: ["w8"] });
-  push(`And you can check it the way a shopkeeper does: count UP from ${money(total)}. `
-    + `Eighty makes thirty-six, then thirty-seven, thirty-eight, thirty-nine, forty. Four prepbills and eighty — ${money(change)}.`,
-    { play: (S) => S.pulse("w8", 0.3) });
-
-  const lay = (S, set) => ALL.forEach((id) => S.put(id, { on: set.has(id) ? 1 : 0 }));
-  const steps = events.map((ev) => ({
-    say: ev.say,
-    show(stage, how) {
-      const S = acts(stage, how.gsap, how.instant);
-      lay(S, ev.before);
-      ev.show.forEach((id, j) => { if (!ev.before.has(id)) S.pop(id, 0.3 + j * 0.16); });
-      ev.play(S);
-    },
-  }));
-  return { build, steps };
-}
 
 /* ═══ the box method for ratios ════════════════════════════════════════════*/
 
@@ -429,13 +308,13 @@ function shiftScene() {
 
 /* ═══ opening one ══════════════════════════════════════════════════════════*/
 
-const SCENES = { shop: shopScene, ratio: ratioScene, shift: shiftScene };
+const SCENES = { ratio: ratioScene, shift: shiftScene };
 let tvOpen = false;
 
 /** Play a lesson by name, with or without a strip to light up while it runs. */
 export async function playLesson(kind, title = "", strip = null) {
   if (tvOpen) return;
-  const made = (SCENES[kind] || shopScene)();
+  const made = (SCENES[kind] || ratioScene)();
   /* the stage is measured in hundredths of its own width, so --u is set when
      it is built and again whenever the window changes shape */
   const sized = (stage) => {

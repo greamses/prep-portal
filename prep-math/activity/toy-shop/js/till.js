@@ -30,13 +30,17 @@ import { priceHtml, writeAmount } from "/utils/components/workbook/purse.js";
 import { bill, readAmount } from "./shop.js";
 import { toyImg } from "./art.js";
 
-const box = (want, label) =>
+/* `sum` is the arithmetic as it would be typed on a calculator. The box does
+   not show it — it is there so PrepBot can work the figure out on the real
+   calculator in front of the learner (js/guide.js) instead of knowing it. */
+const box = (want, label, sum = "") =>
   `<input class="ts-box" type="text" inputmode="decimal" autocomplete="off"`
-  + ` spellcheck="false" data-want="${want}" aria-label="${label}" placeholder="?">`;
+  + ` spellcheck="false" data-want="${want}"${sum ? ` data-sum="${sum}"` : ""}`
+  + ` aria-label="${label}" placeholder="?">`;
 
 /** One question: what it is called, and the box for it. */
-const ask = (label, want, aria, cls = "") =>
-  `<div class="ts-ask${cls ? ` ${cls}` : ""}"><dt>${label}</dt><dd>${box(want, aria)}</dd></div>`;
+const ask = (label, want, aria, cls = "", sum = "") =>
+  `<div class="ts-ask${cls ? ` ${cls}` : ""}"><dt>${label}</dt><dd>${box(want, aria, sum)}</dd></div>`;
 
 /**
  * Draw the bill: one receipt per toy in a grid, then the totals on their own.
@@ -49,11 +53,12 @@ export function tillHtml(lines, rate) {
   const B = bill(lines, rate);
 
   const items = B.rows.map((r) => {
+    const each = writeAmount(r.price);
     const sums = r.cut
-      ? ask(`${r.n} × ${priceHtml(r.price)}`, r.gross, `What ${r.n} ${r.title} come to before the sale`)
-        + ask(`less ${r.cut}%`, r.off, `What the sale takes off the ${r.title}`, "is-less")
-        + ask("after the sale", r.net, `What the ${r.title} line is after the sale`, "is-net")
-      : ask(`${r.n} × ${priceHtml(r.price)}`, r.net, `What ${r.n} ${r.title} come to`, "is-net");
+      ? ask(`${r.n} × ${priceHtml(r.price)}`, r.gross, `What ${r.n} ${r.title} come to before the sale`, "", `${r.n}x${each}`)
+        + ask(`less ${r.cut}%`, r.off, `What the sale takes off the ${r.title}`, "is-less", `${writeAmount(r.gross)}x${r.cut}%`)
+        + ask("after the sale", r.net, `What the ${r.title} line is after the sale`, "is-net", `${writeAmount(r.gross)}-${writeAmount(r.off)}`)
+      : ask(`${r.n} × ${priceHtml(r.price)}`, r.net, `What ${r.n} ${r.title} come to`, "is-net", `${r.n}x${each}`);
     return `
       <article class="ts-item pp-receipt">
         <div class="pp-receipt__paper ts-item__paper">
@@ -76,9 +81,9 @@ export function tillHtml(lines, rate) {
           <p class="ts-sum__shop">The Prep Toy Shop</p>
           <p class="ts-sum__sub">${n} item${n === 1 ? "" : "s"} · ${B.rows.length} line${B.rows.length === 1 ? "" : "s"}</p>
           <dl class="ts-sum__tot">
-            ${ask("Add the lines up", B.subtotal, "The subtotal")}
-            ${ask(`Tax at ${rate}%`, B.tax, "The tax")}
-            ${ask("To pay", B.total, "The total to pay", "is-pay")}
+            ${ask("Add the lines up", B.subtotal, "The subtotal", "", B.rows.map((r) => writeAmount(r.net)).join("+"))}
+            ${ask(`Tax at ${rate}%`, B.tax, "The tax", "", `${writeAmount(B.subtotal)}x${rate}%`)}
+            ${ask("To pay", B.total, "The total to pay", "is-pay", `${writeAmount(B.subtotal)}+${writeAmount(B.tax)}`)}
           </dl>
           <p class="ts-sum__foot">Every figure here is yours to work out</p>
         </div>

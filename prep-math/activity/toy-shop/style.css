@@ -503,3 +503,29 @@
   font: 400 0.76rem/1.5 var(--font-mono, "JetBrains Mono", monospace);
   color: var(--text-secondary, #6b655c);
 }
+
+/* what there is to spend */
+.ts-purse {
+  display: flex; align-items: baseline; justify-content: center; gap: 0.5rem;
+  flex-wrap: wrap; margin: 0 0 0.9rem;
+}
+.ts-purse__lab {
+  font: 800 0.66rem/1 var(--font-mono, monospace);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary, #6b655c);
+}
+.ts-purse__n { font: 800 1.05rem/1 var(--font-mono, monospace); color: var(--ink, #2a2723); }
+.ts-purse.is-over .ts-purse__n { color: var(--accent-danger, #c0453f); }
+.ts-purse__over {
+  font: 400 0.72rem/1.4 var(--font-mono, monospace); font-style: normal;
+  color: var(--accent-danger, #c0453f);
+}
+
+/* PrepBot, down in the corner, out of the way of the shelf */
+.ts-prepbot { position: fixed; right: 1rem; bottom: 4.6rem; z-index: 40; }
+
+/* whatever PrepBot is talking about, while it does the shopping */
+.ts-spot {
+  outline: 3px solid var(--accent-secondary, #6fb7e8);
+  outline-offset: 3px;
+  transition: outline-color 0.2s ease;
+}
