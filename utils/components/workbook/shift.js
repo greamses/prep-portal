@@ -257,6 +257,7 @@ export function mountShift(host, { saved = null, onChange = null } = {}) {
      side of the panel (measured: 1036px of board in a 480px panel). */
   el.className = "wb-shift";
   el.innerHTML = `
+    <div class="wb-shift__learn" data-learn></div>
     <div class="wb-shift__sum">
       <label class="wb-shift__field">
         <span>Number</span>
@@ -571,6 +572,16 @@ export function mountShift(host, { saved = null, onChange = null } = {}) {
   nIn.value = state.n;
   dressSum();
   layout();
+
+  /* PrepBot explains the card itself: the point does not move, the figures do.
+     Fetched only when a card is actually opened, and the card works without
+     it if the film cannot be loaded. */
+  import("/utils/components/workbook/tv-lessons.js")
+    .then(({ lessonStrip }) => {
+      const slot = el.querySelector("[data-learn]");
+      if (slot) slot.innerHTML = lessonStrip("shift", "Multiplying and dividing by ten");
+    })
+    .catch(() => { /* the card is the lesson; the film is a bonus */ });
 
   const refit = () => draw();
   window.addEventListener("resize", refit);

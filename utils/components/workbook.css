@@ -3355,3 +3355,7 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   .wb-tools__paper { padding: 0.7rem 0.3rem; gap: 0.25rem; }
   .wb-tools__btn { width: 2rem; height: 2rem; }
 }
+
+/* PrepBot's film about the card, above the sum */
+.wb-shift__learn { display: flex; justify-content: center; margin-bottom: 0.3rem; }
+.wb-shift__learn:empty { display: none; }
