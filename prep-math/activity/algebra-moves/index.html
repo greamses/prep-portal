@@ -115,5 +115,10 @@
       </ul>
     </section>
     <!-- /seo:about -->
-  </body>
+      <!-- the workbook tools, on the activity pages too -->
+    <script type="module">
+      import { mountTools } from "/utils/components/workbook/toolbar.js";
+      mountTools(document.body, { tools: ["calculator", "shift", "note"] });
+    </script>
+</body>
 </html>

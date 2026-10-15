@@ -225,6 +225,14 @@ module.exports = function () {
           model_id: "eleven_turbo_v2_5",
           voice_settings: { stability: 0.45, similarity_boost: 0.75 },
         }),
+        // NOT sending `apply_text_normalization`. It is ElevenLabs' own
+        // normaliser and it handles numbers, dates, currency and
+        // abbreviations — not superscripts, fractions, roots or relations,
+        // which are the things that were being read wrongly. On the v2.5
+        // models it is an Enterprise-plan feature as well. Callers send text
+        // that has already been through utils/speech-maths.js, which turns
+        // the maths AND the figures into words, so there is nothing left for
+        // it to do and nothing to risk a 400 over.
       });
 
       if (!elResponse.ok) {

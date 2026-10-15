@@ -21,6 +21,7 @@
 import {
   ICON_ASK, ICON_SLEEP, ICON_WAKE, ICON_WIGGLE,
   ICON_TALK_MODE, ICON_BEEP_MODE, ICON_PREPBOT, MOUTH_SHAPES, ICON_MUTE_MODE } from "./icons.js";
+import { sayMaths } from "/utils/speech-maths.js";
 
 // Same pastel set as --pp-note-bg (components.css) — the bubble cycles
 // through these so it reads as "multicoloured" rather than a single card.
@@ -337,7 +338,12 @@ export class PrepbotTeacher {
   async _talkAloud(text, finish, { typeTo, typeOver, alive }) {
     const total = text.length;
     const wordCount = Math.max(1, text.trim().split(/\s+/).length);
-    const dataUrl = await this._tryElevenLabs(text);
+    /* WHAT IS WRITTEN AND WHAT IS SAID ARE NOT THE SAME STRING. The bubble
+       shows "x²"; no engine can read that, so the voice is given "x squared"
+       instead (utils/speech-maths.js). Only the speaking is changed — the
+       child still sees the maths written as maths. */
+    const spoken = sayMaths(text);
+    const dataUrl = await this._tryElevenLabs(spoken);
     if (!alive()) return;      // the learner has moved on while the voice was being fetched: say nothing
     if (dataUrl) {
       let shapeCursor = 0;
@@ -365,10 +371,16 @@ export class PrepbotTeacher {
     }
 
     if (window.speechSynthesis && window.SpeechSynthesisUtterance) {
-      const utter = new SpeechSynthesisUtterance(text);
+      const utter = new SpeechSynthesisUtterance(spoken);
       let shapeCursor = 0;
       let beatCount = 0;
       let gotBoundary = false;
+      /* A boundary tells us how far along the SPOKEN line the voice has got,
+         and when the spoken line is not the written one those offsets land in
+         the wrong place — so the writing goes at a reading pace instead, the
+         same as it does for a voice that reports no boundaries at all. */
+      const sameWords = spoken === text;
+      if (!sameWords) typeOver(wordCount * 380);
       utter.onboundary = (e) => {
         if (!alive()) return;
         gotBoundary = true;
@@ -376,6 +388,7 @@ export class PrepbotTeacher {
         shapeCursor = 1 + (shapeCursor % (MOUTH_SHAPES.length - 1));
         this.mouth?.setAttribute("d", MOUTH_SHAPES[shapeCursor]);
         this._maybeBlink(beatCount);
+        if (!sameWords) return;
         /* the word being said is written as it is said */
         const end = text.indexOf(" ", (e.charIndex || 0) + 1);
         typeTo(end < 0 ? total : end);

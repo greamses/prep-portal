@@ -140,6 +140,13 @@ export function mountGeometryTabs(root = document) {
 
 function start() {
   mountGeometryTabs();
+  /* The workbook's tools, on all five studios at once — this is the one module
+     every one of them loads, so the rail is named here rather than five times.
+     A calculator and a note are what a studio is actually short of: the angles
+     and areas come off the figure, and working them out is arithmetic. */
+  import("/utils/components/workbook/toolbar.js")
+    .then(({ mountTools }) => mountTools(document.body, { tools: ["calculator", "note"] }))
+    .catch(() => { /* a studio without tools still works */ });
   if (!wantsFs()) return;
   setFsLayout(true);
   /* Re-arm real fullscreen at the first chance the browser will give us. */

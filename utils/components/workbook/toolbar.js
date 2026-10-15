@@ -113,13 +113,16 @@ export const TOOL_IDS = Object.keys(TOOLS);
  * → { el, open(id), destroy() }
  */
 export function mountTools(host = document.body, { tools = ["calculator", "column", "times", "shortdiv", "note"], at = "left" } = {}) {
+  /* the rail fetches its own dress, so a page that wants tools needs one line
+     and no stylesheet link of its own */
+  needCss("/utils/components/workbook.css");
   const ids = tools.filter((id) => TOOLS[id]);
 
   const el = document.createElement("aside");
   el.className = `wb-tools wb-tools--${at}`;
   el.setAttribute("aria-label", "Tools");
   el.innerHTML = `<div class="wb-tools__paper pp-receipt__paper">`
-    + ids.map((id) => `<button type="button" class="wb-tools__btn" data-tool="${id}"`
+    + ids.map((id) => `<button type="button" class="wb-tools__btn" data-wbtool="${id}"`
       + ` aria-pressed="false" aria-label="${TOOLS[id].label}"`
       + ` data-tip="${TOOLS[id].label}" data-tip-side="${at === "left" ? "right" : "left"}">`
       + `${TOOL_ICONS[id] || TOOL_ICONS.note}</button>`).join("")
@@ -135,7 +138,7 @@ export function mountTools(host = document.body, { tools = ["calculator", "colum
     const live = open.get(id);
     if (live) { live.close(); return; }
     const spec = TOOLS[id];
-    const key = el.querySelector(`[data-tool="${id}"]`);
+    const key = el.querySelector(`[data-wbtool="${id}"]`);
     key.setAttribute("aria-pressed", "true");
     const panel = openPanel({
       title: spec.label,
@@ -154,8 +157,8 @@ export function mountTools(host = document.body, { tools = ["calculator", "colum
   }
 
   el.addEventListener("click", (e) => {
-    const k = e.target.closest("[data-tool]");
-    if (k) toggle(k.dataset.tool);
+    const k = e.target.closest("[data-wbtool]");
+    if (k) toggle(k.dataset.wbtool);
   });
 
   return {
