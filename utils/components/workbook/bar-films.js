@@ -49,7 +49,8 @@ const SVGNS = "http://www.w3.org/2000/svg";
    too, or the names run off the edge. */
 const BAR_X = 9;
 const BAR_Y = 20;
-const PIC_W = 47;        // how wide a picture is drawn, in width-units
+const PIC_W = 47;        // how wide a FULL-WIDTH picture is drawn, in width-units
+const PAPER_MM = 150;    // and how many millimetres of paper that is
 
 /**
  * A model placed by its own first bar rather than by its middle.
@@ -63,11 +64,17 @@ function artAt(stage, id, html, widthU) {
   const [vw, vh] = vb ? [Number(vb[1]), Number(vb[2])] : [150, 50];
   const bx = bar ? Number(/ x="([\d.]+)"/.exec(bar[0])?.[1] ?? 0) : 0;
   const by = bar ? Number(/ y="([\d.]+)"/.exec(bar[0])?.[1] ?? 0) : 0;
-  const k = widthU / vw;                       // width-units per drawing unit
-  const h = vh * k;                            // the tile's height, in width-units
+  /* ONE RULER FOR EVERY PICTURE, and it is the paper the model was laid out
+     on. Stretching each drawing to a fixed tile width instead magnifies the
+     narrow ones: four little fraction parts, 30mm of paper, came out with
+     bars five times the height of the bars in the film before them, and the
+     figures in them five times the size. A millimetre is a millimetre. */
+  const k = widthU / PAPER_MM;                 // width-units per millimetre of paper
+  const w = vw * k;                            // what this drawing is, at that ruler
+  const h = vh * k;
   /* a tile is centred on its point, so its own middle is half a tile back
      from where the bar has to land */
-  return art(stage, id, BAR_X + widthU / 2 - bx * k, down(BAR_Y + h / 2 - by * k), widthU, html);
+  return art(stage, id, BAR_X + w / 2 - bx * k, down(BAR_Y + h / 2 - by * k), w, html);
 }
 
 /* ═══ counters, INSIDE the bar they are being shared into ══════════════════
@@ -93,7 +100,7 @@ const CT = { 100: ["#8fd39a", "#3f8f4f"], 10: ["#6fb7e8", "#2a6ca8"], 1: ["#f4c9
  *   from   what the first one's data-bit should be, so two bars can be dealt
  *          into alternately and still be one run of numbers
  */
-function pourInto(svg, bar, list, from = 0) {
+function pourInto(svg, bar, list, from = 0, box = null) {
   if (!svg || !bar || !list.length) return [];
   const x = +bar.getAttribute("x"), y = +bar.getAttribute("y");
   const w = +bar.getAttribute("width"), h = +bar.getAttribute("height");
@@ -111,6 +118,9 @@ function pourInto(svg, bar, list, from = 0) {
     const g = document.createElementNS(SVGNS, "g");
     g.setAttribute("data-mb", "ctr");
     g.setAttribute("data-bit", String(from + i));
+    /* which BOX it was shared into, so that box's counters can turn into its
+       number without disturbing anybody else's */
+    if (box != null) g.setAttribute("data-box", String(box));
     g.style.opacity = "0";
     const [fill, edge] = CT[worth] || CT[1];
     const c = document.createElementNS(SVGNS, "circle");
@@ -131,6 +141,9 @@ function pourInto(svg, bar, list, from = 0) {
   });
   return made;
 }
+
+/** The counters in one box, in the order they were dealt into it. */
+const inBox = (svg, box) => [...(svg ? svg.querySelectorAll(`[data-mb="ctr"][data-box="${box}"]`) : [])];
 
 /** The counters already poured into a drawing, in the order they were dealt. */
 const CTR = '[data-mb="ctr"]';
@@ -174,11 +187,14 @@ function hand(gsap, instant) {
      gives the mark back to the drawing, and makes the whole class of mistake
      impossible rather than merely fixed here. */
   const settle = (n) => () => gsap.set(n, { clearProps: "transform" });
-  /* and the origin has to be set BEFORE the starting state is applied: a
-     `fromTo` renders its "from" at once, while an origin passed in its "to"
-     only takes effect when the delay runs out, so the two disagree and the
-     difference is baked in as a shift. */
-  const about = (n, at) => gsap.set(n, from(n, at));
+  /* THE ORIGIN GOES IN THE TWEEN'S OWN VARS, AT BOTH ENDS OF IT.
+     Setting it beside the tween and hoping it sticks is what made Tom's bar
+     hang out in the middle of the screen while it grew and then snap home
+     when the tween ended: a `fromTo` renders its starting state at once and
+     builds its own transform record doing so, and an origin written a moment
+     earlier is not part of that record. Spread `from(n)` into the from-vars
+     AND the to-vars and there is one record, saying the same thing
+     throughout. */
 
   const on = (n) => {
     if (!n) return;
@@ -209,6 +225,7 @@ function hand(gsap, instant) {
   if (instant || !gsap) {
     return {
       show: on, grow: on, write: on, draw: on, mark: on, deal: on, drop: on,
+      away: (nodes) => [...(nodes || [])].forEach((n) => n.remove()),
       focus: () => {}, lit: () => {}, both: () => {},
       tint: (n) => on(n),
       flip: (n, text) => { if (n) { n.textContent = text; on(n); } },
@@ -222,9 +239,9 @@ function hand(gsap, instant) {
     grow(n, delay = 0) {
       if (!n) return;
       n.style.opacity = "1";
-      about(n, "left");
-      gsap.fromTo(n, { scaleX: 0 },
-        { scaleX: 1, duration: 0.6, delay, ease: "power2.out", onComplete: settle(n) });
+      const o = from(n, "left");
+      gsap.fromTo(n, { scaleX: 0, ...o },
+        { scaleX: 1, ...o, duration: 0.6, delay, ease: "power2.out", onComplete: settle(n) });
     },
     /* A BAR THAT IS CUT IS CUT. The line comes down through it like a knife,
        so the child sees the cut being MADE — a bar that merely changes colour
@@ -260,17 +277,36 @@ function hand(gsap, instant) {
      */
     drop(n, delay = 0) {
       if (!n) return;
-      about(n);
-      gsap.fromTo(n, { opacity: 0, scale: 0.3, yPercent: -40 },
-        { opacity: 1, scale: 1, yPercent: 0, duration: 0.34, delay, ease: "back.out(2)", onComplete: settle(n) });
+      const o = from(n);
+      gsap.fromTo(n, { opacity: 0, scale: 0.3, yPercent: -40, ...o },
+        { opacity: 1, scale: 1, yPercent: 0, ...o, duration: 0.34, delay, ease: "back.out(2)", onComplete: settle(n) });
+    },
+    /**
+     * PIECES TAKEN OFF AT THE MOMENT THE FIGURE REPLACES THEM.
+     *
+     * Clearing the whole table and then writing the numbers in one at a time
+     * leaves the last box empty for over a second, and an empty box where
+     * four hundreds were a moment ago reads as the money having gone
+     * missing. Each box's counters go as that box's figure arrives, so the
+     * counters are plainly BECOMING the number rather than being swept away
+     * before it.
+     */
+    away(nodes, delay = 0) {
+      const list = [...(nodes || [])];
+      if (!list.length) return;
+      gsap.to(list, {
+        opacity: 0, scale: 0.55, duration: 0.22, delay, ease: "power1.in",
+        onComplete: () => list.forEach((n) => n.remove()),
+      });
     },
     /** A mark pointed at: a small, quick swell. */
     mark(n, delay = 0) {
       if (!n) return;
       n.style.opacity = "1";
-      about(n);
-      gsap.fromTo(n, { scale: 1 },
-        { scale: 1.05, duration: 0.22, delay, yoyo: true, repeat: 1, ease: "power1.inOut", onComplete: settle(n) });
+      /* a bar is anchored at its left edge, here as everywhere else */
+      const o = from(n, n.dataset && n.dataset.mb === "bar" ? "left" : "center");
+      gsap.fromTo(n, { scale: 1, ...o },
+        { scale: 1.05, ...o, duration: 0.22, delay, yoyo: true, repeat: 1, ease: "power1.inOut", onComplete: settle(n) });
     },
     /**
      * LOOK AT THIS ONE — and the screen does not move.
@@ -290,10 +326,15 @@ function hand(gsap, instant) {
          bar, or past the edge of the screen when it is already near it. Only
          a SHAPE may be scaled, or a shape and its figure together. */
       if (n.tagName === "text" || !inSvg(n)) { this.lit(n, delay, hold); return; }
-      about(n);
+      /* A BAR SWELLS ABOUT ITS LEFT EDGE, never its middle. Every bar in a
+         model is anchored at the left — that is the rule that lets two of
+         them be compared at all — so swelling one about its centre walks its
+         left end out of the column and it looks as if it has come unstuck,
+         then snaps back when the swell ends. */
+      const o = from(n, n.dataset && n.dataset.mb === "bar" ? "left" : "center");
       gsap.timeline({ delay, onComplete: settle(n) })
-        .to(n, { scale: to, duration: 0.4, ease: "back.out(1.7)" })
-        .to(n, { scale: 1, duration: 0.4, ease: "power2.inOut" }, `+=${hold}`);
+        .to(n, { scale: to, ...o, duration: 0.4, ease: "back.out(1.7)" })
+        .to(n, { scale: 1, ...o, duration: 0.4, ease: "power2.inOut" }, `+=${hold}`);
     },
     /**
      * A BAR AND THE FIGURE IN IT, swelled together — both about the BAR's
@@ -303,12 +344,13 @@ function hand(gsap, instant) {
     both(bar, n, delay = 0, hold = 1.7, to = 1.18) {
       if (!bar) return;
       [bar, n].filter(Boolean).forEach((m) => { m.style.opacity = "1"; });
-      const o = inSvg(bar) ? { svgOrigin: originOf(bar) } : { transformOrigin: "50% 50%" };
+      /* and a bar with its figure swells about the BAR's left edge, for the
+         same reason — the figure rides along so it keeps its place in the box */
+      const o = inSvg(bar) ? { svgOrigin: originOf(bar, "left") } : { transformOrigin: "0% 50%" };
       [bar, n].filter(Boolean).forEach((m) => {
-        gsap.set(m, o);
         gsap.timeline({ delay, onComplete: settle(m) })
-          .to(m, { scale: to, duration: 0.4, ease: "back.out(1.7)" })
-          .to(m, { scale: 1, duration: 0.4, ease: "power2.inOut" }, `+=${hold}`);
+          .to(m, { scale: to, ...o, duration: 0.4, ease: "back.out(1.7)" })
+          .to(m, { scale: 1, ...o, duration: 0.4, ease: "power2.inOut" }, `+=${hold}`);
       });
     },
     /**
@@ -341,9 +383,9 @@ function hand(gsap, instant) {
        not like somebody writing. */
     write(n, delay = 0) {
       if (!n) return;
-      about(n);
-      gsap.fromTo(n, { opacity: 0, scale: 0.35 },
-        { opacity: 1, scale: 1, duration: 0.36, delay, ease: "back.out(2.4)", onComplete: settle(n) });
+      const o = from(n);
+      gsap.fromTo(n, { opacity: 0, scale: 0.35, ...o },
+        { opacity: 1, scale: 1, ...o, duration: 0.36, delay, ease: "back.out(2.4)", onComplete: settle(n) });
     },
     /* A BRACE IS DRAWN ACROSS what is already there, so it is drawn the way a
        line is drawn: the stroke itself runs from one end to the other, and the
@@ -367,12 +409,12 @@ function hand(gsap, instant) {
        over in place, so it is plainly the same box being answered. */
     flip(n, text, delay = 0) {
       if (!n) return;
-      about(n);
+      const o = from(n);
       gsap.timeline({ delay, onComplete: settle(n) })
-        .set(n, { opacity: 1 })
-        .to(n, { scaleY: 0, duration: 0.16, ease: "power1.in" })
+        .set(n, { opacity: 1, ...o })
+        .to(n, { scaleY: 0, ...o, duration: 0.16, ease: "power1.in" })
         .add(() => { n.textContent = text; })
-        .to(n, { scaleY: 1, duration: 0.3, ease: "back.out(2.2)" });
+        .to(n, { scaleY: 1, ...o, duration: 0.3, ease: "back.out(2.2)" });
     },
   };
 }
@@ -447,7 +489,19 @@ function film({ pics = {}, trays = {}, stages = {}, lines = [], build: extra = n
       ev.off.forEach((id) => S.put(id, { on: 0 }));
       PIC_IDS.forEach((id) => {
         const svg = svgOf(stage, id);
-        if (svg) svg.querySelectorAll(MARKS).forEach((n) => { n.style.opacity = "0"; });
+        if (!svg) return;
+        /* COUNTERS COME OFF THE TABLE, they are not merely hidden.
+           A counter is not part of the drawing: the stage that pours them
+           makes them, and it makes a fresh set every time the step is
+           replayed. Hiding the old set left it lying in the drawing, so
+           after stepping back and forward twice there were three sets, one
+           live and two dead; the dealing order picks counters by the order
+           they were dealt, found three counters claiming to be the first
+           one, and revealed a dead one while the live one stayed invisible.
+           What the child saw was a box she had just watched being filled
+           standing empty. */
+        svg.querySelectorAll('[data-mb="ctr"]').forEach((n) => n.remove());
+        svg.querySelectorAll(MARKS).forEach((n) => { n.style.opacity = "0"; });
       });
       TRAY_IDS.forEach((id) => bits(stage, id).forEach((n) => { n.style.opacity = "0"; }));
       ev.beforeDrawn.forEach((k) => stages[k]?.(svgOf(stage, picOf(k)), already, stage, bits));
@@ -662,16 +716,22 @@ export function barParts() {
       "pp.pour": (s, H) => {
         mb(s, "num").forEach((n) => { n.style.opacity = "0"; });
         const bars = [mb(s, "bar", 0)[0], ...mb(s, "bar", 1)];
-        bars.forEach((bar, k) => pourInto(s, bar, [100, 100], k * 2));
+        bars.forEach((bar, k) => pourInto(s, bar, [100, 100], k * 2, k));
         /* dealt ROUND: one to each box, then round again */
         const all = pouredIn(s);
         const order = [all[0], all[2], all[4], all[1], all[3], all[5]];
         order.forEach((n, i) => H.drop(n, 0.3 + i * 0.5));
       },
-      "pp.filled": (s, H) => {
-        s.querySelectorAll(CTR).forEach((n) => n.remove());
-        mb(s, "num").forEach((n, i) => H.flip(n, String(UNIT), 0.3 + i * 0.5));
-      },
+      /* BOX BY BOX, AND THE FIGURE IS WRITTEN AS THE COUNTERS FADE, not after
+         they have gone: a box with its counters taken off and its figure not
+         yet written stands empty, and an empty box is what losing the money
+         looks like. Starting both at the same moment means the two hundred is
+         legible before the last of the two hundreds has faded. */
+      "pp.filled": (s, H) => mb(s, "num").forEach((n, i) => {
+        const at = 0.3 + i * 0.5;
+        H.away(inBox(s, i), at);
+        H.flip(n, String(UNIT), at);
+      }),
     },
     steps: ({ push, look }) => {
       push("There are only two shapes a bar model ever comes in, and knowing which one you are looking at "
@@ -774,7 +834,7 @@ export function barMissing() {
            boxes now, and a ? behind them is just something in the way */
         mb(s, "num").forEach((n) => { n.style.opacity = "0"; });
         const bars = mb(s, "bar");
-        bars.forEach((bar, k) => pourInto(s, bar, [100], k));
+        bars.forEach((bar, k) => pourInto(s, bar, [100], k, k));
         pouredIn(s).forEach((n, i) => H.drop(n, 0.3 + i * 0.45));
       },
       "m3.ungroup": (s, H) => {
@@ -786,7 +846,7 @@ export function barMissing() {
         mb(s, "num").forEach((n) => { n.style.opacity = "0"; });
         s.querySelectorAll(CTR).forEach((n) => n.remove());
         const bars = mb(s, "bar");
-        bars.forEach((bar, k) => pourInto(s, bar, [100, 10, 10, 10, 10, 10], k * 6));
+        bars.forEach((bar, k) => pourInto(s, bar, [100, 10, 10, 10, 10, 10], k * 6, k));
         const all = pouredIn(s);
         /* the hundreds were already in the boxes: they stay put */
         all.filter((n) => n.textContent === "100").forEach((n) => H.show(n));
@@ -798,10 +858,11 @@ export function barMissing() {
       },
       /* the counters go, and the number they came to is written in their
          place — a box holding both says the same thing twice */
-      "m3.filled": (s, H) => {
-        s.querySelectorAll(CTR).forEach((n) => n.remove());
-        mb(s, "num").forEach((n, i) => H.flip(n, String(U), 0.3 + i * 0.5));
-      },
+      "m3.filled": (s, H) => mb(s, "num").forEach((n, i) => {
+        const at = 0.3 + i * 0.5;
+        H.away(inBox(s, i), at);
+        H.flip(n, String(U), at);
+      }),
     },
     steps: ({ push, look }) => {
       push("Every bar-model question in the world is one of three gaps, and which gap you have got decides "
@@ -976,19 +1037,27 @@ export function barFractions() {
   const W = 20, D = 4, Nn = 3;                // three quarters of 20
   const each = W / D;                          // 5
   const u = (n, tone) => Array.from({ length: n }, () => part("", 1, tone));
+  /* A PART IS WORTH ONE HERE, not five or twenty, because what a quarter of
+     twenty comes to is the thing being worked out. A row of four ones would
+     otherwise be drawn 30mm wide and magnified to fill the tile, so these
+     bars have to be told how wide a part of one is: a quarter of the paper,
+     which puts the cut bar across the screen like every other model. */
+  const PART_MM = (PAPER_MM - 10) / D;
   return film({
     pics: {
       /* the whole, uncut */
       f0: () => modelSvg([{ parts: [part(String(W), W, "a")] }], { label: "One whole" }),
       /* cut into four equal parts: the DENOMINATOR is how many cuts */
-      f1: () => modelSvg([{ parts: u(D, "a"), says: String(W) }], { label: "Cut into four" }),
+      f1: () => modelSvg([{ parts: u(D, "a"), says: String(W) }], { cap: PART_MM, label: "Cut into four" }),
       /* three of them shaded: the NUMERATOR is how many you take */
       f2: () => modelSvg([{ parts: [...u(Nn, "d"), ...u(D - Nn, "a")],
-        above: [{ from: 0, to: Nn, text: `${Nn}/${D}` }], says: String(W) }], { label: "Three quarters" }),
+        above: [{ from: 0, to: Nn, text: `${Nn}/${D}` }], says: String(W) }],
+      { cap: PART_MM, label: "Three quarters" }),
       /* each part labelled, so the answer can be read off */
       f3: () => modelSvg([{ parts: [...Array.from({ length: Nn }, () => part(String(each), 1, "d")),
         ...Array.from({ length: D - Nn }, () => part(String(each), 1, "a"))],
-        above: [{ from: 0, to: Nn, text: String(Nn * each) }], says: String(W) }], { label: "Read it off" }),
+        above: [{ from: 0, to: Nn, text: String(Nn * each) }], says: String(W) }],
+      { cap: PART_MM, label: "Read it off" }),
       /* and the trap: unequal parts are not fractions at all */
       f4: () => modelSvg([{ parts: [part("", 8, "q"), part("", 3, "q"), part("", 6, "q"), part("", 3, "q")],
         says: String(W) }], { label: "Not quarters" }),
@@ -1012,6 +1081,11 @@ export function barFractions() {
         H.draw(braceOf(s, "above-0-0"), 1.6);
       },
       "f3.each": (s, H) => {
+        /* THE BARS FIRST. This is a fresh drawing, where every mark starts
+           hidden, so writing the fives into it without putting the boxes up
+           left the figures hanging on an empty screen with nothing to be
+           five OF. */
+        mb(s, "bar").forEach((n) => H.show(n));
         H.draw(braceOf(s, "below-0-0"));
         mb(s, "num").forEach((n, i) => H.write(n, 0.3 + i * 0.4));
       },
