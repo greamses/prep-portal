@@ -157,7 +157,7 @@ import { sticksSvg, wSvg, W_POINTS, wheelSvg } from "./tableart.js";
 
 export const TT_GROUPS = [
   { id: "vm-tables", chapter: "Chapter 7 · Times table secrets", label: "The 9 times table", blurb: "Count down the page, count up the page: 09, 18, 27 … And the counting sticks." },
-  { id: "vm-by9s", label: "Multiplying by 9, 99, 999", blurb: "One less in front, what is left of the nines behind: 47 × 99 = 4653. And the interleave — the same answer out of two nine-times facts." },
+  { id: "vm-by9s", label: "Multiplying by 9, 99, 999", blurb: "One less in front, what is left of the nines behind: 47 × 99 = 4653. And the Dansum Interleave — the same answer out of two nine-times facts." },
   { id: "vm-tables8", label: "The 8 times table", blurb: "Tens to 4 and from 4 again; units up the page in twos." },
   { id: "vm-tables7", label: "The 7 times table", blurb: "Three at a time: say the last ten again, and count the units up in threes." },
   { id: "vm-tables6", label: "The 6 times table", blurb: "Units in the order 2, 4, 6, 8, 0; one ten in each half comes twice. And a second trick: the diagonals." },
@@ -343,10 +343,11 @@ const by9Fewer = {
 };
 
 /* ═══ 99 × A TWO-FIGURE NUMBER: THE INTERLEAVE ═══════════════════════════
-   A trick found by a reader of this workbook rather than taken from a book,
-   and it is a genuinely different route to the answer. Set FOUND_BY to the
-   name it is to carry; left empty the page simply gives the trick, which is
-   better than giving it the wrong name.
+   Found by EMMANUEL DANIEL (Teacher Dansum) rather than taken from a book,
+   and a genuinely
+   different route to the answer, so it carries his name: the DANSUM
+   INTERLEAVE. The credit goes under the worked example, beside the thing
+   itself — which is where a credit belongs, not in a list at the back.
 
    THE TRICK. For 99 × "ab" (b not nought):
        9 × (a + 1)   goes in the THOUSANDS and the TENS
@@ -385,8 +386,8 @@ const by9Fewer = {
    table cannot supply what the proof asks for.
    ------------------------------------------------------------------------*/
 
-/** Whose trick it is. Empty until the name is given — see the note above. */
-const FOUND_BY = "";
+/** Whose trick it is. */
+const FOUND_BY = "Emmanuel Daniel (Teacher Dansum)";
 const foundTag = () => (FOUND_BY
   ? `<p class="vm-found">found by <b>${FOUND_BY}</b></p>`
   : "");
@@ -394,10 +395,10 @@ const foundTag = () => (FOUND_BY
 const interleave = {
   id: "vm-by99-interleave",
   group: "vm-by9s",
-  label: "99 × a two-figure number: the interleave",
+  label: "99 × a two-figure number: the Dansum Interleave",
   blurb: "9 × the next figure up, and 9 × the last figure, poured into each other: 99 × 47 = 4653.",
-  heading: "99 × a two-figure number — two nine-times facts, interleaved",
-  instruction: () => "Here is a different way at 99 times a two-figure number, and it uses nothing but the nine times " +
+  heading: "The Dansum Interleave — 99 × a two-figure number, from two nine-times facts",
+  instruction: () => "Here is a different way at 99 times a two-figure number — the Dansum Interleave — and it uses nothing but the nine times " +
     "table. Take 99 × 47. Go up one from the FIRST figure — 4 goes to 5 — and do 9 × 5 = 45. Write those two figures " +
     "in the FIRST and THIRD places: 4 _ 5 _. Now do 9 × the LAST figure: 9 × 7 = 63, and pour those two into the gaps: " +
     "4653. The last figure may not be a nought — 9 × 0 gives nothing to pour in — but every other two-figure number works.",
@@ -424,9 +425,9 @@ const interleave = {
 const interleaveWhy = {
   id: "vm-by99-why",
   group: "vm-by9s",
-  label: "99 × two figures: why the interleave works",
+  label: "99 × two figures: why the Dansum Interleave works",
   blurb: "The two tens spell one less than the number; the two units spell what it takes to reach a hundred.",
-  heading: "Why the interleave works",
+  heading: "Why the Dansum Interleave works",
   instruction: () => "This is the same trick, taken apart. The ordinary rule for the nines says 99 × n is 100 lots of " +
     "(n − 1), and then what n needs to reach a hundred: 99n = 100(n − 1) + (100 − n). So the FRONT half of every answer " +
     "is n − 1 and the BACK half is 100 − n. Now look at the two nine-times facts the trick uses, and read their figures " +
