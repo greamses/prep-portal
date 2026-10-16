@@ -157,7 +157,7 @@ import { sticksSvg, wSvg, W_POINTS, wheelSvg } from "./tableart.js";
 
 export const TT_GROUPS = [
   { id: "vm-tables", chapter: "Chapter 7 · Times table secrets", label: "The 9 times table", blurb: "Count down the page, count up the page: 09, 18, 27 … And the counting sticks." },
-  { id: "vm-by9s", label: "Multiplying by 9, 99, 999", blurb: "One less in front, what is left of the nines behind: 47 × 99 = 4653." },
+  { id: "vm-by9s", label: "Multiplying by 9, 99, 999", blurb: "One less in front, what is left of the nines behind: 47 × 99 = 4653. And the interleave — the same answer out of two nine-times facts." },
   { id: "vm-tables8", label: "The 8 times table", blurb: "Tens to 4 and from 4 again; units up the page in twos." },
   { id: "vm-tables7", label: "The 7 times table", blurb: "Three at a time: say the last ten again, and count the units up in threes." },
   { id: "vm-tables6", label: "The 6 times table", blurb: "Units in the order 2, 4, 6, 8, 0; one ten in each half comes twice. And a second trick: the diagonals." },
@@ -340,6 +340,121 @@ const by9Fewer = {
     say("One less than 7 is 6. 999 has three nines and 7 has one digit, so two places are left: 99. 6 from 9 is 3. So 7 × 999 is 6993.")),
   key: ({ n, k, m }) => [want.num(n - 1), want.num(nines(k - m)), want.num(10 ** m - n), want.num(n * nines(k))],
   answer: ({ n, k, m }) => [`${n - 1} | ${nines(k - m)} | ${String(10 ** m - n).padStart(m, "0")}: ${n} × ${nines(k)} = ${n * nines(k)}`],
+};
+
+/* ═══ 99 × A TWO-FIGURE NUMBER: THE INTERLEAVE ═══════════════════════════
+   A trick found by a reader of this workbook rather than taken from a book,
+   and it is a genuinely different route to the answer. Set FOUND_BY to the
+   name it is to carry; left empty the page simply gives the trick, which is
+   better than giving it the wrong name.
+
+   THE TRICK. For 99 × "ab" (b not nought):
+       9 × (a + 1)   goes in the THOUSANDS and the TENS
+       9 × b         goes in the HUNDREDS and the UNITS
+   so 99 × 47 is 9 × 5 = 45, written 4 _ 5 _, and 9 × 7 = 63 poured into the
+   gaps: 4653.
+
+   WHY IT WORKS — checked over every one of the 81 cases it claims, and here
+   is the reason, which is nothing but the nine times table twice over.
+
+   Write n = 10a + b. The ordinary rule for the nines is
+       99n = 100(n − 1) + (100 − n),
+   because 100n − 100 + 100 − n is 99n. So the front half of the answer is
+   n − 1 and the back half is 100 − n, and ALL the trick does is produce both
+   halves at once out of two nine-times facts:
+
+       9(a + 1)  has tens a      and units 9 − a
+       9b        has tens b − 1  and units 10 − b
+
+   (Both are true for every figure: 9 × 2 … 9 × 10 are 18, 27 … 90, whose
+   tens run 1, 2 … 9; and 9 × 1 … 9 × 9 are 9, 18 … 81, whose tens run
+   0, 1 … 8.)
+
+   Read the two TENS figures together:   a then b − 1   =  10a + b − 1 = n − 1
+   Read the two UNITS figures together:  9 − a then 10 − b
+                                         = 10(9 − a) + (10 − b) = 100 − n
+
+   which are exactly the two halves. The interleaving is not a coincidence to
+   be marvelled at: it is what putting the tens in the odd columns and the
+   units in the even ones MEANS.
+
+   AND WHY b MAY NOT BE NOUGHT. The whole proof leans on the tens figure of
+   9b being b − 1. For b = 0 that would have to be −1, and 9 × 0 = 0 offers 0
+   instead — so the trick reads 99 × 40 as 4050 when the answer is 3960. The
+   rule is not "it happens to fail there"; it is the one place the nine times
+   table cannot supply what the proof asks for.
+   ------------------------------------------------------------------------*/
+
+/** Whose trick it is. Empty until the name is given — see the note above. */
+const FOUND_BY = "";
+const foundTag = () => (FOUND_BY
+  ? `<p class="vm-found">found by <b>${FOUND_BY}</b></p>`
+  : "");
+
+const interleave = {
+  id: "vm-by99-interleave",
+  group: "vm-by9s",
+  label: "99 × a two-figure number: the interleave",
+  blurb: "9 × the next figure up, and 9 × the last figure, poured into each other: 99 × 47 = 4653.",
+  heading: "99 × a two-figure number — two nine-times facts, interleaved",
+  instruction: () => "Here is a different way at 99 times a two-figure number, and it uses nothing but the nine times " +
+    "table. Take 99 × 47. Go up one from the FIRST figure — 4 goes to 5 — and do 9 × 5 = 45. Write those two figures " +
+    "in the FIRST and THIRD places: 4 _ 5 _. Now do 9 × the LAST figure: 9 × 7 = 63, and pour those two into the gaps: " +
+    "4653. The last figure may not be a nought — 9 × 0 gives nothing to pour in — but every other two-figure number works.",
+  /* no `tv` of its own: the film is built from the worked example, rather
+     than naming a scene that does not exist */
+  cols: 2,
+  defaultCount: 6,
+  /* a two-figure number whose units are not nought: the one case the trick
+     cannot take, and the reason is in the note above */
+  make: (r) => { const a = r.int(1, 9); return { a, b: r.int(1, 9) }; },
+  render: ({ a, b }) => big(`99 × ${a}${b}`) +
+    steps(step(`9 × ${a + 1} (one up from the ${a}):`), step(`9 × ${b}:`), step("interleaved — the answer:")),
+  worked: () => worked(big("99 × 47") +
+    ask(strip("9 × 5", "9 × 7") + " = " + strip("45", "63") + " → " + strip("4", "6", "5", "3") + " = 4653") +
+    say("One up from the 4 is 5, and 9 × 5 is 45 — so a 4 in front and a 5 in the middle: 4 _ 5 _. " +
+      "Then 9 × 7 is 63, and the 6 and the 3 drop into the two gaps. 99 × 47 = 4653.") + foundTag()),
+  key: ({ a, b }) => [want.num(9 * (a + 1)), want.num(9 * b), want.num(99 * (10 * a + b))],
+  answer: ({ a, b }) => [`9 × ${a + 1} = ${9 * (a + 1)}, 9 × ${b} = ${9 * b} → ${99 * (10 * a + b)}`],
+};
+
+/* WHY IT WORKS, as a page of its own: the trick is worth proving, and a
+   child who has met 99n = 100(n − 1) + (100 − n) in the exercise before this
+   one has already been handed half the proof. */
+const interleaveWhy = {
+  id: "vm-by99-why",
+  group: "vm-by9s",
+  label: "99 × two figures: why the interleave works",
+  blurb: "The two tens spell one less than the number; the two units spell what it takes to reach a hundred.",
+  heading: "Why the interleave works",
+  instruction: () => "This is the same trick, taken apart. The ordinary rule for the nines says 99 × n is 100 lots of " +
+    "(n − 1), and then what n needs to reach a hundred: 99n = 100(n − 1) + (100 − n). So the FRONT half of every answer " +
+    "is n − 1 and the BACK half is 100 − n. Now look at the two nine-times facts the trick uses, and read their figures " +
+    "in columns rather than in pairs.",
+  cols: 1,
+  defaultCount: 1,
+  make: (r) => ({ a: r.int(2, 8), b: r.int(2, 8) }),
+  render: ({ a, b }) => big(`99 × ${a}${b}`) +
+    steps(step(`9 × ${a + 1} =`), step(`9 × ${b} =`),
+      step("the two TENS figures, read together:"), step(`and ${a}${b} − 1 =`),
+      step("the two UNITS figures, read together:"), step(`and 100 − ${a}${b} =`)),
+  worked: () => worked(big("99 × 47 = 4653") +
+    ask(strip("9 × 5 = 4|5", "9 × 7 = 6|3")) +
+    say("The TENS of the two answers are 4 and 6, which read 46 — one less than 47. " +
+      "The UNITS are 5 and 3, which read 53 — what 47 needs to reach 100. " +
+      "And 99 × 47 is 100 forty-sixes and a 53. The interleaving just writes the tens in the odd " +
+      "columns and the units in the even ones, so both halves come out in one pass.") +
+    ask("in letters: 9(a + 1) has tens <b>a</b> and units <b>9 − a</b>; 9b has tens <b>b − 1</b> and units <b>10 − b</b>. " +
+      "So the tens spell 10a + b − 1 = <b>n − 1</b>, and the units spell 10(9 − a) + (10 − b) = <b>100 − n</b>.") +
+    foundTag()),
+  key: ({ a, b }) => {
+    const n = 10 * a + b;
+    return [want.num(9 * (a + 1)), want.num(9 * b), want.num(n - 1), want.num(n - 1), want.num(100 - n), want.num(100 - n)];
+  },
+  answer: ({ a, b }) => {
+    const n = 10 * a + b;
+    return [`the tens spell ${n - 1} (one less than ${n}); the units spell ${100 - n} (what ${n} needs to reach 100)`];
+  },
 };
 
 const by9More = {
@@ -934,7 +1049,7 @@ const onesTree = {
   answer: ({ n }) => [`${n} ones: ${onesOf(n)} × ${onesOf(n)} = ${treeOf(n)}`],
 };
 
-export const TT_EXERCISES = [nineOne, nineAll, nineSticks, nineRows, ninths, by9Same, by9Fewer, by9More, eightOne, eightAll, sevenOne, sevenAll, sevenGrid, sevenWheel, sevenths, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW, threeOne, threeAll, threeGrid, twoOne, twoAll, onesTree];
+export const TT_EXERCISES = [nineOne, nineAll, nineSticks, nineRows, ninths, by9Same, by9Fewer, by9More, interleave, interleaveWhy, eightOne, eightAll, sevenOne, sevenAll, sevenGrid, sevenWheel, sevenths, sixOne, sixAll, sixDiag, fiveOne, fiveAll, fourOne, fourAll, fourW, threeOne, threeAll, threeGrid, twoOne, twoAll, onesTree];
 
 /* ── one digit to a box, and on to the next ──────────────────────────────────
    On screen the table's boxes open one at a time (the engine's data-steps).

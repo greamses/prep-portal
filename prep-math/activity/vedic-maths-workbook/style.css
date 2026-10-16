@@ -163,3 +163,16 @@
 .vm-video--icon:focus-visible { outline: 0.5mm solid #f4c95d; outline-offset: 1.2mm; }
 .vm-video--icon .vm-video__more { align-self: center; margin-left: 2mm; }
 @media print { .vm-video.vm-video--icon { display: none !important; } }
+
+/* Whose trick it is. A method found by a reader rather than taken from a book
+   carries the name of whoever found it, under the worked example where the
+   credit belongs — beside the thing itself, not in a list at the back. */
+.vm-found {
+  margin: 2mm 0 0;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 8pt;
+  font-weight: 600;
+  color: rgba(42, 39, 35, 0.62);
+  letter-spacing: 0.01em;
+}
+.vm-found b { font-weight: 800; color: rgba(42, 39, 35, 0.9); }
