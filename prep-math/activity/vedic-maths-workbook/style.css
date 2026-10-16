@@ -210,3 +210,16 @@
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 10pt;
 }
+
+/* Where a method came from, when it came from a person. Wider than the bare
+   byline because it is a sentence, and set in the paper's reading face rather
+   than the mono one so it reads as a note and not as a label. */
+.vm-found--origin {
+  max-width: 150mm;
+  margin-top: 2.6mm;
+  font-family: inherit;
+  font-size: 8.8pt;
+  font-style: italic;
+  line-height: 1.45;
+}
+.vm-found--origin b { font-style: normal; }

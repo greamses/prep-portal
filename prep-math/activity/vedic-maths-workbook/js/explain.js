@@ -586,12 +586,19 @@ function by99Steps() {
     tile(stage, "aid1", "9(a + 1) = 9a + 9 = 10a + (9 − a)", 50, 63, { c: 3 });
     tile(stage, "aid2", "9b = 10b − b = 10(b − 1) + (10 − b)", 50, 76, { c: 4 });
     tile(stage, "afin", "1000a + 100(b − 1) + 10(9 − a) + (10 − b)  =  99n", 50, 90, { c: 0, size: "s" });
+    /* whose it is, on the screen it is said on */
+    tile(stage, "who", "the Dansum Interleave", 50, 34, { c: 0, size: "l" });
+    tile(stage, "who2", "first noticed by", 50, 49, { bare: true, size: "s" });
+    tile(stage, "who3", "Emmanuel Daniel (Teacher Dansum)", 50, 60, { c: 1 });
+    tile(stage, "who4", "a primary school teacher in Nigeria,", 50, 73, { bare: true, size: "s" });
+    tile(stage, "who5", "playing about with a few numbers", 50, 82, { bare: true, size: "s" });
   };
 
   const step = (say, fn) => ({ say, show(stage, how) { fn(acts(stage, how.gsap, how.instant)); } });
   const ALL = ["q", "qa", "qb", "lab1", "d0", "d1", "lab2", "e0", "e1",
     "u0", "u1", "u2", "u3", "eq", "why1", "why2",
-    "ahead", "arow1", "aten1", "aun1", "arow2", "aten2", "aun2", "asum1", "asum2", "aid1", "aid2", "afin"];
+    "ahead", "arow1", "aten1", "aun1", "arow2", "aten2", "aun2", "asum1", "asum2", "aid1", "aid2", "afin",
+    "who", "who2", "who3", "who4", "who5"];
   const lay = (S, on) => ALL.forEach((id) => S.put(id, { on: on(id) ? 1 : 0 }));
   /* a figure that has landed is sitting in its place, not in its fact */
   const home = (S, id, i) => S.put(id, { x: SX[i], y: SY });
@@ -722,6 +729,19 @@ function by99Steps() {
       (S) => {
         lay(S, (id) => ["ahead", "arow1", "aten1", "aun1", "arow2", "aten2", "aun2", "aid1", "aid2"].includes(id));
         S.pop("afin", 0.4); S.pulse("afin", 1.4);
+      }),
+
+    /* ── whose it is ───────────────────────────────────────────────────*/
+    step("And one last thing, because it matters more than the trick does. This is not out of a textbook. "
+      + "It was first noticed by Emmanuel Daniel — Teacher Dansum — a primary school teacher in Nigeria, "
+      + "sitting playing about with a few numbers and seeing something in them that nobody had written down. "
+      + "That is where methods come from. Somebody plays, and notices — and it could just as easily be you, "
+      + "because the numbers are the same ones you have got.",
+      (S) => {
+        lay(S, (id) => ["who", "who2", "who3", "who4", "who5"].includes(id));
+        S.pop("who", 0.2); S.pop("who2", 1.0); S.pop("who3", 1.3);
+        S.pop("who4", 2.0); S.pop("who5", 2.3);
+        S.pulse("who3", 3.0);
       }),
 
     step(`One warning and you have it. The last figure may not be a NOUGHT. Nine noughts are nothing, so `

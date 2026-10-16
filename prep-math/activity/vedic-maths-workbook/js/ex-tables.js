@@ -343,7 +343,8 @@ const by9Fewer = {
 };
 
 /* ═══ 99 × A TWO-FIGURE NUMBER: THE INTERLEAVE ═══════════════════════════
-   Found by EMMANUEL DANIEL (Teacher Dansum) rather than taken from a book,
+   First noticed by EMMANUEL DANIEL — Teacher Dansum — a primary school
+   teacher in Nigeria, playing about with a few numbers. Not out of a book,
    and a genuinely
    different route to the answer, so it carries his name: the DANSUM
    INTERLEAVE. The credit goes under the worked example, beside the thing
@@ -437,6 +438,21 @@ const foundTag = () => (FOUND_BY
   ? `<p class="vm-found">found by <b>${FOUND_BY}</b></p>`
   : "");
 
+/**
+ * WHERE IT CAME FROM, for the page the method is introduced on.
+ *
+ * Not out of a textbook. A method that was noticed by a person should say so
+ * beside itself — partly because it is true, and partly because a child
+ * reading it ought to know that noticing is a thing people still do, and that
+ * the person who did it was a teacher in their own country playing about with
+ * a few numbers rather than somebody long dead and far away.
+ */
+const originNote = () => (FOUND_BY
+  ? `<p class="vm-found vm-found--origin">This pattern was first noticed by <b>${FOUND_BY}</b>, `
+    + `a primary school teacher in Nigeria, while he was playing about with a few numbers. `
+    + `It is in this workbook because he worked it out — not because it was in a book.</p>`
+  : "");
+
 const interleave = {
   id: "vm-by99-interleave",
   group: "vm-by9s",
@@ -463,7 +479,7 @@ const interleave = {
     ask(`<span class="vm-ileave__lab">9 × 7 = <b>63</b></span> ${places(["4", "6", "5", "3"], "b")} = <b>4653</b>`) +
     say("One up from the 4 is 5, and 9 × 5 is 45. Its two figures go in the FIRST place and the THIRD, " +
       "leaving a gap between them and a gap after them. Then 9 × 7 is 63, and the 6 and the 3 drop into " +
-      "those two gaps. 99 × 47 = 4653.") + foundTag()),
+      "those two gaps. 99 × 47 = 4653.") + originNote()),
   key: ({ a, b }) => [want.num(9 * (a + 1)), want.num(9 * b), want.num(99 * (10 * a + b))],
   answer: ({ a, b }) => [`9 × ${a + 1} = ${9 * (a + 1)}, 9 × ${b} = ${9 * b} → ${99 * (10 * a + b)}`],
 };
