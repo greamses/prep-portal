@@ -1,0 +1,104 @@
+/* ============================================================================
+   The English workbooks — the few marks the paper needs that maths did not
+   ----------------------------------------------------------------------------
+   The paper itself, the answer boxes, the ruled lines, the ticks and the
+   worked examples are all /utils/components/workbook.css, the same sheet the
+   maths workbooks print from. What is here is only what English adds: a word
+   picked out of a sentence, a passage with numbered lines, a loose word tile.
+
+   It prints at paper sizes, in millimetres, because a workbook is a thing
+   that comes out of a printer and the screen is only a preview of it.
+   ========================================================================== */
+
+/* The word a question is ABOUT, marked out of the sentence it stands in.
+   Underlined as well as bold: a photocopy loses weight before it loses a
+   rule, and these pages are photocopied. */
+.en-pick {
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 0.4mm;
+  text-underline-offset: 0.8mm;
+}
+
+/* A word being asked about on its own, rather than inside a sentence. */
+.en-word {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+}
+
+/* An aside in a question: "(-ed: not this one)". Quiet, and never on its
+   own line — it belongs to the question it qualifies. */
+.en-note {
+  font-size: 8.5pt;
+  color: rgba(42, 39, 35, 0.6);
+}
+
+/* A sentence with its punctuation stripped off, to be written out properly.
+   Set apart so the child can see it is NOT yet a sentence. */
+.en-bare {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  letter-spacing: 0.01em;
+  color: rgba(42, 39, 35, 0.78);
+}
+
+/* ── a loose word, to be put in its place ──────────────────────────────── */
+.en-tile {
+  display: inline-block;
+  padding: 0.8mm 2.2mm;
+  margin: 0 1mm 1.4mm 0;
+  border: 0.35mm solid #2a2723;
+  background: #fffdf8;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10pt;
+  font-weight: 600;
+}
+
+/* ── the passage ───────────────────────────────────────────────────────────
+   Numbered down the side, because every question asks which line the answer
+   came from — and that is half the exercise. */
+.en-passage {
+  margin: 0 0 3mm;
+  padding: 2.6mm 3mm 2.2mm;
+  background: #fbf7ee;
+  border-left: 0.9mm solid var(--accent-secondary, #0055ff);
+}
+.en-passage__title {
+  margin: 0 0 1.6mm;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 9.5pt;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.en-passage__line {
+  margin: 0 0 1mm;
+  padding-left: 7mm;
+  text-indent: -7mm;
+  font-size: 10.5pt;
+  line-height: 1.5;
+}
+.en-passage__n {
+  display: inline-block;
+  width: 5mm;
+  margin-right: 2mm;
+  text-align: right;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 8pt;
+  font-weight: 700;
+  color: rgba(42, 39, 35, 0.45);
+}
+
+/* the number of a question under a passage, and the little "line ___" that
+   follows every answer */
+.en-qn {
+  display: inline-block;
+  min-width: 5mm;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 800;
+}
+.en-from {
+  font-size: 8.5pt;
+  color: rgba(42, 39, 35, 0.6);
+  white-space: nowrap;
+}
+.en-from .wb-answer { min-width: 9mm; }

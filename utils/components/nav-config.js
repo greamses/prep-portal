@@ -237,6 +237,18 @@ const NAV_CONFIG = [
         ],
       },
       {
+        text: "English Workbooks",
+        icon: I.workbooks,
+        description: "Grammar, comprehension, writing, vocabulary and spelling",
+        children: [
+          { text: "Grammar Workbook", href: "/english/activity/grammar-workbook/index.html", description: "The job a word is doing in the sentence it is in — noun, verb, adjective, adverb and the rest" },
+          { text: "Comprehension Workbook", href: "/english/activity/comprehension-workbook/index.html", description: "Short numbered passages, with every answer naming the line it came from" },
+          { text: "Writing Workbook", href: "/english/activity/writing-workbook/index.html", description: "Building one sentence on purpose: word order, capitals and stops" },
+          { text: "Vocabulary Workbook", href: "/english/activity/vocabulary-workbook/index.html", description: "Opposites made with a prefix: un-, dis-, im-, il-, ir-, in-, mis- and non-" },
+          { text: "Spelling Workbook", href: "/english/activity/spelling-workbook/index.html", description: "Adding -ing and -ed: nothing changes, drop the e, double the letter, y becomes i" },
+        ],
+      },
+      {
         text: "Science Workbooks",
         icon: I.tools,
         description: "Computing, to begin with",

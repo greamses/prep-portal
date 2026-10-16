@@ -504,6 +504,81 @@ export const PAGES = [
     priority: "0.8",
   },
   {
+    file: "english/activity/grammar-workbook/index.html",
+    section: "workbooks",
+    name: "Grammar Workbook",
+    title: "Printable Grammar Workbook: Parts of Speech in Context",
+    desc: "A printable grammar workbook: naming the job a word is doing — noun, verb, adjective, adverb, pronoun, preposition, conjunction and determiner — in the sentence it is doing it in.",
+    intro:
+      "Grammar taught the way it actually works: a part of speech is not a label a word carries about with it, it is the job the word is doing in the sentence it is in. The same word can be a noun in one sentence and a verb in the next, and the harder pages are built out of exactly those.",
+    points: [
+      "Noun, verb, adjective, adverb, pronoun, preposition, conjunction, determiner",
+      "The same word doing different jobs in different sentences",
+      "Find a word doing a named job, the other way round",
+    ],
+    priority: "0.8",
+  },
+  {
+    file: "english/activity/comprehension-workbook/index.html",
+    section: "workbooks",
+    name: "Comprehension Workbook",
+    title: "Printable Comprehension Workbook: Passages and Questions",
+    desc: "A printable comprehension workbook: short passages with numbered lines, and literal, vocabulary and inference questions that each ask which line the answer came from.",
+    intro:
+      "Short passages with their lines numbered, and questions whose answers can actually be found and checked. Every question also asks which line the answer came from, because a reader who cannot name the line has not found the answer — they have remembered something.",
+    points: [
+      "Literal questions: the answer is written there",
+      "Vocabulary in context: what a word means where it stands",
+      "Inference, kept to the kind where only one answer fits",
+    ],
+    priority: "0.8",
+  },
+  {
+    file: "english/activity/writing-workbook/index.html",
+    section: "workbooks",
+    name: "Writing Workbook",
+    title: "Printable Writing Workbook: Sentence Building and Punctuation",
+    desc: "A printable writing workbook: putting loose words into the order that makes them mean something, and writing sentences out with their capital letters, commas and full stops.",
+    intro:
+      "Before a paragraph comes one sentence built on purpose. In English the order of the words is the grammar — nothing on the end of a word says which one is doing and which is being done to — so these pages hand the words over jumbled and ask for a sentence back, then ask for it punctuated.",
+    points: [
+      "Word order: who did what to whom, then where and when",
+      "Where the extra parts go, and where they may not",
+      "Capital letters, commas and full stops",
+    ],
+    priority: "0.8",
+  },
+  {
+    file: "english/activity/vocabulary-workbook/index.html",
+    section: "workbooks",
+    name: "Vocabulary Workbook",
+    title: "Printable Vocabulary Workbook: Prefixes and Opposites",
+    desc: "A printable vocabulary workbook: making opposites with un-, dis-, im-, il-, ir-, in-, mis- and non-, which prefix goes on which word, and what the new word means.",
+    intro:
+      "The quickest way to double the words a child owns. Every prefix learnt turns a word they already have into one they did not — and because which prefix goes on which word is fixed rather than chosen, it is a spelling lesson in disguise.",
+    points: [
+      "un-, dis-, im-, il-, ir-, in-, mis- and non-",
+      "The sound rules: im- before p, b and m; il- before l; ir- before r",
+      "What the new word means, not just how it is spelt",
+    ],
+    priority: "0.8",
+  },
+  {
+    file: "english/activity/spelling-workbook/index.html",
+    section: "workbooks",
+    name: "Spelling Workbook",
+    title: "Printable Spelling Workbook: Adding -ing and -ed",
+    desc: "A printable spelling workbook: the four rules for adding an ending — nothing changes, drop the e, double the last letter, y becomes i — with the exceptions that catch careful spellers.",
+    intro:
+      "Four rules that look like one, and a child who has not sorted them out writes hoping when they mean hopping. The pages ask for the word rather than the rule's name, because naming a rule and still misspelling the word is learning the label instead of the spelling.",
+    points: [
+      "Nothing changes, drop the e, double the last letter, y becomes i",
+      "Why hop doubles and open does not — where the stress falls",
+      "The exceptions: travelling, agreeing, enjoyed, tying",
+    ],
+    priority: "0.8",
+  },
+  {
     file: "prep-math/activity/statistics-workbook/index.html",
     section: "workbooks",
     name: "Statistics Workbook",

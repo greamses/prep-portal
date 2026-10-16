@@ -109,6 +109,24 @@ export const FEATURES = [
     usesImageGen: true, // card illustrations
   },
   {
+    id: "english-workbooks",
+    label: "English Workbooks",
+    desc: "The printable English workbooks: grammar, comprehension, writing, vocabulary, spelling",
+    group: "Learning Labs",
+    default: "premium",
+    paths: ["/english/activity"],
+    /* Turning one off here also stops it PRINTING: /api/workbooks/pass asks
+       this same part before it clears a subscriber's pages
+       (server/routes/workbooks.js). */
+    parts: [
+      { id: "grammar-workbook", label: "Grammar Workbook (printable — the jobs words do in a sentence)", path: "/english/activity/grammar-workbook" },
+      { id: "comprehension-workbook", label: "Comprehension Workbook (printable — numbered passages, and the line each answer came from)", path: "/english/activity/comprehension-workbook" },
+      { id: "writing-workbook", label: "Writing Workbook (printable — building a sentence, and punctuating it)", path: "/english/activity/writing-workbook" },
+      { id: "vocabulary-workbook", label: "Vocabulary Workbook (printable — opposites made with a prefix)", path: "/english/activity/vocabulary-workbook" },
+      { id: "spelling-workbook", label: "Spelling Workbook (printable — adding -ing and -ed)", path: "/english/activity/spelling-workbook" },
+    ],
+  },
+  {
     id: "prep-math-activities",
     label: "Prep-Math Activities",
     desc: "Interactive math studios (Cartesian Art, fractions, angles…)",

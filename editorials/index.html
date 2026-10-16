@@ -190,6 +190,80 @@
         </section>
 
         <section class="bookcase__shelf">
+          <span class="shelf-pill theme-yellow"><strong>6</strong> English Workbooks</span>
+          <div class="shelf-scene" style="position: relative; z-index: 1">
+            <div class="shelf-row wbk-row" role="list">
+              <a class="shelf-book wbk-book" href="/english/activity/grammar-workbook/index.html" role="listitem" aria-label="Open the Grammar Workbook">
+                <div class="shelf-book-cover wbk-cover wbk-cover--c0">
+                  <span class="wbk-cover__kicker">Workbook</span>
+                  <span class="wbk-cover__art" aria-hidden="true">N V A</span>
+                  <strong class="wbk-cover__title">Grammar</strong>
+                </div>
+                <span class="shelf-book-label">The job a word is doing</span>
+                <span class="book-sticker">Words</span>
+              </a>
+              <a class="shelf-book wbk-book" href="/english/activity/comprehension-workbook/index.html" role="listitem" aria-label="Open the Comprehension Workbook">
+                <div class="shelf-book-cover wbk-cover wbk-cover--c1">
+                  <span class="wbk-cover__kicker">Workbook</span>
+                  <span class="wbk-cover__art" aria-hidden="true">¶ ?</span>
+                  <strong class="wbk-cover__title">Comprehension</strong>
+                </div>
+                <span class="shelf-book-label">Passages, and where the answer was</span>
+                <span class="book-sticker">Reading</span>
+              </a>
+              <a class="shelf-book wbk-book" href="/english/activity/writing-workbook/index.html" role="listitem" aria-label="Open the Writing Workbook">
+                <div class="shelf-book-cover wbk-cover wbk-cover--c2">
+                  <span class="wbk-cover__kicker">Workbook</span>
+                  <span class="wbk-cover__art" aria-hidden="true">A · z</span>
+                  <strong class="wbk-cover__title">Writing</strong>
+                </div>
+                <span class="shelf-book-label">Building a sentence on purpose</span>
+                <span class="book-sticker">Sentences</span>
+              </a>
+              <a class="shelf-book wbk-book" href="/english/activity/vocabulary-workbook/index.html" role="listitem" aria-label="Open the Vocabulary Workbook">
+                <div class="shelf-book-cover wbk-cover wbk-cover--c3">
+                  <span class="wbk-cover__kicker">Workbook</span>
+                  <span class="wbk-cover__art" aria-hidden="true">un–</span>
+                  <strong class="wbk-cover__title">Vocabulary</strong>
+                </div>
+                <span class="shelf-book-label">Opposites made with a prefix</span>
+                <span class="book-sticker">Words</span>
+              </a>
+              <a class="shelf-book wbk-book" href="/english/activity/spelling-workbook/index.html" role="listitem" aria-label="Open the Spelling Workbook">
+                <div class="shelf-book-cover wbk-cover wbk-cover--c4">
+                  <span class="wbk-cover__kicker">Workbook</span>
+                  <span class="wbk-cover__art" aria-hidden="true">–ing</span>
+                  <strong class="wbk-cover__title">Spelling</strong>
+                </div>
+                <span class="shelf-book-label">Adding an ending, by the rules</span>
+                <span class="book-sticker">Spelling</span>
+              </a>
+              <!-- Grammar Police is a READER rather than a builder: it opens
+                   in the modal at the foot of this page instead of on a page of
+                   its own, which is why it is a button and its neighbours are
+                   links. It belongs on this shelf all the same. -->
+              <button
+                class="shelf-book"
+                id="gpOpen"
+                role="listitem"
+                aria-label="Open Grammar Police and Punctuation Patrol book"
+              >
+                <!-- Flat cover, filled by main.js -->
+                <div class="shelf-book-cover" id="shelfCoverMount"></div>
+                <div class="book-note">
+                  <p class="book-blurb">
+                    An interactive grammar &amp; punctuation workbook — read each
+                    rule, then practise right there on the page.
+                  </p>
+                  <span class="book-sticker">Grammar &amp; punctuation</span>
+                </div>
+              </button>
+            </div>
+            <div class="shelf-plank" aria-hidden="true"></div>
+          </div>
+        </section>
+
+        <section class="bookcase__shelf">
           <span class="shelf-pill theme-green"><strong>1</strong> Science Workbook</span>
           <div class="shelf-scene" style="position: relative; z-index: 1">
             <div class="shelf-row wbk-row" role="list">
@@ -222,32 +296,6 @@
           <div id="yearbook-shelf" class="bookshelf"></div>
         </section>
 
-        <!-- The English workbook (Grammar Police) — a workbook, so for everyone. Reuses the shelf +
-             book engine from /writing/activity/grammar-police; reader modal below. -->
-        <section class="bookcase__shelf">
-          <span class="shelf-pill theme-red"><strong>1</strong> English Workbook</span>
-          <div class="shelf-scene" style="position: relative; z-index: 1">
-            <div class="shelf-row" role="list">
-              <button
-                class="shelf-book"
-                id="gpOpen"
-                role="listitem"
-                aria-label="Open Grammar Police and Punctuation Patrol book"
-              >
-                <!-- Flat cover, filled by main.js -->
-                <div class="shelf-book-cover" id="shelfCoverMount"></div>
-                <div class="book-note">
-                  <p class="book-blurb">
-                    An interactive grammar &amp; punctuation workbook — read each
-                    rule, then practise right there on the page.
-                  </p>
-                  <span class="book-sticker">Grammar &amp; punctuation</span>
-                </div>
-              </button>
-            </div>
-            <div class="shelf-plank" aria-hidden="true"></div>
-          </div>
-        </section>
       </div>
     </main>
 
