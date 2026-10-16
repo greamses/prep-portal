@@ -114,6 +114,9 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
   const tv = box.querySelector(".mm-tv");
   const screen = box.querySelector(".mm-tv-screen");
   const stage = q("stage"), progress = q("progress"), curtain = q("curtain");
+  const bot = box.querySelector(".mm-prepbot");
+  /* not on stage until the curtain goes up */
+  bot.style.opacity = "0";
   const playIcon = q("play").querySelector("span");
 
   let auth = null;
@@ -211,18 +214,63 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
   const onKey = (e) => {
     if (["Escape", "ArrowRight", "ArrowLeft"].includes(e.key)) { e.stopImmediatePropagation(); e.preventDefault(); }
     if (e.key === "Escape") close();
-    else if (e.key === "ArrowRight") { playing = false; go(index + 1); }
-    else if (e.key === "ArrowLeft") { playing = false; go(index - 1); }
+    else if (e.key === "ArrowRight") stepTo(index + 1);
+    else if (e.key === "ArrowLeft") stepTo(index - 1);
     else if (e.key === " " && !e.target.closest?.("input, textarea, button")) { e.preventDefault(); toggle(); }
     else if ((e.key === "f" || e.key === "F") && !e.ctrlKey && !e.metaKey && !e.altKey && !e.target.closest?.("input, textarea")) { e.preventDefault(); q("full").click(); }
     else if ((e.key === "d" || e.key === "D") && !e.ctrlKey && !e.metaKey && !e.altKey && !e.target.closest?.("input, textarea")) { e.preventDefault(); q("save").click(); }
   };
-  function toggle() {
+  /**
+   * UP GOES THE CURTAIN. The one thing that turns a television that is merely
+   * on into a lesson that has started: the drapes part, PrepBot walks on, and
+   * only then does the first step go up and get said.
+   *
+   * It happens once, on whatever the learner presses first — play, the next
+   * key, an arrow — because all of those mean "begin".
+   */
+  let started = false;
+  async function raise() {
+    if (started || closed) return;
+    started = true;
+    /* PrepBot arrives first and pulls the curtain: it is above the drapes
+       (z-index 7 against 6) precisely so it can be seen doing it */
+    if (gsap) {
+      gsap.fromTo(bot, { opacity: 0, yPercent: 14, scale: 0.84 },
+        { opacity: 1, yPercent: 0, scale: 1, duration: 0.5, ease: "back.out(1.6)" });
+    } else {
+      bot.style.opacity = "1";
+    }
+    teacher.poke?.();
+    if (gsap) {
+      const [left, right] = curtain.children;
+      await new Promise((done) => gsap.timeline({ onComplete: done })
+        .to(left, { xPercent: -101, duration: 0.7, ease: "power2.inOut" }, 0.45)
+        .to(right, { xPercent: 101, duration: 0.7, ease: "power2.inOut" }, 0.45));
+    }
+    if (closed) return;
+    curtain.style.display = "none";
+    teacher.scheduleIdle();
+  }
+
+  async function toggle() {
+    if (!started) {
+      playing = true;
+      paintControls();
+      await raise();
+      if (!closed && playing) go(0);
+      return;
+    }
     playing = !playing;
     if (playing) go(index >= steps.length - 1 ? 0 : Math.max(0, index)); else { token++; teacher.stop(); paintControls(); }
   }
-  q("prev").addEventListener("click", () => { playing = false; go(index - 1); });
-  q("next").addEventListener("click", () => { playing = false; go(index + 1); });
+  /** Stepping by hand before the curtain is up starts it too, and stays put. */
+  const stepTo = async (i) => {
+    if (!started) { playing = false; await raise(); if (!closed) go(Math.max(0, i)); return; }
+    playing = false;
+    go(i);
+  };
+  q("prev").addEventListener("click", () => stepTo(index - 1));
+  q("next").addEventListener("click", () => stepTo(index + 1));
   q("play").addEventListener("click", toggle);
   q("close").addEventListener("click", close);
   /* TAKE IT AWAY WITH YOU. The whole explanation, every step in order, as a
@@ -249,16 +297,9 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
   /* the curtain is drawn before anything is shown, and PrepBot pulls it open */
   build(stage);
   paintControls();
-  if (gsap) {
-    const [left, right] = curtain.children;
-    await new Promise((done) => gsap.timeline({ onComplete: done })
-      .to(left, { xPercent: -101, duration: 0.7, ease: "power2.inOut" }, 0.25)
-      .to(right, { xPercent: 101, duration: 0.7, ease: "power2.inOut" }, 0.25));
-    teacher.scheduleIdle();
-  }
-  curtain.style.display = "none";
-  /* the first step is PUT on the screen, with its picture and its line, but
-     nothing is said and nothing moves on until the learner presses play */
-  if (!closed) go(0, false);
+  /* THE SET COMES ON SHUT. Turning the television on is not the same as
+     starting the lesson: the curtain stays down and PrepBot has not come out
+     yet. Pressing play is what draws the curtain, brings PrepBot on and
+     begins — see `raise()`. */
   return api;
 }
