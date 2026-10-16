@@ -25,6 +25,7 @@ const GAP = 4;
 const INK = "#2a2723";
 const PAPER = "#fffdf8";
 const SHADE = "#bfe3ff";
+const TAKEN = "#f0ece4";          // coloured once, and taken away
 const FAINT = "#b8b0a3";
 
 /** The cuts a bar offers: ×2, ×3, ×4, ×5 — and back to how it started. */
@@ -71,22 +72,32 @@ const f = (n) => Number(n.toFixed(2));
  * One bar: `den` parts, `num` of them coloured. `cut` draws the new lines
  * inside each part faintly, so the child can see the old parts under the new.
  */
-export function barSvg({ num, den, was = 0, label = "" } = {}) {
+export function barSvg({ num, den, was = 0, gone = 0, label = "" } = {}) {
   const cell = BAR_MM / den;
   let body = "";
   for (let c = 0; c < den; c++) {
-    body += `<rect class="fb-part" data-part="${c}"${c < num ? ' data-shaded="1"' : ""} x="${f(c * cell)}" y="0"` +
-      ` width="${f(cell)}" height="${BAR_H}" fill="${c < num ? SHADE : PAPER}" stroke="${INK}" stroke-width="0.4"/>`;
+    /* `gone`: parts that WERE coloured and have been taken away. They are
+       drawn pale rather than rubbed out, because a child taking four tenths
+       off seven has to be able to see that they were there — a bar that
+       simply arrives with three parts coloured is the answer, not the
+       working. */
+    const taken = c < num && c >= num - gone;
+    const fill = c < num ? (taken ? TAKEN : SHADE) : PAPER;
+    body += `<rect class="fb-part" data-part="${c}"${c < num && !taken ? ' data-shaded="1"' : ""}` +
+      `${taken ? ' data-taken="1"' : ""} data-mb="cell" data-cell="${c}" x="${f(c * cell)}" y="0"` +
+      ` width="${f(cell)}" height="${BAR_H}" fill="${fill}" stroke="${INK}" stroke-width="0.4"/>`;
   }
   /* the parts it was cut FROM, drawn over the top as a heavier line, so the
      child can still see the half that became three sixths */
   if (was && was < den) {
     const step = BAR_MM / was;
     for (let c = 1; c < was; c++) {
-      body += `<line x1="${f(c * step)}" y1="0" x2="${f(c * step)}" y2="${BAR_H}" stroke="${INK}" stroke-width="0.9"/>`;
+      body += `<line data-mb="cut" x1="${f(c * step)}" y1="0" x2="${f(c * step)}" y2="${BAR_H}" stroke="${INK}" stroke-width="0.9"/>`;
     }
   }
-  body += `<rect x="0" y="0" width="${BAR_MM}" height="${BAR_H}" fill="none" stroke="${INK}" stroke-width="0.9"/>`;
+  /* the frame is the BAR: it is what grows when a film draws one, and the
+     parts inside it are the marks that take their colour afterwards */
+  body += `<rect data-mb="bar" data-mb-row="0" x="0" y="0" width="${BAR_MM}" height="${BAR_H}" fill="none" stroke="${INK}" stroke-width="0.9"/>`;
   return `<svg class="fb-bar" viewBox="-0.6 -0.6 ${BAR_MM + 1.2} ${BAR_H + 1.2}" width="${BAR_MM}mm" height="${BAR_H}mm"` +
     ` role="img" aria-label="${label || `${num} out of ${den}`}" data-num="${num}" data-den="${den}">${body}</svg>`;
 }

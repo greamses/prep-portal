@@ -37,6 +37,7 @@ import { barsSvg, mixed, improper } from "./bars.js";
 import { splitHtml, barSvg, commonDen } from "/utils/components/workbook/fracbar.js";
 import { levelOf, helpOf, box } from "./ex-remainder.js";
 import { want } from "/utils/components/workbook/want.js";
+import { lessonStrip } from "/utils/components/workbook/tv-lessons.js";
 
 export const FRAC_GROUPS = [
   {
@@ -200,6 +201,9 @@ function drawSubLike(r, o) {
 const addLike = {
   id: "frac-add-like",
   group: "frac-add",
+  /* PrepBot takes this one on the TV, on the fraction bar itself
+     (utils/components/workbook/fraction-films.js) */
+  video: () => lessonStrip("frac-like", "Adding and taking away when the parts match"),
   label: "Adding fractions with the same bottom",
   blurb: "Three fifths and one fifth. Count the parts; the five never moves.",
   heading: "Add them — the parts are the same size",
@@ -375,6 +379,9 @@ const barsRead = {
 const mixedToImproper = {
   id: "mixed-to-improper",
   group: "frac-convert",
+  /* PrepBot takes this one on the TV, on the fraction bar itself
+     (utils/components/workbook/fraction-films.js) */
+  video: () => lessonStrip("frac-mixed", "Mixed numbers, and the borrow"),
   label: "Mixed into improper",
   blurb: "Colour the bars in, then count every part.",
   heading: "Mixed number into improper fraction",
@@ -515,6 +522,9 @@ function drawEqual(r, o, { maxK = 4, lowest = false } = {}) {
 const equalSee = {
   id: "frac-equal-see",
   group: "frac-equal",
+  /* PrepBot takes this one on the TV, on the fraction bar itself
+     (utils/components/workbook/fraction-films.js) */
+  video: () => lessonStrip("frac-equal", "The same fraction, another name"),
   label: "Cut every part in two",
   blurb: "The same amount coloured; a new name for it.",
   heading: "The same fraction, another name",
@@ -665,6 +675,9 @@ const cutAndCount = (item) =>
 const addUnlike = {
   id: "frac-add-unlike",
   group: "frac-unlike",
+  /* PrepBot takes this one on the TV, on the fraction bar itself
+     (utils/components/workbook/fraction-films.js) */
+  video: () => lessonStrip("frac-unlike", "When the parts do not match"),
   label: "Adding when the parts do not match",
   blurb: "Cut both bars to the same size, then count.",
   heading: "Adding fractions with different bottoms",

@@ -32,6 +32,7 @@ import { placeFill, worthOf } from "./shift.js";
 /* the workbook's own bar-model drawing, so the film and the paper cannot
    disagree about what one looks like (ch 9, and its brace rule) */
 import { barSetup, barParts, barMissing, barMoney, barFractions } from "./bar-films.js";
+import { fracLike, fracEqual, fracUnlike, fracMixed } from "./fraction-films.js";
 
 /* The strip's dress. A page that is not a workbook does not link video.css,
    and an unstyled strip is not merely plain — it is invisible, which is how
@@ -313,6 +314,12 @@ const SCENES = {
   "bar-money": barMoney,
   "bar-fractions": barFractions,
   bar: barSetup,
+  /* chapter 5 is four films of its own: adding fractions is the first place
+     where the obvious move is the wrong one (./fraction-films.js) */
+  "frac-like": fracLike,
+  "frac-equal": fracEqual,
+  "frac-unlike": fracUnlike,
+  "frac-mixed": fracMixed,
 };
 let tvOpen = false;
 
