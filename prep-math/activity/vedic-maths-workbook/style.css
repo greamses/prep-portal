@@ -176,3 +176,37 @@
   letter-spacing: 0.01em;
 }
 .vm-found b { font-weight: 800; color: rgba(42, 39, 35, 0.9); }
+
+/* ── THE FOUR PLACES of the Dansum Interleave ──────────────────────────────
+   The method is WHERE the figures go, so the worked example has to be a
+   picture of four places with some of them still empty. A gap is drawn as a
+   gap — a ruled line with nothing on it — because an empty cell with no rule
+   under it reads as a space between numbers rather than as somewhere a figure
+   has still to go. */
+.vm-ileave {
+  display: inline-flex;
+  gap: 1.6mm;
+  vertical-align: middle;
+  margin: 0 1.4mm;
+}
+.vm-ileave__c {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 7mm;
+  padding: 0.6mm 0;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11.5pt;
+  font-weight: 800;
+  border-bottom: 0.5mm solid #2a2723;
+}
+.vm-ileave__c.is-gap { color: transparent; border-bottom-color: rgba(42, 39, 35, 0.35); }
+.vm-ileave__c.is-gap::after { content: "\00a0"; }
+/* which fact a figure came out of, so the interleaving can be SEEN */
+.vm-ileave--a .vm-ileave__c:not(.is-gap) { color: var(--accent-secondary, #0055ff); }
+.vm-ileave--b .vm-ileave__c:nth-child(2),
+.vm-ileave--b .vm-ileave__c:nth-child(4) { color: var(--accent-danger, #e4572e); }
+.vm-ileave__lab {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10pt;
+}

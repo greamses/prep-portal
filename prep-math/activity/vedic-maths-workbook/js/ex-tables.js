@@ -379,6 +379,39 @@ const by9Fewer = {
    be marvelled at: it is what putting the tens in the odd columns and the
    units in the even ones MEANS.
 
+   AND THE TWO FACTS ABOUT THE NINES ARE NOT OBSERVATIONS EITHER — they are
+   one line of algebra each, which is what makes this a proof rather than a
+   pattern somebody noticed:
+
+       9(a + 1) = 9a + 9 = 10a + (9 − a)
+       9b       = 10b − b = 10(b − 1) + (10 − b)
+
+   Each right-hand side is already in the form (ten times something) plus
+   (something), and for 1 ≤ a ≤ 9 and 1 ≤ b ≤ 9 BOTH of those somethings are
+   single figures — so each line IS the decimal writing of its number, not
+   merely equal to it. That is the whole of it. Laying the four figures out
+   gives
+
+       1000a + 100(b − 1) + 10(9 − a) + (10 − b)
+     = 1000a − 10a + 100b − b − 100 + 90 + 10
+     = 990a + 99b
+     = 99(10a + b) = 99n
+
+   with nothing left over and no carrying to argue about.
+
+   WHERE THE OBVIOUS ATTEMPT STALLS, and it is worth knowing: if you keep the
+   two products as VALUES (10x + y and 10u + v) instead of as figures, you can
+   never separate 1000x + 10y from 100(10x + y), because x and y cannot be got
+   back out of 10x + y. The substitutions then go round in a circle and the
+   argument has to end by asserting that the carrying works out. Knowing the
+   figures THEMSELVES, which the two lines above hand you for nothing, is what
+   closes it.
+
+   AND IT IS THE SAME LINE THAT RULES OUT b = 0: the second identity needs
+   10 − b to be a single figure, and at b = 0 it is 10. Not a special case to
+   be remembered — the one place the arithmetic cannot supply what the proof
+   asks for.
+
    AND WHY b MAY NOT BE NOUGHT. The whole proof leans on the tens figure of
    9b being b − 1. For b = 0 that would have to be −1, and 9 × 0 = 0 offers 0
    instead — so the trick reads 99 × 40 as 4050 when the answer is 3960. The
@@ -388,6 +421,18 @@ const by9Fewer = {
 
 /** Whose trick it is. */
 const FOUND_BY = "Emmanuel Daniel (Teacher Dansum)";
+
+/**
+ * THE FOUR PLACES, which ARE the trick.
+ *
+ * The whole method is where the figures GO, so the worked example has to be a
+ * picture of four places with two of them still empty — not a line of numbers
+ * with an arrow in it. `cells` is four entries; "" is a place still waiting.
+ */
+const places = (cells, tone = "") =>
+  `<span class="vm-ileave${tone ? ` vm-ileave--${tone}` : ""}">`
+  + cells.map((c) => `<span class="vm-ileave__c${c ? "" : " is-gap"}">${c || ""}</span>`).join("")
+  + `</span>`;
 const foundTag = () => (FOUND_BY
   ? `<p class="vm-found">found by <b>${FOUND_BY}</b></p>`
   : "");
@@ -402,19 +447,23 @@ const interleave = {
     "table. Take 99 × 47. Go up one from the FIRST figure — 4 goes to 5 — and do 9 × 5 = 45. Write those two figures " +
     "in the FIRST and THIRD places: 4 _ 5 _. Now do 9 × the LAST figure: 9 × 7 = 63, and pour those two into the gaps: " +
     "4653. The last figure may not be a nought — 9 × 0 gives nothing to pour in — but every other two-figure number works.",
-  /* no `tv` of its own: the film is built from the worked example, rather
-     than naming a scene that does not exist */
+  /* the film: explain.js by99Steps, where the 4 scrolls up to a 5 and each
+     figure travels from its fact to the place it lands in */
+  tv: "by99int",
   cols: 2,
   defaultCount: 6,
   /* a two-figure number whose units are not nought: the one case the trick
      cannot take, and the reason is in the note above */
   make: (r) => { const a = r.int(1, 9); return { a, b: r.int(1, 9) }; },
-  render: ({ a, b }) => big(`99 × ${a}${b}`) +
-    steps(step(`9 × ${a + 1} (one up from the ${a}):`), step(`9 × ${b}:`), step("interleaved — the answer:")),
+  render: ({ a, b }) => big(`99 × ${a}${b}`)
+    + steps(step(`9 × ${a + 1} (one up from the ${a}):`), step(`9 × ${b}:`))
+    + ask(`the four places: ${places(["", "", "", ""])} ${box()}`),
   worked: () => worked(big("99 × 47") +
-    ask(strip("9 × 5", "9 × 7") + " = " + strip("45", "63") + " → " + strip("4", "6", "5", "3") + " = 4653") +
-    say("One up from the 4 is 5, and 9 × 5 is 45 — so a 4 in front and a 5 in the middle: 4 _ 5 _. " +
-      "Then 9 × 7 is 63, and the 6 and the 3 drop into the two gaps. 99 × 47 = 4653.") + foundTag()),
+    ask(`<span class="vm-ileave__lab">9 × 5 = <b>45</b></span> ${places(["4", "", "5", ""], "a")}`) +
+    ask(`<span class="vm-ileave__lab">9 × 7 = <b>63</b></span> ${places(["4", "6", "5", "3"], "b")} = <b>4653</b>`) +
+    say("One up from the 4 is 5, and 9 × 5 is 45. Its two figures go in the FIRST place and the THIRD, " +
+      "leaving a gap between them and a gap after them. Then 9 × 7 is 63, and the 6 and the 3 drop into " +
+      "those two gaps. 99 × 47 = 4653.") + foundTag()),
   key: ({ a, b }) => [want.num(9 * (a + 1)), want.num(9 * b), want.num(99 * (10 * a + b))],
   answer: ({ a, b }) => [`9 × ${a + 1} = ${9 * (a + 1)}, 9 × ${b} = ${9 * b} → ${99 * (10 * a + b)}`],
 };
@@ -428,6 +477,9 @@ const interleaveWhy = {
   label: "99 × two figures: why the Dansum Interleave works",
   blurb: "The two tens spell one less than the number; the two units spell what it takes to reach a hundred.",
   heading: "Why the Dansum Interleave works",
+  /* the same film: its last five steps are this page, in letters and animated,
+     and said in English rather than read out as symbols */
+  tv: "by99int",
   instruction: () => "This is the same trick, taken apart. The ordinary rule for the nines says 99 × n is 100 lots of " +
     "(n − 1), and then what n needs to reach a hundred: 99n = 100(n − 1) + (100 − n). So the FRONT half of every answer " +
     "is n − 1 and the BACK half is 100 − n. Now look at the two nine-times facts the trick uses, and read their figures " +
@@ -440,13 +492,21 @@ const interleaveWhy = {
       step("the two TENS figures, read together:"), step(`and ${a}${b} − 1 =`),
       step("the two UNITS figures, read together:"), step(`and 100 − ${a}${b} =`)),
   worked: () => worked(big("99 × 47 = 4653") +
-    ask(strip("9 × 5 = 4|5", "9 × 7 = 6|3")) +
+    ask(`9 × 5 = ${places(["4", "", "5", ""], "a")} &nbsp; 9 × 7 = ${places(["", "6", "", "3"], "b")}`) +
     say("The TENS of the two answers are 4 and 6, which read 46 — one less than 47. " +
       "The UNITS are 5 and 3, which read 53 — what 47 needs to reach 100. " +
       "And 99 × 47 is 100 forty-sixes and a 53. The interleaving just writes the tens in the odd " +
       "columns and the units in the even ones, so both halves come out in one pass.") +
-    ask("in letters: 9(a + 1) has tens <b>a</b> and units <b>9 − a</b>; 9b has tens <b>b − 1</b> and units <b>10 − b</b>. " +
-      "So the tens spell 10a + b − 1 = <b>n − 1</b>, and the units spell 10(9 − a) + (10 − b) = <b>100 − n</b>.") +
+    ask("<b>In letters.</b> Write the number as n = 10a + b. Then the two nine-times facts are not " +
+      "observations — they are one line each:") +
+    ask("9(a + 1) = 9a + 9 = <b>10a + (9 − a)</b> &nbsp;&nbsp;&nbsp; 9b = 10b − b = <b>10(b − 1) + (10 − b)</b>") +
+    say("Each right-hand side is already ten-times-something plus something, and for digits 1 to 9 both of those " +
+      "somethings are single figures — so each line IS how the number is written, not just equal to it. That is " +
+      "what hands you the four figures: a and 9 − a from the first, b − 1 and 10 − b from the second.") +
+    ask("1000a + 100(b − 1) + 10(9 − a) + (10 − b) = 990a + 99b = <b>99(10a + b)</b>") +
+    say("Nothing left over, and no carrying to argue about. The tens of the two answers spell n − 1 and the units " +
+      "spell 100 − n, which is why the interleave gives the same answer as the ordinary nines rule. And the same " +
+      "line rules out a last figure of nought: 10 − b would have to be 10, which is not a figure.") +
     foundTag()),
   key: ({ a, b }) => {
     const n = 10 * a + b;

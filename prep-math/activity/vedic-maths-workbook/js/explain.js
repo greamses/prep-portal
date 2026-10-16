@@ -213,6 +213,22 @@ export function acts(stage, gsap, instant) {
       gsap.to(n, { backgroundColor, borderColor, duration: 0.25, delay });
       gsap.fromTo(n, { scale: 1 }, { scale: 1.15, duration: 0.18, delay, yoyo: true, repeat: 1, immediateRender: false });
     },
+    /**
+     * A FIGURE SCROLLS UP TO THE NEXT ONE, the way the numbers on a meter or
+     * an odometer turn over: the old one rides up out of sight and the new one
+     * comes up behind it. "Go up one from the 4" is a thing that HAPPENS to
+     * the 4, and a flip or a fade says only that it changed.
+     */
+    roll(id, text, delay = 0) {
+      const n = inn(id); if (!n) return;
+      const set = () => { n.textContent = text; };
+      if (quick) { set(); n.style.opacity = "1"; return; }
+      gsap.timeline({ delay })
+        .set(n, { opacity: 1 })
+        .to(n, { yPercent: -80, opacity: 0, duration: 0.24, ease: "power1.in" })
+        .add(set)
+        .fromTo(n, { yPercent: 80, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.34, ease: "power2.out" });
+    },
     /** A tile is pointed at: a little jump. */
     pulse(id, delay = 0) {
       const n = inn(id); if (!n || quick) return;
@@ -490,6 +506,235 @@ function ninesSteps(part) {
   if (part === "table") return { build, steps: written };
   if (part === "sticks") return { build, steps: after(steps.slice(4, 13)) };
   if (part === "one") return { build, steps: after(steps.slice(13)) };
+  return { build, steps };
+}
+
+/* ── THE DANSUM INTERLEAVE: 99 × a two-figure number ───────────────────────
+   Found by Emmanuel Daniel (Teacher Dansum). Two nine-times facts, poured
+   into each other.
+
+   THE PLAN, and the whole film is the ARRANGEMENT:
+
+     99 × 4 7                     the question, with its two figures apart
+          ↑                       the 4 SCROLLS UP to a 5, like a meter
+     9 × 5 = 4 5                  the first fact
+     9 × 7 = 6 3                  the second
+
+     _ _ _ _                      four empty places
+     4 _ 5 _                      the first fact's figures, first and third
+     4 6 5 3                      the second's poured into the gaps
+
+   The four places are there from the start and stay there, because the trick
+   IS the interleaving — a film that showed the answer appearing would have
+   shown everything except the thing worth watching. Each figure travels from
+   the fact it came out of to the place it lands in, so you can see which
+   figure went where rather than being told.
+   ------------------------------------------------------------------------*/
+function by99Steps() {
+  const A = 4, B = 7;                       // 99 × 47
+  const X = 9 * (A + 1), Y = 9 * B;         // 45 and 63
+  const d = [Math.floor(X / 10), X % 10];   // 4, 5
+  const e = [Math.floor(Y / 10), Y % 10];   // 6, 3
+  const n = 10 * A + B;
+
+  const QY = 14, F1 = 34, F2 = 48, SY = 72; // the four rows
+  /* the four places sit UNDER the facts they are fed from, not off to one
+     side of them: the figures have to be seen dropping straight down */
+  const SX = [33, 41, 49, 57];
+  /* the figures start where their FACT is, and travel from there */
+  const FX = [44, 50];
+
+  const build = (stage) => {
+    stage.innerHTML = `<div class="vm-tv"></div>`;
+    tile(stage, "q", "99 ×", 30, QY, { c: 0, size: "l" });
+    tile(stage, "qa", String(A), 41, QY, { c: 3, size: "l" });
+    tile(stage, "qb", String(B), 47, QY, { c: 4, size: "l" });
+
+    tile(stage, "lab1", `9 × ${A + 1} =`, 30, F1, { bare: true });
+    tile(stage, "d0", String(d[0]), FX[0], F1, { c: 3, size: "l" });
+    tile(stage, "d1", String(d[1]), FX[1], F1, { c: 3, size: "l" });
+
+    tile(stage, "lab2", `9 × ${B} =`, 30, F2, { bare: true });
+    tile(stage, "e0", String(e[0]), FX[0], F2, { c: 4, size: "l" });
+    tile(stage, "e1", String(e[1]), FX[1], F2, { c: 4, size: "l" });
+
+    /* the four places, drawn as rules so an empty one is plainly a GAP */
+    /* a gap is drawn on the SAME line as the figures beside it, or the row
+       reads as two rows and not as one answer with holes in it */
+    SX.forEach((x, i) => tile(stage, `u${i}`, "—", x, SY, { bare: true, size: "l" }));
+    tile(stage, "eq", "= 4653", 74, SY, { c: 2, size: "l" });
+
+    tile(stage, "why1", `4 6 → 46, one less than ${n}`, 74, F1, { bare: true, size: "s" });
+    tile(stage, "why2", `5 3 → 53, what ${n} needs to reach 100`, 74, F2, { bare: true, size: "s" });
+
+    /* THE SAME THING IN LETTERS, which is the part that proves it for every
+       number rather than for 47. The screen carries the symbols; the voice
+       says them in English, because "9(a+1)" read aloud is not a sentence. */
+    /* three columns, kept apart: the fact, what its TENS figure is, what its
+       UNITS figure is. The labels are set small because the whole point is
+       reading DOWN the two middle ones and then down the two right-hand
+       ones, which cannot be done if the columns run into each other. */
+    tile(stage, "ahead", "for any two-figure number  a b", 50, 11, { bare: true });
+    tile(stage, "arow1", "9(a + 1)", 17, 31, { c: 3 });
+    tile(stage, "aten1", "tens: a", 46, 31, { c: 1, size: "s" });
+    tile(stage, "aun1", "units: 9 − a", 76, 31, { c: 2, size: "s" });
+    tile(stage, "arow2", "9b", 17, 45, { c: 4 });
+    tile(stage, "aten2", "tens: b − 1", 46, 45, { c: 1, size: "s" });
+    tile(stage, "aun2", "units: 10 − b", 76, 45, { c: 2, size: "s" });
+    tile(stage, "asum1", "the two tens:  a, b − 1  →  n − 1", 50, 59, { c: 1, size: "s" });
+    tile(stage, "asum2", "the two units:  9 − a, 10 − b  →  100 − n", 50, 70, { c: 2, size: "s" });
+    tile(stage, "aid1", "9(a + 1) = 9a + 9 = 10a + (9 − a)", 50, 63, { c: 3 });
+    tile(stage, "aid2", "9b = 10b − b = 10(b − 1) + (10 − b)", 50, 76, { c: 4 });
+    tile(stage, "afin", "1000a + 100(b − 1) + 10(9 − a) + (10 − b)  =  99n", 50, 90, { c: 0, size: "s" });
+  };
+
+  const step = (say, fn) => ({ say, show(stage, how) { fn(acts(stage, how.gsap, how.instant)); } });
+  const ALL = ["q", "qa", "qb", "lab1", "d0", "d1", "lab2", "e0", "e1",
+    "u0", "u1", "u2", "u3", "eq", "why1", "why2",
+    "ahead", "arow1", "aten1", "aun1", "arow2", "aten2", "aun2", "asum1", "asum2", "aid1", "aid2", "afin"];
+  const lay = (S, on) => ALL.forEach((id) => S.put(id, { on: on(id) ? 1 : 0 }));
+  /* a figure that has landed is sitting in its place, not in its fact */
+  const home = (S, id, i) => S.put(id, { x: SX[i], y: SY });
+
+  const steps = [
+    step(`Here is a different way at 99 times a two-figure number, and it is Teacher Dansum's. `
+      + `99 times ${n}, and you will do it with nothing but the nine times table.`,
+      (S) => { lay(S, (id) => false); S.pop("q"); S.pop("qa", 0.2); S.pop("qb", 0.35); }),
+
+    step(`First, go UP ONE from the front figure. The ${A} scrolls up to a ${A + 1} — watch it turn over. `
+      + `It is not ${A} any more, it is ${A + 1}, and that is the number you are about to multiply by nine.`,
+      (S) => {
+        lay(S, (id) => ["q", "qa", "qb"].includes(id));
+        S.roll("qa", String(A + 1), 0.5);
+        S.pulse("qa", 1.4);
+      }),
+
+    step(`So: nine times ${A + 1} is ${X}. Say it, write it down at the side, and keep its two figures apart `
+      + `in your head — a ${d[0]} and a ${d[1]} — because they are not going next to each other.`,
+      (S) => {
+        lay(S, (id) => ["q", "qb"].includes(id));
+        S.put("qa", { on: 1, text: String(A + 1) });
+        S.pop("lab1", 0.2); S.pop("d0", 0.5); S.pop("d1", 0.7);
+      }),
+
+    step(`Now the four places the answer goes in, and this is the whole trick. The ${d[0]} and the ${d[1]} `
+      + `do NOT sit side by side. They go in the FIRST place and the THIRD, leaving a gap between them `
+      + `and a gap after them: ${d[0]}, gap, ${d[1]}, gap.`,
+      (S) => {
+        lay(S, (id) => ["q", "qb", "lab1", "d0", "d1"].includes(id));
+        S.put("qa", { on: 1, text: String(A + 1) });
+        ["u0", "u1", "u2", "u3"].forEach((u, i) => S.pop(u, 0.2 + i * 0.12));
+        S.move("d0", SX[0], SY, 0.8);
+        S.move("d1", SX[2], SY, 1.1);
+        S.hide("u0", 1.2); S.hide("u2", 1.5);
+      }),
+
+    step(`And now the LAST figure of the number, the ${B}. Nine times ${B} is ${Y}. Two more figures — `
+      + `a ${e[0]} and a ${e[1]} — and two gaps still waiting for them.`,
+      (S) => {
+        lay(S, (id) => ["q", "qb", "lab1", "lab2", "d0", "d1", "u1", "u3"].includes(id));
+        S.put("qa", { on: 1, text: String(A + 1) });
+        home(S, "d0", 0); home(S, "d1", 2);
+        S.pop("e0", 0.3); S.pop("e1", 0.5);
+      }),
+
+    step(`Pour them in. The ${e[0]} into the first gap, the ${e[1]} into the last one. And look what you have: `
+      + `${d[0]}, ${e[0]}, ${d[1]}, ${e[1]} — ${99 * n}. That is 99 times ${n}, and you never multiplied by 99 at all.`,
+      (S) => {
+        lay(S, (id) => ["q", "qb", "lab1", "lab2", "d0", "d1", "e0", "e1", "u1", "u3"].includes(id));
+        S.put("qa", { on: 1, text: String(A + 1) });
+        home(S, "d0", 0); home(S, "d1", 2);
+        S.move("e0", SX[1], SY, 0.3);
+        S.move("e1", SX[3], SY, 0.7);
+        S.hide("u1", 0.5); S.hide("u3", 0.9);
+        S.pop("eq", 1.5);
+      }),
+
+    step(`And it is not luck. Read the two answers DOWN their columns instead of across. The tens — `
+      + `${d[0]} and ${e[0]} — spell ${10 * d[0] + e[0]}, which is one less than ${n}. The units — ${d[1]} and `
+      + `${e[1]} — spell ${10 * d[1] + e[1]}, which is exactly what ${n} needs to reach a hundred. And 99 times `
+      + `a number IS a hundred lots of one less, plus what it needs to reach a hundred.`,
+      (S) => {
+        lay(S, (id) => ["q", "qb", "lab1", "lab2", "d0", "d1", "e0", "e1", "eq"].includes(id));
+        S.put("qa", { on: 1, text: String(A + 1) });
+        home(S, "d0", 0); home(S, "d1", 2); home(S, "e0", 1); home(S, "e1", 3);
+        S.pop("why1", 0.3); S.pop("why2", 0.9);
+        S.pulse("d0", 0.5); S.pulse("e0", 0.7);
+        S.pulse("d1", 1.1); S.pulse("e1", 1.3);
+      }),
+
+    /* ── and now in letters, so it is proved for every number ───────────*/
+    step("Now, that worked for forty-seven. Does it work for ALL of them? It does, and here is why — "
+      + "written in letters, because letters are how you say a thing about every number at once. Take any "
+      + "two-figure number: call its front figure a and its back figure b.",
+      (S) => { lay(S, (id) => false); S.pop("ahead", 0.2); }),
+
+    step("Look at the first fact. Nine times one more than the front figure. Whatever the front figure is, "
+      + "the answer always has that SAME figure in its tens — nine twos are eighteen, nine threes are "
+      + "twenty-seven, nine fours are thirty-six. One, two, three. And the units are always nine take away it.",
+      (S) => {
+        lay(S, (id) => id === "ahead");
+        S.pop("arow1", 0.2); S.pop("aten1", 0.7); S.pop("aun1", 1.2);
+      }),
+
+    step("And the second fact does the same thing one step behind. Nine times the back figure always has "
+      + "ONE LESS than that figure in its tens — nine sevens are sixty-three, and six is one less than "
+      + "seven — and ten take away it in the units.",
+      (S) => {
+        lay(S, (id) => ["ahead", "arow1", "aten1", "aun1"].includes(id));
+        S.pop("arow2", 0.2); S.pop("aten2", 0.7); S.pop("aun2", 1.2);
+      }),
+
+    step("So read the two TENS together and you have the front figure followed by one less than the back "
+      + "figure — which is the number itself, one less. And read the two UNITS together and you have "
+      + "exactly what the number needs to reach a hundred.",
+      (S) => {
+        lay(S, (id) => ["ahead", "arow1", "aten1", "aun1", "arow2", "aten2", "aun2"].includes(id));
+        S.pop("asum1", 0.3); S.pulse("aten1", 0.5); S.pulse("aten2", 0.7);
+        S.pop("asum2", 1.3); S.pulse("aun1", 1.5); S.pulse("aun2", 1.7);
+      }),
+
+    step("But where do those two facts about the nines come FROM? They are not things somebody noticed — "
+      + "they are one line of working each. Nine lots of one more than a figure is nine of the figure plus "
+      + "nine, and that is the same as TEN of the figure take away the figure. Which is why the figure "
+      + "itself ends up in the tens, and what is left of nine ends up in the units.",
+      (S) => {
+        lay(S, (id) => ["ahead", "arow1", "aten1", "aun1", "arow2", "aten2", "aun2"].includes(id));
+        S.pop("aid1", 0.3); S.pulse("aten1", 1.2); S.pulse("aun1", 1.5);
+      }),
+
+    step("And nine lots of a figure is ten of it take away one of it, which is ten lots of ONE LESS than "
+      + "it, plus ten take away it. There is the one less in the tens, and there is what is left of ten in "
+      + "the units. Both of those are single figures for every digit from one to nine — and THAT is the "
+      + "step that makes this a proof instead of a pattern. It is also the step that fails at nought, "
+      + "because ten take away nought is ten, and ten is not a figure.",
+      (S) => {
+        lay(S, (id) => ["ahead", "arow1", "aten1", "aun1", "arow2", "aten2", "aun2", "aid1"].includes(id));
+        S.pop("aid2", 0.3); S.pulse("aten2", 1.2); S.pulse("aun2", 1.5);
+      }),
+
+    step("Put the four figures in their four places and add them up, and everything cancels: you are left "
+      + "with ninety-nine lots of the number you started with. Nothing over, and no carrying to argue "
+      + "about. And that is the whole proof, because ninety-nine of anything IS a hundred lots of one less, plus "
+      + "what it needs to reach a hundred. Take a hundred away and give it back: the number does not change. "
+      + "So the interleave is not a coincidence to marvel at — putting the tens in the odd places and the "
+      + "units in the even ones is exactly what writes those two halves side by side in one go.",
+      (S) => {
+        lay(S, (id) => ["ahead", "arow1", "aten1", "aun1", "arow2", "aten2", "aun2", "aid1", "aid2"].includes(id));
+        S.pop("afin", 0.4); S.pulse("afin", 1.4);
+      }),
+
+    step(`One warning and you have it. The last figure may not be a NOUGHT. Nine noughts are nothing, so `
+      + `there is nothing to pour into the gaps — and the trick would hand you the wrong answer rather than `
+      + `none. Every other two-figure number works, every time.`,
+      (S) => {
+        lay(S, (id) => ["q", "qb", "lab1", "lab2", "d0", "d1", "e0", "e1", "eq"].includes(id));
+        S.put("qa", { on: 1, text: String(A + 1) });
+        home(S, "d0", 0); home(S, "d1", 2); home(S, "e0", 1); home(S, "e1", 3);
+        S.pulse("qb", 0.3);
+        S.pulse("eq", 0.9);
+      }),
+  ];
   return { build, steps };
 }
 
@@ -1317,6 +1562,7 @@ async function explain(strip) {
     : data.scene.kind === "fours" ? foursSteps()
     : data.scene.kind === "fourw" ? fourwSteps()
     : data.scene.kind === "sixd" ? sixdSteps()
+    : data.scene.kind === "by99int" ? by99Steps()
     : data.scene.kind === "nine2" ? nine2Steps()
     : data.scene.kind === "nine1" ? nine1Steps()
     : data.scene.kind === "threes" ? threesSteps()
