@@ -49,3 +49,32 @@
 .vm-video--icon:focus-visible { outline: 0.5mm solid #f4c95d; outline-offset: 1.2mm; }
 .vm-video--icon .vm-video__more { align-self: center; margin-left: 2mm; }
 @media print { .vm-video.vm-video--icon { display: none !important; } }
+
+/* ── the counters and the money, on a film's stage ──────────────────────────
+   The film shows a number being shared out with the SAME counters the child
+   deals on the mat, and the SAME money that is counted out at the till. Those
+   components draw themselves; what they do not carry is a way to be laid out
+   on a screen that is measured in --u, so that is here. (Their own pages
+   dress them from the workbook's sheet, which a film must not drag in just to
+   show five coins.) */
+.vm-ct { display: flex; flex-direction: column; gap: calc(var(--u) * 0.8); align-items: flex-start; }
+.vm-ct__row { display: flex; align-items: center; gap: calc(var(--u) * 0.55); }
+.vm-ct__who {
+  width: calc(var(--u) * 7); flex: none; text-align: right;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700; font-size: calc(var(--u) * 2.1); color: #2a2723;
+}
+.vm-ct__d { display: inline-flex; }
+.vm-ct__d svg { width: calc(var(--u) * 3.4); height: calc(var(--u) * 3.4); display: block; }
+
+.vm-money { display: flex; flex-direction: column; gap: calc(var(--u) * 0.7); align-items: flex-start; }
+.vm-money__row { display: flex; align-items: center; gap: calc(var(--u) * 0.5); }
+.vm-money__who {
+  width: calc(var(--u) * 7); flex: none; text-align: right;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700; font-size: calc(var(--u) * 2.1); color: #2a2723;
+}
+.vm-money .mo-hand { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: calc(var(--u) * 0.4); }
+.vm-money .mo-hand > * { display: block; }
+.vm-money .mo-hand svg { width: auto; height: calc(var(--u) * 3.6); display: block; }
+.vm-money__more { font-size: calc(var(--u) * 1.8); color: rgba(42, 39, 35, 0.6); }

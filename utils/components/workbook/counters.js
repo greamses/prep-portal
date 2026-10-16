@@ -48,10 +48,13 @@ export const kindOf = (p) => (p.h ? 100 : p.t ? 10 : 1);
 export const countOf = (p) => (p.h || 0) + (p.t || 0) + (p.u || 0);
 
 /** A single counter of one kind, as a piece. */
-const one = (n) => ({ h: n === 100 ? 1 : 0, t: n === 10 ? 1 : 0, u: n === 1 ? 1 : 0 });
+export const one = (n) => ({ h: n === 100 ? 1 : 0, t: n === 10 ? 1 : 0, u: n === 1 ? 1 : 0 });
 
-/** One counter, drawn. The face is what it is worth. */
-function discSvg(p, { mm = 11 } = {}) {
+/** One counter, drawn. The face is what it is worth. Exported because a film
+    shares a number out with the SAME counters the child uses on the mat, and
+    a second drawing of a counter would be a second counter
+    (utils/components/workbook/tv-lessons.js). */
+export function discSvg(p, { mm = 11 } = {}) {
   const face = worth(p);
   const n = kindOf(p);
   const many = countOf(p) > 1;

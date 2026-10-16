@@ -245,21 +245,27 @@ const nineRows = {
   id: "vm-tt9-rows",
   group: "vm-tables",
   label: "A second trick: the two rows",
-  blurb: "09 18 27 36 45 — and each one flipped underneath: 90 81 72 63 54.",
+  blurb: "Tens up from the left, units up from the right — then each answer flipped underneath.",
   heading: "The 9 times table — two rows, and every answer flipped",
-  instruction: () => "Here is a second trick for the nines. Write the first five answers in a ROW: the first digits count up, " +
-    "0, 1, 2, 3, 4, and the second digits count down, 9, 8, 7, 6, 5. Now FLIP each answer over — swap its two digits — " +
-    "and write it UNDERNEATH: 09 flips to 90, 18 to 81, 27 to 72, 36 to 63, 45 to 54. Those are the other five answers, " +
-    "from 9 × 10 back to 9 × 6. On screen the boxes open one at a time, in that order.",
+  instruction: () => "Here is a second trick for the nines. Write the first five answers in a ROW. The first digits count up " +
+    "from the left: 0, 1, 2, 3, 4. Then go to the far END of the row, where your hand already is, and count the second " +
+    "digits UP coming back: 5, 6, 7, 8, 9. (They are the same five figures as counting 9, 8, 7, 6, 5 down from the left — " +
+    "but counting up is easier, and you are standing right beside where the 5 goes.) Now FLIP each answer over — swap its " +
+    "two digits — and write it UNDERNEATH: 09 flips to 90, 18 to 81, 27 to 72, 36 to 63, 45 to 54. Those are the other " +
+    "five answers, from 9 × 10 back to 9 × 6. On screen the boxes open one at a time, in that order.",
   tv: "nine2",
   cols: 1,
   defaultCount: 1,
   make: (r) => ({ n: r.int(2, 9) }),
-  /* top row: the five tens (steps 0 to 4), then the five units (5 to 9); bottom row: each flip, pair by pair (10 to 19) */
-  render: () => `<p class="vm-tt__key"><span class="is-t">top row: 0 1 2 3 4, then 9 8 7 6 5</span>` +
+  /* Top row: the five tens left to right (steps 0 to 4), then the five units
+     from the RIGHT-hand end back (steps 5 to 9), so they are written 5, 6, 7,
+     8, 9 — counting up, which is easier than counting down, and starting at
+     the end the hand has just reached. Bottom row: each flip, pair by pair
+     (10 to 19). `key` is in DOM order and is not touched by this. */
+  render: () => `<p class="vm-tt__key"><span class="is-t">top row: tens 0 1 2 3 4 →, then units 5 6 7 8 9 ←</span>` +
     `<span class="is-u">bottom row: each answer flipped over</span></p>` +
     `<div class="vm-tt vm-tt--w vm-rows" data-steps="listed">` +
-    [0, 1, 2, 3, 4].map((j) => rowsCell(`9 × ${j + 1}`, j, 5 + j, false)).join("") +
+    [0, 1, 2, 3, 4].map((j) => rowsCell(`9 × ${j + 1}`, j, 9 - j, false)).join("") +
     [0, 1, 2, 3, 4].map((j) => rowsCell(`9 × ${10 - j}`, 10 + 2 * j, 11 + 2 * j, true)).join("") + `</div>`,
   worked: () => worked(ask("9 × 3 = " + strip("2", "7") + " &nbsp; flipped &nbsp; " + strip("7", "2") + " = 9 × 8") +
     say("9 × 3 is 27. Flip it over and it is 72, which is 9 × 8. The two sums, 3 and 8, are in the same column.")),

@@ -32,6 +32,11 @@ import { placeFill, worthOf } from "./shift.js";
 /* the workbook's own bar-model drawing, so the film and the paper cannot
    disagree about what one looks like (ch 9, and its brace rule) */
 import { modelSvg } from "/prep-math/activity/maths-workbook/js/modelart.js";
+/* the SAME counters the child deals on the mat, and the SAME money that is
+   counted out at the shop till — a second drawing of either would be a
+   second counter and a second currency */
+import { discSvg, one as oneCounter } from "./counters.js";
+import { moneySvg, writeAmount, bill } from "./purse.js";
 
 /* The strip's dress. A page that is not a workbook does not link video.css,
    and an unstyled strip is not merely plain — it is invisible, which is how
@@ -386,6 +391,57 @@ function artAt(stage, id, html, widthU) {
  * stage and replays every step before the one asked for, instantly — so every
  * one of these has to be able to arrive without being watched.
  */
+/* ── the lens ──────────────────────────────────────────────────────────────
+   LOOK HERE. A bar model fills the screen, and "two boxes more than Amy" is a
+   sentence about one inch of it. So when a step is about one mark, the whole
+   drawing is moved and magnified until that mark is what you are looking at,
+   held while the thing is said, and then let go.
+
+   The stage is an ordinary HTML box, so this is a plain CSS transform about a
+   point — none of the SVG origin trouble the marks themselves have. The stage
+   is rebuilt for every step, so a zoom can never be left on.
+   ------------------------------------------------------------------------*/
+function lens(stage, node, { to = 1.75, hold = 2.4, delay = 0.2, pad = 3, gsap } = {}) {
+  if (!gsap || !node || !stage) return;
+  const vm = stage.querySelector(".vm-tv");
+  const box = stage.getBoundingClientRect();
+  const at = node.getBoundingClientRect();
+  if (!vm || !box.width || !box.height || !at.width) return;
+
+  /* the mark, as a share of the stage it sits on */
+  const span = (a, b, size, start) => [((a - start) / size) * 100, ((b - start) / size) * 100];
+  const [x0, x1] = span(at.x, at.x + at.width, box.width, box.x);
+  const [y0, y1] = span(at.y, at.y + at.height, box.height, box.y);
+
+  /* ZOOMING IN MUST NOT PUSH THE THING OFF THE SCREEN. Magnifying about a
+     mark near an edge throws half of it out of the frame — the working
+     column sits at three quarters across, so the line being pointed at lost
+     its own right-hand end. Scaling by s about o sends a point p to
+     o + (p - o)s, so the origin that keeps [a, b] inside [0, 100] is penned
+     between two values; the natural middle is clamped into that pen, and if
+     the mark is too wide to magnify at all the magnification gives way. */
+  const fit = (a, b) => {
+    const room = Math.max(1, 100 - 2 * pad);
+    const s = Math.min(to, room / Math.max(1, b - a));
+    const lo = ((b + pad) * s - 100) / (s - 1);
+    const hi = ((a - pad) * s) / (s - 1);
+    const mid = (a + b) / 2;
+    return { s, o: Math.max(Math.min(mid, Math.max(lo, hi)), Math.min(lo, hi)) };
+  };
+  const fx = fit(x0, x1);
+  const fy = fit(y0, y1);
+  const scale = Math.min(fx.s, fy.s);
+  if (scale <= 1.02) return;            // nothing to be gained by moving the screen
+
+  gsap.set(vm, { transformOrigin: `${fx.o}% ${fy.o}%` });
+  /* the mark says, while it is being looked at, that it is the one being
+     looked at — which a check can read, and a stylesheet could too */
+  gsap.timeline({ delay, onStart: () => node.setAttribute("data-lens", "1"),
+    onComplete: () => node.removeAttribute("data-lens") })
+    .to(vm, { scale, duration: 0.65, ease: "power2.inOut" })
+    .to(vm, { scale: 1, duration: 0.65, ease: "power2.inOut" }, `+=${hold}`);
+}
+
 function hand(gsap, instant) {
   /* SVG TRANSFORM ORIGINS ARE NOT CSS ONES. Asking for "center center" on a
      mark inside an SVG leaves a residual translation behind when the tween
@@ -438,7 +494,7 @@ function hand(gsap, instant) {
 
   if (instant || !gsap) {
     return {
-      show: on, grow: on, write: on, draw: on, mark: on,
+      show: on, grow: on, write: on, draw: on, mark: on, deal: on,
       tint: (n) => on(n),
       flip: (n, text) => { if (n) { n.textContent = text; on(n); } },
       cut: (svg, x, y, h) => { if (svg) knife(svg, x, y, h); },
@@ -470,6 +526,16 @@ function hand(gsap, instant) {
       if (!n) return;
       n.style.opacity = "1";
       gsap.fromTo(n, { fill: from }, { fill: n.getAttribute("fill"), duration: 0.45, delay, ease: "power1.inOut" });
+    },
+    /* A COUNTER DEALT, or a note laid on the table. These are pieces of an
+       ordinary HTML row rather than marks inside a drawing, so they are moved
+       the plain way — and they come DOWN onto the table, because that is what
+       a hand putting something down looks like. */
+    deal(n, delay = 0) {
+      if (!n) return;
+      gsap.fromTo(n, { opacity: 0, scale: 0.4, y: "-=14" },
+        { opacity: 1, scale: 1, y: "+=14", duration: 0.4, delay, ease: "back.out(1.9)",
+          onComplete() { gsap.set(n, { clearProps: "transform" }); } });
     },
     /** A mark pointed at: a small, quick swell. */
     mark(n, delay = 0) {
@@ -528,6 +594,13 @@ function barScene() {
   const P1 = 20, P2 = WHOLE - P1;        // the two parts of the opening bar
   const MORE = (TIMES - 1) * unit;       // what the last brace reads
 
+  /* the second example: small numbers, so the sharing can be DEALT and seen */
+  const M_A = "Tom", M_B = "Ann";
+  const M_WHOLE = 15, M_PARTS = 3, M_UNIT = M_WHOLE / M_PARTS;   // 5
+  /* and the third: a difference, in money */
+  const Q_A = "Rosa", Q_B = "Kate";
+  const Q_WHOLE = 48, Q_MORE = 12, Q_UNIT = (Q_WHOLE - Q_MORE) / 2;  // 18
+
   const part = (text, value, tone) => ({ text, value, tone });
   const ask = (tone) => part("?", unit, tone);
 
@@ -545,8 +618,46 @@ function barScene() {
         above: [{ from: 1, to: TIMES, text: `${MORE} more` }],
         below: [{ from: 0, to: TIMES, text: `${TIMES} units` }] },
     ], { total: String(WHOLE), label: "One unit against three" }),
+
+    /* ── a SECOND example, small enough that the sharing can be watched ──*/
+    pm: () => modelSvg([
+      { name: M_B, parts: [part("?", M_UNIT, "a")] },
+      { name: M_A, parts: [part("?", M_UNIT, "c"), part("?", M_UNIT, "c")],
+        below: [{ from: 0, to: 2, text: "2 units" }] },
+    ], { total: String(M_WHOLE), label: "Twice as many" }),
+
+    /* ── a THIRD: not a multiple but a DIFFERENCE, which is the other shape
+          a bar model comes in, and the one money questions are usually in ──*/
+    pq: () => modelSvg([
+      { name: Q_B, parts: [part("?", Q_UNIT, "a")] },
+      { name: Q_A, parts: [part("?", Q_UNIT, "a"), part(String(Q_MORE), Q_MORE, "d")] },
+    ], { total: String(Q_WHOLE), label: "One has more than the other" }),
   };
   const PIC_IDS = Object.keys(PICS);
+
+  /* ── the trays ───────────────────────────────────────────────────────────
+     Pictures whose pieces are laid out ONE AT A TIME rather than drawn: the
+     counters dealt round the rows, and the money counted onto the table. They
+     are the site's own counters and the site's own money, not a film's idea
+     of what those look like. */
+  const dealt = (rows, per) => `<div class="vm-ct">` + rows.map((who, r) =>
+    `<div class="vm-ct__row"><span class="vm-ct__who">${esc(who)}</span>`
+    + Array.from({ length: per }, (_, c) =>
+      `<span class="vm-ct__d" data-bit="${c * rows.length + r}">${discSvg(oneCounter(1))}</span>`).join("")
+    + `</div>`).join("") + `</div>`;
+
+  const moneyRows = (rows) => `<div class="vm-money">` + rows.map(([who, coins], r) =>
+    `<div class="vm-money__row" data-bit="${r}"><span class="vm-money__who">${esc(who)}</span>`
+    + moneySvg(coins, { max: 9 }) + `</div>`).join("") + `</div>`;
+
+  const TRAYS = {
+    /* M_WHOLE shared into M_PARTS rows — dealt round, one each, the way a
+       child shares counters out, because that IS what dividing is */
+    pct: () => dealt([M_B, `${M_A} 1`, `${M_A} 2`], M_UNIT),
+    mo1: () => moneyRows([["", bill(Q_WHOLE)]]),
+    mo2: () => moneyRows([[Q_B, bill(Q_UNIT)], [Q_A, bill(Q_UNIT + Q_MORE)]]),
+  };
+  const TRAY_IDS = Object.keys(TRAYS);
 
   /* What each stage of a picture puts on the paper, and in what order a hand
      would put it there. A step names the stages it adds; the stages before it
@@ -590,18 +701,56 @@ function barScene() {
        the picture rather than an answered picture appearing */
     "pr.filled": (s, H) => mb(s, "num").forEach((n, i) => H.flip(n, String(unit), 0.25 + i * 0.55)),
     "pr.more": (s, H) => H.draw(braceOf(s, "above-1-0"), 0.25),
+
+    /* ── the second example ───────────────────────────────────────────── */
+    "pm.bars": (s, H) => {
+      mb(s, "name").forEach((n, i) => H.write(n, i * 0.5));
+      H.grow(mb(s, "bar", 0)[0], 0.25);
+      H.write(mb(s, "num", 0)[0], 0.85);
+      mb(s, "bar", 1).forEach((n, i) => H.grow(n, 0.75 + i * 0.45));
+      mb(s, "num", 1).forEach((n, i) => H.write(n, 1.35 + i * 0.45));
+    },
+    "pm.units": (s, H) => H.draw(braceOf(s, "below-1-0"), 0.2),
+    "pm.total": (s, H) => H.draw(braceOf(s, "total"), 0.2),
+    "pm.filled": (s, H) => mb(s, "num").forEach((n, i) => H.flip(n, String(M_UNIT), 0.25 + i * 0.5)),
+    /* dealt round the rows: one to Ann, one to Tom's first box, one to his
+       second, and round again — fifteen of them, which is the division */
+    "ct.deal": (s, H, stage) => bits(stage, "pct").forEach((n, i) => H.deal(n, 0.2 + i * 0.17)),
+
+    /* ── the third ────────────────────────────────────────────────────── */
+    "mo1.out": (s, H, stage) => bits(stage, "mo1").forEach((n, i) => H.deal(n, 0.2 + i * 0.2)),
+    "pq.bars": (s, H) => {
+      mb(s, "name").forEach((n, i) => H.write(n, i * 0.5));
+      H.grow(mb(s, "bar", 0)[0], 0.25);
+      H.write(mb(s, "num", 0)[0], 0.85);
+      H.grow(mb(s, "bar", 1)[0], 0.75);
+      H.write(mb(s, "num", 1)[0], 1.35);
+    },
+    "pq.extra": (s, H) => { H.grow(mb(s, "bar", 1)[1], 0.2); H.write(mb(s, "num", 1)[1], 0.8); },
+    "pq.total": (s, H) => H.draw(braceOf(s, "total"), 0.2),
+    "pq.filled": (s, H) => [mb(s, "num", 0)[0], mb(s, "num", 1)[0]]
+      .forEach((n, i) => H.flip(n, String(Q_UNIT), 0.25 + i * 0.5)),
+    "mo2.out": (s, H, stage) => bits(stage, "mo2").forEach((n, i) => H.deal(n, 0.2 + i * 0.55)),
   };
   const picOf = (key) => key.split(".")[0];
+  /** A tray's pieces, in the order a hand lays them out. */
+  const bits = (stage, id) => [...(stage.querySelector(`[data-t="${id}"]`)?.querySelectorAll("[data-bit]") || [])]
+    .sort((a, b) => Number(a.dataset.bit) - Number(b.dataset.bit));
 
-  const WORK = ["k0", "k1", "k2", "k3", "k4"];
-  const TILES = ["q", "rule", ...PIC_IDS, ...WORK];
+  const WORK = ["k0", "k1", "k2", "k3", "k4", "m0", "m1", "m2", "q0", "q1", "q2", "q3"];
+  const TILES = ["q", "qm", "qq", "rule", ...PIC_IDS, ...TRAY_IDS, ...WORK];
   const LX = 77;
   const line = (i) => down(12 + i * 7.6);
 
   const build = (stage) => {
     stage.innerHTML = `<div class="vm-tv"></div>`;
     num(stage, "q", `${A} has ${TIMES} times as many as ${B}. Together, ${WHOLE}.`, 50, down(3), 0, 2.6);
+    num(stage, "qm", `${M_A} has twice as many as ${M_B}. Together, ${M_WHOLE}.`, 50, down(3), 0, 2.6);
+    num(stage, "qq", `${Q_A} and ${Q_B} share ${Q_WHOLE} prepbills. ${Q_A} gets ${Q_MORE} more.`, 50, down(3), 0, 2.4);
     PIC_IDS.forEach((id) => artAt(stage, id, PICS[id](), PIC_W));
+    /* the trays are ordinary rows rather than drawings, so they are hung
+       where the bars are rather than measured from a first bar */
+    TRAY_IDS.forEach((id) => art(stage, id, 30, down(27), 46, TRAYS[id]()));
     num(stage, "rule", "a total is a BRACE, never a number beside a bar", 36, down(38), 1, 2.0);
 
     num(stage, "k0", `1 + ${TIMES} = ${TIMES + 1} units`, LX, line(0), 0, 2.5);
@@ -609,18 +758,38 @@ function barScene() {
     num(stage, "k2", `1 unit = ${WHOLE} ÷ ${TIMES + 1} = ${unit}`, LX, line(2), 1, 2.4);
     num(stage, "k3", `${B} = ${unit},  ${A} = ${TIMES} × ${unit} = ${TIMES * unit}`, LX, line(3), 3, 2.2);
     num(stage, "k4", `${unit} + ${TIMES * unit} = ${WHOLE} ✓`, LX, line(4), 2, 2.4);
+
+    num(stage, "m0", `1 + 2 = ${M_PARTS} units`, LX, line(0), 0, 2.5);
+    num(stage, "m1", `${M_PARTS} units = ${M_WHOLE}`, LX, line(1), 2, 2.5);
+    num(stage, "m2", `1 unit = ${M_WHOLE} ÷ ${M_PARTS} = ${M_UNIT}`, LX, line(2), 1, 2.4);
+
+    num(stage, "q0", `take the ${Q_MORE} off first`, LX, line(0), 1, 2.4);
+    num(stage, "q1", `${Q_WHOLE} − ${Q_MORE} = ${Q_WHOLE - Q_MORE}`, LX, line(1), 0, 2.5);
+    num(stage, "q2", `2 units = ${Q_WHOLE - Q_MORE},  1 unit = ${Q_UNIT}`, LX, line(2), 1, 2.4);
+    num(stage, "q3", `${Q_B} = ${Q_UNIT},  ${Q_A} = ${Q_UNIT + Q_MORE}`, LX, line(3), 3, 2.3);
   };
+
+  const svgOf0 = (stage, id) => stage.querySelector(`[data-t="${id}"] svg`);
 
   const events = [];
   let tiles = new Set();
   let drawn = [];
-  const push = (say, { on = [], off = [], add = [], play = () => {} } = {}) => {
+  const push = (say, { on = [], off = [], add = [], play = () => {}, look = null, lookAt = null } = {}) => {
     const beforeTiles = new Set(tiles);
     const beforeDrawn = drawn.slice();
     on.forEach((t) => tiles.add(t));
     off.forEach((t) => tiles.delete(t));
     drawn = [...drawn, ...add];
-    events.push({ say, beforeTiles, beforeDrawn, on, off, add, play });
+    events.push({ say, beforeTiles, beforeDrawn, on, off, add, play, look, lookAt });
+  };
+
+  /* what a step may ask to be LOOKED at: a mark of a picture, a line of the
+     working, a piece on a tray */
+  const look = {
+    mark: (id, kind, i = 0, row = null) => (stage) => mb(svgOf0(stage, id), kind, row)[i],
+    brace: (id, key) => (stage) => braceOf(svgOf0(stage, id), key),
+    tile: (id) => (stage) => stage.querySelector(`[data-t="${id}"]`),
+    tray: (id) => (stage) => stage.querySelector(`[data-t="${id}"]`),
   };
 
   /* ── what a bar is ─────────────────────────────────────────────────────*/
@@ -659,14 +828,14 @@ function barScene() {
     + "across exactly the bit it is the total OF. Why does that matter so much? Because a number "
     + "sitting beside a bar does not tell you what it is counting. The brace does. It says: all of "
     + `THIS, the whole stretch, comes to ${WHOLE} — and you can see what "this" is.`,
-    { on: ["rule"], add: ["pc.total"] });
+    { on: ["rule"], add: ["pc.total"], look: look.brace("pc", "below-0-0"), lookAt: { to: 1.7, hold: 2.2, delay: 1.1 } });
 
   push("And now the only other thing you need before we start. When you are not TOLD a number, you "
     + "do not leave the box empty and you certainly do not guess — you put a question mark in it, and "
     + "you still draw the box the right size. That question mark is a promise: I do not know this yet, "
     + "but I am going to. Honestly, half of getting these right is being willing to draw a box you "
     + "cannot label.",
-    { add: ["pc.ask"] });
+    { add: ["pc.ask"], look: look.mark("pc", "num", 1), lookAt: { to: 2.1, hold: 2.4, delay: 1.0 } });
 
   /* ── a real question ──────────────────────────────────────────────────*/
   push(`Right. A real question, the sort that turns up in a test. ${A} has ${TIMES} times as many `
@@ -710,7 +879,8 @@ function barScene() {
     + `which is ${unit}. And that is the method — that is the bar model, right there. Finding what one `
     + "unit is worth is the mountain; every single thing after it is multiplying. If you can get "
     + "yourself to “one unit equals”, you have done the hard part.",
-    { on: ["k2"], play: (S) => S.pulse("k2", 0.4) });
+    { on: ["k2"], look: look.tile("k2"), lookAt: { to: 1.9, hold: 2.2 },
+      play: (S) => S.pulse("k2", 0.4) });
 
   push(`So ${unit} goes in every box. EVERY box — they are all the same size, so they all hold the `
     + `same. Watch them fill up, one at a time. ${B} has one of them, so ${B} has ${unit}. ${A} has `
@@ -728,15 +898,84 @@ function barScene() {
     + `${A} than ${B}?" Do not work it out again — LOOK at it. ${A} has two boxes more than ${B}, and a `
     + `box is ${unit}, so it is ${MORE}. You read it straight off the drawing. That is what you get for `
     + "drawing the thing properly: one picture, and every question about it is already answered on it.",
-    { add: ["pr.more"], play: (S) => S.pulse("k0", 0.1) });
+    { add: ["pr.more"], look: look.brace("pr", "above-1-0"), lookAt: { to: 1.9, hold: 2.6, delay: 0.9 },
+      play: (S) => S.pulse("k0", 0.1) });
 
-  push("So — three moves, and they are the same three every single time. Draw what you are told, with "
-    + "the smallest thing as one unit. Find what ONE unit is worth. Then multiply back up, and check it "
-    + "comes home. Ribbon, money, stickers, sweets, people on a bus — it genuinely does not matter what "
-    + "the question is about. Bars, count the units, find one unit, multiply back.",
-    { play: (S) => { S.pulse("k0", 0.2); S.pulse("k2", 0.5); S.pulse("k4", 0.8); } });
+  /* ── a SECOND example, small enough to share out with counters ────────*/
+  push(`Now, one example proves nothing — you want to see the same method on a different question, `
+    + `with different numbers, or you have only learnt THAT question. So here is another. ${M_A} has `
+    + `TWICE as many marbles as ${M_B}, and together they have ${M_WHOLE}. Same three moves. Watch me `
+    + "do them.",
+    { on: ["qm"], off: ["q", "pr", ...WORK.filter((k) => k[0] === "k")] });
 
-  const svgOf = (stage, id) => stage.querySelector(`[data-t="${id}"] svg`);
+  push(`${M_B} is the smaller one, so ${M_B} is one unit — one box. And twice as many is two of that `
+    + `SAME box for ${M_A}. One box and two boxes: that is ${M_PARTS} units altogether, and all `
+    + "of them the same size.",
+    { on: ["pm", "m0"], add: ["pm.bars", "pm.units", "pm.total"] });
+
+  push(`And ${M_PARTS} units are ${M_WHOLE}, so one unit is ${M_WHOLE} shared into ${M_PARTS}. Now, `
+    + "you may know that one straight off — but I want you to SEE what sharing actually means, so I am "
+    + `going to do it with counters. Here are ${M_WHOLE} of them, and here are the ${M_PARTS} boxes they `
+    + "have to go into.",
+    { on: ["m1"] });
+
+  push("One for this box. One for this one. One for that one. And round again — one each, every time "
+    + "round, never two to the same box, because the boxes have to stay the same size as each other. "
+    + "That is dividing. Not a trick, not a rule: giving them out one at a time until they are gone.",
+    { on: ["pct"], off: ["pm"], add: ["ct.deal"], look: look.tray("pct"), lookAt: { to: 1.5, hold: 3.6, delay: 1.6 } });
+
+  push(`And they ran out exactly. Count what landed in one box: ${M_UNIT}. So one unit is ${M_UNIT}, `
+    + `which is ${M_WHOLE} divided by ${M_PARTS} — the same answer the sharing gave us, because that `
+    + "is what the division sign was asking for all along.",
+    { on: ["m2"], look: look.tile("m2"), lookAt: { to: 1.9, hold: 2.2 } });
+
+  push(`So back to the bars and multiply up. ${M_B} has one unit: ${M_UNIT} marbles. ${M_A} has two of `
+    + `them: ${2 * M_UNIT}. And check it — ${M_UNIT} and ${2 * M_UNIT} is ${M_WHOLE}, which is what `
+    + "they had between them. Three moves again, and the second one was just counters.",
+    { on: ["pm"], off: ["pct"], add: ["pm.filled"] });
+
+  /* ── a THIRD: a difference, and money ─────────────────────────────────*/
+  push(`One more, and this one is a different SHAPE, so pay attention. ${Q_A} and ${Q_B} share `
+    + `${Q_WHOLE} prepbills — here they are, real money on the table — and ${Q_A} gets ${Q_MORE} more `
+    + `than ${Q_B}. Not three times as many. ${Q_MORE} MORE. That word changes the picture completely.`,
+    { on: ["qq", "mo1"], off: ["qm", "pm", "m0", "m1", "m2"], add: ["mo1.out"] });
+
+  push(`So ${Q_B} is one box, as always — the smaller one first. And ${Q_A} has the same box, because `
+    + "she has everything her sister has, AND a bit more. That is what more means: the same, plus "
+    + "something. So I draw her the same box first.",
+    { on: ["pq"], off: ["mo1"], add: ["pq.bars", "pq.total"] });
+
+  push(`And then the extra bit on the end, and this box I CAN label, because I was told it: ${Q_MORE}. `
+    + "Look at the shape of it — two boxes the same, and one little one hanging off the end. Any "
+    + "question with the word MORE in it comes out looking like that.",
+    { add: ["pq.extra"], look: look.mark("pq", "num", 1, 1), lookAt: { to: 2.1, hold: 2.6, delay: 1.0 } });
+
+  push(`Now here is the move, and it is the only new thing in this film. I cannot share ${Q_WHOLE} into `
+    + `two equal boxes, because the boxes are NOT equal — one of them has that ${Q_MORE} stuck on it. `
+    + `So I take the ${Q_MORE} off the top FIRST. ${Q_WHOLE} take away ${Q_MORE} is ${Q_WHOLE - Q_MORE}, `
+    + "and what is left is two boxes that really are the same.",
+    { on: ["q0", "q1"], look: look.tile("q1"), lookAt: { to: 1.8, hold: 2.4, delay: 0.6 } });
+
+  push(`Two equal units making ${Q_WHOLE - Q_MORE}, so one unit is half of that: ${Q_UNIT}. And now I `
+    + `put the ${Q_MORE} back where it belongs. ${Q_B} has ${Q_UNIT}. ${Q_A} has ${Q_UNIT} and the `
+    + `${Q_MORE} as well, which is ${Q_UNIT + Q_MORE}.`,
+    { on: ["q2", "q3"], add: ["pq.filled"] });
+
+  push(`And count the money out to be sure, because with money you always can. ${Q_UNIT} for ${Q_B}, `
+    + `${Q_UNIT + Q_MORE} for ${Q_A}. Together that is ${Q_WHOLE}, which is what was on the table. And `
+    + `the difference between them is ${Q_MORE} — exactly as the question said. Both things true, so `
+    + "it is right.",
+    { on: ["mo2"], off: ["pq"], add: ["mo2.out"], look: look.tray("mo2"), lookAt: { to: 1.45, hold: 3.2, delay: 1.4 } });
+
+  push("So there you are — three questions, stickers and marbles and money, and the same three moves "
+    + "every single time. Draw what you are told, with the smallest thing as one unit. If something is "
+    + "MORE, take the extra off the top first. Find what ONE unit is worth — share it out, with "
+    + "counters if you want to see it. Then multiply back up, and check it comes home. That is the "
+    + "whole of the bar model, and it does not care what the question is about.",
+    { off: ["mo2", "q0", "q1", "q2", "q3", "qq"], on: ["q", "pr", "k0", "k2", "k4"],
+      play: (S) => { S.pulse("k0", 0.2); S.pulse("k2", 0.5); S.pulse("k4", 0.8); } });
+
+  const svgOf = svgOf0;
 
   const steps = events.map((ev) => ({
     say: ev.say,
@@ -758,6 +997,9 @@ function barScene() {
         const svg = svgOf(stage, id);
         if (svg) svg.querySelectorAll(MARKS).forEach((n) => { n.style.opacity = "0"; });
       });
+      /* a tray's pieces come off too, or a counter dealt three steps ago is
+         already on the table when the dealing starts again */
+      TRAY_IDS.forEach((id) => bits(stage, id).forEach((n) => { n.style.opacity = "0"; }));
       ev.beforeDrawn.forEach((k) => STAGES[k](svgOf(stage, picOf(k)), already, stage));
 
       /* and this step's own: a picture is simply switched on, because it is its
@@ -765,9 +1007,16 @@ function barScene() {
          and bury the one thing worth watching */
       ev.on.forEach((id, j) => {
         if (ev.beforeTiles.has(id)) return;
-        if (PICS[id]) S.put(id, { on: 1 }); else S.pop(id, 0.2 + j * 0.12);
+        if (PICS[id] || TRAYS[id]) S.put(id, { on: 1 }); else S.pop(id, 0.2 + j * 0.12);
       });
       ev.add.forEach((k) => STAGES[k](svgOf(stage, picOf(k)), H, stage));
+      /* LOOK HERE: the step may name one mark to be magnified while it is
+         talked about. Never on the replay — a step being skipped past should
+         not drag the screen about. */
+      if (ev.look && !how.instant && how.gsap) {
+        const n = ev.look(stage);
+        if (n) lens(stage, n, { gsap: how.gsap, ...(ev.lookAt || {}) });
+      }
       ev.play(S);
     },
   }));

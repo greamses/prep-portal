@@ -494,10 +494,18 @@ function ninesSteps(part) {
 }
 
 /* ── THE NINES' SECOND TRICK: TWO ROWS, every answer FLIPPED ────────────────
-   The first five answers are written in a row — tens counting up, units
-   counting down. Then each one is flipped: its two digits cross over as they
-   drop to the row underneath, each keeping its own colour, and the five
-   flips are the other five answers, 9 × 10 back to 9 × 6. */
+   The first five answers are written in a row, and BOTH rows of figures are
+   counted UPWARDS: the tens 0 1 2 3 4 from the left, and then the units
+   5 6 7 8 9 from the RIGHT-hand end back along the row.
+
+   (The units used to be given as 9 8 7 6 5, counting down from the left. They
+   are the same five figures, but counting down is harder than counting up,
+   and the hand has just finished writing the 4 — so it is already standing at
+   the right-hand end, which is exactly where the 5 goes.)
+
+   Then each answer is flipped: its two digits cross over as they drop to the
+   row underneath, each keeping its own colour, and the five flips are the
+   other five answers, 9 × 10 back to 9 × 6. */
 function nine2Steps() {
   const cx = (j) => 18 + j * 16;
   const TY = 30, BY = 60, D = 1.9;
@@ -524,8 +532,11 @@ function nine2Steps() {
     step("Here is a second trick for the nine times table: two rows. Start with the first five sums, in a row.",
       (S) => five((j) => S.pop(`s${j}`, 4.4 + j * 0.3))),
     step("The first digits count up. 0, 1, 2, 3, 4.", (S) => five((j) => S.pop(`t${j}`, 1.8 + j * 0.55))),
-    step("The second digits count down. 9, 8, 7, 6, 5. So the row reads 9, 18, 27, 36, 45.",
-      (S) => five((j) => { S.pop(`u${j}`, 2 + j * 0.55); S.pulse(`t${j}`, 6.6 + j * 0.5); S.pulse(`u${j}`, 6.6 + j * 0.5); })),
+    step("Now the second digits — and do NOT count down for these. Go to the far END of the row, where "
+      + "your hand already is, and count UP coming back: 5, 6, 7, 8, 9. Same five figures, but counting "
+      + "up is easier than counting down, and you are standing right next to where the 5 goes. So the "
+      + "row reads 9, 18, 27, 36, 45.",
+      (S) => five((j) => { S.pop(`u${4 - j}`, 2 + j * 0.55); S.pulse(`t${j}`, 6.6 + j * 0.5); S.pulse(`u${j}`, 6.6 + j * 0.5); })),
     step("Now flip the first one over. Swap its two digits, and write it underneath. 09 flips to 90.", (S) => flip(S, 0, 3.4)),
     step("Flip the next. 18 flips to 81.", (S) => flip(S, 1, 1.2)),
     step("And the rest the same way. 27 flips to 72. 36 flips to 63. 45 flips to 54.",

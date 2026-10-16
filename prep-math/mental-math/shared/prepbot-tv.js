@@ -129,7 +129,11 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
   } catch { /* no animation library: every step simply appears */ }
 
   let index = -1;       // the step on the screen; -1 before the first
-  let playing = true;
+  /* THE SET WAITS TO BE TURNED ON. It used to start talking the moment the
+     curtain opened, which gives nobody time to read the first picture or to
+     turn the sound down — and a lesson that begins before you asked for it is
+     one you have already missed the start of. Press play. */
+  let playing = false;
   let token = 0;        // every move makes a new one, and a narration that is not the latest stops driving
   let closed = false;
 
@@ -140,8 +144,15 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
     progress.textContent = index < 0 ? "Ready" : `Step ${index + 1} of ${steps.length}`;
   };
 
-  /** Put step i on the screen: everything before it at once, itself animated, and said. */
-  async function go(i) {
+  /**
+   * Put step i on the screen: everything before it at once, itself animated,
+   * and said.
+   *
+   * `speak` is false for exactly one call — the one that puts the set up. The
+   * first picture is drawn and the controls are painted, but PrepBot does not
+   * open its mouth until the learner has pressed play.
+   */
+  async function go(i, speak = true) {
     if (closed || !steps.length) return;
     const mine = ++token;
     teacher.stop();
@@ -152,6 +163,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
     steps[index].show?.(stage, { gsap, instant: !gsap });
     paintControls();
     teacher.show();
+    if (!speak) return;
     teacher.speak([{ text: steps[index].say, mode: "speech" }], { colorSeed: index });
     try { await teacher.narrationDone; } catch { /* stopped */ }
     if (mine !== token || closed || !playing) return;
@@ -245,6 +257,8 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
     teacher.scheduleIdle();
   }
   curtain.style.display = "none";
-  if (!closed) go(0);
+  /* the first step is PUT on the screen, with its picture and its line, but
+     nothing is said and nothing moves on until the learner presses play */
+  if (!closed) go(0, false);
   return api;
 }
