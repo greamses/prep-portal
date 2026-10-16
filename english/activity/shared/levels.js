@@ -68,6 +68,35 @@ export const tick = (...opts) =>
 export const pick = (w) => `<b class="en-pick">${w}</b>`;
 
 /**
+ * "A" OR "AN" FOR A WORD THE PAGE DOES NOT KNOW IN ADVANCE.
+ *
+ * Every question whose wording is finished off from a bank has to choose its
+ * own article, and writing `a ${word}` into the template means the page sets
+ * "a adjective" and "a adverb" in front of a child who is being taught, on
+ * that very page, how English works.
+ *
+ * The rule is about the SOUND the word starts with and not the letter, which
+ * is why this cannot be `/^[aeiou]/`: it is a university and an hour, a
+ * one-off and an MP. The two short lists below are the words that break the
+ * letter rule often enough to matter in these banks; anything else follows
+ * its first letter.
+ */
+const SOUNDS_CONSONANT = /^(uni(?!n)|use|usu|usa|utensil|euro|eul|eur|ewe|one|once)/i;
+const SOUNDS_VOWEL = /^(hour|honest|honour|honor|heir)/i;
+export function an(word) {
+  const w = String(word || "").replace(/^[^A-Za-z]+/, "");
+  if (!w) return "a";
+  if (SOUNDS_VOWEL.test(w)) return "an";
+  if (SOUNDS_CONSONANT.test(w)) return "a";
+  /* a lone capital letter, or initials, are said by their letter names:
+     an F, an MP, a B, a TV */
+  if (/^[A-Z]+(-|$)/.test(w)) return /^[AEFHILMNORSX]/.test(w) ? "an" : "a";
+  return /^[aeiou]/i.test(w) ? "an" : "a";
+}
+/** The word with the right article in front of it. */
+export const anOf = (word) => `${an(word)} ${word}`;
+
+/**
  * Dealt, not drawn.
  *
  * `r.pick` is free to give the same item twice running, and on a page of six

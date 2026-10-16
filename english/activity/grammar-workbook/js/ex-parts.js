@@ -20,7 +20,7 @@
    ========================================================================== */
 
 import { want } from "/utils/components/workbook/want.js";
-import { levelOf, box, ask, say, worked, dealer } from "../../shared/levels.js";
+import { levelOf, box, ask, say, worked, dealer, anOf } from "../../shared/levels.js";
 import { JOBS, bankFor } from "/data/english/partsofspeech.js";
 
 const tier = (o) => levelOf(o).id;
@@ -82,7 +82,10 @@ const grFind = {
   cols: 1,
   defaultCount: 6,
   make: (r, o, _k, i) => ({ ...deal(r, bankFor(tier(o)), i) }),
-  render: (it) => ask(`${it.s.join(" ")} &nbsp;&nbsp; a ${JOBS[it.j].name}: ${box()}`),
+  /* `anOf`, not "a": the jobs include adjective, adverb and an interjection,
+     and a page that asks for "a adjective" is teaching the wrong thing on
+     the way to teaching the right one */
+  render: (it) => ask(`${it.s.join(" ")} &nbsp;&nbsp; ${anOf(JOBS[it.j].name)}: ${box()}`),
   worked: () => worked(
     ask(`The cat sat under the table &nbsp;&nbsp; a preposition: <u>under</u>`)
     + say("A preposition puts a thing somewhere. Under is what puts the cat in its place against the table — so "
