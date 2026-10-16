@@ -427,7 +427,7 @@ function section(id, group, maker, { label, blurb, heading, instruction, example
 }
 
 const pw = section("mod-pw", "model-pw", partWhole, {
-  film: ["bar", "Bar models"],
+  film: ["bar-setup", "Setting up a bar model"],
   label: "Part and whole",
   blurb: "Find the whole, or the part that is missing.",
   heading: "Part and whole",
@@ -437,6 +437,7 @@ const pw = section("mod-pw", "model-pw", partWhole, {
 });
 
 const cmp = section("mod-cmp", "model-cmp", comparison, {
+  film: ["bar-missing", "Completing the missing part"],
   label: "Comparison",
   blurb: "More than, fewer than, and how many more.",
   heading: "Comparing two amounts",
@@ -446,6 +447,7 @@ const cmp = section("mod-cmp", "model-cmp", comparison, {
 });
 
 const pp = section("mod-pp", "model-pp", ratio, {
+  film: ["bar-parts", "Part to part, and part to whole"],
   label: "Ratio",
   blurb: "Times as many, p : q, three-way shares.",
   heading: "Ratio: equal units",
@@ -455,6 +457,7 @@ const pp = section("mod-pp", "model-pp", ratio, {
 });
 
 const pwf = section("mod-pwf", "model-pwf", fraction, {
+  film: ["bar-fractions", "Bars as fractions"],
   label: "Fractions",
   blurb: "Of the whole, the whole from a part, of what is left.",
   heading: "Fractions of a whole",
@@ -486,6 +489,10 @@ const deg = section("mod-deg", "model-deg", degrees, {
 const word = {
   id: "mod-word",
   group: "model-word",
+  /* the money film sits here rather than in chapter 11: a money question is a
+     bar question, and this is the section where the child has to decide which
+     model a story wants (utils/components/workbook/bar-films.js) */
+  video: () => lessonStrip("bar-money", "Bar models and money"),
   label: "Word problems",
   blurb: "Every kind mixed, no picture — build the model first.",
   heading: "Word problems — build the model, then answer",

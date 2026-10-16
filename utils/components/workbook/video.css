@@ -78,3 +78,34 @@
 .vm-money .mo-hand > * { display: block; }
 .vm-money .mo-hand svg { width: auto; height: calc(var(--u) * 3.6); display: block; }
 .vm-money__more { font-size: calc(var(--u) * 1.8); color: rgba(42, 39, 35, 0.6); }
+
+/* ── money in piles, one per denomination (bar-films.js) ───────────────────
+   Notes are stacked by kind rather than spread in a row, because the thing a
+   money lesson has to SHOW is an exchange: a twenty leaving its pile and four
+   fives arriving in theirs. Spread in a row, a swap just looks like the money
+   rearranging itself. Each note sits a little below and right of the one
+   under it, the way a hand lays them down. */
+.vm-money--stacks { flex-direction: row; align-items: flex-end; gap: calc(var(--u) * 2.4); }
+.vm-stack { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 0.6); }
+.vm-stack__lab {
+  order: 2;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: calc(var(--u) * 1.7);
+  font-weight: 700;
+  color: rgba(42, 39, 35, 0.65);
+}
+.vm-stack__pile {
+  position: relative;
+  display: block;
+  /* the pile grows down-right, so it needs room for the last note's offset */
+  width: calc(var(--u) * 11);
+  height: calc(var(--u) * 5 + var(--n, 1) * var(--u) * 0.5);
+}
+.vm-stack__one {
+  position: absolute;
+  left: calc(var(--i) * var(--u) * 0.32);
+  top: calc(var(--i) * var(--u) * 0.5);
+  display: block;
+}
+.vm-stack__one .mo-hand { display: block; }
+.vm-stack__one svg { width: calc(var(--u) * 10); height: auto; display: block; }
