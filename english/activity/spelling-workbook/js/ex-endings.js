@@ -60,8 +60,11 @@ const spEndings = {
   /* Only the endings the word really takes: a few of these are irregular in
      the past (ran, not runned), and asking for "runned" would be teaching a
      mistake in order to mark it wrong. */
-  render: (it) => ask(`<b class="en-word">${it.w}</b> + -ing = ${box()}`
-    + (it.ed ? `&nbsp;&nbsp;&nbsp; + -ed = ${box()}` : `&nbsp;&nbsp;&nbsp; <span class="en-note">(-ed: not this one)</span>`)),
+  /* each ending and its box are ONE thing: in two columns the box was
+     wrapping onto the next line and leaving "+ -ed =" stranded above it */
+  render: (it) => ask(`<span class="en-pair"><b class="en-word">${it.w}</b> + -ing = ${box()}</span>`
+    + (it.ed ? ` <span class="en-pair">+ -ed = ${box()}</span>`
+      : ` <span class="en-note">(-ed: not this one)</span>`)),
   worked: () => worked(
     ask(`<b class="en-word">hop</b> + -ing = <u>hopping</u> &nbsp;&nbsp;&nbsp; + -ed = <u>hopped</u>`)
     + say("hop is a short word ending in one vowel and one consonant, so the p is written twice before the ending "

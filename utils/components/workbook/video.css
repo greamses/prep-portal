@@ -109,3 +109,21 @@
 }
 .vm-stack__one .mo-hand { display: block; }
 .vm-stack__one svg { width: calc(var(--u) * 10); height: auto; display: block; }
+
+/* ── the working column: anchored left, and allowed to wrap ────────────────
+   A tile is centred on its point and never wraps, which is right for a figure
+   standing on its own and wrong for a sentence: a centred sentence grows BOTH
+   ways as its text gets longer, and the way it grows is into the drawing. A
+   line of working is anchored by its left edge instead and given a width to
+   wrap inside, so the column keeps its distance however long the words run. */
+.vm-t--left { transform: translate(0, -50%); }
+.vm-t--wrap .vm-t__in {
+  display: block;
+  white-space: normal;
+  width: calc(var(--u) * var(--w, 34));
+  line-height: 1.25;
+  text-wrap: pretty;
+  /* a backstop: a single token longer than the column still has to stay in
+     it, because a line that pokes out of the column is a line in the picture */
+  overflow-wrap: anywhere;
+}

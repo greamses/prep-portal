@@ -102,3 +102,9 @@
   white-space: nowrap;
 }
 .en-from .wb-answer { min-width: 9mm; }
+
+/* A label and the box it belongs to are ONE thing. In two columns the box was
+   wrapping onto the next line and leaving "+ -ed =" stranded above it, which
+   reads as a question with no answer space and an answer space with no
+   question. */
+.en-pair { display: inline-block; white-space: nowrap; margin-right: 4mm; }

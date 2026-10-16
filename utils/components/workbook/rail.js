@@ -32,6 +32,7 @@
      })
    ========================================================================== */
 
+import { mountLetterhead, loadHead } from "./letterhead.js";
 import { renderWorkbook, PAPERS, whenMath, mathify } from "./engine.js";
 import { seedCode, seedFrom } from "./seed.js";
 import { ICON, faceOf } from "./icons.js";
@@ -180,6 +181,8 @@ export function mountBuilder(cfg) {
       title: $("wb-title").value.trim() || title,
       paper: $("wb-paper").value in PAPERS ? $("wb-paper").value : "a4",
       nameLine: $("wb-nameline").checked,
+      /* the school's own heading, when the teacher has set one up */
+      head: letterhead ? letterhead.read() : loadHead(),
       answers: $("wb-answers").checked,
       seed: seedFrom($("wb-seedcode").value),
       code: $("wb-seedcode").value.trim().toUpperCase(),
@@ -401,6 +404,7 @@ export function mountBuilder(cfg) {
      Dealt again only when the number of columns changes (the card goes from
      three to two to one as the window narrows). Moving the nodes keeps every
      listener on them. */
+  let letterhead = null;
   let dialItems = null;
   function packDials() {
     const card = document.querySelector(".wb-rail__paper");
@@ -436,6 +440,16 @@ export function mountBuilder(cfg) {
     $("wb-title").value = saved?.title ?? title;
     $("wb-paper").value = saved?.paper ?? "a4";
     $("wb-nameline").checked = saved?.nameLine !== false;
+    /* The letterhead is the TEACHER'S and not the workbook's, so it is mounted
+       from its own key and every workbook on the machine shows the same one.
+       It is built here rather than in each workbook's HTML: eleven copies of
+       the same fieldset is eleven places for it to drift. */
+    const sheetSet = [...document.querySelectorAll(".wb-rail__paper .wb-fieldset")]
+      .find((f) => !f.classList.contains("wb-fieldset--picks"));
+    if (sheetSet && !letterhead) {
+      letterhead = mountLetterhead(sheetSet.parentElement, () => render());
+      letterhead.write(saved?.head);
+    }
     $("wb-answers").checked = saved?.answers !== false;
     $("wb-seedcode").value = saved?.code || seedCode((Math.random() * 0xffffffff) >>> 0);
 

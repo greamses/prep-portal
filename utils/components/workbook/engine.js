@@ -48,6 +48,8 @@ import { stream, seedFrom, seedCode } from "./seed.js";
 const codeOf = (o) => (o.code ? String(o.code).toUpperCase() : seedCode(o.seed));
 import { ICON } from "./icons.js";
 import { mathify, loadMath } from "./mathify.js";
+/* a school's own heading, when the paper is going out as a test */
+import { headBand, headFooter } from "./letterhead.js";
 export { whenMath, loadMath, mathify } from "./mathify.js";
 
 /* Every number and expression on the paper is set by MathJax (mathify.js).
@@ -154,17 +156,28 @@ export function buildSections(o, subject) {
 
 /* ── the DOM of one workbook ───────────────────────────────────────────────*/
 
-/** The title block that stands at the head of page one. */
+/**
+ * The title block that stands at the head of page one.
+ *
+ * A LETTERHEAD TAKES THE TOP OF IT when one is set (letterhead.js): the
+ * school's badge and name go above everything, and the Prep Portal line goes
+ * away unless the teacher asks to keep it — a paper going out to a class is
+ * the school's paper, not ours. Everything else is unchanged, so the same
+ * sheet is a practice book at home and a test paper at school.
+ */
 function coverBlock(o, subject) {
   const rule = (label) =>
     `<span class="wb-cover__field"><em>${label}</em><span class="wb-line wb-line--fill"></span></span>`;
+  const head = o.head && o.head.on ? o.head : null;
+  const band = head ? headBand(head) : "";
   return el(
     "header",
-    "wb-cover",
-    `<p class="wb-cover__eyebrow">${typeof subject.eyebrow === "function" ? subject.eyebrow(o) : subject.eyebrow}</p>
+    `wb-cover${band ? " wb-cover--headed" : ""}`,
+    band
+    + `<p class="wb-cover__eyebrow">${typeof subject.eyebrow === "function" ? subject.eyebrow(o) : subject.eyebrow}</p>
      <h1 class="wb-cover__title">${escapeHtml(o.title)}</h1>
      <p class="wb-cover__sub">${subject.subtitle(o)}</p>
-     <p class="wb-cover__by">${AUTHOR} &nbsp;·&nbsp; ${SITE}</p>
+     ${!head || head.keepBy ? `<p class="wb-cover__by">${AUTHOR} &nbsp;·&nbsp; ${SITE}</p>` : ""}
      ${o.nameLine ? `<div class="wb-cover__rules">${rule("Name")}${rule("Class")}${rule("Date")}</div>` : ""}`
   );
 }
@@ -273,13 +286,16 @@ function answerBlocks(sections, o) {
 
 /* ── paginate ──────────────────────────────────────────────────────────────*/
 
-function newPage(sheet, mark) {
+function newPage(sheet, mark, head = null) {
   const page = el("section", "wb-page");
+  /* page two onwards carries the SCHOOL, when there is one: a test paper that
+     says Prep Portal at the foot of every page is not the school's paper */
+  const foot = headFooter(head) || `${AUTHOR} · ${SITE}`;
   page.innerHTML =
     (mark ? `<div class="wb-page__wm" aria-hidden="true">${WATERMARK}</div>` : "") +
     `<div class="wb-page__inner"></div>` +
     `<footer class="wb-page__foot">` +
-    `<span class="wb-page__by">${AUTHOR} · ${SITE}</span>` +
+    `<span class="wb-page__by">${escapeHtml(foot)}</span>` +
     `<span class="wb-page__mark"></span>` +
     `<span class="wb-page__no"></span>` +
     `</footer>`;
@@ -302,13 +318,13 @@ export function paginate(sheet, blocks, o) {
   sheet.style.setProperty("--wb-h", paper.h + "mm");
 
   const mark = o.watermark !== false;
-  let inner = newPage(sheet, mark);
+  let inner = newPage(sheet, mark, o.head);
 
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];
 
     if (b.kind === "break") {
-      if (inner.childElementCount) inner = newPage(sheet, mark);
+      if (inner.childElementCount) inner = newPage(sheet, mark, o.head);
       continue;
     }
 
@@ -321,7 +337,7 @@ export function paginate(sheet, blocks, o) {
         continue;
       }
       inner.removeChild(b.node);
-      inner = newPage(sheet, mark);
+      inner = newPage(sheet, mark, o.head);
       inner.appendChild(b.node);
     }
 
@@ -334,7 +350,7 @@ export function paginate(sheet, blocks, o) {
       inner.removeChild(next);
       if (spills && inner.childElementCount > 1) {
         inner.removeChild(b.node);
-        inner = newPage(sheet, mark);
+        inner = newPage(sheet, mark, o.head);
         inner.appendChild(b.node);
       }
     }

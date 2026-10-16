@@ -16,7 +16,7 @@ import { faceOf } from "./icons.js";
 import { UI } from "/utils/components/ui-icons.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const COSMETIC = new Set(["paper", "nameLine", "answers", "watermark", "title"]);
+const COSMETIC = new Set(["paper", "nameLine", "answers", "watermark", "title", "head"]);
 
 /**
  *   mountAssign({ workbook, label, getOptions })

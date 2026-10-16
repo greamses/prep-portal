@@ -3359,3 +3359,75 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 /* PrepBot's film about the card, above the sum */
 .wb-shift__learn { display: flex; justify-content: center; margin-bottom: 0.3rem; }
 .wb-shift__learn:empty { display: none; }
+
+/* ── the letterhead: a workbook as a school's own test paper ───────────────
+   A band across the top of page one — badge on the left, the school's lines
+   in the middle, the time allowed and the marks box on the right, which is
+   where every exam paper any of us has sat has put them. Measured in
+   millimetres, because it comes out of a printer. */
+.wb-headband {
+  display: flex;
+  align-items: flex-start;
+  gap: 4mm;
+  padding-bottom: 2.6mm;
+  margin-bottom: 3mm;
+  border-bottom: 0.6mm solid var(--wb-ink, #2a2723);
+}
+.wb-headband__logo {
+  width: 18mm;
+  height: 18mm;
+  flex: none;
+  object-fit: contain;
+  object-position: center;
+}
+.wb-headband__words { flex: 1 1 auto; min-width: 0; }
+.wb-headband__school {
+  margin: 0;
+  font-family: var(--wb-display, inherit);
+  font-size: 15pt;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.wb-headband__line {
+  margin: 1mm 0 0;
+  font-size: 9.5pt;
+  font-weight: 600;
+  color: var(--wb-mid, rgba(42, 39, 35, 0.72));
+}
+.wb-headband__right {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2mm;
+  text-align: right;
+}
+.wb-head__time { margin: 0; font-size: 9pt; }
+/* a box the marker writes in: ruled, and big enough for two figures and a
+   total without anybody having to squeeze */
+.wb-head__marks {
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+  font-size: 8pt;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--wb-mid, rgba(42, 39, 35, 0.72));
+}
+.wb-head__marks em { display: block; width: 20mm; height: 9mm; border: 0.5mm solid var(--wb-ink, #2a2723); }
+/* with a letterhead over it the title is a SUBheading: the school is the
+   loudest thing on the page, as it is on a real paper */
+.wb-cover--headed .wb-cover__title { font-size: 17pt; }
+.wb-cover--headed .wb-cover__eyebrow { margin-top: 0; }
+
+/* the controls in the rail */
+.wb-head__body { display: grid; gap: 2mm; margin-top: 2mm; }
+.wb-head__logo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.wb-head__shot {
+  width: 40px; height: 40px; object-fit: contain;
+  background: var(--surface-secondary, #fff);
+  border: 1px solid var(--line, rgba(42, 39, 35, 0.2));
+}

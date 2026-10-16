@@ -209,7 +209,7 @@ function hand(gsap, instant) {
   if (instant || !gsap) {
     return {
       show: on, grow: on, write: on, draw: on, mark: on, deal: on, drop: on,
-      focus: () => {}, lit: () => {},
+      focus: () => {}, lit: () => {}, both: () => {},
       tint: (n) => on(n),
       flip: (n, text) => { if (n) { n.textContent = text; on(n); } },
       cut: (svg, x, y, h) => { if (svg) knife(svg, x, y, h); },
@@ -284,10 +284,32 @@ function hand(gsap, instant) {
     focus(n, delay = 0, hold = 1.7, to = 1.22) {
       if (!n) return;
       n.style.opacity = "1";
+      /* WORDS AND FIGURES ARE POINTED AT WITH COLOUR, NEVER BY SWELLING.
+         Text is set against something — the box it sits in, the column it is
+         written down — so growing it alone pushes it out of line with its own
+         bar, or past the edge of the screen when it is already near it. Only
+         a SHAPE may be scaled, or a shape and its figure together. */
+      if (n.tagName === "text" || !inSvg(n)) { this.lit(n, delay, hold); return; }
       about(n);
       gsap.timeline({ delay, onComplete: settle(n) })
         .to(n, { scale: to, duration: 0.4, ease: "back.out(1.7)" })
         .to(n, { scale: 1, duration: 0.4, ease: "power2.inOut" }, `+=${hold}`);
+    },
+    /**
+     * A BAR AND THE FIGURE IN IT, swelled together — both about the BAR's
+     * middle, so the figure stays where it is in its box the whole way
+     * through instead of drifting across it.
+     */
+    both(bar, n, delay = 0, hold = 1.7, to = 1.18) {
+      if (!bar) return;
+      [bar, n].filter(Boolean).forEach((m) => { m.style.opacity = "1"; });
+      const o = inSvg(bar) ? { svgOrigin: originOf(bar) } : { transformOrigin: "50% 50%" };
+      [bar, n].filter(Boolean).forEach((m) => {
+        gsap.set(m, o);
+        gsap.timeline({ delay, onComplete: settle(m) })
+          .to(m, { scale: to, duration: 0.4, ease: "back.out(1.7)" })
+          .to(m, { scale: 1, duration: 0.4, ease: "power2.inOut" }, `+=${hold}`);
+      });
     },
     /**
      * The other way to say "this one": the mark takes a colour for as long as
@@ -299,12 +321,15 @@ function hand(gsap, instant) {
       if (!n) return;
       n.style.opacity = "1";
       const paint = (v) => {
+        /* three kinds of mark, three ways of taking a colour: a line of
+           working is coloured text, a figure in a box is a filled glyph, and
+           a brace is a drawn stroke with its words on it */
+        if (!inSvg(n)) { n.style.color = v; return; }
         const marks = n.tagName === "g" ? [...n.querySelectorAll("path, text")] : [n];
         marks.forEach((m) => {
           if (m.tagName === "text") m.style.fill = v;
           else { m.style.stroke = v; m.style.strokeWidth = v ? "0.9" : ""; }
         });
-        if (!n.tagName || n.tagName === "SPAN" || n.tagName === "DIV") n.style.color = v;
       };
       gsap.timeline({ delay, onComplete: () => paint("") })
         .add(() => paint(ink))
@@ -402,7 +427,12 @@ function film({ pics = {}, trays = {}, stages = {}, lines = [], build: extra = n
     /* a tray is an ordinary row of pieces, so it hangs where the bars are
        rather than being measured from a first bar it has not got */
     TRAY_IDS.forEach((id) => art(stage, id, 30, down(27), 46, trays[id]()));
-    lines.forEach((l) => num(stage, l.id, l.text, l.x ?? 77, down(l.y), l.c ?? 0, l.size ?? 2.5));
+    /* THE WORKING STANDS IN A COLUMN OF ITS OWN, clear of the drawing.
+       Centred tiles grew towards the picture as their text got longer, so a
+       line nobody had measured ended up written across the bars. The column
+       is anchored by its LEFT edge at SIDE_X and given a width to wrap in,
+       which is a thing a teacher's board has and a stage had not. */
+    lines.forEach((l) => side(stage, l.id, l.text, l.x ?? SIDE_X, l.y, l.c ?? 0, l.size ?? 2.5));
     if (extra) extra(stage);
   };
 
@@ -431,13 +461,48 @@ function film({ pics = {}, trays = {}, stages = {}, lines = [], build: extra = n
       if (ev.look && !how.instant && how.gsap) {
         const n = ev.look(stage);
         const o = ev.lookAt || {};
-        if (n) (o.lit ? H.lit(n, o.delay || 0.2, o.hold || 1.7) : H.focus(n, o.delay || 0.2, o.hold || 1.7, o.to || 1.22));
+        if (n) {
+          if (o.lit) H.lit(n, o.delay || 0.2, o.hold || 1.7);
+          else if (o.with) H.both(n, o.with(stage), o.delay || 0.2, o.hold || 1.7, o.to || 1.18);
+          else H.focus(n, o.delay || 0.2, o.hold || 1.7, o.to || 1.22);
+        }
       }
       ev.play(S, H, stage);
     },
   }));
   return { build, steps };
 }
+
+/* Where the working column starts, and how wide it may run. The drawing ends
+   at about 56 across the screen, so 62 leaves a clear gutter between the two
+   and 36 of width carries about fourteen characters a line at this size. */
+const SIDE_X = 59;
+const SIDE_W = 39;
+
+/**
+ * A line of the working: left-anchored in its column, and allowed to WRAP.
+ *
+ * `num` centres its tile and never wraps, which is right for a figure on its
+ * own and wrong for a sentence — a centred sentence grows both ways, and the
+ * way it grows is into the picture.
+ */
+function side(stage, id, text, x, y, c, sizeU) {
+  const box = tile(stage, id, String(text), x, down(y), { c });
+  box.classList.add("vm-t--left", "vm-t--wrap");
+  box.style.setProperty("--w", `${SIDE_W}`);
+  box.firstChild.style.setProperty("font-size", `calc(var(--u) * ${sizeU})`);
+  return box;
+}
+
+/**
+ * Run a colour down a list of lines, one after another.
+ *
+ * The recap at the end of a film used to PULSE them, which scales the tile —
+ * and a tile already near the right-hand edge grows straight off it. Colour
+ * says the same thing and cannot move anything.
+ */
+const runLit = (H, stage, ids, gap = 0.35, hold = 1.1) =>
+  ids.forEach((id, i) => H.lit(stage.querySelector(`[data-t="${id}"]`)?.firstChild, 0.2 + i * gap, hold));
 
 /* the parts a model is made of, written the way the drawing wants them */
 const part = (text, value, tone) => ({ text, value, tone });
@@ -466,11 +531,11 @@ export function barSetup() {
       ], { label: "Two bars on one ruler" }),
     },
     lines: [
-      { id: "r1", text: "1 · a bar is a THING", x: 72, y: 12, c: 1, size: 2.2 },
-      { id: "r2", text: "2 · parts together ARE the whole", x: 72, y: 19.6, c: 1, size: 2.2 },
-      { id: "r3", text: "3 · a total is a BRACE", x: 72, y: 27.2, c: 1, size: 2.2 },
-      { id: "r4", text: "4 · not told → a ? box, to size", x: 72, y: 34.8, c: 1, size: 2.2 },
-      { id: "r5", text: "5 · compared bars, ONE ruler", x: 72, y: 42.4, c: 1, size: 2.2 },
+      { id: "r1", text: "1 · A bar is a THING", y: 12, c: 1, size: 2.2 },
+      { id: "r2", text: "2 · Parts together ARE the whole", y: 19.6, c: 1, size: 2.2 },
+      { id: "r3", text: "3 · A total is a BRACE", y: 27.2, c: 1, size: 2.2 },
+      { id: "r4", text: "4 · Not told → a ? box, to size", y: 34.8, c: 1, size: 2.2 },
+      { id: "r5", text: "5 · Compared bars, ONE ruler", y: 42.4, c: 1, size: 2.2 },
     ],
     stages: {
       "pw.bar": (s, H) => H.grow(mb(s, "bar")[0]),
@@ -539,7 +604,7 @@ export function barSetup() {
         + "where the story cuts it. Brace the total, never write it beside. Question-mark what you were "
         + "not told, at the size you think it is. And if two things are being compared, measure them "
         + "against each other. Get those right and the sums at the end are the easy part.",
-        { play: (S) => { S.pulse("r1", 0.2); S.pulse("r2", 0.5); S.pulse("r3", 0.8); S.pulse("r4", 1.1); S.pulse("r5", 1.4); } });
+        { play: (S, H, stage) => runLit(H, stage, ["r1", "r2", "r3", "r4", "r5"]) });
     },
   });
 }
@@ -678,9 +743,9 @@ export function barMissing() {
       ], { label: "Three equal units" }),
     },
     lines: [
-      { id: "g1", text: "whole missing → ADD", x: 74, y: 12, c: 2, size: 2.3 },
-      { id: "g2", text: "part missing → TAKE AWAY", x: 74, y: 19.6, c: 1, size: 2.3 },
-      { id: "g3", text: "equal units → SHARE", x: 74, y: 27.2, c: 3, size: 2.3 },
+      { id: "g1", text: "Whole missing → ADD", y: 12, c: 2, size: 2.3 },
+      { id: "g2", text: "Part missing → TAKE AWAY", y: 19.6, c: 1, size: 2.3 },
+      { id: "g3", text: "Equal units → SHARE", y: 27.2, c: 3, size: 2.3 },
       { id: "s1", text: `${P1} + ${P2} = ${W}`, y: 38, c: 2, size: 2.6 },
       { id: "s2", text: `${W} − ${P1} = ${P2}`, y: 38, c: 1, size: 2.6 },
       { id: "s3", text: `${T} ÷ ${N} = ${U}`, y: 38, c: 3, size: 2.6 },
@@ -781,7 +846,7 @@ export function barMissing() {
         + "before every question — whole missing, add. Part missing, take away. Equal units, share. Three "
         + "gaps, three moves, and the picture tells you which.",
         { on: ["s3"], add: ["m3.filled"], look: look.tile("s3"), lookAt: { delay: 1.8, hold: 2.0, to: 1.3 },
-          play: (S) => { S.pulse("g3", 0.3); } });
+          play: (S, H, stage) => runLit(H, stage, ["g3"], 0, 1.6) });
     },
   });
 }
@@ -834,7 +899,7 @@ export function barMoney() {
         + `</div>`,
     },
     lines: [
-      { id: "q0", text: `take the ${MORE} off first`, x: 74, y: 12, c: 1, size: 2.4 },
+      { id: "q0", text: `Take the ${MORE} off first`, y: 12, c: 1, size: 2.4 },
       { id: "q1", text: `${WHOLE} − ${MORE} = ${WHOLE - MORE}`, y: 19.6, c: 0 },
       { id: "q2", text: `2 units = ${WHOLE - MORE},  1 unit = ${UNIT}`, y: 27.2, c: 1, size: 2.4 },
       { id: "q3", text: `${B} = ${UNIT},  ${A} = ${UNIT + MORE}`, y: 34.8, c: 3, size: 2.3 },
@@ -929,8 +994,8 @@ export function barFractions() {
         says: String(W) }], { label: "Not quarters" }),
     },
     lines: [
-      { id: "d1", text: "BOTTOM = how many parts", x: 74, y: 12, c: 1, size: 2.3 },
-      { id: "d2", text: "TOP = how many you take", x: 74, y: 19.6, c: 3, size: 2.3 },
+      { id: "d1", text: "BOTTOM = how many parts", y: 12, c: 1, size: 2.3 },
+      { id: "d2", text: "TOP = how many you take", y: 19.6, c: 3, size: 2.3 },
       { id: "d3", text: `${W} ÷ ${D} = ${each}  (one part)`, y: 29, c: 0, size: 2.5 },
       { id: "d4", text: `${Nn} × ${each} = ${Nn * each}`, y: 36.6, c: 2, size: 2.5 },
     ],
@@ -993,7 +1058,7 @@ export function barFractions() {
         + "worth, then multiply back up. And before you do any of it, check with your eye that the parts "
         + "really are the same size — because a bar model is only as honest as its cutting.",
         { off: ["f4"], on: ["f3", "d3", "d4"], add: [],
-          play: (S) => { S.pulse("d1", 0.2); S.pulse("d2", 0.5); S.pulse("d3", 0.9); S.pulse("d4", 1.2); } });
+          play: (S, H, stage) => runLit(H, stage, ["d1", "d2", "d3", "d4"]) });
     },
   });
 }
