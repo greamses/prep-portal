@@ -12,7 +12,7 @@
    Every problem is made from its answer (common.js).
    ========================================================================== */
 
-import { bank, P, MARK, cash, gcd, lcm, low, naira, names, plural } from "./common.js";
+import { bank, P, MARK, cash, gcd, lcm, low, bills, names, plural } from "./common.js";
 import { lessonStrip } from "/utils/components/workbook/tv-lessons.js";
 
 const RATIOS = [[2, 3], [3, 4], [3, 5], [4, 5], [2, 5], [5, 7], [3, 7], [4, 7], [5, 8], [1, 3], [2, 7]];
@@ -103,11 +103,11 @@ const alRule = bank("wp-al-rule", "wp-mix", {
 }, [
   (r) => { const [p, q] = r.pick(RATIOS.concat([[1, 2], [3, 2], [5, 3], [2, 1]])); const k = r.int(1, 4) * 10, c1 = r.int(3, 12) * 50; const c2 = c1 + (p + q) * k, m = c1 + q * k;
     const what = r.pick(["tea", "rice", "beans", "sugar", "garri"]);
-    return P(`In what ratio must ${what} at ${naira(c1)} a kg be mixed with ${what} at ${naira(c2)} a kg so that the mixture is worth ${naira(m)} a kg?`, [["cheaper:", p], ["dearer:", q]], `(${c2} − ${m}) : (${m} − ${c1})`); },
+    return P(`In what ratio must ${what} at ${bills(c1)} a kg be mixed with ${what} at ${bills(c2)} a kg so that the mixture is worth ${bills(m)} a kg?`, [["cheaper:", p], ["dearer:", q]], `(${c2} − ${m}) : (${m} − ${c1})`); },
   (r) => { const [p, q] = r.pick(RATIOS.concat([[1, 2], [2, 1], [3, 2], [1, 4]])); const k = r.int(1, 4), c1 = r.int(1, 5) * 10; const c2 = c1 + (p + q) * k, m = c1 + q * k; if (c2 > 95) return null;
     return P(`A ${c1}% salt solution is mixed with a ${c2}% salt solution to make a ${m}% solution. In what ratio are they mixed (weaker to stronger)?`, [["weaker:", p], ["stronger:", q]], `(${c2} − ${m}) : (${m} − ${c1})`); },
   (r, t) => { if (t === "gentle") return null; const m = r.int(4, 12) * 10, k = r.int(1, 4) * 10; const c = m + k; const [a, b] = low(c - m, m);
-    return P(`In what ratio must water (which costs nothing) be mixed with milk costing ${naira(c)} a litre so that the mixture is worth ${naira(m)} a litre?`, [["water:", a], ["milk:", b]], `(${c} − ${m}) : (${m} − 0)`); },
+    return P(`In what ratio must water (which costs nothing) be mixed with milk costing ${bills(c)} a litre so that the mixture is worth ${bills(m)} a litre?`, [["water:", a], ["milk:", b]], `(${c} − ${m}) : (${m} − 0)`); },
 ]);
 
 const alQuantity = bank("wp-al-qty", "wp-mix", {
@@ -121,11 +121,11 @@ const alQuantity = bank("wp-al-qty", "wp-mix", {
   board: true,
 }, [
   (r) => { const [p, q] = r.pick(RATIOS.concat([[2, 1], [3, 2], [1, 2]])); const k = r.int(1, 3) * 50, c1 = r.int(6, 16) * 50; const c2 = c1 + (p + q) * k, m = c1 + q * k; const n = r.int(2, 8);
-    return P(`How many kg of rice at ${naira(c1)} a kg must be mixed with ${q * n} kg of rice at ${naira(c2)} a kg so that the mixture is worth ${naira(m)} a kg?`, [["kg:", p * n]], `cheaper : dearer = ${p} : ${q}`); },
+    return P(`How many kg of rice at ${bills(c1)} a kg must be mixed with ${q * n} kg of rice at ${bills(c2)} a kg so that the mixture is worth ${bills(m)} a kg?`, [["kg:", p * n]], `cheaper : dearer = ${p} : ${q}`); },
   (r) => { const [p, q] = r.pick([[1, 2], [2, 1], [1, 3], [3, 1], [2, 3], [3, 2], [1, 4]]); const k = r.int(1, 4) * 2, c1 = r.int(1, 4) * 10; const c2 = c1 + (p + q) * k, m = c1 + q * k; const n = r.int(2, 10);
     return P(`A chemist has ${p * n} litres of a ${c1}% acid solution. How many litres of a ${c2}% solution must be added to make a ${m}% solution?`, [["litres:", q * n]], `weaker : stronger = ${p} : ${q}`); },
   (r, t) => { if (t === "gentle") return null; const [p, q] = r.pick([[1, 2], [2, 3], [1, 3], [3, 4], [2, 5]]); const k = r.int(1, 3) * 50, c1 = r.int(6, 14) * 50; const c2 = c1 + (p + q) * k, m = c1 + q * k; const n = r.int(2, 8);
-    return P(`A trader mixes two kinds of beans, at ${naira(c1)} and ${naira(c2)} a kg, to make ${(p + q) * n} kg worth ${naira(m)} a kg. How many kg of each does she use?`, [["cheaper (kg):", p * n], ["dearer (kg):", q * n]], `ratio ${p} : ${q}, ${p + q} shares = ${(p + q) * n} kg`); },
+    return P(`A trader mixes two kinds of beans, at ${bills(c1)} and ${bills(c2)} a kg, to make ${(p + q) * n} kg worth ${bills(m)} a kg. How many kg of each does she use?`, [["cheaper (kg):", p * n], ["dearer (kg):", q * n]], `ratio ${p} : ${q}, ${p + q} shares = ${(p + q) * n} kg`); },
 ]);
 
 const alReplace = bank("wp-al-water", "wp-mix", {
@@ -268,9 +268,9 @@ const rtShare = bank("wp-rt-share", "wp-ratio", {
 }, [
   (r, t) => { const [p, q] = r.pick(SMALL), [rr, s] = r.pick(SMALL); const L = lcm(q, rr); const a = p * (L / q), b = L, c = s * (L / rr); const [g] = [gcd(gcd(a, b), c)]; const k = r.int(1, t === "gentle" ? 4 : 9) * 100;
     const [A, B, C] = names(r, 3); const [x, y, z] = [a / g, b / g, c / g]; if (x + y + z > 40) return null;
-    return P(`${naira((x + y + z) * k)} is shared among ${A}, ${B} and ${C} so that ${A} : ${B} = ${p} : ${q} and ${B} : ${C} = ${rr} : ${s}. How much does each get?`, [[`${A} (${MARK}):`, x * k], [`${B} (${MARK}):`, y * k], [`${C} (${MARK}):`, z * k]], `${A} : ${B} : ${C} = ${x} : ${y} : ${z}`); },
+    return P(`${bills((x + y + z) * k)} is shared among ${A}, ${B} and ${C} so that ${A} : ${B} = ${p} : ${q} and ${B} : ${C} = ${rr} : ${s}. How much does each get?`, [[`${A} (${MARK}):`, x * k], [`${B} (${MARK}):`, y * k], [`${C} (${MARK}):`, z * k]], `${A} : ${B} : ${C} = ${x} : ${y} : ${z}`); },
   (r) => { const [a, b, c, d, sv] = r.pick([[5, 4, 3, 2, 2], [7, 5, 3, 2, 1], [9, 7, 4, 3, 1], [4, 3, 3, 2, 1], [8, 5, 3, 1, 0]]); if (!sv) return null; const x = r.int(2, 9) * 1000; const [A, B] = names(r, 2);
-    return P(`The incomes of ${A} and ${B} are in the ratio ${a} : ${b}, and what they spend in the ratio ${c} : ${d}. Each saves ${naira(sv * x)}. Find their incomes.`, [[`${A} (${MARK}):`, a * x], [`${B} (${MARK}):`, b * x]], `${a}x − ${c}y = ${b}x − ${d}y = ${sv * x}`); },
+    return P(`The incomes of ${A} and ${B} are in the ratio ${a} : ${b}, and what they spend in the ratio ${c} : ${d}. Each saves ${bills(sv * x)}. Find their incomes.`, [[`${A} (${MARK}):`, a * x], [`${B} (${MARK}):`, b * x]], `${a}x − ${c}y = ${b}x − ${d}y = ${sv * x}`); },
   (r) => { const [p, q] = r.pick(SMALL); const u = r.int(3, 12), add = r.int(1, 6) * (q - p) || 0; if (!add) return null; const a = p * u, b = q * u; const [x, y] = low(a + add, b + add); if (x > 12 || y > 12) return null;
     return P(`Two numbers are in the ratio ${p} : ${q}. When ${add} is added to each, the ratio becomes ${x} : ${y}. Find the two numbers.`, [["smaller:", a], ["larger:", b]], `${y}(${p}u + ${add}) = ${x}(${q}u + ${add}), u = ${u}`); },
 ]);

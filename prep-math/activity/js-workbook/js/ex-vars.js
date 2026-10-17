@@ -214,7 +214,7 @@ const NAMING = [
     why: "string names the KIND, which the computer already knows. The name is for the reader, and the reader wants to know whose name it is." },
   { value: `true`, holds: "whether the homework is done", opts: ["thing", "isDone", "true2"], at: 1,
     why: "a box holding true or false is usually named like a question: isDone, hasPaid, canPlay." },
-  { value: `2500`, holds: "the price of a book in naira", opts: ["priceInNaira", "n", "money"], at: 0,
+  { value: `2500`, holds: "the price of a book in prepbills", opts: ["priceInPrepbills", "n", "money"], at: 0,
     why: "money could be anybody's money, and n could be anything at all." },
   { value: `9`, holds: "how many pupils came", opts: ["p", "pupilsHere", "nine"], at: 1,
     why: "nine is the value written as a word — and the moment ten pupils come, the name is a lie." },

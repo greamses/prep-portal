@@ -387,12 +387,12 @@ const lnConvert = {
   id: "ln-convert",
   group: "ln-solve",
   label: "A conversion graph",
-  blurb: "Litres to naira: read it across, read it back, go past its end.",
+  blurb: "Litres to prepbills: read it across, read it back, go past its end.",
   heading: "Use the conversion graph",
   minLevel: "middle",
   instruction: () =>
-    "The line changes one amount into another. To change litres to naira, go up from the litres to the " +
-    "line and across. To go the other way, go across from the naira to the line and down. For more than the " +
+    "The line changes one amount into another. To change litres to prepbills, go up from the litres to the " +
+    "line and across. To go the other way, go across from the prepbills to the line and down. For more than the " +
     "graph shows, use a number you CAN read and multiply.",
   cols: 1,
   defaultCount: 2,

@@ -13,7 +13,7 @@
    problem is made from its answer (common.js).
    ========================================================================== */
 
-import { bank, P, MARK, cash, gcd, naira, names } from "./common.js";
+import { bank, P, MARK, cash, gcd, bills, names } from "./common.js";
 
 export const C_GROUPS = [
   { id: "wp-prob", chapter: "Chapter 9 · Probability trees", label: "Probability trees", blurb: "Multiply along a path; add the paths you want." },
@@ -94,12 +94,12 @@ const pcChange = bank("wp-pc-change", "wp-pct", {
   board: true,
 }, [
   (r) => { const P0 = r.int(2, 40) * 1000, a = r.pick([10, 20, 25, 50]), b = r.pick([10, 20, 25, 50]); const f = (P0 * (100 + a) * (100 - b)) / 10000; if (!Number.isInteger(f)) return null;
-    return P(`The price of a phone, ${naira(P0)}, is raised by ${a}% and later reduced by ${b}%. What is the final price?`, [[`${MARK}:`, f]], `${P0} × ${(100 + a) / 100} × ${(100 - b) / 100}`); },
+    return P(`The price of a phone, ${bills(P0)}, is raised by ${a}% and later reduced by ${b}%. What is the final price?`, [[`${MARK}:`, f]], `${P0} × ${(100 + a) / 100} × ${(100 - b) / 100}`); },
   (r) => { const d = r.pick([10, 20, 25, 30, 40]), m = r.int(2, 60) * 1000; const s = (m * (100 - d)) / 100; if (!Number.isInteger(s)) return null;
-    return P(`After a discount of ${d}%, a television costs ${naira(s)}. What was its marked price?`, [[`${MARK}:`, m]], `${s} ÷ ${(100 - d) / 100}`); },
+    return P(`After a discount of ${d}%, a television costs ${bills(s)}. What was its marked price?`, [[`${MARK}:`, m]], `${s} ÷ ${(100 - d) / 100}`); },
   (r) => { const a = r.pick([10, 20, 30, 40, 50]); return P(`A salary is raised by ${a}% and then cut by ${a}%. By what percentage is it finally less than at first?`, [["%:", (a * a) / 100]], `${(100 + a) / 100} × ${(100 - a) / 100} = ${((100 + a) * (100 - a)) / 10000}`); },
   (r, t) => { if (t === "gentle") return null; const sp = r.pick([60, 70, 75, 80, 85, 90]), inc = r.int(2, 40) * 1000; const save = (inc * (100 - sp)) / 100; if (!Number.isInteger(save)) return null;
-    return P(`A man spends ${sp}% of his income and saves ${naira(save)} a month. What is his income?`, [[`${MARK}:`, inc]], `${save} is ${100 - sp}%`); },
+    return P(`A man spends ${sp}% of his income and saves ${bills(save)} a month. What is his income?`, [[`${MARK}:`, inc]], `${save} is ${100 - sp}%`); },
   (r, t) => { if (t === "gentle") return null; const p0 = r.int(2, 30) * 1000, g = r.pick([10, 20]); const f = (p0 * (100 + g) * (100 + g)) / 10000; if (!Number.isInteger(f)) return null;
     return P(`The population of a town was ${p0.toLocaleString("en-NG")} and grows by ${g}% every year. What is it after 2 years?`, [["people:", f]], `${p0} × ${(100 + g) / 100}²`); },
 ]);
@@ -116,11 +116,11 @@ const pcProfit = bank("wp-pc-profit", "wp-pct", {
   board: true,
 }, [
   (r) => { const c = r.int(2, 60) * 500, g = r.pick([10, 20, 25, 30, 40, 50]); const s = (c * (100 + g)) / 100;
-    return P(`A trader buys a bicycle for ${naira(c)} and sells it for ${naira(s)}. What is her profit per cent?`, [["%:", g]], `${s - c} ÷ ${c} × 100`); },
+    return P(`A trader buys a bicycle for ${bills(c)} and sells it for ${bills(s)}. What is her profit per cent?`, [["%:", g]], `${s - c} ÷ ${c} × 100`); },
   (r) => { const l = r.pick([5, 10, 15, 20]), g = r.pick([5, 10, 15, 20, 25]), c = r.int(2, 40) * 1000; const more = (c * (l + g)) / 100; if (!Number.isInteger(more)) return null;
-    return P(`By selling a goat a farmer loses ${l}%. Had he sold it for ${naira(more)} more, he would have gained ${g}%. Find the cost price.`, [[`${MARK}:`, c]], `${l + g}% of cost = ${more}`); },
+    return P(`By selling a goat a farmer loses ${l}%. Had he sold it for ${bills(more)} more, he would have gained ${g}%. Find the cost price.`, [[`${MARK}:`, c]], `${l + g}% of cost = ${more}`); },
   (r) => { const l = r.pick([10, 20, 25]), g = r.pick([10, 20, 25, 50]), c = r.int(2, 30) * 1000; const s = (c * (100 - l)) / 100, s2 = (c * (100 + g)) / 100; if (!Number.isInteger(s) || !Number.isInteger(s2)) return null;
-    return P(`A man sells a radio for ${naira(s)} and loses ${l}%. At what price must he sell it to gain ${g}%?`, [[`${MARK}:`, s2]], `cost ${c}; × ${(100 + g) / 100}`); },
+    return P(`A man sells a radio for ${bills(s)} and loses ${l}%. At what price must he sell it to gain ${g}%?`, [[`${MARK}:`, s2]], `cost ${c}; × ${(100 + g) / 100}`); },
   (r, t) => { if (t === "gentle") return null; const c = r.int(2, 20) * 1000, up = r.pick([20, 25, 40, 50, 60]), d = r.pick([10, 20, 25]); const net = ((100 + up) * (100 - d)) / 100 - 100; if (!Number.isInteger(net) || net <= 0) return null;
     return P(`A shopkeeper marks his goods ${up}% above cost and then allows a discount of ${d}%. What is his profit per cent?`, [["%:", net]], `${(100 + up) / 100} × ${(100 - d) / 100} = ${(100 + net) / 100}`); },
   (r, t) => { if (t === "gentle") return null; const n = r.pick([10, 12, 15, 20]), m = r.pick([8, 9, 10, 12, 16]); if (m >= n) return null; const g = ((n - m) * 100) / m; if (!Number.isInteger(g)) return null;

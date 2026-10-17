@@ -9,7 +9,7 @@
    Every problem is made from its answer (common.js).
    ========================================================================== */
 
-import { bank, P, MARK, cash, gcd, naira, names, plural } from "./common.js";
+import { bank, P, MARK, cash, gcd, bills, names, plural } from "./common.js";
 
 const fact = (n) => (n <= 1 ? 1 : n * fact(n - 1));
 const nPr = (n, r) => fact(n) / fact(n - r);
@@ -62,10 +62,10 @@ const frNumber = bank("wp-fr-number", "wp-frac", {
   (r) => { const k = r.int(2, 7), m = r.int(1, 4); if (k <= m) return null; const d = 2 * k - m;
     return P(`The numerator of a fraction is ${k} less than its denominator. If ${m} is added to both, the fraction becomes 1/2. Find the original fraction.`, [["fraction:", [d - k, d]]], `(d − ${k} + ${m})/(d + ${m}) = 1/2`); },
   (r, t) => { if (t === "gentle") return null; const x = 20 * r.int(2, 12); const a = x / 4, b = x / 5; const left = x - a - b;
-    return P(`A man spends a quarter of his money on food and a fifth on transport, and has ${naira(left * 100)} left. How much did he have?`, [[`${MARK}:`, x * 100]], `x − x/4 − x/5 = ${left * 100}`); },
+    return P(`A man spends a quarter of his money on food and a fifth on transport, and has ${bills(left * 100)} left. How much did he have?`, [[`${MARK}:`, x * 100]], `x − x/4 − x/5 = ${left * 100}`); },
   (r, t) => { if (t === "gentle") return null; const n = r.int(3, 9), c = r.int(2, 8) * 100; const more = r.int(1, 3); /* T shared among n gets c; with `more` more each gets less by d */
     const T = n * (n + more) * (c / 100) * 100; const each1 = T / n, each2 = T / (n + more);
-    return P(`${naira(T)} is shared equally among some children. If there were ${more} more ${plural(more, "child", "children")}, each would get ${naira(each1 - each2)} less. How many children are there?`, [["children:", n]], `${T}/x − ${T}/(x + ${more}) = ${each1 - each2}`); },
+    return P(`${bills(T)} is shared equally among some children. If there were ${more} more ${plural(more, "child", "children")}, each would get ${bills(each1 - each2)} less. How many children are there?`, [["children:", n]], `${T}/x − ${T}/(x + ${more}) = ${each1 - each2}`); },
 ]);
 
 const frSpeed = bank("wp-fr-speed", "wp-frac", {
@@ -103,9 +103,9 @@ const sysItems = bank("wp-sy-items", "wp-sys", {
 }, [
   (r, t) => { const p = r.int(2, t === "gentle" ? 9 : 20) * 50, b = r.int(2, t === "gentle" ? 9 : 24) * 50; const a1 = r.int(1, 4), b1 = r.int(1, 4), a2 = r.int(1, 4), b2 = r.int(1, 4);
     if (a1 * b2 === a2 * b1) return null; const [[x1, x], [y1, y]] = r.pick([[["pen", "pens"], ["book", "books"]], [["mango", "mangoes"], ["pineapple", "pineapples"]], [["cup", "cups"], ["plate", "plates"]], [["ruler", "rulers"], ["eraser", "erasers"]]]);
-    return P(`${a1} ${plural(a1, x1, x)} and ${b1} ${plural(b1, y1, y)} cost ${naira(a1 * p + b1 * b)}. ${a2} ${plural(a2, x1, x)} and ${b2} ${plural(b2, y1, y)} cost ${naira(a2 * p + b2 * b)}. Find the cost of one of each.`, [[`${x1} (${MARK}):`, p], [`${y1} (${MARK}):`, b]], `${a1}x + ${b1}y = ${a1 * p + b1 * b}; ${a2}x + ${b2}y = ${a2 * p + b2 * b}`); },
+    return P(`${a1} ${plural(a1, x1, x)} and ${b1} ${plural(b1, y1, y)} cost ${bills(a1 * p + b1 * b)}. ${a2} ${plural(a2, x1, x)} and ${b2} ${plural(b2, y1, y)} cost ${bills(a2 * p + b2 * b)}. Find the cost of one of each.`, [[`${x1} (${MARK}):`, p], [`${y1} (${MARK}):`, b]], `${a1}x + ${b1}y = ${a1 * p + b1 * b}; ${a2}x + ${b2}y = ${a2 * p + b2 * b}`); },
   (r) => { const a = r.int(4, 12) * 100, c = r.int(1, 3) * 100; const x = r.int(20, 150), y = r.int(20, 200);
-    return P(`${x + y} tickets were sold, adults' at ${naira(a)} and children's at ${naira(c)}, for ${naira(a * x + c * y)} in all. How many of each were sold?`, [["adults':", x], ["children's:", y]], `x + y = ${x + y}; ${a}x + ${c}y = ${a * x + c * y}`); },
+    return P(`${x + y} tickets were sold, adults' at ${bills(a)} and children's at ${bills(c)}, for ${bills(a * x + c * y)} in all. How many of each were sold?`, [["adults':", x], ["children's:", y]], `x + y = ${x + y}; ${a}x + ${c}y = ${a * x + c * y}`); },
   (r) => { const legs = r.pick([[2, 4, "hens", "goats"], [2, 4, "ducks", "cows"]]); const x = r.int(5, 40), y = r.int(5, 40);
     return P(`A farmer keeps ${legs[2]} and ${legs[3]}. They have ${x + y} heads and ${2 * x + 4 * y} legs between them. How many of each are there?`, [[`${legs[2]}:`, x], [`${legs[3]}:`, y]], `x + y = ${x + y}; 2x + 4y = ${2 * x + 4 * y}`); },
 ]);
@@ -139,7 +139,7 @@ const sysThree = bank("wp-sy-three", "wp-sys", {
   solution: "Adding: 2(A + B + C) = 240, so A + B + C = 120. Then C = 120 − 70 = 50, A = 120 − 90 = 30, and B = 120 − 80 = 40.",
 }, [
   (r, t) => { const k = t === "gentle" ? 10 : 100; const a = r.int(2, 30) * k, b = r.int(2, 30) * k, c = r.int(2, 30) * k; const [A, B, C] = names(r, 3);
-    return P(`${A} and ${B} together have ${naira(a + b)}, ${B} and ${C} have ${naira(b + c)}, and ${A} and ${C} have ${naira(a + c)}. How much has each?`, [[`${A} (${MARK}):`, a], [`${B} (${MARK}):`, b], [`${C} (${MARK}):`, c]], `total ${(2 * (a + b + c)) / 2}`); },
+    return P(`${A} and ${B} together have ${bills(a + b)}, ${B} and ${C} have ${bills(b + c)}, and ${A} and ${C} have ${bills(a + c)}. How much has each?`, [[`${A} (${MARK}):`, a], [`${B} (${MARK}):`, b], [`${C} (${MARK}):`, c]], `total ${(2 * (a + b + c)) / 2}`); },
   (r) => { const a = r.int(20, 70), b = r.int(20, 70), c = r.int(20, 70); const [A, B, C] = names(r, 3);
     return P(`${A} and ${B} together weigh ${a + b} kg, ${B} and ${C} weigh ${b + c} kg, and ${A} and ${C} weigh ${a + c} kg. What does each weigh?`, [[`${A}:`, a], [`${B}:`, b], [`${C}:`, c]], `total ${a + b + c} kg`); },
   (r, t) => { if (t === "gentle") return null; const x = r.int(1, 9), y = r.int(1, 9), z = r.int(1, 9);
@@ -159,7 +159,7 @@ const sqAp = bank("wp-sq-ap", "wp-seq", {
   solution: `10th term: 50 + 9 × 20 = ${cash("230.")} Sum: 10/2 × (50 + 230) = 5 × 280 = ${cash("1,400.")}`,
 }, [
   (r, t) => { const a = r.int(2, 12) * 10, d = r.int(1, 6) * 5, n = r.int(6, t === "gentle" ? 10 : 20); const l = a + (n - 1) * d;
-    return P(`A girl saves ${naira(a)} in the first week and ${naira(d)} more each week than the week before. How much does she save in week ${n}, and how much in the ${n} weeks altogether?`, [[`week ${n} (${MARK}):`, l], [`altogether (${MARK}):`, (n * (a + l)) / 2]], `${a} + ${n - 1} × ${d} = ${l}`); },
+    return P(`A girl saves ${bills(a)} in the first week and ${bills(d)} more each week than the week before. How much does she save in week ${n}, and how much in the ${n} weeks altogether?`, [[`week ${n} (${MARK}):`, l], [`altogether (${MARK}):`, (n * (a + l)) / 2]], `${a} + ${n - 1} × ${d} = ${l}`); },
   (r) => { const a = r.int(8, 20), d = r.int(1, 4), n = r.int(8, 25); const l = a + (n - 1) * d;
     return P(`A hall has ${a} seats in its front row, and each row has ${d} more ${plural(d, "seat")} than the row in front. There are ${n} rows. How many seats are in the last row, and how many in the hall?`, [["last row:", l], ["in the hall:", (n * (a + l)) / 2]], `${a} + ${n - 1} × ${d} = ${l}`); },
   (r, t) => { if (t === "gentle") return null; const a = r.int(3, 20), d = r.int(2, 9), p = r.int(3, 6), q = p + r.int(3, 8);

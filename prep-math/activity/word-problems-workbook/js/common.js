@@ -31,7 +31,7 @@ export const lcm = (a, b) => (a * b) / gcd(a, b);
 /* MONEY IS SAID IN PREPBILLS, and the prepbill carries a MARK, which is
    drawn and never typed (utils/components/workbook/purse.js). `MARK` is the
    mark on its own, for an answer box that wants naming — "₦:" was that. */
-export const naira = billsHtml;
+export const bills = billsHtml;
 export const MARK = billMark();
 /** The mark and the sum after it, as one run that does not wrap. */
 export const cash = withMark;

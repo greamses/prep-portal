@@ -253,7 +253,7 @@ const bmCompare = {
     const x = r.int(...s.x);
     const d = r.int(...s.b);
     const [one, two] = NAMES[i % NAMES.length];
-    return { x, d, total: 2 * x + d, one, two, thing: r.pick(["marbles", "naira", "stickers", "books"]) };
+    return { x, d, total: 2 * x + d, one, two, thing: r.pick(["marbles", "prepbills", "stickers", "books"]) };
   },
   render(item) {
     return (
@@ -328,7 +328,7 @@ const bmDraw = {
 
 const STORIES = [
   (a, b, c, thing) => `A box holds the same number of ${thing} in each of <b>${a}</b> rows, and <b>${b}</b> more ${thing} are loose. There are <b>${c}</b> altogether.`,
-  (a, b, c, thing) => `<b>${a}</b> children each save the same amount. With <b>${b}</b> naira already in the tin there is <b>${c}</b> naira.`,
+  (a, b, c, thing) => `<b>${a}</b> children each save the same amount. With <b>${b}</b> prepbills already in the tin there is <b>${c}</b> prepbills.`,
   (a, b, c, thing) => `<b>${a}</b> shelves hold the same number of ${thing}. With <b>${b}</b> more on the table there are <b>${c}</b>.`,
 ];
 

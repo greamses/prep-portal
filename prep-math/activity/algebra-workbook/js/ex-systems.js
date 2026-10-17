@@ -659,7 +659,7 @@ const grHowMany = {
    so the SETTING-UP is learnt one situation at a time. Every story gives two
    facts about two unknowns; the answer key shows the pair of equations. */
 
-const naira = billsHtml;
+const bills = billsHtml;
 
 /** One real-world section: a story maker returning { text, labels, vals, eqs }. */
 function realWorld(id, { label, blurb, heading, instruction, example, exampleSay }, maker) {
@@ -689,8 +689,8 @@ const rwMoney = realWorld("sy-rw-money", {
 }, (r, t) => {
   const [a, b] = r.pick([[500, 200], [1000, 500], [200, 100], [1000, 200], [500, 100]]);
   const x = r.int(2, t === "gentle" ? 8 : 15), y = r.int(2, t === "gentle" ? 8 : 15);
-  return { text: `A purse holds ${x + y} notes, some ${naira(a)} and some ${naira(b)}, worth ${naira(a * x + b * y)} in all. How many of each note are there?`,
-    labels: [`${naira(a)} notes:`, `${naira(b)} notes:`], vals: [x, y], eqs: `x + y = ${x + y}, ${a}x + ${b}y = ${a * x + b * y}` };
+  return { text: `A purse holds ${x + y} notes, some ${bills(a)} and some ${bills(b)}, worth ${bills(a * x + b * y)} in all. How many of each note are there?`,
+    labels: [`${bills(a)} notes:`, `${bills(b)} notes:`], vals: [x, y], eqs: `x + y = ${x + y}, ${a}x + ${b}y = ${a * x + b * y}` };
 });
 
 const rwAges = realWorld("sy-rw-ages", {
@@ -776,12 +776,12 @@ const rwMix = realWorld("sy-rw-mix", {
   if (r.chance(0.5)) {
     const [a, b] = r.pick([[900, 600], [1200, 800], [700, 500], [1500, 1000]]);
     const x = r.int(3, t === "middle" ? 12 : 25), y = r.int(3, t === "middle" ? 12 : 25);
-    return { text: `A trader mixes rice at ${naira(a)} a kg with rice at ${naira(b)} a kg to make ${x + y} kg worth ${naira(a * x + b * y)}. How many kilograms of each does she use?`,
-      labels: [`at ${naira(a)} (kg):`, `at ${naira(b)} (kg):`], vals: [x, y], eqs: `x + y = ${x + y}, ${a}x + ${b}y = ${a * x + b * y}` };
+    return { text: `A trader mixes rice at ${bills(a)} a kg with rice at ${bills(b)} a kg to make ${x + y} kg worth ${bills(a * x + b * y)}. How many kilograms of each does she use?`,
+      labels: [`at ${bills(a)} (kg):`, `at ${bills(b)} (kg):`], vals: [x, y], eqs: `x + y = ${x + y}, ${a}x + ${b}y = ${a * x + b * y}` };
   }
   const a = r.int(4, 10) * 100, b = r.int(1, 3) * 100;
   const x = r.int(20, 120), y = r.int(20, 150);
-  return { text: `${x + y} tickets were sold for a school play: adults' at ${naira(a)} and children's at ${naira(b)}. The takings were ${naira(a * x + b * y)}. How many of each ticket were sold?`,
+  return { text: `${x + y} tickets were sold for a school play: adults' at ${bills(a)} and children's at ${bills(b)}. The takings were ${bills(a * x + b * y)}. How many of each ticket were sold?`,
     labels: ["adults':", "children's:"], vals: [x, y], eqs: `x + y = ${x + y}, ${a}x + ${b}y = ${a * x + b * y}` };
 });
 

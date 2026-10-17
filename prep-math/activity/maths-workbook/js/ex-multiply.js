@@ -750,7 +750,7 @@ const STORIES = [
   (g, n) => `A bus has <b>${g}</b> rows of seats with <b>${n}</b> seats in each row. How many seats are on the bus?`,
   (g, n) => `Ada reads <b>${n}</b> pages every day for <b>${g}</b> days. How many pages does she read?`,
   (g, n) => `A farmer plants <b>${g}</b> rows of maize with <b>${n}</b> plants in each row. How many plants is that?`,
-  (g, n) => `Tickets cost <b>${n}</b> naira each. How much do <b>${g}</b> tickets cost?`,
+  (g, n) => `Tickets cost <b>${n}</b> prepbills each. How much do <b>${g}</b> tickets cost?`,
   (g, n) => `A crate holds <b>${n}</b> bottles. How many bottles are in <b>${g}</b> crates?`,
 ];
 

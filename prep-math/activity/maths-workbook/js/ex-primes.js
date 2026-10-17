@@ -1957,7 +1957,7 @@ const HARD_STORIES = [
     asks: (n, r, o) => [
       ["How long is one side of the hall?", r, "m"],
       ["How many metres of board is that, all the way round?", r * 4, "m"],
-      ["And what will the board cost?", r * 4 * o.price, "naira"],
+      ["And what will the board cost?", r * 4 * o.price, "prepbills"],
     ],
     extra: (rnd) => ({ price: rnd.pick([200, 250, 500]) }),
   },

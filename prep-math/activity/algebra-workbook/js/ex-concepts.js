@@ -75,7 +75,7 @@ const STORIES = [
     nums: (r) => { const u = r.int(2, 6); return [u, u * r.int(3, 9)]; },
   },
   {
-    text: (u, v) => `Chidi buys a book and a pen. The pen costs <b>${u}</b> naira and he pays <b>${v}</b> naira for both.`,
+    text: (u, v) => `Chidi buys a book and a pen. The pen costs <b>${u}</b> prepbills and he pays <b>${v}</b> prepbills for both.`,
     things: ["the price of the pen", "the price of the book", "what he pays for both"],
     known: [true, false, true],
     eq: (u, v) => ({ right: `n + ${u} = ${v}`, wrong: [`${u}n = ${v}`, `n = ${u} + ${v}`] }),
