@@ -319,22 +319,44 @@
   background: var(--surface-primary, #fffdf8);
   animation: mm-tv-outro-in 0.4s ease both;
 }
+/* PrepBot is ON the card, not merely in the wings: it is the one being
+   introduced. It arrives first and settles, and the words assemble under it. */
+.mm-tv-intro__bot {
+  display: block;
+  width: clamp(3.2rem, 15vh, 6.2rem);
+  aspect-ratio: 1;
+  margin-bottom: 0.1em;
+  opacity: 0;
+  animation: mm-tv-intro-bot 0.75s cubic-bezier(0.2, 1.25, 0.35, 1) both;
+}
+.mm-tv-intro__bot svg { width: 100%; height: 100%; display: block; }
 .mm-tv-intro__lead {
   margin: 0;
   font-size: clamp(0.7rem, 2.4vw, 1.1rem);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  opacity: 0;
-  animation: mm-tv-intro-up 0.5s ease 0.15s both;
 }
 .mm-tv-intro__name {
   margin: 0;
   font-size: clamp(1.4rem, 8vw, 3.6rem);
   font-weight: 800;
   letter-spacing: -0.015em;
+}
+/* ONE LETTER AT A TIME. Each carries its own delay (set where the card is
+   built), which is the only way a stylesheet can stagger a word. */
+.mm-tv-intro__ch {
+  display: inline-block;
   opacity: 0;
-  animation: mm-tv-intro-in 0.6s cubic-bezier(0.2, 1.3, 0.4, 1) 0.45s both;
+  animation: mm-tv-intro-ch 0.42s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes mm-tv-intro-ch {
+  from { opacity: 0; transform: translateY(0.45em) scale(0.7) rotate(-6deg); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes mm-tv-intro-bot {
+  from { opacity: 0; transform: translateY(-0.5em) scale(0.55); }
+  to { opacity: 1; transform: none; }
 }
 /* the rule is DRAWN, left to right, the way a line is drawn on a board */
 .mm-tv-intro__name::after {
@@ -345,7 +367,7 @@
   background: var(--accent-primary, #ffe500);
   transform: scaleX(0);
   transform-origin: 0 50%;
-  animation: mm-tv-intro-rule 0.45s ease 1s both;
+  animation: mm-tv-intro-rule 0.5s ease 1.85s both;
 }
 .mm-tv-intro__title {
   margin: 0.5em 0 0;
@@ -354,7 +376,7 @@
   line-height: 1.3;
   max-width: 26ch;
   opacity: 0;
-  animation: mm-tv-intro-up 0.5s ease 1.35s both;
+  animation: mm-tv-intro-up 0.5s ease 2.25s both;
 }
 @keyframes mm-tv-intro-up {
   from { opacity: 0; transform: translateY(0.5em); }

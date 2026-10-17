@@ -192,9 +192,11 @@ export function fracLike() {
         + "changed the size of a piece.",
         { on: ["w3", "w4"], look: look.tile("w4"), lookAt: { lit: true, delay: 1.4, hold: 2.4 } });
 
-      push("Taking away is the same bar read backwards. The jug holds seven tenths, so: one bar, ten equal "
-        + "parts, seven of them coloured. Ada pours out four tenths. Watch what happens to the bar rather than "
-        + "to the numbers.",
+      push("Taking away is the same bar read backwards, so if you can do the first one you can do this one. "
+        + "The jug holds seven tenths of a litre: one bar, ten equal parts, seven of them coloured in. Then "
+        + "Ada pours four tenths out of it. Now, watch what happens to the BAR rather than to the numbers — "
+        + "the numbers will look after themselves once you can see what is going on, and that is true of "
+        + "every question in this chapter.",
         { on: ["a2", "q1", "m1"], off: ["a1", "p3", "n3", "w1", "w2", "w3"], add: ["q1.draw"] });
 
       push("And out they go, one at a time. That is one tenth gone. Two. Three. Four — and count what is still "

@@ -26,6 +26,7 @@
    ========================================================================== */
 
 import { PrepbotTeacher } from "./prepbot-teacher.js";
+import { ICON_PREPBOT } from "./icons.js";
 import { ICON_PLAY, ICON_PAUSE, ICON_PREV, ICON_NEXT, ICON_FULLSCREEN, ICON_CLOSE } from "./icons.js";
 import { UI } from "/utils/components/ui-icons.js";
 
@@ -93,8 +94,17 @@ const introStep = (title) => ({
   show(stage) {
     const card = document.createElement("div");
     card.className = "mm-tv-intro";
-    card.innerHTML = `<p class="mm-tv-intro__lead">Learning with</p>`
-      + `<p class="mm-tv-intro__name">PrepBot</p>`
+    /* EVERY LETTER COMES IN BY ITSELF, which is what makes this an opening
+       rather than a slide: the words assemble in front of the child, and
+       PrepBot is standing there while they do it. A letter is its own span
+       with its own delay — the only way to stagger letters in CSS — and a
+       space is kept as a span of its own so the word does not close up. */
+    const letters = (word, from, step) => [...word]
+      .map((ch, i) => `<span class="mm-tv-intro__ch" style="animation-delay:${(from + i * step).toFixed(2)}s">`
+        + `${ch === " " ? "&nbsp;" : esc(ch)}</span>`).join("");
+    card.innerHTML = `<span class="mm-tv-intro__bot">${ICON_PREPBOT}</span>`
+      + `<p class="mm-tv-intro__lead">${letters("Learning with", 0.5, 0.045)}</p>`
+      + `<p class="mm-tv-intro__name">${letters("PrepBot", 1.1, 0.085)}</p>`
       + (title ? `<p class="mm-tv-intro__title">${esc(title)}</p>` : "");
     stage.appendChild(card);
   },

@@ -305,6 +305,16 @@ export function hand(gsap, instant) {
       away: (nodes) => [...(nodes || [])].forEach((n) => n.remove()),
       score: on,
       wipe: (n, to) => { if (n) n.setAttribute("fill", to); },
+      underline: (n, ink) => {
+        if (!n) return;
+        n.style.opacity = "1";
+        n.style.backgroundImage = `linear-gradient(${ink}, ${ink})`;
+        n.style.backgroundRepeat = "no-repeat";
+        n.style.backgroundPosition = "0 100%";
+        n.style.backgroundSize = "100% 0.13em";
+        n.style.webkitBoxDecorationBreak = "clone";
+        n.style.boxDecorationBreak = "clone";
+      },
       slide: (n, to) => {
         if (!n || !to) return;
         n.setAttribute("x", to.getAttribute("x"));
@@ -335,6 +345,30 @@ export function hand(gsap, instant) {
       const { line, len } = knife(svg, x, y, h);
       gsap.fromTo(line, { strokeDasharray: len, strokeDashoffset: len },
         { strokeDashoffset: 0, duration: 0.45, delay, ease: "power2.in" });
+    },
+    /**
+     * A PHRASE UNDERLINED, IN A COLOUR OF ITS OWN, AND IT STAYS.
+     *
+     * *"Use a different colour to underline the clues after you underline
+     * them, don't take them off till the example is done."* Lighting a
+     * phrase up for two seconds and dropping it again asks the child to
+     * remember where it was while they work; a rule drawn under it stays
+     * where it was put, and the colour says it is doing a different job from
+     * the word the question is about. Drawn left to right, the way a hand
+     * draws one, and left there until the example is finished with.
+     */
+    underline(n, ink, delay = 0, dur = 0.75) {
+      if (!n) return;
+      n.style.opacity = "1";
+      n.style.backgroundImage = `linear-gradient(${ink}, ${ink})`;
+      n.style.backgroundRepeat = "no-repeat";
+      n.style.backgroundPosition = "0 100%";
+      /* `clone` so that a phrase running over two lines is underlined on
+         both of them rather than once across the pair */
+      n.style.webkitBoxDecorationBreak = "clone";
+      n.style.boxDecorationBreak = "clone";
+      gsap.fromTo(n, { backgroundSize: "0% 0.13em" },
+        { backgroundSize: "100% 0.13em", duration: dur, delay, ease: "power2.inOut" });
     },
     /**
      * A CUT MADE DOWN THROUGH A BAR THAT IS ALREADY DRAWN.

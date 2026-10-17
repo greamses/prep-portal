@@ -304,9 +304,11 @@ export function barParts() {
         + "into Ben's first. One into his second. And round again.",
         { on: ["k1"], add: ["pp.pour"] });
 
-      push(`And they came out even. Count what landed in one box: two hundreds, which is ${UNIT}. So one `
-        + `unit is ${UNIT} — and notice nobody divided anything. The sharing WAS the division, and the `
-        + "boxes did it.",
+      push(`And they came out even — which they had to, because three boxes and six counters is two each `
+        + `whichever way round you deal them. Count what landed in one box: two hundreds, which is ${UNIT}. `
+        + `So one unit is ${UNIT}. And notice what nobody did there: nobody divided anything. The sharing WAS `
+        + `the division, the boxes did it in front of you, and if you ever forget how to find one unit you `
+        + `can always go back to dealing counters round until they run out.`,
         { on: ["k2"], look: look.tile("k2"), lookAt: { delay: 1.0, hold: 2.2, to: 1.3 } });
 
       push(`So write it in every box and multiply back up. Amy has one unit: ${UNIT}. Ben has two of them: `
@@ -808,8 +810,11 @@ export function barFractions() {
         { on: ["f2", "d2"], off: ["f1"], add: ["f2.shade"],
           look: look.brace("f2", "above-0-0"), lookAt: { lit: true, delay: 1.8, hold: 2.2 } });
 
-      push(`So find one part first, always. Twenty shared into four is five, so each piece of bar is worth `
-        + `five. Write it in every box — every one, because they are all the same size.`,
+      push(`So find one part first — always, in every fraction question you will ever meet. Twenty sweets `
+        + `shared into four equal parts: five in each. So each piece of this bar is worth five, and I write `
+        + `the five in EVERY box, not just the shaded ones. Why every one? Because they are all the same `
+        + `size, that is the whole point of cutting equally, and a child who writes it in only the shaded `
+        + `ones has started thinking of them as different pieces again.`,
         { on: ["f3", "d3"], off: ["f2"], add: ["f3.each"],
           look: look.tile("d3"), lookAt: { delay: 1.8, hold: 2.0, to: 1.3 } });
 
