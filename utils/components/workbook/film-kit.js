@@ -32,6 +32,7 @@ import { modelSvg } from "/prep-math/activity/maths-workbook/js/modelart.js";
 import { discSvg, one as oneCounter } from "./counters.js";
 import { moneySvg, bill, billSvg } from "./purse.js";
 import { down, num, esc } from "./video-kit.js";
+import { stackText } from "./stackfrac.js";
 
 /** The marks of a model, addressed the way the drawing names them. */
 export const mb = (svg, kind, row = null) => [...(svg
@@ -471,7 +472,10 @@ export function hand(gsap, instant) {
       if (!g) return;
       g.style.opacity = "1";
       const path = g.querySelector("path");
-      const label = g.querySelector("text");
+      /* ALL of the words, not the first of them: a brace labelled with a
+         stacked fraction carries two figures and a rule, and fading in only
+         the numerator leaves the fraction half-written */
+      const label = [...g.querySelectorAll("text")];
       if (path) {
         const len = path.getTotalLength();
         gsap.fromTo(path, { strokeDasharray: len, strokeDashoffset: len }, {
@@ -479,7 +483,7 @@ export function hand(gsap, instant) {
           onComplete() { path.style.strokeDasharray = ""; path.style.strokeDashoffset = ""; },
         });
       }
-      if (label) gsap.fromTo(label, { opacity: 0 }, { opacity: 1, duration: 0.3, delay: delay + 0.42 });
+      if (label.length) gsap.fromTo(label, { opacity: 0 }, { opacity: 1, duration: 0.3, delay: delay + 0.42 });
     },
     /* "?" becoming 12. The box does not empty and refill: the figure turns
        over in place, so it is plainly the same box being answered. */
@@ -627,6 +631,21 @@ export const SIDE_W = 39;
  * stand across the top of the screen for as long as that example runs, and
  * every figure that follows can be checked back against them.
  */
+export /**
+ * WHAT A TILE SAYS, with its fractions written one figure over the other.
+ * `tile` sets text, not markup, which is right for a figure and wrong for a
+ * fraction — so the words are escaped first and the fractions built after,
+ * which is the only order that is safe.
+ */
+const says = (box, text) => {
+  const html = stackText(esc(String(text)));
+  box.firstChild.innerHTML = html;
+  /* a line holding a two-storey fraction needs the room for it, or the line
+     above comes down on top of the numerator */
+  if (html.includes('class="sf"')) box.firstChild.style.lineHeight = "2.05";
+  return box;
+};
+
 export function asked(stage, id, text) {
   /* clear of the step counter in the top corner, and narrower than the
      screen: a line of words running the full width of a television is a line
@@ -636,7 +655,7 @@ export function asked(stage, id, text) {
   box.style.setProperty("--w", "74");
   box.firstChild.style.setProperty("font-size", "calc(var(--u) * 2)");
   box.firstChild.style.setProperty("font-weight", "700");
-  return box;
+  return says(box, text);
 }
 
 /**
@@ -651,7 +670,7 @@ export function side(stage, id, text, x, y, c, sizeU) {
   box.classList.add("vm-t--left", "vm-t--wrap");
   box.style.setProperty("--w", `${SIDE_W}`);
   box.firstChild.style.setProperty("font-size", `calc(var(--u) * ${sizeU})`);
-  return box;
+  return says(box, text);
 }
 
 /**

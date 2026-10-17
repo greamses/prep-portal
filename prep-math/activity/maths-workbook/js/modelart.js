@@ -34,6 +34,8 @@ const GREY = "#6f685f";
 export const TONE = { a: "#bfe3ff", b: "#fff3a8", c: "#d6f0cf", d: "#ffd9cf", q: "#fffdf8" };
 
 const f = (n) => (+n).toFixed(2);
+import { fracSvg, isFraction, partsOf } from "/utils/components/workbook/stackfrac.js";
+
 const BAR_H = 11;
 const GAP = 2;
 const BRACE = 9;      // the room a brace and its words take over or under a row
@@ -45,9 +47,14 @@ const UNKNOWN_MM = 24;
    and its number written afterwards instead of the whole finished picture
    being swapped in (utils/components/workbook/tv-lessons.js). */
 const text = (x, y, s, { anchor = "middle", size = 4.2, weight = 700, ask = false, tag = "", row = null } = {}) =>
-  `<text x="${f(x)}" y="${f(y)}" text-anchor="${anchor}" font-family="JetBrains Mono, monospace" ` +
+  /* A FRACTION IS WRITTEN ONE FIGURE OVER THE OTHER, here as everywhere else
+     in this workbook: the bottom number names the part and the top counts
+     them, and 3/6 has no top and no bottom (./stackfrac.js). */
+  (isFraction(s) && anchor === "middle"
+    ? fracSvg(x, y, ...partsOf(s), { size, weight, ink: INK, tag, row, ask })
+    : `<text x="${f(x)}" y="${f(y)}" text-anchor="${anchor}" font-family="JetBrains Mono, monospace" ` +
   `font-size="${size}" font-weight="${weight}" fill="${INK}"${ask ? ' data-ask="1"' : ""}` +
-  `${tag ? ` data-mb="${tag}"` : ""}${row != null ? ` data-mb-row="${row}"` : ""}>${s}</text>`;
+  `${tag ? ` data-mb="${tag}"` : ""}${row != null ? ` data-mb-row="${row}"` : ""}>${s}</text>`);
 
 /** A brace and its words, as one named node. */
 const group = (key, inner) => `<g data-mb="brace" data-mb-key="${key}">${inner}</g>`;

@@ -374,9 +374,9 @@ export function fracMixed() {
     paperMm: PAPER_MM,
     picW: PIC_W,
     asks: [
-      { id: "a1", text: "Rosa walks 1 and 1/2 km before school and 2 and 1/3 km after it. "
+      { id: "a1", text: "Rosa walks 1 1/2 km before school and 2 1/3 km after it. "
         + "How far has she walked in the day?" },
-      { id: "a2", text: "A jug holds 3 and 1/4 litres. 1 and 2/3 litres are poured out. "
+      { id: "a2", text: "A jug holds 3 1/4 litres. 1 2/3 litres are poured out. "
         + "How much is left in the jug?" },
     ],
     pics: {
@@ -414,7 +414,7 @@ export function fracMixed() {
       { id: "w2", text: "1 + 2 = 3 whole km", y: 19, c: 0, size: 2.4 },
       { id: "w3", text: "halves and thirds → sixths", y: 27, c: 1, size: 2.2 },
       { id: "w4", text: "3/6 + 2/6 = 5/6", y: 34.5, c: 2, size: 2.5 },
-      { id: "w5", text: "3 and 5/6 km", y: 42, c: 3, size: 2.8 },
+      { id: "w5", text: "3 5/6 km", y: 42, c: 3, size: 2.8 },
       { id: "x1", text: "quarters, thirds → twelfths", y: 12, c: 1, size: 2.2 },
       { id: "x2", text: "3/12 is not enough", y: 19.5, c: 1, size: 2.3 },
       { id: "x3", text: "borrow 1 whole = 12/12", y: 27, c: 0, size: 2.2 },

@@ -36,6 +36,7 @@
    ========================================================================== */
 
 import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
+import { stackText } from "/utils/components/workbook/stackfrac.js";
 import { wSvg, WHEEL, spinnerDisc, spinnerArrow } from "./tableart.js";
 
 /* Tricks with a full animated lesson in Learning with PrepBot. */
@@ -874,7 +875,11 @@ function wheelSteps() {
     });
     ["14", "28", "57"].forEach((t, i) => tile(stage, `j${i}`, t, 14 + i * 7.4, 66, { c: [1, 3, 4][i], size: "l" }));
     [[0, 3], [1, 4], [2, 5]].forEach(([i, j], k) => tile(stage, `o${k}`, `${WHEEL[i]} + ${WHEEL[j]} = 9`, 11 + k * 15, 90, { c: 2, size: "s" }));
-    ["1/7 = 0.142857…", "2/7 = 0.285714…", "3/7 = 0.428571…"].forEach((t, k) => tile(stage, `f${k}`, t, 12 + k * 23, 90, { bare: true, size: "s" }));
+    /* stacked, like every other fraction on a film (../../../utils/components/workbook/stackfrac.js) */
+    ["1/7 = 0.142857…", "2/7 = 0.285714…", "3/7 = 0.428571…"].forEach((t, k) => {
+      const box = tile(stage, `f${k}`, t, 12 + k * 23, 90, { bare: true, size: "s" });
+      box.firstChild.innerHTML = stackText(t);
+    });
   };
   const step = (say, fn) => ({ say, show(stage, how) { fn(acts(stage, how.gsap, how.instant)); } });
   /* The arrow only ever spins clockwise, and always by at least one whole turn: for × n it
