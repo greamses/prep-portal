@@ -303,6 +303,7 @@ export function hand(gsap, instant) {
     return {
       show: on, grow: on, write: on, draw: on, mark: on, deal: on, drop: on,
       away: (nodes) => [...(nodes || [])].forEach((n) => n.remove()),
+      score: on,
       wipe: (n, to) => { if (n) n.setAttribute("fill", to); },
       slide: (n, to) => {
         if (!n || !to) return;
@@ -334,6 +335,24 @@ export function hand(gsap, instant) {
       const { line, len } = knife(svg, x, y, h);
       gsap.fromTo(line, { strokeDasharray: len, strokeDashoffset: len },
         { strokeDashoffset: 0, duration: 0.45, delay, ease: "power2.in" });
+    },
+    /**
+     * A CUT MADE DOWN THROUGH A BAR THAT IS ALREADY DRAWN.
+     *
+     * `cut` brings its own knife, for a bar being divided for the first time.
+     * A fraction bar carries its cuts already — they are what make it four
+     * parts rather than one — so what is wanted is not a line arriving but a
+     * line being MADE: drawn from the top of the bar to the bottom, the way
+     * a hand would draw it, one after another along the bar.
+     */
+    score(n, delay = 0, dur = 0.34) {
+      if (!n) return;
+      n.style.opacity = "1";
+      const len = typeof n.getTotalLength === "function" ? n.getTotalLength() : 12;
+      gsap.fromTo(n, { strokeDasharray: len, strokeDashoffset: len }, {
+        strokeDashoffset: 0, duration: dur, delay, ease: "power2.in",
+        onComplete() { n.style.strokeDasharray = ""; n.style.strokeDashoffset = ""; },
+      });
     },
     /* and then each part takes its own colour, one after the other, so they
        are plainly two things now and not one */

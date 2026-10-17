@@ -71,11 +71,14 @@ const drawBar = (s, H, { row = 0, at = 0, gap = 0.22, from = PAPER } = {}) => {
  * is the lines, and they are made one at a time, left to right, in the colour
  * that says "we made this one".
  */
-const cutBar = (s, H, { row = 0, at = 0.3, gap = 0.18 } = {}) => {
+const cutBar = (s, H, { row = 0, at = 0.3, gap = 0.32 } = {}) => {
   H.grow(frame(s, row), 0);
   cells(s, row).forEach((c) => (fillOf(c) === PAPER ? H.show(c) : H.tint(c, fillOf(c), 0)));
   oldCuts(s, row).forEach((n) => H.show(n));
-  newCuts(s, row).forEach((n, i) => H.write(n, at + i * gap));
+  /* EACH CUT IS MADE, not revealed: drawn down through the bar from the top,
+     one after another along it, so the child watches the bar being divided
+     rather than finding it already divided. */
+  newCuts(s, row).forEach((n, i) => H.score(n, at + i * gap));
 };
 
 /**
@@ -348,7 +351,7 @@ export function fracUnlike() {
         cells(s, 1).filter((c) => fillOf(c) === ADDED)
           .forEach((m, i) => H.slide(m, holes[i], 0.4 + i * 0.75, 0.7));
       },
-      "vv.cut": (s, H) => { cutBar(s, H, { row: 0, gap: 0.1 }); cutBar(s, H, { row: 1, at: 1.4, gap: 0.1 }); },
+      "vv.cut": (s, H) => { cutBar(s, H, { row: 0, gap: 0.14 }); cutBar(s, H, { row: 1, at: 1.7, gap: 0.14 }); },
       /* and here the pieces are carried up to LIE ON what they take away */
       "vv.carry": (s, H) => {
         const take = colouredIn(cells(s, 0));

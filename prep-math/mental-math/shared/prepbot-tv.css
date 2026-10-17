@@ -298,6 +298,74 @@
    stage rather than sitting among the scene's tiles, because the lesson is
    over by now and there is nothing left to read behind it. Sized in the
    screen's own units so it holds up from a phone to full screen. */
+/* ── the title card every film opens on ────────────────────────────────────
+   The mirror of the outro, and it arrives rather than being there: the set's
+   name first, then PrepBot's, then a rule drawn under them, then what today
+   is about. Four small waits, which is long enough to read and short enough
+   that nobody reaches for the next button. */
+.mm-tv-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+  padding: 4% 6% 12%;
+  text-align: center;
+  font-family: var(--font-mono, monospace);
+  color: var(--ink);
+  background: var(--surface-primary, #fffdf8);
+  animation: mm-tv-outro-in 0.4s ease both;
+}
+.mm-tv-intro__lead {
+  margin: 0;
+  font-size: clamp(0.7rem, 2.4vw, 1.1rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: mm-tv-intro-up 0.5s ease 0.15s both;
+}
+.mm-tv-intro__name {
+  margin: 0;
+  font-size: clamp(1.4rem, 8vw, 3.6rem);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  opacity: 0;
+  animation: mm-tv-intro-in 0.6s cubic-bezier(0.2, 1.3, 0.4, 1) 0.45s both;
+}
+/* the rule is DRAWN, left to right, the way a line is drawn on a board */
+.mm-tv-intro__name::after {
+  content: "";
+  display: block;
+  height: 3px;
+  margin: 0.14em auto 0;
+  background: var(--accent-primary, #ffe500);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  animation: mm-tv-intro-rule 0.45s ease 1s both;
+}
+.mm-tv-intro__title {
+  margin: 0.5em 0 0;
+  font-size: clamp(0.72rem, 2.8vw, 1.25rem);
+  font-weight: 700;
+  line-height: 1.3;
+  max-width: 26ch;
+  opacity: 0;
+  animation: mm-tv-intro-up 0.5s ease 1.35s both;
+}
+@keyframes mm-tv-intro-up {
+  from { opacity: 0; transform: translateY(0.5em); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes mm-tv-intro-in {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes mm-tv-intro-rule { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
 .mm-tv-outro {
   position: absolute;
   inset: 0;

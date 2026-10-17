@@ -53,6 +53,7 @@ let open = null;      // the set that is up now: one at a time
  * It rides along to the printed sheet too (lesson-sheet.js walks the same
  * steps), which is the one place a child keeps after the TV goes off.
  */
+const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 const SITE = "prepportal.com.ng";
 const outroStep = () => ({
   say: "And that is the whole of it. Now, watching me do one is not the same as doing one — "
@@ -71,8 +72,34 @@ const outroStep = () => ({
   },
 });
 
+/**
+ * THE TITLE CARD, and it is added here for the same reason the outro is.
+ *
+ * Every one of these films belongs to the same set, and a child who has
+ * watched one should know what they are looking at the moment the next one
+ * starts. The card names the set and then the lesson, in that order, and the
+ * words arrive one after another rather than being there already — the whole
+ * set opens the way it teaches.
+ *
+ * Like the outro, it is added to the steps rather than written into each
+ * scene, because six modules open this set and the card should not be copied
+ * six times nor be missing from the seventh.
+ */
+const introStep = (title) => ({
+  say: `Learning with PrepBot.${title ? ` Today: ${title}.` : ""} Have something to write with `
+    + "next to you, because the bit at the end is for you to do.",
+  show(stage) {
+    const card = document.createElement("div");
+    card.className = "mm-tv-intro";
+    card.innerHTML = `<p class="mm-tv-intro__lead">Learning with</p>`
+      + `<p class="mm-tv-intro__name">PrepBot</p>`
+      + (title ? `<p class="mm-tv-intro__title">${esc(title)}</p>` : "");
+    stage.appendChild(card);
+  },
+});
+
 export async function openTv({ title = "", build = () => {}, steps: told = [] } = {}) {
-  const steps = told.length ? [...told, outroStep()] : told;
+  const steps = told.length ? [introStep(title), ...told, outroStep()] : told;
   open?.close();
   css("/prep-math/mental-math/shared/prepbot-teacher.css");
   css("/prep-math/mental-math/shared/prepbot-tv.css");
