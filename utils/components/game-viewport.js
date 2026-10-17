@@ -21,7 +21,8 @@ const SVG_EXPAND =
   '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="20" height="20"><path d="M3 9.4V4.6A1.6 1.6 0 0 1 4.6 3h4.8v2.8H5.8v3.6zM21 9.4V4.6A1.6 1.6 0 0 0 19.4 3h-4.8v2.8h3.6v3.6zM3 14.6v4.8A1.6 1.6 0 0 0 4.6 21h4.8v-2.8H5.8v-3.6zM21 14.6v4.8a1.6 1.6 0 0 1-1.6 1.6h-4.8v-2.8h3.6v-3.6z" fill="var(--accent-secondary)"/></svg>';
 const SVG_COMPRESS =
   '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="20" height="20"><path d="M9.4 3v4.8A1.6 1.6 0 0 1 7.8 9.4H3V6.6h3.6V3zM14.6 3v4.8a1.6 1.6 0 0 0 1.6 1.6H21V6.6h-3.6V3zM9.4 21v-4.8a1.6 1.6 0 0 0-1.6-1.6H3v2.8h3.6V21zM14.6 21v-4.8a1.6 1.6 0 0 1 1.6-1.6H21v2.8h-3.6V21z" fill="var(--accent-danger)"/></svg>';
-const SVG_ROTATE =
+/* shared: the TV uses the same mark to ask for the same thing */
+export const SVG_ROTATE =
   '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="46" height="46"><rect x="3" y="7" width="12.6" height="10" rx="2" fill="var(--accent-secondary)"/><rect x="5" y="9" width="8.6" height="6" rx="0.8" fill="#fff"/><path d="M17.8 7.6a6.4 6.4 0 0 1 3.4 5.6" fill="none" stroke="var(--accent-primary)" stroke-width="2.6" stroke-linecap="round"/><path d="M19 15.6 21.2 12.2l2 3.4z" fill="var(--accent-danger)"/></svg>';
 
 export function initGameViewport(opts = {}) {
