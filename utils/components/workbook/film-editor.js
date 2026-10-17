@@ -41,6 +41,8 @@ import {
 } from "./filmdoc.js";
 import { filmBoth, saveDraft, publish, unpublish, forget } from "./film-store.js";
 import { needCss } from "./panels.js";
+import { UI } from "/utils/components/ui-icons.js";
+import { mountTooltips } from "/utils/components/tooltip.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
@@ -93,6 +95,14 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     say(history.length ? "Stepped back" : "Back to where you started");
   }
 
+  /* A KEY IS AN ICON WITH ITS NAME IN A TOOLTIP. Six words of button across
+     the top is six words of stage lost, and the stage is the thing being
+     worked on — so the chrome says what it is the way the rest of the bench
+     does (tooltip.js), and gets out of the way. */
+  const key = (k, icon, name, tint = "1", extra = "") =>
+    `<button type="button" class="pp-btn wb-tint-${tint} fe__key" data-f="${k}"${extra}`
+    + ` aria-label="${esc(name)}" data-tip="${esc(name)}" data-tip-side="down">${icon}</button>`;
+
   /* ── the room ────────────────────────────────────────────────────────── */
   const box = document.createElement("div");
   box.className = "fe";
@@ -104,13 +114,15 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
       </span>
       <span class="fe__state" role="status"></span>
       <span class="fe__keys">
-        <button type="button" class="pp-btn wb-tint-1" data-f="undo" disabled title="Step back (Ctrl+Z)">Step back</button>
-        <button type="button" class="pp-btn wb-tint-2" data-f="preview">Watch it</button>
-        <button type="button" class="pp-btn wb-tint-1" data-f="save">Save draft</button>
-        <button type="button" class="pp-btn wb-tint-3" data-f="publish">Publish</button>
-        <button type="button" class="pp-btn wb-tint-1" data-f="down" hidden>Take it down</button>
-        <button type="button" class="pp-btn wb-tint-2" data-f="trace" hidden>Trace the coded film</button>
-        <button type="button" class="pp-btn wb-tint-4" data-f="close" aria-label="Close the editor">Close</button>
+        ${key("undo", UI.undo(20), "Step back (Ctrl+Z)", "1", ' disabled')}
+        ${key("trace", UI.layers(20), "Trace the coded film", "2", " hidden")}
+        ${key("preview", UI.again(20), "Watch it on the real set", "2")}
+        ${key("save", UI.edit(20), "Save the draft", "1")}
+        ${key("publish", UI.share(20), "Publish it to everybody", "3")}
+        ${key("down", UI.noFill(20), "Take it down", "1", " hidden")}
+        ${key("fold-side", UI.menu(20), "Show or hide the inspector", "1")}
+        ${key("fold-time", UI.steps(20), "Show or hide the beats", "1")}
+        ${key("close", UI.close(20), "Close the editor", "4")}
       </span>
     </header>
     <div class="fe__work">
@@ -127,10 +139,10 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
       <div class="fe__time-head">
         <h2>The beats</h2>
         <span class="fe__time-keys">
-          <button type="button" class="pp-btn wb-tint-2" data-f="step-add">Add a beat</button>
-          <button type="button" class="pp-btn wb-tint-1" data-f="step-left">&larr; Move it back</button>
-          <button type="button" class="pp-btn wb-tint-1" data-f="step-right">Move it on &rarr;</button>
-          <button type="button" class="pp-btn wb-tint-4" data-f="step-del">Take the beat out</button>
+          ${key("step-add", UI.plus(18), "Add a beat after this one", "2")}
+          ${key("step-left", UI.arrowLeft(18), "Move this beat back", "1")}
+          ${key("step-right", UI.arrowRight(18), "Move this beat on", "1")}
+          ${key("step-del", UI.trash(18), "Take this beat out", "4")}
         </span>
       </div>
       <div class="fe__grid" data-f="grid"></div>
@@ -152,14 +164,34 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
 
   /* ── the stage, drawn as the television draws it ─────────────────────── */
 
+  /**
+   * A HUNDREDTH OF THE STAGE'S WIDTH, WHATEVER THAT IS NOW.
+   *
+   * Every film is measured in `--u`, and it used to be set at the moment the
+   * stage was painted. That is too early and too seldom: the stage is sized
+   * by a container query, so on the first paint it has not settled, and when
+   * a panel folds away it changes without anything being painted. One stale
+   * reading and the whole film is drawn to the wrong scale — measured at
+   * 12.37px on a stage 928px across, which is a third too big, which is why
+   * a traced film ran off both edges of the screen it fitted on the
+   * television. So the box is watched instead of asked.
+   */
+  function measure() {
+    const tv = stage.querySelector(".vm-tv");
+    const w = stage.clientWidth;
+    if (tv && w) tv.style.setProperty("--u", `${w / 100}px`);
+  }
+  const watchSize = new ResizeObserver(measure);
+  watchSize.observe(stage);
+
+
   /** Every element, then every act up to and including the beat on show. */
   function paintStage() {
     stage.innerHTML = "";
     const tv = document.createElement("div");
     tv.className = "vm-tv";
     stage.appendChild(tv);
-    /* the films are measured in hundredths of the stage's width */
-    tv.style.setProperty("--u", `${stage.clientWidth / 100}px`);
+    measure();
     doc.els.forEach((el) => mountEl(stage, el));
     const film = playable(doc);
     for (let k = 0; k <= step && k < film.steps.length; k++) {
@@ -256,6 +288,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
   stage.addEventListener("pointercancel", dropped);
 
   function pick(elId) {
+    if (elId) box.classList.remove("fe--noside");
     picked = elId;
     stage.querySelectorAll(".fe-el").forEach((n) => n.classList.toggle("is-picked", n.dataset.feId === elId));
     paintSide();
@@ -293,9 +326,18 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
       + `<label><span>Down %</span>${numIn("y", el.y, 0, 100, 0.5)}</label></div>`;
     let own = "";
     if (el.type === "text") {
+      /* A SIZE IS A NUMBER and a colour is a colour. The number is in stage
+         units — the same ruler everything else on the stage is measured in,
+         so 4.2 is the size the films are written at — and the wheel is the
+         browser's own. The six house inks are kept beside it as a row of
+         swatches, because they are the right answer most of the time and
+         matching one by eye on a wheel is a job nobody should have. */
       own = row("Words", `<textarea data-p="text" rows="2">${esc(el.text)}</textarea>`)
-        + row("Size", pickOne("size", el.size, [["s", "Small"], ["m", "Middling"], ["l", "Large"]]))
-        + row("Ink", pickOne("c", el.c, INKS.map((i) => [i.c, i.name])));
+        + `<div class="fe-row fe-row--pair">`
+        + `<label><span>Size</span>${numIn("fs", el.fs, 0.5, 24, 0.1)}</label>`
+        + `<label><span>Colour</span><input type="color" data-p="ink" value="${esc(el.ink)}"></label></div>`
+        + `<div class="fe-inks">${INKS.map((i) => `<button type="button" class="pp-plain fe-ink${i.hex.toLowerCase() === String(el.ink).toLowerCase() ? " is-on" : ""}"`
+          + ` style="background:${i.hex}" data-ink="${i.hex}" aria-label="${esc(i.name)}" data-tip="${esc(i.name)}"></button>`).join("")}</div>`;
     } else if (el.type === "bar") {
       own = row("Width %", numIn("w", el.w, 4, 100, 0.5))
         + `<div class="fe-parts"><span class="fe-parts__h">Its parts</span>`
@@ -437,6 +479,12 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     if (toStep != null) { step = Number(toStep); picked = null; paintAll(); return; }
     const toPick = e.target.closest("[data-pick]")?.dataset.pick;
     if (toPick) { pick(toPick); return; }
+    const ink = e.target.closest("[data-ink]")?.dataset.ink;
+    if (ink) {
+      const el = doc.els.find((x) => x.id === picked);
+      if (el) { remember(); el.ink = ink; touched(); paintAll(); }
+      return;
+    }
     const partDel = e.target.closest("[data-part-del]")?.dataset.partDel;
     if (partDel != null) {
       remember();
@@ -458,6 +506,14 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
       close();
     } else if (k === "el-done") {
       pick(null);
+    } else if (k === "fold-side" || k === "fold-time") {
+      /* MORE STAGE. The inspector and the beats both fold away, because for
+         long stretches of laying a film out you want neither: you want the
+         screen as big as the window will give it. The stage is measured by a
+         ResizeObserver, so it takes the room back the moment it appears. */
+      box.classList.toggle(k === "fold-side" ? "fe--noside" : "fe--notime");
+      e.target.closest("[data-f]").setAttribute("aria-pressed",
+        String(box.classList.contains(k === "fold-side" ? "fe--noside" : "fe--notime")));
     } else if (k === "undo") {
       stepBack();
     } else if (k === "el-del") {
@@ -636,17 +692,15 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
   };
   document.addEventListener("keydown", onKey);
 
-  function paintAll() { paintStage(); paintSide(); paintGrid(); }
+  function paintAll() { paintStage(); paintSide(); paintGrid(); mountTooltips(); }
   function close() {
     document.removeEventListener("keydown", onKey);
+    watchSize.disconnect();
     box.remove();
     live = null;
   }
 
   paintAll();
-  /* the stage is measured once it has a width */
-  requestAnimationFrame(paintStage);
-  window.addEventListener("resize", paintStage);
   box.querySelector('[data-f="down"]').hidden = !both.published;
   box.querySelector('[data-f="trace"]').hidden = !(coded && coded.build);
   say(both.draft ? "A draft is open" : both.published ? "Opened from what is published" : "A new film");

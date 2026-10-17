@@ -93,14 +93,25 @@ let seq = 0;
 /** An id that is unique within a document and readable in the editor. */
 export const newId = (prefix = "e") => `${prefix}${Date.now().toString(36).slice(-4)}${(seq++).toString(36)}`;
 
+/* The size the film's own stylesheet sets a tile in, in stage units — the
+   number the editor starts a new piece of writing at (video.css .vm-t__in). */
+export const BASE_FS = 4.2;
+const LEGACY_FS = { s: 2.3, m: 4.2, l: 5.6 };
+
 export const blankEl = (type = "text") => ({
   id: newId(),
   name: TYPES[type]?.label || "Thing",
   type,
   x: 50,
   y: 28,
-  c: 0,
-  size: "m",
+  /* WRITING IS SIZED AND COLOURED BY NUMBER, not by picking from a short list.
+     Three sizes and six inks is the right discipline for a workbook page,
+     where consistency is the whole point; a film is laid out once, by hand,
+     against a drawing — and "very slightly smaller than that" is a thing you
+     need to be able to say. The old s/m/l and c0–c5 are read back as numbers
+     (see `normalise`), so films laid out before this still play. */
+  fs: BASE_FS,
+  ink: INKS[0].hex,
   w: 30,
   text: type === "text" ? "Words" : "",
   shape: "rect",
@@ -128,7 +139,16 @@ export function normalise(raw, title = "") {
   return {
     v: DOC_VERSION,
     title: typeof d.title === "string" ? d.title : title,
-    els: els.map((e) => ({ ...blankEl(e?.type || "text"), ...e, id: e?.id || newId() })),
+    els: els.map((e) => {
+      const el = { ...blankEl(e?.type || "text"), ...e, id: e?.id || newId() };
+      /* what was written down before sizes and inks were numbers */
+      if (el.fs == null || !Number.isFinite(Number(el.fs))) el.fs = LEGACY_FS[e?.size] ?? BASE_FS;
+      if (!/^#[0-9a-f]{3,8}$/i.test(String(el.ink || ""))) el.ink = inkHex(e?.c ?? 0);
+      el.fs = Math.max(0.5, Math.min(24, Number(el.fs)));
+      delete el.size;
+      delete el.c;
+      return el;
+    }),
     steps: steps.map((s) => ({
       say: typeof s?.say === "string" ? s.say : "",
       hold: Number(s?.hold) || 0,
@@ -199,7 +219,12 @@ export function elHtml(el) {
 /** Put one element on a stage, hidden, ready for its act. */
 export function mountEl(stage, el) {
   if (el.type === "text") {
-    const box = tile(stage, el.id, el.text || "", el.x, el.y, { c: el.c || 0, size: el.size || "m" });
+    const box = tile(stage, el.id, el.text || "", el.x, el.y, { bare: true });
+    const inner = box.firstChild;
+    /* measured in stage units like everything else, so a film laid out once
+       reads the same on a phone and on a television */
+    inner.style.fontSize = `calc(var(--u) * ${Number(el.fs) || BASE_FS})`;
+    inner.style.color = el.ink || INKS[0].hex;
     return box;
   }
   return art(stage, el.id, el.x, el.y, Number(el.w) || 30, elHtml(el));
@@ -208,13 +233,22 @@ export function mountEl(stage, el) {
 /* ── playing it ────────────────────────────────────────────────────────── */
 
 /** Run one act against the kit's verbs. */
-function run(a, k) {
+function run(a, k, stage) {
   const d = Number(a.delay) || 0;
   switch (a.do) {
     case "pop": return k.pop(a.el, d);
     case "fly": return k.fly(a.el, Number(a.fx) || 0, Number(a.fy) || 0, d);
     case "move": return k.move(a.el, Number(a.tx) || 0, Number(a.ty) || 0, d);
-    case "flip": return k.flip(a.el, a.text ?? "", a.c, d);
+    case "flip": {
+      k.flip(a.el, a.text ?? "", undefined, d);
+      /* the kit changes colour by swapping a class, which an inline colour
+         would beat; a document's words carry their own, so it is set here */
+      if (a.ink) {
+        const inner = stage?.querySelector(`[data-t="${a.el}"]`)?.firstChild;
+        if (inner) inner.style.color = a.ink;
+      }
+      return undefined;
+    }
     case "roll": return k.roll(a.el, a.text ?? "", d);
     case "pulse": return k.pulse(a.el, d);
     case "dim": return k.dim(a.el, a.amount == null ? 0.35 : Number(a.amount), d);
@@ -237,13 +271,32 @@ export function playable(raw, fallbackTitle = "") {
     tv.className = "vm-tv";
     stage.appendChild(tv);
     doc.els.forEach((el) => mountEl(stage, el));
+    /**
+     * `--u` IS A HUNDREDTH OF THE STAGE, AND THE STAGE CHANGES SIZE.
+     *
+     * Every caller used to set it once, just after building — which is right
+     * until the window is resized or the set is put full screen, and then the
+     * whole film is drawn to a scale that no longer exists. The stage is
+     * watched instead, here, so there is one place that can be wrong rather
+     * than four. The stage outlives the rebuild it gets on every step, so the
+     * watcher is kept ON it and only ever made once.
+     */
+    const set = () => { if (stage.clientWidth) tv.style.setProperty("--u", `${stage.clientWidth / 100}px`); };
+    set();
+    if (!stage.__filmWatch && typeof ResizeObserver === "function") {
+      stage.__filmWatch = new ResizeObserver(() => {
+        const now = stage.querySelector(".vm-tv");
+        if (now && stage.clientWidth) now.style.setProperty("--u", `${stage.clientWidth / 100}px`);
+      });
+      stage.__filmWatch.observe(stage);
+    }
   };
   const steps = doc.steps.map((s) => ({
     say: s.say,
     hold: s.hold || 0,
     show(stage, { gsap, instant } = {}) {
       const k = acts(stage, gsap, instant);
-      s.acts.forEach((a) => run(a, k));
+      s.acts.forEach((a) => run(a, k, stage));
     },
   }));
   return { title: doc.title, build, steps };
