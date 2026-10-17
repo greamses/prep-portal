@@ -303,6 +303,12 @@ export function hand(gsap, instant) {
     return {
       show: on, grow: on, write: on, draw: on, mark: on, deal: on, drop: on,
       away: (nodes) => [...(nodes || [])].forEach((n) => n.remove()),
+      wipe: (n, to) => { if (n) n.setAttribute("fill", to); },
+      slide: (n, to) => {
+        if (!n || !to) return;
+        n.setAttribute("x", to.getAttribute("x"));
+        n.setAttribute("y", to.getAttribute("y"));
+      },
       focus: () => {}, lit: () => {}, both: () => {},
       tint: (n) => on(n),
       flip: (n, text) => { if (n) { n.textContent = text; on(n); } },
@@ -374,6 +380,32 @@ export function hand(gsap, instant) {
       gsap.to(list, {
         opacity: 0, scale: 0.55, duration: 0.22, delay, ease: "power1.in",
         onComplete: () => list.forEach((n) => n.remove()),
+      });
+    },
+    /**
+     * A MARK LOSING ITS COLOUR WHERE IT STANDS — the other way round from
+     * `tint`, which brings a mark up to the colour the drawing gave it. A
+     * part that is taken away is not rubbed out: it goes pale, so the child
+     * can still see that it was there.
+     */
+    wipe(n, to, delay = 0) {
+      if (!n) return;
+      gsap.to(n, { fill: to, duration: 0.4, delay, ease: "power1.inOut" });
+    },
+    /**
+     * A PIECE CARRIED FROM ONE BAR TO THE OTHER, and set down in its place.
+     *
+     * *"Show the two bars first, then move the second piece to the first bar
+     * to show how much was added or removed."* Swapping in a finished picture
+     * of five sixths asserts the answer; watching two sixths leave the bottom
+     * bar and come to rest in the gap on the top one IS the addition, and the
+     * child can see that nothing changed size on the way.
+     */
+    slide(n, to, delay = 0, hold = 0.55) {
+      if (!n || !to) return;
+      gsap.to(n, {
+        attr: { x: to.getAttribute("x"), y: to.getAttribute("y") },
+        duration: hold, delay, ease: "power2.inOut",
       });
     },
     /** A mark pointed at: a small, quick swell. */

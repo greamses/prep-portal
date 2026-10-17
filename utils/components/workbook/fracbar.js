@@ -26,6 +26,8 @@ const INK = "#2a2723";
 const PAPER = "#fffdf8";
 const SHADE = "#bfe3ff";
 const TAKEN = "#f0ece4";          // coloured once, and taken away
+const ADDED = "#cfe9c4";          // just put on, so it can be told from what was there
+const CUT = "#d9632b";            // a cut made to get two bars to match
 const FAINT = "#b8b0a3";
 
 /** The cuts a bar offers: ×2, ×3, ×4, ×5 — and back to how it started. */
@@ -69,10 +71,15 @@ export function splitState(state, { a, b } = {}) {
 const f = (n) => Number(n.toFixed(2));
 
 /**
- * One bar: `den` parts, `num` of them coloured. `cut` draws the new lines
- * inside each part faintly, so the child can see the old parts under the new.
+ * The body of ONE bar, drawn at `top` and labelled with which row it is.
+ *
+ *   num   how many parts are coloured
+ *   den   how many parts there are
+ *   was   what it was cut FROM, so the old lines can still be seen
+ *   gone  how many of the coloured parts have been taken away
+ *   plus  how many of the coloured parts have just been ADDED
  */
-export function barSvg({ num, den, was = 0, gone = 0, label = "" } = {}) {
+function barBody({ num, den, was = 0, gone = 0, plus = 0 }, top = 0, row = 0) {
   const cell = BAR_MM / den;
   let body = "";
   for (let c = 0; c < den; c++) {
@@ -80,27 +87,74 @@ export function barSvg({ num, den, was = 0, gone = 0, label = "" } = {}) {
        drawn pale rather than rubbed out, because a child taking four tenths
        off seven has to be able to see that they were there — a bar that
        simply arrives with three parts coloured is the answer, not the
-       working. */
+       working. `plus`: parts just added, in a colour of their own, so two
+       eighths and three eighths can be told apart on the SAME bar. */
     const taken = c < num && c >= num - gone;
-    const fill = c < num ? (taken ? TAKEN : SHADE) : PAPER;
+    const added = !taken && c < num && c >= num - plus;
+    const fill = c < num ? (taken ? TAKEN : added ? ADDED : SHADE) : PAPER;
     body += `<rect class="fb-part" data-part="${c}"${c < num && !taken ? ' data-shaded="1"' : ""}` +
-      `${taken ? ' data-taken="1"' : ""} data-mb="cell" data-cell="${c}" x="${f(c * cell)}" y="0"` +
+      `${taken ? ' data-taken="1"' : ""} data-mb="cell" data-cell="${c}" data-row="${row}"` +
+      ` x="${f(c * cell)}" y="${f(top)}"` +
       ` width="${f(cell)}" height="${BAR_H}" fill="${fill}" stroke="${INK}" stroke-width="0.4"/>`;
   }
-  /* the parts it was cut FROM, drawn over the top as a heavier line, so the
-     child can still see the half that became three sixths */
   if (was && was < den) {
     const step = BAR_MM / was;
+    const every = den / was;
+    /* THE NEW CUTS ARE DRAWN IN A COLOUR OF THEIR OWN. Asked for in as many
+       words — *"colour the equivalent cut lines differently"* — and it is
+       the whole point of the picture: the child has to be able to see which
+       lines were already there and which ones we have just made to get the
+       two bars to match. A line that falls where an old one already was is
+       not a new cut, so it stays in ink. */
+    for (let c = 1; c < den; c++) {
+      if (Number.isInteger(every) && c % every === 0) continue;
+      body += `<line data-mb="cut" data-new="1" data-row="${row}" x1="${f(c * cell)}" y1="${f(top)}"` +
+        ` x2="${f(c * cell)}" y2="${f(top + BAR_H)}" stroke="${CUT}" stroke-width="0.7"/>`;
+    }
+    /* and the parts it was cut FROM, heavier, so the half that became three
+       sixths can still be seen */
     for (let c = 1; c < was; c++) {
-      body += `<line data-mb="cut" x1="${f(c * step)}" y1="0" x2="${f(c * step)}" y2="${BAR_H}" stroke="${INK}" stroke-width="0.9"/>`;
+      body += `<line data-mb="cut" data-row="${row}" x1="${f(c * step)}" y1="${f(top)}"` +
+        ` x2="${f(c * step)}" y2="${f(top + BAR_H)}" stroke="${INK}" stroke-width="0.9"/>`;
     }
   }
   /* the frame is the BAR: it is what grows when a film draws one, and the
      parts inside it are the marks that take their colour afterwards */
-  body += `<rect data-mb="bar" data-mb-row="0" x="0" y="0" width="${BAR_MM}" height="${BAR_H}" fill="none" stroke="${INK}" stroke-width="0.9"/>`;
-  return `<svg class="fb-bar" viewBox="-0.6 -0.6 ${BAR_MM + 1.2} ${BAR_H + 1.2}" width="${BAR_MM}mm" height="${BAR_H}mm"` +
-    ` role="img" aria-label="${label || `${num} out of ${den}`}" data-num="${num}" data-den="${den}">${body}</svg>`;
+  body += `<rect data-mb="bar" data-mb-row="${row}" x="0" y="${f(top)}" width="${BAR_MM}"` +
+    ` height="${BAR_H}" fill="none" stroke="${INK}" stroke-width="0.9"/>`;
+  return body;
 }
+
+/**
+ * One bar: `den` parts, `num` of them coloured. `was` draws the parts it was
+ * cut from over the top, so the child can see the old parts under the new.
+ */
+export function barSvg(o = {}) {
+  const { num, den, label = "" } = o;
+  return `<svg class="fb-bar" viewBox="-0.6 -0.6 ${BAR_MM + 1.2} ${BAR_H + 1.2}" width="${BAR_MM}mm" height="${BAR_H}mm"` +
+    ` role="img" aria-label="${label || `${num} out of ${den}`}" data-num="${num}" data-den="${den}">`
+    + `${barBody(o)}</svg>`;
+}
+
+/**
+ * SEVERAL BARS IN ONE DRAWING, one under the other.
+ *
+ * Two bars drawn as two pictures are two coordinate systems, and a piece
+ * cannot be carried from one to the other without arithmetic nobody should
+ * have to write. In one drawing it is a move: the piece keeps its size and
+ * slides up into the gap it is going to fill, which is what adding two
+ * fractions looks like once their parts match.
+ */
+export function stackSvg(bars = [], { label = "" } = {}) {
+  const h = bars.length * BAR_H + (bars.length - 1) * GAP;
+  const body = bars.map((b, i) => barBody(b, i * (BAR_H + GAP), i)).join("");
+  return `<svg class="fb-bar fb-bars" viewBox="-0.6 -0.6 ${BAR_MM + 1.2} ${f(h + 1.2)}"`
+    + ` width="${BAR_MM}mm" height="${f(h)}mm" role="img"`
+    + ` aria-label="${label || `${bars.length} bars`}">${body}</svg>`;
+}
+
+/** How far apart two stacked bars stand, in the drawing's own units. */
+export const ROW_STEP = BAR_H + GAP;
 
 const nameOf = (num, den) => `<span class="fb-name"><b>${num}</b><i></i><b>${den}</b></span>`;
 
