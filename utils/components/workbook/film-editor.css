@@ -79,6 +79,19 @@
   border: 1px dashed rgba(42, 39, 35, 0.45);
   pointer-events: none;
 }
+/* the corner that sizes a drawing: on the right edge, where the width grows */
+.fe-el__grip {
+  position: absolute;
+  right: -0.45rem;
+  top: 50%;
+  width: 0.8rem;
+  height: 1.6rem;
+  margin-top: -0.8rem;
+  background: #d1495b;
+  border: 1px solid #fffdf8;
+  cursor: ew-resize;
+  z-index: 2;
+}
 .fe-el.is-picked::after {
   content: "";
   position: absolute;

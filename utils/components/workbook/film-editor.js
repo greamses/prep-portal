@@ -4,9 +4,10 @@
    A cutting room for PrepBot's films (./filmdoc.js), open to the admin alone.
    Four parts, and they are the four questions you ask about a lesson:
 
-     the STAGE       what is on the screen — drag a thing to move it, pull its
-                     corner to size it, and it is shown exactly as the
-                     television will show it, at the television's own 16:9
+     the STAGE       what is on the screen — drag a thing to move it, pull the
+                     corner to size it, nudge it with the arrow keys, and it is
+                     shown exactly as the television will show it, at the
+                     television's own 16:9
      the INSPECTOR   what the selected thing IS: its words, its colour, its
                      parts; or, with nothing selected, what the step says
      the TIMELINE    a row per thing and a column per BEAT, so you can see at
@@ -20,6 +21,13 @@
    everything after it moves, which is what you want. Seconds live inside a
    beat — each act has its own small delay — and that is where fine timing
    belongs.
+
+   A COACH AND HORSES CAN BE DRIVEN THROUGH AN AFTERNOON'S WORK by one press
+   of Delete, or one Trace over a layout, so every change can be stepped back
+   — Ctrl+Z, or the key in the bar. The document is small and is written down
+   anyway, so the honest undo is a stack of whole documents, kept BEFORE each
+   change. A field is one step however much is typed into it, and a run of
+   nudges is one step rather than twenty.
 
    NOTHING HERE REACHES A CHILD UNTIL IT IS PUBLISHED. Save keeps a draft that
    only this account is served; Publish makes it the lesson for everybody.
@@ -62,6 +70,29 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
   let picked = null;        // the selected element's id
   let dirty = false;
 
+  /* ONE STEP BACK, like every other board on the bench. The document is
+     small and is written down anyway, so the cheapest honest undo is a stack
+     of whole documents: `remember()` is called BEFORE a change, never after,
+     which is the only way to keep the state that is being left. Sixty is
+     about an afternoon's work and a few hundred kilobytes. */
+  const history = [];
+  const remember = () => {
+    history.push(JSON.stringify(doc));
+    if (history.length > 60) history.shift();
+    box.querySelector('[data-f="undo"]').disabled = false;
+  };
+  function stepBack() {
+    const was = history.pop();
+    if (!was) return;
+    doc = normalise(JSON.parse(was), title);
+    picked = null;
+    step = Math.min(step, doc.steps.length - 1);
+    dirty = true;
+    paintAll();
+    box.querySelector('[data-f="undo"]').disabled = !history.length;
+    say(history.length ? "Stepped back" : "Back to where you started");
+  }
+
   /* ── the room ────────────────────────────────────────────────────────── */
   const box = document.createElement("div");
   box.className = "fe";
@@ -73,6 +104,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
       </span>
       <span class="fe__state" role="status"></span>
       <span class="fe__keys">
+        <button type="button" class="pp-btn wb-tint-1" data-f="undo" disabled title="Step back (Ctrl+Z)">Step back</button>
         <button type="button" class="pp-btn wb-tint-2" data-f="preview">Watch it</button>
         <button type="button" class="pp-btn wb-tint-1" data-f="save">Save draft</button>
         <button type="button" class="pp-btn wb-tint-3" data-f="publish">Publish</button>
@@ -155,6 +187,16 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
         node.style.pointerEvents = "none";
       }
       node.classList.toggle("is-picked", el.id === picked);
+      /* THE CORNER. Words are sized small / middling / large, like every
+         other piece of writing on the site, so they have none; everything
+         drawn has a width, and a width is a thing you pull rather than type. */
+      if (el.id === picked && el.type !== "text") {
+        const grip = document.createElement("span");
+        grip.className = "fe-el__grip";
+        grip.dataset.grip = el.id;
+        grip.title = "Pull to size it";
+        node.appendChild(grip);
+      }
     });
   }
 
@@ -163,18 +205,36 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
      drag to is what plays. */
   let drag = null;
   stage.addEventListener("pointerdown", (e) => {
+    const grip = e.target.closest?.("[data-grip]");
     const node = e.target.closest?.(".fe-el");
     if (!node) { pick(null); return; }
     const el = doc.els.find((x) => x.id === node.dataset.feId);
     if (!el) return;
     e.preventDefault();
     pick(el.id);
+    remember();
     const r = stage.getBoundingClientRect();
-    drag = { el, r, fromX: e.clientX, fromY: e.clientY, x: el.x, y: el.y, moved: false };
+    /* A WIDTH IS PULLED FROM THE LEFT EDGE, which stays where it is. A tile
+       is placed by its MIDDLE, so growing it about that middle would walk its
+       left edge away from whatever it was lined up against — and lining a
+       drawing up against the one above it is most of laying a film out. */
+    drag = grip
+      ? { el, r, grip: true, left: el.x - el.w / 2, moved: false }
+      : { el, r, fromX: e.clientX, fromY: e.clientY, x: el.x, y: el.y, moved: false };
     stage.setPointerCapture(e.pointerId);
   });
   stage.addEventListener("pointermove", (e) => {
     if (!drag) return;
+    if (drag.grip) {
+      const at = ((e.clientX - drag.r.left) / drag.r.width) * 100;
+      const w = Math.max(2, Math.min(100, Math.round((at - drag.left) * 2) / 2));
+      drag.el.w = w;
+      drag.el.x = Math.min(100, Math.max(0, drag.left + w / 2));
+      drag.moved = true;
+      paintStage();
+      paintSide();
+      return;
+    }
     const dx = ((e.clientX - drag.fromX) / drag.r.width) * 100;
     const dy = ((e.clientY - drag.fromY) / drag.r.height) * 100;
     if (!drag.moved && Math.abs(dx) < 0.3 && Math.abs(dy) < 0.3) return;
@@ -331,6 +391,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
       const k = e.target.closest("[data-s]")?.dataset.s;
       if (k === "cancel" || e.target === sheet) { sheet.remove(); return; }
       if (k !== "ok") return;
+      remember();
       const rest = s.acts.filter((x) => x.el !== elId);
       if (pickDo.value) {
         const made = { el: elId, do: pickDo.value, delay: Number(sheet.querySelector('[data-s="delay"]').value) || 0 };
@@ -352,6 +413,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
   box.addEventListener("click", async (e) => {
     const add = e.target.closest("[data-add]")?.dataset.add;
     if (add) {
+      remember();
       const el = blankEl(add);
       el.name = `${TYPES[add].label} ${doc.els.filter((x) => x.type === add).length + 1}`;
       /* a new thing lands just clear of the last one: dropped on the same
@@ -377,11 +439,13 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     if (toPick) { pick(toPick); return; }
     const partDel = e.target.closest("[data-part-del]")?.dataset.partDel;
     if (partDel != null) {
+      remember();
       const el = doc.els.find((x) => x.id === picked);
       el.parts.splice(Number(partDel), 1);
       touched(); paintAll(); return;
     }
     if (e.target.closest("[data-part-add]")) {
+      remember();
       const el = doc.els.find((x) => x.id === picked);
       el.parts.push({ n: 1, tone: "sky", label: "" });
       touched(); paintAll(); return;
@@ -394,20 +458,26 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
       close();
     } else if (k === "el-done") {
       pick(null);
+    } else if (k === "undo") {
+      stepBack();
     } else if (k === "el-del") {
+      remember();
       doc.els = doc.els.filter((x) => x.id !== picked);
       doc.steps.forEach((s) => { s.acts = s.acts.filter((a) => a.el !== picked); });
       picked = null; touched(); paintAll();
     } else if (k === "step-add") {
+      remember();
       doc.steps.splice(step + 1, 0, blankStep());
       step += 1; touched(); paintAll();
     } else if (k === "step-del") {
       if (doc.steps.length < 2) { say("A film needs at least one beat", true); return; }
+      remember();
       doc.steps.splice(step, 1);
       step = Math.max(0, step - 1); touched(); paintAll();
     } else if (k === "step-left" || k === "step-right") {
       const to = step + (k === "step-left" ? -1 : 1);
       if (to < 0 || to >= doc.steps.length) return;
+      remember();
       [doc.steps[step], doc.steps[to]] = [doc.steps[to], doc.steps[step]];
       step = to; touched(); paintAll();
     } else if (k === "save") {
@@ -423,6 +493,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
          there (film-trace.js). It is a starting point: the places and the
          order are right, the entrances are all plain ones to be chosen again. */
       if (doc.els.length && !confirm("Trace the coded film? What is on the stage now is replaced.")) return;
+      remember();
       say("Reading the coded film…");
       try {
         const { traceFilm } = await import("./film-trace.js");
@@ -478,6 +549,13 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     }
   }
 
+  /* ONE STEP BACK PER FIELD, not per keystroke: the state is kept when a box
+     is first touched, so undo takes back the whole of what was typed into it
+     rather than one letter. */
+  side.addEventListener("focusin", (e) => {
+    if (e.target.matches("input, textarea, select")) remember();
+  });
+
   /* typing in the inspector writes straight through to the document */
   side.addEventListener("input", (e) => {
     const el = doc.els.find((x) => x.id === picked);
@@ -526,8 +604,35 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
 
   box.querySelector(".fe__title").addEventListener("input", touched);
 
+  const ARROWS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  /* a run of nudges is ONE step back, not twenty */
+  let nudging = false;
+  let nudgeRest = 0;
   const onKey = (e) => {
-    if (e.key === "Escape" && !box.querySelector(".fe-sheet")) { e.preventDefault(); box.querySelector('[data-f="close"]').click(); }
+    if (e.key === "Escape" && !box.querySelector(".fe-sheet")) { e.preventDefault(); box.querySelector('[data-f="close"]').click(); return; }
+    if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) {
+      if (e.target.closest("input, textarea")) return;    // the box has its own undo
+      e.preventDefault();
+      stepBack();
+      return;
+    }
+    /* NUDGING. Half a percent a press, two with shift — a drag gets a mark
+       roughly where it goes and the arrows put it exactly there, which is the
+       difference between a layout that nearly lines up and one that does. */
+    const way = ARROWS[e.key];
+    if (!way || !picked || e.target.closest("input, textarea, select") || box.querySelector(".fe-sheet")) return;
+    const el = doc.els.find((x) => x.id === picked);
+    if (!el) return;
+    e.preventDefault();
+    if (!nudging) { remember(); nudging = true; }
+    clearTimeout(nudgeRest);
+    nudgeRest = setTimeout(() => { nudging = false; }, 900);
+    const by = e.shiftKey ? 2 : 0.5;
+    el.x = Math.max(0, Math.min(100, Math.round((el.x + way[0] * by) * 2) / 2));
+    el.y = Math.max(0, Math.min(100, Math.round((el.y + way[1] * by) * 2) / 2));
+    touched();
+    paintStage();
+    paintSide();
   };
   document.addEventListener("keydown", onKey);
 
