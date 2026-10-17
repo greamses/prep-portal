@@ -2911,6 +2911,28 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .mbb-hint.is-loud { color: #c0453f; font-weight: 700; }
 @media print { .mbb-tools, .mbb-hint { display: none !important; } }
 
+/* THE PREPBILL MARK IN THE WORDS OF A QUESTION (purse.js billMark).
+   The mark is a little drawing, and a drawing hangs from the line by its
+   BOTTOM EDGE — but its box keeps a descender's room under the glyph, the way
+   a font does, so the mark floated above the figures beside it. Dropping it by
+   that much stands it on the same line they do. In the money chapter the mark
+   sits in a flex line of its own (.mo-amt), which lines it up itself. */
+.mo-mark { vertical-align: -0.15em; }
+/* the mark and its figures are one run, and one run does not wrap */
+.mo-bills { white-space: nowrap; }
+
+/* THE BOARD AS WORKING PAPER, out of the rail (interactive.js, toolbar.js).
+   Nothing is printed under it there, so it is not held to the paper's 160mm:
+   it takes the panel, carries its own margin, and scrolls down as the model
+   grows rows — the panel's own body is --bare and does not scroll. */
+.wb-barmodel.mb-board.is-building {
+  max-width: none;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.8rem 0.7rem;
+  overflow: auto;
+}
+
 /* a printed model's "?", written over (double-click) */
 .wb-live svg [data-ask].is-askable { cursor: text; }
 .wb-live svg [data-ask].is-said { fill: #2f6ea8; }

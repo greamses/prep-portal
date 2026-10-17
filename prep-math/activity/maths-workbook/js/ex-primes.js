@@ -70,6 +70,13 @@ import {
   euclidHtml, euclidKey, euclidSteps, euclidTakeHtml, euclidTakeKey, euclidTakeSteps,
 } from "./primeart.js";
 import { levelOf } from "./ex-remainder.js";
+import { billMark, withMark } from "/utils/components/workbook/purse.js";
+
+/* Money is said in PREPBILLS, and the prepbill carries a drawn mark
+   (utils/components/workbook/purse.js). */
+const MARK = billMark();
+/** The mark and the sum after it, as one unbreakable run. */
+const cash = withMark;
 
 /* ── the paper's furniture ───────────────────────────────────────────────── */
 
@@ -632,14 +639,14 @@ const IDX_STORIES = [
   },
   {
     build: (r) => ({ s: r.pick([500, 1000, 2000]), n: r.int(3, 5) }),
-    say: (it) => `A prize starts at <b>₦${it.s}</b> and <b>doubles</b> every round. It is doubled `
+    say: (it) => `A prize starts at <b>${cash(it.s)}</b> and <b>doubles</b> every round. It is doubled `
       + `<b>${it.n}</b> times.`,
     base: 2,
     index: (it) => it.n,
     asks: (it) => [
       ["How many times is it doubled?", it.n, ""],
       ["That multiplies the prize by 2 to the power of " + "that", 2 ** it.n, ""],
-      ["so the prize is now ₦", it.s * 2 ** it.n, ""],
+      [`so the prize is now ${MARK}`, it.s * 2 ** it.n, ""],
     ],
   },
 ];
@@ -1946,7 +1953,7 @@ const HARD_STORIES = [
   {
     k: 2,
     say: (n, o) => `A square hall has a floor of <b>${n}</b> square metres. A skirting board is to go all the `
-      + `way round the edge of it, and it costs <b>₦${o.price}</b> a metre.`,
+      + `way round the edge of it, and it costs <b>${cash(o.price)}</b> a metre.`,
     asks: (n, r, o) => [
       ["How long is one side of the hall?", r, "m"],
       ["How many metres of board is that, all the way round?", r * 4, "m"],
@@ -2041,11 +2048,11 @@ const pfRootWords2 = {
       + t.asks(item.n, root, item).map(([q, , unit]) => ask(`${q} ${box()} ${unit}`)).join("");
   },
   worked() {
-    return worked(ask("A square hall has a floor of <b>324</b> square metres. A skirting board costs <b>₦500</b> "
+    return worked(ask(`A square hall has a floor of <b>324</b> square metres. A skirting board costs <b>${cash("500")}</b> `
       + "a metre and is to go all the way round it.")
       + say("The floor is flat, so the first step is the <b>square root</b>: 324 = 2 × 2 × 3 × 3 × 3 × 3, which "
         + "pairs off into (2 × 2), (3 × 3), (3 × 3), so the side is 2 × 3 × 3 = <b>18 m</b>. All the way round "
-        + "is 4 × 18 = <b>72 m</b>, and at ₦500 a metre that is <b>₦36,000</b>. The root was the first line of "
+        + `is 4 × 18 = <b>72 m</b>, and at ${cash("500")} a metre that is <b>${cash("36,000")}</b>. The root was the first line of `
         + "three, which is what a root usually is."));
   },
   key(item) {

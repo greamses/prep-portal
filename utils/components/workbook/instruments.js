@@ -187,6 +187,14 @@ export const TOOL_ICONS = {
       r(12.4, 9.4, 3.4, 1.8, QUIET, 0.9) + r(12.4, 12.8, 3.4, 1.8, QUIET, 0.9) +
       r(17.4, 8.2, 4, 7.6, PAPER, 1.4)
   ),
+  /* The bar model: a whole over two parts, and the brace that says what the
+     two of them come to. */
+  barmodel: glyph(
+    r(2.6, 4.4, 18.8, 4.8, GOLD, 1.4) +
+      r(2.6, 10.6, 11.2, 4.8, PAPER, 1.4) + r(14.6, 10.6, 6.8, 4.8, LEAF, 1.4) +
+      r(2.6, 17.2, 18.8, 1.7, QUIET, 0.85) +
+      `<path d="M10.3 18.9h3.4L12 21.6Z" fill="${LOUD}"/>`
+  ),
   side: glyph(
     r(2.8, 4.2, 18.4, 15.6, PAPER, 1.8) +
       `<path d="M4.6 4.2h4.2v15.6H4.6a1.8 1.8 0 0 1-1.8-1.8V6a1.8 1.8 0 0 1 1.8-1.8z" fill="${GOLD}"/>`

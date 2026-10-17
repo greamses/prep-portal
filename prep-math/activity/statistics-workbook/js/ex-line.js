@@ -28,6 +28,15 @@ import { tableHtml } from "./pictoart.js";
 import { levelOf, dealer } from "./levels.js";
 import { want } from "/utils/components/workbook/want.js";
 
+import { billMark, withMark } from "/utils/components/workbook/purse.js";
+
+/* Money is said in PREPBILLS, and the prepbill carries a drawn mark
+   (utils/components/workbook/purse.js). An axis names its unit in words, the
+   way "litres" and "kilometres" are words. */
+const MARK = billMark();
+/** The mark and the sum after it, as one unbreakable run. */
+const cash = withMark;
+
 const box = () => `<span class="wb-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
 const art = (html) => `<div class="sw-art">${html}</div>`;
@@ -394,17 +403,17 @@ const lnConvert = {
   render(item) {
     const xs = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
     const top = item.price * 10;
-    const fig = lineSvg({ xs, series: [{ values: xs.map((x) => Number(x) * item.price) }], step: item.price, top, title: "Cost of petrol", yLabel: "naira (₦)", xLabel: "litres", slot: 8.5 });
+    const fig = lineSvg({ xs, series: [{ values: xs.map((x) => Number(x) * item.price) }], step: item.price, top, title: "Cost of petrol", yLabel: "prepbills", xLabel: "litres", slot: 8.5 });
     return side(art(fig),
-      ask(`${item.a} litres cost ₦${box()}`) +
-      ask(`₦${item.back * item.price} buys ${box()} litres`) +
-      ask(`${item.far} litres cost ₦${box()}`));
+      ask(`${item.a} litres cost ${cash(box())}`) +
+      ask(`${cash(item.back * item.price)} buys ${box()} litres`) +
+      ask(`${item.far} litres cost ${cash(box())}`));
   },
   key(item) {
     return [want.num(item.a * item.price), want.num(item.back), want.num(item.far * item.price)];
   },
   answer(item) {
-    return [`₦${item.a * item.price}; ${item.back} litres; ₦${item.far * item.price}`];
+    return [`${cash(item.a * item.price)}; ${item.back} litres; ${cash(item.far * item.price)}`];
   },
 };
 

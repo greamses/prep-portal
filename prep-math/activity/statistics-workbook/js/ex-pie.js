@@ -31,6 +31,15 @@ import { tableHtml } from "./pictoart.js";
 import { levelOf, dealer } from "./levels.js";
 import { want } from "/utils/components/workbook/want.js";
 
+import { billMark, withMark } from "/utils/components/workbook/purse.js";
+
+/* Money is said in PREPBILLS, and the prepbill carries a drawn mark
+   (utils/components/workbook/purse.js). An axis names its unit in words, the
+   way "litres" and "kilometres" are words. */
+const MARK = billMark();
+/** The mark and the sum after it, as one unbreakable run. */
+const cash = withMark;
+
 const box = () => `<span class="wb-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
 const art = (html) => `<div class="sw-art">${html}</div>`;
@@ -521,9 +530,9 @@ const piDirect = {
     const v = directValues(item);
     const xs = ["0", "1", "2", "3", "4", "5", "6"];
     const spec = item.kind === "oranges"
-      ? { title: "Cost of oranges", yLabel: "naira (₦)", xLabel: "oranges", step: item.each, top: 6 * item.each }
+      ? { title: "Cost of oranges", yLabel: "prepbills", xLabel: "oranges", step: item.each, top: 6 * item.each }
       : item.kind === "taxi"
-        ? { title: "Taxi fare", yLabel: "naira (₦)", xLabel: "kilometres", step: item.each, top: item.start + 6 * item.each }
+        ? { title: "Taxi fare", yLabel: "prepbills", xLabel: "kilometres", step: item.each, top: item.start + 6 * item.each }
         : { title: "Area of a square", yLabel: "area in cm²", xLabel: "side in cm", step: 4, top: 36 };
     const thing = item.kind === "oranges" ? "cost" : item.kind === "taxi" ? "fare" : "area";
     const fig = lineSvg({ xs, series: [{ values: v }], slot: 9, ...spec });
@@ -533,8 +542,8 @@ const piDirect = {
       ask("Is it in proportion?") + tick("Yes: a straight line through 0", "No"));
   },
   worked() {
-    return worked(say("Oranges at ₦100 each: 2 cost ₦200 and 4 cost ₦400. Twice as many, twice the cost — in " +
-      "proportion, and the graph is a straight line from 0. A taxi that charges ₦200 before it moves is not: " +
+    return worked(say(`Oranges at ${cash("100")} each: 2 cost ${cash("200")} and 4 cost ${cash("400.")} Twice as many, twice the cost — in ` +
+      `proportion, and the graph is a straight line from 0. A taxi that charges ${cash("200")} before it moves is not: ` +
       "its line starts at 200, and 4 km does not cost twice 2 km."));
   },
   key(item) {

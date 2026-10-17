@@ -27,6 +27,15 @@ import { scatter, scatterSvg, shapeIcon, SHAPES, tallySvg, pictoSvg, symbolAt, S
 import { levelOf, helpOf, dealer } from "./levels.js";
 import { want } from "/utils/components/workbook/want.js";
 
+import { billMark, withMark } from "/utils/components/workbook/purse.js";
+
+/* Money is said in PREPBILLS, and the prepbill carries a drawn mark
+   (utils/components/workbook/purse.js). An axis names its unit in words, the
+   way "litres" and "kilometres" are words. */
+const MARK = billMark();
+/** The mark and the sum after it, as one unbreakable run. */
+const cash = withMark;
+
 const box = () => `<span class="wb-answer"></span>`;
 const slot = (label, unit = "") => `<span class="wb-slot"><em>${label}</em>${box()}${unit}</span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
@@ -528,12 +537,12 @@ const pgProblems = {
     const A = item.rows[item.a];
     const B = item.rows[item.b];
     return art(fig) +
-      ask(`Each ${ctx.one} costs ₦${ctx.price}. How much was taken on ${A.label}? ₦${box()}`) +
+      ask(`Each ${ctx.one} costs ${cash(ctx.price)}. How much was taken on ${A.label}? ${cash(box())}`) +
       ask(`What fraction of all the ${ctx.noun} were sold on ${B.label}? ${box()}`) +
       ask(`On Saturday, ${item.extra} more ${ctx.noun} were sold than on ${A.label}. How many symbols would Saturday's row need? ${box()}`);
   },
   worked() {
-    return worked(say("Key 2 cups. Monday shows 3 symbols: 6 cups. At ₦50 each that is <b>₦300</b>. All the rows " +
+    return worked(say(`Key 2 cups. Monday shows 3 symbols: 6 cups. At ${cash("50")} each that is <b>${cash("300")}</b>. All the rows ` +
       "add up to 20 cups, so Monday is 6/20 = <b>3/10</b> of them. Saturday sold 6 + 3 = 9 cups: 9 ÷ 2 = <b>4½</b> symbols."));
   },
   key(item) {
@@ -553,7 +562,7 @@ const pgProblems = {
     const B = item.rows[item.b];
     const total = item.rows.reduce((s, x) => s + x.v, 0);
     const g = gcd(B.v, total);
-    return [`₦${A.v * ctx.price}; ${B.v / g}/${total / g}; ${fmt((A.v + item.extra) / item.key)} symbols`];
+    return [`${cash(A.v * ctx.price)}; ${B.v / g}/${total / g}; ${fmt((A.v + item.extra) / item.key)} symbols`];
   },
 };
 

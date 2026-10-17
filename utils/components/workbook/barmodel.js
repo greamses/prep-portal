@@ -39,6 +39,8 @@
    braces: [{ id, ids, at, text }] } in board units, 600 across.
    ========================================================================== */
 
+import { MARK_CHAR, markLayout, markPath } from "./purse.js";
+
 const W = 600;         // how far a bar may reach
 const VIEW = 680;      // and the board, with room at the right for a total beside
 const BAR = 26;
@@ -52,6 +54,27 @@ const INK = "#2a2723";
 const GREY = "#6f685f";
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+/**
+ * A WORD ON THE BOARD, WITH ITS MARK IF IT HAS ONE. A sum of money carries the
+ * prepbill mark, and the mark is in no font (purse.js): a label holding the
+ * stand-in is set in the monospace face, where the mark takes exactly one
+ * character's room, and the mark is struck in beside it.
+ */
+function label(x, y, s, { size = 13, anchor = "middle", fill = INK, extra = "" } = {}) {
+  const str = String(s);
+  const tag = (tx, an, face) => `<text x="${tx}" y="${y}" text-anchor="${an}"${face}`
+    + ` font-size="${size}" font-weight="700" fill="${fill}"${extra}>`;
+  if (!str.startsWith(MARK_CHAR)) return `${tag(x, anchor, "")}${esc(str)}</text>`;
+  const at = markLayout(x, size, str.length, anchor);
+  return markPath(at.mark, y, size, { fill })
+    + `${tag(at.text.toFixed(2), "start", ' font-family="JetBrains Mono, monospace"')}${esc(str.slice(MARK_CHAR.length))}</text>`;
+}
+
+/** What a money label keeps when it is written over: its mark. */
+const keepMark = (was, now) =>
+  (String(was).startsWith(MARK_CHAR) && now && !now.startsWith(MARK_CHAR) && /^[\d.,]/.test(now) ? MARK_CHAR + now : now);
+
 const clone = (m) => JSON.parse(JSON.stringify(m));
 const blank = () => ({ bars: [], braces: [] });
 
@@ -188,7 +211,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
       for (let i = 1; i < b.n; i++) out += `<line x1="${b.x + i * unit}" x2="${b.x + i * unit}" y1="${y}" y2="${y + BAR}" stroke="${INK}" stroke-width="1"/>`;
       for (let i = 0; i < b.n; i++) {
         const t = b.labels[i];
-        if (t) out += `<text x="${b.x + (i + 0.5) * unit}" y="${y + BAR / 2 + 5}" text-anchor="middle" font-size="${unit < 34 ? 11 : 14}" font-weight="700" fill="${INK}" pointer-events="none">${esc(t)}</text>`;
+        if (t) out += label(b.x + (i + 0.5) * unit, y + BAR / 2 + 5, t, { size: unit < 34 ? 11 : 14, extra: ' pointer-events="none"' });
       }
       out += `<rect class="mbb-grip" data-grip="${b.id}" x="${b.x + b.w - 7}" y="${y - 3}" width="14" height="${BAR + 6}" fill="transparent"/>` +
         `<rect x="${b.x + b.w - 2}" y="${y + 7}" width="4" height="${BAR - 14}" rx="2" fill="${INK}" opacity="${on ? 0.7 : 0.25}" pointer-events="none"/>` +
@@ -202,7 +225,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
         out += `<g class="mbb-brace" data-brace="${s.br.id}">` +
           `<path d="${curlySide(x, y0, y1)}" fill="none" stroke="${GREY}" stroke-width="1.4"/>` +
           `<rect x="${x + 8}" y="${m - 12}" width="70" height="22" fill="transparent"/>` +
-          `<text x="${x + 13}" y="${m + 5}" font-size="13" font-weight="700" fill="${s.br.text ? INK : GREY}">${esc(s.br.text || "…")}</text></g>`;
+          label(x + 13, m + 5, s.br.text || "…", { anchor: "start", fill: s.br.text ? INK : GREY }) + `</g>`;
         return;
       }
       const y = s.at === "above" ? yOf(s.row) - 3 - s.level * 22 : yOf(s.row) + BAR + 3 + s.level * 22;
@@ -212,7 +235,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
       out += `<g class="mbb-brace" data-brace="${s.br.id}">` +
         `<path d="${curly(s.x0, s.x1, y, dir)}" fill="none" stroke="${GREY}" stroke-width="1.4"/>` +
         `<rect x="${(s.x0 + s.x1) / 2 - 40}" y="${ty - 14}" width="80" height="19" fill="transparent"/>` +
-        `<text x="${(s.x0 + s.x1) / 2}" y="${ty}" text-anchor="middle" font-size="13" font-weight="700" fill="${s.br.text ? INK : GREY}">${esc(words)}</text></g>`;
+        label((s.x0 + s.x1) / 2, ty, words, { fill: s.br.text ? INK : GREY }) + `</g>`;
     });
     svg.innerHTML = out;
     tools.querySelector('[data-t="cut"]').setAttribute("aria-pressed", String(cutting));
@@ -308,13 +331,26 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
 
   /* ── moving, stretching, picking, cutting ────────────────────────────── */
   let drag = null;
+  let tapped = null;      // a brace waiting to see whether this is its second tap
   svg.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
     const grip = e.target.closest("[data-grip]");
     const g = e.target.closest(".mbb-bar");
     if (!g) {
       const braceG = e.target.closest(".mbb-brace");
-      if (braceG) { if (twice(`brace${braceG.dataset.brace}`)) editBrace(Number(braceG.dataset.brace)); return; }
+      if (braceG) {
+        /* THE WORDS ARE OPENED ON POINTER-UP, NEVER HERE. An input made and
+           focused during pointerdown is blurred again by the press's own
+           default — the browser moves focus off it the moment the handler
+           returns — and the blur takes the box away before a key is hit,
+           which is what "the question mark cannot be written on" was.
+           preventDefault keeps the focus where it is; pointerup opens the box,
+           the same way a bar's own label is opened. */
+        e.preventDefault();
+        tapped = Number(braceG.dataset.brace);
+        svg.setPointerCapture(e.pointerId);
+        return;
+      }
       if (!several && !e.shiftKey) { picked.clear(); paint(); }
       return;
     }
@@ -325,6 +361,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
       return;
     }
     e.preventDefault();
+    tapped = null;
     drag = { b, from: p, x: b.x, row: b.row, top: yOf(b.row), w: b.w, grip: !!grip, before: clone(model), moved: false, add: several || e.shiftKey };
     svg.setPointerCapture(e.pointerId);
   });
@@ -346,7 +383,14 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
     }
     paint();
   });
-  const up = () => {
+  const up = (e) => {
+    if (tapped != null) {
+      const id = tapped;
+      tapped = null;
+      /* a pointer taken away from us is not a tap */
+      if (e?.type !== "pointercancel" && twice(`brace${id}`)) editBrace(id);
+      return;
+    }
     if (!drag) return;
     const d = drag;
     drag = null;
@@ -422,22 +466,26 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
     input.addEventListener("blur", () => finish(true));
   }
 
+  /* WHAT IS TYPED IS JUST THE WORDS. A label that says a sum of money holds
+     the prepbill stand-in, which is no use to anybody in a text box: the box
+     opens on the words alone, and if what comes back is a number the mark goes
+     straight back on the front of it. */
+  const bare = (t) => String(t || "").replace(MARK_CHAR, "");
+
   function editBrace(id) {
     const s = braceSpots(model).find((x) => x.br.id === id);
     if (!s) return;
+    const write = (v) => change(() => {
+      const br = model.braces.find((b) => b.id === id);
+      if (br) br.text = keepMark(br.text, v);
+    });
     if (s.at === "side") {
       const x = s.x1 + 6 + s.level * 46;
-      inputAt(Math.min(VIEW - 40, x + 48), (yOf(s.r0) + yOf(s.r1) + BAR) / 2, 80, s.br.text, (v) => change(() => {
-        const br = model.braces.find((b) => b.id === id);
-        if (br) br.text = v;
-      }));
+      inputAt(Math.min(VIEW - 40, x + 48), (yOf(s.r0) + yOf(s.r1) + BAR) / 2, 80, bare(s.br.text), write);
       return;
     }
     const y = s.at === "above" ? yOf(s.row) - 3 - s.level * 22 - 16 : yOf(s.row) + BAR + 3 + s.level * 22 + 16;
-    inputAt((s.x0 + s.x1) / 2, y, Math.min(160, s.x1 - s.x0), s.br.text, (v) => change(() => {
-      const br = model.braces.find((x) => x.id === id);
-      if (br) br.text = v;
-    }));
+    inputAt((s.x0 + s.x1) / 2, y, Math.min(160, s.x1 - s.x0), bare(s.br.text), write);
   }
 
   /* A DOUBLE tap is counted here, not left to the browser's dblclick: the
@@ -455,9 +503,9 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
   function editBar(b, x) {
     const unit = b.w / b.n;
     const i = Math.max(0, Math.min(b.n - 1, Math.floor((x - b.x) / unit)));
-    inputAt(b.x + (i + 0.5) * unit, yOf(b.row) + BAR / 2, unit, b.labels[i] || "", (v) => change(() => {
+    inputAt(b.x + (i + 0.5) * unit, yOf(b.row) + BAR / 2, unit, bare(b.labels[i]), (v) => change(() => {
       const bar = model.bars.find((x) => x.id === b.id);
-      if (bar) bar.labels[i] = v;
+      if (bar) bar.labels[i] = keepMark(bar.labels[i], v);
     }));
   }
 

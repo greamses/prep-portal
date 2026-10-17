@@ -83,6 +83,23 @@ const TOOLS = {
       return () => t.destroy();
     },
   },
+  barmodel: {
+    label: "Bar model",
+    size: { w: 680, h: 520 },
+    async open(body) {
+      body.classList.add("wb-panel__body--bare");
+      const { mountBarModel } = await import("./barmodel.js");
+      const host = document.createElement("div");
+      host.className = "mb-board wb-barmodel";
+      body.appendChild(host);
+      const { saved, onChange } = kept("wb-barmodel");
+      const live = mountBarModel(host, {
+        saved: saved && Array.isArray(saved.bars) ? saved : null,
+        onChange,
+      });
+      return () => live.dispose();
+    },
+  },
   note: {
     label: "Notes",
     size: { w: 420, h: 380 },

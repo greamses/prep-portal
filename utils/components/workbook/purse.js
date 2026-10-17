@@ -136,6 +136,75 @@ export function markSvg(kind = "bill", { em = 1, fill = "currentColor" } = {}) {
 export const priceHtml = (coins) =>
   `<span class="mo-amt">${markSvg("bill", { em: 0.92 })}${writeAmount(coins)}</span>`;
 
+/* ── whole prepbills, in a question ────────────────────────────────────────
+   The money chapter counts in prepcoins and writes the point in. Every other
+   chapter — bar models, word problems, simultaneous equations — only ever
+   says a round sum, so it says it in whole PREPBILLS: the mark, then the
+   figures, with no point. This is the one place the rest of the workbooks ask
+   for money, so there is nothing to keep in step. */
+
+/** The mark on its own, for a label that names the unit — "(mark):". */
+export const billMark = () => markSvg("bill", { em: 0.92 });
+
+/**
+ * THE MARK GLUED TO WHAT COMES AFTER IT — figures, or an answer box.
+ *
+ * A line must never break between a currency mark and the sum it belongs to,
+ * and that cannot be left to a word joiner: the figures are typeset by MathJax
+ * into a box of their own (mathify.js), and a browser will break before a box
+ * whatever invisible character stands in front of it (measured). So the two
+ * are wrapped in one run that does not wrap.
+ */
+export const withMark = (html) => `<span class="mo-bills">${billMark()}${html}</span>`;
+
+/** A sum of whole prepbills in the words of a question (HTML). */
+export const billsHtml = (n) => withMark(Number(n).toLocaleString("en-NG"));
+
+/**
+ * THE MARK, STANDING IN A STRING. A figure is one drawing and cannot nest an
+ * HTML mark in its text, so a label that carries money carries this character
+ * instead and the figure DRAWS the mark where it stands (modelart.js text(),
+ * barmodel.js paint()). It is the generic currency sign, which no amount in
+ * this workbook will ever mean literally, and it takes exactly one character's
+ * room so a monospace label measures the same with it as without.
+ */
+export const MARK_CHAR = "¤";
+
+/** A sum of whole prepbills in a label inside a figure. */
+export const billsFig = (n) => `${MARK_CHAR}${Number(n).toLocaleString("en-NG")}`;
+
+/**
+ * WHERE THE TWO HALVES OF A MARKED LABEL GO. The mark takes the first
+ * character's cell and the figures follow in the monospace face, so a label is
+ * laid out from its length alone — no measuring, and it prints the same.
+ *   x        where the whole label is anchored
+ *   size     the font size it is set in
+ *   chars    how many characters it is, the mark counted as one
+ * → { mark, text } — the left of the mark, and where the figures start
+ */
+export function markLayout(x, size, chars, anchor = "middle") {
+  const adv = 0.6 * size;                    // JetBrains Mono's advance
+  const left = anchor === "middle" ? x - (chars * adv) / 2 : x;
+  return { mark: left, text: left + adv };
+}
+
+/**
+ * THE MARK DRAWN INSIDE A FIGURE'S OWN SVG. `markSvg` makes a little document
+ * of its own, which is what a page wants and what a figure cannot have: here
+ * the strokes are put straight into the drawing, with the mark's left edge at
+ * `x`, its foot on the baseline `y`, and its height matched to text set at
+ * `size`.
+ */
+export function markPath(x, y, size, { kind = "bill", fill = INK, of = "", row = null } = {}) {
+  const k = size / 20;                       // the mark's box is 20 tall = 1em
+  /* `of` names the mark this one belongs to, so a FILM that draws a figure
+     piece by piece brings the mark on with its own number rather than leaving
+     a currency sign hanging over an empty bar (film-kit.js mb()). */
+  return `<g transform="translate(${(x - 2.6 * k).toFixed(2)} ${(y - 16.8 * k).toFixed(2)}) scale(${k.toFixed(4)})"`
+    + ` data-mb="mark"${of ? ` data-mb-of="${of}"` : ""}${row != null ? ` data-mb-row="${row}"` : ""}`
+    + ` aria-hidden="true">${MARK[kind].replaceAll("CC", fill)}</g>`;
+}
+
 /* ── what is printed on the money ──────────────────────────────────────────*/
 
 /* THE HOUSE EMBLEM — the site's own flower, five petals round a middle. Real

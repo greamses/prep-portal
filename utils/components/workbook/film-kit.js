@@ -35,14 +35,18 @@ import { down, num, esc } from "./video-kit.js";
 import { stackText } from "./stackfrac.js";
 
 /** The marks of a model, addressed the way the drawing names them. */
-export const mb = (svg, kind, row = null) => [...(svg
-  ? svg.querySelectorAll(`[data-mb="${kind}"]${row == null ? "" : `[data-mb-row="${row}"]`}`)
-  : [])];
+export const mb = (svg, kind, row = null) => {
+  /* A drawn currency mark belongs to the number it stands in front of
+     (purse.js markPath), so it answers to that number's name and comes and
+     goes with it. */
+  const at = row == null ? "" : `[data-mb-row="${row}"]`;
+  return [...(svg ? svg.querySelectorAll(`[data-mb="${kind}"]${at}, [data-mb-of="${kind}"]${at}`) : [])];
+};
 export const braceOf = (svg, key) => (svg ? svg.querySelector(`[data-mb="brace"][data-mb-key="${key}"]`) : null);
 /** Another picture's drawing — the cut has to be made where the parts divide. */
 export const svgIn = (stage, id) => stage.querySelector(`[data-t="${id}"] svg`);
 export const MARKS = '[data-mb="bar"], [data-mb="num"], [data-mb="name"], [data-mb="brace"], '
-  + '[data-mb="cut"], [data-mb="ctr"], [data-mb="cell"]';
+  + '[data-mb="cut"], [data-mb="ctr"], [data-mb="cell"], [data-mb="mark"]';
 export const SVGNS = "http://www.w3.org/2000/svg";
 
 /* Where the left end and the top edge of EVERY bar sit, in width-units. The

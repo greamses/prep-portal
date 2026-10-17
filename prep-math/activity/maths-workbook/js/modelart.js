@@ -23,7 +23,9 @@
    not show its unknown's size.
 
    A "?" is drawn with data-ask, so the interactive sheet can turn it into a
-   box to write in (double-click).
+   box to write in (double-click) — and so is a label that only HOLDS one, like
+   "25 % = ?": what is written goes where the "?" is and the rest of the label
+   stays put (interactive.js makeAsksLive).
 
    Millimetres at the paper's own size, fixed colours: it prints the same in
    either theme.
@@ -35,6 +37,7 @@ export const TONE = { a: "#bfe3ff", b: "#fff3a8", c: "#d6f0cf", d: "#ffd9cf", q:
 
 const f = (n) => (+n).toFixed(2);
 import { fracSvg, isFraction, partsOf } from "/utils/components/workbook/stackfrac.js";
+import { MARK_CHAR, markLayout, markPath } from "/utils/components/workbook/purse.js";
 
 const BAR_H = 11;
 const GAP = 2;
@@ -46,15 +49,30 @@ const UNKNOWN_MM = 24;
    Nothing on paper reads it; a FILM does, so that a bar can be drawn growing
    and its number written afterwards instead of the whole finished picture
    being swapped in (utils/components/workbook/tv-lessons.js). */
-const text = (x, y, s, { anchor = "middle", size = 4.2, weight = 700, ask = false, tag = "", row = null } = {}) =>
+/** Anything with a question mark in it is something to answer. */
+const asks = (s) => String(s ?? "").includes("?");
+
+const text = (x, y, s, { anchor = "middle", size = 4.2, weight = 700, ask = false, tag = "", row = null } = {}) => {
   /* A FRACTION IS WRITTEN ONE FIGURE OVER THE OTHER, here as everywhere else
      in this workbook: the bottom number names the part and the top counts
      them, and 3/6 has no top and no bottom (./stackfrac.js). */
-  (isFraction(s) && anchor === "middle"
-    ? fracSvg(x, y, ...partsOf(s), { size, weight, ink: INK, tag, row, ask })
-    : `<text x="${f(x)}" y="${f(y)}" text-anchor="${anchor}" font-family="JetBrains Mono, monospace" ` +
-  `font-size="${size}" font-weight="${weight}" fill="${INK}"${ask ? ' data-ask="1"' : ""}` +
-  `${tag ? ` data-mb="${tag}"` : ""}${row != null ? ` data-mb-row="${row}"` : ""}>${s}</text>`);
+  if (isFraction(s) && anchor === "middle") return fracSvg(x, y, ...partsOf(s), { size, weight, ink: INK, tag, row, ask });
+
+  /* MONEY CARRIES ITS MARK, AND THE MARK IS DRAWN. The prepbill has no
+     character in any font, so a label that says a sum holds the stand-in
+     (purse.js MARK_CHAR) and the mark itself is struck here, in the figure's
+     own ink, with the figures set on after it. The face is monospaced, so the
+     mark's cell is one character wide and the whole label measures the same
+     as it reads. */
+  const str = String(s);
+  const money = str.startsWith(MARK_CHAR);
+  const at = money ? markLayout(x, size, str.length, anchor) : null;
+  const body = money ? str.slice(MARK_CHAR.length) : str;
+  return (money ? markPath(at.mark, y, size, { fill: INK, of: tag, row }) : "")
+    + `<text x="${f(money ? at.text : x)}" y="${f(y)}" text-anchor="${money ? "start" : anchor}" font-family="JetBrains Mono, monospace" `
+    + `font-size="${size}" font-weight="${weight}" fill="${INK}"${ask ? ' data-ask="1"' : ""}`
+    + `${tag ? ` data-mb="${tag}"` : ""}${row != null ? ` data-mb-row="${row}"` : ""}>${body}</text>`;
+};
 
 /** A brace and its words, as one named node. */
 const group = (key, inner) => `<g data-mb="brace" data-mb-key="${key}">${inner}</g>`;
@@ -170,7 +188,7 @@ export function modelSvg(rows, { total = null, over = null, cap = 7, label = "A 
       if (p.text) {
         const size = fitSize(p.text, w, w < 7 ? 3.2 : 4.2);
         out += text(x + w / 2, baseline(top + BAR_H / 2, size), p.text,
-          { size, ask: p.text === "?", tag: "num", row: r });
+          { size, ask: asks(p.text), tag: "num", row: r });
       }
       x += w;
     });
@@ -181,12 +199,12 @@ export function modelSvg(rows, { total = null, over = null, cap = 7, label = "A 
     above.forEach((b, i) => {
       const x0 = starts[b.from], x1 = starts[b.to];
       out += group(`above-${r}-${i}`, curly(x0, x1, top - 1, -1)
-        + text((x0 + x1) / 2, top - 5, b.text, { size: 3.8, weight: 700, ask: b.text === "?", tag: "bracenum" }));
+        + text((x0 + x1) / 2, top - 5, b.text, { size: 3.8, weight: 700, ask: asks(b.text), tag: "bracenum" }));
     });
     below.forEach((b, i) => {
       const x0 = starts[b.from], x1 = starts[b.to];
       out += group(`below-${r}-${i}`, curly(x0, x1, top + BAR_H + 1, 1)
-        + text((x0 + x1) / 2, top + BAR_H + 7.6, b.text, { size: 3.8, weight: 700, ask: b.text === "?", tag: "bracenum" }));
+        + text((x0 + x1) / 2, top + BAR_H + 7.6, b.text, { size: 3.8, weight: 700, ask: asks(b.text), tag: "bracenum" }));
     });
     end = Math.max(end, x);
     if (firstTop == null) firstTop = top;
@@ -197,7 +215,7 @@ export function modelSvg(rows, { total = null, over = null, cap = 7, label = "A 
   if (total != null) {
     const x = end + 1.5;
     out += group("total", curlyUp(x, firstTop, lastBottom)
-      + text(x + 4.2, (firstTop + lastBottom) / 2 + 1.5, total, { anchor: "start", ask: total === "?", tag: "bracenum" }));
+      + text(x + 4.2, (firstTop + lastBottom) / 2 + 1.5, total, { anchor: "start", ask: asks(total), tag: "bracenum" }));
     end = x + totalW - 1.5;
   }
   return `<svg class="mb-model" viewBox="0 0 ${f(end + 1)} ${f(h)}" width="${f(end + 1)}mm" height="${f(h)}mm" role="img" aria-label="${label}">${out}</svg>`;

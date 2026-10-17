@@ -46,7 +46,7 @@ const SDATA = [
   { title: "Revision and test marks", x: { from: 0, step: 1, label: "hours of revision" }, y: { from: 0, step: [1, 2, 10], label: "test mark" }, sign: 1, xw: "the hours of revision", yw: "the mark" },
   { title: "Temperature and cold drinks sold", x: { from: 20, step: 2, label: "temperature in °C" }, y: { from: 0, step: [1, 2, 10], label: "drinks sold" }, sign: 1, xw: "the temperature", yw: "the drinks sold" },
   { title: "Height and arm span", x: { from: 120, step: 5, label: "height in cm" }, y: { from: 120, step: [5, 5, 5], label: "arm span in cm" }, sign: 1, xw: "the height", yw: "the arm span" },
-  { title: "Age of a car and its value", x: { from: 0, step: 1, label: "age in years" }, y: { from: 0, step: [1, 2, 5], label: "value in ₦ million" }, sign: -1, xw: "the age", yw: "the value" },
+  { title: "Age of a car and its value", x: { from: 0, step: 1, label: "age in years" }, y: { from: 0, step: [1, 2, 5], label: "value, million prepbills" }, sign: -1, xw: "the age", yw: "the value" },
   { title: "Hours of TV and hours of sleep", x: { from: 0, step: 1, label: "hours of TV" }, y: { from: 0, step: [1, 1, 1], label: "hours of sleep" }, sign: -1, xw: "the TV", yw: "the sleep" },
   { title: "Shoe size and test marks", x: { from: 30, step: 1, label: "shoe size" }, y: { from: 0, step: [1, 2, 10], label: "test mark" }, sign: 0, xw: "the shoe size", yw: "the mark" },
   { title: "Distance from school and test marks", x: { from: 0, step: 1, label: "km from school" }, y: { from: 0, step: [1, 2, 10], label: "test mark" }, sign: 0, xw: "the distance", yw: "the mark" },

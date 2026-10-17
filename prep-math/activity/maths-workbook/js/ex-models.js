@@ -36,6 +36,7 @@ import { want } from "/utils/components/workbook/want.js";
 import { levelOf } from "./ex-remainder.js";
 import { modelSvg, blankModelSvg, boardUnder, units } from "./modelart.js";
 import { lessonStrip } from "/utils/components/workbook/tv-lessons.js";
+import { billsHtml, billsFig, billMark } from "/utils/components/workbook/purse.js";
 
 const box = () => `<span class="wb-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
@@ -51,7 +52,11 @@ const two = (r) => { const a = r.pick(NAMES); let b = r.pick(NAMES); while (b ==
 const three = (r) => { const [a, b] = two(r); let c = r.pick(NAMES); while (c === a || c === b) c = r.pick(NAMES); return [a, b, c]; };
 const THINGS = ["marbles", "stickers", "books", "oranges", "beads", "pencils", "sweets", "stamps"];
 const gcd = (a, b) => (b ? gcd(b, a % b) : a);
-const naira = (n) => `₦${n.toLocaleString("en-NG")}`;
+/* MONEY IS SAID IN PREPBILLS, and the prepbill carries a MARK (purse.js).
+   The words of a story take the mark as a little drawing of its own;
+   a label inside a figure takes the stand-in, which the figure strikes the
+   mark for where it stands (modelart.js, barmodel.js). */
+const MARK = billMark();
 
 /** Numbers in the size a level uses. */
 const size = (r, t, lo = 1) => (t === "gentle" ? r.int(Math.max(lo, 8), 60) : t === "middle" ? r.int(Math.max(lo, 105), 640) : r.int(Math.max(lo, 1050), 6400));
@@ -186,10 +191,10 @@ function ratio(r, o) {
     const money = r.chance(0.5);
     return {
       story: money
-        ? `${naira(total)} is shared among ${X}, ${Y} and ${Z} in the ratio ${p} : ${q} : ${s}. How much does each get?`
+        ? `${billsHtml(total)} is shared among ${X}, ${Y} and ${Z} in the ratio ${p} : ${q} : ${s}. How much does each get?`
         : `${X}, ${Y} and ${Z} share ${total} ${thing} in the ratio ${p} : ${q} : ${s}. How many does each get?`,
       rows: [{ name: X, parts: units(p, "a") }, { name: Y, parts: units(q, "c") }, { name: Z, parts: units(s, "d") }],
-      total: money ? naira(total) : String(total), cap: 16,
+      total: money ? billsFig(total) : String(total), cap: 16,
       labels: ["1 unit:", `${X}:`, `${Y}:`, `${Z}:`], key: [u, p * u, q * u, s * u],
       answer: [`${p} + ${q} + ${s} = ${p + q + s} units = ${total}, so 1 unit = ${u}`, `${X} ${p * u}, ${Y} ${q * u}, ${Z} ${s * u}`],
     };
@@ -242,10 +247,10 @@ function fraction(r, o) {
     const [A] = two(r);
     const left = (rest - m) * u;
     return {
-      story: `${A} had ${naira(total)}. ${A} spent ${n1}/${d1} of it on books, then ${m}/${rest} of what was left on food. How much did ${A} spend on food, and how much was left?`,
-      rows: [grouped([{ n: n1, tone: "b", label: "books" }, { n: m, tone: "c", label: "food" }, { n: rest - m, tone: "a", label: "left" }], { whole: naira(total) })],
+      story: `${A} had ${billsHtml(total)}. ${A} spent ${n1}/${d1} of it on books, then ${m}/${rest} of what was left on food. How much did ${A} spend on food, and how much was left?`,
+      rows: [grouped([{ n: n1, tone: "b", label: "books" }, { n: m, tone: "c", label: "food" }, { n: rest - m, tone: "a", label: "left" }], { whole: billsFig(total) })],
       cap: 18,
-      labels: ["1 unit (₦):", "food (₦):", "left (₦):"], key: [u, m * u, left],
+      labels: [`1 unit (${MARK}):`, `food (${MARK}):`, `left (${MARK}):`], key: [u, m * u, left],
       answer: [`${d1} units = ${total}, so 1 unit = ${u}`, `what was left is ${rest} units, ${m}/${rest} of it is ${m} unit${m > 1 ? "s" : ""} = ${m * u}`, `left: ${rest - m} units = ${left}`],
     };
   }
@@ -260,10 +265,10 @@ function fraction(r, o) {
     /* the part LEFT is told — the whole is found from it */
     const [A] = two(r);
     return {
-      story: `${A} spent ${n}/${d} of some money and had ${naira((d - n) * u)} left. How much did ${A} have at first?`,
-      rows: [grouped([{ n, tone: "b", label: "spent" }, { n: d - n, tone: "a", label: naira((d - n) * u) }], { whole: "?" })],
+      story: `${A} spent ${n}/${d} of some money and had ${billsHtml((d - n) * u)} left. How much did ${A} have at first?`,
+      rows: [grouped([{ n, tone: "b", label: "spent" }, { n: d - n, tone: "a", label: billsFig((d - n) * u) }], { whole: "?" })],
       cap: 18,
-      labels: ["1 unit (₦):", "at first (₦):"], key: [u, total],
+      labels: [`1 unit (${MARK}):`, `at first (${MARK}):`], key: [u, total],
       answer: [`${d - n} units = ${(d - n) * u}, so 1 unit = ${u}`, `at first: ${d} units = ${total}`],
     };
   }
@@ -306,22 +311,22 @@ function percent(r, o) {
     const step = u * 10;
     if (up) {
       return {
-        story: `A bag cost ${naira(price)}. Its price went up by ${pct}%. What is the new price?`,
+        story: `A bag cost ${billsHtml(price)}. Its price went up by ${pct}%. What is the new price?`,
         rows: [
-          { name: "before", parts: units(k, "a", unitText), below: [{ from: 0, to: k, text: naira(price) }] },
+          { name: "before", parts: units(k, "a", unitText), below: [{ from: 0, to: k, text: billsFig(price) }] },
           { name: "after", parts: [...units(k, "a", unitText), ...units(n, "c", unitText)], above: [{ from: k, to: k + n, text: `+${pct}%` }], below: [{ from: 0, to: k + n, text: "?" }] },
         ], cap: 12,
-        labels: [`${each}% (₦):`, "new price (₦):"], key: [step, price + n * step],
+        labels: [`${each}% (${MARK}):`, `new price (${MARK}):`], key: [step, price + n * step],
         answer: [`100% = ${k} units = ${price}, so 1 unit (${each}%) = ${step}`, `new price: ${k + n} units = ${price + n * step}`],
       };
     }
     return {
-      story: `A bag cost ${naira(price)}. In a sale its price came down by ${pct}%. What is the sale price?`,
+      story: `A bag cost ${billsHtml(price)}. In a sale its price came down by ${pct}%. What is the sale price?`,
       rows: [
-        { name: "before", parts: units(k, "a", unitText), below: [{ from: 0, to: k, text: naira(price) }] },
+        { name: "before", parts: units(k, "a", unitText), below: [{ from: 0, to: k, text: billsFig(price) }] },
         { name: "sale", parts: [...units(k - n, "a", unitText), ...units(n, "q", unitText)], above: [{ from: k - n, to: k, text: `−${pct}%` }], below: [{ from: 0, to: k - n, text: "?" }] },
       ], cap: 12,
-      labels: [`${each}% (₦):`, "sale price (₦):"], key: [step, price - n * step],
+      labels: [`${each}% (${MARK}):`, `sale price (${MARK}):`], key: [step, price - n * step],
       answer: [`100% = ${k} units = ${price}, so 1 unit (${each}%) = ${step}`, `sale price: ${k - n} units = ${price - n * step}`],
     };
   }
@@ -462,8 +467,8 @@ const pwf = section("mod-pwf", "model-pwf", fraction, {
   blurb: "Of the whole, the whole from a part, of what is left.",
   heading: "Fractions of a whole",
   instruction: "A fraction cuts the whole into equal units — fifths into 5. Whatever number you are told, share it between ITS units to find one unit. “Of what was left” cuts only the left-over units, so draw the second fraction on those.",
-  example: { story: "Ada had ₦600. She spent 1/3 of it on books, then 1/2 of what was left on food. How much was left?", rows: [grouped([{ n: 1, tone: "b", label: "books" }, { n: 1, tone: "c", label: "food" }, { n: 1, tone: "a", label: "left" }], { whole: "₦600" })], cap: 18 },
-  exampleSay: "3 units make ₦600, so 1 unit is ₦200. Books take 1 unit; half of the 2 left-over units is 1 unit for food; 1 unit, ₦200, is left.",
+  example: { story: `Ada had ${billsHtml(600)}. She spent 1/3 of it on books, then 1/2 of what was left on food. How much was left?`, rows: [grouped([{ n: 1, tone: "b", label: "books" }, { n: 1, tone: "c", label: "food" }, { n: 1, tone: "a", label: "left" }], { whole: billsFig(600) })], cap: 18 },
+  exampleSay: `3 units make ${billsHtml(600)}, so 1 unit is ${billsHtml(200)}. Books take 1 unit; half of the 2 left-over units is 1 unit for food; 1 unit, ${billsHtml(200)}, is left.`,
 });
 
 const pct = section("mod-pct", "model-pct", percent, {

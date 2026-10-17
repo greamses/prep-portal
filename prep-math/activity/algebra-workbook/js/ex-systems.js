@@ -27,6 +27,15 @@ import { grCross, gridFor, cellFor, yEq } from "./ex-graphs.js";
 import { levelOf } from "./poly.js";
 import { want } from "/utils/components/workbook/want.js";
 import { modelSvg, blankModelSvg } from "/prep-math/activity/maths-workbook/js/modelart.js";
+import { billsHtml, billsFig, billMark, withMark } from "/utils/components/workbook/purse.js";
+
+/* MONEY IS SAID IN PREPBILLS, and the prepbill carries a MARK, which is drawn
+   and never typed (utils/components/workbook/purse.js). In the words of a
+   question the mark is a little drawing; in a label inside a bar model it is
+   the stand-in the figure strikes the mark for. */
+const MARK = billMark();
+/** The mark and the sum after it, as one unbreakable run. */
+const cash = withMark;
 
 const box = () => `<span class="wb-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
@@ -172,8 +181,8 @@ const STORIES = [
     const p = r.int(2, 4), q = r.int(1, 4);
     const pen = pencil + d;
     return {
-      text: `A pen costs ₦${d} more than a pencil. ${p} pens and ${q} pencil${q > 1 ? "s" : ""} cost ₦${p * pen + q * pencil} altogether. How much is a pencil, and how much is a pen?`,
-      labels: ["pencil (₦):", "pen (₦):"], vals: [pencil, pen],
+      text: `A pen costs ${cash(d)} more than a pencil. ${p} pens and ${q} pencil${q > 1 ? "s" : ""} cost ${cash(p * pen + q * pencil)} altogether. How much is a pencil, and how much is a pen?`,
+      labels: [`pencil (${MARK}):`, `pen (${MARK}):`], vals: [pencil, pen],
       steps: `pen = pencil + ${d}; ${p}(pencil + ${d}) + ${q} × pencil = ${p * pen + q * pencil}`,
     };
   },
@@ -194,8 +203,8 @@ const STORIES = [
     const a = r.int(1, 4), c = r.int(2, 6);
     const adult = k * child;
     return {
-      text: `An adult's ticket costs ${k === 2 ? "twice" : "three times"} as much as a child's. ${a} adult ticket${a > 1 ? "s" : ""} and ${c} children's tickets cost ₦${a * adult + c * child}. What does each ticket cost?`,
-      labels: ["child (₦):", "adult (₦):"], vals: [child, adult],
+      text: `An adult's ticket costs ${k === 2 ? "twice" : "three times"} as much as a child's. ${a} adult ticket${a > 1 ? "s" : ""} and ${c} children's tickets cost ${cash(a * adult + c * child)}. What does each ticket cost?`,
+      labels: [`child (${MARK}):`, `adult (${MARK}):`], vals: [child, adult],
       steps: `adult = ${k} × child; ${a} × ${k} × child + ${c} × child = ${a * adult + c * child}`,
     };
   },
@@ -225,13 +234,13 @@ const subWord = {
       eq(item.labels.map((l) => `${l} ${box()}`).join(" &nbsp;&nbsp; "));
   },
   worked() {
-    return worked(ask("A pen costs ₦20 more than a pencil. 2 pens and 3 pencils cost ₦290. How much is each?") +
+    return worked(ask(`A pen costs ${cash("20")} more than a pencil. 2 pens and 3 pencils cost ${cash("290.")} How much is each?`) +
       `<div class="mb-art">${modelSvg([
         { name: "pencil", parts: [{ text: "p", value: 50, tone: "a" }] },
         { name: "pen", parts: [{ text: "p", value: 50, tone: "a" }, { text: "20", value: 20, tone: "c" }] },
       ], { cap: 1.2 })}</div>` +
       say("Let a pencil be p. Then a pen is p + 20. So 2(p + 20) + 3p = 290: 5p + 40 = 290, 5p = 250, p = 50. " +
-        "A pencil is ₦50 and a pen ₦70. Check: 2 × 70 + 3 × 50 = 290."));
+        `A pencil is ${cash("50")} and a pen ${cash("70.")} Check: 2 × 70 + 3 × 50 = 290.`));
   },
   key(item) {
     return item.vals.map((v) => want.num(v));
@@ -398,9 +407,9 @@ const EL_STORIES = [
     const k = r.int(1, 3), a = k + r.int(1, 3), c = k;
     const n = r.int(1, 3);
     return {
-      text: `${a} pens and ${n} ruler${n > 1 ? "s" : ""} cost ₦${a * pen + n * ruler}. ${c} pen${c > 1 ? "s" : ""} and ${n} ruler${n > 1 ? "s" : ""} cost ₦${c * pen + n * ruler}. What does a pen cost, and a ruler?`,
-      labels: ["pen (₦):", "ruler (₦):"], vals: [pen, ruler],
-      steps: `the rulers match: take away, ${a - c} pen${a - c > 1 ? "s" : ""} = ₦${(a - c) * pen}`,
+      text: `${a} pens and ${n} ruler${n > 1 ? "s" : ""} cost ${cash(a * pen + n * ruler)}. ${c} pen${c > 1 ? "s" : ""} and ${n} ruler${n > 1 ? "s" : ""} cost ${cash(c * pen + n * ruler)}. What does a pen cost, and a ruler?`,
+      labels: [`pen (${MARK}):`, `ruler (${MARK}):`], vals: [pen, ruler],
+      steps: `the rulers match: take away, ${a - c} pen${a - c > 1 ? "s" : ""} = ${cash((a - c) * pen)}`,
     };
   },
   (r, t) => {
@@ -419,9 +428,9 @@ const EL_STORIES = [
     if (child >= adult) return null;
     const a = r.int(1, 3), c1 = r.int(3, 6), c2 = r.int(1, c1 - 1);
     return {
-      text: `${a} adult${a > 1 ? "s" : ""} and ${c1} children pay ₦${a * adult + c1 * child} at the zoo. ${a} adult${a > 1 ? "s" : ""} and ${c2} child${c2 > 1 ? "ren" : ""} pay ₦${a * adult + c2 * child}. What is the price for an adult, and for a child?`,
-      labels: ["adult (₦):", "child (₦):"], vals: [adult, child],
-      steps: `the adults match: take away, ${c1 - c2} child${c1 - c2 > 1 ? "ren" : ""} = ₦${(c1 - c2) * child}`,
+      text: `${a} adult${a > 1 ? "s" : ""} and ${c1} children pay ${cash(a * adult + c1 * child)} at the zoo. ${a} adult${a > 1 ? "s" : ""} and ${c2} child${c2 > 1 ? "ren" : ""} pay ${cash(a * adult + c2 * child)}. What is the price for an adult, and for a child?`,
+      labels: [`adult (${MARK}):`, `child (${MARK}):`], vals: [adult, child],
+      steps: `the adults match: take away, ${c1 - c2} child${c1 - c2 > 1 ? "ren" : ""} = ${cash((c1 - c2) * child)}`,
     };
   },
   (r, t) => {
@@ -430,9 +439,9 @@ const EL_STORIES = [
     const k = r.int(2, 3), m = r.int(1, 2), o2 = r.int(1, 3);
     const extra = r.int(1, 3);
     return {
-      text: `${m} mango${m > 1 ? "es" : ""} and ${o2} orange${o2 > 1 ? "s" : ""} cost ₦${m * mango + o2 * orange}. ${k * m + extra} mangoes and ${k * o2} oranges cost ₦${(k * m + extra) * mango + k * o2 * orange}. What does a mango cost, and an orange?`,
-      labels: ["mango (₦):", "orange (₦):"], vals: [mango, orange],
-      steps: `× ${k} the first sentence so the oranges match, then take away: ${extra} mango${extra > 1 ? "es" : ""} = ₦${extra * mango}`,
+      text: `${m} mango${m > 1 ? "es" : ""} and ${o2} orange${o2 > 1 ? "s" : ""} cost ${cash(m * mango + o2 * orange)}. ${k * m + extra} mangoes and ${k * o2} oranges cost ${cash((k * m + extra) * mango + k * o2 * orange)}. What does a mango cost, and an orange?`,
+      labels: [`mango (${MARK}):`, `orange (${MARK}):`], vals: [mango, orange],
+      steps: `× ${k} the first sentence so the oranges match, then take away: ${extra} mango${extra > 1 ? "es" : ""} = ${cash(extra * mango)}`,
     };
   },
 ];
@@ -464,14 +473,14 @@ const elWord = {
   worked() {
     const ruler = { text: "ruler", value: 30, tone: "c" };
     const pen = { text: "pen", value: 50, tone: "a" };
-    return worked(ask("3 pens and 2 rulers cost ₦210. 1 pen and 2 rulers cost ₦110. What does each cost?") +
+    return worked(ask(`3 pens and 2 rulers cost ${cash("210.")} 1 pen and 2 rulers cost ${cash("110.")} What does each cost?`) +
       `<div class="mb-art">${modelSvg([
-        { parts: [ruler, ruler, pen, pen, pen], says: "₦210" },
-        { parts: [ruler, ruler, pen], says: "₦110", above: [] },
+        { parts: [ruler, ruler, pen, pen, pen], says: billsFig(210) },
+        { parts: [ruler, ruler, pen], says: billsFig(110), above: [] },
       ], { cap: 0.5 })}</div>` +
       say("Line the rulers up: both rows have 2 rulers and a pen, and the top row has 2 pens more. So the 2 " +
-        "extra pens are the difference: ₦210 − ₦110 = ₦100, and a pen is ₦50. Then 1 pen and 2 rulers: 50 + 2 " +
-        "rulers = 110, so 2 rulers are ₦60 and a ruler is ₦30."));
+        `extra pens are the difference: ${cash("210")} − ${cash("110")} = ${cash("100,")} and a pen is ${cash("50.")} Then 1 pen and 2 rulers: 50 + 2 ` +
+        `rulers = 110, so 2 rulers are ${cash("60")} and a ruler is ${cash("30.")}`));
   },
   key(item) {
     return item.vals.map((v) => want.num(v));
@@ -650,7 +659,7 @@ const grHowMany = {
    so the SETTING-UP is learnt one situation at a time. Every story gives two
    facts about two unknowns; the answer key shows the pair of equations. */
 
-const naira = (n) => `₦${n.toLocaleString("en-NG")}`;
+const naira = billsHtml;
 
 /** One real-world section: a story maker returning { text, labels, vals, eqs }. */
 function realWorld(id, { label, blurb, heading, instruction, example, exampleSay }, maker) {
@@ -674,9 +683,9 @@ const rwMoney = realWorld("sy-rw-money", {
   heading: "Real-world: counting money",
   instruction: "Two facts: how MANY notes there are altogether, and how much they are WORTH altogether. Let x and y be " +
     "the numbers of each note. The count gives x + y = …; the value gives (worth of one) × x + (worth of the other) × y = ….",
-  example: "A purse holds 12 notes, some ₦500 and some ₦200, worth ₦4,200 in all. How many of each?",
+  example: `A purse holds 12 notes, some ${cash("500")} and some ${cash("200,")} worth ${cash("4,200")} in all. How many of each?`,
   exampleSay: "x + y = 12 and 500x + 200y = 4200. From the first, y = 12 − x: 500x + 2400 − 200x = 4200, so 300x = 1800, " +
-    "x = 6. Six ₦500 notes and six ₦200 notes.",
+    `x = 6. Six ${cash("500")} notes and six ${cash("200")} notes.`,
 }, (r, t) => {
   const [a, b] = r.pick([[500, 200], [1000, 500], [200, 100], [1000, 200], [500, 100]]);
   const x = r.int(2, t === "gentle" ? 8 : 15), y = r.int(2, t === "gentle" ? 8 : 15);
@@ -760,7 +769,7 @@ const rwMix = realWorld("sy-rw-mix", {
   heading: "Real-world: mixing two kinds",
   instruction: "Two kinds of thing are put together. One equation counts HOW MUCH there is of the two together; the " +
     "other counts what it COSTS (or weighs, or scores). Let x and y be the amounts of each kind.",
-  example: "A trader mixes rice at ₦900 a kg with rice at ₦600 a kg to make 20 kg worth ₦15,000. How much of each?",
+  example: `A trader mixes rice at ${cash("900")} a kg with rice at ${cash("600")} a kg to make 20 kg worth ${cash("15,000.")} How much of each?`,
   exampleSay: "x + y = 20 and 900x + 600y = 15000. With y = 20 − x: 300x + 12000 = 15000, so x = 10 and y = 10.",
   hardest: true,
 }, (r, t) => {

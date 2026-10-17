@@ -25,6 +25,15 @@ import { pictoSvg, tallySvg, tableHtml } from "./pictoart.js";
 import { levelOf, dealer } from "./levels.js";
 import { want } from "/utils/components/workbook/want.js";
 
+import { billMark, withMark } from "/utils/components/workbook/purse.js";
+
+/* Money is said in PREPBILLS, and the prepbill carries a drawn mark
+   (utils/components/workbook/purse.js). An axis names its unit in words, the
+   way "litres" and "kilometres" are words. */
+const MARK = billMark();
+/** The mark and the sum after it, as one unbreakable run. */
+const cash = withMark;
+
 const box = () => `<span class="wb-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
 const lead = (html) => `<p class="wb-ask wb-ask--lead">${html}</p>`;
@@ -440,7 +449,7 @@ const brProblems = {
     const cats = ch.cats.slice(0, 4);
     const fig = barChartSvg({ cats, series: [{ values: item.vals }], step: item.sc.step, top: item.top, title: ch.title, yLabel: `Number of ${ch.noun}` });
     return art(fig) +
-      ask(`Each ${ch.one} costs ₦${ch.price}. How much was taken on ${cats[item.a]}? ₦${box()}`) +
+      ask(`Each ${ch.one} costs ${cash(ch.price)}. How much was taken on ${cats[item.a]}? ${cash(box())}`) +
       ask(`What fraction of all the ${ch.noun} were sold on ${cats[item.b]}? ${box()}`) +
       ask(`How many more would ${cats[item.b]} need to sell to reach ${item.goal}? ${box()}`);
   },
@@ -457,7 +466,7 @@ const brProblems = {
     const total = item.vals.reduce((s, v) => s + v, 0);
     const v = item.vals[item.b];
     const g = gcd(v, total);
-    return [`₦${item.vals[item.a] * ch.price}; ${v / g}/${total / g}; ${fmt(item.goal - v)} more`];
+    return [`${cash(item.vals[item.a] * ch.price)}; ${v / g}/${total / g}; ${fmt(item.goal - v)} more`];
   },
 };
 

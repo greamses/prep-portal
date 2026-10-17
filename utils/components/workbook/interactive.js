@@ -468,7 +468,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("[data-samediff]").forEach((c) => { c.__wbSlide?.dispose(); c.__wbSlide = null; });
     node.querySelectorAll(".lb-wrap").forEach((c) => { c.querySelector(":scope > .wb-drawbar")?.remove(); c.__wbGates?.dispose(); c.__wbGates = null; });
     node.querySelectorAll("[data-bits]").forEach((c) => { c.__wbBits?.dispose(); c.__wbBits = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
-    node.querySelectorAll("svg [data-ask]").forEach((t) => { if (t.__wbAsk) { t.textContent = "?"; t.classList.remove("is-said"); t.__wbAsk = null; } });
+    node.querySelectorAll("svg [data-ask]").forEach((t) => { if (t.__wbAsk) { t.textContent = t.dataset.ask0 ?? "?"; t.classList.remove("is-said"); t.__wbAsk = null; } });
     node.querySelectorAll(".wb-askin").forEach((n) => n.remove());
     node.querySelectorAll("[data-roll]").forEach((c) => { c.__wbChance?.dispose(); c.__wbChance = null; });
     node.querySelectorAll("[data-pack]").forEach((c) => { c.__wbPack?.dispose(); c.__wbPack = null; });
@@ -764,8 +764,14 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     const asks = [...node.querySelectorAll(".wb-item__body svg [data-ask]")];
     asks.forEach((t, k) => {
       t.__wbAsk = true;
+      /* THE QUESTION MARK IS A PLACE IN THE WORDS, NOT ALWAYS THE WHOLE OF
+         THEM. A percentage bar says "25 % = ?", and what is written goes where
+         the "?" is: the label keeps saying which percentage it is. The printed
+         words are kept so the answer can be put back in its place again, and
+         again, as many times as the child changes their mind. */
+      t.dataset.ask0 ??= t.textContent;
       const said = rec(idx).asks[k];
-      if (said) { t.textContent = said; t.classList.add("is-said"); }
+      if (said) { t.textContent = t.dataset.ask0.replace("?", said); t.classList.add("is-said"); }
       t.classList.add("is-askable");
     });
     if (!asks.length || node.__wbAsksBound) return;
@@ -804,7 +810,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         if (v === before) return;
         const put = (val) => {
           if (val) rec(idx).asks[k] = val; else delete rec(idx).asks[k];
-          t.textContent = val || "?";
+          t.textContent = val ? t.dataset.ask0.replace("?", val) : t.dataset.ask0;
           t.classList.toggle("is-said", !!val);
           save();
         };
@@ -3161,6 +3167,32 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         return () => { shut = true; pad.close(true); pad.destroy(); };
       },
     },
+    /* THE BAR MODEL AS WORKING PAPER. A bar model is not only chapter 9's
+       picture: a percentage, a ratio, a share of money or a difference between
+       two amounts is drawn the same way whatever paper the question is printed
+       on. So the board comes out of the rail like the written boards do —
+       empty, with nothing printed under it — and what is built on it is kept
+       for this page, so it is still there when the panel is opened again. */
+    {
+      id: "barmodel",
+      label: "Bar model",
+      icon: TOOL_ICONS.barmodel,
+      size: { w: 680, h: 520 },
+      open: (body) => {
+        body.classList.add("wb-panel__body--bare");
+        const host = document.createElement("div");
+        host.className = "mb-board wb-barmodel";
+        body.appendChild(host);
+        const KEY = `wb-barmodel:${location.pathname}`;
+        let was = null;
+        try { was = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { /* a fresh board */ }
+        const live = mountBarModel(host, {
+          saved: was && Array.isArray(was.bars) ? was : null,
+          onChange: (now) => { try { localStorage.setItem(KEY, JSON.stringify(now)); } catch { /* not kept */ } },
+        });
+        return () => live.dispose();
+      },
+    },
     {
       id: "gm",
       label: "Algebra moves",
@@ -3397,6 +3429,9 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     ] },
     /* a table looked up is its own errand: one key, not folded in behind the boards */
     { id: "tables", label: "Times tables", of: [asSheet("tables")] },
+    /* A key of its own, like the notes: drawing the problem is ONE thing to go
+       to the rail for, and it is reached for before any arithmetic is. */
+    { id: "model", label: "Bar model", of: [asSheet("barmodel")] },
     { id: "algebra", label: "Algebra", of: [asSheet("gm")] },
     /* a tool of its own, not folded in behind another: paper to work an equation out on */
     { id: "note", label: "Notes", of: [asSheet("note")] },

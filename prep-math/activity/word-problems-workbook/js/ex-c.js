@@ -13,7 +13,7 @@
    problem is made from its answer (common.js).
    ========================================================================== */
 
-import { bank, P, gcd, naira, names } from "./common.js";
+import { bank, P, MARK, cash, gcd, naira, names } from "./common.js";
 
 export const C_GROUPS = [
   { id: "wp-prob", chapter: "Chapter 9 · Probability trees", label: "Probability trees", blurb: "Multiply along a path; add the paths you want." },
@@ -89,16 +89,17 @@ const pcChange = bank("wp-pc-change", "wp-pct", {
   instruction: "A rise of 20% multiplies by 1.2; a fall of 10% multiplies by 0.9. Changes one after another MULTIPLY — " +
     "they do not add. To go BACK to the amount before a change, DIVIDE by the multiplier: after a 20% rise the new " +
     "amount is 120% of the old one.",
-  example: "After a discount of 20% a radio costs ₦6,400. What was the marked price?",
-  solution: "₦6,400 is 80% of the marked price, so the marked price is 6400 ÷ 0.8 = ₦8,000.",
+  example: `After a discount of 20% a radio costs ${cash("6,400.")} What was the marked price?`,
+  solution: `${cash("6,400")} is 80% of the marked price, so the marked price is 6400 ÷ 0.8 = ${cash("8,000.")}`,
+  board: true,
 }, [
   (r) => { const P0 = r.int(2, 40) * 1000, a = r.pick([10, 20, 25, 50]), b = r.pick([10, 20, 25, 50]); const f = (P0 * (100 + a) * (100 - b)) / 10000; if (!Number.isInteger(f)) return null;
-    return P(`The price of a phone, ${naira(P0)}, is raised by ${a}% and later reduced by ${b}%. What is the final price?`, [["₦:", f]], `${P0} × ${(100 + a) / 100} × ${(100 - b) / 100}`); },
+    return P(`The price of a phone, ${naira(P0)}, is raised by ${a}% and later reduced by ${b}%. What is the final price?`, [[`${MARK}:`, f]], `${P0} × ${(100 + a) / 100} × ${(100 - b) / 100}`); },
   (r) => { const d = r.pick([10, 20, 25, 30, 40]), m = r.int(2, 60) * 1000; const s = (m * (100 - d)) / 100; if (!Number.isInteger(s)) return null;
-    return P(`After a discount of ${d}%, a television costs ${naira(s)}. What was its marked price?`, [["₦:", m]], `${s} ÷ ${(100 - d) / 100}`); },
+    return P(`After a discount of ${d}%, a television costs ${naira(s)}. What was its marked price?`, [[`${MARK}:`, m]], `${s} ÷ ${(100 - d) / 100}`); },
   (r) => { const a = r.pick([10, 20, 30, 40, 50]); return P(`A salary is raised by ${a}% and then cut by ${a}%. By what percentage is it finally less than at first?`, [["%:", (a * a) / 100]], `${(100 + a) / 100} × ${(100 - a) / 100} = ${((100 + a) * (100 - a)) / 10000}`); },
   (r, t) => { if (t === "gentle") return null; const sp = r.pick([60, 70, 75, 80, 85, 90]), inc = r.int(2, 40) * 1000; const save = (inc * (100 - sp)) / 100; if (!Number.isInteger(save)) return null;
-    return P(`A man spends ${sp}% of his income and saves ${naira(save)} a month. What is his income?`, [["₦:", inc]], `${save} is ${100 - sp}%`); },
+    return P(`A man spends ${sp}% of his income and saves ${naira(save)} a month. What is his income?`, [[`${MARK}:`, inc]], `${save} is ${100 - sp}%`); },
   (r, t) => { if (t === "gentle") return null; const p0 = r.int(2, 30) * 1000, g = r.pick([10, 20]); const f = (p0 * (100 + g) * (100 + g)) / 10000; if (!Number.isInteger(f)) return null;
     return P(`The population of a town was ${p0.toLocaleString("en-NG")} and grows by ${g}% every year. What is it after 2 years?`, [["people:", f]], `${p0} × ${(100 + g) / 100}²`); },
 ]);
@@ -110,15 +111,16 @@ const pcProfit = bank("wp-pc-profit", "wp-pct", {
   instruction: "Profit and loss are always worked as a percentage of the COST price. A gain of 25% means selling at " +
     "125% of cost; a loss of 10% means selling at 90% of cost. When one selling price loses and another gains, the " +
     "DIFFERENCE between the two selling prices is (loss% + gain%) of the cost.",
-  example: "A trader sells a bag at a loss of 10%. If he had sold it for ₦600 more he would have gained 5%. Find the cost price.",
-  solution: "From a 10% loss to a 5% gain is 15% of the cost, and that is ₦600. So the cost is 600 ÷ 0.15 = ₦4,000.",
+  example: `A trader sells a bag at a loss of 10%. If he had sold it for ${cash("600")} more he would have gained 5%. Find the cost price.`,
+  solution: `From a 10% loss to a 5% gain is 15% of the cost, and that is ${cash("600.")} So the cost is 600 ÷ 0.15 = ${cash("4,000.")}`,
+  board: true,
 }, [
   (r) => { const c = r.int(2, 60) * 500, g = r.pick([10, 20, 25, 30, 40, 50]); const s = (c * (100 + g)) / 100;
     return P(`A trader buys a bicycle for ${naira(c)} and sells it for ${naira(s)}. What is her profit per cent?`, [["%:", g]], `${s - c} ÷ ${c} × 100`); },
   (r) => { const l = r.pick([5, 10, 15, 20]), g = r.pick([5, 10, 15, 20, 25]), c = r.int(2, 40) * 1000; const more = (c * (l + g)) / 100; if (!Number.isInteger(more)) return null;
-    return P(`By selling a goat a farmer loses ${l}%. Had he sold it for ${naira(more)} more, he would have gained ${g}%. Find the cost price.`, [["₦:", c]], `${l + g}% of cost = ${more}`); },
+    return P(`By selling a goat a farmer loses ${l}%. Had he sold it for ${naira(more)} more, he would have gained ${g}%. Find the cost price.`, [[`${MARK}:`, c]], `${l + g}% of cost = ${more}`); },
   (r) => { const l = r.pick([10, 20, 25]), g = r.pick([10, 20, 25, 50]), c = r.int(2, 30) * 1000; const s = (c * (100 - l)) / 100, s2 = (c * (100 + g)) / 100; if (!Number.isInteger(s) || !Number.isInteger(s2)) return null;
-    return P(`A man sells a radio for ${naira(s)} and loses ${l}%. At what price must he sell it to gain ${g}%?`, [["₦:", s2]], `cost ${c}; × ${(100 + g) / 100}`); },
+    return P(`A man sells a radio for ${naira(s)} and loses ${l}%. At what price must he sell it to gain ${g}%?`, [[`${MARK}:`, s2]], `cost ${c}; × ${(100 + g) / 100}`); },
   (r, t) => { if (t === "gentle") return null; const c = r.int(2, 20) * 1000, up = r.pick([20, 25, 40, 50, 60]), d = r.pick([10, 20, 25]); const net = ((100 + up) * (100 - d)) / 100 - 100; if (!Number.isInteger(net) || net <= 0) return null;
     return P(`A shopkeeper marks his goods ${up}% above cost and then allows a discount of ${d}%. What is his profit per cent?`, [["%:", net]], `${(100 + up) / 100} × ${(100 - d) / 100} = ${(100 + net) / 100}`); },
   (r, t) => { if (t === "gentle") return null; const n = r.pick([10, 12, 15, 20]), m = r.pick([8, 9, 10, 12, 16]); if (m >= n) return null; const g = ((n - m) * 100) / m; if (!Number.isInteger(g)) return null;
@@ -133,6 +135,7 @@ const pcMarks = bank("wp-pc-marks", "wp-pct", {
     "total too — and the story tells you what number that difference is. Find 1%, then the total.",
   example: "A candidate who scores 30% fails by 20 marks; one who scores 45% gets 10 marks more than the pass mark. Find the maximum mark.",
   solution: "From 30% to 45% is 15% of the total, and that covers 20 + 10 = 30 marks. So 1% is 2 marks and the maximum is 200.",
+  board: true,
 }, [
   (r) => { const M = r.int(2, 12) * 100, p = r.pick([20, 25, 30, 35]), q = p + r.pick([10, 15, 20]); const lo = (p * M) / 100, hi = (q * M) / 100; const pass = r.int(lo + 5, hi - 5);
     return P(`A candidate who scores ${p}% of the marks fails by ${pass - lo} marks. Another who scores ${q}% gets ${hi - pass} marks more than the pass mark. Find the maximum mark and the pass mark.`, [["maximum:", M], ["pass mark:", pass]], `${q - p}% = ${hi - lo} marks`); },

@@ -37,6 +37,13 @@
 
 import { levelOf } from "./poly.js";
 import { want } from "/utils/components/workbook/want.js";
+import { billMark, withMark } from "/utils/components/workbook/purse.js";
+
+/* Money is said in PREPBILLS, and the prepbill carries a drawn mark
+   (utils/components/workbook/purse.js). */
+const MARK = billMark();
+/** The mark and the sum after it, as one unbreakable run. */
+const cash = withMark;
 
 const box = () => `<span class="wb-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
@@ -393,7 +400,7 @@ const WORD = [
     return { text: `The top of a fraction is ${k} less than its bottom. If ${m} is added to both the top and the bottom, the fraction becomes one half. What is the bottom of the original fraction?`, v: k > m ? d : NaN, how: `(d − ${k} + ${m})/(d + ${m}) = 1/2` };
   },
   (r) => { const x = 12 * r.int(1, 5); return { text: `A third of a number is ${x / 3 - x / 4} more than a quarter of it. What is the number?`, v: x, how: `x/3 − x/4 = ${x / 3 - x / 4}: multiply by 12, x = ${x}` }; },
-  (r) => { const n = r.int(4, 9), sh = r.int(2, 6) * 100; return { text: `₦${(n * sh).toLocaleString("en-NG")} is shared equally among some children, and each gets ₦${sh}. How many children are there?`, v: n, how: `${n * sh}/x = ${sh}` }; },
+  (r) => { const n = r.int(4, 9), sh = r.int(2, 6) * 100; return { text: `${cash((n * sh).toLocaleString("en-NG"))} is shared equally among some children, and each gets ${cash(sh)}. How many children are there?`, v: n, how: `${n * sh}/x = ${sh}` }; },
 ];
 
 const afWord = section("af-word", "af-solve", {

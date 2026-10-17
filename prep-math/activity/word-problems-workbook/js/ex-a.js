@@ -12,7 +12,7 @@
    Every problem is made from its answer (common.js).
    ========================================================================== */
 
-import { bank, P, gcd, lcm, low, naira, names, plural } from "./common.js";
+import { bank, P, MARK, cash, gcd, lcm, low, naira, names, plural } from "./common.js";
 import { lessonStrip } from "/utils/components/workbook/tv-lessons.js";
 
 const RATIOS = [[2, 3], [3, 4], [3, 5], [4, 5], [2, 5], [5, 7], [3, 7], [4, 7], [5, 8], [1, 3], [2, 7]];
@@ -97,7 +97,7 @@ const alRule = bank("wp-al-rule", "wp-mix", {
   instruction: "Two kinds, one cheap and one dear, are mixed to give a MEAN price between them. Write the mean in the " +
     "middle and take the differences crosswise: the amount of the CHEAPER is to the amount of the DEARER as (dearer − " +
     "mean) is to (mean − cheaper). Give the ratio in its lowest terms.",
-  example: "In what ratio must tea at ₦600 a kg be mixed with tea at ₦900 a kg so that the mixture is worth ₦700 a kg?",
+  example: `In what ratio must tea at ${cash("600")} a kg be mixed with tea at ${cash("900")} a kg so that the mixture is worth ${cash("700")} a kg?`,
   solution: "Cheaper : dearer = (900 − 700) : (700 − 600) = 200 : 100 = 2 : 1.",
   board: true,
 }, [
@@ -116,7 +116,7 @@ const alQuantity = bank("wp-al-qty", "wp-mix", {
   heading: "Mixtures: how much of one kind",
   instruction: "Use the rule of alligation to find the RATIO of the two kinds. One of the two quantities is given: see " +
     "how many times its share of the ratio goes into it, and multiply the other share by the same number.",
-  example: "How many kg of rice at ₦800 a kg must be mixed with 30 kg of rice at ₦1,100 a kg so that the mixture is worth ₦900 a kg?",
+  example: `How many kg of rice at ${cash("800")} a kg must be mixed with 30 kg of rice at ${cash("1,100")} a kg so that the mixture is worth ${cash("900")} a kg?`,
   solution: "Cheaper : dearer = (1100 − 900) : (900 − 800) = 2 : 1. The dearer is 30 kg = 1 share, so the cheaper is 2 × 30 = 60 kg.",
   board: true,
 }, [
@@ -262,15 +262,15 @@ const rtShare = bank("wp-rt-share", "wp-ratio", {
   heading: "Sharing: ratios that share a term",
   instruction: "Given A : B and B : C, make the two B's the SAME number (their LCM) by multiplying each ratio up; then " +
     "A : B : C can be read straight off. Add the three terms for the number of shares, find one share, and multiply.",
-  example: "₦1,800 is shared so that A : B = 2 : 3 and B : C = 3 : 4. How much does each get?",
-  solution: "B is 3 in both, so A : B : C = 2 : 3 : 4 — 9 shares. One share is 1800 ÷ 9 = ₦200. A gets ₦400, B ₦600, C ₦800.",
+  example: `${cash("1,800")} is shared so that A : B = 2 : 3 and B : C = 3 : 4. How much does each get?`,
+  solution: `B is 3 in both, so A : B : C = 2 : 3 : 4 — 9 shares. One share is 1800 ÷ 9 = ${cash("200.")} A gets ${cash("400,")} B ${cash("600,")} C ${cash("800.")}`,
   board: true,
 }, [
   (r, t) => { const [p, q] = r.pick(SMALL), [rr, s] = r.pick(SMALL); const L = lcm(q, rr); const a = p * (L / q), b = L, c = s * (L / rr); const [g] = [gcd(gcd(a, b), c)]; const k = r.int(1, t === "gentle" ? 4 : 9) * 100;
     const [A, B, C] = names(r, 3); const [x, y, z] = [a / g, b / g, c / g]; if (x + y + z > 40) return null;
-    return P(`${naira((x + y + z) * k)} is shared among ${A}, ${B} and ${C} so that ${A} : ${B} = ${p} : ${q} and ${B} : ${C} = ${rr} : ${s}. How much does each get?`, [[`${A} (₦):`, x * k], [`${B} (₦):`, y * k], [`${C} (₦):`, z * k]], `${A} : ${B} : ${C} = ${x} : ${y} : ${z}`); },
+    return P(`${naira((x + y + z) * k)} is shared among ${A}, ${B} and ${C} so that ${A} : ${B} = ${p} : ${q} and ${B} : ${C} = ${rr} : ${s}. How much does each get?`, [[`${A} (${MARK}):`, x * k], [`${B} (${MARK}):`, y * k], [`${C} (${MARK}):`, z * k]], `${A} : ${B} : ${C} = ${x} : ${y} : ${z}`); },
   (r) => { const [a, b, c, d, sv] = r.pick([[5, 4, 3, 2, 2], [7, 5, 3, 2, 1], [9, 7, 4, 3, 1], [4, 3, 3, 2, 1], [8, 5, 3, 1, 0]]); if (!sv) return null; const x = r.int(2, 9) * 1000; const [A, B] = names(r, 2);
-    return P(`The incomes of ${A} and ${B} are in the ratio ${a} : ${b}, and what they spend in the ratio ${c} : ${d}. Each saves ${naira(sv * x)}. Find their incomes.`, [[`${A} (₦):`, a * x], [`${B} (₦):`, b * x]], `${a}x − ${c}y = ${b}x − ${d}y = ${sv * x}`); },
+    return P(`The incomes of ${A} and ${B} are in the ratio ${a} : ${b}, and what they spend in the ratio ${c} : ${d}. Each saves ${naira(sv * x)}. Find their incomes.`, [[`${A} (${MARK}):`, a * x], [`${B} (${MARK}):`, b * x]], `${a}x − ${c}y = ${b}x − ${d}y = ${sv * x}`); },
   (r) => { const [p, q] = r.pick(SMALL); const u = r.int(3, 12), add = r.int(1, 6) * (q - p) || 0; if (!add) return null; const a = p * u, b = q * u; const [x, y] = low(a + add, b + add); if (x > 12 || y > 12) return null;
     return P(`Two numbers are in the ratio ${p} : ${q}. When ${add} is added to each, the ratio becomes ${x} : ${y}. Find the two numbers.`, [["smaller:", a], ["larger:", b]], `${y}(${p}u + ${add}) = ${x}(${q}u + ${add}), u = ${u}`); },
 ]);

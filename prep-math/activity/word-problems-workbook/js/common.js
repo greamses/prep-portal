@@ -11,13 +11,14 @@
    line of working printed in the answer key.
 
    Under every problem there is room to work. For the chapters where a
-   picture is the method — ages, mixtures, ratios — that room is the bar
-   model board on screen (utils/components/workbook/barmodel.js).
+   picture is the method — ages, mixtures, ratios, percentages — that room is
+   the bar model board on screen (utils/components/workbook/barmodel.js).
    ========================================================================== */
 
 import { want } from "/utils/components/workbook/want.js";
 import { blankModelSvg } from "/prep-math/activity/maths-workbook/js/modelart.js";
 import { levelOf } from "./levels.js";
+import { billsHtml, billMark, withMark } from "/utils/components/workbook/purse.js";
 
 export const box = () => `<span class="wb-answer"></span>`;
 export const ask = (html) => `<p class="wb-ask">${html}</p>`;
@@ -27,7 +28,13 @@ export const tier = (o) => levelOf(o).id;
 
 export const gcd = (a, b) => (b ? gcd(b, a % b) : Math.abs(a));
 export const lcm = (a, b) => (a * b) / gcd(a, b);
-export const naira = (n) => `₦${n.toLocaleString("en-NG")}`;
+/* MONEY IS SAID IN PREPBILLS, and the prepbill carries a MARK, which is
+   drawn and never typed (utils/components/workbook/purse.js). `MARK` is the
+   mark on its own, for an answer box that wants naming — "₦:" was that. */
+export const naira = billsHtml;
+export const MARK = billMark();
+/** The mark and the sum after it, as one run that does not wrap. */
+export const cash = withMark;
 export const plural = (n, one, many = `${one}s`) => (n === 1 ? one : many);
 /** A ratio in its lowest terms. */
 export const low = (a, b) => { const g = gcd(a, b) || 1; return [a / g, b / g]; };
