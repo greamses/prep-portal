@@ -42,6 +42,9 @@ const LIST_X = 60;
    just made, and it is what tells you */
 const CLUE = "#d9632b";
 const INK = "#2a2723";
+/* and the colour the answer is written in — not the clue's orange, because
+   the clue and the answer are two different things on the same line */
+const ANSWER = "#2f7d4f";
 /* the same mark the printed page puts on the word a question is about
    (.en-pick in english.css) */
 const MARK = "text-decoration:underline;text-decoration-thickness:0.08em;text-underline-offset:0.2em";
@@ -61,9 +64,19 @@ function dress(it) {
   const re = new RegExp(`(^|[^\\w])(${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})([^\\w]|$)`);
   out = out.replace(re, (m, a, w, b) => `${a}<span data-k="slot" style="position:relative">`
     + `<b data-k="word" style="${MARK}">${w}</b>`
-    + `<span data-k="swap" style="position:absolute;left:50%;bottom:118%;transform:translateX(-50%);`
-    + `white-space:normal;max-width:24ch;width:max-content;text-align:center;line-height:1.1;`
-    + `color:${CLUE};font-weight:800;opacity:0">${esc(it.mean[0])}</span>`
+    /* THE REPLACEMENT SITS IN THE GAP ABOVE ITS OWN WORD, in a colour and a
+       size of its own: the orange is the CLUE, the word under it is the
+       problem, and this is the answer, so three jobs want three looks. The
+       sentence is set on a tall line (see `lh` below) to leave it room —
+       written tight against the text it lands on the line above and neither
+       can be read. */
+    + `<span data-k="swap" style="position:absolute;left:50%;bottom:104%;transform:translateX(-50%);`
+    /* ONE LINE. Left to wrap, a long meaning is two lines deep and climbs out
+       of its gap into the question above the sentence; on one line it stays
+       in the space the tall line-height leaves for it, and `writeOver` slides
+       it left if it would run past the column. */
+    + `white-space:nowrap;text-align:center;line-height:1.05;`
+    + `font-size:0.76em;color:${ANSWER};font-weight:800;opacity:0">${esc(it.mean[0])}</span>`
     + `</span>${b}`);
   return out;
 }
@@ -126,8 +139,8 @@ function ctxFilm(kind, one, two, talk) {
     lines: [
       ...listLines(k.id),
       { id: "g1", text: k.hint, x: LIST_X, y: 44, c: 3, size: 2, w: 36 },
-      { id: "s1", html: true, text: dress(one), x: SENT_X, y: SENT_Y, c: 0, size: 2.4, w: SENT_W },
-      { id: "s2", html: true, text: dress(two), x: SENT_X, y: SENT_Y, c: 0, size: 2.4, w: SENT_W },
+      { id: "s1", html: true, text: dress(one), x: SENT_X, y: SENT_Y, c: 0, size: 2.4, w: SENT_W, lh: 2.15 },
+      { id: "s2", html: true, text: dress(two), x: SENT_X, y: SENT_Y, c: 0, size: 2.4, w: SENT_W, lh: 2.15 },
       { id: "m1", text: `${one.word} = ${one.mean[0]}`, x: SENT_X, y: 38, c: 2, size: 2.5, w: SENT_W },
       { id: "m2", text: `${two.word} = ${two.mean[0]}`, x: SENT_X, y: 38, c: 2, size: 2.5, w: SENT_W },
     ],
@@ -152,17 +165,24 @@ function ctxFilm(kind, one, two, talk) {
 
       push(talk.mean, { on: ["m1"], look: look.tile("m1"), lookAt: { delay: 2.4, hold: 2.0, to: 1.25 } });
 
+      /* the SENTENCE is lit while it is read back, not the new word: `lit`
+         clears the inline colour of whatever it finishes on, and the new
+         word is wearing its own */
       push(talk.test, { add: ["t.one"],
-        look: look.said("s1", "swap"), lookAt: { lit: true, delay: 2.0, hold: 2.6 } });
+        look: look.tile("s1"), lookAt: { lit: true, delay: 2.2, hold: 2.8 } });
 
-      push(talk.over, { on: ["a2", "s2"], off: ["a1", "s1", "m1"],
+      /* FIVE SECONDS OF THEIR OWN before the answer comes. A teacher who
+         asks a question and answers it half a second later has asked
+         nothing; the count is on the screen so the child can see how long
+         they have got. */
+      push(talk.over, { on: ["a2", "s2"], off: ["a1", "s1", "m1"], hold: 5,
         look: look.said("s2", "word"), lookAt: { delay: 3.0, hold: 2.0, to: 1.3 } });
 
       push(talk.back, { on: ["m2"], add: ["u.two"],
         look: look.tile("m2"), lookAt: { delay: 3.2, hold: 2.0, to: 1.25 } });
 
       push(talk.test2, { add: ["t.two"],
-        look: look.said("s2", "swap"), lookAt: { lit: true, delay: 1.8, hold: 2.4 } });
+        look: look.tile("s2"), lookAt: { lit: true, delay: 2.0, hold: 2.6 } });
 
       push(talk.close, { on: all, play: (S, H, stage) => runLit(H, stage, all, 0.3, 1.0) });
     },
@@ -183,7 +203,8 @@ export function ctxInference() {
       + "the hardest of the five. INFERENCE means the sentence never actually says it. Nothing is "
       + "defined, nothing is repeated, nobody helps you — and yet only one meaning makes the rest of it "
       + "sensible.",
-    read: `So. Ada, a bus, and a word you may never have met: ${a.word}. Do not stare at it, and do not `
+    read: `Listen to it first: "${plainOf(a.s)}" There. A bus, a girl called Ada, and a word you may `
+      + `never have met: ${a.word}. Do not stare at it, and do not `
       + `try to guess from the look of it — guessing from the look of a word is how children decide `
       + `${a.word} is something to do with wearing. Read right on to the full stop instead. Everything `
       + `you need is in what Ada DOES, and that comes after the word, not before it.`,
@@ -199,10 +220,11 @@ export function ctxInference() {
       + `write your meaning over the top of it. Then read the whole thing again: "${swapped(a)}" Does it `
       + `fit? It does. If it had come out clumsy, or said something the story does not say, I would know `
       + `my meaning was wrong and I would go back to the orange and think again.`,
-    over: `Your turn, and I am going to stay quiet. Rain, a path, and some porters: your word is `
+    over: `Here is the next one, and I will read it to you: "${plainOf(b.s)}" Now it is your turn, and `
+      + `I am going to stop talking. Your word is `
       + `${b.word}. There is no definition in this one either, so do not go hunting for one. Find the `
-      + `part that tells you what happened, underline it, and get a meaning ready. Then cross out and `
-      + `write over the top, exactly as I did. Take your time; I will wait.`,
+      + `part that tells you what happened, underline it, and get a meaning ready. Five seconds on the `
+      + `screen, starting now.`,
     back: `Here is what gives it away: ${b.clue}. People do not fall over on a safe path. Something about `
       + `it, after the rain, made going down likely — so ${b.word} must mean about ${b.mean[0]}. If you `
       + `wrote slippery you have understood it. If you wrote wet, you have described the rain rather than `
@@ -229,7 +251,8 @@ export function ctxDefinition() {
       + "plain words, nearly always just after the hard word, fenced off by a comma, a dash, a colon or a "
       + "pair of brackets. There are signposts as well: is, means, which means, that is. Four little "
       + "phrases, and half of this kind is done for you before you start.",
-    read: `Teeth, grinding, and the word ${a.word}. Now, I happen to know this one — but pretend with me `
+    read: `I will read it, and you follow: "${plainOf(a.s)}" Teeth, grinding, and the word `
+      + `${a.word}. Now, I happen to know this one — but pretend with me `
       + `that I do not, because what matters here is the habit, and the habit is this: when a word stops `
       + `you, keep going. Do not halt at the word. The writer has put something in this sentence `
       + `especially for people who do not know it, and it is only a few letters further on.`,
@@ -246,10 +269,10 @@ export function ctxDefinition() {
       + `properly — the sentence `
       + `should read almost the same afterwards, because the writer was describing the very same thing `
       + `both times.`,
-    over: `Right, you go. A letter, somebody's handwriting, and the word ${b.word}. You know the drill `
-      + `now: read past it, find the comma or the dash, pick up the plain words. Then strike it through, write `
-      + `over, read it back to yourself. There is nothing new to learn in this one — only the doing of `
-      + `it, which is the part that makes it yours.`,
+    over: `Next sentence, read aloud once: "${plainOf(b.s)}" Right — you go. The word is ${b.word}, `
+      + `and you know the drill `
+      + `now: read past it, find the comma or the dash, pick up the plain words. Nothing new to learn `
+      + `in this one — only the doing of it, which is the part that makes it yours. Five seconds.`,
     back: `After the dash: ${b.clue}. The writer has even told you where the pen goes. So ${b.word} means `
       + `${b.mean[0]}, and I would happily take joined handwriting, or writing where the letters run into `
       + `each other, or anything that shows me you pictured the page.`,
@@ -274,7 +297,8 @@ export function ctxExample() {
       + "more work than a definition and it sticks far better, because the bit you work out yourself is "
       + "the bit you remember next week. The signposts are such as, for example, like, including, or "
       + "simply a colon with a list marching off behind it.",
-    read: `Somebody is telling you what to bring to school, and the word is ${a.word}. Before you worry `
+    read: `Hear the whole thing first: "${plainOf(a.s)}" Somebody telling you what to bring to school, `
+      + `and the word is ${a.word}. Before you worry `
       + `about the word at all, look at the SHAPE of the sentence: there is a dash, and then a list. That `
       + `list is not decoration and it is not the writer being chatty. It is there for you, and it is `
       + `about to do the explaining.`,
@@ -289,7 +313,8 @@ export function ctxExample() {
       + `And here is the check that catches a lazy answer with this kind — does your meaning cover the `
       + `RULER? If you had written "things you write with" and stopped there, the ruler is left standing `
       + `with nothing to do, and your meaning is too narrow by one item.`,
-    over: `Now you. A museum, some old things, and the word ${b.word}. Find the list — it is signposted `
+    over: `Read along with me: "${plainOf(b.s)}" Now you take it. The word is ${b.word}. Find the `
+      + `list — it is signposted `
       + `this time, so that part is easy — then ask what the things in it share. Be careful: they are not `
       + `all made of the same stuff and they were not all used for the same job, so what you want is `
       + `something more general than either of those.`,
@@ -317,7 +342,8 @@ export function ctxAntonym() {
       + "paying attention you will read that opposite, write it down, and be exactly wrong. There is "
       + "always a warning word: but, unlike, whereas, instead of, rather than, though, far from. Treat it "
       + "as the sentence saying, careful, I am about to turn round.",
-    read: `A brother, a sister, and the money they are given. Your word is ${a.word}. Before you think `
+    read: `Here it is, out loud: "${plainOf(a.s)}" A brother, a sister, and the money they are given. `
+      + `Your word is ${a.word}. Before you think `
       + `about what it means, find the warning word — it is a short one, sitting in the middle of the `
       + `sentence. Have you got it? BUT. Everything after a but is about to go the other way from `
       + `everything before it.`,
@@ -332,7 +358,8 @@ export function ctxAntonym() {
       + `money, BUT she spends every naira. The contrast still works, and that is how you know you `
       + `flipped it the right way. If you had written "spends a lot, but my sister spends every naira", `
       + `the but would have nothing left to do, and your own ear would tell you.`,
-    over: `Your go. Two speakers, a meeting, and the word ${b.word}. Same two steps as before: find the `
+    over: `Listen: "${plainOf(b.s)}" Your go this time. The word is ${b.word}, and it is the same two `
+      + `steps as before: find the `
       + `hinge, see what is on the far side of it, take the opposite. And when you have your answer, say `
       + `the whole sentence out loud with the but still in it. That is the quickest check there is, and `
       + `it takes about four seconds.`,
@@ -361,7 +388,8 @@ export function ctxSynonym() {
       + "noticing this you will see it everywhere — in textbooks especially, where somebody is trying to "
       + "teach you the hard word on purpose. Watch for or, in other words, that is to say, also called, "
       + "or simply a second word set down next to the first.",
-    read: `An old man, and the word ${a.word}. This sentence is about to be very kind to you, so let me `
+    read: `I will say it first: "${plainOf(a.s)}" An old man, and the word ${a.word}. This sentence `
+      + `is about to be very kind to you, so let me `
       + `tell you what to do with your eyes. Do not go looking away down the line for help. Look at what `
       + `is sitting immediately beside the word — a word or two either side of it, no further. That is `
       + `where a synonym lives.`,
@@ -374,7 +402,8 @@ export function ctxSynonym() {
     test: `Strike it out, write over the top, read: "${swapped(a)}" Fine. Though listen to what we lost `
       + `doing that — the sentence has gone a little flatter. That is what a hard word is FOR: it carries `
       + `something extra, and the easy word beside it is a door into it rather than a replacement for it.`,
-    over: `Last one, and it is yours. A market, and the word ${b.word}. Look either side of it for the `
+    over: `The last sentence of the five films: "${plainOf(b.s)}" It is yours. The word is ${b.word}. `
+      + `Look either side of it for the `
       + `easier twin, underline what you find, then swap your meaning in and hear whether it fits. You have done this four `
       + `times now. It should be starting to feel like a routine rather than a puzzle, and that is `
       + `exactly what it ought to become.`,

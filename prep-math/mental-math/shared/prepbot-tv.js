@@ -245,8 +245,43 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
     try { await teacher.narrationDone; } catch { /* stopped */ }
     if (mine !== token || closed || !playing) return;
     if (index >= steps.length - 1) { playing = false; paintControls(); return; }
+    /* THINKING TIME. A step that hands the work over says `hold`, and the
+       film waits that many seconds before going on — counted down on the
+       screen, so the child can see how long they have got rather than
+       feeling hurried by a teacher who has already stopped talking. It waits
+       AFTER the narration, because a countdown running under PrepBot's voice
+       is not time to think. */
+    if (steps[index].hold) {
+      const left = await think(steps[index].hold, mine);
+      if (!left) return;
+    }
     await new Promise((r) => setTimeout(r, 450));
     if (mine === token && !closed && playing) go(index + 1);
+  }
+
+  /**
+   * The seconds a step gives the learner before it answers itself, counted
+   * where they can see them. Pressing pause, stepping on, or closing the set
+   * ends it: it returns false, and the caller stops rather than carrying on
+   * into a step nobody asked for.
+   */
+  async function think(secs, mine) {
+    const pad = document.createElement("div");
+    pad.className = "mm-tv-count";
+    pad.innerHTML = `<span class="mm-tv-count__n"></span><span class="mm-tv-count__say">your turn</span>`;
+    stage.appendChild(pad);
+    const n = pad.firstChild;
+    for (let left = secs; left > 0; left -= 1) {
+      n.textContent = String(left);
+      /* restarted on every tick, so each number comes in on its own */
+      n.style.animation = "none";
+      void n.offsetWidth;
+      n.style.animation = "";
+      await new Promise((r) => setTimeout(r, 1000));
+      if (mine !== token || closed || !playing) { pad.remove(); return false; }
+    }
+    pad.remove();
+    return true;
   }
 
   /* Out of sight, out of hearing: when the learner leaves the page (another

@@ -327,6 +327,42 @@
   50% { transform: rotate(80deg); }
 }
 
+/* ── thinking time, counted where the learner can see it ──────────────────
+   It stands over the picture rather than beside it, because the picture is
+   what they are meant to be looking at while they think. Big, quiet, and
+   gone the moment the time is up. */
+.mm-tv-count {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.1em;
+  pointer-events: none;
+  font-family: var(--font-mono, monospace);
+  color: var(--ink);
+}
+.mm-tv-count__n {
+  font-size: clamp(2.2rem, 13vh, 5.4rem);
+  font-weight: 800;
+  line-height: 1;
+  opacity: 0.22;
+  animation: mm-tv-tick 1s ease-out both;
+}
+.mm-tv-count__say {
+  font-size: clamp(0.6rem, 2.2vh, 0.9rem);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.4;
+}
+@keyframes mm-tv-tick {
+  from { opacity: 0.34; transform: scale(1.35); }
+  to { opacity: 0.16; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .mm-tv-count__n { animation: none; } }
+
 /* ── like, share, subscribe: the three, each arriving on its own ──────────*/
 .mm-tv-asks {
   display: flex;

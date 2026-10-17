@@ -549,6 +549,10 @@ export function hand(gsap, instant) {
      * job is to span exactly what it spans, and for a bar in a row of bars
      * that must stay the same size as its neighbours to mean anything.
      */
+    /* IT CLEARS THE INLINE COLOUR WHEN IT FINISHES, which is how the mark
+       goes back to the colour the drawing gave it — so never point this at
+       something wearing a colour of its own in a style attribute, or the
+       colour goes with the lighting. Light its parent instead. */
     lit(n, delay = 0, hold = 1.7, ink = "var(--accent-danger)") {
       if (!n) return;
       n.style.opacity = "1";
@@ -651,13 +655,17 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
   const events = [];
   let tiles = new Set();
   let drawn = [];
-  const push = (say, { on = [], off = [], add = [], play = () => {}, look: at = null, lookAt = null } = {}) => {
+  const push = (say, { on = [], off = [], add = [], play = () => {}, look: at = null, lookAt = null,
+    hold = 0 } = {}) => {
     const beforeTiles = new Set(tiles);
     const beforeDrawn = drawn.slice();
     on.forEach((t) => tiles.add(t));
     off.forEach((t) => tiles.delete(t));
     drawn = [...drawn, ...add];
-    events.push({ say, beforeTiles, beforeDrawn, on, off, add, play, look: at, lookAt });
+    /* `hold`: seconds the film waits after this step's words, for the
+       learner to do the thing it has just asked them to do (prepbot-tv.js
+       counts them down on the screen) */
+    events.push({ say, beforeTiles, beforeDrawn, on, off, add, play, look: at, lookAt, hold });
   };
 
   write({ push, look });
@@ -681,12 +689,13 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
        is anchored by its LEFT edge at SIDE_X and given a width to wrap in,
        which is a thing a teacher's board has and a stage had not. */
     lines.forEach((l) => side(stage, l.id, l.text, l.x ?? SIDE_X, l.y, l.c ?? 0, l.size ?? 2.5,
-      { w: l.w ?? SIDE_W, html: !!l.html }));
+      { w: l.w ?? SIDE_W, html: !!l.html, lh: l.lh ?? null }));
     if (extra) extra(stage);
   };
 
   const steps = events.map((ev) => ({
     say: ev.say,
+    hold: ev.hold,
     show(stage, how) {
       const S = acts(stage, how.gsap, how.instant);
       const already = hand(how.gsap, true);
@@ -787,14 +796,19 @@ export function asked(stage, id, text, raw = false) {
  * own and wrong for a sentence — a centred sentence grows both ways, and the
  * way it grows is into the picture.
  */
-export function side(stage, id, text, x, y, c, sizeU, { w = SIDE_W, html = false } = {}) {
+export function side(stage, id, text, x, y, c, sizeU, { w = SIDE_W, html = false, lh = null } = {}) {
   const box = tile(stage, id, String(text), x, down(y), { c });
   box.classList.add("vm-t--left", "vm-t--wrap");
   /* a line of working is 36 units wide; a SENTENCE being read is as wide as
      the film gives it, which is most of the screen */
   box.style.setProperty("--w", `${w}`);
   box.firstChild.style.setProperty("font-size", `calc(var(--u) * ${sizeU})`);
-  return says(box, text, html);
+  const out = says(box, text, html);
+  /* A LINE CAN ASK FOR ROOM ABOVE ITS OWN WORDS. A sentence that will have a
+     replacement written over one of its words needs the space to put it in,
+     or the new word lands on the line above and neither can be read. */
+  if (lh) box.firstChild.style.setProperty("line-height", String(lh));
+  return out;
 }
 
 /**
