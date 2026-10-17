@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+    <!-- seo:head -->
+    <meta name="robots" content="noindex, nofollow" />
+    <!-- /seo:head -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Films — Admin</title>
+  <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+  <link rel="stylesheet" href="/utils/components/theme.css" />
+  <link rel="stylesheet" href="/utils/components/workbook.css" />
+  <!-- every button on the site is a sticky note; this is where that comes from -->
+  <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app":       "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+        "firebase/auth":      "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+        "firebase/storage":   "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+      }
+    }
+  </script>
+  <style>
+    body { margin:0; background: var(--app-bg, var(--bg)); color: var(--text-primary, #2a2723);
+           font-family: var(--font-body, system-ui, sans-serif); padding:1.5rem; }
+    .fl-wrap { max-width: 56rem; margin: 0 auto; }
+    .fl-top { display:flex; align-items:baseline; gap:.8rem; margin:0 0 .3rem; flex-wrap:wrap; }
+    h1 { font-family: var(--font-display); font-size:1.25rem; margin:0; }
+    .fl-back { font-size:.75rem; color: var(--accent-secondary); text-decoration:none; font-weight:700; }
+    .fl-sub { font-size:.8rem; color: var(--text-secondary); line-height:1.55; margin:0 0 1.2rem; max-width:44rem; }
+
+    .fl-gate { padding:1rem; background: var(--surface-primary); border: var(--border); font-size:.85rem; }
+
+    .fl-new { display:flex; gap:.4rem; align-items:flex-end; flex-wrap:wrap; margin:0 0 1.2rem;
+              padding:.8rem; background: var(--surface-primary); border: var(--border); }
+    .fl-new label { display:block; font-size:.7rem; font-weight:700; color: var(--text-secondary); margin-bottom:.15rem; }
+    .fl-new input { padding:.35rem .45rem; font:inherit; font-size:.82rem; color:inherit;
+                    background: var(--surface-secondary); border: var(--border-subtle); border-radius:0; }
+    .fl-new .pp-btn { font-size:.8rem; padding:.35rem .7rem; min-height:0; }
+
+    .fl-list { display:grid; gap:.5rem; }
+    .fl-row { display:grid; grid-template-columns: minmax(0,1fr) auto auto; gap:.7rem; align-items:center;
+              padding:.6rem .8rem; background: var(--surface-primary); border: var(--border); }
+    .fl-row__name { min-width:0; }
+    .fl-row__name b { display:block; font-family: var(--font-display); font-size:.9rem; }
+    .fl-row__name em { font-style:normal; font-size:.7rem; color: var(--text-secondary);
+                       font-family: var(--font-mono, monospace); }
+    .fl-row__of { font-size:.7rem; color: var(--text-secondary); }
+    .fl-tag { display:inline-block; padding:.1rem .4rem; font-size:.65rem; font-weight:700; border:1px solid currentColor; }
+    .fl-tag--coded { color:#6b655c; }
+    .fl-tag--draft { color:#2f6ea8; }
+    .fl-tag--live  { color:#2e8b46; }
+    .fl-row__keys { display:flex; gap:.35rem; }
+    .fl-row__keys .pp-btn { font-size:.76rem; padding:.28rem .55rem; min-height:0; }
+    .fl-head { font-size:.72rem; font-weight:700; color: var(--text-secondary); margin:1.2rem 0 .35rem; }
+  </style>
+</head>
+<body>
+  <div class="fl-wrap">
+    <div class="fl-top">
+      <h1>PrepBot's films</h1>
+      <a class="fl-back" href="/admin/settings/">← Admin</a>
+    </div>
+    <p class="fl-sub">
+      Every lesson the television plays. <b>Coded</b> means it is still the one written in JavaScript;
+      open it and press <b>Trace the coded film</b> to bring its drawing across, or just edit what PrepBot
+      says. A <b>draft</b> is served to you alone; <b>published</b> is what everybody gets. A film with no
+      document goes on playing its coded version, so nothing goes off the air while you work.
+    </p>
+    <div id="fl-gate" class="fl-gate">Checking who you are…</div>
+    <div id="fl-main" hidden>
+      <div class="fl-new">
+        <div>
+          <label for="fl-id">A key of its own</label>
+          <input id="fl-id" placeholder="times-tables-5" size="18" autocomplete="off">
+        </div>
+        <div>
+          <label for="fl-name">What it is called</label>
+          <input id="fl-name" placeholder="Counting in fives" size="26" autocomplete="off">
+        </div>
+        <button type="button" class="pp-btn wb-tint-2" id="fl-make">Start a new film</button>
+      </div>
+      <p class="fl-head">The lessons</p>
+      <div class="fl-list" id="fl-list"></div>
+      <p class="fl-head" id="fl-own-head" hidden>Films of your own</p>
+      <div class="fl-list" id="fl-own"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { FILMS, codedFilm } from "/utils/components/workbook/tv-lessons.js";
+    import { isFilmAdmin, allFilms } from "/utils/components/workbook/film-store.js";
+    import { openFilmEditor } from "/utils/components/workbook/film-editor.js";
+    import { playable } from "/utils/components/workbook/filmdoc.js";
+
+    const gate = document.getElementById("fl-gate");
+    const main = document.getElementById("fl-main");
+    const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+    /* A film opened from here gets the same two things it gets from a lesson
+       strip: the coded film to trace and take a script from, and a way to
+       watch the draft on the real set. */
+    const open = (id, name) => openFilmEditor({
+      id,
+      title: name,
+      coded: codedFilm(id),
+      onPlay: async (doc) => {
+        const { openTv } = await import("/prep-math/mental-math/shared/prepbot-tv.js");
+        const film = playable(doc, name);
+        const set = await openTv({
+          title: film.title || name,
+          build: (stage) => {
+            film.build(stage);
+            stage.querySelector(".vm-tv")?.style.setProperty("--u", `${stage.clientWidth / 100}px`);
+          },
+          steps: film.steps,
+        });
+        await set.done;
+      },
+    }).then(() => paint());
+
+    const play = async (id, name) => {
+      const { playLesson } = await import("/utils/components/workbook/tv-lessons.js");
+      playLesson(id, name);
+    };
+
+    function rowHtml(id, name, of, state) {
+      const tags = state?.published ? `<span class="fl-tag fl-tag--live">published</span>`
+        : state?.draft ? `<span class="fl-tag fl-tag--draft">draft only</span>`
+        : `<span class="fl-tag fl-tag--coded">coded</span>`;
+      return `<div class="fl-row">
+        <span class="fl-row__name"><b>${esc(state?.title || name || id)}</b><em>${esc(id)}</em></span>
+        <span class="fl-row__of">${esc(of || "")} ${tags}${state?.beats ? ` <span class="fl-row__of">${state.beats} beats</span>` : ""}</span>
+        <span class="fl-row__keys">
+          <button type="button" class="pp-btn wb-tint-2" data-open="${esc(id)}" data-name="${esc(name || id)}">Edit</button>
+          <button type="button" class="pp-btn wb-tint-1" data-play="${esc(id)}" data-name="${esc(name || id)}">Watch</button>
+        </span></div>`;
+    }
+
+    async function paint() {
+      const docs = await allFilms();
+      document.getElementById("fl-list").innerHTML =
+        FILMS.map((f) => rowHtml(f.id, f.name, f.of, docs.get(f.id))).join("");
+      /* films that exist only as documents — the ones started here */
+      const known = new Set(FILMS.map((f) => f.id));
+      const own = [...docs.entries()].filter(([id]) => !known.has(id));
+      document.getElementById("fl-own-head").hidden = !own.length;
+      document.getElementById("fl-own").innerHTML =
+        own.map(([id, st]) => rowHtml(id, st.title, "", st)).join("");
+    }
+
+    document.addEventListener("click", (e) => {
+      const o = e.target.closest("[data-open]");
+      if (o) { open(o.dataset.open, o.dataset.name); return; }
+      const w = e.target.closest("[data-play]");
+      if (w) play(w.dataset.play, w.dataset.name);
+    });
+
+    document.getElementById("fl-make").addEventListener("click", () => {
+      const id = document.getElementById("fl-id").value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
+      const name = document.getElementById("fl-name").value.trim();
+      if (!id) { alert("A film needs a key of its own — the name it is played by."); return; }
+      open(id, name || id);
+    });
+
+    (async () => {
+      if (!(await isFilmAdmin())) {
+        gate.innerHTML = 'Films are the admin\'s. <a href="/index.html">Go home</a>.';
+        return;
+      }
+      gate.hidden = true;
+      main.hidden = false;
+      paint();
+    })();
+  </script>
+</body>
+</html>

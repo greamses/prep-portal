@@ -52,6 +52,7 @@ const GATED = new Set([
   "/admin-cbt-edit.html",
   "/admin-cbt.html",
   "/admin-partners.html",
+  "/admin/films",
   "/admin/settings",
   "/blogs/auto",
   "/dashboard.html",

@@ -329,6 +329,41 @@ const SCENES = {
   "ctx-antonym": ctxAntonym,
   "ctx-synonym": ctxSynonym,
 };
+/**
+ * WHAT EVERY FILM IS CALLED, in one place.
+ *
+ * A film's name used to live only at the call site that opened it — the strip
+ * under a workbook section passed it in — so nothing could list the films or
+ * say what one was without first finding the page that plays it. The editor's
+ * index needs exactly that (admin/films), and a name is a fact about the film,
+ * not about the page it is linked from.
+ *
+ * `bar` is left out: it is an old alias for bar-setup, kept so that anything
+ * still linking to the single bar film opens something sensible, and it would
+ * list the same lesson twice.
+ */
+export const FILMS = [
+  { id: "ratio", name: "The box method for ratios", of: "Maths Workbook" },
+  { id: "shift", name: "Multiplying and dividing by ten", of: "Maths Workbook" },
+  { id: "bar-setup", name: "Setting up a bar model", of: "Maths Workbook ch 9" },
+  { id: "bar-parts", name: "Part to part, and part to whole", of: "Maths Workbook ch 9" },
+  { id: "bar-missing", name: "Completing the missing part", of: "Maths Workbook ch 9" },
+  { id: "bar-money", name: "Bar models and money", of: "Maths Workbook ch 9" },
+  { id: "bar-fractions", name: "Bars as fractions", of: "Maths Workbook ch 9" },
+  { id: "frac-like", name: "Adding and taking away when the parts match", of: "Maths Workbook ch 5" },
+  { id: "frac-equal", name: "The same fraction, another name", of: "Maths Workbook ch 5" },
+  { id: "frac-unlike", name: "When the parts do not match", of: "Maths Workbook ch 5" },
+  { id: "frac-mixed", name: "Mixed numbers, and the borrow", of: "Maths Workbook ch 5" },
+  { id: "ctx-inference", name: "Inference clues", of: "Comprehension ch 2" },
+  { id: "ctx-definition", name: "Definition clues", of: "Comprehension ch 2" },
+  { id: "ctx-example", name: "Example clues", of: "Comprehension ch 2" },
+  { id: "ctx-antonym", name: "Antonym clues", of: "Comprehension ch 2" },
+  { id: "ctx-synonym", name: "Synonym clues", of: "Comprehension ch 2" },
+];
+
+/** The coded film behind an id, for the editor to trace and to take a script from. */
+export const codedFilm = (kind) => (SCENES[kind] ? SCENES[kind]() : null);
+
 let tvOpen = false;
 
 /**
@@ -409,7 +444,7 @@ async function editorFor(kind, title, coded) {
     await openFilmEditor({
       id: kind,
       title,
-      coded: coded.steps,
+      coded,
       /* WATCH IT is the real television, the real voice and the real 16:9 —
          the only honest way to judge words that are going to be read aloud */
       onPlay: async (doc) => {

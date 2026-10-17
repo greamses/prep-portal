@@ -47,8 +47,9 @@ let live = null;      // one cutting room at a time
  *
  *   id      the film's key — the same one the lesson strip plays
  *   title   what it is called, for a blank document
- *   coded   the coded film's steps, if there is one: its script is offered
- *           as a starting point so a lesson is never retyped
+ *   coded   the coded film, if there is one — { build, steps }. Its SCRIPT is
+ *           offered as a starting point so a lesson is never retyped, and its
+ *           drawing can be traced from it (./film-trace.js)
  *   onPlay  how to play a document on the television (preview)
  */
 export async function openFilmEditor({ id, title = "", coded = null, onPlay = null } = {}) {
@@ -56,7 +57,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
   needCss("/utils/components/workbook/film-editor.css");
 
   const both = await filmBoth(id);
-  let doc = both.draft || both.published || startFrom(coded, title);
+  let doc = both.draft || both.published || startFrom(coded?.steps, title);
   let step = 0;
   let picked = null;        // the selected element's id
   let dirty = false;
@@ -76,6 +77,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
         <button type="button" class="pp-btn wb-tint-1" data-f="save">Save draft</button>
         <button type="button" class="pp-btn wb-tint-3" data-f="publish">Publish</button>
         <button type="button" class="pp-btn wb-tint-1" data-f="down" hidden>Take it down</button>
+        <button type="button" class="pp-btn wb-tint-2" data-f="trace" hidden>Trace the coded film</button>
         <button type="button" class="pp-btn wb-tint-4" data-f="close" aria-label="Close the editor">Close</button>
       </span>
     </header>
@@ -131,18 +133,26 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     for (let k = 0; k <= step && k < film.steps.length; k++) {
       film.steps[k].show(stage, { gsap: null, instant: true });
     }
-    /* anything with no act yet would be invisible and so unselectable: in the
-       cutting room it is shown faintly, with a ghost ring, so it can be
-       picked up and placed before it is given its entrance */
+    /* WHAT IS SHOWN FAINTLY, AND WHAT IS NOT SHOWN AT ALL.
+       A thing that has not come on yet is INVISIBLE here, because that is the
+       truth of the film at this beat and a stage with every later mark
+       ghosted over it is unreadable the moment a film has a dozen of them.
+       Two exceptions, both so that a thing can be got hold of: the one that
+       is selected, and one that has no act anywhere in the film — which has
+       no beat to be seen on at all, and would otherwise be unplaceable. */
+    const used = new Set(doc.steps.flatMap((s) => s.acts.map((a) => a.el)));
     doc.els.forEach((el) => {
       const node = stage.querySelector(`[data-t="${el.id}"]`);
       if (!node) return;
       node.classList.add("fe-el");
       node.dataset.feId = el.id;
       const inner = node.firstChild;
-      if (inner && Number(getComputedStyle(inner).opacity) < 0.02) {
+      const hidden = inner && Number(getComputedStyle(inner).opacity) < 0.02;
+      if (hidden && (el.id === picked || !used.has(el.id))) {
         node.classList.add("is-ghost");
-        inner.style.opacity = "0.22";
+        inner.style.opacity = "0.3";
+      } else if (hidden) {
+        node.style.pointerEvents = "none";
       }
       node.classList.toggle("is-picked", el.id === picked);
     });
@@ -406,6 +416,31 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
       if (!confirm("Publish? Everybody gets this lesson from now on.")) return;
       await keep(publish, "Published — this is the lesson now");
       box.querySelector('[data-f="down"]').hidden = false;
+    } else if (k === "trace") {
+      /* THE DRAWING, READ OFF THE CODED FILM. The script comes across the
+         moment the room is opened; this brings the pictures too, by running
+         the coded film into a stage off the screen and reading what it puts
+         there (film-trace.js). It is a starting point: the places and the
+         order are right, the entrances are all plain ones to be chosen again. */
+      if (doc.els.length && !confirm("Trace the coded film? What is on the stage now is replaced.")) return;
+      say("Reading the coded film…");
+      try {
+        const { traceFilm } = await import("./film-trace.js");
+        const traced = traceFilm(coded, doc.title || title);
+        /* the words that have been worked on here are kept: a trace is about
+           the drawing, and overwriting an edited script with the old one is
+           exactly the thing this editor exists to stop */
+        traced.steps.forEach((st, i) => { if (doc.steps[i]?.say) st.say = doc.steps[i].say; });
+        doc = normalise(traced, doc.title || title);
+        picked = null;
+        step = 0;
+        touched();
+        paintAll();
+        say(`Traced — ${doc.els.length} things over ${doc.steps.length} beats`);
+      } catch (err) {
+        say("The coded film would not trace", true);
+        console.error("film trace failed", err);
+      }
     } else if (k === "down") {
       /* THE WAY BACK. A film that is worse than the one it replaced must be
          removable in one press — the coded lesson is still there and starts
@@ -508,6 +543,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
   requestAnimationFrame(paintStage);
   window.addEventListener("resize", paintStage);
   box.querySelector('[data-f="down"]').hidden = !both.published;
+  box.querySelector('[data-f="trace"]').hidden = !(coded && coded.build);
   say(both.draft ? "A draft is open" : both.published ? "Opened from what is published" : "A new film");
   return live;
 }
