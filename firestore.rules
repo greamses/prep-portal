@@ -186,6 +186,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // PrepBot's films, written down rather than written out (filmdoc.js).
+    // One doc per film: { draft, published }. Anybody may read — the player
+    // needs the published copy, and the draft is only ever SERVED to the
+    // admin by film-store.js, which is a courtesy and not a secret: nothing
+    // in a lesson script is private. Only the admin may write.
+    match /filmDocs/{filmId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Cartesian Art puzzles — coordinate-plotting "trace the picture" missions.
     // Authored by the admin (client-side, allowed by the admin override too) and
     // played by any signed-in learner, so a shared link works.

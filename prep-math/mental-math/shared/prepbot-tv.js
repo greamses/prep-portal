@@ -125,7 +125,7 @@ const introStep = (title) => ({
   },
 });
 
-export async function openTv({ title = "", build = () => {}, steps: told = [] } = {}) {
+export async function openTv({ title = "", build = () => {}, steps: told = [], onEdit = null } = {}) {
   const steps = told.length ? [introStep(title), ...told, outroStep()] : told;
   open?.close();
   css("/prep-math/mental-math/shared/prepbot-teacher.css");
@@ -168,6 +168,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
     `<button class="mm-tv-btn mm-tv-btn--play" data-tv="play" type="button" aria-label="Play or pause" title="Play or pause (Space)" aria-keyshortcuts="Space"><span>${ICON_PAUSE}</span></button>` +
     `<button class="mm-tv-btn" data-tv="next" type="button" aria-label="Next step" title="Next step (Right arrow)" aria-keyshortcuts="ArrowRight">${ICON_NEXT}</button>` +
     `</div>` +
+    (onEdit ? `<button class="mm-tv-btn" data-tv="edit" type="button" aria-label="Edit this film" title="Edit this film">${UI.edit(22)}</button>` : "") +
     `<button class="mm-tv-btn" data-tv="save" type="button" aria-label="Download this explanation" title="Download this explanation (D)" aria-keyshortcuts="D">${UI.download(22)}</button>` +
     `<button class="mm-tv-btn" data-tv="full" type="button" aria-label="Fullscreen" title="Full screen (F)" aria-keyshortcuts="F">${ICON_FULLSCREEN}</button>` +
     `<button class="mm-tv-btn" data-tv="close" type="button" aria-label="Turn the TV off" title="Turn the TV off (Esc)" aria-keyshortcuts="Escape">${ICON_CLOSE}</button>` +
@@ -331,6 +332,9 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
   onTurn();
   window.addEventListener("pagehide", close);
 
+  let shut = () => {};
+  const done = new Promise((r) => { shut = r; });
+
   function close() {
     if (closed) return;
     closed = true;
@@ -343,6 +347,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
     window.removeEventListener("keydown", onKey, true);
     box.remove();
     if (open === api) open = null;
+    shut();
   }
   /* The keys are the set's own while it is up: caught before the page under it
      hears them (an opened workbook closes on Escape too). */
@@ -422,11 +427,16 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
     key.disabled = false;
   });
 
+  /* STRAIGHT FROM THE SET TO THE CUTTING ROOM. A film is judged watching it,
+     and the moment you see the line that is wrong is the moment to change it
+     (film-editor.js). Only the admin is ever handed an onEdit. */
+  q("edit")?.addEventListener("click", () => { close(); onEdit(); });
+
   q("full").addEventListener("click", () => { if (document.fullscreenElement) document.exitFullscreen?.(); else tv.requestFullscreen?.(); });
   box.addEventListener("click", (e) => { if (e.target === box) close(); });
   window.addEventListener("keydown", onKey, true);
 
-  const api = { close, go, get index() { return index; } };
+  const api = { close, go, done, get index() { return index; } };
   open = api;
 
   /* the curtain is drawn before anything is shown, and PrepBot pulls it open */

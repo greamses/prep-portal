@@ -1,0 +1,217 @@
+/* ── THE FILM EDITOR (film-editor.js) ──────────────────────────────────────
+   The cutting room, dressed as the rest of the bench is: paper, square
+   corners, sticky-note keys. The STAGE in the middle is the one thing here
+   that is not paper — it is the television's own screen, at the television's
+   own 16:9 and with the television's own ink, because a layout judged on a
+   different surface is judged wrong. */
+
+.fe {
+  position: fixed;
+  inset: 0;
+  z-index: 10090;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--bg, #faf7f1);
+  color: var(--text-primary, #2a2723);
+  font-family: var(--font-body, system-ui, sans-serif);
+}
+/* out of the way while the film is being watched on the real set */
+.fe.is-away { visibility: hidden; }
+
+/* ── the bar across the top ──────────────────────────────────────────── */
+.fe__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.5rem 0.8rem;
+  border-bottom: var(--border, 2px solid #2a2723);
+  background: var(--surface-primary, #fffdf8);
+}
+.fe__name { display: flex; align-items: baseline; gap: 0.5rem; min-width: 0; }
+.fe__title {
+  font: 800 1rem/1.2 var(--font-display, inherit);
+  width: min(42vw, 26rem);
+  padding: 0.25rem 0.4rem;
+  color: inherit;
+  background: var(--surface-secondary, #f4f0e8);
+  border: var(--border-subtle, 1px solid rgba(42, 39, 35, 0.12));
+  border-radius: 0;
+}
+.fe__id { font: 600 0.7rem/1 var(--font-mono, monospace); color: var(--text-secondary, #6b655c); }
+.fe__state { flex: 1 1 auto; font-size: 0.78rem; color: var(--text-secondary, #6b655c); }
+.fe__state.is-loud { color: var(--accent-danger, #c0453f); font-weight: 700; }
+.fe__keys { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.fe__keys .pp-btn, .fe__time-keys .pp-btn { font-size: 0.78rem; padding: 0.3rem 0.6rem; min-height: 0; }
+
+/* ── stage and inspector ─────────────────────────────────────────────── */
+.fe__work { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; min-height: 0; }
+.fe__left { display: flex; flex-direction: column; min-width: 0; padding: 0.7rem; gap: 0.6rem; }
+.fe__stagewrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+/* THE SCREEN. 16:9, as wide as the room allows and no taller than it. */
+.fe__stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: min(100%, calc((100cqh - 2rem) * 16 / 9));
+  max-width: 100%;
+  max-height: 100%;
+  background: #fffdf8;
+  border: var(--border, 2px solid #2a2723);
+  box-shadow: 0 2px 0 rgba(42, 39, 35, 0.18);
+  overflow: hidden;
+  touch-action: none;
+}
+.fe__stagewrap { container-type: size; }
+.fe__add { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.fe__add-say { font-size: 0.78rem; color: var(--text-secondary, #6b655c); }
+.fe__add .pp-btn { font-size: 0.78rem; padding: 0.3rem 0.6rem; min-height: 0; }
+
+/* a thing on the stage, in the cutting room only */
+.fe-el { cursor: grab; }
+.fe-el.is-ghost::after {
+  content: "";
+  position: absolute;
+  inset: -0.35rem;
+  border: 1px dashed rgba(42, 39, 35, 0.45);
+  pointer-events: none;
+}
+.fe-el.is-picked::after {
+  content: "";
+  position: absolute;
+  inset: -0.35rem;
+  border: 2px solid #d1495b;
+  pointer-events: none;
+}
+
+/* ── the inspector ───────────────────────────────────────────────────── */
+.fe__side {
+  border-left: var(--border, 2px solid #2a2723);
+  background: var(--surface-primary, #fffdf8);
+  padding: 0.7rem;
+  overflow: auto;
+}
+.fe-side__h { margin: 0 0 0.5rem; font: 800 0.95rem/1.2 var(--font-display, inherit); }
+.fe-side__say, .fe-side__tip { margin: 0 0 0.6rem; font-size: 0.75rem; line-height: 1.45; color: var(--text-secondary, #6b655c); }
+.fe-side__len { margin: -0.3rem 0 0.6rem; font: 700 0.72rem/1 var(--font-mono, monospace); color: var(--text-secondary, #6b655c); }
+.fe-side__keys { display: flex; gap: 0.4rem; margin-top: 0.8rem; }
+.fe-side__keys .pp-btn { font-size: 0.78rem; padding: 0.3rem 0.6rem; min-height: 0; }
+
+.fe-row { display: block; margin-bottom: 0.55rem; }
+.fe-row > span { display: block; margin-bottom: 0.15rem; font: 700 0.72rem/1.2 var(--font-body, inherit); color: var(--text-secondary, #6b655c); }
+.fe-row input, .fe-row select, .fe-row textarea {
+  width: 100%;
+  padding: 0.3rem 0.4rem;
+  font: 0.82rem/1.4 var(--font-body, inherit);
+  color: inherit;
+  background: var(--surface-secondary, #f4f0e8);
+  border: var(--border-subtle, 1px solid rgba(42, 39, 35, 0.12));
+  border-radius: 0;
+}
+.fe-row textarea { resize: vertical; }
+.fe-row input[type="color"] { padding: 0; height: 1.9rem; }
+.fe-row--pair { display: flex; gap: 0.4rem; }
+.fe-row--pair > label { flex: 1 1 0; }
+
+.fe-parts { margin-bottom: 0.6rem; }
+.fe-parts__h { display: block; margin-bottom: 0.25rem; font: 700 0.72rem/1.2 inherit; color: var(--text-secondary, #6b655c); }
+.fe-part { display: flex; gap: 0.25rem; margin-bottom: 0.25rem; min-width: 0; }
+.fe-part input, .fe-part select {
+  min-width: 0;
+  padding: 0.22rem 0.3rem;
+  font-size: 0.76rem;
+  background: var(--surface-secondary, #f4f0e8);
+  border: var(--border-subtle, 1px solid rgba(42, 39, 35, 0.12));
+  border-radius: 0;
+  color: inherit;
+}
+.fe-part input[data-pp="label"] { flex: 1 1 auto; }
+.fe-part input[type="number"] { width: 2.6rem; flex: 0 0 auto; }
+.fe-part select { flex: 0 1 5rem; min-width: 0; }
+.fe-part .pp-btn { padding: 0.1rem 0.4rem; min-height: 0; font-size: 0.8rem; }
+
+/* ── the timeline ────────────────────────────────────────────────────── */
+.fe__time {
+  border-top: var(--border, 2px solid #2a2723);
+  background: var(--surface-primary, #fffdf8);
+  padding: 0.5rem 0.7rem 0.7rem;
+  max-height: 34vh;
+  overflow: auto;
+}
+.fe__time-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
+.fe__time-head h2 { margin: 0; font: 800 0.85rem/1.2 var(--font-display, inherit); }
+.fe__time-keys { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+
+/* THE GRID IS NOT A WALL OF STICKY NOTES. Every button on this site wears
+   the note dress (buttons.css); at this density — a cell per thing per beat —
+   that is unreadable, so the cells opt out with .pp-plain and are drawn as
+   what they are: squares of a table. */
+.fe__grid { display: grid; gap: 2px; min-width: max-content; }
+/* A BEAT IS A COLUMN OF A FIXED WIDTH and the table scrolls sideways, rather
+   than eleven beats sharing the window between them. A timeline whose columns
+   change width as the film grows is one you cannot learn the shape of. */
+.fe-g__row { display: grid; grid-template-columns: 8rem repeat(var(--beats, 1), 7.5rem); gap: 2px; }
+.fe-g__row--head .fe-g__name, .fe-g__row--script .fe-g__name {
+  font: 700 0.7rem/1.9 var(--font-body, inherit);
+  color: var(--text-secondary, #6b655c);
+}
+.fe-g__name {
+  display: block;
+  padding: 0.25rem 0.4rem;
+  font: 700 0.74rem/1.3 var(--font-body, inherit);
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.fe-g__row.is-picked .fe-g__name { color: #d1495b; }
+
+.fe-g__beat, .fe-g__cell, .fe-g__line {
+  padding: 0.25rem 0.35rem;
+  font: 0.72rem/1.3 var(--font-body, inherit);
+  color: inherit;
+  background: var(--surface-secondary, #f4f0e8);
+  border: var(--border-subtle, 1px solid rgba(42, 39, 35, 0.12));
+  border-radius: 0;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+}
+.fe-g__beat { display: flex; align-items: baseline; gap: 0.3rem; justify-content: center; }
+.fe-g__beat b { font-size: 0.8rem; }
+.fe-g__beat em { font-style: normal; font-size: 0.66rem; color: var(--text-secondary, #6b655c); }
+.fe-g__beat.is-now, .fe-g__line.is-now { background: #fff3a8; border-color: #2a2723; }
+.fe-g__cell { min-height: 1.6rem; color: var(--text-secondary, #6b655c); }
+.fe-g__cell.has-act { background: #bfe3ff; color: #14130f; font-weight: 700; }
+.fe-g__line { white-space: nowrap; text-overflow: ellipsis; min-height: 2.2rem; }
+.fe-g__line em { color: var(--text-secondary, #6b655c); }
+.fe-g__empty { margin: 0.4rem 0; font-size: 0.78rem; color: var(--text-secondary, #6b655c); }
+
+/* ── the sheet that asks what a thing does on a beat ─────────────────── */
+.fe-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 10095;
+  display: grid;
+  place-items: center;
+  background: rgba(27, 23, 41, 0.45);
+}
+.fe-sheet__card { width: min(94vw, 23rem); }
+.fe-sheet__in { padding: 0.9rem; }
+.fe-sheet__in h2 { margin: 0 0 0.6rem; font: 800 0.9rem/1.2 var(--font-display, inherit); }
+.fe-sheet__keys { display: flex; gap: 0.4rem; margin-top: 0.7rem; }
+.fe-sheet__keys .pp-btn { font-size: 0.8rem; padding: 0.3rem 0.6rem; min-height: 0; }
+
+/* ── a narrow window: the inspector goes under the stage ─────────────── */
+@media (max-width: 860px) {
+  .fe__work { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .fe__side { border-left: 0; border-top: var(--border, 2px solid #2a2723); max-height: 40vh; }
+}

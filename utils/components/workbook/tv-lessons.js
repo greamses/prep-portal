@@ -331,21 +331,47 @@ const SCENES = {
 };
 let tvOpen = false;
 
+/**
+ * A FILM MAY BE WRITTEN DOWN RATHER THAN WRITTEN OUT.
+ *
+ * Every lesson here began as code. It can now also be a DOCUMENT, laid out in
+ * the film editor and kept in Firestore (./filmdoc.js, ./film-store.js), and
+ * when one exists it is what plays: the admin is served their own draft and
+ * everybody else what has been published. With no document, the coded film
+ * plays exactly as it always has — which is the only safe default, and means
+ * a film can be worked on for as long as it takes without the lesson going
+ * off the air.
+ */
+async function docFor(kind) {
+  try {
+    const { filmToPlay } = await import("./film-store.js");
+    return await filmToPlay(kind);
+  } catch { return null; }
+}
+
 /** Play a lesson by name, with or without a strip to light up while it runs. */
 export async function playLesson(kind, title = "", strip = null) {
   if (tvOpen) return;
-  const made = (SCENES[kind] || ratioScene)();
+  const coded = (SCENES[kind] || ratioScene)();
+  const saved = await docFor(kind);
+  let made = coded;
+  if (saved) {
+    const { playable } = await import("./filmdoc.js");
+    const film = playable(saved.doc, title);
+    made = { build: film.build, steps: film.steps };
+    if (film.title) title = film.title;
+  }
   /* the stage is measured in hundredths of its own width, so --u is set when
      it is built and again whenever the window changes shape */
   const sized = (stage) => {
     made.build(stage);
-    stage.querySelector(".vm-tv").style.setProperty("--u", `${stage.clientWidth / 100}px`);
+    stage.querySelector(".vm-tv")?.style.setProperty("--u", `${stage.clientWidth / 100}px`);
   };
   tvOpen = true;
   strip?.classList.add("is-playing");
   try {
     const { openTv } = await import("/prep-math/mental-math/shared/prepbot-tv.js");
-    await openTv({ title, build: sized, steps: made.steps });
+    await openTv({ title, build: sized, steps: made.steps, onEdit: await editorFor(kind, title, coded) });
     const refit = () => {
       const st = document.querySelector(".mm-tv-overlay [data-tv='stage'] .vm-tv");
       if (st) st.style.setProperty("--u", `${st.parentElement.clientWidth / 100}px`);
@@ -366,6 +392,42 @@ export async function playLesson(kind, title = "", strip = null) {
     strip?.classList.remove("is-playing");
     console.error("PrepBot's TV could not be opened", err);
   }
+}
+
+/**
+ * THE KEY THAT OPENS THE CUTTING ROOM, and only for the one account that may
+ * use it. Everybody else is handed nothing, so the set has no such button and
+ * the editor is never even fetched.
+ */
+async function editorFor(kind, title, coded) {
+  try {
+    const { isFilmAdmin } = await import("./film-store.js");
+    if (!(await isFilmAdmin())) return null;
+  } catch { return null; }
+  return async () => {
+    const { openFilmEditor } = await import("./film-editor.js");
+    await openFilmEditor({
+      id: kind,
+      title,
+      coded: coded.steps,
+      /* WATCH IT is the real television, the real voice and the real 16:9 —
+         the only honest way to judge words that are going to be read aloud */
+      onPlay: async (doc) => {
+        const { playable } = await import("./filmdoc.js");
+        const { openTv } = await import("/prep-math/mental-math/shared/prepbot-tv.js");
+        const film = playable(doc, title);
+        const set = await openTv({
+          title: film.title || title,
+          build: (stage) => {
+            film.build(stage);
+            stage.querySelector(".vm-tv")?.style.setProperty("--u", `${stage.clientWidth / 100}px`);
+          },
+          steps: film.steps,
+        });
+        await set.done;
+      },
+    });
+  };
 }
 
 if (typeof document !== "undefined" && !document.__tvLessons) {
