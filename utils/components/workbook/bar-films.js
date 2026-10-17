@@ -434,14 +434,15 @@ export function barMissing() {
 
       push("Second gap, and it is the one people reach for the wrong operation on. Same baker, next day. "
         + "Now the WHOLE is known — sixty-two on the brace — and one of the PARTS is the question mark. "
-        + "Look at the shape of it before you do anything: the box we want is the bit of the bar that the "
+        + "Take in the shape of it before you do a thing: the box we want is the stretch of bar that the "
         + "thirty-five does not cover.",
         { on: ["a2", "m2", "g2"], off: ["a1", "m1", "s1"], add: ["m2.draw"],
           look: look.mark("m2", "num", 1), lookAt: { delay: 1.8, hold: 2.2, to: 1.45 } });
 
       push(`And that is a take-away, every time. The whole, less the part you know: ${W} take away ${P1} `
-        + `is ${P2} pies, and into the box it goes. If you ever catch yourself adding here, look at the `
-        + "picture again — you cannot have a part bigger than the whole it came out of.",
+        + `is ${P2} pies, and into the box it goes. Now, plenty of people add at this point, out of habit `
+        + `— so train yourself to glance at the picture first. A part that is bigger than its own whole is `
+        + `a drawing that cannot exist, and you will see that long before you could prove it.`,
         { on: ["s2"], add: ["m2.ans"] });
 
       push("Third gap, and the last one. A rope, four hundred and fifty centimetres of it, cut into three "
@@ -452,7 +453,7 @@ export function barMissing() {
 
       push("Four hundred and fifty. Start with hundreds: one into each box. That is three hundred gone and "
         + "a hundred and fifty still in my hand — and I cannot put that fourth hundred anywhere, because "
-        + "one hundred will not go three ways.",
+        + "you cannot cut a hundred into three without breaking it up first.",
         { add: ["m3.pour"] });
 
       push("So UNGROUP it. One hundred is ten tens — the same amount, written in smaller pieces — and now "
@@ -607,7 +608,7 @@ export function barMoney() {
       push("Money questions are bar questions wearing a wallet, and they are the best ones to draw, "
         + "because at the end you can count the answer out and hold it in your hand. Read what we are "
         + "answering first: three sisters, seven hundred and fifty prepbills between them, shared EQUALLY. "
-        + "Equally is the word that tells me what to draw — three boxes, all the same size, and a brace "
+        + "Equally is the word that tells me what to draw — three boxes of one size, and a brace "
         + "underneath saying the whole lot comes to seven hundred and fifty.",
         { on: ["a1", "e1"], add: ["e1.bars"] });
 
@@ -671,7 +672,7 @@ export function barMoney() {
       push(`Count it out, because with money you always can. Kate: three hundreds, three hundred. Rosa: `
         + `three hundreds and the two hundred as well, so five hundred. Now check it twice. Together they `
         + `make ${T2}, which is what was on the table. And Rosa has ${MORE} more than Kate, which is what `
-        + "the question said. Both true, so it is right.",
+        + "the question said. Two things true at once, which is as sure as arithmetic gets.",
         { on: ["w7"], add: ["e2.filled"] });
 
       push("So, money. Draw the bars the way the story tells you, smaller one first. If one person gets "
@@ -813,7 +814,7 @@ export function barFractions() {
       push(`So find one part first — always, in every fraction question you will ever meet. Twenty sweets `
         + `shared into four equal parts: five in each. So each piece of this bar is worth five, and I write `
         + `the five in EVERY box, not just the shaded ones. Why every one? Because they are all the same `
-        + `size, that is the whole point of cutting equally, and a child who writes it in only the shaded `
+        + `size — that is the whole point of cutting equally — and a child who writes it in only the shaded `
         + `ones has started thinking of them as different pieces again.`,
         { on: ["f3", "d3"], off: ["f2"], add: ["f3.each"],
           look: look.tile("d3"), lookAt: { delay: 1.8, hold: 2.0, to: 1.3 } });

@@ -293,6 +293,99 @@
 .mm-tv-btn[data-tv="close"] svg { width: 16px; height: 16px; }
 @media print { .mm-tv-overlay { display: none !important; } }
 
+/* ── held upright: the set is put away and this stands in its place ────────
+   A 16:9 stage inside the width of an upright phone is 16:9 of very little.
+   Rather than play a lesson nobody can read, the TV asks to be turned. */
+.mm-tv-turn { display: none; }
+.mm-tv-overlay.mm-tv-sideways .mm-tv-turn {
+  /* ITS OWN GROUND. The overlay dims the page behind it, which is enough for
+     a television but not for a line of words: white text over a dimmed
+     workbook is a line you have to work at. */
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--bg);
+  background: rgba(20, 19, 15, 0.94);
+}
+.mm-tv-overlay.mm-tv-sideways .mm-tv-col { display: none; }
+.mm-tv-turn__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 22rem;
+  font-family: var(--font-mono, monospace);
+}
+.mm-tv-turn__card svg { width: 54px; height: 54px; animation: mm-tv-tilt 1.9s ease-in-out infinite; }
+.mm-tv-turn__card p { margin: 0; font-size: 1rem; font-weight: 800; letter-spacing: 0.02em; }
+.mm-tv-turn__card span { font-size: 0.8rem; line-height: 1.45; opacity: 0.85; }
+@keyframes mm-tv-tilt {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(80deg); }
+}
+
+/* ── like, share, subscribe: the three, each arriving on its own ──────────*/
+.mm-tv-asks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6em 1.5em;
+  margin: 1em 0 0;
+  padding: 0;
+  list-style: none;
+}
+.mm-tv-ask {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: clamp(0.62rem, 1.9vw, 0.92rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  animation: mm-tv-ask-in 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.mm-tv-ask__mark {
+  display: grid;
+  place-items: center;
+  width: 1.9em;
+  height: 1.9em;
+  background: var(--surface-secondary, #f3efe6);
+}
+.mm-tv-ask__mark svg { width: 1.15em; height: 1.15em; display: block; }
+/* each one does its own small thing once it is there, so the three read as
+   three separate asks rather than one row of pictures */
+.mm-tv-ask--like .mm-tv-ask__mark { animation: mm-tv-beat 1.6s ease-in-out 1.3s infinite; }
+.mm-tv-ask--share .mm-tv-ask__mark { animation: mm-tv-nudge 1.9s ease-in-out 1.6s infinite; }
+.mm-tv-ask--sub .mm-tv-ask__mark { animation: mm-tv-ring 2.2s ease-in-out 1.9s infinite; }
+@keyframes mm-tv-ask-in {
+  from { opacity: 0; transform: translateY(0.7em) scale(0.6); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes mm-tv-beat {
+  0%, 62%, 100% { transform: scale(1); }
+  70% { transform: scale(1.22); }
+  80% { transform: scale(1.06); }
+  88% { transform: scale(1.16); }
+}
+@keyframes mm-tv-nudge {
+  0%, 60%, 100% { transform: translate(0, 0); }
+  72% { transform: translate(0.22em, -0.18em); }
+  84% { transform: translate(0, 0); }
+}
+@keyframes mm-tv-ring {
+  0%, 55%, 100% { transform: rotate(0); }
+  63% { transform: rotate(-14deg); }
+  71% { transform: rotate(12deg); }
+  79% { transform: rotate(-7deg); }
+  87% { transform: rotate(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mm-tv-ask__mark, .mm-tv-turn__card svg { animation: none !important; }
+}
+
 /* ── how every lesson ends (openTv's outroStep) ─────────────────────────────
    The last step of every film: where to go and do it yourself. It covers the
    stage rather than sitting among the scene's tiles, because the lesson is

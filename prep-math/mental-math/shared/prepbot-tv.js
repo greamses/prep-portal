@@ -27,6 +27,8 @@
 
 import { PrepbotTeacher } from "./prepbot-teacher.js";
 import { ICON_PREPBOT } from "./icons.js";
+/* the same mark the games ask to be turned sideways with */
+import { SVG_ROTATE } from "/utils/components/game-viewport.js";
 import { ICON_PLAY, ICON_PAUSE, ICON_PREV, ICON_NEXT, ICON_FULLSCREEN, ICON_CLOSE } from "./icons.js";
 import { UI } from "/utils/components/ui-icons.js";
 
@@ -61,14 +63,27 @@ const outroStep = () => ({
     + `you know that. So go to ${SITE} and have a go yourself. There are more of these lessons `
     + "there, and the exercises that go with every one of them, so you can practise this until it "
     + "is the easy bit. That is how it stops being something you watched and starts being "
-    + "something you can do.",
+    + "something you can do. And if this one helped: like it, share it with somebody in your "
+    + "class who is stuck on the same thing, and subscribe so the next lesson finds you.",
   show(stage) {
     /* the stage is rebuilt for every step, so this simply adds itself again */
     const card = document.createElement("div");
     card.className = "mm-tv-outro";
     card.innerHTML = `<p class="mm-tv-outro__lead">Practise this yourself at</p>`
       + `<p class="mm-tv-outro__url">${SITE}</p>`
-      + `<p class="mm-tv-outro__foot">More lessons, and the exercises to go with them</p>`;
+      + `<p class="mm-tv-outro__foot">More lessons, and the exercises to go with them</p>`
+      /* THE THREE, each arriving on its own. They are asked for out loud in
+         the words above, so they are on the screen to be read as well as
+         heard — and a child who is going to do one of them is deciding
+         while this card is up. */
+      + `<ul class="mm-tv-asks">`
+      /* the icons are drawn to a size, like every other one on the site */
+      + [["like", UI.heartFill(22), "Like it"], ["share", UI.share(22), "Share it"],
+        ["sub", UI.starOn(22), "Subscribe"]]
+        .map(([k, icon, word], i) => `<li class="mm-tv-ask mm-tv-ask--${k}"`
+          + ` style="animation-delay:${(0.5 + i * 0.45).toFixed(2)}s">`
+          + `<span class="mm-tv-ask__mark">${icon}</span><span>${word}</span></li>`).join("")
+      + `</ul>`;
     stage.appendChild(card);
   },
 });
@@ -118,7 +133,20 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
 
   const box = document.createElement("div");
   box.className = "mm-tv-overlay";
-  box.innerHTML =
+  /* A FILM IS 16:9 AND IT IS WATCHED SIDEWAYS.
+     Asked for in as many words: *"Videos should not be watch is portrait
+     mode, users must rotate screen to watch videos, also stick with 16:9."*
+     Squeezed into the width of an upright phone the stage is 16:9 of very
+     little — the bars come out a few millimetres deep and the working beside
+     them is unreadable, which is worse than not playing at all. So in
+     portrait the set is put away and this stands in its place, and the
+     lesson is paused rather than talking to nobody. */
+  const turnCard = `<div class="mm-tv-turn" data-tv="turn">`
+    + `<div class="mm-tv-turn__card">${SVG_ROTATE}`
+    + `<p>Turn your phone sideways</p>`
+    + `<span>These lessons play in landscape, so that the drawing is big enough to read</span>`
+    + `</div></div>`;
+  box.innerHTML = turnCard +
     `<div class="mm-tv-col" role="dialog" aria-modal="true" aria-label="${title.replace(/"/g, "&quot;")}">` +
     `<div class="mm-tv">` +
     `<div class="mm-tv-screen">` +
@@ -241,6 +269,31 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
     }
   };
   document.addEventListener("visibilitychange", onVisible);
+
+  /* Turned upright mid-lesson, it stops where it is; turned back, it takes
+     that step up again from the start — the same manners as leaving the page
+     and coming back to it. */
+  const upright = window.matchMedia("(orientation: portrait) and (max-width: 900px)");
+  let turnedPlaying = false;
+  const onTurn = () => {
+    if (closed) return;
+    const wrong = upright.matches;
+    box.classList.toggle("mm-tv-sideways", wrong);
+    if (wrong) {
+      turnedPlaying = playing && index >= 0;
+      playing = false;
+      token++;
+      teacher.stop();
+      teacher.stopIdle();
+      paintControls();
+    } else if (turnedPlaying) {
+      turnedPlaying = false;
+      playing = true;
+      go(index);
+    }
+  };
+  upright.addEventListener?.("change", onTurn);
+  onTurn();
   window.addEventListener("pagehide", close);
 
   function close() {
@@ -249,6 +302,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
     token++;
     teacher.destroy();
     document.removeEventListener("visibilitychange", onVisible);
+    upright.removeEventListener?.("change", onTurn);
     window.removeEventListener("pagehide", close);
     if (document.fullscreenElement === tv) document.exitFullscreen?.();
     window.removeEventListener("keydown", onKey, true);

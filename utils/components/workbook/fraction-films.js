@@ -181,7 +181,7 @@ export function fracLike() {
         { on: ["p2"], off: ["p1"], add: ["p2.more"] });
 
       push("Now count every part that is coloured, green and blue together. One, two, three, four, five. Five "
-        + "parts out of eight: five eighths. And they are all the same size — a green part is exactly an eighth, "
+        + "parts out of eight: five eighths. And every one of them is the same width — a green part is exactly an eighth, "
         + "the same as a blue one — so I can let them all go back to one colour. Nothing was clever there. You "
         + "counted.",
         { on: ["p3", "n3", "w2"], off: ["p2", "n1"], add: ["p3.one"] });
@@ -385,7 +385,7 @@ export function fracUnlike() {
 
       push("So we do the thing from the last film. Cut both bars until their parts match. Halves cut into three "
         + "are sixths; thirds cut into two are sixths. The orange lines are the cuts I am making — and watch the "
-        + "colour on both bars, which does not move, because cutting never changes how much there is.",
+        + "colour on both bars, which does not shift an inch, because cutting only renames what is there.",
         { on: ["cc", "n3", "n4", "w2", "w3"], off: ["uu", "n1", "n2"], add: ["cc.cut"] });
 
       push("Now every part on the top bar is exactly the size of every part on the bottom one, and THAT is what "
@@ -511,7 +511,7 @@ export function fracMixed() {
         + "travel.",
         { on: ["hc", "n3", "n4"], off: ["hh", "n1", "n2"], add: ["hc.cut"] });
 
-      push("Watch the two green sixths come up onto the first bar and fill the empty parts. One, and two. Count "
+      push("Watch the two green sixths travel up and settle into the gaps on the first bar. There, and there. Count "
         + "the top bar now: five sixths of a kilometre. On top of the three whole kilometres we already had, so "
         + "Rosa has walked three and five sixths kilometres. Put the two halves of the answer together at the "
         + "very end, never in the middle.",

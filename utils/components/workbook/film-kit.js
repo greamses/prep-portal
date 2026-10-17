@@ -305,6 +305,14 @@ export function hand(gsap, instant) {
       away: (nodes) => [...(nodes || [])].forEach((n) => n.remove()),
       score: on,
       wipe: (n, to) => { if (n) n.setAttribute("fill", to); },
+      cross: (n, ink) => {
+        if (!n) return;
+        n.style.opacity = "1";
+        n.style.backgroundImage = `linear-gradient(${ink}, ${ink})`;
+        n.style.backgroundRepeat = "no-repeat";
+        n.style.backgroundPosition = "0 54%";
+        n.style.backgroundSize = "100% 0.11em";
+      },
       underline: (n, ink) => {
         if (!n) return;
         n.style.opacity = "1";
@@ -345,6 +353,26 @@ export function hand(gsap, instant) {
       const { line, len } = knife(svg, x, y, h);
       gsap.fromTo(line, { strokeDasharray: len, strokeDashoffset: len },
         { strokeDashoffset: 0, duration: 0.45, delay, ease: "power2.in" });
+    },
+    /**
+     * A WORD STRUCK OUT WHERE IT STANDS, with the line drawn through it.
+     *
+     * The test for a word you have worked out is to put your meaning INTO
+     * the sentence and read it again, and that is a thing you do on the
+     * page: the old word crossed out, the new one written over the top. A
+     * mark that is drawn rather than simply applied also takes the time the
+     * child needs to see which word is going.
+     */
+    cross(n, ink, delay = 0, dur = 0.45) {
+      if (!n) return;
+      n.style.opacity = "1";
+      n.style.backgroundImage = `linear-gradient(${ink}, ${ink})`;
+      n.style.backgroundRepeat = "no-repeat";
+      n.style.backgroundPosition = "0 54%";
+      n.style.webkitBoxDecorationBreak = "clone";
+      n.style.boxDecorationBreak = "clone";
+      gsap.fromTo(n, { backgroundSize: "0% 0.11em" },
+        { backgroundSize: "100% 0.11em", duration: dur, delay, ease: "power2.in" });
     },
     /**
      * A PHRASE UNDERLINED, IN A COLOUR OF ITS OWN, AND IT STAYS.
