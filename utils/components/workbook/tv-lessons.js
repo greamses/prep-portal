@@ -33,6 +33,7 @@ import { placeFill, worthOf } from "./shift.js";
    disagree about what one looks like (ch 9, and its brace rule) */
 import { barSetup, barParts, barMissing, barMoney, barFractions } from "./bar-films.js";
 import { fracLike, fracEqual, fracUnlike, fracMixed } from "./fraction-films.js";
+import { ctxInference, ctxDefinition, ctxExample, ctxAntonym, ctxSynonym } from "./context-films.js";
 
 /* The strip's dress. A page that is not a workbook does not link video.css,
    and an unstyled strip is not merely plain — it is invisible, which is how
@@ -320,6 +321,13 @@ const SCENES = {
   "frac-equal": fracEqual,
   "frac-unlike": fracUnlike,
   "frac-mixed": fracMixed,
+  /* and English: the five ways a sentence tells you what a word means
+     (./context-films.js, chapter 2 of the Comprehension Workbook) */
+  "ctx-inference": ctxInference,
+  "ctx-definition": ctxDefinition,
+  "ctx-example": ctxExample,
+  "ctx-antonym": ctxAntonym,
+  "ctx-synonym": ctxSynonym,
 };
 let tvOpen = false;
 

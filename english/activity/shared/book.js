@@ -86,11 +86,17 @@ export function mountEnglishBook({
       if (ex.minLevel === "stretch" && o.level !== "stretch") return "needs Stretch";
       return null;
     },
-    /* the fading scaffold: a worked example at the top of a section, until the
-       learner turns it off */
+    /* What opens a section: PrepBot's film, where the section has one, and
+       the worked example until the learner turns it off.
+       THE FILM PRINTS AT EVERY LEVEL OF HELP. It is not a scaffold to be
+       faded — it is the lesson, and a child who has turned the examples off
+       because they no longer need them has not stopped needing to be taught
+       something new. (The maths workbooks do the same: see their
+       subject.js.) */
     sectionHead: (section, o) => {
-      if (helpOf(o).id !== "show" || !section.ex.worked) return "";
-      return section.ex.worked(section.opts);
+      const video = section.ex.video ? section.ex.video(section.opts) : "";
+      if (helpOf(o).id !== "show" || !section.ex.worked) return video;
+      return video + section.ex.worked(section.opts);
     },
   };
 

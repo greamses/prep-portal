@@ -579,6 +579,10 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
     mark: (id, kind, i = 0, row = null) => (stage) => mb(svgOf(stage, id), kind, row)[i],
     brace: (id, key) => (stage) => braceOf(svgOf(stage, id), key),
     tile: (id) => (stage) => stage.querySelector(`[data-t="${id}"]`)?.firstChild,
+    /* ONE MARKED PIECE OF A LINE: the word a sentence is about, or the words
+       that give its meaning away. A film made of sentences points at a
+       phrase the way a film made of bars points at a bar. */
+    said: (id, k) => (stage) => stage.querySelector(`[data-t="${id}"] [data-k="${k}"]`),
     bit: (id, i) => (stage) => bits(stage, id)[i],
   };
 
@@ -608,13 +612,14 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
       const at = trayAt[id] || {};
       art(stage, id, at.x ?? 30, down(at.y ?? 27), at.w ?? 46, trays[id]());
     });
-    asks.forEach((a) => asked(stage, a.id, a.text));
+    asks.forEach((a) => asked(stage, a.id, a.text, !!a.html));
     /* THE WORKING STANDS IN A COLUMN OF ITS OWN, clear of the drawing.
        Centred tiles grew towards the picture as their text got longer, so a
        line nobody had measured ended up written across the bars. The column
        is anchored by its LEFT edge at SIDE_X and given a width to wrap in,
        which is a thing a teacher's board has and a stage had not. */
-    lines.forEach((l) => side(stage, l.id, l.text, l.x ?? SIDE_X, l.y, l.c ?? 0, l.size ?? 2.5));
+    lines.forEach((l) => side(stage, l.id, l.text, l.x ?? SIDE_X, l.y, l.c ?? 0, l.size ?? 2.5,
+      { w: l.w ?? SIDE_W, html: !!l.html }));
     if (extra) extra(stage);
   };
 
@@ -688,8 +693,12 @@ export /**
  * fraction — so the words are escaped first and the fractions built after,
  * which is the only order that is safe.
  */
-const says = (box, text) => {
-  const html = stackText(esc(String(text)));
+const says = (box, text, raw = false) => {
+  /* `raw` is for a line that is already MARKUP — a sentence with the word it
+     is about picked out of it, and the words that give its meaning away in a
+     span of their own, so a film can light them where they stand. The film
+     that passes it is the one responsible for what is in it. */
+  const html = stackText(raw ? String(text) : esc(String(text)));
   box.firstChild.innerHTML = html;
   /* a line holding a two-storey fraction needs the room for it, or the line
      above comes down on top of the numerator */
@@ -697,7 +706,7 @@ const says = (box, text) => {
   return box;
 };
 
-export function asked(stage, id, text) {
+export function asked(stage, id, text, raw = false) {
   /* clear of the step counter in the top corner, and narrower than the
      screen: a line of words running the full width of a television is a line
      nobody finishes reading */
@@ -706,7 +715,7 @@ export function asked(stage, id, text) {
   box.style.setProperty("--w", "74");
   box.firstChild.style.setProperty("font-size", "calc(var(--u) * 2)");
   box.firstChild.style.setProperty("font-weight", "700");
-  return says(box, text);
+  return says(box, text, raw);
 }
 
 /**
@@ -716,12 +725,14 @@ export function asked(stage, id, text) {
  * own and wrong for a sentence — a centred sentence grows both ways, and the
  * way it grows is into the picture.
  */
-export function side(stage, id, text, x, y, c, sizeU) {
+export function side(stage, id, text, x, y, c, sizeU, { w = SIDE_W, html = false } = {}) {
   const box = tile(stage, id, String(text), x, down(y), { c });
   box.classList.add("vm-t--left", "vm-t--wrap");
-  box.style.setProperty("--w", `${SIDE_W}`);
+  /* a line of working is 36 units wide; a SENTENCE being read is as wide as
+     the film gives it, which is most of the screen */
+  box.style.setProperty("--w", `${w}`);
   box.firstChild.style.setProperty("font-size", `calc(var(--u) * ${sizeU})`);
-  return says(box, text);
+  return says(box, text, html);
 }
 
 /**

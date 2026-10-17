@@ -20,7 +20,14 @@ mountEnglishBook({
   chapters: CHAPTERS,
   chapterOf,
   icons: ICON,
-  glyphs: { "cm-read": ICON["cm-read"] },
+  glyphs: {
+    "cm-read": ICON["cm-read"],
+    "cm-ctx-i": ICON["cm-ctx-i"],
+    "cm-ctx-d": ICON["cm-ctx-d"],
+    "cm-ctx-e": ICON["cm-ctx-e"],
+    "cm-ctx-a": ICON["cm-ctx-a"],
+    "cm-ctx-s": ICON["cm-ctx-s"],
+  },
   /* a first visit starts at the beginning */
   starter: { "cm-read-passage": 1 },
 });

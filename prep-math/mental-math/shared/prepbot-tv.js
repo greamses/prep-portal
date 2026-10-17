@@ -86,6 +86,8 @@ const outroStep = () => ({
  * six times nor be missing from the seventh.
  */
 const introStep = (title) => ({
+  /* it opens the film and is gone: not replayed under the steps after it */
+  once: true,
   say: `Learning with PrepBot.${title ? ` Today: ${title}.` : ""} Have something to write with `
     + "next to you, because the bit at the end is for you to do.",
   show(stage) {
@@ -189,7 +191,14 @@ export async function openTv({ title = "", build = () => {}, steps: told = [] } 
     index = Math.max(0, Math.min(steps.length - 1, i));
     stage.innerHTML = "";
     build(stage);
-    for (let k = 0; k < index; k++) steps[k].show?.(stage, { gsap, instant: true });
+    /* A STEP MARKED `once` IS NOT REPLAYED. Every step rebuilds the screen by
+       running the ones before it instantly, which is right for a drawing that
+       is added to — a bar, then its number, then its brace. A title card is
+       not that: it is a picture that belongs to its own step, and replayed
+       it lands on top of every step after it and hides the lesson. */
+    for (let k = 0; k < index; k++) {
+      if (!steps[k].once) steps[k].show?.(stage, { gsap, instant: true });
+    }
     steps[index].show?.(stage, { gsap, instant: !gsap });
     paintControls();
     teacher.show();
