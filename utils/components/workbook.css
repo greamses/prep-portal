@@ -2965,11 +2965,13 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
    A shape with boxes to type in, and pins with the site's own sticky notes
    hanging off them. The notes are PAINTED on a sheet above the shape and take
    no clicks: the pin is the handle, which is the whole point of pinning. */
+/* THE HOUSE FACES. JetBrains for the writing, the display face for a
+   heading — the same two the paper, the films and the bench are set in. */
 .og { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.6rem; box-sizing: border-box; }
 .og__top { display: flex; align-items: flex-start; gap: 0.6rem; flex-wrap: wrap; }
-.og__say { flex: 1 1 14rem; margin: 0; font: 7.8pt/1.5 var(--font-body, system-ui, sans-serif); color: #6f685f; }
+.og__say { flex: 1 1 14rem; margin: 0; font: 7.8pt/1.5 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); color: #6f685f; }
 .og__keys { display: flex; gap: 0.3rem; }
-.og__key { padding: 0.9mm 1.6mm; min-height: 0; font: 700 7.8pt/1 var(--font-body, system-ui, sans-serif); line-height: 0; }
+.og__key { padding: 0.9mm 1.6mm; min-height: 0; font: 700 7.8pt/1 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); line-height: 0; }
 .og__key svg { display: block; }
 
 .og__sheet { position: relative; width: 100%; aspect-ratio: 3 / 2; background: #fffdf8; border: 0.3mm solid #8a837a; }
@@ -2982,14 +2984,19 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .og__field { position: absolute; display: flex; flex-direction: column; pointer-events: auto; }
 .og__field.is-mid { text-align: center; }
 .og__head {
-  font: 700 6.6pt/1.2 var(--font-body, system-ui, sans-serif);
+  font: 700 6.6pt/1.2 var(--font-display, var(--font-mono, "JetBrains Mono", ui-monospace, monospace));
   color: #6f685f; margin-bottom: 0.3mm;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  /* A HEADING MAY TURN A LINE. Cut off with an ellipsis, "Build-up — what
+     starts to go…" stops saying the thing it is there to say, and the
+     narrow fields are exactly the ones whose headings are longest. */
+  overflow: hidden;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 .og__field textarea {
   flex: 1 1 auto; min-height: 0; width: 100%; box-sizing: border-box;
   padding: 0.6mm 1mm; resize: none;
-  font: 8.6pt/1.35 var(--font-body, system-ui, sans-serif); color: #2a2723;
+  font: 8.6pt/1.45 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); color: #2a2723;
   /* the shape shows through: a pale pane over every region turns a drawing
      into a form, which is the thing these are not */
   background: none;
@@ -3025,7 +3032,7 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .lm-svg { display: block; width: 100%; height: auto; touch-action: none; user-select: none; -webkit-user-select: none; }
 .lm-mark circle, .lm-jump path { cursor: grab; }
 .lm-mark text, .lm-jump text { cursor: text; }
-.lm-hint { margin: 1mm 0 0; font: 7.5pt/1.4 var(--font-body, system-ui, sans-serif); color: #6f685f; }
+.lm-hint { margin: 1mm 0 0; font: 7.5pt/1.4 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); color: #6f685f; }
 .lm-hint.is-loud { color: #c0453f; font-weight: 700; }
 
 /* laid out against the WINDOW, so the box it lives in cannot cut it off */
@@ -3036,9 +3043,9 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .lm-chip { width: 100%; aspect-ratio: 1; padding: 0; border: 0.4mm solid rgba(42, 39, 35, 0.3); border-radius: 0; cursor: pointer; }
 .lm-chip:hover { border-color: #2a2723; transform: scale(1.08); }
 .lm-range { display: grid; gap: 1.4mm; padding: 2.4mm; }
-.lm-range label { display: flex; align-items: center; gap: 1.6mm; font: 700 8pt/1.2 var(--font-body, system-ui, sans-serif); }
+.lm-range label { display: flex; align-items: center; gap: 1.6mm; font: 700 8pt/1.2 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); }
 .lm-range span { flex: 0 0 22mm; color: #6f685f; }
-.lm-range__say { margin: 0.4mm 0 0; font: 7.5pt/1.45 var(--font-body, system-ui, sans-serif); color: #6f685f; }
+.lm-range__say { margin: 0.4mm 0 0; font: 7.5pt/1.45 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); color: #6f685f; }
 .lm-range input.is-wrong { border-color: #c0453f; background: #ffeceb; }
 .lm-range input {
   flex: 1 1 auto; min-width: 0; padding: 0.8mm 1.2mm;

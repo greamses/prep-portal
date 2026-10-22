@@ -63,23 +63,72 @@ const ring = (cx, cy, r, i, n) => {
    Every field is placed in PERCENTAGES of the sheet, so one organiser is one
    drawing at any size — on a phone, in a panel, on a board at the front. */
 
+/* A sesame seed, scattered across the crown of the bun. They are drawn at an
+   angle each, because a seed that is level is a seed somebody drew. */
+const seed = (x, y, a) =>
+  `<ellipse cx="${x}" cy="${y}" rx="1.5" ry="0.72" fill="#fdf0d2" stroke="#d8b878"`
+  + ` stroke-width="0.18" transform="rotate(${a} ${x} ${y})"/>`;
+
+/** A ruffled edge — lettuce, and the lick of melted cheese. */
+function ruffle(y, amp, n, from = 4, to = 96) {
+  let d = `M${from} ${y}`;
+  const w = (to - from) / n;
+  for (let i = 0; i < n; i++) {
+    const x = from + w * i;
+    d += ` q${(w / 4).toFixed(2)} ${amp} ${(w / 2).toFixed(2)} 0 q${(w / 4).toFixed(2)} ${-amp} ${(w / 2).toFixed(2)} 0`;
+  }
+  return d;
+}
+
 const BURGER = {
   label: "Paragraph burger",
   say: "A paragraph has a top, a filling and a bottom. Build it before you write it.",
   art: () => `
-    <path d="M6 20C6 11 22 6 50 6s44 5 44 14v3H6z" fill="#e8b96a" stroke="${INK}" stroke-width="1"/>
-    <path d="M14 13.5c1.6-1.2 3.2-1.2 4.8 0M30 10.5c1.6-1.2 3.2-1.2 4.8 0M52 9.6c1.6-1.2 3.2-1.2 4.8 0M72 11.4c1.6-1.2 3.2-1.2 4.8 0"
-          fill="none" stroke="#c99a46" stroke-width="1.1" stroke-linecap="round"/>
-    <rect x="5" y="25" width="90" height="15" fill="#8fc96b" stroke="${INK}" stroke-width="1"/>
-    <rect x="6" y="42" width="88" height="15" fill="#e2706a" stroke="${INK}" stroke-width="1"/>
-    <rect x="5" y="59" width="90" height="15" fill="#f6d35a" stroke="${INK}" stroke-width="1"/>
-    <path d="M6 78h88v10c0 4-3 6-8 6H14c-5 0-8-2-8-6z" fill="#e0ae5d" stroke="${INK}" stroke-width="1"/>`,
+    <defs>
+      <linearGradient id="og-bunTop" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#f0c988"/><stop offset="0.55" stop-color="#dfa85f"/>
+        <stop offset="1" stop-color="#cf9348"/>
+      </linearGradient>
+      <linearGradient id="og-bunLow" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#d79f55"/><stop offset="1" stop-color="#c0863c"/>
+      </linearGradient>
+      <linearGradient id="og-meat" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#8d5733"/><stop offset="1" stop-color="#6d3f24"/>
+      </linearGradient>
+    </defs>
+
+    <!-- the crown: domed, with the shine a baked crust has -->
+    <path d="M5 23.5C5 11.5 22 4.5 50 4.5s45 7 45 19v1.5H5z" fill="url(#og-bunTop)"
+          stroke="${INK}" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M12 17c6-6 20-9.5 33-9.6" fill="none" stroke="#fae3bb" stroke-width="1.6"
+          stroke-linecap="round" opacity="0.65"/>
+    ${[[23, 15, -16], [36, 11.5, 9], [50, 10.2, -5], [64, 11.8, 14], [77, 15.6, -10],
+       [30, 19, 6], [58, 18, -12], [71, 20.4, 8], [44, 16.6, 3]].map(([x, y, a]) => seed(x, y, a)).join("")}
+
+    <!-- lettuce: a band with a ruffled hem -->
+    <path d="${ruffle(26, 3.4, 7)} L96 38 L4 38Z" fill="#9ed06f" stroke="${INK}" stroke-width="0.9"/>
+    <path d="${ruffle(29.5, 2.2, 9)}" fill="none" stroke="#7bb352" stroke-width="0.7" opacity="0.8"/>
+
+    <!-- tomato: a slice, with its pale core and its seeds -->
+    <rect x="6" y="39" width="88" height="13" rx="0" fill="#e2574f" stroke="${INK}" stroke-width="0.9"/>
+    <rect x="9" y="42" width="82" height="7" fill="#ef8178" opacity="0.75"/>
+    ${[14, 28, 42, 56, 70, 84].map((x) => `<ellipse cx="${x}" cy="45.5" rx="1.5" ry="1.1" fill="#f6c9a0" stroke="#c9463f" stroke-width="0.2"/>`).join("")}
+
+    <!-- cheese: a square slice that has begun to go over the edge -->
+    <path d="M5 53h90v9.5c0 0-6 1-9 4.2-2 2-4.4 1.2-6-0.6-1.6-1.8-4-2-5.6 0.2-1.8 2.4-5 2-6.6-0.2-1.4-2-4-1.8-5.4 0.4-1.6 2.4-5 2.2-6.6 0-1.4-2-4-2-5.6 0.2-1.8 2.2-4.8 1.8-6.4-0.4C45 64 42.6 64 41 66c-2 2.4-5 1.6-6.4-0.4C33 63.4 30.6 63.6 29 65.6c-1.8 2.2-5 1.6-6.6-0.6C21 63 18.6 63.2 17 65c-2 2.2-5.4 1.4-7-0.8-1-1.4-3-1.6-5-1.7z"
+          fill="#f7c948" stroke="${INK}" stroke-width="0.9" stroke-linejoin="round"/>
+
+    <!-- the patty, and the heel it sits on -->
+    <rect x="4" y="66" width="92" height="12" fill="url(#og-meat)" stroke="${INK}" stroke-width="1"/>
+    ${[12, 30, 48, 66, 84].map((x) => `<rect x="${x}" y="69.6" width="7" height="1.3" fill="#4e2b16" opacity="0.5"/>`).join("")}
+    <path d="M6 79h88v9c0 4.6-4 7.6-10 7.6H16C10 95.6 6 92.6 6 88z" fill="url(#og-bunLow)"
+          stroke="${INK}" stroke-width="1.1" stroke-linejoin="round"/>`,
   fields: [
-    { id: "top", head: "Topic sentence — what the whole paragraph is about", x: 8, y: 7.5, w: 84, h: 13 },
-    { id: "a", head: "First detail", x: 7, y: 26, w: 86, h: 13 },
-    { id: "b", head: "Second detail", x: 8, y: 43, w: 84, h: 13 },
-    { id: "c", head: "Third detail", x: 7, y: 60, w: 86, h: 13 },
-    { id: "end", head: "Closing sentence", x: 8, y: 78, w: 84, h: 13 },
+    { id: "top", head: "Topic sentence — what the whole paragraph is about", x: 12, y: 8, w: 76, h: 13 },
+    { id: "a", head: "First detail", x: 7, y: 27.5, w: 86, h: 10 },
+    { id: "b", head: "Second detail", x: 8, y: 39.5, w: 84, h: 12 },
+    { id: "c", head: "Third detail", x: 8, y: 53.5, w: 84, h: 11 },
+    { id: "end", head: "Closing sentence", x: 10, y: 80, w: 80, h: 14 },
   ],
 };
 
@@ -87,17 +136,46 @@ const MOUNTAIN = {
   label: "Story mountain",
   say: "A story climbs to one moment and comes down the other side. Put yours on the slope.",
   art: () => `
-    <path d="M3 88 L26 60 L50 16 L74 60 L97 88Z" fill="#dce9f7" stroke="${INK}" stroke-width="1.2"/>
-    <path d="M50 16 L62 38 H38Z" fill="#fffdf8" stroke="${INK}" stroke-width="0.9"/>
-    <line x1="2" y1="88" x2="98" y2="88" stroke="${INK}" stroke-width="1.4"/>
-    ${[[26, 60], [50, 16], [74, 60]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2" fill="#c0453f"/>`).join("")}
-    <circle cx="6" cy="88" r="2" fill="#c0453f"/><circle cx="94" cy="88" r="2" fill="#c0453f"/>`,
+    <defs>
+      <linearGradient id="og-sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#dbeeff"/><stop offset="1" stop-color="#f4f7e8"/>
+      </linearGradient>
+      <linearGradient id="og-rock" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#9fb3c8"/><stop offset="0.48" stop-color="#c2d2e0"/>
+        <stop offset="0.52" stop-color="#8ea3b8"/><stop offset="1" stop-color="#6f869d"/>
+      </linearGradient>
+    </defs>
+    <rect x="0" y="0" width="100" height="92" fill="url(#og-sky)"/>
+
+    <!-- the hills behind, so the climb has something to be bigger than -->
+    <path d="M0 92 Q14 72 27 80 Q38 86 46 92Z" fill="#b9cbb0" opacity="0.75"/>
+    <path d="M58 92 Q70 74 82 81 Q92 86 100 92Z" fill="#b9cbb0" opacity="0.75"/>
+
+    <!-- THE MOUNTAIN, drawn in curves. A story does not climb in a straight
+         line and neither should the picture of one: the rise is slow, the
+         turn is sudden, and the way down is quicker than the way up. -->
+    <path d="M2 92 C14 90 20 76 28 62 C36 48 42 28 50 13 C58 28 65 50 73 64 C80 77 88 90 98 92Z"
+          fill="url(#og-rock)" stroke="${INK}" stroke-width="1.2" stroke-linejoin="round"/>
+    <!-- the snow on the top, melted unevenly as snow is -->
+    <path d="M50 13 C54 20 57 27 59.6 33 C56 35 54 31.6 51 33.4 C48.4 35 46 32 43.4 33.6 C41.6 30 44 24 50 13Z"
+          fill="#fdfdfb" stroke="${INK}" stroke-width="0.7" stroke-linejoin="round"/>
+    <!-- a crease down each face, so it reads as rock and not as a triangle -->
+    <path d="M50 16 C47 32 42 46 33 60" fill="none" stroke="#6f869d" stroke-width="0.7" opacity="0.7"/>
+    <path d="M52 20 C56 36 62 50 70 62" fill="none" stroke="#5d7389" stroke-width="0.7" opacity="0.5"/>
+
+    <!-- the path up it, and the five places the story stops -->
+    <path d="M8 90 C18 86 22 76 30 66 C37 57 42 36 50 18 C57 36 63 56 71 66 C78 76 84 86 92 90"
+          fill="none" stroke="#fffdf8" stroke-width="1.1" stroke-dasharray="2.4 2.4" opacity="0.9"/>
+    <rect x="0" y="90" width="100" height="10" fill="#9bb882"/>
+    <path d="${ruffle(90, 1.4, 22, 0, 100)}" fill="none" stroke="#86a66f" stroke-width="0.9"/>
+    ${[[8, 90], [30, 66], [50, 18], [71, 66], [92, 90]].map(([x, y]) =>
+      circ(x, y, 2.2, "#c0453f", ' stroke="#fffdf8" stroke-width="0.8"')).join("")}`,
   fields: [
-    { id: "open", head: "Opening — who, where, when", x: 1, y: 62, w: 23, h: 24 },
-    { id: "rise", head: "Build-up — what starts to go wrong", x: 15, y: 34, w: 23, h: 22 },
-    { id: "top", head: "The moment everything turns", x: 36, y: 1, w: 28, h: 13 },
-    { id: "fall", head: "What happens because of it", x: 62, y: 34, w: 23, h: 22 },
-    { id: "end", head: "Ending — how it is left", x: 76, y: 62, w: 23, h: 24 },
+    { id: "open", head: "Opening — who, where, when", x: 1, y: 60, w: 22, h: 26 },
+    { id: "rise", head: "Build-up — what starts to go wrong", x: 13, y: 33, w: 23, h: 24 },
+    { id: "top", head: "The moment everything turns", x: 34, y: 0.5, w: 32, h: 12 },
+    { id: "fall", head: "What happens because of it", x: 64, y: 33, w: 23, h: 24 },
+    { id: "end", head: "Ending — how it is left", x: 77, y: 60, w: 22, h: 26 },
   ],
 };
 
