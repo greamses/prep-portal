@@ -118,12 +118,40 @@
 }
 
 /* ── the inspector ───────────────────────────────────────────────────── */
+/* THE KEY THAT FOLDS A SECTION SITS ON THAT SECTION. A control in a far
+   corner that does something to a panel over here is a control you have to
+   remember; on the thing itself it needs no explaining. Folded, the section
+   is gone altogether and one small key stands where it was. */
 .fe__side {
+  position: relative;
   border-left: var(--border, 2px solid #2a2723);
   background: var(--surface-primary, #fffdf8);
-  padding: 0.7rem;
-  overflow: auto;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
 }
+.fe__side-in { padding: 0.7rem 0.7rem 0.7rem; overflow: auto; }
+.fe__side > .fe__key {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.4rem;
+  z-index: 2;
+  padding: 0.15rem 0.3rem;
+}
+.fe__side .fe-side__h { padding-right: 2rem; }
+
+/* TWO CLASSES DEEP ON PURPOSE. Every button on the site is given
+   `position: relative` by the sticky-note dress at one class of specificity
+   (sticky-ui.css); at the same weight the later sheet wins, and this one is
+   not reliably later. Left relative, a fixed key is a GRID ITEM of the work
+   area — which is what put a 501-pixel lilac slab across the bottom of the
+   room and squashed the stage into half its height. */
+.fe .fe__unfold { position: fixed; z-index: 3; padding: 0.25rem 0.35rem; min-height: 0; line-height: 0; display: none; }
+.fe .fe__unfold svg { display: block; }
+/* half way down the right edge, where it cannot land on the key that folded
+   it — a button that reappears exactly where your finger just was is a
+   button you press twice by accident */
+.fe.fe--noside .fe__unfold--side { display: block; top: 50%; right: 0.5rem; transform: translateY(-50%); }
 .fe-side__h { margin: 0 0 0.5rem; font: 800 0.95rem/1.2 var(--font-display, inherit); }
 .fe-side__say, .fe-side__tip { margin: 0 0 0.6rem; font-size: 0.75rem; line-height: 1.45; color: var(--text-secondary, #6b655c); }
 .fe-side__len { margin: -0.3rem 0 0.6rem; font: 700 0.72rem/1 var(--font-mono, monospace); color: var(--text-secondary, #6b655c); }
@@ -145,6 +173,17 @@
 .fe-row input[type="color"] { padding: 0; height: 1.9rem; }
 .fe-row--pair { display: flex; gap: 0.4rem; }
 .fe-row--pair > label { flex: 1 1 0; }
+
+.fe-wheel { margin-top: 0.2rem; }
+.fe-row > span em { font-style: normal; font-weight: 400; opacity: 0.75; }
+
+/* what a thing does on the beat you are looking at */
+.fe-acts {
+  margin: 0.9rem 0 0;
+  padding: 0.6rem 0 0;
+  border-top: 2px solid rgba(42, 39, 35, 0.18);
+}
+.fe-acts__h { margin: 0 0 0.45rem; font: 800 0.8rem/1.2 var(--font-display, inherit); }
 
 .fe-inks { display: flex; gap: 0.25rem; margin: -0.25rem 0 0.7rem; }
 .fe-ink {
@@ -180,6 +219,11 @@
   overflow: auto;
 }
 .fe__time-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
+.fe__time-head > .fe__key { padding: 0.15rem 0.3rem; }
+/* folded, the beats keep their own head — that is where the key to bring
+   them back lives, and a strip two lines deep is not what was in the way */
+.fe--notime .fe__time { max-height: none; padding-bottom: 0.4rem; }
+.fe--notime .fe__time-head { margin-bottom: 0; }
 .fe__time-head h2 { margin: 0; font: 800 0.85rem/1.2 var(--font-display, inherit); }
 .fe__time-keys { display: flex; gap: 0.35rem; flex-wrap: wrap; }
 

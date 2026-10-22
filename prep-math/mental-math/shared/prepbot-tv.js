@@ -199,6 +199,25 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     teacher.gsap = gsap;
   } catch { /* no animation library: every step simply appears */ }
 
+  /**
+   * THE SCALE, KEPT RIGHT BY THE SET ITSELF.
+   *
+   * Every film is measured in `--u`, a hundredth of the stage's width, and
+   * each caller used to set it once just after building. That is one reading
+   * taken at the worst possible moment: the overlay has only just been put in
+   * the document, so the stage can still be measuring the whole window —
+   * caught at 16px on a stage 876 across, which draws the whole lesson at
+   * nearly twice its size. The set owns the stage, so the set watches it, and
+   * every film it is ever given is right: coded or written down, resized,
+   * rotated or put full screen.
+   */
+  const scale = () => {
+    const tv = stage.querySelector(".vm-tv");
+    if (tv && stage.clientWidth) tv.style.setProperty("--u", `${stage.clientWidth / 100}px`);
+  };
+  const watchStage = typeof ResizeObserver === "function" ? new ResizeObserver(scale) : null;
+  watchStage?.observe(stage);
+
   let index = -1;       // the step on the screen; -1 before the first
   /* THE SET WAITS TO BE TURNED ON. It used to start talking the moment the
      curtain opened, which gives nobody time to read the first picture or to
@@ -239,6 +258,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
       if (!steps[k].once) steps[k].show?.(stage, { gsap, instant: true });
     }
     steps[index].show?.(stage, { gsap, instant: !gsap });
+    scale();
     paintControls();
     teacher.show();
     if (!speak) return;
@@ -342,6 +362,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     teacher.destroy();
     document.removeEventListener("visibilitychange", onVisible);
     upright.removeEventListener?.("change", onTurn);
+    watchStage?.disconnect();
     window.removeEventListener("pagehide", close);
     if (document.fullscreenElement === tv) document.exitFullscreen?.();
     window.removeEventListener("keydown", onKey, true);
@@ -441,6 +462,8 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
 
   /* the curtain is drawn before anything is shown, and PrepBot pulls it open */
   build(stage);
+  scale();
+  requestAnimationFrame(scale);
   paintControls();
   /* THE SET COMES ON SHUT. Turning the television on is not the same as
      starting the lesson: the curtain stays down and PrepBot has not come out

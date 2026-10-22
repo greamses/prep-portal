@@ -41,6 +41,7 @@ import {
 } from "./filmdoc.js";
 import { filmBoth, saveDraft, publish, unpublish, forget } from "./film-store.js";
 import { needCss } from "./panels.js";
+import { mountWheel } from "/utils/components/colour-wheel.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
 
@@ -65,6 +66,7 @@ let live = null;      // one cutting room at a time
 export async function openFilmEditor({ id, title = "", coded = null, onPlay = null } = {}) {
   if (live) return live;
   needCss("/utils/components/workbook/film-editor.css");
+  needCss("/utils/components/colour-wheel.css");
 
   const both = await filmBoth(id);
   let doc = both.draft || both.published || startFrom(coded?.steps, title);
@@ -95,6 +97,34 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     say(history.length ? "Stepped back" : "Back to where you started");
   }
 
+  /* WHAT EACH KIND OF THING LOOKS LIKE, as a key. Our own glyphs rather than
+     borrowed ones: there is no icon in the site's set for "a bar model bar"
+     or "a line of words", and a palette of five that nearly fit is worse than
+     five that do. Filled shapes, like every other icon here. */
+  const g = (inner) => `<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">${inner}</svg>`;
+  const TYPE_ICON = {
+    /* three lines of writing, the last one short */
+    text: g(`<rect x="3" y="5" width="18" height="3" rx="1.5" fill="var(--ink,#2a2723)"/>`
+      + `<rect x="3" y="10.5" width="18" height="3" rx="1.5" fill="var(--accent-secondary,#2f6ea8)"/>`
+      + `<rect x="3" y="16" width="11" height="3" rx="1.5" fill="var(--accent-primary,#f4c95d)"/>`),
+    /* a bar cut into parts, with its brace under it */
+    bar: g(`<rect x="2.5" y="6" width="9" height="7" fill="var(--accent-secondary,#bfe3ff)" stroke="var(--ink,#2a2723)" stroke-width="1.2"/>`
+      + `<rect x="11.5" y="6" width="10" height="7" fill="var(--accent-primary,#fff3a8)" stroke="var(--ink,#2a2723)" stroke-width="1.2"/>`
+      + `<rect x="2.5" y="16" width="19" height="2" rx="1" fill="var(--text-tertiary,#6f685f)"/>`
+      + `<path d="M10.4 18h3.2L12 21Z" fill="var(--text-tertiary,#6f685f)"/>`),
+    /* a box and a ring: the two shapes a lesson points with */
+    shape: g(`<rect x="2.5" y="8" width="11" height="11" fill="var(--accent-success,#2e8b46)"/>`
+      + `<circle cx="16" cy="9" r="6" fill="var(--accent-warning,#d9632b)"/>`),
+    /* a picture: a frame with a hill and a sun in it */
+    image: g(`<rect x="2.5" y="4.5" width="19" height="15" fill="var(--accent-secondary,#2f6ea8)"/>`
+      + `<circle cx="8" cy="9.5" r="2.2" fill="#fffdf8"/>`
+      + `<path d="M3.5 19 10 12l4.5 4.5L18 13l3.5 6Z" fill="var(--accent-success,#2e8b46)"/>`),
+    /* a drawing: a nib with its line */
+    svg: g(`<path d="M4 20 6 14l9.5-9.5 4 4L10 18Z" fill="var(--accent-primary,#f4c95d)"/>`
+      + `<path d="M15.5 4.5 17 3a2.1 2.1 0 0 1 3 3l-1.5 1.5Z" fill="var(--accent-danger,#c0453f)"/>`
+      + `<rect x="3" y="20.5" width="18" height="2" rx="1" fill="var(--text-tertiary,#6f685f)"/>`),
+  };
+
   /* A KEY IS AN ICON WITH ITS NAME IN A TOOLTIP. Six words of button across
      the top is six words of stage lost, and the stage is the thing being
      worked on — so the chrome says what it is the way the rest of the bench
@@ -120,8 +150,6 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
         ${key("save", UI.edit(20), "Save the draft", "1")}
         ${key("publish", UI.share(20), "Publish it to everybody", "3")}
         ${key("down", UI.noFill(20), "Take it down", "1", " hidden")}
-        ${key("fold-side", UI.menu(20), "Show or hide the inspector", "1")}
-        ${key("fold-time", UI.steps(20), "Show or hide the beats", "1")}
         ${key("close", UI.close(20), "Close the editor", "4")}
       </span>
     </header>
@@ -130,13 +158,19 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
         <div class="fe__stagewrap"><div class="fe__stage" data-f="stage"></div></div>
         <div class="fe__add">
           <span class="fe__add-say">Put on the stage:</span>
-          ${Object.entries(TYPES).map(([t, v]) => `<button type="button" class="pp-btn wb-tint-2" data-add="${t}">${esc(v.label)}</button>`).join("")}
+          ${Object.entries(TYPES).map(([t, v]) => `<button type="button" class="pp-btn wb-tint-2 fe__key" data-add="${t}"`
+            + ` aria-label="${esc(v.label)}" data-tip="${esc(v.label)}" data-tip-side="up">${TYPE_ICON[t] || TYPE_ICON.shape}</button>`).join("")}
         </div>
       </section>
-      <aside class="fe__side" data-f="side"></aside>
+      <aside class="fe__side">
+        ${key("fold-side", UI.shrink(16), "Fold the inspector away", "1")}
+        <div class="fe__side-in" data-f="side"></div>
+      </aside>
+
     </div>
     <section class="fe__time">
       <div class="fe__time-head">
+        ${key("fold-time", UI.shrink(16), "Fold the beats away", "1")}
         <h2>The beats</h2>
         <span class="fe__time-keys">
           ${key("step-add", UI.plus(18), "Add a beat after this one", "2")}
@@ -146,7 +180,9 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
         </span>
       </div>
       <div class="fe__grid" data-f="grid"></div>
-    </section>`;
+    </section>
+    <button type="button" class="pp-btn wb-tint-1 fe__unfold fe__unfold--side" data-f="fold-side"
+            aria-label="Bring the inspector back" data-tip="Bring the inspector back" data-tip-side="left">${UI.menu(18)}</button>`;
   document.body.appendChild(box);
   live = { close };
 
@@ -303,9 +339,29 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
   const pickOne = (k, v, opts) =>
     `<select data-p="${k}">${opts.map(([val, name]) => `<option value="${esc(val)}"${String(val) === String(v) ? " selected" : ""}>${esc(name)}</option>`).join("")}</select>`;
 
+  let wheel = null;
   function paintSide() {
     const el = doc.els.find((x) => x.id === picked);
+    wheel = null;
     side.innerHTML = el ? elPanel(el) : stepPanel();
+    const spot = side.querySelector('[data-f="wheel"]');
+    if (spot && el) {
+      /* OUR OWN WHEEL, not the operating system's button. It is always open,
+         beside the words it is colouring, so a colour is judged against the
+         drawing rather than in a dialog over the top of it. */
+      wheel = mountWheel(spot, {
+        value: el.ink,
+        inks: INKS.map((i) => ({ name: i.name, hex: i.hex })),
+        onChange: (hex) => {
+          const now = doc.els.find((x) => x.id === picked);
+          if (!now || now.ink === hex) return;
+          now.ink = hex;
+          touched();
+          paintStage();
+        },
+      });
+    }
+    mountTooltips();
   }
 
   function stepPanel() {
@@ -332,12 +388,14 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
          browser's own. The six house inks are kept beside it as a row of
          swatches, because they are the right answer most of the time and
          matching one by eye on a wheel is a job nobody should have. */
-      own = row("Words", `<textarea data-p="text" rows="2">${esc(el.text)}</textarea>`)
+      own = row("Words <em>(Enter breaks the line)</em>", `<textarea data-p="text" rows="3">${esc(el.text)}</textarea>`)
         + `<div class="fe-row fe-row--pair">`
         + `<label><span>Size</span>${numIn("fs", el.fs, 0.5, 24, 0.1)}</label>`
-        + `<label><span>Colour</span><input type="color" data-p="ink" value="${esc(el.ink)}"></label></div>`
-        + `<div class="fe-inks">${INKS.map((i) => `<button type="button" class="pp-plain fe-ink${i.hex.toLowerCase() === String(el.ink).toLowerCase() ? " is-on" : ""}"`
-          + ` style="background:${i.hex}" data-ink="${i.hex}" aria-label="${esc(i.name)}" data-tip="${esc(i.name)}"></button>`).join("")}</div>`;
+        + `<label><span>Wrap at %</span>${numIn("tw", el.tw, 0, 100, 1)}</label></div>`
+        + (Number(el.tw) > 0 ? row("Lines sit", pickOne("align", el.align, [["center", "Centred"], ["left", "Left"], ["right", "Right"]])) : "")
+        + `<p class="fe-side__tip">Wrap at 0 lets a line run as far as it likes — right for a number,
+           wrong for a sentence. Give a sentence a width and it folds inside it.</p>`
+;
     } else if (el.type === "bar") {
       own = row("Width %", numIn("w", el.w, 4, 100, 0.5))
         + `<div class="fe-parts"><span class="fe-parts__h">Its parts</span>`
@@ -360,8 +418,16 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
       own = row("Width %", numIn("w", el.w, 2, 100, 0.5))
         + row("The drawing (SVG)", `<textarea data-p="svg" rows="6" placeholder="&lt;svg viewBox=…&gt;">${esc(el.svg)}</textarea>`);
     }
+    /* THE WHEEL GOES LAST. It is the tallest thing in the panel, and what a
+       thing DOES was the part nobody could find — so the animations sit above
+       it, in sight the moment something is picked, and the colour is at the
+       bottom where scrolling to it costs nothing. */
+    const colour = el.type === "text"
+      ? `<div class="fe-row"><span>Colour</span><div class="fe-wheel" data-f="wheel"></div></div>` : "";
     return `<h2 class="fe-side__h">${esc(TYPES[el.type]?.label || "Thing")}</h2>
       ${common}${own}
+      ${actPanel(el)}
+      ${colour}
       <div class="fe-side__keys">
         <button type="button" class="pp-btn wb-tint-1" data-f="el-done">Done</button>
         <button type="button" class="pp-btn wb-tint-4" data-f="el-del">Take it off the stage</button>
@@ -391,63 +457,58 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     grid.style.setProperty("--beats", String(doc.steps.length));
   }
 
-  /** The little sheet that asks what a thing does on a beat. */
-  function openCell(elId, i) {
-    const el = doc.els.find((x) => x.id === elId);
-    const s = doc.steps[i];
-    if (!el || !s) return;
-    const a = s.acts.find((x) => x.el === elId);
-    const sheet = document.createElement("div");
-    sheet.className = "fe-sheet";
-    const v = a?.do || "";
-    sheet.innerHTML = `<div class="fe-sheet__card pp-receipt"><div class="pp-receipt__paper"><div class="fe-sheet__in">
-      <h2>${esc(el.name)} &middot; beat ${i + 1}</h2>
-      ${row("Does", `<select data-s="do"><option value="">— nothing —</option>`
-        + VERB_IDS.map((k) => `<option value="${k}"${k === v ? " selected" : ""}>${esc(VERBS[k].label)}</option>`).join("")
-        + `</select>`)}
-      <div data-s="args"></div>
-      ${row("After (seconds)", `<input type="number" data-s="delay" value="${a?.delay || 0}" min="0" max="20" step="0.1">`)}
-      <div class="fe-sheet__keys">
-        <button type="button" class="pp-btn wb-tint-2" data-s="ok">Done</button>
-        <button type="button" class="pp-btn wb-tint-4" data-s="cancel">Leave it</button>
-      </div></div></div></div>`;
-    box.appendChild(sheet);
-    const pickDo = sheet.querySelector('[data-s="do"]');
-    const args = sheet.querySelector('[data-s="args"]');
-    const paintArgs = () => {
-      const needs = VERBS[pickDo.value]?.needs || [];
-      args.innerHTML = needs.map((n) => {
-        if (n === "from") return `<div class="fe-row fe-row--pair"><label><span>From across %</span><input type="number" data-a="fx" value="${a?.fx ?? 50}" step="0.5"></label>`
-          + `<label><span>From down %</span><input type="number" data-a="fy" value="${a?.fy ?? 110}" step="0.5"></label></div>`;
-        if (n === "to") return `<div class="fe-row fe-row--pair"><label><span>To across %</span><input type="number" data-a="tx" value="${a?.tx ?? el.x}" step="0.5"></label>`
-          + `<label><span>To down %</span><input type="number" data-a="ty" value="${a?.ty ?? el.y}" step="0.5"></label></div>`;
-        if (n === "text") return row("Now says", `<input data-a="text" value="${esc(a?.text ?? el.text ?? "")}">`);
-        if (n === "amount") return row("Down to", `<input type="number" data-a="amount" value="${a?.amount ?? 0.35}" min="0" max="1" step="0.05">`);
-        if (n === "degrees") return row("Degrees", `<input type="number" data-a="deg" value="${a?.deg ?? 0}" step="5">`);
-        return "";
-      }).join("");
+  /**
+   * WHAT THIS THING DOES ON THIS BEAT — in the panel, not behind a modal.
+   *
+   * The animations used to live in a sheet that opened when you clicked a
+   * square of the timeline, which meant the one part of a film editor
+   * everybody comes for was the one part nothing on the screen mentioned. It
+   * is now a section of the inspector, under the thing it belongs to: pick
+   * something, step to a beat, and there is the verb list, already pointed at
+   * the right thing on the right beat.
+   */
+  function actPanel(el) {
+    const a = doc.steps[step].acts.find((x) => x.el === el.id);
+    const needs = VERBS[a?.do]?.needs || [];
+    const arg = (n) => {
+      if (n === "from") return `<div class="fe-row fe-row--pair"><label><span>From across %</span><input type="number" data-ac="fx" value="${a?.fx ?? 50}" step="0.5"></label>`
+        + `<label><span>From down %</span><input type="number" data-ac="fy" value="${a?.fy ?? 110}" step="0.5"></label></div>`;
+      if (n === "to") return `<div class="fe-row fe-row--pair"><label><span>To across %</span><input type="number" data-ac="tx" value="${a?.tx ?? el.x}" step="0.5"></label>`
+        + `<label><span>To down %</span><input type="number" data-ac="ty" value="${a?.ty ?? el.y}" step="0.5"></label></div>`;
+      if (n === "text") return row("Now says", `<input data-ac="text" value="${esc(a?.text ?? el.text ?? "")}">`)
+        + row("And goes", `<input type="color" data-ac="ink" value="${esc(a?.ink || el.ink)}">`);
+      if (n === "amount") return row("Down to", `<input type="number" data-ac="amount" value="${a?.amount ?? 0.35}" min="0" max="1" step="0.05">`);
+      if (n === "degrees") return row("Degrees", `<input type="number" data-ac="deg" value="${a?.deg ?? 0}" step="5">`);
+      return "";
     };
-    paintArgs();
-    pickDo.addEventListener("change", paintArgs);
-    sheet.addEventListener("click", (e) => {
-      const k = e.target.closest("[data-s]")?.dataset.s;
-      if (k === "cancel" || e.target === sheet) { sheet.remove(); return; }
-      if (k !== "ok") return;
-      remember();
-      const rest = s.acts.filter((x) => x.el !== elId);
-      if (pickDo.value) {
-        const made = { el: elId, do: pickDo.value, delay: Number(sheet.querySelector('[data-s="delay"]').value) || 0 };
-        sheet.querySelectorAll("[data-a]").forEach((inp) => {
-          made[inp.dataset.a] = inp.type === "number" ? Number(inp.value) : inp.value;
-        });
-        rest.push(made);
-      }
-      s.acts = rest;
-      sheet.remove();
-      touched();
-      step = i;
-      paintAll();
-    });
+    return `<div class="fe-acts">
+      <h3 class="fe-acts__h">On beat ${step + 1}, it&hellip;</h3>
+      ${row("Does", `<select data-ac="do"><option value="">&mdash; nothing &mdash;</option>`
+        + VERB_IDS.map((k) => `<option value="${k}"${k === (a?.do || "") ? " selected" : ""}>${esc(VERBS[k].label)}</option>`).join("")
+        + `</select>`)}
+      ${needs.map(arg).join("")}
+      ${a ? row("After (seconds)", `<input type="number" data-ac="delay" value="${a.delay || 0}" min="0" max="20" step="0.1">`) : ""}
+      <p class="fe-side__tip">Every beat rebuilds the screen from the start, so a thing
+        stays as the last beat left it until another beat moves it.</p>
+    </div>`;
+  }
+
+  /** Read the act controls back into the document. */
+  function readAct() {
+    const el = doc.els.find((x) => x.id === picked);
+    if (!el) return;
+    const verb = side.querySelector('[data-ac="do"]')?.value || "";
+    const rest = doc.steps[step].acts.filter((x) => x.el !== el.id);
+    if (verb) {
+      const made = { el: el.id, do: verb, delay: Number(side.querySelector('[data-ac="delay"]')?.value) || 0 };
+      side.querySelectorAll("[data-ac]").forEach((inp) => {
+        if (inp.dataset.ac === "do" || inp.dataset.ac === "delay") return;
+        made[inp.dataset.ac] = inp.type === "number" ? Number(inp.value) : inp.value;
+      });
+      rest.push(made);
+    }
+    doc.steps[step].acts = rest;
+    touched();
   }
 
   /* ── what the keys do ────────────────────────────────────────────────── */
@@ -474,7 +535,16 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
       return;
     }
     const cell = e.target.closest("[data-cell]")?.dataset.cell;
-    if (cell) { const [elId, i] = cell.split(":"); openCell(elId, Number(i)); return; }
+    if (cell) {
+      /* a square of the timeline is a place, not a dialog: it takes you to
+         that thing on that beat, and the inspector says what it does there */
+      const [elId, i] = cell.split(":");
+      step = Number(i);
+      pick(elId);
+      paintStage();
+      paintGrid();
+      return;
+    }
     const toStep = e.target.closest("[data-step]")?.dataset.step;
     if (toStep != null) { step = Number(toStep); picked = null; paintAll(); return; }
     const toPick = e.target.closest("[data-pick]")?.dataset.pick;
@@ -615,12 +685,21 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
   /* typing in the inspector writes straight through to the document */
   side.addEventListener("input", (e) => {
     const el = doc.els.find((x) => x.id === picked);
+    if (e.target.dataset.ac) {
+      readAct();
+      /* the verb decides which questions are asked, so changing it redraws
+         the panel; everything else just writes through */
+      if (e.target.dataset.ac === "do") paintAll(); else { paintStage(); paintGrid(); }
+      return;
+    }
     const p = e.target.dataset.p;
     if (p) {
       const target = el || doc.steps[step];
       target[p] = e.target.type === "number" ? Number(e.target.value) : e.target.value;
       touched();
       if (el) paintStage(); else paintGrid();
+      /* turning wrapping on and off adds or removes the alignment question */
+      if (p === "tw" && (Number(e.target.value) > 0) !== Boolean(side.querySelector('[data-p="align"]'))) paintSide();
       if (p === "say") side.querySelector(".fe-side__len").textContent = `About ${secondsOf(doc.steps[step].say)} seconds spoken`;
       return;
     }

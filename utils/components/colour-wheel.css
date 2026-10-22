@@ -1,0 +1,63 @@
+/* ── A COLOUR WHEEL (colour-wheel.js) ──────────────────────────────────────
+   A disc, a lightness slider, the colour written down, and the house inks.
+   The disc and its marker are the only round things here: the site's corners
+   are square or they are circles, and a colour wheel is a circle. */
+
+.cw { display: grid; gap: 0.4rem; }
+
+.cw__disc { position: relative; width: 100%; max-width: 7.6rem; margin: 0 auto; }
+.cw__canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 50%;
+  cursor: crosshair;
+  touch-action: none;
+  box-shadow: 0 1px 0 rgba(42, 39, 35, 0.25);
+}
+/* where the colour is taken from, drawn as a ring so the colour under it
+   is what you are judging rather than the marker */
+.cw__spot {
+  position: absolute;
+  width: 0.9rem;
+  height: 0.9rem;
+  margin: -0.45rem 0 0 -0.45rem;
+  border: 2px solid #fffdf8;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(42, 39, 35, 0.6);
+  pointer-events: none;
+}
+
+.cw__light { display: flex; align-items: center; gap: 0.4rem; }
+.cw__light > span { font-size: 0.7rem; font-weight: 700; color: var(--text-secondary, #6b655c); }
+.cw__light input { flex: 1 1 auto; min-width: 0; accent-color: #2a2723; }
+
+.cw__foot { display: flex; gap: 0.35rem; align-items: center; }
+.cw__hex {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.25rem 0.35rem;
+  font: 0.78rem/1.3 var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  text-transform: lowercase;
+  color: inherit;
+  background: var(--surface-secondary, #f4f0e8);
+  border: var(--border-subtle, 1px solid rgba(42, 39, 35, 0.12));
+  border-radius: 0;
+}
+.cw__now {
+  flex: 0 0 auto;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 2px solid rgba(42, 39, 35, 0.25);
+}
+
+.cw__inks { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+.cw__ink {
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: 2px solid rgba(42, 39, 35, 0.25);
+  border-radius: 0;
+  cursor: pointer;
+}
+.cw__ink:hover { border-color: #2a2723; }

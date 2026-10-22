@@ -112,6 +112,14 @@ export const blankEl = (type = "text") => ({
      (see `normalise`), so films laid out before this still play. */
   fs: BASE_FS,
   ink: INKS[0].hex,
+  /* HOW WIDE THE WRITING MAY RUN BEFORE IT WRAPS, in stage units — 0 for "as
+     far as it likes". A tile has always been `white-space: nowrap`, which is
+     right for a number and wrong for a sentence: a line of narration ran off
+     both edges of the screen and there was no way to break it. Now a width
+     wraps it (the films' own .vm-t--wrap treatment), and a line break typed
+     into the words is kept whether there is a width or not. */
+  tw: 0,
+  align: "center",
   w: 30,
   text: type === "text" ? "Words" : "",
   shape: "rect",
@@ -225,6 +233,16 @@ export function mountEl(stage, el) {
        reads the same on a phone and on a television */
     inner.style.fontSize = `calc(var(--u) * ${Number(el.fs) || BASE_FS})`;
     inner.style.color = el.ink || INKS[0].hex;
+    /* `pre-wrap` is what makes a typed line break a line break. With a width
+       as well, the words wrap inside it; without one they run on as they
+       always did, which is what a number wants. */
+    inner.style.whiteSpace = "pre-wrap";
+    const tw = Number(el.tw) || 0;
+    if (tw > 0) {
+      box.classList.add("vm-t--wrap");
+      box.style.setProperty("--w", String(tw));
+      inner.style.textAlign = el.align || "center";
+    }
     return box;
   }
   return art(stage, el.id, el.x, el.y, Number(el.w) || 30, elHtml(el));
