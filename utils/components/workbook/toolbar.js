@@ -140,6 +140,20 @@ const TOOLS = {
       return () => live.dispose();
     },
   },
+  nodesmodel: {
+    label: "Nodes",
+    size: { w: 720, h: 580 },
+    async open(body) {
+      body.classList.add("wb-panel__body--bare", "wb-panel__body--scroll");
+      const { mountNodesModel } = await import("./nodesmodel.js");
+      const host = document.createElement("div");
+      host.className = "nd-host wb-nodesmodel";
+      body.appendChild(host);
+      const { saved, onChange } = kept("wb-nodesmodel");
+      const live = mountNodesModel(host, { saved: saved && Array.isArray(saved.nodes) ? saved : null, onChange });
+      return () => live.dispose();
+    },
+  },
   note: {
     label: "Notes",
     size: { w: 420, h: 380 },

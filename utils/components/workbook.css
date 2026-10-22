@@ -3215,6 +3215,51 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .vn-nums__go { width: 100%; justify-content: center; margin-top: 0.6mm; font-size: 7.6pt; }
 @media print { .vn-tools, .vn-hint { display: none !important; } }
 
+/* ── NODES AND THE LINES BETWEEN THEM (nodesmodel.js) ───────────────────────
+   Dressed the same as the Venn diagram: a row of icon keys, a board below.
+   Lines sit in the svg layer, nodes as draggable pills above it. */
+.nd-host { display: block; width: 100%; padding: 0.5rem 0.7rem 0.7rem; box-sizing: border-box; overflow: auto; height: 100%; }
+.nd-tools { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 1mm; margin-bottom: 1.5mm; }
+.nd-key { padding: 0.9mm 1.4mm; line-height: 0; border: 0; box-shadow: none; }
+.nd-key::before, .nd-key::after { display: none; }
+.nd-key svg { display: block; }
+.nd-key:hover { transform: translateY(-0.3mm); }
+.nd-key[aria-pressed="true"] { outline: 2px solid #2f6ea8; outline-offset: -2px; }
+.nd-sets { display: inline-flex; gap: 1mm; margin-right: 0.6mm; }
+.nd-set {
+  padding: 1mm 2mm; font: 700 7.6pt/1 var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  color: #6f685f; border: 0.3mm solid rgba(42, 39, 35, 0.22); border-radius: 0; background: var(--surface-secondary, #f4f0e8);
+}
+.nd-set[aria-pressed="true"] { color: #2a2723; background: #fffdf8; border-color: #2a2723; font-weight: 700; }
+
+.nd-board { position: relative; aspect-ratio: 680 / 440; border: 0.3mm dashed #8a837a; background: #fffdf8; touch-action: none; }
+.nd-board.is-linking { cursor: crosshair; }
+.nd-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.nd-nodes { position: absolute; inset: 0; pointer-events: none; }
+.nd-node {
+  position: absolute; transform: translate(-50%, -50%); z-index: 2; pointer-events: auto;
+  padding: 1.4mm 2.6mm; border: 0.3mm solid rgba(42, 39, 35, 0.35); border-radius: 0;
+  font: 700 8pt/1.2 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); color: #2a2723;
+  cursor: grab; white-space: nowrap; box-shadow: 0 1px 2px rgba(42, 39, 35, 0.25);
+}
+.nd-node:active { cursor: grabbing; }
+.nd-node.is-picked { outline: 2px solid #2f6ea8; outline-offset: 1px; }
+.nd-node.is-pending { outline: 2px dashed #c0453f; outline-offset: 2px; }
+.nd-write {
+  position: absolute; z-index: 3; height: 28px; padding: 0 6px; box-sizing: border-box;
+  font: 700 14px/1 "JetBrains Mono", monospace; text-align: center;
+  color: #2a2723; background: #fff; border: 2px solid #2f6ea8; border-radius: 0;
+}
+.nd-hint { margin: 1mm 0 0; font: 7.5pt/1.4 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); color: #6f685f; }
+.nd-hint.is-loud { color: #c0453f; font-weight: 700; }
+
+.nd-pot { position: fixed; z-index: 10120; width: 44mm; }
+.nd-pot[hidden] { display: none; }
+.nd-pot__in { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.1mm; padding: 2mm; }
+.nd-chip { width: 100%; aspect-ratio: 1; padding: 0; border: 0.4mm solid rgba(42, 39, 35, 0.3); border-radius: 0; cursor: pointer; }
+.nd-chip:hover { border-color: #2a2723; transform: scale(1.08); }
+@media print { .nd-tools, .nd-hint { display: none !important; } }
+
 /* a printed model's "?", written over (double-click) */
 .wb-live svg [data-ask].is-askable { cursor: text; }
 .wb-live svg [data-ask].is-said { fill: #2f6ea8; }
