@@ -3204,7 +3204,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        written board to work the sum on; an English page was handing them a
        long division board, which is no use to anybody drafting a paragraph.
        These are the two boards that page actually wants (./organiser.js). */
-    ...["burger", "mountain", "venn", "roundabout", "table"].map((kind) => ({
+    ...["burger", "mountain", "venn", "roundabout", "oreo", "tchart", "causes", "sequence", "senses", "fishbone", "flow", "table"].map((kind) => ({
       id: kind,
       label: ORGANISERS[kind].label,
       icon: TOOL_ICONS[kind] || TOOL_ICONS.draft,
@@ -3493,7 +3493,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     { id: "algebra", label: "Algebra", of: [asSheet("gm")] },
     /* a tool of its own, not folded in behind another: paper to work an equation out on */
     /* the English workbooks' own family — see `rail` below */
-    { id: "plan", label: "Organisers", of: [asSheet("burger"), asSheet("mountain"), asSheet("venn"), asSheet("roundabout"), asSheet("table")] },
+    { id: "plan", label: "Organisers", of: [asSheet("burger"), asSheet("mountain"), asSheet("venn"), asSheet("roundabout"), asSheet("oreo"), asSheet("tchart"), asSheet("causes"), asSheet("sequence"), asSheet("senses"), asSheet("fishbone"), asSheet("flow"), asSheet("table")] },
     { id: "note", label: "Notes", of: [asSheet("note")] },
   ]
     /* and may drop single keys out of a family it otherwise wants: an English

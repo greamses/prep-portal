@@ -246,6 +246,54 @@ export const TOOL_ICONS = {
       r(8.8, 3.6, 1, 16.8, "#fff", 0) + r(15, 3.6, 1, 16.8, "#fff", 0) +
       r(2.6, 12.2, 18.8, 1, "#fff", 0)
   ),
+  /* OREO: the biscuit, in layers */
+  oreo: glyph(
+    r(3.4, 4.4, 17.2, 4.4, LEAD, 1) + r(4.6, 9.4, 14.8, 2.6, PAPER, 0) +
+      r(4.6, 12.4, 14.8, 2.6, PAPER, 0) + r(3.4, 15.4, 17.2, 4.4, LEAD, 1)
+  ),
+  /* the T-chart: a crossbar with a stem, and a heading over each side */
+  tchart: glyph(
+    r(5.4, 4.2, 5.6, 2.8, GOLD, 0) + r(13, 4.2, 5.6, 2.8, LEAF, 0) +
+      r(2.4, 8.2, 19.2, 2, LEAD, 0) + r(11, 10.2, 2, 11.4, LEAD, 0) +
+      r(4.4, 12.8, 5.4, 1.4, PAPER, 0) + r(4.4, 15.8, 5.4, 1.4, PAPER, 0) +
+      r(14.2, 12.8, 5.4, 1.4, PAPER, 0) + r(14.2, 15.8, 5.4, 1.4, PAPER, 0)
+  ),
+  /* cause and effect: two feeding in, the thing in the middle, two going out */
+  causes: glyph(
+    r(1.6, 4.6, 5.6, 4.4, PAPER, 0) + r(1.6, 15, 5.6, 4.4, PAPER, 0) +
+      r(16.8, 4.6, 5.6, 4.4, LEAF, 0) + r(16.8, 15, 5.6, 4.4, LEAF, 0) +
+      r(9.2, 7.6, 5.6, 8.8, GOLD, 0) +
+      `<path d="M7.6 7.2 9 9.4M7.6 17 9 14.8M15 9.4 16.4 7.2M15 14.8 16.4 17"` +
+      ` fill="none" stroke="${LEAD}" stroke-width="1.5" stroke-linecap="round"/>`
+  ),
+  /* the sequence chain: boxes in order, turning the corner */
+  sequence: glyph(
+    r(2.4, 4, 7.6, 6, PAPER, 0) + r(14, 4, 7.6, 6, PAPER, 0) +
+      r(14, 14, 7.6, 6, LEAF, 0) + r(2.4, 14, 7.6, 6, LEAF, 0) +
+      `<path d="M10.6 7h2.8M17.8 10.6v2.8M13.4 17h-2.8"` +
+      ` fill="none" stroke="${LEAD}" stroke-width="1.6" stroke-linecap="round"/>`
+  ),
+  /* the five senses: an eye, because it is the one you recognise smallest */
+  senses: glyph(
+    `<path d="M1.8 12C5.6 5.8 18.4 5.8 22.2 12C18.4 18.2 5.6 18.2 1.8 12z" fill="${PAPER}"/>` +
+      `<circle cx="12" cy="12" r="4.2" fill="${GOLD}"/>` +
+      `<circle cx="12" cy="12" r="1.8" fill="${LEAD}"/>`
+  ),
+  /* the fishbone: a spine into a head, with bones slanting back off it */
+  fishbone: glyph(
+    r(2.4, 11.2, 14.6, 1.6, QUIET, 0) +
+      `<path d="M17.4 7.4 22 12l-4.6 4.6z" fill="${LOUD}"/>` +
+      `<path d="M6.6 12 4.2 4.8M11.4 12 9 4.8M6.6 12 4.2 19.2M11.4 12 9 19.2"` +
+      ` fill="none" stroke="${PAPER}" stroke-width="1.5" stroke-linecap="round"/>`
+  ),
+  /* a flow chart: a box, a diamond, and the way on */
+  flow: glyph(
+    r(7.6, 2.4, 8.8, 4.4, PAPER, 0) +
+      r(11.2, 7, 1.6, 2.6, QUIET, 0) +
+      `<path d="M12 9.8 17 14l-5 4.2L7 14z" fill="${GOLD}" stroke="${LEAD}" stroke-width="1"/>` +
+      r(11.2, 18.4, 1.6, 2.4, QUIET, 0) +
+      r(7.6, 20.4, 8.8, 3.2, LEAF, 0)
+  ),
   side: glyph(
     r(2.8, 4.2, 18.4, 15.6, PAPER, 1.8) +
       `<path d="M4.6 4.2h4.2v15.6H4.6a1.8 1.8 0 0 1-1.8-1.8V6a1.8 1.8 0 0 1 1.8-1.8z" fill="${GOLD}"/>`

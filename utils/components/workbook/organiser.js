@@ -180,18 +180,14 @@ const MOUNTAIN = {
 };
 
 /**
- * THE TABLE IS A DOZEN ORGANISERS WEARING ONE SHAPE.
+ * THE TABLE'S PRESETS — and there are only two, on purpose.
  *
- * K-W-L, a T-chart, OREO, cause and effect, a sequence chain, the five
- * senses — every one of them is rows and columns with its headings already
- * written in. Giving each its own key on the rail would be a dozen keys for
- * one drawing; they are PRESETS of the table instead, and the child picks
- * the one the lesson is about.
- *
- *   heads   what goes across the top — the columns
- *   stubs   what goes down the side — a first column of labels that are
- *           part of the method, not something to fill in. OREO's four
- *           letters are not a question; they are the shape of the argument.
+ * K-W-L really is a table: three columns, as many rows as you have thoughts,
+ * and nothing about it that a shape would say better. Everything else that
+ * looked table-ish from a distance — OREO, a T-chart, cause and effect, a
+ * sequence chain, the five senses — has a SHAPE of its own further up this
+ * file, because the shape is the teaching. Flattening them into a grid with
+ * their headings typed in throws away the only part that was doing any work.
  */
 export const TABLE_PRESETS = {
   blank: { label: "Blank", rows: 4, heads: ["", "", ""] },
@@ -201,36 +197,6 @@ export const TABLE_PRESETS = {
     rows: 5,
     heads: ["What I already know", "What I want to find out", "What I learned"],
   },
-  tchart: {
-    label: "T-chart",
-    say: "Both sides, fairly, before you decide which one you are on.",
-    rows: 6,
-    heads: ["For", "Against"],
-  },
-  oreo: {
-    label: "OREO",
-    say: "Opinion, Reason, Example, Opinion again — an argument that closes where it opened.",
-    heads: ["What I will write"],
-    stubs: ["O — my opinion", "R — the reason for it", "E — an example that proves it", "O — my opinion again"],
-  },
-  cause: {
-    label: "Cause and effect",
-    say: "What happened, and what it made happen. One line for each pair.",
-    rows: 6,
-    heads: ["The cause — what happened", "The effect — what it made happen"],
-  },
-  chain: {
-    label: "Sequence chain",
-    say: "In order, from the first thing to the last.",
-    heads: ["What happens"],
-    stubs: ["First", "Next", "Then", "After that", "Finally"],
-  },
-  senses: {
-    label: "The five senses",
-    say: "Writing a reader can stand inside: what it was like for each sense.",
-    heads: ["What it was like"],
-    stubs: ["I saw", "I heard", "I felt", "I smelt", "I tasted"],
-  },
 };
 
 const TABLE = {
@@ -238,6 +204,366 @@ const TABLE = {
   say: "Rows and columns, for the things that are only clear side by side.",
   grid: { rows: 4, cols: 3 },
   presets: TABLE_PRESETS,
+};
+
+/**
+ * OREO — an argument built like the biscuit it is named after.
+ *
+ * Opinion, Reason, Example, Opinion again: it closes where it opened, and
+ * that is the whole lesson. Drawn as four stacked layers of a cookie —
+ * wafer, cream, cream, wafer — so the two O's are visibly the same thing
+ * top and bottom, which a column of identical boxes cannot say.
+ *
+ * The wafers are the opinions: scalloped at the rim and pricked the way a
+ * biscuit is. The cream between them is what holds the argument up.
+ */
+function wafer(y, h) {
+  /* a scalloped edge down each side, as a moulded biscuit has.
+     THE RIM IS ONE PATH, walked round: down the left, across the foot, back
+     up the right. Built as two paths and pasted together it came out as an
+     `H` with three numbers after it — a horizontal line shooting off the
+     side of the biscuit, which is exactly what it drew. */
+  const n = 5;
+  const step = h / n;
+  let left = "";
+  let right = "";
+  for (let i = 0; i < n; i++) {
+    left += ` q-2.4 ${(step / 2).toFixed(2)} 0 ${step.toFixed(2)}`;
+    right += ` q2.4 ${(-step / 2).toFixed(2)} 0 ${(-step).toFixed(2)}`;
+  }
+  return `<path d="M14 ${y}${left} H86${right} Z" ${LINE} stroke-width="1.6"/>`;
+}
+const OREO_ROWS = [
+  { id: "o1", head: "O — my opinion", y: 3, h: 20, kind: "wafer" },
+  { id: "r", head: "R — the reason I think so", y: 25.5, h: 21, kind: "cream" },
+  { id: "e", head: "E — an example that proves it", y: 49, h: 21, kind: "cream" },
+  { id: "o2", head: "O — so, my opinion again", y: 72.5, h: 20, kind: "wafer" },
+];
+const OREO = {
+  label: "OREO",
+  say: "Opinion, Reason, Example, Opinion again — an argument that closes where it opened.",
+  art: () => OREO_ROWS.map((r) => {
+    /* The pricking a real biscuit has was drawn here and taken out again:
+       it lands in the middle of the wafer, which is exactly where the
+       child writes, so it was either invisible under the ruled lines or
+       clutter across them. The scalloped rim says biscuit on its own. */
+    if (r.kind === "wafer") return wafer(r.y, r.h);
+    /* the cream: squeezed out a little past the biscuit */
+    return `<path d="M11 ${r.y}h78a3 3 0 0 1 0 ${r.h}H11a3 3 0 0 1 0-${r.h}z" ${LINE} stroke-width="1.4"/>`;
+  }).join(""),
+  fields: OREO_ROWS.map((r) => ({
+    id: r.id, head: r.head,
+    x: r.kind === "wafer" ? 16 : 13, y: r.y + 1, w: r.kind === "wafer" ? 68 : 74, h: r.h - 2,
+  })),
+};
+
+/**
+ * THE T-CHART — and it is a literal T, not two columns.
+ *
+ * The crossbar is what makes it one: the two headings sit ON it, so the eye
+ * reads "this against that" before it reads either side. Drawn as a plain
+ * two-column grid it is a table, and a table says nothing about weighing
+ * one thing against another.
+ *
+ * The foot is where a balanced argument differs from a list: having set the
+ * two sides out, you have to come down somewhere. It is below the stem and
+ * behind a dashed rule, so it reads as the thing you do LAST.
+ */
+const TCHART = {
+  label: "T-chart",
+  say: "Both sides of it, side by side — and what you think once you have weighed them.",
+  art: () => `<rect x="5" y="1" width="90" height="10" ${LINE} stroke-width="1.2"/>`
+    + `<path d="M4 23h92" ${LINE} stroke-width="2.4"/>`
+    + `<path d="M50 23v57" ${LINE} stroke-width="2.4"/>`
+    + `<path d="M6 83.5h88" ${LINE} stroke-width="1" stroke-dasharray="3 3"/>`,
+  fields: [
+    { id: "ask", head: "", x: 6.5, y: 1.9, w: 87, h: 8.2, mid: true, hint: "The question" },
+    { id: "forHead", head: "", x: 9, y: 13, w: 34, h: 8, mid: true, hint: "For" },
+    { id: "againstHead", head: "", x: 57, y: 13, w: 34, h: 8, mid: true, hint: "Against" },
+    { id: "for", head: "", x: 8, y: 25, w: 37, h: 55 },
+    { id: "against", head: "", x: 55, y: 25, w: 37, h: 55 },
+    { id: "verdict", head: "", x: 6, y: 85.5, w: 88, h: 12, hint: "So, on balance…" },
+  ],
+};
+
+/**
+ * AN ARROW, pointing where it is going.
+ *
+ * The stroke is told not to scale (so the shaft is an even width whichever
+ * way it runs) but a FILL is not: a head drawn as a plain triangle comes out
+ * half again as wide as it is tall on a three-by-two sheet. So the head is
+ * built from the line's own direction with the across-ness divided out, the
+ * same correction the circles get.
+ */
+function arrow(x1, y1, x2, y2, head = 3) {
+  const dx = (x2 - x1) * ASPECT;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len;
+  const uy = dy / len;
+  /* back along the line, then out to each side of it */
+  const bx = x2 - (ux * head) / ASPECT;
+  const by = y2 - uy * head;
+  const sx = (-uy * head * 0.5) / ASPECT;
+  const sy = ux * head * 0.5;
+  return `<path d="M${x1} ${y1}L${x2} ${y2}" ${LINE} stroke-width="1.3"/>`
+    + `<path d="M${x2} ${y2}L${(bx + sx).toFixed(2)} ${(by + sy).toFixed(2)}`
+    + `L${(bx - sx).toFixed(2)} ${(by - sy).toFixed(2)}Z" fill="${INK}"/>`;
+}
+
+/**
+ * THE FISHBONE — one effect, and everything that feeds it.
+ *
+ * The head is the thing that happened; the bones are the kinds of reason it
+ * happened, slanting back towards the tail because every one of them came
+ * BEFORE it. Drawn the other way round — bones leaning forward — it reads as
+ * consequences, which is a different diagram entirely.
+ */
+const FISH_BONES = [
+  ["Who", -1], ["Where", -1], ["When", -1],
+  ["What was used", 1], ["How it was done", 1], ["Why", 1],
+];
+const FISHBONE = {
+  label: "Fishbone",
+  say: "The head is what happened. Each bone is a kind of reason it happened.",
+  art: () => {
+    const spineY = 50;
+    let out = arrow(3, spineY, 76, spineY, 3.6);
+    /* the head: the effect everything else runs into */
+    out += `<path d="M77 ${spineY - 15}L97 ${spineY}L77 ${spineY + 15}Z" ${LINE} stroke-width="1.6"/>`;
+    FISH_BONES.forEach(([, way], i) => {
+      const at = 16 + (i % 3) * 20;          // where the bone meets the spine
+      const tipX = at - 9;
+      const tipY = spineY + way * 33;
+      out += `<path d="M${at} ${spineY}L${tipX} ${tipY}" ${LINE} stroke-width="1.3"/>`;
+      /* two small ribs off each bone: the details under a reason */
+      [0.42, 0.72].forEach((t) => {
+        const rx = at + (tipX - at) * t;
+        const ry = spineY + (tipY - spineY) * t;
+        out += `<path d="M${rx.toFixed(2)} ${ry.toFixed(2)}l6 ${(way * -3).toFixed(2)}" ${LINE} stroke-width="0.8" opacity="0.65"/>`;
+      });
+    });
+    return out;
+  },
+  fields: [
+    { id: "effect", head: "", x: 79, y: 42, w: 19, h: 16, mid: true, hint: "What happened" },
+    ...FISH_BONES.map(([head, way], i) => {
+      const at = 16 + (i % 3) * 20;
+      /* each bone's writing sits under its own tip and nowhere near the
+         next one's: overlapping fields run their rules together and the
+         three columns read as one block */
+      return {
+        id: `b${i}`, head,
+        x: Math.max(0.5, at - 17), y: way < 0 ? 4 : 68,
+        w: 17, h: 26,
+      };
+    }),
+  ],
+};
+
+/**
+ * THE CAUSE AND EFFECT MAP — three things in a row, not two.
+ *
+ * The fishbone up there is only the causes; this one has the other half.
+ * What led to it comes in from the left, the thing itself stands in the
+ * middle, and what came of it goes out to the right, so the map is read in
+ * the direction time runs. Every arrow points the same way for the same
+ * reason: an arrow that turned back would be saying the effect caused the
+ * event.
+ */
+const CE_AT = [11, 41.5, 72];        // where the three side boxes sit
+const CE_MID = CE_AT.map((y) => y + 8.5);
+const CAUSES = {
+  label: "Cause and effect",
+  say: "What led to it on the left, the thing itself in the middle, and what came of it on the right.",
+  art: () => {
+    let out = "";
+    CE_AT.forEach((y) => {
+      out += `<rect x="2" y="${y}" width="22" height="17" ${LINE} stroke-width="1.3"/>`;
+      out += `<rect x="76" y="${y}" width="22" height="17" ${LINE} stroke-width="1.3"/>`;
+    });
+    out += `<rect x="38" y="30" width="24" height="40" ${LINE} stroke-width="2"/>`;
+    /* in from the three causes, fanning onto the middle box */
+    const into = [38, 50, 62];
+    CE_MID.forEach((y, i) => { out += arrow(25, y, 36.4, into[i], 2.6); });
+    /* and out of it to the three effects, opening again */
+    CE_MID.forEach((y, i) => { out += arrow(63.6, into[i], 75, y, 2.6); });
+    return out;
+  },
+  labels: [
+    { text: "Causes", x: 13, y: 2.5, w: 20 },
+    { text: "Effects", x: 87, y: 2.5, w: 20 },
+  ],
+  fields: [
+    ...CE_AT.map((y, i) => ({ id: `c${i}`, head: "", x: 3.2, y: y + 1, w: 19.6, h: 15, hint: "Because…" })),
+    { id: "event", head: "What happened", x: 39.5, y: 31.5, w: 21, h: 37 },
+    ...CE_AT.map((y, i) => ({ id: `e${i}`, head: "", x: 77.2, y: y + 1, w: 19.6, h: 15, hint: "And so…" })),
+  ],
+};
+
+/**
+ * THE SEQUENCE CHAIN — it turns a corner, and that is deliberate.
+ *
+ * Six steps straight across would be six tiny boxes nobody can write in. So
+ * the chain goes along the top, turns down the right-hand side and comes
+ * back along the bottom, the way a line of writing does — which keeps every
+ * box the same generous size and keeps the order unmistakable, because the
+ * arrows never stop pointing from the step you have just done to the one
+ * you do next.
+ *
+ * The words are printed in the boxes. "First, next, then" is the vocabulary
+ * the chain is teaching; leaving the headings blank teaches nothing.
+ */
+const SEQ_SAYS = ["First", "Next", "Then", "After that", "And then", "Finally"];
+const SEQ_X = [4, 37, 70];
+const SEQ_W = 26;
+const SEQ_H = 30;
+const SEQ_TOP = 6;
+const SEQ_BOT = 58;
+/* reading order: along the top, down, and back along the bottom */
+const SEQ_AT = [
+  [SEQ_X[0], SEQ_TOP], [SEQ_X[1], SEQ_TOP], [SEQ_X[2], SEQ_TOP],
+  [SEQ_X[2], SEQ_BOT], [SEQ_X[1], SEQ_BOT], [SEQ_X[0], SEQ_BOT],
+];
+const SEQUENCE = {
+  label: "Sequence chain",
+  say: "One step to the next, in the order they happened.",
+  art: () => {
+    let out = SEQ_AT.map(([x, y]) =>
+      `<rect x="${x}" y="${y}" width="${SEQ_W}" height="${SEQ_H}" ${LINE} stroke-width="1.4"/>`).join("");
+    const midTop = SEQ_TOP + SEQ_H / 2;
+    const midBot = SEQ_BOT + SEQ_H / 2;
+    /* along the top, left to right */
+    out += arrow(SEQ_X[0] + SEQ_W + 0.6, midTop, SEQ_X[1] - 0.6, midTop, 2.6);
+    out += arrow(SEQ_X[1] + SEQ_W + 0.6, midTop, SEQ_X[2] - 0.6, midTop, 2.6);
+    /* down the right-hand side */
+    out += arrow(SEQ_X[2] + SEQ_W / 2, SEQ_TOP + SEQ_H + 0.6, SEQ_X[2] + SEQ_W / 2, SEQ_BOT - 0.6, 2.6);
+    /* and back along the bottom, right to left */
+    out += arrow(SEQ_X[2] - 0.6, midBot, SEQ_X[1] + SEQ_W + 0.6, midBot, 2.6);
+    out += arrow(SEQ_X[1] - 0.6, midBot, SEQ_X[0] + SEQ_W + 0.6, midBot, 2.6);
+    return out;
+  },
+  fields: SEQ_AT.map(([x, y], i) => ({
+    id: `s${i}`, head: SEQ_SAYS[i],
+    x: x + 2, y: y + 1.5, w: SEQ_W - 4, h: SEQ_H - 3,
+  })),
+};
+
+/**
+ * THE FIVE SENSES — and they are DRAWN, not listed.
+ *
+ * "See / hear / smell / taste / touch" written down the side of a table is
+ * five words to read. An eye, an ear, a nose, a mouth and a hand are five
+ * things to recognise, which is the whole reason this organiser exists: it
+ * is for describing, and it asks with pictures.
+ *
+ * Each sense is drawn in its own little square space and then squashed
+ * across by the same amount the sheet stretches, so an eye is an eye and
+ * not a wide eye. Everything inside `organ()` is therefore authored as if
+ * on graph paper, centred on nothing, in a box about sixteen across.
+ */
+const organ = (cx, cy, body, s = 0.78) =>
+  `<g transform="translate(${cx} ${cy}) scale(${(s / ASPECT).toFixed(4)} ${s})">${body}</g>`;
+
+const SENSE_EYE = `<path d="M-8 -5.2C-4.6 -8.4 4.6 -8.4 8 -5.2" ${LINE} stroke-width="1"/>`
+  + `<path d="M-7.6 0C-4.2 -5.6 4.2 -5.6 7.6 0C4.2 5.6 -4.2 5.6 -7.6 0Z" ${LINE} stroke-width="1.4"/>`
+  + `<circle r="2.9" ${LINE} stroke-width="1.1"/>`
+  + `<circle r="1.2" fill="${INK}"/>`;
+
+const SENSE_EAR = `<path d="M4.4 -5.6C1.4 -7.8 -3.8 -7.2 -5.4 -3C-6.8 0.6 -5.6 3.6 -3.8 5.4C-2.4 6.8 -0.4 7.4 0.8 6.2C1.8 5.2 1.4 4 2.4 3.2" ${LINE} stroke-width="1.4"/>`
+  + `<path d="M2.2 -2.4C-0.2 -4 -2.8 -2.8 -3.2 -0.4C-3.6 1.8 -2.6 3.4 -1 3.8" ${LINE} stroke-width="1"/>`
+  + `<path d="M6 -2.6C7.4 -1.2 7.4 1.2 6 2.6" ${LINE} stroke-width="0.9" opacity="0.7"/>`;
+
+const SENSE_NOSE = `<path d="M0 -7.4C-1 -3.6 -3.2 -0.4 -4.8 1.8C-5.8 3.2 -4.8 4.6 -3.2 4.4" ${LINE} stroke-width="1.4"/>`
+  + `<path d="M-3.6 4.8C-1.8 7 2.4 7 4.4 4.6" ${LINE} stroke-width="1.4"/>`
+  + `<path d="M3.2 3C2.6 4.6 0.6 5.2 -0.6 4.6" ${LINE} stroke-width="0.9"/>`
+  + `<path d="M6 -2.6q1.4-1.2 0-2.4q-1.4-1.2 0-2.4" ${LINE} stroke-width="0.9" opacity="0.7"/>`;
+
+const SENSE_MOUTH = `<path d="M-7.6 0C-5.2 -4.6 -2.4 -2.4 0 -2.8C2.4 -3.2 5.2 -4.6 7.6 0C4.6 5 -4.6 5 -7.6 0Z" ${LINE} stroke-width="1.4"/>`
+  + `<path d="M-7.6 0H7.6" ${LINE} stroke-width="1"/>`
+  + `<path d="M-2.6 0.8C-2.6 3.4 2.6 3.4 2.6 0.8" ${LINE} stroke-width="0.9"/>`;
+
+/* the palm has no top edge: a line across there cuts the fingers off */
+const SENSE_HAND = `<path d="M-4.2 -2V-5.6M-1.5 -2V-7.4M1.2 -2V-7M3.9 -2V-5.2" ${LINE} stroke-width="1.5"/>`
+  + `<path d="M-5.4 -2V2.2C-5.4 7.6 5.4 7.6 5.4 2.2V-2" ${LINE} stroke-width="1.4"/>`
+  + `<path d="M-5.4 0.6C-7.6 0.2 -8.2 -2 -6.6 -2.8C-5.6 -3.2 -5 -2.4 -5 -1.6" ${LINE} stroke-width="1.3"/>`;
+
+const SENSE_ROWS = [
+  { id: "see", head: "It looks…", art: SENSE_EYE },
+  { id: "hear", head: "It sounds…", art: SENSE_EAR },
+  { id: "smell", head: "It smells…", art: SENSE_NOSE },
+  { id: "taste", head: "It tastes…", art: SENSE_MOUTH },
+  { id: "touch", head: "It feels…", art: SENSE_HAND },
+];
+const SENSE_TOP = 13;
+const SENSE_H = 17;
+const SENSES = {
+  label: "Five senses",
+  say: "Describe it with all five — what you see, hear, smell, taste and feel.",
+  art: () => {
+    let out = `<rect x="4" y="1.5" width="92" height="9" ${LINE} stroke-width="1.2"/>`
+      + `<rect x="4" y="${SENSE_TOP}" width="92" height="${SENSE_H * 5}" ${LINE} stroke-width="1.6"/>`
+      + `<path d="M20 ${SENSE_TOP}v${SENSE_H * 5}" ${LINE} stroke-width="1"/>`;
+    SENSE_ROWS.forEach((row, i) => {
+      if (i) out += `<path d="M4 ${SENSE_TOP + i * SENSE_H}h92" ${LINE} stroke-width="0.8"/>`;
+      out += organ(12, SENSE_TOP + i * SENSE_H + SENSE_H / 2, row.art);
+    });
+    return out;
+  },
+  fields: [
+    { id: "thing", head: "", x: 5, y: 2, w: 90, h: 8, mid: true, hint: "What you are describing" },
+    ...SENSE_ROWS.map((row, i) => ({
+      id: row.id, head: row.head,
+      x: 22, y: SENSE_TOP + i * SENSE_H + 1.5, w: 72, h: SENSE_H - 3,
+    })),
+  ],
+};
+
+/**
+ * A FLOW CHART — and the shapes mean things.
+ *
+ * A stadium is where it starts and stops, a box is something you DO, and a
+ * diamond is a question with two ways out. A flow chart drawn in all
+ * rectangles is a list with arrows on it.
+ */
+const FLOW = {
+  label: "Flow chart",
+  say: "A box is something you do. A diamond is a question, and it has two ways out.",
+  art: () => {
+    const r = 5;
+    let out = "";
+    /* start: a stadium */
+    out += `<path d="M38 2h24a${(r / ASPECT).toFixed(2)} ${r} 0 0 1 0 10H38a${(r / ASPECT).toFixed(2)} ${r} 0 0 1 0-10z" ${LINE} stroke-width="1.5"/>`;
+    out += arrow(50, 12, 50, 19);
+    out += `<rect x="31" y="19" width="38" height="13" ${LINE} stroke-width="1.5"/>`;
+    out += arrow(50, 32, 50, 39);
+    /* the question */
+    out += `<path d="M50 39L${(50 + 20 / ASPECT).toFixed(2)} 51L50 63L${(50 - 20 / ASPECT).toFixed(2)} 51Z" ${LINE} stroke-width="1.5"/>`;
+    /* its two ways out, started clear of the diamond so they do not draw
+       over the two points that make it a diamond */
+    out += arrow(50 + 20 / ASPECT + 1.5, 51, 74, 51);
+    out += arrow(50 - 20 / ASPECT - 1.5, 51, 26, 51);
+    out += `<rect x="74" y="43" width="24" height="16" ${LINE} stroke-width="1.4"/>`;
+    out += `<rect x="2" y="43" width="24" height="16" ${LINE} stroke-width="1.4"/>`;
+    /* and both come back to the same end */
+    out += `<path d="M86 59v14H50" ${LINE} stroke-width="1.1" stroke-dasharray="2.5 2.5"/>`;
+    out += `<path d="M14 59v14h36" ${LINE} stroke-width="1.1" stroke-dasharray="2.5 2.5"/>`;
+    out += arrow(50, 73, 50, 81);
+    out += `<path d="M38 81h24a${(r / ASPECT).toFixed(2)} ${r} 0 0 1 0 10H38a${(r / ASPECT).toFixed(2)} ${r} 0 0 1 0-10z" ${LINE} stroke-width="1.5"/>`;
+    return out;
+  },
+  /* THE WORDS ON THE TWO WAYS OUT are the whole point of a diamond, and they
+     are HTML rather than SVG text: this sheet stretches its drawing three by
+     two, which is fine for a line and turns a letter into a wide letter. */
+  labels: [{ text: "yes", x: 62, y: 45 }, { text: "no", x: 30, y: 45 }],
+  fields: [
+    { id: "start", head: "", x: 39, y: 2.5, w: 22, h: 9, mid: true, hint: "Start" },
+    { id: "step", head: "", x: 32, y: 20, w: 36, h: 11, hint: "The first thing you do" },
+    { id: "ask", head: "", x: 38, y: 44, w: 24, h: 14, mid: true, hint: "The question" },
+    { id: "yes", head: "", x: 75, y: 44, w: 22, h: 14, hint: "If yes…" },
+    { id: "no", head: "", x: 3, y: 44, w: 22, h: 14, hint: "If no…" },
+    { id: "end", head: "", x: 39, y: 81.5, w: 22, h: 9, mid: true, hint: "End" },
+  ],
 };
 
 const VENN = {
@@ -286,6 +612,13 @@ export const ORGANISERS = {
   mountain: MOUNTAIN,
   venn: VENN,
   roundabout: ROUNDABOUT,
+  oreo: OREO,
+  tchart: TCHART,
+  causes: CAUSES,
+  sequence: SEQUENCE,
+  senses: SENSES,
+  fishbone: FISHBONE,
+  flow: FLOW,
   table: TABLE,
 };
 export const ORGANISER_IDS = Object.keys(ORGANISERS);
@@ -455,6 +788,10 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
                   placeholder="${esc(f.hint || "")}">${esc(state.fields[f.id] || "")}</textarea>
       </label>`;
     }).join("");
+    if (spec.labels) {
+      fieldsEl.insertAdjacentHTML("beforeend", spec.labels.map((l) =>
+        `<span class="og__label" style="left:${l.x}%;top:${l.y}%${l.w ? `;width:${l.w}%;margin-left:${-l.w / 2}%` : ""}">${esc(l.text)}</span>`).join(""));
+    }
     if (spec.presets) {
       el.querySelectorAll("[data-set]").forEach((k) => k.setAttribute("aria-pressed", String(k.dataset.set === state.preset)));
       const say = el.querySelector(".og__say");

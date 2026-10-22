@@ -100,7 +100,7 @@ const TOOLS = {
       return () => live.dispose();
     },
   },
-  ...Object.fromEntries(["burger", "mountain", "venn", "roundabout", "table"].map((kind) => [kind, {
+  ...Object.fromEntries(["burger", "mountain", "venn", "roundabout", "oreo", "tchart", "causes", "sequence", "senses", "fishbone", "flow", "table"].map((kind) => [kind, {
     label: kind,
     size: { w: 720, h: 620 },
     async open(body) {

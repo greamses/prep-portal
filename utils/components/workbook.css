@@ -2983,6 +2983,13 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .og__set:hover { border-color: #2a2723; color: #2a2723; }
 .og__set[aria-pressed="true"] { color: #2a2723; background: #fff3a8; border-color: #2a2723; }
 
+/* a word that belongs to the drawing — "yes" and "no" off a diamond */
+.og__label {
+  position: absolute; width: 8%; margin-left: -4%;
+  text-align: center; pointer-events: none;
+  font: 700 7.6pt/1 var(--font-display, inherit); color: #2a2723;
+}
+
 /* a stub is printed down the side: part of the method, not a question */
 .og__stub {
   display: flex; align-items: center; justify-content: center;
