@@ -206,8 +206,10 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
       <span class="og__keys">
         <button type="button" class="pp-btn wb-tint-2 og__key" data-og="pin"
                 aria-label="Add a pin for a sticky note" data-tip="Add a pin, then write its note">${PIN_ICON}</button>
-        ${spec.grid ? `<button type="button" class="pp-btn wb-tint-1 og__key" data-og="row" aria-label="One more row" data-tip="One more row">+ row</button>
-        <button type="button" class="pp-btn wb-tint-1 og__key" data-og="col" aria-label="One more column" data-tip="One more column">+ col</button>` : ""}
+        ${spec.grid ? `<button type="button" class="pp-btn wb-tint-1 og__key" data-og="row+" aria-label="One more row" data-tip="One more row">+ row</button>
+        <button type="button" class="pp-btn wb-tint-1 og__key" data-og="row-" aria-label="One row fewer" data-tip="Take the last row off">&minus; row</button>
+        <button type="button" class="pp-btn wb-tint-1 og__key" data-og="col+" aria-label="One more column" data-tip="One more column">+ col</button>
+        <button type="button" class="pp-btn wb-tint-1 og__key" data-og="col-" aria-label="One column fewer" data-tip="Take the last column off">&minus; col</button>` : ""}
         <button type="button" class="pp-btn wb-tint-4 og__key" data-og="clear"
                 aria-label="Take the picked pin off" data-tip="Take the picked pin off">${BIN_ICON}</button>
       </span>
@@ -326,8 +328,9 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
       write(p);
       return;
     }
-    if (k === "row") { state.grid.rows = Math.min(12, state.grid.rows + 1); paintAll(); tell(); return; }
-    if (k === "col") { state.grid.cols = Math.min(8, state.grid.cols + 1); paintAll(); tell(); return; }
+    if (k === "row+") { state.grid.rows = Math.min(12, state.grid.rows + 1); paintAll(); tell(); return; }
+    if (k === "col+") { state.grid.cols = Math.min(8, state.grid.cols + 1); paintAll(); tell(); return; }
+    if (k === "row-" || k === "col-") { shrink(k === "row-" ? "rows" : "cols"); return; }
     if (k === "clear") {
       if (picked == null) return;
       state.pins = state.pins.filter((p) => p.id !== picked);
@@ -344,6 +347,35 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
       write(p);
     }
   });
+
+  /**
+   * ONE ROW OR COLUMN FEWER — the last one, and what was written in it goes
+   * with it.
+   *
+   * Two things it will not do. It will not take the last row or the last
+   * column away, because a table of nothing is not a table and there would
+   * be no key left to grow it back from. And it will not throw away writing
+   * without asking: a table is filled in slowly and there is no step back on
+   * this sheet, so a row with words in it is worth one question. An empty
+   * one goes without a word, because asking about nothing is just a door to
+   * open twice.
+   */
+  function shrink(which) {
+    const n = state.grid[which];
+    if (n <= 1) return;
+    const last = n - 1;
+    const doomed = fieldsOf().filter((f) => {
+      const m = /^r(\d+)c(\d+)$/.exec(f.id);
+      return m && Number(m[which === "rows" ? 1 : 2]) === last;
+    });
+    const written = doomed.some((f) => (state.fields[f.id] || "").trim());
+    const what = which === "rows" ? "row" : "column";
+    if (written && !confirm(`Take the last ${what} off? What is written in it goes too.`)) return;
+    doomed.forEach((f) => { delete state.fields[f.id]; });
+    state.grid[which] = last;
+    paintAll();
+    tell();
+  }
 
   /* typing straight into the shape */
   fieldsEl.addEventListener("input", (e) => {
