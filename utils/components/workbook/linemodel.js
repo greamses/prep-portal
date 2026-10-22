@@ -27,6 +27,7 @@
    ========================================================================== */
 
 import { mountTooltips } from "/utils/components/tooltip.js";
+import { mixedSvg } from "./stackfrac.js";
 
 const VIEW = 680;          // the board's own width, as the bar model's
 const PAD = 34;            // the room at each end for the first and last figure
@@ -203,40 +204,13 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
   /**
    * A FIGURE AS IT IS WRITTEN BY HAND: a proper fraction stacked — numerator
    * over a bar over the denominator — not run together on one line as
-   * "1/2". A whole number in front (a mixed number) sits at ordinary size,
-   * baseline-aligned, immediately to its left. Anything that is not a
-   * fraction (a plain figure, a decimal, a letter typed on a mark) is drawn
-   * exactly as before.
+   * "1/2". The site's one stacked-fraction writer (./stackfrac.js, already
+   * used by the bar model and every TV film) does this; the only thing
+   * added here is that it ALSO takes a sign and a whole number in front, a
+   * mixed number being most of what a number line actually prints.
    */
-  function numberGlyph(x, yBase, text, size, fill) {
-    const m = /^(-)?(?:(\d+)\s+)?(\d+)\/(\d+)$/.exec(text);
-    if (!m) {
-      return `<text x="${x}" y="${yBase}" text-anchor="middle" font-family="JetBrains Mono, monospace"`
-        + ` font-size="${size}" fill="${fill}">${esc(text)}</text>`;
-    }
-    const [, sign, whole, num, den2] = m;
-    const CH = size * 0.62;
-    const lead = (sign || "") + (whole || "");
-    const fs = size * 0.68;
-    const fCH = fs * 0.62;
-    const barW = Math.max(num.length, den2.length) * fCH + fCH * 0.6;
-    const leadW = lead ? lead.length * CH + CH * (whole ? 0.5 : 0.18) : 0;
-    const total = leadW + barW;
-    const leadX = x - total / 2 + leadW / 2;
-    const fracX = x - total / 2 + leadW + barW / 2;
-    let out = "";
-    if (lead) {
-      out += `<text x="${leadX.toFixed(1)}" y="${yBase}" text-anchor="middle" font-family="JetBrains Mono, monospace"`
-        + ` font-size="${size}" fill="${fill}">${esc(lead)}</text>`;
-    }
-    return out
-      + `<text x="${fracX.toFixed(1)}" y="${(yBase - fs * 0.5).toFixed(1)}" text-anchor="middle"`
-      + ` font-family="JetBrains Mono, monospace" font-size="${fs}" fill="${fill}">${esc(num)}</text>`
-      + `<line x1="${(fracX - barW / 2).toFixed(1)}" x2="${(fracX + barW / 2).toFixed(1)}"`
-      + ` y1="${(yBase - fs * 0.1).toFixed(1)}" y2="${(yBase - fs * 0.1).toFixed(1)}" stroke="${fill}" stroke-width="1"/>`
-      + `<text x="${fracX.toFixed(1)}" y="${(yBase + fs * 0.95).toFixed(1)}" text-anchor="middle"`
-      + ` font-family="JetBrains Mono, monospace" font-size="${fs}" fill="${fill}">${esc(den2)}</text>`;
-  }
+  const numberGlyph = (x, yBase, text, size, fill, weight = 400) =>
+    mixedSvg(x, yBase, text, { size, weight, ink: fill });
 
   /* ── drawing ─────────────────────────────────────────────────────────── */
   function paint() {
@@ -284,7 +258,7 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
       out += `<g class="lm-mark${on ? " is-picked" : ""}" data-mark="${m.id}">`
         + `<circle cx="${x}" cy="${BASE}" r="${on ? 8 : 6.4}" fill="${col}" stroke="#fffdf8" stroke-width="2"/>`
         + `<rect x="${x - 30}" y="${BASE - 46}" width="60" height="24" fill="transparent"/>`
-        + numberGlyph(x, BASE - 28, m.text || "…", 15, m.text ? col : GREY) + `</g>`;
+        + numberGlyph(x, BASE - 28, m.text || "…", 15, m.text ? col : GREY, 700) + `</g>`;
     });
     svg.innerHTML = out;
     tools.querySelector('[data-t="undo"]').disabled = !history.length;

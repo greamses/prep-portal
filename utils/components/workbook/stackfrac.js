@@ -63,3 +63,40 @@ export function fracSvg(x, y, n, d, { size = 4.2, weight = 700, ink = "#2a2723",
 
 /** The two figures of a fraction written as `a/b`. */
 export const partsOf = (s) => String(s).trim().split("/").map((p) => p.trim());
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+/**
+ * A fraction, the same way fracSvg() writes one, but allowed a SIGN and a
+ * WHOLE NUMBER in front of it — "-1 3/4" as a mixed number is actually
+ * written, not run together on one line as "-1 3/4" of plain text. Anything
+ * that isn't shaped like a fraction at all — a whole number, a decimal, a
+ * letter typed on a mark — falls straight through to one plain figure,
+ * which is what makes this safe to call on ANY label, fraction or not.
+ */
+export function mixedSvg(x, y, s, { size = 4.2, weight = 700, ink = "#2a2723",
+  tag = "", row = null, ask = false } = {}) {
+  const open = `<g${tag ? ` data-mb="${tag}"` : ""}${row != null ? ` data-mb-row="${row}"` : ""}`
+    + `${ask ? ' data-ask="1"' : ""} fill="${ink}" font-family="JetBrains Mono, monospace"`
+    + ` font-weight="${weight}" text-anchor="middle">`;
+  const m = /^(-)?(?:(\d+)\s+)?(\d+)\/(\d+)$/.exec(String(s ?? "").trim());
+  if (!m) return `${open}<text x="${f(x)}" y="${f(y)}" font-size="${f(size)}">${esc(String(s ?? ""))}</text></g>`;
+  const [, sign, whole, n, d] = m;
+  const lead = (sign || "") + (whole || "");
+  const CH = size * 0.62;
+  const fs = size * 0.72;
+  const rule = y - size * 0.42;
+  const wide = Math.max(String(n).length, String(d).length);
+  const half = fs * 0.36 * wide + size * 0.08;
+  const leadW = lead ? lead.length * CH + CH * (whole ? 0.5 : 0.18) : 0;
+  const total = leadW + half * 2;
+  const leadX = x - total / 2 + leadW / 2;
+  const fracX = x - total / 2 + leadW + half;
+  let out = open;
+  if (lead) out += `<text x="${f(leadX)}" y="${f(y)}" font-size="${f(size)}">${esc(lead)}</text>`;
+  return out
+    + `<text x="${f(fracX)}" y="${f(rule - size * 0.1)}" font-size="${f(fs)}">${esc(n)}</text>`
+    + `<line x1="${f(fracX - half)}" y1="${f(rule)}" x2="${f(fracX + half)}" y2="${f(rule)}"`
+    + ` stroke="${ink}" stroke-width="${f(size * 0.085)}" stroke-linecap="round"/>`
+    + `<text x="${f(fracX)}" y="${f(rule + size * 0.62)}" font-size="${f(fs)}">${esc(d)}</text></g>`;
+}
