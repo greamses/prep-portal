@@ -90,6 +90,12 @@ export function showValue(v, den) {
 
 export const blankLine = () => ({
   from: 0, to: 20, step: 1,
+  /* WHAT THE CHILD TYPED, not what the number happens to equal. 0.5 and 1/2
+     are the same value and not the same answer: type a decimal and the line
+     rules itself in decimals, type a fraction and it rules itself in
+     fractions. Only the step carries the flag — it is what the tick figures
+     are read off (see den(), below). */
+  stepFraction: false,
   marks: [],
   jumps: [],
 });
@@ -173,8 +179,10 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
 
   /* ── where a value sits, and what a place is worth ───────────────────── */
   const span = () => (Number(line.to) - Number(line.from)) || 1;
-  /** What the line is ruled in — 4 for quarters — so its figures print right. */
-  const den = () => denOf(Number(line.step) > 0 ? Number(line.step) : 1);
+  /** What the line is ruled in — 4 for quarters — so its figures print right.
+      Nothing, unless the step was actually TYPED as a fraction: 0.5 stays
+      "0.5" on the line, because that is what was entered. */
+  const den = () => (line.stepFraction ? denOf(Number(line.step) > 0 ? Number(line.step) : 1) : 0);
   const xOf = (v) => PAD + ((v - line.from) / span()) * (VIEW - PAD * 2);
   const vOf = (x) => line.from + ((x - PAD) / (VIEW - PAD * 2)) * span();
   /** A value rounded to the line's own step — a jump of three and a bit is not a jump. */
@@ -192,6 +200,44 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
   const BASE = 104;        // where the rule itself sits in the drawing
   const HEIGHT = 168;
 
+  /**
+   * A FIGURE AS IT IS WRITTEN BY HAND: a proper fraction stacked — numerator
+   * over a bar over the denominator — not run together on one line as
+   * "1/2". A whole number in front (a mixed number) sits at ordinary size,
+   * baseline-aligned, immediately to its left. Anything that is not a
+   * fraction (a plain figure, a decimal, a letter typed on a mark) is drawn
+   * exactly as before.
+   */
+  function numberGlyph(x, yBase, text, size, fill) {
+    const m = /^(-)?(?:(\d+)\s+)?(\d+)\/(\d+)$/.exec(text);
+    if (!m) {
+      return `<text x="${x}" y="${yBase}" text-anchor="middle" font-family="JetBrains Mono, monospace"`
+        + ` font-size="${size}" fill="${fill}">${esc(text)}</text>`;
+    }
+    const [, sign, whole, num, den2] = m;
+    const CH = size * 0.62;
+    const lead = (sign || "") + (whole || "");
+    const fs = size * 0.68;
+    const fCH = fs * 0.62;
+    const barW = Math.max(num.length, den2.length) * fCH + fCH * 0.6;
+    const leadW = lead ? lead.length * CH + CH * (whole ? 0.5 : 0.18) : 0;
+    const total = leadW + barW;
+    const leadX = x - total / 2 + leadW / 2;
+    const fracX = x - total / 2 + leadW + barW / 2;
+    let out = "";
+    if (lead) {
+      out += `<text x="${leadX.toFixed(1)}" y="${yBase}" text-anchor="middle" font-family="JetBrains Mono, monospace"`
+        + ` font-size="${size}" fill="${fill}">${esc(lead)}</text>`;
+    }
+    return out
+      + `<text x="${fracX.toFixed(1)}" y="${(yBase - fs * 0.5).toFixed(1)}" text-anchor="middle"`
+      + ` font-family="JetBrains Mono, monospace" font-size="${fs}" fill="${fill}">${esc(num)}</text>`
+      + `<line x1="${(fracX - barW / 2).toFixed(1)}" x2="${(fracX + barW / 2).toFixed(1)}"`
+      + ` y1="${(yBase - fs * 0.1).toFixed(1)}" y2="${(yBase - fs * 0.1).toFixed(1)}" stroke="${fill}" stroke-width="1"/>`
+      + `<text x="${fracX.toFixed(1)}" y="${(yBase + fs * 0.95).toFixed(1)}" text-anchor="middle"`
+      + ` font-family="JetBrains Mono, monospace" font-size="${fs}" fill="${fill}">${esc(den2)}</text>`;
+  }
+
   /* ── drawing ─────────────────────────────────────────────────────────── */
   function paint() {
     svg.setAttribute("viewBox", `0 0 ${VIEW} ${HEIGHT}`);
@@ -207,8 +253,7 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
       const v = line.from + i * st;
       const x = xOf(v);
       out += `<line x1="${x}" x2="${x}" y1="${BASE - 7}" y2="${BASE + 7}" stroke="${INK}" stroke-width="1.4"/>`
-        + `<text x="${x}" y="${BASE + 24}" text-anchor="middle" font-family="JetBrains Mono, monospace"`
-        + ` font-size="13" fill="${GREY}">${esc(showValue(v, d))}</text>`;
+        + numberGlyph(x, BASE + 24, showValue(v, d), 13, GREY);
     }
 
     line.jumps.forEach((j) => {
@@ -345,8 +390,12 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
     if (v == null) { e.target.classList.add("is-wrong"); return; }
     if (k === "step" && v <= 0) { e.target.classList.add("is-wrong"); return; }
     e.target.classList.remove("is-wrong");
+    /* what was TYPED, read straight off the box — a "/" in it is a fraction
+       step whatever the box also had around it ("1 1/2", " 3/4 "). */
+    const typedFraction = /\//.test(e.target.value);
     change(() => {
       line[k] = v;
+      if (k === "step") line.stepFraction = typedFraction;
       /* RE-RULING BRINGS EVERYTHING WITH IT. A mark at ten on a line that now
          runs nought to two is drawn off the end of the paper, where it cannot
          be read or taken hold of; the honest thing is to put it on the line
@@ -365,11 +414,19 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
    *
    * Hung under its key by `position: absolute`, it was clipped by the panel
    * it lives in — the bottom of the settings, which is where the step is,
-   * simply was not there. It is laid out against the WINDOW instead, under
-   * its key, and nudged back on screen if the key is near an edge.
+   * simply was not there. `position: fixed` against the window was meant to
+   * fix that, and silently didn't: this panel's own "paper" wrapper carries
+   * a CSS filter (the drop shadow), and a filter on an ancestor makes IT —
+   * not the viewport — the containing block for a fixed descendant, same as
+   * a transform would. The sheet was computing its spot against the real
+   * window and then rendering hundreds of pixels away from it, half off the
+   * edge of the screen. Moving it out to be a child of the page itself, the
+   * first time it is shown, is what actually fixes that: nothing sits
+   * between it and the window after that, ever again.
    */
   function show(sheet, keyEl) {
     if (!sheet.hidden) { sheet.hidden = true; return; }
+    if (sheet.parentElement !== document.body) document.body.appendChild(sheet);
     sheet.hidden = false;
     const k = keyEl.getBoundingClientRect();
     const b = sheet.getBoundingClientRect();
@@ -380,8 +437,10 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
     sheet.style.top = `${Math.max(6, top)}px`;
   }
 
+  /* A click INSIDE the sheet must not close it — it is a child of the page
+     now, not of the toolbar, so ".lm-tools" alone no longer says that. */
   const shut = (e) => {
-    if (!e.target.closest('.lm-tools')) { pot.hidden = true; rangeSheet.hidden = true; }
+    if (!e.target.closest('.lm-tools') && !e.target.closest('.lm-pot')) { pot.hidden = true; rangeSheet.hidden = true; }
   };
   document.addEventListener("pointerdown", shut, true);
 
@@ -503,6 +562,10 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
     clear() { line = blankLine(); picked = null; paint(); },
     dispose() {
       document.removeEventListener("pointerdown", shut, true);
+      /* if a sheet was ever shown, it now lives on document.body, well
+         outside `el` — the innerHTML reset below cannot reach it */
+      pot.remove();
+      rangeSheet.remove();
       el.classList.remove("is-lining");
       el.innerHTML = printed;
     },

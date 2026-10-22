@@ -3118,14 +3118,18 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 
 /* laid out against the WINDOW, so the box it lives in cannot cut it off */
 .lm-pot { position: fixed; z-index: 10120; width: 44mm; }
-.lm-pot--range { width: 54mm; }
+/* 54mm left no real room for the box once the receipt's own padding, the
+   row's label column and the gap between them were taken out of it — an
+   input a handful of millimetres wide cuts off anything longer than a
+   couple of digits. */
+.lm-pot--range { width: 76mm; }
 .lm-pot[hidden] { display: none; }
 .lm-pot__in { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.1mm; padding: 2mm; }
 .lm-chip { width: 100%; aspect-ratio: 1; padding: 0; border: 0.4mm solid rgba(42, 39, 35, 0.3); border-radius: 0; cursor: pointer; }
 .lm-chip:hover { border-color: #2a2723; transform: scale(1.08); }
 .lm-range { display: grid; gap: 1.4mm; padding: 2.4mm; }
 .lm-range label { display: flex; align-items: center; gap: 1.6mm; font: 700 8pt/1.2 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); }
-.lm-range span { flex: 0 0 22mm; color: #6f685f; }
+.lm-range span { flex: 0 0 20mm; color: #6f685f; }
 .lm-range__say { margin: 0.4mm 0 0; font: 7.5pt/1.45 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); color: #6f685f; }
 .lm-range input.is-wrong { border-color: #c0453f; background: #ffeceb; }
 .lm-range input {
