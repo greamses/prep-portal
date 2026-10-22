@@ -3102,6 +3102,7 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
    The bar model board's companion, dressed the same way: a row of icon keys
    with their names in the tooltip, then the drawing. */
 .lm-host { display: block; width: 100%; padding: 0.5rem 0.7rem 0.7rem; box-sizing: border-box; overflow: auto; height: 100%; }
+.vn-host { display: block; width: 100%; padding: 0.5rem 0.7rem 0.7rem; box-sizing: border-box; overflow: auto; height: 100%; }
 .lm-tools { position: relative; display: flex; flex-wrap: wrap; gap: 1mm; margin-bottom: 1.5mm; }
 .lm-key { padding: 0.9mm 1.4mm; line-height: 0; border: 0; box-shadow: none; }
 .lm-key::before, .lm-key::after { display: none; }
@@ -3144,6 +3145,75 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   color: #2a2723; background: #fff; border: 2px solid #2f6ea8; border-radius: 0;
 }
 @media print { .lm-tools, .lm-hint { display: none !important; } }
+
+/* ── A VENN DIAGRAM YOU BUILD (vennmodel.js) ────────────────────────────────
+   Dressed the same way as the number line: a row of icon keys, a board below
+   it. The board carries three layers — the rings (svg), the two or three
+   ring names (vn-caps) and the loose items (vn-items) — stacked so a drag on
+   an item never fights the ring underneath it for the pointer. */
+.vn-tools { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 1mm; margin-bottom: 1.5mm; }
+.vn-key { padding: 0.9mm 1.4mm; line-height: 0; border: 0; box-shadow: none; }
+.vn-key::before, .vn-key::after { display: none; }
+.vn-key svg { display: block; }
+.vn-key:hover { transform: translateY(-0.3mm); }
+.vn-sets { display: inline-flex; gap: 1mm; margin-right: 0.6mm; }
+.vn-set {
+  padding: 1mm 2mm; font: 700 7.6pt/1 var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  color: #6f685f; border: 0.3mm solid rgba(42, 39, 35, 0.22); border-radius: 0; background: var(--surface-secondary, #f4f0e8);
+}
+.vn-set[aria-pressed="true"] { color: #2a2723; background: #fffdf8; border-color: #2a2723; font-weight: 700; }
+.vn-say { margin: 0 0 1mm; min-height: 1.4em; font: 700 7.6pt/1.3 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); color: #6f685f; }
+
+.vn-board { position: relative; aspect-ratio: 680 / 520; border: 0.3mm dashed #8a837a; background: #fffdf8; touch-action: none; }
+.vn-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.vn-caps { position: absolute; inset: 0; pointer-events: none; }
+.vn-cap {
+  position: absolute; transform: translate(-50%, -100%); pointer-events: auto; cursor: text;
+  padding: 0 1mm; font: 700 8pt/1.3 var(--font-display, inherit); color: #2a2723;
+  white-space: nowrap; max-width: 40%; overflow: hidden; text-overflow: ellipsis;
+}
+.vn-cap--below { transform: translate(-50%, 0); }
+/* EMPTY SPACE MUST NOT SWALLOW A CLICK. This layer covers the whole board
+   so an item can be dragged anywhere on it, but with no `pointer-events`
+   rule of its own it was the TOPMOST thing at every point on the board —
+   including where a ring's name sits underneath it — and took every click
+   meant for that label instead. Only a real item (a button, inside it)
+   answers the pointer now. */
+.vn-items { position: absolute; inset: 0; pointer-events: none; }
+.vn-item {
+  pointer-events: auto;
+  position: absolute; transform: translate(-50%, -50%); z-index: 2;
+  padding: 1mm 2.2mm; border: 0.3mm solid rgba(42, 39, 35, 0.35); border-radius: 0;
+  font: 700 8pt/1.2 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); color: #2a2723;
+  cursor: grab; white-space: nowrap; box-shadow: 0 1px 2px rgba(42, 39, 35, 0.25);
+}
+.vn-item:active { cursor: grabbing; }
+.vn-item.is-picked { outline: 2px solid #2f6ea8; outline-offset: 1px; }
+.vn-write {
+  position: absolute; z-index: 3; height: 28px; padding: 0 6px; box-sizing: border-box;
+  font: 700 14px/1 "JetBrains Mono", monospace; text-align: center;
+  color: #2a2723; background: #fff; border: 2px solid #2f6ea8; border-radius: 0;
+}
+.vn-hint { margin: 1mm 0 0; font: 7.5pt/1.4 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); color: #6f685f; }
+.vn-hint.is-loud { color: #c0453f; font-weight: 700; }
+
+.vn-pot { position: fixed; z-index: 10120; width: 44mm; }
+.vn-pot--nums { width: 66mm; }
+.vn-pot[hidden] { display: none; }
+.vn-pot__in { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.1mm; padding: 2mm; }
+.vn-chip { width: 100%; aspect-ratio: 1; padding: 0; border: 0.4mm solid rgba(42, 39, 35, 0.3); border-radius: 0; cursor: pointer; }
+.vn-chip:hover { border-color: #2a2723; transform: scale(1.08); }
+.vn-nums { display: grid; gap: 1.6mm; padding: 2.4mm; }
+.vn-nums label { display: flex; align-items: center; gap: 1.6mm; font: 700 8pt/1.2 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); }
+.vn-nums span { flex: 0 0 24mm; color: #6f685f; }
+.vn-nums input {
+  flex: 1 1 auto; min-width: 0; padding: 0.8mm 1.2mm;
+  font: 8.5pt/1.3 var(--font-mono, monospace); color: inherit;
+  background: var(--surface-secondary, #f4f0e8); border: 1px solid rgba(42, 39, 35, 0.14); border-radius: 0;
+}
+.vn-nums input.is-wrong { border-color: #c0453f; background: #ffeceb; }
+.vn-nums__go { width: 100%; justify-content: center; margin-top: 0.6mm; font-size: 7.6pt; }
+@media print { .vn-tools, .vn-hint { display: none !important; } }
 
 /* a printed model's "?", written over (double-click) */
 .wb-live svg [data-ask].is-askable { cursor: text; }

@@ -126,6 +126,20 @@ const TOOLS = {
       return () => live.dispose();
     },
   },
+  vennmodel: {
+    label: "Venn diagram",
+    size: { w: 720, h: 690 },
+    async open(body) {
+      body.classList.add("wb-panel__body--bare", "wb-panel__body--scroll");
+      const { mountVennModel } = await import("./vennmodel.js");
+      const host = document.createElement("div");
+      host.className = "vn-host wb-vennmodel";
+      body.appendChild(host);
+      const { saved, onChange } = kept("wb-vennmodel");
+      const live = mountVennModel(host, { saved: saved && Array.isArray(saved.sets) ? saved : null, onChange });
+      return () => live.dispose();
+    },
+  },
   note: {
     label: "Notes",
     size: { w: 420, h: 380 },

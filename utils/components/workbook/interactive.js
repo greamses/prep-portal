@@ -3248,6 +3248,31 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         return () => live.dispose();
       },
     },
+    /* A GENERAL TOOL WITH A PRESET ON TOP OF IT — the same bargain as the
+       table organiser's K·W·L. Blank is two rings a child names and sorts
+       anything into; "prime factors" pours a question onto the same tool
+       (./vennmodel.js, maths off ./factortree.js). */
+    {
+      id: "vennmodel",
+      label: "Venn diagram",
+      icon: TOOL_ICONS.vennmodel,
+      size: { w: 720, h: 690 },
+      open: async (body) => {
+        body.classList.add("wb-panel__body--bare", "wb-panel__body--scroll");
+        const host = document.createElement("div");
+        host.className = "vn-host wb-vennmodel";
+        body.appendChild(host);
+        const { mountVennModel } = await import("./vennmodel.js");
+        const KEY = `wb-vennmodel:${location.pathname}`;
+        let was = null;
+        try { was = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { /* a fresh diagram */ }
+        const live = mountVennModel(host, {
+          saved: was && Array.isArray(was.sets) ? was : null,
+          onChange: (now) => { try { localStorage.setItem(KEY, JSON.stringify(now)); } catch { /* not kept */ } },
+        });
+        return () => live.dispose();
+      },
+    },
     {
       id: "gm",
       label: "Algebra moves",
@@ -3489,7 +3514,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     { id: "tables", label: "Times tables", of: [asSheet("tables")] },
     /* A key of its own, like the notes: drawing the problem is ONE thing to go
        to the rail for, and it is reached for before any arithmetic is. */
-    { id: "model", label: "Models", of: [asSheet("barmodel"), asSheet("linemodel")] },
+    { id: "model", label: "Models", of: [asSheet("barmodel"), asSheet("linemodel"), asSheet("vennmodel")] },
     { id: "algebra", label: "Algebra", of: [asSheet("gm")] },
     /* a tool of its own, not folded in behind another: paper to work an equation out on */
     /* the English workbooks' own family — see `rail` below */

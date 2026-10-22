@@ -216,6 +216,13 @@ export const TOOL_ICONS = {
       `<path d="M19.4 13.6 15.9 9.2l5-1.1Z" fill="${LEAF}"/>` +
       `<circle cx="5" cy="14.9" r="2.6" fill="${LOUD}"/>`
   ),
+  /* the Venn MODEL: two rings with loose tiles sorted into them, not the
+     organiser's plain outline — the tiles are the thing this one adds */
+  vennmodel: glyph(
+    `<circle cx="9.2" cy="11" r="7.4" fill="none" stroke="${LEAD}" stroke-width="1.6"/>` +
+      `<circle cx="14.8" cy="11" r="7.4" fill="none" stroke="${LEAD}" stroke-width="1.6"/>` +
+      r(10.6, 9.4, 2.8, 2.8, GOLD, 0) + r(5.4, 16.4, 2.8, 2.8, LEAF, 0) + r(16, 16.4, 2.8, 2.8, WARM, 0)
+  ),
   /* the paragraph burger: two buns and the filling between them */
   burger: glyph(
     `<path d="M2.6 8.4C2.6 5 7 3 12 3s9.4 2 9.4 5.4v1H2.6z" fill="${WARM}"/>` +
