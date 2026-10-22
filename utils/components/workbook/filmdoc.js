@@ -135,6 +135,7 @@ export const blankStep = () => ({ say: "", hold: 0, acts: [] });
 export const blankDoc = (title = "") => ({
   v: DOC_VERSION,
   title,
+  guides: { x: [], y: [] },
   els: [],
   steps: [blankStep()],
 });
@@ -144,9 +145,16 @@ export function normalise(raw, title = "") {
   const d = raw && typeof raw === "object" ? raw : {};
   const els = Array.isArray(d.els) ? d.els : [];
   const steps = Array.isArray(d.steps) && d.steps.length ? d.steps : [blankStep()];
+  /* THE GUIDES COME THROUGH. They are not part of the film — the player
+     ignores them — but they are how it was laid out, and a film is always
+     come back to. Dropped here, every document rebuilt (a trace, a step
+     back, a reload) lost them, and the editor's stage threw reading them. */
+  const g = d.guides && typeof d.guides === "object" ? d.guides : {};
+  const axis = (v) => (Array.isArray(v) ? v.filter((n) => Number.isFinite(Number(n))).map(Number) : []);
   return {
     v: DOC_VERSION,
     title: typeof d.title === "string" ? d.title : title,
+    guides: { x: axis(g.x), y: axis(g.y) },
     els: els.map((e) => {
       const el = { ...blankEl(e?.type || "text"), ...e, id: e?.id || newId() };
       /* what was written down before sizes and inks were numbers */
@@ -250,13 +258,37 @@ export function mountEl(stage, el) {
 
 /* ── playing it ────────────────────────────────────────────────────────── */
 
+/**
+ * THE EASES A FILM MAY BE TIMED WITH — GSAP's own, named in plain words.
+ *
+ * Not the whole of GSAP's list: a lesson wants a handful that read as
+ * different things to a child watching — arriving gently, arriving with a
+ * bump, settling, springing — and twenty names that shade into one another
+ * is a choice nobody can make. The editor builds its menu from this.
+ */
+export const EASES = [
+  ["", "As it comes (the film's own)"],
+  ["none", "Straight through, no easing"],
+  ["power1.out", "Gentle"],
+  ["power2.out", "Gentle, firmer"],
+  ["power3.out", "Arrives and settles"],
+  ["power2.inOut", "Eases both ends"],
+  ["sine.inOut", "Soft both ends"],
+  ["back.out(1.8)", "Overshoots and comes back"],
+  ["elastic.out(1,0.5)", "Springs"],
+  ["bounce.out", "Bounces"],
+  ["expo.out", "Fast, then floats in"],
+];
+
 /** Run one act against the kit's verbs. */
 function run(a, k, stage) {
   const d = Number(a.delay) || 0;
+  /* how long and in what manner, when the film says (explain.js acts()) */
+  const o = (a.dur || a.ease) ? { dur: Number(a.dur) || 0, ease: a.ease || "" } : undefined;
   switch (a.do) {
-    case "pop": return k.pop(a.el, d);
-    case "fly": return k.fly(a.el, Number(a.fx) || 0, Number(a.fy) || 0, d);
-    case "move": return k.move(a.el, Number(a.tx) || 0, Number(a.ty) || 0, d);
+    case "pop": return k.pop(a.el, d, o);
+    case "fly": return k.fly(a.el, Number(a.fx) || 0, Number(a.fy) || 0, d, o);
+    case "move": return k.move(a.el, Number(a.tx) || 0, Number(a.ty) || 0, d, o);
     case "flip": {
       k.flip(a.el, a.text ?? "", undefined, d);
       /* the kit changes colour by swapping a class, which an inline colour
@@ -269,9 +301,9 @@ function run(a, k, stage) {
     }
     case "roll": return k.roll(a.el, a.text ?? "", d);
     case "pulse": return k.pulse(a.el, d);
-    case "dim": return k.dim(a.el, a.amount == null ? 0.35 : Number(a.amount), d);
-    case "hide": return k.hide(a.el, d);
-    case "turn": return k.turn(a.el, Number(a.deg) || 0, d);
+    case "dim": return k.dim(a.el, a.amount == null ? 0.35 : Number(a.amount), d, o);
+    case "hide": return k.hide(a.el, d, o);
+    case "turn": return k.turn(a.el, Number(a.deg) || 0, d, o);
     default: return undefined;
   }
 }

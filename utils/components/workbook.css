@@ -2895,7 +2895,13 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
    (tooltip.js) — the same bargain the workbook rail makes. */
 .mbb-tools { position: relative; display: flex; flex-wrap: wrap; gap: 1mm; padding-right: 22mm; margin-bottom: 1.5mm; }
 .mbb-tools .pp-btn { font: 700 8pt/1.2 var(--font-body, system-ui, sans-serif); padding: 1.2mm 2.4mm; min-height: 0; }
-.mbb-key { padding: 0.9mm 1.4mm; line-height: 0; }
+/* NO BORDER ROUND A TOOL. Eighteen sticky notes in a row is eighteen little
+   frames to read past before you get to the picture on each one; the tint is
+   kept, because it is what tells the families apart, and the paper edge and
+   its shadow go. */
+.mbb-key { padding: 0.9mm 1.4mm; line-height: 0; border: 0; box-shadow: none; }
+.mbb-key::before, .mbb-key::after { display: none; }
+.mbb-key:hover { transform: translateY(-0.3mm); }
 .mbb-key svg { display: block; }
 .mbb-key[disabled] { opacity: 0.38; }
 .mbb-tools [aria-pressed="true"] { outline: 2px solid #d1495b; outline-offset: 1px; }

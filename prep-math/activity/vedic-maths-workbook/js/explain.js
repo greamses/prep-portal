@@ -151,26 +151,41 @@ export function acts(stage, gsap, instant) {
   const box = (id) => stage.querySelector(`[data-t="${id}"]`);
   const inn = (id) => box(id)?.firstChild;
   const quick = instant || !gsap;
+  /**
+   * HOW LONG AND IN WHAT MANNER, when the caller has an opinion.
+   *
+   * Every verb below has a duration and an ease that were chosen for the
+   * coded films and are right for them, so a caller that says nothing gets
+   * exactly what it always got. A film written down as a DOCUMENT is laid out
+   * by hand against a drawing, where "a bit slower" and "let it settle rather
+   * than bounce" are things you need to be able to say — so each verb takes
+   * an optional last argument (filmdoc.js, film-editor.js).
+   */
+  const how = (o, duration, ease) => ({
+    duration: Number(o?.dur) > 0 ? Number(o.dur) : duration,
+    ease: o?.ease || ease,
+  });
   return {
     /** A tile comes on. */
-    pop(id, delay = 0) {
+    pop(id, delay = 0, o) {
       const n = inn(id); if (!n) return;
       if (quick) { n.style.opacity = "1"; return; }
-      gsap.fromTo(n, { opacity: 0, scale: 0.4, rotation: -8 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, delay, ease: "back.out(1.8)" });
+      gsap.fromTo(n, { opacity: 0, scale: 0.4, rotation: -8 }, { opacity: 1, scale: 1, rotation: 0, delay, ...how(o, 0.45, "back.out(1.8)") });
     },
     /** A tile comes on by flying from somewhere else to its own place. */
-    fly(id, fx, fy, delay = 0) {
+    fly(id, fx, fy, delay = 0, o) {
       const b = box(id), n = inn(id); if (!b) return;
       if (quick) { n.style.opacity = "1"; return; }
       const home = { left: b.style.left, top: b.style.top };
-      gsap.fromTo(b, { left: `${fx}%`, top: `${fy}%` }, { ...home, duration: 0.7, delay, ease: "power2.inOut" });
-      gsap.fromTo(n, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.5, delay, ease: "power1.out" });
+      const h = how(o, 0.7, "power2.inOut");
+      gsap.fromTo(b, { left: `${fx}%`, top: `${fy}%` }, { ...home, delay, ...h });
+      gsap.fromTo(n, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, delay, duration: h.duration * 0.72, ease: "power1.out" });
     },
     /** A tile goes somewhere else. */
-    move(id, x, y, delay = 0) {
+    move(id, x, y, delay = 0, o) {
       const b = box(id); if (!b) return;
       if (quick) { b.style.left = `${x}%`; b.style.top = `${y}%`; return; }
-      gsap.to(b, { left: `${x}%`, top: `${y}%`, duration: 0.6, delay, ease: "power2.inOut" });
+      gsap.to(b, { left: `${x}%`, top: `${y}%`, delay, ...how(o, 0.6, "power2.inOut") });
     },
     /** A tile turns over and says something else. */
     flip(id, text, c, delay = 0) {
@@ -180,16 +195,16 @@ export function acts(stage, gsap, instant) {
       gsap.timeline({ delay }).to(n, { scaleY: 0, duration: 0.18, ease: "power1.in" }).add(set).set(n, { opacity: 1 }).to(n, { scaleY: 1, duration: 0.3, ease: "back.out(2)" });
     },
     /** A tile goes off. */
-    hide(id, delay = 0) {
+    hide(id, delay = 0, o) {
       const n = inn(id); if (!n) return;
       if (quick) { n.style.opacity = "0"; return; }
-      gsap.to(n, { opacity: 0, scale: 0.7, duration: 0.3, delay });
+      gsap.to(n, { opacity: 0, scale: 0.7, delay, ...how(o, 0.3, "power1.out") });
     },
     /** A tile is dimmed, or brought back. */
-    dim(id, to = 0.35, delay = 0) {
+    dim(id, to = 0.35, delay = 0, o) {
       const n = inn(id); if (!n) return;
       if (quick) { n.style.opacity = String(to); return; }
-      gsap.to(n, { opacity: to, duration: 0.3, delay });
+      gsap.to(n, { opacity: to, delay, ...how(o, 0.3, "power1.out") });
     },
     /** A tile is PUT as it must stand when a step begins — at once, whatever it was in the middle of. */
     put(id, { on = 1, x, y, tone, text } = {}) {
@@ -201,10 +216,10 @@ export function acts(stage, gsap, instant) {
       if (text != null) n.textContent = text;
     },
     /** A tile is turned to an angle: the spinner's arrow. */
-    turn(id, deg, delay = 0, duration = 1.3) {
+    turn(id, deg, delay = 0, o) {
       const n = inn(id); if (!n) return;
       if (quick) { if (gsap) gsap.set(n, { rotation: deg }); else n.style.transform = `rotate(${deg}deg)`; return; }
-      gsap.to(n, { rotation: deg, duration, delay, ease: "power3.out" });
+      gsap.to(n, { rotation: deg, delay, ...how(o, 1.3, "power3.out") });
     },
     /** A stick takes a colour. */
     paint(id, tone, delay = 0) {

@@ -83,7 +83,7 @@ const SVGNS = "http://www.w3.org/2000/svg";
  *                  Maths Workbook: a trick is only a trick if it is quick.)
  *   → { afterRender(key) }   call after every rebuild of the paper
  */
-export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "", blocks = null, chart = null, onCheck = null, onProgress = null, locked = false, timed = null }) {
+export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "", blocks = null, chart = null, onCheck = null, onProgress = null, locked = false, timed = null, rail = null, railWithout = null,}) {
   let live = false;
   let key = null;
   let store = {};                     // itemIndex -> { v: [...], lines: [...] }
@@ -3198,6 +3198,28 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         return () => live.dispose();
       },
     },
+    /* THE ENGLISH WORKBOOKS' WORKING PAPER. A maths page hands a child a
+       written board to work the sum on; an English page was handing them a
+       long division board, which is no use to anybody drafting a paragraph.
+       These are the two boards that page actually wants (./organiser.js). */
+    ...["draft", "comprehend"].map((kind) => ({
+      id: kind,
+      label: kind === "draft" ? "Planning a piece" : "Reading a passage",
+      icon: TOOL_ICONS[kind],
+      size: { w: 420, h: 560 },
+      open: async (body) => {
+        const { mountOrganiser } = await import("./organiser.js");
+        const KEY = `wb-org:${kind}:${location.pathname}`;
+        let was = null;
+        try { was = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { /* a fresh sheet */ }
+        const live = mountOrganiser(body, {
+          kind,
+          saved: was,
+          onChange: (all) => { try { localStorage.setItem(KEY, JSON.stringify(all)); } catch { /* not kept */ } },
+        });
+        return () => live.dispose();
+      },
+    })),
     {
       id: "gm",
       label: "Algebra moves",
@@ -3439,10 +3461,25 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     { id: "model", label: "Bar model", of: [asSheet("barmodel")] },
     { id: "algebra", label: "Algebra", of: [asSheet("gm")] },
     /* a tool of its own, not folded in behind another: paper to work an equation out on */
+    /* the English workbooks' own family — see `rail` below */
+    { id: "plan", label: "Organisers", of: [asSheet("draft"), asSheet("comprehend")] },
     { id: "note", label: "Notes", of: [asSheet("note")] },
   ]
-    .map((f) => ({ ...f, of: f.of.filter(Boolean) }))
-    .filter((f) => f.of.length);
+    /* and may drop single keys out of a family it otherwise wants: an English
+       page wants the pencil and the eraser out of "Drawing" and has no use
+       for the compass, the ruler or the set square */
+    .map((f) => ({ ...f, of: f.of.filter((k) => k && !(railWithout || []).includes(k.id)) }))
+    .filter((f) => f.of.length)
+    /**
+     * A WORKBOOK MAY SAY WHICH FAMILIES IT WANTS. Left alone it gets all of
+     * them, which is right for a maths paper and wrong for an English one:
+     * a child drafting a paragraph was being offered a long division board, a
+     * place value chart and the algebra canvas, and not one thing that helps
+     * with the writing. `interactive.rail` names the families to keep, in the
+     * order they should appear.
+     */
+    .filter((f) => !rail || rail.includes(f.id))
+    .sort((a, b) => (rail ? rail.indexOf(a.id) - rail.indexOf(b.id) : 0));
 
   const ARROW =
     '<svg viewBox="0 0 8 8" width="7" height="7" aria-hidden="true" class="wb-side__tick">'

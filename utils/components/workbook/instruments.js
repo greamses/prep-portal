@@ -195,6 +195,19 @@ export const TOOL_ICONS = {
       r(2.6, 17.2, 18.8, 1.7, QUIET, 0.85) +
       `<path d="M10.3 18.9h3.4L12 21.6Z" fill="${LOUD}"/>`
   ),
+  /* a plan: a sheet with its headings ruled and the writing still to come */
+  draft: glyph(
+    r(3.4, 2.6, 17.2, 18.8, PAPER, 0) +
+      r(5.6, 5.4, 8.4, 2.2, LOUD, 0) + r(5.6, 9, 12.8, 1.6, "#fff", 0) +
+      r(5.6, 12.2, 12.8, 1.6, "#fff", 0) + r(5.6, 15.4, 8.4, 1.6, GOLD, 0)
+  ),
+  /* a passage, with the line you are going to point at marked in it */
+  comprehend: glyph(
+    r(3, 3.4, 18, 17.2, PAPER, 0) +
+      r(5.2, 6, 13.6, 1.5, "#fff", 0) + r(5.2, 9, 13.6, 1.5, "#fff", 0) +
+      r(5.2, 12, 13.6, 1.5, GOLD, 0) + r(5.2, 15, 9, 1.5, "#fff", 0) +
+      r(4.2, 11.4, 15.6, 2.8, LOUD, 0, ' opacity="0.28"')
+  ),
   side: glyph(
     r(2.8, 4.2, 18.4, 15.6, PAPER, 1.8) +
       `<path d="M4.6 4.2h4.2v15.6H4.6a1.8 1.8 0 0 1-1.8-1.8V6a1.8 1.8 0 0 1 1.8-1.8z" fill="${GOLD}"/>`

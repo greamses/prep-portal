@@ -37,7 +37,7 @@
 
 import {
   blankDoc, blankEl, blankStep, normalise, playable, mountEl, elHtml,
-  INKS, TONES, TYPES, VERBS, VERB_IDS,
+  INKS, TONES, TYPES, VERBS, VERB_IDS, EASES,
 } from "./filmdoc.js";
 import { filmBoth, saveDraft, publish, unpublish, forget } from "./film-store.js";
 import { needCss } from "./panels.js";
@@ -155,7 +155,16 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     </header>
     <div class="fe__work">
       <section class="fe__left">
-        <div class="fe__stagewrap"><div class="fe__stage" data-f="stage"></div></div>
+        <div class="fe__stagewrap">
+          <div class="fe__screen">
+            <div class="fe__rule fe__rule--top" data-rule="y" title="Drag down for a guide"></div>
+            <div class="fe__rule fe__rule--left" data-rule="x" title="Drag across for a guide"></div>
+            <div class="fe__corner"></div>
+            <div class="fe__stage" data-f="stage"></div>
+            <button type="button" class="pp-btn wb-tint-2 fe__play" data-f="play"
+                    aria-label="Play this beat" data-tip="Play this beat" data-tip-side="left">${UI.again(18)}</button>
+          </div>
+        </div>
         <div class="fe__add">
           <span class="fe__add-say">Put on the stage:</span>
           ${Object.entries(TYPES).map(([t, v]) => `<button type="button" class="pp-btn wb-tint-2 fe__key" data-add="${t}"`
@@ -188,6 +197,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
 
   const q = (k) => box.querySelector(`[data-f="${k}"]`);
   const stage = q("stage");
+  const screen = box.querySelector(".fe__screen");
   const side = q("side");
   const grid = q("grid");
   const state = box.querySelector(".fe__state");
@@ -220,8 +230,85 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
   const watchSize = new ResizeObserver(measure);
   watchSize.observe(stage);
 
+  screen.querySelectorAll("[data-rule]").forEach((r) => r.addEventListener("pointerdown", rulerDrag));
+  /* A GUIDE IS TAKEN AWAY FROM THE RULER IT CAME OUT OF — double-click the
+     ruler and the nearest guide on that side goes. The lines themselves take
+     no clicks at all: a guide lying across the stage that swallowed a press
+     meant for the mark under it would make the stage worse, not better. */
+  screen.querySelectorAll("[data-rule]").forEach((r) => r.addEventListener("dblclick", (e) => {
+    const axis = r.dataset.rule;
+    const b = stage.getBoundingClientRect();
+    const at = axis === "x" ? ((e.clientX - b.left) / b.width) * 100 : ((e.clientY - b.top) / b.height) * 100;
+    const list = guides()[axis] || [];
+    if (!list.length) return;
+    let near = 0;
+    list.forEach((g, i) => { if (Math.abs(g - at) < Math.abs(list[near] - at)) near = i; });
+    remember();
+    list.splice(near, 1);
+    touched();
+    paintGuides();
+  }));
+
 
   /** Every element, then every act up to and including the beat on show. */
+  /* ── the rulers, and the guides pulled out of them ───────────────────
+     A layout is lined up against something, and on a 16:9 stage that
+     something is usually not an edge: it is the line the last three captions
+     started on. So the stage has rulers, a guide is dragged out of one, and
+     a mark being moved catches it the way it catches another mark's edge.
+     Guides are kept with the document — they are how the film was built, and
+     a film is always come back to — and the player ignores them. */
+  const guides = () => (doc.guides ||= { x: [], y: [] });
+
+  function paintGuides() {
+    screen.querySelectorAll(".fe-guide").forEach((n) => n.remove());
+    ["x", "y"].forEach((axis) => {
+      (guides()[axis] || []).forEach((at, i) => {
+        const line = document.createElement("div");
+        line.className = `fe-guide fe-guide--${axis}`;
+        line.dataset.guide = `${axis}:${i}`;
+        line.title = "Double-click to take this guide away";
+        line.style[axis === "x" ? "left" : "top"] = `${at}%`;
+        stage.appendChild(line);
+      });
+    });
+  }
+
+  /** Pull a guide out of a ruler. */
+  function rulerDrag(e) {
+    const axis = e.target.closest("[data-rule]")?.dataset.rule;
+    if (!axis) return;
+    e.preventDefault();
+    remember();
+    guides()[axis].push(50);
+    const i = guides()[axis].length - 1;
+    const r = () => stage.getBoundingClientRect();
+    const put = (ev) => {
+      const box2 = r();
+      const at = axis === "x"
+        ? ((ev.clientX - box2.left) / box2.width) * 100
+        : ((ev.clientY - box2.top) / box2.height) * 100;
+      guides()[axis][i] = Math.max(0, Math.min(100, Math.round(at * 2) / 2));
+      paintGuides();
+    };
+    put(e);
+    const move = (ev) => put(ev);
+    const up = (ev) => {
+      document.removeEventListener("pointermove", move);
+      document.removeEventListener("pointerup", up);
+      const box2 = r();
+      const off = axis === "x"
+        ? ev.clientX < box2.left || ev.clientX > box2.right
+        : ev.clientY < box2.top || ev.clientY > box2.bottom;
+      /* dropped off the stage is how a guide is thrown away */
+      if (off) guides()[axis].splice(i, 1);
+      touched();
+      paintGuides();
+    };
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", up);
+  }
+
   function paintStage() {
     stage.innerHTML = "";
     const tv = document.createElement("div");
@@ -240,6 +327,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
        Two exceptions, both so that a thing can be got hold of: the one that
        is selected, and one that has no act anywhere in the film — which has
        no beat to be seen on at all, and would otherwise be unplaceable. */
+    paintGuides();
     const used = new Set(doc.steps.flatMap((s) => s.acts.map((a) => a.el)));
     doc.els.forEach((el) => {
       const node = stage.querySelector(`[data-t="${el.id}"]`);
@@ -307,9 +395,18 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     const dy = ((e.clientY - drag.fromY) / drag.r.height) * 100;
     if (!drag.moved && Math.abs(dx) < 0.3 && Math.abs(dy) < 0.3) return;
     drag.moved = true;
-    const snap = (v) => (e.shiftKey ? v : Math.round(v * 2) / 2);
-    drag.el.x = Math.max(0, Math.min(100, snap(drag.x + dx)));
-    drag.el.y = Math.max(0, Math.min(100, snap(drag.y + dy)));
+    /* A GUIDE CATCHES, the way a bar's end catches another bar's. Shift lets
+       a mark past it, for the one time in ten you meant to be just off it. */
+    const near = (v, axis) => {
+      if (e.shiftKey) return v;
+      let best = Math.round(v * 2) / 2, gap = 1.2;
+      (guides()[axis] || []).concat([50]).forEach((g) => {
+        if (Math.abs(g - v) < gap) { gap = Math.abs(g - v); best = g; }
+      });
+      return best;
+    };
+    drag.el.x = Math.max(0, Math.min(100, near(drag.x + dx, "x")));
+    drag.el.y = Math.max(0, Math.min(100, near(drag.y + dy, "y")));
     const node = stage.querySelector(`[data-t="${drag.el.id}"]`);
     if (node) { node.style.left = `${drag.el.x}%`; node.style.top = `${drag.el.y}%`; }
     paintSide();
@@ -338,6 +435,45 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     `<input type="number" data-p="${k}" value="${v}" min="${min}" max="${max}" step="${stp}">`;
   const pickOne = (k, v, opts) =>
     `<select data-p="${k}">${opts.map(([val, name]) => `<option value="${esc(val)}"${String(val) === String(v) ? " selected" : ""}>${esc(name)}</option>`).join("")}</select>`;
+
+  /* GSAP, the same one the television uses, so a beat tried here moves
+     exactly as it will move there. Fetched once and only if it is wanted. */
+  let gsap = null;
+  const engine = async () => {
+    if (gsap) return gsap;
+    try {
+      const m = await import("https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm");
+      gsap = m.default || m.gsap || m;
+    } catch { gsap = null; }
+    return gsap;
+  };
+
+  /**
+   * PLAY THIS BEAT, WHERE IT IS BEING BUILT.
+   *
+   * Watch it plays the whole film on the real set, which is right for judging
+   * a script and far too slow for "is that caption a shade too fast". So the
+   * stage has a play key of its own: the beats before this one are put up at
+   * once, and this one is animated, with the real engine and the real
+   * timings. The stage stays a stage — a thing can be dragged the moment it
+   * lands.
+   */
+  async function playBeat() {
+    const g = await engine();
+    stage.innerHTML = "";
+    const tv = document.createElement("div");
+    tv.className = "vm-tv";
+    stage.appendChild(tv);
+    measure();
+    doc.els.forEach((el) => mountEl(stage, el));
+    const film = playable(doc);
+    for (let k = 0; k < step && k < film.steps.length; k++) film.steps[k].show(stage, { gsap: g, instant: true });
+    film.steps[step]?.show(stage, { gsap: g, instant: !g });
+    /* the marks are left as the beat ends them, then the cutting room's own
+       handles go back on */
+    const wait = Math.max(900, 400 + (doc.steps[step]?.acts || []).reduce((t, a) => Math.max(t, (Number(a.delay) || 0) + (Number(a.dur) || 0.8)), 0) * 1000);
+    setTimeout(() => { if (box.isConnected) paintStage(); }, wait);
+  }
 
   let wheel = null;
   function paintSide() {
@@ -487,7 +623,12 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
         + VERB_IDS.map((k) => `<option value="${k}"${k === (a?.do || "") ? " selected" : ""}>${esc(VERBS[k].label)}</option>`).join("")
         + `</select>`)}
       ${needs.map(arg).join("")}
-      ${a ? row("After (seconds)", `<input type="number" data-ac="delay" value="${a.delay || 0}" min="0" max="20" step="0.1">`) : ""}
+      ${a ? `<div class="fe-row fe-row--pair">`
+        + `<label><span>Wait (s)</span><input type="number" data-ac="delay" value="${a.delay || 0}" min="0" max="20" step="0.1"></label>`
+        + `<label><span>Takes (s)</span><input type="number" data-ac="dur" value="${a.dur || ""}" min="0" max="20" step="0.05" placeholder="its own"></label></div>`
+        + row("Manner", `<select data-ac="ease">`
+          + EASES.map(([v, name]) => `<option value="${esc(v)}"${v === (a.ease || "") ? " selected" : ""}>${esc(name)}</option>`).join("")
+          + `</select>`) : ""}
       <p class="fe-side__tip">Every beat rebuilds the screen from the start, so a thing
         stays as the last beat left it until another beat moves it.</p>
     </div>`;
@@ -501,8 +642,12 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     const rest = doc.steps[step].acts.filter((x) => x.el !== el.id);
     if (verb) {
       const made = { el: el.id, do: verb, delay: Number(side.querySelector('[data-ac="delay"]')?.value) || 0 };
+      const dur = Number(side.querySelector('[data-ac="dur"]')?.value) || 0;
+      const ease = side.querySelector('[data-ac="ease"]')?.value || "";
+      if (dur) made.dur = dur;
+      if (ease) made.ease = ease;
       side.querySelectorAll("[data-ac]").forEach((inp) => {
-        if (inp.dataset.ac === "do" || inp.dataset.ac === "delay") return;
+        if (["do", "delay", "dur", "ease"].includes(inp.dataset.ac)) return;
         made[inp.dataset.ac] = inp.type === "number" ? Number(inp.value) : inp.value;
       });
       rest.push(made);
@@ -576,6 +721,8 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
       close();
     } else if (k === "el-done") {
       pick(null);
+    } else if (k === "play") {
+      playBeat();
     } else if (k === "fold-side" || k === "fold-time") {
       /* MORE STAGE. The inspector and the beats both fold away, because for
          long stretches of laying a film out you want neither: you want the
@@ -682,8 +829,17 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     if (e.target.matches("input, textarea, select")) remember();
   });
 
-  /* typing in the inspector writes straight through to the document */
-  side.addEventListener("input", (e) => {
+  /**
+   * TYPING IN THE INSPECTOR WRITES STRAIGHT THROUGH TO THE DOCUMENT.
+   *
+   * On `input` AND on `change`, and the second one is not belt and braces: a
+   * native <select> is dressed as the site's own dropdown (pp-select.js) and
+   * that dressing fires `change` ONLY. Listening for `input` alone meant
+   * every dropdown in this panel did nothing — picking an animation never
+   * reached the document at all, so the next keystroke redrew the panel from
+   * a document that had never heard of it and the animation "disappeared".
+   */
+  const wrote = (e) => {
     const el = doc.els.find((x) => x.id === picked);
     if (e.target.dataset.ac) {
       readAct();
@@ -709,7 +865,9 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
       el.parts[i][pp] = e.target.type === "number" ? Number(e.target.value) : e.target.value;
       touched(); paintStage();
     }
-  });
+  };
+  side.addEventListener("input", wrote);
+  side.addEventListener("change", wrote);
 
   /* a picture from this machine goes where every other image on the site goes */
   side.addEventListener("change", async (e) => {

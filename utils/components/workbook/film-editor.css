@@ -68,14 +68,14 @@
   min-height: 0;
   display: grid;
   place-items: center;
+  /* room down the top and left side for the rulers, which hang outside */
+  padding: 14px 0 0 14px;
 }
 /* THE SCREEN. 16:9, as wide as the room allows and no taller than it. */
 .fe__stage {
   position: relative;
-  aspect-ratio: 16 / 9;
-  width: min(100%, calc((100cqh - 2rem) * 16 / 9));
-  max-width: 100%;
-  max-height: 100%;
+  width: 100%;
+  height: 100%;
   background: #fffdf8;
   border: var(--border, 2px solid #2a2723);
   box-shadow: 0 2px 0 rgba(42, 39, 35, 0.18);
@@ -83,6 +83,50 @@
   touch-action: none;
 }
 .fe__stagewrap { container-type: size; }
+
+/* ── the screen, with its rulers ──────────────────────────────────────────
+   THE RULERS HANG OFF THE STAGE, they do not hold it up. Put in grid tracks
+   with the stage in the last one, the stage's own `min(100%, 100cqh…)` had
+   nothing definite to resolve against and collapsed to three pixels wide —
+   and since `--u` is a hundredth of that, every mark on the film was drawn at
+   a thirtieth of a pixel (measured). So the screen shrink-wraps the stage and
+   the rulers are laid alongside it. */
+/* THE SCREEN IS THE SIZED BOX and the stage fills it. The other way round —
+   a shrink-wrapped screen with the stage sizing itself from `100%` of it — is
+   circular, and the stage settles at a few pixels. */
+.fe__screen {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: min(100%, calc((100cqh - 2.9rem) * 16 / 9));
+  max-width: 100%;
+  max-height: 100%;
+}
+.fe__corner {
+  position: absolute; top: -14px; left: -14px; width: 14px; height: 14px;
+  background: var(--surface-secondary, #f4f0e8);
+  border: var(--border-subtle, 1px solid rgba(42, 39, 35, 0.12));
+}
+/* A GUIDE IS PULLED OUT OF A RULER, the way it is in every drawing program,
+   and thrown away by dragging it back off the stage or double-clicking it. */
+.fe__rule {
+  background: repeating-linear-gradient(var(--dir, 90deg),
+    rgba(42, 39, 35, 0.35) 0 1px, transparent 1px 10px);
+  background-color: var(--surface-secondary, #f4f0e8);
+  border: var(--border-subtle, 1px solid rgba(42, 39, 35, 0.12));
+  touch-action: none;
+}
+.fe__rule--top { position: absolute; top: -14px; left: 0; right: 0; height: 14px; --dir: 90deg; cursor: ns-resize; }
+.fe__rule--left { position: absolute; left: -14px; top: 0; bottom: 0; width: 14px; --dir: 0deg; cursor: ew-resize; }
+
+/* the line takes no clicks: one lying over a mark must not swallow the press
+   meant for it. Double-click the ruler to take the nearest guide away. */
+.fe-guide { position: absolute; z-index: 1; background: #2f6ea8; opacity: 0.5; pointer-events: none; }
+.fe-guide--x { top: 0; bottom: 0; width: 1px; margin-left: -0.5px; }
+.fe-guide--y { left: 0; right: 0; height: 1px; margin-top: -0.5px; }
+
+/* the key that tries this beat where it is being built */
+.fe__play { position: absolute; right: 0.4rem; bottom: 0.4rem; z-index: 4; padding: 0.25rem 0.4rem; min-height: 0; line-height: 0; }
+.fe__play svg { display: block; }
 .fe__add { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
 .fe__add-say { font-size: 0.78rem; color: var(--text-secondary, #6b655c); }
 .fe__add .pp-btn { font-size: 0.78rem; padding: 0.3rem 0.6rem; min-height: 0; }

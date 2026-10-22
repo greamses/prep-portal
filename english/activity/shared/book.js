@@ -104,7 +104,16 @@ export function mountEnglishBook({
     subject: SUBJECT,
     /* printing needs a subscription — /utils/components/workbook/print-pass.js */
     print: { workbook: id, label },
-    interactive: {},
+    /* AN ENGLISH PAGE IS NOT A MATHS PAGE. Left to itself the rail offers a
+       calculator, six written boards, a place value chart and the algebra
+       canvas — not one of which helps a child draft a paragraph or pick a
+       passage apart. These five families are what this paper wants: the
+       pencil, the two organisers, the times-tables-free notes, and nothing
+       to work a sum on (utils/components/workbook/organiser.js). */
+    interactive: {
+      rail: ["draw", "plan", "note"],
+      railWithout: ["compass", "ruler", "protractor", "setsquare"],
+    },
     store: `${id}-v1`,
     groups,
     glyphs,
