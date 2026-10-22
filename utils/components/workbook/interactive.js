@@ -3298,6 +3298,31 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         return () => live.dispose();
       },
     },
+    /* A GENERAL TOOL WITH A PRESET ON TOP OF IT — the three shapes a flow
+       chart is built from (stadium / box / diamond), with a "function
+       machine" preset that pours input-operations-output onto the same
+       tool, already joined (./flowmodel.js). */
+    {
+      id: "flowmodel",
+      label: "Flow chart",
+      icon: TOOL_ICONS.flowmodel,
+      size: { w: 720, h: 580 },
+      open: async (body) => {
+        body.classList.add("wb-panel__body--bare", "wb-panel__body--scroll");
+        const host = document.createElement("div");
+        host.className = "fl-host wb-flowmodel";
+        body.appendChild(host);
+        const { mountFlowModel } = await import("./flowmodel.js");
+        const KEY = `wb-flowmodel:${location.pathname}`;
+        let was = null;
+        try { was = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { /* a fresh chart */ }
+        const live = mountFlowModel(host, {
+          saved: was && Array.isArray(was.nodes) ? was : null,
+          onChange: (now) => { try { localStorage.setItem(KEY, JSON.stringify(now)); } catch { /* not kept */ } },
+        });
+        return () => live.dispose();
+      },
+    },
     {
       id: "gm",
       label: "Algebra moves",
@@ -3539,7 +3564,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     { id: "tables", label: "Times tables", of: [asSheet("tables")] },
     /* A key of its own, like the notes: drawing the problem is ONE thing to go
        to the rail for, and it is reached for before any arithmetic is. */
-    { id: "model", label: "Models", of: [asSheet("barmodel"), asSheet("linemodel"), asSheet("vennmodel"), asSheet("nodesmodel")] },
+    { id: "model", label: "Models", of: [asSheet("barmodel"), asSheet("linemodel"), asSheet("vennmodel"), asSheet("nodesmodel"), asSheet("flowmodel")] },
     { id: "algebra", label: "Algebra", of: [asSheet("gm")] },
     /* a tool of its own, not folded in behind another: paper to work an equation out on */
     /* the English workbooks' own family — see `rail` below */

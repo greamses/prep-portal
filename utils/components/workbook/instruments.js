@@ -229,6 +229,12 @@ export const TOOL_ICONS = {
     `<path d="M12 6.4V11M12 11 6 16.4M12 11l6 5.4" stroke="${LEAD}" stroke-width="1.6" fill="none"/>` +
       r(9.2, 3, 5.6, 4.2, GOLD, 0) + r(2.4, 16.4, 5.6, 4.2, LEAF, 0) + r(16, 16.4, 5.6, 4.2, WARM, 0)
   ),
+  /* the flow MODEL: a stadium into a diamond, the shapes themselves — not
+     the organiser's boxes-and-arrows drawing, built rather than drawn once */
+  flowmodel: glyph(
+    r(7.6, 2.4, 8.8, 4.4, GOLD, 2.2) + `<path d="M12 9 17.4 13.2 12 17.4 6.6 13.2Z" fill="${LEAF}" stroke="${LEAD}" stroke-width="1"/>` +
+      `<path d="M12 6.8v2.2M12 17.4v2.4" stroke="${LEAD}" stroke-width="1.4"/>`
+  ),
   /* the paragraph burger: two buns and the filling between them */
   burger: glyph(
     `<path d="M2.6 8.4C2.6 5 7 3 12 3s9.4 2 9.4 5.4v1H2.6z" fill="${WARM}"/>` +
