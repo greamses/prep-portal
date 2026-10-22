@@ -284,8 +284,7 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
       out += `<g class="lm-mark${on ? " is-picked" : ""}" data-mark="${m.id}">`
         + `<circle cx="${x}" cy="${BASE}" r="${on ? 8 : 6.4}" fill="${col}" stroke="#fffdf8" stroke-width="2"/>`
         + `<rect x="${x - 30}" y="${BASE - 46}" width="60" height="24" fill="transparent"/>`
-        + `<text x="${x}" y="${BASE - 28}" text-anchor="middle" font-family="JetBrains Mono, monospace"`
-        + ` font-size="15" font-weight="700" fill="${m.text ? col : GREY}">${esc(m.text || "…")}</text></g>`;
+        + numberGlyph(x, BASE - 28, m.text || "…", 15, m.text ? col : GREY) + `</g>`;
     });
     svg.innerHTML = out;
     tools.querySelector('[data-t="undo"]').disabled = !history.length;
