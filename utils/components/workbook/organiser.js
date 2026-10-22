@@ -154,6 +154,11 @@ function ridge() {
 const MOUNTAIN = {
   label: "Story mountain",
   say: "A story climbs to one moment and comes down the other side — and the way down is quicker.",
+  /* THE PATH IS RUGGED, NOT SYMMETRIC — so a box sized to fit the slope in
+     one telling may sit wrong in the next. Its fields are moveable for the
+     same reason the five stations became pins: the shape says roughly
+     where a part of the story happens, and the child settles it exactly. */
+  movable: true,
   art: () => `
     <path d="${ridge()}" ${LINE} stroke-width="1.8"/>
     <path d="M2 92h96" ${LINE} stroke-width="1.5"/>
@@ -672,6 +677,12 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
     notes: Array.isArray(saved?.notes) ? saved.notes.map((n) => ({ ...n })) : [],
     grid: { ...(spec.grid || {}), ...(saved?.grid || {}) },
     preset: saved?.preset || (spec.presets ? "blank" : null),
+    /* A BOX DRAWN ONE SIZE IS A GUESS AT HOW MUCH SOMEONE WILL WRITE. This
+       keeps only what has been PULLED away from that guess — x/y (moved,
+       mountain only) and w/h (resized, every shape) per field id — so a
+       field with no entry here still tracks the shape's own layout if it
+       is ever changed in code. */
+    layout: { ...(saved?.layout || {}) },
   };
   /* a note written on a pin by the older version comes off it, as a note */
   state.pins.forEach((pn) => {
@@ -730,13 +741,21 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
     notes: state.notes.map((n) => ({ ...n })),
     grid: { ...state.grid },
     preset: state.preset,
+    layout: { ...state.layout },
   });
 
   /* ── the shape, and the boxes to type in ────────────────────────────── */
   const preset = () => (spec.presets ? spec.presets[state.preset] || spec.presets.blank : null);
 
+  /** A field as drawn: the shape's own x/y/w/h, with whatever has been
+      dragged or pulled away from that laid over it. */
+  const layoutOf = (f) => {
+    const o = state.layout[f.id];
+    return o ? { ...f, ...o } : f;
+  };
+
   function fieldsOf() {
-    if (!spec.grid) return spec.fields;
+    if (!spec.grid) return spec.fields.map(layoutOf);
     /* a table is its own fields, because how many there are is a setting */
     const set = preset();
     const stubs = set?.stubs || null;
@@ -750,13 +769,13 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
            letters are the shape of the argument; they are printed down the
            side, not left for the child to guess at. */
         const stub = stubs && c === 0 && r > 0 ? stubs[r - 1] : null;
-        out.push({
+        out.push(layoutOf({
           id: `r${r}c${c}`,
           head: r === 0 ? (set?.heads?.[stubs ? c - 1 : c] ?? "") : "",
           x: 2 + c * cw, y: 4 + r * ch, w: cw - 1, h: ch - 1,
           mid: r === 0,
           stub,
-        });
+        }));
       }
     }
     return out;
@@ -782,11 +801,16 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
       if (f.stub) {
         return `<span class="og__field og__stub" style="left:${f.x}%;top:${f.y}%;width:${f.w}%;height:${f.h}%">${esc(f.stub)}</span>`;
       }
-      return `<label class="og__field${f.mid ? " is-mid" : ""}" style="left:${f.x}%;top:${f.y}%;width:${f.w}%;height:${f.h}%">
+      /* A <div>, not a <label>: a label forwards any click inside it
+         straight to the textarea, which is wrong the moment there is a
+         grip in the corner to press instead. */
+      return `<div class="og__field${f.mid ? " is-mid" : ""}" style="left:${f.x}%;top:${f.y}%;width:${f.w}%;height:${f.h}%" data-fieldbox="${f.id}">
         ${f.head ? `<span class="og__head">${esc(f.head)}</span>` : ""}
         <textarea data-field="${f.id}" aria-label="${esc(f.head || f.hint || f.id)}"
                   placeholder="${esc(f.hint || "")}">${esc(state.fields[f.id] || "")}</textarea>
-      </label>`;
+        ${spec.movable ? `<span class="og__grip og__grip--move" data-move="${f.id}" data-tip="Drag to move it" aria-hidden="true">${MOVE_ICON}</span>` : ""}
+        <span class="og__grip og__grip--size" data-resize="${f.id}" data-tip="Pull to size it" aria-hidden="true">${RESIZE_ICON}</span>
+      </div>`;
     }).join("");
     if (spec.labels) {
       fieldsEl.insertAdjacentHTML("beforeend", spec.labels.map((l) =>
@@ -945,6 +969,56 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
     state.fields[id] = e.target.value;
     tell();
   });
+
+  /**
+   * A BOX IS PULLED, NOT TYPED. The corner grip changes width and height —
+   * every shape — and the move grip, only where `spec.movable` says a box
+   * does not have one right place (the mountain's rugged slope). Both are
+   * worked straight on the DOM while a drag is live, the way a pin is, so
+   * nothing is lost by re-rendering the field mid-keystroke; the state and
+   * the save happen once, on release.
+   */
+  let fieldDrag = null;
+  fieldsEl.addEventListener("pointerdown", (e) => {
+    const resizeId = e.target.closest("[data-resize]")?.dataset.resize;
+    const moveId = e.target.closest("[data-move]")?.dataset.move;
+    const id = resizeId || moveId;
+    if (!id) return;
+    const f = fieldsOf().find((x) => x.id === id);
+    if (!f) return;
+    e.preventDefault();
+    const r = sheet.getBoundingClientRect();
+    fieldDrag = resizeId
+      ? { id, kind: "size", r, left: f.x, top: f.y }
+      : { id, kind: "move", r, fromX: e.clientX, fromY: e.clientY, startX: f.x, startY: f.y, w: f.w, h: f.h };
+    fieldsEl.setPointerCapture(e.pointerId);
+  });
+  fieldsEl.addEventListener("pointermove", (e) => {
+    if (!fieldDrag) return;
+    const box = fieldsEl.querySelector(`[data-fieldbox="${fieldDrag.id}"]`);
+    if (fieldDrag.kind === "size") {
+      const px = ((e.clientX - fieldDrag.r.left) / fieldDrag.r.width) * 100;
+      const py = ((e.clientY - fieldDrag.r.top) / fieldDrag.r.height) * 100;
+      const w = Math.max(6, Math.min(100 - fieldDrag.left, px - fieldDrag.left));
+      const h = Math.max(5, Math.min(100 - fieldDrag.top, py - fieldDrag.top));
+      state.layout[fieldDrag.id] = { ...(state.layout[fieldDrag.id] || {}), w, h };
+      if (box) { box.style.width = `${w}%`; box.style.height = `${h}%`; }
+      return;
+    }
+    const dx = ((e.clientX - fieldDrag.fromX) / fieldDrag.r.width) * 100;
+    const dy = ((e.clientY - fieldDrag.fromY) / fieldDrag.r.height) * 100;
+    const x = Math.max(0, Math.min(100 - fieldDrag.w, fieldDrag.startX + dx));
+    const y = Math.max(0, Math.min(100 - fieldDrag.h, fieldDrag.startY + dy));
+    state.layout[fieldDrag.id] = { ...(state.layout[fieldDrag.id] || {}), x, y };
+    if (box) { box.style.left = `${x}%`; box.style.top = `${y}%`; }
+  });
+  const dropField = () => {
+    if (!fieldDrag) return;
+    fieldDrag = null;
+    tell();
+  };
+  fieldsEl.addEventListener("pointerup", dropField);
+  fieldsEl.addEventListener("pointercancel", dropField);
 
   /**
    * A NOTE IS DRAGGED, AND A PIN CATCHES IT.
@@ -1115,6 +1189,7 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
       notes: state.notes.map((n) => ({ ...n })),
       grid: { ...state.grid },
       preset: state.preset,
+      layout: { ...state.layout },
     }),
     dispose() { watch.disconnect(); pad?.destroy?.(); el.remove(); },
   };
@@ -1134,3 +1209,14 @@ const BIN_ICON = `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="t
   + `<rect x="8.6" y="2.4" width="6.8" height="2.6" fill="var(--accent-danger,#c0453f)"/>`
   + `<rect x="3" y="5" width="18" height="3.2" fill="var(--accent-danger,#c0453f)"/>`
   + `<rect x="5.2" y="9.4" width="13.6" height="12" fill="var(--accent-primary,#f4c95d)" stroke="var(--ink,#2a2723)" stroke-width="1.2"/></svg>`;
+
+/* a corner to pull a box bigger or smaller by, and a cross to drag it by */
+const RESIZE_ICON = `<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true">`
+  + `<path d="M20 8 8 20M20 14 14 20M20 20H17" fill="none" stroke="var(--text-tertiary,#6f685f)"`
+  + ` stroke-width="2.2" stroke-linecap="round"/></svg>`;
+const MOVE_ICON = `<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">`
+  + `<path d="M12 2 8.6 6h6.8Z" fill="var(--text-tertiary,#6f685f)"/>`
+  + `<path d="M12 22 8.6 18h6.8Z" fill="var(--text-tertiary,#6f685f)"/>`
+  + `<path d="M2 12 6 8.6v6.8Z" fill="var(--text-tertiary,#6f685f)"/>`
+  + `<path d="M22 12 18 8.6v6.8Z" fill="var(--text-tertiary,#6f685f)"/>`
+  + `<rect x="10.4" y="10.4" width="3.2" height="3.2" fill="var(--text-tertiary,#6f685f)"/></svg>`;

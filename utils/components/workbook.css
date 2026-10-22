@@ -3009,6 +3009,21 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 
 .og__field { position: absolute; display: flex; flex-direction: column; pointer-events: auto; }
 .og__field.is-mid { text-align: center; }
+
+/* THE GRIPS. Quiet by default — a corner mark would fight the drawing
+   underneath otherwise — and plainer once a finger is near. The resize
+   grip sits bottom-right of every box; the move grip (mountain only) sits
+   top-left, clear of the heading text that already lives top-left inside. */
+.og__grip {
+  position: absolute; display: flex; align-items: center; justify-content: center;
+  width: 0.95rem; height: 0.95rem; opacity: 0.32; pointer-events: auto;
+  touch-action: none; z-index: 2; background: none; border: 0; padding: 0;
+}
+.og__grip svg { display: block; }
+.og__field:hover .og__grip, .og__grip:active { opacity: 0.9; }
+.og__grip--size { right: -0.3rem; bottom: -0.3rem; cursor: nwse-resize; }
+.og__grip--move { left: -0.3rem; top: -0.3rem; cursor: grab; }
+.og__grip--move:active { cursor: grabbing; }
 .og__head {
   font: 700 6.6pt/1.2 var(--font-display, var(--font-mono, "JetBrains Mono", ui-monospace, monospace));
   color: #6f685f; margin-bottom: 0.3mm;
@@ -3030,6 +3045,10 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   /* the hand the notes are written in: this is writing, not a caption */
   font: 400 13px/18px var(--font-hand, "Shantell Sans", "Segoe Print", cursive);
   color: #22324d;
+  /* NO PAPER OF ITS OWN. A textarea is white by default in every browser,
+     and the sheet underneath is not — so without this a form field shows
+     through every box, however carefully the lines are drawn to match. */
+  background-color: transparent;
   background-image: repeating-linear-gradient(
     to bottom,
     transparent 0, transparent 17px,
@@ -3077,7 +3096,7 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 /* the sheet takes the press for a note lying on it */
 .og__sheet { touch-action: none; }
 
-@media print { .og__top, .og__pin { display: none !important; } }
+@media print { .og__top, .og__pin, .og__grip { display: none !important; } }
 
 /* ── A NUMBER LINE YOU BUILD (linemodel.js) ────────────────────────────────
    The bar model board's companion, dressed the same way: a row of icon keys
