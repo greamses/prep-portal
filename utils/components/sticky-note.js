@@ -44,6 +44,18 @@ import { measureMath, mathPicture, mathNode } from "./sticky-math.js";
 /* ── registries ───────────────────────────────────────────────────────────── */
 
 /** The six papers, as .pp-sticky--c0…c5 wears them. */
+/**
+ * TWENTY PAPERS TO WRITE ON.
+ *
+ * Six was enough while a note was a note; it is not enough for a board of
+ * them, where the colour is doing work — this group of three against that
+ * group of four, the ones I am sure of against the ones I am not. They are
+ * all PALE, because every ink below has to stay readable on every one of
+ * them, and they are all warm or soft rather than fluorescent: a wall of
+ * saturated squares is tiring to look at and impossible to read a sentence
+ * off. THE FIRST SIX ARE THE ORIGINAL SIX, in order — a note stores its
+ * paper as a number into this list.
+ */
 export const PAPERS = [
   { id: "butter", hex: "#fff3a8" },
   { id: "lilac", hex: "#e8c8ff" },
@@ -51,6 +63,20 @@ export const PAPERS = [
   { id: "sky", hex: "#bfe3ff" },
   { id: "peach", hex: "#ffd7a3" },
   { id: "mint", hex: "#b8ece2" },
+  { id: "rose", hex: "#ffd0dc" },
+  { id: "sand", hex: "#f0e2c2" },
+  { id: "sage", hex: "#d8e6cb" },
+  { id: "powder", hex: "#d6e4f7" },
+  { id: "apricot", hex: "#ffe0c4" },
+  { id: "orchid", hex: "#f2d4f0" },
+  { id: "lagoon", hex: "#cfeaf2" },
+  { id: "lime", hex: "#e8f2b8" },
+  { id: "clay", hex: "#f3d9cf" },
+  { id: "pewter", hex: "#e2e5ea" },
+  { id: "flax", hex: "#fbeccd" },
+  { id: "jade", hex: "#c6ecdc" },
+  { id: "wisteria", hex: "#ddd9f5" },
+  { id: "shell", hex: "#fdf0e6" },
 ];
 
 /** What you write WITH. Dark enough to read on every paper above. */
@@ -390,7 +416,7 @@ export function layoutNote(note, { maxWidth = MAX_W } = {}) {
  * Returns true when a formula on the note is still being made into a picture,
  * so the caller knows to paint again once it is.
  */
-export function paintSticky(g, note, layout, { width, height, tilt = TILT, shadow = true } = {}) {
+export function paintSticky(g, note, layout, { width, height, tilt = TILT, shadow = true, ruled = false } = {}) {
   const W = width ?? layout.width;
   const H = height ?? layout.height;
   const paper = PAPERS[note.paper]?.hex || PAPERS[0].hex;
@@ -424,6 +450,24 @@ export function paintSticky(g, note, layout, { width, height, tilt = TILT, shado
   g.shadowBlur = 0;
   g.shadowOffsetX = 0;
   g.shadowOffsetY = 0;
+
+  /* RULED, when the note is asked to be. Lines on the paper are what make a
+     note something you write a sentence on rather than a label you fill in,
+     and on a board of them they keep everybody's handwriting on the level.
+     They are ruled to the note's own leading, so the writing sits ON them. */
+  if (ruled) {
+    const step = Math.max(14, (layout.lines?.[0]?.h) || 0) || 20;
+    g.save();
+    g.strokeStyle = "rgba(42,39,35,0.18)";
+    g.lineWidth = 1;
+    for (let y = -ph / 2 + PAD_TOP + step; y < ph / 2 - 4; y += step) {
+      g.beginPath();
+      g.moveTo(-pw / 2 + PAD_X * 0.5, Math.round(y) + 0.5);
+      g.lineTo(pw / 2 - PAD_X * 0.5, Math.round(y) + 0.5);
+      g.stroke();
+    }
+    g.restore();
+  }
 
   // the strip of tape across the top, as .pp-sticky--tape wears it
   const tapeW = Math.min(pw * 0.42, 92);

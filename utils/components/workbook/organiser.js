@@ -268,12 +268,29 @@ function roomFor(pin, pins, boardW) {
  */
 export function mountOrganiser(host, { kind = "burger", saved = null, onChange = () => {} } = {}) {
   const spec = ORGANISERS[kind] || BURGER;
+  /**
+   * A PIN IS A PLACE. A NOTE IS A THING. They are kept apart on purpose.
+   *
+   * The first version made a pin and opened a pad on it, which gets the
+   * order wrong: you do not decide where a thought goes before you have had
+   * it. So a pin is an empty marker you put where something belongs, a note
+   * is written on its own and lies loose on the board, and the two are
+   * brought together by DRAGGING the note onto the pin. Pull it off again
+   * and it is loose again; the pin stays where it was put.
+   */
   const state = {
     fields: { ...(saved?.fields || {}) },
     pins: Array.isArray(saved?.pins) ? saved.pins.map((p) => ({ ...p })) : [],
+    notes: Array.isArray(saved?.notes) ? saved.notes.map((n) => ({ ...n })) : [],
     grid: { ...(spec.grid || {}), ...(saved?.grid || {}) },
   };
-  let seq = 1 + Math.max(0, ...state.pins.map((p) => p.id || 0));
+  /* a note written on a pin by the older version comes off it, as a note */
+  state.pins.forEach((pn) => {
+    if (!pn.note) return;
+    state.notes.push({ id: -pn.id, x: pn.x, y: pn.y, pin: pn.id, ...pn.note });
+    delete pn.note;
+  });
+  let seq = 1 + Math.max(0, ...state.pins.map((p) => p.id || 0), ...state.notes.map((n) => Math.abs(n.id) || 0));
   let picked = null;
 
   const el = document.createElement("div");
@@ -283,7 +300,9 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
       <p class="og__say">${esc(spec.say)}</p>
       <span class="og__keys">
         <button type="button" class="pp-btn wb-tint-2 og__key" data-og="pin"
-                aria-label="Add a pin for a sticky note" data-tip="Add a pin, then write its note">${PIN_ICON}</button>
+                aria-label="Put a pin on the board" data-tip="A pin: somewhere a note can go">${PIN_ICON}</button>
+        <button type="button" class="pp-btn wb-tint-2 og__key" data-og="note"
+                aria-label="Write a sticky note" data-tip="Write a note, then drag it onto a pin">${NOTE_ICON}</button>
         ${spec.grid ? `<button type="button" class="pp-btn wb-tint-1 og__key" data-og="row+" aria-label="One more row" data-tip="One more row">+ row</button>
         <button type="button" class="pp-btn wb-tint-1 og__key" data-og="row-" aria-label="One row fewer" data-tip="Take the last row off">&minus; row</button>
         <button type="button" class="pp-btn wb-tint-1 og__key" data-og="col+" aria-label="One more column" data-tip="One more column">+ col</button>
@@ -306,7 +325,12 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
   const pinsEl = el.querySelector(".og__pins");
   const canvas = el.querySelector(".og__notes");
 
-  const tell = () => onChange({ fields: { ...state.fields }, pins: state.pins.map((p) => ({ ...p })), grid: { ...state.grid } });
+  const tell = () => onChange({
+    fields: { ...state.fields },
+    pins: state.pins.map((p) => ({ ...p })),
+    notes: state.notes.map((n) => ({ ...n })),
+    grid: { ...state.grid },
+  });
 
   /* ── the shape, and the boxes to type in ────────────────────────────── */
   function fieldsOf() {
@@ -356,10 +380,10 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
   /* ── the pins ────────────────────────────────────────────────────────── */
   function paintPins() {
     pinsEl.innerHTML = state.pins.map((p) => `
-      <button type="button" class="og__pin${picked === p.id ? " is-picked" : ""}" data-pin="${p.id}"
+      <button type="button" class="og__pin${picked === p.id ? " is-picked" : ""}${state.notes.some((n) => n.pin === p.id) ? " has-note" : ""}${over === p.id ? " is-over" : ""}" data-pin="${p.id}"
               style="left:${p.x}%;top:${p.y}%"
-              aria-label="${p.note ? "The note on this pin" : "An empty pin — click to write its note"}"
-              data-tip="${p.note ? "Click to change this note" : "Click to write this note"}">${PIN_ICON}</button>`).join("");
+              aria-label="A pin — drag a note onto it"
+              data-tip="Drag a note onto this pin">${PIN_ICON}</button>`).join("");
   }
 
   /**
@@ -368,6 +392,12 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
    * the board, not a box in it. The canvas takes no clicks — the PIN is the
    * handle, which is the point of pinning them.
    */
+  /** Where a note sits: on its pin if it has one, else where it was left. */
+  const spotOf = (n) => {
+    const pin = n.pin ? state.pins.find((p) => p.id === n.pin) : null;
+    return pin ? { x: pin.x, y: pin.y, pinned: true } : { x: n.x, y: n.y, pinned: false };
+  };
+
   function paintNotes() {
     const r = sheet.getBoundingClientRect();
     if (!r.width) return;
@@ -379,18 +409,31 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
     const g = canvas.getContext("2d");
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, r.width, r.height);
-    state.pins.forEach((p) => {
-      if (!p.note || !p.note.runs?.length) return;
-      const note = makeNote({ runs: p.note.runs, paper: p.note.paper || 0 });
-      const lay = layoutNote(note, { maxWidth: roomFor(p, state.pins, r.width) });
+    noteBoxes = [];
+    state.notes.forEach((n) => {
+      if (!n.runs?.length) return;
+      const at = spotOf(n);
+      const note = makeNote({ runs: n.runs, paper: n.paper || 0 });
+      /* ON A PIN it is measured against its neighbours, so a board of them
+         cannot overlap; loose, it takes whatever width it wants. */
+      const lay = layoutNote(note, {
+        maxWidth: at.pinned ? roomFor(at, state.pins, r.width) : 300,
+      });
+      const x = (at.x / 100) * r.width - lay.width * (at.pinned ? 0.18 : 0.5);
+      const y = (at.y / 100) * r.height + (at.pinned ? 6 : -lay.height / 2);
       g.save();
-      /* the note hangs BELOW and a little right of its pin, the way a note
-         pushed on to a pin hangs from it */
-      g.translate((p.x / 100) * r.width - lay.width * 0.18, (p.y / 100) * r.height + 6);
-      paintSticky(g, note, lay, { tilt: tiltOf(p.id) });
+      g.translate(x, y);
+      paintSticky(g, note, lay, { tilt: tiltOf(n.id), ruled: true });
       g.restore();
+      /* kept so the note can be picked up again: the canvas cannot be asked
+         what is under a finger, so the boxes are remembered as they are drawn */
+      noteBoxes.push({ id: n.id, x, y, w: lay.width, h: lay.height });
     });
   }
+  let noteBoxes = [];
+  /** The topmost note under a point on the sheet, if any. */
+  const noteAt = (px, py) => [...noteBoxes].reverse()
+    .find((b) => px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h) || null;
 
   const paintAll = () => { paintArt(); paintFields(); paintPins(); paintNotes(); };
 
@@ -398,12 +441,19 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
   el.addEventListener("click", (e) => {
     const k = e.target.closest("[data-og]")?.dataset.og;
     if (k === "pin") {
-      const p = { id: seq++, x: 50, y: 46, note: null };
-      state.pins.push(p);
-      picked = p.id;
+      /* AN EMPTY PIN, and nothing else happens. A pin says "something goes
+         here"; what goes there is decided later, by dragging a note on. */
+      const pin = { id: seq++, x: 50, y: 46 };
+      state.pins.push(pin);
+      picked = pin.id;
       paintAll();
       tell();
-      write(p);
+      return;
+    }
+    if (k === "note") {
+      const n = { id: seq++, x: 50, y: 30, pin: null, runs: null, paper: 0 };
+      state.notes.push(n);
+      write(n);
       return;
     }
     if (k === "row+") { state.grid.rows = Math.min(12, state.grid.rows + 1); paintAll(); tell(); return; }
@@ -411,18 +461,14 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
     if (k === "row-" || k === "col-") { shrink(k === "row-" ? "rows" : "cols"); return; }
     if (k === "clear") {
       if (picked == null) return;
+      /* a pin taken off sets its note loose rather than taking the writing
+         with it: the words were the work, the pin was only a place */
+      state.notes.forEach((n) => { if (n.pin === picked) { const a = spotOf(n); n.pin = null; n.x = a.x; n.y = a.y; } });
       state.pins = state.pins.filter((p) => p.id !== picked);
       picked = null;
       paintAll();
       tell();
       return;
-    }
-    const pin = e.target.closest("[data-pin]")?.dataset.pin;
-    if (pin && !dragged) {
-      const p = state.pins.find((x) => x.id === Number(pin));
-      picked = p.id;
-      paintPins();
-      write(p);
     }
   });
 
@@ -463,6 +509,89 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
     tell();
   });
 
+  /**
+   * A NOTE IS DRAGGED, AND A PIN CATCHES IT.
+   *
+   * The notes are painted on a canvas, which cannot be asked what is under a
+   * finger — so the boxes are remembered as they are drawn (`noteBoxes`) and
+   * the sheet does the hit-testing itself. Dropped on a pin the note takes
+   * the pin and is measured against its neighbours from then on; dropped
+   * anywhere else it simply lies where it was put. Double-click one to open
+   * it again.
+   */
+  const PIN_CATCH = 7;        // how near a pin has to be, in sheet-widths %
+  let noteDrag = null;
+  /* CAUGHT ON THE WAY DOWN. A note lying over a field is ABOVE it on the
+     board, so it must get the press — and a listener that waits for the
+     event to bubble gets it after the field has already taken the caret.
+     The note is only intercepted when one is really under the finger. */
+  sheet.addEventListener("pointerdown", (e) => {
+    if (e.target.closest(".og__pin")) return;
+    const r = sheet.getBoundingClientRect();
+    const hit = noteAt(e.clientX - r.left, e.clientY - r.top);
+    if (!hit) return;
+    const n = state.notes.find((x) => x.id === hit.id);
+    if (!n) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const at = spotOf(n);
+    noteDrag = { n, r, from: { x: e.clientX, y: e.clientY }, at, moved: false };
+    sheet.setPointerCapture(e.pointerId);
+  }, true);
+  sheet.addEventListener("pointermove", (e) => {
+    if (!noteDrag) return;
+    const dx = ((e.clientX - noteDrag.from.x) / noteDrag.r.width) * 100;
+    const dy = ((e.clientY - noteDrag.from.y) / noteDrag.r.height) * 100;
+    if (!noteDrag.moved && Math.hypot(dx, dy) < 0.8) return;
+    noteDrag.moved = true;
+    noteDrag.n.pin = null;              // picked up, it is loose until it lands
+    noteDrag.n.x = Math.max(2, Math.min(98, noteDrag.at.x + dx));
+    noteDrag.n.y = Math.max(2, Math.min(98, noteDrag.at.y + dy));
+    /* the pin it would land on lights up, so you can see it is going to catch */
+    const near = nearestPin(noteDrag.n.x, noteDrag.n.y);
+    over = near ? near.id : null;
+    paintPins();
+    paintNotes();
+  });
+  const dropNote = () => {
+    if (!noteDrag) return;
+    const d = noteDrag;
+    noteDrag = null;
+    over = null;
+    if (!d.moved) {
+      if (twiceNote(d.n.id)) write(d.n);
+      paintPins();
+      return;
+    }
+    const near = nearestPin(d.n.x, d.n.y);
+    if (near) d.n.pin = near.id;
+    paintAll();
+    tell();
+  };
+  sheet.addEventListener("pointerup", dropNote);
+  sheet.addEventListener("pointercancel", dropNote);
+
+  let over = null;
+  function nearestPin(x, y) {
+    let best = null;
+    let gap = PIN_CATCH;
+    state.pins.forEach((p) => {
+      const d = Math.hypot(p.x - x, (p.y - y) * 0.62);
+      if (d < gap) { gap = d; best = p; }
+    });
+    return best;
+  }
+
+  /* a second tap opens the note again; counted here, as everywhere else on
+     the bench, because the sheet is repainted between the two */
+  let lastNote = null;
+  function twiceNote(id) {
+    const now = Date.now();
+    const yes = lastNote && lastNote.id === id && now - lastNote.at < 450;
+    lastNote = yes ? null : { id, at: now };
+    return yes;
+  }
+
   /* ── a pin is put where the note should be ───────────────────────────── */
   let drag = null;
   let dragged = false;
@@ -501,27 +630,39 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
 
   /* ── writing a note on a pin ─────────────────────────────────────────── */
   let pad = null;
-  async function write(pin) {
+  /**
+   * WRITING A NOTE — in the site's one note editor, the same pad as the
+   * workbook's Notes key and the Toy Shop's. There is no second note here:
+   * the face, the size, the colour of the writing, the paper under it and an
+   * equation if the thought needs one all work the way they work everywhere
+   * else (sticky-note-editor.js).
+   */
+  async function write(note) {
     const { createStickyEditor } = await import("/utils/components/sticky-note-editor.js");
     if (!pad) {
       pad = createStickyEditor({
         host: el,
-        onInput: (note) => {
+        onInput: (n) => {
           if (!pad.on) return;
-          pad.on.note = { runs: note.runs, paper: note.paper };
+          Object.assign(pad.on, { runs: n.runs, paper: n.paper });
           paintNotes();
         },
-        onDone: (note) => {
+        onDone: (n) => {
           if (!pad.on) return;
-          pad.on.note = { runs: note.runs, paper: note.paper };
+          Object.assign(pad.on, { runs: n.runs, paper: n.paper });
+          /* a note left blank is not a note */
+          if (!pad.on.runs?.some((r) => String(r.text || "").trim() || r.tex)) {
+            state.notes = state.notes.filter((x) => x.id !== pad.on.id);
+          }
           pad.on = null;
           paintNotes();
+          paintPins();
           tell();
         },
       });
     }
-    pad.on = pin;
-    pad.open(makeNote(pin.note && pin.note.runs ? { runs: pin.note.runs, paper: pin.note.paper || 0 } : {}));
+    pad.on = note;
+    pad.open(makeNote(note.runs ? { runs: note.runs, paper: note.paper || 0 } : {}));
   }
 
   const watch = new ResizeObserver(() => paintNotes());
@@ -531,7 +672,12 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
 
   return {
     el,
-    get: () => ({ fields: { ...state.fields }, pins: state.pins.map((p) => ({ ...p })), grid: { ...state.grid } }),
+    get: () => ({
+      fields: { ...state.fields },
+      pins: state.pins.map((p) => ({ ...p })),
+      notes: state.notes.map((n) => ({ ...n })),
+      grid: { ...state.grid },
+    }),
     dispose() { watch.disconnect(); pad?.destroy?.(); el.remove(); },
   };
 }
@@ -540,6 +686,12 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
 const PIN_ICON = `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">`
   + `<path d="M9.4 2.6h5.2l-1 5.2 3.8 3.4v2H6.6v-2l3.8-3.4z" fill="var(--accent-danger,#c0453f)"/>`
   + `<rect x="11.2" y="13.2" width="1.6" height="8.2" fill="var(--ink,#2a2723)"/></svg>`;
+const NOTE_ICON = `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">`
+  + `<rect x="3.4" y="4.6" width="17.2" height="15.8" fill="var(--accent-primary,#fff3a8)" stroke="var(--ink,#2a2723)" stroke-width="1.2"/>`
+  + `<rect x="8.6" y="2.8" width="7" height="3.2" fill="var(--text-tertiary,#6f685f)" opacity="0.55"/>`
+  + `<rect x="6" y="10" width="12" height="1.3" fill="var(--ink,#2a2723)" opacity="0.45"/>`
+  + `<rect x="6" y="13.4" width="12" height="1.3" fill="var(--ink,#2a2723)" opacity="0.45"/>`
+  + `<rect x="6" y="16.8" width="7.4" height="1.3" fill="var(--ink,#2a2723)" opacity="0.45"/></svg>`;
 const BIN_ICON = `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">`
   + `<rect x="8.6" y="2.4" width="6.8" height="2.6" fill="var(--accent-danger,#c0453f)"/>`
   + `<rect x="3" y="5" width="18" height="3.2" fill="var(--accent-danger,#c0453f)"/>`

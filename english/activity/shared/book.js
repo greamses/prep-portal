@@ -113,6 +113,9 @@ export function mountEnglishBook({
     interactive: {
       rail: ["draw", "plan", "note"],
       railWithout: ["compass", "ruler", "protractor", "setsquare"],
+      /* the SAME note the maths pages use — it is only called by what it is
+         for here, because nobody drafting a paragraph is after an equation */
+      railNames: { note: "Sticky note" },
     },
     store: `${id}-v1`,
     groups,

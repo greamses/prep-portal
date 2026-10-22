@@ -3014,6 +3014,11 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 }
 .og__pin:active { cursor: grabbing; }
 .og__pin.is-picked { outline: 2px solid #2f6ea8; outline-offset: -1px; }
+/* a pin that has a note on it, and one a note is about to land on */
+.og__pin.has-note { opacity: 0.55; }
+.og__pin.is-over { transform: scale(1.45); filter: drop-shadow(0 0 3px #2f6ea8); }
+/* the sheet takes the press for a note lying on it */
+.og__sheet { touch-action: none; }
 
 @media print { .og__top, .og__pin { display: none !important; } }
 

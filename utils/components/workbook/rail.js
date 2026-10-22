@@ -478,6 +478,7 @@ export function mountBuilder(cfg) {
            it gets all of them (interactive.js FAMILIES) */
         rail: cfg.interactive.rail || null,
         railWithout: cfg.interactive.railWithout || null,
+        railNames: cfg.interactive.railNames || null,
         /* How THIS workbook draws a pile of blocks, if it draws one at all.
            Splitting a flat into ten rods means drawing the pile again, and only
            the workbook knows how — the engine must not reach into a workbook's

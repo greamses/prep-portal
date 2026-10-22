@@ -85,7 +85,7 @@ const SVGNS = "http://www.w3.org/2000/svg";
  *                  Maths Workbook: a trick is only a trick if it is quick.)
  *   → { afterRender(key) }   call after every rebuild of the paper
  */
-export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "", blocks = null, chart = null, onCheck = null, onProgress = null, locked = false, timed = null, rail = null, railWithout = null,}) {
+export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "", blocks = null, chart = null, onCheck = null, onProgress = null, locked = false, timed = null, rail = null, railWithout = null, railNames = null,}) {
   let live = false;
   let key = null;
   let store = {};                     // itemIndex -> { v: [...], lines: [...] }
@@ -3445,7 +3445,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   };
   const asSheet = (id) => {
     const t = SHEETS.find((x) => x.id === id);
-    return t && { id: t.id, label: t.label, icon: t.icon || "", attr: "data-sheet" };
+    /* A WORKBOOK MAY CALL A TOOL WHAT IT IS FOR. The note is the same note
+       on every page; on an English one it is a sticky note, because nobody
+       drafting a paragraph is reaching for an equation. */
+    return t && { id: t.id, label: railNames?.[t.id] || t.label, icon: t.icon || "", attr: "data-sheet" };
   };
   const asMode = (id) => {
     const m = MODES.find((x) => x.id === id);
