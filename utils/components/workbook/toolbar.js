@@ -100,6 +100,20 @@ const TOOLS = {
       return () => live.dispose();
     },
   },
+  linemodel: {
+    label: "Number line",
+    size: { w: 680, h: 420 },
+    async open(body) {
+      body.classList.add("wb-panel__body--bare");
+      const { mountLineModel } = await import("./linemodel.js");
+      const host = document.createElement("div");
+      host.className = "lm-host wb-linemodel";
+      body.appendChild(host);
+      const { saved, onChange } = kept("wb-linemodel");
+      const live = mountLineModel(host, { saved: saved && Array.isArray(saved.marks) ? saved : null, onChange });
+      return () => live.dispose();
+    },
+  },
   note: {
     label: "Notes",
     size: { w: 420, h: 380 },

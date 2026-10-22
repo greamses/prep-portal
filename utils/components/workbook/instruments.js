@@ -208,6 +208,14 @@ export const TOOL_ICONS = {
       r(5.2, 12, 13.6, 1.5, GOLD, 0) + r(5.2, 15, 9, 1.5, "#fff", 0) +
       r(4.2, 11.4, 15.6, 2.8, LOUD, 0, ' opacity="0.28"')
   ),
+  /* the number line: a ruled line with a jump over it */
+  linemodel: glyph(
+    r(2, 14, 20, 1.8, QUIET, 0) +
+      [0, 1, 2, 3, 4].map((i) => r(2.8 + i * 4.6, 15.8, 1.2, 3, QUIET, 0)).join("") +
+      `<path d="M5 12.8q7-9.4 14 0" fill="none" stroke="${LEAF}" stroke-width="2"/>` +
+      `<path d="M19.4 13.6 15.9 9.2l5-1.1Z" fill="${LEAF}"/>` +
+      `<circle cx="5" cy="14.9" r="2.6" fill="${LOUD}"/>`
+  ),
   side: glyph(
     r(2.8, 4.2, 18.4, 15.6, PAPER, 1.8) +
       `<path d="M4.6 4.2h4.2v15.6H4.6a1.8 1.8 0 0 1-1.8-1.8V6a1.8 1.8 0 0 1 1.8-1.8z" fill="${GOLD}"/>`

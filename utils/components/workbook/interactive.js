@@ -32,6 +32,7 @@ import { mountDivMat } from "./divmat.js";
 import { makeFoldable, unFoldable, foldAlong } from "./fold.js";
 import { mountBalance } from "./balance.js";
 import { mountBarModel } from "./barmodel.js";
+import { mountLineModel } from "./linemodel.js";
 import { mountSameDiff } from "./samediff.js";
 import { mountGates, circuitRight } from "./logicboard.js";
 import { mountBits, bitsRight } from "./bits.js";
@@ -3220,6 +3221,30 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         return () => live.dispose();
       },
     })),
+    /* THE BAR MODEL'S COMPANION. A bar says how big a thing is beside another
+       thing; a line says WHERE a number is and how far it is to the next one
+       — counting on, counting back, rounding, negatives, decimals. Different
+       question, different picture (./linemodel.js). */
+    {
+      id: "linemodel",
+      label: "Number line",
+      icon: TOOL_ICONS.linemodel,
+      size: { w: 680, h: 420 },
+      open: (body) => {
+        body.classList.add("wb-panel__body--bare");
+        const host = document.createElement("div");
+        host.className = "lm-host wb-linemodel";
+        body.appendChild(host);
+        const KEY = `wb-linemodel:${location.pathname}`;
+        let was = null;
+        try { was = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { /* a fresh line */ }
+        const live = mountLineModel(host, {
+          saved: was && Array.isArray(was.marks) ? was : null,
+          onChange: (now) => { try { localStorage.setItem(KEY, JSON.stringify(now)); } catch { /* not kept */ } },
+        });
+        return () => live.dispose();
+      },
+    },
     {
       id: "gm",
       label: "Algebra moves",
@@ -3458,7 +3483,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     { id: "tables", label: "Times tables", of: [asSheet("tables")] },
     /* A key of its own, like the notes: drawing the problem is ONE thing to go
        to the rail for, and it is reached for before any arithmetic is. */
-    { id: "model", label: "Bar model", of: [asSheet("barmodel")] },
+    { id: "model", label: "Models", of: [asSheet("barmodel"), asSheet("linemodel")] },
     { id: "algebra", label: "Algebra", of: [asSheet("gm")] },
     /* a tool of its own, not folded in behind another: paper to work an equation out on */
     /* the English workbooks' own family — see `rail` below */
