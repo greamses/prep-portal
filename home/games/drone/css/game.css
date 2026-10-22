@@ -329,9 +329,19 @@
 .dr-load-title { font: 700 0.95rem "Oswald", var(--dr-font); letter-spacing: 0.1em; }
 .dr-load-blink { animation: dr-blink 1s steps(2) infinite; color: var(--dr-amber); }
 @keyframes dr-blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
-.dr-bar { display: flex; gap: 3px; margin-bottom: 0.6rem; }
-.dr-seg { flex: 1; height: 8px; border-radius: 0; background: rgba(255, 255, 255, 0.1); transition: background 0.2s; }
-.dr-seg.on { background: var(--dr-amber); }
+/* ONE UNBROKEN RIBBON — not two dozen little teeth with gaps between them —
+   with a plane sitting at its tail end. The ribbon is standing in for the
+   runway it's about to take off down, so the fill opens from right where
+   the plane's own tail is and runs out ahead of it as loading finishes. */
+.dr-bar { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
+.dr-bar__plane { width: 24px; height: 12px; flex-shrink: 0; color: var(--dr-amber); }
+.dr-bar__plane path { fill: currentColor; }
+.dr-bar__track {
+  flex: 1; height: 10px; border-radius: 0;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.dr-bar__fill { height: 100%; width: 0%; background: var(--dr-amber); transition: width 0.2s ease; }
 .dr-load-status { display: flex; gap: 8px; font: 600 0.72rem var(--dr-font); color: var(--dr-muted); margin-bottom: 0.8rem; }
 .dr-load-sep { color: rgba(255, 255, 255, 0.3); }
 .dr-loader.is-error .dr-load-status { color: var(--dr-red); }

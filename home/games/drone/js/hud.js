@@ -149,8 +149,10 @@ function drawCompass(ctx, cv, bearing, required) {
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  const LABELS = { 0: "N", 45: "NE", 90: "E", 135: "SE", 180: "S", 225: "SW", 270: "W", 315: "NW" };
 
+  /* NUMBERS, NOT NAMES. A bearing is read and flown as a number — "turn to
+     270", never "turn to west" — so the ribbon says what the pilot is
+     actually matching against the delivery card. */
   for (let d = -50; d <= 50; d += 5) {
     const b = norm360(bearing + d);
     const x = cx + d * pxPerDeg;
@@ -165,9 +167,9 @@ function drawCompass(ctx, cv, bearing, required) {
     ctx.lineTo(x, H - 16 * s);
     ctx.stroke();
     if (major) {
-      ctx.fillStyle = LABELS[b] === "N" ? "#f0a868" : "rgba(255,255,255,0.92)";
+      ctx.fillStyle = b === 0 ? "#f0a868" : "rgba(255,255,255,0.92)";
       ctx.font = `700 ${Math.max(8, 13 * s)}px 'JetBrains Mono', monospace`;
-      ctx.fillText(LABELS[b] || fmt3(b), x, H - h - 26 * s);
+      ctx.fillText(fmt3(b), x, H - h - 26 * s);
     }
   }
 
@@ -216,10 +218,10 @@ function drawRadar(ctx, cv, droneBearing) {
   ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
   ctx.beginPath(); ctx.arc(cx, cy, R * 0.5, 0, Math.PI * 2); ctx.stroke();
 
-  // cardinal ticks + labels (fixed, North-up)
+  // cardinal ticks, read by their bearing (fixed, North-up) — numbers, not names
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  const LB = [["N", 0], ["E", 90], ["S", 180], ["W", 270]];
-  for (const [lab, deg] of LB) {
+  const DEGS = [0, 90, 180, 270];
+  for (const deg of DEGS) {
     const a = deg * Math.PI / 180;
     const ox = Math.sin(a), oy = -Math.cos(a);
     ctx.strokeStyle = "rgba(255,255,255,0.3)";
@@ -227,9 +229,9 @@ function drawRadar(ctx, cv, droneBearing) {
     ctx.moveTo(cx + ox * R, cy + oy * R);
     ctx.lineTo(cx + ox * R * 0.82, cy + oy * R * 0.82);
     ctx.stroke();
-    ctx.fillStyle = lab === "N" ? "#f0a868" : "rgba(255,255,255,0.8)";
-    ctx.font = "700 11px 'JetBrains Mono', monospace";
-    ctx.fillText(lab, cx + ox * R * 0.68, cy + oy * R * 0.68);
+    ctx.fillStyle = deg === 0 ? "#f0a868" : "rgba(255,255,255,0.8)";
+    ctx.font = "700 10px 'JetBrains Mono', monospace";
+    ctx.fillText(fmt3(deg), cx + ox * R * 0.66, cy + oy * R * 0.66);
   }
 
   // heading needle (where the drone is pointing) — North-up, clockwise

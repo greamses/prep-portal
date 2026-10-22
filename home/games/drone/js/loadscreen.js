@@ -1,24 +1,15 @@
 /* ============================================================================
    Bearing Courier — load screen (progress percentage)
    ----------------------------------------------------------------------------
-   Segmented progress bar + status text driven by real load progress (Babylon is
+   One ribbon bar + status text driven by real load progress (Babylon is
    streamed in main.js, then the scene builds). Progress only moves forward.
    ========================================================================== */
 
 const $ = (s) => document.querySelector(s);
-const SEGMENTS = 24;
 let cur = 0;
 
 export function initLoader() {
   cur = 0;
-  const bar = $("#dr-bar");
-  if (bar && !bar.childElementCount) {
-    for (let i = 0; i < SEGMENTS; i++) {
-      const seg = document.createElement("span");
-      seg.className = "dr-seg";
-      bar.appendChild(seg);
-    }
-  }
   paint(0);
   setStatus("booting…");
 }
@@ -34,9 +25,8 @@ export function setProgress(frac) {
 }
 
 function paint(pct) {
-  const segs = document.querySelectorAll("#dr-bar .dr-seg");
-  const on = Math.round((pct / 100) * segs.length);
-  segs.forEach((s, i) => s.classList.toggle("on", i < on));
+  const fill = $("#dr-bar-fill");
+  if (fill) fill.style.width = pct + "%";
   const t = $("#dr-loader-pct");
   if (t) t.textContent = String(pct).padStart(2, "0") + "%";
 }
