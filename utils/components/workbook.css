@@ -2971,6 +2971,25 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .og__top { display: flex; align-items: flex-start; gap: 0.6rem; flex-wrap: wrap; }
 .og__say { flex: 1 1 14rem; margin: 0; font: 7.8pt/1.5 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); color: #6f685f; }
 .og__keys { display: flex; gap: 0.3rem; }
+/* THE PRESETS, as a row of tabs rather than a dozen keys on the rail. */
+.og__sets { display: flex; flex-wrap: wrap; gap: 0.2rem; flex: 1 1 100%; order: 3; }
+.og__set {
+  padding: 0.6mm 1.6mm;
+  font: 700 7.2pt/1.5 var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  color: #6f685f; background: none;
+  border: 1px solid rgba(42, 39, 35, 0.22); border-radius: 0;
+  cursor: pointer;
+}
+.og__set:hover { border-color: #2a2723; color: #2a2723; }
+.og__set[aria-pressed="true"] { color: #2a2723; background: #fff3a8; border-color: #2a2723; }
+
+/* a stub is printed down the side: part of the method, not a question */
+.og__stub {
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 1mm; text-align: center;
+  font: 700 7.4pt/1.25 var(--font-display, inherit);
+  color: #6f685f; pointer-events: none;
+}
 .og__key { padding: 0.9mm 1.6mm; min-height: 0; font: 700 7.8pt/1 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); line-height: 0; }
 .og__key svg { display: block; }
 
@@ -2993,19 +3012,50 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
   line-clamp: 2;
 }
+/* NOT A TEXT AREA — A PLACE TO WRITE.
+   A box with a border and a focus ring is a form; ruled lines are paper. The
+   lines are the writing's own leading, so what is written sits ON them, and
+   there is no outline, no corner grip and no pale pane anywhere — only the
+   rules, and the shape showing through between them. */
 .og__field textarea {
   flex: 1 1 auto; min-height: 0; width: 100%; box-sizing: border-box;
-  padding: 0.6mm 1mm; resize: none;
-  font: 8.6pt/1.45 var(--font-mono, "JetBrains Mono", ui-monospace, monospace); color: #2a2723;
-  /* the shape shows through: a pale pane over every region turns a drawing
-     into a form, which is the thing these are not */
-  background: none;
-  border: 0; border-bottom: 0.25mm dotted rgba(42, 39, 35, 0.35); border-radius: 0;
+  padding: 0; resize: none;
+  /* the hand the notes are written in: this is writing, not a caption */
+  font: 400 13px/18px var(--font-hand, "Shantell Sans", "Segoe Print", cursive);
+  color: #22324d;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0, transparent 17px,
+    rgba(42, 39, 35, 0.22) 17px, rgba(42, 39, 35, 0.22) 18px);
+  background-attachment: local;
+  border: 0; border-radius: 0; outline: 0;
 }
-.og__field.is-mid textarea { text-align: center; font-weight: 700; background: none; border-bottom: 0; }
-.og__field textarea:focus { outline: 2px solid #2f6ea8; outline-offset: 1px; background: #fffdf8; }
+.og__field textarea::placeholder { color: rgba(42, 39, 35, 0.3); }
+.og__field.is-mid textarea {
+  text-align: center; font-weight: 700; background-image: none;
+}
+.og__field textarea:focus { outline: 0; }
+/* where the writing is going, said quietly: the rules under it go darker */
+.og__field textarea:focus {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0, transparent 17px,
+    rgba(47, 110, 168, 0.5) 17px, rgba(47, 110, 168, 0.5) 18px);
+}
 
 /* A PIN GOES DOWN FIRST, and the note hangs off it. */
+/* A PIN IS A PIN. Two classes deep, because every button on the site is
+   given a paper and a shadow by the sticky-note dress and a pin wearing a
+   little card behind it is not a pin. */
+.og .og__pin, .og .og__pin:hover {
+  background: none; box-shadow: none;
+  /* The receipt gives every icon-only button inside it a hairline box
+     (`.pp-receipt__paper .pp-btn:not(.pp-worded):has(> [data-icon])`), which
+     is right for a key on a sheet of paper and wrong for a pin stuck in a
+     drawing — and it outranks two classes. This is the one property worth
+     forcing: a pin wearing a little card is not a pin. */
+  border: 0 !important;
+}
 .og__pin {
   position: absolute; z-index: 3; pointer-events: auto;
   width: 1.5rem; height: 1.5rem; padding: 0; margin: -0.75rem 0 0 -0.75rem;

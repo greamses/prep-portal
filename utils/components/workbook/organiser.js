@@ -52,7 +52,8 @@ const INK = "#2a2723";
  */
 const ASPECT = 3 / 2;
 const circ = (cx, cy, r, fill, extra = "") =>
-  `<ellipse cx="${cx}" cy="${cy}" rx="${(r / ASPECT).toFixed(2)}" ry="${r}" fill="${fill}"${extra}/>`;
+  `<ellipse cx="${cx}" cy="${cy}" rx="${(r / ASPECT).toFixed(2)}" ry="${r}" fill="${fill}"`
+  + ` vector-effect="non-scaling-stroke"${extra}/>`;
 /** A point on a ring that looks like a ring, not an oval. */
 const ring = (cx, cy, r, i, n) => {
   const a = (i / n) * Math.PI * 2 - Math.PI / 2;
@@ -63,18 +64,29 @@ const ring = (cx, cy, r, i, n) => {
    Every field is placed in PERCENTAGES of the sheet, so one organiser is one
    drawing at any size — on a phone, in a panel, on a board at the front. */
 
-/* A sesame seed, scattered across the crown of the bun. They are drawn at an
-   angle each, because a seed that is level is a seed somebody drew. */
+/* ── the shapes, in line ─────────────────────────────────────────────────
+   THEY ARE DRAWN, NOT FILLED. A shape with a colour in it is a picture of a
+   burger; a shape in outline is a thing to write inside — which is what
+   these are for, and what they look like when they come off a printer. Only
+   the pencil is on the paper. */
+/* `non-scaling-stroke` is doing real work here. The 0–100 box is stretched
+   over a 3:2 sheet, so without it a stroke comes out half as wide again
+   across as it is down — the steep face of the mountain drew as a fat black
+   wedge and its baseline as a hairline. With it, a line is the width it says
+   it is, whichever way it runs. */
+const LINE = `fill="none" stroke="${INK}" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"`;
+
+/* A sesame seed on the crown, each at its own angle: one that is level is a
+   seed somebody drew. */
 const seed = (x, y, a) =>
-  `<ellipse cx="${x}" cy="${y}" rx="1.5" ry="0.72" fill="#fdf0d2" stroke="#d8b878"`
-  + ` stroke-width="0.18" transform="rotate(${a} ${x} ${y})"/>`;
+  `<ellipse cx="${x}" cy="${y}" rx="1.4" ry="0.66" ${LINE} stroke-width="0.5"`
+  + ` transform="rotate(${a} ${x} ${y})"/>`;
 
 /** A ruffled edge — lettuce, and the lick of melted cheese. */
 function ruffle(y, amp, n, from = 4, to = 96) {
   let d = `M${from} ${y}`;
   const w = (to - from) / n;
   for (let i = 0; i < n; i++) {
-    const x = from + w * i;
     d += ` q${(w / 4).toFixed(2)} ${amp} ${(w / 2).toFixed(2)} 0 q${(w / 4).toFixed(2)} ${-amp} ${(w / 2).toFixed(2)} 0`;
   }
   return d;
@@ -84,45 +96,17 @@ const BURGER = {
   label: "Paragraph burger",
   say: "A paragraph has a top, a filling and a bottom. Build it before you write it.",
   art: () => `
-    <defs>
-      <linearGradient id="og-bunTop" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#f0c988"/><stop offset="0.55" stop-color="#dfa85f"/>
-        <stop offset="1" stop-color="#cf9348"/>
-      </linearGradient>
-      <linearGradient id="og-bunLow" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#d79f55"/><stop offset="1" stop-color="#c0863c"/>
-      </linearGradient>
-      <linearGradient id="og-meat" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#8d5733"/><stop offset="1" stop-color="#6d3f24"/>
-      </linearGradient>
-    </defs>
-
-    <!-- the crown: domed, with the shine a baked crust has -->
-    <path d="M5 23.5C5 11.5 22 4.5 50 4.5s45 7 45 19v1.5H5z" fill="url(#og-bunTop)"
-          stroke="${INK}" stroke-width="1.1" stroke-linejoin="round"/>
-    <path d="M12 17c6-6 20-9.5 33-9.6" fill="none" stroke="#fae3bb" stroke-width="1.6"
-          stroke-linecap="round" opacity="0.65"/>
+    <path d="M5 23.5C5 11.5 22 4.5 50 4.5s45 7 45 19v1.5H5z" ${LINE} stroke-width="1.8"/>
     ${[[23, 15, -16], [36, 11.5, 9], [50, 10.2, -5], [64, 11.8, 14], [77, 15.6, -10],
        [30, 19, 6], [58, 18, -12], [71, 20.4, 8], [44, 16.6, 3]].map(([x, y, a]) => seed(x, y, a)).join("")}
-
-    <!-- lettuce: a band with a ruffled hem -->
-    <path d="${ruffle(26, 3.4, 7)} L96 38 L4 38Z" fill="#9ed06f" stroke="${INK}" stroke-width="0.9"/>
-    <path d="${ruffle(29.5, 2.2, 9)}" fill="none" stroke="#7bb352" stroke-width="0.7" opacity="0.8"/>
-
-    <!-- tomato: a slice, with its pale core and its seeds -->
-    <rect x="6" y="39" width="88" height="13" rx="0" fill="#e2574f" stroke="${INK}" stroke-width="0.9"/>
-    <rect x="9" y="42" width="82" height="7" fill="#ef8178" opacity="0.75"/>
-    ${[14, 28, 42, 56, 70, 84].map((x) => `<ellipse cx="${x}" cy="45.5" rx="1.5" ry="1.1" fill="#f6c9a0" stroke="#c9463f" stroke-width="0.2"/>`).join("")}
-
-    <!-- cheese: a square slice that has begun to go over the edge -->
+    <path d="${ruffle(26, 3.4, 7)} L96 38 L4 38Z" ${LINE} stroke-width="1"/>
+    <rect x="6" y="39" width="88" height="13" ${LINE} stroke-width="1"/>
+    ${[14, 28, 42, 56, 70, 84].map((x) => `<ellipse cx="${x}" cy="45.5" rx="1.4" ry="1.1" ${LINE} stroke-width="0.5"/>`).join("")}
     <path d="M5 53h90v9.5c0 0-6 1-9 4.2-2 2-4.4 1.2-6-0.6-1.6-1.8-4-2-5.6 0.2-1.8 2.4-5 2-6.6-0.2-1.4-2-4-1.8-5.4 0.4-1.6 2.4-5 2.2-6.6 0-1.4-2-4-2-5.6 0.2-1.8 2.2-4.8 1.8-6.4-0.4C45 64 42.6 64 41 66c-2 2.4-5 1.6-6.4-0.4C33 63.4 30.6 63.6 29 65.6c-1.8 2.2-5 1.6-6.6-0.6C21 63 18.6 63.2 17 65c-2 2.2-5.4 1.4-7-0.8-1-1.4-3-1.6-5-1.7z"
-          fill="#f7c948" stroke="${INK}" stroke-width="0.9" stroke-linejoin="round"/>
-
-    <!-- the patty, and the heel it sits on -->
-    <rect x="4" y="66" width="92" height="12" fill="url(#og-meat)" stroke="${INK}" stroke-width="1"/>
-    ${[12, 30, 48, 66, 84].map((x) => `<rect x="${x}" y="69.6" width="7" height="1.3" fill="#4e2b16" opacity="0.5"/>`).join("")}
-    <path d="M6 79h88v9c0 4.6-4 7.6-10 7.6H16C10 95.6 6 92.6 6 88z" fill="url(#og-bunLow)"
-          stroke="${INK}" stroke-width="1.1" stroke-linejoin="round"/>`,
+          ${LINE} stroke-width="1"/>
+    <rect x="4" y="66" width="92" height="12" ${LINE} stroke-width="1.5"/>
+    ${[12, 30, 48, 66, 84].map((x) => `<path d="M${x} 70.2h7" ${LINE} stroke-width="0.8"/>`).join("")}
+    <path d="M6 79h88v9c0 4.6-4 7.6-10 7.6H16C10 95.6 6 92.6 6 88z" ${LINE} stroke-width="1.8"/>`,
   fields: [
     { id: "top", head: "Topic sentence — what the whole paragraph is about", x: 12, y: 8, w: 76, h: 13 },
     { id: "a", head: "First detail", x: 7, y: 27.5, w: 86, h: 10 },
@@ -132,64 +116,135 @@ const BURGER = {
   ],
 };
 
+/**
+ * THE MOUNTAIN IS NOT SYMMETRICAL, and it is not smooth.
+ *
+ * A story that climbs and falls at the same rate is a story nothing happens
+ * in: the build-up is the long part, the turn is near the top and the way
+ * down is short and fast. And a slope ruled in one clean curve is a hill on a
+ * road sign — a real climb has ledges, false summits and bits that give way,
+ * which is also what a story has. So the path is walked in short rugged steps
+ * rather than drawn in one stroke, and the peak sits well right of the middle.
+ */
+const PEAK = [58, 11];
+function ridge() {
+  /* the knees of the climb and the drop; the rough is added between them */
+  const up = [[2, 92], [12, 84], [20, 79], [27, 68], [33, 62], [38, 47], [45, 40], [50, 28], [54, 20], PEAK];
+  const down = [PEAK, [63, 22], [67, 34], [72, 40], [76, 55], [82, 63], [87, 78], [92, 84], [98, 92]];
+  const rough = (pts, k) => {
+    let d = `M${pts[0][0]} ${pts[0][1]}`;
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0] = pts[i - 1];
+      const [x1, y1] = pts[i];
+      /* ONE NOTCH PART WAY ALONG EACH LEG — a ledge, a false summit, a bit
+         that has given way. It leans the way the slope leans, and it is
+         gentler at the foot: a notch down there crosses the ground line and
+         leaves the mountain looking torn rather than rough. */
+      const t = 0.55;
+      const foot = Math.min(1, (92 - Math.max(y0, y1)) / 22);
+      const nx = x0 + (x1 - x0) * t + (i % 2 ? 1 : -1) * 0.8 * k * foot;
+      const ny = Math.min(91.4, y0 + (y1 - y0) * t + (i % 3 ? 0.9 : -0.7) * foot);
+      d += ` L${nx.toFixed(2)} ${ny.toFixed(2)} L${x1} ${y1}`;
+    }
+    return d;
+  };
+  return rough(up, 1) + rough(down, -1).replace(/^M[\d.]+ [\d.]+/, "");
+}
+
 const MOUNTAIN = {
   label: "Story mountain",
-  say: "A story climbs to one moment and comes down the other side. Put yours on the slope.",
+  say: "A story climbs to one moment and comes down the other side — and the way down is quicker.",
   art: () => `
-    <defs>
-      <linearGradient id="og-sky" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#dbeeff"/><stop offset="1" stop-color="#f4f7e8"/>
-      </linearGradient>
-      <linearGradient id="og-rock" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0" stop-color="#9fb3c8"/><stop offset="0.48" stop-color="#c2d2e0"/>
-        <stop offset="0.52" stop-color="#8ea3b8"/><stop offset="1" stop-color="#6f869d"/>
-      </linearGradient>
-    </defs>
-    <rect x="0" y="0" width="100" height="92" fill="url(#og-sky)"/>
-
-    <!-- the hills behind, so the climb has something to be bigger than -->
-    <path d="M0 92 Q14 72 27 80 Q38 86 46 92Z" fill="#b9cbb0" opacity="0.75"/>
-    <path d="M58 92 Q70 74 82 81 Q92 86 100 92Z" fill="#b9cbb0" opacity="0.75"/>
-
-    <!-- THE MOUNTAIN, drawn in curves. A story does not climb in a straight
-         line and neither should the picture of one: the rise is slow, the
-         turn is sudden, and the way down is quicker than the way up. -->
-    <path d="M2 92 C14 90 20 76 28 62 C36 48 42 28 50 13 C58 28 65 50 73 64 C80 77 88 90 98 92Z"
-          fill="url(#og-rock)" stroke="${INK}" stroke-width="1.2" stroke-linejoin="round"/>
-    <!-- the snow on the top, melted unevenly as snow is -->
-    <path d="M50 13 C54 20 57 27 59.6 33 C56 35 54 31.6 51 33.4 C48.4 35 46 32 43.4 33.6 C41.6 30 44 24 50 13Z"
-          fill="#fdfdfb" stroke="${INK}" stroke-width="0.7" stroke-linejoin="round"/>
+    <path d="${ridge()}" ${LINE} stroke-width="1.8"/>
+    <path d="M2 92h96" ${LINE} stroke-width="1.5"/>
+    <!-- snow on the top, broken off unevenly as snow is -->
+    <path d="M${PEAK[0]} ${PEAK[1]} L62.6 20 L60 22 L57.6 19.4 L55 22.4 L52.6 20.6 L${PEAK[0]} ${PEAK[1]}Z"
+          ${LINE} stroke-width="0.8"/>
     <!-- a crease down each face, so it reads as rock and not as a triangle -->
-    <path d="M50 16 C47 32 42 46 33 60" fill="none" stroke="#6f869d" stroke-width="0.7" opacity="0.7"/>
-    <path d="M52 20 C56 36 62 50 70 62" fill="none" stroke="#5d7389" stroke-width="0.7" opacity="0.5"/>
-
-    <!-- the path up it, and the five places the story stops -->
-    <path d="M8 90 C18 86 22 76 30 66 C37 57 42 36 50 18 C57 36 63 56 71 66 C78 76 84 86 92 90"
-          fill="none" stroke="#fffdf8" stroke-width="1.1" stroke-dasharray="2.4 2.4" opacity="0.9"/>
-    <rect x="0" y="90" width="100" height="10" fill="#9bb882"/>
-    <path d="${ruffle(90, 1.4, 22, 0, 100)}" fill="none" stroke="#86a66f" stroke-width="0.9"/>
-    ${[[8, 90], [30, 66], [50, 18], [71, 66], [92, 90]].map(([x, y]) =>
-      circ(x, y, 2.2, "#c0453f", ' stroke="#fffdf8" stroke-width="0.8"')).join("")}`,
+    <path d="M56 16 C50 30 44 44 34 60" ${LINE} stroke-width="0.55" opacity="0.6"/>
+    <path d="M60 18 C64 32 68 46 76 58" ${LINE} stroke-width="0.55" opacity="0.6"/>
+    <!-- the path, picking its way up and down -->
+    <path d="M8 90 L16 86 L14 82 L24 76 L22 71 L32 64 L30 58 L40 48 L44 42 L48 34 L${PEAK[0]} ${PEAK[1] + 3}
+             L64 26 L70 36 L74 48 L80 60 L86 72 L92 88"
+          ${LINE} stroke-width="0.9" stroke-dasharray="2.6 2.4" opacity="0.8"/>`,
+  /* THE STATIONS ARE PINS, NOT DOTS. A dot drawn on the slope is somewhere
+     the lesson decided; a pin is somewhere the child can move. */
+  pins: [[8, 90], [27, 68], PEAK, [76, 55], [92, 88]],
   fields: [
-    { id: "open", head: "Opening — who, where, when", x: 1, y: 60, w: 22, h: 26 },
-    { id: "rise", head: "Build-up — what starts to go wrong", x: 13, y: 33, w: 23, h: 24 },
-    { id: "top", head: "The moment everything turns", x: 34, y: 0.5, w: 32, h: 12 },
-    { id: "fall", head: "What happens because of it", x: 64, y: 33, w: 23, h: 24 },
-    { id: "end", head: "Ending — how it is left", x: 77, y: 60, w: 22, h: 26 },
+    { id: "open", head: "Opening — who, where, when", x: 1, y: 60, w: 21, h: 26 },
+    { id: "rise", head: "Build-up — what starts to go wrong", x: 16, y: 30, w: 22, h: 24 },
+    { id: "top", head: "The moment everything turns", x: 42, y: 0.5, w: 32, h: 9 },
+    { id: "fall", head: "What happens because of it", x: 66, y: 28, w: 21, h: 22 },
+    { id: "end", head: "Ending — how it is left", x: 78, y: 60, w: 21, h: 26 },
   ],
+};
+
+/**
+ * THE TABLE IS A DOZEN ORGANISERS WEARING ONE SHAPE.
+ *
+ * K-W-L, a T-chart, OREO, cause and effect, a sequence chain, the five
+ * senses — every one of them is rows and columns with its headings already
+ * written in. Giving each its own key on the rail would be a dozen keys for
+ * one drawing; they are PRESETS of the table instead, and the child picks
+ * the one the lesson is about.
+ *
+ *   heads   what goes across the top — the columns
+ *   stubs   what goes down the side — a first column of labels that are
+ *           part of the method, not something to fill in. OREO's four
+ *           letters are not a question; they are the shape of the argument.
+ */
+export const TABLE_PRESETS = {
+  blank: { label: "Blank", rows: 4, heads: ["", "", ""] },
+  kwl: {
+    label: "K · W · L",
+    say: "What you knew before, what you wanted to know, and what you came away with.",
+    rows: 5,
+    heads: ["What I already know", "What I want to find out", "What I learned"],
+  },
+  tchart: {
+    label: "T-chart",
+    say: "Both sides, fairly, before you decide which one you are on.",
+    rows: 6,
+    heads: ["For", "Against"],
+  },
+  oreo: {
+    label: "OREO",
+    say: "Opinion, Reason, Example, Opinion again — an argument that closes where it opened.",
+    heads: ["What I will write"],
+    stubs: ["O — my opinion", "R — the reason for it", "E — an example that proves it", "O — my opinion again"],
+  },
+  cause: {
+    label: "Cause and effect",
+    say: "What happened, and what it made happen. One line for each pair.",
+    rows: 6,
+    heads: ["The cause — what happened", "The effect — what it made happen"],
+  },
+  chain: {
+    label: "Sequence chain",
+    say: "In order, from the first thing to the last.",
+    heads: ["What happens"],
+    stubs: ["First", "Next", "Then", "After that", "Finally"],
+  },
+  senses: {
+    label: "The five senses",
+    say: "Writing a reader can stand inside: what it was like for each sense.",
+    heads: ["What it was like"],
+    stubs: ["I saw", "I heard", "I felt", "I smelt", "I tasted"],
+  },
 };
 
 const TABLE = {
   label: "Table",
   say: "Rows and columns, for the things that are only clear side by side.",
   grid: { rows: 4, cols: 3 },
+  presets: TABLE_PRESETS,
 };
 
 const VENN = {
   label: "Venn diagram",
   say: "What belongs to one, what belongs to the other, and what they share in the middle.",
-  art: () => circ(38, 54, 36, "#bfe3ff", ` fill-opacity="0.62" stroke="${INK}" stroke-width="1.2"`)
-    + circ(62, 54, 36, "#ffd9cf", ` fill-opacity="0.62" stroke="${INK}" stroke-width="1.2"`),
+  art: () => circ(38, 54, 36, "none", ` stroke="${INK}" stroke-width="1.8"`)
+    + circ(62, 54, 36, "none", ` stroke="${INK}" stroke-width="1.8"`),
   fields: [
     { id: "aName", head: "", x: 6, y: 5, w: 28, h: 8, mid: true, one: true, hint: "This one" },
     { id: "bName", head: "", x: 66, y: 5, w: 28, h: 8, mid: true, one: true, hint: "That one" },
@@ -211,10 +266,10 @@ const ROUNDABOUT = {
     ROUND_PARTS.forEach((_, i) => {
       const [x, y] = ring(cx, cy, R, i, n);
       spokes += `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(2)}" y2="${y.toFixed(2)}"`
-        + ` stroke="${INK}" stroke-width="0.7" stroke-dasharray="2 2"/>`;
-      discs += circ(x.toFixed(2), y.toFixed(2), 15, "#d6f0cf", ` stroke="${INK}" stroke-width="1.1"`);
+        + ` stroke="${INK}" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>`;
+      discs += circ(x.toFixed(2), y.toFixed(2), 15, "none", ` stroke="${INK}" stroke-width="1.5"`);
     });
-    return spokes + discs + circ(cx, cy, 15, "#fff3a8", ` stroke="${INK}" stroke-width="1.3"`);
+    return spokes + discs + circ(cx, cy, 15, "none", ` stroke="${INK}" stroke-width="2"`);
   },
   fields: (() => {
     const R = 34, cx = 50, cy = 50, n = ROUND_PARTS.length;
@@ -283,6 +338,7 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
     pins: Array.isArray(saved?.pins) ? saved.pins.map((p) => ({ ...p })) : [],
     notes: Array.isArray(saved?.notes) ? saved.notes.map((n) => ({ ...n })) : [],
     grid: { ...(spec.grid || {}), ...(saved?.grid || {}) },
+    preset: saved?.preset || (spec.presets ? "blank" : null),
   };
   /* a note written on a pin by the older version comes off it, as a note */
   state.pins.forEach((pn) => {
@@ -290,6 +346,14 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
     state.notes.push({ id: -pn.id, x: pn.x, y: pn.y, pin: pn.id, ...pn.note });
     delete pn.note;
   });
+  /* SOME SHAPES COME WITH THEIR PINS. The mountain's five stations used to be
+     dots painted on the slope — somewhere the lesson had decided. As pins
+     they are somewhere the child can move, and the shape still arrives
+     saying where the story usually stops. Only on a sheet nobody has
+     touched: once there is work on it, the board is theirs. */
+  if (!saved && Array.isArray(spec.pins)) {
+    spec.pins.forEach(([x, y], i) => state.pins.push({ id: i + 1, x, y }));
+  }
   let seq = 1 + Math.max(0, ...state.pins.map((p) => p.id || 0), ...state.notes.map((n) => Math.abs(n.id) || 0));
   let picked = null;
 
@@ -303,6 +367,8 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
                 aria-label="Put a pin on the board" data-tip="A pin: somewhere a note can go">${PIN_ICON}</button>
         <button type="button" class="pp-btn wb-tint-2 og__key" data-og="note"
                 aria-label="Write a sticky note" data-tip="Write a note, then drag it onto a pin">${NOTE_ICON}</button>
+        ${spec.presets ? `<span class="og__sets">${Object.entries(spec.presets).map(([id, t]) =>
+          `<button type="button" class="pp-plain og__set" data-set="${id}" aria-pressed="false">${esc(t.label)}</button>`).join("")}</span>` : ""}
         ${spec.grid ? `<button type="button" class="pp-btn wb-tint-1 og__key" data-og="row+" aria-label="One more row" data-tip="One more row">+ row</button>
         <button type="button" class="pp-btn wb-tint-1 og__key" data-og="row-" aria-label="One row fewer" data-tip="Take the last row off">&minus; row</button>
         <button type="button" class="pp-btn wb-tint-1 og__key" data-og="col+" aria-label="One more column" data-tip="One more column">+ col</button>
@@ -330,23 +396,33 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
     pins: state.pins.map((p) => ({ ...p })),
     notes: state.notes.map((n) => ({ ...n })),
     grid: { ...state.grid },
+    preset: state.preset,
   });
 
   /* ── the shape, and the boxes to type in ────────────────────────────── */
+  const preset = () => (spec.presets ? spec.presets[state.preset] || spec.presets.blank : null);
+
   function fieldsOf() {
     if (!spec.grid) return spec.fields;
     /* a table is its own fields, because how many there are is a setting */
+    const set = preset();
+    const stubs = set?.stubs || null;
     const { rows, cols } = state.grid;
     const out = [];
     const cw = 96 / cols;
     const ch = 92 / rows;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
+        /* THE STUB IS PART OF THE METHOD, not a question. OREO's four
+           letters are the shape of the argument; they are printed down the
+           side, not left for the child to guess at. */
+        const stub = stubs && c === 0 && r > 0 ? stubs[r - 1] : null;
         out.push({
           id: `r${r}c${c}`,
-          head: r === 0 ? `Heading ${c + 1}` : "",
+          head: r === 0 ? (set?.heads?.[stubs ? c - 1 : c] ?? "") : "",
           x: 2 + c * cw, y: 4 + r * ch, w: cw - 1, h: ch - 1,
           mid: r === 0,
+          stub,
         });
       }
     }
@@ -358,10 +434,10 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
       const { rows, cols } = state.grid;
       const cw = 96 / cols;
       const ch = 92 / rows;
-      let out = `<rect x="2" y="4" width="96" height="92" fill="#fffdf8" stroke="${INK}" stroke-width="1.1"/>`
-        + `<rect x="2" y="4" width="96" height="${ch}" fill="#fff3a8" stroke="${INK}" stroke-width="1.1"/>`;
-      for (let c = 1; c < cols; c++) out += `<line x1="${2 + c * cw}" y1="4" x2="${2 + c * cw}" y2="96" stroke="${INK}" stroke-width="0.8"/>`;
-      for (let r = 1; r < rows; r++) out += `<line x1="2" y1="${4 + r * ch}" x2="98" y2="${4 + r * ch}" stroke="${INK}" stroke-width="0.8"/>`;
+      let out = `<rect x="2" y="4" width="96" height="92" ${LINE} stroke-width="1.8"/>`
+        + `<path d="M2 ${4 + ch}h96" ${LINE} stroke-width="1.8"/>`;
+      for (let c = 1; c < cols; c++) out += `<path d="M${2 + c * cw} 4v92" ${LINE} stroke-width="0.8"/>`;
+      for (let r = 2; r < rows; r++) out += `<path d="M2 ${4 + r * ch}h96" ${LINE} stroke-width="0.8"/>`;
       art.innerHTML = out;
       return;
     }
@@ -369,18 +445,27 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
   }
 
   function paintFields() {
-    fieldsEl.innerHTML = fieldsOf().map((f) => `
-      <label class="og__field${f.mid ? " is-mid" : ""}" style="left:${f.x}%;top:${f.y}%;width:${f.w}%;height:${f.h}%">
+    fieldsEl.innerHTML = fieldsOf().map((f) => {
+      if (f.stub) {
+        return `<span class="og__field og__stub" style="left:${f.x}%;top:${f.y}%;width:${f.w}%;height:${f.h}%">${esc(f.stub)}</span>`;
+      }
+      return `<label class="og__field${f.mid ? " is-mid" : ""}" style="left:${f.x}%;top:${f.y}%;width:${f.w}%;height:${f.h}%">
         ${f.head ? `<span class="og__head">${esc(f.head)}</span>` : ""}
         <textarea data-field="${f.id}" aria-label="${esc(f.head || f.hint || f.id)}"
                   placeholder="${esc(f.hint || "")}">${esc(state.fields[f.id] || "")}</textarea>
-      </label>`).join("");
+      </label>`;
+    }).join("");
+    if (spec.presets) {
+      el.querySelectorAll("[data-set]").forEach((k) => k.setAttribute("aria-pressed", String(k.dataset.set === state.preset)));
+      const say = el.querySelector(".og__say");
+      if (say) say.textContent = preset()?.say || spec.say;
+    }
   }
 
   /* ── the pins ────────────────────────────────────────────────────────── */
   function paintPins() {
     pinsEl.innerHTML = state.pins.map((p) => `
-      <button type="button" class="og__pin${picked === p.id ? " is-picked" : ""}${state.notes.some((n) => n.pin === p.id) ? " has-note" : ""}${over === p.id ? " is-over" : ""}" data-pin="${p.id}"
+      <button type="button" class="pp-plain og__pin${picked === p.id ? " is-picked" : ""}${state.notes.some((n) => n.pin === p.id) ? " has-note" : ""}${over === p.id ? " is-over" : ""}" data-pin="${p.id}"
               style="left:${p.x}%;top:${p.y}%"
               aria-label="A pin — drag a note onto it"
               data-tip="Drag a note onto this pin">${PIN_ICON}</button>`).join("");
@@ -454,6 +539,21 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
       const n = { id: seq++, x: 50, y: 30, pin: null, runs: null, paper: 0 };
       state.notes.push(n);
       write(n);
+      return;
+    }
+    const set = e.target.closest("[data-set]")?.dataset.set;
+    if (set && spec.presets) {
+      const t = spec.presets[set];
+      if (!t) return;
+      const written = Object.values(state.fields).some((v) => String(v || "").trim());
+      if (written && !confirm("Change the table? What is written in it stays, but the headings and the shape change.")) return;
+      state.preset = set;
+      state.grid = {
+        rows: t.stubs ? t.stubs.length + 1 : (t.rows || 4),
+        cols: (t.heads?.length || 2) + (t.stubs ? 1 : 0),
+      };
+      paintAll();
+      tell();
       return;
     }
     if (k === "row+") { state.grid.rows = Math.min(12, state.grid.rows + 1); paintAll(); tell(); return; }
@@ -677,6 +777,7 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
       pins: state.pins.map((p) => ({ ...p })),
       notes: state.notes.map((n) => ({ ...n })),
       grid: { ...state.grid },
+      preset: state.preset,
     }),
     dispose() { watch.disconnect(); pad?.destroy?.(); el.remove(); },
   };
