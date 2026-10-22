@@ -33,6 +33,7 @@ import { makeFoldable, unFoldable, foldAlong } from "./fold.js";
 import { mountBalance } from "./balance.js";
 import { mountBarModel } from "./barmodel.js";
 import { mountLineModel } from "./linemodel.js";
+import { ORGANISERS } from "./organiser.js";
 import { mountSameDiff } from "./samediff.js";
 import { mountGates, circuitRight } from "./logicboard.js";
 import { mountBits, bitsRight } from "./bits.js";
@@ -3203,12 +3204,14 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        written board to work the sum on; an English page was handing them a
        long division board, which is no use to anybody drafting a paragraph.
        These are the two boards that page actually wants (./organiser.js). */
-    ...["draft", "comprehend"].map((kind) => ({
+    ...["burger", "mountain", "venn", "roundabout", "table"].map((kind) => ({
       id: kind,
-      label: kind === "draft" ? "Planning a piece" : "Reading a passage",
-      icon: TOOL_ICONS[kind],
-      size: { w: 420, h: 560 },
+      label: ORGANISERS[kind].label,
+      icon: TOOL_ICONS[kind] || TOOL_ICONS.draft,
+      size: { w: 720, h: 620 },
       open: async (body) => {
+        needCss("/utils/components/sticky-note.css");
+        body.classList.add("wb-panel__body--bare", "wb-panel__body--scroll");
         const { mountOrganiser } = await import("./organiser.js");
         const KEY = `wb-org:${kind}:${location.pathname}`;
         let was = null;
@@ -3487,7 +3490,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     { id: "algebra", label: "Algebra", of: [asSheet("gm")] },
     /* a tool of its own, not folded in behind another: paper to work an equation out on */
     /* the English workbooks' own family — see `rail` below */
-    { id: "plan", label: "Organisers", of: [asSheet("draft"), asSheet("comprehend")] },
+    { id: "plan", label: "Organisers", of: [asSheet("burger"), asSheet("mountain"), asSheet("venn"), asSheet("roundabout"), asSheet("table")] },
     { id: "note", label: "Notes", of: [asSheet("note")] },
   ]
     /* and may drop single keys out of a family it otherwise wants: an English

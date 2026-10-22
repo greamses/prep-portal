@@ -40,6 +40,54 @@ const TONES = [
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const clone = (m) => JSON.parse(JSON.stringify(m));
 
+/* ── a line is not always ruled in whole numbers ──────────────────────────
+   Halves, quarters, thirds and tenths are most of what a number line is FOR
+   in a primary classroom, and a box that only takes 0.25 is a box that makes
+   a child write the wrong thing down. So the three settings are read as
+   fractions as well as decimals — "1/2", "3/4", "1 1/2", "-2/3" — and when
+   the line is ruled in a fraction, its figures are PRINTED as fractions. A
+   line of 0, 0.25, 0.5, 0.75, 1 is arithmetically right and is not the
+   picture the question is about. */
+const gcd = (a, b) => (b ? gcd(b, a % b) : Math.abs(a));
+
+/** "1 1/2", "3/4", "-0.25" → a number, or null if it is not one. */
+export function readNumber(text) {
+  const t = String(text ?? "").trim().replace(/\s+/g, " ");
+  if (!t) return null;
+  let m = /^(-?\d+)\s+(\d+)\/(\d+)$/.exec(t);          // 1 1/2
+  if (m) {
+    const w = Number(m[1]); const d = Number(m[3]);
+    if (!d) return null;
+    return w + (w < 0 ? -1 : 1) * (Number(m[2]) / d);
+  }
+  m = /^(-?\d+)\/(-?\d+)$/.exec(t);                      // 3/4
+  if (m) return Number(m[2]) ? Number(m[1]) / Number(m[2]) : null;
+  const v = Number(t);
+  return Number.isFinite(v) ? v : null;
+}
+
+/** The denominator a value is written over, as small as it will go. */
+function denOf(v, cap = 64) {
+  for (let d = 1; d <= cap; d++) if (Math.abs(v * d - Math.round(v * d)) < 1e-9) return d;
+  return 0;
+}
+
+/**
+ * A value as the line should print it: a fraction when the line is ruled in
+ * one, a plain figure when it is not.
+ */
+export function showValue(v, den) {
+  if (!den || den === 1) return String(Number(v.toFixed(6)));
+  const n = Math.round(v * den);
+  const g = gcd(n, den) || 1;
+  const [a, b] = [n / g, den / g];
+  if (b === 1) return String(a);
+  const sign = a < 0 ? "-" : "";
+  const w = Math.trunc(Math.abs(a) / b);
+  const r = Math.abs(a) % b;
+  return w ? `${sign}${w} ${r}/${b}` : `${sign}${r}/${b}`;
+}
+
 export const blankLine = () => ({
   from: 0, to: 20, step: 1,
   marks: [],
@@ -108,9 +156,10 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
     + `</div></div></div></div>`
     + `<div class="lm-pot lm-pot--range" data-range hidden><div class="pp-receipt"><div class="pp-receipt__paper">`
     + `<div class="lm-range">`
-    + `<label><span>From</span><input type="number" data-r="from" value="${line.from}" step="any"></label>`
-    + `<label><span>To</span><input type="number" data-r="to" value="${line.to}" step="any"></label>`
-    + `<label><span>In steps of</span><input type="number" data-r="step" value="${line.step}" min="0.01" step="any"></label>`
+    + `<label><span>From</span><input type="text" inputmode="text" data-r="from" value="${esc(line.from)}"></label>`
+    + `<label><span>To</span><input type="text" inputmode="text" data-r="to" value="${esc(line.to)}"></label>`
+    + `<label><span>In steps of</span><input type="text" inputmode="text" data-r="step" value="${esc(line.step)}"></label>`
+    + `<p class="lm-range__say">Halves and quarters are welcome: write <b>1/2</b>, <b>3/4</b> or <b>1 1/2</b>.</p>`
     + `</div></div></div></div>`
     + `</div>`
     + `<div class="lm-board"><svg class="lm-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>`
@@ -124,14 +173,20 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
 
   /* ── where a value sits, and what a place is worth ───────────────────── */
   const span = () => (Number(line.to) - Number(line.from)) || 1;
+  /** What the line is ruled in — 4 for quarters — so its figures print right. */
+  const den = () => denOf(Number(line.step) > 0 ? Number(line.step) : 1);
   const xOf = (v) => PAD + ((v - line.from) / span()) * (VIEW - PAD * 2);
   const vOf = (x) => line.from + ((x - PAD) / (VIEW - PAD * 2)) * span();
   /** A value rounded to the line's own step — a jump of three and a bit is not a jump. */
   const onStep = (v) => {
     const st = Number(line.step) > 0 ? Number(line.step) : 1;
     const at = Math.round((v - line.from) / st) * st + Number(line.from);
-    const dp = (String(st).split(".")[1] || "").length;
-    return Number(Math.min(Math.max(at, Math.min(line.from, line.to)), Math.max(line.from, line.to)).toFixed(dp));
+    const lo = Math.min(line.from, line.to);
+    const hi = Math.max(line.from, line.to);
+    /* rounded on the line's OWN ruling, so a third stays a third rather than
+       becoming 0.3333333333333 and then not matching the tick it is on */
+    const d = den() || 1000;
+    return Math.round(Math.min(Math.max(at, lo), hi) * d) / d;
   };
 
   const BASE = 104;        // where the rule itself sits in the drawing
@@ -142,18 +197,18 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
     svg.setAttribute("viewBox", `0 0 ${VIEW} ${HEIGHT}`);
     const st = Number(line.step) > 0 ? Number(line.step) : 1;
     const n = Math.min(80, Math.max(1, Math.round(Math.abs(span()) / st)));
-    const dp = (String(st).split(".")[1] || "").length;
+    const d = den();
     let out = `<line x1="${PAD - 14}" x2="${VIEW - PAD + 14}" y1="${BASE}" y2="${BASE}" stroke="${INK}" stroke-width="2.2"/>`
       /* an arrow at each end: a number line does not stop, it is only drawn
          as far as the question needs */
       + `<path d="M${VIEW - PAD + 14} ${BASE} ${VIEW - PAD + 4} ${BASE - 5}v10Z" fill="${INK}"/>`
       + `<path d="M${PAD - 14} ${BASE} ${PAD - 4} ${BASE - 5}v10Z" fill="${INK}"/>`;
     for (let i = 0; i <= n; i++) {
-      const v = Number((line.from + i * st).toFixed(dp));
+      const v = line.from + i * st;
       const x = xOf(v);
       out += `<line x1="${x}" x2="${x}" y1="${BASE - 7}" y2="${BASE + 7}" stroke="${INK}" stroke-width="1.4"/>`
         + `<text x="${x}" y="${BASE + 24}" text-anchor="middle" font-family="JetBrains Mono, monospace"`
-        + ` font-size="13" fill="${GREY}">${esc(v)}</text>`;
+        + ` font-size="13" fill="${GREY}">${esc(showValue(v, d))}</text>`;
     }
 
     line.jumps.forEach((j) => {
@@ -232,16 +287,16 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
     const t = e.target.closest("[data-t]")?.dataset.t;
     if (!t) return;
     if (t === "undo") { stepBack(); return; }
-    if (t === "range") { rangeSheet.hidden = !rangeSheet.hidden; pot.hidden = true; return; }
+    if (t === "range") { show(rangeSheet, e.target.closest("[data-t]")); pot.hidden = true; return; }
     if (t === "tone") {
       if (!picked) { flash("Tap a mark or a jump first."); return; }
-      pot.hidden = !pot.hidden; rangeSheet.hidden = true;
+      show(pot, e.target.closest("[data-t]")); rangeSheet.hidden = true;
       return;
     }
     if (t === "mark") {
       change(() => {
         const at = onStep(line.from + span() / 2);
-        const m = { id: seq++, at, text: String(at), tone };
+        const m = { id: seq++, at, text: showValue(at, den()), tone };
         line.marks.push(m);
         picked = { kind: "mark", id: m.id };
       });
@@ -286,11 +341,44 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
   rangeSheet.addEventListener("input", (e) => {
     const k = e.target.dataset.r;
     if (!k) return;
-    const v = Number(e.target.value);
-    if (!Number.isFinite(v)) return;
-    if (k === "step" && v <= 0) return;
-    change(() => { line[k] = v; });
+    const v = readNumber(e.target.value);
+    if (v == null) { e.target.classList.add("is-wrong"); return; }
+    if (k === "step" && v <= 0) { e.target.classList.add("is-wrong"); return; }
+    e.target.classList.remove("is-wrong");
+    change(() => {
+      line[k] = v;
+      /* RE-RULING BRINGS EVERYTHING WITH IT. A mark at ten on a line that now
+         runs nought to two is drawn off the end of the paper, where it cannot
+         be read or taken hold of; the honest thing is to put it on the line
+         it is now on, at the nearest place the new ruling has. */
+      line.marks.forEach((m) => {
+        const was = m.text === showValue(m.at, den());
+        m.at = onStep(m.at);
+        if (was) m.text = showValue(m.at, den());
+      });
+      line.jumps.forEach((j) => { j.from = onStep(j.from); j.to = onStep(j.to); });
+    });
   });
+
+  /**
+   * A SHEET IS PUT WHERE IT CAN BE SEEN WHOLE.
+   *
+   * Hung under its key by `position: absolute`, it was clipped by the panel
+   * it lives in — the bottom of the settings, which is where the step is,
+   * simply was not there. It is laid out against the WINDOW instead, under
+   * its key, and nudged back on screen if the key is near an edge.
+   */
+  function show(sheet, keyEl) {
+    if (!sheet.hidden) { sheet.hidden = true; return; }
+    sheet.hidden = false;
+    const k = keyEl.getBoundingClientRect();
+    const b = sheet.getBoundingClientRect();
+    const left = Math.max(6, Math.min(window.innerWidth - b.width - 6, k.left));
+    const room = window.innerHeight - k.bottom - 10;
+    const top = b.height > room && k.top > b.height + 10 ? k.top - b.height - 6 : k.bottom + 6;
+    sheet.style.left = `${left}px`;
+    sheet.style.top = `${Math.max(6, top)}px`;
+  }
 
   const shut = (e) => {
     if (!e.target.closest('.lm-tools')) { pot.hidden = true; rangeSheet.hidden = true; }
@@ -331,7 +419,7 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
       const m = line.marks.find((x) => x.id === drag.id);
       if (!m || m.at === v) return;
       /* a mark whose words ARE its value keeps saying the truth as it moves */
-      if (m.text === String(m.at)) m.text = String(v);
+      if (m.text === showValue(m.at, den())) m.text = showValue(v, den());
       m.at = v;
     } else {
       const j = line.jumps.find((x) => x.id === drag.id);

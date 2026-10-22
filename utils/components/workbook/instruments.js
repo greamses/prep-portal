@@ -216,6 +216,36 @@ export const TOOL_ICONS = {
       `<path d="M19.4 13.6 15.9 9.2l5-1.1Z" fill="${LEAF}"/>` +
       `<circle cx="5" cy="14.9" r="2.6" fill="${LOUD}"/>`
   ),
+  /* the paragraph burger: two buns and the filling between them */
+  burger: glyph(
+    `<path d="M2.6 8.4C2.6 5 7 3 12 3s9.4 2 9.4 5.4v1H2.6z" fill="${WARM}"/>` +
+      r(2.6, 10.4, 18.8, 2.8, LEAF, 0) + r(2.6, 14, 18.8, 2.8, LOUD, 0) +
+      `<path d="M2.6 17.8h18.8v1.8c0 1.4-1 2.4-2.6 2.4H5.2c-1.6 0-2.6-1-2.6-2.4z" fill="${WARM}"/>`
+  ),
+  /* the story mountain: a slope with its peak marked */
+  mountain: glyph(
+    `<path d="M1.6 20 7 13.6 12 4.4l5 9.2 5.4 6.4z" fill="${PAPER}"/>` +
+      `<path d="M12 4.4 14.6 9.2H9.4z" fill="#fff"/>` + r(1.2, 20, 21.6, 1.8, QUIET, 0) +
+      `<circle cx="12" cy="4.6" r="1.8" fill="${LOUD}"/>`
+  ),
+  /* two circles, overlapping */
+  venn: glyph(
+    `<circle cx="9.2" cy="12" r="7.4" fill="${PAPER}" fill-opacity="0.75"/>` +
+      `<circle cx="14.8" cy="12" r="7.4" fill="${WARM}" fill-opacity="0.75"/>`
+  ),
+  /* a hub with five round it */
+  roundabout: glyph(
+    [0, 1, 2, 3, 4].map((i) => {
+      const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+      return `<circle cx="${(12 + Math.cos(a) * 7.6).toFixed(2)}" cy="${(12 + Math.sin(a) * 7.6).toFixed(2)}" r="3.1" fill="${LEAF}"/>`;
+    }).join("") + `<circle cx="12" cy="12" r="3.8" fill="${GOLD}"/>`
+  ),
+  /* rows and columns, the first one a heading */
+  table: glyph(
+    r(2.6, 3.6, 18.8, 16.8, PAPER, 0) + r(2.6, 3.6, 18.8, 4.2, GOLD, 0) +
+      r(8.8, 3.6, 1, 16.8, "#fff", 0) + r(15, 3.6, 1, 16.8, "#fff", 0) +
+      r(2.6, 12.2, 18.8, 1, "#fff", 0)
+  ),
   side: glyph(
     r(2.8, 4.2, 18.4, 15.6, PAPER, 1.8) +
       `<path d="M4.6 4.2h4.2v15.6H4.6a1.8 1.8 0 0 1-1.8-1.8V6a1.8 1.8 0 0 1 1.8-1.8z" fill="${GOLD}"/>`

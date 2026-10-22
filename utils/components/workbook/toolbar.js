@@ -100,6 +100,18 @@ const TOOLS = {
       return () => live.dispose();
     },
   },
+  ...Object.fromEntries(["burger", "mountain", "venn", "roundabout", "table"].map((kind) => [kind, {
+    label: kind,
+    size: { w: 720, h: 620 },
+    async open(body) {
+      needCss("/utils/components/sticky-note.css");
+      body.classList.add("wb-panel__body--bare", "wb-panel__body--scroll");
+      const { mountOrganiser } = await import("./organiser.js");
+      const { saved, onChange } = kept(`wb-org:${kind}`);
+      const live = mountOrganiser(body, { kind, saved, onChange });
+      return () => live.dispose();
+    },
+  }])),
   linemodel: {
     label: "Number line",
     size: { w: 680, h: 420 },
