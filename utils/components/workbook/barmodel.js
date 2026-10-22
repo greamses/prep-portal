@@ -40,6 +40,7 @@
    ========================================================================== */
 
 import { MARK_CHAR, markLayout, markPath } from "./purse.js";
+import { mountTooltips } from "/utils/components/tooltip.js";
 
 const W = 600;         // how far a bar may reach
 const VIEW = 680;      // and the board, with room at the right for a total beside
@@ -49,9 +50,96 @@ const ROOM = 30;       // what a brace and its words need over or under a bar
 const LEVEL = 22;      // and each further brace stacked on the same side
 const SNAP = 5;
 const CATCH = 9;       // how near an end must come to catch another
-const TONES = ["#bfe3ff", "#fff3a8", "#d6f0cf", "#ffd9cf", "#fffdf8"];
+/**
+ * TWENTY PAPERS TO CUT A BAR OUT OF.
+ *
+ * The board began with five, cycled by a button, which is enough for a
+ * part-whole model and not enough for anything a teacher actually builds: six
+ * rows of a comparison want six colours that are telling them apart, not the
+ * same five going round again. The FIRST FIVE ARE THE ORIGINAL FIVE and in
+ * their original order, because a bar's colour is stored as a number into
+ * this list and every model built before today is still pointing into it.
+ *
+ * They are paper colours, not screen colours: a bar model is printed as often
+ * as it is looked at, and a saturated fill eats a laser cartridge and makes
+ * the number inside it hard to read.
+ */
+const TONES = [
+  "#bfe3ff", "#fff3a8", "#d6f0cf", "#ffd9cf", "#fffdf8",
+  "#ffd0e0", "#e2d6f8", "#cdeeea", "#ffe6b8", "#dfe6ef",
+  "#c9e9c2", "#ffc9c2", "#d8e8ff", "#f6e2c0", "#e8f0b8",
+  "#f0d4ef", "#c6e7f5", "#ffdfa8", "#d4dcc4", "#eadfd2",
+];
 const INK = "#2a2723";
 const GREY = "#6f685f";
+
+/* ── the keys, drawn ──────────────────────────────────────────────────────
+   Fifteen tools is a row of words a board's width and more, and the board is
+   the thing being used. So each one is its own filled glyph in the site's
+   icon language (see utils/components/workbook/icons.js for the rule), with
+   its name in the site's tooltip (tooltip.js) — the same bargain the workbook
+   rail and the film editor make. */
+const G = (inner) => `<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">${inner}</svg>`;
+const BX = (x, y, w, h, f, extra = "") => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}"${extra}/>`;
+const SKY = "var(--accent-secondary,#bfe3ff)";
+const SUN = "var(--accent-primary,#f4c95d)";
+const LEAF = "var(--accent-success,#2e8b46)";
+const RED = "var(--accent-danger,#c0453f)";
+/** a bar with `cuts` division lines in it, as the body of most of these keys */
+const barGlyph = (cuts = 0, fill = SKY, y = 8, h = 8) =>
+  BX(2.5, y, 19, h, fill, ` stroke="${INK}" stroke-width="1.3"`)
+  + Array.from({ length: cuts }, (_, i) => BX(2.5 + (19 / (cuts + 1)) * (i + 1) - 0.55, y, 1.1, h, INK)).join("");
+const plus = (x, y) => BX(x - 3.6, y - 1.1, 7.2, 2.2, LEAF) + BX(x - 1.1, y - 3.6, 2.2, 7.2, LEAF);
+const minus = (x, y) => BX(x - 3.6, y - 1.1, 7.2, 2.2, RED);
+
+const ICON = {
+  copy: G(barGlyph(1, SUN, 3, 7) + barGlyph(1, SKY, 14, 7)),
+  new: G(barGlyph(0, SKY, 9, 7) + plus(12, 19.5)),
+  more: G(barGlyph(3, SKY, 4, 8) + plus(12, 18.5)),
+  less: G(barGlyph(1, SKY, 4, 8) + minus(12, 18.5)),
+  uup: G(barGlyph(1, SUN, 3, 7) + barGlyph(3, SKY, 13, 7) + BX(10.8, 10.4, 2.4, 2.4, LEAF)),
+  udn: G(barGlyph(3, SKY, 3, 7) + barGlyph(1, SUN, 13, 7) + BX(10.8, 10.4, 2.4, 2.4, RED)),
+  /* one bar coming apart into the boxes it was cut into */
+  split: G(BX(1.5, 8, 5.6, 8, SKY, ` stroke="${INK}" stroke-width="1.3"`)
+    + BX(9.2, 8, 5.6, 8, SUN, ` stroke="${INK}" stroke-width="1.3"`)
+    + BX(16.9, 8, 5.6, 8, LEAF, ` stroke="${INK}" stroke-width="1.3"`)),
+  cut: G(barGlyph(0, SKY, 9, 8) + BX(11, 2.5, 2, 19, RED)),
+  /* two pieces pushed back together, the join still showing as a unit line */
+  join: G(BX(2.5, 8, 8.4, 8, SKY, ` stroke="${INK}" stroke-width="1.3"`)
+    + BX(13.1, 8, 8.4, 8, SUN, ` stroke="${INK}" stroke-width="1.3"`)
+    + `<path d="M11.6 12h1.2" stroke="${INK}" stroke-width="1.2"/>`
+    + `<path d="M8.4 4.6 11.4 7.6 8.4 10.6" fill="${LEAF}"/>`
+    + `<path d="M15.6 4.6 12.6 7.6l3 3" fill="${LEAF}"/>`),
+  /* a figure written in one box and carried into the rest */
+  fill: G(barGlyph(2, "none", 8, 8) + BX(3.6, 9.1, 4.8, 5.8, SUN)
+    + `<path d="M11 12h7.4" stroke="${LEAF}" stroke-width="2" stroke-linecap="round"/>`
+    + `<path d="M18.8 12 15.6 9.6v4.8Z" fill="${LEAF}"/>`),
+  above: G(brace(true) + barGlyph(1, SKY, 12, 8)),
+  below: G(barGlyph(1, SKY, 4, 8) + brace(false)),
+  side: G(BX(2.5, 4, 13, 6, SKY, ` stroke="${INK}" stroke-width="1.2"`)
+    + BX(2.5, 13, 13, 6, SUN, ` stroke="${INK}" stroke-width="1.2"`)
+    + `<path d="M17.4 4.6q2 0 2 2.6v2.4q0 1.6 2 1.6-2 0-2 1.6v2.4q0 2.6-2 2.6" fill="none" stroke="${GREY}" stroke-width="1.5"/>`),
+  tone: G(`<circle cx="12" cy="12" r="9.4" fill="${SUN}"/>`
+    + `<path d="M12 2.6A9.4 9.4 0 0 1 12 21.4Z" fill="${SKY}"/>`
+    + `<path d="M12 2.6A9.4 9.4 0 0 0 3.4 15.6Z" fill="${LEAF}"/>`
+    + `<circle cx="12" cy="12" r="3" fill="#fffdf8"/>`),
+  many: G(BX(2.4, 4, 8.6, 7, SKY, ` stroke="${INK}" stroke-width="1.2"`)
+    + BX(2.4, 13, 8.6, 7, SKY, ` stroke="${INK}" stroke-width="1.2"`)
+    + BX(13.4, 4, 8.2, 16, "none", ` stroke="${RED}" stroke-width="1.6" stroke-dasharray="2.6 2"`)),
+  del: G(BX(8.6, 2.4, 6.8, 2.6, RED) + BX(3, 5, 18, 3.2, RED)
+    + BX(5.2, 9.4, 13.6, 12, SUN, ` stroke="${INK}" stroke-width="1.2"`)),
+  undo: G(`<path d="M12 6.4a7.6 7.6 0 1 1-7.1 10.2" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>`
+    + `<path d="M4.2 3.4v6.2h6.2Z" fill="${RED}"/>`),
+  fold: G(BX(3, 10.8, 18, 2.4, GREY) + `<path d="M12 20.4 7.4 15h9.2Z" fill="${SUN}"/>`
+    + `<path d="M12 3.6 16.6 9H7.4Z" fill="${SUN}"/>`),
+};
+
+/** the curly over or under a bar, for the two brace keys */
+function brace(up) {
+  return up
+    ? `<path d="M3.4 10.4q0-2.4 2.6-2.4h4q2 0 2-2 0 2 2 2h4q2.6 0 2.6 2.4" fill="none" stroke="${GREY}" stroke-width="1.6"/>`
+    : `<path d="M3.4 13.6q0 2.4 2.6 2.4h4q2 0 2 2 0-2 2-2h4q2.6 0 2.6-2.4" fill="none" stroke="${GREY}" stroke-width="1.6"/>`;
+}
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
@@ -131,6 +219,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
   const printed = el.innerHTML;
   let model = saved ? clone(saved) : blank();
   let picked = new Set();
+  let pickedBraces = new Set();
   let several = false;
   let cutting = false;
   let seq = 1 + Math.max(0, ...model.bars.map((b) => b.id), ...model.braces.map((b) => b.id));
@@ -141,24 +230,40 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
 
   el.classList.add("is-building");
   el.classList.toggle("is-folded", foldable && !model.bars.length);
+  /* a key: its glyph, and its name in the site's own tooltip */
+  const key = (t, tint, name, extra = "") =>
+    `<button type="button" class="pp-btn wb-tint-${tint} mbb-key" data-t="${t}"${extra}`
+    + ` aria-label="${esc(name)}" data-tip="${esc(name)}" data-tip-side="down">${ICON[t]}</button>`;
+
   el.innerHTML =
     (foldable ? `<button type="button" class="pp-btn wb-tint-2 mbb-open">Build the model on a board</button>` : "") +
     `<div class="mbb-tools" role="toolbar" aria-label="Bar model tools">` +
-    (start ? `<button type="button" class="pp-btn wb-tint-3" data-t="copy" title="Put the printed model on the board">From the picture</button>` : "") +
-    `<button type="button" class="pp-btn wb-tint-2" data-t="new">New bar</button>` +
-    `<button type="button" class="pp-btn wb-tint-1" data-t="less" title="Fewer equal units">Units −</button>` +
-    `<button type="button" class="pp-btn wb-tint-1" data-t="more" title="Cut into more equal units">Units +</button>` +
-    `<button type="button" class="pp-btn wb-tint-3" data-t="cut" aria-pressed="false" title="Tap a bar where it should break">Cut</button>` +
-    `<button type="button" class="pp-btn wb-tint-4" data-t="above" title="A brace over the picked bars">Brace over</button>` +
-    `<button type="button" class="pp-btn wb-tint-4" data-t="below" title="A brace under the picked bars">Brace under</button>` +
-    `<button type="button" class="pp-btn wb-tint-4" data-t="side" title="A total down the right of the picked (stacked) bars">Brace beside</button>` +
-    `<button type="button" class="pp-btn wb-tint-2" data-t="tone">Colour</button>` +
-    `<button type="button" class="pp-btn wb-tint-3" data-t="many" aria-pressed="false" title="Taps add bars to the picking">Pick several</button>` +
-    `<button type="button" class="pp-btn wb-tint-4" data-t="del">Delete</button>` +
-    (foldable ? `<button type="button" class="pp-btn wb-tint-1" data-t="fold" title="Fold the board away">Close</button>` : "") +
+    (start ? key("copy", 3, "Put the printed model on the board") : "") +
+    key("new", 2, "A new bar") +
+    key("more", 1, "Cut into one more equal unit") +
+    key("less", 1, "One equal unit fewer") +
+    key("uup", 1, "Halve every unit — units of units") +
+    key("udn", 1, "Put every pair of units back together") +
+    key("split", 2, "Split the picked bars into their units") +
+    key("join", 2, "Join the picked pieces into one bar, keeping their lines") +
+    key("cut", 3, "Cut: tap a bar where it should break", ' aria-pressed="false"') +
+    key("fill", 2, "Write the same figure in every box of the picked bars") +
+    key("above", 4, "A brace over the picked bars") +
+    key("below", 4, "A brace under the picked bars") +
+    key("side", 4, "A total down the right of the picked (stacked) bars") +
+    key("tone", 2, "The colour of the picked bars") +
+    key("many", 3, "Pick several: taps add to the picking", ' aria-pressed="false"') +
+    key("undo", 1, "Step back", " disabled") +
+    key("del", 4, "Take the picked bars and braces off") +
+    (foldable ? key("fold", 1, "Fold the board away") : "") +
+    `<div class="mbb-pot" data-pot hidden>` +
+    `<div class="pp-receipt"><div class="pp-receipt__paper"><div class="mbb-pot__in">` +
+    TONES.map((hex, i) => `<button type="button" class="pp-plain mbb-chip" data-tone="${i}"`
+      + ` style="background:${hex}" aria-label="Colour ${i + 1}"></button>`).join("") +
+    `</div></div></div></div>` +
     `</div>` +
     `<div class="mbb-board"><svg class="mbb-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>` +
-    `<p class="mbb-hint">Double-click a bar or a brace to write on it. Drag a bar to move it, its right edge to stretch it.</p>`;
+    `<p class="mbb-hint">Double-click a bar or a brace to write on it. Drag a bar to move it, its right edge to stretch it — ends and unit lines catch.</p>`;
   const board = el.querySelector(".mbb-board");
   const svg = el.querySelector(".mbb-svg");
   const tools = el.querySelector(".mbb-tools");
@@ -222,8 +327,9 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
         const x = s.x1 + 6 + s.level * 46;
         const y0 = yOf(s.r0), y1 = yOf(s.r1) + BAR;
         const m = (y0 + y1) / 2;
-        out += `<g class="mbb-brace" data-brace="${s.br.id}">` +
-          `<path d="${curlySide(x, y0, y1)}" fill="none" stroke="${GREY}" stroke-width="1.4"/>` +
+        const on = pickedBraces.has(s.br.id);
+        out += `<g class="mbb-brace${on ? " is-picked" : ""}" data-brace="${s.br.id}">` +
+          `<path d="${curlySide(x, y0, y1)}" fill="none" stroke="${on ? "#d1495b" : GREY}" stroke-width="${on ? 2.4 : 1.4}"/>` +
           `<rect x="${x + 8}" y="${m - 12}" width="70" height="22" fill="transparent"/>` +
           label(x + 13, m + 5, s.br.text || "…", { anchor: "start", fill: s.br.text ? INK : GREY }) + `</g>`;
         return;
@@ -232,20 +338,41 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
       const dir = s.at === "above" ? -1 : 1;
       const ty = s.at === "above" ? y - 12 : y + 21;
       const words = s.br.text || "…";
-      out += `<g class="mbb-brace" data-brace="${s.br.id}">` +
-        `<path d="${curly(s.x0, s.x1, y, dir)}" fill="none" stroke="${GREY}" stroke-width="1.4"/>` +
+      const on = pickedBraces.has(s.br.id);
+      out += `<g class="mbb-brace${on ? " is-picked" : ""}" data-brace="${s.br.id}">` +
+        `<path d="${curly(s.x0, s.x1, y, dir)}" fill="none" stroke="${on ? "#d1495b" : GREY}" stroke-width="${on ? 2.4 : 1.4}"/>` +
         `<rect x="${(s.x0 + s.x1) / 2 - 40}" y="${ty - 14}" width="80" height="19" fill="transparent"/>` +
         label((s.x0 + s.x1) / 2, ty, words, { fill: s.br.text ? INK : GREY }) + `</g>`;
     });
     svg.innerHTML = out;
     tools.querySelector('[data-t="cut"]').setAttribute("aria-pressed", String(cutting));
+    tools.querySelector('[data-t="undo"]').disabled = !history.length;
     tools.querySelector('[data-t="many"]').setAttribute("aria-pressed", String(several));
     board.classList.toggle("is-cutting", cutting);
   }
 
   /* ── changes, each one Undo step ─────────────────────────────────────── */
+  /* THE BOARD'S OWN STEP BACK. On a workbook page every change is already an
+     Undo step of the sheet's (interactive.js); opened as a TOOL from the rail
+     there is no sheet to undo, and a mis-aimed Delete took the afternoon with
+     it. The document is small, so the honest undo is a stack of whole models,
+     kept before each change. */
+  const history = [];
+  function stepBack() {
+    const was = history.pop();
+    if (!was) return;
+    const before = clone(model);
+    model = JSON.parse(was);
+    picked.clear();
+    pickedBraces.clear();
+    paint();
+    onChange(clone(model), before);
+  }
+
   function change(fn) {
     const before = clone(model);
+    history.push(JSON.stringify(before));
+    if (history.length > 60) history.shift();
     fn();
     model.braces = model.braces.filter((br) => br.ids.some((id) => model.bars.some((b) => b.id === id)));
     paint();
@@ -254,10 +381,24 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
 
   const pickedBars = () => model.bars.filter((b) => picked.has(b.id));
   const snap = (v) => Math.round(v / SNAP) * SNAP;
-  /** An end near another bar's end (or the left edge) catches it. */
+  /**
+   * An end near a line of another bar catches it.
+   *
+   * ITS UNIT LINES COUNT, NOT ONLY ITS ENDS. A bar model is read by what
+   * lines up with what: the point of laying a shorter bar under a longer one
+   * is to show that it reaches exactly as far as three of the units above
+   * it. Catching only the ends made that the one thing the board would not
+   * help you do — you lined it up by eye, printed it, and it was two units
+   * and a whisker.
+   */
   function caught(v, self) {
     let best = v, gap = CATCH;
-    [0, ...model.bars.filter((b) => b.id !== self).flatMap((b) => [b.x, b.x + b.w])].forEach((e) => {
+    const lines = [0];
+    model.bars.filter((b) => b.id !== self).forEach((b) => {
+      lines.push(b.x, b.x + b.w);
+      for (let i = 1; i < b.n; i++) lines.push(b.x + (b.w / b.n) * i);
+    });
+    lines.forEach((e) => {
       if (Math.abs(e - v) < gap) { gap = Math.abs(e - v); best = e; }
     });
     return gap < CATCH ? best : snap(v);
@@ -272,6 +413,19 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
 
   /* ── tools ───────────────────────────────────────────────────────────── */
   el.querySelector(".mbb-open")?.addEventListener("click", () => { el.classList.remove("is-folded"); paint(); });
+
+  const pot = el.querySelector("[data-pot]");
+  pot.addEventListener("click", (e) => {
+    const tone = e.target.closest("[data-tone]")?.dataset.tone;
+    if (tone == null) return;
+    const bars = pickedBars();
+    if (bars.length) change(() => bars.forEach((b) => { b.tone = Number(tone); }));
+    pot.hidden = true;
+  });
+  /* a press anywhere else puts the pot away, the way every other sheet of
+     choices on the bench behaves */
+  const shutPot = (e) => { if (!pot.hidden && !e.target.closest("[data-pot], [data-t=\"tone\"]")) pot.hidden = true; };
+  document.addEventListener("pointerdown", shutPot, true);
 
   tools.addEventListener("click", (e) => {
     const t = e.target.closest("[data-t]")?.dataset.t;
@@ -299,6 +453,27 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
       });
       return;
     }
+    if (t === "undo") { stepBack(); return; }
+    if (t === "tone") {
+      /* the pot opens under the key rather than the colour stepping on by one:
+         twenty papers is a thing you choose from, not a thing you cycle */
+      if (!pickedBars().length) { flash("Tap a bar first to pick it."); return; }
+      pot.hidden = !pot.hidden;
+      return;
+    }
+    if (t === "del") {
+      if (!picked.size && !pickedBraces.size) { flash("Tap a bar or a brace first to pick it."); return; }
+      change(() => {
+        model.bars = model.bars.filter((b) => !picked.has(b.id));
+        /* A BRACE IS A THING, and can be taken off on its own. It used to go
+           only when the last bar under it went, so a brace put over the wrong
+           stretch could not be removed without removing the bars. */
+        model.braces = model.braces.filter((br) => !pickedBraces.has(br.id));
+        picked.clear();
+        pickedBraces.clear();
+      });
+      return;
+    }
     const bars = pickedBars();
     if (!bars.length) { flash("Tap a bar first to pick it."); return; }
     if (t === "more" || t === "less") {
@@ -306,10 +481,77 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
         b.n = Math.max(1, Math.min(20, b.n + (t === "more" ? 1 : -1)));
         b.labels = Array.from({ length: b.n }, (_, i) => b.labels[i] || "");
       }));
-    } else if (t === "tone") {
-      change(() => bars.forEach((b) => { b.tone = (b.tone + 1) % TONES.length; }));
-    } else if (t === "del") {
-      change(() => { model.bars = model.bars.filter((b) => !picked.has(b.id)); picked.clear(); });
+    } else if (t === "uup" || t === "udn") {
+      /* UNITS OF UNITS. Halving every unit at once is how a bar model
+         actually grows — thirds into sixths, quarters into eighths — and
+         getting there by pressing Units + three times is both slow and wrong,
+         because it passes through fifths and sevenths on the way. */
+      change(() => bars.forEach((b) => {
+        if (t === "uup") {
+          const n = Math.min(20, b.n * 2);
+          if (n === b.n) return;
+          b.labels = Array.from({ length: n }, (_, i) => (i % 2 === 0 ? b.labels[i / 2] || "" : ""));
+          b.n = n;
+        } else {
+          const n = Math.max(1, Math.floor(b.n / 2));
+          b.labels = Array.from({ length: n }, (_, i) => b.labels[i * 2] || "");
+          b.n = n;
+        }
+      }));
+    } else if (t === "split") {
+      /* EVERY UNIT BECOMES A BAR OF ITS OWN, so the pieces can be dragged
+         apart, shared out and lined up under something else. A brace that
+         hung on the bar hangs on all of its pieces, which is the same stretch
+         of the picture it was drawn over. */
+      change(() => {
+        bars.forEach((b) => {
+          if (b.n < 2) return;
+          const unit = b.w / b.n;
+          const made = [];
+          for (let i = 0; i < b.n; i++) {
+            made.push({
+              id: i === 0 ? b.id : seq++, x: Math.round(b.x + i * unit), row: b.row,
+              w: Math.round(unit), n: 1, tone: b.tone, labels: [b.labels[i] || ""],
+            });
+          }
+          const at = model.bars.indexOf(b);
+          model.bars.splice(at, 1, ...made);
+          model.braces.forEach((br) => {
+            if (!br.ids.includes(b.id)) return;
+            br.ids = [...new Set([...br.ids.filter((x) => x !== b.id), ...made.map((m) => m.id)])];
+          });
+          made.forEach((m) => picked.add(m.id));
+        });
+      });
+    } else if (t === "join") {
+      /* AND BACK AGAIN — but the cuts are kept as unit lines. Pieces that have
+         been dealt out and brought back together are not one plain bar again:
+         what they were cut into is the whole point of the picture. */
+      const row = bars[0].row;
+      const mine = bars.filter((b) => b.row === row).sort((a, b) => a.x - b.x);
+      if (mine.length < 2) { flash("Pick two or more pieces on the same row to join."); return; }
+      change(() => {
+        const first = mine[0];
+        const right = Math.max(...mine.map((b) => b.x + b.w));
+        const labels = mine.flatMap((b) => Array.from({ length: b.n }, (_, i) => b.labels[i] || ""));
+        const gone = new Set(mine.slice(1).map((b) => b.id));
+        first.w = right - first.x;
+        first.n = Math.min(20, labels.length);
+        first.labels = labels.slice(0, first.n);
+        model.bars = model.bars.filter((b) => !gone.has(b.id));
+        model.braces.forEach((br) => {
+          if (!br.ids.some((id) => gone.has(id))) return;
+          br.ids = [...new Set([...br.ids.filter((id) => !gone.has(id)), first.id])];
+        });
+        picked = new Set([first.id]);
+      });
+    } else if (t === "fill") {
+      /* ONE FIGURE, WRITTEN ONCE. Equal units say the same thing by
+         definition, and typing "₱250" into eight boxes is eight chances to
+         mistype it. The first figure already written is the one that spreads. */
+      const from = bars.flatMap((b) => b.labels).find((x) => x && x.trim());
+      if (!from) { flash("Write the figure in one box first, then press this."); return; }
+      change(() => bars.forEach((b) => { b.labels = b.labels.map(() => from); }));
     } else if (t === "above" || t === "below" || t === "side") {
       const br = { id: seq++, ids: bars.map((b) => b.id), at: t, text: "" };
       change(() => model.braces.push(br));
@@ -325,7 +567,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
     clearTimeout(flashing);
     flashing = setTimeout(() => {
       hint.classList.remove("is-loud");
-      hint.textContent = "Double-click a bar or a brace to write on it. Drag a bar to move it, its right edge to stretch it.";
+      hint.textContent = "Double-click a bar or a brace to write on it. Drag a bar to move it, its right edge to stretch it — ends and unit lines catch.";
     }, 2200);
   }
 
@@ -339,6 +581,11 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
     if (!g) {
       const braceG = e.target.closest(".mbb-brace");
       if (braceG) {
+        const id = Number(braceG.dataset.brace);
+        if (!several && !e.shiftKey) pickedBraces.clear();
+        if (pickedBraces.has(id)) pickedBraces.delete(id); else pickedBraces.add(id);
+        if (!several && !e.shiftKey) picked.clear();
+        paint();
         /* THE WORDS ARE OPENED ON POINTER-UP, NEVER HERE. An input made and
            focused during pointerdown is blurred again by the press's own
            default — the browser moves focus off it the moment the handler
@@ -351,7 +598,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
         svg.setPointerCapture(e.pointerId);
         return;
       }
-      if (!several && !e.shiftKey) { picked.clear(); paint(); }
+      if (!several && !e.shiftKey) { picked.clear(); pickedBraces.clear(); paint(); }
       return;
     }
     const b = model.bars.find((x) => x.id === Number(g.dataset.id));
@@ -362,6 +609,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
     }
     e.preventDefault();
     tapped = null;
+    if (!several && !e.shiftKey) pickedBraces.clear();
     drag = { b, from: p, x: b.x, row: b.row, top: yOf(b.row), w: b.w, grip: !!grip, before: clone(model), moved: false, add: several || e.shiftKey };
     svg.setPointerCapture(e.pointerId);
   });
@@ -510,12 +758,15 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
   }
 
   paint();
+  /* the keys say what they are the way everything else on the bench does */
+  mountTooltips();
 
   return {
     get: () => clone(model),
-    set(m) { model = m ? clone(m) : blank(); picked.clear(); paint(); return clone(model); },
-    clear() { model = blank(); picked.clear(); paint(); },
+    set(m) { model = m ? clone(m) : blank(); picked.clear(); pickedBraces.clear(); paint(); return clone(model); },
+    clear() { model = blank(); picked.clear(); pickedBraces.clear(); paint(); },
     dispose() {
+      document.removeEventListener("pointerdown", shutPot, true);
       el.classList.remove("is-building");
       el.innerHTML = printed;
     },

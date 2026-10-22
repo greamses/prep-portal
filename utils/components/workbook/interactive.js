@@ -3052,12 +3052,17 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       id: "calculator",
       label: "Calculator",
       icon: TOOL_ICONS.calculator,
-      size: { w: 340, h: 430 },
+      /* THE WHOLE MACHINE, NOT MOST OF IT. The panel was 430 deep and the
+         calculator is 436 with 51 of head above it, so the bottom row of keys
+         — the row with the equals on it — was below the edge (measured). The
+         body scrolls as a backstop, but a tool you have to scroll to press is
+         a tool that is the wrong size. */
+      size: { w: 340, h: 500 },
       open: async (body) => {
         /* THE SITE'S ONE CALCULATOR — the same machine as the chemistry bench
            (utils/components/calculator.js), in its paper skin. */
         needCss("/utils/components/calculator.css");
-        body.classList.add("wb-panel__body--bare");
+        body.classList.add("wb-panel__body--bare", "wb-panel__body--scroll");
         const { mountCalculator } = await import("/utils/components/calculator.js");
         const KEY = "wb-calc";
         let kept = null;

@@ -67,12 +67,28 @@ const OPS = ["+", "-", "*", "/", "^", "^2", "^3", "^-1", "!", "%", "C", "P"];
  */
 export function mountCalculator(el, { state = null, onChange = () => {}, onClose = null, brand = "PREP <b>fx-82</b>", theme = "" } = {}) {
   const C = state || { deg: true, mem: 0, ans: 0 };
-  if (theme) el.classList.add(`cl-calc--${theme}`);
+
+  /**
+   * TWO CASES, AND THE CHILD CHOOSES. The machine comes in the dark grey of
+   * the thing on a desk and in the workbook's paper, and which one a page
+   * hands it is a guess about the page, not about the person using it — one
+   * reads better on a bright screen, the other in a dark room. So the case is
+   * a key on the machine itself, and the choice is kept for next time.
+   */
+  let skin = theme;
+  try { skin = localStorage.getItem("pp-calc-skin") ?? theme; } catch { /* a private window keeps the page's own */ }
+  const wear = () => {
+    el.classList.toggle("cl-calc--paper", skin === "paper");
+    el.querySelector("[data-calc-skin]")?.setAttribute("aria-pressed", String(skin === "paper"));
+  };
 
   el.innerHTML = `
     <div class="cl-calc__top" data-calc-drag>
       <span class="cl-calc__brand">${brand}</span>
       <span class="cl-calc__solar" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <button type="button" class="cl-key cl-key--skin" data-calc-skin aria-pressed="false"
+              aria-label="Change the colour of the calculator" data-tip="Change its colour" data-tip-side="down">
+        <span class="cl-calc__swatch" aria-hidden="true"></span></button>
       ${onClose ? `<button type="button" class="cl-key cl-key--x" data-calc-close aria-label="Put the calculator away">${UI.close(12)}</button>` : ""}
     </div>
     <div class="cl-calc__lcd" role="status" aria-live="polite">
@@ -91,6 +107,7 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
   let asFrac = false;
   const exprEl = el.querySelector("[data-calc-expr]");
   const outEl = el.querySelector("[data-calc-out]");
+  wear();
 
   function paint() {
     exprEl.textContent = show(keys);
@@ -144,6 +161,12 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
   }
 
   el.addEventListener("click", (e) => {
+    if (e.target.closest("[data-calc-skin]")) {
+      skin = skin === "paper" ? "" : "paper";
+      try { localStorage.setItem("pp-calc-skin", skin); } catch { /* not kept */ }
+      wear();
+      return;
+    }
     if (onClose && e.target.closest("[data-calc-close]")) { onClose(); return; }
     const b = e.target.closest("[data-k]");
     if (!b) return;

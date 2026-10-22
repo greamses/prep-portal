@@ -45,13 +45,13 @@ const board = (id, label) => ({
 const TOOLS = {
   calculator: {
     label: "Calculator",
-    size: { w: 330, h: 530 },
+    size: { w: 340, h: 500 },
     async open(body) {
       /* THE SITE'S ONE CALCULATOR — the same machine as the chemistry bench
          (utils/components/calculator.js), in its paper skin. There is no
          second calculator to keep in step with this one. */
       needCss("/utils/components/calculator.css");
-      body.classList.add("wb-panel__body--bare");
+      body.classList.add("wb-panel__body--bare", "wb-panel__body--scroll");
       const { mountCalculator } = await import("/utils/components/calculator.js");
       const host = document.createElement("div");
       host.className = "cl-calc cl-calc--inline";

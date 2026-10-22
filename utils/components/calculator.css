@@ -68,6 +68,15 @@
   margin: 0 auto; box-shadow: none;
 }
 
+/* the key that changes the case, beside the solar strip */
+.cl-key--skin { padding: 2px; line-height: 0; }
+.cl-calc__swatch {
+  display: block; width: 12px; height: 12px;
+  background: linear-gradient(135deg, #fffdf8 0 50%, #2a3039 50% 100%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+}
+.cl-calc--paper .cl-calc__swatch { border-color: rgba(42, 39, 35, 0.4); }
+
 /* ── the paper skin, for the workbook pages ───────────────────────────────*/
 .cl-calc--paper {
   color: #2a2723;

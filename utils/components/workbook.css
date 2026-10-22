@@ -583,6 +583,8 @@ body {
 /* the algebra canvas brings its own paper and fills the panel edge to edge —
    and it is sized against this box, so the height has to reach it */
 .wb-panel__body--bare { padding: 0; overflow: hidden; }
+/* a bare body that still has to be able to reach the bottom of what is in it */
+.wb-panel__body--scroll { overflow: auto; }
 .wb-panel__body--bare > .am-frame { height: 100%; min-height: 0; }
 
 /* ── a tool with settings above it ────────────────────────────────────────
@@ -2888,9 +2890,29 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
    the board. Undo and Clear sit at the top right as on every figure, so the
    tools leave them room. */
 .mb-board.is-building { display: block; width: 100%; max-width: 160mm; }
-.mbb-tools { display: flex; flex-wrap: wrap; gap: 1.2mm; padding-right: 22mm; margin-bottom: 1.5mm; }
+/* FIFTEEN TOOLS IS A ROW OF WORDS WIDER THAN THE BOARD, and the board is what
+   is being used. Each key is its glyph, with its name in the site's tooltip
+   (tooltip.js) — the same bargain the workbook rail makes. */
+.mbb-tools { position: relative; display: flex; flex-wrap: wrap; gap: 1mm; padding-right: 22mm; margin-bottom: 1.5mm; }
 .mbb-tools .pp-btn { font: 700 8pt/1.2 var(--font-body, system-ui, sans-serif); padding: 1.2mm 2.4mm; min-height: 0; }
+.mbb-key { padding: 0.9mm 1.4mm; line-height: 0; }
+.mbb-key svg { display: block; }
+.mbb-key[disabled] { opacity: 0.38; }
 .mbb-tools [aria-pressed="true"] { outline: 2px solid #d1495b; outline-offset: 1px; }
+
+/* the twenty papers, on a sheet under the colour key */
+.mbb-pot { position: absolute; top: 100%; left: 0; z-index: 6; width: 44mm; }
+.mbb-pot[hidden] { display: none; }
+.mbb-pot__in { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.1mm; padding: 2mm; }
+.mbb-chip {
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0.4mm solid rgba(42, 39, 35, 0.3);
+  border-radius: 0;
+  cursor: pointer;
+}
+.mbb-chip:hover { border-color: #2a2723; transform: scale(1.08); }
 .mbb-board {
   position: relative;
   border: 0.3mm dashed #8a837a;
