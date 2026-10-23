@@ -60,16 +60,20 @@ const KEYS = [
     { k: "→", act: "right", title: "Move right" },
   ],
   [
-    // A double-width zero, the way a calculator has one — which also makes the
-    // row come to exactly seven columns.
     { k: "0", wide: true }, { k: ".", t: "." },
     { k: "±", act: "sign", title: "Change the sign" },
     { k: "+", t: "+" }, { k: "=", t: "=" },
     { k: "CLR", act: "clear", title: "Clear", tone: "warn" },
+    // Enter is a key here, not a button living somewhere else below the
+    // pad — the way a laptop's own Return key is just the last key on the
+    // row, not a different kind of control.
+    { k: "Enter", act: "enter", title: "Put it on the canvas", tone: "go" },
   ],
 ];
 
-/** Rows of up to `n`, for a flat list of keys nobody has hand-laid-out. */
+/** Rows of up to `n`, for a flat list of keys nobody has hand-laid-out. Each
+    row is handed its own column count rather than assuming seven, so a row
+    that ends in one extra key (Enter, CAPS) is still a tidy grid. */
 const rowsOf = (keys, n = 7) => {
   const out = [];
   for (let i = 0; i < keys.length; i += n) out.push(keys.slice(i, i + n));
@@ -78,12 +82,14 @@ const rowsOf = (keys, n = 7) => {
 
 const asLetter = (ch, title) => ({ k: ch, t: ch, tone: "letter", title });
 
-/* The full alphabet, for whatever letter a formula reaches for beyond x and
-   y — split into groups of seven, one tab at a time rather than four rows
-   stacked, with a single CAPS key that turns whichever group is showing
-   into its own capitals. Lowercase only otherwise, the same reason the
-   equation's own writing is. */
-const LETTER_GROUPS = rowsOf([..."abcdefghijklmnopqrstuvwxyz"].map((ch) => asLetter(ch)));
+/* The Latin alphabet. CAPS is a key at the end of it rather than a separate
+   control, the same way Enter is a key on the number pad — press it and the
+   row it is sitting on relabels itself in capitals. */
+const LETTER_ROWS = rowsOf([..."abcdefghijklmnopqrstuvwxyz"].map((ch) => asLetter(ch)));
+LETTER_ROWS[LETTER_ROWS.length - 1] = [
+  ...LETTER_ROWS[LETTER_ROWS.length - 1],
+  { k: "caps", act: "caps", title: "Capitals", tone: "act" },
+];
 
 /* The full Greek alphabet — a circle's π, an angle's θ, the unknowns geometry
    reaches for once x, y and z are all taken. Named on the key's title, since
@@ -126,20 +132,7 @@ export function createKeypad(host, { onSubmit } = {}) {
   const pad = document.createElement("div");
   pad.className = "am-pad";
 
-  const go = document.createElement("button");
-  go.type = "button";
-  go.className = "am-go am-go--inline";
-  go.textContent = "Enter";
-  go.title = "Put it on the canvas";
-  go.setAttribute("aria-label", "Put it on the canvas");
-
-  // Enter sits beside what the tool is saying about the line, not under the
-  // whole keyboard — the status and the action that answers it are one row.
-  const status = document.createElement("div");
-  status.className = "am-keystatus";
-  status.append(say, go);
-
-  host.append(preview, line, status, give, pad);
+  host.append(preview, line, say, give, pad);
 
   const SIZE = 40;                // the drawing's font size, in CSS pixels
   const KEY_SIZE = 15;            // and on a key face, which has a cell to fit
@@ -575,9 +568,10 @@ export function createKeypad(host, { onSubmit } = {}) {
     return holder;
   }
 
-  /** One key, built the one way every key on the pad is built — a section's
-      own row and the letter tabs' single row both go through this, so there
-      is one place that knows how a key types and nothing to drift apart. */
+  /** One key, built the one way every key on the pad is built — numbers,
+      Greek and ordinary letters all go through this, so there is one place
+      that knows how a key types and nothing to drift apart. CAPS is the one
+      exception; see buildLetters, below, for why. */
   function keyButton(key) {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -598,103 +592,123 @@ export function createKeypad(host, { onSubmit } = {}) {
     return btn;
   }
 
-  /** One section of the pad: an optional caption, then its rows of keys. A
-      labelled section is a different ALPHABET to reach for, not a different
-      kind of key. */
-  function buildSection(label, rows) {
+  /** How many grid cells a row needs — a wide key counts for two — so a row
+      that ends in one extra key (Enter, CAPS) still lays out evenly instead
+      of assuming every row has seven. */
+  const cellsOf = (row) => row.reduce((n, k) => n + (k.wide ? 2 : 1), 0);
+
+  /** One row of keys, each built through `keyButton` — the one thing every
+      grid of keys on the pad is made of. */
+  function buildPadRow(row) {
+    const rail = document.createElement("div");
+    rail.className = "am-pad__row";
+    rail.style.gridTemplateColumns = `repeat(${cellsOf(row)}, 1fr)`;
+    for (const key of row) rail.appendChild(keyButton(key));
+    return rail;
+  }
+
+  /** A plain alphabet of keys: every row, in order. */
+  function buildGrid(rows) {
     const section = document.createElement("div");
-    section.className = "am-pad__section";
-    if (label) {
-      const cap = document.createElement("span");
-      cap.className = "am-pad__cap";
-      cap.textContent = label;
-      section.appendChild(cap);
-    }
-    for (const row of rows) {
-      const rail = document.createElement("div");
-      rail.className = "am-pad__row";
-      for (const key of row) rail.appendChild(keyButton(key));
-      section.appendChild(rail);
-    }
+    section.className = "am-pad__grid";
+    for (const row of rows) section.appendChild(buildPadRow(row));
     return section;
   }
 
-  /** The Latin alphabet, as tabs rather than four rows stacked — one group
-      of seven showing at a time, with a CAPS key that turns whichever group
-      is up into its own capitals. Rebuilding the one visible row on every
-      switch is cheap enough that there is no reason to keep all four built
-      and hide three of them. */
-  function buildLetterTabs(groups) {
+  /** The Latin alphabet, with CAPS as the last key on it. Pressing it
+      relabels and retypes every letter in capitals — rebuilt in place, the
+      same way a real keyboard's shift key is a stylesheet, not a new key.
+      CAPS is built by hand rather than through `keyButton`: it does not
+      type anything itself, which is the one thing every other key does. */
+  function buildLetters() {
     const section = document.createElement("div");
-    section.className = "am-pad__section";
+    section.className = "am-pad__grid";
+    let caps = false;
+
+    function render() {
+      section.textContent = "";
+      for (const row of LETTER_ROWS) {
+        const rail = document.createElement("div");
+        rail.className = "am-pad__row";
+        rail.style.gridTemplateColumns = `repeat(${cellsOf(row)}, 1fr)`;
+        for (const key of row) {
+          if (key.act === "caps") {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = `am-key am-key--act${caps ? " is-on" : ""}`;
+            btn.textContent = "caps";
+            btn.title = "Capitals";
+            btn.setAttribute("aria-label", "Capitals");
+            btn.setAttribute("aria-pressed", String(caps));
+            btn.addEventListener("pointerdown", (e) => {
+              e.preventDefault();
+              caps = !caps;
+              render();
+              line.focus();
+            });
+            rail.appendChild(btn);
+          } else {
+            const ch = caps ? key.k.toUpperCase() : key.k;
+            rail.appendChild(keyButton({ ...key, k: ch, t: ch }));
+          }
+        }
+        section.appendChild(rail);
+      }
+    }
+    render();
+    return section;
+  }
+
+  /* Numbers, English letters, Greek letters — one alphabet on the pad at a
+     time, the same toggle a phone keyboard uses, rather than three grids
+     stacked fighting each other for room. */
+  function buildPad() {
+    const wrap = document.createElement("div");
+    wrap.className = "am-pad__modes";
 
     const tabs = document.createElement("div");
     tabs.className = "am-subtabs";
     tabs.setAttribute("role", "tablist");
-    tabs.setAttribute("aria-label", "Which letters");
+    tabs.setAttribute("aria-label", "Which keys");
 
-    const rail = document.createElement("div");
-    rail.className = "am-pad__row";
+    const MODES = [
+      { label: "123", el: buildGrid(KEYS) },
+      { label: "ABC", el: buildLetters() },
+      { label: "αβγ", el: buildGrid(GREEK) },
+    ];
 
     let active = 0;
-    let caps = false;
-    const span = (g) => (g[0].k === g[g.length - 1].k ? g[0].k : `${g[0].k}–${g[g.length - 1].k}`);
-    const dress = (ch) => (caps ? ch.toUpperCase() : ch);
-
-    function renderRail() {
-      rail.textContent = "";
-      for (const key of groups[active]) {
-        const ch = dress(key.k);
-        rail.appendChild(keyButton({ ...key, k: ch, t: ch }));
-      }
-    }
-
-    function renderTabs() {
-      tabs.textContent = "";
-      groups.forEach((g, i) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = `am-subtab${i === active ? " is-on" : ""}`;
-        btn.setAttribute("role", "tab");
-        btn.setAttribute("aria-selected", String(i === active));
-        btn.textContent = dress(span(g));
-        btn.addEventListener("pointerdown", (e) => {
-          e.preventDefault();
-          active = i;
-          renderTabs();
-          renderRail();
-          line.focus();
-        });
-        tabs.appendChild(btn);
-      });
-
-      const capsBtn = document.createElement("button");
-      capsBtn.type = "button";
-      capsBtn.className = `am-subtab am-subtab--caps${caps ? " is-on" : ""}`;
-      capsBtn.title = "Capitals";
-      capsBtn.textContent = "caps";
-      capsBtn.setAttribute("aria-pressed", String(caps));
-      capsBtn.addEventListener("pointerdown", (e) => {
+    const tabBtns = MODES.map((m, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.setAttribute("role", "tab");
+      btn.textContent = m.label;
+      btn.addEventListener("pointerdown", (e) => {
         e.preventDefault();
-        caps = !caps;
-        renderTabs();
+        if (active === i) return;
+        active = i;
+        sync();
         line.focus();
-        renderRail();
       });
-      tabs.appendChild(capsBtn);
+      tabs.appendChild(btn);
+      return btn;
+    });
+
+    function sync() {
+      MODES.forEach((m, i) => { m.el.hidden = i !== active; });
+      tabBtns.forEach((btn, i) => {
+        btn.classList.toggle("is-on", i === active);
+        btn.setAttribute("aria-selected", String(i === active));
+      });
     }
 
-    renderTabs();
-    renderRail();
-    section.append(tabs, rail);
-    return section;
+    sync();
+    wrap.append(tabs, ...MODES.map((m) => m.el));
+    return wrap;
   }
 
-  pad.appendChild(buildSection(null, KEYS));
-  pad.appendChild(buildLetterTabs(LETTER_GROUPS));
-  pad.appendChild(buildSection("greek letters", GREEK));
+  pad.appendChild(buildPad());
 
-  go.addEventListener("pointerdown", (e) => { e.preventDefault(); submit(); });
   line.addEventListener("input", draw);
   // The caret is ours to draw, so every way it can move has to redraw it: the
   // arrow keys and Home/End on a real keyboard, a selection, gaining or losing

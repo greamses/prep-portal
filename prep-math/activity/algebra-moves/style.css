@@ -511,19 +511,9 @@
   pointer-events: none;
 }
 
-/* What the tool says about the line, and the button that acts on it, in one
-   row — Enter sits beside its own answer rather than under the whole pad. */
-.am-keystatus {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin: 0.35rem 0 0.55rem;
-}
 .am-keysay {
-  flex: 1;
-  min-width: 0;
   min-height: 1.35em;
-  margin: 0;
+  margin: 0.35rem 0 0.55rem;
   font-family: var(--font-mono);
   font-size: var(--text-mono-xs);
   line-height: 1.4;
@@ -585,35 +575,26 @@
 }
 .am-give__value::placeholder { color: var(--text-tertiary); opacity: 0.6; }
 
-/* Each alphabet the pad can type in is its own section — numbers and the
-   common operators, then the Latin letters, then the Greek ones. Letters are
-   a switcher rather than four rows stacked (see .am-subtabs below); the rest
-   are stacked rather than switched between. */
-.am-pad { display: flex; flex-direction: column; gap: 0.6rem; }
-.am-pad__section { display: grid; gap: 0.3rem; }
-.am-pad__cap {
-  font-family: var(--font-mono);
-  font-size: 0.56rem;
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-}
-.am-pad__row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem; }
+/* One alphabet on the pad at a time — numbers, Latin letters, Greek letters —
+   picked with a toggle, the same one a phone keyboard switches 123/ABC with,
+   rather than three grids stacked fighting each other for room. */
+.am-pad { display: block; }
+.am-pad__modes { display: grid; gap: 0.4rem; }
+.am-pad__grid { display: grid; gap: 0.3rem; }
+.am-pad__grid[hidden] { display: none; }
+.am-pad__row { display: grid; gap: 0.3rem; }
 
-/* The letters' own tab bar: which seven are showing, and a CAPS key that
-   turns them into their capitals. Flat, like a key — these pick an alphabet
-   rather than typing into the equation, but they are still keys and not
-   notes sitting on the desk. */
+/* The toggle itself: flat, like a key — it picks an alphabet rather than
+   typing into the equation, but it is still a key and not a note sitting
+   on the desk. CAPS (inside the Latin grid, built by hand — see keypad.js)
+   shares the same look as the one kind of pad control that is not a note. */
 .am-subtabs { display: flex; gap: 0.22rem; }
 .am-subtab {
   flex: 1;
   min-width: 0;
-  padding: 0.2rem 0.2rem;
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  font-weight: var(--weight-semibold);
-  letter-spacing: 0.01em;
+  padding: 0.3rem 0.2rem;
+  font-family: "STIX Two Text", "Times New Roman", serif;
+  font-size: 0.88rem;
   color: var(--text-secondary);
   background: var(--surface-primary);
   border: var(--border-subtle);
@@ -625,9 +606,7 @@
   transition: background 0.14s ease, color 0.14s ease;
 }
 .am-subtab:hover { background: var(--surface-secondary); }
-.am-subtab.is-on { background: var(--surface-secondary); color: var(--ink); border-color: rgba(42, 39, 35, 0.3); }
-.am-subtab--caps { flex: 0 0 auto; padding: 0.2rem 0.55rem; text-transform: uppercase; }
-.am-subtab--caps.is-on { color: var(--accent-secondary); border-color: var(--accent-secondary); }
+.am-subtab.is-on { background: var(--surface-secondary); color: var(--ink); border-color: rgba(42, 39, 35, 0.3); font-weight: var(--weight-semibold); }
 .am-subtab:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 
 /* A key is the one thing here that is NOT a note — you press it, it does not sit
@@ -675,7 +654,13 @@
   font-size: 0.66rem;
   font-weight: var(--weight-semibold);
 }
+/* CAPS, lit the way a real caps-lock key lights up rather than swapping its
+   paper for a note's. */
+.am-key--act.is-on { color: var(--accent-secondary); border-color: var(--accent-secondary); }
 .am-key--wide { grid-column: span 2; }
+/* Enter: the one key here that is not a piece of the maths, so it earns the
+   one colour that says "do it" instead of "here is a number". */
+.am-key--go { color: var(--accent-secondary); border-color: var(--accent-secondary); font-weight: var(--weight-semibold); }
 
 .am-starters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
 /* Set in the equation's face: a starter is a piece of algebra, and pressing it
@@ -1010,10 +995,11 @@
   opacity: 0.75;
 }
 
-/* The primary action, across the whole width — but plain, on purpose: this is
-   the one button on the pad that is not a piece of the maths, and paper and a
-   tilt would make it look like one more key to read instead of the thing that
-   submits all of them. */
+/* The formula shelf's own primary action, across the whole width — but
+   plain, on purpose: the one button here that is not a piece of the maths,
+   and paper and a tilt would make it look like one more thing to read
+   instead of the thing that submits the rest. (The typing pad's Enter is a
+   different animal now — a key among the others, see .am-key--go.) */
 .am-go {
   display: block;
   width: 100%;
@@ -1034,18 +1020,5 @@
 .am-go:hover { background: var(--surface-secondary); }
 .am-go:active { transform: translateY(1px); box-shadow: none; }
 .am-go:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-
-/* On the typing pad, Enter does not get a row of its own: it sits beside
-   what the tool just said about the line, sized to its own label rather
-   than stretched under the whole keyboard. */
-.am-go--inline {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-  width: auto;
-  margin-top: 0;
-  padding: 0.3rem 0.8rem;
-  font-size: 0.74rem;
-}
 
 
