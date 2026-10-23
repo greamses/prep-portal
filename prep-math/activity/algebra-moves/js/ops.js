@@ -886,6 +886,41 @@ export function allAngles(eq) {
   return { error: "There is no sin, cos or tan standing alone on a side." };
 }
 
+/* ── Differentiate or integrate a whole expression ──────────────────────────
+   x³ + 2x can be asked for its slope or its area, but the answer is a NEW
+   thing, not the next line of the same working — so it goes on a card of its
+   own, as d/dx(x³ + 2x), and the rules are then applied there a tap at a time.
+   y = x³ + 2x asks the same of its right-hand side, as dy/dx and ∫ y dx. */
+export function calculusCards(eq) {
+  const busy = (n) => { let yes = false; A.walk(n, (m) => { if (m.kind === "deriv" || m.kind === "int" || m.kind === "lim") yes = true; }); return yes; };
+  let body, named = null;
+  if (eq.kind === "expr") body = eq.e;
+  else if (A.isEquation(eq)) {
+    const side = eq.l.kind === "var" ? "l" : eq.r.kind === "var" ? "r" : null;
+    if (!side) return [];
+    named = eq[side].name;
+    body = eq[side === "l" ? "r" : "l"];
+    if (A.varsIn(body).includes(named)) return [];
+  }
+  if (!body || busy(body)) return [];
+  const letters = A.varsIn(body).filter((v) => v !== named && v !== "C").slice(0, 3);
+  const out = [];
+  for (const L of letters) {
+    const said = named ? `d${named}/d${L}` : `d/d${L}`;
+    out.push({
+      key: "differentiate", label: named ? `Differentiate: find ${said}` : `Differentiate it with respect to ${L}`,
+      hint: "a new card", mark: `d/d${L}(?)`,
+      cards: [{ eq: A.expression(A.deriv(copy(unbracket(body)), L)), title: named ? said : `the slope, d/d${L}` }],
+    });
+    out.push({
+      key: "integrateit", label: named ? `Integrate: find ∫${named} d${L}` : `Integrate it with respect to ${L}`,
+      hint: "a new card", mark: `∫(?)d${L}`,
+      cards: [{ eq: A.expression(A.integ(copy(unbracket(body)), L)), title: named ? `∫${named} d${L}` : `the integral, d${L}` }],
+    });
+  }
+  return out;
+}
+
 /** C° = 30° says C = 30. */
 export function dropDegrees(eq) {
   if (!A.isEquation(eq) || eq.l.kind !== "deg" || eq.r.kind !== "deg") return { error: "Both sides are not in degrees." };
@@ -1787,6 +1822,9 @@ function isFactorOf(term, leaf) {
   return body.kind === "prod" && body.kids.includes(leaf);
 }
 
+/** Is this node a whole side of the line on its own — the y of y = x³? */
+const SIDES_HOLD = (eq, id) => A.isEquation(eq) && (eq.l.id === id || eq.r.id === id);
+
 export function atomOffers(eq, key, { given = null } = {}) {
   if (!key) return [];
   const { nodeId, slot } = keyParts(key);
@@ -1977,6 +2015,11 @@ export function atomOffers(eq, key, { given = null } = {}) {
   }
 
   // A formula with a number still to go in has one move anywhere: putting it in.
+  // Asking for the slope or the integral of the whole thing: from any glyph of
+  // an expression, and from the = or the lone letter of y = … .
+  if (eq.kind === "expr" || slot === "eq" || A.findById(eq, nodeId)?.kind === "var" && SIDES_HOLD(eq, nodeId)) {
+    for (const o of calculusCards(eq)) add(o);
+  }
   return hasSubstitutions(eq, given) ? out.filter((o) => o.key === "substitute") : out;
 }
 

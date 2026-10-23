@@ -134,7 +134,8 @@ function splitInto(card, offer) {
   menu.close();
   card.clearPick();
   for (const { eq, title } of offer.cards) addCard(eq, { given: card.given, title });
-  say(offer.key === "angles" ? `${offer.label} — one card each.` : "Two cards, one for each answer — work each one down.", "ok");
+  say(offer.key === "branches" ? "Two cards, one for each answer — work each one down."
+    : offer.cards.length > 1 ? `${offer.label} — one card each.` : `${offer.label} — on a new card.`, "ok");
 }
 
 /* The second way to make a move, said once and then never again: the chip is
