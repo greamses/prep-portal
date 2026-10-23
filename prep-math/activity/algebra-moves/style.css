@@ -1070,3 +1070,57 @@
 .am-go:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 
+
+/* ── Notes pinned to a line of working (card.js, pinsFor) ─────────────────── */
+.am-pins {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* Absolutely placed past the line's edge, it would otherwise be squeezed
+     into no width at all and crush the notes in it. */
+  width: max-content;
+}
+.am-pinned { display: block; flex: none; cursor: pointer; }
+.am-pin { flex: none; }
+/* The pin that sticks a new note on: faint until the line is pointed at, so a
+   card of finished working is not a column of pins. */
+.am-pin {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.28;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.am-work:hover .am-pin,
+.am-pin:focus-visible { opacity: 1; }
+.am-pin:hover { transform: rotate(-12deg) scale(1.1); }
+@media (hover: none) { .am-pin { opacity: 0.7; } }
+/* The note editor opens inside the card, over the note it is writing. */
+.am-card .pp-note { position: absolute; left: 0; top: 0; z-index: 30; }
+.am-card .pp-note[hidden] { display: none; }
+
+/* ── The formula book on the side rail ────────────────────────────────────── */
+.am-book { padding: 12px 14px 16px; overflow-y: auto; }
+.am-fx__word {
+  font-family: "Shantell Sans", "Segoe Print", cursive;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 6px;
+  align-self: center;
+}
+.am-fx__ink { display: flex; flex-wrap: wrap; align-items: center; }
+/* A rule is applied, not filled in: it says so with a pin-coloured edge. */
+.pp-sticky.am-fx__pick--rule { box-shadow: inset 4px 0 0 var(--accent-secondary, #6aa5d8), var(--pp-note-shadow, 0 2px 6px rgba(0,0,0,.12)); }
+
+/* Only inside a workbook, where there is no page rail to carry the book. */
+#am-book[hidden] { display: none; }

@@ -1391,6 +1391,23 @@ function givenVarsIn(node, given, eq = node) {
   return out;
 }
 
+/** Every free `name` in the line, given the value `v` — a double-click on a
+    letter is a substitution everywhere that letter is written. */
+export function substituteAll(eq, name, v) {
+  const bound = boundVarIds(eq);
+  const hits = [];
+  A.walk(eq, (n) => { if (n.kind === "var" && n.name === name && !bound.has(n.id)) hits.push(n.id); });
+  if (!hits.length) return { error: `There is no ${name} here to put a number into.` };
+  let next = eq;
+  const from = new Map();
+  for (const id of hits) {
+    const put = A.numberNode(v);
+    from.set(put.id, [id]);
+    next = A.replace(next, id, put);
+  }
+  return { eq: next, from, note: `Put ${name} = ${say(v)} in` };
+}
+
 /* The x of d/dx(x³) is not a value waiting to go in: it is the letter the
    slope is taken in, and putting 2 there would make d/dx(8), which is 0. So a
    letter inside anything still differentiating, integrating or taking a limit
@@ -2048,3 +2065,30 @@ export function multiOffers(eq, keys, { given = null } = {}) {
     with none of these left on any of its terms is as tidy as it goes. */
 export const TIDY = new Set(["combine", "workout", "cancel", "dropzero", "indices", "surd", "addfrac",
   "multiply", "trig", "pyth", "diff", "integrate", "limit"]);
+
+/** Every move on offer for a set of picked glyphs — what each one means, what
+    its term can have done to it, and what they mean together — or, with
+    nothing picked, everywhere on the line. The rule book searches this. */
+export function everyOffer(eq, keys = [], { given = null } = {}) {
+  const out = [];
+  const seen = new Set();
+  const add = (list) => {
+    for (const o of list) {
+      const tag = `${o.key}|${o.mark}|${o.label}`;
+      if (!seen.has(tag)) { seen.add(tag); out.push(o); }
+    }
+  };
+  if (keys.length) {
+    if (keys.length > 1) add(multiOffers(eq, keys, { given }));
+    for (const k of keys) {
+      add(atomOffers(eq, k, { given }));
+      const t = atomTerm(eq, k);
+      if (t) add(offers(eq, t.id, { given }));
+    }
+    return out;
+  }
+  for (const t of A.allTerms(eq)) add(offers(eq, t.id, { given }));
+  if (A.isEquation(eq)) add(atomOffers(eq, `${eq.id}#eq`, { given }));
+  add(calculusCards(eq));
+  return out;
+}

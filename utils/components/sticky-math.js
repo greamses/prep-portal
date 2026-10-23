@@ -79,6 +79,34 @@ export function whenMathDrawn(fn) {
   if (typeof fn === "function") waiting.add(fn);
 }
 
+/* A page that never loaded MathJax (most activity pages have no other use for
+   it) still gets set mathematics on its notes: the first formula that asks
+   sends for it, with the site's one loader, and every note waiting is woken
+   when it lands — the painted ones repaint, and any formula already sitting in
+   an editor as its source text is set where it stands. */
+let sent = false;
+function summon() {
+  if (sent || typeof window === "undefined" || mathReady()) return;
+  sent = true;
+  import("./workbook/mathify.js")
+    .then(({ loadMath }) => loadMath())
+    .then((ok) => {
+      if (!ok) return;
+      sizes.clear();
+      for (const span of document.querySelectorAll(".pp-note__eq.is-source")) {
+        try {
+          const svg = selfContained(span.getAttribute("data-tex") || span.textContent, { display: false }).querySelector("svg");
+          if (!svg) continue;
+          span.textContent = "";
+          span.appendChild(svg);
+          span.classList.remove("is-source");
+        } catch { /* left as its source, which still says what was typed */ }
+      }
+      wake();
+    })
+    .catch(() => { /* no MathJax: notes keep the source text */ });
+}
+
 function wake() {
   const all = [...waiting];
   waiting.clear();
@@ -103,6 +131,7 @@ export function measureMath(tex, px) {
 
   let out;
   if (!mathReady()) {
+    summon();
     // not cached: MathJax may arrive between one call and the next
     return { w: Math.max(px, String(tex).length * px * 0.5), h: px * 1.2, depth: px * 0.2, guess: true };
   }
@@ -147,7 +176,7 @@ export function mathPicture(tex, px, ink) {
   const key = tex + "|" + px + "|" + (ink || "");
   const had = cache.get(key);
   if (had) return had.img && had.img.complete && !had.failed ? had : null;
-  if (!mathReady()) return null;
+  if (!mathReady()) { summon(); return null; }
 
   const made = svgOf(tex, px);
   if (!made) { cache.set(key, { failed: true }); return null; }
@@ -201,5 +230,6 @@ export function mathNode(tex, doc = document, src = null) {
   }
   span.textContent = String(tex);
   span.classList.add("is-source");
+  summon();
   return span;
 }

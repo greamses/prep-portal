@@ -15,7 +15,7 @@ import { buildRow, paintRow, flipInto } from "./render.js";
 import { plain } from "./layout.js";
 import { preservesSolutions } from "./verify.js";
 import { isSolved, solvedLetterValue } from "./solve.js";
-import { asNumbers, hasSubstitutions, offerTo, substitute, EQUALS, atomOffers, multiOffers, atomTerm, isEqualsKey } from "./ops.js";
+import { substituteAll, asNumbers, hasSubstitutions, offerTo, substitute, EQUALS, atomOffers, multiOffers, atomTerm, isEqualsKey } from "./ops.js";
 import * as A from "./ast.js";
 import * as R from "./rational.js";
 
@@ -23,6 +23,7 @@ const SIZE = 34;
 const ROW_GAP = 10;
 const PAD = 18;
 const NOTE_GAP = 12;   // matches .am-work__why margin-left
+let pinSeq = 0;
 
 /* The six papers of .pp-sticky (components.css), taken in turn so a canvas of
    problems reads as a pad of notes rather than a stack of windows. Tilts are
@@ -44,7 +45,34 @@ const fmt = (v) => R.toText(v).replace(/-/g, "−");
 const said = (given) =>
   Object.entries(given).map(([k, v]) => `${k} = ${fmt(v)}`);
 
-export function createCard(eq, { x, y, given = null, title = "", find = "", onPick, onChange, onGesture, onRemove }) {
+/* ── Notes pinned to a line ────────────────────────────────────────────────
+   Any line of the working can carry as many sticky notes as the student wants
+   to stick on it — why this step, what was spotted, what to watch for. They
+   are the site's one sticky note (utils/components/sticky-note*): drawn by its
+   painter, written in its editor, equations and all. Fetched the first time a
+   note is pinned, since most cards never get one. */
+let noteKit = null;
+const loadNotes = () => (noteKit ||= (async () => {
+  if (!document.querySelector('link[href$="/utils/components/sticky-note.css"]')) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "/utils/components/sticky-note.css";
+    document.head.appendChild(link);
+  }
+  const [note, editor, math] = await Promise.all([
+    import("/utils/components/sticky-note.js"),
+    import("/utils/components/sticky-note-editor.js"),
+    import("/utils/components/sticky-math.js"),
+  ]);
+  return { ...note, ...editor, whenMathDrawn: math.whenMathDrawn };
+})());
+
+/* A drawing pin, in the house's filled icon language. */
+const PIN = `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">`
+  + `<path d="M9.4 2.6h5.2l-1 5.2 3.8 3.4v2H6.6v-2l3.8-3.4z" fill="var(--accent-danger,#c0453f)"/>`
+  + `<rect x="11.2" y="13.2" width="1.6" height="8.2" rx="0.8" fill="#6b6457"/></svg>`;
+
+export function createCard(eq, { x, y, given = null, title = "", find = "", onPick, onChange, onGesture, onRemove, onEdit }) {
   const id = `card${++seq}`;
   const rows = [];        // { row, offset, note, from }
   // The GLYPH that is picked — its atom key (nodeId#slot), so the 3 and the x
@@ -131,7 +159,10 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
     let width = 0;
     for (const entry of rows) {
       const note = entry.el?.querySelector(".am-work__why");
-      const margin = note ? NOTE_GAP + note.offsetWidth : 0;
+      const pins = entry.el?.querySelector(".am-pins");
+      // The pinned notes sit after the margin note, not on top of it.
+      if (pins) pins.style.marginLeft = `${(note ? NOTE_GAP + note.offsetWidth : 0) + NOTE_GAP}px`;
+      const margin = (note ? NOTE_GAP + note.offsetWidth : 0) + (pins ? NOTE_GAP + pins.offsetWidth : 0);
       width = Math.max(width, entry.offset.x + entry.row.w + margin);
     }
 
@@ -153,9 +184,110 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
       why.textContent = entry.note;
       holder.appendChild(why);
     }
+    holder.appendChild(pinsFor(entry));
     entry.el = holder;
     entry.svg = svg;
     return holder;
+  }
+
+  /** The notes stuck on a line, and the pin that sticks another one on. */
+  function pinsFor(entry) {
+    entry.pins ||= [];
+    const box = document.createElement("div");
+    box.className = "am-pins";
+    for (const n of entry.pins) box.appendChild(noteFace(entry, n));
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "am-pin";
+    add.title = "Pin a note to this line";
+    add.setAttribute("aria-label", "Pin a note to this line");
+    add.innerHTML = PIN;
+    add.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const n = { id: `pin${++pinSeq}`, runs: null, paper: entry.pins.length % 6 };
+      entry.pins.push(n);
+      refreshPins(entry);
+      write(entry, n);
+    });
+    box.appendChild(add);
+    return box;
+  }
+
+  /** One pinned note, painted by the site's own sticky painter. */
+  function noteFace(entry, n) {
+    const c = document.createElement("canvas");
+    c.className = "am-pinned";
+    c.dataset.pin = n.id;
+    c.title = "Tap to change this note";
+    c.setAttribute("role", "button");
+    c.addEventListener("click", (e) => { e.stopPropagation(); write(entry, n); });
+    loadNotes().then((K) => {
+      // An equation on the note is drawn as its source until MathJax has set
+      // it; the painter is woken then, and draws it again (a few times at most).
+      let tries = 0;
+      const draw = () => {
+      if (!c.isConnected && tries) return;
+      const note = K.makeNote(n.runs ? { runs: n.runs, paper: n.paper } : { text: " ", paper: n.paper });
+      const lay = K.layoutNote(note, { maxWidth: 240 });
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const pad = 8;
+      c.width = Math.round((lay.width + pad * 2) * dpr);
+      c.height = Math.round((lay.height + pad * 2) * dpr);
+      c.style.width = `${lay.width + pad * 2}px`;
+      c.style.height = `${lay.height + pad * 2}px`;
+      const g = c.getContext("2d");
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.translate(pad, pad);
+      K.paintSticky(g, note, lay, { ruled: true });
+      relayout();
+      if (n.runs?.some((r) => r.tex) && tries++ < 4) K.whenMathDrawn(draw);
+      };
+      draw();
+    });
+    return c;
+  }
+
+  function refreshPins(entry) {
+    if (!entry.el) return;
+    const old = entry.el.querySelector(".am-pins");
+    if (old) old.replaceWith(pinsFor(entry));
+    relayout();
+  }
+
+  /* One editor per card, opened over whichever note is being written. */
+  let pad = null;
+  async function write(entry, n) {
+    const K = await loadNotes();
+    if (!pad) {
+      pad = K.createStickyEditor({
+        host: el,
+        onInput: (note) => { if (pad.on) { pad.on.n.runs = note.runs; pad.on.n.paper = note.paper; } },
+        onDone: (note, { empty } = {}) => {
+          const on = pad.on;
+          pad.on = null;
+          if (!on) return;
+          on.n.runs = note.runs;
+          on.n.paper = note.paper;
+          // A note left blank is not a note.
+          if (empty) on.entry.pins = on.entry.pins.filter((x) => x !== on.n);
+          refreshPins(on.entry);
+        },
+      });
+      pad.el.addEventListener("click", (e) => e.stopPropagation());
+      pad.el.addEventListener("pointerdown", (e) => e.stopPropagation());
+      // Put the pen down on a press anywhere off the note — the editor leaves
+      // that rule to whoever opened it.
+      document.addEventListener("pointerdown", (e) => {
+        if (pad.on && pad.isOpen() && !pad.owns(e.target)) pad.close(true);
+      }, true);
+    }
+    pad.on = { entry, n };
+    pad.open(K.makeNote(n.runs ? { runs: n.runs, paper: n.paper } : { paper: n.paper }));
+    // Over the note itself, in the card's own (unzoomed) pixels.
+    const face = entry.el?.querySelector(`[data-pin="${n.id}"]`);
+    let left = 0, top = 0;
+    for (let at = face; at && at !== el; at = at.offsetParent) { left += at.offsetLeft; top += at.offsetTop; }
+    pad.place({ left, top, width: 260 });
   }
 
   /** Redraw only the last row — the only one whose selection can change. */
@@ -272,6 +404,15 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
     sheet.addEventListener(ev, () => clearTimeout(holdTimer));
   }
 
+  /* Double-click a letter to put a number in it, a number to write it another
+     way, the = to write the whole line out yourself. What is typed is checked
+     like any other move. */
+  /* Told apart here rather than with "dblclick": the first click repaints the
+     line, so the browser's own double-click lands on a glyph that has already
+     been replaced and never arrives. Same glyph, twice, quickly, is the edit. */
+  let lastTap = { key: null, at: 0 };
+  const DOUBLE_MS = 380;
+
   sheet.addEventListener("click", (e) => {
     const hit = e.target.closest?.(".am-hit");
     // Handled here, so the canvas below must not also treat it as a tap on bare
@@ -283,6 +424,17 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
     const key = hit?.dataset.key || null;
     if (key && heldKey === key) { heldKey = null; return; }
     heldKey = null;
+
+    const now = performance.now();
+    if (key && lastTap.key === key && now - lastTap.at < DOUBLE_MS && onEdit) {
+      lastTap = { key: null, at: 0 };
+      picks = [];
+      repaintLive();
+      onPick?.(null, api);
+      onEdit(key, api);
+      return;
+    }
+    lastTap = { key, at: now };
 
     if (key && (e.shiftKey || e.ctrlKey || e.metaKey)) { togglePick(key); return; }
 
@@ -412,6 +564,47 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
       undone = [];
       push(result.eq, { from: result.from, note: result.note });
       return { ok: true, note: result.note };
+    },
+
+    /** A line typed by hand, kept only if it says the same as the last one. */
+    rewrite(nextEq) {
+      const now = this.equation;
+      if (nextEq.kind !== now.kind) return { refused: now.kind === "eq" ? "this card holds an equation, so the line needs its = sign" : "this card holds an expression, so no = sign" };
+      const verdict = preservesSolutions(now, nextEq, { given: pinned });
+      if (!verdict.ok) return { refused: verdict.why };
+      picks = [];
+      undone = [];
+      push(nextEq, { note: "" });
+      return { ok: true, note: `Your own step: ${plain(nextEq)}` };
+    },
+
+    /** Double-clicked glyph `key`, typed as `node`: a letter takes a number (a
+        substitution), a number is written another way with the same value. */
+    editAt(key, node) {
+      const now = this.equation;
+      const nodeId = key.slice(0, key.indexOf("#"));
+      const target = A.findById(now, nodeId);
+      if (!target || (target.kind !== "var" && target.kind !== "num")) return { refused: "only a letter or a number can be changed that way" };
+      if (target.kind === "var") {
+        const v = A.exactValue(node);
+        if (!v) return { refused: `${target.name} takes a number here — to rewrite the line, double-click the =` };
+        const extended = { ...(values || {}), [target.name]: v };
+        const result = substituteAll(now, target.name, v);
+        if (result.error) return { refused: result.error };
+        const verdict = preservesSolutions(now, result.eq, { given: asNumbers(extended) });
+        if (!verdict.ok) return { refused: verdict.why };
+        picks = [];
+        undone = [];
+        push(result.eq, { from: result.from, note: "" });
+        return { ok: true, note: result.note };
+      }
+      const next = A.replace(now, nodeId, { ...node, paren: node.kind === "sum" || node.kind === "neg" });
+      const verdict = preservesSolutions(now, next, { given: pinned });
+      if (!verdict.ok) return { refused: "that is not the same number" };
+      picks = [];
+      undone = [];
+      push(next, { note: "" });
+      return { ok: true, note: `${plain(target)} written as ${plain(node)}` };
     },
 
     clearPick() { if (picks.length) { picks = []; repaintLive(); } },

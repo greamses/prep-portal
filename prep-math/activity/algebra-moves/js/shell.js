@@ -26,6 +26,10 @@ export function shellHTML() {
             ${UI.plus(17)}
             <em>New</em>
           </button>
+          <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-book" hidden
+                  title="The formula book" aria-label="The formula book">
+            <em>Formulas</em>
+          </button>
           <button class="pp-sticky pp-note-btn am-tool am-tool--do" type="button" id="am-work"
                   title="How many steps are left?" aria-label="How many steps are left?">
             ${UI.steps(17)}
@@ -65,16 +69,9 @@ export function shellHTML() {
             ${UI.close(16)}
           </button>
 
-          <!-- Two ways in: type your own, or take a formula and say what you
-               were given. Both end up as the same kind of card. -->
-          <div class="am-tabs" role="tablist" aria-label="Where the problem comes from">
-            <button class="pp-sticky pp-note-btn am-tab is-on" type="button" role="tab" id="am-tab-type"
-                    data-pane="type" aria-selected="true" aria-controls="am-pane-type">Type it</button>
-            <button class="pp-sticky pp-note-btn am-tab" type="button" role="tab" id="am-tab-formula"
-                    data-pane="formula" aria-selected="false" aria-controls="am-pane-formula">Formulas</button>
-          </div>
-
-          <div class="am-pane" id="am-pane-type" role="tabpanel" aria-labelledby="am-tab-type">
+          <!-- The formula book is not in here: it is a tool on the side rail,
+               beside the calculator (see mountFormulaBook). -->
+          <div class="am-pane" id="am-pane-type">
             <div class="am-keypad" id="am-keypad"></div>
 
             <div class="am-starters" id="am-starters"></div>
@@ -83,13 +80,6 @@ export function shellHTML() {
             </p>
           </div>
 
-          <div class="am-pane" id="am-pane-formula" role="tabpanel" aria-labelledby="am-tab-formula" hidden>
-            <div class="am-fx" id="am-formulas"></div>
-            <p class="am-note">
-              Fill in every letter but the one you are looking for, and it goes on
-              the canvas with those numbers pinned to it. Tap a term to put them in.
-            </p>
-          </div>
           </div>
          </div>
         </div>

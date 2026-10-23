@@ -24,8 +24,10 @@ import { createCard } from "./card.js";
 import { createMenu } from "./menu.js";
 import { createKeypad } from "./keypad.js";
 import { createFormulaPicker } from "./formula-picker.js";
-import { solve } from "./solve.js";
-import { applyToBoth } from "./ops.js";
+import { solve, bestOffers } from "./solve.js";
+import { applyToBoth, everyOffer } from "./ops.js";
+import { ruleFits } from "./rules.js";
+import * as A from "./ast.js";
 import { shellHTML } from "./shell.js";
 import { heroPaint } from "/utils/components/nav-icons.js";
 
@@ -180,6 +182,92 @@ function startBothSides(card, op) {
   });
 }
 
+/* ── Double-click to write it yourself ──────────────────────────────────────
+   A letter: put a number in it, everywhere it is written. A number: write it
+   another way — 9 as 3², 0.5 as 1/2. The =: the whole line, typed as you would
+   write it, for the step no single move makes. Each is checked before it lands. */
+function startEdit(card, key) {
+  menu.close();
+  const nodeId = key.slice(0, key.indexOf("#"));
+  const slot = key.slice(key.indexOf("#") + 1);
+  const node = A.findById(card.equation, nodeId);
+  let label, accept, start = "", whole = false;
+  if (slot === "eq" || (card.equation.kind === "expr" && !node)) {
+    whole = true;
+    label = "Write the line your own way — it is kept if it says the same thing";
+    start = plain(card.equation);
+    accept = (root) => card.rewrite(root);
+  } else if (node?.kind === "var") {
+    label = `Put a number in for ${node.name}`;
+    accept = (n) => card.editAt(key, n);
+  } else if (node?.kind === "num") {
+    label = `Write ${plain(node)} another way — the same number`;
+    start = plain(node);
+    accept = (n) => card.editAt(key, n);
+  } else {
+    return say("Double-click a letter, a number or the = to write it yourself.");
+  }
+  showPane("type");
+  openDrawer();
+  keypad.setMode({
+    label, whole,
+    accept: (what) => {
+      const result = accept(what);
+      if (result.refused) return result;
+      keypad.setMode(null);
+      closeDrawer();
+      say(result.note, "ok");
+      canvas.revealCard(card.el);
+      return result;
+    },
+  });
+  if (start) keypad.set(start);
+}
+
+/* ── The rule book ──────────────────────────────────────────────────────────
+   Tap a rule and it is looked for among the moves on offer — on the glyphs
+   that are picked, or anywhere on the card's last line when nothing is. A rule
+   that does not fit there says so; it is never forced. */
+function applyRule(rule) {
+  const card = active && cards.includes(active) ? active : cards[cards.length - 1];
+  if (!card) return say("Put a problem on the canvas first.");
+  const picked = card.picks;
+  // With nothing picked, the moves the solver would choose come first — take
+  // the 5 across, not the 3x.
+  const preferred = picked.length ? []
+    : A.allTerms(card.equation).flatMap((t) => bestOffers(card.equation, t.id, { given: card.given }));
+  const pool = [...preferred, ...everyOffer(card.equation, picked, { given: card.given })];
+  for (const o of pool) {
+    if (o.needsInput || !rule.keys.includes(o.key)) continue;
+    if (o.cards) {
+      if (!ruleFits(rule, o, null)) continue;
+      splitInto(card, o);
+      return;
+    }
+    const res = o.run();
+    if (!res || res.error || !ruleFits(rule, o, res)) continue;
+    const result = card.apply({ ...o, run: () => res });
+    if (result.refused) continue;
+    say(result.note, "ok");
+    canvas.revealCard(card.el);
+    return;
+  }
+  say(picked.length
+    ? `“${rule.name}” does not fit what is picked.`
+    : `“${rule.name}” does not fit anywhere on that line.`, "no");
+}
+
+/** The formula book, built into `host` — the rail's panel on this page. */
+export function mountFormulaBook(host) {
+  return createFormulaPicker(host, {
+    onSubmit: ({ eq, given, find, title }) => {
+      addCard(eq, { given, find, title });
+      say(`${title} is on the canvas — tap a letter to put its number in.`, "ok");
+    },
+    onRule: applyRule,
+  });
+}
+
 /* ── Putting a problem on the paper ─────────────────────────────────────── */
 function addCard(eq, { given = null, title = "", find = "" } = {}) {
   const spot = canvas.freeSpot(cards.map((c) => ({
@@ -202,6 +290,7 @@ function addCard(eq, { given = null, title = "", find = "" } = {}) {
       if (picked) { openMenuFor(self); hintOnce(); } else menu.close();
     },
     onChange: (self) => { if (self.picked) openMenuFor(self); else menu.close(); },
+    onEdit: (key, self) => startEdit(self, key),
     onGesture: (offer, self) => {
       if (offer.cards) return splitInto(self, offer);
       if (offer.needsInput) return startBothSides(self, offer.op);
@@ -261,13 +350,18 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
     },
   });
 
-  createFormulaPicker($("#am-formulas"), {
-    onSubmit: ({ eq, given, find, title }) => {
-      addCard(eq, { given, find, title });
-      say(`${title} is on the canvas — tap a letter to put its number in.`, "ok");
-      closeDrawer();
-    },
-  });
+  // Inside a workbook there is no page rail to hang the book on, so the
+  // canvas's own rail carries a key for it.
+  if (!drawer) {
+    const key = $("#am-book");
+    key.hidden = false;
+    key.addEventListener("click", async () => {
+      const { openPanel, needCss } = await import("/utils/components/workbook/panels.js");
+      needCss("/utils/components/workbook.css");
+      const panel = openPanel({ title: "Formula book", size: { w: 460, h: 560 } });
+      mountFormulaBook(panel.body);
+    });
+  }
 
   wireTabs();
 

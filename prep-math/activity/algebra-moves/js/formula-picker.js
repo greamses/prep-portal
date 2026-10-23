@@ -23,6 +23,7 @@
    student that before they start beats letting them find out four lines in.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+import { RULE_GROUPS } from "./rules.js";
 import { GROUPS, readValue, exampleGivens } from "./formulas.js";
 import { parse } from "./parse.js";
 import { buildRow, paintRow } from "./render.js";
@@ -78,23 +79,37 @@ function ensureSelectStyles() {
   document.head.appendChild(link);
 }
 
-/** The formula, drawn in the same hand the canvas writes in. */
+/** The formula, drawn in the same hand the canvas writes in. A rule stated
+    as "this, so that" is drawn a piece at a time with the words between. */
 function drawn(src, size) {
   const holder = document.createElement("div");
   holder.className = "am-fx__ink";
-  try {
-    holder.appendChild(paintRow(buildRow(parse(src), size), { live: false }));
-  } catch {
-    holder.textContent = src;
+  const parts = src.split(/(, so | or )/);
+  for (const part of parts) {
+    if (part === ", so " || part === " or ") {
+      const w = document.createElement("span");
+      w.className = "am-fx__word";
+      w.textContent = part.replace(",", "").trim();
+      holder.appendChild(w);
+      continue;
+    }
+    try {
+      holder.appendChild(paintRow(buildRow(parse(part), size), { live: false }));
+    } catch {
+      const t = document.createElement("span");
+      t.textContent = part;
+      holder.appendChild(t);
+    }
   }
   return holder;
 }
 
-export function createFormulaPicker(host, { onSubmit } = {}) {
+export function createFormulaPicker(host, { onSubmit, onRule } = {}) {
   // A working copy: admin-added formulas (see formula-admin.js) join it at
   // runtime, either into a group already here or a new one of their own —
-  // the static bank itself is never mutated.
-  const allGroups = GROUPS.map((g) => ({ group: g.group, items: [...g.items] }));
+  // the static bank itself is never mutated. The rules (rules.js) are in the
+  // same book, after the formulas.
+  const allGroups = [...GROUPS, ...(onRule ? RULE_GROUPS : [])].map((g) => ({ group: g.group, items: [...g.items] }));
 
   let group = allGroups[0].group;    // "" means every group
   let chosen = null;
@@ -110,7 +125,7 @@ export function createFormulaPicker(host, { onSubmit } = {}) {
   const search = document.createElement("input");
   search.type = "search";
   search.className = "am-fx__search";
-  search.placeholder = "Search: area, radius, speed, quadratic…";
+  search.placeholder = "Search: area, speed, chain rule, indices…";
   search.autocomplete = "off";
   search.spellcheck = false;
   search.setAttribute("aria-label", "Search the formulas");
@@ -183,7 +198,11 @@ export function createFormulaPicker(host, { onSubmit } = {}) {
       const name = document.createElement("em");
       name.textContent = f.name;
       btn.appendChild(name);
-      btn.addEventListener("click", () => choose(f));
+      if (f.rule) {
+        btn.classList.add("am-fx__pick--rule");
+        btn.title = "Apply this rule to what is picked (or anywhere on the line)";
+      }
+      btn.addEventListener("click", () => (f.rule ? onRule?.(f) : choose(f)));
       list.appendChild(btn);
     }
   }

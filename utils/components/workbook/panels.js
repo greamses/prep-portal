@@ -64,7 +64,8 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   };
   el.style.left = `${Math.max(4, Math.min(window.innerWidth - w - 4, spot.x))}px`;
   el.style.top = `${Math.max(4, Math.min(window.innerHeight - h - 4, spot.y))}px`;
-  document.body.appendChild(el);
+  // Inside whatever fills the screen, or it opens behind it and cannot be seen.
+  (document.fullscreenElement || document.webkitFullscreenElement || document.body).appendChild(el);
 
   const raise = () => { el.style.zIndex = String(10070 + (top += 1)); };
   raise();

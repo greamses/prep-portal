@@ -216,23 +216,40 @@ export const TOOL_IDS = Object.keys(TOOLS);
  *   at      "left" or "right" — which side of the window it sits against
  * → { el, open(id), destroy() }
  */
-export function mountTools(host = document.body, { tools = ["calculator", "column", "times", "shortdiv", "note"], at = "left" } = {}) {
+export function mountTools(host = document.body, { tools = ["calculator", "column", "times", "shortdiv", "note"], at = "left", extra = {} } = {}) {
   /* the rail fetches its own dress, so a page that wants tools needs one line
      and no stylesheet link of its own */
   needCss("/utils/components/workbook.css");
-  const ids = tools.filter((id) => TOOLS[id]);
+  /* A page can bring tools of its own (Algebra Moves' formula book): the same
+     { label, size, open(body) } a built-in tool is, joining the same rail. */
+  const ALL = { ...TOOLS, ...extra };
+  const ids = tools.filter((id) => ALL[id]);
 
   const el = document.createElement("aside");
   el.className = `wb-tools wb-tools--${at}`;
   el.setAttribute("aria-label", "Tools");
   el.innerHTML = `<div class="wb-tools__paper pp-receipt__paper">`
     + ids.map((id) => `<button type="button" class="wb-tools__btn" data-wbtool="${id}"`
-      + ` aria-pressed="false" aria-label="${TOOLS[id].label}"`
-      + ` data-tip="${TOOLS[id].label}" data-tip-side="${at === "left" ? "right" : "left"}">`
+      + ` aria-pressed="false" aria-label="${ALL[id].label}"`
+      + ` data-tip="${ALL[id].label}" data-tip-side="${at === "left" ? "right" : "left"}">`
       + `${TOOL_ICONS[id] || TOOL_ICONS.note}</button>`).join("")
     + `</div>`;
   host.appendChild(el);
   mountTooltips();
+
+  /* A page that fills the screen with one element (Algebra Moves' canvas)
+     would leave the rail and its panels behind it, out of sight and out of
+     reach. So they follow whatever is filling the screen, and come home after. */
+  const follow = () => {
+    const full = document.fullscreenElement || document.webkitFullscreenElement;
+    const into = full && !full.contains(host) ? full : host;
+    if (el.parentNode !== into) into.appendChild(el);
+    const panelsInto = full || document.body;
+    for (const p of document.querySelectorAll(".wb-panel")) if (p.parentNode !== panelsInto) panelsInto.appendChild(p);
+  };
+  document.addEventListener("fullscreenchange", follow);
+  document.addEventListener("webkitfullscreenchange", follow);
+  follow();
 
   /* one panel per tool, and pressing the key again puts it away — the same
      bargain the workbook's rail makes */
@@ -241,7 +258,7 @@ export function mountTools(host = document.body, { tools = ["calculator", "colum
   async function toggle(id) {
     const live = open.get(id);
     if (live) { live.close(); return; }
-    const spec = TOOLS[id];
+    const spec = ALL[id];
     const key = el.querySelector(`[data-wbtool="${id}"]`);
     key.setAttribute("aria-pressed", "true");
     const panel = openPanel({
@@ -269,6 +286,8 @@ export function mountTools(host = document.body, { tools = ["calculator", "colum
     el,
     open: toggle,
     destroy() {
+      document.removeEventListener("fullscreenchange", follow);
+      document.removeEventListener("webkitfullscreenchange", follow);
       [...open.values()].forEach((p) => p.close());
       el.remove();
     },

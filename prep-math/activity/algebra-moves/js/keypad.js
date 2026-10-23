@@ -584,6 +584,15 @@ export function createKeypad(host, { onSubmit } = {}) {
       return;
     }
 
+    if (mode && mode.whole) {
+      const r = mode.accept(eq, src);
+      if (r && r.refused) {
+        say.textContent = `I will not do that — ${r.refused}.`;
+        say.className = "am-keysay is-no";
+      }
+      return;
+    }
+
     if (mode) {
       if (eq.kind === "eq") {
         say.textContent = "Just what to apply to both sides — no equals sign.";
