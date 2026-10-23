@@ -75,8 +75,9 @@ function needsBrackets(node, parentKind, slot) {
   if (parentKind === "root") return false;
   if (node.paren) return true;
   switch (parentKind) {
-    case "prod": return node.kind === "sum" || (node.kind === "neg" && slot > 0);
-    case "neg":  return node.kind === "sum";
+    case "prod": return node.kind === "sum" || ((node.kind === "neg" || node.kind === "pm") && slot > 0);
+    case "neg":
+    case "pm":   return node.kind === "sum";
     case "pow":  return slot === 0 && node.kind !== "num" && node.kind !== "var";
     default:     return false;
   }
@@ -141,14 +142,15 @@ function measureBare(node, size, binary) {
       // a fraction with something still to go in it.
       return { ...base, kind: "hole", w: 0.62 * size, ascent: 0.62 * size, descent: 0.02 * size };
 
-    case "neg": {
+    case "neg":
+    case "pm": {
       // A minus in front of a term is tight; a minus BETWEEN terms is an
       // operator and gets air on its right, because the sum already left air
-      // on its left.
-      const signW = measureText("−", size, false);
+      // on its left. A ± is drawn exactly the same way.
+      const signW = measureText(node.kind === "pm" ? "±" : "−", size, false);
       const gap = binary ? 0.22 * size : 0.06 * size;
       const k = measure(node.k, size, "neg", 0);
-      return { ...base, kind: "neg", signW, gap, k, w: signW + gap + k.w,
+      return { ...base, kind: node.kind, signW, gap, k, w: signW + gap + k.w,
                ascent: Math.max(base.ascent, k.ascent), descent: Math.max(base.descent, k.descent) };
     }
 
@@ -157,7 +159,8 @@ function measureBare(node, size, binary) {
       const parts = [];
       let w = 0, ascent = base.ascent, descent = base.descent;
       node.kids.forEach((kid, i) => {
-        const isNeg = kid.kind === "neg" && !kid.paren;
+        // A − or a ± in front of a term is that term's own sign.
+        const isNeg = (kid.kind === "neg" || kid.kind === "pm") && !kid.paren;
         if (i > 0) {
           // A negative term draws its own sign and its own trailing space, so
           // all the sum owes it is the space on the LEFT. Charging it the full
@@ -309,7 +312,8 @@ function place(m, x, y, out) {
       break;
 
     case "neg":
-      text("sign", "−", x, y, m.size, false);
+    case "pm":
+      text("sign", m.kind === "pm" ? "±" : "−", x, y, m.size, false);
       place(m.k, x + m.signW + m.gap, y, out);
       break;
 
@@ -404,9 +408,11 @@ export function plain(node, parentKind = null, slot = 0) {
     case "var":  return wrap(node.name);
     case "hole": return wrap("?");
     case "neg":  return wrap(`−${plain(node.k, "neg", 0)}`);
+    case "pm":   return wrap(`±${plain(node.k, "pm", 0)}`);
     case "sum":  return wrap(node.kids.map((k, i) =>
                    i === 0 ? plain(k, "sum", 0)
                    : k.kind === "neg" && !k.paren ? ` − ${plain(k.k, "neg", 0)}`
+                   : k.kind === "pm" && !k.paren ? ` ± ${plain(k.k, "pm", 0)}`
                    : ` + ${plain(k, "sum", i)}`).join(""));
     case "prod": return wrap(node.kids.map((k, i) =>
                    (i > 0 && startsWithDigit(k) ? "·" : "") + plain(k, "prod", i)).join(""));

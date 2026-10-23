@@ -135,7 +135,15 @@ export function createKeypad(host, { onSubmit } = {}) {
   const pad = document.createElement("div");
   pad.className = "am-pad";
 
-  host.append(preview, line, say, give, pad);
+  /* "Both sides" mode: the = asked for something to apply to both sides, and
+     whatever is typed now is THAT — an expression, not a new problem. The
+     banner says which operation, and Enter hands the typed thing back. */
+  const banner = document.createElement("p");
+  banner.className = "am-keymode";
+  banner.hidden = true;
+  let mode = null;
+
+  host.append(banner, preview, line, say, give, pad);
 
   const SIZE = 40;                // the drawing's font size, in CSS pixels
   const KEY_SIZE = 15;            // and on a key face, which has a cell to fit
@@ -339,7 +347,9 @@ export function createKeypad(host, { onSubmit } = {}) {
     if (!src.trim()) {
       letters([]);
       preview.classList.add("is-empty");
-      say.textContent = "Type an equation, or an expression to tidy up. It is drawn here as you go.";
+      say.textContent = mode
+        ? "Type it — a number, a letter, (b/(2a))^2 — then Enter."
+        : "Type an equation, or an expression to tidy up. It is drawn here as you go.";
       say.className = "am-keysay";
       return;
     }
@@ -364,7 +374,8 @@ export function createKeypad(host, { onSubmit } = {}) {
       return;
     }
 
-    letters(A.varsIn(eq).sort());
+    // No "let x = …" boxes in both-sides mode: what is typed is applied, not solved.
+    letters(mode ? [] : A.varsIn(eq).sort());
 
     const row = buildRow(eq, SIZE);
     const svg = paintRow(row, { live: false });
@@ -533,6 +544,23 @@ export function createKeypad(host, { onSubmit } = {}) {
     } catch (err) {
       say.textContent = err.message;
       say.className = "am-keysay is-no";
+      return;
+    }
+
+    if (mode) {
+      if (eq.kind === "eq") {
+        say.textContent = "Just what to apply to both sides — no equals sign.";
+        say.className = "am-keysay is-no";
+        return;
+      }
+      const r = mode.accept(eq.e, src);
+      if (r && r.refused) {
+        say.textContent = `I will not do that — ${r.refused}.`;
+        say.className = "am-keysay is-no";
+        return;
+      }
+      line.value = "";
+      draw();
       return;
     }
 
@@ -726,6 +754,18 @@ export function createKeypad(host, { onSubmit } = {}) {
   return {
     focus() { line.focus(); },
     set(src) { line.value = src; draw(); line.focus(); },
+    /** Put the keypad into "both sides" mode ({ label, accept(node) }), or out
+        of it with null. */
+    setMode(m) {
+      mode = m;
+      banner.hidden = !m;
+      banner.textContent = m ? m.label : "";
+      give.hidden = true;
+      line.value = "";
+      draw();
+      if (m) line.focus();
+    },
+    get mode() { return mode; },
     get value() { return line.value; },
   };
 }

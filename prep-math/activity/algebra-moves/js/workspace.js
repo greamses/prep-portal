@@ -25,6 +25,7 @@ import { createMenu } from "./menu.js";
 import { createKeypad } from "./keypad.js";
 import { createFormulaPicker } from "./formula-picker.js";
 import { solve } from "./solve.js";
+import { applyToBoth } from "./ops.js";
 import { shellHTML } from "./shell.js";
 import { heroPaint } from "/utils/components/nav-icons.js";
 
@@ -117,6 +118,7 @@ function openMenuFor(card) {
   }
 
   menu.open(offers, () => card.rectFor(picked), (offer) => {
+    if (offer.needsInput) return startBothSides(card, offer.op);
     const result = offer.letter ? card.useFromElsewhere(offer.letter, offer.value) : card.apply(offer);
     menu.close();
     if (result.refused) return say(`I will not do that — ${result.refused}.`, "no");
@@ -135,6 +137,36 @@ function hintOnce() {
     if (!active?.picked) return;
     say("Or tap the = to send it across. Shift-click, or hold, to pick more than one.");
   }, 1400);
+}
+
+/* ── Something to both sides ──────────────────────────────────────────────
+   The = offers + ▢, − ▢, × ▢ and ÷ ▢. Picking one opens the keypad in
+   "both sides" mode: whatever is typed — 5, a, (b/(2a))² — is applied to both
+   sides of THIS card when Enter is pressed, through the verifier like every
+   other move. Closing the drawer abandons it. */
+const BOTH_WORDS = {
+  "+": "Add to both sides", "−": "Take away from both sides",
+  "×": "Multiply both sides by", "÷": "Divide both sides by",
+};
+function startBothSides(card, op) {
+  menu.close();
+  showPane("type");
+  openDrawer();
+  keypad.setMode({
+    label: `${BOTH_WORDS[op]} of ${plain(card.equation)}`,
+    accept: (node) => {
+      const trial = applyToBoth(card.equation, op, node);
+      if (trial.error) return { refused: trial.error };
+      const key = op === "+" || op === "−" ? "across" : op === "×" ? "times" : "divide";
+      const result = card.apply({ key, mark: trial.mark, label: trial.note, run: () => trial });
+      if (result.refused) return result;
+      keypad.setMode(null);
+      closeDrawer();
+      say(result.note, "ok");
+      canvas.revealCard(card.el);
+      return result;
+    },
+  });
 }
 
 /* ── Putting a problem on the paper ─────────────────────────────────────── */
@@ -294,6 +326,7 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
    Type your own, or take a formula off the shelf. The panes are hidden rather
    than unbuilt, so the keypad keeps its caret and the formula form keeps what
    was typed into it while you look at the other one. */
+let showPane = () => {};
 function wireTabs() {
   const tabs = [...root.querySelectorAll(".am-tab")];
   const show = (which) => {
@@ -306,6 +339,7 @@ function wireTabs() {
     if (which === "type") keypad?.focus();
   };
   for (const tab of tabs) tab.addEventListener("click", () => show(tab.dataset.pane));
+  showPane = show;
 }
 
 /* ── Filling the screen ─────────────────────────────────────────────────────
@@ -370,6 +404,8 @@ function openDrawer() {
   if (!$("#am-pane-type").hidden) keypad?.focus();
 }
 function closeDrawer() {
+  // Walking away from a "both sides" keypad abandons it.
+  if (keypad?.mode) keypad.setMode(null);
   const drawer = $("#am-drawer");
   drawer.classList.remove("is-open");
   drawer.inert = true;

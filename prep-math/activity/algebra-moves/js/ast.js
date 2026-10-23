@@ -33,6 +33,10 @@ export const eqn  = (l, r, id = freshId())           => ({ id, kind: "eq", l, r 
    own node rather than a power of 1/2: x^(1/2) and √x are the same number but
    not the same writing, and a student who typed one expects to keep seeing it. */
 export const root = (k, id = freshId())              => ({ id, kind: "root", k });
+/* Plus-or-minus: ONE ± choice for the whole line, so x = −b ± √D is two
+   answers written as one. Its own node, drawn like a minus sign and verified
+   by checking both branches at once (see verify.js). */
+export const pm   = (k, id = freshId())              => ({ id, kind: "pm", k });
 
 /* A line with only one side: 3x + 5 − x, put on the canvas to be tidied rather
    than solved. It is a node of its own rather than an equation with a missing
@@ -58,6 +62,7 @@ export function kidsOf(node) {
     case "expr": return [node.e];
     case "neg":  return [node.k];
     case "root": return [node.k];
+    case "pm":   return [node.k];
     case "sum":
     case "prod": return node.kids;
     case "frac": return [node.a, node.b];
@@ -91,6 +96,7 @@ export function replace(root, id, next) {
       case "neg":  { const k = rec(n.k); return k === n.k ? n : neg(k, n.id); }
       // Built literally: this function's own parameter is called `root`.
       case "root": { const k = rec(n.k); return k === n.k ? n : { id: n.id, kind: "root", k }; }
+      case "pm":   { const k = rec(n.k); return k === n.k ? n : { id: n.id, kind: "pm", k }; }
       case "sum":  { const ks = n.kids.map(rec); return ks.every((k, i) => k === n.kids[i]) ? n : sum(ks, n.id); }
       case "prod": { const ks = n.kids.map(rec); return ks.every((k, i) => k === n.kids[i]) ? n : prod(ks, n.id); }
       case "frac": { const a = rec(n.a), b = rec(n.b); return a === n.a && b === n.b ? n : frac(a, b, n.id); }

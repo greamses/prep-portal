@@ -433,7 +433,7 @@ module.exports = function algebraRoutes() {
         "GET /api/algebra/check?from=&to=": "is that step legal?",
         "GET /api/algebra/formulas":  "the formula shelf and the letters each one wants",
       },
-      moves: ["substitute", "across", "combine", "divide", "times", "cancel", "flip", "expand", "swap", "dropzero", "workout", "indices", "surd"],
+      moves: ["substitute", "across", "combine", "divide", "times", "cancel", "flip", "expand", "swap", "dropzero", "workout", "indices", "surd", "addfrac", "square"],
       takes: {
         eq: "an equation (3x+5=20) or an expression with no equals sign (3x+5-x); roots as sqrt(12) or √12, powers as x^2",
         given: "values for a formula's letters, u:5,a:2,t:3 — accepted by moves, apply and solve",

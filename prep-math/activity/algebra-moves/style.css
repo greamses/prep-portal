@@ -540,6 +540,19 @@
   line-height: 1.4;
   color: var(--text-tertiary);
 }
+/* "Add to both sides of …" — what the keypad is for while the = is waiting on
+   it, so nobody types a whole new problem into it by mistake. */
+.am-keymode {
+  margin: 0 0 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink);
+  background: var(--surface-secondary);
+  border-left: 3px solid var(--accent-secondary);
+}
+.am-keymode[hidden] { display: none; }
 .am-keysay.is-ok { color: var(--accent-success); }
 .am-keysay.is-no { color: var(--accent-danger); }
 

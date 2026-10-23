@@ -16,7 +16,7 @@
    value. A rewrite that cannot be verified is refused, not shipped hopefully.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-import { varsIn } from "./ast.js";
+import { varsIn, walk } from "./ast.js";
 
 /** Float evaluation for sampling only. NaN means "this sample is unusable". */
 function evalAt(node, env) {
@@ -32,11 +32,22 @@ function evalAt(node, env) {
     }
     case "pow":  return Math.pow(evalAt(node.b, env), evalAt(node.e, env));
     case "root": { const v = evalAt(node.k, env); return v < 0 ? NaN : Math.sqrt(v); }
+    // The one ± choice of the line, set per branch by the caller.
+    case "pm":   return env.__pm * evalAt(node.k, env);
     default:     return NaN;
   }
 }
 
-const diff = (eq, env) => evalAt(eq.l, env) - evalAt(eq.r, env);
+const hasPm = (root) => { let yes = false; walk(root, (n) => { if (n.kind === "pm") yes = true; }); return yes; };
+
+/* An equation with a ± in it holds wherever EITHER branch holds, which is
+   exactly where the product of the two branches' differences is zero. That is
+   what lets A² = B become A = ±√B and still be checked: (A − √B)(A + √B) is
+   A² − B. A line without a ± is just its one difference. */
+const diffOf = (eq, env) => (hasPm(eq)
+  ? diffAt(eq, { ...env, __pm: 1 }) * diffAt(eq, { ...env, __pm: -1 })
+  : diffAt(eq, env));
+const diffAt = (eq, env) => evalAt(eq.l, env) - evalAt(eq.r, env);
 
 /** The value of a one-sided line. */
 const value = (root, env) => evalAt(root.e, env);
@@ -59,10 +70,19 @@ const value = (root, env) => evalAt(root.e, env);
  * Returns { ok, why } — `why` is written for the student, not the console.
  */
 export function preservesSolutions(prev, next, { samples = 64, given = null, scaledBy = null } = {}) {
-  const names = [...new Set([...varsIn(prev), ...varsIn(next)])];
+  const names = [...new Set([...varsIn(prev), ...varsIn(next), ...(scaledBy ? varsIn(scaledBy) : [])])].sort();
   const fixed = given || {};
-  const sample = (i, n) =>
-    n in fixed ? fixed[n] : (i % 7) - 3 + (i * 0.37) % 1.9 + (i === 0 ? 0.5 : 0);
+  /* Every letter gets its OWN run of values. Giving them all the same value at
+     each sample (as this once did) cannot tell a from b — a step that swapped
+     them would pass — and it makes b² − 4ac come out −3s² every time, so every
+     line after a square root would be impossible to check. */
+  const slot = new Map(names.map((n, k) => [n, k]));
+  const sample = (i, n) => {
+    if (n in fixed) return fixed[n];
+    const k = slot.get(n) ?? 0;
+    return (((i * (3 + 2 * k) + 5 * k) % 13) / 2) - 3 + (((i * 0.37 + k * 0.61) % 1) * 0.9) + (i === 0 ? 0.5 : 0);
+  };
+  const branches = hasPm(prev) || hasPm(next) ? [1, -1] : [1];
 
   if (prev.kind === "expr" || next.kind === "expr") {
     if (prev.kind !== next.kind) return { ok: false, why: "that turns it into a different kind of thing" };
@@ -70,12 +90,14 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
     for (let i = 0; i < samples; i++) {
       const env = {};
       for (const n of names) env[n] = sample(i, n);
-      const a = value(prev, env);
-      const b = value(next, env);
-      if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
-      usable++;
-      if (Math.abs(a - b) > 1e-7 * Math.max(1, Math.abs(a), Math.abs(b))) {
-        return { ok: false, why: "that does not come to the same thing" };
+      for (const s of branches) {
+        const a = value(prev, { ...env, __pm: s });
+        const b = value(next, { ...env, __pm: s });
+        if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+        usable++;
+        if (Math.abs(a - b) > 1e-7 * Math.max(1, Math.abs(a), Math.abs(b))) {
+          return { ok: false, why: "that does not come to the same thing" };
+        }
       }
     }
     if (usable < 6) return { ok: false, why: "I could not check that move, so I will not make it" };
@@ -88,14 +110,15 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
      multiplying by a LETTER — which has no constant ratio at all, and which is
      the one move that gets an unknown out from under a fraction bar. */
   if (scaledBy) {
-    const all = [...new Set([...names, ...varsIn(scaledBy)])];
     let usable = 0;
+    // Both sides with a ± are a product of two branches, each scaled by k.
+    const power = hasPm(prev) && hasPm(next) ? 2 : 1;
     for (let i = 0; i < samples; i++) {
       const env = {};
-      for (const n of all) env[n] = sample(i, n);
-      const k = evalAt(scaledBy, env);
-      const a = diff(prev, env);
-      const b = diff(next, env);
+      for (const n of names) env[n] = sample(i, n);
+      const k = evalAt(scaledBy, env) ** power;
+      const a = diffOf(prev, env);
+      const b = diffOf(next, env);
       if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(k)) continue;
       if (Math.abs(k) < 1e-6) continue;
       usable++;
@@ -115,8 +138,8 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
     // Spread the samples over awkward values too, not just tidy small ones.
     for (const n of names) env[n] = sample(i, n);
 
-    const a = diff(prev, env);
-    const b = diff(next, env);
+    const a = diffOf(prev, env);
+    const b = diffOf(next, env);
     if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
 
     const scale = Math.max(1, Math.abs(a), Math.abs(b));

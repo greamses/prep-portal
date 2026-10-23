@@ -18,7 +18,7 @@
 
 import * as A from "./ast.js";
 import * as R from "./rational.js";
-import { offers, hasSubstitutions, asNumbers } from "./ops.js";
+import { offers, hasSubstitutions, asNumbers, TIDY } from "./ops.js";
 import { preservesSolutions } from "./verify.js";
 import { plain } from "./layout.js";
 
@@ -37,6 +37,7 @@ const LAST = 99;
    is what keeps the two from ever disagreeing. */
 const isNumberNode = (n) =>
   n.kind === "num" ||
+  (n.kind === "pm" && isNumberNode(n.k)) ||
   isSimpleSurd(n) ||
   (n.kind === "neg" && isNumberNode(n.k)) ||
   // 2√3: a whole number in front of a simplest surd.
@@ -72,7 +73,14 @@ export function isSolved(eq, { given = null } = {}) {
     return !A.allTerms(eq).some((t) => offers(eq, t.id, { given }).length > 0);
   }
   if (hasSubstitutions(eq, given)) return false;
-  return eq.l.kind === "var" && A.termsOf(eq.r).length === 1 && isNumberNode(eq.r);
+  /* Finished means a letter on its own on the left that does not appear on the
+     right — x = 5, but just as much t = (v − u)/a or the quadratic formula,
+     which are what rearranging a formula is FOR — with nothing left on the
+     right that a tidy-up would still change. */
+  if (eq.l.kind !== "var" || A.varsIn(eq.r).includes(eq.l.name)) return false;
+  if (A.termsOf(eq.r).length === 1 && isNumberNode(eq.r)) return true;
+  const right = A.allTerms(eq).filter((t) => A.findById(eq.r, t.id));
+  return !right.some((t) => offers(eq, t.id, { given }).some((o) => TIDY.has(o.key)));
 }
 
 /**

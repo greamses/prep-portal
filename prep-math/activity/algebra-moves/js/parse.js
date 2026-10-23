@@ -58,6 +58,7 @@ function tokenise(src) {
     if (c === "×" || c === "·") { out.push({ t: "*", v: "*", at: i }); i++; continue; }
     if (c === "÷") { out.push({ t: "/", v: "/", at: i }); i++; continue; }
     if (c === "−") { out.push({ t: "-", v: "-", at: i }); i++; continue; }
+    if (c === "±") { out.push({ t: "pm", v: "±", at: i }); i++; continue; }
     throw new SyntaxError(`I do not know what to do with "${c}".`);
   }
   out.push({ t: "end", v: "", at: src.length });
@@ -121,6 +122,7 @@ export function parse(src) {
   function factor() {
     const mark = from();
     if (peek().t === "-") { p++; return span(mark, A.neg(factor())); }
+    if (peek().t === "pm") { p++; return span(mark, A.pm(factor())); }
     if (peek().t === "+") { p++; return span(mark, factor()); }
     return power();
   }
@@ -150,6 +152,7 @@ export function parse(src) {
       const at = from();
       if (tk.t === "+") { p++; terms.push(term()); continue; }
       if (tk.t === "-") { p++; terms.push(span(at, A.neg(term()))); continue; }
+      if (tk.t === "pm") { p++; terms.push(span(at, A.pm(term()))); continue; }
       break;
     }
     return span(mark, terms.length === 1 ? terms[0] : A.sum(terms));

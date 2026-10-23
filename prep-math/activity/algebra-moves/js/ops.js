@@ -21,6 +21,7 @@
 import * as A from "./ast.js";
 import * as R from "./rational.js";
 import { plain } from "./layout.js";
+import { preservesSolutions } from "./verify.js";
 
 /** Where a node sits, if it is one of the terms of SOME container — a true
     side of the line, or the numerator/denominator of a fraction anywhere in
@@ -537,7 +538,8 @@ export function simplifySurd(eq, id) {
   const node = A.findById(eq, id);
   if (!node || node.kind !== "root") return { error: "That is not a square root." };
   const v = A.exactValue(node.k);
-  if (!v || R.isNegative(v)) return { error: "I only simplify the square root of a number." };
+  if (!v) return simplifyLetterSurd(eq, id, node);
+  if (R.isNegative(v)) return { error: "I only simplify the square root of a number that is not negative." };
   // √(p/q) is √(pq)/q, so a fraction under the root comes out rationalised.
   const { out, inside } = R.squareSplit(v.n * v.d);
   // Judged on the number, not the writing — (√3) typed in brackets is √3 already.
@@ -547,6 +549,26 @@ export function simplifySurd(eq, id) {
     : A.prod([A.num(R.rat(out)), A.root(A.num(R.rat(inside)))]);
   const next = v.d === 1n ? core : A.frac(core, A.num(R.rat(v.d)));
   if (plain(next) === plain(node)) return { error: "That surd is as simple as it goes." };
+  return { eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next), note: `${plain(node)} is ${plain(next)}` };
+}
+
+/* √(4a²) is 2a and √(12b³) is 2b√(3b) — the square part of a monomial comes
+   out. Whether that is TRUE depends on signs (√(a²) is |a|), so this offers
+   it and leaves the verifier to say yes only where it holds: under a ±, where
+   either sign is fine, it does; on its own it does not. */
+function simplifyLetterSurd(eq, id, node) {
+  const m = mono(node.k);
+  if (!m || !R.isInt(m.c) || R.isNegative(m.c)) return { error: "I only simplify the root of a number or a simple term." };
+  const { out, inside } = R.squareSplit(m.c.n);
+  const outPows = new Map(), inPows = new Map();
+  for (const [n, p] of m.pows) {
+    if (p >= 2) outPows.set(n, Math.floor(p / 2));
+    if (p % 2) inPows.set(n, 1);
+  }
+  if (out === 1n && outPows.size === 0) return { error: "There is no square to take out of that root." };
+  const outside = monoNode({ c: R.rat(out), pows: outPows });
+  const under = { c: R.rat(inside), pows: inPows };
+  const next = isMonoOne(under) ? outside : A.prod([...(outside.kind === "prod" ? outside.kids : [outside]), A.root(monoNode(under))]);
   return { eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next), note: `${plain(node)} is ${plain(next)}` };
 }
 
@@ -613,13 +635,282 @@ function nodeTidies(eq, node) {
   if (node.kind === "pow" || node.kind === "prod" || node.kind === "frac") {
     t("indices", "Use the laws of indices", "same base", indexLaw(eq, node.id));
   }
-  if (node.kind === "root") t("surd", "Simplify the surd", "take out the square factor", simplifySurd(eq, node.id));
+  if (node.kind === "root") {
+    t("surd", "Simplify the surd", "take out the square factor", simplifySurd(eq, node.id));
+    t("surd", "Root the top and the bottom", "√(a/b) = √a/√b", rootOfFraction(eq, node.id));
+  }
   if (node.kind === "prod") t("surd", "Multiply the roots", "√a × √b = √(ab)", multiplySurds(eq, node.id));
   if (node.kind === "frac") {
     t("surd", "Divide the roots", "√a ÷ √b = √(a/b)", divideSurds(eq, node.id));
     t("surd", "Clear the root off the bottom", "multiply top and bottom by it", rationalise(eq, node.id));
   }
   return out;
+}
+
+/* ── Monomials ──────────────────────────────────────────────────────────────
+   A term read as coefficient × letters-to-powers: 4a²c is {4, a:2, c:1}. What
+   a lowest common denominator is made of — the LCD of a and 4a² is 4a², and a
+   needs times 4a to get there. A surd is not a monomial here. */
+
+const gcdBig = (a, b) => { a = a < 0n ? -a : a; b = b < 0n ? -b : b; while (b) [a, b] = [b, a % b]; return a; };
+
+function mono(node) {
+  const r = A.readTerm(node);
+  if (!r || r.vars.some((v) => v.startsWith("√"))) return null;
+  const pows = new Map();
+  for (const v of r.vars) pows.set(v, (pows.get(v) || 0) + 1);
+  return { c: r.c, pows };
+}
+const isMonoOne = (m) => R.isOne(m.c) && m.pows.size === 0;
+function monoNode(m) {
+  const nodes = [...m.pows.keys()].sort().map((n) => {
+    const p = m.pows.get(n);
+    return p === 1 ? A.vr(n) : A.pow(A.vr(n), A.num(R.rat(BigInt(p))));
+  });
+  return A.termFrom(m.c, nodes);
+}
+function mulMono(a, b) {
+  const pows = new Map(a.pows);
+  for (const [n, p] of b.pows) pows.set(n, (pows.get(n) || 0) + p);
+  return { c: R.mul(a.c, b.c), pows };
+}
+function lcmMono(a, b) {
+  const ca = R.abs(a.c), cb = R.abs(b.c);
+  const c = R.isInt(ca) && R.isInt(cb) ? R.rat((ca.n / gcdBig(ca.n, cb.n)) * cb.n) : R.mul(ca, cb);
+  const pows = new Map(a.pows);
+  for (const [n, p] of b.pows) pows.set(n, Math.max(pows.get(n) || 0, p));
+  return { c, pows };
+}
+function divMono(a, b) {
+  const pows = new Map(a.pows);
+  for (const [n, p] of b.pows) {
+    const left = (pows.get(n) || 0) - p;
+    if (left < 0) return null;
+    if (left === 0) pows.delete(n); else pows.set(n, left);
+  }
+  return { c: R.div(a.c, b.c), pows };
+}
+
+/* ── Adding fractions ───────────────────────────────────────────────────────
+   Like: same bottom, add the tops. Unlike: over the lowest common bottom, each
+   top multiplied by what its bottom was short of — −c/a + b²/(4a²) is
+   (−4ac + b²)/(4a²). A whole term next to a fraction counts as over 1. When a
+   bottom is not a monomial the common bottom is just the product. */
+
+function asFraction(t) {
+  if (t.kind === "frac") return { top: t.a, den: t.b };
+  if ((t.kind === "neg" || t.kind === "pm") && !t.paren && t.k.kind === "frac") {
+    return { top: t.kind === "neg" ? A.neg(t.k.a) : A.pm(t.k.a), den: t.k.b };
+  }
+  return { top: t, den: null };
+}
+
+function scaleTop(top, m) {
+  if (!m || (m.mono && isMonoOne(m.mono))) return top;
+  if (top.kind === "pm" && !top.paren) return A.pm(scaleTop(top.k, m));
+  const read = m.mono && mono(top);
+  if (read) return monoNode(mulMono(read, m.mono));
+  // Written the way a person would: 1 × (x + 1) is just x + 1, and 2 × x is 2x.
+  const factor = m.node || monoNode(m.mono);
+  const v = A.exactValue(top);
+  if (v && R.isOne(v)) return factor;
+  if (v) return A.prod([top, factor]);
+  return A.prod([factor, top]);
+}
+
+const packSum = (pieces) => {
+  const flat = pieces.flatMap((p) => (p.kind === "sum" && !p.paren ? p.kids : [p]));
+  return flat.length === 1 ? flat[0] : A.sum(flat);
+};
+
+export function addFractions(eq, aId, bId) {
+  const la = locate(eq, aId), lb = locate(eq, bId);
+  if (!la || !lb || la.container.id !== lb.container.id || la.index === lb.index) {
+    return { error: "Those two are not on the same side." };
+  }
+  const [first, second] = la.index < lb.index ? [la, lb] : [lb, la];
+  const fa = asFraction(first.term), fb = asFraction(second.term);
+  if (!fa.den && !fb.den) return { error: "Neither of those is a fraction." };
+  const da = fa.den || A.num(R.ONE), db = fb.den || A.num(R.ONE);
+
+  let den, ma = null, mb = null, like = false;
+  if (plain(da) === plain(db)) { den = da; like = true; }
+  else {
+    const xa = mono(da), xb = mono(db);
+    if (xa && xb) {
+      const L = lcmMono(xa, xb);
+      den = monoNode(L);
+      ma = { mono: divMono(L, xa) };
+      mb = { mono: divMono(L, xb) };
+    } else {
+      // A single letter or number goes in front: x(x + 1), not (x + 1)x.
+      den = xa && !xb ? A.prod([freshCopy(da), freshCopy(db)])
+        : !xa && xb ? A.prod([freshCopy(db), freshCopy(da)])
+        : A.prod([freshCopy(da), freshCopy(db)]);
+      ma = { node: freshCopy(db) };
+      mb = { node: freshCopy(da) };
+    }
+  }
+  const result = A.frac(packSum([scaleTop(fa.top, ma), scaleTop(fb.top, mb)]), den);
+  const nextTerms = first.terms.map((t, i) => (i === first.index ? result : t)).filter((_, i) => i !== second.index);
+  return {
+    eq: setContainer(eq, first, nextTerms), from: flyFrom(eq, result, first.term.id), mark: plain(result),
+    note: like ? `Same bottom, so add the tops: ${plain(result)}` : `Over a common bottom, ${plain(den)}: ${plain(result)}`,
+  };
+}
+
+/** Two neighbouring terms the other way round — b² − 4ac rather than −4ac + b². */
+export function swapTerms(eq, aId, bId) {
+  const la = locate(eq, aId), lb = locate(eq, bId);
+  if (!la || !lb || la.container.id !== lb.container.id || Math.abs(la.index - lb.index) !== 1) {
+    return { error: "Those two are not next to each other." };
+  }
+  const terms = [...la.terms];
+  [terms[la.index], terms[lb.index]] = [terms[lb.index], terms[la.index]];
+  const next = A.sideFromTerms(terms, la.container);
+  return { eq: setContainer(eq, la, terms), from: new Map(), mark: plain(next), note: "The same terms, the other way round" };
+}
+
+/* ── Anything to both sides ─────────────────────────────────────────────────
+   What the = is for: add, take away, multiply or divide BOTH sides by whatever
+   the student types — a number, a letter, (b/(2a))². Multiplying or dividing
+   by something with a letter in it says what it scaled by, so the verifier
+   checks exactly that (and, as always, refuses a multiplier that is zero). */
+
+export function applyToBoth(eq, op, node) {
+  if (!A.isEquation(eq)) return { error: TWO_SIDED };
+  const said = plain(node);
+  const isZero = (side) => { const v = A.exactValue(side); return !!v && R.isZero(v); };
+  const value = A.exactValue(node);
+  const pieces = [node, freshCopy(node)];
+
+  if (op === "+" || op === "−") {
+    const put = (side, piece) => {
+      let t = piece;
+      if (op === "−") t = piece.kind === "neg" && !piece.paren ? piece.k : A.neg(piece);
+      if (isZero(side)) return t;
+      const extra = t.kind === "sum" && !t.paren ? t.kids : [t];
+      return A.sideFromTerms([...A.termsOf(side), ...extra], side);
+    };
+    return {
+      eq: A.eqn(put(eq.l, pieces[0]), put(eq.r, pieces[1]), eq.id), from: new Map(),
+      mark: `${op}${said}`, dir: "both",
+      note: op === "+" ? `Add ${said} to both sides` : `Take ${said} from both sides`,
+    };
+  }
+  if (op === "×") {
+    if (value) { const r = timesBoth(eq, value); return r.error ? r : { ...r, mark: `×${mul(value)}`, dir: "both" }; }
+    const grow = (side, piece) => (isZero(side) ? side : A.prod([piece, side]));
+    return {
+      eq: A.eqn(grow(eq.l, pieces[0]), grow(eq.r, pieces[1]), eq.id), from: new Map(),
+      scaledBy: freshCopy(node), mark: `×${said}`, dir: "both", note: `Multiply both sides by ${said}`,
+    };
+  }
+  if (op === "÷") {
+    if (value) { const r = divideBoth(eq, value); return r.error ? r : { ...r, mark: `÷${mul(value)}`, dir: "both" }; }
+    // Nothing divided by anything is still nothing — 0/a is written 0.
+    const cut = (side, piece) => (isZero(side) ? side : A.frac(side, piece));
+    return {
+      eq: A.eqn(cut(eq.l, pieces[0]), cut(eq.r, pieces[1]), eq.id), from: new Map(),
+      scaledBy: A.frac(A.num(R.ONE), freshCopy(node)), mark: `÷${said}`, dir: "both",
+      note: `Divide both sides by ${said}`,
+    };
+  }
+  return { error: "I do not know that operation." };
+}
+
+/** A² = B becomes A = ±√B. Two answers, written as one. */
+export function rootBoth(eq) {
+  if (!A.isEquation(eq)) return { error: TWO_SIDED };
+  const isSquare = (n) => n.kind === "pow" && R.same(A.exactValue(n.e) || R.ZERO, R.rat(2n));
+  let next;
+  if (isSquare(eq.l)) next = A.eqn(unbracket(eq.l.b), A.pm(A.root(eq.r)), eq.id);
+  else if (isSquare(eq.r)) next = A.eqn(A.pm(A.root(eq.l)), unbracket(eq.r.b), eq.id);
+  else return { error: "There is no square standing alone on a side to take the root of." };
+  return { eq: next, from: new Map(), mark: "√", note: "Square root of both sides — a square root can be either sign, so ±" };
+}
+
+/* ── Completing the square ──────────────────────────────────────────────────
+   x² + Px is (x + P/2)² − (P/2)². When the side already holds exactly that
+   (P/2)² — the student added it to both sides — it is a perfect square and
+   folds to (x + P/2)² outright. P can have letters in it: (b/a)x gives
+   (x + b/(2a))². Whether the constant really IS (P/2)² is checked by value,
+   never by how it happens to be written. */
+
+/** The coefficient of a single factor of the letter `name` in a term, or null. */
+function splitOff(t, name) {
+  if (t.kind === "neg" && !t.paren) { const c = splitOff(t.k, name); return c && A.neg(c); }
+  if (t.kind === "var" && t.name === name) return A.num(R.ONE);
+  if (t.kind === "prod") {
+    const hits = t.kids.filter((k) => k.kind === "var" && k.name === name);
+    const rest = t.kids.filter((k) => !(k.kind === "var" && k.name === name));
+    if (hits.length !== 1 || rest.some((k) => A.varsIn(k).includes(name))) return null;
+    return packFactors(rest);
+  }
+  if (t.kind === "frac" && !A.varsIn(t.b).includes(name)) {
+    const c = splitOff(t.a, name);
+    return c && A.frac(c, t.b);
+  }
+  return null;
+}
+
+/** P/2, written the way a person would: b/a halves to b/(2a), 6 to 3. */
+function half(P) {
+  const v = A.exactValue(P);
+  if (v) return A.numberNode(R.div(v, R.rat(2n)));
+  if (P.kind === "neg" && !P.paren) return A.neg(half(P.k));
+  if (P.kind === "frac") {
+    const d = mono(P.b);
+    return A.frac(P.a, d ? monoNode(mulMono(d, { c: R.rat(2n), pows: new Map() })) : A.prod([A.num(R.rat(2n)), P.b]));
+  }
+  return A.frac(P, A.num(R.rat(2n)));
+}
+
+const sameValue = (a, b) => preservesSolutions(A.expression(a), A.expression(b)).ok;
+
+export function squareUp(eq, id) {
+  const loc = locate(eq, id);
+  if (!loc) return { error: "That is not one of the terms." };
+  const isSq = (t) => t.kind === "pow" && !t.paren && t.b.kind === "var" && R.same(A.exactValue(t.e) || R.ZERO, R.rat(2n));
+  const sqIndex = loc.terms.findIndex(isSq);
+  if (sqIndex < 0) return { error: "There is no x² on that side to build a square from." };
+  const sq = loc.terms[sqIndex];
+  const name = sq.b.name;
+  let linIndex = -1, P = null;
+  loc.terms.forEach((t, i) => {
+    if (i === sqIndex || P) return;
+    const c = splitOff(t, name);
+    if (c && !A.varsIn(c).includes(name)) { P = c; linIndex = i; }
+  });
+  if (!P) return { error: `There is no term in ${name} alone to pair with ${name}².` };
+  const S = half(P);
+  const squared = (s) => A.pow(A.sum([A.vr(name), s]), A.num(R.rat(2n)));
+  const rest = loc.terms.filter((_, i) => i !== sqIndex && i !== linIndex);
+
+  let terms, how;
+  if (rest.length === 1 && sameValue(rest[0], A.pow(freshCopy(S), A.num(R.rat(2n))))) {
+    terms = [squared(S)];
+    how = "It is a perfect square";
+  } else {
+    terms = [squared(S), A.neg(A.pow(freshCopy(S), A.num(R.rat(2n)))), ...rest];
+    how = "Complete the square";
+  }
+  const result = A.sideFromTerms(terms, loc.container);
+  return {
+    eq: setContainer(eq, loc, terms), from: flyFrom(eq, result, sq.id), mark: plain(result),
+    note: `${how}: ${plain(result)}`,
+  };
+}
+
+/** √(a/b) is √a/√b. */
+export function rootOfFraction(eq, id) {
+  const node = A.findById(eq, id);
+  if (!node || node.kind !== "root" || node.k.kind !== "frac") return { error: "That is not the root of a fraction." };
+  const next = A.frac(A.root(node.k.a), A.root(node.k.b));
+  return {
+    eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next),
+    note: `The root of a fraction is the root of the top over the root of the bottom: ${plain(next)}`,
+  };
 }
 
 /* ── More than one at once ──────────────────────────────────────────────────
@@ -1052,6 +1343,22 @@ export function offers(eq, id, { given = null } = {}) {
     out.push({ key: "swap", label: "Turn it round", hint: "same equation, read the other way", mark: "⇄", run: () => swapSides(eq) });
   }
 
+  // A fraction beside another fraction on the same side: put them over one bottom.
+  if (asFraction(term).den) {
+    for (const other of terms) {
+      if (other === term || !asFraction(other).den) continue;
+      const trial = addFractions(eq, id, other.id);
+      if (!trial.error) out.push({ key: "addfrac", label: `Add it to ${plain(other)}`, hint: "one bottom", mark: trial.mark, run: () => trial });
+      break;
+    }
+  }
+
+  // x² with a term in x beside it: complete the square, or see it is one.
+  if (term.kind === "pow" && term.b.kind === "var") {
+    const trial = squareUp(eq, id);
+    if (!trial.error) out.push({ key: "square", label: trial.note.split(":")[0], hint: "(x + p/2)²", mark: trial.mark, run: () => trial });
+  }
+
   // The laws of indices and the surd rules, anywhere inside the term.
   {
     const marks = new Set(out.map((o) => o.mark));
@@ -1186,6 +1493,13 @@ export function atomOffers(eq, key, { given = null } = {}) {
         const terms = A.termsOf(eq[side]);
         if (terms.length === 1) pick(pool(terms[0]), "divide", "times");
       }
+      add(direct("root", "Square root of both sides (±)", "a square on one side", rootBoth(eq)));
+      /* The four that need the student to say WHAT: they carry no run of their
+         own — the page opens the keypad for them and builds the move from what
+         is typed (see applyToBoth). */
+      for (const [op, word] of [["+", "Add"], ["−", "Take away"], ["×", "Multiply by"], ["÷", "Divide by"]]) {
+        out.push({ key: "both", op, needsInput: true, label: `${word} something on both sides`, hint: "type it on the keypad", mark: `${op} ▢` });
+      }
     }
   } else if (slot.startsWith("op")) {
     const sum = A.findById(eq, nodeId);
@@ -1195,8 +1509,13 @@ export function atomOffers(eq, key, { given = null } = {}) {
     const isContainer = !!sum && A.containersOf(eq).some((c) => c.id === sum.id);
     if (isContainer && kid && prev) {
       add(direct("combine", `${plain(prev)} and ${plain(kid)} together`, "like terms", combine(eq, prev.id, kid.id)));
+      if (asFraction(prev).den || asFraction(kid).den) {
+        add(direct("addfrac", `${plain(prev)} and ${plain(kid)} over one bottom`, "add the fractions", addFractions(eq, prev.id, kid.id)));
+      }
+      add(direct("square", "Complete the square", "(x + p/2)²", squareUp(eq, kid.id)));
     }
     pick(pool(atomTerm(eq, key)), "combine", "workout", "dropzero", "expand", "across");
+    if (isContainer && kid && prev) add(direct("reorder", `Swap ${plain(prev)} and ${plain(kid)} round`, "same terms, other order", swapTerms(eq, prev.id, kid.id)));
     // A + on top of a bar: the fraction it sits in can be split at it.
     const parent = sum && A.parentOf(eq, sum.id);
     if (parent && parent.kind === "frac" && parent.a === sum) {
@@ -1204,14 +1523,15 @@ export function atomOffers(eq, key, { given = null } = {}) {
       if (fracTerm) add(splitOffer(fracTerm));
     }
   } else if (slot === "sign") {
-    pick(pool(atomTerm(eq, key)), "across", "flip", "expand", "combine", "workout");
+    pick(pool(atomTerm(eq, key)), "across", "flip", "expand", "combine", "addfrac", "workout");
   } else if (slot === "bar") {
     const T = atomTerm(eq, key);
     add(direct("cancel", "Cancel it down", "same number top and bottom", cancel(eq, nodeId)));
     tidiesAbove(nodeId);
     add(workOffer(nodeId));
     if (T && fracOf(T)?.id === nodeId) add(splitOffer(T));
-    if (T && T.id === nodeId) pick(pool(T), "times", "across");
+    if (T && T.id === nodeId) pick(pool(T), "times", "addfrac", "across");
+    else if (T && fracOf(T)?.id === nodeId) pick(pool(T), "addfrac");
   } else if (slot === "rad" || slot === "vinc") {
     // The √ itself, or the bar over what it roots.
     tidiesAbove(nodeId);
@@ -1248,13 +1568,39 @@ export function atomOffers(eq, key, { given = null } = {}) {
         }
       }
     }
+    /* Move a LETTER: the a of at crosses as ÷a — the step that makes a letter
+       the subject of a formula. Dividing by a letter assumes it is not zero,
+       which is what every formula rearrangement assumes; the verifier checks
+       the line is the old one divided by exactly that letter. */
+    if (leaf && leaf.kind === "var" && T && (isFactorOf(T, leaf) || T === leaf || (T.kind === "neg" && T.k === leaf))) {
+      const at = locate(eq, T.id);
+      if (A.isEquation(eq) && at?.topSide) {
+        const d = applyToBoth(eq, "÷", A.vr(leaf.name));
+        if (!d.error) add({ key: "divide", label: `Divide both sides by ${leaf.name}`, hint: "move just the letter in front", mark: `÷${leaf.name}`, dir: at.topSide === "r" ? "l" : "r", run: () => d });
+      }
+    }
     for (const F of chain) {
-      if (F.kind === "frac" && A.findById(F.b, nodeId)) pick(pool(F), "times");
+      if (F.kind === "frac" && A.findById(F.b, nodeId)) {
+        pick(pool(F), "times");
+        // Anything under the bar — a letter, 2a — multiplies the bottom through.
+        const at = locate(eq, F.id);
+        if (A.isEquation(eq) && at?.topSide && A.varsIn(F.b).length) {
+          const m = applyToBoth(eq, "×", freshCopy(F.b));
+          if (!m.error) add({ key: "times", label: `Multiply both sides by ${plain(F.b)}`, hint: "get it out from under the bar", mark: m.mark, dir: at.topSide === "r" ? "l" : "r", run: () => m });
+        }
+      }
       // Written on top of a bar: split the fraction so this piece is free.
       const f = fracOf(F);
       if (f && A.findById(f.a, nodeId)) add(splitOffer(F));
     }
-    pick(p, "across", "combine", "dropzero");
+    pick(p, "across", "combine", "square", "addfrac", "dropzero");
+    /* Inside a fraction, the innermost term is just the top (the c of c/a),
+       which cannot cross the = on its own. The whole term it belongs to — c/a
+       — can, so reach out to the first one standing on a side. */
+    if (T && !locate(eq, T.id)?.topSide) {
+      const whole = chain.find((F) => locate(eq, F.id)?.topSide);
+      if (whole) pick(pool(whole), "across", "combine", "addfrac");
+    }
     tidiesAbove(nodeId);
     // Arithmetic still waiting around it — an exponent, a bracketed sum.
     if (leaf && T) {
@@ -1294,3 +1640,7 @@ export function multiOffers(eq, keys, { given = null } = {}) {
   if (!folded.error) out.push({ key: "combine", label: folded.note, hint: "like terms", mark: folded.mark, run: () => folded });
   return hasSubstitutions(eq, given) ? [] : out;
 }
+
+/** The tidy-ups: moves that leave the same thing written more simply. A side
+    with none of these left on any of its terms is as tidy as it goes. */
+export const TIDY = new Set(["combine", "workout", "cancel", "dropzero", "indices", "surd", "addfrac"]);
