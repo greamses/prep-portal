@@ -3,6 +3,21 @@ server/.env
 server/serviceAccountKey.json
 server/googleCloudKey.json
 
+# Local tooling, never part of the site. With outputDirectory "." anything
+# uploaded is SERVED — .claude/settings.local.json was publicly readable, and
+# .claude (worktrees) was two-thirds of every deployment's size.
+.claude
+.github
+.vscode
+.env
+.env.*
+.firebaserc
+.hintrc
+docs
+scripts
+cloudflare
+DESIGN.md
+
 # Retired — Algebra Moves replaced it. Kept in git, not deployed.
 prep-math/drag
 
