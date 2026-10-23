@@ -143,7 +143,17 @@ const slugify = (s) =>
     .replace(/-+$/g, "") || "lesson";
 
 function metaDescription(post) {
-  const src = post.excerpt && post.excerpt.trim() ? post.excerpt : stripHtml(post.content);
+  // Section headings ("The Hook", "Meet the Animal") are not prose — drop them,
+  // markdown or HTML, so the snippet starts on the first real sentence. The
+  // stored excerpt is only the body's opening cut short, headings and all, so
+  // it is used only when there is no body.
+  // A lesson-note post has its own lede paragraph; that is the summary.
+  const html = markdownToHtml(post.content || "");
+  const lede = html.match(/<p class="ln-lede">([\s\S]*?)<\/p>/);
+  const body = stripHtml(
+    lede ? lede[1] : html.replace(/<(h[1-6])\b[^>]*>[\s\S]*?<\/\1>|<div class="ln-kicker">[\s\S]*?<\/div>/gi, " ")
+  );
+  const src = body || (post.excerpt || "").trim();
   if (src.length <= 155) return src;
   return src.slice(0, 155).replace(/\s+\S*$/, "") + "…";
 }

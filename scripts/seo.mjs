@@ -24,6 +24,7 @@
  *      all falls through to a real 404 instead of a redirect to the login.
  *   5. index.html — the footer's static list of links to every section, so the
  *      home page links to everything without waiting for the nav script.
+ *   6. blogs/index.html — a static card linking to every exported blog post.
  *
  * Idempotent: running it twice changes nothing the second time.
  */
@@ -351,6 +352,39 @@ write("sitemap.xml", sitemap);
     L.push("          </div>");
   }
   L.push("        </nav>", "        <!-- /seo:explore -->", "");
+  write(f, src.replace(re, L.join("\n")));
+}
+
+/* ── 6: the blog index's static post cards ──────────────────────────────── */
+// blog.js fetches the feed and replaces these, but a crawler (and anyone
+// before the script runs) gets real cards with real links to every post page
+// written by server/scripts/export-blog-posts.js.
+{
+  const f = "blogs/index.html";
+  const src = read(f);
+  const re = /[ \t]*<!-- seo:posts -->[\s\S]*?<!-- \/seo:posts -->\n?/;
+  if (!re.test(src)) throw new Error("seo: blogs/index.html has no seo:posts markers");
+  const unesc = (s) => s.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+  const posts = allHtml.filter(isBlogPost).map((file) => {
+    const html = read(file);
+    return {
+      file,
+      title: unesc((html.match(/<h1 class="post-title">([^<]*)<\/h1>/) || [])[1] || ""),
+      desc: unesc((html.match(/<meta name="description" content="([^"]*)"/) || [])[1] || ""),
+      badge: unesc((html.match(/<span class="sci-badge[^"]*">([^<]*)<\/span>/) || [])[1] || ""),
+      date: (html.match(/"datePublished":"([^"]+)"/) || [])[1] || "",
+    };
+  }).filter((p) => p.title).sort((a, b) => b.date.localeCompare(a.date));
+  const L = ["        <!-- seo:posts -->"];
+  posts.forEach((p, i) => {
+    L.push(`        <a class="science-card pp-receipt science-card--p${i % 6}" href="${urlPath(p.file)}">`);
+    L.push(`          <div class="card-inner pp-receipt__paper">`);
+    if (p.badge) L.push(`            <div class="card-badges"><span class="pp-sticky pp-sticky--c${i % 6}">${esc(p.badge)}</span></div>`);
+    L.push(`            <h2 class="card-title">${esc(p.title)}</h2>`);
+    if (p.desc) L.push(`            <p class="card-excerpt">${esc(p.desc)}</p>`);
+    L.push(`          </div>`, `        </a>`);
+  });
+  L.push("        <!-- /seo:posts -->", "");
   write(f, src.replace(re, L.join("\n")));
 }
 
