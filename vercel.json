@@ -1,6 +1,7 @@
 {
   "version": 2,
   "outputDirectory": ".",
+  "git": { "deploymentEnabled": false },
   "functions": {
     "api/index.js": {
       "includeFiles": "{tts-cache/**,utils/features.js,prep-math/activity/algebra-moves/js/**}"
