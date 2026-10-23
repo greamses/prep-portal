@@ -31,6 +31,7 @@ function evalAt(node, env) {
       return Math.abs(b) < 1e-9 ? NaN : evalAt(node.a, env) / b;
     }
     case "pow":  return Math.pow(evalAt(node.b, env), evalAt(node.e, env));
+    case "root": { const v = evalAt(node.k, env); return v < 0 ? NaN : Math.sqrt(v); }
     default:     return NaN;
   }
 }

@@ -17,6 +17,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import * as A from "./ast.js";
+import * as R from "./rational.js";
 import { offers, hasSubstitutions, asNumbers } from "./ops.js";
 import { preservesSolutions } from "./verify.js";
 import { plain } from "./layout.js";
@@ -36,8 +37,21 @@ const LAST = 99;
    is what keeps the two from ever disagreeing. */
 const isNumberNode = (n) =>
   n.kind === "num" ||
+  isSimpleSurd(n) ||
   (n.kind === "neg" && isNumberNode(n.k)) ||
-  (n.kind === "frac" && isNumberNode(n.a) && isNumberNode(n.b) && isLowest(n));
+  // 2√3: a whole number in front of a simplest surd.
+  (n.kind === "prod" && n.kids.length === 2 && n.kids[0].kind === "num" && R.isInt(n.kids[0].v)
+    && !R.isOne(n.kids[0].v) && isSimpleSurd(n.kids[1])) ||
+  (n.kind === "frac" && isNumberNode(n.a) && isNumberNode(n.b) &&
+    (isLowest(n) || (A.exactValue(n.a) === null && n.b.kind === "num" && R.isInt(n.b.v))));
+
+/* A surd as simple as it goes: a whole number under the root with no square
+   factor left in it. √3 is an answer; √12 is still 2√3 waiting to happen. */
+function isSimpleSurd(n) {
+  if (n.kind !== "root") return false;
+  const v = A.exactValue(n.k);
+  return !!v && R.isInt(v) && v.n > 1n && R.squareSplit(v.n).out === 1n;
+}
 
 function isLowest(n) {
   const v = A.exactValue(n);

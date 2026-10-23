@@ -326,6 +326,30 @@
 .am-move:active { transform: translateY(1px); box-shadow: none; }
 .am-move:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
+/* The chip's face is SET, not spelled: a fraction stacked, a root with its bar,
+   a power raised — drawn by the same typesetter as the canvas. An operator in
+   front (−, ÷, ×) stays a glyph beside it. */
+.am-move {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+}
+.am-move__face { display: inline-flex; align-items: center; gap: 0.04em; line-height: 1; }
+.am-move__op { font-size: 1.2rem; }
+.am-move__ink { display: block; overflow: visible; }
+
+/* A move that carries something over the = wears an arrow over it, pointing
+   the way it goes: away from the side the term is on. */
+.am-move__arrow {
+  display: block;
+  width: 1.7rem;
+  height: 0.55rem;
+  color: var(--accent-secondary);
+}
+.am-move__arrow--l { transform: scaleX(-1); }
+
 /* ── What the tool is saying ────────────────────────────────────────────── */
 .am-say {
   position: absolute;

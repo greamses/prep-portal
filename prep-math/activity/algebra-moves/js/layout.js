@@ -71,6 +71,8 @@ function needsBrackets(node, parentKind, slot) {
   // because the keypad's fraction key types a pair into each half.
   if (parentKind === "frac") return false;
   if (parentKind === "pow" && slot === 1) return false;
+  // A root's bar groups whatever is under it, the way a fraction bar does.
+  if (parentKind === "root") return false;
   if (node.paren) return true;
   switch (parentKind) {
     case "prod": return node.kind === "sum" || (node.kind === "neg" && slot > 0);
@@ -216,6 +218,24 @@ function measureBare(node, size, binary) {
                descent: Math.max(b.descent, e.descent - rise) };
     }
 
+    /* A radical: the √ glyph, grown with what it covers the way a bracket is,
+       and a bar (the vinculum) running over the whole radicand. */
+    case "root": {
+      const k = measure(node.k, size, "root", 0);
+      const gap = 0.1 * size;
+      const rule = Math.max(1, 0.05 * size);
+      const above = k.ascent + gap + rule;               // baseline to the bar
+      const rSize = Math.max(size, (above + k.descent) / (ASC + DESC));
+      const rw = measureText("√", rSize, false);
+      const pad = 0.06 * size;
+      return {
+        ...base, kind: "root", k, gap, rule, rSize, rw, pad,
+        w: rw + pad + k.w + pad,
+        ascent: Math.max(base.ascent, above),
+        descent: Math.max(base.descent, k.descent, (ASC + DESC) * rSize - above),
+      };
+    }
+
     // A one-sided line is drawn as exactly its one side. It keeps a node of its
     // own here so it gets a box like everything else — the keypad's caret walks
     // boxes, and the root is the box that spans the whole line.
@@ -331,6 +351,17 @@ function place(m, x, y, out) {
       place(m.e, x + m.b.w + m.kern, y - m.rise, out);
       break;
 
+    case "root": {
+      const barY = y - m.k.ascent - m.gap - m.rule;
+      // Sit the glyph so its top meets the bar.
+      text("rad", "√", x, barY + ASC * m.rSize, m.rSize, false);
+      place(m.k, x + m.rw + m.pad, y, out);
+      const overlap = 0.04 * m.size;                     // join the bar to the tick
+      out.atoms.push({ key: `${id}#vinc`, nodeId: id, kind: "rule",
+                       x: x + m.rw - overlap, y: barY, w: m.k.w + m.pad * 2 + overlap, h: m.rule });
+      break;
+    }
+
     case "expr":
       place(m.e, x, y, out);
       break;
@@ -381,6 +412,12 @@ export function plain(node, parentKind = null, slot = 0) {
                    (i > 0 && startsWithDigit(k) ? "·" : "") + plain(k, "prod", i)).join(""));
     case "frac": return wrap(`${plain(node.a, "frac", 0)}/${plain(node.b, "frac", 1)}`);
     case "pow":  return wrap(`${plain(node.b, "pow", 0)}^${plain(node.e, "pow", 1)}`);
+    // √3 and √x read back as typed; anything bigger is a parcel: √(3x + 1).
+    case "root": {
+      const simple = node.k.kind === "num" || node.k.kind === "var";
+      const inside = plain(node.k, "root", 0);
+      return wrap(simple ? `√${inside}` : `√(${inside})`);
+    }
     case "eq":   return `${plain(node.l, "eq", 0)} = ${plain(node.r, "eq", 1)}`;
     case "expr": return plain(node.e, "expr", 0);
     default:     return "?";

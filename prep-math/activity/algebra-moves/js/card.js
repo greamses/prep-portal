@@ -15,7 +15,7 @@ import { buildRow, paintRow, flipInto } from "./render.js";
 import { plain } from "./layout.js";
 import { preservesSolutions } from "./verify.js";
 import { isSolved, solvedLetterValue } from "./solve.js";
-import { asNumbers, hasSubstitutions, offerTo, substitute, EQUALS, atomOffers, atomTerm, isEqualsKey } from "./ops.js";
+import { asNumbers, hasSubstitutions, offerTo, substitute, EQUALS, atomOffers, multiOffers, atomTerm, isEqualsKey } from "./ops.js";
 import * as A from "./ast.js";
 import * as R from "./rational.js";
 
@@ -49,7 +49,10 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
   const rows = [];        // { row, offset, note, from }
   // The GLYPH that is picked — its atom key (nodeId#slot), so the 3 and the x
   // of 3x, the + between terms and the = are each a thing of their own.
-  let picked = null;
+  // Several can be picked at once; the LAST one picked is the one the menu
+  // sits beside.
+  let picks = [];
+  const primary = () => picks[picks.length - 1] || null;
   let undone = [];        // lines stepped back off the bottom, newest last
 
   const el = document.createElement("div");
@@ -139,8 +142,8 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
   function paint(entry, live) {
     // The card says whether something is picked up, because the equals sign is
     // only a place to put things while something is in hand.
-    if (live) el.classList.toggle("has-pick", !!picked);
-    const svg = paintRow(entry.row, { live, picked: live ? picked : null });
+    if (live) el.classList.toggle("has-pick", picks.length > 0);
+    const svg = paintRow(entry.row, { live, picked: live ? picks : null });
     const holder = document.createElement("div");
     holder.className = `am-work${live ? " is-live" : ""}`;
     holder.appendChild(svg);
@@ -222,7 +225,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
     // the same travel when the forward arrow is pressed.
     undone.push(rows.pop());
     sheet.removeChild(sheet.lastElementChild);
-    picked = null;
+    picks = [];
     const last = rows[rows.length - 1];
     const fresh = paint(last, true);
     sheet.replaceChild(fresh, sheet.lastElementChild);
@@ -236,16 +239,38 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
   function stepForward() {
     const back = undone.pop();
     if (!back) return;
-    picked = null;
+    picks = [];
     push(back.row.eq, { from: back.from, note: back.note });
     onPick?.(null, api);
   }
 
-  /* ── Tapping a term ──────────────────────────────────────────────────── */
+  /* ── Tapping a glyph ─────────────────────────────────────────────────────
+     A tap picks one glyph. Shift-, Ctrl- or ⌘-click — or HOLDING a glyph on
+     a touch screen — adds it to what is picked instead, so 3x and 5 can be
+     carried over together, or three like terms folded at once. */
+  const HOLD_MS = 450;
+  let holdTimer = null;
+  let heldKey = null;              // a hold already toggled this glyph; eat the click
+
+  function togglePick(key) {
+    picks = picks.includes(key) ? picks.filter((k) => k !== key) : [...picks, key];
+    repaintLive();
+    onPick?.(primary(), api);
+  }
+
   sheet.addEventListener("pointerdown", (e) => {
     const hit = e.target.closest?.(".am-hit");
-    if (hit) e.stopPropagation();      // a term is not a handle for the card
+    if (!hit) return;
+    e.stopPropagation();               // a glyph is not a handle for the card
+    const key = hit.dataset.key;
+    clearTimeout(holdTimer);
+    if (e.pointerType !== "mouse") {
+      holdTimer = setTimeout(() => { heldKey = key; togglePick(key); navigator.vibrate?.(12); }, HOLD_MS);
+    }
   });
+  for (const ev of ["pointerup", "pointercancel", "pointerleave"]) {
+    sheet.addEventListener(ev, () => clearTimeout(holdTimer));
+  }
 
   sheet.addEventListener("click", (e) => {
     const hit = e.target.closest?.(".am-hit");
@@ -256,26 +281,36 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
     if (hit) e.stopPropagation();
 
     const key = hit?.dataset.key || null;
+    if (key && heldKey === key) { heldKey = null; return; }
+    heldKey = null;
 
-    /* A second tap, somewhere else, is a DESTINATION: put the term the first
-       glyph belongs to there — over the =, or onto a like term. If that reads
+    if (key && (e.shiftKey || e.ctrlKey || e.metaKey)) { togglePick(key); return; }
+
+    /* A second tap, somewhere else, is a DESTINATION: put the term(s) the picked
+       glyphs belong to there — over the =, or onto a like term. If that reads
        as a move, it is the move; if it does not, the tap simply picks up the
        glyph that was tapped, which is what a tap always does. */
-    if (picked && key && key !== picked) {
+    if (picks.length && key && !picks.includes(key)) {
       const eq = api.equation;
-      const from = atomTerm(eq, picked);
-      const to = isEqualsKey(key) ? EQUALS : atomTerm(eq, key)?.id;
-      if (from && to && to !== from.id) {
-        const offer = offerTo(eq, from.id, to);
-        if (offer) { onGesture?.(offer, api); return; }
+      if (picks.length > 1 && isEqualsKey(key)) {
+        const many = multiOffers(eq, picks, { given: values }).find((o) => o.key === "across");
+        if (many) { onGesture?.(many, api); return; }
+      } else if (picks.length === 1) {
+        const from = atomTerm(eq, primary());
+        const to = isEqualsKey(key) ? EQUALS : atomTerm(eq, key)?.id;
+        if (from && to && to !== from.id) {
+          const offer = offerTo(eq, from.id, to);
+          if (offer) { onGesture?.(offer, api); return; }
+        }
       }
     }
 
-    const next = key && key !== picked ? key : null;
-    if (next === picked && !hit) return;
-    picked = next;
+    const was = primary();
+    const next = key && !(picks.length === 1 && key === was) ? key : null;
+    if (!next && !picks.length && !hit) return;
+    picks = next ? [next] : [];
     repaintLive();
-    onPick?.(picked, api);
+    onPick?.(primary(), api);
   });
 
   tools.addEventListener("click", (e) => {
@@ -290,7 +325,8 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
     el,
     grip,
     get equation() { return rows[rows.length - 1].row.eq; },
-    get picked() { return picked; },
+    get picked() { return primary(); },
+    get picks() { return [...picks]; },
     get depth() { return rows.length; },
     get solved() { return isSolved(rows[rows.length - 1].row.eq, { given: values }); },
     get given() { return values; },
@@ -311,7 +347,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
     /** Letters in the term the picked glyph belongs to that THIS card was
         never given a value for — candidates for pulling one in from another. */
     get freeLettersInPick() {
-      const term = atomTerm(rows[rows.length - 1].row.eq, picked);
+      const term = atomTerm(rows[rows.length - 1].row.eq, primary());
       if (!term) return [];
       return A.varsIn(term).filter((n) => !(values && n in values));
     },
@@ -320,7 +356,13 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
     rectFor(key) {
       const last = rows[rows.length - 1];
       const node = last.svg?.querySelector(`.am-hit[data-key="${key}"]`);
-      return node ? node.getBoundingClientRect() : null;
+      if (!node) return null;
+      /* Centred on the glyph, but below (or above) the WHOLE line: a glyph on
+         top of a fraction bar would otherwise have its menu laid over the
+         denominator it sits above. */
+      const g = node.getBoundingClientRect();
+      const line = last.svg.getBoundingClientRect();
+      return { left: g.left, width: g.width, right: g.right, top: line.top, bottom: line.bottom, height: line.height };
     },
 
     /* Every move the picked glyph means — see atomOffers in ops.js. The 3 of
@@ -328,8 +370,10 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
        offers the both-sides moves. Short marks, so a row of them still reads
        faster than doing the algebra. */
     movesForPicked() {
-      if (!picked) return [];
-      return atomOffers(this.equation, picked, { given: values });
+      if (!picks.length) return [];
+      return picks.length > 1
+        ? multiOffers(this.equation, picks, { given: values })
+        : atomOffers(this.equation, picks[0], { given: values });
     },
 
     /** Make a move. Returns null when it was refused, with the reason. */
@@ -338,7 +382,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
       if (result.error) return { refused: result.error };
       const verdict = preservesSolutions(this.equation, result.eq, { given: pinned, scaledBy: result.scaledBy });
       if (!verdict.ok) return { refused: verdict.why };
-      picked = null;
+      picks = [];
       // A move made here is a new branch of the working: whatever was stepped
       // back off the bottom is not on the way to it any more.
       undone = [];
@@ -355,22 +399,22 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
         has to be told about it just for this one check, the same way a
         formula's own given values are. */
     useFromElsewhere(letter, value) {
-      if (!picked) return { refused: "Nothing is picked." };
+      if (!picks.length) return { refused: "Nothing is picked." };
       const extended = { ...(values || {}), [letter]: value };
       const eq = rows[rows.length - 1].row.eq;
-      const term = atomTerm(eq, picked);
+      const term = atomTerm(eq, primary());
       if (!term) return { refused: "There is no letter there to put a number into." };
       const result = substitute(eq, term.id, extended);
       if (result.error) return { refused: result.error };
       const verdict = preservesSolutions(eq, result.eq, { given: asNumbers(extended) });
       if (!verdict.ok) return { refused: verdict.why };
-      picked = null;
+      picks = [];
       undone = [];
       push(result.eq, { from: result.from, note: result.note });
       return { ok: true, note: result.note };
     },
 
-    clearPick() { if (picked) { picked = null; repaintLive(); } },
+    clearPick() { if (picks.length) { picks = []; repaintLive(); } },
     stepBack,
     stepForward,
     working: () => rows.map((r) => ({ equation: plain(r.row.eq), note: r.note })),

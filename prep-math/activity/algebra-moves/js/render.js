@@ -81,18 +81,21 @@ export function paintRow(row, { live = false, picked = null, pad = 0 } = {}) {
      is one atom, so it is never split. Bars go in first so the digits sitting
      just above and below one win any overlap. */
   if (live) {
+    // One glyph picked, or several picked to move together.
+    const chosen = new Set([].concat(picked || []));
     const gutter = eqGutter(row);
     const order = [...row.atoms.filter((a) => a.kind === "rule"), ...row.atoms.filter((a) => a.kind === "text")];
     for (const a of order) {
       const box = hitBox(a, row, gutter);
-      if (a.key === picked) selLayer.appendChild(el("rect", { ...box, class: "am-sel", rx: 3 }));
+      if (chosen.has(a.key)) selLayer.appendChild(el("rect", { ...box, class: "am-sel", rx: 3 }));
       const hit = el("rect", {
         ...box,
         class: `am-hit${a.kind === "rule" ? " am-hit--bar" : ""}`,
         tabindex: "0", role: "button",
       });
       hit.dataset.key = a.key;
-      hit.setAttribute("aria-label", a.kind === "rule" ? "the fraction bar" : a.text);
+      hit.setAttribute("aria-label", a.kind !== "rule" ? a.text
+        : a.key.endsWith("#vinc") ? "the square root" : "the fraction bar");
       hits.appendChild(hit);
     }
   }

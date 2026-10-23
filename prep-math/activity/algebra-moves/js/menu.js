@@ -14,6 +14,60 @@
    readable however far out the canvas is zoomed.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+import { parse } from "./parse.js";
+import { buildRow, paintRow, el } from "./render.js";
+
+/** The moves that carry something over the equals sign. */
+const MOVES = new Set(["across", "divide", "times"]);
+const OPS = "+−÷×";
+const FACE_SIZE = 20;
+
+/** A curved arrow, drawn rather than typed so it can point either way. */
+function arrow(dir) {
+  const svg = el("svg", { class: `am-move__arrow am-move__arrow--${dir}`, viewBox: "0 0 28 9", "aria-hidden": "true" });
+  svg.append(
+    el("path", { d: "M3 8 Q14 -2 25 7", fill: "none", stroke: "currentColor", "stroke-width": "1.6", "stroke-linecap": "round" }),
+    el("path", { d: "M20.5 6.2 L25 7 L24 2.6", fill: "none", stroke: "currentColor", "stroke-width": "1.6", "stroke-linecap": "round", "stroke-linejoin": "round" }),
+  );
+  if (dir === "both") {
+    svg.append(el("path", { d: "M7.5 6.2 L3 8 L3.6 3.4", fill: "none", stroke: "currentColor", "stroke-width": "1.6", "stroke-linecap": "round", "stroke-linejoin": "round" }));
+  }
+  return svg;
+}
+
+/** One piece of a mark, typeset: an operator in front (−, +, ÷, ×) stays a
+    glyph, and what follows is drawn by the canvas's own typesetter. Anything
+    that will not parse (⇄, ⌫) is shown as it is written. */
+function setPiece(holder, op, src) {
+  if (op) {
+    const o = document.createElement("span");
+    o.className = "am-move__op";
+    o.textContent = op;
+    holder.appendChild(o);
+  }
+  try {
+    const svg = paintRow(buildRow(parse(src), FACE_SIZE), { live: false });
+    svg.classList.add("am-move__ink");
+    holder.appendChild(svg);
+  } catch {
+    holder.appendChild(document.createTextNode(src));
+  }
+}
+
+function face(offer) {
+  const holder = document.createElement("span");
+  holder.className = "am-move__face";
+  holder.setAttribute("aria-hidden", "true");
+  if (offer.faces) {
+    for (const f of offer.faces) setPiece(holder, f.op, f.src);
+    return holder;
+  }
+  const mark = offer.mark || offer.label;
+  if (OPS.includes(mark[0]) && mark.length > 1) setPiece(holder, mark[0], mark.slice(1));
+  else setPiece(holder, "", mark);
+  return holder;
+}
+
 export function createMenu(host) {
   const box = document.createElement("div");
   box.className = "am-menu";
@@ -67,10 +121,17 @@ export function createMenu(host) {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "am-move";
+        // A move that carries something over the = wears an arrow over it,
+        // pointing the way it goes.
+        if (MOVES.has(offer.key)) {
+          btn.classList.add("am-move--across");
+          btn.appendChild(arrow(offer.dir || "r"));
+        }
         // The button says the move, in the two or three characters a person
-        // would write. The sentence goes on the tooltip and on the label a
-        // screen reader reads, so nothing is lost by not printing it.
-        btn.textContent = offer.mark || offer.label;
+        // would write, SET the way the canvas sets it — a fraction stacked, a
+        // root with its bar. The sentence goes on the tooltip and on the label
+        // a screen reader reads, so nothing is lost by not printing it.
+        btn.appendChild(face(offer));
         btn.title = offer.label;
         btn.setAttribute("aria-label", offer.label);
         btn.addEventListener("click", (e) => { e.stopPropagation(); onPick(offer); });

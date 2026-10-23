@@ -29,6 +29,10 @@ export const prod = (kids, id = freshId())           => ({ id, kind: "prod", kid
 export const frac = (a, b, id = freshId())           => ({ id, kind: "frac", a, b });
 export const pow  = (b, e, id = freshId())           => ({ id, kind: "pow", b, e });
 export const eqn  = (l, r, id = freshId())           => ({ id, kind: "eq", l, r });
+/* A square root — a surd when what is under it is not a perfect square. Its
+   own node rather than a power of 1/2: x^(1/2) and √x are the same number but
+   not the same writing, and a student who typed one expects to keep seeing it. */
+export const root = (k, id = freshId())              => ({ id, kind: "root", k });
 
 /* A line with only one side: 3x + 5 − x, put on the canvas to be tidied rather
    than solved. It is a node of its own rather than an equation with a missing
@@ -53,6 +57,7 @@ export function kidsOf(node) {
   switch (node.kind) {
     case "expr": return [node.e];
     case "neg":  return [node.k];
+    case "root": return [node.k];
     case "sum":
     case "prod": return node.kids;
     case "frac": return [node.a, node.b];
@@ -84,6 +89,8 @@ export function replace(root, id, next) {
   const rebuild = (n) => {
     switch (n.kind) {
       case "neg":  { const k = rec(n.k); return k === n.k ? n : neg(k, n.id); }
+      // Built literally: this function's own parameter is called `root`.
+      case "root": { const k = rec(n.k); return k === n.k ? n : { id: n.id, kind: "root", k }; }
       case "sum":  { const ks = n.kids.map(rec); return ks.every((k, i) => k === n.kids[i]) ? n : sum(ks, n.id); }
       case "prod": { const ks = n.kids.map(rec); return ks.every((k, i) => k === n.kids[i]) ? n : prod(ks, n.id); }
       case "frac": { const a = rec(n.a), b = rec(n.b); return a === n.a && b === n.b ? n : frac(a, b, n.id); }
@@ -191,6 +198,18 @@ export function readTerm(node) {
         vars.push(...a.vars);
         return true;
       }
+      /* A surd counts as part of the "letter" part of a term, so 2√3 and 5√3
+         are like terms the same way 2x and 5x are — and fold to 7√3. Only a
+         number or a single letter under the root is read; anything else is a
+         term this rule does not guess about. */
+      case "root": {
+        const k = n.k;
+        if (k.kind === "num") vars.push(`√${R.toText(k.v)}`);
+        else if (k.kind === "var") vars.push(`√${k.name}`);
+        else return false;
+        if (flip) c = R.neg(c);
+        return true;
+      }
       default:
         return false;
     }
@@ -201,11 +220,17 @@ export function readTerm(node) {
   return { c, vars: sorted, sig: sorted.join("*") };
 }
 
-/** The variable nodes of a term, in the order they were written. */
+/** The "letter part" nodes of a term, in the order they were written — a
+    letter, a power of a letter, or a surd. Not descended into: the x of x² and
+    the 3 of √3 belong to the node above them. */
 export function varNodesOf(node) {
   const out = [];
-  walk(node, (n) => { if (n.kind === "var" || (n.kind === "pow" && n.b.kind === "var")) out.push(n); });
-  return out.filter((n, i, all) => !all.some((o, j) => j < i && o.kind === "pow" && o.b === n));
+  const go = (n) => {
+    if (n.kind === "var" || n.kind === "root" || (n.kind === "pow" && n.b.kind === "var")) { out.push(n); return; }
+    for (const k of kidsOf(n)) go(k);
+  };
+  go(node);
+  return out;
 }
 
 /** Rebuild a term as coefficient times variable part, reusing the given var nodes. */
@@ -258,6 +283,14 @@ export function exactValue(node) {
         const k = Number(e.n);
         if (Math.abs(k) > 32 || (k < 0 && R.isZero(b))) return null;
         return R.ipow(b, k);
+      }
+      // Exact only when it comes out exact: √16 is 4 and √(9/4) is 3/2, but √3
+      // has no rational value and stays a surd.
+      case "root": {
+        const v = exactValue(node.k);
+        if (!v || R.isNegative(v)) return null;
+        const top = R.squareSplit(v.n), bottom = R.squareSplit(v.d);
+        return top.inside === 1n && bottom.inside === 1n ? R.rat(top.out, bottom.out) : null;
       }
       default: return null;
     }

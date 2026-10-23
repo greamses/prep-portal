@@ -40,34 +40,37 @@ import * as A from "./ast.js";
    Everything else is a single glyph, already set in the equation's own face by
    .am-key, so drawing it through the typesetter would produce exactly the same
    picture at more cost. */
+// Eight columns on every row, so the keys line up down the pad.
 const KEYS = [
   [
     { k: "7" }, { k: "8" }, { k: "9" },
-    { k: "÷", t: "/" }, { k: "x²", t: "^(2)", back: 0, title: "squared", math: "x^2" },
+    { k: "÷", t: "/" },
     { k: "( )", t: "()", back: 1, title: "brackets", math: "(?)" },
+    { k: "x²", t: "^(2)", back: 0, title: "squared", math: "x^2" },
+    // A square root types the site's own sqrt(…) and leaves the caret inside.
+    { k: "√", t: "sqrt()", back: 1, title: "square root", math: "sqrt(?)" },
     { k: "⌫", act: "back", title: "Delete", tone: "warn" },
   ],
   [
     { k: "4" }, { k: "5" }, { k: "6" },
     { k: "×", t: "*" }, { k: "aᵇ", t: "^()", back: 1, title: "to the power of", math: "a^b" },
-    { k: "x", t: "x", tone: "letter" }, { k: "y", t: "y", tone: "letter" },
+    { k: "x", t: "x", tone: "letter" }, { k: "y", t: "y", tone: "letter" }, { k: "z", t: "z", tone: "letter" },
   ],
   [
     { k: "1" }, { k: "2" }, { k: "3" },
     { k: "−", t: "-" },
     { k: "a⁄b", t: "()/()", back: 4, title: "fraction", math: "a/b" },
+    { k: "±", act: "sign", title: "Change the sign" },
     { k: "←", act: "left", title: "Move left" },
     { k: "→", act: "right", title: "Move right" },
   ],
   [
     { k: "0", wide: true }, { k: ".", t: "." },
-    { k: "±", act: "sign", title: "Change the sign" },
     { k: "+", t: "+" }, { k: "=", t: "=" },
     { k: "CLR", act: "clear", title: "Clear", tone: "warn" },
     // Enter is a key here, not a button living somewhere else below the
-    // pad — the way a laptop's own Return key is just the last key on the
-    // row, not a different kind of control.
-    { k: "Enter", act: "enter", title: "Put it on the canvas", tone: "go" },
+    // pad — and a wide one, the way a laptop's Return key is.
+    { k: "Enter", act: "enter", title: "Put it on the canvas", tone: "go", wide: true },
   ],
 ];
 

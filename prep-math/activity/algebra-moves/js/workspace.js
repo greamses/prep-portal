@@ -133,7 +133,7 @@ function hintOnce() {
   hinted = true;
   setTimeout(() => {
     if (!active?.picked) return;
-    say("Or tap where you want it — the equals sign to send it across, a like term to fold it into.");
+    say("Or tap the = to send it across. Shift-click, or hold, to pick more than one.");
   }, 1400);
 }
 

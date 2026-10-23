@@ -374,6 +374,7 @@ const freshCopy = (n) => {
     case "prod": return A.prod(n.kids.map(freshCopy));
     case "frac": return A.frac(freshCopy(n.a), freshCopy(n.b));
     case "pow":  return A.pow(freshCopy(n.b), freshCopy(n.e));
+    case "root": return A.root(freshCopy(n.k));
     default:     return n;
   }
 };
@@ -404,6 +405,275 @@ export function splitFraction(eq, id) {
 
   const opened = pieces.map((p) => plain(p)).join(" + ").replace(/\+ −/g, "− ");
   return { eq: eqNext, from, mark: opened, note: `${plain(loc.term)} splits into ${opened}` };
+}
+
+/* ── The laws of indices ────────────────────────────────────────────────────
+   Same base: add the powers when multiplying, take them away when dividing,
+   multiply them for a power of a power. A power of 0 is 1, a power of 1 is the
+   thing itself, a negative power is one over the positive one, and a power of
+   a product or a fraction goes onto every piece of it.
+
+   A factor counts as a power of its base when it can be read as one: x is x¹,
+   x³ is itself, 2⁵ is base 2. Plain numbers are only gathered when one of them
+   is written as a power already — 2 × 2³ is 2⁴, but 2 × 3 is just arithmetic,
+   and "work it out" is the move for that. Every exponent here is exact; a
+   power we cannot read exactly is left alone, never guessed at. */
+
+const baseKey = (b) => (b.kind === "var" ? `v:${b.name}` : b.kind === "num" ? `n:${R.toText(b.v)}` : null);
+
+function asPower(f) {
+  if (f.kind === "pow") {
+    const e = A.exactValue(f.e);
+    const key = baseKey(f.b);
+    return e && key ? { key, base: f.b, e, isPow: true } : null;
+  }
+  const key = baseKey(f);
+  return key ? { key, base: f, e: R.ONE, isPow: false } : null;
+}
+
+const powerOf = (base, e) => (R.isZero(e) ? A.num(R.ONE) : R.isOne(e) ? base : A.pow(base, A.numberNode(e)));
+const gatherable = (members) => members[0].p.key.startsWith("v:") || members.some((m) => m.p.isPow);
+const packFactors = (fs) => (fs.length === 0 ? A.num(R.ONE) : fs.length === 1 ? fs[0] : A.prod(fs));
+
+function productLaw(node) {
+  const groups = new Map();
+  node.kids.forEach((f, i) => {
+    const p = asPower(f);
+    if (!p) return;
+    if (!groups.has(p.key)) groups.set(p.key, []);
+    groups.get(p.key).push({ i, p });
+  });
+  const merged = new Map();
+  const drop = new Set();
+  for (const ms of groups.values()) {
+    if (ms.length < 2 || !gatherable(ms)) continue;
+    const total = ms.reduce((s, m) => R.add(s, m.p.e), R.ZERO);
+    merged.set(ms[0].i, powerOf(ms[0].p.base, total));
+    for (const m of ms.slice(1)) drop.add(m.i);
+  }
+  if (!merged.size) return null;
+  const kids = [];
+  node.kids.forEach((f, i) => {
+    if (drop.has(i)) return;
+    const r = merged.has(i) ? merged.get(i) : f;
+    if (merged.has(i) && r.kind === "num" && R.isOne(r.v)) return;   // x⁰ goes
+    kids.push(r);
+  });
+  return packFactors(kids);
+}
+
+function quotientLaw(node) {
+  const top = node.a.kind === "prod" && !node.a.paren ? [...node.a.kids] : [node.a];
+  const bot = node.b.kind === "prod" && !node.b.paren ? [...node.b.kids] : [node.b];
+  let changed = false;
+  for (let i = 0; i < top.length; i++) {
+    const p = top[i] && asPower(top[i]);
+    if (!p) continue;
+    const j = bot.findIndex((f) => f && asPower(f)?.key === p.key);
+    if (j < 0) continue;
+    const q = asPower(bot[j]);
+    if (!gatherable([{ p }, { p: q }])) continue;
+    const d = R.sub(p.e, q.e);
+    changed = true;
+    if (R.isNegative(d)) { top[i] = null; bot[j] = powerOf(q.base, R.neg(d)); }
+    else { top[i] = R.isZero(d) ? null : powerOf(p.base, d); bot[j] = null; }
+  }
+  if (!changed) return null;
+  const a = packFactors(top.filter(Boolean));
+  const b = packFactors(bot.filter(Boolean));
+  return b.kind === "num" && R.isOne(b.v) ? a : A.frac(a, b);
+}
+
+function powerLaw(node) {
+  const e = A.exactValue(node.e);
+  if (!e) return null;
+  const b = node.b;
+  if (R.isZero(e)) return { next: A.num(R.ONE), why: "Anything to the power 0 is 1" };
+  if (R.isOne(e)) return { next: b, why: "To the power 1 is the thing itself" };
+  if (b.kind === "pow") {
+    const m = A.exactValue(b.e);
+    if (m) return { next: powerOf(b.b, R.mul(m, e)), why: "A power of a power: multiply the powers" };
+  }
+  if (R.isNegative(e)) {
+    return { next: A.frac(A.num(R.ONE), powerOf(b, R.neg(e))), why: "A negative power is one over the positive power" };
+  }
+  if (b.kind === "root" && R.same(e, R.rat(2n))) return { next: b.k, why: "A square root squared is what was under it" };
+  if (R.isInt(e) && b.kind === "prod") {
+    return { next: A.prod(b.kids.map((k) => A.pow(k, A.numberNode(e)))), why: "A power of a product: every factor takes the power" };
+  }
+  if (R.isInt(e) && b.kind === "frac") {
+    return { next: A.frac(A.pow(b.a, A.numberNode(e)), A.pow(b.b, A.numberNode(e))), why: "A power of a fraction: top and bottom both take it" };
+  }
+  return null;
+}
+
+/** Everything new in `next` came out of the node it replaced. */
+const flyFrom = (eq, next, id) => {
+  const from = new Map();
+  A.walk(next, (n) => { if (!A.findById(eq, n.id)) from.set(n.id, [id]); });
+  return from;
+};
+
+export function indexLaw(eq, id) {
+  const node = A.findById(eq, id);
+  if (!node) return { error: "I have lost track of that." };
+  let next = null;
+  let why = "";
+  if (node.kind === "pow") ({ next = null, why = "" } = powerLaw(node) || {});
+  else if (node.kind === "prod") { next = productLaw(node); why = "Same base: add the powers"; }
+  else if (node.kind === "frac") { next = quotientLaw(node); why = "Same base: take the powers away"; }
+  if (!next) return { error: "No law of indices applies there." };
+  return { eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next), note: `${why}: ${plain(node)} is ${plain(next)}` };
+}
+
+/* ── Surds ──────────────────────────────────────────────────────────────────
+   Take the square factor out (√12 = 2√3), multiply and divide roots (√a × √b
+   = √(ab)), and clear a root off the bottom of a fraction. Like surds already
+   fold the way like terms do — 2√3 + 5√3 is 7√3 — because readTerm counts a
+   surd as part of a term's "letter" part. Only a number under a root is ever
+   simplified: √(x²) is |x|, not x, and the verifier would rightly refuse x. */
+
+export function simplifySurd(eq, id) {
+  const node = A.findById(eq, id);
+  if (!node || node.kind !== "root") return { error: "That is not a square root." };
+  const v = A.exactValue(node.k);
+  if (!v || R.isNegative(v)) return { error: "I only simplify the square root of a number." };
+  // √(p/q) is √(pq)/q, so a fraction under the root comes out rationalised.
+  const { out, inside } = R.squareSplit(v.n * v.d);
+  // Judged on the number, not the writing — (√3) typed in brackets is √3 already.
+  if (out === 1n && v.d === 1n && inside !== 1n) return { error: "That surd is as simple as it goes." };
+  const core = inside === 1n ? A.num(R.rat(out))
+    : out === 1n ? A.root(A.num(R.rat(inside)))
+    : A.prod([A.num(R.rat(out)), A.root(A.num(R.rat(inside)))]);
+  const next = v.d === 1n ? core : A.frac(core, A.num(R.rat(v.d)));
+  if (plain(next) === plain(node)) return { error: "That surd is as simple as it goes." };
+  return { eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next), note: `${plain(node)} is ${plain(next)}` };
+}
+
+export function multiplySurds(eq, id) {
+  const node = A.findById(eq, id);
+  if (!node || node.kind !== "prod") return { error: "That is not a product." };
+  const at = node.kids.flatMap((k, i) => (k.kind === "root" ? [i] : []));
+  if (at.length < 2) return { error: "There are not two roots there to multiply." };
+  const radicands = at.map((i) => node.kids[i].k);
+  const values = radicands.map((k) => A.exactValue(k));
+  const under = values.every(Boolean) ? A.numberNode(values.reduce((s, v) => R.mul(s, v), R.ONE)) : A.prod(radicands);
+  const merged = A.root(under);
+  const kids = node.kids.flatMap((k, i) => (i === at[0] ? [merged] : at.includes(i) ? [] : [k]));
+  const next = packFactors(kids);
+  return { eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next), note: `Roots multiply under one root: ${plain(node)} is ${plain(next)}` };
+}
+
+export function divideSurds(eq, id) {
+  const node = A.findById(eq, id);
+  if (!node || node.kind !== "frac" || node.a.kind !== "root" || node.b.kind !== "root") {
+    return { error: "That is not one root over another." };
+  }
+  const a = A.exactValue(node.a.k), b = A.exactValue(node.b.k);
+  const under = a && b && !R.isZero(b) ? A.numberNode(R.div(a, b)) : A.frac(node.a.k, node.b.k);
+  const next = A.root(under);
+  return { eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next), note: `Roots divide under one root: ${plain(node)} is ${plain(next)}` };
+}
+
+export function rationalise(eq, id) {
+  const node = A.findById(eq, id);
+  if (!node || node.kind !== "frac") return { error: "That is not a fraction." };
+  const den = node.b;
+  let r = null;
+  let rest = [];
+  if (den.kind === "root") r = den;
+  else if (den.kind === "prod") {
+    const roots = den.kids.filter((k) => k.kind === "root");
+    if (roots.length === 1 && den.kids.every((k) => k.kind === "root" || A.isNumeric(k))) {
+      r = roots[0];
+      rest = den.kids.filter((k) => k !== r);
+    }
+  }
+  if (!r) return { error: "There is no root on the bottom to clear." };
+  // Times top and bottom by the root: the bottom's root squares away.
+  const extra = A.root(freshCopy(r.k));
+  const top = node.a.kind === "num" && R.isOne(node.a.v) ? extra : A.prod([node.a, extra]);
+  const bottomTree = rest.length ? A.prod([...rest, r.k]) : r.k;
+  const bv = A.exactValue(bottomTree);
+  const next = A.frac(top, bv ? A.numberNode(bv) : bottomTree);
+  return {
+    eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next),
+    note: `Multiply top and bottom by ${plain(r)}: ${plain(node)} is ${plain(next)}`,
+  };
+}
+
+/** The tidy-ups that act on one node in place — the laws of indices and the
+    surd rules. Offered from the term (so the solver and "is this tidy?" see
+    them) and from any glyph sitting inside the node they act on. */
+function nodeTidies(eq, node) {
+  const out = [];
+  const t = (key, label, hint, trial) => {
+    if (trial && !trial.error) out.push({ key, label, hint, mark: trial.mark, run: () => trial });
+  };
+  if (node.kind === "pow" || node.kind === "prod" || node.kind === "frac") {
+    t("indices", "Use the laws of indices", "same base", indexLaw(eq, node.id));
+  }
+  if (node.kind === "root") t("surd", "Simplify the surd", "take out the square factor", simplifySurd(eq, node.id));
+  if (node.kind === "prod") t("surd", "Multiply the roots", "√a × √b = √(ab)", multiplySurds(eq, node.id));
+  if (node.kind === "frac") {
+    t("surd", "Divide the roots", "√a ÷ √b = √(a/b)", divideSurds(eq, node.id));
+    t("surd", "Clear the root off the bottom", "multiply top and bottom by it", rationalise(eq, node.id));
+  }
+  return out;
+}
+
+/* ── More than one at once ──────────────────────────────────────────────────
+   Pick 3x AND 5, and they cross the equals sign together in one line of
+   working; pick 2x, 3x and −x and they fold into one term. Each is just the
+   one-term move done in turn, so the verifier checks the whole line exactly
+   as it checks any other. */
+
+const listOf = (xs) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
+
+export function takeManyAcross(eq, ids) {
+  if (!A.isEquation(eq)) return { error: TWO_SIDED };
+  let next = eq;
+  const whats = [];
+  const faces = [];
+  const sides = new Set();
+  for (const id of ids) {
+    const loc = locate(next, id);
+    if (!loc || !loc.topSide) return { error: "Only whole terms on a side can be carried over." };
+    const r = takeAcross(next, id);
+    if (r.error) return r;
+    const adding = loc.term.kind === "neg" && !loc.term.paren;
+    const what = plain(adding ? loc.term.k : loc.term);
+    whats.push(what);
+    faces.push({ op: adding ? "+" : "−", src: what });
+    sides.add(loc.topSide);
+    next = r.eq;
+  }
+  return {
+    eq: next, from: new Map(), faces,
+    mark: faces.map((f) => `${f.op}${f.src}`).join(" "),
+    dir: sides.size === 1 ? (sides.has("l") ? "r" : "l") : "both",
+    note: `Carry ${listOf(whats)} across`,
+  };
+}
+
+export function combineMany(eq, ids) {
+  const locs = ids.map((id) => locate(eq, id));
+  if (locs.some((l) => !l) || new Set(locs.map((l) => l.container.id)).size !== 1) {
+    return { error: "Those are not all on the same side." };
+  }
+  const reads = locs.map((l) => A.readTerm(l.term));
+  if (reads.some((r) => !r) || new Set(reads.map((r) => r.sig)).size !== 1) return { error: "Those are not all like terms." };
+  const order = locs.map((l, i) => ({ l, r: reads[i] })).sort((a, b) => a.l.index - b.l.index);
+  const first = order[0];
+  const total = order.reduce((s, o) => R.add(s, o.r.c), R.ZERO);
+  const combined = A.termFrom(total, first.r.vars.length ? A.varNodesOf(first.l.term) : []);
+  const drop = new Set(order.slice(1).map((o) => o.l.index));
+  const nextTerms = first.l.terms.map((t, i) => (i === first.l.index ? combined : t)).filter((_, i) => !drop.has(i));
+  const from = new Map([[combined.id, order.map((o) => o.l.term.id).filter((x) => x !== combined.id)]]);
+  return {
+    eq: setContainer(eq, first.l, nextTerms), from, mark: plain(combined),
+    note: `${listOf(order.map((o) => plain(o.l.term)))} make ${plain(combined)}`,
+  };
 }
 
 /* ── Turn it round ──────────────────────────────────────────────────────────
@@ -643,6 +913,8 @@ export function offers(eq, id, { given = null } = {}) {
   // makes every part of a term targetable rather than only the outermost
   // layer of it.
   const twoSided = A.isEquation(eq) && !!loc.topSide;
+  // Which way a move across the = goes, for the arrow drawn over its chip.
+  const dir = loc.topSide === "r" ? "l" : "r";
 
   // Numbers waiting to go in come first: there is no sense reshaping a formula
   // that is one tap away from being arithmetic.
@@ -672,6 +944,7 @@ export function offers(eq, id, { given = null } = {}) {
     // sentence beside every line only makes the card wide and the working hard
     // to read down.
     mark: adding ? `+${plain(term.k)}` : `−${plain(term)}`,
+    dir,
     run: () => takeAcross(eq, id),
   });
 
@@ -713,6 +986,7 @@ export function offers(eq, id, { given = null } = {}) {
         label: `Multiply both sides by ${say(den)}`,
         hint: "undo the dividing",
         mark: `×${mul(den)}`,
+        dir,
         run: () => timesBoth(eq, den),
       });
     }
@@ -729,6 +1003,7 @@ export function offers(eq, id, { given = null } = {}) {
         label: `Multiply both sides by ${term.b.name}`,
         hint: "get it out from under the bar",
         mark: `×${term.b.name}`,
+        dir,
         run: () => trial,
       });
     }
@@ -748,6 +1023,7 @@ export function offers(eq, id, { given = null } = {}) {
       label: `Divide both sides by ${say(read.c)}`,
       hint: "undo the multiplying",
       mark: `÷${mul(read.c)}`,
+      dir,
       run: () => divideBoth(eq, read.c),
     });
   }
@@ -774,6 +1050,14 @@ export function offers(eq, id, { given = null } = {}) {
   // The letters have ended up on the right and the answer is written backwards.
   if (twoSided && A.isNumeric(eq.l) && !A.isNumeric(eq.r)) {
     out.push({ key: "swap", label: "Turn it round", hint: "same equation, read the other way", mark: "⇄", run: () => swapSides(eq) });
+  }
+
+  // The laws of indices and the surd rules, anywhere inside the term.
+  {
+    const marks = new Set(out.map((o) => o.mark));
+    A.walk(term, (n) => {
+      for (const o of nodeTidies(eq, n)) if (!marks.has(o.mark)) { marks.add(o.mark); out.push(o); }
+    });
   }
 
   // A sum waiting to be done, whether it is the whole term or buried in it.
@@ -882,6 +1166,17 @@ export function atomOffers(eq, key, { given = null } = {}) {
   // Anything written on top of a bar can be reached by splitting the fraction.
   const splitOffer = (fracTerm) =>
     direct("split", "Split it over the bottom", "one fraction for each piece on top", splitFraction(eq, fracTerm.id));
+  // The laws of indices and the surd rules for every node from this glyph up to
+  // its term — the exponent of x³ in x²·x³ reaches the product it sits in.
+  const tidiesAbove = (id) => {
+    const T = termChain(eq, id)[0];
+    let n = A.findById(eq, id);
+    while (n) {
+      for (const o of nodeTidies(eq, n)) add(o);
+      if (!T || n.id === T.id) break;
+      n = A.parentOf(eq, n.id);
+    }
+  };
 
   if (slot === "eq") {
     if (A.isEquation(eq)) {
@@ -913,14 +1208,22 @@ export function atomOffers(eq, key, { given = null } = {}) {
   } else if (slot === "bar") {
     const T = atomTerm(eq, key);
     add(direct("cancel", "Cancel it down", "same number top and bottom", cancel(eq, nodeId)));
+    tidiesAbove(nodeId);
     add(workOffer(nodeId));
     if (T && fracOf(T)?.id === nodeId) add(splitOffer(T));
     if (T && T.id === nodeId) pick(pool(T), "times", "across");
+  } else if (slot === "rad" || slot === "vinc") {
+    // The √ itself, or the bar over what it roots.
+    tidiesAbove(nodeId);
+    add(workOffer(nodeId));
+    pick(pool(atomTerm(eq, key)), "combine", "across");
   } else if (slot.startsWith("dot")) {
+    tidiesAbove(nodeId);
     add(workOffer(nodeId));
     pick(pool(atomTerm(eq, key)), "expand");
   } else if (slot === "lp" || slot === "rp") {
     pick(pool(atomTerm(eq, key)), "expand");
+    tidiesAbove(nodeId);
     add(workOffer(nodeId));
   } else {
     // A number or a letter.
@@ -929,7 +1232,22 @@ export function atomOffers(eq, key, { given = null } = {}) {
     const leaf = A.findById(eq, nodeId);
     const p = pool(T);
     pick(p, "substitute");
-    if (leaf && leaf.kind === "num" && T && isFactorOf(T, leaf)) pick(p, "divide");
+    if (leaf && leaf.kind === "num" && T && isFactorOf(T, leaf)) {
+      pick(p, "divide");
+      /* Move ONLY the coefficient: the 3 of 3x crosses as ÷3 even when other
+         terms share the side — both sides are divided by it, and the line says
+         so honestly as (3x + 5)/3 = 20/3, ready to be split and cancelled. */
+      const at = locate(eq, T.id);
+      if (A.isEquation(eq) && at?.topSide && !R.isZero(leaf.v) && !R.isOne(leaf.v)) {
+        const d = divideBoth(eq, leaf.v);
+        if (!d.error) {
+          add({
+            key: "divide", label: `Divide both sides by ${say(leaf.v)}`, hint: "move just the number in front",
+            mark: `÷${mul(leaf.v)}`, dir: at.topSide === "r" ? "l" : "r", run: () => d,
+          });
+        }
+      }
+    }
     for (const F of chain) {
       if (F.kind === "frac" && A.findById(F.b, nodeId)) pick(pool(F), "times");
       // Written on top of a bar: split the fraction so this piece is free.
@@ -937,6 +1255,7 @@ export function atomOffers(eq, key, { given = null } = {}) {
       if (f && A.findById(f.a, nodeId)) add(splitOffer(F));
     }
     pick(p, "across", "combine", "dropzero");
+    tidiesAbove(nodeId);
     // Arithmetic still waiting around it — an exponent, a bracketed sum.
     if (leaf && T) {
       let n = leaf;
@@ -953,4 +1272,25 @@ export function atomOffers(eq, key, { given = null } = {}) {
 
   // A formula with a number still to go in has one move anywhere: putting it in.
   return hasSubstitutions(eq, given) ? out.filter((o) => o.key === "substitute") : out;
+}
+
+/** What a SELECTION of glyphs means together: the terms they belong to cross
+    the = as one move, or fold into one term when they are like. One glyph
+    picked is just atomOffers. */
+export function multiOffers(eq, keys, { given = null } = {}) {
+  const terms = [];
+  for (const k of keys) {
+    const t = atomTerm(eq, k);
+    if (t && !terms.some((x) => x.id === t.id)) terms.push(t);
+  }
+  if (terms.length < 2) return atomOffers(eq, keys[keys.length - 1], { given });
+  const ids = terms.map((t) => t.id);
+  const out = [];
+  const many = takeManyAcross(eq, ids);
+  if (!many.error) {
+    out.push({ key: "across", label: many.note, hint: "the balance rule", mark: many.mark, faces: many.faces, dir: many.dir, run: () => many });
+  }
+  const folded = combineMany(eq, ids);
+  if (!folded.error) out.push({ key: "combine", label: folded.note, hint: "like terms", mark: folded.mark, run: () => folded });
+  return hasSubstitutions(eq, given) ? [] : out;
 }

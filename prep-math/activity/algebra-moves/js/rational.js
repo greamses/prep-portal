@@ -51,6 +51,19 @@ export const isInt = (a) => a.d === 1n;
 export const same = (a, b) => a.n === b.n && a.d === b.d;
 export const abs = (a) => (a.n < 0n ? neg(a) : a);
 
+/** A whole number n ≥ 0 as out² × inside, with inside having no square factor
+    left in it: 12 is 2² × 3, 16 is 4² × 1, 7 is 1² × 7. What simplifying a surd
+    is, done exactly — √12 = 2√3 because 12 splits this way. Trial division is
+    plenty: a surd typed into this tool is never a large number. */
+export function squareSplit(n) {
+  let inside = BigInt(n);
+  let out = 1n;
+  for (let f = 2n; f * f <= inside; f += 1n) {
+    while (inside % (f * f) === 0n) { inside /= f * f; out *= f; }
+  }
+  return { out, inside };
+}
+
 /** Only ever for the numeric verifier and for measuring — never for a value. */
 export const toNumber = (a) => Number(a.n) / Number(a.d);
 

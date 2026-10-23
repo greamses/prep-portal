@@ -46,6 +46,10 @@ function tokenise(src) {
       i = j;
       continue;
     }
+    // A square root, written the site's way (sqrt(…)) or as the glyph itself.
+    // Checked before letters, or sqrt would read as s·q·r·t.
+    if (src.startsWith("sqrt", i)) { out.push({ t: "root", v: "sqrt", at: i }); i += 4; continue; }
+    if (c === "√") { out.push({ t: "root", v: "√", at: i }); i++; continue; }
     if (isAlpha(c)) { out.push({ t: "var", v: c, at: i }); i++; continue; }
     if ("+-*/^()=".includes(c)) { out.push({ t: c, v: c, at: i }); i++; continue; }
     // The keypad's placeholder for a slot you have not filled in yet.
@@ -61,7 +65,7 @@ function tokenise(src) {
 }
 
 /** Tokens that can begin a factor — a "-" cannot, or 3 - 2 would read as 3(-2). */
-const STARTS_FACTOR = new Set(["num", "var", "(", "hole"]);
+const STARTS_FACTOR = new Set(["num", "var", "(", "hole", "root"]);
 
 export function parse(src) {
   const toks = tokenise(src);
@@ -95,6 +99,9 @@ export function parse(src) {
     if (tk.t === "num") { p++; return span(mark, A.num(R.fromDecimal(tk.v), tk.v.includes(".") ? tk.v : null)); }
     if (tk.t === "var") { p++; return span(mark, A.vr(tk.v)); }
     if (tk.t === "hole") { p++; return span(mark, A.hole()); }
+    // A root takes the next atom: √3x is (√3)x, √(3x) roots all of it — the
+    // same "a bracket is a parcel" rule the site's linear input uses.
+    if (tk.t === "root") { p++; return span(mark, A.root(atom())); }
     // A bracket the student typed is a bracket they keep seeing: mark it here
     // rather than have the layout guess later where brackets belong.
     // The span stays the content's own, WITHOUT the brackets. It is where the
