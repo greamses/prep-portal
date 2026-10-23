@@ -46,6 +46,10 @@ export const pm   = (k, id = freshId())              => ({ id, kind: "pm", k });
    on and name the letter they act WITH. */
 // arcsin before sin is not needed for the tokenizer (they start differently),
 // but the longer names must not be read as letters: a·r·c·sin.
+/** A mixed number, 2⅓: a whole number `w` and a proper fraction `f` (a frac
+    of two whole numbers) written side by side, meaning w + f. */
+export const mixed = (w, f, id = freshId()) => ({ id, kind: "mixed", w, f });
+
 /** A named equation — E_1 — standing for the whole equation it names, in what
     is typed to combine equations (E_1 − E_2, 2E_1 + 3). Never left in a line:
     workspace.js swaps each one for that equation's left side, then its right. */
@@ -85,6 +89,7 @@ export function kidsOf(node) {
     case "expr": return [node.e];
     case "neg":  return [node.k];
     case "root": return [node.k];
+    case "mixed": return [node.w, node.f];
     case "pm":   return [node.k];
     case "fn":
     case "deg":
@@ -125,6 +130,7 @@ export function replace(root, id, next) {
       // Built literally: this function's own parameter is called `root`.
       case "root": { const k = rec(n.k); return k === n.k ? n : { id: n.id, kind: "root", k }; }
       case "pm":   { const k = rec(n.k); return k === n.k ? n : { id: n.id, kind: "pm", k }; }
+      case "mixed": { const w = rec(n.w), f = rec(n.f); return w === n.w && f === n.f ? n : { ...n, w, f }; }
       case "fn":
       case "deg":
       case "deriv": { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
@@ -218,6 +224,13 @@ export function readTerm(node) {
       case "num":
         c = R.mul(c, flip ? R.neg(n.v) : n.v);
         return true;
+      // 2⅓ is a number like any other: 7/3.
+      case "mixed": {
+        const v = exactValue(n);
+        if (!v) return false;
+        c = R.mul(c, flip ? R.neg(v) : v);
+        return true;
+      }
       case "var":
         vars.push(n.name);
         if (flip) c = R.neg(c);
@@ -325,6 +338,7 @@ export function exactValue(node) {
   try {
     switch (node.kind) {
       case "num":  return node.v;
+      case "mixed": { const w = exactValue(node.w), f = exactValue(node.f); return w && f ? R.add(w, f) : null; }
       case "neg":  { const k = exactValue(node.k); return k ? R.neg(k) : null; }
       case "sum": {
         let acc = R.ZERO;

@@ -78,6 +78,8 @@ function needsBrackets(node, parentKind, slot) {
   if (parentKind === "pow" && slot === 1) return false;
   // A root's bar groups whatever is under it, the way a fraction bar does.
   if (parentKind === "root") return false;
+  // 3 × 2⅓ is 3(2⅓): a mixed number is a sum, and holds together in brackets.
+  if (node.kind === "mixed" && (parentKind === "prod" || parentKind === "pow")) return true;
   // A function's argument and a derivative's body are always in brackets.
   if (parentKind === "fn" || parentKind === "deriv") return true;
   if (parentKind === "int" || parentKind === "lim") return node.kind === "sum";
@@ -249,6 +251,14 @@ function measureBare(node, size, binary) {
     }
 
     // e and π: numbers that happen to be written as letters.
+    // 2⅓: the whole number, a hair of space, the fraction stacked beside it.
+    case "mixed": {
+      const whole = measure(node.w, size, "mixed", 0);
+      const part = measure(node.f, size, "mixed", 1);
+      const gap = 0.08 * size;
+      return { ...base, kind: "mixed", whole, part, gap, w: whole.w + gap + part.w,
+               ascent: Math.max(base.ascent, whole.ascent, part.ascent), descent: Math.max(base.descent, whole.descent, part.descent) };
+    }
     // A named equation, its number lowered the way it is written: E₁.
     case "ref": {
       const t = refFace(node.name);
@@ -441,6 +451,11 @@ function place(m, x, y, out) {
       place(m.e, x + m.b.w + m.kern, y - m.rise, out);
       break;
 
+    case "mixed":
+      place(m.whole, x, y, out);
+      place(m.part, x + m.whole.w + m.gap, y, out);
+      break;
+
     case "fn":
       text("fn", FN_FACE[m.node.name] || m.node.name, x, y, m.size, false);
       place(m.k, x + m.nameW + m.gap, y, out);
@@ -559,6 +574,7 @@ export function plain(node, parentKind = null, slot = 0) {
     }
     case "const": return wrap(node.name);
     case "ref":  return wrap(node.name);
+    case "mixed": return wrap(`${plain(node.w)} ${plain(node.f.a)}/${plain(node.f.b)}`);
     case "fn":   return wrap(`${node.name}${plain(node.k, "fn", 0)}`);
     case "deg":  return wrap(`${plain(node.k, "deg", 0)}°`);
     case "deriv": return wrap(`d/d${node.x}${plain(node.k, "deriv", 0)}`);

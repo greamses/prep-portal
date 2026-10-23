@@ -118,7 +118,20 @@ export function parse(src) {
   function atom() {
     const mark = from();
     const tk = peek();
-    if (tk.t === "num") { p++; return span(mark, A.num(R.fromDecimal(tk.v), tk.v.includes(".") ? tk.v : null)); }
+    /* 2 1/3 — a whole number, a SPACE, then a fraction of two whole numbers —
+       is the mixed number two and a third. Without the space (21/3) it is
+       twenty-one thirds, and 2·1/3 is still two thirds. */
+    if (tk.t === "num") {
+      const [n1, sl, n2] = [toks[p + 1], toks[p + 2], toks[p + 3]];
+      const whole = (t) => t && t.t === "num" && /^\d+$/.test(t.v);
+      if (whole(tk) && whole(n1) && sl?.t === "/" && whole(n2) && n1.at > tk.at + tk.v.length
+          && !(toks[p + 4] && toks[p + 4].t === "^")) {
+        p += 4;
+        return span(mark, A.mixed(A.num(R.fromDecimal(tk.v)), A.frac(A.num(R.fromDecimal(n1.v)), A.num(R.fromDecimal(n2.v)))));
+      }
+      p++;
+      return span(mark, A.num(R.fromDecimal(tk.v), tk.v.includes(".") ? tk.v : null));
+    }
     // e and π are numbers, not letters.
     if (tk.t === "var" && (tk.v === "e" || tk.v === "π")) { p++; return span(mark, A.cnst(tk.v)); }
     if (tk.t === "var") { p++; return span(mark, A.vr(tk.v)); }

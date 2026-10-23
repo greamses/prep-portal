@@ -1213,6 +1213,80 @@ export function poShenLoh(eq) {
   };
 }
 
+/* ── Mixed numbers ──────────────────────────────────────────────────────────
+   2⅓ is 2 + ⅓: the whole number is 2 × 3 thirds, so 2⅓ is (2 × 3 + 1)/3 —
+   written out with the multiplying showing, for "work it out" to finish. The
+   other way: 7 ÷ 3 is 2 remainder 1, so 7/3 is 2⅓. */
+export function mixedToImproper(eq, id) {
+  const m = A.findById(eq, id);
+  if (!m || m.kind !== "mixed") return { error: "That is not a mixed number." };
+  const next = A.frac(A.sum([A.prod([freshCopy(m.w), freshCopy(m.f.b)]), freshCopy(m.f.a)]), freshCopy(m.f.b));
+  return {
+    eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next),
+    note: `The whole number ${plain(m.w)} is ${plain(m.w)} × ${plain(m.f.b)} parts of ${plain(m.f.b)}, plus the ${plain(m.f.a)}: ${plain(next)}`,
+  };
+}
+
+export function improperToMixed(eq, id) {
+  const f = A.findById(eq, id);
+  if (!f || f.kind !== "frac") return { error: "That is not a fraction." };
+  if (A.parentOf(eq, id)?.kind === "mixed") return { error: "That is already part of a mixed number." };
+  const a = A.exactValue(f.a), b = A.exactValue(f.b);
+  if (!a || !b || !R.isInt(a) || !R.isInt(b) || b.n <= 1n) return { error: "Only a fraction of whole numbers turns into a mixed number." };
+  const top = a.n < 0n ? -a.n : a.n;
+  if (top < b.n) return { error: "That is a proper fraction already — less than one whole." };
+  const q = top / b.n, r = top % b.n;
+  if (r === 0n) return { error: `That is a whole number: ${q}.` };
+  let next = A.mixed(A.num(R.rat(q)), A.frac(A.num(R.rat(r)), A.num(R.rat(b.n))));
+  if (a.n < 0n) next = A.neg(next);
+  return {
+    eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next),
+    note: `${top} ÷ ${b.n} = ${q} remainder ${r}, so ${plain(f)} is ${plain(next)}`,
+  };
+}
+
+/* ── Cancelling across the bar ──────────────────────────────────────────────
+   Pick an a on top and an a underneath and they go: (ab + a²)/(4a) is
+   (b + a)/4. What goes is the most of that letter (or the biggest number) that
+   is a factor of EVERY term on top and every term underneath — the only thing
+   a fraction can be cancelled by. */
+function fractionAround(eq, nodeId) {
+  let child = A.findById(eq, nodeId);
+  for (let p = A.parentOf(eq, nodeId); p; child = p, p = A.parentOf(eq, p.id)) {
+    if (p.kind === "frac") return { frac: p, half: p.a === child ? "a" : "b" };
+  }
+  return null;
+}
+
+export function cancelAcross(eq, fracId, leaf) {
+  const F = A.findById(eq, fracId);
+  if (!F || F.kind !== "frac") return { error: "That is not a fraction." };
+  const tops = A.termsOf(unbracket(F.a)), bottoms = A.termsOf(unbracket(F.b));
+  const monos = [...tops, ...bottoms].map(mono);
+  if (monos.some((m) => !m)) return { error: "I can only cancel across plain terms." };
+  let factor;
+  if (leaf.kind === "var") {
+    const least = Math.min(...monos.map((m) => m.pows.get(leaf.name) || 0));
+    if (least < 1) return { error: `${leaf.name} is not in every term on top and underneath.` };
+    factor = { c: R.ONE, pows: new Map([[leaf.name, least]]) };
+  } else if (leaf.kind === "num" && R.isInt(leaf.v)) {
+    if (monos.some((m) => !R.isInt(m.c))) return { error: "Those are not whole numbers." };
+    const g = monos.reduce((acc, m) => gcdBig(acc, m.c.n < 0n ? -m.c.n : m.c.n), 0n);
+    if (g < 2n) return { error: "No number goes into every term on top and underneath." };
+    factor = { c: R.rat(g), pows: new Map() };
+  } else return { error: "Pick a letter or a number." };
+  const cut = (list) => list.map((t) => monoNode(divMono(mono(t), factor)));
+  const top = cut(tops), bottom = cut(bottoms);
+  const topNode = top.length === 1 ? top[0] : { ...A.sum(top), paren: false };
+  const bottomNode = bottom.length === 1 ? bottom[0] : A.sum(bottom);
+  const bv = A.exactValue(bottomNode);
+  const next = bv && R.isOne(bv) ? topNode : A.frac(topNode, bottomNode);
+  return {
+    eq: A.replace(eq, fracId, next), from: flyFrom(eq, next, fracId), mark: plain(next),
+    note: `Cancel ${plain(monoNode(factor))} top and bottom: ${plain(F)} is ${plain(next)}`,
+  };
+}
+
 /** Several terms picked: their highest common factor, taken out of just those. */
 export function factorPicked(eq, ids) {
   const locs = ids.map((id) => locate(eq, id));
@@ -2257,6 +2331,12 @@ export function atomOffers(eq, key, { given = null } = {}) {
     pick(pool(atomTerm(eq, key)), "invert", "degrees", "across", "combine", "pyth");
   } else if (slot === "bar") {
     const T = atomTerm(eq, key);
+    {
+      const toMixed = improperToMixed(eq, nodeId);
+      if (!toMixed.error) add(direct("tomixed", "Turn it into a mixed number", "divide, keep the remainder", toMixed));
+      const host = A.parentOf(eq, nodeId);
+      if (host?.kind === "mixed") add(direct("improper", "Turn it into an improper fraction", "whole × bottom + top", mixedToImproper(eq, host.id)));
+    }
     add(direct("cancel", "Cancel it down", "same number top and bottom", cancel(eq, nodeId)));
     tidiesAbove(nodeId);
     add(workOffer(nodeId));
@@ -2330,6 +2410,20 @@ export function atomOffers(eq, key, { given = null } = {}) {
       if (f && A.findById(f.a, nodeId)) add(splitOffer(F));
     }
     pick(p, "across", "combine", "square", "addfrac", "dropzero", "pyth");
+    // Any part of a mixed number: turn it into an improper fraction.
+    {
+      let m = A.parentOf(eq, nodeId);
+      if (m?.kind === "frac") m = A.parentOf(eq, m.id);
+      if (m?.kind === "mixed") add(direct("improper", "Turn it into an improper fraction", "whole × bottom + top", mixedToImproper(eq, m.id)));
+    }
+    // The same letter (or a shared number) on the other side of a bar: cancel it.
+    if (leaf && (leaf.kind === "var" || leaf.kind === "num")) {
+      const around = fractionAround(eq, nodeId);
+      if (around) {
+        const r = cancelAcross(eq, around.frac.id, leaf);
+        if (!r.error) add({ key: "cancel", label: r.note.split(":")[0], hint: "same factor top and bottom", mark: r.mark, run: () => r });
+      }
+    }
     // A letter or a number shared by two terms or more: take it out.
     if (leaf && (leaf.kind === "var" || leaf.kind === "num")) for (const o of factorOffers(eq, leaf)) add(o);
     /* Inside a fraction, the innermost term is just the top (the c of c/a),
@@ -2367,6 +2461,19 @@ export function atomOffers(eq, key, { given = null } = {}) {
     the = as one move, or fold into one term when they are like. One glyph
     picked is just atomOffers. */
 export function multiOffers(eq, keys, { given = null } = {}) {
+  // Above and below the same bar: cancel what they share.
+  if (keys.length >= 2) {
+    const spots = keys.map((k) => ({ leaf: A.findById(eq, keyParts(k).nodeId), at: fractionAround(eq, keyParts(k).nodeId) }));
+    const f = spots[0].at?.frac;
+    if (f && spots.every((s) => s.at?.frac.id === f.id) && new Set(spots.map((s) => s.at.half)).size === 2) {
+      // Whichever picked letter or number is shared by every term is the one that goes.
+      for (const { leaf } of spots) {
+        if (!leaf || (leaf.kind !== "var" && leaf.kind !== "num")) continue;
+        const r = cancelAcross(eq, f.id, leaf);
+        if (!r.error) return [{ key: "cancel", label: r.note.split(":")[0], hint: "same factor top and bottom", mark: r.mark, run: () => r }];
+      }
+    }
+  }
   const terms = [];
   for (const k of keys) {
     const t = atomTerm(eq, k);
@@ -2375,6 +2482,13 @@ export function multiOffers(eq, keys, { given = null } = {}) {
   if (terms.length < 2) return atomOffers(eq, keys[keys.length - 1], { given });
   const ids = terms.map((t) => t.id);
   const out = [];
+  // The surd and index rules for anything inside the picked terms.
+  {
+    const marks = new Set();
+    for (const t of terms) A.walk(t, (n) => {
+      for (const o of nodeTidies(eq, n)) if ((o.key === "surd" || o.key === "indices") && !marks.has(o.mark)) { marks.add(o.mark); out.push(o); }
+    });
+  }
   // The terms of a quadratic, picked: the factoring method — and, letters
   // and all, the perfect square (or completing it) when there is an x² in them.
   {
