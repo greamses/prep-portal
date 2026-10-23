@@ -309,8 +309,8 @@ function measureBare(node, size, binary) {
     /* d/dx as a small stacked fraction in front of its bracketed body. */
     case "deriv": {
       const s2 = size * 0.8;
-      const topW = measureText("d", s2, false);
-      const botW = measureText(`d${node.x}`, s2, false);
+      const topW = measureText("d", s2, true);
+      const botW = measureText(`d${node.x}`, s2, true);
       const fw = Math.max(topW, botW) + 0.12 * size;
       const axis = 0.3 * size, gap = 0.08 * size, rule = Math.max(1, 0.05 * size);
       const half = gap + (ASC + DESC) * s2;
@@ -331,7 +331,7 @@ function measureBare(node, size, binary) {
       const iSize = Math.max(size * 1.3, tall / (ASC + DESC));
       const iW = measureText("∫", iSize, false);
       const limW = Math.max(lo ? lo.w : 0, hi ? hi.w : 0);
-      const dxW = measureText(`d${node.x}`, size, false);
+      const dxW = measureText(`d${node.x}`, size, true);
       const up = 0.3 * size + ((ASC + DESC) / 2) * iSize;     // baseline to the ∫'s top
       const down = -0.3 * size + ((ASC + DESC) / 2) * iSize;  // baseline to its foot
       // After a substitution, what u stands for is written small beside it.
@@ -347,7 +347,7 @@ function measureBare(node, size, binary) {
     case "lim": {
       const limW = measureText("lim", size, false);
       const sub = size * 0.62;
-      const arrowW = measureText(`${node.x}→`, sub, false);
+      const arrowW = measureText(`${node.x}→`, sub, true);
       const to = measure(node.to, sub, "limto", 0);
       const subW = arrowW + to.w;
       const colW = Math.max(limW, subW);
@@ -497,8 +497,8 @@ function place(m, x, y, out) {
 
     case "deriv": {
       const barTop = y - m.axis - m.rule / 2;
-      text("dtop", "d", x + (m.fw - m.topW) / 2, barTop - m.gap - DESC * m.s2, m.s2, false);
-      text("dbot", `d${m.node.x}`, x + (m.fw - m.botW) / 2, barTop + m.rule + m.gap + ASC * m.s2, m.s2, false);
+      text("dtop", "d", x + (m.fw - m.topW) / 2, barTop - m.gap - DESC * m.s2, m.s2, true);
+      text("dbot", `d${m.node.x}`, x + (m.fw - m.botW) / 2, barTop + m.rule + m.gap + ASC * m.s2, m.s2, true);
       out.atoms.push({ key: `${id}#dbar`, nodeId: id, kind: "rule", x: x + 0.03 * m.size, y: barTop, w: m.fw - 0.06 * m.size, h: m.rule });
       place(m.k, x + m.fw + 0.06 * m.size, y, out);
       break;
@@ -513,10 +513,10 @@ function place(m, x, y, out) {
       if (m.lo) place(m.lo, lx, y + m.down - m.lo.descent, out);
       const bx = x + m.iW + m.limW + 0.1 * m.size;
       place(m.body, bx, y, out);
-      text("dx", `d${m.node.x}`, bx + m.body.w + 0.14 * m.size, y, m.size, false);
+      text("dx", `d${m.node.x}`, bx + m.body.w + 0.14 * m.size, y, m.size, true);
       if (m.back) {
         const ax = bx + m.body.w + 0.14 * m.size + m.dxW + 0.1 * m.size;
-        text("back", `, ${m.node.x} = `, ax, y, m.size * 0.62, false);
+        text("back", `, ${m.node.x} = `, ax, y, m.size * 0.62, true);
         place(m.back, ax + m.backLead, y, out);
       }
       break;
@@ -526,7 +526,7 @@ function place(m, x, y, out) {
       text("lim", "lim", x + (m.colW - m.limW) / 2, y, m.size, false);
       const sx = x + (m.colW - m.subW) / 2;
       const sy = y + m.subDrop;
-      text("limto", `${m.node.x}→`, sx, sy, m.sub, false);
+      text("limto", `${m.node.x}→`, sx, sy, m.sub, true);
       place(m.to, sx + m.arrowW, sy, out);
       place(m.body, x + m.colW + 0.18 * m.size, y, out);
       break;

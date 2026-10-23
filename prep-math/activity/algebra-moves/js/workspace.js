@@ -34,6 +34,7 @@ import { createLive } from "./live.js";
 import { readValue } from "./formulas.js";
 import * as A from "./ast.js";
 import { shellHTML } from "./shell.js";
+import { mountTooltips, setTip } from "/utils/components/tooltip.js";
 import { heroPaint } from "/utils/components/nav-icons.js";
 
 /* Where this workspace is mounted. Its own page hands over the whole frame
@@ -504,9 +505,32 @@ function addCard(eq, { given = null, title = "", find = "", name = "", uid = nul
  * The frame is filled from the one shell template unless it is already built,
  * so a page may lay the markup out itself and still get the same wiring.
  */
+/* ── One tooltip ────────────────────────────────────────────────────────────
+   Everything on this page that explains itself does it in the site's own
+   tooltip (utils/components/tooltip.js) — never the browser's. Cards, chips,
+   keys, notes and the live panel are made all the time and many carry a
+   `title`, so a watcher turns each one into the house tip as it appears. */
+function oneTooltip() {
+  mountTooltips();
+  const convert = (node) => {
+    if (!(node instanceof Element) || !node.hasAttribute("title") || node.closest("svg")) return;
+    const words = node.getAttribute("title");
+    if (words) setTip(node, words);
+    else node.removeAttribute("title");
+  };
+  document.querySelectorAll("[title]").forEach(convert);
+  new MutationObserver((changes) => {
+    for (const c of changes) {
+      if (c.type === "attributes") convert(c.target);
+      else c.addedNodes.forEach((n) => { if (n instanceof Element) { convert(n); n.querySelectorAll?.("[title]").forEach(convert); } });
+    }
+  }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["title"] });
+}
+
 export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
   root = frame;
   frameEl = frame;
+  oneTooltip();
   if (!frame.querySelector(".am-canvas")) frame.innerHTML = shellHTML();
 
   const paint = $(".am-paint");

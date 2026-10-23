@@ -7,6 +7,14 @@
    ========================================================================== */
 
 import { UI } from "/utils/components/ui-icons.js";
+import { PIN } from "./notes.js";
+
+/* Going live, in the house's filled icon language: a red dot sending out two
+   signal arcs either side. */
+const LIVE_ICON = `<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">`
+  + `<circle cx="12" cy="12" r="3.4" fill="var(--accent-danger,#c0453f)"/>`
+  + `<path d="M7.6 7.4a6.4 6.4 0 0 0 0 9.2M16.4 7.4a6.4 6.4 0 0 1 0 9.2" fill="none" stroke="var(--accent-secondary,#6aa5d8)" stroke-width="2.2" stroke-linecap="round"/>`
+  + `<path d="M4.6 4.6a10.4 10.4 0 0 0 0 14.8M19.4 4.6a10.4 10.4 0 0 1 0 14.8" fill="none" stroke="var(--accent-warning,#e0a63a)" stroke-width="2.2" stroke-linecap="round"/></svg>`;
 /** Everything inside the frame: the canvas, the rail and the keypad drawer. */
 export function shellHTML() {
   return `
@@ -22,43 +30,40 @@ export function shellHTML() {
         <div class="am-rail__group">
           <button class="pp-sticky pp-note-btn am-tool am-tool--key" type="button" id="am-add"
                   aria-expanded="false" aria-controls="am-drawer"
-                  title="Put a problem on the canvas" aria-label="Put a problem on the canvas">
+                  data-tip="New: put a problem on the canvas" aria-label="Put a problem on the canvas">
             ${UI.plus(17)}
-            <em>New</em>
           </button>
           <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-pinkey" hidden
-                  title="Pin a sticky note on the canvas" aria-label="Pin a sticky note on the canvas">
-            <em>Pin a note</em>
+                  data-tip="Pin a sticky note on the canvas" aria-label="Pin a sticky note on the canvas">
+            ${PIN.replace('width="14" height="14"', 'width="17" height="17"')}
           </button>
           <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-book" hidden
-                  title="The formula book" aria-label="The formula book">
-            <em>Formulas</em>
+                  data-tip="The formula book" aria-label="The formula book">
+            ${UI.book(17)}
           </button>
           <button class="pp-sticky pp-note-btn am-tool am-tool--live" type="button" id="am-golive"
-                  title="Start a live lesson: send the link, and your class works on this canvas with you"
+                  data-tip="Go live: send the link, and your class works on this canvas with you"
                   aria-label="Start a live lesson">
-            <i class="am-golive__dot" aria-hidden="true"></i>
-            <em>Go live</em>
+            ${LIVE_ICON}
           </button>
           <button class="pp-sticky pp-note-btn am-tool am-tool--do" type="button" id="am-work"
-                  title="How many steps are left?" aria-label="How many steps are left?">
+                  data-tip="Steps left: how far this one has to go" aria-label="How many steps are left?">
             ${UI.steps(17)}
-            <em>Steps left</em>
           </button>
         </div>
 
         <div class="am-rail__group">
-          <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-zoom-out" title="Zoom out" aria-label="Zoom out">
+          <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-zoom-out" data-tip="Zoom out" aria-label="Zoom out">
             ${UI.zoomOut(17)}
           </button>
-          <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-zoom-in" title="Zoom in" aria-label="Zoom in">
+          <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-zoom-in" data-tip="Zoom in" aria-label="Zoom in">
             ${UI.zoomIn(17)}
           </button>
-          <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-zoom-reset" title="Back to the middle" aria-label="Back to the middle">
+          <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-zoom-reset" data-tip="Back to the middle" aria-label="Back to the middle">
             ${UI.recentre(17)}
           </button>
           <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-full" aria-pressed="false"
-                  title="Fill the screen" aria-label="Fill the screen">
+                  data-tip="Fill the screen" aria-label="Fill the screen">
             ${UI.expand(17)}
           </button>
         </div>

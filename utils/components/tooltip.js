@@ -48,6 +48,9 @@ function show(node) {
   if (!text) return hide();
   if (target && target !== node) unlink(target);
   target = node;
+  /* Inside whatever fills the screen, or the tip opens behind it, unseen. */
+  const home = document.fullscreenElement || document.webkitFullscreenElement || document.body;
+  if (tip.parentNode !== home) home.appendChild(tip);
   tip.textContent = text;
   tip.hidden = false;
   place(node, node.dataset.tipSide || "top");
