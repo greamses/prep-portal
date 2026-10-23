@@ -72,13 +72,42 @@ function countUp() {
     : `${cards.length} ${cards.length === 1 ? "problem" : "problems"}`;
 }
 
+/* Letter -> the other card that finished there, x = 5, for "use what you
+   solved over there" offers. Never the card doing the asking — and never
+   assumed onto it either; this only ever builds a chip to tap, on purpose,
+   because two different problems can share a letter name by coincidence. */
+function solvedElsewhere(asking) {
+  const pool = new Map();
+  for (const other of cards) {
+    if (other === asking) continue;
+    const sv = other.solvedValue;
+    if (sv && !pool.has(sv.name)) pool.set(sv.name, { ...sv, card: other });
+  }
+  return pool;
+}
+
 /* ── The menu that follows the picked term ──────────────────────────────── */
 function openMenuFor(card) {
   const picked = card.picked;
   if (!picked) return menu.close();
 
   const moves = card.movesForPicked();
-  if (!moves.length) {
+
+  const pool = solvedElsewhere(card);
+  const reach = card.freeLettersInPick
+    .map((name) => pool.get(name))
+    .filter(Boolean)
+    .map((hit) => ({
+      key: "elsewhere",
+      label: `Use ${hit.name} = ${hit.text}, solved on "${hit.card.title}"`,
+      hint: "from another card",
+      mark: `${hit.name} = ${hit.text}`,
+      letter: hit.name,
+      value: hit.value,
+    }));
+
+  const offers = [...moves, ...reach];
+  if (!offers.length) {
     menu.close();
     // While a formula still has numbers to go into it, nothing else is offered
     // anywhere — so a term with no move is a term with no letter of its own to
@@ -90,8 +119,8 @@ function openMenuFor(card) {
     return say(card.solved ? "That one is finished." : "That one is already where it belongs.");
   }
 
-  menu.open(moves, () => card.rectFor(picked), (offer) => {
-    const result = card.apply(offer);
+  menu.open(offers, () => card.rectFor(picked), (offer) => {
+    const result = offer.letter ? card.useFromElsewhere(offer.letter, offer.value) : card.apply(offer);
     menu.close();
     if (result.refused) return say(`I will not do that — ${result.refused}.`, "no");
     say(result.note, "ok");

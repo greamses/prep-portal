@@ -11,9 +11,13 @@
      the paper you type on   a torn receipt, exactly like the site's doorways
      every button on them    a sticky note too (.pp-sticky .pp-note-btn)
 
-   The single exception is the KEYS. A key is not a note — you press it, it does
-   not sit on the desk — and it is set in the equation's own face, so that the 7
-   you press and the 7 that lands on the canvas are visibly the same 7.
+   Two exceptions, and they are the same rule twice. A KEY is not a note — you
+   press it, it does not sit on the desk — and it is set in the equation's own
+   face, so that the 7 you press and the 7 that lands on the canvas are visibly
+   the same 7. The MOVE CHIP (+5, ÷3, 20) is the same object wearing the same
+   rule: it is the key you would have pressed to get that result, floating
+   beside the term it acts on rather than fixed in a pad, so it is drawn like a
+   key too — not a note that happens to be doing the key's job.
 
    NOTE ON SPECIFICITY: loader.js re-imports components.css AFTER this file, so
    anything overriding a .pp-* declaration has to carry both class names or it
@@ -295,12 +299,12 @@
    the paper as a small square of border. */
 .am-menu[hidden] { display: none; }
 
-/* The chip itself: a note torn off and held beside the term. Big enough for a
-   thumb, short enough to read without reading, and set in the equation's own
-   face — it is a piece of algebra (+5, ÷3, 3x + 3), not a caption about one. */
-.pp-sticky.am-move {
-  --pp-note-bg: #f4c95d;
-  --pp-note-tilt: -2.4deg;
+/* The chip itself: the KEY you would have pressed, floating beside the term
+   it acts on rather than fixed in the pad below — same face, same paper,
+   same "not a note" rule as .am-key. Big enough for a thumb, short enough to
+   read without reading, and set in the equation's own face: it is a piece of
+   algebra (+5, ÷3, 3x + 3), not a caption about one. */
+.am-move {
   display: block;
   min-width: 3.1rem;
   min-height: 2.5rem;
@@ -311,9 +315,17 @@
   line-height: 1.45;
   white-space: nowrap;
   text-align: center;
+  color: var(--ink);
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 0;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.14s ease, background 0.14s ease;
 }
-.pp-sticky.am-move:hover { transform: rotate(var(--pp-note-tilt)) translateY(-2px); }
-.pp-sticky.am-move:focus-visible { outline: 2px solid #14130f; outline-offset: 2px; }
+.am-move:hover { background: var(--surface-secondary); }
+.am-move:active { transform: translateY(1px); box-shadow: none; }
+.am-move:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 /* ── What the tool is saying ────────────────────────────────────────────── */
 .am-say {

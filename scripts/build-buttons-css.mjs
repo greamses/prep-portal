@@ -56,6 +56,12 @@ const TOOLS = [
      100 and back — but in index form it is also the BASE of the expression it
      stands in, and a numeral wearing tape does not read as a numeral */
   ".wb-shift__ten",
+  /* Algebra Moves: the typing keypad's own keys, and the move chip that floats
+     beside a tapped term — both are the SAME key, set in the equation's own
+     face so the 7 you press and the 7 that lands on the canvas are visibly
+     the same 7. Shantell Sans and a sheet of yellow paper over that is a
+     calculator wearing a costume. */
+  ".am-key", ".am-move",
 ];
 
 // Not buttons, or must not be paper. `.pp-plain` is the opt-out.

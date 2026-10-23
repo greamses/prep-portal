@@ -14,8 +14,9 @@ import { UI } from "/utils/components/ui-icons.js";
 import { buildRow, paintRow, flipInto } from "./render.js";
 import { plain } from "./layout.js";
 import { preservesSolutions } from "./verify.js";
-import { isSolved, bestOffers } from "./solve.js";
-import { asNumbers, hasSubstitutions, offerTo, EQUALS } from "./ops.js";
+import { isSolved, bestOffers, solvedLetterValue } from "./solve.js";
+import { asNumbers, hasSubstitutions, offerTo, substitute, EQUALS } from "./ops.js";
+import * as A from "./ast.js";
 import * as R from "./rational.js";
 
 const SIZE = 34;
@@ -36,9 +37,12 @@ const TILTS = [-1.7, 1.2, -0.9, 1.8, -1.4, 0.8];
 
 let seq = 0;
 
+/** A single value as it is written on the card: 5, 1/2, −3. */
+const fmt = (v) => R.toText(v).replace(/-/g, "−");
+
 /** A given value as it is written on the card: v = 5, t = 1/2, a = −3. */
 const said = (given) =>
-  Object.entries(given).map(([k, v]) => `${k} = ${R.toText(v).replace(/-/g, "−")}`);
+  Object.entries(given).map(([k, v]) => `${k} = ${fmt(v)}`);
 
 export function createCard(eq, { x, y, given = null, title = "", find = "", onPick, onChange, onGesture, onRemove }) {
   const id = `card${++seq}`;
@@ -285,6 +289,25 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
     /** Is there still a number waiting to go into this line? */
     get waiting() { return hasSubstitutions(rows[rows.length - 1].row.eq, values); },
 
+    /** x = 5, once this card is finished there — what another card's
+        substitution can reach across for. */
+    get solvedValue() {
+      const sv = solvedLetterValue(rows[rows.length - 1].row.eq, { given: values });
+      return sv ? { ...sv, text: fmt(sv.value) } : null;
+    },
+
+    /** What to call this card in another card's menu. */
+    get title() { return title || plain(rows[0].row.eq); },
+
+    /** Letters standing in the picked term that THIS card was never given a
+        value for — candidates for pulling one in from another card. */
+    get freeLettersInPick() {
+      if (!picked) return [];
+      const node = A.findById(rows[rows.length - 1].row.eq, picked);
+      if (!node) return [];
+      return A.varsIn(node).filter((n) => !(values && n in values));
+    },
+
     /** Where a term sits on screen, so a menu can be put beside it. */
     rectFor(nodeId) {
       const last = rows[rows.length - 1];
@@ -315,6 +338,25 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
       // way working is annotated by hand: +5, ÷3. A tidying step's mark is the
       // answer it produced, which is already written on the line.
       push(result.eq, { from: result.from, note: MARGIN.has(offer.key) ? offer.mark : "" });
+      return { ok: true, note: result.note };
+    },
+
+    /** Reach into another card: substitute a value IT solved for, into
+        whatever letter in the picked term matches it. This is why `apply`
+        will not do: this card was never given that letter, so the verifier
+        has to be told about it just for this one check, the same way a
+        formula's own given values are. */
+    useFromElsewhere(letter, value) {
+      if (!picked) return { refused: "Nothing is picked." };
+      const extended = { ...(values || {}), [letter]: value };
+      const eq = rows[rows.length - 1].row.eq;
+      const result = substitute(eq, picked, extended);
+      if (result.error) return { refused: result.error };
+      const verdict = preservesSolutions(eq, result.eq, { given: asNumbers(extended) });
+      if (!verdict.ok) return { refused: verdict.why };
+      picked = null;
+      undone = [];
+      push(result.eq, { from: result.from, note: result.note });
       return { ok: true, note: result.note };
     },
 

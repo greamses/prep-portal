@@ -101,7 +101,9 @@ export function createKeypad(host, { onSubmit } = {}) {
   const go = document.createElement("button");
   go.type = "button";
   go.className = "pp-sticky pp-note-btn am-go";
-  go.textContent = "Put it on the canvas";
+  go.textContent = "Enter";
+  go.title = "Put it on the canvas";
+  go.setAttribute("aria-label", "Put it on the canvas");
 
   host.append(preview, line, say, give, pad, go);
 

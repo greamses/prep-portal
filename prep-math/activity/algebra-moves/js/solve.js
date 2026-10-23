@@ -61,6 +61,20 @@ export function isSolved(eq, { given = null } = {}) {
   return eq.l.kind === "var" && A.termsOf(eq.r).length === 1 && isNumberNode(eq.r);
 }
 
+/**
+ * The letter and number a finished line stands for — x = 5 once it is there —
+ * which is what another card's substitution can reach across for. Anything
+ * short of exactly that shape (an expression, a formula still waiting on a
+ * number, an equation not yet alone on one side) is not a value to hand out,
+ * so this returns null for all of it rather than guessing at one.
+ */
+export function solvedLetterValue(eq, { given = null } = {}) {
+  if (eq.kind !== "eq" || eq.l.kind !== "var") return null;
+  if (!isSolved(eq, { given })) return null;
+  const value = A.exactValue(eq.r);
+  return value ? { name: eq.l.name, value } : null;
+}
+
 /** 5 = x is the same answer, just written backwards — one "turn it round" away. */
 const isAnswerBackwards = (eq) =>
   eq.kind === "eq" && eq.r.kind === "var" && A.termsOf(eq.l).length === 1 && isNumberNode(eq.l);
