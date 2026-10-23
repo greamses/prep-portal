@@ -13,7 +13,7 @@ export const MENTAL_MATH = {
       grade: "jss1",
       system: "trachtenberg", // 'vedic' | 'trachtenberg' | 'blend'
       summary: "Start simple: split a 2-digit number and add its digits — the sum drops straight in, no carrying yet.",
-      href: "/prep-math/mental-math/times-eleven/index.html?case=2-no-regroup",
+      href: "/prep-math/mental-math/times-eleven/?case=2-no-regroup",
       ready: true,
     },
     {
@@ -22,7 +22,7 @@ export const MENTAL_MATH = {
       grade: "jss1",
       system: "trachtenberg",
       summary: "Same trick, but the digits add past 9 — practice carrying the extra 1 into the tens place.",
-      href: "/prep-math/mental-math/times-eleven/index.html?case=2-regroup",
+      href: "/prep-math/mental-math/times-eleven/?case=2-regroup",
       ready: true,
     },
     {
@@ -31,7 +31,7 @@ export const MENTAL_MATH = {
       grade: "jss1",
       system: "trachtenberg",
       summary: "Scale the same idea up to three or four digits — add every adjacent pair, still no carrying.",
-      href: "/prep-math/mental-math/times-eleven/index.html?case=3plus-no-regroup",
+      href: "/prep-math/mental-math/times-eleven/?case=3plus-no-regroup",
       ready: true,
     },
     {
@@ -40,7 +40,7 @@ export const MENTAL_MATH = {
       grade: "jss1",
       system: "trachtenberg",
       summary: "The full challenge: carries can cascade all the way down the line, even creating a new leading digit.",
-      href: "/prep-math/mental-math/times-eleven/index.html?case=3plus-regroup",
+      href: "/prep-math/mental-math/times-eleven/?case=3plus-regroup",
       ready: true,
     },
     {

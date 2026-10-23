@@ -242,7 +242,7 @@ export default async function middleware(request) {
       }
     }
 
-    const dest = new URL("/index.html", request.url);
+    const dest = new URL("/", request.url);
     dest.searchParams.set("login", "1");
     dest.searchParams.set("next", path + url.search);
     return Response.redirect(dest, 302);

@@ -167,7 +167,7 @@
 
     (async () => {
       if (!(await isFilmAdmin())) {
-        gate.innerHTML = 'Films are the admin\'s. <a href="/index.html">Go home</a>.';
+        gate.innerHTML = 'Films are the admin\'s. <a href="/">Go home</a>.';
         return;
       }
       gate.hidden = true;

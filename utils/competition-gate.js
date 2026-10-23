@@ -44,7 +44,7 @@ function block(title, message, loginHref) {
       '<div style="max-width:30rem">' +
       `<h1 style="font-family:Unbounded,system-ui,sans-serif;font-size:1.4rem;margin:0 0 .6rem">${title}</h1>` +
       `<p style="font-size:.85rem;line-height:1.6;color:#6b655c;margin:0 0 1.2rem">${message}</p>` +
-      (loginHref ? link(loginHref, "Sign in", true) : link("/exam-archive/national/exams/index.html", "Practice papers", true)) +
+      (loginHref ? link(loginHref, "Sign in", true) : link("/exam-archive/national/exams/", "Practice papers", true)) +
       link("/", "Home", false) +
       "</div></div>";
     reveal();
@@ -85,7 +85,7 @@ async function decide() {
   const user = await currentUser();
   if (!user) {
     const next = encodeURIComponent(location.pathname + location.search);
-    block("Sign in to open this paper", "This practice paper was shared with you. Sign in and it will open.", `/index.html?login=1&next=${next}`);
+    block("Sign in to open this paper", "This practice paper was shared with you. Sign in and it will open.", `/?login=1&next=${next}`);
     return;
   }
   if (user.email === ADMIN_EMAIL) { reveal(); return; }

@@ -171,7 +171,7 @@ export function printPass({ workbook, label }) {
           <div class="wb-pay__actions">
             <button type="button" class="pp-btn wb-tint-4" id="wb-pay-cancel">Not now</button>
             <a class="pp-btn" href="${signedOut
-              ? `/index.html?login=1&next=${encodeURIComponent(location.pathname)}`
+              ? `/?login=1&next=${encodeURIComponent(location.pathname)}`
               : "/subscribe.html#plans"}">${signedOut ? "Sign in" : "See plans"}</a>
           </div>
         </div>

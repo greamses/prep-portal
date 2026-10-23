@@ -696,7 +696,7 @@ const INTL_REGISTRY = {
                   id: "standard",
                   name: "Standard Paper",
                   live: true,
-                  url: "/exam-archive/international/cambridge/index.html",
+                  url: "/exam-archive/international/cambridge/",
                 },
               ],
             },

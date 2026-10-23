@@ -15,11 +15,11 @@
    ========================================================================== */
 
 export const GEOMETRY_TABS = [
-  { text: "Polygon Angles", href: "/prep-math/activity/polygon-angles/index.html" },
-  { text: "Transversals",   href: "/prep-math/activity/transversals/index.html" },
-  { text: "Pythagoras",     href: "/prep-math/activity/pythagoras/index.html" },
-  { text: "Surface Area",   href: "/prep-math/activity/surface-area/index.html" },
-  { text: "Circle Theorems", href: "/prep-math/activity/circle-theorems/index.html" },
+  { text: "Polygon Angles", href: "/prep-math/activity/polygon-angles/" },
+  { text: "Transversals",   href: "/prep-math/activity/transversals/" },
+  { text: "Pythagoras",     href: "/prep-math/activity/pythagoras/" },
+  { text: "Surface Area",   href: "/prep-math/activity/surface-area/" },
+  { text: "Circle Theorems", href: "/prep-math/activity/circle-theorems/" },
 ];
 
 /* A tab is current when the page sits in its folder, so /pythagoras/ and

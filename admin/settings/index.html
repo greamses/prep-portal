@@ -358,8 +358,8 @@
     }
 
     onAuthStateChanged(auth, async (user) => {
-      if (!user) { gate.innerHTML = 'Please <a href="/index.html?login=1">sign in</a> as an admin.'; return; }
-      if (!(await isAdmin())) { gate.innerHTML = 'Admins only. <a href="/index.html">Go home</a>.'; return; }
+      if (!user) { gate.innerHTML = 'Please <a href="/?login=1">sign in</a> as an admin.'; return; }
+      if (!(await isAdmin())) { gate.innerHTML = 'Admins only. <a href="/">Go home</a>.'; return; }
       gate.classList.add("hide"); main.classList.remove("hide");
       await load();
     });

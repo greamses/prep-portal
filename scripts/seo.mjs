@@ -246,7 +246,7 @@ function aboutBlock(page, access, html) {
         : `${esc(page.name)} is free to use with a Prep Portal account. Sign in or create one to start.`
     }</p>`);
     L.push(`      <p class="pp-about-actions">`);
-    L.push(`        <a class="pp-about-btn pp-about-btn--main" data-pp-login href="/index.html?login=1&amp;next=${next}">Sign in or create an account</a>`);
+    L.push(`        <a class="pp-about-btn pp-about-btn--main" data-pp-login href="/?login=1&amp;next=${next}">Sign in or create an account</a>`);
     if (access === "premium") L.push(`        <a class="pp-about-btn" href="/subscribe.html#plans">See the plans</a>`);
     L.push("      </p>");
   }

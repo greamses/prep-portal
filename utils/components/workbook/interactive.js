@@ -3006,11 +3006,11 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        A frame gives the whole studio with nothing rewritten, and takes its
        globals away with it when the panel shuts. */
     ...[
-      { id: "angles", label: "Polygon angles", at: "/prep-math/activity/polygon-angles/index.html" },
-      { id: "transversal", label: "Transversal angles", at: "/prep-math/activity/transversals/index.html" },
-      { id: "pythagoras", label: "Pythagoras", at: "/prep-math/activity/pythagoras/index.html" },
-      { id: "surface", label: "Surface area", at: "/prep-math/activity/surface-area/index.html" },
-      { id: "art", label: "Cartesian Art", at: "/prep-math/activity/cartesian-art/index.html" },
+      { id: "angles", label: "Polygon angles", at: "/prep-math/activity/polygon-angles/" },
+      { id: "transversal", label: "Transversal angles", at: "/prep-math/activity/transversals/" },
+      { id: "pythagoras", label: "Pythagoras", at: "/prep-math/activity/pythagoras/" },
+      { id: "surface", label: "Surface area", at: "/prep-math/activity/surface-area/" },
+      { id: "art", label: "Cartesian Art", at: "/prep-math/activity/cartesian-art/" },
     ].map((g) => ({
       id: g.id,
       label: g.label,

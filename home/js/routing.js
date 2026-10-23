@@ -1,13 +1,13 @@
 export const ROUTES = {
   HOME: "/",
   DASHBOARD: "/dashboard.html",
-  MANAGE_USERS: "/home/js/dashboard/index.html",
-  EXAM_ARCHIVE: "/exam-archive/national/exams/index.html",
+  MANAGE_USERS: "/home/js/dashboard/",
+  EXAM_ARCHIVE: "/exam-archive/national/exams/",
   MATH_LAB: "/math-lab/index.html",
-  EQUIVALENT_FRACTIONS: "/prep-math/activity/equivalent-fractions/index.html",
+  EQUIVALENT_FRACTIONS: "/prep-math/activity/equivalent-fractions/",
   TEACHER_REPORTS: "/teacher/reports/index.html",
   PARENT_REPORTS: "/reports/index.html",
-  SETTINGS: "/admin/settings/index.html",
+  SETTINGS: "/admin/settings/",
   ASSIGNMENTS: "/assignments/index.html",
 };
 

@@ -241,7 +241,7 @@
     });
 
     onAuthStateChanged(auth, (user) => {
-      if (!user) { $("ac-gate").innerHTML = 'Please <a href="/index.html?login=1&next=' + encodeURIComponent(location.pathname + location.search) + '">sign in</a> to open this activity.'; return; }
+      if (!user) { $("ac-gate").innerHTML = 'Please <a href="/?login=1&next=' + encodeURIComponent(location.pathname + location.search) + '">sign in</a> to open this activity.'; return; }
       load();
     });
   </script>

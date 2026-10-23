@@ -30,8 +30,8 @@ export function buildAdminPanels(user, data, layout) {
     <div class="db-panel span-full" style="padding: 1rem; margin-bottom: 0.5rem;">
       <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
         <p class="db-kicker" style="margin: 0;">Auto Content Engines:</p>
-        <a href="/blogs/auto/index.html?subject=animals" target="_blank" rel="noopener" class="brutal-btn-flat" style="text-decoration: none; padding: 6px 12px; font-size: 13px;">Animal Auto</a>
-        <a href="/blogs/auto/index.html?subject=plants" target="_blank" rel="noopener" class="brutal-btn-flat" style="text-decoration: none; padding: 6px 12px; font-size: 13px;">Plant Auto</a>
+        <a href="/blogs/auto/?subject=animals" target="_blank" rel="noopener" class="brutal-btn-flat" style="text-decoration: none; padding: 6px 12px; font-size: 13px;">Animal Auto</a>
+        <a href="/blogs/auto/?subject=plants" target="_blank" rel="noopener" class="brutal-btn-flat" style="text-decoration: none; padding: 6px 12px; font-size: 13px;">Plant Auto</a>
       </div>
     </div>
 

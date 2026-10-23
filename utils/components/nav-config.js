@@ -52,10 +52,10 @@ const NAV_CONFIG = [
         icon: I.national,
         description: "Original, exam-style CBT",
         children: [
-          { text: "Common Entrance style", href: "/exam-archive/national/exams/index.html", description: "Junior-secondary entrance practice" },
-          { text: "UTME-style", href: "/exam-archive/national/exams/index.html", description: "University matriculation practice" },
-          { text: "WASSCE-style", href: "/exam-archive/national/exams/index.html", description: "Senior-school certificate practice" },
-          { text: "Post-UTME style", href: "/exam-archive/national/exams/index.html?cat=national", description: "University screening practice" },
+          { text: "Common Entrance style", href: "/exam-archive/national/exams/", description: "Junior-secondary entrance practice" },
+          { text: "UTME-style", href: "/exam-archive/national/exams/", description: "University matriculation practice" },
+          { text: "WASSCE-style", href: "/exam-archive/national/exams/", description: "Senior-school certificate practice" },
+          { text: "Post-UTME style", href: "/exam-archive/national/exams/?cat=national", description: "University screening practice" },
         ],
       },
       {
@@ -63,9 +63,9 @@ const NAV_CONFIG = [
         icon: I.international,
         description: "Original, exam-style CBT",
         children: [
-          { text: "SAT-style", href: "/exam-archive/national/exams/index.html?cat=international", description: "US college-admissions practice" },
-          { text: "IGCSE-style", href: "/exam-archive/national/exams/index.html?cat=international", description: "International GCSE practice" },
-          { text: "A-Level-style", href: "/exam-archive/national/exams/index.html?cat=international", description: "Advanced-level practice" },
+          { text: "SAT-style", href: "/exam-archive/national/exams/?cat=international", description: "US college-admissions practice" },
+          { text: "IGCSE-style", href: "/exam-archive/national/exams/?cat=international", description: "International GCSE practice" },
+          { text: "A-Level-style", href: "/exam-archive/national/exams/?cat=international", description: "Advanced-level practice" },
         ],
       },
       {
@@ -73,10 +73,10 @@ const NAV_CONFIG = [
         icon: I.tools,
         description: "Mixed revision bank — not exam-specific",
         children: [
-          { text: "Practice questions", href: "/exam-archive/national/exams/index.html?cat=practice", description: "All subjects, mixed difficulty" },
-          { text: "Math Tricks", href: "/prep-math/mental-math/index.html", description: "Quick calculation tips" },
-          { text: "Drills", href: "/exam-archive/national/drills/index.html", description: "Timed times-tables — multiplayer or 1v1, bots fill empty seats" },
-          { text: "Puzzles", href: "/exam-archive/national/puzzles/index.html", description: "Timed Sudoku, Slider & Jigsaw races — multiplayer or 1v1, bots fill empty seats" },
+          { text: "Practice questions", href: "/exam-archive/national/exams/?cat=practice", description: "All subjects, mixed difficulty" },
+          { text: "Math Tricks", href: "/prep-math/mental-math/", description: "Quick calculation tips" },
+          { text: "Drills", href: "/exam-archive/national/drills/", description: "Timed times-tables — multiplayer or 1v1, bots fill empty seats" },
+          { text: "Puzzles", href: "/exam-archive/national/puzzles/", description: "Timed Sudoku, Slider & Jigsaw races — multiplayer or 1v1, bots fill empty seats" },
         ],
       },
     ],
@@ -123,9 +123,9 @@ const NAV_CONFIG = [
         icon: I.science,
         description: "Science made fun",
         children: [
-          { text: "Animal Biology Articles", href: "/blogs/index.html?s=animal", description: "Discover amazing creatures" },
-          { text: "Plant Science Articles", href: "/blogs/index.html?s=plants", description: "Explore green wonders" },
-          { text: "Human Body Facts", href: "/blogs/index.html?s=human-body", description: "Know your body" },
+          { text: "Animal Biology Articles", href: "/blogs/?s=animal", description: "Discover amazing creatures" },
+          { text: "Plant Science Articles", href: "/blogs/?s=plants", description: "Explore green wonders" },
+          { text: "Human Body Facts", href: "/blogs/?s=human-body", description: "Know your body" },
         ],
       },
     ],
@@ -165,8 +165,8 @@ const NAV_CONFIG = [
         icon: I.games,
         description: "Math practice games",
         children: [
-          { text: "2D Games", href: "/home/games/index.html?type=2d", description: "Board games, puzzles and arcade practice" },
-          { text: "3D Games", href: "/home/games/index.html?type=3d", description: "Immersive 3D simulations", badge: "Premium" },
+          { text: "2D Games", href: "/home/games/?type=2d", description: "Board games, puzzles and arcade practice" },
+          { text: "3D Games", href: "/home/games/?type=3d", description: "Immersive 3D simulations", badge: "Premium" },
         ],
       },
       {
@@ -174,15 +174,15 @@ const NAV_CONFIG = [
         icon: I.shapes,
         description: "Hands-on math practice",
         children: [
-          { text: "Algebra Moves", href: "/prep-math/activity/algebra-moves/index.html", description: "Name the move, watch the equation rearrange" },
-          { text: "Equivalent Fractions", href: "/prep-math/activity/equivalent-fractions/index.html", description: "Visualize fraction equivalence" },
+          { text: "Algebra Moves", href: "/prep-math/activity/algebra-moves/", description: "Name the move, watch the equation rearrange" },
+          { text: "Equivalent Fractions", href: "/prep-math/activity/equivalent-fractions/", description: "Visualize fraction equivalence" },
           /* The four geometry studios are one link with a tab bar across the
              top of each page (utils/components/geometry-tabs.js), rather than
              four sibling entries the reader has to tell apart. */
-          { text: "Geometry", href: "/prep-math/activity/polygon-angles/index.html", description: "Angles, transversals, Pythagoras and surface area" },
-          { text: "Number Match", href: "/prep-math/activity/number-match/index.html", description: "Match words, tallies and blocks to the number" },
-          { text: "Toy Shop", href: "/prep-math/activity/toy-shop/index.html", description: "Buy toys and work out the bill, the tax and the change" },
-          { text: "Card Tricks", href: "/prep-math/activity/card-tricks/index.html", description: "A real pack, and six tricks that are sums" },
+          { text: "Geometry", href: "/prep-math/activity/polygon-angles/", description: "Angles, transversals, Pythagoras and surface area" },
+          { text: "Number Match", href: "/prep-math/activity/number-match/", description: "Match words, tallies and blocks to the number" },
+          { text: "Toy Shop", href: "/prep-math/activity/toy-shop/", description: "Buy toys and work out the bill, the tax and the change" },
+          { text: "Card Tricks", href: "/prep-math/activity/card-tricks/", description: "A real pack, and six tricks that are sums" },
         ],
       },
       /* The workbooks are books now: they are on the Editorials shelf (below). */
@@ -194,12 +194,12 @@ const NAV_CONFIG = [
           /* The workbenches: open-ended things to think with rather than an
              exercise to work through, which is why they sit with the tools and
              not with the activities. */
-          { text: "Manipulatives", href: "/prep-math/activity/base-blocks/index.html", description: "Blocks, abacuses, algebra tiles and charts" },
-          { text: "Cartesian Art", href: "/prep-math/activity/cartesian-art/index.html", description: "Plot points to draw, then paint" },
-          { text: "Sentence Studio", href: "/writing/blocks/index.html", description: "Build writing out of blocks: sentences, paragraphs, whole compositions" },
-          { text: "Game Studio", href: "/code/studio/index.html", description: "Build a web page and a game out of blocks: HTML, CSS, JavaScript, Phaser" },
-          { text: "Writing Evaluator", href: "/writing/index.html", description: "Grade essays with red pen feedback" },
-          { text: "Theory Practice", href: "/theory-page/index.html", description: "AI-marked theory & essay questions" },
+          { text: "Manipulatives", href: "/prep-math/activity/base-blocks/", description: "Blocks, abacuses, algebra tiles and charts" },
+          { text: "Cartesian Art", href: "/prep-math/activity/cartesian-art/", description: "Plot points to draw, then paint" },
+          { text: "Sentence Studio", href: "/writing/blocks/", description: "Build writing out of blocks: sentences, paragraphs, whole compositions" },
+          { text: "Game Studio", href: "/code/studio/", description: "Build a web page and a game out of blocks: HTML, CSS, JavaScript, Phaser" },
+          { text: "Writing Evaluator", href: "/writing/", description: "Grade essays with red pen feedback" },
+          { text: "Theory Practice", href: "/theory-page/", description: "AI-marked theory & essay questions" },
           { text: "AI Flashcards", href: "/flashcards/library.html", description: "Remember everything fast" },
         ],
       },
@@ -227,12 +227,12 @@ const NAV_CONFIG = [
         icon: I.workbooks,
         description: "Print them, or do them on screen",
         children: [
-          { text: "Maths Workbook", href: "/prep-math/activity/maths-workbook/index.html", description: "Place value, sums, division, fractions, time, multiplying, prime factors, bar models, number bases" },
-          { text: "Geometry Workbook", href: "/prep-math/activity/geometry-workbook/index.html", description: "Angles, polygons, Pythagoras, circles, solids, area" },
-          { text: "Algebra Workbook", href: "/prep-math/activity/algebra-workbook/index.html", description: "From the bar model to quadratics, simultaneous equations, matrices, vectors and logic" },
-          { text: "Statistics Workbook", href: "/prep-math/activity/statistics-workbook/index.html", description: "Pictograms, bar charts, line graphs, pie charts, scatter graphs" },
-          { text: "Mental Maths Workbook", href: "/prep-math/activity/vedic-maths-workbook/index.html", description: "Mental-maths tricks: skill development with steps, or timed drills — complements, doubles, squares, roots, Trachtenberg" },
-          { text: "Competition Word Problems", href: "/prep-math/activity/word-problems-workbook/index.html", description: "Word problems for competitive exams: ages, mixtures, HCF and LCM, ratio, work, systems, series, counting, probability, percentages" },
+          { text: "Maths Workbook", href: "/prep-math/activity/maths-workbook/", description: "Place value, sums, division, fractions, time, multiplying, prime factors, bar models, number bases" },
+          { text: "Geometry Workbook", href: "/prep-math/activity/geometry-workbook/", description: "Angles, polygons, Pythagoras, circles, solids, area" },
+          { text: "Algebra Workbook", href: "/prep-math/activity/algebra-workbook/", description: "From the bar model to quadratics, simultaneous equations, matrices, vectors and logic" },
+          { text: "Statistics Workbook", href: "/prep-math/activity/statistics-workbook/", description: "Pictograms, bar charts, line graphs, pie charts, scatter graphs" },
+          { text: "Mental Maths Workbook", href: "/prep-math/activity/vedic-maths-workbook/", description: "Mental-maths tricks: skill development with steps, or timed drills — complements, doubles, squares, roots, Trachtenberg" },
+          { text: "Competition Word Problems", href: "/prep-math/activity/word-problems-workbook/", description: "Word problems for competitive exams: ages, mixtures, HCF and LCM, ratio, work, systems, series, counting, probability, percentages" },
         ],
       },
       {
@@ -240,11 +240,11 @@ const NAV_CONFIG = [
         icon: I.workbooks,
         description: "Grammar, comprehension, writing, vocabulary and spelling",
         children: [
-          { text: "Grammar Workbook", href: "/english/activity/grammar-workbook/index.html", description: "The job a word is doing in the sentence it is in — noun, verb, adjective, adverb and the rest" },
-          { text: "Comprehension Workbook", href: "/english/activity/comprehension-workbook/index.html", description: "Short numbered passages, with every answer naming the line it came from" },
-          { text: "Writing Workbook", href: "/english/activity/writing-workbook/index.html", description: "Building one sentence on purpose: word order, capitals and stops" },
-          { text: "Vocabulary Workbook", href: "/english/activity/vocabulary-workbook/index.html", description: "Opposites made with a prefix: un-, dis-, im-, il-, ir-, in-, mis- and non-" },
-          { text: "Spelling Workbook", href: "/english/activity/spelling-workbook/index.html", description: "Adding -ing and -ed: nothing changes, drop the e, double the letter, y becomes i" },
+          { text: "Grammar Workbook", href: "/english/activity/grammar-workbook/", description: "The job a word is doing in the sentence it is in — noun, verb, adjective, adverb and the rest" },
+          { text: "Comprehension Workbook", href: "/english/activity/comprehension-workbook/", description: "Short numbered passages, with every answer naming the line it came from" },
+          { text: "Writing Workbook", href: "/english/activity/writing-workbook/", description: "Building one sentence on purpose: word order, capitals and stops" },
+          { text: "Vocabulary Workbook", href: "/english/activity/vocabulary-workbook/", description: "Opposites made with a prefix: un-, dis-, im-, il-, ir-, in-, mis- and non-" },
+          { text: "Spelling Workbook", href: "/english/activity/spelling-workbook/", description: "Adding -ing and -ed: nothing changes, drop the e, double the letter, y becomes i" },
         ],
       },
       {
@@ -252,10 +252,10 @@ const NAV_CONFIG = [
         icon: I.tools,
         description: "Computing, to begin with",
         children: [
-          { text: "JavaScript Workbook", href: "/prep-math/activity/js-workbook/index.html", description: "Learn to code: data types and variables, with an editor and a console" },
+          { text: "JavaScript Workbook", href: "/prep-math/activity/js-workbook/", description: "Learn to code: data types and variables, with an editor and a console" },
         ],
       },
-      { text: "Our Workshop", href: "/editorials/index.html", icon: I.editorial, description: "Every workbook in one place — worked on screen, or printed" },
+      { text: "Our Workshop", href: "/editorials/", icon: I.editorial, description: "Every workbook in one place — worked on screen, or printed" },
     ],
   },
 ];

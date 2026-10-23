@@ -75,7 +75,7 @@ function showAbout() {
   if (!about) return false;
   const next = encodeURIComponent(location.pathname + location.search);
   about.querySelectorAll("[data-pp-login]").forEach((a) => {
-    a.href = "/index.html?login=1&next=" + next;
+    a.href = "/?login=1&next=" + next;
   });
   veil.textContent = "";
   veil.style.display = "block";
@@ -89,7 +89,7 @@ function showAbout() {
 function toLogin() {
   if (showAbout()) return;
   const next = encodeURIComponent(location.pathname + location.search);
-  location.replace("/index.html?login=1&next=" + next);
+  location.replace("/?login=1&next=" + next);
 }
 function toSubscribe() {
   veil.textContent = "Redirecting to plans…";

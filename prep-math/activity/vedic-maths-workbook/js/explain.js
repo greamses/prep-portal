@@ -41,7 +41,7 @@ import { wSvg, WHEEL, spinnerDisc, spinnerArrow } from "./tableart.js";
 
 /* Tricks with a full animated lesson in Learning with PrepBot. */
 const LESSONS = {
-  "vm-eleven": "/prep-math/mental-math/times-eleven/index.html",
+  "vm-eleven": "/prep-math/mental-math/times-eleven/",
 };
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");

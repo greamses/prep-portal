@@ -39,7 +39,7 @@ export function workbookScoresPanelHTML() {
           <p class="db-kicker" id="db-wb-kicker">Workbooks</p>
           <h2 class="db-panel-title">Scores</h2>
         </div>
-        <a class="db-icon-btn ib-blue" href="/prep-math/activity/maths-workbook/index.html"
+        <a class="db-icon-btn ib-blue" href="/prep-math/activity/maths-workbook/"
            title="Set a workbook for your class">${I.plus}</a>
       </div>
       <div id="db-wb-notices"></div>

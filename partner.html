@@ -300,7 +300,7 @@
     }
 
     onAuthStateChanged(auth, (user) => {
-      if (!user) { $("pt-gate").innerHTML = 'Please <a href="/index.html?login=1&next=/partner.html">sign in</a> to view your partner dashboard.'; return; }
+      if (!user) { $("pt-gate").innerHTML = 'Please <a href="/?login=1&next=/partner.html">sign in</a> to view your partner dashboard.'; return; }
       loadMe().catch((e) => { $("pt-gate").textContent = "Error: " + e.message; });
     });
   </script>

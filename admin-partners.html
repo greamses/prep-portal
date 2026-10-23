@@ -282,7 +282,7 @@
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        gate.innerHTML = 'Please <a href="/index.html?login=1">sign in</a> as an admin.';
+        gate.innerHTML = 'Please <a href="/?login=1">sign in</a> as an admin.';
         return;
       }
       if (!(await isAdmin())) {
