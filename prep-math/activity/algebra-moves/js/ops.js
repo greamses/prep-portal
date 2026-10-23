@@ -1201,6 +1201,30 @@ function commonBottoms(eq, first, second, fa, fb, da, db) {
   };
 }
 
+/** A term moved to another place on its side — the front, the end, one step. */
+export function moveTerm(eq, id, to) {
+  const loc = locate(eq, id);
+  if (!loc) return { error: "That is not one of the terms." };
+  const n = loc.terms.length;
+  const at = to === "front" ? 0 : to === "end" ? n - 1 : to === "left" ? loc.index - 1 : loc.index + 1;
+  if (at < 0 || at >= n || at === loc.index) return { error: "It is already there." };
+  const terms = [...loc.terms];
+  const [t] = terms.splice(loc.index, 1);
+  terms.splice(at, 0, t);
+  const next = A.sideFromTerms(terms, loc.container);
+  return { eq: setContainer(eq, loc, terms), from: new Map(), mark: plain(next), note: `The same terms, in a different order: ${plain(next)}` };
+}
+
+/** The four ways a sign offers to move the term it introduces. */
+function moveOffers(eq, termId) {
+  const out = [];
+  for (const [to, label] of [["left", "Swap with the term before"], ["right", "Swap with the term after"], ["front", "Move to the front"], ["end", "Move to the end"]]) {
+    const r = moveTerm(eq, termId, to);
+    if (!r.error) out.push({ key: "reorder", label, hint: "same terms, other order", mark: r.mark, run: () => r });
+  }
+  return out;
+}
+
 /** Two neighbouring terms the other way round — b² − 4ac rather than −4ac + b². */
 export function swapTerms(eq, aId, bId) {
   const la = locate(eq, aId), lb = locate(eq, bId);
@@ -2068,7 +2092,8 @@ export function atomOffers(eq, key, { given = null } = {}) {
       add(direct("square", "Complete the square", "(x + p/2)²", squareUp(eq, kid.id)));
     }
     pick(pool(atomTerm(eq, key)), "combine", "workout", "dropzero", "expand", "across", "pyth");
-    if (isContainer && kid && prev) add(direct("reorder", `Swap ${plain(prev)} and ${plain(kid)} round`, "same terms, other order", swapTerms(eq, prev.id, kid.id)));
+    // Where the term this sign introduces can go instead.
+    if (isContainer && kid) for (const o of moveOffers(eq, kid.id)) add(o);
     // A + on top of a bar: the fraction it sits in can be split at it.
     const parent = sum && A.parentOf(eq, sum.id);
     if (parent && parent.kind === "frac" && parent.a === sum) {
@@ -2082,6 +2107,8 @@ export function atomOffers(eq, key, { given = null } = {}) {
       if (!split.error) add({ key: "branches", label: "Split into the two answers", hint: "one card each", mark: "±", cards: split.cards });
     }
     pick(pool(atomTerm(eq, key)), "across", "flip", "expand", "combine", "addfrac", "workout");
+    const owner = atomTerm(eq, key);
+    if (owner && locate(eq, owner.id)?.terms.length > 1) for (const o of moveOffers(eq, owner.id)) add(o);
   } else if (CALC_SLOTS.has(slot)) {
     // The d/dx, the ∫, the lim, a sin: what that sign means comes first.
     tidiesAbove(nodeId);
@@ -2206,14 +2233,15 @@ export function multiOffers(eq, keys, { given = null } = {}) {
   if (terms.length < 2) return atomOffers(eq, keys[keys.length - 1], { given });
   const ids = terms.map((t) => t.id);
   const out = [];
-  const many = takeManyAcross(eq, ids);
-  if (!many.error) {
-    out.push({ key: "across", label: many.note, hint: "the balance rule", mark: many.mark, faces: many.faces, dir: many.dir, run: () => many });
-  }
+  // Like terms picked together are there to be collected: that comes first.
   const folded = combineMany(eq, ids);
   if (!folded.error) out.push({ key: "combine", label: folded.note, hint: "like terms", mark: folded.mark, run: () => folded });
   const fac = factorPicked(eq, ids);
   if (!fac.error) out.push({ key: "factor", label: fac.note.split(":")[0], hint: "the highest common factor", mark: fac.mark, run: () => fac });
+  const many = takeManyAcross(eq, ids);
+  if (!many.error) {
+    out.push({ key: "across", label: many.note, hint: "the balance rule", mark: many.mark, faces: many.faces, dir: many.dir, run: () => many });
+  }
   return hasSubstitutions(eq, given) ? [] : out;
 }
 

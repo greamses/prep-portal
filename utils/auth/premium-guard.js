@@ -133,6 +133,26 @@ function storeEntitlement(uid, ent) {
   } catch (e) {}
 }
 
+/* A LIVE LESSON is a seat, not a subscription. A learner who follows a host's
+   link (?live=CODE) on a page that runs live lessons (<meta name="pp-live-ns">)
+   is let in while that lesson is open — the host keeps `openUntil` fresh every
+   half-minute and sets it to 0 at the end, so an old link stops working on its
+   own. The same deal a workbook link gives a class. Read from the Realtime
+   Database, which only answers a signed-in user who holds the code. */
+async function liveSeat() {
+  try {
+    const code = new URLSearchParams(location.search).get("live");
+    const ns = document.querySelector('meta[name="pp-live-ns"]')?.content;
+    if (!code || !ns || !/^[A-Z0-9]{4,12}$/i.test(code)) return false;
+    const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js");
+    const db = getDatabase(app, "https://prep-portal-2026-default-rtdb.europe-west1.firebasedatabase.app");
+    const snap = await get(ref(db, `live/${ns}/${code.toUpperCase()}/state/openUntil`));
+    return Number(snap.val() || 0) > Date.now();
+  } catch (e) {
+    return false;
+  }
+}
+
 onAuthStateChanged(auth, async (user) => {
   clearTimeout(veilTimeout);
   if (!user) return toLogin();
@@ -162,7 +182,8 @@ onAuthStateChanged(auth, async (user) => {
   // premium check, so nothing loosens by accident.
   if (!featureId) {
     if (!ent) return reveal(); // read error → fail open (server still gates)
-    return ent.premium ? reveal() : toSubscribe();
+    if (ent.premium) return reveal();
+    return (await liveSeat()) ? reveal() : toSubscribe();
   }
 
   let verdict;
@@ -180,7 +201,8 @@ onAuthStateChanged(auth, async (user) => {
   if (verdict.reason === "premium-required") {
     // Only send to subscribe on a DEFINITIVE "not premium"; a failed profile
     // read fails open so a Firestore glitch never locks out a paying learner.
-    return entFresh && ent ? toSubscribe() : reveal();
+    if (!(entFresh && ent)) return reveal();
+    return (await liveSeat()) ? reveal() : toSubscribe();
   }
   return toDisabled(); // off / override-block / part-disabled
 });

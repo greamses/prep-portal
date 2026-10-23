@@ -762,6 +762,7 @@ export function createKeypad(host, { onSubmit } = {}) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.setAttribute("role", "tab");
+      btn.className = "am-subtab";
       btn.textContent = m.label;
       btn.addEventListener("pointerdown", (e) => {
         e.preventDefault();

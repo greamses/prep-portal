@@ -45,7 +45,7 @@ const fmt = (v) => R.toText(v).replace(/-/g, "−");
 const said = (given) =>
   Object.entries(given).map(([k, v]) => `${k} = ${fmt(v)}`);
 
-export function createCard(eq, { x, y, given = null, title = "", find = "", name = "", onPick, onChange, onGesture, onRemove, onEdit, onRename, onGrow }) {
+export function createCard(eq, { x, y, given = null, title = "", find = "", name = "", onPick, onChange, onGesture, onRemove, onEdit, onRename, onGrow, uid = null }) {
   const id = `card${++seq}`;
   const rows = [];        // { row, offset, note, from }
   // The GLYPH that is picked — its atom key (nodeId#slot), so the 3 and the x
@@ -567,6 +567,41 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
 
     get name() { return label; },
     set name(v) { label = v; showTag(); },
+
+    /* ── For a live classroom (live.js) ───────────────────────────────────
+       The card as data — every line as the text the parser reads back, its
+       margin note and its pinned notes — and the way back from that data. */
+    uid: uid || `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    snapshot() {
+      return {
+        name: label, title, find,
+        given: values ? Object.fromEntries(Object.entries(values).map(([k, v]) => [k, R.toText(v)])) : null,
+        x: parseFloat(el.style.left) || 0, y: parseFloat(el.style.top) || 0,
+        rows: rows.map((r) => ({ eq: plain(r.row.eq), note: r.note || "", pins: (r.pins || []).map((n) => ({ ...n })) })),
+      };
+    },
+    /** Replace the working with these lines (another person's). */
+    loadRows(list, parseLine) {
+      if (!list?.length) return;
+      picks = [];
+      undone = [];
+      rows.length = 0;
+      sheet.textContent = "";
+      for (const r of list) {
+        push(parseLine(r.eq), { animate: false, note: r.note || "" });
+        rows[rows.length - 1].pins = (r.pins || []).map((n) => ({ ...n }));
+      }
+      for (const entry of rows) refreshPins(entry);
+      relayout();
+    },
+    /** Someone else is working on this card: their name on it, or null. */
+    markWorker(names) {
+      let tag = el.querySelector(".am-card__worker");
+      if (!names) { tag?.remove(); el.classList.remove("is-worked"); return; }
+      if (!tag) { tag = document.createElement("span"); tag.className = "am-card__worker"; el.appendChild(tag); }
+      tag.textContent = names;
+      el.classList.add("is-worked");
+    },
 
     /** A line typed by hand, kept only if it says the same as the last one. */
     rewrite(nextEq) {

@@ -19,6 +19,7 @@
    Hangs off classroom-client.js for api/esc rather than growing a third copy.
    ════════════════════════════════════════════════════ */
 import { api, esc } from "./classroom-client.js";
+import { auth } from "/firebase-init.js";
 import { I } from "./icons.js";
 
 const when = (ms) => (ms
@@ -64,6 +65,7 @@ export async function mountWorkbookScores(layout) {
       ? assignments.map(row).join("")
       : `<div class="db-empty">You have not set a workbook yet. Build one, then press
            <b>Assign to my class</b> on the paper — the scores come back here.</div>`;
+    watchLive(host, assignments);
     host.querySelectorAll("[data-copy]").forEach((b) => {
       b.onclick = (e) => {
         e.preventDefault();
@@ -115,12 +117,55 @@ function row(a) {
       ${table}
       ${a.waiting.length
         ? `<p class="wbs-wait">In your class, no score yet: ${a.waiting.map(esc).join(", ")}</p>` : ""}
+      <p class="wbs-live" data-live="${esc(a.code)}" hidden></p>
       <div class="wbs-links">
         <a class="db-pill pill-blue" href="${esc(a.url)}" target="_blank" rel="noopener">Open the paper</a>
         <button class="db-pill pill-grey" type="button" data-copy="${esc(a.code)}">Copy link</button>
         <span class="wbs-code">${esc(a.code)}</span>
       </div>
     </details>`;
+}
+
+/* ── who is on it right now ─────────────────────────────────────────────────
+   The paper a student has open says so in the assignment's live room (see
+   workbook-play/player.js), with how far along they are. The scores above only
+   come in when somebody presses Check — this is the half that shows a class
+   AT WORK, so a teacher who has just sent the link sees them arrive here,
+   without opening the paper themselves. One room per assignment, the newest
+   ten: a long list of old assignments has nobody on it. */
+let liveRooms = [];
+async function watchLive(host, assignments) {
+  liveRooms.forEach((r) => r.leave().catch(() => {}));
+  liveRooms = [];
+  let openRoom, idFor;
+  try { ({ openRoom, idFor } = await import("/utils/live/index.js")); } catch { return; }
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
+  for (const a of assignments.slice(0, 10)) {
+    const line = host.querySelector(`[data-live="${CSS.escape(a.code)}"]`);
+    if (!line) continue;
+    const room = await openRoom({ ns: "wb", code: a.code, role: "teacher", me: { id: idFor(uid), name: "Teacher" } }).catch(() => null);
+    if (!room) continue;
+    liveRooms.push(room);
+    room.presence.set({ on: "the dashboard" });
+    let here = [], work = {};
+    const paint = () => {
+      const on = here.filter((p) => p.role === "student");
+      line.hidden = !on.length;
+      const summary = line.closest("details")?.querySelector(".db-assign-meta");
+      summary?.querySelector(".wbs-live-dot")?.remove();
+      if (!on.length) return;
+      summary?.insertAdjacentHTML("beforeend", ` <span class="wbs-live-dot">· ${on.length} working now</span>`);
+      line.innerHTML = `<b>Working now:</b> ` + on.map((p) => {
+        const w = work[p.id] || {};
+        const far = w.total ? ` (${w.filled} of ${w.total})` : " (just arrived)";
+        return `${esc(w.name || p.name)}${far}`;
+      }).join(", ");
+    };
+    room.on("presence", (people) => { here = people; paint(); });
+    room.on("state", (s) => { work = s || {}; paint(); });
+  }
+  window.addEventListener("pagehide", () => liveRooms.forEach((r) => r.leave()), { once: true });
 }
 
 /* ── what has come in since you last looked ────────────────────────────── */
@@ -218,6 +263,9 @@ function injectStyles() {
     .wbs-links { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; margin-top: 0.6rem; }
     .wbs-links a { text-decoration: none; }
     .wbs-links button { border: 0; cursor: pointer; }
+    .wbs-live { margin: 0.4rem 0 0.2rem; font-size: 0.82rem; color: var(--text-primary); }
+    .wbs-live b { color: var(--accent-success, #2f8f5b); }
+    .wbs-live-dot { color: var(--accent-success, #2f8f5b); font-weight: 600; }
     .wbs-code { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em;
       color: var(--text-tertiary, #9a948a); }
     .wbs-new { border: 2px dashed color-mix(in srgb, var(--accent-primary, #ffd76a) 60%, var(--ink));

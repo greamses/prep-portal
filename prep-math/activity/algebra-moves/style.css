@@ -305,11 +305,11 @@
    algebra (+5, ÷3, 3x + 3), not a caption about one. */
 .am-move {
   display: block;
-  min-width: 3.1rem;
-  min-height: 2.5rem;
-  padding: 0.32rem 0.8rem 0.38rem;
+  min-width: 2.3rem;
+  min-height: 1.9rem;
+  padding: 0.2rem 0.5rem 0.24rem;
   font-family: "STIX Two Text", "Times New Roman", serif;
-  font-size: 1.32rem;
+  font-size: 1.02rem;
   font-weight: 400;
   line-height: 1.45;
   white-space: nowrap;
@@ -337,7 +337,7 @@
   gap: 0.05rem;
 }
 .am-move__face { display: inline-flex; align-items: center; gap: 0.04em; line-height: 1; }
-.am-move__op { font-size: 1.2rem; }
+.am-move__op { font-size: 0.95rem; }
 .am-move__ink { display: block; overflow: visible; }
 
 /* A move that carries something over the = wears an arrow over it, pointing
@@ -432,7 +432,9 @@
   transition: transform var(--transition-bounce);
   pointer-events: none;
 }
-.am-drawer.is-open { transform: translate(-50%, -4.6rem); pointer-events: auto; }
+/* Open, it sits ON the bottom edge of the screen: lifted any higher, a full pad
+   pushed its own top up under the nav, out of sight. */
+.am-drawer.is-open { transform: translate(-50%, 0); pointer-events: auto; }
 
 /* The receipt's own shadow is a drop-shadow filter on the wrapper, which is
    what lets it follow the torn edge instead of squaring it off. */
@@ -446,7 +448,7 @@
    is still here for a short phone in landscape, but it should not be the
    normal way the pad is seen any more. */
 .am-drawer__roll {
-  max-height: calc(100vh - var(--am-nav) - 2.5rem);
+  max-height: calc(100dvh - var(--am-nav) - 1.5rem);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -622,11 +624,11 @@
    typing into the equation, but it is still a key and not a note sitting
    on the desk. CAPS (inside the Latin grid, built by hand — see keypad.js)
    shares the same look as the one kind of pad control that is not a note. */
-.am-subtabs { display: flex; gap: 0.6rem; }
+.am-subtabs { display: flex; gap: 0.6rem; padding: 0.25rem 0 0.35rem; }
 .am-subtab {
   flex: 1;
   min-width: 0;
-  padding: 0.3rem 0.2rem;
+  padding: 0.5rem 0.9rem;
   font-family: "STIX Two Text", "Times New Roman", serif;
   font-size: 0.88rem;
   color: var(--text-secondary);
@@ -1177,3 +1179,54 @@
 .am-free-note { position: absolute; z-index: 5; width: max-content; }
 .am-world > .pp-note { position: absolute; left: 0; top: 0; z-index: 40; }
 .am-world > .pp-note[hidden] { display: none; }
+
+/* ── A live lesson (js/live.js) ───────────────────────────────────────────── */
+.am-golive__dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--accent-danger, #c0453f);
+  box-shadow: 0 0 0 3px rgba(192, 69, 63, 0.18);
+}
+.am-live {
+  position: absolute;
+  z-index: 45;
+  top: 12px;
+  right: 12px;
+  width: min(19rem, calc(100% - 24px));
+  max-height: calc(100% - 7rem);
+  overflow-y: auto;
+  padding: 0.7rem 0.8rem 0.8rem;
+  background: var(--surface-primary, #fffdf7);
+  border: var(--border-subtle);
+  border-radius: 0;
+  box-shadow: var(--shadow-md, 0 6px 18px rgba(20, 19, 15, 0.14));
+  font-size: 0.86rem;
+  color: var(--text-primary);
+}
+.am-live header { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+.am-live__on {
+  font-weight: 700; color: #fff; background: var(--accent-danger, #c0453f);
+  padding: 0.08rem 0.45rem; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.72rem;
+}
+.am-live code { font-family: var(--font-mono, monospace); letter-spacing: 0.14em; font-weight: 700; }
+.am-live header button { margin-left: auto; font-size: 0.78rem; padding: 0.2rem 0.55rem; }
+.am-live header button + button { margin-left: 0; }
+.am-live__ctl { display: flex; align-items: center; gap: 0.4rem; margin: 0.55rem 0 0.2rem; cursor: pointer; }
+.am-live__count { margin: 0.45rem 0 0.3rem; color: var(--text-secondary); }
+.am-live ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+.am-live li { display: flex; align-items: center; gap: 0.45rem; }
+.am-live li span { margin-left: auto; color: var(--text-secondary); font-size: 0.78rem; }
+.am-live__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-success, #2f8f5b); flex: none; }
+
+/* Someone else has their hands on this card: their name on it. */
+.am-card.is-worked { outline: 2px solid var(--accent-secondary, #6aa5d8); outline-offset: 3px; }
+.am-card__worker {
+  position: absolute; left: 0; bottom: 100%; transform: translateY(-6px);
+  padding: 0.1rem 0.45rem; font-size: 0.74rem; font-weight: 600; white-space: nowrap;
+  color: #fff; background: var(--accent-secondary, #6aa5d8);
+}
+
+/* Watching while the host works: the board can be looked round, not touched. */
+.am-viewonly .am-card,
+.am-viewonly .am-free-note { pointer-events: none; }
+.am-viewonly #am-add,
+.am-viewonly #am-work { opacity: 0.4; pointer-events: none; }

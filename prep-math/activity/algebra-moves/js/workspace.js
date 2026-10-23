@@ -30,6 +30,8 @@ import { solve, bestOffers } from "./solve.js";
 import { applyToBoth, everyOffer, asNumbers, flattenSums } from "./ops.js";
 import { ruleFits } from "./rules.js";
 import { noteFace, noteWriter, newNote } from "./notes.js";
+import { createLive } from "./live.js";
+import { readValue } from "./formulas.js";
 import * as A from "./ast.js";
 import { shellHTML } from "./shell.js";
 import { heroPaint } from "/utils/components/nav-icons.js";
@@ -43,18 +45,6 @@ let frameEl = null;
 
 const $ = (sel) => root.querySelector(sel);
 
-/* Equations and expressions side by side, because the second kind is the one
-   nobody expects to be here. */
-const STARTERS = [
-  "3x + 5 = 20",
-  "2x - 7 = 4x + 1",
-  "3(x + 1) = 9",
-  "(3x + 5)/4 = 5",
-  "3x + 5 - x",
-  "2(x + 3) + 4x",
-  "-(3 - x)",
-  "12y/4 - y",
-];
 
 let canvas = null;
 let menu = null;
@@ -233,40 +223,92 @@ function startEdit(card, key) {
    view, ready to write on — as many as are wanted. Drag one anywhere, tap it
    to write, × to take it off; a note left blank is not kept. */
 let canvasWriter = null;
-const freeNotes = [];
+const freeNotes = [];     // { n, holder }
 export function pinNote() {
   if (!canvas) return;
-  canvasWriter ||= noteWriter(canvas.world);
   const at = canvas.centre();
-  const n = newNote(freeNotes.length % 6);
   // Each new one lands a little below and right of the last, not on top of it.
   const step = (freeNotes.length % 6) * 22;
+  const n = { ...newNote(freeNotes.length % 6), x: at.x - 110 + step, y: at.y - 30 + step };
+  placeFreeNote(n, { write: true });
+  say("A note on the canvas — write on it, then drag it wherever it helps.", "ok");
+}
+
+/** A note on the canvas, from its data — made here, or arriving from a live room. */
+function placeFreeNote(n, { write: open = false } = {}) {
+  canvasWriter ||= noteWriter(canvas.world);
   const holder = document.createElement("div");
   holder.className = "am-free-note";
-  holder.style.left = `${at.x - 110 + step}px`;
-  holder.style.top = `${at.y - 30 + step}px`;
+  holder.style.left = `${n.x}px`;
+  holder.style.top = `${n.y}px`;
+  const entry = { n, holder };
   const takeOff = () => {
     canvasWriter.drop(n);
     holder.remove();
-    freeNotes.splice(freeNotes.indexOf(n), 1);
+    const i = freeNotes.indexOf(entry);
+    if (i >= 0) freeNotes.splice(i, 1);
   };
   // The face is drawn again whenever the writing changes, and each face
   // opens the editor over itself.
   const mount = () => {
-    const face = noteFace(n, {
-      scaleOf: () => canvas.zoom,
-      onTap: () => write(face),
-      onDelete: takeOff,
-    });
+    const face = noteFace(n, { scaleOf: () => canvas.zoom, onTap: () => write(face), onDelete: takeOff });
     holder.replaceChildren(face);
     return face;
   };
   const write = (face) => canvasWriter.write(n, face, (note, { empty }) => (empty ? takeOff() : mount()));
+  entry.takeOff = takeOff;
+  entry.mount = mount;
   canvas.world.appendChild(holder);
-  freeNotes.push(n);
-  write(mount());
-  say("A note on the canvas — write on it, then drag it wherever it helps.", "ok");
+  freeNotes.push(entry);
+  const face = mount();
+  if (open) write(face);
+  return entry;
 }
+
+/* ── Live ───────────────────────────────────────────────────────────────────
+   The board as data for live.js, and the board rebuilt from it. */
+const liveCtx = () => ({
+  frame: frameEl,
+  say,
+  activeUid: () => (active && cards.includes(active) && active.picked ? active.uid : null),
+  items() {
+    const out = {};
+    for (const c of cards) out[`card_${c.uid}`] = c.snapshot();
+    for (const { n } of freeNotes) if (n.runs) out[`note_${n.id}`] = { ...n };
+    return out;
+  },
+  apply(key, data) {
+    if (key.startsWith("card_")) {
+      const uid = key.slice(5);
+      const here = cards.find((c) => c.uid === uid);
+      if (!data) { here?.remove(); return; }
+      let card = here;
+      if (!card) {
+        const given = data.given ? Object.fromEntries(Object.entries(data.given).map(([k, v]) => [k, readValue(v)])) : null;
+        card = addCard(parse(data.rows[0].eq), { given, title: data.title || "", find: data.find || "", name: data.name, uid });
+      }
+      const mine = card.snapshot();
+      if (JSON.stringify(mine.rows) !== JSON.stringify(data.rows)) card.loadRows(data.rows, parse);
+      if (mine.name !== data.name) { card.name = data.name; syncNames(); }
+      if (mine.x !== data.x || mine.y !== data.y) { card.el.style.left = `${data.x}px`; card.el.style.top = `${data.y}px`; }
+      return;
+    }
+    if (key.startsWith("note_")) {
+      const id = key.slice(5);
+      const here = freeNotes.find((f) => f.n.id === id);
+      if (!data) { here?.takeOff(); return; }
+      if (!here) { placeFreeNote({ ...data }); return; }
+      Object.assign(here.n, data);
+      here.holder.style.left = `${data.x}px`;
+      here.holder.style.top = `${data.y}px`;
+      here.mount();
+    }
+  },
+  markWorkers(map) { for (const c of cards) c.markWorker(map[c.uid] || null); },
+  setViewOnly(on) { frameEl.classList.toggle("am-viewonly", on); },
+});
+let live = null;
+const liveNow = () => (live ||= createLive(liveCtx()));
 
 /* ── Named equations ────────────────────────────────────────────────────────
    Every card is an equation with a name — E_1, E_2 — and the names are what
@@ -405,7 +447,7 @@ export function mountFormulaBook(host) {
 }
 
 /* ── Putting a problem on the paper ─────────────────────────────────────── */
-function addCard(eq, { given = null, title = "", find = "", name = "" } = {}) {
+function addCard(eq, { given = null, title = "", find = "", name = "", uid = null } = {}) {
   const spot = canvas.freeSpot(cards.map((c) => ({
     x: parseFloat(c.el.style.left), y: parseFloat(c.el.style.top),
     // offsetWidth/Height are the card's own pixels, untouched by the canvas
@@ -414,7 +456,7 @@ function addCard(eq, { given = null, title = "", find = "", name = "" } = {}) {
   })));
 
   const card = createCard(eq, {
-    x: spot.x, y: spot.y, given, title, find, name: name || nextName(),
+    x: spot.x, y: spot.y, given, title, find, name: name || nextName(), uid,
     onPick: (picked, self) => {
       // Only one card can hold the menu at a time.
       for (const other of cards) if (other !== self) other.clearPick();
@@ -509,15 +551,6 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
 
   wireTabs();
 
-  const chips = $("#am-starters");
-  STARTERS.forEach((src, i) => {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = `pp-sticky pp-note-btn am-starter pp-sticky--c${i % 6}`;
-    chip.textContent = src;
-    chip.addEventListener("click", () => keypad.set(src));
-    chips.appendChild(chip);
-  });
 
   // Tapping bare paper puts the menu away.
   $("#am-canvas").addEventListener("click", (e) => {
@@ -527,6 +560,10 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
   });
 
   $("#am-add").addEventListener("click", () => openDrawer());
+  $("#am-golive")?.addEventListener("click", () => liveNow().host());
+  // Opened from a host's link: join their lesson.
+  const joining = new URLSearchParams(location.search).get("live");
+  if (joining) setTimeout(() => liveNow().joinAs(joining.toUpperCase()), 0);
   $("#am-drawer-close").addEventListener("click", () => closeDrawer());
   $("#am-zoom-in").addEventListener("click", () => canvas.zoomBy(1.25));
   $("#am-zoom-out").addEventListener("click", () => canvas.zoomBy(0.8));
@@ -547,8 +584,8 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
     if (e.key === "Escape") { menu.close(); closeDrawer(); }
   });
 
-  // One of each kind, so the canvas says on sight that both are welcome here.
-  for (const src of ["3x + 5 = 20", "3x + 5 - x"]) addCard(parse(src));
+  // A clean slate: the canvas starts empty, and the first card is the
+  // student's own.
   canvas.reset();
   countUp();
   /* On its own page the keypad is the first thing to do, so it opens with the

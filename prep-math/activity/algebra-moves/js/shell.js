@@ -34,6 +34,12 @@ export function shellHTML() {
                   title="The formula book" aria-label="The formula book">
             <em>Formulas</em>
           </button>
+          <button class="pp-sticky pp-note-btn am-tool am-tool--live" type="button" id="am-golive"
+                  title="Start a live lesson: send the link, and your class works on this canvas with you"
+                  aria-label="Start a live lesson">
+            <i class="am-golive__dot" aria-hidden="true"></i>
+            <em>Go live</em>
+          </button>
           <button class="pp-sticky pp-note-btn am-tool am-tool--do" type="button" id="am-work"
                   title="How many steps are left?" aria-label="How many steps are left?">
             ${UI.steps(17)}
@@ -78,7 +84,6 @@ export function shellHTML() {
           <div class="am-pane" id="am-pane-type">
             <div class="am-keypad" id="am-keypad"></div>
 
-            <div class="am-starters" id="am-starters"></div>
             <p class="am-note">
               <a class="am-link" href="./api.html">see the engine</a>
             </p>

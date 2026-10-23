@@ -20,7 +20,7 @@ import { buildRow, paintRow, el } from "./render.js";
 /** The moves that carry something over the equals sign. */
 const MOVES = new Set(["across", "divide", "times"]);
 const OPS = "+−÷×";
-const FACE_SIZE = 20;
+const FACE_SIZE = 16;
 
 /** A curved arrow, drawn rather than typed so it can point either way. */
 function arrow(dir) {
