@@ -295,6 +295,28 @@ export function matInverse(A) {
   return cof.map((row) => row.map((v) => v / det));
 }
 
+/* ── ALGEBRAIC FRACTIONS — exact, never rounded to a decimal and back ──────
+   A fraction kept as a numerator and a denominator stays exactly what it
+   was asked to be; a decimal is already a rounding the moment it is typed.
+   Every result below is reduced to its lowest terms the same way a child
+   is taught to — the greatest common divisor, Euclid's algorithm — and the
+   sign always lives on the numerator, never the denominator. */
+const gcdInt = (a, b) => { a = Math.abs(Math.round(a)); b = Math.abs(Math.round(b)); while (b) { [a, b] = [b, a % b]; } return a || 1; };
+
+/** n/d, reduced to its lowest terms with the sign on top. */
+export function fracSimplify(n, d) {
+  if (d === 0) throw math();
+  if (n === 0) return { n: 0, d: 1 };
+  const sign = d < 0 ? -1 : 1;
+  n *= sign; d *= sign;
+  const g = gcdInt(n, d);
+  return { n: n / g, d: d / g };
+}
+export const fracAdd = (a, b) => fracSimplify(a.n * b.d + b.n * a.d, a.d * b.d);
+export const fracSub = (a, b) => fracSimplify(a.n * b.d - b.n * a.d, a.d * b.d);
+export const fracMul = (a, b) => fracSimplify(a.n * b.n, a.d * b.d);
+export function fracDiv(a, b) { if (b.n === 0) throw math(); return fracSimplify(a.n * b.d, a.d * b.n); }
+
 /** A number as a ten-digit display writes it. */
 export function format(x) {
   if (x === 0) return "0";

@@ -41,6 +41,7 @@ import {
   evaluate, format, fraction, show, CalcError,
   derivative, integral, solve,
   matAdd, matSub, matMul, matScale, matTranspose, matDet, matInverse,
+  fracSimplify, fracAdd, fracSub, fracMul, fracDiv,
   niceTicks,
 } from "/virtual-lab/chemistry-2d/js/calc.js";
 import { UI } from "/utils/components/ui-icons.js";
@@ -59,6 +60,17 @@ const FN = [
   ["R", "R", null, "", "fn"], ["F", "F", null, "", "fn"], ["Vm", "Vₘ", "Vr", "Vᵣ", "fn"],
   ["FX", "f(x)", null, "", "fn"], ["DX", "d/dx", "INTEG", "∫dx", "fn"], ["SOLVE", "SOLVE", null, "", "fn"],
   ["HIST", "HIST", "CLRHIST", "Clr All", "fn"], ["MAT", "MAT", "GRAPH", "GRAPH", "mode"],
+  ["MORE", "MORE", null, "", "mode"],
+];
+
+/** The machines MORE opens — each its own mode, same as MAT/GRAPH, just
+    reached through a list instead of a dedicated key: there is no room left
+    on the keypad for one key per machine, and a list is how a real
+    calculator's own MODE menu grows past the first handful anyway. */
+const MORE_MODES = [
+  { id: "sys", label: "Systems of equations" },
+  { id: "frac", label: "Algebraic fractions" },
+  { id: "base", label: "Number bases" },
 ];
 
 const NUM = [
@@ -155,6 +167,9 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
   if (!C.matBR) C.matBR = 2; if (!C.matBC) C.matBC = 2;
   if (!Array.isArray(C.matA)) C.matA = zeros(3);
   if (!Array.isArray(C.matB)) C.matB = zeros(3);
+  if (!C.sys || !Array.isArray(C.sys.rows)) C.sys = { n: 2, rows: zeros(3).map((r) => [...r, 0]) };
+  if (!C.frac) C.frac = { a: { n: 1, d: 2 }, b: { n: 1, d: 3 } };
+  if (!C.base) C.base = { active: "A", baseIn: 10, a: 0, b: 0 };
 
   /**
    * TWO CASES, AND THE CHILD CHOOSES. The machine comes in the dark grey of
@@ -195,6 +210,10 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
       </div>
     </div>
     <div class="cl-calc__mat" data-calc-mat hidden></div>
+    <div class="cl-calc__more" data-calc-more hidden></div>
+    <div class="cl-calc__sys" data-calc-sys hidden></div>
+    <div class="cl-calc__frac" data-calc-frac hidden></div>
+    <div class="cl-calc__base" data-calc-base hidden></div>
     <div class="cl-calc__fn" data-calc-fn>${FN.map(([k, face, sk, sface, kind]) =>
       `<span class="cl-calc__cell"><em>${sface}</em><button type="button" class="cl-key cl-key--${kind}" data-k="${esc(k)}"${sk ? ` data-s="${esc(sk)}"` : ""} aria-label="${esc(face)}${sface ? `; with shift, ${esc(sface)}` : ""}">${face}</button></span>`).join("")}</div>
     <div class="cl-calc__num" data-calc-num>${NUM.map(([k, face, kind]) =>
@@ -208,6 +227,7 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
   let ask = null;            // { kind: "dx" | "integ" | "solve", stage, a }
   let histOpen = false;
   let funcOpen = false;
+  let moreOpen = false;
   let view = { x0: -10, x1: 10, y0: null, y1: null };   // null y = auto-fit
   const exprEl = el.querySelector("[data-calc-expr]");
   const outEl = el.querySelector("[data-calc-out]");
@@ -216,6 +236,10 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
   const graphEl = el.querySelector("[data-calc-graph]");
   const gsvg = el.querySelector("[data-calc-gsvg]");
   const matEl = el.querySelector("[data-calc-mat]");
+  const moreEl = el.querySelector("[data-calc-more]");
+  const sysEl = el.querySelector("[data-calc-sys]");
+  const fracEl = el.querySelector("[data-calc-frac]");
+  const baseEl = el.querySelector("[data-calc-base]");
   const fnEl = el.querySelector("[data-calc-fn]");
   const numEl = el.querySelector("[data-calc-num]");
   wear();
@@ -244,12 +268,19 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
     el.querySelector('[data-flag="R"]').classList.toggle("is-on", !C.deg);
     el.classList.toggle("is-shift", shift);
     el.classList.toggle("is-asking", !!ask);
+    const gridMode = mode === "mat" || mode === "sys" || mode === "frac" || mode === "base";
     el.classList.toggle("is-mat", mode === "mat");
     el.classList.toggle("is-graph", mode === "graph");
+    el.classList.toggle("is-sys", mode === "sys");
+    el.classList.toggle("is-frac", mode === "frac");
+    el.classList.toggle("is-base", mode === "base");
     graphEl.hidden = mode !== "graph";
     matEl.hidden = mode !== "mat";
-    fnEl.hidden = mode === "mat";
-    numEl.hidden = mode === "mat";
+    sysEl.hidden = mode !== "sys";
+    fracEl.hidden = mode !== "frac";
+    baseEl.hidden = mode !== "base";
+    fnEl.hidden = gridMode;
+    numEl.hidden = gridMode;
     if (mode === "graph") drawGraph();
   }
 
@@ -345,6 +376,7 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
       keys = []; shown = null; ask = null;
       paintMat();
     }
+    else if (k === "MORE") { moreOpen = !moreOpen; paintMore(); return; }
     else {
       /* after a result, an operator carries on from it (Ans), anything else starts again */
       if (shown) { keys = !shown.err && !shown.multi && !ask && OPS.includes(k) ? ["Ans"] : []; shown = null; }
@@ -554,6 +586,212 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
     onChange(C);
   });
 
+  /* ── MORE — the list of machines there was no key left to give its own ── */
+  function paintMore() {
+    moreEl.hidden = !moreOpen;
+    el.classList.toggle("is-more-open", moreOpen);
+    if (!moreOpen) return;
+    moreEl.innerHTML = `<div class="cl-calc__morelist">${MORE_MODES.map((m) =>
+      `<button type="button" class="pp-plain cl-calc__morerow" data-moreto="${m.id}">${esc(m.label)}</button>`).join("")}</div>`;
+  }
+  moreEl.addEventListener("click", (e) => {
+    const to = e.target.closest("[data-moreto]")?.dataset.moreto;
+    if (!to) return;
+    moreOpen = false;
+    mode = to;
+    keys = []; shown = null; ask = null;
+    paintMore();
+    if (to === "sys") paintSys();
+    else if (to === "frac") paintFrac();
+    else if (to === "base") paintBase();
+    paint();
+  });
+
+  /* ── systems of equations — each row typed as plain coefficients,
+     solved exactly the way the matrix's own A⁻¹ already can: the answer IS
+     A⁻¹ times the column of constants, no different a sum than any other
+     the matrix panel already does. */
+  function sysCellsHtml(n) {
+    const vars = ["x", "y", "z"];
+    let out = "";
+    for (let r = 0; r < n; r++) {
+      out += `<div class="cl-sys__row">`;
+      for (let j = 0; j < n; j++) {
+        out += `${j ? `<span>+</span>` : ""}<input class="cl-sys__cell" type="text" inputmode="decimal" data-sys="${r}" data-j="${j}"`
+          + ` value="${C.sys.rows[r][j] === 0 ? "" : C.sys.rows[r][j]}" aria-label="row ${r + 1}, coefficient of ${vars[j]}"><i>${vars[j]}</i>`;
+      }
+      out += `<span>=</span><input class="cl-sys__cell" type="text" inputmode="decimal" data-sys="${r}" data-j="${n}"`
+        + ` value="${C.sys.rows[r][n] === 0 ? "" : C.sys.rows[r][n]}" aria-label="row ${r + 1}, constant"></div>`;
+    }
+    return out;
+  }
+  function paintSys(resultHtml = "") {
+    const n = C.sys.n;
+    sysEl.innerHTML = `
+      <div class="cl-mat__dims">
+        <div class="cl-mat__dimrow"><i>unknowns</i>
+          <span class="cl-mat__rc">${[2, 3].map((v) => `<button type="button" class="pp-plain cl-mat__dimbtn${v === n ? " is-on" : ""}" data-sysn="${v}" aria-label="${v} unknowns">${v}</button>`).join("")}</span>
+          <button type="button" class="pp-plain cl-mat__back" data-sop="comp" aria-label="Back to the ordinary keypad">← COMP</button>
+        </div>
+      </div>
+      <div class="cl-sys__eqs">${sysCellsHtml(n)}</div>
+      <button type="button" class="cl-key cl-key--eq cl-sys__go" data-sop="solve">SOLVE</button>
+      <div class="cl-mat__result" data-sys-result>${resultHtml}</div>`;
+  }
+  sysEl.addEventListener("click", (e) => {
+    const sn = e.target.closest("[data-sysn]")?.dataset.sysn;
+    if (sn) { C.sys.n = Number(sn); onChange(C); paintSys(); return; }
+    const sop = e.target.closest("[data-sop]")?.dataset.sop;
+    if (!sop) return;
+    if (sop === "comp") { mode = "comp"; paint(); return; }
+    const n = C.sys.n;
+    const vars = ["x", "y", "z"];
+    try {
+      const A = C.sys.rows.slice(0, n).map((r) => r.slice(0, n));
+      const b = C.sys.rows.slice(0, n).map((r) => [r[n]]);
+      const x = matMul(matInverse(A), b).map((r) => r[0]);
+      sysEl.querySelector("[data-sys-result]").innerHTML = `<p class="cl-mat__scalar">${x.map((v, i) => `${vars[i]}=${say(v)}`).join("   ")}</p>`;
+    } catch {
+      sysEl.querySelector("[data-sys-result]").innerHTML = `<p class="cl-mat__scalar is-err">No Unique Solution</p>`;
+    }
+  });
+  sysEl.addEventListener("input", (e) => {
+    const r = Number(e.target.dataset.sys);
+    if (!Number.isInteger(r)) return;
+    const j = Number(e.target.dataset.j);
+    const v = Number(e.target.value);
+    C.sys.rows[r][j] = Number.isFinite(v) ? v : 0;
+    onChange(C);
+  });
+
+  /* ── algebraic fractions — kept EXACT, never rounded to a decimal and
+     back; S⇔D on the ordinary keypad only ever approximates a decimal
+     that is already on screen, which is a different thing from doing the
+     arithmetic itself in fractions. */
+  function fracPart(which) { return C.frac[which.toLowerCase()]; }
+  function fracOneHtml(which) {
+    const f = fracPart(which);
+    return `<div class="cl-frac__one"><b>${which}</b>
+      <input class="cl-frac__cell" type="text" inputmode="decimal" data-frac="${which}" data-part="n" value="${f.n}" aria-label="${which}, numerator">
+      <i>⁄</i>
+      <input class="cl-frac__cell" type="text" inputmode="decimal" data-frac="${which}" data-part="d" value="${f.d}" aria-label="${which}, denominator"></div>`;
+  }
+  function fracShow(f) { return `${f.n < 0 ? "−" : ""}${Math.abs(f.n)}⁄${f.d}`; }
+  function paintFrac(resultHtml = "") {
+    fracEl.innerHTML = `
+      <div class="cl-mat__dims"><span></span><button type="button" class="pp-plain cl-mat__back" data-fop="comp" aria-label="Back to the ordinary keypad">← COMP</button></div>
+      <div class="cl-frac__pair">${fracOneHtml("A")}${fracOneHtml("B")}</div>
+      <div class="cl-mat__ops">
+        <button type="button" class="cl-key cl-key--fn" data-fop="add">A+B</button>
+        <button type="button" class="cl-key cl-key--fn" data-fop="sub">A−B</button>
+        <button type="button" class="cl-key cl-key--fn" data-fop="mul">A×B</button>
+        <button type="button" class="cl-key cl-key--fn" data-fop="div">A÷B</button>
+        <button type="button" class="cl-key cl-key--fn" data-fop="simpA">Simplify A</button>
+        <button type="button" class="cl-key cl-key--fn" data-fop="simpB">Simplify B</button>
+        <button type="button" class="cl-key cl-key--fn" data-fop="decA">A→decimal</button>
+        <button type="button" class="cl-key cl-key--fn" data-fop="decB">B→decimal</button>
+      </div>
+      <div class="cl-mat__result" data-frac-result>${resultHtml}</div>`;
+  }
+  fracEl.addEventListener("click", (e) => {
+    const op = e.target.closest("[data-fop]")?.dataset.fop;
+    if (!op) return;
+    if (op === "comp") { mode = "comp"; paint(); return; }
+    const out = fracEl.querySelector("[data-frac-result]");
+    try {
+      const A = fracPart("A"), B = fracPart("B");
+      if (op === "add") out.innerHTML = `<p class="cl-mat__scalar">${fracShow(fracAdd(A, B))}</p>`;
+      else if (op === "sub") out.innerHTML = `<p class="cl-mat__scalar">${fracShow(fracSub(A, B))}</p>`;
+      else if (op === "mul") out.innerHTML = `<p class="cl-mat__scalar">${fracShow(fracMul(A, B))}</p>`;
+      else if (op === "div") out.innerHTML = `<p class="cl-mat__scalar">${fracShow(fracDiv(A, B))}</p>`;
+      else if (op === "simpA") { C.frac.a = fracSimplify(A.n, A.d); onChange(C); paintFrac(out.innerHTML); }
+      else if (op === "simpB") { C.frac.b = fracSimplify(B.n, B.d); onChange(C); paintFrac(out.innerHTML); }
+      else if (op === "decA") out.innerHTML = `<p class="cl-mat__scalar">${say(A.n / A.d)}</p>`;
+      else if (op === "decB") out.innerHTML = `<p class="cl-mat__scalar">${say(B.n / B.d)}</p>`;
+    } catch (err) {
+      out.innerHTML = `<p class="cl-mat__scalar is-err">${esc(err instanceof CalcError ? err.message : "Math ERROR")}</p>`;
+    }
+  });
+  fracEl.addEventListener("input", (e) => {
+    const which = e.target.dataset.frac, part = e.target.dataset.part;
+    if (!which || !part) return;
+    const v = Number(e.target.value);
+    C.frac[which.toLowerCase()][part] = Number.isFinite(v) ? Math.round(v) : (part === "d" ? 1 : 0);
+    onChange(C);
+  });
+
+  /* ── number bases — two registers, typed in whichever base is picked,
+     read back in all four at once */
+  const BASE_DIGITS = "0123456789ABCDEF";
+  function baseStr(v, r) { return (v < 0 ? "-" : "") + Math.abs(Math.trunc(v)).toString(r).toUpperCase(); }
+  function paintBase(resultHtml = "") {
+    const active = C.base.active, radix = C.base.baseIn;
+    baseEl.innerHTML = `
+      <div class="cl-mat__dims">
+        <span class="cl-mat__rc">${[["BIN", 2], ["OCT", 8], ["DEC", 10], ["HEX", 16]].map(([lab, r]) =>
+          `<button type="button" class="pp-plain cl-base__basebtn${r === radix ? " is-on" : ""}" data-basein="${r}">${lab}</button>`).join("")}</span>
+        <button type="button" class="pp-plain cl-mat__back" data-bop="comp" aria-label="Back to the ordinary keypad">← COMP</button>
+      </div>
+      <div class="cl-base__regs">
+        <button type="button" class="pp-plain cl-base__reg${active === "A" ? " is-on" : ""}" data-basereg="A"><b>A</b> <span>${baseStr(C.base.a, radix)}</span></button>
+        <button type="button" class="pp-plain cl-base__reg${active === "B" ? " is-on" : ""}" data-basereg="B"><b>B</b> <span>${baseStr(C.base.b, radix)}</span></button>
+      </div>
+      <div class="cl-base__pad">${BASE_DIGITS.split("").map((d, i) =>
+        `<button type="button" class="pp-plain cl-base__digit" data-basedig="${d}"${i >= radix ? " disabled" : ""}>${d}</button>`).join("")}
+        <button type="button" class="pp-plain cl-base__digit cl-base__clr" data-basedig="AC">AC</button></div>
+      <div class="cl-mat__ops">
+        <button type="button" class="cl-key cl-key--fn" data-bop="add">A+B</button>
+        <button type="button" class="cl-key cl-key--fn" data-bop="sub">A−B</button>
+        <button type="button" class="cl-key cl-key--fn" data-bop="mul">A×B</button>
+        <button type="button" class="cl-key cl-key--fn" data-bop="div">A÷B</button>
+        <button type="button" class="cl-key cl-key--fn" data-bop="and">AND</button>
+        <button type="button" class="cl-key cl-key--fn" data-bop="or">OR</button>
+        <button type="button" class="cl-key cl-key--fn" data-bop="xor">XOR</button>
+        <button type="button" class="cl-key cl-key--fn" data-bop="not">NOT A</button>
+      </div>
+      <div class="cl-mat__result" data-base-result>${resultHtml}</div>`;
+  }
+  function baseAssign(v) {
+    C.base[C.base.active === "A" ? "a" : "b"] = v;
+    onChange(C);
+  }
+  baseEl.addEventListener("click", (e) => {
+    const bi = e.target.closest("[data-basein]")?.dataset.basein;
+    if (bi) { C.base.baseIn = Number(bi); onChange(C); paintBase(); return; }
+    const reg = e.target.closest("[data-basereg]")?.dataset.basereg;
+    if (reg) { C.base.active = reg; onChange(C); paintBase(); return; }
+    const dig = e.target.closest("[data-basedig]")?.dataset.basedig;
+    if (dig) {
+      const cur = C.base.active === "A" ? C.base.a : C.base.b;
+      if (dig === "AC") baseAssign(0);
+      else {
+        const next = cur * C.base.baseIn + BASE_DIGITS.indexOf(dig);
+        if (Number.isSafeInteger(next)) baseAssign(next);
+      }
+      paintBase();
+      return;
+    }
+    const bop = e.target.closest("[data-bop]")?.dataset.bop;
+    if (!bop) return;
+    if (bop === "comp") { mode = "comp"; paint(); return; }
+    const A = C.base.a, B = C.base.b, r = C.base.baseIn;
+    const out = baseEl.querySelector("[data-base-result]");
+    try {
+      let v;
+      if (bop === "add") v = A + B;
+      else if (bop === "sub") v = A - B;
+      else if (bop === "mul") v = A * B;
+      else if (bop === "div") { if (!B) throw new CalcError("Math ERROR"); v = Math.trunc(A / B); }
+      else if (bop === "and") v = A & B;
+      else if (bop === "or") v = A | B;
+      else if (bop === "xor") v = A ^ B;
+      else v = ~A;
+      out.innerHTML = `<p class="cl-mat__scalar">${baseStr(v, r)}</p>`;
+    } catch (err) {
+      out.innerHTML = `<p class="cl-mat__scalar is-err">${esc(err instanceof CalcError ? err.message : "Math ERROR")}</p>`;
+    }
+  });
+
   el.addEventListener("click", (e) => {
     if (e.target.closest("[data-calc-skin]")) {
       skin = skin === "paper" ? "" : "paper";
@@ -585,5 +823,8 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
 
   paint();
   paintMat();
+  paintSys();
+  paintFrac();
+  paintBase();
   return { el, press, paint, get keys() { return keys.slice(); } };
 }

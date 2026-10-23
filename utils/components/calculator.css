@@ -58,7 +58,11 @@
 /* the MAT/GRAPH key: the same grey fn key, a line under it while that mode
    is the one showing, so the machine says which hand it's in */
 .cl-key--mode { height: 22px; background: linear-gradient(180deg, #5b6470, #3b424c); box-shadow: 0 2px 0 #14171b, inset 0 1px 0 rgba(255, 255, 255, 0.28); }
-.cl-calc.is-mat .cl-key--mode, .cl-calc.is-graph .cl-key--mode { box-shadow: 0 0 0 1px #f4c95d inset, 0 2px 0 #14171b; }
+/* each mode key lights up only for ITS OWN mode(s) — .cl-key--mode is shared
+   by MAT/GRAPH and MORE, and a selector keyed off the class alone would
+   have lit both whenever either was active */
+.cl-calc.is-mat [data-k="MAT"], .cl-calc.is-graph [data-k="MAT"] { box-shadow: 0 0 0 1px #f4c95d inset, 0 2px 0 #14171b; }
+.cl-calc.is-sys [data-k="MORE"], .cl-calc.is-frac [data-k="MORE"], .cl-calc.is-base [data-k="MORE"], .cl-calc.is-more-open [data-k="MORE"] { box-shadow: 0 0 0 1px #f4c95d inset, 0 2px 0 #14171b; }
 
 /* ── HISTORY — the tape, pulled down over the keypad ─────────────────────
    Not a popover off the machine (the machine is 264px wide and often
@@ -140,6 +144,62 @@
 }
 .cl-func__live { margin: 0; font: 700 0.68rem var(--font-mono); color: #f2f5f8; text-align: center; }
 
+/* ── MORE — the list of machines there is no key left for ───────────────── */
+.cl-calc__more[hidden] { display: none; }
+.cl-calc__more { margin-top: 6px; max-height: 190px; overflow-y: auto; background: #0e1114; border: 2px solid #0d0f12; }
+.cl-calc__morelist { display: flex; flex-direction: column; }
+.cl-calc__morerow {
+  padding: 7px 8px; border: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: none; color: #c9d0d8; text-align: left; font: 700 0.64rem var(--font-mono); cursor: pointer;
+}
+.cl-calc__morerow:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+
+/* ── SYSTEMS OF EQUATIONS — plain coefficients, solved the way the
+   matrix's own inverse already can (the answer IS A⁻¹ · constants) ──────── */
+.cl-calc__sys[hidden] { display: none; }
+.cl-calc__sys { margin-top: 6px; }
+.cl-sys__eqs { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+.cl-sys__row { display: flex; align-items: center; gap: 3px; font: 700 0.6rem var(--font-mono); color: #c9d0d8; }
+.cl-sys__row span { color: #8a93a0; }
+.cl-sys__row i { font-style: normal; color: #f4c95d; margin-right: 2px; }
+.cl-sys__cell {
+  width: 38px; height: 22px; padding: 0 2px; box-sizing: border-box; text-align: center;
+  font: 700 0.64rem var(--font-mono); color: #1a2416; background: #eef3ea; border: 1px solid #0d0f12; border-radius: 0;
+}
+.cl-sys__go { width: 100%; height: 24px; font-size: 0.68rem; }
+
+/* ── ALGEBRAIC FRACTIONS — exact, never rounded to a decimal and back ──── */
+.cl-calc__frac[hidden] { display: none; }
+.cl-calc__frac { margin-top: 6px; }
+.cl-frac__pair { display: flex; gap: 10px; margin: 6px 0; justify-content: center; }
+.cl-frac__one { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.cl-frac__one b { font: 700 0.6rem var(--font-mono); color: #f4c95d; }
+.cl-frac__one i { font-style: normal; color: #8a93a0; font-size: 0.6rem; }
+.cl-frac__cell {
+  width: 46px; height: 22px; padding: 0 2px; box-sizing: border-box; text-align: center;
+  font: 700 0.68rem var(--font-mono); color: #1a2416; background: #eef3ea; border: 1px solid #0d0f12; border-radius: 0;
+}
+
+/* ── NUMBER BASES — two registers, typed in whichever base is picked ────── */
+.cl-calc__base[hidden] { display: none; }
+.cl-calc__base { margin-top: 6px; }
+.cl-base__basebtn { padding: 2px 5px; font: 700 0.56rem var(--font-mono); color: #c9d0d8; background: #3b424c; border: 0; }
+.cl-base__basebtn.is-on { color: #1b1f25; background: linear-gradient(180deg, #f8d877, #d9a93a); }
+.cl-base__regs { display: flex; gap: 6px; margin: 6px 0; }
+.cl-base__reg {
+  flex: 1; display: flex; align-items: baseline; gap: 4px; padding: 4px 6px; min-width: 0;
+  background: #0e1114; border: 1px solid #0d0f12; text-align: left;
+}
+.cl-base__reg b { font: 700 0.6rem var(--font-mono); color: #f4c95d; }
+.cl-base__reg span { font: 700 0.68rem var(--font-mono); color: #f2f5f8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-base__reg.is-on { outline: 2px solid #2f6ea8; outline-offset: -2px; }
+.cl-base__pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin-bottom: 6px; }
+.cl-base__digit {
+  height: 22px; font: 700 0.62rem var(--font-mono); color: #1a2416; background: #eef3ea; border: 1px solid #0d0f12;
+}
+.cl-base__digit[disabled] { opacity: 0.25; cursor: default; }
+.cl-base__clr { grid-column: span 4; color: #fff; background: #c9462f; }
+
 /* ── the paper skin takes all three with it ──────────────────────────────*/
 .cl-calc--paper .cl-calc__hist { background: #fffdf8; border-color: #2a2723; }
 .cl-calc--paper .cl-calc__histrow { color: #6b655c; border-bottom-color: rgba(42, 39, 35, 0.12); }
@@ -164,6 +224,18 @@
 .cl-calc--paper .cl-func__coef { color: #a06a1f; }
 .cl-calc--paper .cl-func__coef input { background: #eef3ea; color: #1d3a1d; border-color: #2a2723; }
 .cl-calc--paper .cl-func__live { color: #14130f; }
+.cl-calc--paper .cl-calc__more { background: #fffdf8; border-color: #2a2723; }
+.cl-calc--paper .cl-calc__morerow { color: #6b655c; border-bottom-color: rgba(42, 39, 35, 0.12); }
+.cl-calc--paper .cl-calc__morerow:hover { background: rgba(42, 39, 35, 0.05); color: #14130f; }
+.cl-calc--paper .cl-sys__row { color: #6b655c; }
+.cl-calc--paper .cl-sys__row span { color: #8a8375; }
+.cl-calc--paper .cl-sys__cell, .cl-calc--paper .cl-frac__cell { background: #eef3ea; color: #1d3a1d; border-color: #2a2723; }
+.cl-calc--paper .cl-frac__one i { color: #8a8375; }
+.cl-calc--paper .cl-base__basebtn { color: #6b655c; background: #fffdf8; border: 1.5px solid #2a2723; }
+.cl-calc--paper .cl-base__basebtn.is-on { background: #d9ecfa; color: #14130f; }
+.cl-calc--paper .cl-base__reg { background: #fffdf8; border-color: #2a2723; }
+.cl-calc--paper .cl-base__reg span { color: #14130f; }
+.cl-calc--paper .cl-base__digit { background: #eef3ea; color: #1d3a1d; border-color: #2a2723; }
 
 /* a results cell that is worked out from the others in its row */
 .cl-cell.is-sum { font-style: italic; background: color-mix(in srgb, var(--accent-primary) 14%, transparent); }
