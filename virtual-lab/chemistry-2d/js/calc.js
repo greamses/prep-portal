@@ -75,11 +75,15 @@ const ok = (x) => { if (!Number.isFinite(x)) throw math(); return x; };
 /** sin(180°) should be 0, not 1.2e-16. */
 const tidy = (x) => (Math.abs(x) < 1e-14 ? 0 : x);
 
-export function evaluate(keys, { deg = true, ans = 0 } = {}) {
+export function evaluate(keys, { deg = true, ans = 0, vars = null } = {}) {
   const k = deg ? Math.PI / 180 : 1;
   let i = 0;
   const peek = () => keys[i];
-  const startsValue = (t) => t !== undefined && (isDigit(t) || t in CONSTANTS || t === "Ans" || t in FUNCS);
+  /* a bound variable (x, for graphing/calculus/solving) reads exactly like a
+     constant while it has a value, and is a Syntax ERROR when it does not —
+     typing "x" outside of GRAPH/CALC/EQN is a mistake worth saying so, not
+     a silent zero */
+  const startsValue = (t) => t !== undefined && (isDigit(t) || t in CONSTANTS || t === "Ans" || t in FUNCS || (vars && t in vars));
 
   function number() {
     let s = "";
@@ -103,6 +107,7 @@ export function evaluate(keys, { deg = true, ans = 0 } = {}) {
     if (isDigit(t)) return number();
     if (t in CONSTANTS) { i++; return CONSTANTS[t]; }
     if (t === "Ans") { i++; return ans; }
+    if (vars && t in vars) { i++; return vars[t]; }
     if (t in FUNCS) {
       i++;
       const x = sum();
@@ -163,6 +168,130 @@ export function evaluate(keys, { deg = true, ans = 0 } = {}) {
   const out = sum();
   if (i < keys.length) throw syntax();
   return tidy(out);
+}
+
+/* ── CALCULUS AND SOLVE — all numeric, nothing symbolic ─────────────────────
+   The calculator does not know what a derivative IS, only how fast a
+   function is changing at a point, which is a thing it can always find by
+   asking twice more, very close together, and that generalises to any
+   expression this parser already reads — trig, logs, nested functions,
+   whatever was typed. The same honesty runs through all three: an integral
+   is a lot of thin strips added up (Simpson's rule), and SOLVE is the
+   oldest trick there is — Newton's method from wherever the calculator's
+   cursor already was, falling back to a scan for a sign change if the
+   slope is flat or it wanders off. */
+
+/** The function the keys describe, as a plain JS function of x. */
+const asFunction = (keys, opts) => (xv) => evaluate(keys, { ...opts, vars: { ...(opts?.vars), x: xv } });
+
+/** d/dx at x0 — central difference, the step scaled to x0 so it works
+    whether x0 is 0.0001 or 100000. */
+export function derivative(keys, x0, opts = {}) {
+  const f = asFunction(keys, opts);
+  const h = Math.max(1e-7, Math.abs(x0) * 1e-6);
+  return ok2(tidy((f(x0 + h) - f(x0 - h)) / (2 * h)));
+}
+
+/** The definite integral from a to b — composite Simpson's rule, 200 strips
+    (an even number; Simpson needs pairs of them). */
+export function integral(keys, a, b, opts = {}) {
+  if (a === b) return 0;
+  const f = asFunction(keys, opts);
+  const N = 200;
+  const h = (b - a) / N;
+  let s = f(a) + f(b);
+  for (let i = 1; i < N; i++) s += (i % 2 ? 4 : 2) * f(a + i * h);
+  return ok2(tidy((s * h) / 3));
+}
+
+/** Where f(x) = 0, starting from `guess` — Newton's method first (fast, and
+    finds the root nearest the cursor, the way a real SOLVE key does), a
+    scan across a wide bracket for a sign change if that does not settle. */
+export function solve(keys, guess, opts = {}) {
+  const f = asFunction(keys, opts);
+  let x = Number.isFinite(guess) ? guess : 0;
+  for (let iter = 0; iter < 60; iter++) {
+    const fx = f(x);
+    if (!Number.isFinite(fx)) break;
+    if (Math.abs(fx) < 1e-10) return tidy(x);
+    const h = Math.max(1e-7, Math.abs(x) * 1e-6);
+    const df = (f(x + h) - f(x - h)) / (2 * h);
+    if (!Number.isFinite(df) || Math.abs(df) < 1e-12) break;
+    const nx = x - fx / df;
+    if (!Number.isFinite(nx)) break;
+    if (Math.abs(nx - x) < 1e-12) return tidy(nx);
+    x = nx;
+  }
+  const span = Math.max(50, Math.abs(guess) * 4 || 50);
+  const lo = (Number.isFinite(guess) ? guess : 0) - span, hi = (Number.isFinite(guess) ? guess : 0) + span;
+  const steps = 800;
+  let px = lo, pf = f(lo);
+  for (let i = 1; i <= steps; i++) {
+    const xv = lo + ((hi - lo) * i) / steps;
+    const fv = f(xv);
+    if (Number.isFinite(pf) && Math.abs(pf) < 1e-10) return tidy(px);
+    if (Number.isFinite(pf) && Number.isFinite(fv) && pf * fv < 0) {
+      let a = px, b = xv, fa = pf;
+      for (let k2 = 0; k2 < 80; k2++) {
+        const m = (a + b) / 2, fm = f(m);
+        if (Math.abs(fm) < 1e-12) return tidy(m);
+        if ((fa < 0) === (fm < 0)) { a = m; fa = fm; } else b = m;
+      }
+      return tidy((a + b) / 2);
+    }
+    px = xv; pf = fv;
+  }
+  throw new CalcError("No Solution");
+}
+const ok2 = (x) => { if (!Number.isFinite(x)) throw math(); return x; };
+
+/* ── MATRICES — up to 3×3, the sizes a scientific calculator actually does ─ */
+
+const sameSize = (A, B) => A.length === B.length && A[0].length === B[0].length;
+export const matAdd = (A, B) => { if (!sameSize(A, B)) throw new CalcError("Dim ERROR"); return A.map((row, i) => row.map((v, j) => v + B[i][j])); };
+export const matSub = (A, B) => { if (!sameSize(A, B)) throw new CalcError("Dim ERROR"); return A.map((row, i) => row.map((v, j) => v - B[i][j])); };
+export const matScale = (A, s) => A.map((row) => row.map((v) => v * s));
+export const matTranspose = (A) => A[0].map((_, j) => A.map((row) => row[j]));
+
+export function matMul(A, B) {
+  const r = A.length, k = A[0].length, c = B[0].length;
+  if (k !== B.length) throw new CalcError("Dim ERROR");
+  const out = Array.from({ length: r }, () => Array(c).fill(0));
+  for (let i = 0; i < r; i++) for (let j = 0; j < c; j++) for (let t = 0; t < k; t++) out[i][j] += A[i][t] * B[t][j];
+  return out;
+}
+
+export function matDet(A) {
+  const n = A.length;
+  if (n !== A[0].length) throw new CalcError("Dim ERROR");
+  if (n === 1) return A[0][0];
+  if (n === 2) return A[0][0] * A[1][1] - A[0][1] * A[1][0];
+  if (n === 3) {
+    const [[a, b, c], [d, e, f], [g, h, j]] = A;
+    return a * (e * j - f * h) - b * (d * j - f * g) + c * (d * h - e * g);
+  }
+  throw new CalcError("Dim ERROR");
+}
+
+export function matInverse(A) {
+  const n = A.length;
+  const det = matDet(A);
+  if (Math.abs(det) < 1e-12) throw math();
+  if (n === 1) return [[1 / A[0][0]]];
+  if (n === 2) {
+    const [[a, b], [c, d]] = A;
+    return [[d / det, -b / det], [-c / det, a / det]];
+  }
+  const [[a, b, c], [d, e, f], [g, h, j]] = A;
+  /* the matrix of cofactors, transposed (the adjugate), each divided by
+     the determinant — written out rather than looped, at 3×3 it reads
+     straighter than a generalised cofactor-expansion would */
+  const cof = [
+    [(e * j - f * h), -(b * j - c * h), (b * f - c * e)],
+    [-(d * j - f * g), (a * j - c * g), -(a * f - c * d)],
+    [(d * h - e * g), -(a * h - b * g), (a * e - b * d)],
+  ];
+  return cof.map((row) => row.map((v) => v / det));
 }
 
 /** A number as a ten-digit display writes it. */
