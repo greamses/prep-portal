@@ -291,6 +291,75 @@ export const GROUPS = [
       },
     ],
   },
+  /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
+     value the special triangles give. */
+  {
+    group: "Trigonometry",
+    items: [
+      {
+        id: "trig-opposite", name: "Opposite side from the hypotenuse", eq: "o = h·sin(θ°)", find: "o",
+        letters: { o: "the side opposite the angle", h: "the hypotenuse", θ: "the angle in degrees" },
+        example: { h: "10", θ: "30" },
+      },
+      {
+        id: "trig-adjacent", name: "Adjacent side from the hypotenuse", eq: "a = h·cos(θ°)", find: "a",
+        letters: { a: "the side next to the angle", h: "the hypotenuse", θ: "the angle in degrees" },
+        example: { h: "12", θ: "60" },
+      },
+      {
+        id: "trig-tan", name: "Opposite side from the adjacent", eq: "o = a·tan(θ°)", find: "o",
+        letters: { o: "the side opposite the angle", a: "the side next to it", θ: "the angle in degrees" },
+        example: { a: "7", θ: "45" },
+      },
+      {
+        id: "trig-sas-area", name: "Area of a triangle from two sides and the angle", eq: "A = (1/2)ab·sin(C°)", find: "A",
+        letters: { A: "the area", a: "one side", b: "another side", C: "the angle between them, in degrees" },
+        example: { a: "6", b: "8", C: "30" },
+      },
+      {
+        id: "trig-sine-rule", name: "The sine rule", eq: "a/sin(A°) = b/sin(B°)", find: "a",
+        letters: { a: "a side", A: "the angle opposite it", b: "another side", B: "the angle opposite that" },
+        example: { b: "10", A: "30", B: "90" },
+      },
+      {
+        id: "trig-cosine-rule", name: "The cosine rule", eq: "c^2 = a^2 + b^2 - 2ab·cos(C°)", find: "c",
+        letters: { c: "the side opposite the angle", a: "one side", b: "another side", C: "the angle between them, in degrees" },
+        example: { a: "5", b: "8", C: "60" },
+      },
+    ],
+  },
+  /* The letter a slope or an area is taken IN (the x of d/dx) is only given
+     its value once the calculus is done — see substitute in ops.js. */
+  {
+    group: "Calculus",
+    items: [
+      {
+        id: "calc-gradient", name: "Gradient of a curve at a point", eq: "m = d/dx(x^3 - 2x)", find: "m",
+        letters: { m: "the gradient", x: "where on the curve" },
+        example: { x: "2" },
+      },
+      {
+        id: "calc-velocity", name: "Velocity from displacement", eq: "v = d/dt(5t^2 + 2t)", find: "v",
+        letters: { v: "the velocity", t: "the time" },
+        example: { t: "3" },
+      },
+      {
+        id: "calc-area", name: "Area under y = x² from 0", eq: "A = ∫_0^b(x^2)dx", find: "A",
+        letters: { A: "the area", b: "where the area stops" },
+        example: { b: "3" },
+      },
+      {
+        id: "calc-distance", name: "Distance from velocity", eq: "s = ∫_0^T(3t^2 + 2)dt", find: "s",
+        letters: { s: "the distance", T: "the time taken" },
+        example: { T: "2" },
+      },
+      {
+        id: "calc-first-principles", name: "Gradient of y = x² from first principles", eq: "m = lim(h->0)(((x + h)^2 - x^2)/h)", find: "m",
+        letters: { m: "the gradient", x: "where on the curve" },
+        example: { x: "3" },
+      },
+    ],
+  },
 ];
 
 /** Every formula, flat, in the order they are listed. */

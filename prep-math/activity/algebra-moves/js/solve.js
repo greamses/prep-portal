@@ -26,8 +26,17 @@ import { plain } from "./layout.js";
    changing the shape of it, or the tidying gets carried along inside the new
    shape — x/2 = 4 − 1 multiplied up reads x = 2(4 − 1). Shoving a term across
    the equals sign is the move most likely to undo itself, so it goes last. */
-const RANK = { substitute: 0, workout: 1, dropzero: 2, combine: 3, cancel: 4, times: 5, expand: 6, flip: 7, swap: 8, across: 9, divide: 10 };
+const RANK = { substitute: 0, workout: 1, trig: 1, multiply: 1, diff: 1, integrate: 1, limit: 1, dropzero: 2, pyth: 2, combine: 3, cancel: 4, times: 5, expand: 6, flip: 7, swap: 8, across: 9, divide: 10 };
 const LAST = 99;
+
+const CALC = new Set(["deriv", "int", "lim"]);
+const CALC_OK = new Set(["substitute", "workout", "multiply", "combine", "dropzero", "expand", "split", "cancel",
+  "indices", "limit", "diff", "integrate", "trig", "pyth", "addfrac", "surd"]);
+const holdsCalculus = (n) => { let yes = false; A.walk(n, (m) => { if (CALC.has(m.kind)) yes = true; }); return yes; };
+function insideCalculus(eq, id) {
+  for (let p = A.parentOf(eq, id); p; p = A.parentOf(eq, p.id)) if (CALC.has(p.kind)) return true;
+  return false;
+}
 
 /* A finished answer is a NUMBER, not merely something with no letters in it.
    (20 − 5)/3 is variable-free and still half a step from being an answer, so a
@@ -78,6 +87,10 @@ export function isSolved(eq, { given = null } = {}) {
      which are what rearranging a formula is FOR — with nothing left on the
      right that a tidy-up would still change. */
   if (eq.l.kind !== "var" || A.varsIn(eq.r).includes(eq.l.name)) return false;
+  // A d/dx, an ∫ or a lim still on the right is work still to do.
+  let calculus = false;
+  A.walk(eq.r, (n) => { if (n.kind === "deriv" || n.kind === "int" || n.kind === "lim") calculus = true; });
+  if (calculus) return false;
   if (A.termsOf(eq.r).length === 1 && isNumberNode(eq.r)) return true;
   const right = A.allTerms(eq).filter((t) => A.findById(eq.r, t.id));
   return !right.some((t) => offers(eq, t.id, { given }).some((o) => TIDY.has(o.key)));
@@ -132,9 +145,13 @@ export function bestOffers(eq, id, { given = null } = {}) {
   // formula around letters that are about to become 5 and 2 is work thrown away.
   const pending = hasSubstitutions(eq, given);
 
+  // Inside a d/dx, an ∫ or a lim the job is to simplify what is there until
+  // the calculus can be done — not to carry it across or rebuild it.
+  const calc = holdsCalculus(term) || insideCalculus(eq, id);
   const out = [];
   for (const offer of offers(eq, id, { given })) {
     if (pending && offer.key !== "substitute") continue;
+    if (calc && !CALC_OK.has(offer.key)) continue;
     if (offer.key === "swap" && !isAnswerBackwards(eq)) continue;
     if (offer.key === "across") {
       const hasLetter = !A.isNumeric(term);
@@ -175,7 +192,7 @@ export function solve(eq, { maxSteps = 24, given = null } = {}) {
     for (const { offer } of choices) {
       const result = offer.run();
       if (result.error) continue;
-      if (!preservesSolutions(eq, result.eq, { given: pinned, scaledBy: result.scaledBy }).ok) continue;
+      if (!preservesSolutions(eq, result.eq, { given: pinned, scaledBy: result.scaledBy, upToConstant: result.upToConstant, inverse: result.inverse }).ok) continue;
       const line = plain(result.eq);
       if (seen.has(line)) continue;
       seen.add(line);

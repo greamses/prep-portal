@@ -49,6 +49,16 @@ function tokenise(src) {
     // A square root, written the site's way (sqrt(…)) or as the glyph itself.
     // Checked before letters, or sqrt would read as s·q·r·t.
     if (src.startsWith("sqrt", i)) { out.push({ t: "root", v: "sqrt", at: i }); i += 4; continue; }
+    // Function names and lim, checked before letters for the same reason.
+    const word = [...A.FUNCS, "lim"].find((w) => src.startsWith(w, i));
+    if (word) { out.push({ t: word === "lim" ? "lim" : "fn", v: word, at: i }); i += word.length; continue; }
+    // d/dx — a derivative with respect to the letter after it.
+    if (src.startsWith("d/d", i) && isAlpha(src[i + 3] || "")) { out.push({ t: "deriv", v: src[i + 3], at: i }); i += 4; continue; }
+    if (c === "∫") { out.push({ t: "int", v: "∫", at: i }); i++; continue; }
+    if (c === "°") { out.push({ t: "deg", v: "°", at: i }); i++; continue; }
+    if (c === "_") { out.push({ t: "_", v: "_", at: i }); i++; continue; }
+    if (src.startsWith("->", i)) { out.push({ t: "to", v: "->", at: i }); i += 2; continue; }
+    if (c === "→") { out.push({ t: "to", v: "→", at: i }); i++; continue; }
     if (c === "√") { out.push({ t: "root", v: "√", at: i }); i++; continue; }
     if (isAlpha(c)) { out.push({ t: "var", v: c, at: i }); i++; continue; }
     if ("+-*/^()=".includes(c)) { out.push({ t: c, v: c, at: i }); i++; continue; }
@@ -66,7 +76,7 @@ function tokenise(src) {
 }
 
 /** Tokens that can begin a factor — a "-" cannot, or 3 - 2 would read as 3(-2). */
-const STARTS_FACTOR = new Set(["num", "var", "(", "hole", "root"]);
+const STARTS_FACTOR = new Set(["num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
 
 export function parse(src) {
   const toks = tokenise(src);
@@ -98,7 +108,34 @@ export function parse(src) {
     const mark = from();
     const tk = peek();
     if (tk.t === "num") { p++; return span(mark, A.num(R.fromDecimal(tk.v), tk.v.includes(".") ? tk.v : null)); }
+    // e and π are numbers, not letters.
+    if (tk.t === "var" && (tk.v === "e" || tk.v === "π")) { p++; return span(mark, A.cnst(tk.v)); }
     if (tk.t === "var") { p++; return span(mark, A.vr(tk.v)); }
+    if (tk.t === "fn") { p++; return span(mark, A.fn(tk.v, atom())); }
+    if (tk.t === "deriv") { p++; return span(mark, A.deriv(atom(), tk.v)); }
+    if (tk.t === "lim") {
+      p++;
+      eat("(");
+      const at = peek();
+      if (at.t !== "var") throw new SyntaxError("A limit says which letter is moving: lim(h->0)(…).");
+      p++;
+      eat("to");
+      const to = expr();
+      eat(")");
+      return span(mark, A.lim(atom(), at.v, to));
+    }
+    if (tk.t === "int") {
+      p++;
+      let lo = null, hi = null;
+      if (peek().t === "_") { p++; lo = atom(); eat("^"); hi = atom(); }
+      const body = atom();
+      const d = peek(), x = toks[p + 1];
+      if (d.t !== "var" || d.v !== "d" || !x || x.t !== "var") {
+        throw new SyntaxError("An integral ends with what it is taken with respect to: ∫(…)dx.");
+      }
+      p += 2;
+      return span(mark, A.integ(body, x.v, lo, hi));
+    }
     if (tk.t === "hole") { p++; return span(mark, A.hole()); }
     // A root takes the next atom: √3x is (√3)x, √(3x) roots all of it — the
     // same "a bracket is a parcel" rule the site's linear input uses.
@@ -114,7 +151,9 @@ export function parse(src) {
 
   function power() {
     const mark = from();
-    const base = atom();
+    let base = atom();
+    // 30° is an angle in degrees.
+    if (peek().t === "deg") { p++; base = span(mark, A.deg(base)); }
     if (peek().t === "^") { p++; return span(mark, A.pow(base, factor())); }
     return base;
   }

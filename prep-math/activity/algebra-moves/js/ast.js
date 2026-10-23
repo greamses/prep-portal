@@ -38,6 +38,24 @@ export const root = (k, id = freshId())              => ({ id, kind: "root", k }
    by checking both branches at once (see verify.js). */
 export const pm   = (k, id = freshId())              => ({ id, kind: "pm", k });
 
+/* ── Functions, constants and calculus ─────────────────────────────────────
+   e and π are NUMBERS, not letters — the verifier gives them their values and
+   never samples them. A function (sin, cos, tan, ln, log) wraps its argument;
+   an angle written in degrees is a deg node around it, so sin(30°) is exact.
+   d/dx(…), ∫(…)dx, ∫ from a to b, and lim(h→0) each wrap the thing they act
+   on and name the letter they act WITH. */
+// arcsin before sin is not needed for the tokenizer (they start differently),
+// but the longer names must not be read as letters: a·r·c·sin.
+export const FUNCS = ["arcsin", "arccos", "arctan", "sin", "cos", "tan", "ln", "log"];
+/** How a function's name is drawn: arcsin is written sin⁻¹. */
+export const FN_FACE = { arcsin: "sin⁻¹", arccos: "cos⁻¹", arctan: "tan⁻¹" };
+export const cnst  = (name, id = freshId())          => ({ id, kind: "const", name });
+export const fn    = (name, k, id = freshId())       => ({ id, kind: "fn", name, k });
+export const deg   = (k, id = freshId())             => ({ id, kind: "deg", k });
+export const deriv = (k, x, id = freshId())          => ({ id, kind: "deriv", x, k });
+export const integ = (k, x, lo = null, hi = null, id = freshId()) => ({ id, kind: "int", x, k, lo, hi });
+export const lim   = (k, x, to, id = freshId())      => ({ id, kind: "lim", x, to, k });
+
 /* A line with only one side: 3x + 5 − x, put on the canvas to be tidied rather
    than solved. It is a node of its own rather than an equation with a missing
    half, so that nothing downstream can forget to check and go looking for eq.r.
@@ -63,6 +81,11 @@ export function kidsOf(node) {
     case "neg":  return [node.k];
     case "root": return [node.k];
     case "pm":   return [node.k];
+    case "fn":
+    case "deg":
+    case "deriv": return [node.k];
+    case "int":  return [node.k, ...(node.lo ? [node.lo, node.hi] : [])];
+    case "lim":  return [node.to, node.k];
     case "sum":
     case "prod": return node.kids;
     case "frac": return [node.a, node.b];
@@ -97,6 +120,14 @@ export function replace(root, id, next) {
       // Built literally: this function's own parameter is called `root`.
       case "root": { const k = rec(n.k); return k === n.k ? n : { id: n.id, kind: "root", k }; }
       case "pm":   { const k = rec(n.k); return k === n.k ? n : { id: n.id, kind: "pm", k }; }
+      case "fn":
+      case "deg":
+      case "deriv": { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
+      case "int": {
+        const k = rec(n.k), lo = n.lo && rec(n.lo), hi = n.hi && rec(n.hi);
+        return k === n.k && lo === n.lo && hi === n.hi ? n : { ...n, k, lo, hi };
+      }
+      case "lim": { const k = rec(n.k), to = rec(n.to); return k === n.k && to === n.to ? n : { ...n, k, to }; }
       case "sum":  { const ks = n.kids.map(rec); return ks.every((k, i) => k === n.kids[i]) ? n : sum(ks, n.id); }
       case "prod": { const ks = n.kids.map(rec); return ks.every((k, i) => k === n.kids[i]) ? n : prod(ks, n.id); }
       case "frac": { const a = rec(n.a), b = rec(n.b); return a === n.a && b === n.b ? n : frac(a, b, n.id); }
@@ -144,7 +175,11 @@ export function setSide(root, side, next) {
 export function containersOf(root) {
   const out = [];
   for (const s of SIDES(root)) out.push(root[s]);
-  walk(root, (n) => { if (n.kind === "frac") { out.push(n.a); out.push(n.b); } });
+  walk(root, (n) => {
+    if (n.kind === "frac") { out.push(n.a); out.push(n.b); }
+    // What a d/dx, an ∫ or a lim acts on is worked on like a side of its own.
+    if (n.kind === "deriv" || n.kind === "int" || n.kind === "lim") out.push(n.k);
+  });
   return out;
 }
 
@@ -204,6 +239,18 @@ export function readTerm(node) {
         vars.push(...a.vars);
         return true;
       }
+      case "const":
+        vars.push(n.name);
+        if (flip) c = R.neg(c);
+        return true;
+      case "fn":
+      case "deg":
+      case "deriv":
+      case "int":
+      case "lim":
+        vars.push(`#${shapeKey(n)}`);
+        if (flip) c = R.neg(c);
+        return true;
       /* A surd counts as part of the "letter" part of a term, so 2√3 and 5√3
          are like terms the same way 2x and 5x are — and fold to 7√3. Only a
          number or a single letter under the root is read; anything else is a
@@ -226,13 +273,18 @@ export function readTerm(node) {
   return { c, vars: sorted, sig: sorted.join("*") };
 }
 
+/** A node's shape with every id stripped, so two writings of sin(x) compare equal. */
+export const shapeKey = (n) =>
+  JSON.stringify(n, (k, v) => (k === "id" || k === "src" || k === "paren" ? undefined : typeof v === "bigint" ? String(v) : v));
+
 /** The "letter part" nodes of a term, in the order they were written — a
     letter, a power of a letter, or a surd. Not descended into: the x of x² and
     the 3 of √3 belong to the node above them. */
 export function varNodesOf(node) {
   const out = [];
   const go = (n) => {
-    if (n.kind === "var" || n.kind === "root" || (n.kind === "pow" && n.b.kind === "var")) { out.push(n); return; }
+    if (n.kind === "var" || n.kind === "root" || (n.kind === "pow" && n.b.kind === "var")
+        || ["const", "fn", "deg", "deriv", "int", "lim"].includes(n.kind)) { out.push(n); return; }
     for (const k of kidsOf(n)) go(k);
   };
   go(node);

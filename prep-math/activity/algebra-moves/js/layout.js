@@ -20,6 +20,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import * as R from "./rational.js";
+import { FN_FACE } from "./ast.js";
 
 const FAMILY = '"STIX Two Text", "Times New Roman", serif';
 const ASC = 0.72;   // baseline to top of a glyph, as a share of font size
@@ -73,12 +74,16 @@ function needsBrackets(node, parentKind, slot) {
   if (parentKind === "pow" && slot === 1) return false;
   // A root's bar groups whatever is under it, the way a fraction bar does.
   if (parentKind === "root") return false;
+  // A function's argument and a derivative's body are always in brackets.
+  if (parentKind === "fn" || parentKind === "deriv") return true;
+  if (parentKind === "int" || parentKind === "lim") return node.kind === "sum";
+  if (parentKind === "deg") return node.kind !== "num" && node.kind !== "var";
   if (node.paren) return true;
   switch (parentKind) {
     case "prod": return node.kind === "sum" || ((node.kind === "neg" || node.kind === "pm") && slot > 0);
     case "neg":
     case "pm":   return node.kind === "sum";
-    case "pow":  return slot === 0 && node.kind !== "num" && node.kind !== "var";
+    case "pow":  return slot === 0 && !["num", "var", "const"].includes(node.kind);
     default:     return false;
   }
 }
@@ -239,6 +244,75 @@ function measureBare(node, size, binary) {
       };
     }
 
+    // e and π: numbers that happen to be written as letters.
+    case "const":
+      return { ...base, kind: "text", text: node.name, italic: false, w: measureText(node.name, size, false) };
+
+    case "fn": {
+      const nameW = measureText(FN_FACE[node.name] || node.name, size, false);
+      const gap = 0.06 * size;
+      const k = measure(node.k, size, "fn", 0);
+      return { ...base, kind: "fn", nameW, gap, k, w: nameW + gap + k.w,
+               ascent: Math.max(base.ascent, k.ascent), descent: Math.max(base.descent, k.descent) };
+    }
+
+    case "deg": {
+      const k = measure(node.k, size, "deg", 0);
+      const degW = measureText("°", size, false);
+      return { ...base, kind: "deg", k, degW, w: k.w + degW,
+               ascent: Math.max(base.ascent, k.ascent), descent: Math.max(base.descent, k.descent) };
+    }
+
+    /* d/dx as a small stacked fraction in front of its bracketed body. */
+    case "deriv": {
+      const s2 = size * 0.8;
+      const topW = measureText("d", s2, false);
+      const botW = measureText(`d${node.x}`, s2, false);
+      const fw = Math.max(topW, botW) + 0.12 * size;
+      const axis = 0.3 * size, gap = 0.08 * size, rule = Math.max(1, 0.05 * size);
+      const half = gap + (ASC + DESC) * s2;
+      const k = measure(node.k, size, "deriv", 0);
+      return { ...base, kind: "deriv", s2, topW, botW, fw, axis, gap, rule, k,
+               w: fw + 0.06 * size + k.w,
+               ascent: Math.max(base.ascent, k.ascent, axis + rule / 2 + half),
+               descent: Math.max(base.descent, k.descent, -axis + rule / 2 + half) };
+    }
+
+    /* ∫, grown to cover its body, with its limits (if any) beside it, then the
+       body and "dx". */
+    case "int": {
+      const body = measure(node.k, size, "int", 0);
+      const lo = node.lo ? measure(node.lo, size * 0.62, "intlim", 0) : null;
+      const hi = node.hi ? measure(node.hi, size * 0.62, "intlim", 0) : null;
+      const tall = Math.max(body.ascent + body.descent, size) * 1.2;
+      const iSize = Math.max(size * 1.3, tall / (ASC + DESC));
+      const iW = measureText("∫", iSize, false);
+      const limW = Math.max(lo ? lo.w : 0, hi ? hi.w : 0);
+      const dxW = measureText(`d${node.x}`, size, false);
+      const up = 0.3 * size + ((ASC + DESC) / 2) * iSize;     // baseline to the ∫'s top
+      const down = -0.3 * size + ((ASC + DESC) / 2) * iSize;  // baseline to its foot
+      return { ...base, kind: "int", body, lo, hi, iSize, iW, limW, dxW, up, down,
+               w: iW + limW + 0.1 * size + body.w + 0.14 * size + dxW,
+               ascent: Math.max(base.ascent, body.ascent, up + (hi ? 0.1 * size : 0)),
+               descent: Math.max(base.descent, body.descent, down + (lo ? 0.1 * size : 0)) };
+    }
+
+    /* lim with "h→0" underneath it, then the body. */
+    case "lim": {
+      const limW = measureText("lim", size, false);
+      const sub = size * 0.62;
+      const arrowW = measureText(`${node.x}→`, sub, false);
+      const to = measure(node.to, sub, "limto", 0);
+      const subW = arrowW + to.w;
+      const colW = Math.max(limW, subW);
+      const body = measure(node.k, size, "lim", 0);
+      const subDrop = DESC * size + (ASC + 0.1) * sub;
+      return { ...base, kind: "lim", limW, sub, arrowW, to, subW, colW, body, subDrop,
+               w: colW + 0.18 * size + body.w,
+               ascent: Math.max(base.ascent, body.ascent),
+               descent: Math.max(base.descent, body.descent, subDrop + Math.max(DESC * sub, to.descent)) };
+    }
+
     // A one-sided line is drawn as exactly its one side. It keeps a node of its
     // own here so it gets a box like everything else — the keypad's caret walks
     // boxes, and the root is the box that spans the whole line.
@@ -355,6 +429,48 @@ function place(m, x, y, out) {
       place(m.e, x + m.b.w + m.kern, y - m.rise, out);
       break;
 
+    case "fn":
+      text("fn", FN_FACE[m.node.name] || m.node.name, x, y, m.size, false);
+      place(m.k, x + m.nameW + m.gap, y, out);
+      break;
+
+    case "deg":
+      place(m.k, x, y, out);
+      text("deg", "°", x + m.k.w, y, m.size, false);
+      break;
+
+    case "deriv": {
+      const barTop = y - m.axis - m.rule / 2;
+      text("dtop", "d", x + (m.fw - m.topW) / 2, barTop - m.gap - DESC * m.s2, m.s2, false);
+      text("dbot", `d${m.node.x}`, x + (m.fw - m.botW) / 2, barTop + m.rule + m.gap + ASC * m.s2, m.s2, false);
+      out.atoms.push({ key: `${id}#dbar`, nodeId: id, kind: "rule", x: x + 0.03 * m.size, y: barTop, w: m.fw - 0.06 * m.size, h: m.rule });
+      place(m.k, x + m.fw + 0.06 * m.size, y, out);
+      break;
+    }
+
+    case "int": {
+      // The ∫ centred on the maths axis, whatever size it has grown to.
+      const iy = y - 0.3 * m.size + ((ASC - DESC) / 2) * m.iSize;
+      text("int", "∫", x, iy, m.iSize, false);
+      const lx = x + m.iW * 0.9;
+      if (m.hi) place(m.hi, lx, y - m.up + m.hi.ascent, out);
+      if (m.lo) place(m.lo, lx, y + m.down - m.lo.descent, out);
+      const bx = x + m.iW + m.limW + 0.1 * m.size;
+      place(m.body, bx, y, out);
+      text("dx", `d${m.node.x}`, bx + m.body.w + 0.14 * m.size, y, m.size, false);
+      break;
+    }
+
+    case "lim": {
+      text("lim", "lim", x + (m.colW - m.limW) / 2, y, m.size, false);
+      const sx = x + (m.colW - m.subW) / 2;
+      const sy = y + m.subDrop;
+      text("limto", `${m.node.x}→`, sx, sy, m.sub, false);
+      place(m.to, sx + m.arrowW, sy, out);
+      place(m.body, x + m.colW + 0.18 * m.size, y, out);
+      break;
+    }
+
     case "root": {
       const barY = y - m.k.ascent - m.gap - m.rule;
       // Sit the glyph so its top meets the bar.
@@ -424,6 +540,16 @@ export function plain(node, parentKind = null, slot = 0) {
       const inside = plain(node.k, "root", 0);
       return wrap(simple ? `√${inside}` : `√(${inside})`);
     }
+    case "const": return wrap(node.name);
+    case "fn":   return wrap(`${node.name}${plain(node.k, "fn", 0)}`);
+    case "deg":  return wrap(`${plain(node.k, "deg", 0)}°`);
+    case "deriv": return wrap(`d/d${node.x}${plain(node.k, "deriv", 0)}`);
+    case "int": {
+      const lim = (n) => (n.kind === "num" || n.kind === "var" || n.kind === "const" ? plain(n) : `(${plain(n)})`);
+      const range = node.lo ? `_${lim(node.lo)}^${lim(node.hi)}` : "";
+      return wrap(`∫${range}(${plain({ ...node.k, paren: false })})d${node.x}`);
+    }
+    case "lim":  return wrap(`lim(${node.x}->${plain(node.to)})(${plain({ ...node.k, paren: false })})`);
     case "eq":   return `${plain(node.l, "eq", 0)} = ${plain(node.r, "eq", 1)}`;
     case "expr": return plain(node.e, "expr", 0);
     default:     return "?";

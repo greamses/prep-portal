@@ -189,7 +189,7 @@ module.exports = function algebraRoutes() {
         const result = offer.run();
         const verdict = result.error
           ? null
-          : E.verify(eq, result.eq, { given: pinned, scaledBy: result.scaledBy });
+          : E.verify(eq, result.eq, { given: pinned, scaledBy: result.scaledBy, upToConstant: result.upToConstant, inverse: result.inverse });
         return {
           move: offer.key,
           label: offer.label,
@@ -245,7 +245,7 @@ module.exports = function algebraRoutes() {
     // reaches the screen unverified.
     const verdict = E.verify(eq, result.eq, {
       given: given ? E.ops.asNumbers(given) : null,
-      scaledBy: result.scaledBy,
+      scaledBy: result.scaledBy, upToConstant: result.upToConstant, inverse: result.inverse,
     });
     if (!verdict.ok) return res.status(409).json({ ok: false, refused: verdict.why });
 
@@ -433,7 +433,7 @@ module.exports = function algebraRoutes() {
         "GET /api/algebra/check?from=&to=": "is that step legal?",
         "GET /api/algebra/formulas":  "the formula shelf and the letters each one wants",
       },
-      moves: ["substitute", "across", "combine", "divide", "times", "cancel", "flip", "expand", "swap", "dropzero", "workout", "indices", "surd", "addfrac", "square"],
+      moves: ["substitute", "across", "combine", "divide", "times", "cancel", "flip", "expand", "swap", "dropzero", "workout", "indices", "surd", "addfrac", "square", "split", "multiply", "root", "branches", "diff", "integrate", "limit", "trig", "trigid", "pyth", "invert", "degrees"],
       takes: {
         eq: "an equation (3x+5=20) or an expression with no equals sign (3x+5-x); roots as sqrt(12) or √12, powers as x^2",
         given: "values for a formula's letters, u:5,a:2,t:3 — accepted by moves, apply and solve",

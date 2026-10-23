@@ -34,9 +34,62 @@ function evalAt(node, env) {
     case "root": { const v = evalAt(node.k, env); return v < 0 ? NaN : Math.sqrt(v); }
     // The one ± choice of the line, set per branch by the caller.
     case "pm":   return env.__pm * evalAt(node.k, env);
+    case "const": return node.name === "e" ? Math.E : Math.PI;
+    case "deg":  return evalAt(node.k, env) * Math.PI / 180;
+    case "fn": {
+      const v = evalAt(node.k, env);
+      switch (node.name) {
+        case "sin": return Math.sin(v);
+        case "cos": return Math.cos(v);
+        // Near an asymptote tan is too steep to compare samples on.
+        case "tan": return Math.abs(Math.cos(v)) < 1e-3 ? NaN : Math.tan(v);
+        case "ln":  return v > 0 ? Math.log(v) : NaN;
+        case "log": return v > 0 ? Math.log10(v) : NaN;
+        case "arcsin": return Math.abs(v) <= 1 ? Math.asin(v) : NaN;
+        case "arccos": return Math.abs(v) <= 1 ? Math.acos(v) : NaN;
+        case "arctan": return Math.atan(v);
+        default:    return NaN;
+      }
+    }
+    /* The calculus is checked the way it is defined, by numbers: a derivative
+       as a central difference, an integral by Simpson's rule, a limit from both
+       sides of where it is going. */
+    case "deriv": {
+      const x = env[node.x];
+      if (!Number.isFinite(x)) return NaN;
+      const h = 1e-4 * Math.max(1, Math.abs(x));
+      return (evalAt(node.k, { ...env, [node.x]: x + h }) - evalAt(node.k, { ...env, [node.x]: x - h })) / (2 * h);
+    }
+    case "int": {
+      // An indefinite integral is taken from a fixed starting point, so it is
+      // ONE of the antiderivatives; the moves that drop the ∫ are checked up to
+      // a constant (see `upToConstant` below).
+      const a = node.lo ? evalAt(node.lo, env) : INT_FROM;
+      const b = node.lo ? evalAt(node.hi, env) : env[node.x];
+      return simpson((t) => evalAt(node.k, { ...env, [node.x]: t }), a, b);
+    }
+    case "lim": {
+      const to = evalAt(node.to, env);
+      const d = 1e-5 * Math.max(1, Math.abs(to));
+      const up = evalAt(node.k, { ...env, [node.x]: to + d });
+      const dn = evalAt(node.k, { ...env, [node.x]: to - d });
+      return (up + dn) / 2;
+    }
     default:     return NaN;
   }
 }
+
+const INT_FROM = 0.5;
+function simpson(f, a, b, n = 64) {
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return NaN;
+  const h = (b - a) / n;
+  let s = f(a) + f(b);
+  for (let i = 1; i < n; i++) s += (i % 2 ? 4 : 2) * f(a + i * h);
+  return (s * h) / 3;
+}
+
+const CALCULUS = new Set(["deriv", "int", "lim", "fn"]);
+const hasCalculus = (root) => { let yes = false; walk(root, (n) => { if (CALCULUS.has(n.kind)) yes = true; }); return yes; };
 
 const hasPm = (root) => { let yes = false; walk(root, (n) => { if (n.kind === "pm") yes = true; }); return yes; };
 
@@ -69,8 +122,12 @@ const value = (root, env) => evalAt(root.e, env);
  *
  * Returns { ok, why } — `why` is written for the student, not the console.
  */
-export function preservesSolutions(prev, next, { samples = 64, given = null, scaledBy = null } = {}) {
-  const names = [...new Set([...varsIn(prev), ...varsIn(next), ...(scaledBy ? varsIn(scaledBy) : [])])].sort();
+export function preservesSolutions(prev, next, { samples = 64, given = null, scaledBy = null, upToConstant = null, inverse = null } = {}) {
+  const names = [...new Set([...varsIn(prev), ...varsIn(next), ...(scaledBy ? varsIn(scaledBy) : []),
+                             ...(upToConstant ? [upToConstant] : [])])].sort();
+  // Numbers worked out by a difference or a sum of slices carry their own small
+  // error, so a line with any calculus in it is compared a little more loosely.
+  const tol = hasCalculus(prev) || hasCalculus(next) ? 1e-5 : 1e-7;
   const fixed = given || {};
   /* Every letter gets its OWN run of values. Giving them all the same value at
      each sample (as this once did) cannot tell a from b — a step that swapped
@@ -84,6 +141,55 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
   };
   const branches = hasPm(prev) || hasPm(next) ? [1, -1] : [1];
 
+  /* sin u = k becomes u = sin⁻¹ k: true for the ONE angle sin⁻¹ gives, not for
+     every angle with that sine, so no sampling of solutions could pass it. It is
+     checked as what it is — sin⁻¹ applied to both sides — at the samples where
+     u lies in sin⁻¹'s own range, where that really does undo the sin. */
+  if (inverse) {
+    const f = { arcsin: Math.asin, arccos: Math.acos, arctan: Math.atan }[inverse.fn];
+    const inRange = (u) => (inverse.fn === "arccos" ? u >= 0 && u <= Math.PI : Math.abs(u) <= Math.PI / 2);
+    let usable = 0;
+    for (let i = 0; i < samples; i++) {
+      const env = {};
+      for (const n of names) env[n] = sample(i, n);
+      const u = evalAt(next[inverse.side], env);
+      if (!Number.isFinite(u) || !inRange(u)) continue;
+      const a = f(evalAt(prev.l, env)) - f(evalAt(prev.r, env));
+      const b = diffAt(next, env);
+      if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+      usable++;
+      if (Math.abs(a - b) > tol * Math.max(1, Math.abs(a), Math.abs(b))) {
+        return { ok: false, why: "that is not the same function undone on both sides" };
+      }
+    }
+    if (usable < 6) return { ok: false, why: "I could not check that move, so I will not make it" };
+    return { ok: true, why: "" };
+  }
+
+  /* Integrating is only ever right "plus a constant", so a move that takes an
+     ∫ away is checked by what defines it: the slope, in the integral's letter,
+     of what is written must be the same before and after. */
+  if (upToConstant) {
+    const slope = (root, env) => {
+      const f = (t) => (root.kind === "expr" ? value(root, { ...env, [upToConstant]: t }) : diffAt(root, { ...env, [upToConstant]: t }));
+      const x = env[upToConstant], h = 1e-3 * Math.max(1, Math.abs(x));
+      return (f(x + h) - f(x - h)) / (2 * h);
+    };
+    let usable = 0;
+    for (let i = 0; i < samples; i++) {
+      const env = {};
+      for (const n of names) env[n] = sample(i, n);
+      const a = slope(prev, env), b = slope(next, env);
+      if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+      usable++;
+      if (Math.abs(a - b) > 1e-4 * Math.max(1, Math.abs(a), Math.abs(b))) {
+        return { ok: false, why: "that is not what you get back when you differentiate" };
+      }
+    }
+    if (usable < 6) return { ok: false, why: "I could not check that move, so I will not make it" };
+    return { ok: true, why: "" };
+  }
+
   if (prev.kind === "expr" || next.kind === "expr") {
     if (prev.kind !== next.kind) return { ok: false, why: "that turns it into a different kind of thing" };
     let usable = 0;
@@ -95,7 +201,7 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
         const b = value(next, { ...env, __pm: s });
         if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
         usable++;
-        if (Math.abs(a - b) > 1e-7 * Math.max(1, Math.abs(a), Math.abs(b))) {
+        if (Math.abs(a - b) > tol * Math.max(1, Math.abs(a), Math.abs(b))) {
           return { ok: false, why: "that does not come to the same thing" };
         }
       }
@@ -122,7 +228,7 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
       if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(k)) continue;
       if (Math.abs(k) < 1e-6) continue;
       usable++;
-      if (Math.abs(b - a * k) > 1e-7 * Math.max(1, Math.abs(b), Math.abs(a * k))) {
+      if (Math.abs(b - a * k) > tol * Math.max(1, Math.abs(b), Math.abs(a * k))) {
         return { ok: false, why: "the two sides no longer match up the way they did" };
       }
     }
@@ -143,8 +249,8 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
     if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
 
     const scale = Math.max(1, Math.abs(a), Math.abs(b));
-    const aZero = Math.abs(a) < 1e-7 * scale;
-    const bZero = Math.abs(b) < 1e-7 * scale;
+    const aZero = Math.abs(a) < tol * scale;
+    const bZero = Math.abs(b) < tol * scale;
 
     if (aZero && bZero) continue;            // a shared root tells us nothing
     if (aZero !== bZero) return { ok: false, why: "that changes which numbers make the equation true" };
@@ -152,7 +258,7 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
     usable++;
     const r = b / a;
     if (ratio === null) ratio = r;
-    else if (Math.abs(r - ratio) > 1e-6 * Math.max(1, Math.abs(ratio))) {
+    else if (Math.abs(r - ratio) > tol * 10 * Math.max(1, Math.abs(ratio))) {
       return { ok: false, why: "the two sides no longer match up the way they did" };
     }
   }
@@ -161,3 +267,6 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
   if (ratio === null || Math.abs(ratio) < 1e-9) return { ok: false, why: "that would flatten the equation" };
   return { ok: true, why: "" };
 }
+
+/** The value of a letter-free node, or NaN — sin 30°, π/6, e². */
+export const numericValue = (node) => evalAt(node, {});

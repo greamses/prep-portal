@@ -119,12 +119,22 @@ function openMenuFor(card) {
 
   menu.open(offers, () => card.rectFor(picked), (offer) => {
     if (offer.needsInput) return startBothSides(card, offer.op);
+    if (offer.cards) return splitInto(card, offer);
     const result = offer.letter ? card.useFromElsewhere(offer.letter, offer.value) : card.apply(offer);
     menu.close();
     if (result.refused) return say(`I will not do that — ${result.refused}.`, "no");
     say(result.note, "ok");
     canvas.revealCard(card.el);
   });
+}
+
+/* A ± is two answers written as one: each goes on a card of its own, beside
+   this one, to be worked down to a number separately. */
+function splitInto(card, offer) {
+  menu.close();
+  card.clearPick();
+  for (const { eq, title } of offer.cards) addCard(eq, { given: card.given, title });
+  say("Two cards, one for each answer — work each one down.", "ok");
 }
 
 /* The second way to make a move, said once and then never again: the chip is
@@ -192,6 +202,8 @@ function addCard(eq, { given = null, title = "", find = "" } = {}) {
     },
     onChange: (self) => { if (self.picked) openMenuFor(self); else menu.close(); },
     onGesture: (offer, self) => {
+      if (offer.cards) return splitInto(self, offer);
+      if (offer.needsInput) return startBothSides(self, offer.op);
       const result = self.apply(offer);
       menu.close();
       if (result.refused) return say(`I will not do that — ${result.refused}.`, "no");

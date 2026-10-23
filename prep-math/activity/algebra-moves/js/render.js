@@ -95,7 +95,7 @@ export function paintRow(row, { live = false, picked = null, pad = 0 } = {}) {
       });
       hit.dataset.key = a.key;
       hit.setAttribute("aria-label", a.kind !== "rule" ? a.text
-        : a.key.endsWith("#vinc") ? "the square root" : "the fraction bar");
+        : a.key.endsWith("#vinc") ? "the square root" : a.key.endsWith("#dbar") ? "d by d" : "the fraction bar");
       hits.appendChild(hit);
     }
   }

@@ -22,6 +22,7 @@ import * as A from "./ast.js";
 import * as R from "./rational.js";
 import { plain } from "./layout.js";
 import { preservesSolutions } from "./verify.js";
+import { copy, diffStep, intStep, limitStep, exactTrig, exactInverse, tanAsRatio, pythagoreanPair } from "./calculus.js";
 
 /** Where a node sits, if it is one of the terms of SOME container — a true
     side of the line, or the numerator/denominator of a fraction anywhere in
@@ -356,6 +357,50 @@ export function expand(eq, id) {
   return { eq: eqNext, from, mark: opened, note: `${plain(loc.term)} opens up to ${opened}` };
 }
 
+/* ── Brackets times brackets ────────────────────────────────────────────────
+   (x + h)² is first written out as (x + h)(x + h); then every term of one
+   bracket times every term of the other, x(x + 1) included — the step that
+   first principles cannot do without. Like terms are left for the next tap. */
+export function multiplyBrackets(eq, id) {
+  const loc = locate(eq, id);
+  if (!loc) return { error: "That is not one of the terms." };
+  const flipped = loc.term.kind === "neg" && !loc.term.paren;
+  const body = flipped ? loc.term.k : loc.term;
+  let factors;
+  if (body.kind === "pow" && body.b.kind === "sum") {
+    const e = A.exactValue(body.e);
+    if (!e || !R.isInt(e) || e.n < 2n || e.n > 4n) return { error: "I only write out small whole powers of a bracket." };
+    const copies = Array.from({ length: Number(e.n) }, (_, i) => ({ ...(i ? freshCopy(body.b) : body.b), paren: true }));
+    const next = flipped ? A.neg(A.prod(copies)) : A.prod(copies);
+    const nextTerms = loc.terms.map((t, i) => (i === loc.index ? next : t));
+    return { eq: setContainer(eq, loc, nextTerms), from: flyFrom(eq, next, loc.term.id), mark: plain(next),
+             note: `${plain(body)} is ${plain(next)}` };
+  }
+  if (body.kind !== "prod" || !body.kids.some((k) => k.kind === "sum")) return { error: "There are no brackets to multiply out there." };
+  factors = body.kids;
+  if (factors.filter((k) => k.kind !== "sum").every(A.isNumeric) && factors.filter((k) => k.kind === "sum").length === 1) {
+    return { error: "That is a number times a bracket — open it up." };
+  }
+  // Every choice of one term from each factor, multiplied together.
+  let rows = [[]];
+  for (const f of factors) {
+    const pieces = f.kind === "sum" ? f.kids : [f];
+    rows = rows.flatMap((r) => pieces.map((p) => [...r, p]));
+  }
+  const grown = rows.map((r) => {
+    let sign = flipped ? -1 : 1;
+    const parts = r.map((p) => { if (p.kind === "neg" && !p.paren) { sign = -sign; return p.k; } return p; });
+    const m = parts.reduce((acc, p) => { const q = acc && mono(p); return q ? mulMono(acc, q) : null; }, { c: R.ONE, pows: new Map() });
+    if (m) return monoNode(sign < 0 ? { ...m, c: R.neg(m.c) } : m);
+    const pr = A.prod(parts.map(freshCopy));
+    return sign < 0 ? A.neg(pr) : pr;
+  });
+  const nextTerms = [...loc.terms.slice(0, loc.index), ...grown, ...loc.terms.slice(loc.index + 1)];
+  const opened = grown.map((g) => plain(g)).join(" + ").replace(/\+ −/g, "− ");
+  return { eq: setContainer(eq, loc, nextTerms), from: new Map(grown.map((g) => [g.id, [loc.term.id]])), mark: opened,
+           note: `Every term times every term: ${opened}` };
+}
+
 /* ── Split a fraction over its top ──────────────────────────────────────────
    (3x + 5)/4 is 3x/4 + 5/4. It is the move that lets anything written on top
    of a bar be reached at all: until the fraction is split, the 5 in the
@@ -376,7 +421,7 @@ const freshCopy = (n) => {
     case "frac": return A.frac(freshCopy(n.a), freshCopy(n.b));
     case "pow":  return A.pow(freshCopy(n.b), freshCopy(n.e));
     case "root": return A.root(freshCopy(n.k));
-    default:     return n;
+    default:     return copy(n);
   }
 };
 
@@ -644,7 +689,160 @@ function nodeTidies(eq, node) {
     t("surd", "Divide the roots", "√a ÷ √b = √(a/b)", divideSurds(eq, node.id));
     t("surd", "Clear the root off the bottom", "multiply top and bottom by it", rationalise(eq, node.id));
   }
+  if (node.kind === "prod") t("multiply", "Multiply it out", "numbers together, letters together", multiplyOut(eq, node.id));
+  for (const o of calcMoves(eq, node)) out.push(o);
   return out;
+}
+
+/* ── Calculus and trig as moves ─────────────────────────────────────────────
+   calculus.js says what one rule turns a node into; this puts it back in the
+   line. A node that lands inside a product or a sum of the same kind is
+   spliced into it, so 5 × (4x³) is written 5·4x³ with one dot rather than as
+   a product inside a product (which would draw as 54x³). */
+
+function putFlat(eq, id, node) {
+  const parent = A.parentOf(eq, id);
+  let next = A.replace(eq, id, node);
+  if (parent && !node.paren && ((parent.kind === "prod" && node.kind === "prod") || (parent.kind === "sum" && node.kind === "sum"))) {
+    const p2 = A.findById(next, parent.id);
+    next = A.replace(next, parent.id, { ...p2, kids: p2.kids.flatMap((k) => (k.id === node.id ? k.kids : [k])) });
+  }
+  return next;
+}
+
+/** The letter for a constant of integration: C, unless C is already in use. */
+const constantName = (eq) => ["C", "K", "D"].find((c) => !A.varsIn(eq).includes(c)) || "C";
+
+function calcMoves(eq, node) {
+  const out = [];
+  const step = (key, hint, s, extra = {}) => {
+    if (!s) return;
+    const next = putFlat(eq, node.id, s.node);
+    out.push({ key, label: s.rule, hint, mark: plain(s.node), run: () => ({
+      eq: next, from: flyFrom(eq, s.node, node.id), mark: plain(s.node), note: s.rule, ...extra,
+    }) });
+  };
+  switch (node.kind) {
+    case "deriv": step("diff", "differentiate", diffStep(node)); break;
+    case "lim":   step("limit", "let it go there", limitStep(node)); break;
+    case "fn":
+      step("trig", "exact value", exactTrig(node) || exactInverse(node, hasDegrees(eq)));
+      step("trigid", "tan = sin/cos", tanAsRatio(node));
+      break;
+    case "int": {
+      const s = intStep(node);
+      if (!s) break;
+      let next = putFlat(eq, node.id, s.node);
+      let note = s.rule;
+      // The last ∫ to go leaves its + C behind on that side.
+      let open = false;
+      A.walk(next, (n) => { if (n.kind === "int" && !n.lo) open = true; });
+      if (s.done && !open) {
+        const side = A.SIDES(next).find((sd) => A.findById(next[sd], s.node.id));
+        if (side) {
+          const C = constantName(next);
+          next = A.setSide(next, side, A.sideFromTerms([...A.termsOf(next[side]), A.vr(C)], next[side]));
+          note = `${s.rule}, plus a constant ${C}`;
+        }
+      }
+      const shown = s.done && !open ? `${plain(s.node)} + ${constantName(eq)}` : plain(s.node);
+      out.push({ key: "integrate", label: note, hint: "integrate", mark: shown, run: () => ({
+        eq: next, from: flyFrom(eq, s.node, node.id), mark: shown, note,
+        ...(s.done ? { upToConstant: node.x } : {}),
+      }) });
+      break;
+    }
+    case "pow": {
+      // A square standing alone on a side: the root of both sides, from the ² itself.
+      if (A.isEquation(eq) && (eq.l === node || eq.r === node)) {
+        const r = rootBoth(eq);
+        if (!r.error) out.push({ key: "root", label: "Square root of both sides (±)", hint: "a square on one side", mark: "±√", run: () => r });
+      }
+      break;
+    }
+    default: break;
+  }
+  return out;
+}
+
+const hasDegrees = (eq) => { let yes = false; A.walk(eq, (n) => { if (n.kind === "deg") yes = true; }); return yes; };
+
+/** 5·4x³ is 20x³, a·4a is 4a², 3·1 is 3: a product of plain numbers and
+    letters written as the one term it is. */
+export function multiplyOut(eq, id) {
+  const node = A.findById(eq, id);
+  if (!node || node.kind !== "prod") return { error: "That is not a product." };
+  const m = mono(node);
+  if (m) {
+    const next = monoNode(m);
+    if (plain(next) === plain(unbracket(node))) return { error: "That is already multiplied out." };
+    return { eq: putFlat(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next), note: `${plain(node)} is ${plain(next)}` };
+  }
+  // Not a monomial (a sin, a bracket): just bring the numbers to the front as one.
+  const nums = node.kids.filter((k) => A.exactValue(k));
+  if (!nums.length || (nums.length === 1 && node.kids[0] === nums[0] && !R.isOne(A.exactValue(nums[0])))) {
+    return { error: "There are no numbers to gather." };
+  }
+  const c = nums.reduce((acc, k) => R.mul(acc, A.exactValue(k)), R.ONE);
+  const rest = node.kids.filter((k) => !A.exactValue(k));
+  let next;
+  if (R.isZero(c)) next = A.num(R.ZERO);
+  else {
+    const body = rest.length === 1 ? rest[0] : A.prod(rest);
+    if (R.isOne(c)) next = body;
+    else if (R.isOne(R.neg(c))) next = A.neg(body);
+    else next = A.prod([A.numberNode(c), ...rest]);
+  }
+  return { eq: putFlat(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next), note: `${plain(node)} is ${plain(next)}` };
+}
+
+/* ── Split a ± into its two answers ─────────────────────────────────────────
+   x = −b/(2a) ± √(…) is two answers written as one. Tapping the ± writes each
+   on a card of its own, where it is worked to a number separately. */
+export function splitPm(eq) {
+  let has = false;
+  A.walk(eq, (n) => { if (n.kind === "pm") has = true; });
+  if (!has) return { error: "There is no ± here to split." };
+  const branch = (sign) => {
+    const visit = (n) => {
+      if (n.kind === "pm") { const k = visit(n.k); return sign > 0 ? { ...k, paren: n.paren || k.paren } : A.neg(k); }
+      const o = { ...n };
+      for (const key of ["k", "a", "b", "e", "l", "r", "lo", "hi", "to"]) if (n[key]) o[key] = visit(n[key]);
+      if (n.kids) {
+        // + then a −(…) in a sum reads as a minus, so a −branch inside a sum is spliced as its own term.
+        o.kids = n.kids.map(visit);
+      }
+      return o;
+    };
+    return copy(visit(eq));
+  };
+  const plus = branch(1), minus = branch(-1);
+  return { cards: [{ eq: plus, title: "the + answer" }, { eq: minus, title: "the − answer" }],
+           mark: "±", note: "Two answers: one with +, one with −" };
+}
+
+/* ── Undo a trig function on both sides ─────────────────────────────────────
+   sin u = k becomes u = sin⁻¹ k — the angle a calculator gives. */
+const INVERSE = { sin: "arcsin", cos: "arccos", tan: "arctan" };
+export function invertTrig(eq) {
+  if (!A.isEquation(eq)) return { error: TWO_SIDED };
+  for (const side of ["l", "r"]) {
+    const f = eq[side];
+    const other = side === "l" ? "r" : "l";
+    if (f.kind !== "fn" || !INVERSE[f.name] || !A.isNumeric(eq[other])) continue;
+    const inv = INVERSE[f.name];
+    const u = { ...f.k, paren: false };
+    const next = side === "l" ? A.eqn(u, A.fn(inv, eq.r), eq.id) : A.eqn(A.fn(inv, eq.l), u, eq.id);
+    const face = { arcsin: "sin⁻¹", arccos: "cos⁻¹", arctan: "tan⁻¹" }[inv];
+    return { eq: next, from: new Map(), mark: face, dir: "both", inverse: { fn: inv, side }, note: `Take ${face} of both sides` };
+  }
+  return { error: "There is no sin, cos or tan standing alone on a side." };
+}
+
+/** C° = 30° says C = 30. */
+export function dropDegrees(eq) {
+  if (!A.isEquation(eq) || eq.l.kind !== "deg" || eq.r.kind !== "deg") return { error: "Both sides are not in degrees." };
+  return { eq: A.eqn(unbracket(eq.l.k), unbracket(eq.r.k), eq.id), from: new Map(), mark: "°", note: "Both sides are in degrees, so the numbers of degrees are equal" };
 }
 
 /* ── Monomials ──────────────────────────────────────────────────────────────
@@ -656,7 +854,7 @@ const gcdBig = (a, b) => { a = a < 0n ? -a : a; b = b < 0n ? -b : b; while (b) [
 
 function mono(node) {
   const r = A.readTerm(node);
-  if (!r || r.vars.some((v) => v.startsWith("√"))) return null;
+  if (!r || r.vars.some((v) => v.startsWith("√") || v.startsWith("#") || v === "e" || v === "π")) return null;
   const pows = new Map();
   for (const v of r.vars) pows.set(v, (pows.get(v) || 0) + 1);
   return { c: r.c, pows };
@@ -723,7 +921,7 @@ const packSum = (pieces) => {
   return flat.length === 1 ? flat[0] : A.sum(flat);
 };
 
-export function addFractions(eq, aId, bId) {
+export function addFractions(eq, aId, bId, { stepwise = true } = {}) {
   const la = locate(eq, aId), lb = locate(eq, bId);
   if (!la || !lb || la.container.id !== lb.container.id || la.index === lb.index) {
     return { error: "Those two are not on the same side." };
@@ -734,8 +932,10 @@ export function addFractions(eq, aId, bId) {
   const da = fa.den || A.num(R.ONE), db = fb.den || A.num(R.ONE);
 
   let den, ma = null, mb = null, like = false;
-  if (plain(da) === plain(db)) { den = da; like = true; }
-  else {
+  if (plain(unbracket(da)) === plain(unbracket(db))) { den = da; like = true; }
+  else if (stepwise) {
+    return commonBottoms(eq, first, second, fa, fb, da, db);
+  } else {
     const xa = mono(da), xb = mono(db);
     if (xa && xb) {
       const L = lcmMono(xa, xb);
@@ -756,6 +956,48 @@ export function addFractions(eq, aId, bId) {
   return {
     eq: setContainer(eq, first, nextTerms), from: flyFrom(eq, result, first.term.id), mark: plain(result),
     note: like ? `Same bottom, so add the tops: ${plain(result)}` : `Over a common bottom, ${plain(den)}: ${plain(result)}`,
+  };
+}
+
+/* Unlike bottoms are made alike FIRST, and the multiplying is left showing:
+   −c/a beside b²/(4a²) becomes −(c·4a)/(a·4a), the next tap multiplies it out
+   to −4ac/(4a²), and only then — bottoms the same — are the tops added. */
+function commonBottoms(eq, first, second, fa, fb, da, db) {
+  if (isPlainZero(first.term) || isPlainZero(second.term)) return { error: "Adding nothing needs no common bottom." };
+  const xa = mono(da), xb = mono(db);
+  let L, na, nb, shared = null;
+  if (xa && xb) {
+    L = lcmMono(xa, xb);
+    const sameMono = (m, n) => R.same(m.c, n.c) && m.pows.size === n.pows.size && [...m.pows].every(([k, v]) => n.pows.get(k) === v);
+    if (sameMono(xa, xb)) return { error: "The bottoms are the same once they are multiplied out — multiply them out first." };
+    na = divMono(L, xa); nb = divMono(L, xb);
+    na = isMonoOne(na) ? null : monoNode(na);
+    nb = isMonoOne(nb) ? null : monoNode(nb);
+  } else {
+    // Not monomials: the common bottom is the two bottoms multiplied, written
+    // in the SAME order under both, so the next tap sees them as the same.
+    na = freshCopy(db); nb = freshCopy(da);
+    shared = () => A.prod([freshCopy(da), freshCopy(db)]);
+  }
+  const grow = (term, f, d, m) => {
+    if (!m) return term;
+    const flipped = term.kind === "neg" && !term.paren;
+    const top = flipped ? f.top.k : f.top;
+    const times = (x) => {
+      const v = A.exactValue(x);
+      if (v && R.isOne(v)) return freshCopy(m);
+      return A.prod([freshCopy(x), freshCopy(m)]);
+    };
+    const bottom = shared ? shared() : f.den ? A.prod([freshCopy(d), freshCopy(m)]) : freshCopy(m);
+    const fr = A.frac(times(top), bottom);
+    return flipped ? A.neg(fr) : fr;
+  };
+  const ga = grow(first.term, fa, da, na), gb = grow(second.term, fb, db, nb);
+  const nextTerms = first.terms.map((t, i) => (i === first.index ? ga : i === second.index ? gb : t));
+  const shown = [ga, gb].map((g) => plain(g)).join(" + ").replace(/\+ −/g, "− ");
+  return {
+    eq: setContainer(eq, first, nextTerms), from: new Map(), mark: shown,
+    note: `Make the bottoms the same: ${shown}`,
   };
 }
 
@@ -1060,17 +1302,37 @@ export function workOut(eq, id) {
    that put 6 where the 5 belonged would be caught exactly like a sign slip. */
 
 /** The letters of a term that have been given a value, in writing order. */
-function givenVarsIn(node, given) {
+function givenVarsIn(node, given, eq = node) {
+  const bound = boundVarIds(eq);
   const out = [];
-  A.walk(node, (n) => { if (n.kind === "var" && given && given[n.name]) out.push(n); });
+  A.walk(node, (n) => { if (n.kind === "var" && given && given[n.name] && !bound.has(n.id)) out.push(n); });
   return out;
+}
+
+/* The x of d/dx(x³) is not a value waiting to go in: it is the letter the
+   slope is taken in, and putting 2 there would make d/dx(8), which is 0. So a
+   letter inside anything still differentiating, integrating or taking a limit
+   IN that letter is bound, and goes in only once the calculus is done. */
+function boundVarIds(eq) {
+  const ids = new Set();
+  const visit = (n, bound) => {
+    if (n.kind === "var" && bound.has(n.name)) ids.add(n.id);
+    const inner = n.kind === "deriv" || n.kind === "int" || n.kind === "lim" ? new Set([...bound, n.x]) : bound;
+    for (const k of A.kidsOf(n)) {
+      // An integral's limits and a limit's target are outside its letter.
+      const outside = (n.kind === "int" && (k === n.lo || k === n.hi)) || (n.kind === "lim" && k === n.to);
+      visit(k, outside ? bound : inner);
+    }
+  };
+  visit(eq, new Set());
+  return ids;
 }
 
 export function substitute(eq, id, given = {}) {
   const loc = locate(eq, id);
   if (!loc) return { error: "That is not one of the terms." };
 
-  const vars = givenVarsIn(loc.term, given);
+  const vars = givenVarsIn(loc.term, given, eq);
   if (!vars.length) return { error: "There is no letter here that has been given a value." };
 
   const from = new Map();
@@ -1088,7 +1350,7 @@ export function substitute(eq, id, given = {}) {
   }
 
   grown = grown || A.findById(next, id);
-  const said = vars.map((v) => `${v.name} = ${say(given[v.name])}`);
+  const said = [...new Set(vars.map((v) => `${v.name} = ${say(given[v.name])}`))];
   return {
     eq: next,
     from,
@@ -1103,7 +1365,7 @@ export const asNumbers = (given) =>
 
 /** Is there still a number waiting to go into this line? */
 export const hasSubstitutions = (eq, given) =>
-  !!given && A.allTerms(eq).some((t) => givenVarsIn(t, given).length > 0);
+  !!given && A.allTerms(eq).some((t) => givenVarsIn(t, given, eq).length > 0);
 
 /* ── What can I do with this? ───────────────────────────────────────────────
    The moves available on a term. Everything offered here is legal by
@@ -1330,11 +1592,14 @@ export function offers(eq, id, { given = null } = {}) {
     if (!trial.error) out.push({ key: "cancel", label: "Cancel it down", hint: "same number top and bottom", mark: trial.mark, run: () => trial });
   }
 
-  // A bracket with a number in front of it.
+  // A bracket with a number in front of it — or brackets times brackets.
   {
     const trial = expand(eq, id);
     if (!trial.error) {
       out.push({ key: "expand", label: "Open the brackets", hint: "multiply it through", mark: trial.mark, run: () => trial });
+    } else {
+      const many = multiplyBrackets(eq, id);
+      if (!many.error) out.push({ key: "expand", label: many.note.split(":")[0], hint: "multiply it out", mark: many.mark, run: () => many });
     }
   }
 
@@ -1350,6 +1615,22 @@ export function offers(eq, id, { given = null } = {}) {
       const trial = addFractions(eq, id, other.id);
       if (!trial.error) out.push({ key: "addfrac", label: `Add it to ${plain(other)}`, hint: "one bottom", mark: trial.mark, run: () => trial });
       break;
+    }
+  }
+
+  // Under a lim, (6h + h²)/h is split so each piece can cancel its h.
+  if (term.kind === "frac" && A.termsOf(term.a).length > 1 && ["lim", "deriv", "int"].includes(A.parentOf(eq, loc.container.id)?.kind)) {
+    const trial = splitFraction(eq, id);
+    if (!trial.error) out.push({ key: "split", label: "Split it over the bottom", hint: "one fraction for each piece on top", mark: trial.mark, run: () => trial });
+  }
+
+  // sin²u + cos²u on the same side is 1.
+  {
+    const pair = pythagoreanPair(terms);
+    if (pair && pair.includes(index)) {
+      const nextTerms = terms.map((t, i) => (i === pair[0] ? A.num(R.ONE) : t)).filter((_, i) => i !== pair[1]);
+      const result = { eq: setContainer(eq, loc, nextTerms), from: new Map(), mark: "1", note: "sin² + cos² is 1" };
+      out.push({ key: "pyth", label: result.note, hint: "Pythagoras", mark: "1", run: () => result });
     }
   }
 
@@ -1403,6 +1684,9 @@ export function offers(eq, id, { given = null } = {}) {
    Nothing new is decided here: every offer is one the term-level engine
    already makes, or one of its own functions run on the exact node tapped,
    and every one still goes through the verifier before it is drawn. */
+
+/** The glyphs that belong to a function or an operator of calculus. */
+const CALC_SLOTS = new Set(["fn", "deg", "dtop", "dbot", "dbar", "int", "dx", "lim", "limto"]);
 
 const keyParts = (key) => {
   const i = key.indexOf("#");
@@ -1494,6 +1778,11 @@ export function atomOffers(eq, key, { given = null } = {}) {
         if (terms.length === 1) pick(pool(terms[0]), "divide", "times");
       }
       add(direct("root", "Square root of both sides (±)", "a square on one side", rootBoth(eq)));
+      const inv = invertTrig(eq);
+      if (!inv.error) add({ key: "invert", label: inv.note, hint: "undo the trig function", mark: inv.mark, dir: "both", run: () => inv });
+      add(direct("degrees", "Drop the degree signs", "both sides in degrees", dropDegrees(eq)));
+      const split = splitPm(eq);
+      if (!split.error) add({ key: "branches", label: "Split into the two answers", hint: "one card each", mark: "±", cards: split.cards });
       /* The four that need the student to say WHAT: they carry no run of their
          own — the page opens the keypad for them and builds the move from what
          is typed (see applyToBoth). */
@@ -1514,7 +1803,7 @@ export function atomOffers(eq, key, { given = null } = {}) {
       }
       add(direct("square", "Complete the square", "(x + p/2)²", squareUp(eq, kid.id)));
     }
-    pick(pool(atomTerm(eq, key)), "combine", "workout", "dropzero", "expand", "across");
+    pick(pool(atomTerm(eq, key)), "combine", "workout", "dropzero", "expand", "across", "pyth");
     if (isContainer && kid && prev) add(direct("reorder", `Swap ${plain(prev)} and ${plain(kid)} round`, "same terms, other order", swapTerms(eq, prev.id, kid.id)));
     // A + on top of a bar: the fraction it sits in can be split at it.
     const parent = sum && A.parentOf(eq, sum.id);
@@ -1523,7 +1812,16 @@ export function atomOffers(eq, key, { given = null } = {}) {
       if (fracTerm) add(splitOffer(fracTerm));
     }
   } else if (slot === "sign") {
+    // The ± itself: two answers, one card each.
+    if (A.findById(eq, nodeId)?.kind === "pm") {
+      const split = splitPm(eq);
+      if (!split.error) add({ key: "branches", label: "Split into the two answers", hint: "one card each", mark: "±", cards: split.cards });
+    }
     pick(pool(atomTerm(eq, key)), "across", "flip", "expand", "combine", "addfrac", "workout");
+  } else if (CALC_SLOTS.has(slot)) {
+    // The d/dx, the ∫, the lim, a sin: what that sign means comes first.
+    tidiesAbove(nodeId);
+    pick(pool(atomTerm(eq, key)), "across", "combine", "pyth");
   } else if (slot === "bar") {
     const T = atomTerm(eq, key);
     add(direct("cancel", "Cancel it down", "same number top and bottom", cancel(eq, nodeId)));
@@ -1546,7 +1844,10 @@ export function atomOffers(eq, key, { given = null } = {}) {
     tidiesAbove(nodeId);
     add(workOffer(nodeId));
   } else {
-    // A number or a letter.
+    // A number or a letter. The ² of a square standing alone on a side says
+    // "root both sides" before anything else.
+    const above = A.parentOf(eq, nodeId);
+    if (above?.kind === "pow" && above.e.id === nodeId) for (const o of calcMoves(eq, above)) add(o);
     const chain = termChain(eq, nodeId);
     const T = chain[0];
     const leaf = A.findById(eq, nodeId);
@@ -1593,7 +1894,7 @@ export function atomOffers(eq, key, { given = null } = {}) {
       const f = fracOf(F);
       if (f && A.findById(f.a, nodeId)) add(splitOffer(F));
     }
-    pick(p, "across", "combine", "square", "addfrac", "dropzero");
+    pick(p, "across", "combine", "square", "addfrac", "dropzero", "pyth");
     /* Inside a fraction, the innermost term is just the top (the c of c/a),
        which cannot cross the = on its own. The whole term it belongs to — c/a
        — can, so reach out to the first one standing on a side. */
@@ -1643,4 +1944,5 @@ export function multiOffers(eq, keys, { given = null } = {}) {
 
 /** The tidy-ups: moves that leave the same thing written more simply. A side
     with none of these left on any of its terms is as tidy as it goes. */
-export const TIDY = new Set(["combine", "workout", "cancel", "dropzero", "indices", "surd", "addfrac"]);
+export const TIDY = new Set(["combine", "workout", "cancel", "dropzero", "indices", "surd", "addfrac",
+  "multiply", "trig", "pyth", "diff", "integrate", "limit"]);

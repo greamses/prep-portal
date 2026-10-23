@@ -106,6 +106,43 @@ const GREEK_NAMES = {
 };
 const GREEK = rowsOf([...Object.keys(GREEK_NAMES)].map((g) => asLetter(g, GREEK_NAMES[g])));
 
+/* Functions and calculus: each key types its whole shape with the caret left
+   where the student writes next — inside sin( ), inside d/dx( ), on the bottom
+   limit of a definite integral. e and π are numbers here, not letters. */
+const fnKey = (name, title, face = name) => ({ k: face, t: `${name}()`, back: 1, title, math: `${name}(?)` });
+const FUNCS = [
+  [
+    fnKey("sin", "sine"), fnKey("cos", "cosine"), fnKey("tan", "tangent"),
+    fnKey("arcsin", "inverse sine"), fnKey("arccos", "inverse cosine"), fnKey("arctan", "inverse tangent"),
+    { k: "°", t: "°", title: "degrees" },
+    { k: "⌫", act: "back", title: "Delete", tone: "warn" },
+  ],
+  [
+    fnKey("ln", "natural log"), fnKey("log", "log base 10"),
+    { k: "e", t: "e", title: "e, the number 2.718…", math: "e" },
+    { k: "π", t: "π", title: "pi, the number 3.14159…", math: "π" },
+    { k: "aᵇ", t: "^()", back: 1, title: "to the power of", math: "a^b" },
+    { k: "( )", t: "()", back: 1, title: "brackets", math: "(?)" },
+    { k: "←", act: "left", title: "Move left" },
+    { k: "→", act: "right", title: "Move right" },
+  ],
+  [
+    { k: "d/dx", t: "d/dx()", back: 1, title: "differentiate", math: "d/dx(?)" },
+    { k: "∫", t: "∫()dx", back: 3, title: "integrate", math: "∫(?)dx" },
+    { k: "∫ₐᵇ", t: "∫_()^()()dx", back: 8, title: "integrate from a to b", math: "∫_(?)^(?)(?)dx" },
+    { k: "lim", t: "lim(h->0)()", back: 1, title: "limit as h goes to 0", math: "lim(h->0)(?)" },
+    { k: "x", t: "x", tone: "letter" }, { k: "h", t: "h", tone: "letter" },
+    { k: "=", t: "=" },
+    { k: "CLR", act: "clear", title: "Clear", tone: "warn" },
+  ],
+  [
+    { k: "+", t: "+" }, { k: "−", t: "-" }, { k: "×", t: "*" }, { k: "÷", t: "/" },
+    { k: "a⁄b", t: "()/()", back: 4, title: "fraction", math: "a/b" },
+    { k: "Enter", act: "enter", title: "Put it on the canvas", tone: "go", wide: true },
+    { k: "√", t: "sqrt()", back: 1, title: "square root", math: "sqrt(?)" },
+  ],
+];
+
 export function createKeypad(host, { onSubmit } = {}) {
   const preview = document.createElement("div");
   preview.className = "am-preview";
@@ -706,6 +743,7 @@ export function createKeypad(host, { onSubmit } = {}) {
       { label: "123", el: buildGrid(KEYS) },
       { label: "ABC", el: buildLetters() },
       { label: "αβγ", el: buildGrid(GREEK) },
+      { label: "f(x)", el: buildGrid(FUNCS) },
     ];
 
     let active = 0;

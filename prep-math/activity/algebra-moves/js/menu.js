@@ -132,7 +132,7 @@ export function createMenu(host) {
         // root with its bar. The sentence goes on the tooltip and on the label
         // a screen reader reads, so nothing is lost by not printing it.
         btn.appendChild(face(offer));
-        btn.title = offer.label;
+        btn.title = offer.label.replace(/arc(sin|cos|tan)/g, "$1⁻¹");
         btn.setAttribute("aria-label", offer.label);
         btn.addEventListener("click", (e) => { e.stopPropagation(); onPick(offer); });
         box.appendChild(btn);

@@ -48,6 +48,16 @@ const RELATED = {
   capacity: ["volume"],
   electricity: ["voltage", "current", "resistance", "ohm"],
   temperature: ["celsius", "fahrenheit"],
+  trig: ["trigonometry", "sin", "cos", "tan", "angle", "hypotenuse"],
+  angle: ["trigonometry", "sin", "cos", "tan"],
+  sine: ["sin", "trigonometry"],
+  cosine: ["cos", "trigonometry"],
+  calculus: ["gradient", "slope", "area", "d/dx", "∫", "lim"],
+  derivative: ["calculus", "gradient", "d/dx"],
+  differentiate: ["calculus", "gradient", "d/dx"],
+  integral: ["calculus", "area", "∫"],
+  integrate: ["calculus", "area", "∫"],
+  limit: ["calculus", "first principles", "lim"],
   polygon: ["apothem", "rhombus", "parallelogram", "square", "triangle"],
 };
 const related = (w) => [w, ...(RELATED[w] || [])];
