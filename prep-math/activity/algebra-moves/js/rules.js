@@ -59,6 +59,8 @@ export const RULE_GROUPS = [
     group: "Rules: fractions",
     items: [
       r("r-cancel", "Cancel it down", "ka/(kb) = a/b", ["cancel"]),
+      r("r-base-expand", "Expand a number in base ten", "1011_2 = 1·2^3 + 0·2^2 + 1·2^1 + 1·2^0", ["expandbase"]),
+      r("r-base-ten", "Write a number in base ten", "1011_2 = 11", ["base10"]),
       r("r-improper", "Mixed number to improper fraction", "2 1/3 = (2·3 + 1)/3", ["improper"]),
       r("r-tomixed", "Improper fraction to mixed number", "7/3 = 2 1/3", ["tomixed"]),
       r("r-split", "Split a fraction over its bottom", "(a + b)/c = a/c + b/c", ["split"]),

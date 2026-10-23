@@ -38,6 +38,25 @@ function tokenise(src) {
   let i = 0;
   while (i < src.length) {
     const c = src[i];
+    /* A number in another base: 1011_2, 2A_16 — digits (and capital letters
+       for digits past 9), an underscore, the base. Only when every digit
+       belongs in that base, so nothing else written with an underscore is
+       taken for one. 1011₂ with a subscript base reads the same. */
+    {
+      const m = /^([0-9A-Z]+)(?:_([0-9]+)|([₀-₉]+))/.exec(src.slice(i));
+      if (m && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1]))) {
+        const base = Number(m[2] || [...m[3]].map((c) => "₀₁₂₃₄₅₆₇₈₉".indexOf(c)).join(""));
+        if (base >= 2 && base <= 36 && /[0-9]/.test(m[1][0]) && A.baseValue(m[1], base) === null) {
+          const bad = [...m[1]].find((ch) => parseInt(ch, 36) >= base);
+          throw new SyntaxError(`${bad} is not a digit in base ${base} — base ${base} uses ${base <= 10 ? `0 to ${base - 1}` : `0 to 9 and A to ${(base - 1).toString(36).toUpperCase()}`}.`);
+        }
+        if (base >= 2 && base <= 36 && A.baseValue(m[1], base) !== null && /[0-9]/.test(m[1][0])) {
+          out.push({ t: "base", v: m[1], base, at: i });
+          i += m[0].length;
+          continue;
+        }
+      }
+    }
     if (c === " " || c === "\t" || c === "\n") { i++; continue; }
     if (isDigit(c) || (c === "." && isDigit(src[i + 1]))) {
       let j = i;
@@ -87,7 +106,7 @@ export function setRefs(names) {
   REFS = [...new Set(names.filter(Boolean))].sort((a, b) => b.length - a.length);
 }
 
-const STARTS_FACTOR = new Set(["ref", "num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
+const STARTS_FACTOR = new Set(["base", "ref", "num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
 
 export function parse(src) {
   const toks = tokenise(src);
@@ -137,6 +156,7 @@ export function parse(src) {
     if (tk.t === "var") { p++; return span(mark, A.vr(tk.v)); }
     if (tk.t === "fn") { p++; return span(mark, A.fn(tk.v, atom())); }
     if (tk.t === "ref") { p++; return span(mark, A.ref(tk.v)); }
+    if (tk.t === "base") { p++; return span(mark, A.based(tk.v, tk.base)); }
     if (tk.t === "deriv") { p++; return span(mark, A.deriv(atom(), tk.v)); }
     if (tk.t === "lim") {
       p++;

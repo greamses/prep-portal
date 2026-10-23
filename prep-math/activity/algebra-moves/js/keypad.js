@@ -92,6 +92,9 @@ const LETTER_ROWS = rowsOf([..."abcdefghijklmnopqrstuvwxyz"].map((ch) => asLette
 LETTER_ROWS[LETTER_ROWS.length - 1] = [
   ...LETTER_ROWS[LETTER_ROWS.length - 1],
   { k: "caps", act: "caps", title: "Capitals", tone: "act" },
+  // A number in another base: 1011_2 is 1011 in base two (capitals for
+  // digits past 9: 2A_16).
+  { k: "_b", t: "_", title: "Base: type 1011_2 for 1011 in base two", tone: "act", fixed: true },
 ];
 
 /* The full Greek alphabet — a circle's π, an angle's θ, the unknowns geometry
@@ -727,6 +730,7 @@ export function createKeypad(host, { onSubmit } = {}) {
             });
             rail.appendChild(btn);
           } else {
+            if (key.fixed) { rail.appendChild(keyButton(key)); continue; }
             const ch = caps ? key.k.toUpperCase() : key.k;
             rail.appendChild(keyButton({ ...key, k: ch, t: ch }));
           }

@@ -66,6 +66,14 @@ function numText(node) {
    back on one line, both of those groupings vanish and the same tree has to be
    written (20 − 5)/3 or it says something else entirely. */
 
+/* MathJax's radical outlines (its TeX font, SVG output): the normal √ and
+   the tall one it uses for taller contents. h, d, w in ems; paths in font
+   units, 1000 to the em, y pointing up. */
+const RADICAL = {
+  normal: { h: 0.8, d: 0.2, w: 0.833, path: "M95 178Q89 178 81 186T72 200T103 230T169 280T207 309Q209 311 212 311H213Q219 311 227 294T281 177Q300 134 312 108L397 -77Q398 -77 501 136T707 565T814 786Q820 800 834 800Q841 800 846 794T853 782V776L620 293L385 -193Q381 -200 366 -200Q357 -200 354 -197Q352 -195 256 15L160 225L144 214Q129 202 113 190T95 178" },
+  tall: { h: 1.15, d: 0.65, w: 1.0, path: "M1001 1150Q1017 1150 1020 1132Q1020 1127 741 244L460 -643Q453 -650 436 -650H424Q423 -647 423 -645T421 -640T419 -631T415 -617T408 -594T399 -560T385 -512T367 -448T343 -364T312 -259L203 119L138 41L111 67L212 188L264 248L472 -474L983 1140Q988 1150 1001 1150" },
+};
+
 const SUBS = { 0: "₀", 1: "₁", 2: "₂", 3: "₃", 4: "₄", 5: "₅", 6: "₆", 7: "₇", 8: "₈", 9: "₉" };
 /** E_1 as it is drawn: E₁. */
 export const refFace = (name) => name.replace(/_?(\d+)$/, (_, d) => [...d].map((c) => SUBS[c]).join(""));
@@ -239,14 +247,22 @@ function measureBare(node, size, binary) {
       const gap = 0.1 * size;
       const rule = Math.max(1, 0.05 * size);
       const above = k.ascent + gap + rule;               // baseline to the bar
-      const rSize = Math.max(size, (above + k.descent) / (ASC + DESC));
-      const rw = measureText("√", rSize, false);
+      /* MathJax's own √ (radical.js): its normal one when the contents fit in
+         it, its tall one when they do not, stretched upward only past that. */
+      const need = above + k.descent;
+      // A digit or a letter fits under the normal sign with a little to spare,
+      // the way MathJax sets √12; anything taller takes the tall one.
+      const g = need <= 1.25 * (RADICAL.normal.h + RADICAL.normal.d) * size ? RADICAL.normal : RADICAL.tall;
+      const unit = size;
+      const sy = Math.max(1, need / ((g.h + g.d) * unit));
+      const rw = g.w * unit;
       const pad = 0.06 * size;
+      const below = g.d * unit * sy - (g.h * unit * sy - above);   // baseline to the foot of the sign
       return {
-        ...base, kind: "root", k, gap, rule, rSize, rw, pad,
+        ...base, kind: "root", k, gap, rule, rw, pad, g, sy,
         w: rw + pad + k.w + pad,
         ascent: Math.max(base.ascent, above),
-        descent: Math.max(base.descent, k.descent, (ASC + DESC) * rSize - above),
+        descent: Math.max(base.descent, k.descent, below),
       };
     }
 
@@ -258,6 +274,14 @@ function measureBare(node, size, binary) {
       const gap = 0.08 * size;
       return { ...base, kind: "mixed", whole, part, gap, w: whole.w + gap + part.w,
                ascent: Math.max(base.ascent, whole.ascent, part.ascent), descent: Math.max(base.descent, whole.descent, part.descent) };
+    }
+    // 1011₂: the digits upright, the base lowered and small after them.
+    case "base": {
+      const dw = measureText(node.digits, size, false);
+      const sub = size * 0.6;
+      const bw = measureText(String(node.base), sub, false);
+      return { ...base, kind: "base", dw, bw, sub, w: dw + 0.04 * size + bw,
+               descent: Math.max(base.descent, 0.32 * size + DESC * sub) };
     }
     // A named equation, its number lowered the way it is written: E₁.
     case "ref": {
@@ -451,6 +475,11 @@ function place(m, x, y, out) {
       place(m.e, x + m.b.w + m.kern, y - m.rise, out);
       break;
 
+    case "base":
+      text("t", m.node.digits, x, y, m.size, false);
+      text("radix", String(m.node.base), x + m.dw + 0.04 * m.size, y + 0.32 * m.size, m.sub, false);
+      break;
+
     case "mixed":
       place(m.whole, x, y, out);
       place(m.part, x + m.whole.w + m.gap, y, out);
@@ -505,8 +534,15 @@ function place(m, x, y, out) {
 
     case "root": {
       const barY = y - m.k.ascent - m.gap - m.rule;
-      // Sit the glyph so its top meets the bar.
-      text("rad", "√", x, barY + ASC * m.rSize, m.rSize, false);
+      // MathJax's outline, its top on the bar: font units (1000 to the em, y up).
+      const s = m.size / 1000;
+      const gy = barY + m.g.h * m.size * m.sy;            // where the outline's baseline goes
+      out.atoms.push({
+        key: `${id}#rad`, nodeId: id, kind: "path", text: "√",
+        x, y: barY, w: m.rw, h: (m.g.h + m.g.d) * m.size * m.sy,
+        d: m.g.d === RADICAL.normal.d ? RADICAL.normal.path : RADICAL.tall.path,
+        transform: `translate(${x} ${gy}) scale(${s} ${-s * m.sy})`,
+      });
       place(m.k, x + m.rw + m.pad, y, out);
       const overlap = 0.04 * m.size;                     // join the bar to the tick
       out.atoms.push({ key: `${id}#vinc`, nodeId: id, kind: "rule",
@@ -574,6 +610,7 @@ export function plain(node, parentKind = null, slot = 0) {
     }
     case "const": return wrap(node.name);
     case "ref":  return wrap(node.name);
+    case "base": return wrap(`${node.digits}_${node.base}`);
     case "mixed": return wrap(`${plain(node.w)} ${plain(node.f.a)}/${plain(node.f.b)}`);
     case "fn":   return wrap(`${node.name}${plain(node.k, "fn", 0)}`);
     case "deg":  return wrap(`${plain(node.k, "deg", 0)}°`);

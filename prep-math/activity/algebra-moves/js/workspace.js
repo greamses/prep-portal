@@ -582,6 +582,18 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { menu.close(); closeDrawer(); }
+    /* Ctrl+Z steps the card being worked back a line, Ctrl+Y (or
+       Ctrl+Shift+Z) puts it forward again — the card's own arrows. Not while
+       typing: there, the keys belong to the box being typed in. */
+    const mod = e.ctrlKey || e.metaKey;
+    if (!mod) return;
+    const typing = e.target.closest?.("input, textarea, [contenteditable='true'], [contenteditable='']");
+    if (typing) return;
+    const k = e.key.toLowerCase();
+    const card = active && cards.includes(active) ? active : cards[cards.length - 1];
+    if (!card) return;
+    if (k === "z" && !e.shiftKey) { e.preventDefault(); menu.close(); card.stepBack(); say("A step back.", "ok"); }
+    else if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); menu.close(); card.stepForward(); say("A step forward again.", "ok"); }
   });
 
   // A clean slate: the canvas starts empty, and the first card is the

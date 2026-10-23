@@ -46,6 +46,21 @@ export const pm   = (k, id = freshId())              => ({ id, kind: "pm", k });
    on and name the letter they act WITH. */
 // arcsin before sin is not needed for the tokenizer (they start differently),
 // but the longer names must not be read as letters: a·r·c·sin.
+/** A number written in another base: 1011₂ is { digits: "1011", base: 2 }.
+    Digits past 9 are the letters A–Z (A is 10), so base 16 has 0–9 and A–F. */
+export const based = (digits, base, id = freshId()) => ({ id, kind: "base", digits: String(digits).toUpperCase(), base });
+
+/** Its value, exactly, or null when a digit does not belong in that base. */
+export function baseValue(digits, base) {
+  let v = 0n;
+  for (const ch of String(digits).toUpperCase()) {
+    const d = parseInt(ch, 36);
+    if (Number.isNaN(d) || d >= base) return null;
+    v = v * BigInt(base) + BigInt(d);
+  }
+  return v;
+}
+
 /** A mixed number, 2⅓: a whole number `w` and a proper fraction `f` (a frac
     of two whole numbers) written side by side, meaning w + f. */
 export const mixed = (w, f, id = freshId()) => ({ id, kind: "mixed", w, f });
@@ -224,6 +239,13 @@ export function readTerm(node) {
       case "num":
         c = R.mul(c, flip ? R.neg(n.v) : n.v);
         return true;
+      // 1011₂ is a number like any other: eleven.
+      case "base": {
+        const v = exactValue(n);
+        if (!v) return false;
+        c = R.mul(c, flip ? R.neg(v) : v);
+        return true;
+      }
       // 2⅓ is a number like any other: 7/3.
       case "mixed": {
         const v = exactValue(n);
@@ -338,6 +360,7 @@ export function exactValue(node) {
   try {
     switch (node.kind) {
       case "num":  return node.v;
+      case "base": { const v = baseValue(node.digits, node.base); return v === null ? null : R.rat(v); }
       case "mixed": { const w = exactValue(node.w), f = exactValue(node.f); return w && f ? R.add(w, f) : null; }
       case "neg":  { const k = exactValue(node.k); return k ? R.neg(k) : null; }
       case "sum": {

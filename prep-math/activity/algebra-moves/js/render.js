@@ -59,6 +59,10 @@ export function paintRow(row, { live = false, picked = null, pad = 0 } = {}) {
     let node;
     if (a.kind === "rule") {
       node = el("rect", { x: a.x, y: a.y, width: a.w, height: a.h, class: "am-rule" });
+    } else if (a.kind === "path") {
+      // The radical: MathJax's own outline (layout.js, RADICAL), filled.
+      node = el("g", { class: "am-rad" });
+      node.append(el("path", { d: a.d, transform: a.transform, fill: "currentColor" }));
     } else if (a.kind === "hole") {
       node = el("rect", { x: a.x, y: a.y, width: a.w, height: a.h, rx: 2, class: "am-hole" });
     } else {
@@ -84,7 +88,7 @@ export function paintRow(row, { live = false, picked = null, pad = 0 } = {}) {
     // One glyph picked, or several picked to move together.
     const chosen = new Set([].concat(picked || []));
     const gutter = eqGutter(row);
-    const order = [...row.atoms.filter((a) => a.kind === "rule"), ...row.atoms.filter((a) => a.kind === "text")];
+    const order = [...row.atoms.filter((a) => a.kind === "rule" || a.kind === "path"), ...row.atoms.filter((a) => a.kind === "text")];
     for (const a of order) {
       const box = hitBox(a, row, gutter);
       if (chosen.has(a.key)) selLayer.appendChild(el("rect", { ...box, class: "am-sel", rx: 3 }));
@@ -94,7 +98,7 @@ export function paintRow(row, { live = false, picked = null, pad = 0 } = {}) {
         tabindex: "0", role: "button",
       });
       hit.dataset.key = a.key;
-      hit.setAttribute("aria-label", a.kind !== "rule" ? a.text
+      hit.setAttribute("aria-label", a.kind === "path" ? "the square root" : a.kind !== "rule" ? a.text
         : a.key.endsWith("#vinc") ? "the square root" : a.key.endsWith("#dbar") ? "d by d" : "the fraction bar");
       hits.appendChild(hit);
     }
@@ -106,6 +110,7 @@ export function paintRow(row, { live = false, picked = null, pad = 0 } = {}) {
 /** Where a glyph can be tapped. A sign is a sliver of ink, so it borrows the
     air either side of it; the = takes the whole gutter between the two sides. */
 function hitBox(a, row, gutter) {
+  if (a.kind === "path") return { x: a.x - 2, y: a.y - 2, width: a.w + 4, height: a.h + 4 };
   if (a.kind === "rule") {
     const padY = 0.1 * row.size;
     return { x: a.x, y: a.y - padY, width: a.w, height: a.h + padY * 2 };

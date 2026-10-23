@@ -1213,6 +1213,34 @@ export function poShenLoh(eq) {
   };
 }
 
+/* ── Number bases ───────────────────────────────────────────────────────────
+   1011₂ in base ten is each digit times its place value — 1·2³ + 0·2² +
+   1·2¹ + 1·2⁰ — written out with every place showing, zeros too, for "work it
+   out" to add up. A digit past 9 is written as its value: A is 10. */
+export function expandBase(eq, id) {
+  const n = A.findById(eq, id);
+  if (!n || n.kind !== "base") return { error: "That is not a number in another base." };
+  const digits = [...n.digits];
+  const places = digits.map((ch, i) => {
+    const power = digits.length - 1 - i;
+    return A.prod([A.num(R.rat(BigInt(parseInt(ch, 36)))), A.pow(A.num(R.rat(BigInt(n.base))), A.num(R.rat(BigInt(power))))]);
+  });
+  const next = places.length === 1 ? places[0] : { ...A.sum(places), paren: true };
+  return {
+    eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next),
+    note: `Each digit times its place value in base ${n.base}: ${plain(next)}`,
+  };
+}
+
+export function toBaseTen(eq, id) {
+  const n = A.findById(eq, id);
+  if (!n || n.kind !== "base") return { error: "That is not a number in another base." };
+  const v = A.baseValue(n.digits, n.base);
+  if (v === null) return { error: `${n.digits} has a digit that base ${n.base} does not have.` };
+  const next = A.num(R.rat(v));
+  return { eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next), note: `${plain(n)} is ${v} in base ten` };
+}
+
 /* ── Mixed numbers ──────────────────────────────────────────────────────────
    2⅓ is 2 + ⅓: the whole number is 2 × 3 thirds, so 2⅓ is (2 × 3 + 1)/3 —
    written out with the multiplying showing, for "work it out" to finish. The
@@ -2410,6 +2438,11 @@ export function atomOffers(eq, key, { given = null } = {}) {
       if (f && A.findById(f.a, nodeId)) add(splitOffer(F));
     }
     pick(p, "across", "combine", "square", "addfrac", "dropzero", "pyth");
+    // A number in another base: expand it in base ten, or just convert it.
+    if (leaf?.kind === "base") {
+      add(direct("expandbase", "Expand it in base ten", "digit × place value", expandBase(eq, nodeId)));
+      add(direct("base10", "Write it in base ten", "the value", toBaseTen(eq, nodeId)));
+    }
     // Any part of a mixed number: turn it into an improper fraction.
     {
       let m = A.parentOf(eq, nodeId);
@@ -2523,7 +2556,7 @@ export function multiOffers(eq, keys, { given = null } = {}) {
 /** The tidy-ups: moves that leave the same thing written more simply. A side
     with none of these left on any of its terms is as tidy as it goes. */
 export const TIDY = new Set(["combine", "workout", "cancel", "dropzero", "indices", "surd", "addfrac",
-  "multiply", "trig", "pyth", "diff", "integrate", "limit"]);
+  "multiply", "trig", "pyth", "diff", "integrate", "limit", "base10"]);
 
 /** Every move on offer for a set of picked glyphs — what each one means, what
     its term can have done to it, and what they mean together — or, with

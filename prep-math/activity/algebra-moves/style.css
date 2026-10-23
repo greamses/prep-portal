@@ -227,6 +227,7 @@
   -webkit-user-select: none;
 }
 .am-rule { fill: var(--ink); }
+.am-rad { color: var(--ink); }
 
 /* A formula card carries the name of the formula on its handle, and the values
    it was given just under it — the question, written above the working the way
@@ -806,6 +807,7 @@
 /* Paper is paper: the maths on a note is dark ink whatever the theme is. */
 .pp-sticky.am-fx__pick .am-glyph,
 .pp-sticky.am-fx__pick .am-rule { fill: #14130f; }
+.pp-sticky.am-fx__pick .am-rad { color: #14130f; }
 
 /* A wide formula is SCALED to the tile rather than scrolled inside it: the tile
    is a button, so a scrollbar in it is something nobody can use, and C = 2(22/7)r
