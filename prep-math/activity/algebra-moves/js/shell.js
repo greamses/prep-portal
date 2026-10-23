@@ -26,6 +26,10 @@ export function shellHTML() {
             ${UI.plus(17)}
             <em>New</em>
           </button>
+          <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-pinkey" hidden
+                  title="Pin a sticky note on the canvas" aria-label="Pin a sticky note on the canvas">
+            <em>Pin a note</em>
+          </button>
           <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-book" hidden
                   title="The formula book" aria-label="The formula book">
             <em>Formulas</em>

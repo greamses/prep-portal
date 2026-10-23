@@ -29,6 +29,7 @@ import { createFormulaPicker } from "./formula-picker.js";
 import { solve, bestOffers } from "./solve.js";
 import { applyToBoth, everyOffer, asNumbers, flattenSums } from "./ops.js";
 import { ruleFits } from "./rules.js";
+import { noteFace, noteWriter, newNote } from "./notes.js";
 import * as A from "./ast.js";
 import { shellHTML } from "./shell.js";
 import { heroPaint } from "/utils/components/nav-icons.js";
@@ -227,6 +228,46 @@ function startEdit(card, key) {
   if (start) keypad.set(start);
 }
 
+/* ── Notes anywhere on the canvas ───────────────────────────────────────────
+   The rail's pin: every press sticks a new note in the middle of what is in
+   view, ready to write on — as many as are wanted. Drag one anywhere, tap it
+   to write, × to take it off; a note left blank is not kept. */
+let canvasWriter = null;
+const freeNotes = [];
+export function pinNote() {
+  if (!canvas) return;
+  canvasWriter ||= noteWriter(canvas.world);
+  const at = canvas.centre();
+  const n = newNote(freeNotes.length % 6);
+  // Each new one lands a little below and right of the last, not on top of it.
+  const step = (freeNotes.length % 6) * 22;
+  const holder = document.createElement("div");
+  holder.className = "am-free-note";
+  holder.style.left = `${at.x - 110 + step}px`;
+  holder.style.top = `${at.y - 30 + step}px`;
+  const takeOff = () => {
+    canvasWriter.drop(n);
+    holder.remove();
+    freeNotes.splice(freeNotes.indexOf(n), 1);
+  };
+  // The face is drawn again whenever the writing changes, and each face
+  // opens the editor over itself.
+  const mount = () => {
+    const face = noteFace(n, {
+      scaleOf: () => canvas.zoom,
+      onTap: () => write(face),
+      onDelete: takeOff,
+    });
+    holder.replaceChildren(face);
+    return face;
+  };
+  const write = (face) => canvasWriter.write(n, face, (note, { empty }) => (empty ? takeOff() : mount()));
+  canvas.world.appendChild(holder);
+  freeNotes.push(n);
+  write(mount());
+  say("A note on the canvas — write on it, then drag it wherever it helps.", "ok");
+}
+
 /* ── Named equations ────────────────────────────────────────────────────────
    Every card is an equation with a name — E_1, E_2 — and the names are what
    is typed to work on it: E_1 + 3, E_1·2, E_1^2, or E_1 − E_2 to take one
@@ -387,6 +428,8 @@ function addCard(eq, { given = null, title = "", find = "", name = "" } = {}) {
     onChange: (self) => { if (self.picked) openMenuFor(self); else menu.close(); },
     onEdit: (key, self) => startEdit(self, key),
     onRename: (want, self) => rename(self, want),
+    // Lines pile up under the one being worked: follow them down.
+    onGrow: (self) => requestAnimationFrame(() => { canvas.revealCard(self.el); menu.reposition(); }),
     onGesture: (offer, self) => {
       if (offer.cards) return splitInto(self, offer);
       if (offer.needsInput) return offer.op === "eq" ? startOperate(self) : startBothSides(self, offer.op);
@@ -451,6 +494,9 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
   // Inside a workbook there is no page rail to hang the book on, so the
   // canvas's own rail carries a key for it.
   if (!drawer) {
+    const pinKey = $("#am-pinkey");
+    pinKey.hidden = false;
+    pinKey.addEventListener("click", () => pinNote());
     const key = $("#am-book");
     key.hidden = false;
     key.addEventListener("click", async () => {

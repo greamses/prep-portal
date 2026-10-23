@@ -43,6 +43,12 @@ const board = (sign) =>
   r(2.6, 14.2, 18.8, 1.9, QUIET, 0.95) + r(9, 17.8, 12, 3.2, LEAF, 1.6);
 
 export const TOOL_ICONS = {
+  /* a drawing pin: a sticky note stuck anywhere */
+  pin: glyph(
+    r(5, 9, 14, 11.4, GOLD, 1.2) + r(8.4, 7.4, 7.2, 3, PAPER, 0.8) +
+      `<path d="M14.6 2.4h4.2l-.8 3.6 2.6 2.4v1.4h-7.8V8.4l2.6-2.4z" fill="${LOUD}"/>` +
+      `<rect x="16" y="9.8" width="1.2" height="5.4" rx="0.6" fill="#6b6457"/>`
+  ),
   /* the formula book: an open book, ruled lines on one page and a√ on the other */
   formulas: glyph(
     r(2.4, 4.4, 9.2, 15.6, PAPER, 1.2) + r(12.4, 4.4, 9.2, 15.6, PAPER, 1.2) + r(11.2, 3.6, 1.6, 17.2, LOUD, 0.8) +

@@ -116,6 +116,10 @@ export function createCanvas(host) {
 
     add(cardEl) { world.appendChild(cardEl); },
 
+    /** The sheet everything sits on, and how big one of its pixels is on screen. */
+    get world() { return world; },
+    get zoom() { return zoom; },
+
     /** Put a card on top of the pile — it is the one being worked on. */
     raise(cardEl) { if (cardEl.parentElement === world) world.appendChild(cardEl); },
 
@@ -202,12 +206,16 @@ export function createCanvas(host) {
     revealCard(cardEl) {
       const box = host.getBoundingClientRect();
       const r = cardEl.getBoundingClientRect();
+      // The line being worked on is the one that must be in sight: a card
+      // that has grown taller than the view is scrolled to its newest line,
+      // never back up to its first.
+      const live = (cardEl.querySelector(".am-work.is-live") || cardEl).getBoundingClientRect();
       const margin = 24;
       let dx = 0, dy = 0;
       if (r.right > box.right - margin) dx = box.right - margin - r.right;
       if (r.left + dx < box.left + margin) dx = box.left + margin - r.left;
       if (r.bottom > box.bottom - margin) dy = box.bottom - margin - r.bottom;
-      if (r.top + dy < box.top + margin) dy = box.top + margin - r.top;
+      if (r.top + dy < box.top + margin) dy = Math.min(box.top + margin - r.top, box.bottom - margin - live.bottom);
       if (!dx && !dy) return;
       panX += dx;
       panY += dy;

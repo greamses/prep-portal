@@ -258,6 +258,8 @@ export function mountTools(host = document.body, { tools = ["calculator", "colum
   async function toggle(id) {
     const live = open.get(id);
     if (live) { live.close(); return; }
+    // A tool that DOES something (drop a pin) rather than open a panel.
+    if (ALL[id]?.act) { ALL[id].act(); return; }
     const spec = ALL[id];
     const key = el.querySelector(`[data-wbtool="${id}"]`);
     key.setAttribute("aria-pressed", "true");

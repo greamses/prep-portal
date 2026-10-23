@@ -1123,7 +1123,7 @@
 .pp-sticky.am-fx__pick--rule { box-shadow: inset 4px 0 0 var(--accent-secondary, #6aa5d8), var(--pp-note-shadow, 0 2px 6px rgba(0,0,0,.12)); }
 
 /* Only inside a workbook, where there is no page rail to carry the book. */
-#am-book[hidden] { display: none; }
+#am-book[hidden], #am-pinkey[hidden] { display: none; }
 
 /* ── An equation's name: E₁, tap to rename ────────────────────────────────── */
 .am-card__label {
@@ -1172,3 +1172,8 @@
 .am-pinned-wrap:hover .am-pinned__del,
 .am-pinned__del:focus-visible { opacity: 1; }
 @media (hover: none) { .am-pinned__del { opacity: 0.85; } }
+
+/* A note stuck straight on the canvas from the rail's pin. */
+.am-free-note { position: absolute; z-index: 5; width: max-content; }
+.am-world > .pp-note { position: absolute; left: 0; top: 0; z-index: 40; }
+.am-world > .pp-note[hidden] { display: none; }
