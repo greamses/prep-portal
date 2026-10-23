@@ -69,6 +69,25 @@ const KEYS = [
   ],
 ];
 
+/** Rows of up to `n`, for a flat list of keys nobody has hand-laid-out. */
+const rowsOf = (keys, n = 7) => {
+  const out = [];
+  for (let i = 0; i < keys.length; i += n) out.push(keys.slice(i, i + n));
+  return out;
+};
+
+const asLetter = (ch) => ({ k: ch, t: ch, tone: "letter" });
+
+/* The full alphabet, for whatever letter a formula reaches for beyond x and
+   y. Lowercase only — the same reason the equation's own writing is. */
+const LETTERS = rowsOf([..."abcdefghijklmnopqrstuvwxyz"].map(asLetter));
+
+/* The Greek letters a school formula actually uses — a circle's π, an angle's
+   θ, the unknowns geometry reaches for once x, y and z are all taken. Kept to
+   seven so the row matches every other row in the pad; see parse.js for why
+   it stops at these seven. */
+const GREEK = rowsOf(["π", "θ", "α", "β", "γ", "λ", "μ"].map(asLetter));
+
 export function createKeypad(host, { onSubmit } = {}) {
   const preview = document.createElement("div");
   preview.className = "am-preview";
@@ -100,7 +119,7 @@ export function createKeypad(host, { onSubmit } = {}) {
 
   const go = document.createElement("button");
   go.type = "button";
-  go.className = "pp-sticky pp-note-btn am-go";
+  go.className = "am-go";
   go.textContent = "Enter";
   go.title = "Put it on the canvas";
   go.setAttribute("aria-label", "Put it on the canvas");
@@ -108,7 +127,7 @@ export function createKeypad(host, { onSubmit } = {}) {
   host.append(preview, line, say, give, pad, go);
 
   const SIZE = 40;                // the drawing's font size, in CSS pixels
-  const KEY_SIZE = 19;            // and on a key face, which has a cell to fit
+  const KEY_SIZE = 15;            // and on a key face, which has a cell to fit
   let anchors = [];               // where each source offset sits on the page
   let toDrawn = [];               // typed offset -> repaired offset
 
@@ -541,30 +560,49 @@ export function createKeypad(host, { onSubmit } = {}) {
     return holder;
   }
 
-  for (const row of KEYS) {
-    const rail = document.createElement("div");
-    rail.className = "am-pad__row";
-    for (const key of row) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      // A key that DOES something to the keypad rather than typing maths is
-      // labelled, not set: it gets the mono face a caption has.
-      btn.className = `am-key${key.act ? " am-key--act" : ""}` +
-                      `${key.tone ? ` am-key--${key.tone}` : ""}${key.wide ? " am-key--wide" : ""}`;
-      if (key.math) btn.appendChild(face(key.math));
-      else btn.textContent = key.k;
-      if (key.title) btn.title = key.title;
-      btn.setAttribute("aria-label", key.title || key.k);
-      // pointerdown, not click: never let the caret leave the line.
-      btn.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        if (key.act) ACTS[key.act]();
-        else type(key.t ?? key.k, key.back ?? 0);
-      });
-      rail.appendChild(btn);
+  /** One section of the pad: an optional caption, then its rows of keys. A
+      labelled section is a different ALPHABET to reach for, not a different
+      kind of key — so it is built by the one function every key goes
+      through, never a second button-building path to drift from the first. */
+  function buildSection(label, rows) {
+    const section = document.createElement("div");
+    section.className = "am-pad__section";
+    if (label) {
+      const cap = document.createElement("span");
+      cap.className = "am-pad__cap";
+      cap.textContent = label;
+      section.appendChild(cap);
     }
-    pad.appendChild(rail);
+    for (const row of rows) {
+      const rail = document.createElement("div");
+      rail.className = "am-pad__row";
+      for (const key of row) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        // A key that DOES something to the keypad rather than typing maths is
+        // labelled, not set: it gets the mono face a caption has.
+        btn.className = `am-key${key.act ? " am-key--act" : ""}` +
+                        `${key.tone ? ` am-key--${key.tone}` : ""}${key.wide ? " am-key--wide" : ""}`;
+        if (key.math) btn.appendChild(face(key.math));
+        else btn.textContent = key.k;
+        if (key.title) btn.title = key.title;
+        btn.setAttribute("aria-label", key.title || key.k);
+        // pointerdown, not click: never let the caret leave the line.
+        btn.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          if (key.act) ACTS[key.act]();
+          else type(key.t ?? key.k, key.back ?? 0);
+        });
+        rail.appendChild(btn);
+      }
+      section.appendChild(rail);
+    }
+    return section;
   }
+
+  pad.appendChild(buildSection(null, KEYS));
+  pad.appendChild(buildSection("letters", LETTERS));
+  pad.appendChild(buildSection("greek letters", GREEK));
 
   go.addEventListener("pointerdown", (e) => { e.preventDefault(); submit(); });
   line.addEventListener("input", draw);

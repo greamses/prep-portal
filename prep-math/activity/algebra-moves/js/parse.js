@@ -25,7 +25,12 @@ import * as A from "./ast.js";
 import * as R from "./rational.js";
 
 const isDigit = (c) => c >= "0" && c <= "9";
-const isAlpha = (c) => (c >= "a" && c <= "z") || (c >= "A" && c <= "Z");
+// Lowercase only, and only the ones the keypad offers: an uppercase Greek
+// letter is indistinguishable on the page from the Latin one it happens to
+// look like (Α is "A", Β is "B"), which would make two different variables
+// share a glyph. Lowercase has no such collision.
+const GREEK = "αβγθλμπ";
+const isAlpha = (c) => (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || GREEK.includes(c);
 
 function tokenise(src) {
   const out = [];
