@@ -61,6 +61,7 @@ const GATED = new Set([
   "/logo/logo.html",
   "/partner.html",
   "/prep-math/activity/algebra-moves/api.html",
+  "/prep-math/drag",
   "/prep-math/manim-lab",
   "/prep-math/manim-lab/morph-test.html",
   "/tools/organ-tracer",

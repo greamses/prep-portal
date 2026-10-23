@@ -207,21 +207,6 @@ export const PAGES = [
 
   /* ── Maths activities ──────────────────────────────────────────────── */
   {
-    file: "prep-math/drag/index.html",
-    section: "maths",
-    name: "Algebra Lab",
-    title: "Algebra Lab: Solve Equations by Dragging Terms",
-    desc: "Solve linear equations by dragging terms across the equals sign and balancing both sides. An interactive algebra activity that builds equation-solving intuition.",
-    intro:
-      "In the Algebra Lab an equation is something you move with your hands. Drag a term to the other side and watch its sign change; do the same thing to both sides and watch the equation stay balanced. It makes the rules of solving equations visible before you have to do them on paper.",
-    points: [
-      "Drag terms across the equals sign",
-      "See why “change side, change sign” works",
-      "Step-by-step practice with linear equations",
-    ],
-    access: "free",
-  },
-  {
     file: "prep-math/graphing/index.html",
     section: "maths",
     name: "Graph Predictor",

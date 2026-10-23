@@ -150,7 +150,7 @@ export const SITE_PAGES = [
     blurb: "Hub of hands-on math activities: fractions, geometry (angles, transversals, Pythagoras, surface area) and Cartesian art.",
     keywords: ["math activities", "math hub", "prep math", "prep-math"],
   },
-  { id: "algebra-lab", title: "Algebra Lab", href: "/prep-math/drag/index.html", category: "math", blurb: "Drag-and-drop equation solving.", keywords: ["algebra lab", "drag and drop", "solve equations"] },
+  { id: "algebra-moves", title: "Algebra Moves", href: "/prep-math/activity/algebra-moves/index.html", category: "math", blurb: "Type an equation, tap a term, name the move — solve it one legal step at a time.", keywords: ["algebra moves", "solve equations", "balance rule", "rearrange formulas"] },
   { id: "equivalent-fractions", title: "Equivalent Fractions", href: "/prep-math/activity/equivalent-fractions/index.html", category: "math", blurb: "Visualize fraction equivalence.", keywords: ["equivalent fractions", "fractions"] },
   { id: "polygon-angles", title: "Polygon Angles", href: "/prep-math/activity/polygon-angles/index.html", category: "math", blurb: "Explore angle rules and sums.", keywords: ["polygon angles", "polygon", "angle sum", "geometry"] },
   { id: "pythagoras", title: "Pythagoras", href: "/prep-math/activity/pythagoras/index.html", category: "math", blurb: "Grow the squares on a right triangle, then break them apart to fill the one on the hypotenuse.", keywords: ["pythagoras", "pythagorean theorem", "right triangle", "hypotenuse", "a2 + b2 = c2", "geometry", "proof", "dissection"] },

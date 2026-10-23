@@ -2,3 +2,6 @@ server/node_modules
 server/.env
 server/serviceAccountKey.json
 server/googleCloudKey.json
+
+# Retired — Algebra Moves replaced it. Kept in git, not deployed.
+prep-math/drag

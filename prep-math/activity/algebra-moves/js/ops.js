@@ -22,15 +22,33 @@ import * as A from "./ast.js";
 import * as R from "./rational.js";
 import { plain } from "./layout.js";
 
-/** Where a node sits, if it is one of the top-level terms of a side. */
+/** Where a node sits, if it is one of the terms of SOME container — a true
+    side of the line, or the numerator/denominator of a fraction anywhere in
+    it (see A.containersOf). `topSide` is "l"/"r"/"e" only when the container
+    IS a true side, which is what the balance-rule moves (across, divide,
+    times, flip, swap) need and the tidying ones (combine, expand, drop a
+    zero) do not — those rebuild whichever container actually owns the term,
+    with A.replace, wherever in the tree it happens to be. */
 function locate(eq, id) {
-  for (const side of A.SIDES(eq)) {
-    const terms = A.termsOf(eq[side]);
+  const sides = A.SIDES(eq);
+  for (const container of A.containersOf(eq)) {
+    const terms = A.termsOf(container);
     const index = terms.findIndex((t) => t.id === id);
-    if (index >= 0) return { side, other: side === "l" ? "r" : "l", index, terms, term: terms[index] };
+    if (index < 0) continue;
+    const topSide = sides.find((s) => eq[s] === container) ?? null;
+    return {
+      container, topSide,
+      other: topSide ? (topSide === "l" ? "r" : "l") : null,
+      index, terms, term: terms[index],
+    };
   }
   return null;
 }
+
+/** Put a container's rebuilt terms back wherever it actually sits in the
+    tree — the top of a side, same as always, or buried in a fraction. */
+const setContainer = (eq, loc, nextTerms) =>
+  A.replace(eq, loc.container.id, A.sideFromTerms(nextTerms, loc.container));
 
 const isPlainZero = (node) => node.kind === "num" && R.isZero(node.v);
 
@@ -54,8 +72,8 @@ const TWO_SIDED = "There is only one side here — that is an expression, not an
 export function takeAcross(eq, id) {
   if (!A.isEquation(eq)) return { error: TWO_SIDED };
   const loc = locate(eq, id);
-  if (!loc) return { error: "That is not one of the terms." };
-  const { side, other, index, terms, term } = loc;
+  if (!loc || !loc.topSide) return { error: "That is not one of the terms." };
+  const { topSide: side, other, index, terms, term } = loc;
 
   // −5 taken from both sides means +5 arrives; the 5 keeps its own id and slides,
   // and the minus sign it used to wear is what dies.
@@ -89,7 +107,7 @@ export function takeAcross(eq, id) {
 export function combine(eq, aId, bId) {
   const la = locate(eq, aId);
   const lb = locate(eq, bId);
-  if (!la || !lb || la.side !== lb.side) return { error: "Those two are not on the same side." };
+  if (!la || !lb || la.container.id !== lb.container.id) return { error: "Those two are not on the same side." };
   if (la.index === lb.index) return { error: "That is the same term twice." };
 
   const [first, second] = la.index < lb.index ? [la, lb] : [lb, la];
@@ -107,7 +125,7 @@ export function combine(eq, aId, bId) {
     .map((t, i) => (i === first.index ? combined : t))
     .filter((_, i) => i !== second.index);
 
-  const eqNext = A.setSide(eq, first.side, A.sideFromTerms(nextTerms, eq[first.side]));
+  const eqNext = setContainer(eq, first, nextTerms);
 
   // Both old terms feed the new one, so both fly to it.
   const sources = [first.term.id, second.term.id].filter((x) => x !== combined.id);
@@ -327,7 +345,7 @@ export function expand(eq, id) {
   });
 
   const nextTerms = [...loc.terms.slice(0, loc.index), ...grown, ...loc.terms.slice(loc.index + 1)];
-  const eqNext = A.setSide(eq, loc.side, A.sideFromTerms(nextTerms, eq[loc.side]));
+  const eqNext = setContainer(eq, loc, nextTerms);
 
   // Each new term came out of the bracket, so they all fly from the old one.
   const from = new Map();
@@ -358,7 +376,7 @@ export function dropZero(eq, id) {
   if (loc.terms.length < 2) return { error: "That is the only thing on that side." };
 
   const rest = loc.terms.filter((_, i) => i !== loc.index);
-  const eqNext = A.setSide(eq, loc.side, A.sideFromTerms(rest, eq[loc.side]));
+  const eqNext = setContainer(eq, loc, rest);
   return { eq: eqNext, from: new Map(), note: "Adding nothing changes nothing" };
 }
 
@@ -543,9 +561,9 @@ export function offerTo(eq, fromId, toId) {
   if (toId === EQUALS) return A.isEquation(eq) ? cross() : null;
 
   const to = locate(eq, toId);
-  // A term on the far side is a term you might simply have meant to pick up
-  // instead. Crossing is what the equals sign is for.
-  if (!to || to.side !== from.side) return null;
+  // A term in a different container is a term you might simply have meant to
+  // pick up instead. Crossing is what the equals sign is for.
+  if (!to || to.container.id !== from.container.id) return null;
 
   const trial = combine(eq, fromId, toId);
   if (trial.error) return null;
@@ -561,15 +579,19 @@ export function offerTo(eq, fromId, toId) {
 export function offers(eq, id, { given = null } = {}) {
   const loc = locate(eq, id);
   if (!loc) return [];
-  const { side, terms, index, term } = loc;
+  const { terms, index, term } = loc;
   const out = [];
 
   const read = A.readTerm(term);
   const adding = term.kind === "neg" && !term.paren;
-  // An expression has one side, so nothing can be carried across it, divided
-  // through it or turned round. What is left is exactly the tidying moves —
-  // which is the whole of what simplifying an expression is.
-  const twoSided = A.isEquation(eq);
+  // The balance-rule moves — across, divide, times, flip, swap — only mean
+  // anything on a TRUE side of an equation: there is nothing on the other
+  // side of a numerator to balance against. Everything else here (combine,
+  // expand, drop a zero, cancel, work it out) is just as much at home inside
+  // a fraction as it is at the top of the line, which is the whole of what
+  // makes every part of a term targetable rather than only the outermost
+  // layer of it.
+  const twoSided = A.isEquation(eq) && !!loc.topSide;
 
   // Numbers waiting to go in come first: there is no sense reshaping a formula
   // that is one tap away from being arithmetic.
@@ -717,6 +739,5 @@ export function offers(eq, id, { given = null } = {}) {
     }
   }
 
-  void side;
   return out;
 }

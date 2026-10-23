@@ -120,8 +120,25 @@ export function setSide(root, side, next) {
   return next === root.r ? root : eqn(root.l, next, root.id);
 }
 
-/** Every top-level term of the line, left to right — what a student can tap. */
-export const allTerms = (root) => SIDES(root).flatMap((s) => termsOf(root[s]));
+/* ── Containers ─────────────────────────────────────────────────────────────
+   A container is whatever `termsOf` splits into terms: each side of the line
+   is one, and so is the numerator and the denominator of every fraction,
+   however deep it is buried — inside a bracket, inside another fraction's
+   own numerator, it makes no difference. That is the whole of what "every
+   part of a term is targetable, even in fractions" means structurally: a
+   term is tappable the moment SOME container owns it, and a fraction hands
+   out two more containers the instant it exists. */
+export function containersOf(root) {
+  const out = [];
+  for (const s of SIDES(root)) out.push(root[s]);
+  walk(root, (n) => { if (n.kind === "frac") { out.push(n.a); out.push(n.b); } });
+  return out;
+}
+
+/** Every term a student can tap, in every container — both true sides of the
+    line, and recursively, the numerator and denominator of every fraction
+    anywhere in it. */
+export const allTerms = (root) => containersOf(root).flatMap(termsOf);
 
 /** Rebuild a side from its terms, keeping the sum's own id if there still is one. */
 export function sideFromTerms(terms, oldSide) {

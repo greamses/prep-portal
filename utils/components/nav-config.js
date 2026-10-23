@@ -174,7 +174,6 @@ const NAV_CONFIG = [
         icon: I.shapes,
         description: "Hands-on math practice",
         children: [
-          { text: "Algebra Lab", href: "/prep-math/drag/index.html", description: "Drag-and-drop equation solving" },
           { text: "Algebra Moves", href: "/prep-math/activity/algebra-moves/index.html", description: "Name the move, watch the equation rearrange" },
           { text: "Equivalent Fractions", href: "/prep-math/activity/equivalent-fractions/index.html", description: "Visualize fraction equivalence" },
           /* The four geometry studios are one link with a tab bar across the
