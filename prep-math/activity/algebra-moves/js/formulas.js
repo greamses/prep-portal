@@ -193,6 +193,23 @@ export const GROUPS = [
         note: "solves ax² + bx + c = 0, with a not 0",
       },
       {
+        id: "quadratic-psl", name: "Po-Shen Loh: the roots of x² + bx + c = 0", eq: "x = -b/2 ± sqrt(b^2/4 - c)", find: "x",
+        letters: { x: "a root", b: "the number in front of x", c: "the number on its own" },
+        example: { b: "-5", c: "6" },
+        note: "the roots average −b/2 and sit u either side of it",
+      },
+      {
+        id: "quadratic-psl-u", name: "Po-Shen Loh's u: how far each root is from −b/2", eq: "u = sqrt(b^2/4 - c)", find: "u",
+        letters: { u: "the distance from the average to each root", b: "the number in front of x", c: "the number on its own" },
+        example: { b: "-6", c: "5" },
+      },
+      {
+        id: "quadratic-factorised", name: "Factorised form: a quadratic from its roots", eq: "y = (x - r)(x - s)", find: "y",
+        letters: { y: "the value of the quadratic", x: "where it is found", r: "one root", s: "the other root" },
+        example: { x: "5", r: "2", s: "3" },
+        note: "the factoring method run backwards: the roots give the brackets",
+      },
+      {
         id: "quadratic-discriminant", name: "Discriminant of a quadratic", eq: "D = b^2 - 4ac", find: "D",
         letters: { D: "the discriminant", a: "the coefficient of x²", b: "the coefficient of x", c: "the constant term" },
         example: { a: "1", b: "-3", c: "2" },

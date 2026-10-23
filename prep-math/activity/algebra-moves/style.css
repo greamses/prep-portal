@@ -209,7 +209,7 @@
   transform: translateY(-50%);
   margin-left: 0.7rem;
   white-space: nowrap;
-  font-family: "Shantell Sans", "Segoe Print", cursive;
+  font-family: var(--font-mono);
   font-size: 15px;
   font-style: normal;
   font-weight: 500;
@@ -249,7 +249,7 @@
 .am-card__given {
   margin: 0;
   padding: 0.45rem 0.8rem 0;
-  font-family: "Shantell Sans", "Segoe Print", cursive;
+  font-family: var(--font-mono);
   font-size: 0.8rem;
   line-height: 1.45;
   color: rgba(20, 19, 15, 0.75);
@@ -1114,7 +1114,7 @@
 /* ── The formula book on the side rail ────────────────────────────────────── */
 .am-book { padding: 12px 14px 16px; overflow-y: auto; }
 .am-fx__word {
-  font-family: "Shantell Sans", "Segoe Print", cursive;
+  font-family: var(--font-mono);
   font-size: 13px;
   color: var(--text-secondary);
   margin: 0 6px;
@@ -1230,3 +1230,18 @@
 .am-viewonly .am-free-note { pointer-events: none; }
 .am-viewonly #am-add,
 .am-viewonly #am-work { opacity: 0.4; pointer-events: none; }
+
+/* ── One body face ────────────────────────────────────────────────────────
+   JetBrains Mono for everything that is not a heading (Unbounded) or the
+   mathematics itself (STIX, drawn by the typesetter): the site-wide button
+   dress (buttons.css) writes buttons in a hand, and here it does not. The
+   keys and the move chips keep the equation's own face. */
+.am-body,
+.am-body .am-live,
+.am-body .am-book,
+.am-body .am-say,
+.am-body .wb-panel { font-family: var(--font-mono); }
+.am-body :is(button, .pp-sticky, .pp-note-btn, .am-tool, .am-subtab, [role="tab"]):not(.am-key):not(.am-move):not(.am-card__label) {
+  font-family: var(--font-mono) !important;
+}
+.am-body :is(.am-key, .am-move, .am-card__label) { font-family: "STIX Two Text", "Times New Roman", serif !important; }

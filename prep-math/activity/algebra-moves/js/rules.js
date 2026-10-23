@@ -37,7 +37,22 @@ export const RULE_GROUPS = [
       r("r-foil", "Brackets times brackets", "(a + b)(c + d) = ac + ad + bc + bd", ["expand"], /every term times every term|is \(/i),
       r("r-zero", "Rub out a zero", "a + 0 = a", ["dropzero"]),
       r("r-reorder", "Write the terms the other way round", "a + b = b + a", ["reorder"]),
-      r("r-square", "Complete the square", "x^2 + px = (x + p/2)^2 − (p/2)^2", ["square"]),
+      r("r-square", "Complete the square", "x^2 + px = (x + p/2)^2 − (p/2)^2", ["square"], /complete/i),
+    ],
+  },
+  {
+    group: "Rules: quadratics",
+    items: [
+      r("r-q-split", "Split the middle term", "ax^2 + bx + c = ax^2 + px + qx + c", ["quadsplit"]),
+      r("r-q-pair", "The two numbers: product ac, sum b", "pq = ac, so p + q = b", ["quadsplit"]),
+      r("r-q-group", "Factorise in pairs, then the common bracket", "a(x + p) + b(x + p) = (x + p)(a + b)", ["factor"]),
+      r("r-q-factor", "Factorise a quadratic", "x^2 + 5x + 6 = (x + 2)(x + 3)", ["quadfactor"]),
+      r("r-q-diff", "The difference of two squares", "x^2 − a^2 = (x − a)(x + a)", ["quadfactor"]),
+      r("r-q-perfect", "A perfect square", "x^2 + 2px + p^2 = (x + p)^2", ["square"], /perfect square/i),
+      r("r-q-complete", "Complete the square", "x^2 + px = (x + p/2)^2 − (p/2)^2", ["square"], /complete/i),
+      r("r-q-psl", "Po-Shen Loh", "x^2 + bx + c = 0, so x = −b/2 ± u", ["poshenloh"]),
+      r("r-q-pslu", "Po-Shen Loh's u", "(b/2)^2 − u^2 = c, so u^2 = b^2/4 − c", ["poshenloh"]),
+      r("r-q-roots", "Square root of both sides", "(x + p)^2 = k, so x + p = ±√k", ["root"]),
     ],
   },
   {

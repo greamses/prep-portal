@@ -1078,6 +1078,141 @@ export function factorBracket(eq, sumId) {
   return { eq: setContainer(eq, loc, nextTerms), from: new Map(), mark: plain(product), note: `Take out ${plain({ ...S, paren: true })}: ${plain(product)}` };
 }
 
+/* ── Quadratics ─────────────────────────────────────────────────────────────
+   ax² + bx + c read off a list of terms — the x² term, the x term (or none:
+   x² − 9), the number — with whole-number coefficients. The factoring method
+   is offered a step at a time, the way it is taught: find two numbers that
+   multiply to ac and add to b and SPLIT the middle term with them; the pairs
+   then factorise by the moves that already exist (take out a common factor,
+   then the common bracket). The whole answer in one step is offered beside
+   it, for when the method is not the point. */
+function readQuadratic(terms) {
+  let a = null, b = null, c = null, name = null;
+  const at = { a: -1, b: -1, c: -1 };
+  for (let i = 0; i < terms.length; i++) {
+    const m = mono(terms[i]);
+    if (!m || !R.isInt(m.c)) return null;
+    if (m.pows.size === 0) { if (c) return null; c = m.c; at.c = i; continue; }
+    if (m.pows.size !== 1) return null;
+    const [v, p] = [...m.pows][0];
+    if (name && v !== name) return null;
+    name = v;
+    if (p === 2 && !a) { a = m.c; at.a = i; } else if (p === 1 && !b) { b = m.c; at.b = i; } else return null;
+  }
+  // No number term (x² + 5x) is a common factor, not a quadratic to split.
+  if (!a || !name || !c) return null;
+  return { a: a.n, b: b ? b.n : 0n, c: c ? c.n : 0n, name, at };
+}
+
+/** Two whole numbers that multiply to `prod` and add to `sum`, or null. */
+function pairFor(prod, sum) {
+  const lim = prod < 0n ? -prod : prod;
+  if (lim === 0n) return [0n, sum];
+  for (let d = 1n; d * d <= lim; d++) {
+    if (lim % d) continue;
+    const e = lim / d;
+    for (const [p, q] of [[d, prod / d], [-d, prod / -d], [e, prod / e], [-e, prod / -e]]) {
+      if (p + q === sum) return [p, q];
+    }
+  }
+  return null;
+}
+
+const term = (c, name, pow) => monoNode({ c: R.rat(c), pows: pow ? new Map([[name, pow]]) : new Map() });
+
+/** Split bx into px + qx, with pq = ac and p + q = b. */
+export function splitMiddle(eq, loc, idxs) {
+  const terms = idxs.map((i) => loc.terms[i]);
+  const Q = readQuadratic(terms);
+  if (!Q) return { error: "Those are not the terms of a quadratic." };
+  const pq = pairFor(Q.a * Q.c, Q.b);
+  if (!pq) return { error: `No two whole numbers multiply to ${say(R.rat(Q.a * Q.c))} and add to ${say(R.rat(Q.b))}, so it does not factorise.` };
+  const [p0, q0] = pq;
+  // The pair that goes with ax² is the one sharing a factor with a.
+  const [p, q] = gcdBig(p0 < 0n ? -p0 : p0, Q.a < 0n ? -Q.a : Q.a) >= gcdBig(q0 < 0n ? -q0 : q0, Q.a < 0n ? -Q.a : Q.a) ? [p0, q0] : [q0, p0];
+  const pieces = [term(Q.a, Q.name, 2), ...(p ? [term(p, Q.name, 1)] : []), ...(q ? [term(q, Q.name, 1)] : []), ...(Q.c ? [term(Q.c, Q.name, 0)] : [])];
+  const first = Math.min(...idxs);
+  const nextTerms = [];
+  loc.terms.forEach((t, i) => {
+    if (i === first) nextTerms.push(...pieces);
+    else if (!idxs.includes(i)) nextTerms.push(t);
+  });
+  const shown = A.sideFromTerms(pieces, loc.container);
+  return {
+    eq: setContainer(eq, loc, nextTerms), from: new Map(), mark: plain(shown),
+    note: `Two numbers that multiply to ${say(R.rat(Q.a * Q.c))} and add to ${say(R.rat(Q.b))}: ${say(R.rat(p))} and ${say(R.rat(q))}. Split the middle: ${plain(shown)}`,
+  };
+}
+
+/** The whole factorisation in one step: k(mx + n)(rx + s). */
+export function factorQuadratic(eq, loc, idxs) {
+  const Q = readQuadratic(idxs.map((i) => loc.terms[i]));
+  if (!Q) return { error: "Those are not the terms of a quadratic." };
+  const abs = (v) => (v < 0n ? -v : v);
+  // A number common to all three comes out first: 2x² + 10x + 12 is 2(x² + 5x + 6).
+  let k = gcdBig(gcdBig(abs(Q.a), abs(Q.b)), abs(Q.c)) || 1n;
+  if (Q.a < 0n) k = -k;
+  const a = Q.a / k, b = Q.b / k, c = Q.c / k;
+  const pq = pairFor(a * c, b);
+  if (!pq) return { error: "It does not factorise with whole numbers." };
+  const [p, q] = pq;
+  // ax² + px + qx + c = (g x + h)(m x + n), g = gcd(a, p).
+  const g = gcdBig(abs(a), abs(p)) || abs(a);
+  const m = a / g, n = p / g;
+  const h = n === 0n ? c / m : q / m;
+  if ((n === 0n ? c % m : q % m) !== 0n) return { error: "It does not factorise with whole numbers." };
+  const bracket = (x1, x0) => (x0 ? { ...A.sum([term(x1, Q.name, 1), term(x0, Q.name, 0)]), paren: true } : term(x1, Q.name, 1));
+  const left = bracket(g, h), right = bracket(m, n);
+  // The bracket with the smaller number first, the way it is usually written.
+  const pair = (h > n && g === m) ? [right, left] : [left, right];
+  const ak = k < 0n ? -k : k;
+  let product = A.prod([...(ak !== 1n ? [A.numberNode(R.rat(ak))] : []), ...pair]);
+  if (k < 0n) product = A.neg(product);
+  const first = Math.min(...idxs);
+  const nextTerms = loc.terms.map((t, i) => (i === first ? product : t)).filter((_, i) => i === first || !idxs.includes(i));
+  return { eq: setContainer(eq, loc, nextTerms), from: new Map(), mark: plain(product), note: `It factorises: ${plain(product)}` };
+}
+
+/** Both quadratic offers for some terms of one container. */
+function quadraticOffers(eq, loc, idxs) {
+  const out = [];
+  const split = splitMiddle(eq, loc, idxs);
+  if (!split.error) out.push({ key: "quadsplit", label: "Split the middle term", hint: "two numbers: product ac, sum b", mark: split.mark, run: () => split });
+  const whole = factorQuadratic(eq, loc, idxs);
+  if (!whole.error) out.push({ key: "quadfactor", label: "Factorise the quadratic", hint: "into two brackets", mark: whole.mark, run: () => whole });
+  return out;
+}
+
+/* ── Po-Shen Loh ────────────────────────────────────────────────────────────
+   x² + bx + c = 0: the two roots add to −b, so they sit an equal distance u
+   either side of their average −b/2, and multiply to c — (b/2)² − u² = c — so
+   u² = (b/2)² − c. Divided through by a first when there is one. */
+export function poShenLoh(eq) {
+  if (!A.isEquation(eq)) return { error: TWO_SIDED };
+  const zero = (n) => { const v = A.exactValue(n); return v && R.isZero(v); };
+  const side = zero(eq.r) ? "l" : zero(eq.l) ? "r" : null;
+  if (!side) return { error: "Get everything on one side and 0 on the other first." };
+  const Q = readQuadratic(A.termsOf(eq[side]));
+  if (!Q) return { error: "That side is not a quadratic." };
+  const a = R.rat(Q.a), b = R.div(R.rat(Q.b), a), c = R.div(R.rat(Q.c), a);
+  const mid = R.neg(R.div(b, R.rat(2n)));
+  const u2 = R.sub(R.mul(mid, mid), c);
+  if (R.isNegative(u2)) return { error: "u² comes out negative, so there are no real roots." };
+  let u = null;
+  if (R.isInt(u2) || true) {
+    const sq = (v) => { const r = BigInt(Math.round(Math.sqrt(Number(v)))); return r * r === v ? r : null; };
+    const un = sq(u2.n), ud = sq(u2.d);
+    if (un !== null && ud !== null) u = R.rat(un, ud);
+  }
+  const uNode = u ? A.numberNode(u) : A.root(A.numberNode(u2));
+  const right = R.isZero(mid) ? A.pm(uNode) : A.sum([A.numberNode(mid), A.pm(uNode)]);
+  const next = A.eqn(A.vr(Q.name), right, eq.id);
+  return {
+    eq: next, from: new Map(), mark: plain(right),
+    note: `Po-Shen Loh: the roots average ${say(mid)}, so they are ${say(mid)} ± u; their product ${say(c)} = (${say(mid)})² − u², so u² = ${say(u2)}`,
+  };
+}
+
 /** Several terms picked: their highest common factor, taken out of just those. */
 export function factorPicked(eq, ids) {
   const locs = ids.map((id) => locate(eq, id));
@@ -2064,6 +2199,8 @@ export function atomOffers(eq, key, { given = null } = {}) {
         if (terms.length === 1) pick(pool(terms[0]), "divide", "times");
       }
       add(direct("root", "Square root of both sides (±)", "a square on one side", rootBoth(eq)));
+      const psl = poShenLoh(eq);
+      if (!psl.error) add({ key: "poshenloh", label: "Po-Shen Loh: the roots are −b/2 ± u", hint: "average and distance", mark: psl.mark, run: () => psl });
       const inv = invertTrig(eq);
       if (!inv.error) add({ key: "invert", label: inv.note, hint: "undo the trig function", mark: inv.mark, dir: "both", run: () => inv });
       add(direct("degrees", "Drop the degree signs", "both sides in degrees", dropDegrees(eq)));
@@ -2089,7 +2226,12 @@ export function atomOffers(eq, key, { given = null } = {}) {
       if (asFraction(prev).den || asFraction(kid).den) {
         add(direct("addfrac", `${plain(prev)} and ${plain(kid)} over one bottom`, "add the fractions", addFractions(eq, prev.id, kid.id)));
       }
-      add(direct("square", "Complete the square", "(x + p/2)²", squareUp(eq, kid.id)));
+      {
+        // Named for what it does here: a side that already IS a perfect square
+        // says so, rather than offering to "complete" it.
+        const sq = squareUp(eq, kid.id);
+        if (!sq.error) add(direct("square", sq.note.split(":")[0], "(x + p/2)²", sq));
+      }
     }
     pick(pool(atomTerm(eq, key)), "combine", "workout", "dropzero", "expand", "across", "pyth");
     // Where the term this sign introduces can go instead.
@@ -2233,6 +2375,25 @@ export function multiOffers(eq, keys, { given = null } = {}) {
   if (terms.length < 2) return atomOffers(eq, keys[keys.length - 1], { given });
   const ids = terms.map((t) => t.id);
   const out = [];
+  // The terms of a quadratic, picked: the factoring method — and, letters
+  // and all, the perfect square (or completing it) when there is an x² in them.
+  {
+    /* A glyph picked inside a fraction (the b of bx/a) stands for the whole
+       term on the side here: a quadratic is read off the side's own terms. */
+    const sideIds = [...new Set(keys.map((k) => {
+      const { nodeId } = keyParts(k);
+      return (termChain(eq, nodeId).filter((t) => locate(eq, t.id)?.topSide).pop() || atomTerm(eq, k))?.id;
+    }).filter(Boolean))];
+    const locs = sideIds.map((id) => locate(eq, id));
+    if (locs.length > 1 && locs.every(Boolean) && new Set(locs.map((l) => l.container.id)).size === 1) {
+      const sqTerm = locs.find((l) => l.term.kind === "pow" && l.term.b.kind === "var");
+      if (sqTerm) {
+        const sq = squareUp(eq, sqTerm.term.id);
+        if (!sq.error) out.push({ key: "square", label: sq.note.split(":")[0], hint: "(x + p/2)²", mark: sq.mark, run: () => sq });
+      }
+      out.push(...quadraticOffers(eq, locs[0], locs.map((l) => l.index)));
+    }
+  }
   // Like terms picked together are there to be collected: that comes first.
   const folded = combineMany(eq, ids);
   if (!folded.error) out.push({ key: "combine", label: folded.note, hint: "like terms", mark: folded.mark, run: () => folded });
@@ -2273,6 +2434,17 @@ export function everyOffer(eq, keys = [], { given = null } = {}) {
   }
   for (const t of A.allTerms(eq)) add(offers(eq, t.id, { given }));
   if (A.isEquation(eq)) add(atomOffers(eq, `${eq.id}#eq`, { given }));
+  // Nothing picked: a side that is a quadratic, and Po-Shen Loh on the line.
+  for (const c of A.containersOf(eq)) {
+    const ts = A.termsOf(c);
+    if (ts.length < 2) continue;
+    const loc = locate(eq, ts[0].id);
+    if (loc) add(quadraticOffers(eq, loc, ts.map((_, i) => i)));
+  }
+  if (A.isEquation(eq)) {
+    const psl = poShenLoh(eq);
+    if (!psl.error) add([{ key: "poshenloh", label: "Po-Shen Loh", hint: "average and distance", mark: psl.mark, run: () => psl }]);
+  }
   // Nothing picked: the highest common factor of each whole side.
   for (const c of A.containersOf(eq)) {
     const ts = A.termsOf(c);
