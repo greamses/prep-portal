@@ -12,10 +12,10 @@
 
 import { UI } from "/utils/components/ui-icons.js";
 import { buildRow, paintRow, flipInto } from "./render.js";
-import { plain } from "./layout.js";
+import { plain, refFace } from "./layout.js";
 import { preservesSolutions } from "./verify.js";
 import { isSolved, solvedLetterValue } from "./solve.js";
-import { substituteAll, asNumbers, hasSubstitutions, offerTo, substitute, EQUALS, atomOffers, multiOffers, atomTerm, isEqualsKey } from "./ops.js";
+import { substituteExpr, substituteAll, asNumbers, hasSubstitutions, offerTo, substitute, EQUALS, atomOffers, multiOffers, atomTerm, isEqualsKey } from "./ops.js";
 import * as A from "./ast.js";
 import * as R from "./rational.js";
 
@@ -72,7 +72,7 @@ const PIN = `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
   + `<path d="M9.4 2.6h5.2l-1 5.2 3.8 3.4v2H6.6v-2l3.8-3.4z" fill="var(--accent-danger,#c0453f)"/>`
   + `<rect x="11.2" y="13.2" width="1.6" height="8.2" rx="0.8" fill="#6b6457"/></svg>`;
 
-export function createCard(eq, { x, y, given = null, title = "", find = "", onPick, onChange, onGesture, onRemove, onEdit }) {
+export function createCard(eq, { x, y, given = null, title = "", find = "", name = "", onPick, onChange, onGesture, onRemove, onEdit, onRename }) {
   const id = `card${++seq}`;
   const rows = [];        // { row, offset, note, from }
   // The GLYPH that is picked — its atom key (nodeId#slot), so the 3 and the x
@@ -99,6 +99,51 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
   const grip = document.createElement("div");
   grip.className = "am-card__grip";
   grip.innerHTML = `<span class="am-card__dots" aria-hidden="true"></span>`;
+
+  /* The equation's name — E₁ — which is what is typed to combine it with
+     another (E_1 − E_2). Tap it to call it something else. */
+  let label = name;
+  const tag = document.createElement("button");
+  tag.type = "button";
+  tag.className = "am-card__label";
+  const showTag = () => {
+    tag.textContent = refFace(label);
+    tag.title = `This equation is ${label} — tap to rename it`;
+    tag.setAttribute("aria-label", tag.title);
+  };
+  showTag();
+  tag.addEventListener("pointerdown", (e) => e.stopPropagation());
+  tag.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const input = document.createElement("input");
+    input.className = "am-card__rename";
+    input.value = label;
+    input.spellcheck = false;
+    input.setAttribute("aria-label", "A name for this equation");
+    tag.replaceWith(input);
+    input.focus();
+    input.select();
+    let done = false;
+    const finish = (keep) => {
+      if (done) return;
+      done = true;
+      const want = input.value.trim().replace(/\s+/g, "_");
+      if (keep && want && want !== label) {
+        const answer = onRename?.(want, api);
+        if (answer === true) label = want;
+      }
+      showTag();
+      input.replaceWith(tag);
+    };
+    input.addEventListener("keydown", (k) => {
+      if (k.key === "Enter") finish(true);
+      if (k.key === "Escape") finish(false);
+      k.stopPropagation();
+    });
+    input.addEventListener("blur", () => finish(true));
+    input.addEventListener("pointerdown", (k) => k.stopPropagation());
+  });
+  grip.appendChild(tag);
   if (title) {
     const name = document.createElement("b");
     name.className = "am-card__name";
@@ -490,7 +535,8 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
         substitution can reach across for. */
     get solvedValue() {
       const sv = solvedLetterValue(rows[rows.length - 1].row.eq, { given: values });
-      return sv ? { ...sv, text: fmt(sv.value) } : null;
+      if (!sv) return null;
+      return { ...sv, text: sv.expr ? plain(sv.expr) : fmt(sv.value) };
     },
 
     /** What to call this card in another card's menu. */
@@ -550,8 +596,9 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
         will not do: this card was never given that letter, so the verifier
         has to be told about it just for this one check, the same way a
         formula's own given values are. */
-    useFromElsewhere(letter, value) {
+    useFromElsewhere(letter, value, expr = null) {
       if (!picks.length) return { refused: "Nothing is picked." };
+      if (expr) return this.substituteExpression(letter, expr);
       const extended = { ...(values || {}), [letter]: value };
       const eq = rows[rows.length - 1].row.eq;
       const term = atomTerm(eq, primary());
@@ -565,6 +612,34 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
       push(result.eq, { from: result.from, note: result.note });
       return { ok: true, note: result.note };
     },
+
+    /** y = 2x + 1, from another equation or typed in: every y in the line
+        becomes 2x + 1, checked with y worked out from x. */
+    substituteExpression(letter, expr) {
+      const now = this.equation;
+      const result = substituteExpr(now, letter, expr);
+      if (result.error) return { refused: result.error };
+      const verdict = preservesSolutions(now, result.eq, { given: pinned, defs: result.defs });
+      if (!verdict.ok) return { refused: verdict.why };
+      picks = [];
+      undone = [];
+      push(result.eq, { from: result.from, note: "" });
+      return { ok: true, note: result.note };
+    },
+
+    /** A line that follows from this one (E_1 squared, E_1 − E_2 …): written
+        under it. `checked` says whether it says EXACTLY the same; when it only
+        follows (squaring can bring in an answer), the margin says so. */
+    follow(nextEq, note) {
+      if (nextEq.kind !== "eq") return { refused: "that is not an equation" };
+      picks = [];
+      undone = [];
+      push(nextEq, { note });
+      return { ok: true };
+    },
+
+    get name() { return label; },
+    set name(v) { label = v; showTag(); },
 
     /** A line typed by hand, kept only if it says the same as the last one. */
     rewrite(nextEq) {
@@ -587,7 +662,8 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
       if (!target || (target.kind !== "var" && target.kind !== "num")) return { refused: "only a letter or a number can be changed that way" };
       if (target.kind === "var") {
         const v = A.exactValue(node);
-        if (!v) return { refused: `${target.name} takes a number here — to rewrite the line, double-click the =` };
+        // A letter or an expression goes in too: y = 2x + 1 is a substitution.
+        if (!v) return this.substituteExpression(target.name, node);
         const extended = { ...(values || {}), [target.name]: v };
         const result = substituteAll(now, target.name, v);
         if (result.error) return { refused: result.error };

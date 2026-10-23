@@ -1124,3 +1124,26 @@
 
 /* Only inside a workbook, where there is no page rail to carry the book. */
 #am-book[hidden] { display: none; }
+
+/* ── An equation's name: E₁, tap to rename ────────────────────────────────── */
+.am-card__label {
+  font-family: "STIX Two Text", "Times New Roman", serif;
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border: 0;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.55);
+  color: #14130f;
+  cursor: text;
+}
+.am-card__rename {
+  width: 7ch;
+  margin-left: 6px;
+  font: italic 15px "STIX Two Text", "Times New Roman", serif;
+  border: 1px solid var(--accent-secondary, #6aa5d8);
+  border-radius: 0;
+  padding: 1px 4px;
+}

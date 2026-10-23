@@ -1391,6 +1391,38 @@ function givenVarsIn(node, given, eq = node) {
   return out;
 }
 
+/** E_1 − E_2 drops one equation's side into a sum; the terms join the sum. */
+export function flattenSums(n) {
+  const kids = (m) => {
+    const o = { ...m };
+    for (const k of ["l", "r", "k", "a", "b", "e", "lo", "hi", "to"]) if (m[k]) o[k] = flattenSums(m[k]);
+    if (m.kids) o.kids = m.kids.map(flattenSums);
+    if (o.kind === "sum") o.kids = o.kids.flatMap((c) => (c.kind === "sum" && !c.paren ? c.kids : [c]));
+    return o;
+  };
+  return kids(n);
+}
+
+/** Every free `name` in the line replaced by an expression — y = 2x + 1 from
+    another equation, put into this one. The result says what it assumed
+    (`defs`), so the verifier checks it with y worked out from x. */
+export function substituteExpr(eq, name, node) {
+  const bound = boundVarIds(eq);
+  const hits = [];
+  A.walk(eq, (n) => { if (n.kind === "var" && n.name === name && !bound.has(n.id)) hits.push(n.id); });
+  if (!hits.length) return { error: `There is no ${name} here to put that into.` };
+  if (A.varsIn(node).includes(name)) return { error: `${name} cannot be put in terms of itself.` };
+  let next = eq;
+  const from = new Map();
+  for (const id of hits) {
+    const put = copy(unbracket(node));
+    A.walk(put, (m) => from.set(m.id, [id]));
+    next = A.replace(next, id, put);
+  }
+  // 3x + (2x + 1) is 3x + 2x + 1: the new terms join the side's own.
+  return { eq: flattenSums(next), from, defs: { [name]: node }, note: `Put ${name} = ${plain(node)} in` };
+}
+
 /** Every free `name` in the line, given the value `v` — a double-click on a
     letter is a substitution everywhere that letter is written. */
 export function substituteAll(eq, name, v) {
@@ -1900,9 +1932,9 @@ export function atomOffers(eq, key, { given = null } = {}) {
       /* The four that need the student to say WHAT: they carry no run of their
          own — the page opens the keypad for them and builds the move from what
          is typed (see applyToBoth). */
-      for (const [op, word] of [["+", "Add"], ["−", "Take away"], ["×", "Multiply by"], ["÷", "Divide by"]]) {
-        out.push({ key: "both", op, needsInput: true, label: `${word} something on both sides`, hint: "type it on the keypad", mark: `${op} ▢` });
-      }
+      // Anything to both sides — +3, ×2, a power, or another equation added
+      // or taken away — typed after the equation's own name (see workspace.js).
+      out.push({ key: "both", op: "eq", needsInput: true, label: "Do something to both sides, or combine with another equation", hint: "type it after the name", mark: "both sides" });
     }
   } else if (slot.startsWith("op")) {
     const sum = A.findById(eq, nodeId);

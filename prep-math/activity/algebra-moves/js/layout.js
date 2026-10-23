@@ -66,6 +66,10 @@ function numText(node) {
    back on one line, both of those groupings vanish and the same tree has to be
    written (20 − 5)/3 or it says something else entirely. */
 
+const SUBS = { 0: "₀", 1: "₁", 2: "₂", 3: "₃", 4: "₄", 5: "₅", 6: "₆", 7: "₇", 8: "₈", 9: "₉" };
+/** E_1 as it is drawn: E₁. */
+export const refFace = (name) => name.replace(/_?(\d+)$/, (_, d) => [...d].map((c) => SUBS[c]).join(""));
+
 function needsBrackets(node, parentKind, slot) {
   // A fraction bar and a raised exponent do their own grouping, so brackets in
   // those places are noise EVEN WHEN THE STUDENT TYPED THEM — which matters
@@ -245,6 +249,11 @@ function measureBare(node, size, binary) {
     }
 
     // e and π: numbers that happen to be written as letters.
+    // A named equation, its number lowered the way it is written: E₁.
+    case "ref": {
+      const t = refFace(node.name);
+      return { ...base, kind: "text", text: t, italic: false, w: measureText(t, size, false) };
+    }
     case "const":
       return { ...base, kind: "text", text: node.name, italic: false, w: measureText(node.name, size, false) };
 
@@ -549,6 +558,7 @@ export function plain(node, parentKind = null, slot = 0) {
       return wrap(simple ? `√${inside}` : `√(${inside})`);
     }
     case "const": return wrap(node.name);
+    case "ref":  return wrap(node.name);
     case "fn":   return wrap(`${node.name}${plain(node.k, "fn", 0)}`);
     case "deg":  return wrap(`${plain(node.k, "deg", 0)}°`);
     case "deriv": return wrap(`d/d${node.x}${plain(node.k, "deriv", 0)}`);

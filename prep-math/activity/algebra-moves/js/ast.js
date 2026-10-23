@@ -46,6 +46,11 @@ export const pm   = (k, id = freshId())              => ({ id, kind: "pm", k });
    on and name the letter they act WITH. */
 // arcsin before sin is not needed for the tokenizer (they start differently),
 // but the longer names must not be read as letters: a·r·c·sin.
+/** A named equation — E_1 — standing for the whole equation it names, in what
+    is typed to combine equations (E_1 − E_2, 2E_1 + 3). Never left in a line:
+    workspace.js swaps each one for that equation's left side, then its right. */
+export const ref = (name, id = freshId()) => ({ id, kind: "ref", name });
+
 export const FUNCS = ["arcsin", "arccos", "arctan", "sin", "cos", "tan", "ln", "log"];
 /** How a function's name is drawn: arcsin is written sin⁻¹. */
 export const FN_FACE = { arcsin: "sin⁻¹", arccos: "cos⁻¹", arctan: "tan⁻¹" };

@@ -17,7 +17,9 @@
    proved to keep the same solutions is refused out loud instead of drawn.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-import { parse } from "./parse.js";
+import { parse, setRefs } from "./parse.js";
+import { valueAt, preservesSolutions } from "./verify.js";
+import { copy as copyNode } from "./calculus.js";
 import { plain, fontReady } from "./layout.js";
 import { createCanvas } from "./canvas.js";
 import { createCard } from "./card.js";
@@ -25,7 +27,7 @@ import { createMenu } from "./menu.js";
 import { createKeypad } from "./keypad.js";
 import { createFormulaPicker } from "./formula-picker.js";
 import { solve, bestOffers } from "./solve.js";
-import { applyToBoth, everyOffer } from "./ops.js";
+import { applyToBoth, everyOffer, asNumbers, flattenSums } from "./ops.js";
 import { ruleFits } from "./rules.js";
 import * as A from "./ast.js";
 import { shellHTML } from "./shell.js";
@@ -107,6 +109,7 @@ function openMenuFor(card) {
       mark: `${hit.name} = ${hit.text}`,
       letter: hit.name,
       value: hit.value,
+      expr: hit.expr || null,
     }));
 
   const offers = [...moves, ...reach];
@@ -120,9 +123,9 @@ function openMenuFor(card) {
   }
 
   menu.open(offers, () => card.rectFor(picked), (offer) => {
-    if (offer.needsInput) return startBothSides(card, offer.op);
+    if (offer.needsInput) return offer.op === "eq" ? startOperate(card) : startBothSides(card, offer.op);
     if (offer.cards) return splitInto(card, offer);
-    const result = offer.letter ? card.useFromElsewhere(offer.letter, offer.value) : card.apply(offer);
+    const result = offer.letter ? card.useFromElsewhere(offer.letter, offer.value, offer.expr) : card.apply(offer);
     menu.close();
     if (result.refused) return say(`I will not do that — ${result.refused}.`, "no");
     say(result.note, "ok");
@@ -224,6 +227,98 @@ function startEdit(card, key) {
   if (start) keypad.set(start);
 }
 
+/* ── Named equations ────────────────────────────────────────────────────────
+   Every card is an equation with a name — E_1, E_2 — and the names are what
+   is typed to work on it: E_1 + 3, E_1·2, E_1^2, or E_1 − E_2 to take one
+   equation from another. Whatever is typed is done to the LEFT sides and to
+   the RIGHT sides alike: f(E_1, E_2) is f(left₁, left₂) = f(right₁, right₂),
+   which is true wherever the equations are. */
+const nameTaken = (want, but = null) => cards.some((c) => c !== but && c.name === want);
+function nextName() {
+  for (let k = 1; ; k++) if (!nameTaken(`E_${k}`)) return `E_${k}`;
+}
+function syncNames() { setRefs(cards.map((c) => c.name)); }
+
+function rename(card, want) {
+  if (!/^[A-Za-z][A-Za-z0-9_]*\d$/.test(want) && !/^[A-Za-z]+_\w+$/.test(want)) {
+    say("A name needs a number in it, like E_3 or A2 — a lone letter would be read as a letter.", "no");
+    return false;
+  }
+  if (nameTaken(want, card)) { say(`${want} is already the name of another equation.`, "no"); return false; }
+  card.name = want;
+  syncNames();
+  say(`That equation is ${want} now.`, "ok");
+  return true;
+}
+
+function startOperate(card) {
+  menu.close();
+  syncNames();
+  showPane("type");
+  openDrawer();
+  keypad.setMode({
+    label: `Type what to do to ${card.name}: ${card.name} + 3, ${card.name}^2 — or another equation: ${card.name} − E_2`,
+    whole: true,
+    // Starting with an operation means "do it to this equation".
+    translate: (s) => (/^\s*[-+−×*÷/^]/.test(s) ? `${card.name} ${s}` : s),
+    accept: (root, src) => {
+      const result = root.kind === "eq" ? card.rewrite(root) : combine(card, root.e, src);
+      if (result.refused) return result;
+      keypad.setMode(null);
+      closeDrawer();
+      say(result.note, "ok");
+      return result;
+    },
+  });
+  keypad.set(`${card.name} `);
+}
+
+/** The equation f(E_1, E_2, …) stands for, built side by side. */
+function combine(card, f, src) {
+  const used = [];
+  A.walk(f, (n) => { if (n.kind === "ref" && !used.includes(n.name)) used.push(n.name); });
+  if (!used.length) return { refused: `start with the equation's name — ${card.name}` };
+  const from = used.map((nm) => cards.find((c) => c.name === nm));
+  if (from.some((c) => !c || c.equation.kind !== "eq")) return { refused: "that names something that is not an equation on the canvas" };
+  const side = (s) => {
+    const build = (n) => {
+      if (n.kind === "ref") return copyNode(cards.find((c) => c.name === n.name).equation[s]);
+      const o = { ...n, id: A.freshId() };
+      for (const k of ["k", "a", "b", "e", "lo", "hi", "to"]) if (n[k]) o[k] = build(n[k]);
+      if (n.kids) o.kids = n.kids.map(build);
+      return o;
+    };
+    return flattenSums(build(f));
+  };
+  const next = A.eqn(side("l"), side("r"));
+  const said = src.trim();
+
+  // A line that says nothing (×0, or E_1 − E_1) is refused.
+  const letters = A.varsIn(next);
+  let live = 0, zero = 0;
+  for (let i = 0; i < 24; i++) {
+    const env = Object.fromEntries(letters.map((v, k) => [v, 0.37 + ((i * (3 + 2 * k) + 5 * k) % 13) / 3]));
+    const d = valueAt(next.l, env) - valueAt(next.r, env);
+    if (!Number.isFinite(d)) continue;
+    live++;
+    if (Math.abs(d) < 1e-9) zero++;
+  }
+  if (live < 6) return { refused: "I could not check what that gives" };
+  if (zero === live) return { refused: "that leaves 0 = 0, which says nothing" };
+
+  // One equation, worked on: the next line of its own card.
+  if (used.length === 1 && from[0] === card) {
+    const same = preservesSolutions(card.equation, next, { given: card.given ? asNumbers(card.given) : null }).ok;
+    const r = card.follow(next, same ? said : `${said} (may add an answer: check it)`);
+    return r.refused ? r : { ok: true, note: same ? `${said}: ${plain(next)}` : `${said}: ${plain(next)} — squaring or multiplying by a letter can bring in an answer that is not one, so check yours in ${card.name}` };
+  }
+  // Equations combined: a new equation, on a card of its own.
+  const given = Object.assign({}, ...from.map((c) => c.given || {}));
+  const nm = nextName();
+  addCard(next, { given: Object.keys(given).length ? given : null, title: said, name: nm });
+  return { ok: true, note: `${said} is ${nm}: ${plain(next)}` };
+}
+
 /* ── The rule book ──────────────────────────────────────────────────────────
    Tap a rule and it is looked for among the moves on offer — on the glyphs
    that are picked, or anywhere on the card's last line when nothing is. A rule
@@ -269,7 +364,7 @@ export function mountFormulaBook(host) {
 }
 
 /* ── Putting a problem on the paper ─────────────────────────────────────── */
-function addCard(eq, { given = null, title = "", find = "" } = {}) {
+function addCard(eq, { given = null, title = "", find = "", name = "" } = {}) {
   const spot = canvas.freeSpot(cards.map((c) => ({
     x: parseFloat(c.el.style.left), y: parseFloat(c.el.style.top),
     // offsetWidth/Height are the card's own pixels, untouched by the canvas
@@ -278,7 +373,7 @@ function addCard(eq, { given = null, title = "", find = "" } = {}) {
   })));
 
   const card = createCard(eq, {
-    x: spot.x, y: spot.y, given, title, find,
+    x: spot.x, y: spot.y, given, title, find, name: name || nextName(),
     onPick: (picked, self) => {
       // Only one card can hold the menu at a time.
       for (const other of cards) if (other !== self) other.clearPick();
@@ -291,9 +386,10 @@ function addCard(eq, { given = null, title = "", find = "" } = {}) {
     },
     onChange: (self) => { if (self.picked) openMenuFor(self); else menu.close(); },
     onEdit: (key, self) => startEdit(self, key),
+    onRename: (want, self) => rename(self, want),
     onGesture: (offer, self) => {
       if (offer.cards) return splitInto(self, offer);
-      if (offer.needsInput) return startBothSides(self, offer.op);
+      if (offer.needsInput) return offer.op === "eq" ? startOperate(self) : startBothSides(self, offer.op);
       const result = self.apply(offer);
       menu.close();
       if (result.refused) return say(`I will not do that — ${result.refused}.`, "no");
@@ -304,10 +400,12 @@ function addCard(eq, { given = null, title = "", find = "" } = {}) {
       cards = cards.filter((c) => c !== self);
       if (active === self) { active = null; menu.close(); }
       countUp();
+      syncNames();
     },
   });
 
   cards.push(card);
+  syncNames();
   canvas.add(card.el);
   countUp();
   canvas.revealCard(card.el);

@@ -107,7 +107,8 @@ export function solvedLetterValue(eq, { given = null } = {}) {
   if (eq.kind !== "eq" || eq.l.kind !== "var") return null;
   if (!isSolved(eq, { given })) return null;
   const value = A.exactValue(eq.r);
-  return value ? { name: eq.l.name, value } : null;
+  // y = 2x + 1 is as much an answer to hand to another equation as y = 5.
+  return value ? { name: eq.l.name, value } : { name: eq.l.name, expr: eq.r };
 }
 
 /** 5 = x is the same answer, just written backwards — one "turn it round" away. */

@@ -374,7 +374,9 @@ export function createKeypad(host, { onSubmit } = {}) {
 
   /* -- The picture above the keys ------------------------------------------ */
   function draw() {
-    const src = line.value;
+    // A mode may read what is typed its own way first: "+ 3" after an
+    // equation's name means E_1 + 3.
+    const src = mode?.translate ? mode.translate(line.value) : line.value;
     preview.textContent = "";
     anchors = [];
     // The <input> holding the source is not the thing on screen, so the ring
@@ -568,7 +570,7 @@ export function createKeypad(host, { onSubmit } = {}) {
   }
 
   function submit() {
-    const src = line.value.trim();
+    const src = (mode?.translate ? mode.translate(line.value) : line.value).trim();
     if (!src) return;
     if (hasHoles(src)) {
       say.textContent = "There is still an empty box to fill in.";

@@ -128,7 +128,7 @@ const value = (root, env) => evalAt(root.e, env);
  *
  * Returns { ok, why } — `why` is written for the student, not the console.
  */
-export function preservesSolutions(prev, next, { samples = 64, given = null, scaledBy = null, upToConstant = null, inverse = null } = {}) {
+export function preservesSolutions(prev, next, { samples = 64, given = null, scaledBy = null, upToConstant = null, inverse = null, defs = null } = {}) {
   const names = [...new Set([...varsIn(prev), ...varsIn(next), ...backVars(prev), ...backVars(next), ...(scaledBy ? varsIn(scaledBy) : []),
                              ...(upToConstant ? [upToConstant] : [])])].sort();
   // Numbers worked out by a difference or a sum of slices carry their own small
@@ -140,6 +140,10 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
      them would pass — and it makes b² − 4ac come out −3s² every time, so every
      line after a square root would be impossible to check. */
   const slot = new Map(names.map((n, k) => [n, k]));
+  /* `defs` says a letter IS an expression — y = 2x + 1 from another equation.
+     That letter is never sampled: it is worked out from the others, so putting
+     2x + 1 where the y was is checked like any other substitution. */
+  const defined = defs || {};
   const sample = (i, n) => {
     if (n in fixed) return fixed[n];
     const k = slot.get(n) ?? 0;
@@ -158,6 +162,7 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
     for (let i = 0; i < samples; i++) {
       const env = {};
       for (const n of names) env[n] = sample(i, n);
+      for (const [n, d] of Object.entries(defined)) env[n] = evalAt(d, env);
       const u = evalAt(next[inverse.side], env);
       if (!Number.isFinite(u) || !inRange(u)) continue;
       const a = f(evalAt(prev.l, env)) - f(evalAt(prev.r, env));
@@ -185,6 +190,7 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
     for (let i = 0; i < samples; i++) {
       const env = {};
       for (const n of names) env[n] = sample(i, n);
+      for (const [n, d] of Object.entries(defined)) env[n] = evalAt(d, env);
       const a = slope(prev, env), b = slope(next, env);
       if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
       usable++;
@@ -202,6 +208,7 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
     for (let i = 0; i < samples; i++) {
       const env = {};
       for (const n of names) env[n] = sample(i, n);
+      for (const [n, d] of Object.entries(defined)) env[n] = evalAt(d, env);
       for (const s of branches) {
         const a = value(prev, { ...env, __pm: s });
         const b = value(next, { ...env, __pm: s });
@@ -228,6 +235,7 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
     for (let i = 0; i < samples; i++) {
       const env = {};
       for (const n of names) env[n] = sample(i, n);
+      for (const [n, d] of Object.entries(defined)) env[n] = evalAt(d, env);
       const k = evalAt(scaledBy, env) ** power;
       const a = diffOf(prev, env);
       const b = diffOf(next, env);
@@ -249,6 +257,7 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
     const env = {};
     // Spread the samples over awkward values too, not just tidy small ones.
     for (const n of names) env[n] = sample(i, n);
+      for (const [n, d] of Object.entries(defined)) env[n] = evalAt(d, env);
 
     const a = diffOf(prev, env);
     const b = diffOf(next, env);

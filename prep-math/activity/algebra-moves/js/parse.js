@@ -48,6 +48,10 @@ function tokenise(src) {
     }
     // A square root, written the site's way (sqrt(…)) or as the glyph itself.
     // Checked before letters, or sqrt would read as s·q·r·t.
+    // The names of equations on the canvas (E_1, A2), longest first, so E_12
+    // is not read as E_1 and a 2.
+    const named = REFS.find((r) => src.startsWith(r, i));
+    if (named) { out.push({ t: "ref", v: named, at: i }); i += named.length; continue; }
     if (src.startsWith("sqrt", i)) { out.push({ t: "root", v: "sqrt", at: i }); i += 4; continue; }
     // Function names and lim, checked before letters for the same reason.
     const word = [...A.FUNCS, "lim"].find((w) => src.startsWith(w, i));
@@ -76,7 +80,14 @@ function tokenise(src) {
 }
 
 /** Tokens that can begin a factor — a "-" cannot, or 3 - 2 would read as 3(-2). */
-const STARTS_FACTOR = new Set(["num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
+/* Names the tokenizer reads as whole equations — set by the page from the
+   cards it holds (setRefs). Empty everywhere else, so nothing changes there. */
+let REFS = [];
+export function setRefs(names) {
+  REFS = [...new Set(names.filter(Boolean))].sort((a, b) => b.length - a.length);
+}
+
+const STARTS_FACTOR = new Set(["ref", "num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
 
 export function parse(src) {
   const toks = tokenise(src);
@@ -112,6 +123,7 @@ export function parse(src) {
     if (tk.t === "var" && (tk.v === "e" || tk.v === "π")) { p++; return span(mark, A.cnst(tk.v)); }
     if (tk.t === "var") { p++; return span(mark, A.vr(tk.v)); }
     if (tk.t === "fn") { p++; return span(mark, A.fn(tk.v, atom())); }
+    if (tk.t === "ref") { p++; return span(mark, A.ref(tk.v)); }
     if (tk.t === "deriv") { p++; return span(mark, A.deriv(atom(), tk.v)); }
     if (tk.t === "lim") {
       p++;
