@@ -41,7 +41,12 @@ function drawn(src, size) {
 }
 
 export function createFormulaPicker(host, { onSubmit } = {}) {
-  let group = GROUPS[0].group;
+  // A working copy: admin-added formulas (see formula-admin.js) join it at
+  // runtime, either into a group already here or a new one of their own —
+  // the static bank itself is never mutated.
+  const allGroups = GROUPS.map((g) => ({ group: g.group, items: [...g.items] }));
+
+  let group = allGroups[0].group;
   let chosen = null;
   const fields = new Map();          // letter -> input
 
@@ -57,21 +62,26 @@ export function createFormulaPicker(host, { onSubmit } = {}) {
 
   host.append(tabs, list, form);
 
-  for (const g of GROUPS) {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = "pp-sticky pp-note-btn am-fx__group";
-    chip.textContent = g.group;
-    chip.addEventListener("click", () => { group = g.group; paintList(); });
-    tabs.appendChild(chip);
+  function buildTabs() {
+    tabs.textContent = "";
+    for (const g of allGroups) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "pp-sticky pp-note-btn am-fx__group";
+      chip.textContent = g.group;
+      chip.classList.toggle("is-on", chip.textContent === group);
+      chip.addEventListener("click", () => { group = g.group; paintList(); });
+      tabs.appendChild(chip);
+    }
   }
+  buildTabs();
 
   function paintList() {
     for (const chip of tabs.children) {
       chip.classList.toggle("is-on", chip.textContent === group);
     }
     list.textContent = "";
-    for (const f of GROUPS.find((g) => g.group === group).items) {
+    for (const f of allGroups.find((g) => g.group === group).items) {
       const btn = document.createElement("button");
       btn.type = "button";
       // Each formula on its own sheet of paper, the colours taken in turn — the
@@ -219,11 +229,39 @@ export function createFormulaPicker(host, { onSubmit } = {}) {
 
   paintList();
 
+  /* Admin-added formulas (formula-admin.js) do not ship with the page — they
+     join the shelf over the same HTTP engine the API explorer talks to, once
+     it has answered. Reachable and never required: an empty or unreachable
+     answer just leaves the static bank as the whole of the shelf, which was
+     already a complete one. */
+  (async () => {
+    try {
+      const res = await fetch("/api/algebra/formulas");
+      const body = await res.json();
+      if (!body.ok) return;
+      const extra = body.formulas.filter((f) => f.custom);
+      if (!extra.length) return;
+      for (const f of extra) {
+        const item = {
+          id: f.id, name: f.name, eq: f.formula, find: f.usuallyFinds,
+          letters: f.letters, example: f.example, note: f.note || undefined,
+        };
+        let g = allGroups.find((g) => g.group === f.group);
+        if (!g) { g = { group: f.group, items: [] }; allGroups.push(g); }
+        g.items.push(item);
+      }
+      buildTabs();
+      paintList();
+    } catch {
+      // As above: nothing here is required for the shelf to be complete.
+    }
+  })();
+
   return {
     /** Open on a particular formula, by id. */
     show(id) {
-      const f = GROUPS.flatMap((g) => g.items).find((x) => x.id === id);
-      if (f) { group = GROUPS.find((g) => g.items.includes(f)).group; choose(f); }
+      const f = allGroups.flatMap((g) => g.items).find((x) => x.id === id);
+      if (f) { group = allGroups.find((g) => g.items.includes(f)).group; choose(f); }
     },
     focus() { form.querySelector("input")?.focus(); },
   };

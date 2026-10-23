@@ -79,10 +79,7 @@ export function shellHTML() {
 
             <div class="am-starters" id="am-starters"></div>
             <p class="am-note">
-              Typed the way it is said — <b>1/2</b> for a half, <b>x^2</b> for a
-              square, <b>3x</b> for three of them. Leave the equals sign out and
-              you get an expression to tidy up instead. The same algebra is
-              reachable over HTTP: <a class="am-link" href="./api.html">see the engine</a>.
+              <a class="am-link" href="./api.html">see the engine</a>
             </p>
           </div>
 

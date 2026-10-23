@@ -84,9 +84,29 @@ export function paintRow(row, { live = false, picked = null, pad = 0 } = {}) {
       const grow = 6;
       const box = { x: b.x - grow, y: b.y - grow, width: b.w + grow * 2, height: b.h + grow * 2 };
       if (t.id === picked) selLayer.appendChild(el("rect", { ...box, class: "am-sel", rx: 3 }));
-      const hit = el("rect", { ...box, class: "am-hit", tabindex: "0", role: "button" });
-      hit.dataset.node = t.id;
-      hits.appendChild(hit);
+
+      /* Every term's tap target is two zones, not one: its leading edge —
+         where a sign sits, whether one is drawn there or not — asks for a
+         move, the way tapping + 5 means "do something with that +". The
+         rest of it only picks the term up to be carried or folded in,
+         which is the one thing every term can mean regardless of its sign.
+         Both zones carry the SAME node id; only `zone` tells them apart. */
+      const signW = box.width * 0.42;
+      const sign = el("rect", {
+        x: box.x, y: box.y, width: signW, height: box.height,
+        class: "am-hit am-hit--sign", tabindex: "0", role: "button",
+      });
+      sign.dataset.node = t.id;
+      sign.dataset.zone = "sign";
+      hits.appendChild(sign);
+
+      const body = el("rect", {
+        x: box.x + signW, y: box.y, width: box.width - signW, height: box.height,
+        class: "am-hit am-hit--body", tabindex: "0", role: "button",
+      });
+      body.dataset.node = t.id;
+      body.dataset.zone = "body";
+      hits.appendChild(body);
     }
 
     /* The equals sign is a destination, not a term: with something picked, it is

@@ -59,13 +59,7 @@
       <header class="am-hero">
         <span class="am-eyebrow">Mathematics · Under the bonnet</span>
         <h1 class="am-title">The engine<em>.</em></h1>
-        <p class="am-lead">
-          The same algebra that runs
-          <a class="am-link" href="./index.html">Algebra Moves</a>, over HTTP.
-          One implementation, not two — a server-side copy of the rules would be
-          free to drift from the one the student actually uses. Nothing here
-          needs a browser, an account, or an AI call.
-        </p>
+        <p class="am-lead"><a class="am-link" href="./index.html">&larr; Algebra Moves</a></p>
       </header>
 
       <div class="am-bench am-bench--api">
@@ -192,9 +186,16 @@
           </section>
         </div>
       </div>
+
+      <!-- Hidden unless signed in as the admin — see js/formula-admin.js -->
+      <div id="ap-admin-mount"></div>
     </main>
 
     <script type="module" src="/utils/components/nav-builder.js"></script>
     <script type="module" src="./js/api-explorer.js"></script>
+    <script type="module">
+      import { mountFormulaAdmin } from "./js/formula-admin.js";
+      mountFormulaAdmin(document.getElementById("ap-admin-mount"));
+    </script>
   </body>
 </html>

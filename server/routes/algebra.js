@@ -57,9 +57,22 @@
 const express = require("express");
 const path = require("path");
 const { pathToFileURL } = require("url");
+const admin = require("firebase-admin");
+const { authenticate, requireAdmin } = require("../middleware/auth");
 
 const ENGINE_DIR = path.join(__dirname, "..", "..", "prep-math", "activity", "algebra-moves", "js");
 const load = (file) => import(pathToFileURL(path.join(ENGINE_DIR, file)).href);
+
+/* Admin-added formulas, alongside the static bank formulas.js ships with.
+   One doc per formula — public read (merged into GET /formulas below),
+   admin-only write (POST /formulas, below that). Nothing here is a second
+   implementation of the algebra: every submission is parsed and solved by
+   the SAME engine the static bank is swept with before it is ever stored,
+   so a formula that reaches Firestore is already known to be finishable. */
+const customFormulasRef = () => admin.firestore().collection("algebraFormulas");
+
+const slugify = (s) =>
+  String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "formula";
 
 let enginePromise = null;
 function engine() {
@@ -295,23 +308,117 @@ module.exports = function algebraRoutes() {
   });
 
   /* ── What is here ────────────────────────────────────────────────────── */
+  const shapeFormula = (f) => ({
+    id: f.id,
+    group: f.group,
+    name: f.name,
+    formula: f.eq,
+    letters: f.letters,
+    usuallyFinds: f.find,
+    example: f.example,
+    note: f.note || null,
+  });
+
   router.get("/formulas", async (_req, res) => {
     const E = await engine();
+    let custom = [];
+    try {
+      const snap = await customFormulasRef().orderBy("createdAt", "asc").get();
+      custom = snap.docs.map((d) => d.data());
+    } catch {
+      // An empty shelf of admin formulas is not a reason to fail the request
+      // — the static bank is still a complete answer on its own.
+    }
+
     res.json({
       ok: true,
       what: "The formulas the page offers, and the letters each one wants.",
-      formulas: E.formulas.ALL.map((f) => ({
-        id: f.id,
-        group: f.group,
-        name: f.name,
-        formula: f.eq,
-        letters: f.letters,
-        usuallyFinds: f.find,
-        example: f.example,
-        note: f.note || null,
-      })),
+      formulas: [
+        ...E.formulas.ALL.map(shapeFormula),
+        ...custom.map((f) => ({ ...shapeFormula(f), custom: true })),
+      ],
       note: "Feed one to /solve as eq= with given=u:5,a:2,t:3.",
     });
+  });
+
+  /* ── Add one, as the admin ───────────────────────────────────────────────
+     The same validation the static bank is held to, run on a submission
+     instead of in a build-time sweep: parse it, check every letter is
+     accounted for both ways, and solve it with the example standing in for
+     every letter but `find`. Nothing is stored that cannot be finished. */
+  router.post("/formulas", authenticate, requireAdmin, async (req, res) => {
+    const E = await engine();
+    const b = req.body || {};
+
+    const group = String(b.group || "").trim();
+    const name = String(b.name || "").trim();
+    const eqSrc = String(b.eq || "").trim();
+    const find = String(b.find || "").trim();
+    const letters = b.letters && typeof b.letters === "object" ? b.letters : null;
+    const exampleRaw = b.example && typeof b.example === "object" ? b.example : null;
+    const note = b.note ? String(b.note).trim() : null;
+
+    if (!group || !name || !eqSrc || !find || !letters || !exampleRaw) {
+      return res.status(400).json({ ok: false, error: "group, name, eq, find, letters and example are all required." });
+    }
+    if (eqSrc.length > MAX_INPUT) {
+      return res.status(400).json({ ok: false, error: `The equation is longer than ${MAX_INPUT} characters.` });
+    }
+
+    let eq;
+    try { eq = E.parse(eqSrc); } catch (err) { return res.status(400).json({ ok: false, error: err.message }); }
+    if (eq.kind !== "eq") return res.status(400).json({ ok: false, error: "A formula needs an equals sign." });
+
+    const used = new Set(E.A.varsIn(eq));
+    const explained = new Set(Object.keys(letters));
+    const missing = [...used].filter((l) => !explained.has(l));
+    const unused = [...explained].filter((l) => !used.has(l));
+    if (missing.length) {
+      return res.status(400).json({ ok: false, error: `${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} in the equation but not explained in "letters".` });
+    }
+    if (unused.length) {
+      return res.status(400).json({ ok: false, error: `${unused.join(", ")} ${unused.length === 1 ? "is" : "are"} explained but not in the equation.` });
+    }
+    if (!explained.has(find)) return res.status(400).json({ ok: false, error: `"${find}" has to be one of the letters.` });
+
+    const given = {};
+    const example = {};
+    for (const letter of explained) {
+      if (letter === find) continue;
+      const v = E.formulas.readValue(exampleRaw[letter]);
+      if (!v) {
+        return res.status(400).json({
+          ok: false,
+          error: `"${exampleRaw[letter] ?? ""}" is not a number I can use for the example value of ${letter}.`,
+        });
+      }
+      given[letter] = v;
+      example[letter] = String(exampleRaw[letter]).trim();
+    }
+
+    // The same sweep the static bank is held to: a formula that cannot be
+    // finished with the moves on offer is a bug, not one to ship.
+    const worked = E.solve(eq, { given, maxSteps: 24 });
+    if (!worked.solved) {
+      return res.status(409).json({
+        ok: false,
+        error: `Leaving out ${find} needs a move this engine has not got${worked.stuck ? ` — ${worked.stuck}` : ""}.`,
+      });
+    }
+
+    const base = slugify(name);
+    let id = base;
+    let n = 2;
+    while ((await customFormulasRef().doc(id).get()).exists) id = `${base}-${n++}`;
+
+    const doc = {
+      id, group, name, eq: eqSrc, find, letters, example, note,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: req.user.email,
+    };
+    await customFormulasRef().doc(id).set(doc);
+
+    res.json({ ok: true, formula: shapeFormula(doc) });
   });
 
   router.get("/", (_req, res) => {

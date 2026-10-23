@@ -588,7 +588,7 @@
    typing into the equation, but it is still a key and not a note sitting
    on the desk. CAPS (inside the Latin grid, built by hand — see keypad.js)
    shares the same look as the one kind of pad control that is not a note. */
-.am-subtabs { display: flex; gap: 0.22rem; }
+.am-subtabs { display: flex; gap: 0.6rem; }
 .am-subtab {
   flex: 1;
   min-width: 0;
@@ -901,6 +901,7 @@
 
 .am-play { position: relative; }
 .am-side { display: grid; gap: var(--gap-lg); }
+.am-admin { margin-top: var(--gap-lg); max-width: 32rem; }
 
 .am-h {
   font-family: var(--font-mono);

@@ -48,6 +48,10 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
   const id = `card${++seq}`;
   const rows = [];        // { row, offset, note, from }
   let picked = null;
+  // Which half of the picked term was tapped — its sign (asking for a move)
+  // or its body (asking only to be carried or folded in). See render.js for
+  // where the term's box is actually split into the two.
+  let pickedZone = null;
   let undone = [];        // lines stepped back off the bottom, newest last
 
   const el = document.createElement("div");
@@ -221,6 +225,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
     undone.push(rows.pop());
     sheet.removeChild(sheet.lastElementChild);
     picked = null;
+    pickedZone = null;
     const last = rows[rows.length - 1];
     const fresh = paint(last, true);
     sheet.replaceChild(fresh, sheet.lastElementChild);
@@ -235,6 +240,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
     const back = undone.pop();
     if (!back) return;
     picked = null;
+    pickedZone = null;
     push(back.row.eq, { from: back.from, note: back.note });
     onPick?.(null, api);
   }
@@ -265,6 +271,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
     const next = hit ? (hit.dataset.node === picked ? null : hit.dataset.node) : null;
     if (next === picked && !hit) return;
     picked = next;
+    pickedZone = next ? hit.dataset.zone : null;
     repaintLive();
     onPick?.(picked, api);
   });
@@ -282,6 +289,10 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
     grip,
     get equation() { return rows[rows.length - 1].row.eq; },
     get picked() { return picked; },
+    /** "sign" if the picked term was taken by its leading edge (asking for a
+        move) or "body" if it was taken by the rest of it (asking only to be
+        carried or folded in). null when nothing is picked. */
+    get pickedZone() { return pickedZone; },
     get depth() { return rows.length; },
     get solved() { return isSolved(rows[rows.length - 1].row.eq, { given: values }); },
     get given() { return values; },
@@ -331,6 +342,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
       const verdict = preservesSolutions(this.equation, result.eq, { given: pinned, scaledBy: result.scaledBy });
       if (!verdict.ok) return { refused: verdict.why };
       picked = null;
+      pickedZone = null;
       // A move made here is a new branch of the working: whatever was stepped
       // back off the bottom is not on the way to it any more.
       undone = [];
@@ -355,12 +367,13 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
       const verdict = preservesSolutions(eq, result.eq, { given: asNumbers(extended) });
       if (!verdict.ok) return { refused: verdict.why };
       picked = null;
+      pickedZone = null;
       undone = [];
       push(result.eq, { from: result.from, note: result.note });
       return { ok: true, note: result.note };
     },
 
-    clearPick() { if (picked) { picked = null; repaintLive(); } },
+    clearPick() { if (picked) { picked = null; pickedZone = null; repaintLive(); } },
     stepBack,
     stepForward,
     working: () => rows.map((r) => ({ equation: plain(r.row.eq), note: r.note })),

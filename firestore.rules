@@ -186,6 +186,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Formulas the admin added to Algebra Moves' shelf, beyond the static
+    // bank the page ships with. Written only through the Admin SDK (see
+    // POST /api/algebra/formulas, which solves a formula before it ever
+    // reaches here), never from the client — this rule exists so the shape
+    // stays correct even if a client read is ever added. One doc per formula.
+    match /algebraFormulas/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // PrepBot's films, written down rather than written out (filmdoc.js).
     // One doc per film: { draft, published }. Anybody may read — the player
     // needs the published copy, and the draft is only ever SERVED to the

@@ -91,6 +91,18 @@ function openMenuFor(card) {
   const picked = card.picked;
   if (!picked) return menu.close();
 
+  /* The SIGN of a term asks for a move; the rest of it only picks the term
+     up to be carried across the equals sign or folded into a like term — the
+     same split the balance rule itself draws between "what happens to this"
+     and "where this goes". A term taken by its body gets no menu at all, just
+     the plain hint that it is now ready to be pointed somewhere. */
+  if (card.pickedZone !== "sign") {
+    menu.close();
+    if (card.waiting) return say("Put the numbers in first — tap the sign of a term with a letter in it.");
+    if (card.solved) return say("That one is finished.");
+    return say("Tap the equals sign to carry it across, or a like term to fold it into.");
+  }
+
   const moves = card.movesForPicked();
 
   const pool = solvedElsewhere(card);
@@ -275,6 +287,22 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
      page. In a panel the canvas is small and the drawer would fill it, so it
      waits to be asked for. */
   if (drawer) openDrawer();
+
+  /* On its own page, this wants to fill the screen without being asked — but
+     the Fullscreen API needs a user gesture almost everywhere, and loading a
+     page is not one. Trying here catches the browsers that allow it anyway;
+     the one-off listener catches everyone else on the very first tap, which
+     IS the gesture the API was waiting for. Never fires twice, and never
+     fires at all in the workbook sidebar's panel, which is not meant to take
+     over the window. */
+  if (drawer) {
+    const tryFullscreen = () => {
+      if (fullNow()) return;
+      (frameEl.requestFullscreen?.() ?? frameEl.webkitRequestFullscreen?.())?.catch?.(() => {});
+    };
+    tryFullscreen();
+    document.addEventListener("pointerdown", tryFullscreen, { once: true, capture: true });
+  }
 }
 
 /* ── The two ways in ──────────────────────────────────────────────
