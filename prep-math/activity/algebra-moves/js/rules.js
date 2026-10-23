@@ -33,6 +33,7 @@ export const RULE_GROUPS = [
       r("r-like", "Collect like terms", "3x + 5x = 8x", ["combine"]),
       r("r-arith", "Work out the numbers", "2·5 + 3 = 13", ["workout", "multiply"]),
       r("r-expand", "Open the brackets", "a(b + c) = ab + ac", ["expand"]),
+      r("r-factor", "Take out a common factor", "ab + ac = a(b + c)", ["factor"]),
       r("r-foil", "Brackets times brackets", "(a + b)(c + d) = ac + ad + bc + bd", ["expand"], /every term times every term|is \(/i),
       r("r-zero", "Rub out a zero", "a + 0 = a", ["dropzero"]),
       r("r-reorder", "Write the terms the other way round", "a + b = b + a", ["reorder"]),

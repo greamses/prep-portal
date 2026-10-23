@@ -971,6 +971,124 @@ function divMono(a, b) {
   return { c: R.div(a.c, b.c), pows };
 }
 
+/* ── Taking out a common factor ─────────────────────────────────────────────
+   The other way round from opening a bracket: 6x² + 9x is 3x(2x + 3). Tap the
+   x and the x comes out of every term that has one; tap the 6 and the number
+   the coefficients share (3) comes out; either way the whole highest common
+   factor is offered too. Pick some terms and only those are factorised —
+   which is how grouping is done: ax + ay + bx + by, two at a time. Terms are
+   read as monomials (a number times letters to whole powers); anything else
+   is left out of the bracket, never guessed at. */
+
+function hcfOf(monos) {
+  let g = null;
+  for (const m of monos) {
+    if (!R.isInt(m.c)) { g = 1n; break; }
+    const v = m.c.n < 0n ? -m.c.n : m.c.n;
+    g = g === null ? v : gcdBig(g, v);
+  }
+  const pows = new Map();
+  for (const [name, p] of monos[0].pows) {
+    const least = Math.min(...monos.map((m) => m.pows.get(name) || 0));
+    if (least > 0) pows.set(name, least);
+  }
+  return { c: R.rat(g || 1n), pows };
+}
+
+/** Take the monomial F out of the terms at `idxs` of a container. */
+export function factorTerms(eq, loc, idxs, F) {
+  if (idxs.length < 2) return { error: "A common factor needs two terms or more." };
+  if (isMonoOne(F)) return { error: "Those terms have nothing in common to take out." };
+  const inner = [];
+  for (const i of idxs) {
+    const m = mono(loc.terms[i]);
+    const q = m && divMono(m, F);
+    if (!q) return { error: "That does not go into every one of those terms." };
+    inner.push(monoNode(q));
+  }
+  const bracket = { ...A.sum(inner), paren: true };
+  const outside = monoNode(F);
+  const product = outside.kind === "prod" ? A.prod([...outside.kids, bracket]) : A.prod([outside, bracket]);
+  const first = Math.min(...idxs);
+  const nextTerms = loc.terms
+    .map((t, i) => (i === first ? product : t))
+    .filter((_, i) => i === first || !idxs.includes(i));
+  return {
+    eq: setContainer(eq, loc, nextTerms), from: new Map(), mark: plain(product),
+    note: `Take out ${plain(outside)}: ${plain(product)}`,
+  };
+}
+
+/** What tapping this letter or number can take out of its side. */
+function factorOffers(eq, leaf) {
+  const T = termChain(eq, leaf.id)[0];
+  const loc = T && locate(eq, T.id);
+  if (!loc || loc.terms.length < 2) return [];
+  const monos = loc.terms.map(mono);
+  const out = [];
+  const offer = (idxs, F, hint) => {
+    const r = factorTerms(eq, loc, idxs, F);
+    if (!r.error) out.push({ key: "factor", label: r.note.split(":")[0], hint, mark: r.mark, run: () => r });
+  };
+  let idxs;
+  if (leaf.kind === "var") {
+    idxs = monos.map((m, i) => (m && m.pows.has(leaf.name) ? i : -1)).filter((i) => i >= 0);
+    if (idxs.length < 2 || !idxs.includes(loc.index)) return [];
+    const least = Math.min(...idxs.map((i) => monos[i].pows.get(leaf.name)));
+    offer(idxs, { c: R.ONE, pows: new Map([[leaf.name, least]]) }, "a common factor");
+  } else if (leaf.kind === "num" && R.isInt(leaf.v) && !R.isZero(leaf.v)) {
+    idxs = monos.map((m, i) => (m && R.isInt(m.c) && !R.isZero(m.c) ? i : -1)).filter((i) => i >= 0);
+    if (idxs.length < 2 || !idxs.includes(loc.index)) return [];
+    const k = leaf.v.n < 0n ? -leaf.v.n : leaf.v.n;
+    const g = idxs.reduce((acc, i) => gcdBig(acc, monos[i].c.n < 0n ? -monos[i].c.n : monos[i].c.n), k);
+    if (g > 1n) offer(idxs, { c: R.rat(g), pows: new Map() }, "a common factor");
+  } else return [];
+  // And the whole highest common factor of the same terms, when it is more.
+  const H = hcfOf(idxs.map((i) => monos[i]));
+  offer(idxs, H, "the highest common factor");
+  return out;
+}
+
+/** A whole bracket shared by two terms or more — a(x + y) + b(x + y) — is a
+    common factor too: (x + y)(a + b), the last step of grouping. */
+export function factorBracket(eq, sumId) {
+  const S = A.findById(eq, sumId);
+  const T = S && termChain(eq, sumId).find((t) => locate(eq, t.id));
+  const loc = T && locate(eq, T.id);
+  if (!S || !loc) return { error: "There is no bracket there." };
+  const key = A.shapeKey(unbracket(S));
+  const rest = [];
+  const idxs = [];
+  loc.terms.forEach((t, i) => {
+    const flipped = t.kind === "neg" && !t.paren;
+    const body = flipped ? t.k : t;
+    const kids = body.kind === "prod" ? body.kids : [body];
+    const at = kids.findIndex((k) => k.kind === "sum" && A.shapeKey(unbracket(k)) === key);
+    if (at < 0) return;
+    const others = kids.filter((_, j) => j !== at).map(freshCopy);
+    let left = others.length === 0 ? A.num(R.ONE) : others.length === 1 ? others[0] : A.prod(others);
+    if (flipped) left = A.neg(left);
+    idxs.push(i);
+    rest.push(left);
+  });
+  if (idxs.length < 2) return { error: "Only one term has that bracket." };
+  const product = A.prod([{ ...freshCopy(unbracket(S)), paren: true }, { ...A.sum(rest), paren: true }]);
+  const first = Math.min(...idxs);
+  const nextTerms = loc.terms.map((t, i) => (i === first ? product : t)).filter((_, i) => i === first || !idxs.includes(i));
+  return { eq: setContainer(eq, loc, nextTerms), from: new Map(), mark: plain(product), note: `Take out ${plain({ ...S, paren: true })}: ${plain(product)}` };
+}
+
+/** Several terms picked: their highest common factor, taken out of just those. */
+export function factorPicked(eq, ids) {
+  const locs = ids.map((id) => locate(eq, id));
+  if (locs.some((l) => !l) || new Set(locs.map((l) => l.container.id)).size !== 1) {
+    return { error: "Those are not all on the same side." };
+  }
+  const monos = locs.map((l) => mono(l.term));
+  if (monos.some((m) => !m)) return { error: "I can only take a factor out of plain terms." };
+  return factorTerms(eq, locs[0], locs.map((l) => l.index), hcfOf(monos));
+}
+
 /* ── Adding fractions ───────────────────────────────────────────────────────
    Like: same bottom, add the tops. Unlike: over the lowest common bottom, each
    top multiplied by what its bottom was short of — −c/a + b²/(4a²) is
@@ -1987,6 +2105,8 @@ export function atomOffers(eq, key, { given = null } = {}) {
     pick(pool(atomTerm(eq, key)), "expand");
   } else if (slot === "lp" || slot === "rp") {
     pick(pool(atomTerm(eq, key)), "expand");
+    const shared = factorBracket(eq, nodeId);
+    if (!shared.error) add({ key: "factor", label: shared.note.split(":")[0], hint: "a common bracket", mark: shared.mark, run: () => shared });
     tidiesAbove(nodeId);
     add(workOffer(nodeId));
   } else {
@@ -2041,6 +2161,8 @@ export function atomOffers(eq, key, { given = null } = {}) {
       if (f && A.findById(f.a, nodeId)) add(splitOffer(F));
     }
     pick(p, "across", "combine", "square", "addfrac", "dropzero", "pyth");
+    // A letter or a number shared by two terms or more: take it out.
+    if (leaf && (leaf.kind === "var" || leaf.kind === "num")) for (const o of factorOffers(eq, leaf)) add(o);
     /* Inside a fraction, the innermost term is just the top (the c of c/a),
        which cannot cross the = on its own. The whole term it belongs to — c/a
        — can, so reach out to the first one standing on a side. */
@@ -2090,6 +2212,8 @@ export function multiOffers(eq, keys, { given = null } = {}) {
   }
   const folded = combineMany(eq, ids);
   if (!folded.error) out.push({ key: "combine", label: folded.note, hint: "like terms", mark: folded.mark, run: () => folded });
+  const fac = factorPicked(eq, ids);
+  if (!fac.error) out.push({ key: "factor", label: fac.note.split(":")[0], hint: "the highest common factor", mark: fac.mark, run: () => fac });
   return hasSubstitutions(eq, given) ? [] : out;
 }
 
@@ -2121,6 +2245,13 @@ export function everyOffer(eq, keys = [], { given = null } = {}) {
   }
   for (const t of A.allTerms(eq)) add(offers(eq, t.id, { given }));
   if (A.isEquation(eq)) add(atomOffers(eq, `${eq.id}#eq`, { given }));
+  // Nothing picked: the highest common factor of each whole side.
+  for (const c of A.containersOf(eq)) {
+    const ts = A.termsOf(c);
+    if (ts.length < 2) continue;
+    const r = factorPicked(eq, ts.map((t) => t.id));
+    if (!r.error) add([{ key: "factor", label: r.note.split(":")[0], hint: "the highest common factor", mark: r.mark, run: () => r }]);
+  }
   add(calculusCards(eq));
   return out;
 }
