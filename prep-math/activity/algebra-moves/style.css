@@ -511,11 +511,22 @@
   pointer-events: none;
 }
 
-.am-keysay {
-  min-height: 1.35em;
+/* What the tool says about the line, and the button that acts on it, in one
+   row — Enter sits beside its own answer rather than under the whole pad. */
+.am-keystatus {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   margin: 0.35rem 0 0.55rem;
+}
+.am-keysay {
+  flex: 1;
+  min-width: 0;
+  min-height: 1.35em;
+  margin: 0;
   font-family: var(--font-mono);
   font-size: var(--text-mono-xs);
+  line-height: 1.4;
   color: var(--text-tertiary);
 }
 .am-keysay.is-ok { color: var(--accent-success); }
@@ -574,9 +585,10 @@
 }
 .am-give__value::placeholder { color: var(--text-tertiary); opacity: 0.6; }
 
-/* Each alphabet the pad can type in is its own section, stacked rather than
-   switched between — numbers and the common operators, then the letters a
-   formula reaches for beyond x and y, then the Greek ones. */
+/* Each alphabet the pad can type in is its own section — numbers and the
+   common operators, then the Latin letters, then the Greek ones. Letters are
+   a switcher rather than four rows stacked (see .am-subtabs below); the rest
+   are stacked rather than switched between. */
 .am-pad { display: flex; flex-direction: column; gap: 0.6rem; }
 .am-pad__section { display: grid; gap: 0.3rem; }
 .am-pad__cap {
@@ -588,6 +600,35 @@
   color: var(--text-tertiary);
 }
 .am-pad__row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem; }
+
+/* The letters' own tab bar: which seven are showing, and a CAPS key that
+   turns them into their capitals. Flat, like a key — these pick an alphabet
+   rather than typing into the equation, but they are still keys and not
+   notes sitting on the desk. */
+.am-subtabs { display: flex; gap: 0.22rem; }
+.am-subtab {
+  flex: 1;
+  min-width: 0;
+  padding: 0.2rem 0.2rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.am-subtab:hover { background: var(--surface-secondary); }
+.am-subtab.is-on { background: var(--surface-secondary); color: var(--ink); border-color: rgba(42, 39, 35, 0.3); }
+.am-subtab--caps { flex: 0 0 auto; padding: 0.2rem 0.55rem; text-transform: uppercase; }
+.am-subtab--caps.is-on { color: var(--accent-secondary); border-color: var(--accent-secondary); }
+.am-subtab:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 
 /* A key is the one thing here that is NOT a note — you press it, it does not sit
    on the desk. What it is instead is a piece of the equation: set in the same
@@ -993,5 +1034,18 @@
 .am-go:hover { background: var(--surface-secondary); }
 .am-go:active { transform: translateY(1px); box-shadow: none; }
 .am-go:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* On the typing pad, Enter does not get a row of its own: it sits beside
+   what the tool just said about the line, sized to its own label rather
+   than stretched under the whole keyboard. */
+.am-go--inline {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  width: auto;
+  margin-top: 0;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.74rem;
+}
 
 

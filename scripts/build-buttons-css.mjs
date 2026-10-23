@@ -60,11 +60,12 @@ const TOOLS = [
      beside a tapped term — both are the SAME key, set in the equation's own
      face so the 7 you press and the 7 that lands on the canvas are visibly
      the same 7. Shantell Sans and a sheet of yellow paper over that is a
-     calculator wearing a costume. The Enter key below the pad is plain for
-     the opposite reason: it is not a piece of the maths, and the note dress
-     would make it read as one more key to work out instead of the one that
-     submits them. */
-  ".am-key", ".am-move", ".am-go",
+     calculator wearing a costume. The Enter key is plain for the opposite
+     reason: it is not a piece of the maths, and the note dress would make it
+     read as one more key to work out instead of the one that submits them.
+     The letters' own tab bar (which group is up, and CAPS) picks an alphabet
+     rather than typing into the equation, but it is still a key, not a note. */
+  ".am-key", ".am-move", ".am-go", ".am-subtab",
 ];
 
 // Not buttons, or must not be paper. `.pp-plain` is the opt-out.

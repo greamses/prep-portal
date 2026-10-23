@@ -76,17 +76,26 @@ const rowsOf = (keys, n = 7) => {
   return out;
 };
 
-const asLetter = (ch) => ({ k: ch, t: ch, tone: "letter" });
+const asLetter = (ch, title) => ({ k: ch, t: ch, tone: "letter", title });
 
 /* The full alphabet, for whatever letter a formula reaches for beyond x and
-   y. Lowercase only — the same reason the equation's own writing is. */
-const LETTERS = rowsOf([..."abcdefghijklmnopqrstuvwxyz"].map(asLetter));
+   y — split into groups of seven, one tab at a time rather than four rows
+   stacked, with a single CAPS key that turns whichever group is showing
+   into its own capitals. Lowercase only otherwise, the same reason the
+   equation's own writing is. */
+const LETTER_GROUPS = rowsOf([..."abcdefghijklmnopqrstuvwxyz"].map((ch) => asLetter(ch)));
 
-/* The Greek letters a school formula actually uses — a circle's π, an angle's
-   θ, the unknowns geometry reaches for once x, y and z are all taken. Kept to
-   seven so the row matches every other row in the pad; see parse.js for why
-   it stops at these seven. */
-const GREEK = rowsOf(["π", "θ", "α", "β", "γ", "λ", "μ"].map(asLetter));
+/* The full Greek alphabet — a circle's π, an angle's θ, the unknowns geometry
+   reaches for once x, y and z are all taken. Named on the key's title, since
+   "chi" and "xi" are not a glyph anyone is expected to read on sight. See
+   parse.js for why it stops at lowercase. */
+const GREEK_NAMES = {
+  α: "alpha", β: "beta", γ: "gamma", δ: "delta", ε: "epsilon", ζ: "zeta",
+  η: "eta", θ: "theta", ι: "iota", κ: "kappa", λ: "lambda", μ: "mu",
+  ν: "nu", ξ: "xi", ο: "omicron", π: "pi", ρ: "rho", σ: "sigma",
+  τ: "tau", υ: "upsilon", φ: "phi", χ: "chi", ψ: "psi", ω: "omega",
+};
+const GREEK = rowsOf([...Object.keys(GREEK_NAMES)].map((g) => asLetter(g, GREEK_NAMES[g])));
 
 export function createKeypad(host, { onSubmit } = {}) {
   const preview = document.createElement("div");
@@ -119,12 +128,18 @@ export function createKeypad(host, { onSubmit } = {}) {
 
   const go = document.createElement("button");
   go.type = "button";
-  go.className = "am-go";
+  go.className = "am-go am-go--inline";
   go.textContent = "Enter";
   go.title = "Put it on the canvas";
   go.setAttribute("aria-label", "Put it on the canvas");
 
-  host.append(preview, line, say, give, pad, go);
+  // Enter sits beside what the tool is saying about the line, not under the
+  // whole keyboard — the status and the action that answers it are one row.
+  const status = document.createElement("div");
+  status.className = "am-keystatus";
+  status.append(say, go);
+
+  host.append(preview, line, status, give, pad);
 
   const SIZE = 40;                // the drawing's font size, in CSS pixels
   const KEY_SIZE = 15;            // and on a key face, which has a cell to fit
@@ -560,10 +575,32 @@ export function createKeypad(host, { onSubmit } = {}) {
     return holder;
   }
 
+  /** One key, built the one way every key on the pad is built — a section's
+      own row and the letter tabs' single row both go through this, so there
+      is one place that knows how a key types and nothing to drift apart. */
+  function keyButton(key) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    // A key that DOES something to the keypad rather than typing maths is
+    // labelled, not set: it gets the mono face a caption has.
+    btn.className = `am-key${key.act ? " am-key--act" : ""}` +
+                    `${key.tone ? ` am-key--${key.tone}` : ""}${key.wide ? " am-key--wide" : ""}`;
+    if (key.math) btn.appendChild(face(key.math));
+    else btn.textContent = key.k;
+    if (key.title) btn.title = key.title;
+    btn.setAttribute("aria-label", key.title || key.k);
+    // pointerdown, not click: never let the caret leave the line.
+    btn.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      if (key.act) ACTS[key.act]();
+      else type(key.t ?? key.k, key.back ?? 0);
+    });
+    return btn;
+  }
+
   /** One section of the pad: an optional caption, then its rows of keys. A
       labelled section is a different ALPHABET to reach for, not a different
-      kind of key — so it is built by the one function every key goes
-      through, never a second button-building path to drift from the first. */
+      kind of key. */
   function buildSection(label, rows) {
     const section = document.createElement("div");
     section.className = "am-pad__section";
@@ -576,32 +613,85 @@ export function createKeypad(host, { onSubmit } = {}) {
     for (const row of rows) {
       const rail = document.createElement("div");
       rail.className = "am-pad__row";
-      for (const key of row) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        // A key that DOES something to the keypad rather than typing maths is
-        // labelled, not set: it gets the mono face a caption has.
-        btn.className = `am-key${key.act ? " am-key--act" : ""}` +
-                        `${key.tone ? ` am-key--${key.tone}` : ""}${key.wide ? " am-key--wide" : ""}`;
-        if (key.math) btn.appendChild(face(key.math));
-        else btn.textContent = key.k;
-        if (key.title) btn.title = key.title;
-        btn.setAttribute("aria-label", key.title || key.k);
-        // pointerdown, not click: never let the caret leave the line.
-        btn.addEventListener("pointerdown", (e) => {
-          e.preventDefault();
-          if (key.act) ACTS[key.act]();
-          else type(key.t ?? key.k, key.back ?? 0);
-        });
-        rail.appendChild(btn);
-      }
+      for (const key of row) rail.appendChild(keyButton(key));
       section.appendChild(rail);
     }
     return section;
   }
 
+  /** The Latin alphabet, as tabs rather than four rows stacked — one group
+      of seven showing at a time, with a CAPS key that turns whichever group
+      is up into its own capitals. Rebuilding the one visible row on every
+      switch is cheap enough that there is no reason to keep all four built
+      and hide three of them. */
+  function buildLetterTabs(groups) {
+    const section = document.createElement("div");
+    section.className = "am-pad__section";
+
+    const tabs = document.createElement("div");
+    tabs.className = "am-subtabs";
+    tabs.setAttribute("role", "tablist");
+    tabs.setAttribute("aria-label", "Which letters");
+
+    const rail = document.createElement("div");
+    rail.className = "am-pad__row";
+
+    let active = 0;
+    let caps = false;
+    const span = (g) => (g[0].k === g[g.length - 1].k ? g[0].k : `${g[0].k}–${g[g.length - 1].k}`);
+    const dress = (ch) => (caps ? ch.toUpperCase() : ch);
+
+    function renderRail() {
+      rail.textContent = "";
+      for (const key of groups[active]) {
+        const ch = dress(key.k);
+        rail.appendChild(keyButton({ ...key, k: ch, t: ch }));
+      }
+    }
+
+    function renderTabs() {
+      tabs.textContent = "";
+      groups.forEach((g, i) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `am-subtab${i === active ? " is-on" : ""}`;
+        btn.setAttribute("role", "tab");
+        btn.setAttribute("aria-selected", String(i === active));
+        btn.textContent = dress(span(g));
+        btn.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          active = i;
+          renderTabs();
+          renderRail();
+          line.focus();
+        });
+        tabs.appendChild(btn);
+      });
+
+      const capsBtn = document.createElement("button");
+      capsBtn.type = "button";
+      capsBtn.className = `am-subtab am-subtab--caps${caps ? " is-on" : ""}`;
+      capsBtn.title = "Capitals";
+      capsBtn.textContent = "caps";
+      capsBtn.setAttribute("aria-pressed", String(caps));
+      capsBtn.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        caps = !caps;
+        renderTabs();
+        line.focus();
+        renderRail();
+      });
+      tabs.appendChild(capsBtn);
+    }
+
+    renderTabs();
+    renderRail();
+    section.append(tabs, rail);
+    return section;
+  }
+
   pad.appendChild(buildSection(null, KEYS));
-  pad.appendChild(buildSection("letters", LETTERS));
+  pad.appendChild(buildLetterTabs(LETTER_GROUPS));
   pad.appendChild(buildSection("greek letters", GREEK));
 
   go.addEventListener("pointerdown", (e) => { e.preventDefault(); submit(); });

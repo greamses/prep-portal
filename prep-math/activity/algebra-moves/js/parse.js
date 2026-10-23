@@ -25,11 +25,12 @@ import * as A from "./ast.js";
 import * as R from "./rational.js";
 
 const isDigit = (c) => c >= "0" && c <= "9";
-// Lowercase only, and only the ones the keypad offers: an uppercase Greek
-// letter is indistinguishable on the page from the Latin one it happens to
-// look like (Α is "A", Β is "B"), which would make two different variables
-// share a glyph. Lowercase has no such collision.
-const GREEK = "αβγθλμπ";
+// The full Greek alphabet, lowercase only: an uppercase Greek letter is
+// indistinguishable on the page from the Latin one it happens to look like
+// (Α is "A", Β is "B"), which would make two different variables share a
+// glyph. Lowercase has no such collision. Final sigma (ς) is left out — it
+// is a spelling rule for the end of a word, not a different variable.
+const GREEK = "αβγδεζηθικλμνξοπρστυφχψω";
 const isAlpha = (c) => (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || GREEK.includes(c);
 
 function tokenise(src) {
