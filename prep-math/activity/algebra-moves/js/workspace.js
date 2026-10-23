@@ -86,22 +86,10 @@ function solvedElsewhere(asking) {
   return pool;
 }
 
-/* ── The menu that follows the picked term ──────────────────────────────── */
+/* ── The menu that follows the picked glyph ─────────────────────────────── */
 function openMenuFor(card) {
   const picked = card.picked;
   if (!picked) return menu.close();
-
-  /* The SIGN of a term asks for a move; the rest of it only picks the term
-     up to be carried across the equals sign or folded into a like term — the
-     same split the balance rule itself draws between "what happens to this"
-     and "where this goes". A term taken by its body gets no menu at all, just
-     the plain hint that it is now ready to be pointed somewhere. */
-  if (card.pickedZone !== "sign") {
-    menu.close();
-    if (card.waiting) return say("Put the numbers in first — tap the sign of a term with a letter in it.");
-    if (card.solved) return say("That one is finished.");
-    return say("Tap the equals sign to carry it across, or a like term to fold it into.");
-  }
 
   const moves = card.movesForPicked();
 
@@ -124,11 +112,8 @@ function openMenuFor(card) {
     // While a formula still has numbers to go into it, nothing else is offered
     // anywhere — so a term with no move is a term with no letter of its own to
     // fill in, and saying it belongs where it is would be the wrong answer.
-    if (card.waiting) return say("Put the numbers in first — tap a term with a letter in it.");
-    // Otherwise the only things filtered out are carrying a term to the side it
-    // is already on and turning a line round for nothing, so this is almost
-    // always literally true — and it is the thing worth saying.
-    return say(card.solved ? "That one is finished." : "That one is already where it belongs.");
+    if (card.waiting) return say("Put the numbers in first — tap a letter that has been given a value.");
+    return say(card.solved ? "That one is finished." : "Nothing to do with that one — try its sign, or the = .");
   }
 
   menu.open(offers, () => card.rectFor(picked), (offer) => {
@@ -358,9 +343,15 @@ function wireFullScreen() {
     btn.setAttribute("aria-label", btn.title);
     btn.setAttribute("aria-pressed", String(on));
     // Every position on the canvas is measured off the frame, and the frame
-    // just changed size under everything.
-    menu.close();
+    // just changed size under everything. The menu FOLLOWS rather than closing:
+    // the first tap on the page is also what fills the screen, and closing here
+    // threw away the very menu that tap had just opened.
     canvas.reset();
+    // Re-centring goes back to the origin, which can leave the card being
+    // worked on off the edge — bring it back before the menu follows it.
+    if (active) canvas.revealCard(active.el);
+    menu.reposition();
+    requestAnimationFrame(() => menu.reposition());
   };
   document.addEventListener("fullscreenchange", sync);
   document.addEventListener("webkitfullscreenchange", sync);

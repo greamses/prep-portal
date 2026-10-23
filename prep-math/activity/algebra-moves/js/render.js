@@ -13,7 +13,6 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import { layout, FONT_FAMILY } from "./layout.js";
-import { allTerms } from "./ast.js";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -77,52 +76,47 @@ export function paintRow(row, { live = false, picked = null, pad = 0 } = {}) {
     ink.appendChild(node);
   }
 
+  /* Every glyph is its own target: the 3 and the x of 3x, the + between two
+     terms, the 5, the =, a fraction bar, a bracket. A number of several digits
+     is one atom, so it is never split. Bars go in first so the digits sitting
+     just above and below one win any overlap. */
   if (live) {
-    for (const t of allTerms(row.eq)) {
-      const b = row.boxes.get(t.id);
-      if (!b) continue;
-      const grow = 6;
-      const box = { x: b.x - grow, y: b.y - grow, width: b.w + grow * 2, height: b.h + grow * 2 };
-      if (t.id === picked) selLayer.appendChild(el("rect", { ...box, class: "am-sel", rx: 3 }));
-
-      /* Every term's tap target is two zones, not one: its leading edge —
-         where a sign sits, whether one is drawn there or not — asks for a
-         move, the way tapping + 5 means "do something with that +". The
-         rest of it only picks the term up to be carried or folded in,
-         which is the one thing every term can mean regardless of its sign.
-         Both zones carry the SAME node id; only `zone` tells them apart. */
-      const signW = box.width * 0.42;
-      const sign = el("rect", {
-        x: box.x, y: box.y, width: signW, height: box.height,
-        class: "am-hit am-hit--sign", tabindex: "0", role: "button",
+    const gutter = eqGutter(row);
+    const order = [...row.atoms.filter((a) => a.kind === "rule"), ...row.atoms.filter((a) => a.kind === "text")];
+    for (const a of order) {
+      const box = hitBox(a, row, gutter);
+      if (a.key === picked) selLayer.appendChild(el("rect", { ...box, class: "am-sel", rx: 3 }));
+      const hit = el("rect", {
+        ...box,
+        class: `am-hit${a.kind === "rule" ? " am-hit--bar" : ""}`,
+        tabindex: "0", role: "button",
       });
-      sign.dataset.node = t.id;
-      sign.dataset.zone = "sign";
-      hits.appendChild(sign);
-
-      const body = el("rect", {
-        x: box.x + signW, y: box.y, width: box.width - signW, height: box.height,
-        class: "am-hit am-hit--body", tabindex: "0", role: "button",
-      });
-      body.dataset.node = t.id;
-      body.dataset.zone = "body";
-      hits.appendChild(body);
-    }
-
-    /* The equals sign is a destination, not a term: with something picked, it is
-       the obvious place to tap when you mean "over there". Its target is the
-       whole gutter between the two sides rather than the glyph, which is three
-       pixels wide and no use to a thumb. */
-    const gap = eqGutter(row);
-    if (gap) {
-      const hit = el("rect", { ...gap, class: "am-hit am-hit--eq", tabindex: "0", role: "button" });
-      hit.dataset.drop = "=";
-      hit.setAttribute("aria-label", "Carry it over the equals sign");
+      hit.dataset.key = a.key;
+      hit.setAttribute("aria-label", a.kind === "rule" ? "the fraction bar" : a.text);
       hits.appendChild(hit);
     }
   }
 
   return svg;
+}
+
+/** Where a glyph can be tapped. A sign is a sliver of ink, so it borrows the
+    air either side of it; the = takes the whole gutter between the two sides. */
+function hitBox(a, row, gutter) {
+  if (a.kind === "rule") {
+    const padY = 0.1 * row.size;
+    return { x: a.x, y: a.y - padY, width: a.w, height: a.h + padY * 2 };
+  }
+  const slot = a.key.slice(a.key.indexOf("#") + 1);
+  if (slot === "eq" && gutter) return gutter;
+  const isSign = slot.startsWith("op") || slot === "sign" || slot.startsWith("dot");
+  const padX = isSign ? 0.2 * a.size : 2;
+  return {
+    x: a.x - padX,
+    y: a.y - a.asc - 3,
+    width: a.w + padX * 2,
+    height: a.asc + a.desc + 6,
+  };
 }
 
 /** The space between the two sides, where the equals sign is written. */

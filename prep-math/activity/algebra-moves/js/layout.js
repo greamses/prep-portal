@@ -261,8 +261,13 @@ function place(m, x, y, out) {
   // A node placed twice (it cannot be, but be safe) keeps its first box.
   if (!out.boxes.has(id)) out.boxes.set(id, box);
 
+  // Every glyph carries its own extent, so it can be a tap target of its own —
+  // the 3 of 3x, the x, the + between terms, the = — not just a slice of a term.
   const text = (slot, txt, tx, ty, size, italic) =>
-    out.atoms.push({ key: `${id}#${slot}`, nodeId: id, kind: "text", text: txt, x: tx, y: ty, size, italic: !!italic });
+    out.atoms.push({
+      key: `${id}#${slot}`, nodeId: id, kind: "text", text: txt, x: tx, y: ty, size, italic: !!italic,
+      w: measureText(txt, size, !!italic), asc: ASC * size, desc: DESC * size,
+    });
 
   switch (m.kind) {
     case "brackets": {

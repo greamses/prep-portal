@@ -355,6 +355,57 @@ export function expand(eq, id) {
   return { eq: eqNext, from, mark: opened, note: `${plain(loc.term)} opens up to ${opened}` };
 }
 
+/* ── Split a fraction over its top ──────────────────────────────────────────
+   (3x + 5)/4 is 3x/4 + 5/4. It is the move that lets anything written on top
+   of a bar be reached at all: until the fraction is split, the 5 in the
+   numerator cannot cross the equals sign on its own; afterwards 5/4 can.
+
+   The bottom is written again under every piece, and each copy is a FRESH
+   node — one node object standing in two places would give the tree one id
+   in two spots (see ast.js). A minus on top comes out in front of its piece,
+   so (3x − 5)/4 reads 3x/4 − 5/4 rather than 3x/4 + (−5)/4. */
+
+const freshCopy = (n) => {
+  switch (n.kind) {
+    case "num":  return A.num(n.v, n.text);
+    case "var":  return A.vr(n.name);
+    case "neg":  return A.neg(freshCopy(n.k));
+    case "sum":  return A.sum(n.kids.map(freshCopy));
+    case "prod": return A.prod(n.kids.map(freshCopy));
+    case "frac": return A.frac(freshCopy(n.a), freshCopy(n.b));
+    case "pow":  return A.pow(freshCopy(n.b), freshCopy(n.e));
+    default:     return n;
+  }
+};
+
+export function splitFraction(eq, id) {
+  const loc = locate(eq, id);
+  if (!loc) return { error: "That is not one of the terms." };
+  const flipped = loc.term.kind === "neg" && !loc.term.paren;
+  const fr = flipped ? loc.term.k : loc.term;
+  if (fr.kind !== "frac") return { error: "That is not a fraction." };
+  const tops = A.termsOf(fr.a);
+  if (tops.length < 2) return { error: "There is only one thing on top, so there is nothing to split." };
+
+  const pieces = tops.map((t, i) => {
+    const den = i === 0 ? fr.b : freshCopy(fr.b);
+    const isNeg = t.kind === "neg" && !t.paren;
+    let piece = isNeg ? A.neg(A.frac(t.k, den)) : A.frac(t, den);
+    if (flipped) piece = piece.kind === "neg" ? piece.k : A.neg(piece);
+    return piece;
+  });
+
+  const nextTerms = [...loc.terms.slice(0, loc.index), ...pieces, ...loc.terms.slice(loc.index + 1)];
+  const eqNext = setContainer(eq, loc, nextTerms);
+
+  // Every piece of new writing comes out of the old fraction.
+  const from = new Map();
+  for (const p of pieces) A.walk(p, (n) => { if (!A.findById(eq, n.id)) from.set(n.id, [fr.id]); });
+
+  const opened = pieces.map((p) => plain(p)).join(" + ").replace(/\+ −/g, "− ");
+  return { eq: eqNext, from, mark: opened, note: `${plain(loc.term)} splits into ${opened}` };
+}
+
 /* ── Turn it round ──────────────────────────────────────────────────────────
    5 = x is a finished answer, but it is not how anyone writes one down. Both
    sides keep their ids, so they slide past each other rather than blink. */
@@ -740,4 +791,166 @@ export function offers(eq, id, { given = null } = {}) {
   }
 
   return out;
+}
+
+/* ── Every glyph is a handle ────────────────────────────────────────────────
+   In 3x + 5 = 4 the student can put a finger on the 3, the x, the +, the 5,
+   the = or the 4, and each one offers what it MEANS. A key is the layout's own
+   atom key (nodeId#slot), so the thing tapped is exactly the thing drawn — a
+   multi-digit number is one atom, never broken up.
+
+     a number or a letter     transfers: the term it belongs to crosses the
+                              equals sign; a coefficient crosses as a division;
+                              a number under a bar crosses as a multiplication
+     a + or − between terms   simplify or transfer what it links: fold the two
+                              terms it joins, or carry the one it introduces
+     a fraction bar           cancel it down, work it out, or clear it
+     a dot or a bracket       work it out, or open it up
+     the = itself             the both-sides moves: turn it round, change every
+                              sign, divide or multiply the lone term through
+
+   Nothing new is decided here: every offer is one the term-level engine
+   already makes, or one of its own functions run on the exact node tapped,
+   and every one still goes through the verifier before it is drawn. */
+
+const keyParts = (key) => {
+  const i = key.indexOf("#");
+  return { nodeId: key.slice(0, i), slot: key.slice(i + 1) };
+};
+
+const nodeSize = (n) => { let c = 0; A.walk(n, () => { c += 1; }); return c; };
+
+/** Every term, in any container, whose subtree holds `nodeId` — innermost first. */
+function termChain(eq, nodeId) {
+  const seen = new Set();
+  const out = [];
+  for (const c of A.containersOf(eq)) {
+    for (const t of A.termsOf(c)) {
+      if (seen.has(t.id) || !A.findById(t, nodeId)) continue;
+      seen.add(t.id);
+      out.push(t);
+    }
+  }
+  return out.sort((a, b) => nodeSize(a) - nodeSize(b));
+}
+
+export const isEqualsKey = (key) => !!key && keyParts(key).slot === "eq";
+
+/** The term a glyph speaks for: its own innermost term, or — for a + between
+    terms — the term that + introduces. The = speaks for no one term. */
+export function atomTerm(eq, key) {
+  if (!key) return null;
+  const { nodeId, slot } = keyParts(key);
+  if (slot === "eq") return null;
+  if (slot.startsWith("op")) {
+    const kid = A.findById(eq, nodeId)?.kids?.[Number(slot.slice(2))];
+    return kid ? termChain(eq, kid.id)[0] || null : null;
+  }
+  return termChain(eq, nodeId)[0] || null;
+}
+
+/** Is `leaf` one of the factors its term is written as — the 3 of 3x or −3x? */
+function isFactorOf(term, leaf) {
+  const body = term.kind === "neg" && !term.paren ? term.k : term;
+  return body.kind === "prod" && body.kids.includes(leaf);
+}
+
+export function atomOffers(eq, key, { given = null } = {}) {
+  if (!key) return [];
+  const { nodeId, slot } = keyParts(key);
+  const out = [];
+  const marks = new Set();
+
+  const add = (o) => {
+    if (!o) return;
+    const tag = o.mark || o.label;
+    if (marks.has(tag)) return;      // two routes to the same line are one choice
+    marks.add(tag);
+    out.push(o);
+  };
+  const pool = (term) => (term ? offers(eq, term.id, { given }) : []);
+  const pick = (list, ...keys) => { for (const k of keys) for (const o of list) if (o.key === k) add(o); };
+  const direct = (k, label, hint, trial) =>
+    trial && !trial.error ? { key: k, label, hint, mark: trial.mark, run: () => trial } : null;
+  const workOffer = (id) => {
+    const n = A.findById(eq, id);
+    if (!n) return null;
+    return direct("workout", A.isNumeric(n) ? `Work out ${plain(n)}` : "Work out the numbers in it", "arithmetic", workOut(eq, id));
+  };
+  // The fraction a term is (or the fraction under its minus).
+  const fracOf = (T) => (T.kind === "frac" ? T : T.kind === "neg" && !T.paren && T.k.kind === "frac" ? T.k : null);
+  // Anything written on top of a bar can be reached by splitting the fraction.
+  const splitOffer = (fracTerm) =>
+    direct("split", "Split it over the bottom", "one fraction for each piece on top", splitFraction(eq, fracTerm.id));
+
+  if (slot === "eq") {
+    if (A.isEquation(eq)) {
+      add({ key: "swap", label: "Turn it round", hint: "same equation, read the other way", mark: "⇄", run: () => swapSides(eq) });
+      add({ key: "flip", label: "Change every sign", hint: "times both sides by −1", mark: "×(−1)", run: () => flipSigns(eq) });
+      for (const side of ["l", "r"]) {
+        const terms = A.termsOf(eq[side]);
+        if (terms.length === 1) pick(pool(terms[0]), "divide", "times");
+      }
+    }
+  } else if (slot.startsWith("op")) {
+    const sum = A.findById(eq, nodeId);
+    const i = Number(slot.slice(2));
+    const kid = sum?.kids?.[i];
+    const prev = sum?.kids?.[i - 1];
+    const isContainer = !!sum && A.containersOf(eq).some((c) => c.id === sum.id);
+    if (isContainer && kid && prev) {
+      add(direct("combine", `${plain(prev)} and ${plain(kid)} together`, "like terms", combine(eq, prev.id, kid.id)));
+    }
+    pick(pool(atomTerm(eq, key)), "combine", "workout", "dropzero", "expand", "across");
+    // A + on top of a bar: the fraction it sits in can be split at it.
+    const parent = sum && A.parentOf(eq, sum.id);
+    if (parent && parent.kind === "frac" && parent.a === sum) {
+      const fracTerm = termChain(eq, parent.id)[0];
+      if (fracTerm) add(splitOffer(fracTerm));
+    }
+  } else if (slot === "sign") {
+    pick(pool(atomTerm(eq, key)), "across", "flip", "expand", "combine", "workout");
+  } else if (slot === "bar") {
+    const T = atomTerm(eq, key);
+    add(direct("cancel", "Cancel it down", "same number top and bottom", cancel(eq, nodeId)));
+    add(workOffer(nodeId));
+    if (T && fracOf(T)?.id === nodeId) add(splitOffer(T));
+    if (T && T.id === nodeId) pick(pool(T), "times", "across");
+  } else if (slot.startsWith("dot")) {
+    add(workOffer(nodeId));
+    pick(pool(atomTerm(eq, key)), "expand");
+  } else if (slot === "lp" || slot === "rp") {
+    pick(pool(atomTerm(eq, key)), "expand");
+    add(workOffer(nodeId));
+  } else {
+    // A number or a letter.
+    const chain = termChain(eq, nodeId);
+    const T = chain[0];
+    const leaf = A.findById(eq, nodeId);
+    const p = pool(T);
+    pick(p, "substitute");
+    if (leaf && leaf.kind === "num" && T && isFactorOf(T, leaf)) pick(p, "divide");
+    for (const F of chain) {
+      if (F.kind === "frac" && A.findById(F.b, nodeId)) pick(pool(F), "times");
+      // Written on top of a bar: split the fraction so this piece is free.
+      const f = fracOf(F);
+      if (f && A.findById(f.a, nodeId)) add(splitOffer(F));
+    }
+    pick(p, "across", "combine", "dropzero");
+    // Arithmetic still waiting around it — an exponent, a bracketed sum.
+    if (leaf && T) {
+      let n = leaf;
+      let numericAbove = null;
+      while (n && n.id !== T.id) {
+        const parent = A.parentOf(eq, n.id);
+        if (!parent) break;
+        if (A.isNumeric(parent) && A.kidsOf(parent).length) numericAbove = parent;
+        n = parent;
+      }
+      if (numericAbove) add(workOffer(numericAbove.id));
+    }
+  }
+
+  // A formula with a number still to go in has one move anywhere: putting it in.
+  return hasSubstitutions(eq, given) ? out.filter((o) => o.key === "substitute") : out;
 }

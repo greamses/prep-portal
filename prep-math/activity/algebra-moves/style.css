@@ -271,28 +271,25 @@
   stroke-width: 1.4;
 }
 
+/* One target per glyph — the 3, the x, the +, the 5, the =, a fraction bar —
+   so hovering lights exactly the piece of writing the next tap will act on. */
 .am-hit { fill: transparent; cursor: pointer; outline: none; }
-.am-hit:hover { fill: #14130f; fill-opacity: 0.07; }
-.am-hit:focus-visible { fill: #14130f; fill-opacity: 0.14; }
-
-/* The equals sign only becomes a place once something is picked up — before
-   that there is nothing to carry there, and a target that highlights for no
-   reason is a target nobody trusts. */
-.am-hit--eq { pointer-events: none; }
-.am-card.has-pick .am-hit--eq { pointer-events: auto; }
-.am-card.has-pick .am-hit--eq:hover { fill: #14130f; fill-opacity: 0.09; }
+.am-hit:hover { fill: #14130f; fill-opacity: 0.1; }
+.am-hit:focus-visible { fill: #14130f; fill-opacity: 0.16; }
 
 @media (prefers-reduced-motion: reduce) {
   .am-glyph, .am-rule { transition: none !important; }
 }
 
 /* ── The menu of moves ──────────────────────────────────────────────────── */
-/* No paper of its own: with one chip in it, a sheet behind the chip is just a
-   second border round the same thing. The chip carries its own shadow. */
+/* No paper of its own: each chip carries its own shadow. A glyph can mean
+   several moves — the 3 of 3x = 15 is ÷3 or −3x — so the chips sit in a row
+   and wrap rather than run off the edge. */
 .am-menu {
   position: absolute;
   z-index: 40;
   display: flex;
+  flex-wrap: wrap;
   gap: 0.25rem;
   max-width: min(20rem, calc(100vw - 2rem));
 }
