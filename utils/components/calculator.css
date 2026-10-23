@@ -90,17 +90,24 @@
 .cl-calc__gtools { display: flex; gap: 4px; margin-top: 4px; }
 .cl-key--g { flex: 1; height: 20px; font-size: 0.72rem; background: linear-gradient(180deg, #5b6470, #3b424c); box-shadow: 0 2px 0 #14171b, inset 0 1px 0 rgba(255, 255, 255, 0.28); }
 
-/* ── MATRICES — two grids and the arithmetic done on them ───────────────── */
+/* ── MATRICES — two grids, each its OWN rows × columns, and the arithmetic
+   done on them. A real matrix problem is rarely two squares the same size
+   (A×B needs only A's columns to match B's rows), so the two matrices pick
+   their shape independently rather than sharing one "2×2 / 3×3" toggle. */
 .cl-calc__mat[hidden] { display: none; }
 .cl-calc__mat { margin-top: 6px; }
-.cl-mat__size { display: flex; gap: 4px; margin-bottom: 6px; }
-.cl-mat__sz { flex: 1; height: 20px; font: 700 0.6rem var(--font-mono); color: #c9d0d8; background: #3b424c; border: 0; }
-.cl-mat__back { flex: 1.3; height: 20px; font: 700 0.56rem var(--font-mono); color: #f4c95d; background: #262b33; border: 0; }
-.cl-mat__sz.is-on { color: #1b1f25; background: linear-gradient(180deg, #f8d877, #d9a93a); }
+.cl-mat__dims { display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px; }
+.cl-mat__dimrow { display: flex; align-items: center; gap: 3px; }
+.cl-mat__dimrow b { width: 10px; font: 700 0.62rem var(--font-mono); color: #f4c95d; }
+.cl-mat__dimrow i { font-style: normal; color: #8a93a0; font: 700 0.6rem var(--font-mono); }
+.cl-mat__rc { display: flex; gap: 2px; }
+.cl-mat__dimbtn { width: 16px; height: 16px; font: 700 0.56rem var(--font-mono); color: #c9d0d8; background: #3b424c; border: 0; padding: 0; }
+.cl-mat__dimbtn.is-on { color: #1b1f25; background: linear-gradient(180deg, #f8d877, #d9a93a); }
+.cl-mat__back { margin-left: auto; height: 18px; padding: 0 5px; font: 700 0.56rem var(--font-mono); color: #f4c95d; background: #262b33; border: 0; }
 .cl-mat__pair { display: flex; gap: 8px; }
 .cl-mat__one { flex: 1; min-width: 0; }
 .cl-mat__one b { display: block; margin-bottom: 2px; font: 700 0.6rem var(--font-mono); color: #f4c95d; text-align: center; }
-.cl-mat__grid { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 2px; }
+.cl-mat__grid { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 2px; }
 .cl-mat__cell {
   width: 100%; height: 22px; padding: 0 2px; box-sizing: border-box; text-align: center;
   font: 700 0.64rem var(--font-mono); color: #1a2416; background: #eef3ea; border: 1px solid #0d0f12; border-radius: 0;
@@ -108,10 +115,30 @@
 .cl-mat__ops { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; margin-top: 6px; }
 .cl-mat__ops .cl-key { height: 20px; font-size: 0.56rem; }
 .cl-mat__result { margin-top: 6px; min-height: 10px; }
-.cl-mat__out { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 2px; background: #0e1114; padding: 4px; border: 2px solid #0d0f12; }
+.cl-mat__out { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 2px; background: #0e1114; padding: 4px; border: 2px solid #0d0f12; }
 .cl-mat__out span { padding: 3px 2px; font: 700 0.62rem var(--font-mono); color: #f2f5f8; background: #262b33; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cl-mat__scalar { margin: 0; padding: 6px 4px; font: 700 0.68rem var(--font-mono); color: #f2f5f8; background: #0e1114; border: 2px solid #0d0f12; text-align: center; }
 .cl-mat__scalar.is-err { color: #ef7a5e; }
+
+/* ── f(x) — a family, and only its numbers ────────────────────────────────
+   Pulled down over the LCD/keypad the same way the history tape is: no
+   expression is ever typed, so there is nothing here but a family to pick
+   and a number box per letter in it. */
+.cl-calc__func[hidden] { display: none; }
+.cl-calc__func { margin-top: 6px; background: #0e1114; border: 2px solid #0d0f12; padding: 6px; }
+.cl-func__fam { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+.cl-func__famkey {
+  padding: 3px 5px; font: 700 0.6rem var(--font-mono); text-align: left;
+  color: #c9d0d8; background: #262b33; border: 0;
+}
+.cl-func__famkey.is-on { color: #1b1f25; background: linear-gradient(180deg, #f8d877, #d9a93a); }
+.cl-func__coefs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.cl-func__coef { display: flex; align-items: center; gap: 3px; font: 700 0.62rem var(--font-mono); color: #f4c95d; }
+.cl-func__coef input {
+  width: 40px; height: 20px; padding: 0 3px; box-sizing: border-box; text-align: center;
+  font: 700 0.64rem var(--font-mono); color: #1a2416; background: #eef3ea; border: 1px solid #0d0f12; border-radius: 0;
+}
+.cl-func__live { margin: 0; font: 700 0.68rem var(--font-mono); color: #f2f5f8; text-align: center; }
 
 /* ── the paper skin takes all three with it ──────────────────────────────*/
 .cl-calc--paper .cl-calc__hist { background: #fffdf8; border-color: #2a2723; }
@@ -122,14 +149,21 @@
 .cl-calc--paper .cl-calc__histnone { color: #8a8375; }
 .cl-calc--paper .cl-calc__gsvg { background: #eef3ea; border-color: #2a2723; }
 .cl-calc--paper .cl-key--g { color: #14130f; background: #fffdf8; border: 1.5px solid #2a2723; box-shadow: 0 2px 0 #cbc3b2; }
-.cl-calc--paper .cl-mat__sz { color: #6b655c; background: #fffdf8; border: 1.5px solid #2a2723; }
+.cl-calc--paper .cl-mat__dimbtn { color: #6b655c; background: #fffdf8; border: 1.5px solid #2a2723; }
+.cl-calc--paper .cl-mat__dimbtn.is-on { background: #d9ecfa; color: #14130f; }
+.cl-calc--paper .cl-mat__dimrow i { color: #8a8375; }
 .cl-calc--paper .cl-mat__back { color: #a06a1f; background: #f4f0e8; border: 1.5px solid #2a2723; }
-.cl-calc--paper .cl-mat__sz.is-on { background: #d9ecfa; color: #14130f; }
 .cl-calc--paper .cl-mat__cell { background: #eef3ea; color: #1d3a1d; border-color: #2a2723; }
 .cl-calc--paper .cl-mat__out { background: #fffdf8; border-color: #2a2723; }
 .cl-calc--paper .cl-mat__out span { background: #f4f0e8; color: #14130f; }
 .cl-calc--paper .cl-mat__scalar { background: #fffdf8; color: #14130f; border-color: #2a2723; }
 .cl-calc--paper .cl-key--mode { color: #14130f; background: #fffdf8; border: 1.5px solid #2a2723; box-shadow: 0 2px 0 #cbc3b2; }
+.cl-calc--paper .cl-calc__func { background: #fffdf8; border-color: #2a2723; }
+.cl-calc--paper .cl-func__famkey { color: #6b655c; background: #f4f0e8; }
+.cl-calc--paper .cl-func__famkey.is-on { background: #d9ecfa; color: #14130f; }
+.cl-calc--paper .cl-func__coef { color: #a06a1f; }
+.cl-calc--paper .cl-func__coef input { background: #eef3ea; color: #1d3a1d; border-color: #2a2723; }
+.cl-calc--paper .cl-func__live { color: #14130f; }
 
 /* a results cell that is worked out from the others in its row */
 .cl-cell.is-sum { font-style: italic; background: color-mix(in srgb, var(--accent-primary) 14%, transparent); }

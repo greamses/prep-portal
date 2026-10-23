@@ -18,13 +18,19 @@
    (`cl-calc--paper` for the workbook's paper pages), not a second component.
 
    THREE MODES, one machine. COMP is everything the fx-82 always did. MAT
-   replaces the keypad with two matrices (up to 3×3) and the arithmetic
-   done on them. GRAPH keeps the SAME keypad — a function in x is typed the
-   same way any expression always was — and adds a plot above it; "=" draws
-   instead of computing a single number. d/dx, an integral and SOLVE stay
-   IN comp mode rather than earning a mode of their own: each is "type an
-   expression in x, press the key, answer one or two numeric prompts",
-   which is what typing already is, not a different machine.
+   replaces the keypad with two matrices — EACH its OWN rows × columns, not a
+   shared size, because a real matrix problem is rarely two squares the same
+   size — and the arithmetic done on them. GRAPH keeps the comp keypad under
+   it and adds a plot above it.
+
+   NO EXPRESSION IS EVER TYPED for a function. GRAPH, SOLVE and d/dx ⁄ ∫ all
+   work off ONE shared function (`C.fn`): pick a FAMILY (y = ax+b, a
+   quadratic, a cubic, a/x+b, a·sin(bx+c)…) and type only its numbers — the
+   way a real calculator's EQN mode does it, not a line of algebra typed
+   character by character. FX opens that family-and-numbers editor; GRAPH
+   plots whatever it currently says; d/dx, ∫ and SOLVE ask one or two numeric
+   prompts and work on it, confirmed with "=" the same way everything else
+   always was.
 
      const calc = mountCalculator(host, { state, onChange, onClose, theme });
      calc.paint();          // after showing it
@@ -51,7 +57,7 @@ const FN = [
   ["C", "nCr", "P", "nPr", "fn"], ["%", "%", null, "", "fn"], ["SD", "S⇔D", null, "", "fn"],
   ["M+", "M+", "M-", "M−", "fn"], ["MR", "MR", "MC", "MC", "fn"], ["NA", "Nₐ", null, "", "fn"],
   ["R", "R", null, "", "fn"], ["F", "F", null, "", "fn"], ["Vm", "Vₘ", "Vr", "Vᵣ", "fn"],
-  ["x", "x", null, "", "fn"], ["DX", "d/dx", "INTEG", "∫dx", "fn"], ["SOLVE", "SOLVE", null, "", "fn"],
+  ["FX", "f(x)", null, "", "fn"], ["DX", "d/dx", "INTEG", "∫dx", "fn"], ["SOLVE", "SOLVE", null, "", "fn"],
   ["HIST", "HIST", "CLRHIST", "Clr All", "fn"], ["MAT", "MAT", "GRAPH", "GRAPH", "mode"],
 ];
 
@@ -62,9 +68,7 @@ const NUM = [
   ["0", "0"], [".", "."], ["EXP", "×10ˣ"], ["Ans", "Ans"], ["=", "="],
 ];
 
-/** Typed on the keyboard, while the calculator has the focus. "x" is left
-    off this list on purpose: it already means × (multiply), typed either
-    way, and that habit matters more than a shortcut for the variable. */
+/** Typed on the keyboard, while the calculator has the focus. */
 const TYPED = {
   "*": "*", x: "*", X: "*", "/": "/", "+": "+", "-": "-", "^": "^", "(": "(", ")": ")",
   ".": ".", ",": ".", "!": "!", "%": "%", Enter: "=", "=": "=", Backspace: "DEL", Delete: "AC",
@@ -79,10 +83,62 @@ const say = (v) => format(v);
 /** An empty n×n matrix, as the four cells of a brand-new machine are. */
 const zeros = (n) => Array.from({ length: n }, () => Array(n).fill(0));
 
+/* ── THE FAMILIES — every function GRAPH, SOLVE and d/dx ⁄ ∫ can know, named
+   by its SHAPE and typed in as plain numbers, the way an EQN mode does it.
+   `fn(coef, x, deg)` is the family's own formula, nothing cleverer. */
+const FAMILIES = {
+  linear: { label: "y = ax + b", coefs: ["a", "b"], fn: (c, x) => c[0] * x + c[1] },
+  quad: { label: "y = ax² + bx + c", coefs: ["a", "b", "c"], fn: (c, x) => c[0] * x * x + c[1] * x + c[2] },
+  cubic: { label: "y = ax³ + bx² + cx + d", coefs: ["a", "b", "c", "d"], fn: (c, x) => c[0] * x ** 3 + c[1] * x * x + c[2] * x + c[3] },
+  recip: { label: "y = a/x + b", coefs: ["a", "b"], fn: (c, x) => (x === 0 ? NaN : c[0] / x + c[1]) },
+  trig: { label: "y = a·sin(bx + c)", coefs: ["a", "b", "c"], fn: (c, x, deg) => c[0] * Math.sin((c[1] * x + c[2]) * (deg ? Math.PI / 180 : 1)) },
+};
+const FAM_ORDER = ["linear", "quad", "cubic", "recip", "trig"];
+
+/** The family's own formula, with its numbers actually in it. */
+function famExpr(f) {
+  const c = f.coef, n = (i) => say(c[i]);
+  if (f.family === "linear") return `${n(0)}x + ${n(1)}`;
+  if (f.family === "quad") return `${n(0)}x² + ${n(1)}x + ${n(2)}`;
+  if (f.family === "cubic") return `${n(0)}x³ + ${n(1)}x² + ${n(2)}x + ${n(3)}`;
+  if (f.family === "recip") return `${n(0)}/x + ${n(1)}`;
+  return `${n(0)}·sin(${n(1)}x + ${n(2)})`;
+}
+/** The same, as it is printed in the editor and above the graph — WITH the
+    "y =" in front, which "Solve …=0" and "d/dx(…)" below say for themselves
+    and would otherwise say twice. */
+const famLabel = (f) => `y = ${famExpr(f)}`;
+
+/** Where f(x) = 0, in the family's own terms — a straight line and a
+    quadratic are solved exactly (and a quadratic can have two answers, both
+    given); anything else falls back to the general numeric SOLVE. */
+function solveFamily(f, guess, deg) {
+  const c = f.coef;
+  if (f.family === "linear") {
+    if (c[0] === 0) throw new CalcError(c[1] === 0 ? "Infinite Solutions" : "No Solution");
+    return [-c[1] / c[0]];
+  }
+  if (f.family === "quad") {
+    const [a, b, cc] = c;
+    if (a === 0) return solveFamily({ family: "linear", coef: [b, cc] }, guess, deg);
+    const disc = b * b - 4 * a * cc;
+    if (disc < 0) throw new CalcError("No Real Solution");
+    if (Math.abs(disc) < 1e-12) return [-b / (2 * a)];
+    const sq = Math.sqrt(disc);
+    return [(-b + sq) / (2 * a), (-b - sq) / (2 * a)];
+  }
+  if (f.family === "recip") {
+    const [a, b] = c;
+    if (b === 0) throw new CalcError(a === 0 ? "Infinite Solutions" : "No Solution");
+    return [-a / b];
+  }
+  return [solve((xv) => FAMILIES[f.family].fn(c, xv, deg), guess)];
+}
+
 /**
  * Put a calculator in `el`.
  *
- *   state     { deg, mem, ans, hist, matA, matB, matN } — kept by the caller
+ *   state     { deg, mem, ans, hist, fn, matA, matB, matAR/AC/BR/BC }
  *   onChange  called whenever any of that changes
  *   onClose   what the × does; omit it and no × is drawn (a panel has its own)
  *   brand     what it says on the top, for pages that want their own machine
@@ -92,9 +148,11 @@ const zeros = (n) => Array.from({ length: n }, () => Array(n).fill(0));
 export function mountCalculator(el, { state = null, onChange = () => {}, onClose = null, brand = "PREP <b>fx-82</b>", theme = "" } = {}) {
   const C = state || { deg: true, mem: 0, ans: 0 };
   /* an older saved machine has none of these — a calculator is still a
-     calculator without a history or a matrix ever having been touched */
+     calculator without a history or a matrix or a function ever touched */
   if (!Array.isArray(C.hist)) C.hist = [];
-  if (!C.matN) C.matN = 2;
+  if (!C.fn || !FAMILIES[C.fn.family]) C.fn = { family: "linear", coef: [1, 0] };
+  if (!C.matAR) C.matAR = 2; if (!C.matAC) C.matAC = 2;
+  if (!C.matBR) C.matBR = 2; if (!C.matBC) C.matBC = 2;
   if (!Array.isArray(C.matA)) C.matA = zeros(3);
   if (!Array.isArray(C.matB)) C.matB = zeros(3);
 
@@ -127,6 +185,7 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
       <div class="cl-calc__out" data-calc-out>0</div>
     </div>
     <div class="cl-calc__hist" data-calc-hist hidden></div>
+    <div class="cl-calc__func" data-calc-func hidden></div>
     <div class="cl-calc__graph" data-calc-graph hidden>
       <svg class="cl-calc__gsvg" data-calc-gsvg viewBox="0 0 240 150" aria-hidden="true"></svg>
       <div class="cl-calc__gtools">
@@ -141,17 +200,19 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
     <div class="cl-calc__num" data-calc-num>${NUM.map(([k, face, kind]) =>
       `<button type="button" class="cl-key cl-key--${kind || (k === "=" ? "eq" : "num")}" data-k="${esc(k)}" aria-label="${k === "*" ? "times" : k === "/" ? "divided by" : esc(face)}">${face}</button>`).join("")}</div>`;
 
-  let keys = [];            // the expression being typed
+  let keys = [];            // the expression being typed (plain numbers only now)
   let shift = false;
-  let shown = null;         // the result on the bottom line: { v } or { err }
+  let shown = null;         // the result on the bottom line: { v, multi? } or { err }
   let asFrac = false;
   let mode = "comp";         // "comp" | "graph" — MAT is its own thing below
-  let ask = null;            // { kind: "dx" | "integ" | "solve", fn, stage, a }
+  let ask = null;            // { kind: "dx" | "integ" | "solve", stage, a }
   let histOpen = false;
+  let funcOpen = false;
   let view = { x0: -10, x1: 10, y0: null, y1: null };   // null y = auto-fit
   const exprEl = el.querySelector("[data-calc-expr]");
   const outEl = el.querySelector("[data-calc-out]");
   const histEl = el.querySelector("[data-calc-hist]");
+  const funcEl = el.querySelector("[data-calc-func]");
   const graphEl = el.querySelector("[data-calc-graph]");
   const gsvg = el.querySelector("[data-calc-gsvg]");
   const matEl = el.querySelector("[data-calc-mat]");
@@ -161,10 +222,10 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
 
   /* ── the small label a prompt wears while it waits for a number ──────── */
   function askLabel(a) {
-    const fn = show(a.fn);
-    if (a.kind === "dx") return `d/dx(${fn}), x=`;
-    if (a.kind === "solve") return `Solve ${fn}=0, x≈`;
-    if (a.kind === "integ") return a.stage === 0 ? `∫(${fn})dx, a=` : `∫(${fn})dx, b=`;
+    const lbl = famExpr(C.fn);
+    if (a.kind === "dx") return `d/dx(${lbl}), x=`;
+    if (a.kind === "solve") return `Solve ${lbl}=0, x≈`;
+    if (a.kind === "integ") return a.stage === 0 ? `∫(${lbl})dx, a=` : `∫(${lbl})dx, b=`;
     return "";
   }
 
@@ -172,6 +233,7 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
     exprEl.textContent = (ask ? askLabel(ask) : "") + show(keys);
     exprEl.scrollLeft = exprEl.scrollWidth;
     if (shown && shown.err) outEl.textContent = shown.err;
+    else if (shown && shown.multi) outEl.textContent = shown.multi.map(say).join("  or  ");
     else if (shown) {
       const fr = asFrac ? fraction(shown.v) : null;
       outEl.textContent = fr ? `${fr.n < 0 ? "−" : ""}${Math.abs(fr.n)}⁄${fr.d}` : format(shown.v);
@@ -232,13 +294,21 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
     }
     const guess = v == null ? (ask.kind === "solve" ? C.ans : null) : v;
     if (guess == null) return;
+    const lbl = famExpr(C.fn);
     try {
-      let out, label;
-      if (ask.kind === "dx") { out = derivative(ask.fn, guess, { deg: C.deg }); label = `d/dx(${show(ask.fn)}) at x=${say(guess)}`; }
-      else if (ask.kind === "solve") { out = solve(ask.fn, guess, { deg: C.deg }); label = `Solve ${show(ask.fn)}=0`; }
-      else { out = integral(ask.fn, ask.a, guess, { deg: C.deg }); label = `∫(${show(ask.fn)})dx, ${say(ask.a)}→${say(guess)}`; }
-      C.ans = out; shown = { v: out };
-      remember(label, say(out));
+      if (ask.kind === "dx") {
+        const out = derivative((xv) => FAMILIES[C.fn.family].fn(C.fn.coef, xv, C.deg), guess);
+        C.ans = out; shown = { v: out };
+        remember(`d/dx(${lbl}) at x=${say(guess)}`, say(out));
+      } else if (ask.kind === "solve") {
+        const roots = solveFamily(C.fn, guess, C.deg);
+        C.ans = roots[0]; shown = roots.length > 1 ? { v: roots[0], multi: roots } : { v: roots[0] };
+        remember(`Solve ${lbl}=0`, roots.map(say).join(" or "));
+      } else {
+        const out = integral((xv) => FAMILIES[C.fn.family].fn(C.fn.coef, xv, C.deg), ask.a, guess);
+        C.ans = out; shown = { v: out };
+        remember(`∫(${lbl})dx, ${say(ask.a)}→${say(guess)}`, say(out));
+      }
     } catch (e) { shown = { err: e instanceof CalcError ? e.message : "Math ERROR" }; }
     ask = null; keys = []; asFrac = false;
     onChange(C);
@@ -251,23 +321,23 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
     else if (k === "DEL") { if (ask && !keys.length) ask = null; else if (shown) shown = null; else keys.pop(); }
     else if (k === "=") {
       if (ask) finishAsk();
-      else if (mode === "graph") { if (keys.length) drawGraph(); }
       else if (keys.length) run();
     }
     else if (k === "MODE") { C.deg = !C.deg; if (shown && !shown.err && keys.length) run(); onChange(C); }
-    else if (k === "SD") { if (shown && !shown.err) asFrac = !asFrac; }
+    else if (k === "SD") { if (shown && !shown.err && !shown.multi) asFrac = !asFrac; }
     else if (k === "M+" || k === "M-") {
       if (keys.length && !shown) run();
       if (shown && !shown.err) { C.mem += (k === "M+" ? 1 : -1) * shown.v; onChange(C); }
     } else if (k === "MC") { C.mem = 0; onChange(C); }
     else if (k === "MR") { if (shown) { keys = []; shown = null; } keys.push(...numKeys(C.mem)); }
-    else if (k === "HIST") { histOpen = !histOpen; paintHist(); return; }
+    else if (k === "HIST") { histOpen = !histOpen; if (histOpen) funcOpen = false; paintHist(); paintFunc(); return; }
     else if (k === "CLRHIST") { C.hist = []; onChange(C); paintHist(); return; }
+    else if (k === "FX") { funcOpen = !funcOpen; if (funcOpen) histOpen = false; paintFunc(); paintHist(); return; }
     else if (k === "DX" || k === "INTEG") {
-      if (!ask && keys.length) { ask = { kind: k === "DX" ? "dx" : "integ", fn: keys.slice(), stage: 0 }; keys = []; shown = null; }
+      if (!ask) { ask = { kind: k === "DX" ? "dx" : "integ", stage: 0 }; keys = []; shown = null; }
     }
     else if (k === "SOLVE") {
-      if (!ask && keys.length) { ask = { kind: "solve", fn: keys.slice() }; keys = []; shown = null; }
+      if (!ask) { ask = { kind: "solve" }; keys = []; shown = null; }
     }
     else if (k === "MAT" || k === "GRAPH") {
       const next = k === "MAT" ? "mat" : "graph";
@@ -277,7 +347,7 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
     }
     else {
       /* after a result, an operator carries on from it (Ans), anything else starts again */
-      if (shown) { keys = !shown.err && !ask && OPS.includes(k) ? ["Ans"] : []; shown = null; }
+      if (shown) { keys = !shown.err && !shown.multi && !ask && OPS.includes(k) ? ["Ans"] : []; shown = null; }
       if (keys.length < 120) keys.push(k);
     }
     paint();
@@ -296,7 +366,7 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
   histEl.addEventListener("click", (e) => {
     const i = Number(e.target.closest("[data-hist]")?.dataset.hist);
     if (!Number.isInteger(i) || !C.hist[i]) return;
-    const v = Number(C.hist[i].out.replace(/−/g, "-").replace(/×10\^/, "e"));
+    const v = Number(C.hist[i].out.split(" or ")[0].replace(/−/g, "-").replace(/×10\^/, "e"));
     if (Number.isFinite(v)) { C.ans = v; onChange(C); }
     keys = []; shown = Number.isFinite(v) ? { v } : null;
     histOpen = false;
@@ -304,17 +374,53 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
     paint();
   });
 
-  /* ── graphing: the same keypad types f(x); "=" draws it ───────────────── */
+  /* ── f(x): a family, and only its numbers typed in ────────────────────── */
+  function paintFunc() {
+    funcEl.hidden = !funcOpen;
+    el.classList.toggle("is-func-open", funcOpen);
+    if (!funcOpen) return;
+    const F = FAMILIES[C.fn.family];
+    funcEl.innerHTML = `
+      <div class="cl-func__fam">${FAM_ORDER.map((id) =>
+        `<button type="button" class="pp-plain cl-func__famkey${id === C.fn.family ? " is-on" : ""}" data-fam="${id}">${FAMILIES[id].label}</button>`).join("")}</div>
+      <div class="cl-func__coefs">${F.coefs.map((name, i) =>
+        `<label class="cl-func__coef"><span>${name}</span><input type="text" inputmode="decimal" data-coef="${i}" value="${C.fn.coef[i] ?? 0}"></label>`).join("")}</div>
+      <p class="cl-func__live" data-func-live>${esc(famLabel(C.fn))}</p>`;
+  }
+  funcEl.addEventListener("click", (e) => {
+    const fam = e.target.closest("[data-fam]")?.dataset.fam;
+    if (!fam || fam === C.fn.family) return;
+    const n = FAMILIES[fam].coefs.length;
+    /* whatever was already typed carries over, slot for slot; a slot with
+       nothing in it yet defaults to 1 for "a" (so switching family never
+       hands back the flat, forgettable y = 0 line) and 0 for the rest */
+    const coef = Array.from({ length: n }, (_, i) => C.fn.coef[i] ?? (i === 0 ? 1 : 0));
+    C.fn = { family: fam, coef };
+    onChange(C);
+    paintFunc();
+    if (mode === "graph") drawGraph();
+  });
+  funcEl.addEventListener("input", (e) => {
+    const i = Number(e.target.dataset.coef);
+    if (!Number.isInteger(i)) return;
+    const v = Number(e.target.value);
+    C.fn.coef[i] = Number.isFinite(v) ? v : 0;
+    onChange(C);
+    const live = el.querySelector("[data-func-live]");
+    if (live) live.textContent = famLabel(C.fn);
+    if (mode === "graph") drawGraph();
+  });
+
+  /* ── graphing: f(x) is whatever the family editor currently says ─────── */
   function drawGraph() {
     const W = 240, H = 150, L = 24, R = 6, T = 8, B = 16;
     gsvg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-    if (!keys.length) { gsvg.innerHTML = ""; return; }
+    const famFn = FAMILIES[C.fn.family].fn, coef = C.fn.coef;
     const N = 140;
     const pts = [];
     for (let i = 0; i <= N; i++) {
       const xv = view.x0 + ((view.x1 - view.x0) * i) / N;
-      let yv;
-      try { yv = evaluate(keys, { deg: C.deg, ans: C.ans, vars: { x: xv } }); } catch { yv = null; }
+      const yv = famFn(coef, xv, C.deg);
       pts.push(Number.isFinite(yv) ? [xv, yv] : null);
     }
     const finite = pts.filter(Boolean);
@@ -363,30 +469,33 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
     drawGraph();
   });
 
-  /* ── matrices, up to 3×3 ───────────────────────────────────────────────── */
-  function matCellsHtml(which, n) {
+  /* ── matrices — A and B each their own rows × columns, up to 3×3 ───────── */
+  function matCellsHtml(which, rows, cols) {
     const m = which === "A" ? C.matA : C.matB;
     let out = "";
-    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++)
+    for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++)
       out += `<input class="cl-mat__cell" type="text" inputmode="decimal" data-mat="${which}" data-i="${i}" data-j="${j}" value="${m[i][j] === 0 ? "" : m[i][j]}" aria-label="${which}, row ${i + 1}, column ${j + 1}">`;
     return out;
   }
   function matGridHtml(v) {
     if (!v) return "";
-    const n = v.length;
-    return `<div class="cl-mat__out" style="--n:${n}">${v.map((row) => row.map((x) => `<span>${say(x)}</span>`).join("")).join("")}</div>`;
+    const cols = v[0].length;
+    return `<div class="cl-mat__out" style="--cols:${cols}">${v.map((row) => row.map((x) => `<span>${say(x)}</span>`).join("")).join("")}</div>`;
+  }
+  function dimPicker(which, axis, cur) {
+    return [1, 2, 3].map((v) =>
+      `<button type="button" class="pp-plain cl-mat__dimbtn${v === cur ? " is-on" : ""}" data-dim="${which}${axis}" data-v="${v}">${v}</button>`).join("");
   }
   function paintMat(resultHtml = "") {
-    const n = C.matN;
     matEl.innerHTML = `
-      <div class="cl-mat__size">
-        <button type="button" class="pp-plain cl-mat__sz${n === 2 ? " is-on" : ""}" data-n="2">2×2</button>
-        <button type="button" class="pp-plain cl-mat__sz${n === 3 ? " is-on" : ""}" data-n="3">3×3</button>
+      <div class="cl-mat__dims">
+        <div class="cl-mat__dimrow"><b>A</b><span class="cl-mat__rc">${dimPicker("A", "r", C.matAR)}</span><i>×</i><span class="cl-mat__rc">${dimPicker("A", "c", C.matAC)}</span></div>
+        <div class="cl-mat__dimrow"><b>B</b><span class="cl-mat__rc">${dimPicker("B", "r", C.matBR)}</span><i>×</i><span class="cl-mat__rc">${dimPicker("B", "c", C.matBC)}</span></div>
         <button type="button" class="pp-plain cl-mat__back" data-mop="comp" aria-label="Back to the ordinary keypad">← COMP</button>
       </div>
       <div class="cl-mat__pair">
-        <div class="cl-mat__one"><b>A</b><div class="cl-mat__grid" style="--n:${n}">${matCellsHtml("A", n)}</div></div>
-        <div class="cl-mat__one"><b>B</b><div class="cl-mat__grid" style="--n:${n}">${matCellsHtml("B", n)}</div></div>
+        <div class="cl-mat__one"><b>A</b><div class="cl-mat__grid" style="--cols:${C.matAC}">${matCellsHtml("A", C.matAR, C.matAC)}</div></div>
+        <div class="cl-mat__one"><b>B</b><div class="cl-mat__grid" style="--cols:${C.matBC}">${matCellsHtml("B", C.matBR, C.matBC)}</div></div>
       </div>
       <div class="cl-mat__ops">
         <button type="button" class="cl-key cl-key--fn" data-mop="add">A+B</button>
@@ -403,14 +512,20 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
       </div>
       <div class="cl-mat__result" data-mat-result>${resultHtml}</div>`;
   }
-  function cut(A, n) { return A.slice(0, n).map((r) => r.slice(0, n)); }
+  function cut(A, rows, cols) { return A.slice(0, rows).map((r) => r.slice(0, cols)); }
   matEl.addEventListener("click", (e) => {
-    const sz = e.target.closest("[data-n]")?.dataset.n;
-    if (sz) { C.matN = Number(sz); onChange(C); paintMat(); return; }
+    const dim = e.target.closest("[data-dim]")?.dataset.dim;
+    if (dim) {
+      const v = Number(e.target.dataset.v);
+      if (dim === "Ar") C.matAR = v; else if (dim === "Ac") C.matAC = v;
+      else if (dim === "Br") C.matBR = v; else if (dim === "Bc") C.matBC = v;
+      onChange(C); paintMat();
+      return;
+    }
     const op = e.target.closest("[data-mop]")?.dataset.mop;
     if (!op) return;
     if (op === "comp") { mode = "comp"; paint(); return; }
-    const n = C.matN, A = cut(C.matA, n), B = cut(C.matB, n);
+    const A = cut(C.matA, C.matAR, C.matAC), B = cut(C.matB, C.matBR, C.matBC);
     try {
       let result = "";
       if (op === "clr") { C.matA = zeros(3); C.matB = zeros(3); onChange(C); paintMat(); return; }
@@ -455,9 +570,9 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
   el.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === "Escape" && onClose) { onClose(); return; }
-    /* a REAL <input> — a matrix cell — types for itself; this is only for
-       the keypad's own shortcuts, and preventDefault() below was eating
-       every digit a child tried to type into a cell before it landed */
+    /* a REAL <input> — a matrix cell, a coefficient — types for itself; this
+       is only for the keypad's own shortcuts, and preventDefault() below was
+       eating every digit a child tried to type into one before it landed */
     if (e.target.tagName === "INPUT") return;
     const k = /^\d$/.test(e.key) ? e.key : TYPED[e.key];
     /* while the calculator is being typed on, a letter is not one of the

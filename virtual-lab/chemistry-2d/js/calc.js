@@ -173,30 +173,32 @@ export function evaluate(keys, { deg = true, ans = 0, vars = null } = {}) {
 /* ── CALCULUS AND SOLVE — all numeric, nothing symbolic ─────────────────────
    The calculator does not know what a derivative IS, only how fast a
    function is changing at a point, which is a thing it can always find by
-   asking twice more, very close together, and that generalises to any
-   expression this parser already reads — trig, logs, nested functions,
-   whatever was typed. The same honesty runs through all three: an integral
-   is a lot of thin strips added up (Simpson's rule), and SOLVE is the
-   oldest trick there is — Newton's method from wherever the calculator's
-   cursor already was, falling back to a scan for a sign change if the
-   slope is flat or it wanders off. */
+   asking twice more, very close together — and that works on ANY `x => y`
+   function, not just one built from typed keys. The same honesty runs
+   through all three: an integral is a lot of thin strips added up
+   (Simpson's rule), and SOLVE is the oldest trick there is — Newton's
+   method from wherever the cursor already was, falling back to a scan for
+   a sign change if the slope is flat or it wanders off.
 
-/** The function the keys describe, as a plain JS function of x. */
-const asFunction = (keys, opts) => (xv) => evaluate(keys, { ...opts, vars: { ...(opts?.vars), x: xv } });
+   `f` is a plain `(x) => number`. A typed expression becomes one of those
+   with exprFn(keys, opts); the calculator's coefficient-only modes (no
+   expression ever typed — see calculator.js) write their own, straight off
+   a family's formula, and call these exactly the same way. */
+
+/** A typed expression, as the `(x) => number` the three below take. */
+export const exprFn = (keys, opts) => (xv) => evaluate(keys, { ...opts, vars: { ...(opts?.vars), x: xv } });
 
 /** d/dx at x0 — central difference, the step scaled to x0 so it works
     whether x0 is 0.0001 or 100000. */
-export function derivative(keys, x0, opts = {}) {
-  const f = asFunction(keys, opts);
+export function derivative(f, x0) {
   const h = Math.max(1e-7, Math.abs(x0) * 1e-6);
   return ok2(tidy((f(x0 + h) - f(x0 - h)) / (2 * h)));
 }
 
 /** The definite integral from a to b — composite Simpson's rule, 200 strips
     (an even number; Simpson needs pairs of them). */
-export function integral(keys, a, b, opts = {}) {
+export function integral(f, a, b) {
   if (a === b) return 0;
-  const f = asFunction(keys, opts);
   const N = 200;
   const h = (b - a) / N;
   let s = f(a) + f(b);
@@ -207,8 +209,7 @@ export function integral(keys, a, b, opts = {}) {
 /** Where f(x) = 0, starting from `guess` — Newton's method first (fast, and
     finds the root nearest the cursor, the way a real SOLVE key does), a
     scan across a wide bracket for a sign change if that does not settle. */
-export function solve(keys, guess, opts = {}) {
-  const f = asFunction(keys, opts);
+export function solve(f, guess) {
   let x = Number.isFinite(guess) ? guess : 0;
   for (let iter = 0; iter < 60; iter++) {
     const fx = f(x);
