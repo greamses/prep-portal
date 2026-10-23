@@ -45,8 +45,8 @@
         },
         {
             id: 'solver',
-            label: 'Solver',
-            desc: 'Graspable Math scratchpad (GM)',
+            label: 'Tools',
+            desc: 'Calculator, written boards, Algebra Moves and notes on a side rail',
             icon: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
                 '<rect x="4" y="3" width="16" height="18" rx="2.8" fill="var(--accent-primary)"/>' +
                 '<rect x="6.5" y="6" width="11" height="2.2" rx="1.1" fill="#fff"/>' +
@@ -137,6 +137,8 @@
         window.__hintsEnabled   = vals.hints;
         window.__autoAdvance    = vals.autoadvance;
         window.__botGuideEnabled = vals.botguide;
+        // The tool rail (question.html) shows or hides itself on this.
+        window.dispatchEvent(new CustomEvent('exam-settings', { detail: vals }));
 
         document.documentElement.dataset.theme = vals.darkmode ? 'dark' : 'light';
         // Keep the global nav theme toggle (pp-theme) in sync with this choice.

@@ -30,6 +30,8 @@
     <meta name="theme-color" content="#6fb7e8" />
     
     <link rel="stylesheet" href="./question.css">
+    <!-- the face Algebra Moves sets its equations in, for the tool rail -->
+    <link href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet" />
     
     <!-- MathJax 3 — $...$ inline, $$...$$ display -->
     <script>
@@ -184,7 +186,34 @@
     <script src="./js/main.js"></script>
     <script src="./js/timer.js"></script>
     <script src="./js/keyboard.js"></script>
-    <script src="./js/solve-tool.js"></script>
+    <!-- The site's side rail of tools (was the Graspable Math scratchpad): the
+         calculator, the written boards, Algebra Moves and notes. "Tools" in
+         the exam settings shows or hides it. -->
+    <script type="module">
+      import { mountTools } from "/utils/components/workbook/toolbar.js";
+      import { needCss } from "/utils/components/workbook/panels.js";
+      const rail = mountTools(document.body, {
+        tools: ["calculator", "column", "times", "shortdiv", "gm", "note"],
+        extra: {
+          gm: {
+            label: "Algebra Moves",
+            size: { w: 880, h: 620 },
+            async open(body) {
+              needCss("/prep-math/activity/algebra-moves/style.css");
+              body.classList.add("wb-panel__body--bare");
+              const frame = document.createElement("div");
+              frame.className = "am-frame am-frame--in";
+              body.appendChild(frame);
+              const { mountAlgebraMoves } = await import("/prep-math/activity/algebra-moves/js/workspace.js");
+              await mountAlgebraMoves(frame, { drawer: false });
+            },
+          },
+        },
+      });
+      const sync = () => { rail.el.hidden = window.__solverEnabled === false; };
+      sync();
+      window.addEventListener("exam-settings", sync);
+    </script>
     <script type="module" src="/utils/solution-steps.js"></script>
     <script src="./js/animator.js"></script>
 

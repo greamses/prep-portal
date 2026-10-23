@@ -72,6 +72,9 @@
   height: 100%;
   background: transparent;
 }
+/* In a floating panel over another page (the exam paper), the sheet is its
+   own paper: the page underneath must not show through it. */
+.wb-panel .am-frame--in { background: var(--app-bg, #f3efe6); overflow: hidden; }
 
 /* The paper itself: an endless sheet, ruled, that pans under the cards. */
 .am-canvas {

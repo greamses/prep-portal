@@ -110,6 +110,25 @@ export function mountTooltips() {
   tip.setAttribute("role", "tooltip");
   tip.hidden = true;
   document.body.appendChild(tip);
+  /* Its dress is in components.css; a page that does not load that sheet
+     (the exam paper) still gets the same chip rather than bare words. */
+  if (getComputedStyle(tip).position !== "fixed" && !document.getElementById("pp-tip-css")) {
+    const css = document.createElement("style");
+    css.id = "pp-tip-css";
+    css.textContent = `
+.pp-tip { position: fixed; z-index: 100000; width: max-content; max-width: 16rem; padding: 0.3rem 0.55rem;
+  font: 600 0.66rem/1.3 var(--font-mono, ui-monospace, monospace); letter-spacing: 0.02em;
+  color: var(--surface-primary, #fffdf8); background: var(--ink, #2a2723); border-radius: 0;
+  box-shadow: 0 4px 12px -4px rgba(42, 39, 35, 0.4); pointer-events: none; }
+.pp-tip[hidden] { display: none; }
+.pp-tip::after { content: ""; position: absolute; width: 7px; height: 7px; background: inherit; transform: rotate(45deg); }
+.pp-tip[data-side="top"]::after { bottom: -3px; left: calc(50% - 3.5px); }
+.pp-tip[data-side="bottom"]::after { top: -3px; left: calc(50% - 3.5px); }
+.pp-tip[data-side="right"]::after { left: -3px; top: calc(50% - 3.5px); }
+.pp-tip[data-side="left"]::after { right: -3px; top: calc(50% - 3.5px); }
+@media print { .pp-tip { display: none !important; } }`;
+    document.head.appendChild(css);
+  }
 
   const tipOf = (e) => e.target.closest?.("[data-tip]");
   document.addEventListener("pointerover", (e) => {
