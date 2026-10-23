@@ -260,12 +260,70 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
 
   /** One pinned note, painted by the site's own sticky painter. */
   function noteFace(entry, n) {
+    /* The note, a × to take it off, and a place of its own: dragged, it keeps
+       where it was put relative to its line (n.dx, n.dy) — up, down, or out
+       to the side to leave a gap. A press that does not move is a tap, and a
+       tap opens it for writing. */
+    const wrap = document.createElement("div");
+    wrap.className = "am-pinned-wrap";
+    wrap.dataset.pin = n.id;
+    const place = () => { wrap.style.transform = `translate(${n.dx || 0}px, ${n.dy || 0}px)`; };
+    place();
     const c = document.createElement("canvas");
     c.className = "am-pinned";
-    c.dataset.pin = n.id;
-    c.title = "Tap to change this note";
-    c.setAttribute("role", "button");
-    c.addEventListener("click", (e) => { e.stopPropagation(); write(entry, n); });
+    c.title = "Tap to change this note, drag to move it";
+    c.setAttribute("aria-label", "A note on this line — tap to change it, drag to move it");
+    c.tabIndex = 0;
+    c.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); write(entry, n); } });
+    const bin = document.createElement("button");
+    bin.type = "button";
+    bin.className = "am-pinned__del";
+    bin.title = "Take this note off";
+    bin.setAttribute("aria-label", "Take this note off");
+    bin.innerHTML = UI.close(12);
+    bin.addEventListener("pointerdown", (e) => e.stopPropagation());
+    bin.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (pad?.on?.n === n) { pad.on = null; pad.close(false); }
+      entry.pins = entry.pins.filter((x) => x !== n);
+      refreshPins(entry);
+    });
+    wrap.append(c, bin);
+
+    let drag = null;
+    c.addEventListener("pointerdown", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      // The card is drawn at the canvas's zoom; a drag is measured in its own pixels.
+      const zoom = el.getBoundingClientRect().width / el.offsetWidth || 1;
+      drag = { x: e.clientX, y: e.clientY, dx: n.dx || 0, dy: n.dy || 0, zoom, moved: false };
+      // Followed on the window, not captured: the canvas under the card would
+      // otherwise take the moves the moment the pointer leaves the note.
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", end);
+      window.addEventListener("pointercancel", end);
+    });
+    const move = (e) => {
+      if (!drag) return;
+      const mx = (e.clientX - drag.x) / drag.zoom, my = (e.clientY - drag.y) / drag.zoom;
+      if (!drag.moved && Math.hypot(mx, my) < 4) return;
+      drag.moved = true;
+      wrap.classList.add("is-dragging");
+      n.dx = drag.dx + mx;
+      n.dy = drag.dy + my;
+      place();
+    };
+    const end = (e) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+      if (!drag) return;
+      const was = drag;
+      drag = null;
+      wrap.classList.remove("is-dragging");
+      if (e.type === "pointerup" && !was.moved) write(entry, n);
+    };
+    c.addEventListener("click", (e) => e.stopPropagation());
     loadNotes().then((K) => {
       // An equation on the note is drawn as its source until MathJax has set
       // it; the painter is woken then, and draws it again (a few times at most).
@@ -289,7 +347,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
       };
       draw();
     });
-    return c;
+    return wrap;
   }
 
   function refreshPins(entry) {
@@ -332,7 +390,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
     const face = entry.el?.querySelector(`[data-pin="${n.id}"]`);
     let left = 0, top = 0;
     for (let at = face; at && at !== el; at = at.offsetParent) { left += at.offsetLeft; top += at.offsetTop; }
-    pad.place({ left, top, width: 260 });
+    pad.place({ left: left + (n.dx || 0), top: top + (n.dy || 0), width: 260 });
   }
 
   /** Redraw only the last row — the only one whose selection can change. */
