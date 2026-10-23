@@ -12,6 +12,7 @@
     { "source": "/prep-math/activity/two-scales", "destination": "/prep-math/activity/algebra-workbook/index.html", "permanent": true },
     { "source": "/prep-math/activity/two-scales/:path*", "destination": "/prep-math/activity/algebra-workbook/index.html", "permanent": true },
     { "source": "/prep-math/drag", "destination": "/prep-math/activity/algebra-moves/index.html", "permanent": true },
+    { "source": "/prep-math/drag/", "destination": "/prep-math/activity/algebra-moves/index.html", "permanent": true },
     { "source": "/prep-math/drag/:path*", "destination": "/prep-math/activity/algebra-moves/index.html", "permanent": true }
   ],
   "rewrites": [
