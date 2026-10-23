@@ -742,22 +742,35 @@
    Every formula on the shelf is DRAWN with the same typesetting the canvas uses,
    not written out in a monospace line. A student should recognise the thing they
    are picking as the thing they will be working on. */
-.am-fx__groups { display: flex; flex-wrap: wrap; gap: 0.45rem; }
-.pp-sticky.am-fx__group {
-  --pp-note-bg: #f0ece2;
-  --pp-note-tilt: -1.2deg;
-  padding: 0.38rem 0.75rem 0.42rem;
-  font-size: 0.78rem;
-  color: #5a544a;
+/* Finding one on a shelf of fifty: a search box that looks everywhere, and a
+   dropdown (the site's own .pp-select receipt) for the group. */
+.am-fx__bar { display: flex; gap: 0.5rem; align-items: stretch; flex-wrap: wrap; }
+.am-fx__search {
+  flex: 1 1 14rem;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--ink);
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 0;
 }
-.pp-sticky.am-fx__group:nth-child(even) { --pp-note-tilt: 1.3deg; }
-.pp-sticky.am-fx__group.is-on { --pp-note-bg: #b8ece2; color: #14130f; }
+.am-fx__search:focus-visible { outline: 2px solid var(--accent-secondary); outline-offset: -2px; }
+.am-fx__bar .pp-select { flex: 0 1 13rem; min-width: 10rem; }
+.am-fx__count {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  color: var(--text-tertiary);
+}
+.am-fx__count.is-empty { color: var(--accent-danger); }
 
 .am-fx__list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
   gap: 0.7rem;
-  margin-top: 0.8rem;
+  margin-top: 0.6rem;
 }
 /* A shelf of notes, not a grid of tiles. The tilt is small and alternates, or
    nine of them at the same angle reads as a mistake rather than a pad. */

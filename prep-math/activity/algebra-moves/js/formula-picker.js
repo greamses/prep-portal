@@ -27,6 +27,46 @@ import { GROUPS, readValue, exampleGivens } from "./formulas.js";
 import { parse } from "./parse.js";
 import { buildRow, paintRow } from "./render.js";
 import { solve } from "./solve.js";
+import { enhanceSelect } from "/utils/components/pp-select.js";
+
+/* Words that should find each other — searching "circle" ought to turn up the
+   sector and the cylinder, "money" the interest and the profit. Kept short:
+   everything else is found by the formulas' own names, notes and letters. */
+const RELATED = {
+  circle: ["radius", "sector", "cylinder", "sphere", "cone", "ellipse", "22/7"],
+  round: ["circle", "radius"],
+  pi: ["22/7", "π"],
+  π: ["22/7"],
+  speed: ["velocity", "distance", "time"],
+  velocity: ["speed"],
+  motion: ["speed", "acceleration", "force", "distance"],
+  money: ["interest", "profit", "cost", "price"],
+  quadratic: ["roots", "vertex", "discriminant"],
+  roots: ["quadratic"],
+  solid: ["volume", "surface", "cube", "cuboid", "cylinder", "sphere", "cone", "pyramid"],
+  "3d": ["volume", "surface"],
+  capacity: ["volume"],
+  electricity: ["voltage", "current", "resistance", "ohm"],
+  temperature: ["celsius", "fahrenheit"],
+  polygon: ["apothem", "rhombus", "parallelogram", "square", "triangle"],
+};
+const related = (w) => [w, ...(RELATED[w] || [])];
+
+/** Everything a search can match a formula on, in one lowercase string. */
+const haystack = (f, group) => [
+  f.name, group, f.eq, f.note || "",
+  ...Object.entries(f.letters).flat(),
+].join(" ").toLowerCase();
+
+/** The shared dropdown's stylesheet, on whichever page this picker lands —
+    its own page and the workbooks' sidebar both mount it. */
+function ensureSelectStyles() {
+  if (document.querySelector('link[href$="/utils/components/select.css"]')) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = "/utils/components/select.css";
+  document.head.appendChild(link);
+}
 
 /** The formula, drawn in the same hand the canvas writes in. */
 function drawn(src, size) {
@@ -46,12 +86,31 @@ export function createFormulaPicker(host, { onSubmit } = {}) {
   // the static bank itself is never mutated.
   const allGroups = GROUPS.map((g) => ({ group: g.group, items: [...g.items] }));
 
-  let group = allGroups[0].group;
+  let group = allGroups[0].group;    // "" means every group
   let chosen = null;
   const fields = new Map();          // letter -> input
 
-  const tabs = document.createElement("div");
-  tabs.className = "am-fx__groups";
+  /* A shelf of fifty formulas will not fit in a row of chips. A dropdown
+     picks the group; the search box looks EVERYWHERE — the name, the group,
+     the formula, its note, and what every letter stands for — so "radius",
+     "money" or "quadratic" all find what they should. */
+  ensureSelectStyles();
+  const bar = document.createElement("div");
+  bar.className = "am-fx__bar";
+  const search = document.createElement("input");
+  search.type = "search";
+  search.className = "am-fx__search";
+  search.placeholder = "Search: area, radius, speed, quadratic…";
+  search.autocomplete = "off";
+  search.spellcheck = false;
+  search.setAttribute("aria-label", "Search the formulas");
+  const select = document.createElement("select");
+  select.className = "am-fx__select";
+  select.setAttribute("aria-label", "Which group of formulas");
+  bar.append(search, select);
+
+  const count = document.createElement("p");
+  count.className = "am-fx__count";
 
   const list = document.createElement("div");
   list.className = "am-fx__list";
@@ -60,28 +119,50 @@ export function createFormulaPicker(host, { onSubmit } = {}) {
   form.className = "am-fx__form";
   form.hidden = true;
 
-  host.append(tabs, list, form);
+  host.append(bar, count, list, form);
+  enhanceSelect(select, { className: "pp-select--sm" });
 
+  search.addEventListener("input", paintList);
+  select.addEventListener("change", () => { group = select.value; paintList(); });
+
+  /** The group dropdown, rebuilt whenever the shelf grows (admin formulas). */
   function buildTabs() {
-    tabs.textContent = "";
-    for (const g of allGroups) {
-      const chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "pp-sticky pp-note-btn am-fx__group";
-      chip.textContent = g.group;
-      chip.classList.toggle("is-on", chip.textContent === group);
-      chip.addEventListener("click", () => { group = g.group; paintList(); });
-      tabs.appendChild(chip);
-    }
+    const total = allGroups.reduce((n, g) => n + g.items.length, 0);
+    select.textContent = "";
+    const all = new Option(`Every group (${total})`, "");
+    select.add(all);
+    for (const g of allGroups) select.add(new Option(`${g.group} (${g.items.length})`, g.group));
+    select.value = group;
   }
   buildTabs();
 
-  function paintList() {
-    for (const chip of tabs.children) {
-      chip.classList.toggle("is-on", chip.textContent === group);
+  /** The formulas to show: a search runs across every group; otherwise the
+      chosen group, or all of them. */
+  function shown() {
+    const words = search.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const pool = allGroups.flatMap((g) => g.items.map((f) => ({ f, g: g.group })));
+    if (!words.length) return { items: pool.filter((x) => !group || x.g === group).map((x) => x.f), words };
+    const scored = [];
+    for (const { f, g } of pool) {
+      const hay = haystack(f, g);
+      if (!words.every((w) => related(w).some((t) => hay.includes(t)))) continue;
+      const name = f.name.toLowerCase();
+      scored.push({ f, rank: name.includes(words.join(" ")) ? 0 : words.some((w) => name.includes(w)) ? 1 : 2 });
     }
+    scored.sort((a, b) => a.rank - b.rank);
+    return { items: scored.map((x) => x.f), words };
+  }
+
+  function paintList() {
+    const { items, words } = shown();
+    count.textContent = words.length
+      ? items.length
+        ? `${items.length} ${items.length === 1 ? "formula matches" : "formulas match"} "${search.value.trim()}", across every group`
+        : `Nothing matches "${search.value.trim()}". Try a shape, what a letter stands for, or a group's name.`
+      : `${items.length} ${items.length === 1 ? "formula" : "formulas"}${group ? ` in ${group}` : ""}`;
+    count.classList.toggle("is-empty", !items.length);
     list.textContent = "";
-    for (const f of allGroups.find((g) => g.group === group).items) {
+    for (const f of items) {
       const btn = document.createElement("button");
       btn.type = "button";
       // Each formula on its own sheet of paper, the colours taken in turn — the
@@ -203,7 +284,14 @@ export function createFormulaPicker(host, { onSubmit } = {}) {
 
     // The same solver the "steps left" button runs. If it cannot finish this,
     // neither can the student, and that is worth knowing before they begin.
-    const worked = solve(parse(chosen.eq), { given });
+    let worked;
+    try {
+      worked = solve(parse(chosen.eq), { given });
+    } catch {
+      say.textContent = "This one cannot be written out on the canvas — the engine cannot read it.";
+      say.className = "am-fx__say is-no";
+      return null;
+    }
     if (!worked.solved) {
       say.textContent = `Leaving out ${blank[0]} needs a move this tool has not got — try leaving a different letter blank.`;
       say.className = "am-fx__say is-no";
@@ -261,7 +349,12 @@ export function createFormulaPicker(host, { onSubmit } = {}) {
     /** Open on a particular formula, by id. */
     show(id) {
       const f = allGroups.flatMap((g) => g.items).find((x) => x.id === id);
-      if (f) { group = allGroups.find((g) => g.items.includes(f)).group; choose(f); }
+      if (f) {
+        group = allGroups.find((g) => g.items.includes(f)).group;
+        search.value = "";
+        select.value = group;
+        choose(f);
+      }
     },
     focus() { form.querySelector("input")?.focus(); },
   };

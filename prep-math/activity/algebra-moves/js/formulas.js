@@ -62,6 +62,168 @@ export const GROUPS = [
         letters: { A: "the area", a: "one parallel side", b: "the other one", h: "the height" },
         example: { a: "6", b: "10", h: "4" },
       },
+      {
+        id: "square-area", name: "Area of a square", eq: "A = s^2", find: "A",
+        letters: { A: "the area", s: "the side length" },
+        example: { s: "6" },
+      },
+      {
+        id: "square-perimeter", name: "Perimeter of a square", eq: "P = 4s", find: "P",
+        letters: { P: "the perimeter", s: "the side length" },
+        example: { s: "6" },
+      },
+      {
+        id: "triangle-perimeter", name: "Perimeter of a triangle", eq: "P = a + b + c", find: "P",
+        letters: { P: "the perimeter", a: "one side", b: "another side", c: "the third side" },
+        example: { a: "3", b: "4", c: "5" },
+      },
+      {
+        id: "triangle-heron", name: "Area of a triangle (Heron's formula)", eq: "A = sqrt(s(s - a)(s - b)(s - c))", find: "A",
+        letters: { A: "the area", s: "the semi-perimeter, (a + b + c)/2", a: "one side", b: "another side", c: "the third side" },
+        example: { s: "6", a: "3", b: "4", c: "5" },
+      },
+      {
+        id: "parallelogram-area", name: "Area of a parallelogram", eq: "A = bh", find: "A",
+        letters: { A: "the area", b: "the base", h: "the perpendicular height" },
+        example: { b: "9", h: "4" },
+      },
+      {
+        id: "parallelogram-perimeter", name: "Perimeter of a parallelogram", eq: "P = 2(a + b)", find: "P",
+        letters: { P: "the perimeter", a: "one side", b: "an adjacent side" },
+        example: { a: "5", b: "8" },
+      },
+      {
+        id: "rhombus-area", name: "Area of a rhombus", eq: "A = pq/2", find: "A",
+        letters: { A: "the area", p: "one diagonal", q: "the other diagonal" },
+        example: { p: "10", q: "6" },
+        note: "the diagonals are perpendicular",
+      },
+      {
+        id: "rhombus-perimeter", name: "Perimeter of a rhombus", eq: "P = 4s", find: "P",
+        letters: { P: "the perimeter", s: "the side length" },
+        example: { s: "6" },
+      },
+      {
+        id: "ellipse-area", name: "Area of an ellipse", eq: "A = (22/7)ab", find: "A",
+        letters: { A: "the area", a: "the semi-major axis", b: "the semi-minor axis" },
+        example: { a: "7", b: "4" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "sector-area", name: "Area of a sector", eq: "A = (θ/2)r^2", find: "A",
+        letters: { A: "the area", θ: "the angle in radians", r: "the radius" },
+        example: { θ: "1", r: "4" },
+        note: "θ must be in radians",
+      },
+      {
+        id: "sector-area-arc", name: "Area of a sector (from the arc length)", eq: "A = Lr/2", find: "A",
+        letters: { A: "the area", L: "the arc length", r: "the radius" },
+        example: { L: "8", r: "3" },
+      },
+      {
+        id: "regular-polygon-area", name: "Area of a regular polygon (from the apothem)", eq: "A = ap/2", find: "A",
+        letters: { A: "the area", a: "the apothem", p: "the perimeter" },
+        example: { a: "4", p: "20" },
+      },
+      {
+        id: "cube-volume", name: "Volume of a cube", eq: "V = s^3", find: "V",
+        letters: { V: "the volume", s: "the side length" },
+        example: { s: "3" },
+      },
+      {
+        id: "cube-surface-area", name: "Surface area of a cube", eq: "A = 6s^2", find: "A",
+        letters: { A: "the surface area", s: "the side length" },
+        example: { s: "3" },
+      },
+      {
+        id: "cuboid-surface-area", name: "Surface area of a cuboid", eq: "A = 2(lb + lh + bh)", find: "A",
+        letters: { A: "the surface area", l: "the length", b: "the breadth", h: "the height" },
+        example: { l: "5", b: "3", h: "4" },
+      },
+      {
+        id: "cylinder-volume", name: "Volume of a cylinder", eq: "V = (22/7)r^2h", find: "V",
+        letters: { V: "the volume", r: "the radius", h: "the height" },
+        example: { r: "7", h: "10" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "cylinder-surface-area", name: "Total surface area of a cylinder", eq: "A = 2(22/7)r(r + h)", find: "A",
+        letters: { A: "the surface area", r: "the radius", h: "the height" },
+        example: { r: "7", h: "10" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "sphere-volume", name: "Volume of a sphere", eq: "V = (4/3)(22/7)r^3", find: "V",
+        letters: { V: "the volume", r: "the radius" },
+        example: { r: "7" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "sphere-surface-area", name: "Surface area of a sphere", eq: "A = 4(22/7)r^2", find: "A",
+        letters: { A: "the surface area", r: "the radius" },
+        example: { r: "7" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "cone-volume", name: "Volume of a cone", eq: "V = (1/3)(22/7)r^2h", find: "V",
+        letters: { V: "the volume", r: "the base radius", h: "the height" },
+        example: { r: "3", h: "4" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "cone-surface-area", name: "Total surface area of a cone", eq: "A = (22/7)r(r + sqrt(r^2 + h^2))", find: "A",
+        letters: { A: "the surface area", r: "the base radius", h: "the height" },
+        example: { r: "3", h: "4" },
+        note: "taking π as 22/7; the slant height is sqrt(r^2 + h^2)",
+      },
+      {
+        id: "pyramid-volume", name: "Volume of a pyramid", eq: "V = (1/3)Bh", find: "V",
+        letters: { V: "the volume", B: "the base area", h: "the height" },
+        example: { B: "20", h: "6" },
+      },
+    ],
+  },
+  {
+    group: "Algebra",
+    items: [
+      {
+        id: "quadratic-formula", name: "Quadratic formula", eq: "x = (-b ± sqrt(b^2 - 4ac))/(2a)", find: "x",
+        letters: { x: "the unknown", a: "the coefficient of x²", b: "the coefficient of x", c: "the constant term" },
+        example: { a: "1", b: "-3", c: "2" },
+        note: "solves ax² + bx + c = 0, with a not 0",
+      },
+      {
+        id: "quadratic-discriminant", name: "Discriminant of a quadratic", eq: "D = b^2 - 4ac", find: "D",
+        letters: { D: "the discriminant", a: "the coefficient of x²", b: "the coefficient of x", c: "the constant term" },
+        example: { a: "1", b: "-3", c: "2" },
+        note: "D > 0: two real roots; D = 0: one repeated root; D < 0: no real roots",
+      },
+      // "r₁ + r₂ = −b/a, r₁r₂ = c/a" is two equations; one card holds one.
+      {
+        id: "quadratic-root-sum", name: "Sum of the roots of a quadratic", eq: "S = -b/a", find: "S",
+        letters: { S: "the sum of the two roots", a: "the coefficient of x²", b: "the coefficient of x" },
+        example: { a: "1", b: "-3" },
+        note: "the roots of ax² + bx + c = 0",
+      },
+      {
+        id: "quadratic-root-product", name: "Product of the roots of a quadratic", eq: "P = c/a", find: "P",
+        letters: { P: "the product of the two roots", a: "the coefficient of x²", c: "the constant term" },
+        example: { a: "1", c: "2" },
+        note: "the roots of ax² + bx + c = 0",
+      },
+      // The vertex is two coordinates — again one card each.
+      {
+        id: "quadratic-vertex-x", name: "Vertex of a quadratic (across)", eq: "h = -b/(2a)", find: "h",
+        letters: { h: "the x-coordinate of the vertex", a: "the coefficient of x²", b: "the coefficient of x" },
+        example: { a: "1", b: "-3" },
+        note: "the turning point of y = ax² + bx + c",
+      },
+      {
+        id: "quadratic-vertex-y", name: "Vertex of a quadratic (up)", eq: "k = (4ac - b^2)/(4a)", find: "k",
+        letters: { k: "the y-coordinate of the vertex", a: "the coefficient of x²", b: "the coefficient of x", c: "the constant term" },
+        example: { a: "1", b: "-3", c: "2" },
+        note: "the turning point of y = ax² + bx + c",
+      },
     ],
   },
   {
