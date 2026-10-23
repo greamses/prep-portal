@@ -64,8 +64,11 @@ function evalAt(node, env) {
       // An indefinite integral is taken from a fixed starting point, so it is
       // ONE of the antiderivatives; the moves that drop the ∫ are checked up to
       // a constant (see `upToConstant` below).
-      const a = node.lo ? evalAt(node.lo, env) : INT_FROM;
-      const b = node.lo ? evalAt(node.hi, env) : env[node.x];
+      let a = node.lo ? evalAt(node.lo, env) : INT_FROM;
+      let b = node.lo ? evalAt(node.hi, env) : env[node.x];
+      // Integrated in u after u = g(x): from g(start) to g(x), which is the
+      // same number the ∫ in x gave before the substitution.
+      if (node.back) { a = evalAt(node.back.g, { ...env, [node.back.x]: INT_FROM }); b = evalAt(node.back.g, env); }
       return simpson((t) => evalAt(node.k, { ...env, [node.x]: t }), a, b);
     }
     case "lim": {
@@ -80,7 +83,10 @@ function evalAt(node, env) {
 }
 
 const INT_FROM = 0.5;
-function simpson(f, a, b, n = 64) {
+
+/** The letters an integral in u is still really about: the x of its u = g(x). */
+const backVars = (root) => { const out = []; walk(root, (n) => { if (n.kind === "int" && n.back) out.push(...varsIn(n.back.g)); }); return out; };
+function simpson(f, a, b, n = 256) {
   if (!Number.isFinite(a) || !Number.isFinite(b)) return NaN;
   const h = (b - a) / n;
   let s = f(a) + f(b);
@@ -123,7 +129,7 @@ const value = (root, env) => evalAt(root.e, env);
  * Returns { ok, why } — `why` is written for the student, not the console.
  */
 export function preservesSolutions(prev, next, { samples = 64, given = null, scaledBy = null, upToConstant = null, inverse = null } = {}) {
-  const names = [...new Set([...varsIn(prev), ...varsIn(next), ...(scaledBy ? varsIn(scaledBy) : []),
+  const names = [...new Set([...varsIn(prev), ...varsIn(next), ...backVars(prev), ...backVars(next), ...(scaledBy ? varsIn(scaledBy) : []),
                              ...(upToConstant ? [upToConstant] : [])])].sort();
   // Numbers worked out by a difference or a sum of slices carry their own small
   // error, so a line with any calculus in it is compared a little more loosely.
@@ -270,3 +276,6 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
 
 /** The value of a letter-free node, or NaN — sin 30°, π/6, e². */
 export const numericValue = (node) => evalAt(node, {});
+
+/** A node valued with some letters given — what calculus.js samples with. */
+export const valueAt = (node, env) => evalAt(node, env);

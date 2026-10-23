@@ -326,6 +326,33 @@ export const GROUPS = [
         letters: { c: "the side opposite the angle", a: "one side", b: "another side", C: "the angle between them, in degrees" },
         example: { a: "5", b: "8", C: "60" },
       },
+      /* Finding the ANGLE: sin⁻¹ of both sides, the special triangles, then the
+         degree signs come off. */
+      {
+        id: "trig-angle-sin", name: "Angle from the opposite and the hypotenuse", eq: "sin(θ°) = o/h", find: "θ",
+        letters: { θ: "the angle in degrees", o: "the side opposite it", h: "the hypotenuse" },
+        example: { o: "5", h: "10" },
+      },
+      {
+        id: "trig-angle-cos", name: "Angle from the adjacent and the hypotenuse", eq: "cos(θ°) = a/h", find: "θ",
+        letters: { θ: "the angle in degrees", a: "the side next to it", h: "the hypotenuse" },
+        example: { a: "6", h: "12" },
+      },
+      {
+        id: "trig-angle-tan", name: "Angle from the opposite and the adjacent", eq: "tan(θ°) = o/a", find: "θ",
+        letters: { θ: "the angle in degrees", o: "the side opposite it", a: "the side next to it" },
+        example: { o: "7", a: "7" },
+      },
+      {
+        id: "trig-sine-rule-angle", name: "The sine rule, for an angle", eq: "sin(B°)/b = sin(A°)/a", find: "B",
+        letters: { B: "the angle wanted", b: "the side opposite it", A: "another angle", a: "the side opposite that" },
+        example: { b: "10", A: "30", a: "5" },
+      },
+      {
+        id: "trig-cosine-rule-angle", name: "The cosine rule, for an angle", eq: "cos(C°) = (a^2 + b^2 - c^2)/(2ab)", find: "C",
+        letters: { C: "the angle wanted", a: "one side", b: "another side", c: "the side opposite the angle" },
+        example: { a: "5", b: "8", c: "7" },
+      },
     ],
   },
   /* The letter a slope or an area is taken IN (the x of d/dx) is only given

@@ -21,8 +21,8 @@
 import * as A from "./ast.js";
 import * as R from "./rational.js";
 import { plain } from "./layout.js";
-import { preservesSolutions } from "./verify.js";
-import { copy, diffStep, intStep, limitStep, exactTrig, exactInverse, tanAsRatio, pythagoreanPair } from "./calculus.js";
+import { preservesSolutions, numericValue } from "./verify.js";
+import { angleNode, anglesInTurn, copy, diffStep, intStep, subStep, partsStep, limitStep, exactTrig, exactInverse, tanAsRatio, pythagoreanPair } from "./calculus.js";
 
 /** Where a node sits, if it is one of the terms of SOME container — a true
     side of the line, or the numerator/denominator of a fraction anywhere in
@@ -689,7 +689,7 @@ function nodeTidies(eq, node) {
     t("surd", "Divide the roots", "√a ÷ √b = √(a/b)", divideSurds(eq, node.id));
     t("surd", "Clear the root off the bottom", "multiply top and bottom by it", rationalise(eq, node.id));
   }
-  if (node.kind === "prod") t("multiply", "Multiply it out", "numbers together, letters together", multiplyOut(eq, node.id));
+  if (node.kind === "prod" || node.kind === "frac") t("multiply", "Multiply it out", "numbers together, letters together", multiplyOut(eq, node.id));
   for (const o of calcMoves(eq, node)) out.push(o);
   return out;
 }
@@ -730,6 +730,14 @@ function calcMoves(eq, node) {
       step("trigid", "tan = sin/cos", tanAsRatio(node));
       break;
     case "int": {
+      // The two that need spotting: an inside with its slope beside it, and a
+      // product that comes apart by parts.
+      for (const [key, hint, t] of [["usub", "substitution", subStep(node)], ["parts", "by parts", partsStep(node)]]) {
+        if (!t) continue;
+        const res = { eq: putFlat(eq, node.id, t.node), from: flyFrom(eq, t.node, node.id), mark: plain(t.node), note: t.rule,
+                      ...(node.lo ? {} : { upToConstant: node.x }) };
+        out.push({ key, label: t.rule, hint, mark: plain(t.node), run: () => res });
+      }
       const s = intStep(node);
       if (!s) break;
       let next = putFlat(eq, node.id, s.node);
@@ -748,7 +756,7 @@ function calcMoves(eq, node) {
       const shown = s.done && !open ? `${plain(s.node)} + ${constantName(eq)}` : plain(s.node);
       out.push({ key: "integrate", label: note, hint: "integrate", mark: shown, run: () => ({
         eq: next, from: flyFrom(eq, s.node, node.id), mark: shown, note,
-        ...(s.done ? { upToConstant: node.x } : {}),
+        ...(s.done ? { upToConstant: s.upTo || node.x } : {}),
       }) });
       break;
     }
@@ -771,7 +779,25 @@ const hasDegrees = (eq) => { let yes = false; A.walk(eq, (n) => { if (n.kind ===
     letters written as the one term it is. */
 export function multiplyOut(eq, id) {
   const node = A.findById(eq, id);
+  // (x²/2)/2 is x²/4: one bar, the bottoms multiplied.
+  if (node && node.kind === "frac" && unbracket(node.a).kind === "frac") {
+    const inner = unbracket(node.a), b1 = A.exactValue(inner.b), b2 = A.exactValue(node.b);
+    if (!b1 || !b2) return { error: "Those bottoms are not numbers." };
+    const next = A.frac(inner.a, A.numberNode(R.mul(b1, b2)));
+    return { eq: putFlat(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next), note: `${plain(node)} is ${plain(next)}` };
+  }
   if (!node || node.kind !== "prod") return { error: "That is not a product." };
+  // ½ × (x² + 1)⁴/4 is (x² + 1)⁴/8: the number goes onto the fraction.
+  if (node.kids.length === 2 && A.exactValue(node.kids[0]) && unbracket(node.kids[1]).kind === "frac" && A.exactValue(unbracket(node.kids[1]).b)
+      && !A.isNumeric(node.kids[1])) {
+    const c = A.exactValue(node.kids[0]), fr = unbracket(node.kids[1]);
+    const v = R.div(c, A.exactValue(fr.b));
+    const a = R.abs(v);
+    const top = a.n === 1n ? fr.a : A.prod([A.num(R.rat(a.n)), fr.a]);
+    let next = a.d === 1n ? top : A.frac(top, A.num(R.rat(a.d)));
+    if (R.isNegative(v)) next = A.neg(next);
+    return { eq: putFlat(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next), note: `${plain(node)} is ${plain(next)}` };
+  }
   const m = mono(node);
   if (m) {
     const next = monoNode(m);
@@ -835,6 +861,27 @@ export function invertTrig(eq) {
     const next = side === "l" ? A.eqn(u, A.fn(inv, eq.r), eq.id) : A.eqn(A.fn(inv, eq.l), u, eq.id);
     const face = { arcsin: "sin⁻¹", arccos: "cos⁻¹", arctan: "tan⁻¹" }[inv];
     return { eq: next, from: new Map(), mark: face, dir: "both", inverse: { fn: inv, side }, note: `Take ${face} of both sides` };
+  }
+  return { error: "There is no sin, cos or tan standing alone on a side." };
+}
+
+/** sin x° = ½ for every x from 0 to 360: one card per angle. */
+export function allAngles(eq) {
+  if (!A.isEquation(eq)) return { error: TWO_SIDED };
+  for (const side of ["l", "r"]) {
+    const f = eq[side], other = eq[side === "l" ? "r" : "l"];
+    if (f.kind !== "fn" || !INVERSE[f.name] || !A.isNumeric(other)) continue;
+    const u = unbracket(f.k);
+    const degrees = u.kind === "deg";
+    const angles = anglesInTurn(f.name, numericValue(other));
+    if (!angles || !angles.length) return { error: "That value is not one the special triangles give." };
+    const left = degrees ? unbracket(u.k) : u;
+    const write = (t) => (degrees ? A.numberNode(R.rat(BigInt(t))) : angleNode(t, false));
+    return {
+      cards: angles.map((t, i) => ({ eq: A.eqn(copy(left), write(t)), title: `angle ${i + 1} of ${angles.length}` })),
+      mark: angles.map((t) => `${t}°`).join(", "),
+      note: `Every angle from 0° to 360°: ${angles.map((t) => `${t}°`).join(" and ")}`,
+    };
   }
   return { error: "There is no sin, cos or tan standing alone on a side." };
 }
@@ -1624,6 +1671,16 @@ export function offers(eq, id, { given = null } = {}) {
     if (!trial.error) out.push({ key: "split", label: "Split it over the bottom", hint: "one fraction for each piece on top", mark: trial.mark, run: () => trial });
   }
 
+  // sin u alone on a side: undo it on both sides; C° = 30°: drop the degrees.
+  if (twoSided && terms.length === 1 && term.kind === "fn") {
+    const inv = invertTrig(eq);
+    if (!inv.error) out.push({ key: "invert", label: inv.note, hint: "undo the trig function", mark: inv.mark, dir: "both", run: () => inv });
+  }
+  if (twoSided && terms.length === 1 && term.kind === "deg") {
+    const d = dropDegrees(eq);
+    if (!d.error) out.push({ key: "degrees", label: "Drop the degree signs", hint: "both sides in degrees", mark: d.mark, run: () => d });
+  }
+
   // sin²u + cos²u on the same side is 1.
   {
     const pair = pythagoreanPair(terms);
@@ -1783,6 +1840,8 @@ export function atomOffers(eq, key, { given = null } = {}) {
       add(direct("degrees", "Drop the degree signs", "both sides in degrees", dropDegrees(eq)));
       const split = splitPm(eq);
       if (!split.error) add({ key: "branches", label: "Split into the two answers", hint: "one card each", mark: "±", cards: split.cards });
+      const turn = allAngles(eq);
+      if (!turn.error) add({ key: "angles", label: turn.note, hint: "one card each", mark: turn.mark, cards: turn.cards });
       /* The four that need the student to say WHAT: they carry no run of their
          own — the page opens the keypad for them and builds the move from what
          is typed (see applyToBoth). */
@@ -1821,7 +1880,7 @@ export function atomOffers(eq, key, { given = null } = {}) {
   } else if (CALC_SLOTS.has(slot)) {
     // The d/dx, the ∫, the lim, a sin: what that sign means comes first.
     tidiesAbove(nodeId);
-    pick(pool(atomTerm(eq, key)), "across", "combine", "pyth");
+    pick(pool(atomTerm(eq, key)), "invert", "degrees", "across", "combine", "pyth");
   } else if (slot === "bar") {
     const T = atomTerm(eq, key);
     add(direct("cancel", "Cancel it down", "same number top and bottom", cancel(eq, nodeId)));

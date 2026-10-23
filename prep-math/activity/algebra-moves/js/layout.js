@@ -291,8 +291,11 @@ function measureBare(node, size, binary) {
       const dxW = measureText(`d${node.x}`, size, false);
       const up = 0.3 * size + ((ASC + DESC) / 2) * iSize;     // baseline to the ∫'s top
       const down = -0.3 * size + ((ASC + DESC) / 2) * iSize;  // baseline to its foot
-      return { ...base, kind: "int", body, lo, hi, iSize, iW, limW, dxW, up, down,
-               w: iW + limW + 0.1 * size + body.w + 0.14 * size + dxW,
+      // After a substitution, what u stands for is written small beside it.
+      const back = node.back ? measure(node.back.g, size * 0.62, "intlim", 0) : null;
+      const backLead = node.back ? measureText(`, ${node.x} = `, size * 0.62, false) : 0;
+      return { ...base, kind: "int", body, lo, hi, iSize, iW, limW, dxW, up, down, back, backLead,
+               w: iW + limW + 0.1 * size + body.w + 0.14 * size + dxW + (back ? backLead + back.w + 0.1 * size : 0),
                ascent: Math.max(base.ascent, body.ascent, up + (hi ? 0.1 * size : 0)),
                descent: Math.max(base.descent, body.descent, down + (lo ? 0.1 * size : 0)) };
     }
@@ -458,6 +461,11 @@ function place(m, x, y, out) {
       const bx = x + m.iW + m.limW + 0.1 * m.size;
       place(m.body, bx, y, out);
       text("dx", `d${m.node.x}`, bx + m.body.w + 0.14 * m.size, y, m.size, false);
+      if (m.back) {
+        const ax = bx + m.body.w + 0.14 * m.size + m.dxW + 0.1 * m.size;
+        text("back", `, ${m.node.x} = `, ax, y, m.size * 0.62, false);
+        place(m.back, ax + m.backLead, y, out);
+      }
       break;
     }
 

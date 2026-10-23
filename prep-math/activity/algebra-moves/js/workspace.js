@@ -128,13 +128,13 @@ function openMenuFor(card) {
   });
 }
 
-/* A ± is two answers written as one: each goes on a card of its own, beside
-   this one, to be worked down to a number separately. */
+/* A ± is two answers written as one, and sin x = ½ is two angles: each goes on
+   a card of its own, beside this one, to be worked down separately. */
 function splitInto(card, offer) {
   menu.close();
   card.clearPick();
   for (const { eq, title } of offer.cards) addCard(eq, { given: card.given, title });
-  say("Two cards, one for each answer — work each one down.", "ok");
+  say(offer.key === "angles" ? `${offer.label} — one card each.` : "Two cards, one for each answer — work each one down.", "ok");
 }
 
 /* The second way to make a move, said once and then never again: the chip is

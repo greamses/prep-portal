@@ -26,12 +26,12 @@ import { plain } from "./layout.js";
    changing the shape of it, or the tidying gets carried along inside the new
    shape — x/2 = 4 − 1 multiplied up reads x = 2(4 − 1). Shoving a term across
    the equals sign is the move most likely to undo itself, so it goes last. */
-const RANK = { substitute: 0, workout: 1, trig: 1, multiply: 1, diff: 1, integrate: 1, limit: 1, dropzero: 2, pyth: 2, combine: 3, cancel: 4, times: 5, expand: 6, flip: 7, swap: 8, across: 9, divide: 10 };
+const RANK = { substitute: 0, workout: 1, trig: 1, multiply: 1, diff: 1, integrate: 1, limit: 1, dropzero: 2, pyth: 2, combine: 3, cancel: 4, invert: 5, degrees: 5, usub: 7, parts: 8, times: 5, expand: 6, flip: 7, swap: 8, across: 9, divide: 10 };
 const LAST = 99;
 
 const CALC = new Set(["deriv", "int", "lim"]);
 const CALC_OK = new Set(["substitute", "workout", "multiply", "combine", "dropzero", "expand", "split", "cancel",
-  "indices", "limit", "diff", "integrate", "trig", "pyth", "addfrac", "surd"]);
+  "indices", "limit", "diff", "integrate", "usub", "parts", "trig", "pyth", "addfrac", "surd"]);
 const holdsCalculus = (n) => { let yes = false; A.walk(n, (m) => { if (CALC.has(m.kind)) yes = true; }); return yes; };
 function insideCalculus(eq, id) {
   for (let p = A.parentOf(eq, id); p; p = A.parentOf(eq, p.id)) if (CALC.has(p.kind)) return true;
