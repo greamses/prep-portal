@@ -29,6 +29,53 @@ export const SHOW = {
 };
 export const show = (keys) => keys.map((k) => SHOW[k] ?? k).join("");
 
+/* ── READING THE SCREEN BACK — typed, not pressed ─────────────────────────
+   `show()` is keys turned into what the screen prints; `tokenize()` is the
+   other direction, keys turned FROM what was typed on a real keyboard
+   straight into the LCD. The longest function name wins where two start
+   the same way ("asin" before "sin", "sqrt" before nothing it collides
+   with) so "asin(" is never read as "a" "sin(". Anything it does not
+   recognise — a stray letter, a half-finished word — is simply skipped:
+   a child mid-keystroke is not making a mistake yet, and evaluate() is
+   the one place a finished, still-wrong expression is actually an ERROR. */
+const WORDS = [
+  ["asin", "asin("], ["acos", "acos("], ["atan", "atan("],
+  ["sin", "sin("], ["cos", "cos("], ["tan", "tan("],
+  ["sqrt", "sqrt("], ["cbrt", "cbrt("], ["abs", "abs("],
+  ["log", "log("], ["ln", "ln("],
+  ["ans", "Ans"], ["pi", "pi"], ["e", "e"],
+].sort((a, b) => b[0].length - a[0].length);
+
+export function tokenize(str) {
+  const s = String(str ?? "");
+  const out = [];
+  let i = 0;
+  while (i < s.length) {
+    const c = s[i];
+    if (/\s/.test(c)) { i++; continue; }
+    if (c >= "0" && c <= "9" || c === ".") { out.push(c); i++; continue; }
+    if ("+-−*×/÷^()!%".includes(c)) {
+      out.push(c === "−" ? "-" : c === "×" ? "*" : c === "÷" ? "/" : c);
+      i++;
+      continue;
+    }
+    const rest = s.slice(i).toLowerCase();
+    const hit = WORDS.find(([w]) => rest.startsWith(w));
+    if (hit) {
+      out.push(hit[1]);
+      i += hit[0].length;
+      /* "sin" already carries its own "(" into the token — if an open
+         bracket was ALSO typed right after it ("sin(30)", the natural way
+         to type it), that one is the same bracket said twice, not a second
+         one to keep */
+      if (hit[1].endsWith("(") && s[i] === "(") i++;
+      continue;
+    }
+    i++;        // not recognised yet — most likely mid-word; wait for more
+  }
+  return out;
+}
+
 /** Constants a chemist reaches for. */
 export const CONSTANTS = {
   pi: Math.PI, e: Math.E,

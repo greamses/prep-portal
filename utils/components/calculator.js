@@ -38,7 +38,7 @@
    ========================================================================== */
 
 import {
-  evaluate, format, fraction, show, CalcError,
+  evaluate, format, fraction, show, tokenize, CalcError,
   derivative, integral, solve,
   matAdd, matSub, matMul, matScale, matTranspose, matDet, matInverse,
   fracSimplify, fracAdd, fracSub, fracMul, fracDiv,
@@ -196,7 +196,8 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
     </div>
     <div class="cl-calc__lcd" role="status" aria-live="polite">
       <div class="cl-calc__flags"><span data-flag="S">S</span><span data-flag="M">M</span><span data-flag="D">D</span><span data-flag="R">R</span></div>
-      <div class="cl-calc__expr" data-calc-expr></div>
+      <input type="text" class="cl-calc__expr" data-calc-expr spellcheck="false" autocomplete="off"
+             aria-label="Type an expression, or use the keys below">
       <div class="cl-calc__out" data-calc-out>0</div>
     </div>
     <div class="cl-calc__hist" data-calc-hist hidden></div>
@@ -254,8 +255,17 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
   }
 
   function paint() {
-    exprEl.textContent = (ask ? askLabel(ask) : "") + show(keys);
-    exprEl.scrollLeft = exprEl.scrollWidth;
+    exprEl.readOnly = !!ask;
+    /* the screen is a real field now — a child may be mid-keystroke in it,
+       and overwriting .value out from under them would fight their own
+       typing (and jump the cursor to the end on every press). Only while
+       it is NOT the thing actually being typed into (a button was pressed
+       instead, or a prompt is asking something it owns the text for) does
+       paint() get to say what it shows. */
+    if (ask || document.activeElement !== exprEl) {
+      exprEl.value = (ask ? askLabel(ask) : "") + show(keys);
+      exprEl.scrollLeft = exprEl.scrollWidth;
+    }
     if (shown && shown.err) outEl.textContent = shown.err;
     else if (shown && shown.multi) outEl.textContent = shown.multi.map(say).join("  or  ");
     else if (shown) {
@@ -586,6 +596,30 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
     onChange(C);
   });
 
+  /* ── typing straight onto the screen ──────────────────────────────────
+     A real <input>, so a child can click it and type with their own
+     keyboard — words and all (sin, cos, sqrt, log, ln, pi, Ans — see
+     tokenize()'s WORDS list), not only the keys below it. Live, so a
+     half-finished word like "si" is simply not recognised yet rather than
+     flagged wrong; it only has to make sense by the time "=" is pressed. */
+  exprEl.addEventListener("input", () => {
+    if (ask) return;           // read-only mid-prompt; this should not fire
+    keys = tokenize(exprEl.value);
+    if (keys.length > 160) keys.length = 160;
+    shown = null;
+    /* paint() itself knows not to overwrite .value while this field is the
+       one actually being typed into — it only ever touches the flags, the
+       bottom line and the rest */
+    paint();
+  });
+  exprEl.addEventListener("keydown", (e) => {
+    if (ask) return;
+    if (e.key === "Enter") { e.preventDefault(); if (keys.length) run(); paint(); }
+    else if (e.key === "Escape") { keys = []; shown = null; exprEl.value = ""; paint(); }
+    /* everything else — letters, digits, the lot — types into the field
+       exactly as a plain text box would; nothing here calls press() */
+  });
+
   /* ── MORE — the list of machines there was no key left to give its own ── */
   function paintMore() {
     moreEl.hidden = !moreOpen;
@@ -808,10 +842,14 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
   el.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === "Escape" && onClose) { onClose(); return; }
-    /* a REAL <input> — a matrix cell, a coefficient — types for itself; this
-       is only for the keypad's own shortcuts, and preventDefault() below was
-       eating every digit a child tried to type into one before it landed */
-    if (e.target.tagName === "INPUT") return;
+    /* a REAL <input> — a matrix cell, a coefficient, or the screen itself —
+       types for itself; this is only for the keypad's own shortcuts, and
+       preventDefault() below was eating every digit a child tried to type
+       into one before it landed. The screen is the ONE exception to its
+       own exception: mid-prompt it is read-only (the prefix is not
+       editable), and a digit typed then is still meant for press(). */
+    if (e.target.tagName === "INPUT" && e.target !== exprEl) return;
+    if (e.target === exprEl && !ask) return;
     const k = /^\d$/.test(e.key) ? e.key : TYPED[e.key];
     /* while the calculator is being typed on, a letter is not one of the
        host page's shortcuts */
