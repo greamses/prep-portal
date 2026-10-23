@@ -632,12 +632,12 @@ export const PAGES = [
     section: "games",
     name: "Games",
     title: "Maths Games Online: 2D & 3D Learning Games",
-    desc: "Play maths games online: Cross Math, Math Flappy Bird, fraction sliders and flip cards, Snakes and Ladders, plus 3D chess, a bearings drone, an angle shooter and a maze.",
+    desc: "Play maths games online: Cross Math, Math Flappy Bird, fraction sliders and flip cards, Snakes and Ladders, plus 3D chess, a speed cube and first-person free throw.",
     intro:
-      "Games that practise real maths while you play. The 2D games are quick rounds of number facts, fractions and equations. The 3D games put a skill inside a world: reading bearings to fly a drone, reading angles to aim a cannon, or thinking ahead on a chessboard.",
+      "Games that practise real maths while you play. The 2D games are quick rounds of number facts, fractions and equations. The 3D games put a skill inside a world: thinking ahead on a chessboard, solving a cube from the keyboard, or aiming a free throw in first person.",
     points: [
       "2D: Cross Math, Math Flappy Bird, Flip Card, Slider, Snakes and Ladders, Prime Blockster",
-      "3D: Bearing Courier, Alien Angle, Grand Chess, 3D Maze, Speed Cube, Free Throw",
+      "3D: Grand Chess, Speed Cube, Free Throw",
       "Plays in the browser on a phone, tablet or computer",
     ],
     access: "free",
@@ -734,34 +734,6 @@ export const PAGES = [
     access: "login",
   },
   {
-    file: "home/games/drone/index.html",
-    section: "games",
-    name: "Bearing Courier",
-    title: "Bearing Courier: A 3D Drone Game for Learning Bearings",
-    desc: "Pilot a delivery drone by bearing. Read the three-figure bearing to each house, turn to match your compass, fly there and drop the package before the minute is up.",
-    intro:
-      "Bearings make sense once you have had to fly by them. In Bearing Courier each delivery comes with a three-figure bearing. Turn your drone until the compass matches, fly to the numbered house and drop the package, as many times as you can in a minute.",
-    points: [
-      "Three-figure bearings measured clockwise from north",
-      "Compass reading and direction",
-      "A full 3D town to fly over",
-    ],
-  },
-  {
-    file: "home/games/aliens/index.html",
-    section: "games",
-    name: "Alien Angle",
-    title: "Alien Angle: A Protractor Game for Measuring Angles",
-    desc: "Shoot hidden alien saucers using their angular position. Read the protractor, aim the cannon at the right angle and fire. A 3D game for estimating and measuring angles.",
-    intro:
-      "The saucers are hidden; all you are given is an angle. Read the protractor, swing the cannon to that angle and fire. Alien Angle is practice at measuring and estimating angles that feels like an arcade game.",
-    points: [
-      "Read a protractor quickly and accurately",
-      "Acute, obtuse and reflex angles",
-      "Faster rounds as you improve",
-    ],
-  },
-  {
     file: "home/games/chess/index.html",
     section: "games",
     name: "Grand Chess",
@@ -773,20 +745,6 @@ export const PAGES = [
       "Full legal-move checking, check and checkmate",
       "Castling, en passant and pawn promotion",
       "Builds planning and logical thinking",
-    ],
-  },
-  {
-    file: "home/games/maze/index.html",
-    section: "games",
-    name: "3D Maze",
-    title: "3D Maze: Find the Exit Before the Hunters Find You",
-    desc: "Find your way out of a randomly generated 3D maze. Explore with the keyboard and mouse, avoid the hunters and reach the glowing exit. A new maze every game.",
-    intro:
-      "A new maze is built every time you play. Find a route to the glowing exit while hunters search the corridors for you. It rewards a good memory, a sense of direction and a calm head.",
-    points: [
-      "Randomly generated mazes",
-      "Spatial reasoning and route planning",
-      "Keyboard and mouse controls",
     ],
   },
   {

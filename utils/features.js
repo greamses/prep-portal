@@ -175,16 +175,13 @@ export const FEATURES = [
   {
     id: "games-3d",
     label: "3D Games",
-    desc: "Immersive 3D practice games (Bearing Courier, 3D Maze, Grand Chess, etc.)",
+    desc: "Immersive 3D practice games (Grand Chess, Free Throw, Speed Cube)",
     group: "Games",
     default: "premium",
     paths: [],
     parts: [
-      { id: "aliens", label: "Alien Invasion", path: "/home/games/aliens" },
       { id: "chess", label: "Grand Chess", path: "/home/games/chess" },
       { id: "free-throw", label: "Free Throw", path: "/home/games/free-throw" },
-      { id: "drone", label: "Bearing Courier", path: "/home/games/drone" },
-      { id: "maze", label: "3D Maze", path: "/home/games/maze" },
       { id: "rubiks-cube", label: "Speed Cube", path: "/home/games/rubiks-cube" },
     ],
   },
@@ -243,8 +240,8 @@ export function defaultStates() {
 /**
  * Resolve which feature — and, when a part declares its own path, which part —
  * a pathname belongs to. Longest matching prefix wins across feature paths AND
- * part paths, so /home/games/maze beats nothing else and yields
- * { featureId: "games-3d", partId: "maze" }.
+ * part paths, so /home/games/rubiks-cube beats nothing else and yields
+ * { featureId: "games-3d", partId: "rubiks-cube" }.
  */
 export function featureAndPartForPath(pathname) {
   const p = String(pathname || "").toLowerCase();

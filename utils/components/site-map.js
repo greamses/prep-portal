@@ -214,12 +214,9 @@ export const SITE_PAGES = [
 
   // ── Games (math learning games) ─────────────────────────────────────
   { id: "game-free-throw", title: "Free Throw", href: "/home/games/free-throw/index.html", category: "games", blurb: "Aim, shoot and score — a basketball math game.", keywords: ["free throw", "basketball game"] },
-  { id: "game-aliens", title: "Alien Angle", href: "/home/games/aliens/index.html", category: "games", blurb: "Read the angle, aim the cannon, fire.", keywords: ["alien angle", "angles game", "aim cannon"] },
   { id: "game-snakes-ladders", title: "Snakes & Ladders", href: "/home/games/snakes-ladders/index.html", category: "games", blurb: "Roll, climb and slide.", keywords: ["snakes and ladders", "snakes ladders", "board game"] },
   { id: "game-rubiks-cube", title: "Speed Cube", href: "/home/games/rubiks-cube/index.html", category: "games", blurb: "Twist, turn and solve in 3D.", keywords: ["speed cube", "rubik's cube", "rubiks cube", "cube puzzle"] },
   { id: "game-chess", title: "Grand Chess", href: "/home/games/chess/index.html", category: "games", blurb: "Realistic 3D chess with full rules.", keywords: ["chess", "3d chess"] },
-  { id: "game-maze", title: "3D Maze", href: "/home/games/maze/index.html", category: "games", blurb: "Escape a 3D maze in first person.", keywords: ["maze", "3d maze", "escape the maze"] },
-  { id: "game-drone", title: "Bearing Courier", href: "/home/games/drone/index.html", category: "games", blurb: "Fly a delivery drone by compass bearing.", keywords: ["bearing courier", "drone game", "compass bearing"] },
   { id: "game-crossmath", title: "CrossMath", href: "/home/games/crossmath/index.html", category: "games", blurb: "Crossword-style arithmetic puzzle.", keywords: ["crossmath", "cross math", "math crossword"] },
   { id: "game-flip", title: "Flip", href: "/home/games/flip/index.html", category: "games", blurb: "Memory-match card game.", keywords: ["flip game", "memory game", "card match"] },
   { id: "game-slide", title: "Slide", href: "/home/games/slide/game.html", category: "games", blurb: "Sliding tile puzzle.", keywords: ["slide game", "sliding puzzle"] },

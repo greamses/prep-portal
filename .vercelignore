@@ -5,3 +5,9 @@ server/googleCloudKey.json
 
 # Retired — Algebra Moves replaced it. Kept in git, not deployed.
 prep-math/drag
+
+# 3D games taken down to cut Vercel usage. Kept in git, not deployed.
+# Basketball (free-throw), chess and the speed cube stay live.
+home/games/aliens
+home/games/maze
+home/games/drone
