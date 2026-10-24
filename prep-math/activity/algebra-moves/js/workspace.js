@@ -278,7 +278,9 @@ async function runsFromText(text) {
 async function figureImage(svg) {
   const box = /viewBox="([\d.\s-]+)"/.exec(svg)?.[1].trim().split(/\s+/).map(Number) || [0, 0, 320, 220];
   const w = 640, h = Math.round((640 * box[3]) / box[2]);
-  const sized = svg.replace(/^<svg\b/, `<svg width="${w}" height="${h}"`);
+  let sized = svg.replace(/^<svg\b/, `<svg width="${w}" height="${h}"`);
+  // a picture needs its namespace
+  if (!/xmlns\s*=/.test(sized)) sized = sized.replace(/^<svg\b/, '<svg xmlns="http://www.w3.org/2000/svg"');
   const blob = new Blob([sized], { type: "image/svg+xml" });
   return shrink(blob);
 }
@@ -296,7 +298,7 @@ export async function pinQuestion({ text, svg }) {
       const lines = Math.ceil(String(text || "").length / 28) + 1;
       const k = 220 / pic.w;
       n.images = [{ id: `img${Date.now().toString(36)}`, src: pic.src, w: 220, h: Math.round(pic.h * k), x: 10, y: Math.min(260, 24 + lines * 24) }];
-    } catch { /* the question is pinned without its drawing */ }
+    } catch { say("The question is pinned, but its drawing could not be put on the note.", "no"); }
   }
   placeFreeNote(n);
   say("PrepBot's question is pinned on the canvas — drag it where it helps, tap it to write on it.", "ok");

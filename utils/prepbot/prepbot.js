@@ -1805,12 +1805,24 @@ If (and only if) you're pointing the student to one specific page from the site 
      rebuilt from its own shapes only: scripts, event handlers, foreign objects
      and anything that reaches outside the drawing are dropped, so a reply can
      draw but never run. */
-  const SVG_FENCE = /```svg\s*([\s\S]*?)```/gi;
+  // A drawing may come fenced (```svg, ```xml, ```html …) or bare; either way it is <svg>…</svg>.
+  const SVG_FENCE = /```[a-z]*\s*(<svg[\s\S]*?<\/svg>)\s*```|(<svg[\s\S]*?<\/svg>)/gi;
+  const SVG_NS = "http://www.w3.org/2000/svg";
   function cleanSvg(src) {
     try {
-      const doc = new DOMParser().parseFromString(String(src).trim(), "image/svg+xml");
-      const svg = doc.documentElement;
-      if (!svg || svg.nodeName.toLowerCase() !== "svg" || doc.querySelector("parsererror")) return null;
+      let text = String(src).trim();
+      // A model often leaves out the namespace, which a picture needs, and writes a bare & .
+      if (!/xmlns\s*=/.test(text)) text = text.replace(/^<svg\b/i, `<svg xmlns="${SVG_NS}"`);
+      text = text.replace(/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-f]+);)/gi, "&amp;");
+      let doc = new DOMParser().parseFromString(text, "image/svg+xml");
+      let svg = doc.documentElement;
+      // Strict XML refused it: the forgiving HTML reader will usually still make a drawing of it.
+      if (!svg || svg.nodeName.toLowerCase() !== "svg" || doc.querySelector("parsererror")) {
+        doc = new DOMParser().parseFromString(text, "text/html");
+        svg = doc.querySelector("svg");
+        if (!svg) return null;
+        svg.setAttribute("xmlns", SVG_NS);
+      }
       svg.querySelectorAll("script, foreignObject, style, iframe, object, embed, image, a, animate, set").forEach((n) => n.remove());
       for (const el of [svg, ...svg.querySelectorAll("*")]) {
         for (const a of [...el.attributes]) {
@@ -1819,7 +1831,11 @@ If (and only if) you're pointing the student to one specific page from the site 
               || /url\(\s*['"]?(?!#)/i.test(a.value) || /javascript:/i.test(a.value)) el.removeAttribute(a.name);
         }
       }
-      if (!svg.getAttribute("viewBox")) return null;
+      if (!svg.getAttribute("viewBox")) {
+        // a drawing sized by width and height only still has a shape
+        const w = parseFloat(svg.getAttribute("width")), h = parseFloat(svg.getAttribute("height"));
+        svg.setAttribute("viewBox", w > 0 && h > 0 ? `0 0 ${w} ${h}` : "0 0 320 220");
+      }
       svg.removeAttribute("width");
       svg.removeAttribute("height");
       svg.setAttribute("role", "img");
@@ -1830,7 +1846,7 @@ If (and only if) you're pointing the student to one specific page from the site 
   function replyFigure(text) {
     SVG_FENCE.lastIndex = 0;
     const m = SVG_FENCE.exec(String(text));
-    return m ? cleanSvg(m[1]) : null;
+    return m ? cleanSvg(m[1] || m[2]) : null;
   }
   /** The question PrepBot set (between [QUESTION] … [/QUESTION]), or the reply without its drawings. */
   function replyQuestion(text) {
@@ -1845,11 +1861,11 @@ If (and only if) you're pointing the student to one specific page from the site 
     // drawing still arriving (no closing fence yet) shows as a note.
     const figures = [];
     text = String(text)
-      .replace(SVG_FENCE, (_, src) => {
-        const svg = cleanSvg(src);
+      .replace(SVG_FENCE, (_, fenced, bare) => {
+        const svg = cleanSvg(fenced || bare);
         return `[[FIGPB${figures.push(svg ? `<div class="pb-figure">${svg}</div>` : '<div class="pb-figure pb-figure--none">The drawing could not be shown.</div>') - 1}]]`;
       })
-      .replace(/```svg[\s\S]*$/i, () => `[[FIGPB${figures.push('<div class="pb-figure pb-figure--none">Drawing it…</div>') - 1}]]`)
+      .replace(/```[a-z]*\s*<svg[\s\S]*$|<svg(?![\s\S]*<\/svg>)[\s\S]*$/i, () => `[[FIGPB${figures.push('<div class="pb-figure pb-figure--none">Drawing it…</div>') - 1}]]`)
       .replace(/\[QUESTION\]/gi, "**Question:** ")
       .replace(/\[\/QUESTION\]/gi, "");
     // Pull every equation out first — \[..\], $$..$$, \(..\), $..$ — so the
