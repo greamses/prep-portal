@@ -6,10 +6,20 @@
    sidebar. This file is only the half that belongs to this page.
    ========================================================================== */
 
-import { mountAlgebraMoves, mountFormulaBook, pinNote } from "./workspace.js";
+import { mountAlgebraMoves, mountFormulaBook, pinNote, describeBoard, pinQuestion } from "./workspace.js";
 import { mountTools } from "/utils/components/workbook/toolbar.js";
 
 mountAlgebraMoves(document.getElementById("am-frame"));
+
+/* PrepBot, the site's one chat, knows this page: it reads the canvas (every
+   equation with its working, the notes), can draw a figure for a geometry
+   question, and offers to pin what it sets as a sticky note on the canvas. */
+window.__prepbotPage = {
+  title: "Algebra Moves",
+  figures: true,
+  context: () => describeBoard(),
+  pin: (what) => pinQuestion(what),
+};
 
 /* The side rail: the formula book (formulas and rules) beside the workbook's
    own calculator, digit-shift card and notes. */

@@ -458,6 +458,22 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
     document.body.appendChild(mount);
   }
 
+  /* Fullscreen shows only the element that went fullscreen and what is inside
+     it, so a bot left on <body> disappears the moment a page fills the screen.
+     While something is fullscreen the bot moves inside it; when that ends it
+     goes home. (Its position is fixed, so it lands in the same corner.) */
+  {
+    const home = { parent: mount.parentNode, next: mount.nextSibling };
+    const full = () => document.fullscreenElement || document.webkitFullscreenElement;
+    const follow = () => {
+      const host = full();
+      if (host && host !== mount && !host.contains(mount)) host.appendChild(mount);
+      else if (!host && mount.parentNode !== home.parent) home.parent.insertBefore(mount, home.next && home.next.parentNode === home.parent ? home.next : null);
+    };
+    document.addEventListener("fullscreenchange", follow);
+    document.addEventListener("webkitfullscreenchange", follow);
+  }
+
   mount.innerHTML = `
     <div id="chat-fab-wrap" class="pb-locked">
       <button id="chat-fab" title="Open AI Assistant">
@@ -1329,8 +1345,12 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
       ? `\nYOU CONTROL THIS PAGE. ${String(tutorPage.actions)}\nWhen the student asks you to do something on the page, or doing it teaches better than describing it, DO it: say in a short sentence what you are doing, and put on a line of its own: [DO: command; command; command]. Use only the commands listed, spelled exactly. Never show a command to the student any other way.\n`
       : "";
 
+    const drawSection = tutorPage && tutorPage.figures
+      ? `\nQUESTIONS AND DRAWINGS. When the student asks for a question to solve, set ONE, put only the question between the lines [QUESTION] and [/QUESTION], and do not solve it unless asked. When a geometry or diagram question needs a figure, draw it as a fenced block: three backticks then svg, the SVG, three backticks. The SVG must have viewBox="0 0 320 220", only simple shapes (line, polyline, polygon, circle, path, rect, text), stroke="#2a2723" stroke-width="2" fill="none" (or a pale fill), labels in <text font-size="16" font-family="serif"> naming every point and every given length or angle, no scripts, no images, no styles. The figure must match the numbers in the question exactly.\n`
+      : "";
+
     const systemPrompt = `You are ${BOT_NAME}, the built-in AI tutor for ${SITE_INFO.name} — ${SITE_INFO.tagline}. Be encouraging and concise.
-${siteSection}${doSection}
+${siteSection}${doSection}${drawSection}
 ${contextSection}${ragSection}${siteMatchSection}
 
 RULES: Explain step by step with clear numbered steps and brief reasoning, in simple ${userProficiency}-level language. No emojis. Use LaTeX only for equations — \\(...\\) inline, \\[...\\] block — never for ordinary words. When asked what this site does, what's available, or where to find something, answer from the site knowledge above — never invent a page or URL that isn't listed there.
@@ -1351,7 +1371,7 @@ If (and only if) you're pointing the student to one specific page from the site 
           system: systemPrompt,
           messages: [...history, { role: "user", content: text }],
           temperature: 0.3,
-          max_tokens: 800,
+          max_tokens: tutorPage && tutorPage.figures ? 1800 : 800,
           stream: true,
           ...(byukActive()
             ? { byuk: true, provider: byukState.provider, model: byukState.model }
@@ -1781,7 +1801,57 @@ If (and only if) you're pointing the student to one specific page from the site 
 
   /* ── 19. MESSAGE RENDERER ── */
   // Shared text→HTML formatter (used by static messages and live streaming).
+  /* A drawing PrepBot makes comes as a fenced block (```svg … ```). It is
+     rebuilt from its own shapes only: scripts, event handlers, foreign objects
+     and anything that reaches outside the drawing are dropped, so a reply can
+     draw but never run. */
+  const SVG_FENCE = /```svg\s*([\s\S]*?)```/gi;
+  function cleanSvg(src) {
+    try {
+      const doc = new DOMParser().parseFromString(String(src).trim(), "image/svg+xml");
+      const svg = doc.documentElement;
+      if (!svg || svg.nodeName.toLowerCase() !== "svg" || doc.querySelector("parsererror")) return null;
+      svg.querySelectorAll("script, foreignObject, style, iframe, object, embed, image, a, animate, set").forEach((n) => n.remove());
+      for (const el of [svg, ...svg.querySelectorAll("*")]) {
+        for (const a of [...el.attributes]) {
+          const name = a.name.toLowerCase();
+          if (name.startsWith("on") || ((name === "href" || name === "xlink:href") && !a.value.startsWith("#"))
+              || /url\(\s*['"]?(?!#)/i.test(a.value) || /javascript:/i.test(a.value)) el.removeAttribute(a.name);
+        }
+      }
+      if (!svg.getAttribute("viewBox")) return null;
+      svg.removeAttribute("width");
+      svg.removeAttribute("height");
+      svg.setAttribute("role", "img");
+      return new XMLSerializer().serializeToString(svg);
+    } catch (_) { return null; }
+  }
+  /** The first drawing in a reply, cleaned, or null. */
+  function replyFigure(text) {
+    SVG_FENCE.lastIndex = 0;
+    const m = SVG_FENCE.exec(String(text));
+    return m ? cleanSvg(m[1]) : null;
+  }
+  /** The question PrepBot set (between [QUESTION] … [/QUESTION]), or the reply without its drawings. */
+  function replyQuestion(text) {
+    const t = String(text);
+    const m = /\[QUESTION\]([\s\S]*?)\[\/QUESTION\]/i.exec(t);
+    const body = (m ? m[1] : t).replace(SVG_FENCE, "").replace(/\[QUESTION\]|\[\/QUESTION\]/gi, "");
+    return body.replace(/\n?\[SUGGESTIONS:[\s\S]*$/i, "").trim();
+  }
+
   function formatMessageHTML(text) {
+    // Drawings first, so nothing below touches the markup inside them. A
+    // drawing still arriving (no closing fence yet) shows as a note.
+    const figures = [];
+    text = String(text)
+      .replace(SVG_FENCE, (_, src) => {
+        const svg = cleanSvg(src);
+        return `[[FIGPB${figures.push(svg ? `<div class="pb-figure">${svg}</div>` : '<div class="pb-figure pb-figure--none">The drawing could not be shown.</div>') - 1}]]`;
+      })
+      .replace(/```svg[\s\S]*$/i, () => `[[FIGPB${figures.push('<div class="pb-figure pb-figure--none">Drawing it…</div>') - 1}]]`)
+      .replace(/\[QUESTION\]/gi, "**Question:** ")
+      .replace(/\[\/QUESTION\]/gi, "");
     // Pull every equation out first — \[..\], $$..$$, \(..\), $..$ — so the
     // markdown / newline passes below can't corrupt multi-line LaTeX. Each is
     // stashed and normalised to \(..\) / \[..\], the delimiters MathJax renders
@@ -1808,7 +1878,7 @@ If (and only if) you're pointing the student to one specific page from the site 
       return entry.block
         ? `<div class="math-block">\\[${entry.inner}\\]</div>`
         : `<span class="math-inline">\\(${entry.inner}\\)</span>`;
-    });
+    }).replace(/\[\[FIGPB(\d+)\]\]/g, (_, i) => figures[+i] || "");
   }
 
   // Attach the "speak this reply" control to a bot bubble.
@@ -1820,6 +1890,20 @@ If (and only if) you're pointing the student to one specific page from the site 
     sBtn.innerHTML = PB_ICONS.speaker;
     sBtn.onclick = () => speak(text, sBtn);
     footer.appendChild(sBtn);
+    // A page that can keep what PrepBot sets (Algebra Moves pins it on its
+    // canvas as a note) offers the button under every reply.
+    const keeper = window.__prepbotPage;
+    if (keeper && typeof keeper.pin === "function") {
+      const pin = document.createElement("button");
+      pin.className = "pin-btn pb-glyph";
+      pin.type = "button";
+      pin.textContent = "Pin to canvas";
+      pin.title = "Stick this question on the canvas as a note";
+      pin.onclick = () => {
+        try { keeper.pin({ text: replyQuestion(text), svg: replyFigure(text) }); pin.textContent = "Pinned"; } catch (_) { /* the page said no */ }
+      };
+      footer.appendChild(pin);
+    }
     bubbleEl.appendChild(footer);
   }
 

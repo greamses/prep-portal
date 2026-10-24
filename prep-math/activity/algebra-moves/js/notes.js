@@ -142,7 +142,7 @@ const MAX_IMAGES = 4;
 const MAX_SIDE = 360;     // longest side kept, in pixels: a note is not an album
 
 /** A picture file as a small data URL. */
-function shrink(file) {
+export function shrink(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();

@@ -29,7 +29,7 @@ import { createFormulaPicker } from "./formula-picker.js";
 import { solve, bestOffers } from "./solve.js";
 import { applyToBoth, everyOffer, asNumbers, flattenSums } from "./ops.js";
 import { ruleFits } from "./rules.js";
-import { noteFace, noteWriter, newNote } from "./notes.js";
+import { noteFace, noteWriter, newNote, loadNotes, shrink } from "./notes.js";
 import { createLive } from "./live.js";
 import { createWires } from "./wires.js";
 import { systemMatrix } from "./system-matrix.js";
@@ -237,6 +237,69 @@ export function pinNote() {
   const n = { ...newNote(freeNotes.length % 6), x: at.x - 110 + step, y: at.y - 30 + step };
   placeFreeNote(n, { write: true });
   say("A note on the canvas — write on it, then drag it wherever it helps.", "ok");
+}
+
+/* ── PrepBot and the canvas ─────────────────────────────────────────────────
+   What PrepBot is told about the board (every equation with its working, the
+   one in hand, the notes), and what it can put on it: a question it set,
+   pinned as a note — with its drawing, when it drew one, stuck on as a picture. */
+export function describeBoard() {
+  if (!canvas) return "";
+  const out = [`The student is on Algebra Moves: a canvas of equations they solve one move at a time. ${cards.length} equation${cards.length === 1 ? "" : "s"} on it.`];
+  for (const c of cards) {
+    const snap = c.snapshot();
+    const head = `${c.name}${snap.title ? ` (${snap.title})` : ""}${c === active ? " — the one they are working on" : ""}${c.solved ? " — solved" : ""}`;
+    const lines = snap.rows.map((r, i) => `  line ${i + 1}: ${r.eq}${r.note ? `   [${r.note}]` : ""}${r.folded ? " (folded)" : ""}`);
+    out.push(`${head}\n${lines.join("\n")}`);
+  }
+  const notes = freeNotes.map(({ n }) => (n.runs || []).map((r) => r.text).join("").trim()).filter(Boolean);
+  if (notes.length) out.push(`Notes on the canvas:\n${notes.map((t) => `  - ${t}`).join("\n")}`);
+  if (active?.picked) out.push("They have a symbol picked up, ready to move.");
+  return out.join("\n");
+}
+
+/** A reply's words as the runs of a note: \(..\), \[..\] and $..$ become equations. */
+async function runsFromText(text) {
+  const K = await loadNotes();
+  const runs = [];
+  const pattern = /\\\(([\s\S]*?)\\\)|\\\[([\s\S]*?)\\\]|\$([^$\n]+)\$/g;
+  let last = 0, m;
+  const words = (t) => { if (t) runs.push(K.blankRun({ text: t })); };
+  while ((m = pattern.exec(text))) {
+    words(text.slice(last, m.index));
+    runs.push(K.mathRun(m[1] ?? m[2] ?? m[3]));
+    last = m.index + m[0].length;
+  }
+  words(text.slice(last));
+  return runs;
+}
+
+/** PrepBot's drawing as a small picture for a note. */
+async function figureImage(svg) {
+  const box = /viewBox="([\d.\s-]+)"/.exec(svg)?.[1].trim().split(/\s+/).map(Number) || [0, 0, 320, 220];
+  const w = 640, h = Math.round((640 * box[3]) / box[2]);
+  const sized = svg.replace(/^<svg\b/, `<svg width="${w}" height="${h}"`);
+  const blob = new Blob([sized], { type: "image/svg+xml" });
+  return shrink(blob);
+}
+
+export async function pinQuestion({ text, svg }) {
+  if (!canvas) return;
+  const at = canvas.centre();
+  const step = (freeNotes.length % 6) * 22;
+  const n = { ...newNote(freeNotes.length % 6), x: at.x - 130 + step, y: at.y - 90 + step };
+  n.runs = await runsFromText(String(text || "").trim() || "A question from PrepBot");
+  if (svg) {
+    try {
+      const pic = await figureImage(svg);
+      // under the words: a rough guess at how tall they stand (about 28 characters to a line)
+      const lines = Math.ceil(String(text || "").length / 28) + 1;
+      const k = 220 / pic.w;
+      n.images = [{ id: `img${Date.now().toString(36)}`, src: pic.src, w: 220, h: Math.round(pic.h * k), x: 10, y: Math.min(260, 24 + lines * 24) }];
+    } catch { /* the question is pinned without its drawing */ }
+  }
+  placeFreeNote(n);
+  say("PrepBot's question is pinned on the canvas — drag it where it helps, tap it to write on it.", "ok");
 }
 
 /** A note on the canvas, from its data — made here, or arriving from a live room. */

@@ -839,6 +839,10 @@ const chatbotcss = `
     display: inline-block;
 }
 
+.pb-figure { margin: 0.5rem 0; padding: 0.4rem; background: #fffdf8; border: 1px solid rgba(20, 19, 15, 0.15); }
+.pb-figure svg { display: block; width: 100%; height: auto; max-height: 15rem; }
+.pb-figure--none { font-size: 0.8em; color: var(--text-secondary, #6f685f); text-align: center; }
+.msg-footer .pin-btn { margin-left: 0.4rem; padding: 0.15rem 0.6rem; font: 600 0.72rem var(--font-mono, monospace); cursor: pointer; }
 .math-block {
     font-family: var(--_f-mono);
     background: var(--_surface);
