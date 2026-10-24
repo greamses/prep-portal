@@ -256,11 +256,12 @@ function placeFreeNote(n, { write: open = false } = {}) {
   // The face is drawn again whenever the writing changes, and each face
   // opens the editor over itself.
   const mount = () => {
-    const face = noteFace(n, { scaleOf: () => canvas.zoom, onTap: () => write(face), onDelete: takeOff });
+    // Only a note on the canvas may carry pictures; one stuck to a line may not.
+    const face = noteFace(n, { scaleOf: () => canvas.zoom, onTap: () => write(face), onDelete: takeOff, images: true });
     holder.replaceChildren(face);
     return face;
   };
-  const write = (face) => canvasWriter.write(n, face, (note, { empty }) => (empty ? takeOff() : mount()));
+  const write = (face) => canvasWriter.write(n, face, (note, { empty }) => (empty && !n.images?.length ? takeOff() : mount()));
   entry.takeOff = takeOff;
   entry.mount = mount;
   canvas.world.appendChild(holder);
@@ -279,7 +280,7 @@ const liveCtx = () => ({
   items() {
     const out = {};
     for (const c of cards) out[`card_${c.uid}`] = c.snapshot();
-    for (const { n } of freeNotes) if (n.runs) out[`note_${n.id}`] = { ...n };
+    for (const { n } of freeNotes) if (n.runs || n.images?.length) out[`note_${n.id}`] = { ...n };
     // Last, so a receiver has the cards before the wires between them.
     for (const l of wires?.list() || []) out[`link_${l.from}_${l.to}`] = l;
     return out;

@@ -46,7 +46,7 @@ export const newNote = (paper = 0) => ({ id: `note${++seq}`, runs: null, paper, 
  * the canvas zoom — so a drag follows the finger at any zoom. `onSized` is
  * told when the paper has been painted (the holder may need to re-measure).
  */
-export function noteFace(n, { scaleOf = () => 1, onTap, onDelete, onSized, maxWidth = 240 } = {}) {
+export function noteFace(n, { scaleOf = () => 1, onTap, onDelete, onSized, maxWidth = 240, images = false } = {}) {
   const wrap = document.createElement("div");
   wrap.className = "am-pinned-wrap";
   wrap.dataset.pin = n.id;
@@ -69,6 +69,7 @@ export function noteFace(n, { scaleOf = () => 1, onTap, onDelete, onSized, maxWi
   bin.addEventListener("pointerdown", (e) => e.stopPropagation());
   bin.addEventListener("click", (e) => { e.stopPropagation(); onDelete?.(); });
   wrap.append(c, bin);
+  if (images) mountImages(wrap, n, scaleOf);
 
   /* Dragged, it keeps where it was put (n.dx, n.dy). A press that does not
      move is a tap. Followed on the window, not captured: whatever is under the
@@ -128,6 +129,146 @@ export function noteFace(n, { scaleOf = () => 1, onTap, onDelete, onSized, maxWi
     draw();
   });
   return wrap;
+}
+
+/* ── Pictures on a note ──────────────────────────────────────────────────────
+   Only a note that is NOT stuck to a line can carry pictures (a line's notes
+   are small margin remarks). They are kept in the note's own data as small
+   JPEGs — { id, src, x, y, w, h } — so they travel with it: saved on this
+   machine, and sent with the note in a live lesson. They are laid over the
+   paper: drag one to move it, drag its corner to resize it, tap it to bring it
+   to the front, × to take it off. */
+const MAX_IMAGES = 4;
+const MAX_SIDE = 360;     // longest side kept, in pixels: a note is not an album
+
+/** A picture file as a small data URL. */
+function shrink(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.max(1, Math.round(img.naturalWidth * k)), h = Math.max(1, Math.round(img.naturalHeight * k));
+      const cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      const g = cv.getContext("2d");
+      g.fillStyle = "#fff";            // a transparent picture sits on white, not black
+      g.fillRect(0, 0, w, h);
+      g.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve({ src: cv.toDataURL("image/jpeg", 0.8), w, h });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("That file is not a picture I can read.")); };
+    img.src = url;
+  });
+}
+
+function mountImages(wrap, n, scaleOf) {
+  const layer = document.createElement("div");
+  layer.className = "am-note-imgs";
+  wrap.appendChild(layer);
+
+  const add = document.createElement("button");
+  add.type = "button";
+  add.className = "am-pinned__img";
+  add.dataset.tip = "Put a picture on this note";
+  add.setAttribute("aria-label", "Put a picture on this note");
+  add.innerHTML = UI.image(14);
+  const pick = document.createElement("input");
+  pick.type = "file";
+  pick.accept = "image/*";
+  pick.multiple = true;
+  pick.hidden = true;
+  add.addEventListener("pointerdown", (e) => e.stopPropagation());
+  add.addEventListener("click", (e) => { e.stopPropagation(); if ((n.images?.length || 0) < MAX_IMAGES) pick.click(); });
+  wrap.append(add, pick);
+
+  async function take(files) {
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) continue;
+      if ((n.images?.length || 0) >= MAX_IMAGES) break;
+      try {
+        const made = await shrink(file);
+        const k = Math.min(1, 170 / Math.max(made.w, made.h));   // first laid at a modest size
+        (n.images ||= []).push({
+          id: `img${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`,
+          src: made.src, w: Math.round(made.w * k), h: Math.round(made.h * k),
+          x: 10 + (n.images.length % 3) * 16, y: 28 + (n.images.length % 3) * 16,
+        });
+      } catch { /* an unreadable file is passed over */ }
+    }
+    show();
+  }
+  pick.addEventListener("change", () => { take([...pick.files]); pick.value = ""; });
+  // a picture dropped onto the note
+  wrap.addEventListener("dragover", (e) => { if (e.dataTransfer?.types?.includes("Files")) e.preventDefault(); });
+  wrap.addEventListener("drop", (e) => {
+    if (!e.dataTransfer?.files?.length) return;
+    e.preventDefault();
+    take([...e.dataTransfer.files]);
+  });
+
+  function show() {
+    layer.textContent = "";
+    add.hidden = (n.images?.length || 0) >= MAX_IMAGES;
+    for (const im of n.images || []) layer.appendChild(oneImage(im));
+  }
+
+  function oneImage(im) {
+    const box = document.createElement("div");
+    box.className = "am-note-img";
+    box.style.cssText = `left:${im.x}px;top:${im.y}px;width:${im.w}px;height:${im.h}px`;
+    const pic = document.createElement("img");
+    pic.src = im.src;
+    pic.alt = "A picture on the note";
+    pic.draggable = false;
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "am-note-img__del";
+    del.setAttribute("aria-label", "Take this picture off the note");
+    del.innerHTML = UI.close(10);
+    const grow = document.createElement("span");
+    grow.className = "am-note-img__grow";
+    grow.setAttribute("aria-label", "Drag to resize the picture");
+    box.append(pic, del, grow);
+
+    del.addEventListener("pointerdown", (e) => e.stopPropagation());
+    del.addEventListener("click", (e) => { e.stopPropagation(); n.images = n.images.filter((x) => x !== im); show(); });
+
+    // tapped, a picture comes to the front: the last in the list is on top
+    const front = () => { n.images = [...n.images.filter((x) => x !== im), im]; layer.appendChild(box); };
+
+    const follow = (e, how) => {
+      e.stopPropagation();
+      e.preventDefault();
+      front();
+      const zoom = scaleOf() || 1;
+      const from = { x: e.clientX, y: e.clientY, ox: im.x, oy: im.y, ow: im.w, oh: im.h };
+      const move = (ev) => {
+        const dx = (ev.clientX - from.x) / zoom, dy = (ev.clientY - from.y) / zoom;
+        if (how === "move") {
+          im.x = Math.round(from.ox + dx); im.y = Math.round(from.oy + dy);
+        } else {
+          const w = Math.max(30, from.ow + dx);          // keeps its shape
+          im.w = Math.round(w); im.h = Math.round(w * from.oh / from.ow);
+        }
+        box.style.cssText = `left:${im.x}px;top:${im.y}px;width:${im.w}px;height:${im.h}px`;
+      };
+      const end = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", end);
+        window.removeEventListener("pointercancel", end);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", end);
+      window.addEventListener("pointercancel", end);
+    };
+    pic.addEventListener("pointerdown", (e) => follow(e, "move"));
+    grow.addEventListener("pointerdown", (e) => follow(e, "size"));
+    box.addEventListener("click", (e) => e.stopPropagation());
+    return box;
+  }
+  show();
 }
 
 /**
