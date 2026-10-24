@@ -771,3 +771,50 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 .cl-class__stepsbox input { flex: 1 1 auto; min-width: 0; }
 .cl-class__stepsbox .cl-cut { flex: 0 0 auto; width: 1.5rem; height: 1.5rem; display: grid; place-items: center; padding: 0; color: #a3261d; background: transparent; border: 1px solid rgba(20, 19, 15, 0.22); border-radius: 0; cursor: pointer; }
 #cl-class-addstep { margin-top: 0.15rem; font-size: 0.74rem; }
+
+/* ── atoms and structures ──────────────────────────────────────────────── */
+.cl-el { display: block; width: 100%; height: 66px; color: var(--bench-ink); border-top: 3px solid var(--el, var(--accent-secondary)); background: color-mix(in srgb, var(--el, var(--accent-secondary)) 14%, transparent); }
+.cl-el svg { width: 100%; height: 100%; }
+.cl-el--mol { border-top-color: var(--accent-warning); background: none; padding: 4px; box-sizing: border-box; }
+.cl-el--mol svg { font: 700 12px var(--font-display); text-anchor: middle; dominant-baseline: central; fill: none; stroke: var(--bench-ink); stroke-width: 1.4; stroke-linecap: round; }
+.cl-el--mol svg text { stroke: none; }
+
+.cl-atom__chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.7rem; }
+.cl-atom__chips .cl-act.is-on { background: #fff; box-shadow: 2px 2px 0 var(--accent-primary); }
+.cl-atom__facts { display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; margin: 0 0 0.7rem; font-size: 0.72rem; color: var(--text-secondary); }
+.cl-atom__facts b { color: var(--ink); }
+.cl-atom__sym { font-family: var(--font-mono); color: var(--accent-primary); }
+.cl-atom__pics { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-around; margin-bottom: 0.4rem; }
+.cl-atom__pics figure { margin: 0; text-align: center; }
+.cl-atom__pics figcaption { font: 700 0.6rem var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); }
+.cl-lewis { width: 170px; height: auto; }
+.cl-bohr { width: 190px; max-width: 100%; height: auto; }
+.cl-atom__config { display: grid; grid-template-columns: max-content 1fr; gap: 0.3rem 0.9rem; margin: 0 0 0.6rem; font: 600 0.82rem var(--font-mono); }
+.cl-atom__config dt { color: var(--text-secondary); font-weight: 500; }
+.cl-atom__config dd { margin: 0; overflow-wrap: anywhere; }
+.cl-atom__config sup, .cl-atom__facts sup, .cl-atom__sym sup { font-size: 0.7em; line-height: 0; }
+.cl-atom__boxes { display: flex; flex-wrap: wrap; gap: 0.5rem 0.7rem; }
+.cl-orbs { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; }
+.cl-orbs__row { display: flex; }
+.cl-orbs i { font: 600 0.62rem var(--font-mono); font-style: normal; color: var(--text-secondary); }
+.cl-orb { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 30px; margin-left: -1px; color: var(--ink); border: 1.5px solid var(--ink); }
+.cl-orb svg { width: 8px; height: 16px; }
+
+.cl-sk-els { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.5rem 0; }
+.cl-sk-els .cl-act { min-width: 2rem; justify-content: center; }
+.cl-sk-els .cl-act.is-on { background: #fff; box-shadow: 2px 2px 0 var(--accent-primary); }
+.cl-sk-sep { width: 1px; height: 26px; margin: 0 0.15rem; background: color-mix(in srgb, var(--ink) 25%, transparent); }
+.cl-sk-pad { display: block; width: 100%; height: auto; touch-action: none; user-select: none; cursor: crosshair; background: var(--surface-secondary); border: var(--border-subtle); }
+.cl-sk-pad[data-tool="move"] { cursor: grab; }
+.cl-sk-pad[data-tool="erase"] { cursor: pointer; }
+.cl-sk-paper { fill: none; pointer-events: all; }
+.cl-sk-bonds path { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; }
+.cl-sk-bonds .cl-sk-hitb { stroke: transparent; stroke-width: 12; pointer-events: stroke; }
+.cl-sk-atoms text { font: 700 17px var(--font-display); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.cl-sk-atoms .cl-sk-q { font-size: 11px; }
+.cl-sk-e { fill: var(--ink); pointer-events: none; }
+.cl-sk-rubber { stroke: var(--accent-primary); stroke-width: 2; stroke-dasharray: 4 4; fill: none; }
+.cl-sk-ghost { font: 700 17px var(--font-display); text-anchor: middle; dominant-baseline: central; fill: var(--accent-primary); opacity: 0.6; }
+.cl-sk-empty { font: 500 12px var(--font-mono); text-anchor: middle; fill: var(--text-tertiary); pointer-events: none; }
+#cl-sk-info sub { font-size: 0.72em; line-height: 0; }
+.cl-sk-err { color: var(--accent-danger); font-weight: 700; }

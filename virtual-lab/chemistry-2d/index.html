@@ -217,6 +217,32 @@
         </div>
       </section>
 
+
+      <!-- an atom: its Lewis structure and electronic configuration -->
+      <section id="cl-sheet-atom" class="cl-sheet cl-sheet--wide pp-receipt" hidden>
+        <div class="pp-receipt__paper">
+          <div class="cl-sheet__head">
+            <button type="button" class="cl-ico cl-ico--paper" id="cl-atom-prev" data-tip="Previous element" aria-label="Previous element"></button>
+            <h2 class="cl-h2" id="cl-atom-title"></h2>
+            <button type="button" class="cl-ico cl-ico--paper" id="cl-atom-next" data-tip="Next element" aria-label="Next element"></button>
+            <button type="button" class="cl-sheet__close" aria-label="Close"></button>
+          </div>
+          <div id="cl-atom-body" class="cl-atom"></div>
+        </div>
+      </section>
+
+      <!-- the structure pad: draw a molecule -->
+      <section id="cl-sheet-sketch" class="cl-sheet cl-sheet--wide pp-receipt" hidden>
+        <div class="pp-receipt__paper">
+          <div class="cl-sheet__head"><h2 class="cl-h2">Draw a structure</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>
+          <p class="cl-sheet__lead">Tap the paper for an atom, then drag out of it to make a bond. Tap a bond to make it double or triple. The pen draws the chosen element.</p>
+          <div id="cl-sk-tools" class="cl-table-tools"></div>
+          <div id="cl-sk-els" class="cl-sk-els"></div>
+          <svg id="cl-sk-pad" class="cl-sk-pad" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Drawing paper for a chemical structure"></svg>
+          <p id="cl-sk-info" class="cl-atom__facts" aria-live="polite"></p>
+        </div>
+      </section>
+
       <section id="cl-sheet-tasks" class="cl-sheet pp-receipt" hidden>
         <div class="pp-receipt__paper">
           <div class="cl-sheet__head"><h2 class="cl-h2">Practicals</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>

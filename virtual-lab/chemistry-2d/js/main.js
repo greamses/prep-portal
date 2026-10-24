@@ -32,6 +32,9 @@ import { DEFS, VESSELS, TOOLS, SUPPORTS, rAt, vesselSvg, veilSvg, paintVessel, b
 import { EXPERIMENTS, GROUPS, UNKNOWNS, CATIONS, ANIONS, HOWTO, stepDone } from "./waec.js";
 import { initFluid, setVapour, puff, erupt as foamOut, FLUID_DEFS } from "./fluid.js";
 import { UI } from "/utils/components/ui-icons.js";
+import { ELEMENTS, elementTile, tint, initAtoms } from "./atoms.js";
+import { TEMPLATES as MOLECULES, build as buildMolecule, fitBox as fitBoxOf, moleculeSvg as moleculeSvgOf } from "./structures.js";
+import { initSketch } from "./sketch.js";
 import { account, onAccount, useRefill, buyRefills, keepStock, PACK } from "./account.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
 
@@ -114,6 +117,8 @@ const CATS = [
   { id: "glass", label: "Glassware", icon: `<path d="M9 2.6h6v6.2l5 9.400a2.4 2.4 0 0 1-2.1 3.500H6.1A2.4 2.4 0 0 1 4 18.2l5-9.400z" fill="var(--accent-secondary)"/><path d="M7.4 14.6h9.2l1.9 3.700a1 1 0 0 1-.9 1.5H6.4a1 1 0 0 1-.9-1.5z" fill="#fff"/>` },
   { id: "kit", label: "Equipment", icon: `<rect x="9.6" y="13" width="4.8" height="7.6" rx="1.2" fill="var(--text-tertiary)"/><rect x="5" y="19" width="14" height="3" rx="1.5" fill="var(--text-tertiary)"/><path d="M12 1.800c2.6 3.6 4.8 5 4.8 8a4.8 4.8 0 0 1-9.6 0c0-3 2.2-4.4 4.8-8z" fill="var(--accent-danger)"/>` },
   { id: "liquid", label: "Liquids", icon: `<path d="M12 2.4s7.4 7.4 7.4 12.6a7.4 7.4 0 0 1-14.8 0C4.6 9.8 12 2.4 12 2.4z" fill="var(--accent-secondary)"/>` },
+  { id: "atoms", label: "Atoms", icon: `<circle cx="12" cy="12" r="3" fill="var(--accent-danger)"/><ellipse cx="12" cy="12" rx="10" ry="4.2" fill="none" stroke="var(--accent-secondary)" stroke-width="1.8"/><ellipse cx="12" cy="12" rx="10" ry="4.2" fill="none" stroke="var(--accent-secondary)" stroke-width="1.8" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4.2" fill="none" stroke="var(--accent-secondary)" stroke-width="1.8" transform="rotate(120 12 12)"/>` },
+  { id: "struct", label: "Structures", icon: `<path d="M5 8l7-4 7 4v8l-7 4-7-4z" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-linejoin="round"/><circle cx="5" cy="8" r="2.6" fill="var(--accent-danger)"/><circle cx="19" cy="8" r="2.6" fill="var(--accent-secondary)"/><circle cx="12" cy="20" r="2.6" fill="var(--accent-warning)"/>` },
   { id: "solid", label: "Solids", icon: `<path d="M3.4 20.6 8 11.4l3.4 4.4 3-7 6.2 11.800z" fill="var(--accent-warning)"/><circle cx="6" cy="6.4" r="2.4" fill="var(--accent-primary)"/>` },
 ];
 // other words a student might search by
@@ -127,6 +132,9 @@ const CATALOG = [
   ...Object.entries(VESSELS).map(([key, v]) => ({ cat: "glass", kind: "vessel", key, name: v.name })),
   ...Object.entries(SUPPORTS).map(([key, s]) => ({ cat: "kit", kind: "rack", key, name: s.name })),
   ...Object.entries(TOOLS).filter(([, t]) => !t.hidden).map(([key, t]) => ({ cat: "kit", kind: "tool", key, name: t.name })),
+  ...ELEMENTS.map((e) => ({ cat: "atoms", kind: "element", key: String(e.z), name: `${e.name} (${e.sym})`, sym: e.sym, z: e.z })),
+  { cat: "struct", kind: "molecule", key: "blank", name: "Blank paper" },
+  ...MOLECULES.map((t) => ({ cat: "struct", kind: "molecule", key: t.id, name: t.name })),
   ...REAGENTS.map((r) => ({ cat: r.kind === "solid" ? "solid" : "liquid", kind: "reagent", key: r.id, name: cap1(r.name) })),
 ];
 const REAGENT_BOX = { solution: { x0: -35, y0: -125, x1: 35, y1: 8 }, solid: { x0: -36, y0: -96, x1: 36, y1: 8 }, indicator: { x0: -26, y0: -114, x1: 26, y1: 8 } };
@@ -3404,6 +3412,14 @@ $("cl-menu").addEventListener("click", (e) => {
   select(it);
 });
 
+// ── atoms and structures: sheets, not pieces on the bench ───────────────────
+const atoms = initAtoms({ $, openSheet: (id) => openSheet(id), esc, icons: { prev: UI.chevronLeft(18), next: UI.chevronRight(18) } });
+const sketch = initSketch({ $, state, save, openSheet: (id) => openSheet(id), UI });
+/** A small picture of a starting molecule, for its drawer tile. */
+function molThumb(id) {
+  const m = buildMolecule(id, 0, 0);
+  return `<svg viewBox="${fitBoxOf(m)}" aria-hidden="true">${moleculeSvgOf(m, {})}</svg>`;
+}
 // ── the drawer ──────────────────────────────────────────────────────────────
 function renderDrawer() {
   const q = $("cl-search").value.trim().toLowerCase();
@@ -3415,7 +3431,7 @@ function renderDrawer() {
   $("cl-grid").innerHTML = list.length
     ? list.map((c) => {
         const used = c.kind === "reagent" && out.has(c.key);
-        return `<button type="button" class="cl-tile${used ? " is-out" : ""}" data-kind="${c.kind}" data-key="${c.key}" aria-label="${esc(c.name)}${used ? " (on the bench)" : ""}">${thumb(c.kind, c.key)}<span>${esc(c.name)}</span></button>`;
+        return `<button type="button" class="cl-tile${used ? " is-out" : ""}" data-kind="${c.kind}" data-key="${c.key}" aria-label="${esc(c.name)}${used ? " (on the bench)" : ""}">${c.kind === "element" ? `<span class="cl-el" style="--el:${tint(c.z)}">${elementTile(ELEMENTS.find((x) => x.z === c.z))}</span>` : c.kind === "molecule" ? `<span class="cl-el cl-el--mol">${molThumb(c.key)}</span>` : thumb(c.kind, c.key)}<span>${esc(c.name)}</span></button>`;
       }).join("")
     : `<p class="cl-none">Nothing in the drawer by that name.</p>`;
 }
@@ -3433,7 +3449,7 @@ $("cl-search").addEventListener("input", renderDrawer);
 // a tile: tap to put the piece out; with a mouse, drag it to where it should stand
 $("cl-grid").addEventListener("pointerdown", (e) => {
   const b = e.target.closest(".cl-tile");
-  if (botBusy || !b || e.pointerType === "touch" || e.button !== 0) return;
+  if (botBusy || !b || e.pointerType === "touch" || e.button !== 0 || b.dataset.kind === "element" || b.dataset.kind === "molecule") return;
   tileDrag = { kind: b.dataset.kind, key: b.dataset.key, x: e.clientX, y: e.clientY };
 });
 function tileMove(e) {
@@ -3451,6 +3467,8 @@ $("cl-grid").addEventListener("click", (e) => {
   const b = e.target.closest(".cl-tile");
   if (swallow) { swallow = false; return; }
   if (!b) return;
+  if (b.dataset.kind === "element") { atoms.show(+b.dataset.key); return; }
+  if (b.dataset.kind === "molecule") { sketch.show(b.dataset.key); return; }
   const it = addItem(b.dataset.kind, b.dataset.key);
   if (it) { flash(it); save(); }
 });
@@ -3804,7 +3822,7 @@ const actor = {
   fitted: (key) => state.items.some((it) => it.key === key && it.on != null),
   lit: () => state.items.some((it) => (it.key === "burner" || it.key === "spirit") && it.flame > 0),
   // for the chat (A): what the drawer holds, where it is, and fetching it
-  catalog: () => CATALOG.map((c) => ({ ...c, part: CATS.find((k) => k.id === c.cat).label, formula: c.kind === "reagent" ? reagent(c.key).formula : "", also: ALSO[c.key] || "" })),
+  catalog: () => CATALOG.filter((c) => c.kind !== "element" && c.kind !== "molecule").map((c) => ({ ...c, part: CATS.find((k) => k.id === c.cat).label, formula: c.kind === "reagent" ? reagent(c.key).formula : "", also: ALSO[c.key] || "" })),
   standing: () => state.items.filter((it) => it.key !== "cap").map((it) => plain(it)),
   chosen: () => { const e = expNow(); return e ? { title: e.title, task: e.task, needs: e.needs } : null; },
   // for the tutor's commands: the pieces themselves, the practicals, the drawer
