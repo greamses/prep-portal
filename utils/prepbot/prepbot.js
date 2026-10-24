@@ -1916,7 +1916,15 @@ If (and only if) you're pointing the student to one specific page from the site 
       pin.textContent = "Pin to canvas";
       pin.title = "Stick this question on the canvas as a note";
       pin.onclick = () => {
-        try { keeper.pin({ text: replyQuestion(text), svg: replyFigure(text) }); pin.textContent = "Pinned"; } catch (_) { /* the page said no */ }
+        /* What goes on the note is the drawing the student is LOOKING at in this
+           bubble, read back off the page — not a second reading of the reply's
+           text, which could disagree with it. The text is the fallback. */
+        try {
+          const shown = bubbleEl.querySelector(".pb-figure svg");
+          const svg = shown ? new XMLSerializer().serializeToString(shown) : replyFigure(text);
+          keeper.pin({ text: replyQuestion(text), svg });
+          pin.textContent = "Pinned";
+        } catch (_) { /* the page said no */ }
       };
       footer.appendChild(pin);
     }
