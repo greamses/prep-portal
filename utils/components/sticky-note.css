@@ -444,3 +444,6 @@
 .pp-note--pad .pp-note__paper { min-height: 0; height: 100%; overflow: auto; box-sizing: border-box; border-radius: 0; box-shadow: none; }
 .pp-note--pad .pp-note__paper::before { display: none; }
 .pp-note--pad .pp-note__pick[hidden] { display: none; }
+
+/* While MathJax is still on its way, the live preview says so. */
+.pp-note__eqwait { font-family: var(--font-mono, monospace); font-size: 0.8rem; font-style: italic; color: rgba(20, 19, 15, 0.55); }

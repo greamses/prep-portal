@@ -25,6 +25,7 @@
 import { parse } from "./parse.js";
 import { buildRow, paintRow, el } from "./render.js";
 import { readValue } from "./formulas.js";
+import { slotEdit, slotTypingForInput } from "/utils/components/slot-typing.js";
 import * as A from "./ast.js";
 
 /* label, what it types, and how far back into it the caret goes.
@@ -514,9 +515,17 @@ export function createKeypad(host, { onSubmit } = {}) {
   });
 
   /* ── Typing ──────────────────────────────────────────────────────────── */
+  /* The keyboard and the on-screen keys type the same way: after a ^ or a / the
+     cursor stays in the power or the bottom until → is pressed (slot-typing.js). */
+  const slots = slotTypingForInput(line, { onChange: () => draw() });
+
   function type(text, back = 0) {
     const a = line.selectionStart ?? line.value.length;
     const b = line.selectionEnd ?? a;
+    if (text.length === 1) {
+      const edit = slotEdit(line.value, a, b, text);
+      if (edit) { line.focus(); slots.apply(edit); return; }
+    }
     line.value = line.value.slice(0, a) + text + line.value.slice(b);
     const at = a + text.length - back;
     line.setSelectionRange(at, at);
@@ -531,11 +540,15 @@ export function createKeypad(host, { onSubmit } = {}) {
       line.value = line.value.slice(0, a) + line.value.slice(b);
       line.setSelectionRange(a, a);
     } else if (a > 0) {
-      // Sitting between an empty pair, take both.
-      const pair = line.value.slice(a - 1, a + 1);
-      const span = pair === "()" ? 1 : 0;
-      line.value = line.value.slice(0, a - 1) + line.value.slice(a + span);
-      line.setSelectionRange(a - 1, a - 1);
+      // Sitting between an empty pair, take both — and the ^ or / it belonged to.
+      const edit = slotEdit(line.value, a, b, "Backspace");
+      if (edit?.remove) {
+        line.value = line.value.slice(0, edit.remove[0]) + line.value.slice(edit.remove[1]);
+        line.setSelectionRange(edit.remove[0], edit.remove[0]);
+      } else {
+        line.value = line.value.slice(0, a - 1) + line.value.slice(a);
+        line.setSelectionRange(a - 1, a - 1);
+      }
     }
     line.focus();
     draw();

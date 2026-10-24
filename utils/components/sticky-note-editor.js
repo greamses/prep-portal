@@ -66,7 +66,8 @@ import {
   runsToNodes, runsFromDOM, editNote, noteText, snapSize,
   restyle, toggleOver, runsOver,
 } from "./sticky-note.js";
-import { mathNode } from "./sticky-math.js";
+import { mathNode, whenMathDrawn, mathReady, preloadMath } from "./sticky-math.js";
+import { slotTypingForEditable } from "./slot-typing.js";
 import { toTeX, SIGNS } from "./math-linear.js";
 import { enhanceSelect } from "./pp-select.js";
 
@@ -401,7 +402,18 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     try { shown = mathNode(texOf(typed), document, typed); } catch { shown = null; }
     if (!shown) { live.hidden = true; return; }
     shown.removeAttribute("title");
-    live.replaceChildren(shown);
+    /* MathJax is a script that may still be on its way. Until it lands the
+       preview says so, instead of showing the raw TeX as though that were the
+       equation; the moment it arrives, it is set. */
+    if (shown.classList.contains("is-source") && !mathReady()) {
+      const wait = document.createElement("span");
+      wait.className = "pp-note__eqwait";
+      wait.textContent = "Setting the maths…";
+      live.replaceChildren(wait);
+      whenMathDrawn(showLive);
+    } else {
+      live.replaceChildren(shown);
+    }
     live.hidden = false;
     /* the box's place inside the NOTE: its offsets are measured from the paper
        (which is positioned, for its tape), and the paper's from the note */
@@ -410,6 +422,9 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     live.style.left = `${Math.max(0, x)}px`;
     live.style.top = `${y - paper.scrollTop + box.offsetHeight + 6}px`;
   }
+
+  /* x^ keeps the cursor in the power, a/ in the bottom, until → (slot-typing.js) */
+  slotTypingForEditable(paper, { box: openEq });
 
   /**
    * Set whatever equation is open — the moment you leave it, as a word
@@ -726,6 +741,7 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
 
   function open(thing) {
     if (!thing) return;
+    preloadMath();
     if (note && note !== thing) close(true);
     note = thing;
     root.hidden = false;

@@ -159,8 +159,62 @@ const isSpace = (c) => c === " " || c === "\t" || c === "\n";
  * @param {string} src  linear mathematics, TeX, or any mixture of the two
  * @returns {string} TeX, ready for MathJax
  */
+/**
+ * Two things said in a way the run reader does not know, turned into the TeX
+ * it passes through untouched:
+ *
+ *   2 1/3            a mixed number — a whole number, a space, and a PROPER
+ *                    fraction (the top smaller than the bottom): 2rac{1}{3}
+ *   [[1,2],[3,4]]    a matrix, rows in brackets, cells on commas — each cell
+ *                    translated on its own, so [[x^2, 1/2],[0, 1]] works
+ */
+function rewrite(s) {
+  // matrices first: their cells may hold anything, including a mixed number
+  let out = "";
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === "[" && s[i + 1] === "[" && s[i - 1] !== "\\") {
+      const end = matchClose(s, i);
+      if (end > 0) {
+        const rows = splitTop(s.slice(i + 1, end), ",").map((r) => r.trim());
+        if (rows.every((r) => r.startsWith("[") && r.endsWith("]"))) {
+          const cells = rows.map((r) => splitTop(r.slice(1, -1), ",").map((c) => toTeX(c.trim())));
+          out += "\\begin{bmatrix}" + cells.map((r) => r.join("&")).join("\\\\") + "\\end{bmatrix}";
+          i = end;
+          continue;
+        }
+      }
+    }
+    out += s[i];
+  }
+  return out.replace(/(^|[^0-9A-Za-z.\^_/])(\d+)\s+(\d+)\s*\/\s*(\d+)(?![0-9A-Za-z(.])/g,
+    (all, lead, whole, top, bottom) => (Number(top) < Number(bottom) ? lead + whole + "\\frac{" + top + "}{" + bottom + "}" : all));
+}
+
+/** The index of the bracket that closes the one at `i`, or -1. */
+function matchClose(s, i) {
+  let depth = 0;
+  for (let k = i; k < s.length; k++) {
+    if (s[k] === "[") depth++;
+    else if (s[k] === "]" && --depth === 0) return k;
+  }
+  return -1;
+}
+
+/** `s` split on `sep` wherever it is not inside brackets. */
+function splitTop(s, sep) {
+  const parts = [];
+  let depth = 0, from = 0;
+  for (let k = 0; k < s.length; k++) {
+    if ("([{".includes(s[k])) depth++;
+    else if (")]}".includes(s[k])) depth--;
+    else if (s[k] === sep && depth === 0) { parts.push(s.slice(from, k)); from = k + 1; }
+  }
+  parts.push(s.slice(from));
+  return parts;
+}
+
 export function toTeX(src) {
-  const s = String(src == null ? "" : src);
+  const s = rewrite(String(src == null ? "" : src));
   if (!s.trim()) return "";
   try {
     const { tex } = readRun(s, 0, null);

@@ -85,6 +85,9 @@ export function whenMathDrawn(fn) {
    when it lands — the painted ones repaint, and any formula already sitting in
    an editor as its source text is set where it stands. */
 let sent = false;
+/** Send for MathJax now, if it is not here — a note starts this the moment it
+    opens, so by the time an equation is typed it is usually already there. */
+export function preloadMath() { summon(); }
 function summon() {
   if (sent || typeof window === "undefined" || mathReady()) return;
   sent = true;
