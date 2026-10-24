@@ -65,7 +65,7 @@ const TOOLS = [
      read as one more key to work out instead of the one that submits them.
      The letters' own tab bar (which group is up, and CAPS) picks an alphabet
      rather than typing into the equation, but it is still a key, not a note. */
-  ".am-key", ".am-move", ".am-go", ".am-subtab",
+  ".am-key", ".am-move", ".am-go", ".am-subtab", ".am-pin", ".am-pinned__del",
 ];
 
 // Not buttons, or must not be paper. `.pp-plain` is the opt-out.
