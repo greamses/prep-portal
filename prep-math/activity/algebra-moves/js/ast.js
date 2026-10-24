@@ -53,6 +53,9 @@ export const matSize = (m) => [m.rows.length, m.rows[0].length];
 
 /** A percentage, 25%: the number `k` out of a hundred. */
 export const pct = (k, id = freshId()) => ({ id, kind: "pct", k });
+/* n! — the factorial — and nPr / nCr: arrangements and choices of r from n. */
+export const fact = (k, id = freshId()) => ({ id, kind: "fact", k });
+export const choose = (n, r, perm = false, id = freshId()) => ({ id, kind: "choose", n, r, perm });
 
 /** A decimal as it is written: 0.25 — a number that keeps the text it was typed
     as, so it is drawn as a decimal and not as the fraction it is worth. */
@@ -134,6 +137,8 @@ export function kidsOf(node) {
     case "root": return [node.k];
     case "mixed": return [node.w, node.f];
     case "pct":  return [node.k];
+    case "fact": return [node.k];
+    case "choose": return [node.n, node.r];
     case "mat":  return node.rows.flat();
     case "pm":   return [node.k];
     case "fn":
@@ -177,6 +182,8 @@ export function replace(root, id, next) {
       case "pm":   { const k = rec(n.k); return k === n.k ? n : { id: n.id, kind: "pm", k }; }
       case "mixed": { const w = rec(n.w), f = rec(n.f); return w === n.w && f === n.f ? n : { ...n, w, f }; }
       case "pct":  { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
+      case "fact": { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
+      case "choose": { const a = rec(n.n), b = rec(n.r); return a === n.n && b === n.r ? n : { ...n, n: a, r: b }; }
       case "mat": {
         let changed = false;
         const rows = n.rows.map((r) => r.map((c) => { const k = rec(c); if (k !== c) changed = true; return k; }));
@@ -277,7 +284,9 @@ export function readTerm(node) {
       case "num":
         c = R.mul(c, flip ? R.neg(n.v) : n.v);
         return true;
-      // 25% is a number like any other: a quarter.
+      // 25% is a number like any other: a quarter. So is 5!, and so is nCr.
+      case "fact":
+      case "choose":
       case "pct": {
         const v = exactValue(n);
         if (!v) return false;
@@ -402,9 +411,26 @@ export function isNumeric(node) {
 }
 
 /** The exact value of a variable-free subtree, or null when it has none. */
+const BIG_FACT = 170n;            // past this a factorial is not worth writing down
+function factorialBig(k) { let f = 1n; for (let i = 2n; i <= k; i++) f *= i; return f; }
+/** n! and nPr / nCr for whole numbers, exactly; null when they have no such value. */
+function countingValue(node) {
+  const whole = (v) => v && R.isInt(v) && v.n >= 0n && v.n <= BIG_FACT ? v.n : null;
+  if (node.kind === "fact") {
+    const k = whole(exactValue(node.k));
+    return k === null ? null : R.rat(factorialBig(k));
+  }
+  const n = whole(exactValue(node.n)), r = whole(exactValue(node.r));
+  if (n === null || r === null || r > n) return null;
+  const top = factorialBig(n);
+  return R.rat(node.perm ? top / factorialBig(n - r) : top / (factorialBig(r) * factorialBig(n - r)));
+}
+
 export function exactValue(node) {
   try {
     switch (node.kind) {
+      case "fact":
+      case "choose": return countingValue(node);
       case "num":  return node.v;
       case "base": { const v = baseValue(node.digits, node.base); return v === null ? null : R.rat(v); }
       case "pct":  { const k = exactValue(node.k); return k ? R.div(k, R.rat(100n)) : null; }

@@ -23,6 +23,28 @@ import * as R from "./rational.js";
 
 export const GROUPS = [
   {
+    group: "Counting",
+    items: [
+      {
+        id: "arrangements", name: "Arrangements in a row: nPr", eq: "P = n!/(n - r)!", find: "P",
+        letters: { P: "the number of arrangements", n: "how many things there are", r: "how many are taken, in order" },
+        example: { n: "6", r: "3" },
+        note: "the order matters",
+      },
+      {
+        id: "choices", name: "Choices: nCr", eq: "C = n!/(r!(n - r)!)", find: "C",
+        letters: { C: "the number of ways to choose", n: "how many things there are", r: "how many are chosen" },
+        example: { n: "6", r: "2" },
+        note: "the order does not matter",
+      },
+      {
+        id: "all-arranged", name: "All of them in a row: n!", eq: "A = n!", find: "A",
+        letters: { A: "the number of arrangements", n: "how many things there are" },
+        example: { n: "5" },
+      },
+    ],
+  },
+  {
     group: "Shapes",
     items: [
       {

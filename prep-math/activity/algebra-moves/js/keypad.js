@@ -170,6 +170,15 @@ const FUNCS = [
     { k: "←", act: "left", title: "Move left, box to box in a matrix" },
     { k: "→", act: "right", title: "Move right, box to box in a matrix" },
   ],
+  /* Counting: n factorial, and the arrangements and choices of r from n. The
+     last two put two boxes on the line and → goes from one to the next. */
+  [
+    { k: "n!", t: "!", title: "factorial: 5! is 5 × 4 × 3 × 2 × 1", math: "n!" },
+    { k: "nPr", act: "perm", title: "Arrangements of r things from n, in order: nPr", tex: "{}^{n}P_{r}" },
+    { k: "nCr", act: "comb", title: "Choices of r things from n, order not mattering: nCr", tex: "{}^{n}C_{r}" },
+    { k: "←", act: "left", title: "Move left" },
+    { k: "→", act: "right", title: "Move right" },
+  ],
 ];
 
 export function createKeypad(host, { onSubmit } = {}) {
@@ -740,12 +749,23 @@ export function createKeypad(host, { onSubmit } = {}) {
     draw();
   }
 
+  /** nPr(?,?) / nCr(?,?): two boxes, the first selected. */
+  function placeChoose(letter) {
+    const a = line.selectionStart ?? line.value.length;
+    const b = line.selectionEnd ?? a;
+    const put = `n${letter}r(?,?)`;
+    line.value = line.value.slice(0, a) + put + line.value.slice(b);
+    line.setSelectionRange(a + 4, a + 5);
+    line.focus();
+    draw();
+  }
+
   /** → (or ←) from the end of one filled box to the next ? box: the one that
-      comes next once a space and a / are stepped over. Selected whole, so what
-      is typed replaces it. */
+      comes next once a space, a / or a , are stepped over. Selected whole, so
+      what is typed replaces it. */
   function hopBox(dir) {
     const v = line.value, a = line.selectionStart ?? 0, b = line.selectionEnd ?? a;
-    const m = dir > 0 ? /^\s*\/?\s*\?/.exec(v.slice(b)) : /\?\s*\/?\s*$/.exec(v.slice(0, a));
+    const m = dir > 0 ? /^\s*[\/,]?\s*\?/.exec(v.slice(b)) : /\?\s*[\/,]?\s*$/.exec(v.slice(0, a));
     if (!m) return false;
     const at = dir > 0 ? b + m[0].length - 1 : a - m[0].length;
     line.setSelectionRange(at, at + 1);
@@ -810,7 +830,7 @@ export function createKeypad(host, { onSubmit } = {}) {
   const ACTS = { back: backspace, left: () => nudge(-1), right: () => nudge(1),
                  up: () => nudge(0, "up"), down: () => nudge(0, "down"),
                  matrix: (btn) => openPicker(btn), detmatrix: (btn) => openPicker(btn, "det"),
-                 mixed: placeMixed,
+                 mixed: placeMixed, perm: () => placeChoose("P"), comb: () => placeChoose("C"),
                  sign: flipSign, clear: () => { line.value = ""; draw(); line.focus(); },
                  enter: submit };
 

@@ -20,9 +20,33 @@ import { varsIn, walk, baseValue } from "./ast.js";
 import { hasMatrix, evalM, flat as flatM, subtract as subtractM, mulM } from "./matrix-eval.js";
 const baseValueOf = (n) => baseValue(n.digits, n.base);
 
+/** The gamma function, so n! can be sampled at any n, not only whole ones
+    (Lanczos; whole numbers are multiplied out so they are exact). */
+function gammaFn(z) {
+  if (Number.isInteger(z)) {
+    if (z <= 0 || z > 171) return NaN;
+    let f = 1;
+    for (let i = 2; i < z; i++) f *= i;
+    return f;
+  }
+  if (z < 0.5) return Math.PI / (Math.sin(Math.PI * z) * gammaFn(1 - z));
+  const g = 7, c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+    -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  const x = z - 1;
+  let a = c[0];
+  const t = x + g + 0.5;
+  for (let i = 1; i < g + 2; i++) a += c[i] / (x + i);
+  return Math.sqrt(2 * Math.PI) * Math.pow(t, x + 0.5) * Math.exp(-t) * a;
+}
+
 /** Float evaluation for sampling only. NaN means "this sample is unusable". */
 function evalAt(node, env) {
   switch (node.kind) {
+    case "fact": return gammaFn(evalAt(node.k, env) + 1);
+    case "choose": {
+      const n = evalAt(node.n, env), r = evalAt(node.r, env);
+      return node.perm ? gammaFn(n + 1) / gammaFn(n - r + 1) : gammaFn(n + 1) / (gammaFn(r + 1) * gammaFn(n - r + 1));
+    }
     case "num":  return Number(node.v.n) / Number(node.v.d);
     case "var":  return env[node.name];
     case "neg":  return -evalAt(node.k, env);

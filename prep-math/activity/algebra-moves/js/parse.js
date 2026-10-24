@@ -72,6 +72,11 @@ function tokenise(src) {
     const named = REFS.find((r) => src.startsWith(r, i));
     if (named) { out.push({ t: "ref", v: named, at: i }); i += named.length; continue; }
     if (src.startsWith("sqrt", i)) { out.push({ t: "root", v: "sqrt", at: i }); i += 4; continue; }
+    // nCr(8,3) and nPr(8,3): choices and arrangements.
+    {
+      const m = /^n([PC])r\(/.exec(src.slice(i));
+      if (m && (i === 0 || !isAlpha(src[i - 1]))) { out.push({ t: "choose", v: m[1], at: i }); i += 3; continue; }
+    }
     // Function names and lim, checked before letters for the same reason.
     // det and transpose are only the names of functions when something to
     // work on follows them; otherwise d·e·t is three letters.
@@ -83,6 +88,7 @@ function tokenise(src) {
     if (c === "∫") { out.push({ t: "int", v: "∫", at: i }); i++; continue; }
     if (c === "°") { out.push({ t: "deg", v: "°", at: i }); i++; continue; }
     if (c === "%") { out.push({ t: "pct", v: "%", at: i }); i++; continue; }
+    if (c === "!") { out.push({ t: "fact", v: "!", at: i }); i++; continue; }
     if (c === "_") { out.push({ t: "_", v: "_", at: i }); i++; continue; }
     if (src.startsWith("->", i)) { out.push({ t: "to", v: "->", at: i }); i += 2; continue; }
     if (c === "→") { out.push({ t: "to", v: "→", at: i }); i++; continue; }
@@ -110,7 +116,7 @@ export function setRefs(names) {
   REFS = [...new Set(names.filter(Boolean))].sort((a, b) => b.length - a.length);
 }
 
-const STARTS_FACTOR = new Set(["[", "base", "ref", "num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
+const STARTS_FACTOR = new Set(["[", "choose", "base", "ref", "num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
 
 export function parse(src) {
   const toks = tokenise(src);
@@ -160,6 +166,15 @@ export function parse(src) {
     if (tk.t === "var") { p++; return span(mark, A.vr(tk.v)); }
     if (tk.t === "fn") { p++; return span(mark, A.fn(tk.v, atom())); }
     if (tk.t === "ref") { p++; return span(mark, A.ref(tk.v)); }
+    if (tk.t === "choose") {
+      p++;
+      eat("(");
+      const n = expr();
+      eat(",");
+      const r = expr();
+      eat(")");
+      return span(mark, A.choose(n, r, tk.v === "P"));
+    }
     if (tk.t === "base") { p++; return span(mark, A.based(tk.v, tk.base)); }
     if (tk.t === "deriv") { p++; return span(mark, A.deriv(atom(), tk.v)); }
     if (tk.t === "lim") {
@@ -225,6 +240,8 @@ export function parse(src) {
     if (peek().t === "deg") { p++; base = span(mark, A.deg(base)); }
     // 25% is twenty-five out of a hundred.
     if (peek().t === "pct") { p++; base = span(mark, A.pct(base)); }
+    // 5! is five factorial.
+    while (peek().t === "fact") { p++; base = span(mark, A.fact(base)); }
     if (peek().t === "^") {
       p++;
       const e = factor();

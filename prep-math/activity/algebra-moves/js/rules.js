@@ -69,6 +69,14 @@ export const RULE_GROUPS = [
     ],
   },
   {
+    group: "Rules: counting",
+    items: [
+      r("r-fact", "A factorial", "5! = 5 × 4 × 3 × 2 × 1", ["factorial"]),
+      r("r-perm", "Arrangements: nPr", "nPr(n,r) = n!/(n − r)!", ["choose"]),
+      r("r-comb", "Choices: nCr", "nCr(n,r) = n!/(r!(n − r)!)", ["choose"]),
+    ],
+  },
+  {
     group: "Rules: fractions",
     items: [
       r("r-cancel", "Cancel it down", "ka/(kb) = a/b", ["cancel"]),

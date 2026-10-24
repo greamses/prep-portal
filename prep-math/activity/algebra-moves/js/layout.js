@@ -110,7 +110,9 @@ function needsBrackets(node, parentKind, slot) {
   // A function's argument and a derivative's body are always in brackets.
   if (parentKind === "fn" || parentKind === "deriv") return true;
   if (parentKind === "int" || parentKind === "lim") return node.kind === "sum";
-  if (parentKind === "deg" || parentKind === "pct") return node.kind !== "num" && node.kind !== "var";
+  if (parentKind === "deg" || parentKind === "pct" || parentKind === "fact") return node.kind !== "num" && node.kind !== "var";
+  // nCr's two numbers are set apart by their places, not by brackets.
+  if (parentKind === "choose") return false;
   if (node.paren) return true;
   switch (parentKind) {
     case "prod": return node.kind === "sum" || ((node.kind === "neg" || node.kind === "pm") && slot > 0);
@@ -318,6 +320,22 @@ function measureBare(node, size, binary) {
       const sw = measureText("%", size, false);
       return { ...base, kind: "pct", k, sw, w: k.w + sw,
                ascent: Math.max(base.ascent, k.ascent), descent: Math.max(base.descent, k.descent) };
+    }
+    // 5!: the number, then the mark right after it.
+    case "fact": {
+      const k = measure(node.k, size, "fact", 0);
+      const bw = measureText("!", size, false);
+      return { ...base, kind: "fact", k, bw, w: k.w + bw,
+               ascent: Math.max(base.ascent, k.ascent), descent: Math.max(base.descent, k.descent) };
+    }
+    // ⁿCᵣ and ⁿPᵣ: n raised before the letter, r lowered after it.
+    case "choose": {
+      const small = size * 0.62;
+      const n = measure(node.n, small, "choose", 0), r = measure(node.r, small, "choose", 1);
+      const lw = measureText(node.perm ? "P" : "C", size, false);
+      const lift = 0.42 * size, drop = 0.26 * size, gap = 0.04 * size;
+      return { ...base, kind: "choose", n, r, lw, lift, drop, gap, w: n.w + gap + lw + gap + r.w,
+               ascent: Math.max(base.ascent, lift + n.ascent), descent: Math.max(base.descent, drop + r.descent) };
     }
     // 1011₂: the digits upright, the base lowered and small after them.
     case "base": {
@@ -555,6 +573,17 @@ function place(m, x, y, out) {
       text("pct", "%", x + m.k.w, y, m.size, false);
       break;
 
+    case "fact":
+      place(m.k, x, y, out);
+      text("bang", "!", x + m.k.w, y, m.size, false);
+      break;
+
+    case "choose":
+      place(m.n, x, y - m.lift, out);
+      text(m.node.perm ? "perm" : "comb", m.node.perm ? "P" : "C", x + m.n.w + m.gap, y, m.size, false);
+      place(m.r, x + m.n.w + m.gap + m.lw + m.gap, y + m.drop, out);
+      break;
+
     case "base":
       text("t", m.node.digits, x, y, m.size, false);
       text("radix", String(m.node.base), x + m.dw + 0.04 * m.size, y + 0.32 * m.size, m.sub, false);
@@ -696,6 +725,8 @@ export function plain(node, parentKind = null, slot = 0) {
     case "const": return wrap(node.name);
     case "ref":  return wrap(node.name);
     case "pct":  return wrap(`${plain(node.k, "pct", 0)}%`);
+    case "fact": return wrap(`${plain(node.k, "fact", 0)}!`);
+    case "choose": return wrap(`n${node.perm ? "P" : "C"}r(${plain(node.n, "choose", 0)},${plain(node.r, "choose", 1)})`);
     case "mat":  return `[${node.rows.map((r) => `[${r.map((c) => plain(c, "mat", 0)).join(",")}]`).join(",")}]`;
     case "base": return wrap(`${node.digits}_${node.base}`);
     case "mixed": return wrap(`${plain(node.w)} ${plain(node.f.a)}/${plain(node.f.b)}`);

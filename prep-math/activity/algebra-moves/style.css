@@ -1518,7 +1518,9 @@
 
 /* a key face set by MathJax: sized to the key, in the key's own colour */
 .am-key__ink--tex .pp-note__eq { display: inline-block; pointer-events: none; }
-.am-key__ink--tex svg { height: 1.15em; width: auto; vertical-align: middle; }
+.am-key__ink--tex svg { height: 0.95em; width: auto; vertical-align: middle; }
+/* a face drawn on a key that acts (det, nPr) is set like the others, not in the act keys' semibold */
+.am-key--act .am-key__ink { font-weight: 400; }
 
 /* a folded line shows none of itself: not the drawing, not its notes. (The svg
    attribute `hidden` loses to the sheet's own display rule, so say it here.) */

@@ -692,9 +692,37 @@ function nodeTidies(eq, node) {
     t("surd", "Clear the root off the bottom", "multiply top and bottom by it", rationalise(eq, node.id));
   }
   if (node.kind === "prod" || node.kind === "frac") t("multiply", multiplyLabel(node), "numbers together, letters together", multiplyOut(eq, node.id));
+  if (node.kind === "fact") t("factorial", "Write the factorial out", "n × (n − 1) × … × 1", factorialOut(eq, node));
+  if (node.kind === "choose") {
+    t("choose", node.perm ? "Write the arrangements as factorials" : "Write the choices as factorials",
+      node.perm ? "nPr = n! ÷ (n − r)!" : "nCr = n! ÷ (r! (n − r)!)", chooseOut(eq, node));
+  }
   for (const o of calcMoves(eq, node)) out.push(o);
   for (const o of matrixMoves(eq, node)) out.push(o);
   return out;
+}
+
+/* ── Counting: n!, nPr, nCr ──────────────────────────────────────────────────
+   The factorial written as the product it is, and the two counts written as the
+   factorials they are made of. "Work out" then does the numbers. */
+function factorialOut(eq, node) {
+  const v = A.exactValue(node.k);
+  // Only a known whole number is written out: n! with a letter in it has no end to write to.
+  if (!v || !R.isInt(v) || v.n < 2n || v.n > 12n) return { error: "That one is as plain as it goes." };
+  const k = Number(v.n);
+  const next = A.prod(Array.from({ length: k }, (_, i) => A.numberNode(R.rat(BigInt(k - i)))));
+  next.paren = !!node.paren;
+  return { eq: A.replace(eq, node.id, next), from: new Map(), mark: plain(next), note: `${plain(node)} is ${plain(next)}` };
+}
+function chooseOut(eq, node) {
+  const gap = () => {
+    const a = A.exactValue(node.n), b = A.exactValue(node.r);
+    return a && b ? A.numberNode(R.sub(a, b)) : { ...A.sum([copy(node.n), A.neg(copy(node.r))]), paren: true };
+  };
+  const top = A.fact(copy(node.n));
+  const bottom = node.perm ? A.fact(gap()) : A.prod([A.fact(copy(node.r)), A.fact(gap())]);
+  const next = A.frac(top, bottom);
+  return { eq: A.replace(eq, node.id, next), from: new Map(), mark: plain(next), note: `${plain(node)} is ${plain(next)}` };
 }
 
 /* ── Matrices ───────────────────────────────────────────────────────────────
@@ -2840,7 +2868,7 @@ export function multiOffers(eq, keys, { given = null } = {}) {
     with none of these left on any of its terms is as tidy as it goes. */
 export const TIDY = new Set(["combine", "workout", "cancel", "dropzero", "indices", "surd", "addfrac",
   "multiply", "trig", "pyth", "diff", "integrate", "limit", "base10",
-  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse"]);
+  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse", "factorial", "choose"]);
 
 /** Every move on offer for a set of picked glyphs — what each one means, what
     its term can have done to it, and what they mean together — or, with
