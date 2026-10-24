@@ -123,6 +123,85 @@ export const GROUPS = [
     ],
   },
   {
+    group: "Sequences and series",
+    items: [
+      {
+        id: "ap-term", name: "Arithmetic sequence: the nth term", eq: "T = a + (n - 1)d", find: "T",
+        letters: { T: "the nth term", a: "the first term", n: "which term, or how many terms", d: "the common difference" },
+        example: { a: "3", n: "10", d: "4" },
+        note: "add the same number each time",
+      },
+      {
+        id: "ap-diff", name: "Arithmetic sequence: the common difference", eq: "d = (T - a)/(n - 1)", find: "d",
+        letters: { d: "the common difference", T: "the nth term", a: "the first term", n: "which term, or how many terms" },
+        example: { T: "39", a: "3", n: "10" },
+      },
+      {
+        id: "ap-sum", name: "Arithmetic series: the sum, from the difference", eq: "S = n/2(2a + (n - 1)d)", find: "S",
+        letters: { S: "the sum of the first n terms", a: "the first term", n: "how many terms", d: "the common difference" },
+        example: { a: "3", n: "10", d: "4" },
+      },
+      {
+        id: "ap-sum-last", name: "Arithmetic series: the sum, from the last term", eq: "S = n/2(a + l)", find: "S",
+        letters: { S: "the sum of the first n terms", a: "the first term", l: "the last term", n: "how many terms" },
+        example: { a: "3", l: "39", n: "10" },
+      },
+      {
+        id: "gp-term", name: "Geometric sequence: the nth term", eq: "T = ar^(n - 1)", find: "T",
+        letters: { T: "the nth term", a: "the first term", r: "the common ratio", n: "which term, or how many terms" },
+        example: { a: "2", r: "3", n: "5" },
+        note: "multiply by the same number each time",
+      },
+      {
+        id: "gp-ratio", name: "Geometric sequence: the common ratio", eq: "r = b/a", find: "r",
+        letters: { r: "the common ratio", b: "any term", a: "the term before it" },
+        example: { b: "12", a: "4" },
+      },
+      {
+        id: "gp-sum", name: "Geometric series: the sum, ratio above 1", eq: "S = a(r^n - 1)/(r - 1)", find: "S",
+        letters: { S: "the sum of the first n terms", a: "the first term", r: "the common ratio", n: "how many terms" },
+        example: { a: "2", r: "3", n: "5" },
+      },
+      {
+        id: "gp-sum-small", name: "Geometric series: the sum, ratio below 1", eq: "S = a(1 - r^n)/(1 - r)", find: "S",
+        letters: { S: "the sum of the first n terms", a: "the first term", r: "the common ratio", n: "how many terms" },
+        example: { a: "1", r: "1/2", n: "4" },
+      },
+      {
+        id: "gp-infinity", name: "Geometric series: the sum to infinity", eq: "S = a/(1 - r)", find: "S",
+        letters: { S: "the sum of all the terms, for ever", a: "the first term", r: "the common ratio" },
+        example: { a: "6", r: "1/3" },
+        note: "only when r is between −1 and 1",
+      },
+      {
+        id: "gp-mean", name: "Geometric mean of two numbers", eq: "g = sqrt(ab)", find: "g",
+        letters: { g: "the geometric mean", a: "the first number", b: "the second number" },
+        example: { a: "4", b: "9" },
+      },
+      {
+        id: "term-from-sums", name: "A term from two sums", eq: "T = S - P", find: "T",
+        letters: { T: "the nth term", S: "the sum of the first n terms", P: "the sum of the first n − 1 terms" },
+        example: { S: "210", P: "171" },
+      },
+      {
+        id: "sum-naturals", name: "Sum of 1 + 2 + 3 + … + n", eq: "S = n(n + 1)/2", find: "S",
+        letters: { S: "the sum", n: "the last number" },
+        example: { n: "100" },
+      },
+      {
+        id: "sum-squares", name: "Sum of the squares 1² + 2² + … + n²", eq: "S = n(n + 1)(2n + 1)/6", find: "S",
+        letters: { S: "the sum", n: "the last number" },
+        example: { n: "10" },
+      },
+      {
+        id: "sum-cubes-n", name: "Sum of the cubes 1³ + 2³ + … + n³", eq: "S = (n(n + 1)/2)^2", find: "S",
+        letters: { S: "the sum", n: "the last number" },
+        example: { n: "5" },
+        note: "the square of the sum of 1 to n",
+      },
+    ],
+  },
+  {
     group: "Shapes",
     items: [
       {
