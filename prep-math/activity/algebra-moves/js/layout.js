@@ -371,7 +371,7 @@ function measureBare(node, size, binary) {
     case "base": {
       const dw = measureText(node.digits, size, false);
       const sub = size * 0.6;
-      const bw = measureText(String(node.base), sub, false);
+      const bw = measureText(node.v ? node.v.name : String(node.base), sub, !!node.v);
       return { ...base, kind: "base", dw, bw, sub, w: dw + 0.04 * size + bw,
                descent: Math.max(base.descent, 0.32 * size + DESC * sub) };
     }
@@ -641,7 +641,7 @@ function place(m, x, y, out) {
 
     case "base":
       text("t", m.node.digits, x, y, m.size, false);
-      text("radix", String(m.node.base), x + m.dw + 0.04 * m.size, y + 0.32 * m.size, m.sub, false);
+      text("radix", m.node.v ? m.node.v.name : String(m.node.base), x + m.dw + 0.04 * m.size, y + 0.32 * m.size, m.sub, !!m.node.v);
       break;
 
     case "mixed":
@@ -788,7 +788,7 @@ export function plain(node, parentKind = null, slot = 0) {
     }
     case "choose": return wrap(`n${node.perm ? "P" : "C"}r(${plain(node.n, "choose", 0)},${plain(node.r, "choose", 1)})`);
     case "mat":  return `[${node.rows.map((r) => `[${r.map((c) => plain(c, "mat", 0)).join(",")}]`).join(",")}]`;
-    case "base": return wrap(`${node.digits}_${node.base}`);
+    case "base": return wrap(`${node.digits}_${node.v ? node.v.name : node.base}`);
     case "mixed": return wrap(`${plain(node.w)} ${plain(node.f.a)}/${plain(node.f.b)}`);
     case "fn":
       // A matrix on its side reads back as [[…]]^T, which the parser takes as it is.

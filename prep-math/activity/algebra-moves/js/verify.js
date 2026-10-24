@@ -72,7 +72,17 @@ function evalAt(node, env) {
     case "pm":   return env.__pm * evalAt(node.k, env);
     case "mixed": return evalAt(node.w, env) + evalAt(node.f, env);
     case "pct":  return evalAt(node.k, env) / 100;
-    case "base": { const v = baseValueOf(node); return v === null ? NaN : Number(v); }
+    case "base": {
+      // digits in a base that is a letter: each digit times a power of that letter
+      if (node.v) {
+        const b = evalAt(node.v, env);
+        let total = 0;
+        for (const ch of node.digits) total = total * b + parseInt(ch, 36);
+        return total;
+      }
+      const v = baseValueOf(node);
+      return v === null ? NaN : Number(v);
+    }
     case "const": return node.name === "e" ? Math.E : Math.PI;
     case "deg":  return evalAt(node.k, env) * Math.PI / 180;
     case "fn": {

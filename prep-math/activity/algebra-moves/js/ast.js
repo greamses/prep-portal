@@ -84,9 +84,13 @@ export function decimalText(r) {
 /** A number written in another base: 1011₂ is { digits: "1011", base: 2 }.
     Digits past 9 are the letters A–Z (A is 10), so base 16 has 0–9 and A–F. */
 export const based = (digits, base, id = freshId()) => ({ id, kind: "base", digits: String(digits).toUpperCase(), base });
+/* 35_y: digits in a base that is a LETTER — 3y + 5 once it is written out. The
+   letter is a node of its own (`v`) so every walk over the tree finds it. */
+export const basedVar = (digits, name, id = freshId()) => ({ id, kind: "base", digits: String(digits), base: null, v: vr(name) });
 
 /** Its value, exactly, or null when a digit does not belong in that base. */
 export function baseValue(digits, base) {
+  if (base == null) return null;             // a base that is a letter has no number yet
   let v = 0n;
   for (const ch of String(digits).toUpperCase()) {
     const d = parseInt(ch, 36);
@@ -143,6 +147,7 @@ export function kidsOf(node) {
     case "neg":  return [node.k];
     case "root": return [node.k];
     case "mixed": return [node.w, node.f];
+    case "base":  return node.v ? [node.v] : [];
     case "pct":  return [node.k];
     case "fact": return [node.k];
     case "list": return node.items;
@@ -191,6 +196,7 @@ export function replace(root, id, next) {
       case "pm":   { const k = rec(n.k); return k === n.k ? n : { id: n.id, kind: "pm", k }; }
       case "mixed": { const w = rec(n.w), f = rec(n.f); return w === n.w && f === n.f ? n : { ...n, w, f }; }
       case "pct":  { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
+      case "base": { if (!n.v) return n; const v = rec(n.v); return v === n.v ? n : { ...n, v }; }
       case "fact": { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
       case "list": { const items = n.items.map(rec); return items.every((k, i) => k === n.items[i]) ? n : { ...n, items }; }
       case "sigma": { const lo = rec(n.lo), hi = rec(n.hi), k = rec(n.k); return lo === n.lo && hi === n.hi && k === n.k ? n : { ...n, lo, hi, k }; }

@@ -692,6 +692,7 @@ function nodeTidies(eq, node) {
     t("surd", "Clear the root off the bottom", "multiply top and bottom by it", rationalise(eq, node.id));
   }
   if (node.kind === "prod" || node.kind === "frac") t("multiply", multiplyLabel(node), "numbers together, letters together", multiplyOut(eq, node.id));
+  if (node.kind === "base" && node.v) t("expandletter", `Write it out: each digit times a power of ${node.v.name}`, "digit × place value", expandBase(eq, node.id));
   if (node.kind === "fact") t("factorial", "Write the factorial out", "n × (n − 1) × … × 1", factorialOut(eq, node));
   if (node.kind === "sigma") t("sigma", "Write out the terms", "one term for each whole number counted", sigmaOut(eq, node));
   if (node.kind === "fn" && node.k.kind === "list") {
@@ -1503,14 +1504,16 @@ export function expandBase(eq, id) {
   const n = A.findById(eq, id);
   if (!n || n.kind !== "base") return { error: "That is not a number in another base." };
   const digits = [...n.digits];
+  const baseNode = () => (n.v ? A.vr(n.v.name) : A.num(R.rat(BigInt(n.base))));
+  const baseName = n.v ? n.v.name : n.base;
   const places = digits.map((ch, i) => {
     const power = digits.length - 1 - i;
-    return A.prod([A.num(R.rat(BigInt(parseInt(ch, 36)))), A.pow(A.num(R.rat(BigInt(n.base))), A.num(R.rat(BigInt(power))))]);
+    return A.prod([A.num(R.rat(BigInt(parseInt(ch, 36)))), A.pow(baseNode(), A.num(R.rat(BigInt(power))))]);
   });
   const next = places.length === 1 ? places[0] : { ...A.sum(places), paren: true };
   return {
     eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next),
-    note: `Each digit times its place value in base ${n.base}: ${plain(next)}`,
+    note: `Each digit times its place value in base ${baseName}: ${plain(next)}`,
   };
 }
 
@@ -1518,6 +1521,7 @@ export function expandBase(eq, id) {
 export function toBase(eq, id, target) {
   const n = A.findById(eq, id);
   if (!n || n.kind !== "base") return { error: "That is not a number written with its base." };
+  if (n.v) return { error: "Write it out first: its base is still a letter." };
   const v = A.baseValue(n.digits, n.base);
   if (v === null) return { error: `${n.digits} has a digit that base ${n.base} does not have.` };
   if (target === n.base) return { error: `That is in base ${target} already.` };
@@ -1532,6 +1536,7 @@ export function toBase(eq, id, target) {
 export function toBaseTen(eq, id) {
   const n = A.findById(eq, id);
   if (!n || n.kind !== "base") return { error: "That is not a number in another base." };
+  if (n.v) return { error: "Write it out first: its base is still a letter." };
   const v = A.baseValue(n.digits, n.base);
   if (v === null) return { error: `${n.digits} has a digit that base ${n.base} does not have.` };
   const next = A.num(R.rat(v));
@@ -2788,7 +2793,7 @@ export function atomOffers(eq, key, { given = null } = {}) {
     }
     // A number in another base: expand it in base ten, or just convert it.
     if (leaf?.kind === "base") {
-      add(direct("expandbase", "Expand it in base ten", "digit × place value", expandBase(eq, nodeId)));
+      add(direct(leaf.v ? "expandletter" : "expandbase", leaf.v ? `Write it out: each digit times a power of ${leaf.v.name}` : "Expand it in base ten", "digit × place value", expandBase(eq, nodeId)));
       add(direct("base10", "Write it in base ten", "the value", toBaseTen(eq, nodeId)));
       // ...or in another base: by repeated division, the remainders read upwards.
       for (const t of [2, 8, 16]) add(direct("tobase", `Write it in base ${t}`, "divide by the base, keep the remainders", toBase(eq, nodeId, t)));
@@ -2907,7 +2912,7 @@ export function multiOffers(eq, keys, { given = null } = {}) {
     with none of these left on any of its terms is as tidy as it goes. */
 export const TIDY = new Set(["combine", "workout", "cancel", "dropzero", "indices", "surd", "addfrac",
   "multiply", "trig", "pyth", "diff", "integrate", "limit", "base10",
-  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse", "factorial", "choose", "sigma", "mean", "sortlist"]);
+  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse", "factorial", "choose", "sigma", "mean", "sortlist", "expandletter"]);
 
 /** Every move on offer for a set of picked glyphs — what each one means, what
     its term can have done to it, and what they mean together — or, with

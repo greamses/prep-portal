@@ -43,6 +43,13 @@ function tokenise(src) {
        belongs in that base, so nothing else written with an underscore is
        taken for one. 1011₂ with a subscript base reads the same. */
     {
+      // 35_y: digits whose base is a letter (what the equation is about)
+      const lv = /^([0-9]+)_([a-z])(?![A-Za-z0-9_])/.exec(src.slice(i));
+      if (lv && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1]))) {
+        out.push({ t: "base", v: lv[1], base: null, name: lv[2], at: i });
+        i += lv[0].length;
+        continue;
+      }
       const m = /^([0-9A-Z]+)(?:_([0-9]+)|([₀-₉]+))/.exec(src.slice(i));
       if (m && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1]))) {
         const base = Number(m[2] || [...m[3]].map((c) => "₀₁₂₃₄₅₆₇₈₉".indexOf(c)).join(""));
@@ -197,7 +204,7 @@ export function parse(src) {
       eat(")");
       return span(mark, A.choose(n, r, tk.v === "P"));
     }
-    if (tk.t === "base") { p++; return span(mark, A.based(tk.v, tk.base)); }
+    if (tk.t === "base") { p++; return span(mark, tk.name ? A.basedVar(tk.v, tk.name) : A.based(tk.v, tk.base)); }
     if (tk.t === "deriv") { p++; return span(mark, A.deriv(atom(), tk.v)); }
     if (tk.t === "lim") {
       p++;
