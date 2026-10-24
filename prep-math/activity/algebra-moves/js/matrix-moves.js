@@ -104,3 +104,53 @@ export function inverseMat(m) {
 export function powerOut(m, e) {
   return A.prod(Array.from({ length: e }, () => copy(m)));
 }
+
+/* ── Beyond 4 × 4 ───────────────────────────────────────────────────────────
+   A cofactor sum for 5 × 5 has 120 terms and for 6 × 6, 720: nobody writes
+   that out, and a page of it teaches nothing. Past 4 × 4 the matrix is worked
+   by row reduction instead — exactly, in fractions — and only when its entries
+   are all numbers. */
+
+/** The rational entries of a matrix of plain numbers, or null if any entry
+    still holds a letter. */
+export function numbersOf(m) {
+  const g = m.rows.map((row) => row.map((c) => A.exactValue(c)));
+  return g.every((row) => row.every(Boolean)) ? g : null;
+}
+
+/** Gauss–Jordan on [A | I] in exact fractions: { det, inv } (inv null when
+    singular). */
+function reduce(g) {
+  const n = g.length;
+  const w = g.map((row, i) => [...row, ...Array.from({ length: n }, (_, j) => (i === j ? R.ONE : R.ZERO))]);
+  let det = R.ONE;
+  for (let i = 0; i < n; i++) {
+    let p = i;
+    while (p < n && R.isZero(w[p][i])) p++;
+    if (p === n) return { det: R.ZERO, inv: null };
+    if (p !== i) { [w[i], w[p]] = [w[p], w[i]]; det = R.neg(det); }
+    const piv = w[i][i];
+    det = R.mul(det, piv);
+    for (let j = 0; j < 2 * n; j++) w[i][j] = R.div(w[i][j], piv);
+    for (let k = 0; k < n; k++) {
+      if (k === i || R.isZero(w[k][i])) continue;
+      const f = w[k][i];
+      for (let j = 0; j < 2 * n; j++) w[k][j] = R.sub(w[k][j], R.mul(f, w[i][j]));
+    }
+  }
+  return { det, inv: w.map((row) => row.slice(n)) };
+}
+
+/** The determinant of a numeric square matrix of any size, as a number. */
+export function detNumber(m) {
+  const g = numbersOf(m);
+  return g && isSquare(m) ? A.numberNode(reduce(g).det) : null;
+}
+
+/** The inverse of a numeric square matrix of any size: a matrix of numbers. */
+export function inverseNumbers(m) {
+  const g = numbersOf(m);
+  if (!g || !isSquare(m)) return null;
+  const { inv } = reduce(g);
+  return inv ? A.mat(inv.map((row) => row.map((v) => A.numberNode(v)))) : null;
+}

@@ -716,6 +716,13 @@ function matrixMoves(eq, node) {
       if (node.name === "det" && isMat(node.k)) {
         const d = MM.detExpr(node.k);
         if (d) go("det", "Work out the determinant", "ad − bc", d, `The determinant, ad − bc: ${plain(d)}`);
+        else if (MM.isSquare(node.k)) {
+          // past 4 × 4 the cofactor sum is too long to write: row-reduce numbers instead
+          const v = MM.detNumber(node.k);
+          if (v) go("det", "Work out the determinant", "row reduction", v, `The determinant by row reduction: ${plain(v)}`);
+          else out.push({ key: "det", label: "Work out the determinant", hint: "too big to write out", mark: plain(node),
+            run: () => ({ error: "A matrix bigger than 4 × 4 can only be reduced when its entries are numbers." }) });
+        }
       }
       if (node.name === "transpose" && isMat(node.k)) {
         go("transpose", "Turn it on its side", "rows become columns", MM.transposeMat(node.k), "Rows become columns");
@@ -737,7 +744,11 @@ function matrixMoves(eq, node) {
             break;
           }
         }
-        const inv = MM.inverseMat(node.b);
+        const inv = MM.inverseMat(node.b) || (MM.isSquare(node.b) ? MM.inverseNumbers(node.b) : null);
+        if (!inv && MM.isSquare(node.b)) {
+          out.push({ key: "inverse", label: "Find the inverse", hint: "too big to write out", mark: plain(node),
+            run: () => ({ error: "A matrix bigger than 4 × 4 can only be inverted when its entries are numbers." }) });
+        }
         if (inv) go("inverse", "Find the inverse", "1 over the determinant, times the swapped matrix", inv, `The inverse: one over the determinant, times the matrix with its entries swapped: ${plain(inv)}`);
       } else if (e && R.isInt(e) && e.n >= 2n && e.n <= 4n) {
         go("matpow", "Write the power out as a product", "A·A", MM.powerOut(node.b, Number(e.n)), "A power is the matrix times itself");
