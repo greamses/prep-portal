@@ -17,7 +17,7 @@
    (state.sketch). Its chemistry is structures.js.
    ========================================================================== */
 
-import { BOND, BOND_H, empty, clone, atomOf, addAtom, addBond, removeAtom, removeBond, bondBetween, fillH, formulaHtml, massOf, problems, pieces, moleculeSvg, build, TEMPLATES } from "./structures.js";
+import { BOND, BOND_H, empty, clone, atomOf, addAtom, addBond, removeAtom, removeBond, bondBetween, fillH, formulaHtml, massOf, problems, hints, pieces, moleculeSvg, build, TEMPLATES } from "./structures.js";
 import { bySymbol } from "./atoms.js";
 
 const ELS = ["C", "H", "O", "N", "Cl", "Br", "I", "F", "S", "P", "B", "Na", "K", "Mg"];
@@ -82,7 +82,8 @@ export function initSketch({ $, state, save, openSheet, UI }) {
     const n = pieces(m);
     const mr = Math.round(massOf(m) * 10) / 10;
     out.innerHTML = `<span>Formula <b>${formulaHtml(m)}</b></span><span>M<sub>r</sub> <b>${mr}</b></span>${n > 1 ? `<span>${n} separate pieces</span>` : ""}`
-      + errs.map((e) => `<span class="cl-sk-err">${e.text}</span>`).join("");
+      + errs.map((e) => `<span class="cl-sk-err">${e.text}</span>`).join("")
+      + (errs.length ? "" : hints(m).map((e) => `<span class="cl-sk-hint">${e.text}</span>`).join(""));
   }
 
   // ── the pointer ──

@@ -3720,8 +3720,23 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   position: fixed; top: 50%; transform: translateY(-50%); z-index: 60;
   filter: drop-shadow(0 6px 14px rgba(var(--shadow-color, 42, 39, 35), 0.16));
 }
+.wb-tools { transition: transform 0.25s ease; }
 .wb-tools--left { left: 0; }
 .wb-tools--right { right: 0; }
+/* slid away: the rail leaves the window and only its tab stays */
+.wb-tools--left.is-shut { transform: translate(-100%, -50%); }
+.wb-tools--right.is-shut { transform: translate(100%, -50%); }
+.wb-tools__tab {
+  position: absolute; top: 50%; width: 1.3rem; height: 3.2rem; margin-top: -1.6rem; padding: 0;
+  display: grid; place-items: center; cursor: pointer; border: 0; border-radius: 0;
+  color: var(--ink, #2a2723); background: var(--surface-primary, #fffdf6);
+  box-shadow: 0 2px 6px rgba(42, 39, 35, 0.2);
+}
+.wb-tools--left .wb-tools__tab { left: 100%; }
+.wb-tools--right .wb-tools__tab { right: 100%; }
+.wb-tools__tab svg { transition: transform 0.25s ease; }
+.wb-tools.is-shut .wb-tools__tab svg { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .wb-tools, .wb-tools__tab svg { transition: none; } }
 .wb-tools__paper {
   --tooth: 10px;
   display: flex; flex-direction: column; gap: 0.3rem;

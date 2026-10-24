@@ -43,6 +43,23 @@ const board = (id, label) => ({
 });
 
 const TOOLS = {
+  /* THE CHEMISTRY BENCH, from any page that hangs the rail: the real bench in a panel
+     (it is its own page, in a frame, so it brings its own sign-in and its own saved bench) */
+  chembench: {
+    label: "Chemistry Bench",
+    size: { w: 980, h: 640 },
+    icon: `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 2.600h6v6.200l5 9.400a2.400 2.400 0 0 1-2.100 3.500H6.100A2.400 2.400 0 0 1 4 18.200l5-9.400z" fill="#6fb7e8"/><path d="M7.400 14.600h9.200l1.900 3.700a1 1 0 0 1-.9 1.500H6.400a1 1 0 0 1-.9-1.500z" fill="#fff"/><circle cx="10.500" cy="16.800" r="1" fill="#6fb7e8"/><circle cx="14" cy="15.600" r="0.8" fill="#6fb7e8"/></svg>`,
+    async open(body) {
+      body.classList.add("wb-panel__body--bare");
+      const f = document.createElement("iframe");
+      f.src = "/virtual-lab/chemistry-2d/";
+      f.title = "Chemistry Bench";
+      f.setAttribute("allow", "fullscreen");
+      f.style.cssText = "display:block;width:100%;height:100%;min-height:420px;border:0;background:#272c35";
+      body.appendChild(f);
+      return () => f.remove();
+    },
+  },
   calculator: {
     label: "Calculator",
     size: { w: 340, h: 500 },
@@ -232,8 +249,12 @@ export function mountTools(host = document.body, { tools = ["calculator", "colum
     + ids.map((id) => `<button type="button" class="wb-tools__btn" data-wbtool="${id}"`
       + ` aria-pressed="false" aria-label="${ALL[id].label}"`
       + ` data-tip="${ALL[id].label}" data-tip-side="${at === "left" ? "right" : "left"}">`
-      + `${TOOL_ICONS[id] || TOOL_ICONS.note}</button>`).join("")
-    + `</div>`;
+      + `${ALL[id].icon || TOOL_ICONS[id] || TOOL_ICONS.note}</button>`).join("")
+    + `</div>`
+    /* the tab on the rail's inner edge: slides the whole rail away, and back (like the
+       chemistry bench's drawer). Whether it is away is remembered on this machine. */
+    + `<button type="button" class="wb-tools__tab" aria-label="Put the tools away" aria-expanded="true" data-tip="Slide the tools away" data-tip-side="${at === "left" ? "right" : "left"}">`
+    + `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="${at === "left" ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
   host.appendChild(el);
   mountTooltips();
 
@@ -250,6 +271,20 @@ export function mountTools(host = document.body, { tools = ["calculator", "colum
   document.addEventListener("fullscreenchange", follow);
   document.addEventListener("webkitfullscreenchange", follow);
   follow();
+
+  const SHUT = "wb-tools-shut";
+  function slide(away) {
+    el.classList.toggle("is-shut", away);
+    const tab = el.querySelector(".wb-tools__tab");
+    tab.setAttribute("aria-expanded", String(!away));
+    tab.setAttribute("aria-label", away ? "Bring the tools back" : "Put the tools away");
+    tab.dataset.tip = away ? "Slide the tools back" : "Slide the tools away";
+    try { localStorage.setItem(SHUT, away ? "1" : "0"); } catch { /* not kept */ }
+  }
+  let was = false;
+  try { was = localStorage.getItem(SHUT) === "1"; } catch { /* open */ }
+  if (was) slide(true);
+  el.querySelector(".wb-tools__tab").addEventListener("click", () => slide(!el.classList.contains("is-shut")));
 
   /* one panel per tool, and pressing the key again puts it away — the same
      bargain the workbook's rail makes */
@@ -287,6 +322,8 @@ export function mountTools(host = document.body, { tools = ["calculator", "colum
   return {
     el,
     open: toggle,
+    slide,
+    isOpen: (id) => open.has(id),
     destroy() {
       document.removeEventListener("fullscreenchange", follow);
       document.removeEventListener("webkitfullscreenchange", follow);

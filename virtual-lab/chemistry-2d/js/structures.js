@@ -142,6 +142,26 @@ export function problems(m) {
   }
   return out;
 }
+/**
+ * Things worth a second look that are not errors: an atom whose octet is complete would carry a
+ * different charge from the one drawn (OH with no charge is a radical; O with one bond wants a −),
+ * and an odd electron. Only for the atoms a school writes octets for.
+ */
+const OCTET = new Set(["B", "C", "N", "O", "F", "Cl", "Br", "I"]);
+export function hints(m) {
+  const out = [];
+  for (const a of m.atoms) {
+    if (!OCTET.has(a.el)) continue;
+    const b = bondSum(m, a.id);
+    if (!b) continue;
+    const full = outer(a.el) + b - 8;               // the charge that gives it a full shell of eight
+    if (full !== a.q && b <= 4 && full >= -3 && full <= 3 && !problems(m).some((p) => p.id === a.id)) {
+      const nm = bySymbol(a.el).name;
+      out.push({ id: a.id, text: `${nm} with ${b} bond${b > 1 ? "s" : ""} and ${a.q ? `a charge of ${sign(a.q)}` : "no charge"} has ${a.q === full ? "" : "an incomplete or odd outer shell"}: a full shell would make it ${full ? sign(full) : "neutral"}.` });
+    }
+  }
+  return out;
+}
 /** How many separate pieces (molecules or ions) the drawing is. */
 export function pieces(m) {
   const seen = new Set();

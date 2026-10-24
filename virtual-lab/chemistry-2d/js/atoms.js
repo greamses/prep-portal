@@ -246,7 +246,8 @@ function about(z, charge) {
     else if (v === 4) how = " Four outer electrons: it shares them, making four covalent bonds.";
     else how = ` It has ${words[v]} outer electrons, and gains ${words[8 - v]} to fill the shell as ${ionHtml(el.sym, v - 8)}, or shares to make ${words[8 - v]} covalent bond${8 - v === 1 ? "" : "s"}.`;
   } else if (charge > 0) {
-    how = ` ${ionHtml(el.sym, charge)} has lost ${words[charge]} electron${charge === 1 ? "" : "s"}${p.block === "d" ? ", from the outermost shell first" : ""}.`;
+    how = ` ${ionHtml(el.sym, charge)} has lost ${words[charge]} electron${charge === 1 ? "" : "s"}${p.block === "d" ? ", from the outermost (4s or 5s) shell first, then from the d subshell" : ""}.`
+      + (p.block === "d" ? " A transition-metal ion has no outer-shell dots to show, so its Lewis structure is the bracket and the charge; its d electrons are in the boxes below." : "");
   } else {
     how = ` ${ionHtml(el.sym, charge)} has gained ${words[-charge]} electron${charge === -1 ? "" : "s"} (the crosses), which fills its outer shell.`;
   }
@@ -285,7 +286,7 @@ export function initAtoms({ $, openSheet, esc = (s) => s, icons }) {
       </dl>
       ${subs.length ? `<h3 class="cl-h3">Electrons in boxes</h3><div class="cl-atom__boxes">${boxesHtml(subs)}</div>` : ""}`;
   }
-  function show(nz, nc = 0) {
+  function show(nz = z, nc = nz === z ? charge : 0) {
     z = nz; charge = nc;
     render();
     if (sheet.hidden) openSheet("cl-sheet-atom");

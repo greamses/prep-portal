@@ -78,7 +78,6 @@
         <button type="button" class="cl-ico" data-sheet="cl-sheet-notebook" data-ico="notebook" data-tip="Lab notebook" data-tip-side="bottom" aria-label="Lab notebook" aria-pressed="false"><b id="cl-count-log" class="cl-badge"></b></button>
         <button type="button" class="cl-ico" data-sheet="cl-sheet-tasks" data-ico="tasks" data-tip="Practicals: choose one to do" data-tip-side="bottom" aria-label="Practicals" aria-pressed="false"><b id="cl-count-tasks" class="cl-badge"></b></button>
         <button type="button" class="cl-ico" data-sheet="cl-sheet-table" data-ico="table" data-tip="Results: your own table, and a graph of it" data-tip-side="bottom" aria-label="Results table and graph" aria-pressed="false"></button>
-        <button type="button" class="cl-ico" id="cl-calc-key" data-ico="calc" data-tip="Scientific calculator" data-tip-side="bottom" aria-label="Scientific calculator" aria-pressed="false"></button>
         <button type="button" class="cl-ico cl-ico--bot" id="cl-bot" data-sheet="cl-sheet-bot" data-tip="PrepBot does an experiment for you to copy" data-tip-side="bottom" aria-label="PrepBot's experiments" aria-pressed="false"></button>
         <button type="button" class="cl-ico" id="cl-class-key" data-sheet="cl-sheet-class" data-tip="Teachers: build, save and set experiments for your class" data-tip-side="bottom" aria-label="Teachers: experiments for my class" aria-pressed="false" hidden><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 1.800 8.200 12 13.400l10.200-5.200z" fill="var(--accent-primary)"/><path d="M6 11.400v4.200c0 1.700 2.700 3 6 3s6-1.300 6-3v-4.200l-6 3.100z" fill="var(--accent-secondary)"/><rect x="20.300" y="8.400" width="1.500" height="6.400" rx="0.750" fill="var(--accent-warning)"/><circle cx="21.050" cy="16" r="1.500" fill="var(--accent-warning)"/></svg></button>
         <button type="button" class="cl-ico" id="cl-assign-key" data-ico="tasks" data-tip="The practical your teacher has set" data-tip-side="bottom" aria-label="The practical your teacher has set" hidden><b class="cl-count">!</b></button>
@@ -112,8 +111,6 @@
         <button type="button" class="cl-ico cl-ico--round" id="cl-dots" data-tip="What can be done with it" aria-label="What can be done with it"></button>
       </div>
       <div id="cl-menu" class="cl-menu pp-sticky pp-sticky--tape" hidden></div>
-      <!-- the scientific calculator: carried about by its top edge -->
-      <div id="cl-calc" class="cl-calc" role="group" aria-label="Scientific calculator" hidden></div>
 
       <section id="cl-sheet-setups" class="cl-sheet pp-receipt" hidden>
         <div class="pp-receipt__paper">
@@ -235,11 +232,13 @@
       <section id="cl-sheet-sketch" class="cl-sheet cl-sheet--wide pp-receipt" hidden>
         <div class="pp-receipt__paper">
           <div class="cl-sheet__head"><h2 class="cl-h2">Draw a structure</h2><button type="button" class="cl-sheet__close" aria-label="Close"></button></div>
+          <div class="cl-scroll">
           <p class="cl-sheet__lead">Tap the paper for an atom, then drag out of it to make a bond. Tap a bond to make it double or triple. The pen draws the chosen element.</p>
           <div id="cl-sk-tools" class="cl-table-tools"></div>
           <div id="cl-sk-els" class="cl-sk-els"></div>
           <svg id="cl-sk-pad" class="cl-sk-pad" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Drawing paper for a chemical structure"></svg>
           <p id="cl-sk-info" class="cl-atom__facts" aria-live="polite"></p>
+          </div>
         </div>
       </section>
 

@@ -8,8 +8,8 @@
    graph paper: the points, joined or with the line of best fit (least
    squares), its gradient and intercept written underneath.
 
-   THE CALCULATOR  a scientific calculator that works like the one in a
-   school bag: two-line display, SHIFT for the second function of a key,
+   (The scientific calculator is no longer here: it is the first key of the side
+   rail, the same machine every workbook page has. It does: two-line display, SHIFT for the second function of a key,
    degrees or radians, brackets, powers and roots, logs, trig and its
    inverses, factorials, nCr and nPr, ×10ˣ entry, Ans, a memory, S⇔D for a
    fraction, and the constants a chemist uses. Its arithmetic is calc.js.
@@ -18,7 +18,6 @@
    ========================================================================== */
 
 import { evaluate, bestFit, niceTicks } from "./calc.js";
-import { mountCalculator } from "/utils/components/calculator.js";
 import { UI } from "/utils/components/ui-icons.js";
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
@@ -216,61 +215,5 @@ export function initDesk({ state, save, say }) {
   }
   renderTable();
 
-  // ════════════════════════ the calculator ════════════════════════
-  if (!state.calc) state.calc = { deg: true, mem: 0, ans: 0, x: null, y: null, open: false };
-  const C = state.calc;
-  const el = document.getElementById("cl-calc");
-  /* THE KEYPAD IS THE SITE'S ONE CALCULATOR (utils/components/calculator.js).
-     It used to be written out here; the workbook rail wanted the same machine,
-     and two of them would have drifted. What stayed behind is what is about
-     the BENCH rather than about calculators: being carried around the bench
-     top, the key on the toolbar that opens it, and where it was left. */
-  const calc = mountCalculator(el, {
-    state: C,
-    onChange: save,
-    onClose: () => toggleCalc(false),
-    brand: "PREP <b>fx-82 Bench</b>",
-  });
-  const paint = calc.paint;
-
-  // carried about by its top edge
-  let grab = null;
-  const wrap = document.getElementById("cl-benchwrap");
-  function put(x, y) {
-    const w = wrap.getBoundingClientRect();
-    C.x = Math.max(4, Math.min(x, w.width - el.offsetWidth - 4));
-    C.y = Math.max(56, Math.min(y, w.height - 60));
-    el.style.left = `${C.x}px`;
-    el.style.top = `${C.y}px`;
-  }
-  el.addEventListener("pointerdown", (e) => {
-    if (!e.target.closest("[data-calc-drag]") || e.target.closest("button")) return;
-    const r = el.getBoundingClientRect();
-    grab = { dx: e.clientX - r.left, dy: e.clientY - r.top };
-    el.setPointerCapture(e.pointerId);
-  });
-  el.addEventListener("pointermove", (e) => {
-    if (!grab) return;
-    const w = wrap.getBoundingClientRect();
-    put(e.clientX - w.left - grab.dx, e.clientY - w.top - grab.dy);
-  });
-  el.addEventListener("pointerup", () => { if (grab) { grab = null; save(); } });
-  function toggleCalc(on = el.hidden) {
-    el.hidden = !on;
-    C.open = on;
-    document.getElementById("cl-calc-key").setAttribute("aria-pressed", String(on));
-    if (on) {
-      const w = wrap.getBoundingClientRect();
-      put(C.x ?? w.width - el.offsetWidth - 90, C.y ?? 70);
-      paint();
-      el.focus({ preventScroll: true });
-    }
-    save();
-  }
-  document.getElementById("cl-calc-key").addEventListener("click", () => toggleCalc());
-  window.addEventListener("resize", () => { if (!el.hidden) put(C.x ?? 0, C.y ?? 70); });
-  if (C.open) toggleCalc(true);
-  paint();
-
-  return { toggleCalc, renderTable };
+  return { renderTable };
 }

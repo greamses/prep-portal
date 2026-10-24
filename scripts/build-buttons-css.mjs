@@ -33,7 +33,7 @@ const BARE = [
 const TOOLS = [
   ".wb-side__btn", ".wb-side__more", ".wb-side__fam", ".wb-tool", ".bb-tool",
   /* the same rail, on a page that is not a workbook (workbook/toolbar.js) */
-  ".wb-tools__btn",
+  ".wb-tools__btn", ".wb-tools__tab",
   ".bb-kit__btn", ".wb-drawbar .pp-btn",
   /* a counter on the mat: a token worth ten or one, which the child pushes
      about. It answers to the keyboard, so it is a button as far as the browser
@@ -48,7 +48,7 @@ const TOOLS = [
   ".cl-tile", ".cl-cat", ".cl-ico", ".cl-try",
   /* the bench's calculator has a calculator's keys, and its results table has a
      small cross on each row and column: paper on either made them unusable */
-  ".cl-key", ".cl-cut", ".cl-act",
+  ".cl-key", ".cl-cut", ".cl-act", ".cl-pt__el",
   /* the workbook's scientific calculator, for the same reason: a keypad of
      forty sticky notes is not a calculator */
   ".wb-calc__key",

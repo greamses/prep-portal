@@ -32,7 +32,7 @@ import { DEFS, VESSELS, TOOLS, SUPPORTS, rAt, vesselSvg, veilSvg, paintVessel, b
 import { EXPERIMENTS, GROUPS, UNKNOWNS, CATIONS, ANIONS, HOWTO, stepDone } from "./waec.js";
 import { initFluid, setVapour, puff, erupt as foamOut, FLUID_DEFS } from "./fluid.js";
 import { UI } from "/utils/components/ui-icons.js";
-import { ELEMENTS, elementTile, tint, initAtoms } from "./atoms.js";
+import { ELEMENTS, elementTile, tint, initAtoms, bySymbol } from "./atoms.js";
 import { TEMPLATES as MOLECULES, build as buildMolecule, fitBox as fitBoxOf, moleculeSvg as moleculeSvgOf } from "./structures.js";
 import { initSketch } from "./sketch.js";
 import { account, onAccount, useRefill, buyRefills, keepStock, PACK } from "./account.js";
@@ -3412,6 +3412,8 @@ $("cl-menu").addEventListener("click", (e) => {
   select(it);
 });
 
+/** An element named by symbol, name or number: "Na", "sodium", "11". */
+const findElement = (q) => { const t = String(q || "").trim().toLowerCase(); return ELEMENTS.find((e) => e.sym.toLowerCase() === t || e.name.toLowerCase() === t || String(e.z) === t); };
 // ── atoms and structures: sheets, not pieces on the bench ───────────────────
 const atoms = initAtoms({ $, openSheet: (id) => openSheet(id), esc, icons: { prev: UI.chevronLeft(18), next: UI.chevronRight(18) } });
 const sketch = initSketch({ $, state, save, openSheet: (id) => openSheet(id), UI });
@@ -4259,7 +4261,38 @@ $("cl-drawer-key").addEventListener("click", () => setDrawer(!document.querySele
 // ── the desk: the results table, its graph, and the calculator (desk.js) ────
 import("./desk.js").then((d) => {
   const desk = d.initDesk({ state, save, say });
-  actor.calculator = (on) => desk.toggleCalc(on);
+  // THE SIDE RAIL: the workbook's tool rail, hung on the bench. The calculator lives here now
+  // (it used to float over the bench from a key on the top bar), beside the periodic table,
+  // the structure pad and the atoms sheet. A tab on its edge slides it away, like the drawer.
+  const ico = (inner) => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">${inner}</svg>`;
+  Promise.all([import("/utils/components/workbook/toolbar.js"), import("./ptable.js")]).then(([{ mountTools }, { mountPeriodicTable }]) => {
+    const rail = mountTools(document.body, {
+      tools: ["calculator", "ptable", "atoms", "sketch", "note"],
+      extra: {
+        ptable: {
+          label: "Periodic table",
+          size: { w: 700, h: 560 },
+          icon: ico(`<rect x="2" y="3" width="20" height="18" fill="#fffdf6" stroke="#14130f" stroke-width="1.2"/><g fill="#d9534f"><rect x="3.500" y="4.500" width="3.400" height="3.400"/></g><g fill="#6fb7e8"><rect x="8.500" y="9.500" width="3.400" height="3.400"/><rect x="13.500" y="9.500" width="3.400" height="3.400"/><rect x="18" y="14.500" width="3" height="3"/></g><g fill="#f4c95d"><rect x="8.500" y="14.500" width="3.400" height="3.400"/><rect x="3.500" y="9.500" width="3.400" height="3.400"/></g>`),
+          async open(body) { mountPeriodicTable(body, { onOpenAtom: (z) => atoms.show(z) }); },
+        },
+        atoms: {
+          label: "Atoms: Lewis structure and configuration",
+          act: () => { state.cat = "atoms"; renderDrawer(); atoms.show(); },
+          icon: ico(`<circle cx="12" cy="12" r="2.800" fill="#d9534f"/><ellipse cx="12" cy="12" rx="10" ry="4.200" fill="none" stroke="#6fb7e8" stroke-width="1.700"/><ellipse cx="12" cy="12" rx="10" ry="4.200" fill="none" stroke="#6fb7e8" stroke-width="1.700" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4.200" fill="none" stroke="#6fb7e8" stroke-width="1.700" transform="rotate(120 12 12)"/>`),
+        },
+        sketch: {
+          label: "Draw a chemical structure",
+          act: () => sketch.show(),
+          icon: ico(`<path d="M5 8l7-4 7 4v8l-7 4-7-4z" fill="none" stroke="#14130f" stroke-width="1.600" stroke-linejoin="round"/><circle cx="5" cy="8" r="2.600" fill="#d9534f"/><circle cx="19" cy="8" r="2.600" fill="#6fb7e8"/><circle cx="12" cy="20" r="2.600" fill="#f4c95d"/>`),
+        },
+      },
+    });
+    actor.calculator = (on = true) => { if (rail.isOpen("calculator") !== on) rail.open("calculator"); };
+    actor.periodic = () => { if (!rail.isOpen("ptable")) rail.open("ptable"); };
+    document.querySelectorAll(".cl-sheet").length && document.body.classList.add("cl-has-rail");
+  }).catch((e) => console.warn("The side rail did not load", e));
+  actor.atom = (q) => { const e = findElement(q); if (!e) return false; atoms.show(e.z); return true; };
+  actor.structure = (q) => { const t = MOLECULES.find((m) => m.id === String(q).toLowerCase() || m.name.toLowerCase() === String(q).toLowerCase()); if (!t) return false; sketch.show(t.id); return true; };
   const bars = (d) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="${d}" fill="none" stroke="var(--text-tertiary)" stroke-width="2.2" stroke-linecap="round"/><path d="M18 14v8M14 18h8" fill="none" stroke="var(--accent-success)" stroke-width="2.6" stroke-linecap="round"/></svg>`;
   document.querySelectorAll("[data-table]").forEach((b) => { b.innerHTML = { row: bars("M3 5h18M3 11h18M3 17h7"), col: bars("M5 3v18M11 3v18M17 3v7"), wipe: UI.eraser(16) }[b.dataset.table]; });
 }).catch((e) => console.warn("The desk did not load", e));
