@@ -25,7 +25,8 @@
 import { parse } from "./parse.js";
 import { buildRow, paintRow, el } from "./render.js";
 import { readValue } from "./formulas.js";
-import { slotEdit, slotTypingForInput } from "/utils/components/slot-typing.js";
+import { slotEdit, slotTypingForInput, cellMove, matrixTemplate } from "/utils/components/slot-typing.js";
+import { UI } from "/utils/components/ui-icons.js";
 import * as A from "./ast.js";
 
 /* label, what it types, and how far back into it the caret goes.
@@ -55,7 +56,7 @@ const KEYS = [
   [
     { k: "4" }, { k: "5" }, { k: "6" },
     { k: "×", t: "*" }, { k: "aᵇ", t: "^()", back: 1, title: "to the power of", math: "a^b" },
-    { k: "x", t: "x", tone: "letter" }, { k: "y", t: "y", tone: "letter" }, { k: "z", t: "z", tone: "letter" },
+    { k: "x", t: "x", tone: "letter", sticky: 3 }, { k: "y", t: "y", tone: "letter", sticky: 1 }, { k: "z", t: "z", tone: "letter", sticky: 2 },
   ],
   [
     { k: "1" }, { k: "2" }, { k: "3" },
@@ -66,12 +67,13 @@ const KEYS = [
     { k: "→", act: "right", title: "Move right" },
   ],
   [
-    { k: "0", wide: true }, { k: ".", t: "." },
+    { k: "0" }, { k: ".", t: "." },
     { k: "+", t: "+" }, { k: "=", t: "=" },
     { k: "CLR", act: "clear", title: "Clear", tone: "warn" },
+    { k: "a b⁄c", act: "mixed", title: "A mixed number: a whole number and a fraction, in boxes to fill (2 1/3)", math: "2 1/3" },
     // Enter is a key here, not a button living somewhere else below the
     // pad — and a wide one, the way a laptop's Return key is.
-    { k: "Enter", act: "enter", title: "Put it on the canvas", tone: "go", wide: true },
+    { k: "Enter", act: "enter", icon: "enter", title: "Put it on the canvas", tone: "go", wide: true },
   ],
 ];
 
@@ -135,20 +137,20 @@ const FUNCS = [
     { k: "∫", t: "∫()dx", back: 3, title: "integrate", math: "∫(?)dx" },
     { k: "∫ₐᵇ", t: "∫_()^()()dx", back: 8, title: "integrate from a to b", math: "∫_(?)^(?)(?)dx" },
     { k: "lim", t: "lim(h->0)()", back: 1, title: "limit as h goes to 0", math: "lim(h->0)(?)" },
-    { k: "x", t: "x", tone: "letter" }, { k: "h", t: "h", tone: "letter" },
+    { k: "x", t: "x", tone: "letter", sticky: 3 }, { k: "h", t: "h", tone: "letter", sticky: 4 },
     { k: "=", t: "=" },
     { k: "CLR", act: "clear", title: "Clear", tone: "warn" },
   ],
   [
     { k: "+", t: "+" }, { k: "−", t: "-" }, { k: "×", t: "*" }, { k: "÷", t: "/" },
     { k: "a⁄b", t: "()/()", back: 4, title: "fraction", math: "a/b" },
-    { k: "Enter", act: "enter", title: "Put it on the canvas", tone: "go", wide: true },
+    { k: "Enter", act: "enter", icon: "enter", title: "Put it on the canvas", tone: "go", wide: true },
     { k: "√", t: "sqrt()", back: 1, title: "square root", math: "sqrt(?)" },
   ],
   [
     { k: "%", t: "%", title: "percent: 25% is 25 out of 100" },
     { k: "_b", t: "_", title: "base: 1011_2 is 1011 in base two" },
-    { k: "a b⁄c", t: " ()/()", back: 4, title: "mixed number: a whole number, then a fraction", math: "2 1/3" },
+    { k: "a b⁄c", act: "mixed", title: "A mixed number: a whole number and a fraction, in boxes to fill (2 1/3)", math: "2 1/3" },
     { k: "e", t: "e", title: "e, the number 2.718…", math: "e" },
     { k: "π", t: "π", title: "pi", math: "π" },
     { k: "∠", t: "°", title: "degrees" },
@@ -158,14 +160,14 @@ const FUNCS = [
   /* Matrices: a template with the cursor in its first entry, then , to move
      along a row and → to leave. */
   [
-    { k: "2×2", t: "[[,],[,]]", back: 7, title: "a 2 by 2 matrix: type the entries, with , between them" },
-    { k: "3×3", t: "[[,,],[,,],[,,]]", back: 15, title: "a 3 by 3 matrix" },
-    { k: "det", t: "det[[,],[,]]", back: 7, title: "determinant of a matrix" },
+    { k: "▦", act: "matrix", title: "A matrix: pick how many rows and columns, then fill in the boxes (or type mat 2x3 and press Enter)", math: "[[a,b],[c,d]]" },
+    { k: "det", act: "detmatrix", title: "The determinant of a matrix: pick its size" },
     { k: "ᵀ", t: "^T", title: "transpose: rows become columns" },
     { k: "⁻¹", t: "^(-1)", title: "inverse of a matrix" },
-    { k: ",", t: ",", title: "next entry" },
-    { k: "←", act: "left", title: "Move left" },
-    { k: "→", act: "right", title: "Move right" },
+    { k: "↑", act: "up", title: "Up to the box above" },
+    { k: "↓", act: "down", title: "Down to the box below" },
+    { k: "←", act: "left", title: "Move left, box to box in a matrix" },
+    { k: "→", act: "right", title: "Move right, box to box in a matrix" },
   ],
 ];
 
@@ -229,7 +231,24 @@ export function createKeypad(host, { onSubmit } = {}) {
     const origin = [];                     // origin[j] = typed offset of drawn char j
     const put = (ch, at) => { text += ch; origin.push(at); };
 
+    // A closing bracket with nothing open to close is left out of the drawing,
+    // so a stray one cannot throw the whole equation back to raw text.
+    const strays = new Set();
+    {
+      const stack = [];
+      for (let i = 0; i < src.length; i++) {
+        if (src[i] === "(" || src[i] === "[") stack.push(src[i]);
+        else if (src[i] === ")" || src[i] === "]") {
+          if (stack.length && stack[stack.length - 1] === (src[i] === ")" ? "(" : "[")) stack.pop();
+          else strays.add(i);
+        }
+      }
+    }
     for (let i = 0; i < src.length; i++) {
+      if (strays.has(i)) continue;
+      // An operator left dangling just before a closing bracket (2n+) has
+      // something still to come after it: a box stands in for it.
+      if ((src[i] === ")" || src[i] === "]" || src[i] === ",") && /[+\-*/^=]\s*$/.test(text)) { put(" ", i); put("?", i); }
       put(src[i], i);
       if (src[i] !== "(") continue;
       const gap = /^\s*\)/.exec(src.slice(i + 1));
@@ -243,6 +262,9 @@ export function createKeypad(host, { onSubmit } = {}) {
     // typed yet, and brackets nobody asked for would be drawn round it.
     const dangling = /[+\-*/^=]\s*$/.test(text);
     if (dangling) for (const ch of " ?") put(ch, src.length);
+    // Brackets still open are closed for the drawing, so half a line is drawn
+    // as far as it goes rather than as an error until the last one is typed.
+    for (const ch of unclosed(text)) put(ch, src.length);
     /* No equals sign is not a line half-typed — it is an expression, which is a
        perfectly good thing to put on the canvas and tidy. This used to stand an
        empty box where the other side "should" go, which was the keypad quietly
@@ -270,7 +292,18 @@ export function createKeypad(host, { onSubmit } = {}) {
     };
   }
 
-  const hasHoles = (src) => /\(\s*\)/.test(src);
+  // An empty pair of brackets, or a ? box that is still to be filled in.
+  /** The closers a line is still owed, innermost first: ")" or "]" for every
+      "(" or "[" that was opened and not shut. */
+  const unclosed = (text) => {
+    const stack = [];
+    for (const ch of text) {
+      if (ch === "(" || ch === "[") stack.push(ch === "(" ? ")" : "]");
+      else if ((ch === ")" || ch === "]") && stack[stack.length - 1] === ch) stack.pop();
+    }
+    return stack.reverse().join("");
+  };
+  const hasHoles = (src) => /\(\s*\)|\?/.test(src);
 
   /* -- Where a source offset sits on the page -------------------------------
      One entry per node: the characters it was written with, and the box the
@@ -451,7 +484,7 @@ export function createKeypad(host, { onSubmit } = {}) {
 
     // Whatever the repair had to invent is exactly what is still to be typed.
     const todo =
-      fixed.slots    ? "Fill in the empty box."
+      fixed.slots || src.includes("?") ? "Fill in the empty boxes — type, or use the arrows to go from box to box."
       : fixed.dangling ? "Something still has to come after that."
       : null;
     say.textContent = todo ?? (fixed.noEquals ? "Ready — no equals sign, so this one gets tidied up." : "Ready.");
@@ -552,11 +585,14 @@ export function createKeypad(host, { onSubmit } = {}) {
       line.value = line.value.slice(0, a) + line.value.slice(b);
       line.setSelectionRange(a, a);
     } else if (a > 0) {
-      // Sitting between an empty pair, take both — and the ^ or / it belonged to.
+      // Brackets go as pairs (slot-typing.js): an empty pair whole with the ^ or /
+      // it belonged to, an opening bracket with its closer, a closing bracket not
+      // at all — the cursor steps inside it instead.
       const edit = slotEdit(line.value, a, b, "Backspace");
-      if (edit?.remove) {
-        line.value = line.value.slice(0, edit.remove[0]) + line.value.slice(edit.remove[1]);
-        line.setSelectionRange(edit.remove[0], edit.remove[0]);
+      if (edit) {
+        line.focus();
+        slots.apply(edit);
+        return;
       } else {
         line.value = line.value.slice(0, a - 1) + line.value.slice(a);
         line.setSelectionRange(a - 1, a - 1);
@@ -566,9 +602,14 @@ export function createKeypad(host, { onSubmit } = {}) {
     draw();
   }
 
-  function nudge(by) {
+  function nudge(by, dir = by > 0 ? "right" : "left") {
     const v = line.value;
     let at = line.selectionStart ?? 0;
+    // In a matrix the arrows go from box to box.
+    const hop = cellMove(v, at, line.selectionEnd ?? at, dir);
+    if (hop) { line.setSelectionRange(hop.a, hop.b); line.focus(); draw(); return; }
+    if (!by) return;
+    if (hopBox(by)) return;
 
     // ")(" and ")/(" are one seam, not two or three steps. Without this, coming
     // out of a numerator and into the denominator is an arrow-key counting
@@ -608,7 +649,10 @@ export function createKeypad(host, { onSubmit } = {}) {
   }
 
   function submit() {
-    const src = (mode?.translate ? mode.translate(line.value) : line.value).trim();
+    if (expandSize()) return;
+    const typed = (mode?.translate ? mode.translate(line.value) : line.value).trim();
+    // A bracket left open is shut for you, as it is in the drawing.
+    const src = typed + unclosed(typed);
     if (!src) return;
     if (hasHoles(src)) {
       say.textContent = "There is still an empty box to fill in.";
@@ -666,7 +710,106 @@ export function createKeypad(host, { onSubmit } = {}) {
     draw();
   }
 
+  /* ── Matrices: ask the size, leave boxes ────────────────────────────────
+     A matrix is not typed with its brackets. The key asks how big, writes it
+     with every entry a ? box, and selects the first; arrows go from box to box
+     (cellMove, slot-typing.js) and typing fills the one that is selected. */
+  let picker = null;
+  function closePicker() { picker?.remove(); picker = null; }
+
+  function placeMatrix(rows, cols, prefix = "") {
+    const text = prefix + matrixTemplate(rows, cols);
+    const a = line.selectionStart ?? line.value.length;
+    const b = line.selectionEnd ?? a;
+    line.value = line.value.slice(0, a) + text + line.value.slice(b);
+    const first = a + prefix.length + 2;               // the first ? : after [[
+    line.setSelectionRange(first, first + 1);
+    line.focus();
+    draw();
+  }
+
+  /** A mixed number as three boxes: whole, top, bottom — ? ?/? — the first one
+      selected, so typing fills it and → goes on to the next. */
+  function placeMixed() {
+    const a = line.selectionStart ?? line.value.length;
+    const b = line.selectionEnd ?? a;
+    line.value = line.value.slice(0, a) + "? ?/?" + line.value.slice(b);
+    line.setSelectionRange(a, a + 1);
+    line.focus();
+    draw();
+  }
+
+  /** → (or ←) from the end of one filled box to the next ? box: the one that
+      comes next once a space and a / are stepped over. Selected whole, so what
+      is typed replaces it. */
+  function hopBox(dir) {
+    const v = line.value, a = line.selectionStart ?? 0, b = line.selectionEnd ?? a;
+    const m = dir > 0 ? /^\s*\/?\s*\?/.exec(v.slice(b)) : /\?\s*\/?\s*$/.exec(v.slice(0, a));
+    if (!m) return false;
+    const at = dir > 0 ? b + m[0].length - 1 : a - m[0].length;
+    line.setSelectionRange(at, at + 1);
+    line.focus();
+    draw();
+    return true;
+  }
+
+  /** mat 2x3 typed on the line becomes a 2 by 3 matrix of boxes. */
+  function expandSize() {
+    const at = line.selectionStart ?? 0;
+    const m = /(^|[^A-Za-z])(det\s*)?mat(?:rix)?\s*(\d{1,2})\s*[x×*]\s*(\d{1,2})\s*$/i.exec(line.value.slice(0, at));
+    if (!m) return false;
+    const rows = Number(m[3]), cols = Number(m[4]);
+    if (rows < 1 || cols < 1 || rows > 8 || cols > 8) return false;
+    const start = m.index + m[1].length;
+    const prefix = m[2] ? "det" : "";
+    line.value = line.value.slice(0, start) + line.value.slice(at);
+    line.setSelectionRange(start, start);
+    placeMatrix(rows, cols, prefix);
+    return true;
+  }
+
+  function openPicker(anchor, prefix = "") {
+    if (picker) { closePicker(); return; }
+    const N = 5;
+    picker = document.createElement("div");
+    picker.className = "am-matpick pp-sticky pp-sticky--c0";
+    const label = document.createElement("p");
+    label.className = "am-matpick__say";
+    label.textContent = "How big?";
+    const grid = document.createElement("div");
+    grid.className = "am-matpick__grid";
+    grid.style.gridTemplateColumns = `repeat(${N}, 1fr)`;
+    const cells = [];
+    const light = (r, c) => {
+      cells.forEach((d) => d.classList.toggle("is-in", d.dataset.r <= r && d.dataset.c <= c));
+      label.textContent = r ? `${r} row${r > 1 ? "s" : ""} × ${c} column${c > 1 ? "s" : ""}` : "How big?";
+    };
+    for (let r = 1; r <= N; r++) {
+      for (let c = 1; c <= N; c++) {
+        // A div, not a button: sixteen small notes would be the wrong picture of a grid.
+        const d = document.createElement("div");
+        d.className = "am-matpick__cell";
+        d.dataset.r = r; d.dataset.c = c;
+        d.setAttribute("aria-label", `${r} by ${c}`);
+        d.addEventListener("pointerenter", () => light(r, c));
+        d.addEventListener("pointerdown", (e) => { e.preventDefault(); closePicker(); placeMatrix(r, c, prefix); });
+        grid.appendChild(d);
+        cells.push(d);
+      }
+    }
+    picker.append(label, grid);
+    pad.appendChild(picker);
+    const box = pad.getBoundingClientRect(), key = anchor.getBoundingClientRect();
+    picker.style.left = `${Math.max(0, Math.min(box.width - picker.offsetWidth, key.left - box.left))}px`;
+    picker.style.top = `${Math.max(0, key.top - box.top - picker.offsetHeight - 6)}px`;
+    picker.addEventListener("pointerdown", (e) => e.stopPropagation());
+    setTimeout(() => document.addEventListener("pointerdown", closePicker, { once: true }), 0);
+  }
+
   const ACTS = { back: backspace, left: () => nudge(-1), right: () => nudge(1),
+                 up: () => nudge(0, "up"), down: () => nudge(0, "down"),
+                 matrix: (btn) => openPicker(btn), detmatrix: (btn) => openPicker(btn, "det"),
+                 mixed: placeMixed,
                  sign: flipSign, clear: () => { line.value = ""; draw(); line.focus(); },
                  enter: submit };
 
@@ -696,14 +839,17 @@ export function createKeypad(host, { onSubmit } = {}) {
     // labelled, not set: it gets the mono face a caption has.
     btn.className = `am-key${key.act ? " am-key--act" : ""}` +
                     `${key.tone ? ` am-key--${key.tone}` : ""}${key.wide ? " am-key--wide" : ""}`;
-    if (key.math) btn.appendChild(face(key.math));
+    if (key.icon) btn.innerHTML = UI[key.icon](18);
+    else if (key.math) btn.appendChild(face(key.math));
     else btn.textContent = key.k;
+    // The letters x, y, z are notes stuck on the pad, each on its own paper.
+    if (key.sticky !== undefined) btn.classList.add("pp-sticky", "pp-note-btn", `pp-sticky--c${key.sticky}`, "am-key--sticky");
     if (key.title) btn.title = key.title;
     btn.setAttribute("aria-label", key.title || key.k);
     // pointerdown, not click: never let the caret leave the line.
     btn.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      if (key.act) ACTS[key.act]();
+      if (key.act) ACTS[key.act](btn);
       else type(key.t ?? key.k, key.back ?? 0);
     });
     return btn;
@@ -801,7 +947,8 @@ export function createKeypad(host, { onSubmit } = {}) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.setAttribute("role", "tab");
-      btn.className = "am-subtab";
+      // Four notes in four papers; the one in use sits straighter and lifted.
+      btn.className = `pp-sticky pp-note-btn am-subtab pp-sticky--c${[0, 3, 1, 4][i % 4]}`;
       btn.textContent = m.label;
       btn.addEventListener("pointerdown", (e) => {
         e.preventDefault();
@@ -835,7 +982,17 @@ export function createKeypad(host, { onSubmit } = {}) {
   // the focus. `select` alone does not fire for a plain arrow press.
   for (const ev of ["keyup", "select", "focus", "blur"]) line.addEventListener(ev, draw);
   line.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") { e.preventDefault(); submit(); }
+    if (e.key === "Enter") { e.preventDefault(); if (!expandSize()) submit(); return; }
+    // mat 2x3 then Space: the same as the key.
+    if (e.key === " " && expandSize()) { e.preventDefault(); return; }
+    const dir = { ArrowRight: "right", ArrowLeft: "left", ArrowUp: "up", ArrowDown: "down" }[e.key];
+    if (dir && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      const hop = cellMove(line.value, line.selectionStart ?? 0, line.selectionEnd ?? 0, dir);
+      if (hop) { e.preventDefault(); line.setSelectionRange(hop.a, hop.b); draw(); }
+      else if ((dir === "right" || dir === "left") && hopBox(dir === "right" ? 1 : -1)) e.preventDefault();
+    }
+    // Tab goes to the next box to fill, when there is one.
+    if (e.key === "Tab" && !e.shiftKey && line.value.includes("?") && hopBox(1)) e.preventDefault();
   });
 
   draw();

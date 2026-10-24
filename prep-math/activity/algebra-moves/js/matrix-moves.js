@@ -66,40 +66,36 @@ export function transposeMat(m) {
 /** The 2 × 2 determinant of four entries: ad − bc. */
 const det2 = (a, b, c, d) => A.sum([times(a, d), A.neg(times(b, c))]);
 
-/** The determinant of a 2 × 2 or 3 × 3, as the sum it is taught as. */
+/** The minor of entry (i, j): the matrix left when row i and column j go. */
+const minorOf = (g, i, j) => A.mat(g.filter((_, r) => r !== i).map((row) => row.filter((_, c) => c !== j)));
+
+/** The determinant of a square matrix up to 4 × 4, as the sum it is taught as:
+    along the top row, each entry times the determinant of what is left when its
+    row and column go, the signs alternating (+ − + −). A 2 × 2 is ad − bc. */
 export function detExpr(m) {
   const g = m.rows;
-  if (!isSquare(m)) return null;
+  if (!isSquare(m) || g.length > 4) return null;
   if (g.length === 1) return copy(g[0][0]);
   if (g.length === 2) return det2(g[0][0], g[0][1], g[1][0], g[1][1]);
-  if (g.length === 3) {
-    // Along the top row: a(ei − fh) − b(di − fg) + c(dh − eg)
-    const minor = (j) => {
-      const cols = [0, 1, 2].filter((k) => k !== j);
-      return { ...det2(g[1][cols[0]], g[1][cols[1]], g[2][cols[0]], g[2][cols[1]]), paren: true };
-    };
-    const lead = (j) => A.prod([piece(g[0][j]), minor(j)]);
-    return A.sum([lead(0), A.neg(lead(1)), lead(2)]);
-  }
-  return null;
+  const lead = (j) => A.prod([piece(g[0][j]), { ...detExpr(minorOf(g, 0, j)), paren: true }]);
+  return A.sum(g[0].map((_, j) => (j % 2 ? A.neg(lead(j)) : lead(j))));
 }
 
-/** The inverse, written as (1 ÷ determinant) × the matrix of cofactors turned on its side. */
+/** The inverse, written as (1 ÷ determinant) × the matrix of cofactors turned on
+    its side — up to 4 × 4. Each cofactor is the determinant of a minor, signed. */
 export function inverseMat(m) {
   if (!isSquare(m)) return null;
   const g = m.rows, n = g.length;
-  if (n !== 2 && n !== 3) return null;
+  if (n < 2 || n > 4) return null;
   let adj;
   if (n === 2) {
     adj = A.mat([[copy(g[1][1]), A.neg(piece(g[0][1]))], [A.neg(piece(g[1][0])), copy(g[0][0])]]);
   } else {
-    // Cofactor (i, j) is the 2 × 2 determinant left when row i and column j go, signed.
     const cof = (i, j) => {
-      const rs = [0, 1, 2].filter((k) => k !== i), cs = [0, 1, 2].filter((k) => k !== j);
-      const d = det2(g[rs[0]][cs[0]], g[rs[0]][cs[1]], g[rs[1]][cs[0]], g[rs[1]][cs[1]]);
+      const d = detExpr(minorOf(g, i, j));
       return (i + j) % 2 ? A.neg({ ...d, paren: true }) : d;
     };
-    adj = A.mat([0, 1, 2].map((i) => [0, 1, 2].map((j) => cof(j, i))));   // transposed
+    adj = A.mat(Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => cof(j, i))));   // transposed
   }
   return A.prod([A.frac(A.num(R.ONE), detExpr(m)), adj]);
 }

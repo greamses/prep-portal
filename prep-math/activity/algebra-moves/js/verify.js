@@ -220,12 +220,15 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
     // before and after, so what is checked is the other side.
     if (prev.kind === "eq" && next.kind === "eq" && prev.l.kind === "var" && next.l.kind === "var" && prev.l.name === next.l.name
         && !hasLetter(prev.r, prev.l.name) && !hasLetter(next.r, next.l.name)) {
-      return preservesSolutions({ kind: "expr", e: prev.r }, { kind: "expr", e: next.r }, { samples, given });
+      return preservesSolutions({ kind: "expr", e: prev.r }, { kind: "expr", e: next.r }, { samples, given, defs });
     }
     let usable = 0, ratio = null;
     for (let i = 0; i < Math.min(samples, 24); i++) {
       const env = {};
       for (const n of names) env[n] = sample(i, n);
+      // A letter said to BE a matrix (or any expression) is that, whole — the
+      // same letter in the line before and after.
+      for (const [n, d] of Object.entries(defined)) env[n] = evalM(d, env, evalAt);
       const a = flatM(valueOf(prev, env)), b = flatM(valueOf(next, env));
       if (a.length !== b.length || a.some((v) => !Number.isFinite(v)) || b.some((v) => !Number.isFinite(v))) {
         if (a.length !== b.length && a.every(Number.isFinite) && b.every(Number.isFinite)) return { ok: false, why: "that changes the size of the matrix" };
@@ -258,7 +261,7 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
     for (let i = 0; i < samples; i++) {
       const env = {};
       for (const n of names) env[n] = sample(i, n);
-      for (const [n, d] of Object.entries(defined)) env[n] = evalAt(d, env);
+      for (const [n, d] of Object.entries(defined)) env[n] = hasMatrix(d) ? evalM(d, env, evalAt) : evalAt(d, env);
       for (const s of branches) {
         const a = value(prev, { ...env, __pm: s });
         const b = value(next, { ...env, __pm: s });

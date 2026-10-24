@@ -629,25 +629,27 @@
    on the desk. CAPS (inside the Latin grid, built by hand — see keypad.js)
    shares the same look as the one kind of pad control that is not a note. */
 .am-subtabs { display: flex; gap: 0.6rem; padding: 0.25rem 0 0.35rem; }
-.am-subtab {
+/* The toggles are notes stuck on the pad, one paper each (pp-sticky--cN set in
+   keypad.js); the one in use sits straight and lifted, the others lean. */
+.pp-sticky.am-subtab {
   flex: 1;
   min-width: 0;
-  padding: 0.5rem 0.9rem;
-  font-family: "STIX Two Text", "Times New Roman", serif;
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  background: var(--surface-primary);
-  border: var(--border-subtle);
-  border-radius: 0;
+  padding: 0.55rem 0.9rem 0.6rem;
+  font-size: 0.82rem;
+  line-height: 1.1;
+  color: #14130f;
   cursor: pointer;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: background 0.14s ease, color 0.14s ease;
+  --pp-note-tilt: -1.6deg;
 }
-.am-subtab:hover { background: var(--surface-secondary); }
-.am-subtab.is-on { background: var(--surface-secondary); color: var(--ink); border-color: rgba(42, 39, 35, 0.3); font-weight: var(--weight-semibold); }
-.am-subtab:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.pp-sticky.am-subtab:nth-child(even) { --pp-note-tilt: 1.4deg; }
+.pp-sticky.am-subtab.is-on {
+  --pp-note-tilt: 0deg;
+  font-weight: 700;
+  transform: rotate(0deg) translateY(-2px);
+  box-shadow: 0 1px 1px rgba(20, 19, 15, 0.12), 6px 10px 14px -4px rgba(20, 19, 15, 0.38);
+}
+.pp-sticky.am-subtab:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 
 /* A key is the one thing here that is NOT a note — you press it, it does not sit
    on the desk. What it is instead is a piece of the equation: set in the same
@@ -1276,3 +1278,91 @@
 /* The multiplication-sign switch: shows the sign it is set to, in the maths face. */
 .am-times__sign { font: 400 1.35rem/1 "STIX Two Text", "Times New Roman", serif; color: var(--ink); }
 .am-tool--times[aria-pressed="true"] .am-times__sign { font-size: 1.2rem; }
+
+/* x, y and z on the pad are notes too: paper, a slight lean, the letter in ink
+   (italic, as on the canvas) instead of the blue every other letter wears. */
+.pp-sticky.am-key--sticky {
+  background: var(--pp-note-bg);
+  border: 0;
+  color: #14130f;
+  font-style: italic;
+  font-weight: 500;
+  --pp-note-tilt: -1.8deg;
+  box-shadow: 0 1px 1px rgba(20, 19, 15, 0.12), 4px 6px 9px -3px rgba(20, 19, 15, 0.3);
+  transform: rotate(var(--pp-note-tilt));
+}
+.pp-sticky.am-key--sticky:nth-child(even) { --pp-note-tilt: 1.5deg; }
+.pp-sticky.am-key--sticky:hover { background: var(--pp-note-bg); transform: rotate(var(--pp-note-tilt)) translateY(-1px); }
+.pp-sticky.am-key--sticky:active { transform: rotate(var(--pp-note-tilt)) translateY(1px); }
+
+/* The Enter key and the formula book's button are the return-arrow icon alone. */
+.am-key--go svg, .am-go svg { display: block; margin: 0 auto; }
+.am-go { display: grid; place-items: center; }
+
+/* ── The matrix size picker: a note over the pad, a 5 × 5 grid to point into ── */
+.am-pad { position: relative; }
+.pp-sticky.am-matpick {
+  position: absolute;
+  z-index: 8;
+  display: block;
+  padding: 0.6rem 0.7rem 0.7rem;
+  --pp-note-tilt: -1deg;
+}
+.am-matpick__say { margin: 0 0 0.4rem; font: 600 0.74rem var(--font-mono); color: #14130f; min-width: 9.5rem; }
+.am-matpick__grid { display: grid; gap: 0.2rem; }
+.am-matpick__cell {
+  width: 1.55rem;
+  height: 1.55rem;
+  padding: 0;
+  border: 1px solid rgba(20, 19, 15, 0.35);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+.am-matpick__cell.is-in { background: var(--accent-secondary, #6aa5d8); border-color: #14130f; }
+
+/* ── Wires between equations (js/wires.js) ───────────────────────────────── */
+.am-wires { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; color: var(--accent-secondary, #6aa5d8); }
+.am-wire__line { stroke: currentColor; stroke-width: 3; stroke-linecap: round; opacity: 0.85; }
+.am-wire__line--temp { stroke-dasharray: 7 6; opacity: 0.7; }
+.am-wire__hit { stroke: transparent; stroke-width: 18; pointer-events: stroke; cursor: pointer; }
+.am-wire:hover .am-wire__line { stroke-width: 4.5; opacity: 1; }
+.am-card.is-wire-target { outline: 3px dashed var(--accent-secondary, #6aa5d8); outline-offset: 4px; }
+
+/* the port on an equation's edge: there when you look for it */
+.am-card__port {
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  margin-top: -12px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: crosshair;
+  opacity: 0.35;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  touch-action: none;
+  z-index: 6;
+}
+.am-card:hover .am-card__port, .am-card__port:focus-visible { opacity: 1; }
+.am-card__port:hover { transform: scale(1.15); }
+@media (hover: none) { .am-card__port { opacity: 0.8; } }
+
+.am-wiremenu {
+  position: absolute;
+  z-index: 60;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  min-width: 15rem;
+  background: var(--surface-primary, #fffdf8);
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-md, 0 6px 18px rgba(20, 19, 15, 0.16));
+}
+.am-wiremenu__say { margin: 0 0 0.15rem; font: 600 0.74rem var(--font-mono); color: var(--text-secondary); }
+.pp-sticky.am-wiremenu__item { display: block; text-align: left; padding: 0.45rem 0.7rem 0.5rem; font-size: 0.8rem; }

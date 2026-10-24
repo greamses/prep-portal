@@ -31,6 +31,8 @@ import { applyToBoth, everyOffer, asNumbers, flattenSums } from "./ops.js";
 import { ruleFits } from "./rules.js";
 import { noteFace, noteWriter, newNote } from "./notes.js";
 import { createLive } from "./live.js";
+import { createWires } from "./wires.js";
+import { systemMatrix } from "./system-matrix.js";
 import { readValue } from "./formulas.js";
 import * as A from "./ast.js";
 import { shellHTML } from "./shell.js";
@@ -102,6 +104,8 @@ function openMenuFor(card) {
       letter: hit.name,
       value: hit.value,
       expr: hit.expr || null,
+      // Every letter solved on any other card, for the check (matrices are letters too).
+      others: Object.fromEntries([...pool].map(([n, h]) => [n, h.expr || A.numberNode(h.value)])),
     }));
 
   const offers = [...moves, ...reach];
@@ -117,7 +121,7 @@ function openMenuFor(card) {
   menu.open(offers, () => card.rectFor(picked), (offer) => {
     if (offer.needsInput) return offer.op === "eq" ? startOperate(card) : startBothSides(card, offer.op);
     if (offer.cards) return splitInto(card, offer);
-    const result = offer.letter ? card.useFromElsewhere(offer.letter, offer.value, offer.expr) : card.apply(offer);
+    const result = offer.letter ? card.useFromElsewhere(offer.letter, offer.value, offer.expr, offer.others) : card.apply(offer);
     menu.close();
     if (result.refused) return say(`I will not do that — ${result.refused}.`, "no");
     say(result.note, "ok");
@@ -311,6 +315,26 @@ const liveCtx = () => ({
 let live = null;
 const liveNow = () => (live ||= createLive(liveCtx()));
 
+/* ── Wires ──────────────────────────────────────────────────────────────────
+   What the menu on a wire does. The linked equations come in the order the
+   wires run, first to last, and that is the order of the rows. */
+let wires = null;
+function wireAction(act, group, link) {
+  if (act === "remove") return wires.unlink(link.id);
+  if (act === "reverse") return wires.reverse(link.id);
+  const lines = group.map((c) => c.equation);
+  const made = systemMatrix(lines);
+  if (made.error) return say(made.error, "no");
+  const names = group.map((c) => c.name).join(", ");
+  if (act === "augmented") {
+    addCard(A.expression(made.augmented), { title: `augmented matrix of ${names}` });
+    say(`${names} written as one matrix: the numbers in front of ${made.letters.join(", ")}, then the numbers on the right.`, "ok");
+  } else {
+    addCard(made.equation, { title: `matrix form of ${names}` });
+    say(`${names} as a matrix equation: A × (${made.letters.join(", ")}) = the numbers on the right. Tap the brackets to multiply it out.`, "ok");
+  }
+}
+
 /* ── Named equations ────────────────────────────────────────────────────────
    Every card is an equation with a name — E_1, E_2 — and the names are what
    is typed to work on it: E_1 + 3, E_1·2, E_1^2, or E_1 − E_2 to take one
@@ -470,6 +494,7 @@ function addCard(eq, { given = null, title = "", find = "", name = "", uid = nul
     },
     onChange: (self) => { if (self.picked) openMenuFor(self); else menu.close(); },
     onEdit: (key, self) => startEdit(self, key),
+    onLinkStart: (self, e) => wires.begin(self, e),
     onRename: (want, self) => rename(self, want),
     // Lines pile up under the one being worked: follow them down.
     onGrow: (self) => requestAnimationFrame(() => { canvas.revealCard(self.el); menu.reposition(); }),
@@ -483,6 +508,7 @@ function addCard(eq, { given = null, title = "", find = "", name = "", uid = nul
       canvas.revealCard(self.el);
     },
     onRemove: (self) => {
+      wires?.removeCard(self);
       cards = cards.filter((c) => c !== self);
       if (active === self) { active = null; menu.close(); }
       countUp();
@@ -491,6 +517,7 @@ function addCard(eq, { given = null, title = "", find = "", name = "", uid = nul
   });
 
   cards.push(card);
+  wires?.track(card);
   syncNames();
   canvas.add(card.el);
   countUp();
@@ -543,6 +570,7 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
   await fontReady();
 
   canvas = createCanvas($("#am-canvas"));
+  wires = createWires({ canvas, host: frame, cardsOf: () => cards, onAct: wireAction });
   menu = createMenu(frame);
   canvas.onMove(() => menu.reposition());
 

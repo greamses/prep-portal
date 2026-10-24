@@ -45,7 +45,7 @@ const fmt = (v) => R.toText(v).replace(/-/g, "−");
 const said = (given) =>
   Object.entries(given).map(([k, v]) => `${k} = ${fmt(v)}`);
 
-export function createCard(eq, { x, y, given = null, title = "", find = "", name = "", onPick, onChange, onGesture, onRemove, onEdit, onRename, onGrow, uid = null }) {
+export function createCard(eq, { x, y, given = null, title = "", find = "", name = "", onPick, onChange, onGesture, onRemove, onEdit, onRename, onGrow, onLinkStart, uid = null }) {
   const id = `card${++seq}`;
   const rows = [];        // { row, offset, note, from }
   // The GLYPH that is picked — its atom key (nodeId#slot), so the 3 and the x
@@ -156,6 +156,21 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
   flag.hidden = true;
 
   el.append(grip, ...(ask ? [ask] : []), sheet, flag);
+
+  /* The port: drag from it to another equation and a wire joins them (wires.js).
+     Drawn in the house's filled style — a dot with an arrow leaving it. */
+  const port = document.createElement("button");
+  port.type = "button";
+  port.className = "am-card__port";
+  port.dataset.tip = "Drag to another equation to link them";
+  port.setAttribute("aria-label", "Link this equation to another");
+  port.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">`
+    + `<circle cx="12" cy="12" r="11" fill="var(--accent-secondary,#6aa5d8)"/>`
+    + `<rect x="5.5" y="10.4" width="7.5" height="3.2" rx="1.6" fill="#fff"/>`
+    + `<path d="M12.4 6.6 19 12l-6.6 5.4z" fill="#fff"/></svg>`;
+  port.addEventListener("pointerdown", (e) => { e.stopPropagation(); e.preventDefault(); onLinkStart?.(api, e); });
+  port.addEventListener("click", (e) => e.stopPropagation());
+  el.appendChild(port);
 
   /* ── Laying the rows out ─────────────────────────────────────────────────
      Every row is nudged right so all the equals signs sit on one line. */
@@ -523,9 +538,9 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
         will not do: this card was never given that letter, so the verifier
         has to be told about it just for this one check, the same way a
         formula's own given values are. */
-    useFromElsewhere(letter, value, expr = null) {
+    useFromElsewhere(letter, value, expr = null, others = null) {
       if (!picks.length) return { refused: "Nothing is picked." };
-      if (expr) return this.substituteExpression(letter, expr);
+      if (expr) return this.substituteExpression(letter, expr, others);
       const extended = { ...(values || {}), [letter]: value };
       const eq = rows[rows.length - 1].row.eq;
       const term = atomTerm(eq, primary());
@@ -542,11 +557,14 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
 
     /** y = 2x + 1, from another equation or typed in: every y in the line
         becomes 2x + 1, checked with y worked out from x. */
-    substituteExpression(letter, expr) {
+    substituteExpression(letter, expr, others = null) {
       const now = this.equation;
       const result = substituteExpr(now, letter, expr);
       if (result.error) return { refused: result.error };
-      const verdict = preservesSolutions(now, result.eq, { given: pinned, defs: result.defs });
+      /* The other letters in the line may be solved on other cards too (A and B
+         both matrices, say); the check takes every one of them as what it is. */
+      const defs = { ...(others || {}), ...result.defs };
+      const verdict = preservesSolutions(now, result.eq, { given: pinned, defs });
       if (!verdict.ok) return { refused: verdict.why };
       picks = [];
       undone = [];

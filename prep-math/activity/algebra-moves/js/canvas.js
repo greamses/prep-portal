@@ -112,6 +112,8 @@ export function createCanvas(host) {
 
   return {
     world,
+    /** A point on the screen as a point on the sheet. */
+    toWorld,
     get zoom() { return zoom; },
 
     add(cardEl) { world.appendChild(cardEl); },

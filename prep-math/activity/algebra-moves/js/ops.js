@@ -21,6 +21,7 @@
 import * as A from "./ast.js";
 import * as R from "./rational.js";
 import * as MM from "./matrix-moves.js";
+import { det as detOf } from "./matrix-eval.js";
 import { plain } from "./layout.js";
 import { preservesSolutions, numericValue } from "./verify.js";
 import { angleNode, anglesInTurn, copy, diffStep, intStep, subStep, partsStep, limitStep, exactTrig, exactInverse, tanAsRatio, pythagoreanPair } from "./calculus.js";
@@ -725,6 +726,17 @@ function matrixMoves(eq, node) {
       if (!isMat(node.b)) break;
       const e = A.exactValue(node.e);
       if (e && R.same(e, R.rat(-1n))) {
+        // A matrix of numbers whose determinant is 0 has no inverse: say so,
+        // rather than offering a move that can never be checked.
+        const cells = node.b.rows.flat();
+        if (cells.every((c) => A.exactValue(c))) {
+          const d = detOf({ m: node.b.rows.map((r) => r.map((c) => R.toNumber(A.exactValue(c)))) });
+          if (Number.isFinite(d) && Math.abs(d) < 1e-9) {
+            out.push({ key: "inverse", label: "Find the inverse", hint: "its determinant is 0", mark: plain(node),
+              run: () => ({ error: "The determinant of that matrix is 0, so it has no inverse." }) });
+            break;
+          }
+        }
         const inv = MM.inverseMat(node.b);
         if (inv) go("inverse", "Find the inverse", "1 over the determinant, times the swapped matrix", inv, `The inverse: one over the determinant, times the matrix with its entries swapped: ${plain(inv)}`);
       } else if (e && R.isInt(e) && e.n >= 2n && e.n <= 4n) {
@@ -1421,6 +1433,21 @@ export function expandBase(eq, id) {
   return {
     eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next),
     note: `Each digit times its place value in base ${n.base}: ${plain(next)}`,
+  };
+}
+
+/** The same number written in another base: 25_10 is 11001_2, 2A_16 is 42_10. */
+export function toBase(eq, id, target) {
+  const n = A.findById(eq, id);
+  if (!n || n.kind !== "base") return { error: "That is not a number written with its base." };
+  const v = A.baseValue(n.digits, n.base);
+  if (v === null) return { error: `${n.digits} has a digit that base ${n.base} does not have.` };
+  if (target === n.base) return { error: `That is in base ${target} already.` };
+  const next = target === 10 ? A.num(R.rat(v)) : A.based(v.toString(target).toUpperCase(), target);
+  return {
+    eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next),
+    note: target === 10 ? `${plain(n)} is ${v} in base ten`
+      : `${plain(n)} is ${v} in base ten; divide by ${target} again and again and read the remainders upwards: ${plain(next)}`,
   };
 }
 
@@ -2677,6 +2704,8 @@ export function atomOffers(eq, key, { given = null } = {}) {
     if (leaf?.kind === "base") {
       add(direct("expandbase", "Expand it in base ten", "digit × place value", expandBase(eq, nodeId)));
       add(direct("base10", "Write it in base ten", "the value", toBaseTen(eq, nodeId)));
+      // ...or in another base: by repeated division, the remainders read upwards.
+      for (const t of [2, 8, 16]) add(direct("tobase", `Write it in base ${t}`, "divide by the base, keep the remainders", toBase(eq, nodeId, t)));
     }
     // Any part of a mixed number: turn it into an improper fraction.
     {

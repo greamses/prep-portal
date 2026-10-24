@@ -29,6 +29,7 @@ import { parse } from "./parse.js";
 import { buildRow, paintRow } from "./render.js";
 import { solve } from "./solve.js";
 import { enhanceSelect } from "/utils/components/pp-select.js";
+import { UI } from "/utils/components/ui-icons.js";
 
 /* Words that should find each other — searching "circle" ought to turn up the
    sector and the cylinder, "money" the interest and the profit. Kept short:
@@ -270,7 +271,7 @@ export function createFormulaPicker(host, { onSubmit, onRule } = {}) {
     const go = document.createElement("button");
     go.type = "button";
     go.className = "am-go";
-    go.textContent = "Enter";
+    go.innerHTML = UI.enter(20);
     go.title = "Put it on the canvas";
     go.setAttribute("aria-label", "Put it on the canvas");
     go.addEventListener("click", submit);
