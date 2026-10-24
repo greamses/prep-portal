@@ -9,6 +9,7 @@
                sequence and series, arrangements and selections
      ex-c.js   chapters 9 to 11: probability trees, percentages, remainders
                (cycles: days of the week, repeating patterns, units digits)
+     ex-d.js   chapters 12 and 13: working backwards, elapsed time
 
    Every section is a BANK of story templates (common.js), each making its
    problem from the answer. The level picks which templates are in play:
@@ -20,11 +21,12 @@
 import { A_GROUPS, A_EXERCISES } from "./ex-a.js";
 import { B_GROUPS, B_EXERCISES } from "./ex-b.js";
 import { C_GROUPS, C_EXERCISES } from "./ex-c.js";
+import { D_GROUPS, D_EXERCISES } from "./ex-d.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
-export const GROUPS = [...A_GROUPS, ...B_GROUPS, ...C_GROUPS];
-export const EXERCISES = [...A_EXERCISES, ...B_EXERCISES, ...C_EXERCISES];
+export const GROUPS = [...A_GROUPS, ...B_GROUPS, ...C_GROUPS, ...D_GROUPS];
+export const EXERCISES = [...A_EXERCISES, ...B_EXERCISES, ...C_EXERCISES, ...D_EXERCISES];
 
 /** Which chapter an exercise belongs to: the groups are in book order. */
 const CHAPTER = new Map(GROUPS.map((g, i) => [g.id, i + 1]));

@@ -275,4 +275,41 @@ const rtShare = bank("wp-rt-share", "wp-ratio", {
     return P(`Two numbers are in the ratio ${p} : ${q}. When ${add} is added to each, the ratio becomes ${x} : ${y}. Find the two numbers.`, [["smaller:", a], ["larger:", b]], `${y}(${p}u + ${add}) = ${x}(${q}u + ${add}), u = ${u}`); },
 ]);
 
-export const A_EXERCISES = [agRatio, agShift, agFamily, alRule, alQuantity, alReplace, hlHcf, hlLcm, hlMixed, rtCompound, rtPowers, rtShare];
+const PAIRS = [["boys", "girls", "pupils"], ["hens", "ducks", "birds"], ["cows", "goats", "animals"], ["pens", "pencils", "writing tools"], ["mangoes", "oranges", "fruits"]];
+const TRIPLES = [[2, 3, 5], [1, 2, 4], [3, 4, 7], [2, 5, 6], [1, 3, 4], [3, 5, 8]];
+
+const rtStories = bank("wp-rt-stories", "wp-ratio", {
+  label: "Ratio in everyday stories",
+  blurb: "Farms, recipes, maps, workers and sweets passed between friends.",
+  heading: "Ratio in everyday stories",
+  instruction: "Whatever the story, turn the ratio into UNITS first. Find what ONE unit is worth from the one thing you " +
+    "are told (a part, a total or a difference), then multiply. When something is GIVEN AWAY or ADDED, ask what stays " +
+    "the same: a gift between two friends leaves the TOTAL unchanged; adding to one side leaves the OTHER side unchanged. " +
+    "More workers or a faster speed mean LESS time — the ratio of times is the ratio turned upside down.",
+  example: "Sweets are shared between Ada and Bola in the ratio 3 : 5. Ada gives 6 sweets to Bola and now the ratio is 1 : 3. How many sweets has each at first?",
+  solution: "The total does not change. At first Ada has 3/8 of it; afterwards 1/4, which is 2/8. Her share fell by 1/8 of the total, and that is the 6 sweets given away. So the total is 6 × 8 = 48. Ada has 3/8 of 48 = 18 and Bola has 30.",
+}, [
+  (r) => { const [a, b, tot] = r.pick(PAIRS), [p, q] = r.pick(RATIOS), u = r.int(2, 9);
+    return P(`The ratio of ${a} to ${b} is ${p} : ${q}. There are ${q * u} ${b}. How many ${a} are there, and how many ${tot} altogether?`, [[`${a}:`, p * u], ["altogether:", (p + q) * u]], `1 unit = ${q * u} ÷ ${q} = ${u}`); },
+  (r) => { const [p, q] = r.pick(RATIOS), u = r.int(2, 9) * 2, [A, B] = names(r, 2);
+    return P(`${A} and ${B} have sweets in the ratio ${p} : ${q}. ${B} has ${(q - p) * u} more sweets than ${A}. How many sweets has each?`, [[`${A}:`, p * u], [`${B}:`, q * u]], `${q - p} ${plural(q - p, "unit")} = ${(q - p) * u}, 1 unit = ${u}`); },
+  (r) => { const [p, q] = r.pick(RATIOS), u = r.int(2, 8) * 5;
+    return P(`Orange squash is made by mixing juice and water in the ratio ${p} : ${q}. How much water is needed for ${p * u} ml of juice, and how much squash does that make?`, [["water (ml):", q * u], ["squash (ml):", (p + q) * u]], `1 unit = ${u} ml`); },
+  (r) => { const k = r.pick([20000, 25000, 50000, 100000, 200000]), d = r.int(2, 15);
+    return P(`The scale of a map is 1 : ${k}. Two towns are ${d} cm apart on the map. How far apart are they in real life, in kilometres?`, [["km:", d * k / 100000]], `${d} × ${k} cm = ${d * k / 100000} km`); },
+  (r) => { const a = r.int(4, 12), D = r.int(6, 20); const opts = []; for (let b = 2; b <= 36; b++) if (b !== a && (a * D) % b === 0) opts.push(b); const b = r.pick(opts); const job = r.pick(["a wall", "a road", "a well", "a fence"]);
+    return P(`${a} workers can build ${job} in ${D} days. How many days would ${b} workers take, working at the same rate?`, [["days:", a * D / b]], `${a} × ${D} = ${a * D} worker-days, ÷ ${b}`); },
+  (r) => { const [p, q] = r.pick(RATIOS), u = r.int(2, 9) * 2, [A, B] = names(r, 2);
+    return P(`${A} and ${B} walk the same road at speeds in the ratio ${p} : ${q}. ${A} takes ${q * u} minutes. How long does ${B} take?`, [["minutes:", p * u]], `times are in the ratio ${q} : ${p}, 1 unit = ${u}`); },
+  (r, t) => { if (t === "gentle") return null; const [p, q, s] = r.pick(TRIPLES), u = r.int(2, 9), [A, B, C] = names(r, 3);
+    return P(`${A}, ${B} and ${C} share some stickers in the ratio ${p} : ${q} : ${s}. ${C} has ${(s - p) * u} more stickers than ${A}. How many stickers are there altogether, and how many has ${B}?`, [["altogether:", (p + q + s) * u], [`${B}:`, q * u]], `${s - p} ${plural(s - p, "unit")} = ${(s - p) * u}, 1 unit = ${u}`); },
+  (r, t) => { if (t === "gentle") return null; const [p, q] = r.pick(RATIOS), [m, n] = r.pick(RATIOS); const L = lcm(p + q, m + n), k = r.int(1, 3); const T = L * k; if (T > 400) return null;
+    const a = (p * T) / (p + q), after = (m * T) / (m + n), g = a - after; if (g <= 0) return null; const [A, B] = names(r, 2);
+    return P(`${A} and ${B} have sweets in the ratio ${p} : ${q}. ${A} gives ${g} sweets to ${B}, and now they have them in the ratio ${m} : ${n}. How many sweets has each at first?`, [[`${A}:`, a], [`${B}:`, T - a]], `the total ${T} does not change`); },
+  (r, t) => { if (t === "gentle") return null; const [p, q] = r.pick(RATIOS), [m, n] = r.pick(RATIOS); const L = lcm(q, n), j = r.int(1, 3); const G = L * j, boys = (p * G) / q, after = (m * G) / n, k = after - boys; if (!k || G > 150) return null;
+    return P(`In a club the ratio of boys to girls is ${p} : ${q}. When ${Math.abs(k)} boys ${k > 0 ? "join" : "leave"}, the ratio becomes ${m} : ${n}. How many girls are there, and how many boys were there at first?`, [["girls:", G], ["boys:", boys]], `the girls do not change`); },
+  (r, t) => { if (t === "gentle") return null; const [p, q] = r.pick(SMALL), [rr, s] = r.pick(SMALL); const L = lcm(q, rr); let a = p * (L / q), b = L, c = s * (L / rr); const g = gcd(gcd(a, b), c); a /= g; b /= g; c /= g; const k = r.int(2, 9); const [A, B, C] = names(r, 3);
+    return P(`${A} has ${a * k} marbles. The ratio of ${A}'s marbles to ${B}'s is ${p} : ${q}, and the ratio of ${B}'s to ${C}'s is ${rr} : ${s}. How many marbles have ${B} and ${C}?`, [[`${B}:`, b * k], [`${C}:`, c * k]], `${A} : ${B} : ${C} = ${a} : ${b} : ${c}`); },
+]);
+
+export const A_EXERCISES = [agRatio, agShift, agFamily, alRule, alQuantity, alReplace, hlHcf, hlLcm, hlMixed, rtCompound, rtPowers, rtShare, rtStories];

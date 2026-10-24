@@ -601,7 +601,7 @@ export const PAGES = [
     title: "Maths Word Problems for Competitions & Scholarship Exams",
     desc: "A printable workbook of word problems for maths competitions and scholarship exams: ages, mixtures, HCF and LCM, ratio, work and speed, sequences, probability and percentages.",
     intro:
-      "The word problems that decide maths competitions and scholarship exams, sorted by type. Each of the eleven chapters works one problem in full, then gives you a fresh set to try, and the answer key shows the method as well as the answer.",
+      "The word problems that decide maths competitions and scholarship exams, sorted by type. Each of the thirteen chapters works one problem in full, then gives you a fresh set to try, and the answer key shows the method as well as the answer.",
     points: [
       "Ages, alligation and mixture, HCF and LCM, compound ratios",
       "Work, pipes and speed; systems of equations; sequences and series",

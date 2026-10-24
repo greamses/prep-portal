@@ -36,4 +36,8 @@ export const ICON = {
   wpPct: svg(bar(5.4, 19.4, 18.6, 4.6, 2.4, QUIET) + dot(7, 7, 3.6, LOUD) + dot(17, 17, 3.6, PAPER) + dot(7, 7, 1.3, "#fff") + dot(17, 17, 1.3, "#fff")),
   /* remainder: a divided bar with one piece left over */
   wpRem: svg(cell(2.6, 8.4, 4.6, 7.2, PAPER) + cell(8, 8.4, 4.6, 7.2, PAPER) + cell(13.4, 8.4, 4.6, 7.2, PAPER) + cell(19, 8.4, 2.6, 7.2, LOUD) + bar(2.6, 19, 18, 19, 1.4, WARM)),
+  /* working backwards: an arrow running back along a line to where it began */
+  wpBack: svg(bar(20, 12, 7, 12, 2.4, LOUD) + bar(7, 12, 12, 7, 2.4, LOUD) + bar(7, 12, 12, 17, 2.4, LOUD) + dot(20.4, 12, 2.2, GOLD) + bar(3, 5, 3, 19, 1.6, QUIET)),
+  /* elapsed time: a clock face with its hands, the gap between them loud */
+  wpTime: svg(dot(12, 12, 9.4, PAPER) + bar(12, 12, 12, 6, 2.2, LOUD) + bar(12, 12, 16.4, 14.4, 2.2, GOLD) + dot(12, 12, 1.7, LOUD)),
 };

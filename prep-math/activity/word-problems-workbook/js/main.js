@@ -55,6 +55,8 @@ mountBuilder({
     "wp-prob": ICON.wpProb,
     "wp-pct": ICON.wpPct,
     "wp-rem": ICON.wpRem,
+    "wp-back": ICON.wpBack,
+    "wp-time": ICON.wpTime,
   },
   icons: ICON,
   title: "Competition Word Problems",
