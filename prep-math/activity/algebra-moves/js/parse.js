@@ -81,11 +81,12 @@ function tokenise(src) {
     // det and transpose are only the names of functions when something to
     // work on follows them; otherwise d·e·t is three letters.
     const word = [...A.FUNCS, "lim"].find((w) => src.startsWith(w, i)
-      && (w !== "det" && w !== "transpose" || "([".includes(src[i + w.length] || "")));
+      && (w !== "det" && w !== "transpose" && !A.LIST_FNS.includes(w) || (A.LIST_FNS.includes(w) ? "([{" : "([").includes(src[i + w.length] || "")));
     if (word) { out.push({ t: word === "lim" ? "lim" : "fn", v: word, at: i }); i += word.length; continue; }
     // d/dx — a derivative with respect to the letter after it.
     if (src.startsWith("d/d", i) && isAlpha(src[i + 3] || "")) { out.push({ t: "deriv", v: src[i + 3], at: i }); i += 4; continue; }
     if (c === "∫") { out.push({ t: "int", v: "∫", at: i }); i++; continue; }
+    if (c === "Σ") { out.push({ t: "sigma", v: "Σ", at: i }); i++; continue; }
     if (c === "°") { out.push({ t: "deg", v: "°", at: i }); i++; continue; }
     if (c === "%") { out.push({ t: "pct", v: "%", at: i }); i++; continue; }
     if (c === "!") { out.push({ t: "fact", v: "!", at: i }); i++; continue; }
@@ -94,7 +95,7 @@ function tokenise(src) {
     if (c === "→") { out.push({ t: "to", v: "→", at: i }); i++; continue; }
     if (c === "√") { out.push({ t: "root", v: "√", at: i }); i++; continue; }
     if (isAlpha(c)) { out.push({ t: "var", v: c, at: i }); i++; continue; }
-    if ("+-*/^()=[],".includes(c)) { out.push({ t: c, v: c, at: i }); i++; continue; }
+    if ("+-*/^()=[],{}".includes(c)) { out.push({ t: c, v: c, at: i }); i++; continue; }
     // The keypad's placeholder for a slot you have not filled in yet.
     if (c === "?") { out.push({ t: "hole", v: "?", at: i }); i++; continue; }
     // Typed with the keys a phone offers instead of the ones we expect.
@@ -116,7 +117,7 @@ export function setRefs(names) {
   REFS = [...new Set(names.filter(Boolean))].sort((a, b) => b.length - a.length);
 }
 
-const STARTS_FACTOR = new Set(["[", "choose", "base", "ref", "num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
+const STARTS_FACTOR = new Set(["[", "{", "sigma", "choose", "base", "ref", "num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
 
 export function parse(src) {
   const toks = tokenise(src);
@@ -166,6 +167,27 @@ export function parse(src) {
     if (tk.t === "var") { p++; return span(mark, A.vr(tk.v)); }
     if (tk.t === "fn") { p++; return span(mark, A.fn(tk.v, atom())); }
     if (tk.t === "ref") { p++; return span(mark, A.ref(tk.v)); }
+    if (tk.t === "{") {
+      p++;
+      const items = [expr()];
+      while (peek().t === ",") { p++; items.push(expr()); }
+      eat("}");
+      return span(mark, A.list(items));
+    }
+    if (tk.t === "sigma") {
+      p++;
+      eat("_");
+      eat("(");
+      const v = peek();
+      if (v.t !== "var") throw new SyntaxError("A sum says which letter counts: Σ_(i=1)^(5)(…).");
+      p++;
+      eat("=");
+      const lo = expr();
+      eat(")");
+      eat("^");
+      const hi = atom();
+      return span(mark, A.sigma(atom(), v.v, lo, hi));
+    }
     if (tk.t === "choose") {
       p++;
       eat("(");

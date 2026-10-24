@@ -43,6 +43,16 @@ function gammaFn(z) {
 function evalAt(node, env) {
   switch (node.kind) {
     case "fact": return gammaFn(evalAt(node.k, env) + 1);
+    // Σ adds up the body for each whole number counted; a limit that is not a
+    // whole number at this sample cannot be counted to, so the sample is unusable.
+    case "sigma": {
+      const lo = evalAt(node.lo, env), hi = evalAt(node.hi, env);
+      if (!Number.isInteger(lo) || !Number.isInteger(hi) || hi - lo > 400) return NaN;
+      let s = 0;
+      for (let i = lo; i <= hi; i++) s += evalAt(node.k, { ...env, [node.x]: i });
+      return s;
+    }
+    case "list": return NaN;
     case "choose": {
       const n = evalAt(node.n, env), r = evalAt(node.r, env);
       return node.perm ? gammaFn(n + 1) / gammaFn(n - r + 1) : gammaFn(n + 1) / (gammaFn(r + 1) * gammaFn(n - r + 1));
@@ -66,6 +76,21 @@ function evalAt(node, env) {
     case "const": return node.name === "e" ? Math.E : Math.PI;
     case "deg":  return evalAt(node.k, env) * Math.PI / 180;
     case "fn": {
+      if (["median", "mean", "mode", "range", "sum"].includes(node.name)) {
+        if (node.k.kind !== "list") return NaN;
+        const xs = node.k.items.map((it) => evalAt(it, env)).sort((a, b) => a - b);
+        if (!xs.length || xs.some((x) => !Number.isFinite(x))) return NaN;
+        const total = xs.reduce((a, b) => a + b, 0);
+        if (node.name === "sum") return total;
+        if (node.name === "mean") return total / xs.length;
+        if (node.name === "range") return xs[xs.length - 1] - xs[0];
+        if (node.name === "median") { const m = xs.length >> 1; return xs.length % 2 ? xs[m] : (xs[m - 1] + xs[m]) / 2; }
+        const counts = new Map();
+        for (const x of xs) counts.set(x, (counts.get(x) || 0) + 1);
+        const best = Math.max(...counts.values());
+        const top = [...counts].filter(([, c]) => c === best);
+        return top.length === 1 ? top[0][0] : NaN;
+      }
       const v = evalAt(node.k, env);
       switch (node.name) {
         case "sin": return Math.sin(v);

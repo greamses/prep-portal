@@ -71,6 +71,9 @@ export const RULE_GROUPS = [
   {
     group: "Rules: counting",
     items: [
+      r("r-sigma", "Σ: write out the terms", "Σ_(i=1)^(3)(2i + 1) = (2·1 + 1) + (2·2 + 1) + (2·3 + 1)", ["sigma"]),
+      r("r-mean", "The mean of a list", "mean({a, b, c}) = (a + b + c)/3", ["mean"]),
+      r("r-median", "The median: put them in order first", "median({3, 1, 2}) = median({1, 2, 3})", ["sortlist"]),
       r("r-fact", "A factorial", "5! = 5 × 4 × 3 × 2 × 1", ["factorial"]),
       r("r-perm", "Arrangements: nPr", "nPr(n,r) = n!/(n − r)!", ["choose"]),
       r("r-comb", "Choices: nCr", "nCr(n,r) = n!/(r!(n − r)!)", ["choose"]),

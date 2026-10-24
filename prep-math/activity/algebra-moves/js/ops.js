@@ -24,7 +24,7 @@ import * as MM from "./matrix-moves.js";
 import { det as detOf, hasMatrix as hasMatrixNode } from "./matrix-eval.js";
 import { plain } from "./layout.js";
 import { preservesSolutions, numericValue } from "./verify.js";
-import { angleNode, anglesInTurn, copy, diffStep, intStep, subStep, partsStep, limitStep, exactTrig, exactInverse, tanAsRatio, pythagoreanPair } from "./calculus.js";
+import { angleNode, anglesInTurn, substVar, copy, diffStep, intStep, subStep, partsStep, limitStep, exactTrig, exactInverse, tanAsRatio, pythagoreanPair } from "./calculus.js";
 
 /** Where a node sits, if it is one of the terms of SOME container — a true
     side of the line, or the numerator/denominator of a fraction anywhere in
@@ -693,6 +693,11 @@ function nodeTidies(eq, node) {
   }
   if (node.kind === "prod" || node.kind === "frac") t("multiply", multiplyLabel(node), "numbers together, letters together", multiplyOut(eq, node.id));
   if (node.kind === "fact") t("factorial", "Write the factorial out", "n × (n − 1) × … × 1", factorialOut(eq, node));
+  if (node.kind === "sigma") t("sigma", "Write out the terms", "one term for each whole number counted", sigmaOut(eq, node));
+  if (node.kind === "fn" && node.k.kind === "list") {
+    if (node.name === "mean") t("mean", "Add them up and divide by how many", "mean = sum ÷ how many", meanOut(eq, node));
+    if (node.name === "median") t("sortlist", "Put the numbers in order", "smallest to largest", sortListOut(eq, node));
+  }
   if (node.kind === "choose") {
     t("choose", node.perm ? "Write the arrangements as factorials" : "Write the choices as factorials",
       node.perm ? "nPr = n! ÷ (n − r)!" : "nCr = n! ÷ (r! (n − r)!)", chooseOut(eq, node));
@@ -700,6 +705,40 @@ function nodeTidies(eq, node) {
   for (const o of calcMoves(eq, node)) out.push(o);
   for (const o of matrixMoves(eq, node)) out.push(o);
   return out;
+}
+
+/* ── Σ and lists of numbers ──────────────────────────────────────────────────
+   Σ is written out term by term (the numbers then work out like any sum); a
+   mean as the sum over the count; a median is read off once the list is in order. */
+function sigmaOut(eq, node) {
+  const lo = A.exactValue(node.lo), hi = A.exactValue(node.hi);
+  if (!lo || !hi || !R.isInt(lo) || !R.isInt(hi)) return { error: "Both ends of the sum need to be whole numbers to write it out." };
+  const count = Number(hi.n - lo.n) + 1;
+  if (count < 1) return { error: "The sum stops before it starts." };
+  if (count > 12) return { error: "That is more than twelve terms — too many to write out." };
+  const terms = Array.from({ length: count }, (_, i) => {
+    const t = substVar(node.k, node.x, A.numberNode(R.rat(lo.n + BigInt(i))));
+    return t.kind === "sum" && !t.paren ? { ...t, paren: true } : t;
+  });
+  const next = terms.length === 1 ? terms[0] : A.sum(terms);
+  if (node.paren && terms.length > 1) next.paren = true;
+  return { eq: A.replace(eq, node.id, next), from: new Map(), mark: plain(next), note: `Σ written out: ${plain(next)}` };
+}
+function meanOut(eq, node) {
+  const items = node.k.items;
+  if (items.length < 2) return { error: "There is nothing to add." };
+  const top = A.sum(items.map((it) => copy(it)));
+  const next = A.frac(top, A.numberNode(R.rat(BigInt(items.length))));
+  return { eq: A.replace(eq, node.id, next), from: new Map(), mark: plain(next), note: `The mean is the sum over how many: ${plain(next)}` };
+}
+function sortListOut(eq, node) {
+  const vals = node.k.items.map((it) => A.exactValue(it));
+  if (vals.some((v) => !v)) return { error: "I can only put numbers in order." };
+  const order = vals.map((v, i) => i).sort((a, b) => { const d = R.sub(vals[a], vals[b]); return d.n < 0n ? -1 : d.n > 0n ? 1 : 0; });
+  if (order.every((v, i) => v === i)) return { error: "They are in order already." };
+  const sorted = A.list(order.map((i) => copy(node.k.items[i])));
+  const next = A.fn("median", sorted);
+  return { eq: A.replace(eq, node.id, next), from: new Map(), mark: plain(sorted), note: `In order: ${plain(sorted)}` };
 }
 
 /* ── Counting: n!, nPr, nCr ──────────────────────────────────────────────────
@@ -2868,7 +2907,7 @@ export function multiOffers(eq, keys, { given = null } = {}) {
     with none of these left on any of its terms is as tidy as it goes. */
 export const TIDY = new Set(["combine", "workout", "cancel", "dropzero", "indices", "surd", "addfrac",
   "multiply", "trig", "pyth", "diff", "integrate", "limit", "base10",
-  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse", "factorial", "choose"]);
+  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse", "factorial", "choose", "sigma", "mean", "sortlist"]);
 
 /** Every move on offer for a set of picked glyphs — what each one means, what
     its term can have done to it, and what they mean together — or, with

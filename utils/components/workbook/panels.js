@@ -20,6 +20,8 @@ const ICON_CLOSE =
   + '<rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/>'
   + '<rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg>';
 
+import { UI } from "/utils/components/ui-icons.js";
+
 let top = 0;
 
 /**
@@ -45,6 +47,8 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
       <div class="pp-receipt__paper">
         <header class="wb-panel__head">
           <h2 class="wb-panel__title">${title}</h2>
+          <button type="button" class="pp-btn pp-sticky pp-note-btn wb-panel__expand"
+                  aria-label="Make the ${title.toLowerCase()} bigger" aria-pressed="false" data-tip="Make it bigger">${UI.expand(14)}</button>
           <button type="button" class="pp-btn pp-sticky pp-note-btn wb-panel__close"
                   aria-label="Put the ${title.toLowerCase()} away">${ICON_CLOSE}</button>
         </header>
@@ -77,11 +81,40 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   el.querySelector(".wb-panel__close").addEventListener("click", close);
   el.addEventListener("pointerdown", raise, true);
 
+  /* Expanding: the sheet grows to nearly the whole window, easing there, and
+     goes back to the place and size it had. Dragging is off while it is big. */
+  const bigBtn = el.querySelector(".wb-panel__expand");
+  let small = null;
+  const bigRect = () => {
+    const bw = Math.min(window.innerWidth - 24, 1500), bh = window.innerHeight - 24;
+    return { left: Math.round((window.innerWidth - bw) / 2), top: 12, width: bw, height: bh };
+  };
+  const put = (r) => { el.style.left = `${r.left}px`; el.style.top = `${r.top}px`; el.style.width = `${r.width}px`; el.style.height = `${r.height}px`; };
+  const settle = () => window.dispatchEvent(new Event("resize"));   // whatever is inside measures itself again
+  bigBtn.addEventListener("click", () => {
+    el.classList.add("is-easing");
+    if (!small) {
+      small = { left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight };
+      put(bigRect());
+      el.classList.add("is-expanded");
+    } else {
+      put(small);
+      small = null;
+      el.classList.remove("is-expanded");
+    }
+    bigBtn.setAttribute("aria-pressed", String(!!small));
+    bigBtn.dataset.tip = small ? "Make it smaller" : "Make it bigger";
+    bigBtn.innerHTML = small ? UI.shrink(14) : UI.expand(14);
+    raise();
+    setTimeout(() => { el.classList.remove("is-easing"); settle(); }, 300);
+  });
+  window.addEventListener("resize", () => { if (small && el.isConnected) put(bigRect()); });
+
   /* dragging, by the head only — the body is being typed into */
   const head = el.querySelector(".wb-panel__head");
   let from = null;
   head.addEventListener("pointerdown", (e) => {
-    if (e.target.closest(".wb-panel__close")) return;
+    if (e.target.closest(".wb-panel__close, .wb-panel__expand") || small) return;
     e.preventDefault();
     head.setPointerCapture(e.pointerId);
     from = { px: e.clientX, py: e.clientY, x: el.offsetLeft, y: el.offsetTop };

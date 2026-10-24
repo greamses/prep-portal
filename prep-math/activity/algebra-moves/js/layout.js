@@ -111,8 +111,10 @@ function needsBrackets(node, parentKind, slot) {
   if (parentKind === "fn" || parentKind === "deriv") return true;
   if (parentKind === "int" || parentKind === "lim") return node.kind === "sum";
   if (parentKind === "deg" || parentKind === "pct" || parentKind === "fact") return node.kind !== "num" && node.kind !== "var";
-  // nCr's two numbers are set apart by their places, not by brackets.
-  if (parentKind === "choose") return false;
+  // nCr's two numbers are set apart by their places, not by brackets; so are a
+  // list's by its commas and a sum's limits by where they sit.
+  if (parentKind === "choose" || parentKind === "list" || parentKind === "sigmalim") return false;
+  if (parentKind === "sigma") return node.kind === "sum";
   if (node.paren) return true;
   switch (parentKind) {
     case "prod": return node.kind === "sum" || ((node.kind === "neg" || node.kind === "pm") && slot > 0);
@@ -320,6 +322,34 @@ function measureBare(node, size, binary) {
       const sw = measureText("%", size, false);
       return { ...base, kind: "pct", k, sw, w: k.w + sw,
                ascent: Math.max(base.ascent, k.ascent), descent: Math.max(base.descent, k.descent) };
+    }
+    // {4, 7, 9}: the numbers between braces, set a comma apart.
+    case "list": {
+      const items = node.items.map((it) => measure(it, size, "list", 0));
+      const open = measureText("{", size, false), close = measureText("}", size, false);
+      const comma = measureText(",", size, false), sp = 0.3 * size;
+      const w = open + items.reduce((a, m, i) => a + m.w + (i ? comma + sp : 0), 0) + close;
+      return { ...base, kind: "list", items, open, close, comma, sp, w,
+               ascent: Math.max(base.ascent, ...items.map((m) => m.ascent)),
+               descent: Math.max(base.descent, ...items.map((m) => m.descent)) };
+    }
+    // Σ with the counter and where it starts underneath, where it stops above.
+    case "sigma": {
+      const body = measure(node.k, size, "sigma", 0);
+      const small = size * 0.62;
+      const lo = measure(node.lo, small, "sigmalim", 0), hi = measure(node.hi, small, "sigmalim", 0);
+      const loLab = measureText(`${node.x}=`, small, true);
+      const loW = loLab + lo.w;
+      const sSize = Math.max(size * 1.3, (Math.max(body.ascent + body.descent, size) * 1.1) / (ASC + DESC));
+      const sW = measureText("Σ", sSize, false);
+      const colW = Math.max(sW, hi.w, loW);
+      const up = 0.3 * size + ((ASC + DESC) / 2) * sSize;      // baseline to the Σ's top
+      const down = -0.3 * size + ((ASC + DESC) / 2) * sSize;   // baseline to its foot
+      const gap = 0.06 * size;
+      return { ...base, kind: "sigma", body, lo, hi, loLab, loW, small, sSize, sW, colW, up, down, gap,
+               w: colW + 0.14 * size + body.w,
+               ascent: Math.max(base.ascent, body.ascent, up + gap + hi.descent + hi.ascent),
+               descent: Math.max(base.descent, body.descent, down + gap + lo.ascent + lo.descent) };
     }
     // 5!: the number, then the mark right after it.
     case "fact": {
@@ -573,6 +603,31 @@ function place(m, x, y, out) {
       text("pct", "%", x + m.k.w, y, m.size, false);
       break;
 
+    case "list": {
+      let cx = x;
+      text("lbrace", "{", cx, y, m.size, false);
+      cx += m.open;
+      m.items.forEach((it, i) => {
+        if (i) { text(`lc${i}`, ",", cx, y, m.size, false); cx += m.comma + m.sp; }
+        place(it, cx, y, out);
+        cx += it.w;
+      });
+      text("rbrace", "}", cx, y, m.size, false);
+      break;
+    }
+
+    case "sigma": {
+      const iy = y - 0.3 * m.size + ((ASC - DESC) / 2) * m.sSize;
+      text("sigma", "Σ", x + (m.colW - m.sW) / 2, iy, m.sSize, false);
+      place(m.hi, x + (m.colW - m.hi.w) / 2, y - m.up - m.gap - m.hi.descent, out);
+      const ly = y + m.down + m.gap + m.lo.ascent;
+      const lx = x + (m.colW - m.loW) / 2;
+      text("sigx", `${m.node.x}=`, lx, ly, m.small, true);
+      place(m.lo, lx + m.loLab, ly, out);
+      place(m.body, x + m.colW + 0.14 * m.size, y, out);
+      break;
+    }
+
     case "fact":
       place(m.k, x, y, out);
       text("bang", "!", x + m.k.w, y, m.size, false);
@@ -726,6 +781,11 @@ export function plain(node, parentKind = null, slot = 0) {
     case "ref":  return wrap(node.name);
     case "pct":  return wrap(`${plain(node.k, "pct", 0)}%`);
     case "fact": return wrap(`${plain(node.k, "fact", 0)}!`);
+    case "list": return wrap(`{${node.items.map((it, i) => plain(it, "list", i)).join(", ")}}`);
+    case "sigma": {
+      const lim = (n) => (n.kind === "num" || n.kind === "var" || n.kind === "const" ? plain(n) : `(${plain(n)})`);
+      return wrap(`Σ_(${node.x}=${plain(node.lo)})^${lim(node.hi)}(${plain({ ...node.k, paren: false })})`);
+    }
     case "choose": return wrap(`n${node.perm ? "P" : "C"}r(${plain(node.n, "choose", 0)},${plain(node.r, "choose", 1)})`);
     case "mat":  return `[${node.rows.map((r) => `[${r.map((c) => plain(c, "mat", 0)).join(",")}]`).join(",")}]`;
     case "base": return wrap(`${node.digits}_${node.base}`);

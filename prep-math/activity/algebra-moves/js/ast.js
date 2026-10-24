@@ -55,6 +55,10 @@ export const matSize = (m) => [m.rows.length, m.rows[0].length];
 export const pct = (k, id = freshId()) => ({ id, kind: "pct", k });
 /* n! — the factorial — and nPr / nCr: arrangements and choices of r from n. */
 export const fact = (k, id = freshId()) => ({ id, kind: "fact", k });
+/* {4, 7, 9}: a list of numbers, for the mean and the median to be taken of. */
+export const list = (items, id = freshId()) => ({ id, kind: "list", items });
+/* Σ_(i=1)^(5)(2i + 1): the terms of the body for each whole number from lo to hi. */
+export const sigma = (k, x, lo, hi, id = freshId()) => ({ id, kind: "sigma", x, lo, hi, k });
 export const choose = (n, r, perm = false, id = freshId()) => ({ id, kind: "choose", n, r, perm });
 
 /** A decimal as it is written: 0.25 — a number that keeps the text it was typed
@@ -101,7 +105,10 @@ export const mixed = (w, f, id = freshId()) => ({ id, kind: "mixed", w, f });
     workspace.js swaps each one for that equation's left side, then its right. */
 export const ref = (name, id = freshId()) => ({ id, kind: "ref", name });
 
-export const FUNCS = ["arcsin", "arccos", "arctan", "transpose", "sin", "cos", "tan", "ln", "log", "det"];
+export const FUNCS = ["arcsin", "arccos", "arctan", "transpose", "sin", "cos", "tan", "ln", "log", "det",
+  "median", "mean", "mode", "range", "sum"];
+/** The functions of a list of numbers; each is only a function when a bracket follows. */
+export const LIST_FNS = ["median", "mean", "mode", "range", "sum"];
 /** How a function's name is drawn: arcsin is written sin⁻¹. */
 export const FN_FACE = { arcsin: "sin⁻¹", arccos: "cos⁻¹", arctan: "tan⁻¹" };
 export const cnst  = (name, id = freshId())          => ({ id, kind: "const", name });
@@ -138,6 +145,8 @@ export function kidsOf(node) {
     case "mixed": return [node.w, node.f];
     case "pct":  return [node.k];
     case "fact": return [node.k];
+    case "list": return node.items;
+    case "sigma": return [node.lo, node.hi, node.k];
     case "choose": return [node.n, node.r];
     case "mat":  return node.rows.flat();
     case "pm":   return [node.k];
@@ -183,6 +192,8 @@ export function replace(root, id, next) {
       case "mixed": { const w = rec(n.w), f = rec(n.f); return w === n.w && f === n.f ? n : { ...n, w, f }; }
       case "pct":  { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
       case "fact": { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
+      case "list": { const items = n.items.map(rec); return items.every((k, i) => k === n.items[i]) ? n : { ...n, items }; }
+      case "sigma": { const lo = rec(n.lo), hi = rec(n.hi), k = rec(n.k); return lo === n.lo && hi === n.hi && k === n.k ? n : { ...n, lo, hi, k }; }
       case "choose": { const a = rec(n.n), b = rec(n.r); return a === n.n && b === n.r ? n : { ...n, n: a, r: b }; }
       case "mat": {
         let changed = false;
@@ -426,9 +437,37 @@ function countingValue(node) {
   return R.rat(node.perm ? top / factorialBig(n - r) : top / (factorialBig(r) * factorialBig(n - r)));
 }
 
+/** The mean, median, mode, range or sum of a list of exact numbers, or null. */
+function listValue(node) {
+  if (!LIST_FNS.includes(node.name) || node.k.kind !== "list" || !node.k.items.length) return null;
+  const vs = node.k.items.map(exactValue);
+  if (vs.some((v) => !v)) return null;
+  const sign = (a, b) => { const d = R.sub(a, b); return d.n < 0n ? -1 : d.n > 0n ? 1 : 0; };
+  const sorted = [...vs].sort(sign);
+  const total = vs.reduce((a, v) => R.add(a, v), R.ZERO);
+  switch (node.name) {
+    case "sum": return total;
+    case "mean": return R.div(total, R.rat(BigInt(vs.length)));
+    case "range": return R.sub(sorted[sorted.length - 1], sorted[0]);
+    case "median": {
+      const m = sorted.length >> 1;
+      return sorted.length % 2 ? sorted[m] : R.div(R.add(sorted[m - 1], sorted[m]), R.rat(2n));
+    }
+    case "mode": {
+      const counts = new Map();
+      for (const v of vs) { const key = `${v.n}/${v.d}`; counts.set(key, { v, c: (counts.get(key)?.c || 0) + 1 }); }
+      const best = Math.max(...[...counts.values()].map((e) => e.c));
+      const top = [...counts.values()].filter((e) => e.c === best);
+      return top.length === 1 ? top[0].v : null;     // two modes is not one number
+    }
+    default: return null;
+  }
+}
+
 export function exactValue(node) {
   try {
     switch (node.kind) {
+      case "fn": return listValue(node);
       case "fact":
       case "choose": return countingValue(node);
       case "num":  return node.v;

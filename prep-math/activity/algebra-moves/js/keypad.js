@@ -170,6 +170,18 @@ const FUNCS = [
     { k: "←", act: "left", title: "Move left, box to box in a matrix" },
     { k: "→", act: "right", title: "Move right, box to box in a matrix" },
   ],
+  /* Sums and lists: Σ with its limits to fill, a list in braces, the comma
+     between its numbers, and the things taken of a list. */
+  [
+    { k: "Σ", t: "Σ_(i=1)^()()", back: 3, title: "sum: add up a body for each whole number from the start to the stop", math: "Σ_(i=1)^(?)(?)" },
+    { k: "{ }", t: "{}", back: 1, title: "a list of numbers in braces", math: "{?}" },
+    { k: ",", t: ",", title: "comma: on to the next number in a list" },
+    { k: "mean", t: "mean({})", back: 2, title: "the mean of a list", math: "mean({?})" },
+    { k: "median", t: "median({})", back: 2, title: "the median of a list", math: "median({?})" },
+    { k: "mode", t: "mode({})", back: 2, title: "the mode of a list", math: "mode({?})" },
+    { k: "range", t: "range({})", back: 2, title: "the range of a list", math: "range({?})" },
+    { k: "sum", t: "sum({})", back: 2, title: "the sum of a list", math: "sum({?})" },
+  ],
   /* Counting: n factorial, and the arrangements and choices of r from n. The
      last two put two boxes on the line and → goes from one to the next. */
   [
