@@ -85,6 +85,7 @@ export const RULE_GROUPS = [
       r("r-cancel", "Cancel it down", "ka/(kb) = a/b", ["cancel"]),
       r("r-base-expand", "Expand a number in base ten", "1011_2 = 1·2^3 + 0·2^2 + 1·2^1 + 1·2^0", ["expandbase"]),
       r("r-base-ten", "Write a number in base ten", "1011_2 = 11", ["base10"]),
+      r("r-powers-first", "Powers before products", "3·y^1 + 5·y^0 = 3·y + 5·1", ["resolvepowers"]),
       r("r-base-letter", "A base that is a letter", "35_y = 3·y^1 + 5·y^0", ["expandletter"]),
       r("r-base-to", "Write a number in another base", "25_10 = 11001_2", ["tobase"]),
       r("r-tofrac", "A decimal or percentage as a fraction", "0.75 = 75/100, 75% = 75/100", ["tofraction"]),

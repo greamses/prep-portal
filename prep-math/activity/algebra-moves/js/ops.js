@@ -693,6 +693,12 @@ function nodeTidies(eq, node) {
   }
   if (node.kind === "prod" || node.kind === "frac") t("multiply", multiplyLabel(node), "numbers together, letters together", multiplyOut(eq, node.id));
   if (node.kind === "base" && node.v) t("expandletter", `Write it out: each digit times a power of ${node.v.name}`, "digit × place value", expandBase(eq, node.id));
+  // From any sum / product / fraction, but over the WHOLE of the outermost one it sits in, so every power goes in one step
+  if (node.kind === "sum" || node.kind === "prod" || node.kind === "frac") {
+    let scope = node;
+    for (let up = A.parentOf(eq, scope.id); up && ["sum", "prod", "frac"].includes(up.kind); up = A.parentOf(eq, scope.id)) scope = up;
+    t("resolvepowers", "Work out the powers first", "indices before products", resolvePowers(eq, scope));
+  }
   if (node.kind === "fact") t("factorial", "Write the factorial out", "n × (n − 1) × … × 1", factorialOut(eq, node));
   if (node.kind === "sigma") t("sigma", "Write out the terms", "one term for each whole number counted", sigmaOut(eq, node));
   if (node.kind === "fn" && node.k.kind === "list") {
@@ -706,6 +712,35 @@ function nodeTidies(eq, node) {
   for (const o of calcMoves(eq, node)) out.push(o);
   for (const o of matrixMoves(eq, node)) out.push(o);
   return out;
+}
+
+/* ── Powers first ─────────────────────────────────────────────────────────────
+   Indices come before products: 3·y^1 + 5·y^0 first becomes 3·y + 5·1 (each
+   power on its own), and 1·2^3 + 0·2^2 becomes 1·8 + 0·4 — only then are the
+   products shown and worked. One step, so each step does one kind of thing. */
+function resolvePowers(eq, node) {
+  const hits = [];
+  A.walk(node, (n) => { if (n !== node && n.kind === "pow") hits.push(n); });
+  const outer = hits.filter((h) => !hits.some((o) => o !== h && A.findById(o, h.id)));
+  const plainNumber = (n) => n.kind === "num" || (n.kind === "neg" && n.k.kind === "num");
+  const swaps = [];
+  for (const h of outer) {
+    const e = A.exactValue(h.e);
+    if (!e || !R.isInt(e) || !plainNumber(h.e)) continue;
+    let put = null;
+    if (A.isNumeric(h) && A.exactValue(h)) put = A.numberNode(A.exactValue(h));
+    else if (h.b.kind === "var" && (R.isZero(e) || R.isOne(e))) put = R.isOne(e) ? A.vr(h.b.name) : A.num(R.ONE);
+    if (put && plain(put) !== plain(h)) swaps.push({ h, put });
+  }
+  if (!swaps.length) return { error: "There is no power to work out." };
+  let next = eq;
+  const from = new Map();
+  for (const { h, put } of swaps) {
+    A.walk(put, (n) => from.set(n.id, [h.id]));
+    next = A.replace(next, h.id, put);
+  }
+  const note = swaps.map(({ h, put }) => `${plain(h)} is ${plain(put)}`).join(", ");
+  return { eq: next, from, mark: swaps.map(({ put }) => plain(put)).join(" "), note: `Powers first: ${note}` };
 }
 
 /* ── Σ and lists of numbers ──────────────────────────────────────────────────
@@ -2912,7 +2947,7 @@ export function multiOffers(eq, keys, { given = null } = {}) {
     with none of these left on any of its terms is as tidy as it goes. */
 export const TIDY = new Set(["combine", "workout", "cancel", "dropzero", "indices", "surd", "addfrac",
   "multiply", "trig", "pyth", "diff", "integrate", "limit", "base10",
-  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse", "factorial", "choose", "sigma", "mean", "sortlist", "expandletter"]);
+  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse", "factorial", "choose", "sigma", "mean", "sortlist", "expandletter", "resolvepowers"]);
 
 /** Every move on offer for a set of picked glyphs — what each one means, what
     its term can have done to it, and what they mean together — or, with
