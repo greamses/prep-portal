@@ -1366,3 +1366,127 @@
 }
 .am-wiremenu__say { margin: 0 0 0.15rem; font: 600 0.74rem var(--font-mono); color: var(--text-secondary); }
 .pp-sticky.am-wiremenu__item { display: block; text-align: left; padding: 0.45rem 0.7rem 0.5rem; font-size: 0.8rem; }
+
+/* ── Tools on a card's lines (js/line-tools.js) ─────────────────────────── */
+/* the strip beside each line: fold arrow over tick box, level with the line */
+.am-gut {
+  position: absolute;
+  left: var(--am-gut-x, -34px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  z-index: 5;
+}
+.pp-plain.am-gut__fold {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+.am-work:hover .am-gut__fold, .am-gut__fold:focus-visible { opacity: 1; }
+
+/* a tick box drawn here, so it matches the site rather than the browser */
+.am-gut__tick { position: relative; display: inline-grid; place-items: center; width: 18px; height: 18px; cursor: pointer; }
+.am-gut__tick input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.am-gut__tick span {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--text-secondary);
+  background: var(--surface-primary, #fffdf8);
+  display: block;
+  position: relative;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+.am-work:hover .am-gut__tick span, .am-gut__tick input:focus-visible + span, .am-gut__tick input:checked + span { opacity: 1; }
+.am-gut__tick input:checked + span { background: var(--accent-secondary, #6aa5d8); border-color: var(--accent-secondary, #6aa5d8); }
+.am-gut__tick input:checked + span::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+.am-gut__tick input:indeterminate + span { background: var(--accent-secondary, #6aa5d8); border-color: var(--accent-secondary, #6aa5d8); }
+.am-gut__tick input:indeterminate + span::after { content: ""; position: absolute; left: 1px; top: 4px; width: 8px; height: 2.5px; background: #fff; }
+.am-gut__tick--all { margin-right: 0.35rem; }
+.am-gut__tick--all span { opacity: 1; }
+
+/* a coloured line: its paper tone behind the writing */
+.am-work.has-tint { background: var(--am-tint); box-shadow: 0 0 0 6px var(--am-tint); }
+
+/* a folded line is a thin stub with its equation in plain text */
+.am-work.is-folded { height: 30px; }
+.pp-plain.am-fold-stub {
+  display: block;
+  height: 30px;
+  max-width: 240px;
+  padding: 0 0.6rem;
+  border: 0;
+  border-left: 3px solid var(--accent-secondary, #6aa5d8);
+  background: var(--surface-secondary, rgba(20, 19, 15, 0.05));
+  color: var(--text-secondary);
+  font: 500 0.78rem/30px var(--font-mono);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+/* the bar over the card while lines are ticked */
+.am-selbar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0 0 0.3rem;
+  padding: 0.3rem 0.45rem;
+  background: var(--surface-primary, #fffdf8);
+  border: var(--border-subtle);
+}
+.am-selbar[hidden] { display: none; }
+.am-selbar__count { margin-right: auto; font: 600 0.72rem var(--font-mono); color: var(--text-secondary); }
+.pp-plain.am-selbar__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 1.9rem;
+  height: 1.9rem;
+  padding: 0 0.35rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.pp-plain.am-selbar__btn:hover { background: var(--surface-secondary, rgba(20, 19, 15, 0.06)); }
+.am-selbar__btn b { font: 700 0.95rem "STIX Two Text", serif; }
+.am-selbar__btn i { font: 700 0.8rem var(--font-mono); font-style: normal; }
+.am-selbar__chip { width: 1rem; height: 1rem; border: 2px solid var(--text-secondary); display: block; }
+.am-selbar__palette {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: repeat(11, 1.5rem);
+  gap: 0.25rem;
+  padding-top: 0.3rem;
+}
+.am-selbar__palette[hidden] { display: none; }
+.pp-plain.am-tone { width: 1.5rem; height: 1.5rem; padding: 0; border: 2px solid rgba(20, 19, 15, 0.25); cursor: pointer; display: grid; place-items: center; }
+.pp-plain.am-tone:hover { border-color: var(--text-primary); }
+.pp-plain.am-tone--none { background: #fff; }

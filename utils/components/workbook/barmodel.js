@@ -42,6 +42,7 @@
 import { MARK_CHAR, markLayout, markPath } from "./purse.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
 
+import { TONES } from "/utils/components/tones.js";
 const W = 600;         // how far a bar may reach
 const VIEW = 680;      // and the board, with room at the right for a total beside
 const BAR = 26;
@@ -64,12 +65,6 @@ const CATCH = 9;       // how near an end must come to catch another
  * as it is looked at, and a saturated fill eats a laser cartridge and makes
  * the number inside it hard to read.
  */
-const TONES = [
-  "#bfe3ff", "#fff3a8", "#d6f0cf", "#ffd9cf", "#fffdf8",
-  "#ffd0e0", "#e2d6f8", "#cdeeea", "#ffe6b8", "#dfe6ef",
-  "#c9e9c2", "#ffc9c2", "#d8e8ff", "#f6e2c0", "#e8f0b8",
-  "#f0d4ef", "#c6e7f5", "#ffdfa8", "#d4dcc4", "#eadfd2",
-];
 const INK = "#2a2723";
 const GREY = "#6f685f";
 

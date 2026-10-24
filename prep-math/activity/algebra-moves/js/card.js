@@ -13,6 +13,7 @@
 import { UI } from "/utils/components/ui-icons.js";
 import { noteFace, noteWriter, newNote, PIN } from "./notes.js";
 import { buildRow, paintRow, flipInto } from "./render.js";
+import { GUT, FOLD_H, FONT_MIN, FONT_MAX, FONT_STEP, gutterFor, stubFor, selectionBar } from "./line-tools.js";
 import { plain, refFace } from "./layout.js";
 import { preservesSolutions } from "./verify.js";
 import { isSolved, solvedLetterValue } from "./solve.js";
@@ -23,6 +24,7 @@ import * as R from "./rational.js";
 const SIZE = 34;
 const ROW_GAP = 10;
 const PAD = 18;
+const X0 = PAD + GUT;   // where the lines start: past the strip of fold arrows and tick boxes
 const NOTE_GAP = 12;   // matches .am-work__why margin-left
 
 /* The six papers of .pp-sticky (components.css), taken in turn so a canvas of
@@ -45,7 +47,7 @@ const fmt = (v) => R.toText(v).replace(/-/g, "−");
 const said = (given) =>
   Object.entries(given).map(([k, v]) => `${k} = ${fmt(v)}`);
 
-export function createCard(eq, { x, y, given = null, title = "", find = "", name = "", onPick, onChange, onGesture, onRemove, onEdit, onRename, onGrow, onLinkStart, uid = null }) {
+export function createCard(eq, { x, y, given = null, title = "", find = "", name = "", onPick, onChange, onGesture, onRemove, onEdit, onRename, onGrow, onLinkStart, onCopyLines, uid = null }) {
   const id = `card${++seq}`;
   const rows = [];        // { row, offset, note, from }
   // The GLYPH that is picked — its atom key (nodeId#slot), so the 3 and the x
@@ -138,6 +140,24 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
     </button>`;
   grip.appendChild(tools);
 
+  // One box ticks every line at once.
+  const allTick = document.createElement("label");
+  allTick.className = "am-gut__tick am-gut__tick--all";
+  allTick.dataset.tip = "Tick every line";
+  const all = document.createElement("input");
+  all.type = "checkbox";
+  all.setAttribute("aria-label", "Tick every line");
+  all.addEventListener("change", () => {
+    for (const r of rows) r.ticked = all.checked;
+    for (const r of rows) repaintLine(r);
+    relayout();
+    syncSelbar();
+  });
+  allTick.append(all, document.createElement("span"));
+  allTick.addEventListener("pointerdown", (e) => e.stopPropagation());
+  allTick.addEventListener("click", (e) => e.stopPropagation());
+  tools.prepend(allTick);
+
   const sheet = document.createElement("div");
   sheet.className = "am-card__sheet";
 
@@ -151,11 +171,12 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
     ask.innerHTML = `<span>given</span> ${said(values).join(", ")}${find ? ` &middot; <span>find</span> ${find}` : ""}`;
   }
 
+  const selbar = selectionBar((what, arg) => selectionAct(what, arg));
   const flag = document.createElement("div");
   flag.className = "am-card__done";
   flag.hidden = true;
 
-  el.append(grip, ...(ask ? [ask] : []), sheet, flag);
+  el.append(grip, ...(ask ? [ask] : []), selbar.el, sheet, flag);
 
   /* The port: drag from it to another equation and a wire joins them (wires.js).
      Drawn in the house's filled style — a dot with an arrow leaving it. */
@@ -178,13 +199,15 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
     const gutter = Math.max(...rows.map((r) => r.row.eqX));
     let top = 0;
     for (const entry of rows) {
-      entry.offset = { x: gutter - entry.row.eqX, y: top };
-      top += entry.row.h + ROW_GAP;
+      entry.offset = { x: entry.folded ? 0 : gutter - entry.row.eqX, y: top };
+      top += (entry.folded ? FOLD_H : entry.row.h) + ROW_GAP;
     }
     for (const entry of rows) {
       if (!entry.el) continue;
-      entry.el.style.left = `${PAD + entry.offset.x}px`;
+      entry.el.style.left = `${X0 + entry.offset.x}px`;
       entry.el.style.top = `${PAD + entry.offset.y}px`;
+      // the strip sits at the same place for every line, however far this one is nudged
+      entry.el.style.setProperty("--am-gut-x", `${-(entry.offset.x + GUT - 4)}px`);
     }
 
     // The reason sits in a margin to the right of its line, so the paper has to
@@ -196,10 +219,10 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
       // The pinned notes sit after the margin note, not on top of it.
       if (pins) pins.style.marginLeft = `${(note ? NOTE_GAP + note.offsetWidth : 0) + NOTE_GAP}px`;
       const margin = (note ? NOTE_GAP + note.offsetWidth : 0) + (pins ? NOTE_GAP + pins.offsetWidth : 0);
-      width = Math.max(width, entry.offset.x + entry.row.w + margin);
+      width = Math.max(width, entry.offset.x + (entry.folded ? stubWidth(entry) : entry.row.w) + margin);
     }
 
-    sheet.style.width = `${width + PAD * 2}px`;
+    sheet.style.width = `${width + PAD * 2 + GUT}px`;
     sheet.style.height = `${Math.max(0, top - ROW_GAP) + PAD * 2}px`;
   }
 
@@ -209,9 +232,15 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
     if (live) el.classList.toggle("has-pick", picks.length > 0);
     const svg = paintRow(entry.row, { live, picked: live ? picks : null });
     const holder = document.createElement("div");
-    holder.className = `am-work${live ? " is-live" : ""}`;
+    holder.className = `am-work${live ? " is-live" : ""}${entry.folded ? " is-folded" : ""}${entry.tint ? " has-tint" : ""}`;
+    if (entry.tint) holder.style.setProperty("--am-tint", entry.tint);
     holder.appendChild(svg);
-    if (entry.note) {
+    if (entry.folded) {
+      svg.hidden = true;
+      holder.appendChild(stubFor(plain(entry.row.eq), () => toggleFold(entry)));
+    }
+    holder.appendChild(gutterFor(entry, rows.indexOf(entry) + 1, { onFold: toggleFold, onTick: tickLine }));
+    if (entry.note && !entry.folded) {
       const why = document.createElement("i");
       why.className = "am-work__why";
       why.textContent = entry.note;
@@ -276,6 +305,84 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
   }
 
   /** Redraw only the last row — the only one whose selection can change. */
+  /* ── The tools on the lines (line-tools.js) ──────────────────────────── */
+  const stubWidth = (entry) => Math.min(240, 24 + plain(entry.row.eq).length * 8);
+  const tickedRows = () => rows.filter((r) => r.ticked);
+
+  /** Repaint one line in place (it is live if it is the last). */
+  function repaintLine(entry) {
+    const old = entry.el;
+    const fresh = paint(entry, entry === rows[rows.length - 1]);
+    if (old && old.parentNode === sheet) sheet.replaceChild(fresh, old);
+  }
+  function syncSelbar() {
+    const t = tickedRows();
+    const tones = new Set(t.map((r) => r.tint || ""));
+    selbar.show(t.length, tones.size === 1 ? [...tones][0] || null : null);
+    all.checked = t.length > 0 && t.length === rows.length;
+    all.indeterminate = t.length > 0 && t.length < rows.length;
+  }
+  function toggleFold(entry) {
+    entry.folded = !entry.folded;
+    repaintLine(entry);
+    relayout();
+    onChange?.(api);
+  }
+  function tickLine(entry, on) {
+    entry.ticked = on;
+    syncSelbar();
+  }
+  function untickAll() {
+    for (const r of rows) r.ticked = false;
+    for (const r of rows) repaintLine(r);
+    relayout();
+    syncSelbar();
+  }
+  function selectionAct(what, arg) {
+    const t = tickedRows();
+    if (!t.length) return;
+    if (what === "clear") return untickAll();
+    if (what === "bigger" || what === "smaller") {
+      for (const r of t) {
+        const next = Math.max(FONT_MIN, Math.min(FONT_MAX, (r.size || SIZE) + (what === "bigger" ? FONT_STEP : -FONT_STEP)));
+        if (next === r.size) continue;
+        r.size = next;
+        r.row = buildRow(r.row.eq, next);
+        repaintLine(r);
+      }
+      relayout();
+      onChange?.(api);
+      return;
+    }
+    if (what === "tone") {
+      for (const r of t) { r.tint = arg; repaintLine(r); }
+      syncSelbar();
+      onChange?.(api);
+      return;
+    }
+    if (what === "copy" || what === "cut") {
+      const numbers = t.map((r) => rows.indexOf(r) + 1);
+      const list = t.map((r) => ({ eq: plain(r.row.eq), note: r.note || "", pins: (r.pins || []).map((n) => ({ ...n })), size: r.size, tint: r.tint || null }));
+      onCopyLines?.(api, list, numbers, what);
+      if (what === "cut") removeRows(t); else untickAll();
+    }
+  }
+  /** Take lines out of the working. Taking them all takes the card. */
+  function removeRows(list) {
+    if (list.length >= rows.length) { el.remove(); onRemove?.(api); return; }
+    for (const r of list) rows.splice(rows.indexOf(r), 1);
+    undone = [];
+    picks = [];
+    sheet.textContent = "";
+    rows.forEach((r, i) => { r.ticked = false; sheet.appendChild(paint(r, i === rows.length - 1)); });
+    relayout();
+    done(rows[rows.length - 1].row.eq);
+    arrows();
+    syncSelbar();
+    onPick?.(null, api);
+    onChange?.(api);
+  }
+
   function repaintLive() {
     const last = rows[rows.length - 1];
     if (!last || !last.el) return;
@@ -284,7 +391,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
     relayout();
   }
 
-  function push(nextEq, { from = new Map(), note = "", animate = true } = {}) {
+  function push(nextEq, { from = new Map(), note = "", animate = true, size = null } = {}) {
     const prev = rows[rows.length - 1];
     if (prev && prev.el) {
       // The row above stops being live the moment a new one lands under it.
@@ -294,7 +401,9 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
 
     // `from` is kept with the row: stepping forward again replays the same
     // travel rather than fading the writing in from nowhere.
-    const entry = { row: buildRow(nextEq, SIZE), note, from };
+    // A new line is written the size of the one above it.
+    const fontSize = size || prev?.size || SIZE;
+    const entry = { row: buildRow(nextEq, fontSize), size: fontSize, note, from };
     rows.push(entry);
 
     const holder = paint(entry, true);
@@ -303,8 +412,8 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
 
     if (animate && prev) {
       flipInto({
-        prevRow: prev.row, prevOffset: { x: PAD + prev.offset.x, y: PAD + prev.offset.y },
-        newRow: entry.row, newOffset: { x: PAD + entry.offset.x, y: PAD + entry.offset.y },
+        prevRow: prev.row, prevOffset: { x: X0 + prev.offset.x, y: PAD + prev.offset.y },
+        newRow: entry.row, newOffset: { x: X0 + entry.offset.x, y: PAD + entry.offset.y },
         newSvg: entry.svg, from,
       });
       holder.animate(
@@ -589,7 +698,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
     /** The multiplication sign was switched (· or ×): every line is drawn again. */
     relook() {
       rows.forEach((entry, i) => {
-        entry.row = buildRow(entry.row.eq, SIZE);
+        entry.row = buildRow(entry.row.eq, entry.size || SIZE);
         const old = entry.el;
         const fresh = paint(entry, i === rows.length - 1);
         if (old && old.parentNode === sheet) sheet.replaceChild(fresh, old);
@@ -606,7 +715,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
         name: label, title, find,
         given: values ? Object.fromEntries(Object.entries(values).map(([k, v]) => [k, R.toText(v)])) : null,
         x: parseFloat(el.style.left) || 0, y: parseFloat(el.style.top) || 0,
-        rows: rows.map((r) => ({ eq: plain(r.row.eq), note: r.note || "", pins: (r.pins || []).map((n) => ({ ...n })) })),
+        rows: rows.map((r) => ({ eq: plain(r.row.eq), note: r.note || "", pins: (r.pins || []).map((n) => ({ ...n })), size: r.size || SIZE, tint: r.tint || null, folded: !!r.folded })),
       };
     },
     /** Replace the working with these lines (another person's). */
@@ -617,8 +726,11 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
       rows.length = 0;
       sheet.textContent = "";
       for (const r of list) {
-        push(parseLine(r.eq), { animate: false, note: r.note || "" });
-        rows[rows.length - 1].pins = (r.pins || []).map((n) => ({ ...n }));
+        push(parseLine(r.eq), { animate: false, note: r.note || "", size: r.size || null });
+        const made = rows[rows.length - 1];
+        made.pins = (r.pins || []).map((n) => ({ ...n }));
+        made.tint = r.tint || null;
+        made.folded = !!r.folded;
       }
       for (const entry of rows) refreshPins(entry);
       relayout();

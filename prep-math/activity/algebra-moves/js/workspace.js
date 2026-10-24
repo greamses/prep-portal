@@ -506,6 +506,19 @@ export function mountFormulaBook(host) {
 }
 
 /* ── Putting a problem on the paper ─────────────────────────────────────── */
+/** Ticked lines of one card, written out as a new equation of their own:
+    E_2 (Line 5-7). Cut takes them out of the source as well, margin notes and
+    all; copy leaves the source alone and does not duplicate its pinned notes. */
+function copyLines(src, list, numbers, what) {
+  const runs = numbers.every((n, i) => !i || n === numbers[i - 1] + 1);
+  const range = numbers.length === 1 ? `Line ${numbers[0]}`
+    : runs ? `Line ${numbers[0]}-${numbers[numbers.length - 1]}` : `Lines ${numbers.join(", ")}`;
+  const lines = list.map((l) => (what === "cut" ? l : { ...l, pins: [] }));
+  const card = addCard(parse(lines[0].eq), { title: `${range} of ${src.name}` });
+  card.loadRows(lines, parse);
+  say(`${what === "cut" ? "Cut" : "Copied"} ${range} of ${src.name} onto a card of its own: ${card.name}.`, "ok");
+}
+
 function addCard(eq, { given = null, title = "", find = "", name = "", uid = null } = {}) {
   const spot = canvas.freeSpot(cards.map((c) => ({
     x: parseFloat(c.el.style.left), y: parseFloat(c.el.style.top),
@@ -529,6 +542,7 @@ function addCard(eq, { given = null, title = "", find = "", name = "", uid = nul
     onChange: (self) => { if (self.picked) openMenuFor(self); else menu.close(); },
     onEdit: (key, self) => startEdit(self, key),
     onLinkStart: (self, e) => wires.begin(self, e),
+    onCopyLines: copyLines,
     onRename: (want, self) => rename(self, want),
     // Lines pile up under the one being worked: follow them down.
     onGrow: (self) => requestAnimationFrame(() => { canvas.revealCard(self.el); menu.reposition(); }),
