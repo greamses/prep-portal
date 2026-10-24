@@ -26,6 +26,17 @@ export const GROUPS = [
     group: "Shapes",
     items: [
       {
+        id: "pythagoras", name: "Pythagorean theorem", eq: "a^2 + b^2 = c^2", find: "c",
+        letters: { c: "the hypotenuse, the longest side", a: "one shorter side", b: "the other shorter side" },
+        example: { a: "3", b: "4" },
+      },
+      {
+        id: "arc-length", name: "Arc length", eq: "s = 2(22/7)r(θ/360)", find: "s",
+        letters: { s: "the length of the arc", r: "the radius", θ: "the angle at the centre, in degrees" },
+        example: { r: "7", θ: "90" },
+        note: "taking π as 22/7",
+      },
+      {
         id: "rect-area", name: "Area of a rectangle", eq: "A = lb", find: "A",
         letters: { A: "the area", l: "the length", b: "the breadth" },
         example: { l: "8", b: "5" },
@@ -401,6 +412,180 @@ export const GROUPS = [
         id: "calc-first-principles", name: "Gradient of y = x² from first principles", eq: "m = lim(h->0)(((x + h)^2 - x^2)/h)", find: "m",
         letters: { m: "the gradient", x: "where on the curve" },
         example: { x: "3" },
+      },
+    ],
+  },
+  {
+    group: "Identities and expansions",
+    items: [
+      {
+        id: "quadratic-pq", name: "Quadratic formula (p-q form)", eq: "x = -p/2 ± sqrt((p/2)^2 - q)", find: "x",
+        letters: { x: "a root", p: "the number in front of x", q: "the number on its own" },
+        example: { p: "-5", q: "6" },
+        note: "for x² + px + q = 0",
+      },
+      {
+        id: "factor-quad-sum", name: "Factoring a quadratic by hand: the numbers add to b", eq: "b = p + q", find: "b",
+        letters: { b: "the number in front of x", p: "the number in the first bracket", q: "the number in the second bracket" },
+        example: { p: "2", q: "3" },
+        note: "x² + bx + c = (x + p)(x + q)",
+      },
+      {
+        id: "factor-quad-product", name: "Factoring a quadratic by hand: the numbers multiply to c", eq: "c = pq", find: "c",
+        letters: { c: "the number on its own", p: "the number in the first bracket", q: "the number in the second bracket" },
+        example: { p: "2", q: "3" },
+        note: "x² + bx + c = (x + p)(x + q)",
+      },
+      {
+        id: "diff-squares", name: "Difference of squares", eq: "D = (a + b)(a - b)", find: "D",
+        letters: { D: "a² − b²", a: "the first number", b: "the second number" },
+        example: { a: "7", b: "3" },
+        note: "a² − b² = (a + b)(a − b)",
+      },
+      {
+        id: "binomial-square", name: "Square of a binomial", eq: "S = a^2 + 2ab + b^2", find: "S",
+        letters: { S: "(a + b)²", a: "the first number", b: "the second number" },
+        example: { a: "3", b: "4" },
+        note: "(a + b)² = a² + 2ab + b²",
+      },
+      {
+        id: "diff-cubes", name: "Difference of cubes", eq: "D = (a - b)(a^2 + ab + b^2)", find: "D",
+        letters: { D: "a³ − b³", a: "the first number", b: "the second number" },
+        example: { a: "3", b: "1" },
+        note: "a³ − b³ = (a − b)(a² + ab + b²)",
+      },
+      {
+        id: "sum-cubes", name: "Sum of cubes", eq: "S = (a + b)(a^2 - ab + b^2)", find: "S",
+        letters: { S: "a³ + b³", a: "the first number", b: "the second number" },
+        example: { a: "2", b: "1" },
+        note: "a³ + b³ = (a + b)(a² − ab + b²)",
+      },
+    ],
+  },
+  {
+    group: "Trigonometric identities",
+    items: [
+      {
+        id: "tan-identity", name: "Tangent: sin over cos", eq: "t = sin(x°)/cos(x°)", find: "t",
+        letters: { t: "tan x", x: "the angle in degrees" },
+        example: { x: "0" },
+        note: "tan x = sin x / cos x",
+      },
+      {
+        id: "cot-identity", name: "Cotangent: cos over sin", eq: "c = cos(x°)/sin(x°)", find: "c",
+        letters: { c: "cot x", x: "the angle in degrees" },
+        example: { x: "90" },
+        note: "cot x = cos x / sin x",
+      },
+      {
+        id: "csc-identity", name: "Cosecant: one over sin", eq: "c = 1/sin(x°)", find: "c",
+        letters: { c: "csc x", x: "the angle in degrees" },
+        example: { x: "30" },
+        note: "csc x = 1 / sin x",
+      },
+      {
+        id: "sec-identity", name: "Secant: one over cos", eq: "s = 1/cos(x°)", find: "s",
+        letters: { s: "sec x", x: "the angle in degrees" },
+        example: { x: "60" },
+        note: "sec x = 1 / cos x",
+      },
+      {
+        id: "cot-reciprocal", name: "Cotangent: one over tan", eq: "c = 1/tan(x°)", find: "c",
+        letters: { c: "cot x", x: "the angle in degrees" },
+        example: { x: "45" },
+        note: "cot x = 1 / tan x",
+      },
+      {
+        id: "pyth-identity", name: "Pythagorean identity: sin² + cos²", eq: "s = sin(x°)^2 + cos(x°)^2", find: "s",
+        letters: { s: "sin²x + cos²x", x: "the angle in degrees" },
+        example: { x: "30" },
+        note: "this is always 1",
+      },
+      {
+        id: "pyth-tan", name: "Pythagorean identity: tan² + 1", eq: "s = tan(x°)^2 + 1", find: "s",
+        letters: { s: "tan²x + 1", x: "the angle in degrees" },
+        example: { x: "45" },
+        note: "this is sec²x",
+      },
+      {
+        id: "pyth-cot", name: "Pythagorean identity: cot² + 1", eq: "c = cos(x°)^2/sin(x°)^2 + 1", find: "c",
+        letters: { c: "cot²x + 1", x: "the angle in degrees" },
+        example: { x: "30" },
+        note: "this is csc²x",
+      },
+      {
+        id: "double-sin", name: "Double angle: sin 2x", eq: "s = 2sin(x°)cos(x°)", find: "s",
+        letters: { s: "sin 2x", x: "the angle in degrees" },
+        example: { x: "30" },
+        note: "sin 2x = 2 sin x cos x",
+      },
+      {
+        id: "double-cos-1", name: "Double angle: cos 2x, from cos² − sin²", eq: "c = cos(x°)^2 - sin(x°)^2", find: "c",
+        letters: { c: "cos 2x", x: "the angle in degrees" },
+        example: { x: "30" },
+        note: "cos 2x = cos²x − sin²x",
+      },
+      {
+        id: "double-cos-2", name: "Double angle: cos 2x, from cos²", eq: "c = 2cos(x°)^2 - 1", find: "c",
+        letters: { c: "cos 2x", x: "the angle in degrees" },
+        example: { x: "30" },
+        note: "cos 2x = 2cos²x − 1",
+      },
+      {
+        id: "double-cos-3", name: "Double angle: cos 2x, from sin²", eq: "c = 1 - 2sin(x°)^2", find: "c",
+        letters: { c: "cos 2x", x: "the angle in degrees" },
+        example: { x: "30" },
+        note: "cos 2x = 1 − 2sin²x",
+      },
+      {
+        id: "double-tan", name: "Double angle: tan 2x", eq: "t = 2tan(x°)/(1 - tan(x°)^2)", find: "t",
+        letters: { t: "tan 2x", x: "the angle in degrees" },
+        example: { x: "30" },
+        note: "tan 2x = 2 tan x / (1 − tan²x)",
+      },
+      {
+        id: "half-sin", name: "Half angle: sin² x", eq: "s = (1 - cos((2x)°))/2", find: "s",
+        letters: { s: "sin²x", x: "the angle in degrees" },
+        example: { x: "30" },
+        note: "sin²x = (1 − cos 2x) / 2",
+      },
+      {
+        id: "half-cos", name: "Half angle: cos² x", eq: "c = (1 + cos((2x)°))/2", find: "c",
+        letters: { c: "cos²x", x: "the angle in degrees" },
+        example: { x: "30" },
+        note: "cos²x = (1 + cos 2x) / 2",
+      },
+      {
+        id: "sum-sin", name: "Sum rule: sin(x + y)", eq: "s = sin(x°)cos(y°) + cos(x°)sin(y°)", find: "s",
+        letters: { s: "sin(x + y)", x: "the first angle in degrees", y: "the second angle in degrees" },
+        example: { x: "60", y: "0" },
+      },
+      {
+        id: "sum-cos", name: "Sum rule: cos(x + y)", eq: "c = cos(x°)cos(y°) - sin(x°)sin(y°)", find: "c",
+        letters: { c: "cos(x + y)", x: "the first angle in degrees", y: "the second angle in degrees" },
+        example: { x: "30", y: "60" },
+      },
+      {
+        id: "sum-tan", name: "Sum rule: tan(x + y)", eq: "t = (tan(x°) + tan(y°))/(1 - tan(x°)tan(y°))", find: "t",
+        letters: { t: "tan(x + y)", x: "the first angle in degrees", y: "the second angle in degrees" },
+        example: { x: "0", y: "45" },
+      },
+    ],
+  },
+  {
+    group: "Coordinates",
+    items: [
+      {
+        id: "midpoint-x", name: "Midpoint, across (x)", eq: "m = (a + b)/2", find: "m",
+        letters: { m: "the x of the midpoint", a: "the x of the first point", b: "the x of the second point" },
+        example: { a: "2", b: "8" },
+        note: "M = ((x₁ + x₂)/2, (y₁ + y₂)/2)",
+      },
+      {
+        id: "midpoint-y", name: "Midpoint, up (y)", eq: "n = (a + b)/2", find: "n",
+        letters: { n: "the y of the midpoint", a: "the y of the first point", b: "the y of the second point" },
+        example: { a: "1", b: "7" },
+        note: "M = ((x₁ + x₂)/2, (y₁ + y₂)/2)",
       },
     ],
   },
