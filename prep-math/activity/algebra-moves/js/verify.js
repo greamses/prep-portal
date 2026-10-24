@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import { varsIn, walk, baseValue } from "./ast.js";
-import { hasMatrix, evalM, flat as flatM, subtract as subtractM } from "./matrix-eval.js";
+import { hasMatrix, evalM, flat as flatM, subtract as subtractM, mulM } from "./matrix-eval.js";
 const baseValueOf = (n) => baseValue(n.digits, n.base);
 
 /** Float evaluation for sampling only. NaN means "this sample is unusable". */
@@ -134,7 +134,7 @@ const value = (root, env) => evalAt(root.e, env);
  *
  * Returns { ok, why } — `why` is written for the student, not the console.
  */
-export function preservesSolutions(prev, next, { samples = 64, given = null, scaledBy = null, upToConstant = null, inverse = null, defs = null } = {}) {
+export function preservesSolutions(prev, next, { samples = 64, given = null, scaledBy = null, upToConstant = null, inverse = null, defs = null, premulBy = null } = {}) {
   const names = [...new Set([...varsIn(prev), ...varsIn(next), ...backVars(prev), ...backVars(next), ...(scaledBy ? varsIn(scaledBy) : []),
                              ...(upToConstant ? [upToConstant] : [])])].sort();
   // Numbers worked out by a difference or a sum of slices carry their own small
@@ -213,6 +213,26 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
      equation), exactly as the single number does below — see matrix-eval.js. */
   if (hasMatrix(prev) || hasMatrix(next)) {
     if (prev.kind !== next.kind) return { ok: false, why: "that turns it into a different kind of thing" };
+    /* Both sides multiplied by a matrix, on the LEFT (matrices do not commute):
+       what is left of the equation must be that matrix times what it was —
+       M(AX − B) — which is a whole new shape, not a steady ratio of the old. */
+    if (premulBy && prev.kind === "eq") {
+      const diff = (root, env) => subtractM(evalM(root.l, env, evalAt), evalM(root.r, env, evalAt));
+      let usable = 0;
+      for (let i = 0; i < Math.min(samples, 24); i++) {
+        const env = {};
+        for (const n of names) env[n] = sample(i, n);
+        for (const [n, d] of Object.entries(defined)) env[n] = evalM(d, env, evalAt);
+        const want = flatM(mulM(evalM(premulBy, env, evalAt), diff(prev, env)));
+        const got = flatM(diff(next, env));
+        if (want.length !== got.length || want.some((v) => !Number.isFinite(v)) || got.some((v) => !Number.isFinite(v))) continue;
+        usable++;
+        if (got.some((v, k) => Math.abs(v - want[k]) > 1e-6 * Math.max(1, Math.abs(v), Math.abs(want[k])))) {
+          return { ok: false, why: "the matrix has to multiply both sides, on the left" };
+        }
+      }
+      return usable >= 4 ? { ok: true, why: "" } : { ok: false, why: "I could not check that move, so I will not make it" };
+    }
     const valueOf = (root, env) => (root.kind === "expr"
       ? evalM(root.e, env, evalAt)
       : subtractM(evalM(root.l, env, evalAt), evalM(root.r, env, evalAt)));

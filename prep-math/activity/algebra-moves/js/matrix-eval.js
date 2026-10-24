@@ -133,5 +133,6 @@ function powM(a, e) {
 }
 
 /** Every number in a value, in a row — a scalar is a row of one. */
+export const mulM = mul;
 export const flat = (v) => (isM(v) ? v.m.flat() : [v]);
 export const subtract = (a, b) => add(a, isM(b) ? map(b, (x) => -x) : -b);

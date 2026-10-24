@@ -520,7 +520,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
     apply(offer) {
       const result = offer.run();
       if (result.error) return { refused: result.error };
-      const verdict = preservesSolutions(this.equation, result.eq, { given: pinned, scaledBy: result.scaledBy, upToConstant: result.upToConstant, inverse: result.inverse });
+      const verdict = preservesSolutions(this.equation, result.eq, { given: pinned, scaledBy: result.scaledBy, upToConstant: result.upToConstant, inverse: result.inverse, premulBy: result.premulBy });
       if (!verdict.ok) return { refused: verdict.why };
       picks = [];
       // A move made here is a new branch of the working: whatever was stepped

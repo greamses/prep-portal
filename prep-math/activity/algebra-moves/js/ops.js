@@ -21,7 +21,7 @@
 import * as A from "./ast.js";
 import * as R from "./rational.js";
 import * as MM from "./matrix-moves.js";
-import { det as detOf } from "./matrix-eval.js";
+import { det as detOf, hasMatrix as hasMatrixNode } from "./matrix-eval.js";
 import { plain } from "./layout.js";
 import { preservesSolutions, numericValue } from "./verify.js";
 import { angleNode, anglesInTurn, copy, diffStep, intStep, subStep, partsStep, limitStep, exactTrig, exactInverse, tanAsRatio, pythagoreanPair } from "./calculus.js";
@@ -1733,10 +1733,12 @@ export function applyToBoth(eq, op, node) {
   }
   if (op === "×") {
     if (value) { const r = timesBoth(eq, value); return r.error ? r : { ...r, mark: `×${mul(value)}`, dir: "both" }; }
-    const grow = (side, piece) => (isZero(side) ? side : A.prod([piece, side]));
+    const grow = (side, piece) => (isZero(side) ? side : A.prod([piece, ...(side.kind === "prod" && !side.paren ? side.kids : [side])]));
+    // A matrix goes on the LEFT of each side, and is checked as that, not as a ratio.
+    const byMatrix = hasMatrixNode(node);
     return {
       eq: A.eqn(grow(eq.l, pieces[0]), grow(eq.r, pieces[1]), eq.id), from: new Map(),
-      scaledBy: freshCopy(node), mark: `×${said}`, dir: "both", note: `Multiply both sides by ${said}`,
+      ...(byMatrix ? { premulBy: freshCopy(node) } : { scaledBy: freshCopy(node) }), mark: `×${said}`, dir: "both", note: `Multiply both sides by ${said}`,
     };
   }
   if (op === "÷") {
@@ -2538,6 +2540,12 @@ export function atomOffers(eq, key, { given = null } = {}) {
     if (A.isEquation(eq)) {
       add({ key: "swap", label: "Turn it round", hint: "same equation, read the other way", mark: "⇄", run: () => swapSides(eq) });
       add({ key: "flip", label: "Change every sign", hint: "times both sides by −1", mark: "×(−1)", run: () => flipSigns(eq) });
+      // AX = B: multiply both sides, on the left, by the inverse of A.
+      const lead = eq.l.kind === "prod" ? eq.l.kids[0] : null;
+      if (lead && lead.kind === "mat" && MM.isSquare(lead) && eq.l.kids.length > 1) {
+        const trial = applyToBoth(eq, "×", A.pow(copy(lead), A.neg(A.num(R.ONE))));
+        if (!trial.error) add({ key: "matinv", label: "Multiply both sides by the inverse of the matrix", hint: "A⁻¹ on the left of each side", mark: trial.mark, dir: "both", run: () => trial });
+      }
       for (const side of ["l", "r"]) {
         const terms = A.termsOf(eq[side]);
         if (terms.length === 1) pick(pool(terms[0]), "divide", "times");
