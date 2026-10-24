@@ -237,7 +237,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
     holder.appendChild(svg);
     if (entry.folded) {
       svg.hidden = true;
-      holder.appendChild(stubFor(plain(entry.row.eq), () => toggleFold(entry)));
+      holder.appendChild(stubFor(plain(entry.row.eq), () => toggleFold(entry), stubWidth(entry)));
     }
     holder.appendChild(gutterFor(entry, rows.indexOf(entry) + 1, { onFold: toggleFold, onTick: tickLine }));
     if (entry.note && !entry.folded) {
@@ -306,7 +306,7 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
 
   /** Redraw only the last row — the only one whose selection can change. */
   /* ── The tools on the lines (line-tools.js) ──────────────────────────── */
-  const stubWidth = (entry) => Math.min(240, 24 + plain(entry.row.eq).length * 8);
+  const stubWidth = (entry) => Math.max(90, Math.min(260, entry.row.w));
   const tickedRows = () => rows.filter((r) => r.ticked);
 
   /** Repaint one line in place (it is live if it is the last). */
@@ -322,10 +322,21 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
     all.checked = t.length > 0 && t.length === rows.length;
     all.indeterminate = t.length > 0 && t.length < rows.length;
   }
+  /* Folding eases: the lines below slide to their new places (a transition on
+     `top`, switched on only for this moment so ordinary moves are not slowed),
+     and the line that changed fades its new face in. */
+  let foldTimer = null;
   function toggleFold(entry) {
     entry.folded = !entry.folded;
+    el.classList.add("is-folding");
     repaintLine(entry);
     relayout();
+    entry.el?.animate(
+      entry.folded ? [{ opacity: 0.2 }, { opacity: 1 }] : [{ opacity: 0, transform: "scaleY(0.4)" }, { opacity: 1, transform: "scaleY(1)" }],
+      { duration: 240, easing: "cubic-bezier(.3,.7,.2,1)" }
+    );
+    clearTimeout(foldTimer);
+    foldTimer = setTimeout(() => el.classList.remove("is-folding"), 320);
     onChange?.(api);
   }
   function tickLine(entry, on) {

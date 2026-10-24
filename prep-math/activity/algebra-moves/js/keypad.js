@@ -27,6 +27,7 @@ import { buildRow, paintRow, el } from "./render.js";
 import { readValue } from "./formulas.js";
 import { slotEdit, slotTypingForInput, cellMove, matrixTemplate } from "/utils/components/slot-typing.js";
 import { UI } from "/utils/components/ui-icons.js";
+import { mathNode, mathReady, whenMathDrawn } from "/utils/components/sticky-math.js";
 import * as A from "./ast.js";
 
 /* label, what it types, and how far back into it the caret goes.
@@ -97,7 +98,7 @@ LETTER_ROWS[LETTER_ROWS.length - 1] = [
   { k: "caps", act: "caps", icon: "arrowUp", title: "Capitals", tone: "act" },
   // A number in another base: 1011_2 is 1011 in base two (capitals for
   // digits past 9: 2A_16).
-  { k: "_b", t: "_", title: "Base: type 1011_2 for 1011 in base two", tone: "act", fixed: true },
+  { k: "_b", t: "_", title: "Base: type 1011_2 for 1011 in base two", tone: "act", fixed: true, tex: "q_b" },
 ];
 
 /* The full Greek alphabet — a circle's π, an angle's θ, the unknowns geometry
@@ -149,7 +150,7 @@ const FUNCS = [
   ],
   [
     { k: "%", t: "%", title: "percent: 25% is 25 out of 100" },
-    { k: "_b", t: "_", title: "base: 1011_2 is 1011 in base two" },
+    { k: "_b", t: "_", title: "base: 1011_2 is 1011 in base two", tex: "q_b" },
     { k: "a b⁄c", act: "mixed", title: "A mixed number: a whole number and a fraction, in boxes to fill (2 1/3)", math: "2 1/3" },
     { k: "e", t: "e", title: "e, the number 2.718…", math: "e" },
     { k: "π", t: "π", title: "pi", math: "π" },
@@ -828,6 +829,24 @@ export function createKeypad(host, { onSubmit } = {}) {
     return holder;
   }
 
+  /** A key face set by MathJax itself, for what the site's own typesetter has
+      no word for — the base key, q with a subscript b. Until MathJax arrives it
+      shows the source, and is set again when it lands. */
+  function texFace(tex) {
+    const holder = document.createElement("span");
+    holder.className = "am-key__ink am-key__ink--tex";
+    holder.setAttribute("aria-hidden", "true");
+    const set = () => {
+      const eq = mathNode(tex);
+      // the note's "tap to edit this equation" has no place on a key
+      for (const att of ["data-tip", "title", "aria-label"]) eq.removeAttribute(att);
+      holder.replaceChildren(eq);
+    };
+    set();
+    if (!mathReady()) whenMathDrawn(set);
+    return holder;
+  }
+
   /** One key, built the one way every key on the pad is built — numbers,
       Greek and ordinary letters all go through this, so there is one place
       that knows how a key types and nothing to drift apart. CAPS is the one
@@ -840,6 +859,7 @@ export function createKeypad(host, { onSubmit } = {}) {
     btn.className = `am-key${key.act ? " am-key--act" : ""}` +
                     `${key.tone ? ` am-key--${key.tone}` : ""}${key.wide ? " am-key--wide" : ""}`;
     if (key.icon) btn.innerHTML = UI[key.icon](18);
+    else if (key.tex) btn.appendChild(texFace(key.tex));
     else if (key.math) btn.appendChild(face(key.math));
     else btn.textContent = key.k;
     // The letters x, y, z are notes stuck on the pad, each on its own paper.

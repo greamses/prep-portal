@@ -1432,22 +1432,23 @@
 /* a folded line is a thin stub with its equation in plain text */
 .am-work.is-folded { height: 30px; }
 .pp-plain.am-fold-stub {
-  display: block;
-  height: 30px;
-  max-width: 240px;
-  padding: 0 0.6rem;
+  display: grid;
+  place-items: center;
+  height: 22px;
+  margin-top: 4px;
+  padding: 0;
   border: 0;
-  border-left: 3px solid var(--accent-secondary, #6aa5d8);
+  border-top: 2px dashed var(--text-secondary);
+  border-bottom: 2px dashed var(--text-secondary);
   background: var(--surface-secondary, rgba(20, 19, 15, 0.05));
   color: var(--text-secondary);
-  font: 500 0.78rem/30px var(--font-mono);
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   cursor: pointer;
+  opacity: 0.8;
 }
-
+.pp-plain.am-fold-stub:hover { opacity: 1; background: var(--surface-tertiary, rgba(20, 19, 15, 0.09)); }
+.am-fold-stub i { font: 700 0.85rem/1 var(--font-mono); font-style: normal; letter-spacing: 0.15em; }
+/* lines slide when one is folded or opened */
+.am-card.is-folding .am-work { transition: top 0.26s cubic-bezier(0.3, 0.7, 0.2, 1); }
 /* the bar over the card while lines are ticked */
 .am-selbar {
   position: relative;
@@ -1514,3 +1515,11 @@
 .am-pinned-wrap:hover .am-pinned__img, .am-pinned__img:focus-visible { opacity: 1; }
 .am-pinned__img[hidden] { display: none; }
 @media (hover: none) { .am-pinned__img { opacity: 0.85; } }
+
+/* a key face set by MathJax: sized to the key, in the key's own colour */
+.am-key__ink--tex .pp-note__eq { display: inline-block; pointer-events: none; }
+.am-key__ink--tex svg { height: 1.15em; width: auto; vertical-align: middle; }
+
+/* a folded line shows none of itself: not the drawing, not its notes. (The svg
+   attribute `hidden` loses to the sheet's own display rule, so say it here.) */
+.am-work.is-folded > svg, .am-work.is-folded > .am-pins, .am-work.is-folded > .am-work__why { display: none; }

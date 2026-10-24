@@ -15,7 +15,7 @@ import { UI } from "/utils/components/ui-icons.js";
 import { TONES } from "/utils/components/tones.js";
 
 export const GUT = 34;          // the strip to the left of the lines, in card pixels
-export const FOLD_H = 30;       // a folded line
+export const FOLD_H = 28;       // a folded line
 export const FONT_MIN = 18;
 export const FONT_MAX = 72;
 export const FONT_STEP = 4;
@@ -60,13 +60,16 @@ export function gutterFor(entry, n, { onFold, onTick }) {
   return gut;
 }
 
-/** What a folded line shows in its place. */
-export function stubFor(text, onOpen) {
+/** What a folded line shows in its place: nothing of the line, as in an
+    editor — a slim marker, with the line itself in its tooltip. */
+export function stubFor(text, onOpen, width = 120) {
   const stub = document.createElement("button");
   stub.type = "button";
   stub.className = "pp-plain am-fold-stub";
-  stub.textContent = text;
-  stub.setAttribute("aria-label", `Open the folded line ${text}`);
+  stub.style.width = `${width}px`;
+  stub.innerHTML = `<i aria-hidden="true">···</i>`;
+  stub.dataset.tip = text;
+  stub.setAttribute("aria-label", `A folded line, ${text} — open it`);
   stub.addEventListener("click", (e) => { e.stopPropagation(); onOpen(); });
   stub.addEventListener("pointerdown", (e) => e.stopPropagation());
   return stub;
