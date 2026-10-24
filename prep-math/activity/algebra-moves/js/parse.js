@@ -73,7 +73,10 @@ function tokenise(src) {
     if (named) { out.push({ t: "ref", v: named, at: i }); i += named.length; continue; }
     if (src.startsWith("sqrt", i)) { out.push({ t: "root", v: "sqrt", at: i }); i += 4; continue; }
     // Function names and lim, checked before letters for the same reason.
-    const word = [...A.FUNCS, "lim"].find((w) => src.startsWith(w, i));
+    // det and transpose are only the names of functions when something to
+    // work on follows them; otherwise d·e·t is three letters.
+    const word = [...A.FUNCS, "lim"].find((w) => src.startsWith(w, i)
+      && (w !== "det" && w !== "transpose" || "([".includes(src[i + w.length] || "")));
     if (word) { out.push({ t: word === "lim" ? "lim" : "fn", v: word, at: i }); i += word.length; continue; }
     // d/dx — a derivative with respect to the letter after it.
     if (src.startsWith("d/d", i) && isAlpha(src[i + 3] || "")) { out.push({ t: "deriv", v: src[i + 3], at: i }); i += 4; continue; }
@@ -85,7 +88,7 @@ function tokenise(src) {
     if (c === "→") { out.push({ t: "to", v: "→", at: i }); i++; continue; }
     if (c === "√") { out.push({ t: "root", v: "√", at: i }); i++; continue; }
     if (isAlpha(c)) { out.push({ t: "var", v: c, at: i }); i++; continue; }
-    if ("+-*/^()=".includes(c)) { out.push({ t: c, v: c, at: i }); i++; continue; }
+    if ("+-*/^()=[],".includes(c)) { out.push({ t: c, v: c, at: i }); i++; continue; }
     // The keypad's placeholder for a slot you have not filled in yet.
     if (c === "?") { out.push({ t: "hole", v: "?", at: i }); i++; continue; }
     // Typed with the keys a phone offers instead of the ones we expect.
@@ -107,7 +110,7 @@ export function setRefs(names) {
   REFS = [...new Set(names.filter(Boolean))].sort((a, b) => b.length - a.length);
 }
 
-const STARTS_FACTOR = new Set(["base", "ref", "num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
+const STARTS_FACTOR = new Set(["[", "base", "ref", "num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
 
 export function parse(src) {
   const toks = tokenise(src);
@@ -192,6 +195,26 @@ export function parse(src) {
     // caret may stand, and inside the brackets is exactly where a student
     // wanting to add another digit to (4) means to be.
     if (tk.t === "(") { p++; const e = expr(); eat(")"); e.paren = true; return e; }
+    /* A matrix: [[1,2],[3,4]] — rows in brackets, entries on commas, every
+       entry any expression. */
+    if (tk.t === "[") {
+      p++;
+      const rows = [];
+      for (;;) {
+        eat("[");
+        const row = [expr()];
+        while (peek().t === ",") { p++; row.push(expr()); }
+        eat("]");
+        rows.push(row);
+        if (peek().t === ",") { p++; continue; }
+        break;
+      }
+      eat("]");
+      if (rows.some((r) => r.length !== rows[0].length)) {
+        throw new SyntaxError("Every row of a matrix needs the same number of entries.");
+      }
+      return span(mark, A.mat(rows));
+    }
     throw new SyntaxError(tk.t === "end" ? "The line stops before it is finished." : `I did not expect "${tk.v}" here.`);
   }
 
@@ -202,7 +225,13 @@ export function parse(src) {
     if (peek().t === "deg") { p++; base = span(mark, A.deg(base)); }
     // 25% is twenty-five out of a hundred.
     if (peek().t === "pct") { p++; base = span(mark, A.pct(base)); }
-    if (peek().t === "^") { p++; return span(mark, A.pow(base, factor())); }
+    if (peek().t === "^") {
+      p++;
+      const e = factor();
+      // A^T is the matrix turned on its side.
+      if (base.kind === "mat" && e.kind === "var" && e.name === "T") return span(mark, A.fn("transpose", base));
+      return span(mark, A.pow(base, e));
+    }
     return base;
   }
 

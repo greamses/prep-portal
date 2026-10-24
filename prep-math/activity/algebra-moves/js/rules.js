@@ -57,6 +57,18 @@ export const RULE_GROUPS = [
     ],
   },
   {
+    group: "Rules: matrices",
+    items: [
+      r("r-m-add", "Add matrices: entry by entry", "[[a,b],[c,d]] + [[e,f],[g,h]] = [[a + e, b + f],[c + g, d + h]]", ["matadd"]),
+      r("r-m-scale", "A number times a matrix", "k[[a,b],[c,d]] = [[ka, kb],[kc, kd]]", ["matscale"]),
+      r("r-m-mul", "Multiply matrices: row by column", "[[a,b],[c,d]][[e,f],[g,h]] = [[ae + bg, af + bh],[ce + dg, cf + dh]]", ["matmul"]),
+      r("r-m-pow", "A power of a matrix", "A^2 = A·A", ["matpow"]),
+      r("r-m-det", "The determinant", "det[[a,b],[c,d]] = ad − bc", ["det"]),
+      r("r-m-trans", "Transpose: rows become columns", "[[a,b],[c,d]]^T = [[a,c],[b,d]]", ["transpose"]),
+      r("r-m-inv", "The inverse of a matrix", "[[a,b],[c,d]]^(-1) = 1/(ad − bc)[[d,−b],[−c,a]]", ["inverse"]),
+    ],
+  },
+  {
     group: "Rules: fractions",
     items: [
       r("r-cancel", "Cancel it down", "ka/(kb) = a/b", ["cancel"]),

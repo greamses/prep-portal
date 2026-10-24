@@ -42,9 +42,13 @@ function measureText(text, size, italic) {
 
 /** The font is webfont-loaded; anything measured before it lands is wrong. */
 export function fontReady() {
-  return (document.fonts ? document.fonts.load(`400 32px ${FAMILY}`) : Promise.resolve())
-    .catch(() => {})
-    .then(() => widthCache.clear());
+  /* Never wait on the font for long: a slow or blocked font server would leave
+     the whole page blank behind it. Past the limit the page is built with the
+     fallback's widths, and drawn again the moment the font does land. */
+  const loading = (document.fonts ? document.fonts.load(`400 32px ${FAMILY}`) : Promise.resolve()).catch(() => {});
+  const limit = new Promise((resolve) => setTimeout(resolve, 2500));
+  loading.then(() => { widthCache.clear(); window.dispatchEvent?.(new Event("am-font-ready")); });
+  return Promise.race([loading, limit]).then(() => widthCache.clear());
 }
 
 export const FONT_FAMILY = FAMILY;
@@ -98,6 +102,9 @@ function needsBrackets(node, parentKind, slot) {
   if (parentKind === "pow" && slot === 1) return false;
   // A root's bar groups whatever is under it, the way a fraction bar does.
   if (parentKind === "root") return false;
+  // A matrix draws its own brackets, so it takes none from what holds it.
+  if (node.kind === "mat" && (parentKind === "fn" || parentKind === "tr")) return false;
+  if (parentKind === "tr") return node.kind !== "var";
   // 3 × 2⅓ is 3(2⅓): a mixed number is a sum, and holds together in brackets.
   if (node.kind === "mixed" && (parentKind === "prod" || parentKind === "pow")) return true;
   // A function's argument and a derivative's body are always in brackets.
@@ -287,6 +294,24 @@ function measureBare(node, size, binary) {
       return { ...base, kind: "mixed", whole, part, gap, w: whole.w + gap + part.w,
                ascent: Math.max(base.ascent, whole.ascent, part.ascent), descent: Math.max(base.descent, whole.descent, part.descent) };
     }
+    /* [[1,2],[3,4]]: entries in columns, each centred in its own, between two
+       tall square brackets drawn as strokes — which stretch to any height, where
+       a typed [ would only ever be one size. */
+    case "mat": {
+      const cells = node.rows.map((r) => r.map((c) => measure(c, size, "mat", 0)));
+      const cols = node.rows[0].length;
+      const colW = Array.from({ length: cols }, (_, j) => Math.max(...cells.map((r) => r[j].w)));
+      const rowA = cells.map((r) => Math.max(...r.map((c) => c.ascent)));
+      const rowD = cells.map((r) => Math.max(...r.map((c) => c.descent)));
+      const colGap = 0.95 * size, rowGap = 0.32 * size, pad = 0.2 * size, bw = 0.3 * size;
+      const bodyW = colW.reduce((a, b) => a + b, 0) + colGap * (cols - 1);
+      const bodyH = rowA.reduce((a, b) => a + b, 0) + rowD.reduce((a, b) => a + b, 0) + rowGap * (cells.length - 1);
+      const H = bodyH + 2 * pad;
+      const axis = 0.3 * size;
+      return { ...base, kind: "mat", cells, colW, rowA, rowD, colGap, rowGap, pad, bw, bodyH, H, axis,
+               w: bw * 2 + pad * 2 + bodyW,
+               ascent: Math.max(base.ascent, H / 2 + axis), descent: Math.max(base.descent, H / 2 - axis) };
+    }
     // 25%: the number, then the sign right after it.
     case "pct": {
       const k = measure(node.k, size, "pct", 0);
@@ -311,6 +336,14 @@ function measureBare(node, size, binary) {
       return { ...base, kind: "text", text: node.name, italic: false, w: measureText(node.name, size, false) };
 
     case "fn": {
+      // A matrix turned on its side is written with a raised T: Aᵀ.
+      if (node.name === "transpose") {
+        const k = measure(node.k, size, "tr", 0);
+        const sup = size * 0.62;
+        const tW = measureText("T", sup, false);
+        return { ...base, kind: "fn", transpose: true, k, sup, tW, w: k.w + 0.05 * size + tW,
+                 ascent: Math.max(base.ascent, k.ascent, 0.55 * size + 0.72 * sup), descent: Math.max(base.descent, k.descent) };
+      }
       const nameW = measureText(FN_FACE[node.name] || node.name, size, false);
       const gap = 0.06 * size;
       const k = measure(node.k, size, "fn", 0);
@@ -494,6 +527,29 @@ function place(m, x, y, out) {
       place(m.e, x + m.b.w + m.kern, y - m.rise, out);
       break;
 
+    case "mat": {
+      const top = y - m.axis - m.H / 2;           // the top of the brackets
+      const t = Math.max(1, 0.05 * m.size);
+      const bottom = top + m.H;
+      const arm = m.bw;
+      out.atoms.push({ key: `${id}#lb`, nodeId: id, kind: "path", text: "[", x, y: top, w: arm, h: m.H, stroke: t,
+        d: `M${x + arm} ${top + t / 2} H${x + t / 2} V${bottom - t / 2} H${x + arm}` });
+      const rx = x + m.w;
+      out.atoms.push({ key: `${id}#rb`, nodeId: id, kind: "path", text: "]", x: rx - arm, y: top, w: arm, h: m.H, stroke: t,
+        d: `M${rx - arm} ${top + t / 2} H${rx - t / 2} V${bottom - t / 2} H${rx - arm}` });
+      let cy = top + m.pad;
+      m.cells.forEach((row, i) => {
+        const baseline = cy + m.rowA[i];
+        let cx = x + m.bw + m.pad;
+        row.forEach((cell, j) => {
+          place(cell, cx + (m.colW[j] - cell.w) / 2, baseline, out);
+          cx += m.colW[j] + m.colGap;
+        });
+        cy += m.rowA[i] + m.rowD[i] + m.rowGap;
+      });
+      break;
+    }
+
     case "pct":
       place(m.k, x, y, out);
       text("pct", "%", x + m.k.w, y, m.size, false);
@@ -510,6 +566,11 @@ function place(m, x, y, out) {
       break;
 
     case "fn":
+      if (m.transpose) {
+        place(m.k, x, y, out);
+        text("fn", "T", x + m.k.w + 0.05 * m.size, y - 0.55 * m.size, m.sup, false);
+        break;
+      }
       text("fn", FN_FACE[m.node.name] || m.node.name, x, y, m.size, false);
       place(m.k, x + m.nameW + m.gap, y, out);
       break;
@@ -635,9 +696,13 @@ export function plain(node, parentKind = null, slot = 0) {
     case "const": return wrap(node.name);
     case "ref":  return wrap(node.name);
     case "pct":  return wrap(`${plain(node.k, "pct", 0)}%`);
+    case "mat":  return `[${node.rows.map((r) => `[${r.map((c) => plain(c, "mat", 0)).join(",")}]`).join(",")}]`;
     case "base": return wrap(`${node.digits}_${node.base}`);
     case "mixed": return wrap(`${plain(node.w)} ${plain(node.f.a)}/${plain(node.f.b)}`);
-    case "fn":   return wrap(`${node.name}${plain(node.k, "fn", 0)}`);
+    case "fn":
+      // A matrix on its side reads back as [[…]]^T, which the parser takes as it is.
+      if (node.name === "transpose" && node.k.kind === "mat") return wrap(`${plain(node.k)}^T`);
+      return wrap(`${node.name}${plain(node.k, "fn", 0)}`);
     case "deg":  return wrap(`${plain(node.k, "deg", 0)}°`);
     case "deriv": return wrap(`d/d${node.x}${plain(node.k, "deriv", 0)}`);
     case "int": {

@@ -536,6 +536,8 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
   const paint = $(".am-paint");
   if (paint) paint.innerHTML = heroPaint();
 
+  // The font landing after the page was built (it can be slow): measure again.
+  window.addEventListener("am-font-ready", () => { for (const c of cards) c.relook(); keypad?.redraw?.(); });
   // Every width in the layout comes from measuring this font. Measure before it
   // has loaded and the whole equation is set to the fallback's metrics.
   await fontReady();

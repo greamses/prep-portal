@@ -20,6 +20,7 @@
 
 import * as A from "./ast.js";
 import * as R from "./rational.js";
+import * as MM from "./matrix-moves.js";
 import { plain } from "./layout.js";
 import { preservesSolutions, numericValue } from "./verify.js";
 import { angleNode, anglesInTurn, copy, diffStep, intStep, subStep, partsStep, limitStep, exactTrig, exactInverse, tanAsRatio, pythagoreanPair } from "./calculus.js";
@@ -691,7 +692,98 @@ function nodeTidies(eq, node) {
   }
   if (node.kind === "prod" || node.kind === "frac") t("multiply", multiplyLabel(node), "numbers together, letters together", multiplyOut(eq, node.id));
   for (const o of calcMoves(eq, node)) out.push(o);
+  for (const o of matrixMoves(eq, node)) out.push(o);
   return out;
+}
+
+/* ── Matrices ───────────────────────────────────────────────────────────────
+   Each rule is one tap and writes the working with the entries NOT yet done —
+   adding writes 1 + 5 in a cell, multiplying writes 1·5 + 2·7 — so the
+   entry-by-entry method is on the page, and "Work it out" then does the sums.
+   The builders are in matrix-moves.js; what is here is where each is offered. */
+function matrixMoves(eq, node) {
+  const out = [];
+  const isMat = (n) => n && n.kind === "mat";
+  const go = (key, label, hint, next, note) => {
+    out.push({
+      key, label, hint, mark: plain(next),
+      run: () => ({ eq: putFlat(eq, node.id, next), from: flyFrom(eq, next, node.id), mark: plain(next), note: note || `${label}: ${plain(next)}` }),
+    });
+  };
+  switch (node.kind) {
+    case "fn": {
+      if (node.name === "det" && isMat(node.k)) {
+        const d = MM.detExpr(node.k);
+        if (d) go("det", "Work out the determinant", "ad − bc", d, `The determinant, ad − bc: ${plain(d)}`);
+      }
+      if (node.name === "transpose" && isMat(node.k)) {
+        go("transpose", "Turn it on its side", "rows become columns", MM.transposeMat(node.k), "Rows become columns");
+      }
+      break;
+    }
+    case "pow": {
+      if (!isMat(node.b)) break;
+      const e = A.exactValue(node.e);
+      if (e && R.same(e, R.rat(-1n))) {
+        const inv = MM.inverseMat(node.b);
+        if (inv) go("inverse", "Find the inverse", "1 over the determinant, times the swapped matrix", inv, `The inverse: one over the determinant, times the matrix with its entries swapped: ${plain(inv)}`);
+      } else if (e && R.isInt(e) && e.n >= 2n && e.n <= 4n) {
+        go("matpow", "Write the power out as a product", "A·A", MM.powerOut(node.b, Number(e.n)), "A power is the matrix times itself");
+      }
+      break;
+    }
+    case "neg": {
+      if (isMat(node.k)) go("matscale", "Take the minus into the matrix", "every entry changes sign", MM.negateMat(node.k), "The minus goes into every entry");
+      break;
+    }
+    case "frac": {
+      if (isMat(node.a) && !isMat(node.b)) go("matscale", "Divide every entry", "each entry over the number", MM.divideMat(node.a, node.b), "Every entry is divided");
+      break;
+    }
+    case "prod": {
+      const kids = node.kids;
+      const at = kids.findIndex((k, i) => isMat(k) && isMat(kids[i + 1]));
+      if (at >= 0) {
+        const m = MM.multiplyMats(kids[at], kids[at + 1]);
+        if (m) {
+          const rest = kids.flatMap((k, i) => (i === at ? [m] : i === at + 1 ? [] : [k]));
+          go("matmul", "Multiply the matrices", "each row against each column", rest.length === 1 ? m : A.prod(rest),
+            "Row by column: each entry is a row of the first times a column of the second, added up");
+        }
+      } else {
+        const mats = kids.filter(isMat);
+        const others = kids.filter((k) => !isMat(k));
+        if (mats.length === 1 && others.length) {
+          const k = others.length === 1 ? others[0] : A.prod(others.map(freshCopy));
+          go("matscale", "Multiply every entry", "the number goes into each entry", MM.scaleMat(k, mats[0]), "Every entry is multiplied by it");
+        }
+      }
+      break;
+    }
+    default: break;
+  }
+  return out;
+}
+
+/** Two matrices of one size, on one side: A + B written entry by entry. */
+export function addMatrices(eq, aId, bId) {
+  const la = locate(eq, aId), lb = locate(eq, bId);
+  if (!la || !lb || la.container.id !== lb.container.id || la.index === lb.index) return { error: "Those two are not on the same side." };
+  const signed = (t) => (t.kind === "mat" ? { m: t, s: 1 } : t.kind === "neg" && !t.paren && t.k.kind === "mat" ? { m: t.k, s: -1 } : null);
+  const [first, second] = la.index < lb.index ? [la, lb] : [lb, la];
+  const a = signed(first.term), b = signed(second.term);
+  if (!a || !b) return { error: "Those are not both matrices." };
+  if (!MM.sameSize(a.m, b.m)) return { error: "Matrices can only be added if they are the same size." };
+  // −A + B is B − A; −A − B is the minus of A + B.
+  let result;
+  if (a.s === 1) result = MM.addMats(a.m, b.m, b.s);
+  else if (b.s === 1) result = MM.addMats(b.m, a.m, -1);
+  else result = A.neg(MM.addMats(a.m, b.m, 1));
+  const nextTerms = first.terms.map((t, i) => (i === first.index ? result : t)).filter((_, i) => i !== second.index);
+  return {
+    eq: setContainer(eq, first, nextTerms), from: flyFrom(eq, result, first.term.id), mark: plain(result),
+    note: `Add them entry by entry — each entry with the one in the same place: ${plain(result)}`,
+  };
 }
 
 /** Multiplying written out for what it is: 3·3 is 9, said with the numbers. */
@@ -819,6 +911,8 @@ export function multiplyOut(eq, id) {
   const rest = node.kids.filter((k) => !A.exactValue(k));
   let next;
   if (R.isZero(c)) next = A.num(R.ZERO);
+  // Nothing but numbers: the product IS the number (a fraction times a minus, say).
+  else if (!rest.length) next = A.numberNode(c);
   else {
     const body = rest.length === 1 ? rest[0] : A.prod(rest);
     if (R.isOne(c)) next = body;
@@ -2130,6 +2224,18 @@ export function offers(eq, id, { given = null } = {}) {
     }
   }
 
+  // Two matrices of one size on this side: add them, entry by entry.
+  {
+    const isM = (t) => t.kind === "mat" || (t.kind === "neg" && !t.paren && t.k.kind === "mat");
+    if (isM(term)) {
+      const other = terms.find((t, i) => i !== index && isM(t));
+      if (other) {
+        const trial = addMatrices(eq, id, other.id);
+        if (!trial.error) out.push({ key: "matadd", label: `Add it to ${plain(other)}`, hint: "entry by entry", mark: trial.mark, run: () => trial });
+      }
+    }
+  }
+
   /* A fraction with a letter in it that is the whole of its side: clear it by
      multiplying. This is the only way out of (3x + 5)/4 = 5 — the top is a sum,
      so there is nothing to cancel down and nothing else touches the bottom.
@@ -2423,6 +2529,7 @@ export function atomOffers(eq, key, { given = null } = {}) {
     const isContainer = !!sum && A.containersOf(eq).some((c) => c.id === sum.id);
     if (isContainer && kid && prev) {
       add(direct("combine", `${plain(prev)} and ${plain(kid)} together`, "like terms", combine(eq, prev.id, kid.id)));
+      add(direct("matadd", "Add the matrices", "entry by entry", addMatrices(eq, prev.id, kid.id)));
       if (asFraction(prev).den || asFraction(kid).den) {
         add(direct("addfrac", `${plain(prev)} and ${plain(kid)} over one bottom`, "add the fractions", addFractions(eq, prev.id, kid.id)));
       }
@@ -2473,6 +2580,10 @@ export function atomOffers(eq, key, { given = null } = {}) {
     if (T && fracOf(T)?.id === nodeId) add(splitOffer(T));
     if (T && T.id === nodeId) pick(pool(T), "times", "addfrac", "across");
     else if (T && fracOf(T)?.id === nodeId) pick(pool(T), "addfrac");
+  } else if (slot === "lb" || slot === "rb") {
+    // The brackets of a matrix speak for the whole of it.
+    tidiesAbove(nodeId);
+    pick(pool(atomTerm(eq, key)), "matadd", "combine", "across", "flip", "divide", "times");
   } else if (slot === "pct") {
     for (const o of [
       direct("tofraction", "Write it as a fraction", "out of 100", toFraction(eq, nodeId)),
@@ -2680,7 +2791,8 @@ export function multiOffers(eq, keys, { given = null } = {}) {
 /** The tidy-ups: moves that leave the same thing written more simply. A side
     with none of these left on any of its terms is as tidy as it goes. */
 export const TIDY = new Set(["combine", "workout", "cancel", "dropzero", "indices", "surd", "addfrac",
-  "multiply", "trig", "pyth", "diff", "integrate", "limit", "base10"]);
+  "multiply", "trig", "pyth", "diff", "integrate", "limit", "base10",
+  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse"]);
 
 /** Every move on offer for a set of picked glyphs — what each one means, what
     its term can have done to it, and what they mean together — or, with

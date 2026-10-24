@@ -34,7 +34,7 @@ const WORDY = /[0-9A-Za-z.(]/;         // what a "(" must not be put in front of
  *
  *   { insert: "x", back: n }   put `insert` at the selection, then move the
  *                              cursor back n characters
- *   { step: 1 }                just move the cursor forward one (over a ")")
+ *   { step: n }                just move the cursor forward n (over a ")" or a ",")
  *   { exit: true, insert: "=" } go to the end of the closing brackets, then insert
  *   { remove: [from, to] }     take this stretch of text away
  */
@@ -53,6 +53,14 @@ export function slotEdit(text, start, end, key) {
   }
   if (key === ")" || key === "]") {
     if (!selected && next === key) return { step: 1 };
+    return null;
+  }
+  // In a matrix, "," is the key for "on to the next entry": over a comma the
+  // template already holds, or across ],[ from the end of one row to the next.
+  if (key === ",") {
+    if (selected) return null;
+    if (next === ",") return { step: 1 };
+    if (after.startsWith("],[")) return { step: 3 };
     return null;
   }
   // [ ] work the same way — a matrix is [[1,2],[3,4]], typed without closing one.
@@ -103,7 +111,7 @@ export function slotTypingForInput(input, { onChange = () => {} } = {}) {
     let value = input.value;
     let at;
     if (edit.step) {
-      at = a + 1;
+      at = a + edit.step;
     } else if (edit.remove) {
       value = value.slice(0, edit.remove[0]) + value.slice(edit.remove[1]);
       at = edit.remove[0];
@@ -166,7 +174,7 @@ export function slotTypingForEditable(paper, { box, onChange = () => {} } = {}) 
     const edit = slotEdit(textOf(b), start, end, key);
     if (!edit) return;
     e.preventDefault();
-    if (edit.step) move(sel, 1);
+    if (edit.step) move(sel, edit.step);
     else if (edit.remove) {
       // Select the stretch and delete it as one edit.
       const len = edit.remove[1] - edit.remove[0];

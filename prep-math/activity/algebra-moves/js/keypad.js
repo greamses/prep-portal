@@ -155,6 +155,18 @@ const FUNCS = [
     { k: "⌫", act: "back", title: "Delete", tone: "warn" },
     { k: "CLR", act: "clear", title: "Clear", tone: "warn" },
   ],
+  /* Matrices: a template with the cursor in its first entry, then , to move
+     along a row and → to leave. */
+  [
+    { k: "2×2", t: "[[,],[,]]", back: 7, title: "a 2 by 2 matrix: type the entries, with , between them" },
+    { k: "3×3", t: "[[,,],[,,],[,,]]", back: 15, title: "a 3 by 3 matrix" },
+    { k: "det", t: "det[[,],[,]]", back: 7, title: "determinant of a matrix" },
+    { k: "ᵀ", t: "^T", title: "transpose: rows become columns" },
+    { k: "⁻¹", t: "^(-1)", title: "inverse of a matrix" },
+    { k: ",", t: ",", title: "next entry" },
+    { k: "←", act: "left", title: "Move left" },
+    { k: "→", act: "right", title: "Move right" },
+  ],
 ];
 
 export function createKeypad(host, { onSubmit } = {}) {

@@ -17,6 +17,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import { varsIn, walk, baseValue } from "./ast.js";
+import { hasMatrix, evalM, flat as flatM, subtract as subtractM } from "./matrix-eval.js";
 const baseValueOf = (n) => baseValue(n.digits, n.base);
 
 /** Float evaluation for sampling only. NaN means "this sample is unusable". */
@@ -101,6 +102,7 @@ function simpson(f, a, b, n = 256) {
 const CALCULUS = new Set(["deriv", "int", "lim", "fn"]);
 const hasCalculus = (root) => { let yes = false; walk(root, (n) => { if (CALCULUS.has(n.kind)) yes = true; }); return yes; };
 
+const hasLetter = (root, name) => varsIn(root).includes(name);
 const hasPm = (root) => { let yes = false; walk(root, (n) => { if (n.kind === "pm") yes = true; }); return yes; };
 
 /* An equation with a ± in it holds wherever EITHER branch holds, which is
@@ -203,6 +205,50 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
       }
     }
     if (usable < 6) return { ok: false, why: "I could not check that move, so I will not make it" };
+    return { ok: true, why: "" };
+  }
+
+  /* A matrix anywhere in the line: every number in the grids, before and after,
+     must come out the same (an expression) or in one steady ratio (an
+     equation), exactly as the single number does below — see matrix-eval.js. */
+  if (hasMatrix(prev) || hasMatrix(next)) {
+    if (prev.kind !== next.kind) return { ok: false, why: "that turns it into a different kind of thing" };
+    const valueOf = (root, env) => (root.kind === "expr"
+      ? evalM(root.e, env, evalAt)
+      : subtractM(evalM(root.l, env, evalAt), evalM(root.r, env, evalAt)));
+    // X = [[…]] + [[…]]: a letter standing for a whole matrix is the same letter
+    // before and after, so what is checked is the other side.
+    if (prev.kind === "eq" && next.kind === "eq" && prev.l.kind === "var" && next.l.kind === "var" && prev.l.name === next.l.name
+        && !hasLetter(prev.r, prev.l.name) && !hasLetter(next.r, next.l.name)) {
+      return preservesSolutions({ kind: "expr", e: prev.r }, { kind: "expr", e: next.r }, { samples, given });
+    }
+    let usable = 0, ratio = null;
+    for (let i = 0; i < Math.min(samples, 24); i++) {
+      const env = {};
+      for (const n of names) env[n] = sample(i, n);
+      const a = flatM(valueOf(prev, env)), b = flatM(valueOf(next, env));
+      if (a.length !== b.length || a.some((v) => !Number.isFinite(v)) || b.some((v) => !Number.isFinite(v))) {
+        if (a.length !== b.length && a.every(Number.isFinite) && b.every(Number.isFinite)) return { ok: false, why: "that changes the size of the matrix" };
+        continue;
+      }
+      usable++;
+      if (prev.kind === "expr") {
+        if (a.some((v, k) => Math.abs(v - b[k]) > 1e-7 * Math.max(1, Math.abs(v), Math.abs(b[k])))) {
+          return { ok: false, why: "that does not come to the same matrix" };
+        }
+        continue;
+      }
+      // An equation: the difference of the sides keeps its shape, scaled by one number.
+      const aa = a.reduce((s, v) => s + v * v, 0);
+      if (aa < 1e-12) { if (b.some((v) => Math.abs(v) > 1e-7)) return { ok: false, why: "that changes which values make the equation true" }; continue; }
+      const r = a.reduce((s, v, k) => s + v * b[k], 0) / aa;
+      if (a.some((v, k) => Math.abs(b[k] - r * v) > 1e-6 * Math.max(1, Math.abs(b[k])))) {
+        return { ok: false, why: "the two sides no longer match up the way they did" };
+      }
+      if (ratio === null) ratio = r;
+      else if (Math.abs(r - ratio) > 1e-6 * Math.max(1, Math.abs(ratio))) return { ok: false, why: "the two sides no longer match up the way they did" };
+    }
+    if (usable < 4) return { ok: false, why: "I could not check that move, so I will not make it" };
     return { ok: true, why: "" };
   }
 

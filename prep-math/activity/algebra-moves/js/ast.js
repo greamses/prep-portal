@@ -46,6 +46,11 @@ export const pm   = (k, id = freshId())              => ({ id, kind: "pm", k });
    on and name the letter they act WITH. */
 // arcsin before sin is not needed for the tokenizer (they start differently),
 // but the longer names must not be read as letters: a·r·c·sin.
+/** A matrix, [[1,2],[3,4]]: `rows` is a list of rows, each a list of entries
+    (any expression). Every row is the same length. */
+export const mat = (rows, id = freshId()) => ({ id, kind: "mat", rows });
+export const matSize = (m) => [m.rows.length, m.rows[0].length];
+
 /** A percentage, 25%: the number `k` out of a hundred. */
 export const pct = (k, id = freshId()) => ({ id, kind: "pct", k });
 
@@ -93,7 +98,7 @@ export const mixed = (w, f, id = freshId()) => ({ id, kind: "mixed", w, f });
     workspace.js swaps each one for that equation's left side, then its right. */
 export const ref = (name, id = freshId()) => ({ id, kind: "ref", name });
 
-export const FUNCS = ["arcsin", "arccos", "arctan", "sin", "cos", "tan", "ln", "log"];
+export const FUNCS = ["arcsin", "arccos", "arctan", "transpose", "sin", "cos", "tan", "ln", "log", "det"];
 /** How a function's name is drawn: arcsin is written sin⁻¹. */
 export const FN_FACE = { arcsin: "sin⁻¹", arccos: "cos⁻¹", arctan: "tan⁻¹" };
 export const cnst  = (name, id = freshId())          => ({ id, kind: "const", name });
@@ -129,6 +134,7 @@ export function kidsOf(node) {
     case "root": return [node.k];
     case "mixed": return [node.w, node.f];
     case "pct":  return [node.k];
+    case "mat":  return node.rows.flat();
     case "pm":   return [node.k];
     case "fn":
     case "deg":
@@ -171,6 +177,11 @@ export function replace(root, id, next) {
       case "pm":   { const k = rec(n.k); return k === n.k ? n : { id: n.id, kind: "pm", k }; }
       case "mixed": { const w = rec(n.w), f = rec(n.f); return w === n.w && f === n.f ? n : { ...n, w, f }; }
       case "pct":  { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
+      case "mat": {
+        let changed = false;
+        const rows = n.rows.map((r) => r.map((c) => { const k = rec(c); if (k !== c) changed = true; return k; }));
+        return changed ? { ...n, rows } : n;
+      }
       case "fn":
       case "deg":
       case "deriv": { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
@@ -230,6 +241,8 @@ export function containersOf(root) {
     if (n.kind === "frac") { out.push(n.a); out.push(n.b); }
     // What a d/dx, an ∫ or a lim acts on is worked on like a side of its own.
     if (n.kind === "deriv" || n.kind === "int" || n.kind === "lim") out.push(n.k);
+    // Every entry of a matrix is worked on like a side of its own.
+    if (n.kind === "mat") for (const cell of n.rows.flat()) out.push(cell);
   });
   return out;
 }
@@ -316,6 +329,7 @@ export function readTerm(node) {
         if (flip) c = R.neg(c);
         return true;
       case "fn":
+      case "mat":
       case "deg":
       case "deriv":
       case "int":
@@ -356,7 +370,7 @@ export function varNodesOf(node) {
   const out = [];
   const go = (n) => {
     if (n.kind === "var" || n.kind === "root" || (n.kind === "pow" && n.b.kind === "var")
-        || ["const", "fn", "deg", "deriv", "int", "lim"].includes(n.kind)) { out.push(n); return; }
+        || ["const", "fn", "mat", "deg", "deriv", "int", "lim"].includes(n.kind)) { out.push(n); return; }
     for (const k of kidsOf(n)) go(k);
   };
   go(node);

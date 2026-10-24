@@ -60,9 +60,12 @@ export function paintRow(row, { live = false, picked = null, pad = 0 } = {}) {
     if (a.kind === "rule") {
       node = el("rect", { x: a.x, y: a.y, width: a.w, height: a.h, class: "am-rule" });
     } else if (a.kind === "path") {
-      // The radical: MathJax's own outline (layout.js, RADICAL), filled.
+      // The radical: MathJax's own outline (layout.js, RADICAL), filled. A
+      // matrix's brackets are strokes instead.
       node = el("g", { class: "am-rad" });
-      node.append(el("path", { d: a.d, transform: a.transform, fill: "currentColor" }));
+      node.append(a.stroke
+        ? el("path", { d: a.d, fill: "none", stroke: "currentColor", "stroke-width": a.stroke, "stroke-linejoin": "miter" })
+        : el("path", { d: a.d, transform: a.transform, fill: "currentColor" }));
     } else if (a.kind === "hole") {
       node = el("rect", { x: a.x, y: a.y, width: a.w, height: a.h, rx: 2, class: "am-hole" });
     } else {
@@ -98,7 +101,7 @@ export function paintRow(row, { live = false, picked = null, pad = 0 } = {}) {
         tabindex: "0", role: "button",
       });
       hit.dataset.key = a.key;
-      hit.setAttribute("aria-label", a.kind === "path" ? "the square root" : a.kind !== "rule" ? a.text
+      hit.setAttribute("aria-label", a.kind === "path" ? (a.stroke ? "the matrix" : "the square root") : a.kind !== "rule" ? a.text
         : a.key.endsWith("#vinc") ? "the square root" : a.key.endsWith("#dbar") ? "d by d" : "the fraction bar");
       hits.appendChild(hit);
     }
