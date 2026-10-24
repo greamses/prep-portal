@@ -268,7 +268,7 @@ async function start() {
   /* the workbook's own tools, the same ones and in the same order: this is
      where the sums on the bill actually get done (js/guide.js uses them) */
   mountTools(document.body, {
-    tools: ["calculator", "column", "times", "criss", "shortdiv", "longdiv", "shift", "note"],
+    tools: ["calculator", "column", "times", "criss", "shortdiv", "longdiv", "shift", "pin", "note"],
   });
 
   /* PREPBOT DOES THE SHOPPING, on this page. Not a film of a shop: it presses

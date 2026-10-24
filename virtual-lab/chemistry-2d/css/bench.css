@@ -835,3 +835,11 @@ body.cl-dragging { cursor: grabbing; user-select: none; }
 #cl-atom-body, .cl-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 0.3rem 0.4rem 0; }
 @media (max-width: 620px) { .cl-sheet.pp-receipt { left: 48px; width: min(430px, calc(100% - 60px)); } }
 .cl-sk-hint { flex-basis: 100%; color: var(--text-secondary); }
+
+/* the symbols are sticky notes: the picker, and each atom on the paper */
+.cl-sk-els .cl-act { display: none; }
+.cl-sk-pick { min-width: 2.3rem; padding: 0.3rem 0.5rem 0.36rem; font: 700 0.95rem var(--font-display); color: #14130f; background: var(--note, #fff3a8); border: 0; border-radius: 0; cursor: pointer; transform: rotate(var(--tilt, 0deg)); box-shadow: 1px 2px 0 rgba(20, 19, 15, 0.22), 3px 6px 10px rgba(20, 19, 15, 0.18); transition: transform 0.12s, box-shadow 0.12s; }
+.cl-sk-pick:hover, .cl-sk-pick:focus-visible { transform: rotate(0deg) translateY(-2px); }
+.cl-sk-pick.is-on { transform: rotate(0deg) translateY(-4px) scale(1.12); box-shadow: 1px 4px 0 rgba(20, 19, 15, 0.25), 4px 12px 14px rgba(20, 19, 15, 0.28); outline: 2px solid var(--accent-primary); outline-offset: 1px; }
+.cl-sk-note { stroke: rgba(20, 19, 15, 0.28); stroke-width: 1; filter: drop-shadow(1px 2px 1.5px rgba(20, 19, 15, 0.28)); pointer-events: none; }
+.cl-sk-atoms text { font: 700 15px var(--font-display); }

@@ -167,23 +167,24 @@ export function lewisSvg(z, charge = 0) {
   // helium and the hydride ion: the pair sits together on one side
   if (n === 2 && (z === 1 || z === 2)) count[1] = 2;
   else for (let i = 0; i < Math.min(n, 8); i++) count[i < 4 ? i : i - 4]++;
-  const R = 30;
+  // the dots sit clear of the letters: top and bottom above the cap height, left and right past the symbol's own width
+  const font = el.sym.length > 1 ? 40 : 46;
+  const RY = font * 0.5 + 12, RX = el.sym.length * font * 0.34 + 14;
   let dots = "", k = 0;
   side.forEach(([dx, dy], i) => {
     for (let j = 0; j < count[i]; j++) {
       const off = count[i] === 2 ? (j ? 7 : -7) : 0;
-      const x = cx + dx * R + (dy ? off : 0), y = cy + dy * R + (dx ? off : 0);
+      const x = cx + dx * RX + (dy ? off : 0), y = cy + dy * RY + (dx ? off : 0);
       dots += DOT(x, y, k < mine);
       k++;
     }
   });
-  const font = el.sym.length > 1 ? 40 : 46;
   let txt = `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" font-family="var(--font-display)" font-weight="700" font-size="${font}" fill="var(--ink)">${el.sym}</text>`;
   if (charge) {
-    txt += `<path d="M28 26h-8v100h8M122 26h8v100h-8" fill="none" stroke="var(--ink)" stroke-width="3"/>`
-      + `<text x="136" y="24" font-family="var(--font-mono)" font-weight="700" font-size="20" fill="var(--ink)">${sup(charge)}</text>`;
+    txt += `<path d="M16 26H8v100h8M134 26h8v100h-8" fill="none" stroke="var(--ink)" stroke-width="3"/>`
+      + `<text x="146" y="24" font-family="var(--font-mono)" font-weight="700" font-size="20" fill="var(--ink)">${sup(charge)}</text>`;
   }
-  return `<svg class="cl-lewis" viewBox="0 0 ${W + 14} ${H}" role="img" aria-label="Lewis structure of ${ionName(el.sym, charge)}">${txt}${dots}</svg>`;
+  return `<svg class="cl-lewis" viewBox="0 0 ${W + 28} ${H}" role="img" aria-label="Lewis structure of ${ionName(el.sym, charge)}">${txt}${dots}</svg>`;
 }
 
 /** A shell (Bohr) diagram: the nucleus counted, each shell a ring, its electrons spaced round it. */

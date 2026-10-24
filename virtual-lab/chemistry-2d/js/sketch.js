@@ -17,7 +17,7 @@
    (state.sketch). Its chemistry is structures.js.
    ========================================================================== */
 
-import { BOND, BOND_H, empty, clone, atomOf, addAtom, addBond, removeAtom, removeBond, bondBetween, fillH, formulaHtml, massOf, problems, hints, pieces, moleculeSvg, build, TEMPLATES } from "./structures.js";
+import { BOND, BOND_H, empty, clone, atomOf, addAtom, addBond, removeAtom, removeBond, bondBetween, fillH, formulaHtml, massOf, problems, hints, pieces, moleculeSvg, build, TEMPLATES, hiddenAtoms, dropH, noteOf } from "./structures.js";
 import { bySymbol } from "./atoms.js";
 
 const ELS = ["C", "H", "O", "N", "Cl", "Br", "I", "F", "S", "P", "B", "Na", "K", "Mg"];
@@ -29,11 +29,11 @@ export function initSketch({ $, state, save, openSheet, UI }) {
   const sheet = $("cl-sheet-sketch");
   const pad = $("cl-sk-pad");
   if (!state.sketch || !Array.isArray(state.sketch.atoms)) state.sketch = empty();
-  const ui = { tool: "pen", el: "C", order: 1, lewis: false };
+  const ui = { tool: "pen", el: "C", order: 1, lewis: false, skeleton: false };
   let m = state.sketch;
   const undo = [];
-  const keep = () => { undo.push(clone(m)); if (undo.length > 60) undo.shift(); };
-  const commit = () => { state.sketch = m; save(); render(); };
+  const keep = () => { undo.push(clone(m)); if (undo.length > 60) undo.shift(); if (ui.skeleton) dropH(m); };
+  const commit = () => { if (ui.skeleton) fillH(m); state.sketch = m; save(); render(); };
 
   // ── the keys ──
   const TOOLS = [
@@ -49,14 +49,16 @@ export function initSketch({ $, state, save, openSheet, UI }) {
     + `<span class="cl-sk-sep"></span>`
     + `<button type="button" class="cl-ico cl-ico--paper" data-do="fill" data-tip="Add every hydrogen still missing" aria-label="Add hydrogens">${glyph(`<text x="8.5" y="17.5" text-anchor="middle" font-family="var(--font-display)" font-weight="700" font-size="15" fill="var(--ink)">H</text><path d="M17.5 5.500v8M13.500 9.500h8" stroke="var(--accent-success)" stroke-width="2.600" stroke-linecap="round"/>`)}</button>`
     + `<button type="button" class="cl-ico cl-ico--paper" data-do="lewis" data-tip="Show the lone pairs (Lewis structure)" aria-label="Lewis structure" aria-pressed="false">${glyph(`<text x="12" y="17" text-anchor="middle" font-family="var(--font-display)" font-weight="700" font-size="13" fill="var(--accent-danger)">O</text><circle cx="10" cy="3.500" r="1.700" fill="var(--ink)"/><circle cx="14" cy="3.500" r="1.700" fill="var(--ink)"/><circle cx="10" cy="21" r="1.700" fill="var(--ink)"/><circle cx="14" cy="21" r="1.700" fill="var(--ink)"/><circle cx="3" cy="10.500" r="1.700" fill="var(--ink)"/><circle cx="3" cy="14.500" r="1.700" fill="var(--ink)"/>`)}</button>`
+    + `<button type="button" class="cl-ico cl-ico--paper" data-do="skeleton" data-tip="Skeletal formula: carbons are the corners, hydrogens on carbon are left out" aria-label="Skeletal formula" aria-pressed="false">${glyph(`<path d="M2.500 16l5-8 5 8 5-8 4.500 5" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`)}</button>`
     + `<button type="button" class="cl-ico cl-ico--paper" data-do="undo" data-tip="Undo" aria-label="Undo">${UI.undo(18)}</button>`
     + `<button type="button" class="cl-ico cl-ico--paper" data-do="clear" data-tip="Clear the paper" aria-label="Clear the paper">${UI.trash(18)}</button>`;
-  $("cl-sk-els").innerHTML = ELS.map((e) => `<button type="button" class="cl-act" data-el="${e}" aria-pressed="false" aria-label="${bySymbol(e).name}">${e}</button>`).join("");
+  $("cl-sk-els").innerHTML = ELS.map((e, i) => `<button type="button" class="cl-sk-pick" data-el="${e}" style="--note:${noteOf(e)};--tilt:${[-2.2, 1.6, -1, 2.2, -1.8, 1.2][i % 6]}deg" aria-pressed="false" aria-label="${bySymbol(e).name}">${e}</button>`).join("");
 
   function keys() {
     sheet.querySelectorAll("[data-tool]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.tool === ui.tool)));
     sheet.querySelectorAll("[data-order]").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.order === ui.order)));
     sheet.querySelectorAll("[data-el]").forEach((b) => { const on = b.dataset.el === ui.el; b.classList.toggle("is-on", on); b.setAttribute("aria-pressed", String(on)); });
+    sheet.querySelector('[data-do="skeleton"]').setAttribute("aria-pressed", String(ui.skeleton));
     sheet.querySelector('[data-do="lewis"]').setAttribute("aria-pressed", String(ui.lewis));
     pad.dataset.tool = ui.tool;
   }
@@ -71,7 +73,7 @@ export function initSketch({ $, state, save, openSheet, UI }) {
       rubber = `<path class="cl-sk-rubber" d="M${a.x} ${a.y}L${drag.to.x.toFixed(1)} ${drag.to.y.toFixed(1)}"/>`;
       if (!drag.to.id) rubber += `<text class="cl-sk-ghost" x="${drag.to.x.toFixed(1)}" y="${drag.to.y.toFixed(1)}">${ui.el}</text>`;
     }
-    pad.innerHTML = `<rect class="cl-sk-paper" x="0" y="0" width="${W}" height="${H}"/>${rubber}${moleculeSvg(m, { lewis: ui.lewis, bad, sel: hover })}`
+    pad.innerHTML = `<rect class="cl-sk-paper" x="0" y="0" width="${W}" height="${H}"/>${rubber}${moleculeSvg(m, { lewis: ui.lewis, skeleton: ui.skeleton, bad, sel: hover })}`
       + (m.atoms.length ? "" : `<text class="cl-sk-empty" x="${W / 2}" y="${H / 2}">Tap the paper to put an atom down, then drag out of it to make a bond.</text>`);
     info();
   }
@@ -88,11 +90,13 @@ export function initSketch({ $, state, save, openSheet, UI }) {
 
   // ── the pointer ──
   const toPad = (e) => { const p = pad.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; const q = p.matrixTransform(pad.getScreenCTM().inverse()); return { x: q.x, y: q.y }; };
-  const atomAt = (p, not) => { let best = null, d = 15; for (const a of m.atoms) { const k = Math.hypot(a.x - p.x, a.y - p.y); if (k < d && a.id !== not) { d = k; best = a; } } return best; };
+  const atomAt = (p, not) => { let best = null, d = 15; const hid = ui.skeleton ? hiddenAtoms(m) : new Set(); for (const a of m.atoms) { if (hid.has(a.id) && a.el === "H") continue; const k = Math.hypot(a.x - p.x, a.y - p.y); if (k < d && a.id !== not) { d = k; best = a; } } return best; };
   function bondAt(p) {
     let best = null, d = 7;
+    const hid = ui.skeleton ? hiddenAtoms(m) : new Set();
     for (const b of m.bonds) {
       const A = atomOf(m, b.a), B = atomOf(m, b.b);
+      if ((hid.has(A.id) && A.el === "H") || (hid.has(B.id) && B.el === "H")) continue;
       const dx = B.x - A.x, dy = B.y - A.y, L2 = dx * dx + dy * dy || 1;
       const t = Math.max(0, Math.min(1, ((p.x - A.x) * dx + (p.y - A.y) * dy) / L2));
       const k = Math.hypot(A.x + t * dx - p.x, A.y + t * dy - p.y);
@@ -170,7 +174,7 @@ export function initSketch({ $, state, save, openSheet, UI }) {
       }
     } else if (!d.fresh) {
       // a tap on an atom: make it the chosen element (a tap on one already that element changes nothing)
-      if (a.el === ui.el) { undo.pop(); render(); return; }
+      if (a.el === ui.el) { undo.pop(); if (ui.skeleton) fillH(m); render(); return; }
       a.el = ui.el;
     }
     commit();
@@ -186,6 +190,7 @@ export function initSketch({ $, state, save, openSheet, UI }) {
     else if (t.dataset.order) { ui.order = +t.dataset.order; ui.tool = "pen"; }
     else if (t.dataset.el) { ui.el = t.dataset.el; ui.tool = "pen"; }
     else if (t.dataset.do === "lewis") ui.lewis = !ui.lewis;
+    else if (t.dataset.do === "skeleton") { ui.skeleton = !ui.skeleton; if (ui.skeleton && ui.el === "H") ui.el = "C"; }
     else if (t.dataset.do === "fill") { keep(); if (!fillH(m)) undo.pop(); commit(); }
     else if (t.dataset.do === "undo") { if (undo.length) { m = undo.pop(); commit(); } }
     else if (t.dataset.do === "clear") { if (m.atoms.length) { keep(); m = empty(); commit(); } }

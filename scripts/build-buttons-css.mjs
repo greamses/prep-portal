@@ -48,7 +48,7 @@ const TOOLS = [
   ".cl-tile", ".cl-cat", ".cl-ico", ".cl-try",
   /* the bench's calculator has a calculator's keys, and its results table has a
      small cross on each row and column: paper on either made them unusable */
-  ".cl-key", ".cl-cut", ".cl-act", ".cl-pt__el",
+  ".cl-key", ".cl-cut", ".cl-act", ".cl-pt__el", ".cl-sk-pick",
   /* the workbook's scientific calculator, for the same reason: a keypad of
      forty sticky notes is not a calculator */
   ".wb-calc__key",

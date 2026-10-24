@@ -207,37 +207,86 @@ export function fitBox(m, pad = 22) {
   return `${f1(x0)} ${f1(y0)} ${f1(Math.max(...xs) - x0 + pad)} ${f1(Math.max(...ys) - y0 + pad)}`;
 }
 
+/** The colour of each element's sticky note. */
+const NOTE = { H: "#fffaf0", C: "#e3dfd2", O: "#ffc4bf", N: "#bfe3ff", F: "#c8f0c0", Cl: "#c8f0c0", Br: "#ffd7a3", I: "#e8c8ff", S: "#fff3a8", P: "#ffd7a3", B: "#b8ece2", Na: "#e8c8ff", K: "#e8c8ff", Mg: "#e8c8ff" };
+export const noteOf = (el) => NOTE[el] || "#fff3a8";
+/** Half the width and height of an atom's note: a two-letter symbol is a wider note. */
+export const halfBox = (el) => ({ w: el.length > 1 ? 15 : 11, h: 11 });
+/** Where a ray at `deg` leaves the atom's note, plus `gap`. */
+const edge = (el, deg, gap = 0) => {
+  const { w, h } = halfBox(el), c = Math.abs(Math.cos(rad(deg))), s = Math.abs(Math.sin(rad(deg)));
+  return Math.min(c > 1e-6 ? w / c : Infinity, s > 1e-6 ? h / s : Infinity) + gap;
+};
+
 /**
- * The molecule as SVG markup (no <svg> round it). opts.lewis adds lone pairs as dot pairs;
- * opts.bad is a Set of atom ids drawn in red; opts.sel an atom id to ring.
+ * The atoms a SKELETAL formula leaves out: a carbon that is joined to anything but hydrogen
+ * is just a corner of the line (no letter), and so are the hydrogens on it. A lone carbon,
+ * and a carbon with a charge, keep their letter; so do hydrogens on any other atom (OH, NH2).
+ */
+export function hiddenAtoms(m) {
+  const hid = new Set();
+  for (const a of m.atoms) {
+    if (a.el !== "C" || a.q) continue;
+    if (bondsOf(m, a.id).some((b) => atomOf(m, other(b, a.id)).el !== "H")) hid.add(a.id);
+  }
+  for (const a of m.atoms) {
+    if (a.el !== "H") continue;
+    const bs = bondsOf(m, a.id);
+    if (bs.length === 1 && hid.has(other(bs[0], a.id))) hid.add(a.id);
+  }
+  return hid;
+}
+/** Take away the hydrogens on carbon: in the skeletal view they are implied, and put back by fillH(). */
+export function dropH(m) {
+  const gone = m.atoms.filter((a) => a.el === "H" && bondsOf(m, a.id).length === 1 && atomOf(m, other(bondsOf(m, a.id)[0], a.id)).el === "C").map((a) => a.id);
+  gone.forEach((id) => removeAtom(m, id));
+  return gone.length;
+}
+
+/**
+ * The molecule as SVG markup (no <svg> round it). Every atom is a little sticky note with its
+ * symbol on it. opts.lewis adds lone pairs as dot pairs, clear of the note; opts.skeleton draws
+ * the skeletal formula; opts.bad is a Set of atom ids marked red; opts.sel an atom id to ring;
+ * opts.plain draws the symbols with no note behind them (the drawer's small pictures).
  */
 export function moleculeSvg(m, opts = {}) {
   const bad = opts.bad || new Set();
+  const hid = opts.skeleton ? hiddenAtoms(m) : new Set();
   let bonds = "", atoms = "";
   for (const b of m.bonds) {
     const A = atomOf(m, b.a), B = atomOf(m, b.b);
-    if (!A || !B) continue;
+    if (!A || !B || hid.has(A.id) && hid.has(B.id) && (A.el === "H" || B.el === "H")) continue;
+    if ((hid.has(A.id) && A.el === "H") || (hid.has(B.id) && B.el === "H")) continue;
     const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1;
     const ux = dx / L, uy = dy / L, nx = -uy, ny = ux;
-    const cut = 11;                        // the line stops short of the letters
-    const x1 = A.x + ux * cut, y1 = A.y + uy * cut, x2 = B.x - ux * cut, y2 = B.y - uy * cut;
+    const ang = deg(Math.atan2(dy, dx));
+    const ca = hid.has(A.id) ? 0 : edge(A.el, ang, 1.5), cb = hid.has(B.id) ? 0 : edge(B.el, ang + 180, 1.5);
+    const x1 = A.x + ux * ca, y1 = A.y + uy * ca, x2 = B.x - ux * cb, y2 = B.y - uy * cb;
     const offs = b.o === 1 ? [0] : b.o === 2 ? [-3, 3] : [-4.5, 0, 4.5];
     for (const o of offs) bonds += `<path d="M${f1(x1 + nx * o)} ${f1(y1 + ny * o)}L${f1(x2 + nx * o)} ${f1(y2 + ny * o)}"/>`;
     // a wider, invisible line to tap
     bonds += `<path class="cl-sk-hitb" data-a="${b.a}" data-b="${b.b}" d="M${f1(x1)} ${f1(y1)}L${f1(x2)} ${f1(y2)}"/>`;
   }
   for (const a of m.atoms) {
-    const c = bad.has(a.id) ? "var(--accent-danger)" : colourOf(a.el);
-    if (opts.sel === a.id) atoms += `<circle cx="${f1(a.x)}" cy="${f1(a.y)}" r="14" fill="none" stroke="var(--accent-primary)" stroke-width="2.5"/>`;
-    if (bad.has(a.id)) atoms += `<circle cx="${f1(a.x)}" cy="${f1(a.y)}" r="13" fill="color-mix(in srgb, var(--accent-danger) 18%, transparent)"/>`;
+    if (hid.has(a.id)) {
+      // a corner of the skeleton: nothing drawn, unless it is chosen or wrong
+      if (opts.sel === a.id) atoms += `<circle cx="${f1(a.x)}" cy="${f1(a.y)}" r="6" fill="none" stroke="var(--accent-primary)" stroke-width="2.5"/>`;
+      if (bad.has(a.id)) atoms += `<circle cx="${f1(a.x)}" cy="${f1(a.y)}" r="7" fill="color-mix(in srgb, var(--accent-danger) 30%, transparent)"/>`;
+      continue;
+    }
+    const { w, h } = halfBox(a.el);
+    const c = opts.plain ? colourOf(a.el) : "#14130f";
+    if (!opts.plain) atoms += `<rect class="cl-sk-note" x="${f1(a.x - w)}" y="${f1(a.y - h)}" width="${w * 2}" height="${h * 2}" fill="${noteOf(a.el)}"/>`;
+    if (opts.sel === a.id) atoms += `<rect x="${f1(a.x - w - 3)}" y="${f1(a.y - h - 3)}" width="${w * 2 + 6}" height="${h * 2 + 6}" fill="none" stroke="var(--accent-primary)" stroke-width="2.5"/>`;
+    if (bad.has(a.id)) atoms += `<rect x="${f1(a.x - w - 2)}" y="${f1(a.y - h - 2)}" width="${w * 2 + 4}" height="${h * 2 + 4}" fill="none" stroke="var(--accent-danger)" stroke-width="2.5"/>`;
     atoms += `<text x="${f1(a.x)}" y="${f1(a.y)}" fill="${c}">${a.el}</text>`;
-    if (a.q) atoms += `<text class="cl-sk-q" x="${f1(a.x + 11)}" y="${f1(a.y - 10)}" fill="${c}">${sign(a.q)}</text>`;
+    if (a.q) atoms += `<text class="cl-sk-q" x="${f1(a.x + w + 5)}" y="${f1(a.y - h)}" fill="${bad.has(a.id) ? "var(--accent-danger)" : "var(--ink)"}">${sign(a.q)}</text>`;
     if (opts.lewis) {
       const { pairs, odd } = lonePairs(m, a);
       const spots = pairSpots(anglesOf(m, a.id), pairs + odd);
       spots.forEach((t, i) => {
         const single = odd && i === spots.length - 1;
-        const r = 14, x = a.x + r * Math.cos(rad(t)), y = a.y + r * Math.sin(rad(t));
+        const r = edge(a.el, t, 6), x = a.x + r * Math.cos(rad(t)), y = a.y + r * Math.sin(rad(t));
         const px = -Math.sin(rad(t)) * 3.2, py = Math.cos(rad(t)) * 3.2;
         atoms += single
           ? `<circle class="cl-sk-e" cx="${f1(x)}" cy="${f1(y)}" r="2.1"/>`

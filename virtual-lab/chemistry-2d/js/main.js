@@ -3420,7 +3420,7 @@ const sketch = initSketch({ $, state, save, openSheet: (id) => openSheet(id), UI
 /** A small picture of a starting molecule, for its drawer tile. */
 function molThumb(id) {
   const m = buildMolecule(id, 0, 0);
-  return `<svg viewBox="${fitBoxOf(m)}" aria-hidden="true">${moleculeSvgOf(m, {})}</svg>`;
+  return `<svg viewBox="${fitBoxOf(m)}" aria-hidden="true">${moleculeSvgOf(m, { plain: true })}</svg>`;
 }
 // ── the drawer ──────────────────────────────────────────────────────────────
 function renderDrawer() {
@@ -4267,7 +4267,7 @@ import("./desk.js").then((d) => {
   const ico = (inner) => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">${inner}</svg>`;
   Promise.all([import("/utils/components/workbook/toolbar.js"), import("./ptable.js")]).then(([{ mountTools }, { mountPeriodicTable }]) => {
     const rail = mountTools(document.body, {
-      tools: ["calculator", "ptable", "atoms", "sketch", "note"],
+      tools: ["calculator", "ptable", "atoms", "sketch", "pin", "note"],
       extra: {
         ptable: {
           label: "Periodic table",

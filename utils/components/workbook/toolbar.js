@@ -21,6 +21,7 @@
 import { openPanel, needCss } from "./panels.js";
 import { TOOL_ICONS } from "./instruments.js";
 import { mountTooltips } from "../tooltip.js";
+import { dropPin, restorePins } from "./pins.js";
 
 /* Each tool says only how to open itself. The components are imported when a
    key is first pressed, not before: a shop page should not pay for a long
@@ -43,6 +44,8 @@ const board = (id, label) => ({
 });
 
 const TOOLS = {
+  /* a sticky note stuck anywhere on the page (workbook/pins.js); a page with a canvas of its own hands in its own */
+  pin: { label: "Pin a sticky note anywhere", act: dropPin },
   /* THE CHEMISTRY BENCH, from any page that hangs the rail: the real bench in a panel
      (it is its own page, in a frame, so it brings its own sign-in and its own saved bench) */
   chembench: {
@@ -233,7 +236,7 @@ export const TOOL_IDS = Object.keys(TOOLS);
  *   at      "left" or "right" — which side of the window it sits against
  * → { el, open(id), destroy() }
  */
-export function mountTools(host = document.body, { tools = ["calculator", "column", "times", "shortdiv", "note"], at = "left", extra = {} } = {}) {
+export function mountTools(host = document.body, { tools = ["calculator", "column", "times", "shortdiv", "pin", "note"], at = "left", extra = {} } = {}) {
   /* the rail fetches its own dress, so a page that wants tools needs one line
      and no stylesheet link of its own */
   needCss("/utils/components/workbook.css");
@@ -241,6 +244,7 @@ export function mountTools(host = document.body, { tools = ["calculator", "colum
      { label, size, open(body) } a built-in tool is, joining the same rail. */
   const ALL = { ...TOOLS, ...extra };
   const ids = tools.filter((id) => ALL[id]);
+  if (ids.includes("pin") && ALL.pin === TOOLS.pin) restorePins();
 
   const el = document.createElement("aside");
   el.className = `wb-tools wb-tools--${at}`;
