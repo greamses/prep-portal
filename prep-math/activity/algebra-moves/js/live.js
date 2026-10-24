@@ -85,7 +85,7 @@ export function createLive(ctx) {
     }
     const seen = new Set();
     for (const [key, data] of Object.entries(state)) {
-      if (!key.startsWith("card_") && !key.startsWith("note_")) continue;
+      if (!key.startsWith("card_") && !key.startsWith("note_") && !key.startsWith("link_")) continue;
       seen.add(key);
       inRoom.add(key);
       const json = JSON.stringify(data);

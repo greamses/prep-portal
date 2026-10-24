@@ -280,9 +280,16 @@ const liveCtx = () => ({
     const out = {};
     for (const c of cards) out[`card_${c.uid}`] = c.snapshot();
     for (const { n } of freeNotes) if (n.runs) out[`note_${n.id}`] = { ...n };
+    // Last, so a receiver has the cards before the wires between them.
+    for (const l of wires?.list() || []) out[`link_${l.from}_${l.to}`] = l;
     return out;
   },
   apply(key, data) {
+    if (key.startsWith("link_")) {
+      if (data) wires.set(data.from, data.to);
+      else { const [from, to] = key.slice(5).split("_"); wires.drop(from, to); }
+      return;
+    }
     if (key.startsWith("card_")) {
       const uid = key.slice(5);
       const here = cards.find((c) => c.uid === uid);
@@ -314,6 +321,33 @@ const liveCtx = () => ({
 });
 let live = null;
 const liveNow = () => (live ||= createLive(liveCtx()));
+
+/* ── Kept on this machine ───────────────────────────────────────────────────
+   The board — cards, notes on the canvas, the wires between them — is written
+   to this browser as it changes and put back on load, in the same shape the live
+   room uses. A live lesson's board is the room's, so it is not kept. */
+const BOARD_KEY = () => `am-board:${location.pathname}`;
+let boardJson = "";
+function restoreBoard() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(BOARD_KEY()) || "null"); } catch { /* unreadable: start clean */ }
+  if (!saved || typeof saved !== "object") return;
+  const ctx = liveCtx();
+  for (const [key, data] of Object.entries(saved)) {
+    try { ctx.apply(key, data); } catch { /* one bad entry does not lose the rest */ }
+  }
+  boardJson = JSON.stringify(liveCtx().items());
+  wires?.retrack();
+}
+function keepBoard() {
+  setInterval(() => {
+    if (live?.live) return;
+    const json = JSON.stringify(liveCtx().items());
+    if (json === boardJson) return;
+    boardJson = json;
+    try { localStorage.setItem(BOARD_KEY(), json); } catch { /* storage off or full */ }
+  }, 1500);
+}
 
 /* ── Wires ──────────────────────────────────────────────────────────────────
    What the menu on a wire does. The linked equations come in the order the
@@ -630,9 +664,12 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
     keypad?.redraw?.();
     say(timesSign() === "×" ? "Multiplication is drawn with × now." : "Multiplication is drawn with a dot now.", "ok");
   });
-  // Opened from a host's link: join their lesson.
+  // Opened from a host's link: join their lesson. Otherwise the board comes
+  // back as it was left.
   const joining = new URLSearchParams(location.search).get("live");
   if (joining) setTimeout(() => liveNow().joinAs(joining.toUpperCase()), 0);
+  else restoreBoard();
+  keepBoard();
   $("#am-drawer-close").addEventListener("click", () => closeDrawer());
   $("#am-zoom-in").addEventListener("click", () => canvas.zoomBy(1.25));
   $("#am-zoom-out").addEventListener("click", () => canvas.zoomBy(0.8));

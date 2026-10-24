@@ -56,9 +56,10 @@ export function createWires({ canvas, host, cardsOf, onAct }) {
 
   function update() {
     paths.textContent = "";
-    links = links.filter((l) => byUid(l.from) && byUid(l.to));
     for (const link of links) {
       const a = byUid(link.from), b = byUid(link.to);
+      // Its card may not have arrived yet (a live room, a reload): wait for it.
+      if (!a || !b) continue;
       const [p, q] = ends(a, b);
       const d = curve(p, q);
       const g = svgEl("g", { class: "am-wire", "data-link": link.id });
@@ -202,5 +203,17 @@ export function createWires({ canvas, host, cardsOf, onAct }) {
     unlink(id) { links = links.filter((l) => l.id !== id); update(); },
     reverse(id) { const l = links.find((k) => k.id === id); if (l) { [l.from, l.to] = [l.to, l.from]; update(); } },
     get count() { return links.length; },
+    /** The wires as plain data, for the live room and for reload. */
+    list() { return links.map(({ from, to }) => ({ from, to })); },
+    /** A wire that came from elsewhere (live, saved): the same as drawing it. */
+    set(from, to) {
+      links = links.filter((l) => !((l.from === from && l.to === to) || (l.from === to && l.to === from)));
+      links.push({ id: ++seq, from, to });
+      for (const uid of [from, to]) { const c = byUid(uid); if (c) track(c); }
+      update();
+    },
+    drop(from, to) { links = links.filter((l) => !(l.from === from && l.to === to)); update(); },
+    /** Cards that have just arrived get watched, so their wires follow them. */
+    retrack() { for (const c of cardsOf()) track(c); update(); },
   };
 }
