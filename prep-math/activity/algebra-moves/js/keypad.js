@@ -69,7 +69,7 @@ const KEYS = [
   [
     { k: "0" }, { k: ".", t: "." },
     { k: "+", t: "+" }, { k: "=", t: "=" },
-    { k: "CLR", act: "clear", title: "Clear", tone: "warn" },
+    { k: "CLR", act: "clear", icon: "trash", title: "Clear", tone: "warn" },
     { k: "a b⁄c", act: "mixed", title: "A mixed number: a whole number and a fraction, in boxes to fill (2 1/3)", math: "2 1/3" },
     // Enter is a key here, not a button living somewhere else below the
     // pad — and a wide one, the way a laptop's Return key is.
@@ -94,7 +94,7 @@ const asLetter = (ch, title) => ({ k: ch, t: ch, tone: "letter", title });
 const LETTER_ROWS = rowsOf([..."abcdefghijklmnopqrstuvwxyz"].map((ch) => asLetter(ch)));
 LETTER_ROWS[LETTER_ROWS.length - 1] = [
   ...LETTER_ROWS[LETTER_ROWS.length - 1],
-  { k: "caps", act: "caps", title: "Capitals", tone: "act" },
+  { k: "caps", act: "caps", icon: "arrowUp", title: "Capitals", tone: "act" },
   // A number in another base: 1011_2 is 1011 in base two (capitals for
   // digits past 9: 2A_16).
   { k: "_b", t: "_", title: "Base: type 1011_2 for 1011 in base two", tone: "act", fixed: true },
@@ -139,7 +139,7 @@ const FUNCS = [
     { k: "lim", t: "lim(h->0)()", back: 1, title: "limit as h goes to 0", math: "lim(h->0)(?)" },
     { k: "x", t: "x", tone: "letter", sticky: 3 }, { k: "h", t: "h", tone: "letter", sticky: 4 },
     { k: "=", t: "=" },
-    { k: "CLR", act: "clear", title: "Clear", tone: "warn" },
+    { k: "CLR", act: "clear", icon: "trash", title: "Clear", tone: "warn" },
   ],
   [
     { k: "+", t: "+" }, { k: "−", t: "-" }, { k: "×", t: "*" }, { k: "÷", t: "/" },
@@ -154,14 +154,14 @@ const FUNCS = [
     { k: "e", t: "e", title: "e, the number 2.718…", math: "e" },
     { k: "π", t: "π", title: "pi", math: "π" },
     { k: "∠", t: "°", title: "degrees" },
-    { k: "⌫", act: "back", title: "Delete", tone: "warn" },
-    { k: "CLR", act: "clear", title: "Clear", tone: "warn" },
+    { k: "y", t: "y", tone: "letter", sticky: 1 },
+    { k: "z", t: "z", tone: "letter", sticky: 2 },
   ],
   /* Matrices: a template with the cursor in its first entry, then , to move
      along a row and → to leave. */
   [
     { k: "▦", act: "matrix", title: "A matrix: pick how many rows and columns, then fill in the boxes (or type mat 2x3 and press Enter)", math: "[[a,b],[c,d]]" },
-    { k: "det", act: "detmatrix", title: "The determinant of a matrix: pick its size" },
+    { k: "det", act: "detmatrix", title: "The determinant of a matrix: pick its size", math: "det(?)" },
     { k: "ᵀ", t: "^T", title: "transpose: rows become columns" },
     { k: "⁻¹", t: "^(-1)", title: "inverse of a matrix" },
     { k: "↑", act: "up", title: "Up to the box above" },
@@ -899,7 +899,7 @@ export function createKeypad(host, { onSubmit } = {}) {
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = `am-key am-key--act${caps ? " is-on" : ""}`;
-            btn.textContent = "caps";
+            btn.innerHTML = UI.arrowUp(18);
             btn.title = "Capitals";
             btn.setAttribute("aria-label", "Capitals");
             btn.setAttribute("aria-pressed", String(caps));
