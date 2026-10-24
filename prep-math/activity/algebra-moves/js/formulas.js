@@ -45,6 +45,84 @@ export const GROUPS = [
     ],
   },
   {
+    group: "Statistics and probability",
+    items: [
+      {
+        id: "mean", name: "Mean", eq: "m = S/n", find: "m",
+        letters: { m: "the mean", S: "the sum of all the values", n: "how many values there are" },
+        example: { S: "45", n: "5" },
+      },
+      {
+        id: "mean-freq", name: "Mean from a frequency table", eq: "m = F/f", find: "m",
+        letters: { m: "the mean", F: "the sum of frequency × value", f: "the total frequency" },
+        example: { F: "132", f: "12" },
+      },
+      {
+        id: "range", name: "Range", eq: "R = H - L", find: "R",
+        letters: { R: "the range", H: "the highest value", L: "the lowest value" },
+        example: { H: "93", L: "47" },
+      },
+      {
+        id: "probability", name: "Probability of an event", eq: "p = f/n", find: "p",
+        letters: { p: "the probability", f: "the ways it can happen", n: "all the ways anything can happen" },
+        example: { f: "3", n: "12" },
+      },
+      {
+        id: "not-event", name: "Probability it does not happen", eq: "q = 1 - p", find: "q",
+        letters: { q: "the probability it does not happen", p: "the probability it does" },
+        example: { p: "3/8" },
+      },
+      {
+        id: "and-event", name: "Both of two independent events", eq: "P = ab", find: "P",
+        letters: { P: "the probability of both", a: "the probability of the first", b: "the probability of the second" },
+        example: { a: "1/2", b: "1/3" },
+      },
+      {
+        id: "or-event", name: "Either of two events", eq: "P = a + b - c", find: "P",
+        letters: { P: "the probability of either", a: "the probability of the first", b: "the probability of the second", c: "the probability of both" },
+        example: { a: "1/2", b: "1/3", c: "1/6" },
+      },
+      {
+        id: "conditional", name: "Probability given something has happened", eq: "P = c/b", find: "P",
+        letters: { P: "the probability of the first given the second", c: "the probability of both", b: "the probability of the second" },
+        example: { c: "1/6", b: "1/2" },
+      },
+      {
+        id: "expected", name: "Expected number of times", eq: "E = np", find: "E",
+        letters: { E: "how many times to expect it", n: "how many tries", p: "the probability each time" },
+        example: { n: "60", p: "1/6" },
+      },
+      {
+        id: "variance", name: "Variance", eq: "v = S/n - m^2", find: "v",
+        letters: { v: "the variance", S: "the sum of the squares of the values", n: "how many values there are", m: "the mean" },
+        example: { S: "250", n: "5", m: "6" },
+        note: "the mean of the squares, take away the square of the mean",
+      },
+      {
+        id: "std-dev", name: "Standard deviation", eq: "s = sqrt(S/n - m^2)", find: "s",
+        letters: { s: "the standard deviation", S: "the sum of the squares of the values", n: "how many values there are", m: "the mean" },
+        example: { S: "250", n: "5", m: "7" },
+        note: "the square root of the variance",
+      },
+      {
+        id: "z-score", name: "Standard score (z)", eq: "z = (x - m)/s", find: "z",
+        letters: { z: "the standard score", x: "the value", m: "the mean", s: "the standard deviation" },
+        example: { x: "74", m: "62", s: "6" },
+      },
+      {
+        id: "std-error", name: "Standard error of the mean", eq: "d = s/sqrt(n)", find: "d",
+        letters: { d: "the standard error", s: "the standard deviation", n: "the sample size" },
+        example: { s: "8", n: "16" },
+      },
+      {
+        id: "binomial", name: "Binomial probability", eq: "P = nCr(n,r)p^r(1 - p)^(n - r)", find: "P",
+        letters: { P: "the probability of exactly r successes", n: "how many tries", r: "how many successes", p: "the probability of success each time" },
+        example: { n: "5", r: "2", p: "1/2" },
+        note: "choose which r of the n tries succeed",
+      },
+    ],
+  },
+  {
     group: "Shapes",
     items: [
       {
