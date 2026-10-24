@@ -192,8 +192,10 @@
     <script type="module">
       import { mountTools } from "/utils/components/workbook/toolbar.js";
       import { needCss } from "/utils/components/workbook/panels.js";
+      /* a science paper (chemistry, physics, biology) also gets the Chemistry Bench key */
+      const science = /chem|phys|bio|science/i.test(new URLSearchParams(location.search).get("subjects") || "");
       const rail = mountTools(document.body, {
-        tools: ["calculator", "column", "times", "shortdiv", "gm", "note"],
+        tools: ["calculator", "column", "times", "shortdiv", "gm", ...(science ? ["chembench"] : []), "note"],
         extra: {
           gm: {
             label: "Algebra Moves",
