@@ -56,7 +56,7 @@ const KEYS = [
   [
     { k: "4" }, { k: "5" }, { k: "6" },
     { k: "×", t: "*" }, { k: "aᵇ", t: "^()", back: 1, title: "to the power of", math: "a^b" },
-    { k: "x", t: "x", tone: "letter", sticky: 3 }, { k: "y", t: "y", tone: "letter", sticky: 1 }, { k: "z", t: "z", tone: "letter", sticky: 2 },
+    { k: "x", t: "x", tone: "letter" }, { k: "y", t: "y", tone: "letter" }, { k: "z", t: "z", tone: "letter" },
   ],
   [
     { k: "1" }, { k: "2" }, { k: "3" },
@@ -137,7 +137,7 @@ const FUNCS = [
     { k: "∫", t: "∫()dx", back: 3, title: "integrate", math: "∫(?)dx" },
     { k: "∫ₐᵇ", t: "∫_()^()()dx", back: 8, title: "integrate from a to b", math: "∫_(?)^(?)(?)dx" },
     { k: "lim", t: "lim(h->0)()", back: 1, title: "limit as h goes to 0", math: "lim(h->0)(?)" },
-    { k: "x", t: "x", tone: "letter", sticky: 3 }, { k: "h", t: "h", tone: "letter", sticky: 4 },
+    { k: "x", t: "x", tone: "letter" }, { k: "h", t: "h", tone: "letter" },
     { k: "=", t: "=" },
     { k: "CLR", act: "clear", icon: "trash", title: "Clear", tone: "warn" },
   ],
@@ -154,8 +154,8 @@ const FUNCS = [
     { k: "e", t: "e", title: "e, the number 2.718…", math: "e" },
     { k: "π", t: "π", title: "pi", math: "π" },
     { k: "∠", t: "°", title: "degrees" },
-    { k: "y", t: "y", tone: "letter", sticky: 1 },
-    { k: "z", t: "z", tone: "letter", sticky: 2 },
+    { k: "y", t: "y", tone: "letter" },
+    { k: "z", t: "z", tone: "letter" },
   ],
   /* Matrices: a template with the cursor in its first entry, then , to move
      along a row and → to leave. */
