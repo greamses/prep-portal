@@ -79,6 +79,7 @@ function tokenise(src) {
     if (src.startsWith("d/d", i) && isAlpha(src[i + 3] || "")) { out.push({ t: "deriv", v: src[i + 3], at: i }); i += 4; continue; }
     if (c === "∫") { out.push({ t: "int", v: "∫", at: i }); i++; continue; }
     if (c === "°") { out.push({ t: "deg", v: "°", at: i }); i++; continue; }
+    if (c === "%") { out.push({ t: "pct", v: "%", at: i }); i++; continue; }
     if (c === "_") { out.push({ t: "_", v: "_", at: i }); i++; continue; }
     if (src.startsWith("->", i)) { out.push({ t: "to", v: "->", at: i }); i += 2; continue; }
     if (c === "→") { out.push({ t: "to", v: "→", at: i }); i++; continue; }
@@ -199,6 +200,8 @@ export function parse(src) {
     let base = atom();
     // 30° is an angle in degrees.
     if (peek().t === "deg") { p++; base = span(mark, A.deg(base)); }
+    // 25% is twenty-five out of a hundred.
+    if (peek().t === "pct") { p++; base = span(mark, A.pct(base)); }
     if (peek().t === "^") { p++; return span(mark, A.pow(base, factor())); }
     return base;
   }

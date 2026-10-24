@@ -47,6 +47,7 @@ function insideCalculus(eq, id) {
 const isNumberNode = (n) =>
   n.kind === "num" ||
   n.kind === "mixed" ||
+  n.kind === "pct" ||
   (n.kind === "pm" && isNumberNode(n.k)) ||
   isSimpleSurd(n) ||
   (n.kind === "neg" && isNumberNode(n.k)) ||

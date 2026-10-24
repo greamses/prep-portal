@@ -20,7 +20,7 @@
 import { parse, setRefs } from "./parse.js";
 import { valueAt, preservesSolutions } from "./verify.js";
 import { copy as copyNode } from "./calculus.js";
-import { plain, fontReady } from "./layout.js";
+import { plain, fontReady, timesSign, setTimesSign } from "./layout.js";
 import { createCanvas } from "./canvas.js";
 import { createCard } from "./card.js";
 import { createMenu } from "./menu.js";
@@ -585,6 +585,21 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
 
   $("#am-add").addEventListener("click", () => openDrawer());
   $("#am-golive")?.addEventListener("click", () => liveNow().host());
+  // · or × between factors: a choice kept on this machine, applied to every line.
+  const timesBtn = $("#am-times");
+  const showTimes = () => {
+    const sign = timesSign();
+    timesBtn.querySelector(".am-times__sign").textContent = sign;
+    timesBtn.setAttribute("aria-pressed", String(sign === "×"));
+  };
+  showTimes();
+  timesBtn.addEventListener("click", () => {
+    setTimesSign(timesSign() === "×" ? "·" : "×");
+    showTimes();
+    for (const c of cards) c.relook();
+    keypad?.redraw?.();
+    say(timesSign() === "×" ? "Multiplication is drawn with × now." : "Multiplication is drawn with a dot now.", "ok");
+  });
   // Opened from a host's link: join their lesson.
   const joining = new URLSearchParams(location.search).get("live");
   if (joining) setTimeout(() => liveNow().joinAs(joining.toUpperCase()), 0);

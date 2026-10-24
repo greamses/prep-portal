@@ -1250,3 +1250,29 @@
   font-family: var(--font-mono) !important;
 }
 .am-body :is(.am-key, .am-move, .am-card__label) { font-family: "STIX Two Text", "Times New Roman", serif !important; }
+
+/* ── Writing on a pinned note ─────────────────────────────────────────────── */
+/* The painted face steps aside while its note is open in the editor. */
+.am-pinned-wrap.is-writing { visibility: hidden; }
+/* The editor beside a card or on the canvas is narrow: its toolbar wraps, and
+   nothing inside it may widen it past the width it was given (it would take the
+   paper with it, and the note would spill out sideways as you type). */
+.pp-note--onboard { grid-template-columns: minmax(0, 1fr); }
+/* The toolbar hangs above the paper instead of sitting in the editor's layout,
+   so the paper is exactly the size and place of the note it is writing — it
+   does not move however many rows the toolbar wraps into. */
+.pp-note--onboard .pp-note__bar {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  margin-bottom: 0.4rem;
+  width: max-content;
+  max-width: min(22rem, 90vw);
+  flex-wrap: wrap;
+  z-index: 3;
+}
+.pp-note--onboard .pp-note__paper { min-width: 0; box-sizing: border-box; }
+
+/* The multiplication-sign switch: shows the sign it is set to, in the maths face. */
+.am-times__sign { font: 400 1.35rem/1 "STIX Two Text", "Times New Roman", serif; color: var(--ink); }
+.am-tool--times[aria-pressed="true"] .am-times__sign { font-size: 1.2rem; }

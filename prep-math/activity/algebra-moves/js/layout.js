@@ -74,6 +74,18 @@ const RADICAL = {
   tall: { h: 1.15, d: 0.65, w: 1.0, path: "M1001 1150Q1017 1150 1020 1132Q1020 1127 741 244L460 -643Q453 -650 436 -650H424Q423 -647 423 -645T421 -640T419 -631T415 -617T408 -594T399 -560T385 -512T367 -448T343 -364T312 -259L203 119L138 41L111 67L212 188L264 248L472 -474L983 1140Q988 1150 1001 1150" },
 };
 
+/* The sign drawn between factors that need one (3·3, not 3x): a dot, or ×.
+   A choice the student makes once and keeps on this machine; the line itself
+   is the same either way. */
+let TIMES = "·";
+try { if (localStorage.getItem("am-times") === "×") TIMES = "×"; } catch { /* storage off: the dot */ }
+export const timesSign = () => TIMES;
+export function setTimesSign(sign) {
+  TIMES = sign === "×" ? "×" : "·";
+  widthCache.clear();
+  try { localStorage.setItem("am-times", TIMES); } catch { /* not kept */ }
+}
+
 const SUBS = { 0: "₀", 1: "₁", 2: "₂", 3: "₃", 4: "₄", 5: "₅", 6: "₆", 7: "₇", 8: "₈", 9: "₉" };
 /** E_1 as it is drawn: E₁. */
 export const refFace = (name) => name.replace(/_?(\d+)$/, (_, d) => [...d].map((c) => SUBS[c]).join(""));
@@ -91,7 +103,7 @@ function needsBrackets(node, parentKind, slot) {
   // A function's argument and a derivative's body are always in brackets.
   if (parentKind === "fn" || parentKind === "deriv") return true;
   if (parentKind === "int" || parentKind === "lim") return node.kind === "sum";
-  if (parentKind === "deg") return node.kind !== "num" && node.kind !== "var";
+  if (parentKind === "deg" || parentKind === "pct") return node.kind !== "num" && node.kind !== "var";
   if (node.paren) return true;
   switch (parentKind) {
     case "prod": return node.kind === "sum" || ((node.kind === "neg" || node.kind === "pm") && slot > 0);
@@ -206,7 +218,7 @@ function measureBare(node, size, binary) {
         // A dot is only needed where juxtaposition would read as one number.
         const dot = i > 0 && startsWithDigit(kid) && m.kind !== "brackets";
         const gap = i === 0 ? 0 : dot ? 0.16 * size : 0.04 * size;
-        const dotW = dot ? measureText("·", size, false) : 0;
+        const dotW = dot ? measureText(timesSign(), size, false) : 0;
         parts.push({ m, dot, gap, dotW });
         w += gap + dotW + (dot ? gap : 0) + m.w;
         ascent = Math.max(ascent, m.ascent);
@@ -274,6 +286,13 @@ function measureBare(node, size, binary) {
       const gap = 0.08 * size;
       return { ...base, kind: "mixed", whole, part, gap, w: whole.w + gap + part.w,
                ascent: Math.max(base.ascent, whole.ascent, part.ascent), descent: Math.max(base.descent, whole.descent, part.descent) };
+    }
+    // 25%: the number, then the sign right after it.
+    case "pct": {
+      const k = measure(node.k, size, "pct", 0);
+      const sw = measureText("%", size, false);
+      return { ...base, kind: "pct", k, sw, w: k.w + sw,
+               ascent: Math.max(base.ascent, k.ascent), descent: Math.max(base.descent, k.descent) };
     }
     // 1011₂: the digits upright, the base lowered and small after them.
     case "base": {
@@ -454,7 +473,7 @@ function place(m, x, y, out) {
       let cx = x;
       m.parts.forEach((part, i) => {
         cx += part.gap;
-        if (part.dot) { text(`dot${i}`, "·", cx, y, m.size, false); cx += part.dotW + part.gap; }
+        if (part.dot) { text(`dot${i}`, timesSign(), cx, y, m.size, false); cx += part.dotW + part.gap; }
         place(part.m, cx, y, out);
         cx += part.m.w;
       });
@@ -473,6 +492,11 @@ function place(m, x, y, out) {
     case "pow":
       place(m.b, x, y, out);
       place(m.e, x + m.b.w + m.kern, y - m.rise, out);
+      break;
+
+    case "pct":
+      place(m.k, x, y, out);
+      text("pct", "%", x + m.k.w, y, m.size, false);
       break;
 
     case "base":
@@ -610,6 +634,7 @@ export function plain(node, parentKind = null, slot = 0) {
     }
     case "const": return wrap(node.name);
     case "ref":  return wrap(node.name);
+    case "pct":  return wrap(`${plain(node.k, "pct", 0)}%`);
     case "base": return wrap(`${node.digits}_${node.base}`);
     case "mixed": return wrap(`${plain(node.w)} ${plain(node.f.a)}/${plain(node.f.b)}`);
     case "fn":   return wrap(`${node.name}${plain(node.k, "fn", 0)}`);

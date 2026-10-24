@@ -144,6 +144,16 @@ const FUNCS = [
     { k: "Enter", act: "enter", title: "Put it on the canvas", tone: "go", wide: true },
     { k: "√", t: "sqrt()", back: 1, title: "square root", math: "sqrt(?)" },
   ],
+  [
+    { k: "%", t: "%", title: "percent: 25% is 25 out of 100" },
+    { k: "_b", t: "_", title: "base: 1011_2 is 1011 in base two" },
+    { k: "a b⁄c", t: " ()/()", back: 4, title: "mixed number: a whole number, then a fraction", math: "2 1/3" },
+    { k: "e", t: "e", title: "e, the number 2.718…", math: "e" },
+    { k: "π", t: "π", title: "pi", math: "π" },
+    { k: "∠", t: "°", title: "degrees" },
+    { k: "⌫", act: "back", title: "Delete", tone: "warn" },
+    { k: "CLR", act: "clear", title: "Clear", tone: "warn" },
+  ],
 ];
 
 export function createKeypad(host, { onSubmit } = {}) {
@@ -807,6 +817,8 @@ export function createKeypad(host, { onSubmit } = {}) {
 
   return {
     focus() { line.focus(); },
+    /** Draw what is typed again — the multiplication sign was switched. */
+    redraw() { draw(); },
     set(src) { line.value = src; draw(); line.focus(); },
     /** Put the keypad into "both sides" mode ({ label, accept(node) }), or out
         of it with null. */

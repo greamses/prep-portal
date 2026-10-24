@@ -53,6 +53,10 @@ export function shellHTML() {
         </div>
 
         <div class="am-rail__group">
+          <button class="pp-sticky pp-note-btn am-tool am-tool--plain am-tool--times" type="button" id="am-times"
+                  data-tip="Multiplication sign: switch between a dot and ×" aria-label="Multiplication sign: switch between a dot and ×" aria-pressed="false">
+            <span class="am-times__sign" aria-hidden="true">·</span>
+          </button>
           <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-zoom-out" data-tip="Zoom out" aria-label="Zoom out">
             ${UI.zoomOut(17)}
           </button>

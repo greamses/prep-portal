@@ -568,6 +568,17 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
     get name() { return label; },
     set name(v) { label = v; showTag(); },
 
+    /** The multiplication sign was switched (· or ×): every line is drawn again. */
+    relook() {
+      rows.forEach((entry, i) => {
+        entry.row = buildRow(entry.row.eq, SIZE);
+        const old = entry.el;
+        const fresh = paint(entry, i === rows.length - 1);
+        if (old && old.parentNode === sheet) sheet.replaceChild(fresh, old);
+      });
+      relayout();
+    },
+
     /* ── For a live classroom (live.js) ───────────────────────────────────
        The card as data — every line as the text the parser reads back, its
        margin note and its pinned notes — and the way back from that data. */

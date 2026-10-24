@@ -13,6 +13,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import { UI } from "/utils/components/ui-icons.js";
+import { hideTip } from "/utils/components/tooltip.js";
 
 let kit = null;
 export const loadNotes = () => (kit ||= (async () => {
@@ -149,6 +150,7 @@ export function noteWriter(host) {
             const was = on;
             on = null;
             if (!was) return;
+            was.face?.classList.remove("is-writing");
             was.n.runs = note.runs;
             was.n.paper = note.paper;
             was.done?.(was.n, { empty });
@@ -161,14 +163,36 @@ export function noteWriter(host) {
         }, true);
       }
       if (on && on.n !== n && pad.isOpen()) pad.close(true);
-      on = { n, done };
+      /* The face that is ON THE PAGE for this note now: the one the tap came
+         from may have been redrawn in the meantime (a line repaints its notes
+         whenever anything on it changes), and positioning over a face that is
+         no longer there put the editor at the card's corner and hid nothing. */
+      face = host.querySelector(`[data-pin="${n.id}"]`) || face;
+      on = { n, done, face };
+      hideTip();
       pad.open(K.makeNote(n.runs ? { runs: n.runs, paper: n.paper } : { paper: n.paper }));
-      // Over the note itself, in the host's own (unzoomed) pixels.
+      pad.el.classList.add("pp-note--onboard");
+      /* ONE note on the paper while it is being written: the painted face
+         steps aside (it would otherwise sit frozen under the live editor, a
+         second copy drifting away from the first with every key), and the
+         editor — its toolbar hangs ABOVE it, out of the layout (style.css) — is laid
+         exactly where the face was. All in the host's own (unzoomed) pixels. */
+      face?.classList.add("is-writing");
+      /* Where the face is, in the host's own pixels. offsetLeft/offsetTop leave
+         out CSS translates — the face's own drag, and the translateY(-50%) that
+         centres a line's notes on it — so those are added back from the
+         computed transform of every box on the way up. */
       let left = 0, top = 0;
-      for (let at = face; at && at !== host; at = at.offsetParent) { left += at.offsetLeft; top += at.offsetTop; }
-      pad.place({ left: left + (n.dx || 0), top: top + (n.dy || 0), width: 260 });
+      for (let at = face; at && at !== host; at = at.offsetParent) {
+        const m = new DOMMatrix(getComputedStyle(at).transform);
+        left += at.offsetLeft + m.m41;
+        top += at.offsetTop + m.m42;
+      }
+      const canvasEl = face?.querySelector("canvas");
+      const width = Math.max(220, Math.min(300, canvasEl ? canvasEl.offsetWidth : 260));
+      pad.place({ left, top, width });
     },
     /** Stop writing on `n` without keeping what was typed (it is being thrown away). */
-    drop(n) { if (on?.n === n) { on = null; pad.close(false); } },
+    drop(n) { if (on?.n === n) { on.face?.classList.remove("is-writing"); on = null; pad.close(false); } },
   };
 }

@@ -689,9 +689,15 @@ function nodeTidies(eq, node) {
     t("surd", "Divide the roots", "√a ÷ √b = √(a/b)", divideSurds(eq, node.id));
     t("surd", "Clear the root off the bottom", "multiply top and bottom by it", rationalise(eq, node.id));
   }
-  if (node.kind === "prod" || node.kind === "frac") t("multiply", "Multiply it out", "numbers together, letters together", multiplyOut(eq, node.id));
+  if (node.kind === "prod" || node.kind === "frac") t("multiply", multiplyLabel(node), "numbers together, letters together", multiplyOut(eq, node.id));
   for (const o of calcMoves(eq, node)) out.push(o);
   return out;
+}
+
+/** Multiplying written out for what it is: 3·3 is 9, said with the numbers. */
+function multiplyLabel(node) {
+  const nums = node.kind === "prod" ? node.kids.filter((k) => A.exactValue(k) && k.kind !== "frac") : [];
+  return nums.length > 1 ? `Multiply ${nums.map((k) => plain(k)).join("·")}` : "Multiply it out";
 }
 
 /* ── Calculus and trig as moves ─────────────────────────────────────────────
@@ -971,6 +977,29 @@ function divMono(a, b) {
   return { c: R.div(a.c, b.c), pows };
 }
 
+/* A term read as coefficient × letters × SURDS, for factoring: 3√2x is
+   {3, x:1, √2:1}. A surd is a factor like any other when it is taken out —
+   √2x + √2y is √2(x + y) — though it is not a "letter" for the lowest common
+   denominator, which is why mono() keeps refusing them. Only whole-number and
+   single-letter roots: √(1/2) is left alone, never guessed at. */
+function monoS(node) {
+  const r = A.readTerm(node);
+  if (!r || r.vars.some((v) => v.startsWith("#") || v === "e" || v === "π" || (v.startsWith("√") && !/^√(\d+|[A-Za-z])$/.test(v)))) return null;
+  const pows = new Map();
+  for (const v of r.vars) pows.set(v, (pows.get(v) || 0) + 1);
+  return { c: r.c, pows };
+}
+const keyNode = (k) => (k.startsWith("√") ? A.root(/^\d+$/.test(k.slice(1)) ? A.num(R.rat(BigInt(k.slice(1)))) : A.vr(k.slice(1))) : A.vr(k));
+function monoNodeS(m) {
+  // Letters first, then surds: 3x√2, which cannot be read as √(2x).
+  const keys = [...m.pows.keys()].sort((a, b) => (a.startsWith("√") - b.startsWith("√")) || (a < b ? -1 : 1));
+  const nodes = keys.map((k) => {
+    const p = m.pows.get(k);
+    return p === 1 ? keyNode(k) : A.pow(keyNode(k), A.num(R.rat(BigInt(p))));
+  });
+  return A.termFrom(m.c, nodes);
+}
+
 /* ── Taking out a common factor ─────────────────────────────────────────────
    The other way round from opening a bracket: 6x² + 9x is 3x(2x + 3). Tap the
    x and the x comes out of every term that has one; tap the 6 and the number
@@ -1001,13 +1030,13 @@ export function factorTerms(eq, loc, idxs, F) {
   if (isMonoOne(F)) return { error: "Those terms have nothing in common to take out." };
   const inner = [];
   for (const i of idxs) {
-    const m = mono(loc.terms[i]);
+    const m = monoS(loc.terms[i]);
     const q = m && divMono(m, F);
     if (!q) return { error: "That does not go into every one of those terms." };
-    inner.push(monoNode(q));
+    inner.push(monoNodeS(q));
   }
   const bracket = { ...A.sum(inner), paren: true };
-  const outside = monoNode(F);
+  const outside = monoNodeS(F);
   const product = outside.kind === "prod" ? A.prod([...outside.kids, bracket]) : A.prod([outside, bracket]);
   const first = Math.min(...idxs);
   const nextTerms = loc.terms
@@ -1021,17 +1050,28 @@ export function factorTerms(eq, loc, idxs, F) {
 
 /** What tapping this letter or number can take out of its side. */
 function factorOffers(eq, leaf) {
+  // The 2 of √2, or the √ itself, speaks for the whole surd.
+  const par = A.parentOf(eq, leaf.id);
+  const surd = leaf.kind === "root" ? leaf : par?.kind === "root" ? par : null;
   const T = termChain(eq, leaf.id)[0];
   const loc = T && locate(eq, T.id);
   if (!loc || loc.terms.length < 2) return [];
-  const monos = loc.terms.map(mono);
+  const monos = loc.terms.map(monoS);
   const out = [];
   const offer = (idxs, F, hint) => {
     const r = factorTerms(eq, loc, idxs, F);
     if (!r.error) out.push({ key: "factor", label: r.note.split(":")[0], hint, mark: r.mark, run: () => r });
   };
   let idxs;
-  if (leaf.kind === "var") {
+  if (surd) {
+    // √2 in two terms or more: √2x + √2y is √2(x + y).
+    const key = surd.k.kind === "num" && R.isInt(surd.k.v) ? `√${R.toText(surd.k.v)}` : surd.k.kind === "var" ? `√${surd.k.name}` : null;
+    if (!key) return [];
+    idxs = monos.map((m, i) => (m && m.pows.has(key) ? i : -1)).filter((i) => i >= 0);
+    if (idxs.length < 2 || !idxs.includes(loc.index)) return [];
+    const least = Math.min(...idxs.map((i) => monos[i].pows.get(key)));
+    offer(idxs, { c: R.ONE, pows: new Map([[key, least]]) }, "a common surd");
+  } else if (leaf.kind === "var") {
     idxs = monos.map((m, i) => (m && m.pows.has(leaf.name) ? i : -1)).filter((i) => i >= 0);
     if (idxs.length < 2 || !idxs.includes(loc.index)) return [];
     const least = Math.min(...idxs.map((i) => monos[i].pows.get(leaf.name)));
@@ -1090,7 +1130,7 @@ function readQuadratic(terms) {
   let a = null, b = null, c = null, name = null;
   const at = { a: -1, b: -1, c: -1 };
   for (let i = 0; i < terms.length; i++) {
-    const m = mono(terms[i]);
+    const m = monoS(terms[i]);
     if (!m || !R.isInt(m.c)) return null;
     if (m.pows.size === 0) { if (c) return null; c = m.c; at.c = i; continue; }
     if (m.pows.size !== 1) return null;
@@ -1118,7 +1158,7 @@ function pairFor(prod, sum) {
   return null;
 }
 
-const term = (c, name, pow) => monoNode({ c: R.rat(c), pows: pow ? new Map([[name, pow]]) : new Map() });
+const term = (c, name, pow) => monoNodeS({ c: R.rat(c), pows: pow ? new Map([[name, pow]]) : new Map() });
 
 /** Split bx into px + qx, with pq = ac and p + q = b. */
 export function splitMiddle(eq, loc, idxs) {
@@ -1213,6 +1253,64 @@ export function poShenLoh(eq) {
   };
 }
 
+/* ── Fractions, decimals and percentages ────────────────────────────────────
+   The same number written three ways, each a tap from the others: 3/4, 0.75,
+   75%. A fraction of whole numbers becomes a decimal only when it ends (1/4 is
+   0.25; 1/3 never ends, and is not pretended to); a decimal is first written
+   over its power of ten (0.75 is 75/100) for "Work it out" to bring down to
+   3/4; a percentage is written over a hundred (75% is 75/100). */
+const numberKind = (n) => n && (n.kind === "pct" || n.kind === "frac" || n.kind === "num" || (n.kind === "neg" && !n.paren && numberKind(n.k)));
+
+export function toDecimal(eq, id) {
+  const n = A.findById(eq, id);
+  if (!numberKind(n)) return { error: "That is not a number to write as a decimal." };
+  const v = A.exactValue(n);
+  if (!v) return { error: "I cannot work that one out exactly." };
+  if (n.kind === "num" && n.text && n.text.includes(".")) return { error: "That is a decimal already." };
+  const next = A.decimalNode(v);
+  if (!next) return { error: `${plain(n)} never ends as a decimal — it goes on and on (a recurring decimal).` };
+  return { eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next), note: `${plain(n)} as a decimal is ${plain(next)}` };
+}
+
+export function toFraction(eq, id) {
+  const n = A.findById(eq, id);
+  if (!n) return { error: "I have lost track of that." };
+  let next, why;
+  if (n.kind === "pct") {
+    next = A.frac(freshCopy(n.k), A.num(R.rat(100n)));
+    why = `${plain(n)} is ${plain(n.k)} out of 100`;
+  } else if (n.kind === "num" && n.text && n.text.includes(".")) {
+    const places = n.text.split(".")[1].length;
+    const digits = BigInt(n.text.replace(".", ""));
+    next = A.frac(A.num(R.rat(digits)), A.num(R.rat(10n ** BigInt(places))));
+    why = `${n.text} has ${places} place${places === 1 ? "" : "s"} after the point, so it is ${digits} over ${10n ** BigInt(places)}`;
+  } else return { error: "Only a decimal or a percentage turns into a fraction this way." };
+  return { eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next), note: `${why}: ${plain(next)}` };
+}
+
+export function toPercent(eq, id) {
+  const n = A.findById(eq, id);
+  if (!numberKind(n) || n.kind === "pct") return { error: "That is not a number to write as a percentage." };
+  const v = A.exactValue(n);
+  if (!v) return { error: "I cannot work that one out exactly." };
+  const times = R.mul(v, R.rat(100n));
+  const k = A.decimalNode(times) || A.numberNode(times);
+  const next = A.pct(k);
+  return { eq: A.replace(eq, id, next), from: flyFrom(eq, next, id), mark: plain(next), note: `${plain(n)} times 100 is ${plain(k)}%` };
+}
+
+/** The three conversions on offer for a number node, as menu offers. */
+function numberForms(eq, id) {
+  const out = [];
+  const one = (key, label, hint, trial) => { if (trial && !trial.error) out.push({ key, label, hint, mark: trial.mark, run: () => trial }); };
+  const n = A.findById(eq, id);
+  if (!numberKind(n)) return out;
+  if (n.kind !== "num" || (n.text && n.text.includes("."))) one("tofraction", "Write it as a fraction", "over a power of ten", toFraction(eq, id));
+  if (n.kind !== "num" || !n.text) one("todecimal", "Write it as a decimal", "divide it out", toDecimal(eq, id));
+  if (n.kind === "frac" || (n.kind === "num" && n.text && n.text.includes("."))) one("topct", "Write it as a percentage", "times 100", toPercent(eq, id));
+  return out;
+}
+
 /* ── Number bases ───────────────────────────────────────────────────────────
    1011₂ in base ten is each digit times its place value — 1·2³ + 0·2² +
    1·2¹ + 1·2⁰ — written out with every place showing, zeros too, for "work it
@@ -1303,7 +1401,7 @@ export function cancelAcross(eq, fracId, leaf) {
     if (g < 2n) return { error: "No number goes into every term on top and underneath." };
     factor = { c: R.rat(g), pows: new Map() };
   } else return { error: "Pick a letter or a number." };
-  const cut = (list) => list.map((t) => monoNode(divMono(mono(t), factor)));
+  const cut = (list) => list.map((t) => monoNodeS(divMono(monoS(t), factor)));
   const top = cut(tops), bottom = cut(bottoms);
   const topNode = top.length === 1 ? top[0] : { ...A.sum(top), paren: false };
   const bottomNode = bottom.length === 1 ? bottom[0] : A.sum(bottom);
@@ -1311,7 +1409,7 @@ export function cancelAcross(eq, fracId, leaf) {
   const next = bv && R.isOne(bv) ? topNode : A.frac(topNode, bottomNode);
   return {
     eq: A.replace(eq, fracId, next), from: flyFrom(eq, next, fracId), mark: plain(next),
-    note: `Cancel ${plain(monoNode(factor))} top and bottom: ${plain(F)} is ${plain(next)}`,
+    note: `Cancel ${plain(monoNodeS(factor))} top and bottom: ${plain(F)} is ${plain(next)}`,
   };
 }
 
@@ -1321,7 +1419,7 @@ export function factorPicked(eq, ids) {
   if (locs.some((l) => !l) || new Set(locs.map((l) => l.container.id)).size !== 1) {
     return { error: "Those are not all on the same side." };
   }
-  const monos = locs.map((l) => mono(l.term));
+  const monos = locs.map((l) => monoS(l.term));
   if (monos.some((m) => !m)) return { error: "I can only take a factor out of plain terms." };
   return factorTerms(eq, locs[0], locs.map((l) => l.index), hcfOf(monos));
 }
@@ -2360,6 +2458,10 @@ export function atomOffers(eq, key, { given = null } = {}) {
   } else if (slot === "bar") {
     const T = atomTerm(eq, key);
     {
+      const f = A.findById(eq, nodeId);
+      if (f?.kind === "frac" && A.isNumeric(f)) for (const o of numberForms(eq, nodeId)) add(o);
+    }
+    {
       const toMixed = improperToMixed(eq, nodeId);
       if (!toMixed.error) add(direct("tomixed", "Turn it into a mixed number", "divide, keep the remainder", toMixed));
       const host = A.parentOf(eq, nodeId);
@@ -2371,8 +2473,19 @@ export function atomOffers(eq, key, { given = null } = {}) {
     if (T && fracOf(T)?.id === nodeId) add(splitOffer(T));
     if (T && T.id === nodeId) pick(pool(T), "times", "addfrac", "across");
     else if (T && fracOf(T)?.id === nodeId) pick(pool(T), "addfrac");
+  } else if (slot === "pct") {
+    for (const o of [
+      direct("tofraction", "Write it as a fraction", "out of 100", toFraction(eq, nodeId)),
+      direct("todecimal", "Write it as a decimal", "divide by 100", toDecimal(eq, nodeId)),
+    ]) add(o);
+    tidiesAbove(nodeId);
+    add(workOffer(nodeId));
   } else if (slot === "rad" || slot === "vinc") {
     // The √ itself, or the bar over what it roots.
+    {
+      const r = A.findById(eq, nodeId);
+      if (r?.kind === "root") for (const o of factorOffers(eq, r)) add(o);
+    }
     tidiesAbove(nodeId);
     add(workOffer(nodeId));
     pick(pool(atomTerm(eq, key)), "combine", "across");
@@ -2438,6 +2551,17 @@ export function atomOffers(eq, key, { given = null } = {}) {
       if (f && A.findById(f.a, nodeId)) add(splitOffer(F));
     }
     pick(p, "across", "combine", "square", "addfrac", "dropzero", "pyth");
+    // A decimal written as a fraction or a percentage; a percentage as either.
+    if (leaf?.kind === "num" && leaf.text && leaf.text.includes(".") && A.parentOf(eq, nodeId)?.kind !== "pct") {
+      for (const o of numberForms(eq, nodeId)) add(o);
+    }
+    {
+      const host = leaf && A.parentOf(eq, nodeId);
+      if (host?.kind === "pct") for (const o of [
+        direct("tofraction", "Write it as a fraction", "out of 100", toFraction(eq, host.id)),
+        direct("todecimal", "Write it as a decimal", "divide by 100", toDecimal(eq, host.id)),
+      ]) add(o);
+    }
     // A number in another base: expand it in base ten, or just convert it.
     if (leaf?.kind === "base") {
       add(direct("expandbase", "Expand it in base ten", "digit × place value", expandBase(eq, nodeId)));

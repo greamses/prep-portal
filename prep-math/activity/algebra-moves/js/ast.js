@@ -46,6 +46,29 @@ export const pm   = (k, id = freshId())              => ({ id, kind: "pm", k });
    on and name the letter they act WITH. */
 // arcsin before sin is not needed for the tokenizer (they start differently),
 // but the longer names must not be read as letters: a·r·c·sin.
+/** A percentage, 25%: the number `k` out of a hundred. */
+export const pct = (k, id = freshId()) => ({ id, kind: "pct", k });
+
+/** A decimal as it is written: 0.25 — a number that keeps the text it was typed
+    as, so it is drawn as a decimal and not as the fraction it is worth. */
+export function decimalNode(r) {
+  if (R.isNegative(r)) return neg(decimalNode(R.neg(r)));
+  const text = decimalText(r);
+  return text === null ? null : num(r, text);
+}
+
+/** The ending decimal of a rational, or null when it never ends (1/3). */
+export function decimalText(r) {
+  let d = r.d, twos = 0, fives = 0;
+  while (d % 2n === 0n) { d /= 2n; twos++; }
+  while (d % 5n === 0n) { d /= 5n; fives++; }
+  if (d !== 1n) return null;
+  const places = Math.max(twos, fives);
+  const scaled = (r.n * 10n ** BigInt(places)) / r.d;
+  const digits = String(scaled).padStart(places + 1, "0");
+  return places === 0 ? digits : `${digits.slice(0, -places)}.${digits.slice(-places)}`;
+}
+
 /** A number written in another base: 1011₂ is { digits: "1011", base: 2 }.
     Digits past 9 are the letters A–Z (A is 10), so base 16 has 0–9 and A–F. */
 export const based = (digits, base, id = freshId()) => ({ id, kind: "base", digits: String(digits).toUpperCase(), base });
@@ -105,6 +128,7 @@ export function kidsOf(node) {
     case "neg":  return [node.k];
     case "root": return [node.k];
     case "mixed": return [node.w, node.f];
+    case "pct":  return [node.k];
     case "pm":   return [node.k];
     case "fn":
     case "deg":
@@ -146,6 +170,7 @@ export function replace(root, id, next) {
       case "root": { const k = rec(n.k); return k === n.k ? n : { id: n.id, kind: "root", k }; }
       case "pm":   { const k = rec(n.k); return k === n.k ? n : { id: n.id, kind: "pm", k }; }
       case "mixed": { const w = rec(n.w), f = rec(n.f); return w === n.w && f === n.f ? n : { ...n, w, f }; }
+      case "pct":  { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
       case "fn":
       case "deg":
       case "deriv": { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
@@ -239,6 +264,13 @@ export function readTerm(node) {
       case "num":
         c = R.mul(c, flip ? R.neg(n.v) : n.v);
         return true;
+      // 25% is a number like any other: a quarter.
+      case "pct": {
+        const v = exactValue(n);
+        if (!v) return false;
+        c = R.mul(c, flip ? R.neg(v) : v);
+        return true;
+      }
       // 1011₂ is a number like any other: eleven.
       case "base": {
         const v = exactValue(n);
@@ -361,6 +393,7 @@ export function exactValue(node) {
     switch (node.kind) {
       case "num":  return node.v;
       case "base": { const v = baseValue(node.digits, node.base); return v === null ? null : R.rat(v); }
+      case "pct":  { const k = exactValue(node.k); return k ? R.div(k, R.rat(100n)) : null; }
       case "mixed": { const w = exactValue(node.w), f = exactValue(node.f); return w && f ? R.add(w, f) : null; }
       case "neg":  { const k = exactValue(node.k); return k ? R.neg(k) : null; }
       case "sum": {

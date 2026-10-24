@@ -36,6 +36,7 @@ function evalAt(node, env) {
     // The one ± choice of the line, set per branch by the caller.
     case "pm":   return env.__pm * evalAt(node.k, env);
     case "mixed": return evalAt(node.w, env) + evalAt(node.f, env);
+    case "pct":  return evalAt(node.k, env) / 100;
     case "base": { const v = baseValueOf(node); return v === null ? NaN : Number(v); }
     case "const": return node.name === "e" ? Math.E : Math.PI;
     case "deg":  return evalAt(node.k, env) * Math.PI / 180;
