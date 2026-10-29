@@ -730,6 +730,119 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Ratio, proportion and variation",
+    items: [
+      {
+        id: "share-ratio", name: "Share in a ratio: the first part", eq: "S = Ta/(a + b)", find: "S",
+        letters: { S: "the first share", T: "the total to be shared", a: "the first part of the ratio", b: "the second part of the ratio" },
+        example: { T: "360", a: "2", b: "7" },
+        note: "the total is split into a + b equal parts",
+      },
+      {
+        id: "share-ratio-2", name: "Share in a ratio: the second part", eq: "S = Tb/(a + b)", find: "S",
+        letters: { S: "the second share", T: "the total to be shared", a: "the first part of the ratio", b: "the second part of the ratio" },
+        example: { T: "360", a: "2", b: "7" },
+      },
+      {
+        id: "ratio-equal", name: "Two ratios that are equal", eq: "a/b = c/d", find: "a",
+        letters: { a: "the first number of the first ratio", b: "the second number of the first ratio", c: "the first number of the second ratio", d: "the second number of the second ratio" },
+        example: { b: "6", c: "10", d: "15" },
+        note: "a : b = c : d, written as fractions",
+      },
+      {
+        id: "direct-prop", name: "Direct proportion: y = kx", eq: "y = kx", find: "y",
+        letters: { y: "the quantity that changes with x", k: "the constant of proportionality", x: "the quantity it is proportional to" },
+        example: { k: "4", x: "7" },
+        note: "double x and y doubles",
+      },
+      {
+        id: "direct-two", name: "Direct proportion between two cases", eq: "y/x = Y/X", find: "Y",
+        letters: { y: "the first y", x: "the first x", Y: "the second y", X: "the second x" },
+        example: { y: "12", x: "4", X: "10" },
+        note: "the ratio y : x stays the same",
+      },
+      {
+        id: "direct-square", name: "Varies as the square: y = kx²", eq: "y = kx^2", find: "y",
+        letters: { y: "the quantity that changes", k: "the constant of variation", x: "the quantity it is the square of" },
+        example: { k: "3", x: "5" },
+        note: "double x and y becomes four times as big",
+      },
+      {
+        id: "direct-root", name: "Varies as the square root: y = k√x", eq: "y = ksqrt(x)", find: "y",
+        letters: { y: "the quantity that changes", k: "the constant of variation", x: "the quantity whose root it follows" },
+        example: { k: "3", x: "16" },
+      },
+      {
+        id: "direct-cube", name: "Varies as the cube: y = kx³", eq: "y = kx^3", find: "y",
+        letters: { y: "the quantity that changes", k: "the constant of variation", x: "the quantity it is the cube of" },
+        example: { k: "2", x: "3" },
+      },
+      {
+        id: "inverse-prop", name: "Inverse proportion: y = k/x", eq: "y = k/x", find: "y",
+        letters: { y: "the quantity that changes", k: "the constant of variation", x: "the quantity it is inversely proportional to" },
+        example: { k: "24", x: "6" },
+        note: "double x and y halves",
+      },
+      {
+        id: "inverse-two", name: "Inverse proportion between two cases", eq: "xy = XY", find: "Y",
+        letters: { x: "the first x", y: "the first y", X: "the second x", Y: "the second y" },
+        example: { x: "6", y: "8", X: "12" },
+        note: "the product xy stays the same",
+      },
+      {
+        id: "inverse-square", name: "Inverse square: y = k/x²", eq: "y = k/x^2", find: "y",
+        letters: { y: "the quantity that changes", k: "the constant of variation", x: "the quantity it is inversely proportional to the square of" },
+        example: { k: "100", x: "5" },
+        note: "double x and y falls to a quarter",
+      },
+      {
+        id: "joint-var", name: "Joint variation: y = kxz", eq: "y = kxz", find: "y",
+        letters: { y: "the quantity that changes", k: "the constant of variation", x: "the first quantity", z: "the second quantity" },
+        example: { k: "2", x: "3", z: "5" },
+        note: "y varies as x and as z together",
+      },
+      {
+        id: "joint-inv", name: "Joint and inverse: y = kx/z", eq: "y = kx/z", find: "y",
+        letters: { y: "the quantity that changes", k: "the constant of variation", x: "the quantity it rises with", z: "the quantity it falls with" },
+        example: { k: "6", x: "4", z: "3" },
+      },
+      {
+        id: "partial-var", name: "Partial variation: y = a + bx", eq: "y = a + bx", find: "y",
+        letters: { y: "the total", a: "the part that stays fixed", b: "the part for each unit of x", x: "how many units" },
+        example: { a: "500", b: "30", x: "8" },
+        note: "a fixed part plus a part that varies as x",
+      },
+      {
+        id: "scale-length", name: "Scale factor of similar shapes", eq: "k = L/l", find: "k",
+        letters: { k: "the scale factor", l: "a length on the first shape", L: "the matching length on the second" },
+        example: { l: "4", L: "10" },
+      },
+      {
+        id: "scale-area", name: "Areas of similar shapes", eq: "B = Ak^2", find: "B",
+        letters: { B: "the area of the second shape", A: "the area of the first shape", k: "the scale factor of the lengths" },
+        example: { A: "12", k: "3" },
+        note: "areas change by the scale factor squared",
+      },
+      {
+        id: "scale-volume", name: "Volumes of similar solids", eq: "W = Vk^3", find: "W",
+        letters: { W: "the volume of the second solid", V: "the volume of the first solid", k: "the scale factor of the lengths" },
+        example: { V: "8", k: "3" },
+        note: "volumes change by the scale factor cubed",
+      },
+      {
+        id: "map-scale", name: "Distance from a map", eq: "D = dN", find: "D",
+        letters: { D: "the real distance", d: "the distance on the map", N: "the scale, 1 : N" },
+        example: { d: "6", N: "50000" },
+        note: "the real distance is N times the distance on the map",
+      },
+      {
+        id: "work-rate", name: "Workers and time (inverse proportion)", eq: "nt = NT", find: "T",
+        letters: { n: "the first number of workers", t: "the time they take", N: "the second number of workers", T: "the time they take" },
+        example: { n: "6", t: "10", N: "15" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
