@@ -99,6 +99,35 @@ export const GROUPS = [
         example: { F: "132", f: "12" },
       },
       {
+        id: "mean-arith2", name: "Arithmetic mean of two numbers", eq: "A = (a + b)/2", find: "A",
+        letters: { A: "the arithmetic mean", a: "the first number", b: "the second number" },
+        example: { a: "4", b: "9" },
+      },
+      {
+        id: "mean-geo2", name: "Geometric mean of two numbers", eq: "G = sqrt(ab)", find: "G",
+        letters: { G: "the geometric mean", a: "the first number", b: "the second number" },
+        example: { a: "4", b: "9" },
+        note: "the square root of their product",
+      },
+      {
+        id: "mean-geo3", name: "Geometric mean of three numbers", eq: "G = cbrt(abc)", find: "G",
+        letters: { G: "the geometric mean", a: "the first number", b: "the second number", c: "the third number" },
+        example: { a: "2", b: "4", c: "8" },
+        note: "the cube root of their product",
+      },
+      {
+        id: "mean-harm2", name: "Harmonic mean of two numbers", eq: "H = 2ab/(a + b)", find: "H",
+        letters: { H: "the harmonic mean", a: "the first number", b: "the second number" },
+        example: { a: "2", b: "6" },
+        note: "the reciprocal of the mean of the reciprocals",
+      },
+      {
+        id: "mean-harm3", name: "Harmonic mean of three numbers", eq: "H = 3abc/(ab + bc + ac)", find: "H",
+        letters: { H: "the harmonic mean", a: "the first number", b: "the second number", c: "the third number" },
+        example: { a: "2", b: "3", c: "6" },
+        note: "3 over the sum of the reciprocals",
+      },
+      {
         id: "range", name: "Range", eq: "R = H - L", find: "R",
         letters: { R: "the range", H: "the highest value", L: "the lowest value" },
         example: { H: "93", L: "47" },
@@ -516,6 +545,17 @@ export const GROUPS = [
         id: "simple-interest", name: "Simple interest", eq: "I = PRT/100", find: "I",
         letters: { I: "the interest", P: "the money put in", R: "the rate per year", T: "the number of years" },
         example: { P: "8000", R: "5", T: "3" },
+      },
+      {
+        id: "compound-amount", name: "Compound interest: the amount", eq: "A = P(1 + R/100)^n", find: "A",
+        letters: { A: "the amount after n years", P: "the money put in", R: "the rate per year", n: "the number of years" },
+        example: { P: "10000", R: "10", n: "2" },
+        note: "each year's interest is added before the next year's is worked out",
+      },
+      {
+        id: "compound-interest", name: "Compound interest earned", eq: "I = P((1 + R/100)^n - 1)", find: "I",
+        letters: { I: "the compound interest", P: "the money put in", R: "the rate per year", n: "the number of years" },
+        example: { P: "10000", R: "10", n: "2" },
       },
       {
         id: "profit", name: "Profit", eq: "P = S - C", find: "P",
