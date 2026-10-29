@@ -2049,6 +2049,163 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Logic: truth tables, sets and counting",
+    items: [
+      {
+        id: "truth-rows", name: "Rows in a truth table", eq: "R = 2^n", find: "R",
+        letters: { R: "the number of rows", n: "the number of statements" },
+        example: { n: "4" },
+        note: "each statement is true or false",
+      },
+      {
+        id: "boolean-functions", name: "Different logic functions of n inputs", eq: "F = 2^(2^n)", find: "F",
+        letters: { F: "the number of different functions", n: "the number of inputs" },
+        example: { n: "3" },
+      },
+      {
+        id: "union-two", name: "Inclusion and exclusion for two sets", eq: "U = a + b - c", find: "U",
+        letters: { U: "the number in A or B (or both)", a: "the number in A", b: "the number in B", c: "the number in both" },
+        example: { a: "30", b: "25", c: "12" },
+        note: "the ones in both were counted twice",
+      },
+      {
+        id: "union-three", name: "Inclusion and exclusion for three sets", eq: "U = a + b + c - p - q - r + t", find: "U",
+        letters: { U: "the number in A or B or C", a: "the number in A", b: "the number in B", c: "the number in C", p: "the number in A and B", q: "the number in A and C", r: "the number in B and C", t: "the number in all three" },
+        example: { a: "30", b: "25", c: "20", p: "10", q: "8", r: "6", t: "3" },
+      },
+      {
+        id: "only-in-a", name: "Only in the first set", eq: "o = a - c", find: "o",
+        letters: { o: "the number in A but not B", a: "the number in A", c: "the number in both" },
+        example: { a: "30", c: "12" },
+      },
+      {
+        id: "neither-set", name: "In neither set", eq: "N = T - a - b + c", find: "N",
+        letters: { N: "the number in neither set", T: "the number in all", a: "the number in A", b: "the number in B", c: "the number in both" },
+        example: { T: "60", a: "30", b: "25", c: "12" },
+      },
+      {
+        id: "subsets", name: "Subsets of a set", eq: "S = 2^n", find: "S",
+        letters: { S: "the number of subsets", n: "the number of elements" },
+        example: { n: "5" },
+        note: "each element is in or out",
+      },
+      {
+        id: "proper-subsets", name: "Proper subsets of a set", eq: "S = 2^n - 1", find: "S",
+        letters: { S: "the number of proper subsets", n: "the number of elements" },
+        example: { n: "5" },
+        note: "every subset except the set itself",
+      },
+      {
+        id: "cartesian", name: "Size of a Cartesian product", eq: "P = ab", find: "P",
+        letters: { P: "the number of ordered pairs", a: "the elements in A", b: "the elements in B" },
+        example: { a: "4", b: "7" },
+      },
+      {
+        id: "relations", name: "Relations on a set", eq: "R = 2^(n^2)", find: "R",
+        letters: { R: "the number of relations", n: "the number of elements" },
+        example: { n: "3" },
+      },
+      {
+        id: "functions-count", name: "Functions from one set to another", eq: "F = n^m", find: "F",
+        letters: { F: "the number of functions", m: "the elements in the first set", n: "the elements in the second set" },
+        example: { m: "3", n: "4" },
+      },
+      {
+        id: "one-to-one-count", name: "One-to-one functions from one set to another", eq: "F = nPr(n, m)", find: "F",
+        letters: { F: "the number of one-to-one functions", m: "the elements in the first set", n: "the elements in the second set" },
+        example: { m: "3", n: "5" },
+      },
+      {
+        id: "pigeonhole", name: "Pigeonhole principle", eq: "n = km + 1", find: "n",
+        letters: { n: "the items that guarantee it", k: "the boxes", m: "the most that can be kept out of one box" },
+        example: { k: "7", m: "2" },
+        note: "with this many, some box must hold m + 1",
+      },
+      {
+        id: "handshakes", name: "Handshakes in a group", eq: "H = n(n - 1)/2", find: "H",
+        letters: { H: "the number of handshakes", n: "the number of people" },
+        example: { n: "12" },
+      },
+      {
+        id: "odds-from-prob", name: "Odds from a probability", eq: "o = p/(1 - p)", find: "o",
+        letters: { o: "the odds in favour", p: "the probability" },
+        example: { p: "3/4" },
+      },
+      {
+        id: "prob-from-odds", name: "A probability from the odds", eq: "p = o/(1 + o)", find: "p",
+        letters: { p: "the probability", o: "the odds in favour" },
+        example: { o: "3" },
+      },
+    ],
+  },
+  {
+    group: "Law: damages, shares and evidence",
+    items: [
+      {
+        id: "contributory", name: "Damages when the claimant is partly to blame", eq: "D = L(100 - p)/100", find: "D",
+        letters: { D: "the damages awarded", L: "the full loss", p: "the claimant's share of the blame, as a percentage" },
+        example: { L: "800000", p: "25" },
+      },
+      {
+        id: "liability-share", name: "A share of a liability", eq: "S = La/T", find: "S",
+        letters: { S: "the share to pay", L: "the whole liability", a: "this party's part", T: "the total of all the parts" },
+        example: { L: "900000", a: "2", T: "9" },
+      },
+      {
+        id: "estate-share", name: "A share of an estate", eq: "S = Ea/b", find: "S",
+        letters: { S: "the share", E: "the value of the estate", a: "the top of the fraction", b: "the bottom of the fraction" },
+        example: { E: "2400000", a: "1", b: "3" },
+      },
+      {
+        id: "judgment-debt", name: "A judgment debt with simple interest", eq: "T = J(100 + RY)/100", find: "T",
+        letters: { T: "the total owed", J: "the sum awarded", R: "the rate per year", Y: "the years until it is paid" },
+        example: { J: "500000", R: "10", Y: "2" },
+      },
+      {
+        id: "loss-multiplier", name: "Loss of earnings by the multiplier method", eq: "D = ym", find: "D",
+        letters: { D: "the damages", y: "the loss each year", m: "the multiplier" },
+        example: { y: "600000", m: "12" },
+      },
+      {
+        id: "time-served", name: "Time served with remission", eq: "T = S(100 - r)/100", find: "T",
+        letters: { T: "the time actually served", S: "the sentence", r: "the remission, as a percentage" },
+        example: { S: "60", r: "25" },
+      },
+      {
+        id: "daily-fine", name: "A fine charged by the day", eq: "F = dn", find: "F",
+        letters: { F: "the total fine", d: "the fine for one day", n: "the number of days" },
+        example: { d: "5000", n: "14" },
+      },
+      {
+        id: "likelihood-ratio", name: "Likelihood ratio of a piece of evidence", eq: "L = a/b", find: "L",
+        letters: { L: "the likelihood ratio", a: "the chance of the evidence if the claim is true", b: "the chance of the evidence if it is false" },
+        example: { a: "9/10", b: "1/30" },
+      },
+      {
+        id: "posterior-odds", name: "Updating the odds with new evidence", eq: "P = oL", find: "P",
+        letters: { P: "the new odds", o: "the odds before the evidence", L: "the likelihood ratio" },
+        example: { o: "1/5", L: "15" },
+        note: "Bayes' rule in odds form",
+      },
+      {
+        id: "random-match", name: "Chance that a random person matches all the markers", eq: "M = p^n", find: "M",
+        letters: { M: "the chance of matching all of them", p: "the chance of matching one marker", n: "the number of independent markers" },
+        example: { p: "1/10", n: "4" },
+      },
+      {
+        id: "expected-matches", name: "People expected to match by chance", eq: "E = Np", find: "E",
+        letters: { E: "how many to expect", N: "the people who could have left it", p: "the chance that one person matches" },
+        example: { N: "2000000", p: "1/1000000" },
+        note: "a rare match is not the same as a unique match",
+      },
+      {
+        id: "another-match", name: "Chance that at least one other person matches", eq: "P = 1 - (1 - p)^N", find: "P",
+        letters: { P: "the chance that someone else matches", p: "the chance that one person matches", N: "the other people who could have left it" },
+        example: { p: "1/10", N: "2" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
