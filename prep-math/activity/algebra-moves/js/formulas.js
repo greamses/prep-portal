@@ -458,11 +458,6 @@ export const GROUPS = [
         example: { l: "2", w: "3", h: "6" },
       },
       {
-        id: "triangle-sine-area", name: "Area of a triangle from two sides and the angle between", eq: "A = (1/2)ab·sin(C°)", find: "A",
-        letters: { A: "the area", a: "one side", b: "the other side", C: "the angle between them, in degrees" },
-        example: { a: "8", b: "5", C: "30" },
-      },
-      {
         id: "equilateral-area", name: "Area of an equilateral triangle", eq: "A = sqrt(3)s^2/4", find: "A",
         letters: { A: "the area", s: "the side" },
         example: { s: "4" },
@@ -1254,11 +1249,6 @@ export const GROUPS = [
         id: "ideal-gas", name: "The ideal gas law", eq: "PV = nRT", find: "P",
         letters: { P: "the pressure", V: "the volume", n: "the number of moles", R: "the gas constant", T: "the temperature, in kelvin" },
         example: { V: "4", n: "2", R: "8", T: "300" },
-      },
-      {
-        id: "enthalpy", name: "Heat given out or taken in", eq: "Q = mct", find: "Q",
-        letters: { Q: "the heat energy", m: "the mass of the water", c: "the specific heat capacity", t: "the temperature change" },
-        example: { m: "100", c: "4.2", t: "5" },
       },
       {
         id: "enthalpy-mole", name: "Enthalpy change per mole", eq: "H = Q/n", find: "H",
@@ -2878,6 +2868,746 @@ export const GROUPS = [
         id: "vaccine-efficacy", name: "Efficacy of a vaccine", eq: "E = 100(1 - a/b)", find: "E",
         letters: { E: "the efficacy, as a percentage", a: "the risk of illness in the vaccinated", b: "the risk of illness in the unvaccinated" },
         example: { a: "1/10", b: "1/2" },
+      },
+    ],
+  },
+  {
+    group: "Geometry: triangles",
+    items: [
+      {
+        id: "equilateral-perimeter", name: "Perimeter of an equilateral triangle", eq: "P = 3s", find: "P",
+        letters: { P: "the perimeter", s: "the side" },
+        example: { s: "7" },
+      },
+      {
+        id: "equilateral-height", name: "Height of an equilateral triangle", eq: "h = sqrt(3)s/2", find: "h",
+        letters: { h: "the height", s: "the side" },
+        example: { s: "4" },
+      },
+      {
+        id: "isosceles-area", name: "Area of an isosceles triangle", eq: "A = (b/4)sqrt(4a^2 - b^2)", find: "A",
+        letters: { A: "the area", a: "one of the equal sides", b: "the base" },
+        example: { a: "5", b: "6" },
+      },
+      {
+        id: "isosceles-height", name: "Height of an isosceles triangle", eq: "h = sqrt(a^2 - b^2/4)", find: "h",
+        letters: { h: "the height", a: "one of the equal sides", b: "the base" },
+        example: { a: "5", b: "6" },
+      },
+      {
+        id: "isosceles-base-angle", name: "Base angles of an isosceles triangle", eq: "B = (180 - A)/2", find: "B",
+        letters: { B: "each base angle in degrees", A: "the angle at the top in degrees" },
+        example: { A: "40" },
+      },
+      {
+        id: "angle-sum-triangle", name: "Angles of a triangle", eq: "C = 180 - A - B", find: "C",
+        letters: { C: "the third angle in degrees", A: "the first angle", B: "the second angle" },
+        example: { A: "50", B: "60" },
+      },
+      {
+        id: "exterior-angle", name: "Exterior angle of a triangle", eq: "E = a + b", find: "E",
+        letters: { E: "the exterior angle", a: "one opposite interior angle", b: "the other opposite interior angle" },
+        example: { a: "50", b: "60" },
+      },
+      {
+        id: "triangle-height", name: "Height of a triangle from its area", eq: "h = 2A/b", find: "h",
+        letters: { h: "the height", A: "the area", b: "the base" },
+        example: { A: "30", b: "10" },
+      },
+      {
+        id: "right-altitude", name: "Altitude to the hypotenuse of a right triangle", eq: "h = ab/c", find: "h",
+        letters: { h: "the altitude to the hypotenuse", a: "one leg", b: "the other leg", c: "the hypotenuse" },
+        example: { a: "3", b: "4", c: "5" },
+      },
+      {
+        id: "altitude-theorem", name: "Altitude to the hypotenuse from its two pieces", eq: "h = sqrt(pq)", find: "h",
+        letters: { h: "the altitude", p: "one piece of the hypotenuse", q: "the other piece" },
+        example: { p: "4", q: "9" },
+        note: "the altitude is the geometric mean of the two pieces",
+      },
+      {
+        id: "leg-theorem", name: "A leg of a right triangle from the hypotenuse", eq: "a^2 = pc", find: "p",
+        letters: { a: "the leg", p: "the piece of the hypotenuse next to that leg", c: "the whole hypotenuse" },
+        example: { a: "8", c: "16" },
+      },
+      {
+        id: "inradius-area", name: "Radius of the circle inside a triangle", eq: "r = A/s", find: "r",
+        letters: { r: "the inradius", A: "the area", s: "half the perimeter" },
+        example: { A: "24", s: "12" },
+      },
+      {
+        id: "right-inradius", name: "Radius of the circle inside a right triangle", eq: "r = (a + b - c)/2", find: "r",
+        letters: { r: "the inradius", a: "one leg", b: "the other leg", c: "the hypotenuse" },
+        example: { a: "3", b: "4", c: "5" },
+      },
+      {
+        id: "circumradius", name: "Radius of the circle round a triangle", eq: "R = abc/(4A)", find: "R",
+        letters: { R: "the circumradius", a: "one side", b: "another side", c: "the third side", A: "the area" },
+        example: { a: "3", b: "4", c: "5", A: "6" },
+      },
+      {
+        id: "circumradius-right", name: "Radius of the circle round a right triangle", eq: "R = c/2", find: "R",
+        letters: { R: "the circumradius", c: "the hypotenuse" },
+        example: { c: "10" },
+        note: "the hypotenuse is a diameter",
+      },
+      {
+        id: "sine-rule-circle", name: "The sine rule with the circumradius", eq: "a/sin(A°) = 2R", find: "R",
+        letters: { a: "a side", A: "the angle opposite it in degrees", R: "the circumradius" },
+        example: { a: "5", A: "30" },
+      },
+      {
+        id: "area-circumradius", name: "Area of a triangle from the circumradius", eq: "A = abc/(4R)", find: "A",
+        letters: { A: "the area", a: "one side", b: "another side", c: "the third side", R: "the circumradius" },
+        example: { a: "3", b: "4", c: "5", R: "5/2" },
+      },
+      {
+        id: "area-inradius", name: "Area of a triangle from the inradius", eq: "A = rs", find: "A",
+        letters: { A: "the area", r: "the inradius", s: "half the perimeter" },
+        example: { r: "2", s: "12" },
+      },
+      {
+        id: "median-length", name: "Length of a median", eq: "m = sqrt(2b^2 + 2c^2 - a^2)/2", find: "m",
+        letters: { m: "the median to side a", a: "the side it meets", b: "one other side", c: "the third side" },
+        example: { a: "6", b: "5", c: "5" },
+      },
+      {
+        id: "midsegment-triangle", name: "Line joining the midpoints of two sides", eq: "m = b/2", find: "m",
+        letters: { m: "the length of the line", b: "the third side, which it is parallel to" },
+        example: { b: "14" },
+      },
+      {
+        id: "centroid-coordinate", name: "Centroid of a triangle", eq: "g = (a + b + c)/3", find: "g",
+        letters: { g: "the coordinate of the centroid", a: "the first corner", b: "the second corner", c: "the third corner" },
+        example: { a: "3", b: "6", c: "9" },
+        note: "use it for the x values, then again for the y values",
+      },
+      {
+        id: "area-triangle-coordinates", name: "Area of a triangle from its corners", eq: "A = (a(d - f) + c(f - b) + e(b - d))/2", find: "A",
+        letters: { A: "the area (take the positive value)", a: "x of the first corner", b: "y of the first corner", c: "x of the second corner", d: "y of the second corner", e: "x of the third corner", f: "y of the third corner" },
+        example: { a: "1", b: "1", c: "5", d: "1", e: "1", f: "4" },
+      },
+    ],
+  },
+  {
+    group: "Geometry: quadrilaterals and polygons",
+    items: [
+      {
+        id: "quad-perimeter", name: "Perimeter of any four-sided shape", eq: "P = a + b + c + d", find: "P",
+        letters: { P: "the perimeter", a: "the first side", b: "the second side", c: "the third side", d: "the fourth side" },
+        example: { a: "5", b: "7", c: "6", d: "9" },
+      },
+      {
+        id: "parallelogram-sine", name: "Area of a parallelogram from two sides and the angle", eq: "A = ab·sin(C°)", find: "A",
+        letters: { A: "the area", a: "one side", b: "the next side", C: "the angle between them in degrees" },
+        example: { a: "8", b: "5", C: "30" },
+      },
+      {
+        id: "parallelogram-diagonal", name: "Diagonals of a parallelogram", eq: "q = sqrt(2(a^2 + b^2) - p^2)", find: "q",
+        letters: { q: "one diagonal", p: "the other diagonal", a: "one side", b: "the next side" },
+        example: { a: "5", b: "5", p: "6" },
+        note: "the squares of the diagonals add to twice the squares of the sides",
+      },
+      {
+        id: "rhombus-side", name: "Side of a rhombus from its diagonals", eq: "s = sqrt(p^2 + q^2)/2", find: "s",
+        letters: { s: "the side", p: "one diagonal", q: "the other diagonal" },
+        example: { p: "6", q: "8" },
+      },
+      {
+        id: "rhombus-sine", name: "Area of a rhombus from its side and an angle", eq: "A = s^2·sin(t°)", find: "A",
+        letters: { A: "the area", s: "the side", t: "an angle in degrees" },
+        example: { s: "10", t: "30" },
+      },
+      {
+        id: "rhombus-inradius", name: "Radius of the circle inside a rhombus", eq: "r = pq/(2sqrt(p^2 + q^2))", find: "r",
+        letters: { r: "the inradius", p: "one diagonal", q: "the other diagonal" },
+        example: { p: "6", q: "8" },
+      },
+      {
+        id: "isosceles-trapezium-height", name: "Height of an isosceles trapezium", eq: "h = sqrt(c^2 - ((a - b)/2)^2)", find: "h",
+        letters: { h: "the height", a: "the long parallel side", b: "the short parallel side", c: "each slanting side" },
+        example: { a: "10", b: "4", c: "5" },
+      },
+      {
+        id: "quad-diagonals-area", name: "Area of any four-sided shape from its diagonals", eq: "A = pq·sin(t°)/2", find: "A",
+        letters: { A: "the area", p: "one diagonal", q: "the other diagonal", t: "the angle between them in degrees" },
+        example: { p: "10", q: "8", t: "30" },
+      },
+      {
+        id: "cyclic-area", name: "Area of a quadrilateral inside a circle (Brahmagupta)", eq: "A = sqrt((s - a)(s - b)(s - c)(s - d))", find: "A",
+        letters: { A: "the area", s: "half the perimeter", a: "the first side", b: "the second side", c: "the third side", d: "the fourth side" },
+        example: { s: "6", a: "3", b: "3", c: "3", d: "3" },
+      },
+      {
+        id: "ptolemy", name: "Ptolemy's theorem for a quadrilateral inside a circle", eq: "pq = ac + bd", find: "p",
+        letters: { p: "one diagonal", q: "the other diagonal", a: "one side", c: "the opposite side", b: "another side", d: "its opposite side" },
+        example: { a: "3", b: "4", c: "3", d: "4", q: "5" },
+      },
+      {
+        id: "cyclic-opposite-angles", name: "Opposite angles of a quadrilateral inside a circle", eq: "C = 180 - A", find: "C",
+        letters: { C: "one angle in degrees", A: "the opposite angle" },
+        example: { A: "70" },
+      },
+      {
+        id: "tangential-quad", name: "A quadrilateral with a circle inside it", eq: "d = a + c - b", find: "d",
+        letters: { a: "one side", b: "the next side", c: "the side opposite a", d: "the side opposite b" },
+        example: { a: "7", b: "5", c: "9" },
+        note: "opposite sides add to the same total",
+      },
+      {
+        id: "regular-polygon-side-area", name: "Area of a regular polygon from its side", eq: "A = ns^2/(4tan((180/n)°))", find: "A",
+        letters: { A: "the area", n: "the number of sides", s: "the side" },
+        example: { n: "4", s: "5" },
+      },
+      {
+        id: "polygon-apothem", name: "Apothem of a regular polygon", eq: "a = s/(2tan((180/n)°))", find: "a",
+        letters: { a: "the apothem", s: "the side", n: "the number of sides" },
+        example: { n: "4", s: "10" },
+      },
+      {
+        id: "polygon-circumradius", name: "Radius of the circle round a regular polygon", eq: "R = s/(2sin((180/n)°))", find: "R",
+        letters: { R: "the circumradius", s: "the side", n: "the number of sides" },
+        example: { n: "6", s: "10" },
+      },
+      {
+        id: "polygon-perimeter", name: "Perimeter of a regular polygon", eq: "P = ns", find: "P",
+        letters: { P: "the perimeter", n: "the number of sides", s: "the side" },
+        example: { n: "8", s: "5" },
+      },
+      {
+        id: "polygon-triangles", name: "Triangles a polygon is cut into", eq: "T = n - 2", find: "T",
+        letters: { T: "the number of triangles", n: "the number of sides" },
+        example: { n: "9" },
+        note: "cut from one corner",
+      },
+      {
+        id: "polygon-interior-exterior", name: "Interior and exterior angle at one corner", eq: "I = 180 - E", find: "I",
+        letters: { I: "the interior angle", E: "the exterior angle" },
+        example: { E: "40" },
+      },
+      {
+        id: "square-incircle", name: "Radius of the circle inside a square", eq: "r = s/2", find: "r",
+        letters: { r: "the radius", s: "the side" },
+        example: { s: "12" },
+      },
+      {
+        id: "square-circumcircle", name: "Radius of the circle round a square", eq: "R = ssqrt(2)/2", find: "R",
+        letters: { R: "the radius", s: "the side" },
+        example: { s: "6" },
+      },
+      {
+        id: "pick", name: "Pick's theorem for a shape on a grid", eq: "A = i + b/2 - 1", find: "A",
+        letters: { A: "the area", i: "the grid points inside", b: "the grid points on the edge" },
+        example: { i: "6", b: "8" },
+      },
+    ],
+  },
+  {
+    group: "Geometry: circles",
+    items: [
+      {
+        id: "circle-diameter", name: "Diameter of a circle", eq: "d = 2r", find: "d",
+        letters: { d: "the diameter", r: "the radius" },
+        example: { r: "7" },
+      },
+      {
+        id: "circle-area-diameter", name: "Area of a circle from its diameter", eq: "A = (22/7)(d/2)^2", find: "A",
+        letters: { A: "the area", d: "the diameter" },
+        example: { d: "14" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "circle-circumference-diameter", name: "Distance round a circle from its diameter", eq: "C = (22/7)d", find: "C",
+        letters: { C: "the circumference", d: "the diameter" },
+        example: { d: "14" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "circle-area-circumference", name: "Area of a circle from its circumference", eq: "A = C^2/(4(22/7))", find: "A",
+        letters: { A: "the area", C: "the circumference" },
+        example: { C: "44" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "sector-perimeter", name: "Perimeter of a sector", eq: "P = 2r + s", find: "P",
+        letters: { P: "the perimeter", r: "the radius", s: "the arc length" },
+        example: { r: "7", s: "11" },
+      },
+      {
+        id: "arc-radians", name: "Arc length when the angle is in radians", eq: "s = rt", find: "s",
+        letters: { s: "the arc length", r: "the radius", t: "the angle in radians" },
+        example: { r: "5", t: "2" },
+      },
+      {
+        id: "degrees-to-radians", name: "Degrees into radians", eq: "R = (22/7)D/180", find: "R",
+        letters: { R: "the angle in radians", D: "the angle in degrees" },
+        example: { D: "90" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "sagitta", name: "Height of a circular segment", eq: "h = r - sqrt(r^2 - c^2/4)", find: "h",
+        letters: { h: "the height of the segment", r: "the radius", c: "the chord" },
+        example: { r: "5", c: "8" },
+      },
+      {
+        id: "tangent-length", name: "Length of a tangent from a point", eq: "t = sqrt(d^2 - r^2)", find: "t",
+        letters: { t: "the tangent length", d: "the distance from the point to the centre", r: "the radius" },
+        example: { d: "13", r: "5" },
+      },
+      {
+        id: "external-tangent", name: "Length of a common outside tangent", eq: "t = sqrt(d^2 - (R - r)^2)", find: "t",
+        letters: { t: "the tangent length", d: "the distance between the centres", R: "the bigger radius", r: "the smaller radius" },
+        example: { d: "13", R: "8", r: "3" },
+      },
+      {
+        id: "internal-tangent", name: "Length of a common crossing tangent", eq: "t = sqrt(d^2 - (R + r)^2)", find: "t",
+        letters: { t: "the tangent length", d: "the distance between the centres", R: "one radius", r: "the other radius" },
+        example: { d: "13", R: "3", r: "2" },
+      },
+      {
+        id: "intersecting-chords", name: "Two chords crossing inside a circle", eq: "ab = cd", find: "a",
+        letters: { a: "one piece of the first chord", b: "the other piece", c: "one piece of the second chord", d: "the other piece" },
+        example: { b: "4", c: "6", d: "2" },
+      },
+      {
+        id: "secant-secant", name: "Two secants meeting outside a circle", eq: "a(a + b) = c(c + d)", find: "d",
+        letters: { a: "the outside part of the first secant", b: "its inside part", c: "the outside part of the second", d: "its inside part" },
+        example: { a: "3", b: "5", c: "4" },
+      },
+      {
+        id: "tangent-secant", name: "A tangent and a secant meeting outside a circle", eq: "t = sqrt(a(a + b))", find: "t",
+        letters: { t: "the tangent", a: "the outside part of the secant", b: "its inside part" },
+        example: { a: "4", b: "5" },
+      },
+      {
+        id: "inscribed-angle", name: "Angle at the edge on an arc", eq: "I = C/2", find: "I",
+        letters: { I: "the angle at the circumference", C: "the angle at the centre on the same arc" },
+        example: { C: "80" },
+      },
+      {
+        id: "angle-two-chords", name: "Angle between two chords inside a circle", eq: "x = (a + b)/2", find: "x",
+        letters: { x: "the angle in degrees", a: "one arc", b: "the opposite arc" },
+        example: { a: "70", b: "50" },
+      },
+      {
+        id: "angle-outside-circle", name: "Angle between two lines meeting outside a circle", eq: "x = (a - b)/2", find: "x",
+        letters: { x: "the angle in degrees", a: "the far arc", b: "the near arc" },
+        example: { a: "100", b: "40" },
+      },
+      {
+        id: "circle-equation-radius", name: "Radius from the equation of a circle", eq: "r = sqrt((x - h)^2 + (y - k)^2)", find: "r",
+        letters: { r: "the radius", x: "x of a point on the circle", y: "y of that point", h: "x of the centre", k: "y of the centre" },
+        example: { x: "7", y: "3", h: "3", k: "0" },
+      },
+      {
+        id: "circle-general-radius", name: "Radius from x² + y² + 2gx + 2fy + c = 0", eq: "r = sqrt(g^2 + f^2 - c)", find: "r",
+        letters: { r: "the radius", g: "half the x coefficient", f: "half the y coefficient", c: "the number on its own" },
+        example: { g: "3", f: "4", c: "0" },
+        note: "the centre is at (−g, −f)",
+      },
+      {
+        id: "ellipse-perimeter", name: "Distance round an ellipse (Ramanujan)", eq: "P = (22/7)(3(a + b) - sqrt((3a + b)(a + 3b)))", find: "P",
+        letters: { P: "the perimeter", a: "the long radius", b: "the short radius" },
+        example: { a: "7", b: "7" },
+        note: "taking π as 22/7; a close estimate",
+      },
+      {
+        id: "ellipse-eccentricity", name: "How stretched an ellipse is", eq: "x = sqrt(1 - b^2/a^2)", find: "x",
+        letters: { x: "the eccentricity", a: "the long radius", b: "the short radius" },
+        example: { a: "5", b: "3" },
+      },
+      {
+        id: "ellipse-focus", name: "Distance to a focus of an ellipse", eq: "c = sqrt(a^2 - b^2)", find: "c",
+        letters: { c: "the distance from the centre to a focus", a: "the long radius", b: "the short radius" },
+        example: { a: "5", b: "3" },
+      },
+      {
+        id: "hyperbola-focus", name: "Distance to a focus of a hyperbola", eq: "c = sqrt(a^2 + b^2)", find: "c",
+        letters: { c: "the distance from the centre to a focus", a: "the distance to a vertex", b: "the other semi-axis" },
+        example: { a: "3", b: "4" },
+      },
+      {
+        id: "hyperbola-asymptote", name: "Slope of a hyperbola's asymptote", eq: "m = b/a", find: "m",
+        letters: { m: "the slope", a: "the distance to a vertex", b: "the other semi-axis" },
+        example: { a: "3", b: "4" },
+      },
+      {
+        id: "parabola-focus", name: "Focal length of a parabola y² = 4ax", eq: "a = y^2/(4x)", find: "a",
+        letters: { a: "the focal length", x: "x of a point on the parabola", y: "y of that point" },
+        example: { x: "1", y: "4" },
+      },
+    ],
+  },
+  {
+    group: "Geometry: coordinates and transformations",
+    items: [
+      {
+        id: "distance-2d", name: "Distance between two points", eq: "D = sqrt((c - a)^2 + (d - b)^2)", find: "D",
+        letters: { D: "the distance", a: "x of the first point", b: "y of the first point", c: "x of the second point", d: "y of the second point" },
+        example: { a: "1", b: "2", c: "4", d: "6" },
+      },
+      {
+        id: "section-point", name: "Point dividing a line in a ratio", eq: "x = (mc + na)/(m + n)", find: "x",
+        letters: { x: "the coordinate of the point", a: "the first end", c: "the second end", m: "the first part of the ratio", n: "the second part" },
+        example: { a: "1", c: "9", m: "1", n: "3" },
+        note: "use it for x, then again for y",
+      },
+      {
+        id: "slope-two-points", name: "Slope between two points", eq: "m = (d - b)/(c - a)", find: "m",
+        letters: { m: "the slope", a: "x of the first point", b: "y of the first point", c: "x of the second point", d: "y of the second point" },
+        example: { a: "1", b: "2", c: "4", d: "11" },
+      },
+      {
+        id: "line-slope-intercept", name: "A line y = mx + c", eq: "y = mx + c", find: "y",
+        letters: { y: "the height of the line", m: "the slope", x: "the distance along", c: "where it crosses the y-axis" },
+        example: { m: "2", x: "3", c: "1" },
+      },
+      {
+        id: "line-point-slope", name: "A line from a point and a slope", eq: "y - b = m(x - a)", find: "y",
+        letters: { y: "the height of the line", b: "y of the known point", m: "the slope", x: "the distance along", a: "x of the known point" },
+        example: { m: "2", x: "5", a: "3", b: "1" },
+      },
+      {
+        id: "line-two-points", name: "A line through two points", eq: "(y - b)/(d - b) = (x - a)/(c - a)", find: "y",
+        letters: { y: "the height of the line", x: "the distance along", a: "x of the first point", b: "y of the first point", c: "x of the second point", d: "y of the second point" },
+        example: { a: "1", b: "1", c: "3", d: "5", x: "2" },
+      },
+      {
+        id: "line-intercepts", name: "A line from its two intercepts", eq: "y = b(1 - x/a)", find: "y",
+        letters: { y: "the height of the line", x: "the distance along", a: "where it crosses the x-axis", b: "where it crosses the y-axis" },
+        example: { a: "4", b: "2", x: "2" },
+      },
+      {
+        id: "line-general-slope", name: "Slope of ax + by + c = 0", eq: "m = -a/b", find: "m",
+        letters: { m: "the slope", a: "the number in front of x", b: "the number in front of y" },
+        example: { a: "2", b: "4" },
+      },
+      {
+        id: "perpendicular-slope", name: "Slope of a perpendicular line", eq: "n = -1/m", find: "n",
+        letters: { n: "the slope of the perpendicular", m: "the slope of the first line" },
+        example: { m: "2" },
+        note: "the two slopes multiply to −1",
+      },
+      {
+        id: "angle-between-lines", name: "Angle between two lines", eq: "tan(t°) = (m - n)/(1 + mn)", find: "t",
+        letters: { t: "the angle in degrees", m: "the slope of one line", n: "the slope of the other" },
+        example: { m: "3", n: "1/2" },
+      },
+      {
+        id: "point-line-distance", name: "Distance from a point to a line", eq: "d = (ax + by + c)/sqrt(a^2 + b^2)", find: "d",
+        letters: { d: "the distance (ignore the sign)", a: "the number in front of x", b: "the number in front of y", c: "the number on its own", x: "x of the point", y: "y of the point" },
+        example: { a: "3", b: "4", c: "-5", x: "1", y: "2" },
+      },
+      {
+        id: "parallel-lines-distance", name: "Distance between two parallel lines", eq: "d = (c - f)/sqrt(a^2 + b^2)", find: "d",
+        letters: { d: "the distance (ignore the sign)", a: "the number in front of x", b: "the number in front of y", c: "the number on its own in the first line", f: "the number on its own in the second" },
+        example: { a: "3", b: "4", c: "10", f: "0" },
+      },
+      {
+        id: "translation", name: "Moving a point", eq: "X = x + a", find: "X",
+        letters: { X: "the new x", x: "the old x", a: "how far it moves along" },
+        example: { x: "3", a: "5" },
+        note: "use it again for y",
+      },
+      {
+        id: "enlargement", name: "Enlarging from a centre", eq: "X = k(x - a) + a", find: "X",
+        letters: { X: "the new x", x: "the old x", a: "x of the centre", k: "the scale factor" },
+        example: { k: "3", x: "4", a: "2" },
+        note: "use it again for y",
+      },
+      {
+        id: "rotation-x", name: "Turning a point about the origin: the new x", eq: "X = x·cos(t°) - y·sin(t°)", find: "X",
+        letters: { X: "the new x", x: "the old x", y: "the old y", t: "the angle turned in degrees" },
+        example: { x: "2", y: "3", t: "90" },
+      },
+      {
+        id: "rotation-y", name: "Turning a point about the origin: the new y", eq: "Y = x·sin(t°) + y·cos(t°)", find: "Y",
+        letters: { Y: "the new y", x: "the old x", y: "the old y", t: "the angle turned in degrees" },
+        example: { x: "2", y: "3", t: "90" },
+      },
+      {
+        id: "polar-x", name: "Polar to rectangular: x", eq: "x = r·cos(t°)", find: "x",
+        letters: { x: "the distance along", r: "the distance from the origin", t: "the angle in degrees" },
+        example: { r: "10", t: "60" },
+      },
+      {
+        id: "polar-y", name: "Polar to rectangular: y", eq: "y = r·sin(t°)", find: "y",
+        letters: { y: "the height", r: "the distance from the origin", t: "the angle in degrees" },
+        example: { r: "10", t: "30" },
+      },
+      {
+        id: "polar-radius", name: "Distance from the origin", eq: "r = sqrt(x^2 + y^2)", find: "r",
+        letters: { r: "the distance from the origin", x: "the distance along", y: "the height" },
+        example: { x: "6", y: "8" },
+      },
+      {
+        id: "vector-magnitude-2d", name: "Length of a vector in two dimensions", eq: "m = sqrt(a^2 + b^2)", find: "m",
+        letters: { m: "the length", a: "the x part", b: "the y part" },
+        example: { a: "3", b: "4" },
+      },
+      {
+        id: "vector-dot-2d", name: "Dot product in two dimensions", eq: "D = ac + bd", find: "D",
+        letters: { D: "the dot product", a: "x of the first vector", b: "y of the first vector", c: "x of the second", d: "y of the second" },
+        example: { a: "2", b: "3", c: "4", d: "-1" },
+      },
+      {
+        id: "vector-angle", name: "Angle between two vectors", eq: "cos(t°) = (ac + bd)/(sqrt(a^2 + b^2)sqrt(c^2 + d^2))", find: "t",
+        letters: { t: "the angle in degrees", a: "x of the first vector", b: "y of the first vector", c: "x of the second", d: "y of the second" },
+        example: { a: "0", b: "1", c: "1", d: "0" },
+      },
+    ],
+  },
+  {
+    group: "Geometry: solids",
+    items: [
+      {
+        id: "cube-diagonal", name: "Diagonal of a cube", eq: "d = ssqrt(3)", find: "d",
+        letters: { d: "the diagonal from corner to corner", s: "the edge" },
+        example: { s: "4" },
+      },
+      {
+        id: "sphere-in-cube", name: "Sphere that just fits inside a cube", eq: "r = s/2", find: "r",
+        letters: { r: "the radius of the sphere", s: "the edge of the cube" },
+        example: { s: "10" },
+      },
+      {
+        id: "sphere-round-cube", name: "Sphere that just holds a cube", eq: "R = ssqrt(3)/2", find: "R",
+        letters: { R: "the radius of the sphere", s: "the edge of the cube" },
+        example: { s: "4" },
+      },
+      {
+        id: "cuboid-lateral", name: "Sides of a cuboid without top or bottom", eq: "L = 2h(l + w)", find: "L",
+        letters: { L: "the area of the four sides", h: "the height", l: "the length", w: "the width" },
+        example: { h: "5", l: "6", w: "4" },
+      },
+      {
+        id: "prism-lateral", name: "Sides of a prism", eq: "L = Ph", find: "L",
+        letters: { L: "the area of the sides", P: "the perimeter of the end", h: "the length of the prism" },
+        example: { P: "12", h: "10" },
+      },
+      {
+        id: "prism-surface", name: "Surface area of a prism", eq: "A = 2B + Ph", find: "A",
+        letters: { A: "the total area", B: "the area of one end", P: "the perimeter of the end", h: "the length of the prism" },
+        example: { B: "6", P: "12", h: "10" },
+      },
+      {
+        id: "right-triangular-prism", name: "Surface area of a prism with a right-angled end", eq: "A = pq + (p + q + r)L", find: "A",
+        letters: { A: "the total area", p: "one leg", q: "the other leg", r: "the hypotenuse", L: "the length of the prism" },
+        example: { p: "3", q: "4", r: "5", L: "10" },
+      },
+      {
+        id: "hexagonal-prism", name: "Volume of a hexagonal prism", eq: "V = 3sqrt(3)s^2h/2", find: "V",
+        letters: { V: "the volume", s: "the side of the hexagon", h: "the height" },
+        example: { s: "2", h: "5" },
+      },
+      {
+        id: "hollow-cylinder", name: "Volume of a pipe", eq: "V = (22/7)h(R^2 - r^2)", find: "V",
+        letters: { V: "the volume of the material", h: "the length", R: "the outer radius", r: "the inner radius" },
+        example: { h: "7", R: "14", r: "7" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "open-cylinder", name: "Surface area of a cylinder open at the top", eq: "A = (22/7)r(r + 2h)", find: "A",
+        letters: { A: "the area", r: "the radius", h: "the height" },
+        example: { r: "7", h: "10" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "cylinder-diagonal", name: "Longest straight line inside a cylinder", eq: "d = sqrt(4r^2 + h^2)", find: "d",
+        letters: { d: "the diagonal", r: "the radius", h: "the height" },
+        example: { r: "3", h: "8" },
+      },
+      {
+        id: "cone-sector-angle", name: "Angle of the sector that folds into a cone", eq: "t = 360r/l", find: "t",
+        letters: { t: "the angle in degrees", r: "the base radius", l: "the slant height" },
+        example: { r: "3", l: "5" },
+      },
+      {
+        id: "cone-cut", name: "Radius of a slice cut from a cone", eq: "r = Rh/H", find: "r",
+        letters: { r: "the radius of the slice", R: "the radius of the base", h: "the height of the small cone", H: "the height of the whole cone" },
+        example: { R: "9", h: "2", H: "6" },
+      },
+      {
+        id: "frustum-slant", name: "Slant height of a frustum", eq: "l = sqrt(h^2 + (R - r)^2)", find: "l",
+        letters: { l: "the slant height", h: "the height", R: "the bigger radius", r: "the smaller radius" },
+        example: { h: "4", R: "6", r: "3" },
+      },
+      {
+        id: "frustum-lateral", name: "Curved surface of a frustum", eq: "A = (22/7)(R + r)l", find: "A",
+        letters: { A: "the curved area", R: "the bigger radius", r: "the smaller radius", l: "the slant height" },
+        example: { R: "4", r: "3", l: "5" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "frustum-total", name: "Total surface of a frustum", eq: "A = (22/7)((R + r)l + R^2 + r^2)", find: "A",
+        letters: { A: "the total area", R: "the bigger radius", r: "the smaller radius", l: "the slant height" },
+        example: { R: "4", r: "3", l: "5" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "pyramid-lateral", name: "Sloping faces of a regular pyramid", eq: "L = Pl/2", find: "L",
+        letters: { L: "the area of the sloping faces", P: "the perimeter of the base", l: "the slant height" },
+        example: { P: "24", l: "5" },
+      },
+      {
+        id: "pyramid-surface", name: "Surface area of a regular pyramid", eq: "A = B + Pl/2", find: "A",
+        letters: { A: "the total area", B: "the area of the base", P: "the perimeter of the base", l: "the slant height" },
+        example: { B: "36", P: "24", l: "5" },
+      },
+      {
+        id: "pyramid-slant", name: "Slant height of a square-based pyramid", eq: "l = sqrt(h^2 + (a/2)^2)", find: "l",
+        letters: { l: "the slant height", h: "the height", a: "the side of the base" },
+        example: { h: "4", a: "6" },
+      },
+      {
+        id: "pyramid-edge", name: "Sloping edge of a square-based pyramid", eq: "k = sqrt(h^2 + a^2/2)", find: "k",
+        letters: { k: "the sloping edge", h: "the height", a: "the side of the base" },
+        example: { h: "1", a: "4" },
+      },
+      {
+        id: "tetrahedron-volume", name: "Volume of a regular tetrahedron", eq: "V = a^3·sqrt(2)/12", find: "V",
+        letters: { V: "the volume", a: "the edge" },
+        example: { a: "6" },
+      },
+      {
+        id: "tetrahedron-surface", name: "Surface area of a regular tetrahedron", eq: "A = sqrt(3)a^2", find: "A",
+        letters: { A: "the area", a: "the edge" },
+        example: { a: "2" },
+      },
+      {
+        id: "tetrahedron-height", name: "Height of a regular tetrahedron", eq: "h = a·sqrt(6)/3", find: "h",
+        letters: { h: "the height", a: "the edge" },
+        example: { a: "3" },
+      },
+      {
+        id: "octahedron-volume", name: "Volume of a regular octahedron", eq: "V = sqrt(2)a^3/3", find: "V",
+        letters: { V: "the volume", a: "the edge" },
+        example: { a: "3" },
+      },
+      {
+        id: "octahedron-surface", name: "Surface area of a regular octahedron", eq: "A = 2sqrt(3)a^2", find: "A",
+        letters: { A: "the area", a: "the edge" },
+        example: { a: "2" },
+      },
+      {
+        id: "icosahedron-volume", name: "Volume of a regular icosahedron", eq: "V = 5(3 + sqrt(5))a^3/12", find: "V",
+        letters: { V: "the volume", a: "the edge" },
+        example: { a: "2" },
+      },
+      {
+        id: "icosahedron-surface", name: "Surface area of a regular icosahedron", eq: "A = 5sqrt(3)a^2", find: "A",
+        letters: { A: "the area", a: "the edge" },
+        example: { a: "2" },
+      },
+      {
+        id: "dodecahedron-volume", name: "Volume of a regular dodecahedron", eq: "V = (15 + 7sqrt(5))a^3/4", find: "V",
+        letters: { V: "the volume", a: "the edge" },
+        example: { a: "2" },
+      },
+      {
+        id: "dodecahedron-surface", name: "Surface area of a regular dodecahedron", eq: "A = 3sqrt(25 + 10sqrt(5))a^2", find: "A",
+        letters: { A: "the area", a: "the edge" },
+        example: { a: "2" },
+      },
+      {
+        id: "euler-solid", name: "Euler's formula for solids", eq: "F = E - V + 2", find: "F",
+        letters: { F: "the faces", E: "the edges", V: "the corners" },
+        example: { E: "12", V: "8" },
+      },
+      {
+        id: "cap-volume", name: "Volume of a spherical cap", eq: "V = (22/21)h^2(3r - h)", find: "V",
+        letters: { V: "the volume", h: "the height of the cap", r: "the radius of the sphere" },
+        example: { h: "3", r: "7" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "cap-area", name: "Curved surface of a spherical cap or zone", eq: "A = 2(22/7)rh", find: "A",
+        letters: { A: "the curved area", r: "the radius of the sphere", h: "the height of the cap or zone" },
+        example: { r: "7", h: "3" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "sphere-sector", name: "Volume of a spherical sector", eq: "V = (2/3)(22/7)r^2h", find: "V",
+        letters: { V: "the volume", r: "the radius of the sphere", h: "the height of the cap" },
+        example: { r: "7", h: "3" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "torus-volume", name: "Volume of a ring doughnut", eq: "V = 2(22/7)^2·Rr^2", find: "V",
+        letters: { V: "the volume", R: "the distance from the centre of the hole to the middle of the tube", r: "the radius of the tube" },
+        example: { R: "7", r: "1" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "torus-surface", name: "Surface area of a ring doughnut", eq: "A = 4(22/7)^2·Rr", find: "A",
+        letters: { A: "the area", R: "the distance from the centre of the hole to the middle of the tube", r: "the radius of the tube" },
+        example: { R: "7", r: "1" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "ellipsoid-volume", name: "Volume of an ellipsoid", eq: "V = (4/3)(22/7)abc", find: "V",
+        letters: { V: "the volume", a: "the first radius", b: "the second radius", c: "the third radius" },
+        example: { a: "7", b: "3", c: "2" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "paraboloid-volume", name: "Volume of a paraboloid", eq: "V = (22/7)r^2h/2", find: "V",
+        letters: { V: "the volume", r: "the radius of the top", h: "the height" },
+        example: { r: "7", h: "6" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "capsule-volume", name: "Volume of a capsule", eq: "V = (22/7)r^2(h + 4r/3)", find: "V",
+        letters: { V: "the volume", r: "the radius", h: "the length of the straight part" },
+        example: { r: "7", h: "10" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "pappus-volume", name: "Volume of a solid of revolution (Pappus)", eq: "V = 2(22/7)dA", find: "V",
+        letters: { V: "the volume", d: "the distance of the centre of the shape from the axis", A: "the area of the shape" },
+        example: { d: "7", A: "10" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "pappus-surface", name: "Surface of a solid of revolution (Pappus)", eq: "A = 2(22/7)dL", find: "A",
+        letters: { A: "the surface area", d: "the distance of the centre of the curve from the axis", L: "the length of the curve" },
+        example: { d: "7", L: "10" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "prismatoid", name: "Volume of a solid from its ends and middle (prismatoid)", eq: "V = h(a + 4m + b)/6", find: "V",
+        letters: { V: "the volume", h: "the height", a: "the area of one end", m: "the area of the middle slice", b: "the area of the other end" },
+        example: { h: "6", a: "10", m: "12", b: "14" },
+      },
+      {
+        id: "solid-angle", name: "Solid angle", eq: "W = A/r^2", find: "W",
+        letters: { W: "the solid angle in steradians", A: "the area on the sphere", r: "the radius" },
+        example: { A: "8", r: "2" },
+      },
+      {
+        id: "capacity-litres", name: "Litres in a volume", eq: "L = V/1000", find: "L",
+        letters: { L: "the litres", V: "the volume in cubic centimetres" },
+        example: { V: "2500" },
+      },
+      {
+        id: "distance-3d", name: "Distance between two points in space", eq: "D = sqrt((d - a)^2 + (e - b)^2 + (f - c)^2)", find: "D",
+        letters: { D: "the distance", a: "x of the first point", b: "y of the first point", c: "z of the first point", d: "x of the second", e: "y of the second", f: "z of the second" },
+        example: { a: "1", b: "2", c: "3", d: "3", e: "6", f: "7" },
+      },
+      {
+        id: "vector-magnitude-3d", name: "Length of a vector in three dimensions", eq: "m = sqrt(a^2 + b^2 + c^2)", find: "m",
+        letters: { m: "the length", a: "the x part", b: "the y part", c: "the z part" },
+        example: { a: "2", b: "3", c: "6" },
+      },
+      {
+        id: "vector-dot-3d", name: "Dot product in three dimensions", eq: "D = ad + be + cf", find: "D",
+        letters: { D: "the dot product", a: "x of the first vector", b: "y of the first", c: "z of the first", d: "x of the second", e: "y of the second", f: "z of the second" },
+        example: { a: "1", b: "2", c: "3", d: "4", e: "-1", f: "2" },
+      },
+      {
+        id: "point-plane-distance", name: "Distance from a point to a plane", eq: "d = (ax + by + cz + q)/sqrt(a^2 + b^2 + c^2)", find: "d",
+        letters: { d: "the distance (ignore the sign)", a: "the number in front of x", b: "the number in front of y", c: "the number in front of z", q: "the number on its own", x: "x of the point", y: "y of the point", z: "z of the point" },
+        example: { a: "1", b: "2", c: "2", q: "-3", x: "1", y: "1", z: "1" },
       },
     ],
   },
