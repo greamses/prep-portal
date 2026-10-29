@@ -14,9 +14,8 @@
    `example` is a worked set of values so that picking a formula and pressing go
    lands a real question on the canvas. `find` is the letter left blank.
 
-   π is written as the fraction every syllabus here tells a student to use. The
-   tool holds exact rationals, so 22/7 stays 22/7 all the way down and only
-   becomes a number when the arithmetic asks for one.
+   π is the number π itself, kept as a symbol: an answer stays as 49π until
+   the student asks for a decimal.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import * as R from "./rational.js";
@@ -280,10 +279,9 @@ export const GROUPS = [
         example: { a: "3", b: "4" },
       },
       {
-        id: "arc-length", name: "Arc length", eq: "s = 2(22/7)r(θ/360)", find: "s",
+        id: "arc-length", name: "Arc length", eq: "s = 2πr(θ/360)", find: "s",
         letters: { s: "the length of the arc", r: "the radius", θ: "the angle at the centre, in degrees" },
         example: { r: "7", θ: "90" },
-        note: "taking π as 22/7",
       },
       {
         id: "rect-area", name: "Area of a rectangle", eq: "A = lb", find: "A",
@@ -301,16 +299,14 @@ export const GROUPS = [
         example: { b: "12", h: "5" },
       },
       {
-        id: "circle-area", name: "Area of a circle", eq: "A = (22/7)r^2", find: "A",
+        id: "circle-area", name: "Area of a circle", eq: "A = πr^2", find: "A",
         letters: { A: "the area", r: "the radius" },
         example: { r: "7" },
-        note: "taking π as 22/7",
       },
       {
-        id: "circle-round", name: "Distance round a circle", eq: "C = 2(22/7)r", find: "C",
+        id: "circle-round", name: "Distance round a circle", eq: "C = 2πr", find: "C",
         letters: { C: "the distance round", r: "the radius" },
         example: { r: "14" },
-        note: "taking π as 22/7",
       },
       {
         id: "cuboid-volume", name: "Volume of a cuboid", eq: "V = lbh", find: "V",
@@ -364,10 +360,9 @@ export const GROUPS = [
         example: { s: "6" },
       },
       {
-        id: "ellipse-area", name: "Area of an ellipse", eq: "A = (22/7)ab", find: "A",
+        id: "ellipse-area", name: "Area of an ellipse", eq: "A = πab", find: "A",
         letters: { A: "the area", a: "the semi-major axis", b: "the semi-minor axis" },
         example: { a: "7", b: "4" },
-        note: "taking π as 22/7",
       },
       {
         id: "sector-area", name: "Area of a sector", eq: "A = (θ/2)r^2", find: "A",
@@ -401,40 +396,35 @@ export const GROUPS = [
         example: { l: "5", b: "3", h: "4" },
       },
       {
-        id: "cylinder-volume", name: "Volume of a cylinder", eq: "V = (22/7)r^2h", find: "V",
+        id: "cylinder-volume", name: "Volume of a cylinder", eq: "V = πr^2h", find: "V",
         letters: { V: "the volume", r: "the radius", h: "the height" },
         example: { r: "7", h: "10" },
-        note: "taking π as 22/7",
       },
       {
-        id: "cylinder-surface-area", name: "Total surface area of a cylinder", eq: "A = 2(22/7)r(r + h)", find: "A",
+        id: "cylinder-surface-area", name: "Total surface area of a cylinder", eq: "A = 2πr(r + h)", find: "A",
         letters: { A: "the surface area", r: "the radius", h: "the height" },
         example: { r: "7", h: "10" },
-        note: "taking π as 22/7",
       },
       {
-        id: "sphere-volume", name: "Volume of a sphere", eq: "V = (4/3)(22/7)r^3", find: "V",
+        id: "sphere-volume", name: "Volume of a sphere", eq: "V = (4/3)πr^3", find: "V",
         letters: { V: "the volume", r: "the radius" },
         example: { r: "7" },
-        note: "taking π as 22/7",
       },
       {
-        id: "sphere-surface-area", name: "Surface area of a sphere", eq: "A = 4(22/7)r^2", find: "A",
+        id: "sphere-surface-area", name: "Surface area of a sphere", eq: "A = 4πr^2", find: "A",
         letters: { A: "the surface area", r: "the radius" },
         example: { r: "7" },
-        note: "taking π as 22/7",
       },
       {
-        id: "cone-volume", name: "Volume of a cone", eq: "V = (1/3)(22/7)r^2h", find: "V",
+        id: "cone-volume", name: "Volume of a cone", eq: "V = (1/3)πr^2h", find: "V",
         letters: { V: "the volume", r: "the base radius", h: "the height" },
         example: { r: "3", h: "4" },
-        note: "taking π as 22/7",
       },
       {
-        id: "cone-surface-area", name: "Total surface area of a cone", eq: "A = (22/7)r(r + sqrt(r^2 + h^2))", find: "A",
+        id: "cone-surface-area", name: "Total surface area of a cone", eq: "A = πr(r + sqrt(r^2 + h^2))", find: "A",
         letters: { A: "the surface area", r: "the base radius", h: "the height" },
         example: { r: "3", h: "4" },
-        note: "taking π as 22/7; the slant height is sqrt(r^2 + h^2)",
+        note: "the slant height is sqrt(r^2 + h^2)",
       },
       {
         id: "pyramid-volume", name: "Volume of a pyramid", eq: "V = (1/3)Bh", find: "V",
@@ -463,10 +453,9 @@ export const GROUPS = [
         example: { s: "4" },
       },
       {
-        id: "annulus-area", name: "Area of a ring between two circles", eq: "A = (22/7)(R^2 - r^2)", find: "A",
+        id: "annulus-area", name: "Area of a ring between two circles", eq: "A = π(R^2 - r^2)", find: "A",
         letters: { A: "the area of the ring", R: "the outer radius", r: "the inner radius" },
         example: { R: "10", r: "7" },
-        note: "taking π as 22/7",
       },
       {
         id: "chord-length", name: "Length of a chord from its distance to the centre", eq: "c = 2sqrt(r^2 - d^2)", find: "c",
@@ -479,10 +468,10 @@ export const GROUPS = [
         example: { r: "10", t: "60" },
       },
       {
-        id: "segment-area", name: "Area of a segment of a circle", eq: "A = (t/360)(22/7)r^2 - (1/2)r^2·sin(t°)", find: "A",
+        id: "segment-area", name: "Area of a segment of a circle", eq: "A = (t/360)πr^2 - (1/2)r^2·sin(t°)", find: "A",
         letters: { A: "the area of the segment", t: "the angle at the centre, in degrees", r: "the radius" },
         example: { t: "90", r: "7" },
-        note: "taking π as 22/7; the sector take away its triangle",
+        note: "the sector take away its triangle",
       },
       {
         id: "prism-volume", name: "Volume of a prism", eq: "V = Ah", find: "V",
@@ -490,10 +479,9 @@ export const GROUPS = [
         example: { A: "15", h: "8" },
       },
       {
-        id: "cylinder-curved", name: "Curved surface area of a cylinder", eq: "A = 2(22/7)rh", find: "A",
+        id: "cylinder-curved", name: "Curved surface area of a cylinder", eq: "A = 2πrh", find: "A",
         letters: { A: "the curved area", r: "the radius", h: "the height" },
         example: { r: "7", h: "10" },
-        note: "taking π as 22/7",
       },
       {
         id: "cone-slant", name: "Slant height of a cone", eq: "l = sqrt(r^2 + h^2)", find: "l",
@@ -501,34 +489,30 @@ export const GROUPS = [
         example: { r: "3", h: "4" },
       },
       {
-        id: "cone-curved", name: "Curved surface area of a cone", eq: "A = (22/7)rl", find: "A",
+        id: "cone-curved", name: "Curved surface area of a cone", eq: "A = πrl", find: "A",
         letters: { A: "the curved area", r: "the base radius", l: "the slant height" },
         example: { r: "7", l: "10" },
-        note: "taking π as 22/7",
       },
       {
-        id: "frustum-volume", name: "Volume of a frustum of a cone", eq: "V = (1/3)(22/7)h(R^2 + Rr + r^2)", find: "V",
+        id: "frustum-volume", name: "Volume of a frustum of a cone", eq: "V = (1/3)πh(R^2 + Rr + r^2)", find: "V",
         letters: { V: "the volume", h: "the height", R: "the bigger radius", r: "the smaller radius" },
         example: { h: "6", R: "7", r: "3" },
-        note: "taking π as 22/7",
       },
       {
-        id: "hemisphere-volume", name: "Volume of a hemisphere", eq: "V = (2/3)(22/7)r^3", find: "V",
+        id: "hemisphere-volume", name: "Volume of a hemisphere", eq: "V = (2/3)πr^3", find: "V",
         letters: { V: "the volume", r: "the radius" },
         example: { r: "7" },
-        note: "taking π as 22/7",
       },
       {
-        id: "hemisphere-curved", name: "Curved surface area of a hemisphere", eq: "A = 2(22/7)r^2", find: "A",
+        id: "hemisphere-curved", name: "Curved surface area of a hemisphere", eq: "A = 2πr^2", find: "A",
         letters: { A: "the curved area", r: "the radius" },
         example: { r: "7" },
-        note: "taking π as 22/7",
       },
       {
-        id: "hemisphere-total", name: "Total surface area of a hemisphere", eq: "A = 3(22/7)r^2", find: "A",
+        id: "hemisphere-total", name: "Total surface area of a hemisphere", eq: "A = 3πr^2", find: "A",
         letters: { A: "the total area", r: "the radius" },
         example: { r: "7" },
-        note: "taking π as 22/7; the curved part plus the flat circle",
+        note: "the curved part plus the flat circle",
       },
       {
         id: "polygon-angle-sum", name: "Sum of the interior angles of a polygon", eq: "S = 180(n - 2)", find: "S",
@@ -1827,10 +1811,9 @@ export const GROUPS = [
         example: { T: "20", w: "150" },
       },
       {
-        id: "angular-speed", name: "Angular speed from the frequency", eq: "w = 2(22/7)f", find: "w",
+        id: "angular-speed", name: "Angular speed from the frequency", eq: "w = 2πf", find: "w",
         letters: { w: "the angular speed, in radians per second", f: "the turns each second" },
         example: { f: "7" },
-        note: "taking π as 22/7",
       },
       {
         id: "gear-ratio", name: "Gear ratio", eq: "G = N/n", find: "G",
@@ -3096,22 +3079,19 @@ export const GROUPS = [
         example: { r: "7" },
       },
       {
-        id: "circle-area-diameter", name: "Area of a circle from its diameter", eq: "A = (22/7)(d/2)^2", find: "A",
+        id: "circle-area-diameter", name: "Area of a circle from its diameter", eq: "A = π(d/2)^2", find: "A",
         letters: { A: "the area", d: "the diameter" },
         example: { d: "14" },
-        note: "taking π as 22/7",
       },
       {
-        id: "circle-circumference-diameter", name: "Distance round a circle from its diameter", eq: "C = (22/7)d", find: "C",
+        id: "circle-circumference-diameter", name: "Distance round a circle from its diameter", eq: "C = πd", find: "C",
         letters: { C: "the circumference", d: "the diameter" },
         example: { d: "14" },
-        note: "taking π as 22/7",
       },
       {
-        id: "circle-area-circumference", name: "Area of a circle from its circumference", eq: "A = C^2/(4(22/7))", find: "A",
+        id: "circle-area-circumference", name: "Area of a circle from its circumference", eq: "A = C^2/(4π)", find: "A",
         letters: { A: "the area", C: "the circumference" },
         example: { C: "44" },
-        note: "taking π as 22/7",
       },
       {
         id: "sector-perimeter", name: "Perimeter of a sector", eq: "P = 2r + s", find: "P",
@@ -3124,10 +3104,9 @@ export const GROUPS = [
         example: { r: "5", t: "2" },
       },
       {
-        id: "degrees-to-radians", name: "Degrees into radians", eq: "R = (22/7)D/180", find: "R",
+        id: "degrees-to-radians", name: "Degrees into radians", eq: "R = πD/180", find: "R",
         letters: { R: "the angle in radians", D: "the angle in degrees" },
         example: { D: "90" },
-        note: "taking π as 22/7",
       },
       {
         id: "sagitta", name: "Height of a circular segment", eq: "h = r - sqrt(r^2 - c^2/4)", find: "h",
@@ -3191,10 +3170,10 @@ export const GROUPS = [
         note: "the centre is at (−g, −f)",
       },
       {
-        id: "ellipse-perimeter", name: "Distance round an ellipse (Ramanujan)", eq: "P = (22/7)(3(a + b) - sqrt((3a + b)(a + 3b)))", find: "P",
+        id: "ellipse-perimeter", name: "Distance round an ellipse (Ramanujan)", eq: "P = π(3(a + b) - sqrt((3a + b)(a + 3b)))", find: "P",
         letters: { P: "the perimeter", a: "the long radius", b: "the short radius" },
         example: { a: "7", b: "7" },
-        note: "taking π as 22/7; a close estimate",
+        note: "a close estimate",
       },
       {
         id: "ellipse-eccentricity", name: "How stretched an ellipse is", eq: "x = sqrt(1 - b^2/a^2)", find: "x",
@@ -3381,16 +3360,14 @@ export const GROUPS = [
         example: { s: "2", h: "5" },
       },
       {
-        id: "hollow-cylinder", name: "Volume of a pipe", eq: "V = (22/7)h(R^2 - r^2)", find: "V",
+        id: "hollow-cylinder", name: "Volume of a pipe", eq: "V = πh(R^2 - r^2)", find: "V",
         letters: { V: "the volume of the material", h: "the length", R: "the outer radius", r: "the inner radius" },
         example: { h: "7", R: "14", r: "7" },
-        note: "taking π as 22/7",
       },
       {
-        id: "open-cylinder", name: "Surface area of a cylinder open at the top", eq: "A = (22/7)r(r + 2h)", find: "A",
+        id: "open-cylinder", name: "Surface area of a cylinder open at the top", eq: "A = πr(r + 2h)", find: "A",
         letters: { A: "the area", r: "the radius", h: "the height" },
         example: { r: "7", h: "10" },
-        note: "taking π as 22/7",
       },
       {
         id: "cylinder-diagonal", name: "Longest straight line inside a cylinder", eq: "d = sqrt(4r^2 + h^2)", find: "d",
@@ -3413,16 +3390,14 @@ export const GROUPS = [
         example: { h: "4", R: "6", r: "3" },
       },
       {
-        id: "frustum-lateral", name: "Curved surface of a frustum", eq: "A = (22/7)(R + r)l", find: "A",
+        id: "frustum-lateral", name: "Curved surface of a frustum", eq: "A = π(R + r)l", find: "A",
         letters: { A: "the curved area", R: "the bigger radius", r: "the smaller radius", l: "the slant height" },
         example: { R: "4", r: "3", l: "5" },
-        note: "taking π as 22/7",
       },
       {
-        id: "frustum-total", name: "Total surface of a frustum", eq: "A = (22/7)((R + r)l + R^2 + r^2)", find: "A",
+        id: "frustum-total", name: "Total surface of a frustum", eq: "A = π((R + r)l + R^2 + r^2)", find: "A",
         letters: { A: "the total area", R: "the bigger radius", r: "the smaller radius", l: "the slant height" },
         example: { R: "4", r: "3", l: "5" },
-        note: "taking π as 22/7",
       },
       {
         id: "pyramid-lateral", name: "Sloping faces of a regular pyramid", eq: "L = Pl/2", find: "L",
@@ -3495,64 +3470,54 @@ export const GROUPS = [
         example: { E: "12", V: "8" },
       },
       {
-        id: "cap-volume", name: "Volume of a spherical cap", eq: "V = (22/21)h^2(3r - h)", find: "V",
+        id: "cap-volume", name: "Volume of a spherical cap", eq: "V = πh^2(3r - h)/3", find: "V",
         letters: { V: "the volume", h: "the height of the cap", r: "the radius of the sphere" },
         example: { h: "3", r: "7" },
-        note: "taking π as 22/7",
       },
       {
-        id: "cap-area", name: "Curved surface of a spherical cap or zone", eq: "A = 2(22/7)rh", find: "A",
+        id: "cap-area", name: "Curved surface of a spherical cap or zone", eq: "A = 2πrh", find: "A",
         letters: { A: "the curved area", r: "the radius of the sphere", h: "the height of the cap or zone" },
         example: { r: "7", h: "3" },
-        note: "taking π as 22/7",
       },
       {
-        id: "sphere-sector", name: "Volume of a spherical sector", eq: "V = (2/3)(22/7)r^2h", find: "V",
+        id: "sphere-sector", name: "Volume of a spherical sector", eq: "V = (2/3)πr^2h", find: "V",
         letters: { V: "the volume", r: "the radius of the sphere", h: "the height of the cap" },
         example: { r: "7", h: "3" },
-        note: "taking π as 22/7",
       },
       {
-        id: "torus-volume", name: "Volume of a ring doughnut", eq: "V = 2(22/7)^2·Rr^2", find: "V",
+        id: "torus-volume", name: "Volume of a ring doughnut", eq: "V = 2π^2·Rr^2", find: "V",
         letters: { V: "the volume", R: "the distance from the centre of the hole to the middle of the tube", r: "the radius of the tube" },
         example: { R: "7", r: "1" },
-        note: "taking π as 22/7",
       },
       {
-        id: "torus-surface", name: "Surface area of a ring doughnut", eq: "A = 4(22/7)^2·Rr", find: "A",
+        id: "torus-surface", name: "Surface area of a ring doughnut", eq: "A = 4π^2·Rr", find: "A",
         letters: { A: "the area", R: "the distance from the centre of the hole to the middle of the tube", r: "the radius of the tube" },
         example: { R: "7", r: "1" },
-        note: "taking π as 22/7",
       },
       {
-        id: "ellipsoid-volume", name: "Volume of an ellipsoid", eq: "V = (4/3)(22/7)abc", find: "V",
+        id: "ellipsoid-volume", name: "Volume of an ellipsoid", eq: "V = (4/3)πabc", find: "V",
         letters: { V: "the volume", a: "the first radius", b: "the second radius", c: "the third radius" },
         example: { a: "7", b: "3", c: "2" },
-        note: "taking π as 22/7",
       },
       {
-        id: "paraboloid-volume", name: "Volume of a paraboloid", eq: "V = (22/7)r^2h/2", find: "V",
+        id: "paraboloid-volume", name: "Volume of a paraboloid", eq: "V = πr^2h/2", find: "V",
         letters: { V: "the volume", r: "the radius of the top", h: "the height" },
         example: { r: "7", h: "6" },
-        note: "taking π as 22/7",
       },
       {
-        id: "capsule-volume", name: "Volume of a capsule", eq: "V = (22/7)r^2(h + 4r/3)", find: "V",
+        id: "capsule-volume", name: "Volume of a capsule", eq: "V = πr^2(h + 4r/3)", find: "V",
         letters: { V: "the volume", r: "the radius", h: "the length of the straight part" },
         example: { r: "7", h: "10" },
-        note: "taking π as 22/7",
       },
       {
-        id: "pappus-volume", name: "Volume of a solid of revolution (Pappus)", eq: "V = 2(22/7)dA", find: "V",
+        id: "pappus-volume", name: "Volume of a solid of revolution (Pappus)", eq: "V = 2πdA", find: "V",
         letters: { V: "the volume", d: "the distance of the centre of the shape from the axis", A: "the area of the shape" },
         example: { d: "7", A: "10" },
-        note: "taking π as 22/7",
       },
       {
-        id: "pappus-surface", name: "Surface of a solid of revolution (Pappus)", eq: "A = 2(22/7)dL", find: "A",
+        id: "pappus-surface", name: "Surface of a solid of revolution (Pappus)", eq: "A = 2πdL", find: "A",
         letters: { A: "the surface area", d: "the distance of the centre of the curve from the axis", L: "the length of the curve" },
         example: { d: "7", L: "10" },
-        note: "taking π as 22/7",
       },
       {
         id: "prismatoid", name: "Volume of a solid from its ends and middle (prismatoid)", eq: "V = h(a + 4m + b)/6", find: "V",
@@ -3834,10 +3799,9 @@ export const GROUPS = [
         note: "also the speed of water leaving a hole in a tank (Torricelli)",
       },
       {
-        id: "circular-speed", name: "Speed round a circle", eq: "v = 2(22/7)r/T", find: "v",
+        id: "circular-speed", name: "Speed round a circle", eq: "v = 2πr/T", find: "v",
         letters: { v: "the speed", r: "the radius", T: "the time for one turn" },
         example: { r: "7", T: "11" },
-        note: "taking π as 22/7",
       },
       {
         id: "speed-angular", name: "Speed from the angular speed", eq: "v = rw", find: "v",
@@ -3845,10 +3809,9 @@ export const GROUPS = [
         example: { r: "2", w: "5" },
       },
       {
-        id: "angular-period", name: "Angular speed from the time for one turn", eq: "w = 2(22/7)/T", find: "w",
+        id: "angular-period", name: "Angular speed from the time for one turn", eq: "w = 2π/T", find: "w",
         letters: { w: "the angular speed", T: "the time for one turn" },
         example: { T: "11" },
-        note: "taking π as 22/7",
       },
       {
         id: "centripetal-acceleration", name: "Acceleration towards the centre", eq: "a = v^2/r", find: "a",
@@ -3861,10 +3824,9 @@ export const GROUPS = [
         example: { w: "3", r: "2" },
       },
       {
-        id: "orbit-period", name: "Time of one orbit", eq: "T = 2(22/7)sqrt(r^3/(GM))", find: "T",
+        id: "orbit-period", name: "Time of one orbit", eq: "T = 2πsqrt(r^3/(GM))", find: "T",
         letters: { T: "the time for one orbit", r: "the distance from the centre", G: "the gravitational constant", M: "the mass of the body being orbited" },
         example: { r: "4", G: "2", M: "1" },
-        note: "taking π as 22/7",
       },
       {
         id: "angular-acceleration", name: "Angular acceleration", eq: "a = (w - v)/t", find: "a",
@@ -4012,16 +3974,14 @@ export const GROUPS = [
     group: "Physics: oscillations and fluids",
     items: [
       {
-        id: "spring-period", name: "Time for a mass on a spring to swing once", eq: "T = 2(22/7)sqrt(m/k)", find: "T",
+        id: "spring-period", name: "Time for a mass on a spring to swing once", eq: "T = 2πsqrt(m/k)", find: "T",
         letters: { T: "the period", m: "the mass", k: "the spring constant" },
         example: { m: "1", k: "4" },
-        note: "taking π as 22/7",
       },
       {
-        id: "pendulum", name: "Time for a pendulum to swing once", eq: "T = 2(22/7)sqrt(L/g)", find: "T",
+        id: "pendulum", name: "Time for a pendulum to swing once", eq: "T = 2πsqrt(L/g)", find: "T",
         letters: { T: "the period", L: "the length of the pendulum", g: "the pull of gravity per kilogram" },
         example: { L: "1", g: "4" },
-        note: "taking π as 22/7",
       },
       {
         id: "shm-acceleration", name: "Acceleration in simple harmonic motion", eq: "a = -w^2x", find: "a",
@@ -4064,10 +4024,9 @@ export const GROUPS = [
         example: { T: "0.07", a: "0", d: "1000", g: "10", r: "0.001" },
       },
       {
-        id: "stokes-drag", name: "Drag on a small sphere in a thick fluid (Stokes)", eq: "F = 6(22/7)nrv", find: "F",
+        id: "stokes-drag", name: "Drag on a small sphere in a thick fluid (Stokes)", eq: "F = 6πnrv", find: "F",
         letters: { F: "the drag", n: "the viscosity", r: "the radius of the sphere", v: "the speed" },
         example: { n: "7", r: "2", v: "3" },
-        note: "taking π as 22/7",
       },
     ],
   },
@@ -4145,10 +4104,9 @@ export const GROUPS = [
         example: { P: "2", A: "4" },
       },
       {
-        id: "inverse-square-light", name: "Intensity spreading from a point source", eq: "I = P/(4(22/7)r^2)", find: "I",
+        id: "inverse-square-light", name: "Intensity spreading from a point source", eq: "I = P/(4πr^2)", find: "I",
         letters: { I: "the intensity", P: "the power of the source", r: "the distance from it" },
         example: { P: "88", r: "7" },
-        note: "taking π as 22/7",
       },
       {
         id: "string-wave-speed", name: "Speed of a wave on a string", eq: "v = sqrt(T/m)", find: "v",
@@ -4321,10 +4279,9 @@ export const GROUPS = [
         example: { m: "2", v: "6", q: "3", B: "1" },
       },
       {
-        id: "wire-field", name: "Magnetic field round a long wire", eq: "B = kI/(2(22/7)r)", find: "B",
+        id: "wire-field", name: "Magnetic field round a long wire", eq: "B = kI/(2πr)", find: "B",
         letters: { B: "the magnetic field", k: "the permeability", I: "the current", r: "the distance from the wire" },
         example: { k: "2", I: "11", r: "7" },
-        note: "taking π as 22/7",
       },
       {
         id: "solenoid-field", name: "Magnetic field inside a solenoid", eq: "B = knI", find: "B",
@@ -4362,16 +4319,14 @@ export const GROUPS = [
         example: { L: "2", I: "6", t: "3" },
       },
       {
-        id: "inductive-reactance", name: "Reactance of an inductor", eq: "X = 2(22/7)fL", find: "X",
+        id: "inductive-reactance", name: "Reactance of an inductor", eq: "X = 2πfL", find: "X",
         letters: { X: "the reactance", f: "the frequency", L: "the inductance" },
         example: { f: "50", L: "7" },
-        note: "taking π as 22/7",
       },
       {
-        id: "capacitive-reactance", name: "Reactance of a capacitor", eq: "X = 1/(2(22/7)fC)", find: "X",
+        id: "capacitive-reactance", name: "Reactance of a capacitor", eq: "X = 1/(2πfC)", find: "X",
         letters: { X: "the reactance", f: "the frequency", C: "the capacitance" },
         example: { f: "7", C: "1/44" },
-        note: "taking π as 22/7",
       },
       {
         id: "impedance", name: "Impedance of a series circuit", eq: "Z = sqrt(R^2 + (X - Y)^2)", find: "Z",
@@ -4379,10 +4334,9 @@ export const GROUPS = [
         example: { R: "3", X: "10", Y: "6" },
       },
       {
-        id: "resonance", name: "Resonant frequency", eq: "f = 1/(2(22/7)sqrt(LC))", find: "f",
+        id: "resonance", name: "Resonant frequency", eq: "f = 1/(2πsqrt(LC))", find: "f",
         letters: { f: "the resonant frequency", L: "the inductance", C: "the capacitance" },
         example: { L: "1", C: "1/49" },
-        note: "taking π as 22/7",
       },
       {
         id: "time-constant", name: "Time constant of a capacitor circuit", eq: "T = RC", find: "T",
@@ -4471,10 +4425,9 @@ export const GROUPS = [
         example: { G: "3", M: "6", c: "3" },
       },
       {
-        id: "luminosity", name: "Luminosity of a star", eq: "L = 4(22/7)r^2sT^4", find: "L",
+        id: "luminosity", name: "Luminosity of a star", eq: "L = 4πr^2sT^4", find: "L",
         letters: { L: "the luminosity", r: "the radius of the star", s: "the Stefan-Boltzmann constant", T: "the surface temperature in kelvin" },
         example: { r: "7", s: "1", T: "2" },
-        note: "taking π as 22/7",
       },
       {
         id: "time-dilation", name: "Time dilation", eq: "t = T/sqrt(1 - v^2/c^2)", find: "t",
@@ -5230,16 +5183,14 @@ export const GROUPS = [
         example: { N: "24", n: "6" },
       },
       {
-        id: "circularity-ratio", name: "Circularity ratio of a basin", eq: "C = 4(22/7)A/P^2", find: "C",
+        id: "circularity-ratio", name: "Circularity ratio of a basin", eq: "C = 4πA/P^2", find: "C",
         letters: { C: "the circularity ratio", A: "the area", P: "the perimeter" },
         example: { A: "154", P: "44" },
-        note: "taking π as 22/7",
       },
       {
-        id: "elongation-ratio", name: "Elongation ratio of a basin", eq: "E = 2sqrt(A/(22/7))/L", find: "E",
+        id: "elongation-ratio", name: "Elongation ratio of a basin", eq: "E = 2sqrt(A/π)/L", find: "E",
         letters: { E: "the elongation ratio", A: "the area", L: "the length of the basin" },
         example: { A: "154", L: "14" },
-        note: "taking π as 22/7",
       },
       {
         id: "form-factor", name: "Form factor of a basin", eq: "F = A/L^2", find: "F",
@@ -5282,16 +5233,14 @@ export const GROUPS = [
         example: { P: "200", d: "1", f: "1/100", D: "1000" },
       },
       {
-        id: "deep-water-speed", name: "Speed of a deep-water wave", eq: "c = gT/(2(22/7))", find: "c",
+        id: "deep-water-speed", name: "Speed of a deep-water wave", eq: "c = gT/(2π)", find: "c",
         letters: { c: "the wave speed", g: "the pull of gravity per kilogram", T: "the time between waves" },
         example: { g: "10", T: "22" },
-        note: "taking π as 22/7",
       },
       {
-        id: "deep-water-wavelength", name: "Wavelength of a deep-water wave", eq: "L = gT^2/(2(22/7))", find: "L",
+        id: "deep-water-wavelength", name: "Wavelength of a deep-water wave", eq: "L = gT^2/(2π)", find: "L",
         letters: { L: "the wavelength", g: "the pull of gravity per kilogram", T: "the time between waves" },
         example: { g: "10", T: "11/5" },
-        note: "taking π as 22/7",
       },
       {
         id: "dry-lapse", name: "Cooling of rising dry air", eq: "T = t - 9.8h/1000", find: "T",
@@ -5375,10 +5324,9 @@ export const GROUPS = [
         example: { n: "2", F: "100", f: "1" },
       },
       {
-        id: "apparent-brightness", name: "Apparent brightness of a star", eq: "b = L/(4(22/7)d^2)", find: "b",
+        id: "apparent-brightness", name: "Apparent brightness of a star", eq: "b = L/(4πd^2)", find: "b",
         letters: { b: "the apparent brightness", L: "the luminosity", d: "the distance" },
         example: { L: "88", d: "7" },
-        note: "taking π as 22/7",
       },
       {
         id: "synodic-period", name: "Synodic period of an outer planet", eq: "1/S = 1/E - 1/P", find: "S",
@@ -5394,6 +5342,229 @@ export const GROUPS = [
         id: "vis-viva", name: "Speed in an elliptical orbit (vis-viva)", eq: "v = sqrt(GM(2/r - 1/a))", find: "v",
         letters: { v: "the speed", G: "the gravitational constant", M: "the mass of the body being orbited", r: "the distance now", a: "the semi-major axis" },
         example: { G: "1", M: "4", r: "1", a: "1" },
+      },
+    ],
+  },
+  {
+    group: "Geometry: faces, edges and vertices",
+    items: [
+      {
+        id: "prism-faces", name: "Faces of a prism", eq: "F = n + 2", find: "F",
+        letters: { F: "the faces", n: "the sides of the base" },
+        example: { n: "5" },
+        note: "two ends and one rectangle for each side",
+      },
+      {
+        id: "prism-edges", name: "Edges of a prism", eq: "E = 3n", find: "E",
+        letters: { E: "the edges", n: "the sides of the base" },
+        example: { n: "5" },
+      },
+      {
+        id: "prism-vertices", name: "Vertices of a prism", eq: "V = 2n", find: "V",
+        letters: { V: "the vertices (corners)", n: "the sides of the base" },
+        example: { n: "5" },
+      },
+      {
+        id: "pyramid-faces", name: "Faces of a pyramid", eq: "F = n + 1", find: "F",
+        letters: { F: "the faces", n: "the sides of the base" },
+        example: { n: "5" },
+        note: "the base and one triangle for each side",
+      },
+      {
+        id: "pyramid-edges", name: "Edges of a pyramid", eq: "E = 2n", find: "E",
+        letters: { E: "the edges", n: "the sides of the base" },
+        example: { n: "5" },
+      },
+      {
+        id: "pyramid-vertices", name: "Vertices of a pyramid", eq: "V = n + 1", find: "V",
+        letters: { V: "the vertices (corners)", n: "the sides of the base" },
+        example: { n: "5" },
+      },
+      {
+        id: "bipyramid-faces", name: "Faces of a bipyramid", eq: "F = 2n", find: "F",
+        letters: { F: "the faces", n: "the sides of the middle polygon" },
+        example: { n: "4" },
+        note: "two pyramids joined base to base",
+      },
+      {
+        id: "bipyramid-edges", name: "Edges of a bipyramid", eq: "E = 3n", find: "E",
+        letters: { E: "the edges", n: "the sides of the middle polygon" },
+        example: { n: "4" },
+      },
+      {
+        id: "bipyramid-vertices", name: "Vertices of a bipyramid", eq: "V = n + 2", find: "V",
+        letters: { V: "the vertices (corners)", n: "the sides of the middle polygon" },
+        example: { n: "4" },
+      },
+      {
+        id: "antiprism-faces", name: "Faces of an antiprism", eq: "F = 2n + 2", find: "F",
+        letters: { F: "the faces", n: "the sides of each end" },
+        example: { n: "5" },
+      },
+      {
+        id: "antiprism-edges", name: "Edges of an antiprism", eq: "E = 4n", find: "E",
+        letters: { E: "the edges", n: "the sides of each end" },
+        example: { n: "5" },
+      },
+      {
+        id: "antiprism-vertices", name: "Vertices of an antiprism", eq: "V = 2n", find: "V",
+        letters: { V: "the vertices (corners)", n: "the sides of each end" },
+        example: { n: "5" },
+      },
+      {
+        id: "polyhedron-edges-faces", name: "Edges from the faces", eq: "E = pF/2", find: "E",
+        letters: { E: "the edges", p: "the sides of each face", F: "the faces" },
+        example: { p: "4", F: "6" },
+        note: "every edge is shared by two faces",
+      },
+      {
+        id: "polyhedron-edges-vertices", name: "Edges from the vertices", eq: "E = qV/2", find: "E",
+        letters: { E: "the edges", q: "the edges meeting at each vertex", V: "the vertices" },
+        example: { q: "3", V: "8" },
+        note: "every edge has two ends",
+      },
+      {
+        id: "regular-polyhedron-vertices", name: "Vertices of a regular polyhedron", eq: "V = 4p/(2p + 2q - pq)", find: "V",
+        letters: { V: "the vertices", p: "the sides of each face", q: "the faces meeting at each vertex" },
+        example: { p: "4", q: "3" },
+        note: "a cube is p = 4, q = 3",
+      },
+      {
+        id: "regular-polyhedron-edges", name: "Edges of a regular polyhedron", eq: "E = 2pq/(2p + 2q - pq)", find: "E",
+        letters: { E: "the edges", p: "the sides of each face", q: "the faces meeting at each vertex" },
+        example: { p: "4", q: "3" },
+      },
+      {
+        id: "regular-polyhedron-faces", name: "Faces of a regular polyhedron", eq: "F = 4q/(2p + 2q - pq)", find: "F",
+        letters: { F: "the faces", p: "the sides of each face", q: "the faces meeting at each vertex" },
+        example: { p: "4", q: "3" },
+      },
+      {
+        id: "euler-genus", name: "Euler's formula for a solid with holes", eq: "F = E - V + 2 - 2g", find: "F",
+        letters: { F: "the faces", E: "the edges", V: "the vertices", g: "the holes through the solid" },
+        example: { E: "24", V: "16", g: "1" },
+        note: "a doughnut shape has g = 1",
+      },
+      {
+        id: "face-angle-total", name: "Sum of all the face angles of a solid", eq: "S = 360(V - 2)", find: "S",
+        letters: { S: "the sum of every angle on every face, in degrees", V: "the vertices" },
+        example: { V: "8" },
+      },
+      {
+        id: "angle-defect", name: "Angle defect at a vertex", eq: "D = 360 - S", find: "D",
+        letters: { D: "the angle defect in degrees", S: "the sum of the face angles at the vertex" },
+        example: { S: "270" },
+        note: "the defects of all the vertices add to 720",
+      },
+      {
+        id: "total-edge-length", name: "Total length of the edges of a regular solid", eq: "L = Ea", find: "L",
+        letters: { L: "the total length of all the edges", E: "the number of edges", a: "the length of one edge" },
+        example: { E: "12", a: "5" },
+      },
+      {
+        id: "cube-edge-length", name: "Total edge length of a cube", eq: "L = 12s", find: "L",
+        letters: { L: "the total length of the edges", s: "the edge" },
+        example: { s: "5" },
+      },
+      {
+        id: "cuboid-edge-length", name: "Total edge length of a cuboid", eq: "L = 4(l + w + h)", find: "L",
+        letters: { L: "the total length of the edges", l: "the length", w: "the width", h: "the height" },
+        example: { l: "6", w: "4", h: "3" },
+      },
+      {
+        id: "prism-edge-length", name: "Total edge length of a regular prism", eq: "L = 2ns + nh", find: "L",
+        letters: { L: "the total length of the edges", n: "the sides of the base", s: "the side of the base", h: "the height" },
+        example: { n: "6", s: "3", h: "10" },
+      },
+      {
+        id: "pyramid-edge-length", name: "Total edge length of a regular pyramid", eq: "L = ns + nk", find: "L",
+        letters: { L: "the total length of the edges", n: "the sides of the base", s: "the side of the base", k: "the sloping edge" },
+        example: { n: "4", s: "6", k: "5" },
+      },
+    ],
+  },
+  {
+    group: "Geometry: more surface areas and volumes of solids",
+    items: [
+      {
+        id: "cube-lateral", name: "Four sides of a cube", eq: "A = 4s^2", find: "A",
+        letters: { A: "the area of the four sides", s: "the edge" },
+        example: { s: "5" },
+      },
+      {
+        id: "triangular-prism-volume", name: "Volume of a triangular prism", eq: "V = bhl/2", find: "V",
+        letters: { V: "the volume", b: "the base of the triangle", h: "the height of the triangle", l: "the length of the prism" },
+        example: { b: "6", h: "4", l: "10" },
+      },
+      {
+        id: "polygon-prism-volume", name: "Volume of a regular prism", eq: "V = ns^2h/(4tan((180/n)°))", find: "V",
+        letters: { V: "the volume", n: "the sides of the base", s: "the side of the base", h: "the height of the prism" },
+        example: { n: "4", s: "5", h: "10" },
+      },
+      {
+        id: "hexagonal-prism-surface", name: "Surface area of a hexagonal prism", eq: "A = 3sqrt(3)s^2 + 6sh", find: "A",
+        letters: { A: "the area", s: "the side of the hexagon", h: "the height" },
+        example: { s: "2", h: "5" },
+      },
+      {
+        id: "hollow-cylinder-surface", name: "Surface area of a pipe with both ends open to view", eq: "A = 2πh(R + r) + 2π(R^2 - r^2)", find: "A",
+        letters: { A: "the total area", h: "the length", R: "the outer radius", r: "the inner radius" },
+        example: { h: "10", R: "5", r: "3" },
+      },
+      {
+        id: "square-pyramid-volume", name: "Volume of a square-based pyramid", eq: "V = a^2h/3", find: "V",
+        letters: { V: "the volume", a: "the side of the base", h: "the height" },
+        example: { a: "6", h: "5" },
+      },
+      {
+        id: "square-pyramid-surface", name: "Surface area of a square-based pyramid", eq: "A = a^2 + 2al", find: "A",
+        letters: { A: "the total area", a: "the side of the base", l: "the slant height" },
+        example: { a: "6", l: "5" },
+      },
+      {
+        id: "polygon-pyramid-volume", name: "Volume of a regular pyramid", eq: "V = ns^2h/(12tan((180/n)°))", find: "V",
+        letters: { V: "the volume", n: "the sides of the base", s: "the side of the base", h: "the height" },
+        example: { n: "4", s: "6", h: "5" },
+      },
+      {
+        id: "square-frustum-volume", name: "Volume of a square frustum", eq: "V = h(a^2 + ab + b^2)/3", find: "V",
+        letters: { V: "the volume", h: "the height", a: "the side of the bigger end", b: "the side of the smaller end" },
+        example: { h: "6", a: "5", b: "3" },
+      },
+      {
+        id: "square-frustum-surface", name: "Surface area of a square frustum", eq: "A = a^2 + b^2 + 2(a + b)l", find: "A",
+        letters: { A: "the total area", a: "the side of the bigger end", b: "the side of the smaller end", l: "the slant height" },
+        example: { a: "5", b: "3", l: "4" },
+      },
+      {
+        id: "cap-total-area", name: "Total surface of a spherical cap", eq: "A = π(2a^2 + h^2)", find: "A",
+        letters: { A: "the total area", a: "the radius of the flat face", h: "the height of the cap" },
+        example: { a: "3", h: "2" },
+      },
+      {
+        id: "sector-sphere-area", name: "Surface of a spherical sector", eq: "A = πr(2h + a)", find: "A",
+        letters: { A: "the total area", r: "the radius of the sphere", h: "the height of the cap", a: "the radius of the cap's edge" },
+        example: { r: "5", h: "2", a: "3" },
+      },
+      {
+        id: "shell-volume", name: "Volume of a hollow sphere", eq: "V = (4/3)π(R^3 - r^3)", find: "V",
+        letters: { V: "the volume of the material", R: "the outer radius", r: "the inner radius" },
+        example: { R: "3", r: "2" },
+      },
+      {
+        id: "shell-area", name: "Total surface of a hollow sphere", eq: "A = 4π(R^2 + r^2)", find: "A",
+        letters: { A: "the total area, inside and out", R: "the outer radius", r: "the inner radius" },
+        example: { R: "3", r: "2" },
+      },
+      {
+        id: "capsule-surface", name: "Surface area of a capsule", eq: "A = 2πr(2r + h)", find: "A",
+        letters: { A: "the area", r: "the radius", h: "the length of the straight part" },
+        example: { r: "3", h: "10" },
+      },
+      {
+        id: "hemisphere-hollow-surface", name: "Surface area of a hollow hemisphere (a bowl)", eq: "A = 2π(R^2 + r^2) + π(R^2 - r^2)", find: "A",
+        letters: { A: "the total area", R: "the outer radius", r: "the inner radius" },
+        example: { R: "5", r: "4" },
       },
     ],
   },
@@ -5670,6 +5841,15 @@ export const GROUPS = [
 ];
 
 /** Every formula, flat, in the order they are listed. */
+/* The groups are written in the order they were made; the shelf reads better with
+   a family kept together — every "Geometry: …" group right after Shapes, every
+   "Physics: …" group right after Motion and forces. */
+for (const [family, anchor] of [["Geometry:", "Shapes"], ["Physics:", "Motion and forces"]]) {
+  const kin = GROUPS.filter((g) => g.group.startsWith(family));
+  for (const g of kin) GROUPS.splice(GROUPS.indexOf(g), 1);
+  GROUPS.splice(GROUPS.findIndex((g) => g.group === anchor) + 1, 0, ...kin);
+}
+
 export const ALL = GROUPS.flatMap((g) => g.items.map((f) => ({ ...f, group: g.group })));
 
 export const byId = (id) => ALL.find((f) => f.id === id) || null;

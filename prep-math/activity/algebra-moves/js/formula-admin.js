@@ -43,7 +43,7 @@ export function mountFormulaAdmin(host) {
     </div>
     <div class="am-row am-row--type" style="margin-top: 0.5rem">
       <input class="am-input" id="fa-eq" autocomplete="off" spellcheck="false"
-             placeholder="Equation, e.g. A = (22/7)r^2" aria-label="The equation">
+             placeholder="Equation, e.g. A = πr^2" aria-label="The equation">
     </div>
     <div class="am-row am-row--type" style="margin-top: 0.5rem">
       <input class="am-input" id="fa-find" autocomplete="off" spellcheck="false"

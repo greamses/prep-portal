@@ -19,7 +19,7 @@
    The one thing this does that no other panel does is CHECK ITSELF. Whenever
    the blank moves, it runs the solver over what the form currently says and
    reports whether the moves on offer can actually finish it. Leaving out the r
-   in A = (22/7)r² needs a square root, which is not a move here — and telling a
+   in A = πr² needs a square root, which is not a move here — and telling a
    student that before they start beats letting them find out four lines in.
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -35,17 +35,23 @@ import { UI } from "/utils/components/ui-icons.js";
    sector and the cylinder, "money" the interest and the profit. Kept short:
    everything else is found by the formulas' own names, notes and letters. */
 const RELATED = {
-  circle: ["radius", "sector", "cylinder", "sphere", "cone", "ellipse", "22/7"],
+  circle: ["radius", "sector", "cylinder", "sphere", "cone", "ellipse", "π"],
   round: ["circle", "radius"],
-  pi: ["22/7", "π"],
-  π: ["22/7"],
+  pi: ["π", "circle", "radius"],
+  π: ["pi", "circle", "radius"],
   speed: ["velocity", "distance", "time"],
   velocity: ["speed"],
   motion: ["speed", "acceleration", "force", "distance"],
   money: ["interest", "profit", "cost", "price"],
   quadratic: ["roots", "vertex", "discriminant"],
   roots: ["quadratic"],
-  solid: ["volume", "surface", "cube", "cuboid", "cylinder", "sphere", "cone", "pyramid"],
+  solid: ["volume", "surface", "cube", "cuboid", "cylinder", "sphere", "cone", "pyramid", "prism", "faces", "edges", "vertices"],
+  faces: ["edges", "vertices", "euler", "polyhedron", "solid"],
+  edges: ["faces", "vertices", "euler", "polyhedron", "solid"],
+  vertices: ["faces", "edges", "corners", "euler", "polyhedron", "solid"],
+  corners: ["vertices", "faces", "edges"],
+  surface: ["area", "solid", "curved", "volume"],
+  polyhedron: ["faces", "edges", "vertices", "tetrahedron", "octahedron", "dodecahedron", "icosahedron"],
   "3d": ["volume", "surface"],
   capacity: ["volume"],
   electricity: ["voltage", "current", "resistance", "ohm"],
