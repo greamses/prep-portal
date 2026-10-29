@@ -72,6 +72,7 @@ export const RULE_GROUPS = [
     group: "Rules: picking several",
     items: [
       r("r-swap", "Swap two terms", "3x + 5 = 5 + 3x", ["swapterms"]),
+      r("r-group-like", "Put like terms together", "x^2 + 3 + 5x + 2x = x^2 + 5x + 2x + 3", ["grouplike"]),
       r("r-swap-factors", "Swap two factors", "3·x = x·3", ["swapfactors"]),
       r("r-diff-picked", "Differentiate the picked terms", "d/dx(x^2 + 3x)", ["diffpicked"]),
       r("r-int-picked", "Integrate the picked terms", "∫(x^2 + 3x)dx", ["intpicked"]),

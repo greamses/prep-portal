@@ -3136,6 +3136,29 @@ export function swapPicked(eq, ids) {
   };
 }
 
+/** Bring the picked terms of one sum into order: like terms side by side, the
+    highest powers first, plain numbers last — 3 + 2x + x² + 5x − 4 → x² + 2x + 5x + 3 − 4.
+    They fill the places the picked terms held, so unpicked terms stay put. */
+export function groupLike(eq, ids) {
+  const loc = locate(eq, ids[0]);
+  if (!loc || loc.terms.length < 3) return { error: "There are too few terms to arrange." };
+  const at = [...new Set(ids.map((id) => loc.terms.findIndex((t) => t.id === id)))];
+  if (at.length < 3 || at.some((i) => i < 0)) return { error: "Pick three or more terms of one sum." };
+  const places = at.sort((x, y) => x - y);
+  const picked = places.map((p, n) => {
+    const r = A.readTerm(loc.terms[p]);
+    return { term: loc.terms[p], n, sig: r ? r.sig : `?${n}`, deg: r ? r.vars.length : 0.5 };
+  });
+  const first = new Map();
+  picked.forEach((p) => { if (!first.has(p.sig)) first.set(p.sig, p.n); });
+  const order = [...picked].sort((a, b) => b.deg - a.deg || first.get(a.sig) - first.get(b.sig) || a.n - b.n);
+  if (order.every((o, k) => o.n === k)) return { error: "Like terms are already side by side." };
+  const next = [...loc.terms];
+  places.forEach((p, k) => { next[p] = order[k].term; });
+  const shown = A.sideFromTerms(next, loc.container);
+  return { eq: setContainer(eq, loc, next), from: new Map(), mark: plain(shown), note: `Like terms side by side: ${plain(shown)}` };
+}
+
 /** Exchange picked factors of one product: 3·x → x·3. */
 export function swapFactors(eq, nodeIds) {
   let prod = null;
@@ -3234,11 +3257,11 @@ export function multiOffers(eq, keys, { given = null } = {}) {
     }
   }
   // Several SIGNS picked (and nothing else): each one offers to swap the two terms either side of it.
-  const signsOnly = keys.length >= 2 && keys.every((k) => keyParts(k).slot.startsWith("op"));
+  const signsOnly = keys.length >= 2 && keys.every((k) => /^(op|sign)/.test(keyParts(k).slot));
   if (signsOnly) {
     for (const k of keys) {
       const { nodeId, slot } = keyParts(k);
-      const kid = A.findById(eq, nodeId)?.kids?.[Number(slot.slice(2))];
+      const kid = slot === "sign" ? A.findById(eq, nodeId) : A.findById(eq, nodeId)?.kids?.[Number(slot.slice(2))];
       if (kid) for (const o of moveOffers(eq, kid.id)) out.push(o);
     }
   }
@@ -3246,6 +3269,20 @@ export function multiOffers(eq, keys, { given = null } = {}) {
   if (!signsOnly) {
     const sw = swapPicked(eq, ids);
     if (!sw.error) out.push({ key: "swapterms", label: sw.note, hint: "the order of a sum does not matter", mark: sw.mark, faces: sw.faces, run: () => sw });
+  }
+  // Every sign (or every term) of a sum picked: set like terms side by side.
+  {
+    let all = ids;
+    if (signsOnly) {                              // a sign also speaks for the term before it
+      all = [...ids];
+      for (const t of terms) {
+        const loc = locate(eq, t.id);
+        const prev = loc && loc.terms[loc.index - 1];
+        if (prev && !all.includes(prev.id)) all.push(prev.id);
+      }
+    }
+    const g = groupLike(eq, all);
+    if (!g.error) out.push({ key: "grouplike", label: g.note.split(":")[0], hint: "like terms together, highest power first", mark: g.mark, run: () => g });
   }
   // Glyphs picked in different factors of one product: change those factors' places.
   {
