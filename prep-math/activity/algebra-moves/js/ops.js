@@ -692,7 +692,7 @@ function nodeTidies(eq, node) {
     t("surd", "Clear the root off the bottom", "multiply top and bottom by it", rationalise(eq, node.id));
   }
   if (node.kind === "prod" || node.kind === "frac") t("multiply", multiplyLabel(node), "numbers together, letters together", multiplyOut(eq, node.id));
-  if (node.kind === "base" && (node.v || node.dv)) t("expandletter", node.v ? `Write it out: each digit times a power of ${node.v.name}` : "Write it out: each digit times its place value", "digit × place value", expandBase(eq, node.id));
+  if (node.kind === "base" && (node.v || node.dv)) t("expandletter", node.v ? `Write it out: each digit times a power of ${plain({ ...node.v, paren: false })}` : "Write it out: each digit times its place value", "digit × place value", expandBase(eq, node.id));
   // From any sum / product / fraction, but over the WHOLE of the outermost one it sits in, so every power goes in one step
   if (node.kind === "sum" || node.kind === "prod" || node.kind === "frac") {
     let scope = node;
@@ -702,6 +702,7 @@ function nodeTidies(eq, node) {
   if (node.kind === "frac") t("cancelbracket", "Cancel what is the same on the top and the bottom", "the same bracket above and below", cancelBrackets(eq, node));
   if (node.kind === "frac") t("factorfrac", "Factor the top and the bottom", "a common factor, then two brackets", factorFraction(eq, node));
   if (node.kind === "fact") t("factorial", "Write the factorial out", "n × (n − 1) × … × 1", factorialOut(eq, node));
+  if (node.kind === "logb") for (const o of logMoves(eq, node)) out.push(o);
   if (node.kind === "sigma") t("sigma", "Write out the terms", "one term for each whole number counted", sigmaOut(eq, node));
   if (node.kind === "fn" && node.k.kind === "list") {
     if (node.name === "mean") t("mean", "Add them up and divide by how many", "mean = sum ÷ how many", meanOut(eq, node));
@@ -791,6 +792,62 @@ function resolvePowers(eq, node) {
   }
   const note = swaps.map(({ h, put }) => `${plain(h)} is ${plain(put)}`).join(", ");
   return { eq: next, from, mark: swaps.map(({ put }) => plain(put)).join(" "), note: `Powers first: ${note}` };
+}
+
+/* ── Logarithms to any base ──────────────────────────────────────────────────
+   log_b x is the power b is raised to to make x. Worked out when it comes out
+   whole; otherwise the laws — a product splits into a sum, a quotient into a
+   difference, a power comes out in front — and the change of base to ln. */
+function logMoves(eq, node) {
+  const out = [];
+  const add = (key, label, hint, next, note) => {
+    out.push({ key, label, hint, mark: plain(next), run: () => ({ eq: A.replace(eq, node.id, next), from: new Map(), mark: plain(next), note: note || `${label}: ${plain(next)}` }) });
+  };
+  const same = (a, b) => plain({ ...a, paren: false }) === plain({ ...b, paren: false });
+  const k = { ...node.k, paren: false };
+  const mk = (arg) => A.logb(copy(node.b), arg);
+  // log_b b is 1, log_b 1 is 0, log_b (b^n) is n
+  if (!A.exactValue(node)) {
+    if (same(k, node.b)) add("logown", "A base's own logarithm is 1", "log_b b = 1", A.num(R.ONE), `log of b to the base b is 1`);
+    else if (k.kind === "pow" && same(k.b, node.b)) add("logown", "The power comes out: log_b(b^n) = n", "log_b(b^n) = n", copy(k.e), `log_b(b^n) is n`);
+  }
+  if (k.kind === "prod" && k.kids.length > 1 && !A.exactValue(k)) {
+    const parts = k.kids.map((p) => mk(copy(p)));
+    add("loglaw", "A product's log is a sum of logs", "log_b(xy) = log_b x + log_b y", A.sum(parts), "The log of a product is the sum of the logs");
+  }
+  if (k.kind === "frac") {
+    add("loglaw", "A quotient's log is a difference of logs", "log_b(x/y) = log_b x − log_b y", A.sum([mk(copy(k.a)), A.neg({ ...mk(copy(k.b)), paren: false })]), "The log of a quotient is the difference of the logs");
+  }
+  if (k.kind === "pow" && !same(k.b, node.b)) {
+    add("loglaw", "The power comes out in front", "log_b(x^n) = n·log_b x", A.prod([copy(k.e), mk(copy(k.b))]), "The log of a power is the power times the log");
+  }
+  add("logchange", "Change of base: ln over ln", "log_b x = ln x / ln b", A.frac(A.fn("ln", copy(k)), A.fn("ln", copy(node.b))), "Change of base: log_b x is ln x over ln b");
+  return out;
+}
+
+/** log_b u = c is u = b^c; b^x = c is x = log_b c. The base is whatever the log carries, or the number raised. */
+export function logSwap(eq) {
+  if (!A.isEquation(eq)) return { error: TWO_SIDED };
+  for (const side of ["l", "r"]) {
+    const f = eq[side], other = eq[side === "l" ? "r" : "l"];
+    if (f.kind === "logb" && !A.varsIn(other).some((v) => A.varsIn(f.b).includes(v))) {
+      const u = { ...f.k, paren: false };
+      const power = A.pow(copy(f.b), copy(other));
+      return {
+        eq: side === "l" ? A.eqn(u, power, eq.id) : A.eqn(power, u, eq.id), from: new Map(), mark: plain(power), dir: "both",
+        inverse: { fn: "exp", base: copy(f.b) }, note: `log_${plain({ ...f.b, paren: false })} u = c means u = ${plain({ ...f.b, paren: false })}^c`,
+      };
+    }
+    if (f.kind === "pow" && A.isNumeric(f.b) && A.exactValue(f.b) && !A.isNumeric(f.e) && A.isNumeric(other)) {
+      const log = A.logb(copy(f.b), copy(other));
+      const e = { ...f.e, paren: false };
+      return {
+        eq: side === "l" ? A.eqn(e, log, eq.id) : A.eqn(log, e, eq.id), from: new Map(), mark: plain(log), dir: "both",
+        inverse: { fn: "logb", base: copy(f.b) }, note: `${plain(f.b)}^x = c means x = log_${plain(f.b)} c`,
+      };
+    }
+  }
+  return { error: "There is no logarithm or power standing alone on a side." };
 }
 
 /* ── Σ and lists of numbers ──────────────────────────────────────────────────
@@ -1589,8 +1646,9 @@ export function expandBase(eq, id) {
   const n = A.findById(eq, id);
   if (!n || n.kind !== "base") return { error: "That is not a number in another base." };
   const digits = [...n.digits];
-  const baseNode = () => (n.v ? A.vr(n.v.name) : A.num(R.rat(BigInt(n.base))));
-  const baseName = n.v ? n.v.name : n.base;
+  // the base is a number, a letter, or a whole expression (bracketed when it has more than one piece)
+  const baseNode = () => (n.v ? (n.v.kind === "var" ? A.vr(n.v.name) : { ...copy(n.v), paren: n.v.kind === "sum" || n.v.kind === "prod" }) : A.num(R.rat(BigInt(n.base))));
+  const baseName = n.v ? plain({ ...n.v, paren: false }) : n.base;
   const places = digits.map((ch, i) => {
     const power = digits.length - 1 - i;
     // an unknown digit is its letter; a numeral digit is its number
@@ -2542,6 +2600,11 @@ export function offers(eq, id, { given = null } = {}) {
     const inv = invertTrig(eq);
     if (!inv.error) out.push({ key: "invert", label: inv.note, hint: "undo the trig function", mark: inv.mark, dir: "both", run: () => inv });
   }
+  // log_b u alone on a side, or b^x: write it the other way round (a log is a power).
+  if (twoSided && terms.length === 1 && (term.kind === "logb" || term.kind === "pow")) {
+    const lg = logSwap(eq);
+    if (!lg.error) out.push({ key: "logswap", label: lg.note, hint: "a log is a power the other way round", mark: lg.mark, dir: "both", run: () => lg });
+  }
   if (twoSided && terms.length === 1 && term.kind === "deg") {
     const d = dropDegrees(eq);
     if (!d.error) out.push({ key: "degrees", label: "Drop the degree signs", hint: "both sides in degrees", mark: d.mark, run: () => d });
@@ -2712,6 +2775,8 @@ export function atomOffers(eq, key, { given = null } = {}) {
       add(direct("root", "Square root of both sides (±)", "a square on one side", rootBoth(eq)));
       const psl = poShenLoh(eq);
       if (!psl.error) add({ key: "poshenloh", label: "Po-Shen Loh: the roots are −b/2 ± u", hint: "average and distance", mark: psl.mark, run: () => psl });
+      const lg = logSwap(eq);
+      if (!lg.error) add({ key: "logswap", label: lg.note, hint: "a log is a power the other way round", mark: lg.mark, dir: "both", run: () => lg });
       const inv = invertTrig(eq);
       if (!inv.error) add({ key: "invert", label: inv.note, hint: "undo the trig function", mark: inv.mark, dir: "both", run: () => inv });
       add(direct("degrees", "Drop the degree signs", "both sides in degrees", dropDegrees(eq)));
@@ -2999,7 +3064,7 @@ export function multiOffers(eq, keys, { given = null } = {}) {
     with none of these left on any of its terms is as tidy as it goes. */
 export const TIDY = new Set(["combine", "workout", "cancel", "dropzero", "indices", "surd", "addfrac",
   "multiply", "trig", "pyth", "diff", "integrate", "limit", "base10",
-  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse", "factorial", "choose", "sigma", "mean", "sortlist", "expandletter", "resolvepowers", "cancelbracket"]);
+  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse", "factorial", "choose", "sigma", "mean", "sortlist", "expandletter", "resolvepowers", "cancelbracket", "logown"]);
 
 /** Every move on offer for a set of picked glyphs — what each one means, what
     its term can have done to it, and what they mean together — or, with

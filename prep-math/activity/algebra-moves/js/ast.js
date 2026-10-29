@@ -55,6 +55,8 @@ export const matSize = (m) => [m.rows.length, m.rows[0].length];
 export const pct = (k, id = freshId()) => ({ id, kind: "pct", k });
 /* n! — the factorial — and nPr / nCr: arrangements and choices of r from n. */
 export const fact = (k, id = freshId()) => ({ id, kind: "fact", k });
+/* log_b(x): the power b must be raised to to give x. The base `b` is any expression. */
+export const logb = (b, k, id = freshId()) => ({ id, kind: "logb", b, k });
 /* {4, 7, 9}: a list of numbers, for the mean and the median to be taken of. */
 export const list = (items, id = freshId()) => ({ id, kind: "list", items });
 /* Σ_(i=1)^(5)(2i + 1): the terms of the body for each whole number from lo to hi. */
@@ -97,6 +99,11 @@ export const based = (digits, base, id = freshId()) => {
 };
 /* 35_y: digits in a base that is a LETTER — 3y + 5 once it is written out. The
    letter is a node of its own (`v`) so every walk over the tree finds it. */
+/* 101_(x + 1): digits in a base that is any EXPRESSION — a letter, a sum, anything. */
+export const basedExpr = (digits, v, id = freshId()) => {
+  const d = tidyDigits(digits), dv = digitVars(d);
+  return { id, kind: "base", digits: d, base: null, v, ...(dv ? { dv } : {}) };
+};
 export const basedVar = (digits, name, id = freshId()) => {
   const d = tidyDigits(digits), dv = digitVars(d);
   return { id, kind: "base", digits: d, base: null, v: vr(name), ...(dv ? { dv } : {}) };
@@ -165,6 +172,7 @@ export function kidsOf(node) {
     case "base":  return [...(node.v ? [node.v] : []), ...(node.dv || []).filter(Boolean)];
     case "pct":  return [node.k];
     case "fact": return [node.k];
+    case "logb": return [node.b, node.k];
     case "list": return node.items;
     case "sigma": return [node.lo, node.hi, node.k];
     case "choose": return [node.n, node.r];
@@ -218,6 +226,7 @@ export function replace(root, id, next) {
         return same ? n : { ...n, ...(n.v ? { v } : {}), ...(dv ? { dv } : {}) };
       }
       case "fact": { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
+      case "logb": { const b = rec(n.b), k = rec(n.k); return b === n.b && k === n.k ? n : { ...n, b, k }; }
       case "list": { const items = n.items.map(rec); return items.every((k, i) => k === n.items[i]) ? n : { ...n, items }; }
       case "sigma": { const lo = rec(n.lo), hi = rec(n.hi), k = rec(n.k); return lo === n.lo && hi === n.hi && k === n.k ? n : { ...n, lo, hi, k }; }
       case "choose": { const a = rec(n.n), b = rec(n.r); return a === n.n && b === n.r ? n : { ...n, n: a, r: b }; }
@@ -448,6 +457,21 @@ export function isNumeric(node) {
 }
 
 /** The exact value of a variable-free subtree, or null when it has none. */
+/** log_b x as a whole number, when b^n is exactly x for some whole n (log₂ 8 is 3, log₂ ¼ is −2); null otherwise. */
+function logValue(node) {
+  const b = exactValue(node.b), x = exactValue(node.k);
+  if (!b || !x || R.isZero(b) || R.isNegative(b) || R.isNegative(x) || R.isZero(x) || R.isOne(b)) return null;
+  if (R.isOne(x)) return R.ZERO;
+  for (let n = 1; n <= 64; n++) {
+    const up = R.ipow(b, n);
+    if (R.same(up, x)) return R.rat(BigInt(n));
+    if (R.same(R.ipow(b, -n), x)) return R.rat(BigInt(-n));
+    // past the target in both directions: no whole answer
+    if (R.toNumber(up) > 1e18 && R.toNumber(R.ipow(b, -n)) < 1e-18) break;
+  }
+  return null;
+}
+
 const BIG_FACT = 170n;            // past this a factorial is not worth writing down
 function factorialBig(k) { let f = 1n; for (let i = 2n; i <= k; i++) f *= i; return f; }
 /** n! and nPr / nCr for whole numbers, exactly; null when they have no such value. */
@@ -497,7 +521,14 @@ export function exactValue(node) {
       case "fact":
       case "choose": return countingValue(node);
       case "num":  return node.v;
-      case "base": { const v = baseValue(node.digits, node.base); return v === null ? null : R.rat(v); }
+      case "base": {
+        // a base that is an expression with a whole-number value (101_(1+2)) is that number's base
+        let b = node.base;
+        if (node.v) { const bv = exactValue(node.v); b = bv && R.isInt(bv) && bv.n >= 2n && bv.n <= 1000n ? Number(bv.n) : null; }
+        const v = b === null ? null : baseValue(node.digits, b);
+        return v === null ? null : R.rat(v);
+      }
+      case "logb": return logValue(node);
       case "pct":  { const k = exactValue(node.k); return k ? R.div(k, R.rat(100n)) : null; }
       case "mixed": { const w = exactValue(node.w), f = exactValue(node.f); return w && f ? R.add(w, f) : null; }
       case "neg":  { const k = exactValue(node.k); return k ? R.neg(k) : null; }

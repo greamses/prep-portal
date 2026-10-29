@@ -33,6 +33,10 @@ const isDigit = (c) => c >= "0" && c <= "9";
 const GREEK = "αβγδεζηθικλμνξοπρστυφχψω";
 const isAlpha = (c) => (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || GREEK.includes(c);
 
+/* A function's name inside a run of letters (3log_2(x), 2sin_…) means the run is a product with a
+   function in it, not a numeral with unknown digits. */
+const HAS_FN_NAME = /sin|cos|tan|ln|log|det|sqrt|mean|median|mode|range|sum|arc|mixed|nCr|nPr|transpose/;
+
 function tokenise(src, lenient = false) {
   const out = [];
   let i = 0;
@@ -43,6 +47,15 @@ function tokenise(src, lenient = false) {
        belongs in that base, so nothing else written with an underscore is
        taken for one. 1011₂ with a subscript base reads the same. */
     {
+      // log_2(8), log_(x + 1)(y): a logarithm to any base — the base, then what it is taken of.
+      if (src.startsWith("log_", i)) { out.push({ t: "logb", v: "log_", at: i }); i += 4; continue; }
+      // 101_(x + 1): digits whose base is a whole expression, in brackets — the "(" is left to be read as one.
+      const bx = /^([0-9A-Za-z?]+)_(?=\()/.exec(src.slice(i));
+      if (bx && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1])) && !REFS.some((r) => src.startsWith(r, i)) && /^[0-9?a-z]/.test(bx[1]) && !HAS_FN_NAME.test(bx[1])) {
+        out.push({ t: "basex", v: bx[1], at: i });
+        i += bx[0].length;
+        continue;
+      }
       // ?_8, 35_?, ?_?: a numeral and its base with a box still empty — only ever on the keypad's own drawing.
       const ph = /^(\?|[0-9A-Za-z]+)_(\?|[0-9]+|[a-z])(?![A-Za-z0-9_?])/.exec(src.slice(i));
       if (ph && (ph[1] === "?" || ph[2] === "?") && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1]))) {
@@ -52,7 +65,7 @@ function tokenise(src, lenient = false) {
       }
       // y7_8: a numeral with an unknown digit (a lowercase letter), in a numeral base.
       const uv = /^([0-9A-Za-z]*[a-z][0-9A-Za-z]*)_([0-9]+)(?![A-Za-z0-9_])/.exec(src.slice(i));
-      if (uv && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1])) && !REFS.some((r) => src.startsWith(r, i))) {
+      if (uv && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1])) && !REFS.some((r) => src.startsWith(r, i)) && !HAS_FN_NAME.test(uv[1])) {
         const b = Number(uv[2]);
         if (b >= 2 && b <= 36) {
           const bad = [...uv[1]].find((ch) => !/[a-z]/.test(ch) && parseInt(ch, 36) >= b);
@@ -64,7 +77,7 @@ function tokenise(src, lenient = false) {
       }
       // 35_y: digits whose base is a letter (what the equation is about)
       const lv = /^([0-9a-z]+)_([a-z])(?![A-Za-z0-9_])/.exec(src.slice(i));
-      if (lv && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1]))) {
+      if (lv && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1])) && !HAS_FN_NAME.test(lv[1])) {
         out.push({ t: "base", v: lv[1], base: null, name: lv[2], at: i });
         i += lv[0].length;
         continue;
@@ -145,7 +158,7 @@ export function setRefs(names) {
   REFS = [...new Set(names.filter(Boolean))].sort((a, b) => b.length - a.length);
 }
 
-const STARTS_FACTOR = new Set(["[", "{", "sigma", "choose", "base", "ref", "num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
+const STARTS_FACTOR = new Set(["[", "{", "sigma", "logb", "basex", "choose", "base", "ref", "num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
 
 /** `lenient` draws a numeral whose digit is not one of its base's (the keypad shows it, and says why)
     rather than refusing the whole line. */
@@ -229,6 +242,16 @@ export function parse(src, { lenient = false } = {}) {
       const r = expr();
       eat(")");
       return span(mark, A.choose(n, r, tk.v === "P"));
+    }
+    if (tk.t === "logb") {
+      p++;
+      const b = atom();                    // 2, y, (x + 1)
+      const k = atom();                    // what the logarithm is taken of
+      return span(mark, A.logb(b, k));
+    }
+    if (tk.t === "basex") {
+      p++;
+      return span(mark, A.basedExpr(tk.v, atom()));
     }
     if (tk.t === "mixed") {
       p++;

@@ -69,6 +69,15 @@ export const RULE_GROUPS = [
     ],
   },
   {
+    group: "Rules: logarithms",
+    items: [
+      r("r-log-own", "A power of the base", "log_b(b^n) = n", ["logown"]),
+      r("r-log-law", "Products, quotients and powers", "log_b(xy) = log_b x + log_b y", ["loglaw"]),
+      r("r-log-change", "Change of base", "log_b x = ln x / ln b", ["logchange"]),
+      r("r-log-swap", "A log is a power the other way round", "log_2 x = 3 means x = 2^3", ["logswap"]),
+    ],
+  },
+  {
     group: "Rules: counting",
     items: [
       r("r-sigma", "Σ: write out the terms", "Σ_(i=1)^(3)(2i + 1) = (2·1 + 1) + (2·2 + 1) + (2·3 + 1)", ["sigma"]),

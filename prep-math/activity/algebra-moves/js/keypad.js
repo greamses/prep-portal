@@ -189,6 +189,7 @@ const FUNCS = [
     { k: "n!", t: "!", title: "factorial: 5! is 5 × 4 × 3 × 2 × 1", math: "n!" },
     { k: "nPr", act: "perm", title: "Arrangements of r things from n, in order: nPr", tex: "{}^{n}P_{r}" },
     { k: "nCr", act: "comb", title: "Choices of r things from n, order not mattering: nCr", tex: "{}^{n}C_{r}" },
+    { k: "log_b", t: "logb()", title: "Logarithm to any base: the base, then what it is taken of — log_2(8) is 3", math: "log_b(x)" },
     { k: "←", act: "left", title: "Move left" },
     { k: "→", act: "right", title: "Move right" },
   ],
@@ -673,6 +674,7 @@ export function createKeypad(host, { onSubmit } = {}) {
     "lim(h->0)()": () => ed.template("lim", { fill: ["0", ""], focus: 1 }),
     "Σ_(i=1)^()()": () => ed.template("sigma", { fill: ["i", "1", "", ""], focus: 2 }),
     "{}": () => ed.template("list"),
+    "logb()": () => ed.template("logb"),
   };
 
   /** A key, or a piece of text: into the boxes. */
@@ -858,6 +860,13 @@ export function createKeypad(host, { onSubmit } = {}) {
       return box;
     };
     picker.append(row(["2", "3", "4", "5", "6", "7", "8", "9", "12", "16"], false), row(["n", "b", "x", "y", "k", "m"], true));
+    // ...or a base that is a whole expression (x + 1): its own box, to be filled with the keys
+    const own = document.createElement("div");
+    own.className = "am-basepick__cell am-basepick__own";
+    own.textContent = "an expression";
+    own.setAttribute("aria-label", "a base that is an expression");
+    own.addEventListener("pointerdown", (e) => { e.preventDefault(); closePicker(); ed.base(); sync(); });
+    picker.appendChild(own);
     pad.appendChild(picker);
     const box = pad.getBoundingClientRect(), key = anchor.getBoundingClientRect();
     picker.style.left = `${Math.max(0, Math.min(box.width - picker.offsetWidth, key.left - box.left))}px`;

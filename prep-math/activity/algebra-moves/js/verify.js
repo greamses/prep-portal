@@ -43,6 +43,10 @@ function gammaFn(z) {
 function evalAt(node, env) {
   switch (node.kind) {
     case "fact": return gammaFn(evalAt(node.k, env) + 1);
+    case "logb": {
+      const b = evalAt(node.b, env), v = evalAt(node.k, env);
+      return b > 0 && Math.abs(b - 1) > 1e-9 && v > 0 ? Math.log(v) / Math.log(b) : NaN;
+    }
     // Σ adds up the body for each whole number counted; a limit that is not a
     // whole number at this sample cannot be counted to, so the sample is unusable.
     case "sigma": {
@@ -220,6 +224,28 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
      every angle with that sine, so no sampling of solutions could pass it. It is
      checked as what it is — sin⁻¹ applied to both sides — at the samples where
      u lies in sin⁻¹'s own range, where that really does undo the sin. */
+  /* log_b u = c written as u = b^c, or b^x = c as x = log_b c: the same function
+     applied to both sides — checked as exactly that, where it is defined. */
+  if (inverse && (inverse.fn === "exp" || inverse.fn === "logb")) {
+    let usable = 0;
+    for (let i = 0; i < samples; i++) {
+      const env = {};
+      for (const n of names) env[n] = sample(i, n);
+      for (const [n, d] of Object.entries(defined)) env[n] = evalAt(d, env);
+      const b = evalAt(inverse.base, env);
+      if (!(b > 0) || Math.abs(b - 1) < 1e-6) continue;
+      const f = inverse.fn === "exp" ? (v) => Math.pow(b, v) : (v) => Math.log(v) / Math.log(b);
+      const l = evalAt(prev.l, env), r = evalAt(prev.r, env);
+      if (inverse.fn === "logb" && !(l > 0 && r > 0)) continue;
+      const a = f(l) - f(r), c = diffAt(next, env);
+      if (!Number.isFinite(a) || !Number.isFinite(c)) continue;
+      usable++;
+      if (Math.abs(a - c) > tol * Math.max(1, Math.abs(a), Math.abs(c))) return { ok: false, why: "that is not the same power or logarithm taken on both sides" };
+    }
+    if (usable < 6) return { ok: false, why: "I could not check that move, so I will not make it" };
+    return { ok: true, why: "" };
+  }
+
   if (inverse) {
     const f = { arcsin: Math.asin, arccos: Math.acos, arctan: Math.atan }[inverse.fn];
     const inRange = (u) => (inverse.fn === "arccos" ? u >= 0 && u <= Math.PI : Math.abs(u) <= Math.PI / 2);

@@ -113,7 +113,9 @@ function needsBrackets(node, parentKind, slot) {
   if (parentKind === "deg" || parentKind === "pct" || parentKind === "fact") return node.kind !== "num" && node.kind !== "var";
   // nCr's two numbers are set apart by their places, not by brackets; so are a
   // list's by its commas and a sum's limits by where they sit.
-  if (parentKind === "choose" || parentKind === "list" || parentKind === "sigmalim") return false;
+  if (parentKind === "choose" || parentKind === "list" || parentKind === "sigmalim" || parentKind === "baserad" || parentKind === "logbase") return false;
+  // a logarithm's argument stands in brackets, as a function's does; its base sits lowered beside it
+  if (parentKind === "logb") return slot === 1;
   if (parentKind === "sigma") return node.kind === "sum";
   if (node.paren) return true;
   switch (parentKind) {
@@ -373,9 +375,21 @@ function measureBare(node, size, binary) {
       const cw = [...node.digits].map((c) => (c === "?" ? 0.62 * size : measureText(c, size, /[a-z]/.test(c))));
       const dw = cw.reduce((a, b) => a + b, 0);
       const sub = size * 0.6;
-      const bw = node.v?.kind === "hole" ? 0.62 * sub : measureText(node.v ? node.v.name : String(node.base), sub, !!node.v);
-      return { ...base, kind: "base", dw, cw, bw, sub, w: dw + 0.04 * size + bw,
-               descent: Math.max(base.descent, 0.32 * size + DESC * sub) };
+      // a base that is more than a letter or a number is laid out as the expression it is
+      const radix = node.v && node.v.kind !== "var" && node.v.kind !== "hole" ? measure(node.v, sub, "baserad", 0) : null;
+      const bw = radix ? radix.w : node.v?.kind === "hole" ? 0.62 * sub : measureText(node.v ? node.v.name : String(node.base), sub, !!node.v);
+      return { ...base, kind: "base", dw, cw, bw, sub, radix, w: dw + 0.04 * size + bw,
+               descent: Math.max(base.descent, 0.32 * size + DESC * sub, radix ? 0.32 * size + radix.descent : 0) };
+    }
+    // log with its base lowered and small, then the argument in brackets
+    case "logb": {
+      const nameW = measureText("log", size, false);
+      const small = size * 0.62;
+      const b = measure(node.b, small, "logb", 0);
+      const k = measure(node.k, size, "logb", 1);
+      const gap = 0.04 * size, lower = 0.26 * size;
+      return { ...base, kind: "logb", nameW, b, k, gap, lower, w: nameW + gap + b.w + gap + k.w,
+               ascent: Math.max(base.ascent, k.ascent), descent: Math.max(base.descent, k.descent, lower + b.descent) };
     }
     // A named equation, its number lowered the way it is written: E₁.
     case "ref": {
@@ -652,9 +666,17 @@ function place(m, x, y, out) {
           cx += m.cw[i];
         });
       }
-      if (m.node.v?.kind === "hole") {
+      if (m.radix) {
+        place(m.radix, x + m.dw + 0.04 * m.size, y + 0.32 * m.size, out);
+      } else if (m.node.v?.kind === "hole") {
         out.atoms.push({ key: `${m.node.id}#radix`, nodeId: m.node.id, kind: "hole", x: x + m.dw + 0.04 * m.size, y: y + 0.32 * m.size - 0.62 * m.sub, w: m.bw, h: 0.64 * m.sub });
       } else text("radix", m.node.v ? m.node.v.name : String(m.node.base), x + m.dw + 0.04 * m.size, y + 0.32 * m.size, m.sub, !!m.node.v);
+      break;
+
+    case "logb":
+      text("log", "log", x, y, m.size, false);
+      place(m.b, x + m.nameW + m.gap, y + m.lower, out);
+      place(m.k, x + m.nameW + m.gap + m.b.w + m.gap, y, out);
       break;
 
     case "mixed":
@@ -801,7 +823,14 @@ export function plain(node, parentKind = null, slot = 0) {
     }
     case "choose": return wrap(`n${node.perm ? "P" : "C"}r(${plain(node.n, "choose", 0)},${plain(node.r, "choose", 1)})`);
     case "mat":  return `[${node.rows.map((r) => `[${r.map((c) => plain(c, "mat", 0)).join(",")}]`).join(",")}]`;
-    case "base": return wrap(`${node.digits}_${node.v ? (node.v.kind === "hole" ? "?" : node.v.name) : node.base}`);
+    case "base": {
+      const rad = node.v ? (node.v.kind === "hole" ? "?" : node.v.kind === "var" ? node.v.name : `(${plain({ ...node.v, paren: false })})`) : node.base;
+      return wrap(`${node.digits}_${rad}`);
+    }
+    case "logb": {
+      const rad = node.b.kind === "num" || node.b.kind === "var" || node.b.kind === "hole" ? plain(node.b) : `(${plain({ ...node.b, paren: false })})`;
+      return wrap(`log_${rad}${plain(node.k, "logb", 1)}`);
+    }
     case "mixed": return wrap(`${plain(node.w)} ${plain(node.f.a)}/${plain(node.f.b)}`);
     case "fn":
       // A matrix on its side reads back as [[…]]^T, which the parser takes as it is.

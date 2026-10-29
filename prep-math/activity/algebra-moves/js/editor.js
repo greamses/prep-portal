@@ -29,7 +29,7 @@ const chr = (c) => ({ t: "c", c });
 
 /** How many boxes each kind of template has. */
 const COUNT = {
-  frac: 2, pow: 1, sqrt: 1, br: 1, fn: 1, base: 2, mixed: 3, choose: 2,
+  frac: 2, pow: 1, sqrt: 1, br: 1, fn: 1, base: 2, mixed: 3, choose: 2, logb: 2,
   sigma: 4, list: 1, deriv: 1, int: 3, int0: 1, lim: 2,
 };
 
@@ -115,10 +115,11 @@ export function createEditor() {
     return { item: it, target };
   }
 
-  /** A numeral's boxes hold digits and letters only: anything else made there is made after it. */
+  /** A numeral's DIGITS box holds digits and letters only: anything else made there is made after
+      the numeral. (Its base box holds any expression.) */
   function leaveBase() {
     const o = here().owner;
-    if (o && o.kind === "base") caret = { block: o.parent, i: indexOfIn(o) + 1 };
+    if (o && o.kind === "base" && o.blocks[0] === here()) caret = { block: o.parent, i: indexOfIn(o) + 1 };
   }
 
   function template(kind, o = {}) {
@@ -210,7 +211,7 @@ export function createEditor() {
       case "}": closeUp("list"); return;
       case "/": slash(); return;
       case "^": power(); return;
-      case "_": base(); return;
+      case "_": if (here().owner?.kind === "base" && here().owner.blocks[0] === here()) return; base(); return;
       case ",": if (ownerOfKind("mat")) { nextCell(); return; } break;
       case " ": if (caret.i === 0 || (here().items[caret.i - 1]?.t === "c" && here().items[caret.i - 1].c === " ")) return; break;
       default: break;
@@ -483,6 +484,16 @@ export function createEditor() {
         const e = closeAt(s, i + 3);
         if (e > 0) { const parts = splitTop(s.slice(i + 4, e)); push(tplOf("choose", parts, { perm: m[1] === "P" })); i = e + 1; continue; }
       }
+      if ((m = /^log_/.exec(rest)) && (i === 0 || !/[A-Za-z]/.test(s[i - 1]))) {
+        // log_2(8), log_(x + 1)(y): the base, then what it is taken of
+        let k = i + 4, baseText = null;
+        if (s[k] === "(") { const e = closeAt(s, k); if (e > 0) { baseText = s.slice(k + 1, e); k = e + 1; } }
+        else { const t = /^([0-9]+|[a-z])/.exec(s.slice(k)); if (t) { baseText = t[0]; k += t[0].length; } }
+        if (baseText !== null && s[k] === "(") {
+          const e = closeAt(s, k);
+          if (e > 0) { push(tplOf("logb", [baseText, s.slice(k + 1, e)])); i = e + 1; continue; }
+        }
+      }
       if ((m = /^mixed\(/.exec(rest))) {
         const e = closeAt(s, i + 5);
         if (e > 0) { push(tplOf("mixed", splitTop(s.slice(i + 6, e)))); i = e + 1; continue; }
@@ -533,6 +544,18 @@ export function createEditor() {
           push(it); i = d.next; continue;
         }
       }
+      if (s[i] === "_" && rest[1] === "(") {
+        const e = closeAt(s, i + 1);
+        const j = operandStart({ items: out }, out.length, ALNUM);
+        if (e > 0 && j < out.length) {
+          const taken = out.splice(j, out.length - j);
+          const it = make("base");
+          it.blocks[0].items.push(...taken); adopt(taken, it.blocks[0]);
+          const inner = sub(s.slice(i + 2, e));
+          it.blocks[1].items.push(...inner); adopt(inner, it.blocks[1]);
+          push(it); i = e + 1; continue;
+        }
+      }
       if (s[i] === "_" && (m = /^_([0-9]+|[a-z])/.exec(rest))) {
         const j = operandStart({ items: out }, out.length, ALNUM);
         if (j < out.length) {
@@ -566,6 +589,12 @@ export function createEditor() {
     const put = (s) => { text += s; };
     const spot = (b, i) => spots.push({ off: text.length, block: b, i, depth: depthOf(b) });
 
+    /** A base written plainly when it is a number, a letter or nothing yet; in brackets when it is an expression. */
+    function baseBox(b) {
+      const txt = b.items.every((x) => x.t === "c") ? b.items.map((x) => x.c).join("") : null;
+      if (txt !== null && (txt === "" || /^[0-9]+$/.test(txt) || /^[a-z]$/.test(txt))) { blk(b); return; }
+      put("("); blk(b); put(")");
+    }
     function blk(b) {
       spot(b, 0);
       if (!b.items.length) { put("?"); return; }
@@ -584,7 +613,8 @@ export function createEditor() {
         case "sqrt": put("sqrt("); blk(B[0]); put(")"); break;
         case "br": put("("); blk(B[0]); put(")"); break;
         case "fn": put(`${it.name}(`); blk(B[0]); put(")"); break;
-        case "base": blk(B[0]); put("_"); blk(B[1]); break;
+        case "base": blk(B[0]); put("_"); baseBox(B[1]); break;
+        case "logb": put("log_"); baseBox(B[0]); put("("); blk(B[1]); put(")"); break;
         case "mixed": put("mixed("); blk(B[0]); put(","); blk(B[1]); put(","); blk(B[2]); put(")"); break;
         case "choose": put(it.perm ? "nPr(" : "nCr("); blk(B[0]); put(","); blk(B[1]); put(")"); break;
         case "sigma": put("Σ_("); blk(B[0]); put("="); blk(B[1]); put(")^("); blk(B[2]); put(")("); blk(B[3]); put(")"); break;

@@ -23,6 +23,47 @@ import * as R from "./rational.js";
 
 export const GROUPS = [
   {
+    group: "Logarithms and bases",
+    items: [
+      {
+        id: "log-value", name: "A logarithm to any base", eq: "L = log_b(x)", find: "L",
+        letters: { L: "the power b is raised to", b: "the base", x: "the number it makes" },
+        example: { b: "2", x: "8" },
+        note: "log_b x is the power b needs to make x",
+      },
+      {
+        id: "log-power", name: "A logarithm as a power", eq: "x = b^L", find: "x",
+        letters: { x: "the number", b: "the base", L: "the logarithm" },
+        example: { b: "2", L: "5" },
+        note: "log_b x = L means x = b^L",
+      },
+      {
+        id: "log-product", name: "Logs add when numbers multiply", eq: "L = log_b(x) + log_b(y)", find: "L",
+        letters: { L: "the log of the product", b: "the base", x: "the first number", y: "the second number" },
+        example: { b: "2", x: "4", y: "8" },
+        note: "log_b(xy) = log_b x + log_b y",
+      },
+      {
+        id: "log-quotient", name: "Logs subtract when numbers divide", eq: "L = log_b(x) - log_b(y)", find: "L",
+        letters: { L: "the log of the quotient", b: "the base", x: "the top number", y: "the bottom number" },
+        example: { b: "3", x: "81", y: "3" },
+        note: "log_b(x/y) = log_b x − log_b y",
+      },
+      {
+        id: "log-power-rule", name: "A power comes out of a log", eq: "L = n log_b(x)", find: "L",
+        letters: { L: "the log of x to the n", n: "the power", b: "the base", x: "the number" },
+        example: { n: "3", b: "2", x: "4" },
+        note: "log_b(x^n) = n log_b x",
+      },
+      {
+        id: "numeral-value", name: "A numeral with a letter base", eq: "N = 35_b", find: "N",
+        letters: { N: "its value in base ten", b: "the base" },
+        example: { b: "8" },
+        note: "each digit times a power of the base",
+      },
+    ],
+  },
+  {
     group: "Counting",
     items: [
       {
