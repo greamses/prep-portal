@@ -558,6 +558,38 @@ export const GROUPS = [
         example: { P: "10000", R: "10", n: "2" },
       },
       {
+        id: "simple-rate", name: "Simple interest: the rate", eq: "R = 100I/(PT)", find: "R",
+        letters: { R: "the rate per year", I: "the interest", P: "the money put in", T: "the number of years" },
+        example: { I: "1200", P: "8000", T: "3" },
+      },
+      {
+        id: "simple-time", name: "Simple interest: the time", eq: "T = 100I/(PR)", find: "T",
+        letters: { T: "the number of years", I: "the interest", P: "the money put in", R: "the rate per year" },
+        example: { I: "1200", P: "8000", R: "5" },
+      },
+      {
+        id: "simple-principal", name: "Simple interest: the money put in", eq: "P = 100I/(RT)", find: "P",
+        letters: { P: "the money put in", I: "the interest", R: "the rate per year", T: "the number of years" },
+        example: { I: "1200", R: "5", T: "3" },
+      },
+      {
+        id: "compound-rate", name: "Compound interest: the rate", eq: "R = 100((A/P)^(1/n) - 1)", find: "R",
+        letters: { R: "the rate per year", A: "the amount after n years", P: "the money put in", n: "the number of years" },
+        example: { A: "12100", P: "10000", n: "2" },
+        note: "take the n-th root of how many times the money has grown, then subtract 1",
+      },
+      {
+        id: "compound-time", name: "Compound interest: the time", eq: "n = log_(1 + R/100)(A/P)", find: "n",
+        letters: { n: "the number of years", A: "the amount after n years", P: "the money put in", R: "the rate per year" },
+        example: { A: "40000", P: "10000", R: "100" },
+        note: "how many times the money must be multiplied by (1 + R/100) to reach the amount",
+      },
+      {
+        id: "compound-principal", name: "Compound interest: the money put in", eq: "P = A/(1 + R/100)^n", find: "P",
+        letters: { P: "the money put in", A: "the amount after n years", R: "the rate per year", n: "the number of years" },
+        example: { A: "12100", R: "10", n: "2" },
+      },
+      {
         id: "pct-change", name: "Percentage change", eq: "C = 100(N - O)/O", find: "C",
         letters: { C: "the percentage change (negative for a fall)", N: "the new value", O: "the original value" },
         example: { N: "65", O: "50" },
