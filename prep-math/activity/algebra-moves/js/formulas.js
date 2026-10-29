@@ -1592,6 +1592,226 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Computer science: bits, files and algorithms",
+    items: [
+      {
+        id: "bits-values", name: "How many values n bits can hold", eq: "V = 2^n", find: "V",
+        letters: { V: "the number of different values", n: "the number of bits" },
+        example: { n: "8" },
+      },
+      {
+        id: "bits-max", name: "The biggest whole number n bits can hold", eq: "M = 2^n - 1", find: "M",
+        letters: { M: "the biggest number", n: "the number of bits" },
+        example: { n: "8" },
+        note: "counting from 0",
+      },
+      {
+        id: "bits-needed", name: "Bits needed for some values", eq: "n = log_2(V)", find: "n",
+        letters: { n: "the number of bits", V: "the number of different values" },
+        example: { V: "256" },
+        note: "round up when it is not a whole number",
+      },
+      {
+        id: "twos-min", name: "Smallest two's complement number", eq: "m = -2^(n - 1)", find: "m",
+        letters: { m: "the smallest number", n: "the number of bits" },
+        example: { n: "8" },
+      },
+      {
+        id: "twos-max", name: "Biggest two's complement number", eq: "M = 2^(n - 1) - 1", find: "M",
+        letters: { M: "the biggest number", n: "the number of bits" },
+        example: { n: "8" },
+      },
+      {
+        id: "hex-digits", name: "Hexadecimal digits for n bits", eq: "d = n/4", find: "d",
+        letters: { d: "the number of hex digits", n: "the number of bits" },
+        example: { n: "32" },
+        note: "each hex digit stands for 4 bits",
+      },
+      {
+        id: "bytes", name: "Bytes from bits", eq: "B = b/8", find: "B",
+        letters: { B: "the number of bytes", b: "the number of bits" },
+        example: { b: "64" },
+      },
+      {
+        id: "colours", name: "Colours for a colour depth", eq: "C = 2^d", find: "C",
+        letters: { C: "the number of colours", d: "the bits for each pixel" },
+        example: { d: "8" },
+      },
+      {
+        id: "pixels", name: "Pixels in an image", eq: "P = wh", find: "P",
+        letters: { P: "the number of pixels", w: "the width in pixels", h: "the height in pixels" },
+        example: { w: "800", h: "600" },
+      },
+      {
+        id: "image-size", name: "File size of an image, in bytes", eq: "S = whd/8", find: "S",
+        letters: { S: "the file size in bytes", w: "the width in pixels", h: "the height in pixels", d: "the bits for each pixel" },
+        example: { w: "800", h: "600", d: "24" },
+      },
+      {
+        id: "sound-size", name: "File size of a recording, in bytes", eq: "S = rstc/8", find: "S",
+        letters: { S: "the file size in bytes", r: "the samples each second", s: "the bits in each sample", t: "the seconds", c: "the number of channels" },
+        example: { r: "8000", s: "16", t: "10", c: "2" },
+      },
+      {
+        id: "sample-rate", name: "Sampling rate needed", eq: "f = 2B", find: "f",
+        letters: { f: "the sampling rate", B: "the highest frequency in the sound" },
+        example: { B: "20000" },
+        note: "at least twice the highest frequency",
+      },
+      {
+        id: "transfer-time", name: "Time to send a file", eq: "t = S/b", find: "t",
+        letters: { t: "the time in seconds", S: "the size of the file in bits", b: "the bits sent each second" },
+        example: { S: "80000000", b: "2000000" },
+      },
+      {
+        id: "compression", name: "Compression ratio", eq: "r = O/C", find: "r",
+        letters: { r: "the compression ratio", O: "the size before", C: "the size after" },
+        example: { O: "12000", C: "3000" },
+      },
+      {
+        id: "address-bits", name: "Bits needed to address memory", eq: "n = log_2(M)", find: "n",
+        letters: { n: "the bits in an address", M: "the number of memory places" },
+        example: { M: "65536" },
+      },
+      {
+        id: "hosts", name: "Hosts on a network", eq: "H = 2^h - 2", find: "H",
+        letters: { H: "the number of hosts", h: "the bits left for hosts" },
+        example: { h: "8" },
+        note: "two addresses are kept for the network and for broadcast",
+      },
+      {
+        id: "binary-search", name: "Steps for a binary search", eq: "n = log_2(N)", find: "n",
+        letters: { n: "the most steps", N: "the number of items" },
+        example: { N: "1024" },
+        note: "round up when it is not a whole number",
+      },
+      {
+        id: "bubble-sort", name: "Comparisons in a bubble sort", eq: "C = n(n - 1)/2", find: "C",
+        letters: { C: "the number of comparisons", n: "the number of items" },
+        example: { n: "10" },
+      },
+      {
+        id: "tree-nodes", name: "Nodes in a full binary tree", eq: "N = 2^h - 1", find: "N",
+        letters: { N: "the number of nodes", h: "the number of levels" },
+        example: { h: "4" },
+      },
+      {
+        id: "tree-height", name: "Levels of a full binary tree", eq: "h = log_2(N + 1)", find: "h",
+        letters: { h: "the number of levels", N: "the number of nodes" },
+        example: { N: "15" },
+      },
+      {
+        id: "load-factor", name: "Load factor of a hash table", eq: "L = n/m", find: "L",
+        letters: { L: "the load factor", n: "how many items are stored", m: "how many places there are" },
+        example: { n: "30", m: "40" },
+      },
+    ],
+  },
+  {
+    group: "Number theory",
+    items: [
+      {
+        id: "hcf-lcm", name: "The lowest common multiple from the highest common factor", eq: "L = ab/H", find: "L",
+        letters: { L: "the lowest common multiple", a: "the first number", b: "the second number", H: "their highest common factor" },
+        example: { a: "12", b: "18", H: "6" },
+        note: "HCF × LCM = the product of the two numbers",
+      },
+      {
+        id: "division-algorithm", name: "Dividing with a remainder", eq: "a = bq + r", find: "a",
+        letters: { a: "the number divided", b: "the divisor", q: "the quotient", r: "the remainder" },
+        example: { b: "5", q: "9", r: "2" },
+      },
+      {
+        id: "totient-prime", name: "Euler's totient of a prime", eq: "t = p - 1", find: "t",
+        letters: { t: "how many numbers up to p share no factor with it", p: "the prime" },
+        example: { p: "13" },
+      },
+      {
+        id: "totient-two-primes", name: "Euler's totient of two primes multiplied", eq: "t = (p - 1)(q - 1)", find: "t",
+        letters: { t: "the totient of pq", p: "the first prime", q: "the second prime" },
+        example: { p: "5", q: "11" },
+      },
+      {
+        id: "totient-power", name: "Euler's totient of a prime power", eq: "t = p^(k - 1)(p - 1)", find: "t",
+        letters: { t: "the totient of p to the power k", p: "the prime", k: "the power" },
+        example: { p: "3", k: "3" },
+      },
+      {
+        id: "divisor-count", name: "Number of factors of p^a × q^b", eq: "D = (a + 1)(b + 1)", find: "D",
+        letters: { D: "the number of factors", a: "the power of the first prime", b: "the power of the second prime" },
+        example: { a: "3", b: "2" },
+      },
+      {
+        id: "divisor-sum", name: "Sum of the factors of a prime power", eq: "S = (p^(k + 1) - 1)/(p - 1)", find: "S",
+        letters: { S: "the sum of the factors", p: "the prime", k: "the power" },
+        example: { p: "2", k: "4" },
+      },
+      {
+        id: "mersenne", name: "A Mersenne number", eq: "M = 2^p - 1", find: "M",
+        letters: { M: "the Mersenne number", p: "the power of 2" },
+        example: { p: "5" },
+        note: "prime for some prime values of p",
+      },
+      {
+        id: "perfect", name: "A perfect number from a Mersenne prime", eq: "P = 2^(p - 1)(2^p - 1)", find: "P",
+        letters: { P: "the perfect number", p: "a power that makes 2^p − 1 prime" },
+        example: { p: "3" },
+      },
+      {
+        id: "fermat", name: "A Fermat number", eq: "F = 2^(2^n) + 1", find: "F",
+        letters: { F: "the Fermat number", n: "which one" },
+        example: { n: "2" },
+      },
+      {
+        id: "triple-a", name: "Pythagorean triples: the first leg", eq: "a = m^2 - k^2", find: "a",
+        letters: { a: "the first leg", m: "the bigger number", k: "the smaller number" },
+        example: { m: "5", k: "2" },
+      },
+      {
+        id: "triple-b", name: "Pythagorean triples: the second leg", eq: "b = 2mk", find: "b",
+        letters: { b: "the second leg", m: "the bigger number", k: "the smaller number" },
+        example: { m: "5", k: "2" },
+      },
+      {
+        id: "triple-c", name: "Pythagorean triples: the hypotenuse", eq: "c = m^2 + k^2", find: "c",
+        letters: { c: "the hypotenuse", m: "the bigger number", k: "the smaller number" },
+        example: { m: "5", k: "2" },
+      },
+      {
+        id: "sum-odds", name: "Sum of the first n odd numbers", eq: "S = n^2", find: "S",
+        letters: { S: "the sum", n: "how many odd numbers" },
+        example: { n: "9" },
+        note: "1 + 3 + 5 + … is always a square",
+      },
+      {
+        id: "sum-evens", name: "Sum of the first n even numbers", eq: "S = n(n + 1)", find: "S",
+        letters: { S: "the sum", n: "how many even numbers" },
+        example: { n: "9" },
+      },
+      {
+        id: "pentagonal", name: "Pentagonal numbers", eq: "P = n(3n - 1)/2", find: "P",
+        letters: { P: "the nth pentagonal number", n: "which one" },
+        example: { n: "6" },
+      },
+      {
+        id: "hexagonal", name: "Hexagonal numbers", eq: "H = n(2n - 1)", find: "H",
+        letters: { H: "the nth hexagonal number", n: "which one" },
+        example: { n: "6" },
+      },
+      {
+        id: "catalan", name: "Catalan numbers", eq: "C = nCr(2n, n)/(n + 1)", find: "C",
+        letters: { C: "the nth Catalan number", n: "which one" },
+        example: { n: "3" },
+      },
+      {
+        id: "stars-bars", name: "Ways to share identical things", eq: "W = nCr(n + k - 1, k - 1)", find: "W",
+        letters: { W: "the number of ways", n: "how many identical things", k: "how many people share them" },
+        example: { n: "5", k: "3" },
+        note: "stars and bars",
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
