@@ -43,8 +43,20 @@ function tokenise(src) {
        belongs in that base, so nothing else written with an underscore is
        taken for one. 1011₂ with a subscript base reads the same. */
     {
+      // y7_8: a numeral with an unknown digit (a lowercase letter), in a numeral base.
+      const uv = /^([0-9A-Za-z]*[a-z][0-9A-Za-z]*)_([0-9]+)(?![A-Za-z0-9_])/.exec(src.slice(i));
+      if (uv && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1])) && !REFS.some((r) => src.startsWith(r, i))) {
+        const b = Number(uv[2]);
+        if (b >= 2 && b <= 36) {
+          const bad = [...uv[1]].find((ch) => !/[a-z]/.test(ch) && parseInt(ch, 36) >= b);
+          if (bad) throw new SyntaxError(`${bad} is not a digit in base ${b} — base ${b} uses ${b <= 10 ? `0 to ${b - 1}` : `0 to 9 and A to ${(b - 1).toString(36).toUpperCase()}`}.`);
+          out.push({ t: "base", v: uv[1], base: b, at: i });
+          i += uv[0].length;
+          continue;
+        }
+      }
       // 35_y: digits whose base is a letter (what the equation is about)
-      const lv = /^([0-9]+)_([a-z])(?![A-Za-z0-9_])/.exec(src.slice(i));
+      const lv = /^([0-9a-z]+)_([a-z])(?![A-Za-z0-9_])/.exec(src.slice(i));
       if (lv && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1]))) {
         out.push({ t: "base", v: lv[1], base: null, name: lv[2], at: i });
         i += lv[0].length;

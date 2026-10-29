@@ -83,14 +83,29 @@ export function decimalText(r) {
 
 /** A number written in another base: 1011₂ is { digits: "1011", base: 2 }.
     Digits past 9 are the letters A–Z (A is 10), so base 16 has 0–9 and A–F. */
-export const based = (digits, base, id = freshId()) => ({ id, kind: "base", digits: String(digits).toUpperCase(), base });
+/* A digit that is a lowercase LETTER is an unknown digit: y7_8 is y·8¹ + 7·8⁰.
+   Each such letter is a node of its own (`dv`, one slot per digit) so every walk
+   over the tree finds it; the other digits are numerals, kept in capitals. */
+const tidyDigits = (digits) => [...String(digits)].map((c) => (/[a-z]/.test(c) ? c : c.toUpperCase())).join("");
+const digitVars = (digits) => {
+  const dv = [...digits].map((c) => (/[a-z]/.test(c) ? vr(c) : null));
+  return dv.some(Boolean) ? dv : null;
+};
+export const based = (digits, base, id = freshId()) => {
+  const d = tidyDigits(digits), dv = digitVars(d);
+  return { id, kind: "base", digits: d, base, ...(dv ? { dv } : {}) };
+};
 /* 35_y: digits in a base that is a LETTER — 3y + 5 once it is written out. The
    letter is a node of its own (`v`) so every walk over the tree finds it. */
-export const basedVar = (digits, name, id = freshId()) => ({ id, kind: "base", digits: String(digits), base: null, v: vr(name) });
+export const basedVar = (digits, name, id = freshId()) => {
+  const d = tidyDigits(digits), dv = digitVars(d);
+  return { id, kind: "base", digits: d, base: null, v: vr(name), ...(dv ? { dv } : {}) };
+};
 
 /** Its value, exactly, or null when a digit does not belong in that base. */
 export function baseValue(digits, base) {
   if (base == null) return null;             // a base that is a letter has no number yet
+  if (/[a-z]/.test(String(digits))) return null;   // an unknown digit has no number yet
   let v = 0n;
   for (const ch of String(digits).toUpperCase()) {
     const d = parseInt(ch, 36);
@@ -147,7 +162,7 @@ export function kidsOf(node) {
     case "neg":  return [node.k];
     case "root": return [node.k];
     case "mixed": return [node.w, node.f];
-    case "base":  return node.v ? [node.v] : [];
+    case "base":  return [...(node.v ? [node.v] : []), ...(node.dv || []).filter(Boolean)];
     case "pct":  return [node.k];
     case "fact": return [node.k];
     case "list": return node.items;
@@ -196,7 +211,12 @@ export function replace(root, id, next) {
       case "pm":   { const k = rec(n.k); return k === n.k ? n : { id: n.id, kind: "pm", k }; }
       case "mixed": { const w = rec(n.w), f = rec(n.f); return w === n.w && f === n.f ? n : { ...n, w, f }; }
       case "pct":  { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
-      case "base": { if (!n.v) return n; const v = rec(n.v); return v === n.v ? n : { ...n, v }; }
+      case "base": {
+        const v = n.v && rec(n.v);
+        const dv = n.dv && n.dv.map((d) => d && rec(d));
+        const same = v === n.v && (!dv || dv.every((d, i) => d === n.dv[i]));
+        return same ? n : { ...n, ...(n.v ? { v } : {}), ...(dv ? { dv } : {}) };
+      }
       case "fact": { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
       case "list": { const items = n.items.map(rec); return items.every((k, i) => k === n.items[i]) ? n : { ...n, items }; }
       case "sigma": { const lo = rec(n.lo), hi = rec(n.hi), k = rec(n.k); return lo === n.lo && hi === n.hi && k === n.k ? n : { ...n, lo, hi, k }; }

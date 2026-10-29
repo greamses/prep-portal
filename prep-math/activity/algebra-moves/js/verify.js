@@ -74,10 +74,10 @@ function evalAt(node, env) {
     case "pct":  return evalAt(node.k, env) / 100;
     case "base": {
       // digits in a base that is a letter: each digit times a power of that letter
-      if (node.v) {
-        const b = evalAt(node.v, env);
+      if (node.v || node.dv) {
+        const b = node.v ? evalAt(node.v, env) : node.base;
         let total = 0;
-        for (const ch of node.digits) total = total * b + parseInt(ch, 36);
+        [...node.digits].forEach((ch, i) => { total = total * b + (node.dv && node.dv[i] ? evalAt(node.dv[i], env) : parseInt(ch, 36)); });
         return total;
       }
       const v = baseValueOf(node);

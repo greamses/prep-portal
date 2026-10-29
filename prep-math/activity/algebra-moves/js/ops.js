@@ -692,7 +692,7 @@ function nodeTidies(eq, node) {
     t("surd", "Clear the root off the bottom", "multiply top and bottom by it", rationalise(eq, node.id));
   }
   if (node.kind === "prod" || node.kind === "frac") t("multiply", multiplyLabel(node), "numbers together, letters together", multiplyOut(eq, node.id));
-  if (node.kind === "base" && node.v) t("expandletter", `Write it out: each digit times a power of ${node.v.name}`, "digit × place value", expandBase(eq, node.id));
+  if (node.kind === "base" && (node.v || node.dv)) t("expandletter", node.v ? `Write it out: each digit times a power of ${node.v.name}` : "Write it out: each digit times its place value", "digit × place value", expandBase(eq, node.id));
   // From any sum / product / fraction, but over the WHOLE of the outermost one it sits in, so every power goes in one step
   if (node.kind === "sum" || node.kind === "prod" || node.kind === "frac") {
     let scope = node;
@@ -1543,7 +1543,9 @@ export function expandBase(eq, id) {
   const baseName = n.v ? n.v.name : n.base;
   const places = digits.map((ch, i) => {
     const power = digits.length - 1 - i;
-    return A.prod([A.num(R.rat(BigInt(parseInt(ch, 36)))), A.pow(baseNode(), A.num(R.rat(BigInt(power))))]);
+    // an unknown digit is its letter; a numeral digit is its number
+    const digit = /[a-z]/.test(ch) ? A.vr(ch) : A.num(R.rat(BigInt(parseInt(ch, 36))));
+    return A.prod([digit, A.pow(baseNode(), A.num(R.rat(BigInt(power))))]);
   });
   const next = places.length === 1 ? places[0] : { ...A.sum(places), paren: true };
   return {
@@ -1556,7 +1558,7 @@ export function expandBase(eq, id) {
 export function toBase(eq, id, target) {
   const n = A.findById(eq, id);
   if (!n || n.kind !== "base") return { error: "That is not a number written with its base." };
-  if (n.v) return { error: "Write it out first: its base is still a letter." };
+  if (n.v || n.dv) return { error: "Write it out first: it still has a letter in it." };
   const v = A.baseValue(n.digits, n.base);
   if (v === null) return { error: `${n.digits} has a digit that base ${n.base} does not have.` };
   if (target === n.base) return { error: `That is in base ${target} already.` };
@@ -1571,7 +1573,7 @@ export function toBase(eq, id, target) {
 export function toBaseTen(eq, id) {
   const n = A.findById(eq, id);
   if (!n || n.kind !== "base") return { error: "That is not a number in another base." };
-  if (n.v) return { error: "Write it out first: its base is still a letter." };
+  if (n.v || n.dv) return { error: "Write it out first: it still has a letter in it." };
   const v = A.baseValue(n.digits, n.base);
   if (v === null) return { error: `${n.digits} has a digit that base ${n.base} does not have.` };
   const next = A.num(R.rat(v));
@@ -2828,7 +2830,7 @@ export function atomOffers(eq, key, { given = null } = {}) {
     }
     // A number in another base: expand it in base ten, or just convert it.
     if (leaf?.kind === "base") {
-      add(direct(leaf.v ? "expandletter" : "expandbase", leaf.v ? `Write it out: each digit times a power of ${leaf.v.name}` : "Expand it in base ten", "digit × place value", expandBase(eq, nodeId)));
+      add(direct(leaf.v || leaf.dv ? "expandletter" : "expandbase", leaf.v ? `Write it out: each digit times a power of ${leaf.v.name}` : leaf.dv ? "Write it out: each digit times its place value" : "Expand it in base ten", "digit × place value", expandBase(eq, nodeId)));
       add(direct("base10", "Write it in base ten", "the value", toBaseTen(eq, nodeId)));
       // ...or in another base: by repeated division, the remainders read upwards.
       for (const t of [2, 8, 16]) add(direct("tobase", `Write it in base ${t}`, "divide by the base, keep the remainders", toBase(eq, nodeId, t)));

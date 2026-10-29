@@ -369,10 +369,12 @@ function measureBare(node, size, binary) {
     }
     // 1011₂: the digits upright, the base lowered and small after them.
     case "base": {
-      const dw = measureText(node.digits, size, false);
+      // each digit its own width: an unknown digit is a letter, set italic
+      const cw = [...node.digits].map((c) => measureText(c, size, /[a-z]/.test(c)));
+      const dw = cw.reduce((a, b) => a + b, 0);
       const sub = size * 0.6;
       const bw = measureText(node.v ? node.v.name : String(node.base), sub, !!node.v);
-      return { ...base, kind: "base", dw, bw, sub, w: dw + 0.04 * size + bw,
+      return { ...base, kind: "base", dw, cw, bw, sub, w: dw + 0.04 * size + bw,
                descent: Math.max(base.descent, 0.32 * size + DESC * sub) };
     }
     // A named equation, its number lowered the way it is written: E₁.
@@ -640,7 +642,13 @@ function place(m, x, y, out) {
       break;
 
     case "base":
-      text("t", m.node.digits, x, y, m.size, false);
+      {
+        let cx = x;
+        [...m.node.digits].forEach((c, i) => {
+          text(`d${i}`, c, cx, y, m.size, /[a-z]/.test(c));
+          cx += m.cw[i];
+        });
+      }
       text("radix", m.node.v ? m.node.v.name : String(m.node.base), x + m.dw + 0.04 * m.size, y + 0.32 * m.size, m.sub, !!m.node.v);
       break;
 
