@@ -4898,6 +4898,505 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Organic chemistry: formulas and masses",
+    items: [
+      {
+        id: "haloalkane", name: "Hydrogen atoms in a haloalkane", eq: "H = 2n + 1", find: "H",
+        letters: { H: "the hydrogen atoms", n: "the carbon atoms" },
+        example: { n: "4" },
+        note: "one halogen atom takes the place of one hydrogen of the alkane",
+      },
+      {
+        id: "amine", name: "Hydrogen atoms in a primary amine", eq: "H = 2n + 3", find: "H",
+        letters: { H: "the hydrogen atoms", n: "the carbon atoms" },
+        example: { n: "3" },
+      },
+      {
+        id: "alkane-bonds", name: "Bonds in an alkane", eq: "B = 3n + 1", find: "B",
+        letters: { B: "the bonds in all", n: "the carbon atoms" },
+        example: { n: "3" },
+      },
+      {
+        id: "alkane-mass", name: "Molar mass of an alkane", eq: "M = 14n + 2", find: "M",
+        letters: { M: "the molar mass", n: "the carbon atoms" },
+        example: { n: "5" },
+      },
+      {
+        id: "alkene-mass", name: "Molar mass of an alkene", eq: "M = 14n", find: "M",
+        letters: { M: "the molar mass", n: "the carbon atoms" },
+        example: { n: "4" },
+      },
+      {
+        id: "alkyne-mass", name: "Molar mass of an alkyne", eq: "M = 14n - 2", find: "M",
+        letters: { M: "the molar mass", n: "the carbon atoms" },
+        example: { n: "3" },
+      },
+      {
+        id: "alcohol-mass", name: "Molar mass of an alcohol", eq: "M = 14n + 18", find: "M",
+        letters: { M: "the molar mass", n: "the carbon atoms" },
+        example: { n: "2" },
+      },
+      {
+        id: "acid-mass", name: "Molar mass of a carboxylic acid", eq: "M = 14n + 32", find: "M",
+        letters: { M: "the molar mass", n: "the carbon atoms" },
+        example: { n: "2" },
+      },
+      {
+        id: "hydrocarbon-oxygen", name: "Oxygen needed to burn a hydrocarbon CxHy", eq: "O = x + y/4", find: "O",
+        letters: { O: "the moles of oxygen for one mole", x: "the carbon atoms", y: "the hydrogen atoms" },
+        example: { x: "3", y: "8" },
+      },
+      {
+        id: "hydrocarbon-water", name: "Water made by burning a hydrocarbon CxHy", eq: "W = y/2", find: "W",
+        letters: { W: "the moles of water for one mole", y: "the hydrogen atoms" },
+        example: { y: "8" },
+        note: "the moles of carbon dioxide are x",
+      },
+      {
+        id: "oxygenated-oxygen", name: "Oxygen needed to burn CxHyOz", eq: "O = x + y/4 - z/2", find: "O",
+        letters: { O: "the moles of oxygen for one mole", x: "the carbon atoms", y: "the hydrogen atoms", z: "the oxygen atoms" },
+        example: { x: "2", y: "6", z: "1" },
+      },
+      {
+        id: "combustion-heat", name: "Heat from burning a mass of fuel", eq: "Q = mH/M", find: "Q",
+        letters: { Q: "the heat given out", m: "the mass of fuel", H: "the heat given out by one mole", M: "the molar mass" },
+        example: { m: "23", H: "1370", M: "46" },
+      },
+      {
+        id: "hydrogenation", name: "Hydrogen needed to saturate a compound", eq: "H = dn", find: "H",
+        letters: { H: "the moles of hydrogen", d: "the double bonds in each molecule", n: "the moles of the compound" },
+        example: { d: "2", n: "3" },
+      },
+      {
+        id: "iodine-value", name: "Iodine value of a fat or oil", eq: "I = 25380n/M", find: "I",
+        letters: { I: "the grams of iodine taken up by 100 g", n: "the double bonds in each molecule", M: "the molar mass" },
+        example: { n: "1", M: "282" },
+      },
+      {
+        id: "saponification-value", name: "Saponification value of a fat", eq: "S = 56100n/M", find: "S",
+        letters: { S: "the milligrams of potassium hydroxide for 1 g", n: "the ester groups in each molecule", M: "the molar mass" },
+        example: { n: "3", M: "561" },
+      },
+      {
+        id: "equivalent-mass", name: "Equivalent mass", eq: "E = M/z", find: "E",
+        letters: { E: "the equivalent mass", M: "the molar mass", z: "the reacting units in one mole" },
+        example: { M: "98", z: "2" },
+      },
+    ],
+  },
+  {
+    group: "Organic chemistry: structure and spectra",
+    items: [
+      {
+        id: "stereoisomers", name: "Stereoisomers of a molecule", eq: "S = 2^n", find: "S",
+        letters: { S: "the number of stereoisomers", n: "the chiral centres" },
+        example: { n: "3" },
+      },
+      {
+        id: "stereoisomers-meso", name: "Stereoisomers when the molecule is symmetrical", eq: "S = 2^(n - 1)", find: "S",
+        letters: { S: "the number of stereoisomers", n: "the chiral centres" },
+        example: { n: "3" },
+        note: "rough guide; some centres may repeat",
+      },
+      {
+        id: "specific-rotation", name: "Specific rotation", eq: "S = a/(lc)", find: "S",
+        letters: { S: "the specific rotation", a: "the rotation measured", l: "the length of the tube in decimetres", c: "the concentration in grams for each millilitre" },
+        example: { a: "30", l: "1", c: "1/2" },
+      },
+      {
+        id: "enantiomeric-excess", name: "Enantiomeric excess", eq: "E = 100(R - S)/(R + S)", find: "E",
+        letters: { E: "the enantiomeric excess, as a percentage", R: "the amount of the major form", S: "the amount of the minor form" },
+        example: { R: "75", S: "25" },
+      },
+      {
+        id: "nmr-shift", name: "Chemical shift in NMR", eq: "d = 1000000(f - g)/g", find: "d",
+        letters: { d: "the shift in parts per million", f: "the frequency of the signal", g: "the frequency of the reference" },
+        example: { f: "300001500", g: "300000000" },
+      },
+      {
+        id: "nmr-peaks", name: "Peaks in an NMR signal (n + 1 rule)", eq: "P = n + 1", find: "P",
+        letters: { P: "the peaks in the signal", n: "the hydrogen atoms on the next carbon" },
+        example: { n: "2" },
+      },
+      {
+        id: "wavenumber", name: "Wavenumber in infrared spectroscopy", eq: "w = 10000/L", find: "w",
+        letters: { w: "the wavenumber in waves for each centimetre", L: "the wavelength in micrometres" },
+        example: { L: "5" },
+      },
+      {
+        id: "retention-factor", name: "Retention factor in chromatography", eq: "k = (t - s)/s", find: "k",
+        letters: { k: "the retention factor", t: "the time the substance is held back", s: "the time for something that is not held back" },
+        example: { t: "12", s: "3" },
+      },
+      {
+        id: "huckel", name: "Hückel's rule for aromatic rings", eq: "p = 4n + 2", find: "p",
+        letters: { p: "the pi electrons in the ring", n: "0, 1, 2, 3 …" },
+        example: { n: "1" },
+      },
+      {
+        id: "formal-charge", name: "Formal charge on an atom", eq: "F = V - N - B/2", find: "F",
+        letters: { F: "the formal charge", V: "the valence electrons of the free atom", N: "the electrons in lone pairs", B: "the electrons in bonds" },
+        example: { V: "5", N: "0", B: "8" },
+      },
+      {
+        id: "bond-order", name: "Bond order", eq: "O = (b - a)/2", find: "O",
+        letters: { O: "the bond order", b: "the bonding electrons", a: "the antibonding electrons" },
+        example: { b: "10", a: "4" },
+      },
+      {
+        id: "electron-domains", name: "Electron domains round an atom", eq: "S = b + l", find: "S",
+        letters: { S: "the electron domains", b: "the atoms bonded to it", l: "its lone pairs" },
+        example: { b: "4", l: "0" },
+      },
+    ],
+  },
+  {
+    group: "Organic chemistry: polymers",
+    items: [
+      {
+        id: "polymer-length", name: "Units in a polymer chain", eq: "n = M/m", find: "n",
+        letters: { n: "the units in the chain", M: "the molar mass of the polymer", m: "the molar mass of one unit" },
+        example: { M: "28000", m: "28" },
+      },
+      {
+        id: "number-average", name: "Number-average molar mass of a polymer", eq: "M = (Na + nb)/(N + n)", find: "M",
+        letters: { M: "the number-average molar mass", N: "the chains of the first kind", a: "their molar mass", n: "the chains of the second kind", b: "their molar mass" },
+        example: { N: "100", a: "10000", n: "50", b: "40000" },
+      },
+      {
+        id: "polydispersity", name: "Polydispersity of a polymer", eq: "D = W/M", find: "D",
+        letters: { D: "the polydispersity", W: "the mass-average molar mass", M: "the number-average molar mass" },
+        example: { W: "30000", M: "20000" },
+      },
+    ],
+  },
+  {
+    group: "Earth science: geology and seismology",
+    items: [
+      {
+        id: "spreading-rate", name: "Rate of sea-floor spreading", eq: "r = d/t", find: "r",
+        letters: { r: "the rate", d: "the distance from the ridge", t: "the age of the rock" },
+        example: { d: "500", t: "10" },
+      },
+      {
+        id: "geothermal-gradient", name: "Temperature underground", eq: "T = t + gd", find: "T",
+        letters: { T: "the temperature at depth", t: "the temperature at the surface", g: "the rise for each kilometre", d: "the depth in kilometres" },
+        example: { t: "15", g: "25", d: "2" },
+      },
+      {
+        id: "isostasy", name: "Root of a mountain (Airy isostasy)", eq: "r = hd/(m - d)", find: "r",
+        letters: { r: "the depth of the root", h: "the height of the mountain", d: "the density of the crust", m: "the density of the mantle" },
+        example: { h: "5", d: "2", m: "3" },
+      },
+      {
+        id: "bouguer", name: "Bouguer correction", eq: "B = 0.0419dh", find: "B",
+        letters: { B: "the correction in milligals", d: "the density of the rock", h: "the height" },
+        example: { d: "2.5", h: "100" },
+      },
+      {
+        id: "free-air", name: "Free-air correction", eq: "F = 0.3086h", find: "F",
+        letters: { F: "the correction in milligals", h: "the height in metres" },
+        example: { h: "1000" },
+      },
+      {
+        id: "gravity-anomaly", name: "Bouguer gravity anomaly", eq: "A = g - t + f - b", find: "A",
+        letters: { A: "the anomaly", g: "the gravity measured", t: "the gravity expected at that latitude", f: "the free-air correction", b: "the Bouguer correction" },
+        example: { g: "980000", t: "979900", f: "30", b: "10" },
+      },
+      {
+        id: "heat-flow", name: "Heat flow through rock", eq: "q = kT/z", find: "q",
+        letters: { q: "the heat flow", k: "the conductivity of the rock", T: "the temperature difference", z: "the depth difference" },
+        example: { k: "3", T: "60", z: "2" },
+      },
+      {
+        id: "local-magnitude", name: "Local earthquake magnitude", eq: "M = log_10(A) + 3log_10(8t) - 2.92", find: "M",
+        letters: { M: "the magnitude", A: "the largest wave amplitude", t: "the gap between the P wave and the S wave in seconds" },
+        example: { A: "1000", t: "5/4" },
+      },
+      {
+        id: "magnitude-energy", name: "Energy of an earthquake", eq: "L = 1.5M + 4.8", find: "L",
+        letters: { L: "the log of the energy in joules", M: "the magnitude" },
+        example: { M: "6" },
+      },
+      {
+        id: "moment-magnitude", name: "Moment magnitude", eq: "M = (2/3)log_10(S) - 10.7", find: "M",
+        letters: { M: "the moment magnitude", S: "the seismic moment" },
+        example: { S: "10^22" },
+      },
+      {
+        id: "seismic-moment", name: "Seismic moment", eq: "S = uAD", find: "S",
+        letters: { S: "the seismic moment", u: "the rigidity of the rock", A: "the area that slipped", D: "the slip" },
+        example: { u: "30", A: "100", D: "2" },
+      },
+      {
+        id: "p-wave-speed", name: "Speed of a P wave", eq: "v = sqrt((K + 4G/3)/d)", find: "v",
+        letters: { v: "the speed", K: "the bulk modulus", G: "the shear modulus", d: "the density" },
+        example: { K: "30", G: "15", d: "2" },
+      },
+      {
+        id: "s-wave-speed", name: "Speed of an S wave", eq: "v = sqrt(G/d)", find: "v",
+        letters: { v: "the speed", G: "the shear modulus", d: "the density" },
+        example: { G: "32", d: "2" },
+      },
+      {
+        id: "ray-parameter", name: "Ray parameter of a seismic wave", eq: "p = sin(i°)/v", find: "p",
+        letters: { p: "the ray parameter", i: "the angle of the ray in degrees", v: "the wave speed" },
+        example: { i: "30", v: "4" },
+      },
+      {
+        id: "tsunami-speed", name: "Speed of a tsunami", eq: "v = sqrt(gd)", find: "v",
+        letters: { v: "the speed", g: "the pull of gravity per kilogram", d: "the depth of the water" },
+        example: { g: "10", d: "1000" },
+      },
+      {
+        id: "tsunami-wavelength", name: "Wavelength of a tsunami", eq: "w = vT", find: "w",
+        letters: { w: "the wavelength", v: "the speed", T: "the time between waves" },
+        example: { v: "100", T: "900" },
+      },
+    ],
+  },
+  {
+    group: "Earth science: water, soil and landforms",
+    items: [
+      {
+        id: "runoff-coefficient", name: "Runoff coefficient", eq: "C = R/P", find: "C",
+        letters: { C: "the runoff coefficient", R: "the runoff", P: "the rain that fell" },
+        example: { R: "30", P: "60" },
+      },
+      {
+        id: "rational-method", name: "Peak river flow from rain (rational method)", eq: "Q = CiA/360", find: "Q",
+        letters: { Q: "the peak flow in cubic metres a second", C: "the runoff coefficient", i: "the rainfall in millimetres an hour", A: "the area in hectares" },
+        example: { C: "0.9", i: "40", A: "10" },
+      },
+      {
+        id: "manning", name: "Speed of a river (Manning's equation)", eq: "v = R^(2/3)S^(1/2)/n", find: "v",
+        letters: { v: "the speed", R: "the hydraulic radius", S: "the slope", n: "Manning's roughness" },
+        example: { R: "8", S: "1/4", n: "1/10" },
+      },
+      {
+        id: "hydraulic-radius", name: "Hydraulic radius of a channel", eq: "R = A/P", find: "R",
+        letters: { R: "the hydraulic radius", A: "the area of the flow", P: "the length of the wetted edge" },
+        example: { A: "12", P: "8" },
+      },
+      {
+        id: "water-balance", name: "Water balance of an area", eq: "S = P - E - R", find: "S",
+        letters: { S: "the change in stored water", P: "the rain that fell", E: "the water lost to the air", R: "the runoff" },
+        example: { P: "800", E: "450", R: "200" },
+      },
+      {
+        id: "settling-speed", name: "Speed a grain settles in water (Stokes)", eq: "v = 2(p - f)gr^2/(9n)", find: "v",
+        letters: { v: "the settling speed", p: "the density of the grain", f: "the density of the water", g: "the pull of gravity per kilogram", r: "the radius of the grain", n: "the viscosity of the water" },
+        example: { p: "3", f: "1", g: "10", r: "3", n: "2" },
+      },
+      {
+        id: "void-ratio", name: "Void ratio of a soil", eq: "v = V/S", find: "v",
+        letters: { v: "the void ratio", V: "the volume of the gaps", S: "the volume of the solid grains" },
+        example: { V: "30", S: "60" },
+      },
+      {
+        id: "water-content", name: "Water content of a soil", eq: "w = 100m/s", find: "w",
+        letters: { w: "the water content, as a percentage", m: "the mass of the water", s: "the mass of the dry soil" },
+        example: { m: "25", s: "100" },
+      },
+      {
+        id: "dry-density", name: "Dry density of a soil", eq: "D = B/(1 + w/100)", find: "D",
+        letters: { D: "the dry density", B: "the bulk density", w: "the water content, as a percentage" },
+        example: { B: "2", w: "25" },
+      },
+      {
+        id: "saturation", name: "Degree of saturation of a soil", eq: "S = 100a/b", find: "S",
+        letters: { S: "the saturation, as a percentage", a: "the volume of water", b: "the volume of the gaps" },
+        example: { a: "18", b: "30" },
+      },
+      {
+        id: "slope-angle", name: "Angle of a slope", eq: "tan(t°) = h/d", find: "t",
+        letters: { t: "the angle in degrees", h: "the rise", d: "the distance along the ground" },
+        example: { h: "1", d: "1" },
+      },
+      {
+        id: "relief-ratio", name: "Relief ratio of a basin", eq: "R = h/L", find: "R",
+        letters: { R: "the relief ratio", h: "the difference in height between the top and bottom", L: "the length of the basin" },
+        example: { h: "300", L: "6000" },
+      },
+      {
+        id: "hypsometric-integral", name: "Hypsometric integral", eq: "H = (m - l)/(h - l)", find: "H",
+        letters: { H: "the hypsometric integral", m: "the mean height", l: "the lowest height", h: "the highest height" },
+        example: { m: "500", l: "100", h: "900" },
+      },
+      {
+        id: "bifurcation-ratio", name: "Bifurcation ratio of streams", eq: "B = N/n", find: "B",
+        letters: { B: "the bifurcation ratio", N: "the streams of one order", n: "the streams of the next order up" },
+        example: { N: "24", n: "6" },
+      },
+      {
+        id: "circularity-ratio", name: "Circularity ratio of a basin", eq: "C = 4(22/7)A/P^2", find: "C",
+        letters: { C: "the circularity ratio", A: "the area", P: "the perimeter" },
+        example: { A: "154", P: "44" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "elongation-ratio", name: "Elongation ratio of a basin", eq: "E = 2sqrt(A/(22/7))/L", find: "E",
+        letters: { E: "the elongation ratio", A: "the area", L: "the length of the basin" },
+        example: { A: "154", L: "14" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "form-factor", name: "Form factor of a basin", eq: "F = A/L^2", find: "F",
+        letters: { F: "the form factor", A: "the area", L: "the length of the basin" },
+        example: { A: "50", L: "10" },
+      },
+      {
+        id: "glacier-balance", name: "Mass balance of a glacier", eq: "B = A - C", find: "B",
+        letters: { B: "the mass balance", A: "the snow gained", C: "the ice lost" },
+        example: { A: "500", C: "620" },
+      },
+      {
+        id: "ice-thickness", name: "Thickness of a glacier", eq: "h = T/(dg·sin(a°))", find: "h",
+        letters: { h: "the thickness", T: "the shear stress at the bed", d: "the density of ice", g: "the pull of gravity per kilogram", a: "the slope in degrees" },
+        example: { T: "90000", d: "900", g: "10", a: "30" },
+      },
+      {
+        id: "vertical-exaggeration", name: "Vertical exaggeration of a profile", eq: "V = a/b", find: "V",
+        letters: { V: "the vertical exaggeration", a: "the vertical scale", b: "the horizontal scale" },
+        example: { a: "1/10", b: "1/50" },
+      },
+    ],
+  },
+  {
+    group: "Earth science: oceans, air and climate",
+    items: [
+      {
+        id: "iceberg", name: "Share of an iceberg above the water", eq: "f = 1 - a/b", find: "f",
+        letters: { f: "the share above the surface", a: "the density of ice", b: "the density of the water" },
+        example: { a: "900", b: "1000" },
+      },
+      {
+        id: "coriolis", name: "Coriolis parameter", eq: "f = 2w·sin(p°)", find: "f",
+        letters: { f: "the Coriolis parameter", w: "the spin rate of the planet", p: "the latitude in degrees" },
+        example: { w: "1/10000", p: "30" },
+      },
+      {
+        id: "geostrophic-wind", name: "Geostrophic wind", eq: "v = P/(dfD)", find: "v",
+        letters: { v: "the wind speed", P: "the pressure difference", d: "the density of the air", f: "the Coriolis parameter", D: "the distance it is measured over" },
+        example: { P: "200", d: "1", f: "1/100", D: "1000" },
+      },
+      {
+        id: "deep-water-speed", name: "Speed of a deep-water wave", eq: "c = gT/(2(22/7))", find: "c",
+        letters: { c: "the wave speed", g: "the pull of gravity per kilogram", T: "the time between waves" },
+        example: { g: "10", T: "22" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "deep-water-wavelength", name: "Wavelength of a deep-water wave", eq: "L = gT^2/(2(22/7))", find: "L",
+        letters: { L: "the wavelength", g: "the pull of gravity per kilogram", T: "the time between waves" },
+        example: { g: "10", T: "11/5" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "dry-lapse", name: "Cooling of rising dry air", eq: "T = t - 9.8h/1000", find: "T",
+        letters: { T: "the temperature at height h", t: "the temperature at the start", h: "the height risen in metres" },
+        example: { t: "30", h: "1000" },
+      },
+      {
+        id: "dew-point", name: "Dew point from humidity", eq: "D = T - (100 - H)/5", find: "D",
+        letters: { D: "the dew point", T: "the air temperature", H: "the relative humidity, as a percentage" },
+        example: { T: "25", H: "60" },
+        note: "a rough guide for humidity above 50 percent",
+      },
+      {
+        id: "albedo", name: "Albedo", eq: "A = 100r/i", find: "A",
+        letters: { A: "the albedo, as a percentage", r: "the light reflected", i: "the light arriving" },
+        example: { r: "30", i: "100" },
+      },
+      {
+        id: "effective-temperature", name: "Temperature of a planet with no atmosphere", eq: "T = (S(1 - a)/(4s))^(1/4)", find: "T",
+        letters: { T: "the temperature in kelvin", S: "the sunlight arriving at the planet", a: "the albedo, from 0 to 1", s: "the Stefan-Boltzmann constant" },
+        example: { S: "64", a: "0", s: "1" },
+      },
+      {
+        id: "climate-sensitivity", name: "Warming from a change in heating", eq: "T = lF", find: "T",
+        letters: { T: "the warming", l: "the climate sensitivity", F: "the change in radiative forcing" },
+        example: { l: "3/4", F: "4" },
+      },
+      {
+        id: "noon-sun", name: "Height of the noon sun", eq: "A = 90 - L + D", find: "A",
+        letters: { A: "the altitude of the sun in degrees", L: "the latitude in degrees", D: "the latitude the sun is overhead at" },
+        example: { L: "40", D: "10" },
+      },
+      {
+        id: "solar-zenith", name: "Zenith angle of the sun", eq: "cos(z°) = sin(l°)sin(d°) + cos(l°)cos(d°)cos(h°)", find: "z",
+        letters: { z: "the zenith angle in degrees", l: "the latitude", d: "the declination of the sun", h: "the hour angle" },
+        example: { l: "0", d: "0", h: "60" },
+      },
+      {
+        id: "insolation", name: "Sunlight on a flat surface", eq: "Q = S·cos(z°)", find: "Q",
+        letters: { Q: "the sunlight on the surface", S: "the sunlight at right angles", z: "the zenith angle in degrees" },
+        example: { S: "1000", z: "60" },
+      },
+      {
+        id: "latitude-distance", name: "Distance along a line of longitude", eq: "d = 111L", find: "d",
+        letters: { d: "the distance in kilometres", L: "the difference in latitude in degrees" },
+        example: { L: "30" },
+      },
+      {
+        id: "longitude-distance", name: "Distance along a line of latitude", eq: "d = 111·cos(p°)L", find: "d",
+        letters: { d: "the distance in kilometres", p: "the latitude in degrees", L: "the difference in longitude in degrees" },
+        example: { p: "60", L: "10" },
+      },
+      {
+        id: "central-angle", name: "Angle between two places on the Earth", eq: "cos(t°) = sin(a°)sin(b°) + cos(a°)cos(b°)cos(c°)", find: "t",
+        letters: { t: "the angle at the centre of the Earth in degrees", a: "the latitude of the first place", b: "the latitude of the second", c: "the difference in longitude" },
+        example: { a: "0", b: "0", c: "90" },
+      },
+    ],
+  },
+  {
+    group: "Earth science: the solar system and stars",
+    items: [
+      {
+        id: "roche-limit", name: "Roche limit", eq: "d = 2.44R(m/M)^(1/3)", find: "d",
+        letters: { d: "the closest a moon can come", R: "the radius of the planet", m: "the density of the planet", M: "the density of the moon" },
+        example: { R: "10", m: "8", M: "1" },
+      },
+      {
+        id: "hill-sphere", name: "Hill sphere", eq: "r = a(m/(3M))^(1/3)", find: "r",
+        letters: { r: "the radius of the Hill sphere", a: "the distance from the sun", m: "the mass of the planet", M: "the mass of the sun" },
+        example: { a: "10", m: "1", M: "8/3" },
+      },
+      {
+        id: "distance-modulus", name: "Distance modulus", eq: "m = M + 5log_10(d/10)", find: "m",
+        letters: { m: "the apparent magnitude", M: "the absolute magnitude", d: "the distance in parsecs" },
+        example: { M: "1", d: "100" },
+      },
+      {
+        id: "magnitude-difference", name: "Difference in magnitude from the brightness", eq: "m - n = -(5/2)log_10(F/f)", find: "m",
+        letters: { m: "the magnitude of the brighter star", n: "the magnitude of the fainter star", F: "the brightness of the brighter star", f: "the brightness of the fainter star" },
+        example: { n: "2", F: "100", f: "1" },
+      },
+      {
+        id: "apparent-brightness", name: "Apparent brightness of a star", eq: "b = L/(4(22/7)d^2)", find: "b",
+        letters: { b: "the apparent brightness", L: "the luminosity", d: "the distance" },
+        example: { L: "88", d: "7" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "synodic-period", name: "Synodic period of an outer planet", eq: "1/S = 1/E - 1/P", find: "S",
+        letters: { S: "the time between oppositions", E: "the Earth's year", P: "the planet's year" },
+        example: { E: "1", P: "2" },
+      },
+      {
+        id: "small-angle", name: "Size of an object from its angle", eq: "a = 206265s/d", find: "a",
+        letters: { a: "the angle in arcseconds", s: "the size of the object", d: "the distance to it" },
+        example: { s: "1", d: "206265" },
+      },
+      {
+        id: "vis-viva", name: "Speed in an elliptical orbit (vis-viva)", eq: "v = sqrt(GM(2/r - 1/a))", find: "v",
+        letters: { v: "the speed", G: "the gravitational constant", M: "the mass of the body being orbited", r: "the distance now", a: "the semi-major axis" },
+        example: { G: "1", M: "4", r: "1", a: "1" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
