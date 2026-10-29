@@ -212,6 +212,14 @@ export function createKeypad(host, { onSubmit } = {}) {
   line.type = "text";
   line.inputMode = "none";        // our keys are the keyboard
   line.autocomplete = "off";
+  /* A browser's autofill and a password manager look for a field to fill, and a
+     text field with nothing around it is a candidate. Say, in every dialect, that
+     this one is not a form field (it is only where the keyboard's focus sits). */
+  line.name = `am-line-${Math.random().toString(36).slice(2)}`;
+  line.autocapitalize = "off";
+  line.setAttribute("autocorrect", "off");
+  line.setAttribute("aria-autocomplete", "none");
+  for (const a of ["data-lpignore", "data-1p-ignore", "data-bwignore", "data-form-type"]) line.setAttribute(a, a === "data-form-type" ? "other" : "true");
   line.spellcheck = false;
   line.setAttribute("aria-label", "The line you are typing");
 
@@ -463,6 +471,10 @@ export function createKeypad(host, { onSubmit } = {}) {
       const input = document.createElement("input");
       input.type = "text";
       input.inputMode = "decimal";
+      input.autocomplete = "off";
+      input.name = `am-value-${Math.random().toString(36).slice(2)}`;
+      input.setAttribute("data-lpignore", "true");
+      input.setAttribute("data-1p-ignore", "true");
       input.className = "am-give__value";
       input.placeholder = "?";
       input.value = kept.get(name) ?? "";
@@ -1126,11 +1138,16 @@ export function createKeypad(host, { onSubmit } = {}) {
     e.preventDefault();
     insertWhole(e.clipboardData?.getData("text") || "");
   });
-  line.addEventListener("input", () => {
+  line.addEventListener("input", (e) => {
     if (line.value === ed.text()) return;
+    /* An `input` that is not an InputEvent is not typing: it is the browser filling
+       the field in (autofill, a password manager, a saved suggestion). What the
+       student typed is in the boxes; the field is put back to match them. */
+    if (!(e instanceof InputEvent)) { sync(false); return; }
     ed.setText(looksLikeTeX(line.value) ? texToLinear(line.value) : line.value);
     sync();
   });
+  line.addEventListener("change", () => { if (line.value !== ed.text()) sync(false); });
   // The caret is ours to draw, so every way it can gain or lose the focus redraws it.
   for (const ev of ["focus", "blur"]) line.addEventListener(ev, draw);
 

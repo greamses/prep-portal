@@ -94,6 +94,8 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
     input.className = "am-card__rename";
     input.value = label;
     input.spellcheck = false;
+    input.autocomplete = "off";
+    input.setAttribute("data-lpignore", "true");
     input.setAttribute("aria-label", "A name for this equation");
     tag.replaceWith(input);
     input.focus();
