@@ -463,11 +463,6 @@ export const GROUPS = [
         example: { s: "4" },
       },
       {
-        id: "kite-area", name: "Area of a kite (or any shape with perpendicular diagonals)", eq: "A = pq/2", find: "A",
-        letters: { A: "the area", p: "one diagonal", q: "the other diagonal" },
-        example: { p: "10", q: "7" },
-      },
-      {
         id: "annulus-area", name: "Area of a ring between two circles", eq: "A = (22/7)(R^2 - r^2)", find: "A",
         letters: { A: "the area of the ring", R: "the outer radius", r: "the inner radius" },
         example: { R: "10", r: "7" },
@@ -1285,11 +1280,6 @@ export const GROUPS = [
         id: "quartile-position", name: "Position of the lower quartile", eq: "p = (n + 1)/4", find: "p",
         letters: { p: "the position of the lower quartile", n: "how many values there are" },
         example: { n: "11" },
-      },
-      {
-        id: "class-mid", name: "Midpoint of a class interval", eq: "m = (a + b)/2", find: "m",
-        letters: { m: "the midpoint", a: "the lower end of the class", b: "the upper end of the class" },
-        example: { a: "10", b: "20" },
       },
       {
         id: "weighted-mean", name: "Weighted mean of two values", eq: "m = (xw + yv)/(w + v)", find: "m",
@@ -2982,11 +2972,6 @@ export const GROUPS = [
         example: { a: "3", b: "6", c: "9" },
         note: "use it for the x values, then again for the y values",
       },
-      {
-        id: "area-triangle-coordinates", name: "Area of a triangle from its corners", eq: "A = (a(d - f) + c(f - b) + e(b - d))/2", find: "A",
-        letters: { A: "the area (take the positive value)", a: "x of the first corner", b: "y of the first corner", c: "x of the second corner", d: "y of the second corner", e: "x of the third corner", f: "y of the third corner" },
-        example: { a: "1", b: "1", c: "5", d: "1", e: "1", f: "4" },
-      },
     ],
   },
   {
@@ -3366,11 +3351,6 @@ export const GROUPS = [
         example: { s: "4" },
       },
       {
-        id: "sphere-in-cube", name: "Sphere that just fits inside a cube", eq: "r = s/2", find: "r",
-        letters: { r: "the radius of the sphere", s: "the edge of the cube" },
-        example: { s: "10" },
-      },
-      {
         id: "sphere-round-cube", name: "Sphere that just holds a cube", eq: "R = ssqrt(3)/2", find: "R",
         letters: { R: "the radius of the sphere", s: "the edge of the cube" },
         example: { s: "4" },
@@ -3590,24 +3570,1331 @@ export const GROUPS = [
         example: { V: "2500" },
       },
       {
-        id: "distance-3d", name: "Distance between two points in space", eq: "D = sqrt((d - a)^2 + (e - b)^2 + (f - c)^2)", find: "D",
-        letters: { D: "the distance", a: "x of the first point", b: "y of the first point", c: "z of the first point", d: "x of the second", e: "y of the second", f: "z of the second" },
-        example: { a: "1", b: "2", c: "3", d: "3", e: "6", f: "7" },
-      },
-      {
         id: "vector-magnitude-3d", name: "Length of a vector in three dimensions", eq: "m = sqrt(a^2 + b^2 + c^2)", find: "m",
         letters: { m: "the length", a: "the x part", b: "the y part", c: "the z part" },
         example: { a: "2", b: "3", c: "6" },
       },
       {
-        id: "vector-dot-3d", name: "Dot product in three dimensions", eq: "D = ad + be + cf", find: "D",
-        letters: { D: "the dot product", a: "x of the first vector", b: "y of the first", c: "z of the first", d: "x of the second", e: "y of the second", f: "z of the second" },
-        example: { a: "1", b: "2", c: "3", d: "4", e: "-1", f: "2" },
-      },
-      {
         id: "point-plane-distance", name: "Distance from a point to a plane", eq: "d = (ax + by + cz + q)/sqrt(a^2 + b^2 + c^2)", find: "d",
         letters: { d: "the distance (ignore the sign)", a: "the number in front of x", b: "the number in front of y", c: "the number in front of z", q: "the number on its own", x: "x of the point", y: "y of the point", z: "z of the point" },
         example: { a: "1", b: "2", c: "2", q: "-3", x: "1", y: "1", z: "1" },
+      },
+    ],
+  },
+  {
+    group: "Biology: cells and microscopes",
+    items: [
+      {
+        id: "magnification-image", name: "Magnification of a drawing or image", eq: "M = I/A", find: "M",
+        letters: { M: "the magnification", I: "the size of the image", A: "the real size" },
+        example: { I: "60", A: "2" },
+      },
+      {
+        id: "total-magnification", name: "Total magnification of a microscope", eq: "M = ab", find: "M",
+        letters: { M: "the total magnification", a: "the eyepiece lens magnification", b: "the objective lens magnification" },
+        example: { a: "10", b: "40" },
+      },
+      {
+        id: "field-of-view", name: "Size of an object from the field of view", eq: "s = d/n", find: "s",
+        letters: { s: "the size of one object", d: "the diameter of the field of view", n: "how many objects fit across it" },
+        example: { d: "4500", n: "30" },
+      },
+      {
+        id: "cube-sa-v", name: "Surface area to volume ratio of a cube-shaped cell", eq: "R = 6/s", find: "R",
+        letters: { R: "the surface area to volume ratio", s: "the side" },
+        example: { s: "2" },
+        note: "the smaller the cell, the bigger the ratio",
+      },
+      {
+        id: "sphere-sa-v", name: "Surface area to volume ratio of a round cell", eq: "R = 3/r", find: "R",
+        letters: { R: "the surface area to volume ratio", r: "the radius" },
+        example: { r: "3" },
+      },
+      {
+        id: "water-potential", name: "Water potential", eq: "W = s + p", find: "W",
+        letters: { W: "the water potential", s: "the solute potential", p: "the pressure potential" },
+        example: { s: "-700", p: "300" },
+      },
+      {
+        id: "solute-potential", name: "Solute potential", eq: "S = -nCRT", find: "S",
+        letters: { S: "the solute potential", n: "the ions each particle makes", C: "the concentration in moles per litre", R: "the pressure constant", T: "the temperature in kelvin" },
+        example: { n: "2", C: "1/10", R: "8", T: "300" },
+      },
+      {
+        id: "mitotic-index", name: "Mitotic index", eq: "M = 100d/N", find: "M",
+        letters: { M: "the mitotic index, as a percentage", d: "the cells dividing", N: "the cells counted" },
+        example: { d: "12", N: "200" },
+      },
+      {
+        id: "diffusion-rate", name: "Rate of diffusion (Fick's law)", eq: "R = kA(C - c)/d", find: "R",
+        letters: { R: "the rate of diffusion", k: "the diffusion constant", A: "the surface area", C: "the higher concentration", c: "the lower concentration", d: "the distance" },
+        example: { k: "2", A: "5", C: "10", c: "4", d: "3" },
+      },
+      {
+        id: "michaelis-menten", name: "Rate of an enzyme reaction (Michaelis-Menten)", eq: "v = VS/(K + S)", find: "v",
+        letters: { v: "the rate", V: "the greatest rate", S: "the amount of substrate", K: "the substrate amount at half the greatest rate" },
+        example: { V: "10", S: "5", K: "5" },
+      },
+      {
+        id: "enzyme-rate", name: "Rate of an enzyme reaction from the time taken", eq: "r = 1/t", find: "r",
+        letters: { r: "the rate", t: "the time taken" },
+        example: { t: "25" },
+      },
+      {
+        id: "temperature-coefficient", name: "Effect of a 10 degree rise on a reaction (Q10)", eq: "Q = (R/r)^(10/(T - t))", find: "Q",
+        letters: { Q: "the temperature coefficient", R: "the rate at the higher temperature", r: "the rate at the lower temperature", T: "the higher temperature", t: "the lower temperature" },
+        example: { R: "8", r: "2", T: "30", t: "20" },
+      },
+      {
+        id: "rf-value", name: "Rf value in chromatography", eq: "R = d/D", find: "R",
+        letters: { R: "the Rf value", d: "the distance moved by the spot", D: "the distance moved by the solvent" },
+        example: { d: "3", D: "12" },
+      },
+      {
+        id: "transpiration-rate", name: "Rate of water loss by a plant", eq: "R = V/(At)", find: "R",
+        letters: { R: "the rate of water loss", V: "the volume lost", A: "the leaf area", t: "the time" },
+        example: { V: "12", A: "4", t: "3" },
+      },
+      {
+        id: "respiratory-quotient", name: "Respiratory quotient", eq: "Q = c/o", find: "Q",
+        letters: { Q: "the respiratory quotient", c: "the carbon dioxide given out", o: "the oxygen taken in" },
+        example: { c: "6", o: "6" },
+      },
+      {
+        id: "net-productivity", name: "Net primary productivity", eq: "N = G - R", find: "N",
+        letters: { N: "the net productivity", G: "the gross productivity", R: "the energy lost in respiration" },
+        example: { G: "900", R: "400" },
+      },
+    ],
+  },
+  {
+    group: "Biology: growth and populations",
+    items: [
+      {
+        id: "cell-divisions", name: "Cells after some divisions", eq: "N = A·2^n", find: "N",
+        letters: { N: "the number of cells", A: "the cells to begin with", n: "the number of divisions" },
+        example: { A: "1", n: "10" },
+      },
+      {
+        id: "bacteria-growth", name: "Bacteria after some time", eq: "N = A·2^(t/g)", find: "N",
+        letters: { N: "the number of bacteria", A: "the number to begin with", t: "the time", g: "the time for the number to double" },
+        example: { A: "100", t: "60", g: "20" },
+      },
+      {
+        id: "generation-time", name: "Generation time", eq: "g = t/n", find: "g",
+        letters: { g: "the time for one generation", t: "the total time", n: "the number of generations" },
+        example: { t: "120", n: "6" },
+      },
+      {
+        id: "dilution-factor", name: "Concentration after serial dilutions", eq: "C = c/d^k", find: "C",
+        letters: { C: "the final concentration", c: "the starting concentration", d: "the dilution factor at each step", k: "the number of steps" },
+        example: { c: "1000000", d: "10", k: "4" },
+      },
+      {
+        id: "colony-count", name: "Bacteria in a sample from a plate count", eq: "C = n/(dV)", find: "C",
+        letters: { C: "the bacteria in each millilitre", n: "the colonies counted", d: "the dilution (such as 1/1000)", V: "the volume plated in millilitres" },
+        example: { n: "150", d: "1/1000", V: "1" },
+      },
+      {
+        id: "mean-density", name: "Mean number in each quadrat", eq: "m = n/q", find: "m",
+        letters: { m: "the mean for each quadrat", n: "the total counted", q: "the number of quadrats" },
+        example: { n: "84", q: "12" },
+      },
+      {
+        id: "population-estimate", name: "Population estimated from quadrats", eq: "N = dA", find: "N",
+        letters: { N: "the estimate for the whole area", d: "the mean density", A: "the whole area" },
+        example: { d: "5", A: "200" },
+      },
+      {
+        id: "percentage-cover", name: "Percentage cover", eq: "C = 100a/N", find: "C",
+        letters: { C: "the percentage cover", a: "the squares that contain the plant", N: "the squares in the quadrat" },
+        example: { a: "36", N: "100" },
+      },
+      {
+        id: "lincoln-index", name: "Capture and recapture (Lincoln index)", eq: "N = ab/c", find: "N",
+        letters: { N: "the population estimate", a: "the number marked in the first catch", b: "the number in the second catch", c: "the marked ones in the second catch" },
+        example: { a: "50", b: "40", c: "10" },
+      },
+      {
+        id: "simpson-diversity", name: "Simpson's index of diversity", eq: "D = 1 - S/(N(N - 1))", find: "D",
+        letters: { D: "the index of diversity", S: "the total of n(n−1) for each species", N: "the total number of organisms" },
+        example: { S: "20", N: "10" },
+      },
+      {
+        id: "birth-rate", name: "Birth rate", eq: "B = 1000b/N", find: "B",
+        letters: { B: "the births for each 1000 people", b: "the births in a year", N: "the population" },
+        example: { b: "45", N: "3000" },
+      },
+      {
+        id: "population-change", name: "Change in a population", eq: "G = (b + i - d - m)/N", find: "G",
+        letters: { G: "the growth for each person", b: "the births", i: "the people moving in", d: "the deaths", m: "the people moving out", N: "the population at the start" },
+        example: { b: "300", i: "100", d: "200", m: "50", N: "10000" },
+      },
+      {
+        id: "logistic-growth", name: "Logistic growth of a population", eq: "g = rN(K - N)/K", find: "g",
+        letters: { g: "the growth in one step", r: "the growth rate", N: "the population now", K: "the carrying capacity" },
+        example: { r: "2", N: "50", K: "100" },
+      },
+    ],
+  },
+  {
+    group: "Biology: genetics and heredity",
+    items: [
+      {
+        id: "hardy-weinberg-q", name: "Hardy-Weinberg: the other allele frequency", eq: "q = 1 - p", find: "q",
+        letters: { q: "the frequency of one allele", p: "the frequency of the other" },
+        example: { p: "3/10" },
+      },
+      {
+        id: "hardy-weinberg-het", name: "Hardy-Weinberg: carriers in a population", eq: "H = 2pq", find: "H",
+        letters: { H: "the share of heterozygous people", p: "the frequency of the dominant allele", q: "the frequency of the recessive allele" },
+        example: { p: "3/10", q: "7/10" },
+      },
+      {
+        id: "hardy-weinberg-recessive", name: "Hardy-Weinberg: the recessive allele from those showing the trait", eq: "q = sqrt(f)", find: "q",
+        letters: { q: "the frequency of the recessive allele", f: "the share of people with the recessive trait" },
+        example: { f: "1/25" },
+      },
+      {
+        id: "allele-frequency", name: "Frequency of an allele from the genotypes", eq: "p = (2a + h)/(2N)", find: "p",
+        letters: { p: "the frequency of the allele", a: "the people with two copies", h: "the people with one copy", N: "the people counted" },
+        example: { a: "30", h: "40", N: "100" },
+      },
+      {
+        id: "gamete-types", name: "Kinds of gametes", eq: "G = 2^n", find: "G",
+        letters: { G: "the kinds of gamete", n: "the gene pairs that are heterozygous" },
+        example: { n: "3" },
+      },
+      {
+        id: "genotype-count", name: "Kinds of genotype from several gene pairs", eq: "G = 3^n", find: "G",
+        letters: { G: "the kinds of genotype", n: "the gene pairs" },
+        example: { n: "3" },
+      },
+      {
+        id: "phenotype-count", name: "Kinds of phenotype from several gene pairs", eq: "P = 2^n", find: "P",
+        letters: { P: "the kinds of phenotype", n: "the gene pairs with complete dominance" },
+        example: { n: "3" },
+      },
+      {
+        id: "chi-squared", name: "Chi-squared test", eq: "X = (O - E)^2/E", find: "X",
+        letters: { X: "the chi-squared contribution of one class", O: "the number observed", E: "the number expected" },
+        example: { O: "18", E: "12" },
+        note: "add the results for all the classes",
+      },
+      {
+        id: "degrees-of-freedom", name: "Degrees of freedom", eq: "d = n - 1", find: "d",
+        letters: { d: "the degrees of freedom", n: "the number of classes" },
+        example: { n: "4" },
+      },
+      {
+        id: "recombination", name: "Recombination frequency", eq: "R = 100r/N", find: "R",
+        letters: { R: "the recombination frequency, as a percentage", r: "the recombinant offspring", N: "the offspring in all" },
+        example: { r: "18", N: "200" },
+        note: "one percent is one map unit",
+      },
+    ],
+  },
+  {
+    group: "Biology: the body",
+    items: [
+      {
+        id: "stroke-volume", name: "Stroke volume", eq: "S = E - s", find: "S",
+        letters: { S: "the stroke volume", E: "the volume in the heart before the beat", s: "the volume left after the beat" },
+        example: { E: "120", s: "50" },
+      },
+      {
+        id: "ventilation-rate", name: "Minute ventilation", eq: "V = tr", find: "V",
+        letters: { V: "the air breathed each minute", t: "the tidal volume", r: "the breaths each minute" },
+        example: { t: "500", r: "12" },
+      },
+      {
+        id: "haematocrit", name: "Haematocrit", eq: "H = 100r/t", find: "H",
+        letters: { H: "the haematocrit, as a percentage", r: "the volume of red cells", t: "the volume of blood" },
+        example: { r: "45", t: "100" },
+      },
+      {
+        id: "mean-cell-volume", name: "Mean corpuscular volume", eq: "M = 10h/n", find: "M",
+        letters: { M: "the mean red cell volume", h: "the haematocrit, as a percentage", n: "the red cells in millions for each microlitre" },
+        example: { h: "45", n: "5" },
+      },
+    ],
+  },
+  {
+    group: "Physics: more on motion",
+    items: [
+      {
+        id: "final-position", name: "Distance from the final speed", eq: "s = vt - (1/2)at^2", find: "s",
+        letters: { s: "the distance", v: "the final speed", t: "the time", a: "the acceleration" },
+        example: { v: "10", t: "4", a: "2" },
+      },
+      {
+        id: "drop-speed", name: "Speed after a drop", eq: "v = sqrt(2gh)", find: "v",
+        letters: { v: "the speed", g: "the pull of gravity per kilogram", h: "the height dropped" },
+        example: { g: "10", h: "20" },
+        note: "also the speed of water leaving a hole in a tank (Torricelli)",
+      },
+      {
+        id: "circular-speed", name: "Speed round a circle", eq: "v = 2(22/7)r/T", find: "v",
+        letters: { v: "the speed", r: "the radius", T: "the time for one turn" },
+        example: { r: "7", T: "11" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "speed-angular", name: "Speed from the angular speed", eq: "v = rw", find: "v",
+        letters: { v: "the speed", r: "the radius", w: "the angular speed" },
+        example: { r: "2", w: "5" },
+      },
+      {
+        id: "angular-period", name: "Angular speed from the time for one turn", eq: "w = 2(22/7)/T", find: "w",
+        letters: { w: "the angular speed", T: "the time for one turn" },
+        example: { T: "11" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "centripetal-acceleration", name: "Acceleration towards the centre", eq: "a = v^2/r", find: "a",
+        letters: { a: "the acceleration", v: "the speed", r: "the radius" },
+        example: { v: "6", r: "4" },
+      },
+      {
+        id: "centripetal-acceleration-w", name: "Acceleration towards the centre from the angular speed", eq: "a = w^2r", find: "a",
+        letters: { a: "the acceleration", w: "the angular speed", r: "the radius" },
+        example: { w: "3", r: "2" },
+      },
+      {
+        id: "orbit-period", name: "Time of one orbit", eq: "T = 2(22/7)sqrt(r^3/(GM))", find: "T",
+        letters: { T: "the time for one orbit", r: "the distance from the centre", G: "the gravitational constant", M: "the mass of the body being orbited" },
+        example: { r: "4", G: "2", M: "1" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "angular-acceleration", name: "Angular acceleration", eq: "a = (w - v)/t", find: "a",
+        letters: { a: "the angular acceleration", w: "the final angular speed", v: "the starting angular speed", t: "the time" },
+        example: { w: "20", v: "8", t: "3" },
+      },
+      {
+        id: "angular-distance", name: "Angle turned through with a steady angular acceleration", eq: "t = vs + (1/2)as^2", find: "t",
+        letters: { t: "the angle turned", v: "the starting angular speed", s: "the time", a: "the angular acceleration" },
+        example: { v: "4", s: "3", a: "2" },
+      },
+    ],
+  },
+  {
+    group: "Physics: more on forces and energy",
+    items: [
+      {
+        id: "friction", name: "Friction", eq: "f = kN", find: "f",
+        letters: { f: "the friction force", k: "the coefficient of friction", N: "the push of the surface" },
+        example: { k: "2/5", N: "50" },
+      },
+      {
+        id: "slope-along", name: "Pull of gravity along a slope", eq: "F = mg·sin(a°)", find: "F",
+        letters: { F: "the force down the slope", m: "the mass", g: "the pull of gravity per kilogram", a: "the angle of the slope in degrees" },
+        example: { m: "10", g: "10", a: "30" },
+      },
+      {
+        id: "slope-normal", name: "Push of a slope on an object", eq: "N = mg·cos(a°)", find: "N",
+        letters: { N: "the push of the slope", m: "the mass", g: "the pull of gravity per kilogram", a: "the angle of the slope in degrees" },
+        example: { m: "10", g: "10", a: "60" },
+      },
+      {
+        id: "slope-acceleration", name: "Acceleration down a rough slope", eq: "a = g·sin(t°) - kg·cos(t°)", find: "a",
+        letters: { a: "the acceleration", g: "the pull of gravity per kilogram", t: "the angle of the slope in degrees", k: "the coefficient of friction" },
+        example: { g: "10", t: "30", k: "0" },
+      },
+      {
+        id: "lift-weight", name: "Apparent weight in a lift", eq: "W = m(g + a)", find: "W",
+        letters: { W: "the weight you feel", m: "the mass", g: "the pull of gravity per kilogram", a: "the acceleration of the lift (negative when going down faster)" },
+        example: { m: "60", g: "10", a: "2" },
+      },
+      {
+        id: "atwood", name: "Two masses over a pulley (Atwood machine)", eq: "a = (m - M)g/(m + M)", find: "a",
+        letters: { a: "the acceleration", m: "the heavier mass", M: "the lighter mass", g: "the pull of gravity per kilogram" },
+        example: { m: "6", M: "4", g: "10" },
+      },
+      {
+        id: "atwood-tension", name: "Tension in an Atwood machine", eq: "T = 2mMg/(m + M)", find: "T",
+        letters: { T: "the tension", m: "one mass", M: "the other mass", g: "the pull of gravity per kilogram" },
+        example: { m: "6", M: "4", g: "10" },
+      },
+      {
+        id: "drag", name: "Drag on a moving object", eq: "F = (1/2)dCAv^2", find: "F",
+        letters: { F: "the drag", d: "the density of the fluid", C: "the drag coefficient", A: "the area facing the flow", v: "the speed" },
+        example: { d: "1", C: "1", A: "2", v: "10" },
+      },
+      {
+        id: "momentum-conservation", name: "Conservation of momentum", eq: "mu + MU = mv + MV", find: "v",
+        letters: { m: "the first mass", u: "its speed before", v: "its speed after", M: "the second mass", U: "its speed before", V: "its speed after" },
+        example: { m: "2", u: "5", M: "3", U: "0", V: "4/3" },
+      },
+      {
+        id: "inelastic-collision", name: "Objects that stick together", eq: "v = (mu + MU)/(m + M)", find: "v",
+        letters: { v: "the speed after", m: "the first mass", u: "its speed before", M: "the second mass", U: "its speed before" },
+        example: { m: "2", u: "5", M: "3", U: "0" },
+      },
+      {
+        id: "restitution", name: "Coefficient of restitution", eq: "r = (V - v)/(u - U)", find: "r",
+        letters: { r: "the coefficient of restitution", v: "the first speed after", V: "the second speed after", u: "the first speed before", U: "the second speed before" },
+        example: { v: "-1", V: "2", u: "3", U: "0" },
+      },
+      {
+        id: "centre-of-mass", name: "Centre of mass of two objects", eq: "x = (ma + Mb)/(m + M)", find: "x",
+        letters: { x: "the position of the centre of mass", m: "the first mass", a: "its position", M: "the second mass", b: "its position" },
+        example: { m: "2", a: "0", M: "3", b: "10" },
+      },
+      {
+        id: "inertia-point", name: "Moment of inertia of a point mass", eq: "I = mr^2", find: "I",
+        letters: { I: "the moment of inertia", m: "the mass", r: "the distance from the axis" },
+        example: { m: "3", r: "2" },
+      },
+      {
+        id: "inertia-rod", name: "Moment of inertia of a rod about its middle", eq: "I = ML^2/12", find: "I",
+        letters: { I: "the moment of inertia", M: "the mass", L: "the length" },
+        example: { M: "3", L: "4" },
+      },
+      {
+        id: "inertia-disc", name: "Moment of inertia of a disc", eq: "I = MR^2/2", find: "I",
+        letters: { I: "the moment of inertia", M: "the mass", R: "the radius" },
+        example: { M: "4", R: "3" },
+      },
+      {
+        id: "inertia-sphere", name: "Moment of inertia of a solid sphere", eq: "I = 2MR^2/5", find: "I",
+        letters: { I: "the moment of inertia", M: "the mass", R: "the radius" },
+        example: { M: "5", R: "2" },
+      },
+      {
+        id: "torque-inertia", name: "Torque and angular acceleration", eq: "T = Ia", find: "T",
+        letters: { T: "the torque", I: "the moment of inertia", a: "the angular acceleration" },
+        example: { I: "4", a: "3" },
+      },
+      {
+        id: "angular-momentum", name: "Angular momentum", eq: "L = Iw", find: "L",
+        letters: { L: "the angular momentum", I: "the moment of inertia", w: "the angular speed" },
+        example: { I: "4", w: "5" },
+      },
+      {
+        id: "angular-momentum-orbit", name: "Angular momentum of a moving mass", eq: "L = mvr", find: "L",
+        letters: { L: "the angular momentum", m: "the mass", v: "the speed", r: "the distance from the centre" },
+        example: { m: "2", v: "3", r: "4" },
+      },
+      {
+        id: "work-energy", name: "Work and change of speed", eq: "W = (1/2)m(v^2 - u^2)", find: "W",
+        letters: { W: "the work done", m: "the mass", v: "the final speed", u: "the starting speed" },
+        example: { m: "4", v: "6", u: "2" },
+      },
+      {
+        id: "work-angle", name: "Work done by a force at an angle", eq: "W = Fd·cos(a°)", find: "W",
+        letters: { W: "the work done", F: "the force", d: "the distance moved", a: "the angle between the force and the movement in degrees" },
+        example: { F: "10", d: "5", a: "60" },
+      },
+      {
+        id: "power-speed", name: "Power from force and speed", eq: "P = Fv", find: "P",
+        letters: { P: "the power", F: "the force", v: "the speed" },
+        example: { F: "200", v: "15" },
+      },
+      {
+        id: "spring-energy", name: "Energy stored in a spring", eq: "E = (1/2)kx^2", find: "E",
+        letters: { E: "the energy stored", k: "the spring constant", x: "the stretch" },
+        example: { k: "50", x: "0.4" },
+      },
+      {
+        id: "gravitational-energy", name: "Gravitational potential energy between two masses", eq: "U = -GMm/r", find: "U",
+        letters: { U: "the potential energy", G: "the gravitational constant", M: "one mass", m: "the other mass", r: "the distance between them" },
+        example: { G: "2", M: "3", m: "4", r: "6" },
+      },
+      {
+        id: "gravitational-potential", name: "Gravitational potential", eq: "V = -GM/r", find: "V",
+        letters: { V: "the gravitational potential", G: "the gravitational constant", M: "the mass", r: "the distance from its centre" },
+        example: { G: "2", M: "3", r: "6" },
+      },
+    ],
+  },
+  {
+    group: "Physics: oscillations and fluids",
+    items: [
+      {
+        id: "spring-period", name: "Time for a mass on a spring to swing once", eq: "T = 2(22/7)sqrt(m/k)", find: "T",
+        letters: { T: "the period", m: "the mass", k: "the spring constant" },
+        example: { m: "1", k: "4" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "pendulum", name: "Time for a pendulum to swing once", eq: "T = 2(22/7)sqrt(L/g)", find: "T",
+        letters: { T: "the period", L: "the length of the pendulum", g: "the pull of gravity per kilogram" },
+        example: { L: "1", g: "4" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "shm-acceleration", name: "Acceleration in simple harmonic motion", eq: "a = -w^2x", find: "a",
+        letters: { a: "the acceleration", w: "the angular frequency", x: "the displacement" },
+        example: { w: "3", x: "2" },
+      },
+      {
+        id: "shm-speed", name: "Speed in simple harmonic motion", eq: "v = w·sqrt(A^2 - x^2)", find: "v",
+        letters: { v: "the speed", w: "the angular frequency", A: "the amplitude", x: "the displacement" },
+        example: { w: "2", A: "5", x: "3" },
+      },
+      {
+        id: "shm-energy", name: "Total energy in simple harmonic motion", eq: "E = (1/2)kA^2", find: "E",
+        letters: { E: "the total energy", k: "the spring constant", A: "the amplitude" },
+        example: { k: "50", A: "0.4" },
+      },
+      {
+        id: "buoyancy", name: "Upthrust on a floating or sunk object", eq: "F = dVg", find: "F",
+        letters: { F: "the upthrust", d: "the density of the fluid", V: "the volume of fluid pushed aside", g: "the pull of gravity per kilogram" },
+        example: { d: "1000", V: "0.002", g: "10" },
+      },
+      {
+        id: "continuity", name: "Flow through a pipe that changes width", eq: "Av = aV", find: "v",
+        letters: { A: "the area of the wide part", v: "the speed in it", a: "the area of the narrow part", V: "the speed in it" },
+        example: { A: "8", a: "2", V: "12" },
+      },
+      {
+        id: "bernoulli", name: "Bernoulli's equation", eq: "P + (1/2)dv^2 + dgh = Q + (1/2)dw^2 + dgk", find: "Q",
+        letters: { P: "the pressure at the first place", v: "the speed there", h: "the height there", Q: "the pressure at the second place", w: "the speed there", k: "the height there", d: "the density", g: "the pull of gravity per kilogram" },
+        example: { P: "100", d: "1", v: "2", h: "0", w: "4", g: "10", k: "0" },
+      },
+      {
+        id: "surface-tension", name: "Surface tension", eq: "T = F/L", find: "T",
+        letters: { T: "the surface tension", F: "the force", L: "the length of the edge" },
+        example: { F: "0.06", L: "2" },
+      },
+      {
+        id: "capillary-rise", name: "Rise of liquid in a thin tube", eq: "h = 2T·cos(a°)/(dgr)", find: "h",
+        letters: { h: "the height risen", T: "the surface tension", a: "the contact angle in degrees", d: "the density", g: "the pull of gravity per kilogram", r: "the radius of the tube" },
+        example: { T: "0.07", a: "0", d: "1000", g: "10", r: "0.001" },
+      },
+      {
+        id: "stokes-drag", name: "Drag on a small sphere in a thick fluid (Stokes)", eq: "F = 6(22/7)nrv", find: "F",
+        letters: { F: "the drag", n: "the viscosity", r: "the radius of the sphere", v: "the speed" },
+        example: { n: "7", r: "2", v: "3" },
+        note: "taking π as 22/7",
+      },
+    ],
+  },
+  {
+    group: "Physics: heat and thermodynamics",
+    items: [
+      {
+        id: "first-law", name: "First law of thermodynamics", eq: "U = Q - W", find: "U",
+        letters: { U: "the change in internal energy", Q: "the heat added", W: "the work done by the gas" },
+        example: { Q: "500", W: "200" },
+      },
+      {
+        id: "kelvin", name: "Kelvin from Celsius", eq: "K = C + 273", find: "K",
+        letters: { K: "the temperature in kelvin", C: "the temperature in degrees Celsius" },
+        example: { C: "27" },
+      },
+      {
+        id: "gas-energy", name: "Energy of a gas particle", eq: "E = (3/2)kT", find: "E",
+        letters: { E: "the average energy of a particle", k: "the Boltzmann constant", T: "the temperature in kelvin" },
+        example: { k: "2", T: "300" },
+      },
+      {
+        id: "rms-speed", name: "Typical speed of gas particles", eq: "v = sqrt(3RT/M)", find: "v",
+        letters: { v: "the root mean square speed", R: "the gas constant", T: "the temperature in kelvin", M: "the molar mass" },
+        example: { R: "8", T: "300", M: "2" },
+      },
+      {
+        id: "entropy-change", name: "Change of entropy", eq: "S = Q/T", find: "S",
+        letters: { S: "the change in entropy", Q: "the heat moved", T: "the temperature in kelvin" },
+        example: { Q: "600", T: "300" },
+      },
+      {
+        id: "stefan-boltzmann", name: "Power radiated by a hot object", eq: "P = sAT^4", find: "P",
+        letters: { P: "the power", s: "the Stefan-Boltzmann constant", A: "the surface area", T: "the temperature in kelvin" },
+        example: { s: "2", A: "3", T: "10" },
+      },
+      {
+        id: "wien", name: "Wien's law", eq: "wT = b", find: "w",
+        letters: { w: "the wavelength of the strongest light", T: "the temperature in kelvin", b: "Wien's constant" },
+        example: { T: "3000", b: "3" },
+      },
+      {
+        id: "area-expansion", name: "Expansion of an area", eq: "A = 2aSt", find: "A",
+        letters: { A: "the increase in area", a: "the expansion coefficient", S: "the original area", t: "the rise in temperature" },
+        example: { a: "0.00002", S: "10", t: "50" },
+      },
+      {
+        id: "volume-expansion", name: "Expansion of a volume", eq: "V = 3aSt", find: "V",
+        letters: { V: "the increase in volume", a: "the expansion coefficient", S: "the original volume", t: "the rise in temperature" },
+        example: { a: "0.00002", S: "10", t: "50" },
+      },
+      {
+        id: "mixing-temperature", name: "Temperature after mixing (calorimetry)", eq: "T = (mct + MCu)/(mc + MC)", find: "T",
+        letters: { T: "the final temperature", m: "the first mass", c: "its specific heat capacity", t: "its temperature", M: "the second mass", C: "its specific heat capacity", u: "its temperature" },
+        example: { m: "2", c: "4", t: "80", M: "3", C: "4", u: "20" },
+      },
+      {
+        id: "cop", name: "Coefficient of performance of a refrigerator", eq: "C = Q/W", find: "C",
+        letters: { C: "the coefficient of performance", Q: "the heat removed", W: "the work put in" },
+        example: { Q: "600", W: "200" },
+      },
+    ],
+  },
+  {
+    group: "Physics: waves, sound and light",
+    items: [
+      {
+        id: "doppler", name: "Doppler effect for a moving source and listener", eq: "f = F(v + o)/(v - s)", find: "f",
+        letters: { f: "the frequency heard", F: "the frequency made", v: "the speed of sound", o: "the speed of the listener towards the source", s: "the speed of the source towards the listener" },
+        example: { F: "400", v: "340", o: "0", s: "20" },
+      },
+      {
+        id: "sound-intensity", name: "Intensity of a sound", eq: "I = P/A", find: "I",
+        letters: { I: "the intensity", P: "the power", A: "the area it spreads over" },
+        example: { P: "2", A: "4" },
+      },
+      {
+        id: "inverse-square-light", name: "Intensity spreading from a point source", eq: "I = P/(4(22/7)r^2)", find: "I",
+        letters: { I: "the intensity", P: "the power of the source", r: "the distance from it" },
+        example: { P: "88", r: "7" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "string-wave-speed", name: "Speed of a wave on a string", eq: "v = sqrt(T/m)", find: "v",
+        letters: { v: "the wave speed", T: "the tension", m: "the mass of each metre of string" },
+        example: { T: "100", m: "4" },
+      },
+      {
+        id: "mirror", name: "Focal length of a curved mirror", eq: "f = R/2", find: "f",
+        letters: { f: "the focal length", R: "the radius of curvature" },
+        example: { R: "30" },
+      },
+      {
+        id: "lens-maker", name: "Focal length of a lens from its curves", eq: "1/F = (n - 1)(1/a - 1/b)", find: "F",
+        letters: { F: "the focal length", n: "the refractive index", a: "the radius of the first surface", b: "the radius of the second surface" },
+        example: { n: "3/2", a: "10", b: "-10" },
+      },
+      {
+        id: "critical-angle", name: "Critical angle", eq: "sin(c°) = 1/n", find: "c",
+        letters: { c: "the critical angle in degrees", n: "the refractive index" },
+        example: { n: "2" },
+      },
+      {
+        id: "light-speed-index", name: "Refractive index from the speed of light", eq: "n = c/v", find: "n",
+        letters: { n: "the refractive index", c: "the speed of light in a vacuum", v: "the speed of light in the material" },
+        example: { c: "300", v: "200" },
+      },
+      {
+        id: "apparent-depth", name: "Apparent depth", eq: "n = R/A", find: "n",
+        letters: { n: "the refractive index", R: "the real depth", A: "the apparent depth" },
+        example: { R: "12", A: "9" },
+      },
+      {
+        id: "prism-index", name: "Refractive index from a prism", eq: "n = sin(((a + d)/2)°)/sin((a/2)°)", find: "n",
+        letters: { n: "the refractive index", a: "the angle of the prism in degrees", d: "the least deviation in degrees" },
+        example: { a: "60", d: "30" },
+      },
+      {
+        id: "double-slit", name: "Fringe spacing in a double-slit experiment", eq: "x = wD/d", find: "x",
+        letters: { x: "the fringe spacing", w: "the wavelength", D: "the distance to the screen", d: "the distance between the slits" },
+        example: { w: "0.0006", D: "2", d: "0.2" },
+      },
+      {
+        id: "grating", name: "Diffraction grating", eq: "d·sin(t°) = nw", find: "w",
+        letters: { d: "the distance between the lines", t: "the angle of the bright line in degrees", n: "the order of the bright line", w: "the wavelength" },
+        example: { d: "2", t: "30", n: "2" },
+      },
+      {
+        id: "single-slit", name: "Single slit diffraction", eq: "a·sin(t°) = nw", find: "w",
+        letters: { a: "the width of the slit", t: "the angle of the dark line in degrees", n: "the order of the dark line", w: "the wavelength" },
+        example: { a: "4", t: "30", n: "1" },
+      },
+      {
+        id: "malus", name: "Light through a second polariser (Malus's law)", eq: "I = J·cos(t°)^2", find: "I",
+        letters: { I: "the intensity after", J: "the intensity before", t: "the angle between the polarisers in degrees" },
+        example: { J: "80", t: "60" },
+      },
+      {
+        id: "brewster", name: "Brewster's angle", eq: "tan(t°) = n", find: "t",
+        letters: { t: "the angle in degrees", n: "the refractive index" },
+        example: { n: "1" },
+      },
+    ],
+  },
+  {
+    group: "Physics: electricity and magnetism",
+    items: [
+      {
+        id: "coulomb", name: "Force between two charges (Coulomb's law)", eq: "F = kQq/r^2", find: "F",
+        letters: { F: "the force", k: "Coulomb's constant", Q: "one charge", q: "the other charge", r: "the distance between them" },
+        example: { k: "9", Q: "2", q: "3", r: "3" },
+      },
+      {
+        id: "field-force", name: "Electric field strength from the force", eq: "E = F/q", find: "E",
+        letters: { E: "the field strength", F: "the force on the charge", q: "the charge" },
+        example: { F: "12", q: "3" },
+      },
+      {
+        id: "field-point", name: "Electric field strength of a point charge", eq: "E = kQ/r^2", find: "E",
+        letters: { E: "the field strength", k: "Coulomb's constant", Q: "the charge", r: "the distance from it" },
+        example: { k: "9", Q: "2", r: "3" },
+      },
+      {
+        id: "field-uniform", name: "Electric field between plates", eq: "E = V/d", find: "E",
+        letters: { E: "the field strength", V: "the voltage", d: "the distance between the plates" },
+        example: { V: "120", d: "4" },
+      },
+      {
+        id: "potential-point", name: "Electric potential of a point charge", eq: "V = kQ/r", find: "V",
+        letters: { V: "the potential", k: "Coulomb's constant", Q: "the charge", r: "the distance from it" },
+        example: { k: "9", Q: "2", r: "3" },
+      },
+      {
+        id: "electric-potential-energy", name: "Electric potential energy of two charges", eq: "U = kQq/r", find: "U",
+        letters: { U: "the potential energy", k: "Coulomb's constant", Q: "one charge", q: "the other charge", r: "the distance between them" },
+        example: { k: "9", Q: "2", q: "3", r: "3" },
+      },
+      {
+        id: "plate-capacitor", name: "Capacitance of two plates", eq: "C = kA/d", find: "C",
+        letters: { C: "the capacitance", k: "the permittivity of the material between them", A: "the area of a plate", d: "the gap" },
+        example: { k: "2", A: "6", d: "3" },
+      },
+      {
+        id: "capacitors-series", name: "Capacitors in series", eq: "1/C = 1/a + 1/b", find: "C",
+        letters: { C: "the total capacitance", a: "the first capacitor", b: "the second capacitor" },
+        example: { a: "6", b: "3" },
+      },
+      {
+        id: "capacitors-parallel", name: "Capacitors in parallel", eq: "C = a + b", find: "C",
+        letters: { C: "the total capacitance", a: "the first capacitor", b: "the second capacitor" },
+        example: { a: "6", b: "3" },
+      },
+      {
+        id: "potential-divider", name: "Potential divider", eq: "V = ER/(R + r)", find: "V",
+        letters: { V: "the voltage across R", E: "the supply voltage", R: "the resistor measured across", r: "the other resistor" },
+        example: { E: "12", R: "4", r: "2" },
+      },
+      {
+        id: "internal-resistance", name: "Cell with internal resistance", eq: "E = V + Ir", find: "E",
+        letters: { E: "the emf of the cell", V: "the voltage at the terminals", I: "the current", r: "the internal resistance" },
+        example: { V: "11", I: "2", r: "1/2" },
+      },
+      {
+        id: "cells-series", name: "Cells in series", eq: "E = nc", find: "E",
+        letters: { E: "the total emf", n: "the number of cells", c: "the emf of one cell" },
+        example: { n: "4", c: "3/2" },
+      },
+      {
+        id: "wheatstone", name: "Wheatstone bridge", eq: "R/S = a/b", find: "R",
+        letters: { R: "the unknown resistor", S: "the known resistor", a: "the first ratio arm", b: "the second ratio arm" },
+        example: { S: "10", a: "3", b: "6" },
+      },
+      {
+        id: "power-voltage", name: "Electrical power from voltage and resistance", eq: "P = V^2/R", find: "P",
+        letters: { P: "the power", V: "the voltage", R: "the resistance" },
+        example: { V: "12", R: "6" },
+      },
+      {
+        id: "conductance", name: "Conductance", eq: "G = 1/R", find: "G",
+        letters: { G: "the conductance", R: "the resistance" },
+        example: { R: "4" },
+      },
+      {
+        id: "resistance-temperature", name: "Resistance as temperature changes", eq: "R = r(1 + at)", find: "R",
+        letters: { R: "the new resistance", r: "the resistance at 0 degrees", a: "the temperature coefficient", t: "the temperature" },
+        example: { r: "100", a: "0.004", t: "50" },
+      },
+      {
+        id: "drift-current", name: "Current from drifting charges", eq: "I = nAvq", find: "I",
+        letters: { I: "the current", n: "the charges in each cubic metre", A: "the cross-section area", v: "the drift speed", q: "the charge on each" },
+        example: { n: "10", A: "2", v: "3", q: "4" },
+      },
+      {
+        id: "electric-cost", name: "Cost of using electrical energy", eq: "C = Ptr/1000", find: "C",
+        letters: { C: "the cost", P: "the power in watts", t: "the time in hours", r: "the price of a kilowatt-hour" },
+        example: { P: "2000", t: "3", r: "50" },
+      },
+      {
+        id: "magnetic-force-charge", name: "Force on a moving charge", eq: "F = qvB·sin(t°)", find: "F",
+        letters: { F: "the force", q: "the charge", v: "the speed", B: "the magnetic field", t: "the angle between the speed and the field in degrees" },
+        example: { q: "2", v: "5", B: "3", t: "30" },
+      },
+      {
+        id: "magnetic-force-wire", name: "Force on a wire in a magnetic field", eq: "F = BIL·sin(t°)", find: "F",
+        letters: { F: "the force", B: "the magnetic field", I: "the current", L: "the length of wire", t: "the angle between the wire and the field in degrees" },
+        example: { B: "2", I: "3", L: "4", t: "30" },
+      },
+      {
+        id: "cyclotron-radius", name: "Radius of a charge circling in a magnetic field", eq: "r = mv/(qB)", find: "r",
+        letters: { r: "the radius", m: "the mass of the charge", v: "its speed", q: "the charge", B: "the magnetic field" },
+        example: { m: "2", v: "6", q: "3", B: "1" },
+      },
+      {
+        id: "wire-field", name: "Magnetic field round a long wire", eq: "B = kI/(2(22/7)r)", find: "B",
+        letters: { B: "the magnetic field", k: "the permeability", I: "the current", r: "the distance from the wire" },
+        example: { k: "2", I: "11", r: "7" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "solenoid-field", name: "Magnetic field inside a solenoid", eq: "B = knI", find: "B",
+        letters: { B: "the magnetic field", k: "the permeability", n: "the turns each metre", I: "the current" },
+        example: { k: "2", n: "100", I: "3" },
+      },
+      {
+        id: "magnetic-flux", name: "Magnetic flux", eq: "F = BA·cos(t°)", find: "F",
+        letters: { F: "the flux", B: "the magnetic field", A: "the area", t: "the angle between the field and the normal to the area in degrees" },
+        example: { B: "2", A: "5", t: "60" },
+      },
+      {
+        id: "faraday-law", name: "Induced emf (Faraday's law)", eq: "E = -Nf/t", find: "E",
+        letters: { E: "the induced emf", N: "the turns of the coil", f: "the change in flux", t: "the time it takes" },
+        example: { N: "100", f: "0.02", t: "0.5" },
+      },
+      {
+        id: "motional-emf", name: "Emf of a moving wire", eq: "E = Blv", find: "E",
+        letters: { E: "the emf", B: "the magnetic field", l: "the length of the wire", v: "the speed" },
+        example: { B: "2", l: "3", v: "4" },
+      },
+      {
+        id: "rms-voltage", name: "Root mean square of an alternating voltage", eq: "V = P/sqrt(2)", find: "V",
+        letters: { V: "the root mean square voltage", P: "the peak voltage" },
+        example: { P: "325" },
+      },
+      {
+        id: "inductor-energy", name: "Energy stored in an inductor", eq: "E = (1/2)LI^2", find: "E",
+        letters: { E: "the energy", L: "the inductance", I: "the current" },
+        example: { L: "4", I: "3" },
+      },
+      {
+        id: "self-induction", name: "Emf induced in a coil by its own current", eq: "E = -LI/t", find: "E",
+        letters: { E: "the induced emf", L: "the inductance", I: "the change in current", t: "the time it takes" },
+        example: { L: "2", I: "6", t: "3" },
+      },
+      {
+        id: "inductive-reactance", name: "Reactance of an inductor", eq: "X = 2(22/7)fL", find: "X",
+        letters: { X: "the reactance", f: "the frequency", L: "the inductance" },
+        example: { f: "50", L: "7" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "capacitive-reactance", name: "Reactance of a capacitor", eq: "X = 1/(2(22/7)fC)", find: "X",
+        letters: { X: "the reactance", f: "the frequency", C: "the capacitance" },
+        example: { f: "7", C: "1/44" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "impedance", name: "Impedance of a series circuit", eq: "Z = sqrt(R^2 + (X - Y)^2)", find: "Z",
+        letters: { Z: "the impedance", R: "the resistance", X: "the inductive reactance", Y: "the capacitive reactance" },
+        example: { R: "3", X: "10", Y: "6" },
+      },
+      {
+        id: "resonance", name: "Resonant frequency", eq: "f = 1/(2(22/7)sqrt(LC))", find: "f",
+        letters: { f: "the resonant frequency", L: "the inductance", C: "the capacitance" },
+        example: { L: "1", C: "1/49" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "time-constant", name: "Time constant of a capacitor circuit", eq: "T = RC", find: "T",
+        letters: { T: "the time constant", R: "the resistance", C: "the capacitance" },
+        example: { R: "1000", C: "0.002" },
+      },
+    ],
+  },
+  {
+    group: "Physics: modern physics and astronomy",
+    items: [
+      {
+        id: "photon-energy", name: "Energy of a photon", eq: "E = hf", find: "E",
+        letters: { E: "the energy", h: "Planck's constant", f: "the frequency" },
+        example: { h: "2", f: "5" },
+      },
+      {
+        id: "photoelectric", name: "Photoelectric effect", eq: "K = hf - p", find: "K",
+        letters: { K: "the greatest energy of an electron released", h: "Planck's constant", f: "the frequency of the light", p: "the work function" },
+        example: { h: "2", f: "5", p: "3" },
+      },
+      {
+        id: "de-broglie", name: "Wavelength of a moving particle (de Broglie)", eq: "w = h/(mv)", find: "w",
+        letters: { w: "the wavelength", h: "Planck's constant", m: "the mass", v: "the speed" },
+        example: { h: "6", m: "2", v: "3" },
+        note: "also the wavelength of a photon from its momentum",
+      },
+      {
+        id: "photon-momentum-energy", name: "Energy and momentum of a photon", eq: "E = pc", find: "E",
+        letters: { E: "the energy", p: "the momentum", c: "the speed of light" },
+        example: { p: "2", c: "3" },
+      },
+      {
+        id: "mass-energy", name: "Mass and energy (Einstein)", eq: "E = mc^2", find: "E",
+        letters: { E: "the energy", m: "the mass", c: "the speed of light" },
+        example: { m: "2", c: "3" },
+      },
+      {
+        id: "hydrogen-level", name: "Energy level of hydrogen", eq: "E = -13.6/n^2", find: "E",
+        letters: { E: "the energy in electron-volts", n: "the level" },
+        example: { n: "2" },
+      },
+      {
+        id: "rydberg", name: "Wavelengths of hydrogen light (Rydberg)", eq: "1/w = R(1/a^2 - 1/b^2)", find: "w",
+        letters: { w: "the wavelength", R: "Rydberg's constant", a: "the lower level", b: "the higher level" },
+        example: { R: "1", a: "1", b: "2" },
+      },
+      {
+        id: "mass-number", name: "Mass number of an atom", eq: "A = Z + N", find: "A",
+        letters: { A: "the mass number", Z: "the protons", N: "the neutrons" },
+        example: { Z: "6", N: "8" },
+      },
+      {
+        id: "decay-constant", name: "Decay constant and half-life", eq: "l = ln(2)/h", find: "l",
+        letters: { l: "the decay constant", h: "the half-life" },
+        example: { h: "ln(2)/5" },
+      },
+      {
+        id: "activity", name: "Activity of a radioactive sample", eq: "A = lN", find: "A",
+        letters: { A: "the decays each second", l: "the decay constant", N: "the number of nuclei" },
+        example: { l: "0.01", N: "5000" },
+      },
+      {
+        id: "binding-energy-defect", name: "Binding energy from the mass lost", eq: "B = dc^2", find: "B",
+        letters: { B: "the binding energy", d: "the mass defect", c: "the speed of light" },
+        example: { d: "2", c: "3" },
+      },
+      {
+        id: "hubble", name: "Hubble's law", eq: "v = Hd", find: "v",
+        letters: { v: "the speed a galaxy moves away", H: "Hubble's constant", d: "its distance" },
+        example: { H: "70", d: "100" },
+      },
+      {
+        id: "parallax-distance", name: "Distance from parallax", eq: "d = 1/p", find: "d",
+        letters: { d: "the distance in parsecs", p: "the parallax angle in arcseconds" },
+        example: { p: "1/4" },
+      },
+      {
+        id: "redshift", name: "Redshift", eq: "z = (w - l)/l", find: "z",
+        letters: { z: "the redshift", w: "the wavelength observed", l: "the wavelength emitted" },
+        example: { w: "660", l: "600" },
+      },
+      {
+        id: "schwarzschild", name: "Radius of a black hole", eq: "r = 2GM/c^2", find: "r",
+        letters: { r: "the Schwarzschild radius", G: "the gravitational constant", M: "the mass", c: "the speed of light" },
+        example: { G: "3", M: "6", c: "3" },
+      },
+      {
+        id: "luminosity", name: "Luminosity of a star", eq: "L = 4(22/7)r^2sT^4", find: "L",
+        letters: { L: "the luminosity", r: "the radius of the star", s: "the Stefan-Boltzmann constant", T: "the surface temperature in kelvin" },
+        example: { r: "7", s: "1", T: "2" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "time-dilation", name: "Time dilation", eq: "t = T/sqrt(1 - v^2/c^2)", find: "t",
+        letters: { t: "the time for the moving clock", T: "the time for the stationary clock", v: "the speed", c: "the speed of light" },
+        example: { T: "3", v: "3", c: "5" },
+      },
+      {
+        id: "length-contraction", name: "Length contraction", eq: "L = l·sqrt(1 - v^2/c^2)", find: "L",
+        letters: { L: "the length seen", l: "the length at rest", v: "the speed", c: "the speed of light" },
+        example: { l: "10", v: "3", c: "5" },
+      },
+    ],
+  },
+  {
+    group: "Physics: measurement",
+    items: [
+      {
+        id: "percentage-error", name: "Percentage error", eq: "E = 100d/m", find: "E",
+        letters: { E: "the percentage error", d: "the error", m: "the measured value" },
+        example: { d: "0.5", m: "20" },
+      },
+      {
+        id: "percentage-uncertainty", name: "Percentage uncertainty", eq: "U = 100u/m", find: "U",
+        letters: { U: "the percentage uncertainty", u: "the uncertainty", m: "the measured value" },
+        example: { u: "0.2", m: "40" },
+      },
+      {
+        id: "mean-uncertainty-product", name: "Uncertainty of a product or quotient", eq: "U = a + b", find: "U",
+        letters: { U: "the percentage uncertainty of the answer", a: "the percentage uncertainty of one value", b: "the percentage uncertainty of the other" },
+        example: { a: "2", b: "3" },
+        note: "for values that are multiplied or divided",
+      },
+      {
+        id: "power-uncertainty", name: "Uncertainty of a power", eq: "U = nu", find: "U",
+        letters: { U: "the percentage uncertainty of the answer", n: "the power", u: "the percentage uncertainty of the value" },
+        example: { n: "2", u: "3" },
+      },
+    ],
+  },
+  {
+    group: "Geometry: triangles",
+    items: [
+      {
+        id: "area-triangle-coordinates", name: "Area of a triangle from its corners", eq: "A = (a(d - q) + c(q - b) + p(b - d))/2", find: "A",
+        letters: { A: "the area (take the positive value)", a: "x of the first corner", b: "y of the first corner", c: "x of the second corner", d: "y of the second corner", p: "x of the third corner", q: "y of the third corner" },
+        example: { a: "1", b: "1", c: "5", d: "1", p: "1", q: "4" },
+      },
+    ],
+  },
+  {
+    group: "Geometry: solids",
+    items: [
+      {
+        id: "distance-3d", name: "Distance between two points in space", eq: "D = sqrt((d - a)^2 + (p - b)^2 + (q - c)^2)", find: "D",
+        letters: { D: "the distance", a: "x of the first point", b: "y of the first point", c: "z of the first point", d: "x of the second", p: "y of the second", q: "z of the second" },
+        example: { a: "1", b: "2", c: "3", d: "3", p: "6", q: "7" },
+      },
+      {
+        id: "vector-dot-3d", name: "Dot product in three dimensions", eq: "D = ad + bp + cq", find: "D",
+        letters: { D: "the dot product", a: "x of the first vector", b: "y of the first", c: "z of the first", d: "x of the second", p: "y of the second", q: "z of the second" },
+        example: { a: "1", b: "2", c: "3", d: "4", p: "-1", q: "2" },
+      },
+    ],
+  },
+  {
+    group: "Chemistry: atoms and formulas",
+    items: [
+      {
+        id: "mass-number-neutrons", name: "Neutrons in an atom", eq: "N = A - Z", find: "N",
+        letters: { N: "the neutrons", A: "the mass number", Z: "the atomic number" },
+        example: { A: "35", Z: "17" },
+      },
+      {
+        id: "relative-atomic-mass", name: "Relative atomic mass from isotopes", eq: "R = (xa + yb)/100", find: "R",
+        letters: { R: "the relative atomic mass", x: "the percentage of the first isotope", a: "its mass number", y: "the percentage of the second isotope", b: "its mass number" },
+        example: { x: "75", a: "35", y: "25", b: "37" },
+      },
+      {
+        id: "shell-capacity", name: "Electrons in a shell", eq: "S = 2n^2", find: "S",
+        letters: { S: "the most electrons the shell holds", n: "the shell number" },
+        example: { n: "3" },
+      },
+      {
+        id: "shell-orbitals", name: "Orbitals in a shell", eq: "O = n^2", find: "O",
+        letters: { O: "the orbitals in the shell", n: "the shell number" },
+        example: { n: "3" },
+      },
+      {
+        id: "subshell-capacity", name: "Electrons in a subshell", eq: "S = 2(2l + 1)", find: "S",
+        letters: { S: "the most electrons the subshell holds", l: "0 for s, 1 for p, 2 for d, 3 for f" },
+        example: { l: "2" },
+      },
+      {
+        id: "effective-charge", name: "Effective nuclear charge", eq: "Z = A - S", find: "Z",
+        letters: { Z: "the effective nuclear charge", A: "the atomic number", S: "the shielding by inner electrons" },
+        example: { A: "17", S: "10" },
+      },
+      {
+        id: "relative-formula-mass", name: "Relative formula mass", eq: "M = a + b + c", find: "M",
+        letters: { M: "the relative formula mass", a: "the mass of the first part", b: "the mass of the second", c: "the mass of the third" },
+        example: { a: "23", b: "35", c: "0" },
+        note: "add the mass of every atom in the formula",
+      },
+      {
+        id: "molecular-formula", name: "Molecular formula from the empirical formula", eq: "n = M/E", find: "n",
+        letters: { n: "how many times bigger the molecular formula is", M: "the molar mass of the compound", E: "the mass of the empirical formula" },
+        example: { M: "180", E: "30" },
+      },
+      {
+        id: "alkane", name: "Hydrogen atoms in an alkane", eq: "H = 2n + 2", find: "H",
+        letters: { H: "the hydrogen atoms", n: "the carbon atoms" },
+        example: { n: "6" },
+      },
+      {
+        id: "alkene", name: "Hydrogen atoms in an alkene", eq: "H = 2n", find: "H",
+        letters: { H: "the hydrogen atoms", n: "the carbon atoms" },
+        example: { n: "6" },
+      },
+      {
+        id: "alkyne", name: "Hydrogen atoms in an alkyne", eq: "H = 2n - 2", find: "H",
+        letters: { H: "the hydrogen atoms", n: "the carbon atoms" },
+        example: { n: "6" },
+      },
+      {
+        id: "alkane-oxygen", name: "Oxygen needed to burn an alkane", eq: "O = (3n + 1)/2", find: "O",
+        letters: { O: "the moles of oxygen for one mole of alkane", n: "the carbon atoms" },
+        example: { n: "3" },
+      },
+      {
+        id: "unsaturation", name: "Degrees of unsaturation", eq: "D = (2C + 2 + N - H - X)/2", find: "D",
+        letters: { D: "the degrees of unsaturation", C: "the carbon atoms", N: "the nitrogen atoms", H: "the hydrogen atoms", X: "the halogen atoms" },
+        example: { C: "6", N: "0", H: "6", X: "0" },
+      },
+    ],
+  },
+  {
+    group: "Chemistry: amounts and concentrations",
+    items: [
+      {
+        id: "molarity-mass", name: "Molarity from a mass", eq: "C = m/(MV)", find: "C",
+        letters: { C: "the concentration in moles per litre", m: "the mass dissolved", M: "the molar mass", V: "the volume in litres" },
+        example: { m: "40", M: "40", V: "2" },
+      },
+      {
+        id: "mass-percent-solution", name: "Percentage of a solution by mass", eq: "P = 100m/T", find: "P",
+        letters: { P: "the percentage by mass", m: "the mass of the solute", T: "the mass of the whole solution" },
+        example: { m: "15", T: "200" },
+      },
+      {
+        id: "ppm", name: "Parts per million", eq: "P = 1000000a/b", find: "P",
+        letters: { P: "the parts per million", a: "the mass of the substance", b: "the mass of the sample" },
+        example: { a: "3", b: "2000000" },
+      },
+      {
+        id: "molality", name: "Molality", eq: "b = n/w", find: "b",
+        letters: { b: "the molality", n: "the moles of solute", w: "the kilograms of solvent" },
+        example: { n: "2", w: "4" },
+      },
+      {
+        id: "mole-fraction", name: "Mole fraction", eq: "X = a/(a + b)", find: "X",
+        letters: { X: "the mole fraction of the first substance", a: "its moles", b: "the moles of the others" },
+        example: { a: "2", b: "6" },
+      },
+      {
+        id: "normality", name: "Normality", eq: "N = Cz", find: "N",
+        letters: { N: "the normality", C: "the concentration in moles per litre", z: "the equivalents in one mole" },
+        example: { C: "0.5", z: "2" },
+      },
+      {
+        id: "titration", name: "Titration of two solutions", eq: "CV/a = cv/b", find: "c",
+        letters: { C: "the concentration of the first solution", V: "its volume", a: "its moles in the equation", c: "the concentration of the second solution", v: "its volume", b: "its moles in the equation" },
+        example: { C: "0.1", V: "25", a: "1", v: "20", b: "2" },
+      },
+      {
+        id: "mixing-concentration", name: "Concentration of two solutions mixed", eq: "C = (aV + bv)/(V + v)", find: "C",
+        letters: { C: "the concentration of the mixture", a: "the concentration of the first solution", V: "its volume", b: "the concentration of the second", v: "its volume" },
+        example: { a: "2", V: "100", b: "1", v: "300" },
+      },
+      {
+        id: "molarity-percent", name: "Molarity from a percentage and a density", eq: "C = 10dP/M", find: "C",
+        letters: { C: "the concentration in moles per litre", d: "the density in grams for each millilitre", P: "the percentage by mass", M: "the molar mass" },
+        example: { d: "6/5", P: "20", M: "40" },
+      },
+      {
+        id: "density-specific", name: "Specific gravity", eq: "S = d/w", find: "S",
+        letters: { S: "the specific gravity", d: "the density of the substance", w: "the density of water" },
+        example: { d: "13.6", w: "1" },
+      },
+      {
+        id: "atom-economy", name: "Atom economy", eq: "A = 100m/M", find: "A",
+        letters: { A: "the atom economy, as a percentage", m: "the mass of the product wanted", M: "the mass of all the products" },
+        example: { m: "44", M: "80" },
+      },
+      {
+        id: "purity", name: "Percentage purity", eq: "P = 100a/b", find: "P",
+        letters: { P: "the percentage purity", a: "the mass of pure substance", b: "the mass of the sample" },
+        example: { a: "18", b: "20" },
+      },
+    ],
+  },
+  {
+    group: "Chemistry: gases and solutions",
+    items: [
+      {
+        id: "dalton", name: "Total pressure of a gas mixture (Dalton)", eq: "P = a + b + c", find: "P",
+        letters: { P: "the total pressure", a: "the pressure of the first gas", b: "the pressure of the second", c: "the pressure of the third" },
+        example: { a: "20", b: "30", c: "50" },
+      },
+      {
+        id: "partial-pressure", name: "Partial pressure of one gas", eq: "p = xP", find: "p",
+        letters: { p: "the partial pressure", x: "the mole fraction of the gas", P: "the total pressure" },
+        example: { x: "1/5", P: "100" },
+      },
+      {
+        id: "graham", name: "Graham's law of effusion", eq: "a/b = sqrt(M/m)", find: "a",
+        letters: { a: "the speed of the lighter gas", b: "the speed of the heavier gas", M: "the molar mass of the heavier gas", m: "the molar mass of the lighter gas" },
+        example: { b: "1", M: "16", m: "4" },
+      },
+      {
+        id: "avogadro-law", name: "Avogadro's law", eq: "V/n = v/m", find: "V",
+        letters: { V: "the first volume", n: "its moles", v: "the second volume", m: "its moles" },
+        example: { n: "2", v: "12", m: "3" },
+      },
+      {
+        id: "gas-density", name: "Density of a gas", eq: "d = PM/(RT)", find: "d",
+        letters: { d: "the density", P: "the pressure", M: "the molar mass", R: "the gas constant", T: "the temperature in kelvin" },
+        example: { P: "100", M: "32", R: "8", T: "400" },
+      },
+      {
+        id: "van-der-waals", name: "Pressure of a real gas (van der Waals)", eq: "P = nRT/(V - nb) - an^2/V^2", find: "P",
+        letters: { P: "the pressure", n: "the moles", R: "the gas constant", T: "the temperature in kelvin", V: "the volume", a: "the attraction constant", b: "the size constant" },
+        example: { n: "1", R: "8", T: "300", V: "10", a: "0", b: "0" },
+      },
+      {
+        id: "raoult", name: "Vapour pressure of a solution (Raoult's law)", eq: "P = xp", find: "P",
+        letters: { P: "the vapour pressure of the solution", x: "the mole fraction of the solvent", p: "the vapour pressure of the pure solvent" },
+        example: { x: "9/10", p: "100" },
+      },
+      {
+        id: "boiling-elevation", name: "Rise in boiling point", eq: "T = kmi", find: "T",
+        letters: { T: "the rise in boiling point", k: "the boiling point constant", m: "the molality", i: "the particles each unit makes" },
+        example: { k: "1/2", m: "2", i: "2" },
+      },
+      {
+        id: "freezing-depression", name: "Fall in freezing point", eq: "T = kmi", find: "T",
+        letters: { T: "the fall in freezing point", k: "the freezing point constant", m: "the molality", i: "the particles each unit makes" },
+        example: { k: "2", m: "1", i: "3" },
+      },
+      {
+        id: "osmotic-pressure", name: "Osmotic pressure", eq: "P = iCRT", find: "P",
+        letters: { P: "the osmotic pressure", i: "the particles each unit makes", C: "the concentration in moles per litre", R: "the gas constant", T: "the temperature in kelvin" },
+        example: { i: "2", C: "1/10", R: "8", T: "300" },
+      },
+      {
+        id: "henry", name: "Gas dissolving in a liquid (Henry's law)", eq: "C = kP", find: "C",
+        letters: { C: "the concentration of the dissolved gas", k: "Henry's constant", P: "the pressure of the gas" },
+        example: { k: "2", P: "5" },
+      },
+      {
+        id: "beer-lambert", name: "Light absorbed by a solution (Beer-Lambert law)", eq: "A = klc", find: "A",
+        letters: { A: "the absorbance", k: "the absorption constant", l: "the path length", c: "the concentration" },
+        example: { k: "2", l: "1", c: "3/10" },
+      },
+      {
+        id: "absorbance-transmittance", name: "Absorbance from transmittance", eq: "A = -log_10(T)", find: "A",
+        letters: { A: "the absorbance", T: "the share of light let through" },
+        example: { T: "1/100" },
+      },
+      {
+        id: "unit-cell-density", name: "Density of a crystal from its unit cell", eq: "d = ZM/(a^3N)", find: "d",
+        letters: { d: "the density", Z: "the atoms in one unit cell", M: "the molar mass", a: "the edge of the cell", N: "Avogadro's constant" },
+        example: { Z: "4", M: "60", a: "2", N: "10" },
+      },
+    ],
+  },
+  {
+    group: "Chemistry: energy and rates",
+    items: [
+      {
+        id: "hess", name: "Hess's law", eq: "H = P - R", find: "H",
+        letters: { H: "the enthalpy change of the reaction", P: "the total for the products", R: "the total for the reactants" },
+        example: { P: "-800", R: "-300" },
+      },
+      {
+        id: "bond-enthalpy", name: "Enthalpy change from bond energies", eq: "H = B - M", find: "H",
+        letters: { H: "the enthalpy change", B: "the energy to break the bonds", M: "the energy given out making the bonds" },
+        example: { B: "2000", M: "2500" },
+      },
+      {
+        id: "gibbs", name: "Gibbs free energy", eq: "G = H - TS", find: "G",
+        letters: { G: "the free energy change", H: "the enthalpy change", T: "the temperature in kelvin", S: "the entropy change" },
+        example: { H: "-100", T: "300", S: "0.2" },
+        note: "a reaction can happen by itself when this is negative",
+      },
+      {
+        id: "entropy-reaction", name: "Entropy change of a reaction", eq: "S = P - R", find: "S",
+        letters: { S: "the entropy change", P: "the total entropy of the products", R: "the total entropy of the reactants" },
+        example: { P: "200", R: "150" },
+      },
+      {
+        id: "rate-law", name: "Rate law", eq: "r = kA^mB^n", find: "r",
+        letters: { r: "the rate", k: "the rate constant", A: "the concentration of the first substance", m: "its order", B: "the concentration of the second", n: "its order" },
+        example: { k: "2", A: "3", m: "2", B: "2", n: "1" },
+      },
+      {
+        id: "first-order-half-life", name: "Half-life of a first-order reaction", eq: "t = ln(2)/k", find: "t",
+        letters: { t: "the half-life", k: "the rate constant" },
+        example: { k: "ln(2)/5" },
+      },
+      {
+        id: "first-order-time", name: "Time for a first-order reaction", eq: "t = ln(A/B)/k", find: "t",
+        letters: { t: "the time", A: "the amount at the start", B: "the amount left", k: "the rate constant" },
+        example: { A: "8", B: "1", k: "ln(2)" },
+      },
+    ],
+  },
+  {
+    group: "Chemistry: equilibrium, acids and bases",
+    items: [
+      {
+        id: "equilibrium-constant", name: "Equilibrium constant", eq: "K = C^cD^d/(A^aB^b)", find: "K",
+        letters: { K: "the equilibrium constant", A: "the concentration of the first reactant", a: "its number in the equation", B: "the concentration of the second reactant", b: "its number", C: "the concentration of the first product", c: "its number", D: "the concentration of the second product", d: "its number" },
+        example: { A: "2", a: "1", B: "1", b: "1", C: "4", c: "1", D: "2", d: "1" },
+      },
+      {
+        id: "pressure-constant", name: "Equilibrium constant with pressures", eq: "K = k(RT)^n", find: "K",
+        letters: { K: "the pressure constant", k: "the concentration constant", R: "the gas constant", T: "the temperature in kelvin", n: "the change in moles of gas" },
+        example: { k: "2", R: "1/2", T: "4", n: "2" },
+      },
+      {
+        id: "solubility-product-1", name: "Solubility product for a salt such as AgCl", eq: "K = s^2", find: "K",
+        letters: { K: "the solubility product", s: "the solubility in moles per litre" },
+        example: { s: "3" },
+      },
+      {
+        id: "solubility-product-2", name: "Solubility product for a salt such as CaF2", eq: "K = 4s^3", find: "K",
+        letters: { K: "the solubility product", s: "the solubility in moles per litre" },
+        example: { s: "2" },
+      },
+      {
+        id: "solubility-product-general", name: "Solubility product in general", eq: "K = a^a·b^b·s^(a + b)", find: "K",
+        letters: { K: "the solubility product", a: "the ions of the first kind in the formula", b: "the ions of the second kind", s: "the solubility in moles per litre" },
+        example: { a: "1", b: "2", s: "2" },
+      },
+      {
+        id: "poh", name: "pOH", eq: "p = -log_10(O)", find: "p",
+        letters: { p: "the pOH", O: "the hydroxide concentration in moles per litre" },
+        example: { O: "1/1000" },
+      },
+      {
+        id: "ph-poh", name: "pH and pOH", eq: "p + q = 14", find: "q",
+        letters: { p: "the pH", q: "the pOH" },
+        example: { p: "3" },
+        note: "at 25 degrees",
+      },
+      {
+        id: "weak-acid-ka", name: "Acid dissociation constant", eq: "K = H^2/C", find: "K",
+        letters: { K: "the acid dissociation constant", H: "the hydrogen ion concentration", C: "the acid concentration" },
+        example: { H: "1/100", C: "1" },
+      },
+      {
+        id: "weak-acid-h", name: "Hydrogen ions from a weak acid", eq: "H = sqrt(KC)", find: "H",
+        letters: { H: "the hydrogen ion concentration", K: "the acid dissociation constant", C: "the acid concentration" },
+        example: { K: "1/10000", C: "1" },
+      },
+      {
+        id: "pka", name: "pKa", eq: "p = -log_10(K)", find: "p",
+        letters: { p: "the pKa", K: "the acid dissociation constant" },
+        example: { K: "1/100000" },
+      },
+      {
+        id: "henderson", name: "Buffer pH (Henderson-Hasselbalch)", eq: "P = k + log_10(b/a)", find: "P",
+        letters: { P: "the pH", k: "the pKa", b: "the concentration of the base", a: "the concentration of the acid" },
+        example: { k: "5", b: "10", a: "1" },
+      },
+      {
+        id: "ostwald", name: "Degree of dissociation (Ostwald's dilution law)", eq: "d = sqrt(K/C)", find: "d",
+        letters: { d: "the degree of dissociation", K: "the dissociation constant", C: "the concentration" },
+        example: { K: "1/10000", C: "1" },
+      },
+    ],
+  },
+  {
+    group: "Chemistry: electrochemistry",
+    items: [
+      {
+        id: "cell-potential", name: "Cell potential", eq: "E = R - L", find: "E",
+        letters: { E: "the cell potential", R: "the potential of the cathode", L: "the potential of the anode" },
+        example: { R: "0.34", L: "-0.76" },
+      },
+      {
+        id: "nernst", name: "Cell potential away from standard conditions (Nernst)", eq: "E = f - (0.0592/n)log_10(Q)", find: "E",
+        letters: { E: "the cell potential", f: "the standard cell potential", n: "the electrons transferred", Q: "the reaction quotient" },
+        example: { f: "1.1", n: "2", Q: "100" },
+      },
+      {
+        id: "gibbs-cell", name: "Free energy of a cell reaction", eq: "G = -nFE", find: "G",
+        letters: { G: "the free energy change", n: "the electrons transferred", F: "Faraday's constant", E: "the cell potential" },
+        example: { n: "2", F: "96500", E: "1.1" },
+      },
+      {
+        id: "electron-moles", name: "Moles of electrons in electrolysis", eq: "n = Q/F", find: "n",
+        letters: { n: "the moles of electrons", Q: "the charge passed", F: "Faraday's constant" },
+        example: { Q: "9650", F: "96500" },
+      },
+      {
+        id: "equilibrium-cell", name: "Equilibrium constant from the cell potential", eq: "log_10(K) = nE/0.0592", find: "K",
+        letters: { K: "the equilibrium constant", n: "the electrons transferred", E: "the standard cell potential" },
+        example: { n: "2", E: "0.0592" },
+      },
+    ],
+  },
+  {
+    group: "Chemistry: equilibrium, acids and bases",
+    items: [
+      {
+        id: "water-product", name: "Ionic product of water", eq: "O = 1/(10^14H)", find: "O",
+        letters: { H: "the hydrogen ion concentration", O: "the hydroxide ion concentration" },
+        example: { H: "1/1000000" },
+        note: "the two concentrations multiply to 10 to the power −14 at 25 degrees",
       },
     ],
   },
