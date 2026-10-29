@@ -98,7 +98,7 @@ LETTER_ROWS[LETTER_ROWS.length - 1] = [
   { k: "caps", act: "caps", icon: "arrowUp", title: "Capitals", tone: "act" },
   // A number in another base: 1011_2 is 1011 in base two (capitals for
   // digits past 9: 2A_16).
-  { k: "_b", t: "_", title: "Base: type 1011_2 for 1011 in base two", tone: "act", fixed: true, tex: "q_b" },
+  { k: "_b", act: "base", title: "Base: pick the base of a number — a number (1011_2) or a letter (35_y)", tone: "act", fixed: true, tex: "q_b" },
 ];
 
 /* The full Greek alphabet — a circle's π, an angle's θ, the unknowns geometry
@@ -150,7 +150,7 @@ const FUNCS = [
   ],
   [
     { k: "%", t: "%", title: "percent: 25% is 25 out of 100" },
-    { k: "_b", t: "_", title: "base: 1011_2 is 1011 in base two", tex: "q_b" },
+    { k: "_b", act: "base", title: "Base: pick the base of a number — a number (1011_2) or a letter (35_y)", tex: "q_b" },
     { k: "a b⁄c", act: "mixed", title: "A mixed number: a whole number and a fraction, in boxes to fill (2 1/3)", math: "2 1/3" },
     { k: "e", t: "e", title: "e, the number 2.718…", math: "e" },
     { k: "π", t: "π", title: "pi", math: "π" },
@@ -737,7 +737,22 @@ export function createKeypad(host, { onSubmit } = {}) {
      with every entry a ? box, and selects the first; arrows go from box to box
      (cellMove, slot-typing.js) and typing fills the one that is selected. */
   let picker = null;
-  function closePicker() { picker?.remove(); picker = null; }
+  /* A press anywhere else puts the picker away. That listener is taken off the
+     moment the picker closes any other way (a pick), or it would still be
+     waiting and close the NEXT picker the instant it opened. */
+  let pickerOut = null;
+  function closePicker() {
+    picker?.remove();
+    picker = null;
+    if (pickerOut) { document.removeEventListener("pointerdown", pickerOut); pickerOut = null; }
+  }
+  function closePickerOnOutside() {
+    setTimeout(() => {
+      if (!picker) return;
+      pickerOut = () => closePicker();
+      document.addEventListener("pointerdown", pickerOut);
+    }, 0);
+  }
 
   function placeMatrix(rows, cols, prefix = "") {
     const text = prefix + matrixTemplate(rows, cols);
@@ -836,10 +851,43 @@ export function createKeypad(host, { onSubmit } = {}) {
     picker.style.left = `${Math.max(0, Math.min(box.width - picker.offsetWidth, key.left - box.left))}px`;
     picker.style.top = `${Math.max(0, key.top - box.top - picker.offsetHeight - 6)}px`;
     picker.addEventListener("pointerdown", (e) => e.stopPropagation());
-    setTimeout(() => document.addEventListener("pointerdown", closePicker, { once: true }), 0);
+    closePickerOnOutside();
   }
 
-  const ACTS = { back: backspace, left: () => nudge(-1), right: () => nudge(1),
+  /** The base key: a small sheet of bases to pick from — the numbers people
+      count in, and the letters an equation might be about (35_y = 29). */
+  function openBasePicker(anchor) {
+    if (picker) { closePicker(); return; }
+    picker = document.createElement("div");
+    picker.className = "am-matpick am-basepick pp-sticky pp-sticky--c0";
+    const label = document.createElement("p");
+    label.className = "am-matpick__say";
+    label.textContent = "In which base?";
+    picker.appendChild(label);
+    const row = (items, letters) => {
+      const box = document.createElement("div");
+      box.className = "am-basepick__row";
+      for (const b of items) {
+        // divs, not buttons: a row of small notes would be the wrong picture of a choice of base
+        const d = document.createElement("div");
+        d.className = `am-basepick__cell${letters ? " is-letter" : ""}`;
+        d.textContent = b;
+        d.setAttribute("aria-label", letters ? `base ${b}, a letter` : `base ${b}`);
+        d.addEventListener("pointerdown", (e) => { e.preventDefault(); closePicker(); type(`_${b}`, 0); });
+        box.appendChild(d);
+      }
+      return box;
+    };
+    picker.append(row(["2", "3", "4", "5", "6", "7", "8", "9", "12", "16"], false), row(["n", "b", "x", "y", "k", "m"], true));
+    pad.appendChild(picker);
+    const box = pad.getBoundingClientRect(), key = anchor.getBoundingClientRect();
+    picker.style.left = `${Math.max(0, Math.min(box.width - picker.offsetWidth, key.left - box.left))}px`;
+    picker.style.top = `${Math.max(0, key.top - box.top - picker.offsetHeight - 6)}px`;
+    picker.addEventListener("pointerdown", (e) => e.stopPropagation());
+    closePickerOnOutside();
+  }
+
+  const ACTS = { back: backspace, base: (btn) => openBasePicker(btn), left: () => nudge(-1), right: () => nudge(1),
                  up: () => nudge(0, "up"), down: () => nudge(0, "down"),
                  matrix: (btn) => openPicker(btn), detmatrix: (btn) => openPicker(btn, "det"),
                  mixed: placeMixed, perm: () => placeChoose("P"), comb: () => placeChoose("C"),

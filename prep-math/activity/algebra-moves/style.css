@@ -1525,3 +1525,19 @@
 /* a folded line shows none of itself: not the drawing, not its notes. (The svg
    attribute `hidden` loses to the sheet's own display rule, so say it here.) */
 .am-work.is-folded > svg, .am-work.is-folded > .am-pins, .am-work.is-folded > .am-work__why { display: none; }
+
+/* ── The base key's sheet of bases ──────────────────────────────────────── */
+.am-basepick__row { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.3rem; max-width: 15rem; }
+.am-basepick__cell {
+  min-width: 1.9rem;
+  padding: 0.3rem 0.4rem;
+  text-align: center;
+  font: 500 0.95rem "STIX Two Text", serif;
+  color: #14130f;
+  background: rgba(255, 255, 255, 0.7);
+  border: 2px solid rgba(20, 19, 15, 0.35);
+  cursor: pointer;
+  user-select: none;
+}
+.am-basepick__cell.is-letter { font-style: italic; }
+.am-basepick__cell:hover { background: var(--accent-secondary, #6aa5d8); border-color: #14130f; }
