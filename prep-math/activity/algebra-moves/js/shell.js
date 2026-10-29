@@ -57,6 +57,10 @@ export function shellHTML() {
                   data-tip="Multiplication sign: switch between a dot and ×" aria-label="Multiplication sign: switch between a dot and ×" aria-pressed="false">
             <span class="am-times__sign" aria-hidden="true">·</span>
           </button>
+          <button class="pp-sticky pp-note-btn am-tool am-tool--plain am-tool--autofactor" type="button" id="am-autofactor"
+                  data-tip="Factor fractions automatically: off" aria-label="Factor fractions automatically" aria-pressed="false">
+            <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><rect x="7" y="3.4" width="10" height="5.4" rx="1" fill="var(--accent-secondary,#6aa5d8)"/><rect x="3" y="10.7" width="18" height="2.6" rx="1.3" fill="currentColor"/><rect x="5" y="15.2" width="14" height="5.4" rx="1" fill="var(--accent-warning,#e8a838)"/></svg>
+          </button>
           <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-zoom-out" data-tip="Zoom out" aria-label="Zoom out">
             ${UI.zoomOut(17)}
           </button>

@@ -699,6 +699,8 @@ function nodeTidies(eq, node) {
     for (let up = A.parentOf(eq, scope.id); up && ["sum", "prod", "frac"].includes(up.kind); up = A.parentOf(eq, scope.id)) scope = up;
     t("resolvepowers", "Work out the powers first", "indices before products", resolvePowers(eq, scope));
   }
+  if (node.kind === "frac") t("cancelbracket", "Cancel what is the same on the top and the bottom", "the same bracket above and below", cancelBrackets(eq, node));
+  if (node.kind === "frac") t("factorfrac", "Factor the top and the bottom", "a common factor, then two brackets", factorFraction(eq, node));
   if (node.kind === "fact") t("factorial", "Write the factorial out", "n × (n − 1) × … × 1", factorialOut(eq, node));
   if (node.kind === "sigma") t("sigma", "Write out the terms", "one term for each whole number counted", sigmaOut(eq, node));
   if (node.kind === "fn" && node.k.kind === "list") {
@@ -712,6 +714,54 @@ function nodeTidies(eq, node) {
   for (const o of calcMoves(eq, node)) out.push(o);
   for (const o of matrixMoves(eq, node)) out.push(o);
   return out;
+}
+
+/* ── Factor the fraction ─────────────────────────────────────────────────────
+   Every bracket and side of the top and bottom of a fraction, one step at a
+   time: a common factor comes out first (3x² − 12 is 3(x² − 4)), then a
+   quadratic is split into its two brackets (x² − 4 is (x − 2)(x + 2)). Once
+   the same bracket stands on the top and the bottom it cancels. */
+export function factorFraction(eq, node) {
+  if (node.kind !== "frac") return { error: "That is not a fraction." };
+  const sums = [];
+  for (const part of [node.a, node.b]) A.walk(part, (n) => { if (n.kind === "sum") sums.push(n); });
+  for (const sum of sums) {
+    const ids = sum.kids.map((k) => k.id);
+    const common = factorPicked(eq, ids);
+    if (!common.error) return common;
+    // A bracket inside a product (the 3(x² − 4) a common factor just left) is a container too.
+    const loc = locate(eq, ids[0]) || { container: sum, terms: sum.kids, index: 0, term: sum.kids[0], topSide: null, other: null };
+    const whole = factorQuadratic(eq, loc, sum.kids.map((_, i) => i));
+    if (!whole.error) return whole;
+  }
+  return { error: "There is nothing left to factor on the top or the bottom." };
+}
+
+/** The same bracket standing on the top and the bottom of a fraction cancels:
+    3(x − 2)(x + 2)/((x − 2)(x + 1)) is 3(x + 2)/(x + 1). */
+export function cancelBrackets(eq, node) {
+  if (node.kind !== "frac") return { error: "That is not a fraction." };
+  const factors = (n) => (n.kind === "prod" ? n.kids.flatMap(factors) : [n]);   // 3·((x − 2)(x + 2)) is three factors
+  const face = (k) => plain({ ...k, paren: false });
+  const top = [...factors(node.a)], bottom = [...factors(node.b)];
+  const gone = [];
+  for (let i = top.length - 1; i >= 0; i--) {
+    // numbers are cancelled by their own move: it is the shared BRACKETS (and letters) that go here
+    if (A.exactValue(top[i])) continue;
+    const j = bottom.findIndex((b) => face(b) === face(top[i]));
+    if (j < 0) continue;
+    gone.push(face(top[i]));
+    top.splice(i, 1);
+    bottom.splice(j, 1);
+  }
+  if (!gone.length) return { error: "There is nothing the same on the top and the bottom." };
+  const build = (list) => (!list.length ? A.num(R.ONE) : list.length === 1 ? { ...list[0], paren: false } : A.prod(list));
+  const next = bottom.length ? A.frac(build(top), build(bottom)) : build(top);
+  const shared = gone.reverse().map((g) => `(${g})`).join("");
+  return {
+    eq: A.replace(eq, node.id, next), from: new Map(), mark: plain(next),
+    note: `${shared} is on the top and the bottom, so it cancels`,
+  };
 }
 
 /* ── Powers first ─────────────────────────────────────────────────────────────
@@ -2949,7 +2999,7 @@ export function multiOffers(eq, keys, { given = null } = {}) {
     with none of these left on any of its terms is as tidy as it goes. */
 export const TIDY = new Set(["combine", "workout", "cancel", "dropzero", "indices", "surd", "addfrac",
   "multiply", "trig", "pyth", "diff", "integrate", "limit", "base10",
-  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse", "factorial", "choose", "sigma", "mean", "sortlist", "expandletter", "resolvepowers"]);
+  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse", "factorial", "choose", "sigma", "mean", "sortlist", "expandletter", "resolvepowers", "cancelbracket"]);
 
 /** Every move on offer for a set of picked glyphs — what each one means, what
     its term can have done to it, and what they mean together — or, with

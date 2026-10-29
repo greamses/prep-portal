@@ -26,8 +26,25 @@ import { plain } from "./layout.js";
    changing the shape of it, or the tidying gets carried along inside the new
    shape — x/2 = 4 − 1 multiplied up reads x = 2(4 − 1). Shoving a term across
    the equals sign is the move most likely to undo itself, so it goes last. */
-const RANK = { substitute: 0, resolvepowers: 0, factorial: 1, choose: 1, expandletter: 1, sigma: 1, mean: 1, sortlist: 1, matadd: 1, matmul: 1, matscale: 1, matpow: 1, det: 1, transpose: 1, inverse: 1, workout: 1, trig: 1, multiply: 1, diff: 1, integrate: 1, limit: 1, dropzero: 2, pyth: 2, combine: 3, cancel: 4, invert: 5, degrees: 5, usub: 7, parts: 8, times: 5, expand: 6, flip: 7, swap: 8, across: 9, divide: 10 };
+const RANK = { cancelbracket: 4, substitute: 0, resolvepowers: 0, factorial: 1, choose: 1, expandletter: 1, sigma: 1, mean: 1, sortlist: 1, matadd: 1, matmul: 1, matscale: 1, matpow: 1, det: 1, transpose: 1, inverse: 1, workout: 1, trig: 1, multiply: 1, diff: 1, integrate: 1, limit: 1, dropzero: 2, pyth: 2, combine: 3, cancel: 4, invert: 5, degrees: 5, usub: 7, parts: 8, times: 5, expand: 6, flip: 7, swap: 8, across: 9, divide: 10 };
 const LAST = 99;
+
+/* Factoring the fractions is the student's to switch on: with it off the
+   working never reaches for it; with it on every fraction has its top and
+   bottom factored (a common factor, then brackets) and what is the same on both
+   is cancelled, before anything else is tidied. */
+let AUTO_FACTOR = false;
+/** A fraction whose top or bottom is already a product of brackets: factored, and to be left so. */
+const hasFactoredFraction = (eq) => {
+  let hit = false;
+  A.walk(eq, (n) => {
+    if (n.kind !== "frac") return;
+    for (const part of [n.a, n.b]) if (part.kind === "prod" && part.kids.filter((k) => k.kind === "sum").length >= 1) hit = true;
+  });
+  return hit;
+};
+export const setAutoFactor = (on) => { AUTO_FACTOR = !!on; };
+export const autoFactor = () => AUTO_FACTOR;
 
 const CALC = new Set(["deriv", "int", "lim"]);
 const CALC_OK = new Set(["substitute", "workout", "multiply", "combine", "dropzero", "expand", "split", "cancel",
@@ -79,9 +96,19 @@ function isLowest(n) {
  * itself is both the honest definition and a self-maintaining one: a move added
  * later automatically stops counting a line as tidy while it still applies.
  */
+/** Is this offer one the working may take, given the factoring switch? */
+function allowed(offer, eq, keepFactored) {
+  if (offer.key === "factorfrac" && !AUTO_FACTOR) return false;
+  // factored stays factored: no opening the brackets again, no completing a square
+  if (keepFactored && (offer.key === "expand" || offer.key === "square" || (offer.key === "multiply" && offer.label === "Multiply it out"))) return false;
+  if (AUTO_FACTOR && offer.key === "square" && eq.kind === "expr") return false;
+  return true;
+}
+
 export function isSolved(eq, { given = null } = {}) {
   if (eq.kind === "expr") {
-    return !A.allTerms(eq).some((t) => offers(eq, t.id, { given }).length > 0);
+    const keep = AUTO_FACTOR && hasFactoredFraction(eq);
+    return !A.allTerms(eq).some((t) => offers(eq, t.id, { given }).some((o) => allowed(o, eq, keep)));
   }
   if (hasSubstitutions(eq, given)) return false;
   /* Finished means a letter on its own on the left that does not appear on the
@@ -182,9 +209,14 @@ export function solve(eq, { maxSteps = 24, given = null } = {}) {
 
     // Exactly what the student would be shown on every term, pooled.
     const choices = [];
+    const keepFactored = AUTO_FACTOR && hasFactoredFraction(eq);
     for (const term of A.allTerms(eq)) {
       for (const offer of bestOffers(eq, term.id, { given })) {
-        choices.push({ offer, rank: RANK[offer.key] ?? LAST });
+        if (!allowed(offer, eq, keepFactored)) continue;
+        let rank = RANK[offer.key] ?? LAST;
+        if (AUTO_FACTOR && offer.key === "factorfrac") rank = 0;
+        if (AUTO_FACTOR && (offer.key === "cancel" || offer.key === "cancelbracket")) rank = -1;
+        choices.push({ offer, rank });
       }
     }
     choices.sort((a, b) => a.rank - b.rank);

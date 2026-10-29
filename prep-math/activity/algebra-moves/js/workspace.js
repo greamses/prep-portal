@@ -26,7 +26,7 @@ import { createCard } from "./card.js";
 import { createMenu } from "./menu.js";
 import { createKeypad } from "./keypad.js";
 import { createFormulaPicker } from "./formula-picker.js";
-import { solve, bestOffers } from "./solve.js";
+import { solve, bestOffers, setAutoFactor } from "./solve.js";
 import { applyToBoth, everyOffer, asNumbers, flattenSums } from "./ops.js";
 import { ruleFits } from "./rules.js";
 import { noteFace, noteWriter, newNote, loadNotes, shrink } from "./notes.js";
@@ -791,6 +791,24 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
   $("#am-add").addEventListener("click", () => openDrawer());
   $("#am-golive")?.addEventListener("click", () => liveNow().host());
   // · or × between factors: a choice kept on this machine, applied to every line.
+  // Factor fractions automatically — off until it is switched on; kept on this machine.
+  const factorBtn = $("#am-autofactor");
+  if (factorBtn) {
+    let on = false;
+    try { on = localStorage.getItem("am-autofactor") === "1"; } catch { /* storage off */ }
+    const showFactor = () => {
+      setAutoFactor(on);
+      factorBtn.setAttribute("aria-pressed", String(on));
+      factorBtn.dataset.tip = `Factor fractions automatically: ${on ? "on" : "off"}`;
+    };
+    showFactor();
+    factorBtn.addEventListener("click", () => {
+      on = !on;
+      try { localStorage.setItem("am-autofactor", on ? "1" : "0"); } catch { /* not kept */ }
+      showFactor();
+      say(on ? "Fractions are factored for you: top and bottom, then what matches cancels." : "Fractions are left as they are until you factor them.", "ok");
+    });
+  }
   const timesBtn = $("#am-times");
   const showTimes = () => {
     const sign = timesSign();
