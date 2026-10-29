@@ -2206,6 +2206,172 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Language: reading, words and speech",
+    items: [
+      {
+        id: "flesch-ease", name: "Flesch reading ease", eq: "R = 206.835 - 1.015(W/S) - 84.6(Y/W)", find: "R",
+        letters: { R: "the reading ease score (higher is easier)", W: "the number of words", S: "the number of sentences", Y: "the number of syllables" },
+        example: { W: "100", S: "5", Y: "150" },
+      },
+      {
+        id: "flesch-kincaid", name: "Flesch-Kincaid grade level", eq: "G = 0.39(W/S) + 11.8(Y/W) - 15.59", find: "G",
+        letters: { G: "the school grade needed to read it", W: "the number of words", S: "the number of sentences", Y: "the number of syllables" },
+        example: { W: "100", S: "5", Y: "150" },
+      },
+      {
+        id: "gunning-fog", name: "Gunning fog index", eq: "F = 0.4((W/S) + 100(C/W))", find: "F",
+        letters: { F: "the school grade needed to read it", W: "the number of words", S: "the number of sentences", C: "the number of long words (three syllables or more)" },
+        example: { W: "100", S: "5", C: "10" },
+      },
+      {
+        id: "ari", name: "Automated readability index", eq: "A = 4.71(C/W) + 0.5(W/S) - 21.43", find: "A",
+        letters: { A: "the school grade needed to read it", C: "the number of letters", W: "the number of words", S: "the number of sentences" },
+        example: { C: "450", W: "100", S: "5" },
+      },
+      {
+        id: "words-per-sentence", name: "Average sentence length", eq: "m = W/S", find: "m",
+        letters: { m: "the words in an average sentence", W: "the number of words", S: "the number of sentences" },
+        example: { W: "240", S: "15" },
+      },
+      {
+        id: "mean-word-length", name: "Average word length", eq: "m = L/W", find: "m",
+        letters: { m: "the letters in an average word", L: "the number of letters", W: "the number of words" },
+        example: { L: "450", W: "100" },
+      },
+      {
+        id: "type-token", name: "Type-token ratio", eq: "R = T/N", find: "R",
+        letters: { R: "the type-token ratio", T: "the number of different words", N: "the number of words in all" },
+        example: { T: "60", N: "150" },
+        note: "how varied the vocabulary is",
+      },
+      {
+        id: "lexical-density", name: "Lexical density", eq: "D = 100c/N", find: "D",
+        letters: { D: "the lexical density, as a percentage", c: "the number of content words", N: "the number of words in all" },
+        example: { c: "45", N: "100" },
+        note: "nouns, verbs, adjectives and adverbs",
+      },
+      {
+        id: "reading-time", name: "Time to read a text", eq: "t = W/r", find: "t",
+        letters: { t: "the time in minutes", W: "the number of words", r: "the words read each minute" },
+        example: { W: "1500", r: "250" },
+      },
+      {
+        id: "words-from-pages", name: "Words in a document", eq: "W = pw", find: "W",
+        letters: { W: "the number of words", p: "the number of pages", w: "the words on a page" },
+        example: { p: "12", w: "300" },
+      },
+      {
+        id: "speech-rate", name: "Speech rate", eq: "r = S/t", find: "r",
+        letters: { r: "the syllables each second", S: "the number of syllables", t: "the time in seconds" },
+        example: { S: "90", t: "20" },
+      },
+      {
+        id: "words-per-minute", name: "Words a minute", eq: "w = 60W/t", find: "w",
+        letters: { w: "the words each minute", W: "the number of words", t: "the time in seconds" },
+        example: { W: "150", t: "50" },
+      },
+      {
+        id: "mlu", name: "Mean length of utterance", eq: "M = m/u", find: "M",
+        letters: { M: "the mean length of utterance", m: "the number of morphemes", u: "the number of utterances" },
+        example: { m: "180", u: "60" },
+        note: "a measure of a child's language growth",
+      },
+      {
+        id: "pitch-interval", name: "Musical interval between two pitches", eq: "s = 12log_2(f/g)", find: "s",
+        letters: { s: "the interval in semitones", f: "the higher frequency", g: "the lower frequency" },
+        example: { f: "440", g: "220" },
+      },
+      {
+        id: "zipf", name: "Zipf's law", eq: "f = k/r", find: "f",
+        letters: { f: "how often the word appears", k: "a constant for the text", r: "the word's rank, most common first" },
+        example: { k: "6000", r: "12" },
+      },
+      {
+        id: "heaps", name: "Heaps' law", eq: "V = Kn^b", find: "V",
+        letters: { V: "the number of different words", K: "a constant for the text", n: "the number of words read", b: "the growth power, between 0 and 1" },
+        example: { K: "4", n: "10000", b: "1/2" },
+      },
+      {
+        id: "string-count", name: "Possible strings from an alphabet", eq: "W = k^n", find: "W",
+        letters: { W: "the number of strings", k: "the letters in the alphabet", n: "the length of the string" },
+        example: { k: "26", n: "3" },
+      },
+      {
+        id: "glottochronology", name: "Time since two languages split", eq: "t = log_2(c)/(2log_2(r))", find: "t",
+        letters: { t: "the time since the split, in thousand-year units", c: "the share of the word list that is still shared", r: "the share kept by one language in one unit of time" },
+        example: { c: "1/4", r: "1/2" },
+        note: "the more shared words, the more recent the split",
+      },
+    ],
+  },
+  {
+    group: "Linguistics: information and language technology",
+    items: [
+      {
+        id: "information", name: "Information in an event", eq: "I = -log_2(p)", find: "I",
+        letters: { I: "the information, in bits", p: "the probability of the event" },
+        example: { p: "1/8" },
+        note: "rarer events tell you more",
+      },
+      {
+        id: "perplexity", name: "Perplexity of a language model", eq: "P = 2^H", find: "P",
+        letters: { P: "the perplexity", H: "the entropy, in bits for each word" },
+        example: { H: "5" },
+        note: "how many equally likely words the model is torn between",
+      },
+      {
+        id: "bigram", name: "Bigram probability", eq: "P = c/n", find: "P",
+        letters: { P: "the chance the second word follows the first", c: "how often the pair appears", n: "how often the first word appears" },
+        example: { c: "12", n: "60" },
+      },
+      {
+        id: "add-one", name: "Add-one smoothing", eq: "P = (c + 1)/(n + V)", find: "P",
+        letters: { P: "the smoothed probability", c: "how often the pair appears", n: "how often the first word appears", V: "the size of the vocabulary" },
+        example: { c: "3", n: "20", V: "80" },
+      },
+      {
+        id: "tf-idf", name: "TF-IDF weight of a word", eq: "w = tlog_10(N/n)", find: "w",
+        letters: { w: "the weight of the word in a document", t: "how often it appears in the document", N: "the number of documents", n: "the number of documents that contain it" },
+        example: { t: "3", N: "1000", n: "10" },
+      },
+      {
+        id: "precision", name: "Precision", eq: "P = a/(a + b)", find: "P",
+        letters: { P: "the precision", a: "the right answers it gave", b: "the wrong answers it gave" },
+        example: { a: "40", b: "10" },
+      },
+      {
+        id: "recall", name: "Recall", eq: "R = a/(a + m)", find: "R",
+        letters: { R: "the recall", a: "the right answers it gave", m: "the right answers it missed" },
+        example: { a: "40", m: "20" },
+      },
+      {
+        id: "f-score", name: "F-score", eq: "F = 2PR/(P + R)", find: "F",
+        letters: { F: "the F-score", P: "the precision", R: "the recall" },
+        example: { P: "4/5", R: "2/3" },
+      },
+      {
+        id: "accuracy", name: "Accuracy of a classifier", eq: "A = 100c/N", find: "A",
+        letters: { A: "the accuracy, as a percentage", c: "the number it got right", N: "the number it was tested on" },
+        example: { c: "180", N: "200" },
+      },
+      {
+        id: "wer", name: "Word error rate", eq: "W = 100(S + D + I)/N", find: "W",
+        letters: { W: "the word error rate, as a percentage", S: "the words wrongly swapped", D: "the words left out", I: "the words wrongly added", N: "the words in the correct text" },
+        example: { S: "6", D: "3", I: "1", N: "200" },
+      },
+      {
+        id: "cosine", name: "Cosine similarity of two texts", eq: "c = D/(AB)", find: "c",
+        letters: { c: "the cosine similarity", D: "the dot product of the two word-count lists", A: "the length of the first list", B: "the length of the second list" },
+        example: { D: "24", A: "5", B: "8" },
+      },
+      {
+        id: "kappa", name: "Agreement between two annotators (kappa)", eq: "K = (a - b)/(1 - b)", find: "K",
+        letters: { K: "kappa", a: "the share of items they agreed on", b: "the share they would agree on by chance" },
+        example: { a: "9/10", b: "1/2" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
