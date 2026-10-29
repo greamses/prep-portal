@@ -962,6 +962,321 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Physics: motion, force and energy",
+    items: [
+      {
+        id: "suvat-v", name: "Speed from the distance covered", eq: "v^2 = u^2 + 2as", find: "a",
+        letters: { v: "the final speed", u: "the starting speed", a: "the acceleration", s: "the distance" },
+        example: { v: "13", u: "5", s: "9" },
+        note: "no time needed",
+      },
+      {
+        id: "suvat-s", name: "Distance with a steady acceleration", eq: "s = ut + (1/2)at^2", find: "s",
+        letters: { s: "the distance", u: "the starting speed", t: "the time", a: "the acceleration" },
+        example: { u: "4", t: "3", a: "2" },
+      },
+      {
+        id: "suvat-avg", name: "Distance from the average speed", eq: "s = (u + v)t/2", find: "s",
+        letters: { s: "the distance", u: "the starting speed", v: "the final speed", t: "the time" },
+        example: { u: "4", v: "10", t: "5" },
+      },
+      {
+        id: "momentum", name: "Momentum", eq: "p = mv", find: "p",
+        letters: { p: "the momentum", m: "the mass", v: "the speed" },
+        example: { m: "6", v: "4" },
+      },
+      {
+        id: "impulse", name: "Impulse and change of momentum", eq: "Ft = m(v - u)", find: "F",
+        letters: { F: "the force", t: "the time it acts", m: "the mass", v: "the final speed", u: "the starting speed" },
+        example: { t: "2", m: "5", v: "12", u: "2" },
+      },
+      {
+        id: "weight", name: "Weight", eq: "W = mg", find: "W",
+        letters: { W: "the weight", m: "the mass", g: "the pull of gravity per kilogram" },
+        example: { m: "8", g: "10" },
+        note: "g is about 10 N per kg",
+      },
+      {
+        id: "pressure", name: "Pressure", eq: "P = F/A", find: "P",
+        letters: { P: "the pressure", F: "the force", A: "the area it presses on" },
+        example: { F: "200", A: "5" },
+      },
+      {
+        id: "liquid-pressure", name: "Pressure in a liquid", eq: "P = hdg", find: "P",
+        letters: { P: "the pressure", h: "the depth", d: "the density of the liquid", g: "the pull of gravity per kilogram" },
+        example: { h: "3", d: "1000", g: "10" },
+      },
+      {
+        id: "moments", name: "Moments in balance", eq: "Fd = fx", find: "F",
+        letters: { F: "the first force", d: "its distance from the pivot", f: "the second force", x: "its distance from the pivot" },
+        example: { d: "4", f: "10", x: "6" },
+        note: "clockwise moment = anticlockwise moment",
+      },
+      {
+        id: "hooke", name: "Hooke's law for a spring", eq: "F = kx", find: "F",
+        letters: { F: "the force", k: "the spring constant", x: "the stretch" },
+        example: { k: "50", x: "0.4" },
+      },
+      {
+        id: "power", name: "Power", eq: "P = W/t", find: "P",
+        letters: { P: "the power", W: "the work done", t: "the time" },
+        example: { W: "600", t: "20" },
+      },
+      {
+        id: "efficiency", name: "Efficiency", eq: "E = 100u/T", find: "E",
+        letters: { E: "the efficiency, as a percentage", u: "the useful work out", T: "the total work put in" },
+        example: { u: "60", T: "80" },
+      },
+      {
+        id: "kinetic", name: "Kinetic energy", eq: "K = (1/2)mv^2", find: "K",
+        letters: { K: "the kinetic energy", m: "the mass", v: "the speed" },
+        example: { m: "4", v: "5" },
+      },
+      {
+        id: "potential", name: "Potential energy", eq: "P = mgh", find: "P",
+        letters: { P: "the potential energy", m: "the mass", g: "the pull of gravity per kilogram", h: "the height" },
+        example: { m: "5", g: "10", h: "3" },
+      },
+      {
+        id: "centripetal", name: "Force towards the centre of a circle", eq: "F = mv^2/r", find: "F",
+        letters: { F: "the force", m: "the mass", v: "the speed", r: "the radius of the circle" },
+        example: { m: "2", v: "6", r: "4" },
+      },
+      {
+        id: "gravitation", name: "Gravitation between two masses", eq: "F = Gmn/r^2", find: "F",
+        letters: { F: "the force", G: "the gravitational constant", m: "one mass", n: "the other mass", r: "the distance between them" },
+        example: { G: "2", m: "3", n: "4", r: "2" },
+      },
+      {
+        id: "mech-advantage", name: "Mechanical advantage", eq: "M = L/E", find: "M",
+        letters: { M: "the mechanical advantage", L: "the load", E: "the effort" },
+        example: { L: "400", E: "80" },
+      },
+      {
+        id: "velocity-ratio", name: "Velocity ratio", eq: "V = D/d", find: "V",
+        letters: { V: "the velocity ratio", D: "the distance the effort moves", d: "the distance the load moves" },
+        example: { D: "12", d: "3" },
+      },
+    ],
+  },
+  {
+    group: "Physics: waves, light and electricity",
+    items: [
+      {
+        id: "wave-speed", name: "Speed of a wave", eq: "v = fw", find: "v",
+        letters: { v: "the wave speed", f: "the frequency", w: "the wavelength" },
+        example: { f: "50", w: "4" },
+      },
+      {
+        id: "frequency", name: "Frequency and period", eq: "f = 1/T", find: "f",
+        letters: { f: "the frequency", T: "the time for one wave" },
+        example: { T: "0.02" },
+      },
+      {
+        id: "refraction", name: "Refractive index (Snell's law)", eq: "n = sin(a°)/sin(b°)", find: "n",
+        letters: { n: "the refractive index", a: "the angle in the air, in degrees", b: "the angle in the material, in degrees" },
+        example: { a: "30", b: "30" },
+      },
+      {
+        id: "lens", name: "The lens formula", eq: "1/F = 1/u + 1/v", find: "F",
+        letters: { F: "the focal length", u: "the distance of the object", v: "the distance of the image" },
+        example: { u: "30", v: "60" },
+      },
+      {
+        id: "magnification", name: "Magnification", eq: "m = v/u", find: "m",
+        letters: { m: "the magnification", v: "the distance of the image", u: "the distance of the object" },
+        example: { v: "60", u: "20" },
+      },
+      {
+        id: "power-electric", name: "Electrical power", eq: "P = IV", find: "P",
+        letters: { P: "the power", I: "the current", V: "the voltage" },
+        example: { I: "5", V: "230" },
+      },
+      {
+        id: "charge", name: "Charge", eq: "Q = It", find: "Q",
+        letters: { Q: "the charge", I: "the current", t: "the time" },
+        example: { I: "3", t: "20" },
+      },
+      {
+        id: "electric-energy", name: "Electrical energy", eq: "E = IVt", find: "E",
+        letters: { E: "the energy", I: "the current", V: "the voltage", t: "the time" },
+        example: { I: "2", V: "12", t: "30" },
+      },
+      {
+        id: "series", name: "Resistors in series", eq: "R = a + b", find: "R",
+        letters: { R: "the total resistance", a: "the first resistor", b: "the second resistor" },
+        example: { a: "4", b: "6" },
+      },
+      {
+        id: "parallel", name: "Resistors in parallel", eq: "1/R = 1/a + 1/b", find: "R",
+        letters: { R: "the total resistance", a: "the first resistor", b: "the second resistor" },
+        example: { a: "6", b: "3" },
+      },
+      {
+        id: "resistivity", name: "Resistance of a wire", eq: "R = dL/A", find: "R",
+        letters: { R: "the resistance", d: "the resistivity of the material", L: "the length", A: "the cross-section area" },
+        example: { d: "2", L: "10", A: "4" },
+      },
+      {
+        id: "transformer", name: "A transformer", eq: "V/v = N/n", find: "V",
+        letters: { V: "the voltage across the primary coil", v: "the voltage across the secondary coil", N: "turns on the primary coil", n: "turns on the secondary coil" },
+        example: { v: "12", N: "2000", n: "100" },
+      },
+    ],
+  },
+  {
+    group: "Physics: heat, gases and the nucleus",
+    items: [
+      {
+        id: "heat-capacity", name: "Heat to change a temperature", eq: "Q = mct", find: "Q",
+        letters: { Q: "the heat energy", m: "the mass", c: "the specific heat capacity", t: "the temperature change" },
+        example: { m: "2", c: "4200", t: "10" },
+      },
+      {
+        id: "latent-heat", name: "Heat to change state", eq: "Q = ml", find: "Q",
+        letters: { Q: "the heat energy", m: "the mass", l: "the specific latent heat" },
+        example: { m: "0.5", l: "336000" },
+      },
+      {
+        id: "expansion", name: "Expansion of a solid", eq: "x = Lat", find: "x",
+        letters: { x: "the increase in length", L: "the original length", a: "the expansion coefficient", t: "the rise in temperature" },
+        example: { L: "2", a: "0.00002", t: "50" },
+      },
+      {
+        id: "boyle", name: "Boyle's law", eq: "PV = pv", find: "P",
+        letters: { P: "the first pressure", V: "the first volume", p: "the second pressure", v: "the second volume" },
+        example: { V: "6", p: "3", v: "10" },
+        note: "the temperature stays the same",
+      },
+      {
+        id: "charles", name: "Charles's law", eq: "V/T = v/t", find: "V",
+        letters: { V: "the first volume", T: "the first temperature, in kelvin", v: "the second volume", t: "the second temperature, in kelvin" },
+        example: { T: "300", v: "8", t: "400" },
+        note: "the pressure stays the same",
+      },
+      {
+        id: "pressure-law", name: "The pressure law", eq: "P/T = p/t", find: "P",
+        letters: { P: "the first pressure", T: "the first temperature, in kelvin", p: "the second pressure", t: "the second temperature, in kelvin" },
+        example: { T: "300", p: "3", t: "450" },
+        note: "the volume stays the same",
+      },
+      {
+        id: "gas-law", name: "The general gas law", eq: "PV/T = pv/t", find: "P",
+        letters: { P: "the first pressure", V: "the first volume", T: "the first temperature, in kelvin", p: "the second pressure", v: "the second volume", t: "the second temperature, in kelvin" },
+        example: { V: "4", T: "300", p: "2", v: "8", t: "600" },
+      },
+      {
+        id: "half-life", name: "What is left after some half-lives", eq: "N = A(1/2)^n", find: "N",
+        letters: { N: "the amount left", A: "the amount to begin with", n: "the number of half-lives" },
+        example: { A: "80", n: "3" },
+      },
+      {
+        id: "half-life-time", name: "What is left after a time", eq: "N = A(1/2)^(t/h)", find: "N",
+        letters: { N: "the amount left", A: "the amount to begin with", t: "the time that has passed", h: "the half-life" },
+        example: { A: "80", t: "15", h: "5" },
+      },
+    ],
+  },
+  {
+    group: "Chemistry: moles and solutions",
+    items: [
+      {
+        id: "moles-mass", name: "Moles from a mass", eq: "n = m/M", find: "n",
+        letters: { n: "the number of moles", m: "the mass", M: "the molar mass" },
+        example: { m: "36", M: "18" },
+      },
+      {
+        id: "moles-gas", name: "Moles of a gas at room conditions", eq: "n = V/24", find: "n",
+        letters: { n: "the number of moles", V: "the volume, in dm³" },
+        example: { V: "48" },
+        note: "one mole of gas fills 24 dm³ at room temperature and pressure",
+      },
+      {
+        id: "moles-stp", name: "Moles of a gas at s.t.p.", eq: "n = V/22.4", find: "n",
+        letters: { n: "the number of moles", V: "the volume, in dm³" },
+        example: { V: "44.8" },
+        note: "one mole of gas fills 22.4 dm³ at standard temperature and pressure",
+      },
+      {
+        id: "moles-solution", name: "Moles in a solution", eq: "n = CV", find: "n",
+        letters: { n: "the number of moles", C: "the concentration, in mol/dm³", V: "the volume, in dm³" },
+        example: { C: "0.5", V: "2" },
+      },
+      {
+        id: "concentration-mass", name: "Concentration in grams per dm³", eq: "C = m/V", find: "C",
+        letters: { C: "the concentration, in g/dm³", m: "the mass dissolved", V: "the volume, in dm³" },
+        example: { m: "20", V: "0.5" },
+      },
+      {
+        id: "dilution", name: "Dilution", eq: "CV = cv", find: "C",
+        letters: { C: "the first concentration", V: "the first volume", c: "the second concentration", v: "the second volume" },
+        example: { V: "50", c: "0.2", v: "250" },
+        note: "the moles stay the same",
+      },
+      {
+        id: "avogadro", name: "Particles in some moles", eq: "N = nL", find: "N",
+        letters: { N: "the number of particles", n: "the number of moles", L: "Avogadro's constant" },
+        example: { n: "2", L: "6" },
+        note: "L is about 6 × 10²³ per mole",
+      },
+      {
+        id: "percent-mass", name: "Percentage of an element in a compound", eq: "P = 100a/M", find: "P",
+        letters: { P: "the percentage by mass", a: "the mass of the element in one formula", M: "the molar mass of the compound" },
+        example: { a: "12", M: "44" },
+      },
+      {
+        id: "percent-yield", name: "Percentage yield", eq: "Y = 100a/t", find: "Y",
+        letters: { Y: "the percentage yield", a: "the mass actually made", t: "the mass that could be made" },
+        example: { a: "18", t: "24" },
+      },
+      {
+        id: "ph", name: "pH", eq: "p = -log_10(H)", find: "p",
+        letters: { p: "the pH", H: "the hydrogen ion concentration, in mol/dm³" },
+        example: { H: "1/1000" },
+      },
+      {
+        id: "ph-conc", name: "Hydrogen ion concentration from pH", eq: "H = 10^(-p)", find: "H",
+        letters: { H: "the hydrogen ion concentration, in mol/dm³", p: "the pH" },
+        example: { p: "3" },
+      },
+      {
+        id: "faraday", name: "Mass deposited in electrolysis", eq: "m = QM/(zF)", find: "m",
+        letters: { m: "the mass deposited", Q: "the charge passed", M: "the molar mass", z: "the charge on the ion", F: "Faraday's constant" },
+        example: { Q: "9600", M: "64", z: "2", F: "96000" },
+      },
+    ],
+  },
+  {
+    group: "Chemistry: gases and energy",
+    items: [
+      {
+        id: "ideal-gas", name: "The ideal gas law", eq: "PV = nRT", find: "P",
+        letters: { P: "the pressure", V: "the volume", n: "the number of moles", R: "the gas constant", T: "the temperature, in kelvin" },
+        example: { V: "4", n: "2", R: "8", T: "300" },
+      },
+      {
+        id: "enthalpy", name: "Heat given out or taken in", eq: "Q = mct", find: "Q",
+        letters: { Q: "the heat energy", m: "the mass of the water", c: "the specific heat capacity", t: "the temperature change" },
+        example: { m: "100", c: "4.2", t: "5" },
+      },
+      {
+        id: "enthalpy-mole", name: "Enthalpy change per mole", eq: "H = Q/n", find: "H",
+        letters: { H: "the enthalpy change per mole", Q: "the heat energy", n: "the number of moles" },
+        example: { Q: "2400", n: "0.5" },
+      },
+      {
+        id: "rate", name: "Rate of a reaction", eq: "r = x/t", find: "r",
+        letters: { r: "the rate", x: "the amount made or used up", t: "the time taken" },
+        example: { x: "60", t: "20" },
+      },
+      {
+        id: "empirical", name: "Moles of each element for the empirical formula", eq: "n = m/A", find: "n",
+        letters: { n: "the moles of the element", m: "its mass in the sample", A: "its relative atomic mass" },
+        example: { m: "24", A: "12" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
