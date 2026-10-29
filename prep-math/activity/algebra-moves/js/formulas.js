@@ -590,6 +590,45 @@ export const GROUPS = [
         example: { S: "1500", C: "1150" },
       },
       {
+        id: "loss", name: "Loss", eq: "L = C - S", find: "L",
+        letters: { L: "the loss", C: "the cost price", S: "the selling price" },
+        example: { C: "1500", S: "1150" },
+      },
+      {
+        id: "pct-profit", name: "Percentage profit", eq: "P = 100(S - C)/C", find: "P",
+        letters: { P: "the percentage profit", S: "the selling price", C: "the cost price" },
+        example: { S: "1380", C: "1200" },
+        note: "the profit as a percentage of the COST price",
+      },
+      {
+        id: "pct-loss", name: "Percentage loss", eq: "L = 100(C - S)/C", find: "L",
+        letters: { L: "the percentage loss", C: "the cost price", S: "the selling price" },
+        example: { C: "1200", S: "1020" },
+        note: "the loss as a percentage of the COST price",
+      },
+      {
+        id: "sell-profit", name: "Selling price for a given percentage profit", eq: "S = C(100 + P)/100", find: "S",
+        letters: { S: "the selling price", C: "the cost price", P: "the percentage profit" },
+        example: { C: "1200", P: "15" },
+      },
+      {
+        id: "sell-loss", name: "Selling price for a given percentage loss", eq: "S = C(100 - L)/100", find: "S",
+        letters: { S: "the selling price", C: "the cost price", L: "the percentage loss" },
+        example: { C: "1200", L: "15" },
+      },
+      {
+        id: "cost-from-profit", name: "Cost price from a percentage profit", eq: "C = 100S/(100 + P)", find: "C",
+        letters: { C: "the cost price", S: "the selling price", P: "the percentage profit" },
+        example: { S: "1380", P: "15" },
+        note: "the selling price is (100 + P)% of the cost price",
+      },
+      {
+        id: "cost-from-loss", name: "Cost price from a percentage loss", eq: "C = 100S/(100 - L)", find: "C",
+        letters: { C: "the cost price", S: "the selling price", L: "the percentage loss" },
+        example: { S: "1020", L: "15" },
+        note: "the selling price is (100 − L)% of the cost price",
+      },
+      {
         id: "total-cost", name: "Cost of several of a thing", eq: "T = np", find: "T",
         letters: { T: "the total cost", n: "how many", p: "the price of one" },
         example: { n: "12", p: "250" },
