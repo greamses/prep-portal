@@ -1413,6 +1413,185 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Finance: interest, loans and investing",
+    items: [
+      {
+        id: "annuity-future", name: "Saving the same amount each period: the total", eq: "F = 100P((1 + R/100)^n - 1)/R", find: "F",
+        letters: { F: "the total after n periods", P: "the amount saved each period", R: "the rate per period", n: "the number of periods" },
+        example: { P: "100", R: "100", n: "3" },
+        note: "each payment earns interest from the day it goes in",
+      },
+      {
+        id: "loan-payment", name: "Repaying a loan in equal payments", eq: "M = (PR/100)/(1 - (1 + R/100)^(-n))", find: "M",
+        letters: { M: "the payment each period", P: "the amount borrowed", R: "the rate per period", n: "the number of payments" },
+        example: { P: "1000", R: "100", n: "1" },
+      },
+      {
+        id: "rule-72", name: "The rule of 72: years to double", eq: "t = 72/R", find: "t",
+        letters: { t: "the years to double", R: "the rate per year" },
+        example: { R: "8" },
+        note: "a quick estimate, best for rates between 5 and 12",
+      },
+      {
+        id: "compound-often", name: "Compound interest added m times a year", eq: "A = P(1 + R/(100m))^(mn)", find: "A",
+        letters: { A: "the amount", P: "the money put in", R: "the rate per year", m: "how many times a year interest is added", n: "the number of years" },
+        example: { P: "100", R: "100", m: "2", n: "1" },
+      },
+      {
+        id: "effective-rate", name: "Effective annual rate", eq: "E = 100((1 + R/(100m))^m - 1)", find: "E",
+        letters: { E: "the effective annual rate", R: "the quoted rate per year", m: "how many times a year interest is added" },
+        example: { R: "100", m: "2" },
+        note: "what the quoted rate really pays over a year",
+      },
+      {
+        id: "inflation-value", name: "What money is worth after inflation", eq: "V = P/(1 + I/100)^n", find: "V",
+        letters: { V: "the value in today's money", P: "the amount in n years", I: "the inflation rate per year", n: "the number of years" },
+        example: { P: "1210", I: "10", n: "2" },
+      },
+      {
+        id: "real-rate", name: "Real interest rate", eq: "r = 100((1 + R/100)/(1 + I/100) - 1)", find: "r",
+        letters: { r: "the real rate", R: "the interest rate", I: "the inflation rate" },
+        example: { R: "21", I: "10" },
+      },
+      {
+        id: "perpetuity", name: "Value of a payment that goes on for ever", eq: "V = 100C/R", find: "V",
+        letters: { V: "the value now", C: "the payment each year", R: "the rate per year" },
+        example: { C: "50", R: "5" },
+      },
+      {
+        id: "roi", name: "Return on an investment", eq: "R = 100(G - C)/C", find: "R",
+        letters: { R: "the return, as a percentage", G: "what the investment is worth now", C: "what it cost" },
+        example: { G: "1380", C: "1200" },
+      },
+      {
+        id: "dividend-yield", name: "Dividend yield", eq: "Y = 100D/P", find: "Y",
+        letters: { Y: "the yield, as a percentage", D: "the dividend per share each year", P: "the price of a share" },
+        example: { D: "8", P: "200" },
+      },
+      {
+        id: "price-earnings", name: "Price-to-earnings ratio", eq: "r = P/s", find: "r",
+        letters: { r: "the price-to-earnings ratio", P: "the price of a share", s: "the earnings per share" },
+        example: { P: "240", s: "12" },
+      },
+      {
+        id: "current-ratio", name: "Current ratio", eq: "r = A/L", find: "r",
+        letters: { r: "the current ratio", A: "the current assets", L: "the current liabilities" },
+        example: { A: "900", L: "600" },
+      },
+      {
+        id: "net-pay", name: "Pay after tax", eq: "N = I(100 - T)/100", find: "N",
+        letters: { N: "the pay after tax", I: "the pay before tax", T: "the tax rate" },
+        example: { I: "50000", T: "20" },
+      },
+      {
+        id: "vat-add", name: "Price with a sales tax added", eq: "G = N(100 + V)/100", find: "G",
+        letters: { G: "the price with tax", N: "the price before tax", V: "the tax rate" },
+        example: { N: "2000", V: "10" },
+      },
+      {
+        id: "vat-remove", name: "Price before a sales tax", eq: "N = 100G/(100 + V)", find: "N",
+        letters: { N: "the price before tax", G: "the price with tax", V: "the tax rate" },
+        example: { G: "2200", V: "10" },
+      },
+      {
+        id: "commission", name: "Commission", eq: "C = RS/100", find: "C",
+        letters: { C: "the commission", R: "the commission rate", S: "the value of the sales" },
+        example: { R: "5", S: "3000" },
+      },
+      {
+        id: "profit-margin", name: "Profit margin on the selling price", eq: "M = 100(S - C)/S", find: "M",
+        letters: { M: "the margin, as a percentage", S: "the selling price", C: "the cost price" },
+        example: { S: "1500", C: "1200" },
+      },
+    ],
+  },
+  {
+    group: "Economics: costs, revenue and the economy",
+    items: [
+      {
+        id: "total-cost-fixed", name: "Total cost", eq: "T = F + vn", find: "T",
+        letters: { T: "the total cost", F: "the fixed costs", v: "the cost of making one more", n: "how many are made" },
+        example: { F: "6000", v: "20", n: "300" },
+      },
+      {
+        id: "average-cost", name: "Average cost", eq: "A = T/n", find: "A",
+        letters: { A: "the average cost of one", T: "the total cost", n: "how many are made" },
+        example: { T: "12000", n: "300" },
+      },
+      {
+        id: "revenue", name: "Total revenue", eq: "R = pq", find: "R",
+        letters: { R: "the total revenue", p: "the price of one", q: "how many are sold" },
+        example: { p: "50", q: "300" },
+      },
+      {
+        id: "econ-profit", name: "Profit from a business", eq: "P = n(p - v) - F", find: "P",
+        letters: { P: "the profit", n: "how many are sold", p: "the price of one", v: "the cost of making one", F: "the fixed costs" },
+        example: { n: "300", p: "50", v: "20", F: "6000" },
+      },
+      {
+        id: "break-even", name: "Break-even quantity", eq: "n = F/(p - v)", find: "n",
+        letters: { n: "how many must be sold to break even", F: "the fixed costs", p: "the price of one", v: "the cost of making one" },
+        example: { F: "6000", p: "50", v: "20" },
+      },
+      {
+        id: "marginal-cost", name: "Marginal cost", eq: "M = a/b", find: "M",
+        letters: { M: "the marginal cost", a: "the change in total cost", b: "the change in the number made" },
+        example: { a: "300", b: "10" },
+      },
+      {
+        id: "elasticity", name: "Price elasticity of demand", eq: "E = aP/(bQ)", find: "E",
+        letters: { E: "the elasticity of demand", a: "the change in the quantity demanded", P: "the price", b: "the change in the price", Q: "the quantity demanded" },
+        example: { a: "20", P: "50", b: "10", Q: "100" },
+        note: "how much demand reacts to a change in price",
+      },
+      {
+        id: "gdp-expenditure", name: "Gross domestic product by spending", eq: "Y = C + I + G + X - M", find: "Y",
+        letters: { Y: "the GDP", C: "household spending", I: "investment", G: "government spending", X: "exports", M: "imports" },
+        example: { C: "600", I: "200", G: "150", X: "80", M: "30" },
+      },
+      {
+        id: "gdp-per-person", name: "GDP per person", eq: "y = Y/n", find: "y",
+        letters: { y: "the GDP per person", Y: "the GDP", n: "the number of people" },
+        example: { Y: "1000000", n: "2500" },
+      },
+      {
+        id: "real-gdp", name: "Real GDP", eq: "R = 100N/D", find: "R",
+        letters: { R: "the real GDP", N: "the GDP at today's prices", D: "the price index (the base year is 100)" },
+        example: { N: "1200", D: "120" },
+      },
+      {
+        id: "multiplier", name: "The spending multiplier", eq: "k = 1/(1 - c)", find: "k",
+        letters: { k: "the multiplier", c: "the share of extra income that is spent" },
+        example: { c: "4/5" },
+      },
+      {
+        id: "unemployment", name: "Unemployment rate", eq: "u = 100U/L", find: "u",
+        letters: { u: "the unemployment rate, as a percentage", U: "the number unemployed", L: "the labour force" },
+        example: { U: "500", L: "10000" },
+      },
+      {
+        id: "cpi", name: "Consumer price index", eq: "I = 100C/B", find: "I",
+        letters: { I: "the price index", C: "the cost of a basket of goods now", B: "the cost of the same basket in the base year" },
+        example: { C: "330", B: "300" },
+      },
+      {
+        id: "terms-of-trade", name: "Terms of trade", eq: "T = 100X/M", find: "T",
+        letters: { T: "the terms of trade", X: "the export price index", M: "the import price index" },
+        example: { X: "120", M: "80" },
+      },
+      {
+        id: "exchange", name: "Changing money into another currency", eq: "A = nr", find: "A",
+        letters: { A: "the amount in the other currency", n: "the amount you change", r: "the rate: how much of the other currency for one" },
+        example: { n: "250", r: "1500" },
+      },
+      {
+        id: "quantity-theory", name: "The quantity theory of money", eq: "MV = PQ", find: "P",
+        letters: { M: "the money supply", V: "how fast money changes hands", P: "the price level", Q: "the quantity of goods and services" },
+        example: { M: "500", V: "4", Q: "100" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
