@@ -29,6 +29,7 @@ import { slotEdit, slotTypingForInput, cellMove, matrixTemplate } from "/utils/c
 import { UI } from "/utils/components/ui-icons.js";
 import { mathNode, mathReady, whenMathDrawn } from "/utils/components/sticky-math.js";
 import * as A from "./ast.js";
+import { texToLinear, looksLikeTeX, balanced } from "./tex.js";
 
 /* label, what it types, and how far back into it the caret goes.
    `wide` marks the keys that earn a double cell.
@@ -454,7 +455,22 @@ export function createKeypad(host, { onSubmit } = {}) {
   }
 
   /* -- The picture above the keys ------------------------------------------ */
+  /* TeX pasted or typed on the line — \frac{a}{b}, x^{2} — is turned into the
+     line the page reads, once a piece of it is finished (every { shut, not
+     stopped on half a command). `force` does it regardless, on Enter. */
+  function fromTeX(force = false) {
+    const v = line.value;
+    if (!looksLikeTeX(v)) return;
+    if (!force && (!balanced(v) || /\\[A-Za-z]*$/.test(v))) return;
+    const lin = texToLinear(v);
+    if (lin && lin !== v) {
+      line.value = lin;
+      line.setSelectionRange(lin.length, lin.length);
+    }
+  }
+
   function draw() {
+    fromTeX();
     // A mode may read what is typed its own way first: "+ 3" after an
     // equation's name means E_1 + 3.
     const src = mode?.translate ? mode.translate(line.value) : line.value;
@@ -671,6 +687,7 @@ export function createKeypad(host, { onSubmit } = {}) {
   }
 
   function submit() {
+    fromTeX(true);
     if (expandSize()) return;
     const typed = (mode?.translate ? mode.translate(line.value) : line.value).trim();
     // A bracket left open is shut for you, as it is in the drawing.

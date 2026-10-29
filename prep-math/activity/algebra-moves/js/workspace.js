@@ -32,6 +32,7 @@ import { ruleFits } from "./rules.js";
 import { noteFace, noteWriter, newNote, loadNotes, shrink } from "./notes.js";
 import { createLive } from "./live.js";
 import { createWires } from "./wires.js";
+import { texToLinear, looksLikeTeX } from "./tex.js";
 import { systemMatrix } from "./system-matrix.js";
 import { readValue } from "./formulas.js";
 import * as A from "./ast.js";
@@ -304,6 +305,66 @@ export async function pinQuestion({ text, svg }) {
   say("PrepBot's question is pinned on the canvas — drag it where it helps, tap it to write on it.", "ok");
 }
 
+/* ── Equations out of a note ─────────────────────────────────────────────────
+   A note can carry an equation as set mathematics or as plain words
+   ("solve 3x + 5 = 20 for x"). This finds each one — an equation run as it was
+   written, and in the words the longest stretch that reads as maths — and puts
+   every one on a card of its own. */
+const MATHY = /[=+\-*/^]/;
+const MATH_WORDS = new Set([...A.FUNCS, "sqrt", "nCr", "nPr", "lim", "pi", "dx", "dy"]);
+const STOP = new Set(["is", "to", "of", "in", "if", "as", "at", "or", "an", "so", "by", "be", "it", "on", "we", "do", "no", "go", "he", "me", "my", "up", "us", "and", "the", "for", "then", "find", "solve", "when", "with"]);
+/** Words are not algebra: "solve" would parse as s·o·l·v·e, so a run of letters
+    is only maths if it is a function the page knows or a couple of variables. */
+function hasWords(t) {
+  for (const w of t.match(/[A-Za-z]{2,}/g) || []) {
+    if (MATH_WORDS.has(w)) continue;
+    if (w.length >= 3 || STOP.has(w.toLowerCase())) return true;
+  }
+  return false;
+}
+function readable(text) {
+  const t = text.trim();
+  if (!t || !MATHY.test(t) || !/[0-9a-zA-Z]/.test(t) || hasWords(t)) return null;
+  try { parse(t); return t; } catch { return null; }
+}
+/** The maths in a run of ordinary words: the longest stretches of it that parse, left to right. */
+function mathInWords(text) {
+  const found = [];
+  for (const line of text.split(/\n|(?<=[.;?!])\s+/)) {
+    const words = line.trim().split(/\s+/).filter(Boolean);
+    let start = 0;
+    while (start < words.length) {
+      let hit = null;
+      for (let end = words.length; end > start && !hit; end--) {
+        const cand = words.slice(start, end).join(" ").replace(/[.,;:?!]+$/, "");
+        if (readable(cand)) hit = { text: cand, end };
+      }
+      if (hit) { found.push(hit.text); start = hit.end; } else start++;
+    }
+  }
+  return found;
+}
+function extractFromNote(n) {
+  const found = [];
+  let words = "";
+  const flush = () => { if (words.trim()) found.push(...mathInWords(words)); words = ""; };
+  for (const run of n.runs || []) {
+    if (run.tex) {
+      flush();
+      // what was typed, when it was not TeX; otherwise the TeX turned into the page's own line
+      const src = run.src && !looksLikeTeX(run.src) ? run.src : texToLinear(run.tex);
+      if (readable(src)) found.push(src.trim());
+    } else {
+      words += run.text;
+    }
+  }
+  flush();
+  const unique = [...new Set(found)];
+  if (!unique.length) return say("I could not find an equation in that note.", "no");
+  for (const src of unique) addCard(parse(src), { title: "from a note" });
+  say(`Took ${unique.length === 1 ? "an equation" : `${unique.length} equations`} off the note: ${unique.join("   ·   ")}`, "ok");
+}
+
 /** A note on the canvas, from its data — made here, or arriving from a live room. */
 function placeFreeNote(n, { write: open = false } = {}) {
   canvasWriter ||= noteWriter(canvas.world);
@@ -322,7 +383,7 @@ function placeFreeNote(n, { write: open = false } = {}) {
   // opens the editor over itself.
   const mount = () => {
     // Only a note on the canvas may carry pictures; one stuck to a line may not.
-    const face = noteFace(n, { scaleOf: () => canvas.zoom, onTap: () => write(face), onDelete: takeOff, images: true });
+    const face = noteFace(n, { scaleOf: () => canvas.zoom, onTap: () => write(face), onDelete: takeOff, images: true, onExtract: extractFromNote });
     holder.replaceChildren(face);
     return face;
   };

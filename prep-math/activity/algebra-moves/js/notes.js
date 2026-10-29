@@ -46,7 +46,7 @@ export const newNote = (paper = 0) => ({ id: `note${++seq}`, runs: null, paper, 
  * the canvas zoom — so a drag follows the finger at any zoom. `onSized` is
  * told when the paper has been painted (the holder may need to re-measure).
  */
-export function noteFace(n, { scaleOf = () => 1, onTap, onDelete, onSized, maxWidth = 240, images = false } = {}) {
+export function noteFace(n, { scaleOf = () => 1, onTap, onDelete, onSized, maxWidth = 240, images = false, onExtract = null } = {}) {
   const wrap = document.createElement("div");
   wrap.className = "am-pinned-wrap";
   wrap.dataset.pin = n.id;
@@ -70,6 +70,18 @@ export function noteFace(n, { scaleOf = () => 1, onTap, onDelete, onSized, maxWi
   bin.addEventListener("click", (e) => { e.stopPropagation(); onDelete?.(); });
   wrap.append(c, bin);
   if (images) mountImages(wrap, n, scaleOf);
+  // Take the equations out of the note and onto cards of their own.
+  if (onExtract) {
+    const out = document.createElement("button");
+    out.type = "button";
+    out.className = "am-pinned__eq";
+    out.dataset.tip = "Take the equations out of this note onto the canvas";
+    out.setAttribute("aria-label", "Take the equations out of this note onto the canvas");
+    out.innerHTML = UI.arrowRight(14);
+    out.addEventListener("pointerdown", (e) => e.stopPropagation());
+    out.addEventListener("click", (e) => { e.stopPropagation(); onExtract(n); });
+    wrap.appendChild(out);
+  }
 
   /* Dragged, it keeps where it was put (n.dx, n.dy). A press that does not
      move is a tap. Followed on the window, not captured: whatever is under the
@@ -77,6 +89,9 @@ export function noteFace(n, { scaleOf = () => 1, onTap, onDelete, onSized, maxWi
   let drag = null;
   const move = (e) => {
     if (!drag) return;
+    // The button was let go somewhere we were not told about (outside the
+    // window, over the browser's own chrome): the drag is over, not still on.
+    if (e.pointerType === "mouse" && e.buttons === 0) return end(e);
     const mx = (e.clientX - drag.x) / drag.zoom, my = (e.clientY - drag.y) / drag.zoom;
     if (!drag.moved && Math.hypot(mx, my) < 4) return;
     drag.moved = true;
@@ -89,19 +104,31 @@ export function noteFace(n, { scaleOf = () => 1, onTap, onDelete, onSized, maxWi
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", end);
     window.removeEventListener("pointercancel", end);
+    document.documentElement.classList.remove("am-noselect");
     if (!drag) return;
     const was = drag;
     drag = null;
     wrap.classList.remove("is-dragging");
     if (e.type === "pointerup" && !was.moved) onTap?.();
   };
-  c.addEventListener("pointerdown", (e) => {
+  /* A press on the note starts a drag — and while it lasts nothing on the page
+     may be selected: highlighting is what a drag turns into when the browser
+     is left to start it. Anything already highlighted is let go first. */
+  const start = (e) => {
     e.stopPropagation();
     e.preventDefault();
+    window.getSelection()?.removeAllRanges();
+    document.documentElement.classList.add("am-noselect");
     drag = { x: e.clientX, y: e.clientY, dx: n.dx || 0, dy: n.dy || 0, zoom: scaleOf() || 1, moved: false };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", end);
     window.addEventListener("pointercancel", end);
+  };
+  c.addEventListener("pointerdown", start);
+  // The paper's edge, the tape and the gaps round the picture are the note too.
+  wrap.addEventListener("pointerdown", (e) => {
+    if (e.target === c || e.target.closest("button, input, .am-note-img")) return;
+    start(e);
   });
   c.addEventListener("click", (e) => e.stopPropagation());
 

@@ -1307,8 +1307,15 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
       if (ctx.explanation) contextBlock += `\nDETAILED EXPLANATION:\n${ctx.explanation}\n`;
     }
 
+    /* A page that reads its own live state (window.__prepbotPage.context — the
+       Algebra Moves canvas, the chemistry bench) always sends it in full. The
+       "unchanged" pointer assumes the model still has the earlier block, but
+       the system prompt is not kept between turns: only the last few messages
+       are, so after one turn the bot would be told "same as before" about a
+       page it can no longer see. */
+    const liveContext = !!(window.__prepbotPage && typeof window.__prepbotPage.context === "function");
     let contextSection;
-    if (contextBlock === lastSentContextKey) {
+    if (!liveContext && contextBlock === lastSentContextKey) {
       contextSection = "CONTEXT: (unchanged — same page/question as earlier in this chat)";
     } else {
       contextSection = contextBlock;
@@ -1349,8 +1356,12 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
       ? `\nQUESTIONS AND DRAWINGS. When the student asks for a question to solve, set ONE, put only the question between the lines [QUESTION] and [/QUESTION], and do not solve it unless asked. When a geometry or diagram question needs a figure, draw it as a fenced block: three backticks then svg, the SVG, three backticks. The SVG must have viewBox="0 0 320 220", only simple shapes (line, polyline, polygon, circle, path, rect, text), stroke="#2a2723" stroke-width="2" fill="none" (or a pale fill), labels in <text font-size="16" font-family="serif"> naming every point and every given length or angle, no scripts, no images, no styles. The figure must match the numbers in the question exactly.\n`
       : "";
 
+    const liveSection = liveContext
+      ? " THE CONTEXT BELOW IS A LIVE READING OF WHAT THE STUDENT HAS ON THEIR SCREEN RIGHT NOW. You can see it: refer to their equations and lines of working by name, and never say you cannot see what they are working on. "
+      : "";
+
     const systemPrompt = `You are ${BOT_NAME}, the built-in AI tutor for ${SITE_INFO.name} — ${SITE_INFO.tagline}. Be encouraging and concise.
-${siteSection}${doSection}${drawSection}
+${siteSection}${doSection}${drawSection}${liveSection}
 ${contextSection}${ragSection}${siteMatchSection}
 
 RULES: Explain step by step with clear numbered steps and brief reasoning, in simple ${userProficiency}-level language. No emojis. Use LaTeX only for equations — \\(...\\) inline, \\[...\\] block — never for ordinary words. When asked what this site does, what's available, or where to find something, answer from the site knowledge above — never invent a page or URL that isn't listed there.
