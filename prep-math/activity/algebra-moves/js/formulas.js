@@ -558,6 +558,33 @@ export const GROUPS = [
         example: { P: "10000", R: "10", n: "2" },
       },
       {
+        id: "pct-change", name: "Percentage change", eq: "C = 100(N - O)/O", find: "C",
+        letters: { C: "the percentage change (negative for a fall)", N: "the new value", O: "the original value" },
+        example: { N: "65", O: "50" },
+      },
+      {
+        id: "pct-increase", name: "After a percentage increase", eq: "N = O(100 + R)/100", find: "N",
+        letters: { N: "the new value", O: "the original value", R: "the percentage increase" },
+        example: { O: "40", R: "15" },
+      },
+      {
+        id: "pct-decrease", name: "After a percentage decrease", eq: "N = O(100 - R)/100", find: "N",
+        letters: { N: "the new value", O: "the original value", R: "the percentage decrease" },
+        example: { O: "40", R: "15" },
+      },
+      {
+        id: "reverse-increase", name: "Reverse percentage: the original before an increase", eq: "O = 100N/(100 + R)", find: "O",
+        letters: { O: "the original value", N: "the value after the increase", R: "the percentage increase" },
+        example: { N: "115", R: "15" },
+        note: "the new value is (100 + R)% of the original, so divide by that and multiply by 100",
+      },
+      {
+        id: "reverse-decrease", name: "Reverse percentage: the original before a decrease", eq: "O = 100N/(100 - R)", find: "O",
+        letters: { O: "the original value", N: "the value after the decrease", R: "the percentage decrease" },
+        example: { N: "85", R: "15" },
+        note: "the new value is (100 − R)% of the original, so divide by that and multiply by 100",
+      },
+      {
         id: "profit", name: "Profit", eq: "P = S - C", find: "P",
         letters: { P: "the profit", S: "the selling price", C: "the cost price" },
         example: { S: "1500", C: "1150" },
