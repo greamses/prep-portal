@@ -33,7 +33,7 @@ const isDigit = (c) => c >= "0" && c <= "9";
 const GREEK = "αβγδεζηθικλμνξοπρστυφχψω";
 const isAlpha = (c) => (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || GREEK.includes(c);
 
-function tokenise(src) {
+function tokenise(src, lenient = false) {
   const out = [];
   let i = 0;
   while (i < src.length) {
@@ -43,13 +43,20 @@ function tokenise(src) {
        belongs in that base, so nothing else written with an underscore is
        taken for one. 1011₂ with a subscript base reads the same. */
     {
+      // ?_8, 35_?, ?_?: a numeral and its base with a box still empty — only ever on the keypad's own drawing.
+      const ph = /^(\?|[0-9A-Za-z]+)_(\?|[0-9]+|[a-z])(?![A-Za-z0-9_?])/.exec(src.slice(i));
+      if (ph && (ph[1] === "?" || ph[2] === "?") && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1]))) {
+        out.push({ t: "base", v: ph[1], base: /^[0-9]+$/.test(ph[2]) ? Number(ph[2]) : null, name: /^[a-z]$/.test(ph[2]) ? ph[2] : null, empty: ph[2] === "?", at: i });
+        i += ph[0].length;
+        continue;
+      }
       // y7_8: a numeral with an unknown digit (a lowercase letter), in a numeral base.
       const uv = /^([0-9A-Za-z]*[a-z][0-9A-Za-z]*)_([0-9]+)(?![A-Za-z0-9_])/.exec(src.slice(i));
       if (uv && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1])) && !REFS.some((r) => src.startsWith(r, i))) {
         const b = Number(uv[2]);
         if (b >= 2 && b <= 36) {
           const bad = [...uv[1]].find((ch) => !/[a-z]/.test(ch) && parseInt(ch, 36) >= b);
-          if (bad) throw new SyntaxError(`${bad} is not a digit in base ${b} — base ${b} uses ${b <= 10 ? `0 to ${b - 1}` : `0 to 9 and A to ${(b - 1).toString(36).toUpperCase()}`}.`);
+          if (bad && !lenient) throw new SyntaxError(`${bad} is not a digit in base ${b} — base ${b} uses ${b <= 10 ? `0 to ${b - 1}` : `0 to 9 and A to ${(b - 1).toString(36).toUpperCase()}`}.`);
           out.push({ t: "base", v: uv[1], base: b, at: i });
           i += uv[0].length;
           continue;
@@ -65,11 +72,11 @@ function tokenise(src) {
       const m = /^([0-9A-Z]+)(?:_([0-9]+)|([₀-₉]+))/.exec(src.slice(i));
       if (m && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1]))) {
         const base = Number(m[2] || [...m[3]].map((c) => "₀₁₂₃₄₅₆₇₈₉".indexOf(c)).join(""));
-        if (base >= 2 && base <= 36 && /[0-9]/.test(m[1][0]) && A.baseValue(m[1], base) === null) {
+        if (!lenient && base >= 2 && base <= 36 && /[0-9]/.test(m[1][0]) && A.baseValue(m[1], base) === null) {
           const bad = [...m[1]].find((ch) => parseInt(ch, 36) >= base);
           throw new SyntaxError(`${bad} is not a digit in base ${base} — base ${base} uses ${base <= 10 ? `0 to ${base - 1}` : `0 to 9 and A to ${(base - 1).toString(36).toUpperCase()}`}.`);
         }
-        if (base >= 2 && base <= 36 && A.baseValue(m[1], base) !== null && /[0-9]/.test(m[1][0])) {
+        if (base >= 2 && base <= 36 && (lenient || A.baseValue(m[1], base) !== null) && /[0-9]/.test(m[1][0])) {
           out.push({ t: "base", v: m[1], base, at: i });
           i += m[0].length;
           continue;
@@ -91,6 +98,8 @@ function tokenise(src) {
     const named = REFS.find((r) => src.startsWith(r, i));
     if (named) { out.push({ t: "ref", v: named, at: i }); i += named.length; continue; }
     if (src.startsWith("sqrt", i)) { out.push({ t: "root", v: "sqrt", at: i }); i += 4; continue; }
+    // mixed(w,n,d): a whole number and a fraction side by side — the keypad's three boxes.
+    if (src.startsWith("mixed(", i)) { out.push({ t: "mixed", v: "mixed", at: i }); i += 5; continue; }
     // nCr(8,3) and nPr(8,3): choices and arrangements.
     {
       const m = /^n([PC])r\(/.exec(src.slice(i));
@@ -138,11 +147,16 @@ export function setRefs(names) {
 
 const STARTS_FACTOR = new Set(["[", "{", "sigma", "choose", "base", "ref", "num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
 
-export function parse(src) {
-  const toks = tokenise(src);
+/** `lenient` draws a numeral whose digit is not one of its base's (the keypad shows it, and says why)
+    rather than refusing the whole line. */
+export function parse(src, { lenient = false } = {}) {
+  const toks = tokenise(src, lenient);
   let p = 0;
   const peek = () => toks[p];
-  const eat = (t) => { if (toks[p].t !== t) throw new SyntaxError(`I expected ${t === "end" ? "the end" : `"${t}"`} here.`); return toks[p++]; };
+  const eat = (t) => {
+    if (toks[p].t !== t) throw Object.assign(new SyntaxError(`I expected ${t === "end" ? "the end" : `"${t}"`} here.`), { at: toks[p].at, expected: t });
+    return toks[p++];
+  };
 
   /* Where in the typed line each node came from, as [start, end).
      The keypad needs it and nothing else does: it is what lets a caret in the
@@ -198,7 +212,7 @@ export function parse(src) {
       eat("_");
       eat("(");
       const v = peek();
-      if (v.t !== "var") throw new SyntaxError("A sum says which letter counts: Σ_(i=1)^(5)(…).");
+      if (v.t !== "var") throw new SyntaxError("A sum needs the letter it counts with in its first box.");
       p++;
       eat("=");
       const lo = expr();
@@ -216,13 +230,28 @@ export function parse(src) {
       eat(")");
       return span(mark, A.choose(n, r, tk.v === "P"));
     }
-    if (tk.t === "base") { p++; return span(mark, tk.name ? A.basedVar(tk.v, tk.name) : A.based(tk.v, tk.base)); }
+    if (tk.t === "mixed") {
+      p++;
+      eat("(");
+      const w = expr();
+      eat(",");
+      const n = expr();
+      eat(",");
+      const d = expr();
+      eat(")");
+      return span(mark, A.mixed(w, A.frac(n, d)));
+    }
+    if (tk.t === "base") {
+      p++;
+      if (tk.empty) { const n = A.based(tk.v, null); n.v = A.hole(); return span(mark, n); }     // the base is a box still to fill
+      return span(mark, tk.name ? A.basedVar(tk.v, tk.name) : A.based(tk.v, tk.base));
+    }
     if (tk.t === "deriv") { p++; return span(mark, A.deriv(atom(), tk.v)); }
     if (tk.t === "lim") {
       p++;
       eat("(");
       const at = peek();
-      if (at.t !== "var") throw new SyntaxError("A limit says which letter is moving: lim(h->0)(…).");
+      if (at.t !== "var") throw new SyntaxError("A limit needs the letter that is moving.");
       p++;
       eat("to");
       const to = expr();
@@ -236,7 +265,7 @@ export function parse(src) {
       const body = atom();
       const d = peek(), x = toks[p + 1];
       if (d.t !== "var" || d.v !== "d" || !x || x.t !== "var") {
-        throw new SyntaxError("An integral ends with what it is taken with respect to: ∫(…)dx.");
+        throw new SyntaxError("An integral ends with the letter it is taken with respect to.");
       }
       p += 2;
       return span(mark, A.integ(body, x.v, lo, hi));
@@ -271,7 +300,7 @@ export function parse(src) {
       }
       return span(mark, A.mat(rows));
     }
-    throw new SyntaxError(tk.t === "end" ? "The line stops before it is finished." : `I did not expect "${tk.v}" here.`);
+    throw Object.assign(new SyntaxError(tk.t === "end" ? "The line stops before it is finished." : `I did not expect "${tk.v}" here.`), { at: tk.at, atEnd: tk.t === "end" });
   }
 
   function power() {

@@ -25,11 +25,11 @@
 import { parse } from "./parse.js";
 import { buildRow, paintRow, el } from "./render.js";
 import { readValue } from "./formulas.js";
-import { slotEdit, slotTypingForInput, cellMove, matrixTemplate } from "/utils/components/slot-typing.js";
+import { createEditor } from "./editor.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { mathNode, mathReady, whenMathDrawn } from "/utils/components/sticky-math.js";
 import * as A from "./ast.js";
-import { texToLinear, looksLikeTeX, balanced } from "./tex.js";
+import { texToLinear, looksLikeTeX } from "./tex.js";
 
 /* label, what it types, and how far back into it the caret goes.
    `wide` marks the keys that earn a double cell.
@@ -72,7 +72,7 @@ const KEYS = [
     { k: "0" }, { k: ".", t: "." },
     { k: "+", t: "+" }, { k: "=", t: "=" },
     { k: "CLR", act: "clear", icon: "trash", title: "Clear", tone: "warn" },
-    { k: "a b⁄c", act: "mixed", title: "A mixed number: a whole number and a fraction, in boxes to fill (2 1/3)", math: "2 1/3" },
+    { k: "a b⁄c", act: "mixed", title: "A mixed number: a whole number and a fraction, in boxes to fill (a b/c)", mixedFace: true },
     // Enter is a key here, not a button living somewhere else below the
     // pad — and a wide one, the way a laptop's Return key is.
     { k: "Enter", act: "enter", icon: "enter", title: "Put it on the canvas", tone: "go", wide: true },
@@ -152,7 +152,7 @@ const FUNCS = [
   [
     { k: "%", t: "%", title: "percent: 25% is 25 out of 100" },
     { k: "_b", act: "base", title: "Base: pick the base of a number — a number (1011_2) or a letter (35_y)", tex: "q_b" },
-    { k: "a b⁄c", act: "mixed", title: "A mixed number: a whole number and a fraction, in boxes to fill (2 1/3)", math: "2 1/3" },
+    { k: "a b⁄c", act: "mixed", title: "A mixed number: a whole number and a fraction, in boxes to fill (a b/c)", mixedFace: true },
     { k: "e", t: "e", title: "e, the number 2.718…", math: "e" },
     { k: "π", t: "π", title: "pi", math: "π" },
     { k: "∠", t: "°", title: "degrees" },
@@ -208,6 +208,19 @@ export function createKeypad(host, { onSubmit } = {}) {
 
   const say = document.createElement("p");
   say.className = "am-keysay";
+
+  /* What is typed lives in BOXES (editor.js), not in this field. The field is
+     only where the keyboard's focus sits; after every edit the boxes are written
+     out into it as the line the parser reads, and the caret with them. Nothing in
+     it is ever shown — the drawing above the keys is. */
+  const ed = createEditor();
+  function sync(focus = true) {
+    const { text, caret } = ed.serialize();
+    line.value = text;
+    line.setSelectionRange(caret, caret);
+    if (focus) line.focus();
+    draw();
+  }
 
   /* Values for the letters in whatever has been typed. The formula shelf is not
      the only place a substitution belongs: a line a student wrote themselves has
@@ -360,6 +373,19 @@ export function createKeypad(host, { onSubmit } = {}) {
         slot: slots.get(n.id) || null,
         typedFrom: back(n.src[0]), typedTo: back(n.src[1]),
       });
+      // A numeral's empty digit box and empty base box are places the caret can stand
+      // too, though neither is a node of its own: their spots are read off the line.
+      if (n.kind === "base") {
+        for (const h of row.atoms.filter((a) => a.nodeId === n.id && a.kind === "hole")) {
+          const d = /#d(\d+)$/.exec(h.key);
+          const pos = h.key.endsWith("#radix") ? n.src[0] + n.digits.length + 1 : d ? n.src[0] + Number(d[1]) : null;
+          if (pos === null) continue;
+          out.push({
+            from: pos, to: pos + 1, box: { x: h.x, y: h.y, w: h.w, h: h.h }, left: h.x, right: h.x + h.w,
+            leaf: false, slot: h, typedFrom: back(pos), typedTo: back(pos + 1),
+          });
+        }
+      }
     });
     return out;
   }
@@ -455,22 +481,50 @@ export function createKeypad(host, { onSubmit } = {}) {
   }
 
   /* -- The picture above the keys ------------------------------------------ */
-  /* TeX pasted or typed on the line — \frac{a}{b}, x^{2} — is turned into the
-     line the page reads, once a piece of it is finished (every { shut, not
-     stopped on half a command). `force` does it regardless, on Enter. */
-  function fromTeX(force = false) {
-    const v = line.value;
-    if (!looksLikeTeX(v)) return;
-    if (!force && (!balanced(v) || /\\[A-Za-z]*$/.test(v))) return;
-    const lin = texToLinear(v);
-    if (lin && lin !== v) {
-      line.value = lin;
-      line.setSelectionRange(lin.length, lin.length);
+  /** The line the parser reads, mended until it will: a box where something is
+      still to come at the end, nothing where a character does not belong. Returns
+      the tree and which characters were left out (so the caret still lands right). */
+  function tolerant(text) {
+    let t = text;
+    const gone = [];                      // indexes, in the ORIGINAL text, that were left out
+    let note = null;                      // something to say about a line that is drawn but not right
+    const originalAt = (i) => gone.reduce((k, idx) => (idx <= k ? k + 1 : k), i);
+    for (let n = 0; n < 16; n++) {
+      try { return { eq: parse(t), gone, note }; } catch (err) {
+        // A digit that is not one of its base's (8 in base 6): drawn as written, and said in words.
+        if (/is not a digit in base/.test(err.message || "") && !note) {
+          note = err.message;
+          try { return { eq: parse(t, { lenient: true }), gone, note }; } catch { /* fall through to mending */ }
+        }
+        // 3. is a number still being typed: drawn as 3 until the digits after the point come
+        if (/^not a number/.test(err.message || "")) {
+          const dot = t.search(/\.(?![0-9])/);
+          if (dot >= 0) { gone.push(originalAt(dot)); gone.sort((x, y) => x - y); t = t.slice(0, dot) + t.slice(dot + 1); continue; }
+        }
+        if (err.atEnd || err.at === undefined || err.at >= t.length) {
+          if (/\?$/.test(t)) return null;
+          t += " ?";
+          continue;
+        }
+        gone.push(originalAt(err.at));
+        gone.sort((x, y) => x - y);
+        t = t.slice(0, err.at) + t.slice(err.at + 1);
+      }
     }
+    return null;
+  }
+
+  /** What went wrong, in words — never the symbols it was made of. */
+  function friendly(err) {
+    const m = String(err?.message || "");
+    if (/is not a digit in base/.test(m)) return m;
+    if (/^I do not know what to do with/.test(m)) return "That is not a symbol this keypad can use.";
+    if (/^I did not expect/.test(m)) return "Something is out of place there.";
+    if (/^I expected|stops before it is finished/.test(m)) return "That is not finished yet — there is more to fill in.";
+    return m;
   }
 
   function draw() {
-    fromTeX();
     // A mode may read what is typed its own way first: "+ 3" after an
     // equation's name means E_1 + 3.
     const src = mode?.translate ? mode.translate(line.value) : line.value;
@@ -484,7 +538,7 @@ export function createKeypad(host, { onSubmit } = {}) {
       letters([]);
       preview.classList.add("is-empty");
       say.textContent = mode
-        ? "Type it — a number, a letter, (b/(2a))^2 — then Enter."
+        ? "Type it — a number, a letter or an expression — then Enter."
         : "Type an equation, or an expression to tidy up. It is drawn here as you go.";
       say.className = "am-keysay";
       return;
@@ -494,21 +548,21 @@ export function createKeypad(host, { onSubmit } = {}) {
     const fixed = repair(src);
     toDrawn = fixed.forward;
 
-    let eq;
-    try {
-      eq = parse(fixed.text);
-    } catch (err) {
-      // Nothing can be drawn, so show the letters themselves rather than an
-      // empty box: whatever is wrong, the student has to be able to see it.
-      const raw = document.createElement("p");
-      raw.className = "am-preview__raw";
-      raw.textContent = src;
-      preview.appendChild(raw);
+    /* Whatever has been typed is DRAWN — never shown as the characters it was
+       written with. A line the parser still will not take (a stray sign from a
+       paste, say) is drawn without the piece that does not belong, and the
+       message says so in words; if nothing at all can be drawn, the picture stays
+       empty. There is no "raw" fallback to see. */
+    const read = tolerant(fixed.text);
+    if (!read) {
       letters([]);
-      say.textContent = err.message;
+      preview.classList.add("is-empty");
+      say.textContent = "That is not something I can draw yet — keep typing, or press Clear.";
       say.className = "am-keysay is-no";
       return;
     }
+    const eq = read.eq;
+    fixed.back = ((back, gone) => (j) => back(gone.reduce((k, idx) => (idx <= k ? k + 1 : k), j)))(fixed.back, read.gone);
 
     // No "let x = …" boxes in both-sides mode: what is typed is applied, not solved.
     letters(mode ? [] : A.varsIn(eq).sort());
@@ -522,11 +576,13 @@ export function createKeypad(host, { onSubmit } = {}) {
 
     // Whatever the repair had to invent is exactly what is still to be typed.
     const todo =
-      fixed.slots || src.includes("?") ? "Fill in the empty boxes — type, or use the arrows to go from box to box."
+      read.note ? read.note
+      : read.gone.length ? "Part of that does not fit there yet, so it is not drawn."
+      : fixed.slots || src.includes("?") ? "Fill in the empty boxes — type, or use the arrows to go from box to box."
       : fixed.dangling ? "Something still has to come after that."
       : null;
     say.textContent = todo ?? (fixed.noEquals ? "Ready — no equals sign, so this one gets tidied up." : "Ready.");
-    say.className = todo ? "am-keysay" : "am-keysay is-ok";
+    say.className = read.note ? "am-keysay is-no" : todo ? "am-keysay" : "am-keysay is-ok";
   }
 
   /** The caret, and the band behind a selection, drawn into the equation. */
@@ -593,101 +649,53 @@ export function createKeypad(host, { onSubmit } = {}) {
         }
       }
     }
-    line.setSelectionRange(best.typed, best.typed);
-    draw();
+    ed.setCaretAtOffset(best.typed);
+    sync();
   });
 
   /* ── Typing ──────────────────────────────────────────────────────────── */
   /* The keyboard and the on-screen keys type the same way: after a ^ or a / the
      cursor stays in the power or the bottom until → is pressed (slot-typing.js). */
-  const slots = slotTypingForInput(line, { onChange: () => draw() });
 
-  function type(text, back = 0) {
-    const a = line.selectionStart ?? line.value.length;
-    const b = line.selectionEnd ?? a;
-    if (text.length === 1) {
-      const edit = slotEdit(line.value, a, b, text);
-      if (edit) { line.focus(); slots.apply(edit); return; }
-    }
-    line.value = line.value.slice(0, a) + text + line.value.slice(b);
-    const at = a + text.length - back;
-    line.setSelectionRange(at, at);
-    line.focus();
-    draw();
+  /* The keys that make a shape, by what the old line typed for them. Each now
+     makes the boxes of that shape, with the caret in the first one to fill. */
+  const SHAPES = {
+    "()": () => ed.template("br"),
+    "()/()": () => ed.insertChar("/"),
+    "^(2)": () => ed.template("pow", { fill: ["2"], after: true }),
+    "^()": () => ed.template("pow"),
+    "^T": () => ed.template("pow", { fill: ["T"], after: true }),
+    "^(-1)": () => ed.template("pow", { fill: ["-1"], after: true }),
+    "sqrt()": () => ed.template("sqrt"),
+    "d/dx()": () => ed.template("deriv"),
+    "∫()dx": () => ed.template("int0"),
+    "∫_()^()()dx": () => ed.template("int"),
+    "lim(h->0)()": () => ed.template("lim", { fill: ["0", ""], focus: 1 }),
+    "Σ_(i=1)^()()": () => ed.template("sigma", { fill: ["i", "1", "", ""], focus: 2 }),
+    "{}": () => ed.template("list"),
+  };
+
+  /** A key, or a piece of text: into the boxes. */
+  function type(text) {
+    let m;
+    if (SHAPES[text]) SHAPES[text]();
+    else if ((m = /^([a-z]+)\(\)$/.exec(text))) ed.template("fn", { name: m[1] });
+    else if ((m = /^([a-z]+)\(\{\}\)$/.exec(text))) ed.template("fn", { name: m[1], inner: { kind: "list" } });
+    else if ([...text].length === 1) ed.insertChar(text);
+    else ed.insertText(text);
+    sync();
   }
 
-  function backspace() {
-    const a = line.selectionStart ?? 0;
-    const b = line.selectionEnd ?? a;
-    if (a !== b) {
-      line.value = line.value.slice(0, a) + line.value.slice(b);
-      line.setSelectionRange(a, a);
-    } else if (a > 0) {
-      // Brackets go as pairs (slot-typing.js): an empty pair whole with the ^ or /
-      // it belonged to, an opening bracket with its closer, a closing bracket not
-      // at all — the cursor steps inside it instead.
-      const edit = slotEdit(line.value, a, b, "Backspace");
-      if (edit) {
-        line.focus();
-        slots.apply(edit);
-        return;
-      } else {
-        line.value = line.value.slice(0, a - 1) + line.value.slice(a);
-        line.setSelectionRange(a - 1, a - 1);
-      }
-    }
-    line.focus();
-    draw();
-  }
+  function backspace() { ed.backspace(); sync(); }
 
   function nudge(by, dir = by > 0 ? "right" : "left") {
-    const v = line.value;
-    let at = line.selectionStart ?? 0;
-    // In a matrix the arrows go from box to box.
-    const hop = cellMove(v, at, line.selectionEnd ?? at, dir);
-    if (hop) { line.setSelectionRange(hop.a, hop.b); line.focus(); draw(); return; }
-    if (!by) return;
-    if (hopBox(by)) return;
-
-    // ")(" and ")/(" are one seam, not two or three steps. Without this, coming
-    // out of a numerator and into the denominator is an arrow-key counting
-    // exercise, which is exactly the fiddliness a keypad is supposed to remove.
-    if (by > 0) {
-      const seam = /^\)(\/?)\(/.exec(v.slice(at));
-      at = seam ? at + seam[0].length : Math.min(v.length, at + 1);
-      while (at < v.length && v[at] === " ") at++;
-    } else {
-      const back = /\)(\/?)\($/.exec(v.slice(0, at));
-      at = back ? at - back[0].length : Math.max(0, at - 1);
-      while (at > 0 && v[at - 1] === " ") at--;
-    }
-
-    // Space is not a place: the caret is drawn beside the writing now, so a
-    // press that only crossed a gap looks like a press that did nothing.
-    line.setSelectionRange(at, at);
-    line.focus();
-    draw();
+    ed.move(dir);
+    sync();
   }
 
-  /** Flip the sign of the thing the caret is sitting in. */
-  function flipSign() {
-    const at = line.selectionStart ?? line.value.length;
-    // Back up to the start of this term.
-    let i = at;
-    while (i > 0 && !"+-=*/(".includes(line.value[i - 1])) i--;
-    if (line.value[i - 1] === "-") {
-      line.value = line.value.slice(0, i - 1) + line.value.slice(i);
-      line.setSelectionRange(at - 1, at - 1);
-    } else {
-      line.value = line.value.slice(0, i) + "-" + line.value.slice(i);
-      line.setSelectionRange(at + 1, at + 1);
-    }
-    line.focus();
-    draw();
-  }
+  function flipSign() { ed.flipSign(); sync(); }
 
   function submit() {
-    fromTeX(true);
     if (expandSize()) return;
     const typed = (mode?.translate ? mode.translate(line.value) : line.value).trim();
     // A bracket left open is shut for you, as it is in the drawing.
@@ -702,7 +710,7 @@ export function createKeypad(host, { onSubmit } = {}) {
     try {
       eq = parse(src);
     } catch (err) {
-      say.textContent = err.message;
+      say.textContent = friendly(err);
       say.className = "am-keysay is-no";
       return;
     }
@@ -728,8 +736,8 @@ export function createKeypad(host, { onSubmit } = {}) {
         say.className = "am-keysay is-no";
         return;
       }
-      line.value = "";
-      draw();
+      ed.clear();
+      sync(false);
       return;
     }
 
@@ -743,10 +751,10 @@ export function createKeypad(host, { onSubmit } = {}) {
     // One letter left without a value is the thing being looked for, and worth
     // writing on the card. Two or more and there is no one answer to name.
     onSubmit?.(eq, src, vals.given, vals.given && vals.blank.length === 1 ? vals.blank[0] : "");
-    line.value = "";
+    ed.clear();
     for (const input of values.values()) input.value = "";
     kept.clear();
-    draw();
+    sync(false);
   }
 
   /* ── Matrices: ask the size, leave boxes ────────────────────────────────
@@ -772,64 +780,18 @@ export function createKeypad(host, { onSubmit } = {}) {
   }
 
   function placeMatrix(rows, cols, prefix = "") {
-    const text = prefix + matrixTemplate(rows, cols);
-    const a = line.selectionStart ?? line.value.length;
-    const b = line.selectionEnd ?? a;
-    line.value = line.value.slice(0, a) + text + line.value.slice(b);
-    const first = a + prefix.length + 2;               // the first ? : after [[
-    line.setSelectionRange(first, first + 1);
-    line.focus();
-    draw();
+    if (prefix === "det") ed.template("fn", { name: "det", inner: { kind: "mat", rows, cols } });
+    else ed.template("mat", { rows, cols });
+    sync();
   }
 
-  /** A mixed number as three boxes: whole, top, bottom — ? ?/? — the first one
-      selected, so typing fills it and → goes on to the next. */
-  function placeMixed() {
-    const a = line.selectionStart ?? line.value.length;
-    const b = line.selectionEnd ?? a;
-    line.value = line.value.slice(0, a) + "? ?/?" + line.value.slice(b);
-    line.setSelectionRange(a, a + 1);
-    line.focus();
-    draw();
-  }
+  function placeMixed() { ed.template("mixed", { focus: 0 }); sync(); }
 
-  /** nPr(?,?) / nCr(?,?): two boxes, the first selected. */
-  function placeChoose(letter) {
-    const a = line.selectionStart ?? line.value.length;
-    const b = line.selectionEnd ?? a;
-    const put = `n${letter}r(?,?)`;
-    line.value = line.value.slice(0, a) + put + line.value.slice(b);
-    line.setSelectionRange(a + 4, a + 5);
-    line.focus();
-    draw();
-  }
+  function placeChoose(letter) { ed.template("choose", { perm: letter === "P" }); sync(); }
 
-  /** → (or ←) from the end of one filled box to the next ? box: the one that
-      comes next once a space, a / or a , are stepped over. Selected whole, so
-      what is typed replaces it. */
-  function hopBox(dir) {
-    const v = line.value, a = line.selectionStart ?? 0, b = line.selectionEnd ?? a;
-    const m = dir > 0 ? /^\s*[\/,]?\s*\?/.exec(v.slice(b)) : /\?\s*[\/,]?\s*$/.exec(v.slice(0, a));
-    if (!m) return false;
-    const at = dir > 0 ? b + m[0].length - 1 : a - m[0].length;
-    line.setSelectionRange(at, at + 1);
-    line.focus();
-    draw();
-    return true;
-  }
-
-  /** mat 2x3 typed on the line becomes a 2 by 3 matrix of boxes. */
   function expandSize() {
-    const at = line.selectionStart ?? 0;
-    const m = /(^|[^A-Za-z])(det\s*)?mat(?:rix)?\s*(\d{1,2})\s*[x×*]\s*(\d{1,2})\s*$/i.exec(line.value.slice(0, at));
-    if (!m) return false;
-    const rows = Number(m[3]), cols = Number(m[4]);
-    if (rows < 1 || cols < 1 || rows > 8 || cols > 8) return false;
-    const start = m.index + m[1].length;
-    const prefix = m[2] ? "det" : "";
-    line.value = line.value.slice(0, start) + line.value.slice(at);
-    line.setSelectionRange(start, start);
-    placeMatrix(rows, cols, prefix);
+    if (!ed.matrixShorthand()) return false;
+    sync();
     return true;
   }
 
@@ -890,7 +852,7 @@ export function createKeypad(host, { onSubmit } = {}) {
         d.className = `am-basepick__cell${letters ? " is-letter" : ""}`;
         d.textContent = b;
         d.setAttribute("aria-label", letters ? `base ${b}, a letter` : `base ${b}`);
-        d.addEventListener("pointerdown", (e) => { e.preventDefault(); closePicker(); type(`_${b}`, 0); });
+        d.addEventListener("pointerdown", (e) => { e.preventDefault(); closePicker(); ed.base({ baseText: String(b) }); sync(); });
         box.appendChild(d);
       }
       return box;
@@ -908,10 +870,20 @@ export function createKeypad(host, { onSubmit } = {}) {
                  up: () => nudge(0, "up"), down: () => nudge(0, "down"),
                  matrix: (btn) => openPicker(btn), detmatrix: (btn) => openPicker(btn, "det"),
                  mixed: placeMixed, perm: () => placeChoose("P"), comb: () => placeChoose("C"),
-                 sign: flipSign, clear: () => { line.value = ""; draw(); line.focus(); },
+                 sign: flipSign, clear: () => { ed.clear(); sync(); },
                  enter: submit };
 
   /** A key's face, typeset rather than spelled out. */
+  /** The mixed-number key's face: a whole beside a fraction, all letters — a b/c. */
+  function mixedFace() {
+    const holder = document.createElement("span");
+    holder.className = "am-key__ink";
+    holder.setAttribute("aria-hidden", "true");
+    const node = A.expression(A.mixed(A.vr("a"), A.frac(A.vr("b"), A.vr("c"))));
+    holder.appendChild(paintRow(buildRow(node, KEY_SIZE), { live: false }));
+    return holder;
+  }
+
   function face(src) {
     const holder = document.createElement("span");
     holder.className = "am-key__ink";
@@ -956,6 +928,7 @@ export function createKeypad(host, { onSubmit } = {}) {
     btn.className = `am-key${key.act ? " am-key--act" : ""}` +
                     `${key.tone ? ` am-key--${key.tone}` : ""}${key.wide ? " am-key--wide" : ""}`;
     if (key.icon) btn.innerHTML = UI[key.icon](18);
+    else if (key.mixedFace) btn.appendChild(mixedFace());
     else if (key.tex) btn.appendChild(texFace(key.tex));
     else if (key.math) btn.appendChild(face(key.math));
     else btn.textContent = key.k;
@@ -967,7 +940,7 @@ export function createKeypad(host, { onSubmit } = {}) {
     btn.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       if (key.act) ACTS[key.act](btn);
-      else type(key.t ?? key.k, key.back ?? 0);
+      else type(key.t ?? key.k);
     });
     return btn;
   }
@@ -1093,24 +1066,53 @@ export function createKeypad(host, { onSubmit } = {}) {
 
   pad.appendChild(buildPad());
 
-  line.addEventListener("input", draw);
-  // The caret is ours to draw, so every way it can move has to redraw it: the
-  // arrow keys and Home/End on a real keyboard, a selection, gaining or losing
-  // the focus. `select` alone does not fire for a plain arrow press.
-  for (const ev of ["keyup", "select", "focus", "blur"]) line.addEventListener(ev, draw);
+  /* The keyboard is the same keys as the pad: each press goes into the boxes and
+     the field's own editing is switched off, so what is on screen can never be
+     half a piece of syntax. (A virtual keyboard that skips keydown comes through
+     beforeinput; anything that still changes the field is read back as a line.) */
+  const ARROWS = { ArrowRight: "right", ArrowLeft: "left", ArrowUp: "up", ArrowDown: "down", Home: "home", End: "end" };
   line.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") { e.preventDefault(); if (!expandSize()) submit(); return; }
-    // mat 2x3 then Space: the same as the key.
-    if (e.key === " " && expandSize()) { e.preventDefault(); return; }
-    const dir = { ArrowRight: "right", ArrowLeft: "left", ArrowUp: "up", ArrowDown: "down" }[e.key];
-    if (dir && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-      const hop = cellMove(line.value, line.selectionStart ?? 0, line.selectionEnd ?? 0, dir);
-      if (hop) { e.preventDefault(); line.setSelectionRange(hop.a, hop.b); draw(); }
-      else if ((dir === "right" || dir === "left") && hopBox(dir === "right" ? 1 : -1)) e.preventDefault();
-    }
-    // Tab goes to the next box to fill, when there is one.
-    if (e.key === "Tab" && !e.shiftKey && line.value.includes("?") && hopBox(1)) e.preventDefault();
+    if (e.ctrlKey || e.metaKey || e.altKey) return;           // the browser's own shortcuts
+    const k = e.key;
+    if (k === "Enter") { e.preventDefault(); if (!expandSize()) submit(); return; }
+    if (k === "Backspace") { e.preventDefault(); ed.backspace(); sync(); return; }
+    if (k === "Delete") { e.preventDefault(); ed.del(); sync(); return; }
+    if (ARROWS[k]) { e.preventDefault(); ed.move(ARROWS[k]); sync(); return; }
+    if (k === "Tab") { if (ed.tab(e.shiftKey ? -1 : 1)) { e.preventDefault(); sync(); } return; }
+    if (k === " " && expandSize()) { e.preventDefault(); return; }
+    if ([...k].length === 1) { e.preventDefault(); ed.insertChar(k === "×" || k === "·" ? "*" : k === "−" ? "-" : k); sync(); }
   });
+  /** Text that arrives whole — pasted, dropped, dictated, a TeX worksheet line — is
+      read into boxes the way it was written, TeX turned into the page's own line first. */
+  const insertWhole = (t) => {
+    const text = String(t || "");
+    ed.insertText(looksLikeTeX(text) ? texToLinear(text) : text);
+    sync();
+  };
+  line.addEventListener("beforeinput", (e) => {
+    const type = e.inputType || "";
+    if (type === "insertText" && e.data) {
+      e.preventDefault();
+      if ([...e.data].length > 1) insertWhole(e.data);
+      else { ed.insertChar(e.data); sync(); }
+    } else if (type === "deleteContentBackward") {
+      e.preventDefault(); ed.backspace(); sync();
+    } else if (type.startsWith("insertFrom") || type === "insertReplacementText") {
+      e.preventDefault();
+      insertWhole(e.dataTransfer?.getData("text") || e.data || "");
+    }
+  });
+  line.addEventListener("paste", (e) => {
+    e.preventDefault();
+    insertWhole(e.clipboardData?.getData("text") || "");
+  });
+  line.addEventListener("input", () => {
+    if (line.value === ed.text()) return;
+    ed.setText(looksLikeTeX(line.value) ? texToLinear(line.value) : line.value);
+    sync();
+  });
+  // The caret is ours to draw, so every way it can gain or lose the focus redraws it.
+  for (const ev of ["focus", "blur"]) line.addEventListener(ev, draw);
 
   draw();
 
@@ -1118,7 +1120,7 @@ export function createKeypad(host, { onSubmit } = {}) {
     focus() { line.focus(); },
     /** Draw what is typed again — the multiplication sign was switched. */
     redraw() { draw(); },
-    set(src) { line.value = src; draw(); line.focus(); },
+    set(src) { ed.setText(src); sync(); },
     /** Put the keypad into "both sides" mode ({ label, accept(node) }), or out
         of it with null. */
     setMode(m) {
@@ -1126,8 +1128,8 @@ export function createKeypad(host, { onSubmit } = {}) {
       banner.hidden = !m;
       banner.textContent = m ? m.label : "";
       give.hidden = true;
-      line.value = "";
-      draw();
+      ed.clear();
+      sync(false);
       if (m) line.focus();
     },
     get mode() { return mode; },

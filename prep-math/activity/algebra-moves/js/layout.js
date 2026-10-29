@@ -370,10 +370,10 @@ function measureBare(node, size, binary) {
     // 1011₂: the digits upright, the base lowered and small after them.
     case "base": {
       // each digit its own width: an unknown digit is a letter, set italic
-      const cw = [...node.digits].map((c) => measureText(c, size, /[a-z]/.test(c)));
+      const cw = [...node.digits].map((c) => (c === "?" ? 0.62 * size : measureText(c, size, /[a-z]/.test(c))));
       const dw = cw.reduce((a, b) => a + b, 0);
       const sub = size * 0.6;
-      const bw = measureText(node.v ? node.v.name : String(node.base), sub, !!node.v);
+      const bw = node.v?.kind === "hole" ? 0.62 * sub : measureText(node.v ? node.v.name : String(node.base), sub, !!node.v);
       return { ...base, kind: "base", dw, cw, bw, sub, w: dw + 0.04 * size + bw,
                descent: Math.max(base.descent, 0.32 * size + DESC * sub) };
     }
@@ -645,11 +645,16 @@ function place(m, x, y, out) {
       {
         let cx = x;
         [...m.node.digits].forEach((c, i) => {
-          text(`d${i}`, c, cx, y, m.size, /[a-z]/.test(c));
+          if (c === "?") {
+            // an empty digit box, drawn like every other empty box
+            out.atoms.push({ key: `${m.node.id}#d${i}`, nodeId: m.node.id, kind: "hole", x: cx, y: y - 0.62 * m.size, w: m.cw[i], h: 0.64 * m.size });
+          } else text(`d${i}`, c, cx, y, m.size, /[a-z]/.test(c));
           cx += m.cw[i];
         });
       }
-      text("radix", m.node.v ? m.node.v.name : String(m.node.base), x + m.dw + 0.04 * m.size, y + 0.32 * m.size, m.sub, !!m.node.v);
+      if (m.node.v?.kind === "hole") {
+        out.atoms.push({ key: `${m.node.id}#radix`, nodeId: m.node.id, kind: "hole", x: x + m.dw + 0.04 * m.size, y: y + 0.32 * m.size - 0.62 * m.sub, w: m.bw, h: 0.64 * m.sub });
+      } else text("radix", m.node.v ? m.node.v.name : String(m.node.base), x + m.dw + 0.04 * m.size, y + 0.32 * m.size, m.sub, !!m.node.v);
       break;
 
     case "mixed":
@@ -796,7 +801,7 @@ export function plain(node, parentKind = null, slot = 0) {
     }
     case "choose": return wrap(`n${node.perm ? "P" : "C"}r(${plain(node.n, "choose", 0)},${plain(node.r, "choose", 1)})`);
     case "mat":  return `[${node.rows.map((r) => `[${r.map((c) => plain(c, "mat", 0)).join(",")}]`).join(",")}]`;
-    case "base": return wrap(`${node.digits}_${node.v ? node.v.name : node.base}`);
+    case "base": return wrap(`${node.digits}_${node.v ? (node.v.kind === "hole" ? "?" : node.v.name) : node.base}`);
     case "mixed": return wrap(`${plain(node.w)} ${plain(node.f.a)}/${plain(node.f.b)}`);
     case "fn":
       // A matrix on its side reads back as [[…]]^T, which the parser takes as it is.
