@@ -1277,6 +1277,142 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Statistics: averages, spread and relationships",
+    items: [
+      {
+        id: "iqr", name: "Interquartile range", eq: "I = U - L", find: "I",
+        letters: { I: "the interquartile range", U: "the upper quartile", L: "the lower quartile" },
+        example: { U: "15", L: "7" },
+      },
+      {
+        id: "median-position", name: "Position of the median", eq: "p = (n + 1)/2", find: "p",
+        letters: { p: "the position of the median", n: "how many values there are" },
+        example: { n: "9" },
+        note: "counting from the smallest, once the values are in order",
+      },
+      {
+        id: "quartile-position", name: "Position of the lower quartile", eq: "p = (n + 1)/4", find: "p",
+        letters: { p: "the position of the lower quartile", n: "how many values there are" },
+        example: { n: "11" },
+      },
+      {
+        id: "class-mid", name: "Midpoint of a class interval", eq: "m = (a + b)/2", find: "m",
+        letters: { m: "the midpoint", a: "the lower end of the class", b: "the upper end of the class" },
+        example: { a: "10", b: "20" },
+      },
+      {
+        id: "weighted-mean", name: "Weighted mean of two values", eq: "m = (xw + yv)/(w + v)", find: "m",
+        letters: { m: "the weighted mean", x: "the first value", w: "its weight", y: "the second value", v: "its weight" },
+        example: { x: "60", w: "2", y: "90", v: "3" },
+      },
+      {
+        id: "combined-mean", name: "Mean of two groups together", eq: "M = (nm + Nk)/(n + N)", find: "M",
+        letters: { M: "the mean of both groups", n: "how many in the first group", m: "the mean of the first group", N: "how many in the second group", k: "the mean of the second group" },
+        example: { n: "10", m: "60", N: "30", k: "80" },
+      },
+      {
+        id: "mean-added", name: "The mean after one more value is added", eq: "m = (nM + x)/(n + 1)", find: "m",
+        letters: { m: "the new mean", n: "how many values there were", M: "the old mean", x: "the value added" },
+        example: { n: "9", M: "50", x: "60" },
+      },
+      {
+        id: "mean-deviation", name: "Mean deviation", eq: "D = S/n", find: "D",
+        letters: { D: "the mean deviation", S: "the sum of how far each value is from the mean", n: "how many values there are" },
+        example: { S: "24", n: "8" },
+      },
+      {
+        id: "coef-variation", name: "Coefficient of variation", eq: "C = 100s/m", find: "C",
+        letters: { C: "the coefficient of variation, as a percentage", s: "the standard deviation", m: "the mean" },
+        example: { s: "6", m: "40" },
+      },
+      {
+        id: "pie-angle", name: "Angle of a pie chart sector", eq: "A = 360f/T", find: "A",
+        letters: { A: "the angle of the sector, in degrees", f: "the frequency of the item", T: "the total frequency" },
+        example: { f: "15", T: "60" },
+      },
+      {
+        id: "rel-freq", name: "Relative frequency", eq: "r = f/n", find: "r",
+        letters: { r: "the relative frequency", f: "how many times it happened", n: "how many times it was tried" },
+        example: { f: "18", n: "60" },
+      },
+      {
+        id: "regress-slope", name: "Slope of the line of best fit", eq: "b = M/N", find: "b",
+        letters: { b: "the slope", M: "the sum of the products of the x and y deviations", N: "the sum of the squares of the x deviations" },
+        example: { M: "48", N: "16" },
+      },
+      {
+        id: "regress-intercept", name: "The line of best fit passes through the means", eq: "a = Y - bX", find: "a",
+        letters: { a: "the intercept", Y: "the mean of y", b: "the slope", X: "the mean of x" },
+        example: { Y: "20", b: "3", X: "4" },
+      },
+      {
+        id: "pearson", name: "Pearson's correlation coefficient", eq: "r = M/sqrt(NQ)", find: "r",
+        letters: { r: "the correlation coefficient", M: "the sum of the products of the x and y deviations", N: "the sum of the squares of the x deviations", Q: "the sum of the squares of the y deviations" },
+        example: { M: "30", N: "36", Q: "25" },
+      },
+      {
+        id: "spearman", name: "Spearman's rank correlation", eq: "r = 1 - 6D/(n(n^2 - 1))", find: "r",
+        letters: { r: "the rank correlation", D: "the sum of the squares of the differences in rank", n: "how many pairs" },
+        example: { D: "4", n: "5" },
+      },
+      {
+        id: "margin", name: "Margin of error for a mean", eq: "E = zs/sqrt(n)", find: "E",
+        letters: { E: "the margin of error", z: "the z value for the confidence level", s: "the standard deviation", n: "the sample size" },
+        example: { z: "2", s: "5", n: "25" },
+      },
+      {
+        id: "sample-size", name: "Sample size for a margin of error", eq: "n = (zs/E)^2", find: "n",
+        letters: { n: "the sample size", z: "the z value for the confidence level", s: "the standard deviation", E: "the margin of error wanted" },
+        example: { z: "2", s: "5", E: "2" },
+      },
+    ],
+  },
+  {
+    group: "Probability: more rules",
+    items: [
+      {
+        id: "mutually-exclusive", name: "Either of two events that cannot both happen", eq: "P = a + b", find: "P",
+        letters: { P: "the probability of either", a: "the probability of the first", b: "the probability of the second" },
+        example: { a: "1/6", b: "1/3" },
+      },
+      {
+        id: "at-least-once", name: "At least once in n tries", eq: "P = 1 - (1 - p)^n", find: "P",
+        letters: { P: "the probability of at least one success", p: "the probability each time", n: "the number of tries" },
+        example: { p: "1/2", n: "3" },
+      },
+      {
+        id: "no-replacement", name: "Two picks without putting the first back", eq: "P = (a/n)(b/(n - 1))", find: "P",
+        letters: { P: "the probability of both", a: "how many of the first kind there are", b: "how many of the second kind are left after the first pick", n: "how many things there are in all" },
+        example: { a: "3", b: "2", n: "10" },
+      },
+      {
+        id: "bayes", name: "Bayes' rule", eq: "a = bc/d", find: "a",
+        letters: { a: "the probability of A given B", b: "the probability of B given A", c: "the probability of A", d: "the probability of B" },
+        example: { b: "4/5", c: "1/4", d: "1/2" },
+      },
+      {
+        id: "binomial-mean", name: "Mean of a binomial distribution", eq: "m = np", find: "m",
+        letters: { m: "the mean number of successes", n: "the number of trials", p: "the probability each time" },
+        example: { n: "40", p: "1/4" },
+      },
+      {
+        id: "binomial-var", name: "Variance of a binomial distribution", eq: "v = np(1 - p)", find: "v",
+        letters: { v: "the variance", n: "the number of trials", p: "the probability each time" },
+        example: { n: "40", p: "1/4" },
+      },
+      {
+        id: "geometric-prob", name: "The first success is on try k", eq: "P = (1 - p)^(k - 1)p", find: "P",
+        letters: { P: "the probability", p: "the probability of success each time", k: "the try on which the first success comes" },
+        example: { p: "1/2", k: "3" },
+      },
+      {
+        id: "geometric-mean-tries", name: "Average number of tries to the first success", eq: "m = 1/p", find: "m",
+        letters: { m: "the mean number of tries", p: "the probability of success each time" },
+        example: { p: "1/5" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
