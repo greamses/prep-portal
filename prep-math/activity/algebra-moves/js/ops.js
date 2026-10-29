@@ -1840,6 +1840,69 @@ export function cancelAcross(eq, fracId, leaf) {
   };
 }
 
+/** Cancel only the numbers picked: in (10000 × 50 × 8)/100, picking 50 and 100
+    takes their common factor (50) out of those two and leaves 10000 and 8 alone. */
+export function cancelPicked(eq, leaves) {
+  let F = null;
+  const picked = [];
+  for (const leaf of leaves) {
+    const at = fractionAround(eq, leaf.id);
+    if (!at || leaf.kind !== "num" || !R.isInt(leaf.v) || leaf.v.n < 1n) return { error: "Pick whole numbers in a fraction." };
+    const half = at.half === "a" ? at.frac.a : at.frac.b;
+    const parent = A.parentOf(eq, leaf.id);
+    const direct = half === leaf || (half.kind === "prod" && parent === half);
+    if (!direct || (F && F.id !== at.frac.id)) return { error: "Pick whole numbers that are factors of the top or the bottom." };
+    F = at.frac;
+    picked.push({ leaf, half: at.half });
+  }
+  const side = (h) => picked.filter((p) => p.half === h);
+  if (!side("a").length || !side("b").length) return { error: "Pick a number on top and one underneath." };
+  const prodOf = (ps) => ps.reduce((m, p) => m * p.leaf.v.n, 1n);
+  let g = gcdBig(prodOf(side("a")), prodOf(side("b")));
+  if (g < 2n) return { error: "Those have no common factor." };
+  const shrink = (h) => {
+    const half = h === "a" ? F.a : F.b;
+    let rest = g;
+    const swap = new Map();
+    for (const p of side(h)) {
+      const d = gcdBig(p.leaf.v.n, rest);
+      rest /= d;
+      swap.set(p.leaf.id, p.leaf.v.n / d);
+    }
+    if (half.kind !== "prod") return A.num(R.rat(swap.get(half.id)));
+    const kids = half.kids.flatMap((k) => (swap.has(k.id) ? (swap.get(k.id) === 1n ? [] : [A.num(R.rat(swap.get(k.id)))]) : [k]));
+    return kids.length === 0 ? A.num(R.ONE) : kids.length === 1 ? kids[0] : { ...half, kids };
+  };
+  const top = shrink("a"), bottom = shrink("b");
+  const bv = A.exactValue(bottom);
+  const next = bv && R.isOne(bv) ? (top.kind === "prod" ? { ...top, paren: false } : top) : A.frac(top, bottom);
+  return {
+    eq: A.replace(eq, F.id, next), from: flyFrom(eq, next, F.id), mark: plain(next),
+    note: `Cancel ${g} between the picked numbers: ${plain(F)} is ${plain(next)}`,
+  };
+}
+
+/** Multiply only the numbers picked: 10000 and 50 of 10000 × 50 × 8 become 500000. */
+export function multiplyPicked(eq, leaves) {
+  if (leaves.length < 2 || leaves.some((l) => !l || l.kind !== "num")) return { error: "Pick two or more numbers." };
+  const prod = A.parentOf(eq, leaves[0].id);
+  if (!prod || prod.kind !== "prod" || leaves.some((l) => A.parentOf(eq, l.id) !== prod)) return { error: "Pick numbers multiplied together." };
+  const ids = new Set(leaves.map((l) => l.id));
+  const total = prod.kids.filter((k) => ids.has(k.id)).reduce((m, k) => R.mul(m, k.v), R.ONE);
+  let placed = false;
+  const kids = prod.kids.flatMap((k) => {
+    if (!ids.has(k.id)) return [k];
+    if (placed) return [];
+    placed = true;
+    return [A.num(total)];
+  });
+  const next = kids.length === 1 ? kids[0] : { ...prod, kids };
+  return {
+    eq: A.replace(eq, prod.id, next), from: flyFrom(eq, next, prod.id), mark: plain(next),
+    note: `Multiply ${leaves.map((l) => plain(l)).join(" × ")} to make ${plain(A.num(total))}: ${plain(next)}`,
+  };
+}
+
 /** Several terms picked: their highest common factor, taken out of just those. */
 export function factorPicked(eq, ids) {
   const locs = ids.map((id) => locate(eq, id));
@@ -3214,6 +3277,9 @@ export function multiOffers(eq, keys, { given = null } = {}) {
     const spots = keys.map((k) => ({ leaf: A.findById(eq, keyParts(k).nodeId), at: fractionAround(eq, keyParts(k).nodeId) }));
     const f = spots[0].at?.frac;
     if (f && spots.every((s) => s.at?.frac.id === f.id) && new Set(spots.map((s) => s.at.half)).size === 2) {
+      // Numbers picked in a product: cancel just those, nothing else on the line.
+      const only = cancelPicked(eq, spots.map((s) => s.leaf).filter(Boolean));
+      if (!only.error) return [{ key: "cancel", label: only.note.split(":")[0], hint: "just the picked numbers", mark: only.mark, run: () => only }];
       // Whichever picked letter or number is shared by every term is the one that goes.
       for (const { leaf } of spots) {
         if (!leaf || (leaf.kind !== "var" && leaf.kind !== "num")) continue;
@@ -3221,6 +3287,12 @@ export function multiOffers(eq, keys, { given = null } = {}) {
         if (!r.error) return [{ key: "cancel", label: r.note.split(":")[0], hint: "same factor top and bottom", mark: r.mark, run: () => r }];
       }
     }
+  }
+  // Numbers picked in one product, and only those: multiply them together.
+  if (keys.length >= 2) {
+    const leaves = keys.map((k) => A.findById(eq, keyParts(k).nodeId));
+    const m = multiplyPicked(eq, leaves);
+    if (!m.error) return [{ key: "multiply", label: m.note.split(":")[0], hint: "just the picked numbers", mark: m.mark, run: () => m }];
   }
   const terms = [];
   for (const k of keys) {
