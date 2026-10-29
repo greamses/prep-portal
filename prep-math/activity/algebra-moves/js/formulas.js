@@ -1812,6 +1812,243 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Engineering: forces, machines and structures",
+    items: [
+      {
+        id: "stress", name: "Stress on a material", eq: "S = F/A", find: "S",
+        letters: { S: "the stress", F: "the force", A: "the cross-section area" },
+        example: { F: "5000", A: "25" },
+      },
+      {
+        id: "strain", name: "Strain on a material", eq: "s = x/L", find: "s",
+        letters: { s: "the strain", x: "the stretch", L: "the original length" },
+        example: { x: "2", L: "400" },
+      },
+      {
+        id: "young", name: "Young's modulus", eq: "Y = FL/(Ax)", find: "Y",
+        letters: { Y: "Young's modulus", F: "the force", L: "the original length", A: "the cross-section area", x: "the stretch" },
+        example: { F: "200", L: "3", A: "2", x: "0.5" },
+        note: "stress divided by strain",
+      },
+      {
+        id: "safety-factor", name: "Factor of safety", eq: "F = S/W", find: "F",
+        letters: { F: "the factor of safety", S: "the load that would break it", W: "the load it carries" },
+        example: { S: "900", W: "300" },
+      },
+      {
+        id: "torque", name: "Torque", eq: "T = Fr", find: "T",
+        letters: { T: "the torque", F: "the force", r: "the distance from the axis" },
+        example: { F: "40", r: "0.5" },
+      },
+      {
+        id: "rotational-power", name: "Power of a turning shaft", eq: "P = Tw", find: "P",
+        letters: { P: "the power", T: "the torque", w: "the angular speed" },
+        example: { T: "20", w: "150" },
+      },
+      {
+        id: "angular-speed", name: "Angular speed from the frequency", eq: "w = 2(22/7)f", find: "w",
+        letters: { w: "the angular speed, in radians per second", f: "the turns each second" },
+        example: { f: "7" },
+        note: "taking π as 22/7",
+      },
+      {
+        id: "gear-ratio", name: "Gear ratio", eq: "G = N/n", find: "G",
+        letters: { G: "the gear ratio", N: "the teeth on the driven gear", n: "the teeth on the driving gear" },
+        example: { N: "60", n: "15" },
+      },
+      {
+        id: "rotational-ke", name: "Energy of a spinning object", eq: "E = (1/2)Iw^2", find: "E",
+        letters: { E: "the energy", I: "the moment of inertia", w: "the angular speed" },
+        example: { I: "4", w: "5" },
+      },
+      {
+        id: "incline-ma", name: "Mechanical advantage of a ramp", eq: "M = L/h", find: "M",
+        letters: { M: "the mechanical advantage", L: "the length of the ramp", h: "the height it rises" },
+        example: { L: "6", h: "1.5" },
+      },
+      {
+        id: "hydraulic", name: "A hydraulic press", eq: "F/A = f/a", find: "F",
+        letters: { F: "the force on the big piston", A: "the area of the big piston", f: "the force on the small piston", a: "the area of the small piston" },
+        example: { A: "50", f: "20", a: "2" },
+        note: "pressure is the same everywhere in the fluid",
+      },
+      {
+        id: "flow-rate", name: "Flow rate in a pipe", eq: "Q = Av", find: "Q",
+        letters: { Q: "the volume flowing each second", A: "the cross-section area of the pipe", v: "the speed of the fluid" },
+        example: { A: "0.02", v: "3" },
+      },
+      {
+        id: "beam-moment", name: "Bending moment: a load in the middle of a beam", eq: "M = FL/4", find: "M",
+        letters: { M: "the greatest bending moment", F: "the load", L: "the length between the supports" },
+        example: { F: "800", L: "5" },
+      },
+      {
+        id: "beam-inertia", name: "Second moment of area of a rectangle", eq: "I = bh^3/12", find: "I",
+        letters: { I: "the second moment of area", b: "the width", h: "the depth" },
+        example: { b: "6", h: "10" },
+      },
+      {
+        id: "heat-conduction", name: "Heat conducted through a wall", eq: "H = kAT/d", find: "H",
+        letters: { H: "the heat flowing each second", k: "the conductivity of the material", A: "the area", T: "the temperature difference", d: "the thickness" },
+        example: { k: "0.5", A: "20", T: "15", d: "0.25" },
+      },
+      {
+        id: "carnot", name: "Best efficiency of a heat engine", eq: "E = 100(1 - c/h)", find: "E",
+        letters: { E: "the greatest efficiency, as a percentage", c: "the cold temperature, in kelvin", h: "the hot temperature, in kelvin" },
+        example: { c: "300", h: "600" },
+      },
+      {
+        id: "power-loss", name: "Power lost as heat in a wire", eq: "P = I^2R", find: "P",
+        letters: { P: "the power lost", I: "the current", R: "the resistance" },
+        example: { I: "5", R: "4" },
+      },
+      {
+        id: "capacitance", name: "Capacitance", eq: "C = Q/V", find: "C",
+        letters: { C: "the capacitance", Q: "the charge stored", V: "the voltage" },
+        example: { Q: "0.06", V: "12" },
+      },
+      {
+        id: "capacitor-energy", name: "Energy stored in a capacitor", eq: "E = (1/2)CV^2", find: "E",
+        letters: { E: "the energy", C: "the capacitance", V: "the voltage" },
+        example: { C: "0.002", V: "10" },
+      },
+      {
+        id: "range-projectile", name: "Range of a projectile", eq: "R = u^2·sin(2a°)/g", find: "R",
+        letters: { R: "the range", u: "the launch speed", a: "the launch angle, in degrees", g: "the pull of gravity per kilogram" },
+        example: { u: "20", a: "45", g: "10" },
+      },
+      {
+        id: "height-projectile", name: "Greatest height of a projectile", eq: "H = u^2·sin(a°)^2/(2g)", find: "H",
+        letters: { H: "the greatest height", u: "the launch speed", a: "the launch angle, in degrees", g: "the pull of gravity per kilogram" },
+        example: { u: "20", a: "30", g: "10" },
+      },
+      {
+        id: "flight-time", name: "Time of flight of a projectile", eq: "T = 2u·sin(a°)/g", find: "T",
+        letters: { T: "the time in the air", u: "the launch speed", a: "the launch angle, in degrees", g: "the pull of gravity per kilogram" },
+        example: { u: "20", a: "30", g: "10" },
+      },
+    ],
+  },
+  {
+    group: "Earth science: rocks, weather, rivers and the planet",
+    items: [
+      {
+        id: "quake-ratio", name: "How much bigger one earthquake is than another", eq: "R = 10^(M - m)", find: "R",
+        letters: { R: "how many times bigger the shaking is", M: "the bigger magnitude", m: "the smaller magnitude" },
+        example: { M: "7", m: "5" },
+        note: "each step of 1 on the scale is ten times the shaking",
+      },
+      {
+        id: "quake-distance", name: "Distance to an earthquake", eq: "d = tvu/(v - u)", find: "d",
+        letters: { d: "the distance to the earthquake", t: "the gap between the first P wave and the first S wave", v: "the speed of the P wave", u: "the speed of the S wave" },
+        example: { t: "10", v: "8", u: "4" },
+      },
+      {
+        id: "rock-age", name: "Age of a rock from its half-life", eq: "t = h·log_2(A/N)", find: "t",
+        letters: { t: "the age", h: "the half-life", A: "the amount of the isotope at the start", N: "the amount left now" },
+        example: { h: "5", A: "80", N: "10" },
+      },
+      {
+        id: "porosity", name: "Porosity of a rock", eq: "P = 100V/T", find: "P",
+        letters: { P: "the porosity, as a percentage", V: "the volume of the gaps", T: "the total volume of the rock" },
+        example: { V: "30", T: "150" },
+      },
+      {
+        id: "specific-gravity", name: "Specific gravity of a mineral", eq: "S = a/(a - w)", find: "S",
+        letters: { S: "the specific gravity", a: "the weight in air", w: "the weight in water" },
+        example: { a: "30", w: "20" },
+      },
+      {
+        id: "darcy", name: "Water flowing through rock or soil", eq: "Q = kAh/L", find: "Q",
+        letters: { Q: "the flow each second", k: "how easily water passes", A: "the cross-section area", h: "the drop in water level", L: "the length of the flow" },
+        example: { k: "0.2", A: "10", h: "6", L: "4" },
+      },
+      {
+        id: "lapse-rate", name: "Temperature at a height", eq: "T = t - 0.0065h", find: "T",
+        letters: { T: "the temperature at height h", t: "the temperature at sea level", h: "the height in metres" },
+        example: { t: "30", h: "1000" },
+        note: "air cools about 6.5 °C for each 1000 m",
+      },
+      {
+        id: "cloud-base", name: "Height of the base of a cloud", eq: "H = 125(T - d)", find: "H",
+        letters: { H: "the cloud base in metres", T: "the air temperature", d: "the dew point" },
+        example: { T: "30", d: "20" },
+      },
+      {
+        id: "humidity", name: "Relative humidity", eq: "H = 100a/s", find: "H",
+        letters: { H: "the relative humidity, as a percentage", a: "the water vapour in the air", s: "the most the air could hold" },
+        example: { a: "12", s: "30" },
+      },
+      {
+        id: "river-discharge", name: "Discharge of a river", eq: "Q = wdv", find: "Q",
+        letters: { Q: "the volume flowing each second", w: "the width", d: "the average depth", v: "the speed of the water" },
+        example: { w: "12", d: "2", v: "1.5" },
+      },
+      {
+        id: "river-gradient", name: "Gradient of a river or slope", eq: "G = h/d", find: "G",
+        letters: { G: "the gradient", h: "the drop in height", d: "the distance along" },
+        example: { h: "50", d: "2000" },
+      },
+      {
+        id: "percent-grade", name: "Percentage grade of a slope", eq: "G = 100h/d", find: "G",
+        letters: { G: "the grade, as a percentage", h: "the rise", d: "the distance along the ground" },
+        example: { h: "12", d: "150" },
+      },
+      {
+        id: "drainage-density", name: "Drainage density", eq: "D = L/A", find: "D",
+        letters: { D: "the drainage density", L: "the total length of the streams", A: "the area of the basin" },
+        example: { L: "90", A: "30" },
+      },
+      {
+        id: "sinuosity", name: "Sinuosity of a river", eq: "S = c/s", find: "S",
+        letters: { S: "the sinuosity", c: "the length along the channel", s: "the straight-line distance" },
+        example: { c: "15", s: "10" },
+      },
+      {
+        id: "population-density", name: "Population density", eq: "D = n/A", find: "D",
+        letters: { D: "the people for each square kilometre", n: "the number of people", A: "the area" },
+        example: { n: "900000", A: "300" },
+      },
+      {
+        id: "natural-increase", name: "Natural increase of a population", eq: "r = (b - d)/10", find: "r",
+        letters: { r: "the natural increase, as a percentage", b: "births for each 1000 people", d: "deaths for each 1000 people" },
+        example: { b: "35", d: "15" },
+      },
+      {
+        id: "rule-70", name: "The rule of 70: years for a population to double", eq: "t = 70/r", find: "t",
+        letters: { t: "the years to double", r: "the growth rate, as a percentage" },
+        example: { r: "2" },
+      },
+      {
+        id: "time-longitude", name: "Time difference from longitude", eq: "t = L/15", find: "t",
+        letters: { t: "the time difference in hours", L: "the difference in longitude, in degrees" },
+        example: { L: "45" },
+        note: "the sun crosses 15 degrees of longitude each hour",
+      },
+      {
+        id: "surface-gravity", name: "Gravity at the surface of a planet", eq: "g = GM/r^2", find: "g",
+        letters: { g: "the pull of gravity per kilogram", G: "the gravitational constant", M: "the mass of the planet", r: "the radius of the planet" },
+        example: { G: "6", M: "8", r: "2" },
+      },
+      {
+        id: "escape-speed", name: "Escape speed from a planet", eq: "v = sqrt(2GM/r)", find: "v",
+        letters: { v: "the escape speed", G: "the gravitational constant", M: "the mass of the planet", r: "the radius of the planet" },
+        example: { G: "6", M: "8", r: "3" },
+      },
+      {
+        id: "orbit-speed", name: "Speed of a satellite in a circular orbit", eq: "v = sqrt(GM/r)", find: "v",
+        letters: { v: "the orbital speed", G: "the gravitational constant", M: "the mass of the planet", r: "the distance from the centre" },
+        example: { G: "6", M: "8", r: "3" },
+      },
+      {
+        id: "kepler", name: "Kepler's third law", eq: "T^2 = a^3", find: "T",
+        letters: { T: "the orbit time, in years", a: "the distance from the sun, in astronomical units" },
+        example: { a: "4" },
+        note: "for anything that orbits the sun",
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
