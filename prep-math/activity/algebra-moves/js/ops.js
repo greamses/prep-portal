@@ -1882,6 +1882,29 @@ export function cancelPicked(eq, leaves) {
   };
 }
 
+/** Carry picked factors across the = together: P and T of I = PRT/100 divide both
+    sides by PT at once (not by P and then by T); a picked bottom multiplies. */
+export function factorsAcross(eq, leaves) {
+  if (!A.isEquation(eq)) return { error: TWO_SIDED };
+  let term = null, down = null;
+  for (const leaf of leaves) {
+    if (!leaf || (leaf.kind !== "var" && leaf.kind !== "num")) return { error: "Pick letters or numbers." };
+    let under = false, n = leaf, ok = true;
+    for (let p = A.parentOf(eq, n.id); p && ok; n = p, p = A.parentOf(eq, p.id)) {
+      if (p.kind === "frac") { if (p.b === n) under = !under; }
+      else if (p.kind !== "prod" && p.kind !== "neg") ok = false;
+      if (locate(eq, p.id)?.topSide && locate(eq, p.id).term === p) { n = p; break; }
+    }
+    const top = ok && locate(eq, n.id);
+    if (!top || !top.topSide || top.term !== n) return { error: "Pick factors of a whole term." };
+    if ((term && term !== n) || (down !== null && down !== under)) return { error: "Pick factors of one term, all on top or all underneath." };
+    term = n; down = under;
+  }
+  const piece = leaves.length === 1 ? freshCopy(leaves[0]) : A.prod(leaves.map((l) => freshCopy(l)));
+  const r = applyToBoth(eq, down ? "×" : "÷", piece);
+  return r.error ? r : { ...r, note: `${down ? "Multiply" : "Divide"} both sides by ${plain(piece)}` };
+}
+
 /** Multiply only the numbers picked: 10000 and 50 of 10000 × 50 × 8 become 500000. */
 export function multiplyPicked(eq, leaves) {
   if (leaves.length < 2 || leaves.some((l) => !l || l.kind !== "num")) return { error: "Pick two or more numbers." };
@@ -3090,6 +3113,10 @@ export function atomOffers(eq, key, { given = null } = {}) {
         if (!d.error) add({ key: "divide", label: `Divide both sides by ${leaf.name}`, hint: "move just the letter in front", mark: `÷${leaf.name}`, dir: at.topSide === "r" ? "l" : "r", run: () => d });
       }
     }
+    if (leaf && (leaf.kind === "var" || leaf.kind === "num") && !out.some((o) => o.key === "divide" && o.mark === "÷" + (leaf.kind === "var" ? leaf.name : mul(leaf.v)))) {
+      const fa = factorsAcross(eq, [leaf]);
+      if (!fa.error && !R.isOne(A.exactValue(leaf) || R.ZERO)) add({ key: fa.mark.startsWith("×") ? "times" : "divide", label: fa.note, hint: "just the picked factor", mark: fa.mark, dir: "both", run: () => fa });
+    }
     for (const F of chain) {
       if (F.kind === "frac" && A.findById(F.b, nodeId)) {
         pick(pool(F), "times");
@@ -3293,6 +3320,11 @@ export function multiOffers(eq, keys, { given = null } = {}) {
     const leaves = keys.map((k) => A.findById(eq, keyParts(k).nodeId));
     const m = multiplyPicked(eq, leaves);
     if (!m.error) return [{ key: "multiply", label: m.note.split(":")[0], hint: "just the picked numbers", mark: m.mark, run: () => m }];
+  }
+  // Factors of one term picked together: carry all of them across at once.
+  if (keys.length >= 2) {
+    const fa = factorsAcross(eq, keys.map((k) => A.findById(eq, keyParts(k).nodeId)));
+    if (!fa.error) return [{ key: fa.mark.startsWith("×") ? "times" : "divide", label: fa.note, hint: "the picked factors cross together", mark: fa.mark, dir: "both", run: () => fa }];
   }
   const terms = [];
   for (const k of keys) {
