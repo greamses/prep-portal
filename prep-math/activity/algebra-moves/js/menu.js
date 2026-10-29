@@ -35,6 +35,17 @@ function arrow(dir) {
   return svg;
 }
 
+/** Two arrows, one each way: two things changing places. */
+function swapArrow() {
+  const svg = el("svg", { class: "am-move__swap", viewBox: "0 0 24 14", "aria-hidden": "true" });
+  const line = (d) => el("path", { d, fill: "none", stroke: "currentColor", "stroke-width": "1.7", "stroke-linecap": "round", "stroke-linejoin": "round" });
+  svg.append(
+    line("M2 4.2 H21"), line("M17.2 1 L21 4.2 L17.2 7.4"),
+    line("M22 9.8 H3"), line("M6.8 6.6 L3 9.8 L6.8 13"),
+  );
+  return svg;
+}
+
 /** One piece of a mark, typeset: an operator in front (−, +, ÷, ×) stays a
     glyph, and what follows is drawn by the canvas's own typesetter. Anything
     that will not parse (⇄, ⌫) is shown as it is written. */
@@ -59,7 +70,10 @@ function face(offer) {
   holder.className = "am-move__face";
   holder.setAttribute("aria-hidden", "true");
   if (offer.faces) {
-    for (const f of offer.faces) setPiece(holder, f.op, f.src);
+    for (const f of offer.faces) {
+      if (f.swap) holder.appendChild(swapArrow());          // the arrows of a swap, between the two things swapped
+      else setPiece(holder, f.op, f.src);
+    }
     return holder;
   }
   const mark = offer.mark || offer.label;

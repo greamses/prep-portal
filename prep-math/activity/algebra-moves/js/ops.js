@@ -1987,7 +1987,10 @@ function moveOffers(eq, termId) {
   const before = loc.terms[loc.index - 1], after = loc.term;
   const r = swapTerms(eq, before.id, after.id);
   if (r.error) return [];
-  return [{ key: "reorder", label: `Swap ${plain(before)} and ${plain(after)}`, hint: "the two terms either side of the sign", mark: r.mark, run: () => r }];
+  return [{
+    key: "reorder", label: `Swap ${plain(before)} and ${plain(after)}`, hint: "the two terms either side of the sign", mark: r.mark, run: () => r,
+    faces: [{ op: "", src: plain(before) }, { swap: true }, { op: "", src: plain(after) }],
+  }];
 }
 
 /** Two neighbouring terms the other way round — b² − 4ac rather than −4ac + b². */
@@ -3128,6 +3131,7 @@ export function swapPicked(eq, ids) {
   const shown = A.sideFromTerms(next, loc.container);
   return {
     eq: setContainer(eq, loc, next), from: new Map(), mark: `⇄ ${plain(shown)}`,
+    faces: [{ op: "", src: plain(loc.terms[order[0]]) }, { swap: true }, { op: "", src: plain(loc.terms[order[order.length - 1]]) }],
     note: `${order.length === 2 ? "The two terms change places" : "The picked terms are turned round"}: ${plain(shown)}`,
   };
 }
@@ -3152,7 +3156,10 @@ export function swapFactors(eq, nodeIds) {
   const kids = [...prod.kids];
   at.forEach((pos, k) => { kids[pos] = prod.kids[at[at.length - 1 - k]]; });
   const next = { ...prod, kids };
-  return { eq: A.replace(eq, prod.id, next), from: new Map(), mark: `⇄ ${plain(next)}`, note: `The factors change places: ${plain(next)}` };
+  return {
+    eq: A.replace(eq, prod.id, next), from: new Map(), mark: `⇄ ${plain(next)}`, note: `The factors change places: ${plain(next)}`,
+    faces: [{ op: "", src: plain(prod.kids[at[0]]) }, { swap: true }, { op: "", src: plain(prod.kids[at[at.length - 1]]) }],
+  };
 }
 
 /** The slope and the integral of just the terms picked, each on a card of its own. */
@@ -3226,15 +3233,24 @@ export function multiOffers(eq, keys, { given = null } = {}) {
       out.push(...quadraticOffers(eq, locs[0], locs.map((l) => l.index)));
     }
   }
-  // Terms (or the signs in front of them) picked together: change their places.
-  {
+  // Several SIGNS picked (and nothing else): each one offers to swap the two terms either side of it.
+  const signsOnly = keys.length >= 2 && keys.every((k) => keyParts(k).slot.startsWith("op"));
+  if (signsOnly) {
+    for (const k of keys) {
+      const { nodeId, slot } = keyParts(k);
+      const kid = A.findById(eq, nodeId)?.kids?.[Number(slot.slice(2))];
+      if (kid) for (const o of moveOffers(eq, kid.id)) out.push(o);
+    }
+  }
+  // Terms picked together: change their places.
+  if (!signsOnly) {
     const sw = swapPicked(eq, ids);
-    if (!sw.error) out.push({ key: "swapterms", label: sw.note, hint: "the order of a sum does not matter", mark: sw.mark, run: () => sw });
+    if (!sw.error) out.push({ key: "swapterms", label: sw.note, hint: "the order of a sum does not matter", mark: sw.mark, faces: sw.faces, run: () => sw });
   }
   // Glyphs picked in different factors of one product: change those factors' places.
   {
     const fw = swapFactors(eq, keys.map((k) => keyParts(k).nodeId));
-    if (!fw.error && !out.some((o) => o.key === "swapterms")) out.push({ key: "swapfactors", label: fw.note, hint: "the order of a product does not matter", mark: fw.mark, run: () => fw });
+    if (!fw.error && !out.some((o) => o.key === "swapterms")) out.push({ key: "swapfactors", label: fw.note, hint: "the order of a product does not matter", mark: fw.mark, faces: fw.faces, run: () => fw });
   }
   // The slope or the integral of just these terms.
   for (const o of pickedCalculus(eq, terms)) out.push(o);
