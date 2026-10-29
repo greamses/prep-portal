@@ -2599,6 +2599,288 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Sports: scores, rankings and training",
+    items: [
+      {
+        id: "run-pace", name: "Running pace", eq: "p = t/d", find: "p",
+        letters: { p: "the minutes for each kilometre", t: "the time in minutes", d: "the distance in kilometres" },
+        example: { t: "30", d: "5" },
+      },
+      {
+        id: "pace-speed", name: "Speed from a running pace", eq: "v = 60/p", find: "v",
+        letters: { v: "the speed in kilometres an hour", p: "the minutes for each kilometre" },
+        example: { p: "6" },
+      },
+      {
+        id: "race-time", name: "Race time from a pace", eq: "T = dp", find: "T",
+        letters: { T: "the time in minutes", d: "the distance in kilometres", p: "the minutes for each kilometre" },
+        example: { d: "10", p: "5.5" },
+      },
+      {
+        id: "laps", name: "Laps in a distance", eq: "L = d/c", find: "L",
+        letters: { L: "the number of laps", d: "the distance", c: "the length of one lap" },
+        example: { d: "5000", c: "400" },
+      },
+      {
+        id: "batting-average", name: "Batting average", eq: "A = r/o", find: "A",
+        letters: { A: "the batting average", r: "the runs scored", o: "the number of times out" },
+        example: { r: "840", o: "21" },
+      },
+      {
+        id: "strike-rate", name: "Batting strike rate", eq: "S = 100r/b", find: "S",
+        letters: { S: "the runs for each 100 balls", r: "the runs scored", b: "the balls faced" },
+        example: { r: "45", b: "30" },
+      },
+      {
+        id: "economy", name: "Bowling economy rate", eq: "E = r/o", find: "E",
+        letters: { E: "the runs conceded each over", r: "the runs conceded", o: "the overs bowled" },
+        example: { r: "42", o: "6" },
+      },
+      {
+        id: "bowling-average", name: "Bowling average", eq: "A = r/w", find: "A",
+        letters: { A: "the runs for each wicket", r: "the runs conceded", w: "the wickets taken" },
+        example: { r: "300", w: "12" },
+      },
+      {
+        id: "run-rate", name: "Run rate", eq: "R = r/o", find: "R",
+        letters: { R: "the runs each over", r: "the runs scored", o: "the overs bowled" },
+        example: { r: "135", o: "15" },
+      },
+      {
+        id: "required-rate", name: "Required run rate", eq: "q = (T - s)/o", find: "q",
+        letters: { q: "the runs needed each over", T: "the target", s: "the score now", o: "the overs left" },
+        example: { T: "180", s: "96", o: "7" },
+      },
+      {
+        id: "net-run-rate", name: "Net run rate", eq: "N = r/o - c/p", find: "N",
+        letters: { N: "the net run rate", r: "the runs scored", o: "the overs faced", c: "the runs conceded", p: "the overs bowled" },
+        example: { r: "300", o: "40", c: "240", p: "40" },
+      },
+      {
+        id: "league-points", name: "League points", eq: "P = 3w + d", find: "P",
+        letters: { P: "the points", w: "the wins", d: "the draws" },
+        example: { w: "9", d: "4" },
+        note: "3 for a win and 1 for a draw",
+      },
+      {
+        id: "win-percent", name: "Winning percentage", eq: "W = 100w/g", find: "W",
+        letters: { W: "the percentage of games won", w: "the games won", g: "the games played" },
+        example: { w: "18", g: "30" },
+      },
+      {
+        id: "goal-difference", name: "Goal difference", eq: "D = f - a", find: "D",
+        letters: { D: "the goal difference", f: "the goals scored", a: "the goals conceded" },
+        example: { f: "42", a: "27" },
+      },
+      {
+        id: "pythagorean-expectation", name: "Expected share of wins from points scored", eq: "W = P^2/(P^2 + A^2)", find: "W",
+        letters: { W: "the expected share of wins", P: "the points scored", A: "the points conceded" },
+        example: { P: "3", A: "4" },
+      },
+      {
+        id: "elo-expected", name: "Chance of winning from two ratings (Elo)", eq: "E = 1/(1 + 10^((b - a)/400))", find: "E",
+        letters: { E: "the chance that the first player wins", a: "the first player's rating", b: "the second player's rating" },
+        example: { a: "1900", b: "1500" },
+      },
+      {
+        id: "elo-new", name: "New rating after a game (Elo)", eq: "N = a + K(S - E)", find: "N",
+        letters: { N: "the new rating", a: "the old rating", K: "how much one game can change a rating", S: "1 for a win, 1/2 for a draw, 0 for a loss", E: "the chance of winning that was expected" },
+        example: { a: "1500", K: "32", S: "1", E: "1/2" },
+      },
+      {
+        id: "one-rep-max", name: "Estimated heaviest single lift (Epley)", eq: "M = w(1 + r/30)", find: "M",
+        letters: { M: "the estimated one-rep max", w: "the weight lifted", r: "how many times it was lifted" },
+        example: { w: "80", r: "6" },
+      },
+      {
+        id: "lift-volume", name: "Total weight lifted in a session", eq: "L = srw", find: "L",
+        letters: { L: "the total lifted", s: "the sets", r: "the repetitions in each set", w: "the weight for each repetition" },
+        example: { s: "4", r: "8", w: "60" },
+      },
+      {
+        id: "met-calories", name: "Calories used in exercise", eq: "C = Mwt", find: "C",
+        letters: { C: "the calories used", M: "the MET value of the exercise", w: "the body mass in kilograms", t: "the time in hours" },
+        example: { M: "8", w: "70", t: "1" },
+      },
+      {
+        id: "sweat-rate", name: "Sweat rate", eq: "S = (a - b + d)/t", find: "S",
+        letters: { S: "the litres lost each hour", a: "the body mass before, in kilograms", b: "the body mass after, in kilograms", d: "the litres drunk", t: "the hours of exercise" },
+        example: { a: "70", b: "69", d: "0.5", t: "1" },
+      },
+    ],
+  },
+  {
+    group: "Health: body, dosage and public health",
+    items: [
+      {
+        id: "bmi", name: "Body mass index", eq: "B = m/h^2", find: "B",
+        letters: { B: "the body mass index", m: "the mass in kilograms", h: "the height in metres" },
+        example: { m: "45", h: "1.5" },
+      },
+      {
+        id: "body-surface", name: "Body surface area (Mosteller)", eq: "S = sqrt(hw/3600)", find: "S",
+        letters: { S: "the body surface area in square metres", h: "the height in centimetres", w: "the mass in kilograms" },
+        example: { h: "180", w: "80" },
+      },
+      {
+        id: "waist-hip", name: "Waist-to-hip ratio", eq: "R = a/b", find: "R",
+        letters: { R: "the waist-to-hip ratio", a: "the waist measurement", b: "the hip measurement" },
+        example: { a: "80", b: "100" },
+      },
+      {
+        id: "max-heart-rate", name: "Greatest heart rate", eq: "M = 220 - a", find: "M",
+        letters: { M: "the greatest heart rate in beats a minute", a: "the age in years" },
+        example: { a: "30" },
+      },
+      {
+        id: "karvonen", name: "Target heart rate (Karvonen)", eq: "T = (M - r)p + r", find: "T",
+        letters: { T: "the target heart rate", M: "the greatest heart rate", r: "the resting heart rate", p: "the share of effort, from 0 to 1" },
+        example: { M: "190", r: "60", p: "7/10" },
+      },
+      {
+        id: "bmr-male", name: "Resting energy use, men (Mifflin-St Jeor)", eq: "B = 10w + 6.25h - 5a + 5", find: "B",
+        letters: { B: "the calories used each day at rest", w: "the mass in kilograms", h: "the height in centimetres", a: "the age in years" },
+        example: { w: "70", h: "175", a: "30" },
+      },
+      {
+        id: "bmr-female", name: "Resting energy use, women (Mifflin-St Jeor)", eq: "B = 10w + 6.25h - 5a - 161", find: "B",
+        letters: { B: "the calories used each day at rest", w: "the mass in kilograms", h: "the height in centimetres", a: "the age in years" },
+        example: { w: "60", h: "165", a: "30" },
+      },
+      {
+        id: "daily-energy", name: "Calories needed in a day", eq: "E = Bf", find: "E",
+        letters: { E: "the calories needed in a day", B: "the calories used at rest", f: "the activity factor, from 1.2 to 1.9" },
+        example: { B: "1600", f: "1.5" },
+      },
+      {
+        id: "food-energy", name: "Energy in food", eq: "E = 4p + 4c + 9f", find: "E",
+        letters: { E: "the calories", p: "the grams of protein", c: "the grams of carbohydrate", f: "the grams of fat" },
+        example: { p: "100", c: "250", f: "60" },
+      },
+      {
+        id: "water-need", name: "Water needed in a day", eq: "V = 35w", find: "V",
+        letters: { V: "the millilitres of water", w: "the mass in kilograms" },
+        example: { w: "60" },
+        note: "a rough guide",
+      },
+      {
+        id: "dose-weight", name: "Dose by body mass", eq: "D = mw", find: "D",
+        letters: { D: "the dose", m: "the dose for each kilogram", w: "the mass in kilograms" },
+        example: { m: "15", w: "20" },
+      },
+      {
+        id: "clark", name: "Child's dose from the adult dose (Clark's rule)", eq: "c = wD/70", find: "c",
+        letters: { c: "the child's dose", w: "the child's mass in kilograms", D: "the adult dose" },
+        example: { w: "21", D: "500" },
+      },
+      {
+        id: "young-dose", name: "Child's dose from the adult dose (Young's rule)", eq: "c = aD/(a + 12)", find: "c",
+        letters: { c: "the child's dose", a: "the child's age in years", D: "the adult dose" },
+        example: { a: "4", D: "400" },
+      },
+      {
+        id: "drip-rate", name: "Drip rate of an infusion", eq: "R = Vf/t", find: "R",
+        letters: { R: "the drops each minute", V: "the volume in millilitres", f: "the drops in one millilitre", t: "the time in minutes" },
+        example: { V: "500", f: "20", t: "100" },
+      },
+      {
+        id: "map", name: "Mean arterial pressure", eq: "M = (s + 2d)/3", find: "M",
+        letters: { M: "the mean arterial pressure", s: "the systolic pressure", d: "the diastolic pressure" },
+        example: { s: "120", d: "75" },
+      },
+      {
+        id: "pulse-pressure", name: "Pulse pressure", eq: "P = s - d", find: "P",
+        letters: { P: "the pulse pressure", s: "the systolic pressure", d: "the diastolic pressure" },
+        example: { s: "120", d: "80" },
+      },
+      {
+        id: "cardiac-output", name: "Cardiac output", eq: "C = hs", find: "C",
+        letters: { C: "the millilitres pumped each minute", h: "the heart rate", s: "the stroke volume in millilitres" },
+        example: { h: "72", s: "70" },
+      },
+      {
+        id: "ejection-fraction", name: "Ejection fraction", eq: "F = 100(E - s)/E", find: "F",
+        letters: { F: "the ejection fraction, as a percentage", E: "the volume in the heart before it beats", s: "the volume left after it beats" },
+        example: { E: "120", s: "48" },
+      },
+      {
+        id: "creatinine-clearance", name: "Kidney clearance (Cockcroft-Gault)", eq: "C = (140 - a)w/(72s)", find: "C",
+        letters: { C: "the clearance in millilitres a minute", a: "the age in years", w: "the mass in kilograms", s: "the serum creatinine" },
+        example: { a: "60", w: "72", s: "1" },
+      },
+      {
+        id: "corrected-calcium", name: "Corrected calcium", eq: "C = a + 0.8(4 - b)", find: "C",
+        letters: { C: "the corrected calcium", a: "the measured calcium", b: "the albumin" },
+        example: { a: "2", b: "3" },
+      },
+      {
+        id: "anion-gap", name: "Anion gap", eq: "A = N - C - B", find: "A",
+        letters: { A: "the anion gap", N: "the sodium", C: "the chloride", B: "the bicarbonate" },
+        example: { N: "140", C: "104", B: "24" },
+      },
+      {
+        id: "prevalence", name: "Prevalence of a condition", eq: "P = 100c/N", find: "P",
+        letters: { P: "the prevalence, as a percentage", c: "the people who have it", N: "the people in the group" },
+        example: { c: "45", N: "1500" },
+      },
+      {
+        id: "mortality-rate", name: "Death rate for each 1000 people", eq: "M = 1000d/N", find: "M",
+        letters: { M: "the deaths for each 1000 people", d: "the deaths in a year", N: "the people in the population" },
+        example: { d: "90", N: "12000" },
+      },
+      {
+        id: "case-fatality", name: "Case fatality rate", eq: "C = 100d/c", find: "C",
+        letters: { C: "the case fatality rate, as a percentage", d: "the deaths from the disease", c: "the people who caught it" },
+        example: { d: "30", c: "1200" },
+      },
+      {
+        id: "relative-risk", name: "Relative risk", eq: "R = (a/(a + b))/(c/(c + d))", find: "R",
+        letters: { R: "the relative risk", a: "the exposed who got ill", b: "the exposed who stayed well", c: "the unexposed who got ill", d: "the unexposed who stayed well" },
+        example: { a: "20", b: "80", c: "10", d: "90" },
+      },
+      {
+        id: "odds-ratio", name: "Odds ratio", eq: "O = ad/(bc)", find: "O",
+        letters: { O: "the odds ratio", a: "the exposed who got ill", b: "the exposed who stayed well", c: "the unexposed who got ill", d: "the unexposed who stayed well" },
+        example: { a: "20", b: "80", c: "10", d: "90" },
+      },
+      {
+        id: "nnt", name: "Number needed to treat", eq: "n = 1/(a - b)", find: "n",
+        letters: { n: "the people to treat for one to benefit", a: "the share who recover with the treatment", b: "the share who recover without it" },
+        example: { a: "3/10", b: "1/10" },
+      },
+      {
+        id: "sensitivity", name: "Sensitivity of a test", eq: "S = t/(t + f)", find: "S",
+        letters: { S: "the sensitivity", t: "the sick people the test found", f: "the sick people it missed" },
+        example: { t: "90", f: "10" },
+      },
+      {
+        id: "specificity", name: "Specificity of a test", eq: "S = t/(t + f)", find: "S",
+        letters: { S: "the specificity", t: "the healthy people it cleared", f: "the healthy people it wrongly flagged" },
+        example: { t: "180", f: "20" },
+      },
+      {
+        id: "ppv", name: "Chance that a positive test is right", eq: "V = t/(t + f)", find: "V",
+        letters: { V: "the positive predictive value", t: "the positive tests that were right", f: "the positive tests that were wrong" },
+        example: { t: "90", f: "30" },
+      },
+      {
+        id: "spread", name: "People infected after n rounds of spread", eq: "I = R^n", find: "I",
+        letters: { I: "the people infected", R: "the people each person infects", n: "the number of rounds" },
+        example: { R: "3", n: "4" },
+      },
+      {
+        id: "herd-immunity", name: "Share that must be immune to stop an outbreak", eq: "H = 100(1 - 1/R)", find: "H",
+        letters: { H: "the share that must be immune, as a percentage", R: "the people each person infects" },
+        example: { R: "4" },
+      },
+      {
+        id: "vaccine-efficacy", name: "Efficacy of a vaccine", eq: "E = 100(1 - a/b)", find: "E",
+        letters: { E: "the efficacy, as a percentage", a: "the risk of illness in the vaccinated", b: "the risk of illness in the unvaccinated" },
+        example: { a: "1/10", b: "1/2" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
