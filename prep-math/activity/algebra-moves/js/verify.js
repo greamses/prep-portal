@@ -80,7 +80,8 @@ function evalAt(node, env) {
     case "neg":  return -evalAt(node.k, env);
     case "sum":  return node.kids.reduce((a, k) => a + evalAt(k, env), 0);
     case "prod": return node.kids.reduce((a, k) => a * evalAt(k, env), 1);
-    case "frac": {
+    case "frac":
+    case "div": {
       const b = evalAt(node.b, env);
       return Math.abs(b) < 1e-9 ? NaN : evalAt(node.a, env) / b;
     }

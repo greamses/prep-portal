@@ -674,6 +674,24 @@ export function rationalise(eq, id) {
 /** The tidy-ups that act on one node in place — the laws of indices and the
     surd rules. Offered from the term (so the solver and "is this tidy?" see
     them) and from any glyph sitting inside the node they act on. */
+/* ── Fractions stacked on fractions ─────────────────────────────────────────
+   (a/b) over (c/d) is a DIVISION: a/b ÷ c/d. Say so, and then dividing by a
+   fraction is multiplying by its reciprocal: a/b × d/c. */
+export function fracToDiv(eq, node) {
+  if (!node || node.kind !== "frac" || (node.a.kind !== "frac" && node.b.kind !== "frac")) return { error: "That is not a fraction over a fraction." };
+  const next = A.div(node.a, node.b);
+  return { eq: A.replace(eq, node.id, next), from: new Map(), mark: plain(next), note: `A fraction over a fraction is a division: ${plain(next)}` };
+}
+
+export function divFlip(eq, node) {
+  if (!node || node.kind !== "div") return { error: "That is not a division." };
+  const v = A.exactValue(node.b);
+  if (v && R.isZero(v)) return { error: "Nothing can be divided by zero." };
+  const recip = node.b.kind === "frac" ? A.frac(freshCopy(node.b.b), freshCopy(node.b.a)) : A.frac(A.num(R.ONE), freshCopy(node.b));
+  const next = A.prod([node.a, recip]);
+  return { eq: A.replace(eq, node.id, next), from: flyFrom(eq, next, node.id), mark: plain(next), note: `Dividing is multiplying by the flipped fraction: ${plain(next)}` };
+}
+
 function nodeTidies(eq, node) {
   const out = [];
   const t = (key, label, hint, trial) => {
@@ -699,6 +717,8 @@ function nodeTidies(eq, node) {
     for (let up = A.parentOf(eq, scope.id); up && ["sum", "prod", "frac"].includes(up.kind); up = A.parentOf(eq, scope.id)) scope = up;
     t("resolvepowers", "Work out the powers first", "indices before products", resolvePowers(eq, scope));
   }
+  if (node.kind === "frac") t("fracdiv", "Write it as a division", "the top ÷ the bottom", fracToDiv(eq, node));
+  if (node.kind === "div") t("divflip", "Multiply by the flipped fraction", "÷ a/b is × b/a", divFlip(eq, node));
   if (node.kind === "frac") t("cancelbracket", "Cancel what is the same on the top and the bottom", "the same bracket above and below", cancelBrackets(eq, node));
   if (node.kind === "frac") t("factorfrac", "Factor the top and the bottom", "a common factor, then two brackets", factorFraction(eq, node));
   if (node.kind === "fact") t("factorial", "Write the factorial out", "n × (n − 1) × … × 1", factorialOut(eq, node));
@@ -3066,6 +3086,9 @@ export function atomOffers(eq, key, { given = null } = {}) {
     tidiesAbove(nodeId);
     add(workOffer(nodeId));
     pick(pool(atomTerm(eq, key)), "combine", "across");
+  } else if (slot === "div") {
+    tidiesAbove(nodeId);
+    pick(pool(atomTerm(eq, key)), "across");
   } else if (slot.startsWith("dot")) {
     tidiesAbove(nodeId);
     add(workOffer(nodeId));

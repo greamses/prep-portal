@@ -120,6 +120,8 @@ function needsBrackets(node, parentKind, slot) {
   // a logarithm's argument stands in brackets, as a function's does; its base sits lowered beside it
   if (parentKind === "logb") return slot === 1;
   if (parentKind === "sigma") return node.kind === "sum";
+  if (parentKind === "div") return node.kind === "sum" || node.kind === "neg" || node.kind === "pm" || (slot === 1 && (node.kind === "prod" || node.kind === "div"));
+  if (node.kind === "div" && (parentKind === "prod" || parentKind === "neg" || parentKind === "pm")) return true;
   if (node.paren) return true;
   switch (parentKind) {
     case "prod": return node.kind === "sum" || ((node.kind === "neg" || node.kind === "pm") && slot > 0);
@@ -133,6 +135,8 @@ function needsBrackets(node, parentKind, slot) {
 function needsBracketsLinear(node, parentKind, slot) {
   if (needsBrackets(node, parentKind, slot)) return true;
   switch (parentKind) {
+    // a ÷ b reads left to right: a fraction beside it must be bracketed or it would run on
+    case "div": return node.kind === "frac";
     // A bar groups; a slash does not.
     case "frac":
       return slot === 0
@@ -246,10 +250,12 @@ function measureBare(node, size, binary) {
     case "frac": {
       const a = measure(node.a, size, "frac", 0);
       const b = measure(node.b, size, "frac", 1);
-      const pad = 0.16 * size;
+      // A fraction with a fraction in its top or bottom: its own bar is the main one, drawn heavier and longer than the small bars it holds
+      const tower = node.a.kind === "frac" || node.b.kind === "frac";
+      const pad = (tower ? 0.34 : 0.16) * size;
       const axis = 0.30 * size;
-      const gap = 0.13 * size;
-      const rule = Math.max(1, 0.05 * size);
+      const gap = (tower ? 0.2 : 0.13) * size;
+      const rule = Math.max(tower ? 2 : 1, (tower ? 0.1 : 0.05) * size);
       return {
         ...base, kind: "frac", a, b, pad, axis, gap, rule,
         w: Math.max(a.w, b.w) + pad * 2,
@@ -392,6 +398,14 @@ function measureBare(node, size, binary) {
       const lift = r.ascent * 0.5;
       return { ...r, kind: "nroot", node, idx, indent, lift, w: r.w + indent,
                ascent: Math.max(r.ascent, lift + idx.ascent) };
+    }
+    // a ÷ b: the two sides with a ÷ between, each fraction kept stacked
+    case "div": {
+      const a = measure(node.a, size, "div", 0);
+      const b = measure(node.b, size, "div", 1);
+      const sign = measureText("÷", size, false), gap = 0.28 * size;
+      return { ...base, kind: "div", a, b, sign, gap, w: a.w + gap + sign + gap + b.w,
+               ascent: Math.max(base.ascent, a.ascent, b.ascent), descent: Math.max(base.descent, a.descent, b.descent) };
     }
     // ⁿa: the height raised small before the base
     case "tet": {
@@ -698,6 +712,12 @@ function place(m, x, y, out) {
       place({ ...m, kind: "root" }, x + m.indent, y, out);
       break;
 
+    case "div":
+      place(m.a, x, y, out);
+      text("div", "÷", x + m.a.w + m.gap, y, m.size, false);
+      place(m.b, x + m.a.w + m.gap + m.sign + m.gap, y, out);
+      break;
+
     case "tet":
       place(m.n, x, y - m.lift, out);
       place(m.b, x + m.n.w + m.gap, y, out);
@@ -835,6 +855,7 @@ export function plain(node, parentKind = null, slot = 0) {
     case "prod": return wrap(node.kids.map((k, i) =>
                    (i > 0 && startsWithDigit(k) ? "·" : "") + plain(k, "prod", i)).join(""));
     case "frac": return wrap(`${plain(node.a, "frac", 0)}/${plain(node.b, "frac", 1)}`);
+    case "div":  return wrap(`${plain(node.a, "div", 0)}÷${plain(node.b, "div", 1)}`);
     case "pow":  return wrap(`${plain(node.b, "pow", 0)}^${plain(node.e, "pow", 1)}`);
     // √3 and √x read back as typed; anything bigger is a parcel: √(3x + 1).
     case "root": {

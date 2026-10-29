@@ -60,6 +60,8 @@ export const logb = (b, k, id = freshId()) => ({ id, kind: "logb", b, k });
 /* The nth root: ∛27 is nroot(3, 27). The index is any expression. */
 export const nroot = (n, k, id = freshId()) => ({ id, kind: "nroot", n, k });
 /* Tetration, a power tower: ³2 is 2^(2^2). `b` the base, `n` how many high. */
+/** a ÷ b written as a division, for the ÷ between stacked fractions: (a/b) ÷ (c/d). */
+export const div = (a, b, id = freshId()) => ({ id, kind: "div", a, b });
 export const tet = (b, n, id = freshId()) => ({ id, kind: "tet", b, n });
 /* {4, 7, 9}: a list of numbers, for the mean and the median to be taken of. */
 export const list = (items, id = freshId()) => ({ id, kind: "list", items });
@@ -191,7 +193,8 @@ export function kidsOf(node) {
     case "lim":  return [node.to, node.k];
     case "sum":
     case "prod": return node.kids;
-    case "frac": return [node.a, node.b];
+    case "frac":
+    case "div": return [node.a, node.b];
     case "pow":  return [node.b, node.e];
     case "eq":   return [node.l, node.r];
     default:     return [];
@@ -254,6 +257,7 @@ export function replace(root, id, next) {
       case "sum":  { const ks = n.kids.map(rec); return ks.every((k, i) => k === n.kids[i]) ? n : sum(ks, n.id); }
       case "prod": { const ks = n.kids.map(rec); return ks.every((k, i) => k === n.kids[i]) ? n : prod(ks, n.id); }
       case "frac": { const a = rec(n.a), b = rec(n.b); return a === n.a && b === n.b ? n : frac(a, b, n.id); }
+      case "div": { const a = rec(n.a), b = rec(n.b); return a === n.a && b === n.b ? n : { ...n, a, b }; }
       case "pow":  { const b = rec(n.b), e = rec(n.e); return b === n.b && e === n.e ? n : pow(b, e, n.id); }
       case "eq":   { const l = rec(n.l), r = rec(n.r); return l === n.l && r === n.r ? n : eqn(l, r, n.id); }
       case "expr": { const e = rec(n.e); return e === n.e ? n : expression(e, n.id); }
@@ -590,7 +594,8 @@ export function exactValue(node) {
         for (const k of node.kids) { const v = exactValue(k); if (!v) return null; acc = R.mul(acc, v); }
         return acc;
       }
-      case "frac": {
+      case "frac":
+      case "div": {
         const a = exactValue(node.a), b = exactValue(node.b);
         return a && b && !R.isZero(b) ? R.div(a, b) : null;
       }

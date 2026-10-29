@@ -147,7 +147,7 @@ function tokenise(src, lenient = false) {
     if (c === "?") { out.push({ t: "hole", v: "?", at: i }); i++; continue; }
     // Typed with the keys a phone offers instead of the ones we expect.
     if (c === "×" || c === "·") { out.push({ t: "*", v: "*", at: i }); i++; continue; }
-    if (c === "÷") { out.push({ t: "/", v: "/", at: i }); i++; continue; }
+    if (c === "÷") { out.push({ t: "÷", v: "÷", at: i }); i++; continue; }
     if (c === "−") { out.push({ t: "-", v: "-", at: i }); i++; continue; }
     if (c === "±") { out.push({ t: "pm", v: "±", at: i }); i++; continue; }
     throw new SyntaxError(`I do not know what to do with "${c}".`);
@@ -373,6 +373,13 @@ export function parse(src, { lenient = false } = {}) {
       const tk = peek();
       if (tk.t === "*") { p++; node = span(mark, mul(node, factor())); continue; }
       if (tk.t === "/") { p++; node = span(mark, A.frac(node, factor())); continue; }
+      // ÷ is a slash, except between fractions, where it stays a division: (a/b) ÷ (c/d)
+      if (tk.t === "÷") {
+        p++;
+        const right = factor();
+        node = span(mark, node.kind === "frac" || right.kind === "frac" ? A.div(node, right) : A.frac(node, right));
+        continue;
+      }
       if (STARTS_FACTOR.has(tk.t)) { node = span(mark, mul(node, factor())); continue; }
       return node;
     }
