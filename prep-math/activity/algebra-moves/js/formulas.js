@@ -590,6 +590,59 @@ export const GROUPS = [
         example: { A: "12100", R: "10", n: "2" },
       },
       {
+        id: "depr-value", name: "Depreciation: the value after n years", eq: "V = P(1 - R/100)^n", find: "V",
+        letters: { V: "the value after n years", P: "the value to begin with", R: "the percentage lost each year", n: "the number of years" },
+        example: { P: "10000", R: "10", n: "2" },
+        note: "each year loses a percentage of the year before's value, not of the original",
+      },
+      {
+        id: "depr-rate", name: "Depreciation: the rate", eq: "R = 100(1 - (V/P)^(1/n))", find: "R",
+        letters: { V: "the value after n years", P: "the value to begin with", R: "the percentage lost each year", n: "the number of years" },
+        example: { V: "8100", P: "10000", n: "2" },
+      },
+      {
+        id: "depr-time", name: "Depreciation: the time", eq: "n = log_(1 - R/100)(V/P)", find: "n",
+        letters: { V: "the value after n years", P: "the value to begin with", R: "the percentage lost each year", n: "the number of years" },
+        example: { V: "2500", P: "10000", R: "50" },
+      },
+      {
+        id: "depr-start", name: "Depreciation: the value to begin with", eq: "P = V/(1 - R/100)^n", find: "P",
+        letters: { V: "the value after n years", P: "the value to begin with", R: "the percentage lost each year", n: "the number of years" },
+        example: { V: "8100", R: "10", n: "2" },
+      },
+      {
+        id: "appr-value", name: "Appreciation: the value after n years", eq: "V = P(1 + R/100)^n", find: "V",
+        letters: { V: "the value after n years", P: "the value to begin with", R: "the percentage gained each year", n: "the number of years" },
+        example: { P: "10000", R: "10", n: "2" },
+        note: "each year gains a percentage of the year before's value",
+      },
+      {
+        id: "appr-rate", name: "Appreciation: the rate", eq: "R = 100((V/P)^(1/n) - 1)", find: "R",
+        letters: { V: "the value after n years", P: "the value to begin with", R: "the percentage gained each year", n: "the number of years" },
+        example: { V: "12100", P: "10000", n: "2" },
+      },
+      {
+        id: "appr-time", name: "Appreciation: the time", eq: "n = log_(1 + R/100)(V/P)", find: "n",
+        letters: { V: "the value after n years", P: "the value to begin with", R: "the percentage gained each year", n: "the number of years" },
+        example: { V: "40000", P: "10000", R: "100" },
+      },
+      {
+        id: "appr-start", name: "Appreciation: the value to begin with", eq: "P = V/(1 + R/100)^n", find: "P",
+        letters: { V: "the value after n years", P: "the value to begin with", R: "the percentage gained each year", n: "the number of years" },
+        example: { V: "12100", R: "10", n: "2" },
+      },
+      {
+        id: "depr-line", name: "Straight-line depreciation each year", eq: "D = (C - S)/n", find: "D",
+        letters: { D: "the amount lost each year", C: "the cost when new", S: "the scrap value at the end", n: "the number of years" },
+        example: { C: "500000", S: "100000", n: "8" },
+        note: "the same amount comes off every year",
+      },
+      {
+        id: "depr-line-value", name: "Straight-line: the value after n years", eq: "V = C - Dn", find: "V",
+        letters: { V: "the value after n years", C: "the cost when new", D: "the amount lost each year", n: "the number of years" },
+        example: { C: "500000", D: "50000", n: "3" },
+      },
+      {
         id: "pct-change", name: "Percentage change", eq: "C = 100(N - O)/O", find: "C",
         letters: { C: "the percentage change (negative for a fall)", N: "the new value", O: "the original value" },
         example: { N: "65", O: "50" },
