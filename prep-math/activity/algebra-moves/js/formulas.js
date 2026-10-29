@@ -2372,6 +2372,233 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Art and design: proportion, colour and pattern",
+    items: [
+      {
+        id: "golden-ratio", name: "The golden ratio", eq: "g = (1 + sqrt(5))/2", find: "g",
+        letters: { g: "the golden ratio" },
+        example: {  },
+        note: "about 1.618: the long side of a golden rectangle over its short side",
+      },
+      {
+        id: "golden-rectangle", name: "Long side of a golden rectangle", eq: "L = Ws", find: "L",
+        letters: { L: "the long side", W: "the short side", s: "the golden ratio, about 1.618" },
+        example: { W: "10", s: "8/5" },
+        note: "put the golden ratio in as a number",
+      },
+      {
+        id: "rule-of-thirds", name: "Rule of thirds line", eq: "p = L/3", find: "p",
+        letters: { p: "the distance of the line from the edge", L: "the width or height of the picture" },
+        example: { L: "90" },
+      },
+      {
+        id: "aspect-ratio", name: "Aspect ratio", eq: "A = w/h", find: "A",
+        letters: { A: "the aspect ratio", w: "the width", h: "the height" },
+        example: { w: "1920", h: "1080" },
+      },
+      {
+        id: "scale-picture", name: "Resizing a picture without squashing it", eq: "H = hW/w", find: "H",
+        letters: { H: "the new height", h: "the old height", W: "the new width", w: "the old width" },
+        example: { h: "600", W: "800", w: "1200" },
+      },
+      {
+        id: "print-pixels", name: "Pixels needed for a print", eq: "P = dI", find: "P",
+        letters: { P: "the pixels across", d: "the dots for each inch", I: "the inches across" },
+        example: { d: "300", I: "8" },
+      },
+      {
+        id: "print-size", name: "Biggest print from an image", eq: "I = P/d", find: "I",
+        letters: { I: "the inches across", P: "the pixels across", d: "the dots for each inch" },
+        example: { P: "2400", d: "300" },
+      },
+      {
+        id: "paper-area", name: "Area of an A-series sheet", eq: "A = 1/2^n", find: "A",
+        letters: { A: "the area in square metres", n: "the paper size, as in A4" },
+        example: { n: "4" },
+        note: "A0 is one square metre and each size is half the one before",
+      },
+      {
+        id: "mat-border", name: "Border of a picture mount", eq: "b = (F - p)/2", find: "b",
+        letters: { b: "the border on each side", F: "the width of the frame opening", p: "the width of the picture" },
+        example: { F: "50", p: "36" },
+      },
+      {
+        id: "framed-width", name: "Width of a framed picture", eq: "W = w + 2f", find: "W",
+        letters: { W: "the width with the frame", w: "the width of the picture", f: "the width of the frame" },
+        example: { w: "40", f: "3" },
+      },
+      {
+        id: "paint-needed", name: "Paint needed for a wall", eq: "L = A/c", find: "L",
+        letters: { L: "the litres of paint", A: "the area to cover", c: "the area one litre covers" },
+        example: { A: "45", c: "9" },
+      },
+      {
+        id: "tile-count", name: "Tiles needed with some spare", eq: "N = A(100 + w)/(100a)", find: "N",
+        letters: { N: "the number of tiles", A: "the area to cover", w: "the percentage to allow for breakage", a: "the area of one tile" },
+        example: { A: "12", w: "10", a: "0.04" },
+      },
+      {
+        id: "kiln-shrink", name: "Shrinkage of clay in the kiln", eq: "S = 100(a - b)/a", find: "S",
+        letters: { S: "the shrinkage, as a percentage", a: "the length before firing", b: "the length after firing" },
+        example: { a: "20", b: "17" },
+      },
+      {
+        id: "model-scale", name: "Real size from a model", eq: "R = mN", find: "R",
+        letters: { R: "the real size", m: "the size of the model", N: "the scale, 1 : N" },
+        example: { m: "15", N: "20" },
+      },
+      {
+        id: "tessellation", name: "Regular polygons that meet at a point", eq: "k = 2n/(n - 2)", find: "k",
+        letters: { k: "how many meet at a point", n: "the number of sides of each polygon" },
+        example: { n: "6" },
+        note: "a whole number means the polygon tiles on its own",
+      },
+      {
+        id: "koch", name: "Perimeter of a Koch snowflake", eq: "P = 3s(4/3)^n", find: "P",
+        letters: { P: "the perimeter", s: "the side of the first triangle", n: "the number of times the pattern is repeated" },
+        example: { s: "9", n: "2" },
+      },
+      {
+        id: "sierpinski", name: "Triangles in a Sierpinski pattern", eq: "T = 3^n", find: "T",
+        letters: { T: "the number of small triangles", n: "the number of times the pattern is repeated" },
+        example: { n: "4" },
+      },
+      {
+        id: "rgb-colours", name: "Colours from red, green and blue", eq: "C = 256^3", find: "C",
+        letters: { C: "the number of colours" },
+        example: {  },
+        note: "256 levels for each of three lights",
+      },
+      {
+        id: "luminance", name: "Brightness of a colour", eq: "L = 0.2126R + 0.7152G + 0.0722B", find: "L",
+        letters: { L: "the brightness", R: "the red", G: "the green", B: "the blue" },
+        example: { R: "100", G: "200", B: "50" },
+      },
+      {
+        id: "contrast-ratio", name: "Contrast between two colours", eq: "C = (a + 0.05)/(b + 0.05)", find: "C",
+        letters: { C: "the contrast ratio", a: "the brightness of the lighter colour, from 0 to 1", b: "the brightness of the darker colour, from 0 to 1" },
+        example: { a: "0.95", b: "0.05" },
+        note: "at least 4.5 is easy to read",
+      },
+    ],
+  },
+  {
+    group: "Music: pitch, rhythm and sound",
+    items: [
+      {
+        id: "note-frequency", name: "Frequency of a note", eq: "f = 440·2^(n/12)", find: "f",
+        letters: { f: "the frequency in hertz", n: "the semitones above the A at 440 Hz (negative for below)" },
+        example: { n: "12" },
+      },
+      {
+        id: "note-from-frequency", name: "Semitones from a frequency", eq: "n = 12log_2(f/440)", find: "n",
+        letters: { n: "the semitones above the A at 440 Hz", f: "the frequency in hertz" },
+        example: { f: "880" },
+      },
+      {
+        id: "interval-ratio", name: "Frequency ratio of an interval", eq: "r = 2^(s/12)", find: "r",
+        letters: { r: "the ratio of the two frequencies", s: "the semitones between them" },
+        example: { s: "12" },
+        note: "twelve semitones make an octave, a ratio of 2",
+      },
+      {
+        id: "cents", name: "Interval in cents", eq: "c = 1200log_2(f/g)", find: "c",
+        letters: { c: "the interval in cents", f: "the higher frequency", g: "the lower frequency" },
+        example: { f: "880", g: "440" },
+        note: "100 cents make a semitone",
+      },
+      {
+        id: "octaves", name: "Octaves between two notes", eq: "k = log_2(f/g)", find: "k",
+        letters: { k: "the number of octaves", f: "the higher frequency", g: "the lower frequency" },
+        example: { f: "1760", g: "220" },
+      },
+      {
+        id: "harmonic", name: "Harmonics of a note", eq: "f = nF", find: "f",
+        letters: { f: "the frequency of the harmonic", n: "which harmonic", F: "the lowest frequency" },
+        example: { n: "5", F: "110" },
+      },
+      {
+        id: "beat-frequency", name: "Beats between two notes", eq: "b = f - g", find: "b",
+        letters: { b: "the beats each second", f: "the higher frequency", g: "the lower frequency" },
+        example: { f: "442", g: "440" },
+        note: "used for tuning by ear",
+      },
+      {
+        id: "string-frequency", name: "Frequency of a stretched string", eq: "f = sqrt(T/m)/(2L)", find: "f",
+        letters: { f: "the frequency", T: "the tension", m: "the mass of each metre of string", L: "the length" },
+        example: { T: "100", m: "1", L: "5" },
+      },
+      {
+        id: "open-pipe", name: "Frequency of a pipe open at both ends", eq: "f = v/(2L)", find: "f",
+        letters: { f: "the lowest frequency", v: "the speed of sound", L: "the length of the pipe" },
+        example: { v: "340", L: "0.5" },
+      },
+      {
+        id: "closed-pipe", name: "Frequency of a pipe closed at one end", eq: "f = v/(4L)", find: "f",
+        letters: { f: "the lowest frequency", v: "the speed of sound", L: "the length of the pipe" },
+        example: { v: "340", L: "0.5" },
+      },
+      {
+        id: "sound-speed", name: "Speed of sound in air", eq: "v = 331 + 0.6t", find: "v",
+        letters: { v: "the speed of sound in metres a second", t: "the temperature in degrees Celsius" },
+        example: { t: "20" },
+      },
+      {
+        id: "wavelength", name: "Wavelength of a note", eq: "w = v/f", find: "w",
+        letters: { w: "the wavelength", v: "the speed of sound", f: "the frequency" },
+        example: { v: "340", f: "170" },
+      },
+      {
+        id: "decibels", name: "Loudness in decibels", eq: "L = 10log_10(I/J)", find: "L",
+        letters: { L: "how much louder in decibels", I: "the intensity of the louder sound", J: "the intensity of the quieter sound" },
+        example: { I: "100", J: "1" },
+      },
+      {
+        id: "reverb", name: "Reverberation time of a room (Sabine)", eq: "T = 0.161V/A", find: "T",
+        letters: { T: "the time for the sound to die away, in seconds", V: "the volume of the room", A: "the total absorption of the room" },
+        example: { V: "1000", A: "40" },
+      },
+      {
+        id: "beat-length", name: "Length of a beat", eq: "t = 60/b", find: "t",
+        letters: { t: "the seconds in one beat", b: "the beats a minute" },
+        example: { b: "120" },
+      },
+      {
+        id: "bar-length", name: "Length of a bar", eq: "D = 60n/b", find: "D",
+        letters: { D: "the seconds in one bar", n: "the beats in a bar", b: "the beats a minute" },
+        example: { n: "4", b: "120" },
+      },
+      {
+        id: "song-length", name: "Length of a piece", eq: "T = 60B/b", find: "T",
+        letters: { T: "the length in seconds", B: "the beats in the piece", b: "the beats a minute" },
+        example: { B: "480", b: "120" },
+      },
+      {
+        id: "dotted-note", name: "Length of a dotted note", eq: "D = 3d/2", find: "D",
+        letters: { D: "the length of the dotted note", d: "the length of the note without the dot" },
+        example: { d: "2" },
+        note: "a dot adds half the note again",
+      },
+      {
+        id: "triplet-note", name: "Length of a note in a triplet", eq: "D = 2d/3", find: "D",
+        letters: { D: "the length of one note in the triplet", d: "the length of the plain note" },
+        example: { d: "1" },
+        note: "three in the time of two",
+      },
+      {
+        id: "rhythm-count", name: "Ways to fill a bar with beats", eq: "W = 2^(n - 1)", find: "W",
+        letters: { W: "the number of different rhythms", n: "the number of beats in the bar" },
+        example: { n: "4" },
+        note: "each beat can be split from the one before or not",
+      },
+      {
+        id: "chord-count", name: "Chords of k notes from a scale", eq: "C = nCr(n, k)", find: "C",
+        letters: { C: "the number of chords", n: "the notes in the scale", k: "the notes in each chord" },
+        example: { n: "7", k: "3" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
