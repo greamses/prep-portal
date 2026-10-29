@@ -57,6 +57,10 @@ export const pct = (k, id = freshId()) => ({ id, kind: "pct", k });
 export const fact = (k, id = freshId()) => ({ id, kind: "fact", k });
 /* log_b(x): the power b must be raised to to give x. The base `b` is any expression. */
 export const logb = (b, k, id = freshId()) => ({ id, kind: "logb", b, k });
+/* The nth root: ∛27 is nroot(3, 27). The index is any expression. */
+export const nroot = (n, k, id = freshId()) => ({ id, kind: "nroot", n, k });
+/* Tetration, a power tower: ³2 is 2^(2^2). `b` the base, `n` how many high. */
+export const tet = (b, n, id = freshId()) => ({ id, kind: "tet", b, n });
 /* {4, 7, 9}: a list of numbers, for the mean and the median to be taken of. */
 export const list = (items, id = freshId()) => ({ id, kind: "list", items });
 /* Σ_(i=1)^(5)(2i + 1): the terms of the body for each whole number from lo to hi. */
@@ -173,6 +177,8 @@ export function kidsOf(node) {
     case "pct":  return [node.k];
     case "fact": return [node.k];
     case "logb": return [node.b, node.k];
+    case "nroot": return [node.n, node.k];
+    case "tet": return [node.n, node.b];
     case "list": return node.items;
     case "sigma": return [node.lo, node.hi, node.k];
     case "choose": return [node.n, node.r];
@@ -227,6 +233,8 @@ export function replace(root, id, next) {
       }
       case "fact": { const k = rec(n.k); return k === n.k ? n : { ...n, k }; }
       case "logb": { const b = rec(n.b), k = rec(n.k); return b === n.b && k === n.k ? n : { ...n, b, k }; }
+      case "nroot": { const a = rec(n.n), k = rec(n.k); return a === n.n && k === n.k ? n : { ...n, n: a, k }; }
+      case "tet": { const b = rec(n.b), a = rec(n.n); return b === n.b && a === n.n ? n : { ...n, b, n: a }; }
       case "list": { const items = n.items.map(rec); return items.every((k, i) => k === n.items[i]) ? n : { ...n, items }; }
       case "sigma": { const lo = rec(n.lo), hi = rec(n.hi), k = rec(n.k); return lo === n.lo && hi === n.hi && k === n.k ? n : { ...n, lo, hi, k }; }
       case "choose": { const a = rec(n.n), b = rec(n.r); return a === n.n && b === n.r ? n : { ...n, n: a, r: b }; }
@@ -457,6 +465,44 @@ export function isNumeric(node) {
 }
 
 /** The exact value of a variable-free subtree, or null when it has none. */
+/** The nth root of a whole number as a whole number, or null: 27, 3 -> 3 (binary search, so no float error). */
+export function intRoot(m, n) {
+  if (m < 0n || n < 1n) return null;
+  if (m < 2n) return m;
+  let lo = 1n, hi = 1n;
+  while (hi ** n <= m) hi *= 2n;
+  while (lo < hi) {
+    const mid = (lo + hi) / 2n;
+    if (mid ** n < m) lo = mid + 1n; else hi = mid;
+  }
+  return lo ** n === m ? lo : null;
+}
+/** ⁿ√x exactly, when numerator and denominator are both perfect nth powers (∛(8/27) is 2/3; ∛−8 is −2). */
+function nrootValue(node) {
+  const nv = exactValue(node.n), x = exactValue(node.k);
+  if (!nv || !x || !R.isInt(nv) || nv.n < 2n || nv.n > 64n) return null;
+  const n = nv.n, neg = R.isNegative(x);
+  if (neg && n % 2n === 0n) return null;
+  const top = intRoot(neg ? -x.n : x.n, n), bottom = intRoot(x.d, n);
+  if (top === null || bottom === null) return null;
+  return R.rat(neg ? -top : top, bottom);
+}
+/** ⁿa, the tower a^a^…^a n high, when it stays small enough to write down. */
+function tetValue(node) {
+  const a = exactValue(node.b), nv = exactValue(node.n);
+  if (!a || !nv || !R.isInt(nv) || nv.n < 0n || nv.n > 12n) return null;
+  const n = Number(nv.n);
+  if (n === 0) return R.ONE;
+  let t = a;
+  for (let i = 1; i < n; i++) {
+    if (!R.isInt(t) || t.n > 32n || t.n < -32n) return null;       // the exponent has grown past what is worth writing out
+    if (R.isZero(a) && R.isNegative(t)) return null;
+    t = R.ipow(a, Number(t.n));
+    if (R.toNumber(t) > 1e30) return null;
+  }
+  return t;
+}
+
 /** log_b x as a whole number, when b^n is exactly x for some whole n (log₂ 8 is 3, log₂ ¼ is −2); null otherwise. */
 function logValue(node) {
   const b = exactValue(node.b), x = exactValue(node.k);
@@ -529,6 +575,8 @@ export function exactValue(node) {
         return v === null ? null : R.rat(v);
       }
       case "logb": return logValue(node);
+      case "nroot": return nrootValue(node);
+      case "tet": return tetValue(node);
       case "pct":  { const k = exactValue(node.k); return k ? R.div(k, R.rat(100n)) : null; }
       case "mixed": { const w = exactValue(node.w), f = exactValue(node.f); return w && f ? R.add(w, f) : null; }
       case "neg":  { const k = exactValue(node.k); return k ? R.neg(k) : null; }

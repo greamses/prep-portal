@@ -26,7 +26,7 @@ import { plain } from "./layout.js";
    changing the shape of it, or the tidying gets carried along inside the new
    shape — x/2 = 4 − 1 multiplied up reads x = 2(4 − 1). Shoving a term across
    the equals sign is the move most likely to undo itself, so it goes last. */
-const RANK = { cancelbracket: 4, substitute: 0, resolvepowers: 0, factorial: 1, choose: 1, logown: 1, logswap: 5, expandletter: 1, sigma: 1, mean: 1, sortlist: 1, matadd: 1, matmul: 1, matscale: 1, matpow: 1, det: 1, transpose: 1, inverse: 1, workout: 1, trig: 1, multiply: 1, diff: 1, integrate: 1, limit: 1, dropzero: 2, pyth: 2, combine: 3, cancel: 4, invert: 5, degrees: 5, usub: 7, parts: 8, times: 5, expand: 6, flip: 7, swap: 8, across: 9, divide: 10 };
+const RANK = { cancelbracket: 4, substitute: 0, resolvepowers: 0, factorial: 1, choose: 1, logown: 1, tetexpand: 1, logswap: 5, rootswap: 5, expandletter: 1, sigma: 1, mean: 1, sortlist: 1, matadd: 1, matmul: 1, matscale: 1, matpow: 1, det: 1, transpose: 1, inverse: 1, workout: 1, trig: 1, multiply: 1, diff: 1, integrate: 1, limit: 1, dropzero: 2, pyth: 2, combine: 3, cancel: 4, invert: 5, degrees: 5, usub: 7, parts: 8, times: 5, expand: 6, flip: 7, swap: 8, across: 9, divide: 10 };
 const LAST = 99;
 
 /* Factoring the fractions is the student's to switch on: with it off the
@@ -99,7 +99,7 @@ function isLowest(n) {
 /** Is this offer one the working may take, given the factoring switch? */
 function allowed(offer, eq, keepFactored) {
   // the log laws and the change of base are moves to choose, not steps to take by themselves
-  if (offer.key === "loglaw" || offer.key === "logchange") return false;
+  if (offer.key === "loglaw" || offer.key === "logchange" || offer.key === "rootpower") return false;
   if (offer.key === "factorfrac" && !AUTO_FACTOR) return false;
   // factored stays factored: no opening the brackets again, no completing a square
   if (keepFactored && (offer.key === "expand" || offer.key === "square" || (offer.key === "multiply" && offer.label === "Multiply it out"))) return false;

@@ -43,6 +43,20 @@ function gammaFn(z) {
 function evalAt(node, env) {
   switch (node.kind) {
     case "fact": return gammaFn(evalAt(node.k, env) + 1);
+    case "nroot": {
+      const n = evalAt(node.n, env), x = evalAt(node.k, env);
+      if (!Number.isInteger(n) || n < 2 || !Number.isFinite(x)) return NaN;
+      if (x >= 0) return Math.pow(x, 1 / n);
+      return n % 2 === 1 ? -Math.pow(-x, 1 / n) : NaN;
+    }
+    case "tet": {
+      const a = evalAt(node.b, env), n = evalAt(node.n, env);
+      if (!Number.isInteger(n) || n < 0 || n > 12 || !Number.isFinite(a)) return NaN;
+      if (n === 0) return 1;
+      let t = a;
+      for (let i = 1; i < n; i++) { t = Math.pow(a, t); if (!Number.isFinite(t) || Math.abs(t) > 1e150) return NaN; }
+      return t;
+    }
     case "logb": {
       const b = evalAt(node.b, env), v = evalAt(node.k, env);
       return b > 0 && Math.abs(b - 1) > 1e-9 && v > 0 ? Math.log(v) / Math.log(b) : NaN;
@@ -226,6 +240,26 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
      u lies in sin⁻¹'s own range, where that really does undo the sin. */
   /* log_b u = c written as u = b^c, or b^x = c as x = log_b c: the same function
      applied to both sides — checked as exactly that, where it is defined. */
+  if (inverse && (inverse.fn === "nroot" || inverse.fn === "pownth")) {
+    // x^n = c as x = ⁿ√c (n odd), or ⁿ√u = c as u = c^n: the same function on both sides, where it is defined
+    let usable = 0;
+    for (let i = 0; i < samples; i++) {
+      const env = {};
+      for (const n of names) env[n] = sample(i, n);
+      for (const [n, d] of Object.entries(defined)) env[n] = evalAt(d, env);
+      const n = inverse.n;
+      const f = inverse.fn === "nroot"
+        ? (v) => (v >= 0 ? Math.pow(v, 1 / n) : n % 2 === 1 ? -Math.pow(-v, 1 / n) : NaN)
+        : (v) => Math.pow(v, n);
+      const a = f(evalAt(prev.l, env)) - f(evalAt(prev.r, env)), c = diffAt(next, env);
+      if (!Number.isFinite(a) || !Number.isFinite(c)) continue;
+      usable++;
+      if (Math.abs(a - c) > tol * Math.max(1, Math.abs(a), Math.abs(c))) return { ok: false, why: "that is not the same root or power taken on both sides" };
+    }
+    if (usable < 6) return { ok: false, why: "I could not check that move, so I will not make it" };
+    return { ok: true, why: "" };
+  }
+
   if (inverse && (inverse.fn === "exp" || inverse.fn === "logb")) {
     let usable = 0;
     for (let i = 0; i < samples; i++) {

@@ -703,6 +703,8 @@ function nodeTidies(eq, node) {
   if (node.kind === "frac") t("factorfrac", "Factor the top and the bottom", "a common factor, then two brackets", factorFraction(eq, node));
   if (node.kind === "fact") t("factorial", "Write the factorial out", "n × (n − 1) × … × 1", factorialOut(eq, node));
   if (node.kind === "logb") for (const o of logMoves(eq, node)) out.push(o);
+  if (node.kind === "nroot") for (const o of nrootMoves(eq, node)) out.push(o);
+  if (node.kind === "tet") t("tetexpand", "Write the tower out as powers", "a^(a^(a…))", tetOut(eq, node));
   if (node.kind === "sigma") t("sigma", "Write out the terms", "one term for each whole number counted", sigmaOut(eq, node));
   if (node.kind === "fn" && node.k.kind === "list") {
     if (node.name === "mean") t("mean", "Add them up and divide by how many", "mean = sum ÷ how many", meanOut(eq, node));
@@ -792,6 +794,82 @@ function resolvePowers(eq, node) {
   }
   const note = swaps.map(({ h, put }) => `${plain(h)} is ${plain(put)}`).join(", ");
   return { eq: next, from, mark: swaps.map(({ put }) => plain(put)).join(" "), note: `Powers first: ${note}` };
+}
+
+/* ── nth roots and towers ────────────────────────────────────────────────────
+   ∛54 is 3∛2: the biggest perfect nth power in the radicand comes out. An nth
+   root is a power 1/n; x³ = 8 is x = ∛8. A power tower is written out as the
+   powers it is, which the arithmetic then works from the top down. */
+function factorBig(m) {
+  const out = new Map();
+  let x = m;
+  for (let p = 2n; p * p <= x && p < 1000000n; p++) {
+    while (x % p === 0n) { out.set(p, (out.get(p) || 0n) + 1n); x /= p; }
+  }
+  if (x > 1n) out.set(x, (out.get(x) || 0n) + 1n);
+  return out;
+}
+function simplifyNRoot(eq, node) {
+  const nv = A.exactValue(node.n), x = A.exactValue(node.k);
+  if (!nv || !x || !R.isInt(nv) || !R.isInt(x) || nv.n < 2n || x.n === 0n) return { error: "That root has nothing to take out." };
+  const n = nv.n, neg = x.n < 0n;
+  if (neg && n % 2n === 0n) return { error: "An even root of a negative number is not a real number." };
+  if (A.exactValue(node)) return { error: "That root works out exactly." };
+  let outside = 1n, inside = 1n;
+  for (const [p, e] of factorBig(neg ? -x.n : x.n)) {
+    outside *= p ** (e / n);
+    inside *= p ** (e % n);
+  }
+  if (outside === 1n) return { error: "No whole nth power divides that, so it is as simple as it goes." };
+  let next = inside === 1n ? A.num(R.rat(outside)) : A.prod([A.num(R.rat(outside)), A.nroot(copy(node.n), A.num(R.rat(inside)))]);
+  if (neg) next = A.neg(next);
+  return { eq: A.replace(eq, node.id, next), from: new Map(), mark: plain(next), note: `${plain(node)} is ${plain(next)}: ${outside}^${n} goes in the front` };
+}
+function nrootMoves(eq, node) {
+  const out = [];
+  const go = (key, label, hint, next, note) => out.push({ key, label, hint, mark: plain(next), run: () => ({ eq: A.replace(eq, node.id, next), from: new Map(), mark: plain(next), note: note || `${label}: ${plain(next)}` }) });
+  const s = simplifyNRoot(eq, node);
+  if (!s.error) out.push({ key: "surd", label: `Take the whole ${plain(node.n)}th powers out`, hint: "the biggest perfect power in it", mark: s.mark, run: () => s });
+  // an nth root is a power of 1/n
+  go("rootpower", "Write it as a power", "ⁿ√x = x^(1/n)", A.pow({ ...copy(node.k), paren: false }, A.frac(A.num(R.ONE), copy(node.n))), "An nth root is the power one over n");
+  return out;
+}
+function tetOut(eq, node) {
+  const nv = A.exactValue(node.n);
+  if (!nv || !R.isInt(nv) || nv.n < 2n || nv.n > 6n) return { error: "That tower is as plain as it goes." };
+  let t = copy(node.b);
+  for (let i = 1; i < Number(nv.n); i++) t = A.pow(copy(node.b), t);
+  return { eq: A.replace(eq, node.id, t), from: new Map(), mark: plain(t), note: `${plain(node)} is ${plain(t)}` };
+}
+const ordinalRoot = (n) => {
+  const k = Number(n);
+  if (k === 3) return "cube root";
+  const suffix = k % 100 >= 11 && k % 100 <= 13 ? "th" : { 1: "st", 2: "nd", 3: "rd" }[k % 10] || "th";
+  return `${k}${suffix} root`;
+};
+/** x^n = c is x = ⁿ√c for odd n, and ⁿ√u = c is u = c^n. */
+export function nrootSwap(eq) {
+  if (!A.isEquation(eq)) return { error: TWO_SIDED };
+  for (const side of ["l", "r"]) {
+    const f = eq[side], other = eq[side === "l" ? "r" : "l"];
+    if (f.kind === "pow") {
+      const e = A.exactValue(f.e);
+      if (e && R.isInt(e) && e.n >= 3n && e.n % 2n === 1n) {
+        const root = A.nroot(A.num(e), copy(other));
+        const u = { ...f.b, paren: false };
+        return { eq: side === "l" ? A.eqn(u, root, eq.id) : A.eqn(root, u, eq.id), from: new Map(), mark: plain(root), dir: "both", inverse: { fn: "nroot", n: Number(e.n) }, note: `Take the ${ordinalRoot(e.n)} of both sides` };
+      }
+    }
+    if (f.kind === "nroot") {
+      const nv = A.exactValue(f.n);
+      if (nv && R.isInt(nv) && nv.n >= 2n && nv.n <= 12n) {
+        const u = { ...f.k, paren: false };
+        const power = A.pow(copy(other), A.num(nv));
+        return { eq: side === "l" ? A.eqn(u, power, eq.id) : A.eqn(power, u, eq.id), from: new Map(), mark: plain(power), dir: "both", inverse: { fn: "pownth", n: Number(nv.n) }, note: `Raise both sides to the power ${nv.n}` };
+      }
+    }
+  }
+  return { error: "There is no power or root standing alone on a side." };
 }
 
 /* ── Logarithms to any base ──────────────────────────────────────────────────
@@ -2600,6 +2678,11 @@ export function offers(eq, id, { given = null } = {}) {
     const inv = invertTrig(eq);
     if (!inv.error) out.push({ key: "invert", label: inv.note, hint: "undo the trig function", mark: inv.mark, dir: "both", run: () => inv });
   }
+  // x³ alone on a side: the cube root of both sides; ∛u alone: the cube of both sides.
+  if (twoSided && terms.length === 1 && (term.kind === "pow" || term.kind === "nroot")) {
+    const nr = nrootSwap(eq);
+    if (!nr.error) out.push({ key: "rootswap", label: nr.note, hint: "undo the power or root", mark: nr.mark, dir: "both", run: () => nr });
+  }
   // log_b u alone on a side, or b^x: write it the other way round (a log is a power).
   if (twoSided && terms.length === 1 && (term.kind === "logb" || term.kind === "pow")) {
     const lg = logSwap(eq);
@@ -2719,6 +2802,25 @@ function isFactorOf(term, leaf) {
 /** Is this node a whole side of the line on its own — the y of y = x³? */
 const SIDES_HOLD = (eq, id) => A.isEquation(eq) && (eq.l.id === id || eq.r.id === id);
 
+/* ── What a picked letter or number IS ───────────────────────────────────────
+   Tap the x of 3x² and the page should offer what a LETTER can have done to it,
+   not everything the whole term could. Tap the ² and it is a POWER's moves; tap
+   the 3 and it is a COEFFICIENT's. Whole terms are for picking together: factoring,
+   collecting, swapping and the rest are offered when several are picked. */
+function glyphRole(eq, leaf) {
+  const parent = A.parentOf(eq, leaf.id);
+  if (parent?.kind === "pow") return parent.e.id === leaf.id ? "power" : "base";
+  if (leaf.kind === "var") return "variable";
+  if (leaf.kind === "num" && parent?.kind === "prod" && parent.kids.some((k) => k.id !== leaf.id && !A.isNumeric(k))) return "coefficient";
+  return null;                      // a plain number: everything on offer stays on offer
+}
+const ROLE_KEYS = {
+  variable: new Set(["substitute", "across", "divide", "times", "cancel", "split", "indices", "dropzero"]),
+  coefficient: new Set(["substitute", "across", "divide", "times", "cancel", "split", "workout", "multiply", "dropzero"]),
+  power: new Set(["substitute", "indices", "workout", "resolvepowers", "root", "expand", "surd", "rootswap", "logswap", "square", "diff", "integrate", "usub", "parts", "across"]),
+  base: new Set(["substitute", "indices", "expand", "workout", "resolvepowers", "root", "square", "surd", "rootswap", "logswap", "across", "divide", "cancel", "split", "diff", "integrate", "usub", "parts"]),
+};
+
 export function atomOffers(eq, key, { given = null } = {}) {
   if (!key) return [];
   const { nodeId, slot } = keyParts(key);
@@ -2775,6 +2877,8 @@ export function atomOffers(eq, key, { given = null } = {}) {
       add(direct("root", "Square root of both sides (±)", "a square on one side", rootBoth(eq)));
       const psl = poShenLoh(eq);
       if (!psl.error) add({ key: "poshenloh", label: "Po-Shen Loh: the roots are −b/2 ± u", hint: "average and distance", mark: psl.mark, run: () => psl });
+      const nr = nrootSwap(eq);
+      if (!nr.error) add({ key: "rootswap", label: nr.note, hint: "undo the power or root", mark: nr.mark, dir: "both", run: () => nr });
       const lg = logSwap(eq);
       if (!lg.error) add({ key: "logswap", label: lg.note, hint: "a log is a power the other way round", mark: lg.mark, dir: "both", run: () => lg });
       const inv = invertTrig(eq);
@@ -2994,7 +3098,78 @@ export function atomOffers(eq, key, { given = null } = {}) {
   if (eq.kind === "expr" || slot === "eq" || A.findById(eq, nodeId)?.kind === "var" && SIDES_HOLD(eq, nodeId)) {
     for (const o of calculusCards(eq)) add(o);
   }
-  return hasSubstitutions(eq, given) ? out.filter((o) => o.key === "substitute") : out;
+  // One letter, number, power or base picked: only what is normal for that.
+  let shown = out;
+  {
+    const leaf = slot === "t" ? A.findById(eq, nodeId) : null;
+    const role = leaf && (leaf.kind === "var" || leaf.kind === "num") ? glyphRole(eq, leaf) : null;
+    if (role) {
+      const oneTerm = eq.kind === "expr" && A.termsOf(eq.e).length === 1;     // a lone term: the slope and the integral of it are still its own
+      shown = out.filter((o) => ROLE_KEYS[role].has(o.key) || (oneTerm && (o.key === "differentiate" || o.key === "integrateit")));
+    }
+  }
+  return hasSubstitutions(eq, given) ? shown.filter((o) => o.key === "substitute") : shown;
+}
+
+/* ── Picked together: swap, and the calculus of a few terms ─────────────────── */
+
+/** Exchange the places of the terms picked in one sum: 3x + 5 → 5 + 3x. Each term keeps its own sign. */
+export function swapPicked(eq, ids) {
+  const loc = locate(eq, ids[0]);
+  if (!loc || loc.terms.length < 2) return { error: "There is only one term there." };
+  const at = ids.map((id) => loc.terms.findIndex((t) => t.id === id));
+  if (at.some((i) => i < 0) || new Set(at).size < 2) return { error: "Those are not terms of the same sum." };
+  const order = [...at].sort((x, y) => x - y);
+  const next = [...loc.terms];
+  order.forEach((pos, k) => { next[pos] = loc.terms[order[order.length - 1 - k]]; });
+  const shown = A.sideFromTerms(next, loc.container);
+  return {
+    eq: setContainer(eq, loc, next), from: new Map(), mark: `⇄ ${plain(shown)}`,
+    note: `${order.length === 2 ? "The two terms change places" : "The picked terms are turned round"}: ${plain(shown)}`,
+  };
+}
+
+/** Exchange picked factors of one product: 3·x → x·3. */
+export function swapFactors(eq, nodeIds) {
+  let prod = null;
+  const picked = [];
+  for (const id of nodeIds) {
+    for (let n = A.findById(eq, id); n; n = A.parentOf(eq, n.id)) {
+      const parent = A.parentOf(eq, n.id);
+      if (parent?.kind === "prod") {
+        if (prod && prod.id !== parent.id) return { error: "Those are not factors of the same product." };
+        prod = parent;
+        if (!picked.includes(n.id)) picked.push(n.id);
+        break;
+      }
+    }
+  }
+  if (!prod || picked.length < 2) return { error: "Those are not factors of the same product." };
+  const at = picked.map((id) => prod.kids.findIndex((k) => k.id === id)).sort((x, y) => x - y);
+  const kids = [...prod.kids];
+  at.forEach((pos, k) => { kids[pos] = prod.kids[at[at.length - 1 - k]]; });
+  const next = { ...prod, kids };
+  return { eq: A.replace(eq, prod.id, next), from: new Map(), mark: `⇄ ${plain(next)}`, note: `The factors change places: ${plain(next)}` };
+}
+
+/** The slope and the integral of just the terms picked, each on a card of its own. */
+export function pickedCalculus(eq, terms) {
+  const busy = (n) => { let yes = false; A.walk(n, (m) => { if (m.kind === "deriv" || m.kind === "int" || m.kind === "lim") yes = true; }); return yes; };
+  if (terms.some(busy)) return [];
+  const body = terms.length === 1 ? copy(unbracket(terms[0])) : A.sum(terms.map((t) => copy(t)));
+  const said = plain(body);
+  const out = [];
+  for (const L of A.varsIn(body).filter((v) => v !== "C").slice(0, 3)) {
+    out.push({
+      key: "diffpicked", label: `Differentiate ${said} with respect to ${L}`, hint: "just the picked terms, on a new card", mark: `d/d${L}`,
+      cards: [{ eq: A.expression(A.deriv(copy(body), L)), title: `the slope of ${said}` }],
+    });
+    out.push({
+      key: "intpicked", label: `Integrate ${said} with respect to ${L}`, hint: "just the picked terms, on a new card", mark: `∫d${L}`,
+      cards: [{ eq: A.expression(A.integ(copy(body), L)), title: `the integral of ${said}` }],
+    });
+  }
+  return out;
 }
 
 /** What a SELECTION of glyphs means together: the terms they belong to cross
@@ -3048,6 +3223,18 @@ export function multiOffers(eq, keys, { given = null } = {}) {
       out.push(...quadraticOffers(eq, locs[0], locs.map((l) => l.index)));
     }
   }
+  // Terms (or the signs in front of them) picked together: change their places.
+  {
+    const sw = swapPicked(eq, ids);
+    if (!sw.error) out.push({ key: "swapterms", label: sw.note, hint: "the order of a sum does not matter", mark: sw.mark, run: () => sw });
+  }
+  // Glyphs picked in different factors of one product: change those factors' places.
+  {
+    const fw = swapFactors(eq, keys.map((k) => keyParts(k).nodeId));
+    if (!fw.error && !out.some((o) => o.key === "swapterms")) out.push({ key: "swapfactors", label: fw.note, hint: "the order of a product does not matter", mark: fw.mark, run: () => fw });
+  }
+  // The slope or the integral of just these terms.
+  for (const o of pickedCalculus(eq, terms)) out.push(o);
   // Like terms picked together are there to be collected: that comes first.
   const folded = combineMany(eq, ids);
   if (!folded.error) out.push({ key: "combine", label: folded.note, hint: "like terms", mark: folded.mark, run: () => folded });
@@ -3064,7 +3251,7 @@ export function multiOffers(eq, keys, { given = null } = {}) {
     with none of these left on any of its terms is as tidy as it goes. */
 export const TIDY = new Set(["combine", "workout", "cancel", "dropzero", "indices", "surd", "addfrac",
   "multiply", "trig", "pyth", "diff", "integrate", "limit", "base10",
-  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse", "factorial", "choose", "sigma", "mean", "sortlist", "expandletter", "resolvepowers", "cancelbracket", "logown"]);
+  "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse", "factorial", "choose", "sigma", "mean", "sortlist", "expandletter", "resolvepowers", "cancelbracket", "logown", "tetexpand"]);
 
 /** Every move on offer for a set of picked glyphs — what each one means, what
     its term can have done to it, and what they mean together — or, with

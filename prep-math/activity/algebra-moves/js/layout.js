@@ -114,6 +114,9 @@ function needsBrackets(node, parentKind, slot) {
   // nCr's two numbers are set apart by their places, not by brackets; so are a
   // list's by its commas and a sum's limits by where they sit.
   if (parentKind === "choose" || parentKind === "list" || parentKind === "sigmalim" || parentKind === "baserad" || parentKind === "logbase") return false;
+  // a root's bar groups what is under it, and its index sits small above; a tower's base is bracketed unless it is one symbol
+  if (parentKind === "nroot") return false;
+  if (parentKind === "tet") return slot === 1 && node.kind !== "num" && node.kind !== "var" && node.kind !== "const";
   // a logarithm's argument stands in brackets, as a function's does; its base sits lowered beside it
   if (parentKind === "logb") return slot === 1;
   if (parentKind === "sigma") return node.kind === "sum";
@@ -380,6 +383,23 @@ function measureBare(node, size, binary) {
       const bw = radix ? radix.w : node.v?.kind === "hole" ? 0.62 * sub : measureText(node.v ? node.v.name : String(node.base), sub, !!node.v);
       return { ...base, kind: "base", dw, cw, bw, sub, radix, w: dw + 0.04 * size + bw,
                descent: Math.max(base.descent, 0.32 * size + DESC * sub, radix ? 0.32 * size + radix.descent : 0) };
+    }
+    // ⁿ√x: the radical of a square root, its index small and raised at its left
+    case "nroot": {
+      const r = measureBare({ ...node, kind: "root", paren: false }, size, false);
+      const idx = measure(node.n, size * 0.5, "nroot", 0);
+      const indent = Math.max(0, idx.w * 0.85 - r.rw * 0.3);
+      const lift = r.ascent * 0.5;
+      return { ...r, kind: "nroot", node, idx, indent, lift, w: r.w + indent,
+               ascent: Math.max(r.ascent, lift + idx.ascent) };
+    }
+    // ⁿa: the height raised small before the base
+    case "tet": {
+      const n = measure(node.n, size * 0.62, "tet", 0);
+      const b = measure(node.b, size, "tet", 1);
+      const lift = 0.5 * size, gap = 0.03 * size;
+      return { ...base, kind: "tet", n, b, lift, gap, w: n.w + gap + b.w,
+               ascent: Math.max(base.ascent, b.ascent, lift + n.ascent), descent: Math.max(base.descent, b.descent) };
     }
     // log with its base lowered and small, then the argument in brackets
     case "logb": {
@@ -673,6 +693,16 @@ function place(m, x, y, out) {
       } else text("radix", m.node.v ? m.node.v.name : String(m.node.base), x + m.dw + 0.04 * m.size, y + 0.32 * m.size, m.sub, !!m.node.v);
       break;
 
+    case "nroot":
+      place(m.idx, x, y - m.lift, out);
+      place({ ...m, kind: "root" }, x + m.indent, y, out);
+      break;
+
+    case "tet":
+      place(m.n, x, y - m.lift, out);
+      place(m.b, x + m.n.w + m.gap, y, out);
+      break;
+
     case "logb":
       text("log", "log", x, y, m.size, false);
       place(m.b, x + m.nameW + m.gap, y + m.lower, out);
@@ -826,6 +856,21 @@ export function plain(node, parentKind = null, slot = 0) {
     case "base": {
       const rad = node.v ? (node.v.kind === "hole" ? "?" : node.v.kind === "var" ? node.v.name : `(${plain({ ...node.v, paren: false })})`) : node.base;
       return wrap(`${node.digits}_${rad}`);
+    }
+    case "nroot": {
+      // the cube and fourth roots read back as the glyphs they are written with
+      const nv = node.n.kind === "num" && R.isInt(node.n.v) ? Number(node.n.v.n) : 0;
+      if (nv === 3 || nv === 4) {
+        const simple = node.k.kind === "num" || node.k.kind === "var";
+        const inside = plain({ ...node.k }, "root", 0);
+        return wrap(`${nv === 3 ? "∛" : "∜"}${simple ? inside : `(${inside})`}`);
+      }
+      const idx = node.n.kind === "num" || node.n.kind === "var" || node.n.kind === "hole" ? plain(node.n) : `(${plain({ ...node.n, paren: false })})`;
+      return wrap(`root_${idx}${plain(node.k, "logb", 1)}`);
+    }
+    case "tet": {
+      const h = node.n.kind === "num" || node.n.kind === "var" || node.n.kind === "hole" ? plain(node.n) : `(${plain({ ...node.n, paren: false })})`;
+      return wrap(`${plain(node.b, "tet", 1)}^^${h}`);
     }
     case "logb": {
       const rad = node.b.kind === "num" || node.b.kind === "var" || node.b.kind === "hole" ? plain(node.b) : `(${plain({ ...node.b, paren: false })})`;

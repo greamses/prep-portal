@@ -29,7 +29,7 @@ const chr = (c) => ({ t: "c", c });
 
 /** How many boxes each kind of template has. */
 const COUNT = {
-  frac: 2, pow: 1, sqrt: 1, br: 1, fn: 1, base: 2, mixed: 3, choose: 2, logb: 2,
+  frac: 2, pow: 1, sqrt: 1, br: 1, fn: 1, base: 2, mixed: 3, choose: 2, logb: 2, nroot: 2, tet: 2,
   sigma: 4, list: 1, deriv: 1, int: 3, int0: 1, lim: 2,
 };
 
@@ -484,6 +484,31 @@ export function createEditor() {
         const e = closeAt(s, i + 3);
         if (e > 0) { const parts = splitTop(s.slice(i + 4, e)); push(tplOf("choose", parts, { perm: m[1] === "P" })); i = e + 1; continue; }
       }
+      if ((m = /^cbrt\(/.exec(rest))) {
+        const e = closeAt(s, i + 4);
+        if (e > 0) { push(tplOf("nroot", ["3", s.slice(i + 5, e)])); i = e + 1; continue; }
+      }
+      if ((m = /^root_/.exec(rest))) {
+        let k = i + 5, idxText = null;
+        if (s[k] === "(") { const e = closeAt(s, k); if (e > 0) { idxText = s.slice(k + 1, e); k = e + 1; } }
+        else { const t = /^([0-9]+|[a-z])/.exec(s.slice(k)); if (t) { idxText = t[0]; k += t[0].length; } }
+        if (idxText !== null && s[k] === "(") {
+          const e = closeAt(s, k);
+          if (e > 0) { push(tplOf("nroot", [idxText, s.slice(k + 1, e)])); i = e + 1; continue; }
+        }
+      }
+      if (rest.startsWith("^^")) {
+        const ex = exponentAt(i + 2);
+        const j = operandStart({ items: out }, out.length);
+        if (ex && j < out.length) {
+          const taken = out.splice(j, out.length - j);
+          const it = make("tet");
+          const h = sub(ex.text);
+          it.blocks[0].items.push(...h); adopt(h, it.blocks[0]);
+          it.blocks[1].items.push(...taken); adopt(taken, it.blocks[1]);
+          push(it); i = ex.next; continue;
+        }
+      }
       if ((m = /^log_/.exec(rest)) && (i === 0 || !/[A-Za-z]/.test(s[i - 1]))) {
         // log_2(8), log_(x + 1)(y): the base, then what it is taken of
         let k = i + 4, baseText = null;
@@ -593,6 +618,8 @@ export function createEditor() {
     function baseBox(b) {
       const txt = b.items.every((x) => x.t === "c") ? b.items.map((x) => x.c).join("") : null;
       if (txt !== null && (txt === "" || /^[0-9]+$/.test(txt) || /^[a-z]$/.test(txt))) { blk(b); return; }
+      // a single bracket, function or root already shuts itself: no second pair round it
+      if (b.items.length === 1 && b.items[0].t === "tpl" && ["br", "fn", "sqrt", "list", "choose", "logb", "nroot"].includes(b.items[0].kind)) { blk(b); return; }
       put("("); blk(b); put(")");
     }
     function blk(b) {
@@ -615,6 +642,9 @@ export function createEditor() {
         case "fn": put(`${it.name}(`); blk(B[0]); put(")"); break;
         case "base": blk(B[0]); put("_"); baseBox(B[1]); break;
         case "logb": put("log_"); baseBox(B[0]); put("("); blk(B[1]); put(")"); break;
+        case "nroot": put("root_"); baseBox(B[0]); put("("); blk(B[1]); put(")"); break;
+        // the tower reads base first, though its height is the box the caret meets first
+        case "tet": baseBox(B[1]); put("^^"); baseBox(B[0]); break;
         case "mixed": put("mixed("); blk(B[0]); put(","); blk(B[1]); put(","); blk(B[2]); put(")"); break;
         case "choose": put(it.perm ? "nPr(" : "nCr("); blk(B[0]); put(","); blk(B[1]); put(")"); break;
         case "sigma": put("Σ_("); blk(B[0]); put("="); blk(B[1]); put(")^("); blk(B[2]); put(")("); blk(B[3]); put(")"); break;

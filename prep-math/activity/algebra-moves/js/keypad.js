@@ -193,6 +193,14 @@ const FUNCS = [
     { k: "←", act: "left", title: "Move left" },
     { k: "→", act: "right", title: "Move right" },
   ],
+  /* Roots of any index, and power towers. */
+  [
+    { k: "∛", t: "cbrt()", title: "Cube root", math: "root_3(x)" },
+    { k: "ⁿ√", t: "nroot()", title: "Root of any index: the index, then what it is taken of", math: "root_n(x)" },
+    { k: "ⁿa", t: "tet()", title: "A power tower (tetration): the height, then the base — ³2 is 2^(2^2)", math: "a^^n" },
+    { k: "←", act: "left", title: "Move left" },
+    { k: "→", act: "right", title: "Move right" },
+  ],
 ];
 
 export function createKeypad(host, { onSubmit } = {}) {
@@ -675,6 +683,9 @@ export function createKeypad(host, { onSubmit } = {}) {
     "Σ_(i=1)^()()": () => ed.template("sigma", { fill: ["i", "1", "", ""], focus: 2 }),
     "{}": () => ed.template("list"),
     "logb()": () => ed.template("logb"),
+    "cbrt()": () => ed.template("nroot", { fill: ["3", ""], focus: 1 }),
+    "nroot()": () => ed.template("nroot"),
+    "tet()": () => ed.template("tet"),
   };
 
   /** A key, or a piece of text: into the boxes. */

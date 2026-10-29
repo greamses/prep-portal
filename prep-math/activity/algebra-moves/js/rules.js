@@ -69,6 +69,24 @@ export const RULE_GROUPS = [
     ],
   },
   {
+    group: "Rules: picking several",
+    items: [
+      r("r-swap", "Swap two terms", "3x + 5 = 5 + 3x", ["swapterms"]),
+      r("r-swap-factors", "Swap two factors", "3·x = x·3", ["swapfactors"]),
+      r("r-diff-picked", "Differentiate the picked terms", "d/dx(x^2 + 3x)", ["diffpicked"]),
+      r("r-int-picked", "Integrate the picked terms", "∫(x^2 + 3x)dx", ["intpicked"]),
+    ],
+  },
+  {
+    group: "Rules: roots and towers",
+    items: [
+      r("r-nroot-take", "Take whole powers out of a root", "∛54 = 3·∛2", ["surd"]),
+      r("r-nroot-power", "A root is a power", "root_3(x) = x^(1/3)", ["rootpower"]),
+      r("r-nroot-swap", "Undo a power with a root", "x^3 = 8 means x = root_3(8)", ["rootswap"]),
+      r("r-tet", "A power tower", "3^^3 = 3^(3^3)", ["tetexpand"]),
+    ],
+  },
+  {
     group: "Rules: logarithms",
     items: [
       r("r-log-own", "A power of the base", "log_b(b^n) = n", ["logown"]),

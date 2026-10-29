@@ -49,6 +49,12 @@ function tokenise(src, lenient = false) {
     {
       // log_2(8), log_(x + 1)(y): a logarithm to any base — the base, then what it is taken of.
       if (src.startsWith("log_", i)) { out.push({ t: "logb", v: "log_", at: i }); i += 4; continue; }
+      // root_3(27), root_n(x), cbrt(27), ∛27, ∜16: the nth root, index first
+      if (src.startsWith("root_", i)) { out.push({ t: "nroot", v: "root_", at: i }); i += 5; continue; }
+      if (src.startsWith("cbrt", i) && src[i + 4] === "(") { out.push({ t: "nroot", v: "cbrt", at: i }); i += 4; continue; }
+      if (src[i] === "∛" || src[i] === "∜") { out.push({ t: "nroot", v: src[i], at: i }); i++; continue; }
+      // 3^^4: tetration, a power tower — checked before a single ^
+      if (src.startsWith("^^", i)) { out.push({ t: "^^", v: "^^", at: i }); i += 2; continue; }
       // 101_(x + 1): digits whose base is a whole expression, in brackets — the "(" is left to be read as one.
       const bx = /^([0-9A-Za-z?]+)_(?=\()/.exec(src.slice(i));
       if (bx && (i === 0 || !/[A-Za-z0-9]/.test(src[i - 1])) && !REFS.some((r) => src.startsWith(r, i)) && /^[0-9?a-z]/.test(bx[1]) && !HAS_FN_NAME.test(bx[1])) {
@@ -158,7 +164,7 @@ export function setRefs(names) {
   REFS = [...new Set(names.filter(Boolean))].sort((a, b) => b.length - a.length);
 }
 
-const STARTS_FACTOR = new Set(["[", "{", "sigma", "logb", "basex", "choose", "base", "ref", "num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
+const STARTS_FACTOR = new Set(["[", "{", "sigma", "logb", "nroot", "basex", "choose", "base", "ref", "num", "var", "(", "hole", "root", "fn", "deriv", "int", "lim"]);
 
 /** `lenient` draws a numeral whose digit is not one of its base's (the keypad shows it, and says why)
     rather than refusing the whole line. */
@@ -242,6 +248,11 @@ export function parse(src, { lenient = false } = {}) {
       const r = expr();
       eat(")");
       return span(mark, A.choose(n, r, tk.v === "P"));
+    }
+    if (tk.t === "nroot") {
+      p++;
+      const idx = tk.v === "root_" ? atom() : A.num(R.rat(tk.v === "∜" ? 4n : 3n));   // root_n(x): the index first
+      return span(mark, A.nroot(idx, atom()));
     }
     if (tk.t === "logb") {
       p++;
@@ -333,6 +344,8 @@ export function parse(src, { lenient = false } = {}) {
     if (peek().t === "deg") { p++; base = span(mark, A.deg(base)); }
     // 25% is twenty-five out of a hundred.
     if (peek().t === "pct") { p++; base = span(mark, A.pct(base)); }
+    // 3^^4 is three tetrated four times: 3^(3^(3^3)), the index raised before the base
+    if (peek().t === "^^") { p++; base = span(mark, A.tet(base, factor())); }
     // 5! is five factorial.
     while (peek().t === "fact") { p++; base = span(mark, A.fact(base)); }
     if (peek().t === "^") {
