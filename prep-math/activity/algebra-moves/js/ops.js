@@ -1979,12 +1979,15 @@ export function moveTerm(eq, id, to) {
 
 /** The four ways a sign offers to move the term it introduces. */
 function moveOffers(eq, termId) {
-  const out = [];
-  for (const [to, label] of [["left", "Swap with the term before"], ["right", "Swap with the term after"], ["front", "Move to the front"], ["end", "Move to the end"]]) {
-    const r = moveTerm(eq, termId, to);
-    if (!r.error) out.push({ key: "reorder", label, hint: "same terms, other order", mark: r.mark, run: () => r });
-  }
-  return out;
+  /* A sign speaks for the two terms on either side of it: it offers to swap THOSE
+     two — not four ways of moving its term about. (Picking several terms or signs
+     is for swapping a few of them, and for the moves that need a few.) */
+  const loc = locate(eq, termId);
+  if (!loc || loc.index < 1) return [];
+  const before = loc.terms[loc.index - 1], after = loc.term;
+  const r = swapTerms(eq, before.id, after.id);
+  if (r.error) return [];
+  return [{ key: "reorder", label: `Swap ${plain(before)} and ${plain(after)}`, hint: "the two terms either side of the sign", mark: r.mark, run: () => r }];
 }
 
 /** Two neighbouring terms the other way round — b² − 4ac rather than −4ac + b². */
