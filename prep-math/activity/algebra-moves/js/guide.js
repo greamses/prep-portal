@@ -52,6 +52,7 @@ const SECTIONS = [
       ["Drag a card by its grip", "Move the card about the canvas."],
       ["Drag the bare paper", "Pan the canvas."],
       ["Scroll the wheel", "Zoom in and out, keeping what is under the pointer where it is."],
+      ["Pinch with two fingers (touch screens)", "Spread to zoom in, bring together to zoom out. The point between your fingers stays put, and moving both fingers together pans the canvas. It works over cards and numbers too."],
       ["Tap bare paper", "Puts the menu away."],
       ["Ctrl/⌘ + Z, and Ctrl/⌘ + Y", "A step back, and a step forward again, on the card you are working. The card's own arrows do the same."],
       ["Esc", "Puts the menu and the keypad away."],

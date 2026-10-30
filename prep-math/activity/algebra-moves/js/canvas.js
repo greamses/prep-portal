@@ -108,6 +108,61 @@ export function createCanvas(host) {
     paint();
   }, { passive: false });
 
+  /* ── Pinching ────────────────────────────────────────────────────────────
+     Two fingers on a touch screen zoom the sheet: the point half way between them stays where it
+     is, so the paper stretches about your fingers, and moving both fingers together pans as well.
+     Heard in the capture phase, so it works whether the fingers land on bare paper, on a card or
+     on a glyph — and a glyph that a first finger was about to pick or hold is let go of. */
+  const fingers = new Map();           // pointerId → { x, y, target }
+  let pinch = null;                    // { d0, zoom0, wx, wy } while two fingers are down
+  let swallow = false;                 // the click that ends a pinch is not a tap
+  let letting = false;                 // we are telling a glyph its press was cancelled: not a finger lifting
+
+  const centreOf = () => {
+    const [a, b] = [...fingers.values()];
+    const box = host.getBoundingClientRect();
+    return { cx: (a.x + b.x) / 2 - box.left, cy: (a.y + b.y) / 2 - box.top, d: Math.hypot(a.x - b.x, a.y - b.y) };
+  };
+
+  host.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse") return;
+    fingers.set(e.pointerId, { x: e.clientX, y: e.clientY, target: e.target });
+    if (fingers.size !== 2) return;
+    // a drag the first finger began is over; a glyph it was holding is let go
+    if (drag) { drag.kind === "card" && drag.card.classList.remove("is-lifted"); drag = null; host.classList.remove("is-panning"); }
+    letting = true;
+    for (const [id, f] of fingers) f.target?.dispatchEvent?.(new PointerEvent("pointercancel", { pointerId: id, bubbles: true }));
+    letting = false;
+    const { cx, cy, d } = centreOf();
+    pinch = { d0: Math.max(d, 1), zoom0: zoom, wx: (cx - panX) / zoom, wy: (cy - panY) / zoom };
+  }, true);
+
+  host.addEventListener("pointermove", (e) => {
+    const f = fingers.get(e.pointerId);
+    if (!f) return;
+    f.x = e.clientX; f.y = e.clientY;
+    if (!pinch || fingers.size < 2) return;
+    const { cx, cy, d } = centreOf();
+    zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pinch.zoom0 * (d / pinch.d0)));
+    panX = cx - pinch.wx * zoom;
+    panY = cy - pinch.wy * zoom;
+    paint();
+    e.preventDefault();
+  }, true);
+
+  const lift = (e) => {
+    if (letting) return;
+    if (!fingers.delete(e.pointerId)) return;
+    if (pinch && fingers.size < 2) {
+      pinch = null;
+      swallow = true;
+      setTimeout(() => { swallow = false; }, 350);
+    }
+  };
+  host.addEventListener("pointerup", lift, true);
+  host.addEventListener("pointercancel", lift, true);
+  host.addEventListener("click", (e) => { if (swallow) { e.stopPropagation(); e.preventDefault(); swallow = false; } }, true);
+
   paint();
 
   return {
