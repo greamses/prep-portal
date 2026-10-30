@@ -7,7 +7,7 @@
    tomorrow.
    ========================================================================== */
 
-import { TYPES, COLOURS, BLANK_HEAD, blank, clean, parseQuestions, promptFor, totalMarks, esc } from "./model.js";
+import { TYPES, COLOURS, BLANK_HEAD, blank, clean, parseQuestions, promptFor, checkQuestions, limitTo, verifyPrompt, applyChecks, totalMarks, esc } from "./model.js";
 import { paperHtml, cleanSvg } from "./paper.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
@@ -309,18 +309,51 @@ $("xm-ai-go").addEventListener("click", async () => {
   const count = (id, max) => Math.max(0, Math.min(max, Math.round(+$(id).value) || 0));
   const mcq = count("xm-ai-mcq", 40), fill = count("xm-ai-fill", 20), sub = count("xm-ai-sub", 20), theory = count("xm-ai-theory", 10);
   if (!mcq && !fill && !sub && !theory) { status("Ask for at least one question.", true); return; }
-  const { system, prompt } = promptFor({
-    topic: $("xm-ai-topic").value.trim(), subject: state.head.subject, level: $("xm-ai-level").value.trim(),
-    mcq, fill, sub, theory, svg: $("xm-ai-svg").checked, extra: $("xm-ai-extra").value,
-  });
-  go.disabled = true; status("Writing the questions…");
+  const want = { mcq, fill, sub, theory };
+  const level = $("xm-ai-level").value.trim() || state.head.klass;
+  const common = { topic: $("xm-ai-topic").value.trim(), subject: state.head.subject, level, svg: $("xm-ai-svg").checked, extra: $("xm-ai-extra").value };
+  go.disabled = true;
   try {
     const { groqGenerate, groqText } = await import("/utils/ai-client.js");
-    const data = await groqGenerate({ system, prompt, json: true, temperature: 0.5, maxTokens: 8000 });
-    const made = parseQuestions(groqText(data));
-    state.questions.push(...made);
+    const ask = async ({ system, prompt }, temperature = 0.2) => groqText(await groqGenerate({ system, prompt, json: true, temperature, maxTokens: 8000 }));
+    const kept = [];
+    let faults = [];
+    /* The model is held to the brief in code: every reply is checked, what
+       breaks a rule is thrown away, and only the shortfall is asked for again. */
+    for (let round = 1; round <= 3; round++) {
+      const need = {};
+      for (const t of Object.keys(want)) need[t] = want[t] - kept.filter((q) => q.type === t).length;
+      if (!Object.values(need).some((n) => n > 0)) break;
+      status(round === 1 ? "Writing the questions…" : `Round ${round}: rewriting what broke the brief…`);
+      let made = [], faultsNow = [];
+      try {
+        made = parseQuestions(await ask(promptFor({ ...common, need, seen: kept.map((q) => q.text), faults })));
+      } catch (err) { faultsNow.push("the reply was not the JSON object asked for"); }
+      const checked = checkQuestions(made, { svg: common.svg, seen: kept.map((q) => q.text) });
+      faultsNow.push(...checked.faults);
+      let good = limitTo(checked.good, need);
+      good.forEach((q) => { if (q.svg && !cleanSvg(q.svg)) q.svg = ""; });
+      const solvable = good.filter((q) => q.type === "mcq" || q.type === "fill");
+      if (solvable.length) {
+        status(round === 1 ? "Checking the answers…" : `Round ${round}: checking the answers…`);
+        try {
+          const v = applyChecks(solvable, await ask(verifyPrompt(solvable), 0));
+          faultsNow.push(...v.faults);
+          good = good.filter((q) => !solvable.includes(q) || v.good.includes(q));
+        } catch { /* the check is a second opinion; if it cannot run, the checked questions stand */ }
+      }
+      kept.push(...good);
+      faults = faultsNow;
+    }
+    const order = Object.keys(want);
+    kept.sort((x, y) => order.indexOf(x.type) - order.indexOf(y.type));
+    state.questions.push(...kept);
     renderList(); draw(); save();
-    status(`Added ${made.length} question${made.length === 1 ? "" : "s"}. Read each one before you print.`);
+    const wanted = mcq + fill + sub + theory;
+    status(kept.length === wanted
+      ? `Added ${kept.length} question${kept.length === 1 ? "" : "s"}, each checked against your brief. Read them before you print.`
+      : `Added ${kept.length} of ${wanted}. The model could not meet the brief for the rest${faults.length ? `: ${faults[0]}` : ""}. Press Generate again for the remainder.`,
+      kept.length === 0);
   } catch (err) {
     status(String(err && err.message || err).slice(0, 200) || "The model could not write the questions. Try again.", true);
   } finally { go.disabled = false; }

@@ -90,6 +90,11 @@ export function clean(q) {
     out.options = o.slice(0, 4).map((s) => fixTex(s, true).trim());
     let a = q && q.answer;
     if (typeof a === "string" && /^[A-Da-d]$/.test(a.trim())) a = "ABCD".indexOf(a.trim().toUpperCase());
+    /* an answer given as the option's own text, not its index */
+    if (typeof a === "string" && !/^\d$/.test(a.trim())) {
+      const k = out.options.findIndex((o) => norm(o) === norm(a));
+      if (k >= 0) a = k;
+    }
     out.answer = num(a, 0, 0, 3);
   }
   return out;
@@ -178,23 +183,117 @@ function normType(t) {
 }
 
 /** The instructions the model gets. It writes content; it is told nothing about layout. */
-export function promptFor({ topic, subject, level, mcq, fill, sub, theory, svg, extra }) {
+export function promptFor({ topic, subject, level, need, svg, extra, seen = [], faults = [] }) {
   const system =
-    "You write school examination questions. Reply with ONE JSON object only: " +
+    "You are setting a school examination paper. The teacher's brief is BINDING: obey every rule below exactly, and never add, skip or swap anything. " +
+    "Reply with ONE JSON object and nothing else, in this shape: " +
     '{"questions":[{"type":"mcq"|"fill"|"sub"|"theory","text":"...","options":["...","...","...","..."],"answer":0,"marks":1,"svg":""}]}. ' +
-    "Rules: 'options' and 'answer' (the index 0-3 of the correct option) are only for mcq; for fill, sub and theory 'answer' is the model answer or marking note. " +
-    "A fill question is ONE sentence with exactly one blank written as six underscores (______); its 'answer' is the missing word or number, and 'options' is empty. " +
-    "Write every piece of mathematics in TeX between single dollar signs, like $\\frac{3}{4}$ or $x^2+5x+6=0$, and use a double backslash for every TeX command inside the JSON string. " +
-    "Never put a raw newline inside a string; write the two characters \\n only where a line break is wanted. " +
-    "Questions must be original, correct, unambiguous and suited to the level. MCQ distractors must be plausible and exactly one option is right. " +
-    "Marks: mcq 1, fill 1, sub 2 to 5, theory 6 to 15. Theory questions may have parts (a), (b), (c) separated by \\n. " +
+    "RULES. " +
+    "1. COUNTS: write exactly the number of each type asked for, no more and no fewer, ordered mcq, fill, sub, theory. " +
+    "2. SCOPE: every question is about the TOPIC given, at the LEVEL given, in the SUBJECT given. Do not drift to other topics or other levels. " +
+    "3. MCQ: exactly four options, all different, exactly one correct. 'answer' is the index 0 to 3 of the correct option. Solve the question yourself before you choose the index. Distractors must be plausible. " +
+    "4. FILL: ONE sentence with exactly one blank written as six underscores (______). 'answer' is the missing word or number; 'options' is []. " +
+    "5. SUB and THEORY: 'answer' is a model answer or marking note and is never empty; 'options' is []. Marks: sub 2 to 5, theory 6 to 15. Theory may have parts (a), (b), (c) separated by \\n. mcq and fill are 1 mark. " +
+    "6. MATHS: write every piece of mathematics in TeX between single dollar signs, like $\\frac{3}{4}$ or $x^2+5x+6=0$, with a double backslash for each TeX command inside the JSON string. Never write maths as plain text. " +
+    "7. Never put a raw newline inside a string; write the two characters \\n where a line break is wanted. " +
+    "8. Every question is original, correct, unambiguous and answerable from what is written. Never repeat a question listed under ALREADY WRITTEN. " +
     (svg
-      ? "Where a question truly needs a figure (geometry, a graph, a shape, a number line) put a small self-contained SVG in 'svg': one <svg> element with a viewBox, black strokes, no fill colours, no scripts, labels in <text>. Otherwise leave 'svg' empty. "
-      : "Leave 'svg' empty. ");
-  const counts = [mcq && `${mcq} multiple-choice`, fill && `${fill} fill-in-the-blank`, sub && `${sub} subjective (short-answer)`, theory && `${theory} theory`].filter(Boolean).join(", ");
-  const prompt = `Subject: ${subject || "Mathematics"}\nLevel: ${level || "secondary school"}\nTopic: ${topic || "a mixed selection of topics"}\nWrite: ${counts}.\nOrder them multiple-choice first, then fill-in-the-blank, then subjective, then theory.` +
-    (extra && extra.trim() ? `\nThe teacher's further instructions (follow them, but keep the JSON format above):\n${extra.trim()}` : "");
+      ? "9. DIAGRAMS: where a question truly needs a figure (geometry, a graph, a shape, a number line) put a small self-contained SVG in 'svg': one <svg> element with a viewBox, black strokes, no fill colours, no scripts, labels in <text>. Otherwise 'svg' is \"\". "
+      : "9. DIAGRAMS: 'svg' is always \"\". ") +
+    "10. The teacher's FURTHER INSTRUCTIONS are part of the brief and equally binding. If one conflicts with the JSON format or rules 3 to 7, the format wins.";
+  const label = { mcq: "multiple-choice (mcq)", fill: "fill-in-the-blank (fill)", sub: "subjective short-answer (sub)", theory: "theory (theory)" };
+  const counts = Object.keys(label).filter((t) => need && need[t] > 0).map((t) => `${need[t]} ${label[t]}`).join(", ");
+  const prompt =
+    `SUBJECT: ${subject || "Mathematics"}\nLEVEL: ${level || "secondary school"}\nTOPIC: ${topic || "a mixed selection of the subject's topics"}\n` +
+    `WRITE EXACTLY: ${counts}.` +
+    (extra && extra.trim() ? `\nFURTHER INSTRUCTIONS (binding):\n${extra.trim()}` : "") +
+    (seen.length ? `\nALREADY WRITTEN (do not repeat or paraphrase):\n${seen.map((s) => `- ${String(s).replace(/\s+/g, " ").slice(0, 110)}`).join("\n")}` : "") +
+    (faults.length ? `\nFAULTS IN YOUR LAST ATTEMPT (put them right; write only what is asked above):\n${faults.map((f) => `- ${f}`).join("\n")}` : "");
   return { system, prompt };
+}
+
+const norm = (s) => String(s || "").toLowerCase().replace(/\s+/g, " ").replace(/\$/g, "").trim();
+const RANGE = { mcq: [1, 1], fill: [1, 1], sub: [2, 5], theory: [6, 15] };
+
+/**
+ * The model's questions held to the brief, in code, not on trust.
+ *   opts.svg   diagrams were asked for
+ *   opts.seen  texts already kept (a repeat is a fault)
+ * → { good: the ones that obey every rule, faults: what was wrong with the rest }
+ */
+export function checkQuestions(list, { svg = false, seen = [] } = {}) {
+  const good = [], faults = [], texts = new Set(seen.map(norm));
+  list.forEach((q, i) => {
+    const tag = `${TYPES[q.type].label} question "${q.text.slice(0, 40)}"`;
+    const bad = (why) => faults.push(`${tag}: ${why}`);
+    if (q.text.length < 8) return bad("the question is too short to be a question");
+    if (texts.has(norm(q.text))) return bad("it repeats a question already written");
+    if (q.type === "mcq") {
+      const o = q.options.map(norm);
+      if (o.some((x) => !x)) return bad("it needs exactly four non-empty options");
+      if (new Set(o).size !== 4) return bad("the four options must all be different");
+    } else {
+      q.options = [];
+      if (!q.answer) return bad("it has no model answer");
+    }
+    if (q.type === "fill") {
+      const blanks = q.text.match(/_{3,}/g) || [];
+      if (blanks.length !== 1) return bad("a fill question needs exactly one blank written as ______");
+      q.text = q.text.replace(/_{3,}/, "______");
+    }
+    const [lo, hi] = RANGE[q.type];
+    q.marks = Math.min(hi, Math.max(lo, q.marks || lo));
+    if (!svg) q.svg = "";
+    texts.add(norm(q.text));
+    good.push(q);
+  });
+  return { good, faults };
+}
+
+/** Questions beyond what was asked for are dropped (the model was told: exactly). */
+export function limitTo(list, need) {
+  const left = { ...need };
+  return list.filter((q) => (left[q.type] > 0 ? (left[q.type]--, true) : false));
+}
+
+/**
+ * A second, independent look: the model is given each multiple-choice and
+ * fill question WITHOUT its answer and asked to solve it. A disagreement means
+ * the question or its key is wrong, so it is dropped and rewritten.
+ */
+export function verifyPrompt(qs) {
+  const system =
+    "You are checking examination questions. For each question work out the correct answer yourself, carefully. " +
+    'Reply with ONE JSON object only: {"checks":[{"n":1,"answer":2}]}. For a multiple-choice question "answer" is the index 0 to 3 of the only correct option, or -1 if none or more than one option is correct. ' +
+    'For a fill question "answer" is the missing word or number. Write TeX with a double backslash for each command.';
+  const prompt = qs.map((q, i) => q.type === "mcq"
+    ? `${i + 1}. [mcq] ${q.text}\n   0) ${q.options[0]}\n   1) ${q.options[1]}\n   2) ${q.options[2]}\n   3) ${q.options[3]}`
+    : `${i + 1}. [fill] ${q.text}`).join("\n");
+  return { system, prompt };
+}
+
+/** Apply the checker's reply: → { good, faults }. An unreadable reply drops nothing. */
+export function applyChecks(qs, reply) {
+  let checks;
+  try {
+    const t = String(reply || "");
+    const data = JSON.parse(repairJson(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1)));
+    checks = Array.isArray(data.checks) ? data.checks : null;
+  } catch { checks = null; }
+  if (!checks) return { good: qs, faults: [] };
+  const good = [], faults = [];
+  const same = (a, b) => {
+    const x = norm(a).replace(/[\s,]/g, ""), y = norm(b).replace(/[\s,]/g, "");
+    return x === y || (x !== "" && Number.isFinite(+x) && Number.isFinite(+y) && +x === +y);
+  };
+  qs.forEach((q, i) => {
+    const c = checks.find((k) => +k.n === i + 1);
+    if (!c) { good.push(q); return; }
+    const ok = q.type === "mcq" ? Number(c.answer) === q.answer : same(c.answer, q.answer);
+    if (ok) good.push(q);
+    else faults.push(`${TYPES[q.type].label} question "${q.text.slice(0, 40)}": the stated answer is not what solving it gives, so the question or its key is wrong`);
+  });
+  return { good, faults };
 }
 
 /** Marks added up. */
