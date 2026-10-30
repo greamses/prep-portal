@@ -70,6 +70,7 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
 .xm-svg[open] { display: flex; flex-direction: column; gap: 0.55rem; }
 .xm-code { font-family: var(--font-mono); font-size: 0.7rem; }
 .xm-svg__row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.xm-svg__msg { font-size: 0.72rem; color: var(--text-secondary); }
 .xm-svg__bad { font-size: 0.72rem; color: var(--accent-danger); }
 .xm-svg__shot svg { max-width: 220px; max-height: 160px; width: auto; height: auto; background: #fff; display: block; box-shadow: 0 1px 4px rgba(42, 39, 35, 0.2); }
 .xm-svg__shot:empty { display: none; }
@@ -136,9 +137,16 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
 .xp-body { flex: 1; min-width: 0; }
 .xp-text { overflow-wrap: anywhere; }
 .xp-marks { float: right; margin-left: 4mm; font-size: 8pt; font-weight: 700; color: var(--ci); white-space: nowrap; }
-.xp-svg { margin: 2.5mm 0 1mm; }
-.xp-svg__art { display: block; max-width: 100%; max-height: 62mm; width: auto; height: auto; color: #1d1b18; }
-.xp-cols .xp-svg__art { max-height: 38mm; }
+/* a figure: a framed plate, centred, numbered underneath */
+.xp-svg { margin: 3mm auto 1.5mm; width: fit-content; max-width: 100%; break-inside: avoid; }
+.xp-svg__frame { background: #fff; border: 0.35mm solid color-mix(in srgb, var(--c) 55%, #fff); border-radius: 2.5mm; padding: 3mm 4mm; }
+.xp-svg figcaption { margin-top: 1.2mm; text-align: center; font-size: 7pt; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; color: var(--ci); }
+.xp-svg__art { overflow: visible; display: block; width: 100%; max-width: 78mm; max-height: 60mm; height: auto; margin: 0 auto; color: #1d1b18; }
+/* the drawing is set in the paper's own type and ink, whatever the model wrote */
+.xp-svg__art text { font-family: "JetBrains Mono", ui-monospace, monospace; font-weight: 600; fill: #1d1b18; stroke: none; }
+.xp-svg__art :is(line, polyline, polygon, path, circle, ellipse, rect) { stroke-linecap: round; stroke-linejoin: round; }
+.xp-cols .xp-svg__art { max-width: 56mm; max-height: 38mm; }
+.xp-cols .xp-svg__frame { padding: 2mm 3mm; }
 
 /* multiple choice: two columns */
 .xp-cols { column-count: 2; column-gap: 9mm; column-rule: 0.3mm solid var(--cs); }
@@ -197,6 +205,8 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
   .xp-cell b { color: #1d1b18 !important; }
   .xp-student em { background: var(--cs) !important; }
   .xp-banner { background: var(--cs) !important; }
+  .xp-svg__frame { background: #fff !important; }
+  .xp-svg figcaption { color: var(--ci) !important; }
   .xp-banner__tag { background: #fff1a6 !important; color: #1d1b18 !important; }
   .xp-banner__tag::before { background: rgba(255, 255, 255, 0.7) !important; }
   .xp-n { background: var(--ci) !important; color: #fff !important; }

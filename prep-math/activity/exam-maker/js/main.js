@@ -7,7 +7,7 @@
    tomorrow.
    ========================================================================== */
 
-import { TYPES, COLOURS, BLANK_HEAD, blank, clean, parseQuestions, promptFor, checkQuestions, limitTo, verifyPrompt, applyChecks, totalMarks, esc } from "./model.js";
+import { TYPES, COLOURS, BLANK_HEAD, blank, clean, parseQuestions, promptFor, svgPrompt, extractSvg, checkQuestions, limitTo, verifyPrompt, applyChecks, totalMarks, esc } from "./model.js";
 import { paperHtml, cleanSvg } from "./paper.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
@@ -89,7 +89,12 @@ function typeset() {
         try { await window.MathJax.typesetPromise([el]); } catch { /* this one stays as text */ }
       }
     }
-    try { mathify(sheet); } catch { /* nothing to set */ }
+    /* mathify sets plain maths, but must never be let at a question whose
+       $maths$ is still raw: it would cut the delimiters apart and strand them */
+    for (const el of sheet.querySelectorAll(".xp-q, .xp-key li")) {
+      if (/\\\(|\\\[/.test(el.textContent)) continue;
+      try { mathify(el); } catch { /* nothing to set */ }
+    }
   });
   return queue;
 }
@@ -179,11 +184,14 @@ function card(q, i) {
     ${opts}
     <details class="xm-svg"${q.svg ? " open" : ""}>
       <summary>${UI.shapes(16)} Diagram (SVG)${q.svg ? " — attached" : ""}</summary>
+      <input class="wb-input" data-f="svgbrief" autocomplete="off" maxlength="200" placeholder="What should the diagram show? (optional) For example: a right-angled triangle, base 12 cm, height 5 cm" />
       <textarea class="wb-input xm-code" data-f="svg" rows="4" spellcheck="false" placeholder="Paste SVG code, or upload an .svg file">${esc(q.svg)}</textarea>
       <div class="xm-svg__row">
         <input type="file" accept=".svg,image/svg+xml" data-f="svgfile" hidden />
+        <button class="pp-btn" type="button" data-do="svggen">${UI.sparkle(16)} Generate diagram</button>
         <button class="pp-btn pp-btn--ghost" type="button" data-do="svgpick">${UI.download(16)} Upload .svg</button>
         <button class="pp-btn pp-btn--ghost" type="button" data-do="svgclear"${q.svg ? "" : " hidden"}>${UI.trash(16)} Remove diagram</button>
+        <span class="xm-svg__msg" role="status"></span>
         <span class="xm-svg__bad" hidden>That is not a valid SVG, so it is left off the paper.</span>
       </div>
       <div class="xm-svg__shot">${q.svg ? cleanSvg(q.svg) : ""}</div>
@@ -254,6 +262,7 @@ list.addEventListener("click", (e) => {
   if (d === "del") qs.splice(i, 1);
   else if (d === "up" && i > 0) [qs[i - 1], qs[i]] = [qs[i], qs[i - 1]];
   else if (d === "down" && i < qs.length - 1) [qs[i + 1], qs[i]] = [qs[i], qs[i + 1]];
+  else if (d === "svggen") { genDiagram(b, qs[i]); return; }
   else if (d === "svgpick") { b.parentElement.querySelector('[data-f="svgfile"]').click(); return; }
   else if (d === "svgclear") qs[i].svg = "";
   else return;
@@ -292,6 +301,31 @@ document.addEventListener("click", (e) => {
   state.questions = what === "all" ? [] : state.questions.filter((q) => q.type !== what);
   renderList(); draw(); save();
 });
+
+/* a diagram for one question, written by the model, drawn to its numbers; a
+   reply that is not a valid SVG is sent back once with the reason */
+async function genDiagram(btn, q) {
+  const card = btn.closest(".xm-card");
+  const msg = card.querySelector(".xm-svg__msg");
+  const brief = card.querySelector('[data-f="svgbrief"]').value;
+  if (!q.text.trim()) { msg.textContent = "Write the question first, so the diagram can match it."; return; }
+  btn.disabled = true; msg.textContent = "Drawing…";
+  try {
+    const { groqGenerate, groqText } = await import("/utils/ai-client.js");
+    let svg = "", fault = "";
+    for (let tries = 0; tries < 2 && !svg; tries++) {
+      const { system, prompt } = svgPrompt(q, brief, fault);
+      const raw = extractSvg(groqText(await groqGenerate({ system, prompt, temperature: 0.3, maxTokens: 3500 })));
+      svg = raw && cleanSvg(raw) ? raw : "";
+      if (!svg) fault = raw ? "it was not well-formed SVG" : "it contained no <svg> element";
+    }
+    if (!svg) { msg.textContent = "The model could not draw a valid diagram. Try again, or say what it should show."; return; }
+    q.svg = svg;
+    renderList(); draw(); save();
+  } catch (err) {
+    msg.textContent = String(err && err.message || err).slice(0, 140);
+  } finally { btn.disabled = false; }
+}
 
 document.querySelectorAll("[data-add]").forEach((b) => b.addEventListener("click", () => {
   const q = blank(b.dataset.add);

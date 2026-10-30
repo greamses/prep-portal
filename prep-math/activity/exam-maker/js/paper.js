@@ -8,7 +8,7 @@
    textHtml() so it is written as \( \) for MathJax to typeset afterwards.
    ========================================================================== */
 
-import { TYPES, ORDER, COLOURS, textHtml, esc, totalMarks } from "./model.js";
+import { TYPES, ORDER, COLOURS, textHtml, blankHtml, esc, totalMarks } from "./model.js";
 
 /* ── diagrams ──────────────────────────────────────────────────────────── */
 
@@ -52,9 +52,11 @@ export function cleanSvg(src) {
 
 /* ── the pieces ────────────────────────────────────────────────────────── */
 
+/* a diagram is a numbered figure in a frame; the count restarts with each paper */
+let figNo = 0;
 const figure = (q) => {
   const s = cleanSvg(q.svg);
-  return s ? `<div class="xp-svg">${s}</div>` : "";
+  return s ? `<figure class="xp-svg"><div class="xp-svg__frame">${s}</div><figcaption data-nomath>Figure ${++figNo}</figcaption></figure>` : "";
 };
 
 const letter = (i) => "ABCD"[i];
@@ -86,8 +88,7 @@ function written(q, no) {
     "______" in the text is the blank; with none, the line follows the sentence. */
 function fill(q, no) {
   const blank = `<span class="xp-blank"></span>`;
-  let html = textHtml(q.text);
-  html = /_{3,}/.test(html) ? html.replace(/_{3,}/g, blank) : `${html} ${blank}`;
+  const html = blankHtml(q.text, blank);
   return `<div class="xp-q xp-q--fill">
     <span class="xp-n" data-nomath>${no}</span>
     <div class="xp-body">
@@ -156,6 +157,7 @@ function key(qs, head) {
  *   questions  clean questions, in the order they were written
  */
 export function paperHtml(head, questions) {
+  figNo = 0;
   const col = COLOURS.find((c) => c.id === head.colour) || COLOURS[0];
   const groups = ORDER.map((t) => [t, questions.filter((q) => q.type === t)]).filter(([, l]) => l.length);
   let no = 0;

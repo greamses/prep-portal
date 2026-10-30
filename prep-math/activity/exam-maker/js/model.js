@@ -132,6 +132,31 @@ export function textHtml(src) {
   return out;
 }
 
+/**
+ * A fill-in-the-blank's HTML, with its blank drawn as `blank`.
+ *
+ * The blank is often INSIDE the maths ("$7,842 + 1,159 = ______$"). An HTML
+ * element cannot sit in the middle of a formula: MathJax reads a delimiter pair
+ * only inside one run of text, so the whole sentence stayed raw as "\(7,842 …
+ * \)". So the formula is cut around the blank instead: "$7,842 + 1,159 =$"
+ * blank "$$". Where the blank is inside braces (a fraction) it cannot be cut,
+ * and becomes a blank drawn by TeX itself.
+ */
+export function blankHtml(src, blank) {
+  const s = fixTex(src);
+  let out, inTex = false;
+  if (s.indexOf("$$") >= 0) out = s;
+  else {
+    out = s.split("$").map((seg, i) => {
+      if (i % 2 === 0 || !/_{3,}/.test(seg)) return i % 2 ? `$${seg}$` : seg;
+      if (/[{}]/.test(seg)) { inTex = true; return `$${seg.replace(/_{3,}/g, "\\underline{\\phantom{0000}}")}$`; }
+      return seg.split(/_{3,}/).map((b, k) => (k ? "\u0001" : "") + (b.trim() ? `$${b.trim()}$` : "")).join("");
+    }).join("");
+  }
+  const html = textHtml(out);
+  return /\u0001|_{3,}/.test(html) ? html.replace(/\u0001|_{3,}/g, blank) : inTex ? html : `${html} ${blank}`;
+}
+
 /* ── the model's JSON ──────────────────────────────────────────────────── */
 
 /**
@@ -297,6 +322,36 @@ export function applyChecks(qs, reply) {
     else faults.push(`${TYPES[q.type].label} question "${q.text.slice(0, 40)}": the stated answer is not what solving it gives, so the question or its key is wrong`);
   });
   return { good, faults };
+}
+
+/**
+ * The prompt that draws ONE question's diagram. The model is shown the whole
+ * question (text and options) so the drawing carries the numbers and labels the
+ * question uses, plus whatever the teacher says it should show.
+ */
+export function svgPrompt(q, brief = "", fault = "") {
+  const system =
+    "You draw diagrams for school examination questions as SVG. Reply with the SVG markup only, no explanation and no code fence. " +
+    "Rules: one <svg> element with xmlns and a viewBox (for example 0 0 220 150), and no width or height. " +
+    "Draw in black lines (stroke='#1d1b18', stroke-width='1.6'), fill='none' or a very light grey (#eeeeee) only. Leave a margin of 12 units inside the viewBox. " +
+    "Every length, angle, point and name the question mentions must be labelled in <text> (font-size='11', text-anchor set), placed beside what it labels and never over a line. " +
+    "Draw to scale where the numbers allow it, and mark right angles with a small square. For a graph draw labelled axes with ticks. " +
+    "Use single quotes for every attribute. No scripts, no images, no foreignObject, no external links. " +
+    "The diagram must show what the question describes and must not reveal the answer.";
+  const opts = q.type === "mcq" ? `\nOptions: ${q.options.join(" | ")}` : "";
+  const prompt = `Question: ${q.text.replace(/\s+/g, " ")}${opts}` +
+    (brief.trim() ? `\nThe teacher wants the diagram to show: ${brief.trim()}` : "") +
+    (fault ? `\nYour last attempt was rejected: ${fault}. Reply with one valid, well-formed SVG element.` : "");
+  return { system, prompt };
+}
+
+/** The <svg> out of a model's reply, however it was wrapped (fence, JSON string, prose). */
+export function extractSvg(text) {
+  const t = String(text || "");
+  const a = t.indexOf("<svg"), b = t.lastIndexOf("</svg>");
+  if (a < 0 || b < a) return "";
+  return t.slice(a, b + 6)
+    .replace(/\\"/g, '"').replace(/\\\//g, "/").replace(/\\n/g, " ").replace(/\\t/g, " ");
 }
 
 /** Marks added up. */
