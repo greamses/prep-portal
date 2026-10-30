@@ -266,7 +266,7 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
 .xp-omr__grid ol { list-style: none; margin: 0; padding: 0; flex: 1 1 0; display: grid; gap: 2.6mm; align-content: start; }
 .xp-omr li { display: flex; align-items: center; gap: 1.8mm; }
 .xp-omr__n { width: 7mm; text-align: right; font-size: 8pt; font-weight: 700; color: var(--ci); }
-.xp-omr li b { flex: none; width: 5.2mm; height: 7mm; box-sizing: border-box; border: 0.35mm solid var(--ci); border-radius: 50%; background: #fff; color: var(--ci); font-size: 6.5pt; display: grid; place-items: center; line-height: 1; }
+.xp-omr li b { flex: none; width: 5.6mm; height: 5.6mm; aspect-ratio: 1; box-sizing: border-box; border: 0.35mm solid var(--ci); border-radius: 50%; background: #fff; color: var(--ci); font-size: 6.5pt; display: grid; place-items: center; line-height: 1; }
 .xp-omr__note { margin: 9mm 0 0; font-size: 7.5pt; color: #6b655c; text-align: center; }
 /* the four black marks a scanner finds the page by */
 .xp-reg { position: absolute; width: 5mm; height: 5mm; background: #1d1b18; }
@@ -306,3 +306,32 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
   .xp-live .xp--omr .xp-opts li.is-right b { background: transparent !important; color: #3f7d4f !important; }
   .xp-live .xp--omr .xp-opts li.is-wrong b { background: transparent !important; color: #b0453d !important; }
 }
+
+/* ── answering: only the paper on screen, and the OMR sheet from the side ───── */
+/* the setup steps aside; the paper is all that is left (the toolbar stays, with the way back) */
+html.xm-focus .xm-rail,
+html.xm-focus .wb-hero,
+html.xm-focus .wb-note,
+html.xm-focus .xm-sharebox { display: none !important; }
+html.xm-focus .wb-work.xm-work { display: block; }
+html.xm-focus .xm-preview { max-width: 230mm; margin: 0 auto; }
+
+/* the OMR page at the end is for print; on screen the drawer replaces it */
+.xp-live .xp-sheetpage.xp-omr { display: none; }
+@media print { .xp-live .xp-sheetpage.xp-omr { display: block; } .xo-drawer, .xo-tab { display: none !important; } }
+
+.xo-tab { position: fixed; right: 0; top: 38%; z-index: 10040; writing-mode: vertical-rl; padding: 0.9rem 0.45rem; letter-spacing: 0.08em; }
+.xo-drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 10050; width: min(19rem, 92vw); box-sizing: border-box; overflow-y: auto; padding: 1rem 1rem 2rem; background: #fffdf8; color: #1d1b18; border-left: 1px solid rgba(42, 39, 35, 0.18); box-shadow: -8px 0 26px rgba(42, 39, 35, 0.22); transform: translateX(105%); transition: transform 0.25s ease; font-family: "JetBrains Mono", ui-monospace, monospace; }
+.xo-drawer.is-open { transform: none; }
+.xo-drawer__head { display: grid; gap: 0.2rem; margin-bottom: 0.8rem; }
+.xo-drawer__head b { font-size: 1rem; }
+.xo-drawer__head span { font-size: 0.72rem; color: #6b655c; }
+.xo-close { justify-self: start; margin-top: 0.4rem; }
+.xp-omr.xo-omr { min-height: 0; padding: 0; }
+.xo-omr .xp-omr__grid { flex-direction: column; gap: 0.5rem; }
+.xo-omr li b { cursor: pointer; }
+.xo-omr li b:hover { box-shadow: 0 0 0 0.5mm var(--c); }
+.xo-omr li b.is-picked { background: var(--ci); color: #fff; }
+.xo-omr li b.is-right { background: #3f7d4f; color: #fff; border-color: #3f7d4f; }
+.xo-omr li b.is-wrong { background: #b0453d; color: #fff; border-color: #b0453d; }
+html.xm-focus .wb-toolbar { flex-wrap: wrap; gap: 0.4rem 0.5rem; }

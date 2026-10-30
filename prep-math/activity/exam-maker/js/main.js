@@ -534,6 +534,10 @@ function setLive(on) {
   live.setOn(on);
   $("xm-live").setAttribute("aria-pressed", String(on));
   $("xm-live").classList.toggle("is-on", on);
+  /* answering leaves only the paper; the same button takes you back to the setup */
+  $("xm-live").lastChild.textContent = on ? " Back to setup" : " Answer on screen";
+  document.documentElement.classList.toggle("xm-focus", on);
+  if (on) scrollTo({ top: 0 });
   $("xm-check").hidden = !on; $("xm-clear").hidden = !on;
   $("xm-check").lastChild.textContent = " Check answers";
   clearTimeout(drawTimer); draw(); paintScore();

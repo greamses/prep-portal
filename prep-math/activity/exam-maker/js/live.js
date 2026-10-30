@@ -52,7 +52,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY } = {}) {
     sheet.querySelectorAll(`.xp-q--mcq[data-qid="${id}"] .xp-opts li`).forEach((li, k) => {
       li.classList.toggle("is-picked", k === got); li.setAttribute("aria-checked", String(k === got));
     });
-    sheet.querySelectorAll(`.xp-omr li[data-qid="${id}"] b`).forEach((b) => b.classList.toggle("is-picked", Number(b.dataset.i) === got));
+    document.querySelectorAll(`.xp-omr li[data-qid="${id}"] b`).forEach((b) => b.classList.toggle("is-picked", Number(b.dataset.i) === got));
   };
 
   /** Make every question on the sheet answerable (the sheet has just been drawn). */
@@ -104,20 +104,8 @@ export function createLive(sheet, { onChange = () => {}, store = KEY } = {}) {
         if (lines) lines.replaceWith(box); else el.querySelector(".xp-body").appendChild(box);
       }
     });
-    /* the OMR sheet: the same answers, shaded there instead */
-    sheet.querySelectorAll(".xp-omr li[data-qid]").forEach((li) => {
-      const id = li.dataset.qid;
-      li.querySelectorAll("b").forEach((b) => {
-        b.classList.toggle("is-picked", answers[id] === Number(b.dataset.i));
-        b.tabIndex = 0; b.setAttribute("role", "radio");
-        const pick = () => {
-          if (checked) return;
-          answers[id] = Number(b.dataset.i); keep(); paintPick(id, answers[id]); onChange();
-        };
-        b.addEventListener("click", pick);
-        b.addEventListener("keydown", (e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); pick(); } });
-      });
-    });
+    wireOmr(sheet);
+    mountDrawer();
     /* the theory sheet: a page to write on, in the block for its question */
     sheet.querySelectorAll(".xp-ans[data-qid]").forEach((blk) => {
       const q = qs.get(blk.dataset.qid);
@@ -133,6 +121,71 @@ export function createLive(sheet, { onChange = () => {}, store = KEY } = {}) {
       if (lines) lines.replaceWith(box); else blk.appendChild(box);
     });
     if (checked) showResults(questions);
+  }
+
+  /** The OMR rows under `root` (the page at the end, or the side drawer): the same answers, shaded there. */
+  function wireOmr(root) {
+    root.querySelectorAll(".xp-omr li[data-qid], .xo-omr li[data-qid]").forEach((li) => {
+      const id = li.dataset.qid;
+      li.querySelectorAll("b").forEach((b) => {
+        b.classList.toggle("is-picked", answers[id] === Number(b.dataset.i));
+        b.tabIndex = 0; b.setAttribute("role", "radio");
+        const pick = () => {
+          if (checked) return;
+          answers[id] = Number(b.dataset.i); keep(); paintPick(id, answers[id]); onChange();
+        };
+        b.addEventListener("click", pick);
+        b.addEventListener("keydown", (e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); pick(); } });
+      });
+    });
+  }
+
+  /* ── the OMR sheet, from the side ───────────────────────────────────────
+     While the paper is being answered, the OMR sheet is not a page at the end
+     to scroll to: it is a drawer on the right edge with a tab to open it, so the
+     questions and the sheet are in view together. It is built from the sheet the
+     paper already carries (so the numbering is the paper's own) and the page at
+     the end is hidden on screen while this is up; printing still gets the page. */
+  let drawerOpen = false;
+  function unmountDrawer() {
+    document.querySelector(".xo-drawer")?.remove();
+    document.querySelector(".xo-tab")?.remove();
+  }
+  function mountDrawer() {
+    unmountDrawer();
+    const page = sheet.querySelector(".xp-sheetpage.xp-omr");
+    if (!on || !page) return;
+    const article = page.closest(".xp");
+    const grid = page.querySelector(".xp-omr__grid").cloneNode(true);
+
+    const tab = document.createElement("button");
+    tab.type = "button"; tab.className = "pp-btn xo-tab"; tab.textContent = "OMR sheet";
+    tab.setAttribute("aria-expanded", String(drawerOpen));
+
+    const drawer = document.createElement("aside");
+    drawer.className = "xo-drawer" + (drawerOpen ? " is-open" : "");
+    drawer.setAttribute("aria-label", "OMR answer sheet");
+    drawer.setAttribute("style", article.getAttribute("style") || "");
+    const head = document.createElement("div");
+    head.className = "xo-drawer__head";
+    head.innerHTML = "<b>OMR sheet</b><span>Shade one bubble for each question.</span>";
+    const close = document.createElement("button");
+    close.type = "button"; close.className = "pp-btn xo-close"; close.textContent = "Close";
+    head.appendChild(close);
+    const body = document.createElement("div");
+    body.className = "xp-omr xo-omr";
+    body.appendChild(grid);
+    drawer.append(head, body);
+    document.body.append(drawer, tab);
+
+    const set = (v) => {
+      drawerOpen = v;
+      drawer.classList.toggle("is-open", v);
+      tab.setAttribute("aria-expanded", String(v));
+    };
+    tab.addEventListener("click", () => set(!drawerOpen));
+    close.addEventListener("click", () => set(false));
+    wireOmr(drawer);
   }
 
   /** Mark what can be marked and show the model answer where it cannot. */
@@ -156,7 +209,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY } = {}) {
           li.classList.toggle("is-right", i === q.answer);
           li.classList.toggle("is-wrong", got === i && i !== q.answer);
         });
-        sheet.querySelectorAll(`.xp-omr li[data-qid="${q.id}"] b`).forEach((b) => {
+        document.querySelectorAll(`.xp-omr li[data-qid="${q.id}"] b`).forEach((b) => {
           const i = Number(b.dataset.i);
           b.classList.toggle("is-right", i === q.answer);
           b.classList.toggle("is-wrong", got === i && i !== q.answer);
@@ -188,7 +241,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY } = {}) {
   return {
     get on() { return on; },
     get checked() { return checked; },
-    setOn(v) { on = !!v; if (!on) { checked = false; sheet.classList.remove("xp-live"); } },
+    setOn(v) { on = !!v; if (!on) { checked = false; sheet.classList.remove("xp-live"); unmountDrawer(); } },
     check(questions) { checked = true; return score(questions); },
     reopen() { checked = false; },
     clear() { answers = {}; checked = false; keep(); },
