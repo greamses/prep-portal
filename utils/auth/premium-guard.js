@@ -153,6 +153,21 @@ async function liveSeat() {
   }
 }
 
+/* A TOOL OPENED INSIDE A SHARED PAPER is part of that paper. Whoever holds the link to a shared mock
+   paper (/paper/<code>) has the whole paper for free, and its tool rail opens the activity pages
+   (Algebra Moves, the manipulatives, the graph…) in frames: those frames are let in too, so a
+   student is never stopped by a subscription wall in the middle of a paper. It is the frame's
+   PARENT that vouches: the paper page sets `data-pp-paper-pass` only after the server has handed
+   it a real paper, and a parent on another origin cannot be read at all. The admin's switches
+   still win (a feature turned off, or blocked for a user, stays off). */
+function paperSeat() {
+  try {
+    return window.parent !== window && window.parent.document.documentElement.dataset.ppPaperPass === "1";
+  } catch (e) {
+    return false;
+  }
+}
+
 onAuthStateChanged(auth, async (user) => {
   clearTimeout(veilTimeout);
   if (!user) return toLogin();
@@ -183,7 +198,7 @@ onAuthStateChanged(auth, async (user) => {
   if (!featureId) {
     if (!ent) return reveal(); // read error → fail open (server still gates)
     if (ent.premium) return reveal();
-    return (await liveSeat()) ? reveal() : toSubscribe();
+    return (await liveSeat()) || paperSeat() ? reveal() : toSubscribe();
   }
 
   let verdict;
@@ -202,7 +217,7 @@ onAuthStateChanged(auth, async (user) => {
     // Only send to subscribe on a DEFINITIVE "not premium"; a failed profile
     // read fails open so a Firestore glitch never locks out a paying learner.
     if (!(entFresh && ent)) return reveal();
-    return (await liveSeat()) ? reveal() : toSubscribe();
+    return (await liveSeat()) || paperSeat() ? reveal() : toSubscribe();
   }
   return toDisabled(); // off / override-block / part-disabled
 });

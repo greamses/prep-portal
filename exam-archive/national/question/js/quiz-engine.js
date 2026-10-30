@@ -900,6 +900,7 @@ const Quiz = (() => {
     const q = new URLSearchParams({ cbt: [axis, top, subject, PAGE_CONFIG.topic, PAGE_CONFIG.paper || 1].join("|") });
     if (PAGE_CONFIG.format) q.set("format", PAGE_CONFIG.format);
     if (PAGE_CONFIG.attempt) q.set("attempt", PAGE_CONFIG.attempt);
+    if (PAGE_CONFIG.timed) q.set("timer", "1");
 
     let allowed = false;
     try {
@@ -1827,6 +1828,7 @@ const Quiz = (() => {
   }
 
   function showResults() {
+    mountResultAttempt();
     const quizScreen = document.getElementById("quiz-screen");
     const resultsScreen = document.getElementById("results-screen");
     if (quizScreen) quizScreen.style.display = "none";
@@ -1989,6 +1991,31 @@ const Quiz = (() => {
     } else {
       window.print();
     }
+  }
+
+  /* "How many to attempt" again, on the results screen: All, or the first 10, 20, 30 or 40 of the
+     paper. The questions are cut to that number when the paper loads, so choosing one starts the
+     paper afresh at that length (the same address with `attempt` changed). */
+  function mountResultAttempt() {
+    const box = document.getElementById("res-attempt");
+    const chips = document.getElementById("res-attempt-chips");
+    if (!box || !chips || PAGE_CONFIG.source !== "cbtlocal") return;
+    chips.innerHTML = "";
+    [0, 10, 20, 30, 40].forEach((n) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn res-attempt__chip" + (n === (PAGE_CONFIG.attempt || 0) ? " is-on" : "");
+      b.textContent = n ? String(n) : "All";
+      b.setAttribute("aria-pressed", String(n === (PAGE_CONFIG.attempt || 0)));
+      b.addEventListener("click", () => {
+        if (n === (PAGE_CONFIG.attempt || 0)) { retake(); return; }
+        const u = new URL(location.href);
+        if (n) u.searchParams.set("attempt", String(n)); else u.searchParams.delete("attempt");
+        location.href = u.href;
+      });
+      chips.appendChild(b);
+    });
+    box.hidden = false;
   }
 
   function retake() {

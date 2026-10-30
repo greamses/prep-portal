@@ -420,7 +420,7 @@ module.exports = function () {
     head.logo = typeof h.logo === "string" && /^data:image\//.test(h.logo) && h.logo.length <= 200000 ? h.logo : "";
     head.colour = COLOURS.includes(h.colour) ? h.colour : "indigo";
     head.paper = h.paper === "letter" ? "letter" : "a4";
-    for (const k of ["tint", "clean", "omr", "theorySheet"]) head[k] = !!h[k];
+    for (const k of ["tint", "clean", "omr", "theorySheet", "timer"]) head[k] = !!h[k];
     head.key = false;
     head.breakAt = {};
     for (const t of TYPES) if (h.breakAt && h.breakAt[t]) head.breakAt[t] = true;

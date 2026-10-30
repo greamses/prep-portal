@@ -12,6 +12,7 @@ import { paperHtml, cleanSvg } from "./paper.js";
 import { loadPaper } from "./cbt.js";
 import { createLive } from "./live.js";
 import { mountTools } from "./tools.js";
+import { createClock, minutesFor } from "./timer.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { UI } from "/utils/components/ui-icons.js";
@@ -127,6 +128,7 @@ function fillHead() {
   document.querySelectorAll("[data-attempt]").forEach((el) => { el.value = (state.head.attempt || {})[el.dataset.attempt] || ""; });
   $("xm-key").checked = !!state.head.key;
   $("xm-omr").checked = !!state.head.omr;
+  $("xm-timer").checked = !!state.head.timer;
   $("xm-tsheet").checked = !!state.head.theorySheet;
   $("xm-clean").checked = state.head.clean !== false;
   $("xm-tint").checked = !!state.head.tint;
@@ -149,6 +151,7 @@ document.querySelectorAll("[data-attempt]").forEach((el) => el.addEventListener(
 }));
 $("xm-paper").addEventListener("change", (e) => { state.head.paper = e.target.value; redraw(); });
 $("xm-clean").addEventListener("change", (e) => { state.head.clean = e.target.checked; redraw(); });
+$("xm-timer").addEventListener("change", (e) => { state.head.timer = e.target.checked; save(); syncClock(); });
 $("xm-omr").addEventListener("change", (e) => { state.head.omr = e.target.checked; redraw(); });
 $("xm-tsheet").addEventListener("change", (e) => { state.head.theorySheet = e.target.checked; redraw(); });
 $("xm-key").addEventListener("change", (e) => { state.head.key = e.target.checked; redraw(); });
@@ -500,7 +503,8 @@ async function fromCbt() {
   if (!spec) return;
   const format = u.searchParams.get("format") || "";
   const attempt = parseInt(u.searchParams.get("attempt") || "0", 10) || 0;
-  u.searchParams.delete("cbt"); u.searchParams.delete("format"); u.searchParams.delete("attempt");
+  const timed = u.searchParams.get("timer") === "1";
+  u.searchParams.delete("cbt"); u.searchParams.delete("format"); u.searchParams.delete("attempt"); u.searchParams.delete("timer");
   history.replaceState(null, "", u.pathname + u.search + u.hash);
 
   const out = $("xm-cbt-status");
@@ -519,6 +523,7 @@ async function fromCbt() {
   state.head.klass = got.head.klass;
   state.head.key = true;
   state.head.attempt = got.head.attempt || {};
+  if (timed) state.head.timer = true;
   flush();
   setLive(true);
 
@@ -571,7 +576,24 @@ function setLive(on) {
   if (on) scrollTo({ top: 0 });
   $("xm-check").hidden = !on; $("xm-clear").hidden = !on;
   clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces();
+  clock.stop(); syncClock();
 }
+/* The countdown: runs while the paper is being answered, if the setup asks for it, and the paper is
+   checked when it reaches zero. Checking it, or putting the paper away, stops it. */
+const clock = createClock($("xm-clock"), {
+  onEnd: () => {
+    if (live.on && !live.checked) {
+      $("xm-check").click();
+      $("xm-score").textContent = "Time is up. " + $("xm-score").textContent;
+    }
+  },
+});
+function syncClock() {
+  if (live.on && state.head.timer && !live.checked) {
+    if (!clock.running) clock.start(minutesFor(state.head.time, state.questions.length) * 60);
+  } else clock.stop();
+}
+
 function setLiveFaces() {
   faceOf($("xm-live"), live.on ? UI.settings(18) : UI.pen(18), live.on ? "Back to setup" : "Answer on screen");
   faceOf($("xm-check"), live.checked ? UI.undo(18) : UI.check(18), live.checked ? "Answer again" : "Check answers");
@@ -581,9 +603,9 @@ $("xm-live").addEventListener("click", () => setLive(!live.on));
 
 $("xm-check").addEventListener("click", () => {
   if (live.checked) live.reopen(); else live.check(state.questions);
-  clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces();
+  clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces(); syncClock();
 });
-$("xm-clear").addEventListener("click", () => { live.clear(); clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces(); });
+$("xm-clear").addEventListener("click", () => { live.clear(); clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces(); clock.stop(); syncClock(); });
 
 /* however printing starts (the button, Ctrl+P), empty answer boxes print as ruled
    lines, and the paper is drawn again afterwards so it can still be answered */

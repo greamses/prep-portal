@@ -14,6 +14,7 @@
 import { paperHtml } from "/prep-math/activity/exam-maker/js/paper.js";
 import { clean, paperMarks, BLANK_HEAD } from "/prep-math/activity/exam-maker/js/model.js";
 import { createLive } from "/prep-math/activity/exam-maker/js/live.js";
+import { createClock, minutesFor } from "/prep-math/activity/exam-maker/js/timer.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { api } from "/utils/components/workbook/account.js";
 import { UI } from "/utils/components/ui-icons.js";
@@ -83,15 +84,27 @@ async function open() {
     $("pp-title").innerHTML = `${(r.title || "Mock paper").replace(/[<>&]/g, "")}<em>.</em>`;
     $("pp-eyebrow").textContent = r.ownerName ? `A mock paper from ${r.ownerName}` : "A mock paper";
     document.title = `Prep Portal | ${r.title || "Mock paper"}`;
+    /* the paper is the learner's: its tools (framed activity pages) are let in without a subscription */
+    document.documentElement.dataset.ppPaperPass = "1";
     live.setOn(true);
     $("xm-check").hidden = false; $("xm-clear").hidden = false;
     /* the workbook tool rail, for working out beside the paper */
     mountTools({ sheet, viewport: document.querySelector(".xm-viewport"), toolbar: document.querySelector(".wb-toolbar") }).on();
     say(`${questions.length} questions · ${paperMarks(questions, head.attempt)} marks.`);
     draw();
+    syncClock();
   } catch (e) {
     say(String((e && e.message) || e || "Could not open the paper.").slice(0, 200), true);
   }
+}
+
+/* the countdown, when the paper was set with a timer; the paper is checked when it runs out */
+const clock = createClock($("xm-clock"), {
+  onEnd: () => { if (!live.checked) { live.check(questions); draw(); faces(); $("xm-score").textContent = "Time is up. " + $("xm-score").textContent; } },
+});
+function syncClock() {
+  if (head && head.timer && !live.checked) { if (!clock.running) clock.start(minutesFor(head.time, questions.length) * 60); }
+  else clock.stop();
 }
 
 /* the buttons are glyphs with their names in the site's tooltip, like the rest of the site */
@@ -101,9 +114,9 @@ function faces() {
 }
 $("xm-check").addEventListener("click", () => {
   if (live.checked) live.reopen(); else live.check(questions);
-  draw(); faces();
+  draw(); faces(); syncClock();
 });
-$("xm-clear").addEventListener("click", () => { live.clear(); draw(); faces(); });
+$("xm-clear").addEventListener("click", () => { live.clear(); draw(); faces(); clock.stop(); syncClock(); });
 faces();
 
 open();

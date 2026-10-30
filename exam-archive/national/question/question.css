@@ -1256,3 +1256,11 @@ body {
 .print-link .pl-ico { display: grid; place-items: center; width: 1.5rem; height: 1.5rem; }
 .print-link .pl-ico svg { width: 100%; height: 100%; display: block; }
 .print-link .pl-name { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+/* results screen: how many to attempt next time */
+.res-attempt { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.5rem 0.9rem; margin: 0.6rem 0 0.2rem; }
+.res-attempt[hidden] { display: none; }
+.res-attempt__label { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
+.res-attempt__chips { display: inline-flex; flex-wrap: wrap; gap: 0.4rem; }
+.res-attempt__chip { min-width: 2.6rem; }
+.res-attempt__chip.is-on { background: #fff3a8; outline: 2px solid var(--ink, #14130f); outline-offset: 1px; }

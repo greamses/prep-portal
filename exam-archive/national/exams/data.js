@@ -125,6 +125,7 @@ let cbtState = {
   format: "",                       // "" | "mcq" | "short" | "theory"
   mode: "cbt",                      // "cbt" (on screen) | "paper" (printed, in Exam Maker)
   attempt: 0,                       // how many of the paper's questions to attempt; 0 = all
+  timer: 0,                         // 1 = the paper is timed
   _subjects: null, _topics: null, _papers: 1, _topicCount: 0,
 };
 
@@ -184,6 +185,7 @@ async function renderCbtFormat() {
   const premium = await isPickerPremium();
   renderCbtMode(premium);
   renderCbtAttempt();
+  renderCbtTimer();
   chips.querySelectorAll(".fmt-chip").forEach((chip) => {
     const fmt = chip.dataset.fmt || "";
     const locked = (fmt === "short" || fmt === "theory") && !premium;
@@ -249,6 +251,20 @@ function renderCbtAttempt() {
       chips.forEach((c) => c.classList.remove("checked"));
       chip.classList.add("checked");
       cbtState.attempt = n;
+    };
+  });
+}
+
+// "Timer": on, the quiz opens with its Timed Exam switch already on, and a paper opens with its countdown set.
+function renderCbtTimer() {
+  const chips = document.querySelectorAll("#cbt-timer-chips .tmr-chip");
+  chips.forEach((chip) => {
+    const on = Number(chip.dataset.t) || 0;
+    chip.classList.toggle("checked", on === (cbtState.timer || 0));
+    chip.onclick = () => {
+      chips.forEach((c) => c.classList.remove("checked"));
+      chip.classList.add("checked");
+      cbtState.timer = on;
     };
   });
 }
@@ -401,7 +417,7 @@ function initCbt(axis, region) {
   cbtState = {
     axis, region: region || null,
     top: null, topLabel: null, subject: null, subjectLabel: null, topic: null, paper: null,
-    format: "", mode: "cbt", attempt: 0,
+    format: "", mode: "cbt", attempt: 0, timer: 0,
     _subjects: null, _topics: null, _papers: 1, _topicCount: 0,
   };
   relabelCbtSteps();
@@ -1087,6 +1103,7 @@ function targetUrl() {
     });
     if (cbtState.format) params.set("format", cbtState.format);
     if (cbtState.attempt) params.set("attempt", String(cbtState.attempt));
+    if (cbtState.timer) params.set("timer", "on");
     if (cbtState.mode === "paper") {
       // Paper mode: the Exam Maker builds the printed paper from this same paper.
       const p = new URLSearchParams({
@@ -1094,6 +1111,7 @@ function targetUrl() {
       });
       if (cbtState.format) p.set("format", cbtState.format);
       if (cbtState.attempt) p.set("attempt", String(cbtState.attempt));
+      if (cbtState.timer) p.set("timer", "1");
       return `/prep-math/activity/exam-maker/?${p.toString()}`;
     }
     return `../question/question.html?${params.toString()}`;

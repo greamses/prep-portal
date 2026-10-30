@@ -45,7 +45,7 @@ export function blank(type) {
 
 export const BLANK_HEAD = {
   school: "", term: "", year: "", subject: "", date: "", klass: "", time: "",
-  logo: "", colour: "indigo", paper: "a4", key: false, tint: false, clean: true, omr: false, theorySheet: false, breakAt: {},
+  logo: "", colour: "indigo", paper: "a4", key: false, tint: false, clean: true, omr: false, theorySheet: false, timer: false, breakAt: {},
   /* how many questions of each kind are to be attempted ("answer any 3"); none or 0 = all of them */
   attempt: {},
   /* what each question in a section is worth; every question follows its section

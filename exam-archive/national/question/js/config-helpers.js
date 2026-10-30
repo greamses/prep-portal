@@ -32,6 +32,7 @@ const PAGE_CONFIG = {
     topic:     (urlParams.get('topic') || '').trim(),
     // attempt = how many of a CBT paper's questions to sit (0 = all of them)
     attempt:   parseInt(urlParams.get('attempt') || '0', 10) || 0,
+    timed:     (urlParams.get('timer') || '').toLowerCase() === 'on',
     grade:     (urlParams.get('grade') || '').trim(),
     limit:     parseInt(urlParams.get('n') || urlParams.get('limit') || '20', 10) || 20,
     // feedback=on → reveal the correct answer + explanation the instant a

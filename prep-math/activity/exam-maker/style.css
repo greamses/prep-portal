@@ -399,3 +399,9 @@ html, body { overflow-x: clip !important; overflow-y: visible !important; }
 /* the sticky-note button style sets `position: relative`; the OMR toggle has to be fixed to the edge of the window */
 button.pp-btn.xo-tab { position: fixed; top: auto; bottom: 1.4rem; right: 0; left: auto; margin: 0; z-index: 10045; }
 button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
+
+/* the countdown in the toolbar */
+.xm-clock { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 0.95rem; letter-spacing: 0.04em; padding: 0.15rem 0.6rem; border: 1px solid rgba(42, 39, 35, 0.35); background: #fff; color: #1d1b18; }
+.xm-clock[hidden] { display: none; }
+.xm-clock.is-low { color: #b0453d; border-color: #b0453d; }
+@media print { .xm-clock { display: none !important; } }
