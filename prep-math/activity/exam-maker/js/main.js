@@ -7,7 +7,7 @@
    tomorrow.
    ========================================================================== */
 
-import { TYPES, COLOURS, BLANK_HEAD, blank, clean, parseQuestions, promptFor, svgPrompt, extractSvg, checkQuestions, limitTo, verifyPrompt, applyChecks, totalMarks, esc } from "./model.js";
+import { TYPES, COLOURS, BLANK_HEAD, blank, clean, parseQuestions, promptFor, svgPrompt, needsDiagram, extractSvg, checkQuestions, limitTo, verifyPrompt, applyChecks, totalMarks, esc } from "./model.js";
 import { paperHtml, cleanSvg } from "./paper.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
@@ -57,7 +57,13 @@ let drawTimer = 0;
 function pageRule() {
   let st = $("xm-page");
   if (!st) { st = document.createElement("style"); st.id = "xm-page"; document.head.appendChild(st); }
-  st.textContent = `@page { size: ${state.head.paper === "letter" ? "letter" : "A4"}; margin: 14mm 13mm 16mm; }`;
+  /* margin 0 leaves the browser no room for its own date / title / address line,
+     so "clean" prints without them; the paper's margins are then padding that
+     repeats on every printed page (box-decoration-break), and the page numbers,
+     which live in the margin, go with them */
+  const margin = state.head.clean ? "0" : "14mm 13mm 16mm";
+  st.textContent = `@page { size: ${state.head.paper === "letter" ? "letter" : "A4"}; margin: ${margin}; }`;
+  sheet.dataset.clean = state.head.clean ? "1" : "";
   sheet.dataset.paper = state.head.paper === "letter" ? "letter" : "a4";
 }
 
@@ -108,6 +114,7 @@ function fillHead() {
   $("xm-paper").value = state.head.paper;
   document.querySelectorAll("[data-each]").forEach((el) => { el.value = state.head.marksEach[el.dataset.each]; });
   $("xm-key").checked = !!state.head.key;
+  $("xm-clean").checked = state.head.clean !== false;
   $("xm-tint").checked = !!state.head.tint;
   document.querySelectorAll("[data-break]").forEach((el) => { const at = state.head.breakAt || {}; el.checked = el.dataset.break === "key" ? at.key !== false : !!at[el.dataset.break]; });
   paintLogo(); paintSwatches();
@@ -121,6 +128,7 @@ document.querySelectorAll("[data-each]").forEach((el) => el.addEventListener("in
   renderList(); draw(); save();
 }));
 $("xm-paper").addEventListener("change", (e) => { state.head.paper = e.target.value; redraw(); });
+$("xm-clean").addEventListener("change", (e) => { state.head.clean = e.target.checked; redraw(); });
 $("xm-key").addEventListener("change", (e) => { state.head.key = e.target.checked; redraw(); });
 $("xm-tint").addEventListener("change", (e) => { state.head.tint = e.target.checked; redraw(); });
 document.querySelectorAll("[data-break]").forEach((el) => el.addEventListener("change", () => {
@@ -306,6 +314,18 @@ document.addEventListener("click", (e) => {
 
 /* a diagram for one question, written by the model, drawn to its numbers; a
    reply that is not a valid SVG is sent back once with the reason */
+async function drawSvg(q, brief = "") {
+  const { groqGenerate, groqText } = await import("/utils/ai-client.js");
+  let svg = "", fault = "";
+  for (let tries = 0; tries < 2 && !svg; tries++) {
+    const { system, prompt } = svgPrompt(q, brief, fault);
+    const raw = extractSvg(groqText(await groqGenerate({ system, prompt, temperature: 0.3, maxTokens: 3500 })));
+    svg = raw && cleanSvg(raw) ? raw : "";
+    if (!svg) fault = raw ? "it was not well-formed SVG" : "it contained no <svg> element";
+  }
+  return svg;
+}
+
 async function genDiagram(btn, q) {
   const card = btn.closest(".xm-card");
   const msg = card.querySelector(".xm-svg__msg");
@@ -313,14 +333,7 @@ async function genDiagram(btn, q) {
   if (!q.text.trim()) { msg.textContent = "Write the question first, so the diagram can match it."; return; }
   btn.disabled = true; msg.textContent = "Drawing…";
   try {
-    const { groqGenerate, groqText } = await import("/utils/ai-client.js");
-    let svg = "", fault = "";
-    for (let tries = 0; tries < 2 && !svg; tries++) {
-      const { system, prompt } = svgPrompt(q, brief, fault);
-      const raw = extractSvg(groqText(await groqGenerate({ system, prompt, temperature: 0.3, maxTokens: 3500 })));
-      svg = raw && cleanSvg(raw) ? raw : "";
-      if (!svg) fault = raw ? "it was not well-formed SVG" : "it contained no <svg> element";
-    }
+    const svg = await drawSvg(q, brief);
     if (!svg) { msg.textContent = "The model could not draw a valid diagram. Try again, or say what it should show."; return; }
     q.svg = svg;
     renderList(); draw(); save();
@@ -328,6 +341,30 @@ async function genDiagram(btn, q) {
     msg.textContent = String(err && err.message || err).slice(0, 140);
   } finally { btn.disabled = false; }
 }
+
+/* a diagram for every geometry question that has none, one at a time */
+async function drawGeometry(report) {
+  const todo = state.questions.filter(needsDiagram);
+  let done = 0;
+  for (const [i, q] of todo.entries()) {
+    report(`Drawing diagram ${i + 1} of ${todo.length}…`);
+    try {
+      const svg = await drawSvg(q);
+      if (svg) { q.svg = svg; done++; renderList(); draw(); save(); }
+    } catch { /* this one stays without; the rest go on */ }
+  }
+  return { found: todo.length, done };
+}
+
+$("xm-diagrams").addEventListener("click", async () => {
+  const btn = $("xm-diagrams"), out = $("xm-diag-status");
+  btn.disabled = true;
+  try {
+    const r = await drawGeometry((t) => { out.textContent = t; });
+    out.textContent = !r.found ? "No geometry question is missing a diagram."
+      : `Drew ${r.done} of ${r.found} diagram${r.found === 1 ? "" : "s"}.${r.done < r.found ? " Open the others and press Generate diagram." : ""}`;
+  } finally { btn.disabled = false; }
+});
 
 document.querySelectorAll("[data-add]").forEach((b) => b.addEventListener("click", () => {
   const q = blank(b.dataset.add);
@@ -396,6 +433,10 @@ $("xm-ai-go").addEventListener("click", async () => {
     kept.sort((x, y) => order.indexOf(x.type) - order.indexOf(y.type));
     state.questions.push(...kept);
     renderList(); draw(); save();
+    if (common.svg && state.questions.some(needsDiagram)) {
+      const r = await drawGeometry((t) => status(`${kept.length} questions added. ${t}`));
+      if (r.found && r.done < r.found) faults = [`${r.found - r.done} geometry diagram${r.found - r.done === 1 ? "" : "s"} could not be drawn; open the question and press Generate diagram`];
+    }
     const wanted = mcq + fill + sub + theory;
     status(kept.length === wanted
       ? `Added ${kept.length} question${kept.length === 1 ? "" : "s"}, each checked against your brief. Read them before you print.`

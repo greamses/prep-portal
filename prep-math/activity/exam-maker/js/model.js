@@ -45,7 +45,7 @@ export function blank(type) {
 
 export const BLANK_HEAD = {
   school: "", term: "", year: "", subject: "", date: "", klass: "", time: "",
-  logo: "", colour: "indigo", paper: "a4", key: false, tint: false, breakAt: {},
+  logo: "", colour: "indigo", paper: "a4", key: false, tint: false, clean: true, breakAt: {},
   /* what each question in a section is worth; every question follows its section
      until its own marks are changed */
   marksEach: { mcq: 1, fill: 1, sub: 2, theory: 4 },
@@ -352,6 +352,19 @@ export function extractSvg(text) {
   if (a < 0 || b < a) return "";
   return t.slice(a, b + 6)
     .replace(/\\"/g, '"').replace(/\\\//g, "/").replace(/\\n/g, " ").replace(/\\t/g, " ");
+}
+
+const SHAPES = /\b(triangles?|circles?|semicircles?|radius|diameter|circumference|chords?|tangents?|sectors?|rectangles?|squares?|rhombus|parallelograms?|trapezi(?:um|a)|kites?|polygons?|pentagons?|hexagons?|octagons?|quadrilaterals?|cuboids?|cubes?|cylinders?|cones?|spheres?|prisms?|pyramids?|bearings?|parallel lines?|perpendicular|transversal|number line|coordinates?|graphs?|diagram|figure|shown|sketch|isosceles|equilateral|scalene|hypotenuse|vertices|vertex)\b/i;
+
+/**
+ * Is this a geometry (or graph) question that would be clearer drawn and has no
+ * diagram yet? A fill-in-the-blank only counts when it points at a figure.
+ */
+export function needsDiagram(q) {
+  if (q.svg && q.svg.trim()) return false;
+  const text = `${q.text} ${(q.options || []).join(" ")}`;
+  if (q.type === "fill") return /\b(shown|diagram|figure|below|number line)\b/i.test(text);
+  return SHAPES.test(text);
 }
 
 /** Marks added up. */
