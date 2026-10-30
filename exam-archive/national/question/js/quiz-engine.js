@@ -908,14 +908,14 @@ const Quiz = (() => {
     }
     const a = document.createElement("a");
     a.className = cls;
-    a.textContent = "Print this paper";
+    a.textContent = "Open as paper";
     if (allowed) {
       a.href = `/prep-math/activity/exam-maker/?${q}`;
       a.target = "_blank"; a.rel = "noopener";
     } else {
       a.href = "/subscribe.html";
       a.title = "Paper mode is a Premium feature";
-      a.textContent = "Print this paper (Premium)";
+      a.textContent = "Open as paper (Premium)";
     }
     left.insertBefore(a, before);
   }

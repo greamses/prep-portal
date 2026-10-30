@@ -1,0 +1,8 @@
+/* The shared mock paper: the Exam Maker's own paper styles (linked from its
+   style.css) in a page with no bench. Only what is different is here. */
+.pp-msg { margin: 0 0 0.8rem; font-size: 0.85rem; color: var(--text-secondary, #6b655c); min-height: 1.2em; }
+.pp-msg.is-bad { color: #b0453d; font-weight: 600; }
+/* a phone is narrower than a sheet of paper: the sheet scrolls rather than squashes */
+.xm-viewport { overflow-x: auto; max-width: 100%; }
+.xm-work { display: block; }
+.xm-preview { max-width: 230mm; margin: 0 auto; }

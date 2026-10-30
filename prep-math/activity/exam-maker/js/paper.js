@@ -113,7 +113,7 @@ const figure = (q, cols = false) => {
 const letter = (i) => "ABCD"[i];
 
 function mcq(q, no) {
-  return `<div class="xp-q xp-q--mcq">
+  return `<div class="xp-q xp-q--mcq" data-qid="${q.id}">
     <span class="xp-n" data-nomath>${no}</span>
     <div class="xp-body">
       <div class="xp-text">${textHtml(q.text)}</div>
@@ -123,9 +123,9 @@ function mcq(q, no) {
   </div>`;
 }
 
-function written(q, no) {
-  const rows = Math.max(0, q.lines | 0);
-  return `<div class="xp-q xp-q--${q.type}">
+function written(q, no, sheeted = false) {
+  const rows = sheeted ? 0 : Math.max(0, q.lines | 0);
+  return `<div class="xp-q xp-q--${q.type}${sheeted ? " xp-q--sheeted" : ""}" data-qid="${q.id}">
     <span class="xp-n" data-nomath>${no}</span>
     <div class="xp-body">
       <div class="xp-text">${textHtml(q.text)}${q.marks ? `<span class="xp-marks" data-nomath>[${q.marks} ${q.marks === 1 ? "mark" : "marks"}]</span>` : ""}</div>
@@ -140,7 +140,7 @@ function written(q, no) {
 function fill(q, no) {
   const blank = `<span class="xp-blank"></span>`;
   const html = blankHtml(q.text, blank);
-  return `<div class="xp-q xp-q--fill">
+  return `<div class="xp-q xp-q--fill" data-qid="${q.id}">
     <span class="xp-n" data-nomath>${no}</span>
     <div class="xp-body">
       <div class="xp-text">${html}${q.marks ? `<span class="xp-marks" data-nomath>[${q.marks} ${q.marks === 1 ? "mark" : "marks"}]</span>` : ""}</div>
@@ -202,6 +202,47 @@ function key(qs, head) {
   return `<section class="xp-keypage${head.breakAt && head.breakAt.key === false ? " xp-keypage--flow" : ""}">${bar("Marking", "Answer key")}<ol class="xp-key">${rows}</ol></section>`;
 }
 
+
+/* ── the answer sheets ─────────────────────────────────────────────────────
+   A standard paper has the questions on one set of pages and the answers on
+   another. Both are optional (header switches) and each starts a page of its
+   own. The OMR sheet is for the multiple choice: a row of four bubbles for every
+   question, numbered as on the paper. The theory sheet gives every written
+   question a numbered block of ruled lines. The question paper itself loses the
+   things the sheets replace: plain letters instead of bubbles, no ruled space. */
+
+const who = () => `<div class="xp-student xp-sheetwho" data-nomath><span>Student's name</span><i></i><span>Class</span><i class="xp-sheetwho__short"></i><span>Candidate no.</span><span class="xp-boxes">${"<u></u>".repeat(8)}</span></div>`;
+
+function omrSheet(numbered) {
+  const rows = numbered.map((q, i) => ({ q, n: i + 1 })).filter((r) => r.q.type === "mcq");
+  if (!rows.length) return "";
+  const PER = 15;
+  const cols = [];
+  for (let i = 0; i < rows.length; i += PER) cols.push(rows.slice(i, i + PER));
+  const li = ({ q, n }) => `<li data-qid="${q.id}"><span class="xp-omr__n" data-nomath>${n}</span>${[0, 1, 2, 3].map((i) => `<b data-i="${i}" data-nomath>${letter(i)}</b>`).join("")}</li>`;
+  return `<section class="xp-sheetpage xp-omr" data-nomath>
+    <i class="xp-reg xp-reg--tl"></i><i class="xp-reg xp-reg--tr"></i><i class="xp-reg xp-reg--bl"></i><i class="xp-reg xp-reg--br"></i>
+    ${bar("Answer sheet", "Multiple choice", "Shade ONE bubble for each question, completely, with a pencil.")}
+    ${who()}
+    <div class="xp-omr__grid">${cols.map((c) => `<ol>${c.map(li).join("")}</ol>`).join("")}</div>
+    <p class="xp-omr__note" data-nomath>Do not write outside the bubbles. To change an answer, rub the first one out completely.</p>
+  </section>`;
+}
+
+function theorySheet(numbered) {
+  const rows = numbered.map((q, i) => ({ q, n: i + 1 })).filter((r) => r.q.type === "sub" || r.q.type === "theory");
+  if (!rows.length) return "";
+  const block = ({ q, n }) => {
+    const lines = Math.max(q.type === "theory" ? 10 : 4, q.lines | 0);
+    return `<div class="xp-ans" data-qid="${q.id}"><div class="xp-ans__tag" data-nomath><b>Question ${n}</b><span>${q.marks} ${q.marks === 1 ? "mark" : "marks"}</span></div><div class="xp-lines">${"<i></i>".repeat(lines)}</div></div>`;
+  };
+  return `<section class="xp-sheetpage xp-tsheet">
+    ${bar("Answer sheet", "Written answers", "Write each answer in the space for its own question number.")}
+    ${who()}
+    ${rows.map(block).join("")}
+  </section>`;
+}
+
 /**
  * The whole paper as HTML.
  *   head       the header fields (model.js BLANK_HEAD)
@@ -214,7 +255,7 @@ export function paperHtml(head, questions) {
   let no = 0;
   const numbered = [];
   const body = groups.map(([t, list], gi) => {
-    const html = list.map((q) => { numbered.push(q); return t === "mcq" ? mcq(q, ++no) : t === "fill" ? fill(q, ++no) : written(q, ++no); }).join("");
+    const html = list.map((q) => { numbered.push(q); return t === "mcq" ? mcq(q, ++no) : t === "fill" ? fill(q, ++no) : written(q, ++no, !!head.theorySheet); }).join("");
     return `<section class="xp-sec xp-sec--${t}${gi && head.breakAt && head.breakAt[t] ? " xp-sec--page" : ""}">${banner(t, list, gi)}${t === "mcq" ? `<div class="xp-cols">${html}</div>` : html}</section>`;
   }).join("");
   const empty = groups.length ? "" : `<p class="xp-empty">No questions yet. Write some, or ask the model for a set.</p>`;
@@ -223,10 +264,12 @@ export function paperHtml(head, questions) {
   const wm = head.logo
     ? "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297"><image href="${head.logo}" x="65" y="103" width="80" height="80" preserveAspectRatio="xMidYMid meet" opacity="0.045"/></svg>`)
     : "";
-  return `<article class="xp${wm ? " xp--wm" : ""}${head.tint ? " xp--tint" : ""}" style="--c:${col.main};--cs:${col.soft};--ci:${col.ink}${wm ? `;--wm:url(&quot;${wm}&quot;)` : ""}">
+  return `<article class="xp${wm ? " xp--wm" : ""}${head.tint ? " xp--tint" : ""}${head.omr ? " xp--omr" : ""}" style="--c:${col.main};--cs:${col.soft};--ci:${col.ink}${wm ? `;--wm:url(&quot;${wm}&quot;)` : ""}">
     ${head.logo ? `<img class="xp-wm" src="${head.logo}" alt="" />` : ""}
     ${header(head, totalMarks(questions))}
     ${body}${empty}
+    ${head.omr && numbered.length ? omrSheet(numbered) : ""}
+    ${head.theorySheet && numbered.length ? theorySheet(numbered) : ""}
     ${head.key && numbered.length ? key(numbered, head) : ""}
   </article>`;
 }

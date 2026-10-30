@@ -10,6 +10,7 @@
 import { TYPES, COLOURS, BLANK_HEAD, blank, clean, parseQuestions, promptFor, svgPrompt, needsDiagram, extractSvg, checkQuestions, limitTo, verifyPrompt, applyChecks, totalMarks, esc } from "./model.js";
 import { paperHtml, cleanSvg } from "./paper.js";
 import { loadPaper } from "./cbt.js";
+import { createLive } from "./live.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { UI } from "/utils/components/ui-icons.js";
@@ -54,6 +55,7 @@ addEventListener("pagehide", flush);
 
 const sheet = $("xm-sheet");
 let drawTimer = 0;
+const live = createLive(sheet, { onChange: () => paintScore() });
 
 function pageRule() {
   let st = $("xm-page");
@@ -73,6 +75,7 @@ function draw() {
   const mj = window.MathJax;
   try { mj && mj.typesetClear && mj.typesetClear([sheet]); } catch { /* nothing typeset yet */ }
   sheet.innerHTML = paperHtml(state.head, state.questions);
+  live.apply(state.questions);
   const total = totalMarks(state.questions);
   $("xm-summary").textContent = `${state.questions.length} question${state.questions.length === 1 ? "" : "s"} · ${total} mark${total === 1 ? "" : "s"}`;
   $("xm-count").textContent = state.questions.length ? `(${state.questions.length})` : "";
@@ -115,6 +118,8 @@ function fillHead() {
   $("xm-paper").value = state.head.paper;
   document.querySelectorAll("[data-each]").forEach((el) => { el.value = state.head.marksEach[el.dataset.each]; });
   $("xm-key").checked = !!state.head.key;
+  $("xm-omr").checked = !!state.head.omr;
+  $("xm-tsheet").checked = !!state.head.theorySheet;
   $("xm-clean").checked = state.head.clean !== false;
   $("xm-tint").checked = !!state.head.tint;
   document.querySelectorAll("[data-break]").forEach((el) => { const at = state.head.breakAt || {}; el.checked = el.dataset.break === "key" ? at.key !== false : !!at[el.dataset.break]; });
@@ -130,6 +135,8 @@ document.querySelectorAll("[data-each]").forEach((el) => el.addEventListener("in
 }));
 $("xm-paper").addEventListener("change", (e) => { state.head.paper = e.target.value; redraw(); });
 $("xm-clean").addEventListener("change", (e) => { state.head.clean = e.target.checked; redraw(); });
+$("xm-omr").addEventListener("change", (e) => { state.head.omr = e.target.checked; redraw(); });
+$("xm-tsheet").addEventListener("change", (e) => { state.head.theorySheet = e.target.checked; redraw(); });
 $("xm-key").addEventListener("change", (e) => { state.head.key = e.target.checked; redraw(); });
 $("xm-tint").addEventListener("change", (e) => { state.head.tint = e.target.checked; redraw(); });
 document.querySelectorAll("[data-break]").forEach((el) => el.addEventListener("change", () => {
@@ -485,6 +492,7 @@ async function fromCbt() {
   state.head.klass = got.head.klass;
   state.head.key = true;
   flush();
+  setLive(true);
 
   const pics = got.pictures ? ` ${got.pictures} of them refer${got.pictures === 1 ? "s" : ""} to a picture the printed paper cannot show yet.` : "";
   out.textContent = `Loaded ${got.questions.length} questions from the CBT paper, with the answer key at the back.${pics}`;
@@ -505,6 +513,63 @@ async function fromCbt() {
     out.append(" ", undo);
   }
 }
+
+/* ── answering on screen, and sharing the paper ────────────────────────────
+   The paper can be done where it is shown (live.js): the same design, the
+   bubbles shaded by clicking, the blanks typed on. "Share link" keeps a copy of
+   the paper on the server and hands back /paper/<code>, which anyone with an
+   account can open and sit for mock preparation. */
+function paintScore() {
+  const el = $("xm-score");
+  if (!live.on) { el.textContent = ""; return; }
+  const s = live.score(state.questions);
+  if (live.checked) {
+    el.textContent = `${s.won} of ${s.auto} marks on the questions marked for you` + (s.manual ? ` · ${s.manual} written to mark yourself` : "");
+  } else {
+    el.textContent = `${s.answered} of ${s.total} answered`;
+  }
+}
+
+function setLive(on) {
+  live.setOn(on);
+  $("xm-live").setAttribute("aria-pressed", String(on));
+  $("xm-live").classList.toggle("is-on", on);
+  $("xm-check").hidden = !on; $("xm-clear").hidden = !on;
+  $("xm-check").lastChild.textContent = " Check answers";
+  clearTimeout(drawTimer); draw(); paintScore();
+}
+$("xm-live").addEventListener("click", () => setLive(!live.on));
+$("xm-check").addEventListener("click", () => {
+  if (live.checked) { live.reopen(); $("xm-check").lastChild.textContent = " Check answers"; }
+  else { live.check(state.questions); $("xm-check").lastChild.textContent = " Answer again"; }
+  clearTimeout(drawTimer); draw(); paintScore();
+});
+$("xm-clear").addEventListener("click", () => { live.clear(); $("xm-check").lastChild.textContent = " Check answers"; clearTimeout(drawTimer); draw(); paintScore(); });
+
+/* however printing starts (the button, Ctrl+P), empty answer boxes print as ruled
+   lines, and the paper is drawn again afterwards so it can still be answered */
+addEventListener("beforeprint", () => { if (live.on) live.forPrint(); });
+addEventListener("afterprint", () => { if (live.on) { clearTimeout(drawTimer); draw(); } });
+
+$("xm-share").addEventListener("click", async () => {
+  const box = $("xm-sharebox"), btn = $("xm-share");
+  box.hidden = false;
+  if (!state.questions.length) { box.textContent = "Write or generate some questions first, then share the paper."; return; }
+  btn.disabled = true; box.textContent = "Making the link…";
+  try {
+    const { api } = await import("/utils/components/workbook/account.js");
+    const title = [state.head.school, state.head.subject].filter(Boolean).join(" · ") || "Exam paper";
+    const r = await api("/api/workbooks/paper-share", { title, head: { ...state.head, key: false }, questions: state.questions });
+    const url = new URL(r.url, location.origin).href;
+    box.replaceChildren();
+    const a = document.createElement("a"); a.href = url; a.textContent = url; a.target = "_blank"; a.rel = "noopener";
+    const copy = document.createElement("button"); copy.type = "button"; copy.className = "pp-btn pp-btn--ghost"; copy.textContent = "Copy link";
+    copy.onclick = async () => { try { await navigator.clipboard.writeText(url); copy.textContent = "Copied"; } catch { copy.textContent = "Select and copy it"; } };
+    box.append("Anyone with an account can sit this paper on screen: ", a, " ", copy);
+  } catch (e) {
+    box.textContent = String((e && e.message) || e || "Could not make the link.").slice(0, 200);
+  } finally { btn.disabled = false; }
+});
 
 /* ── go ────────────────────────────────────────────────────────────────── */
 

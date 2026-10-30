@@ -377,5 +377,105 @@ module.exports = function () {
     }
   });
 
+  /* ══ SHARED PAPERS ═══════════════════════════════════════════════════════
+     The Exam Maker's paper, kept so others can sit it for mock preparation.
+
+       POST /api/workbooks/paper-share   { title, head, questions }   → { code, url }
+       GET  /api/workbooks/paper/:code                                → the paper, to play
+
+     Making a link is the Exam Maker's own gate (the same feature part, so the
+     admin's switch and per-user grants apply); opening one needs an account and
+     nothing else, like an assigned workbook. Everything stored comes from the
+     browser and goes to every visitor, so each field is checked and clipped
+     here; the page cleans it again before it draws. The answers travel with the
+     paper (the learner's browser marks it), which is fine for practice and says
+     so on the page. */
+
+  const clip = (s, n) => String(s == null ? "" : s).slice(0, n);
+  const TYPES = ["mcq", "fill", "sub", "theory"];
+  const COLOURS = ["indigo", "teal", "crimson", "amber", "forest", "plum"];
+
+  function cleanPaper(b) {
+    if (!b || !Array.isArray(b.questions)) return null;
+    const questions = b.questions.slice(0, 120).map((q, i) => {
+      const type = TYPES.includes(q && q.type) ? q.type : "mcq";
+      const out = {
+        id: clip(q && q.id, 40).replace(/[^A-Za-z0-9_-]/g, "") || `q${i}`,
+        type, text: clip(q && q.text, 3000),
+        marks: Math.max(0, Math.min(100, Math.round(Number(q && q.marks)) || 0)),
+        lines: Math.max(0, Math.min(40, Math.round(Number(q && q.lines)) || 0)),
+        svg: typeof (q && q.svg) === "string" && /^\s*<svg[\s>]/i.test(q.svg) ? clip(q.svg, 30000) : "",
+      };
+      if (type === "mcq") {
+        out.options = [0, 1, 2, 3].map((k) => clip(q && q.options && q.options[k], 400));
+        out.answer = Math.max(0, Math.min(3, Math.round(Number(q && q.answer)) || 0));
+      } else { out.options = []; out.answer = clip(q && q.answer, 3000); }
+      return out;
+    }).filter((q) => q.text.trim());
+    if (!questions.length) return null;
+
+    const h = (b.head && typeof b.head === "object") ? b.head : {};
+    const head = {};
+    for (const k of ["school", "term", "year", "subject", "date", "klass", "time"]) head[k] = clip(h[k], 120);
+    head.logo = typeof h.logo === "string" && /^data:image\//.test(h.logo) && h.logo.length <= 200000 ? h.logo : "";
+    head.colour = COLOURS.includes(h.colour) ? h.colour : "indigo";
+    head.paper = h.paper === "letter" ? "letter" : "a4";
+    for (const k of ["tint", "clean", "omr", "theorySheet"]) head[k] = !!h[k];
+    head.key = false;
+    head.breakAt = {};
+    for (const t of TYPES) if (h.breakAt && h.breakAt[t]) head.breakAt[t] = true;
+    head.marksEach = {};
+    for (const t of TYPES) head.marksEach[t] = Math.max(0, Math.min(100, Math.round(Number(h.marksEach && h.marksEach[t])) || 0));
+    const paper = { head, questions };
+    return JSON.stringify(paper).length > 900000 ? "too-big" : paper;
+  }
+
+  router.post("/paper-share", authenticate, async (req, res) => {
+    try {
+      if (!isAdmin(req)) {
+        const v = await access.canUse(req, "prep-math-activities", "exam-maker");
+        if (!v.allowed) {
+          return res.status(v.reason === "premium-required" ? 402 : 403).json({
+            error: v.reason === "premium-required" ? "Sharing a paper needs a subscription." : "Sharing papers is not available at the moment.",
+          });
+        }
+      }
+      const paper = cleanPaper(req.body);
+      if (paper === "too-big") return res.status(413).json({ error: "That paper is too big to share. Try a smaller logo or fewer diagrams." });
+      if (!paper) return res.status(400).json({ error: "Write some questions first." });
+
+      let code = null;
+      for (let i = 0; i < 8 && !code; i++) {
+        let c = "";
+        for (let k = 0; k < 6; k++) c += ALPHA[require("crypto").randomInt(ALPHA.length)];
+        if (!(await db().collection("sharedPapers").doc(c).get()).exists) code = c;
+      }
+      if (!code) return res.status(500).json({ error: "Could not make a code — try again." });
+      const p = await profile(req.user.uid);
+      await db().collection("sharedPapers").doc(code).set({
+        code, ...paper, title: clip(req.body.title, 120) || "Exam paper",
+        ownerUid: req.user.uid, ownerName: nameOf(req, p), createdAt: stamp(),
+      });
+      res.json({ ok: true, code, url: `/paper/${code}` });
+    } catch (err) {
+      console.error("[/api/workbooks/paper-share]", err.message);
+      res.status(500).json({ error: "Could not make the link." });
+    }
+  });
+
+  router.get("/paper/:code", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code)) return res.status(404).json({ error: "That link isn't right." });
+      const snap = await db().collection("sharedPapers").doc(code).get();
+      if (!snap.exists) return res.status(404).json({ error: "That paper doesn't exist any more." });
+      const a = snap.data();
+      res.json({ ok: true, code, title: a.title, head: a.head, questions: a.questions, ownerName: a.ownerName, owner: a.ownerUid === req.user.uid });
+    } catch (err) {
+      console.error("[/api/workbooks/paper]", err.message);
+      res.status(500).json({ error: "Could not open the paper." });
+    }
+  });
+
   return router;
 };

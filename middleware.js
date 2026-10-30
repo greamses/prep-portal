@@ -62,6 +62,7 @@ const GATED = new Set([
   "/home/games/maze",
   "/home/js/dashboard",
   "/logo/logo.html",
+  "/paper-play",
   "/partner.html",
   "/prep-math/activity/algebra-moves/api.html",
   "/prep-math/drag",
@@ -77,10 +78,11 @@ const GATED = new Set([
 /* /seo:routes */
 
 // Gated whatever the table says: rewritten short links (a writing task, an
-// assigned workbook — /w/CODE, /wb/CODE have no file of their own) and the
+// assigned workbook, a shared mock paper — /w/CODE, /wb/CODE, /paper/CODE have no
+// file of their own) and the
 // admin tree. The login redirect carries ?next= so a student lands back on the
 // task they were sent.
-const GATED_PREFIXES = ["/w", "/wb", "/admin"];
+const GATED_PREFIXES = ["/w", "/wb", "/paper", "/admin"];
 
 function isGated(path) {
   // "/x/", "/x/index.html" and "/x" are one page.

@@ -197,7 +197,7 @@ async function renderCbtFormat() {
 }
 
 // "How to sit it": CBT (on screen, as always) or Paper — the same paper opened in
-// the Exam Maker, laid out and ready to print. Paper is Premium like the Exam
+// the Exam Maker in the exam-paper design, to answer on screen or print. Paper is Premium like the Exam
 // Maker itself, so free users see it locked, as the written-answer chips are.
 function renderCbtMode(premium) {
   const chips = document.querySelectorAll("#cbt-mode-chips .mode-chip");
@@ -230,7 +230,7 @@ function renderCbtMode(premium) {
 function syncModeLabel() {
   const el = beginBtn.querySelector(".cta-label");
   if (!el || activeCat === "competition") return;
-  el.textContent = cbtState.mode === "paper" ? "Print this paper" : (HEADER_CONTENT[activeCat] || HEADER_CONTENT.national).ctaLabel;
+  el.textContent = cbtState.mode === "paper" ? "Open the paper" : (HEADER_CONTENT[activeCat] || HEADER_CONTENT.national).ctaLabel;
 }
 
 function natUpdateReadyState() {

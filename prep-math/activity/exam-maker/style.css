@@ -224,3 +224,85 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
   .xp mjx-container, .xp mjx-container * { color: #1d1b18 !important; }
 }
 .xm-banks[hidden] { display: none; }
+
+/* ── the paper answered on screen (live.js) ───────────────────────────────
+   The design is the paper's own; only what a pencil would do is added. */
+.xm-score { font-size: 0.78rem; color: var(--text-secondary, #6b655c); margin-right: 0.4rem; }
+.xm-sharebox { margin: 0 0 0.6rem; font-size: 0.8rem; word-break: break-all; }
+.xm-sharebox a { color: inherit; }
+.xp-live .xp-opts li { cursor: pointer; border-radius: 1.2mm; }
+.xp-live .xp-opts li:hover b { box-shadow: 0 0 0 0.5mm var(--c); }
+.xp-live .xp-opts li:focus-visible { outline: 0.4mm solid var(--ci); outline-offset: 0.6mm; }
+.xp-live .xp-opts li.is-picked b { background: var(--ci); color: #fff; border-color: var(--ci); }
+.xp-live .xp-opts li.is-right b { background: #3f7d4f; color: #fff; border-color: #3f7d4f; }
+.xp-live .xp-opts li.is-wrong b { background: #b0453d; color: #fff; border-color: #b0453d; }
+.xp-in { font: inherit; color: #1d1b18; width: 34mm; max-width: 100%; border: 0; border-bottom: 0.35mm solid #1d1b18; border-radius: 0; background: transparent; padding: 0 1mm; margin: 0 1.2mm; outline: none; }
+.xp-in:focus { background: color-mix(in srgb, var(--c) 14%, transparent); }
+.xp-ta { display: block; width: 100%; box-sizing: border-box; margin: 2.5mm 0 3mm; font: inherit; color: #1d1b18; line-height: 7.5mm; border: 0.3mm solid #b9b2a5; border-radius: 1.5mm; background: #fff; padding: 1mm 2mm; resize: vertical; }
+.xp-ta:focus { outline: 0.4mm solid var(--c); }
+.xp-reveal { margin-top: 1.6mm; font-size: 0.9em; padding: 1.4mm 2.4mm; border-left: 0.9mm solid #b9b2a5; background: #f6f3ec; color: #1d1b18; }
+.xp-reveal.is-ok { border-color: #3f7d4f; color: #2f6140; }
+.xp-reveal.is-no { border-color: #b0453d; }
+.xp-reveal.is-model { border-color: var(--c); }
+.xp-reveal.is-skipped { border-color: #b9b2a5; font-style: italic; }
+@media print {
+  .xp-live .xp-opts li.is-picked b { background: var(--ci) !important; color: #fff !important; border-color: var(--ci) !important; }
+  .xp-live .xp-opts li.is-right b { background: #3f7d4f !important; color: #fff !important; }
+  .xp-live .xp-opts li.is-wrong b { background: #b0453d !important; color: #fff !important; }
+  .xp-in { border-bottom: 0.35mm solid #1d1b18 !important; color: #1d1b18 !important; }
+  .xp-ta { border: 0.3mm solid #b9b2a5 !important; background: #fff !important; color: #1d1b18 !important; resize: none; }
+  .xp-reveal { background: #f6f3ec !important; color: #1d1b18 !important; border-left: 0.9mm solid #b9b2a5 !important; }
+  .xm-score, .xm-sharebox { display: none !important; }
+}
+
+/* ── the answer sheets: OMR for the multiple choice, ruled blocks for the written ── */
+.xp-sheetpage { break-before: page; margin-top: 6mm; position: relative; }
+@media print { .xp-sheetpage { margin-top: 0; } }
+.xp-sheetwho { margin: 3mm 0 4mm; }
+.xp-sheetwho__short { max-width: 26mm; }
+.xp-boxes { display: inline-flex; gap: 0.8mm; }
+.xp-boxes u { display: block; width: 5.4mm; height: 7mm; border: 0.35mm solid #1d1b18; background: #fff; text-decoration: none; }
+.xp-omr__grid { display: flex; gap: 5mm; justify-content: space-between; margin-top: 3mm; }
+.xp-omr__grid ol { list-style: none; margin: 0; padding: 0; flex: 1 1 0; display: grid; gap: 2.6mm; align-content: start; }
+.xp-omr li { display: flex; align-items: center; gap: 1.8mm; }
+.xp-omr__n { width: 7mm; text-align: right; font-size: 8pt; font-weight: 700; color: var(--ci); }
+.xp-omr li b { flex: none; width: 5.2mm; height: 7mm; box-sizing: border-box; border: 0.35mm solid var(--ci); border-radius: 50%; background: #fff; color: var(--ci); font-size: 6.5pt; display: grid; place-items: center; line-height: 1; }
+.xp-omr__note { margin: 9mm 0 0; font-size: 7.5pt; color: #6b655c; text-align: center; }
+/* the four black marks a scanner finds the page by */
+.xp-reg { position: absolute; width: 5mm; height: 5mm; background: #1d1b18; }
+.xp-reg--tl { left: 0; top: 0; } .xp-reg--tr { right: 0; top: 0; }
+.xp-reg--bl { left: 0; bottom: 0; } .xp-reg--br { right: 0; bottom: 0; }
+.xp-omr { min-height: 150mm; padding: 6mm; }
+.xp-ans { break-inside: avoid; margin: 0 0 5mm; }
+.xp-ans__tag { display: flex; justify-content: space-between; align-items: baseline; font-size: 8pt; color: var(--ci); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; border-bottom: 0.3mm solid var(--c); padding-bottom: 0.8mm; }
+.xp-ans .xp-lines { margin-top: 0; }
+/* with an OMR sheet, the question paper's own options are plain letters */
+.xp--omr .xp-opts b { border-color: transparent; background: transparent; width: auto; height: auto; display: inline; font-size: 8.5pt; }
+.xp--omr .xp-opts b::after { content: "."; }
+.xp-live .xp-omr li b { cursor: pointer; }
+.xp-live .xp-omr li b:hover { box-shadow: 0 0 0 0.5mm var(--c); }
+.xp-live .xp-omr li b.is-picked { background: var(--ci); color: #fff; }
+.xp-live .xp-omr li b.is-right { background: #3f7d4f; color: #fff; border-color: #3f7d4f; }
+.xp-live .xp-omr li b.is-wrong { background: #b0453d; color: #fff; border-color: #b0453d; }
+@media print {
+  .xp-reg { background: #1d1b18 !important; }
+  .xp-omr li b { color: var(--ci) !important; border-color: var(--ci) !important; background: #fff !important; }
+  .xp-omr li b.is-picked { background: var(--ci) !important; color: #fff !important; }
+  .xp-omr li b.is-right { background: #3f7d4f !important; color: #fff !important; }
+  .xp-omr li b.is-wrong { background: #b0453d !important; color: #fff !important; }
+  .xp-omr__n, .xp-ans__tag { color: var(--ci) !important; }
+  .xp-ans__tag { border-bottom: 0.3mm solid var(--c) !important; }
+  .xp-boxes u { border: 0.35mm solid #1d1b18 !important; background: #fff !important; }
+  .xp--omr .xp-opts b { background: transparent !important; border-color: transparent !important; }
+}
+
+/* with an OMR sheet the shading is on the sheet; the question just marks its letter */
+.xp-live.xm-sheet .xp--omr .xp-opts li.is-picked b,
+.xp-live .xp--omr .xp-opts li.is-picked b { background: transparent; color: var(--ci); font-weight: 900; text-decoration: underline; border-color: transparent; }
+.xp-live .xp--omr .xp-opts li.is-right b { background: transparent; color: #3f7d4f; font-weight: 900; border-color: transparent; }
+.xp-live .xp--omr .xp-opts li.is-wrong b { background: transparent; color: #b0453d; font-weight: 900; text-decoration: line-through; border-color: transparent; }
+@media print {
+  .xp-live .xp--omr .xp-opts li.is-picked b { background: transparent !important; color: var(--ci) !important; }
+  .xp-live .xp--omr .xp-opts li.is-right b { background: transparent !important; color: #3f7d4f !important; }
+  .xp-live .xp--omr .xp-opts li.is-wrong b { background: transparent !important; color: #b0453d !important; }
+}

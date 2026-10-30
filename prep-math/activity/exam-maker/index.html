@@ -114,6 +114,8 @@
                 <label class="wb-field xm-span2"><span>Paper</span>
                   <select class="wb-select" id="xm-paper"><option value="a4">A4</option><option value="letter">US Letter</option></select></label>
                 <label class="wb-toggle"><input type="checkbox" id="xm-key" /> Answer key at the back</label>
+                <label class="wb-toggle"><input type="checkbox" id="xm-omr" /> OMR answer sheet for the multiple choice</label>
+                <label class="wb-toggle"><input type="checkbox" id="xm-tsheet" /> Theory answer sheet (written answers go on it)</label>
                 <label class="wb-toggle xm-span2"><input type="checkbox" id="xm-clean" /> Print without the browser's date and title line (page numbers go too)</label>
                 <label class="wb-toggle"><input type="checkbox" id="xm-tint" /> Tint section headings with the paper colour</label>
                 <fieldset class="wb-fieldset xm-span2 xm-each">
@@ -182,8 +184,14 @@
           <div class="wb-toolbar">
             <span class="wb-toolbar__count"><span data-ui="doc"></span> <span id="xm-summary"></span></span>
             <span class="wb-toolbar__spacer"></span>
+            <span class="xm-score" id="xm-score" role="status"></span>
+            <button class="pp-btn" id="xm-live" type="button" aria-pressed="false"><span data-ui="pen"></span> Answer on screen</button>
+            <button class="pp-btn" id="xm-check" type="button" hidden><span data-ui="check"></span> Check answers</button>
+            <button class="pp-btn pp-btn--ghost" id="xm-clear" type="button" hidden>Clear answers</button>
+            <button class="pp-btn" id="xm-share" type="button"><span data-ui="link"></span> Share link</button>
             <button class="pp-btn" id="xm-print" type="button">Print <span data-ui="print"></span></button>
           </div>
+          <p class="xm-sharebox" id="xm-sharebox" role="status" hidden></p>
           <p class="wb-note">
             In the print dialog turn <strong>Headers and footers</strong> off and leave margins on <strong>Default</strong>;
             the paper numbers its own pages. Choose <strong>Save as PDF</strong> to keep a copy.

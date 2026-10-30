@@ -36,14 +36,15 @@
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/index.js" },
     { "source": "/w/:code", "destination": "/writing/index.html" },
-    { "source": "/wb/:code", "destination": "/workbook-play/index.html" }
+    { "source": "/wb/:code", "destination": "/workbook-play/index.html" },
+    { "source": "/paper/:code", "destination": "/paper-play/index.html" }
   ],
   "headers": [
     { "source": "/(.*).js", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
     { "source": "/(.*).mjs", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
     { "source": "/(.*).css", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
     { "source": "/(dashboard|partner|activity|admin-cbt|admin-cbt-edit|admin-partners).html", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] },
-    { "source": "/(admin|w|wb|workbook-play|tools|logo)/(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] },
+    { "source": "/(admin|w|wb|paper|paper-play|workbook-play|tools|logo)/(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] },
     { "source": "/api/(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }] },
     { "source": "/prep-math/activity/maths-workbook(.*)", "headers": [{ "key": "X-Frame-Options", "value": "SAMEORIGIN" }, { "key": "Content-Security-Policy", "value": "frame-ancestors 'self'" }] },
     { "source": "/prep-math/activity/geometry-workbook(.*)", "headers": [{ "key": "X-Frame-Options", "value": "SAMEORIGIN" }, { "key": "Content-Security-Policy", "value": "frame-ancestors 'self'" }] }

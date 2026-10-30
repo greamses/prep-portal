@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- seo:head -->
+    <meta name="robots" content="noindex, nofollow" />
+    <!-- /seo:head -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Prep Portal | Mock paper</title>
+    <meta name="description" content="A mock exam paper shared with you: answer it on screen and check your marks." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;900&family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Shantell+Sans:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/utils/components/workbook.css" />
+    <link rel="stylesheet" href="/prep-math/activity/exam-maker/style.css" />
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+    <link rel="stylesheet" href="/paper-play/style.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+    <!-- A free account is all this needs: no premium guard. -->
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+  </head>
+  <body>
+    <main class="wb-main xm-main">
+      <header class="wb-hero">
+        <span class="wb-eyebrow" id="pp-eyebrow">A mock paper</span>
+        <h1 class="wb-title" id="pp-title">Opening the paper<em>.</em></h1>
+        <p class="wb-lead">
+          Shade the bubbles, type on the lines, then press <strong>Check answers</strong>.
+          Multiple choice and one-word answers are marked for you; for the written ones you
+          get the model answer to mark against.
+        </p>
+      </header>
+
+      <div class="wb-work xm-work">
+        <section class="wb-preview xm-preview">
+          <div class="wb-toolbar">
+            <span class="xm-score" id="xm-score" role="status"></span>
+            <span class="wb-toolbar__spacer"></span>
+            <button class="pp-btn" id="xm-check" type="button" hidden>Check answers</button>
+            <button class="pp-btn pp-btn--ghost" id="xm-clear" type="button" hidden>Clear answers</button>
+          </div>
+          <p class="pp-msg" id="pp-msg" role="status"></p>
+          <div class="wb-viewport xm-viewport"><div class="xm-sheet" id="xm-sheet"></div></div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="/utils/components/nav-builder.js"></script>
+    <script type="module" src="/paper-play/player.js"></script>
+  </body>
+</html>
