@@ -1784,7 +1784,7 @@ function factorOffers(eq, leaf) {
 
 /** A whole bracket shared by two terms or more — a(x + y) + b(x + y) — is a
     common factor too: (x + y)(a + b), the last step of grouping. */
-export function factorBracket(eq, sumId) {
+export function factorBracket(eq, sumId, onlyTerms = null) {
   const S = A.findById(eq, sumId);
   const T = S && termChain(eq, sumId).find((t) => locate(eq, t.id));
   const loc = T && locate(eq, T.id);
@@ -1793,6 +1793,7 @@ export function factorBracket(eq, sumId) {
   const rest = [];
   const idxs = [];
   loc.terms.forEach((t, i) => {
+    if (onlyTerms && !onlyTerms.has(t.id)) return;           // just the terms whose brackets were picked
     const flipped = t.kind === "neg" && !t.paren;
     const body = flipped ? t.k : t;
     const kids = body.kind === "prod" ? body.kids : [body];
@@ -1805,7 +1806,7 @@ export function factorBracket(eq, sumId) {
     rest.push(left);
   });
   if (idxs.length < 2) return { error: "Only one term has that bracket." };
-  const product = A.prod([{ ...freshCopy(unbracket(S)), paren: true }, { ...A.sum(rest), paren: true }]);
+  const product = A.prod([{ ...A.sum(rest), paren: true }, { ...freshCopy(unbracket(S)), paren: true }]);
   const first = Math.min(...idxs);
   const nextTerms = loc.terms.map((t, i) => (i === first ? product : t)).filter((_, i) => i === first || !idxs.includes(i));
   return { eq: setContainer(eq, loc, nextTerms), from: new Map(), mark: plain(product), note: `Take out ${plain({ ...S, paren: true })}: ${plain(product)}` };
@@ -3691,6 +3692,24 @@ function multiOffersRaw(eq, keys, { given = null } = {}) {
         if (!sq.error) out.push({ key: "square", label: sq.note.split(":")[0], hint: "(x + p/2)²", mark: sq.mark, run: () => sq });
       }
       out.push(...quadraticOffers(eq, locs[0], locs.map((l) => l.index)));
+    }
+  }
+  // A bracket picked from each of several terms: if they are the same bracket, it comes out as a common factor.
+  {
+    const picked = keys.map((k) => {
+      const { nodeId, slot } = keyParts(k);
+      const n = (slot === "lp" || slot === "rp") ? A.findById(eq, nodeId) : null;
+      return n && n.kind === "sum" ? n : null;
+    });
+    if (picked.length >= 2 && picked.every(Boolean)) {
+      const shape = A.shapeKey(unbracket(picked[0]));
+      if (picked.every((b) => A.shapeKey(unbracket(b)) === shape)) {
+        const termIds = new Set(picked.map((b) => termChain(eq, b.id).find((t) => locate(eq, t.id))?.id).filter(Boolean));
+        if (termIds.size >= 2) {
+          const fb = factorBracket(eq, picked[0].id, termIds);
+          if (!fb.error) out.push({ key: "factor", label: fb.note.split(":")[0], hint: "the same bracket in each term", mark: fb.mark, run: () => fb });
+        }
+      }
     }
   }
   // Several SIGNS picked (and nothing else): each one offers to swap the two terms either side of it.

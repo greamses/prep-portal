@@ -46,7 +46,8 @@ export const RULE_GROUPS = [
     items: [
       r("r-q-split", "Split the middle term", "ax^2 + bx + c = ax^2 + px + qx + c", ["quadsplit"]),
       r("r-q-pair", "The two numbers: product ac, sum b", "pq = ac, so p + q = b", ["quadsplit"]),
-      r("r-q-group", "Factorise in pairs, then the common bracket", "a(x + p) + b(x + p) = (x + p)(a + b)", ["factor"]),
+      r("r-q-group", "Factorise in pairs, then the common bracket", "a(x + p) + b(x + p) = (a + b)(x + p)", ["factor"]),
+      r("r-bracket-common", "Take out a common bracket: tap one bracket from each term", "2(x + 5y) − 3(x + 5y) = (2 − 3)(x + 5y)", ["factor"], /^Take out \(/),
       r("r-q-factor", "Factorise a quadratic", "x^2 + 5x + 6 = (x + 2)(x + 3)", ["quadfactor"]),
       r("r-q-diff", "The difference of two squares", "x^2 − a^2 = (x − a)(x + a)", ["quadfactor"]),
       r("r-q-perfect", "A perfect square", "x^2 + 2px + p^2 = (x + p)^2", ["square"], /perfect square/i),
