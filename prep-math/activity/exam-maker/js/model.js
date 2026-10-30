@@ -332,9 +332,10 @@ export function applyChecks(qs, reply) {
 export function svgPrompt(q, brief = "", fault = "") {
   const system =
     "You draw diagrams for school examination questions as SVG. Reply with the SVG markup only, no explanation and no code fence. " +
-    "Rules: one <svg> element with xmlns and a viewBox (for example 0 0 220 150), and no width or height. " +
-    "Draw in black lines (stroke='#1d1b18', stroke-width='1.6'), fill='none' or a very light grey (#eeeeee) only. Leave a margin of 12 units inside the viewBox. " +
-    "Every length, angle, point and name the question mentions must be labelled in <text> (font-size='11', text-anchor set), placed beside what it labels and never over a line. " +
+    "Rules: one <svg> element with xmlns and EXACTLY viewBox='0 0 400 280' (a landscape canvas, 10 by 7), and no width or height. " +
+    "Fill the canvas: the figure should span most of its width or height, with a margin of about 25 units, never a small drawing in the middle. " +
+    "Draw in black lines (stroke='#1d1b18', stroke-width='2.4'), fill='none' or a very light grey (#eeeeee) only. " +
+    "Every length, angle, point and name the question mentions must be labelled in <text> (font-size='16', text-anchor set), placed beside what it labels with a gap of at least 8 units and never over a line. " +
     "Draw to scale where the numbers allow it, and mark right angles with a small square. For a graph draw labelled axes with ticks. " +
     "Use single quotes for every attribute. No scripts, no images, no foreignObject, no external links. " +
     "The diagram must show what the question describes and must not reveal the answer.";

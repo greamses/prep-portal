@@ -17,9 +17,59 @@ import { TYPES, ORDER, COLOURS, textHtml, blankHtml, esc, totalMarks } from "./m
  * no scripts, no foreignObject, no event handlers, no outside links.
  * → the cleaned markup, or "" if it is not an SVG.
  */
-export function cleanSvg(src) {
+export function cleanSvg(src, { cols = false } = {}) {
   const text = String(src || "").trim();
   if (!text) return "";
+  const key = `${cols ? "c" : "f"}|${text}`;
+  if (FITTED.has(key)) return FITTED.get(key);
+  const out = cleanSvgNow(text, cols);
+  if (FITTED.size > 60) FITTED.clear();
+  FITTED.set(key, out);
+  return out;
+}
+const FITTED = new Map();
+
+/* The space a figure has on the paper, in millimetres: a question that runs the
+   full width, or one inside a multiple-choice column. */
+const SPACE = { full: { w: 112, h: 70 }, cols: { w: 74, h: 46 } };
+
+/**
+ * Make any drawing fill its frame, whatever canvas the model drew it on:
+ *  - the viewBox is tightened to the drawing's own bounding box (plus a margin),
+ *    so a figure drawn small in the middle of a big canvas is not small on paper;
+ *  - its printed size is set in millimetres (--w), and --u says how many user
+ *    units make a millimetre, so the CSS can give every label and line the same
+ *    real size (3.4 mm type, 0.5 mm lines) however big the model's numbers were.
+ */
+function fitSvg(root, cols) {
+  const space = cols ? SPACE.cols : SPACE.full;
+  const host = document.createElement("div");
+  host.className = "xp xp-measure";
+  host.style.cssText = "position:absolute;left:-9999px;top:0;width:480px;visibility:hidden;pointer-events:none";
+  const probe = document.importNode(root, true);
+  host.appendChild(probe);
+  document.body.appendChild(host);
+  try {
+    const bbox = () => { const b = probe.getBBox(); return b.width > 0 && b.height > 0 ? b : null; };
+    const size = (b) => {
+      const pad = Math.max(b.width, b.height) * 0.05;
+      const vw = b.width + 2 * pad, vh = b.height + 2 * pad;
+      const mm = Math.min(space.w, space.h * (vw / vh));
+      return { x: b.x - pad, y: b.y - pad, vw, vh, mm, u: vw / mm };
+    };
+    let b = bbox();
+    if (!b) return;
+    let s = size(b);
+    /* labels change size once --u is set, so measure again with it in place */
+    probe.setAttribute("style", `--u:${s.u};--w:${s.mm}`);
+    b = bbox() || b;
+    s = size(b);
+    root.setAttribute("viewBox", `${s.x.toFixed(2)} ${s.y.toFixed(2)} ${s.vw.toFixed(2)} ${s.vh.toFixed(2)}`);
+    root.setAttribute("style", `--u:${s.u.toFixed(4)};--w:${s.mm.toFixed(1)}`);
+  } catch { /* the drawing keeps the model's own viewBox */ } finally { host.remove(); }
+}
+
+function cleanSvgNow(text, cols) {
   let doc;
   try { doc = new DOMParser().parseFromString(text, "image/svg+xml"); } catch { return ""; }
   const root = doc.documentElement;
@@ -47,6 +97,7 @@ export function cleanSvg(src) {
   root.setAttribute("class", "xp-svg__art");
   root.setAttribute("role", "img");
   if (!root.getAttribute("xmlns")) root.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  fitSvg(root, cols);
   return new XMLSerializer().serializeToString(root);
 }
 
@@ -54,8 +105,8 @@ export function cleanSvg(src) {
 
 /* a diagram is a numbered figure in a frame; the count restarts with each paper */
 let figNo = 0;
-const figure = (q) => {
-  const s = cleanSvg(q.svg);
+const figure = (q, cols = false) => {
+  const s = cleanSvg(q.svg, { cols });
   return s ? `<figure class="xp-svg"><div class="xp-svg__frame">${s}</div><figcaption data-nomath>Figure ${++figNo}</figcaption></figure>` : "";
 };
 
@@ -66,7 +117,7 @@ function mcq(q, no) {
     <span class="xp-n" data-nomath>${no}</span>
     <div class="xp-body">
       <div class="xp-text">${textHtml(q.text)}</div>
-      ${figure(q)}
+      ${figure(q, true)}
       <ol class="xp-opts">${q.options.map((o, i) => `<li><b data-nomath>${letter(i)}</b><span>${textHtml(o)}</span></li>`).join("")}</ol>
     </div>
   </div>`;

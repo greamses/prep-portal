@@ -72,7 +72,7 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
 .xm-svg__row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 .xm-svg__msg { font-size: 0.72rem; color: var(--text-secondary); }
 .xm-svg__bad { font-size: 0.72rem; color: var(--accent-danger); }
-.xm-svg__shot svg { max-width: 220px; max-height: 160px; width: auto; height: auto; background: #fff; display: block; box-shadow: 0 1px 4px rgba(42, 39, 35, 0.2); }
+.xm-svg__shot svg { width: 240px; max-width: 100%; height: auto; background: #fff; display: block; box-shadow: 0 1px 4px rgba(42, 39, 35, 0.2); }
 .xm-svg__shot:empty { display: none; }
 
 /* ── the preview ───────────────────────────────────────────────────────── */
@@ -140,14 +140,16 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
 .xp-marks { float: right; margin-left: 4mm; font-size: 8pt; font-weight: 700; color: var(--ci); white-space: nowrap; }
 /* a figure: a framed plate, centred, numbered underneath */
 .xp-svg { margin: 3mm auto 1.5mm; width: fit-content; max-width: 100%; break-inside: avoid; }
-.xp-svg__frame { background: #fff; border: 0.35mm solid color-mix(in srgb, var(--c) 55%, #fff); border-radius: 2.5mm; padding: 3mm 4mm; }
+.xp-svg__frame { background: #fff; border: 0.35mm solid color-mix(in srgb, var(--c) 55%, #fff); border-radius: 2.5mm; }
 .xp-svg figcaption { margin-top: 1.2mm; text-align: center; font-size: 7pt; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; color: var(--ci); }
-.xp-svg__art { overflow: visible; display: block; width: 100%; max-width: 78mm; max-height: 60mm; height: auto; margin: 0 auto; color: #1d1b18; }
-/* the drawing is set in the paper's own type and ink, whatever the model wrote */
-.xp-svg__art text { font-family: "JetBrains Mono", ui-monospace, monospace; font-weight: 600; fill: #1d1b18; stroke: none; }
-.xp-svg__art :is(line, polyline, polygon, path, circle, ellipse, rect) { stroke-linecap: round; stroke-linejoin: round; }
-.xp-cols .xp-svg__art { max-width: 56mm; max-height: 38mm; }
-.xp-cols .xp-svg__frame { padding: 2mm 3mm; }
+/* The drawing's printed size and the real size of its type and lines come from
+   fitSvg() in paper.js: --w is its width in mm, --u the user units per mm. */
+.xp-svg__art { overflow: visible; display: block; width: calc(var(--w, 80) * 1mm); max-width: 100%; height: auto; margin: 0 auto; color: #1d1b18; }
+.xp-svg__art text { font-family: "JetBrains Mono", ui-monospace, monospace; font-weight: 600; font-size: calc(var(--u, 1) * 3.4px); fill: #1d1b18; stroke: none; }
+.xp-svg__art :is(line, polyline, polygon, path, circle, ellipse, rect) { stroke-width: calc(var(--u, 1) * 0.5px); stroke-linecap: round; stroke-linejoin: round; }
+.xp-svg__art [stroke-dasharray] { stroke-dasharray: calc(var(--u, 1) * 2px) calc(var(--u, 1) * 1.6px); }
+.xp-svg__frame { padding: 3.5mm 5mm; }
+.xp-cols .xp-svg__frame { padding: 2.5mm 3.5mm; }
 
 /* multiple choice: two columns */
 .xp-cols { column-count: 2; column-gap: 9mm; column-rule: 0.3mm solid var(--cs); }
