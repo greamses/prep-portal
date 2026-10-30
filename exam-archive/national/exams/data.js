@@ -50,12 +50,23 @@ const HEADER_CONTENT = {
   practice: { ctaLabel: "Start practice" },
 };
 
+/* The big button is a glyph with its name in the site's tooltip (and kept, hidden,
+   for a screen reader): the arrow starts the test, a sheet opens it as a paper. */
+const BEGIN_ICON = {
+  start: beginBtn.querySelector(".cta-arrow") ? beginBtn.querySelector(".cta-arrow").outerHTML : "",
+  paper: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 2.8h8.2L19 7.6V20a1.4 1.4 0 0 1-1.4 1.4H6A1.4 1.4 0 0 1 4.6 20V4.2A1.4 1.4 0 0 1 6 2.8z" fill="var(--accent-secondary, #6fb7e8)"/><path d="M14.2 2.8v4.8H19z" fill="var(--accent-danger, #e86f6f)"/><rect x="7.6" y="11" width="8.8" height="1.6" rx=".8" fill="#fff"/><rect x="7.6" y="14.4" width="8.8" height="1.6" rx=".8" fill="#fff"/><rect x="7.6" y="17.8" width="5.6" height="1.6" rx=".8" fill="#fff"/></svg>`,
+};
+function setBegin(name, kind) {
+  beginBtn.innerHTML = `<span class="cta-ico" aria-hidden="true">${BEGIN_ICON[kind] || BEGIN_ICON.start}</span><em class="cta-name">${name}</em>`;
+  beginBtn.dataset.tip = name;
+  beginBtn.setAttribute("aria-label", name);
+}
 function updateHeaderContent(cat) {
   const h = HEADER_CONTENT[cat] || HEADER_CONTENT.national;
-  const ctaLabelEl = beginBtn.querySelector(".cta-label");
-  if (ctaLabelEl) ctaLabelEl.textContent = h.ctaLabel;
-  else beginBtn.textContent = h.ctaLabel;
+  setBegin(h.ctaLabel, "start");
 }
+// the tooltip that carries the button's name
+import("/utils/components/tooltip.js").then((m) => m.mountTooltips()).catch(() => {});
 
 // ════════════════════════════════════════════════════════════════════
 //  NATIONAL MODE
@@ -228,9 +239,9 @@ function renderCbtMode(premium) {
 
 // The big button says what it will do.
 function syncModeLabel() {
-  const el = beginBtn.querySelector(".cta-label");
-  if (!el || activeCat === "competition") return;
-  el.textContent = cbtState.mode === "paper" ? "Open the paper" : (HEADER_CONTENT[activeCat] || HEADER_CONTENT.national).ctaLabel;
+  if (activeCat === "competition") return;
+  if (cbtState.mode === "paper") setBegin("Open the paper", "paper");
+  else setBegin((HEADER_CONTENT[activeCat] || HEADER_CONTENT.national).ctaLabel, "start");
 }
 
 function natUpdateReadyState() {

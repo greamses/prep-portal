@@ -18,6 +18,7 @@ import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { api } from "/utils/components/workbook/account.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { faceOf } from "/utils/components/workbook/icons.js";
+import { mountTools } from "/prep-math/activity/exam-maker/js/tools.js";
 
 const $ = (id) => document.getElementById(id);
 const sheet = $("xm-sheet");
@@ -81,7 +82,9 @@ async function open() {
     $("pp-eyebrow").textContent = r.ownerName ? `A mock paper from ${r.ownerName}` : "A mock paper";
     document.title = `Prep Portal | ${r.title || "Mock paper"}`;
     live.setOn(true);
-    $("xm-check").hidden = false; $("xm-clear").hidden = false;
+    $("xm-check").hidden = false; $("xm-clear").hidden = false; $("xm-omr-btn").hidden = false;
+    /* the workbook tool rail, for working out beside the paper */
+    mountTools({ sheet, viewport: document.querySelector(".xm-viewport"), toolbar: document.querySelector(".wb-toolbar") }).on();
     say(`${questions.length} questions · ${totalMarks(questions)} marks.`);
     draw();
   } catch (e) {
@@ -90,7 +93,20 @@ async function open() {
 }
 
 /* the buttons are glyphs with their names in the site's tooltip, like the rest of the site */
+/* the OMR sheet is the learner's to open, even when the paper was shared without one */
+function paintOmr() {
+  const on = !!head.omr && live.omrOpen;
+  $("xm-omr-btn").setAttribute("aria-pressed", String(on));
+  $("xm-omr-btn").classList.toggle("is-on", on);
+}
+$("xm-omr-btn").addEventListener("click", () => {
+  if (!head.omr) { head.omr = true; draw(); live.setOmrOpen(true); }
+  else live.setOmrOpen(!live.omrOpen);
+  paintOmr();
+});
+
 function faces() {
+  faceOf($("xm-omr-btn"), UI.target(18), "OMR sheet");
   faceOf($("xm-check"), live.checked ? UI.undo(18) : UI.check(18), live.checked ? "Answer again" : "Check answers");
   faceOf($("xm-clear"), UI.eraser(18), "Clear answers");
 }

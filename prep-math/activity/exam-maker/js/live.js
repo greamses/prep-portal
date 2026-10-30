@@ -245,6 +245,13 @@ export function createLive(sheet, { onChange = () => {}, store = KEY } = {}) {
     get on() { return on; },
     get checked() { return checked; },
     setOn(v) { on = !!v; if (!on) { checked = false; sheet.classList.remove("xp-live"); unmountDrawer(); } },
+    /** The OMR drawer, opened or shut from a toolbar button (it opens by itself when a sheet exists). */
+    get omrOpen() { return drawerOpen; },
+    setOmrOpen(v) {
+      drawerOpen = !!v;
+      document.querySelector(".xo-drawer")?.classList.toggle("is-open", drawerOpen);
+      document.querySelector(".xo-tab")?.setAttribute("aria-expanded", String(drawerOpen));
+    },
     check(questions) { checked = true; return score(questions); },
     reopen() { checked = false; },
     clear() { answers = {}; checked = false; keep(); },

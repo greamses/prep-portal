@@ -3888,13 +3888,6 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .wb-page--flow .wb-newpage { break-before: page; }
 .wb-keypart[hidden] { display: none !important; }
 
-/* the tools are for the learning layout: an exam paper is written on, not
-   worked out on a bench of models. Only the pencil and eraser stay. */
-html[data-wb-layout="exam"] .wb-side__fam:not([data-fam="draw"]),
-html[data-wb-layout="exam"] .wb-side__fly:not([data-fam="draw"]),
-html[data-wb-layout="exam"] .wb-side [data-tool],
-html[data-wb-layout="exam"] .wb-side__fly [data-tool] { display: none !important; }
-
 @media print {
   .wb-page.wb-page--flow {
     height: auto !important;
@@ -3910,4 +3903,14 @@ html[data-wb-layout="exam"] .wb-side__fly [data-tool] { display: none !important
   /* the foot and the mark repeat on every sheet: fixed boxes do, in print */
   .wb-page--flow .wb-page__foot { position: fixed; left: var(--wb-pad-x); right: var(--wb-pad-x); bottom: 6mm; }
   .wb-page--flow .wb-page__wm { position: fixed; }
+}
+
+/* THE TOOL RAIL STACKS THREE TO A ROW. One long column of keys ran off the bottom
+   of a short window; three across keeps the whole box in view, and its pop-out
+   menus (a family's other tools) lay out the same way. The strip along the
+   bottom of a phone is already a row and stays one. */
+@media (min-width: 701px) {
+  .wb-side__keys { display: grid; grid-template-columns: repeat(3, auto); justify-content: center; align-content: start; gap: 0.3rem; }
+  .wb-side__keys > :is(.wb-side__cap, .wb-side__rule) { grid-column: 1 / -1; }
+  .wb-side__flypaper { display: grid; grid-template-columns: repeat(3, auto); gap: 0.25rem; justify-content: center; }
 }

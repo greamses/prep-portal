@@ -11,6 +11,7 @@ import { TYPES, COLOURS, BLANK_HEAD, blank, clean, parseQuestions, promptFor, sv
 import { paperHtml, cleanSvg } from "./paper.js";
 import { loadPaper } from "./cbt.js";
 import { createLive } from "./live.js";
+import { mountTools } from "./tools.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { UI } from "/utils/components/ui-icons.js";
@@ -136,7 +137,7 @@ document.querySelectorAll("[data-each]").forEach((el) => el.addEventListener("in
 }));
 $("xm-paper").addEventListener("change", (e) => { state.head.paper = e.target.value; redraw(); });
 $("xm-clean").addEventListener("change", (e) => { state.head.clean = e.target.checked; redraw(); });
-$("xm-omr").addEventListener("change", (e) => { state.head.omr = e.target.checked; redraw(); });
+$("xm-omr").addEventListener("change", (e) => { state.head.omr = e.target.checked; redraw(); setTimeout(() => typeof paintOmrBtn === "function" && paintOmrBtn(), 0); });
 $("xm-tsheet").addEventListener("change", (e) => { state.head.theorySheet = e.target.checked; redraw(); });
 $("xm-key").addEventListener("change", (e) => { state.head.key = e.target.checked; redraw(); });
 $("xm-tint").addEventListener("change", (e) => { state.head.tint = e.target.checked; redraw(); });
@@ -543,7 +544,11 @@ function paintScore() {
   }
 }
 
+/* the workbook tool rail, for a student sitting the paper */
+let tools = null;
 function setLive(on) {
+  if (!tools) tools = mountTools({ sheet, viewport: document.querySelector(".xm-viewport"), toolbar: document.querySelector(".wb-toolbar") });
+  if (on) tools.on(); else tools.off();
   live.setOn(on);
   $("xm-live").setAttribute("aria-pressed", String(on));
   $("xm-live").classList.toggle("is-on", on);
@@ -551,7 +556,7 @@ function setLive(on) {
   document.documentElement.classList.toggle("xm-focus", on);
   if (on) scrollTo({ top: 0 });
   $("xm-check").hidden = !on; $("xm-clear").hidden = !on;
-  clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces();
+  clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces(); paintOmrBtn();
 }
 function setLiveFaces() {
   faceOf($("xm-live"), live.on ? UI.settings(18) : UI.pen(18), live.on ? "Back to setup" : "Answer on screen");
@@ -559,6 +564,24 @@ function setLiveFaces() {
   faceOf($("xm-clear"), UI.eraser(18), "Clear answers");
 }
 $("xm-live").addEventListener("click", () => setLive(!live.on));
+
+/* The OMR sheet, one button. Answering: it turns the sheet on if the paper has none
+   and slides the drawer in or out. Setting up: it adds the sheet to the paper or
+   takes it away (the same switch as in the header). */
+function paintOmrBtn() {
+  const shown = live.on ? state.head.omr && live.omrOpen : state.head.omr;
+  $("xm-omr-btn").setAttribute("aria-pressed", String(!!shown));
+  $("xm-omr-btn").classList.toggle("is-on", !!shown);
+}
+$("xm-omr-btn").addEventListener("click", () => {
+  if (!live.on) { state.head.omr = !state.head.omr; $("xm-omr").checked = state.head.omr; redraw(); paintOmrBtn(); return; }
+  if (!state.head.omr) {
+    state.head.omr = true; $("xm-omr").checked = true;
+    clearTimeout(drawTimer); draw(); save();
+    live.setOmrOpen(true);
+  } else live.setOmrOpen(!live.omrOpen);
+  paintOmrBtn();
+});
 $("xm-check").addEventListener("click", () => {
   if (live.checked) live.reopen(); else live.check(state.questions);
   clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces();
@@ -602,6 +625,7 @@ faceOf($("xm-diagrams"), UI.shapes(18), "Add diagrams to geometry questions");
 document.querySelectorAll('[data-clear="all"]').forEach((b) => { faceOf(b, UI.trash(18), "Delete all questions"); b.dataset.label = "Delete all questions"; });
 faceOf($("xm-print"), UI.print(18), "Print");
 faceOf($("xm-share"), UI.link(18), "Share link");
-setLiveFaces();
+faceOf($("xm-omr-btn"), UI.target(18), "OMR sheet");
+setLiveFaces(); paintOmrBtn();
 enhanceSelects(document.querySelector(".xm-rail"), { className: "pp-select--sm" });
 mountTooltips();

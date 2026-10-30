@@ -343,3 +343,25 @@ html.xm-focus .wb-toolbar { flex-wrap: wrap; gap: 0.4rem 0.5rem; }
 .xm-glyph i svg { width: 0.62rem; height: 0.62rem; }
 .pp-btn:has(.xm-glyph) { padding-right: 1.1rem; }
 .xm-clear.is-armed { background: #ffd9d4; }
+
+/* The setup is as tall as the paper beside it (one sheet, or what the window shows
+   of it) and scrolls inside itself, instead of running on for as long as the
+   question list does. It stays alongside while the paper is read. */
+@media (min-width: 1001px) {
+  html:not(.xm-focus) .xm-rail {
+    position: sticky; top: 5rem; align-self: start;
+    height: min(297mm, calc(100vh - 6rem));
+    overflow-y: auto; overflow-x: hidden;
+    padding: 0.3rem 0.7rem 1.4rem 0.3rem;
+    scrollbar-gutter: stable;
+    overscroll-behavior: contain;
+  }
+}
+
+/* the workbook interactive layer makes a toggle and a bar of its own; this page drives the rail itself */
+.xm-main .wb-live-toggle, .xm-main .wb-livebar { display: none !important; }
+
+/* `overflow-x: hidden` on the page turns <body> into a scroll container that never
+   scrolls, and a sticky box sticks to THAT: the setup would scroll away. `clip`
+   cuts the same overflow without making a scroller. */
+html, body { overflow-x: clip !important; overflow-y: visible !important; }

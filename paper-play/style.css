@@ -6,3 +6,7 @@
 .xm-viewport { overflow-x: auto; max-width: 100%; }
 .xm-work { display: block; }
 .xm-preview { max-width: 230mm; margin: 0 auto; }
+
+/* the workbook interactive layer makes a toggle and a bar of its own; the rail is driven from here */
+.xm-main .wb-live-toggle, .xm-main .wb-livebar { display: none !important; }
+html, body { overflow-x: clip !important; overflow-y: visible !important; }

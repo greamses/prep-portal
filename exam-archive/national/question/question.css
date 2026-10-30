@@ -1251,3 +1251,8 @@ body {
 @media print {
   .page-paint { display: none !important; }
 }
+/* "Open as paper" is an icon; its name is the tooltip, kept hidden for a screen reader */
+.print-link { display: inline-flex; align-items: center; justify-content: center; }
+.print-link .pl-ico { display: grid; place-items: center; width: 1.5rem; height: 1.5rem; }
+.print-link .pl-ico svg { width: 100%; height: 100%; display: block; }
+.print-link .pl-name { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }

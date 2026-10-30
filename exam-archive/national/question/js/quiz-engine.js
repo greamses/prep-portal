@@ -906,18 +906,21 @@ const Quiz = (() => {
       const p = await userProfile();
       allowed = !!(p && p.isPremium);
     }
+    /* an icon with its name in the site's tooltip (kept, hidden, for a screen reader) */
     const a = document.createElement("a");
     a.className = cls;
-    a.textContent = "Open as paper";
+    const name = allowed ? "Open as paper" : "Open as paper (Premium)";
+    a.innerHTML = `<span class="pl-ico" aria-hidden="true">${allowed ? "<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'><path d='M6 2.8h8.2L19 7.6V20a1.4 1.4 0 0 1-1.4 1.4H6A1.4 1.4 0 0 1 4.6 20V4.2A1.4 1.4 0 0 1 6 2.8z' fill='var(--accent-secondary, #6fb7e8)'/><path d='M14.2 2.8v4.8H19z' fill='var(--accent-danger, #e86f6f)'/><rect x='7.6' y='11' width='8.8' height='1.6' rx='.8' fill='#fff'/><rect x='7.6' y='14.4' width='8.8' height='1.6' rx='.8' fill='#fff'/><rect x='7.6' y='17.8' width='5.6' height='1.6' rx='.8' fill='#fff'/></svg>" : "<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'><rect x='4.8' y='10.4' width='14.4' height='10.6' rx='2.2' fill='#9b9487'/><path d='M8 10.4V8a4 4 0 0 1 8 0v2.4' fill='none' stroke='#6b655c' stroke-width='2.2' stroke-linecap='round'/><circle cx='12' cy='15.4' r='1.7' fill='#fff'/></svg>"}</span><em class="pl-name">${name}</em>`;
+    a.dataset.tip = name;
+    a.setAttribute("aria-label", name);
     if (allowed) {
       a.href = `/prep-math/activity/exam-maker/?${q}`;
       a.target = "_blank"; a.rel = "noopener";
     } else {
       a.href = "/subscribe.html";
-      a.title = "Paper mode is a Premium feature";
-      a.textContent = "Open as paper (Premium)";
     }
     left.insertBefore(a, before);
+    import("/utils/components/tooltip.js").then((m) => m.mountTooltips()).catch(() => {});
   }
 
   async function loadAndRender() {
