@@ -16,6 +16,8 @@
 .xm-rail { display: flex; flex-direction: column; gap: 1.4rem; min-width: 0; }
 /* two classes: .pp-receipt__paper sets its own display */
 .xm-receipt .xm-paper { display: flex; flex-direction: column; gap: 0.95rem; padding: 1.4rem 1.35rem 1.5rem; }
+.xm-each { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.6rem; }
+.xm-each > legend { grid-column: 1 / -1; }
 .xm-breaks { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 0.8rem; }
 .xm-breaks > legend { grid-column: 1 / -1; }
 .xm-span2 { grid-column: 1 / -1; }
@@ -142,8 +144,9 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
 .xp-cols { column-count: 2; column-gap: 9mm; column-rule: 0.3mm solid var(--cs); }
 .xp-cols .xp-q { margin-bottom: 4mm; }
 .xp-opts { list-style: none; margin: 1.6mm 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.8mm; }
-.xp-opts li { display: flex; gap: 2.2mm; align-items: baseline; }
-.xp-opts b { flex: none; width: 5mm; height: 5mm; border: 0.3mm solid var(--c); color: var(--ci); font-size: 7.5pt; display: grid; place-items: center; line-height: 1; transform: translateY(0.6mm); }
+.xp-opts li { display: flex; gap: 2.4mm; align-items: center; }
+/* answer bubbles: round, so a learner can shade one in */
+.xp-opts b { flex: none; width: 5.8mm; height: 5.8mm; box-sizing: border-box; border: 0.35mm solid var(--ci); border-radius: 50%; background: #fff; color: var(--ci); font-size: 7.5pt; display: grid; place-items: center; line-height: 1; }
 .xp-opts span { min-width: 0; overflow-wrap: anywhere; }
 
 /* written answers: ruled lines, --rows of them */

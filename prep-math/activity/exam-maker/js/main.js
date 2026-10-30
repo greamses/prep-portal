@@ -29,6 +29,7 @@ function load() {
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { /* private window */ }
   const head = { ...BLANK_HEAD, ...(saved && saved.head) };
+  head.marksEach = { ...BLANK_HEAD.marksEach, ...(saved && saved.head && saved.head.marksEach) };
   /* the first version had one switch for every section */
   if (saved && saved.head && saved.head.breaks && !saved.head.breakAt) head.breakAt = { mcq: true, fill: true, sub: true, theory: true };
   delete head.breaks;
@@ -100,11 +101,19 @@ const heads = document.querySelectorAll("[data-h]");
 function fillHead() {
   heads.forEach((el) => { el.value = state.head[el.dataset.h] || ""; });
   $("xm-paper").value = state.head.paper;
+  document.querySelectorAll("[data-each]").forEach((el) => { el.value = state.head.marksEach[el.dataset.each]; });
   $("xm-key").checked = !!state.head.key;
   document.querySelectorAll("[data-break]").forEach((el) => { const at = state.head.breakAt || {}; el.checked = el.dataset.break === "key" ? at.key !== false : !!at[el.dataset.break]; });
   paintLogo(); paintSwatches();
 }
 heads.forEach((el) => el.addEventListener("input", () => { state.head[el.dataset.h] = el.value; redraw(); }));
+/* marks for each question, per section: changing one re-scores that whole section */
+document.querySelectorAll("[data-each]").forEach((el) => el.addEventListener("input", () => {
+  const t = el.dataset.each, v = Math.max(0, Math.min(100, Math.round(+el.value) || 0));
+  state.head.marksEach = { ...state.head.marksEach, [t]: v };
+  state.questions.forEach((q) => { if (q.type === t) q.marks = v; });
+  renderList(); draw(); save();
+}));
 $("xm-paper").addEventListener("change", (e) => { state.head.paper = e.target.value; redraw(); });
 $("xm-key").addEventListener("change", (e) => { state.head.key = e.target.checked; redraw(); });
 document.querySelectorAll("[data-break]").forEach((el) => el.addEventListener("change", () => {
@@ -221,7 +230,7 @@ list.addEventListener("change", (e) => {
   const q = state.questions[i], f = e.target.dataset.f;
   if (f === "type") {
     const was = q.type;
-    const next = clean({ ...q, type: e.target.value, marks: q.marks === TYPES[was].marks ? TYPES[e.target.value].marks : q.marks,
+    const next = clean({ ...q, type: e.target.value, marks: q.marks === state.head.marksEach[was] ? state.head.marksEach[e.target.value] : q.marks,
       lines: q.lines === TYPES[was].lines ? TYPES[e.target.value].lines : q.lines,
       answer: e.target.value === "mcq" ? 0 : (was === "mcq" ? "" : q.answer) });
     state.questions[i] = next;
@@ -285,7 +294,9 @@ document.addEventListener("click", (e) => {
 });
 
 document.querySelectorAll("[data-add]").forEach((b) => b.addEventListener("click", () => {
-  state.questions.push(blank(b.dataset.add));
+  const q = blank(b.dataset.add);
+  q.marks = state.head.marksEach[q.type];
+  state.questions.push(q);
   renderList(); draw(); save();
   const last = list.querySelector(".xm-card:last-child textarea");
   if (last) { last.focus(); last.scrollIntoView({ block: "center", behavior: "smooth" }); }
@@ -329,7 +340,7 @@ $("xm-ai-go").addEventListener("click", async () => {
       try {
         made = parseQuestions(await ask(promptFor({ ...common, need, seen: kept.map((q) => q.text), faults })));
       } catch (err) { faultsNow.push("the reply was not the JSON object asked for"); }
-      const checked = checkQuestions(made, { svg: common.svg, seen: kept.map((q) => q.text) });
+      const checked = checkQuestions(made, { svg: common.svg, seen: kept.map((q) => q.text), marksEach: state.head.marksEach });
       faultsNow.push(...checked.faults);
       let good = limitTo(checked.good, need);
       good.forEach((q) => { if (q.svg && !cleanSvg(q.svg)) q.svg = ""; });

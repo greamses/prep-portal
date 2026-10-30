@@ -14,8 +14,8 @@
 export const TYPES = {
   mcq:    { label: "Multiple choice", section: "Section A", head: "Multiple choice", rule: "Choose the one correct answer, A, B, C or D.", marks: 1, lines: 0 },
   fill:   { label: "Fill in the blank", section: "Section B", head: "Fill in the blank", rule: "Write the missing word or number on the line.", marks: 1, lines: 0 },
-  sub:    { label: "Subjective",      section: "Section B", head: "Short answer",    rule: "Answer every question. Show your working.", marks: 3, lines: 4 },
-  theory: { label: "Theory",          section: "Section C", head: "Theory",          rule: "Answer in full. Marks are given for method.", marks: 10, lines: 10 },
+  sub:    { label: "Subjective",      section: "Section B", head: "Short answer",    rule: "Answer every question. Show your working.", marks: 2, lines: 4 },
+  theory: { label: "Theory",          section: "Section C", head: "Theory",          rule: "Answer in full. Marks are given for method.", marks: 4, lines: 10 },
 };
 export const ORDER = ["mcq", "fill", "sub", "theory"];
 
@@ -46,6 +46,9 @@ export function blank(type) {
 export const BLANK_HEAD = {
   school: "", term: "", year: "", subject: "", date: "", klass: "", time: "",
   logo: "", colour: "indigo", paper: "a4", key: false, breakAt: {},
+  /* what each question in a section is worth; every question follows its section
+     until its own marks are changed */
+  marksEach: { mcq: 1, fill: 1, sub: 2, theory: 4 },
 };
 
 /* ── TeX as models actually write it ───────────────────────────────────── */
@@ -187,13 +190,13 @@ export function promptFor({ topic, subject, level, need, svg, extra, seen = [], 
   const system =
     "You are setting a school examination paper. The teacher's brief is BINDING: obey every rule below exactly, and never add, skip or swap anything. " +
     "Reply with ONE JSON object and nothing else, in this shape: " +
-    '{"questions":[{"type":"mcq"|"fill"|"sub"|"theory","text":"...","options":["...","...","...","..."],"answer":0,"marks":1,"svg":""}]}. ' +
+    '{"questions":[{"type":"mcq"|"fill"|"sub"|"theory","text":"...","options":["...","...","...","..."],"answer":0,"svg":""}]}. ' +
     "RULES. " +
     "1. COUNTS: write exactly the number of each type asked for, no more and no fewer, ordered mcq, fill, sub, theory. " +
     "2. SCOPE: every question is about the TOPIC given, at the LEVEL given, in the SUBJECT given. Do not drift to other topics or other levels. " +
     "3. MCQ: exactly four options, all different, exactly one correct. 'answer' is the index 0 to 3 of the correct option. Solve the question yourself before you choose the index. Distractors must be plausible. " +
     "4. FILL: ONE sentence with exactly one blank written as six underscores (______). 'answer' is the missing word or number; 'options' is []. " +
-    "5. SUB and THEORY: 'answer' is a model answer or marking note and is never empty; 'options' is []. Marks: sub 2 to 5, theory 6 to 15. Theory may have parts (a), (b), (c) separated by \\n. mcq and fill are 1 mark. " +
+    "5. SUB and THEORY: 'answer' is a model answer or marking note and is never empty; 'options' is []. Do not choose marks: the teacher sets them. Theory may have parts (a), (b), (c) separated by \\n. " +
     "6. MATHS: write every piece of mathematics in TeX between single dollar signs, like $\\frac{3}{4}$ or $x^2+5x+6=0$, with a double backslash for each TeX command inside the JSON string. Never write maths as plain text. " +
     "7. Never put a raw newline inside a string; write the two characters \\n where a line break is wanted. " +
     "8. Every question is original, correct, unambiguous and answerable from what is written. Never repeat a question listed under ALREADY WRITTEN. " +
@@ -213,15 +216,15 @@ export function promptFor({ topic, subject, level, need, svg, extra, seen = [], 
 }
 
 const norm = (s) => String(s || "").toLowerCase().replace(/\s+/g, " ").replace(/\$/g, "").trim();
-const RANGE = { mcq: [1, 1], fill: [1, 1], sub: [2, 5], theory: [6, 15] };
 
 /**
  * The model's questions held to the brief, in code, not on trust.
  *   opts.svg   diagrams were asked for
  *   opts.seen  texts already kept (a repeat is a fault)
+ *   opts.marksEach  what each type is worth (the teacher's scheme)
  * → { good: the ones that obey every rule, faults: what was wrong with the rest }
  */
-export function checkQuestions(list, { svg = false, seen = [] } = {}) {
+export function checkQuestions(list, { svg = false, seen = [], marksEach = {} } = {}) {
   const good = [], faults = [], texts = new Set(seen.map(norm));
   list.forEach((q, i) => {
     const tag = `${TYPES[q.type].label} question "${q.text.slice(0, 40)}"`;
@@ -241,8 +244,8 @@ export function checkQuestions(list, { svg = false, seen = [] } = {}) {
       if (blanks.length !== 1) return bad("a fill question needs exactly one blank written as ______");
       q.text = q.text.replace(/_{3,}/, "______");
     }
-    const [lo, hi] = RANGE[q.type];
-    q.marks = Math.min(hi, Math.max(lo, q.marks || lo));
+    /* equal scoring: a section's questions are all worth what the teacher set for it */
+    q.marks = Number.isFinite(marksEach[q.type]) ? marksEach[q.type] : TYPES[q.type].marks;
     if (!svg) q.svg = "";
     texts.add(norm(q.text));
     good.push(q);
