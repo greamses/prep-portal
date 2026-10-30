@@ -152,7 +152,7 @@ function card(q, i) {
         <label class="xm-opt"><input type="radio" name="a-${q.id}" data-f="answer" data-k="${k}" ${q.answer === k ? "checked" : ""} title="The correct answer" />
           <b>${"ABCD"[k]}</b><input class="wb-input" data-f="opt" data-k="${k}" value="${esc(o)}" autocomplete="off" placeholder="Option ${"ABCD"[k]}" /></label>`).join("")}</div>`
     : `<label class="wb-field"><span>Model answer or marking note</span><textarea class="wb-input" data-f="answerText" rows="2">${esc(q.answer)}</textarea></label>`;
-  return `<div class="xm-card pp-sticky" data-id="${q.id}">
+  return `<div class="pp-receipt xm-qreceipt"><div class="pp-receipt__paper xm-card" data-id="${q.id}">
     <div class="xm-card__top">
       <span class="xm-card__n">${i + 1}</span>
       <select class="wb-select xm-card__type" data-f="type" aria-label="Question type">
@@ -179,7 +179,7 @@ function card(q, i) {
       </div>
       <div class="xm-svg__shot">${q.svg ? cleanSvg(q.svg) : ""}</div>
     </details>
-  </div>`;
+  </div></div>`;
 }
 
 function renderList() {
@@ -247,6 +247,24 @@ list.addEventListener("click", (e) => {
   else if (d === "svgpick") { b.parentElement.querySelector('[data-f="svgfile"]').click(); return; }
   else if (d === "svgclear") qs[i].svg = "";
   else return;
+  renderList(); draw(); save();
+});
+
+/* delete the whole bank: two clicks, the first only asks */
+const clearBtn = $("xm-clear");
+let clearTimer = 0;
+const clearLabel = () => { clearBtn.querySelector("b").textContent = "Delete all"; clearBtn.classList.remove("is-armed"); };
+clearBtn.addEventListener("click", () => {
+  const n = state.questions.length;
+  if (!n) return;
+  if (!clearBtn.classList.contains("is-armed")) {
+    clearBtn.classList.add("is-armed");
+    clearBtn.querySelector("b").textContent = `Delete all ${n}? Click again`;
+    clearTimer = setTimeout(clearLabel, 4000);
+    return;
+  }
+  clearTimeout(clearTimer); clearLabel();
+  state.questions = [];
   renderList(); draw(); save();
 });
 
