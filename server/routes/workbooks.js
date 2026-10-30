@@ -541,5 +541,137 @@ module.exports = function () {
     }
   });
 
+  /* ══ SHARED-PAPER SCORES, AND THE WEEKLY COMPILER ═══════════════════════
+     A learner who finishes a shared mock paper sends the score back under the name they typed on the
+     paper, the way an assigned workbook does. The compiler then gathers every score the teacher has
+     received, from workbook assignments and shared papers alike, into weeks.
+
+       POST /api/workbooks/paper/:code/result   { name, won, outOf, first }
+       GET  /api/workbooks/compile?weeks=4&start=YYYY-MM-DD
+
+     A completed assignment counts in the week of its LAST attempt, at that attempt's score. Scores are
+     worked out in the learner's browser (the same as every score here), so they are practice
+     feedback for a teacher and say so. */
+
+  const GRADES = [[70, "A"], [60, "B"], [50, "C"], [45, "D"], [40, "E"], [0, "F"]];
+  const gradeOf = (pct) => (GRADES.find(([min]) => pct >= min) || GRADES[GRADES.length - 1])[1];
+
+  router.post("/paper/:code/result", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code)) return res.status(404).json({ error: "No such paper." });
+      const b = req.body || {};
+      const won = Math.round(Number(b.won)), outOf = Math.round(Number(b.outOf));
+      if (!Number.isFinite(won) || !Number.isFinite(outOf) || outOf < 1 || outOf > 5000 || won < 0 || won > outOf) {
+        return res.status(400).json({ error: "Bad score." });
+      }
+      const pRef = db().collection("sharedPapers").doc(code);
+      const rRef = pRef.collection("results").doc(req.user.uid);
+      const p = await profile(req.user.uid);
+      const typed = clip(String(b.name || "").replace(/\s+/g, " ").trim(), 60);
+      const pct = Math.round((100 * won) / outOf);
+      const out = await db().runTransaction(async (t) => {
+        const [pSnap, rSnap] = [await t.get(pRef), await t.get(rRef)];
+        if (!pSnap.exists) return null;
+        const prev = rSnap.exists ? rSnap.data() : null;
+        const attempts = (prev ? prev.attempts || 0 : 0) + (b.first === true || !prev ? 1 : 0);
+        const best = Math.max(pct, prev ? prev.bestPct || 0 : 0);
+        t.set(rRef, {
+          uid: req.user.uid, name: typed || (prev && prev.name) || nameOf(req, p), email: req.user.email || null,
+          lastWon: won, lastOutOf: outOf, lastPct: pct, grade: gradeOf(pct), bestPct: best, attempts,
+          firstAt: prev ? prev.firstAt : stamp(), lastAt: stamp(),
+        }, { merge: true });
+        if (!prev) t.set(pRef, { students: admin.firestore.FieldValue.increment(1) }, { merge: true });
+        return { ownerUid: pSnap.data().ownerUid, title: pSnap.data().title, best, attempts };
+      });
+      if (!out) return res.status(404).json({ error: "No such paper." });
+      try {
+        await db().collection("teacherNotices").doc(out.ownerUid).collection("items").doc(`paper_${code}_${req.user.uid}`).set({
+          kind: "paper", code, title: out.title || "Mock paper", uid: req.user.uid, name: typed || nameOf(req, p),
+          right: won, total: outOf, pct, bestPct: out.best, attempts: out.attempts, at: stamp(), seen: false,
+        }, { merge: true });
+      } catch (e) { console.error("[paper notice]", e.message); }
+      res.json({ ok: true, pct, grade: gradeOf(pct) });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/result]", err.message);
+      res.status(500).json({ error: "Could not save the score." });
+    }
+  });
+
+  router.get("/compile", authenticate, async (req, res) => {
+    try {
+      const me = await profile(req.user.uid);
+      if (!isAdmin(req) && !["teacher", "admin"].includes(me.role)) {
+        return res.status(403).json({ error: "Only teachers can compile results." });
+      }
+      const DAY = 86400000;
+      const weeks = Math.max(1, Math.min(8, Math.round(Number(req.query.weeks)) || 4));
+      /* weeks run Monday to Sunday (UTC), and the default is the four ending with this one */
+      const monday = (ms) => { const d = new Date(ms); d.setUTCHours(0, 0, 0, 0); return d.getTime() - ((d.getUTCDay() + 6) % 7) * DAY; };
+      let startMs = NaN;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(String(req.query.start || ""))) startMs = Date.parse(`${req.query.start}T00:00:00Z`);
+      startMs = Number.isFinite(startMs) ? monday(startMs) : monday(Date.now()) - (weeks - 1) * 7 * DAY;
+      const endMs = startMs + weeks * 7 * DAY;
+      const ms = (x) => (x && x.toMillis ? x.toMillis() : 0);
+
+      const roster = await db().collection("teacherStudents").doc(req.user.uid).collection("roster").get();
+      const people = new Map(); // uid -> { name, items: [] }
+      const person = (uid, name) => {
+        if (!people.has(uid)) people.set(uid, { uid, name: name || "Student", items: [] });
+        else if (name && people.get(uid).name === "Student") people.get(uid).name = name;
+        return people.get(uid);
+      };
+      roster.docs.forEach((d) => person(d.id, d.data().name));
+
+      const [wbs, papers] = await Promise.all([
+        db().collection("workbookAssignments").where("teacherUid", "==", req.user.uid).limit(80).get(),
+        db().collection("sharedPapers").where("ownerUid", "==", req.user.uid).limit(80).get(),
+      ]);
+      const seen = new Set();
+      const take = async (snap, kind) => {
+        await Promise.all(snap.docs.map(async (d) => {
+          const a = d.data();
+          const rs = await d.ref.collection("results").get();
+          rs.docs.forEach((x) => {
+            const r = x.data();
+            const at = ms(r.lastAt);
+            if (at < startMs || at >= endMs) return;
+            const pct = Number.isFinite(r.lastPct) ? r.lastPct : 0;
+            person(x.id, r.name).items.push({
+              kind, code: a.code || d.id, title: a.title || (kind === "paper" ? "Mock paper" : "Workbook"),
+              pct, at, week: Math.floor((at - startMs) / (7 * DAY)), attempts: r.attempts || 1,
+            });
+            seen.add(`${kind}:${d.id}`);
+          });
+        }));
+      };
+      await Promise.all([take(wbs, "workbook"), take(papers, "paper")]);
+
+      const mean = (a) => (a.length ? Math.round(a.reduce((s, v) => s + v, 0) / a.length) : null);
+      const students = [...people.values()].map((p) => {
+        const wk = Array.from({ length: weeks }, (_, w) => {
+          const items = p.items.filter((i) => i.week === w).sort((x, y) => x.at - y.at);
+          return { completed: items.length, avg: mean(items.map((i) => i.pct)), items };
+        });
+        return { uid: p.uid, name: p.name, weeks: wk, completed: p.items.length, avg: mean(p.items.map((i) => i.pct)) };
+      }).sort((a, b) => a.name.localeCompare(b.name));
+
+      const all = [...people.values()].flatMap((p) => p.items);
+      const classWeeks = Array.from({ length: weeks }, (_, w) => {
+        const items = all.filter((i) => i.week === w);
+        return { completed: items.length, avg: mean(items.map((i) => i.pct)), students: new Set(students.filter((s) => s.weeks[w].completed).map((s) => s.uid)).size };
+      });
+      res.json({
+        ok: true, teacher: me.name || me.displayName || "", weeks,
+        from: new Date(startMs).toISOString().slice(0, 10), to: new Date(endMs - DAY).toISOString().slice(0, 10),
+        weekStarts: Array.from({ length: weeks }, (_, w) => new Date(startMs + w * 7 * DAY).toISOString().slice(0, 10)),
+        assignments: seen.size, students, classWeeks,
+      });
+    } catch (err) {
+      console.error("[/api/workbooks/compile]", err.message);
+      res.status(500).json({ error: "Could not compile the results." });
+    }
+  });
+
   return router;
 };

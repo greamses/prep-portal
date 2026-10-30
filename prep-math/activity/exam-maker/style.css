@@ -409,3 +409,30 @@ button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
 /* the "any colour" swatch: a colour wheel until a custom colour is chosen, then that colour */
 .xm-sw--wheel { background: conic-gradient(#e86f6f, #f4c95d, #7cc47c, #6fb7e8, #c9a3ee, #e86f6f); }
 .xm-sw--wheel.has-colour { background: var(--sw); }
+
+/* ── done: the grade stamp, the score, and the suggestion to print ───────────── */
+.xp-receipt .xp-receipt__paper { position: relative; }
+.xp-student em { display: grid; place-items: center; font-style: normal; font-weight: 800; font-size: 11pt; color: var(--ci); }
+.xp-stamp { position: absolute; right: 9mm; top: 2.5mm; width: 26mm; height: 26mm; border-radius: 50%; display: grid; grid-template-rows: auto auto auto; place-content: center; justify-items: center; align-content: center; gap: 0.2mm; text-align: center; color: #b0453d; border: 0.9mm solid #b0453d; box-shadow: inset 0 0 0 0.5mm #b0453d; background: rgba(255, 253, 247, 0.55); transform: rotate(-12deg); mix-blend-mode: multiply; pointer-events: none; animation: xp-stamp-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both; z-index: 3; }
+.xp-stamp.is-still { animation: none; }
+.xp-stamp b { font-size: 15mm; line-height: 0.95; font-weight: 900; font-family: "Unbounded", "JetBrains Mono", sans-serif; }
+.xp-stamp span { font-size: 3.1mm; font-weight: 800; letter-spacing: 0.04em; }
+.xp-stamp i { font-style: normal; font-size: 2.2mm; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+@keyframes xp-stamp-in { from { transform: rotate(-12deg) scale(2.4); opacity: 0; } to { transform: rotate(-12deg) scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .xp-stamp { animation: none; } }
+.xp-selfmark { display: flex; align-items: center; gap: 0.5rem; margin-top: 1.2mm; font-weight: 700; }
+.xp-selfmark input { width: 3.6rem; font: inherit; padding: 0.1rem 0.3rem; border: 1px solid rgba(42, 39, 35, 0.4); background: #fff; color: #1d1b18; }
+.xo-done { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); z-index: 10055; max-width: min(36rem, 94vw); display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem 1rem; background: #fff3a8; color: #1d1b18; font: 600 0.85rem/1.4 "JetBrains Mono", ui-monospace, monospace; box-shadow: 0 6px 22px rgba(42, 39, 35, 0.3); }
+.xo-done__say { flex: 1 1 auto; }
+@media print {
+  .xo-done { display: none !important; }
+  .xp-stamp { color: #b0453d !important; border: 0.9mm solid #b0453d !important; box-shadow: inset 0 0 0 0.5mm #b0453d !important; animation: none !important; mix-blend-mode: multiply; }
+  .xp-student em { color: var(--ci) !important; }
+  .xp-selfmark input { border: 1px solid #1d1b18 !important; background: #fff !important; color: #1d1b18 !important; }
+}
+
+/* the student's name, typed on the line at the top of the paper */
+.xp-student input.xp-name { flex: 1; min-width: 0; height: 6mm; padding: 0 1mm; border: 0; border-bottom: 0.4mm solid #1d1b18; border-radius: 0; background: transparent; font: 600 10pt/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0; text-transform: none; color: #1d1b18; outline: none; }
+.xp-student input.xp-name::placeholder { color: #b6afa4; font-weight: 400; }
+.xp-student input.xp-name:focus { background: color-mix(in srgb, var(--c) 14%, transparent); }
+@media print { .xp-student input.xp-name { border-bottom: 0.4mm solid #1d1b18 !important; color: #1d1b18 !important; background: transparent !important; } .xp-student input.xp-name::placeholder { color: transparent; } }

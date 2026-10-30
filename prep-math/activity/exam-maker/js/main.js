@@ -64,6 +64,9 @@ const live = createLive(sheet, {
   getAttempt: () => state.head.attempt,
   /* the OMR toggle on a paper that has no sheet makes one */
   ensureOmr: () => { state.head.omr = true; $("xm-omr").checked = true; clearTimeout(drawTimer); draw(); save(); },
+  /* every question answered and the writing has stopped: score it, stamp it, suggest printing */
+  onComplete: () => { if (!live.checked) $("xm-check").click(); },
+  onPrint: () => $("xm-print").click(),
 });
 
 function pageRule() {
@@ -584,7 +587,7 @@ function paintScore() {
   if (!live.on) { el.textContent = ""; return; }
   const s = live.score(state.questions);
   if (live.checked) {
-    el.textContent = `${s.won} of ${s.auto} marks on the questions marked for you` + (s.manual ? ` · ${s.manual} written to mark yourself` : "");
+    el.textContent = `${s.won} of ${s.outOf} marks` + (s.pending ? ` · mark your ${s.pending} written answer${s.pending === 1 ? "" : "s"}` : "");
   } else {
     el.textContent = `${s.answered} of ${s.total} answered`;
   }

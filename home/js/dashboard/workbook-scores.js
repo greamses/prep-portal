@@ -39,8 +39,12 @@ export function workbookScoresPanelHTML() {
           <p class="db-kicker" id="db-wb-kicker">Workbooks</p>
           <h2 class="db-panel-title">Scores</h2>
         </div>
-        <a class="db-icon-btn ib-blue" href="/prep-math/activity/maths-workbook/"
-           title="Set a workbook for your class">${I.plus}</a>
+        <span class="db-icon-row">
+          <a class="db-icon-btn ib-green" href="/results-compiler/"
+             title="Weekly results: four weeks, with a graph for each student">${I.activity || I.papers || ""}</a>
+          <a class="db-icon-btn ib-blue" href="/prep-math/activity/maths-workbook/"
+             title="Set a workbook for your class">${I.plus}</a>
+        </span>
       </div>
       <div id="db-wb-notices"></div>
       <div class="db-assign-list" id="db-wb-list"><div class="db-empty">Loading…</div></div>
@@ -246,6 +250,7 @@ function injectStyles() {
   const s = document.createElement("style");
   s.id = "wbs-styles";
   s.textContent = `
+    .db-icon-row { display: inline-flex; gap: 0.4rem; align-items: center; }
     .wbs-one { padding: 0.75rem; }
     .wbs-one + .wbs-one { margin-top: 0.5rem; }
     .wbs-one > summary { list-style: none; cursor: pointer; }

@@ -1,0 +1,99 @@
+/* Weekly results: a teacher's compiler. The report is a sheet of white paper with
+   fixed colours (nothing on it reads a theme token), so it prints as it looks. */
+
+.rc-main { max-width: 1120px; margin: 0 auto; padding: 6rem 1rem 4rem; color: var(--text-primary, #2a2723); }
+.rc-hero { text-align: center; margin-bottom: 1.4rem; }
+.rc-eyebrow { display: block; font: 700 0.72rem/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-secondary, #6b655c); }
+.rc-title { margin: 0.6rem 0 0.4rem; font: 900 clamp(2rem, 5vw, 3rem)/1 "Unbounded", sans-serif; letter-spacing: -0.02em; }
+.rc-title em { color: #f4c95d; font-style: normal; }
+.rc-lead { max-width: 40rem; margin: 0 auto; font: 400 0.9rem/1.6 "JetBrains Mono", ui-monospace, monospace; color: var(--text-secondary, #6b655c); }
+
+/* glyph-only buttons: the name is the tooltip, kept hidden for a screen reader */
+.wb-btn__ico { display: grid; place-items: center; width: 1.15rem; height: 1.15rem; }
+.wb-btn__ico svg { width: 100%; height: 100%; display: block; }
+.wb-btn__name { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+.rc-controls { margin: 0 auto 1rem; max-width: 52rem; }
+.rc-controls__paper { display: flex; flex-wrap: wrap; align-items: end; gap: 0.7rem 1rem; padding: 0.9rem 1.2rem; }
+.rc-field { display: grid; gap: 0.25rem; font: 700 0.66rem/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; }
+.rc-field input, .rc-field select { font: 600 0.85rem/1.2 "JetBrains Mono", ui-monospace, monospace; padding: 0.4rem 0.5rem; border: 1px solid rgba(42, 39, 35, 0.35); border-radius: 0; background: #fff; color: #2a2723; }
+.rc-toggle { display: flex; align-items: center; gap: 0.45rem; font: 600 0.78rem/1.3 "JetBrains Mono", ui-monospace, monospace; }
+.rc-spacer { flex: 1 1 auto; }
+.rc-msg { text-align: center; min-height: 1.3em; margin: 0 0 1rem; font: 600 0.85rem/1.4 "JetBrains Mono", ui-monospace, monospace; color: var(--text-secondary, #6b655c); }
+
+/* ── the sheet ─────────────────────────────────────────────────────────── */
+.rc-sheet { background: #fff; color: #2a2723; padding: 1.6rem 1.8rem 1.4rem; box-shadow: 0 6px 22px rgba(42, 39, 35, 0.16); font-family: "JetBrains Mono", ui-monospace, monospace; }
+.rc-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.8rem 2rem; align-items: end; padding-bottom: 0.9rem; border-bottom: 2px solid #2a2723; }
+.rc-head__eyebrow { margin: 0; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #6b655c; }
+.rc-head h2 { margin: 0.3rem 0 0; font: 900 1.5rem/1.1 "Unbounded", sans-serif; letter-spacing: -0.01em; }
+.rc-head__by { margin: 0; text-align: right; font-size: 0.74rem; line-height: 1.6; color: #6b655c; }
+.rc-block { margin-top: 1.2rem; }
+.rc-h { margin: 0 0 0.6rem; font: 700 0.72rem/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0.16em; text-transform: uppercase; color: #6b655c; }
+
+.rc-classrow { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(15rem, 1fr); gap: 1.2rem; align-items: start; }
+.rc-tablewrap { overflow-x: auto; }
+.rc-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.rc-table th, .rc-table td { border: 1px solid #d9d3c8; padding: 0.35rem 0.45rem; text-align: center; }
+.rc-table thead th { background: #f3efe6; font-size: 0.7rem; letter-spacing: 0.06em; }
+.rc-table thead small { display: block; font-weight: 400; color: #6b655c; }
+.rc-table tbody th { text-align: left; font-weight: 700; white-space: nowrap; }
+.rc-cell b { display: block; font-size: 0.82rem; }
+.rc-cell small { color: #5a544a; font-size: 0.66rem; }
+.rc-cell--good { background: #d9eed2; }
+.rc-cell--mid { background: #fbefc4; }
+.rc-cell--low { background: #f6d3cf; }
+.rc-cell--none { background: #f7f4ec; color: #a39b8c; }
+.rc-num { font-weight: 700; }
+.rc-total th, .rc-total td { border-top: 2px solid #2a2723; }
+.rc-pill { display: inline-block; min-width: 1.5rem; padding: 0.1rem 0.35rem; font-style: normal; font-weight: 900; border: 1px solid #2a2723; }
+.rc-pill--good { background: #7cc47c; } .rc-pill--mid { background: #f4c95d; } .rc-pill--low { background: #e8837a; }
+.rc-classchart { margin: 0; }
+.rc-classchart figcaption { text-align: center; font-size: 0.68rem; color: #6b655c; margin-top: 0.2rem; }
+.rc-chart { width: 100%; height: auto; display: block; }
+
+.rc-students { display: grid; grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr)); gap: 1rem; }
+.rc-student { border: 1px solid #cfc8bb; padding: 0.8rem 0.9rem 0.9rem; background: #fffdf7; break-inside: avoid; }
+.rc-student__head { display: grid; grid-template-columns: 1fr auto; gap: 0.1rem 0.6rem; align-items: center; }
+.rc-student__head h3 { margin: 0; font: 800 1rem/1.2 "Unbounded", sans-serif; }
+.rc-student__sum { grid-column: 1; font-size: 0.72rem; color: #6b655c; }
+.rc-stamp { grid-column: 2; grid-row: 1 / span 2; display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 50%; border: 2px solid; font: 900 1.3rem/1 "Unbounded", sans-serif; font-style: normal; transform: rotate(-10deg); }
+.rc-stamp--good { color: #2f6140; border-color: #2f6140; } .rc-stamp--mid { color: #8a6518; border-color: #8a6518; } .rc-stamp--low { color: #b0453d; border-color: #b0453d; }
+.rc-weeks { list-style: none; margin: 0.5rem 0 0; padding: 0; font-size: 0.74rem; }
+.rc-weeks > li { padding: 0.3rem 0; border-top: 1px dashed #d9d3c8; }
+.rc-weeks ul { list-style: none; margin: 0.2rem 0 0; padding: 0 0 0 0.9rem; }
+.rc-weeks ul li { padding: 0.1rem 0; }
+.rc-dates { color: #6b655c; }
+.rc-kind { display: inline-block; padding: 0 0.3rem; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; background: #e7e2d6; }
+.rc-kind--paper { background: #d6e6f6; }
+.rc-score { float: right; }
+.rc-score--good { color: #2f6140; } .rc-score--mid { color: #8a6518; } .rc-score--low { color: #b0453d; }
+.rc-none { margin: 0.6rem 0 0; font-size: 0.74rem; color: #a39b8c; }
+.rc-foot { margin: 1.1rem 0 0; font-size: 0.66rem; color: #6b655c; border-top: 1px solid #d9d3c8; padding-top: 0.6rem; }
+
+@media (max-width: 800px) { .rc-classrow { grid-template-columns: 1fr; } .rc-head__by { text-align: left; } }
+
+/* ── print: a report ───────────────────────────────────────────────────── */
+@page { size: A4; margin: 12mm; }
+@media print {
+  .no-print, .site-nav, .page-paint, #prepbot, #chat-fab-wrap, #pp-loader, nav { display: none !important; }
+  html, body { background: #fff !important; }
+  .rc-main { max-width: none; padding: 0; }
+  .rc-sheet { box-shadow: none; padding: 0; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .rc-cell--good, .rc-pill--good { background: #d9eed2 !important; } .rc-pill--good { background: #7cc47c !important; }
+  .rc-cell--mid { background: #fbefc4 !important; } .rc-pill--mid { background: #f4c95d !important; }
+  .rc-cell--low { background: #f6d3cf !important; } .rc-pill--low { background: #e8837a !important; }
+  .rc-cell--none { background: #f7f4ec !important; }
+  .rc-table thead th { background: #f3efe6 !important; }
+  .rc-student { background: #fffdf7 !important; border-color: #8c8577 !important; }
+  .rc-kind { background: #e7e2d6 !important; } .rc-kind--paper { background: #d6e6f6 !important; }
+  .rc-stamp--good { color: #2f6140 !important; border-color: #2f6140 !important; } .rc-stamp--mid { color: #8a6518 !important; border-color: #8a6518 !important; } .rc-stamp--low { color: #b0453d !important; border-color: #b0453d !important; }
+  .rc-students { grid-template-columns: repeat(2, 1fr); }
+  .rc-per-page .rc-students { grid-template-columns: 1fr; }
+  .rc-per-page .rc-student { break-after: page; }
+  .rc-per-page .rc-student:last-child { break-after: auto; }
+}
+
+/* the receipt component's paper is a block; two classes make the controls one row */
+.pp-receipt .rc-controls__paper { display: flex; flex-wrap: wrap; align-items: end; gap: 0.7rem 1rem; }
+.rc-field input, .rc-field select { min-width: 9rem; }

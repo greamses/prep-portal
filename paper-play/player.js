@@ -34,13 +34,33 @@ let questions = [];
 
 const live = createLive(sheet, { onChange: () => paintScore(), store: `xm-live-paper-${code}`, getAttempt: () => head && head.attempt,
   /* the OMR sheet is the learner's to open, even when the paper was shared without one */
-  ensureOmr: () => { head.omr = true; draw(); } });
+  ensureOmr: () => { head.omr = true; draw(); },
+  /* every question answered and the writing has stopped: score it, stamp it, suggest printing */
+  onComplete: () => { if (!live.checked) $("xm-check").click(); },
+  onPrint: () => window.print(),
+  /* a name typed after the score went in is sent along, without counting as a new attempt */
+  onName: () => { if (live.checked) sendResult(); } });
+
+/* A finished paper's score goes back to the teacher who shared it, under the name typed on the paper.
+   It is sent again, a moment after, as the written answers are marked (not counted as a new attempt). */
+let sendTimer = 0, firstSend = false;
+function sendResult() {
+  clearTimeout(sendTimer);
+  sendTimer = setTimeout(async () => {
+    if (!live.checked) return;
+    const s = live.score(questions);
+    if (!s.outOf) return;
+    const first = firstSend; firstSend = false;
+    try { await api(`/api/workbooks/paper/${code}/result`, { name: live.name, won: s.won, outOf: s.outOf, first }); } catch { /* the page still works without it */ }
+  }, 900);
+}
 
 function paintScore() {
   const el = $("xm-score");
   const s = live.score(questions);
+  if (live.checked) sendResult();
   el.textContent = live.checked
-    ? `${s.won} of ${s.auto} marks on the questions marked for you` + (s.manual ? ` · ${s.manual} written to mark yourself` : "")
+    ? `${s.won} of ${s.outOf} marks` + (s.pending ? ` · mark your ${s.pending} written answer${s.pending === 1 ? "" : "s"}` : "")
     : `${s.answered} of ${s.total} answered`;
 }
 
@@ -86,6 +106,8 @@ async function open() {
     document.title = `Prep Portal | ${r.title || "Mock paper"}`;
     /* the paper is the learner's: its tools (framed activity pages) are let in without a subscription */
     document.documentElement.dataset.ppPaperPass = "1";
+    /* whoever holds the link has the paper free, and that includes printing it marked */
+    document.documentElement.classList.add("wb-print-ok");
     live.setOn(true);
     $("xm-check").hidden = false; $("xm-clear").hidden = false;
     /* the workbook tool rail, for working out beside the paper */
@@ -113,8 +135,9 @@ function faces() {
   faceOf($("xm-clear"), UI.eraser(18), "Clear answers");
 }
 $("xm-check").addEventListener("click", () => {
-  if (live.checked) live.reopen(); else live.check(questions);
+  if (live.checked) live.reopen(); else { live.check(questions); firstSend = true; }
   draw(); faces(); syncClock();
+  if (live.checked && !live.name.trim()) say("Type your name on the paper, so your teacher knows whose score this is.");
 });
 $("xm-clear").addEventListener("click", () => { live.clear(); draw(); faces(); clock.stop(); syncClock(); });
 faces();

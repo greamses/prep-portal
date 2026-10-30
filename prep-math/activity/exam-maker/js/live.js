@@ -16,6 +16,13 @@ import { UI } from "/utils/components/ui-icons.js";
 
 const KEY = "xm-live-v1";
 
+/* The student's own name, typed on the line at the top of the paper. It is kept on this device for
+   every paper (a learner types it once), and it is the name a shared paper's score goes to the
+   teacher under. */
+const NAME_KEY = "pp-student-name";
+export const savedName = () => { try { return (localStorage.getItem(NAME_KEY) || "").slice(0, 60); } catch { return ""; } };
+const keepName = (v) => { try { localStorage.setItem(NAME_KEY, String(v).slice(0, 60)); } catch { /* private window */ } };
+
 const load = (key) => { try { return JSON.parse(localStorage.getItem(key) || "null") || {}; } catch { return {}; } };
 
 /** "$\text{12 cm}$", " 12  CM. " and "12 cm" are the same answer. */
@@ -42,12 +49,24 @@ export function matches(typed, answer) {
 
 /* `store` is where this paper's answers are kept; a shared paper has its own, so
    it never mixes with the papers made on the bench */
-export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt = () => ({}), ensureOmr = () => {} } = {}) {
+export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt = () => ({}), ensureOmr = () => {}, onComplete = null, onPrint = null, onName = () => {} } = {}) {
   let answers = load(store);
   let on = false;
   let checked = false;
   let lastQuestions = [];
-  const keep = () => { try { localStorage.setItem(store, JSON.stringify(answers)); } catch { /* storage full or off */ } paintAttempts(); };
+  let announced = false;
+  let idle = 0;
+  const keep = () => {
+    try { localStorage.setItem(store, JSON.stringify(answers)); } catch { /* storage full or off */ }
+    paintAttempts();
+    /* DONE is when every question the paper asks to be attempted has an answer. The paper is then
+       scored on its own once the learner has stopped writing for a few seconds (more writing
+       puts the wait back), so nobody has to find a button. "Answer again" reopens it. */
+    clearTimeout(idle);
+    if (on && !checked && onComplete && isComplete(lastQuestions)) {
+      idle = setTimeout(() => { if (on && !checked && isComplete(lastQuestions)) onComplete(); }, 3500);
+    }
+  };
 
   const byId = (questions) => new Map(questions.map((q) => [q.id, q]));
 
@@ -65,6 +84,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     lastQuestions = questions;
     const qs = byId(questions);
     sheet.classList.add("xp-live");
+    wireName();
     sheet.querySelectorAll(".xp-q[data-qid]").forEach((el) => {
       const q = qs.get(el.dataset.qid);
       if (!q) return;
@@ -126,7 +146,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       if (lines) lines.replaceWith(box); else blk.appendChild(box);
     });
     paintAttempts();
-    if (checked) showResults(questions);
+    if (checked) { showResults(questions); paintStamp(true); announce(); }
   }
 
   /* "Attempted 2 of 3" in the heading of a section that says "answer any 3"; it turns to a warning
@@ -147,6 +167,25 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       span.setAttribute("data-nomath", "");
       span.textContent = done > n ? `Attempted ${done}, only ${n} count` : `Attempted ${done} of ${n}`;
       sec.appendChild(span);
+    });
+  }
+
+  /* the "Student's name" line, here and on the OMR sheet, becomes a place to type; they share one name */
+  function wireName() {
+    sheet.querySelectorAll(".xp-student > i:first-of-type").forEach((line) => {
+      if (line.classList.contains("xp-sheetwho__short")) return;
+      const input = document.createElement("input");
+      input.type = "text"; input.className = "xp-name"; input.maxLength = 60;
+      input.autocomplete = "name"; input.spellcheck = false;
+      input.setAttribute("aria-label", "Your name");
+      input.placeholder = "Type your name";
+      input.value = savedName();
+      input.addEventListener("input", () => {
+        keepName(input.value);
+        sheet.querySelectorAll(".xp-name").forEach((o) => { if (o !== input) o.value = input.value; });
+        onName(input.value);
+      });
+      line.replaceWith(input);
     });
   }
 
@@ -266,37 +305,140 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
         el.classList.toggle("is-ok", ok); el.classList.toggle("is-no", !ok);
         say(ok ? "is-ok" : "is-no", ok ? "Correct." : `Answer: ${esc(q.answer)}`);
       } else {
-        say("is-model", `<b>Model answer</b> ${esc(q.answer || "No model answer was written.")}<br><i>Mark this one yourself: it is worth ${q.marks} mark${q.marks === 1 ? "" : "s"}.</i>`);
+        say("is-model", `<b>Model answer</b> ${esc(q.answer || "No model answer was written.")}`
+          + `<label class="xp-selfmark">Your mark <input type="number" min="0" max="${q.marks}" step="1" inputmode="numeric" aria-label="Your mark for this answer, out of ${q.marks}"> out of ${q.marks}</label>`);
+        const box = body.querySelector(".xp-reveal.is-model .xp-selfmark input");
+        if (box) {
+          if (answers["m:" + q.id] !== undefined) box.value = answers["m:" + q.id];
+          box.addEventListener("input", () => {
+            if (box.value === "") delete answers["m:" + q.id];
+            else answers["m:" + q.id] = Math.max(0, Math.min(q.marks, Math.round(+box.value) || 0));
+            keep(); paintStamp(false); announce(); onChange();
+          });
+        }
       }
     });
   }
 
-  /** Marks won on the questions code can mark, and how many are left to the learner.
-      A section that says "answer any 3" counts its 3 best answers and is out of its 3 best-paying. */
+  const GRADES = [
+    { min: 70, g: "A", say: "Excellent" },
+    { min: 60, g: "B", say: "Very good" },
+    { min: 50, g: "C", say: "Good" },
+    { min: 45, g: "D", say: "Fair" },
+    { min: 40, g: "E", say: "Pass" },
+    { min: 0, g: "F", say: "Keep practising" },
+  ];
+  const gradeFor = (pct) => GRADES.find((x) => pct >= x.min) || GRADES[GRADES.length - 1];
+
+  /* how many of a kind are to be attempted ("answer any 3"), and whether a question has an answer */
+  const nFor = (att, type, count) => { const n0 = Math.round(Number(att[type]) || 0); return n0 > 0 && n0 < count ? n0 : count; };
+  const given = (q) => answers[q.id] !== undefined && String(answers[q.id]).trim() !== "";
+
+  /** Has every question that is to be attempted been answered? */
+  function isComplete(questions) {
+    if (!questions.length) return false;
+    const att = getAttempt() || {};
+    return ["mcq", "fill", "sub", "theory"].every((type) => {
+      const list = questions.filter((q) => q.type === type);
+      return !list.length || list.filter(given).length >= nFor(att, type, list.length);
+    });
+  }
+
+  /** Marks won, what the paper is out of, and what is still to be marked by hand.
+      A section that says "answer any 3" counts its 3 best answers and is out of its 3 best-paying.
+      The multiple choice and the one-word blanks are marked by the page; a written answer carries the
+      mark its marker gave it (the number beside the model answer). */
   function score(questions) {
     const att = getAttempt() || {};
-    let won = 0, auto = 0, manual = 0, answered = 0, total = 0;
+    const top = (nums, n) => nums.sort((a, b) => b - a).slice(0, n).reduce((s, m) => s + m, 0);
+    let won = 0, outOf = 0, auto = 0, manual = 0, answered = 0, total = 0, pending = 0;
     for (const type of ["mcq", "fill", "sub", "theory"]) {
       const list = questions.filter((q) => q.type === type);
       if (!list.length) continue;
-      const n0 = Math.round(Number(att[type]) || 0);
-      const n = n0 > 0 && n0 < list.length ? n0 : list.length;
+      const n = nFor(att, type, list.length);
       total += n;
-      const given = (q) => answers[q.id] !== undefined && String(answers[q.id]).trim() !== "";
-      answered += Math.min(n, list.filter(given).length);
+      const got = list.filter(given);
+      answered += Math.min(n, got.length);
+      const out = top(list.map((q) => q.marks), n);
+      outOf += out;
       if (type === "mcq" || type === "fill") {
         const right = (q) => (type === "mcq" ? answers[q.id] === q.answer : matches(answers[q.id], q.answer));
-        auto += list.map((q) => q.marks).sort((a, b) => b - a).slice(0, n).reduce((s, m) => s + m, 0);
-        won += list.filter((q) => given(q) && right(q)).map((q) => q.marks).sort((a, b) => b - a).slice(0, n).reduce((s, m) => s + m, 0);
-      } else manual += n;
+        auto += out;
+        won += top(got.filter(right).map((q) => q.marks), n);
+      } else {
+        manual += n;
+        const mark = (q) => Math.max(0, Math.min(q.marks, Number(answers["m:" + q.id]) || 0));
+        won += top(got.map(mark), n);
+        pending += Math.min(n, got.filter((q) => answers["m:" + q.id] === undefined).length);
+      }
     }
-    return { won, auto, manual, answered, total };
+    return { won, outOf, auto, manual, answered, total, pending, pct: outOf ? Math.round((100 * won) / outOf) : 0 };
+  }
+
+  /* ── the grade stamp ────────────────────────────────────────────────────
+     When the paper is checked, a rubber stamp comes down on the header: the grade, the marks, and
+     a word. The same marks go in the score box. It prints with the paper. */
+  function paintStamp(animate) {
+    sheet.querySelectorAll(".xp-stamp").forEach((n) => n.remove());
+    if (!on || !checked) return;
+    const host = sheet.querySelector(".xp-receipt__paper");
+    if (!host) return;
+    const s = score(lastQuestions);
+    const gr = gradeFor(s.pct);
+    const st = document.createElement("div");
+    st.className = "xp-stamp" + (animate ? "" : " is-still");
+    st.setAttribute("data-nomath", "");
+    st.setAttribute("role", "img");
+    st.setAttribute("aria-label", `Grade ${gr.g}, ${s.won} out of ${s.outOf} marks`);
+    st.innerHTML = `<b>${gr.g}</b><span>${s.won} / ${s.outOf}</span><i>${s.pending ? "marking" : gr.say}</i>`;
+    host.appendChild(st);
+    const box = sheet.querySelector(".xp-student em");
+    if (box) box.textContent = `${s.won} / ${s.outOf}`;
+  }
+
+  /* ── done: the result, and a suggestion to print it ────────────────────────
+     A note comes up with the score and grade and offers to print the marked paper. It follows the marks
+     as they are given to the written answers. */
+  function noticeText() {
+    const s = score(lastQuestions);
+    const gr = gradeFor(s.pct);
+    return s.pending
+      ? `Scored ${s.won} of ${s.outOf} so far. Mark your ${s.pending} written answer${s.pending === 1 ? "" : "s"}, then print the paper.`
+      : `Done: ${s.won} of ${s.outOf} marks, grade ${gr.g} (${gr.say}). Print your marked paper to keep it.`;
+  }
+  function announce() {
+    if (!on || !checked) return;
+    const say = document.querySelector(".xo-done .xo-done__say");
+    if (say) { say.textContent = noticeText(); return; }
+    if (announced) return;
+    announced = true;
+    const box = document.createElement("div");
+    box.className = "xo-done";
+    box.setAttribute("role", "status");
+    box.innerHTML = `<span class="xo-done__say"></span>`;
+    const print = document.createElement("button");
+    print.type = "button"; print.className = "pp-btn xo-done__print";
+    faceOf(print, UI.print(18), "Print your marked paper");
+    print.addEventListener("click", () => (onPrint ? onPrint() : window.print()));
+    const close = document.createElement("button");
+    close.type = "button"; close.className = "pp-btn pp-btn--ghost xo-done__close";
+    faceOf(close, UI.close(16), "Close");
+    close.addEventListener("click", () => box.remove());
+    box.append(print, close);
+    document.body.appendChild(box);
+    box.querySelector(".xo-done__say").textContent = noticeText();
+  }
+  function dropResult() {
+    announced = false;
+    clearTimeout(idle);
+    sheet.querySelectorAll(".xp-stamp").forEach((n) => n.remove());
+    document.querySelector(".xo-done")?.remove();
   }
 
   return {
     get on() { return on; },
     get checked() { return checked; },
-    setOn(v) { on = !!v; if (!on) { checked = false; sheet.classList.remove("xp-live"); unmountDrawer(); } },
+    setOn(v) { on = !!v; if (!on) { checked = false; sheet.classList.remove("xp-live"); unmountDrawer(); dropResult(); } },
     /** The OMR drawer, opened or shut from a toolbar button (it opens by itself when a sheet exists). */
     get omrOpen() { return drawerOpen; },
     setOmrOpen(v) {
@@ -307,8 +449,12 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       t?.classList.toggle("is-open", drawerOpen);
     },
     check(questions) { checked = true; return score(questions); },
-    reopen() { checked = false; },
-    clear() { answers = {}; checked = false; keep(); },
+    reopen() { checked = false; dropResult(); },
+    clear() { answers = {}; checked = false; dropResult(); keep(); },
+    /** Has every question that is to be attempted been answered? */
+    complete: (questions) => isComplete(questions),
+    get name() { return savedName(); },
+    gradeFor,
     score,
     apply,
     /** Just before printing: a box nobody wrote in goes back to the ruled lines the
