@@ -82,7 +82,12 @@ function typeset() {
     try {
       await window.MathJax.startup.promise;
       await window.MathJax.typesetPromise([sheet]);
-    } catch { /* a bad formula leaves itself as text */ }
+    } catch {
+      /* one bad formula must not leave the whole paper raw: go question by question */
+      for (const el of sheet.querySelectorAll(".xp-q, .xp-key li")) {
+        try { await window.MathJax.typesetPromise([el]); } catch { /* this one stays as text */ }
+      }
+    }
     try { mathify(sheet); } catch { /* nothing to set */ }
   });
   return queue;
@@ -291,7 +296,7 @@ $("xm-ai-go").addEventListener("click", async () => {
 
 $("xm-print").addEventListener("click", async () => {
   clearTimeout(drawTimer); draw();
-  try { await loadMath(); await (window.MathJax.startup && window.MathJax.startup.promise); } catch { /* print plain */ }
+  try { await typeset(); } catch { /* print plain */ }
   window.print();
 });
 

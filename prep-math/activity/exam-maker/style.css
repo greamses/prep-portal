@@ -79,23 +79,32 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
 .xp { --c: #3b4cca; --cs: #e8ebfb; font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-size: 9.5pt; line-height: 1.6; color: #1d1b18; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .xp p { margin: 0; }
 
-/* page one: the header */
-.xp-head { margin-bottom: 6mm; break-inside: avoid; }
-.xp-head__band { display: flex; align-items: center; gap: 5mm; background: var(--c); color: #fff; padding: 4.5mm 6mm; border-bottom: 1.6mm solid var(--cs); }
-.xp-head__logo { width: 19mm; height: 19mm; object-fit: contain; background: #fff; padding: 1mm; flex: none; box-sizing: border-box; }
-.xp-head__logo--none { display: block; border: 0.4mm dashed rgba(255, 255, 255, 0.7); background: transparent; }
-.xp-head__words { flex: 1; min-width: 0; }
-.xp-head__school { font-family: "Unbounded", "Helvetica Neue", Arial, sans-serif; font-weight: 900; font-size: 15pt; line-height: 1.15; text-transform: uppercase; letter-spacing: 0.01em; }
-.xp-head__term { font-size: 9.5pt; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 1.4mm; opacity: 0.92; }
-.xp-head__subject { background: #fff; color: var(--c); font-family: "Unbounded", "Helvetica Neue", Arial, sans-serif; font-weight: 700; font-size: 11pt; padding: 2.4mm 4mm; text-align: center; max-width: 42mm; flex: none; }
-.xp-meta { display: grid; grid-template-columns: repeat(4, 1fr); border: 0.35mm solid var(--c); border-top: 0; }
-.xp-cell { padding: 1.8mm 3mm 2mm; border-left: 0.35mm solid var(--c); min-width: 0; }
-.xp-cell:first-child { border-left: 0; }
-.xp-cell span { display: block; font-size: 6.5pt; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c); font-weight: 700; }
-.xp-cell b { display: block; font-size: 10pt; min-height: 1.3em; overflow-wrap: anywhere; }
-.xp-student { display: flex; align-items: flex-end; gap: 3mm; margin-top: 4.5mm; font-size: 8pt; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: var(--c); }
-.xp-student i { flex: 1; border-bottom: 0.4mm solid #1d1b18; height: 6mm; }
-.xp-student em { width: 28mm; height: 9mm; border: 0.4mm solid var(--c); background: var(--cs); }
+/* page one: the header, as sticky notes stuck to the page */
+.xp-head { margin-bottom: 7mm; break-inside: avoid; }
+.xp-notes { display: flex; align-items: stretch; gap: 5mm; }
+.xp-note { position: relative; padding: 3.2mm 4.5mm 3mm; box-shadow: 0.5mm 0.9mm 1.8mm rgba(29, 27, 24, 0.24); box-sizing: border-box; }
+/* the strip of tape that holds it */
+.xp-note::before { content: ""; position: absolute; top: -2.6mm; left: 50%; width: 15mm; height: 5mm; margin-left: -7.5mm; background: rgba(255, 255, 255, 0.62); border: 0.2mm solid rgba(29, 27, 24, 0.12); transform: rotate(-2deg); }
+.xp-note span { display: block; font-size: 6.5pt; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; color: var(--c); }
+.xp-note b { display: block; font-size: 10pt; min-height: 1.3em; overflow-wrap: anywhere; }
+.xp-note--logo { background: #fff; padding: 2.4mm; transform: rotate(-2deg); flex: none; display: grid; place-items: center; }
+.xp-head__logo { width: 19mm; height: 19mm; object-fit: contain; display: block; }
+.xp-note--school { flex: 1; min-width: 0; background: var(--c); color: #fff; transform: rotate(0.5deg); padding: 4.5mm 6mm; }
+.xp-head__school { font-family: "Unbounded", "JetBrains Mono", monospace; font-weight: 900; font-size: 15pt; line-height: 1.15; text-transform: uppercase; }
+.xp-head__term { font-size: 8.5pt; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 1.6mm; opacity: 0.94; }
+.xp-note--subject { flex: none; max-width: 46mm; min-width: 30mm; background: #fff1a6; transform: rotate(-1.4deg); display: flex; flex-direction: column; justify-content: center; }
+.xp-note--subject b { font-family: "Unbounded", "JetBrains Mono", monospace; font-size: 12pt; color: #1d1b18; margin-top: 1mm; }
+.xp-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4.5mm; margin-top: 6.5mm; }
+.xp-note--meta { background: var(--cs); }
+.xp-note--meta.xp-note--1 { transform: rotate(-0.9deg); }
+.xp-note--meta.xp-note--2 { transform: rotate(0.7deg); background: #fff1a6; }
+.xp-note--meta.xp-note--3 { transform: rotate(-0.5deg); }
+.xp-note--meta.xp-note--4 { transform: rotate(0.9deg); background: #fff1a6; }
+.xp-student { display: flex; align-items: stretch; gap: 5mm; margin-top: 6.5mm; }
+.xp-note--name { flex: 1; background: #fff1a6; transform: rotate(-0.4deg); padding-bottom: 2mm; }
+.xp-note--name i { display: block; border-bottom: 0.4mm solid #1d1b18; height: 7mm; }
+.xp-note--score { width: 34mm; background: var(--cs); transform: rotate(0.8deg); }
+.xp-note--score em { display: block; height: 7.5mm; }
 
 /* sections */
 .xp-sec { margin-top: 6mm; }

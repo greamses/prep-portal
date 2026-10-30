@@ -110,23 +110,26 @@ function banner(type, qs, idx) {
 
 function header(h, total) {
   const tl = [h.term, h.year].filter(Boolean).join(" · ");
-  const cell = (k, v) => `<div class="xp-cell"><span>${k}</span><b>${esc(v) || "&nbsp;"}</b></div>`;
+  const cell = (k, v, n) => `<div class="xp-note xp-note--meta xp-note--${n}"><span>${k}</span><b>${esc(v) || "&nbsp;"}</b></div>`;
   return `<header class="xp-head" data-nomath>
-    <div class="xp-head__band">
-      ${h.logo ? `<img class="xp-head__logo" src="${h.logo}" alt="" />` : `<span class="xp-head__logo xp-head__logo--none"></span>`}
-      <div class="xp-head__words">
+    <div class="xp-notes">
+      ${h.logo ? `<div class="xp-note xp-note--logo"><img class="xp-head__logo" src="${h.logo}" alt="" /></div>` : ""}
+      <div class="xp-note xp-note--school">
         <p class="xp-head__school">${esc(h.school) || "School name"}</p>
         <p class="xp-head__term">${esc(tl) || "Term · Year"} Examination</p>
       </div>
-      <div class="xp-head__subject">${esc(h.subject) || "Subject"}</div>
+      <div class="xp-note xp-note--subject"><span>Subject</span><b>${esc(h.subject) || "Subject"}</b></div>
     </div>
     <div class="xp-meta">
-      ${cell("Exam date", h.date)}
-      ${cell("Class", h.klass)}
-      ${cell("Time allowed", h.time)}
-      ${cell("Total marks", total ? String(total) : "")}
+      ${cell("Exam date", h.date, 1)}
+      ${cell("Class", h.klass, 2)}
+      ${cell("Time allowed", h.time, 3)}
+      ${cell("Total marks", total ? String(total) : "", 4)}
     </div>
-    <div class="xp-student"><span>Student's name</span><i></i><span>Score</span><em></em></div>
+    <div class="xp-student">
+      <div class="xp-note xp-note--name"><span>Student's name</span><i></i></div>
+      <div class="xp-note xp-note--score"><span>Score</span><em></em></div>
+    </div>
   </header>`;
 }
 

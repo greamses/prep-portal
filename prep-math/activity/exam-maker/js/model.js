@@ -45,6 +45,30 @@ export const BLANK_HEAD = {
   logo: "", colour: "indigo", paper: "a4", key: false, breakAt: {},
 };
 
+/* ── TeX as models actually write it ───────────────────────────────────── */
+
+const CMD = "times|div|frac|dfrac|sqrt|pi|cdot|neq|leq|geq|le|ge|pm|theta|alpha|beta|angle|triangle|circ|infty|approx|rightarrow|sum|int|log|sin|cos|tan|ldots|overline|vec|hat|mathrm|text|left|right";
+
+/**
+ * A model's TeX, made the way this page writes it ($…$, one backslash):
+ *   \\times           (escaped twice by the model)  →  \times
+ *   \( … \) / \[ … \]                                →  $ … $ / $$ … $$
+ *   2\times4 with no dollars at all                  →  $2\times4$
+ * `whole` wraps a short string (an option) entire when it holds a command.
+ * Safe to run again: a clean string comes back unchanged.
+ */
+export function fixTex(src, whole = false) {
+  let s = String(src == null ? "" : src);
+  /* no \b after the name: "\\times1" has no word boundary between s and 1 */
+  s = s.replace(new RegExp("\\\\{2,}(?=(?:" + CMD + "))", "g"), "\\");
+  s = s.replace(/\\{1,2}\(([\s\S]*?)\\{1,2}\)/g, "$$$1$$");
+  s = s.replace(/\\{1,2}\[([\s\S]*?)\\{1,2}\]/g, "$$$$$1$$$$");
+  if (s.indexOf("\\") < 0) return s;
+  if (whole && s.indexOf("$") < 0) return `$${s.trim()}$`;
+  const run = /(?:[A-Za-z0-9]+\s*)?\\[a-zA-Z]+(?:\{[^{}]*\})*(?:\s*[A-Za-z0-9^]+)?/g;
+  return s.split("$").map((seg, i) => (i % 2 ? seg : seg.replace(run, (m) => `$${m.trim()}$`))).join("$");
+}
+
 /** Whatever came in (storage, the model), coerced into a well-formed question. */
 export function clean(q) {
   const type = TYPES[q && q.type] ? q.type : "mcq";
@@ -52,15 +76,15 @@ export function clean(q) {
   const str = (v) => (v == null ? "" : String(v));
   const num = (v, d, lo, hi) => { const x = Math.round(Number(v)); return Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : d; };
   const out = {
-    id: str(q && q.id) || newId(), type, text: str(q && q.text).trim(),
-    options: [], answer: type === "mcq" ? 0 : str(q && q.answer).trim(),
+    id: str(q && q.id) || newId(), type, text: fixTex(str(q && q.text)).trim(),
+    options: [], answer: type === "mcq" ? 0 : fixTex(str(q && q.answer)).trim(),
     marks: num(q && q.marks, t.marks, 0, 100), lines: num(q && q.lines, t.lines, 0, 40),
     svg: str(q && q.svg),
   };
   if (type === "mcq") {
     const o = Array.isArray(q && q.options) ? q.options.map(str) : [];
     while (o.length < 4) o.push("");
-    out.options = o.slice(0, 4).map((s) => s.trim());
+    out.options = o.slice(0, 4).map((s) => fixTex(s, true).trim());
     let a = q && q.answer;
     if (typeof a === "string" && /^[A-Da-d]$/.test(a.trim())) a = "ABCD".indexOf(a.trim().toUpperCase());
     out.answer = num(a, 0, 0, 3);
@@ -79,7 +103,7 @@ export { ESC as esc };
  * lines become <br>. A lone "$" (a price) is left alone when it has no partner.
  */
 export function textHtml(src) {
-  const s = String(src == null ? "" : src);
+  const s = fixTex(src);
   let out = "", i = 0;
   const plain = (t) => ESC(t).replace(/\r?\n/g, "<br>");
   while (i < s.length) {
