@@ -100,6 +100,9 @@ textarea.xm-input { resize: vertical; line-height: 1.5; }
 
 /* sections */
 .xp-sec { margin-top: 6mm; }
+/* "start each section on a new page": the gap above is the page's own margin then */
+.xp-sec--page { break-before: page; }
+@media print { .xp-sec--page { margin-top: 0; } }
 .xp-banner { display: flex; align-items: baseline; flex-wrap: wrap; gap: 1mm 3.5mm; background: var(--cs); border-left: 2.2mm solid var(--c); padding: 2mm 4mm; margin-bottom: 4mm; break-after: avoid; }
 .xp-banner__tag { background: var(--c); color: #fff; font-size: 7.5pt; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.8mm 2.4mm; }
 .xp-banner__name { font-family: "Unbounded", "Helvetica Neue", Arial, sans-serif; font-weight: 700; font-size: 11pt; color: var(--c); }

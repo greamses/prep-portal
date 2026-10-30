@@ -135,9 +135,9 @@ export function paperHtml(head, questions) {
   const groups = ORDER.map((t) => [t, questions.filter((q) => q.type === t)]).filter(([, l]) => l.length);
   let no = 0;
   const numbered = [];
-  const body = groups.map(([t, list]) => {
+  const body = groups.map(([t, list], gi) => {
     const html = list.map((q) => { numbered.push(q); return t === "mcq" ? mcq(q, ++no) : written(q, ++no); }).join("");
-    return `<section class="xp-sec xp-sec--${t}">${banner(t, list)}${t === "mcq" ? `<div class="xp-cols">${html}</div>` : html}</section>`;
+    return `<section class="xp-sec xp-sec--${t}${head.breaks && gi ? " xp-sec--page" : ""}">${banner(t, list)}${t === "mcq" ? `<div class="xp-cols">${html}</div>` : html}</section>`;
   }).join("");
   const empty = groups.length ? "" : `<p class="xp-empty">No questions yet. Write some, or ask the model for a set.</p>`;
   return `<article class="xp" style="--c:${col.main};--cs:${col.soft}">

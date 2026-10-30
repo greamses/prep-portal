@@ -70,11 +70,13 @@ function fillHead() {
   heads.forEach((el) => { el.value = state.head[el.dataset.h] || ""; });
   $("xm-paper").value = state.head.paper;
   $("xm-key").checked = !!state.head.key;
+  $("xm-breaks").checked = !!state.head.breaks;
   paintLogo(); paintSwatches();
 }
 heads.forEach((el) => el.addEventListener("input", () => { state.head[el.dataset.h] = el.value; redraw(); }));
 $("xm-paper").addEventListener("change", (e) => { state.head.paper = e.target.value; redraw(); });
 $("xm-key").addEventListener("change", (e) => { state.head.key = e.target.checked; redraw(); });
+$("xm-breaks").addEventListener("change", (e) => { state.head.breaks = e.target.checked; redraw(); });
 
 function paintLogo() {
   const shot = $("xm-logo-shot");
