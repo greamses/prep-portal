@@ -61,3 +61,12 @@
   cursor: pointer;
 }
 .cw__ink:hover { border-color: #2a2723; }
+
+/* ── the wheel in a receipt beside whatever it colours (colour-pop.js) ──────── */
+.cw-pop { position: fixed; z-index: 10100; width: 11.6rem; }
+.cw-pop__paper { padding: 0.9rem 1rem; }
+.cw-btn { display: inline-block; vertical-align: middle; width: 2.4rem; height: 1.7rem; padding: 0; border: 2px solid rgba(42, 39, 35, 0.4); border-radius: 0; cursor: pointer; box-shadow: 0 1px 0 rgba(42, 39, 35, 0.2); }
+.cw-btn:hover, .cw-btn:focus-visible { outline: 2px solid #f4c95d; outline-offset: 1px; }
+input[type="color"].cw-upgraded { display: none; }
+/* `.pp-receipt` sets `position: relative`; two classes make the popover fixed whatever loads last */
+.pp-receipt.cw-pop { position: fixed; z-index: 10100; }

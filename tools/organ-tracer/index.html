@@ -396,5 +396,9 @@ load();
 if (!state.parts.length) newPart({ name: '', fill: '#f2a6c0' });
 renderParts(); syncForm(); draw();
 </script>
+<script type="module">
+  import { upgradeColourInputs } from "/utils/components/colour-pop.js";
+  upgradeColourInputs();
+</script>
 </body>
 </html>

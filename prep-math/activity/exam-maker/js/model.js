@@ -31,6 +31,18 @@ export const COLOURS = [
   { id: "plum",    name: "Mauve",      main: "#b093b8", soft: "#f2eaf4", ink: "#6b4a74" },
 ];
 
+/** A paper colour from any hex: the strong tone as chosen, a very light tint for the section receipts,
+    and a deeper ink for the small text and badges. (Pure maths, so this stays testable without a page.) */
+export function customColour(hex) {
+  let h = String(hex || "").trim().replace(/^#/, "");
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  if (!/^[0-9a-f]{6}$/i.test(h)) h = "7c8bbd";
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  const to = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
+  const mix = (t, k) => `#${to(r + (t - r) * k)}${to(g + (t - g) * k)}${to(b + (t - b) * k)}`;
+  return { id: "custom", name: "Custom", main: `#${h.toLowerCase()}`, soft: mix(255, 0.9), ink: mix(0, 0.55) };
+}
+
 let n = 0;
 export const newId = () => `q${Date.now().toString(36)}${(n++).toString(36)}`;
 
@@ -45,7 +57,7 @@ export function blank(type) {
 
 export const BLANK_HEAD = {
   school: "", term: "", year: "", subject: "", date: "", klass: "", time: "",
-  logo: "", colour: "indigo", paper: "a4", key: false, tint: false, clean: true, omr: false, theorySheet: false, timer: false, breakAt: {},
+  logo: "", colour: "indigo", paper: "a4", key: false, tint: false, clean: true, omr: false, theorySheet: false, timer: false, custom: "", breakAt: {},
   /* how many questions of each kind are to be attempted ("answer any 3"); none or 0 = all of them */
   attempt: {},
   /* what each question in a section is worth; every question follows its section

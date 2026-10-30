@@ -418,7 +418,8 @@ module.exports = function () {
     const head = {};
     for (const k of ["school", "term", "year", "subject", "date", "klass", "time"]) head[k] = clip(h[k], 120);
     head.logo = typeof h.logo === "string" && /^data:image\//.test(h.logo) && h.logo.length <= 200000 ? h.logo : "";
-    head.colour = COLOURS.includes(h.colour) ? h.colour : "indigo";
+    head.colour = COLOURS.includes(h.colour) || (h.colour === "custom" && /^#[0-9a-f]{6}$/i.test(String(h.custom))) ? h.colour : "indigo";
+    head.custom = head.colour === "custom" ? String(h.custom).toLowerCase() : "";
     head.paper = h.paper === "letter" ? "letter" : "a4";
     for (const k of ["tint", "clean", "omr", "theorySheet", "timer"]) head[k] = !!h[k];
     head.key = false;

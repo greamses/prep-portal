@@ -405,3 +405,7 @@ button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
 .xm-clock[hidden] { display: none; }
 .xm-clock.is-low { color: #b0453d; border-color: #b0453d; }
 @media print { .xm-clock { display: none !important; } }
+
+/* the "any colour" swatch: a colour wheel until a custom colour is chosen, then that colour */
+.xm-sw--wheel { background: conic-gradient(#e86f6f, #f4c95d, #7cc47c, #6fb7e8, #c9a3ee, #e86f6f); }
+.xm-sw--wheel.has-colour { background: var(--sw); }

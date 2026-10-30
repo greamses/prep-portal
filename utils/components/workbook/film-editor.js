@@ -42,6 +42,7 @@ import {
 import { filmBoth, saveDraft, publish, unpublish, forget } from "./film-store.js";
 import { needCss } from "./panels.js";
 import { mountWheel } from "/utils/components/colour-wheel.js";
+import { upgradeColourInputs } from "/utils/components/colour-pop.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
 
@@ -497,6 +498,8 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
         },
       });
     }
+    /* the fill, line and "and goes" colours use the same wheel, not the system's dialog */
+    upgradeColourInputs(side, { presets: INKS.map((i) => ({ name: i.name, hex: i.hex })) });
     mountTooltips();
   }
 

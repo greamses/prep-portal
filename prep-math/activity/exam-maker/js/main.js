@@ -7,11 +7,12 @@
    tomorrow.
    ========================================================================== */
 
-import { TYPES, COLOURS, BLANK_HEAD, blank, clean, parseQuestions, promptFor, svgPrompt, needsDiagram, extractSvg, checkQuestions, limitTo, verifyPrompt, applyChecks, totalMarks, paperMarks, esc } from "./model.js";
+import { TYPES, COLOURS, customColour, BLANK_HEAD, blank, clean, parseQuestions, promptFor, svgPrompt, needsDiagram, extractSvg, checkQuestions, limitTo, verifyPrompt, applyChecks, totalMarks, paperMarks, esc } from "./model.js";
 import { paperHtml, cleanSvg } from "./paper.js";
 import { loadPaper } from "./cbt.js";
 import { createLive } from "./live.js";
 import { mountTools } from "./tools.js";
+import { pickColour } from "/utils/components/colour-pop.js";
 import { createClock, minutesFor } from "./timer.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
@@ -173,15 +174,41 @@ $("xm-logo-file").addEventListener("change", async (e) => {
   paintLogo(); redraw();
 });
 
+/* The six presets, and a seventh swatch that opens the site's colour wheel (the presets sit beside it
+   there too) for any other colour. Built once; choosing only moves the ring, so the wheel's receipt
+   stays where it is while the colour is being found. */
 function paintSwatches() {
   const host = $("xm-swatches");
   host.innerHTML = COLOURS.map((c) =>
-    `<button type="button" class="xm-sw pp-plain${c.id === state.head.colour ? " is-on" : ""}" data-c="${c.id}" style="--sw:${c.main}" aria-label="${c.name}" data-tip="${c.name}"></button>`).join("");
+    `<button type="button" class="xm-sw pp-plain" data-c="${c.id}" style="--sw:${c.main}" aria-label="${c.name}" data-tip="${c.name}"></button>`).join("")
+    + `<button type="button" class="xm-sw xm-sw--wheel pp-plain" data-wheel="1" aria-label="Any colour" data-tip="Any colour"></button>`;
+  markSwatches();
+}
+function markSwatches() {
+  const custom = state.head.colour === "custom" && state.head.custom;
+  document.querySelectorAll("#xm-swatches [data-c]").forEach((b) => b.classList.toggle("is-on", !custom && b.dataset.c === state.head.colour));
+  const w = document.querySelector("#xm-swatches [data-wheel]");
+  if (w) { w.classList.toggle("is-on", !!custom); w.style.setProperty("--sw", custom ? customColour(state.head.custom).main : "transparent"); w.classList.toggle("has-colour", !!custom); }
 }
 $("xm-swatches").addEventListener("click", (e) => {
+  const wheel = e.target.closest("[data-wheel]");
+  if (wheel) {
+    const now = state.head.colour === "custom" && state.head.custom ? state.head.custom : (COLOURS.find((c) => c.id === state.head.colour) || COLOURS[0]).main;
+    pickColour(wheel, {
+      value: now,
+      presets: COLOURS.map((c) => ({ name: c.name, hex: c.main })),
+      onChange: (hex) => {
+        const preset = COLOURS.find((c) => c.main.toLowerCase() === hex.toLowerCase());
+        if (preset) { state.head.colour = preset.id; state.head.custom = ""; }
+        else { state.head.colour = "custom"; state.head.custom = hex; }
+        markSwatches(); redraw();
+      },
+    });
+    return;
+  }
   const b = e.target.closest("[data-c]");
   if (!b) return;
-  state.head.colour = b.dataset.c; paintSwatches(); redraw();
+  state.head.colour = b.dataset.c; state.head.custom = ""; markSwatches(); redraw();
 });
 
 /* ── the question editor ───────────────────────────────────────────────── */

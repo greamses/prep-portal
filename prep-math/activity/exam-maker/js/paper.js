@@ -8,7 +8,7 @@
    textHtml() so it is written as \( \) for MathJax to typeset afterwards.
    ========================================================================== */
 
-import { TYPES, ORDER, COLOURS, textHtml, blankHtml, esc, paperMarks, attemptOf } from "./model.js";
+import { TYPES, ORDER, COLOURS, customColour, textHtml, blankHtml, esc, paperMarks, attemptOf } from "./model.js";
 
 /* ── diagrams ──────────────────────────────────────────────────────────── */
 
@@ -253,7 +253,7 @@ function theorySheet(numbered) {
  */
 export function paperHtml(head, questions) {
   figNo = 0;
-  const col = COLOURS.find((c) => c.id === head.colour) || COLOURS[0];
+  const col = head.colour === "custom" && head.custom ? customColour(head.custom) : COLOURS.find((c) => c.id === head.colour) || COLOURS[0];
   const groups = ORDER.map((t) => [t, questions.filter((q) => q.type === t)]).filter(([, l]) => l.length);
   let no = 0;
   const numbered = [];
