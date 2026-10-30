@@ -867,6 +867,11 @@
       // Graph is already the studio's own rail panel; embedded (?embed=graph) there is no rail
       if (!/[?&]embed=/.test(location.search)) mountTools(document.body, { tools: ["calculator", "gm", "pin", "note"] });
     </script>
+      <script type="module">
+      /* every colour input here opens our own colour wheel (the presets sit beside it) */
+      import { upgradeColourInputs } from "/utils/components/colour-pop.js";
+      upgradeColourInputs();
+    </script>
     <!-- seo:about -->
     <section id="pp-about" class="pp-about" data-access="premium" hidden>
       <nav class="pp-about-crumbs" aria-label="Breadcrumb">
@@ -904,10 +909,5 @@
       </ul>
     </section>
     <!-- /seo:about -->
-      <script type="module">
-      /* every colour input here opens our own colour wheel (the presets sit beside it) */
-      import { upgradeColourInputs } from "/utils/components/colour-pop.js";
-      upgradeColourInputs();
-    </script>
-</body>
+  </body>
 </html>
