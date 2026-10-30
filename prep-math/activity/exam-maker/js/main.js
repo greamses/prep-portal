@@ -187,6 +187,7 @@ function renderList() {
     ? state.questions.map(card).join("")
     : `<p class="xm-hint">Nothing yet. Add a question with the buttons above, or generate a set.</p>`;
   enhanceSelects(list, { className: "pp-select--sm" });
+  renderBanks();
 }
 
 const find = (el) => {
@@ -250,21 +251,36 @@ list.addEventListener("click", (e) => {
   renderList(); draw(); save();
 });
 
-/* delete the whole bank: two clicks, the first only asks */
-const clearBtn = $("xm-clear");
-let clearTimer = 0;
-const clearLabel = () => { clearBtn.querySelector("b").textContent = "Delete all"; clearBtn.classList.remove("is-armed"); };
-clearBtn.addEventListener("click", () => {
-  const n = state.questions.length;
-  if (!n) return;
-  if (!clearBtn.classList.contains("is-armed")) {
-    clearBtn.classList.add("is-armed");
-    clearBtn.querySelector("b").textContent = `Delete all ${n}? Click again`;
-    clearTimer = setTimeout(clearLabel, 4000);
+/* delete a bank, or all of them: two clicks, the first only asks */
+const banks = $("xm-banks");
+let armTimer = 0;
+function renderBanks() {
+  const n = (t) => state.questions.filter((q) => q.type === t).length;
+  banks.innerHTML = Object.keys(TYPES).filter(n).map((t) =>
+    `<button class="pp-btn pp-btn--ghost xm-clear" type="button" data-clear="${t}">${UI.trash(16)} <b>Delete ${TYPES[t].label.toLowerCase()} (${n(t)})</b></button>`).join("");
+  banks.hidden = !banks.children.length;
+}
+const disarm = () => document.querySelectorAll("[data-clear].is-armed").forEach((b) => {
+  b.classList.remove("is-armed");
+  b.querySelector("b").textContent = b.dataset.label;
+});
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-clear]");
+  if (!b) { disarm(); return; }
+  const what = b.dataset.clear;
+  if (!b.classList.contains("is-armed")) {
+    disarm();
+    const label = b.querySelector("b");
+    b.dataset.label = label.textContent;
+    const n = what === "all" ? state.questions.length : state.questions.filter((q) => q.type === what).length;
+    if (!n) return;
+    b.classList.add("is-armed");
+    label.textContent = `Delete ${n}? Click again`;
+    clearTimeout(armTimer); armTimer = setTimeout(disarm, 4000);
     return;
   }
-  clearTimeout(clearTimer); clearLabel();
-  state.questions = [];
+  clearTimeout(armTimer);
+  state.questions = what === "all" ? [] : state.questions.filter((q) => q.type !== what);
   renderList(); draw(); save();
 });
 

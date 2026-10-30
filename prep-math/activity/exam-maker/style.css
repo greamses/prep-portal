@@ -191,3 +191,4 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
   .xp-lines { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(7.5mm - 0.3mm), #b9b2a5 calc(7.5mm - 0.3mm), #b9b2a5 7.5mm) !important; }
   .xp mjx-container, .xp mjx-container * { color: #1d1b18 !important; }
 }
+.xm-banks[hidden] { display: none; }
