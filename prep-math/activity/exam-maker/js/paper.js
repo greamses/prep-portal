@@ -97,15 +97,21 @@ function fill(q, no) {
   </div>`;
 }
 
+/** A section's head: a receipt (the site's .pp-receipt, used whole) with the
+    section's name stuck on it as a sticky note. */
+function bar(tag, name, rule, marks) {
+  return `<div class="pp-receipt xp-sec-receipt" data-nomath><div class="pp-receipt__paper xp-banner">
+    <span class="xp-banner__tag">${tag}</span>
+    <span class="xp-banner__name">${name}</span>
+    ${rule ? `<span class="xp-banner__rule">${rule}</span>` : ""}
+    ${marks ? `<span class="xp-banner__marks">${marks}</span>` : ""}
+  </div></div>`;
+}
+
 function banner(type, qs, idx) {
   const t = TYPES[type];
   const marks = totalMarks(qs);
-  return `<div class="xp-banner" data-nomath>
-    <span class="xp-banner__tag">Section ${letter(idx)}</span>
-    <span class="xp-banner__name">${t.head}</span>
-    <span class="xp-banner__rule">${t.rule}</span>
-    <span class="xp-banner__marks">${marks} ${marks === 1 ? "mark" : "marks"}</span>
-  </div>`;
+  return bar(`Section ${letter(idx)}`, t.head, t.rule, `${marks} ${marks === 1 ? "mark" : "marks"}`);
 }
 
 function header(h, total) {
@@ -141,7 +147,7 @@ function key(qs, head) {
     else a = q.answer ? textHtml(q.answer) : "—";
     return `<li><span class="xp-key__no" data-nomath>${i + 1}</span><div>${a}</div></li>`;
   }).join("");
-  return `<section class="xp-keypage${head.breakAt && head.breakAt.key === false ? " xp-keypage--flow" : ""}"><div class="xp-banner" data-nomath><span class="xp-banner__tag">Marking</span><span class="xp-banner__name">Answer key</span></div><ol class="xp-key">${rows}</ol></section>`;
+  return `<section class="xp-keypage${head.breakAt && head.breakAt.key === false ? " xp-keypage--flow" : ""}">${bar("Marking", "Answer key")}<ol class="xp-key">${rows}</ol></section>`;
 }
 
 /**
