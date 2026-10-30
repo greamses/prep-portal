@@ -7429,6 +7429,327 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Music theory: tuning and intervals",
+    items: [
+      {
+        id: "midi-note", name: "MIDI note number from a frequency", eq: "m = 69 + 12log_2(f/440)", find: "m",
+        letters: { m: "the MIDI note number", f: "the frequency in hertz" },
+        example: { f: "880" },
+        note: "middle C is 60 and the A above it is 69",
+      },
+      {
+        id: "midi-frequency", name: "Frequency from a MIDI note number", eq: "f = 440·2^((m - 69)/12)", find: "f",
+        letters: { f: "the frequency in hertz", m: "the MIDI note number" },
+        example: { m: "81" },
+      },
+      {
+        id: "semitone-ratio", name: "Ratio of one equal-tempered semitone", eq: "r = 2^(1/12)", find: "r",
+        letters: { r: "the ratio between neighbouring keys" },
+        example: {  },
+        note: "twelve of them multiply to 2, an octave",
+      },
+      {
+        id: "pythagorean-comma", name: "The Pythagorean comma", eq: "c = (3/2)^12/2^7", find: "c",
+        letters: { c: "the ratio left over when twelve perfect fifths are stacked beside seven octaves" },
+        example: {  },
+        note: "about 1.0136",
+      },
+      {
+        id: "harmonic-interval", name: "Semitones from the fundamental to a harmonic", eq: "s = 12log_2(n)", find: "s",
+        letters: { s: "the semitones above the fundamental", n: "the number of the harmonic" },
+        example: { n: "4" },
+      },
+      {
+        id: "fret-position", name: "Distance of a fret from the nut", eq: "d = L(1 - 2^(-n/12))", find: "d",
+        letters: { d: "the distance from the nut", L: "the length of the string", n: "the number of the fret" },
+        example: { L: "648", n: "12" },
+        note: "the twelfth fret is half way",
+      },
+      {
+        id: "interval-inversion", name: "Inverting an interval in semitones", eq: "I = 12 - s", find: "I",
+        letters: { I: "the inverted interval in semitones", s: "the interval in semitones" },
+        example: { s: "7" },
+      },
+      {
+        id: "diatonic-inversion", name: "Inverting an interval by its number", eq: "I = 9 - n", find: "I",
+        letters: { I: "the number of the inverted interval", n: "the number of the interval (a fifth is 5)" },
+        example: { n: "5" },
+        note: "a fifth turns into a fourth",
+      },
+    ],
+  },
+  {
+    group: "Music theory: rhythm and form",
+    items: [
+      {
+        id: "time-signature-beats", name: "Crotchet beats in a bar", eq: "B = 4n/d", find: "B",
+        letters: { B: "the crotchet beats in a bar", n: "the top number of the time signature", d: "the bottom number" },
+        example: { n: "6", d: "8" },
+      },
+      {
+        id: "tuplet-note", name: "Length of a note in a tuplet", eq: "D = dn/m", find: "D",
+        letters: { D: "the length of one note in the tuplet", d: "the length of the plain note", n: "the plain notes it takes the place of", m: "the notes in the tuplet" },
+        example: { d: "1", n: "4", m: "5" },
+        note: "a quintuplet is five in the time of four",
+      },
+      {
+        id: "multi-dotted", name: "Length of a note with several dots", eq: "D = d(2 - 1/2^n)", find: "D",
+        letters: { D: "the length of the note", d: "the length without dots", n: "the number of dots" },
+        example: { d: "4", n: "2" },
+      },
+      {
+        id: "bars-in-time", name: "Bars in a stretch of time", eq: "B = Tb/(60n)", find: "B",
+        letters: { B: "the number of bars", T: "the time in seconds", b: "the beats a minute", n: "the beats in a bar" },
+        example: { T: "120", b: "120", n: "4" },
+      },
+      {
+        id: "euclidean-gap", name: "Average gap between notes in a Euclidean rhythm", eq: "g = n/k", find: "g",
+        letters: { g: "the steps between hits", n: "the steps in the cycle", k: "the number of hits" },
+        example: { n: "16", k: "5" },
+      },
+    ],
+  },
+  {
+    group: "Music theory: sound and recording",
+    items: [
+      {
+        id: "sound-level-sum", name: "Two sounds together", eq: "L = 10log_10(10^(a/10) + 10^(b/10))", find: "L",
+        letters: { L: "the combined level in decibels", a: "the level of one sound", b: "the level of the other" },
+        example: { a: "60", b: "60" },
+        note: "two equal sounds are 3 decibels louder",
+      },
+      {
+        id: "sound-level-equal", name: "Several equal sounds together", eq: "L = a + 10log_10(n)", find: "L",
+        letters: { L: "the combined level in decibels", a: "the level of one sound", n: "the number of sounds" },
+        example: { a: "60", n: "100" },
+      },
+      {
+        id: "sound-level-distance", name: "Sound level at a different distance", eq: "L = a - 20log_10(d/D)", find: "L",
+        letters: { L: "the level at distance d", a: "the level at distance D", d: "the new distance", D: "the first distance" },
+        example: { a: "80", d: "10", D: "1" },
+      },
+      {
+        id: "room-mode", name: "Standing waves in a room", eq: "f = vn/(2L)", find: "f",
+        letters: { f: "the frequency", v: "the speed of sound", n: "the number of the mode", L: "the length of the room" },
+        example: { v: "340", n: "1", L: "5" },
+      },
+      {
+        id: "helmholtz", name: "Helmholtz resonator", eq: "f = (v/(2π))sqrt(A/(VL))", find: "f",
+        letters: { f: "the frequency", v: "the speed of sound", A: "the area of the opening", V: "the volume of the cavity", L: "the length of the neck" },
+        example: { v: "340", A: "1", V: "1", L: "1/4" },
+      },
+      {
+        id: "pcm-bitrate", name: "Bit rate of uncompressed sound", eq: "B = sdc", find: "B",
+        letters: { B: "the bits each second", s: "the samples each second", d: "the bits in each sample", c: "the channels" },
+        example: { s: "44100", d: "16", c: "2" },
+      },
+      {
+        id: "audio-file-size", name: "Size of a compressed recording", eq: "S = bt/8", find: "S",
+        letters: { S: "the size in bytes", b: "the bits each second", t: "the time in seconds" },
+        example: { b: "128000", t: "10" },
+      },
+      {
+        id: "decibels-to-ratio", name: "Voltage ratio from decibels", eq: "r = 10^(L/20)", find: "r",
+        letters: { r: "the voltage ratio", L: "the gain in decibels" },
+        example: { L: "40" },
+      },
+      {
+        id: "delay-time", name: "Delay time that matches the tempo", eq: "t = 60000/b", find: "t",
+        letters: { t: "the milliseconds for one beat", b: "the beats a minute" },
+        example: { b: "120" },
+      },
+      {
+        id: "lfo-rate", name: "Rate of a modulation that matches the tempo", eq: "f = b/60", find: "f",
+        letters: { f: "the cycles each second for one cycle a beat", b: "the beats a minute" },
+        example: { b: "120" },
+      },
+      {
+        id: "buffer-latency", name: "Delay from an audio buffer", eq: "L = 1000b/r", find: "L",
+        letters: { L: "the delay in milliseconds", b: "the samples in the buffer", r: "the samples each second" },
+        example: { b: "441", r: "44100" },
+      },
+    ],
+  },
+  {
+    group: "Cooking: scaling and conversions",
+    items: [
+      {
+        id: "recipe-scale", name: "Scaling a recipe", eq: "k = n/m", find: "k",
+        letters: { k: "the number to multiply every amount by", n: "the servings wanted", m: "the servings the recipe makes" },
+        example: { n: "6", m: "4" },
+      },
+      {
+        id: "scaled-quantity", name: "Amount of an ingredient for more servings", eq: "Q = aN/n", find: "Q",
+        letters: { Q: "the new amount", a: "the amount in the recipe", N: "the servings wanted", n: "the servings the recipe makes" },
+        example: { a: "200", N: "6", n: "4" },
+      },
+      {
+        id: "pan-scale", name: "Scaling a recipe for a different round tin", eq: "k = (D/d)^2", find: "k",
+        letters: { k: "the number to multiply every amount by", D: "the diameter of the new tin", d: "the diameter of the tin in the recipe" },
+        example: { D: "9", d: "6" },
+      },
+      {
+        id: "cups-to-ml", name: "Cups into millilitres", eq: "m = 240c", find: "m",
+        letters: { m: "the millilitres", c: "the cups" },
+        example: { c: "3/2" },
+      },
+      {
+        id: "tablespoons-to-ml", name: "Tablespoons into millilitres", eq: "m = 15t", find: "m",
+        letters: { m: "the millilitres", t: "the tablespoons" },
+        example: { t: "4" },
+      },
+      {
+        id: "teaspoons-to-ml", name: "Teaspoons into millilitres", eq: "m = 5t", find: "m",
+        letters: { m: "the millilitres", t: "the teaspoons" },
+        example: { t: "3" },
+      },
+      {
+        id: "ounces-to-grams", name: "Ounces into grams", eq: "g = 28.35z", find: "g",
+        letters: { g: "the grams", z: "the ounces" },
+        example: { z: "4" },
+      },
+      {
+        id: "pounds-to-kilograms", name: "Pounds into kilograms", eq: "k = 0.4536p", find: "k",
+        letters: { k: "the kilograms", p: "the pounds" },
+        example: { p: "10" },
+      },
+    ],
+  },
+  {
+    group: "Cooking: baking and food cost",
+    items: [
+      {
+        id: "baker-percentage", name: "Baker's percentage", eq: "P = 100a/F", find: "P",
+        letters: { P: "the baker's percentage", a: "the mass of the ingredient", F: "the mass of flour" },
+        example: { a: "360", F: "500" },
+        note: "everything is measured against the flour",
+      },
+      {
+        id: "dough-hydration", name: "Hydration of a dough", eq: "H = 100w/f", find: "H",
+        letters: { H: "the hydration, as a percentage", w: "the mass of water", f: "the mass of flour" },
+        example: { w: "350", f: "500" },
+      },
+      {
+        id: "ingredient-from-percentage", name: "Ingredient from its baker's percentage", eq: "m = pF/100", find: "m",
+        letters: { m: "the mass of the ingredient", p: "its baker's percentage", F: "the mass of flour" },
+        example: { p: "2", F: "500" },
+      },
+      {
+        id: "dough-total", name: "Total mass of a dough", eq: "T = F(100 + h + s + y)/100", find: "T",
+        letters: { T: "the mass of the dough", F: "the mass of flour", h: "the water, as a percentage of the flour", s: "the salt, as a percentage", y: "the yeast, as a percentage" },
+        example: { F: "500", h: "70", s: "2", y: "1" },
+      },
+      {
+        id: "dough-ball", name: "Mass of each dough ball", eq: "w = T/n", find: "w",
+        letters: { w: "the mass of one ball", T: "the mass of the dough", n: "the number of balls" },
+        example: { T: "1000", n: "4" },
+      },
+      {
+        id: "cooking-yield", name: "Cooking yield", eq: "Y = 100c/r", find: "Y",
+        letters: { Y: "the yield, as a percentage", c: "the mass after cooking", r: "the mass before cooking" },
+        example: { c: "70", r: "100" },
+      },
+      {
+        id: "trim-loss", name: "Trim loss in preparing food", eq: "W = 100(a - e)/a", find: "W",
+        letters: { W: "the waste, as a percentage", a: "the mass as bought", e: "the mass that can be eaten" },
+        example: { a: "100", e: "75" },
+      },
+      {
+        id: "food-cost-percentage", name: "Food cost percentage", eq: "C = 100f/s", find: "C",
+        letters: { C: "the food cost, as a percentage of sales", f: "the cost of the food", s: "the sales" },
+        example: { f: "30", s: "100" },
+      },
+      {
+        id: "menu-price", name: "Menu price from a target food cost", eq: "P = 100c/t", find: "P",
+        letters: { P: "the price to charge", c: "the cost of the food in one dish", t: "the food cost wanted, as a percentage" },
+        example: { c: "30", t: "30" },
+      },
+      {
+        id: "plate-cost", name: "Cost of an ingredient", eq: "C = pq", find: "C",
+        letters: { C: "the cost", p: "the price of one unit", q: "the number of units used" },
+        example: { p: "2000", q: "3/10" },
+      },
+      {
+        id: "cost-per-portion", name: "Cost of one portion", eq: "C = T/n", find: "C",
+        letters: { C: "the cost of one portion", T: "the cost of the whole recipe", n: "the portions" },
+        example: { T: "1200", n: "8" },
+      },
+      {
+        id: "pizza-price", name: "Price for each unit area of a round pizza", eq: "u = 4c/(πd^2)", find: "u",
+        letters: { u: "the price for each square centimetre", c: "the price", d: "the diameter" },
+        example: { c: "12", d: "12" },
+        note: "use it to compare two sizes",
+      },
+    ],
+  },
+  {
+    group: "Cooking: heat, time and nutrition",
+    items: [
+      {
+        id: "roast-time", name: "Roasting time", eq: "t = wk + c", find: "t",
+        letters: { t: "the time in minutes", w: "the mass in kilograms", k: "the minutes for each kilogram", c: "the extra minutes" },
+        example: { w: "2", k: "30", c: "20" },
+      },
+      {
+        id: "large-roast-time", name: "Cooking time for a large roast or bird", eq: "t = a·w^(2/3)", find: "t",
+        letters: { t: "the time in minutes", a: "a constant for the meat", w: "the mass in kilograms" },
+        example: { a: "30", w: "8" },
+        note: "time grows more slowly than the mass",
+      },
+      {
+        id: "boiling-point-altitude", name: "Boiling point of water at a height", eq: "T = 100 - h/300", find: "T",
+        letters: { T: "the boiling point in degrees Celsius", h: "the height above sea level in metres" },
+        example: { h: "1500" },
+        note: "about 1 degree lower for each 300 metres",
+      },
+      {
+        id: "microwave-time", name: "Microwave time at another power", eq: "t = aP/p", find: "t",
+        letters: { t: "the new time", a: "the time on the packet", P: "the power on the packet", p: "the power of your oven" },
+        example: { a: "120", P: "1000", p: "800" },
+      },
+      {
+        id: "brine-salt", name: "Salt for a brine", eq: "s = Pw/(100 - P)", find: "s",
+        letters: { s: "the mass of salt", P: "the strength wanted, as a percentage", w: "the mass of water" },
+        example: { P: "5", w: "950" },
+      },
+      {
+        id: "brix", name: "Brix of a sugar solution", eq: "B = 100s/(s + w)", find: "B",
+        letters: { B: "the degrees Brix", s: "the mass of sugar", w: "the mass of water" },
+        example: { s: "20", w: "80" },
+      },
+      {
+        id: "alcohol-by-volume", name: "Alcohol by volume of a home brew", eq: "A = 131.25(O - F)", find: "A",
+        letters: { A: "the alcohol by volume, as a percentage", O: "the original gravity, such as 1.050", F: "the final gravity" },
+        example: { O: "21/20", F: "1" },
+      },
+      {
+        id: "calories-per-serving", name: "Calories in one serving", eq: "c = C/n", find: "c",
+        letters: { c: "the calories in one serving", C: "the calories in the whole recipe", n: "the servings" },
+        example: { C: "2400", n: "6" },
+      },
+      {
+        id: "protein-energy-share", name: "Share of the energy from protein", eq: "P = 400p/E", find: "P",
+        letters: { P: "the share of the energy, as a percentage", p: "the grams of protein", E: "the calories in all" },
+        example: { p: "25", E: "500" },
+      },
+      {
+        id: "fat-energy-share", name: "Share of the energy from fat", eq: "F = 900f/E", find: "F",
+        letters: { F: "the share of the energy, as a percentage", f: "the grams of fat", E: "the calories in all" },
+        example: { f: "20", E: "500" },
+      },
+      {
+        id: "carbohydrate-energy-share", name: "Share of the energy from carbohydrate", eq: "C = 400c/E", find: "C",
+        letters: { C: "the share of the energy, as a percentage", c: "the grams of carbohydrate", E: "the calories in all" },
+        example: { c: "60", E: "500" },
+      },
+      {
+        id: "glycaemic-load", name: "Glycaemic load", eq: "G = IC/100", find: "G",
+        letters: { G: "the glycaemic load", I: "the glycaemic index of the food", C: "the grams of carbohydrate in the serving" },
+        example: { I: "70", C: "30" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
@@ -7705,7 +8026,7 @@ export const GROUPS = [
 /* The groups are written in the order they were made; the shelf reads better with
    a family kept together — every "Geometry: …" group right after Shapes, every
    "Physics: …" group right after Motion and forces. */
-for (const [family, anchor] of [["Geometry:", "Shapes"], ["Physics:", "Motion and forces"], ["Engineering:", "Engineering: forces, machines and structures"], ["Astronomy:", "Earth science: the solar system and stars"], ["Botany:", "Biology: the body"], ["Zoology:", "Botany: leaves, growth and crops"]]) {
+for (const [family, anchor] of [["Geometry:", "Shapes"], ["Physics:", "Motion and forces"], ["Engineering:", "Engineering: forces, machines and structures"], ["Astronomy:", "Earth science: the solar system and stars"], ["Botany:", "Biology: the body"], ["Zoology:", "Botany: leaves, growth and crops"], ["Music theory:", "Music: pitch, rhythm and sound"]]) {
   const kin = GROUPS.filter((g) => g.group.startsWith(family) && g.group !== anchor);
   for (const g of kin) GROUPS.splice(GROUPS.indexOf(g), 1);
   GROUPS.splice(GROUPS.findIndex((g) => g.group === anchor) + 1, 0, ...kin);
