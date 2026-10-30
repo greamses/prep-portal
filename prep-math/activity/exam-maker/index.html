@@ -114,7 +114,14 @@
                 <label class="wb-field xm-span2"><span>Paper</span>
                   <select class="wb-select" id="xm-paper"><option value="a4">A4</option><option value="letter">US Letter</option></select></label>
                 <label class="wb-toggle"><input type="checkbox" id="xm-key" /> Answer key at the back</label>
-                <label class="wb-toggle"><input type="checkbox" id="xm-breaks" /> New page for each section</label>
+                <fieldset class="wb-fieldset xm-span2 xm-breaks">
+                  <legend>Start on a new page</legend>
+                  <label class="wb-toggle"><input type="checkbox" data-break="mcq" /> Multiple choice</label>
+                  <label class="wb-toggle"><input type="checkbox" data-break="fill" /> Fill in the blank</label>
+                  <label class="wb-toggle"><input type="checkbox" data-break="sub" /> Short answer</label>
+                  <label class="wb-toggle"><input type="checkbox" data-break="theory" /> Theory</label>
+                  <label class="wb-toggle"><input type="checkbox" data-break="key" /> Answer key</label>
+                </fieldset>
               </div>
             </div>
           </div>

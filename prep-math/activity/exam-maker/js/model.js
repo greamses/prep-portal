@@ -42,7 +42,7 @@ export function blank(type) {
 
 export const BLANK_HEAD = {
   school: "", term: "", year: "", subject: "", date: "", klass: "", time: "",
-  logo: "", colour: "indigo", paper: "a4", key: false, breaks: false,
+  logo: "", colour: "indigo", paper: "a4", key: false, breakAt: {},
 };
 
 /** Whatever came in (storage, the model), coerced into a well-formed question. */

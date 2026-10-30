@@ -130,14 +130,14 @@ function header(h, total) {
   </header>`;
 }
 
-function key(qs) {
+function key(qs, head) {
   const rows = qs.map((q, i) => {
     let a;
     if (q.type === "mcq") a = `<b>${letter(q.answer)}</b> ${textHtml(q.options[q.answer] || "")}`;
     else a = q.answer ? textHtml(q.answer) : "—";
     return `<li><span class="xp-key__no" data-nomath>${i + 1}</span><div>${a}</div></li>`;
   }).join("");
-  return `<section class="xp-keypage"><div class="xp-banner" data-nomath><span class="xp-banner__tag">Marking</span><span class="xp-banner__name">Answer key</span></div><ol class="xp-key">${rows}</ol></section>`;
+  return `<section class="xp-keypage${head.breakAt && head.breakAt.key === false ? " xp-keypage--flow" : ""}"><div class="xp-banner" data-nomath><span class="xp-banner__tag">Marking</span><span class="xp-banner__name">Answer key</span></div><ol class="xp-key">${rows}</ol></section>`;
 }
 
 /**
@@ -152,12 +152,12 @@ export function paperHtml(head, questions) {
   const numbered = [];
   const body = groups.map(([t, list], gi) => {
     const html = list.map((q) => { numbered.push(q); return t === "mcq" ? mcq(q, ++no) : t === "fill" ? fill(q, ++no) : written(q, ++no); }).join("");
-    return `<section class="xp-sec xp-sec--${t}${head.breaks && gi ? " xp-sec--page" : ""}">${banner(t, list, gi)}${t === "mcq" ? `<div class="xp-cols">${html}</div>` : html}</section>`;
+    return `<section class="xp-sec xp-sec--${t}${gi && head.breakAt && head.breakAt[t] ? " xp-sec--page" : ""}">${banner(t, list, gi)}${t === "mcq" ? `<div class="xp-cols">${html}</div>` : html}</section>`;
   }).join("");
   const empty = groups.length ? "" : `<p class="xp-empty">No questions yet. Write some, or ask the model for a set.</p>`;
   return `<article class="xp" style="--c:${col.main};--cs:${col.soft}">
     ${header(head, totalMarks(questions))}
     ${body}${empty}
-    ${head.key && numbered.length ? key(numbered) : ""}
+    ${head.key && numbered.length ? key(numbered, head) : ""}
   </article>`;
 }

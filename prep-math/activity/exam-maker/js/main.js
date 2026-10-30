@@ -29,6 +29,9 @@ function load() {
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { /* private window */ }
   const head = { ...BLANK_HEAD, ...(saved && saved.head) };
+  /* the first version had one switch for every section */
+  if (saved && saved.head && saved.head.breaks && !saved.head.breakAt) head.breakAt = { mcq: true, fill: true, sub: true, theory: true };
+  delete head.breaks;
   if (!saved) {
     /* a school already set up in a workbook's letterhead is the same school */
     const l = loadHead();
@@ -93,13 +96,16 @@ function fillHead() {
   heads.forEach((el) => { el.value = state.head[el.dataset.h] || ""; });
   $("xm-paper").value = state.head.paper;
   $("xm-key").checked = !!state.head.key;
-  $("xm-breaks").checked = !!state.head.breaks;
+  document.querySelectorAll("[data-break]").forEach((el) => { const at = state.head.breakAt || {}; el.checked = el.dataset.break === "key" ? at.key !== false : !!at[el.dataset.break]; });
   paintLogo(); paintSwatches();
 }
 heads.forEach((el) => el.addEventListener("input", () => { state.head[el.dataset.h] = el.value; redraw(); }));
 $("xm-paper").addEventListener("change", (e) => { state.head.paper = e.target.value; redraw(); });
 $("xm-key").addEventListener("change", (e) => { state.head.key = e.target.checked; redraw(); });
-$("xm-breaks").addEventListener("change", (e) => { state.head.breaks = e.target.checked; redraw(); });
+document.querySelectorAll("[data-break]").forEach((el) => el.addEventListener("change", () => {
+  state.head.breakAt = { ...state.head.breakAt, [el.dataset.break]: el.checked };
+  redraw();
+}));
 
 function paintLogo() {
   const shot = $("xm-logo-shot");
