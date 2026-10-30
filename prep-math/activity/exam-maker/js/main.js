@@ -9,6 +9,7 @@
 
 import { TYPES, COLOURS, BLANK_HEAD, blank, clean, parseQuestions, promptFor, svgPrompt, needsDiagram, extractSvg, checkQuestions, limitTo, verifyPrompt, applyChecks, totalMarks, esc } from "./model.js";
 import { paperHtml, cleanSvg } from "./paper.js";
+import { loadPaper } from "./cbt.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { UI } from "/utils/components/ui-icons.js";
@@ -455,8 +456,59 @@ $("xm-print").addEventListener("click", async () => {
   window.print();
 });
 
+/* ── a CBT paper sent here by the picker's Paper mode ──────────────────────
+   `?cbt=axis|top|subject|topic|paper` (cbt.js). It replaces the paper on the
+   bench, so the one that was there is put aside first and one press brings it
+   back. The address is cleaned afterwards: a refresh must not load it again
+   over whatever has been edited since. */
+async function fromCbt() {
+  const u = new URL(location.href);
+  const spec = u.searchParams.get("cbt");
+  if (!spec) return;
+  const format = u.searchParams.get("format") || "";
+  u.searchParams.delete("cbt"); u.searchParams.delete("format");
+  history.replaceState(null, "", u.pathname + u.search + u.hash);
+
+  const out = $("xm-cbt-status");
+  let got = null;
+  try { got = await loadPaper(spec, format, state.head.marksEach); } catch { /* reported below */ }
+  if (!got || !got.questions.length) {
+    out.textContent = "That CBT paper could not be found, so the bench is as you left it.";
+    return;
+  }
+  const had = state.questions.length > 0;
+  if (had) {
+    try { localStorage.setItem(`${KEY}:before-cbt`, JSON.stringify({ head: state.head, questions: state.questions, ai: state.ai })); } catch { /* storage full */ }
+  }
+  state.questions = got.questions;
+  state.head.subject = got.head.subject;
+  state.head.klass = got.head.klass;
+  state.head.key = true;
+  flush();
+
+  const pics = got.pictures ? ` ${got.pictures} of them refer${got.pictures === 1 ? "s" : ""} to a picture the printed paper cannot show yet.` : "";
+  out.textContent = `Loaded ${got.questions.length} questions from the CBT paper, with the answer key at the back.${pics}`;
+  if (had) {
+    const undo = document.createElement("button");
+    undo.type = "button"; undo.className = "pp-btn pp-btn--ghost xm-undo";
+    undo.textContent = "Bring back my earlier paper";
+    undo.onclick = () => {
+      try {
+        const b = JSON.parse(localStorage.getItem(`${KEY}:before-cbt`) || "null");
+        if (!b) return;
+        state.head = { ...BLANK_HEAD, ...b.head }; state.questions = (b.questions || []).map(clean); state.ai = b.ai || {};
+        localStorage.removeItem(`${KEY}:before-cbt`);
+        fillHead(); renderList(); draw(); flush();
+        out.textContent = "Your earlier paper is back.";
+      } catch { out.textContent = "Could not bring it back."; }
+    };
+    out.append(" ", undo);
+  }
+}
+
 /* ── go ────────────────────────────────────────────────────────────────── */
 
+await fromCbt();
 fillHead(); renderList(); draw(); ico();
 enhanceSelects(document.querySelector(".xm-rail"), { className: "pp-select--sm" });
 mountTooltips();

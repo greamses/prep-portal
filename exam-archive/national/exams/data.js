@@ -112,6 +112,7 @@ let cbtState = {
   subject: null, subjectLabel: null,
   topic: null, paper: null,
   format: "",                       // "" | "mcq" | "short" | "theory"
+  mode: "cbt",                      // "cbt" (on screen) | "paper" (printed, in Exam Maker)
   _subjects: null, _topics: null, _papers: 1, _topicCount: 0,
 };
 
@@ -169,6 +170,7 @@ async function renderCbtFormat() {
   if (!wrap || !chips) return;
   wrap.style.display = "";
   const premium = await isPickerPremium();
+  renderCbtMode(premium);
   chips.querySelectorAll(".fmt-chip").forEach((chip) => {
     const fmt = chip.dataset.fmt || "";
     const locked = (fmt === "short" || fmt === "theory") && !premium;
@@ -192,6 +194,43 @@ async function renderCbtFormat() {
       cbtState.format = fmt;
     };
   });
+}
+
+// "How to sit it": CBT (on screen, as always) or Paper — the same paper opened in
+// the Exam Maker, laid out and ready to print. Paper is Premium like the Exam
+// Maker itself, so free users see it locked, as the written-answer chips are.
+function renderCbtMode(premium) {
+  const chips = document.querySelectorAll("#cbt-mode-chips .mode-chip");
+  const note = document.getElementById("mode-lock-note");
+  chips.forEach((chip) => {
+    const mode = chip.dataset.mode;
+    const locked = mode === "paper" && !premium;
+    chip.classList.toggle("locked", locked);
+    let lock = chip.querySelector(".fmt-lock");
+    if (locked && !lock) {
+      lock = document.createElement("span");
+      lock.className = "fmt-lock";
+      lock.textContent = "PRO";
+      chip.appendChild(lock);
+    } else if (!locked && lock) { lock.remove(); }
+    chip.classList.toggle("checked", mode === (cbtState.mode || "cbt"));
+    chip.onclick = () => {
+      if (chip.classList.contains("locked")) { if (note) note.style.display = ""; return; }
+      if (note) note.style.display = "none";
+      chips.forEach((c) => c.classList.remove("checked"));
+      chip.classList.add("checked");
+      cbtState.mode = mode;
+      syncModeLabel();
+    };
+  });
+  syncModeLabel();
+}
+
+// The big button says what it will do.
+function syncModeLabel() {
+  const el = beginBtn.querySelector(".cta-label");
+  if (!el || activeCat === "competition") return;
+  el.textContent = cbtState.mode === "paper" ? "Print this paper" : (HEADER_CONTENT[activeCat] || HEADER_CONTENT.national).ctaLabel;
 }
 
 function natUpdateReadyState() {
@@ -335,7 +374,7 @@ function initCbt(axis, region) {
   cbtState = {
     axis, region: region || null,
     top: null, topLabel: null, subject: null, subjectLabel: null, topic: null, paper: null,
-    format: "",
+    format: "", mode: "cbt",
     _subjects: null, _topics: null, _papers: 1, _topicCount: 0,
   };
   relabelCbtSteps();
@@ -1020,6 +1059,14 @@ function targetUrl() {
       paper: String(cbtState.paper),
     });
     if (cbtState.format) params.set("format", cbtState.format);
+    if (cbtState.mode === "paper") {
+      // Paper mode: the Exam Maker builds the printed paper from this same paper.
+      const p = new URLSearchParams({
+        cbt: [cbtState.axis, cbtState.top, cbtState.subject, cbtState.topic, cbtState.paper].join("|"),
+      });
+      if (cbtState.format) p.set("format", cbtState.format);
+      return `/prep-math/activity/exam-maker/?${p.toString()}`;
+    }
     return `../question/question.html?${params.toString()}`;
   }
 
