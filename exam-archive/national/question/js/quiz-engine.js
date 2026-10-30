@@ -51,7 +51,29 @@ const Quiz = (() => {
   // as its part, so the admin's off/free/premium state, the per-format
   // checkboxes AND this user's grant/block override all apply. Cached per format.
   const _writtenVerdict = {}; // format -> bool
+  /* A SHARE LINK'S PASS. `k=<code>` names a paper the sharer was allowed to give away whole; the
+     server says which paper, and it only counts if that is THIS one. It lifts the free-format limit
+     (written questions) and the paper-mode gate, for this paper only. */
+  let _seat;
+  async function sharedSeat() {
+    if (_seat !== undefined) return _seat;
+    _seat = false;
+    if (!PAGE_CONFIG.pass || PAGE_CONFIG.source !== "cbtlocal") return _seat;
+    try {
+      const { api } = await import("/utils/components/workbook/account.js");
+      const got = await api(`/api/workbooks/cbt-share/${encodeURIComponent(PAGE_CONFIG.pass)}`);
+      const axis = PAGE_CONFIG.axis === "exam" ? "exam" : "class";
+      const top = axis === "exam" ? PAGE_CONFIG.scheme : PAGE_CONFIG.cbtClass;
+      const here = [axis, top, (PAGE_CONFIG.subjects || [])[0], PAGE_CONFIG.topic, PAGE_CONFIG.paper || "1"].join("|");
+      _seat = !!got && got.key === here;
+    } catch (_) {
+      _seat = false;
+    }
+    return _seat;
+  }
+
   async function writtenAllowed(format) {
+    if (await sharedSeat()) return true;
     const part = format === "theory" ? "theory" : "short";
     if (part in _writtenVerdict) return _writtenVerdict[part];
     try {
@@ -901,14 +923,18 @@ const Quiz = (() => {
     if (PAGE_CONFIG.format) q.set("format", PAGE_CONFIG.format);
     if (PAGE_CONFIG.attempt) q.set("attempt", PAGE_CONFIG.attempt);
     if (PAGE_CONFIG.timed) q.set("timer", "1");
+    if (PAGE_CONFIG.pass) q.set("k", PAGE_CONFIG.pass);
 
-    let allowed = false;
+    let allowed = await sharedSeat();
     try {
+      if (allowed) throw 0; // a pass for this paper: nothing more to ask
       const { resolveUserAccess } = await import("/utils/features.js");
       allowed = (await resolveUserAccess({ featureId: "prep-math-activities", partId: "exam-maker", profile: await userProfile() })).allowed;
     } catch (_) {
-      const p = await userProfile();
-      allowed = !!(p && p.isPremium);
+      if (!allowed) {
+        const p = await userProfile();
+        allowed = !!(p && p.isPremium);
+      }
     }
     /* an icon with its name in the site's tooltip (kept, hidden, for a screen reader) */
     const a = document.createElement("a");

@@ -168,6 +168,25 @@ function paperSeat() {
   }
 }
 
+/* A CBT SHARE LINK'S PASS. A paper shared by someone who has the written answers carries `k=<code>`
+   (made by /api/workbooks/cbt-share). On the Exam Maker, an address of `?cbt=<paper>&k=<code>` is let in
+   when the server says that code names THAT paper and no other. Needs an account like everything here;
+   the admin's switches still win, and the AI endpoints still check the subscription on the server. */
+async function cbtSeat(user) {
+  try {
+    const q = new URLSearchParams(location.search);
+    const code = (q.get("k") || "").toUpperCase();
+    const spec = q.get("cbt");
+    if (!user || !spec || !/^[A-Z2-9]{6}$/.test(code)) return false;
+    const base = location.port === "5500" ? "http://127.0.0.1:5000" : "";
+    const r = await fetch(`${base}/api/workbooks/cbt-share/${code}`, { headers: { Authorization: `Bearer ${await user.getIdToken()}` } });
+    if (!r.ok) return false;
+    return (await r.json()).key === spec;
+  } catch (e) {
+    return false;
+  }
+}
+
 onAuthStateChanged(auth, async (user) => {
   clearTimeout(veilTimeout);
   if (!user) return toLogin();
@@ -198,7 +217,7 @@ onAuthStateChanged(auth, async (user) => {
   if (!featureId) {
     if (!ent) return reveal(); // read error → fail open (server still gates)
     if (ent.premium) return reveal();
-    return (await liveSeat()) || paperSeat() ? reveal() : toSubscribe();
+    return (await liveSeat()) || paperSeat() || (await cbtSeat(user)) ? reveal() : toSubscribe();
   }
 
   let verdict;
@@ -217,7 +236,7 @@ onAuthStateChanged(auth, async (user) => {
     // Only send to subscribe on a DEFINITIVE "not premium"; a failed profile
     // read fails open so a Firestore glitch never locks out a paying learner.
     if (!(entFresh && ent)) return reveal();
-    return (await liveSeat()) || paperSeat() ? reveal() : toSubscribe();
+    return (await liveSeat()) || paperSeat() || (await cbtSeat(user)) ? reveal() : toSubscribe();
   }
   return toDisabled(); // off / override-block / part-disabled
 });

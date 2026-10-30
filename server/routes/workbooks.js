@@ -480,5 +480,66 @@ module.exports = function () {
     }
   });
 
+  /* ══ CBT SHARE LINKS ═════════════════════════════════════════════════════
+     Sharing a CBT paper from the picker. The plain link works for anyone, but a free learner who
+     opens it is held to the free formats (multiple choice). A link made by someone who HAS written
+     answers (Short Answer / Theory, premium by default) carries `k=<code>`: a stored pass for that
+     one paper, so whoever opens it gets everything in it, the written questions, the paper mode and
+     the tool rail, free.
+
+       POST /api/workbooks/cbt-share        { axis, top, subject, topic, paper }  → { code }
+       GET  /api/workbooks/cbt-share/:code                                       → { key }
+
+     The code names one paper; the page compares that key with the paper in its own address, so a
+     code from one paper opens nothing else. Making one needs the access it hands out (the admin,
+     or the written-answers feature), so a free account cannot mint a pass. Opening needs an account
+     only. The same limits as every client-side gate apply: it is practice, and the question bank is
+     static, so this is a way in that is honest about who it is for, not a lock on the files. */
+
+  const cbtKey = (b) => [b.axis === "exam" ? "exam" : "class", b.top, b.subject, b.topic, String(b.paper || 1)].join("|");
+  const cbtOk = (b) => b && ["top", "subject", "topic"].every((k) => typeof b[k] === "string" && b[k].trim() && b[k].length <= 160);
+
+  router.post("/cbt-share", authenticate, async (req, res) => {
+    try {
+      const b = req.body || {};
+      if (!cbtOk(b)) return res.status(400).json({ error: "Choose a paper first." });
+      if (!isAdmin(req)) {
+        const [s, t] = await Promise.all([access.canUse(req, "cbt-written", "short"), access.canUse(req, "cbt-written", "theory")]);
+        if (!(s.allowed || t.allowed)) {
+          return res.status(402).json({ error: "A link that unlocks the paper needs a subscription. The plain link still works." });
+        }
+      }
+      const key = cbtKey(b);
+      /* one code per paper per person: pressing Share again hands back the same one */
+      const had = await db().collection("cbtShares").where("ownerUid", "==", req.user.uid).where("key", "==", key).limit(1).get();
+      if (!had.empty) return res.json({ ok: true, code: had.docs[0].id });
+      let code = null;
+      for (let i = 0; i < 8 && !code; i++) {
+        let c = "";
+        for (let k = 0; k < 6; k++) c += ALPHA[require("crypto").randomInt(ALPHA.length)];
+        if (!(await db().collection("cbtShares").doc(c).get()).exists) code = c;
+      }
+      if (!code) return res.status(500).json({ error: "Could not make a code, try again." });
+      await db().collection("cbtShares").doc(code).set({ code, key, ownerUid: req.user.uid, createdAt: stamp() });
+      res.json({ ok: true, code });
+    } catch (err) {
+      console.error("[/api/workbooks/cbt-share]", err.message);
+      res.status(500).json({ error: "Could not make the link." });
+    }
+  });
+
+  router.get("/cbt-share/:code", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code)) return res.status(404).json({ error: "That link isn't right." });
+      const snap = await db().collection("cbtShares").doc(code).get();
+      if (!snap.exists) return res.status(404).json({ error: "That link doesn't exist any more." });
+      res.json({ ok: true, key: snap.data().key });
+    } catch (err) {
+      console.error("[/api/workbooks/cbt-share/:code]", err.message);
+      res.status(500).json({ error: "Could not check the link." });
+    }
+  });
+
   return router;
 };

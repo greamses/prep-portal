@@ -1258,6 +1258,26 @@ beginBtn.onclick = () => {
   if (url) window.location.href = url;
 };
 
+/* `&k=<code>` on a share link, from the server, when the sharer is allowed to hand one out. Anything
+   that goes wrong (not signed in, no subscription, offline) leaves the plain link. */
+async function withPass(rel) {
+  if (!(await isPickerPremium())) return rel;
+  try {
+    const user = await ppCurrentUser();
+    if (!user) return rel;
+    const res = await fetch(`${API_BASE}/api/workbooks/cbt-share`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${await user.getIdToken()}` },
+      body: JSON.stringify({ axis: cbtState.axis, top: cbtState.top, subject: cbtState.subject, topic: cbtState.topic, paper: cbtState.paper }),
+    });
+    if (!res.ok) return rel;
+    const { code } = await res.json();
+    return code ? `${rel}${rel.includes("?") ? "&" : "?"}k=${encodeURIComponent(code)}` : rel;
+  } catch (_) {
+    return rel;
+  }
+}
+
 // ── Copy a shareable link to the configured test ───────────────────────
 const shareBtn = document.getElementById("share-btn");
 const shareLabel = shareBtn && shareBtn.querySelector(".share-label");
@@ -1280,6 +1300,10 @@ if (shareBtn) {
     let rel;
     try {
       rel = activeCat === "competition" && compIsAdmin ? await compShareUrl() : targetUrl();
+      /* A paper shared by someone who has the written answers carries a pass for THAT paper, so the
+         person who opens it gets the written questions, the paper and the tools free. A sharer
+         without that access just gets the plain link. */
+      if (rel && activeCat !== "competition") rel = await withPass(rel);
     } catch (e) {
       console.error("[builder] could not make the share link:", e);
       setStatus("Could not make the link — try again.", false);

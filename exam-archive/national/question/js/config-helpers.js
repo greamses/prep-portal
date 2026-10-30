@@ -32,6 +32,8 @@ const PAGE_CONFIG = {
     topic:     (urlParams.get('topic') || '').trim(),
     // attempt = how many of a CBT paper's questions to sit (0 = all of them)
     attempt:   parseInt(urlParams.get('attempt') || '0', 10) || 0,
+    // k = a pass for this one paper, made by a share link (checked with the server, see sharedSeat)
+    pass:      (urlParams.get('k') || '').trim().toUpperCase(),
     timed:     (urlParams.get('timer') || '').toLowerCase() === 'on',
     grade:     (urlParams.get('grade') || '').trim(),
     limit:     parseInt(urlParams.get('n') || urlParams.get('limit') || '20', 10) || 20,
