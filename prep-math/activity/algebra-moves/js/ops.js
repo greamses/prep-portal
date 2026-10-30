@@ -403,6 +403,47 @@ export function multiplyBrackets(eq, id) {
            note: `Every term times every term: ${opened}` };
 }
 
+/** One bracket multiplied into the next, and no further: click the first bracket of
+    (a + b)(c + d) and a goes over the whole of (c + d), then b does — a(c + d) + b(c + d).
+    Click the second and each of c and d goes over the whole of (a + b) instead. */
+export function distributeBracket(eq, bracketId) {
+  const bracket = A.findById(eq, bracketId);
+  const prod = bracket && A.parentOf(eq, bracketId);
+  if (!bracket || bracket.kind !== "sum" || !prod || prod.kind !== "prod") return { error: "That bracket is not multiplied by another bracket." };
+  const at = prod.kids.findIndex((k) => k.id === bracketId);
+  const sums = prod.kids.map((k, i) => (k.kind === "sum" ? i : -1)).filter((i) => i >= 0);
+  if (sums.length < 2) return { error: "There is no second bracket to multiply into." };
+  const right = sums.find((i) => i > at);
+  const intoRight = right !== undefined;
+  const partnerAt = intoRight ? right : [...sums].reverse().find((i) => i < at);
+  const partner = prod.kids[partnerAt];
+  const flat = (x) => (x.kind === "prod" && !x.paren ? x.kids : [x]);
+  const grown = A.termsOf(bracket).flatMap((t) => {
+    const neg = t.kind === "neg" && !t.paren;
+    const body = neg ? t.k : t;
+    const bracketed = { ...freshCopy(partner), paren: true };
+    // 1 times a bracket is just the bracket's own terms
+    const one = A.exactValue(body);
+    if (one && R.isOne(one) && !neg) return A.termsOf(freshCopy(partner));
+    const pr = A.prod(intoRight ? [...flat(body), bracketed] : [bracketed, ...flat(body)]);
+    return [neg ? A.neg(pr) : pr];
+  });
+  const lo = Math.min(at, partnerAt), hi = Math.max(at, partnerAt);
+  const sumNode = { ...A.sum(grown), paren: true };
+  const rest = prod.kids.filter((_, i) => i !== at && i !== partnerAt);
+  const opened = grown.map((g) => plain(g)).join(" + ").replace(/\+ −/g, "− ");
+  const note = intoRight ? `The first bracket goes into the second: ${opened}` : `The second bracket goes into the first: ${opened}`;
+  // Nothing else in the product, and it is a whole term: the pieces join the side.
+  const loc = locate(eq, prod.id);
+  if (!rest.length && loc) {
+    const nextTerms = [...loc.terms.slice(0, loc.index), ...grown, ...loc.terms.slice(loc.index + 1)];
+    return { eq: setContainer(eq, loc, nextTerms), from: new Map(grown.map((g) => [g.id, [prod.id]])), mark: opened, note };
+  }
+  const kids = rest.length ? [...prod.kids.slice(0, lo).filter((k) => k.id !== prod.kids[at].id && k.id !== partner.id), sumNode, ...prod.kids.slice(hi + 1).filter((k) => k.id !== prod.kids[at].id && k.id !== partner.id)] : [sumNode];
+  const next = kids.length === 1 ? { ...kids[0], paren: false } : A.prod(kids);
+  return { eq: A.replace(eq, prod.id, next), from: new Map(), mark: opened, note };
+}
+
 /* ── Split a fraction over its top ──────────────────────────────────────────
    (3x + 5)/4 is 3x/4 + 5/4. It is the move that lets anything written on top
    of a bar be reached at all: until the fraction is split, the 5 in the
@@ -3114,7 +3155,10 @@ export function atomOffers(eq, key, { given = null } = {}) {
     add(workOffer(nodeId));
     pick(pool(atomTerm(eq, key)), "expand");
   } else if (slot === "lp" || slot === "rp") {
-    pick(pool(atomTerm(eq, key)), "expand");
+    // Brackets times brackets: the one tapped is multiplied into the other, and only that far.
+    const dist = distributeBracket(eq, nodeId);
+    if (!dist.error) add({ key: "expand", label: dist.note.split(":")[0], hint: "one bracket at a time", mark: dist.mark, run: () => dist });
+    else pick(pool(atomTerm(eq, key)), "expand");
     const shared = factorBracket(eq, nodeId);
     if (!shared.error) add({ key: "factor", label: shared.note.split(":")[0], hint: "a common bracket", mark: shared.mark, run: () => shared });
     tidiesAbove(nodeId);
