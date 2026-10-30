@@ -392,6 +392,10 @@ const Quiz = (() => {
 
     if (window.ExamSettings) {
       window.ExamSettings.show(startExam);
+      /* the settings dialog is where a paper is chosen to sit, so it is also
+         where it can be printed instead */
+      const foot = document.querySelector(".es-foot");
+      mountPrintLink(foot, "btn print-link", document.getElementById("es-start"));
     } else {
       startExam();
     }
@@ -880,6 +884,42 @@ const Quiz = (() => {
     });
   }
 
+  /* "Paper mode" from the quiz page: the paper being sat, opened in the Exam
+     Maker to print. Only the local bank has a paper to hand over. It opens in a
+     new tab so the test in progress is not lost, and it is locked for anyone the
+     Exam Maker would turn away (same rule, from the feature registry), like the
+     picker's Paper chip. */
+  async function mountPrintLink(left = document.querySelector("#nav-bar .nav-left"), cls = "quit-link print-link", before = null) {
+    if (!left || PAGE_CONFIG.source !== "cbtlocal" || left.querySelector(".print-link")) return;
+    const axis = PAGE_CONFIG.axis === "exam" ? "exam" : "class";
+    const top = axis === "exam" ? PAGE_CONFIG.scheme : PAGE_CONFIG.cbtClass;
+    const subject = (PAGE_CONFIG.subjects || [])[0];
+    if (!top || !subject || !PAGE_CONFIG.topic) return;
+    const q = new URLSearchParams({ cbt: [axis, top, subject, PAGE_CONFIG.topic, PAGE_CONFIG.paper || 1].join("|") });
+    if (PAGE_CONFIG.format) q.set("format", PAGE_CONFIG.format);
+
+    let allowed = false;
+    try {
+      const { resolveUserAccess } = await import("/utils/features.js");
+      allowed = (await resolveUserAccess({ featureId: "prep-math-activities", partId: "exam-maker", profile: await userProfile() })).allowed;
+    } catch (_) {
+      const p = await userProfile();
+      allowed = !!(p && p.isPremium);
+    }
+    const a = document.createElement("a");
+    a.className = cls;
+    a.textContent = "Print this paper";
+    if (allowed) {
+      a.href = `/prep-math/activity/exam-maker/?${q}`;
+      a.target = "_blank"; a.rel = "noopener";
+    } else {
+      a.href = "/subscribe.html";
+      a.title = "Paper mode is a Premium feature";
+      a.textContent = "Print this paper (Premium)";
+    }
+    left.insertBefore(a, before);
+  }
+
   async function loadAndRender() {
     const loadingEl = document.getElementById("loading-state");
     if (loadingEl) loadingEl.style.display = "flex";
@@ -909,6 +949,7 @@ const Quiz = (() => {
       if (card) card.style.display = "flex";
       if (nav) nav.style.display = "grid";
       showIntroGate(); // watch-first video → hold questions behind a Start button
+      mountPrintLink();
       return;
     }
 
