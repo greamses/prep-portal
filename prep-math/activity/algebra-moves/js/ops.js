@@ -1635,7 +1635,7 @@ const gcdBig = (a, b) => { a = a < 0n ? -a : a; b = b < 0n ? -b : b; while (b) [
 
 function mono(node) {
   const r = A.readTerm(node);
-  if (!r || r.vars.some((v) => v.startsWith("√") || v.startsWith("#") || v === "e" || v === "π")) return null;
+  if (!r || r.vars.some((v) => v.startsWith("√") || v.startsWith("#") || v === "ℯ" || v === "π")) return null;
   const pows = new Map();
   for (const v of r.vars) pows.set(v, (pows.get(v) || 0) + 1);
   return { c: r.c, pows };
@@ -1677,7 +1677,7 @@ function divMono(a, b) {
    single-letter roots: √(1/2) is left alone, never guessed at. */
 function monoS(node) {
   const r = A.readTerm(node);
-  if (!r || r.vars.some((v) => v.startsWith("#") || v === "e" || v === "π" || (v.startsWith("√") && !/^√(\d+|[A-Za-z])$/.test(v)))) return null;
+  if (!r || r.vars.some((v) => v.startsWith("#") || v === "ℯ" || v === "π" || (v.startsWith("√") && !/^√(\d+|[A-Za-z])$/.test(v)))) return null;
   const pows = new Map();
   for (const v of r.vars) pows.set(v, (pows.get(v) || 0) + 1);
   return { c: r.c, pows };

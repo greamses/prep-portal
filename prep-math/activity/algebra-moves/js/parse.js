@@ -30,7 +30,7 @@ const isDigit = (c) => c >= "0" && c <= "9";
 // glyph. Final sigma (ς) is left out — it
 // is a spelling rule for the end of a word, not a different variable.
 // Capitals are only the ones that do not look like a Latin letter: Γ Δ Θ Λ Ξ Π Φ Ψ Ω. (Σ is the sum sign.)
-const GREEK = "αβγδεζηθικλμνξοπρστυφχψωΓΔΘΛΞΠΦΨΩ";
+const GREEK = "αβγδεζηθικλμνξοπρστυφχψωΓΔΘΛΞΠΦΨΩℯ";      // ℯ: Euler's number, a letter to the lexer, a constant to the parser
 const isAlpha = (c) => (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || GREEK.includes(c);
 
 /* A function's name inside a run of letters (3log_2(x), 2sin_…) means the run is a product with a
@@ -223,7 +223,7 @@ export function parse(src, { lenient = false } = {}) {
       return span(mark, A.num(R.fromDecimal(tk.v), tk.v.includes(".") ? tk.v : null));
     }
     // e and π are numbers, not letters.
-    if (tk.t === "var" && (tk.v === "e" || tk.v === "π")) { p++; return span(mark, A.cnst(tk.v)); }
+    if (tk.t === "var" && (tk.v === "ℯ" || tk.v === "π")) { p++; return span(mark, A.cnst(tk.v === "ℯ" ? "e" : tk.v)); }   // a plain e is a letter now
     if (tk.t === "var") { p++; return span(mark, A.vr(tk.v)); }
     if (tk.t === "bar") {                      // |x|, the bars hold whatever is between them
       p++; absDepth++;

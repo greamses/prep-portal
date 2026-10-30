@@ -422,7 +422,7 @@ export function readTerm(node) {
         return true;
       }
       case "const":
-        vars.push(n.name);
+        vars.push(n.name === "e" ? "ℯ" : n.name);          // Euler's number is not the letter e
         if (flip) c = R.neg(c);
         return true;
       case "fn":

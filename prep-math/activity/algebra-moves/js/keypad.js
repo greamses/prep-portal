@@ -58,7 +58,8 @@ const KEYS = [
   [
     { k: "4" }, { k: "5" }, { k: "6" },
     { k: "×", t: "*" }, { k: "aᵇ", t: "^()", back: 1, title: "to the power of", math: "a^b" },
-    { k: "x", t: "x", tone: "letter" }, { k: "y", t: "y", tone: "letter" }, { k: "z", t: "z", tone: "letter" },
+    { k: "x", t: "x", tone: "letter" }, { k: "y", t: "y", tone: "letter" },
+    { k: "ℯ", t: "ℯ", title: "Euler's number, 2.718… (the slanted ℯ — a plain e is a letter)", math: "ℯ" },
   ],
   [
     { k: "1" }, { k: "2" }, { k: "3" },
@@ -131,7 +132,7 @@ const FUNCS = [
   ],
   [
     fnKey("ln", "natural log"), fnKey("log", "log base 10"),
-    { k: "e", t: "e", title: "e, the number 2.718…", math: "e" },
+    { k: "ℯ", t: "ℯ", title: "Euler's number, 2.718… (the slanted ℯ — a plain e is a letter)", math: "ℯ" },
     { k: "π", t: "π", title: "pi, the number 3.14159…", math: "π" },
     { k: "aᵇ", t: "^()", back: 1, title: "to the power of", math: "a^b" },
     { k: "( )", t: "()", back: 1, title: "brackets", math: "(?)" },
@@ -157,7 +158,7 @@ const FUNCS = [
     { k: "%", t: "%", title: "percent: 25% is 25 out of 100" },
     { k: "_b", act: "base", title: "Base: pick the base of a number — a number (1011_2) or a letter (35_y)", tex: "q_b" },
     { k: "a b⁄c", act: "mixed", title: "A mixed number: a whole number and a fraction, in boxes to fill (a b/c)", mixedFace: true },
-    { k: "e", t: "e", title: "e, the number 2.718…", math: "e" },
+    { k: "ℯ", t: "ℯ", title: "Euler's number, 2.718… (the slanted ℯ — a plain e is a letter)", math: "ℯ" },
     { k: "π", t: "π", title: "pi", math: "π" },
     { k: "∠", t: "°", title: "degrees" },
     { k: "y", t: "y", tone: "letter" },

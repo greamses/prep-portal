@@ -432,9 +432,10 @@ function measureBare(node, size, binary) {
       return { ...base, kind: "text", text: t, italic: false, w: measureText(t, size, false) };
     }
     case "const": {
-      // Euler's number is written italic, the way it is in print; π stays upright
-      const slanted = node.name === "e";
-      return { ...base, kind: "text", text: node.name, italic: slanted, w: measureText(node.name, size, slanted) };
+      // Euler's number is the slanted script ℯ, which a letter e is not; π stays upright
+      const euler = node.name === "e";
+      const face = euler ? "ℯ" : node.name;
+      return { ...base, kind: "text", text: face, italic: euler, w: measureText(face, size, euler) };
     }
 
     case "fn": {
@@ -898,7 +899,7 @@ export function plain(node, parentKind = null, slot = 0) {
       const inside = plain(node.k, "root", 0);
       return wrap(simple ? `√${inside}` : `√(${inside})`);
     }
-    case "const": return wrap(node.name);
+    case "const": return wrap(node.name === "e" ? "ℯ" : node.name);
     case "ref":  return wrap(node.name);
     case "pct":  return wrap(`${plain(node.k, "pct", 0)}%`);
     case "fact": return wrap(`${plain(node.k, "fact", 0)}!`);
