@@ -101,7 +101,7 @@ function allowed(offer, eq, keepFactored) {
   // the log laws and the change of base are moves to choose, not steps to take by themselves
   if (offer.key === "loglaw" || offer.key === "logchange" || offer.key === "rootpower") return false;
   if (offer.key === "factorfrac" && !AUTO_FACTOR) return false;
-  if (offer.key === "fracdiv" || offer.key === "abssplit" || offer.key === "absout") return false;        // a way of writing it, chosen by the student
+  if (offer.key === "fracdiv" || offer.key === "abssplit" || offer.key === "absout" || offer.key === "signchart") return false;        // a way of writing it, chosen by the student
   // factored stays factored: no opening the brackets again, no completing a square
   if (keepFactored && (offer.key === "expand" || offer.key === "square" || (offer.key === "multiply" && offer.label === "Multiply it out"))) return false;
   if (AUTO_FACTOR && offer.key === "square" && eq.kind === "expr") return false;

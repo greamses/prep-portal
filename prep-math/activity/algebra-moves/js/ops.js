@@ -19,6 +19,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import * as A from "./ast.js";
+import { solveSigns } from "./sign-chart.js";
 import * as R from "./rational.js";
 import * as MM from "./matrix-moves.js";
 import { det as detOf, hasMatrix as hasMatrixNode } from "./matrix-eval.js";
@@ -749,6 +750,44 @@ export function rationalise(eq, id) {
 /** The tidy-ups that act on one node in place — the laws of indices and the
     surd rules. Offered from the term (so the solver and "is this tidy?" see
     them) and from any glyph sitting inside the node they act on. */
+/* ── Quadratic and rational inequalities ────────────────────────────────────
+   x² − 5x + 6 < 0, (x − 1)/(x + 2) ≥ 0: find where each side changes sign, test between, keep what
+   fits (sign-chart.js). One stretch is one line on the same card; several are one card each. */
+export function signChartOffers(eq) {
+  if (!A.isInequality(eq) || A.isChain(eq)) return [];
+  const s = solveSigns(eq.l, eq.r, eq.rel);
+  const say1 = (label, why) => [{ key: "signchart", label, hint: why, mark: "sign chart", run: () => ({ error: label }) }];
+  if (s.error) return say1(s.error, "not possible here");
+  if (s.none) return say1("No number makes that true", "nothing works");
+  if (s.all) return say1("Every number makes that true", "everything works");
+  // a place it is zero: a number, or p ± g√m for a quadratic that does not factor
+  const num = (c) => {
+    if (c.rat) return A.numberNode(c.rat);
+    const { p, g, m, sign } = c.surd;
+    const root = A.root(A.numberNode(R.rat(m)));
+    let term = R.isOne(g) ? root : A.prod([A.numberNode(g), root]);
+    if (sign < 0) term = A.neg(term);
+    return R.isZero(p) ? term : A.sum([A.numberNode(p), term]);
+  };
+  const node = (p) => {
+    const x = A.vr(s.v);
+    if (p.lo !== null && p.lo === p.hi) return A.eqn(x, num(p.lo));
+    if (p.lo === null) return A.eqn(x, num(p.hi), undefined, p.hiIn ? "≤" : "<");
+    if (p.hi === null) return A.eqn(x, num(p.lo), undefined, p.loIn ? "≥" : ">");
+    return A.chain(num(p.lo), x, num(p.hi), p.loIn ? "≤" : "<", p.hiIn ? "≤" : "<");
+  };
+  const label = `Test the stretches: ${s.note}`;
+  const single = s.pieces.length === 1 && !(s.pieces[0].lo !== null && s.pieces[0].lo === s.pieces[0].hi);
+  if (single) {
+    const next = node(s.pieces[0]);
+    return [{ key: "signchart", label, hint: "where each part changes sign, and the stretches between", mark: plain(next), run: () => ({ eq: next, from: new Map(), mark: plain(next), note: label + " — " + plain(next) }) }];
+  }
+  return [{
+    key: "signchart", label: label + " — more than one stretch", hint: "one card for each stretch", mark: "or: " + s.pieces.map((p) => plain(node(p))).join("  or  "),
+    cards: s.pieces.map((p) => ({ eq: node(p), title: "one stretch" })),
+  }];
+}
+
 /* ── Absolute value ─────────────────────────────────────────────────────────
    |E| = 5 is two equations, E = 5 and E = −5 — one card each. |E| < 5 is the one line −5 < E < 5.
    |E| > 5 is two lines again: E < −5 or E > 5. The bars must be a whole side with a number on the
@@ -3160,6 +3199,7 @@ function atomOffersRaw(eq, key, { given = null } = {}) {
 
   if (slot === "eq" || slot === "eq2") {
     if (A.isEquation(eq)) {
+      for (const o of signChartOffers(eq)) add(o);
       add({ key: "swap", label: "Turn it round", hint: "same equation, read the other way", mark: "⇄", run: () => swapSides(eq) });
       add({ key: "flip", label: "Change every sign", hint: "times both sides by −1", mark: "×(−1)", run: () => flipSigns(eq) });
       // AX = B: multiply both sides, on the left, by the inverse of A.
