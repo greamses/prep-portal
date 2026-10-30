@@ -234,6 +234,7 @@ function paintSlider(r, sub, value) {
         <input type="text" class="ca-eq-mini" data-sl="min" aria-label="Lowest" />
         <input type="range" class="ca-eq-range-input" aria-label="Value" />
         <input type="text" class="ca-eq-mini" data-sl="max" aria-label="Highest" />
+        <input type="text" class="ca-eq-mini ca-eq-step" data-sl="step" aria-label="Step" title="Step: how far one move of the slider goes (empty = automatic)" placeholder="step" />
       </div>`;
   }
   const range = $(".ca-eq-range-input", sub);
@@ -242,6 +243,8 @@ function paintSlider(r, sub, value) {
   const lo = $('[data-sl="min"]', sub), hi = $('[data-sl="max"]', sub);
   if (document.activeElement !== lo) lo.value = s.min;
   if (document.activeElement !== hi) hi.value = s.max;
+  const st = $('[data-sl="step"]', sub);
+  if (document.activeElement !== st) st.value = s.step > 0 ? s.step : "";
   paintTrack(range);
   // only when it changes: rebuilding the icon every frame swallows the click
   const btn = $(".ca-eq-play", sub);
@@ -253,7 +256,13 @@ function paintSlider(r, sub, value) {
   }
 }
 
-const sliderStep = (s) => niceStep(Math.abs(s.max - s.min) || 1) / 20;
+/** The slider's step: the one typed, else a tidy twentieth of its range. */
+const sliderStep = (s) => (s.step > 0 ? s.step : niceStep(Math.abs(s.max - s.min) || 1) / 20);
+/** Snap a value onto the slider's steps (counted from its lowest value). */
+const onStep = (s, v) => {
+  const st = sliderStep(s);
+  return Math.min(s.max, Math.max(s.min, s.min + Math.round((v - s.min) / st) * st));
+};
 
 function paintTrack(range) {
   const p = ((range.value - range.min) / ((range.max - range.min) || 1)) * 100;
@@ -262,8 +271,8 @@ function paintTrack(range) {
 
 /** Write a slider's value back into its line, e.g. "a = 2.5". */
 function setSliderValue(r, v) {
-  const step = sliderStep(r.slider);
-  const d = Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
+  const places = (x) => (String(Number(x.toPrecision(8))).split(".")[1] || "").length;
+  const d = Math.min(8, Math.max(places(sliderStep(r.slider)), places(r.slider.min)));
   const name = (r.src.split("=")[0] || "").trim();
   r.src = `${name} = ${Number(v.toFixed(d))}`;
   const li = liOf(r);
@@ -287,7 +296,7 @@ function play(r) {
     a.last = now;
     if (v >= s.max) { v = s.max; a.dir = -1; }
     if (v <= s.min) { v = s.min; a.dir = 1; }
-    setSliderValue(r, v);
+    setSliderValue(r, onStep(s, v));
     a.raf = requestAnimationFrame(tick);
   };
   a.raf = requestAnimationFrame(tick);
@@ -352,7 +361,8 @@ async function openKeypad() {
     import("/prep-math/activity/algebra-moves/js/keypad.js"),
   ]);
   needCss("/prep-math/activity/algebra-moves/style.css");
-  kp = createKeypad($("#eq-keypad-host"), {});
+  kp = createKeypad($("#eq-keypad-host"), { relations: true }); // < > ≤ ≥ | are kept
+  wireInequalityKeys();
   const go = keypadEl.querySelector(".am-key--go");
   if (go) go.setAttribute("aria-label", "Next line");
 
@@ -387,6 +397,23 @@ async function openKeypad() {
   keypadEl.addEventListener("input", pull, true);
   keypadEl.addEventListener("paste", pull, true);
   return kp;
+}
+
+/* The keypad has no < > keys (Algebra Moves has no use for them), so a small strip of
+   them sits above it. Each press is sent to the keypad as a typed key, so it lands
+   at the caret exactly like one from the keyboard. */
+function wireInequalityKeys() {
+  const strip = $("#eq-ineq");
+  if (!strip) return;
+  strip.addEventListener("pointerdown", (e) => {
+    const b = e.target.closest("[data-ch]");
+    if (!b) return;
+    e.preventDefault();
+    const line = keypadEl.querySelector(".am-line");
+    if (!line) return;
+    line.focus();
+    line.dispatchEvent(new KeyboardEvent("keydown", { key: b.dataset.ch, bubbles: true, cancelable: true }));
+  });
 }
 
 function loadIntoKeypad(r) {
@@ -460,7 +487,9 @@ function wire() {
     const t = e.target;
     if (t.dataset.sl) {
       const v = parseFloat(t.value);
-      if (isFinite(v)) r.slider[t.dataset.sl] = v;
+      if (t.dataset.sl === "step") {
+        if (isFinite(v) && v > 0) r.slider.step = v; else delete r.slider.step;
+      } else if (isFinite(v)) r.slider[t.dataset.sl] = v;
       if (r.slider.min >= r.slider.max) r.slider.max = r.slider.min + 1;
       const sub = $(".ca-eq-sub", liOf(r));
       refresh();

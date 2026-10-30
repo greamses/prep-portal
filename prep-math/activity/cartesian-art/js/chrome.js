@@ -25,7 +25,7 @@ import { mountTooltips, setTip } from "/utils/components/tooltip.js";
 const NOT_NOTES = [
   ".ca-fab", ".ca-toolrail-btn", ".ca-dpad-btn", ".ca-icon-btn", ".ca-steer-toggle", ".ca-modal-close",
   ".ca-dock-toggle", ".ca-dock-btn", ".ca-eq-dot", ".ca-eq-del", ".ca-eq-play", ".ca-eq-col", ".ca-swatch", ".ca-size",
-  ".am-key", ".pp-sticky", ".mm-prepbot-menu-btn", ".ca-grad-stop", ".ca-wheel-swatch",
+  ".am-key", ".ca-eq-ineq button", ".pp-sticky", ".mm-prepbot-menu-btn", ".ca-grad-stop", ".ca-wheel-swatch",
 ].join(",");
 
 const TILTS = [-1.6, 1.3, -0.9, 1.7, -1.2, 0.8];

@@ -76,7 +76,11 @@ const SUPER = "⁰¹²³⁴⁵⁶⁷⁸⁹";
 const SUB = "₀₁₂₃₄₅₆₇₈₉";
 const KEEP = /[0-9A-Za-z+\-*/=^_(){}\[\],.?°%!π±∫Σ√∠ Ͱ-Ͽ]/;
 
-export function sanitize(input) {
+/* Algebra Moves has no use for < > ≤ ≥ and the absolute-value bar, so they are dropped. A page
+   that graphs (Cartesian Art) asks for them with createEditor({ relations: true }). */
+const KEEP_RELATIONS = /[<>≤≥|]/;
+
+export function sanitize(input, relations = false) {
   let s = String(input ?? "");
   s = s.replace(/[​-‏⁠﻿­]/g, "");                          // zero-width and soft hyphens
   s = s.replace(new RegExp(`[${SUPER}⁺⁻]+`, "g"), (run) => `^(${[...run].map((c) => (c === "⁺" ? "+" : c === "⁻" ? "-" : SUPER.indexOf(c))).join("")})`);
@@ -84,11 +88,11 @@ export function sanitize(input) {
   // the full-width forms a phone or an East Asian keyboard brings (２＋３) are the ordinary ones
   s = [...s].map((c) => { const k = c.charCodeAt(0); return k >= 0xff01 && k <= 0xff5e && SAME_AS[c] === undefined ? String.fromCharCode(k - 0xfee0) : c; }).join("");
   s = [...s].map((c) => (SAME_AS[c] !== undefined ? SAME_AS[c] : c)).join("");
-  s = [...s].filter((c) => KEEP.test(c)).join("");                                  // what is left has a meaning here
+  s = [...s].filter((c) => KEEP.test(c) || (relations && KEEP_RELATIONS.test(c))).join("");                                  // what is left has a meaning here
   return s.replace(/ {2,}/g, " ");
 }
 
-export function createEditor() {
+export function createEditor({ relations = false } = {}) {
   let root = block();
   let caret = { block: root, i: 0 };
 
@@ -199,7 +203,7 @@ export function createEditor() {
 
   function insertChar(c) {
     // A character that is really a few (², ½, a typographic minus) is read as the text it stands for.
-    const clean = sanitize(c);
+    const clean = sanitize(c, relations);
     if (clean !== c) { if (clean) insertText(clean); return; }
     // A numeral and its base hold digits and letters only; a sign or a bracket
     // typed there is for what comes AFTER the numeral, so the boxes are left first.
@@ -599,7 +603,7 @@ export function createEditor() {
   }
 
   function insertText(str) {
-    const items = importItems(sanitize(str));
+    const items = importItems(sanitize(str, relations));
     for (const it of items) place(it);
   }
 

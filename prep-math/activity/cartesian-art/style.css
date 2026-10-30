@@ -2342,3 +2342,20 @@ body.ca-fs .ca-fs-exit { display: block; }
 .ca-dock-btn:hover { background: var(--surface-secondary); }
 .ca-dock-btn svg { width: 16px; height: 16px; }
 .ca-embed .ca-steer-toggle, .ca-embed #dock-move { display: none !important; }
+
+/* inequality keys: a strip of plain keys above the borrowed keypad */
+.ca-eq-ineq { display: flex; gap: 6px; padding: 8px 10px 0; }
+.ca-eq-ineq button {
+  flex: 1 1 0;
+  min-height: 2.4rem;
+  border: var(--border-subtle);
+  background: var(--surface-primary);
+  color: var(--ink);
+  font-family: "STIX Two Text", "Times New Roman", serif;
+  font-size: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+.ca-eq-ineq button:hover { background: var(--surface-secondary); }
+.ca-eq-ineq button:active { transform: translateY(1px); box-shadow: none; }
+.ca-eq-step { width: 48px; }

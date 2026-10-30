@@ -203,7 +203,7 @@ const FUNCS = [
   ],
 ];
 
-export function createKeypad(host, { onSubmit } = {}) {
+export function createKeypad(host, { onSubmit, relations = false } = {}) {
   const preview = document.createElement("div");
   preview.className = "am-preview";
 
@@ -230,7 +230,7 @@ export function createKeypad(host, { onSubmit } = {}) {
      only where the keyboard's focus sits; after every edit the boxes are written
      out into it as the line the parser reads, and the caret with them. Nothing in
      it is ever shown — the drawing above the keys is. */
-  const ed = createEditor();
+  const ed = createEditor({ relations });
   function sync(focus = true) {
     const { text, caret } = ed.serialize();
     line.value = text;

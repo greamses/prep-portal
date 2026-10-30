@@ -47,6 +47,7 @@ function init() {
   initGrid(stage);
   initMascot();
   initPrepbot(document);
+  initPrepbotDrag();
   initPoints();
   initControls(document);
   initPaint();
@@ -107,6 +108,27 @@ function init() {
     if (btn && !btn.classList.contains("is-active")) btn.click();
   }
   initChrome(); // last: tooltips + sticky-note buttons for everything built above
+}
+
+/* ── PrepBot can be moved: drag it by its avatar, and it stays where it was left ── */
+function initPrepbotDrag() {
+  const bot = $("#ca-prepbot");
+  const av = $("#caBotAvatar");
+  if (!bot || !av) return;
+  makeDraggable(bot, av, "ca-prepbot-pos");
+  av.dataset.tip = "Drag to move PrepBot";
+  // a drag is not a tap: it must not also open the avatar's menu
+  let from = null, moved = false;
+  av.addEventListener("pointerdown", (e) => { from = [e.clientX, e.clientY]; moved = false; }, true);
+  av.addEventListener("pointermove", (e) => {
+    if (from && Math.hypot(e.clientX - from[0], e.clientY - from[1]) > 5) moved = true;
+  }, true);
+  av.addEventListener("click", (e) => {
+    if (!moved) return;
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    moved = false;
+  }, true);
 }
 
 /* ── keyboard shortcuts (arrows/Enter/Del/C/undo live in controls.js) ─────── */
