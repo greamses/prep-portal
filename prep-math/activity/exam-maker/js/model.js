@@ -45,7 +45,7 @@ export function blank(type) {
 
 export const BLANK_HEAD = {
   school: "", term: "", year: "", subject: "", date: "", klass: "", time: "",
-  logo: "", colour: "indigo", paper: "a4", key: false, breakAt: {},
+  logo: "", colour: "indigo", paper: "a4", key: false, tint: false, breakAt: {},
   /* what each question in a section is worth; every question follows its section
      until its own marks are changed */
   marksEach: { mcq: 1, fill: 1, sub: 2, theory: 4 },

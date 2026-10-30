@@ -108,6 +108,7 @@ function fillHead() {
   $("xm-paper").value = state.head.paper;
   document.querySelectorAll("[data-each]").forEach((el) => { el.value = state.head.marksEach[el.dataset.each]; });
   $("xm-key").checked = !!state.head.key;
+  $("xm-tint").checked = !!state.head.tint;
   document.querySelectorAll("[data-break]").forEach((el) => { const at = state.head.breakAt || {}; el.checked = el.dataset.break === "key" ? at.key !== false : !!at[el.dataset.break]; });
   paintLogo(); paintSwatches();
 }
@@ -121,6 +122,7 @@ document.querySelectorAll("[data-each]").forEach((el) => el.addEventListener("in
 }));
 $("xm-paper").addEventListener("change", (e) => { state.head.paper = e.target.value; redraw(); });
 $("xm-key").addEventListener("change", (e) => { state.head.key = e.target.checked; redraw(); });
+$("xm-tint").addEventListener("change", (e) => { state.head.tint = e.target.checked; redraw(); });
 document.querySelectorAll("[data-break]").forEach((el) => el.addEventListener("change", () => {
   state.head.breakAt = { ...state.head.breakAt, [el.dataset.break]: el.checked };
   redraw();
