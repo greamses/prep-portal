@@ -629,6 +629,10 @@ export function mountFormulaBook(host) {
       say(`${title} is on the canvas — tap a letter to put its number in.`, "ok");
     },
     onRule: applyRule,
+    onExample: (rule) => {
+      addCard(parse(rule.ex), { title: rule.name });
+      say(`The example for “${rule.name}” is on the canvas: ${rule.how ? rule.how + ", then" : "now"} tap the rule.`, "ok");
+    },
   });
 }
 

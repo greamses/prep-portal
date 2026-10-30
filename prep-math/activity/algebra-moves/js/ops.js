@@ -543,7 +543,8 @@ export function splitFraction(eq, id) {
    and "work it out" is the move for that. Every exponent here is exact; a
    power we cannot read exactly is left alone, never guessed at. */
 
-const baseKey = (b) => (b.kind === "var" ? `v:${b.name}` : b.kind === "num" ? `n:${R.toText(b.v)}` : null);
+// the same bracket repeated is a base too: (x + 1)(x + 1) is (x + 1)²
+const baseKey = (b) => (b.kind === "var" ? `v:${b.name}` : b.kind === "num" ? `n:${R.toText(b.v)}` : b.kind === "sum" ? `s:${A.shapeKey({ ...b, paren: false })}` : null);
 
 function asPower(f) {
   if (f.kind === "pow") {
@@ -556,7 +557,7 @@ function asPower(f) {
 }
 
 const powerOf = (base, e) => (R.isZero(e) ? A.num(R.ONE) : R.isOne(e) ? base : A.pow(base, A.numberNode(e)));
-const gatherable = (members) => members[0].p.key.startsWith("v:") || members.some((m) => m.p.isPow);
+const gatherable = (members) => members[0].p.key.startsWith("v:") || members[0].p.key.startsWith("s:") || members.some((m) => m.p.isPow);
 const packFactors = (fs) => (fs.length === 0 ? A.num(R.ONE) : fs.length === 1 ? fs[0] : A.prod(fs));
 
 function productLaw(node) {
@@ -3396,7 +3397,7 @@ function atomOffersRaw(eq, key, { given = null } = {}) {
   } else if (slot === "div") {
     tidiesAbove(nodeId);
     pick(pool(atomTerm(eq, key)), "across");
-  } else if (slot.startsWith("dot")) {
+  } else if (slot.startsWith("dot") || slot === "log") {
     tidiesAbove(nodeId);
     add(workOffer(nodeId));
     pick(pool(atomTerm(eq, key)), "expand");
@@ -3658,12 +3659,21 @@ function multiOffersRaw(eq, keys, { given = null } = {}) {
   // Factors of one term picked together: carry all of them across at once.
   if (keys.length >= 2) {
     const fa = factorsAcross(eq, keys.map((k) => A.findById(eq, keyParts(k).nodeId)));
-    if (!fa.error) return [{ key: fa.mark.startsWith("×") ? "times" : "divide", label: fa.note, hint: "the picked factors cross together", mark: fa.mark, dir: "both", run: () => fa }];
+    if (!fa.error) {
+      const fw = swapFactors(eq, keys.map((k) => keyParts(k).nodeId));            // the same factors can also just change places
+      return [{ key: fa.mark.startsWith("×") ? "times" : "divide", label: fa.note, hint: "the picked factors cross together", mark: fa.mark, dir: "both", run: () => fa },
+        ...(fw.error ? [] : [{ key: "swapfactors", label: fw.note, hint: "the order of a product does not matter", mark: fw.mark, faces: fw.faces, run: () => fw }])];
+    }
   }
   const terms = [];
   for (const k of keys) {
     const t = atomTerm(eq, k);
     if (t && !terms.some((x) => x.id === t.id)) terms.push(t);
+  }
+  // 3·x·5 with the 3 and the x picked: they are factors of ONE term, and change places
+  if (terms.length === 1 && keys.length >= 2) {
+    const fw = swapFactors(eq, keys.map((k) => keyParts(k).nodeId));
+    if (!fw.error) return [{ key: "swapfactors", label: fw.note, hint: "the order of a product does not matter", mark: fw.mark, faces: fw.faces, run: () => fw }, ...atomOffers(eq, keys[keys.length - 1], { given })];
   }
   if (terms.length < 2) return atomOffers(eq, keys[keys.length - 1], { given });
   const ids = terms.map((t) => t.id);

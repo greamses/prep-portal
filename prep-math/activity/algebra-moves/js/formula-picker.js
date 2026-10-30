@@ -111,7 +111,7 @@ function drawn(src, size) {
   return holder;
 }
 
-export function createFormulaPicker(host, { onSubmit, onRule } = {}) {
+export function createFormulaPicker(host, { onSubmit, onRule, onExample } = {}) {
   // A working copy: admin-added formulas (see formula-admin.js) join it at
   // runtime, either into a group already here or a new one of their own —
   // the static bank itself is never mutated. The rules (rules.js) are in the
@@ -210,6 +210,20 @@ export function createFormulaPicker(host, { onSubmit, onRule } = {}) {
         btn.title = "Apply this rule to what is picked (or anywhere on the line)";
       }
       btn.addEventListener("click", () => (f.rule ? onRule?.(f) : choose(f)));
+      if (f.rule && f.ex && onExample) {
+        // a rule comes with an example: a line to put on the canvas where it works
+        const wrap = document.createElement("div");
+        wrap.className = "am-fx__item";
+        const tryIt = document.createElement("button");
+        tryIt.type = "button";
+        tryIt.className = "am-fx__try";
+        tryIt.textContent = "Try an example";
+        tryIt.title = f.how ? `Puts ${f.ex} on the canvas — ${f.how}, then tap the rule` : `Puts ${f.ex} on the canvas`;
+        tryIt.addEventListener("click", (e) => { e.stopPropagation(); onExample(f); });
+        wrap.append(btn, tryIt);
+        list.appendChild(wrap);
+        continue;
+      }
       list.appendChild(btn);
     }
   }

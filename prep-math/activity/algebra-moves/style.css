@@ -1567,3 +1567,18 @@ html.am-noselect, html.am-noselect * { -webkit-user-select: none !important; use
 .pp-sticky.am-subtab.am-subtab--small { padding: 0.32rem 0.6rem 0.36rem; font-size: 0.7rem; }
 /* A Greek key with no capital of its own, while CAPS is on. */
 .am-key--off { opacity: 0.32; cursor: not-allowed; }
+
+/* A rule's own "Try an example" button, under its note. */
+.am-fx__item { display: flex; flex-direction: column; gap: 0.15rem; }
+.am-fx__try {
+  align-self: flex-start;
+  margin: 0 0 0.35rem 0.2rem;
+  padding: 0.12rem 0.5rem;
+  font: inherit;
+  font-size: 0.68rem;
+  color: var(--accent-secondary);
+  background: transparent;
+  border: 1px solid var(--accent-secondary);
+  cursor: pointer;
+}
+.am-fx__try:hover, .am-fx__try:focus-visible { background: var(--accent-secondary); color: var(--text-on-accent, #fff); }
