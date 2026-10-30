@@ -5568,6 +5568,678 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Astronomy: orbits and gravity",
+    items: [
+      {
+        id: "kepler-si", name: "Kepler's third law in full", eq: "T^2 = 4π^2a^3/(GM)", find: "T",
+        letters: { T: "the orbit time", a: "the semi-major axis", G: "the gravitational constant", M: "the mass of the body being orbited" },
+        example: { a: "2", G: "1", M: "1" },
+      },
+      {
+        id: "binary-mass", name: "Mass of a binary system", eq: "M = a^3/T^2", find: "M",
+        letters: { M: "the total mass in suns", a: "the distance between the stars in astronomical units", T: "the orbit time in years" },
+        example: { a: "4", T: "8" },
+      },
+      {
+        id: "eccentricity", name: "Eccentricity of an orbit", eq: "x = (q - p)/(q + p)", find: "x",
+        letters: { x: "the eccentricity", q: "the farthest distance", p: "the nearest distance" },
+        example: { q: "15", p: "5" },
+      },
+      {
+        id: "periapsis", name: "Nearest distance in an orbit", eq: "p = a(1 - x)", find: "p",
+        letters: { p: "the nearest distance", a: "the semi-major axis", x: "the eccentricity" },
+        example: { a: "10", x: "1/2" },
+      },
+      {
+        id: "apoapsis", name: "Farthest distance in an orbit", eq: "q = a(1 + x)", find: "q",
+        letters: { q: "the farthest distance", a: "the semi-major axis", x: "the eccentricity" },
+        example: { a: "10", x: "1/2" },
+      },
+      {
+        id: "synodic-inner", name: "Synodic period of an inner planet", eq: "1/S = 1/P - 1/E", find: "S",
+        letters: { S: "the time between conjunctions", P: "the planet's year", E: "the Earth's year" },
+        example: { P: "1/2", E: "1" },
+      },
+      {
+        id: "synodic-general", name: "Time between two bodies lining up again", eq: "1/S = 1/a - 1/b", find: "S",
+        letters: { S: "the time between alignments", a: "the shorter period", b: "the longer period" },
+        example: { a: "2", b: "3" },
+        note: "also the day and the month",
+      },
+      {
+        id: "tidal-force", name: "Tidal force across a body", eq: "F = 2GMmR/d^3", find: "F",
+        letters: { F: "the difference in pull across the body", G: "the gravitational constant", M: "the mass of the body pulling", m: "the mass of the body pulled", R: "the radius of the body pulled", d: "the distance between them" },
+        example: { G: "1", M: "8", m: "3", R: "1", d: "2" },
+      },
+      {
+        id: "gravitational-redshift", name: "Redshift from gravity", eq: "z = GM/(rc^2)", find: "z",
+        letters: { z: "the redshift", G: "the gravitational constant", M: "the mass", r: "the distance from its centre", c: "the speed of light" },
+        example: { G: "1", M: "2", r: "4", c: "1" },
+      },
+      {
+        id: "einstein-radius", name: "Einstein ring of a gravitational lens", eq: "t = sqrt(4GMd/(c^2DL))", find: "t",
+        letters: { t: "the angle of the ring in radians", G: "the gravitational constant", M: "the mass of the lens", d: "the distance from the lens to the source", D: "the distance to the lens", L: "the distance to the source" },
+        example: { G: "1", M: "1", d: "4", c: "1", D: "1", L: "1" },
+      },
+    ],
+  },
+  {
+    group: "Astronomy: stars and galaxies",
+    items: [
+      {
+        id: "mass-luminosity", name: "Mass and luminosity of a main sequence star", eq: "L = M^(7/2)", find: "L",
+        letters: { L: "the luminosity in suns", M: "the mass in suns" },
+        example: { M: "4" },
+        note: "a rough rule",
+      },
+      {
+        id: "star-lifetime", name: "Lifetime of a main sequence star", eq: "t = 10^10M/L", find: "t",
+        letters: { t: "the lifetime in years", M: "the mass in suns", L: "the luminosity in suns" },
+        example: { M: "2", L: "16" },
+      },
+      {
+        id: "star-radius", name: "Radius of a star", eq: "R = sqrt(L/(4πsT^4))", find: "R",
+        letters: { R: "the radius", L: "the luminosity", s: "the Stefan-Boltzmann constant", T: "the surface temperature in kelvin" },
+        example: { L: "4", s: "1", T: "1" },
+      },
+      {
+        id: "radial-velocity", name: "Speed towards or away from us", eq: "v = cd/w", find: "v",
+        letters: { v: "the speed", c: "the speed of light", d: "the change in wavelength", w: "the wavelength" },
+        example: { c: "300000", d: "2", w: "600" },
+      },
+      {
+        id: "redshift-speed", name: "Speed from a small redshift", eq: "v = cz", find: "v",
+        letters: { v: "the speed", c: "the speed of light", z: "the redshift" },
+        example: { c: "300000", z: "1/100" },
+        note: "only for small redshifts",
+      },
+      {
+        id: "hubble-time", name: "Age of the universe from the Hubble constant", eq: "t = 1/H", find: "t",
+        letters: { t: "the age", H: "Hubble's constant" },
+        example: { H: "1/14" },
+      },
+      {
+        id: "redshift-distance", name: "Distance from a small redshift", eq: "d = cz/H", find: "d",
+        letters: { d: "the distance", c: "the speed of light", z: "the redshift", H: "Hubble's constant" },
+        example: { c: "300000", z: "1/100", H: "70" },
+      },
+      {
+        id: "scale-factor", name: "Redshift and the size of the universe", eq: "z = 1/a - 1", find: "z",
+        letters: { z: "the redshift", a: "the size of the universe then, compared with now" },
+        example: { a: "1/3" },
+      },
+      {
+        id: "critical-density", name: "Critical density of the universe", eq: "D = 3H^2/(8πG)", find: "D",
+        letters: { D: "the critical density", H: "Hubble's constant", G: "the gravitational constant" },
+        example: { H: "2", G: "1" },
+      },
+      {
+        id: "proper-motion-speed", name: "Sideways speed of a star", eq: "v = 4.74md", find: "v",
+        letters: { v: "the sideways speed in kilometres a second", m: "the proper motion in arcseconds a year", d: "the distance in parsecs" },
+        example: { m: "1/10", d: "100" },
+      },
+      {
+        id: "space-velocity", name: "Total speed of a star", eq: "v = sqrt(r^2 + t^2)", find: "v",
+        letters: { v: "the total speed", r: "the speed along our line of sight", t: "the sideways speed" },
+        example: { r: "12", t: "5" },
+      },
+      {
+        id: "cepheid", name: "Brightness of a Cepheid variable", eq: "M = -2.81log_10(P) - 1.43", find: "M",
+        letters: { M: "the absolute magnitude", P: "the period in days" },
+        example: { P: "10" },
+      },
+      {
+        id: "habitable-zone", name: "Distance to the habitable zone", eq: "d = sqrt(L)", find: "d",
+        letters: { d: "the distance in astronomical units", L: "the luminosity of the star in suns" },
+        example: { L: "4" },
+      },
+      {
+        id: "transit-depth", name: "Dip in light as a planet crosses a star", eq: "D = (r/R)^2", find: "D",
+        letters: { D: "the share of light blocked", r: "the radius of the planet", R: "the radius of the star" },
+        example: { r: "1", R: "10" },
+      },
+      {
+        id: "drake", name: "Drake equation", eq: "N = Rfpnlic", find: "N",
+        letters: { N: "the civilisations we might hear", R: "the stars formed each year", f: "the share with planets", p: "the planets that could hold life on average", n: "the share where life starts", l: "the share where life becomes intelligent", i: "the share that send signals", c: "the years they keep sending" },
+        example: { R: "2", f: "1/2", p: "2", n: "1/10", l: "1/10", i: "1/10", c: "1000" },
+      },
+    ],
+  },
+  {
+    group: "Astronomy: telescopes and the sky",
+    items: [
+      {
+        id: "telescope-magnification", name: "Magnification of a telescope", eq: "M = F/f", find: "M",
+        letters: { M: "the magnification", F: "the focal length of the main lens or mirror", f: "the focal length of the eyepiece" },
+        example: { F: "1000", f: "10" },
+      },
+      {
+        id: "focal-ratio", name: "Focal ratio of a telescope", eq: "N = F/D", find: "N",
+        letters: { N: "the focal ratio", F: "the focal length", D: "the diameter of the main lens or mirror" },
+        example: { F: "1000", D: "100" },
+      },
+      {
+        id: "light-grasp", name: "Light gathered compared with another telescope", eq: "R = (D/d)^2", find: "R",
+        letters: { R: "how many times more light", D: "the diameter of the bigger telescope", d: "the diameter of the smaller" },
+        example: { D: "200", d: "50" },
+      },
+      {
+        id: "resolution", name: "Sharpest detail a telescope can show (Rayleigh)", eq: "t = 1.22w/D", find: "t",
+        letters: { t: "the smallest angle in radians", w: "the wavelength", D: "the diameter of the telescope" },
+        example: { w: "5", D: "61" },
+      },
+      {
+        id: "limiting-magnitude", name: "Faintest star a telescope can show", eq: "m = 2 + 5log_10(D)", find: "m",
+        letters: { m: "the faintest magnitude", D: "the diameter in millimetres" },
+        example: { D: "100" },
+      },
+      {
+        id: "plate-scale", name: "Plate scale of a telescope", eq: "s = 206265/F", find: "s",
+        letters: { s: "the arcseconds for each millimetre", F: "the focal length in millimetres" },
+        example: { F: "2000" },
+      },
+      {
+        id: "air-mass", name: "Air mass", eq: "X = 1/cos(z°)", find: "X",
+        letters: { X: "the thickness of air the light crosses, compared with straight up", z: "the angle from the point overhead in degrees" },
+        example: { z: "60" },
+      },
+      {
+        id: "extinction", name: "Dimming by the air", eq: "m = n + kX", find: "m",
+        letters: { m: "the magnitude seen", n: "the magnitude above the air", k: "the extinction coefficient", X: "the air mass" },
+        example: { n: "5", k: "1/5", X: "2" },
+      },
+      {
+        id: "hour-angle", name: "Hour angle of an object", eq: "H = L - A", find: "H",
+        letters: { H: "the hour angle", L: "the local sidereal time", A: "the right ascension of the object" },
+        example: { L: "10", A: "4" },
+      },
+      {
+        id: "object-altitude", name: "Height of an object in the sky", eq: "sin(a°) = sin(p°)sin(d°) + cos(p°)cos(d°)cos(h°)", find: "a",
+        letters: { a: "the altitude in degrees", p: "the latitude", d: "the declination of the object", h: "the hour angle" },
+        example: { p: "0", d: "0", h: "60" },
+      },
+      {
+        id: "rise-set-angle", name: "Hour angle when an object rises or sets", eq: "cos(h°) = -tan(p°)tan(d°)", find: "h",
+        letters: { h: "the hour angle in degrees", p: "the latitude", d: "the declination" },
+        example: { p: "0", d: "45" },
+      },
+    ],
+  },
+  {
+    group: "Engineering: strength of materials",
+    items: [
+      {
+        id: "shear-modulus", name: "Shear modulus", eq: "G = S/s", find: "G",
+        letters: { G: "the shear modulus", S: "the shear stress", s: "the shear strain" },
+        example: { S: "120", s: "3/100" },
+      },
+      {
+        id: "bulk-modulus", name: "Bulk modulus", eq: "K = VP/d", find: "K",
+        letters: { K: "the bulk modulus", V: "the original volume", P: "the increase in pressure", d: "the decrease in volume" },
+        example: { V: "100", P: "6", d: "1/5" },
+      },
+      {
+        id: "poisson", name: "Poisson's ratio", eq: "n = a/b", find: "n",
+        letters: { n: "Poisson's ratio", a: "the shrinking across", b: "the stretching along" },
+        example: { a: "1/10", b: "3/10" },
+        note: "both as strains, the sign ignored",
+      },
+      {
+        id: "thermal-stress", name: "Stress from a held-back expansion", eq: "S = YaT", find: "S",
+        letters: { S: "the stress", Y: "Young's modulus", a: "the expansion coefficient", T: "the rise in temperature" },
+        example: { Y: "200", a: "1/100000", T: "50" },
+      },
+      {
+        id: "strain-energy", name: "Energy stored in a stretched bar", eq: "U = S^2V/(2Y)", find: "U",
+        letters: { U: "the energy stored", S: "the stress", V: "the volume of the bar", Y: "Young's modulus" },
+        example: { S: "20", V: "5", Y: "100" },
+      },
+      {
+        id: "bending-stress", name: "Stress in a bent beam", eq: "S = My/I", find: "S",
+        letters: { S: "the stress", M: "the bending moment", y: "the distance from the middle of the beam", I: "the second moment of area" },
+        example: { M: "400", y: "3", I: "24" },
+      },
+      {
+        id: "section-modulus", name: "Section modulus of a rectangle", eq: "Z = bh^2/6", find: "Z",
+        letters: { Z: "the section modulus", b: "the width", h: "the depth" },
+        example: { b: "6", h: "10" },
+      },
+      {
+        id: "inertia-circle", name: "Second moment of area of a circle", eq: "I = πd^4/64", find: "I",
+        letters: { I: "the second moment of area", d: "the diameter" },
+        example: { d: "2" },
+      },
+      {
+        id: "polar-inertia", name: "Polar second moment of area of a shaft", eq: "J = πd^4/32", find: "J",
+        letters: { J: "the polar second moment of area", d: "the diameter" },
+        example: { d: "2" },
+      },
+      {
+        id: "radius-of-gyration", name: "Radius of gyration", eq: "k = sqrt(I/A)", find: "k",
+        letters: { k: "the radius of gyration", I: "the second moment of area", A: "the area" },
+        example: { I: "100", A: "4" },
+      },
+      {
+        id: "cantilever-moment", name: "Greatest bending moment of a cantilever with an end load", eq: "M = FL", find: "M",
+        letters: { M: "the bending moment", F: "the load", L: "the length" },
+        example: { F: "300", L: "2" },
+      },
+      {
+        id: "udl-moment", name: "Greatest bending moment of a beam with an even load", eq: "M = wL^2/8", find: "M",
+        letters: { M: "the bending moment", w: "the load for each metre", L: "the length between the supports" },
+        example: { w: "20", L: "4" },
+      },
+      {
+        id: "cantilever-deflection", name: "Sag of a cantilever with an end load", eq: "d = FL^3/(3YI)", find: "d",
+        letters: { d: "the sag", F: "the load", L: "the length", Y: "Young's modulus", I: "the second moment of area" },
+        example: { F: "30", L: "2", Y: "200", I: "1" },
+      },
+      {
+        id: "beam-deflection-point", name: "Sag of a beam with a load in the middle", eq: "d = FL^3/(48YI)", find: "d",
+        letters: { d: "the sag", F: "the load", L: "the length between the supports", Y: "Young's modulus", I: "the second moment of area" },
+        example: { F: "96", L: "2", Y: "100", I: "1" },
+      },
+      {
+        id: "cantilever-udl-deflection", name: "Sag of a cantilever with an even load", eq: "d = wL^4/(8YI)", find: "d",
+        letters: { d: "the sag", w: "the load for each metre", L: "the length", Y: "Young's modulus", I: "the second moment of area" },
+        example: { w: "8", L: "2", Y: "4", I: "1" },
+      },
+      {
+        id: "beam-deflection-udl", name: "Sag of a beam with an even load", eq: "d = 5wL^4/(384YI)", find: "d",
+        letters: { d: "the sag", w: "the load for each metre", L: "the length between the supports", Y: "Young's modulus", I: "the second moment of area" },
+        example: { w: "24", L: "4", Y: "5", I: "1" },
+      },
+      {
+        id: "torsion-stress", name: "Shear stress in a twisted shaft", eq: "S = Tr/J", find: "S",
+        letters: { S: "the shear stress", T: "the torque", r: "the radius", J: "the polar second moment of area" },
+        example: { T: "100", r: "2", J: "50" },
+      },
+      {
+        id: "twist-angle", name: "Angle a shaft twists", eq: "t = TL/(GJ)", find: "t",
+        letters: { t: "the angle of twist in radians", T: "the torque", L: "the length", G: "the shear modulus", J: "the polar second moment of area" },
+        example: { T: "100", L: "2", G: "20", J: "5" },
+      },
+      {
+        id: "euler-buckling", name: "Buckling load of a column (Euler)", eq: "P = π^2YI/L^2", find: "P",
+        letters: { P: "the load that makes it buckle", Y: "Young's modulus", I: "the second moment of area", L: "the effective length" },
+        example: { Y: "200", I: "3", L: "10" },
+      },
+      {
+        id: "slenderness", name: "Slenderness ratio of a column", eq: "s = L/k", find: "s",
+        letters: { s: "the slenderness ratio", L: "the effective length", k: "the radius of gyration" },
+        example: { L: "240", k: "3" },
+      },
+      {
+        id: "hoop-stress", name: "Hoop stress in a thin pipe", eq: "S = Pr/t", find: "S",
+        letters: { S: "the hoop stress", P: "the pressure inside", r: "the radius", t: "the wall thickness" },
+        example: { P: "5", r: "40", t: "2" },
+      },
+      {
+        id: "longitudinal-stress", name: "Stress along a thin closed pipe or a thin sphere", eq: "S = Pr/(2t)", find: "S",
+        letters: { S: "the stress", P: "the pressure inside", r: "the radius", t: "the wall thickness" },
+        example: { P: "5", r: "40", t: "2" },
+      },
+      {
+        id: "spring-stiffness", name: "Stiffness of a coil spring", eq: "k = Gd^4/(8nD^3)", find: "k",
+        letters: { k: "the stiffness", G: "the shear modulus of the wire", d: "the diameter of the wire", n: "the coils", D: "the diameter of the coil" },
+        example: { G: "80", d: "2", n: "10", D: "4" },
+      },
+      {
+        id: "springs-series", name: "Springs end to end", eq: "1/k = 1/a + 1/b", find: "k",
+        letters: { k: "the stiffness of both", a: "the first spring", b: "the second spring" },
+        example: { a: "6", b: "3" },
+      },
+      {
+        id: "springs-parallel", name: "Springs side by side", eq: "k = a + b", find: "k",
+        letters: { k: "the stiffness of both", a: "the first spring", b: "the second spring" },
+        example: { a: "6", b: "3" },
+      },
+    ],
+  },
+  {
+    group: "Engineering: machines and mechanisms",
+    items: [
+      {
+        id: "belt-drive", name: "Belt drive speeds", eq: "dn = DN", find: "n",
+        letters: { d: "the diameter of the first pulley", n: "its speed", D: "the diameter of the second pulley", N: "its speed" },
+        example: { d: "10", D: "25", N: "40" },
+      },
+      {
+        id: "screw-advantage", name: "Mechanical advantage of a screw", eq: "M = 2πr/p", find: "M",
+        letters: { M: "the mechanical advantage", r: "the radius the handle turns through", p: "the distance between threads" },
+        example: { r: "5", p: "1/2" },
+      },
+      {
+        id: "wedge-advantage", name: "Mechanical advantage of a wedge", eq: "M = L/t", find: "M",
+        letters: { M: "the mechanical advantage", L: "the length of the sloping side", t: "the thickness of the wedge" },
+        example: { L: "12", t: "3" },
+      },
+      {
+        id: "gear-module", name: "Gear module", eq: "m = d/n", find: "m",
+        letters: { m: "the module", d: "the pitch diameter", n: "the number of teeth" },
+        example: { d: "60", n: "30" },
+      },
+      {
+        id: "gear-centre-distance", name: "Distance between the centres of two gears", eq: "C = m(n + N)/2", find: "C",
+        letters: { C: "the distance between the centres", m: "the module", n: "the teeth on the first gear", N: "the teeth on the second" },
+        example: { m: "2", n: "20", N: "40" },
+      },
+      {
+        id: "gear-pitch", name: "Circular pitch of a gear", eq: "p = πm", find: "p",
+        letters: { p: "the circular pitch", m: "the module" },
+        example: { m: "2" },
+      },
+      {
+        id: "shaft-power", name: "Power carried by a shaft", eq: "P = 2πNT/60", find: "P",
+        letters: { P: "the power", N: "the turns each minute", T: "the torque" },
+        example: { N: "300", T: "20" },
+      },
+      {
+        id: "belt-power", name: "Power carried by a belt", eq: "P = (a - b)v", find: "P",
+        letters: { P: "the power", a: "the tension on the tight side", b: "the tension on the slack side", v: "the speed of the belt" },
+        example: { a: "500", b: "200", v: "10" },
+      },
+      {
+        id: "clutch-torque", name: "Torque a clutch can carry", eq: "T = kFR", find: "T",
+        letters: { T: "the torque", k: "the coefficient of friction", F: "the force pressing the plates together", R: "the mean radius" },
+        example: { k: "2/5", F: "500", R: "10" },
+      },
+      {
+        id: "bearing-life", name: "Life of a bearing", eq: "L = (C/P)^3", find: "L",
+        letters: { L: "the life in millions of turns", C: "the load rating", P: "the load it carries" },
+        example: { C: "30", P: "10" },
+      },
+      {
+        id: "truss-members", name: "Members in a simple truss", eq: "m = 2j - 3", find: "m",
+        letters: { m: "the members", j: "the joints" },
+        example: { j: "7" },
+      },
+      {
+        id: "grubler", name: "Degrees of freedom of a mechanism", eq: "F = 3(n - 1) - 2j", find: "F",
+        letters: { F: "the degrees of freedom", n: "the links", j: "the joints" },
+        example: { n: "4", j: "4" },
+      },
+    ],
+  },
+  {
+    group: "Engineering: fluids and heat",
+    items: [
+      {
+        id: "reynolds", name: "Reynolds number", eq: "R = dvD/m", find: "R",
+        letters: { R: "the Reynolds number", d: "the density of the fluid", v: "the speed", D: "the diameter of the pipe", m: "the viscosity" },
+        example: { d: "1000", v: "2", D: "1/10", m: "1/50" },
+        note: "below about 2000 the flow is smooth",
+      },
+      {
+        id: "poiseuille", name: "Flow of a thick fluid through a pipe (Poiseuille)", eq: "Q = πr^4P/(8nL)", find: "Q",
+        letters: { Q: "the volume flowing each second", r: "the radius of the pipe", P: "the pressure difference", n: "the viscosity", L: "the length of the pipe" },
+        example: { r: "2", P: "16", n: "1", L: "2" },
+      },
+      {
+        id: "head-loss", name: "Head lost to friction in a pipe (Darcy-Weisbach)", eq: "h = f(L/D)(v^2/(2g))", find: "h",
+        letters: { h: "the head lost", f: "the friction factor", L: "the length of the pipe", D: "the diameter", v: "the speed", g: "the pull of gravity per kilogram" },
+        example: { f: "1/50", L: "100", D: "1/2", v: "2", g: "10" },
+      },
+      {
+        id: "pump-power", name: "Power a pump needs", eq: "P = dgQH/n", find: "P",
+        letters: { P: "the power", d: "the density of the fluid", g: "the pull of gravity per kilogram", Q: "the volume pumped each second", H: "the height it is lifted", n: "the efficiency, from 0 to 1" },
+        example: { d: "1000", g: "10", Q: "1/100", H: "20", n: "4/5" },
+      },
+      {
+        id: "chezy", name: "Speed in an open channel (Chézy)", eq: "v = C·sqrt(RS)", find: "v",
+        letters: { v: "the speed", C: "Chézy's coefficient", R: "the hydraulic radius", S: "the slope" },
+        example: { C: "50", R: "4", S: "1/100" },
+      },
+      {
+        id: "froude", name: "Froude number of an open channel", eq: "F = v/sqrt(gd)", find: "F",
+        letters: { F: "the Froude number", v: "the speed", g: "the pull of gravity per kilogram", d: "the depth" },
+        example: { v: "5", g: "10", d: "5/2" },
+        note: "above 1 the flow is fast",
+      },
+      {
+        id: "heat-exchanger", name: "Heat passed through a heat exchanger", eq: "Q = UAT", find: "Q",
+        letters: { Q: "the heat passed each second", U: "the overall heat transfer coefficient", A: "the area", T: "the temperature difference" },
+        example: { U: "500", A: "2", T: "30" },
+      },
+      {
+        id: "thermal-resistance", name: "Thermal resistance of a wall", eq: "R = L/(kA)", find: "R",
+        letters: { R: "the thermal resistance", L: "the thickness", k: "the conductivity", A: "the area" },
+        example: { L: "1/4", k: "1/2", A: "10" },
+      },
+      {
+        id: "convection", name: "Heat lost by convection", eq: "Q = hAT", find: "Q",
+        letters: { Q: "the heat lost each second", h: "the convection coefficient", A: "the area", T: "the temperature difference" },
+        example: { h: "10", A: "2", T: "15" },
+      },
+      {
+        id: "otto-efficiency", name: "Efficiency of an Otto engine", eq: "E = 100(1 - 1/r^(k - 1))", find: "E",
+        letters: { E: "the efficiency, as a percentage", r: "the compression ratio", k: "the ratio of the heat capacities of the gas" },
+        example: { r: "32", k: "7/5" },
+      },
+      {
+        id: "isentropic", name: "Gas squeezed without heat moving", eq: "PV^k = pv^k", find: "P",
+        letters: { P: "the first pressure", V: "the first volume", p: "the second pressure", v: "the second volume", k: "the ratio of the heat capacities" },
+        example: { V: "1", p: "32", v: "1/32", k: "1" },
+        note: "for k = 1 this is Boyle's law",
+      },
+      {
+        id: "residence-time", name: "Time a fluid stays in a vessel", eq: "t = V/Q", find: "t",
+        letters: { t: "the residence time", V: "the volume of the vessel", Q: "the volume flowing through each second" },
+        example: { V: "500", Q: "5" },
+      },
+      {
+        id: "conversion", name: "Conversion of a reactant", eq: "X = (a - b)/a", find: "X",
+        letters: { X: "the fraction that reacted", a: "the amount that went in", b: "the amount that came out" },
+        example: { a: "10", b: "3" },
+      },
+    ],
+  },
+  {
+    group: "Engineering: electrical and electronic",
+    items: [
+      {
+        id: "three-phase-power", name: "Power of a three-phase supply", eq: "P = sqrt(3)VI·cos(t°)", find: "P",
+        letters: { P: "the power", V: "the line voltage", I: "the line current", t: "the phase angle in degrees" },
+        example: { V: "400", I: "10", t: "60" },
+      },
+      {
+        id: "power-factor", name: "Power factor", eq: "F = P/(VI)", find: "F",
+        letters: { F: "the power factor", P: "the real power", V: "the voltage", I: "the current" },
+        example: { P: "800", V: "200", I: "5" },
+      },
+      {
+        id: "line-voltage", name: "Line voltage of a star connection", eq: "L = sqrt(3)V", find: "L",
+        letters: { L: "the line voltage", V: "the voltage across one phase" },
+        example: { V: "230" },
+      },
+      {
+        id: "synchronous-speed", name: "Speed of a motor's magnetic field", eq: "N = 120f/p", find: "N",
+        letters: { N: "the turns each minute", f: "the frequency", p: "the poles" },
+        example: { f: "50", p: "4" },
+      },
+      {
+        id: "motor-slip", name: "Slip of an induction motor", eq: "s = (N - n)/N", find: "s",
+        letters: { s: "the slip", N: "the speed of the magnetic field", n: "the speed of the rotor" },
+        example: { N: "1500", n: "1440" },
+      },
+      {
+        id: "inverting-amp", name: "Gain of an inverting amplifier", eq: "G = -R/r", find: "G",
+        letters: { G: "the gain", R: "the feedback resistor", r: "the input resistor" },
+        example: { R: "100", r: "10" },
+      },
+      {
+        id: "noninverting-amp", name: "Gain of a non-inverting amplifier", eq: "G = 1 + R/r", find: "G",
+        letters: { G: "the gain", R: "the feedback resistor", r: "the resistor to ground" },
+        example: { R: "90", r: "10" },
+      },
+      {
+        id: "rc-cutoff", name: "Cut-off frequency of an RC filter", eq: "f = 1/(2πRC)", find: "f",
+        letters: { f: "the cut-off frequency", R: "the resistance", C: "the capacitance" },
+        example: { R: "1", C: "1" },
+      },
+      {
+        id: "rl-cutoff", name: "Cut-off frequency of an RL filter", eq: "f = R/(2πL)", find: "f",
+        letters: { f: "the cut-off frequency", R: "the resistance", L: "the inductance" },
+        example: { R: "1", L: "1" },
+      },
+      {
+        id: "q-factor", name: "Quality factor of a circuit", eq: "Q = sqrt(L/C)/R", find: "Q",
+        letters: { Q: "the quality factor", L: "the inductance", C: "the capacitance", R: "the resistance" },
+        example: { L: "4", C: "1", R: "1" },
+      },
+      {
+        id: "voltage-gain-db", name: "Voltage gain in decibels", eq: "G = 20log_10(V/v)", find: "G",
+        letters: { G: "the gain in decibels", V: "the voltage out", v: "the voltage in" },
+        example: { V: "100", v: "1" },
+      },
+      {
+        id: "led-resistor", name: "Resistor for an LED", eq: "R = (S - F)/I", find: "R",
+        letters: { R: "the resistor", S: "the supply voltage", F: "the voltage across the LED", I: "the current wanted" },
+        example: { S: "9", F: "2", I: "7/100" },
+      },
+      {
+        id: "battery-life", name: "How long a battery lasts", eq: "t = C/I", find: "t",
+        letters: { t: "the time in hours", C: "the capacity in amp-hours", I: "the current drawn" },
+        example: { C: "2", I: "1/4" },
+      },
+      {
+        id: "battery-energy", name: "Energy in a battery", eq: "E = VC", find: "E",
+        letters: { E: "the energy in watt-hours", V: "the voltage", C: "the capacity in amp-hours" },
+        example: { V: "12", C: "7" },
+      },
+      {
+        id: "duty-cycle", name: "Duty cycle", eq: "D = 100t/T", find: "D",
+        letters: { D: "the duty cycle, as a percentage", t: "the time the signal is on", T: "the time of one cycle" },
+        example: { t: "3", T: "12" },
+      },
+      {
+        id: "pwm-average", name: "Average voltage of a pulsed signal", eq: "A = DV/100", find: "A",
+        letters: { A: "the average voltage", D: "the duty cycle, as a percentage", V: "the voltage when on" },
+        example: { D: "25", V: "12" },
+      },
+      {
+        id: "transistor-gain", name: "Current gain of a transistor", eq: "c = ba", find: "c",
+        letters: { c: "the collector current", b: "the gain", a: "the base current" },
+        example: { b: "100", a: "1/20" },
+      },
+      {
+        id: "shannon", name: "Greatest data rate of a channel (Shannon)", eq: "C = B·log_2(1 + S)", find: "C",
+        letters: { C: "the greatest data rate", B: "the bandwidth", S: "the signal to noise ratio" },
+        example: { B: "1000", S: "15" },
+      },
+      {
+        id: "rise-time", name: "Rise time and bandwidth", eq: "t = 7/(20B)", find: "t",
+        letters: { t: "the rise time", B: "the bandwidth" },
+        example: { B: "1/10" },
+      },
+      {
+        id: "path-loss", name: "Free-space path loss", eq: "L = 20log_10(d) + 20log_10(f) + 32.44", find: "L",
+        letters: { L: "the loss in decibels", d: "the distance in kilometres", f: "the frequency in megahertz" },
+        example: { d: "10", f: "100" },
+      },
+      {
+        id: "line-impedance", name: "Characteristic impedance of a line", eq: "Z = sqrt(L/C)", find: "Z",
+        letters: { Z: "the characteristic impedance", L: "the inductance for each metre", C: "the capacitance for each metre" },
+        example: { L: "4", C: "1/25" },
+      },
+    ],
+  },
+  {
+    group: "Engineering: civil and aerospace",
+    items: [
+      {
+        id: "active-pressure", name: "Soil pressure coefficient (Rankine)", eq: "K = (1 - sin(a°))/(1 + sin(a°))", find: "K",
+        letters: { K: "the coefficient of active pressure", a: "the soil's angle of friction in degrees" },
+        example: { a: "30" },
+      },
+      {
+        id: "curve-radius", name: "Radius of a banked road curve", eq: "R = v^2/(g(b + f))", find: "R",
+        letters: { R: "the radius", v: "the speed", g: "the pull of gravity per kilogram", b: "the bank, as a slope", f: "the friction coefficient" },
+        example: { v: "20", g: "10", b: "1/10", f: "3/10" },
+      },
+      {
+        id: "stopping-distance", name: "Stopping distance of a vehicle", eq: "d = vt + v^2/(2kg)", find: "d",
+        letters: { d: "the distance", v: "the speed", t: "the reaction time", k: "the friction coefficient", g: "the pull of gravity per kilogram" },
+        example: { v: "20", t: "1", k: "1/2", g: "10" },
+      },
+      {
+        id: "traffic-flow", name: "Traffic flow", eq: "q = kv", find: "q",
+        letters: { q: "the vehicles passing each hour", k: "the vehicles for each kilometre", v: "the speed" },
+        example: { k: "30", v: "60" },
+      },
+      {
+        id: "water-cement", name: "Water-cement ratio of concrete", eq: "w = W/C", find: "w",
+        letters: { w: "the water-cement ratio", W: "the mass of water", C: "the mass of cement" },
+        example: { W: "180", C: "400" },
+      },
+      {
+        id: "lift-force", name: "Lift on a wing", eq: "L = dv^2SC/2", find: "L",
+        letters: { L: "the lift", d: "the density of the air", v: "the speed", S: "the wing area", C: "the lift coefficient" },
+        example: { d: "1", v: "50", S: "10", C: "1/5" },
+      },
+      {
+        id: "dynamic-pressure", name: "Dynamic pressure of moving air", eq: "q = dv^2/2", find: "q",
+        letters: { q: "the dynamic pressure", d: "the density of the air", v: "the speed" },
+        example: { d: "1", v: "40" },
+      },
+      {
+        id: "mach", name: "Mach number", eq: "M = v/c", find: "M",
+        letters: { M: "the Mach number", v: "the speed of the object", c: "the speed of sound" },
+        example: { v: "680", c: "340" },
+      },
+      {
+        id: "thrust", name: "Thrust of a jet or rocket", eq: "T = m(v - u)", find: "T",
+        letters: { T: "the thrust", m: "the mass of gas thrown out each second", v: "the speed of the gas out", u: "the speed of the craft" },
+        example: { m: "100", v: "600", u: "200" },
+      },
+      {
+        id: "rocket-equation", name: "Change of speed of a rocket (Tsiolkovsky)", eq: "d = v·ln(m/n)", find: "d",
+        letters: { d: "the change in speed", v: "the speed of the exhaust", m: "the mass at the start", n: "the mass at the end" },
+        example: { v: "5", m: "2", n: "1" },
+      },
+      {
+        id: "specific-impulse", name: "Specific impulse", eq: "I = F/(mg)", find: "I",
+        letters: { I: "the specific impulse in seconds", F: "the thrust", m: "the mass of fuel burnt each second", g: "the pull of gravity per kilogram" },
+        example: { F: "3000", m: "10", g: "10" },
+      },
+      {
+        id: "wing-loading", name: "Wing loading", eq: "W = M/S", find: "W",
+        letters: { W: "the wing loading", M: "the mass of the aircraft", S: "the wing area" },
+        example: { M: "1200", S: "16" },
+      },
+      {
+        id: "wing-aspect-ratio", name: "Aspect ratio of a wing", eq: "A = b^2/S", find: "A",
+        letters: { A: "the aspect ratio", b: "the wing span", S: "the wing area" },
+        example: { b: "12", S: "16" },
+      },
+      {
+        id: "glide-ratio", name: "Glide ratio", eq: "G = d/h", find: "G",
+        letters: { G: "the glide ratio", d: "the distance covered", h: "the height lost" },
+        example: { d: "3000", h: "100" },
+      },
+      {
+        id: "stall-speed", name: "Stall speed", eq: "v = sqrt(2W/(dSC))", find: "v",
+        letters: { v: "the stall speed", W: "the weight", d: "the density of the air", S: "the wing area", C: "the greatest lift coefficient" },
+        example: { W: "1000", d: "1", S: "10", C: "5" },
+      },
+      {
+        id: "turn-radius", name: "Radius of an aircraft's turn", eq: "r = v^2/(g·tan(b°))", find: "r",
+        letters: { r: "the radius of the turn", v: "the speed", g: "the pull of gravity per kilogram", b: "the angle of bank in degrees" },
+        example: { v: "50", g: "10", b: "45" },
+      },
+    ],
+  },
+  {
+    group: "Engineering: civil and aerospace",
+    items: [
+      {
+        id: "bank-load-factor", name: "Load factor in a banked turn", eq: "n = 1/cos(b°)", find: "n",
+        letters: { n: "the load factor", b: "the angle of bank in degrees" },
+        example: { b: "60" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
@@ -5844,8 +6516,8 @@ export const GROUPS = [
 /* The groups are written in the order they were made; the shelf reads better with
    a family kept together — every "Geometry: …" group right after Shapes, every
    "Physics: …" group right after Motion and forces. */
-for (const [family, anchor] of [["Geometry:", "Shapes"], ["Physics:", "Motion and forces"]]) {
-  const kin = GROUPS.filter((g) => g.group.startsWith(family));
+for (const [family, anchor] of [["Geometry:", "Shapes"], ["Physics:", "Motion and forces"], ["Engineering:", "Engineering: forces, machines and structures"], ["Astronomy:", "Earth science: the solar system and stars"]]) {
+  const kin = GROUPS.filter((g) => g.group.startsWith(family) && g.group !== anchor);
   for (const g of kin) GROUPS.splice(GROUPS.indexOf(g), 1);
   GROUPS.splice(GROUPS.findIndex((g) => g.group === anchor) + 1, 0, ...kin);
 }
