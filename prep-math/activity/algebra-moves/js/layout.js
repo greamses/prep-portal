@@ -431,8 +431,11 @@ function measureBare(node, size, binary) {
       const t = refFace(node.name);
       return { ...base, kind: "text", text: t, italic: false, w: measureText(t, size, false) };
     }
-    case "const":
-      return { ...base, kind: "text", text: node.name, italic: false, w: measureText(node.name, size, false) };
+    case "const": {
+      // Euler's number is written italic, the way it is in print; π stays upright
+      const slanted = node.name === "e";
+      return { ...base, kind: "text", text: node.name, italic: slanted, w: measureText(node.name, size, slanted) };
+    }
 
     case "fn": {
       // A matrix turned on its side is written with a raised T: Aᵀ.
