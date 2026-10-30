@@ -388,6 +388,11 @@ function flow(sheet, blocks, o, paper, mark) {
   page.classList.add("wb-page--flow");
   blocks.forEach((b) => inner.appendChild(b.node));
 
+  /* the worked examples are left out of this layout, so the cover must not
+     promise one */
+  const sub = page.querySelector(".wb-cover__sub");
+  if (sub) sub.innerHTML = sub.innerHTML.replace(/\s*(&nbsp;)?\s*[·•]\s*(&nbsp;)?\s*one done for you/i, "");
+
   const foot = page.querySelector(".wb-page__foot");
   page.querySelector(".wb-page__mark").textContent = `${o.title} · ${codeOf(o)}`;
   page.querySelector(".wb-page__no").textContent = "";

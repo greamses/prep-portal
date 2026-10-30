@@ -3883,7 +3883,7 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .wb-page--flow .wb-sec__say { break-after: avoid; }
 .wb-page--flow .wb-sec > div { break-inside: avoid; }
 /* "one done for you" is how the learning layout teaches; an exam asks */
-.wb-sheet--exam .rw-worked { display: none; }
+.wb-sheet--exam :is(.rw-worked, .wb-sec > .wb-worked, .wb-sec > .vm-video) { display: none; }
 .wb-page--flow .wb-break { height: 0; margin: 0; break-before: page; }
 .wb-page--flow .wb-newpage { break-before: page; }
 .wb-keypart[hidden] { display: none !important; }
