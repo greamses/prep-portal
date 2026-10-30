@@ -57,7 +57,12 @@ addEventListener("pagehide", flush);
 
 const sheet = $("xm-sheet");
 let drawTimer = 0;
-const live = createLive(sheet, { onChange: () => paintScore(), getAttempt: () => state.head.attempt });
+const live = createLive(sheet, {
+  onChange: () => paintScore(),
+  getAttempt: () => state.head.attempt,
+  /* the OMR toggle on a paper that has no sheet makes one */
+  ensureOmr: () => { state.head.omr = true; $("xm-omr").checked = true; clearTimeout(drawTimer); draw(); save(); },
+});
 
 function pageRule() {
   let st = $("xm-page");
@@ -144,7 +149,7 @@ document.querySelectorAll("[data-attempt]").forEach((el) => el.addEventListener(
 }));
 $("xm-paper").addEventListener("change", (e) => { state.head.paper = e.target.value; redraw(); });
 $("xm-clean").addEventListener("change", (e) => { state.head.clean = e.target.checked; redraw(); });
-$("xm-omr").addEventListener("change", (e) => { state.head.omr = e.target.checked; redraw(); setTimeout(() => typeof paintOmrBtn === "function" && paintOmrBtn(), 0); });
+$("xm-omr").addEventListener("change", (e) => { state.head.omr = e.target.checked; redraw(); });
 $("xm-tsheet").addEventListener("change", (e) => { state.head.theorySheet = e.target.checked; redraw(); });
 $("xm-key").addEventListener("change", (e) => { state.head.key = e.target.checked; redraw(); });
 $("xm-tint").addEventListener("change", (e) => { state.head.tint = e.target.checked; redraw(); });
@@ -494,12 +499,13 @@ async function fromCbt() {
   const spec = u.searchParams.get("cbt");
   if (!spec) return;
   const format = u.searchParams.get("format") || "";
-  u.searchParams.delete("cbt"); u.searchParams.delete("format");
+  const attempt = parseInt(u.searchParams.get("attempt") || "0", 10) || 0;
+  u.searchParams.delete("cbt"); u.searchParams.delete("format"); u.searchParams.delete("attempt");
   history.replaceState(null, "", u.pathname + u.search + u.hash);
 
   const out = $("xm-cbt-status");
   let got = null;
-  try { got = await loadPaper(spec, format, state.head.marksEach); } catch { /* reported below */ }
+  try { got = await loadPaper(spec, format, state.head.marksEach, attempt); } catch { /* reported below */ }
   if (!got || !got.questions.length) {
     out.textContent = "That CBT paper could not be found, so the bench is as you left it.";
     return;
@@ -512,6 +518,7 @@ async function fromCbt() {
   state.head.subject = got.head.subject;
   state.head.klass = got.head.klass;
   state.head.key = true;
+  state.head.attempt = got.head.attempt || {};
   flush();
   setLive(true);
 
@@ -563,7 +570,7 @@ function setLive(on) {
   document.documentElement.classList.toggle("xm-focus", on);
   if (on) scrollTo({ top: 0 });
   $("xm-check").hidden = !on; $("xm-clear").hidden = !on;
-  clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces(); paintOmrBtn();
+  clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces();
 }
 function setLiveFaces() {
   faceOf($("xm-live"), live.on ? UI.settings(18) : UI.pen(18), live.on ? "Back to setup" : "Answer on screen");
@@ -572,23 +579,6 @@ function setLiveFaces() {
 }
 $("xm-live").addEventListener("click", () => setLive(!live.on));
 
-/* The OMR sheet, one button. Answering: it turns the sheet on if the paper has none
-   and slides the drawer in or out. Setting up: it adds the sheet to the paper or
-   takes it away (the same switch as in the header). */
-function paintOmrBtn() {
-  const shown = live.on ? state.head.omr && live.omrOpen : state.head.omr;
-  $("xm-omr-btn").setAttribute("aria-pressed", String(!!shown));
-  $("xm-omr-btn").classList.toggle("is-on", !!shown);
-}
-$("xm-omr-btn").addEventListener("click", () => {
-  if (!live.on) { state.head.omr = !state.head.omr; $("xm-omr").checked = state.head.omr; redraw(); paintOmrBtn(); return; }
-  if (!state.head.omr) {
-    state.head.omr = true; $("xm-omr").checked = true;
-    clearTimeout(drawTimer); draw(); save();
-    live.setOmrOpen(true);
-  } else live.setOmrOpen(!live.omrOpen);
-  paintOmrBtn();
-});
 $("xm-check").addEventListener("click", () => {
   if (live.checked) live.reopen(); else live.check(state.questions);
   clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces();
@@ -632,7 +622,6 @@ faceOf($("xm-diagrams"), UI.shapes(18), "Add diagrams to geometry questions");
 document.querySelectorAll('[data-clear="all"]').forEach((b) => { faceOf(b, UI.trash(18), "Delete all questions"); b.dataset.label = "Delete all questions"; });
 faceOf($("xm-print"), UI.print(18), "Print");
 faceOf($("xm-share"), UI.link(18), "Share link");
-faceOf($("xm-omr-btn"), UI.target(18), "OMR sheet");
-setLiveFaces(); paintOmrBtn();
+setLiveFaces();
 enhanceSelects(document.querySelector(".xm-rail"), { className: "pp-select--sm" });
 mountTooltips();

@@ -391,3 +391,11 @@ html, body { overflow-x: clip !important; overflow-y: visible !important; }
 .xp-banner__att { flex: none; margin-left: 0.8rem; font-size: 0.72rem; font-weight: 700; color: var(--ci); border: 1px solid var(--c); padding: 0.15rem 0.5rem; background: #fff; }
 .xp-banner__att.is-over { color: #b0453d; border-color: #b0453d; }
 @media print { .xp-banner__att { display: none !important; } }
+
+/* the OMR toggle: bottom of the right edge, and it rides out beside the sheet when it opens */
+.xo-tab { top: auto; bottom: 1.4rem; right: 0; transition: right 0.25s ease; }
+.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
+
+/* the sticky-note button style sets `position: relative`; the OMR toggle has to be fixed to the edge of the window */
+button.pp-btn.xo-tab { position: fixed; top: auto; bottom: 1.4rem; right: 0; left: auto; margin: 0; z-index: 10045; }
+button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }

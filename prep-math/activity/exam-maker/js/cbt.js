@@ -60,12 +60,35 @@ export function toPaper(bank, { format = "", marksEach = { mcq: 1, fill: 1, sub:
   };
 }
 
+/**
+ * "Attempt N of the paper" as the Exam Maker holds it, one number per kind of question:
+ * N shared out in proportion to how many of each there are (largest remainders), at least
+ * one for every kind that is there. A number that is every question (or more) means all.
+ */
+export function attemptSplit(questions, n) {
+  const kinds = ["mcq", "fill", "sub", "theory"];
+  const count = Object.fromEntries(kinds.map((k) => [k, questions.filter((q) => q.type === k).length]));
+  const total = kinds.reduce((s, k) => s + count[k], 0);
+  if (!(n > 0) || n >= total) return {};
+  const present = kinds.filter((k) => count[k]);
+  const raw = Object.fromEntries(present.map((k) => [k, (count[k] * n) / total]));
+  const out = Object.fromEntries(present.map((k) => [k, Math.max(1, Math.floor(raw[k]))]));
+  let left = n - present.reduce((s, k) => s + out[k], 0);
+  const byRemainder = [...present].sort((a, b) => (raw[b] - Math.floor(raw[b])) - (raw[a] - Math.floor(raw[a])));
+  for (let i = 0; left > 0 && i < 100; i++, left--) out[byRemainder[i % byRemainder.length]]++;
+  /* a kind given as many as it has is simply "all" */
+  present.forEach((k) => { if (out[k] >= count[k]) out[k] = 0; });
+  return out;
+}
+
 /** "class|grade10|biology|Cell Structure|1" → that paper's questions, as above. */
-export async function loadPaper(spec, format, marksEach) {
+export async function loadPaper(spec, format, marksEach, attempt = 0) {
   const [axis, top, subject, topic, paper] = String(spec || "").split("|");
   if (!top || !subject || !topic) return null;
   const { paperQuestions } = await import("/utils/cbt-bank.js");
   const bank = await paperQuestions(axis === "exam" ? "exam" : "class", top, subject, topic, paper || 1);
   if (!bank.length) return null;
-  return toPaper(bank, { format, marksEach });
+  const built = toPaper(bank, { format, marksEach });
+  built.head.attempt = attemptSplit(built.questions, attempt);
+  return built;
 }

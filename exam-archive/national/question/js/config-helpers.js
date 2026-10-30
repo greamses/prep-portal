@@ -30,6 +30,8 @@ const PAGE_CONFIG = {
     // CBT optional filters: format = '' | 'mcq' | 'blank' | 'theory'; topic = exact topic.
     format:    (urlParams.get('format') || '').toLowerCase().trim(),
     topic:     (urlParams.get('topic') || '').trim(),
+    // attempt = how many of a CBT paper's questions to sit (0 = all of them)
+    attempt:   parseInt(urlParams.get('attempt') || '0', 10) || 0,
     grade:     (urlParams.get('grade') || '').trim(),
     limit:     parseInt(urlParams.get('n') || urlParams.get('limit') || '20', 10) || 20,
     // feedback=on → reveal the correct answer + explanation the instant a

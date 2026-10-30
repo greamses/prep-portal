@@ -124,6 +124,7 @@ let cbtState = {
   topic: null, paper: null,
   format: "",                       // "" | "mcq" | "short" | "theory"
   mode: "cbt",                      // "cbt" (on screen) | "paper" (printed, in Exam Maker)
+  attempt: 0,                       // how many of the paper's questions to attempt; 0 = all
   _subjects: null, _topics: null, _papers: 1, _topicCount: 0,
 };
 
@@ -182,6 +183,7 @@ async function renderCbtFormat() {
   wrap.style.display = "";
   const premium = await isPickerPremium();
   renderCbtMode(premium);
+  renderCbtAttempt();
   chips.querySelectorAll(".fmt-chip").forEach((chip) => {
     const fmt = chip.dataset.fmt || "";
     const locked = (fmt === "short" || fmt === "theory") && !premium;
@@ -235,6 +237,20 @@ function renderCbtMode(premium) {
     };
   });
   syncModeLabel();
+}
+
+// "How many to attempt": the paper has up to 60 questions; sit all of them, or only the first 10, 20, 30 or 40.
+function renderCbtAttempt() {
+  const chips = document.querySelectorAll("#cbt-attempt-chips .att-chip");
+  chips.forEach((chip) => {
+    const n = Number(chip.dataset.n) || 0;
+    chip.classList.toggle("checked", n === (cbtState.attempt || 0));
+    chip.onclick = () => {
+      chips.forEach((c) => c.classList.remove("checked"));
+      chip.classList.add("checked");
+      cbtState.attempt = n;
+    };
+  });
 }
 
 // The big button says what it will do.
@@ -385,7 +401,7 @@ function initCbt(axis, region) {
   cbtState = {
     axis, region: region || null,
     top: null, topLabel: null, subject: null, subjectLabel: null, topic: null, paper: null,
-    format: "", mode: "cbt",
+    format: "", mode: "cbt", attempt: 0,
     _subjects: null, _topics: null, _papers: 1, _topicCount: 0,
   };
   relabelCbtSteps();
@@ -1070,12 +1086,14 @@ function targetUrl() {
       paper: String(cbtState.paper),
     });
     if (cbtState.format) params.set("format", cbtState.format);
+    if (cbtState.attempt) params.set("attempt", String(cbtState.attempt));
     if (cbtState.mode === "paper") {
       // Paper mode: the Exam Maker builds the printed paper from this same paper.
       const p = new URLSearchParams({
         cbt: [cbtState.axis, cbtState.top, cbtState.subject, cbtState.topic, cbtState.paper].join("|"),
       });
       if (cbtState.format) p.set("format", cbtState.format);
+      if (cbtState.attempt) p.set("attempt", String(cbtState.attempt));
       return `/prep-math/activity/exam-maker/?${p.toString()}`;
     }
     return `../question/question.html?${params.toString()}`;

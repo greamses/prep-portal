@@ -42,7 +42,7 @@ export function matches(typed, answer) {
 
 /* `store` is where this paper's answers are kept; a shared paper has its own, so
    it never mixes with the papers made on the bench */
-export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt = () => ({}) } = {}) {
+export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt = () => ({}), ensureOmr = () => {} } = {}) {
   let answers = load(store);
   let on = false;
   let checked = false;
@@ -180,8 +180,20 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   }
   function mountDrawer() {
     unmountDrawer();
+    if (!on) return;
     const page = sheet.querySelector(".xp-sheetpage.xp-omr");
-    if (!on || !page) return;
+
+    /* The toggle sits at the BOTTOM of the edge the sheet slides in from, and moves out with it.
+       Without a sheet on the paper it makes one (ensureOmr) and opens it. */
+    const tab = document.createElement("button");
+    tab.type = "button"; tab.className = "pp-btn xo-tab" + (drawerOpen && page ? " is-open" : "");
+    faceOf(tab, UI.target(20), "OMR sheet", "left");
+    tab.setAttribute("aria-expanded", String(drawerOpen && !!page));
+    if (!page) {
+      tab.addEventListener("click", () => { drawerOpen = true; ensureOmr(); });
+      document.body.appendChild(tab);
+      return;
+    }
     const article = page.closest(".xp");
     /* the paper's own rows, dealt into THREE sets side by side: a drawer one row wide
        is as tall as the paper, three wide puts a whole sheet in view */
@@ -194,10 +206,6 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       rows.slice(i, i + per).forEach((li) => ol.appendChild(li));
       grid.appendChild(ol);
     }
-
-    const tab = document.createElement("button");
-    tab.type = "button"; tab.className = "pp-btn xo-tab"; faceOf(tab, UI.target(20), "OMR sheet", "left");
-    tab.setAttribute("aria-expanded", String(drawerOpen));
 
     const drawer = document.createElement("aside");
     drawer.className = "xo-drawer" + (drawerOpen ? " is-open" : "");
@@ -219,6 +227,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       drawerOpen = v;
       drawer.classList.toggle("is-open", v);
       tab.setAttribute("aria-expanded", String(v));
+      tab.classList.toggle("is-open", v);
     };
     tab.addEventListener("click", () => set(!drawerOpen));
     close.addEventListener("click", () => set(false));
@@ -293,7 +302,9 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     setOmrOpen(v) {
       drawerOpen = !!v;
       document.querySelector(".xo-drawer")?.classList.toggle("is-open", drawerOpen);
-      document.querySelector(".xo-tab")?.setAttribute("aria-expanded", String(drawerOpen));
+      const t = document.querySelector(".xo-tab");
+      t?.setAttribute("aria-expanded", String(drawerOpen));
+      t?.classList.toggle("is-open", drawerOpen);
     },
     check(questions) { checked = true; return score(questions); },
     reopen() { checked = false; },

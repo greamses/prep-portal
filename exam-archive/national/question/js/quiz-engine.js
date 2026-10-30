@@ -613,6 +613,8 @@ const Quiz = (() => {
             if (want && f !== want) return false;          // explicit filter
             return true;
           });
+          // "How many to attempt": the first N of the paper, in its own order.
+          if (PAGE_CONFIG.attempt > 0 && PAGE_CONFIG.attempt < questions.length) questions = questions.slice(0, PAGE_CONFIG.attempt);
         } else {
           const params = new URLSearchParams({ subject: subKey, limit: String(per) });
           if (cls) {
@@ -897,6 +899,7 @@ const Quiz = (() => {
     if (!top || !subject || !PAGE_CONFIG.topic) return;
     const q = new URLSearchParams({ cbt: [axis, top, subject, PAGE_CONFIG.topic, PAGE_CONFIG.paper || 1].join("|") });
     if (PAGE_CONFIG.format) q.set("format", PAGE_CONFIG.format);
+    if (PAGE_CONFIG.attempt) q.set("attempt", PAGE_CONFIG.attempt);
 
     let allowed = false;
     try {
