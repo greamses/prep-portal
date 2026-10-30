@@ -11,8 +11,16 @@ import { TYPES, COLOURS, BLANK_HEAD, blank, clean, parseQuestions, promptFor, to
 import { paperHtml, cleanSvg } from "./paper.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath } from "/utils/components/workbook/mathify.js";
+import { UI } from "/utils/components/ui-icons.js";
+import { enhanceSelects } from "/utils/components/pp-select.js";
+import { mountTooltips } from "/utils/components/tooltip.js";
 
 const $ = (id) => document.getElementById(id);
+
+/* workbook.css (the bench's fields and toggles) also carries the workbooks'
+   print rules, including "no subscription, no pages". This page is already
+   behind its own premium guard, so it tells those rules it may print. */
+document.documentElement.classList.add("wb-print-ok");
 const KEY = "xm-paper-v1";
 
 /* ── what is kept ──────────────────────────────────────────────────────── */
@@ -32,12 +40,10 @@ function load() {
 
 const state = load();
 let saveTimer = 0;
-function save() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* storage full or off */ }
-  }, 250);
-}
+const flush = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* storage full or off */ } };
+function save() { clearTimeout(saveTimer); saveTimer = setTimeout(flush, 250); }
+/* a reload or a closed tab inside the 250ms still keeps the last edit */
+addEventListener("pagehide", flush);
 
 /* ── the paper ─────────────────────────────────────────────────────────── */
 
@@ -93,7 +99,7 @@ $("xm-logo-file").addEventListener("change", async (e) => {
 function paintSwatches() {
   const host = $("xm-swatches");
   host.innerHTML = COLOURS.map((c) =>
-    `<button type="button" class="xm-sw pp-plain${c.id === state.head.colour ? " is-on" : ""}" data-c="${c.id}" style="--sw:${c.main}" aria-label="${c.name}" title="${c.name}"></button>`).join("");
+    `<button type="button" class="xm-sw pp-plain${c.id === state.head.colour ? " is-on" : ""}" data-c="${c.id}" style="--sw:${c.main}" aria-label="${c.name}" data-tip="${c.name}"></button>`).join("");
 }
 $("xm-swatches").addEventListener("click", (e) => {
   const b = e.target.closest("[data-c]");
@@ -104,37 +110,43 @@ $("xm-swatches").addEventListener("click", (e) => {
 /* ── the question editor ───────────────────────────────────────────────── */
 
 const list = $("xm-list");
+list.classList.add("xm-list");
+
+/* our filled icons, wherever the markup asks for one with data-ui="name" */
+const ico = (root = document) => root.querySelectorAll("[data-ui]").forEach((el) => {
+  if (!el.firstChild && UI[el.dataset.ui]) el.innerHTML = UI[el.dataset.ui]();
+});
 
 function card(q, i) {
   const t = TYPES[q.type];
   const opts = q.type === "mcq"
     ? `<div class="xm-opts">${q.options.map((o, k) => `
         <label class="xm-opt"><input type="radio" name="a-${q.id}" data-f="answer" data-k="${k}" ${q.answer === k ? "checked" : ""} title="The correct answer" />
-          <b>${"ABCD"[k]}</b><input class="xm-input" data-f="opt" data-k="${k}" value="${esc(o)}" autocomplete="off" placeholder="Option ${"ABCD"[k]}" /></label>`).join("")}</div>`
-    : `<label class="xm-field"><span>Model answer or marking note</span><textarea class="xm-input" data-f="answerText" rows="2">${esc(q.answer)}</textarea></label>`;
-  return `<div class="xm-card" data-id="${q.id}">
+          <b>${"ABCD"[k]}</b><input class="wb-input" data-f="opt" data-k="${k}" value="${esc(o)}" autocomplete="off" placeholder="Option ${"ABCD"[k]}" /></label>`).join("")}</div>`
+    : `<label class="wb-field"><span>Model answer or marking note</span><textarea class="wb-input" data-f="answerText" rows="2">${esc(q.answer)}</textarea></label>`;
+  return `<div class="xm-card pp-sticky" data-id="${q.id}">
     <div class="xm-card__top">
       <span class="xm-card__n">${i + 1}</span>
-      <select class="xm-input xm-card__type" data-f="type" aria-label="Question type">
+      <select class="wb-select xm-card__type" data-f="type" aria-label="Question type">
         ${Object.keys(TYPES).map((k) => `<option value="${k}" ${k === q.type ? "selected" : ""}>${TYPES[k].label}</option>`).join("")}
       </select>
-      <label class="xm-mini">Marks <input class="xm-input" data-f="marks" type="number" min="0" max="100" value="${q.marks}" /></label>
-      ${q.type === "mcq" ? "" : `<label class="xm-mini">Lines <input class="xm-input" data-f="lines" type="number" min="0" max="40" value="${q.lines}" /></label>`}
+      <label class="xm-mini">Marks <input class="wb-input" data-f="marks" type="number" min="0" max="100" value="${q.marks}" /></label>
+      ${q.type === "mcq" ? "" : `<label class="xm-mini">Lines <input class="wb-input" data-f="lines" type="number" min="0" max="40" value="${q.lines}" /></label>`}
       <span class="xm-card__tools">
-        <button class="pp-btn pp-btn--ghost pp-plain" type="button" data-do="up" aria-label="Move up" title="Move up">↑</button>
-        <button class="pp-btn pp-btn--ghost pp-plain" type="button" data-do="down" aria-label="Move down" title="Move down">↓</button>
-        <button class="pp-btn pp-btn--ghost pp-plain" type="button" data-do="del" aria-label="Delete question" title="Delete">×</button>
+        <button class="pp-btn pp-btn--ghost" type="button" data-do="up" aria-label="Move up" data-tip="Move up">${UI.arrowUp(16)}</button>
+        <button class="pp-btn pp-btn--ghost" type="button" data-do="down" aria-label="Move down" data-tip="Move down">${UI.arrowDown(16)}</button>
+        <button class="pp-btn pp-btn--ghost" type="button" data-do="del" aria-label="Delete question" data-tip="Delete">${UI.trash(16)}</button>
       </span>
     </div>
-    <label class="xm-field"><span>${t.label} question</span><textarea class="xm-input" data-f="text" rows="${q.type === "theory" ? 4 : 3}" placeholder="Type the question. Maths goes between $ signs.">${esc(q.text)}</textarea></label>
+    <label class="wb-field"><span>${t.label} question</span><textarea class="wb-input" data-f="text" rows="${q.type === "theory" ? 4 : 3}" placeholder="Type the question. Maths goes between $ signs.">${esc(q.text)}</textarea></label>
     ${opts}
     <details class="xm-svg"${q.svg ? " open" : ""}>
-      <summary>Diagram (SVG)${q.svg ? " — attached" : ""}</summary>
-      <textarea class="xm-input xm-code" data-f="svg" rows="4" spellcheck="false" placeholder="Paste SVG code, or upload an .svg file">${esc(q.svg)}</textarea>
+      <summary>${UI.shapes(16)} Diagram (SVG)${q.svg ? " — attached" : ""}</summary>
+      <textarea class="wb-input xm-code" data-f="svg" rows="4" spellcheck="false" placeholder="Paste SVG code, or upload an .svg file">${esc(q.svg)}</textarea>
       <div class="xm-svg__row">
         <input type="file" accept=".svg,image/svg+xml" data-f="svgfile" hidden />
-        <button class="pp-btn pp-btn--ghost pp-plain" type="button" data-do="svgpick">Upload .svg</button>
-        <button class="pp-btn pp-btn--ghost pp-plain" type="button" data-do="svgclear"${q.svg ? "" : " hidden"}>Remove diagram</button>
+        <button class="pp-btn pp-btn--ghost" type="button" data-do="svgpick">${UI.download(16)} Upload .svg</button>
+        <button class="pp-btn pp-btn--ghost" type="button" data-do="svgclear"${q.svg ? "" : " hidden"}>${UI.trash(16)} Remove diagram</button>
         <span class="xm-svg__bad" hidden>That is not a valid SVG, so it is left off the paper.</span>
       </div>
       <div class="xm-svg__shot">${q.svg ? cleanSvg(q.svg) : ""}</div>
@@ -146,6 +158,7 @@ function renderList() {
   list.innerHTML = state.questions.length
     ? state.questions.map(card).join("")
     : `<p class="xm-hint">Nothing yet. Add a question with the buttons above, or generate a set.</p>`;
+  enhanceSelects(list, { className: "pp-select--sm" });
 }
 
 const find = (el) => {
@@ -252,4 +265,6 @@ $("xm-print").addEventListener("click", async () => {
 
 /* ── go ────────────────────────────────────────────────────────────────── */
 
-fillHead(); renderList(); draw();
+fillHead(); renderList(); draw(); ico();
+enhanceSelects(document.querySelector(".xm-rail"), { className: "pp-select--sm" });
+mountTooltips();

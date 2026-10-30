@@ -1,78 +1,71 @@
 /* ============================================================================
    Exam Maker
    ----------------------------------------------------------------------------
-   Two worlds in one file. The BENCH (.xm-*) is the site: theme tokens, so it
-   follows light and dark. The PAPER (.xp-*) is a printed page: fixed hexes and
-   fixed ink so it prints the same from a dark-mode browser as from a light one.
-   Borders are square or circular, never rounded.
+   Two worlds in one file. The BENCH is the site's own: receipts (.pp-receipt),
+   sticky-note buttons (sticky-ui.css), the workbooks' fields and toggles
+   (workbook.css) and our filled icons (ui-icons.js), so only the layout is
+   written here. The PAPER (.xp-*) is a printed page: fixed hexes and fixed ink,
+   so it prints the same from a dark-mode browser as from a light one.
    ========================================================================== */
 
-.xm-main { font-family: var(--font-mono); position: relative; max-width: 1500px; margin: 0 auto; padding: clamp(1.4rem, 4vw, 3rem) clamp(0.9rem, 3vw, 2rem) 4rem; }
-.xm-hero { text-align: center; margin-bottom: clamp(1.2rem, 3vw, 2rem); }
-.xm-eyebrow { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary); }
-.xm-title { font-family: var(--font-display); font-weight: 900; font-size: clamp(1.9rem, 5vw, 3.1rem); line-height: 1.05; margin: 0.5rem 0 0; }
-.xm-title em { font-style: normal; color: var(--accent-primary); }
-
-.xm-work { display: grid; grid-template-columns: minmax(340px, 460px) minmax(0, 1fr); gap: clamp(1rem, 2.4vw, 2rem); align-items: start; }
+.wb-work.xm-work { display: grid; grid-template-columns: minmax(340px, 470px) minmax(0, 1fr); gap: clamp(1rem, 2.4vw, 2rem); align-items: start; }
 @media (max-width: 1000px) { .xm-work { grid-template-columns: minmax(0, 1fr); } }
 
-/* ── the editor ────────────────────────────────────────────────────────── */
+/* ── the bench ─────────────────────────────────────────────────────────── */
 
-.xm-rail { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
-.xm-box { background: var(--bg-card, #fffdf8); border: 2px solid var(--ink, #2b2620); box-shadow: 4px 4px 0 var(--ink, #2b2620); padding: 1rem 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.8rem; }
-.xm-h { font-family: var(--font-display); font-size: 0.95rem; margin: 0; }
-.xm-count { font-family: var(--font-mono); font-weight: 500; color: var(--text-tertiary); font-size: 0.8rem; }
-.xm-hint { margin: 0; font-size: 0.74rem; line-height: 1.55; color: var(--text-secondary); }
-.xm-hint code { background: var(--accent-primary-soft, rgba(244, 201, 93, 0.35)); padding: 0 0.25em; }
-.xm-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
-.xm-bar__add { display: flex; gap: 0.35rem; flex-wrap: wrap; }
-
-.xm-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
-.xm-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
+.xm-rail { display: flex; flex-direction: column; gap: 1.4rem; min-width: 0; }
+/* two classes: .pp-receipt__paper sets its own display */
+.xm-receipt .xm-paper { display: flex; flex-direction: column; gap: 0.95rem; padding: 1.4rem 1.35rem 1.5rem; }
 .xm-span2 { grid-column: 1 / -1; }
-.xm-field { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; font-size: 0.7rem; letter-spacing: 0.04em; color: var(--text-secondary); }
-.xm-input { font: inherit; font-size: 0.82rem; letter-spacing: 0; color: var(--ink, #2b2620); background: var(--bg-input, #fff); border: 1.5px solid var(--text-tertiary, #8a8174); border-radius: 0; padding: 0.4rem 0.5rem; width: 100%; box-sizing: border-box; min-width: 0; }
-textarea.xm-input { resize: vertical; line-height: 1.5; }
-.xm-input:focus { outline: 2px solid var(--accent-primary, #f4c95d); outline-offset: 1px; }
-.xm-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; align-self: end; padding-bottom: 0.3rem; }
-.xm-go { align-self: flex-start; }
+.xm-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
+.xm-hint { margin: 0; font-size: 0.76rem; line-height: 1.6; color: var(--text-secondary); }
+.xm-hint code { background: var(--accent-primary); background: color-mix(in srgb, var(--accent-primary) 35%, transparent); padding: 0 0.25em; }
+.xm-count { font-family: var(--font-mono); font-weight: 500; color: var(--text-tertiary); font-size: 0.8rem; }
 .xm-status { margin: 0; min-height: 1.2em; font-size: 0.76rem; color: var(--text-secondary); }
-.xm-status.is-bad { color: var(--accent-danger, #c0392b); }
+.xm-status.is-bad { color: var(--accent-danger); }
+.xm-go { align-self: flex-start; }
+.xm-bar__add { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
-.xm-logo { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.xm-logo__shot { height: 44px; width: auto; max-width: 90px; object-fit: contain; border: 1px dashed var(--text-tertiary); padding: 2px; background: #fff; }
-.xm-swatches { display: flex; gap: 0.45rem; flex-wrap: wrap; }
-.xm-sw { width: 28px; height: 28px; padding: 0; background: var(--sw); border: 2px solid transparent; outline: 2px solid var(--ink, #2b2620); outline-offset: 0; cursor: pointer; }
-.xm-sw.is-on { border-color: #fff; outline-width: 3px; box-shadow: 3px 3px 0 var(--ink, #2b2620); }
+/* a glyph sitting in a heading or on a note */
+[data-ui] { display: inline-flex; vertical-align: middle; }
+[data-ui] svg, .xm-card svg { width: 18px; height: 18px; display: block; }
+.pp-btn [data-ui] { margin-right: 0.15rem; }
+.wb-rail__title [data-ui] svg { width: 20px; height: 20px; }
 
-/* one question being edited */
-.xm-card { border: 1.5px solid var(--ink, #2b2620); background: var(--bg-surface, rgba(255, 255, 255, 0.55)); padding: 0.7rem; margin-top: 0.7rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.xm-logo { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.xm-logo__shot { height: 46px; width: auto; max-width: 92px; object-fit: contain; background: #fff; padding: 3px; box-shadow: 0 2px 6px rgba(42, 39, 35, 0.18); }
+
+/* paper colour: round chips, the one place a button stays plain */
+.xm-swatches { display: flex; gap: 0.55rem; flex-wrap: wrap; }
+.xm-sw { width: 30px; height: 30px; padding: 0; border-radius: 50%; background: var(--sw); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(42, 39, 35, 0.3); cursor: pointer; }
+.xm-sw.is-on { box-shadow: 0 0 0 3px var(--sw), 0 3px 8px rgba(42, 39, 35, 0.35); transform: scale(1.1); }
+
+/* one question being edited: a sticky note on the receipt */
+.xm-list .xm-card { display: flex; flex-direction: column; gap: 0.7rem; padding: 1.1rem 0.9rem 0.9rem; margin-top: 1rem; text-align: left; }
 .xm-card__top { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.xm-card__n { width: 26px; height: 26px; border-radius: 50%; background: var(--ink, #2b2620); color: var(--text-on-accent, #fff); display: grid; place-items: center; font-size: 0.74rem; font-weight: 700; flex: none; }
+.xm-list .xm-card__n { width: 28px; height: 28px; font-family: var(--font-mono); border-radius: 50%; background: #2a2723; color: #fff; display: grid; place-items: center; font-size: 0.9rem; font-weight: 700; flex: none; }
 .xm-card__type { width: auto; flex: 1 1 8rem; }
 .xm-mini { display: flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; color: var(--text-secondary); }
-.xm-mini .xm-input { width: 3.6rem; }
-.xm-card__tools { margin-left: auto; display: flex; gap: 0.2rem; }
-.xm-opts { display: flex; flex-direction: column; gap: 0.35rem; }
-.xm-opt { display: flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; }
+.xm-mini .wb-input { width: 3.8rem; padding: 0.35rem 0.4rem; }
+.xm-card__tools { margin-left: auto; display: flex; gap: 0.3rem; }
+.xm-card__tools .pp-btn { padding: 0.3rem 0.45rem; min-width: 0; }
+textarea.wb-input { resize: vertical; line-height: 1.5; }
+.xm-opts { display: flex; flex-direction: column; gap: 0.4rem; }
+.xm-opt { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; }
 .xm-opt b { width: 1.2em; }
-.xm-svg summary { cursor: pointer; font-size: 0.74rem; color: var(--text-secondary); }
-.xm-svg[open] { display: flex; flex-direction: column; gap: 0.5rem; }
+.xm-svg summary { cursor: pointer; font-size: 0.76rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.4rem; }
+.xm-svg[open] { display: flex; flex-direction: column; gap: 0.55rem; }
 .xm-code { font-family: var(--font-mono); font-size: 0.7rem; }
-.xm-svg__row { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
-.xm-svg__bad { font-size: 0.72rem; color: var(--accent-danger, #c0392b); }
-.xm-svg__shot svg { max-width: 220px; max-height: 160px; background: #fff; border: 1px dashed var(--text-tertiary); display: block; }
+.xm-svg__row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.xm-svg__bad { font-size: 0.72rem; color: var(--accent-danger); }
+.xm-svg__shot svg { max-width: 220px; max-height: 160px; width: auto; height: auto; background: #fff; display: block; box-shadow: 0 1px 4px rgba(42, 39, 35, 0.2); }
 .xm-svg__shot:empty { display: none; }
 
 /* ── the preview ───────────────────────────────────────────────────────── */
 
 .xm-preview { min-width: 0; }
-.xm-toolbar { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.6rem; font-size: 0.8rem; color: var(--text-secondary); }
-.xm-spacer { flex: 1; }
-.xm-note { font-size: 0.72rem; line-height: 1.55; color: var(--text-tertiary); margin: 0 0 0.8rem; }
-.xm-viewport { overflow-x: auto; padding: 0.2rem 0.2rem 1.2rem; background: transparent; }
-
-.xm-sheet { background: #fff; color: #1d1b18; width: 210mm; min-height: 297mm; box-sizing: border-box; padding: 14mm 13mm 16mm; margin: 0 auto; box-shadow: 0 0 0 1px #d9d2c5, 6px 8px 0 rgba(43, 38, 32, 0.18); }
+.wb-viewport.xm-viewport { overflow-x: auto; padding: 0.2rem 0.2rem 1.2rem; }
+.xm-sheet { background: #fff; color: #1d1b18; width: 210mm; min-height: 297mm; box-sizing: border-box; padding: 14mm 13mm 16mm; margin: 0 auto; box-shadow: 0 6px 22px rgba(42, 39, 35, 0.2); }
 .xm-sheet[data-paper="letter"] { width: 8.5in; min-height: 11in; }
 
 /* ══ THE PAPER ═══════════════════════════════════════════════════════════ */
@@ -144,9 +137,10 @@ textarea.xm-input { resize: vertical; line-height: 1.5; }
 
 @media print {
   html, body { background: #fff !important; }
-  .site-nav, #loader, .xm-hero, .xm-rail, .xm-toolbar, .xm-note, #prepbot, .pp-about { display: none !important; }
+  .site-nav, #loader, .wb-paint, .wb-hero, .xm-rail, .wb-toolbar, .wb-note, #prepbot, .pp-about { display: none !important; }
   .xm-main { padding: 0; max-width: none; }
   .xm-work { display: block; }
+  .wb-main { max-width: none; padding: 0; }
   .xm-viewport { overflow: visible; padding: 0; }
   .xm-sheet, .xm-sheet[data-paper] { width: auto; min-height: 0; padding: 0; margin: 0; box-shadow: none; }
 }

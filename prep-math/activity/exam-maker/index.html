@@ -35,10 +35,20 @@
       href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
     <link rel="stylesheet" href="/utils/components/nav.css" />
     <link rel="stylesheet" href="/utils/components/components.css" />
+    <!-- The bench's own pieces (fields, inputs, toggles, the toolbar) are the
+         workbooks'; this page's sheet adds only the exam paper. -->
+    <link rel="stylesheet" href="/utils/components/select.css" />
+    <link rel="stylesheet" href="/utils/components/workbook.css" />
     <link rel="stylesheet" href="./style.css" />
+    <!-- Turns every .pp-btn into a sticky note. Loaded last, as its own header asks. -->
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
 
     <script type="importmap">
       {
@@ -57,102 +67,112 @@
     <script type="module" src="/utils/auth/login-guard.js"></script>
     <nav class="site-nav" data-nav="main"></nav>
 
-    <main class="xm-main">
-      <header class="xm-hero">
-        <span class="xm-eyebrow">Mathematics · Something to print</span>
-        <h1 class="xm-title">Exam Maker<em>.</em></h1>
+    <div class="wb-paint" aria-hidden="true"></div>
+
+    <main class="wb-main xm-main">
+      <header class="wb-hero">
+        <span class="wb-eyebrow"><span data-ui="doc"></span> Mathematics · Something to print</span>
+        <h1 class="wb-title">Exam Maker<em>.</em></h1>
       </header>
 
-      <div class="xm-work">
-        <!-- ═══ THE EDITOR ═══ -->
+      <div class="wb-work xm-work">
+        <!-- ═══ THE BENCH ═══ -->
         <aside class="xm-rail">
-          <section class="xm-box">
-            <h2 class="xm-h">First-page header</h2>
-            <div class="xm-grid2">
-              <label class="xm-field xm-span2"><span>School name</span>
-                <input class="xm-input" data-h="school" maxlength="64" autocomplete="off" placeholder="St Mary's International School" /></label>
-              <label class="xm-field"><span>Term</span>
-                <input class="xm-input" data-h="term" maxlength="32" autocomplete="off" placeholder="First Term" /></label>
-              <label class="xm-field"><span>Exam year</span>
-                <input class="xm-input" data-h="year" maxlength="16" autocomplete="off" placeholder="2026" /></label>
-              <label class="xm-field"><span>Exam subject</span>
-                <input class="xm-input" data-h="subject" maxlength="48" autocomplete="off" placeholder="Mathematics" /></label>
-              <label class="xm-field"><span>Exam date</span>
-                <input class="xm-input" data-h="date" maxlength="32" autocomplete="off" placeholder="12 December 2026" /></label>
-              <label class="xm-field"><span>Class (optional)</span>
-                <input class="xm-input" data-h="klass" maxlength="24" autocomplete="off" placeholder="Basic 5" /></label>
-              <label class="xm-field"><span>Time allowed (optional)</span>
-                <input class="xm-input" data-h="time" maxlength="32" autocomplete="off" placeholder="1 hour 30 minutes" /></label>
-            </div>
-            <div class="xm-field">
-              <span>School logo</span>
-              <div class="xm-logo">
-                <img class="xm-logo__shot" id="xm-logo-shot" alt="" hidden />
-                <input type="file" id="xm-logo-file" accept="image/*" hidden />
-                <button class="pp-btn pp-btn--ghost pp-plain" id="xm-logo-pick" type="button">Choose a picture</button>
-                <button class="pp-btn pp-btn--ghost pp-plain" id="xm-logo-drop" type="button" hidden>Remove</button>
+          <div class="pp-receipt xm-receipt">
+            <div class="pp-receipt__paper xm-paper">
+              <h2 class="wb-rail__title"><span data-ui="doc"></span> First-page header</h2>
+              <div class="wb-row2">
+                <label class="wb-field xm-span2"><span>School name</span>
+                  <input class="wb-input" data-h="school" maxlength="64" autocomplete="off" placeholder="St Mary's International School" /></label>
+                <label class="wb-field"><span>Term</span>
+                  <input class="wb-input" data-h="term" maxlength="32" autocomplete="off" placeholder="First Term" /></label>
+                <label class="wb-field"><span>Exam year</span>
+                  <input class="wb-input" data-h="year" maxlength="16" autocomplete="off" placeholder="2026" /></label>
+                <label class="wb-field"><span>Exam subject</span>
+                  <input class="wb-input" data-h="subject" maxlength="48" autocomplete="off" placeholder="Mathematics" /></label>
+                <label class="wb-field"><span>Exam date</span>
+                  <input class="wb-input" data-h="date" maxlength="32" autocomplete="off" placeholder="12 December 2026" /></label>
+                <label class="wb-field"><span>Class (optional)</span>
+                  <input class="wb-input" data-h="klass" maxlength="24" autocomplete="off" placeholder="Basic 5" /></label>
+                <label class="wb-field"><span>Time allowed (optional)</span>
+                  <input class="wb-input" data-h="time" maxlength="32" autocomplete="off" placeholder="1 hour 30 minutes" /></label>
+              </div>
+              <div class="wb-field">
+                <span>School logo</span>
+                <div class="xm-logo">
+                  <img class="xm-logo__shot" id="xm-logo-shot" alt="" hidden />
+                  <input type="file" id="xm-logo-file" accept="image/*" hidden />
+                  <button class="pp-btn pp-btn--ghost" id="xm-logo-pick" type="button"><span data-ui="image"></span> Choose a picture</button>
+                  <button class="pp-btn pp-btn--ghost" id="xm-logo-drop" type="button" hidden><span data-ui="trash"></span> Remove</button>
+                </div>
+              </div>
+              <div class="wb-field">
+                <span>Paper colour</span>
+                <div class="xm-swatches" id="xm-swatches"></div>
+              </div>
+              <div class="wb-row2">
+                <label class="wb-field xm-span2"><span>Paper</span>
+                  <select class="wb-select" id="xm-paper"><option value="a4">A4</option><option value="letter">US Letter</option></select></label>
+                <label class="wb-toggle"><input type="checkbox" id="xm-key" /> Answer key at the back</label>
+                <label class="wb-toggle"><input type="checkbox" id="xm-breaks" /> New page for each section</label>
               </div>
             </div>
-            <div class="xm-field">
-              <span>Paper colour</span>
-              <div class="xm-swatches" id="xm-swatches"></div>
-            </div>
-            <div class="xm-grid2">
-              <label class="xm-field"><span>Paper</span>
-                <select class="xm-input" id="xm-paper"><option value="a4">A4</option><option value="letter">US Letter</option></select></label>
-              <label class="xm-toggle"><input type="checkbox" id="xm-key" /> Answer key at the back</label>
-              <label class="xm-toggle xm-span2"><input type="checkbox" id="xm-breaks" /> Start each section on a new page</label>
-            </div>
-          </section>
+          </div>
 
-          <section class="xm-box">
-            <h2 class="xm-h">Write with our models</h2>
-            <p class="xm-hint">The model writes the questions; the paper's layout is ours. Maths is typeset for you.</p>
-            <label class="xm-field"><span>Topic</span>
-              <input class="xm-input" id="xm-ai-topic" maxlength="120" autocomplete="off" placeholder="Fractions, bearings, quadratic equations…" /></label>
-            <div class="xm-grid3">
-              <label class="xm-field"><span>MCQ</span><input class="xm-input" id="xm-ai-mcq" type="number" min="0" max="40" value="10" /></label>
-              <label class="xm-field"><span>Subjective</span><input class="xm-input" id="xm-ai-sub" type="number" min="0" max="20" value="5" /></label>
-              <label class="xm-field"><span>Theory</span><input class="xm-input" id="xm-ai-theory" type="number" min="0" max="10" value="3" /></label>
+          <div class="pp-receipt xm-receipt">
+            <div class="pp-receipt__paper xm-paper">
+              <h2 class="wb-rail__title"><span data-ui="sparkles"></span> Write with our models</h2>
+              <p class="xm-hint">The model writes the questions; the layout of the paper is ours. Maths is typeset for you.</p>
+              <label class="wb-field"><span>Topic</span>
+                <input class="wb-input" id="xm-ai-topic" maxlength="120" autocomplete="off" placeholder="Fractions, bearings, quadratic equations" /></label>
+              <div class="xm-grid3">
+                <label class="wb-field"><span>MCQ</span><input class="wb-input" id="xm-ai-mcq" type="number" min="0" max="40" value="10" /></label>
+                <label class="wb-field"><span>Subjective</span><input class="wb-input" id="xm-ai-sub" type="number" min="0" max="20" value="5" /></label>
+                <label class="wb-field"><span>Theory</span><input class="wb-input" id="xm-ai-theory" type="number" min="0" max="10" value="3" /></label>
+              </div>
+              <label class="wb-field"><span>Level</span>
+                <input class="wb-input" id="xm-ai-level" maxlength="60" autocomplete="off" placeholder="Basic 5, JSS 2, SS 3 WAEC" /></label>
+              <label class="wb-toggle"><input type="checkbox" id="xm-ai-svg" checked /> Draw a diagram where a question needs one</label>
+              <button class="pp-btn xm-go" id="xm-ai-go" type="button"><span data-ui="sparkle"></span> Generate questions</button>
+              <p class="xm-status" id="xm-ai-status" role="status"></p>
             </div>
-            <label class="xm-field"><span>Level</span>
-              <input class="xm-input" id="xm-ai-level" maxlength="60" autocomplete="off" placeholder="Basic 5, JSS 2, SS 3 WAEC…" /></label>
-            <label class="xm-toggle"><input type="checkbox" id="xm-ai-svg" checked /> Draw a diagram where a question needs one</label>
-            <button class="pp-btn pp-plain xm-go" id="xm-ai-go" type="button">Generate questions</button>
-            <p class="xm-status" id="xm-ai-status" role="status"></p>
-          </section>
+          </div>
 
-          <section class="xm-box">
-            <div class="xm-bar">
-              <h2 class="xm-h">Questions <span class="xm-count" id="xm-count"></span></h2>
-              <span class="xm-bar__add">
-                <button class="pp-btn pp-btn--ghost pp-plain" data-add="mcq" type="button">+ MCQ</button>
-                <button class="pp-btn pp-btn--ghost pp-plain" data-add="sub" type="button">+ Subjective</button>
-                <button class="pp-btn pp-btn--ghost pp-plain" data-add="theory" type="button">+ Theory</button>
-              </span>
+          <div class="pp-receipt xm-receipt">
+            <div class="pp-receipt__paper xm-paper">
+              <h2 class="wb-rail__title"><span data-ui="list"></span> Questions <span class="xm-count" id="xm-count"></span></h2>
+              <div class="xm-bar__add">
+                <button class="pp-btn pp-btn--ghost" data-add="mcq" type="button"><span data-ui="plus"></span> MCQ</button>
+                <button class="pp-btn pp-btn--ghost" data-add="sub" type="button"><span data-ui="plus"></span> Subjective</button>
+                <button class="pp-btn pp-btn--ghost" data-add="theory" type="button"><span data-ui="plus"></span> Theory</button>
+              </div>
+              <p class="xm-hint">Write maths between <code>$ $</code>, for example <code>$\frac{3}{4} + \frac{1}{2}$</code>. It is typeset on the paper.</p>
+              <div id="xm-list"></div>
             </div>
-            <p class="xm-hint">Write maths between <code>$ $</code>, for example <code>$\frac{3}{4} + \frac{1}{2}$</code>. It is typeset on the paper.</p>
-            <div id="xm-list"></div>
-          </section>
+          </div>
         </aside>
 
         <!-- ═══ THE PAPER ═══ -->
-        <section class="xm-preview">
-          <div class="xm-toolbar">
-            <span id="xm-summary"></span>
-            <span class="xm-spacer"></span>
-            <button class="pp-btn pp-plain" id="xm-print" type="button">Print</button>
+        <section class="wb-preview xm-preview">
+          <div class="wb-toolbar">
+            <span class="wb-toolbar__count"><span data-ui="doc"></span> <span id="xm-summary"></span></span>
+            <span class="wb-toolbar__spacer"></span>
+            <button class="pp-btn" id="xm-print" type="button">Print <span data-ui="print"></span></button>
           </div>
-          <p class="xm-note">
+          <p class="wb-note">
             In the print dialog turn <strong>Headers and footers</strong> off and leave margins on <strong>Default</strong>;
             the paper numbers its own pages. Choose <strong>Save as PDF</strong> to keep a copy.
           </p>
-          <div class="xm-viewport"><div class="xm-sheet" id="xm-sheet"></div></div>
+          <div class="wb-viewport xm-viewport"><div class="xm-sheet" id="xm-sheet"></div></div>
         </section>
       </div>
     </main>
 
     <script type="module" src="/utils/components/nav-builder.js"></script>
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".wb-paint").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
     <script type="module" src="./js/main.js"></script>
     <!-- seo:about -->
     <section id="pp-about" class="pp-about" data-access="premium" hidden>
