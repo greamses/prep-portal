@@ -124,7 +124,7 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
 @media print { .xp-sec--page { margin-top: 0; } }
 /* a section's head: a receipt tinted with the paper colour, the section's letter a sticky note stuck to it */
 .xp-sec-receipt { margin-bottom: 4.5mm; break-after: avoid; --surface-secondary: #fff; --ink: #1d1b18; --shadow-color: 29, 27, 24; }
-.xp-sec-receipt .xp-banner { --tooth: 7px; --pp-paper: var(--cs); display: flex; align-items: center; flex-wrap: wrap; gap: 1mm 4mm; padding: 4.2mm 6.5mm; color: #1d1b18; }
+.xp-sec-receipt .xp-banner { --tooth: 7px; --pp-paper: #fffdf7; display: flex; align-items: center; flex-wrap: wrap; gap: 1mm 4mm; padding: 4.2mm 6.5mm; color: #1d1b18; }
 .xp-banner__tag { position: relative; flex: none; background: #fff1a6; color: #1d1b18; font-size: 8pt; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; padding: 1.8mm 3.6mm; transform: rotate(-2.2deg); filter: drop-shadow(0.4mm 0.7mm 0.7mm rgba(29, 27, 24, 0.3)); }
 .xp-banner__tag::before { content: ""; position: absolute; top: -1.7mm; left: 50%; width: 9mm; height: 3.2mm; margin-left: -4.5mm; background: rgba(255, 255, 255, 0.7); border: 0.2mm solid rgba(29, 27, 24, 0.12); transform: rotate(3deg); }
 .xp-banner__name { font-family: "Unbounded", "JetBrains Mono", monospace; font-weight: 700; font-size: 11pt; color: var(--ci); }
@@ -206,7 +206,7 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
   .xp-cell span, .xp-student, .xp-banner__name, .xp-banner__marks, .xp-marks, .xp-key__no, .xp-opts b { color: var(--ci) !important; }
   .xp-cell b { color: #1d1b18 !important; }
   .xp-student em { background: var(--cs) !important; }
-  .xp-banner { background: var(--cs) !important; }
+  .xp-banner { background: #fffdf7 !important; }
   .xp-svg__frame { background: #fff !important; }
   .xp-svg figcaption { color: var(--ci) !important; }
   .xp-banner__tag { background: #fff1a6 !important; color: #1d1b18 !important; }
