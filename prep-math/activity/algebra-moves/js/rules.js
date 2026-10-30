@@ -85,6 +85,11 @@ export const RULE_GROUPS = [
       r("r-ineq-divide", "Divide both sides by a positive number", "2x < 6  →  x < 3", ["divide"]),
       r("r-ineq-negative", "Multiply or divide by a negative number: the sign turns round", "−2x < 6  →  x > −3", ["divide", "times", "flip"]),
       r("r-ineq-swap", "Read it the other way round", "5 < x  →  x > 5", ["swap"]),
+      r("r-ineq-chain", "A compound inequality: do the same to all three parts", "−3 < 2x + 1 ≤ 7  →  −4 < 2x ≤ 6", ["across", "divide", "times"]),
+      r("r-abs-equal", "An absolute value equation: two answers", "|x − 3| = 5  →  x − 3 = 5 or x − 3 = −5", ["abssplit"]),
+      r("r-abs-less", "Absolute value less than a number: between its opposite and it", "|x − 3| < 5  →  −5 < x − 3 < 5", ["abssplit"]),
+      r("r-abs-greater", "Absolute value greater than a number: outside, two ranges", "|x| > 4  →  x < −4 or x > 4", ["abssplit"]),
+      r("r-abs-out", "A number multiplying inside the bars comes out", "|3x| = 3|x|", ["absout"]),
     ],
   },
   {

@@ -101,7 +101,7 @@ function allowed(offer, eq, keepFactored) {
   // the log laws and the change of base are moves to choose, not steps to take by themselves
   if (offer.key === "loglaw" || offer.key === "logchange" || offer.key === "rootpower") return false;
   if (offer.key === "factorfrac" && !AUTO_FACTOR) return false;
-  if (offer.key === "fracdiv") return false;        // a way of writing it, chosen by the student
+  if (offer.key === "fracdiv" || offer.key === "abssplit" || offer.key === "absout") return false;        // a way of writing it, chosen by the student
   // factored stays factored: no opening the brackets again, no completing a square
   if (keepFactored && (offer.key === "expand" || offer.key === "square" || (offer.key === "multiply" && offer.label === "Multiply it out"))) return false;
   if (AUTO_FACTOR && offer.key === "square" && eq.kind === "expr") return false;
@@ -118,6 +118,12 @@ export function isSolved(eq, { given = null } = {}) {
      right — x = 5, but just as much t = (v − u)/a or the quadratic formula,
      which are what rearranging a formula is FOR — with nothing left on the
      right that a tidy-up would still change. */
+  // a < x < b: the letter alone in the middle, a number at each end
+  if (eq.m) {
+    if (eq.m.kind !== "var" || A.varsIn(eq.l).length || A.varsIn(eq.r).length) return false;
+    if (eq.rel === ">" || eq.rel === "≥") return false;          // 3 > x > −2 is one "turn it round" from −2 < x < 3
+    return ![eq.l, eq.r].some((part) => A.allTerms(eq).filter((t) => A.findById(part, t.id)).some((t) => offers(eq, t.id, { given }).some((o) => TIDY.has(o.key))));
+  }
   if (eq.l.kind !== "var" || A.varsIn(eq.r).includes(eq.l.name)) return false;
   // A d/dx, an ∫ or a lim still on the right is work still to do.
   let calculus = false;
@@ -136,7 +142,7 @@ export function isSolved(eq, { given = null } = {}) {
  * so this returns null for all of it rather than guessing at one.
  */
 export function solvedLetterValue(eq, { given = null } = {}) {
-  if (eq.kind !== "eq" || eq.l.kind !== "var") return null;
+  if (eq.kind !== "eq" || eq.m || eq.l.kind !== "var") return null;
   if (!isSolved(eq, { given })) return null;
   const value = A.exactValue(eq.r);
   // y = 2x + 1 is as much an answer to hand to another equation as y = 5.
@@ -145,11 +151,13 @@ export function solvedLetterValue(eq, { given = null } = {}) {
 
 /** 5 = x is the same answer, just written backwards — one "turn it round" away. */
 const isAnswerBackwards = (eq) =>
+  (eq.kind === "eq" && !!eq.m && eq.m.kind === "var" && (eq.rel === ">" || eq.rel === "≥")) ||
   eq.kind === "eq" && eq.r.kind === "var" && A.termsOf(eq.l).length === 1 && isNumberNode(eq.l);
 
 /** Which side we are gathering the letters on — wherever most of them already are. */
 function letterSide(eq) {
   if (eq.kind === "expr") return "e";
+  if (eq.m) return "m";                         // a < x < b: the letters are gathered in the middle
   const count = (side) => A.termsOf(side).filter((t) => !A.isNumeric(t)).length;
   return count(eq.r) > count(eq.l) ? "r" : "l";
 }

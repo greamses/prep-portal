@@ -78,6 +78,7 @@ function evalAt(node, env) {
     case "num":  return Number(node.v.n) / Number(node.v.d);
     case "var":  return env[node.name];
     case "neg":  return -evalAt(node.k, env);
+    case "abs":  return Math.abs(evalAt(node.k, env));
     case "sum":  return node.kids.reduce((a, k) => a + evalAt(k, env), 0);
     case "prod": return node.kids.reduce((a, k) => a * evalAt(k, env), 1);
     case "frac":
@@ -241,17 +242,26 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
   const relOf = (root) => (root.kind === "eq" && root.rel) || "=";
   if (relOf(prev) !== "=" || relOf(next) !== "=") {
     if (prev.kind !== "eq" || next.kind !== "eq") return { ok: false, why: "that turns it into a different kind of thing" };
+    const says = (d, r) => (r === "<" || r === "≤" ? d < 0 : r === ">" || r === "≥" ? d > 0 : false);
     const holds = (root, env) => {
+      if (root.m) {                         // a < x < b: both halves must hold
+        const a = evalAt(root.l, env), b = evalAt(root.m, env), c = evalAt(root.r, env);
+        const d1 = a - b, d2 = b - c;
+        if (![d1, d2].every(Number.isFinite)) return null;
+        if (Math.abs(d1) < 1e-9 || Math.abs(d2) < 1e-9) return "edge";
+        return says(d1, root.rel) && says(d2, root.rel2);
+      }
       const d = diffOf(root, env);
       if (!Number.isFinite(d)) return null;
       if (Math.abs(d) < 1e-9) return "edge";
-      const r = relOf(root);
-      return r === "<" || r === "≤" ? d < 0 : r === ">" || r === "≥" ? d > 0 : false;
+      return says(d, relOf(root));
     };
     let usable = 0, sawTrue = false, sawFalse = false;
-    for (let i = 0; i < samples; i++) {
+    // A scan, not a handful of spots: the edge of a solution set can sit anywhere, and a wrong edge
+    // only shows at the values between the right one and the wrong one.
+    for (let i = 0; i < 1200; i++) {
       const env = {};
-      for (const n of names) env[n] = sample(i, n) * (1 + (i % 5) * 3);            // reach well past the small values
+      names.forEach((n, k) => { env[n] = n in fixed ? fixed[n] : ((i * (7 + 11 * k) + 13 * k) % 1200) / 10 - 60 + 0.013 * (i % 7); });
       for (const [n, d] of Object.entries(defined)) env[n] = evalAt(d, env);
       const a = holds(prev, env), b = holds(next, env);
       if (a === null || b === null || a === "edge" || b === "edge") continue;

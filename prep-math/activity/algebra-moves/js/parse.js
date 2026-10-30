@@ -25,12 +25,12 @@ import * as A from "./ast.js";
 import * as R from "./rational.js";
 
 const isDigit = (c) => c >= "0" && c <= "9";
-// The full Greek alphabet, lowercase only: an uppercase Greek letter is
-// indistinguishable on the page from the Latin one it happens to look like
-// (Α is "A", Β is "B"), which would make two different variables share a
-// glyph. Lowercase has no such collision. Final sigma (ς) is left out — it
+// The full Greek alphabet in lowercase, and the capitals that are NOT indistinguishable on the page
+// from a Latin letter (Α is "A", Β is "B"), which would make two different variables share a
+// glyph. Final sigma (ς) is left out — it
 // is a spelling rule for the end of a word, not a different variable.
-const GREEK = "αβγδεζηθικλμνξοπρστυφχψω";
+// Capitals are only the ones that do not look like a Latin letter: Γ Δ Θ Λ Ξ Π Φ Ψ Ω. (Σ is the sum sign.)
+const GREEK = "αβγδεζηθικλμνξοπρστυφχψωΓΔΘΛΞΠΦΨΩ";
 const isAlpha = (c) => (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || GREEK.includes(c);
 
 /* A function's name inside a run of letters (3log_2(x), 2sin_…) means the run is a product with a
@@ -143,6 +143,7 @@ function tokenise(src, lenient = false) {
     if (c === "√") { out.push({ t: "root", v: "√", at: i }); i++; continue; }
     if (isAlpha(c)) { out.push({ t: "var", v: c, at: i }); i++; continue; }
     // < > ≤ ≥ (and <= >=) make the line an inequality
+    if (c === "|") { out.push({ t: "bar", v: "|", at: i }); i++; continue; }
     if (c === "<" || c === ">" || c === "≤" || c === "≥") {
       let v = c, n = 1;
       if ((c === "<" || c === ">") && src[i + 1] === "=") { v = c === "<" ? "≤" : "≥"; n = 2; }
@@ -178,6 +179,7 @@ export function parse(src, { lenient = false } = {}) {
   const toks = tokenise(src, lenient);
   let p = 0;
   const peek = () => toks[p];
+  let absDepth = 0;                       // inside |…| a bar closes it instead of starting a new factor
   const eat = (t) => {
     if (toks[p].t !== t) throw Object.assign(new SyntaxError(`I expected ${t === "end" ? "the end" : `"${t}"`} here.`), { at: toks[p].at, expected: t });
     return toks[p++];
@@ -223,6 +225,13 @@ export function parse(src, { lenient = false } = {}) {
     // e and π are numbers, not letters.
     if (tk.t === "var" && (tk.v === "e" || tk.v === "π")) { p++; return span(mark, A.cnst(tk.v)); }
     if (tk.t === "var") { p++; return span(mark, A.vr(tk.v)); }
+    if (tk.t === "bar") {                      // |x|, the bars hold whatever is between them
+      p++; absDepth++;
+      const inner = expr();
+      absDepth--; eat("bar");
+      return span(mark, A.abs(inner));
+    }
+    if (tk.t === "fn" && tk.v === "abs") { p++; const arg = atom(); return span(mark, A.abs(arg.paren ? { ...arg, paren: false } : arg)); }
     if (tk.t === "fn") { p++; return span(mark, A.fn(tk.v, atom())); }
     if (tk.t === "ref") { p++; return span(mark, A.ref(tk.v)); }
     if (tk.t === "{") {
@@ -386,7 +395,7 @@ export function parse(src, { lenient = false } = {}) {
         node = span(mark, node.kind === "frac" || right.kind === "frac" ? A.div(node, right) : A.frac(node, right));
         continue;
       }
-      if (STARTS_FACTOR.has(tk.t)) { node = span(mark, mul(node, factor())); continue; }
+      if (STARTS_FACTOR.has(tk.t) || (tk.t === "bar" && absDepth === 0)) { node = span(mark, mul(node, factor())); continue; }
       return node;
     }
   }
@@ -420,6 +429,13 @@ export function parse(src, { lenient = false } = {}) {
   const relTok = peek().t === "rel" ? toks[p++] : null;
   if (!relTok) eat("=");
   const right = expr();
+  // 1 < x ≤ 5: a second relation makes it one line with two halves
+  if (relTok && peek().t === "rel") {
+    const rel2 = toks[p++];
+    const third = expr();
+    eat("end");
+    return span(start, A.chain(left, right, third, relTok.v, rel2.v));
+  }
   eat("end");
   return span(start, A.eqn(left, right, undefined, relTok ? relTok.v : undefined));
 }

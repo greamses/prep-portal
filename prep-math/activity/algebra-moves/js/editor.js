@@ -79,7 +79,7 @@ const KEEP = /[0-9A-Za-z+\-*/=^_(){}\[\],.?°%!π±∫Σ√∠ Ͱ-Ͽ]/;
 /* Algebra Moves has no use for < > ≤ ≥ and the absolute-value bar, so they are dropped. A page
    that graphs (Cartesian Art) asks for them with createEditor({ relations: true }). */
 const KEEP_RELATIONS = /[<>≤≥|]/;
-const KEEP_INEQUALITIES = /[<>≤≥]/;      // relations: "ineq" — the signs but not the absolute-value bar
+const KEEP_INEQUALITIES = /[<>≤≥|]/;     // relations: "ineq" — the signs and the absolute-value bar
 
 export function sanitize(input, relations = false) {
   let s = String(input ?? "");
@@ -412,7 +412,7 @@ export function createEditor({ relations = false } = {}) {
      through, not a row of characters with brackets. Anything it does not
      recognise is kept as plain characters: nothing typed is ever lost. */
 
-  const NAMES = ["arcsin", "arccos", "arctan", "transpose", "median", "mean", "mode", "range", "sum", "sin", "cos", "tan", "ln", "log", "det"];
+  const NAMES = ["abs", "arcsin", "arccos", "arctan", "transpose", "median", "mean", "mode", "range", "sum", "sin", "cos", "tan", "ln", "log", "det"];
 
   function closeAt(s, from) {          // index of the bracket that shuts s[from]
     const open = s[from], shut = { "(": ")", "[": "]", "{": "}" }[open];

@@ -86,6 +86,19 @@ export function takeAcross(eq, id) {
   const rest = terms.filter((_, i) => i !== index);
   const nextSide = A.sideFromTerms(rest, eq[side]);
 
+  // 1 < x + 3 < 7: what is taken from one part is taken from all three
+  if (A.isChain(eq)) {
+    let next = A.setSide(eq, side, nextSide);
+    A.SIDES(eq).filter((s) => s !== side).forEach((s, n) => {
+      const there = A.termsOf(next[s]);
+      const piece = n === 0 ? moved : freshCopy(moved);
+      next = A.setSide(next, s, there.length === 1 && isPlainZero(there[0]) ? piece : A.sideFromTerms([...there, piece], next[s]));
+    });
+    const gone = term.kind === "neg" && !term.paren;
+    const said = plain(gone ? term.k : term);
+    return { eq: next, from: new Map(), note: gone ? `Add ${said} to all three parts` : `Take ${said} from all three parts` };
+  }
+
   const otherTerms = A.termsOf(eq[other]);
   // A lone 0 on the far side is a placeholder, not a term worth keeping.
   const nextOther =
@@ -155,6 +168,12 @@ export function divideBoth(eq, value) {
   if (R.isZero(value)) return { error: "Nothing can be divided by zero." };
   if (R.isOne(value)) return { error: "Dividing by one changes nothing." };
 
+  if (A.isChain(eq)) {
+    const turns = R.isNegative(value);
+    const over = (side) => A.frac(side, A.numberNode(value));
+    const next = A.chain(over(eq.l), over(eq.m), over(eq.r), turns ? A.flipRel(eq.rel) : eq.rel, turns ? A.flipRel(eq.rel2) : eq.rel2, turns ? undefined : eq.id);
+    return { eq: next, from: new Map(), note: `Divide all three parts by ${say(value)}${turns ? " — both signs turn round" : ""}` };
+  }
   // Each side keeps its id, so both sides slide up into their numerators.
   const flips = A.isInequality(eq) && R.isNegative(value);     // dividing by a negative turns < into >
   const eqNext = A.eqn(
@@ -199,6 +218,11 @@ export function timesBoth(eq, value) {
     return next;
   };
 
+  if (A.isChain(eq)) {
+    const turns = R.isNegative(value);
+    const next = A.chain(grow(eq.l), grow(eq.m), grow(eq.r), turns ? A.flipRel(eq.rel) : eq.rel, turns ? A.flipRel(eq.rel2) : eq.rel2, turns ? undefined : eq.id);
+    return { eq: next, from, note: `Multiply all three parts by ${say(value)}${turns ? " — both signs turn round" : ""}` };
+  }
   const flips = A.isInequality(eq) && R.isNegative(value);     // multiplying by a negative turns < into >
   return {
     eq: A.eqn(grow(eq.l), grow(eq.r), flips ? undefined : eq.id, flips ? A.flipRel(eq.rel) : undefined),
@@ -287,6 +311,10 @@ export function cancel(eq, id) {
 
 export function flipSigns(eq) {
   if (!A.isEquation(eq)) return { error: TWO_SIDED };
+  if (A.isChain(eq)) {
+    const flipAll = (side) => A.sideFromTerms(A.termsOf(side).map((t) => (t.kind === "neg" && !t.paren ? t.k : A.neg(t))), side);
+    return { eq: A.chain(flipAll(eq.l), flipAll(eq.m), flipAll(eq.r), A.flipRel(eq.rel), A.flipRel(eq.rel2)), from: new Map(), note: "Change every sign — and both inequality signs turn round" };
+  }
   const flip = (side) =>
     A.sideFromTerms(
       A.termsOf(side).map((t) => (t.kind === "neg" && !t.paren ? t.k : A.neg(t))),
@@ -721,6 +749,63 @@ export function rationalise(eq, id) {
 /** The tidy-ups that act on one node in place — the laws of indices and the
     surd rules. Offered from the term (so the solver and "is this tidy?" see
     them) and from any glyph sitting inside the node they act on. */
+/* ── Absolute value ─────────────────────────────────────────────────────────
+   |E| = 5 is two equations, E = 5 and E = −5 — one card each. |E| < 5 is the one line −5 < E < 5.
+   |E| > 5 is two lines again: E < −5 or E > 5. The bars must be a whole side with a number on the
+   other, which is why the other terms are carried across first. */
+export function absOffers(eq, node) {
+  if (!node || node.kind !== "abs" || !A.isEquation(eq) || A.isChain(eq)) return [];
+  const onLeft = eq.l.id === node.id, onRight = eq.r.id === node.id;
+  if (!onLeft && !onRight) return [];
+  const c = A.exactValue(onLeft ? eq.r : eq.l);
+  if (!c) return [];
+  let rel = A.relOf(eq);
+  if (onRight) rel = A.flipRel(rel);                       // c < |E| reads |E| > c
+  const inner = () => copy(unbracket(node.k));
+  const num = (v) => A.numberNode(v);
+  const minus = R.neg(c);
+  const out = [];
+  const one = (key, label, hint, next, mark) => out.push({ key, label, hint, mark, run: () => ({ eq: next, from: new Map(), mark, note: label }) });
+  const cards = (label, mark, list) => out.push({ key: "abssplit", label, hint: "one card each", mark, cards: list });
+  const none = (why) => out.push({ key: "abssplit", label: why, hint: "nothing to solve", mark: "none", run: () => ({ error: why }) });
+  if (rel === "=") {
+    if (R.isNegative(c)) return [{ key: "abssplit", label: "An absolute value is never negative", hint: "no answer", mark: "none", run: () => ({ error: "An absolute value is never negative, so no number works." }) }];
+    if (R.isZero(c)) { one("abssplit", "Only zero has an absolute value of zero", "the inside is zero", A.eqn(inner(), num(R.ZERO), undefined, "="), "= 0"); return out; }
+    cards("Two answers: the inside is the number or its opposite", "± two cards", [
+      { eq: A.eqn(inner(), num(c)), title: "the inside is positive" },
+      { eq: A.eqn(inner(), num(minus)), title: "the inside is negative" },
+    ]);
+    return out;
+  }
+  const less = rel === "<" || rel === "≤";
+  const strict = rel === "<" || rel === ">";
+  if (less) {
+    if (R.isNegative(c) || (R.isZero(c) && strict)) { none("An absolute value is never that small, so no number works"); return out; }
+    if (R.isZero(c)) { one("abssplit", "Only zero has an absolute value of zero", "the inside is zero", A.eqn(inner(), num(R.ZERO), undefined, "="), "= 0"); return out; }
+    one("abssplit", "Between the opposite and the number", "|E| < c is −c < E < c", A.chain(num(minus), inner(), num(c), rel, rel), `−${plain(num(c))} ${rel} ? ${rel} ${plain(num(c))}`);
+    return out;
+  }
+  if (R.isNegative(c) || (R.isZero(c) && !strict)) { none("An absolute value is never negative, so every number works"); return out; }
+  if (R.isZero(c)) { none("Every number works except where the inside is zero"); return out; }
+  const lo = strict ? "<" : "≤", hi = strict ? ">" : "≥";
+  cards("Two ranges: below the opposite, or above the number", "or: two cards", [
+    { eq: A.eqn(inner(), num(minus), undefined, lo), title: "the inside is very low" },
+    { eq: A.eqn(inner(), num(c), undefined, hi), title: "the inside is very high" },
+  ]);
+  return out;
+}
+
+/** |3x| is 3|x|: a number multiplied inside the bars can come out. */
+export function absOut(eq, node) {
+  if (!node || node.kind !== "abs" || node.k.kind !== "prod") return { error: "There is nothing to take out of the bars." };
+  const nums = node.k.kids.filter((k) => A.isNumeric(k) && A.exactValue(k));
+  const rest = node.k.kids.filter((k) => !(A.isNumeric(k) && A.exactValue(k)));
+  if (!nums.length || !rest.length) return { error: "There is no number multiplying what is inside the bars." };
+  const c = nums.reduce((m, k) => R.mul(m, A.exactValue(k)), R.ONE);
+  const next = A.prod([A.numberNode(R.abs(c)), A.abs(rest.length === 1 ? rest[0] : A.prod(rest))]);
+  return { eq: A.replace(eq, node.id, next), from: flyFrom(eq, next, node.id), mark: plain(next), note: `The number comes out of the bars: ${plain(next)}` };
+}
+
 /** Fractions multiplied together: (100I/T)(1/R) is 100I/(TR) — the tops multiply and the bottoms multiply. */
 export function multiplyFractions(eq, node) {
   if (!node || node.kind !== "prod" || A.isNumeric(node)) return { error: "That is not fractions being multiplied." };
@@ -782,6 +867,10 @@ function nodeTidies(eq, node) {
     let scope = node;
     for (let up = A.parentOf(eq, scope.id); up && ["sum", "prod", "frac"].includes(up.kind); up = A.parentOf(eq, scope.id)) scope = up;
     t("resolvepowers", "Work out the powers first", "indices before products", resolvePowers(eq, scope));
+  }
+  if (node.kind === "abs") {
+    for (const o of absOffers(eq, node)) out.push(o);
+    t("absout", "Take the number out of the bars", "|ax| = |a||x|", absOut(eq, node));
   }
   if (node.kind === "prod") t("multiplyfrac", "Multiply the tops and multiply the bottoms", "(a/b)(c/d) = ac/(bd)", multiplyFractions(eq, node));
   if (node.kind === "frac") t("fracdiv", "Write it as a division", "the top ÷ the bottom", fracToDiv(eq, node));
@@ -2186,6 +2275,24 @@ export function swapTerms(eq, aId, bId) {
 
 export function applyToBoth(eq, op, node) {
   if (!A.isEquation(eq)) return { error: TWO_SIDED };
+  if (A.isChain(eq)) {                                      // all three parts, the same thing each
+    const value = A.exactValue(node);
+    if (op === "×" || op === "÷") {
+      if (!value) return { error: "I can only multiply or divide an inequality by a number: a letter might be negative, which turns the sign round" };
+      const r = op === "×" ? timesBoth(eq, value) : divideBoth(eq, value);
+      return r.error ? r : { ...r, mark: `${op}${mul(value)}`, dir: "both" };
+    }
+    const put = (side, n) => {
+      let t = n === 0 ? node : freshCopy(node);
+      if (op === "−") t = t.kind === "neg" && !t.paren ? t.k : A.neg(t);
+      const there = A.termsOf(side);
+      const extra = t.kind === "sum" && !t.paren ? t.kids : [t];
+      return there.length === 1 && isPlainZero(there[0]) ? A.sideFromTerms(extra, side) : A.sideFromTerms([...there, ...extra], side);
+    };
+    const said = plain(node);
+    return { eq: A.chain(put(eq.l, 0), put(eq.m, 1), put(eq.r, 2), eq.rel, eq.rel2, eq.id), from: new Map(), mark: `${op}${said}`, dir: "both",
+             note: op === "+" ? `Add ${said} to all three parts` : `Take ${said} from all three parts` };
+  }
   if (A.isInequality(eq) && (op === "×" || op === "÷") && !A.exactValue(node)) {
     return { error: "I can only multiply or divide an inequality by a number: a letter might be negative, which turns the sign round" };
   }
@@ -2385,6 +2492,7 @@ export function combineMany(eq, ids) {
 
 export function swapSides(eq) {
   if (!A.isEquation(eq)) return { error: TWO_SIDED };
+  if (A.isChain(eq)) return { eq: A.chain(eq.r, eq.m, eq.l, A.flipRel(eq.rel2), A.flipRel(eq.rel)), from: new Map(), note: "Turn it round" };
   const turned = A.isInequality(eq);                         // 5 < x read the other way is x > 5
   return { eq: A.eqn(eq.r, eq.l, turned ? undefined : eq.id, turned ? A.flipRel(eq.rel) : undefined), from: new Map(), note: "Turn it round" };
 }
@@ -2967,14 +3075,14 @@ function termChain(eq, nodeId) {
   return out.sort((a, b) => nodeSize(a) - nodeSize(b));
 }
 
-export const isEqualsKey = (key) => !!key && keyParts(key).slot === "eq";
+export const isEqualsKey = (key) => !!key && (keyParts(key).slot === "eq" || keyParts(key).slot === "eq2");
 
 /** The term a glyph speaks for: its own innermost term, or — for a + between
     terms — the term that + introduces. The = speaks for no one term. */
 export function atomTerm(eq, key) {
   if (!key) return null;
   const { nodeId, slot } = keyParts(key);
-  if (slot === "eq") return null;
+  if (slot === "eq" || slot === "eq2") return null;
   if (slot.startsWith("op")) {
     const kid = A.findById(eq, nodeId)?.kids?.[Number(slot.slice(2))];
     return kid ? termChain(eq, kid.id)[0] || null : null;
@@ -3050,7 +3158,7 @@ function atomOffersRaw(eq, key, { given = null } = {}) {
     }
   };
 
-  if (slot === "eq") {
+  if (slot === "eq" || slot === "eq2") {
     if (A.isEquation(eq)) {
       add({ key: "swap", label: "Turn it round", hint: "same equation, read the other way", mark: "⇄", run: () => swapSides(eq) });
       add({ key: "flip", label: "Change every sign", hint: "times both sides by −1", mark: "×(−1)", run: () => flipSigns(eq) });
@@ -3164,6 +3272,12 @@ function atomOffersRaw(eq, key, { given = null } = {}) {
     tidiesAbove(nodeId);
     add(workOffer(nodeId));
     pick(pool(atomTerm(eq, key)), "combine", "across");
+  } else if (slot === "lbar" || slot === "rbar") {
+    const bars = A.findById(eq, nodeId);
+    for (const o of absOffers(eq, bars)) add(o);
+    tidiesAbove(nodeId);
+    add(workOffer(nodeId));
+    pick(pool(atomTerm(eq, key)), "across");
   } else if (slot === "div") {
     tidiesAbove(nodeId);
     pick(pool(atomTerm(eq, key)), "across");
@@ -3295,7 +3409,7 @@ function atomOffersRaw(eq, key, { given = null } = {}) {
   // A formula with a number still to go in has one move anywhere: putting it in.
   // Asking for the slope or the integral of the whole thing: from any glyph of
   // an expression, and from the = or the lone letter of y = … .
-  if (eq.kind === "expr" || slot === "eq" || A.findById(eq, nodeId)?.kind === "var" && SIDES_HOLD(eq, nodeId)) {
+  if (eq.kind === "expr" || slot === "eq" || slot === "eq2" || A.findById(eq, nodeId)?.kind === "var" && SIDES_HOLD(eq, nodeId)) {
     for (const o of calculusCards(eq)) add(o);
   }
   // One letter, number, power or base picked: only what is normal for that.

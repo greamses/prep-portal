@@ -113,6 +113,10 @@ const GREEK_NAMES = {
   τ: "tau", υ: "upsilon", φ: "phi", χ: "chi", ψ: "psi", ω: "omega",
 };
 const GREEK = rowsOf([...Object.keys(GREEK_NAMES)].map((g) => asLetter(g, GREEK_NAMES[g])));
+GREEK[GREEK.length - 1] = [...GREEK[GREEK.length - 1], { k: "caps", act: "caps", icon: "arrowUp", title: "Capitals", tone: "act" }];
+/* The capitals that are their own letters. The rest (Α, Β, Ε …) look exactly like a Latin letter, so
+   with CAPS on their keys are greyed out rather than adding a second "A" that is not the first. */
+const GREEK_CAPITAL = { γ: "Γ", δ: "Δ", θ: "Θ", λ: "Λ", ξ: "Ξ", π: "Π", φ: "Φ", ψ: "Ψ", ω: "Ω" };
 
 /* Functions and calculus: each key types its whole shape with the caret left
    where the student writes next — inside sin( ), inside d/dx( ), on the bottom
@@ -205,7 +209,7 @@ const FUNCS = [
   [
     { k: "<", t: "<", title: "is less than" }, { k: ">", t: ">", title: "is greater than" },
     { k: "≤", t: "≤", title: "is less than or equal to" }, { k: "≥", t: "≥", title: "is greater than or equal to" },
-    { k: "=", t: "=" },
+    { k: "|x|", t: "abs()", back: 1, title: "absolute value: how far from zero", math: "abs(?)" },
     { k: "←", act: "left", title: "Move left" },
     { k: "→", act: "right", title: "Move right" },
     { k: "⌫", act: "back", title: "Delete", tone: "warn" },
@@ -1009,6 +1013,81 @@ export function createKeypad(host, { onSubmit, relations = false } = {}) {
     return section;
   }
 
+  /** The Greek alphabet, with CAPS as the last key. Capitals show for the letters that have a capital of
+      their own; the others are greyed out while CAPS is on. */
+  function buildGreek() {
+    const section = document.createElement("div");
+    section.className = "am-pad__grid";
+    let caps = false;
+    function render() {
+      section.textContent = "";
+      for (const row of GREEK) {
+        const rail = document.createElement("div");
+        rail.className = "am-pad__row";
+        rail.style.gridTemplateColumns = `repeat(${cellsOf(row)}, 1fr)`;
+        for (const key of row) {
+          if (key.act === "caps") {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = `am-key am-key--act${caps ? " is-on" : ""}`;
+            btn.innerHTML = UI.arrowUp(18);
+            btn.title = "Capitals";
+            btn.setAttribute("aria-label", "Capitals");
+            btn.setAttribute("aria-pressed", String(caps));
+            btn.addEventListener("pointerdown", (e) => { e.preventDefault(); caps = !caps; render(); line.focus(); });
+            rail.appendChild(btn);
+          } else if (!caps) {
+            rail.appendChild(keyButton(key));
+          } else if (GREEK_CAPITAL[key.k]) {
+            const big = GREEK_CAPITAL[key.k];
+            rail.appendChild(keyButton({ ...key, k: big, t: big, title: `${key.title} (capital)` }));
+          } else {
+            const off = keyButton({ ...key, title: `${key.title}: its capital looks like a Latin letter` });
+            off.disabled = true;
+            off.classList.add("am-key--off");
+            rail.appendChild(off);
+          }
+        }
+        section.appendChild(rail);
+      }
+    }
+    render();
+    return section;
+  }
+
+  /** The f(x) keys, in three groups with a toggle on top: too many for one grid. */
+  function buildFuncs() {
+    const wrapF = document.createElement("div");
+    const GROUPS = [
+      { label: "Trig", rows: FUNCS.slice(0, 4) },
+      { label: "Lists", rows: FUNCS.slice(4, 7) },
+      { label: "More", rows: FUNCS.slice(7) },
+    ];
+    const bar = document.createElement("div");
+    bar.className = "am-subtabs am-subtabs--inner";
+    bar.setAttribute("role", "tablist");
+    bar.setAttribute("aria-label", "Which function keys");
+    const grids = GROUPS.map((g) => buildGrid(g.rows));
+    let on = 0;
+    const chips = GROUPS.map((g, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.setAttribute("role", "tab");
+      btn.className = "pp-sticky pp-note-btn am-subtab am-subtab--small pp-sticky--c" + [2, 5, 3][i % 3];
+      btn.textContent = g.label;
+      btn.addEventListener("pointerdown", (e) => { e.preventDefault(); on = i; show(); line.focus(); });
+      bar.appendChild(btn);
+      return btn;
+    });
+    function show() {
+      grids.forEach((el, i) => { el.hidden = i !== on; });
+      chips.forEach((b, i) => { b.classList.toggle("is-on", i === on); b.setAttribute("aria-selected", String(i === on)); });
+    }
+    show();
+    wrapF.append(bar, ...grids);
+    return wrapF;
+  }
+
   /** The Latin alphabet, with CAPS as the last key on it. Pressing it
       relabels and retypes every letter in capitals — rebuilt in place, the
       same way a real keyboard's shift key is a stylesheet, not a new key.
@@ -1069,8 +1148,8 @@ export function createKeypad(host, { onSubmit, relations = false } = {}) {
     const MODES = [
       { label: "123", el: buildGrid(KEYS) },
       { label: "ABC", el: buildLetters() },
-      { label: "αβγ", el: buildGrid(GREEK) },
-      { label: "f(x)", el: buildGrid(FUNCS) },
+      { label: "αβγ", el: buildGreek() },
+      { label: "f(x)", el: buildFuncs() },
     ];
 
     let active = 0;

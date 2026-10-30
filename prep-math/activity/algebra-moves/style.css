@@ -1561,3 +1561,9 @@
 html.am-noselect, html.am-noselect * { -webkit-user-select: none !important; user-select: none !important; cursor: grabbing !important; }
 
 .am-basepick__own { margin-top: 0.3rem; font: 600 0.72rem var(--font-mono); font-style: normal; }
+
+/* The f(x) keys come in three groups: a smaller row of toggles above them. */
+.am-subtabs--inner { padding: 0.1rem 0 0.3rem; gap: 0.45rem; }
+.pp-sticky.am-subtab.am-subtab--small { padding: 0.32rem 0.6rem 0.36rem; font-size: 0.7rem; }
+/* A Greek key with no capital of its own, while CAPS is on. */
+.am-key--off { opacity: 0.32; cursor: not-allowed; }

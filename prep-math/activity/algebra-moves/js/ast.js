@@ -39,6 +39,14 @@ export const eqn  = (l, r, id = freshId(), rel) => {
   return kept === "=" ? { id, kind: "eq", l, r } : { id, kind: "eq", l, r, rel: kept };
 };
 export const relOf = (root) => (root && root.kind === "eq" && root.rel) || "=";
+/** a < x < b: one line with two relations and three parts (l, m, r). The first relation is rel, the second rel2. */
+export const chain = (l, m, r, rel, rel2, id = freshId()) => {
+  RELATION.set(id, rel);
+  return { id, kind: "eq", l, m, r, rel, rel2: rel2 || rel };
+};
+export const isChain = (root) => root.kind === "eq" && !!root.m;
+/** |x|: the distance from zero. */
+export const abs = (k, id = freshId()) => ({ id, kind: "abs", k });
 /* A square root — a surd when what is under it is not a perfect square. Its
    own node rather than a power of 1/2: x^(1/2) and √x are the same number but
    not the same writing, and a student who typed one expects to keep seeing it. */
@@ -147,7 +155,7 @@ export const mixed = (w, f, id = freshId()) => ({ id, kind: "mixed", w, f });
     workspace.js swaps each one for that equation's left side, then its right. */
 export const ref = (name, id = freshId()) => ({ id, kind: "ref", name });
 
-export const FUNCS = ["arcsin", "arccos", "arctan", "transpose", "sin", "cos", "tan", "ln", "log", "det",
+export const FUNCS = ["abs", "arcsin", "arccos", "arctan", "transpose", "sin", "cos", "tan", "ln", "log", "det",
   "median", "mean", "mode", "range", "sum"];
 /** The functions of a list of numbers; each is only a function when a bracket follows. */
 export const LIST_FNS = ["median", "mean", "mode", "range", "sum"];
@@ -206,7 +214,8 @@ export function kidsOf(node) {
     case "frac":
     case "div": return [node.a, node.b];
     case "pow":  return [node.b, node.e];
-    case "eq":   return [node.l, node.r];
+    case "eq":   return node.m ? [node.l, node.m, node.r] : [node.l, node.r];
+    case "abs":  return [node.k];
     default:     return [];
   }
 }
@@ -269,7 +278,12 @@ export function replace(root, id, next) {
       case "frac": { const a = rec(n.a), b = rec(n.b); return a === n.a && b === n.b ? n : frac(a, b, n.id); }
       case "div": { const a = rec(n.a), b = rec(n.b); return a === n.a && b === n.b ? n : { ...n, a, b }; }
       case "pow":  { const b = rec(n.b), e = rec(n.e); return b === n.b && e === n.e ? n : pow(b, e, n.id); }
-      case "eq":   { const l = rec(n.l), r = rec(n.r); return l === n.l && r === n.r ? n : eqn(l, r, n.id); }
+      case "eq":   {
+        const l = rec(n.l), r = rec(n.r), m = n.m ? rec(n.m) : null;
+        if (l === n.l && r === n.r && m === (n.m || null)) return n;
+        return n.m ? chain(l, m, r, n.rel, n.rel2, n.id) : eqn(l, r, n.id);
+      }
+      case "abs":  { const k = rec(n.k); return k === n.k ? n : abs(k, n.id); }
       case "expr": { const e = rec(n.e); return e === n.e ? n : expression(e, n.id); }
       default:     return n;
     }
@@ -290,7 +304,7 @@ export const termsOf = (side) => (side.kind === "sum" ? side.kids : [side]);
    the tool goes through here, which is what let expressions arrive without a
    `.r` being read somewhere and coming back undefined. */
 
-export const SIDES = (root) => (root.kind === "expr" ? ["e"] : ["l", "r"]);
+export const SIDES = (root) => (root.kind === "expr" ? ["e"] : root.m ? ["l", "m", "r"] : ["l", "r"]);
 
 export const isEquation = (root) => root.kind === "eq";
 /** A line that says one side is smaller or bigger than the other, not equal to it. */
@@ -299,6 +313,10 @@ export const isInequality = (root) => root.kind === "eq" && !!root.rel && root.r
 /** The same line with one side replaced, keeping the root's own id. */
 export function setSide(root, side, next) {
   if (root.kind === "expr") return next === root.e ? root : expression(next, root.id);
+  if (root.m) {
+    if (next === root[side]) return root;
+    return chain(side === "l" ? next : root.l, side === "m" ? next : root.m, side === "r" ? next : root.r, root.rel, root.rel2, root.id);
+  }
   if (side === "l") return next === root.l ? root : eqn(next, root.r, root.id);
   return next === root.r ? root : eqn(root.l, next, root.id);
 }
@@ -593,6 +611,7 @@ export function exactValue(node) {
       case "logb": return logValue(node);
       case "nroot": return nrootValue(node);
       case "tet": return tetValue(node);
+      case "abs": { const k = exactValue(node.k); return k ? R.abs(k) : null; }
       case "pct":  { const k = exactValue(node.k); return k ? R.div(k, R.rat(100n)) : null; }
       case "mixed": { const w = exactValue(node.w), f = exactValue(node.f); return w && f ? R.add(w, f) : null; }
       case "neg":  { const k = exactValue(node.k); return k ? R.neg(k) : null; }

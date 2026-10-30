@@ -99,6 +99,7 @@ function needsBrackets(node, parentKind, slot) {
   // those places are noise EVEN WHEN THE STUDENT TYPED THEM — which matters
   // because the keypad's fraction key types a pair into each half.
   if (parentKind === "frac") return false;
+  if (parentKind === "abs") return false;              // the bars group what is between them
   if (parentKind === "pow" && slot === 1) return false;
   // A root's bar groups whatever is under it, the way a fraction bar does.
   if (parentKind === "root") return false;
@@ -518,11 +519,26 @@ function measureBare(node, size, binary) {
                ascent: Math.max(base.ascent, e.ascent), descent: Math.max(base.descent, e.descent) };
     }
 
+    case "abs": {
+      const k = measure(node.k, size, "abs", 0);
+      const rule = Math.max(1, 0.055 * size), pad = 0.16 * size, over = 0.12 * size;
+      return { ...base, kind: "abs", k, rule, pad, over, w: k.w + 2 * (rule + pad),
+               ascent: Math.max(base.ascent, k.ascent + over), descent: Math.max(base.descent, k.descent + over) };
+    }
+
     case "eq": {
       const l = measure(node.l, size, "eq", 0);
       const r = measure(node.r, size, "eq", 1);
+      const mid = node.m ? measure(node.m, size, "eq", 2) : null;
       const gap = 0.34 * size;
       const eqW = measureText(node.rel || "=", size, false);
+      if (mid) {
+        const eqW2 = measureText(node.rel2 || node.rel || "=", size, false);
+        return { ...base, kind: "eq", l, m: mid, r, gap, eqW, eqW2, rel: node.rel || "=", rel2: node.rel2 || node.rel || "=",
+                 w: l.w + gap + eqW + gap + mid.w + gap + eqW2 + gap + r.w,
+                 ascent: Math.max(base.ascent, l.ascent, mid.ascent, r.ascent),
+                 descent: Math.max(base.descent, l.descent, mid.descent, r.descent) };
+      }
       return { ...base, kind: "eq", l, r, gap, eqW, rel: node.rel || "=", w: l.w + gap + eqW + gap + r.w,
                ascent: Math.max(base.ascent, l.ascent, r.ascent),
                descent: Math.max(base.descent, l.descent, r.descent) };
@@ -808,10 +824,26 @@ function place(m, x, y, out) {
       place(m.e, x, y, out);
       break;
 
+    case "abs": {
+      const h = m.ascent + m.descent;
+      out.atoms.push({ key: `${id}#lbar`, nodeId: id, kind: "rule", x, y: y - m.ascent, w: m.rule, h });
+      place(m.k, x + m.rule + m.pad, y, out);
+      out.atoms.push({ key: `${id}#rbar`, nodeId: id, kind: "rule", x: x + m.w - m.rule, y: y - m.ascent, w: m.rule, h });
+      break;
+    }
+
     case "eq": {
       place(m.l, x, y, out);
       const ex = x + m.l.w + m.gap;
       text("eq", m.rel || "=", ex, y, m.size, false);
+      if (m.m) {
+        const mx = ex + m.eqW + m.gap;
+        place(m.m, mx, y, out);
+        const ex2 = mx + m.m.w + m.gap;
+        text("eq2", m.rel2 || "=", ex2, y, m.size, false);
+        place(m.r, ex2 + m.eqW2 + m.gap, y, out);
+        break;
+      }
       place(m.r, ex + m.eqW + m.gap, y, out);
       break;
     }
@@ -910,7 +942,10 @@ export function plain(node, parentKind = null, slot = 0) {
       return wrap(`∫${range}(${plain({ ...node.k, paren: false })})d${node.x}`);
     }
     case "lim":  return wrap(`lim(${node.x}->${plain(node.to)})(${plain({ ...node.k, paren: false })})`);
-    case "eq":   return `${plain(node.l, "eq", 0)} ${node.rel || "="} ${plain(node.r, "eq", 1)}`;
+    case "eq":   return node.m
+      ? `${plain(node.l, "eq", 0)} ${node.rel} ${plain(node.m, "eq", 2)} ${node.rel2 || node.rel} ${plain(node.r, "eq", 1)}`
+      : `${plain(node.l, "eq", 0)} ${node.rel || "="} ${plain(node.r, "eq", 1)}`;
+    case "abs":  return wrap(`abs(${plain(node.k, "abs", 0)})`);
     case "expr": return plain(node.e, "expr", 0);
     default:     return "?";
   }
