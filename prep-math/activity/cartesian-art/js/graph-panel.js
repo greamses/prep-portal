@@ -599,6 +599,7 @@ export function initGraphPanel() {
   const setKp = async (on) => {
     if (!keypadEl) return;
     keypadEl.hidden = !on;
+    dock.classList.toggle("has-keypad", on); // the panel widens to give the keys room
     kpBtn?.classList.toggle("is-active", on);
     kpBtn?.setAttribute("aria-pressed", on ? "true" : "false");
     if (!on) {

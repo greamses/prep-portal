@@ -2136,3 +2136,61 @@ body {
   stroke-width: 1;
 }
 .ca-layer--graph { pointer-events: none; }
+
+/* ── Opens straight onto the canvas ───────────────────────────────────────
+   The hero is for search engines and screen readers: still in the page, taken
+   out of the layout the sighted visitor sees (visually hidden, not display:none). */
+.ca-hero {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.ca-page { max-width: none; padding: 0 0 0; }
+.ca-studio {
+  margin-top: 0;
+  height: calc(100vh - 76px); /* the nav is a fixed 76px */
+  height: calc(100dvh - 76px);
+  min-height: 420px;
+}
+.ca-stage-wrap { inset: 8px clamp(8px, 1.4vw, 16px) 12px; }
+
+/* ── Toggle buttons show ONE icon at a time ───────────────────────────────
+   Two glyphs live in each toggle; the state decides which is drawn. */
+.ca-menu-close { display: none; }
+.ca-menu.is-open .ca-menu-open { display: none; }
+.ca-menu.is-open .ca-menu-close { display: block; }
+.ca-fs-exit { display: none; }
+body.ca-fs .ca-fs-enter { display: none; }
+body.ca-fs .ca-fs-exit { display: block; }
+
+/* ── The borrowed keypad gets room ────────────────────────────────────────
+   Algebra Moves sizes its keys for a narrow drawer and clips what does not fit
+   (sin, arcsin, median …). Here the panel widens while the keypad is open and
+   the keys are taller, with their words shown whole. */
+.ca-studio .ca-dock--graph.has-keypad { width: 600px; max-width: calc(100% - 90px); }
+.ca-eq-keypad .am-pad__row, .ca-eq-keypad .am-pad__grid, .ca-eq-keypad .am-pad__modes { gap: 0.4rem; }
+.ca-eq-keypad .am-key {
+  min-height: 3rem;
+  padding: 0.3rem 0.35rem;
+  font-size: 1.25rem;
+  overflow: visible;
+  text-overflow: clip;
+}
+.ca-eq-keypad .am-key--act { font-size: 0.82rem; letter-spacing: 0; }
+.ca-eq-keypad .am-key__ink { max-width: 100%; }
+.ca-eq-keypad .am-preview { min-height: 72px; }
+/* rows wrap instead of overflowing: a key keeps the width its words need */
+.ca-eq-keypad, .ca-eq-keypad .am-pad, .ca-eq-keypad .am-pad__grid { min-width: 0; max-width: 100%; }
+.ca-eq-keypad .am-pad__grid .am-pad__row {
+  display: flex !important;
+  flex-wrap: wrap;
+  grid-template-columns: none !important;
+}
+.ca-eq-keypad .am-pad__grid .am-pad__row > .am-key { flex: 1 1 auto; min-width: 3.4rem; max-width: 9rem; }
+.ca-eq-keypad .am-pad__grid .am-pad__row > .am-key--wide { flex: 2 1 7rem; max-width: 16rem; }
+.ca-studio .ca-dock--graph .ca-dock-body { overflow-x: hidden; }
