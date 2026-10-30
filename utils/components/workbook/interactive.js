@@ -2770,6 +2770,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       svg.setAttribute("aria-hidden", "true");
       page.appendChild(svg);
     }
+    /* A flowing (exam) paper is one page as tall as all its questions, so the
+       layer takes that height too; strokes are millimetres from the top and
+       stay where they were drawn. */
+    if (page.classList.contains("wb-page--flow") && page.offsetWidth) {
+      const w = parseFloat(getComputedStyle(page).getPropertyValue("--wb-w")) || 210;
+      svg.setAttribute("viewBox", `0 0 ${w} ${(page.offsetHeight * w / page.offsetWidth).toFixed(2)}`);
+    }
     return svg;
   }
 
@@ -4076,6 +4083,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       const isKey = !!p.querySelector(".wb-answers, .wb-sec--key") && !p.querySelector(".wb-item");
       p.hidden = on && isKey;
     });
+    /* in the flowing layout the key is the tail of the one page */
+    sheet.querySelectorAll(".wb-page--flow .wb-keypart").forEach((n) => { n.hidden = on; });
     refit();
   }
 

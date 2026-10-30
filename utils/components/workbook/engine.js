@@ -219,10 +219,11 @@ export function blocksOf(sections, o, subject) {
   const state = {}; // scratch for sectionHead — "have I printed the key yet?"
 
   sections.forEach((section, i) => {
-    blocks.push({
-      kind: "head",
-      node: headBlock(section, sectionLetter(i), o, subject, state, i),
-    });
+    const head = headBlock(section, sectionLetter(i), o, subject, state, i);
+    /* only the flowing (exam) layout reads this: a section the teacher wants on
+       a page of its own. The first one already is, under the cover. */
+    if (i && o.breakSections) head.classList.add("wb-newpage");
+    blocks.push({ kind: "head", node: head });
 
     /* a number, or — for a workbook whose layout changes with a dial — a function of the options */
     const cols = (typeof section.ex.cols === "function" ? section.ex.cols(section.opts) : section.ex.cols) || 1;
@@ -241,12 +242,14 @@ export function blocksOf(sections, o, subject) {
 
 /** The key, as its own section that always starts on a fresh page. */
 function answerBlocks(sections, o) {
-  const out = [{ kind: "break", node: el("div", "wb-break") }];
+  /* `wb-keypart` marks everything that is the key, so that on screen, while
+     the paper is being done, it can be put away wherever the layout keeps it */
+  const out = [{ kind: "break", node: el("div", "wb-break wb-keypart") }];
   out.push({
     kind: "head",
     node: el(
       "div",
-      "wb-sec wb-sec--key",
+      "wb-sec wb-sec--key wb-keypart",
       `<h2 class="wb-sec__title"><span class="wb-sec__letter wb-sec__letter--key">${ICON.check}</span>Answers</h2>
        <p class="wb-sec__say">Workbook ${codeOf(o)} — every copy printed with this code has these answers.</p>`
     ),
@@ -275,7 +278,7 @@ function answerBlocks(sections, o) {
         kind: "row",
         node: el(
           "div",
-          "wb-answers",
+          "wb-answers wb-keypart",
           head + `<ol class="wb-answers__list">${rows.slice(k, k + PER).join("")}</ol>`
         ),
       });
@@ -318,6 +321,8 @@ export function paginate(sheet, blocks, o) {
   sheet.style.setProperty("--wb-h", paper.h + "mm");
 
   const mark = o.watermark !== false;
+  sheet.classList.toggle("wb-sheet--exam", o.layout === "exam");
+  if (o.layout === "exam") return flow(sheet, blocks, o, paper, mark);
   let inner = newPage(sheet, mark, o.head);
 
   for (let i = 0; i < blocks.length; i++) {
@@ -364,6 +369,38 @@ export function paginate(sheet, blocks, o) {
     p.querySelector(".wb-page__mark").textContent = `${o.title} · ${codeOf(o)}`;
   });
   return pages.length;
+}
+
+/**
+ * THE EXAM LAYOUT: one paper that simply runs on.
+ *
+ * The learning layout measures every block and packs it into a fixed box per
+ * page, and a block that does not fit goes to the next page whole — which
+ * leaves a gap at the foot of most pages. An exam paper does not work like
+ * that: it is one stream of questions and the printer cuts it into pages
+ * wherever it falls, never through the middle of a question (the CSS in
+ * workbook.css says which things stay whole). So everything goes into ONE tall
+ * `.wb-page--flow`, and the returned page count is an estimate from its height.
+ */
+function flow(sheet, blocks, o, paper, mark) {
+  const inner = newPage(sheet, mark, o.head);
+  const page = inner.closest(".wb-page");
+  page.classList.add("wb-page--flow");
+  blocks.forEach((b) => inner.appendChild(b.node));
+
+  const foot = page.querySelector(".wb-page__foot");
+  page.querySelector(".wb-page__mark").textContent = `${o.title} · ${codeOf(o)}`;
+  page.querySelector(".wb-page__no").textContent = "";
+  foot.dataset.flow = "1";
+
+  /* how many sheets of paper this much writing comes to: the paper's height
+     less the margins it prints with (--wb-pad-t / --wb-pad-b), in pixels */
+  const probe = el("div");
+  probe.style.cssText = `position:absolute;visibility:hidden;height:${paper.h - 28}mm;width:1px`;
+  sheet.appendChild(probe);
+  const sheetPx = probe.offsetHeight || 1;
+  probe.remove();
+  return Math.max(1, Math.ceil((inner.scrollHeight - 1) / sheetPx));
 }
 
 /** Build and paginate in one call — what a page's rail actually wants. */

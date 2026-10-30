@@ -184,6 +184,10 @@ export function mountBuilder(cfg) {
       /* the school's own heading, when the teacher has set one up */
       head: letterhead ? letterhead.read() : loadHead(),
       answers: $("wb-answers").checked,
+      /* learning: fixed pages with the tools. exam: one flowing paper, cut into
+         pages by the printer (engine.js flow) */
+      layout: $("wb-layout")?.value === "exam" ? "exam" : "learn",
+      breakSections: !!$("wb-newpage")?.checked,
       seed: seedFrom($("wb-seedcode").value),
       code: $("wb-seedcode").value.trim().toUpperCase(),
       chosen,
@@ -255,7 +259,13 @@ export function mountBuilder(cfg) {
     }
 
     const pages = renderWorkbook(sheet(), o, subject);
-    $("wb-pages").textContent = pages === 1 ? "1 page" : `${pages} pages`;
+    /* the stylesheet and the tool rail both key off which layout this is */
+    document.documentElement.dataset.wbLayout = o.layout;
+    const newpage = $("wb-newpage");
+    if (newpage) newpage.disabled = o.layout !== "exam";
+    $("wb-pages").textContent = o.layout === "exam"
+      ? `about ${pages} page${pages === 1 ? "" : "s"}`
+      : pages === 1 ? "1 page" : `${pages} pages`;
     $("wb-print").disabled = false;
     modal?.count($("wb-pages").textContent, true);
     if (pass) pass.update(o, { pages, sections: o.chosen.length, code: $("wb-seedcode").value });
@@ -451,6 +461,19 @@ export function mountBuilder(cfg) {
       letterhead.write(saved?.head);
     }
     $("wb-answers").checked = saved?.answers !== false;
+    /* The layout choice is the same on every workbook, so it is built here and
+       not in each page's HTML. */
+    const paperField = $("wb-paper")?.closest("label");
+    if (paperField && !$("wb-layout")) {
+      paperField.insertAdjacentHTML("afterend",
+        `<label class="wb-field"><span>Layout</span>` +
+        `<select class="wb-select" id="wb-layout">` +
+        `<option value="learn">Learning · fixed pages</option>` +
+        `<option value="exam">Exam · one flowing paper</option></select></label>` +
+        `<label class="wb-toggle"><input type="checkbox" id="wb-newpage" /> Exam: start each section on a new page</label>`);
+    }
+    if ($("wb-layout")) $("wb-layout").value = saved?.layout === "exam" ? "exam" : "learn";
+    if ($("wb-newpage")) $("wb-newpage").checked = !!saved?.breakSections;
     $("wb-seedcode").value = saved?.code || seedCode((Math.random() * 0xffffffff) >>> 0);
 
     /* Every control on the paper page is a glyph with its name in the tooltip

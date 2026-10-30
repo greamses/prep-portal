@@ -3852,3 +3852,62 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   background: var(--surface-secondary, #fff);
   border: 1px solid var(--line, rgba(42, 39, 35, 0.2));
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE EXAM LAYOUT — one paper that runs on (engine.js flow)
+   The learning layout is a stack of fixed boxes, one per printed page. This is
+   a single page as tall as its questions; the printer cuts it. On screen the
+   padding is the page's margin once; in print it is repeated on every sheet
+   (box-decoration-break: clone) with @page margin 0, so the browser has no
+   room left for its own date and address line.
+   ══════════════════════════════════════════════════════════════════════════ */
+.wb-page.wb-page--flow {
+  height: auto;
+  min-height: calc(var(--wb-h) - 0.4mm);
+  overflow: visible;
+  padding: var(--wb-pad-t) var(--wb-pad-x) calc(var(--wb-pad-b) + 9mm);
+}
+.wb-page--flow .wb-page__inner { position: static; overflow: visible; }
+.wb-page--flow .wb-page__foot { bottom: 6mm; }
+.wb-page--flow .wb-page__no { display: none; }
+/* what must never be cut by a page edge, and what must not be left alone at
+   the foot of one */
+.wb-page--flow .wb-row,
+.wb-page--flow .wb-item,
+.wb-page--flow .wb-answers { break-inside: avoid; }
+/* a section head is its words plus whatever the subject hangs under them; the
+   words stay with what follows, but the head as a whole may be cut between
+   its parts, or a tall one leaves half a page empty */
+.wb-page--flow .wb-sec { break-inside: auto; }
+.wb-page--flow .wb-sec__title,
+.wb-page--flow .wb-sec__say { break-after: avoid; }
+.wb-page--flow .wb-sec > div { break-inside: avoid; }
+/* "one done for you" is how the learning layout teaches; an exam asks */
+.wb-sheet--exam .rw-worked { display: none; }
+.wb-page--flow .wb-break { height: 0; margin: 0; break-before: page; }
+.wb-page--flow .wb-newpage { break-before: page; }
+.wb-keypart[hidden] { display: none !important; }
+
+/* the tools are for the learning layout: an exam paper is written on, not
+   worked out on a bench of models. Only the pencil and eraser stay. */
+html[data-wb-layout="exam"] .wb-side__fam:not([data-fam="draw"]),
+html[data-wb-layout="exam"] .wb-side__fly:not([data-fam="draw"]),
+html[data-wb-layout="exam"] .wb-side [data-tool],
+html[data-wb-layout="exam"] .wb-side__fly [data-tool] { display: none !important; }
+
+@media print {
+  .wb-page.wb-page--flow {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding: var(--wb-pad-t) var(--wb-pad-x) var(--wb-pad-b);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    break-after: auto;
+    page-break-after: auto;
+  }
+  .wb-page--flow .wb-page__inner { position: static !important; overflow: visible !important; }
+  /* the foot and the mark repeat on every sheet: fixed boxes do, in print */
+  .wb-page--flow .wb-page__foot { position: fixed; left: var(--wb-pad-x); right: var(--wb-pad-x); bottom: 6mm; }
+  .wb-page--flow .wb-page__wm { position: fixed; }
+}

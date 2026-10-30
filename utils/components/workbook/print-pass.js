@@ -28,7 +28,7 @@ import { api, currentUser, onUser } from "./account.js";
 /* Cosmetic options do not change any answer here any more — a subscriber may
    print anything — but the fingerprint below is still how the interactive
    sheet knows one built workbook from another, so the list stays. */
-const COSMETIC = new Set(["title", "paper", "nameLine", "answers", "watermark", "head"]);
+const COSMETIC = new Set(["title", "paper", "nameLine", "answers", "watermark", "head", "layout", "breakSections"]);
 const root = document.documentElement;
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
