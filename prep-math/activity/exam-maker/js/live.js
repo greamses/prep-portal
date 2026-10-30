@@ -42,11 +42,12 @@ export function matches(typed, answer) {
 
 /* `store` is where this paper's answers are kept; a shared paper has its own, so
    it never mixes with the papers made on the bench */
-export function createLive(sheet, { onChange = () => {}, store = KEY } = {}) {
+export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt = () => ({}) } = {}) {
   let answers = load(store);
   let on = false;
   let checked = false;
-  const keep = () => { try { localStorage.setItem(store, JSON.stringify(answers)); } catch { /* storage full or off */ } };
+  let lastQuestions = [];
+  const keep = () => { try { localStorage.setItem(store, JSON.stringify(answers)); } catch { /* storage full or off */ } paintAttempts(); };
 
   const byId = (questions) => new Map(questions.map((q) => [q.id, q]));
 
@@ -61,6 +62,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY } = {}) {
   /** Make every question on the sheet answerable (the sheet has just been drawn). */
   function apply(questions) {
     if (!on) return;
+    lastQuestions = questions;
     const qs = byId(questions);
     sheet.classList.add("xp-live");
     sheet.querySelectorAll(".xp-q[data-qid]").forEach((el) => {
@@ -123,7 +125,29 @@ export function createLive(sheet, { onChange = () => {}, store = KEY } = {}) {
       box.addEventListener("input", () => { answers[q.id] = box.value; keep(); onChange(); });
       if (lines) lines.replaceWith(box); else blk.appendChild(box);
     });
+    paintAttempts();
     if (checked) showResults(questions);
+  }
+
+  /* "Attempted 2 of 3" in the heading of a section that says "answer any 3"; it turns to a warning
+     when more are answered than count, and says only the best ones are marked */
+  function paintAttempts() {
+    if (!on) return;
+    const att = getAttempt() || {};
+    ["mcq", "fill", "sub", "theory"].forEach((type) => {
+      const list = lastQuestions.filter((q) => q.type === type);
+      const sec = sheet.querySelector(`.xp-sec--${type} .xp-banner`);
+      if (!sec) return;
+      sec.querySelector(".xp-banner__att")?.remove();
+      const n = Math.round(Number(att[type]) || 0);
+      if (!(n > 0 && n < list.length)) return;
+      const done = list.filter((q) => answers[q.id] !== undefined && String(answers[q.id]).trim() !== "").length;
+      const span = document.createElement("span");
+      span.className = "xp-banner__att" + (done > n ? " is-over" : "");
+      span.setAttribute("data-nomath", "");
+      span.textContent = done > n ? `Attempted ${done}, only ${n} count` : `Attempted ${done} of ${n}`;
+      sec.appendChild(span);
+    });
   }
 
   /** The OMR rows under `root` (the page at the end, or the side drawer): the same answers, shaded there. */
@@ -159,7 +183,17 @@ export function createLive(sheet, { onChange = () => {}, store = KEY } = {}) {
     const page = sheet.querySelector(".xp-sheetpage.xp-omr");
     if (!on || !page) return;
     const article = page.closest(".xp");
-    const grid = page.querySelector(".xp-omr__grid").cloneNode(true);
+    /* the paper's own rows, dealt into THREE sets side by side: a drawer one row wide
+       is as tall as the paper, three wide puts a whole sheet in view */
+    const rows = [...page.querySelectorAll(".xp-omr li")].map((li) => li.cloneNode(true));
+    const grid = document.createElement("div");
+    grid.className = "xp-omr__grid";
+    const per = Math.max(1, Math.ceil(rows.length / 3));
+    for (let i = 0; i < rows.length; i += per) {
+      const ol = document.createElement("ol");
+      rows.slice(i, i + per).forEach((li) => ol.appendChild(li));
+      grid.appendChild(ol);
+    }
 
     const tab = document.createElement("button");
     tab.type = "button"; tab.className = "pp-btn xo-tab"; faceOf(tab, UI.target(20), "OMR sheet", "left");
@@ -228,17 +262,26 @@ export function createLive(sheet, { onChange = () => {}, store = KEY } = {}) {
     });
   }
 
-  /** Marks won on the questions code can mark, and how many are left to the learner. */
+  /** Marks won on the questions code can mark, and how many are left to the learner.
+      A section that says "answer any 3" counts its 3 best answers and is out of its 3 best-paying. */
   function score(questions) {
-    let won = 0, auto = 0, manual = 0, answered = 0;
-    questions.forEach((q) => {
-      const got = answers[q.id];
-      if (got !== undefined && got !== "") answered++;
-      if (q.type === "mcq") { auto += q.marks; if (got === q.answer) won += q.marks; }
-      else if (q.type === "fill") { auto += q.marks; if (matches(got, q.answer)) won += q.marks; }
-      else manual++;
-    });
-    return { won, auto, manual, answered, total: questions.length };
+    const att = getAttempt() || {};
+    let won = 0, auto = 0, manual = 0, answered = 0, total = 0;
+    for (const type of ["mcq", "fill", "sub", "theory"]) {
+      const list = questions.filter((q) => q.type === type);
+      if (!list.length) continue;
+      const n0 = Math.round(Number(att[type]) || 0);
+      const n = n0 > 0 && n0 < list.length ? n0 : list.length;
+      total += n;
+      const given = (q) => answers[q.id] !== undefined && String(answers[q.id]).trim() !== "";
+      answered += Math.min(n, list.filter(given).length);
+      if (type === "mcq" || type === "fill") {
+        const right = (q) => (type === "mcq" ? answers[q.id] === q.answer : matches(answers[q.id], q.answer));
+        auto += list.map((q) => q.marks).sort((a, b) => b - a).slice(0, n).reduce((s, m) => s + m, 0);
+        won += list.filter((q) => given(q) && right(q)).map((q) => q.marks).sort((a, b) => b - a).slice(0, n).reduce((s, m) => s + m, 0);
+      } else manual += n;
+    }
+    return { won, auto, manual, answered, total };
   }
 
   return {

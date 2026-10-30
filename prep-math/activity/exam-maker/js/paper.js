@@ -8,7 +8,7 @@
    textHtml() so it is written as \( \) for MathJax to typeset afterwards.
    ========================================================================== */
 
-import { TYPES, ORDER, COLOURS, textHtml, blankHtml, esc, totalMarks } from "./model.js";
+import { TYPES, ORDER, COLOURS, textHtml, blankHtml, esc, paperMarks, attemptOf } from "./model.js";
 
 /* ── diagrams ──────────────────────────────────────────────────────────── */
 
@@ -160,10 +160,13 @@ function bar(tag, name, rule, marks) {
   </div></div>`;
 }
 
-function banner(type, qs, idx) {
+function banner(type, qs, idx, attempt) {
   const t = TYPES[type];
-  const marks = totalMarks(qs);
-  return bar(`Section ${letter(idx)}`, t.head, t.rule, `${marks} ${marks === 1 ? "mark" : "marks"}`);
+  const n = attemptOf(attempt, type, qs.length);
+  const marks = paperMarks(qs, { [type]: n });
+  /* "Answer any 3 of the 5." says it once, in place of the section's usual rule */
+  const rule = n < qs.length ? `Answer any ${n} of the ${qs.length} questions. ${t.rule.replace(/^Answer every question\.\s*/, "")}`.trim() : t.rule;
+  return bar(`Section ${letter(idx)}`, t.head, rule, `${marks} ${marks === 1 ? "mark" : "marks"}`);
 }
 
 function header(h, total) {
@@ -256,7 +259,7 @@ export function paperHtml(head, questions) {
   const numbered = [];
   const body = groups.map(([t, list], gi) => {
     const html = list.map((q) => { numbered.push(q); return t === "mcq" ? mcq(q, ++no) : t === "fill" ? fill(q, ++no) : written(q, ++no, !!head.theorySheet); }).join("");
-    return `<section class="xp-sec xp-sec--${t}${gi && head.breakAt && head.breakAt[t] ? " xp-sec--page" : ""}">${banner(t, list, gi)}${t === "mcq" ? `<div class="xp-cols">${html}</div>` : html}</section>`;
+    return `<section class="xp-sec xp-sec--${t}${gi && head.breakAt && head.breakAt[t] ? " xp-sec--page" : ""}">${banner(t, list, gi, head.attempt)}${t === "mcq" ? `<div class="xp-cols">${html}</div>` : html}</section>`;
   }).join("");
   const empty = groups.length ? "" : `<p class="xp-empty">No questions yet. Write some, or ask the model for a set.</p>`;
   /* the school's logo, very faint, behind every page: a page-sized tile on screen,
@@ -266,7 +269,7 @@ export function paperHtml(head, questions) {
     : "";
   return `<article class="xp${wm ? " xp--wm" : ""}${head.tint ? " xp--tint" : ""}${head.omr ? " xp--omr" : ""}" style="--c:${col.main};--cs:${col.soft};--ci:${col.ink}${wm ? `;--wm:url(&quot;${wm}&quot;)` : ""}">
     ${head.logo ? `<img class="xp-wm" src="${head.logo}" alt="" />` : ""}
-    ${header(head, totalMarks(questions))}
+    ${header(head, paperMarks(questions, head.attempt))}
     ${body}${empty}
     ${head.omr && numbered.length ? omrSheet(numbered) : ""}
     ${head.theorySheet && numbered.length ? theorySheet(numbered) : ""}

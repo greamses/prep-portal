@@ -12,7 +12,7 @@
    ========================================================================== */
 
 import { paperHtml } from "/prep-math/activity/exam-maker/js/paper.js";
-import { clean, totalMarks, BLANK_HEAD } from "/prep-math/activity/exam-maker/js/model.js";
+import { clean, paperMarks, BLANK_HEAD } from "/prep-math/activity/exam-maker/js/model.js";
 import { createLive } from "/prep-math/activity/exam-maker/js/live.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { api } from "/utils/components/workbook/account.js";
@@ -31,7 +31,7 @@ const say = (t, bad = false) => { const m = $("pp-msg"); m.textContent = t; m.cl
 let head = null;
 let questions = [];
 
-const live = createLive(sheet, { onChange: () => paintScore(), store: `xm-live-paper-${code}` });
+const live = createLive(sheet, { onChange: () => paintScore(), store: `xm-live-paper-${code}`, getAttempt: () => head && head.attempt });
 
 function paintScore() {
   const el = $("xm-score");
@@ -85,7 +85,7 @@ async function open() {
     $("xm-check").hidden = false; $("xm-clear").hidden = false; $("xm-omr-btn").hidden = false;
     /* the workbook tool rail, for working out beside the paper */
     mountTools({ sheet, viewport: document.querySelector(".xm-viewport"), toolbar: document.querySelector(".wb-toolbar") }).on();
-    say(`${questions.length} questions · ${totalMarks(questions)} marks.`);
+    say(`${questions.length} questions · ${paperMarks(questions, head.attempt)} marks.`);
     draw();
   } catch (e) {
     say(String((e && e.message) || e || "Could not open the paper.").slice(0, 200), true);

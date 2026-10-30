@@ -7,7 +7,7 @@
    tomorrow.
    ========================================================================== */
 
-import { TYPES, COLOURS, BLANK_HEAD, blank, clean, parseQuestions, promptFor, svgPrompt, needsDiagram, extractSvg, checkQuestions, limitTo, verifyPrompt, applyChecks, totalMarks, esc } from "./model.js";
+import { TYPES, COLOURS, BLANK_HEAD, blank, clean, parseQuestions, promptFor, svgPrompt, needsDiagram, extractSvg, checkQuestions, limitTo, verifyPrompt, applyChecks, totalMarks, paperMarks, esc } from "./model.js";
 import { paperHtml, cleanSvg } from "./paper.js";
 import { loadPaper } from "./cbt.js";
 import { createLive } from "./live.js";
@@ -57,7 +57,7 @@ addEventListener("pagehide", flush);
 
 const sheet = $("xm-sheet");
 let drawTimer = 0;
-const live = createLive(sheet, { onChange: () => paintScore() });
+const live = createLive(sheet, { onChange: () => paintScore(), getAttempt: () => state.head.attempt });
 
 function pageRule() {
   let st = $("xm-page");
@@ -78,7 +78,7 @@ function draw() {
   try { mj && mj.typesetClear && mj.typesetClear([sheet]); } catch { /* nothing typeset yet */ }
   sheet.innerHTML = paperHtml(state.head, state.questions);
   live.apply(state.questions);
-  const total = totalMarks(state.questions);
+  const total = paperMarks(state.questions, state.head.attempt);
   $("xm-summary").textContent = `${state.questions.length} question${state.questions.length === 1 ? "" : "s"} · ${total} mark${total === 1 ? "" : "s"}`;
   $("xm-count").textContent = state.questions.length ? `(${state.questions.length})` : "";
   typeset();
@@ -119,6 +119,7 @@ function fillHead() {
   heads.forEach((el) => { el.value = state.head[el.dataset.h] || ""; });
   $("xm-paper").value = state.head.paper;
   document.querySelectorAll("[data-each]").forEach((el) => { el.value = state.head.marksEach[el.dataset.each]; });
+  document.querySelectorAll("[data-attempt]").forEach((el) => { el.value = (state.head.attempt || {})[el.dataset.attempt] || ""; });
   $("xm-key").checked = !!state.head.key;
   $("xm-omr").checked = !!state.head.omr;
   $("xm-tsheet").checked = !!state.head.theorySheet;
@@ -134,6 +135,12 @@ document.querySelectorAll("[data-each]").forEach((el) => el.addEventListener("in
   state.head.marksEach = { ...state.head.marksEach, [t]: v };
   state.questions.forEach((q) => { if (q.type === t) q.marks = v; });
   renderList(); draw(); save();
+}));
+/* how many of each kind are to be attempted: empty is all of them */
+document.querySelectorAll("[data-attempt]").forEach((el) => el.addEventListener("input", () => {
+  const n = Math.max(0, Math.min(200, Math.round(+el.value) || 0));
+  state.head.attempt = { ...(state.head.attempt || {}), [el.dataset.attempt]: n };
+  redraw(); paintScore();
 }));
 $("xm-paper").addEventListener("change", (e) => { state.head.paper = e.target.value; redraw(); });
 $("xm-clean").addEventListener("change", (e) => { state.head.clean = e.target.checked; redraw(); });

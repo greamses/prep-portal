@@ -46,6 +46,8 @@ export function blank(type) {
 export const BLANK_HEAD = {
   school: "", term: "", year: "", subject: "", date: "", klass: "", time: "",
   logo: "", colour: "indigo", paper: "a4", key: false, tint: false, clean: true, omr: false, theorySheet: false, breakAt: {},
+  /* how many questions of each kind are to be attempted ("answer any 3"); none or 0 = all of them */
+  attempt: {},
   /* what each question in a section is worth; every question follows its section
      until its own marks are changed */
   marksEach: { mcq: 1, fill: 1, sub: 2, theory: 4 },
@@ -370,3 +372,19 @@ export function needsDiagram(q) {
 
 /** Marks added up. */
 export const totalMarks = (qs) => qs.reduce((s, q) => s + (Number(q.marks) || 0), 0);
+
+/** How many of a section's questions are to be attempted: the setting, kept between 1 and how many there are. */
+export const attemptOf = (attempt, type, count) => {
+  const n = Math.round(Number(attempt && attempt[type]) || 0);
+  return n > 0 && n < count ? n : count;
+};
+
+/** The marks the paper is out of: every question, except that a section "answer any 3" counts its 3 best-paying. */
+export function paperMarks(qs, attempt) {
+  let sum = 0;
+  for (const type of Object.keys(TYPES)) {
+    const marks = qs.filter((q) => q.type === type).map((q) => Number(q.marks) || 0).sort((a, b) => b - a);
+    sum += marks.slice(0, attemptOf(attempt, type, marks.length)).reduce((s, m) => s + m, 0);
+  }
+  return sum;
+}

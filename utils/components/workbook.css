@@ -3905,12 +3905,20 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   .wb-page--flow .wb-page__wm { position: fixed; }
 }
 
-/* THE TOOL RAIL STACKS THREE TO A ROW. One long column of keys ran off the bottom
-   of a short window; three across keeps the whole box in view, and its pop-out
-   menus (a family's other tools) lay out the same way. The strip along the
-   bottom of a phone is already a row and stays one. */
+/* THE POP-OUTS STACK THREE TO A ROW. The rail itself stays one column of main
+   tools; it is the menu a family opens (its other tools) that was a long column,
+   and three across keeps it short. The strip along the bottom of a phone is
+   already a row and stays one. */
 @media (min-width: 701px) {
-  .wb-side__keys { display: grid; grid-template-columns: repeat(3, auto); justify-content: center; align-content: start; gap: 0.3rem; }
-  .wb-side__keys > :is(.wb-side__cap, .wb-side__rule) { grid-column: 1 / -1; }
   .wb-side__flypaper { display: grid; grid-template-columns: repeat(3, auto); gap: 0.25rem; justify-content: center; }
+}
+
+/* the tool rail and the boards scroll with the site's own bar, not the system's */
+.wb-side__keys, .wb-side__flypaper, .wb-modal__body, .wb-preview.wb-modal { scrollbar-width: thin; scrollbar-color: #e8b94c #f1ecdf; }
+@supports selector(::-webkit-scrollbar) {
+  .wb-side__keys, .wb-side__flypaper, .wb-preview.wb-modal { scrollbar-width: auto; scrollbar-color: auto; }
+  .wb-side__keys::-webkit-scrollbar, .wb-side__flypaper::-webkit-scrollbar, .wb-preview.wb-modal::-webkit-scrollbar { width: 12px; height: 12px; }
+  .wb-side__keys::-webkit-scrollbar-track, .wb-side__flypaper::-webkit-scrollbar-track, .wb-preview.wb-modal::-webkit-scrollbar-track { background: #f1ecdf; border-left: 1px dashed rgba(42, 39, 35, 0.28); }
+  .wb-side__keys::-webkit-scrollbar-thumb, .wb-side__flypaper::-webkit-scrollbar-thumb, .wb-preview.wb-modal::-webkit-scrollbar-thumb { background: #f4c95d; border: 3px solid #f1ecdf; box-shadow: inset 0 0 0 1px rgba(42, 39, 35, 0.4); border-radius: 0; min-height: 36px; }
+  .wb-side__keys::-webkit-scrollbar-thumb:hover, .wb-side__flypaper::-webkit-scrollbar-thumb:hover, .wb-preview.wb-modal::-webkit-scrollbar-thumb:hover { background: #e8b94c; }
 }
