@@ -90,19 +90,17 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
 .xp-head { margin-bottom: 7mm; break-inside: avoid; }
 .xp-receipt { --surface-primary: #fffdf7; --surface-secondary: #fff; --ink: #1d1b18; --shadow-color: 29, 27, 24; }
 .xp-receipt .xp-receipt__paper { --tooth: 9px; --pp-paper: #fffdf7; padding: 5.5mm 6.5mm 5mm; color: #1d1b18; }
-/* the band is glass: a muted tint with a pale sheen, a bright edge, rounded (the one place the site's square-corner rule is lifted, by request) */
-.xp { --glass: linear-gradient(135deg, color-mix(in srgb, var(--c) 82%, #fff) 0%, color-mix(in srgb, var(--c) 48%, #fff) 100%); --sheen: linear-gradient(158deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.14) 40%, rgba(255, 255, 255, 0) 62%); --pane: rgba(255, 255, 255, 0.62); }
-.xp-top { position: relative; overflow: hidden; display: flex; align-items: center; gap: 5mm; background: var(--glass); color: var(--ci); border: 0.4mm solid rgba(255, 255, 255, 0.85); border-radius: 4.5mm; padding: 4mm 5mm; margin: 0 -1mm; }
-.xp-top::before { content: ""; position: absolute; inset: 0; background: var(--sheen); pointer-events: none; }
-.xp-top > * { position: relative; }
-.xp-head__logo { flex: none; width: 19mm; height: 19mm; background: var(--pane); border: 0.3mm solid rgba(255, 255, 255, 0.9); border-radius: 3.5mm; padding: 1mm; box-sizing: border-box; display: grid; place-items: center; }
+/* the band: a flat muted fill, rounded (the one place the square-corner rule is lifted, by request) */
+.xp { --band: color-mix(in srgb, var(--c) 58%, #fff); }
+.xp-top { display: flex; align-items: center; gap: 5mm; background: var(--band); color: var(--ci); border-radius: 4.5mm; padding: 4mm 5mm; margin: 0 -1mm; }
+.xp-head__logo { flex: none; width: 19mm; height: 19mm; background: #fff; border-radius: 3.5mm; padding: 1mm; box-sizing: border-box; display: grid; place-items: center; }
 .xp-head__logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .xp-head__logo--none { background: transparent; border: 0.4mm dashed var(--ci); padding: 0; opacity: 0.8; }
 .xp-head__logo--none i { font-style: normal; font-size: 6.5pt; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; line-height: 1.3; opacity: 0.9; }
 .xp-head__words { flex: 1; min-width: 0; }
 .xp-head__school { font-family: "Unbounded", "JetBrains Mono", monospace; font-weight: 900; font-size: 15pt; line-height: 1.15; text-transform: uppercase; }
 .xp-head__term { font-size: 8.5pt; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 1.6mm; opacity: 0.94; }
-.xp-head__subject { flex: none; max-width: 44mm; background: var(--pane); border: 0.3mm solid rgba(255, 255, 255, 0.9); border-radius: 3.5mm; color: var(--ci); font-family: "Unbounded", "JetBrains Mono", monospace; font-weight: 700; font-size: 11pt; padding: 2.4mm 4mm; text-align: center; }
+.xp-head__subject { flex: none; max-width: 44mm; background: #fff; border-radius: 3.5mm; color: var(--ci); font-family: "Unbounded", "JetBrains Mono", monospace; font-weight: 700; font-size: 11pt; padding: 2.4mm 4mm; text-align: center; }
 /* the dashed tear lines between the receipt's parts */
 .xp-meta { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 4.5mm; padding-top: 3.5mm; border-top: 0.4mm dashed #b9b2a5; }
 .xp-cell { padding: 0 3mm; border-left: 0.3mm dotted #b9b2a5; min-width: 0; }
@@ -187,12 +185,11 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
 @media print {
   .xp { color: #1d1b18 !important; }
   .xp-receipt__paper { background: #fffdf7 !important; }
-  .xp-top { background: var(--glass) !important; color: var(--ci) !important; }
-  .xp-top::before { background: var(--sheen) !important; }
+  .xp-top { background: var(--band) !important; color: var(--ci) !important; }
   .xp-head__school, .xp-head__term, .xp-head__logo--none i { color: var(--ci) !important; }
-  .xp-head__logo { background: var(--pane) !important; }
+  .xp-head__logo { background: #fff !important; }
   .xp-head__logo--none { background: transparent !important; }
-  .xp-head__subject { background: var(--pane) !important; color: var(--ci) !important; }
+  .xp-head__subject { background: #fff !important; color: var(--ci) !important; }
   .xp-cell span, .xp-student, .xp-banner__name, .xp-banner__marks, .xp-marks, .xp-key__no, .xp-opts b { color: var(--ci) !important; }
   .xp-cell b { color: #1d1b18 !important; }
   .xp-student em { background: var(--cs) !important; }
