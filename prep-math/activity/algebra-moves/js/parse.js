@@ -142,6 +142,12 @@ function tokenise(src, lenient = false) {
     if (c === "→") { out.push({ t: "to", v: "→", at: i }); i++; continue; }
     if (c === "√") { out.push({ t: "root", v: "√", at: i }); i++; continue; }
     if (isAlpha(c)) { out.push({ t: "var", v: c, at: i }); i++; continue; }
+    // < > ≤ ≥ (and <= >=) make the line an inequality
+    if (c === "<" || c === ">" || c === "≤" || c === "≥") {
+      let v = c, n = 1;
+      if ((c === "<" || c === ">") && src[i + 1] === "=") { v = c === "<" ? "≤" : "≥"; n = 2; }
+      out.push({ t: "rel", v, at: i }); i += n; continue;
+    }
     if ("+-*/^()=[],{}".includes(c)) { out.push({ t: c, v: c, at: i }); i++; continue; }
     // The keypad's placeholder for a slot you have not filled in yet.
     if (c === "?") { out.push({ t: "hole", v: "?", at: i }); i++; continue; }
@@ -411,8 +417,9 @@ export function parse(src, { lenient = false } = {}) {
   const start = from();
   const left = expr();
   if (peek().t === "end") return span(start, A.expression(left));
-  eat("=");
+  const relTok = peek().t === "rel" ? toks[p++] : null;
+  if (!relTok) eat("=");
   const right = expr();
   eat("end");
-  return span(start, A.eqn(left, right));
+  return span(start, A.eqn(left, right, undefined, relTok ? relTok.v : undefined));
 }

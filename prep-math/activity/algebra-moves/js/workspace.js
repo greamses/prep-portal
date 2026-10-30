@@ -750,6 +750,7 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
   canvas.onMove(() => menu.reposition());
 
   keypad = createKeypad($("#am-keypad"), {
+    relations: "ineq",                // < > ≤ ≥ are real here: they make the line an inequality
     onSubmit: (eq, src, given, find) => {
       addCard(eq, { given, find });
       say(

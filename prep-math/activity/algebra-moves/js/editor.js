@@ -79,6 +79,7 @@ const KEEP = /[0-9A-Za-z+\-*/=^_(){}\[\],.?°%!π±∫Σ√∠ Ͱ-Ͽ]/;
 /* Algebra Moves has no use for < > ≤ ≥ and the absolute-value bar, so they are dropped. A page
    that graphs (Cartesian Art) asks for them with createEditor({ relations: true }). */
 const KEEP_RELATIONS = /[<>≤≥|]/;
+const KEEP_INEQUALITIES = /[<>≤≥]/;      // relations: "ineq" — the signs but not the absolute-value bar
 
 export function sanitize(input, relations = false) {
   let s = String(input ?? "");
@@ -88,7 +89,7 @@ export function sanitize(input, relations = false) {
   // the full-width forms a phone or an East Asian keyboard brings (２＋３) are the ordinary ones
   s = [...s].map((c) => { const k = c.charCodeAt(0); return k >= 0xff01 && k <= 0xff5e && SAME_AS[c] === undefined ? String.fromCharCode(k - 0xfee0) : c; }).join("");
   s = [...s].map((c) => (SAME_AS[c] !== undefined ? SAME_AS[c] : c)).join("");
-  s = [...s].filter((c) => KEEP.test(c) || (relations && KEEP_RELATIONS.test(c))).join("");                                  // what is left has a meaning here
+  s = [...s].filter((c) => KEEP.test(c) || (relations && (relations === "ineq" ? KEEP_INEQUALITIES : KEEP_RELATIONS).test(c))).join("");                                  // what is left has a meaning here
   return s.replace(/ {2,}/g, " ");
 }
 

@@ -522,8 +522,8 @@ function measureBare(node, size, binary) {
       const l = measure(node.l, size, "eq", 0);
       const r = measure(node.r, size, "eq", 1);
       const gap = 0.34 * size;
-      const eqW = measureText("=", size, false);
-      return { ...base, kind: "eq", l, r, gap, eqW, w: l.w + gap + eqW + gap + r.w,
+      const eqW = measureText(node.rel || "=", size, false);
+      return { ...base, kind: "eq", l, r, gap, eqW, rel: node.rel || "=", w: l.w + gap + eqW + gap + r.w,
                ascent: Math.max(base.ascent, l.ascent, r.ascent),
                descent: Math.max(base.descent, l.descent, r.descent) };
     }
@@ -811,7 +811,7 @@ function place(m, x, y, out) {
     case "eq": {
       place(m.l, x, y, out);
       const ex = x + m.l.w + m.gap;
-      text("eq", "=", ex, y, m.size, false);
+      text("eq", m.rel || "=", ex, y, m.size, false);
       place(m.r, ex + m.eqW + m.gap, y, out);
       break;
     }
@@ -910,7 +910,7 @@ export function plain(node, parentKind = null, slot = 0) {
       return wrap(`∫${range}(${plain({ ...node.k, paren: false })})d${node.x}`);
     }
     case "lim":  return wrap(`lim(${node.x}->${plain(node.to)})(${plain({ ...node.k, paren: false })})`);
-    case "eq":   return `${plain(node.l, "eq", 0)} = ${plain(node.r, "eq", 1)}`;
+    case "eq":   return `${plain(node.l, "eq", 0)} ${node.rel || "="} ${plain(node.r, "eq", 1)}`;
     case "expr": return plain(node.e, "expr", 0);
     default:     return "?";
   }

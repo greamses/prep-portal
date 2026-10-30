@@ -235,6 +235,34 @@ export function preservesSolutions(prev, next, { samples = 64, given = null, sca
   };
   const branches = hasPm(prev) || hasPm(next) ? [1, -1] : [1];
 
+  /* An INEQUALITY is checked by what it says: at every value tried, the line before and the line
+     after must be true together or false together. That is what catches the one slip that matters,
+     a sign that should have turned round when both sides were multiplied by a negative. */
+  const relOf = (root) => (root.kind === "eq" && root.rel) || "=";
+  if (relOf(prev) !== "=" || relOf(next) !== "=") {
+    if (prev.kind !== "eq" || next.kind !== "eq") return { ok: false, why: "that turns it into a different kind of thing" };
+    const holds = (root, env) => {
+      const d = diffOf(root, env);
+      if (!Number.isFinite(d)) return null;
+      if (Math.abs(d) < 1e-9) return "edge";
+      const r = relOf(root);
+      return r === "<" || r === "≤" ? d < 0 : r === ">" || r === "≥" ? d > 0 : false;
+    };
+    let usable = 0, sawTrue = false, sawFalse = false;
+    for (let i = 0; i < samples; i++) {
+      const env = {};
+      for (const n of names) env[n] = sample(i, n) * (1 + (i % 5) * 3);            // reach well past the small values
+      for (const [n, d] of Object.entries(defined)) env[n] = evalAt(d, env);
+      const a = holds(prev, env), b = holds(next, env);
+      if (a === null || b === null || a === "edge" || b === "edge") continue;
+      usable++;
+      if (a !== b) return { ok: false, why: "that changes which numbers make it true — check whether the sign should turn round" };
+      if (a) sawTrue = true; else sawFalse = true;
+    }
+    if (usable < 6) return { ok: false, why: "I could not check that move, so I will not make it" };
+    return { ok: true, why: "" };
+  }
+
   /* sin u = k becomes u = sin⁻¹ k: true for the ONE angle sin⁻¹ gives, not for
      every angle with that sine, so no sampling of solutions could pass it. It is
      checked as what it is — sin⁻¹ applied to both sides — at the samples where

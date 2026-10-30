@@ -82,6 +82,10 @@ function command(s, i) {
       // \left( and \right) : the bracket that follows is just a bracket
       return ["", at];
     case "ne": case "neq": return ["≠", at];
+    case "le": case "leq": case "leqslant": return ["≤", at];
+    case "ge": case "geq": case "geqslant": return ["≥", at];
+    case "lt": return ["<", at];
+    case "gt": return [">", at];
     case "sum": return ["Σ", at];
     case "circ": return ["°", at];
     case "degree": return ["°", at];

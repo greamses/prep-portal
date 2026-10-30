@@ -28,7 +28,17 @@ export const sum  = (kids, id = freshId())           => ({ id, kind: "sum", kids
 export const prod = (kids, id = freshId())           => ({ id, kind: "prod", kids });
 export const frac = (a, b, id = freshId())           => ({ id, kind: "frac", a, b });
 export const pow  = (b, e, id = freshId())           => ({ id, kind: "pow", b, e });
-export const eqn  = (l, r, id = freshId())           => ({ id, kind: "eq", l, r });
+/* An equation — or an INEQUALITY: the same node with a relation that is < > ≤ or ≥ instead of =.
+   Every move builds its next line with eqn(l, r, eq.id), so the relation rides on the id: a line
+   keeps its relation unless the move says otherwise (see flipRel). */
+const RELATION = new Map();
+export const flipRel = (rel) => ({ "<": ">", ">": "<", "≤": "≥", "≥": "≤" }[rel] || "=");
+export const eqn  = (l, r, id = freshId(), rel) => {
+  const kept = rel || RELATION.get(id) || "=";
+  if (kept !== "=") RELATION.set(id, kept);
+  return kept === "=" ? { id, kind: "eq", l, r } : { id, kind: "eq", l, r, rel: kept };
+};
+export const relOf = (root) => (root && root.kind === "eq" && root.rel) || "=";
 /* A square root — a surd when what is under it is not a perfect square. Its
    own node rather than a power of 1/2: x^(1/2) and √x are the same number but
    not the same writing, and a student who typed one expects to keep seeing it. */
@@ -283,6 +293,8 @@ export const termsOf = (side) => (side.kind === "sum" ? side.kids : [side]);
 export const SIDES = (root) => (root.kind === "expr" ? ["e"] : ["l", "r"]);
 
 export const isEquation = (root) => root.kind === "eq";
+/** A line that says one side is smaller or bigger than the other, not equal to it. */
+export const isInequality = (root) => root.kind === "eq" && !!root.rel && root.rel !== "=";
 
 /** The same line with one side replaced, keeping the root's own id. */
 export function setSide(root, side, next) {

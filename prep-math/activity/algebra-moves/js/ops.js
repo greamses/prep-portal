@@ -156,10 +156,12 @@ export function divideBoth(eq, value) {
   if (R.isOne(value)) return { error: "Dividing by one changes nothing." };
 
   // Each side keeps its id, so both sides slide up into their numerators.
+  const flips = A.isInequality(eq) && R.isNegative(value);     // dividing by a negative turns < into >
   const eqNext = A.eqn(
     A.frac(eq.l, A.numberNode(value)),
     A.frac(eq.r, A.numberNode(value)),
-    eq.id
+    flips ? undefined : eq.id,
+    flips ? A.flipRel(eq.rel) : undefined
   );
 
   return { eq: eqNext, from: new Map(), note: `Divide both sides by ${say(value)}` };
@@ -197,10 +199,11 @@ export function timesBoth(eq, value) {
     return next;
   };
 
+  const flips = A.isInequality(eq) && R.isNegative(value);     // multiplying by a negative turns < into >
   return {
-    eq: A.eqn(grow(eq.l), grow(eq.r), eq.id),
+    eq: A.eqn(grow(eq.l), grow(eq.r), flips ? undefined : eq.id, flips ? A.flipRel(eq.rel) : undefined),
     from,
-    note: `Multiply both sides by ${say(value)}`,
+    note: `Multiply both sides by ${say(value)}${flips ? " — the sign turns round" : ""}`,
   };
 }
 
@@ -221,6 +224,7 @@ export function timesBoth(eq, value) {
 
 export function timesByTerm(eq, node) {
   if (!A.isEquation(eq)) return { error: TWO_SIDED };
+  if (A.isInequality(eq)) return { error: "A letter might be negative, which turns the sign round, so I cannot multiply an inequality by one." };
   if (node.kind !== "var") return { error: "I only multiply both sides by a single letter." };
 
   const from = new Map();
@@ -288,7 +292,9 @@ export function flipSigns(eq) {
       A.termsOf(side).map((t) => (t.kind === "neg" && !t.paren ? t.k : A.neg(t))),
       side
     );
-  return { eq: A.eqn(flip(eq.l), flip(eq.r), eq.id), from: new Map(), note: "Change every sign" };
+  const turned = A.isInequality(eq);                         // times −1 turns < into > as well
+  return { eq: A.eqn(flip(eq.l), flip(eq.r), turned ? undefined : eq.id, turned ? A.flipRel(eq.rel) : undefined), from: new Map(),
+           note: turned ? "Change every sign — and the inequality turns round" : "Change every sign" };
 }
 
 /* ── Open the brackets ──────────────────────────────────────────────────────
@@ -2180,6 +2186,9 @@ export function swapTerms(eq, aId, bId) {
 
 export function applyToBoth(eq, op, node) {
   if (!A.isEquation(eq)) return { error: TWO_SIDED };
+  if (A.isInequality(eq) && (op === "×" || op === "÷") && !A.exactValue(node)) {
+    return { error: "I can only multiply or divide an inequality by a number: a letter might be negative, which turns the sign round" };
+  }
   const said = plain(node);
   const isZero = (side) => { const v = A.exactValue(side); return !!v && R.isZero(v); };
   const value = A.exactValue(node);
@@ -2376,7 +2385,8 @@ export function combineMany(eq, ids) {
 
 export function swapSides(eq) {
   if (!A.isEquation(eq)) return { error: TWO_SIDED };
-  return { eq: A.eqn(eq.r, eq.l, eq.id), from: new Map(), note: "Turn it round" };
+  const turned = A.isInequality(eq);                         // 5 < x read the other way is x > 5
+  return { eq: A.eqn(eq.r, eq.l, turned ? undefined : eq.id, turned ? A.flipRel(eq.rel) : undefined), from: new Map(), note: "Turn it round" };
 }
 
 /* ── Drop a zero ────────────────────────────────────────────────────────────
@@ -2660,7 +2670,13 @@ export function offerTo(eq, fromId, toId) {
   };
 }
 
-export function offers(eq, id, { given = null } = {}) {
+/* What only an EQUATION can do: roots, ± and the undoing of powers, logs and trig give more than
+   one answer, or none, and a sign that turns round when a negative is involved. */
+const NOT_FOR_INEQUALITIES = new Set(["root", "poshenloh", "branches", "angles", "degrees", "invert", "rootswap", "logswap"]);
+const forRelation = (eq, list) => (A.isInequality(eq) ? list.filter((o) => !NOT_FOR_INEQUALITIES.has(o.key)) : list);
+
+export function offers(eq, id, o) { return forRelation(eq, offersRaw(eq, id, o)); }
+function offersRaw(eq, id, { given = null } = {}) {
   const loc = locate(eq, id);
   if (!loc) return [];
   const { terms, index, term } = loc;
@@ -2994,7 +3010,8 @@ const ROLE_KEYS = {
   base: new Set(["substitute", "indices", "expand", "workout", "resolvepowers", "root", "square", "surd", "rootswap", "logswap", "across", "divide", "cancel", "split", "diff", "integrate", "usub", "parts"]),
 };
 
-export function atomOffers(eq, key, { given = null } = {}) {
+export function atomOffers(eq, key, o) { return forRelation(eq, atomOffersRaw(eq, key, o)); }
+function atomOffersRaw(eq, key, { given = null } = {}) {
   if (!key) return [];
   const { nodeId, slot } = keyParts(key);
   const out = [];
@@ -3371,11 +3388,11 @@ export function pickedCalculus(eq, terms) {
   const out = [];
   for (const L of A.varsIn(body).filter((v) => v !== "C").slice(0, 3)) {
     out.push({
-      key: "diffpicked", label: `Differentiate ${said} with respect to ${L}`, hint: "just the picked terms, on a new card", mark: `d/d${L}`,
+      key: "diffpicked", label: `Differentiate ${said} with respect to ${L}`, hint: "just the picked terms, on a new card", mark: `d/d${L}(?)`,
       cards: [{ eq: A.expression(A.deriv(copy(body), L)), title: `the slope of ${said}` }],
     });
     out.push({
-      key: "intpicked", label: `Integrate ${said} with respect to ${L}`, hint: "just the picked terms, on a new card", mark: `∫d${L}`,
+      key: "intpicked", label: `Integrate ${said} with respect to ${L}`, hint: "just the picked terms, on a new card", mark: `∫(?)d${L}`,
       cards: [{ eq: A.expression(A.integ(copy(body), L)), title: `the integral of ${said}` }],
     });
   }
@@ -3385,7 +3402,8 @@ export function pickedCalculus(eq, terms) {
 /** What a SELECTION of glyphs means together: the terms they belong to cross
     the = as one move, or fold into one term when they are like. One glyph
     picked is just atomOffers. */
-export function multiOffers(eq, keys, { given = null } = {}) {
+export function multiOffers(eq, keys, o) { return forRelation(eq, multiOffersRaw(eq, keys, o)); }
+function multiOffersRaw(eq, keys, { given = null } = {}) {
   // Above and below the same bar: cancel what they share.
   if (keys.length >= 2) {
     const spots = keys.map((k) => ({ leaf: A.findById(eq, keyParts(k).nodeId), at: fractionAround(eq, keyParts(k).nodeId) }));
@@ -3503,7 +3521,8 @@ export const TIDY = new Set(["combine", "multiplyfrac", "workout", "cancel", "dr
 /** Every move on offer for a set of picked glyphs — what each one means, what
     its term can have done to it, and what they mean together — or, with
     nothing picked, everywhere on the line. The rule book searches this. */
-export function everyOffer(eq, keys = [], { given = null } = {}) {
+export function everyOffer(eq, keys = [], o) { return forRelation(eq, everyOfferRaw(eq, keys, o)); }
+function everyOfferRaw(eq, keys = [], { given = null } = {}) {
   const out = [];
   const seen = new Set();
   const add = (list) => {

@@ -79,6 +79,15 @@ export const RULE_GROUPS = [
     ],
   },
   {
+    group: "Rules: inequalities",
+    items: [
+      r("r-ineq-across", "Move a term across an inequality", "x + 3 < 7  →  x < 7 − 3", ["across"]),
+      r("r-ineq-divide", "Divide both sides by a positive number", "2x < 6  →  x < 3", ["divide"]),
+      r("r-ineq-negative", "Multiply or divide by a negative number: the sign turns round", "−2x < 6  →  x > −3", ["divide", "times", "flip"]),
+      r("r-ineq-swap", "Read it the other way round", "5 < x  →  x > 5", ["swap"]),
+    ],
+  },
+  {
     group: "Rules: roots and towers",
     items: [
       r("r-nroot-take", "Take whole powers out of a root", "∛54 = 3·∛2", ["surd"]),

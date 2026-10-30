@@ -201,6 +201,15 @@ const FUNCS = [
     { k: "←", act: "left", title: "Move left" },
     { k: "→", act: "right", title: "Move right" },
   ],
+  /* Inequalities: one side is smaller or bigger than the other. */
+  [
+    { k: "<", t: "<", title: "is less than" }, { k: ">", t: ">", title: "is greater than" },
+    { k: "≤", t: "≤", title: "is less than or equal to" }, { k: "≥", t: "≥", title: "is greater than or equal to" },
+    { k: "=", t: "=" },
+    { k: "←", act: "left", title: "Move left" },
+    { k: "→", act: "right", title: "Move right" },
+    { k: "⌫", act: "back", title: "Delete", tone: "warn" },
+  ],
 ];
 
 export function createKeypad(host, { onSubmit, relations = false } = {}) {
