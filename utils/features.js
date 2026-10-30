@@ -142,6 +142,7 @@ export const FEATURES = [
          printing: /api/workbooks/pass asks this same part before it clears a
          subscriber's pages (server/routes/workbooks.js). */
       { id: "maths-workbook", label: "Maths Workbook (printable — place value, words, sums, remainders, fractions, time, multiplying)", path: "/prep-math/activity/maths-workbook" },
+      { id: "exam-maker", label: "Exam Maker (printable exam paper — multiple choice, subjective and theory questions written by hand or by the models, school header, colour print layout, maths and SVG diagrams)", path: "/prep-math/activity/exam-maker" },
       { id: "geometry-workbook", label: "Geometry Workbook (printable — lines and angles through to parts of a circle)", path: "/prep-math/activity/geometry-workbook" },
       { id: "algebra-workbook", label: "Algebra Workbook (printable — basic concepts, the bar model, the balance scale, the remainder theorem, properties and identities, functions, graphs, completing the square, simultaneous equations incl. Cramer and Gaussian elimination)", path: "/prep-math/activity/algebra-workbook" },
       { id: "statistics-workbook", label: "Statistics Workbook (printable — pictograms: sorting, tallies, keys, building one, problems)", path: "/prep-math/activity/statistics-workbook" },

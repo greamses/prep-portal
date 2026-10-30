@@ -457,6 +457,22 @@ export const PAGES = [
     priority: "0.8",
   },
   {
+    file: "prep-math/activity/exam-maker/index.html",
+    section: "workbooks",
+    name: "Exam Maker",
+    title: "Exam Paper Maker: Printable MCQ, Subjective & Theory Questions",
+    desc: "Set a printable exam paper: write multiple-choice, subjective and theory questions or have them generated, add diagrams, and print in colour with your school header.",
+    intro:
+      "An exam paper builder for teachers. Write your own questions or have the models draft them, then the paper lays them out for you: a coloured header with your school's name and logo, multiple choice in two columns, and ruled space for written answers.",
+    points: [
+      "Multiple choice, short answer and theory questions in separate sections",
+      "School logo, term, year, subject, date and a line for the student's name",
+      "Maths typeset properly, and SVG diagrams for geometry and graphs",
+      "A colour layout built for printing, with an optional answer key",
+    ],
+    priority: "0.7",
+  },
+  {
     file: "prep-math/activity/geometry-workbook/index.html",
     section: "workbooks",
     name: "Geometry Workbook",

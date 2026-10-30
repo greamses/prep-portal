@@ -56,7 +56,7 @@ export function saveHead(head) {
  * An uploaded file, redrawn at printing size.
  * → a data: URL, or "" if it could not be read.
  */
-function shrink(file) {
+export function shrink(file) {
   return new Promise((done) => {
     if (!file || !/^image\//.test(file.type)) { done(""); return; }
     const fr = new FileReader();

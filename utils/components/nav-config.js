@@ -228,6 +228,7 @@ const NAV_CONFIG = [
         description: "Print them, or do them on screen",
         children: [
           { text: "Maths Workbook", href: "/prep-math/activity/maths-workbook/", description: "Place value, sums, division, fractions, time, multiplying, prime factors, bar models, number bases" },
+          { text: "Exam Maker", href: "/prep-math/activity/exam-maker/", description: "Set a printable exam paper: multiple choice, short answer and theory, with your school header" },
           { text: "Geometry Workbook", href: "/prep-math/activity/geometry-workbook/", description: "Angles, polygons, Pythagoras, circles, solids, area" },
           { text: "Algebra Workbook", href: "/prep-math/activity/algebra-workbook/", description: "From the bar model to quadratics, simultaneous equations, matrices, vectors and logic" },
           { text: "Statistics Workbook", href: "/prep-math/activity/statistics-workbook/", description: "Pictograms, bar charts, line graphs, pie charts, scatter graphs" },
