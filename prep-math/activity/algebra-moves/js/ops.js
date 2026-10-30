@@ -674,6 +674,25 @@ export function rationalise(eq, id) {
 /** The tidy-ups that act on one node in place — the laws of indices and the
     surd rules. Offered from the term (so the solver and "is this tidy?" see
     them) and from any glyph sitting inside the node they act on. */
+/** Fractions multiplied together: (100I/T)(1/R) is 100I/(TR) — the tops multiply and the bottoms multiply. */
+export function multiplyFractions(eq, node) {
+  if (!node || node.kind !== "prod" || A.isNumeric(node)) return { error: "That is not fractions being multiplied." };
+  // a plain number like 2/3 in front of a letter is a coefficient, not a fraction to collapse
+  if (!node.kids.some((k) => k.kind === "frac" && !A.isNumeric(k))) return { error: "There is no fraction with a letter in that product." };
+  const flat = (x) => (x.kind === "prod" && !x.paren ? x.kids : [x]);
+  const isOne = (x) => { const v = A.exactValue(x); return !!v && R.isOne(v); };
+  const tops = [], bottoms = [];
+  for (const k of node.kids) {
+    if (k.kind === "frac") { tops.push(...flat(k.a)); bottoms.push(...flat(k.b)); }
+    else tops.push(...flat(k));
+  }
+  const keep = (xs) => xs.filter((x) => !isOne(x));
+  const make = (xs) => { const ys = keep(xs); return ys.length === 0 ? A.num(R.ONE) : ys.length === 1 ? ys[0] : A.prod(ys); };
+  const top = make(tops), bottom = make(bottoms);
+  const next = isOne(bottom) ? top : A.frac(top, bottom);
+  return { eq: A.replace(eq, node.id, next), from: flyFrom(eq, next, node.id), mark: plain(next), note: `Multiply the tops and multiply the bottoms: ${plain(next)}` };
+}
+
 /* ── Fractions stacked on fractions ─────────────────────────────────────────
    (a/b) over (c/d) is a DIVISION: a/b ÷ c/d. Say so, and then dividing by a
    fraction is multiplying by its reciprocal: a/b × d/c. */
@@ -717,6 +736,7 @@ function nodeTidies(eq, node) {
     for (let up = A.parentOf(eq, scope.id); up && ["sum", "prod", "frac"].includes(up.kind); up = A.parentOf(eq, scope.id)) scope = up;
     t("resolvepowers", "Work out the powers first", "indices before products", resolvePowers(eq, scope));
   }
+  if (node.kind === "prod") t("multiplyfrac", "Multiply the tops and multiply the bottoms", "(a/b)(c/d) = ac/(bd)", multiplyFractions(eq, node));
   if (node.kind === "frac") t("fracdiv", "Write it as a division", "the top ÷ the bottom", fracToDiv(eq, node));
   if (node.kind === "div") t("divflip", "Multiply by the flipped fraction", "÷ a/b is × b/a", divFlip(eq, node));
   if (node.kind === "frac") t("cancelbracket", "Cancel what is the same on the top and the bottom", "the same bracket above and below", cancelBrackets(eq, node));
@@ -3432,7 +3452,7 @@ export function multiOffers(eq, keys, { given = null } = {}) {
 
 /** The tidy-ups: moves that leave the same thing written more simply. A side
     with none of these left on any of its terms is as tidy as it goes. */
-export const TIDY = new Set(["combine", "workout", "cancel", "dropzero", "indices", "surd", "addfrac",
+export const TIDY = new Set(["combine", "multiplyfrac", "workout", "cancel", "dropzero", "indices", "surd", "addfrac",
   "multiply", "trig", "pyth", "diff", "integrate", "limit", "base10",
   "matadd", "matmul", "matscale", "matpow", "det", "transpose", "inverse", "factorial", "choose", "sigma", "mean", "sortlist", "expandletter", "resolvepowers", "cancelbracket", "logown", "tetexpand"]);
 
