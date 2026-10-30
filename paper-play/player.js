@@ -16,6 +16,8 @@ import { clean, totalMarks, BLANK_HEAD } from "/prep-math/activity/exam-maker/js
 import { createLive } from "/prep-math/activity/exam-maker/js/live.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { api } from "/utils/components/workbook/account.js";
+import { UI } from "/utils/components/ui-icons.js";
+import { faceOf } from "/utils/components/workbook/icons.js";
 
 const $ = (id) => document.getElementById(id);
 const sheet = $("xm-sheet");
@@ -87,11 +89,16 @@ async function open() {
   }
 }
 
+/* the buttons are glyphs with their names in the site's tooltip, like the rest of the site */
+function faces() {
+  faceOf($("xm-check"), live.checked ? UI.undo(18) : UI.check(18), live.checked ? "Answer again" : "Check answers");
+  faceOf($("xm-clear"), UI.eraser(18), "Clear answers");
+}
 $("xm-check").addEventListener("click", () => {
-  if (live.checked) { live.reopen(); $("xm-check").textContent = "Check answers"; }
-  else { live.check(questions); $("xm-check").textContent = "Answer again"; }
-  draw();
+  if (live.checked) live.reopen(); else live.check(questions);
+  draw(); faces();
 });
-$("xm-clear").addEventListener("click", () => { live.clear(); $("xm-check").textContent = "Check answers"; draw(); });
+$("xm-clear").addEventListener("click", () => { live.clear(); draw(); faces(); });
+faces();
 
 open();

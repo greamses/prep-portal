@@ -14,6 +14,7 @@ import { createLive } from "./live.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { UI } from "/utils/components/ui-icons.js";
+import { faceOf } from "/utils/components/workbook/icons.js";
 import { enhanceSelects } from "/utils/components/pp-select.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
 
@@ -177,6 +178,14 @@ const ico = (root = document) => root.querySelectorAll("[data-ui]").forEach((el)
   if (!el.firstChild && UI[el.dataset.ui]) el.innerHTML = UI[el.dataset.ui]();
 });
 
+/* Every button here is a glyph with its name in the site's tooltip (faceOf), the
+   way the workbooks' are. A question type has its own glyph so the four "add"
+   and "delete" buttons can be told apart without a word on them. */
+const TYPE_ICON = { mcq: "check", fill: "pen", sub: "lines", theory: "doc" };
+const typeGlyph = (t, badge) => `<span class="xm-glyph">${UI[TYPE_ICON[t]](20)}${badge ? `<i>${badge}</i>` : ""}</span>`;
+const face = (ui, name) => `<span class="wb-btn__ico" aria-hidden="true">${UI[ui](18)}</span><em class="wb-btn__name">${name}</em>`;
+const setTip = (b, t) => { b.dataset.tip = t; b.setAttribute("aria-label", t); const n = b.querySelector(".wb-btn__name"); if (n) n.textContent = t; };
+
 function card(q, i) {
   const t = TYPES[q.type];
   const opts = q.type === "mcq"
@@ -206,9 +215,9 @@ function card(q, i) {
       <textarea class="wb-input xm-code" data-f="svg" rows="4" spellcheck="false" placeholder="Paste SVG code, or upload an .svg file">${esc(q.svg)}</textarea>
       <div class="xm-svg__row">
         <input type="file" accept=".svg,image/svg+xml" data-f="svgfile" hidden />
-        <button class="pp-btn" type="button" data-do="svggen">${UI.sparkle(16)} Generate diagram</button>
-        <button class="pp-btn pp-btn--ghost" type="button" data-do="svgpick">${UI.download(16)} Upload .svg</button>
-        <button class="pp-btn pp-btn--ghost" type="button" data-do="svgclear"${q.svg ? "" : " hidden"}>${UI.trash(16)} Remove diagram</button>
+        <button class="pp-btn" type="button" data-do="svggen" data-tip="Generate diagram" aria-label="Generate diagram">${face("sparkle", "Generate diagram")}</button>
+        <button class="pp-btn pp-btn--ghost" type="button" data-do="svgpick" data-tip="Upload an .svg file" aria-label="Upload an .svg file">${face("download", "Upload an .svg file")}</button>
+        <button class="pp-btn pp-btn--ghost" type="button" data-do="svgclear"${q.svg ? "" : " hidden"} data-tip="Remove diagram" aria-label="Remove diagram">${face("trash", "Remove diagram")}</button>
         <span class="xm-svg__msg" role="status"></span>
         <span class="xm-svg__bad" hidden>That is not a valid SVG, so it is left off the paper.</span>
       </div>
@@ -293,12 +302,17 @@ let armTimer = 0;
 function renderBanks() {
   const n = (t) => state.questions.filter((q) => q.type === t).length;
   banks.innerHTML = Object.keys(TYPES).filter(n).map((t) =>
-    `<button class="pp-btn pp-btn--ghost xm-clear" type="button" data-clear="${t}">${UI.trash(16)} <b>Delete ${TYPES[t].label.toLowerCase()} (${n(t)})</b></button>`).join("");
+    `<button class="pp-btn pp-btn--ghost xm-clear" type="button" data-clear="${t}"></button>`).join("");
+  banks.querySelectorAll("[data-clear]").forEach((b) => {
+    const t = b.dataset.clear, name = `Delete all ${TYPES[t].label.toLowerCase()} questions (${n(t)})`;
+    b.dataset.label = name;
+    faceOf(b, typeGlyph(t, UI.trash(11)), name);
+  });
   banks.hidden = !banks.children.length;
 }
 const disarm = () => document.querySelectorAll("[data-clear].is-armed").forEach((b) => {
   b.classList.remove("is-armed");
-  b.querySelector("b").textContent = b.dataset.label;
+  setTip(b, b.dataset.label);
 });
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-clear]");
@@ -306,12 +320,11 @@ document.addEventListener("click", (e) => {
   const what = b.dataset.clear;
   if (!b.classList.contains("is-armed")) {
     disarm();
-    const label = b.querySelector("b");
-    b.dataset.label = label.textContent;
+    if (!b.dataset.label) b.dataset.label = b.dataset.tip;
     const n = what === "all" ? state.questions.length : state.questions.filter((q) => q.type === what).length;
     if (!n) return;
     b.classList.add("is-armed");
-    label.textContent = `Delete ${n}? Click again`;
+    setTip(b, `Click again to delete ${n}`);
     clearTimeout(armTimer); armTimer = setTimeout(disarm, 4000);
     return;
   }
@@ -499,7 +512,7 @@ async function fromCbt() {
   if (had) {
     const undo = document.createElement("button");
     undo.type = "button"; undo.className = "pp-btn pp-btn--ghost xm-undo";
-    undo.textContent = "Bring back my earlier paper";
+    faceOf(undo, UI.undo(18), "Bring back my earlier paper");
     undo.onclick = () => {
       try {
         const b = JSON.parse(localStorage.getItem(`${KEY}:before-cbt`) || "null");
@@ -535,20 +548,22 @@ function setLive(on) {
   $("xm-live").setAttribute("aria-pressed", String(on));
   $("xm-live").classList.toggle("is-on", on);
   /* answering leaves only the paper; the same button takes you back to the setup */
-  $("xm-live").lastChild.textContent = on ? " Back to setup" : " Answer on screen";
   document.documentElement.classList.toggle("xm-focus", on);
   if (on) scrollTo({ top: 0 });
   $("xm-check").hidden = !on; $("xm-clear").hidden = !on;
-  $("xm-check").lastChild.textContent = " Check answers";
-  clearTimeout(drawTimer); draw(); paintScore();
+  clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces();
+}
+function setLiveFaces() {
+  faceOf($("xm-live"), live.on ? UI.settings(18) : UI.pen(18), live.on ? "Back to setup" : "Answer on screen");
+  faceOf($("xm-check"), live.checked ? UI.undo(18) : UI.check(18), live.checked ? "Answer again" : "Check answers");
+  faceOf($("xm-clear"), UI.eraser(18), "Clear answers");
 }
 $("xm-live").addEventListener("click", () => setLive(!live.on));
 $("xm-check").addEventListener("click", () => {
-  if (live.checked) { live.reopen(); $("xm-check").lastChild.textContent = " Check answers"; }
-  else { live.check(state.questions); $("xm-check").lastChild.textContent = " Answer again"; }
-  clearTimeout(drawTimer); draw(); paintScore();
+  if (live.checked) live.reopen(); else live.check(state.questions);
+  clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces();
 });
-$("xm-clear").addEventListener("click", () => { live.clear(); $("xm-check").lastChild.textContent = " Check answers"; clearTimeout(drawTimer); draw(); paintScore(); });
+$("xm-clear").addEventListener("click", () => { live.clear(); clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces(); });
 
 /* however printing starts (the button, Ctrl+P), empty answer boxes print as ruled
    lines, and the paper is drawn again afterwards so it can still be answered */
@@ -567,8 +582,8 @@ $("xm-share").addEventListener("click", async () => {
     const url = new URL(r.url, location.origin).href;
     box.replaceChildren();
     const a = document.createElement("a"); a.href = url; a.textContent = url; a.target = "_blank"; a.rel = "noopener";
-    const copy = document.createElement("button"); copy.type = "button"; copy.className = "pp-btn pp-btn--ghost"; copy.textContent = "Copy link";
-    copy.onclick = async () => { try { await navigator.clipboard.writeText(url); copy.textContent = "Copied"; } catch { copy.textContent = "Select and copy it"; } };
+    const copy = document.createElement("button"); copy.type = "button"; copy.className = "pp-btn pp-btn--ghost"; faceOf(copy, UI.copy(18), "Copy link");
+    copy.onclick = async () => { try { await navigator.clipboard.writeText(url); faceOf(copy, UI.check(18), "Copied"); } catch { faceOf(copy, UI.alert(18), "Select the link and copy it"); } };
     box.append("Anyone with an account can sit this paper on screen: ", a, " ", copy);
   } catch (e) {
     box.textContent = String((e && e.message) || e || "Could not make the link.").slice(0, 200);
@@ -579,5 +594,14 @@ $("xm-share").addEventListener("click", async () => {
 
 await fromCbt();
 fillHead(); renderList(); draw(); ico();
+faceOf($("xm-logo-pick"), UI.image(18), "Choose a picture");
+faceOf($("xm-logo-drop"), UI.trash(18), "Remove the logo");
+faceOf($("xm-ai-go"), UI.sparkle(18), "Generate questions");
+document.querySelectorAll("[data-add]").forEach((b) => faceOf(b, typeGlyph(b.dataset.add, "+"), `Add a ${TYPES[b.dataset.add].label.toLowerCase()} question`));
+faceOf($("xm-diagrams"), UI.shapes(18), "Add diagrams to geometry questions");
+document.querySelectorAll('[data-clear="all"]').forEach((b) => { faceOf(b, UI.trash(18), "Delete all questions"); b.dataset.label = "Delete all questions"; });
+faceOf($("xm-print"), UI.print(18), "Print");
+faceOf($("xm-share"), UI.link(18), "Share link");
+setLiveFaces();
 enhanceSelects(document.querySelector(".xm-rail"), { className: "pp-select--sm" });
 mountTooltips();

@@ -1,3 +1,6 @@
+import { faceOf } from "/utils/components/workbook/icons.js";
+import { UI } from "/utils/components/ui-icons.js";
+
 /* ============================================================================
    The paper, answered on screen
    ----------------------------------------------------------------------------
@@ -159,7 +162,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY } = {}) {
     const grid = page.querySelector(".xp-omr__grid").cloneNode(true);
 
     const tab = document.createElement("button");
-    tab.type = "button"; tab.className = "pp-btn xo-tab"; tab.textContent = "OMR sheet";
+    tab.type = "button"; tab.className = "pp-btn xo-tab"; faceOf(tab, UI.target(20), "OMR sheet", "left");
     tab.setAttribute("aria-expanded", String(drawerOpen));
 
     const drawer = document.createElement("aside");
@@ -170,7 +173,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY } = {}) {
     head.className = "xo-drawer__head";
     head.innerHTML = "<b>OMR sheet</b><span>Shade one bubble for each question.</span>";
     const close = document.createElement("button");
-    close.type = "button"; close.className = "pp-btn xo-close"; close.textContent = "Close";
+    close.type = "button"; close.className = "pp-btn xo-close"; faceOf(close, UI.close(18), "Close the OMR sheet", "right");
     head.appendChild(close);
     const body = document.createElement("div");
     body.className = "xp-omr xo-omr";
