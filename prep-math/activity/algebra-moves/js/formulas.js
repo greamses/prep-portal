@@ -6615,6 +6615,414 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Psychology: testing and scores",
+    items: [
+      {
+        id: "ratio-iq", name: "Ratio IQ", eq: "I = 100m/c", find: "I",
+        letters: { I: "the IQ", m: "the mental age", c: "the chronological age" },
+        example: { m: "12", c: "10" },
+      },
+      {
+        id: "deviation-iq", name: "Deviation IQ", eq: "I = 100 + 15z", find: "I",
+        letters: { I: "the IQ", z: "the standard score" },
+        example: { z: "2" },
+      },
+      {
+        id: "t-score", name: "T-score", eq: "T = 50 + 10z", find: "T",
+        letters: { T: "the T-score", z: "the standard score" },
+        example: { z: "-1" },
+      },
+      {
+        id: "stanine", name: "Stanine", eq: "S = 2z + 5", find: "S",
+        letters: { S: "the stanine", z: "the standard score" },
+        example: { z: "1" },
+        note: "rounded to a whole number from 1 to 9",
+      },
+      {
+        id: "percentile-rank", name: "Percentile rank", eq: "P = 100(c + f/2)/N", find: "P",
+        letters: { P: "the percentile rank", c: "the scores below this one", f: "the scores equal to it", N: "the number of scores" },
+        example: { c: "40", f: "10", N: "100" },
+      },
+      {
+        id: "std-error-measurement", name: "Standard error of measurement", eq: "S = s·sqrt(1 - r)", find: "S",
+        letters: { S: "the standard error of measurement", s: "the standard deviation of the scores", r: "the reliability of the test" },
+        example: { s: "15", r: "3/4" },
+      },
+      {
+        id: "spearman-brown", name: "Reliability of a longer test (Spearman-Brown)", eq: "R = nr/(1 + (n - 1)r)", find: "R",
+        letters: { R: "the reliability of the longer test", n: "how many times longer", r: "the reliability now" },
+        example: { n: "2", r: "3/5" },
+      },
+      {
+        id: "cronbach", name: "Cronbach's alpha", eq: "a = (k/(k - 1))(1 - s/V)", find: "a",
+        letters: { a: "the alpha", k: "the number of items", s: "the total of the variances of the items", V: "the variance of the total scores" },
+        example: { k: "5", s: "2", V: "5" },
+      },
+      {
+        id: "attenuation", name: "Correlation corrected for unreliable tests", eq: "R = a/sqrt(bc)", find: "R",
+        letters: { R: "the corrected correlation", a: "the correlation found", b: "the reliability of the first test", c: "the reliability of the second test" },
+        example: { a: "3/10", b: "9/25", c: "1" },
+      },
+      {
+        id: "item-difficulty", name: "Difficulty of a test item", eq: "p = c/n", find: "p",
+        letters: { p: "the item difficulty", c: "the people who got it right", n: "the people who tried it" },
+        example: { c: "60", n: "80" },
+      },
+      {
+        id: "item-discrimination", name: "Discrimination of a test item", eq: "D = U - L", find: "D",
+        letters: { D: "the discrimination index", U: "the share of the top group who got it right", L: "the share of the bottom group who got it right" },
+        example: { U: "9/10", L: "3/10" },
+      },
+      {
+        id: "std-error-estimate", name: "Standard error of an estimate", eq: "S = s·sqrt(1 - r^2)", find: "S",
+        letters: { S: "the standard error of the estimate", s: "the standard deviation", r: "the correlation" },
+        example: { s: "10", r: "3/5" },
+      },
+      {
+        id: "regression-mean", name: "Predicted score (regression towards the mean)", eq: "p = rz", find: "p",
+        letters: { p: "the predicted standard score", r: "the correlation", z: "the standard score now" },
+        example: { r: "1/2", z: "2" },
+      },
+    ],
+  },
+  {
+    group: "Psychology: research statistics",
+    items: [
+      {
+        id: "cohen-d", name: "Cohen's d", eq: "d = (a - b)/s", find: "d",
+        letters: { d: "the effect size", a: "the mean of one group", b: "the mean of the other", s: "the standard deviation" },
+        example: { a: "105", b: "100", s: "10" },
+        note: "0.2 is small, 0.5 medium, 0.8 large",
+      },
+      {
+        id: "pooled-sd", name: "Pooled standard deviation", eq: "s = sqrt(((n - 1)v + (m - 1)w)/(n + m - 2))", find: "s",
+        letters: { s: "the pooled standard deviation", n: "the size of the first group", v: "its variance", m: "the size of the second group", w: "its variance" },
+        example: { n: "11", v: "16", m: "11", w: "16" },
+      },
+      {
+        id: "r-to-d", name: "Cohen's d from a correlation", eq: "d = 2r/sqrt(1 - r^2)", find: "d",
+        letters: { d: "the effect size", r: "the correlation" },
+        example: { r: "3/5" },
+      },
+      {
+        id: "one-sample-t", name: "One-sample t test", eq: "t = (m - u)/(s/sqrt(n))", find: "t",
+        letters: { t: "the t value", m: "the sample mean", u: "the mean it is compared with", s: "the standard deviation", n: "the sample size" },
+        example: { m: "105", u: "100", s: "10", n: "100" },
+      },
+      {
+        id: "independent-t", name: "Independent-samples t test", eq: "t = (a - b)/sqrt(v/n + w/m)", find: "t",
+        letters: { t: "the t value", a: "the first mean", b: "the second mean", v: "the first variance", n: "its size", w: "the second variance", m: "its size" },
+        example: { a: "105", b: "100", v: "16", n: "16", w: "48", m: "16" },
+      },
+      {
+        id: "anova-f", name: "F ratio in analysis of variance", eq: "F = B/W", find: "F",
+        letters: { F: "the F ratio", B: "the mean square between groups", W: "the mean square within groups" },
+        example: { B: "24", W: "8" },
+      },
+      {
+        id: "mean-square", name: "Mean square", eq: "M = S/d", find: "M",
+        letters: { M: "the mean square", S: "the sum of squares", d: "the degrees of freedom" },
+        example: { S: "48", d: "4" },
+      },
+      {
+        id: "eta-squared", name: "Eta squared", eq: "H = B/T", find: "H",
+        letters: { H: "the share of the variation explained", B: "the sum of squares between groups", T: "the total sum of squares" },
+        example: { B: "20", T: "100" },
+      },
+      {
+        id: "r-from-t", name: "Correlation from a t value", eq: "r = t/sqrt(t^2 + d)", find: "r",
+        letters: { r: "the correlation", t: "the t value", d: "the degrees of freedom" },
+        example: { t: "3", d: "16" },
+      },
+    ],
+  },
+  {
+    group: "Psychology: perception, learning and decision",
+    items: [
+      {
+        id: "weber", name: "Weber's law", eq: "k = d/I", find: "k",
+        letters: { k: "the Weber fraction", d: "the smallest change that can be noticed", I: "the strength of the stimulus" },
+        example: { d: "2", I: "100" },
+      },
+      {
+        id: "fechner", name: "Fechner's law", eq: "S = k·log_10(I)", find: "S",
+        letters: { S: "the sensation", k: "a constant", I: "the strength of the stimulus" },
+        example: { k: "2", I: "1000" },
+      },
+      {
+        id: "stevens", name: "Stevens' power law", eq: "S = kI^n", find: "S",
+        letters: { S: "the sensation", k: "a constant", I: "the strength of the stimulus", n: "the power for that kind of stimulus" },
+        example: { k: "2", I: "9", n: "1/2" },
+      },
+      {
+        id: "hick", name: "Hick's law of choice time", eq: "T = a + b·log_2(n + 1)", find: "T",
+        letters: { T: "the time to choose", a: "the time for everything else", b: "the time for each bit of choice", n: "the number of equal choices" },
+        example: { a: "200", b: "150", n: "7" },
+      },
+      {
+        id: "fitts", name: "Fitts's law of reaching", eq: "T = a + b·log_2(2D/W)", find: "T",
+        letters: { T: "the time to reach", a: "the start-up time", b: "the time for each bit of difficulty", D: "the distance to the target", W: "the width of the target" },
+        example: { a: "100", b: "50", D: "16", W: "1" },
+      },
+      {
+        id: "practice-law", name: "Power law of practice", eq: "T = aN^(-b)", find: "T",
+        letters: { T: "the time for the task", a: "the time the first time", N: "the number of tries", b: "the rate of learning" },
+        example: { a: "64", N: "4", b: "1/2" },
+      },
+      {
+        id: "rescorla-wagner", name: "Rescorla-Wagner learning rule", eq: "d = ab(l - V)", find: "d",
+        letters: { d: "the change in the strength of the link", a: "how noticeable the cue is", b: "how noticeable the outcome is", l: "the most the link can reach", V: "the strength now" },
+        example: { a: "1/2", b: "1/2", l: "100", V: "20" },
+      },
+      {
+        id: "visual-size", name: "Size of something from its visual angle", eq: "s = 2d·tan((t/2)°)", find: "s",
+        letters: { s: "the size", d: "the distance", t: "the visual angle in degrees" },
+        example: { d: "10", t: "90" },
+      },
+      {
+        id: "criterion", name: "Response criterion (signal detection)", eq: "c = -(h + f)/2", find: "c",
+        letters: { c: "the criterion", h: "the z score of the hit rate", f: "the z score of the false alarm rate" },
+        example: { h: "1", f: "-1" },
+      },
+      {
+        id: "d-prime", name: "Sensitivity (signal detection)", eq: "d = h - f", find: "d",
+        letters: { d: "the sensitivity d prime", h: "the z score of the hit rate", f: "the z score of the false alarm rate" },
+        example: { h: "1", f: "-1" },
+      },
+      {
+        id: "expected-utility", name: "Expected utility", eq: "E = pv", find: "E",
+        letters: { E: "the expected utility", p: "the probability", v: "the value of the outcome" },
+        example: { p: "1/4", v: "200" },
+      },
+      {
+        id: "prospect-gain", name: "Prospect theory: the value of a gain", eq: "v = x^a", find: "v",
+        letters: { v: "the felt value", x: "the gain", a: "how quickly the feeling levels off" },
+        example: { x: "16", a: "1/2" },
+      },
+      {
+        id: "prospect-loss", name: "Prospect theory: the value of a loss", eq: "v = -l(-x)^b", find: "v",
+        letters: { v: "the felt value", l: "how much more losses hurt", x: "the loss, as a negative number", b: "how quickly the feeling levels off" },
+        example: { l: "2", x: "-9", b: "1/2" },
+      },
+      {
+        id: "hyperbolic-discount", name: "Hyperbolic discounting", eq: "V = A/(1 + kD)", find: "V",
+        letters: { V: "the value now", A: "the amount later", k: "how steeply the future is discounted", D: "the delay" },
+        example: { A: "100", k: "1/10", D: "10" },
+      },
+      {
+        id: "matching-law", name: "The matching law", eq: "B/b = R/r", find: "B",
+        letters: { B: "the responses to the first choice", b: "the responses to the second", R: "the rewards from the first", r: "the rewards from the second" },
+        example: { b: "20", R: "3", r: "1" },
+      },
+    ],
+  },
+  {
+    group: "Sociology: population and society",
+    items: [
+      {
+        id: "dependency-ratio", name: "Dependency ratio", eq: "D = 100(y + o)/w", find: "D",
+        letters: { D: "the dependency ratio", y: "the young people", o: "the old people", w: "the people of working age" },
+        example: { y: "30", o: "10", w: "60" },
+      },
+      {
+        id: "infant-mortality", name: "Infant mortality rate", eq: "I = 1000d/b", find: "I",
+        letters: { I: "the deaths of babies under one for each 1000 births", d: "the deaths of babies under one", b: "the live births" },
+        example: { d: "15", b: "1000" },
+      },
+      {
+        id: "general-fertility", name: "General fertility rate", eq: "G = 1000b/w", find: "G",
+        letters: { G: "the births for each 1000 women of child-bearing age", b: "the births", w: "the women of child-bearing age" },
+        example: { b: "60", w: "1000" },
+      },
+      {
+        id: "total-fertility", name: "Total fertility rate", eq: "T = 5s", find: "T",
+        letters: { T: "the children a woman would have", s: "the total of the birth rates for each age group, as a number for each woman" },
+        example: { s: "1/2" },
+        note: "for age groups five years wide",
+      },
+      {
+        id: "net-migration", name: "Net migration rate", eq: "M = 1000(i - o)/N", find: "M",
+        letters: { M: "the net migration for each 1000 people", i: "the people moving in", o: "the people moving out", N: "the population" },
+        example: { i: "500", o: "300", N: "10000" },
+      },
+      {
+        id: "urbanisation", name: "Urbanisation rate", eq: "U = 100u/N", find: "U",
+        letters: { U: "the share living in towns and cities, as a percentage", u: "the people in towns and cities", N: "the population" },
+        example: { u: "60", N: "100" },
+      },
+      {
+        id: "marriage-rate", name: "Marriage rate", eq: "M = 1000m/N", find: "M",
+        letters: { M: "the marriages for each 1000 people", m: "the marriages in a year", N: "the population" },
+        example: { m: "7", N: "1000" },
+      },
+      {
+        id: "household-size", name: "Average household size", eq: "h = N/H", find: "h",
+        letters: { h: "the people in an average household", N: "the population", H: "the households" },
+        example: { N: "840", H: "210" },
+      },
+      {
+        id: "literacy-rate", name: "Literacy rate", eq: "L = 100l/N", find: "L",
+        letters: { L: "the literacy rate, as a percentage", l: "the people who can read and write", N: "the adults" },
+        example: { l: "860", N: "1000" },
+      },
+      {
+        id: "enrolment-ratio", name: "School enrolment ratio", eq: "E = 100n/N", find: "E",
+        letters: { E: "the enrolment ratio, as a percentage", n: "the children enrolled", N: "the children of school age" },
+        example: { n: "920", N: "1000" },
+      },
+      {
+        id: "student-teacher", name: "Student-teacher ratio", eq: "R = s/t", find: "R",
+        letters: { R: "the students for each teacher", s: "the students", t: "the teachers" },
+        example: { s: "600", t: "20" },
+      },
+      {
+        id: "participation-rate", name: "Labour force participation rate", eq: "L = 100l/w", find: "L",
+        letters: { L: "the participation rate, as a percentage", l: "the people working or looking for work", w: "the people of working age" },
+        example: { l: "650", w: "1000" },
+      },
+      {
+        id: "pay-gap", name: "Gender pay gap", eq: "G = 100(m - f)/m", find: "G",
+        letters: { G: "the pay gap, as a percentage", m: "the average pay of men", f: "the average pay of women" },
+        example: { m: "500", f: "420" },
+      },
+      {
+        id: "gender-parity", name: "Gender parity index", eq: "G = f/m", find: "G",
+        letters: { G: "the gender parity index", f: "the value for girls or women", m: "the value for boys or men" },
+        example: { f: "45", m: "50" },
+      },
+      {
+        id: "crime-rate", name: "Crime rate", eq: "C = 100000c/N", find: "C",
+        letters: { C: "the crimes for each 100 000 people", c: "the crimes reported", N: "the population" },
+        example: { c: "45", N: "30000" },
+      },
+      {
+        id: "clearance-rate", name: "Clearance rate", eq: "C = 100a/c", find: "C",
+        letters: { C: "the clearance rate, as a percentage", a: "the cases solved", c: "the cases reported" },
+        example: { a: "36", c: "120" },
+      },
+    ],
+  },
+  {
+    group: "Sociology: inequality and development",
+    items: [
+      {
+        id: "gini", name: "Gini coefficient from the Lorenz curve", eq: "G = A/(A + B)", find: "G",
+        letters: { G: "the Gini coefficient", A: "the area between the line of equality and the Lorenz curve", B: "the area under the Lorenz curve" },
+        example: { A: "20", B: "80" },
+      },
+      {
+        id: "gini-sum", name: "Gini coefficient from ordered incomes", eq: "G = 2S/(nT) - (n + 1)/n", find: "G",
+        letters: { G: "the Gini coefficient", S: "the total of each income times its place, smallest first", n: "the number of people", T: "the total income" },
+        example: { S: "30", n: "4", T: "10" },
+      },
+      {
+        id: "palma", name: "Palma ratio", eq: "P = t/b", find: "P",
+        letters: { P: "the Palma ratio", t: "the income share of the richest tenth", b: "the income share of the poorest four tenths" },
+        example: { t: "35", b: "15" },
+      },
+      {
+        id: "poverty-rate", name: "Poverty rate", eq: "P = 100p/N", find: "P",
+        letters: { P: "the poverty rate, as a percentage", p: "the people below the poverty line", N: "the population" },
+        example: { p: "370", N: "1000" },
+      },
+      {
+        id: "poverty-gap", name: "Poverty gap", eq: "G = 100(z - m)/z", find: "G",
+        letters: { G: "the poverty gap, as a percentage", z: "the poverty line", m: "the average income of the poor" },
+        example: { z: "100", m: "70" },
+      },
+      {
+        id: "hdi", name: "Human Development Index", eq: "H = (abc)^(1/3)", find: "H",
+        letters: { H: "the index", a: "the health index", b: "the education index", c: "the income index" },
+        example: { a: "1/2", b: "1/4", c: "1" },
+      },
+      {
+        id: "dimension-index", name: "A dimension index for the HDI", eq: "I = (a - m)/(M - m)", find: "I",
+        letters: { I: "the index", a: "the actual value", m: "the smallest value", M: "the biggest value" },
+        example: { a: "75", m: "20", M: "85" },
+      },
+      {
+        id: "fractionalisation", name: "Ethnic fractionalisation of three groups", eq: "F = 1 - a^2 - b^2 - c^2", find: "F",
+        letters: { F: "the chance two people differ", a: "the share of the first group", b: "the share of the second", c: "the share of the third" },
+        example: { a: "1/2", b: "1/4", c: "1/4" },
+      },
+    ],
+  },
+  {
+    group: "Sociology: networks, surveys and places",
+    items: [
+      {
+        id: "network-density", name: "Density of a social network", eq: "D = 2L/(n(n - 1))", find: "D",
+        letters: { D: "the share of possible ties that exist", L: "the ties", n: "the people" },
+        example: { L: "6", n: "5" },
+      },
+      {
+        id: "degree-centrality", name: "Degree centrality", eq: "C = d/(n - 1)", find: "C",
+        letters: { C: "the centrality", d: "the ties a person has", n: "the people in the network" },
+        example: { d: "3", n: "7" },
+      },
+      {
+        id: "clustering", name: "Clustering coefficient", eq: "C = 2t/(k(k - 1))", find: "C",
+        letters: { C: "the clustering coefficient", t: "the ties among a person's friends", k: "the person's friends" },
+        example: { t: "3", k: "4" },
+      },
+      {
+        id: "path-length", name: "Typical distance between two people in a network", eq: "L = log_10(N)/log_10(k)", find: "L",
+        letters: { L: "the steps between two people", N: "the people", k: "the friends each has" },
+        example: { N: "100", k: "10" },
+      },
+      {
+        id: "metcalfe", name: "Metcalfe's law", eq: "V = kn^2", find: "V",
+        letters: { V: "the value of the network", k: "a constant", n: "the users" },
+        example: { k: "2", n: "10" },
+      },
+      {
+        id: "bass", name: "Spread of a new product (Bass model)", eq: "f = (p + qF)(1 - F)", find: "f",
+        letters: { f: "the share who adopt next", p: "the share who adopt on their own", q: "the share who copy others", F: "the share who have adopted" },
+        example: { p: "1/50", q: "2/5", F: "1/2" },
+      },
+      {
+        id: "survey-size", name: "People to ask in a survey", eq: "n = z^2p(1 - p)/m^2", find: "n",
+        letters: { n: "the sample size", z: "the z value for the confidence level", p: "the share expected", m: "the margin of error wanted" },
+        example: { z: "2", p: "1/2", m: "1/20" },
+      },
+      {
+        id: "finite-correction", name: "Survey size for a small population", eq: "n = k/(1 + (k - 1)/N)", find: "n",
+        letters: { n: "the sample size needed", k: "the size for a very large population", N: "the size of the population" },
+        example: { k: "400", N: "399" },
+      },
+      {
+        id: "proportion-margin", name: "Margin of error for a proportion", eq: "m = z·sqrt(p(1 - p)/n)", find: "m",
+        letters: { m: "the margin of error", z: "the z value", p: "the share found", n: "the sample size" },
+        example: { z: "2", p: "1/2", n: "400" },
+      },
+      {
+        id: "design-effect", name: "Design effect of cluster sampling", eq: "D = 1 + (m - 1)r", find: "D",
+        letters: { D: "the design effect", m: "the people in each cluster", r: "how alike people in a cluster are" },
+        example: { m: "11", r: "1/10" },
+      },
+      {
+        id: "response-rate", name: "Survey response rate", eq: "R = 100c/s", find: "R",
+        letters: { R: "the response rate, as a percentage", c: "the surveys completed", s: "the people sampled" },
+        example: { c: "620", s: "1000" },
+      },
+      {
+        id: "gravity-model", name: "Gravity model of movement between places", eq: "M = kPQ/d^2", find: "M",
+        letters: { M: "the movement between the places", k: "a constant", P: "the size of the first place", Q: "the size of the second place", d: "the distance between them" },
+        example: { k: "1", P: "100", Q: "200", d: "10" },
+      },
+      {
+        id: "reilly", name: "Breaking point between two towns (Reilly)", eq: "d = D/(1 + sqrt(Q/P))", find: "d",
+        letters: { d: "the distance from the first town where the pull is equal", D: "the distance between the towns", Q: "the size of the second town", P: "the size of the first town" },
+        example: { D: "30", Q: "4", P: "1" },
+      },
+      {
+        id: "rank-size", name: "Rank-size rule for cities", eq: "P = L/r", find: "P",
+        letters: { P: "the population of the city", L: "the population of the largest city", r: "the city's rank" },
+        example: { L: "1000000", r: "4" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
