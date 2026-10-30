@@ -79,7 +79,7 @@ function written(q, no) {
     <div class="xp-body">
       <div class="xp-text">${textHtml(q.text)}${q.marks ? `<span class="xp-marks" data-nomath>[${q.marks} ${q.marks === 1 ? "mark" : "marks"}]</span>` : ""}</div>
       ${figure(q)}
-      ${rows ? `<div class="xp-lines" style="--rows:${rows}"></div>` : ""}
+      ${rows ? `<div class="xp-lines">${"<i></i>".repeat(rows)}</div>` : ""}
     </div>
   </div>`;
 }
@@ -170,7 +170,7 @@ export function paperHtml(head, questions) {
   /* the school's logo, very faint, behind every page: a page-sized tile on screen,
      a fixed image (repeated on every printed page) in print */
   const wm = head.logo
-    ? "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297"><image href="${head.logo}" x="65" y="103" width="80" height="80" preserveAspectRatio="xMidYMid meet" opacity="0.07"/></svg>`)
+    ? "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297"><image href="${head.logo}" x="65" y="103" width="80" height="80" preserveAspectRatio="xMidYMid meet" opacity="0.045"/></svg>`)
     : "";
   return `<article class="xp${wm ? " xp--wm" : ""}" style="--c:${col.main};--cs:${col.soft};--ci:${col.ink}${wm ? `;--wm:url(&quot;${wm}&quot;)` : ""}">
     ${head.logo ? `<img class="xp-wm" src="${head.logo}" alt="" />` : ""}

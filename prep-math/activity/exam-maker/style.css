@@ -161,7 +161,9 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
 /* a fill-in-the-blank: ONE line, in the sentence */
 .xp-q--fill { margin-bottom: 3.6mm; }
 .xp-blank { display: inline-block; width: 34mm; height: 1em; border-bottom: 0.35mm solid #1d1b18; vertical-align: baseline; margin: 0 1.2mm; }
-.xp-lines { margin-top: 2.5mm; height: calc(var(--rows) * 7.5mm); background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(7.5mm - 0.3mm), #b9b2a5 calc(7.5mm - 0.3mm), #b9b2a5 7.5mm); }
+/* ruled answer space: one real line per row (a repeating gradient prints as two smears in a PDF) */
+.xp-lines { margin: 2.5mm 0 3mm; }
+.xp-lines i { display: block; height: 7.5mm; border-bottom: 0.3mm solid #b9b2a5; }
 .xp-empty { padding: 20mm 0; text-align: center; color: #8a8174; }
 
 /* answer key, on a page of its own */
@@ -211,9 +213,8 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
   .xp-banner__tag::before { background: rgba(255, 255, 255, 0.7) !important; }
   .xp-n { background: var(--ci) !important; color: #fff !important; }
   .xp--wm { background: none !important; }
-  .xp-wm { display: block; position: fixed; left: 50%; top: 50%; width: 80mm; height: 80mm; margin: -40mm 0 0 -40mm; object-fit: contain; opacity: 0.07; mix-blend-mode: multiply; pointer-events: none; }
+  .xp-wm { display: block; position: fixed; left: 50%; top: 50%; width: 80mm; height: 80mm; margin: -40mm 0 0 -40mm; object-fit: contain; opacity: 0.045; mix-blend-mode: multiply; pointer-events: none; }
   .xp-banner__rule { color: #4a443b !important; }
-  .xp-lines { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(7.5mm - 0.3mm), #b9b2a5 calc(7.5mm - 0.3mm), #b9b2a5 7.5mm) !important; }
   .xp mjx-container, .xp mjx-container * { color: #1d1b18 !important; }
 }
 .xm-banks[hidden] { display: none; }
