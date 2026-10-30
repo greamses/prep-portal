@@ -10,7 +10,7 @@
 import { TYPES, COLOURS, BLANK_HEAD, blank, clean, parseQuestions, promptFor, totalMarks, esc } from "./model.js";
 import { paperHtml, cleanSvg } from "./paper.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
-import { loadMath } from "/utils/components/workbook/mathify.js";
+import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { enhanceSelects } from "/utils/components/pp-select.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
@@ -35,7 +35,7 @@ function load() {
     head.school = l.school || ""; head.logo = l.logo || ""; head.time = l.time || "";
   }
   const questions = saved && Array.isArray(saved.questions) ? saved.questions.map(clean) : [];
-  return { head, questions };
+  return { head, questions, ai: (saved && saved.ai) || {} };
 }
 
 const state = load();
@@ -65,7 +65,24 @@ function draw() {
   const total = totalMarks(state.questions);
   $("xm-summary").textContent = `${state.questions.length} question${state.questions.length === 1 ? "" : "s"} · ${total} mark${total === 1 ? "" : "s"}`;
   $("xm-count").textContent = state.questions.length ? `(${state.questions.length})` : "";
-  loadMath().then((ok) => { if (ok && window.MathJax.typesetPromise) window.MathJax.typesetPromise([sheet]).catch(() => {}); });
+  typeset();
+}
+
+/* MathJax is asked one paper at a time: two typesettings of the same page
+   running together leave formulas raw. Written $maths$ is set by MathJax;
+   whatever is left that is plainly maths ("3x + 4 = 19", "x^2") is set by the
+   workbooks' own mathify, so a question typed without any $ is still typeset. */
+let queue = Promise.resolve();
+function typeset() {
+  queue = queue.then(async () => {
+    if (!(await loadMath())) return;
+    try {
+      await window.MathJax.startup.promise;
+      await window.MathJax.typesetPromise([sheet]);
+    } catch { /* a bad formula leaves itself as text */ }
+    try { mathify(sheet); } catch { /* nothing to set */ }
+  });
+  return queue;
 }
 function redraw() { clearTimeout(drawTimer); drawTimer = setTimeout(draw, 160); save(); }
 
@@ -131,7 +148,7 @@ function card(q, i) {
         ${Object.keys(TYPES).map((k) => `<option value="${k}" ${k === q.type ? "selected" : ""}>${TYPES[k].label}</option>`).join("")}
       </select>
       <label class="xm-mini">Marks <input class="wb-input" data-f="marks" type="number" min="0" max="100" value="${q.marks}" /></label>
-      ${q.type === "mcq" ? "" : `<label class="xm-mini">Lines <input class="wb-input" data-f="lines" type="number" min="0" max="40" value="${q.lines}" /></label>`}
+      ${q.type === "mcq" || q.type === "fill" ? "" : `<label class="xm-mini">Lines <input class="wb-input" data-f="lines" type="number" min="0" max="40" value="${q.lines}" /></label>`}
       <span class="xm-card__tools">
         <button class="pp-btn pp-btn--ghost" type="button" data-do="up" aria-label="Move up" data-tip="Move up">${UI.arrowUp(16)}</button>
         <button class="pp-btn pp-btn--ghost" type="button" data-do="down" aria-label="Move down" data-tip="Move down">${UI.arrowDown(16)}</button>
@@ -231,16 +248,25 @@ document.querySelectorAll("[data-add]").forEach((b) => b.addEventListener("click
 
 /* ── the model ─────────────────────────────────────────────────────────── */
 
+/* what was asked last time is still there: the prompt is worth keeping */
+const AI_IDS = ["xm-ai-topic", "xm-ai-level", "xm-ai-extra", "xm-ai-mcq", "xm-ai-fill", "xm-ai-sub", "xm-ai-theory"];
+state.ai = state.ai && typeof state.ai === "object" ? state.ai : {};
+AI_IDS.forEach((id) => {
+  const el = $(id);
+  if (state.ai[id] != null) el.value = state.ai[id];
+  el.addEventListener("input", () => { state.ai[id] = el.value; save(); });
+});
+
 const status = (msg, bad) => { const s = $("xm-ai-status"); s.textContent = msg; s.classList.toggle("is-bad", !!bad); };
 
 $("xm-ai-go").addEventListener("click", async () => {
   const go = $("xm-ai-go");
   const count = (id, max) => Math.max(0, Math.min(max, Math.round(+$(id).value) || 0));
-  const mcq = count("xm-ai-mcq", 40), sub = count("xm-ai-sub", 20), theory = count("xm-ai-theory", 10);
-  if (!mcq && !sub && !theory) { status("Ask for at least one question.", true); return; }
+  const mcq = count("xm-ai-mcq", 40), fill = count("xm-ai-fill", 20), sub = count("xm-ai-sub", 20), theory = count("xm-ai-theory", 10);
+  if (!mcq && !fill && !sub && !theory) { status("Ask for at least one question.", true); return; }
   const { system, prompt } = promptFor({
     topic: $("xm-ai-topic").value.trim(), subject: state.head.subject, level: $("xm-ai-level").value.trim(),
-    mcq, sub, theory, svg: $("xm-ai-svg").checked,
+    mcq, fill, sub, theory, svg: $("xm-ai-svg").checked, extra: $("xm-ai-extra").value,
   });
   go.disabled = true; status("Writing the questions…");
   try {

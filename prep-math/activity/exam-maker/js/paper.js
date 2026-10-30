@@ -61,11 +61,11 @@ const letter = (i) => "ABCD"[i];
 
 function mcq(q, no) {
   return `<div class="xp-q xp-q--mcq">
-    <span class="xp-n">${no}</span>
+    <span class="xp-n" data-nomath>${no}</span>
     <div class="xp-body">
       <div class="xp-text">${textHtml(q.text)}</div>
       ${figure(q)}
-      <ol class="xp-opts">${q.options.map((o, i) => `<li><b>${letter(i)}</b><span>${textHtml(o)}</span></li>`).join("")}</ol>
+      <ol class="xp-opts">${q.options.map((o, i) => `<li><b data-nomath>${letter(i)}</b><span>${textHtml(o)}</span></li>`).join("")}</ol>
     </div>
   </div>`;
 }
@@ -73,20 +73,35 @@ function mcq(q, no) {
 function written(q, no) {
   const rows = Math.max(0, q.lines | 0);
   return `<div class="xp-q xp-q--${q.type}">
-    <span class="xp-n">${no}</span>
+    <span class="xp-n" data-nomath>${no}</span>
     <div class="xp-body">
-      <div class="xp-text">${textHtml(q.text)}${q.marks ? `<span class="xp-marks">[${q.marks} ${q.marks === 1 ? "mark" : "marks"}]</span>` : ""}</div>
+      <div class="xp-text">${textHtml(q.text)}${q.marks ? `<span class="xp-marks" data-nomath>[${q.marks} ${q.marks === 1 ? "mark" : "marks"}]</span>` : ""}</div>
       ${figure(q)}
       ${rows ? `<div class="xp-lines" style="--rows:${rows}"></div>` : ""}
     </div>
   </div>`;
 }
 
-function banner(type, qs) {
+/** A fill-in-the-blank: the sentence, and ONE short line where the answer goes.
+    "______" in the text is the blank; with none, the line follows the sentence. */
+function fill(q, no) {
+  const blank = `<span class="xp-blank"></span>`;
+  let html = textHtml(q.text);
+  html = /_{3,}/.test(html) ? html.replace(/_{3,}/g, blank) : `${html} ${blank}`;
+  return `<div class="xp-q xp-q--fill">
+    <span class="xp-n" data-nomath>${no}</span>
+    <div class="xp-body">
+      <div class="xp-text">${html}${q.marks ? `<span class="xp-marks" data-nomath>[${q.marks} ${q.marks === 1 ? "mark" : "marks"}]</span>` : ""}</div>
+      ${figure(q)}
+    </div>
+  </div>`;
+}
+
+function banner(type, qs, idx) {
   const t = TYPES[type];
   const marks = totalMarks(qs);
-  return `<div class="xp-banner">
-    <span class="xp-banner__tag">${t.section}</span>
+  return `<div class="xp-banner" data-nomath>
+    <span class="xp-banner__tag">Section ${letter(idx)}</span>
     <span class="xp-banner__name">${t.head}</span>
     <span class="xp-banner__rule">${t.rule}</span>
     <span class="xp-banner__marks">${marks} ${marks === 1 ? "mark" : "marks"}</span>
@@ -96,7 +111,7 @@ function banner(type, qs) {
 function header(h, total) {
   const tl = [h.term, h.year].filter(Boolean).join(" · ");
   const cell = (k, v) => `<div class="xp-cell"><span>${k}</span><b>${esc(v) || "&nbsp;"}</b></div>`;
-  return `<header class="xp-head">
+  return `<header class="xp-head" data-nomath>
     <div class="xp-head__band">
       ${h.logo ? `<img class="xp-head__logo" src="${h.logo}" alt="" />` : `<span class="xp-head__logo xp-head__logo--none"></span>`}
       <div class="xp-head__words">
@@ -120,9 +135,9 @@ function key(qs) {
     let a;
     if (q.type === "mcq") a = `<b>${letter(q.answer)}</b> ${textHtml(q.options[q.answer] || "")}`;
     else a = q.answer ? textHtml(q.answer) : "—";
-    return `<li><span class="xp-key__no">${i + 1}</span><div>${a}</div></li>`;
+    return `<li><span class="xp-key__no" data-nomath>${i + 1}</span><div>${a}</div></li>`;
   }).join("");
-  return `<section class="xp-keypage"><div class="xp-banner"><span class="xp-banner__tag">Marking</span><span class="xp-banner__name">Answer key</span></div><ol class="xp-key">${rows}</ol></section>`;
+  return `<section class="xp-keypage"><div class="xp-banner" data-nomath><span class="xp-banner__tag">Marking</span><span class="xp-banner__name">Answer key</span></div><ol class="xp-key">${rows}</ol></section>`;
 }
 
 /**
@@ -136,8 +151,8 @@ export function paperHtml(head, questions) {
   let no = 0;
   const numbered = [];
   const body = groups.map(([t, list], gi) => {
-    const html = list.map((q) => { numbered.push(q); return t === "mcq" ? mcq(q, ++no) : written(q, ++no); }).join("");
-    return `<section class="xp-sec xp-sec--${t}${head.breaks && gi ? " xp-sec--page" : ""}">${banner(t, list)}${t === "mcq" ? `<div class="xp-cols">${html}</div>` : html}</section>`;
+    const html = list.map((q) => { numbered.push(q); return t === "mcq" ? mcq(q, ++no) : t === "fill" ? fill(q, ++no) : written(q, ++no); }).join("");
+    return `<section class="xp-sec xp-sec--${t}${head.breaks && gi ? " xp-sec--page" : ""}">${banner(t, list, gi)}${t === "mcq" ? `<div class="xp-cols">${html}</div>` : html}</section>`;
   }).join("");
   const empty = groups.length ? "" : `<p class="xp-empty">No questions yet. Write some, or ask the model for a set.</p>`;
   return `<article class="xp" style="--c:${col.main};--cs:${col.soft}">

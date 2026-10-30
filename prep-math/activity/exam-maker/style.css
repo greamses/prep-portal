@@ -17,6 +17,10 @@
 /* two classes: .pp-receipt__paper sets its own display */
 .xm-receipt .xm-paper { display: flex; flex-direction: column; gap: 0.95rem; padding: 1.4rem 1.35rem 1.5rem; }
 .xm-span2 { grid-column: 1 / -1; }
+.xm-grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.7rem; }
+@media (max-width: 520px) { .xm-grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.xm-ai-topic { min-height: 4.2rem; }
+.xm-ai-extra { min-height: 9rem; }
 .xm-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
 .xm-hint { margin: 0; font-size: 0.76rem; line-height: 1.6; color: var(--text-secondary); }
 .xm-hint code { background: var(--accent-primary); background: color-mix(in srgb, var(--accent-primary) 35%, transparent); padding: 0 0.25em; }
@@ -70,7 +74,7 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
 
 /* ══ THE PAPER ═══════════════════════════════════════════════════════════ */
 
-.xp { --c: #3b4cca; --cs: #e8ebfb; font-family: "Helvetica Neue", Arial, "Segoe UI", sans-serif; font-size: 10.5pt; line-height: 1.5; color: #1d1b18; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.xp { --c: #3b4cca; --cs: #e8ebfb; font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-size: 9.5pt; line-height: 1.6; color: #1d1b18; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .xp p { margin: 0; }
 
 /* page one: the header */
@@ -121,6 +125,9 @@ textarea.wb-input { resize: vertical; line-height: 1.5; }
 .xp-opts span { min-width: 0; overflow-wrap: anywhere; }
 
 /* written answers: ruled lines, --rows of them */
+/* a fill-in-the-blank: ONE line, in the sentence */
+.xp-q--fill { margin-bottom: 3.6mm; }
+.xp-blank { display: inline-block; width: 34mm; height: 1em; border-bottom: 0.35mm solid #1d1b18; vertical-align: baseline; margin: 0 1.2mm; }
 .xp-lines { margin-top: 2.5mm; height: calc(var(--rows) * 7.5mm); background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(7.5mm - 0.3mm), #b9b2a5 calc(7.5mm - 0.3mm), #b9b2a5 7.5mm); }
 .xp-empty { padding: 20mm 0; text-align: center; color: #8a8174; }
 

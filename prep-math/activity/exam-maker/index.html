@@ -124,14 +124,17 @@
               <h2 class="wb-rail__title"><span data-ui="sparkles"></span> Write with our models</h2>
               <p class="xm-hint">The model writes the questions; the layout of the paper is ours. Maths is typeset for you.</p>
               <label class="wb-field"><span>Topic</span>
-                <input class="wb-input" id="xm-ai-topic" maxlength="120" autocomplete="off" placeholder="Fractions, bearings, quadratic equations" /></label>
-              <div class="xm-grid3">
+                <textarea class="wb-input xm-ai-topic" id="xm-ai-topic" rows="2" maxlength="300" placeholder="Fractions, bearings, quadratic equations. Name as many topics as the paper should cover."></textarea></label>
+              <div class="xm-grid4">
                 <label class="wb-field"><span>MCQ</span><input class="wb-input" id="xm-ai-mcq" type="number" min="0" max="40" value="10" /></label>
+                <label class="wb-field"><span>Fill in the blank</span><input class="wb-input" id="xm-ai-fill" type="number" min="0" max="20" value="5" /></label>
                 <label class="wb-field"><span>Subjective</span><input class="wb-input" id="xm-ai-sub" type="number" min="0" max="20" value="5" /></label>
                 <label class="wb-field"><span>Theory</span><input class="wb-input" id="xm-ai-theory" type="number" min="0" max="10" value="3" /></label>
               </div>
               <label class="wb-field"><span>Level</span>
                 <input class="wb-input" id="xm-ai-level" maxlength="60" autocomplete="off" placeholder="Basic 5, JSS 2, SS 3 WAEC" /></label>
+              <label class="wb-field"><span>Further instructions to the model</span>
+                <textarea class="wb-input xm-ai-extra" id="xm-ai-extra" rows="6" maxlength="1500" placeholder="Anything else the paper needs. For example: use Nigerian names in word problems; the geometry questions need a diagram; keep the theory questions to two parts; avoid calculators; match the style of a WAEC paper."></textarea></label>
               <label class="wb-toggle"><input type="checkbox" id="xm-ai-svg" checked /> Draw a diagram where a question needs one</label>
               <button class="pp-btn xm-go" id="xm-ai-go" type="button"><span data-ui="sparkle"></span> Generate questions</button>
               <p class="xm-status" id="xm-ai-status" role="status"></p>
@@ -143,6 +146,7 @@
               <h2 class="wb-rail__title"><span data-ui="list"></span> Questions <span class="xm-count" id="xm-count"></span></h2>
               <div class="xm-bar__add">
                 <button class="pp-btn pp-btn--ghost" data-add="mcq" type="button"><span data-ui="plus"></span> MCQ</button>
+                <button class="pp-btn pp-btn--ghost" data-add="fill" type="button"><span data-ui="plus"></span> Fill in the blank</button>
                 <button class="pp-btn pp-btn--ghost" data-add="sub" type="button"><span data-ui="plus"></span> Subjective</button>
                 <button class="pp-btn pp-btn--ghost" data-add="theory" type="button"><span data-ui="plus"></span> Theory</button>
               </div>

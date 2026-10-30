@@ -13,10 +13,11 @@
 
 export const TYPES = {
   mcq:    { label: "Multiple choice", section: "Section A", head: "Multiple choice", rule: "Choose the one correct answer, A, B, C or D.", marks: 1, lines: 0 },
+  fill:   { label: "Fill in the blank", section: "Section B", head: "Fill in the blank", rule: "Write the missing word or number on the line.", marks: 1, lines: 0 },
   sub:    { label: "Subjective",      section: "Section B", head: "Short answer",    rule: "Answer every question. Show your working.", marks: 3, lines: 4 },
   theory: { label: "Theory",          section: "Section C", head: "Theory",          rule: "Answer in full. Marks are given for method.", marks: 10, lines: 10 },
 };
-export const ORDER = ["mcq", "sub", "theory"];
+export const ORDER = ["mcq", "fill", "sub", "theory"];
 
 export const COLOURS = [
   { id: "indigo", name: "Indigo", main: "#3b4cca", soft: "#e8ebfb" },
@@ -143,26 +144,29 @@ export function parseQuestions(text) {
 
 function normType(t) {
   const s = String(t || "").toLowerCase();
+  if (/fill|blank|cloze/.test(s)) return "fill";
   if (/mcq|multiple|choice|objective/.test(s)) return "mcq";
   if (/theory|essay|long/.test(s)) return "theory";
   return "sub";
 }
 
 /** The instructions the model gets. It writes content; it is told nothing about layout. */
-export function promptFor({ topic, subject, level, mcq, sub, theory, svg }) {
+export function promptFor({ topic, subject, level, mcq, fill, sub, theory, svg, extra }) {
   const system =
     "You write school examination questions. Reply with ONE JSON object only: " +
-    '{"questions":[{"type":"mcq"|"sub"|"theory","text":"...","options":["...","...","...","..."],"answer":0,"marks":1,"svg":""}]}. ' +
-    "Rules: 'options' and 'answer' (the index 0-3 of the correct option) are only for mcq; for sub and theory 'answer' is a short model answer or marking note. " +
+    '{"questions":[{"type":"mcq"|"fill"|"sub"|"theory","text":"...","options":["...","...","...","..."],"answer":0,"marks":1,"svg":""}]}. ' +
+    "Rules: 'options' and 'answer' (the index 0-3 of the correct option) are only for mcq; for fill, sub and theory 'answer' is the model answer or marking note. " +
+    "A fill question is ONE sentence with exactly one blank written as six underscores (______); its 'answer' is the missing word or number, and 'options' is empty. " +
     "Write every piece of mathematics in TeX between single dollar signs, like $\\frac{3}{4}$ or $x^2+5x+6=0$, and use a double backslash for every TeX command inside the JSON string. " +
     "Never put a raw newline inside a string; write the two characters \\n only where a line break is wanted. " +
     "Questions must be original, correct, unambiguous and suited to the level. MCQ distractors must be plausible and exactly one option is right. " +
-    "Marks: mcq 1, sub 2 to 5, theory 6 to 15. Theory questions may have parts (a), (b), (c) separated by \\n. " +
+    "Marks: mcq 1, fill 1, sub 2 to 5, theory 6 to 15. Theory questions may have parts (a), (b), (c) separated by \\n. " +
     (svg
       ? "Where a question truly needs a figure (geometry, a graph, a shape, a number line) put a small self-contained SVG in 'svg': one <svg> element with a viewBox, black strokes, no fill colours, no scripts, labels in <text>. Otherwise leave 'svg' empty. "
       : "Leave 'svg' empty. ");
-  const counts = [mcq && `${mcq} multiple-choice`, sub && `${sub} subjective (short-answer)`, theory && `${theory} theory`].filter(Boolean).join(", ");
-  const prompt = `Subject: ${subject || "Mathematics"}\nLevel: ${level || "secondary school"}\nTopic: ${topic || "a mixed selection of topics"}\nWrite: ${counts}.\nOrder them multiple-choice first, then subjective, then theory.`;
+  const counts = [mcq && `${mcq} multiple-choice`, fill && `${fill} fill-in-the-blank`, sub && `${sub} subjective (short-answer)`, theory && `${theory} theory`].filter(Boolean).join(", ");
+  const prompt = `Subject: ${subject || "Mathematics"}\nLevel: ${level || "secondary school"}\nTopic: ${topic || "a mixed selection of topics"}\nWrite: ${counts}.\nOrder them multiple-choice first, then fill-in-the-blank, then subjective, then theory.` +
+    (extra && extra.trim() ? `\nThe teacher's further instructions (follow them, but keep the JSON format above):\n${extra.trim()}` : "");
   return { system, prompt };
 }
 
