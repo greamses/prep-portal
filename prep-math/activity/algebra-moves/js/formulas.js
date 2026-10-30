@@ -6240,6 +6240,381 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Botany: leaves, growth and crops",
+    items: [
+      {
+        id: "stomatal-density", name: "Stomatal density", eq: "D = n/A", find: "D",
+        letters: { D: "the stomata for each square millimetre", n: "the stomata counted", A: "the area looked at" },
+        example: { n: "60", A: "2" },
+      },
+      {
+        id: "stomatal-index", name: "Stomatal index", eq: "I = 100s/(s + c)", find: "I",
+        letters: { I: "the stomatal index, as a percentage", s: "the stomata counted", c: "the ordinary leaf cells counted" },
+        example: { s: "20", c: "80" },
+      },
+      {
+        id: "leaf-area-index", name: "Leaf area index", eq: "L = A/G", find: "L",
+        letters: { L: "the leaf area index", A: "the total area of leaf", G: "the area of ground it covers" },
+        example: { A: "60", G: "20" },
+      },
+      {
+        id: "leaf-area-estimate", name: "Area of a leaf from its length and width", eq: "A = 2LW/3", find: "A",
+        letters: { A: "the area of the leaf", L: "the length", W: "the widest width" },
+        example: { L: "12", W: "6" },
+        note: "a rough guide for a simple leaf",
+      },
+      {
+        id: "specific-leaf-area", name: "Specific leaf area", eq: "S = A/m", find: "S",
+        letters: { S: "the specific leaf area", A: "the area of the leaf", m: "the dry mass of the leaf" },
+        example: { A: "60", m: "3" },
+      },
+      {
+        id: "relative-water-content", name: "Relative water content of a leaf", eq: "R = 100(F - D)/(T - D)", find: "R",
+        letters: { R: "the relative water content, as a percentage", F: "the fresh mass", D: "the dry mass", T: "the mass when fully swollen" },
+        example: { F: "8", D: "2", T: "10" },
+      },
+      {
+        id: "light-intensity", name: "Light intensity from a lamp", eq: "I = 1/d^2", find: "I",
+        letters: { I: "the light intensity, compared with 1 at a distance of 1", d: "the distance from the lamp" },
+        example: { d: "4" },
+        note: "used when measuring photosynthesis at different distances",
+      },
+      {
+        id: "relative-growth-rate", name: "Relative growth rate of a plant", eq: "R = ln(W/w)/t", find: "R",
+        letters: { R: "the relative growth rate", W: "the dry mass at the end", w: "the dry mass at the start", t: "the time" },
+        example: { W: "2", w: "1", t: "5" },
+      },
+      {
+        id: "net-assimilation", name: "Net assimilation rate", eq: "N = (W - w)/(At)", find: "N",
+        letters: { N: "the net assimilation rate", W: "the dry mass at the end", w: "the dry mass at the start", A: "the leaf area", t: "the time" },
+        example: { W: "50", w: "20", A: "10", t: "3" },
+      },
+      {
+        id: "crop-growth-rate", name: "Crop growth rate", eq: "C = (W - w)/(Gt)", find: "C",
+        letters: { C: "the crop growth rate", W: "the dry mass at the end", w: "the dry mass at the start", G: "the area of ground", t: "the time" },
+        example: { W: "500", w: "200", G: "10", t: "3" },
+      },
+      {
+        id: "water-use-efficiency", name: "Water use efficiency", eq: "W = B/T", find: "W",
+        letters: { W: "the water use efficiency", B: "the biomass made", T: "the water transpired" },
+        example: { B: "12", T: "3000" },
+      },
+      {
+        id: "root-shoot", name: "Root to shoot ratio", eq: "R = r/s", find: "R",
+        letters: { R: "the root to shoot ratio", r: "the dry mass of the roots", s: "the dry mass of the shoots" },
+        example: { r: "3", s: "12" },
+      },
+      {
+        id: "harvest-index", name: "Harvest index", eq: "H = 100y/b", find: "H",
+        letters: { H: "the harvest index, as a percentage", y: "the mass of the part harvested", b: "the whole dry mass of the plant" },
+        example: { y: "45", b: "100" },
+      },
+      {
+        id: "chlorophyll", name: "Chlorophyll in an extract (Arnon)", eq: "C = 20.2a + 8.02b", find: "C",
+        letters: { C: "the total chlorophyll in milligrams for each litre", a: "the absorbance at 645 nm", b: "the absorbance at 663 nm" },
+        example: { a: "1/10", b: "1/5" },
+      },
+      {
+        id: "germination", name: "Germination percentage", eq: "G = 100g/n", find: "G",
+        letters: { G: "the germination percentage", g: "the seeds that germinated", n: "the seeds sown" },
+        example: { g: "88", n: "100" },
+      },
+      {
+        id: "seedling-vigour", name: "Seedling vigour index", eq: "V = Gl", find: "V",
+        letters: { V: "the vigour index", G: "the germination percentage", l: "the mean seedling length" },
+        example: { G: "90", l: "12" },
+      },
+      {
+        id: "plant-spacing", name: "Plants in a field", eq: "N = A/(rs)", find: "N",
+        letters: { N: "the number of plants", A: "the area", r: "the distance between rows", s: "the distance between plants in a row" },
+        example: { A: "10000", r: "1", s: "1/2" },
+      },
+      {
+        id: "fertiliser-nutrient", name: "Nutrient in a fertiliser", eq: "N = mP/100", find: "N",
+        letters: { N: "the mass of the nutrient", m: "the mass of the fertiliser", P: "the percentage of the nutrient in it" },
+        example: { m: "50", P: "15" },
+      },
+      {
+        id: "yield-area", name: "Crop yield", eq: "Y = M/A", find: "Y",
+        letters: { Y: "the yield for each hectare", M: "the mass harvested", A: "the area in hectares" },
+        example: { M: "360", A: "12" },
+      },
+      {
+        id: "tree-basal-area", name: "Basal area of a tree", eq: "B = πd^2/4", find: "B",
+        letters: { B: "the basal area", d: "the trunk diameter" },
+        example: { d: "2" },
+      },
+      {
+        id: "tree-volume", name: "Volume of timber in a tree", eq: "V = Bhf", find: "V",
+        letters: { V: "the volume", B: "the basal area", h: "the height", f: "the form factor, about 0.5" },
+        example: { B: "1/2", h: "20", f: "1/2" },
+      },
+    ],
+  },
+  {
+    group: "Zoology: size, energy and growth",
+    items: [
+      {
+        id: "kleiber", name: "Metabolic rate and body mass (Kleiber's law)", eq: "B = 70M^(3/4)", find: "B",
+        letters: { B: "the metabolic rate in kilocalories a day", M: "the body mass in kilograms" },
+        example: { M: "16" },
+      },
+      {
+        id: "body-surface-meeh", name: "Body surface area of an animal (Meeh)", eq: "A = kM^(2/3)", find: "A",
+        letters: { A: "the body surface area", k: "a constant for the kind of animal", M: "the body mass" },
+        example: { k: "10", M: "27" },
+      },
+      {
+        id: "heart-rate-mass", name: "Heart rate and body mass", eq: "H = 241M^(-1/4)", find: "H",
+        letters: { H: "the heart rate in beats a minute", M: "the body mass in kilograms" },
+        example: { M: "16" },
+      },
+      {
+        id: "fick-oxygen", name: "Oxygen used by an animal (Fick principle)", eq: "V = Q(a - v)", find: "V",
+        letters: { V: "the oxygen used each minute", Q: "the cardiac output", a: "the oxygen in the arteries", v: "the oxygen in the veins" },
+        example: { Q: "5000", a: "20", v: "15" },
+      },
+      {
+        id: "energy-budget", name: "Energy budget of an animal", eq: "I = G + R + F", find: "I",
+        letters: { I: "the energy eaten", G: "the energy used in growth", R: "the energy used in respiration", F: "the energy lost in faeces" },
+        example: { G: "20", R: "60", F: "20" },
+      },
+      {
+        id: "assimilation-efficiency", name: "Assimilation efficiency", eq: "A = 100(I - F)/I", find: "A",
+        letters: { A: "the assimilation efficiency, as a percentage", I: "the energy eaten", F: "the energy lost in faeces" },
+        example: { I: "100", F: "20" },
+      },
+      {
+        id: "production-efficiency", name: "Production efficiency", eq: "P = 100g/a", find: "P",
+        letters: { P: "the production efficiency, as a percentage", g: "the energy used in growth", a: "the energy assimilated" },
+        example: { g: "20", a: "80" },
+      },
+      {
+        id: "average-daily-gain", name: "Average daily gain", eq: "G = (W - w)/d", find: "G",
+        letters: { G: "the mass gained each day", W: "the mass at the end", w: "the mass at the start", d: "the days" },
+        example: { W: "520", w: "400", d: "60" },
+      },
+      {
+        id: "feed-conversion", name: "Feed conversion ratio", eq: "F = f/g", find: "F",
+        letters: { F: "the feed conversion ratio", f: "the feed eaten", g: "the mass gained" },
+        example: { f: "180", g: "90" },
+      },
+      {
+        id: "feed-efficiency", name: "Feed efficiency", eq: "E = 100g/f", find: "E",
+        letters: { E: "the feed efficiency, as a percentage", g: "the mass gained", f: "the feed eaten" },
+        example: { g: "90", f: "180" },
+      },
+      {
+        id: "dressing-percentage", name: "Dressing percentage", eq: "D = 100c/l", find: "D",
+        letters: { D: "the dressing percentage", c: "the mass of the carcass", l: "the live mass" },
+        example: { c: "60", l: "100" },
+      },
+      {
+        id: "fish-weight-length", name: "Weight and length of a fish", eq: "W = aL^b", find: "W",
+        letters: { W: "the weight", a: "a constant for the fish", L: "the length", b: "the growth power, about 3" },
+        example: { a: "1/100", L: "10", b: "3" },
+      },
+      {
+        id: "fulton-condition", name: "Fulton's condition factor of a fish", eq: "K = 100W/L^3", find: "K",
+        letters: { K: "the condition factor", W: "the weight in grams", L: "the length in centimetres" },
+        example: { W: "40", L: "10" },
+      },
+      {
+        id: "specific-growth-rate", name: "Specific growth rate of fish", eq: "S = 100ln(W/w)/t", find: "S",
+        letters: { S: "the growth for each day, as a percentage", W: "the weight at the end", w: "the weight at the start", t: "the days" },
+        example: { W: "2", w: "1", t: "10" },
+      },
+    ],
+  },
+  {
+    group: "Zoology: farming, breeding and reproduction",
+    items: [
+      {
+        id: "egg-rate", name: "Egg laying rate", eq: "R = 100n/(hd)", find: "R",
+        letters: { R: "the laying rate, as a percentage", n: "the eggs laid", h: "the hens", d: "the days" },
+        example: { n: "630", h: "100", d: "10" },
+      },
+      {
+        id: "fertility-rate", name: "Fertility of eggs", eq: "F = 100f/s", find: "F",
+        letters: { F: "the fertility, as a percentage", f: "the fertile eggs", s: "the eggs set to hatch" },
+        example: { f: "90", s: "100" },
+      },
+      {
+        id: "hatchability", name: "Hatchability of eggs", eq: "H = 100h/f", find: "H",
+        letters: { H: "the hatchability, as a percentage", h: "the chicks hatched", f: "the fertile eggs" },
+        example: { h: "81", f: "90" },
+      },
+      {
+        id: "conception-rate", name: "Conception rate", eq: "C = 100p/s", find: "C",
+        letters: { C: "the conception rate, as a percentage", p: "the animals that became pregnant", s: "the animals served" },
+        example: { p: "36", s: "48" },
+      },
+      {
+        id: "stocking-rate", name: "Stocking rate of a pasture", eq: "S = A/n", find: "S",
+        letters: { S: "the hectares for each animal", A: "the area of pasture", n: "the number of animals" },
+        example: { A: "60", n: "20" },
+      },
+      {
+        id: "mortality-percent", name: "Mortality in a herd or flock", eq: "M = 100d/N", find: "M",
+        letters: { M: "the mortality, as a percentage", d: "the deaths", N: "the number at the start" },
+        example: { d: "6", N: "200" },
+      },
+      {
+        id: "survival-percent", name: "Survival in a herd or flock", eq: "S = 100(N - d)/N", find: "S",
+        letters: { S: "the survival, as a percentage", N: "the number at the start", d: "the deaths" },
+        example: { N: "200", d: "6" },
+      },
+      {
+        id: "heritability", name: "Heritability", eq: "h = G/P", find: "h",
+        letters: { h: "the heritability", G: "the variation caused by genes", P: "the total variation" },
+        example: { G: "3", P: "10" },
+      },
+      {
+        id: "selection-response", name: "Response to selection", eq: "R = hS", find: "R",
+        letters: { R: "the gain in the next generation", h: "the heritability", S: "the difference between those chosen and the average" },
+        example: { h: "3/10", S: "20" },
+      },
+      {
+        id: "inbreeding", name: "Inbreeding in a small population", eq: "F = 1/(2N)", find: "F",
+        letters: { F: "the rise in inbreeding each generation", N: "the number of breeding animals" },
+        example: { N: "50" },
+      },
+    ],
+  },
+  {
+    group: "Zoology: populations and ecology",
+    items: [
+      {
+        id: "survivorship", name: "Survivorship", eq: "l = n/N", find: "l",
+        letters: { l: "the share still alive", n: "the number alive at that age", N: "the number at birth" },
+        example: { n: "40", N: "200" },
+      },
+      {
+        id: "intrinsic-rate", name: "Intrinsic rate of increase", eq: "r = ln(R)/T", find: "r",
+        letters: { r: "the growth rate", R: "the net reproductive rate", T: "the generation time" },
+        example: { R: "2", T: "4" },
+      },
+      {
+        id: "sex-ratio", name: "Sex ratio", eq: "S = m/f", find: "S",
+        letters: { S: "the sex ratio", m: "the males", f: "the females" },
+        example: { m: "45", f: "60" },
+      },
+      {
+        id: "lotka-volterra-prey", name: "Prey population (Lotka-Volterra)", eq: "g = rN - aNP", find: "g",
+        letters: { g: "the change in the prey", r: "the prey's growth rate", N: "the prey", a: "the rate predators catch prey", P: "the predators" },
+        example: { r: "1", N: "100", a: "1/50", P: "20" },
+      },
+      {
+        id: "lotka-volterra-competition", name: "Competition between two species", eq: "g = rN(K - N - aM)/K", find: "g",
+        letters: { g: "the change in the first species", r: "its growth rate", N: "its numbers", K: "its carrying capacity", a: "the effect of the other species", M: "the other species' numbers" },
+        example: { r: "1", N: "40", K: "100", a: "1/2", M: "20" },
+      },
+      {
+        id: "holling", name: "Prey caught by a predator (Holling type II)", eq: "f = aN/(1 + ahN)", find: "f",
+        letters: { f: "the prey caught each time", a: "the attack rate", N: "the prey available", h: "the time spent handling one" },
+        example: { a: "1/10", N: "20", h: "1/2" },
+      },
+      {
+        id: "foraging-profitability", name: "Profitability of a food item", eq: "P = E/h", find: "P",
+        letters: { P: "the profitability", E: "the energy gained", h: "the time spent handling it" },
+        example: { E: "60", h: "15" },
+      },
+      {
+        id: "hamilton", name: "Hamilton's rule for helping relatives", eq: "rb = c", find: "r",
+        letters: { r: "how closely related they are", b: "the benefit to the one helped", c: "the cost to the helper" },
+        example: { b: "8", c: "2" },
+        note: "helping is favoured when rb is bigger than c",
+      },
+      {
+        id: "line-transect", name: "Animals from a line transect", eq: "D = n/(2Lw)", find: "D",
+        letters: { D: "the animals for each unit of area", n: "the animals seen", L: "the length walked", w: "how far each side the animals can be seen" },
+        example: { n: "30", L: "10", w: "1/2" },
+      },
+      {
+        id: "catch-per-effort", name: "Catch per unit effort", eq: "C = c/E", find: "C",
+        letters: { C: "the catch for each unit of effort", c: "the total catch", E: "the effort" },
+        example: { c: "240", E: "60" },
+      },
+      {
+        id: "dispersion-index", name: "Index of dispersion", eq: "I = v/m", find: "I",
+        letters: { I: "the index of dispersion", v: "the variance of the counts", m: "the mean of the counts" },
+        example: { v: "12", m: "4" },
+        note: "a value near 1 means random, above 1 clumped, below 1 even",
+      },
+      {
+        id: "margalef", name: "Margalef's richness index", eq: "D = (S - 1)/ln(N)", find: "D",
+        letters: { D: "the richness index", S: "the number of species", N: "the number of individuals" },
+        example: { S: "5", N: "100" },
+      },
+      {
+        id: "menhinick", name: "Menhinick's richness index", eq: "D = S/sqrt(N)", find: "D",
+        letters: { D: "the richness index", S: "the number of species", N: "the number of individuals" },
+        example: { S: "5", N: "100" },
+      },
+      {
+        id: "evenness", name: "Pielou's evenness", eq: "J = H/ln(S)", find: "J",
+        letters: { J: "the evenness", H: "the Shannon diversity index", S: "the number of species" },
+        example: { H: "1", S: "5" },
+      },
+      {
+        id: "sorensen", name: "Sørensen similarity of two habitats", eq: "Q = 2c/(a + b)", find: "Q",
+        letters: { Q: "the similarity", c: "the species found in both", a: "the species in the first", b: "the species in the second" },
+        example: { c: "6", a: "10", b: "14" },
+      },
+      {
+        id: "jaccard", name: "Jaccard similarity of two habitats", eq: "J = c/(a + b - c)", find: "J",
+        letters: { J: "the similarity", c: "the species found in both", a: "the species in the first", b: "the species in the second" },
+        example: { c: "6", a: "10", b: "14" },
+      },
+    ],
+  },
+  {
+    group: "Zoology: movement and evolution",
+    items: [
+      {
+        id: "gait-froude", name: "Froude number of an animal's gait", eq: "F = v^2/(gL)", find: "F",
+        letters: { F: "the Froude number", v: "the speed", g: "the pull of gravity per kilogram", L: "the leg length" },
+        example: { v: "2", g: "10", L: "1" },
+        note: "a walk changes to a run at about 0.5",
+      },
+      {
+        id: "strouhal", name: "Strouhal number of a swimming or flying animal", eq: "S = fA/v", find: "S",
+        letters: { S: "the Strouhal number", f: "the beats each second", A: "the width of the beat", v: "the speed" },
+        example: { f: "4", A: "1/10", v: "2" },
+      },
+      {
+        id: "echolocation", name: "Distance by echolocation", eq: "d = vt/2", find: "d",
+        letters: { d: "the distance to the object", v: "the speed of sound", t: "the time for the echo to come back" },
+        example: { v: "340", t: "1/10" },
+      },
+      {
+        id: "p-distance", name: "Genetic distance between two sequences", eq: "p = d/n", find: "p",
+        letters: { p: "the share of sites that differ", d: "the sites that differ", n: "the sites compared" },
+        example: { d: "12", n: "100" },
+      },
+      {
+        id: "jukes-cantor", name: "Corrected genetic distance (Jukes-Cantor)", eq: "d = -(3/4)ln(1 - 4p/3)", find: "d",
+        letters: { d: "the corrected distance", p: "the share of sites that differ" },
+        example: { p: "3/16" },
+      },
+      {
+        id: "molecular-clock", name: "Time since two species split", eq: "T = d/(2r)", find: "T",
+        letters: { T: "the time since the split", d: "the genetic distance", r: "the rate of change in one lineage" },
+        example: { d: "1/5", r: "1/100" },
+      },
+    ],
+  },
+  {
+    group: "Botany: leaves, growth and crops",
+    items: [
+      {
+        id: "tree-height-clinometer", name: "Height of a tree from a clinometer", eq: "h = d·tan(a°) + c", find: "h",
+        letters: { h: "the height of the tree", d: "the distance from the tree", a: "the angle to the top in degrees", c: "the height of your eye" },
+        example: { d: "20", a: "45", c: "3/2" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
@@ -6516,7 +6891,7 @@ export const GROUPS = [
 /* The groups are written in the order they were made; the shelf reads better with
    a family kept together — every "Geometry: …" group right after Shapes, every
    "Physics: …" group right after Motion and forces. */
-for (const [family, anchor] of [["Geometry:", "Shapes"], ["Physics:", "Motion and forces"], ["Engineering:", "Engineering: forces, machines and structures"], ["Astronomy:", "Earth science: the solar system and stars"]]) {
+for (const [family, anchor] of [["Geometry:", "Shapes"], ["Physics:", "Motion and forces"], ["Engineering:", "Engineering: forces, machines and structures"], ["Astronomy:", "Earth science: the solar system and stars"], ["Botany:", "Biology: the body"], ["Zoology:", "Botany: leaves, growth and crops"]]) {
   const kin = GROUPS.filter((g) => g.group.startsWith(family) && g.group !== anchor);
   for (const g of kin) GROUPS.splice(GROUPS.indexOf(g), 1);
   GROUPS.splice(GROUPS.findIndex((g) => g.group === anchor) + 1, 0, ...kin);
