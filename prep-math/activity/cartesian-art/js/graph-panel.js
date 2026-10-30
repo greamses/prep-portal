@@ -243,7 +243,14 @@ function paintSlider(r, sub, value) {
   if (document.activeElement !== lo) lo.value = s.min;
   if (document.activeElement !== hi) hi.value = s.max;
   paintTrack(range);
-  $(".ca-eq-play", sub).innerHTML = anim.has(r.id) ? ICON.pause : ICON.play;
+  // only when it changes: rebuilding the icon every frame swallows the click
+  const btn = $(".ca-eq-play", sub);
+  const playing = anim.has(r.id) ? "1" : "0";
+  if (btn.dataset.playing !== playing) {
+    btn.dataset.playing = playing;
+    btn.innerHTML = playing === "1" ? ICON.pause : ICON.play;
+    btn.title = btn.ariaLabel = playing === "1" ? "Pause" : "Play";
+  }
 }
 
 const sliderStep = (s) => niceStep(Math.abs(s.max - s.min) || 1) / 20;
