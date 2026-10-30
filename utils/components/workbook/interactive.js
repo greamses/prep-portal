@@ -3341,6 +3341,22 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         await mountAlgebraMoves(frame, { drawer: false });
       },
     },
+    {
+      id: "graph",
+      label: "Graph",
+      icon: TOOL_ICONS.graph,
+      size: { w: 980, h: 640 },
+      /* Cartesian Art's grapher, bare, in a frame: type equations and see them drawn */
+      open: async (body) => {
+        body.classList.add("wb-panel__body--bare");
+        const f = document.createElement("iframe");
+        f.src = "/prep-math/activity/cartesian-art/?embed=graph";
+        f.title = "Graph";
+        f.style.cssText = "display:block;width:100%;height:100%;min-height:420px;border:0;background:#fffdf8";
+        body.appendChild(f);
+        return () => f.remove();
+      },
+    },
   ];
 
   /* ── the tool that has something to set ────────────────────────────────

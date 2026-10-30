@@ -4267,7 +4267,7 @@ import("./desk.js").then((d) => {
   const ico = (inner) => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">${inner}</svg>`;
   Promise.all([import("/utils/components/workbook/toolbar.js"), import("./ptable.js")]).then(([{ mountTools }, { mountPeriodicTable }]) => {
     const rail = mountTools(document.body, {
-      tools: ["calculator", "ptable", "atoms", "sketch", "pin", "note"],
+      tools: ["calculator", "graph", "gm", "ptable", "atoms", "sketch", "pin", "note"],
       extra: {
         ptable: {
           label: "Periodic table",

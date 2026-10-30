@@ -30,9 +30,15 @@ import { initGallery } from "./gallery.js";
 import { initTaskPanel } from "./task-panel.js";
 import { initRangeFills } from "./range-fill.js";
 import { initGraphPanel } from "./graph-panel.js";
+import { initChrome } from "./chrome.js";
 import { fmtCoord } from "./scale.js";
 
 const $ = (sel) => document.querySelector(sel);
+
+/* ?embed=graph: the grapher on its own, for the side rail's Graph tool on other
+   pages (inside a frame). No nav, no intro, the Graph panel already open. */
+const EMBED = /[?&]embed=/.test(location.search);
+if (EMBED) document.documentElement.classList.add("ca-embed");
 
 function init() {
   const stage = $("#ca-stage");
@@ -96,6 +102,11 @@ function init() {
   initShortcuts();
   initFullscreen();
   initRangeFills(document); // custom filled-track sliders
+  if (EMBED) { // the Graph panel open, and the keypad drawer's usual rail state left alone
+    const btn = $('.ca-toolrail-btn[data-panel="graph"]');
+    if (btn && !btn.classList.contains("is-active")) btn.click();
+  }
+  initChrome(); // last: tooltips + sticky-note buttons for everything built above
 }
 
 /* ── keyboard shortcuts (arrows/Enter/Del/C/undo live in controls.js) ─────── */

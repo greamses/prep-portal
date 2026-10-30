@@ -150,7 +150,8 @@ function fmtTick(v, step) {
 function tick(parent, x, y, cls, v, step) {
   const t = el("text", { x, y, class: cls }, parent);
   t.textContent = fmtShort(v);
-  el("title", {}, t).textContent = fmtTick(v, step);
+  const full = fmtTick(v, step);
+  if (full !== t.textContent) t.setAttribute("data-tip", full); // the full value, in the site's tooltip
 }
 
 const MAX_LINES = 800; // hard cap so an extreme zoom can never lock up the page

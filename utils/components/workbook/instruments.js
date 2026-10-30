@@ -199,6 +199,12 @@ export const TOOL_ICONS = {
       r(12.4, 9.4, 3.4, 1.8, QUIET, 0.9) + r(12.4, 12.8, 3.4, 1.8, QUIET, 0.9) +
       r(17.4, 8.2, 4, 7.6, PAPER, 1.4)
   ),
+  /* Graph: two axes, a curve and the point on it */
+  graph: glyph(
+    r(3, 2.6, 2.4, 18.8, QUIET, 1.2) + r(3, 19, 18.4, 2.4, QUIET, 1.2) +
+      `<path d="M7.4 4.6c2.4 9.4 4.6 11 6.6 11s3.6-3.6 6.2-9" fill="none" stroke="${LOUD}" stroke-width="2.8" stroke-linecap="round"/>` +
+      `<circle cx="14" cy="15.6" r="2.2" fill="${GOLD}"/>`
+  ),
   /* The bar model: a whole over two parts, and the brace that says what the
      two of them come to. */
   barmodel: glyph(

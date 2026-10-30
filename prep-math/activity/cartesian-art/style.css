@@ -2113,7 +2113,7 @@ body {
 .ca-eq-deg { font-family: var(--font-mono); letter-spacing: 0.06em; }
 
 /* the Algebra Moves keypad, borrowed: its letter-value boxes are its own business */
-.ca-eq-keypad { border-top: var(--border-subtle); padding-top: 8px; }
+
 .ca-eq-keypad .am-give,
 .ca-eq-keypad .am-keysay { display: none !important; } /* the line itself says what is wrong */
 .ca-eq-keypad .am-preview { min-height: 56px; }
@@ -2172,7 +2172,6 @@ body.ca-fs .ca-fs-exit { display: block; }
    Algebra Moves sizes its keys for a narrow drawer and clips what does not fit
    (sin, arcsin, median …). Here the panel widens while the keypad is open and
    the keys are taller, with their words shown whole. */
-.ca-studio .ca-dock--graph.has-keypad { width: 600px; max-width: calc(100% - 90px); }
 .ca-eq-keypad .am-pad__row, .ca-eq-keypad .am-pad__grid, .ca-eq-keypad .am-pad__modes { gap: 0.4rem; }
 .ca-eq-keypad .am-key {
   min-height: 3rem;
@@ -2194,3 +2193,152 @@ body.ca-fs .ca-fs-exit { display: block; }
 .ca-eq-keypad .am-pad__grid .am-pad__row > .am-key { flex: 1 1 auto; min-width: 3.4rem; max-width: 9rem; }
 .ca-eq-keypad .am-pad__grid .am-pad__row > .am-key--wide { flex: 2 1 7rem; max-width: 16rem; }
 .ca-studio .ca-dock--graph .ca-dock-body { overflow-x: hidden; }
+
+/* ── Keypad: its own panel, to the SIDE of the equation panel ─────────────── */
+.ca-studio .ca-dock--graph { overflow: visible; } /* the keypad hangs off its right edge */
+.ca-dock--graph > .ca-dock-head { background: color-mix(in srgb, var(--surface-secondary) 85%, var(--surface-primary)); }
+.ca-eq-keypad {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 10px);
+  z-index: 2;
+  width: 540px;
+  max-width: calc(100vw - 460px);
+  min-width: 360px;
+  max-height: calc(100vh - 150px);
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--surface-primary) 94%, transparent);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-lg);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ca-eq-keypad[hidden] { display: none; }
+.ca-eq-keypad-head { cursor: default; }
+.ca-eq-keypad-host { padding: 10px; overflow-y: auto; overflow-x: hidden; min-height: 0; }
+.ca-eq-keypad-head .ca-dock-btn svg { transform: none; }
+
+/* folded: just the title bar (and the keypad goes with it) */
+.ca-dock--graph.is-folded .ca-dock-body,
+.ca-dock--graph.is-folded .ca-eq-keypad { display: none; }
+.ca-eq-fold svg { transition: transform 0.2s ease; }
+.ca-dock--graph.is-folded .ca-eq-fold svg { transform: rotate(180deg); }
+
+/* a narrow window has no room beside the panel: the keypad goes underneath */
+@media (max-width: 1000px) {
+  .ca-eq-keypad { position: static; width: auto; max-width: none; min-width: 0; margin: 8px; max-height: none; }
+}
+
+/* ── Text buttons are sticky notes ────────────────────────────────────────
+   chrome.js adds .pp-sticky .ca-note to every button that has words on it.
+   Paper, ink, shadow and tilt come from the site's note; the studio's own
+   button rules (soft / tool / option / chip) give way, and a lit state is an
+   inked outline rather than a colour swap, as everywhere else. */
+.pp-sticky.ca-note {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: var(--pp-note-bg, #fff3a8);
+  color: #14130f;
+  border: 0;
+  border-radius: 0;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: 0 1px 1px rgba(20, 19, 15, 0.1), 4px 6px 10px -4px rgba(20, 19, 15, 0.3);
+  transform: none;
+  rotate: var(--pp-note-tilt, -1.5deg);
+  translate: 0 0;
+  cursor: pointer;
+  transition: translate 0.15s ease, box-shadow 0.15s ease, rotate 0.15s ease;
+}
+.pp-sticky.ca-note:hover { translate: 0 -2px; transform: none; background: var(--pp-note-bg, #fff3a8); box-shadow: 0 1px 1px rgba(20, 19, 15, 0.1), 5px 9px 12px -4px rgba(20, 19, 15, 0.34); }
+.pp-sticky.ca-note:active { translate: 0 0; transform: none; }
+.pp-sticky.ca-note.is-active,
+.pp-sticky.ca-note[aria-pressed="true"],
+.pp-sticky.ca-note.is-on { outline: 2px solid #14130f; outline-offset: 0; background: var(--pp-note-bg, #fff3a8); color: #14130f; }
+.pp-sticky.ca-note:disabled { opacity: 1; background: #ebe7dc; color: #8a857a; box-shadow: none; cursor: default; }
+.pp-sticky.ca-note:focus-visible { outline: 2px solid #14130f; outline-offset: 2px; }
+.pp-sticky.ca-note svg { flex: none; }
+.pp-sticky.ca-note.ca-soft-btn--sm { font-size: 0.74rem; }
+.pp-sticky.ca-note.ca-tool { height: auto; }
+.pp-sticky.ca-note.ca-eq-opt { height: 26px; padding: 0 8px; }
+.pp-sticky.ca-note.ca-eq-chip { padding: 3px 9px; font-size: 0.7rem; }
+/* the dock foot's row of notes shares the width out evenly */
+.ca-eq-foot .pp-sticky.ca-note { flex: 1 1 auto; }
+
+/* ── Picture + words: the picture only ───────────────────────────────────── */
+.ca-btn-words {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.ca-iconised {
+  position: relative;
+  width: auto;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0.4rem;
+  flex: 0 0 auto;
+  justify-content: center;
+}
+.ca-iconised svg { width: 20px; height: 20px; }
+.ca-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.ca-actions .ca-iconised { width: auto; }
+.ca-tf-history .ca-iconised, .ca-export-actions .ca-iconised, .ca-eq-foot .ca-iconised { flex: 1 1 auto; }
+.ca-eq-opt.ca-iconised { min-height: 26px; min-width: 30px; padding: 0 6px; }
+.ca-eq-opt.ca-iconised svg { width: 16px; height: 16px; }
+
+/* ── The right-hand icons: bare glyphs, close together ────────────────────
+   No white disc behind them (like the left rail); the picture keeps a soft
+   shadow so it still reads on the grid. The yellow menu key stays a key. */
+.ca-menu-items .ca-fab {
+  width: 34px;
+  height: 34px;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+.ca-menu-items .ca-fab svg { width: 24px; height: 24px; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.28)); }
+.ca-menu-items .ca-fab:hover { transform: translateY(-1px) scale(1.08); box-shadow: none; background: transparent; }
+.ca-menu-items .ca-fab.is-active { background: transparent; box-shadow: inset 0 -3px 0 var(--accent-primary); }
+.ca-menu, .ca-menu-items { gap: 2px; }
+
+/* ── embedded in the side rail's Graph tool (?embed=graph) ───────────────── */
+.ca-embed .site-nav, .ca-embed .ca-paint, .ca-embed #loader, .ca-embed #prepbot,
+.ca-embed .ca-hero, .ca-embed .pp-about, .ca-embed #chat-fab { display: none !important; }
+.ca-embed body { padding-top: 0 !important; background: var(--surface-primary); }
+.ca-embed .ca-page { padding: 0; }
+.ca-embed .ca-studio { height: 100vh; height: 100dvh; margin: 0; min-height: 0; }
+.ca-embed .ca-stage-wrap { inset: 0; padding: 0; border: 0; box-shadow: none; }
+
+/* the play/pause key is small: its clickable area reaches past its circle */
+.ca-eq-play { position: relative; }
+.ca-eq-play::before { content: ""; position: absolute; inset: -7px; border-radius: 50%; }
+
+/* the panel's own header keys (fold, close the keypad): not the rail's chevron */
+.ca-dock-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.ca-dock-btn:hover { background: var(--surface-secondary); }
+.ca-dock-btn svg { width: 16px; height: 16px; }
+.ca-embed .ca-steer-toggle, .ca-embed #dock-move { display: none !important; }

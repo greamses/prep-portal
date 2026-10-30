@@ -249,7 +249,7 @@ function paintSlider(r, sub, value) {
   if (btn.dataset.playing !== playing) {
     btn.dataset.playing = playing;
     btn.innerHTML = playing === "1" ? ICON.pause : ICON.play;
-    btn.title = btn.ariaLabel = playing === "1" ? "Pause" : "Play";
+    btn.title = playing === "1" ? "Pause" : "Play"; btn.setAttribute("aria-label", btn.title);
   }
 }
 
@@ -352,9 +352,9 @@ async function openKeypad() {
     import("/prep-math/activity/algebra-moves/js/keypad.js"),
   ]);
   needCss("/prep-math/activity/algebra-moves/style.css");
-  kp = createKeypad(keypadEl, {});
+  kp = createKeypad($("#eq-keypad-host"), {});
   const go = keypadEl.querySelector(".am-key--go");
-  if (go) { go.title = "Next line"; go.setAttribute("aria-label", "Next line"); }
+  if (go) go.setAttribute("aria-label", "Next line");
 
   const pull = () => setTimeout(() => {
     if (!kpRow || !rows.includes(kpRow)) return;
@@ -601,12 +601,23 @@ export function initGraphPanel() {
   };
   degBtn?.addEventListener("click", () => { deg = !deg; paintDeg(); refresh(); save(); });
   paintDeg();
+  // fold the whole panel down to its title bar (and put it back)
+  const foldBtn = $("#eq-fold");
+  const setFold = (on) => {
+    dock.classList.toggle("is-folded", on);
+    foldBtn?.setAttribute("aria-pressed", on ? "true" : "false");
+    foldBtn?.setAttribute("aria-label", on ? "Unfold the panel" : "Fold the panel");
+    if (foldBtn) foldBtn.title = on ? "Unfold the panel" : "Fold the panel";
+    try { localStorage.setItem("ca-graph-fold", on ? "1" : "0"); } catch {}
+  };
+  foldBtn?.addEventListener("click", (e) => { e.stopPropagation(); setFold(!dock.classList.contains("is-folded")); });
+  try { if (localStorage.getItem("ca-graph-fold") === "1") setFold(true); } catch {}
+
   const kpBtn = $("#eq-kp");
   const coarse = window.matchMedia?.("(pointer: coarse)").matches;
   const setKp = async (on) => {
     if (!keypadEl) return;
     keypadEl.hidden = !on;
-    dock.classList.toggle("has-keypad", on); // the panel widens to give the keys room
     kpBtn?.classList.toggle("is-active", on);
     kpBtn?.setAttribute("aria-pressed", on ? "true" : "false");
     if (!on) {
@@ -620,7 +631,8 @@ export function initGraphPanel() {
     loadIntoKeypad(sel || last);
   };
   if (coarse) setKp(true);
-  kpBtn?.addEventListener("click", () => setKp(keypadEl.hidden));
+  kpBtn?.addEventListener("click", () => { if (dock.classList.contains("is-folded")) dock.classList.remove("is-folded"); setKp(keypadEl.hidden); });
+  $("#eq-kp-close")?.addEventListener("click", () => setKp(false));
 
   // clicking the empty part of the panel deselects
   dock.addEventListener("pointerdown", (e) => {

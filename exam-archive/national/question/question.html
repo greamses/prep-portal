@@ -195,7 +195,7 @@
       /* a science paper (chemistry, physics, biology) also gets the Chemistry Bench key */
       const science = /chem|phys|bio|science/i.test(new URLSearchParams(location.search).get("subjects") || "");
       const rail = mountTools(document.body, {
-        tools: ["calculator", "column", "times", "shortdiv", "gm", ...(science ? ["chembench"] : []), "pin", "note"],
+        tools: ["calculator", "graph", "column", "times", "shortdiv", "gm", ...(science ? ["chembench"] : []), "pin", "note"],
         extra: {
           gm: {
             label: "Algebra Moves",

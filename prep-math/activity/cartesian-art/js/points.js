@@ -70,7 +70,7 @@ export function redrawPoints() {
         const full = `${fmtCoord(pts[i].x)}, ${fmtCoord(pts[i].y)}`;
         const t = el("text", { x: p.x, y: p.y - 12, class: "ca-point-label" }, m);
         t.textContent = `${fmtShort(pts[i].x)},${fmtShort(pts[i].y)}`;
-        el("title", {}, t).textContent = full; // full value on hover
+        t.setAttribute("data-tip", full); // full value, in the site's tooltip
       }
     });
   }

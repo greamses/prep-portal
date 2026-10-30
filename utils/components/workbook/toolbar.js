@@ -63,6 +63,37 @@ const TOOLS = {
       return () => f.remove();
     },
   },
+  /* ALGEBRA MOVES, from any page that hangs the rail: the real workspace, mounted here
+     rather than copied — one canvas, one set of moves, one verifier (as the workbook does). */
+  gm: {
+    label: "Algebra Moves",
+    size: { w: 880, h: 620 },
+    async open(body) {
+      needCss("/prep-math/activity/algebra-moves/style.css");
+      body.classList.add("wb-panel__body--bare");
+      const frame = document.createElement("div");
+      frame.className = "am-frame am-frame--in";
+      body.appendChild(frame);
+      const { mountAlgebraMoves } = await import("/prep-math/activity/algebra-moves/js/workspace.js");
+      await mountAlgebraMoves(frame, { drawer: false });
+    },
+  },
+  /* GRAPH, from any page that hangs the rail: type equations and see them drawn. It is
+     Cartesian Art's own grapher, opened bare in a frame (?embed=graph: no nav, no intro,
+     the Graph panel already open), so it brings its own sign-in like the Chemistry Bench. */
+  graph: {
+    label: "Graph",
+    size: { w: 980, h: 640 },
+    async open(body) {
+      body.classList.add("wb-panel__body--bare");
+      const f = document.createElement("iframe");
+      f.src = "/prep-math/activity/cartesian-art/?embed=graph";
+      f.title = "Graph";
+      f.style.cssText = "display:block;width:100%;height:100%;min-height:420px;border:0;background:#fffdf8";
+      body.appendChild(f);
+      return () => f.remove();
+    },
+  },
   calculator: {
     label: "Calculator",
     size: { w: 340, h: 500 },
@@ -236,7 +267,7 @@ export const TOOL_IDS = Object.keys(TOOLS);
  *   at      "left" or "right" — which side of the window it sits against
  * → { el, open(id), destroy() }
  */
-export function mountTools(host = document.body, { tools = ["calculator", "column", "times", "shortdiv", "pin", "note"], at = "left", extra = {} } = {}) {
+export function mountTools(host = document.body, { tools = ["calculator", "graph", "gm", "column", "times", "shortdiv", "pin", "note"], at = "left", extra = {} } = {}) {
   /* the rail fetches its own dress, so a page that wants tools needs one line
      and no stylesheet link of its own */
   needCss("/utils/components/workbook.css");

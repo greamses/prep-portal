@@ -145,7 +145,7 @@ function start() {
      A calculator and a note are what a studio is actually short of: the angles
      and areas come off the figure, and working them out is arithmetic. */
   import("/utils/components/workbook/toolbar.js")
-    .then(({ mountTools }) => mountTools(document.body, { tools: ["calculator", "pin", "note"] }))
+    .then(({ mountTools }) => mountTools(document.body, { tools: ["calculator", "graph", "gm", "pin", "note"] }))
     .catch(() => { /* a studio without tools still works */ });
   if (!wantsFs()) return;
   setFsLayout(true);
