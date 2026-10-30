@@ -1582,3 +1582,12 @@ html.am-noselect, html.am-noselect * { -webkit-user-select: none !important; use
   cursor: pointer;
 }
 .am-fx__try:hover, .am-fx__try:focus-visible { background: var(--accent-secondary); color: var(--text-on-accent, #fff); }
+
+/* The guide on the side rail: gestures and set-up, one row each. */
+.am-guide { padding: 0.9rem 1rem 1.2rem; overflow-y: auto; }
+.am-guide__intro { margin: 0 0 0.9rem; font-size: 0.82rem; line-height: 1.45; color: var(--text-muted, inherit); }
+.am-guide__h { margin: 1.1rem 0 0.4rem; font-family: var(--font-display, inherit); font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.am-guide__list { margin: 0; display: grid; grid-template-columns: minmax(8rem, 0.38fr) 1fr; gap: 0.3rem 0.8rem; }
+.am-guide__list dt { font-weight: 700; font-size: 0.78rem; line-height: 1.35; }
+.am-guide__list dd { margin: 0; font-size: 0.78rem; line-height: 1.45; }
+@media (max-width: 520px) { .am-guide__list { grid-template-columns: 1fr; } .am-guide__list dd { margin-bottom: 0.4rem; } }
