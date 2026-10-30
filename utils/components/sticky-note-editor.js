@@ -70,6 +70,7 @@ import { mathNode, whenMathDrawn, mathReady, preloadMath } from "./sticky-math.j
 import { slotTypingForEditable } from "./slot-typing.js";
 import { toTeX, SIGNS } from "./math-linear.js";
 import { enhanceSelect } from "./pp-select.js";
+import { pickColour } from "/utils/components/colour-pop.js";
 
 /**
  * @param {object} opts
@@ -648,13 +649,34 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     pick.innerHTML = SETS[which]().map((c, i) => `
       <button type="button" class="pp-note__chip${c.hex ? "" : " is-none"}"
         data-hex="${c.hex || ""}" data-index="${c.index ?? i}" title="${c.name}"
-        style="${c.hex ? `background:${c.hex}` : ""}"><span class="sr-only">${c.name}</span></button>`).join("");
+        style="${c.hex ? `background:${c.hex}` : ""}"><span class="sr-only">${c.name}</span></button>`).join("")
+      /* the presets above, and any other colour from the site's wheel (not the paper: a note's
+         paper is one of the house papers) */
+      + (which === "paper" ? "" : `<button type="button" class="pp-note__chip pp-note__chip--wheel" data-wheel="1"
+        title="Any colour" aria-label="Any colour"></button>`);
     pick.hidden = false;
     pick.style.left = Math.max(0, from.offsetLeft - 30) + "px";
   }
 
   pick.addEventListener("pointerdown", (e) => e.preventDefault());
   pick.addEventListener("click", (e) => {
+    if (e.target.closest("[data-wheel]") && note) {
+      /* the wheel is a popover outside the note, so the words that were selected are kept and put
+         back each time the colour moves */
+      const which = pending;
+      const at = saveSel();
+      const anchor = root.querySelector(`[data-pick="${which}"]`);
+      closePick();
+      pickColour(anchor, {
+        value: swatch(which).style.background && /^#/.test(swatch(which).style.background) ? swatch(which).style.background : (which === "ink" ? INKS[0].hex : "#fff3a8"),
+        presets: SETS[which]().filter((c) => c.hex),
+        onChange: (hex) => {
+          dressSelection(which === "ink" ? { ink: hex } : { mark: hex }, at);
+          swatch(which).style.background = hex;
+        },
+      });
+      return;
+    }
     const chip = e.target.closest("[data-hex]");
     if (!chip || !note) return;
     const hex = chip.dataset.hex || null;

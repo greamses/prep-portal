@@ -16,6 +16,7 @@ import { state, setFill, setActiveShape, subscribe } from "./state.js";
 import { clientToMath, onRender } from "./grid.js";
 import { registerCanvas, commit as historyCommit } from "./history.js";
 import { paintRange } from "./range-fill.js";
+import { pickColour } from "/utils/components/colour-pop.js";
 
 export const PALETTE = [
   "#f07a7a", "#f0a868", "#f4c95d", "#7cc47c", "#6fd0c0",
@@ -183,18 +184,25 @@ function swatch(host, c) {
   return b;
 }
 
-/** The extra swatch that toggles open the in-app custom colour WHEEL. */
+/** The extra swatch that opens the site's colour wheel; this task's colours are the presets beside it. */
 function wheelSwatch(host) {
   const b = document.createElement("button");
   b.type = "button";
   b.className = "ca-swatch ca-swatch--wheel";
-  b.title = "Custom colour wheel";
+  b.title = "Any colour";
   b.addEventListener("click", () => {
-    const pop = $("#ca-wheel");
-    if (!pop) return;
-    pop.hidden = !pop.hidden;
-    b.classList.toggle("is-active", !pop.hidden);
-    if (!pop.hidden) drawWheel();
+    pickColour(b, {
+      value: normHex(tool.color) || "#6fb7e8",
+      /* a task's own colours when it has them, the house inks otherwise */
+      presets: artColors().length ? artColors().map((c) => ({ name: c, hex: normHex(c) || c })) : undefined,
+      onChange: (hex) => {
+        tool.color = hex;
+        clearActive();
+        b.style.setProperty("--sw", hex);
+        b.classList.add("has-color", "is-active");
+        if (tool.name === "move") setTool("brush"); // picking on Move jumps to brush
+      },
+    });
   });
   host.appendChild(b);
   return b;

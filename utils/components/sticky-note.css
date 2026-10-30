@@ -447,3 +447,6 @@
 
 /* While MathJax is still on its way, the live preview says so. */
 .pp-note__eqwait { font-family: var(--font-mono, monospace); font-size: 0.8rem; font-style: italic; color: rgba(20, 19, 15, 0.55); }
+
+/* the "any colour" chip at the end of the ink and highlighter strips */
+.pp-note__chip--wheel { background: conic-gradient(#e86f6f, #f4c95d, #7cc47c, #6fb7e8, #c9a3ee, #e86f6f); }

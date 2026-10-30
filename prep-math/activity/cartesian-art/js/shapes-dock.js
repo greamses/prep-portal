@@ -16,6 +16,7 @@ import {
 import { PALETTE } from "./paint.js";
 import { parsePoints } from "./parse.js";
 import { fmtCoord } from "./scale.js";
+import { pickColour } from "/utils/components/colour-pop.js";
 
 const $ = (s) => document.querySelector(s);
 
@@ -119,6 +120,25 @@ function buildSwatchRow(hostSel, onPick, withNone) {
     b.addEventListener("click", () => onPick(c));
     host.appendChild(b);
   });
+  /* the presets above, and any other colour from the site's wheel */
+  const wheel = document.createElement("button");
+  wheel.type = "button";
+  wheel.className = "ca-swatch ca-swatch--wheel";
+  wheel.title = "Any colour";
+  wheel.addEventListener("click", () => {
+    const s = activeShape();
+    const now = (hostSel === "#shapes-stroke" ? s.strokeColor : s.fillColor) || PALETTE[0];
+    pickColour(wheel, {
+      value: now,
+      presets: PALETTE.map((c) => ({ name: c, hex: c })),
+      onChange: (hex) => {
+        onPick(hex);
+        wheel.style.setProperty("--sw", hex);
+        wheel.classList.add("has-color", "is-active");
+      },
+    });
+  });
+  host.appendChild(wheel);
 }
 
 function markActiveSwatches() {
