@@ -7023,6 +7023,412 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Geography: maps and measuring places",
+    items: [
+      {
+        id: "representative-fraction", name: "Representative fraction of a map", eq: "R = 1/N", find: "R",
+        letters: { R: "the representative fraction", N: "the scale, 1 : N" },
+        example: { N: "50000" },
+      },
+      {
+        id: "map-distance", name: "Distance on a map", eq: "d = D/N", find: "d",
+        letters: { d: "the distance on the map", D: "the real distance", N: "the scale, 1 : N" },
+        example: { D: "25000", N: "50000" },
+        note: "use the same unit for both",
+      },
+      {
+        id: "map-area", name: "Area on a map", eq: "a = A/N^2", find: "a",
+        letters: { a: "the area on the map", A: "the real area", N: "the scale, 1 : N" },
+        example: { A: "100", N: "10" },
+        note: "areas change by the scale squared",
+      },
+      {
+        id: "back-bearing", name: "Back bearing", eq: "b = a + 180", find: "b",
+        letters: { b: "the bearing back", a: "the bearing there, below 180" },
+        example: { a: "60" },
+        note: "take away 180 instead when the bearing there is 180 or more",
+      },
+      {
+        id: "true-bearing", name: "True bearing from a compass bearing", eq: "T = M + V", find: "T",
+        letters: { T: "the true bearing", M: "the magnetic bearing", V: "the magnetic variation (west is negative)" },
+        example: { M: "45", V: "-3" },
+      },
+      {
+        id: "decimal-degrees", name: "Degrees, minutes and seconds as a decimal", eq: "D = d + m/60 + s/3600", find: "D",
+        letters: { D: "the angle in degrees", d: "the whole degrees", m: "the minutes", s: "the seconds" },
+        example: { d: "51", m: "30", s: "36" },
+      },
+      {
+        id: "ground-sample-distance", name: "Size of one pixel on the ground", eq: "G = Hp/f", find: "G",
+        letters: { G: "the ground size of one pixel", H: "the height of the camera", p: "the size of one pixel on the sensor", f: "the focal length" },
+        example: { H: "1000", p: "1/200000", f: "1/10" },
+      },
+      {
+        id: "raster-area", name: "Area covered by a raster map", eq: "A = nc^2", find: "A",
+        letters: { A: "the area", n: "the number of cells", c: "the side of one cell" },
+        example: { n: "400", c: "30" },
+      },
+    ],
+  },
+  {
+    group: "Geography: weather and climate",
+    items: [
+      {
+        id: "growing-degree-days", name: "Growing degree days", eq: "G = (T + t)/2 - b", find: "G",
+        letters: { G: "the degree days for one day", T: "the highest temperature", t: "the lowest temperature", b: "the base temperature of the crop" },
+        example: { T: "28", t: "12", b: "10" },
+      },
+      {
+        id: "aridity-index", name: "Aridity index", eq: "A = P/E", find: "A",
+        letters: { A: "the aridity index", P: "the rainfall in a year", E: "the water that could evaporate in a year" },
+        example: { P: "300", E: "1200" },
+        note: "below about 0.2 is desert",
+      },
+      {
+        id: "continentality", name: "Continentality (Conrad)", eq: "K = 1.7a/sin((p + 10)°) - 14", find: "K",
+        letters: { K: "the continentality", a: "the difference between the hottest and coldest monthly temperatures", p: "the latitude in degrees" },
+        example: { a: "20", p: "20" },
+      },
+      {
+        id: "evapotranspiration", name: "Water lost from soil and plants (Hargreaves)", eq: "E = 0.0023R(T + 17.8)sqrt(M - m)", find: "E",
+        letters: { E: "the water lost in a day", R: "the sunlight reaching the top of the air", T: "the mean temperature", M: "the highest temperature", m: "the lowest temperature" },
+        example: { R: "1000", T: "2.2", M: "30", m: "14" },
+      },
+      {
+        id: "beaufort-speed", name: "Wind speed from the Beaufort number", eq: "v = 0.836B^(3/2)", find: "v",
+        letters: { v: "the wind speed in metres a second", B: "the Beaufort number" },
+        example: { B: "4" },
+      },
+    ],
+  },
+  {
+    group: "Geography: coasts, rivers and slopes",
+    items: [
+      {
+        id: "salinity", name: "Salinity of sea water", eq: "S = 1000s/w", find: "S",
+        letters: { S: "the salinity in parts per thousand", s: "the mass of salt", w: "the mass of the water" },
+        example: { s: "35", w: "1000" },
+      },
+      {
+        id: "wave-energy", name: "Energy of a wave", eq: "E = dgH^2/8", find: "E",
+        letters: { E: "the energy for each square metre", d: "the density of the water", g: "the pull of gravity per kilogram", H: "the wave height" },
+        example: { d: "1000", g: "10", H: "2" },
+      },
+      {
+        id: "wave-power", name: "Power of a wave", eq: "P = dg^2H^2T/(32π)", find: "P",
+        letters: { P: "the power for each metre of wave", d: "the density of the water", g: "the pull of gravity per kilogram", H: "the wave height", T: "the time between waves" },
+        example: { d: "1000", g: "10", H: "2", T: "8" },
+      },
+      {
+        id: "cailleux", name: "Cailleux roundness index of a pebble", eq: "C = 2r/L", find: "C",
+        letters: { C: "the roundness index", r: "the radius of the sharpest corner", L: "the length of the pebble" },
+        example: { r: "3", L: "20" },
+      },
+      {
+        id: "soil-loss", name: "Soil lost to erosion (the universal soil loss equation)", eq: "A = RKLSCP", find: "A",
+        letters: { A: "the soil lost", R: "the rainfall factor", K: "the soil factor", L: "the length factor", S: "the slope factor", C: "the crop factor", P: "the conservation factor" },
+        example: { R: "300", K: "1/5", L: "2", S: "3/2", C: "1/10", P: "1" },
+      },
+      {
+        id: "channel-area", name: "Cross-section area of a river channel", eq: "A = wd", find: "A",
+        letters: { A: "the area", w: "the width", d: "the mean depth" },
+        example: { w: "12", d: "2" },
+      },
+      {
+        id: "wetted-perimeter", name: "Wetted perimeter of a rectangular channel", eq: "P = w + 2d", find: "P",
+        letters: { P: "the wetted perimeter", w: "the width", d: "the depth" },
+        example: { w: "12", d: "2" },
+      },
+      {
+        id: "stream-power", name: "Power of a river", eq: "W = dgQS", find: "W",
+        letters: { W: "the power for each metre of river", d: "the density of water", g: "the pull of gravity per kilogram", Q: "the discharge", S: "the slope" },
+        example: { d: "1000", g: "10", Q: "2", S: "1/100" },
+      },
+      {
+        id: "scs-runoff", name: "Runoff from a storm (curve number method)", eq: "Q = (P - 0.2S)^2/(P + 0.8S)", find: "Q",
+        letters: { Q: "the runoff", P: "the rainfall", S: "the storage of the soil" },
+        example: { P: "5", S: "5" },
+      },
+      {
+        id: "scs-storage", name: "Storage of the soil from its curve number", eq: "S = 1000/C - 10", find: "S",
+        letters: { S: "the storage in inches", C: "the curve number" },
+        example: { C: "80" },
+      },
+      {
+        id: "slope-safety", name: "Safety of a slope against sliding", eq: "F = tan(p°)/tan(b°)", find: "F",
+        letters: { F: "the factor of safety", p: "the angle of friction of the material in degrees", b: "the angle of the slope in degrees" },
+        example: { p: "45", b: "45" },
+        note: "below 1 the slope slides",
+      },
+    ],
+  },
+  {
+    group: "Geography: settlement, transport and trade",
+    items: [
+      {
+        id: "nearest-neighbour", name: "Nearest neighbour index", eq: "R = 2m·sqrt(n/A)", find: "R",
+        letters: { R: "the index (1 is random, below 1 clustered, above 1 even)", m: "the mean distance to the nearest neighbour", n: "the number of points", A: "the area" },
+        example: { m: "5", n: "25", A: "100" },
+      },
+      {
+        id: "location-quotient", name: "Location quotient", eq: "Q = (e/E)/(n/N)", find: "Q",
+        letters: { Q: "the location quotient", e: "the jobs in the industry here", E: "the jobs here in all", n: "the jobs in the industry in the whole country", N: "the jobs in all in the whole country" },
+        example: { e: "200", E: "1000", n: "1000", N: "10000" },
+        note: "above 1 means the area is more specialised than the country",
+      },
+      {
+        id: "distance-decay", name: "Distance decay", eq: "I = 1/d^b", find: "I",
+        letters: { I: "the interaction compared with 1 at a distance of 1", d: "the distance", b: "how quickly it falls with distance" },
+        example: { d: "4", b: "2" },
+      },
+      {
+        id: "huff", name: "Chance a shopper goes to the first shop (Huff model)", eq: "P = (S/d^2)/(S/d^2 + T/D^2)", find: "P",
+        letters: { P: "the share of shoppers", S: "the size of the first shop", d: "its distance", T: "the size of the second shop", D: "its distance" },
+        example: { S: "100", d: "10", T: "100", D: "20" },
+      },
+      {
+        id: "christaller", name: "Settlements at each level (Christaller)", eq: "N = k^n", find: "N",
+        letters: { N: "the settlements at that level", k: "the number of lower settlements each higher one serves", n: "the levels below the top" },
+        example: { k: "3", n: "3" },
+      },
+      {
+        id: "bid-rent", name: "Rent a farmer can pay (von Thünen)", eq: "R = Y(p - c) - Yfd", find: "R",
+        letters: { R: "the rent for each hectare", Y: "the yield", p: "the price for each unit", c: "the cost of producing each unit", f: "the cost of moving one unit one kilometre", d: "the distance to the market" },
+        example: { Y: "10", p: "100", c: "40", f: "1", d: "5" },
+      },
+      {
+        id: "floor-area-ratio", name: "Floor area ratio of a building", eq: "F = A/B", find: "F",
+        letters: { F: "the floor area ratio", A: "the total floor area", B: "the area of the plot" },
+        example: { A: "2400", B: "800" },
+      },
+      {
+        id: "beta-index", name: "Beta index of a transport network", eq: "B = L/V", find: "B",
+        letters: { B: "the beta index", L: "the links", V: "the places joined" },
+        example: { L: "10", V: "8" },
+      },
+      {
+        id: "gamma-index", name: "Gamma index of a transport network", eq: "G = L/(3(V - 2))", find: "G",
+        letters: { G: "the gamma index", L: "the links", V: "the places joined" },
+        example: { L: "9", V: "6" },
+        note: "1 means every possible link is there",
+      },
+      {
+        id: "alpha-index", name: "Alpha index of a transport network", eq: "A = (L - V + 1)/(2V - 5)", find: "A",
+        letters: { A: "the alpha index", L: "the links", V: "the places joined" },
+        example: { L: "9", V: "6" },
+      },
+      {
+        id: "cyclomatic", name: "Cyclomatic number of a network", eq: "m = L - V + p", find: "m",
+        letters: { m: "the independent circuits", L: "the links", V: "the places joined", p: "the separate parts of the network" },
+        example: { L: "9", V: "6", p: "1" },
+      },
+      {
+        id: "detour-index", name: "Detour index of a route", eq: "D = a/s", find: "D",
+        letters: { D: "the detour index", a: "the distance along the route", s: "the straight-line distance" },
+        example: { a: "15", s: "12" },
+      },
+      {
+        id: "tourism-capacity", name: "Physical carrying capacity of a site", eq: "C = A/a", find: "C",
+        letters: { C: "the visitors at one time", A: "the area of the site", a: "the area each visitor needs" },
+        example: { A: "5000", a: "10" },
+      },
+      {
+        id: "opportunity-cost", name: "Opportunity cost in trade", eq: "C = a/b", find: "C",
+        letters: { C: "the units of the first good given up for one of the second", a: "the output of the first good", b: "the output of the second" },
+        example: { a: "6", b: "3" },
+      },
+      {
+        id: "employment-multiplier", name: "Employment multiplier", eq: "M = T/B", find: "M",
+        letters: { M: "the multiplier", T: "the total jobs", B: "the basic jobs that bring in money from outside" },
+        example: { T: "1200", B: "800" },
+      },
+      {
+        id: "ecological-footprint", name: "Ecological footprint", eq: "F = c/y", find: "F",
+        letters: { F: "the footprint in hectares for each person", c: "the amount consumed for each person", y: "the yield for each hectare" },
+        example: { c: "3", y: "1/2" },
+      },
+      {
+        id: "emissions", name: "Emissions from an activity", eq: "E = af", find: "E",
+        letters: { E: "the emissions", a: "the amount of the activity", f: "the emission factor" },
+        example: { a: "1000", f: "1/5" },
+      },
+    ],
+  },
+  {
+    group: "History: calendars and dates",
+    items: [
+      {
+        id: "bce-ce", name: "Years from a date BCE to a date CE", eq: "n = b + c - 1", find: "n",
+        letters: { n: "the years between", b: "the year BCE", c: "the year CE" },
+        example: { b: "100", c: "50" },
+        note: "there is no year 0",
+      },
+      {
+        id: "hijri-to-gregorian", name: "Islamic year to the Gregorian year", eq: "G = 0.97H + 622", find: "G",
+        letters: { G: "the Gregorian year", H: "the Hijri year" },
+        example: { H: "1000" },
+        note: "an approximation",
+      },
+      {
+        id: "gregorian-to-hijri", name: "Gregorian year to the Islamic year", eq: "H = 33(G - 622)/32", find: "H",
+        letters: { H: "the Hijri year", G: "the Gregorian year" },
+        example: { G: "1592" },
+        note: "an approximation",
+      },
+      {
+        id: "hebrew-year", name: "Hebrew year", eq: "H = G + 3760", find: "H",
+        letters: { H: "the Hebrew year", G: "the Gregorian year" },
+        example: { G: "2000" },
+        note: "from the start of the Hebrew year in autumn",
+      },
+      {
+        id: "buddhist-year", name: "Buddhist era year", eq: "B = G + 543", find: "B",
+        letters: { B: "the Buddhist era year", G: "the Gregorian year" },
+        example: { G: "2000" },
+      },
+      {
+        id: "ethiopian-year", name: "Ethiopian year", eq: "E = G - 7", find: "E",
+        letters: { E: "the Ethiopian year", G: "the Gregorian year" },
+        example: { G: "2000" },
+        note: "7 years behind from September to December, 8 behind the rest of the year",
+      },
+      {
+        id: "saka-year", name: "Saka era year", eq: "S = G - 78", find: "S",
+        letters: { S: "the Saka era year", G: "the Gregorian year" },
+        example: { G: "2000" },
+      },
+    ],
+  },
+  {
+    group: "History: dating and archaeology",
+    items: [
+      {
+        id: "radiocarbon-age", name: "Age from radiocarbon", eq: "t = 5730·log_2(A/N)", find: "t",
+        letters: { t: "the age in years", A: "the carbon-14 when it was alive", N: "the carbon-14 now" },
+        example: { A: "8", N: "1" },
+      },
+      {
+        id: "thermoluminescence", name: "Age by thermoluminescence", eq: "t = D/r", find: "t",
+        letters: { t: "the age in years", D: "the radiation dose stored", r: "the dose received each year" },
+        example: { D: "200", r: "2" },
+      },
+      {
+        id: "obsidian-hydration", name: "Age by obsidian hydration", eq: "t = x^2/k", find: "t",
+        letters: { t: "the age", x: "the thickness of the hydrated layer", k: "the rate for that obsidian" },
+        example: { x: "4", k: "2" },
+      },
+      {
+        id: "tree-ring-age", name: "Age of a tree from its rings", eq: "a = r + c", find: "a",
+        letters: { a: "the age", r: "the rings counted", c: "the years it took to reach the core height" },
+        example: { r: "120", c: "5" },
+      },
+      {
+        id: "hearth-population", name: "Population from a hearth tax", eq: "P = hm", find: "P",
+        letters: { P: "the population", h: "the hearths counted", m: "the people for each hearth" },
+        example: { h: "1200", m: "9/2" },
+      },
+      {
+        id: "generations", name: "Generations in a time", eq: "g = t/l", find: "g",
+        letters: { g: "the number of generations", t: "the time in years", l: "the years for each generation" },
+        example: { t: "300", l: "25" },
+      },
+      {
+        id: "ancestors", name: "Ancestors in one generation", eq: "A = 2^n", find: "A",
+        letters: { A: "the ancestors", n: "the generations back" },
+        example: { n: "10" },
+      },
+      {
+        id: "ancestors-total", name: "All ancestors over several generations", eq: "A = 2^(n + 1) - 2", find: "A",
+        letters: { A: "the ancestors in all", n: "the generations back" },
+        example: { n: "3" },
+      },
+      {
+        id: "relationship-degree", name: "Degree of a family relationship", eq: "R = a + b", find: "R",
+        letters: { R: "the degree of relationship", a: "the steps up to the common ancestor", b: "the steps down from them" },
+        example: { a: "3", b: "3" },
+      },
+      {
+        id: "shared-dna", name: "DNA shared with an ancestor", eq: "S = 100/2^n", find: "S",
+        letters: { S: "the percentage shared", n: "the generations back" },
+        example: { n: "3" },
+      },
+    ],
+  },
+  {
+    group: "History: money, war and elections",
+    items: [
+      {
+        id: "price-index-value", name: "Value of money in another year", eq: "V = AP/p", find: "V",
+        letters: { V: "the value in the later year", A: "the amount in the earlier year", P: "the price index in the later year", p: "the price index in the earlier year" },
+        example: { A: "100", P: "250", p: "100" },
+      },
+      {
+        id: "real-wage", name: "Real wage", eq: "W = 100w/p", find: "W",
+        letters: { W: "the real wage", w: "the money wage", p: "the price index" },
+        example: { w: "300", p: "120" },
+      },
+      {
+        id: "lanchester", name: "Lanchester's square law", eq: "A^2 - B^2 = c", find: "c",
+        letters: { A: "the strength of the first army", B: "the strength of the second", c: "the strength squared that the winner has left" },
+        example: { A: "100", B: "60" },
+        note: "the winner keeps the square root of c",
+      },
+      {
+        id: "casualty-rate", name: "Casualty rate", eq: "C = 100c/N", find: "C",
+        letters: { C: "the casualty rate, as a percentage", c: "the killed and wounded", N: "the soldiers who fought" },
+        example: { c: "45", N: "300" },
+      },
+      {
+        id: "kill-ratio", name: "Kill ratio", eq: "R = a/b", find: "R",
+        letters: { R: "the kill ratio", a: "the enemy lost", b: "the own side lost" },
+        example: { a: "30", b: "10" },
+      },
+      {
+        id: "vote-share", name: "Share of the vote", eq: "V = 100v/T", find: "V",
+        letters: { V: "the share, as a percentage", v: "the votes for the party", T: "the votes in all" },
+        example: { v: "4500", T: "10000" },
+      },
+      {
+        id: "turnout", name: "Turnout", eq: "T = 100v/R", find: "T",
+        letters: { T: "the turnout, as a percentage", v: "the votes cast", R: "the people on the register" },
+        example: { v: "620", R: "1000" },
+      },
+      {
+        id: "hare-quota", name: "Hare quota", eq: "Q = V/S", find: "Q",
+        letters: { Q: "the votes needed for a seat", V: "the votes in all", S: "the seats" },
+        example: { V: "100000", S: "5" },
+      },
+      {
+        id: "droop-quota", name: "Droop quota", eq: "Q = V/(S + 1) + 1", find: "Q",
+        letters: { Q: "the votes needed for a seat", V: "the votes in all", S: "the seats" },
+        example: { V: "100000", S: "4" },
+      },
+      {
+        id: "dhondt", name: "D'Hondt quotient", eq: "Q = v/(s + 1)", find: "Q",
+        letters: { Q: "the quotient", v: "the party's votes", s: "the seats it already has" },
+        example: { v: "100000", s: "2" },
+        note: "the party with the biggest quotient wins the next seat",
+      },
+      {
+        id: "sainte-lague", name: "Sainte-Laguë quotient", eq: "Q = v/(2s + 1)", find: "Q",
+        letters: { Q: "the quotient", v: "the party's votes", s: "the seats it already has" },
+        example: { v: "100000", s: "2" },
+        note: "the party with the biggest quotient wins the next seat",
+      },
+      {
+        id: "effective-parties", name: "Effective number of parties", eq: "N = 1/(a^2 + b^2 + c^2)", find: "N",
+        letters: { N: "the effective number of parties", a: "the first party's share of the vote", b: "the second party's share", c: "the third party's share" },
+        example: { a: "1/2", b: "1/4", c: "1/4" },
+        note: "add a square for every further party",
+      },
+      {
+        id: "butler-swing", name: "Butler swing between two parties", eq: "S = ((a - b) + (c - d))/2", find: "S",
+        letters: { S: "the swing", a: "the first party's share now", b: "its share before", c: "the second party's share before", d: "its share now" },
+        example: { a: "45", b: "40", c: "42", d: "38" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
