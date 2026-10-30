@@ -7750,6 +7750,553 @@ export const GROUPS = [
       },
     ],
   },
+  {
+    group: "Law: tax, property and contracts",
+    items: [
+      {
+        id: "capital-gains-tax", name: "Capital gains tax", eq: "T = r(S - C - E)/100", find: "T",
+        letters: { T: "the tax", r: "the tax rate", S: "the selling price", C: "the cost", E: "the costs of buying and selling" },
+        example: { r: "20", S: "500000", C: "300000", E: "20000" },
+      },
+      {
+        id: "income-tax-two-bands", name: "Income tax in two bands", eq: "T = (ra + s(I - a))/100", find: "T",
+        letters: { T: "the tax", r: "the rate on the first band", a: "the top of the first band", s: "the rate on the rest", I: "the income" },
+        example: { r: "10", a: "100000", s: "20", I: "300000" },
+      },
+      {
+        id: "effective-tax-rate", name: "Effective tax rate", eq: "E = 100T/I", find: "E",
+        letters: { E: "the effective rate, as a percentage", T: "the tax paid", I: "the income" },
+        example: { T: "50000", I: "300000" },
+      },
+      {
+        id: "corporate-tax", name: "Company tax", eq: "T = r(P - D)/100", find: "T",
+        letters: { T: "the tax", r: "the tax rate", P: "the profit", D: "the allowances" },
+        example: { r: "30", P: "1000000", D: "200000" },
+      },
+      {
+        id: "inheritance-tax", name: "Inheritance tax", eq: "T = r(E - n)/100", find: "T",
+        letters: { T: "the tax", r: "the tax rate", E: "the value of the estate", n: "the amount that is not taxed" },
+        example: { r: "40", E: "500000", n: "325000" },
+      },
+      {
+        id: "rental-yield", name: "Gross rental yield", eq: "Y = 100R/V", find: "Y",
+        letters: { Y: "the yield, as a percentage", R: "the rent in a year", V: "the value of the property" },
+        example: { R: "60000", V: "1000000" },
+      },
+      {
+        id: "loan-to-value", name: "Loan to value ratio", eq: "L = 100d/V", find: "L",
+        letters: { L: "the loan to value, as a percentage", d: "the loan", V: "the value of the property" },
+        example: { d: "700000", V: "1000000" },
+      },
+      {
+        id: "debt-service-cover", name: "Debt service cover", eq: "D = N/S", find: "D",
+        letters: { D: "the cover", N: "the net income in a year", S: "the loan payments in a year" },
+        example: { N: "150", S: "100" },
+      },
+      {
+        id: "rent-per-area", name: "Rent for each square metre", eq: "R = T/A", find: "R",
+        letters: { R: "the rent for each square metre", T: "the total rent", A: "the area" },
+        example: { T: "60000", A: "50" },
+      },
+      {
+        id: "loss-of-bargain", name: "Damages for a lost bargain", eq: "D = M - C", find: "D",
+        letters: { D: "the damages", M: "the market price", C: "the contract price" },
+        example: { M: "120", C: "100" },
+        note: "the buyer's loss when the seller does not deliver",
+      },
+      {
+        id: "annuity-value", name: "Present value of a loss that continues", eq: "V = A(1 - (1 + r)^(-n))/r", find: "V",
+        letters: { V: "the lump sum now", A: "the loss each year", r: "the discount rate as a decimal", n: "the years" },
+        example: { A: "100", r: "1", n: "2" },
+      },
+      {
+        id: "litigation-value", name: "Expected value of going to court", eq: "S = pD - C", find: "S",
+        letters: { S: "the expected gain", p: "the chance of winning", D: "the damages if the case is won", C: "the cost of the case" },
+        example: { p: "3/5", D: "100000", C: "15000" },
+      },
+      {
+        id: "negligence-burden", name: "Learned Hand test of reasonable care", eq: "B = pL", find: "B",
+        letters: { B: "the most it is reasonable to spend on prevention", p: "the chance of the harm", L: "the loss if it happens" },
+        example: { p: "1/10", L: "500000" },
+        note: "taking care is required when the cost is less than this",
+      },
+      {
+        id: "insurance-premium", name: "Insurance premium", eq: "P = pL/(1 - l)", find: "P",
+        letters: { P: "the premium", p: "the chance of a claim", L: "the size of a claim", l: "the share added for costs and profit" },
+        example: { p: "1/100", L: "1000000", l: "1/5" },
+      },
+      {
+        id: "average-clause", name: "Claim when underinsured (the average clause)", eq: "C = La/r", find: "C",
+        letters: { C: "the amount paid", L: "the loss", a: "the sum insured", r: "the value it should have been insured for" },
+        example: { L: "40000", a: "300000", r: "500000" },
+      },
+    ],
+  },
+  {
+    group: "Law: courts, sentences and rights at work",
+    items: [
+      {
+        id: "parole-eligibility", name: "Time before parole", eq: "E = fS", find: "E",
+        letters: { E: "the time before parole can be considered", f: "the share of the sentence", S: "the sentence" },
+        example: { f: "1/2", S: "60" },
+      },
+      {
+        id: "consecutive-sentences", name: "Sentences served one after another", eq: "T = a + b + c", find: "T",
+        letters: { T: "the total time", a: "the first sentence", b: "the second", c: "the third" },
+        example: { a: "24", b: "12", c: "6" },
+      },
+      {
+        id: "conviction-threshold", name: "Standard of proof as a balance of errors", eq: "p = a/(a + b)", find: "p",
+        letters: { p: "the probability of guilt needed", a: "the cost of convicting an innocent person", b: "the cost of freeing a guilty one" },
+        example: { a: "10", b: "1" },
+        note: "Blackstone's ten to one gives about 0.91",
+      },
+      {
+        id: "prosecutors-fallacy", name: "Chance of innocence after a match", eq: "I = (1 - p)r/((1 - p)r + p)", find: "I",
+        letters: { I: "the chance the person is innocent", p: "the chance of guilt before the match", r: "the chance of a match if innocent" },
+        example: { p: "1/100", r: "1/10" },
+        note: "not the same as the chance of a match if innocent",
+      },
+      {
+        id: "conviction-rate", name: "Conviction rate", eq: "C = 100c/t", find: "C",
+        letters: { C: "the conviction rate, as a percentage", c: "the convictions", t: "the trials" },
+        example: { c: "720", t: "1000" },
+      },
+      {
+        id: "backlog-time", name: "Time to clear a court backlog", eq: "T = B/(c - n)", find: "T",
+        letters: { T: "the time to clear it", B: "the cases waiting", c: "the cases finished each month", n: "the new cases each month" },
+        example: { B: "6000", c: "550", n: "500" },
+      },
+      {
+        id: "copyright-expiry", name: "End of copyright", eq: "y = d + 70", find: "y",
+        letters: { y: "the year copyright ends (at the end of that year)", d: "the year the author died" },
+        example: { d: "1950" },
+        note: "70 years in many countries, 50 in some",
+      },
+      {
+        id: "patent-expiry", name: "End of a patent", eq: "y = f + 20", find: "y",
+        letters: { y: "the year the patent ends", f: "the year it was filed" },
+        example: { f: "2010" },
+      },
+      {
+        id: "redundancy-pay", name: "Redundancy pay", eq: "P = wyk", find: "P",
+        letters: { P: "the pay", w: "a week's pay", y: "the years worked", k: "the factor for the worker's age" },
+        example: { w: "500", y: "10", k: "1" },
+      },
+      {
+        id: "overtime-pay", name: "Overtime pay", eq: "P = rhm", find: "P",
+        letters: { P: "the pay", r: "the normal hourly rate", h: "the overtime hours", m: "the overtime multiplier" },
+        example: { r: "10", h: "6", m: "3/2" },
+      },
+      {
+        id: "gratuity", name: "End of service gratuity", eq: "G = 15sy/30", find: "G",
+        letters: { G: "the gratuity", s: "the monthly pay", y: "the years of service" },
+        example: { s: "60000", y: "8" },
+        note: "15 days' pay for each year",
+      },
+    ],
+  },
+  {
+    group: "Medicine: heart, lungs and body size",
+    items: [
+      {
+        id: "qtc-bazett", name: "Corrected QT interval (Bazett)", eq: "Q = t/sqrt(r)", find: "Q",
+        letters: { Q: "the corrected QT in milliseconds", t: "the QT interval", r: "the time between beats in seconds" },
+        example: { t: "300", r: "1/4" },
+      },
+      {
+        id: "qtc-fridericia", name: "Corrected QT interval (Fridericia)", eq: "Q = t/r^(1/3)", find: "Q",
+        letters: { Q: "the corrected QT in milliseconds", t: "the QT interval", r: "the time between beats in seconds" },
+        example: { t: "300", r: "1/8" },
+      },
+      {
+        id: "ecg-rate", name: "Heart rate from an ECG strip", eq: "h = 300/n", find: "h",
+        letters: { h: "the heart rate", n: "the large squares between two beats" },
+        example: { n: "4" },
+      },
+      {
+        id: "rate-pressure-product", name: "Rate-pressure product", eq: "R = hs", find: "R",
+        letters: { R: "the rate-pressure product", h: "the heart rate", s: "the systolic pressure" },
+        example: { h: "72", s: "125" },
+      },
+      {
+        id: "cardiac-index", name: "Cardiac index", eq: "I = C/S", find: "I",
+        letters: { I: "the cardiac index", C: "the cardiac output", S: "the body surface area" },
+        example: { C: "5", S: "2" },
+      },
+      {
+        id: "shock-index", name: "Shock index", eq: "I = h/s", find: "I",
+        letters: { I: "the shock index", h: "the heart rate", s: "the systolic pressure" },
+        example: { h: "100", s: "100" },
+        note: "above 0.9 can mean shock",
+      },
+      {
+        id: "vascular-resistance", name: "Systemic vascular resistance", eq: "S = 80(m - c)/o", find: "S",
+        letters: { S: "the resistance", m: "the mean arterial pressure", c: "the central venous pressure", o: "the cardiac output" },
+        example: { m: "90", c: "10", o: "5" },
+      },
+      {
+        id: "oxygen-content", name: "Oxygen in the blood", eq: "C = 1.34hs + 0.003p", find: "C",
+        letters: { C: "the millilitres of oxygen in 100 millilitres of blood", h: "the haemoglobin", s: "the saturation as a decimal", p: "the oxygen pressure" },
+        example: { h: "15", s: "1", p: "100" },
+      },
+      {
+        id: "aa-gradient", name: "Alveolar-arterial oxygen gradient", eq: "G = 713f - c/0.8 - a", find: "G",
+        letters: { G: "the gradient", f: "the oxygen in the air breathed, as a decimal", c: "the carbon dioxide pressure", a: "the arterial oxygen pressure" },
+        example: { f: "1/5", c: "40", a: "90" },
+      },
+      {
+        id: "pf-ratio", name: "PaO2 to FiO2 ratio", eq: "R = a/f", find: "R",
+        letters: { R: "the ratio", a: "the arterial oxygen pressure", f: "the oxygen in the air breathed, as a decimal" },
+        example: { a: "90", f: "1/5" },
+      },
+      {
+        id: "alveolar-ventilation", name: "Alveolar ventilation", eq: "V = r(t - d)", find: "V",
+        letters: { V: "the air reaching the alveoli each minute", r: "the breaths each minute", t: "the tidal volume", d: "the dead space" },
+        example: { r: "12", t: "500", d: "150" },
+      },
+      {
+        id: "lung-compliance", name: "Lung compliance", eq: "C = V/(P - p)", find: "C",
+        letters: { C: "the compliance", V: "the tidal volume", P: "the plateau pressure", p: "the end pressure after breathing out" },
+        example: { V: "500", P: "25", p: "5" },
+      },
+      {
+        id: "airway-resistance", name: "Airway resistance", eq: "R = (P - p)/F", find: "R",
+        letters: { R: "the resistance", P: "the peak pressure", p: "the plateau pressure", F: "the flow" },
+        example: { P: "20", p: "5", F: "1/2" },
+      },
+      {
+        id: "fev-ratio", name: "FEV1 to FVC ratio", eq: "R = 100a/b", find: "R",
+        letters: { R: "the ratio, as a percentage", a: "the air breathed out in the first second", b: "the most air that can be breathed out" },
+        example: { a: "3", b: "4" },
+        note: "below 70 can mean airway obstruction",
+      },
+      {
+        id: "ideal-weight-male", name: "Ideal body weight, men", eq: "I = 50 + 2.3(h - 60)", find: "I",
+        letters: { I: "the ideal weight in kilograms", h: "the height in inches" },
+        example: { h: "70" },
+      },
+      {
+        id: "ideal-weight-female", name: "Ideal body weight, women", eq: "I = 45.5 + 2.3(h - 60)", find: "I",
+        letters: { I: "the ideal weight in kilograms", h: "the height in inches" },
+        example: { h: "65" },
+      },
+      {
+        id: "adjusted-weight", name: "Adjusted body weight", eq: "A = I + 2(w - I)/5", find: "A",
+        letters: { A: "the adjusted weight", I: "the ideal weight", w: "the actual weight" },
+        example: { I: "70", w: "120" },
+      },
+      {
+        id: "lean-mass-male", name: "Lean body mass, men (Boer)", eq: "L = 0.407w + 0.267h - 19.2", find: "L",
+        letters: { L: "the lean mass in kilograms", w: "the mass in kilograms", h: "the height in centimetres" },
+        example: { w: "70", h: "175" },
+      },
+      {
+        id: "body-fat-estimate", name: "Body fat from the body mass index (Deurenberg, men)", eq: "F = 1.2b + 0.23a - 16.2", find: "F",
+        letters: { F: "the body fat, as a percentage", b: "the body mass index", a: "the age in years" },
+        example: { b: "25", a: "30" },
+      },
+      {
+        id: "ponderal-index", name: "Ponderal index", eq: "P = m/h^3", find: "P",
+        letters: { P: "the ponderal index", m: "the mass", h: "the height" },
+        example: { m: "8", h: "2" },
+      },
+      {
+        id: "waist-height", name: "Waist-to-height ratio", eq: "R = w/h", find: "R",
+        letters: { R: "the ratio", w: "the waist", h: "the height" },
+        example: { w: "80", h: "160" },
+        note: "above 0.5 carries more health risk",
+      },
+    ],
+  },
+  {
+    group: "Medicine: kidneys, blood and metabolism",
+    items: [
+      {
+        id: "fractional-sodium", name: "Fractional excretion of sodium", eq: "F = 100ac/(bd)", find: "F",
+        letters: { F: "the fractional excretion, as a percentage", a: "the sodium in the urine", c: "the creatinine in the blood", b: "the sodium in the blood", d: "the creatinine in the urine" },
+        example: { a: "20", c: "1", b: "140", d: "50" },
+      },
+      {
+        id: "serum-osmolality", name: "Serum osmolality", eq: "O = 2N + G/18 + U/2.8", find: "O",
+        letters: { O: "the osmolality", N: "the sodium", G: "the glucose", U: "the urea" },
+        example: { N: "140", G: "90", U: "14" },
+      },
+      {
+        id: "osmolar-gap", name: "Osmolar gap", eq: "G = m - c", find: "G",
+        letters: { G: "the osmolar gap", m: "the osmolality measured", c: "the osmolality calculated" },
+        example: { m: "300", c: "290" },
+      },
+      {
+        id: "free-water-deficit", name: "Free water deficit", eq: "D = 3w(N/140 - 1)/5", find: "D",
+        letters: { D: "the litres of water lacking", w: "the mass in kilograms", N: "the sodium" },
+        example: { w: "70", N: "154" },
+      },
+      {
+        id: "corrected-sodium", name: "Sodium corrected for high glucose", eq: "C = N + 0.016(g - 100)", find: "C",
+        letters: { C: "the corrected sodium", N: "the sodium measured", g: "the glucose" },
+        example: { N: "130", g: "600" },
+      },
+      {
+        id: "delta-ratio", name: "Delta ratio", eq: "R = (a - 12)/(24 - b)", find: "R",
+        letters: { R: "the delta ratio", a: "the anion gap", b: "the bicarbonate" },
+        example: { a: "22", b: "14" },
+      },
+      {
+        id: "winters-formula", name: "Expected carbon dioxide in metabolic acidosis (Winter's formula)", eq: "p = 1.5b + 8", find: "p",
+        letters: { p: "the expected carbon dioxide pressure", b: "the bicarbonate" },
+        example: { b: "20" },
+      },
+      {
+        id: "bicarbonate-ph", name: "Blood pH from bicarbonate and carbon dioxide", eq: "P = 6.1 + log_10(b/(0.03c))", find: "P",
+        letters: { P: "the pH", b: "the bicarbonate", c: "the carbon dioxide pressure" },
+        example: { b: "12", c: "40" },
+      },
+      {
+        id: "insulin-correction", name: "Insulin correction factor", eq: "c = 1800/t", find: "c",
+        letters: { c: "the fall in glucose for one unit of insulin", t: "the total insulin units in a day" },
+        example: { t: "45" },
+      },
+      {
+        id: "carbohydrate-ratio", name: "Insulin to carbohydrate ratio", eq: "r = 500/t", find: "r",
+        letters: { r: "the grams of carbohydrate covered by one unit of insulin", t: "the total insulin units in a day" },
+        example: { t: "50" },
+      },
+      {
+        id: "insulin-dose", name: "Insulin to correct a high glucose", eq: "D = (g - t)/c", find: "D",
+        letters: { D: "the units of insulin", g: "the glucose now", t: "the target glucose", c: "the correction factor" },
+        example: { g: "240", t: "140", c: "50" },
+      },
+      {
+        id: "estimated-average-glucose", name: "Average glucose from HbA1c", eq: "g = 28.7a - 46.7", find: "g",
+        letters: { g: "the average glucose", a: "the HbA1c, as a percentage" },
+        example: { a: "7" },
+      },
+      {
+        id: "homa-ir", name: "Insulin resistance (HOMA-IR)", eq: "H = gi/22.5", find: "H",
+        letters: { H: "the HOMA-IR", g: "the fasting glucose in millimoles for each litre", i: "the fasting insulin" },
+        example: { g: "5", i: "9" },
+      },
+      {
+        id: "friedewald", name: "LDL cholesterol (Friedewald)", eq: "L = t - h - g/5", find: "L",
+        letters: { L: "the LDL cholesterol", t: "the total cholesterol", h: "the HDL cholesterol", g: "the triglycerides" },
+        example: { t: "200", h: "50", g: "100" },
+      },
+      {
+        id: "fluid-maintenance-child", name: "Daily fluid for a child of 10 to 20 kilograms", eq: "M = 40 + 2(w - 10)", find: "M",
+        letters: { M: "the millilitres each hour", w: "the mass in kilograms" },
+        example: { w: "15" },
+      },
+      {
+        id: "fluid-maintenance-large", name: "Hourly fluid for a person over 20 kilograms", eq: "M = 60 + (w - 20)", find: "M",
+        letters: { M: "the millilitres each hour", w: "the mass in kilograms" },
+        example: { w: "30" },
+      },
+      {
+        id: "parkland", name: "Fluid for the first day after a burn (Parkland)", eq: "V = 4wb", find: "V",
+        letters: { V: "the millilitres of fluid in 24 hours", w: "the mass in kilograms", b: "the percentage of the body burned" },
+        example: { w: "70", b: "20" },
+        note: "half in the first 8 hours",
+      },
+      {
+        id: "blood-volume", name: "Estimated blood volume", eq: "V = 70w", find: "V",
+        letters: { V: "the millilitres of blood", w: "the mass in kilograms" },
+        example: { w: "70" },
+      },
+      {
+        id: "allowable-blood-loss", name: "Allowable blood loss", eq: "A = V(h - f)/h", find: "A",
+        letters: { A: "the blood that can be lost", V: "the blood volume", h: "the starting haemoglobin", f: "the lowest haemoglobin accepted" },
+        example: { V: "4900", h: "14", f: "10" },
+      },
+    ],
+  },
+  {
+    group: "Medicine: drugs and dosing",
+    items: [
+      {
+        id: "volume-to-give", name: "Volume of a drug to give", eq: "V = D/c", find: "V",
+        letters: { V: "the volume", D: "the dose", c: "the concentration" },
+        example: { D: "500", c: "100" },
+      },
+      {
+        id: "percent-to-mg", name: "Strength of a solution in milligrams for each millilitre", eq: "c = 10p", find: "c",
+        letters: { c: "the milligrams in each millilitre", p: "the strength, as a percentage" },
+        example: { p: "2" },
+      },
+      {
+        id: "infusion-rate", name: "Pump rate for a dose by mass and time", eq: "r = 60dw/c", find: "r",
+        letters: { r: "the millilitres each hour", d: "the dose in micrograms for each kilogram each minute", w: "the mass in kilograms", c: "the micrograms in each millilitre" },
+        example: { d: "5", w: "70", c: "1000" },
+      },
+      {
+        id: "steady-state", name: "Time to steady state", eq: "t = 5h", find: "t",
+        letters: { t: "the time to reach steady state", h: "the half-life" },
+        example: { h: "6" },
+      },
+      {
+        id: "loading-dose", name: "Loading dose", eq: "L = Vc/F", find: "L",
+        letters: { L: "the loading dose", V: "the volume of distribution", c: "the concentration wanted", F: "the share of the dose that is absorbed" },
+        example: { V: "50", c: "10", F: "1/2" },
+      },
+      {
+        id: "maintenance-dose", name: "Maintenance dose rate", eq: "D = cl/F", find: "D",
+        letters: { D: "the dose each hour", c: "the concentration wanted", l: "the clearance", F: "the share of the dose that is absorbed" },
+        example: { c: "10", l: "5", F: "1/2" },
+      },
+      {
+        id: "drug-clearance", name: "Clearance from the half-life", eq: "C = ln(2)V/h", find: "C",
+        letters: { C: "the clearance", V: "the volume of distribution", h: "the half-life" },
+        example: { V: "50", h: "10" },
+      },
+      {
+        id: "bioavailability", name: "Bioavailability", eq: "F = aD/(bd)", find: "F",
+        letters: { F: "the bioavailability", a: "the area under the curve by mouth", D: "the dose given into a vein", b: "the area under the curve from a vein", d: "the dose by mouth" },
+        example: { a: "40", D: "100", b: "80", d: "100" },
+      },
+      {
+        id: "therapeutic-index", name: "Therapeutic index", eq: "T = a/b", find: "T",
+        letters: { T: "the therapeutic index", a: "the dose that is toxic", b: "the dose that works" },
+        example: { a: "100", b: "10" },
+      },
+      {
+        id: "child-dose-bsa", name: "Child's dose from the adult dose by surface area", eq: "D = Sd/1.73", find: "D",
+        letters: { D: "the child's dose", S: "the child's surface area", d: "the adult dose" },
+        example: { S: "0.865", d: "100" },
+      },
+      {
+        id: "dose-per-area", name: "Dose by body surface area", eq: "D = aS", find: "D",
+        letters: { D: "the dose", a: "the dose for each square metre", S: "the surface area" },
+        example: { a: "100", S: "3/2" },
+      },
+      {
+        id: "child-weight-estimate", name: "Weight of a child from their age", eq: "w = 2(a + 4)", find: "w",
+        letters: { w: "the mass in kilograms", a: "the age in years" },
+        example: { a: "3" },
+        note: "for ages 1 to 10",
+      },
+      {
+        id: "tube-size", name: "Breathing tube size for a child", eq: "s = a/4 + 4", find: "s",
+        letters: { s: "the tube size in millimetres", a: "the age in years" },
+        example: { a: "8" },
+      },
+      {
+        id: "due-date", name: "Expected date of delivery (Naegele)", eq: "d = l + 280", find: "d",
+        letters: { d: "the day number of the due date", l: "the day number of the last period" },
+        example: { l: "100" },
+        note: "280 days is 40 weeks",
+      },
+      {
+        id: "hill-equation", name: "Dose and response (Hill equation)", eq: "E = MC^n/(K^n + C^n)", find: "E",
+        letters: { E: "the effect", M: "the greatest effect", C: "the concentration", K: "the concentration that gives half the effect", n: "the Hill coefficient" },
+        example: { M: "100", C: "10", K: "10", n: "2" },
+      },
+    ],
+  },
+  {
+    group: "Medicine: tests, risk and imaging",
+    items: [
+      {
+        id: "incidence-rate", name: "Incidence rate", eq: "R = n/(pt)", find: "R",
+        letters: { R: "the new cases for each person each year", n: "the new cases", p: "the people at risk", t: "the years watched" },
+        example: { n: "30", p: "1000", t: "3" },
+      },
+      {
+        id: "attack-rate", name: "Attack rate", eq: "A = 100c/N", find: "A",
+        letters: { A: "the attack rate, as a percentage", c: "the people who fell ill", N: "the people exposed" },
+        example: { c: "30", N: "200" },
+      },
+      {
+        id: "likelihood-ratio-positive", name: "Positive likelihood ratio", eq: "L = s/(1 - c)", find: "L",
+        letters: { L: "the likelihood ratio", s: "the sensitivity", c: "the specificity" },
+        example: { s: "9/10", c: "9/10" },
+      },
+      {
+        id: "likelihood-ratio-negative", name: "Negative likelihood ratio", eq: "L = (1 - s)/c", find: "L",
+        letters: { L: "the likelihood ratio", s: "the sensitivity", c: "the specificity" },
+        example: { s: "9/10", c: "9/10" },
+      },
+      {
+        id: "ppv-prevalence", name: "Positive predictive value from the prevalence", eq: "V = sp/(sp + (1 - c)(1 - p))", find: "V",
+        letters: { V: "the positive predictive value", s: "the sensitivity", p: "the prevalence", c: "the specificity" },
+        example: { s: "9/10", p: "1/10", c: "9/10" },
+      },
+      {
+        id: "npv-prevalence", name: "Negative predictive value from the prevalence", eq: "N = c(1 - p)/(c(1 - p) + (1 - s)p)", find: "N",
+        letters: { N: "the negative predictive value", c: "the specificity", p: "the prevalence", s: "the sensitivity" },
+        example: { s: "9/10", c: "9/10", p: "1/10" },
+      },
+      {
+        id: "youden", name: "Youden's index", eq: "J = s + c - 1", find: "J",
+        letters: { J: "Youden's index", s: "the sensitivity", c: "the specificity" },
+        example: { s: "9/10", c: "9/10" },
+      },
+      {
+        id: "absolute-risk-reduction", name: "Absolute risk reduction", eq: "R = c - t", find: "R",
+        letters: { R: "the absolute risk reduction", c: "the risk in the control group", t: "the risk with the treatment" },
+        example: { c: "1/5", t: "1/10" },
+      },
+      {
+        id: "relative-risk-reduction", name: "Relative risk reduction", eq: "R = 100(c - t)/c", find: "R",
+        letters: { R: "the relative risk reduction, as a percentage", c: "the risk in the control group", t: "the risk with the treatment" },
+        example: { c: "1/5", t: "1/10" },
+      },
+      {
+        id: "standardised-mortality", name: "Standardised mortality ratio", eq: "S = 100a/b", find: "S",
+        letters: { S: "the standardised mortality ratio", a: "the deaths seen", b: "the deaths expected" },
+        example: { a: "120", b: "100" },
+      },
+      {
+        id: "years-of-life-lost", name: "Years of life lost", eq: "Y = nl", find: "Y",
+        letters: { Y: "the years of life lost", n: "the early deaths", l: "the years each person would have lived" },
+        example: { n: "20", l: "30" },
+      },
+      {
+        id: "daly", name: "Disability-adjusted life years", eq: "D = Y + L", find: "D",
+        letters: { D: "the DALYs", Y: "the years of life lost", L: "the years lived with disability" },
+        example: { Y: "600", L: "60" },
+      },
+      {
+        id: "years-with-disability", name: "Years lived with disability", eq: "L = idt", find: "L",
+        letters: { L: "the years lived with disability", i: "the new cases", d: "the disability weight", t: "the average time with the condition" },
+        example: { i: "100", d: "1/5", t: "3" },
+      },
+      {
+        id: "qaly", name: "Quality-adjusted life years", eq: "Q = yu", find: "Q",
+        letters: { Q: "the QALYs", y: "the years of life", u: "the quality of life, from 0 to 1" },
+        example: { y: "10", u: "4/5" },
+      },
+      {
+        id: "reproduction-from-growth", name: "Reproduction number from the growth rate", eq: "R = 1 + rT", find: "R",
+        letters: { R: "the reproduction number", r: "the growth rate each day", T: "the serial interval in days" },
+        example: { r: "1/10", T: "5" },
+      },
+      {
+        id: "radiation-effective-dose", name: "Effective radiation dose", eq: "E = Dw", find: "E",
+        letters: { E: "the effective dose in sieverts", D: "the dose absorbed in grays", w: "the weighting factor" },
+        example: { D: "10", w: "1/20" },
+      },
+      {
+        id: "half-value-layer", name: "Radiation through a shield", eq: "I = J(1/2)^(x/h)", find: "I",
+        letters: { I: "the radiation after the shield", J: "the radiation before", x: "the thickness", h: "the thickness that halves it" },
+        example: { J: "80", x: "6", h: "2" },
+      },
+      {
+        id: "suv", name: "Standardised uptake value", eq: "S = cw/d", find: "S",
+        letters: { S: "the standardised uptake value", c: "the concentration in the tissue", w: "the mass of the patient", d: "the dose injected" },
+        example: { c: "5", w: "70", d: "350" },
+      },
+      {
+        id: "hounsfield", name: "Hounsfield units in a scan", eq: "H = 1000(m - w)/w", find: "H",
+        letters: { H: "the Hounsfield units", m: "the attenuation of the tissue", w: "the attenuation of water" },
+        example: { m: "3/10", w: "1/5" },
+      },
+      {
+        id: "ultrasound-doppler", name: "Doppler shift in ultrasound", eq: "f = 2gv·cos(t°)/c", find: "f",
+        letters: { f: "the shift in frequency", g: "the frequency sent", v: "the speed of the blood", t: "the angle to the blood flow in degrees", c: "the speed of sound in tissue" },
+        example: { g: "2", v: "1", t: "60", c: "1" },
+      },
+    ],
+  },
   /* Angles are written in degrees with the ° on them, so sin(30°) has an exact
      value the special triangles give. */
   {
@@ -8026,7 +8573,7 @@ export const GROUPS = [
 /* The groups are written in the order they were made; the shelf reads better with
    a family kept together — every "Geometry: …" group right after Shapes, every
    "Physics: …" group right after Motion and forces. */
-for (const [family, anchor] of [["Geometry:", "Shapes"], ["Physics:", "Motion and forces"], ["Engineering:", "Engineering: forces, machines and structures"], ["Astronomy:", "Earth science: the solar system and stars"], ["Botany:", "Biology: the body"], ["Zoology:", "Botany: leaves, growth and crops"], ["Music theory:", "Music: pitch, rhythm and sound"]]) {
+for (const [family, anchor] of [["Geometry:", "Shapes"], ["Physics:", "Motion and forces"], ["Engineering:", "Engineering: forces, machines and structures"], ["Astronomy:", "Earth science: the solar system and stars"], ["Botany:", "Biology: the body"], ["Zoology:", "Botany: leaves, growth and crops"], ["Music theory:", "Music: pitch, rhythm and sound"], ["Law:", "Law: damages, shares and evidence"], ["Medicine:", "Health: body, dosage and public health"]]) {
   const kin = GROUPS.filter((g) => g.group.startsWith(family) && g.group !== anchor);
   for (const g of kin) GROUPS.splice(GROUPS.indexOf(g), 1);
   GROUPS.splice(GROUPS.findIndex((g) => g.group === anchor) + 1, 0, ...kin);
