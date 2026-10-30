@@ -20,6 +20,8 @@ import { isSolved, solvedLetterValue } from "./solve.js";
 import { substituteExpr, substituteAll, asNumbers, hasSubstitutions, offerTo, substitute, EQUALS, atomOffers, multiOffers, atomTerm, isEqualsKey } from "./ops.js";
 import * as A from "./ast.js";
 import * as R from "./rational.js";
+import { parse } from "./parse.js";
+import { readValue } from "./formulas.js";
 
 const SIZE = 34;
 const ROW_GAP = 10;
@@ -47,7 +49,7 @@ const fmt = (v) => R.toText(v).replace(/-/g, "−");
 const said = (given) =>
   Object.entries(given).map(([k, v]) => `${k} = ${fmt(v)}`);
 
-export function createCard(eq, { x, y, given = null, title = "", find = "", name = "", onPick, onChange, onGesture, onRemove, onEdit, onRename, onGrow, onLinkStart, onCopyLines, uid = null }) {
+export function createCard(eq, { x, y, given = null, title = "", find = "", name = "", onGiven, onPick, onChange, onGesture, onRemove, onEdit, onRename, onGrow, onLinkStart, onCopyLines, uid = null }) {
   const id = `card${++seq}`;
   const rows = [];        // { row, offset, note, from }
   // The GLYPH that is picked — its atom key (nodeId#slot), so the 3 and the x
@@ -68,8 +70,8 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
   // The letters this card was handed values for, and the number each stands
   // for. Held as exact rationals; the verifier wants them as plain numbers, and
   // converting once here keeps that conversion out of every move.
-  const values = given && Object.keys(given).length ? given : null;
-  const pinned = values ? asNumbers(values) : null;
+  let values = given && Object.keys(given).length ? given : null;
+  let pinned = values ? asNumbers(values) : null;
 
   const grip = document.createElement("div");
   grip.className = "am-card__grip";
@@ -167,10 +169,65 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", name
      working on paper. It stays there after every number has gone in, because
      what the letters stood for is most of what the answer means. */
   let ask = null;
+  /* The given values are chips: tap one to change the number. The working starts again from the
+     formula with the new number, since every line after it was worked out from the old one. */
+  function paintAsk() {
+    ask.textContent = "";
+    const tag = document.createElement("span");
+    tag.textContent = "given";
+    ask.append(tag, " ");
+    Object.entries(values).forEach(([letter, v], i) => {
+      if (i) ask.append(", ");
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "am-card__value";
+      chip.textContent = `${letter} = ${fmt(v)}`;
+      chip.title = `Change the value of ${letter}`;
+      chip.addEventListener("click", (e) => { e.stopPropagation(); editValue(letter, chip, v); });
+      ask.append(chip);
+    });
+    if (find) {
+      const f = document.createElement("span");
+      f.textContent = "find";
+      ask.append(" · ", f, ` ${find}`);
+    }
+  }
+  function editValue(letter, chip, was) {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.inputMode = "decimal";
+    input.className = "am-card__value-input";
+    input.value = R.toText(was);
+    input.setAttribute("aria-label", `The value of ${letter}`);
+    chip.replaceWith(input);
+    input.focus();
+    input.select();
+    let done = false;
+    const finish = (keep) => {
+      if (done) return;
+      done = true;
+      const next = keep ? readValue(input.value) : null;
+      if (keep && !next) { onGiven?.(api, letter, null, "That is not a number I can read: use digits, a point, or a fraction such as 3/4."); }
+      if (next && !R.same(next, was)) {
+        values = { ...values, [letter]: next };
+        pinned = asNumbers(values);
+        const first = rows[0];
+        api.loadRows([{ eq: plain(first.row.eq), note: "", pins: first.pins || [], size: first.size || null, tint: first.tint || null, folded: false }], parse);
+        onChange?.(api);
+        onGiven?.(api, letter, next, null);
+      }
+      paintAsk();
+    };
+    input.addEventListener("keydown", (k) => {
+      if (k.key === "Enter") { k.preventDefault(); finish(true); }
+      else if (k.key === "Escape") { k.preventDefault(); finish(false); }
+    });
+    input.addEventListener("blur", () => finish(true));
+  }
   if (values) {
     ask = document.createElement("p");
     ask.className = "am-card__given";
-    ask.innerHTML = `<span>given</span> ${said(values).join(", ")}${find ? ` &middot; <span>find</span> ${find}` : ""}`;
+    paintAsk();
   }
 
   const selbar = selectionBar((what, arg) => selectionAct(what, arg));

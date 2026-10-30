@@ -18,6 +18,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import { parse, setRefs } from "./parse.js";
+import * as R from "./rational.js";
 import { valueAt, preservesSolutions } from "./verify.js";
 import { copy as copyNode } from "./calculus.js";
 import { plain, fontReady, timesSign, setTimesSign } from "./layout.js";
@@ -660,6 +661,10 @@ function addCard(eq, { given = null, title = "", find = "", name = "", uid = nul
 
   const card = createCard(eq, {
     x: spot.x, y: spot.y, given, title, find, name: name || nextName(), uid,
+    onGiven: (self, letter, value, why) => {
+      if (why) return say(why, "no");
+      say(`${letter} is now ${R.toText(value)} — the working starts again from the formula.`, "ok");
+    },
     onPick: (picked, self) => {
       // Only one card can hold the menu at a time.
       for (const other of cards) if (other !== self) other.clearPick();

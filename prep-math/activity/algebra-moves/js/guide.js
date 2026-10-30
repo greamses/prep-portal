@@ -44,6 +44,7 @@ const SECTIONS = [
       ["Double-tap a letter", "Put a number in for that letter, everywhere it is written."],
       ["Double-tap a number", "Write it another way: 9 as 3², 0.5 as 1/2. The same number is checked before it is kept."],
       ["Double-tap the =", "Write the whole next line your own way. It stays if it says the same thing."],
+      ["Tap a given value (r = 7) at the top of a card", "Type a new number and press Enter. The working starts again from the formula with the new value; Esc leaves it as it was."],
     ],
   },
   {

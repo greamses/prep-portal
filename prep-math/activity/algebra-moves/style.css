@@ -1591,3 +1591,16 @@ html.am-noselect, html.am-noselect * { -webkit-user-select: none !important; use
 .am-guide__list dt { font-weight: 700; font-size: 0.78rem; line-height: 1.35; }
 .am-guide__list dd { margin: 0; font-size: 0.78rem; line-height: 1.45; }
 @media (max-width: 520px) { .am-guide__list { grid-template-columns: 1fr; } .am-guide__list dd { margin-bottom: 0.4rem; } }
+
+/* A given value is a chip you can tap to change. */
+.am-card__given .am-card__value {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dashed currentColor;
+  padding: 0 0.1rem;
+  cursor: text;
+}
+.am-card__given .am-card__value:hover, .am-card__given .am-card__value:focus-visible { background: rgba(20, 19, 15, 0.08); outline: none; }
+.am-card__value-input { font: inherit; width: 6ch; padding: 0 0.2rem; border: 1px solid var(--accent-secondary); background: var(--surface-primary, #fff); color: inherit; }
