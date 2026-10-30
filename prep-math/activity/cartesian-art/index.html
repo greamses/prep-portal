@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="light" data-plain-buttons>
   <head>
     <meta charset="UTF-8" />
     <!-- seo:head -->
@@ -94,6 +94,7 @@
           Plot points on the grid to trace a hidden picture, then paint it in.
           Steer the mascot with the arrow keys or the on-screen pad, press
           <kbd>Enter</kbd> to drop a point, and watch the outline come to life.
+          Or open <strong>Graph</strong> and type an equation to see it drawn.
         </p>
 
         <div class="ca-features">
@@ -189,6 +190,9 @@
           <span class="ca-toolrail-grip" id="ca-toolrail-grip" aria-hidden="true" title="Drag to move">
             <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
           </span>
+          <button class="ca-toolrail-btn" type="button" data-panel="graph" title="Graph equations" aria-label="Graph equations">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="2.6" width="2.4" height="18.8" rx="1.2" fill="var(--text-tertiary)"/><rect x="3" y="19" width="18.4" height="2.4" rx="1.2" fill="var(--text-tertiary)"/><path d="M7.4 4.6c2.4 9.4 4.6 11 6.6 11s3.6-3.6 6.2-9" fill="none" stroke="var(--accent-danger)" stroke-width="2.8" stroke-linecap="round"/><circle cx="14" cy="15.6" r="2.2" fill="var(--accent-secondary)"/></svg>
+          </button>
           <button class="ca-toolrail-btn" type="button" data-panel="readout" title="Position" aria-label="Position">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="6.4" fill="var(--accent-secondary)"/><circle cx="12" cy="12" r="3.2" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="var(--accent-danger)"/><rect x="10.8" y="1.6" width="2.4" height="4.4" rx="1.2" fill="var(--accent-danger)"/><rect x="10.8" y="18" width="2.4" height="4.4" rx="1.2" fill="var(--accent-danger)"/><rect x="1.6" y="10.8" width="4.4" height="2.4" rx="1.2" fill="var(--accent-danger)"/><rect x="18" y="10.8" width="4.4" height="2.4" rx="1.2" fill="var(--accent-danger)"/></svg>
           </button>
@@ -232,6 +236,34 @@
         <button class="ca-steer-toggle" id="ca-steer-toggle" type="button" title="Steering controls" aria-label="Steering controls" aria-pressed="false">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9.4" fill="var(--accent-secondary)"/><rect x="10.8" y="5.6" width="2.4" height="12.8" rx="1.2" fill="#fff"/><rect x="5.6" y="10.8" width="12.8" height="2.4" rx="1.2" fill="#fff"/><circle cx="12" cy="12" r="2.6" fill="var(--accent-danger)"/></svg>
         </button>
+
+        <!-- ═══ DOCK: graph equations (Desmos-style list) ═══ -->
+        <div class="ca-dock ca-dock--graph" id="dock-graph" data-dock="graph">
+          <div class="ca-dock-head">
+            <span class="ca-dock-grip" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></span>
+            <span class="ca-dock-title">Graph</span>
+            <button class="ca-dock-toggle" type="button" aria-label="Collapse"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(90 12 12)"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></g></svg></button>
+          </div>
+          <div class="ca-dock-body">
+            <div class="ca-eq-foot">
+              <button type="button" id="eq-add" class="ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent" title="New line (Enter)">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="10.5" y="4" width="3" height="16" rx="1.5" fill="var(--accent-success)"/><rect x="4" y="10.5" width="16" height="3" rx="1.5" fill="var(--accent-success)"/></svg>
+                Line
+              </button>
+              <button type="button" id="eq-kp" class="ca-soft-btn ca-soft-btn--sm" title="Keypad" aria-pressed="false">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="2.6" y="5" width="18.8" height="14" rx="2" fill="var(--accent-secondary)"/><rect x="5" y="7.6" width="3" height="2.6" fill="#fff"/><rect x="10.5" y="7.6" width="3" height="2.6" fill="#fff"/><rect x="16" y="7.6" width="3" height="2.6" fill="#fff"/><rect x="5" y="11.6" width="3" height="2.6" fill="#fff"/><rect x="10.5" y="11.6" width="3" height="2.6" fill="#fff"/><rect x="16" y="11.6" width="3" height="2.6" fill="#fff"/><rect x="7.6" y="15.4" width="8.8" height="2" fill="#fff"/></svg>
+                Keypad
+              </button>
+              <button type="button" id="eq-deg" class="ca-soft-btn ca-soft-btn--sm ca-eq-deg">RAD</button>
+              <button type="button" id="eq-clear" class="ca-soft-btn ca-soft-btn--sm" title="Clear every line">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="8.6" y="2.4" width="6.8" height="2.6" rx="1.3" fill="var(--accent-danger)"/><rect x="3" y="5" width="18" height="3.2" rx="1.6" fill="var(--accent-danger)"/><path d="M5.4 9.4h13.2l-1.1 10.4a2 2 0 0 1-2 1.8H8.5a2 2 0 0 1-2-1.8z" fill="var(--accent-secondary)"/><rect x="9.1" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/><rect x="13" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/></svg>
+                Clear
+              </button>
+            </div>
+            <div class="ca-eq-list" id="eq-list"></div>
+            <div class="ca-eq-keypad" id="eq-keypad" hidden></div>
+          </div>
+        </div>
 
         <!-- ═══ DOCK: position readout ═══ -->
         <div class="ca-dock ca-dock--readout" id="dock-readout" data-dock="readout">

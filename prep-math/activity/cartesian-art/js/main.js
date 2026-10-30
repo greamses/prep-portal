@@ -29,6 +29,7 @@ import { initAiGenerate } from "./ai-generate.js";
 import { initGallery } from "./gallery.js";
 import { initTaskPanel } from "./task-panel.js";
 import { initRangeFills } from "./range-fill.js";
+import { initGraphPanel } from "./graph-panel.js";
 import { fmtCoord } from "./scale.js";
 
 const $ = (sel) => document.querySelector(sel);
@@ -55,6 +56,7 @@ function init() {
   initExport();
   initAiGenerate();
   initGallery();
+  initGraphPanel(); // before loadFromUrl, so a shared link's equations land
   loadFromUrl(); // a shared ?#art= link rehydrates the drawing before baseline
   initHistory(); // last: baseline snapshot needs the brush bridge registered
 

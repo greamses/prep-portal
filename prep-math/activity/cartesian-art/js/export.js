@@ -13,6 +13,7 @@
 import { state, subscribe, loadShape, allPoints } from "./state.js";
 import { layout } from "./grid.js";
 import { getPaintCanvas } from "./paint.js";
+import { getGraphRows, setGraphRows } from "./graph-panel.js";
 
 const $ = (s) => document.querySelector(s);
 
@@ -55,7 +56,7 @@ function snapshotSvg({ grid = true, points = true, mascot = false } = {}) {
   if (!grid) drop.push(".ca-layer--grid", ".ca-layer--axes");
   if (!points) drop.push(".ca-layer--points", ".ca-layer--shape");
   if (!mascot) drop.push(".ca-layer--mascot");
-  drop.push(".ca-layer--ghost", ".ca-layer--tfghost", ".ca-layer--anim"); // helpers, never in the art
+  drop.push(".ca-layer--ghost", ".ca-layer--tfghost", ".ca-layer--anim", ".ca-graph-hover", ".ca-graph-pois"); // helpers, never in the art
   drop.forEach((sel) => clone.querySelectorAll(sel).forEach((n) => n.remove()));
 
   return clone;
@@ -165,6 +166,8 @@ export function serializeArt() {
       })),
     g: [g.xMin, g.xMax, g.yMin, g.yMax],
   };
+  const eq = getGraphRows();
+  if (eq.length) payload.e = eq;
   return b64encode(JSON.stringify(payload));
 }
 
@@ -180,6 +183,7 @@ export function loadFromUrl() {
   if (!m) return false;
   try {
     const data = JSON.parse(b64decode(m[1]));
+    if (Array.isArray(data.e)) setGraphRows(data.e);
     const grid = data.g
       ? { xMin: data.g[0], xMax: data.g[1], yMin: data.g[2], yMax: data.g[3] }
       : null;

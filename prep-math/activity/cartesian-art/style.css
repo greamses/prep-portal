@@ -1939,3 +1939,200 @@ body {
   .ca-toolrail-btn { width: 38px; height: 38px; }
   .ca-studio .ca-dock { left: 62px; }
 }
+
+/* ── GRAPH: typed equations, Desmos-style ────────────────────────────────── */
+.ca-studio .ca-dock--graph {
+  z-index: 27; /* over the steering pad, which shares the left edge */
+  width: 340px;
+  max-width: min(360px, calc(100% - 90px));
+}
+.ca-dock--graph .ca-dock-body { gap: 8px; }
+.ca-eq-list {
+  display: flex;
+  flex-direction: column;
+  border: var(--border-subtle);
+  background: var(--surface-primary);
+  user-select: text;
+  -webkit-user-select: text;
+}
+.ca-eq-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 28px;
+  align-items: start;
+  border-bottom: var(--border-subtle);
+  border-left: 4px solid transparent;
+}
+.ca-eq-row:last-child { border-bottom: none; }
+.ca-eq-row.is-selected { border-left-color: var(--accent-secondary); background: color-mix(in srgb, var(--accent-secondary) 7%, transparent); }
+.ca-eq-row.is-keyed { background: color-mix(in srgb, var(--accent-primary) 16%, transparent); }
+.ca-eq-dot {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.ca-eq-dot span {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--c);
+  border: 3px solid var(--c);
+  transition: transform 0.12s ease;
+}
+.ca-eq-dot:hover span { transform: scale(1.12); }
+.ca-eq-dot.is-hidden span { background: transparent; }
+.ca-eq-main { min-width: 0; padding: 4px 0; }
+.ca-eq-field { position: relative; min-height: 32px; }
+.ca-eq-input {
+  width: 100%;
+  height: 32px;
+  border: none;
+  background: transparent;
+  padding: 0 6px;
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+.ca-eq-input:focus { outline: none; }
+.ca-eq-input::placeholder { color: var(--text-tertiary); font-size: 0.78rem; }
+.ca-eq-math {
+  display: none;
+  min-height: 32px;
+  padding: 4px 6px;
+  align-items: center;
+  overflow-x: auto;
+  justify-content: flex-start;
+  cursor: text;
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+.ca-eq-math .pp-note__eq { display: inline-flex; }
+.ca-eq-row.is-typeset .ca-eq-input { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.ca-eq-row.is-typeset .ca-eq-math { display: flex; }
+.ca-eq-sub { padding: 0 6px; font-family: var(--font-mono); font-size: 0.72rem; }
+.ca-eq-sub:empty { display: none; }
+.ca-eq-err { color: var(--accent-danger); }
+.ca-eq-row.is-error .ca-eq-dot span { opacity: 0.35; }
+.ca-eq-val { color: var(--text-secondary); font-weight: 600; }
+.ca-eq-chip {
+  margin: 2px 4px 4px 0;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  border: 1px solid var(--accent-secondary);
+  background: transparent;
+  color: var(--accent-secondary);
+  cursor: pointer;
+}
+.ca-eq-chip:hover { background: color-mix(in srgb, var(--accent-secondary) 12%, transparent); }
+.ca-eq-del {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.35;
+}
+.ca-eq-row:hover .ca-eq-del, .ca-eq-row.is-selected .ca-eq-del { opacity: 1; }
+.ca-eq-del svg { width: 14px; height: 14px; }
+
+.ca-eq-slider { display: flex; align-items: center; gap: 6px; padding: 2px 0 6px; }
+.ca-eq-slider .ca-eq-range-input { flex: 1 1 auto; min-width: 60px; }
+.ca-eq-mini {
+  width: 42px;
+  padding: 2px 4px;
+  border: var(--border-subtle);
+  background: var(--surface-primary);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ink);
+  text-align: center;
+}
+.ca-eq-mini:focus { outline: none; border-color: var(--accent-secondary); }
+.ca-eq-play {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-secondary);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+.ca-eq-play svg { width: 13px; height: 13px; }
+.ca-eq-range { display: flex; align-items: center; gap: 6px; padding: 2px 0 6px; color: var(--text-secondary); }
+
+.ca-eq-style {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px 8px 38px;
+  background: var(--surface-secondary);
+}
+.ca-eq-style[hidden] { display: none; }
+.ca-eq-style-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.ca-eq-col {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--c);
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+.ca-eq-col.is-active { border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface-primary) inset; }
+.ca-eq-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  background: var(--surface-primary);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ca-eq-opt svg { width: 30px; height: 10px; }
+.ca-eq-opt.ca-eq-eye svg { width: 16px; height: 16px; }
+.ca-eq-opt.is-active { border-color: var(--ink); }
+.ca-eq-mkshape { align-self: flex-start; }
+
+.ca-eq-foot { display: flex; flex-wrap: wrap; gap: 6px; }
+.ca-eq-foot .ca-soft-btn { flex: 1 1 auto; padding-inline: 0.5rem; }
+.ca-eq-foot .ca-soft-btn.is-active { background: var(--accent-primary); color: var(--text-on-accent); }
+.ca-eq-deg { font-family: var(--font-mono); letter-spacing: 0.06em; }
+
+/* the Algebra Moves keypad, borrowed: its letter-value boxes are its own business */
+.ca-eq-keypad { border-top: var(--border-subtle); padding-top: 8px; }
+.ca-eq-keypad .am-give,
+.ca-eq-keypad .am-keysay { display: none !important; } /* the line itself says what is wrong */
+.ca-eq-keypad .am-preview { min-height: 56px; }
+
+/* curves on the plane */
+.ca-graph-curve { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.ca-graph-region { image-rendering: auto; }
+.ca-graph-pt { stroke: var(--surface-primary); stroke-width: 2; }
+.ca-graph-ptlabel, .ca-graph-tip-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+.ca-graph-poi { fill: var(--surface-primary); stroke: #8a8a8a; stroke-width: 2.4; }
+.ca-graph-trace { stroke: var(--surface-primary); stroke-width: 2; }
+.ca-graph-tip {
+  fill: color-mix(in srgb, var(--surface-primary) 94%, transparent);
+  stroke: color-mix(in srgb, var(--ink) 20%, transparent);
+  stroke-width: 1;
+}
+.ca-layer--graph { pointer-events: none; }
