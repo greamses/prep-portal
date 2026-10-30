@@ -165,7 +165,13 @@ export function paperHtml(head, questions) {
     return `<section class="xp-sec xp-sec--${t}${gi && head.breakAt && head.breakAt[t] ? " xp-sec--page" : ""}">${banner(t, list, gi)}${t === "mcq" ? `<div class="xp-cols">${html}</div>` : html}</section>`;
   }).join("");
   const empty = groups.length ? "" : `<p class="xp-empty">No questions yet. Write some, or ask the model for a set.</p>`;
-  return `<article class="xp" style="--c:${col.main};--cs:${col.soft}">
+  /* the school's logo, very faint, behind every page: a page-sized tile on screen,
+     a fixed image (repeated on every printed page) in print */
+  const wm = head.logo
+    ? "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297"><image href="${head.logo}" x="65" y="103" width="80" height="80" preserveAspectRatio="xMidYMid meet" opacity="0.07"/></svg>`)
+    : "";
+  return `<article class="xp${wm ? " xp--wm" : ""}" style="--c:${col.main};--cs:${col.soft};--ci:${col.ink}${wm ? `;--wm:url(&quot;${wm}&quot;)` : ""}">
+    ${head.logo ? `<img class="xp-wm" src="${head.logo}" alt="" />` : ""}
     ${header(head, totalMarks(questions))}
     ${body}${empty}
     ${head.key && numbered.length ? key(numbered, head) : ""}

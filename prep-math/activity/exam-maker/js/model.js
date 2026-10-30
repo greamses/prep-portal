@@ -19,13 +19,16 @@ export const TYPES = {
 };
 export const ORDER = ["mcq", "fill", "sub", "theory"];
 
+/* Muted on purpose: `main` is the glass and the fills, `soft` the tint of the
+   section receipts, `ink` the deeper tone every small text and badge is set in.
+   (The ids are the first palette's and stay, so a saved choice still resolves.) */
 export const COLOURS = [
-  { id: "indigo", name: "Indigo", main: "#3b4cca", soft: "#e8ebfb" },
-  { id: "teal",   name: "Teal",   main: "#0e8a7d", soft: "#dff4f1" },
-  { id: "crimson", name: "Crimson", main: "#c0392b", soft: "#fbe7e4" },
-  { id: "amber",  name: "Amber",  main: "#c9780a", soft: "#fdeed5" },
-  { id: "forest", name: "Forest", main: "#2f7d32", soft: "#e3f2e4" },
-  { id: "plum",   name: "Plum",   main: "#8e3b9c", soft: "#f3e5f6" },
+  { id: "indigo",  name: "Slate blue", main: "#7c8bbd", soft: "#eceff7", ink: "#3d4a7a" },
+  { id: "teal",    name: "Sage",       main: "#7fb0a3", soft: "#e8f1ee", ink: "#35695d" },
+  { id: "crimson", name: "Rose",       main: "#c98f8a", soft: "#f7ebe9", ink: "#86413c" },
+  { id: "amber",   name: "Sand",       main: "#cfaa73", soft: "#f7efe1", ink: "#7a5a22" },
+  { id: "forest",  name: "Moss",       main: "#96b07f", soft: "#edf2e6", ink: "#476233" },
+  { id: "plum",    name: "Mauve",      main: "#b093b8", soft: "#f2eaf4", ink: "#6b4a74" },
 ];
 
 let n = 0;
