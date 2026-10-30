@@ -788,6 +788,79 @@ export function signChartOffers(eq) {
   }];
 }
 
+/* ── Exponential and logarithmic inequalities ───────────────────────────────
+   2^x > 8 is x > 3: a power with a base over 1 only gets bigger, so taking the log keeps the sign. With a base
+   between 0 and 1 (1/2)^x < 1/4 it gets smaller, so the sign turns round. log_2 x < 3 is 0 < x < 8: the log only
+   exists for positive numbers, so the answer is a stretch, not just x < 8. */
+export function expLogOffers(eq) {
+  if (!A.isInequality(eq) || A.isChain(eq)) return [];
+  const letterFree = (n) => !A.varsIn(n).length;
+  // base of a power or a log: a positive number other than 1, or e — { value (rational or null for e), more: is it over 1 }
+  const baseOf = (n) => {
+    if (n.kind === "const" && n.name === "e") return { e: true, more: true };
+    const v = A.exactValue(n);
+    if (!v || R.isNegative(v) || R.isZero(v) || R.isOne(v) || !letterFree(n)) return null;
+    return { v, more: R.toNumber(v) > 1 };
+  };
+  const out = [];
+  const say1 = (label, why) => out.push({ key: "explog", label, hint: why, mark: "log both sides", run: () => ({ error: label }) });
+  const unb = (n) => (n.paren ? { ...n, paren: false } : n);
+  const sides = [[eq.l, eq.r, eq.rel], [eq.r, eq.l, A.flipRel(eq.rel)]];      // always E rel c, with the power or log on the left
+  for (const [E, other, rel] of sides) {
+    const c = A.exactValue(other);
+    // ── a power: b^f
+    if (E.kind === "pow" && A.varsIn(E.e).length && letterFree(E.b)) {
+      const base = baseOf(E.b);
+      if (!base) continue;
+      const both = other.kind === "pow" && A.varsIn(other.e).length && letterFree(other.b) && baseOf(other.b)
+        && (base.e ? baseOf(other.b).e : baseOf(other.b).v && R.same(baseOf(other.b).v, base.v));
+      const turned = base.more ? rel : A.flipRel(rel);
+      if (both) {
+        const next = A.eqn(copy(unb(E.e)), copy(unb(other.e)), undefined, turned);
+        out.push({ key: "explog", label: base.more ? "Same base on both sides: compare the powers" : "Same base, below 1: compare the powers, and the sign turns round",
+          hint: "the same base, so the powers compare", mark: plain(next), run: () => ({ eq: next, from: new Map(), mark: plain(next), note: "Compare the powers" }) });
+        return out;
+      }
+      if (!c) continue;
+      if (!R.isNegative(c) && !R.isZero(c)) {
+        // the power that gives c: a whole-number exponent when there is one, else the log
+        let target = null;
+        if (!base.e) for (let n = -12; n <= 12 && !target; n++) if (R.same(R.ipow(base.v, n), c)) target = A.numberNode(R.rat(BigInt(n)));
+        if (!target && base.e) { if (R.isOne(c)) target = A.numberNode(R.ZERO); }
+        if (!target) target = base.e ? A.fn("ln", A.numberNode(c)) : A.logb(A.numberNode(base.v), A.numberNode(c));
+        const next = A.eqn(copy(unb(E.e)), target, undefined, turned);
+        out.push({ key: "explog", label: base.more ? "Take the log of both sides" : "Take the log of both sides: the base is below 1, so the sign turns round",
+          hint: "a power is the log undone", mark: plain(next), run: () => ({ eq: next, from: new Map(), mark: plain(next), note: "Take the log of both sides" }) });
+        return out;
+      }
+      // a power is never zero or negative
+      const bigger = rel === ">" || rel === "≥";
+      say1(bigger ? "A power is always positive, so every number works" : "A power is always positive, so no number works", "nothing to solve");
+      return out;
+    }
+    // ── a log: log_b f, ln f, log f
+    let lbase = null, f = null;
+    if (E.kind === "logb") { lbase = baseOf(E.b); f = E.k; }
+    else if (E.kind === "fn" && E.name === "ln") { lbase = { e: true, more: true }; f = E.k; }
+    else if (E.kind === "fn" && E.name === "log") { lbase = { v: R.rat(10n), more: true }; f = E.k; }
+    if (!lbase || !f || !A.varsIn(f).length || !c) continue;
+    const bound = (() => {
+      if (lbase.e) return R.isZero(c) ? A.numberNode(R.ONE) : R.isOne(c) ? A.cnst("e") : A.pow(A.cnst("e"), A.numberNode(c));
+      const val = R.isInt(c) && Math.abs(Number(c.n)) <= 12 ? R.ipow(lbase.v, Number(c.n)) : null;
+      return val ? A.numberNode(val) : A.pow(A.numberNode(lbase.v), A.numberNode(c));
+    })();
+    const lessType = rel === "<" || rel === "≤";
+    const inner = copy(unb(f));
+    let next;
+    if (lbase.more) next = lessType ? A.chain(A.numberNode(R.ZERO), inner, bound, "<", rel) : A.eqn(inner, bound, undefined, rel);
+    else next = lessType ? A.eqn(inner, bound, undefined, A.flipRel(rel)) : A.chain(A.numberNode(R.ZERO), inner, bound, "<", A.flipRel(rel));
+    out.push({ key: "explog", label: lbase.more ? "Undo the log: the number it is of is between 0 and the power" : "Undo the log (base below 1): the sign turns round",
+      hint: "a log only exists for positive numbers", mark: plain(next), run: () => ({ eq: next, from: new Map(), mark: plain(next), note: "Undo the log, keeping the number it is of positive" }) });
+    return out;
+  }
+  return out;
+}
+
 /* ── Absolute value ─────────────────────────────────────────────────────────
    |E| = 5 is two equations, E = 5 and E = −5 — one card each. |E| < 5 is the one line −5 < E < 5.
    |E| > 5 is two lines again: E < −5 or E > 5. The bars must be a whole side with a number on the
@@ -3200,6 +3273,7 @@ function atomOffersRaw(eq, key, { given = null } = {}) {
   if (slot === "eq" || slot === "eq2") {
     if (A.isEquation(eq)) {
       for (const o of signChartOffers(eq)) add(o);
+      for (const o of expLogOffers(eq)) add(o);
       add({ key: "swap", label: "Turn it round", hint: "same equation, read the other way", mark: "⇄", run: () => swapSides(eq) });
       add({ key: "flip", label: "Change every sign", hint: "times both sides by −1", mark: "×(−1)", run: () => flipSigns(eq) });
       // AX = B: multiply both sides, on the left, by the inverse of A.
