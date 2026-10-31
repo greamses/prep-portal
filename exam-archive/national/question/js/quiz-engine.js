@@ -946,6 +946,10 @@ const Quiz = (() => {
     if (allowed) {
       a.href = `/prep-math/activity/exam-maker/?${q}`;
       a.target = "_blank"; a.rel = "noopener";
+      /* exam mode is for tablets and laptops: a phone is told here, not sent to a tab that only says no */
+      let gate = null;
+      import("/utils/components/exam-gate.js").then((m) => { gate = m; }).catch(() => {});
+      a.addEventListener("click", (e) => { if (gate && gate.blockPhone()) e.preventDefault(); });
     } else {
       a.href = "/subscribe.html";
     }

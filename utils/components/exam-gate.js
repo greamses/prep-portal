@@ -29,6 +29,34 @@ const TEXT = {
   rotate: ["Turn your screen sideways", "The paper is set out for a landscape screen. Turn your tablet or laptop window so it is wider than it is tall, and the paper will come back."],
 };
 
+/**
+ * A closable notice for a link that leads into exam mode, so a phone is told before it leaves the page
+ * (the page it opens would only cover itself). Returns true if it stopped the visit: use it as
+ *   link.addEventListener("click", (e) => { if (blockPhone()) e.preventDefault(); });
+ */
+export function blockPhone() {
+  if (!isPhone()) return false;
+  document.getElementById("pp-exam-notice")?.remove();
+  const box = document.createElement("div");
+  box.id = "pp-exam-notice";
+  box.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:1.2rem;background:rgba(42,39,35,0.55);font-family:'JetBrains Mono',ui-monospace,monospace;";
+  box.setAttribute("role", "alertdialog");
+  box.setAttribute("aria-modal", "true");
+  box.setAttribute("aria-label", TEXT.phone[0]);
+  box.innerHTML = `<div style="max-width:28rem;padding:1.4rem 1.3rem;border:2px solid #2a2723;background:#fffdf7;color:#2a2723;box-shadow:5px 5px 0 rgba(42,39,35,0.3);text-align:center">
+    <h2 style="margin:0 0 .6rem;font:800 1.05rem/1.25 'Unbounded',sans-serif">${TEXT.phone[0]}</h2>
+    <p style="margin:0 0 1rem;font-size:.85rem;line-height:1.55">${TEXT.phone[1]}</p>
+    <button type="button" style="font:700 .8rem 'JetBrains Mono',monospace;padding:.55rem 1.2rem;border:2px solid #2a2723;background:#f4c95d;color:#2a2723;cursor:pointer">Understood</button></div>`;
+  const close = () => { box.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  box.addEventListener("pointerdown", (e) => { if (e.target === box) close(); });
+  box.querySelector("button").addEventListener("click", close);
+  document.body.appendChild(box);
+  box.querySelector("button").focus();
+  return true;
+}
+
 export function examGate({ when = () => true } = {}) {
   let cover = null;
 
