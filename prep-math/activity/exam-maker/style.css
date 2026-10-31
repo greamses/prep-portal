@@ -317,7 +317,7 @@ html.xm-focus .wb-work.xm-work { display: block; }
 html.xm-focus .xm-preview { max-width: 230mm; margin: 0 auto; }
 
 /* the OMR page at the end is for print; on screen the drawer replaces it */
-.xp-live .xp-sheetpage.xp-omr { display: none; }
+.xp-live .xp-sheetpage.xp-omr:not(.xp-bcover) { display: none; }
 @media print { .xp-live .xp-sheetpage.xp-omr { display: block; } .xo-drawer, .xo-tab { display: none !important; } }
 
 .xo-tab { position: fixed; right: 0; top: 38%; z-index: 10040; padding: 0.7rem 0.6rem; }
@@ -657,3 +657,40 @@ button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
 .xp-instrpage .xp-ifacts { margin-bottom: 1.2mm; }
 .xm-clock.pp-pill[hidden] { display: none; }
 html.xm-clocked .pp-watch.pp-sticky { top: 9.4rem; }
+
+
+/* ── the answer booklet as a document of its own ─────────────────────────────
+   Two tabs over the paper: the question paper and the answer booklet, one at a time on screen, both in print. */
+.xp-tabs { position: sticky; top: 0; z-index: 6; display: flex; gap: 0.5rem; margin: 0 0 4mm; padding: 0.5rem 0; background: color-mix(in srgb, var(--surface-primary, #fbf8f1) 92%, transparent); }
+.xp-tab { padding: 0.45rem 0.9rem; font: 700 0.78rem var(--font-display, inherit); color: #4a443b; background: #ece6d8; border: 0; border-radius: 0; cursor: pointer; }
+.xp-tab.is-on { background: var(--c, #6b655c); color: #fff; }
+@media screen {
+  .xp[data-view="paper"] .xp-doc--booklet, .xp[data-view="booklet"] .xp-doc--paper { display: none; }
+  .xp-doc--booklet .xp-booklet .xp-bcover { margin-top: 0; border-top: 0; padding-top: 0; }
+}
+@media print { .xp-tabs { display: none !important; } .xp-doc { display: block !important; } }
+.xp-bindex { margin: 4mm 0 2mm; break-inside: avoid; }
+.xp-bindex h3 { margin: 0 0 1.6mm; font-size: 8.5pt; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ci); }
+.xp-bindex__list { columns: 2; column-gap: 8mm; }
+.xp-bindex a { display: flex; align-items: baseline; gap: 1.6mm; margin: 0 0 1.4mm; break-inside: avoid; color: inherit; text-decoration: none; font-size: 9pt; }
+.xp-bindex a strong { font-weight: 700; }
+.xp-bindex a small { font-size: 7.5pt; color: #6b655c; }
+.xp-bindex a i { flex: 1; border-bottom: 0.3mm dotted #8a8478; transform: translateY(-1mm); }
+.xp-bindex a em { font-style: normal; font-weight: 700; color: var(--ci); }
+.xp-bindex a:hover em { text-decoration: underline; }
+.xp-bfoot { margin: 3mm 0 0; text-align: center; font-size: 7.5pt; letter-spacing: 0.12em; text-transform: uppercase; color: #6b655c; }
+
+/* the OMR drawer opens with who is sitting: logo, school, subject, the name, and the logo faint behind it */
+.xo-who { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.7rem; align-items: center; margin: 0 0 0.8rem; padding-bottom: 0.7rem; border-bottom: 1px solid color-mix(in srgb, var(--c, #888) 40%, transparent); }
+.xo-who img { grid-row: span 2; height: 2.6rem; width: auto; object-fit: contain; }
+.xo-who b { font-size: 0.85rem; }
+.xo-who span { font-size: 0.7rem; color: #6b655c; }
+.xo-who input { grid-column: 1 / -1; box-sizing: border-box; width: 100%; padding: 0.4rem 0.5rem; font: 600 0.85rem var(--font-mono, monospace); border: 0; border-bottom: 2px solid var(--c, #888); background: transparent; border-radius: 0; }
+.xo-drawer.xp--wm::before { content: ""; position: fixed; inset: 0; background: var(--wm) center / contain no-repeat; pointer-events: none; z-index: 0; }
+.xo-drawer > * { position: relative; z-index: 1; }
+
+/* answer fields are writing, not form controls: a div that holds words and equations */
+div.xp-ta { min-height: 22mm; padding: 1mm 2.2mm; outline: none; }
+div.xp-in { min-width: 34mm; line-height: 1.4; min-height: 1.3em; }
+div.xp-ta:focus-visible { outline: 0.4mm solid var(--c); }
+div.xp-in:focus-visible { outline: none; }

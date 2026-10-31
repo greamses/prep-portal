@@ -1,5 +1,6 @@
 import { faceOf } from "/utils/components/workbook/icons.js";
 import { UI } from "/utils/components/ui-icons.js";
+import { richField } from "./rich-field.js";
 
 /* ============================================================================
    The paper, answered on screen
@@ -84,21 +85,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
 
   const byId = (questions) => new Map(questions.map((q) => [q.id, q]));
 
-  /* Alt + = in any answer field writes an equation (answer-equation.js, loaded when first wanted); a field
-     that holds one is shown typeset beneath, which is what prints */
-  const eqMod = () => import("./answer-equation.js");
-  const refreshEq = () => { if (Object.values(answers).some((v) => typeof v === "string" && v.includes("$"))) eqMod().then((m) => m.refreshAll(sheet)); };
-  sheet.addEventListener("keydown", (e) => {
-    if (!on || !(e.altKey && !e.ctrlKey && !e.metaKey && (e.key === "=" || e.key === "+" || e.code === "Equal"))) return;
-    const t = e.target;
-    if (!t.matches || !t.matches("input.xp-in, textarea.xp-ta") || t.disabled) return;
-    e.preventDefault();
-    eqMod().then((m) => m.openEquation(t));
-  });
-  sheet.addEventListener("input", (e) => {
-    const t = e.target;
-    if (t.matches && t.matches("input.xp-in, textarea.xp-ta") && (t.value.includes("$") || t.classList.contains("has-eq"))) eqMod().then((m) => m.refreshField(t));
-  });
+  /* Every answer field is a rich-field (rich-field.js): Alt + = writes an equation in place, as in the sticky notes */
 
   /* a shaded choice shows on the question AND on the OMR sheet, whichever was clicked */
   const paintPick = (id, got) => {
@@ -139,8 +126,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       } else if (q.type === "fill") {
         const blank = el.querySelector(".xp-blank");
         if (blank) {
-          const input = document.createElement("input");
-          input.type = "text"; input.className = "xp-in"; input.autocomplete = "off"; input.spellcheck = false;
+          const input = richField({ className: "xp-in" });
           input.setAttribute("aria-label", `Answer to question ${el.querySelector(".xp-n")?.textContent || ""}`);
           input.value = got || "";
           input.disabled = checked;
@@ -149,8 +135,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
         }
       } else if (!el.classList.contains("xp-q--sheeted")) {
         const lines = el.querySelector(".xp-lines");
-        const box = document.createElement("textarea");
-        box.className = "xp-ta";
+        const box = richField({ multiline: true, className: "xp-ta" });
         box.rows = Math.max(3, q.lines | 0 || 3);
         box.setAttribute("aria-label", `Answer to question ${el.querySelector(".xp-n")?.textContent || ""}`);
         box.value = got || "";
@@ -167,8 +152,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       const q = qs.get(blk.dataset.qid);
       if (!q) return;
       const lines = blk.querySelector(".xp-lines");
-      const box = document.createElement("textarea");
-      box.className = "xp-ta";
+      const box = richField({ multiline: true, className: "xp-ta" });
       box.rows = Math.max(4, (lines ? lines.children.length : 4));
       box.setAttribute("aria-label", `Answer to ${blk.querySelector(".xp-ans__tag b")?.textContent || "the question"}`);
       box.value = answers[q.id] || "";
@@ -177,7 +161,6 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       if (lines) lines.replaceWith(box); else blk.appendChild(box);
     });
     paintAttempts();
-    refreshEq();
     if (checked) { showResults(questions); paintStamp(true); announce(); }
   }
 
@@ -214,7 +197,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       input.value = savedName();
       input.addEventListener("input", () => {
         keepName(input.value);
-        sheet.querySelectorAll(".xp-name").forEach((o) => { if (o !== input) o.value = input.value; });
+        document.querySelectorAll(".xp-name").forEach((o) => { if (o !== input) o.value = input.value; });
         onName(input.value);
       });
       line.replaceWith(input);
@@ -299,7 +282,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     const article = page.closest(".xp");
     /* the paper's own rows, dealt into THREE sets side by side: a drawer one row wide
        is as tall as the paper, three wide puts a whole sheet in view */
-    const rows = [...page.querySelectorAll(".xp-omr li")].map((li) => li.cloneNode(true));
+    const rows = [...page.querySelectorAll(".xp-omr li[data-qid]")].map((li) => li.cloneNode(true));
     const grid = document.createElement("div");
     grid.className = "xp-omr__grid";
     const per = Math.max(1, Math.ceil(rows.length / 3));
@@ -313,6 +296,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     drawer.className = "xo-drawer" + (drawerOpen ? " is-open" : "");
     drawer.setAttribute("aria-label", "OMR answer sheet");
     drawer.setAttribute("style", article.getAttribute("style") || "");
+    if (article.classList.contains("xp--wm")) drawer.classList.add("xp--wm");   // the school's logo, faint behind the sheet
     const head = document.createElement("div");
     head.className = "xo-drawer__head";
     head.innerHTML = "<b>OMR sheet</b><span>Shade one bubble for each question.</span>";
@@ -325,7 +309,25 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     const exno = page.querySelector(".xp-exno");
     if (exno) body.appendChild(exno.cloneNode(true));
     body.appendChild(grid);
-    drawer.append(head, body);
+    /* who is sitting: the school's logo, its name, the subject, and the student's name (one name, shared with the paper) */
+    const who = document.createElement("div");
+    who.className = "xo-who";
+    const logo = article.querySelector(".xp-head__logo img");
+    const school = article.querySelector(".xp-head__school"), subj = article.querySelector(".xp-head__subject");
+    who.innerHTML = `${logo ? `<img src="${logo.getAttribute("src")}" alt="" />` : ""}<b></b><span></span>`;
+    who.querySelector("b").textContent = school ? school.textContent : "";
+    who.querySelector("span").textContent = subj ? subj.textContent : "";
+    const nm = document.createElement("input");
+    nm.type = "text"; nm.className = "xp-name"; nm.maxLength = 60; nm.autocomplete = "name"; nm.spellcheck = false;
+    nm.placeholder = "Type your name"; nm.setAttribute("aria-label", "Your name");
+    nm.value = (sheet.querySelector(".xp-name") || {}).value || savedName();
+    nm.addEventListener("input", () => {
+      keepName(nm.value);
+      sheet.querySelectorAll(".xp-name").forEach((o) => { o.value = nm.value; });
+      onName(nm.value);
+    });
+    who.appendChild(nm);
+    drawer.append(head, who, body);
     document.body.append(drawer, tab);
 
     const set = (v) => {
