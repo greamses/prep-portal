@@ -47,11 +47,7 @@ function writeField(n, v) {
    the same way, through the frame (same origin), and put back once the frame has built them. */
 const FRAME_FIELDS = 'input:not([type="button"]):not([type="submit"]):not([type="file"]),textarea,select';
 function fieldsIn(body) {
-  const out = [...body.querySelectorAll(FIELDS)];
-  body.querySelectorAll("iframe").forEach((f) => {
-    try { const d = f.contentDocument; if (d && d.body && d.readyState !== "loading") out.push(...d.body.querySelectorAll(FRAME_FIELDS)); } catch { /* another origin: nothing to read */ }
-  });
-  return out;
+  return [...body.querySelectorAll(FIELDS)];     // a studio in a frame keeps its own state (utils/components/geo-memory.js)
 }
 const rangeLike = (n) => n.type === "range";
 
@@ -266,11 +262,6 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   const typing = () => { clearTimeout(typed); typed = setTimeout(remember, 400); };
   body.addEventListener("input", typing, true);
   body.addEventListener("change", typing, true);
-  /* a frame's own controls: listened to once the frame has loaded */
-  body.addEventListener("load", (e) => {
-    if (!e.target || e.target.tagName !== "IFRAME") return;
-    try { const d = e.target.contentDocument; d.addEventListener("input", typing, true); d.addEventListener("change", typing, true); } catch { /* another origin */ }
-  }, true);
   /* Called by whoever mounted the tool once it is built: put back what was typed last time. */
   const restoreContents = async () => {
     if (ready || !saved || !saved.fields) return;

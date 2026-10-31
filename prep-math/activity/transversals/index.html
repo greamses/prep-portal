@@ -374,7 +374,19 @@
       </div>
     </div>
 
+    <script src="/utils/components/geo-memory.js"></script>
     <script src="./script.js"></script>
+    <script>
+      /* the two dragged points are the angle and the distance (their sliders move as they are dragged); the view is kept here */
+      geoMemory("transversals", {
+        get: () => ({ v: [vX, vY, vScale], am: state.animMode }),
+        set: (x) => {
+          if (Array.isArray(x.v) && x.v.every(isFinite)) { vX = x.v[0]; vY = x.v[1]; vScale = x.v[2]; }
+          if (x.am && x.am !== state.animMode) { const b = document.querySelector('.anim-mode-btn[data-mode="' + x.am + '"]'); if (b) b.click(); }
+          updateView(); render();
+        },
+      });
+    </script>
     <script src="/utils/components/loader.js"></script>
     <script type="module" src="/utils/components/nav-builder.js"></script>
     <script type="module" src="/utils/components/geometry-tabs.js"></script>
