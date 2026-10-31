@@ -137,7 +137,7 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   const remember = () => {
     if (!mem || !el.isConnected) return;
     const all = memAll();
-    all[mem] = { l: small ? small.left : el.offsetLeft, t: small ? small.top : el.offsetTop, w: small ? small.width : el.offsetWidth, h: small ? small.height : el.offsetHeight, folded: !!tab };
+    all[mem] = { l: small ? small.left : el.offsetLeft, t: small ? small.top : el.offsetTop, w: small ? small.width : el.offsetWidth, h: small ? small.height : el.offsetHeight, folded: !!tab, big: !!small };
     memPut(all);
   };
   const close = (opts) => {
@@ -190,6 +190,7 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
     bigBtn.innerHTML = small ? UI.shrink(14) : UI.expand(14);
     raise();
     setTimeout(() => { el.classList.remove("is-easing"); settle(); }, 300);
+    remember();
   });
   window.addEventListener("resize", () => { if (small && el.isConnected) put(bigRect()); });
 
@@ -233,6 +234,7 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   grip.addEventListener("pointercancel", stop);
 
   remember();
+  if (saved && saved.big) bigBtn.click();
   if (saved && saved.folded) fold(true);
   return { el, body: el.querySelector(".wb-panel__body"), close, raise };
 }
