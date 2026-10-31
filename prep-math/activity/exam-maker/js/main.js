@@ -7,13 +7,14 @@
    tomorrow.
    ========================================================================== */
 
-import { TYPES, COLOURS, customColour, BLANK_HEAD, blank, clean, parseQuestions, promptFor, svgPrompt, needsDiagram, extractSvg, checkQuestions, limitTo, verifyPrompt, applyChecks, totalMarks, paperMarks, esc } from "./model.js";
+import { TYPES, COLOURS, customColour, BLANK_HEAD, blank, clean, parseQuestions, promptFor, svgPrompt, needsDiagram, extractSvg, checkQuestions, limitTo, verifyPrompt, applyChecks, totalMarks, paperMarks, shuffled, esc } from "./model.js";
 import { paperHtml, cleanSvg } from "./paper.js";
 import { loadPaper } from "./cbt.js";
 import { createLive } from "./live.js";
 import { mountTools } from "./tools.js";
 import { pickColour } from "/utils/components/colour-pop.js";
 import { createClock, minutesFor } from "./timer.js";
+import { saveToBank, openBank } from "./bank.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { UI } from "/utils/components/ui-icons.js";
@@ -133,6 +134,7 @@ function fillHead() {
   $("xm-key").checked = !!state.head.key;
   $("xm-omr").checked = !!state.head.omr;
   $("xm-timer").checked = !!state.head.timer;
+  $("xm-tries").value = state.head.tries == null ? 1 : state.head.tries;
   $("xm-tsheet").checked = !!state.head.theorySheet;
   $("xm-clean").checked = state.head.clean !== false;
   $("xm-tint").checked = !!state.head.tint;
@@ -155,6 +157,12 @@ document.querySelectorAll("[data-attempt]").forEach((el) => el.addEventListener(
 }));
 $("xm-paper").addEventListener("change", (e) => { state.head.paper = e.target.value; redraw(); });
 $("xm-clean").addEventListener("change", (e) => { state.head.clean = e.target.checked; redraw(); });
+/* how many tries a student gets at a shared paper: one unless the teacher says otherwise */
+$("xm-tries").addEventListener("input", (e) => {
+  const n = Math.round(+e.target.value);
+  state.head.tries = Number.isFinite(n) ? Math.max(0, Math.min(20, n)) : 1;
+  save();
+});
 $("xm-timer").addEventListener("change", (e) => { state.head.timer = e.target.checked; save(); syncClock(); });
 $("xm-omr").addEventListener("change", (e) => { state.head.omr = e.target.checked; redraw(); });
 $("xm-tsheet").addEventListener("change", (e) => { state.head.theorySheet = e.target.checked; redraw(); });
@@ -250,6 +258,7 @@ function card(q, i) {
       <span class="xm-card__tools">
         <button class="pp-btn pp-btn--ghost" type="button" data-do="up" aria-label="Move up" data-tip="Move up">${UI.arrowUp(16)}</button>
         <button class="pp-btn pp-btn--ghost" type="button" data-do="down" aria-label="Move down" data-tip="Move down">${UI.arrowDown(16)}</button>
+        <button class="pp-btn pp-btn--ghost" type="button" data-do="bank" aria-label="Keep this question in my bank" data-tip="Keep in my bank">${UI.save(16)}</button>
         <button class="pp-btn pp-btn--ghost" type="button" data-do="del" aria-label="Delete question" data-tip="Delete">${UI.trash(16)}</button>
       </span>
     </div>
@@ -335,12 +344,28 @@ list.addEventListener("click", (e) => {
   if (d === "del") qs.splice(i, 1);
   else if (d === "up" && i > 0) [qs[i - 1], qs[i]] = [qs[i], qs[i - 1]];
   else if (d === "down" && i < qs.length - 1) [qs[i + 1], qs[i]] = [qs[i], qs[i + 1]];
+  else if (d === "bank") { keep([qs[i]]); return; }
   else if (d === "svggen") { genDiagram(b, qs[i]); return; }
   else if (d === "svgpick") { b.parentElement.querySelector('[data-f="svgfile"]').click(); return; }
   else if (d === "svgclear") qs[i].svg = "";
   else return;
   renderList(); draw(); save();
 });
+
+/* The question bank (bank.js): save the paper's questions, or one, and bring some back. */
+const bankMeta = () => ({ subject: state.head.subject, level: state.head.klass });
+async function keep(list) {
+  const n = await saveToBank(list, bankMeta());
+  const out = $("xm-cbt-status");
+  out.textContent = n < 0 ? "The question bank could not be reached." : `${n} question${n === 1 ? "" : "s"} kept in your bank.`;
+}
+$("xm-qbank-save").addEventListener("click", () => { if (state.questions.length) keep(state.questions); });
+$("xm-qbank-open").addEventListener("click", () => openBank({
+  onAdd: (chosen) => {
+    chosen.forEach((q) => state.questions.push(clean({ ...q, id: undefined, marks: state.head.marksEach[q.type] ?? q.marks })));
+    renderList(); draw(); save();
+  },
+}));
 
 /* delete a bank, or all of them: two clicks, the first only asks */
 const banks = $("xm-banks");
@@ -499,6 +524,7 @@ $("xm-ai-go").addEventListener("click", async () => {
     const order = Object.keys(want);
     kept.sort((x, y) => order.indexOf(x.type) - order.indexOf(y.type));
     state.questions.push(...kept);
+    saveToBank(kept, { ...bankMeta(), topic: $("xm-ai-topic").value.slice(0, 80) }); // quietly: what the model wrote is kept
     renderList(); draw(); save();
     if (common.svg && state.questions.some(needsDiagram)) {
       const r = await drawGeometry((t) => status(`${kept.length} questions added. ${t}`));
@@ -520,6 +546,15 @@ $("xm-print").addEventListener("click", async () => {
   clearTimeout(drawTimer); draw();
   try { await typeset(); } catch { /* print plain */ }
   window.print();
+});
+
+/* Shuffle: the questions and each question's answers in a new order, the correct answer carried with
+   it. While a paper is being answered the answers (kept by position) are cleared with it. */
+$("xm-shuffle").addEventListener("click", () => {
+  if (!state.questions.length) return;
+  state.questions = shuffled(state.questions, Math.floor(Math.random() * 4294967296));
+  if (live.on) live.clear();
+  renderList(); clearTimeout(drawTimer); draw(); save(); paintScore();
 });
 
 /* ── a CBT paper sent here by the picker's Paper mode ──────────────────────
@@ -587,7 +622,7 @@ function paintScore() {
   if (!live.on) { el.textContent = ""; return; }
   const s = live.score(state.questions);
   if (live.checked) {
-    el.textContent = `${s.won} of ${s.outOf} marks` + (s.pending ? ` · mark your ${s.pending} written answer${s.pending === 1 ? "" : "s"}` : "");
+    el.textContent = `${s.won} of ${s.outOf} marks · grade ${live.gradeFor(s.pct).g}` + (s.pending ? ` · mark your ${s.pending} written answer${s.pending === 1 ? "" : "s"}` : "");
   } else {
     el.textContent = `${s.answered} of ${s.total} answered`;
   }
@@ -710,6 +745,9 @@ faceOf($("xm-diagrams"), UI.shapes(18), "Add diagrams to geometry questions");
 document.querySelectorAll('[data-clear="all"]').forEach((b) => { faceOf(b, UI.trash(18), "Delete all questions"); b.dataset.label = "Delete all questions"; });
 faceOf($("xm-print"), UI.print(18), "Print");
 faceOf($("xm-share"), UI.link(18), "Share link");
+faceOf($("xm-qbank-save"), UI.save(18), "Keep this paper's questions in my bank");
+faceOf($("xm-qbank-open"), UI.book(18), "Open my question bank");
+faceOf($("xm-shuffle"), UI.shuffle(18), "Shuffle the questions and their answers");
 setLiveFaces();
 enhanceSelects(document.querySelector(".xm-rail"), { className: "pp-select--sm" });
 mountTooltips();

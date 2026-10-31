@@ -20,7 +20,7 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 /* the same scale the paper's grade stamp uses */
-const GRADES = [[70, "A", "Excellent"], [60, "B", "Very good"], [50, "C", "Good"], [45, "D", "Fair"], [40, "E", "Pass"], [0, "F", "Keep practising"]];
+const GRADES = [[70, "A", "Excellent"], [60, "B", "Very good"], [50, "C", "Good"], [45, "D", "Fair"], [40, "E", "Pass"], [0, "F", "Try again"]];
 const gradeOf = (pct) => (GRADES.find(([min]) => pct >= min) || GRADES[GRADES.length - 1]);
 const tone = (pct) => (pct == null ? "none" : pct >= 70 ? "good" : pct >= 50 ? "mid" : "low");
 const FILL = { good: "#7cc47c", mid: "#f4c95d", low: "#e8837a", none: "#d9d3c8" };

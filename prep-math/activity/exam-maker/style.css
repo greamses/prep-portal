@@ -441,3 +441,45 @@ button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
 .xm-assign { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.4rem; }
 .xm-assign__to { min-width: 11rem; }
 .xm-assign__say { font-size: 0.78rem; }
+
+/* the grade stamp sits in the name row, between the name and the Score box, overlapping the rules above and below it a little */
+.xp-student .xp-stamp { position: relative; right: auto; top: auto; flex: none; width: 19mm; height: 19mm; margin: -11mm 3mm -1.5mm; mix-blend-mode: normal; background: rgba(255, 253, 247, 0.85); z-index: 3; }
+.xp-student .xp-stamp b { font-size: 10.5mm; }
+.xp-student .xp-stamp span { font-size: 2.7mm; letter-spacing: 0; }
+.xp-student .xp-stamp i { font-size: 1.9mm; letter-spacing: 0.1em; }
+
+/* orange for what was not answered: the options of an unanswered multiple choice, the line of an unanswered blank or written answer */
+.xp-live .xp-q.is-unanswered { border-left: 1.2mm solid #e8883a; padding-left: 2mm; margin-left: -3.2mm; }
+.xp-live .xp-q--mcq.is-unanswered .xp-opts b { background: #ffe0c2; border-color: #e8883a; color: #b5560e; }
+.xp-live .xp-q--mcq.is-unanswered .xp-opts span { color: #b5560e; }
+.xp-live .xp-q--fill.is-unanswered .xp-in, .xp-live .xp-q.is-unanswered .xp-ta { border-color: #e8883a; background: #fff1e2; }
+.xp-omr li.is-unanswered b, .xo-omr li.is-unanswered b { background: #ffe0c2; border-color: #e8883a; color: #b5560e; }
+.xp-live .xp-reveal.is-skipped { border-color: #e8883a; color: #b5560e; font-style: normal; font-weight: 700; }
+@media print {
+  .xp-live .xp-q.is-unanswered { border-left: 1.2mm solid #e8883a !important; }
+  .xp-live .xp-q--mcq.is-unanswered .xp-opts b, .xp-omr li.is-unanswered b { background: #ffe0c2 !important; border-color: #e8883a !important; color: #b5560e !important; }
+  .xp-live .xp-q--mcq.is-unanswered .xp-opts span { color: #b5560e !important; }
+  .xp-student .xp-stamp { background: rgba(255, 253, 247, 0.85) !important; }
+}
+
+.xp-head { scroll-margin-top: 7rem; }
+
+@media print { .xp-stamp, .xp-stamp b, .xp-stamp span, .xp-stamp i { color: #b0453d !important; } }
+
+/* the question bank panel */
+.xm-qbank { position: fixed; inset: 0; z-index: 10080; display: grid; place-items: center; padding: 1rem; background: rgba(42, 39, 35, 0.45); }
+.pp-receipt.xm-qbank__card { position: relative; width: min(46rem, 100%); max-height: 90vh; }
+.xm-qbank__paper { display: flex; flex-direction: column; gap: 0.7rem; max-height: calc(90vh - 2rem); padding: 1rem 1.2rem; color: #2a2723; }
+.xm-qbank__head { display: flex; justify-content: space-between; align-items: center; }
+.xm-qbank__head h2 { margin: 0; font: 800 1.05rem/1.2 "Unbounded", sans-serif; }
+.xm-qbank__filters { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.5rem; }
+.xm-qbank__msg { margin: 0; font-size: 0.78rem; color: #6b655c; min-height: 1.2em; }
+.xm-qbank__list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1 1 auto; min-height: 8rem; border-top: 1px dashed #cfc8bb; }
+.xm-qbank__item { padding: 0.5rem 0.2rem; border-bottom: 1px dashed #cfc8bb; }
+.xm-qbank__item label { display: grid; grid-template-columns: auto auto 1fr; gap: 0.6rem; align-items: baseline; cursor: pointer; }
+.xm-qbank__kind { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.05rem 0.35rem; background: #e7e2d6; white-space: nowrap; }
+.xm-qbank__text { font-size: 0.82rem; line-height: 1.4; overflow-wrap: anywhere; }
+.xm-qbank__item small { display: block; margin: 0.1rem 0 0 2.2rem; color: #6b655c; font-size: 0.68rem; }
+.xm-qbank__foot { display: flex; align-items: center; gap: 0.6rem; font-size: 0.76rem; font-weight: 700; }
+.xm-qbank__sp { flex: 1 1 auto; }
+@media (max-width: 560px) { .xm-qbank__filters { grid-template-columns: 1fr; } }

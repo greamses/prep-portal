@@ -12,7 +12,7 @@
    ========================================================================== */
 
 import { paperHtml } from "/prep-math/activity/exam-maker/js/paper.js";
-import { clean, paperMarks, BLANK_HEAD } from "/prep-math/activity/exam-maker/js/model.js";
+import { clean, paperMarks, shuffled, BLANK_HEAD } from "/prep-math/activity/exam-maker/js/model.js";
 import { createLive } from "/prep-math/activity/exam-maker/js/live.js";
 import { createClock, minutesFor } from "/prep-math/activity/exam-maker/js/timer.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
@@ -32,8 +32,13 @@ const say = (t, bad = false) => { const m = $("pp-msg"); m.textContent = t; m.cl
 
 let head = null;
 let questions = [];
+let base = [];                    // the paper in the order the teacher wrote it
+const seedKey = () => `xm-shuffle-${code}`;
 let isOwner = false;
 let room = null;
+let tries = 1, used = 0;          // the teacher's number of tries (0 = no limit), and how many this student has used
+/* the owner may always sit their own paper; anyone else may sit it again while they have tries left */
+const canTryAgain = () => isOwner || tries === 0 || used < tries;
 
 /* ── live ─────────────────────────────────────────────────────────────────
    Everyone on the paper joins one room (namespace "paper", the share code). A student says how far on
@@ -108,10 +113,12 @@ function sendResult() {
 function paintScore() {
   const el = $("xm-score");
   const s = live.score(questions);
+  /* a student may shuffle their own copy until they have answered something; the order is theirs alone */
+  $("xm-shuffle").hidden = locked || live.checked || s.answered > 0;
   if (live.checked) sendResult();
   tell();
   el.textContent = live.checked
-    ? `${s.won} of ${s.outOf} marks` + (s.pending ? ` · mark your ${s.pending} written answer${s.pending === 1 ? "" : "s"}` : "")
+    ? `${s.won} of ${s.outOf} marks · grade ${live.gradeFor(s.pct).g}` + (s.pending ? ` · mark your ${s.pending} written answer${s.pending === 1 ? "" : "s"}` : "")
     : `${s.answered} of ${s.total} answered`;
 }
 
@@ -151,7 +158,9 @@ async function open() {
   try {
     const r = await api(`/api/workbooks/paper/${code}`);
     head = { ...BLANK_HEAD, ...r.head, key: false };
-    questions = (r.questions || []).map(clean);
+    base = (r.questions || []).map(clean);
+    questions = base;
+    try { const seed = Number(localStorage.getItem(seedKey())); if (seed) questions = shuffled(base, seed); } catch { /* shown as written */ }
     $("pp-title").innerHTML = `${(r.title || "Mock paper").replace(/[<>&]/g, "")}<em>.</em>`;
     $("pp-eyebrow").textContent = r.ownerName ? `A mock paper from ${r.ownerName}` : "A mock paper";
     document.title = `Prep Portal | ${r.title || "Mock paper"}`;
@@ -160,11 +169,22 @@ async function open() {
     /* whoever holds the link has the paper free, and that includes printing it marked */
     document.documentElement.classList.add("wb-print-ok");
     isOwner = !!r.owner;
+    tries = r.tries == null ? 1 : r.tries; used = r.used || 0;
+    /* back with every try spent: the paper is shown, and nothing on it can be answered */
+    locked = !isOwner && tries > 0 && used >= tries;
+    if (locked) {
+      sheet.dataset.paper = head.paper === "letter" ? "letter" : "a4";
+      sheet.innerHTML = paperHtml(head, questions);
+      typeset();
+      $("xm-check").hidden = true; $("xm-clear").hidden = true;
+      say(`You have used ${tries === 1 ? "your one try" : `all ${tries} tries`} on this paper, so it cannot be answered again. Your teacher has your score.`);
+      return;
+    }
     live.setOn(true);
     $("xm-check").hidden = false; $("xm-clear").hidden = false;
     /* the workbook tool rail, for working out beside the paper */
     mountTools({ sheet, viewport: document.querySelector(".xm-viewport"), toolbar: document.querySelector(".wb-toolbar") }).on();
-    say(`${questions.length} questions · ${paperMarks(questions, head.attempt)} marks.`);
+    say(`${questions.length} questions · ${paperMarks(questions, head.attempt)} marks${triesNote()}.`);
     draw();
     syncClock();
     joinLive();
@@ -186,13 +206,33 @@ function syncClock() {
 function faces() {
   faceOf($("xm-check"), live.checked ? UI.undo(18) : UI.check(18), live.checked ? "Answer again" : "Check answers");
   faceOf($("xm-clear"), UI.eraser(18), "Clear answers");
+  faceOf($("xm-shuffle"), UI.shuffle(18), "Shuffle the questions and their answers");
+  /* out of tries: nothing on the paper can be opened again */
+  const spent = live.checked && !canTryAgain();
+  $("xm-check").hidden = spent || locked; $("xm-clear").hidden = spent || locked;
 }
+let locked = false;               // came back with no tries left: the paper is shown, not answerable
+function triesNote() {
+  if (isOwner || tries === 0) return "";
+  const left = Math.max(0, tries - used);
+  return left ? ` · ${left} ${left === 1 ? "try" : "tries"} left` : ` · no tries left`;
+}
+$("xm-shuffle").addEventListener("click", () => {
+  if (live.checked || live.score(questions).answered) return;
+  const seed = Math.floor(Math.random() * 4294967296);
+  try { localStorage.setItem(seedKey(), String(seed)); } catch { /* private window: it lasts this visit */ }
+  questions = shuffled(base, seed);
+  draw();
+});
 $("xm-check").addEventListener("click", () => {
-  if (live.checked) live.reopen(); else { live.check(questions); firstSend = true; }
+  if (live.checked) { if (!canTryAgain()) return; live.reopen(); }
+  else { live.check(questions); firstSend = true; if (!isOwner) used += 1; }
   draw(); faces(); syncClock();
   if (live.checked && !live.name.trim()) say("Type your name on the paper, so your teacher knows whose score this is.");
+  else if (live.checked && !canTryAgain()) say(tries === 1 ? "That was your one try. Your score has gone to your teacher." : `You have used all ${tries} tries. Your score has gone to your teacher.`);
+  else if (live.checked) say(`Scored${triesNote()}. Press the arrow to answer again.`);
 });
-$("xm-clear").addEventListener("click", () => { live.clear(); draw(); faces(); clock.stop(); syncClock(); });
+$("xm-clear").addEventListener("click", () => { if (live.checked && !canTryAgain()) return; live.clear(); draw(); faces(); clock.stop(); syncClock(); });
 faces();
 
 open();

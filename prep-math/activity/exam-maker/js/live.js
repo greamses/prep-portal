@@ -288,7 +288,10 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
         body.appendChild(d);
       };
       const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+      const skipped = q.type === "mcq" ? answers[q.id] === undefined : !given(q);
+      el.classList.toggle("is-unanswered", skipped);
       if (q.type === "mcq") {
+        document.querySelectorAll(`.xp-omr li[data-qid="${q.id}"]`).forEach((row) => row.classList.toggle("is-unanswered", skipped));
         const got = answers[q.id];
         [...el.querySelectorAll(".xp-opts li")].forEach((li, i) => {
           li.classList.toggle("is-right", i === q.answer);
@@ -326,7 +329,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     { min: 50, g: "C", say: "Good" },
     { min: 45, g: "D", say: "Fair" },
     { min: 40, g: "E", say: "Pass" },
-    { min: 0, g: "F", say: "Keep practising" },
+    { min: 0, g: "F", say: "Try again" },
   ];
   const gradeFor = (pct) => GRADES.find((x) => pct >= x.min) || GRADES[GRADES.length - 1];
 
@@ -381,7 +384,9 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   function paintStamp(animate) {
     sheet.querySelectorAll(".xp-stamp").forEach((n) => n.remove());
     if (!on || !checked) return;
-    const host = sheet.querySelector(".xp-receipt__paper");
+    /* beside the Score box, in the name row: the one place in the header nothing is printed over */
+    const host = sheet.querySelector(".xp-head .xp-student");
+    const scoreLabel = host && [...host.querySelectorAll(":scope > span")].find((x) => /score/i.test(x.textContent));
     if (!host) return;
     const s = score(lastQuestions);
     const gr = gradeFor(s.pct);
@@ -391,7 +396,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     st.setAttribute("role", "img");
     st.setAttribute("aria-label", `Grade ${gr.g}, ${s.won} out of ${s.outOf} marks`);
     st.innerHTML = `<b>${gr.g}</b><span>${s.won} / ${s.outOf}</span><i>${s.pending ? "marking" : gr.say}</i>`;
-    host.appendChild(st);
+    if (scoreLabel) scoreLabel.before(st); else host.appendChild(st);
     const box = sheet.querySelector(".xp-student em");
     if (box) box.textContent = `${s.won} / ${s.outOf}`;
   }
@@ -412,6 +417,13 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     if (say) { say.textContent = noticeText(); return; }
     if (announced) return;
     announced = true;
+    /* the stamp is on the header: if the learner has scrolled down the paper, take them to it */
+    const hd = sheet.querySelector(".xp-head");
+    if (hd) {
+      const r = hd.getBoundingClientRect();
+      /* after the paper has been redrawn, or the move is lost to the layout shift */
+      if (r.top < 90 || r.bottom > innerHeight) setTimeout(() => hd.scrollIntoView({ block: "start" }), 80);
+    }
     const box = document.createElement("div");
     box.className = "xo-done";
     box.setAttribute("role", "status");

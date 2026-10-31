@@ -114,6 +114,7 @@
                 <label class="wb-field xm-span2"><span>Paper</span>
                   <select class="wb-select" id="xm-paper"><option value="a4">A4</option><option value="letter">US Letter</option></select></label>
                 <label class="wb-toggle"><input type="checkbox" id="xm-key" /> Answer key at the back</label>
+                <label class="wb-field"><span>Tries allowed (0 is no limit)</span><input class="wb-input" id="xm-tries" type="number" min="0" max="20" step="1" /></label>
                 <label class="wb-toggle"><input type="checkbox" id="xm-timer" /> Timer when answered on screen (counts down from the time allowed)</label>
                 <label class="wb-toggle"><input type="checkbox" id="xm-omr" /> OMR answer sheet for the multiple choice</label>
                 <label class="wb-toggle"><input type="checkbox" id="xm-tsheet" /> Theory answer sheet (written answers go on it)</label>
@@ -175,6 +176,8 @@
                 <button class="pp-btn pp-btn--ghost" data-add="fill" type="button"><span data-ui="plus"></span> Fill in the blank</button>
                 <button class="pp-btn pp-btn--ghost" data-add="sub" type="button"><span data-ui="plus"></span> Subjective</button>
                 <button class="pp-btn pp-btn--ghost" data-add="theory" type="button"><span data-ui="plus"></span> Theory</button>
+                <button class="pp-btn" id="xm-qbank-save" type="button"></button>
+                <button class="pp-btn" id="xm-qbank-open" type="button"></button>
                 <button class="pp-btn xm-draw" id="xm-diagrams" type="button"><span data-ui="shapes"></span> Add diagrams to geometry questions</button>
                 <button class="pp-btn pp-btn--ghost xm-clear" data-clear="all" data-label="Delete all" type="button"><span data-ui="trash"></span> <b>Delete all</b></button>
               </div>
@@ -194,6 +197,7 @@
             <span class="wb-toolbar__spacer"></span>
             <span class="xm-score" id="xm-score" role="status"></span>
             <span class="xm-clock" id="xm-clock" role="timer" aria-label="Time left" hidden></span>
+            <button class="pp-btn" id="xm-shuffle" type="button"></button>
             <button class="pp-btn" id="xm-live" type="button" aria-pressed="false"><span data-ui="pen"></span> Answer on screen</button>
             <button class="pp-btn" id="xm-check" type="button" hidden><span data-ui="check"></span> Check answers</button>
             <button class="pp-btn pp-btn--ghost" id="xm-clear" type="button" hidden>Clear answers</button>

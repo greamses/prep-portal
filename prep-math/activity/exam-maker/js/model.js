@@ -58,6 +58,8 @@ export function blank(type) {
 export const BLANK_HEAD = {
   school: "", term: "", year: "", subject: "", date: "", klass: "", time: "",
   logo: "", colour: "indigo", paper: "a4", key: false, tint: false, clean: true, omr: false, theorySheet: false, timer: false, custom: "", breakAt: {},
+  /* how many times a student may sit it (check it); 0 = no limit */
+  tries: 1,
   /* how many questions of each kind are to be attempted ("answer any 3"); none or 0 = all of them */
   attempt: {},
   /* what each question in a section is worth; every question follows its section
@@ -380,6 +382,38 @@ export function needsDiagram(q) {
   const text = `${q.text} ${(q.options || []).join(" ")}`;
   if (q.type === "fill") return /\b(shown|diagram|figure|below|number line)\b/i.test(text);
   return SHAPES.test(text);
+}
+
+/** A small seeded random (mulberry32): the same seed always gives the same order. */
+export function rng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * The paper in another order: the questions mixed, and each multiple-choice question's four answers
+ * mixed with its correct answer carried to wherever it landed. Same seed, same order (so a student's
+ * shuffle can be put back after a reload). Section order never changes: the paper still groups its
+ * questions by kind, so this mixes them within their section.
+ */
+export function shuffled(questions, seed) {
+  const r = rng(seed);
+  const mix = (arr) => {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  };
+  return mix(questions).map((q) => {
+    if (q.type !== "mcq") return q;
+    const order = mix([0, 1, 2, 3]);
+    return { ...q, options: order.map((i) => q.options[i]), answer: order.indexOf(q.answer) };
+  });
 }
 
 /** Marks added up. */

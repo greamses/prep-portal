@@ -14,6 +14,7 @@ const { authenticate } = require("../middleware/auth");
 const P = require("../lib/workbook-prints");
 const access = require("../lib/access");
 const { notifyStudents } = require("../lib/notices");
+const { saveQuestions } = require("../lib/question-bank");
 
 module.exports = function () {
   const router = express.Router();
@@ -428,6 +429,8 @@ module.exports = function () {
     head.key = false;
     head.breakAt = {};
     for (const t of TYPES) if (h.breakAt && h.breakAt[t]) head.breakAt[t] = true;
+    const tries = Math.round(Number(h.tries));
+    head.tries = Number.isFinite(tries) ? Math.max(0, Math.min(20, tries)) : 1;
     head.attempt = {};
     for (const t of TYPES) head.attempt[t] = Math.max(0, Math.min(200, Math.round(Number(h.attempt && h.attempt[t])) || 0));
     head.marksEach = {};
@@ -462,6 +465,8 @@ module.exports = function () {
         code, ...paper, title: clip(req.body.title, 120) || "Exam paper",
         ownerUid: req.user.uid, ownerName: nameOf(req, p), createdAt: stamp(),
       });
+      /* what was shared is kept in the sharer's bank too, so it can go on another paper */
+      saveQuestions(req.user.uid, paper.questions, { subject: paper.head.subject });
       res.json({ ok: true, code, url: `/paper/${code}` });
     } catch (err) {
       console.error("[/api/workbooks/paper-share]", err.message);
@@ -476,7 +481,10 @@ module.exports = function () {
       const snap = await db().collection("sharedPapers").doc(code).get();
       if (!snap.exists) return res.status(404).json({ error: "That paper doesn't exist any more." });
       const a = snap.data();
-      res.json({ ok: true, code, title: a.title, head: a.head, questions: a.questions, ownerName: a.ownerName, owner: a.ownerUid === req.user.uid });
+      /* how many tries this person has used already, so a returning student is not offered another */
+      const mine = await snap.ref.collection("results").doc(req.user.uid).get();
+      res.json({ ok: true, code, title: a.title, head: a.head, questions: a.questions, ownerName: a.ownerName, owner: a.ownerUid === req.user.uid,
+        tries: a.head && a.head.tries != null ? a.head.tries : 1, used: mine.exists ? mine.data().attempts || 0 : 0 });
     } catch (err) {
       console.error("[/api/workbooks/paper]", err.message);
       res.status(500).json({ error: "Could not open the paper." });
@@ -577,6 +585,9 @@ module.exports = function () {
         const [pSnap, rSnap] = [await t.get(pRef), await t.get(rRef)];
         if (!pSnap.exists) return null;
         const prev = rSnap.exists ? rSnap.data() : null;
+        /* the teacher's number of tries: a new try past it is refused (the owner may always sit their own) */
+        const allowed = pSnap.data().head && pSnap.data().head.tries != null ? pSnap.data().head.tries : 1;
+        if (b.first === true && prev && allowed > 0 && (prev.attempts || 0) >= allowed && pSnap.data().ownerUid !== req.user.uid) return { noTries: allowed };
         const attempts = (prev ? prev.attempts || 0 : 0) + (b.first === true || !prev ? 1 : 0);
         const best = Math.max(pct, prev ? prev.bestPct || 0 : 0);
         t.set(rRef, {
@@ -588,6 +599,7 @@ module.exports = function () {
         return { ownerUid: pSnap.data().ownerUid, title: pSnap.data().title, best, attempts };
       });
       if (!out) return res.status(404).json({ error: "No such paper." });
+      if (out.noTries) return res.status(403).json({ error: `You have used all ${out.noTries} ${out.noTries === 1 ? "try" : "tries"} on this paper.` });
       try {
         await db().collection("teacherNotices").doc(out.ownerUid).collection("items").doc(`paper_${code}_${req.user.uid}`).set({
           kind: "paper", code, title: out.title || "Mock paper", uid: req.user.uid, name: typed || nameOf(req, p),
