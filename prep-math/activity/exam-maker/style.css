@@ -773,3 +773,12 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 .xm-ico[aria-pressed="false"] { opacity: 0.45; }
+
+/* the hourglass in the clock: the sand falls as the time goes */
+.xm-clock.pp-pill { display: inline-flex; align-items: center; gap: 0.5rem; }
+.xm-clock[hidden] { display: none !important; }
+.xm-glass { display: inline-grid; place-items: center; line-height: 0; }
+.xm-glass svg { display: block; width: 1.4rem; height: 1.9rem; overflow: visible; }
+.xm-glass .stream { stroke-dasharray: 1.2 1.8; animation: xm-sand 0.45s linear infinite; }
+@keyframes xm-sand { to { stroke-dashoffset: -3; } }
+@media (prefers-reduced-motion: reduce) { .xm-glass .stream { animation: none; } }

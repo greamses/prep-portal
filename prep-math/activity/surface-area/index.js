@@ -907,3 +907,22 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate();
+
+/* The studio remembers where it was turned to: the camera's place and aim (the orbit) and the shape's own turn (auto-rotate and the
+   joystick), as well as its sliders and ticks (utils/components/geo-memory.js). */
+if (window.geoMemory) {
+  window.geoMemory("surface-area", {
+    get: () => ({
+      cam: [camera.position.x, camera.position.y, camera.position.z],
+      tgt: [controls.target.x, controls.target.y, controls.target.z],
+      rot: [sceneGroup.rotation.x, sceneGroup.rotation.y, sceneGroup.rotation.z],
+    }),
+    set: (x) => {
+      const ok = (a) => Array.isArray(a) && a.length === 3 && a.every(Number.isFinite);
+      if (ok(x.cam)) camera.position.set(x.cam[0], x.cam[1], x.cam[2]);
+      if (ok(x.tgt)) controls.target.set(x.tgt[0], x.tgt[1], x.tgt[2]);
+      if (ok(x.rot)) sceneGroup.rotation.set(x.rot[0], x.rot[1], x.rot[2]);
+      controls.update();
+    },
+  });
+}

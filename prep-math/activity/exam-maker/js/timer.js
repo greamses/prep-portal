@@ -32,14 +32,35 @@ const fmt = (s) => {
 /** A countdown shown in `el`. start(seconds) begins it, stop() clears it; onEnd() fires once at zero. */
 export function createClock(el, { onEnd = () => {}, onLow = () => {} } = {}) {
   let left = 0;
+  let total = 1;             // seconds the run began with, for the sand
   let lowSaid = false;       // onLow fires once per run, the first time a minute or less is left
   let timer = 0;
   let running = false;
   /* The clock is the site's pill, fixed to the edge of the window so the student sees it wherever they have scrolled to
-     (the camera's self-view stacks under it: html.xm-clocked). It turns red in the last minute. */
+     (the camera's self-view stacks under it: html.xm-clocked). It turns red in the last minute. In it is an hourglass whose sand
+     falls as the time goes: the top bulb holds what is left, the bottom what has gone. */
   el.classList.add("pp-pill", "pp-pill--static");
+  const id = `xmg${Math.random().toString(36).slice(2, 8)}`;
+  const GLASS = "M5 3H19C19 11 14.5 14 12 16C14.5 18 19 21 19 29H5C5 21 9.5 18 12 16C9.5 14 5 11 5 3Z";
+  el.innerHTML = `<span class="xm-glass" aria-hidden="true"><svg viewBox="0 0 24 32" width="18" height="24">
+      <defs><clipPath id="${id}"><path d="${GLASS}"/></clipPath></defs>
+      <g clip-path="url(#${id})"><rect class="sand-top" x="4" width="16" fill="#d9a441"/><rect class="sand-bottom" x="4" width="16" fill="#d9a441"/></g>
+      <line class="stream" x1="12" x2="12" stroke="#d9a441" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="${GLASS}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M3 3H21M3 29H21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span><span class="xm-time"></span>`;
+  const sandTop = el.querySelector(".sand-top"), sandBottom = el.querySelector(".sand-bottom"), stream = el.querySelector(".stream"), face = el.querySelector(".xm-time");
+  const sand = () => {
+    const f = Math.max(0, Math.min(1, left / total)), H = 13;
+    sandTop.setAttribute("y", String(16 - H * f)); sandTop.setAttribute("height", String(H * f));
+    sandBottom.setAttribute("y", String(29 - H * (1 - f))); sandBottom.setAttribute("height", String(H * (1 - f)));
+    /* a thread of sand from the neck down to the heap, while there is sand above and room below */
+    const falling = running && f > 0 && f < 1;
+    stream.setAttribute("y1", "15"); stream.setAttribute("y2", String(Math.max(16, 29 - H * (1 - f))));
+    stream.style.display = falling ? "" : "none";
+  };
   const paint = () => {
-    el.textContent = running ? fmt(left) : "";
+    face.textContent = running ? fmt(left) : "";
+    sand();
     el.classList.toggle("is-low", running && left <= 60);
     el.classList.toggle("pp-pill--danger", running && left <= 60);
     el.hidden = !running;
@@ -52,6 +73,7 @@ export function createClock(el, { onEnd = () => {}, onLow = () => {} } = {}) {
     start(seconds) {
       stop();
       left = Math.max(1, Math.round(seconds));
+      total = left;
       lowSaid = false;
       running = true;
       paint();
