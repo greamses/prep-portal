@@ -28,7 +28,10 @@ async function deleteTask(db, kind, code, mayDelete = () => true) {
   if (owner) (await db.collection("teacherStudents").doc(owner).collection("roster").get()).docs.forEach((d) => who.add(d.id));
   const refs = [...results.docs.map((d) => d.ref)];
   /* a paper's camera-check notes (events only, see routes/workbooks.js) go with it */
-  if (kind === "paper") (await ref.collection("watch").get()).docs.forEach((d) => refs.push(d.ref));
+  if (kind === "paper") {
+    (await ref.collection("watch").get()).docs.forEach((d) => refs.push(d.ref));
+    (await db.collection("markQueue").where("code", "==", code).get()).docs.forEach((d) => refs.push(d.ref));   // AI marking jobs and marks
+  }
   who.forEach((uid) => {
     refs.push(db.collection("studentAssignments").doc(uid).collection("items").doc(k.item(code)));
     refs.push(db.collection("studentNotices").doc(uid).collection("items").doc(`task_${kind}_${code}`));

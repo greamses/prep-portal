@@ -15,6 +15,8 @@ const P = require("../lib/workbook-prints");
 const access = require("../lib/access");
 const { notifyStudents } = require("../lib/notices");
 const { saveQuestions } = require("../lib/question-bank");
+const createMarkQueue = require("../lib/mark-queue");
+const { markScript } = require("../lib/ai-mark");
 
 module.exports = function () {
   const router = express.Router();
@@ -425,7 +427,7 @@ module.exports = function () {
     head.colour = COLOURS.includes(h.colour) || (h.colour === "custom" && /^#[0-9a-f]{6}$/i.test(String(h.custom))) ? h.colour : "indigo";
     head.custom = head.colour === "custom" ? String(h.custom).toLowerCase() : "";
     head.paper = h.paper === "letter" ? "letter" : "a4";
-    for (const k of ["tint", "clean", "omr", "theorySheet", "timer", "camera", "instructions", "booklet"]) head[k] = !!h[k];
+    for (const k of ["tint", "clean", "omr", "theorySheet", "timer", "camera", "instructions", "booklet", "aiMark"]) head[k] = !!h[k];
     head.instrText = clip(String(h.instrText || "").replace(/\r/g, ""), 1500).trim();
     head.key = false;
     head.breakAt = {};
@@ -489,6 +491,78 @@ module.exports = function () {
     } catch (err) {
       console.error("[/api/workbooks/paper]", err.message);
       res.status(500).json({ error: "Could not open the paper." });
+    }
+  });
+
+  /* ══ AI MARKING OF WRITTEN ANSWERS ═══════════════════════════════════════
+     A paper set with head.aiMark has its written answers (short answer and theory) marked by AI. A
+     finished script joins a queue (lib/mark-queue.js) and is marked at the rate the AI providers allow,
+     first come first served, so thirty students finishing together are all marked in the end and none is
+     refused. The questions, their worth and the model answers are read from the paper here, so the
+     browser supplies only the student's words.
+
+       POST /api/workbooks/paper/:code/mark      { answers: { [questionId]: text }, name }   (a student: join the line)
+       GET  /api/workbooks/paper/:code/mark                                                  (that student: place in line, or the marks)
+       GET  /api/workbooks/paper/:code/marking                                               (the owner: every script and its state)
+
+     Both GETs do a little of the queue's work first, because the site has no scheduled jobs: the
+     queue is drained by the people waiting on it. */
+  const marker = createMarkQueue({ db, markScript });
+  const MAX_SCRIPTS = 400;                 // per paper
+  const WRITTEN = ["sub", "theory"];
+
+  router.post("/paper/:code/mark", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code)) return res.status(404).json({ error: "No such paper." });
+      const p = await db().collection("sharedPapers").doc(code).get();
+      if (!p.exists) return res.status(404).json({ error: "No such paper." });
+      const a = p.data();
+      if (!(a.head && a.head.aiMark)) return res.json({ ok: true, status: "off" });
+      if (a.ownerUid === req.user.uid) return res.json({ ok: true, status: "off" });
+      const given = (req.body && req.body.answers) || {};
+      const items = (a.questions || []).filter((q) => WRITTEN.includes(q.type)).slice(0, 12).map((q) => ({
+        id: String(q.id), text: clip(q.text, 1500), max: Math.max(1, Math.round(Number(q.marks)) || 1), model: clip(q.answer, 1500), answer: clip(given[q.id], 4000),
+      })).filter((it) => it.answer.trim());
+      if (!items.length) return res.json({ ok: true, status: "none" });
+      const mine = await marker.statusOf(code, req.user.uid);
+      if (mine.status === "none" && (await marker.summary(code)).total >= MAX_SCRIPTS) {
+        return res.status(429).json({ error: "This paper has more scripts than can be marked. Ask your teacher to mark yours." });
+      }
+      const me = await profile(req.user.uid);
+      const typed = clip(String((req.body && req.body.name) || "").replace(/\s+/g, " ").trim(), 60);
+      const out = await marker.enqueue({ code, uid: req.user.uid, ownerUid: a.ownerUid, name: typed || nameOf(req, me), subject: a.head.subject, klass: a.head.klass, items });
+      res.json({ ok: true, status: out.status, ...(await marker.statusOf(code, req.user.uid)) });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/mark]", err.message);
+      res.status(500).json({ error: "Could not queue the marking." });
+    }
+  });
+
+  router.get("/paper/:code/mark", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code)) return res.status(404).json({ error: "No such paper." });
+      try { await marker.drain({ max: 1, budgetMs: 15000 }); } catch (e) { console.warn("[mark drain]", e.message); }
+      res.json({ ok: true, ...(await marker.statusOf(code, req.user.uid)) });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/mark/get]", err.message);
+      res.status(500).json({ error: "Could not read the marking." });
+    }
+  });
+
+  router.get("/paper/:code/marking", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code)) return res.status(404).json({ error: "No such paper." });
+      const p = await db().collection("sharedPapers").doc(code).get();
+      if (!p.exists) return res.status(404).json({ error: "No such paper." });
+      if (p.data().ownerUid !== req.user.uid && !isAdmin(req)) return res.status(403).json({ error: "This is for the teacher who shared the paper." });
+      try { await marker.drain({ max: 2, budgetMs: 20000 }); } catch (e) { console.warn("[mark drain]", e.message); }
+      res.json({ ok: true, aiMark: !!(p.data().head && p.data().head.aiMark), ...(await marker.summary(code)) });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/marking]", err.message);
+      res.status(500).json({ error: "Could not read the marking." });
     }
   });
 

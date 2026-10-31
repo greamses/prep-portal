@@ -67,6 +67,8 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   let checked = false;
   let lastQuestions = [];
   let announced = false;
+  /* AI marking of the written answers (the page queues the script and reports how it is getting on, see setAi/applyAiMarks) */
+  let ai = { on: false, status: "off", text: "", notes: {} };
   let idle = 0;
   const keep = () => {
     try { localStorage.setItem(store, JSON.stringify(answers)); } catch { /* storage full or off */ }
@@ -336,6 +338,16 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
         const ok = matches(answers[q.id], q.answer);
         el.classList.toggle("is-ok", ok); el.classList.toggle("is-no", !ok);
         say(ok ? "is-ok" : "is-no", ok ? "Correct." : `Answer: ${esc(q.answer)}`);
+      } else if (ai.on && ai.status !== "failed") {
+        /* marked by AI (queued): the model answer, and either the mark and why, or where it is in the line */
+        if (!given(q)) say("is-skipped", "Not answered.");
+        else {
+          const m = answers["m:" + q.id];
+          say("is-model", `<b>Model answer</b> ${esc(q.answer || "No model answer was written.")}`
+            + `<div class="xp-aimark">${m !== undefined && ai.status === "done"
+              ? `<span class="pp-pill pp-pill--static pp-pill--ok">AI mark: ${m} of ${q.marks}</span> ${esc(ai.notes[q.id] || "")}`
+              : `<span class="pp-pill pp-pill--static pp-pill--warn">${esc(ai.text || "Waiting to be marked")}</span>`}</div>`);
+        }
       } else {
         say("is-model", `<b>Model answer</b> ${esc(q.answer || "No model answer was written.")}`
           + `<label class="xp-selfmark">Your mark <input type="number" min="0" max="${q.marks}" step="1" inputmode="numeric" aria-label="Your mark for this answer, out of ${q.marks}"> out of ${q.marks}</label>`);
@@ -538,6 +550,22 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       t?.setAttribute("aria-expanded", String(drawerOpen));
       t?.classList.toggle("is-open", drawerOpen);
     },
+    /** The AI marking's state: { on, status: off|queued|working|done|failed, text }. Redraws the marked paper. */
+    setAi(next) { ai = { ...ai, ...next }; if (checked) { showResults(lastQuestions); paintStamp(false); announce(); } },
+    /** The AI's marks for the written answers: [{ id, m, of, note }]. They count like marks given by hand. */
+    applyAiMarks(list) {
+      (list || []).forEach((x) => { answers["m:" + x.id] = x.m; ai.notes[x.id] = x.note || ""; });
+      ai.status = "done"; keep();
+      if (checked) { showResults(lastQuestions); paintStamp(false); announce(); }
+      onChange();
+    },
+    /** What the student wrote for the written questions: { id: text }, for the marking queue. */
+    writtenAnswers(questions) {
+      const out = {};
+      questions.filter((q) => q.type === "sub" || q.type === "theory").forEach((q) => { if (given(q)) out[q.id] = String(answers[q.id]); });
+      return out;
+    },
+    get ai() { return ai; },
     check(questions) { checked = true; return score(questions); },
     reopen() { checked = false; dropResult(); },
     clear() { answers = {}; checked = false; dropResult(); keep(); },

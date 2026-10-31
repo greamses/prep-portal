@@ -43,7 +43,8 @@ let base = [];                    // the paper in the order the teacher wrote it
 const seedKey = () => `xm-shuffle-${code}`;
 let isOwner = false;
 let room = null;
-let watcher = null;               // the camera check, when the teacher set one (events only: see exam-watch.js)
+let watcher = null;
+let markPoll = 0, markWait = 0;    // AI marking: the timer of the next look, and how many looks so far               // the camera check, when the teacher set one (events only: see exam-watch.js)
 let tries = 1, used = 0;          // the teacher's number of tries (0 = no limit), and how many this student has used
 /* the owner may always sit their own paper; anyone else may sit it again while they have tries left */
 const canTryAgain = () => isOwner || tries === 0 || used < tries;
@@ -92,6 +93,75 @@ function watchTheRoom(r) {
   r.on("presence", (people) => { here = people; paint(); });
   r.on("state", (s) => { work = s || {}; paint(); });
   paint();
+}
+
+/* ── AI marking of the written answers ──────────────────────────────────────
+   When the paper is checked, the written answers join the server's marking queue (lib/mark-queue.js) and
+   this page waits for the marks, looking again after 3 s, then 5, 8, 12 and every 15, only while the
+   page is open and visible. Nobody is turned away: if the AI is busy the script simply waits its turn. */
+const SAY = {
+  queued: (r) => (r.position > 1 ? `In the marking line: ${r.position - 1} ${r.position === 2 ? "script is" : "scripts are"} ahead of yours` : "Next in the marking line"),
+  working: () => "Being marked now",
+};
+function takeMarkStatus(r) {
+  if (r.status === "done" && r.result) { live.applyAiMarks(r.result.marks); say("Your written answers have been marked."); return true; }
+  if (r.status === "failed") { live.setAi({ on: true, status: "failed", text: "" }); say(`${r.error || "The AI could not mark your answers."} You can mark them yourself against the model answers.`, true); return true; }
+  if (r.status === "queued" || r.status === "working") { live.setAi({ on: true, status: r.status, text: SAY[r.status](r) }); return false; }
+  return true;
+}
+function lookAtMarking() {
+  clearTimeout(markPoll);
+  if (!live.checked || !head || !head.aiMark || isOwner) return;
+  const next = () => { markPoll = setTimeout(lookAtMarking, [3, 5, 8, 12, 15][Math.min(markWait++, 4)] * 1000 || 20000); };
+  if (document.hidden) { document.addEventListener("visibilitychange", lookAtMarking, { once: true }); return; }
+  api(`/api/workbooks/paper/${code}/mark`).then((r) => { if (!takeMarkStatus(r)) next(); }).catch(() => next());
+}
+async function queueMarking() {
+  if (!head || !head.aiMark || isOwner) return;
+  const answers = live.writtenAnswers(questions);
+  if (!Object.keys(answers).length) { live.setAi({ on: true, status: "done", text: "" }); return; }
+  live.setAi({ on: true, status: "queued", text: "Joining the marking line…" });
+  say("Your written answers are being marked by AI. Keep this page open: your marks will appear here.");
+  markWait = 0;
+  try {
+    const r = await api(`/api/workbooks/paper/${code}/mark`, { answers, name: live.name });
+    if (!takeMarkStatus(r)) { markPoll = setTimeout(lookAtMarking, 3000); }
+  } catch (e) {
+    live.setAi({ on: true, status: "failed", text: "" });
+    say(`${String((e && e.message) || "The marking could not be started.")} You can mark your answers yourself against the model answers.`, true);
+  }
+}
+function stopMarking() { clearTimeout(markPoll); live.setAi({ on: !!(head && head.aiMark && !isOwner), status: "off", text: "" }); }
+
+/* the teacher's view of the marking line: every script and how it stands. Read when the page opens, when the
+   key is pressed and when the tab is come back to; each look also gives the queue a push. */
+function mountMarkingList() {
+  const box = document.createElement("section");
+  box.className = "pp-live pp-watchlist";
+  box.innerHTML = `<h2 class="pp-live__cap">AI marking <button type="button" class="pp-btn pp-watchlist__refresh"></button></h2>
+    <p class="pp-watchlist__how">Finished scripts are marked in turn, at the rate the AI allows. Pressing the key checks on them and gives the line a push.</p>
+    <div class="pp-watchlist__who"><p class="pp-live__none">Reading the line…</p></div>`;
+  document.querySelector(".xm-preview").prepend(box);
+  faceOf(box.querySelector(".pp-watchlist__refresh"), UI.refresh(16), "Check on the marking");
+  const list = box.querySelector(".pp-watchlist__who");
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const TONE = { done: "ok", queued: "warn", working: "warn", failed: "danger" };
+  const WORD = { done: "Marked", queued: "Waiting", working: "Being marked", failed: "Could not mark" };
+  let at = 0;
+  async function read(force) {
+    if (!force && Date.now() - at < 20000) return;
+    at = Date.now();
+    try {
+      const d = await api(`/api/workbooks/paper/${code}/marking`);
+      list.innerHTML = d.total
+        ? `<p class="pp-watchlist__how"><b>${d.done}</b> marked · <b>${d.queued + d.working}</b> waiting${d.failed ? ` · <b>${d.failed}</b> could not be marked` : ""} of ${d.total}</p>`
+          + d.students.map((s) => `<div class="pp-watchlist__one"><span class="pp-pill pp-pill--static pp-pill--${TONE[s.status] || "warn"}">${WORD[s.status] || s.status}</span> <b>${esc(s.name)}</b>${s.error ? ` · ${esc(s.error)}` : ""}</div>`).join("")
+        : `<p class="pp-live__none">No script has been sent for marking yet.</p>`;
+    } catch (e) { list.innerHTML = `<p class="pp-live__none">${esc(String((e && e.message) || e).slice(0, 120))}</p>`; }
+  }
+  box.querySelector(".pp-watchlist__refresh").addEventListener("click", () => read(true));
+  addEventListener("focus", () => read(false));
+  read(true);
 }
 
 /* ── the teacher's list of camera-check notes ─────────────────────────────
@@ -244,6 +314,8 @@ async function open() {
     syncClock();
     joinLive();
     if (isOwner && head.camera) mountWatchList();
+    if (isOwner && head.aiMark) mountMarkingList();
+    if (!isOwner && head.aiMark) live.setAi({ on: true, status: "off", text: "" });
   } catch (e) {
     say(String((e && e.message) || e || "Could not open the paper.").slice(0, 200), true);
   }
@@ -251,7 +323,7 @@ async function open() {
 
 /* the countdown, when the paper was set with a timer; the paper is checked when it runs out */
 const clock = createClock($("xm-clock"), {
-  onEnd: () => { if (!live.checked) { live.check(questions); draw(); faces(); $("xm-score").textContent = "Time is up. " + $("xm-score").textContent; watcher && watcher.flush(true); } },
+  onEnd: () => { if (!live.checked) { live.check(questions); draw(); faces(); $("xm-score").textContent = "Time is up. " + $("xm-score").textContent; watcher && watcher.flush(true); queueMarking(); } },
 });
 function syncClock() {
   if (head && head.timer && !live.checked) { if (!clock.running) clock.start(minutesFor(head.time, questions.length) * 60); }
@@ -289,6 +361,8 @@ $("xm-check").addEventListener("click", () => {
   if (live.checked && !live.name.trim()) say("Type your name on the paper, so your teacher knows whose score this is.");
   else if (live.checked && !canTryAgain()) say(tries === 1 ? "That was your one try. Your score has gone to your teacher." : `You have used all ${tries} tries. Your score has gone to your teacher.`);
   else if (live.checked) say(`Scored${triesNote()}. Press the arrow to answer again.`);
+  /* written answers go to the AI marking line (after the messages above, so its own message is the one left showing) */
+  if (live.checked) queueMarking(); else stopMarking();
 });
 $("xm-clear").addEventListener("click", () => { if (live.checked && !canTryAgain()) return; live.clear(); draw(); faces(); clock.stop(); syncClock(); });
 faces();

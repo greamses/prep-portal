@@ -33,3 +33,7 @@ html, body { overflow-x: clip !important; overflow-y: visible !important; }
 .pp-watchlist__one ul { margin: 0.3rem 0 0.2rem; padding-left: 1.1rem; font-size: 0.74rem; font-weight: 400; }
 .pp-watchlist__one p { margin: 0.3rem 0 0.2rem; font-size: 0.74rem; font-weight: 400; }
 .pp-watchlist__refresh { margin-left: 0.4rem; vertical-align: middle; }
+.pp-watchlist .pp-pill { background: var(--surface-primary, #fffdf8); font-weight: 800; }
+.pp-watchlist .pp-pill--ok { color: #1c7a3a; }
+.pp-watchlist .pp-pill--warn { color: #8a5a10; }
+.pp-watchlist .pp-pill--danger { color: #b0302a; }

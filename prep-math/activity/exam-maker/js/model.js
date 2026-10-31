@@ -59,7 +59,9 @@ export const BLANK_HEAD = {
   school: "", term: "", year: "", subject: "", date: "", klass: "", time: "",
   logo: "", colour: "indigo", paper: "a4", key: false, tint: false, clean: true, omr: false, theorySheet: false, timer: false, camera: false,
   /* an instructions page the student reads before the exam starts (and what the teacher adds to it), and an answer booklet */
-  instructions: false, instrText: "", booklet: false, custom: "", breakAt: {},
+  instructions: false, instrText: "", booklet: false,
+  /* written answers marked by AI, queued so every script is marked however many finish together */
+  aiMark: false, custom: "", breakAt: {},
   /* how many times a student may sit it (check it); 0 = no limit */
   tries: 1,
   /* how many questions of each kind are to be attempted ("answer any 3"); none or 0 = all of them */

@@ -506,7 +506,7 @@ button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
 .xp-mark--right { color: #1f9d46; }
 .xp-mark--wrong { color: #d6322a; }
 .xp-mark--part { color: #1f9d46; }
-.xp-mark small { position: absolute; left: 6.2mm; top: 3.6mm; font: 800 2.6mm/1 "JetBrains Mono", monospace; color: #1f9d46; white-space: nowrap; }
+.xp-mark small { position: absolute; left: 0.4mm; top: 6.4mm; font: 800 2.6mm/1 "JetBrains Mono", monospace; color: #1f9d46; white-space: nowrap; }
 .xp-cols .xp-mark { left: -7.4mm; }
 
 /* the bubbles: filled, with the tick or the cross where the letter was */
@@ -568,3 +568,10 @@ button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
 .xp-booklet .xp-bpage { padding-top: 5mm; }
 @media screen { .xp-booklet .xp-sheetpage { border-top: 1mm dashed var(--c); margin-top: 9mm; padding-top: 6mm; } }
 @media print { .xp-bpage__run { color: var(--ci) !important; border-bottom: 0.4mm solid var(--c) !important; } }
+
+/* the AI's mark under a written answer */
+.xp-aimark { margin-top: 1.4mm; display: flex; flex-wrap: wrap; align-items: center; gap: 1.6mm; font-size: 0.92em; }
+.xp-aimark .pp-pill { font-size: 0.7em; }
+@media print { .xp-aimark .pp-pill { border-color: #8c8577 !important; } }
+.xp-aimark .pp-pill--ok { color: #1c7a3a; font-weight: 800; }
+.xp-aimark .pp-pill--warn { color: #8a5a10; font-weight: 800; }
