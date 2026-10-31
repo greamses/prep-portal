@@ -24,6 +24,7 @@
  */
 
 const express = require("express");
+const tasksLib = require("../lib/tasks");
 const admin = require("firebase-admin");
 const { authenticate } = require("../middleware/auth");
 const { notifyStudents } = require("../lib/notices");
@@ -328,34 +329,7 @@ module.exports = function () {
     }
   });
 
-  async function deleteTask(kind, code) {
-    const k = KINDS[kind];
-    const ref = db().collection(k.col).doc(code);
-    const snap = await ref.get();
-    if (!snap.exists) return false;
-    const a = snap.data();
-    const results = await ref.collection("results").get();
-    /* everyone who has it in their list: those who sent a score, and the owner's whole class */
-    const who = new Set(results.docs.map((d) => d.id));
-    const owner = a.teacherUid || a.ownerUid;
-    if (owner) (await rosterOf(owner).get()).docs.forEach((d) => who.add(d.id));
-    const refs = [...results.docs.map((d) => d.ref)];
-    who.forEach((uid) => {
-      refs.push(db().collection("studentAssignments").doc(uid).collection("items").doc(k.item(code)));
-      refs.push(db().collection("studentNotices").doc(uid).collection("items").doc(`task_${kind}_${code}`));
-    });
-    if (owner) {
-      const notes = await db().collection("teacherNotices").doc(owner).collection("items").where("code", "==", code).get();
-      notes.docs.forEach((d) => refs.push(d.ref));
-    }
-    for (let i = 0; i < refs.length; i += 400) {
-      const batch = db().batch();
-      refs.slice(i, i + 400).forEach((r) => batch.delete(r));
-      await batch.commit();
-    }
-    await ref.delete();
-    return true;
-  }
+  const deleteTask = (kind, code) => tasksLib.deleteTask(db(), kind, code);
 
   router.delete("/tasks", authenticate, async (req, res) => {
     try {

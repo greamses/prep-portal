@@ -800,7 +800,7 @@ faceOf($("xm-print"), UI.print(18), "Print");
 faceOf($("xm-share"), UI.link(18), "Share link");
 faceOf($("xm-exam-save"), UI.save(18), "Save this whole exam");
 faceOf($("xm-exam-new"), UI.plus(18), "Save as a new exam");
-faceOf($("xm-exam-open"), UI.layers(18), "My exams");
+faceOf($("xm-exam-open"), UI.layers(18), "Everything I have built");
 showNewKey();
 faceOf($("xm-qbank-save"), UI.save(18), "Keep this paper's questions in my bank");
 faceOf($("xm-qbank-open"), UI.book(18), "Open my question bank");

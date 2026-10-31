@@ -44,8 +44,12 @@ export async function openExams({ onOpen, onGone = () => {} }) {
   box.innerHTML = `
     <div class="pp-receipt xm-qbank__card" role="dialog" aria-modal="true" aria-label="My exams">
       <div class="pp-receipt__paper xm-qbank__paper">
-        <div class="xm-qbank__head"><h2>My exams</h2><button type="button" class="pp-btn xm-qbank__close"></button></div>
-        <p class="xm-qbank__msg" id="xm-ex-msg" role="status">Opening your exams…</p>
+        <div class="xm-qbank__head"><h2>Everything I have built</h2><button type="button" class="pp-btn xm-qbank__close"></button></div>
+        <div class="xm-ex__scope" id="xm-ex-scope" role="group" aria-label="Whose work" hidden>
+          <button type="button" class="pp-btn" data-scope="mine" aria-pressed="true">Mine</button>
+          <button type="button" class="pp-btn" data-scope="all" aria-pressed="false">All teachers</button>
+        </div>
+        <p class="xm-qbank__msg" id="xm-ex-msg" role="status">Opening your work…</p>
         <ul class="xm-qbank__list" id="xm-ex-list"></ul>
       </div>
     </div>`;
@@ -60,48 +64,77 @@ export async function openExams({ onOpen, onGone = () => {} }) {
   box.querySelector(".xm-qbank__close").addEventListener("click", close);
 
   let items = [];
-  const armed = new Map(); // id → timer of a delete waiting for its second press
+  let scope = "mine";
+  const KIND = { exam: "Exam", paper: "Paper link", workbook: "Workbook" };
+  const LINK = { paper: (c) => `/paper/${c}`, workbook: (c) => `/wb/${c}` };
+  const armed = new Map(); // "kind:id" → timer of a delete waiting for its second press
 
   function paint() {
     const now = currentExamId();
-    $("xm-ex-list").innerHTML = items.map((x) => `<li class="xm-qbank__item xm-ex" data-id="${esc(x.id)}">`
-      + `<div class="xm-ex__main"><b class="xm-ex__title">${esc(x.title)}</b>`
-      + `<small>${esc([x.subject, x.klass].filter(Boolean).join(" · "))}${x.subject || x.klass ? " · " : ""}${x.questions} question${x.questions === 1 ? "" : "s"} · ${x.marks} mark${x.marks === 1 ? "" : "s"} · saved ${esc(when(x.savedAt))}${x.id === now ? " · on the bench" : ""}</small></div>`
-      + `<button type="button" class="pp-btn" data-do="open"></button><button type="button" class="pp-btn" data-do="del"></button></li>`).join("");
+    $("xm-ex-list").innerHTML = items.map((x, i) => {
+      const bits = [[x.subject, x.klass].filter(Boolean).join(" · ")];
+      if (x.kind !== "workbook") bits.push(`${x.questions} question${x.questions === 1 ? "" : "s"}`, `${x.marks} mark${x.marks === 1 ? "" : "s"}`);
+      if (x.kind !== "exam") bits.push(`${x.students} student${x.students === 1 ? "" : "s"} sent it back`);
+      bits.push(`${x.kind === "exam" ? "saved" : "shared"} ${when(x.savedAt)}`);
+      if (scope === "all" && x.owner) bits.push(`by ${x.owner}`);
+      if (x.kind === "exam" && x.id === now) bits.push("on the bench");
+      return `<li class="xm-qbank__item xm-ex" data-i="${i}">`
+        + `<div class="xm-ex__main"><b class="xm-ex__title"><span class="xm-qbank__kind">${KIND[x.kind]}</span> ${esc(x.title)}</b>`
+        + `<small>${esc(bits.filter(Boolean).join(" · "))}</small></div>`
+        + (x.kind === "exam" ? `<button type="button" class="pp-btn" data-do="open"></button>` : `<a class="pp-btn" data-do="link" href="${esc(LINK[x.kind](x.id))}" target="_blank" rel="noopener"></a>`)
+        + `<button type="button" class="pp-btn" data-do="del"></button></li>`;
+    }).join("");
     box.querySelectorAll(".xm-ex").forEach((li) => {
-      faceOf(li.querySelector('[data-do="open"]'), UI.open(18), "Open this exam on the bench");
-      faceOf(li.querySelector('[data-do="del"]'), UI.trash(18), "Delete this exam");
+      const x = items[+li.dataset.i];
+      if (x.kind === "exam") faceOf(li.querySelector('[data-do="open"]'), UI.open(18), "Open this exam on the bench");
+      else faceOf(li.querySelector('[data-do="link"]'), UI.external(18), x.kind === "paper" ? "Open the paper link" : "Open the workbook link");
+      faceOf(li.querySelector('[data-do="del"]'), UI.trash(18), `Delete this ${KIND[x.kind].toLowerCase()}`);
     });
-    $("xm-ex-msg").textContent = items.length ? "" : "Nothing saved yet. Build an exam, then press the save-exam key to keep the whole paper here.";
+    $("xm-ex-msg").textContent = items.length ? "" : "Nothing yet. Save an exam with the save-exam key, share a paper, or assign a workbook, and it appears here.";
   }
 
   async function load() {
-    try { items = (await api("/api/exams")).items; paint(); }
-    catch (e) { $("xm-ex-msg").textContent = String((e && e.message) || e).slice(0, 160); }
+    try {
+      const d = await api(`/api/exams/built?scope=${scope}`);
+      items = d.items;
+      $("xm-ex-scope").hidden = !d.admin;
+      paint();
+    } catch (e) { $("xm-ex-msg").textContent = String((e && e.message) || e).slice(0, 160); }
   }
+
+  /* the administrator's switch between their own work and every teacher's */
+  $("xm-ex-scope").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-scope]"); if (!b || b.dataset.scope === scope) return;
+    scope = b.dataset.scope;
+    $("xm-ex-scope").querySelectorAll("[data-scope]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    $("xm-ex-msg").textContent = "Gathering…"; $("xm-ex-list").innerHTML = "";
+    load();
+  });
 
   $("xm-ex-list").addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-do]"); if (!btn) return;
-    const li = btn.closest(".xm-ex"), id = li.dataset.id;
+    if (btn.dataset.do === "link") return; // an ordinary link: the browser opens it
+    const li = btn.closest(".xm-ex"), x = items[+li.dataset.i], id = x.id, key = `${x.kind}:${id}`;
     if (btn.dataset.do === "open") {
       try {
         $("xm-ex-msg").textContent = "Opening…";
-        const full = await api(`/api/exams/${id}`);
+        const full = await api(`/api/exams/${id}${scope === "all" && x.ownerUid ? `?ownerUid=${encodeURIComponent(x.ownerUid)}` : ""}`);
         onOpen(full);
         close();
       } catch (err) { $("xm-ex-msg").textContent = String((err && err.message) || err).slice(0, 160); }
       return;
     }
     /* two presses to delete: the first only asks */
-    if (!armed.has(id)) {
-      armed.set(id, setTimeout(() => { armed.delete(id); faceOf(btn, UI.trash(18), "Delete this exam"); }, 4000));
-      faceOf(btn, UI.trash(18), "Press again to delete this exam for good");
+    const what = KIND[x.kind].toLowerCase();
+    if (!armed.has(key)) {
+      armed.set(key, setTimeout(() => { armed.delete(key); faceOf(btn, UI.trash(18), `Delete this ${what}`); }, 4000));
+      faceOf(btn, UI.trash(18), x.kind === "exam" ? "Press again to delete this exam for good" : `Press again: the ${what} and the scores sent back to it go for good`);
       return;
     }
-    clearTimeout(armed.get(id)); armed.delete(id);
+    clearTimeout(armed.get(key)); armed.delete(key);
     try {
-      await api(`/api/exams/${id}`, undefined, "DELETE");
-      if (currentExamId() === id) setCurrentExamId("");
+      await api("/api/exams/built", { kind: x.kind, id, ownerUid: x.ownerUid }, "DELETE");
+      if (x.kind === "exam" && currentExamId() === id) setCurrentExamId("");
       onGone(id);
       await load();
       $("xm-ex-msg").textContent = "Deleted.";

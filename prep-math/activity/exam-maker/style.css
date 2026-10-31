@@ -489,3 +489,7 @@ button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
 .xm-ex .xm-ex__main small { margin: 0.15rem 0 0; }
 .xm-ex__title { font-size: 0.86rem; overflow-wrap: anywhere; }
 .xm-main #xm-exam-title { min-width: 11rem; flex: 1 1 11rem; }
+.xm-ex__scope { display: flex; gap: 0.5rem; }
+.xm-ex__scope[hidden] { display: none; }
+.xm-ex__scope .pp-btn[aria-pressed="true"] { outline: 2px solid #2a2723; outline-offset: 1px; }
+.xm-ex .pp-btn[data-do] { min-width: 2.6rem; }

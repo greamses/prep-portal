@@ -6,6 +6,8 @@
  *   GET    /api/exams/:id    one exam in full: { id, title, head, questions }
  *   POST   /api/exams        { id?, title?, head, questions }  save it; with an id of theirs it is overwritten
  *   DELETE /api/exams/:id    take it out
+ *   GET    /api/exams/built?scope=all   everything built: exams, shared papers, assigned workbooks (all: administrator)
+ *   DELETE /api/exams/built   { kind: exam|paper|workbook, id, ownerUid? }  delete one, with what hangs off it
  *
  * It is the caller's own shelf, always: there is no way to name anyone else's. Allowed to the same people
  * as the question bank (teachers, the administrator, anyone the Exam Maker is open to). A SUBcollection of
@@ -18,6 +20,7 @@ const admin = require("firebase-admin");
 const { authenticate } = require("../middleware/auth");
 const access = require("../lib/access");
 const { cleanQuestion } = require("../lib/question-bank");
+const tasks = require("../lib/tasks");
 
 const MAX_EXAMS = 100;       // per teacher
 const MAX_QUESTIONS = 300;   // per exam
@@ -60,9 +63,71 @@ module.exports = function () {
     });
   }));
 
+  /* ── everything a teacher has built ──────────────────────────────────────
+     Saved exams, paper links they shared and workbooks they assigned, in one list, each of which can
+     be deleted. The administrator may ask for every teacher's (scope=all) and delete any of it. */
+  const marksOf = (qs) => (Array.isArray(qs) ? qs.reduce((n, q) => n + (Number(q && q.marks) || 0), 0) : 0);
+
+  router.get("/built", authenticate, guard(async (req, res) => {
+    const everyone = req.query.scope === "all";
+    if (everyone && !isAdmin(req)) return res.status(403).json({ error: "Only the administrator can see every teacher's work." });
+    const items = [];
+
+    const exam = (uid, owner, d) => {
+      const x = d.data();
+      items.push({ kind: "exam", id: d.id, title: x.title || "Untitled exam", subject: x.subject || "", klass: x.klass || "", questions: x.count || 0, marks: x.marks || 0, students: 0, savedAt: ms(x.savedAt), owner, ownerUid: uid });
+    };
+    if (everyone) {
+      const names = new Map();
+      const who = await db().collection("users").where("role", "in", ["teacher", "admin"]).limit(300).get();
+      who.docs.forEach((d) => names.set(d.id, d.data().name || d.data().displayName || "Teacher"));
+      if (!names.has(req.user.uid)) names.set(req.user.uid, "You");
+      await Promise.all([...names].map(async ([uid, name]) => {
+        (await shelf(uid).orderBy("savedAt", "desc").limit(MAX_EXAMS).get()).docs.forEach((d) => exam(uid, name, d));
+      }));
+    } else {
+      (await shelf(req.user.uid).orderBy("savedAt", "desc").limit(MAX_EXAMS).get()).docs.forEach((d) => exam(req.user.uid, "", d));
+    }
+
+    const q = (col, field) => (everyone ? db().collection(col).limit(500) : db().collection(col).where(field, "==", req.user.uid).limit(100)).get();
+    const [papers, workbooks] = await Promise.all([q("sharedPapers", "ownerUid"), q("workbookAssignments", "teacherUid")]);
+    papers.docs.forEach((d) => {
+      const a = d.data();
+      items.push({ kind: "paper", id: d.id, title: a.title || "Exam paper", subject: (a.head && a.head.subject) || "", klass: (a.head && a.head.klass) || "", questions: (a.questions || []).length, marks: marksOf(a.questions), students: a.students || 0, savedAt: ms(a.createdAt), owner: a.ownerName || "", ownerUid: a.ownerUid || "" });
+    });
+    workbooks.docs.forEach((d) => {
+      const a = d.data();
+      items.push({ kind: "workbook", id: d.id, title: a.title || "Workbook", subject: "", klass: "", questions: 0, marks: 0, students: a.students || 0, savedAt: ms(a.createdAt), owner: a.teacherName || "", ownerUid: a.teacherUid || "" });
+    });
+    items.sort((a, b) => b.savedAt - a.savedAt);
+    res.json({ ok: true, admin: isAdmin(req), items });
+  }));
+
+  router.delete("/built", authenticate, guard(async (req, res) => {
+    const b = req.body || {};
+    const kind = String(b.kind || "");
+    if (kind === "exam") {
+      const id = String(b.id || "");
+      if (!/^[a-f0-9]{20}$/.test(id)) return res.status(404).json({ error: "That exam is not there." });
+      /* the owner is the caller, unless the administrator names a teacher */
+      const owner = isAdmin(req) && /^[A-Za-z0-9_-]{1,128}$/.test(String(b.ownerUid || "")) ? String(b.ownerUid) : req.user.uid;
+      await shelf(owner).doc(id).delete();
+      return res.json({ ok: true });
+    }
+    if (!tasks.KINDS[kind]) return res.status(400).json({ error: "Choose an exam, a paper or a workbook." });
+    const code = String(b.id || "").toUpperCase();
+    if (!/^[A-Z2-9]{6}$/.test(code)) return res.status(404).json({ error: "That one is not there." });
+    const done = await tasks.deleteTask(db(), kind, code, (owner) => isAdmin(req) || owner === req.user.uid);
+    if (done === "forbidden") return res.status(403).json({ error: "That one is not yours to delete." });
+    if (!done) return res.status(404).json({ error: "That one is not there." });
+    res.json({ ok: true });
+  }));
+
   router.get("/:id", authenticate, guard(async (req, res) => {
     if (!/^[a-f0-9]{20}$/.test(req.params.id)) return res.status(404).json({ error: "That exam is not on your shelf." });
-    const d = await shelf(req.user.uid).doc(req.params.id).get();
+    /* the caller's own shelf; the administrator may open a teacher's by naming them */
+    const owner = isAdmin(req) && /^[A-Za-z0-9_-]{1,128}$/.test(String(req.query.ownerUid || "")) ? String(req.query.ownerUid) : req.user.uid;
+    const d = await shelf(owner).doc(req.params.id).get();
     if (!d.exists) return res.status(404).json({ error: "That exam is not on your shelf." });
     const x = d.data();
     let head = {};
