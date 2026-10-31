@@ -22,6 +22,7 @@ import { saveExam, openExams, currentExamId, setCurrentExamId } from "./exams.js
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { UI } from "/utils/components/ui-icons.js";
+import { TOOL_ICONS } from "/utils/components/workbook/instruments.js";
 import { GROQ_MODELS, GEMINI_MODELS_UI } from "/utils/ai-models.js";
 import { faceOf } from "/utils/components/workbook/icons.js";
 import { enhanceSelects } from "/utils/components/pp-select.js";
@@ -144,6 +145,7 @@ function fillHead() {
   $("xm-booklet").checked = !!state.head.booklet;
   $("xm-aimark").checked = !!state.head.aiMark;
   $("xm-hold").checked = !!state.head.holdResults;
+  if (window.__paintRailTools) window.__paintRailTools();
   $("xm-examno").checked = !!state.head.examNo; $("xm-exdigits-wrap").hidden = !state.head.examNo; $("xm-exdigits").value = state.head.examDigits || 8;
   $("xm-tries").value = state.head.tries == null ? 1 : state.head.tries;
   $("xm-tsheet").checked = !!state.head.theorySheet;
@@ -544,16 +546,64 @@ document.querySelectorAll("[data-add]").forEach((b) => b.addEventListener("click
 }));
 
 /* ── the model ─────────────────────────────────────────────────────────── */
-/* which AI model writes the questions: Automatic, or one of the Groq / Gemini models by name (kept on this machine) */
+/* which AI model writes the questions: Automatic, or one of a few named models, each a picture with its name in the tooltip (kept on this machine) */
 {
-  const sel = document.getElementById("xm-ai-model");
-  if (sel) {
-    const group = (label, items) => `<optgroup label="${label}">${items.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</optgroup>`;
-    sel.insertAdjacentHTML("beforeend",
-      group("Gemini", GEMINI_MODELS_UI.map((m) => [`gemini:${m.url}`, m.label]))
-      + group("Groq", GROQ_MODELS.map((m) => [`groq:${m.model}`, m.label])));
-    try { const was = localStorage.getItem("xm-ai-model"); if (was && [...sel.options].some((o) => o.value === was)) sel.value = was; } catch { /* the default */ }
-    sel.addEventListener("change", () => { try { localStorage.setItem("xm-ai-model", sel.value); } catch { /* not kept */ } });
+  const box = document.getElementById("xm-ai-models"), val = document.getElementById("xm-ai-model");
+  if (box && val) {
+    const gem = (needle) => GEMINI_MODELS_UI.find((m) => m.label === needle);
+    const grq = (needle) => GROQ_MODELS.find((m) => m.label === needle);
+    const choices = [
+      ["auto", "sparkle", "Automatic: the best one available"],
+      gem("Gemini 3.8 Flash") && [`gemini:${gem("Gemini 3.8 Flash").url}`, "bolt", "Gemini 3.8 Flash: quick"],
+      gem("Gemini 3.5 Pro") && [`gemini:${gem("Gemini 3.5 Pro").url}`, "think", "Gemini 3.5 Pro: most careful (paid keys only)"],
+      grq("Llama 3.3 70B") && [`groq:${grq("Llama 3.3 70B").model}`, "cpu", "Llama 3.3 70B (Groq)"],
+      grq("GPT-OSS 120B") && [`groq:${grq("GPT-OSS 120B").model}`, "cube", "GPT-OSS 120B (Groq)"],
+      grq("Qwen3 32B") && [`groq:${grq("Qwen3 32B").model}`, "gear", "Qwen3 32B (Groq)"],
+    ].filter(Boolean);
+    let was = "auto";
+    try { const w = localStorage.getItem("xm-ai-model"); if (w && choices.some((c) => c[0] === w)) was = w; } catch { /* the default */ }
+    val.value = was;
+    choices.forEach(([v, icon, name]) => {
+      const bt = document.createElement("button");
+      bt.type = "button"; bt.className = "pp-btn pp-note-btn xm-ico"; bt.dataset.v = v;
+      bt.setAttribute("role", "radio"); bt.setAttribute("aria-checked", String(v === was)); bt.setAttribute("aria-pressed", String(v === was));
+      faceOf(bt, UI[icon](22), name);
+      bt.addEventListener("click", () => {
+        val.value = v;
+        box.querySelectorAll(".xm-ico").forEach((x) => { const on = x === bt; x.setAttribute("aria-checked", String(on)); x.setAttribute("aria-pressed", String(on)); });
+        try { localStorage.setItem("xm-ai-model", v); } catch { /* not kept */ }
+      });
+      box.appendChild(bt);
+    });
+  }
+}
+/* the families of tools on the side rail during the exam: all on to begin with; the pick is kept with the paper */
+{
+  const box = document.getElementById("xm-railtools");
+  if (box) {
+    const FAM = [
+      ["draw", "ruler", "Drawing and measuring"], ["work", "calculator", "Calculator and working out"], ["count", "bench", "Counting"],
+      ["shapes", "shapes", "Shapes and graphs"], ["tables", "tables", "Times tables"], ["model", "barmodel", "Models"],
+      ["algebra", "gm", "Algebra"], ["note", "note", "Notes"],
+    ];
+    const paint = () => {
+      const on = new Set(Array.isArray(state.head.railTools) ? state.head.railTools : FAM.map((f) => f[0]));
+      box.querySelectorAll(".xm-ico").forEach((x) => { x.setAttribute("aria-pressed", String(on.has(x.dataset.v))); });
+    };
+    FAM.forEach(([id, icon, name]) => {
+      const bt = document.createElement("button");
+      bt.type = "button"; bt.className = "pp-btn pp-note-btn xm-ico"; bt.dataset.v = id;
+      bt.innerHTML = TOOL_ICONS[icon] || ""; bt.dataset.tip = name; bt.setAttribute("aria-label", name);
+      bt.addEventListener("click", () => {
+        const now = new Set(Array.isArray(state.head.railTools) ? state.head.railTools : FAM.map((f) => f[0]));
+        if (now.has(id)) now.delete(id); else now.add(id);
+        state.head.railTools = now.size === FAM.length ? null : FAM.map((f) => f[0]).filter((f) => now.has(f));
+        paint(); save();
+      });
+      box.appendChild(bt);
+    });
+    paint();
+    window.__paintRailTools = paint;     // called when a saved exam is opened
   }
 }
 
@@ -737,7 +787,7 @@ function setLive(on) {
   examOn = on; gate.check();
   if (on && state.head.camera && !benchWatch) { benchWatch = createWatch({ code: "bench", test: true, send: async () => {} }); benchWatch.begin(); }
   if (!on && benchWatch) { benchWatch.stop(); benchWatch = null; }
-  if (!tools) tools = mountTools({ sheet, viewport: document.querySelector(".xm-viewport"), toolbar: document.querySelector(".wb-toolbar") });
+  if (!tools) tools = mountTools({ sheet, viewport: document.querySelector(".xm-viewport"), toolbar: document.querySelector(".wb-toolbar"), families: state.head.railTools });
   if (on) tools.on(); else tools.off();
   live.setOn(on);
   $("xm-live").setAttribute("aria-pressed", String(on));

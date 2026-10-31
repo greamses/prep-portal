@@ -20,9 +20,12 @@
 
 import { mountInteractive } from "/utils/components/workbook/interactive.js";
 
-const FAMILIES = ["draw", "work", "count", "shapes", "tables", "model", "algebra", "note"];
+export const FAMILIES = ["draw", "work", "count", "shapes", "tables", "model", "algebra", "note"];
 
-export function mountTools({ sheet, viewport, toolbar }) {
+export function mountTools({ sheet, viewport, toolbar, families = null }) {
+  /* the teacher picks which families sit on the rail (null is all); none at all means no rail */
+  const want = Array.isArray(families) ? FAMILIES.filter((f) => families.includes(f)) : FAMILIES;
+  if (!want.length) return { ready: Promise.resolve(), async on() {}, async off() {} };
   let api = null;
   /* the protractor is drawn by the geometry workbook; the rail needs it up front */
   const ready = (async () => {
@@ -31,7 +34,7 @@ export function mountTools({ sheet, viewport, toolbar }) {
     try {
       api = mountInteractive({
         sheet, viewport, scaler: viewport, toolbar, refit: () => {},
-        rail: FAMILIES, railWithout: ["pencil", "eraser"], protractor,
+        rail: want, railWithout: ["pencil", "eraser"], protractor,
       });
     } catch (e) {
       console.warn("[exam tools] the rail could not be mounted:", e);

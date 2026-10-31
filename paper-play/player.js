@@ -460,7 +460,7 @@ async function open() {
     live.setOn(true);
     $("xm-check").hidden = false; $("xm-clear").hidden = false;
     /* the workbook tool rail, for working out beside the paper */
-    mountTools({ sheet, viewport: document.querySelector(".xm-viewport"), toolbar: document.querySelector(".wb-toolbar") }).on();
+    mountTools({ sheet, viewport: document.querySelector(".xm-viewport"), toolbar: document.querySelector(".wb-toolbar"), families: head.railTools }).on();
     say(`${questions.length} questions · ${paperMarks(questions, head.attempt)} marks${triesNote()}.`);
     draw();
     syncClock();

@@ -429,6 +429,8 @@ module.exports = function () {
     head.paper = h.paper === "letter" ? "letter" : "a4";
     for (const k of ["tint", "clean", "omr", "theorySheet", "timer", "camera", "instructions", "booklet", "aiMark", "examNo", "holdResults"]) head[k] = !!h[k];
     head.examDigits = Math.max(4, Math.min(12, Math.round(Number(h.examDigits)) || 8));
+    const RAIL = ["draw", "work", "count", "shapes", "tables", "model", "algebra", "note"];
+    head.railTools = Array.isArray(h.railTools) ? RAIL.filter((f) => h.railTools.includes(f)) : null;
     head.instrText = clip(String(h.instrText || "").replace(/\r/g, ""), 1500).trim();
     head.key = false;
     head.breakAt = {};
