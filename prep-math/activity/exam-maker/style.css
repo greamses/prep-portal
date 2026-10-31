@@ -401,9 +401,9 @@ button.pp-btn.xo-tab { position: fixed; top: auto; bottom: 1.4rem; right: 0; lef
 button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
 
 /* the countdown in the toolbar */
-.xm-clock { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 0.95rem; letter-spacing: 0.04em; padding: 0.15rem 0.6rem; border: 1px solid rgba(42, 39, 35, 0.35); background: #fff; color: #1d1b18; }
+.xm-clock.pp-pill { position: fixed; top: 5.4rem; right: 0.9rem; z-index: 10052; font-variant-numeric: tabular-nums; font-weight: 800; font-size: 1.1rem; letter-spacing: 0.06em; padding: 0.45rem 1rem; color: var(--ink, #2a2723); }
 .xm-clock[hidden] { display: none; }
-.xm-clock.is-low { color: #b0453d; border-color: #b0453d; }
+.xm-clock.pp-pill.is-low { color: #b3261e; font-weight: 900; }
 @media print { .xm-clock { display: none !important; } }
 
 /* the "any colour" swatch: a colour wheel until a custom colour is chosen, then that colour */
@@ -655,3 +655,5 @@ button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
 .xp-instrpage .xp-istruct .xp-ih { margin-top: 1.6mm; }
 .xp-instrpage .xp-ititle { padding: 1.4mm 3.4mm; }
 .xp-instrpage .xp-ifacts { margin-bottom: 1.2mm; }
+.xm-clock.pp-pill[hidden] { display: none; }
+html.xm-clocked .pp-watch.pp-sticky { top: 9.4rem; }

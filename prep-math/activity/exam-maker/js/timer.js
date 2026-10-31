@@ -34,10 +34,15 @@ export function createClock(el, { onEnd = () => {} } = {}) {
   let left = 0;
   let timer = 0;
   let running = false;
+  /* The clock is the site's pill, fixed to the edge of the window so the student sees it wherever they have scrolled to
+     (the camera's self-view stacks under it: html.xm-clocked). It turns red in the last minute. */
+  el.classList.add("pp-pill", "pp-pill--static");
   const paint = () => {
     el.textContent = running ? fmt(left) : "";
     el.classList.toggle("is-low", running && left <= 60);
+    el.classList.toggle("pp-pill--danger", running && left <= 60);
     el.hidden = !running;
+    document.documentElement.classList.toggle("xm-clocked", running);
   };
   const stop = () => { clearInterval(timer); timer = 0; running = false; paint(); };
   return {
