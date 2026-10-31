@@ -1,0 +1,46 @@
+/* My classes. Fixed colours on the paper parts, the site's receipt for each block. */
+.cl-main { max-width: 62rem; margin: 0 auto; padding: 6rem 1rem 4rem; color: var(--text-primary, #2a2723); font-family: "JetBrains Mono", ui-monospace, monospace; }
+.cl-hero { text-align: center; margin-bottom: 1.2rem; }
+.cl-eyebrow { display: block; font: 700 0.72rem/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-secondary, #6b655c); }
+.cl-title { margin: 0.6rem 0 0.4rem; font: 900 clamp(2rem, 5vw, 3rem)/1 "Unbounded", sans-serif; letter-spacing: -0.02em; }
+.cl-title em { color: #f4c95d; font-style: normal; }
+.cl-lead { max-width: 40rem; margin: 0 auto; font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary, #6b655c); }
+.cl-msg { text-align: center; min-height: 1.3em; margin: 0 0 1rem; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary, #6b655c); }
+.cl-msg.is-bad { color: #b0453d; }
+
+/* glyph-only buttons: the name is the tooltip, kept hidden for a screen reader */
+.wb-btn__ico { display: grid; place-items: center; width: 1.15rem; height: 1.15rem; }
+.wb-btn__ico svg { width: 100%; height: 100%; display: block; }
+.wb-btn__name { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+.pp-btn.is-armed { outline: 2px solid #b0453d; background: #ffd9d4; }
+
+.cl-card { margin: 0 0 1.2rem; }
+.cl-card .pp-receipt__paper { padding: 1rem 1.3rem 1.2rem; color: #2a2723; }
+.cl-h { margin: 0 0 0.7rem; font: 800 1rem/1.2 "Unbounded", sans-serif; }
+.cl-h small { font: 400 0.68rem/1 "JetBrains Mono", ui-monospace, monospace; color: #6b655c; }
+.cl-row { display: flex; flex-wrap: wrap; align-items: end; gap: 0.7rem 1rem; margin-top: 0.7rem; }
+.cl-row--between { justify-content: space-between; align-items: center; margin-top: 0; }
+.cl-spacer { flex: 1 1 auto; }
+.cl-field { display: grid; gap: 0.25rem; font: 700 0.64rem/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; }
+.cl-field--grow { flex: 1 1 14rem; }
+.cl-field input, .cl-field select, .cl-grp { font: 600 0.82rem/1.2 "JetBrains Mono", ui-monospace, monospace; padding: 0.4rem 0.5rem; border: 1px solid rgba(42, 39, 35, 0.35); border-radius: 0; background: #fff; color: #2a2723; min-width: 8rem; }
+.cl-code { font-size: 0.74rem; } .cl-code b { padding: 0.1rem 0.45rem; background: #fff3a8; letter-spacing: 0.12em; }
+
+.cl-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.cl-chip { font: 700 0.76rem/1 "JetBrains Mono", ui-monospace, monospace; padding: 0.45rem 0.7rem; border: 1px solid rgba(42, 39, 35, 0.4); background: #fff; color: #2a2723; cursor: pointer; border-radius: 0; }
+.cl-chip b { margin-left: 0.3rem; color: #6b655c; }
+.cl-chip.is-on { background: #fff3a8; outline: 2px solid #2a2723; outline-offset: 1px; }
+
+.cl-bulk { display: flex; flex-wrap: wrap; align-items: end; gap: 0.7rem 1rem; margin-top: 0.8rem; padding: 0.6rem 0.8rem; background: #fff3a8; font-size: 0.78rem; font-weight: 700; }
+.cl-tablewrap { overflow-x: auto; margin-top: 0.8rem; }
+.cl-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.cl-table th, .cl-table td { border-bottom: 1px dashed #cfc8bb; padding: 0.45rem 0.5rem; text-align: left; }
+.cl-table thead th { font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; color: #6b655c; border-bottom: 2px solid #2a2723; }
+.cl-table tbody th { font-weight: 700; }
+.cl-mail { color: #6b655c; overflow-wrap: anywhere; }
+.cl-none, .cl-note { margin: 0.7rem 0 0; font-size: 0.78rem; color: #6b655c; }
+
+/* the site's own scroll bar */
+.cl-tablewrap::-webkit-scrollbar { height: 12px; }
+.cl-tablewrap::-webkit-scrollbar-track { background: #f1ecdf; border-top: 1px dashed rgba(42, 39, 35, 0.28); }
+.cl-tablewrap::-webkit-scrollbar-thumb { background: #f4c95d; border: 3px solid #f1ecdf; box-shadow: inset 0 0 0 1px rgba(42, 39, 35, 0.4); border-radius: 0; }

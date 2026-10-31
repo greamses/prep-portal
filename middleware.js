@@ -55,6 +55,7 @@ const GATED = new Set([
   "/admin/films",
   "/admin/settings",
   "/blogs/auto",
+  "/classes",
   "/dashboard.html",
   "/flashcards/library.html",
   "/home/games/aliens",

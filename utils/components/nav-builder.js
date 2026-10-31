@@ -765,6 +765,10 @@ function buildNav(siteNav) {
   const rightWrap = document.createElement("div");
   rightWrap.className = "nav-right-wrap";
   rightWrap.appendChild(buildThemeToggle());
+  /* the bell: tasks set, results in. Mounted by bell.js, shown only to someone signed in. */
+  const bellHost = document.createElement("div");
+  rightWrap.appendChild(bellHost);
+  import("/utils/components/bell.js").then((m) => m.mountBell(bellHost, auth)).catch(() => {});
   rightWrap.appendChild(buildUserMenu());
 
   const toggle = document.createElement("button");

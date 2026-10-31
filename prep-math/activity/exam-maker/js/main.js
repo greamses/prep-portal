@@ -642,6 +642,40 @@ $("xm-clear").addEventListener("click", () => { live.clear(); clearTimeout(drawT
 addEventListener("beforeprint", () => { if (live.on) live.forPrint(); });
 addEventListener("afterprint", () => { if (live.on) { clearTimeout(drawTimer); draw(); } });
 
+/* Beside the link: set it as a task for the class (or one group), and go live to watch them work.
+   Only a teacher has a class, so a failed lookup simply leaves these out. */
+async function classControls(box, code, url) {
+  let ov = null;
+  try {
+    const { api } = await import("/utils/components/workbook/account.js");
+    ov = await api("/api/classes/overview");
+  } catch { return; }
+  const wrap = document.createElement("span");
+  wrap.className = "xm-assign";
+  const pick = document.createElement("select");
+  pick.className = "wb-select xm-assign__to"; pick.setAttribute("aria-label", "Who to assign it to");
+  pick.innerHTML = `<option value="">Whole class (${ov.students.length})</option>` + ov.groups.map((g) => `<option value="${esc(g.id)}">${esc(g.name)} (${g.count})</option>`).join("");
+  const assign = document.createElement("button");
+  assign.type = "button"; assign.className = "pp-btn";
+  faceOf(assign, UI.userPlus(18), "Assign to class");
+  const say = document.createElement("span");
+  say.className = "xm-assign__say"; say.setAttribute("role", "status");
+  assign.onclick = async () => {
+    assign.disabled = true; say.textContent = "Assigning…";
+    try {
+      const { api } = await import("/utils/components/workbook/account.js");
+      const r = await api("/api/classes/assign-paper", { code, ...(pick.value ? { groupId: pick.value } : { all: true }) });
+      say.textContent = `Set for ${r.assigned} student${r.assigned === 1 ? "" : "s"}. It is on their list, and they have a notice.`;
+    } catch (e) { say.textContent = String((e && e.message) || e).slice(0, 160); }
+    assign.disabled = false;
+  };
+  const live = document.createElement("a");
+  live.className = "pp-btn"; live.href = url; live.target = "_blank"; live.rel = "noopener";
+  faceOf(live, UI.pulse(18), "Go live: watch the class work on it");
+  wrap.append(" ", pick, " ", assign, " ", live, " ", say);
+  box.append(wrap);
+}
+
 $("xm-share").addEventListener("click", async () => {
   const box = $("xm-sharebox"), btn = $("xm-share");
   box.hidden = false;
@@ -657,6 +691,8 @@ $("xm-share").addEventListener("click", async () => {
     const copy = document.createElement("button"); copy.type = "button"; copy.className = "pp-btn pp-btn--ghost"; faceOf(copy, UI.copy(18), "Copy link");
     copy.onclick = async () => { try { await navigator.clipboard.writeText(url); faceOf(copy, UI.check(18), "Copied"); } catch { faceOf(copy, UI.alert(18), "Select the link and copy it"); } };
     box.append("Anyone with an account can sit this paper on screen: ", a, " ", copy);
+    const code = (r.url.match(/\/paper\/([A-Z2-9]{6})/) || [])[1];
+    if (code) await classControls(box, code, url);
   } catch (e) {
     box.textContent = String((e && e.message) || e || "Could not make the link.").slice(0, 200);
   } finally { btn.disabled = false; }

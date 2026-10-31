@@ -133,6 +133,7 @@ function asgItem(a) {
   const isCbt = a.kind === "cbt";
   const isWriting = a.kind === "writing";
   const isWorkbook = a.kind === "workbook";
+  const isPaper = a.kind === "paper";
   const done = a.status === "submitted" || a.status === "reviewed";
   /* A CBT practice test still has no submission hook, so its pill says which
      kind it is rather than pretending to a score that will never arrive.
@@ -140,7 +141,9 @@ function asgItem(a) {
      teacher signing it off flips it to "reviewed" with their score on it. */
   /* A workbook is marked on the student's screen each time they check it, so
      its pill carries their best score so far. */
-  const pill = isWorkbook
+  const pill = isPaper
+    ? (a.bestPct != null ? `<span class="db-pill pill-green">Best ${a.bestPct}%</span>` : `<span class="db-pill pill-yellow">Paper</span>`)
+    : isWorkbook
     ? (a.bestPct != null
         ? `<span class="db-pill pill-green">Best ${a.bestPct}%</span>`
         : `<span class="db-pill pill-yellow">Workbook</span>`)
@@ -155,11 +158,12 @@ function asgItem(a) {
       : done
         ? `<span class="db-pill pill-green">${a.score != null ? `${a.score}/${a.totalMarks}` : "Done"}</span>`
         : `<span class="db-pill pill-yellow">To do</span>`;
-  const href = isWorkbook ? a.workbookUrl
+  const href = isPaper ? a.paperUrl
+    : isWorkbook ? a.workbookUrl
     : isCbt ? a.cbtUrl
     : isWriting ? a.writingUrl
     : `/activity.html?a=${encodeURIComponent(a.shareSlug || a.id)}`;
-  const fallbackTitle = isWorkbook ? "Workbook" : isCbt ? "Practice test" : isWriting ? "Writing task" : "Activity";
+  const fallbackTitle = isPaper ? "Mock paper" : isWorkbook ? "Workbook" : isCbt ? "Practice test" : isWriting ? "Writing task" : "Activity";
   return `<a class="db-assign-item" href="${esc(href)}" style="text-decoration:none;color:inherit">
       <div class="db-assign-top">
         <div><div class="db-assign-title">${esc(a.activityTitle || fallbackTitle)}</div>

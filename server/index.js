@@ -87,6 +87,7 @@ app.use("/api/auth",  require("./routes/auth")());
 app.use("/api/ai",    require("./routes/ai")());
 app.use("/api/activities", quota.guard, require("./routes/activities")());
 app.use("/api/classroom", quota.guard, require("./routes/classroom")());
+app.use("/api/classes", quota.guard, require("./routes/classes")());
 app.use("/api/calendar", quota.guard, require("./routes/calendar")());
 app.use("/api/questions", quota.guard, require("./routes/questions")());
 app.use("/api/config", require("./routes/config")());

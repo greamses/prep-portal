@@ -1,0 +1,30 @@
+/* The bell in the nav (bell.js). The button is the nav's own round key; the list is a receipt. */
+.nav-bell { position: relative; display: flex; align-items: center; }
+.nav-bell[hidden] { display: none; }
+.nav-bell__btn { position: relative; }
+.nav-bell__btn svg { width: 22px; height: 22px; }
+.nav-bell__n { position: absolute; top: -4px; right: -4px; min-width: 1.15rem; height: 1.15rem; padding: 0 0.25rem; box-sizing: border-box; display: grid; place-items: center; border-radius: 50%; background: #e8574d; color: #fff; font: 800 0.62rem/1 "JetBrains Mono", ui-monospace, monospace; border: 2px solid var(--surface-primary, #fffdf8); }
+.nav-bell__n[hidden] { display: none; }
+
+/* two classes, or the receipt's `position: relative` wins on load order */
+.pp-receipt.nav-bell__panel { position: absolute; top: calc(100% + 0.7rem); right: 0; z-index: 10090; width: min(21rem, 92vw); }
+.pp-receipt.nav-bell__panel[hidden] { display: none; }
+.nav-bell__paper { padding: 0.8rem 0.9rem 0.9rem; color: #2a2723; font-family: "JetBrains Mono", ui-monospace, monospace; }
+.nav-bell__head { font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 0.5rem; }
+.nav-bell__list { max-height: min(60vh, 26rem); overflow-y: auto; display: grid; gap: 0.15rem; }
+.nav-bell__item { display: grid; grid-template-columns: auto 1fr auto; gap: 0.1rem 0.5rem; align-items: baseline; padding: 0.5rem 0.4rem; text-decoration: none; color: inherit; border-top: 1px dashed rgba(42, 39, 35, 0.22); }
+.nav-bell__item:first-child { border-top: 0; }
+.nav-bell__item:hover { background: rgba(244, 201, 93, 0.22); }
+.nav-bell__item.is-new { background: #fff3a8; }
+.nav-bell__kind { grid-row: 1; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.05rem 0.35rem; background: #c8f0c0; }
+.nav-bell__kind--result { background: #bfe3ff; }
+.nav-bell__title { grid-row: 1; font-size: 0.8rem; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+.nav-bell__when { grid-row: 1; font-size: 0.64rem; color: #6b655c; white-space: nowrap; }
+.nav-bell__text { grid-column: 1 / -1; font-size: 0.72rem; color: #4b463e; }
+.nav-bell__none { margin: 0.3rem 0 0; font-size: 0.76rem; color: #6b655c; line-height: 1.5; }
+
+/* the site's own scroll bar */
+.nav-bell__list::-webkit-scrollbar { width: 12px; }
+.nav-bell__list::-webkit-scrollbar-track { background: #f1ecdf; border-left: 1px dashed rgba(42, 39, 35, 0.28); }
+.nav-bell__list::-webkit-scrollbar-thumb { background: #f4c95d; border: 3px solid #f1ecdf; box-shadow: inset 0 0 0 1px rgba(42, 39, 35, 0.4); border-radius: 0; }
+@media print { .nav-bell { display: none !important; } }

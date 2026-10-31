@@ -40,6 +40,8 @@ export function workbookScoresPanelHTML() {
           <h2 class="db-panel-title">Scores</h2>
         </div>
         <span class="db-icon-row">
+          <a class="db-icon-btn ib-yellow" href="/classes/"
+             title="My classes: add, group and remove students">${I.users || I.papers || ""}</a>
           <a class="db-icon-btn ib-green" href="/results-compiler/"
              title="Weekly results: four weeks, with a graph for each student">${I.activity || I.papers || ""}</a>
           <a class="db-icon-btn ib-blue" href="/prep-math/activity/maths-workbook/"

@@ -436,3 +436,8 @@ button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
 .xp-student input.xp-name::placeholder { color: #b6afa4; font-weight: 400; }
 .xp-student input.xp-name:focus { background: color-mix(in srgb, var(--c) 14%, transparent); }
 @media print { .xp-student input.xp-name { border-bottom: 0.4mm solid #1d1b18 !important; color: #1d1b18 !important; background: transparent !important; } .xp-student input.xp-name::placeholder { color: transparent; } }
+
+/* beside the share link: assign to the class, or go live */
+.xm-assign { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.4rem; }
+.xm-assign__to { min-width: 11rem; }
+.xm-assign__say { font-size: 0.78rem; }

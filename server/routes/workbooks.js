@@ -13,6 +13,7 @@ const express = require("express");
 const { authenticate } = require("../middleware/auth");
 const P = require("../lib/workbook-prints");
 const access = require("../lib/access");
+const { notifyStudents } = require("../lib/notices");
 
 module.exports = function () {
   const router = express.Router();
@@ -155,6 +156,7 @@ module.exports = function () {
         }, { merge: true });
       });
       if (roster.size) await batch.commit();
+      await notifyStudents(roster.docs.map((d) => d.id), { kind: "task", title, text: `${teacherName} set you a workbook.`, url: `/wb/${code}`, from: teacherName }, `task_workbook_${code}`);
       res.json({ ok: true, code, url: `/wb/${code}`, sent: roster.size });
     } catch (err) {
       console.error("[/api/workbooks/assign]", err.message);
@@ -259,6 +261,7 @@ module.exports = function () {
             at: stamp(), seen: false,
           }, { merge: true });
       } catch (e) { console.error("[workbook notice]", e.message); }
+      await notifyStudents([req.user.uid], { kind: "result", title: out.title || "Workbook", text: `Your result went in: ${pct}% (best ${out.best}%).`, url: `/wb/${code}`, from: "Prep Portal" }, `result_workbook_${code}`);
       res.json({ ok: true, pct, bestPct: out.best });
     } catch (err) {
       console.error("[/api/workbooks/a/result]", err.message);
@@ -591,6 +594,12 @@ module.exports = function () {
           right: won, total: outOf, pct, bestPct: out.best, attempts: out.attempts, at: stamp(), seen: false,
         }, { merge: true });
       } catch (e) { console.error("[paper notice]", e.message); }
+      try {
+        await db().collection("studentAssignments").doc(req.user.uid).collection("items").doc(`paper_${code}`).set({
+          kind: "paper", paperUrl: `/paper/${code}`, activityTitle: out.title || "Mock paper", status: "done", lastPct: pct, bestPct: out.best, updatedAt: stamp(),
+        }, { merge: true });
+      } catch (e) { console.error("[paper item]", e.message); }
+      if (b.first === true) await notifyStudents([req.user.uid], { kind: "result", title: out.title || "Mock paper", text: `Your result went in: ${won} of ${outOf}, grade ${gradeOf(pct)}.`, url: `/paper/${code}`, from: "Prep Portal" }, `result_paper_${code}`);
       res.json({ ok: true, pct, grade: gradeOf(pct) });
     } catch (err) {
       console.error("[/api/workbooks/paper/result]", err.message);
