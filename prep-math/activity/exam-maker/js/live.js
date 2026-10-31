@@ -409,8 +409,9 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
      Beside every marked question a pen's mark: a good green tick for a right answer, a red cross for
      a wrong one or one left blank. A written answer gets one once it has a mark: a tick for full marks,
      a cross for none, and a tick with the fraction between. The bubbles are filled the same way (css). */
-  const TICK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.2 19.4 2.8 13l2.2-2.2 4.2 4.2L19 5.2l2.2 2.2z"/></svg>`;
-  const CROSS = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 4.2 12 9.8l5.6-5.6 2.2 2.2L14.2 12l5.6 5.6-2.2 2.2L12 14.2l-5.6 5.6-2.2-2.2L9.8 12 4.2 6.4z"/></svg>`;
+  /* Marks drawn the way a teacher's pen does them: a quick uneven stroke, heavy where the pen pressed, with a second lighter pass over it. */
+  const TICK = `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="2.7" d="M3.2 13.4c1.9 1.1 3.9 3.3 5.4 6.2 1.5-5.4 6.4-11.2 12.2-15.4"/><path stroke-width="1.2" opacity=".75" d="M3.9 12.8c2 1.4 3.6 3.2 4.9 5.9 2-5 6.2-9.8 11.6-13.6"/></g></svg>`;
+  const CROSS = `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="2.7" d="M4.6 4.9c3.6 3.2 9.6 9.6 14.9 14.7"/><path stroke-width="2.4" d="M19.2 4.2c-4 3.6-9.4 9.6-13.6 15.4"/><path stroke-width="1" opacity=".7" d="M5.3 5.8c3.4 3 8.6 8.2 13.6 13.2"/></g></svg>`;
   function paintMark(el, q) {
     el.querySelector(":scope > .xp-mark")?.remove();
     if (!checked) return;
