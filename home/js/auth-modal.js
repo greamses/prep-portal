@@ -35,6 +35,16 @@ function goToDashboard() {
 export function injectAuthModal() {
   if (document.querySelector(".auth-modal")) return;
 
+  /* The form brings its own stylesheet. A page without the nav bar (a shared paper, a workbook link)
+     never ran the nav's loader, and the form then sat unstyled at the foot of the page. */
+  if (!document.getElementById("auth-modal-styles")) {
+    const link = document.createElement("link");
+    link.id = "auth-modal-styles";
+    link.rel = "stylesheet";
+    link.href = "/home/css/login.css";
+    document.head.appendChild(link);
+  }
+
   let mountPoint = document.querySelector(".log-in");
 
   if (!mountPoint) {
