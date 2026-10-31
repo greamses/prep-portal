@@ -4,7 +4,7 @@
   "git": { "deploymentEnabled": false },
   "functions": {
     "api/index.js": {
-      "includeFiles": "{tts-cache/**,utils/features.js,prep-math/activity/algebra-moves/js/**}"
+      "includeFiles": "{tts-cache/**,utils/features.js,utils/maths-wrap.js,prep-math/activity/algebra-moves/js/**}"
     }
   },
   "redirects": [

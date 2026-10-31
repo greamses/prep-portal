@@ -17,6 +17,15 @@ const admin = require("firebase-admin");
 const { authenticate, requireAdmin } = require("../middleware/auth");
 const { GEMINI_MODELS, GROQ_DEFAULT_MODEL } = require("../ai-models");
 const quota = require("../lib/quota");
+const path = require("path");
+const { pathToFileURL } = require("url");
+
+// The safety net for maths the model forgot to wrap — the browser's own module, loaded once (see lib/access.js).
+let _wrap = null;
+const mathsReady = import(pathToFileURL(path.join(__dirname, "..", "..", "utils", "maths-wrap.js")).href)
+  .then((m) => { _wrap = m.wrapMaths; }).catch((e) => console.error("[cbt] maths-wrap not loaded:", e.message));
+/** Wrap bare maths in \( … \) (money stays plain). Used on what a MODEL wrote, never on what an admin typed. */
+const aiMaths = (s) => (_wrap && typeof s === "string" ? _wrap(s, { paren: true }) : s);
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
@@ -264,7 +273,7 @@ MANDATORY:
 - For short/theory/subjective: provide a clear, correct "answer" (model answer / key points) and OMIT options.
 - "explanation" is an array of short strings. Every item carries its correct "type" AND a "grade" (its class/level).
 ${imageBlock}
-${videoBlock}- Wrap ALL mathematics in LaTeX delimiters using DOUBLE backslashes for commands, EXACTLY as in the sample (e.g. the sample's fractions/integrals). Keep money/currency as plain text, not inside math.
+${videoBlock}- MATHS FORMAT: every number, unit, symbol and expression that is maths goes between \\\\( and \\\\), in the question, every option, the answer, the hint and the explanation. That means 12, 3.5, 40%, 8 cm, 25°, x, 2x + 3 = 11, 3/4 and the like, even a lone number in a sentence. RIGHT: "Find \\\\( 15.75 \\\\div 25 \\\\).", "A box is \\\\( 8\\\\ \\\\text{cm} \\\\) long.", "\\\\( x = 4 \\\\)". WRONG: "Find 15.75 ÷ 25.", "x = 4", "8 cm", "$x$". Write double backslashes for every command and every delimiter, as in the sample. Plain words stay outside. Money stays plain text (₦500, 20 naira). Before you reply, check no bare number or symbol is left outside \\\\( \\\\).
 
 OUTPUT — return the result as a SINGLE COPY BLOCK: one fenced \`\`\`js code block containing ONLY "const examQuestions = [ … ];" EXACTLY in the format below. Put nothing before or after the code block — no prose, no JSON, no commentary:
 
@@ -363,18 +372,18 @@ function cleanQuestions(arr) {
   const out = [];
   for (const q of arr) {
     if (!q || typeof q !== "object") continue;
-    const question = fixLatex(q.question).trim().slice(0, 2000);
+    const question = aiMaths(fixLatex(q.question).trim()).slice(0, 2400);
     if (question.length < 6) continue;
     const dedupe = question.toLowerCase().replace(/\s+/g, " ");
     if (seen.has(dedupe)) continue;
     const type = normType(q.type, q);
-    const explanation = normExpl(q.explanation, true);
-    const hint = fixLatex(q.hint || "").slice(0, 600);
+    const explanation = (() => { const e = normExpl(q.explanation, true); return Array.isArray(e) ? e.map(aiMaths) : aiMaths(e); })();
+    const hint = aiMaths(fixLatex(q.hint || "")).slice(0, 700);
     const image = typeof q.image === "string" && q.image.trim() ? q.image.trim().slice(0, 80000) : null;
     const video = safeUrl(q.video);
     const videoScope = video ? videoScopeOf(q.videoScope) : "question";
     const grade = String(q.grade || "").trim().slice(0, 60) || null;
-    const opts = Array.isArray(q.options) ? q.options.map((o) => fixLatex(o).trim().slice(0, 300)).filter(Boolean) : [];
+    const opts = Array.isArray(q.options) ? q.options.map((o) => aiMaths(fixLatex(o).trim()).slice(0, 400)).filter(Boolean) : [];
 
     if (opts.length >= 2) {
       // Objective / polar (MCQ) — needs 2–6 real options + a correct index.
@@ -382,7 +391,7 @@ function cleanQuestions(arr) {
       if (opts.every((o) => /^[A-D]$/i.test(o.trim()))) continue; // reject placeholders
       let ai = parseInt(q.answerIndex ?? q.correctIndex, 10);
       if ((!Number.isInteger(ai) || ai < 0 || ai >= opts.length) && typeof q.answer === "string") {
-        const idx = opts.findIndex((o) => o === fixLatex(q.answer).trim());
+        const idx = opts.findIndex((o) => o === aiMaths(fixLatex(q.answer).trim()));
         ai = idx >= 0 ? idx : 0;
       }
       if (!Number.isInteger(ai) || ai < 0 || ai >= opts.length) ai = 0;
@@ -390,7 +399,7 @@ function cleanQuestions(arr) {
       out.push({ type: opts.length === 2 && type === "polar" ? "polar" : "objective", question, options: opts, answerIndex: ai, answer: null, explanation, hint, image, video, videoScope, grade });
     } else {
       // Free-response (short / theory / subjective) — needs an answer.
-      const answer = fixLatex(q.answer || "").trim().slice(0, 4000);
+      const answer = aiMaths(fixLatex(q.answer || "").trim()).slice(0, 4400);
       if (!answer) continue;
       seen.add(dedupe);
       out.push({ type: ["short", "theory", "subjective"].includes(type) ? type : "short", question, options: null, answerIndex: null, answer, explanation, hint, image, video, videoScope, grade });
@@ -513,12 +522,13 @@ Return ONLY JSON (same order as given):
 QUESTIONS:
 ${list}`;
   const raw = await callModel(prompt);
+  await mathsReady;
   const items = (raw && (raw.items || raw.questions)) || [];
   return group.map((q, i) => {
     const it = items[i];
     if (!it || typeof it !== "object") return null;
-    const question = fixLatex(it.question).trim();
-    const options = Array.isArray(it.options) ? it.options.map((o) => fixLatex(o).trim()).filter(Boolean) : [];
+    const question = aiMaths(fixLatex(it.question).trim());
+    const options = Array.isArray(it.options) ? it.options.map((o) => aiMaths(fixLatex(o).trim())).filter(Boolean) : [];
     if (question.length < 3 || options.length !== (q.options || []).length) return null;
     return { question, options };
   });
@@ -649,6 +659,7 @@ module.exports = function () {
       const text = await callModelRaw(genPrompt(scheme, label, topic, count, types, wantImages, video, grade), false);
       let arr = parseExamJs(text);
       if (!arr.length) { try { const j = safeJson(text); arr = j.questions || j.items || (Array.isArray(j) ? j : []); } catch (_) {} }
+      await mathsReady;
       const questions = cleanQuestions(arr);
       if (!questions.length) return res.status(502).json({ error: "The model returned no usable questions — try again." });
 

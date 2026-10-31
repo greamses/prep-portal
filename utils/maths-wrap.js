@@ -46,9 +46,10 @@ function outside(s, fn) {
 }
 
 /** Wrap what is left outside dollar signs. */
-export function wrapMaths(src) {
+export function wrapMaths(src, opts) {
   const original = String(src == null ? "" : src);
   if (!/[0-9²³π°]|[a-z]\^|\b[xyz]\b/.test(original)) return original;      // no maths to find: nothing to do
+  if (opts && opts.paren) return wrapParen(original);                         // the question bank's \( … \) style, money left alone
   const blanks = [], displays = [];
   /* display maths ($$…$$) and the fill-in blank are set aside, and put back at the end exactly as they were */
   let s = original
@@ -74,6 +75,20 @@ export function wrapMaths(src) {
   /* two spans only a space apart ($3$ $4$) stay as written: they read as separate numbers */
   let i = 0, j = 0;
   return s.replace(/\u0002/g, () => blanks[i++]).replace(/\u0003/g, () => displays[j++]);
+}
+
+/* The question bank writes maths between \( … \) and keeps money as plain text (₦500, 20 naira). Existing \(…\), \[…\]
+   and $…$ are set aside as written, so are amounts of money; what is left is wrapped as above and its $…$ turned into \(…\). */
+function wrapParen(original) {
+  const held = [];
+  const hold = (m) => { held.push(m); return "\u0004" + String.fromCharCode(0xE000 + held.length - 1) + "\u0004"; };
+  const s = original
+    .replace(/\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/g, hold)
+    .replace(/[₦£€$]\s?\d+(?:[.,]\d+)*(?:\s?(?:k|million|billion))?/g, hold)
+    .replace(/\$[^$]+\$/g, hold)
+    .replace(/\d+(?:[.,]\d+)*\s?(?:naira|kobo|dollars?|pounds?|cents?|euros?)(?![A-Za-z])/gi, hold);
+  const out = wrapMaths(s).replace(/\$([^$]*)\$/g, (m, a) => "\\(" + a + "\\)");
+  return out.replace(/\u0004([-])\u0004/g, (m, c) => held[c.charCodeAt(0) - 0xE000]);
 }
 
 /** A question as the model wrote it, with the maths in each of its texts wrapped. */
