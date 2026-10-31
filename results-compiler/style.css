@@ -98,6 +98,13 @@
   .rc-solo .rc-head, .rc-solo .rc-block:not(.rc-cards), .rc-solo .rc-foot, .rc-solo .rc-cards > .rc-h, .rc-solo .rc-card:not(.is-solo) { display: none !important; }
 }
 
+/* the school's name along the foot of every printed page (a fixed box repeats on each page) */
+.rc-printfoot { display: none; }
+@media print {
+  .rc-printfoot { display: block; position: fixed; left: 0; right: 0; bottom: 0; padding-top: 0.25rem; border-top: 1px solid #8c8577; text-align: center; font: 700 0.7rem/1.2 "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0.08em; color: #2a2723; background: #fff; }
+  .rc-sheet { padding-bottom: 1.6rem; }
+}
+
 /* report cards */
 .rc-cardlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr)); gap: 1.1rem; }
 .rc-card { border: 2px solid #2a2723; padding: 1rem 1.1rem; background: #fffdf7; break-inside: avoid; display: flex; flex-direction: column; gap: 0.7rem; }

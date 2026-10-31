@@ -150,6 +150,7 @@ function render(d) {
         <h3 class="rc-h">Report cards</h3>
         <div class="rc-cardlist">${reports || `<p class="rc-none">No students yet.</p>`}</div>
       </section>
+      ${school.school ? `<div class="rc-printfoot" aria-hidden="true">${esc(school.school)}</div>` : ""}
       <p class="rc-foot">Scores are worked out in the student's browser: practice feedback, not an invigilated exam. A completed assignment counts in the week of its last attempt.</p>
     </div>`;
   document.querySelectorAll(".rc-card__print").forEach((b) => faceOf(b, UI.print(16), "Print this report card"));
