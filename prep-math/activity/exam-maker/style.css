@@ -724,3 +724,25 @@ div.xp-in:focus-visible { outline: none; }
 .xm-sec { display: inline-grid; place-items: center; width: 2rem; height: 2rem; flex: 0 0 auto; }
 .xm-sec svg { display: block; }
 .wb-field > .xm-sec { margin-bottom: 0.15rem; }
+
+/* page buttons for the answer booklet: only while the booklet is showing */
+.xp-pager { display: none; margin-left: 0.8rem; align-items: center; gap: 0.25rem; }
+.xp[data-view="booklet"] .xp-pager { display: inline-flex; }
+.xp-pg { min-width: 2rem; height: 2rem; padding: 0 0.45rem; border: 0; border-radius: 0; background: #ece6d8; color: #4a443b; font: 700 0.8rem var(--font-mono, monospace); cursor: pointer; display: inline-grid; place-items: center; }
+.xp-pg:hover { background: #ddd5c2; }
+.xp-pg.is-on { background: var(--c, #6b655c); color: #fff; }
+.xp-pg--arrow { background: transparent; }
+@media print { .xp-pager { display: none !important; } }
+
+/* the sliding sheet as the answer booklet: wide enough to write on, the pages as paper, a button for each page */
+.xo-drawer--book { width: min(50rem, 98vw); padding: 0 0 2rem; background: #efeadd; }
+.xo-bookhead { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 0.8rem; margin: 0; padding: 0.7rem 0.9rem; background: #fffdf8; border-bottom: 1px solid rgba(42, 39, 35, 0.18); }
+.xo-bookhead > b { font-size: 0.95rem; }
+.xo-pager { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; margin-right: auto; }
+.xo-pg { min-width: 2.1rem; height: 2.1rem; padding: 0 0.5rem; border: 0; border-radius: 0; background: #ece6d8; color: #4a443b; font: 700 0.85rem var(--font-mono, monospace); cursor: pointer; display: inline-grid; place-items: center; }
+.xo-pg:hover { background: #ddd5c2; }
+.xo-pg.is-on { background: var(--c, #6b655c); color: #fff; }
+.xo-pg--arrow { background: transparent; }
+.xo-book { padding: 0.8rem 0.6rem; }
+.xo-book .xp-booklet .xp-sheetpage { box-sizing: border-box; width: 188mm; margin: 0 auto 6mm; padding: 9mm 11mm 10mm; background: #fff; border: 0; box-shadow: 0 3px 12px rgba(42, 39, 35, 0.2); position: relative; break-before: auto; }
+.xo-book .xp-booklet .xp-sheetpage + .xp-sheetpage { border-top: 0; }

@@ -288,7 +288,7 @@ function bookletPlan(numbered) {
 function booklet(numbered, head) {
   const pages = bookletPlan(numbered);
   const total = pages.length + 1;
-  const intro = `<p class="xp-bintro" data-nomath>This booklet has ${total} page${total === 1 ? "" : "s"}: this front page${pages.length ? `, then ${pages.length} lined page${pages.length === 1 ? "" : "s"} for the written answers. Write each answer under its own question number. The questions themselves are in the question paper: use the tabs at the top to move between the two.` : "."}</p>`;
+  const intro = `<p class="xp-bintro" data-nomath>This booklet has ${total} page${total === 1 ? "" : "s"}: this front page${pages.length ? `, then ${pages.length} lined page${pages.length === 1 ? "" : "s"} for the written answers. Write each answer under its own question number. While you answer on screen, this booklet slides out from the side, and the page buttons take you to each page.` : "."}</p>`;
   /* where each written answer goes: the question, its marks, and the page to turn to (a tap goes there) */
   const index = pages.length ? `<div class="xp-bindex" data-nomath><h3>Where to write your answers</h3><div class="xp-bindex__list">${pages.map((list, k) => list.map(({ q, n }) => `<a href="#" data-goto="${k + 2}"><strong>Question ${n}</strong><small>${q.marks} ${q.marks === 1 ? "mark" : "marks"}</small><i></i><em>page ${k + 2}</em></a>`).join("")).join("")}</div></div>` : "";
   const grid = omrGrid(numbered);
@@ -365,27 +365,6 @@ export function instructionsArticle(head, questions) {
  *   head       the header fields (model.js BLANK_HEAD)
  *   questions  clean questions, in the order they were written
  */
-let view = "paper";   // which of the two documents is showing (kept across redraws)
-if (typeof document !== "undefined") {
-  const show = (art, v) => {
-    view = v;
-    art.dataset.view = v;
-    art.querySelectorAll(".xp-tab").forEach((t) => { const on = t.dataset.view === v; t.classList.toggle("is-on", on); t.setAttribute("aria-pressed", String(on)); });
-  };
-  document.addEventListener("click", (e) => {
-    const tabBtn = e.target.closest && e.target.closest(".xp-tab");
-    if (tabBtn) { const art = tabBtn.closest(".xp"); show(art, tabBtn.dataset.view); art.scrollIntoView({ block: "start" }); return; }
-    const go = e.target.closest && e.target.closest("a[data-goto]");
-    if (go) {
-      e.preventDefault();
-      const art = go.closest(".xp");
-      show(art, "booklet");
-      const page = art.querySelector(`[data-bpage="${go.dataset.goto}"]`);
-      if (page) page.scrollIntoView({ block: "start", behavior: "smooth" });
-    }
-  });
-}
-
 export function paperHtml(head, questions) {
   figNo = 0;
   const groups = ORDER.map((t) => [t, questions.filter((q) => q.type === t)]).filter(([, l]) => l.length);
@@ -398,19 +377,17 @@ export function paperHtml(head, questions) {
   const empty = groups.length ? "" : `<p class="xp-empty">No questions yet. Write some, or ask the model for a set.</p>`;
   /* an exam number needs a sheet to be shaded on: the OMR sheet, or a front sheet of its own */
   const front = head.omr || head.examNo;
-  const separate = !!(head.booklet && numbered.length);
-  const paper = `${head.instructions && numbered.length ? instructionsPage(head, numbered) : ""}
+  return `${articleOpen(head)}
+    ${head.instructions && numbered.length ? instructionsPage(head, numbered) : ""}
     ${header(head, paperMarks(questions, head.attempt), !!(head.instructions && numbered.length))}
     ${body}${empty}
-    ${separate ? "" : `${front && numbered.length ? omrSheet(numbered, "", undefined, head) : ""}
+    ${head.booklet && numbered.length ? booklet(numbered, head) : `${front && numbered.length ? omrSheet(numbered, "", undefined, head) : ""}
     ${head.theorySheet && numbered.length ? theorySheet(numbered) : ""}`}
-    ${head.key && numbered.length ? key(numbered, head) : ""}`;
-  /* An answer booklet is a document of its own, not a tail on the question paper: two tabs, one at a time on screen,
-     both when printed. */
-  if (!separate) return `${articleOpen(head)}${paper}</article>`;
+    ${head.key && numbered.length ? key(numbered, head) : ""}
+  </article>`;
   const tab = (v, label) => `<button type="button" class="xp-tab${view === v ? " is-on" : ""}" data-view="${v}" aria-pressed="${view === v}">${label}</button>`;
   return `${articleOpen(head).replace('<article class="xp', `<article data-view="${view}" class="xp`)}
-    <nav class="xp-tabs" data-nomath aria-label="Question paper or answer booklet">${tab("paper", "Question paper")}${tab("booklet", "Answer booklet")}</nav>
+    <nav class="xp-tabs" data-nomath aria-label="Question paper or answer booklet">${tab("paper", "Question paper")}${tab("booklet", "Answer booklet")}${pager(bookletPlan(numbered).length + 1)}</nav>
     <div class="xp-doc xp-doc--paper">${paper}</div>
     <div class="xp-doc xp-doc--booklet">${booklet(numbered, head)}</div>
   </article>`;

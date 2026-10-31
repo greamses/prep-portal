@@ -147,7 +147,6 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     });
     wireOmr(sheet);
     wireExamNo(sheet);
-    mountDrawer();
     /* the theory sheet: a page to write on, in the block for its question */
     sheet.querySelectorAll(".xp-ans[data-qid]").forEach((blk) => {
       const q = qs.get(blk.dataset.qid);
@@ -161,6 +160,8 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       box.addEventListener("input", () => { answers[q.id] = box.value; keep(); onChange(); });
       if (lines) lines.replaceWith(box); else blk.appendChild(box);
     });
+    /* the drawer comes last: with an answer booklet it takes the booklet's pages (and the fields made on them) out of the paper */
+    mountDrawer();
     paintAttempts();
     if (checked && !held) { showResults(questions); paintStamp(true); announce(); }
   }
@@ -260,7 +261,14 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
      paper already carries (so the numbering is the paper's own) and the page at
      the end is hidden on screen while this is up; printing still gets the page. */
   let drawerOpen = false;
+  /* With an answer booklet, the sliding sheet IS the booklet: its pages are moved into the drawer while the paper is
+     answered, and go back into the paper to be printed. */
+  let bookHome = null, bookPrint = null;
   function unmountDrawer() {
+    const book = document.querySelector(".xo-drawer .xp-booklet");
+    if (book && bookHome && bookHome.isConnected) bookHome.appendChild(book);     // back where it was made
+    if (bookPrint) { removeEventListener("beforeprint", bookPrint.before); removeEventListener("afterprint", bookPrint.after); bookPrint = null; }
+    bookHome = null;
     document.querySelector(".xo-drawer")?.remove();
     document.querySelector(".xo-tab")?.remove();
   }
@@ -281,6 +289,8 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       return;
     }
     const article = page.closest(".xp");
+    const book = sheet.querySelector(".xp-booklet");
+    if (book) { mountBookDrawer(article, book, tab); return; }
     /* the paper's own rows, dealt into THREE sets side by side: a drawer one row wide
        is as tall as the paper, three wide puts a whole sheet in view */
     const rows = [...page.querySelectorAll(".xp-omr li[data-qid]")].map((li) => li.cloneNode(true));
@@ -341,6 +351,62 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     close.addEventListener("click", () => set(false));
     wireOmr(drawer);
     wireExamNo(drawer);
+  }
+
+  /** The drawer as the answer booklet: the OMR sheet on page 1, then the lined pages, with a button for every page. */
+  function mountBookDrawer(article, book, tab) {
+    bookHome = article;
+    const drawer = document.createElement("aside");
+    drawer.className = "xo-drawer xo-drawer--book" + (drawerOpen ? " is-open" : "");
+    drawer.setAttribute("aria-label", "Answer booklet");
+    drawer.setAttribute("style", article.getAttribute("style") || "");
+    if (article.classList.contains("xp--wm")) drawer.classList.add("xp--wm");
+    const pages = [...book.querySelectorAll("[data-bpage]")];
+    const head = document.createElement("div");
+    head.className = "xo-drawer__head xo-bookhead";
+    head.innerHTML = `<b>Answer booklet</b><nav class="xo-pager" aria-label="Booklet pages"><button type="button" class="xo-pg xo-pg--arrow" data-step="-1" aria-label="Previous page" data-tip="Previous page"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>${pages.map((p, k) => `<button type="button" class="xo-pg${k === 0 ? " is-on" : ""}" data-page="${k + 1}" aria-label="${k === 0 ? "OMR sheet, page 1" : `Page ${k + 1}`}" data-tip="${k === 0 ? "OMR sheet" : `Page ${k + 1}`}">${k + 1}</button>`).join("")}<button type="button" class="xo-pg xo-pg--arrow" data-step="1" aria-label="Next page" data-tip="Next page"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button></nav>`;
+    const close = document.createElement("button");
+    close.type = "button"; close.className = "pp-btn xo-close"; faceOf(close, UI.close(18), "Close the answer booklet", "right");
+    head.appendChild(close);
+    const wrap = document.createElement("div");
+    wrap.className = `${article.className.replace(/\bxp--wm\b/, "").trim()} xp-live xo-book`;
+    wrap.setAttribute("style", article.getAttribute("style") || "");
+    wrap.appendChild(book);
+    drawer.append(head, wrap);
+    document.body.append(drawer, tab);
+
+    const here = () => { let at = 1; const top = drawer.getBoundingClientRect().top + head.offsetHeight + 30; pages.forEach((p) => { if (p.getBoundingClientRect().top <= top) at = Number(p.dataset.bpage); }); if (drawer.scrollTop + drawer.clientHeight >= drawer.scrollHeight - 6 && drawer.scrollTop > 0) at = pages.length; return at; };
+    const mark = () => { const n = here(); head.querySelectorAll(".xo-pg[data-page]").forEach((b) => b.classList.toggle("is-on", Number(b.dataset.page) === n)); };
+    /* a page's place inside the scrolling drawer */
+    const placeOf = (p) => p.getBoundingClientRect().top - drawer.getBoundingClientRect().top + drawer.scrollTop - head.offsetHeight - 8;
+    const goTo = (n) => { const p = pages[Math.max(0, Math.min(pages.length - 1, n - 1))]; if (p) drawer.scrollTo({ top: Math.max(0, placeOf(p)), behavior: "smooth" }); };
+    head.addEventListener("click", (e) => {
+      const b = e.target.closest(".xo-pg"); if (!b) return;
+      goTo(b.dataset.step ? here() + Number(b.dataset.step) : Number(b.dataset.page));
+    });
+    wrap.addEventListener("click", (e) => { const a = e.target.closest("a[data-goto]"); if (a) { e.preventDefault(); goTo(Number(a.dataset.goto)); } });
+    drawer.addEventListener("scroll", () => requestAnimationFrame(mark), { passive: true });
+
+    /* the pages are laid out at the paper's own width, shrunk to fit the drawer */
+    const fit = () => {
+      wrap.style.zoom = "";
+      const w = (pages[0] ? pages[0].offsetWidth : 0) || 1, room = drawer.clientWidth - 24;
+      wrap.style.zoom = room < w ? (room / w).toFixed(3) : "";
+    };
+    new ResizeObserver(fit).observe(drawer);
+    requestAnimationFrame(fit);
+
+    const set = (v) => { drawerOpen = v; drawer.classList.toggle("is-open", v); tab.setAttribute("aria-expanded", String(v)); tab.classList.toggle("is-open", v); if (v) requestAnimationFrame(fit); };
+    tab.addEventListener("click", () => set(!drawerOpen));
+    close.addEventListener("click", () => set(false));
+    /* printing wants the booklet back behind the paper; afterwards it goes back in the drawer */
+    bookPrint = {
+      before: () => { if (book.isConnected && article.isConnected) article.appendChild(book); wrap.style.zoom = ""; },
+      after: () => { wrap.appendChild(book); fit(); },
+    };
+    addEventListener("beforeprint", bookPrint.before);
+    addEventListener("afterprint", bookPrint.after);
+    if (drawerOpen) requestAnimationFrame(fit);
   }
 
   /** Mark what can be marked and show the model answer where it cannot. */
@@ -634,7 +700,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     /** Just before printing: a box nobody wrote in goes back to the ruled lines the
         paper is designed with; what was written stays, as text. */
     forPrint() {
-      sheet.querySelectorAll(".xp-ta").forEach((box) => {
+      document.querySelectorAll(".xm-sheet .xp-ta, .xo-drawer .xp-ta").forEach((box) => {
         if (box.value.trim()) return;
         const lines = document.createElement("div");
         lines.className = "xp-lines";

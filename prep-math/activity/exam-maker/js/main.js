@@ -22,6 +22,7 @@ import { saveExam, openExams, currentExamId, setCurrentExamId } from "./exams.js
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { UI } from "/utils/components/ui-icons.js";
+import { GROQ_MODELS, GEMINI_MODELS_UI } from "/utils/ai-models.js";
 import { faceOf } from "/utils/components/workbook/icons.js";
 import { enhanceSelects } from "/utils/components/pp-select.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
@@ -543,6 +544,18 @@ document.querySelectorAll("[data-add]").forEach((b) => b.addEventListener("click
 }));
 
 /* ── the model ─────────────────────────────────────────────────────────── */
+/* which AI model writes the questions: Automatic, or one of the Groq / Gemini models by name (kept on this machine) */
+{
+  const sel = document.getElementById("xm-ai-model");
+  if (sel) {
+    const group = (label, items) => `<optgroup label="${label}">${items.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</optgroup>`;
+    sel.insertAdjacentHTML("beforeend",
+      group("Gemini", GEMINI_MODELS_UI.map((m) => [`gemini:${m.url}`, m.label]))
+      + group("Groq", GROQ_MODELS.map((m) => [`groq:${m.model}`, m.label])));
+    try { const was = localStorage.getItem("xm-ai-model"); if (was && [...sel.options].some((o) => o.value === was)) sel.value = was; } catch { /* the default */ }
+    sel.addEventListener("change", () => { try { localStorage.setItem("xm-ai-model", sel.value); } catch { /* not kept */ } });
+  }
+}
 
 /* what was asked last time is still there: the prompt is worth keeping */
 const AI_IDS = ["xm-ai-topic", "xm-ai-level", "xm-ai-extra", "xm-ai-mcq", "xm-ai-fill", "xm-ai-sub", "xm-ai-theory"];
@@ -565,8 +578,17 @@ $("xm-ai-go").addEventListener("click", async () => {
   const common = { topic: $("xm-ai-topic").value.trim(), subject: state.head.subject, level, svg: $("xm-ai-svg").checked, extra: $("xm-ai-extra").value };
   go.disabled = true;
   try {
-    const { groqGenerate, groqText } = await import("/utils/ai-client.js");
-    const ask = async ({ system, prompt }, temperature = 0.2) => groqText(await groqGenerate({ system, prompt, json: true, temperature, maxTokens: 8000 }));
+    const { groqGenerate, groqText, geminiGenerate, geminiText } = await import("/utils/ai-client.js");
+    /* the model the teacher chose: Automatic walks the usual chain; a named one is the only one asked */
+    const pick = $("xm-ai-model").value || "auto";
+    const ask = async ({ system, prompt }, temperature = 0.2) => {
+      if (pick.startsWith("gemini:")) {
+        const data = await geminiGenerate({ models: [pick.slice(7)], body: { systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature, maxOutputTokens: 8000, responseMimeType: "application/json" } } });
+        return geminiText(data);
+      }
+      const one = pick.startsWith("groq:") ? GROQ_MODELS.filter((m) => m.model === pick.slice(5)) : null;
+      return groqText(await groqGenerate({ system, prompt, json: true, temperature, maxTokens: 8000, ...(one && one.length ? { models: one } : {}) }));
+    };
     const kept = [];
     let faults = [];
     /* The model is held to the brief in code: every reply is checked, what
