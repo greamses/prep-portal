@@ -61,6 +61,26 @@ function chart(avgs, counts, labels, { w = 320, h = 160 } = {}) {
   return `<svg class="rc-chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Average score for each week">${g}</svg>`;
 }
 
+/** One bar per task, in the order they were done, numbered to match the report table. */
+function taskChart(items, { w = 320, h = 160 } = {}) {
+  const L = 30, R = 8, T = 16, B = 26;
+  const iw = w - L - R, ih = h - T - B, n = items.length;
+  const bw = Math.min(34, (iw / n) * 0.62);
+  const y = (v) => T + ih - (v / 100) * ih;
+  const cx = (i) => L + (iw * (i + 0.5)) / n;
+  let g = "";
+  [0, 50, 100].forEach((v) => {
+    g += `<line x1="${L}" x2="${w - R}" y1="${y(v)}" y2="${y(v)}" stroke="#cfc8bb" stroke-width="1"${v ? ' stroke-dasharray="3 3"' : ""}/>`
+      + `<text x="${L - 6}" y="${y(v) + 3}" text-anchor="end" font-size="9" fill="#6b655c">${v}</text>`;
+  });
+  items.forEach((it, i) => {
+    g += `<rect x="${cx(i) - bw / 2}" y="${y(it.pct)}" width="${bw}" height="${Math.max(1, y(0) - y(it.pct))}" fill="${FILL[tone(it.pct)]}" stroke="#2a2723" stroke-width="1"/>`
+      + `<text x="${cx(i)}" y="${y(it.pct) - 4}" text-anchor="middle" font-size="9" font-weight="700" fill="#2a2723">${it.pct}</text>`
+      + `<text x="${cx(i)}" y="${h - 10}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#2a2723">${i + 1}</text>`;
+  });
+  return `<svg class="rc-chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Score on each task">${g}</svg>`;
+}
+
 function render(d) {
   data = d;
   const labels = d.weekStarts.map((s, i) => `Wk ${i + 1}`);
@@ -97,6 +117,8 @@ function render(d) {
 
   /* one report card per student: every task they did, its score, grade and remark */
   const when = (at) => (at ? new Date(at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "");
+  /* a comment is kept on this machine, for that student and that run of weeks */
+  const saved = (k) => { try { return localStorage.getItem(k) || ""; } catch (_) { return ""; } };
   /* the school is the one kept once on this machine for the workbooks' letterhead */
   let school = { school: "", logo: "" };
   try { school = loadHead() || school; } catch (_) { /* no letterhead kept */ }
@@ -119,8 +141,13 @@ function render(d) {
       ${items.length ? `<table class="rc-table rc-rc"><thead><tr><th>#</th><th>Task</th><th>Kind</th><th>Date</th><th>Score</th><th>Grade</th><th>Remark</th></tr></thead><tbody>${lines}</tbody></table>`
         : `<p class="rc-none">No task completed in these weeks.</p>`}
       <div class="rc-card__sum"><span>Tasks completed <b>${s.completed}</b></span><span>Average <b>${s.avg == null ? "–" : s.avg + "%"}</b></span><span>Overall <b>${g ? g[1] + " · " + g[2] : "–"}</b></span></div>
-      ${chart(s.weeks.map((w) => w.avg), s.weeks.map((w) => w.completed), labels)}
-      <div class="rc-card__sign"><span>Teacher's comment</span><span>Signature</span></div>
+      <div class="rc-card__graphs">
+        <figure>${chart(s.weeks.map((w) => w.avg), s.weeks.map((w) => w.completed), labels)}<figcaption>Average each week</figcaption></figure>
+        ${items.length ? `<figure>${taskChart(items)}<figcaption>Score on each task (numbered as in the table)</figcaption></figure>` : ""}
+      </div>
+      <label class="rc-card__comment"><span>Teacher's comment</span>
+        <textarea class="rc-comment" rows="3" maxlength="600" data-key="${esc(`rc-comment:${s.uid}:${d.from}:${d.weeks}`)}" placeholder="Write a comment for ${esc(s.name)}">${esc(saved(`rc-comment:${s.uid}:${d.from}:${d.weeks}`))}</textarea></label>
+      <div class="rc-card__sign"><span>Teacher's signature</span><span>Date</span></div>
     </article>`;
   }).join("");
 
@@ -153,6 +180,7 @@ function render(d) {
       ${school.school ? `<div class="rc-printfoot" aria-hidden="true">${esc(school.school)}</div>` : ""}
       <p class="rc-foot">Scores are worked out in the student's browser: practice feedback, not an invigilated exam. A completed assignment counts in the week of its last attempt.</p>
     </div>`;
+  document.querySelectorAll(".rc-comment").forEach(grow);
   document.querySelectorAll(".rc-card__print").forEach((b) => faceOf(b, UI.print(16), "Print this report card"));
   $("rc-start").value = d.from;
   $("rc-msg").textContent = d.assignments ? "" : "No scores came in during these weeks. Try other dates, or check that students have opened your assignment links.";
@@ -179,6 +207,14 @@ $("rc-start").addEventListener("change", (e) => e.target.value && load(e.target.
 $("rc-weeks").addEventListener("change", () => load(data ? data.from : ""));
 $("rc-pages").addEventListener("change", (e) => document.documentElement.classList.toggle("rc-per-page", e.target.checked));
 $("rc-print").addEventListener("click", () => window.print());
+/* the comment box grows with the writing, so nothing is cut off on paper */
+function grow(t) { t.style.height = "auto"; t.style.height = t.scrollHeight + 2 + "px"; }
+$("rc-report").addEventListener("input", (e) => {
+  const t = e.target.closest(".rc-comment"); if (!t) return;
+  grow(t);
+  try { t.value ? localStorage.setItem(t.dataset.key, t.value) : localStorage.removeItem(t.dataset.key); } catch (_) { /* kept for this visit only */ }
+});
+window.addEventListener("beforeprint", () => document.querySelectorAll(".rc-comment").forEach(grow));
 /* a single report card: print only that one */
 $("rc-report").addEventListener("click", (e) => {
   const b = e.target.closest(".rc-card__print"); if (!b) return;
