@@ -136,3 +136,4 @@
 /* the receipt component's paper is a block; two classes make the controls one row */
 .pp-receipt .rc-controls__paper { display: flex; flex-wrap: wrap; align-items: end; gap: 0.7rem 1rem; }
 .rc-field input, .rc-field select { min-width: 9rem; }
+.rc-exno { display: block; font-weight: 400; font-size: 0.64rem; color: #6b655c; letter-spacing: 0.04em; }

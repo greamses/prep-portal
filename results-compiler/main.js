@@ -91,7 +91,7 @@ function render(d) {
 
   const rows = d.students.map((s) => {
     const g = s.avg == null ? null : gradeOf(s.avg);
-    return `<tr><th scope="row">${esc(s.name)}</th>${cells(s.weeks, cell)}`
+    return `<tr><th scope="row">${esc(s.name)}${s.examNo ? `<small class="rc-exno">No. ${esc(s.examNo)}</small>` : ""}</th>${cells(s.weeks, cell)}`
       + `<td class="rc-num">${s.completed}</td><td class="rc-num rc-avg">${s.avg == null ? "–" : s.avg + "%"}</td>`
       + `<td class="rc-grade">${g ? `<i class="rc-pill rc-pill--${tone(s.avg)}">${g[1]}</i>` : ""}</td></tr>`;
   }).join("");
@@ -134,7 +134,7 @@ function render(d) {
       ${school.school || school.logo ? `<div class="rc-card__school">${school.logo ? `<img src="${esc(school.logo)}" alt="" />` : ""}<b>${esc(school.school)}</b></div>` : ""}
       <header class="rc-card__head">
         <div><p class="rc-head__eyebrow">Report card</p><h3>${esc(s.name)}</h3>
-          <p class="rc-card__sub">${s.klass ? `Class: <b>${esc(s.klass)}</b> · ` : ""}${esc(short(d.from))} to ${esc(day(d.to, { day: "numeric", month: "short", year: "numeric" }))}${d.teacher ? ` · Teacher: ${esc(d.teacher)}` : ""}</p></div>
+          <p class="rc-card__sub">${s.klass ? `Class: <b>${esc(s.klass)}</b> · ` : ""}${s.examNo ? `Exam no. <b>${esc(s.examNo)}</b> · ` : ""}${esc(short(d.from))} to ${esc(day(d.to, { day: "numeric", month: "short", year: "numeric" }))}${d.teacher ? ` · Teacher: ${esc(d.teacher)}` : ""}</p></div>
         ${g ? `<i class="rc-stamp rc-stamp--${tone(s.avg)}" title="${g[2]}">${g[1]}</i>` : ""}
         <button type="button" class="pp-btn no-print rc-card__print" data-i="${si}"></button>
       </header>

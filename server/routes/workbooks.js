@@ -560,7 +560,9 @@ module.exports = function () {
       if (!p.exists) return res.status(404).json({ error: "No such paper." });
       if (p.data().ownerUid !== req.user.uid && !isAdmin(req)) return res.status(403).json({ error: "This is for the teacher who shared the paper." });
       try { await marker.drain({ max: 2, budgetMs: 20000 }); } catch (e) { console.warn("[mark drain]", e.message); }
-      res.json({ ok: true, aiMark: !!(p.data().head && p.data().head.aiMark), ...(await marker.summary(code)) });
+      const sum = await marker.summary(code);
+      const numbers = await examNumbers(p.ref);
+      res.json({ ok: true, aiMark: !!(p.data().head && p.data().head.aiMark), ...sum, students: sum.students.map((s) => ({ ...s, examNo: numbers.get(s.uid) || "" })) });
     } catch (err) {
       console.error("[/api/workbooks/paper/marking]", err.message);
       res.status(500).json({ error: "Could not read the marking." });
@@ -575,6 +577,12 @@ module.exports = function () {
     return { p, pRef: p.ref };
   };
   const uidOk = (u) => /^[A-Za-z0-9_-]{1,128}$/.test(String(u || ""));
+  /* the exam number each student shaded, from the score they sent: uid -> digits (the teacher's lists show it beside the name) */
+  const examNumbers = async (pRef) => {
+    const m = new Map();
+    try { (await pRef.collection("results").limit(500).get()).docs.forEach((d) => { if (d.data().examNo) m.set(d.id, String(d.data().examNo)); }); } catch (_) { /* a list without numbers is still a list */ }
+    return m;
+  };
 
   router.get("/paper/:code/marking/:uid", authenticate, async (req, res) => {
     try {
@@ -685,9 +693,10 @@ module.exports = function () {
       if (!p.exists) return res.status(404).json({ error: "No such paper." });
       if (p.data().ownerUid !== req.user.uid && !isAdmin(req)) return res.status(403).json({ error: "These notes are for the teacher who shared the paper." });
       const snap = await pRef.collection("watch").limit(500).get();
+      const numbers = await examNumbers(pRef);
       const students = snap.docs.map((d) => {
         const x = d.data();
-        return { uid: d.id, name: x.name || "Student", events: x.events || [], flags: x.flags || 0, secs: x.secs || 0, checks: x.checks || 0, state: x.state || "on", updatedAt: x.updatedAt && x.updatedAt.toMillis ? x.updatedAt.toMillis() : 0 };
+        return { uid: d.id, examNo: numbers.get(d.id) || "", name: x.name || "Student", events: x.events || [], flags: x.flags || 0, secs: x.secs || 0, checks: x.checks || 0, state: x.state || "on", updatedAt: x.updatedAt && x.updatedAt.toMillis ? x.updatedAt.toMillis() : 0 };
       }).sort((a, b) => b.flags - a.flags || a.name.localeCompare(b.name));
       res.json({ ok: true, camera: !!(p.data().head && p.data().head.camera), students });
     } catch (err) {
@@ -868,6 +877,7 @@ module.exports = function () {
             const at = ms(r.lastAt);
             if (at < startMs || at >= endMs) return;
             const pct = Number.isFinite(r.lastPct) ? r.lastPct : 0;
+            if (r.examNo) person(x.id, r.name).examNo = String(r.examNo);
             person(x.id, r.name).items.push({
               kind, code: a.code || d.id, title: a.title || (kind === "paper" ? "Mock paper" : "Workbook"),
               pct, at, week: Math.floor((at - startMs) / (7 * DAY)), attempts: r.attempts || 1,
@@ -884,7 +894,7 @@ module.exports = function () {
           const items = p.items.filter((i) => i.week === w).sort((x, y) => x.at - y.at);
           return { completed: items.length, avg: mean(items.map((i) => i.pct)), items };
         });
-        return { uid: p.uid, name: p.name, klass: p.klass || "", weeks: wk, completed: p.items.length, avg: mean(p.items.map((i) => i.pct)) };
+        return { uid: p.uid, name: p.name, examNo: p.examNo || "", klass: p.klass || "", weeks: wk, completed: p.items.length, avg: mean(p.items.map((i) => i.pct)) };
       }).sort((a, b) => a.name.localeCompare(b.name));
 
       const all = [...people.values()].flatMap((p) => p.items);

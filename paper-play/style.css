@@ -50,3 +50,4 @@ html, body { overflow-x: clip !important; overflow-y: visible !important; }
 .pp-mk__m { width: 4.2rem; }
 .pp-mk__c { flex: 1 1 14rem; min-width: 10rem; }
 .pp-mk__say { flex: 1 1 100%; font-size: 0.72rem; font-weight: 700; }
+.pp-exno { font: 700 0.7rem var(--font-mono, "JetBrains Mono", monospace); letter-spacing: 0.06em; padding: 0.05rem 0.4rem; background: var(--surface-primary, #fffdf8); color: var(--text-secondary, #6b655c); }

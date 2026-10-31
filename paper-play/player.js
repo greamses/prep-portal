@@ -166,7 +166,7 @@ function mountMarkingList() {
       const d = await api(`/api/workbooks/paper/${code}/marking`);
       list.innerHTML = d.total
         ? `<p class="pp-watchlist__how"><b>${d.done}</b> marked · <b>${d.queued + d.working}</b> waiting${d.failed ? ` · <b>${d.failed}</b> could not be marked` : ""} of ${d.total}</p>`
-          + d.students.map((s) => `<details class="pp-watchlist__one" data-uid="${esc(s.uid)}" data-status="${esc(s.status)}"><summary><span class="pp-pill pp-pill--static pp-pill--${TONE[s.status] || "warn"}">${WORD[s.status] || s.status}</span> <b>${esc(s.name)}</b>${s.error ? ` · ${esc(s.error)}` : ""}</summary><div class="pp-mk"></div></details>`).join("")
+          + d.students.map((s) => `<details class="pp-watchlist__one" data-uid="${esc(s.uid)}" data-status="${esc(s.status)}"><summary><span class="pp-pill pp-pill--static pp-pill--${TONE[s.status] || "warn"}">${WORD[s.status] || s.status}</span> <b>${esc(s.name)}</b>${s.examNo ? ` <span class="pp-exno">No. ${esc(s.examNo)}</span>` : ""}${s.error ? ` · ${esc(s.error)}` : ""}</summary><div class="pp-mk"></div></details>`).join("")
         : `<p class="pp-live__none">No script has been sent for marking yet.</p>`;
     } catch (e) { list.innerHTML = `<p class="pp-live__none">${esc(String((e && e.message) || e).slice(0, 120))}</p>`; }
   }
@@ -239,7 +239,7 @@ function mountWatchList() {
       list.innerHTML = d.students.length ? d.students.map((s) => {
         const state = s.state === "unavailable" ? " · the face check could not run on their device" : s.state === "starting" ? " · only just started" : "";
         const n = s.flags ? `${s.flags} note${s.flags === 1 ? "" : "s"}` : "no notes";
-        return `<details class="pp-watchlist__one"${s.flags ? "" : " data-quiet"}><summary><b>${esc(s.name)}</b> · ${n}${state}</summary>`
+        return `<details class="pp-watchlist__one"${s.flags ? "" : " data-quiet"}><summary><b>${esc(s.name)}</b>${s.examNo ? ` <span class="pp-exno">No. ${esc(s.examNo)}</span>` : ""} · ${n}${state}</summary>`
           + (s.events.length ? `<ul>${s.events.map((e) => `<li>${esc(sayNote(e))}</li>`).join("")}</ul>` : `<p>Nothing to look at.</p>`) + `</details>`;
       }).join("") : `<p class="pp-live__none">Nobody has started the paper yet.</p>`;
     } catch (e) { list.innerHTML = `<p class="pp-live__none">${esc(String((e && e.message) || e).slice(0, 120))}</p>`; }
