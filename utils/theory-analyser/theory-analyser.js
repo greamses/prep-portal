@@ -389,6 +389,7 @@ MARKING RULES (apply to every question):
 - improvements per question: 2-3 specific, actionable suggestions for that answer.
 - Total score = exact sum of all per-question scores.
 
+NO REPEATS: every question must ask something different from every other. Never write the same question twice or reword one; do not repeat a question unless told to.
 ${_MATHS} This applies to your own comments (feedback, improvements, missed points, study tips), not to the student's text in annotatedText, which you return exactly as written.
 
 BANDS (% of total marks): Excellent ≥80% | Good 65–79% | Average 50–64% | Weak 30–49% | Very Weak <30%

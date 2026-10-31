@@ -25,7 +25,7 @@ import { buildShelf, createCanvasView, buildDock } from "./shell.js";
 import { canvasShellHTML } from "./canvas-shell.js";
 import { stackRail } from "./stacks.js";
 import { GROUPS } from "./tools.js";
-import { store, subscribe, emit, say, nextId, snapshot, selectedItems } from "./state.js";
+import { store, subscribe, emit, say, nextId, snapshot, selectedItems, exportState, importState } from "./state.js";
 import { planSum, applyStep, canWorkSums } from "./sums.js";
 import { splitSelected, addPlace, addThing, addTile, addCard, rotateSelected,
   settleThings, cancelOverlapping, addBlock } from "./ops.js";
@@ -1064,7 +1064,32 @@ function teardown() {
  *
  * → { boot, resize, dispose }
  */
-export async function mountBaseBlocks(host, { shelf = null, tool = null, onBack = null } = {}) {
+/* What is on the canvas is kept on this machine under `remember` (a panel on a workbook or paper asks for it), so closing the
+   tool, or the page, does not clear the work. */
+let stopKeeping = null;
+function keepCanvas(key) {
+  if (stopKeeping) { stopKeeping(); stopKeeping = null; }
+  if (!key) return false;
+  let restored = false;
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) || "null");
+    if (saved && importState(saved) && (store.blocks.length || store.things.length)) restored = true;
+  } catch { /* a fresh canvas */ }
+  let t = 0;
+  const off = subscribe(() => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      try {
+        const s = JSON.stringify(exportState());
+        if (s.length < 300000) localStorage.setItem(key, s);
+      } catch { /* not kept */ }
+    }, 500);
+  });
+  stopKeeping = () => { clearTimeout(t); off(); };
+  return restored;
+}
+
+export async function mountBaseBlocks(host, { shelf = null, tool = null, onBack = null, remember = null } = {}) {
   root = host;
   /* The markup comes from canvas-shell.js unless the host already has it. */
   if (!host.querySelector(".bb-stage")) host.innerHTML = canvasShellHTML();
@@ -1113,7 +1138,10 @@ export async function mountBaseBlocks(host, { shelf = null, tool = null, onBack 
   const ok = await bootCanvas();
   if (!ok) return handle;
   engine.resize();
-  const first = tool && toolById(tool);
+  /* the work left on the canvas last time comes back; the opening tool is only placed on an empty canvas */
+  const back = keepCanvas(remember);
+  if (back) emit();
+  const first = !back && tool && toolById(tool);
   if (first) {
     placeTool(first);
     emit();

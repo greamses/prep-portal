@@ -43,6 +43,18 @@ function writeField(n, v) {
   n.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+/* A studio in a frame (the geometry studios) has its controls in a page of its own: its sliders, choices and boxes are read
+   the same way, through the frame (same origin), and put back once the frame has built them. */
+const FRAME_FIELDS = 'input:not([type="button"]):not([type="submit"]):not([type="file"]),textarea,select';
+function fieldsIn(body) {
+  const out = [...body.querySelectorAll(FIELDS)];
+  body.querySelectorAll("iframe").forEach((f) => {
+    try { const d = f.contentDocument; if (d && d.body && d.readyState !== "loading") out.push(...d.body.querySelectorAll(FRAME_FIELDS)); } catch { /* another origin: nothing to read */ }
+  });
+  return out;
+}
+const rangeLike = (n) => n.type === "range";
+
 /** The tool ids that were left open on this page. */
 export function savedPanels() {
   const pre = `${location.pathname}|`;
@@ -152,7 +164,7 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   const remember = () => {
     if (!mem || !el.isConnected) return;
     const all = memAll();
-    const fields = ready ? [...body.querySelectorAll(FIELDS)].map(readField) : (saved && saved.fields) || [];
+    const fields = ready ? fieldsIn(body).map(readField) : (saved && saved.fields) || [];
     all[mem] = { fields: fields.some((v) => v !== "" && v !== false) && JSON.stringify(fields).length < 40000 ? fields : undefined, l: small ? small.left : el.offsetLeft, t: small ? small.top : el.offsetTop, w: small ? small.width : el.offsetWidth, h: small ? small.height : el.offsetHeight, folded: !!tab, big: !!small };
     memPut(all);
   };
@@ -254,12 +266,17 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   const typing = () => { clearTimeout(typed); typed = setTimeout(remember, 400); };
   body.addEventListener("input", typing, true);
   body.addEventListener("change", typing, true);
+  /* a frame's own controls: listened to once the frame has loaded */
+  body.addEventListener("load", (e) => {
+    if (!e.target || e.target.tagName !== "IFRAME") return;
+    try { const d = e.target.contentDocument; d.addEventListener("input", typing, true); d.addEventListener("change", typing, true); } catch { /* another origin */ }
+  }, true);
   /* Called by whoever mounted the tool once it is built: put back what was typed last time. */
   const restoreContents = async () => {
     if (ready || !saved || !saved.fields) return;
     const want = saved.fields;
     for (let i = 0; i < 20 && el.isConnected; i++) {
-      const now = body.querySelectorAll(FIELDS);
+      const now = fieldsIn(body);
       if (now.length >= want.length) {
         want.forEach((v, k) => writeField(now[k], v));
         ready = true;

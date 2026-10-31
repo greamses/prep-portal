@@ -9,7 +9,7 @@
    ========================================================================== */
 
 import { UI } from "/utils/components/ui-icons.js";
-import { state, loadShape, allPoints } from "./state.js";
+import { state, loadShape, allPoints, subscribe } from "./state.js";
 import { buildThumb, normalizeShapes } from "./thumb.js";
 
 const KEY = "ca-gallery-v1";
@@ -115,6 +115,29 @@ function saveCurrent() {
     setTimeout(() => (status.textContent = ""), 1600);
   }
   render();
+}
+
+/* THE DRAWING IN PROGRESS: kept as you work, and put back when the studio is opened again (a panel on a workbook or paper, or
+   the page itself). Not when the page was opened with a shared drawing or a puzzle in its address. */
+const DRAFT = "ca-draft-v1";
+export function keepDraft() {
+  try {
+    if ((!location.search || /^\?embed=/.test(location.search)) && !location.hash) {
+      const d = JSON.parse(localStorage.getItem(DRAFT) || "null");
+      if (d && Array.isArray(d.shapes) && d.shapes.length && !allPoints().length) loadShape({ shapes: normalizeShapes(d), grid: d.grid || null });
+    }
+  } catch { /* an empty studio */ }
+  let t = 0;
+  subscribe(() => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      try {
+        if (!allPoints().length) { localStorage.removeItem(DRAFT); return; }
+        const a = currentArtwork("draft");
+        localStorage.setItem(DRAFT, JSON.stringify({ shapes: a.shapes, grid: a.grid }));
+      } catch { /* not kept */ }
+    }, 600);
+  });
 }
 
 export function initGallery() {

@@ -3000,7 +3000,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         host.className = "bb-canvas-view wb-bench";
         body.appendChild(host);
         const { mountBaseBlocks } = await import("/prep-math/activity/base-blocks/js/workspace.js");
-        const bench = await mountBaseBlocks(host, { tool: "base-blocks" });
+        const bench = await mountBaseBlocks(host, { tool: "base-blocks", remember: "wb-bench-canvas" });
         /* handed back to togglePanel: shutting the panel stops the render loop */
         return () => bench?.dispose?.();
       },

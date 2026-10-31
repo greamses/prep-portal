@@ -600,9 +600,9 @@ $("xm-ai-go").addEventListener("click", async () => {
       status(round === 1 ? "Writing the questions…" : `Round ${round}: rewriting what broke the brief…`);
       let made = [], faultsNow = [];
       try {
-        made = parseQuestions(await ask(promptFor({ ...common, need, seen: kept.map((q) => q.text), faults })));
+        made = parseQuestions(await ask(promptFor({ ...common, need, seen: [...state.questions.map((q) => q.text), ...kept.map((q) => q.text)], faults })));
       } catch (err) { faultsNow.push("the reply was not the JSON object asked for"); }
-      const checked = checkQuestions(made, { svg: common.svg, seen: kept.map((q) => q.text), marksEach: state.head.marksEach });
+      const checked = checkQuestions(made, { svg: common.svg, seen: [...state.questions.map((q) => q.text), ...kept.map((q) => q.text)], marksEach: state.head.marksEach });
       faultsNow.push(...checked.faults);
       let good = limitTo(checked.good, need);
       good.forEach((q) => { if (q.svg && !cleanSvg(q.svg)) q.svg = ""; });

@@ -213,7 +213,7 @@ const TYPE_GUIDE = {
 };
 const ALL_TYPES = Object.keys(TYPE_GUIDE);
 
-function genPrompt(scheme, subjectLabel, topic, count, types, wantImages, video, grade) {
+function genPrompt(scheme, subjectLabel, topic, count, types, wantImages, video, grade, avoid = []) {
   const sc = SCHEMES[scheme] || SCHEMES.utme;
   const isMath = /math|further\s*math|quantitative/i.test(subjectLabel);
   const gradeStr = String(grade || "").trim().slice(0, 60);
@@ -266,7 +266,12 @@ MATHEMATICS RIGOR:
 - For objective items, make ALL options plausible: distractors should reflect common mistakes (sign slips, wrong formula, mis-applied rule), never random numbers.
 - Keep arithmetic clean enough to solve by hand unless the exam allows a calculator.
 ` : ""}
+${avoid.length ? `
+ALREADY IN THE BANK for this subject (do NOT repeat, reword or re-number any of these; every new question must test something else):
+${avoid.map((t) => `- ${t}`).join("\n")}
+` : ""}
 MANDATORY:
+- NO REPEATS. Every question must ask something different from every other question, in this reply and in anything listed as already written. Never write the same question twice. Never reword it, reorder its options, or change only its numbers, names or units. Do not repeat a question unless the instruction says to repeat or vary one.
 - Original, brand-new questions. NEVER reproduce, quote, or lightly reword a real past exam question.
 - No copyrighted passages, named datasets or third-party diagrams. Self-contained content only.
 - For objective/polar: options are the real answer values — NEVER the letters A/B/C/D or placeholders; "answerIndex" is the 0-based index of the correct option.
@@ -366,7 +371,17 @@ async function callModelRaw(prompt, json, order = ["groq", "gemini"]) {
 // JSON convenience wrapper (used by the rephrase flow + marking).
 async function callModel(prompt, order) { return safeJson(await callModelRaw(prompt, true, order)); }
 
-function cleanQuestions(arr) {
+/* two questions that say nearly the same thing (the same words, one changed): a repeat */
+const simWords = (s) => new Set(String(s || "").toLowerCase().replace(/\\\(|\\\)|\$/g, " ").replace(/[^a-z0-9\u00c0-\uffff ]+/g, " ").split(" ").filter((w) => w.length > 2 || /\d/.test(w)));
+function similarText(a, b) {
+  const x = simWords(a), y = simWords(b);
+  if (x.size < 4 || y.size < 4) return String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+  let both = 0;
+  x.forEach((w) => { if (y.has(w)) both++; });
+  return both / (x.size + y.size - both) >= 0.8;
+}
+
+function cleanQuestions(arr, avoidTexts = []) {
   if (!Array.isArray(arr)) return [];
   const seen = new Set();
   const out = [];
@@ -376,6 +391,8 @@ function cleanQuestions(arr) {
     if (question.length < 6) continue;
     const dedupe = question.toLowerCase().replace(/\s+/g, " ");
     if (seen.has(dedupe)) continue;
+    /* the same question again, reworded: in this batch or already in the bank */
+    if (out.some((o) => similarText(o.question, question)) || avoidTexts.some((t) => similarText(t, question))) continue;
     const type = normType(q.type, q);
     const explanation = (() => { const e = normExpl(q.explanation, true); return Array.isArray(e) ? e.map(aiMaths) : aiMaths(e); })();
     const hint = aiMaths(fixLatex(q.hint || "")).slice(0, 700);
@@ -656,12 +673,20 @@ module.exports = function () {
       const grade = String(b.grade || "").trim().slice(0, 60);
 
       // Ask for a .js file and parse it in the sandbox; fall back to JSON.
-      const text = await callModelRaw(genPrompt(scheme, label, topic, count, types, wantImages, video, grade), false);
+      /* what the bank already holds for this class, subject and topic, so the model is told not to write it again */
+      let avoid = [];
+      try {
+        const cl0 = classKey(grade);
+        const base = db().collection("cbtQuestions");
+        const snap = await (cl0 ? base.where("classSubjectTopic", "==", cstKey(cl0, key, topicKeyOf(topic || GENERAL_TOPIC))) : base.where("schemeSubject", "==", `${scheme}__${key}`)).limit(120).get();
+        avoid = snap.docs.map((d) => String((d.data() || {}).question || "").replace(/\s+/g, " ").trim()).filter(Boolean).slice(-80).map((t) => t.slice(0, 120));
+      } catch (e) { console.warn("[/api/cbt/generate] could not read what is already there:", e.message); }
+      const text = await callModelRaw(genPrompt(scheme, label, topic, count, types, wantImages, video, grade, avoid), false);
       let arr = parseExamJs(text);
       if (!arr.length) { try { const j = safeJson(text); arr = j.questions || j.items || (Array.isArray(j) ? j : []); } catch (_) {} }
       await mathsReady;
-      const questions = cleanQuestions(arr);
-      if (!questions.length) return res.status(502).json({ error: "The model returned no usable questions — try again." });
+      const questions = cleanQuestions(arr, avoid);
+      if (!questions.length) return res.status(502).json({ error: "The model returned only questions the bank already has, or none usable. Try again." });
 
       // Every question needs a class to file under (per-question grade or the
       // batch grade). The topic is the generation's topic (or "General").

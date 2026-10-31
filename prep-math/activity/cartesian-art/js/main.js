@@ -26,7 +26,7 @@ import { initPuzzleMode } from "./puzzle-mode.js";
 import { initLibrary } from "./library.js";
 import { initExport, loadFromUrl } from "./export.js";
 import { initAiGenerate } from "./ai-generate.js";
-import { initGallery } from "./gallery.js";
+import { initGallery, keepDraft } from "./gallery.js";
 import { initTaskPanel } from "./task-panel.js";
 import { initRangeFills } from "./range-fill.js";
 import { initGraphPanel } from "./graph-panel.js";
@@ -65,6 +65,7 @@ function init() {
   initGallery();
   initGraphPanel(); // before loadFromUrl, so a shared link's equations land
   loadFromUrl(); // a shared ?#art= link rehydrates the drawing before baseline
+  keepDraft(); // the drawing in progress is kept, and comes back when the studio is opened again
   initHistory(); // last: baseline snapshot needs the brush bridge registered
 
   // ── readouts: cursor position + how many points dropped ────────────────

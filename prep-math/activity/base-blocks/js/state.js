@@ -123,6 +123,15 @@ function restore(s) {
   store.selection = new Set(s.selection.filter((id) => live.has(id)));
 }
 
+/** The canvas as plain data (what undo keeps), to be saved and put back after a reload. */
+export function exportState() { return capture(); }
+/** Put a saved canvas back. Returns false if it is not one. */
+export function importState(s) {
+  if (!s || !Array.isArray(s.blocks) || !Array.isArray(s.things)) return false;
+  restore({ ...s, selection: [] });
+  return true;
+}
+
 export function snapshot() {
   store.history.push(capture());
   if (store.history.length > CFG.undoDepth) store.history.shift();

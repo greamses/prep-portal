@@ -746,3 +746,17 @@ div.xp-in:focus-visible { outline: none; }
 .xo-book { padding: 0.8rem 0.6rem; }
 .xo-book .xp-booklet .xp-sheetpage { box-sizing: border-box; width: 188mm; margin: 0 auto 6mm; padding: 9mm 11mm 10mm; background: #fff; border: 0; box-shadow: 0 3px 12px rgba(42, 39, 35, 0.2); position: relative; break-before: auto; }
 .xo-book .xp-booklet .xp-sheetpage + .xp-sheetpage { border-top: 0; }
+
+/* A written answer is written on RULED LINES, as in a real answer booklet: no box round it, one line every 7.5 mm that the
+   words sit on (the lines run on as far as the writing does). An equation does not push the lines apart. */
+div.xp-ta {
+  border: 0; border-radius: 0; padding: 0 1mm; margin: 2mm 0 3mm; min-height: 22mm;
+  line-height: 7.5mm; background-color: transparent;
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(7.5mm - 0.3mm), #b9b2a5 calc(7.5mm - 0.3mm), #b9b2a5 7.5mm);
+  background-attachment: local;
+}
+div.xp-ta:focus-visible { outline: none; background-color: color-mix(in srgb, var(--c) 6%, transparent); }
+div.xp-ta .pp-note__eq { margin: -2mm 0; }
+div.xp-ta .pp-note__eqbox { line-height: 1.2; }
+.xp-live .xp-q.is-unanswered div.xp-ta { background-color: #fdebe9; }
+@media print { div.xp-ta { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(7.5mm - 0.3mm), #b9b2a5 calc(7.5mm - 0.3mm), #b9b2a5 7.5mm) !important; border: 0 !important; background-color: transparent !important; } }

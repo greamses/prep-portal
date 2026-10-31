@@ -256,6 +256,7 @@ export function promptFor({ topic, subject, level, need, svg, extra, seen = [], 
     "Only the words stay outside the dollars; never put a whole sentence between them. Write maths with TeX commands, never with the symbols ×, ÷, ², √, ≤ or ≥ (write $\\\\times$, $\\\\div$, $^2$, $\\\\sqrt{9}$, $\\\\le$, $\\\\ge$). Do not use \\\\( \\\\), $$ or markdown. Inside the JSON string every backslash of a TeX command is written twice, exactly as in the examples here. A fill-in answer that is a number is also written in dollars, like \"$12$\". Only the blank ______ and ordinary words stay outside. " +
     "7. Never put a raw newline inside a string; write the two characters \\n where a line break is wanted. " +
     "8. Every question is original, correct, unambiguous and answerable from what is written. Never repeat a question listed under ALREADY WRITTEN. " +
+    "8a. NO REPEATS: every question asks something different from every other, in this reply and in the list below. Never write the same question twice, never reword one, never change only its numbers, names or units, unless the instruction above says to repeat or vary a question. " +
     (svg
       ? "9. DIAGRAMS: where a question truly needs a figure (geometry, a graph, a shape, a number line) put a small self-contained SVG in 'svg': one <svg> element with a viewBox, black strokes, no fill colours, no scripts, labels in <text>. Otherwise 'svg' is \"\". "
       : "9. DIAGRAMS: 'svg' is always \"\". ") +
@@ -275,6 +276,15 @@ export function promptFor({ topic, subject, level, need, svg, extra, seen = [], 
 }
 
 const norm = (s) => String(s || "").toLowerCase().replace(/\s+/g, " ").replace(/\$/g, "").trim();
+/* two questions that say nearly the same thing (the same words in another order, one word changed): a repeat */
+const words = (s) => new Set(norm(s).replace(/[^a-z0-9\u00c0-\uffff ]+/g, " ").split(" ").filter((w) => w.length > 2 || /\d/.test(w)));
+export function similar(a, b) {
+  const x = words(a), y = words(b);
+  if (x.size < 4 || y.size < 4) return norm(a) === norm(b);
+  let both = 0;
+  x.forEach((w) => { if (y.has(w)) both++; });
+  return both / (x.size + y.size - both) >= 0.8;
+}
 
 /**
  * The model's questions held to the brief, in code, not on trust.
@@ -284,12 +294,12 @@ const norm = (s) => String(s || "").toLowerCase().replace(/\s+/g, " ").replace(/
  * → { good: the ones that obey every rule, faults: what was wrong with the rest }
  */
 export function checkQuestions(list, { svg = false, seen = [], marksEach = {} } = {}) {
-  const good = [], faults = [], texts = new Set(seen.map(norm));
+  const good = [], faults = [], texts = new Set(seen.map(norm)), seenList = [...seen];
   list.forEach((q, i) => {
     const tag = `${TYPES[q.type].label} question "${q.text.slice(0, 40)}"`;
     const bad = (why) => faults.push(`${tag}: ${why}`);
     if (q.text.length < 8) return bad("the question is too short to be a question");
-    if (texts.has(norm(q.text))) return bad("it repeats a question already written");
+    if (texts.has(norm(q.text)) || [...seenList, ...good.map((g) => g.text)].some((t) => similar(t, q.text))) return bad("it repeats a question already written");
     if (q.type === "mcq") {
       const o = q.options.map(norm);
       if (o.some((x) => !x)) return bad("it needs exactly four non-empty options");
