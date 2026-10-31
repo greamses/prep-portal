@@ -113,24 +113,24 @@
               <div class="wb-row2">
                 <label class="wb-field xm-span2"><span>Paper</span>
                   <select class="wb-select" id="xm-paper"><option value="a4">A4</option><option value="letter">US Letter</option></select></label>
-                <label class="wb-toggle"><input type="checkbox" id="xm-key" /> Answer key at the back</label>
+                <label class="wb-toggle"><input type="checkbox" id="xm-key" /> Answer key</label>
                 <label class="wb-field"><span>Tries allowed (0 is no limit)</span><input class="wb-input" id="xm-tries" type="number" min="0" max="20" step="1" /></label>
-                <label class="wb-toggle"><input type="checkbox" id="xm-timer" /> Timer when answered on screen (counts down from the time allowed)</label>
-                <label class="wb-toggle"><input type="checkbox" id="xm-omr" /> OMR answer sheet for the multiple choice</label>
-                <label class="wb-toggle"><input type="checkbox" id="xm-camera" /> Camera check on the shared paper (read on the student's own device; no picture or video is sent, only a short list of notes to you)</label>
-                <label class="wb-toggle xm-span2"><input type="checkbox" id="xm-instructions" /> Instructions page before the exam starts (the student reads it and presses Begin; the timer starts then)</label>
+                <label class="wb-toggle" title="Counts down from the time allowed when the paper is answered on screen."><input type="checkbox" id="xm-timer" /> Timer on screen</label>
+                <label class="wb-toggle"><input type="checkbox" id="xm-omr" /> OMR answer sheet</label>
+                <label class="wb-toggle" title="Read on the student's own device. No picture or video is sent, only a short list of notes to you."><input type="checkbox" id="xm-camera" /> Camera check</label>
+                <label class="wb-toggle xm-span2" title="The student reads the instructions and presses Begin; the timer starts then."><input type="checkbox" id="xm-instructions" /> Instructions page</label>
                 <div class="wb-field xm-span2" id="xm-instr-wrap" hidden>
                   <span>Your own instructions (optional; added to the page)</span>
                   <textarea class="wb-input" data-h="instrText" rows="4" maxlength="1500" placeholder="For example: Calculators are allowed. Write your working. Do not leave the page."></textarea>
                   <button class="pp-btn pp-btn--ghost" id="xm-instr-preview" type="button"></button>
                 </div>
-                <label class="wb-toggle"><input type="checkbox" id="xm-tsheet" /> Theory answer sheet (written answers go on it)</label>
-                <label class="wb-toggle xm-span2"><input type="checkbox" id="xm-aimark" /> Mark the written answers with AI on the shared paper (each finished script joins a queue and is marked at the rate the AI allows, so every student is marked even when many finish together)</label>
-                <label class="wb-toggle"><input type="checkbox" id="xm-examno" /> Exam number: the student writes it and shades it on the OMR sheet or answer booklet</label>
+                <label class="wb-toggle" title="Written answers go on a sheet of their own."><input type="checkbox" id="xm-tsheet" /> Theory answer sheet</label>
+                <label class="wb-toggle xm-span2" title="Each finished script joins a queue and is marked at the rate the AI allows, so every student is marked."><input type="checkbox" id="xm-aimark" /> AI marking of written answers</label>
+                <label class="wb-toggle" title="The student writes the number and shades it on the OMR sheet or answer booklet."><input type="checkbox" id="xm-examno" /> Exam number</label>
                 <label class="wb-field" id="xm-exdigits-wrap" hidden><span>Digits in the exam number</span><input class="wb-input" id="xm-exdigits" type="number" min="4" max="12" step="1" /></label>
-                <label class="wb-toggle xm-span2"><input type="checkbox" id="xm-booklet" /> Separate answer booklet: the OMR sheet in front, then lined pages for the written answers (typed answers go in it)</label>
-                <label class="wb-toggle xm-span2"><input type="checkbox" id="xm-clean" /> Print without the browser's date and title line (page numbers go too)</label>
-                <label class="wb-toggle"><input type="checkbox" id="xm-tint" /> Tint section headings with the paper colour</label>
+                <label class="wb-toggle xm-span2" title="The OMR sheet in front, then lined pages for the written answers."><input type="checkbox" id="xm-booklet" /> Answer booklet</label>
+                <label class="wb-toggle xm-span2" title="Prints without the browser's date, title line and page numbers."><input type="checkbox" id="xm-clean" /> Clean print (no browser date or title)</label>
+                <label class="wb-toggle"><input type="checkbox" id="xm-tint" /> Tinted headings</label>
                 <fieldset class="wb-fieldset xm-span2 xm-each">
                   <legend>Marks for each question</legend>
                   <label class="wb-field"><span>Multiple choice</span><input class="wb-input" data-each="mcq" type="number" min="0" max="100" /></label>

@@ -311,7 +311,28 @@ body {
    row with the hidden attribute stays on screen unless we say otherwise. The
    admin-only watermark switch depends on this working. */
 .wb-toggle[hidden] { display: none; }
-.wb-toggle input { accent-color: var(--accent-secondary); width: 15px; height: 15px; }
+/* THE CHECKBOX: our own square box, not the browser's. Empty it is a paper square with a soft edge; ticked it fills with the
+   accent and shows a pen-drawn tick. (Squared corners, like everything else on the site.) */
+.wb-toggle input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  flex: 0 0 auto; width: 1.2rem; height: 1.2rem; margin: 0; padding: 0;
+  display: inline-grid; place-items: center;
+  background: var(--surface-primary, #fffdf8);
+  border: 2px solid color-mix(in srgb, var(--text-primary, #2a2723) 55%, transparent);
+  border-radius: 0; cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+.wb-toggle input[type="checkbox"]::after {
+  content: ""; width: 0.8rem; height: 0.8rem; transform: scale(0); transition: transform 0.14s ease;
+  background: var(--text-on-accent, #fff);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round' d='M3.6 13.2c1.8 1.1 3.7 3.2 5.2 6 1.5-5.3 6.2-10.8 11.8-14.8'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round' d='M3.6 13.2c1.8 1.1 3.7 3.2 5.2 6 1.5-5.3 6.2-10.8 11.8-14.8'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.wb-toggle input[type="checkbox"]:hover { border-color: var(--accent-secondary, #4a9fd8); }
+.wb-toggle input[type="checkbox"]:checked { background: var(--accent-secondary, #4a9fd8); border-color: var(--accent-secondary, #4a9fd8); }
+.wb-toggle input[type="checkbox"]:checked::after { transform: scale(1); }
+.wb-toggle input[type="checkbox"]:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent-secondary, #4a9fd8) 70%, transparent); outline-offset: 2px; }
+.wb-toggle input[type="checkbox"]:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* The re-roll button is a note with tape on it, so the row leaves it room. */
 .wb-seed { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: end; margin-top: 0.5rem; }
