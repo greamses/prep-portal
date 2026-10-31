@@ -15,6 +15,7 @@
 import { api } from "/utils/components/workbook/account.js";
 import { faceOf } from "/utils/components/workbook/icons.js";
 import { UI } from "/utils/components/ui-icons.js";
+import { loadHead } from "/utils/components/workbook/letterhead.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -96,6 +97,9 @@ function render(d) {
 
   /* one report card per student: every task they did, its score, grade and remark */
   const when = (at) => (at ? new Date(at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "");
+  /* the school is the one kept once on this machine for the workbooks' letterhead */
+  let school = { school: "", logo: "" };
+  try { school = loadHead() || school; } catch (_) { /* no letterhead kept */ }
   const reports = d.students.map((s, si) => {
     const g = s.avg == null ? null : gradeOf(s.avg);
     const items = s.weeks.flatMap((wk) => wk.items).sort((a, b) => (a.at || 0) - (b.at || 0));
@@ -105,9 +109,10 @@ function render(d) {
         + `<td class="rc-num"><b>${it.pct}%</b></td><td class="rc-grade"><i class="rc-pill rc-pill--${tone(it.pct)}">${ig[1]}</i></td><td class="rc-rc__remark">${ig[2]}</td></tr>`;
     }).join("");
     return `<article class="rc-card" data-i="${si}">
+      ${school.school || school.logo ? `<div class="rc-card__school">${school.logo ? `<img src="${esc(school.logo)}" alt="" />` : ""}<b>${esc(school.school)}</b></div>` : ""}
       <header class="rc-card__head">
         <div><p class="rc-head__eyebrow">Report card</p><h3>${esc(s.name)}</h3>
-          <p class="rc-card__sub">${esc(short(d.from))} to ${esc(day(d.to, { day: "numeric", month: "short", year: "numeric" }))}${d.teacher ? ` · Teacher: ${esc(d.teacher)}` : ""}</p></div>
+          <p class="rc-card__sub">${s.klass ? `Class: <b>${esc(s.klass)}</b> · ` : ""}${esc(short(d.from))} to ${esc(day(d.to, { day: "numeric", month: "short", year: "numeric" }))}${d.teacher ? ` · Teacher: ${esc(d.teacher)}` : ""}</p></div>
         ${g ? `<i class="rc-stamp rc-stamp--${tone(s.avg)}" title="${g[2]}">${g[1]}</i>` : ""}
         <button type="button" class="pp-btn no-print rc-card__print" data-i="${si}"></button>
       </header>

@@ -643,6 +643,10 @@ module.exports = function () {
         return people.get(uid);
       };
       roster.docs.forEach((d) => person(d.id, d.data().name));
+      /* the class each student sits in: the name of the group the teacher put them in */
+      const groupNames = new Map();
+      try { (await db().collection("teacherGroups").doc(req.user.uid).collection("groups").get()).docs.forEach((g) => groupNames.set(g.id, g.data().name || "")); } catch (_) { /* a report card without a class is still a report card */ }
+      roster.docs.forEach((d) => { people.get(d.id).klass = groupNames.get(d.data().groupId) || ""; });
 
       const [wbs, papers] = await Promise.all([
         db().collection("workbookAssignments").where("teacherUid", "==", req.user.uid).limit(80).get(),
@@ -674,7 +678,7 @@ module.exports = function () {
           const items = p.items.filter((i) => i.week === w).sort((x, y) => x.at - y.at);
           return { completed: items.length, avg: mean(items.map((i) => i.pct)), items };
         });
-        return { uid: p.uid, name: p.name, weeks: wk, completed: p.items.length, avg: mean(p.items.map((i) => i.pct)) };
+        return { uid: p.uid, name: p.name, klass: p.klass || "", weeks: wk, completed: p.items.length, avg: mean(p.items.map((i) => i.pct)) };
       }).sort((a, b) => a.name.localeCompare(b.name));
 
       const all = [...people.values()].flatMap((p) => p.items);

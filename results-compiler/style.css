@@ -104,6 +104,8 @@
 .rc-card__head { display: grid; grid-template-columns: 1fr auto auto; gap: 0.6rem; align-items: center; border-bottom: 2px solid #2a2723; padding-bottom: 0.6rem; }
 .rc-card__head h3 { margin: 0; font: 800 1.15rem/1.2 "Unbounded", sans-serif; }
 .rc-card__head .rc-head__eyebrow { margin: 0 0 0.2rem; }
+.rc-card__school { display: flex; align-items: center; justify-content: center; gap: 0.6rem; font: 800 0.95rem/1.2 "Unbounded", sans-serif; text-align: center; }
+.rc-card__school img { height: 2.4rem; width: auto; }
 .rc-card__sub { margin: 0.2rem 0 0; font-size: 0.72rem; color: #6b655c; }
 .rc-card .rc-stamp { grid-column: auto; grid-row: auto; }
 .rc-rc { font-size: 0.74rem; }
