@@ -23,7 +23,7 @@ import { instruments, TOOL_ICONS, compassSvg, hingeRise, COMPASS } from "./instr
 import { ICON, faceOf } from "./icons.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { mountTooltips, hideTip } from "/utils/components/tooltip.js";
-import { needCss, openPanel } from "./panels.js";
+import { needCss, openPanel, savedPanels } from "./panels.js";
 import { BOARDS } from "/utils/components/boards/index.js";
 import { mountBoard } from "/utils/components/boards/sheet.js";
 import { mountCounters } from "./counters.js";
@@ -3797,6 +3797,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       title: spec.label,
       size: spec.size,
       icon: btn?.querySelector("svg")?.outerHTML || null,
+      key: id,
       onClose: () => {
         delete panels[id];
         btn?.classList.remove("is-on");
@@ -3820,7 +3821,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   }
 
   function putSheetsAway() {
-    Object.values(panels).forEach((p) => p.close());
+    Object.values(panels).forEach((p) => p.close({ keep: true }));
   }
 
   function zoom() {
@@ -4148,6 +4149,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     bar.querySelectorAll(".wb-labelbtn").forEach((b) => { b.hidden = !labelled; });
     keyPages(true);
     if (timed) startDrill();
+    for (const id of savedPanels()) if (SHEETS.some((t) => t.id === id) && !panels[id]) togglePanel(id);
   }
 
   function leave() {

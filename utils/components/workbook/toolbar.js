@@ -18,7 +18,7 @@
    workbook is going to want.
    ========================================================================== */
 
-import { openPanel, needCss } from "./panels.js";
+import { openPanel, needCss, savedPanels } from "./panels.js";
 import { TOOL_ICONS } from "./instruments.js";
 import { mountTooltips } from "../tooltip.js";
 import { dropPin, restorePins } from "./pins.js";
@@ -337,6 +337,7 @@ export function mountTools(host = document.body, { tools = ["calculator", "graph
       title: spec.label,
       size: spec.size,
       icon: key.querySelector("svg")?.outerHTML || null,
+      key: id,
       onClose: () => {
         const was = open.get(id);
         open.delete(id);
@@ -355,6 +356,9 @@ export function mountTools(host = document.body, { tools = ["calculator", "graph
     if (k) toggle(k.dataset.wbtool);
   });
 
+  /* sheets left open (or folded into tabs) come back after a reload */
+  for (const id of savedPanels()) if (ALL[id] && !ALL[id].act) toggle(id);
+
   return {
     el,
     open: toggle,
@@ -363,7 +367,7 @@ export function mountTools(host = document.body, { tools = ["calculator", "graph
     destroy() {
       document.removeEventListener("fullscreenchange", follow);
       document.removeEventListener("webkitfullscreenchange", follow);
-      [...open.values()].forEach((p) => p.close());
+      [...open.values()].forEach((p) => p.close({ keep: true }));
       el.remove();
     },
   };

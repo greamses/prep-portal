@@ -23,6 +23,19 @@ const ICON_CLOSE =
 import { UI } from "/utils/components/ui-icons.js";
 
 let top = 0;
+
+/* What is open, and how, is kept per page on this machine: a sheet that was open (or folded into a tab) comes back
+   the same after a reload. Keyed by page + tool. */
+const MEM = "wb-panels";
+const memAll = () => { try { return JSON.parse(localStorage.getItem(MEM)) || {}; } catch { return {}; } };
+const memPut = (all) => { try { localStorage.setItem(MEM, JSON.stringify(all)); } catch { /* a memory is a nicety */ } };
+const memKey = (k) => `${location.pathname}|${k}`;
+/** The tool ids that were left open on this page. */
+export function savedPanels() {
+  const pre = `${location.pathname}|`;
+  return Object.keys(memAll()).filter((k) => k.startsWith(pre)).map((k) => k.slice(pre.length));
+}
+
 const TABS = "wb-tab-spots";
 const spotOf = (title) => { try { return (JSON.parse(localStorage.getItem(TABS)) || {})[title] || null; } catch { return null; } };
 const keepSpot = (title, x, y) => { try { const o = JSON.parse(localStorage.getItem(TABS)) || {}; o[title] = { x, y }; localStorage.setItem(TABS, JSON.stringify(o)); } catch { /* a spot is a nicety */ } };
@@ -73,8 +86,11 @@ function makeTab(title, icon, open) {
  *
  * → { el, body, close(), raise() }
  */
-export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose = null, icon = null } = {}) {
+export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose = null, icon = null, key = null } = {}) {
   const closers = [];
+  const mem = key ? memKey(key) : null;
+  const saved = mem ? memAll()[mem] : null;
+  if (saved && !at && !size.fixed) { size = { w: saved.w || size.w, h: saved.h || size.h }; at = (saved.l != null) ? { x: saved.l, y: saved.t } : at; }
   const el = document.createElement("section");
   el.className = "wb-panel";
   el.setAttribute("role", "dialog");
@@ -117,12 +133,21 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   const raise = () => { el.style.zIndex = String(10070 + (top += 1)); };
   raise();
 
-  const close = () => {
+  /* remember: where it is, how big, folded or not */
+  const remember = () => {
+    if (!mem || !el.isConnected) return;
+    const all = memAll();
+    all[mem] = { l: small ? small.left : el.offsetLeft, t: small ? small.top : el.offsetTop, w: small ? small.width : el.offsetWidth, h: small ? small.height : el.offsetHeight, folded: !!tab };
+    memPut(all);
+  };
+  const close = (opts) => {
+    // put away by the reader: forgotten; put away by the page (leaving interactive mode, tearing down): kept for next time
+    if (mem && !(opts && opts.keep)) { const all = memAll(); delete all[mem]; memPut(all); }
     closers.forEach((f) => f());
     el.remove();
     if (onClose) onClose();
   };
-  el.querySelector(".wb-panel__close").addEventListener("click", close);
+  el.querySelector(".wb-panel__close").addEventListener("click", () => close());
   el.addEventListener("pointerdown", raise, true);
 
   /* Expanding: the sheet grows to nearly the whole window, easing there, and
@@ -144,6 +169,7 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
     if (on === !!tab) return;
     if (on) { tab = makeTab(title, icon, () => fold(false)); el.classList.add("is-folded"); }
     else { tab.remove(); tab = null; el.classList.remove("is-folded"); settle(); raise(); }
+    remember();
   };
   minBtn.addEventListener("click", () => fold(true));
   head.addEventListener("dblclick", (e) => { if (!e.target.closest("button")) fold(true); });
@@ -182,7 +208,7 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
     el.style.left = `${Math.max(4 - w + 60, Math.min(window.innerWidth - 60, x))}px`;
     el.style.top = `${Math.max(4, Math.min(window.innerHeight - 40, y))}px`;
   });
-  const drop = () => { from = null; };
+  const drop = () => { if (from) remember(); from = null; };
   head.addEventListener("pointerup", drop);
   head.addEventListener("pointercancel", drop);
 
@@ -202,10 +228,12 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
     el.style.height = `${Math.max(160, Math.min(window.innerHeight - el.offsetTop - 4, sz.h + e.clientY - sz.py))}px`;
     if (!tick) tick = requestAnimationFrame(() => { tick = 0; settle(); });   // whatever is inside measures itself again
   });
-  const stop = () => { if (sz) { sz = null; settle(); } };
+  const stop = () => { if (sz) { sz = null; settle(); remember(); } };
   grip.addEventListener("pointerup", stop);
   grip.addEventListener("pointercancel", stop);
 
+  remember();
+  if (saved && saved.folded) fold(true);
   return { el, body: el.querySelector(".wb-panel__body"), close, raise };
 }
 
