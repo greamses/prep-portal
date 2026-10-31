@@ -448,7 +448,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
         if (!given(q)) say("is-skipped", "Not answered.");
         else {
           const m = answers["m:" + q.id];
-          say("is-model", `<b>Model answer</b> ${esc(q.answer || "No model answer was written.")}`
+          say("is-model", `<span class="xp-reveal__k">Model answer</span><div class="xp-reveal__a">${esc(q.answer || "No model answer was written.")}</div>`
             + `<div class="xp-aimark">${m !== undefined && ai.status === "done"
               ? (ai.by[q.id] === "teacher"
                 ? `<span class="pp-pill pp-pill--static pp-pill--ok">Teacher's mark: ${m} of ${q.marks}</span> ${esc(ai.notes[q.id] || "")} <small>The AI gave ${ai.was[q.id]}.</small>`
@@ -456,7 +456,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
               : `<span class="pp-pill pp-pill--static pp-pill--warn">${esc(ai.text || "Waiting to be marked")}</span>`}</div>`);
         }
       } else {
-        say("is-model", `<b>Model answer</b> ${esc(q.answer || "No model answer was written.")}`
+        say("is-model", `<span class="xp-reveal__k">Model answer</span><div class="xp-reveal__a">${esc(q.answer || "No model answer was written.")}</div>`
           + `<label class="xp-selfmark">Your mark <input type="number" min="0" max="${q.marks}" step="1" inputmode="numeric" aria-label="Your mark for this answer, out of ${q.marks}"> out of ${q.marks}</label>`);
         const box = body.querySelector(".xp-reveal.is-model .xp-selfmark input");
         if (box) {

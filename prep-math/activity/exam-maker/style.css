@@ -792,3 +792,18 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 .xp-bpage__run > span:first-of-type, .xp-bpage__run > span:nth-of-type(1) { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .xp-bpage__run > span:last-child { flex: 0 0 auto; white-space: nowrap; text-align: right; }
 .xp-bpage__logo { flex: 0 0 auto; }
+
+/* The model answer and the other notes under a marked question: a soft panel with no bar down its left side; its label above, the
+   answer under it with its own line breaks and lists kept, the maths typeset. Colour says right, wrong or waiting. */
+.xp-reveal, .xp-live .xp-reveal { border: 0 !important; border-left: 0 !important; border-radius: 0; padding: 2mm 3mm; background: #f4f1e9; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }
+.xp-reveal.is-ok, .xp-live .xp-reveal.is-ok { background: #e6f3ea; }
+.xp-reveal.is-no, .xp-live .xp-reveal.is-no, .xp-live .xp-reveal.is-skipped { background: #fbeceb; }
+.xp-reveal.is-model, .xp-live .xp-reveal.is-model { background: color-mix(in srgb, var(--c, #3b4cca) 8%, #fff); }
+.xp-reveal__k { display: block; margin-bottom: 0.8mm; font-size: 0.72em; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ci, #3b4cca); }
+.xp-reveal__a { white-space: pre-wrap; }
+.xp-reveal .xp-aimark, .xp-reveal .xp-selfmark { display: block; margin-top: 1.6mm; white-space: normal; }
+@media print { .xp-reveal, .xp-live .xp-reveal { border: 0 !important; border-left: 0 !important; background: #f4f1e9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+
+/* no bar down the left of an unanswered question either: it is already marked by its red cross and "Not answered" */
+.xp-live .xp-q.is-unanswered { border-left: 0 !important; padding-left: 0; margin-left: 0; }
+@media print { .xp-live .xp-q.is-unanswered { border-left: 0 !important; } }
