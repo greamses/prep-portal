@@ -92,7 +92,26 @@
   .rc-per-page .rc-students { grid-template-columns: 1fr; }
   .rc-per-page .rc-student { break-after: page; }
   .rc-per-page .rc-student:last-child { break-after: auto; }
+  .rc-card { background: #fffdf7 !important; border-color: #2a2723 !important; break-after: page; }
+  .rc-card:last-child { break-after: auto; }
+  .rc-cardlist { grid-template-columns: 1fr; }
+  .rc-solo .rc-head, .rc-solo .rc-block:not(.rc-cards), .rc-solo .rc-foot, .rc-solo .rc-cards > .rc-h, .rc-solo .rc-card:not(.is-solo) { display: none !important; }
 }
+
+/* report cards */
+.rc-cardlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr)); gap: 1.1rem; }
+.rc-card { border: 2px solid #2a2723; padding: 1rem 1.1rem; background: #fffdf7; break-inside: avoid; display: flex; flex-direction: column; gap: 0.7rem; }
+.rc-card__head { display: grid; grid-template-columns: 1fr auto auto; gap: 0.6rem; align-items: center; border-bottom: 2px solid #2a2723; padding-bottom: 0.6rem; }
+.rc-card__head h3 { margin: 0; font: 800 1.15rem/1.2 "Unbounded", sans-serif; }
+.rc-card__head .rc-head__eyebrow { margin: 0 0 0.2rem; }
+.rc-card__sub { margin: 0.2rem 0 0; font-size: 0.72rem; color: #6b655c; }
+.rc-card .rc-stamp { grid-column: auto; grid-row: auto; }
+.rc-rc { font-size: 0.74rem; }
+.rc-rc .rc-rc__title, .rc-rc .rc-rc__remark { text-align: left; }
+.rc-card__sum { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; font-size: 0.78rem; padding: 0.5rem 0; border-top: 1px dashed #8c8577; border-bottom: 1px dashed #8c8577; }
+.rc-card__sum b { margin-left: 0.3rem; }
+.rc-card__sign { display: grid; grid-template-columns: 2fr 1fr; gap: 1.4rem; margin-top: 0.8rem; font-size: 0.68rem; color: #6b655c; }
+.rc-card__sign span { border-top: 1px solid #2a2723; padding-top: 0.25rem; }
 
 /* the receipt component's paper is a block; two classes make the controls one row */
 .pp-receipt .rc-controls__paper { display: flex; flex-wrap: wrap; align-items: end; gap: 0.7rem 1rem; }

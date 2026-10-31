@@ -30,6 +30,8 @@ const { notifyStudents } = require("../lib/notices");
 
 module.exports = function () {
   const router = express.Router();
+  // a class list is read straight after it is changed: never let a browser or proxy replay an old one
+  router.use((req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
   const db = () => admin.firestore();
   const stamp = () => admin.firestore.FieldValue.serverTimestamp();
   const ms = (x) => (x && x.toMillis ? x.toMillis() : 0);

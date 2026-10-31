@@ -94,6 +94,31 @@ function render(d) {
     </article>`;
   }).join("");
 
+  /* one report card per student: every task they did, its score, grade and remark */
+  const when = (at) => (at ? new Date(at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "");
+  const reports = d.students.map((s, si) => {
+    const g = s.avg == null ? null : gradeOf(s.avg);
+    const items = s.weeks.flatMap((wk) => wk.items).sort((a, b) => (a.at || 0) - (b.at || 0));
+    const lines = items.map((it, n) => {
+      const ig = gradeOf(it.pct);
+      return `<tr><td class="rc-num">${n + 1}</td><td class="rc-rc__title">${esc(it.title)}</td><td>${it.kind === "paper" ? "Paper" : "Workbook"}</td><td>${when(it.at)}</td>`
+        + `<td class="rc-num"><b>${it.pct}%</b></td><td class="rc-grade"><i class="rc-pill rc-pill--${tone(it.pct)}">${ig[1]}</i></td><td class="rc-rc__remark">${ig[2]}</td></tr>`;
+    }).join("");
+    return `<article class="rc-card" data-i="${si}">
+      <header class="rc-card__head">
+        <div><p class="rc-head__eyebrow">Report card</p><h3>${esc(s.name)}</h3>
+          <p class="rc-card__sub">${esc(short(d.from))} to ${esc(day(d.to, { day: "numeric", month: "short", year: "numeric" }))}${d.teacher ? ` · Teacher: ${esc(d.teacher)}` : ""}</p></div>
+        ${g ? `<i class="rc-stamp rc-stamp--${tone(s.avg)}" title="${g[2]}">${g[1]}</i>` : ""}
+        <button type="button" class="pp-btn no-print rc-card__print" data-i="${si}"></button>
+      </header>
+      ${items.length ? `<table class="rc-table rc-rc"><thead><tr><th>#</th><th>Task</th><th>Kind</th><th>Date</th><th>Score</th><th>Grade</th><th>Remark</th></tr></thead><tbody>${lines}</tbody></table>`
+        : `<p class="rc-none">No task completed in these weeks.</p>`}
+      <div class="rc-card__sum"><span>Tasks completed <b>${s.completed}</b></span><span>Average <b>${s.avg == null ? "–" : s.avg + "%"}</b></span><span>Overall <b>${g ? g[1] + " · " + g[2] : "–"}</b></span></div>
+      ${chart(s.weeks.map((w) => w.avg), s.weeks.map((w) => w.completed), labels)}
+      <div class="rc-card__sign"><span>Teacher's comment</span><span>Signature</span></div>
+    </article>`;
+  }).join("");
+
   $("rc-report").innerHTML = `
     <div class="rc-sheet">
       <header class="rc-head">
@@ -116,8 +141,13 @@ function render(d) {
         <h3 class="rc-h">Each student</h3>
         <div class="rc-students">${cards || `<p class="rc-none">No students yet.</p>`}</div>
       </section>
+      <section class="rc-block rc-cards">
+        <h3 class="rc-h">Report cards</h3>
+        <div class="rc-cardlist">${reports || `<p class="rc-none">No students yet.</p>`}</div>
+      </section>
       <p class="rc-foot">Scores are worked out in the student's browser: practice feedback, not an invigilated exam. A completed assignment counts in the week of its last attempt.</p>
     </div>`;
+  document.querySelectorAll(".rc-card__print").forEach((b) => faceOf(b, UI.print(16), "Print this report card"));
   $("rc-start").value = d.from;
   $("rc-msg").textContent = d.assignments ? "" : "No scores came in during these weeks. Try other dates, or check that students have opened your assignment links.";
 }
@@ -143,5 +173,14 @@ $("rc-start").addEventListener("change", (e) => e.target.value && load(e.target.
 $("rc-weeks").addEventListener("change", () => load(data ? data.from : ""));
 $("rc-pages").addEventListener("change", (e) => document.documentElement.classList.toggle("rc-per-page", e.target.checked));
 $("rc-print").addEventListener("click", () => window.print());
+/* a single report card: print only that one */
+$("rc-report").addEventListener("click", (e) => {
+  const b = e.target.closest(".rc-card__print"); if (!b) return;
+  const card = b.closest(".rc-card"), root = document.documentElement;
+  card.classList.add("is-solo"); root.classList.add("rc-solo");
+  const undo = () => { card.classList.remove("is-solo"); root.classList.remove("rc-solo"); window.removeEventListener("afterprint", undo); };
+  window.addEventListener("afterprint", undo);
+  window.print();
+});
 
 load("");

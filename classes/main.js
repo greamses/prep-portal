@@ -22,7 +22,14 @@ const picked = new Set();
 const pickedTasks = new Set();
 let tasks = [];
 
-const say = (t, bad = false) => { const m = $("cl-msg"); m.textContent = t; m.classList.toggle("is-bad", bad); };
+let sayTimer = 0;
+const say = (t, bad = false) => {
+  const m = $("cl-msg"); m.textContent = t; m.classList.toggle("is-bad", bad);
+  // shown as a note over the page, so it is seen wherever the teacher has scrolled to
+  m.classList.toggle("is-toast", !!t && !/^Loading/.test(t));
+  clearTimeout(sayTimer);
+  if (t && !bad) sayTimer = setTimeout(() => m.classList.remove("is-toast"), 3500);
+};
 const who = () => (teacherUid ? { teacherUid } : {});
 const query = () => (teacherUid ? `?teacherUid=${encodeURIComponent(teacherUid)}` : "");
 const groupName = (id) => (ov.groups.find((g) => g.id === id) || {}).name || "";
@@ -140,12 +147,14 @@ async function loadTasks() {
 }
 
 async function act(path, body, method = "POST", done = "") {
+  document.body.classList.add("cl-busy");
   try {
     const r = await api(path, { ...who(), ...body }, method);
-    if (done) say(typeof done === "function" ? done(r) : done);
     await load();
+    if (done) say(typeof done === "function" ? done(r) : done);
     return r;
-  } catch (e) { say(String((e && e.message) || e).slice(0, 200), true); return null; }
+  } catch (e) { say(String((e && e.message) || e).slice(0, 200), true); await load().catch(() => {}); return null; }
+  finally { document.body.classList.remove("cl-busy"); }
 }
 
 /* ── events ────────────────────────────────────────────────────────────── */

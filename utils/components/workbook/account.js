@@ -65,6 +65,7 @@ export async function api(path, body, method = body === undefined ? "GET" : "POS
   const base = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
   const res = await fetch(`${base}${path}`, {
     method,
+    cache: "no-store",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${await user.getIdToken()}` },
     body: method === "GET" ? undefined : JSON.stringify(body || {}),
   });
