@@ -130,7 +130,7 @@ function render(d) {
       return `<tr><td class="rc-num">${n + 1}</td><td class="rc-rc__title">${esc(it.title)}</td><td>${it.kind === "paper" ? "Paper" : "Workbook"}</td><td>${when(it.at)}</td>`
         + `<td class="rc-num"><b>${it.pct}%</b></td><td class="rc-grade"><i class="rc-pill rc-pill--${tone(it.pct)}">${ig[1]}</i></td><td class="rc-rc__remark">${ig[2]}</td></tr>`;
     }).join("");
-    return `<article class="rc-card" data-i="${si}">
+    return `<article class="rc-card pp-receipt" data-i="${si}"><div class="pp-receipt__paper rc-card__paper">
       ${school.school || school.logo ? `<div class="rc-card__school">${school.logo ? `<img src="${esc(school.logo)}" alt="" />` : ""}<b>${esc(school.school)}</b></div>` : ""}
       <header class="rc-card__head">
         <div><p class="rc-head__eyebrow">Report card</p><h3>${esc(s.name)}</h3>
@@ -148,7 +148,7 @@ function render(d) {
       <label class="rc-card__comment"><span>Teacher's comment</span>
         <textarea class="rc-comment" rows="3" maxlength="600" data-key="${esc(`rc-comment:${s.uid}:${d.from}:${d.weeks}`)}" placeholder="Write a comment for ${esc(s.name)}">${esc(saved(`rc-comment:${s.uid}:${d.from}:${d.weeks}`))}</textarea></label>
       <div class="rc-card__sign"><span>Teacher's signature</span><span>Date</span></div>
-    </article>`;
+    </div></article>`;
   }).join("");
 
   $("rc-report").innerHTML = `

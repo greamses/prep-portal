@@ -92,8 +92,10 @@
   .rc-per-page .rc-students { grid-template-columns: 1fr; }
   .rc-per-page .rc-student { break-after: page; }
   .rc-per-page .rc-student:last-child { break-after: auto; }
-  .rc-card { background: #fffdf7 !important; border-color: #2a2723 !important; break-after: page; }
-  .rc-card:last-child { break-after: auto; }
+  .rc-card.pp-receipt { filter: none; break-after: page; }
+  .rc-card__paper { -webkit-mask: none; mask: none; background: #fffdf7 !important; border: 0.3mm solid #8c8577; padding: 6mm; min-height: 0; }
+  .rc-card__paper::before, .rc-card__paper::after { display: none; }
+  .rc-card.pp-receipt:last-child { break-after: auto; }
   .rc-cardlist { grid-template-columns: 1fr; }
   .rc-comment { border-color: #2a2723 !important; background: #fff !important; }
   .rc-comment::placeholder { color: transparent; }
@@ -109,12 +111,12 @@
 
 /* report cards */
 .rc-cardlist { display: grid; grid-template-columns: 1fr; gap: 1.4rem; }
-.rc-card { min-height: 38rem; }
 .rc-card__graphs { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0.8rem; }
 .rc-card__graphs figure { margin: 0; }
 .rc-card__graphs figcaption { text-align: center; font-size: 0.66rem; color: #6b655c; }
-.rc-card { border: 2px solid #2a2723; padding: 1rem 1.1rem; background: #fffdf7; break-inside: avoid; display: flex; flex-direction: column; gap: 0.7rem; }
-.rc-card__head { display: grid; grid-template-columns: 1fr auto auto; gap: 0.6rem; align-items: center; border-bottom: 2px solid #2a2723; padding-bottom: 0.6rem; }
+.rc-card.pp-receipt { break-inside: avoid; }
+.rc-card__paper { display: flex; flex-direction: column; gap: 0.7rem; min-height: 36rem; padding: 1.7rem 1.9rem 1.6rem; }
+.rc-card__head { display: grid; grid-template-columns: 1fr auto auto; gap: 0.6rem; align-items: center; border-bottom: 1px dashed var(--text-tertiary, #9a948a); padding-bottom: 0.6rem; }
 .rc-card__head h3 { margin: 0; font: 800 1.15rem/1.2 "Unbounded", sans-serif; }
 .rc-card__head .rc-head__eyebrow { margin: 0 0 0.2rem; }
 .rc-card__school { display: flex; align-items: center; justify-content: center; gap: 0.6rem; font: 800 0.95rem/1.2 "Unbounded", sans-serif; text-align: center; }

@@ -216,7 +216,7 @@ function key(qs, head) {
 
 const who = () => `<div class="xp-student xp-sheetwho" data-nomath><span>Student's name</span><i></i><span>Class</span><i class="xp-sheetwho__short"></i><span>Candidate no.</span><span class="xp-boxes">${"<u></u>".repeat(8)}</span></div>`;
 
-function omrSheet(numbered) {
+function omrSheet(numbered, extra = "", title = ["Answer sheet", "Multiple choice"]) {
   const rows = numbered.map((q, i) => ({ q, n: i + 1 })).filter((r) => r.q.type === "mcq");
   if (!rows.length) return "";
   const PER = 15;
@@ -225,8 +225,8 @@ function omrSheet(numbered) {
   const li = ({ q, n }) => `<li data-qid="${q.id}"><span class="xp-omr__n" data-nomath>${n}</span>${[0, 1, 2, 3].map((i) => `<b data-i="${i}" data-nomath>${letter(i)}</b>`).join("")}</li>`;
   return `<section class="xp-sheetpage xp-omr" data-nomath>
     <i class="xp-reg xp-reg--tl"></i><i class="xp-reg xp-reg--tr"></i><i class="xp-reg xp-reg--bl"></i><i class="xp-reg xp-reg--br"></i>
-    ${bar("Answer sheet", "Multiple choice", "Shade ONE bubble for each question, completely, with a pencil.")}
-    ${who()}
+    ${bar(title[0], title[1], "Shade ONE bubble for each question, completely, with a pencil.")}
+    ${who()}${extra}
     <div class="xp-omr__grid">${cols.map((c) => `<ol>${c.map(li).join("")}</ol>`).join("")}</div>
     <p class="xp-omr__note" data-nomath>Do not write outside the bubbles. To change an answer, rub the first one out completely.</p>
   </section>`;
@@ -246,6 +246,44 @@ function theorySheet(numbered) {
   </section>`;
 }
 
+/* ── the answer booklet ────────────────────────────────────────────────────
+   A separate booklet the student answers in: the OMR sheet on its front cover, then lined pages,
+   the written questions' blocks packed onto them in order, each page numbered "page k of N". It
+   replaces the paper's own OMR sheet and theory sheet, and reuses their markup (.xp-omr, .xp-ans)
+   so everything that types into, marks and prints those works on it unchanged. */
+const BOOKLET_PAGE = 27;   // ruled lines one page holds under its running head (a question's tag costs two)
+
+function bookletPlan(numbered) {
+  const written = numbered.map((q, i) => ({ q, n: i + 1 })).filter((r) => r.q.type === "sub" || r.q.type === "theory");
+  const pages = [];
+  let cur = [], used = 0;
+  for (const r of written) {
+    const lines = Math.min(BOOKLET_PAGE - 2, Math.max(r.q.type === "theory" ? 12 : 5, r.q.lines | 0));
+    const need = lines + 2;
+    if (used + need > BOOKLET_PAGE && cur.length) { pages.push(cur); cur = []; used = 0; }
+    cur.push({ ...r, lines });
+    used += need;
+  }
+  if (cur.length) pages.push(cur);
+  return pages;
+}
+
+function booklet(numbered, head) {
+  const pages = bookletPlan(numbered);
+  const total = pages.length + 1;
+  const intro = `<p class="xp-bintro" data-nomath>This booklet has ${total} page${total === 1 ? "" : "s"}: this front page${pages.length ? `, then ${pages.length} lined page${pages.length === 1 ? "" : "s"} for the written answers. Write each answer under its own question number.` : "."}</p>`;
+  const hasMcq = numbered.some((q) => q.type === "mcq");
+  const cover = (hasMcq && omrSheet(numbered, intro, ["Answer booklet", "Multiple choice"]).replace('class="xp-sheetpage xp-omr"', 'class="xp-sheetpage xp-omr xp-bcover"'))
+    || `<section class="xp-sheetpage xp-bcover" data-nomath>${bar("Answer booklet", "Written answers", "Write each answer under its own question number.")}${who()}${intro}</section>`;
+  const run = [head.school, head.subject, head.klass].filter(Boolean).map(esc).join(" · ");
+  const block = ({ q, n, lines }) => `<div class="xp-ans" data-qid="${q.id}"><div class="xp-ans__tag" data-nomath><b>Question ${n}</b><span>${q.marks} ${q.marks === 1 ? "mark" : "marks"}</span></div><div class="xp-lines">${"<i></i>".repeat(lines)}</div></div>`;
+  const sheets = pages.map((list, k) => `<section class="xp-sheetpage xp-tsheet xp-bpage">
+    <div class="xp-bpage__run" data-nomath><span>${run || "Answer booklet"}</span><span>Answer booklet · page ${k + 2} of ${total}</span></div>
+    ${list.map(block).join("")}
+  </section>`).join("");
+  return `<div class="xp-booklet">${cover}${sheets}</div>`;
+}
+
 /**
  * The whole paper as HTML.
  *   head       the header fields (model.js BLANK_HEAD)
@@ -258,7 +296,7 @@ export function paperHtml(head, questions) {
   let no = 0;
   const numbered = [];
   const body = groups.map(([t, list], gi) => {
-    const html = list.map((q) => { numbered.push(q); return t === "mcq" ? mcq(q, ++no) : t === "fill" ? fill(q, ++no) : written(q, ++no, !!head.theorySheet); }).join("");
+    const html = list.map((q) => { numbered.push(q); return t === "mcq" ? mcq(q, ++no) : t === "fill" ? fill(q, ++no) : written(q, ++no, !!head.theorySheet || !!head.booklet); }).join("");
     return `<section class="xp-sec xp-sec--${t}${gi && head.breakAt && head.breakAt[t] ? " xp-sec--page" : ""}">${banner(t, list, gi, head.attempt)}${t === "mcq" ? `<div class="xp-cols">${html}</div>` : html}</section>`;
   }).join("");
   const empty = groups.length ? "" : `<p class="xp-empty">No questions yet. Write some, or ask the model for a set.</p>`;
@@ -267,12 +305,12 @@ export function paperHtml(head, questions) {
   const wm = head.logo
     ? "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297"><image href="${head.logo}" x="65" y="103" width="80" height="80" preserveAspectRatio="xMidYMid meet" opacity="0.045"/></svg>`)
     : "";
-  return `<article class="xp${wm ? " xp--wm" : ""}${head.tint ? " xp--tint" : ""}${head.omr ? " xp--omr" : ""}" style="--c:${col.main};--cs:${col.soft};--ci:${col.ink}${wm ? `;--wm:url(&quot;${wm}&quot;)` : ""}">
+  return `<article class="xp${wm ? " xp--wm" : ""}${head.tint ? " xp--tint" : ""}${head.omr || head.booklet ? " xp--omr" : ""}" style="--c:${col.main};--cs:${col.soft};--ci:${col.ink}${wm ? `;--wm:url(&quot;${wm}&quot;)` : ""}">
     ${head.logo ? `<img class="xp-wm" src="${head.logo}" alt="" />` : ""}
     ${header(head, paperMarks(questions, head.attempt))}
     ${body}${empty}
-    ${head.omr && numbered.length ? omrSheet(numbered) : ""}
-    ${head.theorySheet && numbered.length ? theorySheet(numbered) : ""}
+    ${head.booklet && numbered.length ? booklet(numbered, head) : `${head.omr && numbered.length ? omrSheet(numbered) : ""}
+    ${head.theorySheet && numbered.length ? theorySheet(numbered) : ""}`}
     ${head.key && numbered.length ? key(numbered, head) : ""}
   </article>`;
 }

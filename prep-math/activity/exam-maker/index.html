@@ -118,7 +118,14 @@
                 <label class="wb-toggle"><input type="checkbox" id="xm-timer" /> Timer when answered on screen (counts down from the time allowed)</label>
                 <label class="wb-toggle"><input type="checkbox" id="xm-omr" /> OMR answer sheet for the multiple choice</label>
                 <label class="wb-toggle"><input type="checkbox" id="xm-camera" /> Camera check on the shared paper (read on the student's own device; no picture or video is sent, only a short list of notes to you)</label>
+                <label class="wb-toggle xm-span2"><input type="checkbox" id="xm-instructions" /> Instructions page before the exam starts (the student reads it and presses Begin; the timer starts then)</label>
+                <div class="wb-field xm-span2" id="xm-instr-wrap" hidden>
+                  <span>Your own instructions (optional; added to the page)</span>
+                  <textarea class="wb-input" data-h="instrText" rows="4" maxlength="1500" placeholder="For example: Calculators are allowed. Write your working. Do not leave the page."></textarea>
+                  <button class="pp-btn pp-btn--ghost" id="xm-instr-preview" type="button"></button>
+                </div>
                 <label class="wb-toggle"><input type="checkbox" id="xm-tsheet" /> Theory answer sheet (written answers go on it)</label>
+                <label class="wb-toggle xm-span2"><input type="checkbox" id="xm-booklet" /> Separate answer booklet: the OMR sheet in front, then lined pages for the written answers (typed answers go in it)</label>
                 <label class="wb-toggle xm-span2"><input type="checkbox" id="xm-clean" /> Print without the browser's date and title line (page numbers go too)</label>
                 <label class="wb-toggle"><input type="checkbox" id="xm-tint" /> Tint section headings with the paper colour</label>
                 <fieldset class="wb-fieldset xm-span2 xm-each">

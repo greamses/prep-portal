@@ -8,10 +8,16 @@
      · anything held upright (taller than wide) is told to turn landscape.
    The cover goes the moment the screen is right, with no reload.
 
+   The cover is the site's receipt on the paint blob (pp-cover.js), the same as every
+   other full-screen message.
+
      import { examGate } from "/utils/components/exam-gate.js";
      const gate = examGate();            // always on
      const gate = examGate({ when });    // on only while when() is true; call gate.check() after it changes
    ========================================================================== */
+
+import { makeCover } from "/utils/components/pp-cover.js";
+import { UI } from "/utils/components/ui-icons.js";
 
 const PHONE_SHORT_SIDE = 600; // CSS px: the shorter side of every phone's screen, less than any tablet's
 
@@ -25,9 +31,13 @@ export const isUpright = () => window.innerHeight > window.innerWidth;
 export const verdict = () => (isPhone() ? "phone" : isUpright() ? "rotate" : "ok");
 
 const TEXT = {
-  phone: ["Exam mode is not on phones", "Open this paper on a tablet or a laptop. It needs the whole sheet, the tools and the answer sheet in view, and a phone screen is too small to sit it fairly."],
-  rotate: ["Turn your screen sideways", "The paper is set out for a landscape screen. Turn your tablet or laptop window so it is wider than it is tall, and the paper will come back."],
+  phone: ["Exam mode is not on phones", "Open this paper on a tablet or a laptop. It needs the whole sheet, the tools and the answer sheet in view, and a phone screen is too small to sit it fairly.", "monitor"],
+  rotate: ["Turn your screen sideways", "The paper is set out for a landscape screen. Turn your tablet or laptop window so it is wider than it is tall, and the paper will come back.", "rotateDevice"],
 };
+
+const body = (kind) => `<span class="pp-cover__icon" aria-hidden="true">${UI[TEXT[kind][2]](58)}</span>
+  <h2 class="pp-cover__title" style="text-align:center">${TEXT[kind][0]}</h2>
+  <p class="pp-cover__text" style="text-align:center">${TEXT[kind][1]}</p>`;
 
 /**
  * A closable notice for a link that leads into exam mode, so a phone is told before it leaves the page
@@ -37,66 +47,35 @@ const TEXT = {
 export function blockPhone() {
   if (!isPhone()) return false;
   document.getElementById("pp-exam-notice")?.remove();
-  const box = document.createElement("div");
-  box.id = "pp-exam-notice";
-  box.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:1.2rem;background:rgba(42,39,35,0.55);font-family:'JetBrains Mono',ui-monospace,monospace;";
-  box.setAttribute("role", "alertdialog");
-  box.setAttribute("aria-modal", "true");
-  box.setAttribute("aria-label", TEXT.phone[0]);
-  box.innerHTML = `<div style="max-width:28rem;padding:1.4rem 1.3rem;border:2px solid #2a2723;background:#fffdf7;color:#2a2723;box-shadow:5px 5px 0 rgba(42,39,35,0.3);text-align:center">
-    <h2 style="margin:0 0 .6rem;font:800 1.05rem/1.25 'Unbounded',sans-serif">${TEXT.phone[0]}</h2>
-    <p style="margin:0 0 1rem;font-size:.85rem;line-height:1.55">${TEXT.phone[1]}</p>
-    <button type="button" style="font:700 .8rem 'JetBrains Mono',monospace;padding:.55rem 1.2rem;border:2px solid #2a2723;background:#f4c95d;color:#2a2723;cursor:pointer">Understood</button></div>`;
-  const close = () => { box.remove(); document.removeEventListener("keydown", onKey); };
-  const onKey = (e) => { if (e.key === "Escape") close(); };
+  const { root, paper, close } = makeCover({ label: TEXT.phone[0], scrim: true, tag: "Exam mode", colour: 4 });
+  root.id = "pp-exam-notice";
+  paper.innerHTML = `${body("phone")}<div class="pp-cover__go"><button type="button" class="pp-btn">Understood</button></div>`;
+  const done = () => { close(); document.removeEventListener("keydown", onKey); };
+  const onKey = (e) => { if (e.key === "Escape") done(); };
   document.addEventListener("keydown", onKey);
-  box.addEventListener("pointerdown", (e) => { if (e.target === box) close(); });
-  box.querySelector("button").addEventListener("click", close);
-  document.body.appendChild(box);
-  box.querySelector("button").focus();
+  root.addEventListener("pointerdown", (e) => { if (e.target === root) done(); });
+  const btn = paper.querySelector("button");
+  btn.addEventListener("click", done);
+  btn.focus();
   return true;
 }
 
 export function examGate({ when = () => true } = {}) {
-  let cover = null;
-
-  function ensureStyles() {
-    if (document.getElementById("pp-exam-gate-css")) return;
-    const s = document.createElement("style");
-    s.id = "pp-exam-gate-css";
-    s.textContent = `
-      .pp-exam-gate { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; padding: 1.2rem; background: #fbf8f1; color: #2a2723; font-family: "JetBrains Mono", ui-monospace, monospace; text-align: center; }
-      .pp-exam-gate__card { max-width: 30rem; padding: 1.6rem 1.4rem; border: 2px solid #2a2723; background: #fffdf7; box-shadow: 5px 5px 0 rgba(42, 39, 35, 0.3); }
-      .pp-exam-gate h2 { margin: 0.2rem 0 0.7rem; font: 800 1.15rem/1.25 "Unbounded", sans-serif; }
-      .pp-exam-gate p { margin: 0; font-size: 0.86rem; line-height: 1.55; }
-      .pp-exam-gate svg { width: 4.2rem; height: 4.2rem; }
-      .pp-exam-gate--rotate svg { animation: pp-exam-turn 2.4s ease-in-out infinite; }
-      @keyframes pp-exam-turn { 0%, 25% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
-      @media (prefers-reduced-motion: reduce) { .pp-exam-gate--rotate svg { animation: none; transform: rotate(-90deg); } }
-      @media print { .pp-exam-gate { display: none !important; } }`;
-    document.head.appendChild(s);
-  }
-
-  /* a filled tablet, drawn upright (it turns by itself while the screen is wrong) */
-  const ICON = `<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="3" width="30" height="42" fill="#7fb6e8" stroke="#2a2723" stroke-width="2.4"/><rect x="13" y="8" width="22" height="30" fill="#fffdf7" stroke="#2a2723" stroke-width="1.6"/><circle cx="24" cy="41.5" r="1.8" fill="#2a2723"/></svg>`;
+  let cover = null, shown = "";
 
   function show(kind) {
-    ensureStyles();
-    if (!cover) {
-      cover = document.createElement("div");
-      cover.className = "pp-exam-gate";
-      cover.setAttribute("role", "alertdialog");
-      cover.setAttribute("aria-modal", "true");
-      (document.body || document.documentElement).appendChild(cover);
-    }
-    cover.className = `pp-exam-gate pp-exam-gate--${kind}`;
-    cover.innerHTML = `<div class="pp-exam-gate__card">${ICON}<h2>${TEXT[kind][0]}</h2><p>${TEXT[kind][1]}</p></div>`;
-    cover.setAttribute("aria-label", TEXT[kind][0]);
+    if (cover && shown === kind) return;
+    cover?.close();
+    cover = makeCover({ label: TEXT[kind][0], tag: "Exam mode", colour: 4 });
+    cover.root.classList.add("pp-exam-gate", `pp-exam-gate--${kind}`);
+    cover.root.style.zIndex = "2147483000";   // above every other cover: a phone is stopped before anything else is shown
+    cover.paper.innerHTML = body(kind);
+    shown = kind;
   }
 
   function check() {
     const kind = when() ? verdict() : "ok";
-    if (kind === "ok") { if (cover) { cover.remove(); cover = null; } return "ok"; }
+    if (kind === "ok") { cover?.close(); cover = null; shown = ""; return "ok"; }
     show(kind);
     return kind;
   }

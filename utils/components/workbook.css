@@ -3946,3 +3946,6 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 }
 @media (prefers-reduced-motion: reduce) { .wb-side.pp-receipt, .wb-side-tab, .wb-side-tab svg { transition: none; } }
 @media print { .wb-side-tab { display: none !important; } }
+
+.wb-side-tab { outline: 0; }
+.wb-side-tab:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent-secondary, #6fb7e8) 80%, transparent); outline-offset: 1px; }

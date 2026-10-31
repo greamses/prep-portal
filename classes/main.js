@@ -23,12 +23,20 @@ const pickedTasks = new Set();
 let tasks = [];
 
 let sayTimer = 0;
+/* the note is a real .pp-sticky (yellow; orange when something went wrong), placed by .cl-msg.is-toast */
+function paintToast(m, on, bad) {
+  m.classList.toggle("is-toast", on);
+  m.classList.toggle("pp-sticky", on);
+  m.classList.toggle("pp-sticky--c0", on && !bad);
+  m.classList.toggle("pp-sticky--c4", on && bad);
+}
 const say = (t, bad = false) => {
   const m = $("cl-msg"); m.textContent = t; m.classList.toggle("is-bad", bad);
   // shown as a note over the page, so it is seen wherever the teacher has scrolled to
-  m.classList.toggle("is-toast", !!t && !/^Loading/.test(t));
+  const toast = !!t && !/^Loading/.test(t);
+  paintToast(m, toast, bad);
   clearTimeout(sayTimer);
-  if (t && !bad) sayTimer = setTimeout(() => m.classList.remove("is-toast"), 3500);
+  if (t && !bad) sayTimer = setTimeout(() => paintToast(m, false, false), 3500);
 };
 const who = () => (teacherUid ? { teacherUid } : {});
 const query = () => (teacherUid ? `?teacherUid=${encodeURIComponent(teacherUid)}` : "");

@@ -425,7 +425,8 @@ module.exports = function () {
     head.colour = COLOURS.includes(h.colour) || (h.colour === "custom" && /^#[0-9a-f]{6}$/i.test(String(h.custom))) ? h.colour : "indigo";
     head.custom = head.colour === "custom" ? String(h.custom).toLowerCase() : "";
     head.paper = h.paper === "letter" ? "letter" : "a4";
-    for (const k of ["tint", "clean", "omr", "theorySheet", "timer", "camera"]) head[k] = !!h[k];
+    for (const k of ["tint", "clean", "omr", "theorySheet", "timer", "camera", "instructions", "booklet"]) head[k] = !!h[k];
+    head.instrText = clip(String(h.instrText || "").replace(/\r/g, ""), 1500).trim();
     head.key = false;
     head.breakAt = {};
     for (const t of TYPES) if (h.breakAt && h.breakAt[t]) head.breakAt[t] = true;

@@ -25,9 +25,20 @@ const keepName = (v) => { try { localStorage.setItem(NAME_KEY, String(v).slice(0
 
 const load = (key) => { try { return JSON.parse(localStorage.getItem(key) || "null") || {}; } catch { return {}; } };
 
-/** "$\text{12 cm}$", " 12  CM. " and "12 cm" are the same answer. */
-export function norm(s) {
+/** TeX as the plain thing it says, so an equation typed with Alt + = (a \\frac{1}{2}) is the answer "1/2". */
+export function plainTex(s) {
   return String(s == null ? "" : s)
+    .replace(/\\left|\\right/g, "")
+    .replace(/\^\{([^{}]*)\}/g, "^$1")
+    .replace(/\\d?frac\{([^{}]*)\}\{([^{}]*)\}/g, (_, a, b) => `${/^[\w.]+$/.test(a) ? a : `(${a})`}/${/^[\w.]+$/.test(b) ? b : `(${b})`}`)
+    .replace(/\\sqrt\{([^{}]*)\}/g, "sqrt($1)")
+    .replace(/\\(?:times|cdot)/g, "*").replace(/\\div/g, "/").replace(/\\pi/g, "pi")
+    .replace(/\^\\circ|\\degree/g, "\u00b0").replace(/\\%/g, "%");
+}
+
+/** "$\\text{12 cm}$", " 12  CM. " and "12 cm" are the same answer. */
+export function norm(s) {
+  return plainTex(s)
     .replace(/\\text\{([^}]*)\}/g, "$1")
     .replace(/\\[,;! ]/g, "")
     .replace(/[$\s{}]/g, "")
@@ -39,7 +50,8 @@ export function norm(s) {
 export function matches(typed, answer) {
   const t = norm(typed);
   if (!t) return false;
-  const options = String(answer || "").split(/\s*(?:\/|\||;|\bor\b)\s*/i).map(norm).filter(Boolean);
+  /* "a / b" (spaces round the slash), "a | b", "a; b" and "a or b" are alternatives; "1/2" is one fraction */
+  const options = String(answer || "").split(/\s*(?:\s\/\s|\||;|\bor\b)\s*/i).map(norm).filter(Boolean);
   return options.some((o) => {
     if (o === t) return true;
     const a = parseFloat(o), b = parseFloat(t);
@@ -69,6 +81,22 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   };
 
   const byId = (questions) => new Map(questions.map((q) => [q.id, q]));
+
+  /* Alt + = in any answer field writes an equation (answer-equation.js, loaded when first wanted); a field
+     that holds one is shown typeset beneath, which is what prints */
+  const eqMod = () => import("./answer-equation.js");
+  const refreshEq = () => { if (Object.values(answers).some((v) => typeof v === "string" && v.includes("$"))) eqMod().then((m) => m.refreshAll(sheet)); };
+  sheet.addEventListener("keydown", (e) => {
+    if (!on || !(e.altKey && !e.ctrlKey && !e.metaKey && (e.key === "=" || e.key === "+" || e.code === "Equal"))) return;
+    const t = e.target;
+    if (!t.matches || !t.matches("input.xp-in, textarea.xp-ta") || t.disabled) return;
+    e.preventDefault();
+    eqMod().then((m) => m.openEquation(t));
+  });
+  sheet.addEventListener("input", (e) => {
+    const t = e.target;
+    if (t.matches && t.matches("input.xp-in, textarea.xp-ta") && (t.value.includes("$") || t.classList.contains("has-eq"))) eqMod().then((m) => m.refreshField(t));
+  });
 
   /* a shaded choice shows on the question AND on the OMR sheet, whichever was clicked */
   const paintPick = (id, got) => {
@@ -146,6 +174,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       if (lines) lines.replaceWith(box); else blk.appendChild(box);
     });
     paintAttempts();
+    refreshEq();
     if (checked) { showResults(questions); paintStamp(true); announce(); }
   }
 
@@ -316,11 +345,43 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
           box.addEventListener("input", () => {
             if (box.value === "") delete answers["m:" + q.id];
             else answers["m:" + q.id] = Math.max(0, Math.min(q.marks, Math.round(+box.value) || 0));
-            keep(); paintStamp(false); announce(); onChange();
+            keep(); paintMark(el, q); paintStamp(false); announce(); onChange();
           });
         }
       }
     });
+    sheet.querySelectorAll(".xp-q[data-qid]").forEach((el) => { const q = qs.get(el.dataset.qid); if (q) paintMark(el, q); });
+  }
+
+  /* ── the marker's tick or cross ─────────────────────────────────────────────
+     Beside every marked question a pen's mark: a good green tick for a right answer, a red cross for
+     a wrong one or one left blank. A written answer gets one once it has a mark: a tick for full marks,
+     a cross for none, and a tick with the fraction between. The bubbles are filled the same way (css). */
+  const TICK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.2 19.4 2.8 13l2.2-2.2 4.2 4.2L19 5.2l2.2 2.2z"/></svg>`;
+  const CROSS = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 4.2 12 9.8l5.6-5.6 2.2 2.2L14.2 12l5.6 5.6-2.2 2.2L12 14.2l-5.6 5.6-2.2-2.2L9.8 12 4.2 6.4z"/></svg>`;
+  function paintMark(el, q) {
+    el.querySelector(":scope > .xp-mark")?.remove();
+    if (!checked) return;
+    let kind = null, label = "", part = "";
+    if (q.type === "mcq") { const got = answers[q.id]; kind = got === q.answer ? "right" : "wrong"; label = got === undefined ? "Not answered" : kind === "right" ? "Correct" : "Wrong"; }
+    else if (q.type === "fill") { kind = matches(answers[q.id], q.answer) ? "right" : "wrong"; label = given(q) ? (kind === "right" ? "Correct" : "Wrong") : "Not answered"; }
+    else {
+      const m = answers["m:" + q.id];
+      if (!given(q)) { kind = "wrong"; label = "Not answered"; }
+      else if (m !== undefined) {
+        kind = m >= q.marks ? "right" : m <= 0 ? "wrong" : "part";
+        label = `${m} of ${q.marks} marks`;
+        if (kind === "part") part = `${m}/${q.marks}`;
+      }
+    }
+    if (!kind) return;
+    const span = document.createElement("span");
+    span.className = `xp-mark xp-mark--${kind}`;
+    span.setAttribute("data-nomath", "");
+    span.setAttribute("role", "img");
+    span.setAttribute("aria-label", label);
+    span.innerHTML = (kind === "wrong" ? CROSS : TICK) + (part ? `<small>${part}</small>` : "");
+    el.appendChild(span);
   }
 
   const GRADES = [
@@ -381,6 +442,21 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   /* ── the grade stamp ────────────────────────────────────────────────────
      When the paper is checked, a rubber stamp comes down on the header: the grade, the marks, and
      a word. The same marks go in the score box. It prints with the paper. */
+  /* the stamp's ink: a rubber stamp is never a clean print, so the shape is given a worn, mottled edge by an SVG filter (once per page) */
+  function inkFilter() {
+    if (document.getElementById("xp-ink-defs")) return;
+    const d = document.createElement("div");
+    d.id = "xp-ink-defs";
+    d.setAttribute("aria-hidden", "true");
+    d.style.cssText = "position:absolute;width:0;height:0;overflow:hidden";
+    d.innerHTML = `<svg width="0" height="0"><filter id="xp-ink" x="-4%" y="-4%" width="108%" height="108%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="7" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.1 1.42" result="holes"/>
+      <feComposite in="SourceGraphic" in2="holes" operator="in" result="worn"/>
+      <feTurbulence type="turbulence" baseFrequency="0.05" numOctaves="2" seed="2" result="w"/>
+      <feDisplacementMap in="worn" in2="w" scale="1.6"/></filter></svg>`;
+    document.body.appendChild(d);
+  }
   function paintStamp(animate) {
     sheet.querySelectorAll(".xp-stamp").forEach((n) => n.remove());
     if (!on || !checked) return;
@@ -391,11 +467,13 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     const s = score(lastQuestions);
     const gr = gradeFor(s.pct);
     const st = document.createElement("div");
-    st.className = "xp-stamp" + (animate ? "" : " is-still");
+    inkFilter();
+    st.className = `xp-stamp xp-stamp--${gr.g <= "B" ? "good" : gr.g <= "D" ? "mid" : "low"}` + (animate ? "" : " is-still");
     st.setAttribute("data-nomath", "");
     st.setAttribute("role", "img");
     st.setAttribute("aria-label", `Grade ${gr.g}, ${s.won} out of ${s.outOf} marks`);
-    st.innerHTML = `<b>${gr.g}</b><span>${s.won} / ${s.outOf}</span><i>${s.pending ? "marking" : gr.say}</i>`;
+    const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }).toUpperCase();
+    st.innerHTML = `<b>${gr.g}</b><span>${s.won}/${s.outOf}</span><i>${s.pending ? "Marking" : gr.say}</i><small>${today}</small>`;
     if (scoreLabel) scoreLabel.before(st); else host.appendChild(st);
     const box = sheet.querySelector(".xp-student em");
     if (box) box.textContent = `${s.won} / ${s.outOf}`;

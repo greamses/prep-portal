@@ -16,6 +16,7 @@ import { clean, paperMarks, shuffled, BLANK_HEAD } from "/prep-math/activity/exa
 import { createLive } from "/prep-math/activity/exam-maker/js/live.js";
 import { examGate } from "/utils/components/exam-gate.js";
 import { createWatch } from "/utils/components/exam-watch.js";
+import { showInstructions } from "/prep-math/activity/exam-maker/js/instructions.js";
 import { sayNote } from "/utils/components/exam-watch-core.js";
 import { createClock, minutesFor } from "/prep-math/activity/exam-maker/js/timer.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
@@ -220,6 +221,14 @@ async function open() {
       say(`You have used ${tries === 1 ? "your one try" : `all ${tries} tries`} on this paper, so it cannot be answered again. Your teacher has your score.`);
       return;
     }
+    /* the instructions page, when the teacher set one: read first, then Begin. Once per tab, so a
+       reload mid-exam does not send the student back through it */
+    if (head.instructions && !isOwner) {
+      const seenKey = `xm-instr-${code}`;
+      let seen = false;
+      try { seen = sessionStorage.getItem(seenKey) === "1"; } catch { /* shown again */ }
+      if (!seen) { await showInstructions({ head, questions }); try { sessionStorage.setItem(seenKey, "1"); } catch { /* shown again next time */ } }
+    }
     /* a camera check is read on this device and only a short list of notes is sent; the paper stays
        covered until the camera is allowed, so it is not drawn before then */
     if (head.camera && !isOwner) {
@@ -299,4 +308,6 @@ window.addEventListener("resize", () => { clearTimeout(fitTimer); fitTimer = set
 window.addEventListener("beforeprint", () => { sheet.style.zoom = ""; });
 window.addEventListener("afterprint", fitSheet);
 fitSheet();
+/* a box nobody wrote in goes back to the paper's ruled lines for printing; what was written stays */
+addEventListener("beforeprint", () => { if (live.on) live.forPrint(); });
 new MutationObserver(() => { clearTimeout(fitTimer); fitTimer = setTimeout(fitSheet, 60); }).observe(sheet, { attributes: true, attributeFilter: ["data-paper"] });

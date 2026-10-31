@@ -24,6 +24,7 @@
    ========================================================================== */
 
 import { createTracker } from "./exam-watch-core.js";
+import { makeCover } from "/utils/components/pp-cover.js";
 
 const LIB = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.esm.js";
 const MODELS = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/";
@@ -38,30 +39,21 @@ export async function loadDetector() {
   return async (video) => (await faceapi.detectAllFaces(video, opts)).length;
 }
 
+/* Only the PLACEMENT of the self-view is ours: it is a .pp-sticky (paper, tape-free, soft shadow) with a
+   .pp-pill under the video, so the look is the site's own. Two classes, because .pp-sticky sets
+   `position: relative` and ties and loses to a single one. */
 const CSS = `
-.pp-watch-cover { position: fixed; inset: 0; z-index: 2147482000; display: grid; place-items: center; padding: 1.2rem; background: #fbf8f1; color: #2a2723; font-family: "JetBrains Mono", ui-monospace, monospace; }
-.pp-watch-cover__card { max-width: 34rem; padding: 1.6rem 1.5rem; border: 2px solid #2a2723; background: #fffdf7; box-shadow: 5px 5px 0 rgba(42, 39, 35, 0.3); }
-.pp-watch-cover h2 { margin: 0 0 0.8rem; font: 800 1.1rem/1.25 "Unbounded", sans-serif; }
-.pp-watch-cover p { margin: 0 0 0.7rem; font-size: 0.84rem; line-height: 1.55; }
-.pp-watch-cover ul { margin: 0 0 1rem; padding-left: 1.1rem; font-size: 0.82rem; line-height: 1.6; }
-.pp-watch-cover button { font: 700 0.82rem "JetBrains Mono", monospace; padding: 0.6rem 1.3rem; border: 2px solid #2a2723; background: #f4c95d; color: #2a2723; cursor: pointer; }
-.pp-watch-cover button:disabled { opacity: 0.6; cursor: progress; }
-.pp-watch-cover .pp-watch-cover__err { color: #b0453d; font-weight: 700; min-height: 1.2em; }
-.pp-watch { position: fixed; right: 0.8rem; top: 5.4rem; z-index: 10050; width: 8rem; padding: 0.3rem; background: #fffdf7; border: 2px solid #2a2723; box-shadow: 3px 3px 0 rgba(42, 39, 35, 0.3); font: 700 0.6rem/1.3 "JetBrains Mono", monospace; color: #2a2723; pointer-events: none; }
-.pp-watch video { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; background: #2a2723; transform: scaleX(-1); }
-.pp-watch__row { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.25rem; }
-.pp-watch__dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #a39b8c; flex: none; }
-.pp-watch[data-s="ok"] .pp-watch__dot { background: #5aa86a; }
-.pp-watch[data-s="warn"] .pp-watch__dot { background: #e0a030; }
-.pp-watch[data-s="bad"] .pp-watch__dot { background: #c9544a; }
-@media print { .pp-watch, .pp-watch-cover { display: none !important; } }`;
+.pp-watch.pp-sticky { position: fixed; right: 0.9rem; top: 5.6rem; z-index: 10050; width: 9rem; padding: 0.45rem 0.45rem 0.5rem; pointer-events: none; --pp-note-tilt: 2deg; }
+.pp-watch video { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; background: var(--surface-secondary, #f4f0e8); transform: scaleX(-1); }
+.pp-watch .pp-pill { margin-top: 0.4rem; width: 100%; justify-content: center; font-size: 0.56rem; padding: 0.25rem 0.3rem; white-space: normal; text-align: center; line-height: 1.2; }
+@media print { .pp-watch { display: none !important; } }`;
 
 function ensureCss() {
   if (document.getElementById("pp-watch-css")) return;
-  const s = document.createElement("style");
-  s.id = "pp-watch-css";
-  s.textContent = CSS;
-  document.head.appendChild(s);
+  const el = document.createElement("style");
+  el.id = "pp-watch-css";
+  el.textContent = CSS;
+  document.head.appendChild(el);
 }
 
 /**
@@ -83,7 +75,10 @@ export function createWatch({ code, send, name = () => "", hold, every = 1000, l
   function paint(s, words) {
     if (!box) return;
     box.dataset.s = s;
-    box.querySelector(".pp-watch__say").textContent = words;
+    const pill = box.querySelector(".pp-pill");
+    pill.classList.remove("pp-pill--ok", "pp-pill--warn", "pp-pill--danger");
+    pill.classList.add(s === "ok" ? "pp-pill--ok" : s === "bad" ? "pp-pill--danger" : "pp-pill--warn");
+    pill.textContent = words;
   }
 
   function payload() {
@@ -130,25 +125,19 @@ export function createWatch({ code, send, name = () => "", hold, every = 1000, l
   function begin() {
     return new Promise((resolve) => {
       ensureCss();
-      const cover = document.createElement("div");
-      cover.className = "pp-watch-cover";
-      cover.setAttribute("role", "dialog");
-      cover.setAttribute("aria-modal", "true");
-      cover.setAttribute("aria-label", "This exam has a camera check");
-      cover.innerHTML = `<div class="pp-watch-cover__card">
-        <h2>This exam has a camera check</h2>
-        <p>Your teacher has asked for one. Here is exactly what it does:</p>
-        <ul>
+      const { root: cover, paper } = makeCover({ label: "This exam has a camera check", tag: "Camera check", colour: 3 });
+      paper.innerHTML = `<h2 class="pp-cover__title">This exam has a camera check</h2>
+        <p class="pp-cover__text">Your teacher has asked for one. Here is exactly what it does:</p>
+        <ul class="pp-cover__list">
           <li>Your camera is looked at <b>on this device only</b>.</li>
           <li><b>No picture, video or sound</b> is sent or saved, by us or by your teacher.</li>
           <li>Your teacher gets a short list of notes, such as "face not in view for 14 seconds" or "left the exam page".</li>
           <li>It only looks for a face, or more than one. It does not judge where your eyes go.</li>
         </ul>
-        <p>Sit where your face is lit and in view, with nobody else in the picture.</p>
-        <p class="pp-watch-cover__err" role="alert"></p>
-        <button type="button">Allow the camera and begin</button></div>`;
-      document.body.appendChild(cover);
-      const btn = cover.querySelector("button"), err = cover.querySelector(".pp-watch-cover__err");
+        <p class="pp-cover__text">Sit where your face is lit and in view, with nobody else in the picture.</p>
+        <p class="pp-cover__err" role="alert"></p>
+        <div class="pp-cover__go"><button type="button" class="pp-btn">Allow the camera and begin</button></div>`;
+      const btn = cover.querySelector("button"), err = cover.querySelector(".pp-cover__err");
       btn.addEventListener("click", async () => {
         btn.disabled = true; err.textContent = "";
         try {
@@ -166,9 +155,9 @@ export function createWatch({ code, send, name = () => "", hold, every = 1000, l
         cover.remove();
         t0 = performance.now();
         box = document.createElement("div");
-        box.className = "pp-watch";
+        box.className = "pp-watch pp-sticky pp-sticky--c3";
         box.setAttribute("aria-live", "polite");
-        box.innerHTML = `<video muted playsinline autoplay></video><div class="pp-watch__row"><i class="pp-watch__dot"></i><span class="pp-watch__say">Starting the check…</span></div>`;
+        box.innerHTML = `<video muted playsinline autoplay></video><span class="pp-pill pp-pill--static pp-pill--warn">Starting the check…</span>`;
         document.body.appendChild(box);
         video = box.querySelector("video");
         video.srcObject = stream;

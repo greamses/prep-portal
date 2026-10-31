@@ -485,3 +485,37 @@
   font-size: 0.82rem;
 }
 .avatar-draw-actions .pp-note-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* ── COVER ───────────────────────────────────────────────────────────────
+   A full-screen sheet that holds ONE receipt in the middle: the instructions page, a consent, "turn your
+   screen". The page's paint blob sits behind it like it does on every page. `--scrim` is the same
+   receipt over a live page (a notice) instead of in place of it. Built by utils/components/pp-cover.js.
+   Sticky tags and buttons are ordinary .pp-sticky and .pp-btn. */
+.pp-cover {
+  position: fixed; inset: 0; z-index: 2147482000;
+  display: grid; place-items: center; overflow-y: auto;
+  padding: var(--padding-md, 1rem);
+  background: var(--bg, #faf7f1);
+}
+.pp-cover--scrim {
+  background: color-mix(in srgb, var(--ink, #2a2723) 34%, transparent);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.pp-cover__paint { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; opacity: 0.26; }
+.pp-cover__paint svg { width: 100%; height: 100%; display: block; }
+[data-theme="dark"] .pp-cover__paint { opacity: 0.15; }
+.pp-cover .pp-receipt.pp-cover__card { position: relative; z-index: 1; width: min(30rem, 100%); margin: auto; }
+.pp-cover .pp-receipt.pp-cover__card--wide { width: min(46rem, 100%); }
+.pp-cover .pp-cover__card .pp-receipt__paper { padding: 1.9rem 1.9rem 1.7rem; }
+.pp-cover__scroll { max-height: min(76vh, 40rem); overflow-y: auto; overscroll-behavior: contain; padding: 0.2rem 0.3rem 0.2rem 0; }
+.pp-cover__icon { display: block; width: 3.6rem; height: 3.6rem; margin: 0 auto 0.5rem; }
+.pp-cover__title { margin: 0.1rem 0 0.7rem; font-family: var(--font-display, "Unbounded", sans-serif); font-weight: var(--weight-black, 900); font-size: var(--text-h3, 1.2rem); line-height: var(--leading-tight, 1.15); color: var(--ink, #2a2723); }
+.pp-cover__text { margin: 0 0 0.75rem; font-family: var(--font-mono, "JetBrains Mono", monospace); font-size: 0.84rem; line-height: 1.6; color: var(--text-secondary, #6b655c); }
+.pp-cover__list { margin: 0 0 0.9rem; padding-left: 1.1rem; font-family: var(--font-mono, "JetBrains Mono", monospace); font-size: 0.84rem; line-height: 1.6; color: var(--ink, #2a2723); }
+.pp-cover__list li + li { margin-top: 0.3rem; }
+.pp-cover__list b { font-weight: var(--weight-bold, 700); }
+.pp-cover__err { min-height: 1.3em; margin: 0 0 0.6rem; font-family: var(--font-mono, monospace); font-size: 0.8rem; font-weight: 700; color: var(--accent-danger, #f07a7a); }
+.pp-cover__go { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-top: 1.1rem; }
+.pp-cover__head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.8rem; margin-bottom: 0.3rem; }
+.pp-cover__tag { margin: 1rem 0 0.45rem; }
+@media print { .pp-cover { display: none !important; } }

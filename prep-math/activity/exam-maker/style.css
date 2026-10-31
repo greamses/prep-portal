@@ -493,3 +493,78 @@ button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
 .xm-ex__scope[hidden] { display: none; }
 .xm-ex__scope .pp-btn[aria-pressed="true"] { outline: 2px solid #2a2723; outline-offset: 1px; }
 .xm-ex .pp-btn[data-do] { min-width: 2.6rem; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MARKING WITH A PEN, and the stamp (live.js)
+   Ticks and bubble fills: a right answer is a good GREEN tick and a green filled bubble; a wrong
+   answer, or one left blank, is a RED cross and a red bubble. These come last so they win over the
+   earlier colours (orange for blanks has gone: blank is red now).
+   ════════════════════════════════════════════════════════════════════════════ */
+.xp-live .xp-q { position: relative; }
+.xp-mark { position: absolute; left: -7.8mm; top: -0.6mm; display: inline-flex; align-items: center; gap: 0.6mm; z-index: 2; pointer-events: none; }
+.xp-mark svg { width: 6.4mm; height: 6.4mm; fill: currentColor; filter: drop-shadow(0 0.2mm 0 rgba(0, 0, 0, 0.18)); }
+.xp-mark--right { color: #1f9d46; }
+.xp-mark--wrong { color: #d6322a; }
+.xp-mark--part { color: #1f9d46; }
+.xp-mark small { position: absolute; left: 6.2mm; top: 3.6mm; font: 800 2.6mm/1 "JetBrains Mono", monospace; color: #1f9d46; white-space: nowrap; }
+.xp-cols .xp-mark { left: -7.4mm; }
+
+/* the bubbles: filled, with the tick or the cross where the letter was */
+.xp-live .xp-q .xp-opts li.is-right b, .xp-live .xp-omr li b.is-right, .xo-omr li b.is-right {
+  background: #1f9d46 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9.2 19.4 2.8 13l2.2-2.2 4.2 4.2L19 5.2l2.2 2.2z'/%3E%3C/svg%3E") center / 68% no-repeat;
+  border-color: #1f9d46; color: transparent; font-size: 0; }
+.xp-live .xp-q .xp-opts li.is-wrong b, .xp-live .xp-omr li b.is-wrong, .xo-omr li b.is-wrong {
+  background: #d6322a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M6.4 4.2 12 9.8l5.6-5.6 2.2 2.2L14.2 12l5.6 5.6-2.2 2.2L12 14.2l-5.6 5.6-2.2-2.2L9.8 12 4.2 6.4z'/%3E%3C/svg%3E") center / 62% no-repeat;
+  border-color: #d6322a; color: transparent; font-size: 0; }
+/* blank: red bubbles, red edge; the right answer is still shown in green beside them */
+.xp-live .xp-q.is-unanswered { border-left: 1.2mm solid #d6322a; padding-left: 2mm; margin-left: -3.2mm; }
+.xp-live .xp-q--mcq.is-unanswered .xp-opts li:not(.is-right) b, .xp-omr li.is-unanswered b:not(.is-right), .xo-omr li.is-unanswered b:not(.is-right) { background: #fbd9d6; border-color: #d6322a; color: #b3261e; }
+.xp-live .xp-q--mcq.is-unanswered .xp-opts li:not(.is-right) span { color: #b3261e; }
+.xp-live .xp-q--mcq.is-unanswered .xp-opts li.is-right span { color: #1c7a3a; }
+.xp-live .xp-q--fill.is-unanswered .xp-in, .xp-live .xp-q.is-unanswered .xp-ta { border-color: #d6322a; background: #fdebe9; }
+.xp-live .xp-reveal.is-skipped { border-color: #d6322a; color: #b3261e; font-style: normal; font-weight: 700; }
+.xp-live .xp-reveal.is-ok { border-color: #1f9d46; color: #1c7a3a; }
+.xp-live .xp-reveal.is-no { border-color: #d6322a; }
+/* the options of a letters-only paper (OMR on): the letter itself is ticked or struck, in the same colours */
+/* (specific enough to beat the bubble fills above, which belong to the OMR sheet, not to these letters) */
+.xp-live .xp--omr .xp-q .xp-opts li.is-right b { color: #1f9d46; font-size: inherit; font-weight: 900; background: none; border-color: transparent; text-decoration: none; }
+.xp-live .xp--omr .xp-q .xp-opts li.is-wrong b { color: #d6322a; font-size: inherit; font-weight: 900; background: none; border-color: transparent; text-decoration: line-through; }
+.xp-live .xp--omr .xp-q--mcq.is-unanswered .xp-opts li:not(.is-right) b { background: none; border-color: transparent; color: #b3261e; }
+
+/* THE STAMP: a rectangular rubber stamp, in the manner of the theory and writing evaluators — a
+   double rule, tilted, in one ink, worn at the edge. Grade, marks, the word, and the day. */
+.xp-student .xp-stamp, .xp-stamp {
+  position: relative; right: auto; top: auto; flex: none; width: 41mm; height: 19mm; margin: -13.5mm 3mm -1.5mm; padding: 1.2mm 2.6mm;
+  display: grid; grid-template-columns: auto 1fr; grid-template-rows: 1fr auto auto; column-gap: 2.4mm; row-gap: 0.2mm; align-items: center; justify-items: start; align-content: center;
+  border-radius: 0; border: 0.95mm solid currentColor; box-shadow: inset 0 0 0 0.35mm currentColor; background: transparent;
+  transform: rotate(-5deg); mix-blend-mode: multiply; filter: url(#xp-ink); opacity: 0.93; z-index: 3; text-align: left;
+}
+.xp-stamp--good { color: #1f7a3c; }
+.xp-stamp--mid { color: #b9730f; }
+.xp-stamp--low { color: #c0332b; }
+.xp-student .xp-stamp b, .xp-stamp b { grid-row: 1 / span 3; font: 900 13mm/0.9 "Unbounded", "JetBrains Mono", sans-serif; letter-spacing: -0.02em; }
+.xp-student .xp-stamp span, .xp-stamp span { font: 900 5.4mm/1 "Unbounded", "JetBrains Mono", sans-serif; letter-spacing: 0; align-self: end; }
+.xp-student .xp-stamp i, .xp-stamp i { font: 800 2.35mm/1.1 "JetBrains Mono", monospace; letter-spacing: 0.2em; text-transform: uppercase; font-style: normal; }
+.xp-student .xp-stamp small, .xp-stamp small { font: 700 2mm/1 "JetBrains Mono", monospace; letter-spacing: 0.14em; opacity: 0.85; }
+@keyframes xp-stamp-in { from { transform: rotate(-12deg) scale(2.6); opacity: 0; } 70% { transform: rotate(-4deg) scale(0.96); opacity: 0.95; } to { transform: rotate(-5deg) scale(1); opacity: 0.93; } }
+
+@media print {
+  .xp-mark--right, .xp-mark--part, .xp-mark small { color: #1f9d46 !important; }
+  .xp-mark--wrong { color: #d6322a !important; }
+  .xp-mark svg { fill: currentColor !important; }
+  .xp-live .xp-q .xp-opts li.is-right b, .xp-live .xp-omr li b.is-right { background-color: #1f9d46 !important; border-color: #1f9d46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .xp-live .xp-q .xp-opts li.is-wrong b, .xp-live .xp-omr li b.is-wrong { background-color: #d6322a !important; border-color: #d6322a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .xp-live .xp-q--mcq.is-unanswered .xp-opts li:not(.is-right) b, .xp-omr li.is-unanswered b:not(.is-right) { background: #fbd9d6 !important; border-color: #d6322a !important; color: #b3261e !important; }
+  .xp-live .xp-q.is-unanswered { border-left: 1.2mm solid #d6322a !important; }
+  .xp-stamp--good, .xp-stamp--good b, .xp-stamp--good span, .xp-stamp--good i, .xp-stamp--good small { color: #1f7a3c !important; }
+  .xp-stamp--mid, .xp-stamp--mid b, .xp-stamp--mid span, .xp-stamp--mid i, .xp-stamp--mid small { color: #b9730f !important; }
+  .xp-stamp--low, .xp-stamp--low b, .xp-stamp--low span, .xp-stamp--low i, .xp-stamp--low small { color: #c0332b !important; }
+  .xp-stamp { border: 0.95mm solid currentColor !important; box-shadow: inset 0 0 0 0.35mm currentColor !important; background: transparent !important; animation: none !important; }
+}
+
+/* ── the answer booklet (paper.js): front cover with the OMR sheet, then lined pages ───────── */
+.xp-bintro { margin: 0 0 3mm; font-size: 9pt; line-height: 1.5; color: #1d1b18; }
+.xp-bpage__run { display: flex; justify-content: space-between; gap: 4mm; margin: 0 0 4mm; padding-bottom: 1.6mm; border-bottom: 0.4mm solid var(--c); font-size: 7.5pt; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ci); }
+.xp-booklet .xp-bpage { padding-top: 5mm; }
+@media screen { .xp-booklet .xp-sheetpage { border-top: 1mm dashed var(--c); margin-top: 9mm; padding-top: 6mm; } }
+@media print { .xp-bpage__run { color: var(--ci) !important; border-bottom: 0.4mm solid var(--c) !important; } }

@@ -7,8 +7,7 @@
 .cl-lead { max-width: 40rem; margin: 0 auto; font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary, #6b655c); }
 .cl-msg { text-align: center; min-height: 1.3em; margin: 0 0 1rem; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary, #6b655c); }
 .cl-msg.is-bad { color: #b0453d; }
-.cl-msg.is-toast { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); z-index: 10090; max-width: min(32rem, 92vw); margin: 0; padding: 0.6rem 1rem; background: #fffdf7; color: #2a2723; border: 2px solid #2a2723; box-shadow: 4px 4px 0 rgba(42, 39, 35, 0.35); }
-.cl-msg.is-toast.is-bad { color: #b0453d; border-color: #b0453d; }
+.cl-msg.is-toast { position: fixed; left: 50%; bottom: 1.2rem; translate: -50% 0; z-index: 10090; max-width: min(32rem, 92vw); margin: 0; --pp-note-tilt: -1deg; text-align: left; color: #14130f; }
 body.cl-busy { cursor: progress; }
 body.cl-busy .cl-table, body.cl-busy #cl-rows { opacity: 0.6; pointer-events: none; }
 
