@@ -30,8 +30,9 @@ const fmt = (s) => {
 };
 
 /** A countdown shown in `el`. start(seconds) begins it, stop() clears it; onEnd() fires once at zero. */
-export function createClock(el, { onEnd = () => {} } = {}) {
+export function createClock(el, { onEnd = () => {}, onLow = () => {} } = {}) {
   let left = 0;
+  let lowSaid = false;       // onLow fires once per run, the first time a minute or less is left
   let timer = 0;
   let running = false;
   /* The clock is the site's pill, fixed to the edge of the window so the student sees it wherever they have scrolled to
@@ -43,6 +44,7 @@ export function createClock(el, { onEnd = () => {} } = {}) {
     el.classList.toggle("pp-pill--danger", running && left <= 60);
     el.hidden = !running;
     document.documentElement.classList.toggle("xm-clocked", running);
+    if (running && left <= 60 && !lowSaid) { lowSaid = true; onLow(); }
   };
   const stop = () => { clearInterval(timer); timer = 0; running = false; paint(); };
   return {
@@ -50,6 +52,7 @@ export function createClock(el, { onEnd = () => {} } = {}) {
     start(seconds) {
       stop();
       left = Math.max(1, Math.round(seconds));
+      lowSaid = false;
       running = true;
       paint();
       timer = setInterval(() => {

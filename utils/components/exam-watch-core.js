@@ -19,7 +19,9 @@
    ========================================================================== */
 
 /** Seconds a condition must last before it is worth a note. */
-export const HOLD = { no_face: 8, extra_face: 3, left_tab: 2, camera_off: 2 };
+export const HOLD = { no_face: 8, extra_face: 3, left_tab: 1, camera_off: 2 };
+/** Seconds before a SPOKEN warning (earlier than the note: the student is told while they can still put it right). */
+export const WARN = { no_face: 4, extra_face: 3, camera_off: 2 };
 export const KINDS = ["no_face", "extra_face", "left_tab", "camera_off", "no_detector"];
 const MAX_NOTES = 200;
 
@@ -29,15 +31,19 @@ const MAX_NOTES = 200;
  * → { see(faces, t), hidden(isHidden, t), camera(isOn, t), note(kind, t), notes(), seen(), stop(t) }
  * `t` is always seconds since the exam began.
  */
-export function createTracker({ hold = HOLD } = {}) {
+export function createTracker({ hold = HOLD, warn = WARN, onWarn = () => {} } = {}) {
   const list = [];
-  const open = {};      // kind → { since, note | null }
+  const open = {};      // kind → { since, note | null, warned }
   let checks = 0;
   let hiddenNow = false;
+  let awaySince = 0;
+  let leaves = 0;       // times the page was left for a second or more
 
-  function begin(kind, t) { if (!open[kind]) open[kind] = { since: t, note: null }; }
+  function begin(kind, t) { if (!open[kind]) open[kind] = { since: t, note: null, warned: false }; }
   function grow(kind, t) {
     const o = open[kind]; if (!o) return;
+    /* the spoken warning comes once per episode, a little before the note is written */
+    if (!o.warned && warn[kind] !== undefined && t - o.since >= warn[kind]) { o.warned = true; onWarn(kind, { t }); }
     if (!o.note && t - o.since >= hold[kind] && list.length < MAX_NOTES) {
       o.note = { k: kind, t: Math.round(o.since), d: 0 };
       list.push(o.note);
@@ -57,6 +63,9 @@ export function createTracker({ hold = HOLD } = {}) {
     },
     /** The page went to the background, or came back. */
     hidden(isHidden, t) {
+      /* coming back from the page being left: that is the moment to warn (nothing can be heard while it is away) */
+      if (isHidden && !hiddenNow) awaySince = t;
+      if (!isHidden && hiddenNow && t - awaySince >= 1) { leaves++; onWarn("left_tab", { t, count: leaves, away: Math.round(t - awaySince) }); }
       hiddenNow = isHidden;
       /* what the camera shows while the page is away says nothing about the student */
       if (isHidden) { end("no_face", t); end("extra_face", t); }
@@ -72,6 +81,8 @@ export function createTracker({ hold = HOLD } = {}) {
     notes() { return list.map((n) => ({ ...n })); },
     /** How many looks at the camera there have been. */
     seen() { return checks; },
+    /** How many times the page has been left (for a second or more) and come back to. */
+    leaves() { return leaves; },
     /** The exam is over: close everything. */
     stop(t) { for (const k of Object.keys(open)) end(k, t); },
   };

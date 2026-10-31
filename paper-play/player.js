@@ -16,6 +16,8 @@ import { clean, paperMarks, shuffled, BLANK_HEAD } from "/prep-math/activity/exa
 import { createLive } from "/prep-math/activity/exam-maker/js/live.js";
 import { examGate } from "/utils/components/exam-gate.js";
 import { createWatch } from "/utils/components/exam-watch.js";
+import { createVoice, leaveWarning } from "/utils/components/exam-voice.js";
+import { startGuard, showLeaveWarning } from "/utils/components/exam-guard.js";
 import { showInstructions } from "/prep-math/activity/exam-maker/js/instructions.js";
 import { sayNote } from "/utils/components/exam-watch-core.js";
 import { createClock, minutesFor } from "/prep-math/activity/exam-maker/js/timer.js";
@@ -44,6 +46,8 @@ const seedKey = () => `xm-shuffle-${code}`;
 let isOwner = false;
 let room = null;
 let watcher = null;
+const voice = createVoice();     // the eight recorded warnings (static files; nothing is synthesised during an exam)
+let guard = null;                // the page-leaving guard: back button, closing, going to another tab
 let markPoll = 0, markWait = 0;    // AI marking: the timer of the next look, and how many looks so far               // the camera check, when the teacher set one (events only: see exam-watch.js)
 let tries = 1, used = 0;          // the teacher's number of tries (0 = no limit), and how many this student has used
 /* the owner may always sit their own paper; anyone else may sit it again while they have tries left */
@@ -220,11 +224,11 @@ function mountMarkingList() {
    Read when the page opens, when the refresh key is pressed and when the tab is come back to (at most
    every 20 s): never on a timer. They are each student's own device reporting on itself, so they are
    shown as "worth a look", never as a finding. */
-function mountWatchList() {
+function mountWatchList(camera) {
   const box = document.createElement("section");
   box.className = "pp-live pp-watchlist";
-  box.innerHTML = `<h2 class="pp-live__cap">Camera check <button type="button" class="pp-btn pp-watchlist__refresh"></button></h2>
-    <p class="pp-watchlist__how">Each student's camera is read on their own device. Nothing but these notes reaches you, and they are a prompt to take a look, not proof.</p>
+  box.innerHTML = `<h2 class="pp-live__cap">${camera ? "Camera check" : "Leaving the page"} <button type="button" class="pp-btn pp-watchlist__refresh"></button></h2>
+    <p class="pp-watchlist__how">${camera ? "Each student's camera is read on their own device. Nothing but these notes reaches you, and they are a prompt to take a look, not proof." : "Students may not leave the exam page once it has started. Each time one does, it is noted here, and they are warned out loud."}</p>
     <div class="pp-watchlist__who"><p class="pp-live__none">Reading the notes…</p></div>`;
   document.querySelector(".xm-preview").prepend(box);
   faceOf(box.querySelector(".pp-watchlist__refresh"), UI.refresh(16), "Read the notes again");
@@ -351,14 +355,31 @@ async function open() {
       try { seen = sessionStorage.getItem(seenKey) === "1"; } catch { /* shown again */ }
       if (!seen) { await showInstructions({ head, questions, preview: isOwner }); try { sessionStorage.setItem(seenKey, "1"); } catch { /* shown again next time */ } }
     }
-    /* a camera check is read on this device and only a short list of notes is sent; the paper stays
-       covered until the camera is allowed, so it is not drawn before then */
-    if (head.camera) {
-      /* the owner is not watched, but is shown exactly what a student is: a test run, with nothing sent anywhere */
+    /* Every student's exam is watched for leaving the page, and a camera is added when the teacher asked for one (read on
+       this device; only a short list of notes is sent). The paper stays covered until the camera is allowed. The owner
+       is not watched, but with a camera on is shown exactly what a student is: a test run, nothing sent anywhere. */
+    if (!isOwner || head.camera) {
+      voice.preload();
+      const warn = (kind, info) => {
+        if (kind === "left_tab") {
+          voice.say(leaveWarning(info.count), { force: true });
+          if (!isOwner) showLeaveWarning({ count: info.count, away: info.away });
+        } else voice.say(kind);
+      };
       watcher = createWatch(isOwner
-        ? { code, test: true, send: async () => {} }
-        : { code, name: () => live.name, send: (p) => api(`/api/workbooks/paper/${code}/watch`, p) });
+        ? { code, test: true, send: async () => {}, onWarn: warn }
+        : { code, camera: !!head.camera, name: () => live.name, send: (p) => api(`/api/workbooks/paper/${code}/watch`, p), onWarn: warn });
       await watcher.begin();
+    }
+    if (!isOwner) {
+      guard = startGuard({
+        active: () => !live.checked && !locked,
+        onAttempt: (why) => {
+          if (why !== "back") return;
+          voice.say("leave_attempt", { force: true });
+          showLeaveWarning({ title: "Do not leave the exam", text: "Please do not leave or close the exam page. Finish your paper first." });
+        },
+      });
     }
     live.setOn(true);
     $("xm-check").hidden = false; $("xm-clear").hidden = false;
@@ -368,7 +389,7 @@ async function open() {
     draw();
     syncClock();
     joinLive();
-    if (isOwner && head.camera) mountWatchList();
+    if (isOwner) mountWatchList(!!head.camera);
     if (isOwner && head.aiMark) mountMarkingList();
     if (!isOwner && head.aiMark) live.setAi({ on: true, status: "off", text: "" });
   } catch (e) {
@@ -378,7 +399,9 @@ async function open() {
 
 /* the countdown, when the paper was set with a timer; the paper is checked when it runs out */
 const clock = createClock($("xm-clock"), {
-  onEnd: () => { if (!live.checked) { live.check(questions); draw(); faces(); $("xm-score").textContent = "Time is up. " + $("xm-score").textContent; watcher && watcher.flush(true); queueMarking(); } },
+  onEnd: () => { if (!live.checked) { live.check(questions); draw(); faces(); $("xm-score").textContent = "Time is up. " + $("xm-score").textContent; watcher && (watcher.flush(true), watcher.setActive(false)); queueMarking(); } },
+  /* one minute left: said out loud, from the recording */
+  onLow: () => voice.say("time_low", { force: true }),
 });
 function syncClock() {
   if (head && head.timer && !live.checked) { if (!clock.running) clock.start(minutesFor(head.time, questions.length) * 60); }
@@ -412,6 +435,8 @@ $("xm-check").addEventListener("click", () => {
   else { live.check(questions); firstSend = true; if (!isOwner) used += 1; }
   draw(); faces(); syncClock();
   /* the notes go with the score; with no tries left the exam is over, so the camera is let go */
+  /* once the paper is checked nothing is warned (the student may leave); sitting it again watches it again */
+  if (watcher) watcher.setActive(!live.checked);
   if (watcher && live.checked) { watcher.flush(true); if (!canTryAgain()) watcher.stop(); }
   if (live.checked && !live.name.trim()) say("Type your name on the paper, so your teacher knows whose score this is.");
   else if (live.checked && !canTryAgain()) say(tries === 1 ? "That was your one try. Your score has gone to your teacher." : `You have used all ${tries} tries. Your score has gone to your teacher.`);

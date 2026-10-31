@@ -16,3 +16,6 @@ firebase-debug.log
 
 # Removed legacy template — kept deleted and ignored
 writing/activity/flip-template.html
+
+# secrets pulled from Vercel (vercel env pull)
+.env.*

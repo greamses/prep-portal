@@ -61,6 +61,7 @@ export function instructionSections(head, questions) {
   if (head.timer) conduct.push("A countdown clock runs on the screen. It starts when you press Begin, and your paper is checked for you when it reaches zero.");
   else if (head.time) conduct.push("Keep to the time yourself: there is no clock on the screen.");
   conduct.push("Work on your own. Do not talk, copy from anyone, or look up the answers.");
+  conduct.push("Once the exam has started, do not leave the page: no other tab or window, no back button, no closing it. You are warned out loud, it is recorded, and your teacher is told.");
   if (head.camera) {
     conduct.push("Camera check: your camera is looked at on this device only. No picture, video or sound is sent or saved; your teacher gets a short list of notes (such as 'face not in view'). Keep your face in view, alone in the picture, and stay on the exam page.");
   }

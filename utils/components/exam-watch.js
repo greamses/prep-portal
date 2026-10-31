@@ -60,13 +60,16 @@ function ensureCss() {
  * @param code    the paper's code (only used to key the kept notes)
  * @param send    async ({ events, secs, checks, state, name }) → the notes go to the teacher
  * @param name    () → the name typed on the paper, if any
+ * @param camera  false: no camera at all, only the page-left notes (every shared paper is guarded against leaving the page)
+ * @param onWarn  (kind, info) a warning is due: the voice says it, and a page left is shown to the student
  * @param test    a test run for the teacher: the same consent and self-view, nothing sent, nothing kept
  * @param hold    seconds each kind of note must last (tests make these short)
  * @param every   ms between looks at the camera
  * @param load    () → Promise<(video) → Promise<number>>   the face counter (tests give a fake)
  */
-export function createWatch({ code, send, name = () => "", hold, every = 1000, load = loadDetector, test = false }) {
-  const tracker = createTracker(hold ? { hold } : undefined);
+export function createWatch({ code, send, name = () => "", hold, every = 1000, load = loadDetector, test = false, camera = true, onWarn = () => {} }) {
+  const tracker = createTracker({ ...(hold ? { hold } : {}), onWarn: (k, info) => { if (active) onWarn(k, info); } });
+  let active = true;               // false once the paper is checked: nothing is warned or noted until it is sat again
   let t0 = 0, stream = null, video = null, box = null, timer = 0, saveTimer = 0, detect = null, stopped = false;
   let state = "starting";        // starting | on | unavailable | stopped
   let lastSent = "";
@@ -99,7 +102,7 @@ export function createWatch({ code, send, name = () => "", hold, every = 1000, l
   let looking = false;
   async function look() {
     /* one look at a time: on a slow device the next one waits rather than piling up behind this one */
-    if (looking || stopped || !video || video.readyState < 2) return;
+    if (looking || stopped || !active || !video || video.readyState < 2) return;
     if (away()) return;
     looking = true;
     let n;
@@ -109,21 +112,29 @@ export function createWatch({ code, send, name = () => "", hold, every = 1000, l
   }
 
   function wire() {
-    const pageAway = () => tracker.hidden(away(), t());
+    const pageAway = () => { if (active) tracker.hidden(away(), t()); };
     document.addEventListener("visibilitychange", pageAway);
     addEventListener("blur", pageAway);
     addEventListener("focus", pageAway);
-    const track = stream.getVideoTracks()[0];
+    const track = stream && stream.getVideoTracks()[0];
     if (track) {
-      track.addEventListener("ended", () => tracker.camera(false, t()));
-      track.addEventListener("mute", () => tracker.camera(false, t()));
-      track.addEventListener("unmute", () => tracker.camera(true, t()));
+      track.addEventListener("ended", () => active && tracker.camera(false, t()));
+      track.addEventListener("mute", () => active && tracker.camera(false, t()));
+      track.addEventListener("unmute", () => active && tracker.camera(true, t()));
     }
     addEventListener("pagehide", () => { tracker.tick(t()); flush(true); });
   }
 
   /** The consent cover, then the camera. Resolves when the check is running. */
   function begin() {
+    /* no camera on this paper: only the page is watched (left, or not); nothing to ask for */
+    if (!camera) {
+      t0 = performance.now();
+      state = "on";
+      wire();
+      saveTimer = setInterval(() => flush(false), 60000);
+      return Promise.resolve();
+    }
     return new Promise((resolve) => {
       ensureCss();
       const { root: cover, paper } = makeCover({ label: "This exam has a camera check", tag: test ? "Test run" : "Camera check", colour: test ? 4 : 3 });
@@ -186,5 +197,10 @@ export function createWatch({ code, send, name = () => "", hold, every = 1000, l
     box && box.remove();
   }
 
-  return { begin, flush, stop, tracker, state: () => state };
+  return {
+    begin, flush, stop, tracker, state: () => state,
+    /** Pause (the paper was checked) or resume (it is being sat again): while paused nothing is warned or noted. */
+    setActive(v) { active = !!v; },
+    leaves: () => tracker.leaves(),
+  };
 }

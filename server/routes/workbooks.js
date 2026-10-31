@@ -660,14 +660,16 @@ module.exports = function () {
       const p = await pRef.get();
       if (!p.exists) return res.status(404).json({ error: "No such paper." });
       const a = p.data();
-      /* the owner's own run is not watched, and a paper without the check keeps nothing */
-      if (a.ownerUid === req.user.uid || !(a.head && a.head.camera)) return res.json({ ok: true, kept: false });
+      /* the owner's own run is not watched. Leaving the page is not allowed on any shared paper, so those notes are kept
+         for every paper; the camera's notes only where the teacher asked for the camera check */
+      if (a.ownerUid === req.user.uid) return res.json({ ok: true, kept: false });
+      const camera = !!(a.head && a.head.camera);
       const b = req.body || {};
       const events = (Array.isArray(b.events) ? b.events : []).slice(0, 200).map((e) => ({
         k: WATCH_KINDS.includes(e && e.k) ? e.k : null,
         t: Math.max(0, Math.min(86400, Math.round(Number(e && e.t)) || 0)),
         d: Math.max(0, Math.min(86400, Math.round(Number(e && e.d)) || 0)),
-      })).filter((e) => e.k);
+      })).filter((e) => e.k && (camera || e.k === "left_tab"));
       const me = await profile(req.user.uid);
       const typed = clip(String(b.name || "").replace(/\s+/g, " ").trim(), 60);
       await pRef.collection("watch").doc(req.user.uid).set({
