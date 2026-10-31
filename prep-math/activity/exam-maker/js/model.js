@@ -11,6 +11,9 @@
    by paper.js, never by the model.
    ========================================================================== */
 
+/* the safety net for maths the model leaves bare (applied to its reply only, in parseQuestions) */
+import { wrapQuestion } from "/utils/maths-wrap.js";
+
 export const TYPES = {
   mcq:    { label: "Multiple choice", section: "Section A", head: "Multiple choice", rule: "Choose the one correct answer, A, B, C or D.", marks: 1, lines: 0 },
   fill:   { label: "Fill in the blank", section: "Section B", head: "Fill in the blank", rule: "Write the missing word or number on the line.", marks: 1, lines: 0 },
@@ -218,10 +221,12 @@ export function parseQuestions(text) {
   const br = (v) => (typeof v === "string"
     ? v.split("$").map((seg, i) => (i % 2 ? seg : seg.replace(/\\n/g, "\n"))).join("$")
     : v);
-  return list.map((q) => clean({
+  /* the model often leaves numbers and expressions outside $…$ however it is told: wrap what is left (utils/maths-wrap.js).
+     This is the model's reply only; what a teacher types is never touched. */
+  return list.map((q) => wrapQuestion(clean({
     ...q, type: normType(q && q.type), text: br(q && q.text), answer: br(q && q.answer),
     options: Array.isArray(q && q.options) ? q.options.map(br) : q && q.options,
-  })).filter((q) => q.text);
+  }))).filter((q) => q.text);
 }
 
 function normType(t) {
@@ -244,13 +249,19 @@ export function promptFor({ topic, subject, level, need, svg, extra, seen = [], 
     "3. MCQ: exactly four options, all different, exactly one correct. 'answer' is the index 0 to 3 of the correct option. Solve the question yourself before you choose the index. Distractors must be plausible. " +
     "4. FILL: ONE sentence with exactly one blank written as six underscores (______). 'answer' is the missing word or number; 'options' is []. " +
     "5. SUB and THEORY: 'answer' is a model answer or marking note and is never empty; 'options' is []. Do not choose marks: the teacher sets them. Theory may have parts (a), (b), (c) separated by \\n. " +
-    "6. MATHS: write every piece of mathematics in TeX between single dollar signs, like $\\frac{3}{4}$ or $x^2+5x+6=0$, with a double backslash for each TeX command inside the JSON string. Never write maths as plain text. " +
+    "6. MATHS FORMAT. This is the rule that is forgotten most, so follow it letter by letter. Put EVERY number, every letter that stands for a number (x, y, n), every equation, expression, fraction, power, root, percentage, angle, ratio and unit that follows a number, and every maths symbol between single dollar signs: in the question, in EVERY option and in every answer. A bare number IS maths. " +
+    "RIGHT: Find $15.75 \\\\div 25$. A rectangle $8\\\\ \\\\text{cm}$ by $5\\\\ \\\\text{cm}$. $40\\\\%$ of $200$. If $x=3$. The angle is $45^\\\\circ$. There are $12$ pupils. Solve $2x+3=11$. " +
+    "WRONG: Find 15.75 ÷ 25. A rectangle 8 cm by 5 cm. 40% of 200. If x=3. There are 12 pupils. Solve 2x+3=11. " +
+    "Only the words stay outside the dollars; never put a whole sentence between them. Write maths with TeX commands, never with the symbols ×, ÷, ², √, ≤ or ≥ (write $\\\\times$, $\\\\div$, $^2$, $\\\\sqrt{9}$, $\\\\le$, $\\\\ge$). Do not use \\\\( \\\\), $$ or markdown. Inside the JSON string every backslash of a TeX command is written twice, exactly as in the examples here. A fill-in answer that is a number is also written in dollars, like \"$12$\". Only the blank ______ and ordinary words stay outside. " +
     "7. Never put a raw newline inside a string; write the two characters \\n where a line break is wanted. " +
     "8. Every question is original, correct, unambiguous and answerable from what is written. Never repeat a question listed under ALREADY WRITTEN. " +
     (svg
       ? "9. DIAGRAMS: where a question truly needs a figure (geometry, a graph, a shape, a number line) put a small self-contained SVG in 'svg': one <svg> element with a viewBox, black strokes, no fill colours, no scripts, labels in <text>. Otherwise 'svg' is \"\". "
       : "9. DIAGRAMS: 'svg' is always \"\". ") +
-    "10. The teacher's FURTHER INSTRUCTIONS are part of the brief and equally binding. If one conflicts with the JSON format or rules 3 to 7, the format wins.";
+    "10. The teacher's FURTHER INSTRUCTIONS are part of the brief and equally binding. If one conflicts with the JSON format or rules 3 to 7, the format wins. " +
+    "11. CHECK BEFORE YOU REPLY. Read every string you have written. Any digit, any x or y standing for a number, any unit after a number, or any maths symbol that is outside dollar signs is a mistake: put it inside dollar signs. The only things allowed outside are ordinary words and the blank ______. " +
+    "EXAMPLE of correct maths formatting (note the dollars and the doubled backslashes): " +
+    '{"questions":[{"type":"mcq","text":"The area of a rectangle $8\\\\ \\\\text{cm}$ long and $5\\\\ \\\\text{cm}$ wide is","options":["$13\\\\ \\\\text{cm}^2$","$26\\\\ \\\\text{cm}^2$","$40\\\\ \\\\text{cm}^2$","$80\\\\ \\\\text{cm}^2$"],"answer":2,"svg":""},{"type":"fill","text":"If $2x+3=11$ then $x=$ ______.","options":[],"answer":"$4$","svg":""}]}';
   const label = { mcq: "multiple-choice (mcq)", fill: "fill-in-the-blank (fill)", sub: "subjective short-answer (sub)", theory: "theory (theory)" };
   const counts = Object.keys(label).filter((t) => need && need[t] > 0).map((t) => `${need[t]} ${label[t]}`).join(", ");
   const prompt =
