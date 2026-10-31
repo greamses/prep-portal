@@ -131,6 +131,17 @@ async function queueMarking() {
     say(`${String((e && e.message) || "The marking could not be started.")} You can mark your answers yourself against the model answers.`, true);
   }
 }
+/* a mark the teacher changes after the student's page has the AI's: looked for once each time the tab is come back to */
+let marksAt = 0;
+addEventListener("focus", () => {
+  if (isOwner || !head || !head.aiMark || !live.checked || live.ai.status !== "done" || Date.now() - marksAt < 30000) return;
+  marksAt = Date.now();
+  api(`/api/workbooks/paper/${code}/mark`).then((r) => {
+    if (r.status !== "done" || !r.result) return;
+    const changed = r.result.marks.some((x) => x.by === "teacher" && live.ai.by[x.id] !== "teacher" || (live.ai.by[x.id] === "teacher" && x.m !== live.writtenMark(x.id)));
+    if (changed) { live.applyAiMarks(r.result.marks); say("Your teacher changed a mark."); }
+  }).catch(() => { /* looked again next time */ });
+});
 function stopMarking() { clearTimeout(markPoll); live.setAi({ on: !!(head && head.aiMark && !isOwner), status: "off", text: "" }); }
 
 /* the teacher's view of the marking line: every script and how it stands. Read when the page opens, when the
@@ -155,13 +166,54 @@ function mountMarkingList() {
       const d = await api(`/api/workbooks/paper/${code}/marking`);
       list.innerHTML = d.total
         ? `<p class="pp-watchlist__how"><b>${d.done}</b> marked · <b>${d.queued + d.working}</b> waiting${d.failed ? ` · <b>${d.failed}</b> could not be marked` : ""} of ${d.total}</p>`
-          + d.students.map((s) => `<div class="pp-watchlist__one"><span class="pp-pill pp-pill--static pp-pill--${TONE[s.status] || "warn"}">${WORD[s.status] || s.status}</span> <b>${esc(s.name)}</b>${s.error ? ` · ${esc(s.error)}` : ""}</div>`).join("")
+          + d.students.map((s) => `<details class="pp-watchlist__one" data-uid="${esc(s.uid)}" data-status="${esc(s.status)}"><summary><span class="pp-pill pp-pill--static pp-pill--${TONE[s.status] || "warn"}">${WORD[s.status] || s.status}</span> <b>${esc(s.name)}</b>${s.error ? ` · ${esc(s.error)}` : ""}</summary><div class="pp-mk"></div></details>`).join("")
         : `<p class="pp-live__none">No script has been sent for marking yet.</p>`;
     } catch (e) { list.innerHTML = `<p class="pp-live__none">${esc(String((e && e.message) || e).slice(0, 120))}</p>`; }
   }
   box.querySelector(".pp-watchlist__refresh").addEventListener("click", () => read(true));
   addEventListener("focus", () => read(false));
   read(true);
+
+  /* Opening a student shows their script: each written answer, the AI's mark and why, and a place for the
+     teacher's own mark and comment, which stands in place of the AI's (the AI's is kept beside it). */
+  const clipText = (t, n) => (String(t).length > n ? `${String(t).slice(0, n)}…` : String(t));
+  const paintItem = (it) => {
+    const mine = it.by === "teacher";
+    return `<div class="pp-mk__item" data-qid="${esc(it.id)}" data-max="${it.max}">
+      <p class="pp-mk__q">${esc(clipText(it.text, 180))}</p>
+      <p class="pp-mk__a">${esc(it.answer)}</p>
+      <div class="pp-mk__row"><span class="pp-pill pp-pill--static pp-pill--${mine ? "ok" : "warn"}">${mine ? "Your mark" : "AI mark"}: ${it.m} of ${it.max}</span>${mine ? `<span class="pp-mk__was">The AI gave ${it.ai}.</span>` : ""}<span class="pp-mk__note">${esc(it.note || "")}</span></div>
+      <div class="pp-mk__edit"><label>Your mark <input type="number" class="pp-mk__m" min="0" max="${it.max}" step="1" value="${it.m}" aria-label="Your mark out of ${it.max}"></label>
+        <input type="text" class="pp-mk__c" maxlength="200" placeholder="A comment for the student (optional)" aria-label="A comment for the student">
+        <button type="button" class="pp-btn pp-mk__save"></button><span class="pp-mk__say" role="status"></span></div>
+    </div>`;
+  };
+  list.addEventListener("toggle", async (e) => {
+    const det = e.target;
+    if (!det.matches || !det.matches("details.pp-watchlist__one") || !det.open || det.dataset.loaded) return;
+    const body = det.querySelector(".pp-mk");
+    if (det.dataset.status !== "done") { body.innerHTML = `<p class="pp-live__none">${det.dataset.status === "failed" ? "The AI could not mark this script." : "This script has not been marked yet."}</p>`; return; }
+    body.innerHTML = `<p class="pp-live__none">Opening the script…</p>`;
+    try {
+      const d = await api(`/api/workbooks/paper/${code}/marking/${det.dataset.uid}`);
+      body.innerHTML = d.items.map(paintItem).join("");
+      body.querySelectorAll(".pp-mk__save").forEach((b) => faceOf(b, UI.save(16), "Save my mark"));
+      det.dataset.loaded = "1";
+    } catch (err) { body.innerHTML = `<p class="pp-live__none">${esc(String((err && err.message) || err).slice(0, 120))}</p>`; }
+  }, true);
+  list.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".pp-mk__save"); if (!btn) return;
+    const item = btn.closest(".pp-mk__item"), det = btn.closest("details"), say2 = item.querySelector(".pp-mk__say");
+    const m = item.querySelector(".pp-mk__m").value;
+    if (m === "" || !Number.isFinite(+m)) { say2.textContent = "Give the mark as a number."; return; }
+    btn.disabled = true; say2.textContent = "Saving…";
+    try {
+      const r = await api(`/api/workbooks/paper/${code}/marking/${det.dataset.uid}/override`, { qid: item.dataset.qid, m: +m, note: item.querySelector(".pp-mk__c").value });
+      const note = item.querySelector(".pp-mk__c").value.trim();
+      item.outerHTML = paintItem({ id: item.dataset.qid, text: item.querySelector(".pp-mk__q").textContent, answer: item.querySelector(".pp-mk__a").textContent, max: +item.dataset.max, m: r.after, by: "teacher", ai: r.before, note });
+      det.querySelector(`[data-qid="${item.dataset.qid}"] .pp-mk__say`).textContent = `Saved. The student has been told${r.score ? ` and their score is now ${r.score.won} of ${r.score.outOf}` : ""}.`;
+    } catch (err) { say2.textContent = String((err && err.message) || err).slice(0, 140); btn.disabled = false; }
+  });
 }
 
 /* ── the teacher's list of camera-check notes ─────────────────────────────

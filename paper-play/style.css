@@ -37,3 +37,16 @@ html, body { overflow-x: clip !important; overflow-y: visible !important; }
 .pp-watchlist .pp-pill--ok { color: #1c7a3a; }
 .pp-watchlist .pp-pill--warn { color: #8a5a10; }
 .pp-watchlist .pp-pill--danger { color: #b0302a; }
+
+/* a script opened in the teacher's AI marking list */
+.pp-mk { padding: 0.5rem 0 0.2rem; }
+.pp-mk__item { padding: 0.6rem 0; border-top: 1px dashed rgba(29, 27, 24, 0.3); font-weight: 400; }
+.pp-mk__q { margin: 0 0 0.3rem; font-size: 0.74rem; color: var(--text-secondary, #6b655c); }
+.pp-mk__a { margin: 0 0 0.45rem; padding: 0.4rem 0.55rem; background: var(--surface-primary, #fffdf8); font-size: 0.8rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pp-mk__row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.7rem; font-size: 0.76rem; }
+.pp-mk__was, .pp-mk__note { font-weight: 400; }
+.pp-mk__edit { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; margin-top: 0.5rem; font-size: 0.74rem; }
+.pp-mk__edit input { font: 600 0.8rem var(--font-mono, "JetBrains Mono", monospace); padding: 0.3rem 0.45rem; border: var(--border-subtle, 1px solid rgba(42, 39, 35, 0.12)); border-radius: 0; background: var(--surface-primary, #fffdf8); color: var(--ink, #2a2723); }
+.pp-mk__m { width: 4.2rem; }
+.pp-mk__c { flex: 1 1 14rem; min-width: 10rem; }
+.pp-mk__say { flex: 1 1 100%; font-size: 0.72rem; font-weight: 700; }

@@ -37,6 +37,12 @@ module.exports = function createMarkQueue({ db, markScript, now = Date.now, rpm 
     return { status: "queued", already: false };
   }
 
+  /** The marks as they stand: the AI's, with the teacher's own mark in place of any they changed (the AI's is kept, as `ai`). */
+  const merged = (j) => {
+    const ov = j.overrides || {};
+    return ((j.result && j.result.marks) || []).map((x) => (ov[x.id] ? { ...x, ai: x.m, m: ov[x.id].m, note: ov[x.id].note || x.note, by: "teacher" } : x));
+  };
+
   /** How one student's script is getting on, and where it is in the line. */
   async function statusOf(code, uid) {
     const snap = await jobs().doc(idOf(code, uid)).get();
@@ -48,7 +54,7 @@ module.exports = function createMarkQueue({ db, markScript, now = Date.now, rpm 
       out.position = ahead + 1;
       out.waitingFor = j.notBefore > now() ? Math.ceil((j.notBefore - now()) / 1000) : 0;
     }
-    if (j.status === "done") out.result = j.result;
+    if (j.status === "done") out.result = { provider: j.result && j.result.provider, marks: merged(j) };
     if (j.status === "failed") out.error = j.error;
     return out;
   }
@@ -151,5 +157,38 @@ module.exports = function createMarkQueue({ db, markScript, now = Date.now, rpm 
     return { total: list.length, queued: count("queued"), working: count("working"), done: count("done"), failed: count("failed"), students: list };
   }
 
-  return { enqueue, statusOf, drain, summary, takeToken, reapStale, MAX_TRIES };
+  /** One script as the teacher reads it: each written answer with what it was worth, the AI's mark and any change. */
+  async function detail(code, uid) {
+    const snap = await jobs().doc(idOf(code, uid)).get();
+    if (!snap.exists) return null;
+    const j = snap.data();
+    const marks = new Map(merged(j).map((x) => [x.id, x]));
+    return {
+      uid, name: j.name || "Student", status: j.status,
+      items: (j.items || []).map((it) => {
+        const mk = marks.get(it.id);
+        return { id: it.id, text: it.text, max: it.max, model: it.model, answer: it.answer, ...(mk ? { m: mk.m, note: mk.note, ai: mk.ai !== undefined ? mk.ai : mk.m, by: mk.by || "ai" } : {}) };
+      }),
+    };
+  }
+
+  /**
+   * The teacher's mark for one answer, in place of the AI's. The AI's mark is kept beside it.
+   * → { ok, before, after, max, ownerUid, name } (before/after are the mark the student had and now has), or { ok: false, reason }
+   */
+  async function applyOverride({ code, uid, qid, m, note }) {
+    const ref = jobs().doc(idOf(code, uid));
+    const snap = await ref.get();
+    if (!snap.exists || snap.data().status !== "done") return { ok: false, reason: "not-marked" };
+    const j = snap.data();
+    const cur = merged(j).find((x) => x.id === qid);
+    if (!cur) return { ok: false, reason: "no-question" };
+    const after = Math.round(Number(m));
+    if (!Number.isFinite(after)) return { ok: false, reason: "bad-mark" };
+    const mark = Math.max(0, Math.min(cur.of, after));
+    await ref.set({ overrides: { ...(j.overrides || {}), [qid]: { m: mark, note: String(note || "").trim().slice(0, 200), at: now() } }, updatedAt: now() }, { merge: true });
+    return { ok: true, before: cur.m, after: mark, max: cur.of, ownerUid: j.ownerUid, name: j.name };
+  }
+
+  return { enqueue, statusOf, drain, summary, detail, applyOverride, takeToken, reapStale, MAX_TRIES };
 };

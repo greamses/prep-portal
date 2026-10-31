@@ -566,6 +566,70 @@ module.exports = function () {
     }
   });
 
+  /* The teacher reads one script (each written answer, the AI's mark and why) ... */
+  const ownsPaper = async (req, code) => {
+    const p = await db().collection("sharedPapers").doc(code).get();
+    if (!p.exists) return { err: [404, "No such paper."] };
+    if (p.data().ownerUid !== req.user.uid && !isAdmin(req)) return { err: [403, "This is for the teacher who shared the paper."] };
+    return { p, pRef: p.ref };
+  };
+  const uidOk = (u) => /^[A-Za-z0-9_-]{1,128}$/.test(String(u || ""));
+
+  router.get("/paper/:code/marking/:uid", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code) || !uidOk(req.params.uid)) return res.status(404).json({ error: "No such script." });
+      const own = await ownsPaper(req, code);
+      if (own.err) return res.status(own.err[0]).json({ error: own.err[1] });
+      const d = await marker.detail(code, req.params.uid);
+      if (!d) return res.status(404).json({ error: "That student has no script on this paper." });
+      res.json({ ok: true, ...d });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/marking/uid]", err.message);
+      res.status(500).json({ error: "Could not read the script." });
+    }
+  });
+
+  /* ... and changes a mark. The teacher's mark stands in place of the AI's (which is kept beside it), the stored
+     score moves by the difference, and the student is told. The score is adjusted by the change in marks, so for a
+     written section set to "answer any n" it is the student's own page that works out the best n once it is opened. */
+  router.post("/paper/:code/marking/:uid/override", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code) || !uidOk(req.params.uid)) return res.status(404).json({ error: "No such script." });
+      const own = await ownsPaper(req, code);
+      if (own.err) return res.status(own.err[0]).json({ error: own.err[1] });
+      const b = req.body || {};
+      const out = await marker.applyOverride({ code, uid: req.params.uid, qid: String(b.qid || ""), m: b.m, note: b.note });
+      if (!out.ok) {
+        const why = { "not-marked": "That script has not been marked yet.", "no-question": "That question is not on the script.", "bad-mark": "Give the mark as a whole number." }[out.reason];
+        return res.status(out.reason === "not-marked" ? 409 : 400).json({ error: why || "Could not change that mark." });
+      }
+      const delta = out.after - out.before;
+      let score = null;
+      if (delta) {
+        const rRef = own.pRef.collection("results").doc(req.params.uid);
+        const rs = await rRef.get();
+        if (rs.exists && (rs.data().lastOutOf || 0) > 0) {
+          const r = rs.data();
+          const won = Math.max(0, Math.min(r.lastOutOf, (r.lastWon || 0) + delta));
+          const pct = Math.round((100 * won) / r.lastOutOf);
+          const best = (r.lastPct || 0) >= (r.bestPct || 0) ? pct : Math.max(r.bestPct || 0, pct);
+          await rRef.set({ lastWon: won, lastPct: pct, grade: gradeOf(pct), bestPct: best }, { merge: true });
+          try { await db().collection("studentAssignments").doc(req.params.uid).collection("items").doc(`paper_${code}`).set({ lastPct: pct, bestPct: best, updatedAt: stamp() }, { merge: true }); } catch (e) { console.error("[override item]", e.message); }
+          score = { won, outOf: r.lastOutOf, pct, grade: gradeOf(pct) };
+        }
+        try {
+          await notifyStudents([req.params.uid], { kind: "result", title: own.p.data().title || "Mock paper", text: `Your teacher changed the mark for a written answer: ${out.before} to ${out.after} of ${out.max}.`, url: `/paper/${code}`, from: own.p.data().ownerName || "Your teacher" }, `override_${code}_${String(b.qid || "").slice(0, 40)}`);
+        } catch (e) { console.error("[override notice]", e.message); }
+      }
+      res.json({ ok: true, before: out.before, after: out.after, max: out.max, score });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/marking/override]", err.message);
+      res.status(500).json({ error: "Could not change that mark." });
+    }
+  });
+
   /* ══ THE CAMERA CHECK: events only ═══════════════════════════════════════
      A paper set with a camera check (head.camera) has its camera read on the STUDENT'S OWN DEVICE
      (utils/components/exam-watch.js). No picture, video or sound ever reaches us. What comes is a

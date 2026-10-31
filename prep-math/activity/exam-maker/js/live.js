@@ -68,7 +68,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   let lastQuestions = [];
   let announced = false;
   /* AI marking of the written answers (the page queues the script and reports how it is getting on, see setAi/applyAiMarks) */
-  let ai = { on: false, status: "off", text: "", notes: {} };
+  let ai = { on: false, status: "off", text: "", notes: {}, by: {}, was: {} };
   let idle = 0;
   const keep = () => {
     try { localStorage.setItem(store, JSON.stringify(answers)); } catch { /* storage full or off */ }
@@ -345,7 +345,9 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
           const m = answers["m:" + q.id];
           say("is-model", `<b>Model answer</b> ${esc(q.answer || "No model answer was written.")}`
             + `<div class="xp-aimark">${m !== undefined && ai.status === "done"
-              ? `<span class="pp-pill pp-pill--static pp-pill--ok">AI mark: ${m} of ${q.marks}</span> ${esc(ai.notes[q.id] || "")}`
+              ? (ai.by[q.id] === "teacher"
+                ? `<span class="pp-pill pp-pill--static pp-pill--ok">Teacher's mark: ${m} of ${q.marks}</span> ${esc(ai.notes[q.id] || "")} <small>The AI gave ${ai.was[q.id]}.</small>`
+                : `<span class="pp-pill pp-pill--static pp-pill--ok">AI mark: ${m} of ${q.marks}</span> ${esc(ai.notes[q.id] || "")}`)
               : `<span class="pp-pill pp-pill--static pp-pill--warn">${esc(ai.text || "Waiting to be marked")}</span>`}</div>`);
         }
       } else {
@@ -554,7 +556,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     setAi(next) { ai = { ...ai, ...next }; if (checked) { showResults(lastQuestions); paintStamp(false); announce(); } },
     /** The AI's marks for the written answers: [{ id, m, of, note }]. They count like marks given by hand. */
     applyAiMarks(list) {
-      (list || []).forEach((x) => { answers["m:" + x.id] = x.m; ai.notes[x.id] = x.note || ""; });
+      (list || []).forEach((x) => { answers["m:" + x.id] = x.m; ai.notes[x.id] = x.note || ""; ai.by[x.id] = x.by || "ai"; ai.was[x.id] = x.ai; });
       ai.status = "done"; keep();
       if (checked) { showResults(lastQuestions); paintStamp(false); announce(); }
       onChange();
@@ -566,6 +568,8 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       return out;
     },
     get ai() { return ai; },
+    /** The mark now held for a written answer, or undefined. */
+    writtenMark(id) { return answers["m:" + id]; },
     check(questions) { checked = true; return score(questions); },
     reopen() { checked = false; dropResult(); },
     clear() { answers = {}; checked = false; dropResult(); keep(); },

@@ -33,7 +33,7 @@ const BARE = [
 const TOOLS = [
   ".wb-side__btn", ".wb-side__more", ".wb-side__fam", ".wb-tool", ".bb-tool",
   /* the same rail, on a page that is not a workbook (workbook/toolbar.js) */
-  ".wb-tools__btn", ".wb-tools__tab",
+  ".wb-tools__btn", ".wb-tools__tab", ".wb-side-tab",
   ".bb-kit__btn", ".wb-drawbar .pp-btn",
   /* a counter on the mat: a token worth ten or one, which the child pushes
      about. It answers to the keyboard, so it is a button as far as the browser
