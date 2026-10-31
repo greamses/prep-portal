@@ -65,6 +65,7 @@ export const BLANK_HEAD = {
   instructions: false, instrText: "", booklet: false,
   /* written answers marked by AI, queued so every script is marked however many finish together */
   aiMark: false,
+  holdResults: false,
   /* an exam number the student shades on the OMR sheet or answer booklet, and how many digits it has */
   examNo: false, examDigits: 8, custom: "", breakAt: {},
   /* how many times a student may sit it (check it); 0 = no limit */

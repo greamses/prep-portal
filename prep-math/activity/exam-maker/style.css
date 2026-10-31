@@ -719,3 +719,8 @@ div.xp-in:focus-visible { outline: none; }
   .xp-live .xp--omr .xp-q .xp-opts li.is-right b { background: #1f9d46 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .xp-live .xp--omr .xp-q .xp-opts li.is-wrong b { background: #d6322a !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* a section shown as its icon (the name is the tooltip) */
+.xm-sec { display: inline-grid; place-items: center; width: 2rem; height: 2rem; flex: 0 0 auto; }
+.xm-sec svg { display: block; }
+.wb-field > .xm-sec { margin-bottom: 0.15rem; }

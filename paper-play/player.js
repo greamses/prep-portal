@@ -27,6 +27,7 @@ import { openRoom, idFor } from "/utils/live/index.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { faceOf } from "/utils/components/workbook/icons.js";
 import { mountTools } from "/prep-math/activity/exam-maker/js/tools.js";
+import { mountAnnotator, annotatedView } from "/paper-play/annotate.js";
 
 const $ = (id) => document.getElementById(id);
 const sheet = $("xm-sheet");
@@ -52,6 +53,24 @@ let markPoll = 0, markWait = 0;    // AI marking: the timer of the next look, an
 let tries = 1, used = 0;          // the teacher's number of tries (0 = no limit), and how many this student has used
 /* the owner may always sit their own paper; anyone else may sit it again while they have tries left */
 const canTryAgain = () => isOwner || tries === 0 || used < tries;
+/* a paper set to hold its results: the student hands it in and sees no marks until the teacher releases them */
+const holds = () => !!(head && head.holdResults) && !isOwner;
+let review = null;               // the released results (answers, the teacher's marks and notes), when this student's have been released
+const paintMarkedUp = () => {
+  if (!review) return;
+  Object.keys(review.annotations || {}).forEach((qid) => {
+    const notes = review.annotations[qid];
+    if (!notes || !notes.length) return;
+    const host = sheet.querySelector(`.xp-ans[data-qid="${qid}"]`) || sheet.querySelector(`.xp-q[data-qid="${qid}"]`);
+    if (!host || host.querySelector(":scope > .an-student")) return;
+    const box = document.createElement("div");
+    box.className = "an-student";
+    box.setAttribute("data-nomath", "");
+    box.innerHTML = "<h4>Your teacher's marks</h4>";
+    box.appendChild(annotatedView(String(review.answers[qid] ?? ""), notes));
+    host.appendChild(box);
+  });
+};
 
 /* ── live ─────────────────────────────────────────────────────────────────
    Everyone on the paper joins one room (namespace "paper", the share code). A student says how far on
@@ -108,6 +127,7 @@ const SAY = {
   working: () => "Being marked now",
 };
 function takeMarkStatus(r) {
+  if (r.status === "held") return true;     // the teacher has not released the marks: nothing to show, nothing to wait for
   if (r.status === "done" && r.result) { live.applyAiMarks(r.result.marks); say("Your written answers have been marked."); return true; }
   if (r.status === "failed") { live.setAi({ on: true, status: "failed", text: "" }); say(`${r.error || "The AI could not mark your answers."} You can mark them yourself against the model answers.`, true); return true; }
   if (r.status === "queued" || r.status === "working") { live.setAi({ on: true, status: r.status, text: SAY[r.status](r) }); return false; }
@@ -125,7 +145,7 @@ async function queueMarking() {
   const answers = live.writtenAnswers(questions);
   if (!Object.keys(answers).length) { live.setAi({ on: true, status: "done", text: "" }); return; }
   live.setAi({ on: true, status: "queued", text: "Joining the marking line…" });
-  say("Your written answers are being marked by AI. Keep this page open: your marks will appear here.");
+  if (!holds()) say("Your written answers are being marked by AI. Keep this page open: your marks will appear here.");
   markWait = 0;
   try {
     const r = await api(`/api/workbooks/paper/${code}/mark`, { answers, name: live.name });
@@ -161,6 +181,9 @@ function mountMarkingList() {
   const list = box.querySelector(".pp-watchlist__who");
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const TONE = { done: "ok", queued: "warn", working: "warn", failed: "danger" };
+  let relBy = new Map();              // uid -> released? (only for a paper that holds its results)
+  const relBtn = (uid, released, ready) => `<button type="button" class="pp-btn pp-mk__release${released ? " is-done" : ""}" data-uid="${esc(uid)}" ${released || !ready ? "disabled" : ""} data-tip="${released ? "Released: the student has been told" : ready ? "Release the results to this student" : "Wait until the marking has finished"}" aria-label="${released ? "Released" : "Release the results"}"></button>`;
+  const faceRelease = (root) => root.querySelectorAll(".pp-mk__release").forEach((b) => faceOf(b, b.classList.contains("is-done") ? UI.check(16) : UI.share(16), b.dataset.tip));
   const WORD = { done: "Marked", queued: "Waiting", working: "Being marked", failed: "Could not mark" };
   let at = 0;
   async function read(force) {
@@ -168,10 +191,16 @@ function mountMarkingList() {
     at = Date.now();
     try {
       const d = await api(`/api/workbooks/paper/${code}/marking`);
+      relBy = new Map((d.submissions || []).map((x) => [x.uid, x.released]));
+      const jobUids = new Set(d.students.map((x) => x.uid));
+      const heldRows = d.hold ? (d.submissions || []).filter((x) => !jobUids.has(x.uid)) : [];
       list.innerHTML = d.total
         ? `<p class="pp-watchlist__how"><b>${d.done}</b> marked · <b>${d.queued + d.working}</b> waiting${d.failed ? ` · <b>${d.failed}</b> could not be marked` : ""} of ${d.total}</p>`
-          + d.students.map((s) => `<details class="pp-watchlist__one" data-uid="${esc(s.uid)}" data-status="${esc(s.status)}"><summary><span class="pp-pill pp-pill--static pp-pill--${TONE[s.status] || "warn"}">${WORD[s.status] || s.status}</span> <b>${esc(s.name)}</b>${s.examNo ? ` <span class="pp-exno">No. ${esc(s.examNo)}</span>` : ""}${s.error ? ` · ${esc(s.error)}` : ""}</summary><div class="pp-mk"></div></details>`).join("")
+          + d.students.map((s) => `<details class="pp-watchlist__one" data-uid="${esc(s.uid)}" data-status="${esc(s.status)}"><summary><span class="pp-pill pp-pill--static pp-pill--${TONE[s.status] || "warn"}">${WORD[s.status] || s.status}</span> <b>${esc(s.name)}</b>${s.examNo ? ` <span class="pp-exno">No. ${esc(s.examNo)}</span>` : ""}${s.error ? ` · ${esc(s.error)}` : ""}${d.hold ? ` ${relBtn(s.uid, relBy.get(s.uid) === true, s.status === "done")}` : ""}</summary><div class="pp-mk"></div></details>`).join("")
         : `<p class="pp-live__none">No script has been sent for marking yet.</p>`;
+      if (heldRows.length) list.innerHTML += `<p class="pp-watchlist__how">Handed in with no written answers to mark:</p>` + heldRows.map((x) => `<div class="pp-watchlist__one pp-mk__plain"><b>${esc(x.name)}</b>${x.examNo ? ` <span class="pp-exno">No. ${esc(x.examNo)}</span>` : ""} · ${x.won} of ${x.outOf} ${relBtn(x.uid, x.released, true)}</div>`).join("");
+      if (d.hold && !d.total && !heldRows.length) list.innerHTML = `<p class="pp-live__none">Nobody has handed in yet.</p>`;
+      faceRelease(list);
     } catch (e) { list.innerHTML = `<p class="pp-live__none">${esc(String((e && e.message) || e).slice(0, 120))}</p>`; }
   }
   box.querySelector(".pp-watchlist__refresh").addEventListener("click", () => read(true));
@@ -185,7 +214,7 @@ function mountMarkingList() {
     const mine = it.by === "teacher";
     return `<div class="pp-mk__item" data-qid="${esc(it.id)}" data-max="${it.max}">
       <p class="pp-mk__q">${esc(clipText(it.text, 180))}</p>
-      <p class="pp-mk__a">${esc(it.answer)}</p>
+      <div class="pp-mk__a pp-mk__an" data-ans></div>
       <div class="pp-mk__row"><span class="pp-pill pp-pill--static pp-pill--${mine ? "ok" : "warn"}">${mine ? "Your mark" : "AI mark"}: ${it.m} of ${it.max}</span>${mine ? `<span class="pp-mk__was">The AI gave ${it.ai}.</span>` : ""}<span class="pp-mk__note">${esc(it.note || "")}</span></div>
       <div class="pp-mk__edit"><label>Your mark <input type="number" class="pp-mk__m" min="0" max="${it.max}" step="1" value="${it.m}" aria-label="Your mark out of ${it.max}"></label>
         <input type="text" class="pp-mk__c" maxlength="200" placeholder="A comment for the student (optional)" aria-label="A comment for the student">
@@ -201,11 +230,29 @@ function mountMarkingList() {
     try {
       const d = await api(`/api/workbooks/paper/${code}/marking/${det.dataset.uid}`);
       body.innerHTML = d.items.map(paintItem).join("");
+      det._an = {}; det._text = {};
+      const saveNotes = (qid) => { clearTimeout(det._t && det._t[qid]); (det._t = det._t || {})[qid] = setTimeout(() => api(`/api/workbooks/paper/${code}/marking/${det.dataset.uid}/annotate`, { qid, notes: det._an[qid].notes.map((n) => ({ s: n.s, e: n.e, kind: n.kind, text: n.text || "" })) }).catch(() => {}), 500); };
+      det._mount = (qid, notes) => { const host = body.querySelector(`.pp-mk__item[data-qid="${qid}"] [data-ans]`); if (host) det._an[qid] = mountAnnotator(host, { text: det._text[qid], notes, onChange: () => saveNotes(qid) }); };
+      d.items.forEach((it) => { det._text[it.id] = it.answer; det._mount(it.id, (d.annotations && d.annotations[it.id]) || []); });
+      body.insertAdjacentHTML("beforeend", d.hold ? `<div class="pp-mk__foot">${relBtn(det.dataset.uid, d.released, true)}<span class="pp-mk__say">${d.released ? "Released to the student." : "Marked up? Release it to tell the student."}</span></div>` : "");
+      faceRelease(body);
       body.querySelectorAll(".pp-mk__save").forEach((b) => faceOf(b, UI.save(16), "Save my mark"));
       det.dataset.loaded = "1";
     } catch (err) { body.innerHTML = `<p class="pp-live__none">${esc(String((err && err.message) || err).slice(0, 120))}</p>`; }
   }, true);
   list.addEventListener("click", async (e) => {
+    const rel = e.target.closest(".pp-mk__release");
+    if (rel) {
+      e.preventDefault(); e.stopPropagation();
+      if (rel.disabled) return;
+      rel.disabled = true;
+      try {
+        await api(`/api/workbooks/paper/${code}/marking/${rel.dataset.uid}/release`, {});
+        list.querySelectorAll(`.pp-mk__release[data-uid="${rel.dataset.uid}"]`).forEach((b) => { b.classList.add("is-done"); b.disabled = true; b.dataset.tip = "Released: the student has been told"; faceOf(b, UI.check(16), b.dataset.tip); });
+        list.querySelectorAll(`details[data-uid="${rel.dataset.uid}"] .pp-mk__foot .pp-mk__say`).forEach((m) => { m.textContent = "Released to the student."; });
+      } catch (err) { rel.disabled = false; rel.dataset.tip = String((err && err.message) || err).slice(0, 100); }
+      return;
+    }
     const btn = e.target.closest(".pp-mk__save"); if (!btn) return;
     const item = btn.closest(".pp-mk__item"), det = btn.closest("details"), say2 = item.querySelector(".pp-mk__say");
     const m = item.querySelector(".pp-mk__m").value;
@@ -214,7 +261,9 @@ function mountMarkingList() {
     try {
       const r = await api(`/api/workbooks/paper/${code}/marking/${det.dataset.uid}/override`, { qid: item.dataset.qid, m: +m, note: item.querySelector(".pp-mk__c").value });
       const note = item.querySelector(".pp-mk__c").value.trim();
-      item.outerHTML = paintItem({ id: item.dataset.qid, text: item.querySelector(".pp-mk__q").textContent, answer: item.querySelector(".pp-mk__a").textContent, max: +item.dataset.max, m: r.after, by: "teacher", ai: r.before, note });
+      const qid = item.dataset.qid, keepNotes = det._an && det._an[qid] ? det._an[qid].notes.map((n) => ({ ...n })) : [];
+      item.outerHTML = paintItem({ id: qid, text: item.querySelector(".pp-mk__q").textContent, answer: "", max: +item.dataset.max, m: r.after, by: "teacher", ai: r.before, note });
+      if (det._mount) det._mount(qid, keepNotes);
       det.querySelector(`[data-qid="${item.dataset.qid}"] .pp-mk__say`).textContent = `Saved. The student has been told${r.score ? ` and their score is now ${r.score.won} of ${r.score.outOf}` : ""}.`;
     } catch (err) { say2.textContent = String((err && err.message) || err).slice(0, 140); btn.disabled = false; }
   });
@@ -273,7 +322,7 @@ function sendResult() {
     const s = live.score(questions);
     if (!s.outOf) return;
     const first = firstSend; firstSend = false;
-    try { await api(`/api/workbooks/paper/${code}/result`, { name: live.name, won: s.won, outOf: s.outOf, first, examNo: live.examNo }); } catch { /* the page still works without it */ }
+    try { await api(`/api/workbooks/paper/${code}/result`, { name: live.name, won: s.won, outOf: s.outOf, first, examNo: live.examNo, ...(holds() ? { answers: live.snapshot() } : {}) }); } catch { /* the page still works without it */ }
   }, 900);
 }
 
@@ -284,6 +333,7 @@ function paintScore() {
   $("xm-shuffle").hidden = locked || live.checked || s.answered > 0;
   if (live.checked) sendResult();
   tell();
+  if (live.held) { el.textContent = "Handed in. Your teacher will release your results."; return; }
   el.textContent = live.checked
     ? `${s.won} of ${s.outOf} marks · grade ${live.gradeFor(s.pct).g}` + (s.pending ? ` · mark your ${s.pending} written answer${s.pending === 1 ? "" : "s"}` : "")
     : `${s.answered} of ${s.total} answered`;
@@ -316,6 +366,7 @@ function draw() {
   sheet.dataset.paper = head.paper === "letter" ? "letter" : "a4";
   sheet.innerHTML = paperHtml(head, questions);
   live.apply(questions);
+  paintMarkedUp();
   paintScore();
   typeset();
 }
@@ -339,6 +390,31 @@ async function open() {
     tries = r.tries == null ? 1 : r.tries; used = r.used || 0;
     /* back with every try spent: the paper is shown, and nothing on it can be answered */
     locked = !isOwner && tries > 0 && used >= tries;
+    /* results held for the teacher: handed in and waiting, or released (the paper is shown marked, with the teacher's notes) */
+    if (holds()) {
+      let rv = null;
+      try { rv = await api(`/api/workbooks/paper/${code}/review`); } catch { /* treated as not handed in */ }
+      if (rv && rv.handedIn && !rv.released) {
+        locked = true;
+        sheet.dataset.paper = head.paper === "letter" ? "letter" : "a4";
+        sheet.innerHTML = paperHtml(head, questions);
+        typeset();
+        $("xm-check").hidden = true; $("xm-clear").hidden = true;
+        say("Your paper is in. Your teacher will go through it and release your results; you will be told.");
+        return;
+      }
+      if (rv && rv.handedIn && rv.released) {
+        locked = true; review = rv;
+        live.setOn(true);
+        live.loadAnswers(rv.answers);
+        live.check(questions);
+        draw(); faces();
+        $("xm-check").hidden = true; $("xm-clear").hidden = true;
+        say(`Your teacher has marked your paper: ${rv.score.won} of ${rv.score.outOf}, grade ${rv.score.grade}.`);
+        api(`/api/workbooks/paper/${code}/mark`).then((r) => { if (r.status === "done" && r.result) live.applyAiMarks(r.result.marks); }).catch(() => {});
+        return;
+      }
+    }
     if (locked) {
       sheet.dataset.paper = head.paper === "letter" ? "letter" : "a4";
       sheet.innerHTML = paperHtml(head, questions);
@@ -390,7 +466,7 @@ async function open() {
     syncClock();
     joinLive();
     if (isOwner) mountWatchList(!!head.camera);
-    if (isOwner && head.aiMark) mountMarkingList();
+    if (isOwner && (head.aiMark || head.holdResults)) mountMarkingList();
     if (!isOwner && head.aiMark) live.setAi({ on: true, status: "off", text: "" });
   } catch (e) {
     say(String((e && e.message) || e || "Could not open the paper.").slice(0, 200), true);
@@ -399,7 +475,7 @@ async function open() {
 
 /* the countdown, when the paper was set with a timer; the paper is checked when it runs out */
 const clock = createClock($("xm-clock"), {
-  onEnd: () => { if (!live.checked) { live.check(questions); draw(); faces(); $("xm-score").textContent = "Time is up. " + $("xm-score").textContent; watcher && (watcher.flush(true), watcher.setActive(false)); queueMarking(); } },
+  onEnd: () => { if (!live.checked) { if (holds()) live.setHeld(true); live.check(questions); draw(); faces(); $("xm-score").textContent = "Time is up. " + $("xm-score").textContent; watcher && (watcher.flush(true), watcher.setActive(false)); queueMarking(); } },
   /* one minute left: said out loud, from the recording */
   onLow: () => voice.say("time_low", { force: true }),
 });
@@ -414,7 +490,7 @@ function faces() {
   faceOf($("xm-clear"), UI.eraser(18), "Clear answers");
   faceOf($("xm-shuffle"), UI.shuffle(18), "Shuffle the questions and their answers");
   /* out of tries: nothing on the paper can be opened again */
-  const spent = live.checked && !canTryAgain();
+  const spent = live.checked && (!canTryAgain() || live.held);
   $("xm-check").hidden = spent || locked; $("xm-clear").hidden = spent || locked;
 }
 let locked = false;               // came back with no tries left: the paper is shown, not answerable
@@ -431,8 +507,8 @@ $("xm-shuffle").addEventListener("click", () => {
   draw();
 });
 $("xm-check").addEventListener("click", () => {
-  if (live.checked) { if (!canTryAgain()) return; live.reopen(); }
-  else { live.check(questions); firstSend = true; if (!isOwner) used += 1; }
+  if (live.checked) { if (!canTryAgain() || live.held) return; live.reopen(); }
+  else { if (holds()) live.setHeld(true); live.check(questions); firstSend = true; if (!isOwner) used += 1; }
   draw(); faces(); syncClock();
   /* the notes go with the score; with no tries left the exam is over, so the camera is let go */
   /* once the paper is checked nothing is warned (the student may leave); sitting it again watches it again */
@@ -443,6 +519,7 @@ $("xm-check").addEventListener("click", () => {
   else if (live.checked) say(`Scored${triesNote()}. Press the arrow to answer again.`);
   /* a paper that asks for an exam number: say so if it was not shaded, so the teacher can tell whose paper it is */
   if (live.checked && head.examNo && !isOwner && !live.examNo) say("Your exam number is not complete. Shade every digit on the OMR sheet so your teacher knows whose paper this is, then check again.", true);
+  if (live.checked && live.held) say("Your paper is in. Your teacher will go through it and release your results; you will be told.");
   /* written answers go to the AI marking line (after the messages above, so its own message is the one left showing) */
   if (live.checked) queueMarking(); else stopMarking();
 });

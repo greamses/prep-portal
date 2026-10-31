@@ -427,7 +427,7 @@ module.exports = function () {
     head.colour = COLOURS.includes(h.colour) || (h.colour === "custom" && /^#[0-9a-f]{6}$/i.test(String(h.custom))) ? h.colour : "indigo";
     head.custom = head.colour === "custom" ? String(h.custom).toLowerCase() : "";
     head.paper = h.paper === "letter" ? "letter" : "a4";
-    for (const k of ["tint", "clean", "omr", "theorySheet", "timer", "camera", "instructions", "booklet", "aiMark", "examNo"]) head[k] = !!h[k];
+    for (const k of ["tint", "clean", "omr", "theorySheet", "timer", "camera", "instructions", "booklet", "aiMark", "examNo", "holdResults"]) head[k] = !!h[k];
     head.examDigits = Math.max(4, Math.min(12, Math.round(Number(h.examDigits)) || 8));
     head.instrText = clip(String(h.instrText || "").replace(/\r/g, ""), 1500).trim();
     head.key = false;
@@ -509,6 +509,13 @@ module.exports = function () {
      Both GETs do a little of the queue's work first, because the site has no scheduled jobs: the
      queue is drained by the people waiting on it. */
   const marker = createMarkQueue({ db, markScript });
+  /* A paper set to hold its results: this student's marks are not shown to them until the teacher releases them. */
+  const isHeld = async (code, uid) => {
+    const p = await db().collection("sharedPapers").doc(code).get();
+    if (!p.exists || !(p.data().head && p.data().head.holdResults) || p.data().ownerUid === uid) return false;
+    const r = await p.ref.collection("results").doc(uid).get();
+    return !(r.exists && r.data().released === true);
+  };
   const MAX_SCRIPTS = 400;                 // per paper
   const WRITTEN = ["sub", "theory"];
 
@@ -533,6 +540,7 @@ module.exports = function () {
       const me = await profile(req.user.uid);
       const typed = clip(String((req.body && req.body.name) || "").replace(/\s+/g, " ").trim(), 60);
       const out = await marker.enqueue({ code, uid: req.user.uid, ownerUid: a.ownerUid, name: typed || nameOf(req, me), subject: a.head.subject, klass: a.head.klass, items });
+      if (await isHeld(code, req.user.uid)) return res.json({ ok: true, status: "held" });
       res.json({ ok: true, status: out.status, ...(await marker.statusOf(code, req.user.uid)) });
     } catch (err) {
       console.error("[/api/workbooks/paper/mark]", err.message);
@@ -545,7 +553,9 @@ module.exports = function () {
       const code = String(req.params.code || "").toUpperCase();
       if (!codeOk(code)) return res.status(404).json({ error: "No such paper." });
       try { await marker.drain({ max: 1, budgetMs: 15000 }); } catch (e) { console.warn("[mark drain]", e.message); }
-      res.json({ ok: true, ...(await marker.statusOf(code, req.user.uid)) });
+      const st = await marker.statusOf(code, req.user.uid);
+      if (await isHeld(code, req.user.uid)) return res.json({ ok: true, status: "held" });
+      res.json({ ok: true, ...st });
     } catch (err) {
       console.error("[/api/workbooks/paper/mark/get]", err.message);
       res.status(500).json({ error: "Could not read the marking." });
@@ -562,7 +572,15 @@ module.exports = function () {
       try { await marker.drain({ max: 2, budgetMs: 20000 }); } catch (e) { console.warn("[mark drain]", e.message); }
       const sum = await marker.summary(code);
       const numbers = await examNumbers(p.ref);
-      res.json({ ok: true, aiMark: !!(p.data().head && p.data().head.aiMark), ...sum, students: sum.students.map((s) => ({ ...s, examNo: numbers.get(s.uid) || "" })) });
+      const hold = !!(p.data().head && p.data().head.holdResults);
+      let submissions = [];
+      if (hold) {
+        try {
+          submissions = (await p.ref.collection("results").limit(500).get()).docs.map((d) => d.data()).filter((r) => r.held)
+            .map((r) => ({ uid: r.uid, name: r.name || "Student", examNo: r.examNo || "", released: r.released === true, won: r.lastWon || 0, outOf: r.lastOutOf || 0 }));
+        } catch (_) { /* the list can be empty */ }
+      }
+      res.json({ ok: true, aiMark: !!(p.data().head && p.data().head.aiMark), hold, submissions, ...sum, students: sum.students.map((s) => ({ ...s, examNo: numbers.get(s.uid) || "" })) });
     } catch (err) {
       console.error("[/api/workbooks/paper/marking]", err.message);
       res.status(500).json({ error: "Could not read the marking." });
@@ -592,7 +610,9 @@ module.exports = function () {
       if (own.err) return res.status(own.err[0]).json({ error: own.err[1] });
       const d = await marker.detail(code, req.params.uid);
       if (!d) return res.status(404).json({ error: "That student has no script on this paper." });
-      res.json({ ok: true, ...d });
+      const rs = await own.pRef.collection("results").doc(req.params.uid).get();
+      const r = rs.exists ? rs.data() : {};
+      res.json({ ok: true, ...d, hold: !!(own.p.data().head && own.p.data().head.holdResults), released: r.released === true, annotations: r.annotations || {} });
     } catch (err) {
       console.error("[/api/workbooks/paper/marking/uid]", err.message);
       res.status(500).json({ error: "Could not read the script." });
@@ -629,13 +649,86 @@ module.exports = function () {
           score = { won, outOf: r.lastOutOf, pct, grade: gradeOf(pct) };
         }
         try {
-          await notifyStudents([req.params.uid], { kind: "result", title: own.p.data().title || "Mock paper", text: `Your teacher changed the mark for a written answer: ${out.before} to ${out.after} of ${out.max}.`, url: `/paper/${code}`, from: own.p.data().ownerName || "Your teacher" }, `override_${code}_${String(b.qid || "").slice(0, 40)}`);
+          if (!(own.p.data().head && own.p.data().head.holdResults && !(await isReleased(own.pRef, req.params.uid)))) await notifyStudents([req.params.uid], { kind: "result", title: own.p.data().title || "Mock paper", text: `Your teacher changed the mark for a written answer: ${out.before} to ${out.after} of ${out.max}.`, url: `/paper/${code}`, from: own.p.data().ownerName || "Your teacher" }, `override_${code}_${String(b.qid || "").slice(0, 40)}`);
         } catch (e) { console.error("[override notice]", e.message); }
       }
       res.json({ ok: true, before: out.before, after: out.after, max: out.max, score });
     } catch (err) {
       console.error("[/api/workbooks/paper/marking/override]", err.message);
       res.status(500).json({ error: "Could not change that mark." });
+    }
+  });
+
+  /* ══ RESULTS HELD FOR THE TEACHER ═══════════════════════════════════════
+     A paper set with head.holdResults keeps each student's marks from them until the teacher has gone through
+     the script (the AI's marks, corrected), pinned any comments and marked it up, and pressed Release, which
+     tells the student. Until then the student's page shows only that the paper is in.
+
+       POST /api/workbooks/paper/:code/marking/:uid/annotate  { qid, notes: [{ s, e, kind, text }] }   (the owner)
+       POST /api/workbooks/paper/:code/marking/:uid/release   (the owner: the student is told)
+       GET  /api/workbooks/paper/:code/review                  (the student: held, or released with answers and notes) */
+  const isReleased = async (pRef, uid) => { const r = await pRef.collection("results").doc(uid).get(); return r.exists && r.data().released === true; };
+  const KINDS = ["note", "del", "ins", "rep", "cap", "lower", "sp", "tr", "par", "space"];
+  const cleanNotes = (list) => (Array.isArray(list) ? list : []).slice(0, 60).map((n) => {
+    const s = Math.round(Number(n && n.s)), e = Math.round(Number(n && n.e));
+    if (!Number.isFinite(s) || !Number.isFinite(e) || s < 0 || e < s || e > 4000 || !KINDS.includes(n.kind)) return null;
+    return { s, e, kind: n.kind, text: clip(String(n.text || "").replace(/\r/g, ""), 300) };
+  }).filter(Boolean);
+
+  router.post("/paper/:code/marking/:uid/annotate", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code) || !uidOk(req.params.uid)) return res.status(404).json({ error: "No such script." });
+      const own = await ownsPaper(req, code);
+      if (own.err) return res.status(own.err[0]).json({ error: own.err[1] });
+      const qid = String((req.body && req.body.qid) || "");
+      if (!/^[\w:.-]{1,60}$/.test(qid)) return res.status(400).json({ error: "Which answer?" });
+      const notes = cleanNotes(req.body && req.body.notes);
+      await own.pRef.collection("results").doc(req.params.uid).set({ annotations: { [qid]: notes } }, { merge: true });
+      res.json({ ok: true, count: notes.length });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/marking/annotate]", err.message);
+      res.status(500).json({ error: "Could not save the notes." });
+    }
+  });
+
+  router.post("/paper/:code/marking/:uid/release", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code) || !uidOk(req.params.uid)) return res.status(404).json({ error: "No such script." });
+      const own = await ownsPaper(req, code);
+      if (own.err) return res.status(own.err[0]).json({ error: own.err[1] });
+      const rRef = own.pRef.collection("results").doc(req.params.uid);
+      const rs = await rRef.get();
+      if (!rs.exists) return res.status(404).json({ error: "That student has not handed the paper in." });
+      await rRef.set({ released: true, releasedAt: stamp() }, { merge: true });
+      const r = rs.data();
+      try {
+        await notifyStudents([req.params.uid], { kind: "result", title: own.p.data().title || "Mock paper", text: "Your teacher has marked your paper. Open it to see your results and their notes.", url: `/paper/${code}`, from: own.p.data().ownerName || "Your teacher" }, `released_${code}`);
+      } catch (e) { console.error("[release notice]", e.message); }
+      res.json({ ok: true, name: r.name || "Student" });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/marking/release]", err.message);
+      res.status(500).json({ error: "Could not release the results." });
+    }
+  });
+
+  router.get("/paper/:code/review", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code)) return res.status(404).json({ error: "No such paper." });
+      const p = await db().collection("sharedPapers").doc(code).get();
+      if (!p.exists) return res.status(404).json({ error: "No such paper." });
+      const hold = !!(p.data().head && p.data().head.holdResults) && p.data().ownerUid !== req.user.uid;
+      if (!hold) return res.json({ ok: true, hold: false });
+      const rs = await p.ref.collection("results").doc(req.user.uid).get();
+      if (!rs.exists || !rs.data().held) return res.json({ ok: true, hold: true, handedIn: false, released: false });
+      const r = rs.data();
+      if (r.released !== true) return res.json({ ok: true, hold: true, handedIn: true, released: false });
+      res.json({ ok: true, hold: true, handedIn: true, released: true, answers: r.answers || {}, annotations: r.annotations || {}, score: { won: r.lastWon || 0, outOf: r.lastOutOf || 0, pct: r.lastPct || 0, grade: r.grade || "" } });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/review]", err.message);
+      res.status(500).json({ error: "Could not read your results." });
     }
   });
 
@@ -798,6 +891,16 @@ module.exports = function () {
       const typed = clip(String(b.name || "").replace(/\s+/g, " ").trim(), 60);
       const examNo = String(b.examNo || "").replace(/[^0-9]/g, "").slice(0, 12);
       const pct = Math.round((100 * won) / outOf);
+      /* the answers themselves, kept only for a paper whose results are held for the teacher (the student's page is rebuilt from them when the results are released) */
+      const keepAnswers = {};
+      if (b.answers && typeof b.answers === "object") {
+        for (const k of Object.keys(b.answers).slice(0, 120)) {
+          if (!/^[\w:.-]{1,60}$/.test(k)) continue;
+          const v = b.answers[k];
+          if (typeof v === "string") keepAnswers[k] = v.slice(0, 4000);
+          else if (Number.isFinite(v)) keepAnswers[k] = v;
+        }
+      }
       const out = await db().runTransaction(async (t) => {
         const [pSnap, rSnap] = [await t.get(pRef), await t.get(rRef)];
         if (!pSnap.exists) return null;
@@ -807,13 +910,17 @@ module.exports = function () {
         if (b.first === true && prev && allowed > 0 && (prev.attempts || 0) >= allowed && pSnap.data().ownerUid !== req.user.uid) return { noTries: allowed };
         const attempts = (prev ? prev.attempts || 0 : 0) + (b.first === true || !prev ? 1 : 0);
         const best = Math.max(pct, prev ? prev.bestPct || 0 : 0);
+        const hold = !!(pSnap.data().head && pSnap.data().head.holdResults) && pSnap.data().ownerUid !== req.user.uid;
+        /* a held paper: a NEW try goes back to waiting for the teacher; a re-send of the same try keeps whatever the teacher has done */
+        const heldFields = hold ? { held: true, released: b.first === true || !prev ? false : !!(prev && prev.released), ...(Object.keys(keepAnswers).length ? { answers: keepAnswers } : {}), ...(b.first === true || !prev ? { annotations: {} } : {}) } : {};
         t.set(rRef, {
+          ...heldFields,
           uid: req.user.uid, name: typed || (prev && prev.name) || nameOf(req, p), email: req.user.email || null,
           lastWon: won, lastOutOf: outOf, lastPct: pct, grade: gradeOf(pct), bestPct: best, attempts, ...(examNo ? { examNo } : {}),
           firstAt: prev ? prev.firstAt : stamp(), lastAt: stamp(),
         }, { merge: true });
         if (!prev) t.set(pRef, { students: admin.firestore.FieldValue.increment(1) }, { merge: true });
-        return { ownerUid: pSnap.data().ownerUid, title: pSnap.data().title, best, attempts };
+        return { ownerUid: pSnap.data().ownerUid, title: pSnap.data().title, best, attempts, hold };
       });
       if (!out) return res.status(404).json({ error: "No such paper." });
       if (out.noTries) return res.status(403).json({ error: `You have used all ${out.noTries} ${out.noTries === 1 ? "try" : "tries"} on this paper.` });
@@ -828,6 +935,10 @@ module.exports = function () {
           kind: "paper", paperUrl: `/paper/${code}`, activityTitle: out.title || "Mock paper", status: "done", lastPct: pct, bestPct: out.best, updatedAt: stamp(),
         }, { merge: true });
       } catch (e) { console.error("[paper item]", e.message); }
+      if (out.hold) {
+        if (b.first === true) await notifyStudents([req.user.uid], { kind: "result", title: out.title || "Mock paper", text: "Your paper is in. Your teacher will go through it and release your results.", url: `/paper/${code}`, from: "Prep Portal" }, `result_paper_${code}`);
+        return res.json({ ok: true, held: true });
+      }
       if (b.first === true) await notifyStudents([req.user.uid], { kind: "result", title: out.title || "Mock paper", text: `Your result went in: ${won} of ${outOf}, grade ${gradeOf(pct)}.`, url: `/paper/${code}`, from: "Prep Portal" }, `result_paper_${code}`);
       res.json({ ok: true, pct, grade: gradeOf(pct) });
     } catch (err) {

@@ -66,6 +66,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   let answers = load(store);
   let on = false;
   let checked = false;
+  let held = false;      // results held for the teacher: the paper is locked and handed in, but no marks are shown
   let lastQuestions = [];
   let announced = false;
   /* AI marking of the written answers (the page queues the script and reports how it is getting on, see setAi/applyAiMarks) */
@@ -161,7 +162,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       if (lines) lines.replaceWith(box); else blk.appendChild(box);
     });
     paintAttempts();
-    if (checked) { showResults(questions); paintStamp(true); announce(); }
+    if (checked && !held) { showResults(questions); paintStamp(true); announce(); }
   }
 
   /* "Attempted 2 of 3" in the heading of a section that says "answer any 3"; it turns to a warning
@@ -582,6 +583,13 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   return {
     get on() { return on; },
     get checked() { return checked; },
+    get held() { return held; },
+    /** Hold the results: the paper is handed in and locked, but no marks, stamp or notes are shown until the teacher releases them. */
+    setHeld(v) { held = !!v; sheet.classList.toggle("xp-held", held); },
+    /** Every answer as given (not the marks), to send with a held paper so it can be shown again, anywhere, when it is released. */
+    snapshot() { const o = {}; Object.keys(answers).forEach((k) => { if (!k.startsWith("m:") && k !== "examno") o[k] = answers[k]; }); if (answers.examno) o.examno = answers.examno; return o; },
+    /** Put answers back (from the server), keeping the exam number as shaded. */
+    loadAnswers(obj) { answers = { ...(obj || {}) }; keep(); },
     setOn(v) { on = !!v; if (!on) { checked = false; sheet.classList.remove("xp-live"); unmountDrawer(); dropResult(); } },
     /** The OMR drawer, opened or shut from a toolbar button (it opens by itself when a sheet exists). */
     get omrOpen() { return drawerOpen; },
@@ -593,12 +601,12 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       t?.classList.toggle("is-open", drawerOpen);
     },
     /** The AI marking's state: { on, status: off|queued|working|done|failed, text }. Redraws the marked paper. */
-    setAi(next) { ai = { ...ai, ...next }; if (checked) { showResults(lastQuestions); paintStamp(false); announce(); } },
+    setAi(next) { ai = { ...ai, ...next }; if (checked && !held) { showResults(lastQuestions); paintStamp(false); announce(); } },
     /** The AI's marks for the written answers: [{ id, m, of, note }]. They count like marks given by hand. */
     applyAiMarks(list) {
       (list || []).forEach((x) => { answers["m:" + x.id] = x.m; ai.notes[x.id] = x.note || ""; ai.by[x.id] = x.by || "ai"; ai.was[x.id] = x.ai; });
       ai.status = "done"; keep();
-      if (checked) { showResults(lastQuestions); paintStamp(false); announce(); }
+      if (checked && !held) { showResults(lastQuestions); paintStamp(false); announce(); }
       onChange();
     },
     /** What the student wrote for the written questions: { id: text }, for the marking queue. */

@@ -142,6 +142,7 @@ function fillHead() {
   $("xm-instructions").checked = !!state.head.instructions; $("xm-instr-wrap").hidden = !state.head.instructions;
   $("xm-booklet").checked = !!state.head.booklet;
   $("xm-aimark").checked = !!state.head.aiMark;
+  $("xm-hold").checked = !!state.head.holdResults;
   $("xm-examno").checked = !!state.head.examNo; $("xm-exdigits-wrap").hidden = !state.head.examNo; $("xm-exdigits").value = state.head.examDigits || 8;
   $("xm-tries").value = state.head.tries == null ? 1 : state.head.tries;
   $("xm-tsheet").checked = !!state.head.theorySheet;
@@ -177,7 +178,18 @@ $("xm-omr").addEventListener("change", (e) => { state.head.omr = e.target.checke
 $("xm-camera").addEventListener("change", (e) => { state.head.camera = e.target.checked; save(); });
 $("xm-instructions").addEventListener("change", (e) => { state.head.instructions = e.target.checked; $("xm-instr-wrap").hidden = !e.target.checked; save(); });
 $("xm-booklet").addEventListener("change", (e) => { state.head.booklet = e.target.checked; redraw(); });
-$("xm-aimark").addEventListener("change", (e) => { state.head.aiMark = e.target.checked; save(); });
+$("xm-aimark").addEventListener("change", (e) => { state.head.aiMark = e.target.checked; if (!e.target.checked && state.head.holdResults) { state.head.holdResults = false; $("xm-hold").checked = false; } save(); });
+/* holding the results is a review of the AI's marking, so it needs the AI marking on */
+$("xm-hold").addEventListener("change", (e) => { state.head.holdResults = e.target.checked; if (e.target.checked) { state.head.aiMark = true; $("xm-aimark").checked = true; } save(); });
+/* the four sections are shown as icons (the name is in the tooltip) */
+{
+  const SEC = { mcq: ["list", "Multiple choice"], fill: ["pen", "Fill in the blank"], sub: ["lines", "Short answer"], theory: ["book", "Theory"] };
+  document.querySelectorAll("[data-sec]").forEach((el) => {
+    const [icon, name] = SEC[el.dataset.sec] || [];
+    if (!icon) return;
+    el.innerHTML = UI[icon](22); el.dataset.tip = name; el.setAttribute("aria-label", name); el.setAttribute("role", "img");
+  });
+}
 $("xm-examno").addEventListener("change", (e) => { state.head.examNo = e.target.checked; $("xm-exdigits-wrap").hidden = !e.target.checked; redraw(); });
 $("xm-exdigits").addEventListener("input", (e) => { state.head.examDigits = Math.max(4, Math.min(12, Math.round(+e.target.value) || 8)); redraw(); });
 $("xm-instr-preview").addEventListener("click", () => showInstructions({ head: state.head, questions: state.questions, preview: true }));
@@ -799,7 +811,7 @@ $("xm-share").addEventListener("click", async () => {
     copy.onclick = async () => { try { await navigator.clipboard.writeText(url); faceOf(copy, UI.check(18), "Copied"); } catch { faceOf(copy, UI.alert(18), "Select the link and copy it"); } };
     box.append("Anyone with an account can sit this paper on screen: ", a, " ", copy);
     /* what this link carries: it keeps the settings it was made with, so a switch turned on later needs a new link */
-    const carries = [state.head.camera && "camera check", state.head.instructions && "instructions page", state.head.aiMark && "AI marking of written answers", state.head.booklet && "answer booklet", state.head.examNo && "exam number"].filter(Boolean);
+    const carries = [state.head.camera && "camera check", state.head.instructions && "instructions page", state.head.aiMark && "AI marking of written answers", state.head.holdResults && "results held for your review", state.head.booklet && "answer booklet", state.head.examNo && "exam number"].filter(Boolean);
     const note = document.createElement("p");
     note.className = "xm-sharebox__on";
     note.textContent = carries.length

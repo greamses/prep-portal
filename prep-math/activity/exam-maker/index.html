@@ -126,6 +126,7 @@
                 </div>
                 <label class="wb-toggle" title="Written answers go on a sheet of their own."><input type="checkbox" id="xm-tsheet" /> Theory answer sheet</label>
                 <label class="wb-toggle xm-span2" title="Each finished script joins a queue and is marked at the rate the AI allows, so every student is marked."><input type="checkbox" id="xm-aimark" /> AI marking of written answers</label>
+                <label class="wb-toggle" title="Students do not see their marks until you have gone through the AI marking, corrected it, marked up their answers and pressed Release. They are then told."><input type="checkbox" id="xm-hold" /> Hold results for review</label>
                 <label class="wb-toggle" title="The student writes the number and shades it on the OMR sheet or answer booklet."><input type="checkbox" id="xm-examno" /> Exam number</label>
                 <label class="wb-field" id="xm-exdigits-wrap" hidden><span>Digits in the exam number</span><input class="wb-input" id="xm-exdigits" type="number" min="4" max="12" step="1" /></label>
                 <label class="wb-toggle xm-span2" title="The OMR sheet in front, then lined pages for the written answers."><input type="checkbox" id="xm-booklet" /> Answer booklet</label>
@@ -133,24 +134,24 @@
                 <label class="wb-toggle"><input type="checkbox" id="xm-tint" /> Tinted headings</label>
                 <fieldset class="wb-fieldset xm-span2 xm-each">
                   <legend>Marks for each question</legend>
-                  <label class="wb-field"><span>Multiple choice</span><input class="wb-input" data-each="mcq" type="number" min="0" max="100" /></label>
-                  <label class="wb-field"><span>Fill in the blank</span><input class="wb-input" data-each="fill" type="number" min="0" max="100" /></label>
-                  <label class="wb-field"><span>Short answer</span><input class="wb-input" data-each="sub" type="number" min="0" max="100" /></label>
-                  <label class="wb-field"><span>Theory</span><input class="wb-input" data-each="theory" type="number" min="0" max="100" /></label>
+                  <label class="wb-field"><span class="xm-sec" data-sec="mcq"></span><input class="wb-input" data-each="mcq" type="number" min="0" max="100" /></label>
+                  <label class="wb-field"><span class="xm-sec" data-sec="fill"></span><input class="wb-input" data-each="fill" type="number" min="0" max="100" /></label>
+                  <label class="wb-field"><span class="xm-sec" data-sec="sub"></span><input class="wb-input" data-each="sub" type="number" min="0" max="100" /></label>
+                  <label class="wb-field"><span class="xm-sec" data-sec="theory"></span><input class="wb-input" data-each="theory" type="number" min="0" max="100" /></label>
                 </fieldset>
                 <fieldset class="wb-fieldset xm-span2 xm-each xm-attempt">
                   <legend>How many to attempt (empty is all of them)</legend>
-                  <label class="wb-field"><span>Multiple choice</span><input class="wb-input" data-attempt="mcq" type="number" min="0" max="200" placeholder="all" /></label>
-                  <label class="wb-field"><span>Fill in the blank</span><input class="wb-input" data-attempt="fill" type="number" min="0" max="200" placeholder="all" /></label>
-                  <label class="wb-field"><span>Short answer</span><input class="wb-input" data-attempt="sub" type="number" min="0" max="200" placeholder="all" /></label>
-                  <label class="wb-field"><span>Theory</span><input class="wb-input" data-attempt="theory" type="number" min="0" max="200" placeholder="all" /></label>
+                  <label class="wb-field"><span class="xm-sec" data-sec="mcq"></span><input class="wb-input" data-attempt="mcq" type="number" min="0" max="200" placeholder="all" /></label>
+                  <label class="wb-field"><span class="xm-sec" data-sec="fill"></span><input class="wb-input" data-attempt="fill" type="number" min="0" max="200" placeholder="all" /></label>
+                  <label class="wb-field"><span class="xm-sec" data-sec="sub"></span><input class="wb-input" data-attempt="sub" type="number" min="0" max="200" placeholder="all" /></label>
+                  <label class="wb-field"><span class="xm-sec" data-sec="theory"></span><input class="wb-input" data-attempt="theory" type="number" min="0" max="200" placeholder="all" /></label>
                 </fieldset>
                 <fieldset class="wb-fieldset xm-span2 xm-breaks">
                   <legend>Start on a new page</legend>
-                  <label class="wb-toggle"><input type="checkbox" data-break="mcq" /> Multiple choice</label>
-                  <label class="wb-toggle"><input type="checkbox" data-break="fill" /> Fill in the blank</label>
-                  <label class="wb-toggle"><input type="checkbox" data-break="sub" /> Short answer</label>
-                  <label class="wb-toggle"><input type="checkbox" data-break="theory" /> Theory</label>
+                  <label class="wb-toggle"><input type="checkbox" data-break="mcq" /><span class="xm-sec" data-sec="mcq"></span></label>
+                  <label class="wb-toggle"><input type="checkbox" data-break="fill" /><span class="xm-sec" data-sec="fill"></span></label>
+                  <label class="wb-toggle"><input type="checkbox" data-break="sub" /><span class="xm-sec" data-sec="sub"></span></label>
+                  <label class="wb-toggle"><input type="checkbox" data-break="theory" /><span class="xm-sec" data-sec="theory"></span></label>
                   <label class="wb-toggle"><input type="checkbox" data-break="key" /> Answer key</label>
                 </fieldset>
               </div>

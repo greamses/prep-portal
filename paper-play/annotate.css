@@ -1,0 +1,55 @@
+/* Marked-up answers: a teacher's red pen on the student's own words (paper-play/annotate.js). */
+.an { --ink: #c0392b; }
+.an-text {
+  padding: 0.55rem 0.7rem 0.7rem; background: var(--surface-primary, #fffdf8); font-size: 0.86rem; line-height: 2.3;
+  white-space: pre-wrap; overflow-wrap: anywhere; outline: none; user-select: text; cursor: text;
+}
+.an--read .an-text { cursor: default; }
+.an-seg { position: relative; }
+/* a sticky note's words: marker highlight and a number */
+.an-k-note { background: linear-gradient(transparent 14%, rgba(255, 224, 80, 0.72) 14% 92%, transparent 92%); }
+.an-seg[data-no]::after {
+  content: attr(data-no); display: inline-grid; place-items: center; min-width: 1.15em; height: 1.15em; margin-left: 0.15em; padding: 0 0.2em;
+  border-radius: 50%; background: #f2c94c; color: #3a2f00; font: 700 0.62rem/1 var(--font-mono, monospace); vertical-align: super;
+}
+/* the proofreader's marks, in red pen */
+.an-k-del { text-decoration: line-through 2px var(--ink); text-decoration-skip-ink: none; }
+.an-k-rep { text-decoration: line-through 2px var(--ink); }
+.an-seg[data-t]::before {
+  content: attr(data-t); position: absolute; left: 0; bottom: 78%; white-space: nowrap; color: var(--ink);
+  font: 600 0.82rem/1 "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+}
+.an-k-cap { border-bottom: 3px double var(--ink); }
+.an-k-lower { background: linear-gradient(to top right, transparent 46%, var(--ink) 47% 53%, transparent 54%); }
+.an-k-sp { text-decoration: underline wavy var(--ink); text-underline-offset: 3px; }
+.an-k-tr { border-top: 2px solid var(--ink); border-radius: 0.6em 0.6em 0 0; }
+.an-caret { display: inline-block; position: relative; width: 0.5em; height: 1em; vertical-align: baseline; }
+.an-caret::after { content: attr(data-g); position: absolute; left: -0.1em; top: 0.55em; color: var(--ink); font: 700 0.95rem/1 "Shantell Sans", "Segoe Print", cursive; }
+.an-caret[data-t]::before { content: attr(data-t); position: absolute; left: -0.2em; bottom: 90%; white-space: nowrap; color: var(--ink); font: 600 0.82rem/1 "Shantell Sans", "Segoe Print", "Bradley Hand", cursive; }
+.an-caret.an-k-par::after { top: -0.1em; font-size: 1.05rem; }
+.an-caret.an-k-space::after { top: 0.1em; }
+/* the notes and marks listed */
+.an-list { display: grid; gap: 0.5rem; margin-top: 0.4rem; }
+.an-notes { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.an-note { position: relative; display: flex; align-items: flex-start; gap: 0.5rem; max-width: 18rem; padding: 0.55rem 0.7rem; font-size: 0.8rem; font-weight: 500; --pp-note-bg: #fff2a8; }
+.an-note b { flex: 0 0 auto; display: inline-grid; place-items: center; width: 1.3em; height: 1.3em; border-radius: 50%; background: #f2c94c; font-size: 0.7rem; }
+.an-marks { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.an-mark { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.15rem 0.5rem; border: 1px solid var(--ink); color: var(--ink); font-size: 0.72rem; }
+.an-mark i { font: 700 0.9rem/1 "Shantell Sans", "Segoe Print", cursive; font-style: normal; }
+.an-mark em { font-style: normal; font-weight: 600; }
+.an-x { border: 0; background: none; color: inherit; font-size: 1rem; line-height: 1; cursor: pointer; padding: 0 0.1rem; opacity: 0.7; }
+.an-x:hover { opacity: 1; }
+/* the bar over a highlight, and the little note that asks for words */
+.an-bar { position: fixed; z-index: 2147482000; display: flex; align-items: center; gap: 0.2rem; padding: 0.25rem 0.35rem; background: var(--surface-primary, #fffdf8); border: 1px solid rgba(42, 39, 35, 0.25); box-shadow: 0 6px 18px rgba(20, 19, 15, 0.22); }
+.an-bar button { min-width: 1.9rem; height: 1.9rem; padding: 0 0.3rem; border: 0; border-radius: 0; background: transparent; color: var(--ink, #c0392b); font: 700 1rem/1 "Shantell Sans", "Segoe Print", cursive; cursor: pointer; display: inline-grid; place-items: center; }
+.an-bar button:hover { background: rgba(192, 57, 43, 0.12); }
+.an-bar__tick { color: #1f9d46 !important; }
+.an-bar__sep { width: 1px; align-self: stretch; background: rgba(42, 39, 35, 0.2); margin: 0 0.15rem; }
+.an-ask { position: fixed; z-index: 2147482000; width: 17rem; padding: 0.8rem; --pp-note-bg: #fff2a8; }
+.an-ask label { display: grid; gap: 0.3rem; font-size: 0.74rem; font-weight: 600; }
+.an-ask input { width: 100%; box-sizing: border-box; padding: 0.4rem 0.5rem; border: 0; border-bottom: 2px solid #3a2f00; background: rgba(255, 255, 255, 0.6); font: inherit; border-radius: 0; }
+.an-ask__row { display: flex; gap: 0.4rem; justify-content: flex-end; margin-top: 0.5rem; }
+/* on the student's own page, under the answer they wrote */
+.an-student { margin: 0.6rem 0 1rem; padding: 0.6rem 0.7rem; border-left: 3px solid #c0392b; background: rgba(192, 57, 43, 0.04); }
+.an-student > h4 { margin: 0 0 0.4rem; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: #8a2a20; }
+@media print { .an-bar, .an-ask { display: none !important; } .an-k-note, .an-note { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
