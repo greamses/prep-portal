@@ -21,7 +21,7 @@ const SECTIONS = [
     title: "Making a move",
     rows: [
       ["Tap a number, letter, sign or bracket", "A menu shows only the moves that fit that one thing: the 3 of 3x offers ÷3, a + between terms offers to swap them, a bracket offers to open or take out."],
-      ["Tap the =", "Moves for the whole line: turn it round, change every sign, do something to both sides, solve an inequality by testing stretches, take the log of both sides."],
+      ["Tap the =", "Moves for the whole line: turn it round, change every sign, do something to both sides, solve an inequality by testing stretches, take the log of both sides, or — when one side is zero and the other a product — split it into one card for each factor."],
       ["Tap a fraction bar, a root, an absolute value bar", "Moves for that shape: split it, cancel, rationalise, write it as a division, split ± into two cards."],
     ],
   },

@@ -862,6 +862,35 @@ export function expLogOffers(eq) {
   return out;
 }
 
+/* ── The zero product ──────────────────────────────────────────────────────
+   If a product is zero, one of its factors is: (x + 5)(x − 5) = 0 means x + 5 = 0 or x − 5 = 0. One card for
+   each factor — the two answers are worked down separately. Plain numbers in front are not factors to set
+   to zero (2(x + 1) = 0 only has x + 1), and a power (x − 2)² = 0 has the one factor x − 2. */
+export function zeroProductOffers(eq) {
+  if (!A.isEquation(eq) || A.isChain(eq) || A.isInequality(eq)) return [];
+  const isZero = (n) => { const v = A.exactValue(n); return !!v && R.isZero(v); };
+  const side = isZero(eq.r) ? eq.l : isZero(eq.l) ? eq.r : null;
+  if (!side) return [];
+  const body = side.kind === "neg" && !side.paren ? side.k : side;
+  if (body.kind !== "prod") return [];
+  const factors = [];
+  for (const k of body.kids) {
+    if (A.isNumeric(k)) continue;                              // a number in front is just a multiplier
+    let f = k;
+    if (f.kind === "pow") {
+      const e = A.exactValue(f.e);
+      if (e && R.isInt(e) && e.n >= 1n && !A.isNumeric(f.b)) f = f.b;
+    }
+    if (!factors.some((g) => plain({ ...g, paren: false }) === plain({ ...f, paren: false }))) factors.push(f);
+  }
+  if (factors.length < 2) return [];
+  const cards = factors.map((f) => ({ eq: A.eqn(copy(unbracket(f)), A.numberNode(R.ZERO)), title: "this factor is zero" }));
+  return [{
+    key: "zeroproduct", label: "Zero product: one of the factors is zero", hint: "one card for each factor",
+    mark: factors.map((f) => `${plain({ ...f, paren: false })} = 0`).join("  or  "), cards,
+  }];
+}
+
 /* ── Absolute value ─────────────────────────────────────────────────────────
    |E| = 5 is two equations, E = 5 and E = −5 — one card each. |E| < 5 is the one line −5 < E < 5.
    |E| > 5 is two lines again: E < −5 or E > 5. The bars must be a whole side with a number on the
@@ -3274,6 +3303,7 @@ function atomOffersRaw(eq, key, { given = null } = {}) {
 
   if (slot === "eq" || slot === "eq2") {
     if (A.isEquation(eq)) {
+      for (const o of zeroProductOffers(eq)) add(o);
       for (const o of signChartOffers(eq)) add(o);
       for (const o of expLogOffers(eq)) add(o);
       add({ key: "swap", label: "Turn it round", hint: "same equation, read the other way", mark: "⇄", run: () => swapSides(eq) });
@@ -3398,10 +3428,12 @@ function atomOffersRaw(eq, key, { given = null } = {}) {
     tidiesAbove(nodeId);
     pick(pool(atomTerm(eq, key)), "across");
   } else if (slot.startsWith("dot") || slot === "log") {
+    for (const o of zeroProductOffers(eq)) add(o);
     tidiesAbove(nodeId);
     add(workOffer(nodeId));
     pick(pool(atomTerm(eq, key)), "expand");
   } else if (slot === "lp" || slot === "rp") {
+    for (const o of zeroProductOffers(eq)) add(o);
     // Brackets times brackets: the one tapped is multiplied into the other, and only that far.
     const dist = distributeBracket(eq, nodeId);
     if (!dist.error) add({ key: "expand", label: dist.note.split(":")[0], hint: "one bracket at a time", mark: dist.mark, run: () => dist });

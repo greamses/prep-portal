@@ -78,6 +78,22 @@ const TOOLS = {
       await mountAlgebraMoves(frame, { drawer: false });
     },
   },
+  /* THE FORMULA BOOK for Algebra Moves, on the rail beneath it: formulas to fill in and the rule book. It puts
+     its formulas on Algebra Moves' own canvas, so it makes sure that panel is open first. */
+  formulas: {
+    label: "Formula book",
+    size: { w: 470, h: 600 },
+    async open(body) {
+      needCss("/prep-math/activity/algebra-moves/style.css");
+      const ensure = new CustomEvent("wb-ensure-tool", { detail: { id: "gm", done: null } });
+      document.dispatchEvent(ensure);
+      await ensure.detail.done;
+      const { mountFormulaBook, algebraMovesReady } = await import("/prep-math/activity/algebra-moves/js/workspace.js");
+      for (let i = 0; i < 50 && !algebraMovesReady(); i++) await new Promise((r) => setTimeout(r, 100));
+      body.classList.add("am-book");
+      mountFormulaBook(body);
+    },
+  },
   /* GRAPH, from any page that hangs the rail: type equations and see them drawn. It is
      Cartesian Art's own grapher, opened bare in a frame (?embed=graph: no nav, no intro,
      the Graph panel already open), so it brings its own sign-in like the Chemistry Bench. */
@@ -275,6 +291,8 @@ export function mountTools(host = document.body, { tools = ["calculator", "graph
      { label, size, open(body) } a built-in tool is, joining the same rail. */
   const ALL = { ...TOOLS, ...extra };
   const ids = tools.filter((id) => ALL[id]);
+  // Algebra Moves on the rail brings its formula book: the icon sits just beneath it
+  if (ids.includes("gm") && !ids.includes("formulas") && ALL.formulas) ids.splice(ids.indexOf("gm") + 1, 0, "formulas");
   if (ids.includes("pin") && ALL.pin === TOOLS.pin) restorePins();
 
   const el = document.createElement("aside");
@@ -324,6 +342,13 @@ export function mountTools(host = document.body, { tools = ["calculator", "graph
   /* one panel per tool, and pressing the key again puts it away — the same
      bargain the workbook's rail makes */
   const open = new Map();
+
+  /* a tool that needs another one open (the formula book needs Algebra Moves) asks for it here */
+  document.addEventListener("wb-ensure-tool", (e) => {
+    const id = e.detail?.id;
+    if (!id || !ids.includes(id) || e.detail.done) return;
+    e.detail.done = (async () => { if (!open.has(id)) await toggle(id); })();
+  });
 
   async function toggle(id) {
     const live = open.get(id);

@@ -622,6 +622,9 @@ function applyRule(rule) {
     : `“${rule.name}” does not fit anywhere on that line.`, "no");
 }
 
+/** Is the workspace mounted, with a canvas to put things on? (the formula book on the workbook rail waits for it) */
+export const algebraMovesReady = () => !!canvas && !!keypad && !!canvas.world?.isConnected;
+
 /** The formula book, built into `host` — the rail's panel on this page. */
 export function mountFormulaBook(host) {
   return createFormulaPicker(host, {
