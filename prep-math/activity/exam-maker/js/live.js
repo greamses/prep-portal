@@ -1,6 +1,7 @@
 import { faceOf } from "/utils/components/workbook/icons.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { richField } from "./rich-field.js";
+import { textHtml } from "./model.js";
 
 /* ============================================================================
    The paper, answered on screen
@@ -442,13 +443,13 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       } else if (q.type === "fill") {
         const ok = matches(answers[q.id], q.answer);
         el.classList.toggle("is-ok", ok); el.classList.toggle("is-no", !ok);
-        say(ok ? "is-ok" : "is-no", ok ? "Correct." : `Answer: ${esc(q.answer)}`);
+        say(ok ? "is-ok" : "is-no", ok ? "Correct." : `Answer: ${textHtml(q.answer)}`);
       } else if (ai.on && ai.status !== "failed") {
         /* marked by AI (queued): the model answer, and either the mark and why, or where it is in the line */
         if (!given(q)) say("is-skipped", "Not answered.");
         else {
           const m = answers["m:" + q.id];
-          say("is-model", `<span class="xp-reveal__k">Model answer</span><div class="xp-reveal__a">${esc(q.answer || "No model answer was written.")}</div>`
+          say("is-model", `<span class="xp-reveal__k">Model answer</span><div class="xp-reveal__a">${textHtml(q.answer || "No model answer was written.")}</div>`
             + `<div class="xp-aimark">${m !== undefined && ai.status === "done"
               ? (ai.by[q.id] === "teacher"
                 ? `<span class="pp-pill pp-pill--static pp-pill--ok">Teacher's mark: ${m} of ${q.marks}</span> ${esc(ai.notes[q.id] || "")} <small>The AI gave ${ai.was[q.id]}.</small>`
@@ -456,7 +457,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
               : `<span class="pp-pill pp-pill--static pp-pill--warn">${esc(ai.text || "Waiting to be marked")}</span>`}</div>`);
         }
       } else {
-        say("is-model", `<span class="xp-reveal__k">Model answer</span><div class="xp-reveal__a">${esc(q.answer || "No model answer was written.")}</div>`
+        say("is-model", `<span class="xp-reveal__k">Model answer</span><div class="xp-reveal__a">${textHtml(q.answer || "No model answer was written.")}</div>`
           + `<label class="xp-selfmark">Your mark <input type="number" min="0" max="${q.marks}" step="1" inputmode="numeric" aria-label="Your mark for this answer, out of ${q.marks}"> out of ${q.marks}</label>`);
         const box = body.querySelector(".xp-reveal.is-model .xp-selfmark input");
         if (box) {
@@ -470,15 +471,28 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       }
     });
     sheet.querySelectorAll(".xp-q[data-qid]").forEach((el) => { const q = qs.get(el.dataset.qid); if (q) paintMark(el, q); });
+    typesetReveals();
+  }
+
+  /* the model answers and notes under the marked questions are typeset too (they arrive after the paper was, and again when the marks do) */
+  let tsTimer = 0;
+  function typesetReveals() {
+    clearTimeout(tsTimer);
+    tsTimer = setTimeout(async () => {
+      const nodes = [...sheet.querySelectorAll(".xp-reveal")];
+      if (!nodes.length) return;
+      try { const { loadMath } = await import("/utils/components/workbook/mathify.js"); if (await loadMath()) await window.MathJax.typesetPromise(nodes); } catch { /* left as written */ }
+    }, 60);
   }
 
   /* ── the marker's tick or cross ─────────────────────────────────────────────
      Beside every marked question a pen's mark: a good green tick for a right answer, a red cross for
      a wrong one or one left blank. A written answer gets one once it has a mark: a tick for full marks,
      a cross for none, and a tick with the fraction between. The bubbles are filled the same way (css). */
-  /* Marks drawn the way a teacher's pen does them: a quick uneven stroke, heavy where the pen pressed, with a second lighter pass over it. */
-  const TICK = `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="2.7" d="M3.2 13.4c1.9 1.1 3.9 3.3 5.4 6.2 1.5-5.4 6.4-11.2 12.2-15.4"/><path stroke-width="1.2" opacity=".75" d="M3.9 12.8c2 1.4 3.6 3.2 4.9 5.9 2-5 6.2-9.8 11.6-13.6"/></g></svg>`;
-  const CROSS = `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="2.7" d="M4.6 4.9c3.6 3.2 9.6 9.6 14.9 14.7"/><path stroke-width="2.4" d="M19.2 4.2c-4 3.6-9.4 9.6-13.6 15.4"/><path stroke-width="1" opacity=".7" d="M5.3 5.8c3.4 3 8.6 8.2 13.6 13.2"/></g></svg>`;
+  /* Marks as a teacher's pen leaves them: each stroke is a SHAPE, thin where the pen lands, full in the turn and tapering where it lifts off,
+     and a little off the straight — not a line of even width. */
+  const TICK = `<svg viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(-5 12 12)"><path d="M2.9 13.7C4.1 12.8 5.7 13.3 6.9 14.9C7.8 16.1 8.5 17.4 9 18.8C10.5 13.9 14.2 8.5 20.7 3.5C21.2 3.2 21.6 3.7 21.2 4.1C15.9 9.6 12.4 15 10.7 20.5C10.4 21.4 9.2 21.5 8.8 20.6C7.9 18.6 6.5 16.6 4.9 15.3C4.1 14.7 3.3 14.7 2.8 14.2C2.5 13.9 2.6 13.8 2.9 13.7Z"/></g></svg>`;
+  const CROSS = `<svg viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(3 12 12)"><path d="M4.3 4.5C8 7.9 14 14.3 19.7 19.8C20.2 20.3 19.6 20.8 19.1 20.4C13.2 15.7 8.3 10.7 3.9 5.7C3.5 5.2 3.9 4.2 4.3 4.5Z"/><path d="M19.5 4.4C15.3 8.6 9.8 14.2 6.2 19.7C5.9 20.2 5.4 19.9 5.7 19.4C8.6 14 13.6 8.3 18.9 3.9C19.4 3.6 19.9 4.1 19.5 4.4Z"/></g></svg>`;
   function paintMark(el, q) {
     el.querySelector(":scope > .xp-mark")?.remove();
     if (!checked) return;

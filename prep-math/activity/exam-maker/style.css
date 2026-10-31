@@ -807,3 +807,22 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 /* no bar down the left of an unanswered question either: it is already marked by its red cross and "Not answered" */
 .xp-live .xp-q.is-unanswered { border-left: 0 !important; padding-left: 0; margin-left: 0; }
 @media print { .xp-live .xp-q.is-unanswered { border-left: 0 !important; } }
+
+/* the marks: smaller, and filled pen shapes */
+.xp-mark { left: -6.2mm; top: 0; }
+.xp-cols .xp-mark { left: -5.8mm; }
+.xp-mark svg { width: 4.6mm; height: 4.6mm; fill: currentColor; stroke: none; filter: none; }
+.xp-mark svg g, .xp-mark svg path { fill: currentColor; stroke: none; }
+.xp-mark small { top: 4.8mm; font-size: 2.3mm; }
+.xp-mark svg { width: 5.8mm; height: 5.8mm; }
+.xp-mark svg g, .xp-mark svg path { stroke: currentColor; stroke-width: 1.05; stroke-linejoin: round; stroke-linecap: round; }
+.xp-mark { left: -6.8mm; }
+
+.xp-reveal, .xp-live .xp-reveal, .xp-reveal__a { white-space: normal; }
+.xp-reveal mjx-container, .xp-reveal svg { vertical-align: middle; }
+/* the marks, smaller and still bold */
+.xp-mark { left: -5.6mm; top: 0.4mm; }
+.xp-cols .xp-mark { left: -5.2mm; }
+.xp-mark svg { width: 4.3mm; height: 4.3mm; }
+.xp-mark svg g, .xp-mark svg path { stroke-width: 1.4; }
+.xp-mark small { top: 4mm; font-size: 2.1mm; }
