@@ -37,12 +37,12 @@ function makeTab(title, icon, open) {
   t.innerHTML = icon || UI.window(22);
   (document.fullscreenElement || document.webkitFullscreenElement || document.body).appendChild(t);
   const n = document.querySelectorAll(".wb-tab").length - 1;
-  const W = 46, saved = spotOf(title);
+  const W = 62, saved = spotOf(title);
   const place = (x, y) => {
     t.style.left = `${Math.max(2, Math.min(window.innerWidth - W - 2, x))}px`;
-    t.style.top = `${Math.max(2, Math.min(window.innerHeight - 44, y))}px`;
+    t.style.top = `${Math.max(2, Math.min(window.innerHeight - 58, y))}px`;
   };
-  place(saved ? saved.x : 12 + n * (W + 8), saved ? saved.y : window.innerHeight - 58);
+  place(saved ? saved.x : 12 + n * (W + 8), saved ? saved.y : window.innerHeight - 72);
   let from = null, moved = false;
   t.addEventListener("pointerdown", (e) => {
     t.setPointerCapture(e.pointerId);
