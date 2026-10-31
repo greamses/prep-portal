@@ -14,6 +14,7 @@ import { createLive } from "./live.js";
 import { mountTools } from "./tools.js";
 import { pickColour } from "/utils/components/colour-pop.js";
 import { createClock, minutesFor } from "./timer.js";
+import { examGate } from "/utils/components/exam-gate.js";
 import { saveToBank, openBank } from "./bank.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
@@ -629,8 +630,12 @@ function paintScore() {
 }
 
 /* the workbook tool rail, for a student sitting the paper */
+/* answering on screen is exam mode: tablets and laptops, landscape only (writing the paper is not) */
+let examOn = false;
+const gate = examGate({ when: () => examOn });
 let tools = null;
 function setLive(on) {
+  examOn = on; gate.check();
   if (!tools) tools = mountTools({ sheet, viewport: document.querySelector(".xm-viewport"), toolbar: document.querySelector(".wb-toolbar") });
   if (on) tools.on(); else tools.off();
   live.setOn(on);

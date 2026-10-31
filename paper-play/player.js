@@ -14,6 +14,7 @@
 import { paperHtml } from "/prep-math/activity/exam-maker/js/paper.js";
 import { clean, paperMarks, shuffled, BLANK_HEAD } from "/prep-math/activity/exam-maker/js/model.js";
 import { createLive } from "/prep-math/activity/exam-maker/js/live.js";
+import { examGate } from "/utils/components/exam-gate.js";
 import { createClock, minutesFor } from "/prep-math/activity/exam-maker/js/timer.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { api, currentUser } from "/utils/components/workbook/account.js";
@@ -24,6 +25,9 @@ import { mountTools } from "/prep-math/activity/exam-maker/js/tools.js";
 
 const $ = (id) => document.getElementById(id);
 const sheet = $("xm-sheet");
+
+/* exam mode: tablets and laptops, landscape only */
+examGate();
 
 const code = (location.pathname.match(/\/paper\/([A-Za-z2-9]{6})/) || [])[1]
   || new URLSearchParams(location.search).get("c") || "";
