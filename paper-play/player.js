@@ -345,16 +345,19 @@ async function open() {
     }
     /* the instructions page, when the teacher set one: read first, then Begin. Once per tab, so a
        reload mid-exam does not send the student back through it */
-    if (head.instructions && !isOwner) {
+    if (head.instructions) {
       const seenKey = `xm-instr-${code}`;
       let seen = false;
       try { seen = sessionStorage.getItem(seenKey) === "1"; } catch { /* shown again */ }
-      if (!seen) { await showInstructions({ head, questions }); try { sessionStorage.setItem(seenKey, "1"); } catch { /* shown again next time */ } }
+      if (!seen) { await showInstructions({ head, questions, preview: isOwner }); try { sessionStorage.setItem(seenKey, "1"); } catch { /* shown again next time */ } }
     }
     /* a camera check is read on this device and only a short list of notes is sent; the paper stays
        covered until the camera is allowed, so it is not drawn before then */
-    if (head.camera && !isOwner) {
-      watcher = createWatch({ code, name: () => live.name, send: (p) => api(`/api/workbooks/paper/${code}/watch`, p) });
+    if (head.camera) {
+      /* the owner is not watched, but is shown exactly what a student is: a test run, with nothing sent anywhere */
+      watcher = createWatch(isOwner
+        ? { code, test: true, send: async () => {} }
+        : { code, name: () => live.name, send: (p) => api(`/api/workbooks/paper/${code}/watch`, p) });
       await watcher.begin();
     }
     live.setOn(true);

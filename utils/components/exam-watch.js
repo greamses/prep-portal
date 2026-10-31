@@ -60,11 +60,12 @@ function ensureCss() {
  * @param code    the paper's code (only used to key the kept notes)
  * @param send    async ({ events, secs, checks, state, name }) → the notes go to the teacher
  * @param name    () → the name typed on the paper, if any
+ * @param test    a test run for the teacher: the same consent and self-view, nothing sent, nothing kept
  * @param hold    seconds each kind of note must last (tests make these short)
  * @param every   ms between looks at the camera
  * @param load    () → Promise<(video) → Promise<number>>   the face counter (tests give a fake)
  */
-export function createWatch({ code, send, name = () => "", hold, every = 1000, load = loadDetector }) {
+export function createWatch({ code, send, name = () => "", hold, every = 1000, load = loadDetector, test = false }) {
   const tracker = createTracker(hold ? { hold } : undefined);
   let t0 = 0, stream = null, video = null, box = null, timer = 0, saveTimer = 0, detect = null, stopped = false;
   let state = "starting";        // starting | on | unavailable | stopped
@@ -125,9 +126,9 @@ export function createWatch({ code, send, name = () => "", hold, every = 1000, l
   function begin() {
     return new Promise((resolve) => {
       ensureCss();
-      const { root: cover, paper } = makeCover({ label: "This exam has a camera check", tag: "Camera check", colour: 3 });
-      paper.innerHTML = `<h2 class="pp-cover__title">This exam has a camera check</h2>
-        <p class="pp-cover__text">Your teacher has asked for one. Here is exactly what it does:</p>
+      const { root: cover, paper } = makeCover({ label: "This exam has a camera check", tag: test ? "Test run" : "Camera check", colour: test ? 4 : 3 });
+      paper.innerHTML = `<h2 class="pp-cover__title">${test ? "Camera check: a test run" : "This exam has a camera check"}</h2>
+        <p class="pp-cover__text">${test ? "This is what your students see and what runs on their device. While you test, nothing is recorded and nothing is sent to anyone." : "Your teacher has asked for one. Here is exactly what it does:"}</p>
         <ul class="pp-cover__list">
           <li>Your camera is looked at <b>on this device only</b>.</li>
           <li><b>No picture, video or sound</b> is sent or saved, by us or by your teacher.</li>
@@ -136,7 +137,7 @@ export function createWatch({ code, send, name = () => "", hold, every = 1000, l
         </ul>
         <p class="pp-cover__text">Sit where your face is lit and in view, with nobody else in the picture.</p>
         <p class="pp-cover__err" role="alert"></p>
-        <div class="pp-cover__go"><button type="button" class="pp-btn">Allow the camera and begin</button></div>`;
+        <div class="pp-cover__go"><button type="button" class="pp-btn">${test ? "Allow the camera and test" : "Allow the camera and begin"}</button></div>`;
       const btn = cover.querySelector("button"), err = cover.querySelector(".pp-cover__err");
       btn.addEventListener("click", async () => {
         btn.disabled = true; err.textContent = "";

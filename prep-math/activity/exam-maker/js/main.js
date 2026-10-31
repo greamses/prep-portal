@@ -16,6 +16,7 @@ import { pickColour } from "/utils/components/colour-pop.js";
 import { createClock, minutesFor } from "./timer.js";
 import { examGate } from "/utils/components/exam-gate.js";
 import { showInstructions } from "./instructions.js";
+import { createWatch } from "/utils/components/exam-watch.js";
 import { saveToBank, openBank } from "./bank.js";
 import { saveExam, openExams, currentExamId, setCurrentExamId } from "./exams.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
@@ -692,8 +693,13 @@ function paintScore() {
 let examOn = false;
 const gate = examGate({ when: () => examOn });
 let tools = null;
+/* The camera check belongs to the shared link; on the bench it is a TEST RUN so the teacher can see what a student sees
+   (same consent and self-view, nothing sent or kept). */
+let benchWatch = null;
 function setLive(on) {
   examOn = on; gate.check();
+  if (on && state.head.camera && !benchWatch) { benchWatch = createWatch({ code: "bench", test: true, send: async () => {} }); benchWatch.begin(); }
+  if (!on && benchWatch) { benchWatch.stop(); benchWatch = null; }
   if (!tools) tools = mountTools({ sheet, viewport: document.querySelector(".xm-viewport"), toolbar: document.querySelector(".wb-toolbar") });
   if (on) tools.on(); else tools.off();
   live.setOn(on);
@@ -789,6 +795,14 @@ $("xm-share").addEventListener("click", async () => {
     const copy = document.createElement("button"); copy.type = "button"; copy.className = "pp-btn pp-btn--ghost"; faceOf(copy, UI.copy(18), "Copy link");
     copy.onclick = async () => { try { await navigator.clipboard.writeText(url); faceOf(copy, UI.check(18), "Copied"); } catch { faceOf(copy, UI.alert(18), "Select the link and copy it"); } };
     box.append("Anyone with an account can sit this paper on screen: ", a, " ", copy);
+    /* what this link carries: it keeps the settings it was made with, so a switch turned on later needs a new link */
+    const carries = [state.head.camera && "camera check", state.head.instructions && "instructions page", state.head.aiMark && "AI marking of written answers", state.head.booklet && "answer booklet", state.head.examNo && "exam number"].filter(Boolean);
+    const note = document.createElement("p");
+    note.className = "xm-sharebox__on";
+    note.textContent = carries.length
+      ? `This link carries: ${carries.join(", ")}. Open it yourself to see each one as a test run; students get the real thing.`
+      : "This link carries none of the extra checks (camera check, instructions page, AI marking, answer booklet). Switch them on in the setup, then make a new link: a link keeps the settings it was made with.";
+    box.append(note);
     const code = (r.url.match(/\/paper\/([A-Z2-9]{6})/) || [])[1];
     if (code) await classControls(box, code, url);
   } catch (e) {
