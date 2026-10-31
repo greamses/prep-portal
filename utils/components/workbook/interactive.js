@@ -3810,6 +3810,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     btn?.classList.add("is-on");
     btn?.setAttribute("aria-pressed", "true");
     Promise.resolve(spec.open(panel.body)).then((off) => {
+      panel.restoreContents();
       if (typeof off !== "function") return;
       /* Opened and shut again before it had finished fetching: the tool is
          built by now and nothing is left to close it, so close it here. */

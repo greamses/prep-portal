@@ -30,6 +30,19 @@ const MEM = "wb-panels";
 const memAll = () => { try { return JSON.parse(localStorage.getItem(MEM)) || {}; } catch { return {}; } };
 const memPut = (all) => { try { localStorage.setItem(MEM, JSON.stringify(all)); } catch { /* a memory is a nicety */ } };
 const memKey = (k) => `${location.pathname}|${k}`;
+/* What a person has TYPED into a tool: every field in it, in order. Tools that draw or drag (the manipulatives,
+   the studios) have nothing to read back this way; the ones with their own memory keep it themselves. */
+const FIELDS = 'input:not([type="button"]):not([type="submit"]):not([type="file"]):not([type="range"]),textarea,select,[contenteditable=""],[contenteditable="true"]';
+const readField = (n) => (n.type === "checkbox" || n.type === "radio" ? !!n.checked : ("value" in n ? n.value : n.textContent));
+function writeField(n, v) {
+  if (readField(n) === v) return;
+  if (n.type === "checkbox" || n.type === "radio") n.checked = !!v;
+  else if ("value" in n) n.value = v;
+  else n.textContent = v;
+  n.dispatchEvent(new Event("input", { bubbles: true }));
+  n.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 /** The tool ids that were left open on this page. */
 export function savedPanels() {
   const pre = `${location.pathname}|`;
@@ -133,11 +146,14 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   const raise = () => { el.style.zIndex = String(10070 + (top += 1)); };
   raise();
 
+  const body = el.querySelector(".wb-panel__body");
+  let ready = !(saved && saved.fields);          // false until what was typed last time has been put back
   /* remember: where it is, how big, folded or not */
   const remember = () => {
     if (!mem || !el.isConnected) return;
     const all = memAll();
-    all[mem] = { l: small ? small.left : el.offsetLeft, t: small ? small.top : el.offsetTop, w: small ? small.width : el.offsetWidth, h: small ? small.height : el.offsetHeight, folded: !!tab, big: !!small };
+    const fields = ready ? [...body.querySelectorAll(FIELDS)].map(readField) : (saved && saved.fields) || [];
+    all[mem] = { fields: fields.some((v) => v !== "" && v !== false) && JSON.stringify(fields).length < 40000 ? fields : undefined, l: small ? small.left : el.offsetLeft, t: small ? small.top : el.offsetTop, w: small ? small.width : el.offsetWidth, h: small ? small.height : el.offsetHeight, folded: !!tab, big: !!small };
     memPut(all);
   };
   const close = (opts) => {
@@ -233,10 +249,30 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   grip.addEventListener("pointerup", stop);
   grip.addEventListener("pointercancel", stop);
 
+  /* typing is kept a moment after it stops */
+  let typed = 0;
+  const typing = () => { clearTimeout(typed); typed = setTimeout(remember, 400); };
+  body.addEventListener("input", typing, true);
+  body.addEventListener("change", typing, true);
+  /* Called by whoever mounted the tool once it is built: put back what was typed last time. */
+  const restoreContents = async () => {
+    if (ready || !saved || !saved.fields) return;
+    const want = saved.fields;
+    for (let i = 0; i < 20 && el.isConnected; i++) {
+      const now = body.querySelectorAll(FIELDS);
+      if (now.length >= want.length) {
+        want.forEach((v, k) => writeField(now[k], v));
+        ready = true;
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 150));
+    }
+  };
+
   remember();
   if (saved && saved.big) bigBtn.click();
   if (saved && saved.folded) fold(true);
-  return { el, body: el.querySelector(".wb-panel__body"), close, raise };
+  return { el, body, close, raise, restoreContents };
 }
 
 /* ── the stylesheet a sheet needs, fetched once ───────────────────────────── */

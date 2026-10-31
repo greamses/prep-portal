@@ -349,6 +349,7 @@ export function mountTools(host = document.body, { tools = ["calculator", "graph
     /* the component is imported and mounted after the panel is up, so the
        panel is never a blank rectangle waiting on a network */
     panel.undo = await spec.open(panel.body);
+    panel.restoreContents();
   }
 
   el.addEventListener("click", (e) => {
