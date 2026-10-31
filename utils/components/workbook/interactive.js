@@ -3676,6 +3676,42 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     side.querySelectorAll(".wb-side__more").forEach((m) => m.setAttribute("aria-expanded", "false"));
   };
 
+  /* ── sliding the rail away ──────────────────────────────────────────────
+     A tab on the rail's inner edge puts the whole rail out of the way, and brings it back (like
+     the shared tools rail's own tab). The tab is a sibling on the body, not a child: the rail
+     clips its overflow, and a tab hanging off its edge would be cut away. It follows the rail's
+     edge through --wb-side-w / --wb-side-h, measured as the rail changes size. Whether it is away
+     is remembered on this machine, for every page that has the rail. */
+  const SIDE_SHUT = "wb-side-shut";
+  const tab = document.createElement("button");
+  tab.type = "button";
+  tab.className = "wb-side-tab";
+  tab.hidden = true;
+  tab.dataset.tipSide = "right";
+  tab.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  document.body.appendChild(tab);
+  const slideSide = (away) => {
+    side.classList.toggle("is-shut", away);
+    tab.classList.toggle("is-shut", away);
+    tab.setAttribute("aria-expanded", String(!away));
+    tab.setAttribute("aria-label", away ? "Bring the tools back" : "Put the tools away");
+    tab.dataset.tip = away ? "Slide the tools back" : "Slide the tools away";
+    if (away) shutFamilies();
+    try { localStorage.setItem(SIDE_SHUT, away ? "1" : "0"); } catch { /* not kept */ }
+  };
+  const measure = () => {
+    const r = side.getBoundingClientRect();
+    /* a hidden rail measures as nothing; keep the last real size */
+    if (r.width) document.documentElement.style.setProperty("--wb-side-w", `${Math.round(r.width)}px`);
+    if (r.height) document.documentElement.style.setProperty("--wb-side-h", `${Math.round(r.height)}px`);
+  };
+  new ResizeObserver(measure).observe(side);
+  new MutationObserver(() => { tab.hidden = side.hidden; measure(); }).observe(side, { attributes: true, attributeFilter: ["hidden"] });
+  let wasShut = false;
+  try { wasShut = localStorage.getItem(SIDE_SHUT) === "1"; } catch { /* open */ }
+  slideSide(wasShut);
+  tab.addEventListener("click", () => slideSide(!side.classList.contains("is-shut")));
+
   side.addEventListener("click", (e) => {
     const more = e.target.closest(".wb-side__more");
     if (!more) return;
