@@ -27,6 +27,8 @@ async function deleteTask(db, kind, code, mayDelete = () => true) {
   const who = new Set(results.docs.map((d) => d.id));
   if (owner) (await db.collection("teacherStudents").doc(owner).collection("roster").get()).docs.forEach((d) => who.add(d.id));
   const refs = [...results.docs.map((d) => d.ref)];
+  /* a paper's camera-check notes (events only, see routes/workbooks.js) go with it */
+  if (kind === "paper") (await ref.collection("watch").get()).docs.forEach((d) => refs.push(d.ref));
   who.forEach((uid) => {
     refs.push(db.collection("studentAssignments").doc(uid).collection("items").doc(k.item(code)));
     refs.push(db.collection("studentNotices").doc(uid).collection("items").doc(`task_${kind}_${code}`));

@@ -24,3 +24,12 @@ html, body { overflow-x: clip !important; overflow-y: visible !important; }
 .pp-live__none { margin: 0; font-weight: 400; }
 @media print { .pp-live { display: none !important; } }
 @media print { .xm-sheet { zoom: 1 !important; } }
+
+/* the teacher's camera-check notes */
+.pp-watchlist__how { margin: 0 0 0.6rem; font-size: 0.72rem; font-weight: 400; }
+.pp-watchlist__one { padding: 0.25rem 0; border-top: 1px dashed rgba(29, 27, 24, 0.35); }
+.pp-watchlist__one summary { cursor: pointer; font-size: 0.78rem; }
+.pp-watchlist__one[data-quiet] summary { font-weight: 400; }
+.pp-watchlist__one ul { margin: 0.3rem 0 0.2rem; padding-left: 1.1rem; font-size: 0.74rem; font-weight: 400; }
+.pp-watchlist__one p { margin: 0.3rem 0 0.2rem; font-size: 0.74rem; font-weight: 400; }
+.pp-watchlist__refresh { margin-left: 0.4rem; vertical-align: middle; }

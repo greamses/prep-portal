@@ -136,6 +136,7 @@ function fillHead() {
   $("xm-key").checked = !!state.head.key;
   $("xm-omr").checked = !!state.head.omr;
   $("xm-timer").checked = !!state.head.timer;
+  $("xm-camera").checked = !!state.head.camera;
   $("xm-tries").value = state.head.tries == null ? 1 : state.head.tries;
   $("xm-tsheet").checked = !!state.head.theorySheet;
   $("xm-clean").checked = state.head.clean !== false;
@@ -167,6 +168,7 @@ $("xm-tries").addEventListener("input", (e) => {
 });
 $("xm-timer").addEventListener("change", (e) => { state.head.timer = e.target.checked; save(); syncClock(); });
 $("xm-omr").addEventListener("change", (e) => { state.head.omr = e.target.checked; redraw(); });
+$("xm-camera").addEventListener("change", (e) => { state.head.camera = e.target.checked; save(); });
 $("xm-tsheet").addEventListener("change", (e) => { state.head.theorySheet = e.target.checked; redraw(); });
 $("xm-key").addEventListener("change", (e) => { state.head.key = e.target.checked; redraw(); });
 $("xm-tint").addEventListener("change", (e) => { state.head.tint = e.target.checked; redraw(); });

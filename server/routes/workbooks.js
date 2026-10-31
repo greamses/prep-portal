@@ -425,7 +425,7 @@ module.exports = function () {
     head.colour = COLOURS.includes(h.colour) || (h.colour === "custom" && /^#[0-9a-f]{6}$/i.test(String(h.custom))) ? h.colour : "indigo";
     head.custom = head.colour === "custom" ? String(h.custom).toLowerCase() : "";
     head.paper = h.paper === "letter" ? "letter" : "a4";
-    for (const k of ["tint", "clean", "omr", "theorySheet", "timer"]) head[k] = !!h[k];
+    for (const k of ["tint", "clean", "omr", "theorySheet", "timer", "camera"]) head[k] = !!h[k];
     head.key = false;
     head.breakAt = {};
     for (const t of TYPES) if (h.breakAt && h.breakAt[t]) head.breakAt[t] = true;
@@ -488,6 +488,71 @@ module.exports = function () {
     } catch (err) {
       console.error("[/api/workbooks/paper]", err.message);
       res.status(500).json({ error: "Could not open the paper." });
+    }
+  });
+
+  /* ══ THE CAMERA CHECK: events only ═══════════════════════════════════════
+     A paper set with a camera check (head.camera) has its camera read on the STUDENT'S OWN DEVICE
+     (utils/components/exam-watch.js). No picture, video or sound ever reaches us. What comes is a
+     short list of notes (a kind, the second it began, how long it lasted) and is kept at
+     sharedPapers/{code}/watch/{uid}, a few hundred bytes a student.
+
+       POST /api/workbooks/paper/:code/watch   { events, secs, checks, state, name }   (a student)
+       GET  /api/workbooks/paper/:code/watch                                           (the owner, or the administrator)
+
+     The notes are the student's own device reporting on itself: a prompt to take a look, not proof. */
+  const WATCH_KINDS = ["no_face", "extra_face", "left_tab", "camera_off", "no_detector"];
+  const WATCH_STATES = ["starting", "on", "unavailable", "stopped"];
+
+  router.post("/paper/:code/watch", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code)) return res.status(404).json({ error: "No such paper." });
+      const pRef = db().collection("sharedPapers").doc(code);
+      const p = await pRef.get();
+      if (!p.exists) return res.status(404).json({ error: "No such paper." });
+      const a = p.data();
+      /* the owner's own run is not watched, and a paper without the check keeps nothing */
+      if (a.ownerUid === req.user.uid || !(a.head && a.head.camera)) return res.json({ ok: true, kept: false });
+      const b = req.body || {};
+      const events = (Array.isArray(b.events) ? b.events : []).slice(0, 200).map((e) => ({
+        k: WATCH_KINDS.includes(e && e.k) ? e.k : null,
+        t: Math.max(0, Math.min(86400, Math.round(Number(e && e.t)) || 0)),
+        d: Math.max(0, Math.min(86400, Math.round(Number(e && e.d)) || 0)),
+      })).filter((e) => e.k);
+      const me = await profile(req.user.uid);
+      const typed = clip(String(b.name || "").replace(/\s+/g, " ").trim(), 60);
+      await pRef.collection("watch").doc(req.user.uid).set({
+        name: typed || nameOf(req, me), events, flags: events.length,
+        secs: Math.max(0, Math.min(86400, Math.round(Number(b.secs)) || 0)),
+        checks: Math.max(0, Math.min(100000, Math.round(Number(b.checks)) || 0)),
+        state: WATCH_STATES.includes(b.state) ? b.state : "on",
+        updatedAt: stamp(),
+      });
+      res.json({ ok: true, kept: true });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/watch]", err.message);
+      res.status(500).json({ error: "Could not keep the notes." });
+    }
+  });
+
+  router.get("/paper/:code/watch", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code)) return res.status(404).json({ error: "No such paper." });
+      const pRef = db().collection("sharedPapers").doc(code);
+      const p = await pRef.get();
+      if (!p.exists) return res.status(404).json({ error: "No such paper." });
+      if (p.data().ownerUid !== req.user.uid && !isAdmin(req)) return res.status(403).json({ error: "These notes are for the teacher who shared the paper." });
+      const snap = await pRef.collection("watch").limit(500).get();
+      const students = snap.docs.map((d) => {
+        const x = d.data();
+        return { uid: d.id, name: x.name || "Student", events: x.events || [], flags: x.flags || 0, secs: x.secs || 0, checks: x.checks || 0, state: x.state || "on", updatedAt: x.updatedAt && x.updatedAt.toMillis ? x.updatedAt.toMillis() : 0 };
+      }).sort((a, b) => b.flags - a.flags || a.name.localeCompare(b.name));
+      res.json({ ok: true, camera: !!(p.data().head && p.data().head.camera), students });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/watch/get]", err.message);
+      res.status(500).json({ error: "Could not read the notes." });
     }
   });
 

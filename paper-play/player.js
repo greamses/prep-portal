@@ -15,6 +15,8 @@ import { paperHtml } from "/prep-math/activity/exam-maker/js/paper.js";
 import { clean, paperMarks, shuffled, BLANK_HEAD } from "/prep-math/activity/exam-maker/js/model.js";
 import { createLive } from "/prep-math/activity/exam-maker/js/live.js";
 import { examGate } from "/utils/components/exam-gate.js";
+import { createWatch } from "/utils/components/exam-watch.js";
+import { sayNote } from "/utils/components/exam-watch-core.js";
 import { createClock, minutesFor } from "/prep-math/activity/exam-maker/js/timer.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { api, currentUser } from "/utils/components/workbook/account.js";
@@ -40,6 +42,7 @@ let base = [];                    // the paper in the order the teacher wrote it
 const seedKey = () => `xm-shuffle-${code}`;
 let isOwner = false;
 let room = null;
+let watcher = null;               // the camera check, when the teacher set one (events only: see exam-watch.js)
 let tries = 1, used = 0;          // the teacher's number of tries (0 = no limit), and how many this student has used
 /* the owner may always sit their own paper; anyone else may sit it again while they have tries left */
 const canTryAgain = () => isOwner || tries === 0 || used < tries;
@@ -88,6 +91,39 @@ function watchTheRoom(r) {
   r.on("presence", (people) => { here = people; paint(); });
   r.on("state", (s) => { work = s || {}; paint(); });
   paint();
+}
+
+/* ── the teacher's list of camera-check notes ─────────────────────────────
+   Read when the page opens, when the refresh key is pressed and when the tab is come back to (at most
+   every 20 s): never on a timer. They are each student's own device reporting on itself, so they are
+   shown as "worth a look", never as a finding. */
+function mountWatchList() {
+  const box = document.createElement("section");
+  box.className = "pp-live pp-watchlist";
+  box.innerHTML = `<h2 class="pp-live__cap">Camera check <button type="button" class="pp-btn pp-watchlist__refresh"></button></h2>
+    <p class="pp-watchlist__how">Each student's camera is read on their own device. Nothing but these notes reaches you, and they are a prompt to take a look, not proof.</p>
+    <div class="pp-watchlist__who"><p class="pp-live__none">Reading the notes…</p></div>`;
+  document.querySelector(".xm-preview").prepend(box);
+  faceOf(box.querySelector(".pp-watchlist__refresh"), UI.refresh(16), "Read the notes again");
+  const list = box.querySelector(".pp-watchlist__who");
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  let at = 0;
+  async function read(force) {
+    if (!force && Date.now() - at < 20000) return;
+    at = Date.now();
+    try {
+      const d = await api(`/api/workbooks/paper/${code}/watch`);
+      list.innerHTML = d.students.length ? d.students.map((s) => {
+        const state = s.state === "unavailable" ? " · the face check could not run on their device" : s.state === "starting" ? " · only just started" : "";
+        const n = s.flags ? `${s.flags} note${s.flags === 1 ? "" : "s"}` : "no notes";
+        return `<details class="pp-watchlist__one"${s.flags ? "" : " data-quiet"}><summary><b>${esc(s.name)}</b> · ${n}${state}</summary>`
+          + (s.events.length ? `<ul>${s.events.map((e) => `<li>${esc(sayNote(e))}</li>`).join("")}</ul>` : `<p>Nothing to look at.</p>`) + `</details>`;
+      }).join("") : `<p class="pp-live__none">Nobody has started the paper yet.</p>`;
+    } catch (e) { list.innerHTML = `<p class="pp-live__none">${esc(String((e && e.message) || e).slice(0, 120))}</p>`; }
+  }
+  box.querySelector(".pp-watchlist__refresh").addEventListener("click", () => read(true));
+  addEventListener("focus", () => read(false));
+  read(true);
 }
 
 const live = createLive(sheet, { onChange: () => paintScore(), store: `xm-live-paper-${code}`, getAttempt: () => head && head.attempt,
@@ -184,6 +220,12 @@ async function open() {
       say(`You have used ${tries === 1 ? "your one try" : `all ${tries} tries`} on this paper, so it cannot be answered again. Your teacher has your score.`);
       return;
     }
+    /* a camera check is read on this device and only a short list of notes is sent; the paper stays
+       covered until the camera is allowed, so it is not drawn before then */
+    if (head.camera && !isOwner) {
+      watcher = createWatch({ code, name: () => live.name, send: (p) => api(`/api/workbooks/paper/${code}/watch`, p) });
+      await watcher.begin();
+    }
     live.setOn(true);
     $("xm-check").hidden = false; $("xm-clear").hidden = false;
     /* the workbook tool rail, for working out beside the paper */
@@ -192,6 +234,7 @@ async function open() {
     draw();
     syncClock();
     joinLive();
+    if (isOwner && head.camera) mountWatchList();
   } catch (e) {
     say(String((e && e.message) || e || "Could not open the paper.").slice(0, 200), true);
   }
@@ -199,7 +242,7 @@ async function open() {
 
 /* the countdown, when the paper was set with a timer; the paper is checked when it runs out */
 const clock = createClock($("xm-clock"), {
-  onEnd: () => { if (!live.checked) { live.check(questions); draw(); faces(); $("xm-score").textContent = "Time is up. " + $("xm-score").textContent; } },
+  onEnd: () => { if (!live.checked) { live.check(questions); draw(); faces(); $("xm-score").textContent = "Time is up. " + $("xm-score").textContent; watcher && watcher.flush(true); } },
 });
 function syncClock() {
   if (head && head.timer && !live.checked) { if (!clock.running) clock.start(minutesFor(head.time, questions.length) * 60); }
@@ -232,6 +275,8 @@ $("xm-check").addEventListener("click", () => {
   if (live.checked) { if (!canTryAgain()) return; live.reopen(); }
   else { live.check(questions); firstSend = true; if (!isOwner) used += 1; }
   draw(); faces(); syncClock();
+  /* the notes go with the score; with no tries left the exam is over, so the camera is let go */
+  if (watcher && live.checked) { watcher.flush(true); if (!canTryAgain()) watcher.stop(); }
   if (live.checked && !live.name.trim()) say("Type your name on the paper, so your teacher knows whose score this is.");
   else if (live.checked && !canTryAgain()) say(tries === 1 ? "That was your one try. Your score has gone to your teacher." : `You have used all ${tries} tries. Your score has gone to your teacher.`);
   else if (live.checked) say(`Scored${triesNote()}. Press the arrow to answer again.`);
