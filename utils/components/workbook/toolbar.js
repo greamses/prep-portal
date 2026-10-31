@@ -336,6 +336,7 @@ export function mountTools(host = document.body, { tools = ["calculator", "graph
     const panel = openPanel({
       title: spec.label,
       size: spec.size,
+      icon: key.querySelector("svg")?.outerHTML || null,
       onClose: () => {
         const was = open.get(id);
         open.delete(id);

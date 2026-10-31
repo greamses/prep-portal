@@ -3796,6 +3796,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     const panel = openPanel({
       title: spec.label,
       size: spec.size,
+      icon: btn?.querySelector("svg")?.outerHTML || null,
       onClose: () => {
         delete panels[id];
         btn?.classList.remove("is-on");

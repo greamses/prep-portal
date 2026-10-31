@@ -23,6 +23,45 @@ const ICON_CLOSE =
 import { UI } from "/utils/components/ui-icons.js";
 
 let top = 0;
+const TABS = "wb-tab-spots";
+const spotOf = (title) => { try { return (JSON.parse(localStorage.getItem(TABS)) || {})[title] || null; } catch { return null; } };
+const keepSpot = (title, x, y) => { try { const o = JSON.parse(localStorage.getItem(TABS)) || {}; o[title] = { x, y }; localStorage.setItem(TABS, JSON.stringify(o)); } catch { /* a spot is a nicety */ } };
+
+/* An icon tab for a folded sheet. Tap to open the sheet again; drag to put the tab where it suits. */
+function makeTab(title, icon, open) {
+  const t = document.createElement("button");
+  t.type = "button";
+  t.className = "pp-btn pp-sticky pp-note-btn wb-tab";
+  t.dataset.tip = title;
+  t.setAttribute("aria-label", `Open the ${title.toLowerCase()}`);
+  t.innerHTML = icon || UI.window(22);
+  (document.fullscreenElement || document.webkitFullscreenElement || document.body).appendChild(t);
+  const n = document.querySelectorAll(".wb-tab").length - 1;
+  const W = 46, saved = spotOf(title);
+  const place = (x, y) => {
+    t.style.left = `${Math.max(2, Math.min(window.innerWidth - W - 2, x))}px`;
+    t.style.top = `${Math.max(2, Math.min(window.innerHeight - 44, y))}px`;
+  };
+  place(saved ? saved.x : 12 + n * (W + 8), saved ? saved.y : window.innerHeight - 58);
+  let from = null, moved = false;
+  t.addEventListener("pointerdown", (e) => {
+    t.setPointerCapture(e.pointerId);
+    from = { px: e.clientX, py: e.clientY, x: t.offsetLeft, y: t.offsetTop };
+    moved = false;
+  });
+  t.addEventListener("pointermove", (e) => {
+    if (!from) return;
+    const dx = e.clientX - from.px, dy = e.clientY - from.py;
+    if (!moved && Math.hypot(dx, dy) < 6) return;
+    moved = true;
+    place(from.x + dx, from.y + dy);
+  });
+  const end = () => { if (from && moved) keepSpot(title, t.offsetLeft, t.offsetTop); from = null; };
+  t.addEventListener("pointerup", end);
+  t.addEventListener("pointercancel", end);
+  t.addEventListener("click", () => { if (moved) { moved = false; return; } open(); });
+  return t;
+}
 
 /**
  * Open a panel.
@@ -34,7 +73,8 @@ let top = 0;
  *
  * → { el, body, close(), raise() }
  */
-export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose = null } = {}) {
+export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose = null, icon = null } = {}) {
+  const closers = [];
   const el = document.createElement("section");
   el.className = "wb-panel";
   el.setAttribute("role", "dialog");
@@ -48,7 +88,7 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
         <header class="wb-panel__head">
           <h2 class="wb-panel__title">${title}</h2>
           <button type="button" class="pp-btn pp-sticky pp-note-btn wb-panel__min"
-                  aria-label="Fold the ${title.toLowerCase()} up" aria-pressed="false" data-tip="Fold it up">${UI.minimize(14)}</button>
+                  aria-label="Fold the ${title.toLowerCase()} into a tab" data-tip="Fold into a tab">${UI.minimize(14)}</button>
           <button type="button" class="pp-btn pp-sticky pp-note-btn wb-panel__expand"
                   aria-label="Make the ${title.toLowerCase()} bigger" aria-pressed="false" data-tip="Make it bigger">${UI.expand(14)}</button>
           <button type="button" class="pp-btn pp-sticky pp-note-btn wb-panel__close"
@@ -56,6 +96,7 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
         </header>
         <div class="wb-panel__body"></div>
       </div>
+      <button type="button" class="wb-panel__grip" aria-label="Resize the ${title.toLowerCase()}" data-tip="Drag to resize"></button>
     </div>`;
 
   const w = Math.min(size.w, Math.max(260, window.innerWidth - 24));
@@ -77,6 +118,7 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   raise();
 
   const close = () => {
+    closers.forEach((f) => f());
     el.remove();
     if (onClose) onClose();
   };
@@ -94,23 +136,19 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   };
   const put = (r) => { el.style.left = `${r.left}px`; el.style.top = `${r.top}px`; el.style.width = `${r.width}px`; el.style.height = `${r.height}px`; };
   const settle = () => window.dispatchEvent(new Event("resize"));   // whatever is inside measures itself again
-  /* Folding up: only the head stays, so the sheet is out of the way but still alive (nothing inside is reset). */
+  /* Folding up: the sheet is put out of sight but stays alive (nothing inside is reset), and an icon tab
+     takes its place. Tabs can be dragged anywhere, so the space is used as the reader likes. */
   const minBtn = el.querySelector(".wb-panel__min");
-  let folded = null;
+  let tab = null;
   const fold = (on) => {
-    if (on === !!folded) return;
-    if (on) { folded = el.offsetHeight; el.classList.add("is-folded"); el.style.height = "auto"; }
-    else { el.classList.remove("is-folded"); el.style.height = `${folded}px`; folded = null; settle(); }
-    minBtn.setAttribute("aria-pressed", String(!!folded));
-    minBtn.dataset.tip = folded ? "Open it again" : "Fold it up";
-    minBtn.setAttribute("aria-label", `${folded ? "Open" : "Fold up"} the ${title.toLowerCase()}`);
-    minBtn.innerHTML = UI.minimize(14);
-    raise();
+    if (on === !!tab) return;
+    if (on) { tab = makeTab(title, icon, () => fold(false)); el.classList.add("is-folded"); }
+    else { tab.remove(); tab = null; el.classList.remove("is-folded"); settle(); raise(); }
   };
-  minBtn.addEventListener("click", () => fold(!folded));
-  head.addEventListener("dblclick", (e) => { if (!e.target.closest("button")) fold(!folded); });
+  minBtn.addEventListener("click", () => fold(true));
+  head.addEventListener("dblclick", (e) => { if (!e.target.closest("button")) fold(true); });
+  closers.push(() => { if (tab) { tab.remove(); tab = null; } });
   bigBtn.addEventListener("click", () => {
-    if (folded) fold(false);
     el.classList.add("is-easing");
     if (!small) {
       small = { left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight };
@@ -147,6 +185,26 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   const drop = () => { from = null; };
   head.addEventListener("pointerup", drop);
   head.addEventListener("pointercancel", drop);
+
+  /* resizing, by the corner grip */
+  const grip = el.querySelector(".wb-panel__grip");
+  let sz = null, tick = 0;
+  grip.addEventListener("pointerdown", (e) => {
+    if (small) return;
+    e.preventDefault();
+    grip.setPointerCapture(e.pointerId);
+    sz = { px: e.clientX, py: e.clientY, w: el.offsetWidth, h: el.offsetHeight };
+    raise();
+  });
+  grip.addEventListener("pointermove", (e) => {
+    if (!sz) return;
+    el.style.width = `${Math.max(240, Math.min(window.innerWidth - el.offsetLeft - 4, sz.w + e.clientX - sz.px))}px`;
+    el.style.height = `${Math.max(160, Math.min(window.innerHeight - el.offsetTop - 4, sz.h + e.clientY - sz.py))}px`;
+    if (!tick) tick = requestAnimationFrame(() => { tick = 0; settle(); });   // whatever is inside measures itself again
+  });
+  const stop = () => { if (sz) { sz = null; settle(); } };
+  grip.addEventListener("pointerup", stop);
+  grip.addEventListener("pointercancel", stop);
 
   return { el, body: el.querySelector(".wb-panel__body"), close, raise };
 }

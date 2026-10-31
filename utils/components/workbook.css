@@ -589,9 +589,41 @@ body {
 .wb-panel__min.pp-btn { --pp-note-bg: #d9f0c8; --pp-note-tilt: 1deg; }
 .wb-panel__min.pp-btn:hover { --pp-note-bg: #c3e6a8; }
 .wb-panel__min svg { display: block; }
-/* folded: only the head shows */
-.wb-panel.is-folded .wb-panel__body { display: none; }
-.wb-panel.is-folded .wb-panel__head { border-bottom: 0; }
+/* folded: the sheet is out of sight (alive), its icon tab stands in for it */
+.wb-panel.is-folded { display: none; }
+.wb-tab.pp-btn {
+  position: fixed;
+  z-index: 99990;
+  display: grid;
+  place-items: center;
+  width: 2.9rem;
+  height: 2.6rem;
+  padding: 0;
+  --pp-note-bg: #d9f0c8;
+  --pp-note-tilt: -1.5deg;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.wb-tab.pp-btn:active { cursor: grabbing; }
+.wb-tab svg { display: block; width: 1.4rem; height: 1.4rem; pointer-events: none; }
+/* the corner grip: three small diagonal strokes */
+.wb-panel__grip {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: linear-gradient(135deg, transparent 0 52%, var(--text-muted, #8a8a8a) 52% 58%, transparent 58% 70%, var(--text-muted, #8a8a8a) 70% 76%, transparent 76% 88%, var(--text-muted, #8a8a8a) 88% 94%, transparent 94%);
+  opacity: 0.6;
+  cursor: nwse-resize;
+  touch-action: none;
+  z-index: 2;
+}
+.wb-panel__grip:hover { opacity: 1; }
+.wb-panel.is-expanded .wb-panel__grip { display: none; }
 .wb-panel__expand svg { display: block; }
 /* the sheet eases between its two sizes */
 .wb-panel.is-easing { transition: left 0.28s cubic-bezier(0.3, 0.7, 0.2, 1), top 0.28s cubic-bezier(0.3, 0.7, 0.2, 1), width 0.28s cubic-bezier(0.3, 0.7, 0.2, 1), height 0.28s cubic-bezier(0.3, 0.7, 0.2, 1); }
