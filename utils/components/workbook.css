@@ -573,7 +573,8 @@ body {
   margin-top: 0.1rem;
 }
 .wb-panel__close.pp-btn:hover { --pp-note-bg: #ffbf7a; }
-.wb-panel__expand.pp-btn {
+.wb-panel__expand.pp-btn,
+.wb-panel__min.pp-btn {
   --pp-note-bg: #cfe6ff;
   --pp-note-tilt: -2deg;
   flex: 0 0 auto;
@@ -585,6 +586,12 @@ body {
   margin-top: 0.1rem;
 }
 .wb-panel__expand.pp-btn:hover { --pp-note-bg: #a9d2ff; }
+.wb-panel__min.pp-btn { --pp-note-bg: #d9f0c8; --pp-note-tilt: 1deg; }
+.wb-panel__min.pp-btn:hover { --pp-note-bg: #c3e6a8; }
+.wb-panel__min svg { display: block; }
+/* folded: only the head shows */
+.wb-panel.is-folded .wb-panel__body { display: none; }
+.wb-panel.is-folded .wb-panel__head { border-bottom: 0; }
 .wb-panel__expand svg { display: block; }
 /* the sheet eases between its two sizes */
 .wb-panel.is-easing { transition: left 0.28s cubic-bezier(0.3, 0.7, 0.2, 1), top 0.28s cubic-bezier(0.3, 0.7, 0.2, 1), width 0.28s cubic-bezier(0.3, 0.7, 0.2, 1), height 0.28s cubic-bezier(0.3, 0.7, 0.2, 1); }

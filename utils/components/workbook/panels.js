@@ -47,6 +47,8 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
       <div class="pp-receipt__paper">
         <header class="wb-panel__head">
           <h2 class="wb-panel__title">${title}</h2>
+          <button type="button" class="pp-btn pp-sticky pp-note-btn wb-panel__min"
+                  aria-label="Fold the ${title.toLowerCase()} up" aria-pressed="false" data-tip="Fold it up">${UI.minimize(14)}</button>
           <button type="button" class="pp-btn pp-sticky pp-note-btn wb-panel__expand"
                   aria-label="Make the ${title.toLowerCase()} bigger" aria-pressed="false" data-tip="Make it bigger">${UI.expand(14)}</button>
           <button type="button" class="pp-btn pp-sticky pp-note-btn wb-panel__close"
@@ -83,6 +85,7 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
 
   /* Expanding: the sheet grows to nearly the whole window, easing there, and
      goes back to the place and size it had. Dragging is off while it is big. */
+  const head = el.querySelector(".wb-panel__head");
   const bigBtn = el.querySelector(".wb-panel__expand");
   let small = null;
   const bigRect = () => {
@@ -91,7 +94,23 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   };
   const put = (r) => { el.style.left = `${r.left}px`; el.style.top = `${r.top}px`; el.style.width = `${r.width}px`; el.style.height = `${r.height}px`; };
   const settle = () => window.dispatchEvent(new Event("resize"));   // whatever is inside measures itself again
+  /* Folding up: only the head stays, so the sheet is out of the way but still alive (nothing inside is reset). */
+  const minBtn = el.querySelector(".wb-panel__min");
+  let folded = null;
+  const fold = (on) => {
+    if (on === !!folded) return;
+    if (on) { folded = el.offsetHeight; el.classList.add("is-folded"); el.style.height = "auto"; }
+    else { el.classList.remove("is-folded"); el.style.height = `${folded}px`; folded = null; settle(); }
+    minBtn.setAttribute("aria-pressed", String(!!folded));
+    minBtn.dataset.tip = folded ? "Open it again" : "Fold it up";
+    minBtn.setAttribute("aria-label", `${folded ? "Open" : "Fold up"} the ${title.toLowerCase()}`);
+    minBtn.innerHTML = UI.minimize(14);
+    raise();
+  };
+  minBtn.addEventListener("click", () => fold(!folded));
+  head.addEventListener("dblclick", (e) => { if (!e.target.closest("button")) fold(!folded); });
   bigBtn.addEventListener("click", () => {
+    if (folded) fold(false);
     el.classList.add("is-easing");
     if (!small) {
       small = { left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight };
@@ -111,10 +130,9 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   window.addEventListener("resize", () => { if (small && el.isConnected) put(bigRect()); });
 
   /* dragging, by the head only — the body is being typed into */
-  const head = el.querySelector(".wb-panel__head");
   let from = null;
   head.addEventListener("pointerdown", (e) => {
-    if (e.target.closest(".wb-panel__close, .wb-panel__expand") || small) return;
+    if (e.target.closest(".wb-panel__close, .wb-panel__expand, .wb-panel__min") || small) return;
     e.preventDefault();
     head.setPointerCapture(e.pointerId);
     from = { px: e.clientX, py: e.clientY, x: el.offsetLeft, y: el.offsetTop };
