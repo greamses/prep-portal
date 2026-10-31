@@ -826,3 +826,9 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 .xp-mark svg { width: 4.3mm; height: 4.3mm; }
 .xp-mark svg g, .xp-mark svg path { stroke-width: 1.4; }
 .xp-mark small { top: 4mm; font-size: 2.1mm; }
+/* the marks, smaller again */
+.xp-mark { left: -4.6mm; top: 0.6mm; }
+.xp-cols .xp-mark { left: -4.4mm; }
+.xp-mark svg { width: 3.2mm; height: 3.2mm; }
+.xp-mark svg g, .xp-mark svg path { stroke-width: 1.6; }
+.xp-mark small { top: 3mm; left: 0.2mm; font-size: 1.9mm; }
