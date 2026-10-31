@@ -160,6 +160,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       }
     });
     wireOmr(sheet);
+    wireExamNo(sheet);
     mountDrawer();
     /* the theory sheet: a page to write on, in the block for its question */
     sheet.querySelectorAll(".xp-ans[data-qid]").forEach((blk) => {
@@ -218,6 +219,37 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       });
       line.replaceWith(input);
     });
+  }
+
+  /* ── the exam number ──────────────────────────────────────────────────────
+     A box for each digit and a column of bubbles 0 to 9 under it, on the OMR sheet (and the same grid in the OMR
+     drawer). One bubble to a column; the box above shows the digit. Kept as a string, "_" where none is shaded yet,
+     under answers.examno. It is the student's, so "clear answers" leaves it. */
+  const exnoValue = () => String(answers.examno || "");
+  function paintExamNo() {
+    document.querySelectorAll(".xp-exno").forEach((g) => {
+      const v = exnoValue().padEnd(+g.dataset.n || 8, "_");
+      g.querySelectorAll(".xp-exno__col").forEach((col, c) => {
+        const d = v[c];
+        col.querySelector(".xp-exno__box").textContent = d === "_" ? "" : d;
+        col.querySelectorAll("b").forEach((b) => { b.classList.toggle("is-picked", b.dataset.d === d); b.setAttribute("aria-checked", String(b.dataset.d === d)); });
+      });
+    });
+  }
+  function wireExamNo(root) {
+    root.querySelectorAll(".xp-exno .xp-exno__col b").forEach((b) => {
+      b.tabIndex = 0; b.setAttribute("role", "radio");
+      const pick = () => {
+        if (checked) return;
+        const g = b.closest(".xp-exno"), n = +g.dataset.n || 8, c = +b.closest(".xp-exno__col").dataset.c;
+        const cur = exnoValue().padEnd(n, "_").split("");
+        cur[c] = cur[c] === b.dataset.d ? "_" : b.dataset.d;
+        answers.examno = cur.join(""); keep(); paintExamNo(); onChange();
+      };
+      b.addEventListener("click", pick);
+      b.addEventListener("keydown", (e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); pick(); } });
+    });
+    paintExamNo();
   }
 
   /** The OMR rows under `root` (the page at the end, or the side drawer): the same answers, shaded there. */
@@ -289,6 +321,9 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     head.appendChild(close);
     const body = document.createElement("div");
     body.className = "xp-omr xo-omr";
+    /* the exam number, when the paper asks for one, is shaded from the drawer too */
+    const exno = page.querySelector(".xp-exno");
+    if (exno) body.appendChild(exno.cloneNode(true));
     body.appendChild(grid);
     drawer.append(head, body);
     document.body.append(drawer, tab);
@@ -302,6 +337,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     tab.addEventListener("click", () => set(!drawerOpen));
     close.addEventListener("click", () => set(false));
     wireOmr(drawer);
+    wireExamNo(drawer);
   }
 
   /** Mark what can be marked and show the model answer where it cannot. */
@@ -475,7 +511,8 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     sheet.querySelectorAll(".xp-stamp").forEach((n) => n.remove());
     if (!on || !checked) return;
     /* beside the Score box, in the name row: the one place in the header nothing is printed over */
-    const host = sheet.querySelector(".xp-head .xp-student");
+    const hosts = [...sheet.querySelectorAll(".xp-head .xp-student")];
+    const host = hosts.find((h) => h.offsetParent !== null) || hosts[0];
     const scoreLabel = host && [...host.querySelectorAll(":scope > span")].find((x) => /score/i.test(x.textContent));
     if (!host) return;
     const s = score(lastQuestions);
@@ -489,8 +526,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }).toUpperCase();
     st.innerHTML = `<b>${gr.g}</b><span>${s.won}/${s.outOf}</span><i>${s.pending ? "Marking" : gr.say}</i><small>${today}</small>`;
     if (scoreLabel) scoreLabel.before(st); else host.appendChild(st);
-    const box = sheet.querySelector(".xp-student em");
-    if (box) box.textContent = `${s.won} / ${s.outOf}`;
+    sheet.querySelectorAll(".xp-student em").forEach((box) => { box.textContent = `${s.won} / ${s.outOf}`; });
   }
 
   /* ── done: the result, and a suggestion to print it ────────────────────────
@@ -510,7 +546,8 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     if (announced) return;
     announced = true;
     /* the stamp is on the header: if the learner has scrolled down the paper, take them to it */
-    const hd = sheet.querySelector(".xp-head");
+    const heads = [...sheet.querySelectorAll(".xp-head")];
+    const hd = heads.find((h) => h.offsetParent !== null) || heads[0];
     if (hd) {
       const r = hd.getBoundingClientRect();
       /* after the paper has been redrawn, or the move is lost to the layout shift */
@@ -572,7 +609,11 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     writtenMark(id) { return answers["m:" + id]; },
     check(questions) { checked = true; return score(questions); },
     reopen() { checked = false; dropResult(); },
-    clear() { answers = {}; checked = false; dropResult(); keep(); },
+    clear() { const no = answers.examno; answers = {}; if (no) answers.examno = no; checked = false; dropResult(); keep(); paintExamNo(); },
+    /** The exam number as shaded, or "" until every digit is. */
+    get examNo() { const v = exnoValue(); return /^\d+$/.test(v) ? v : ""; },
+    /** How many digits of the exam number are shaded so far, and of how many. */
+    examNoProgress() { const g = document.querySelector(".xp-exno"); const n = g ? +g.dataset.n || 8 : 0; return { n, have: exnoValue().replace(/_/g, "").length }; },
     /** Has every question that is to be attempted been answered? */
     complete: (questions) => isComplete(questions),
     get name() { return savedName(); },

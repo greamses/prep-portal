@@ -9,6 +9,7 @@
    ========================================================================== */
 
 import { TYPES, ORDER, COLOURS, customColour, textHtml, blankHtml, esc, paperMarks, attemptOf } from "./model.js";
+import { instructionSections, structureRows } from "./instructions-data.js";
 
 /* ── diagrams ──────────────────────────────────────────────────────────── */
 
@@ -169,10 +170,10 @@ function banner(type, qs, idx, attempt) {
   return bar(`Section ${letter(idx)}`, t.head, rule, `${marks} ${marks === 1 ? "mark" : "marks"}`);
 }
 
-function header(h, total) {
+function header(h, total, mini = false) {
   const tl = [h.term, h.year].filter(Boolean).join(" · ");
   const cell = (k, v) => `<div class="xp-cell"><span>${k}</span><b>${esc(v) || "&nbsp;"}</b></div>`;
-  return `<header class="xp-head" data-nomath>
+  return `<header class="xp-head${mini ? " xp-head--mini" : ""}" data-nomath>
     <div class="pp-receipt xp-receipt"><div class="pp-receipt__paper xp-receipt__paper">
       <div class="xp-top">
         ${h.logo
@@ -184,13 +185,13 @@ function header(h, total) {
         </div>
         <div class="xp-head__subject">${esc(h.subject) || "Subject"}</div>
       </div>
-      <div class="xp-meta">
+      ${mini ? "" : `<div class="xp-meta">
         ${cell("Exam date", h.date)}
         ${cell("Class", h.klass)}
         ${cell("Time allowed", h.time)}
         ${cell("Total marks", total ? String(total) : "")}
-      </div>
-      <div class="xp-student"><span>Student's name</span><i></i><span>Score</span><em></em></div>
+      </div>`}
+      ${mini === "slim" ? "" : `<div class="xp-student"><span>Student's name</span><i></i><span>Score</span><em></em></div>`}
     </div></div>
   </header>`;
 }
@@ -216,19 +217,34 @@ function key(qs, head) {
 
 const who = () => `<div class="xp-student xp-sheetwho" data-nomath><span>Student's name</span><i></i><span>Class</span><i class="xp-sheetwho__short"></i><span>Candidate no.</span><span class="xp-boxes">${"<u></u>".repeat(8)}</span></div>`;
 
-function omrSheet(numbered, extra = "", title = ["Answer sheet", "Multiple choice"]) {
+/** The rows of bubbles, A to D for each multiple-choice question; "" if there are none. */
+function omrGrid(numbered) {
   const rows = numbered.map((q, i) => ({ q, n: i + 1 })).filter((r) => r.q.type === "mcq");
   if (!rows.length) return "";
   const PER = 15;
   const cols = [];
   for (let i = 0; i < rows.length; i += PER) cols.push(rows.slice(i, i + PER));
   const li = ({ q, n }) => `<li data-qid="${q.id}"><span class="xp-omr__n" data-nomath>${n}</span>${[0, 1, 2, 3].map((i) => `<b data-i="${i}" data-nomath>${letter(i)}</b>`).join("")}</li>`;
+  return `<div class="xp-omr__grid">${cols.map((c) => `<ol>${c.map(li).join("")}</ol>`).join("")}</div>`;
+}
+
+/** The exam number: a box for each digit, and under it that column of bubbles 0 to 9 to shade (live.js wires them). */
+function examNoGrid(head) {
+  const n = Math.max(4, Math.min(12, Math.round(Number(head.examDigits)) || 8));
+  const col = (c) => `<div class="xp-exno__col" data-c="${c}"><u class="xp-exno__box"></u>${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => `<b data-d="${d}" data-nomath>${d}</b>`).join("")}</div>`;
+  return `<div class="xp-exno" data-n="${n}" data-nomath><p class="xp-exno__cap"><b>Exam number</b> Write each digit in its box, then shade the same digit in the column below it.</p><div class="xp-exno__grid">${Array.from({ length: n }, (_, c) => col(c)).join("")}</div></div>`;
+}
+
+function omrSheet(numbered, extra = "", title = ["Answer sheet", "Multiple choice"], head = null) {
+  const grid = omrGrid(numbered);
+  const exno = head && head.examNo ? examNoGrid(head) : "";
+  if (!grid && !exno) return "";
   return `<section class="xp-sheetpage xp-omr" data-nomath>
     <i class="xp-reg xp-reg--tl"></i><i class="xp-reg xp-reg--tr"></i><i class="xp-reg xp-reg--bl"></i><i class="xp-reg xp-reg--br"></i>
-    ${bar(title[0], title[1], "Shade ONE bubble for each question, completely, with a pencil.")}
-    ${who()}${extra}
-    <div class="xp-omr__grid">${cols.map((c) => `<ol>${c.map(li).join("")}</ol>`).join("")}</div>
-    <p class="xp-omr__note" data-nomath>Do not write outside the bubbles. To change an answer, rub the first one out completely.</p>
+    ${bar(title[0], grid ? title[1] : "Exam number", grid ? "Shade ONE bubble for each question, completely, with a pencil." : "")}
+    ${who()}${extra}${exno}
+    ${grid}
+    ${grid ? `<p class="xp-omr__note" data-nomath>Do not write outside the bubbles. To change an answer, rub the first one out completely.</p>` : ""}
   </section>`;
 }
 
@@ -272,16 +288,71 @@ function booklet(numbered, head) {
   const pages = bookletPlan(numbered);
   const total = pages.length + 1;
   const intro = `<p class="xp-bintro" data-nomath>This booklet has ${total} page${total === 1 ? "" : "s"}: this front page${pages.length ? `, then ${pages.length} lined page${pages.length === 1 ? "" : "s"} for the written answers. Write each answer under its own question number.` : "."}</p>`;
-  const hasMcq = numbered.some((q) => q.type === "mcq");
-  const cover = (hasMcq && omrSheet(numbered, intro, ["Answer booklet", "Multiple choice"]).replace('class="xp-sheetpage xp-omr"', 'class="xp-sheetpage xp-omr xp-bcover"'))
-    || `<section class="xp-sheetpage xp-bcover" data-nomath>${bar("Answer booklet", "Written answers", "Write each answer under its own question number.")}${who()}${intro}</section>`;
+  const grid = omrGrid(numbered);
+  const cover = `<section class="xp-sheetpage xp-omr xp-bcover" data-nomath>
+    <i class="xp-reg xp-reg--tl"></i><i class="xp-reg xp-reg--tr"></i><i class="xp-reg xp-reg--bl"></i><i class="xp-reg xp-reg--br"></i>
+    ${header(head, paperMarks(numbered, head.attempt))}
+    ${bar("Answer booklet", grid ? "Multiple choice" : "Written answers", grid ? "Shade ONE bubble for each question, completely, with a pencil." : "Write each answer under its own question number.")}
+    ${intro}
+    ${head.examNo ? examNoGrid(head) : ""}
+    ${grid}
+    ${grid ? `<p class="xp-omr__note" data-nomath>Do not write outside the bubbles. To change an answer, rub the first one out completely.</p>` : ""}
+  </section>`;
   const run = [head.school, head.subject, head.klass].filter(Boolean).map(esc).join(" · ");
   const block = ({ q, n, lines }) => `<div class="xp-ans" data-qid="${q.id}"><div class="xp-ans__tag" data-nomath><b>Question ${n}</b><span>${q.marks} ${q.marks === 1 ? "mark" : "marks"}</span></div><div class="xp-lines">${"<i></i>".repeat(lines)}</div></div>`;
   const sheets = pages.map((list, k) => `<section class="xp-sheetpage xp-tsheet xp-bpage">
-    <div class="xp-bpage__run" data-nomath><span>${run || "Answer booklet"}</span><span>Answer booklet · page ${k + 2} of ${total}</span></div>
+    <div class="xp-bpage__run" data-nomath>${head.logo ? `<img class="xp-bpage__logo" src="${head.logo}" alt="" />` : ""}<span>${run || "Answer booklet"}</span><span>Answer booklet · page ${k + 2} of ${total}</span></div>
     ${list.map(block).join("")}
   </section>`).join("");
   return `<div class="xp-booklet">${cover}${sheets}</div>`;
+}
+
+/* ── the instructions page ──────────────────────────────────────────────────
+   The first page of the paper when the teacher turns instructions on: the school's header with its logo, the
+   structure of the paper as a table, the numbered instructions (instructions-data.js), and a declaration to
+   sign. It prints with the paper. On screen it is read before the exam starts (instructions.js) and then
+   stays out of the way, like the OMR page. */
+function instructionsPage(head, numbered) {
+  const total = paperMarks(numbered, head.attempt);
+  const rows = structureRows(head, numbered);
+  const table = rows.length
+    ? `<table class="xp-itable" data-nomath><thead><tr><th>Section</th><th>Kind of question</th><th>Questions</th><th>To answer</th><th>Marks</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${r.section}</td><td>${esc(r.kind)}</td><td>${r.questions}</td><td>${r.toAnswer}</td><td>${r.marks}</td></tr>`).join("")}<tr class="xp-itable__tot"><td colspan="4">Total</td><td>${total}</td></tr></tbody></table>`
+    : "";
+  /* the numbered parts in two columns, in reading order, split where the two come out nearest in height
+     (the browser's own columns break at the page edge and spill the rest onto a second page) */
+  const secs = instructionSections(head, numbered);
+  const weight = (s) => 1.4 + s.lines.reduce((n, l) => n + Math.ceil(l.length / 48), 0);
+  const wsum = secs.reduce((n, s) => n + weight(s), 0);
+  let split = 1, run = 0, best = Infinity;
+  secs.forEach((s, i) => { run += weight(s); const gap = Math.abs(wsum - 2 * run); if (i < secs.length - 1 && gap < best) { best = gap; split = i + 1; } });
+  const part = (s, i) => `<section class="xp-isec"><h3 class="xp-ih"><span>${i + 1}</span>${esc(s.title)}</h3><ol class="xp-il">${s.lines.map((l) => `<li>${esc(l)}</li>`).join("")}</ol></section>`;
+  const parts = `<div>${secs.slice(0, split).map((s, i) => part(s, i)).join("")}</div><div>${secs.slice(split).map((s, i) => part(s, split + i)).join("")}</div>`;
+  const facts = [["Exam date", head.date], ["Class", head.klass], ["Time allowed", head.time], ["Total marks", total ? String(total) : ""]].map(([k, v]) => `<div><span>${k}</span><b>${esc(v) || "&nbsp;"}</b></div>`).join("");
+  return `<section class="xp-sheetpage xp-instrpage" data-nomath>
+    ${header(head, total, "slim")}
+    <div class="xp-ifacts">${facts}</div>
+    <div class="xp-ititle"><b>Instructions</b><em>Read this page before you begin</em></div>
+    ${rows.length ? `<div class="xp-istruct"><h3 class="xp-ih"><span>0</span>Structure of the paper</h3>${table}</div>` : ""}
+    <div class="xp-icols">${parts}</div>
+    <p class="xp-inotice">Do not turn over this page, or press Begin, until you are told to start.</p>
+    <div class="xp-idecl"><span>I have read and understood these instructions.</span><div class="xp-idecl__sign"><i></i><em>Signature</em><i></i><em>Date</em></div></div>
+  </section>`;
+}
+
+/** The paper's opening tag: its colours, and the school's logo very faint behind every page. */
+function articleOpen(head) {
+  const col = head.colour === "custom" && head.custom ? customColour(head.custom) : COLOURS.find((c) => c.id === head.colour) || COLOURS[0];
+  const wm = head.logo
+    ? "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297"><image href="${head.logo}" x="65" y="103" width="80" height="80" preserveAspectRatio="xMidYMid meet" opacity="0.045"/></svg>`)
+    : "";
+  return `<article class="xp${wm ? " xp--wm" : ""}${head.tint ? " xp--tint" : ""}${head.omr || head.booklet ? " xp--omr" : ""}" style="--c:${col.main};--cs:${col.soft};--ci:${col.ink}${wm ? `;--wm:url(&quot;${wm}&quot;)` : ""}">
+    ${head.logo ? `<img class="xp-wm" src="${head.logo}" alt="" />` : ""}`;
+}
+
+/** Just the instructions page, in the paper's own dress: what the student reads before the exam begins. */
+export function instructionsArticle(head, questions) {
+  const numbered = ORDER.flatMap((t) => questions.filter((q) => q.type === t));
+  return `${articleOpen(head)}${instructionsPage(head, numbered)}</article>`;
 }
 
 /**
@@ -291,7 +362,6 @@ function booklet(numbered, head) {
  */
 export function paperHtml(head, questions) {
   figNo = 0;
-  const col = head.colour === "custom" && head.custom ? customColour(head.custom) : COLOURS.find((c) => c.id === head.colour) || COLOURS[0];
   const groups = ORDER.map((t) => [t, questions.filter((q) => q.type === t)]).filter(([, l]) => l.length);
   let no = 0;
   const numbered = [];
@@ -300,16 +370,13 @@ export function paperHtml(head, questions) {
     return `<section class="xp-sec xp-sec--${t}${gi && head.breakAt && head.breakAt[t] ? " xp-sec--page" : ""}">${banner(t, list, gi, head.attempt)}${t === "mcq" ? `<div class="xp-cols">${html}</div>` : html}</section>`;
   }).join("");
   const empty = groups.length ? "" : `<p class="xp-empty">No questions yet. Write some, or ask the model for a set.</p>`;
-  /* the school's logo, very faint, behind every page: a page-sized tile on screen,
-     a fixed image (repeated on every printed page) in print */
-  const wm = head.logo
-    ? "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297"><image href="${head.logo}" x="65" y="103" width="80" height="80" preserveAspectRatio="xMidYMid meet" opacity="0.045"/></svg>`)
-    : "";
-  return `<article class="xp${wm ? " xp--wm" : ""}${head.tint ? " xp--tint" : ""}${head.omr || head.booklet ? " xp--omr" : ""}" style="--c:${col.main};--cs:${col.soft};--ci:${col.ink}${wm ? `;--wm:url(&quot;${wm}&quot;)` : ""}">
-    ${head.logo ? `<img class="xp-wm" src="${head.logo}" alt="" />` : ""}
-    ${header(head, paperMarks(questions, head.attempt))}
+  /* an exam number needs a sheet to be shaded on: the OMR sheet, or a front sheet of its own */
+  const front = head.omr || head.examNo;
+  return `${articleOpen(head)}
+    ${head.instructions && numbered.length ? instructionsPage(head, numbered) : ""}
+    ${header(head, paperMarks(questions, head.attempt), !!(head.instructions && numbered.length))}
     ${body}${empty}
-    ${head.booklet && numbered.length ? booklet(numbered, head) : `${head.omr && numbered.length ? omrSheet(numbered) : ""}
+    ${head.booklet && numbered.length ? booklet(numbered, head) : `${front && numbered.length ? omrSheet(numbered, "", undefined, head) : ""}
     ${head.theorySheet && numbered.length ? theorySheet(numbered) : ""}`}
     ${head.key && numbered.length ? key(numbered, head) : ""}
   </article>`;

@@ -36,17 +36,25 @@ function needComponents() {
  * @param label   what a screen reader calls it
  * @param wide    the roomy receipt (the instructions page)
  * @param scrim   over the live page, not in place of it
+ * @param bare    no receipt: the paint blob and a plain holder, for content that is already a paper (the instructions page)
  * @param tag     the words on the sticky tag at the receipt's corner ("" for none)
  * @param colour  that tag's paper, 0..5 (.pp-sticky--cN)
  * → { root, paper, close }
  */
-export function makeCover({ label, wide = false, scrim = false, tag = "", colour = 0 }) {
+export function makeCover({ label, wide = false, scrim = false, tag = "", colour = 0, bare = false }) {
   needComponents();
   const root = document.createElement("div");
-  root.className = `pp-cover${scrim ? " pp-cover--scrim" : ""}`;
+  root.className = `pp-cover${scrim ? " pp-cover--scrim" : ""}${bare ? " pp-cover--bare" : ""}`;
   root.setAttribute("role", "dialog");
   root.setAttribute("aria-modal", "true");
   root.setAttribute("aria-label", label);
+  if (bare) {
+    root.innerHTML = `<div class="pp-cover__paint" aria-hidden="true"></div><div class="pp-cover__holder"></div>`;
+    const paint = root.querySelector(".pp-cover__paint");
+    try { paint.innerHTML = heroPaint(); } catch { /* the blob is a wash, never a need */ }
+    document.body.appendChild(root);
+    return { root, paper: root.querySelector(".pp-cover__holder"), close: () => root.remove() };
+  }
   root.innerHTML = `${scrim ? "" : `<div class="pp-cover__paint" aria-hidden="true"></div>`}
     <div class="pp-receipt pp-cover__card${wide ? " pp-cover__card--wide" : ""}">
       ${tag ? `<span class="pp-sticky pp-sticky--c${colour} pp-sticky--tape" style="position:absolute;top:-14px;left:26px;z-index:2;--pp-note-tilt:-3deg"></span>` : ""}

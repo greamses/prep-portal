@@ -142,6 +142,7 @@ function fillHead() {
   $("xm-instructions").checked = !!state.head.instructions; $("xm-instr-wrap").hidden = !state.head.instructions;
   $("xm-booklet").checked = !!state.head.booklet;
   $("xm-aimark").checked = !!state.head.aiMark;
+  $("xm-examno").checked = !!state.head.examNo; $("xm-exdigits-wrap").hidden = !state.head.examNo; $("xm-exdigits").value = state.head.examDigits || 8;
   $("xm-tries").value = state.head.tries == null ? 1 : state.head.tries;
   $("xm-tsheet").checked = !!state.head.theorySheet;
   $("xm-clean").checked = state.head.clean !== false;
@@ -177,6 +178,8 @@ $("xm-camera").addEventListener("change", (e) => { state.head.camera = e.target.
 $("xm-instructions").addEventListener("change", (e) => { state.head.instructions = e.target.checked; $("xm-instr-wrap").hidden = !e.target.checked; save(); });
 $("xm-booklet").addEventListener("change", (e) => { state.head.booklet = e.target.checked; redraw(); });
 $("xm-aimark").addEventListener("change", (e) => { state.head.aiMark = e.target.checked; save(); });
+$("xm-examno").addEventListener("change", (e) => { state.head.examNo = e.target.checked; $("xm-exdigits-wrap").hidden = !e.target.checked; redraw(); });
+$("xm-exdigits").addEventListener("input", (e) => { state.head.examDigits = Math.max(4, Math.min(12, Math.round(+e.target.value) || 8)); redraw(); });
 $("xm-instr-preview").addEventListener("click", () => showInstructions({ head: state.head, questions: state.questions, preview: true }));
 $("xm-tsheet").addEventListener("change", (e) => { state.head.theorySheet = e.target.checked; redraw(); });
 $("xm-key").addEventListener("change", (e) => { state.head.key = e.target.checked; redraw(); });

@@ -576,3 +576,82 @@ button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
 .xp-aimark .pp-pill--ok { color: #1c7a3a; font-weight: 800; }
 .xp-aimark .pp-pill--warn { color: #8a5a10; font-weight: 800; }
 .xm-sharebox__on { margin: 0.5rem 0 0; font-size: 0.76rem; line-height: 1.5; color: var(--text-secondary, #6b655c); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   THE INSTRUCTIONS PAGE, THE EXAM NUMBER, THE BOOKLET'S FRONT PAGE
+   All pages of a paper are the same width (the .xp article). The instructions are the first page of the paper:
+   header with the logo, the structure table, numbered instructions, a declaration to sign. On screen, once the
+   exam has begun, it stays out of the way (like the OMR page); in print it is page one.
+   ════════════════════════════════════════════════════════════════════════════ */
+.xp-instrpage { break-after: page; }
+.xp-live .xp-instrpage { display: none; }
+.xp-instrpage .xp-head { margin-bottom: 4mm; }
+.xp-ih { display: flex; align-items: center; gap: 2.4mm; margin: 4.4mm 0 1.8mm; padding-bottom: 1.2mm; border-bottom: 0.35mm solid var(--c); font: 800 8.6pt/1.2 "Unbounded", sans-serif; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ci); break-after: avoid; }
+.xp-ih span { flex: none; display: inline-grid; place-items: center; width: 5.4mm; height: 5.4mm; border-radius: 50%; background: var(--ci); color: #fff; font-size: 7.6pt; }
+.xp-il { margin: 0; padding-left: 7mm; font-size: 9.2pt; line-height: 1.55; color: #1d1b18; }
+.xp-il li + li { margin-top: 1.2mm; }
+.xp-isec { break-inside: avoid; }
+.xp-itable { width: 100%; border-collapse: collapse; margin-top: 1.2mm; font-size: 9pt; color: #1d1b18; }
+.xp-itable th, .xp-itable td { border: 0.3mm solid #b9b2a5; padding: 1.5mm 2.2mm; text-align: left; }
+.xp-itable th { background: var(--cs); color: var(--ci); font-size: 7.4pt; letter-spacing: 0.08em; text-transform: uppercase; }
+.xp-itable td:nth-child(n + 3), .xp-itable th:nth-child(n + 3) { text-align: center; }
+.xp-itable__tot td { font-weight: 800; background: color-mix(in srgb, var(--cs) 50%, #fff); }
+.xp-inotice { margin: 5mm 0 3mm; padding: 2.2mm 3mm; border: 0.5mm solid var(--ci); text-align: center; font-size: 8.6pt; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ci); }
+.xp-idecl { margin-top: 5mm; font-size: 8.6pt; color: #1d1b18; break-inside: avoid; }
+.xp-idecl__sign { display: grid; grid-template-columns: 2fr auto 1fr auto; align-items: end; gap: 2mm; margin-top: 9mm; }
+.xp-idecl__sign i { border-bottom: 0.4mm solid #1d1b18; height: 5mm; }
+.xp-idecl__sign em { font-style: normal; font-size: 7pt; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ci); }
+
+/* the instructions as the student reads them before the exam: the paper's own page, on the paint blob */
+.pp-instr__sheet.xm-sheet { margin: 0 auto 1rem; }
+.pp-instr__go { position: fixed; left: 0; right: 0; bottom: 1rem; z-index: 3; display: flex; justify-content: center; pointer-events: none; }
+.pp-instr__go .pp-btn { pointer-events: auto; }
+
+/* the exam number: a box for each digit, and the column of bubbles under it */
+.xp-exno { margin: 3mm 0 4mm; padding: 2.4mm 3mm 3mm; border: 0.4mm solid var(--c); background: color-mix(in srgb, var(--cs) 28%, #fff); break-inside: avoid; }
+.xp-exno__cap { margin: 0 0 2.2mm; font-size: 8pt; line-height: 1.4; color: #1d1b18; }
+.xp-exno__cap b { margin-right: 2mm; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ci); }
+.xp-exno__grid { display: flex; justify-content: center; gap: 2.4mm; flex-wrap: wrap; }
+.xp-exno__col { display: flex; flex-direction: column; align-items: center; gap: 0.9mm; }
+.xp-exno__box { display: grid; place-items: center; width: 7.2mm; height: 8.2mm; margin-bottom: 0.8mm; border: 0.4mm solid #1d1b18; background: #fff; text-decoration: none; font: 800 11pt/1 "JetBrains Mono", monospace; color: #1d1b18; }
+.xp-exno__col b { display: grid; place-items: center; width: 5.4mm; height: 5.4mm; border-radius: 50%; border: 0.3mm solid var(--ci); background: #fff; font-size: 6.6pt; font-weight: 700; color: var(--ci); }
+.xp-live .xp-exno__col b { cursor: pointer; }
+.xp-live .xp-exno__col b:hover { box-shadow: 0 0 0 0.5mm var(--c); }
+.xp-live .xp-exno__col b:focus-visible { outline: 0.4mm solid var(--ci); outline-offset: 0.5mm; }
+.xp-exno__col b.is-picked { background: var(--ci); color: #fff; }
+.xo-omr .xp-exno { margin-top: 0; }
+@media print { .xp-exno__col b.is-picked { background: var(--ci) !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .xp-exno { background: #fff !important; } .xp-itable th { background: var(--cs) !important; } .xp-live .xp-instrpage { display: block; } }
+
+/* the booklet's front page is a paper page: the school's header and logo, the exam number, the OMR sheet; each lined page carries the logo */
+.xp-bcover .xp-head { margin-bottom: 3mm; }
+.xp-bpage__run { align-items: center; }
+.xp-bpage__logo { height: 7mm; width: auto; margin-right: 2.4mm; }
+.xp-icols { display: grid; grid-template-columns: 1fr 1fr; column-gap: 8mm; align-items: start; }
+.xp-icols .xp-isec { break-inside: avoid; margin-bottom: 1mm; }
+.xp-icols .xp-ih { margin-top: 2.6mm; }
+.xp-icols .xp-il { font-size: 8.4pt; line-height: 1.45; padding-left: 5.6mm; }
+.xp-instrpage .xp-istruct { margin-bottom: 1mm; }
+.xp-ifacts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2mm; margin: 0 0 3mm; padding: 1.6mm 2mm; border-top: 0.3mm dashed #b9b2a5; border-bottom: 0.3mm dashed #b9b2a5; }
+.xp-ifacts span { display: block; font-size: 6.4pt; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ci); }
+.xp-ifacts b { display: block; font-size: 9pt; color: #1d1b18; }
+.xp-instrpage .xp-head { margin-bottom: 2mm; }
+.xp-instrpage .xp-itable th, .xp-instrpage .xp-itable td { padding: 1mm 2mm; }
+.xp-instrpage .xp-inotice { margin: 3mm 0 2mm; padding: 1.6mm 3mm; }
+.xp-instrpage .xp-idecl__sign { margin-top: 7mm; }
+.xp-ititle { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1mm 4mm; margin: 0 0 1mm; padding: 2mm 3.4mm; background: var(--cs); border-left: 1.4mm solid var(--c); color: var(--ci); }
+.xp-ititle b { font: 900 11pt/1.1 "Unbounded", sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+.xp-ititle em { font-style: normal; font-size: 8.4pt; font-weight: 600; }
+@media print { .xp-ititle { background: var(--cs) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+.xp-icols .xp-il { font-size: 8pt; line-height: 1.4; padding-left: 5.2mm; }
+.xp-icols .xp-il li + li { margin-top: 0.7mm; }
+.xp-icols .xp-ih { margin: 2mm 0 1.2mm; padding-bottom: 0.8mm; font-size: 8pt; }
+.xp-instrpage .xp-itable th, .xp-instrpage .xp-itable td { padding: 0.7mm 2mm; font-size: 8.6pt; }
+.xp-instrpage .xp-istruct .xp-ih { margin-top: 2.6mm; }
+.xp-instrpage .xp-ifacts { padding: 1.1mm 2mm; margin-bottom: 2mm; }
+.xp-instrpage .xp-idecl { margin-top: 1.5mm; font-size: 8pt; }
+.xp-instrpage .xp-idecl__sign { margin-top: 4.5mm; }
+.xp-instrpage .xp-inotice { margin: 2mm 0 1mm; font-size: 8pt; }
+.xp-instrpage .xp-itable th, .xp-instrpage .xp-itable td { padding: 0.45mm 2mm; }
+.xp-instrpage .xp-istruct .xp-ih { margin-top: 1.6mm; }
+.xp-instrpage .xp-ititle { padding: 1.4mm 3.4mm; }
+.xp-instrpage .xp-ifacts { margin-bottom: 1.2mm; }

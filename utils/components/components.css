@@ -519,3 +519,6 @@
 .pp-cover__head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.8rem; margin-bottom: 0.3rem; }
 .pp-cover__tag { margin: 1rem 0 0.45rem; }
 @media print { .pp-cover { display: none !important; } }
+/* a cover whose content is already a paper (the instructions page): scrolls, the paper at the top */
+.pp-cover--bare { place-items: start center; padding: 1rem 1rem 5.5rem; }
+.pp-cover--bare .pp-cover__holder { position: relative; z-index: 1; width: 100%; display: flex; flex-direction: column; align-items: center; }

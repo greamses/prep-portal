@@ -269,7 +269,7 @@ function sendResult() {
     const s = live.score(questions);
     if (!s.outOf) return;
     const first = firstSend; firstSend = false;
-    try { await api(`/api/workbooks/paper/${code}/result`, { name: live.name, won: s.won, outOf: s.outOf, first }); } catch { /* the page still works without it */ }
+    try { await api(`/api/workbooks/paper/${code}/result`, { name: live.name, won: s.won, outOf: s.outOf, first, examNo: live.examNo }); } catch { /* the page still works without it */ }
   }, 900);
 }
 
@@ -416,6 +416,8 @@ $("xm-check").addEventListener("click", () => {
   if (live.checked && !live.name.trim()) say("Type your name on the paper, so your teacher knows whose score this is.");
   else if (live.checked && !canTryAgain()) say(tries === 1 ? "That was your one try. Your score has gone to your teacher." : `You have used all ${tries} tries. Your score has gone to your teacher.`);
   else if (live.checked) say(`Scored${triesNote()}. Press the arrow to answer again.`);
+  /* a paper that asks for an exam number: say so if it was not shaded, so the teacher can tell whose paper it is */
+  if (live.checked && head.examNo && !isOwner && !live.examNo) say("Your exam number is not complete. Shade every digit on the OMR sheet so your teacher knows whose paper this is, then check again.", true);
   /* written answers go to the AI marking line (after the messages above, so its own message is the one left showing) */
   if (live.checked) queueMarking(); else stopMarking();
 });

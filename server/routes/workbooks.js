@@ -427,7 +427,8 @@ module.exports = function () {
     head.colour = COLOURS.includes(h.colour) || (h.colour === "custom" && /^#[0-9a-f]{6}$/i.test(String(h.custom))) ? h.colour : "indigo";
     head.custom = head.colour === "custom" ? String(h.custom).toLowerCase() : "";
     head.paper = h.paper === "letter" ? "letter" : "a4";
-    for (const k of ["tint", "clean", "omr", "theorySheet", "timer", "camera", "instructions", "booklet", "aiMark"]) head[k] = !!h[k];
+    for (const k of ["tint", "clean", "omr", "theorySheet", "timer", "camera", "instructions", "booklet", "aiMark", "examNo"]) head[k] = !!h[k];
+    head.examDigits = Math.max(4, Math.min(12, Math.round(Number(h.examDigits)) || 8));
     head.instrText = clip(String(h.instrText || "").replace(/\r/g, ""), 1500).trim();
     head.key = false;
     head.breakAt = {};
@@ -784,6 +785,7 @@ module.exports = function () {
       const rRef = pRef.collection("results").doc(req.user.uid);
       const p = await profile(req.user.uid);
       const typed = clip(String(b.name || "").replace(/\s+/g, " ").trim(), 60);
+      const examNo = String(b.examNo || "").replace(/[^0-9]/g, "").slice(0, 12);
       const pct = Math.round((100 * won) / outOf);
       const out = await db().runTransaction(async (t) => {
         const [pSnap, rSnap] = [await t.get(pRef), await t.get(rRef)];
@@ -796,7 +798,7 @@ module.exports = function () {
         const best = Math.max(pct, prev ? prev.bestPct || 0 : 0);
         t.set(rRef, {
           uid: req.user.uid, name: typed || (prev && prev.name) || nameOf(req, p), email: req.user.email || null,
-          lastWon: won, lastOutOf: outOf, lastPct: pct, grade: gradeOf(pct), bestPct: best, attempts,
+          lastWon: won, lastOutOf: outOf, lastPct: pct, grade: gradeOf(pct), bestPct: best, attempts, ...(examNo ? { examNo } : {}),
           firstAt: prev ? prev.firstAt : stamp(), lastAt: stamp(),
         }, { merge: true });
         if (!prev) t.set(pRef, { students: admin.firestore.FieldValue.increment(1) }, { merge: true });
