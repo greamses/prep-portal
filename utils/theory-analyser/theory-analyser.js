@@ -9,6 +9,7 @@
 ═══════════════════════════════════════════════════════ */
 import { GEMINI_MODELS } from '/utils/ai-models.js';
 import { geminiGenerate } from '/utils/ai-client.js';
+import { wrapMaths } from '/utils/maths-wrap.js';
 
 (function(global) {
   'use strict';
@@ -72,6 +73,38 @@ import { geminiGenerate } from '/utils/ai-client.js';
   
   function _esc(s) {
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* ─── Maths in what the AI writes ───
+     The AI is told to put every number, unit and symbol between single dollar signs so MathJax can set
+     them (_MATHS, in both prompts). It forgets, so what it wrote is also wrapped here (utils/maths-wrap.js),
+     and the results are typeset after they are drawn. The student's own text (annotatedText) is never touched. */
+  const _MATHS = `MATHS FORMAT — mandatory: write every number, every unit that follows a number, and every formula, equation or symbol between single dollar signs, wherever it appears in any string. RIGHT: "a current of $2\\\\ \\\\text{A}$", "heated to $100^\\\\circ\\\\text{C}$", "$\\\\text{CO}_2$", "$F = ma$", "the $3$ states of matter". WRONG: "a current of 2 A", "heated to 100°C", "CO2", "F = ma", "the 3 states of matter". Only ordinary words stay outside the dollars. Inside the JSON string write each backslash of a TeX command twice, as above. Do not use \\\\( \\\\), $$ or markdown.`;
+
+  function _wrapResult(c) {
+    const W = (v) => (typeof v === 'string' ? wrapMaths(v) : v);
+    const WA = (a) => (Array.isArray(a) ? a.map(W) : a);
+    c.overallFeedback = W(c.overallFeedback);
+    c.overallImprovements = WA(c.overallImprovements);
+    (c.overallStudyTips || []).forEach((t) => { if (t) t.tip = W(t.tip); });
+    (c.questions || []).forEach((q) => {
+      if (!q) return;
+      q.feedback = W(q.feedback);
+      q.improvements = WA(q.improvements);
+      q.missedPoints = WA(q.missedPoints);
+      q.ageMismatchNote = W(q.ageMismatchNote);
+      q.outstandingNote = W(q.outstandingNote);
+      (q.awardedPoints || []).forEach((p) => { if (p) { p.point = W(p.point); p.comment = W(p.comment); } });
+    });
+    return c;
+  }
+
+  /* typeset what was just drawn, waiting for MathJax if it is still starting */
+  function _typeset(el) {
+    const mj = window.MathJax;
+    if (!mj) return;
+    const go = () => { try { mj.typesetPromise([el]).catch(() => {}); } catch (_) { /* shown as written */ } };
+    if (mj.startup && mj.startup.promise) mj.startup.promise.then(go).catch(() => {}); else go();
   }
   
   /* ─────────────────────────────────────────────────────
@@ -356,6 +389,8 @@ MARKING RULES (apply to every question):
 - improvements per question: 2-3 specific, actionable suggestions for that answer.
 - Total score = exact sum of all per-question scores.
 
+${_MATHS} This applies to your own comments (feedback, improvements, missed points, study tips), not to the student's text in annotatedText, which you return exactly as written.
+
 BANDS (% of total marks): Excellent ≥80% | Good 65–79% | Average 50–64% | Weak 30–49% | Very Weak <30%
 
 AGE-APPROPRIATENESS (per question):
@@ -436,6 +471,8 @@ STRICT RULES — READ CAREFULLY:
 - Suggest a mark value between 5 and 10.
 ${avoid}
 
+${_MATHS}
+
 RESPOND ONLY WITH VALID JSON:
 {
   "questions": [
@@ -500,8 +537,9 @@ RESPOND ONLY WITH VALID JSON:
       if (questions.length === 0) {
         throw new Error('No questions generated');
       }
-      
-      return questions;
+
+      /* numbers, units and symbols the AI left bare are wrapped for MathJax */
+      return questions.map((q) => (q && typeof q.text === 'string' ? { ...q, text: wrapMaths(q.text) } : q));
     },
     
     async analyseAll(questionsArr, answersArr, studentName, submissionDate) {
@@ -531,8 +569,8 @@ RESPOND ONLY WITH VALID JSON:
           throw new Error('Empty response from Gemini API');
         }
         
-        const combined = _parseJSON(text);
-        
+        const combined = _wrapResult(_parseJSON(text));
+
         const results = (combined.questions || []).map((q, i) => ({
           question: questionsArr[i]?.text || `Question ${i+1}`,
           compulsory: questionsArr[i]?.compulsory || false,
@@ -540,7 +578,8 @@ RESPOND ONLY WITH VALID JSON:
         }));
         
         _renderAll(results, combined, studentName, submissionDate, el);
-        
+        _typeset(el);
+
         if (typeof _cfg.onResult === 'function') try { _cfg.onResult({ combined, results }); } catch (_) {}
         return { combined, results };
         
