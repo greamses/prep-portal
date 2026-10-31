@@ -12,6 +12,7 @@ import {
   SVG_MOON,
 } from "/utils/components/nav-icons.js";
 import "/home/js/auth-modal.js";
+import { mountTooltips } from "/utils/components/tooltip.js";
 import { auth, db } from "/firebase-init.js";
 import { watchProfile } from "/utils/data-service.js";
 import { signOut, updateProfile } from "firebase/auth";
@@ -990,3 +991,6 @@ if (document.readyState === "loading") {
    so it brings the rule with it (see receipt-dropdowns.js). */
 import("/utils/components/button-words.js").catch(() => { /* an icon-and-words button merely stays plain */ });
 import("/utils/components/receipt-dropdowns.js").catch(() => { /* a page still works with its own dropdowns */ });
+
+/* the site's one tooltip, and its takeover of any `title` (tooltip.js) */
+mountTooltips();

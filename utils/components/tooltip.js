@@ -101,9 +101,46 @@ export function setTip(node, text, side) {
   return node;
 }
 
+/* ── adopting `title` ──────────────────────────────────────────────────────
+   A `title` on a control draws the browser's own tooltip: late, unstyled, in another face. Rather
+   than chase every one by hand (dozens of pages, and more set from script), the component takes
+   them over: each `title` on the page, now or added later, becomes a `data-tip` and is removed, so
+   the house chip is the only tooltip there is. The words stay available to a screen reader:
+   an icon with no text takes them as its label, a control with text keeps its own name and gets
+   them as its description.
+
+   Left alone, because their `title` is not a tooltip: an iframe's (its accessible name), <abbr>
+   (the expansion), <link>/<style>/<meta>/<html>, and anything in SVG (a `title` there is an element,
+   not an attribute that draws a tip). Opt out of one with `data-native-title`. */
+const KEEP_TITLE = new Set(["IFRAME", "ABBR", "LINK", "STYLE", "META", "HTML", "TITLE", "OBJECT", "EMBED", "FRAME"]);
+function adopt(el) {
+  if (!el || el.nodeType !== 1 || !el.hasAttribute("title")) return;
+  if (KEEP_TITLE.has(el.tagName) || el instanceof SVGElement || "nativeTitle" in el.dataset) return;
+  const words = (el.getAttribute("title") || "").trim();
+  el.removeAttribute("title");
+  if (!words) return;
+  if (!el.dataset.tip) el.dataset.tip = words;
+  const hasText = (el.textContent || "").trim().length > 0;
+  if (!hasText) { if (!el.getAttribute("aria-label") && !el.getAttribute("aria-labelledby")) el.setAttribute("aria-label", words); }
+  else if (!el.getAttribute("aria-description") && el.dataset.tip === words && !el.getAttribute("aria-label")) el.setAttribute("aria-description", words);
+  if (target === el && tip && !tip.hidden) show(el);
+}
+function adoptTree(root) {
+  if (!root || root.nodeType !== 1) return;
+  adopt(root);
+  root.querySelectorAll("[title]").forEach(adopt);
+}
+
 /** Start the site's tooltip on this page. Idempotent. */
 export function mountTooltips() {
-  if (tip) return;
+  if (tip || document.getElementById("pp-tip")) return; // once per page, even if the module was loaded twice
+  adoptTree(document.body);
+  new MutationObserver((list) => {
+    for (const m of list) {
+      if (m.type === "attributes") adopt(m.target);
+      else m.addedNodes.forEach(adoptTree);
+    }
+  }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["title"] });
   tip = document.createElement("span");
   tip.className = "pp-tip";
   tip.id = "pp-tip";

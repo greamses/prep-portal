@@ -386,3 +386,12 @@
     start();
   }
 })();
+
+/* ── The site's one tooltip, on every page that has this loader ──
+   It also takes over any `title` on the page (see tooltip.js), so the browser's own tooltip never
+   draws over it. Idempotent: pages that mount it themselves are unaffected. */
+(function () {
+  const go = () => import("/utils/components/tooltip.js").then((m) => m.mountTooltips()).catch(() => {});
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go);
+  else go();
+})();
