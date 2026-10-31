@@ -483,3 +483,9 @@ button.pp-btn.xo-tab.is-open { right: min(31rem, 96vw); z-index: 10060; }
 .xm-qbank__foot { display: flex; align-items: center; gap: 0.6rem; font-size: 0.76rem; font-weight: 700; }
 .xm-qbank__sp { flex: 1 1 auto; }
 @media (max-width: 560px) { .xm-qbank__filters { grid-template-columns: 1fr; } }
+
+/* the saved-exams panel reuses the bank panel; its rows carry two keys */
+.xm-ex { display: grid; grid-template-columns: 1fr auto auto; gap: 0.5rem; align-items: center; }
+.xm-ex .xm-ex__main small { margin: 0.15rem 0 0; }
+.xm-ex__title { font-size: 0.86rem; overflow-wrap: anywhere; }
+.xm-main #xm-exam-title { min-width: 11rem; flex: 1 1 11rem; }

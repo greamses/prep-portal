@@ -16,6 +16,7 @@ import { pickColour } from "/utils/components/colour-pop.js";
 import { createClock, minutesFor } from "./timer.js";
 import { examGate } from "/utils/components/exam-gate.js";
 import { saveToBank, openBank } from "./bank.js";
+import { saveExam, openExams, currentExamId, setCurrentExamId } from "./exams.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
 import { UI } from "/utils/components/ui-icons.js";
@@ -367,6 +368,53 @@ $("xm-qbank-open").addEventListener("click", () => openBank({
     renderList(); draw(); save();
   },
 }));
+
+/* The whole exam, kept with the teacher's account (exams.js): Save writes it (over the one it was opened
+   from, if any), "save as new" makes another, and My exams lists them all to open again. */
+function showNewKey() { $("xm-exam-new").hidden = !currentExamId(); }
+async function keepExam(asNew) {
+  const out = $("xm-cbt-status");
+  if (!state.questions.length) { out.textContent = "Add some questions before saving the exam."; return; }
+  out.textContent = "Saving the exam…";
+  try {
+    const r = await saveExam({ id: asNew ? "" : currentExamId(), title: $("xm-exam-title").value, head: state.head, questions: state.questions });
+    out.textContent = `Saved "${r.title}" with ${r.questions} question${r.questions === 1 ? "" : "s"}. It is in My exams.`;
+    showNewKey();
+  } catch (e) { out.textContent = String((e && e.message) || e).slice(0, 180); }
+}
+function putOnBench(exam) {
+  const out = $("xm-cbt-status");
+  if (state.questions.length) {
+    try { localStorage.setItem(`${KEY}:before-exam`, JSON.stringify({ head: state.head, questions: state.questions, ai: state.ai, id: currentExamId(), title: $("xm-exam-title").value })); } catch { /* storage full */ }
+  }
+  const had = state.questions.length > 0;
+  state.head = { ...BLANK_HEAD, ...exam.head, marksEach: { ...BLANK_HEAD.marksEach, ...((exam.head || {}).marksEach || {}) } };
+  state.questions = (exam.questions || []).map(clean);
+  setCurrentExamId(exam.id);
+  $("xm-exam-title").value = exam.title || "";
+  fillHead(); renderList(); draw(); flush(); showNewKey();
+  out.textContent = `Opened "${exam.title}" with ${state.questions.length} question${state.questions.length === 1 ? "" : "s"}.`;
+  if (!had) return;
+  const undo = document.createElement("button");
+  undo.type = "button"; undo.className = "pp-btn pp-btn--ghost xm-undo";
+  faceOf(undo, UI.undo(18), "Bring back the paper that was on the bench");
+  undo.onclick = () => {
+    try {
+      const b = JSON.parse(localStorage.getItem(`${KEY}:before-exam`) || "null");
+      if (!b) return;
+      state.head = { ...BLANK_HEAD, ...b.head }; state.questions = (b.questions || []).map(clean); state.ai = b.ai || {};
+      setCurrentExamId(b.id || "");
+      $("xm-exam-title").value = b.title || "";
+      localStorage.removeItem(`${KEY}:before-exam`);
+      fillHead(); renderList(); draw(); flush(); showNewKey();
+      out.textContent = "The earlier paper is back.";
+    } catch { out.textContent = "Could not bring it back."; }
+  };
+  out.append(" ", undo);
+}
+$("xm-exam-save").addEventListener("click", () => keepExam(false));
+$("xm-exam-new").addEventListener("click", () => keepExam(true));
+$("xm-exam-open").addEventListener("click", () => openExams({ onOpen: putOnBench, onGone: showNewKey }));
 
 /* delete a bank, or all of them: two clicks, the first only asks */
 const banks = $("xm-banks");
@@ -750,6 +798,10 @@ faceOf($("xm-diagrams"), UI.shapes(18), "Add diagrams to geometry questions");
 document.querySelectorAll('[data-clear="all"]').forEach((b) => { faceOf(b, UI.trash(18), "Delete all questions"); b.dataset.label = "Delete all questions"; });
 faceOf($("xm-print"), UI.print(18), "Print");
 faceOf($("xm-share"), UI.link(18), "Share link");
+faceOf($("xm-exam-save"), UI.save(18), "Save this whole exam");
+faceOf($("xm-exam-new"), UI.plus(18), "Save as a new exam");
+faceOf($("xm-exam-open"), UI.layers(18), "My exams");
+showNewKey();
 faceOf($("xm-qbank-save"), UI.save(18), "Keep this paper's questions in my bank");
 faceOf($("xm-qbank-open"), UI.book(18), "Open my question bank");
 faceOf($("xm-shuffle"), UI.shuffle(18), "Shuffle the questions and their answers");
