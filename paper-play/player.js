@@ -236,3 +236,18 @@ $("xm-clear").addEventListener("click", () => { if (live.checked && !canTryAgain
 faces();
 
 open();
+
+/* Fit the sheet to the screen: on a wide screen the paper is shown larger than its printed size
+   (never smaller, a phone scrolls instead); printing is untouched (see style.css). */
+function fitSheet() {
+  sheet.style.zoom = "";
+  const room = ($("xm-sheet").closest(".xm-preview") || document.body).clientWidth - 24;
+  const z = Math.max(1, Math.min(1.6, room / sheet.offsetWidth));
+  sheet.style.zoom = z > 1.02 ? z.toFixed(3) : "";
+}
+let fitTimer = 0;
+window.addEventListener("resize", () => { clearTimeout(fitTimer); fitTimer = setTimeout(fitSheet, 120); });
+window.addEventListener("beforeprint", () => { sheet.style.zoom = ""; });
+window.addEventListener("afterprint", fitSheet);
+fitSheet();
+new MutationObserver(() => { clearTimeout(fitTimer); fitTimer = setTimeout(fitSheet, 60); }).observe(sheet, { attributes: true, attributeFilter: ["data-paper"] });

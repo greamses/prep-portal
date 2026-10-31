@@ -4,8 +4,10 @@
 .pp-msg.is-bad { color: #b0453d; font-weight: 600; }
 /* a phone is narrower than a sheet of paper: the sheet scrolls rather than squashes */
 .xm-viewport { overflow-x: auto; max-width: 100%; }
-.xm-work { display: block; }
-.xm-preview { max-width: 230mm; margin: 0 auto; }
+.wb-work.xm-work { display: block; }
+.xm-preview { max-width: min(100%, 1400px); margin: 0 auto; }
+/* leave room each side for the tool rail, so the toolbar is not under it */
+@media (min-width: 760px) { .xm-preview { max-width: min(calc(100vw - 13rem), 1400px); } }
 
 /* the workbook interactive layer makes a toggle and a bar of its own; the rail is driven from here */
 .xm-main .wb-live-toggle, .xm-main .wb-livebar { display: none !important; }
@@ -21,3 +23,4 @@ html, body { overflow-x: clip !important; overflow-y: visible !important; }
 .pp-live__marked { font-style: normal; font-size: 0.72rem; font-weight: 800; color: #2f6140; }
 .pp-live__none { margin: 0; font-weight: 400; }
 @media print { .pp-live { display: none !important; } }
+@media print { .xm-sheet { zoom: 1 !important; } }
