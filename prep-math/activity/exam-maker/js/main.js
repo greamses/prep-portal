@@ -135,6 +135,7 @@ const heads = document.querySelectorAll("[data-h]");
 function fillHead() {
   heads.forEach((el) => { el.value = state.head[el.dataset.h] || ""; });
   $("xm-paper").value = state.head.paper;
+  if (window.__paintPaper) window.__paintPaper();
   document.querySelectorAll("[data-each]").forEach((el) => { el.value = state.head.marksEach[el.dataset.each]; });
   document.querySelectorAll("[data-attempt]").forEach((el) => { el.value = (state.head.attempt || {})[el.dataset.attempt] || ""; });
   $("xm-key").checked = !!state.head.key;
@@ -575,6 +576,24 @@ document.querySelectorAll("[data-add]").forEach((b) => b.addEventListener("click
       });
       box.appendChild(bt);
     });
+  }
+}
+/* the paper size, as two little sheets (the name is the tooltip) */
+{
+  const box = document.getElementById("xm-papers"), val = document.getElementById("xm-paper");
+  if (box && val) {
+    const sheet = (label, h, y) => `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="${y}" width="14" height="${h}" rx="1" fill="#fffdf8" stroke="#2a2723" stroke-width="1.6"/><text x="12" y="${y + h / 2 + 2.6}" font-size="7.4" font-weight="800" text-anchor="middle" fill="#2a2723" font-family="monospace">${label}</text></svg>`;
+    const SIZES = [["a4", "A4 paper", sheet("A4", 20, 2)], ["letter", "US Letter paper", sheet("US", 18, 3)]];
+    const paint = () => box.querySelectorAll(".xm-ico").forEach((x) => { const on = x.dataset.v === val.value; x.setAttribute("aria-checked", String(on)); x.setAttribute("aria-pressed", String(on)); });
+    SIZES.forEach(([v, name, svg]) => {
+      const bt = document.createElement("button");
+      bt.type = "button"; bt.className = "pp-btn pp-note-btn xm-ico"; bt.dataset.v = v; bt.setAttribute("role", "radio");
+      bt.innerHTML = svg; bt.dataset.tip = name; bt.setAttribute("aria-label", name);
+      bt.addEventListener("click", () => { val.value = v; paint(); val.dispatchEvent(new Event("change", { bubbles: true })); });
+      box.appendChild(bt);
+    });
+    paint();
+    window.__paintPaper = paint;
   }
 }
 /* the families of tools on the side rail during the exam: all on to begin with; the pick is kept with the paper */

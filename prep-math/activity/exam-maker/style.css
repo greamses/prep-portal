@@ -782,3 +782,6 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 .xm-glass .stream { stroke-dasharray: 1.2 1.8; animation: xm-sand 0.45s linear infinite; }
 @keyframes xm-sand { to { stroke-dashoffset: -3; } }
 @media (prefers-reduced-motion: reduce) { .xm-glass .stream { animation: none; } }
+
+/* the instructions preview is a small icon key, not a bar across the form */
+.xm-icon-only.pp-btn { align-self: flex-start; justify-self: start; width: 2.9rem; height: 2.4rem; min-width: 0; padding: 0; display: inline-grid; place-items: center; flex: 0 0 auto; }
