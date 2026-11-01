@@ -543,40 +543,41 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     typesetReveals();
   }
 
-  /* the model answers and notes under the marked questions are typeset too (they arrive after the paper was, and again when the marks do) */
-  let tsTimer = 0;
+  /* the model answers and notes under the marked questions are typeset too (they arrive after the paper was, and again when the marks do).
+     Each formula is set as a SELF-CONTAINED picture (the sticky notes' own mathNode), not by a MathJax pass over the page: MathJax's
+     shared glyph cache lives in the page and is lost when the paper is drawn again, and the booklet in the sliding sheet is outside the
+     paper, so formulas set that way came out blank there. It runs a moment after the marks are painted, and once more, at once, just
+     before printing, so a page printed straight away never shows the raw TeX. */
+  let tsTimer = 0, mathMod = null;
+  const loadMathMod = () => (mathMod ? Promise.resolve(mathMod) : import("/utils/components/sticky-math.js").then((m) => { mathMod = m; m.preloadMath(); return m; }));
+  const MARKED = ".xm-sheet .xp-reveal, .xm-sheet .xp-script, .xo-drawer .xp-reveal, .xo-drawer .xp-script, .xp-bfill";
+  function swapMath() {
+    if (!mathMod) return;
+    const { mathNode } = mathMod;
+    document.querySelectorAll(MARKED).forEach((root) => {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const hits = [];
+      while (walker.nextNode()) if (/\\\(|\\\[/.test(walker.currentNode.nodeValue)) hits.push(walker.currentNode);
+      hits.forEach((tn) => {
+        const frag = document.createDocumentFragment();
+        tn.nodeValue.split(/(\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/).forEach((part) => {
+          if (!part) return;
+          if (/^\\[([][\s\S]*\\[)\]]$/.test(part)) {
+            const n = mathNode(part.slice(2, -2));
+            n.removeAttribute("title"); n.removeAttribute("contenteditable");
+            frag.appendChild(n);
+          } else frag.appendChild(document.createTextNode(part));
+        });
+        tn.replaceWith(frag);
+      });
+    });
+  }
   function typesetReveals() {
     clearTimeout(tsTimer);
-    tsTimer = setTimeout(async () => {
-      const nodes = [...document.querySelectorAll(".xm-sheet .xp-reveal, .xm-sheet .xp-script, .xo-drawer .xp-reveal, .xo-drawer .xp-script, .xp-bfill")];
-      if (!nodes.length) return;
-      /* Each formula is set as a SELF-CONTAINED picture (the sticky notes' own mathNode), not by a MathJax pass over the page: MathJax's
-         shared glyph cache lives in the page and is lost when the paper is drawn again, and the booklet in the sliding sheet is outside the
-         paper, so formulas set that way came out blank there. */
-      try {
-        const { mathNode, preloadMath } = await import("/utils/components/sticky-math.js");
-        preloadMath();
-        const swap = (root) => {
-          const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-          const hits = [];
-          while (walker.nextNode()) if (/\\\(|\\\[/.test(walker.currentNode.nodeValue)) hits.push(walker.currentNode);
-          hits.forEach((tn) => {
-            const frag = document.createDocumentFragment();
-            tn.nodeValue.split(/(\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/).forEach((part) => {
-              if (!part) return;
-              if (/^\\[([][\s\S]*\\[)\]]$/.test(part)) {
-                const n = mathNode(part.slice(2, -2));
-                n.removeAttribute("title"); n.removeAttribute("contenteditable");
-                frag.appendChild(n);
-              } else frag.appendChild(document.createTextNode(part));
-            });
-            tn.replaceWith(frag);
-          });
-        };
-        nodes.forEach(swap);
-      } catch { /* left as written */ }
-    }, 60);
+    tsTimer = setTimeout(() => { loadMathMod().then(swapMath).catch(() => {}); }, 60);
   }
+  loadMathMod().catch(() => {});
+  addEventListener("beforeprint", () => { try { swapMath(); } catch { /* left as written */ } });
 
   /* ── the marker's tick or cross ─────────────────────────────────────────────
      Beside every marked question a pen's mark: a good green tick for a right answer, a red cross for

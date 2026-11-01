@@ -1054,3 +1054,6 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
   .xp-mark small { color: #1f9d46 !important; }
   .xp-script__note, .xp-bfill__row small { color: #c0392b !important; }
 }
+
+/* print: the page links in the booklet's list are not printed as "(#)" */
+@media print { .xp-bindex a::after, .xp a[href="#"]::after { content: none !important; } }
