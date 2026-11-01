@@ -3,6 +3,7 @@ import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { richField } from "./rich-field.js";
 import { textHtml } from "./model.js";
+import { toTeX } from "/utils/components/math-linear.js";
 
 /* ============================================================================
    The paper, answered on screen
@@ -445,6 +446,14 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   }
 
   /** Mark what can be marked and show the model answer where it cannot. */
+  /* A blank's answer typed as plain maths (12x-8, 3/4, x^2) is SHOWN set, the way it would have looked written with Alt + =; words stay words */
+  function asMaths(v) {
+    const t = String(v == null ? "" : v).trim();
+    if (!t || t.includes("$")) return t;
+    if (!/^[\w\s.+\-*/^=()<>,÷×−]+$/.test(t) || /[A-Za-z]{4,}/.test(t) || !/[\d+\-*/^=]/.test(t)) return t;
+    try { return "$" + toTeX(t) + "$"; } catch { return t; }
+  }
+
   function showResults(questions) {
     const qs = byId(questions);
     /* WITH AN ANSWER BOOKLET the question paper is never marked: the written answers are marked in the booklet, the multiple choice on its
@@ -488,7 +497,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
         const ok = matches(answers[q.id], q.answer);
         if (inBook) fills.push({ n: el.querySelector(".xp-n")?.textContent || "", got: answers[q.id] || "", ok, answer: q.answer });
         else { el.classList.toggle("is-ok", ok); el.classList.toggle("is-no", !ok); }
-        say(ok ? "is-ok" : "is-no", ok ? "Correct." : `Answer: ${textHtml(q.answer)}`);
+        say(ok ? "is-ok" : "is-no", ok ? "Correct." : `Answer: ${textHtml(asMaths(q.answer))}`);
       } else if (ai.on && ai.status !== "failed") {
         /* marked by AI (queued): the model answer, and either the mark and why, or where it is in the line */
         if (!given(q)) say("is-skipped", "Not answered.");
@@ -536,8 +545,8 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       box.className = "xp-bfill";
       box.setAttribute("data-nomath", "");
       box.innerHTML = "<h3>Fill in the blank</h3>" + fills.map((f) => `<div class="xp-bfill__row ${f.ok ? "is-ok" : "is-no"}"><b>${f.n}</b>`
-        + `<span>${f.got ? textHtml(String(f.got)) : "<i>Not answered</i>"}</span><em>${f.ok ? TICK : CROSS}</em>`
-        + (f.ok ? "" : `<small>Answer: ${textHtml(String(f.answer || ""))}</small>`) + `</div>`).join("");
+        + `<span>${f.got ? textHtml(asMaths(f.got)) : "<i>Not answered</i>"}</span><em>${f.ok ? TICK : CROSS}</em>`
+        + (f.ok ? "" : `<small>Answer: ${textHtml(asMaths(f.answer || ""))}</small>`) + `</div>`).join("");
       cover.insertBefore(box, cover.querySelector(".xp-bindex") || cover.querySelector(".xp-bfoot"));
     }
     typesetReveals();
