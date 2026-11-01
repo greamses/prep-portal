@@ -163,28 +163,22 @@ function cutAt(cv, from, to) {
   }
   return to;
 }
-async function makePdf({ pages, root, image, name, step }) {
-  const { jsPDF } = await import(LIB.pdf);
-  let doc = null;
-  const add = (wmm, hmm) => {
-    const o = wmm > hmm ? "l" : "p";
-    if (!doc) doc = new jsPDF({ unit: "mm", format: [wmm, hmm], orientation: o, compress: true });
-    else doc.addPage([wmm, hmm], o);
-  };
+/* The printed pages as pictures: [{ w, h (page, mm), m (margin, mm), url (JPEG/PNG data URL), iw, ih (picture, mm), type }].
+   The PDF and the exact-look Word file are both made from these, so the two always match. */
+async function pagePictures({ pages, root, image, step }) {
+  const out = [];
   if (image) {
     const cv = await image();
     const m = 14, cw = A4.w - 2 * m, ch = A4.h - 2 * m;
     const k = Math.min(cw / cv.width, ch / cv.height);
-    add(A4.w, A4.h);
-    doc.addImage(cv.toDataURL("image/png"), "PNG", (A4.w - cv.width * k) / 2, m, cv.width * k, cv.height * k);
+    out.push({ w: A4.w, h: A4.h, m, url: cv.toDataURL("image/png"), type: "PNG", iw: cv.width * k, ih: cv.height * k, x: (A4.w - cv.width * k) / 2 });
   } else if (pages && pages.length) {
     for (let i = 0; i < pages.length; i++) {
       step(`Page ${i + 1} of ${pages.length}`);
       const el = pages[i], r = el.getBoundingClientRect();
       const cv = await capture(el);
       const wmm = r.width * PX_MM, hmm = r.height * PX_MM;
-      add(wmm, hmm);
-      doc.addImage(cv.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, wmm, hmm);
+      out.push({ w: wmm, h: hmm, m: 0, url: cv.toDataURL("image/jpeg", 0.92), type: "JPEG", iw: wmm, ih: hmm, x: 0 });
     }
   } else if (root) {
     step("Reading the page");
@@ -200,14 +194,52 @@ async function makePdf({ pages, root, image, name, step }) {
       const pc = part.getContext("2d");
       pc.fillStyle = "#fff"; pc.fillRect(0, 0, part.width, h);
       pc.drawImage(cv, 0, y, cv.width, h, 0, 0, cv.width, h);
-      add(A4.w, A4.h);
-      doc.addImage(part.toDataURL("image/jpeg", 0.92), "JPEG", m, m, cw, h / pxPerMm);
+      out.push({ w: A4.w, h: A4.h, m, url: part.toDataURL("image/jpeg", 0.92), type: "JPEG", iw: cw, ih: h / pxPerMm, x: m });
       step(`Page ${++n}`);
       y = end;
     }
   }
-  if (!doc) throw new Error("There was nothing to put in the PDF.");
+  if (!out.length) throw new Error("There was nothing to put in the file.");
+  return out;
+}
+
+async function makePdf(job) {
+  const { jsPDF } = await import(LIB.pdf);
+  const pics = await pagePictures(job);
+  let doc = null;
+  for (const pg of pics) {
+    const o = pg.w > pg.h ? "l" : "p";
+    if (!doc) doc = new jsPDF({ unit: "mm", format: [pg.w, pg.h], orientation: o, compress: true });
+    else doc.addPage([pg.w, pg.h], o);
+    doc.addImage(pg.url, pg.type, pg.x, pg.m, pg.iw, pg.ih);
+  }
   return doc.output("blob");
+}
+
+/* ── Word, exactly as printed ────────────────────────────────────────────────
+   Each printed page is one picture filling its own page of the document, so Word and Google Docs show it EXACTLY as it prints
+   (the same pictures as the PDF). The words are part of the picture: for words to edit, the "editable" Word file is the one. */
+async function makeDocxExact(job) {
+  const D = await import(LIB.docx);
+  const { Document, Packer, Paragraph, ImageRun, AlignmentType } = D;
+  const pics = await pagePictures(job);
+  const twip = (mm) => Math.round((mm / 25.4) * 1440);
+  const mmPx = (mm) => mm / PX_MM;
+  const bytes = (url) => Uint8Array.from(atob(url.split(",")[1]), (c) => c.charCodeAt(0));
+  const sections = pics.map((pg) => {
+    /* a hair under the page, so Word never spills the picture onto a blank page after it */
+    const k = Math.min(1, (pg.h - 2 * pg.m - 1.5) / pg.ih, (pg.w - 2 * Math.max(pg.m, pg.x) + 0.01) / pg.iw);
+    const side = Math.max(0, (pg.w - pg.iw * k) / 2);
+    return {
+      properties: { page: { size: { width: twip(pg.w), height: twip(pg.h), orientation: pg.w > pg.h ? "landscape" : "portrait" }, margin: { top: twip(pg.m), bottom: 0, left: twip(side), right: 0, header: 0, footer: 0, gutter: 0 } } },
+      children: [new Paragraph({
+        alignment: AlignmentType.LEFT,
+        spacing: { before: 0, after: 0, line: 240 },
+        children: [new ImageRun({ data: bytes(pg.url), transformation: { width: Math.round(mmPx(pg.iw * k)), height: Math.round(mmPx(pg.ih * k)) } })],
+      })],
+    };
+  });
+  return Packer.toBlob(new Document({ creator: "Prep Portal", title: job.name, sections }));
 }
 
 /* ── Word ────────────────────────────────────────────────────────────────────
@@ -612,7 +644,7 @@ function save(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
-/** Make the file: "pdf" | "docx" | "gdocs". Used by the menu, and directly by any page that wants it. */
+/** Make the file: "pdf" | "docx" | "docx-edit" | "gdocs". Used by the menu, and directly by any page that wants it. */
 export async function exportDoc(kind, opts, step = () => {}) {
   const name = safeName(typeof opts.name === "function" ? opts.name() : opts.name);
   if (kind === "pdf" && opts.pdfUrl) { const a = Object.assign(document.createElement("a"), { href: opts.pdfUrl, download: "" }); document.body.appendChild(a); a.click(); a.remove(); return {}; }
@@ -637,7 +669,8 @@ export async function exportDoc(kind, opts, step = () => {}) {
     const job = { pages, root, image: opts.image, name, step };
     try {
       if (kind === "pdf") { save(await makePdf(job), `${name}.pdf`); return {}; }
-      const blob = await makeDocx(job);
+      if (kind === "docx-edit") { save(await makeDocx(job), `${name} (editable).docx`); return {}; }
+      const blob = await makeDocxExact(job);
       if (kind === "docx") { save(blob, `${name}.docx`); return {}; }
       step("Putting it in your Google Drive");
       return { link: await toGoogleDocs(blob, name, token) };
@@ -649,9 +682,10 @@ export async function exportDoc(kind, opts, step = () => {}) {
 const ICON_DL = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="4" y="17" width="16" height="4" rx="1.2" fill="var(--accent-secondary, #6aa7e0)"/><path d="M10.4 3h3.2v7.2h3.3L12 15.6 7.1 10.2h3.3z" fill="var(--accent-warning, #f0a868)"/></svg>';
 const fileIcon = (band, label) => `<svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M7 2h12.5L26 8.5V28a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#fffdf7" stroke="#cfc6b6" stroke-width="1.2"/><path d="M19.5 2v6.5H26z" fill="#e6dfd2"/><rect x="2.5" y="15" width="21" height="9" rx="1.5" fill="${band}"/><text x="13" y="21.8" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="6.4" font-weight="800" fill="#fff">${label}</text></svg>`;
 const CHOICES = [
-  { kind: "pdf", icon: fileIcon("#d6503f", "PDF"), title: "PDF", say: "The pages as they print" },
-  { kind: "docx", icon: fileIcon("#2f6db5", "DOCX"), title: "Word", say: "An editable document (.docx)" },
-  { kind: "gdocs", icon: fileIcon("#2f9a5a", "DOCS"), title: "Google Docs", say: "Saved to your own Google Drive as a Google Doc" },
+  { kind: "pdf", icon: fileIcon("#d6503f", "PDF"), title: "PDF", say: "The pages exactly as they print" },
+  { kind: "docx", icon: fileIcon("#2f6db5", "DOCX"), title: "Word", say: "Exactly as it prints, one picture per page (.docx)" },
+  { kind: "gdocs", icon: fileIcon("#2f9a5a", "DOCS"), title: "Google Docs", say: "Exactly as it prints, saved to your own Google Drive" },
+  { kind: "docx-edit", icon: fileIcon("#5b7fb0", "EDIT"), title: "Word, to edit", say: "The words as text you can change; the layout is close, not exact" },
 ];
 const CSS = `
 .pp-dl-pop.pp-receipt { position: fixed; z-index: 2147482500; width: min(21rem, 94vw); }
