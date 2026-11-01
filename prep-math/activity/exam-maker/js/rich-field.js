@@ -22,7 +22,7 @@ import { toTeX } from "/utils/components/math-linear.js";
 import { mathNode, mathReady, preloadMath, whenMathDrawn } from "/utils/components/sticky-math.js";
 
 const CSS = `
-.xp-rich { white-space: pre-wrap; overflow-wrap: anywhere; cursor: text; }
+.xp-rich { white-space: pre-wrap; overflow-wrap: anywhere; cursor: text; font-family: "Playwrite US Trad", "Segoe Script", "Brush Script MT", cursive; font-weight: 300; font-size: 1.02em; letter-spacing: 0.01em; }
 .xp-rich.is-off { cursor: default; }
 .xp-rich .pp-note__eq { display: inline-block; vertical-align: middle; padding: 0 0.6mm; border-radius: 0; cursor: default; user-select: all; }
 .xp-rich .pp-note__eq:hover { background: color-mix(in srgb, var(--c, #6fb7e8) 18%, transparent); }
@@ -101,6 +101,8 @@ function preview(box) {
  */
 export function richField({ multiline = false, className = "" } = {}) {
   if (!document.getElementById("xp-rich-css")) document.head.appendChild(Object.assign(document.createElement("style"), { id: "xp-rich-css", textContent: CSS }));
+  /* the student's words are written in American school cursive (equations stay set as maths) */
+  if (!document.getElementById("xp-cursive-font")) document.head.appendChild(Object.assign(document.createElement("link"), { id: "xp-cursive-font", rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Playwrite+US+Trad:wght@100..400&display=swap" }));
   preloadMath();
   const el = document.createElement("div");
   el.className = `xp-rich ${className}`.trim();
