@@ -17,7 +17,7 @@ import { createClock, minutesFor } from "./timer.js";
 import { examGate } from "/utils/components/exam-gate.js";
 import { showInstructions } from "./instructions.js";
 import { createWatch } from "/utils/components/exam-watch.js";
-import { saveToBank, openBank } from "./bank.js";
+import { openBank } from "./bank.js";
 import { saveExam, openExams, currentExamId, setCurrentExamId } from "./exams.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
@@ -302,6 +302,7 @@ function card(q, i) {
     : `<label class="wb-field"><span>Model answer or marking note</span><textarea class="wb-input" data-f="answerText" rows="2">${esc(q.answer)}</textarea></label>`;
   return `<div class="pp-receipt xm-qreceipt"><div class="pp-receipt__paper xm-card" data-id="${q.id}">
     <div class="xm-card__top">
+      <label class="xm-tick" data-tip="Tick to keep it when you delete the unticked ones"><input type="checkbox" data-f="tick" aria-label="Keep question ${i + 1}" ${ticked.has(q.id) ? "checked" : ""} /><i aria-hidden="true"></i></label>
       <span class="xm-card__n">${i + 1}</span>
       <select class="wb-select xm-card__type" data-f="type" aria-label="Question type">
         ${Object.keys(TYPES).map((k) => `<option value="${k}" ${k === q.type ? "selected" : ""}>${TYPES[k].label}</option>`).join("")}
@@ -311,7 +312,6 @@ function card(q, i) {
       <span class="xm-card__tools">
         <button class="pp-btn pp-btn--ghost" type="button" data-do="up" aria-label="Move up" data-tip="Move up">${UI.arrowUp(16)}</button>
         <button class="pp-btn pp-btn--ghost" type="button" data-do="down" aria-label="Move down" data-tip="Move down">${UI.arrowDown(16)}</button>
-        <button class="pp-btn pp-btn--ghost" type="button" data-do="bank" aria-label="Keep this question in my bank" data-tip="Keep in my bank">${UI.save(16)}</button>
         <button class="pp-btn pp-btn--ghost" type="button" data-do="del" aria-label="Delete question" data-tip="Delete">${UI.trash(16)}</button>
       </span>
     </div>
@@ -334,12 +334,26 @@ function card(q, i) {
   </div></div>`;
 }
 
+/* Ticks: which questions to keep when "Delete unticked" is pressed. Not saved with the paper; they are for
+   merging banks (load a bank, tick what to keep, delete the rest, load the next). */
+const ticked = new Set();
+function paintTickBar() {
+  const bar = $("xm-tickbar");
+  if (!bar) return;
+  const n = state.questions.length, t = state.questions.filter((q) => ticked.has(q.id)).length;
+  bar.hidden = !n;
+  bar.querySelector("[data-tick-count]").textContent = `${t} of ${n} ticked`;
+  const del = bar.querySelector('[data-tick="del"]');
+  del.disabled = t === n || !n;
+  del.querySelector("b").textContent = n - t ? `Delete unticked (${n - t})` : "Delete unticked";
+}
 function renderList() {
   list.innerHTML = state.questions.length
     ? state.questions.map(card).join("")
     : `<p class="xm-hint">Nothing yet. Add a question with the buttons above, or generate a set.</p>`;
   enhanceSelects(list, { className: "pp-select--sm" });
   renderBanks();
+  paintTickBar();
 }
 
 const find = (el) => {
@@ -350,6 +364,7 @@ const find = (el) => {
 list.addEventListener("input", (e) => {
   const i = find(e.target);
   if (i < 0) return;
+  if (e.target.dataset.f === "tick") { const id = state.questions[i].id; e.target.checked ? ticked.add(id) : ticked.delete(id); paintTickBar(); return; }
   const q = state.questions[i], f = e.target.dataset.f, v = e.target.value;
   if (f === "text") q.text = v;
   else if (f === "opt") q.options[+e.target.dataset.k] = v;
@@ -397,7 +412,6 @@ list.addEventListener("click", (e) => {
   if (d === "del") qs.splice(i, 1);
   else if (d === "up" && i > 0) [qs[i - 1], qs[i]] = [qs[i], qs[i - 1]];
   else if (d === "down" && i < qs.length - 1) [qs[i + 1], qs[i]] = [qs[i], qs[i + 1]];
-  else if (d === "bank") { keep([qs[i]]); return; }
   else if (d === "svggen") { genDiagram(b, qs[i]); return; }
   else if (d === "svgpick") { b.parentElement.querySelector('[data-f="svgfile"]').click(); return; }
   else if (d === "svgclear") qs[i].svg = "";
@@ -405,20 +419,39 @@ list.addEventListener("click", (e) => {
   renderList(); draw(); save();
 });
 
-/* The question bank (bank.js): save the paper's questions, or one, and bring some back. */
-const bankMeta = () => ({ subject: state.head.subject, level: state.head.klass });
-async function keep(list) {
-  const n = await saveToBank(list, bankMeta());
-  const out = $("xm-cbt-status");
-  out.textContent = n < 0 ? "The question bank could not be reached." : `${n} question${n === 1 ? "" : "s"} kept in your bank.`;
+/* The question bank (bank.js): every question in the editor saved as ONE bank under a name, and banks
+   loaded back into the editor (after what is there) to be changed or merged. */
+const bankBench = () => ({ questions: state.questions, subject: state.head.subject, level: state.head.klass, name: $("xm-exam-title").value.trim() });
+function loadBank(qs, name) {
+  /* what was already in the editor is kept (ticked); the bank's questions arrive unticked, ready to be chosen from */
+  state.questions.forEach((q) => ticked.add(q.id));
+  const first = state.questions.length;
+  const added = (qs || []).map((q) => clean({ ...q, id: undefined }));
+  state.questions.push(...added);
+  renderList(); draw(); save();
+  $("xm-cbt-status").textContent = `Loaded ${added.length} question${added.length === 1 ? "" : "s"} from "${name}".${first ? " Tick the ones you want to keep, then press Delete unticked." : ""}`;
+  list.querySelectorAll(".xm-qreceipt")[first]?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
-$("xm-qbank-save").addEventListener("click", () => { if (state.questions.length) keep(state.questions); });
-$("xm-qbank-open").addEventListener("click", () => openBank({
-  onAdd: (chosen) => {
-    chosen.forEach((q) => state.questions.push(clean({ ...q, id: undefined, marks: state.head.marksEach[q.type] ?? q.marks })));
+$("xm-qbank-save").addEventListener("click", () => openBank({ bench: bankBench, onLoad: loadBank, focusSave: true }));
+$("xm-qbank-open").addEventListener("click", () => openBank({ bench: bankBench, onLoad: loadBank }));
+/* the tick bar */
+$("xm-tickbar").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-tick]");
+  if (!b) return;
+  if (b.dataset.tick === "all") state.questions.forEach((q) => ticked.add(q.id));
+  else if (b.dataset.tick === "none") ticked.clear();
+  else if (b.dataset.tick === "del") {
+    const gone = state.questions.filter((q) => !ticked.has(q.id)).length;
+    if (!gone) return;
+    if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.classList.add("is-armed"); b.querySelector("b").textContent = `Press again to delete ${gone}`; setTimeout(() => { b.dataset.armed = ""; b.classList.remove("is-armed"); paintTickBar(); }, 4000); return; }
+    b.dataset.armed = ""; b.classList.remove("is-armed");
+    state.questions = state.questions.filter((q) => ticked.has(q.id));
+    $("xm-cbt-status").textContent = `Deleted ${gone} unticked question${gone === 1 ? "" : "s"}. ${state.questions.length} left.`;
     renderList(); draw(); save();
-  },
-}));
+    return;
+  }
+  renderList();
+});
 
 /* The whole exam, kept with the teacher's account (exams.js): Save writes it (over the one it was opened
    from, if any), "save as new" makes another, and My exams lists them all to open again. */
@@ -748,7 +781,6 @@ $("xm-ai-go").addEventListener("click", async () => {
     const order = Object.keys(want);
     kept.sort((x, y) => order.indexOf(x.type) - order.indexOf(y.type));
     state.questions.push(...kept);
-    saveToBank(kept, { ...bankMeta(), topic: $("xm-ai-topic").value.slice(0, 80) }); // quietly: what the model wrote is kept
     renderList(); draw(); save();
     if (common.svg && state.questions.some(needsDiagram)) {
       const r = await drawGeometry((t) => status(`${kept.length} questions added. ${t}`));
@@ -1019,8 +1051,8 @@ faceOf($("xm-exam-save"), UI.save(18), "Save this whole exam");
 faceOf($("xm-exam-new"), UI.plus(18), "Save as a new exam");
 faceOf($("xm-exam-open"), UI.layers(18), "Everything I have built");
 showNewKey();
-faceOf($("xm-qbank-save"), UI.save(18), "Keep this paper's questions in my bank");
-faceOf($("xm-qbank-open"), UI.book(18), "Open my question bank");
+faceOf($("xm-qbank-save"), UI.save(18), "Save these questions as a bank");
+faceOf($("xm-qbank-open"), UI.book(18), "Open my question banks");
 faceOf($("xm-shuffle"), UI.shuffle(18), "Shuffle the questions and their answers");
 setLiveFaces();
 enhanceSelects(document.querySelector(".xm-rail"), { className: "pp-select--sm" });

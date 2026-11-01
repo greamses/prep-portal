@@ -209,6 +209,12 @@
               <p class="xm-status" id="xm-cbt-status" role="status"></p>
               <p class="xm-status" id="xm-diag-status" role="status"></p>
               <div class="xm-bar__add xm-banks" id="xm-banks" hidden></div>
+              <div class="xm-tickbar" id="xm-tickbar" hidden>
+                <span class="xm-tickbar__n" data-tick-count></span>
+                <button class="pp-btn pp-btn--ghost" type="button" data-tick="all"><b>Tick all</b></button>
+                <button class="pp-btn pp-btn--ghost" type="button" data-tick="none"><b>Untick all</b></button>
+                <button class="pp-btn pp-btn--ghost xm-tickbar__del" type="button" data-tick="del"><span data-ui="trash"></span> <b>Delete unticked</b></button>
+              </div>
               <p class="xm-hint">Write maths between <code>$ $</code>, for example <code>$\frac{3}{4} + \frac{1}{2}$</code>. It is typeset on the paper.</p>
               <div id="xm-list"></div>
             </div>

@@ -1148,3 +1148,69 @@ div.xp-ta.xp-rich { line-height: 7.5mm; }
 .xp-exno__mine { font-weight: 800; letter-spacing: 0.06em; color: var(--ci, #2d5f9a); }
 .xp-exno__cap .xp-watch { vertical-align: middle; margin-left: 1.5mm; }
 @media print { .xp-exno__cap .xp-watch { display: none !important; } }
+
+/* ── THE QUESTION BANK (bank.js): named banks, a scrolling list, load into the editor ── */
+html.xm-bk-on { overflow: hidden; }
+.xm-bk { position: fixed; inset: 0; z-index: 10080; display: grid; place-items: center; padding: 16px; background: rgba(42, 39, 35, 0.42); backdrop-filter: blur(2px); }
+.pp-receipt.xm-bk__card { position: relative; width: min(44rem, 100%); }
+.xm-bk__paper { font-family: var(--font-mono, "JetBrains Mono"), monospace; display: flex; flex-direction: column; gap: 0.9rem; height: min(46rem, calc(100vh - 64px)); padding: 1.3rem 1.4rem 1.1rem; color: #2a2723; overflow: hidden; }
+.xm-bk__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex: none; }
+.xm-bk__eyebrow { margin: 0 0 0.15rem; font: 600 0.66rem/1 var(--font-mono, "JetBrains Mono"), monospace; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8174; }
+.xm-bk__head h2 { margin: 0; font: 800 1.35rem/1.15 var(--font-display, "Unbounded"), sans-serif; }
+
+.xm-bk__save { flex: none; padding: 0.9rem 1rem 0.8rem; background: #fff6d6; box-shadow: 0 2px 8px rgba(29, 27, 24, 0.08); }
+.xm-bk__save label { display: block; margin-bottom: 0.55rem; }
+.xm-bk__save label b { display: block; font: 700 0.86rem/1.3 var(--font-display, "Unbounded"), sans-serif; }
+.xm-bk__save label span { display: block; margin-top: 0.2rem; font-size: 0.74rem; line-height: 1.45; color: #6f675b; }
+.xm-bk__saverow { display: flex; gap: 0.5rem; align-items: stretch; }
+.xm-bk__saverow .wb-input { flex: 1; min-width: 0; }
+.xm-bk__saverow .pp-btn { display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
+.xm-bk__saverow .wb-btn__name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.xm-bk__word { font-weight: 700; }
+.xm-bk__msg { min-height: 1em; margin: 0.45rem 0 0; font-size: 0.74rem; line-height: 1.4; color: #6f675b; }
+
+.xm-bk__bar { flex: none; display: flex; align-items: center; gap: 0.8rem; }
+.xm-bk__bar b { font: 700 0.86rem/1 var(--font-display, "Unbounded"), sans-serif; white-space: nowrap; }
+.xm-bk__bar .wb-input { flex: 1; min-width: 0; }
+
+/* the list scrolls inside the receipt; the receipt itself never grows past the window */
+.xm-bk__scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; align-content: start; gap: 0.6rem; padding: 0.2rem 0.35rem 0.6rem 0.1rem; margin-right: -0.35rem; scrollbar-width: thin; }
+.xm-bk__none { margin: 1.5rem 0; text-align: center; font-size: 0.8rem; color: #8a8174; }
+.xm-bk__item { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem 1rem; align-items: center; padding: 0.8rem 0.9rem; background: #fff; box-shadow: 0 1px 3px rgba(29, 27, 24, 0.1), 0 4px 12px rgba(29, 27, 24, 0.05); border-left: 4px solid #c9d4e3; transition: box-shadow 0.15s; }
+.xm-bk__item:hover { box-shadow: 0 2px 6px rgba(29, 27, 24, 0.12), 0 8px 18px rgba(29, 27, 24, 0.08); }
+.xm-bk__item.is-new { border-left-color: var(--accent-success, #7cc47c); }
+.xm-bk__main { min-width: 0; }
+.xm-bk__main h3 { margin: 0 0 0.25rem; font: 700 0.92rem/1.25 var(--font-display, "Unbounded"), sans-serif; overflow-wrap: anywhere; }
+.xm-bk__meta, .xm-bk__types { margin: 0; font-size: 0.72rem; line-height: 1.45; color: #6f675b; }
+.xm-bk__count { font-weight: 700; color: #2a2723; }
+.xm-bk__types { color: #8a8174; }
+.xm-bk__acts { display: flex; gap: 0.4rem; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+.xm-bk__acts .pp-btn { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.74rem; white-space: nowrap; }
+.xm-bk__ico svg { display: block; width: 16px; height: 16px; }
+.xm-bk__del.is-armed { background: #f6d5cf !important; }
+.xm-bk__peeklist { grid-column: 1 / -1; margin: 0.2rem 0 0; padding: 0.6rem 0.8rem 0.6rem 2rem; background: #fbf8f2; font-size: 0.76rem; line-height: 1.5; max-height: 16rem; overflow-y: auto; }
+.xm-bk__peeklist li { margin: 0.25rem 0; }
+.xm-bk__tag { display: inline-block; margin-right: 0.4rem; padding: 0 0.35rem; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; background: #e8eef7; color: #3c5a85; }
+.xm-bk__dia { color: #8a8174; font-style: normal; }
+.xm-bk__foot { flex: none; margin: 0; padding-top: 0.6rem; border-top: 1px dashed rgba(29, 27, 24, 0.16); font-size: 0.72rem; line-height: 1.5; color: #6f675b; }
+@media (max-width: 640px) {
+  .xm-bk { padding: 8px; }
+  .xm-bk__paper { height: calc(100vh - 40px); padding: 1rem; }
+  .xm-bk__item { grid-template-columns: 1fr; }
+  .xm-bk__acts { justify-content: flex-start; }
+  .xm-bk__bar { flex-wrap: wrap; }
+}
+
+/* ── ticks on the editor's questions, for merging banks ── */
+.xm-tick { position: relative; display: inline-grid; place-items: center; width: 22px; height: 22px; flex: none; cursor: pointer; }
+.xm-tick input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.xm-tick i { width: 18px; height: 18px; background: #fff; box-shadow: inset 0 0 0 1.5px #9a9184; transition: background 0.12s, box-shadow 0.12s; }
+.xm-tick input:checked + i { background: var(--accent-success, #5fae6a); box-shadow: inset 0 0 0 1.5px var(--accent-success, #5fae6a); }
+.xm-tick input:checked + i::after { content: ""; display: block; width: 5px; height: 10px; margin: 2px 0 0 6px; border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
+.xm-tick input:focus-visible + i { outline: 2px solid var(--accent-secondary, #6aa7e0); outline-offset: 2px; }
+.xm-tickbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin: 0.4rem 0 0.6rem; padding: 0.5rem 0.6rem; background: #fbf8f2; box-shadow: 0 1px 4px rgba(29, 27, 24, 0.08); }
+.xm-tickbar[hidden] { display: none; }
+.xm-tickbar__n { margin-right: auto; font-size: 0.74rem; font-weight: 600; color: #6f675b; }
+.xm-tickbar .pp-btn { font-size: 0.72rem; display: inline-flex; align-items: center; gap: 0.3rem; }
+.xm-tickbar .pp-btn svg { width: 15px; height: 15px; }
+.xm-tickbar__del.is-armed { background: #f6d5cf !important; }
