@@ -14,8 +14,9 @@
  */
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = process.env.MARK_GROQ_MODEL || "llama-3.3-70b-versatile";
-const CLAUDE_MODEL = process.env.MARK_CLAUDE_MODEL || process.env.CLAUDE_MODEL || "claude-haiku-4-5-20251001";
+/* Groq retires models without notice (a 404 for the model): the marker walks this list and uses the first that answers. */
+const GROQ_MODELS = (process.env.MARK_GROQ_MODEL ? [process.env.MARK_GROQ_MODEL] : []).concat(["openai/gpt-oss-120b", "llama-3.3-70b-versatile", "qwen/qwen3-32b", "openai/gpt-oss-20b"]);
+const CLAUDE_MODEL = process.env.MARK_CLAUDE_MODEL || "claude-haiku-5-5";
 const GEMINI_URL = process.env.MARK_GEMINI_URL || "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const TIMEOUT_MS = 25000;
 
@@ -79,28 +80,39 @@ async function post(url, init) {
   catch (e) { throw new Busy(e && e.name === "AbortError" ? "timed out" : String((e && e.message) || e)); }
   finally { clearTimeout(t); }
 }
+/** The first words of a provider's error body, so a failure says what the provider said. */
+async function said(r) { try { const t = await r.text(); const m = t.match(/"message"\s*:\s*"([^"]{1,140})/); return (m ? m[1] : t).replace(/\s+/g, " ").slice(0, 140); } catch { return ""; } }
 const busyStatus = (s) => s === 429 || s === 503 || s === 529 || s === 500 || s === 502 || s === 504;
 
 async function viaGroq(system, user) {
-  const r = await post(GROQ_URL, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
-    body: JSON.stringify({ model: GROQ_MODEL, temperature: 0.1, max_tokens: 1500, messages: [{ role: "system", content: system }, { role: "user", content: user }] }) });
-  if (!r.ok) { if (busyStatus(r.status)) throw new Busy(`Groq ${r.status}`); throw new Error(`Groq ${r.status}`); }
-  const d = await r.json();
-  return d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+  let last = null;
+  for (const model of GROQ_MODELS) {
+    const r = await post(GROQ_URL, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+      body: JSON.stringify({ model, temperature: 0.1, max_tokens: 4000, messages: [{ role: "system", content: system }, { role: "user", content: user }] }) });
+    if (r.status === 404 || r.status === 400) { last = `Groq ${r.status} on ${model}: ${await said(r)}`; continue; }   // retired or unknown model: the next one
+    if (!r.ok) { const why = `Groq ${r.status}: ${await said(r)}`; if (busyStatus(r.status)) throw new Busy(why); throw new Error(why); }
+    const d = await r.json();
+    return d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+  }
+  throw new Error(last || "Groq: no model answered");
 }
 async function viaClaude(system, user) {
   const r = await post("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1500, temperature: 0.1, system, messages: [{ role: "user", content: user }] }) });
-  if (!r.ok) { if (busyStatus(r.status)) throw new Busy(`Claude ${r.status}`); throw new Error(`Claude ${r.status}`); }
+    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4000, output_config: { effort: "low" }, system, messages: [{ role: "user", content: user }] }) });
+  if (!r.ok) { const why = `Claude ${r.status}: ${await said(r)}`; if (busyStatus(r.status)) throw new Busy(why); throw new Error(why); }
   const d = await r.json();
-  return d.content && d.content[0] && d.content[0].text;
+  if (d.stop_reason === "refusal") throw new Error("Claude declined to mark this");
+  const t = (d.content || []).find((x) => x && x.type === "text");
+  return t && t.text;
 }
 async function viaGemini(system, user) {
   const r = await post(`${GEMINI_URL}?key=${process.env.GEMINI_API_KEY}`, { method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: user }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 1500, responseMimeType: "application/json" } }) });
-  if (!r.ok) { if (busyStatus(r.status)) throw new Busy(`Gemini ${r.status}`); throw new Error(`Gemini ${r.status}`); }
+    body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: user }] }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 8192, responseMimeType: "application/json", thinkingConfig: { thinkingBudget: 0 } } }) });
+  if (!r.ok) { const why = `Gemini ${r.status}: ${await said(r)}`; if (busyStatus(r.status)) throw new Busy(why); throw new Error(why); }
   const d = await r.json();
-  return d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts && d.candidates[0].content.parts[0] && d.candidates[0].content.parts[0].text;
+  const parts = (d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts) || [];
+  return parts.filter((x) => x && typeof x.text === "string" && !x.thought).map((x) => x.text).join("");
 }
 
 /**
@@ -126,7 +138,7 @@ async function markScript(job, { providers } = {}) {
       why.push(`${name}: its reply could not be read as marks`);
     } catch (e) {
       if (e && e.retryable) busy = e;
-      why.push(`${name}: ${String((e && e.message) || e).slice(0, 80)}`);
+      why.push(`${name}: ${String((e && e.message) || e).slice(0, 160)}`);
     }
   }
   if (busy) throw busy;           // at least one was only busy: wait and try again

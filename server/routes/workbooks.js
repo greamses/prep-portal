@@ -677,7 +677,7 @@ module.exports = function () {
       if (!(await marker.takeToken())) return res.status(429).json({ error: "The AI is busy marking other scripts. Try again in a moment." });
       let out;
       try { out = await markScript({ items, name: "Owner", subject: clip(b.subject, 60), klass: clip(b.klass, 40) }); }
-      catch (e) { console.error("[paper-mark-preview]", String((e && e.message) || e)); return res.status(e && e.retryable ? 429 : 502).json({ error: String((e && e.message) || "The AI could not mark this.").slice(0, 200) }); }
+      catch (e) { console.error("[paper-mark-preview]", String((e && e.message) || e)); return res.status(e && e.retryable ? 429 : 502).json({ error: String((e && e.message) || "The AI could not mark this.").slice(0, 400) }); }
       res.json({ ok: true, provider: out.provider, marks: out.marks });
     } catch (err) {
       console.error("[/api/workbooks/paper-mark-preview]", err.message);
