@@ -136,6 +136,7 @@ function fillHead() {
   heads.forEach((el) => { el.value = state.head[el.dataset.h] || ""; });
   $("xm-paper").value = state.head.paper;
   if (window.__paintPaper) window.__paintPaper();
+  if (window.__paintTemplates) window.__paintTemplates();
   document.querySelectorAll("[data-each]").forEach((el) => { el.value = state.head.marksEach[el.dataset.each]; });
   document.querySelectorAll("[data-attempt]").forEach((el) => { el.value = (state.head.attempt || {})[el.dataset.attempt] || ""; });
   $("xm-key").checked = !!state.head.key;
@@ -577,6 +578,43 @@ document.querySelectorAll("[data-add]").forEach((b) => b.addEventListener("click
       });
       box.appendChild(bt);
     });
+  }
+}
+/* the paper template: the default, a textbook page, a classroom page (each a little picture of its own head; the name is the tooltip).
+   Choosing one also sets a matching colour; going back to the default gives back the colour that was there. */
+{
+  const box = document.getElementById("xm-templates");
+  if (box) {
+    const mini = (kind) => {
+      const head = kind === "textbook"
+        ? '<rect x="3" y="3" width="30" height="2.6" fill="#0b4f9c"/><rect x="3" y="7" width="12" height="2" fill="#1d1b18"/><rect x="26" y="6" width="7" height="4" fill="none" stroke="#0b4f9c" stroke-width="1"/><rect x="3" y="11.2" width="30" height="0.8" fill="#0b4f9c"/>'
+        : kind === "classroom"
+          ? '<rect x="3" y="3" width="30" height="8" fill="#d5282f"/><rect x="24" y="5.2" width="8" height="4" fill="#ffd23f" transform="rotate(-4 28 7)"/><rect x="5" y="5.4" width="14" height="2" fill="#fff"/>'
+          : '<rect x="3" y="3" width="30" height="8" rx="2" fill="#9bbab2"/><rect x="5" y="5.2" width="8" height="3.6" rx="1" fill="#fff"/><rect x="24" y="5.2" width="7" height="3.6" rx="1" fill="#fff"/>';
+      const lines = [15, 19, 23, 27].map((y, i) => `<rect x="${kind === "textbook" ? 9 : 8}" y="${y}" width="${22 - i * 2}" height="1.2" fill="#8a8478"/>`).join("");
+      const nums = [15, 19, 23, 27].map((y) => kind === "textbook" ? `<rect x="3" y="${y}" width="3.4" height="1.2" fill="#0b4f9c"/>` : kind === "classroom" ? `<circle cx="5" cy="${y + 0.6}" r="1.7" fill="#ffd23f"/>` : `<circle cx="5" cy="${y + 0.6}" r="1.7" fill="#3b4cca"/>`).join("");
+      return `<svg viewBox="0 0 36 32" aria-hidden="true"><rect x="1" y="1" width="34" height="30" fill="#fffdf8" stroke="#2a2723" stroke-width="1.2"/>${head}${nums}${lines}</svg>`;
+    };
+    const TPL = [["default", "Default template"], ["textbook", "Textbook template: a chapter-test page"], ["classroom", "Classroom template: a bright worksheet"]];
+    const MATCH = { textbook: "#0b4f9c", classroom: "#d5282f" };
+    const paint = () => box.querySelectorAll(".xm-ico").forEach((x) => { const on = x.dataset.v === (state.head.template || "default"); x.setAttribute("aria-checked", String(on)); x.setAttribute("aria-pressed", String(on)); });
+    TPL.forEach(([id, name]) => {
+      const bt = document.createElement("button");
+      bt.type = "button"; bt.className = "pp-btn pp-note-btn xm-ico"; bt.dataset.v = id; bt.setAttribute("role", "radio");
+      bt.innerHTML = mini(id); bt.dataset.tip = name; bt.setAttribute("aria-label", name);
+      bt.addEventListener("click", () => {
+        const h = state.head, was = h.template || "default";
+        if (was === id) return;
+        if (was === "default") h._colour = { colour: h.colour, custom: h.custom || "" };
+        h.template = id;
+        if (MATCH[id]) { h.colour = "custom"; h.custom = MATCH[id]; }
+        else if (h._colour) { h.colour = h._colour.colour; h.custom = h._colour.custom; }
+        paint(); if (typeof paintSwatches === "function") paintSwatches(); redraw(); save();
+      });
+      box.appendChild(bt);
+    });
+    paint();
+    window.__paintTemplates = paint;
   }
 }
 /* the paper size, as two little sheets (the name is the tooltip) */

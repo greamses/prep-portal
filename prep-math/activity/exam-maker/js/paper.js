@@ -191,7 +191,11 @@ function header(h, total, mini = false) {
         ${cell("Time allowed", h.time)}
         ${cell("Total marks", total ? String(total) : "")}
       </div>`}
-      ${mini === "slim" ? "" : `<div class="xp-student"><span>Student's name</span><i></i><span>Score</span><em></em></div>`}
+      ${mini === "slim" ? "" : `<div class="xp-student">${h.template === "textbook"
+        ? `<span>Name</span><i></i><span>Date</span><i class="xp-student__short"></i><span>Period</span><i class="xp-student__short"></i><span>Score</span><em></em>`
+        : h.template === "classroom"
+          ? `<span>My name</span><i></i><span>Date</span><i class="xp-student__short"></i><span>Score</span><em></em>`
+          : `<span>Student's name</span><i></i><span>Score</span><em></em>`}</div>`}
     </div></div>
   </header>`;
 }
@@ -350,7 +354,8 @@ function articleOpen(head) {
   const wm = head.logo
     ? "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297"><image href="${head.logo}" x="65" y="103" width="80" height="80" preserveAspectRatio="xMidYMid meet" opacity="0.045"/></svg>`)
     : "";
-  return `<article class="xp${wm ? " xp--wm" : ""}${head.tint ? " xp--tint" : ""}${head.omr || head.booklet ? " xp--omr" : ""}" style="--c:${col.main};--cs:${col.soft};--ci:${col.ink}${wm ? `;--wm:url(&quot;${wm}&quot;)` : ""}">
+  const tpl = head.template === "textbook" || head.template === "classroom" ? head.template : "default";
+  return `<article data-tpl="${tpl}" class="xp${wm ? " xp--wm" : ""}${head.tint ? " xp--tint" : ""}${head.omr || head.booklet ? " xp--omr" : ""}" style="--c:${col.main};--cs:${col.soft};--ci:${col.ink}${wm ? `;--wm:url(&quot;${wm}&quot;)` : ""}">
     ${head.logo ? `<img class="xp-wm" src="${head.logo}" alt="" />` : ""}`;
 }
 
