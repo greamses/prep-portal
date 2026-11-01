@@ -1153,7 +1153,7 @@ div.xp-ta.xp-rich { line-height: 7.5mm; }
 html.xm-bk-on { overflow: hidden; }
 .xm-bk { position: fixed; inset: 0; z-index: 10080; display: grid; place-items: center; padding: 16px; background: rgba(42, 39, 35, 0.42); backdrop-filter: blur(2px); }
 .pp-receipt.xm-bk__card { position: relative; width: min(44rem, 100%); }
-.xm-bk__paper { font-family: var(--font-mono, "JetBrains Mono"), monospace; display: flex; flex-direction: column; gap: 0.9rem; height: min(46rem, calc(100vh - 64px)); padding: 1.3rem 1.4rem 1.1rem; color: #2a2723; overflow: hidden; }
+.pp-receipt.xm-bk__card > .pp-receipt__paper.xm-bk__paper { font-family: var(--font-mono, "JetBrains Mono"), monospace; display: flex; flex-direction: column; gap: 0.9rem; height: min(46rem, calc(100vh - 64px)); padding: 1.3rem 1.4rem 1.1rem; color: #2a2723; overflow: hidden; }
 .xm-bk__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex: none; }
 .xm-bk__eyebrow { margin: 0 0 0.15rem; font: 600 0.66rem/1 var(--font-mono, "JetBrains Mono"), monospace; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8174; }
 .xm-bk__head h2 { margin: 0; font: 800 1.35rem/1.15 var(--font-display, "Unbounded"), sans-serif; }
@@ -1195,7 +1195,7 @@ html.xm-bk-on { overflow: hidden; }
 .xm-bk__foot { flex: none; margin: 0; padding-top: 0.6rem; border-top: 1px dashed rgba(29, 27, 24, 0.16); font-size: 0.72rem; line-height: 1.5; color: #6f675b; }
 @media (max-width: 640px) {
   .xm-bk { padding: 8px; }
-  .xm-bk__paper { height: calc(100vh - 40px); padding: 1rem; }
+  .pp-receipt.xm-bk__card > .pp-receipt__paper.xm-bk__paper { height: calc(100vh - 40px); padding: 1rem; }
   .xm-bk__item { grid-template-columns: 1fr; }
   .xm-bk__acts { justify-content: flex-start; }
   .xm-bk__bar { flex-wrap: wrap; }
