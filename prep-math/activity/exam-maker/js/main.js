@@ -127,7 +127,12 @@ function typeset() {
   });
   return queue;
 }
-function redraw() { clearTimeout(drawTimer); drawTimer = setTimeout(draw, 160); save(); }
+let ownerLogo = null;      // the site owner's default logo, once fetched (null for everyone else)
+const logoTaken = () => { try { return sessionStorage.getItem("xm-logo-removed") === "1"; } catch { return false; } };
+function redraw() {
+  if (ownerLogo && !state.head.logo && !logoTaken()) { state.head.logo = ownerLogo; paintLogo(); }
+  clearTimeout(drawTimer); drawTimer = setTimeout(draw, 160); save();
+}
 
 /* ── the header form ───────────────────────────────────────────────────── */
 
@@ -212,10 +217,10 @@ function paintLogo() {
   if (state.head.logo) shot.src = state.head.logo;
 }
 $("xm-logo-pick").addEventListener("click", () => $("xm-logo-file").click());
-$("xm-logo-drop").addEventListener("click", () => { state.head.logo = ""; $("xm-logo-file").value = ""; try { localStorage.setItem("xm-logo-removed", "1"); } catch { /* the default may return */ } paintLogo(); redraw(); });
+$("xm-logo-drop").addEventListener("click", () => { state.head.logo = ""; $("xm-logo-file").value = ""; try { sessionStorage.setItem("xm-logo-removed", "1"); } catch { /* the default may return */ } paintLogo(); redraw(); });
 $("xm-logo-file").addEventListener("change", async (e) => {
   state.head.logo = await shrink(e.target.files && e.target.files[0]);
-  try { localStorage.removeItem("xm-logo-removed"); } catch { /* nothing to clear */ }
+  try { sessionStorage.removeItem("xm-logo-removed"); } catch { /* nothing to clear */ }
   paintLogo(); redraw();
 });
 
@@ -979,17 +984,18 @@ setLiveFaces();
 enhanceSelects(document.querySelector(".xm-rail"), { className: "pp-select--sm" });
 mountTooltips();
 
-/* For the site's owner a paper that has no logo of its own opens with Prep Portal's, not the empty "School logo" box. Taking it off
-   (the bin key) is remembered, and uploading another replaces it. Everyone else still starts with the placeholder. */
+/* For the site's owner a paper that has no logo of its own opens with Prep Portal's logo, not the empty "School logo" box, and gets it back
+   whenever a paper without one is opened. Taking it off (the bin key) lasts for that visit; uploading another replaces it. Everyone else
+   still starts with the placeholder. */
 (async () => {
   try {
-    if (state.head.logo || localStorage.getItem("xm-logo-removed") === "1") return;
+    localStorage.removeItem("xm-logo-removed");          // an older version kept the removal for good; it no longer does
     const { currentUser } = await import("/utils/components/workbook/account.js");
     const u = await currentUser();
     if (!u || u.email !== "eemadanyel@gmail.com") return;
     const svg = await (await fetch("/logo/logo-light.svg")).text();
-    if (!/<svg/i.test(svg) || state.head.logo) return;
-    state.head.logo = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg)));
-    save(); paintLogo(); redraw();
+    if (!/<svg/i.test(svg)) return;
+    ownerLogo = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg)));
+    if (!state.head.logo && !logoTaken()) { state.head.logo = ownerLogo; paintLogo(); redraw(); }
   } catch { /* the placeholder stays */ }
 })();
