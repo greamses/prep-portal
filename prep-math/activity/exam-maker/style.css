@@ -843,10 +843,11 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
    A chapter-test page: a serif body, a sans for everything that labels or directs, ONE blue, and a small orange mark. A double rule under the
    head, the subject set as the title, hanging numbers, hairline rules. The head and the part heads are still our receipts and tags. */
 .xp[data-tpl="textbook"] {
-  --tb-sans: "Franklin Gothic Medium", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
-  --tb-serif: "STIX Two Text", "Century Schoolbook", "Times New Roman", Georgia, serif;
+  /* the site's own fonts, as everywhere else on the paper: Unbounded for titles, JetBrains Mono for the rest */
+  --tb-display: "Unbounded", "JetBrains Mono", ui-monospace, monospace;
+  --tb-sans: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --tb-serif: "JetBrains Mono", ui-monospace, Consolas, monospace;
   --tb-orange: #e5741a; --tb-rule: #c9d4e3;
-  font-family: var(--tb-serif); font-size: 10.8pt; line-height: 1.5;
 }
 /* the head */
 .xp[data-tpl="textbook"] .xp-receipt .xp-receipt__paper { padding: 5mm 7mm 4.6mm; }
@@ -855,16 +856,16 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 .xp[data-tpl="textbook"] .xp-tb-top::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2.4mm; border-top: 0.3mm solid #1d1b18; }
 .xp[data-tpl="textbook"] .xp-head__logo { width: 15mm; height: 15mm; background: none; border-radius: 0; padding: 0; }
 .xp[data-tpl="textbook"] .xp-head__logo--none { border: 0.35mm dashed var(--c); }
-.xp[data-tpl="textbook"] .xp-head__school { font-family: var(--tb-sans); font-weight: 800; font-size: 11.5pt; letter-spacing: 0.09em; color: var(--c); line-height: 1.15; }
-.xp[data-tpl="textbook"] .xp-head__term { font-family: var(--tb-serif); font-style: italic; font-size: 9.6pt; letter-spacing: 0; text-transform: none; color: #1d1b18; opacity: 1; margin-top: 1mm; }
+.xp[data-tpl="textbook"] .xp-head__school { font-family: var(--tb-display); font-weight: 900; font-size: 11pt; letter-spacing: 0.02em; text-transform: uppercase; color: var(--c); line-height: 1.15; }
+.xp[data-tpl="textbook"] .xp-head__term { font-family: var(--tb-serif); font-style: normal; font-size: 8.4pt; letter-spacing: 0.06em; letter-spacing: 0; text-transform: none; color: #1d1b18; opacity: 1; margin-top: 1mm; }
 .xp[data-tpl="textbook"] .xp-tb-facts { display: grid; grid-auto-flow: column; gap: 0; margin: 0; }
 .xp[data-tpl="textbook"] .xp-tb-facts > div { padding: 0 3mm; border-left: 0.3mm solid var(--tb-rule); min-width: 15mm; }
 .xp[data-tpl="textbook"] .xp-tb-facts > div:first-child { border-left: 0; }
 .xp[data-tpl="textbook"] .xp-tb-facts dt { font-family: var(--tb-sans); font-weight: 700; font-size: 6.4pt; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c); }
-.xp[data-tpl="textbook"] .xp-tb-facts dd { margin: 0.4mm 0 0; font-family: var(--tb-serif); font-weight: 700; font-size: 10pt; white-space: nowrap; }
+.xp[data-tpl="textbook"] .xp-tb-facts dd { margin: 0.4mm 0 0; font-family: var(--tb-serif); font-weight: 700; font-size: 9pt; white-space: nowrap; }
 .xp[data-tpl="textbook"] .xp-tb-title { margin-top: 6.2mm; display: flex; align-items: center; }
 .xp[data-tpl="textbook"] .xp-tb-title::before { content: ""; flex: none; width: 2.6mm; height: 8.5mm; background: var(--tb-orange); margin-right: 3.4mm; }
-.xp[data-tpl="textbook"] .xp-head__subject { max-width: none; padding: 0; background: none; border: 0; border-radius: 0; color: #1d1b18; font-family: var(--tb-serif); font-weight: 700; font-size: 25pt; line-height: 1.05; letter-spacing: -0.015em; text-align: left; }
+.xp[data-tpl="textbook"] .xp-head__subject { max-width: none; padding: 0; background: none; border: 0; border-radius: 0; color: #1d1b18; font-family: var(--tb-display); font-weight: 700; font-size: 19pt; line-height: 1.1; letter-spacing: -0.01em; text-align: left; }
 .xp[data-tpl="textbook"] .xp-student { margin-top: 5mm; padding-top: 0; border-top: 0; align-items: flex-end; gap: 2.4mm; font-family: var(--tb-sans); font-weight: 700; font-size: 7.6pt; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c); }
 .xp[data-tpl="textbook"] .xp-student i { border-bottom: 0.35mm solid #1d1b18; height: 6.5mm; }
 .xp[data-tpl="textbook"] .xp-student .xp-student__short { flex: 0 0 25mm; }
@@ -874,12 +875,12 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 .xp[data-tpl="textbook"] .xp-banner { --pp-paper: #fff; gap: 1.2mm 4mm; padding: 3.6mm 6.5mm; }
 .xp[data-tpl="textbook"] .xp-banner__tag { background: var(--c); color: #fff; transform: none; border-radius: 0; padding: 1.2mm 3.2mm; font-family: var(--tb-sans); font-weight: 800; font-size: 7.6pt; letter-spacing: 0.16em; }
 .xp[data-tpl="textbook"] .xp-banner__tag::before { display: none; }
-.xp[data-tpl="textbook"] .xp-banner__name { font-family: var(--tb-sans); font-weight: 800; font-size: 10.6pt; letter-spacing: 0.08em; text-transform: uppercase; color: #1d1b18; }
-.xp[data-tpl="textbook"] .xp-banner__rule { font-family: var(--tb-serif); font-style: italic; font-size: 9.6pt; color: #3d4654; }
+.xp[data-tpl="textbook"] .xp-banner__name { font-family: var(--tb-display); font-weight: 700; font-size: 10pt; letter-spacing: 0.03em; text-transform: uppercase; color: #1d1b18; }
+.xp[data-tpl="textbook"] .xp-banner__rule { font-family: var(--tb-serif); font-style: italic; font-size: 8.5pt; color: #3d4654; }
 .xp[data-tpl="textbook"] .xp-banner__marks { margin-left: auto; padding: 0.6mm 2.6mm; border: 0.3mm solid var(--c); font-family: var(--tb-sans); font-weight: 700; font-size: 7.6pt; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c); }
 /* the problems */
 .xp[data-tpl="textbook"] .xp-q { gap: 2.4mm; }
-.xp[data-tpl="textbook"] .xp-n { background: none; color: var(--c); width: 7.4mm; min-width: 7.4mm; height: auto; border-radius: 0; font-family: var(--tb-sans); font-weight: 800; font-size: 11pt; display: block; text-align: right; margin-top: 0; line-height: 1.4; }
+.xp[data-tpl="textbook"] .xp-n { background: none; color: var(--c); width: 7.4mm; min-width: 7.4mm; height: auto; border-radius: 0; font-family: var(--tb-sans); font-weight: 800; font-size: 10pt; display: block; text-align: right; margin-top: 0; line-height: 1.4; }
 .xp[data-tpl="textbook"] .xp-n::after { content: "."; }
 .xp[data-tpl="textbook"] .xp-marks { font-family: var(--tb-serif); font-style: italic; font-weight: 500; font-size: 8.6pt; color: #4a5568; }
 .xp[data-tpl="textbook"] .xp-cols { column-rule: 0.25mm solid var(--tb-rule); }
@@ -892,7 +893,6 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 .xp[data-tpl="textbook"] .xp-key__no { font-family: var(--tb-sans); }
 
 /* ── classroom ── */
-.xp[data-tpl="classroom"] { font-family: "Trebuchet MS", "Segoe UI", Verdana, sans-serif; font-size: 10.2pt; line-height: 1.6; }
 .xp[data-tpl="classroom"] .xp-top { background: var(--c); color: #fff; border-radius: 0; outline: 0.5mm dashed rgba(255, 255, 255, 0.75); outline-offset: -1.6mm; padding: 4.6mm 5.4mm; }
 .xp[data-tpl="classroom"] .xp-head__logo { border-radius: 50%; padding: 1.4mm; }
 .xp[data-tpl="classroom"] .xp-head__logo img { border-radius: 50%; }
