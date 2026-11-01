@@ -1,4 +1,5 @@
 import { faceOf } from "/utils/components/workbook/icons.js";
+import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { richField } from "./rich-field.js";
 import { textHtml } from "./model.js";
@@ -73,6 +74,13 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   /* AI marking of the written answers (the page queues the script and reports how it is getting on, see setAi/applyAiMarks) */
   let ai = { on: false, status: "off", text: "", notes: {}, by: {}, was: {}, lines: {} };
   const drawn = new Set();        // answers whose line marks have already been drawn in (the pen draws them once, not on every redraw)
+  /* PrepBot's film on writing maths: from the booklet's card, or from a corrected line on the marked script (with that line) */
+  if (!window.__xpEqFilm) {
+    window.__xpEqFilm = true;
+    const go = (w) => import("./eq-tutor.js").then((m) => m.openEquationFilm(w.dataset.fix ? { line: w.dataset.line || "", fix: w.dataset.fix } : {})).catch(() => {});
+    document.addEventListener("click", (e) => { const w = e.target.closest && e.target.closest(".xp-watch"); if (w) { e.preventDefault(); go(w); } });
+    document.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("xp-watch")) { e.preventDefault(); go(e.target); } });
+  }
   let idle = 0;
   const keep = () => {
     try { localStorage.setItem(store, JSON.stringify(answers)); } catch { /* storage full or off */ }
@@ -430,7 +438,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       + `<span class="xp-script__t">${textHtml(l.t)}</span>`
       + `<span class="xp-script__mk" aria-label="${l.ok === true ? "right" : l.ok === false ? "wrong" : ""}">${l.ok === true ? TICK : l.ok === false ? CROSS : ""}</span>`
       + (l.note ? `<span class="xp-script__note">${textHtml(l.note)}</span>` : "")
-      + (l.fix ? `<span class="xp-script__fix"><em>Correct</em>${textHtml(l.fix)}</span>` : "")
+      + (l.fix ? `<span class="xp-script__fix"><em>Correct</em>${textHtml(l.fix)}${/\$[^$]+\$/.test(l.fix) ? `<span class="xp-watch" role="link" tabindex="0" data-line="${esc(l.t)}" data-fix="${esc(l.fix)}" aria-label="Watch PrepBot write this line" data-tip="Watch PrepBot write this line"><span class="xp-watch__bot" aria-hidden="true">${ICON_PREPBOT}</span><span class="xp-watch__play" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span></span>` : ""}</span>` : "")
       + `</div>`).join("");
     field.after(box);
     field.classList.add("is-scripted");

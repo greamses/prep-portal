@@ -1019,3 +1019,23 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 .xp-reveal .pp-note__eq, .xp-script .pp-note__eq, .xp-bfill .pp-note__eq, .xp-verdict .pp-note__eq { display: inline-block; vertical-align: middle; margin: 0 0.4mm; }
 .xp-reveal .pp-note__eq svg, .xp-script .pp-note__eq svg, .xp-bfill .pp-note__eq svg, .xp-verdict .pp-note__eq svg { display: inline-block; vertical-align: middle; }
 .xp-script .pp-note__eq.is-source, .xp-reveal .pp-note__eq.is-source { font-family: var(--font-mono, monospace); font-size: 0.9em; }
+
+/* ── how to write maths: the booklet's card, and PrepBot's play key ── */
+.xp-mathtip { margin: 0 0 4mm; padding: 3mm 4mm; background: #f4f7fd; border: 0.3mm solid #c9d4e3; font-size: 8.4pt; line-height: 1.5; }
+.xp-mathtip__head { display: flex; align-items: center; justify-content: space-between; gap: 3mm; margin-bottom: 1mm; }
+.xp-mathtip__head b { font-size: 8pt; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ci); }
+.xp-mathtip p { margin: 0 0 1.6mm; font-size: 8.4pt; line-height: 1.6; }
+.xp-mathtip kbd { display: inline-block; padding: 0 1.4mm; background: #fff8d6; box-shadow: 0 0.6mm 0 #d9cf9e; font: 700 7.6pt/1.5 "JetBrains Mono", monospace; }
+.xp-mathtip dl { display: flex; flex-wrap: wrap; gap: 1.2mm 4mm; margin: 0; }
+.xp-mathtip dl > div { display: inline-flex; gap: 1.6mm; align-items: baseline; }
+.xp-mathtip dt { font-weight: 700; }
+.xp-mathtip dt::after { content: "  gives"; font-weight: 400; color: #6b655c; }
+.xp-mathtip dd { margin: 0; font-family: "STIX Two Text", "Cambria Math", Georgia, serif; font-size: 10pt; }
+@media print { .xp-mathtip, .xp-watch { display: none !important; } }
+.xp-watch { position: relative; display: inline-grid; place-items: center; width: 8.5mm; height: 8.5mm; margin-left: 2mm; cursor: pointer; vertical-align: middle; flex: none; }
+.xp-watch__bot { width: 100%; height: 100%; display: grid; place-items: center; }
+.xp-watch__bot svg { width: 100%; height: 100%; display: block; }
+.xp-watch__play { position: absolute; right: -1.2mm; bottom: -1.2mm; width: 4.4mm; height: 4.4mm; border-radius: 50%; background: #3b4cca; color: #fff; display: grid; place-items: center; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+.xp-watch__play svg { width: 2.6mm; height: 2.6mm; margin-left: 0.3mm; }
+.xp-watch:hover .xp-watch__play, .xp-watch:focus-visible .xp-watch__play { transform: scale(1.15); }
+.xp-watch:focus-visible { outline: 0.4mm solid var(--ci); outline-offset: 0.6mm; }
