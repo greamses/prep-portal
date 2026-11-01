@@ -72,6 +72,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   let announced = false;
   /* AI marking of the written answers (the page queues the script and reports how it is getting on, see setAi/applyAiMarks) */
   let ai = { on: false, status: "off", text: "", notes: {}, by: {}, was: {}, lines: {} };
+  const drawn = new Set();        // answers whose line marks have already been drawn in (the pen draws them once, not on every redraw)
   let idle = 0;
   const keep = () => {
     try { localStorage.setItem(store, JSON.stringify(answers)); } catch { /* storage full or off */ }
@@ -424,10 +425,12 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     box.className = "xp-script";
     box.setAttribute("data-nomath", "");
     box.setAttribute("aria-label", "Your answer, marked line by line");
-    box.innerHTML = lines.map((l) => `<div class="xp-script__row${l.ok === true ? " is-ok" : l.ok === false ? " is-no" : ""}">`
+    if (!drawn.has(q.id)) { box.classList.add("is-drawing"); drawn.add(q.id); }
+    box.innerHTML = lines.map((l, k) => `<div class="xp-script__row${l.ok === true ? " is-ok" : l.ok === false ? " is-no" : ""}" style="--i:${k}">`
       + `<span class="xp-script__t">${textHtml(l.t)}</span>`
       + `<span class="xp-script__mk" aria-label="${l.ok === true ? "right" : l.ok === false ? "wrong" : ""}">${l.ok === true ? TICK : l.ok === false ? CROSS : ""}</span>`
-      + (l.note ? `<span class="xp-script__note">${esc(l.note)}</span>` : "")
+      + (l.note ? `<span class="xp-script__note">${textHtml(l.note)}</span>` : "")
+      + (l.fix ? `<span class="xp-script__fix"><em>Correct</em>${textHtml(l.fix)}</span>` : "")
       + `</div>`).join("");
     field.after(box);
     field.classList.add("is-scripted");
@@ -483,12 +486,16 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
         if (!given(q)) say("is-skipped", "Not answered.");
         else {
           const m = answers["m:" + q.id];
-          say("is-model", `<span class="xp-reveal__k">Model answer</span><div class="xp-reveal__a">${textHtml(q.answer || "No model answer was written.")}</div>`
-            + `<div class="xp-aimark">${m !== undefined && ai.status === "done"
-              ? (ai.by[q.id] === "teacher"
-                ? `<span class="pp-pill pp-pill--static pp-pill--ok">Teacher's mark: ${m} of ${q.marks}</span> ${esc(ai.notes[q.id] || "")} <small>The AI gave ${ai.was[q.id]}.</small>`
-                : `<span class="pp-pill pp-pill--static pp-pill--ok">AI mark: ${m} of ${q.marks}</span> ${esc(ai.notes[q.id] || "")}`)
-              : `<span class="pp-pill pp-pill--static pp-pill--warn">${esc(ai.text || "Waiting to be marked")}</span>`}</div>`);
+          /* the verdict is a sticky note pinned beside the model answer, which is a receipt: the site's own two pieces */
+          const done = m !== undefined && ai.status === "done";
+          const teacher = ai.by[q.id] === "teacher";
+          const tone = !done ? "wait" : m >= q.marks ? "ok" : m <= 0 ? "no" : "part";
+          say("is-model xp-reveal--ai", `<div class="pp-receipt xp-modelrec"><div class="pp-receipt__paper"><span class="xp-reveal__k">Model answer</span><div class="xp-reveal__a">${textHtml(q.answer || "No model answer was written.")}</div></div></div>`
+            + `<div class="pp-sticky xp-verdict xp-verdict--${tone}">${done
+              ? `<span class="xp-verdict__k">${teacher ? "Teacher's mark" : "AI mark"}</span><b class="xp-verdict__m">${m}<small>/${q.marks}</small></b>`
+                + (ai.notes[q.id] ? `<p class="xp-verdict__note">${textHtml(ai.notes[q.id])}</p>` : "")
+                + (teacher ? `<small class="xp-verdict__was">The AI gave ${ai.was[q.id]}.</small>` : "")
+              : `<span class="xp-verdict__k">AI marking</span><p class="xp-verdict__note">${esc(ai.text || "Waiting to be marked")}</p><span class="xp-verdict__dots" aria-hidden="true"><i></i><i></i><i></i></span>`}</div>`);
           if (m !== undefined && ai.status === "done") paintScript(el, q);
         }
       } else {
@@ -535,7 +542,31 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     tsTimer = setTimeout(async () => {
       const nodes = [...document.querySelectorAll(".xm-sheet .xp-reveal, .xm-sheet .xp-script, .xo-drawer .xp-reveal, .xo-drawer .xp-script, .xp-bfill")];
       if (!nodes.length) return;
-      try { const { loadMath } = await import("/utils/components/workbook/mathify.js"); if (await loadMath()) await window.MathJax.typesetPromise(nodes); } catch { /* left as written */ }
+      /* Each formula is set as a SELF-CONTAINED picture (the sticky notes' own mathNode), not by a MathJax pass over the page: MathJax's
+         shared glyph cache lives in the page and is lost when the paper is drawn again, and the booklet in the sliding sheet is outside the
+         paper, so formulas set that way came out blank there. */
+      try {
+        const { mathNode, preloadMath } = await import("/utils/components/sticky-math.js");
+        preloadMath();
+        const swap = (root) => {
+          const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+          const hits = [];
+          while (walker.nextNode()) if (/\\\(|\\\[/.test(walker.currentNode.nodeValue)) hits.push(walker.currentNode);
+          hits.forEach((tn) => {
+            const frag = document.createDocumentFragment();
+            tn.nodeValue.split(/(\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/).forEach((part) => {
+              if (!part) return;
+              if (/^\\[([][\s\S]*\\[)\]]$/.test(part)) {
+                const n = mathNode(part.slice(2, -2));
+                n.removeAttribute("title"); n.removeAttribute("contenteditable");
+                frag.appendChild(n);
+              } else frag.appendChild(document.createTextNode(part));
+            });
+            tn.replaceWith(frag);
+          });
+        };
+        nodes.forEach(swap);
+      } catch { /* left as written */ }
     }, 60);
   }
 
@@ -664,9 +695,12 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     st.setAttribute("role", "img");
     st.setAttribute("aria-label", `Grade ${gr.g}, ${s.won} out of ${s.outOf} marks`);
     const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }).toUpperCase();
-    st.innerHTML = `<b>${gr.g}</b><span>${s.won}/${s.outOf}</span><i>${s.pending ? "Marking" : gr.say}</i><small>${today}</small>`;
+    st.innerHTML = `<b>${gr.g}</b><span>${s.pct}%</span><i>${s.pending ? "Marking" : gr.say}</i><small>${today}</small>`;
     if (scoreLabel) scoreLabel.before(st); else host.appendChild(st);
-    sheet.querySelectorAll(".xp-student em").forEach((box) => { box.textContent = `${s.won} / ${s.outOf}`; });
+    /* the Score box filled in: the marks out of the total. With a booklet, only the booklet's (the question paper stays clean) */
+    const boxes = bookHead ? [...document.querySelectorAll(".xp-bcover .xp-student em")] : [...sheet.querySelectorAll(".xp-student em")];
+    document.querySelectorAll(".xm-sheet .xp-student em, .xo-drawer .xp-student em").forEach((box) => { if (!boxes.includes(box)) box.textContent = ""; });
+    boxes.forEach((box) => { box.textContent = `${s.won} / ${s.outOf}`; box.classList.add("is-scored"); });
   }
 
   /* ── done: the result, and a suggestion to print it ────────────────────────
@@ -714,6 +748,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     clearTimeout(idle);
     document.querySelectorAll(".xm-sheet .xp-stamp, .xo-drawer .xp-stamp").forEach((n) => n.remove());
     document.querySelector(".xo-done")?.remove();
+    document.querySelectorAll(".xm-sheet .xp-student em, .xo-drawer .xp-student em").forEach((box) => { box.textContent = ""; box.classList.remove("is-scored"); });
   }
 
   return {
@@ -755,7 +790,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     /** The mark now held for a written answer, or undefined. */
     writtenMark(id) { return answers["m:" + id]; },
     check(questions) { checked = true; return score(questions); },
-    reopen() { checked = false; dropResult(); },
+    reopen() { checked = false; drawn.clear(); dropResult(); },
     clear() { const no = answers.examno; answers = {}; if (no) answers.examno = no; checked = false; dropResult(); keep(); paintExamNo(); },
     /** The exam number as shaded, or "" until every digit is. */
     get examNo() { const v = exnoValue(); return /^\d+$/.test(v) ? v : ""; },

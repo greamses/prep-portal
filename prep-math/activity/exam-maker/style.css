@@ -970,3 +970,52 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 .xp-bfill__row.is-no em { color: #d6322a; }
 .xp-bfill__row small { grid-column: 2 / -1; color: #c0392b; font: 600 8.4pt/1.3 "Shantell Sans", "Segoe Print", cursive; }
 .xp-bfill__row i { color: #8a8174; }
+
+/* ══ AI MARKING, IN THE SITE'S OWN PIECES ═══════════════════════════════════
+   The verdict is a sticky note (.pp-sticky) pinned beside the model answer, which is a small receipt (.pp-receipt). The line marks are
+   drawn in by the pen one line after another, the first time they arrive; a wrong line carries the marker's note and the line done right. */
+.xp-reveal.xp-reveal--ai, .xp-live .xp-reveal.xp-reveal--ai { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4mm; align-items: start; padding: 0; background: none !important; margin-top: 2.6mm; }
+.xp-modelrec.pp-receipt { --surface-primary: #fffdf7; --ink: #1d1b18; --shadow-color: 29, 27, 24; margin: 0; }
+.xp-modelrec .pp-receipt__paper { --tooth: 7px; --pp-paper: #fffdf7; padding: 3.4mm 4.4mm; color: #1d1b18; }
+.xp-verdict.pp-sticky { position: relative; display: grid; justify-items: start; gap: 0.6mm; width: 46mm; padding: 4.4mm 4mm 3.6mm; transform: rotate(1.6deg); color: #2a2723; box-shadow: 0 4px 12px rgba(42, 39, 35, 0.16), 0 1px 2px rgba(42, 39, 35, 0.12); }
+.xp-verdict--ok { --pp-note-bg: #d8f0d5; background: #d8f0d5; }
+.xp-verdict--part { --pp-note-bg: #fff1a6; background: #fff1a6; }
+.xp-verdict--no { --pp-note-bg: #ffd9d2; background: #ffd9d2; }
+.xp-verdict--wait { --pp-note-bg: #e9e4f6; background: #e9e4f6; }
+.xp-verdict::before { content: ""; position: absolute; top: -2.2mm; left: 50%; width: 13mm; height: 4mm; margin-left: -6.5mm; background: rgba(255, 255, 255, 0.72); border: 0.2mm solid rgba(29, 27, 24, 0.1); transform: rotate(-3deg); }
+.xp-verdict__k { font-size: 6.6pt; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.8; }
+.xp-verdict__m { font-family: "Unbounded", "JetBrains Mono", monospace; font-weight: 900; font-size: 19pt; line-height: 1; }
+.xp-verdict__m small { font-size: 10pt; font-weight: 700; opacity: 0.7; margin-left: 0.6mm; }
+.xp-verdict__note { margin: 0.8mm 0 0; font: 600 8.6pt/1.35 "Shantell Sans", "Segoe Print", "Bradley Hand", cursive; white-space: normal; }
+.xp-verdict__was { font-size: 7pt; opacity: 0.75; }
+.xp-verdict__dots { display: inline-flex; gap: 1mm; margin-top: 1mm; }
+.xp-verdict__dots i { width: 1.6mm; height: 1.6mm; border-radius: 50%; background: currentColor; opacity: 0.25; animation: xp-dot 1.2s ease-in-out infinite; }
+.xp-verdict__dots i:nth-child(2) { animation-delay: 0.18s; }
+.xp-verdict__dots i:nth-child(3) { animation-delay: 0.36s; }
+@keyframes xp-dot { 0%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 0.85; transform: translateY(-0.6mm); } }
+/* the corrected line, under the wrong one */
+.xp-script__fix { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 2mm; padding: 0 0 1.4mm 4mm; color: #1c7a3a; font-weight: 600; }
+.xp-script__fix em { font-style: normal; font-size: 6.6pt; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.8; }
+/* the pen draws the marks in, one line after another; the words under a line follow it */
+.xp-script.is-drawing .xp-script__mk svg { clip-path: inset(0 100% 0 0); animation: xp-pen 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards; animation-delay: calc(var(--i, 0) * 0.22s + 0.15s); }
+.xp-script.is-drawing .xp-script__note, .xp-script.is-drawing .xp-script__fix { opacity: 0; animation: xp-ink 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; animation-delay: calc(var(--i, 0) * 0.22s + 0.4s); }
+.xp-reveal--ai .xp-verdict { animation: xp-pin 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes xp-pen { to { clip-path: inset(0 0 0 0); } }
+@keyframes xp-ink { from { opacity: 0; transform: translateY(-0.8mm); } to { opacity: 1; transform: none; } }
+@keyframes xp-pin { from { opacity: 0; transform: translateY(-3mm) rotate(5deg) scale(0.96); } to { opacity: 1; transform: rotate(1.6deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .xp-script.is-drawing .xp-script__mk svg, .xp-script.is-drawing .xp-script__note, .xp-script.is-drawing .xp-script__fix, .xp-reveal--ai .xp-verdict, .xp-verdict__dots i { animation: none; clip-path: none; opacity: 1; }
+}
+@media print {
+  .xp-script__mk svg, .xp-script__note, .xp-script__fix, .xp-verdict { animation: none !important; clip-path: none !important; opacity: 1 !important; }
+  .xp-verdict--ok { background: #d8f0d5 !important; } .xp-verdict--part { background: #fff1a6 !important; } .xp-verdict--no { background: #ffd9d2 !important; }
+  .xp-script__fix { color: #1c7a3a !important; }
+}
+
+/* the Score box, filled in once the paper is marked */
+.xp-student em.is-scored { display: grid; place-items: center; font-family: "Unbounded", "JetBrains Mono", monospace; font-style: normal; font-weight: 800; font-size: 11pt; letter-spacing: 0; text-transform: none; color: var(--ci); white-space: nowrap; }
+
+/* formulas in the marking (set as self-contained pictures) sit in the line of words */
+.xp-reveal .pp-note__eq, .xp-script .pp-note__eq, .xp-bfill .pp-note__eq, .xp-verdict .pp-note__eq { display: inline-block; vertical-align: middle; margin: 0 0.4mm; }
+.xp-reveal .pp-note__eq svg, .xp-script .pp-note__eq svg, .xp-bfill .pp-note__eq svg, .xp-verdict .pp-note__eq svg { display: inline-block; vertical-align: middle; }
+.xp-script .pp-note__eq.is-source, .xp-reveal .pp-note__eq.is-source { font-family: var(--font-mono, monospace); font-size: 0.9em; }
