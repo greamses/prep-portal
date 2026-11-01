@@ -13,6 +13,7 @@
  */
 
 const admin = require("firebase-admin");
+const { sendOut } = require("./notify-out");
 
 const db = () => admin.firestore();
 const stamp = () => admin.firestore.FieldValue.serverTimestamp();
@@ -31,8 +32,10 @@ function shape(n) {
   };
 }
 
-/** Tell these students. Failures are swallowed: a missed notice must never fail an assignment. */
-async function notifyStudents(uids, n, id = null) {
+/** Tell these students. Failures are swallowed: a missed notice must never fail an assignment.
+ *  out: { push, mail }  also send it as a push notification to their devices, and/or an email (notify-out.js). Off by default:
+ *  a notice about something the student has just done on the page in front of them needs neither. */
+async function notifyStudents(uids, n, id = null, out = null) {
   try {
     const list = [...new Set((uids || []).map(String))].filter(Boolean);
     for (let i = 0; i < list.length; i += 400) {
@@ -46,6 +49,7 @@ async function notifyStudents(uids, n, id = null) {
   } catch (e) {
     console.error("[notices]", e.message);
   }
+  if (out && (out.push || out.mail)) await sendOut(uids, shape(n), { push: !!out.push, mail: !!out.mail, tag: id || "" });
 }
 
 module.exports = { notifyStudents };

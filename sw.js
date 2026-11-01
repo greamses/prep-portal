@@ -1,4 +1,4 @@
-const CACHE_NAME = "prepportal-v20";
+const CACHE_NAME = "prepportal-v21";
 const PRECACHE_URLS = [
   "/",
   "/index.html",
@@ -97,4 +97,33 @@ self.addEventListener("fetch", (event) => {
       return cachedResponse || fetchPromise;
     }),
   );
+});
+
+/* ── PUSH: results and tasks, when the person turned notifications on (utils/components/push.js) ──
+   The server (server/lib/notify-out.js) sends { title, body, url, tag }. Clicking the notification brings an open tab of the
+   site to that page, or opens one. */
+self.addEventListener("push", (event) => {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch (_) { d = { body: event.data ? event.data.text() : "" }; }
+  event.waitUntil(self.registration.showNotification(d.title || "Prep Portal", {
+    body: d.body || "",
+    icon: "/logo/favicon-192.png",
+    badge: "/logo/favicon-192.png",
+    tag: d.tag || undefined,
+    renotify: !!d.tag,
+    data: { url: d.url || "/" },
+  }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || "/", self.location.origin).href;
+  event.waitUntil((async () => {
+    const tabs = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const same = tabs.find((t) => t.url === url);
+    if (same) return same.focus();
+    const any = tabs.find((t) => t.url.startsWith(self.location.origin));
+    if (any && "navigate" in any) { await any.navigate(url); return any.focus(); }
+    return self.clients.openWindow(url);
+  })());
 });

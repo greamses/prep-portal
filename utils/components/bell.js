@@ -80,8 +80,44 @@ export function mountBell(host, auth) {
         + (n.text ? `<span class="nav-bell__text">${esc(n.text)}</span>` : "")
         + `<time class="nav-bell__when">${esc(ago(n.at))}</time></a>`).join("")
       : `<p class="nav-bell__none">Nothing new. A task from your teacher, or a result going in, will show up here.</p>`;
-    paper.innerHTML = head + `<div class="nav-bell__list">${list}</div>`;
+    paper.innerHTML = head + `<div class="nav-bell__list">${list}</div>` + `<div class="nav-bell__foot" data-foot></div>`;
+    paintFoot();
   }
+
+  /* how a notice reaches the person when they are not on the site: a notification on this device, and results by email */
+  let prefs = { push: "", email: null };
+  const sw = (name, on, words, busy) => `<button type="button" class="nav-bell__sw" data-sw="${name}" role="switch" aria-checked="${on ? "true" : "false"}"${busy ? " disabled" : ""}><i aria-hidden="true"></i><span>${words}</span></button>`;
+  function paintFoot(note = "") {
+    const f = paper.querySelector("[data-foot]");
+    if (!f) return;
+    const p = prefs.push;
+    const pushWords = p === "unsupported" ? "This browser cannot show notifications" : p === "blocked" ? "Notifications are blocked for this site in your browser's settings" : "Notifications on this device";
+    f.innerHTML = (p === "unsupported" || p === "blocked" ? `<p class="nav-bell__fine">${pushWords}</p>` : sw("push", p === "on", pushWords, !p))
+      + sw("email", prefs.email === true, "Email me my results", prefs.email === null)
+      + (note ? `<p class="nav-bell__fine">${esc(note)}</p>` : "");
+  }
+  async function loadPrefs() {
+    try {
+      const m = await import("/utils/components/push.js");
+      const t = await token();
+      const [p, e] = await Promise.all([m.pushState(), t ? m.emailPref(t).catch(() => true) : true]);
+      prefs = { push: p, email: e };
+    } catch { prefs = { push: "unsupported", email: true }; }
+    if (open) paintFoot();
+  }
+  paper.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-sw]");
+    if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    b.disabled = true;
+    try {
+      const m = await import("/utils/components/push.js");
+      const t = await token();
+      if (b.dataset.sw === "push") prefs.push = prefs.push === "on" ? await m.pushOff(t) : await m.pushOn(t);
+      else prefs.email = await m.setEmailPref(t, !prefs.email);
+      paintFoot(b.dataset.sw === "push" && prefs.push === "on" ? "You will be told here when a task is set or a result is ready." : "");
+    } catch (err) { paintFoot(String((err && err.message) || err).slice(0, 120)); }
+  });
 
   async function refresh(force = false) {
     if (!force && Date.now() - loadedAt < TTL) return;
@@ -114,6 +150,7 @@ export function mountBell(host, auth) {
     fresh = new Set(items.filter((n) => !n.seen).map((n) => n.id));
     open = true;
     paintPanel();
+    if (!prefs.push) loadPrefs();
     panel.hidden = false;
     btn.setAttribute("aria-expanded", "true");
     if (unread) {

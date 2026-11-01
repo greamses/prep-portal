@@ -75,3 +75,11 @@ html, body { overflow-x: clip !important; overflow-y: visible !important; }
 .xm-tutpop__row b { display: block; font-size: 0.8rem; }
 .xm-tutpop__row small { display: block; font-size: 0.68rem; line-height: 1.35; color: var(--text-secondary); }
 .xm-tutpop__ico, .xm-tutpop__ico svg { display: block; width: 2.1rem; height: 2.1rem; }
+
+/* the offer to be told when results are ready */
+.xm-pushoffer.pp-receipt { position: fixed; right: 1rem; bottom: 1rem; z-index: 2147482000; width: min(22rem, calc(100vw - 2rem)); }
+.xm-pushoffer .pp-receipt__paper { padding: 1rem 1.1rem 0.9rem; font-size: 0.8rem; line-height: 1.5; }
+.xm-pushoffer b { display: block; font-family: var(--font-display, "Unbounded"), sans-serif; font-size: 0.88rem; margin-bottom: 0.3rem; }
+.xm-pushoffer p { margin: 0 0 0.75rem; }
+.xm-pushoffer__row { display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap; }
+@media print { .xm-pushoffer { display: none !important; } }

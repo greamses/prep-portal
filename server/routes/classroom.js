@@ -260,7 +260,7 @@ module.exports = function () {
         }, { merge: true });
       }
       await batch.commit();
-      await notifyStudents(who.targets, { kind: "task", title: act.title || "New activity", text: `${who.teacherName} set you a task.`, url: `/activity.html?a=${encodeURIComponent(act.shareSlug || act.id)}` || "/dashboard.html", from: who.teacherName });
+      await notifyStudents(who.targets, { kind: "task", title: act.title || "New activity", text: `${who.teacherName} set you a task.`, url: `/activity.html?a=${encodeURIComponent(act.shareSlug || act.id)}` || "/dashboard.html", from: who.teacherName }, null, { push: true });
       res.json({ ok: true, assigned: who.targets.length, teacherName: who.teacherName });
     } catch (e) {
       console.error("[/api/classroom/assign]", e.message);
@@ -310,7 +310,7 @@ module.exports = function () {
         }, { merge: true });
       }
       await batch.commit();
-      await notifyStudents(who.targets, { kind: "task", title: title, text: `${who.teacherName} set you a task.`, url: url || "/dashboard.html", from: who.teacherName });
+      await notifyStudents(who.targets, { kind: "task", title: title, text: `${who.teacherName} set you a task.`, url: url || "/dashboard.html", from: who.teacherName }, null, { push: true });
       res.json({ ok: true, assigned: who.targets.length, teacherName: who.teacherName });
     } catch (e) {
       console.error("[/api/classroom/assign-cbt]", e.message);
@@ -374,7 +374,7 @@ module.exports = function () {
         }, { merge: true });
       }
       await batch.commit();
-      await notifyStudents(who.targets, { kind: "task", title: title, text: `${who.teacherName} set you a task.`, url: url || "/dashboard.html", from: who.teacherName });
+      await notifyStudents(who.targets, { kind: "task", title: title, text: `${who.teacherName} set you a task.`, url: url || "/dashboard.html", from: who.teacherName }, null, { push: true });
       res.json({ ok: true, assigned: who.targets.length, teacherName: who.teacherName });
     } catch (e) {
       console.error("[/api/classroom/assign-writing]", e.message);

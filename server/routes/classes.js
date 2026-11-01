@@ -249,7 +249,7 @@ module.exports = function () {
         });
         await batch.commit();
       }
-      await notifyStudents(targets, { kind: "task", title: paper.title || "New paper", text: `${teacherName} set you a paper.`, url, from: teacherName }, `task_paper_${code}`);
+      await notifyStudents(targets, { kind: "task", title: paper.title || "New paper", text: `${teacherName} set you a paper.`, url, from: teacherName }, `task_paper_${code}`, { push: true });
       res.json({ ok: true, assigned: targets.length, url });
     } catch (e) {
       console.error("[/api/classes/assign-paper]", e.message);

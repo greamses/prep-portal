@@ -22,7 +22,7 @@ const MAX_TRIES = 6;
 const LEASE_MS = 120000;
 const delayFor = (tries) => Math.min(600, 20 * 2 ** Math.max(0, tries - 1)) * 1000;
 
-module.exports = function createMarkQueue({ db, markScript, now = Date.now, rpm = Number(process.env.MARK_RPM) || 20 }) {
+module.exports = function createMarkQueue({ db, markScript, onDone = null, now = Date.now, rpm = Number(process.env.MARK_RPM) || 20 }) {
   const jobs = () => db().collection("markQueue");
   const limiter = () => db().collection("markMeta").doc("limiter");
   const idOf = (code, uid) => `${code}_${uid}`;
@@ -125,6 +125,7 @@ module.exports = function createMarkQueue({ db, markScript, now = Date.now, rpm 
     try {
       const { marks, provider } = await markScript({ subject: job.subject, klass: job.klass, items: job.items });
       await job.ref.set({ status: "done", result: { marks, provider }, finishedAt: now(), updatedAt: now(), lockedUntil: 0, error: "" }, { merge: true });
+      if (onDone && job.uid !== job.ownerUid) await onDone(job);
       return "done";
     } catch (e) {
       const tries = (job.attempts || 0) + 1;

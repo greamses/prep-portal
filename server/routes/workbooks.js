@@ -159,7 +159,7 @@ module.exports = function () {
         }, { merge: true });
       });
       if (roster.size) await batch.commit();
-      await notifyStudents(roster.docs.map((d) => d.id), { kind: "task", title, text: `${teacherName} set you a workbook.`, url: `/wb/${code}`, from: teacherName }, `task_workbook_${code}`);
+      await notifyStudents(roster.docs.map((d) => d.id), { kind: "task", title, text: `${teacherName} set you a workbook.`, url: `/wb/${code}`, from: teacherName }, `task_workbook_${code}`, { push: true });
       res.json({ ok: true, code, url: `/wb/${code}`, sent: roster.size });
     } catch (err) {
       console.error("[/api/workbooks/assign]", err.message);
@@ -540,7 +540,13 @@ module.exports = function () {
 
      Both GETs do a little of the queue's work first, because the site has no scheduled jobs: the
      queue is drained by the people waiting on it. */
-  const marker = createMarkQueue({ db, markScript });
+  const marker = createMarkQueue({ db, markScript, onDone: async (job) => {
+    try {
+      const p = await db().collection("sharedPapers").doc(job.code).get();
+      if (!p.exists || (p.data().head && p.data().head.holdResults)) return;
+      await notifyStudents([job.uid], { kind: "result", title: p.data().title || "Mock paper", text: "Your written answers have been marked. Open the paper to see your marks and the corrections.", url: `/paper/${job.code}`, from: p.data().ownerName || "Prep Portal" }, `aimarked_${job.code}`, { push: true, mail: true });
+    } catch (e) { console.error("[marked notice]", e.message); }
+  } });
   /* A paper set to hold its results: this student's marks are not shown to them until the teacher releases them. */
   const isHeld = async (code, uid) => {
     const p = await db().collection("sharedPapers").doc(code).get();
@@ -682,7 +688,7 @@ module.exports = function () {
           score = { won, outOf: r.lastOutOf, pct, grade: gradeOf(pct) };
         }
         try {
-          if (!(own.p.data().head && own.p.data().head.holdResults && !(await isReleased(own.pRef, req.params.uid)))) await notifyStudents([req.params.uid], { kind: "result", title: own.p.data().title || "Mock paper", text: `Your teacher changed the mark for a written answer: ${out.before} to ${out.after} of ${out.max}.`, url: `/paper/${code}`, from: own.p.data().ownerName || "Your teacher" }, `override_${code}_${String(b.qid || "").slice(0, 40)}`);
+          if (!(own.p.data().head && own.p.data().head.holdResults && !(await isReleased(own.pRef, req.params.uid)))) await notifyStudents([req.params.uid], { kind: "result", title: own.p.data().title || "Mock paper", text: `Your teacher changed the mark for a written answer: ${out.before} to ${out.after} of ${out.max}.`, url: `/paper/${code}`, from: own.p.data().ownerName || "Your teacher" }, `override_${code}_${String(b.qid || "").slice(0, 40)}`, { push: true, mail: true });
         } catch (e) { console.error("[override notice]", e.message); }
       }
       res.json({ ok: true, before: out.before, after: out.after, max: out.max, score });
@@ -803,7 +809,7 @@ module.exports = function () {
       await rRef.set({ released: true, releasedAt: stamp() }, { merge: true });
       const r = rs.data();
       try {
-        await notifyStudents([req.params.uid], { kind: "result", title: own.p.data().title || "Mock paper", text: "Your teacher has marked your paper. Open it to see your results and their notes.", url: `/paper/${code}`, from: own.p.data().ownerName || "Your teacher" }, `released_${code}`);
+        await notifyStudents([req.params.uid], { kind: "result", title: own.p.data().title || "Mock paper", text: "Your teacher has marked your paper. Open it to see your results and their notes.", url: `/paper/${code}`, from: own.p.data().ownerName || "Your teacher" }, `released_${code}`, { push: true, mail: true });
       } catch (e) { console.error("[release notice]", e.message); }
       res.json({ ok: true, name: r.name || "Student" });
     } catch (err) {

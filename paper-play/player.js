@@ -372,7 +372,39 @@ function sendResult() {
     if (!s.outOf) return;
     const first = firstSend; firstSend = false;
     try { await api(`/api/workbooks/paper/${code}/result`, { name: live.name, won: s.won, outOf: s.outOf, first, examNo: live.examNo, ...(holds() ? { answers: live.snapshot() } : {}) }); } catch { /* the page still works without it */ }
+    /* results still to come (the teacher's review, or the AI marking the written answers): offer to say so when they are ready */
+    if (first && (holds() || head.aiMark)) offerPush();
   }, 900);
+}
+
+/* ── "tell me when my results are ready" ─────────────────────────────────────
+   Offered once a paper is in and its results are still to come, on a device that has not been asked (or said Not now) before. */
+async function offerPush() {
+  try {
+    if (localStorage.getItem("pp-push-asked") === "1") return;
+    const m = await import("/utils/components/push.js");
+    if ((await m.pushState()) !== "off") return;
+    const card = document.createElement("div");
+    card.className = "pp-receipt xm-pushoffer";
+    card.setAttribute("role", "dialog");
+    card.setAttribute("aria-label", "Get told when your results are ready");
+    card.innerHTML = `<div class="pp-receipt__paper"><b>Get told when your results are ready?</b>
+      <p>${holds() ? "Your teacher will go through your paper first." : "The AI is marking your written answers."} A notification on this device says when your results are in, even if you have left this page.</p>
+      <div class="xm-pushoffer__row"><button type="button" class="pp-btn pp-btn--ghost" data-no>Not now</button><button type="button" class="pp-btn" data-yes>Turn on notifications</button></div></div>`;
+    document.body.appendChild(card);
+    const done = () => { try { localStorage.setItem("pp-push-asked", "1"); } catch { /* asked again next time */ } card.remove(); };
+    card.querySelector("[data-no]").addEventListener("click", done);
+    card.querySelector("[data-yes]").addEventListener("click", async (e) => {
+      e.target.disabled = true;
+      try {
+        const u = await currentUser();
+        const t = u && u.getIdToken ? await u.getIdToken() : null;
+        const st = await m.pushOn(t);
+        say(st === "on" ? "Notifications are on. You will be told when your results are ready." : st === "blocked" ? "Notifications are blocked for this site in your browser's settings." : "Notifications were not turned on.");
+      } catch (err) { say(String((err && err.message) || err).slice(0, 160), true); }
+      done();
+    });
+  } catch { /* no offer */ }
 }
 
 function paintScore() {
