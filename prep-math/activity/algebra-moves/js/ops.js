@@ -1750,6 +1750,7 @@ function hcfOf(monos) {
 /** Take the monomial F out of the terms at `idxs` of a container. */
 export function factorTerms(eq, loc, idxs, F) {
   if (idxs.length < 2) return { error: "A common factor needs two terms or more." };
+  idxs = [...idxs].sort((a, b) => a - b);          // the bracket keeps the order the terms were written in, however they were picked
   if (isMonoOne(F)) return { error: "Those terms have nothing in common to take out." };
   const inner = [];
   for (const i of idxs) {
@@ -2388,7 +2389,21 @@ function moveOffers(eq, termId) {
      two — not four ways of moving its term about. (Picking several terms or signs
      is for swapping a few of them, and for the moves that need a few.) */
   const loc = locate(eq, termId);
-  if (!loc || loc.index < 1) return [];
+  if (!loc) {
+    // inside a bracket: (b − 5) is a sum that is not a whole side, and its two terms can still change places
+    const sum = A.parentOf(eq, termId);
+    const at = sum && sum.kind === "sum" ? sum.kids.findIndex((k) => k.id === termId) : -1;
+    if (at < 1) return [];
+    const kids = [...sum.kids];
+    [kids[at - 1], kids[at]] = [kids[at], kids[at - 1]];
+    const next = { ...sum, kids };
+    const turned = { eq: A.replace(eq, sum.id, next), from: new Map(), mark: plain(next), note: "The same terms, the other way round" };
+    return [{
+      key: "reorder", label: `Swap ${plain(sum.kids[at - 1])} and ${plain(sum.kids[at])}`, hint: "the two terms either side of the sign", mark: turned.mark, run: () => turned,
+      faces: [{ op: "", src: plain(sum.kids[at - 1]) }, { swap: true }, { op: "", src: plain(sum.kids[at]) }],
+    }];
+  }
+  if (loc.index < 1) return [];
   const before = loc.terms[loc.index - 1], after = loc.term;
   const r = swapTerms(eq, before.id, after.id);
   if (r.error) return [];
@@ -3360,7 +3375,7 @@ function atomOffersRaw(eq, key, { given = null } = {}) {
     }
     pick(pool(atomTerm(eq, key)), "combine", "workout", "dropzero", "expand", "across", "pyth");
     // Where the term this sign introduces can go instead.
-    if (isContainer && kid) for (const o of moveOffers(eq, kid.id)) add(o);
+    if (kid) for (const o of moveOffers(eq, kid.id)) add(o);
     // A + on top of a bar: the fraction it sits in can be split at it.
     const parent = sum && A.parentOf(eq, sum.id);
     if (parent && parent.kind === "frac" && parent.a === sum) {
@@ -3375,7 +3390,9 @@ function atomOffersRaw(eq, key, { given = null } = {}) {
     }
     pick(pool(atomTerm(eq, key)), "across", "flip", "expand", "combine", "addfrac", "workout");
     const owner = atomTerm(eq, key);
-    if (owner && locate(eq, owner.id)?.terms.length > 1) for (const o of moveOffers(eq, owner.id)) add(o);
+    const signed = A.findById(eq, nodeId);
+    if (signed && !locate(eq, signed.id) && A.parentOf(eq, signed.id)?.kind === "sum") for (const o of moveOffers(eq, signed.id)) add(o);   // the − of a term inside a bracket
+    else if (owner) for (const o of moveOffers(eq, owner.id)) add(o);
   } else if (CALC_SLOTS.has(slot)) {
     // The d/dx, the ∫, the lim, a sin: what that sign means comes first.
     tidiesAbove(nodeId);
