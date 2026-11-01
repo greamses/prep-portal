@@ -78,6 +78,11 @@ export function initModal() {
     setTimeout(() => document.querySelector('.paper-editable')?.focus(), 80);
   });
   
+  import('/utils/components/doc-export.js').then(({ mountDownload }) => mountDownload(document.getElementById('print-btn'), {
+    label: 'Download',
+    root: () => document.querySelector('#theory-results .ta-paper') || document.getElementById('theory-results'),
+    name: () => 'Theory answer sheet',
+  })).catch(() => {});
   document.getElementById('print-btn').addEventListener('click', () => {
     const paper = document.querySelector('#theory-results .ta-paper');
     if (paper)

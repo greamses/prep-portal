@@ -837,6 +837,10 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     print.type = "button"; print.className = "pp-btn xo-done__print";
     faceOf(print, UI.print(18), "Print your marked paper");
     print.addEventListener("click", () => (onPrint ? onPrint() : window.print()));
+    queueMicrotask(() => import("/utils/components/doc-export.js").then(({ mountDownload }) => mountDownload(print, {
+      root: () => sheet,
+      name: () => `Marked paper ${(document.querySelector(".xp-student input, .xp-name input") || {}).value || ""}`.trim(),
+    })).catch(() => {}));
     const close = document.createElement("button");
     close.type = "button"; close.className = "pp-btn pp-btn--ghost xo-done__close";
     faceOf(close, UI.close(16), "Close");

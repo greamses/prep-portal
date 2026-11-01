@@ -771,6 +771,12 @@ $("xm-print").addEventListener("click", async () => {
   try { await typeset(); } catch { /* print plain */ }
   window.print();
 });
+import("/utils/components/doc-export.js").then(({ mountDownload }) => mountDownload($("xm-print"), {
+  root: () => document.getElementById("xm-sheet"),
+  width: "210mm",
+  name: () => [state.head.school, state.head.subject, state.head.klass, "exam"].filter(Boolean).join(" "),
+  before: async () => { clearTimeout(drawTimer); draw(); try { await typeset(); } catch { /* plain */ } },
+})).catch(() => {});
 
 /* Shuffle: the questions and each question's answers in a new order, the correct answer carried with
    it. While a paper is being answered the answers (kept by position) are cleared with it. */

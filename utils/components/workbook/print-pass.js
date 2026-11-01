@@ -194,7 +194,14 @@ export function printPass({ workbook, label }) {
   });
 
   apply();
-  return { update, print, allowed: () => !!state.allowed };
+  /* a download is a print by another name: the same subscription, the same gate */
+  function can() {
+    if (state.allowed) { root.classList.add("wb-print-ok"); return true; }
+    openGate();
+    return false;
+  }
+
+  return { update, print, can, allowed: () => !!state.allowed };
 }
 
 /**

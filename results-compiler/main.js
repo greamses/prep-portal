@@ -207,6 +207,10 @@ $("rc-start").addEventListener("change", (e) => e.target.value && load(e.target.
 $("rc-weeks").addEventListener("change", () => load(data ? data.from : ""));
 $("rc-pages").addEventListener("change", (e) => document.documentElement.classList.toggle("rc-per-page", e.target.checked));
 $("rc-print").addEventListener("click", () => window.print());
+import("/utils/components/doc-export.js").then(({ mountDownload }) => mountDownload($("rc-print"), {
+  root: () => $("rc-report"),
+  name: () => `Results report ${data && data.from ? data.from : ""}`.trim(),
+})).catch(() => {});
 /* the comment box grows with the writing, so nothing is cut off on paper */
 function grow(t) { t.style.height = "auto"; t.style.height = t.scrollHeight + 2 + "px"; }
 $("rc-report").addEventListener("input", (e) => {

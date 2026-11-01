@@ -41,6 +41,7 @@ import { mountInteractive } from "./interactive.js";
 import { mountAssign } from "./assign.js";
 import { enhanceSelects } from "/utils/components/pp-select.js";
 import { UI } from "/utils/components/ui-icons.js";
+import { mountDownload } from "/utils/components/doc-export.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
 
 const $ = (id) => document.getElementById(id);
@@ -553,6 +554,12 @@ export function mountBuilder(cfg) {
     });
 
     $("wb-print").addEventListener("click", () => (pass ? pass.print() : window.print()));
+    /* the same pages as a PDF, a Word file or a Google Doc, behind the same subscription */
+    mountDownload($("wb-print"), {
+      pages: () => [...document.querySelectorAll(".wb-sheet .wb-page, .wb-page")].filter((p, i, a) => a.indexOf(p) === i),
+      name: () => `${($("wb-title") && $("wb-title").value.trim()) || document.title.split("|")[0].trim()} ${($("wb-seedcode") && $("wb-seedcode").value) || ""}`.trim(),
+      gate: async () => (pass && pass.can ? pass.can() : true),
+    });
 
     /* The printer gets the pages at full size; the preview's transform would
        otherwise be baked into the print in some browsers. Undo it for the
