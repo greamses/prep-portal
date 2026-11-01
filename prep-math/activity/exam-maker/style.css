@@ -1046,3 +1046,11 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 .xm-qreceipt.is-flash { animation: xm-flash 1.4s cubic-bezier(0.16, 1, 0.3, 1); }
 @keyframes xm-flash { 0% { transform: translateX(0); filter: drop-shadow(0 0 0 rgba(59, 76, 202, 0)); } 15% { transform: translateX(-6px); filter: drop-shadow(0 6px 18px rgba(59, 76, 202, 0.45)); } 100% { transform: none; filter: drop-shadow(0 0 0 rgba(59, 76, 202, 0)); } }
 @media (prefers-reduced-motion: reduce) { .xm-qreceipt.is-flash { animation: none; outline: 2px solid #3b4cca; outline-offset: 3px; } }
+
+/* PRINT: the site's print rule turns every element black, which reaches the pen marks' own paths; colour them by hand */
+@media print {
+  .xp-mark--right svg path, .xp-mark--part svg path, .xp-script__row.is-ok .xp-script__mk svg path, .xp-bfill__row.is-ok em svg path { fill: #1f9d46 !important; stroke: #1f9d46 !important; }
+  .xp-mark--wrong svg path, .xp-script__row.is-no .xp-script__mk svg path, .xp-bfill__row.is-no em svg path { fill: #d6322a !important; stroke: #d6322a !important; }
+  .xp-mark small { color: #1f9d46 !important; }
+  .xp-script__note, .xp-bfill__row small { color: #c0392b !important; }
+}

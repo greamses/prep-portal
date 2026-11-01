@@ -306,12 +306,32 @@ function readRun(s, i, close, denominator = false) {
       continue;
     }
 
+    /* div, times, cdot (and the signs themselves) end a run like + does, so 3/4 div 1/2 is three quarters divided by one half */
+    const ow = opWord(s, i);
+    if (ow) {
+      if (denominator) return done(i);
+      flush();
+      out.push(gap(ow.tex));
+      i = ow.i;
+      continue;
+    }
+
     const atom = readAtom(s, i);
     chunk.push(atom);
     i = atom.i;
   }
 
   return done(i);
+}
+
+const OP_WORDS = { div: "\\div", times: "\\times", cdot: "\\cdot", "\u00f7": "\\div", "\u00d7": "\\times", "\u00b7": "\\cdot" };
+/** A dividing or multiplying word or sign, standing on its own, if one starts here. */
+function opWord(s, i) {
+  if (i > 0 && isAlpha(s[i - 1])) return null;
+  for (const k of Object.keys(OP_WORDS)) {
+    if (s.startsWith(k, i) && !(isAlpha(k[0]) && isAlpha(s[i + k.length] || ""))) return { tex: OP_WORDS[k], i: i + k.length };
+  }
+  return null;
 }
 
 /** A two- or three-character sign, if one starts here. */
