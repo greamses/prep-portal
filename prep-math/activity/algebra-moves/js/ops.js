@@ -2060,6 +2060,26 @@ export function expandBase(eq, id) {
   };
 }
 
+/** The same numeral nested, one digit at a time: 433_7 is (((4 × 7) + 3) × 7) + 3 — multiply by the base, add the next digit. */
+export function expandNested(eq, id) {
+  const n = A.findById(eq, id);
+  if (!n || n.kind !== "base") return { error: "That is not a number in another base." };
+  const digits = [...n.digits];
+  if (digits.length < 2) return { error: "A single digit is just itself." };
+  const baseNode = () => (n.v ? (n.v.kind === "var" ? A.vr(n.v.name) : { ...copy(n.v), paren: n.v.kind === "sum" || n.v.kind === "prod" }) : A.num(R.rat(BigInt(n.base))));
+  const digitNode = (ch) => (/[a-z]/.test(ch) ? A.vr(ch) : A.num(R.rat(BigInt(parseInt(ch, 36)))));
+  let acc = digitNode(digits[0]);
+  for (let i = 1; i < digits.length; i++) {
+    const step = { ...A.prod([acc, baseNode()]), paren: true };
+    acc = { ...A.sum([step, digitNode(digits[i])]), paren: i < digits.length - 1 };
+  }
+  const baseName = n.v ? plain({ ...n.v, paren: false }) : n.base;
+  return {
+    eq: A.replace(eq, id, acc), from: flyFrom(eq, acc, id), mark: plain(acc),
+    note: `Multiply by the base ${baseName} and add the next digit, each time: ${plain(acc)}`,
+  };
+}
+
 /** The same number written in another base: 25_10 is 11001_2, 2A_16 is 42_10. */
 export function toBase(eq, id, target) {
   const n = A.findById(eq, id);
@@ -3529,6 +3549,7 @@ function atomOffersRaw(eq, key, { given = null } = {}) {
     // A number in another base: expand it in base ten, or just convert it.
     if (leaf?.kind === "base") {
       add(direct(leaf.v || leaf.dv ? "expandletter" : "expandbase", leaf.v ? `Write it out: each digit times a power of ${leaf.v.name}` : leaf.dv ? "Write it out: each digit times its place value" : "Expand it in base ten", "digit × place value", expandBase(eq, nodeId)));
+      add(direct("expandnested", "Write it nested: multiply by the base, add the next digit", "((d₁ × b) + d₂) × b + d₃", expandNested(eq, nodeId)));
       add(direct("base10", "Write it in base ten", "the value", toBaseTen(eq, nodeId)));
       // ...or in another base: by repeated division, the remainders read upwards.
       for (const t of [2, 8, 16]) add(direct("tobase", `Write it in base ${t}`, "divide by the base, keep the remainders", toBase(eq, nodeId, t)));

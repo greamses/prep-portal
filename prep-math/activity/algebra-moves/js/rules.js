@@ -84,6 +84,7 @@ const EXAMPLES = {
   "r-comb": "y = nCr(5,2)",
   "r-cancel": "6x/3 = 10",
   "r-base-expand": "y = 1011_2",
+  "r-base-nested": "y = 433_7",
   "r-base-ten": "y = 1011_2",
   "r-powers-first": "y = 3*2^2 + 5*2^0",
   "r-base-letter": "z = 35_y",
@@ -281,6 +282,7 @@ export const RULE_GROUPS = [
     items: [
       r("r-cancel", "Cancel it down", "ka/(kb) = a/b", ["cancel"]),
       r("r-base-expand", "Expand a number in base ten", "1011_2 = 1·2^3 + 0·2^2 + 1·2^1 + 1·2^0", ["expandbase"]),
+      r("r-base-nested", "Write a numeral nested: multiply by the base, add the next digit", "433_7 = (((4 × 7) + 3) × 7) + 3", ["expandnested"]),
       r("r-base-ten", "Write a number in base ten", "1011_2 = 11", ["base10"]),
       r("r-powers-first", "Powers before products", "3·y^1 + 5·y^0 = 3·y + 5·1", ["resolvepowers"]),
       r("r-base-letter", "A base that is a letter", "35_y = 3·y^1 + 5·y^0", ["expandletter"]),
