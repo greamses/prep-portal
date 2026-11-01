@@ -37,6 +37,17 @@ module.exports = function createMarkQueue({ db, markScript, now = Date.now, rpm 
     return { status: "queued", already: false };
   }
 
+  /** Put a finished or failed script back in the line, with the answers it already holds. → { ok } or { ok: false, reason } */
+  async function requeue(code, uid) {
+    const ref = jobs().doc(idOf(code, uid));
+    const snap = await ref.get();
+    if (!snap.exists) return { ok: false, reason: "none" };
+    const j = snap.data();
+    if (["queued", "working"].includes(j.status)) return { ok: true, status: j.status, already: true };
+    await ref.set({ status: "queued", attempts: 0, notBefore: 0, lockedUntil: 0, updatedAt: now(), result: null, error: "", overrides: {} }, { merge: true });
+    return { ok: true, status: "queued" };
+  }
+
   /** The marks as they stand: the AI's, with the teacher's own mark in place of any they changed (the AI's is kept, as `ai`). */
   const merged = (j) => {
     const ov = j.overrides || {};
@@ -190,5 +201,5 @@ module.exports = function createMarkQueue({ db, markScript, now = Date.now, rpm 
     return { ok: true, before: cur.m, after: mark, max: cur.of, ownerUid: j.ownerUid, name: j.name };
   }
 
-  return { enqueue, statusOf, drain, summary, detail, applyOverride, takeToken, reapStale, MAX_TRIES };
+  return { enqueue, requeue, statusOf, drain, summary, detail, applyOverride, takeToken, reapStale, MAX_TRIES };
 };

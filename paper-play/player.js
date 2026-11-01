@@ -173,16 +173,19 @@ function stopMarking() { clearTimeout(markPoll); live.setAi({ on: !!(head && hea
 function mountMarkingList() {
   const box = document.createElement("section");
   box.className = "pp-live pp-watchlist";
-  box.innerHTML = `<h2 class="pp-live__cap">AI marking <button type="button" class="pp-btn pp-watchlist__refresh"></button></h2>
+  box.innerHTML = `<h2 class="pp-live__cap">AI marking <button type="button" class="pp-btn pp-watchlist__refresh"></button> <button type="button" class="pp-btn pp-watchlist__run"></button></h2>
     <p class="pp-watchlist__how">Finished scripts are marked in turn, at the rate the AI allows. Pressing the key checks on them and gives the line a push.</p>
     <div class="pp-watchlist__who"><p class="pp-live__none">Reading the line…</p></div>`;
   document.querySelector(".xm-preview").prepend(box);
   faceOf(box.querySelector(".pp-watchlist__refresh"), UI.refresh(16), "Check on the marking");
+  faceOf(box.querySelector(".pp-watchlist__run"), UI.bolt(16), "Mark the waiting scripts now");
   const list = box.querySelector(".pp-watchlist__who");
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const TONE = { done: "ok", queued: "warn", working: "warn", failed: "danger" };
   let relBy = new Map();              // uid -> released? (only for a paper that holds its results)
   const relBtn = (uid, released, ready) => `<button type="button" class="pp-btn pp-mk__release${released ? " is-done" : ""}" data-uid="${esc(uid)}" ${released || !ready ? "disabled" : ""} data-tip="${released ? "Released: the student has been told" : ready ? "Release the results to this student" : "Wait until the marking has finished"}" aria-label="${released ? "Released" : "Release the results"}"></button>`;
+  const qBtn = (uid, tip) => `<button type="button" class="pp-btn pp-mk__queue" data-uid="${esc(uid)}" data-tip="${esc(tip)}" aria-label="${esc(tip)}"></button>`;
+  const faceQueue = (root) => root.querySelectorAll(".pp-mk__queue").forEach((b) => faceOf(b, UI.bolt(16), b.dataset.tip));
   const faceRelease = (root) => root.querySelectorAll(".pp-mk__release").forEach((b) => faceOf(b, b.classList.contains("is-done") ? UI.check(16) : UI.share(16), b.dataset.tip));
   const WORD = { done: "Marked", queued: "Waiting", working: "Being marked", failed: "Could not mark" };
   let at = 0;
@@ -196,16 +199,43 @@ function mountMarkingList() {
       const heldRows = d.hold ? (d.submissions || []).filter((x) => !jobUids.has(x.uid)) : [];
       list.innerHTML = d.total
         ? `<p class="pp-watchlist__how"><b>${d.done}</b> marked · <b>${d.queued + d.working}</b> waiting${d.failed ? ` · <b>${d.failed}</b> could not be marked` : ""} of ${d.total}</p>`
-          + d.students.map((s) => `<details class="pp-watchlist__one" data-uid="${esc(s.uid)}" data-status="${esc(s.status)}"><summary><span class="pp-pill pp-pill--static pp-pill--${TONE[s.status] || "warn"}">${WORD[s.status] || s.status}</span> <b>${esc(s.name)}</b>${s.examNo ? ` <span class="pp-exno">No. ${esc(s.examNo)}</span>` : ""}${s.error ? ` · ${esc(s.error)}` : ""}${d.hold ? ` ${relBtn(s.uid, relBy.get(s.uid) === true, s.status === "done")}` : ""}</summary><div class="pp-mk"></div></details>`).join("")
+          + d.students.map((s) => `<details class="pp-watchlist__one" data-uid="${esc(s.uid)}" data-status="${esc(s.status)}"><summary><span class="pp-pill pp-pill--static pp-pill--${TONE[s.status] || "warn"}">${WORD[s.status] || s.status}</span> <b>${esc(s.name)}</b>${s.examNo ? ` <span class="pp-exno">No. ${esc(s.examNo)}</span>` : ""}${s.error ? ` · ${esc(s.error)}` : ""}${s.status === "failed" ? ` ${qBtn(s.uid, "Try the AI marking again")}` : ""}${d.hold ? ` ${relBtn(s.uid, relBy.get(s.uid) === true, s.status === "done")}` : ""}</summary><div class="pp-mk"></div></details>`).join("")
         : `<p class="pp-live__none">No script has been sent for marking yet.</p>`;
-      if (heldRows.length) list.innerHTML += `<p class="pp-watchlist__how">Handed in with no written answers to mark:</p>` + heldRows.map((x) => `<div class="pp-watchlist__one pp-mk__plain"><b>${esc(x.name)}</b>${x.examNo ? ` <span class="pp-exno">No. ${esc(x.examNo)}</span>` : ""} · ${x.won} of ${x.outOf} ${relBtn(x.uid, x.released, true)}</div>`).join("");
+      if (heldRows.length) list.innerHTML += `<p class="pp-watchlist__how">Handed in with no written answers to mark:</p>` + heldRows.map((x) => `<div class="pp-watchlist__one pp-mk__plain"><b>${esc(x.name)}</b>${x.examNo ? ` <span class="pp-exno">No. ${esc(x.examNo)}</span>` : ""} · ${x.won} of ${x.outOf} ${qBtn(x.uid, "Send this script's written answers to the AI")} ${relBtn(x.uid, x.released, true)}</div>`).join("");
       if (d.hold && !d.total && !heldRows.length) list.innerHTML = `<p class="pp-live__none">Nobody has handed in yet.</p>`;
-      faceRelease(list);
+      faceRelease(list); faceQueue(list);
     } catch (e) { list.innerHTML = `<p class="pp-live__none">${esc(String((e && e.message) || e).slice(0, 120))}</p>`; }
   }
   box.querySelector(".pp-watchlist__refresh").addEventListener("click", () => read(true));
+  /* MARK NOW: asks the server to work through the line, a few scripts at a time, until none is waiting (or it can go no further) */
+  const runBtn = box.querySelector(".pp-watchlist__run");
+  runBtn.addEventListener("click", async () => {
+    if (runBtn.disabled) return;
+    runBtn.disabled = true;
+    const how = list.parentElement.querySelector(".pp-watchlist__how") || list;
+    try {
+      for (let i = 0; i < 12; i++) {
+        const r = await api(`/api/workbooks/paper/${code}/marking/run`, {});
+        how.textContent = `Marking: ${r.done} marked, ${r.queued + r.working} waiting${r.failed ? `, ${r.failed} could not be marked` : ""}…`;
+        if (!r.queued && !r.working) break;
+        if (!r.queued && r.working) await new Promise((res) => setTimeout(res, 4000));
+        else if (!r.ran || (!r.ran.done && !r.ran.requeued && !r.ran.failed)) await new Promise((res) => setTimeout(res, 6000));   // the allowance is used up for the minute
+      }
+    } catch (err) { how.textContent = String((err && err.message) || err).slice(0, 140); }
+    runBtn.disabled = false;
+    read(true);
+  });
   addEventListener("focus", () => read(false));
   read(true);
+
+  list.addEventListener("click", async (e) => {
+    const qb = e.target.closest(".pp-mk__queue");
+    if (!qb) return;
+    e.preventDefault(); e.stopPropagation();
+    qb.disabled = true;
+    try { await api(`/api/workbooks/paper/${code}/marking/${qb.dataset.uid}/queue`, {}); runBtn.click(); }
+    catch (err) { qb.disabled = false; qb.dataset.tip = String((err && err.message) || err).slice(0, 100); }
+  });
 
   /* Opening a student shows their script: each written answer, the AI's mark and why, and a place for the
      teacher's own mark and comment, which stands in place of the AI's (the AI's is kept beside it). */

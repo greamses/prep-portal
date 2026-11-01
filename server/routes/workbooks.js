@@ -662,6 +662,49 @@ module.exports = function () {
     }
   });
 
+  /* The teacher pushes the line along: marks waiting scripts now, a few at a time, within the limit the AI providers allow.
+     The queue has no background worker, so it only moves when someone asks; this is how the teacher asks. */
+  router.post("/paper/:code/marking/run", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code)) return res.status(404).json({ error: "No such paper." });
+      const own = await ownsPaper(req, code);
+      if (own.err) return res.status(own.err[0]).json({ error: own.err[1] });
+      let ran = { done: 0, requeued: 0, failed: 0 };
+      try { ran = await marker.drain({ max: 4, budgetMs: 25000 }); } catch (e) { console.warn("[mark run]", e.message); }
+      const sum = await marker.summary(code);
+      res.json({ ok: true, ran, total: sum.total, done: sum.done, queued: sum.queued, working: sum.working, failed: sum.failed });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/marking/run]", err.message);
+      res.status(500).json({ error: "Could not run the marking." });
+    }
+  });
+
+  /* One script to the AI: put a failed (or marked) one back in the line, or, for a paper that holds its results, queue a script whose
+     written answers were handed in but never sent for marking. */
+  router.post("/paper/:code/marking/:uid/queue", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code) || !uidOk(req.params.uid)) return res.status(404).json({ error: "No such script." });
+      const own = await ownsPaper(req, code);
+      if (own.err) return res.status(own.err[0]).json({ error: own.err[1] });
+      const again = await marker.requeue(code, req.params.uid);
+      if (again.ok) return res.json({ ok: true, status: again.status });
+      const a = own.p.data();
+      const rs = await own.pRef.collection("results").doc(req.params.uid).get();
+      const given = (rs.exists && rs.data().answers) || {};
+      const items = (a.questions || []).filter((x) => WRITTEN.includes(x.type)).slice(0, 12).map((x) => ({
+        id: String(x.id), text: clip(x.text, 1500), max: Math.max(1, Math.round(Number(x.marks)) || 1), model: clip(x.answer, 1500), answer: clip(given[x.id], 4000),
+      })).filter((it) => it.answer.trim());
+      if (!items.length) return res.status(409).json({ error: "This student has no written answers to mark." });
+      const out = await marker.enqueue({ code, uid: req.params.uid, ownerUid: a.ownerUid, name: (rs.exists && rs.data().name) || "Student", subject: a.head && a.head.subject, klass: a.head && a.head.klass, items });
+      res.json({ ok: true, status: out.status });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/marking/queue]", err.message);
+      res.status(500).json({ error: "Could not queue that script." });
+    }
+  });
+
   /* ══ RESULTS HELD FOR THE TEACHER ═══════════════════════════════════════
      A paper set with head.holdResults keeps each student's marks from them until the teacher has gone through
      the script (the AI's marks, corrected), pinned any comments and marked it up, and pressed Release, which
