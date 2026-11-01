@@ -71,7 +71,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   let lastQuestions = [];
   let announced = false;
   /* AI marking of the written answers (the page queues the script and reports how it is getting on, see setAi/applyAiMarks) */
-  let ai = { on: false, status: "off", text: "", notes: {}, by: {}, was: {} };
+  let ai = { on: false, status: "off", text: "", notes: {}, by: {}, was: {}, lines: {} };
   let idle = 0;
   const keep = () => {
     try { localStorage.setItem(store, JSON.stringify(answers)); } catch { /* storage full or off */ }
@@ -411,15 +411,47 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     if (drawerOpen) requestAnimationFrame(fit);
   }
 
+  /* THE SCRIPT MARKED LINE BY LINE: the student's answer, each line on the ruled paper with a pen tick or cross at its end and the
+     marker's word under a line that needs one. It takes the place of the answer field once the AI has marked it (the field comes back
+     when the paper is answered again). */
+  function paintScript(el, q) {
+    const lines = ai.lines[q.id];
+    const field = (document.querySelector(`.xp-ans[data-qid="${q.id}"] .xp-ta`)) || el.querySelector(".xp-ta");
+    if (!field || !Array.isArray(lines) || !lines.length) return;
+    field.parentElement.querySelector(":scope > .xp-script")?.remove();
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const box = document.createElement("div");
+    box.className = "xp-script";
+    box.setAttribute("data-nomath", "");
+    box.setAttribute("aria-label", "Your answer, marked line by line");
+    box.innerHTML = lines.map((l) => `<div class="xp-script__row${l.ok === true ? " is-ok" : l.ok === false ? " is-no" : ""}">`
+      + `<span class="xp-script__t">${textHtml(l.t)}</span>`
+      + `<span class="xp-script__mk" aria-label="${l.ok === true ? "right" : l.ok === false ? "wrong" : ""}">${l.ok === true ? TICK : l.ok === false ? CROSS : ""}</span>`
+      + (l.note ? `<span class="xp-script__note">${esc(l.note)}</span>` : "")
+      + `</div>`).join("");
+    field.after(box);
+    field.classList.add("is-scripted");
+  }
+
   /** Mark what can be marked and show the model answer where it cannot. */
   function showResults(questions) {
     const qs = byId(questions);
+    /* WITH AN ANSWER BOOKLET the question paper is never marked: the written answers are marked in the booklet, the multiple choice on its
+       OMR sheet, and the blanks in a small table on the booklet's front page. */
+    const inBook = !!document.querySelector(".xp-booklet");
+    const fills = [];
     sheet.querySelectorAll(".xp-q[data-qid]").forEach((el) => {
       const q = qs.get(el.dataset.qid);
       if (!q) return;
-      el.querySelector(".xp-reveal")?.remove();
-      const body = el.querySelector(".xp-body");
+      const blk = inBook && (q.type === "sub" || q.type === "theory") ? document.querySelector(`.xp-ans[data-qid="${q.id}"]`) : null;
+      const paperOnly = inBook && !blk;            // marked elsewhere (the OMR sheet, the blanks table): nothing on the paper
+      el.querySelectorAll(".xp-reveal").forEach((n) => n.remove());
+      if (blk) blk.querySelectorAll(":scope > .xp-reveal").forEach((n) => n.remove());
+      if (inBook) el.classList.remove("is-unanswered", "is-ok", "is-no");
+      const target = blk || el;
+      const body = blk || el.querySelector(".xp-body");
       const say = (cls, html) => {
+        if (paperOnly) return;
         const d = document.createElement("div");
         d.className = `xp-reveal ${cls}`; d.setAttribute("data-nomath", "");
         d.innerHTML = html;
@@ -427,13 +459,13 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       };
       const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
       const skipped = q.type === "mcq" ? answers[q.id] === undefined : !given(q);
-      el.classList.toggle("is-unanswered", skipped);
+      if (!paperOnly) target.classList.toggle("is-unanswered", skipped);
       if (q.type === "mcq") {
         document.querySelectorAll(`.xp-omr li[data-qid="${q.id}"]`).forEach((row) => row.classList.toggle("is-unanswered", skipped));
         const got = answers[q.id];
         [...el.querySelectorAll(".xp-opts li")].forEach((li, i) => {
-          li.classList.toggle("is-right", i === q.answer);
-          li.classList.toggle("is-wrong", got === i && i !== q.answer);
+          li.classList.toggle("is-right", !inBook && i === q.answer);
+          li.classList.toggle("is-wrong", !inBook && got === i && i !== q.answer);
         });
         document.querySelectorAll(`.xp-omr li[data-qid="${q.id}"] b`).forEach((b) => {
           const i = Number(b.dataset.i);
@@ -443,7 +475,8 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
         if (got === undefined) say("is-skipped", "Not answered.");
       } else if (q.type === "fill") {
         const ok = matches(answers[q.id], q.answer);
-        el.classList.toggle("is-ok", ok); el.classList.toggle("is-no", !ok);
+        if (inBook) fills.push({ n: el.querySelector(".xp-n")?.textContent || "", got: answers[q.id] || "", ok, answer: q.answer });
+        else { el.classList.toggle("is-ok", ok); el.classList.toggle("is-no", !ok); }
         say(ok ? "is-ok" : "is-no", ok ? "Correct." : `Answer: ${textHtml(q.answer)}`);
       } else if (ai.on && ai.status !== "failed") {
         /* marked by AI (queued): the model answer, and either the mark and why, or where it is in the line */
@@ -456,6 +489,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
                 ? `<span class="pp-pill pp-pill--static pp-pill--ok">Teacher's mark: ${m} of ${q.marks}</span> ${esc(ai.notes[q.id] || "")} <small>The AI gave ${ai.was[q.id]}.</small>`
                 : `<span class="pp-pill pp-pill--static pp-pill--ok">AI mark: ${m} of ${q.marks}</span> ${esc(ai.notes[q.id] || "")}`)
               : `<span class="pp-pill pp-pill--static pp-pill--warn">${esc(ai.text || "Waiting to be marked")}</span>`}</div>`);
+          if (m !== undefined && ai.status === "done") paintScript(el, q);
         }
       } else {
         say("is-model", `<span class="xp-reveal__k">Model answer</span><div class="xp-reveal__a">${textHtml(q.answer || "No model answer was written.")}</div>`
@@ -466,12 +500,31 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
           box.addEventListener("input", () => {
             if (box.value === "") delete answers["m:" + q.id];
             else answers["m:" + q.id] = Math.max(0, Math.min(q.marks, Math.round(+box.value) || 0));
-            keep(); paintMark(el, q); paintStamp(false); announce(); onChange();
+            keep(); paintMark(target, q); paintStamp(false); announce(); onChange();
           });
         }
       }
     });
-    sheet.querySelectorAll(".xp-q[data-qid]").forEach((el) => { const q = qs.get(el.dataset.qid); if (q) paintMark(el, q); });
+    sheet.querySelectorAll(".xp-q[data-qid]").forEach((el) => {
+      const q = qs.get(el.dataset.qid);
+      if (!q) return;
+      const blk = inBook && (q.type === "sub" || q.type === "theory") ? document.querySelector(`.xp-ans[data-qid="${q.id}"]`) : null;
+      if (inBook) el.querySelector(":scope > .xp-mark")?.remove();
+      if (inBook && !blk) return;
+      paintMark(blk || el, q);
+    });
+    /* the blanks, marked on the booklet's front page */
+    document.querySelectorAll(".xp-bfill").forEach((n) => n.remove());
+    const cover = inBook && document.querySelector(".xp-bcover");
+    if (cover && fills.length) {
+      const box = document.createElement("div");
+      box.className = "xp-bfill";
+      box.setAttribute("data-nomath", "");
+      box.innerHTML = "<h3>Fill in the blank</h3>" + fills.map((f) => `<div class="xp-bfill__row ${f.ok ? "is-ok" : "is-no"}"><b>${f.n}</b>`
+        + `<span>${f.got ? textHtml(String(f.got)) : "<i>Not answered</i>"}</span><em>${f.ok ? TICK : CROSS}</em>`
+        + (f.ok ? "" : `<small>Answer: ${textHtml(String(f.answer || ""))}</small>`) + `</div>`).join("");
+      cover.insertBefore(box, cover.querySelector(".xp-bindex") || cover.querySelector(".xp-bfoot"));
+    }
     typesetReveals();
   }
 
@@ -480,7 +533,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   function typesetReveals() {
     clearTimeout(tsTimer);
     tsTimer = setTimeout(async () => {
-      const nodes = [...sheet.querySelectorAll(".xp-reveal")];
+      const nodes = [...document.querySelectorAll(".xm-sheet .xp-reveal, .xm-sheet .xp-script, .xo-drawer .xp-reveal, .xo-drawer .xp-script, .xp-bfill")];
       if (!nodes.length) return;
       try { const { loadMath } = await import("/utils/components/workbook/mathify.js"); if (await loadMath()) await window.MathJax.typesetPromise(nodes); } catch { /* left as written */ }
     }, 60);
@@ -593,10 +646,12 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     document.body.appendChild(d);
   }
   function paintStamp(animate) {
-    sheet.querySelectorAll(".xp-stamp").forEach((n) => n.remove());
+    document.querySelectorAll(".xm-sheet .xp-stamp, .xo-drawer .xp-stamp").forEach((n) => n.remove());
     if (!on || !checked) return;
-    /* beside the Score box, in the name row: the one place in the header nothing is printed over */
-    const hosts = [...sheet.querySelectorAll(".xp-head .xp-student")];
+    /* beside the Score box, in the name row: the one place in the header nothing is printed over. With an answer booklet the stamp
+       goes on the booklet's front page, not on the question paper. */
+    const bookHead = document.querySelector(".xp-bcover .xp-head .xp-student");
+    const hosts = bookHead ? [bookHead] : [...sheet.querySelectorAll(".xp-head .xp-student")];
     const host = hosts.find((h) => h.offsetParent !== null) || hosts[0];
     const scoreLabel = host && [...host.querySelectorAll(":scope > span")].find((x) => /score/i.test(x.textContent));
     if (!host) return;
@@ -657,7 +712,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   function dropResult() {
     announced = false;
     clearTimeout(idle);
-    sheet.querySelectorAll(".xp-stamp").forEach((n) => n.remove());
+    document.querySelectorAll(".xm-sheet .xp-stamp, .xo-drawer .xp-stamp").forEach((n) => n.remove());
     document.querySelector(".xo-done")?.remove();
   }
 
@@ -685,7 +740,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     setAi(next) { ai = { ...ai, ...next }; if (checked && !held) { showResults(lastQuestions); paintStamp(false); announce(); } },
     /** The AI's marks for the written answers: [{ id, m, of, note }]. They count like marks given by hand. */
     applyAiMarks(list) {
-      (list || []).forEach((x) => { answers["m:" + x.id] = x.m; ai.notes[x.id] = x.note || ""; ai.by[x.id] = x.by || "ai"; ai.was[x.id] = x.ai; });
+      (list || []).forEach((x) => { answers["m:" + x.id] = x.m; ai.notes[x.id] = x.note || ""; ai.by[x.id] = x.by || "ai"; ai.was[x.id] = x.ai; if (Array.isArray(x.lines)) ai.lines[x.id] = x.lines; });
       ai.status = "done"; keep();
       if (checked && !held) { showResults(lastQuestions); paintStamp(false); announce(); }
       onChange();

@@ -940,3 +940,33 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 .xp[data-tpl="classroom"] .xp-bpage__run { color: var(--c); border-bottom: 0.6mm dashed var(--c); }
 .xp[data-tpl="classroom"] .xp-ans__tag b { color: var(--c); }
 .xp[data-tpl="classroom"] .xp-bindex h3, .xp[data-tpl="classroom"] .xp-bindex a em { color: var(--c); }
+
+/* the answer marked line by line (live.js paintScript): ruled like the answer space, a pen mark at the end of each line, the note under it */
+.xp-ta.is-scripted { display: none !important; }
+.xp-script { margin: 2mm 0 3mm; }
+.xp-script__row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 6mm; column-gap: 2mm; align-items: end; min-height: 7.5mm; border-bottom: 0.3mm solid #b9b2a5; padding: 0 1mm; }
+.xp-script__t { line-height: 1.5; padding: 1.2mm 0 0.8mm; overflow-wrap: anywhere; }
+.xp-script__mk { align-self: center; justify-self: center; line-height: 0; }
+.xp-script__mk svg { width: 3.4mm; height: 3.4mm; fill: currentColor; }
+.xp-script__mk svg path, .xp-script__mk svg g { fill: currentColor; stroke: currentColor; stroke-width: 1.4; stroke-linejoin: round; }
+.xp-script__row.is-ok .xp-script__mk { color: #1f9d46; }
+.xp-script__row.is-no .xp-script__mk { color: #d6322a; }
+.xp-script__note { grid-column: 1 / -1; padding: 0 0 1mm 4mm; color: #c0392b; font: 600 8.6pt/1.3 "Shantell Sans", "Segoe Print", "Bradley Hand", cursive; }
+.xp[data-tpl="classroom"] .xp-script__row { border-bottom: 0.45mm dotted var(--c); }
+.xp[data-tpl="textbook"] .xp-script__row { border-bottom-color: #a7b6cb; }
+@media print { .xp-script__row.is-ok .xp-script__mk { color: #1f9d46 !important; } .xp-script__row.is-no .xp-script__mk, .xp-script__note { color: #c0392b !important; } }
+
+/* marking in the answer booklet: a written answer's tick or cross by its tag, the blanks as a small table on the front page */
+.xp-ans { position: relative; }
+.xp-ans > .xp-mark { left: -5.4mm; top: 0.4mm; }
+.xp-bfill { margin: 4mm 0 2mm; break-inside: avoid; }
+.xp-bfill h3 { margin: 0 0 1.6mm; font-size: 8.5pt; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ci); }
+.xp-bfill__row { display: grid; grid-template-columns: 7mm minmax(0, 1fr) 5mm; align-items: center; gap: 0 2mm; padding: 1mm 0; border-bottom: 0.25mm solid #d8d2c6; font-size: 9pt; }
+.xp-bfill__row b { color: var(--ci); }
+.xp-bfill__row em { line-height: 0; justify-self: center; }
+.xp-bfill__row em svg { width: 3.4mm; height: 3.4mm; fill: currentColor; }
+.xp-bfill__row em svg path, .xp-bfill__row em svg g { fill: currentColor; stroke: currentColor; stroke-width: 1.4; stroke-linejoin: round; }
+.xp-bfill__row.is-ok em { color: #1f9d46; }
+.xp-bfill__row.is-no em { color: #d6322a; }
+.xp-bfill__row small { grid-column: 2 / -1; color: #c0392b; font: 600 8.4pt/1.3 "Shantell Sans", "Segoe Print", cursive; }
+.xp-bfill__row i { color: #8a8174; }
