@@ -801,11 +801,15 @@ module.exports = function () {
     }
   });
 
-  /* ══ THE CAMERA CHECK: events only ═══════════════════════════════════════
+  /* ══ THE CAMERA CHECK: notes, and a still picture when something is flagged ══════════
      A paper set with a camera check (head.camera) has its camera read on the STUDENT'S OWN DEVICE
-     (utils/components/exam-watch.js). No picture, video or sound ever reaches us. What comes is a
-     short list of notes (a kind, the second it began, how long it lasted) and is kept at
-     sharedPapers/{code}/watch/{uid}, a few hundred bytes a student.
+     (utils/components/exam-watch.js). No video or sound ever reaches us. What comes is a short list of
+     notes (a kind, the second it began, how long it lasted), kept at sharedPapers/{code}/watch/{uid},
+     and, at the moment a flag is raised, one small JPEG from the camera, kept at .../watch/{uid}/shots
+     (at most SHOT_MAX a student, each under SHOT_BYTES). The student is told this before the camera opens.
+
+       POST /api/workbooks/paper/:code/watch/shot        { k, t, img }   (a student)
+       GET  /api/workbooks/paper/:code/watch/:uid/shots                  (the owner, or the administrator)
 
        POST /api/workbooks/paper/:code/watch   { events, secs, checks, state, name }   (a student)
        GET  /api/workbooks/paper/:code/watch                                           (the owner, or the administrator)
@@ -840,11 +844,59 @@ module.exports = function () {
         checks: Math.max(0, Math.min(100000, Math.round(Number(b.checks)) || 0)),
         state: WATCH_STATES.includes(b.state) ? b.state : "on",
         updatedAt: stamp(),
-      });
+      }, { merge: true });   /* merged: the picture count (shots) is kept by its own route */
       res.json({ ok: true, kept: true });
     } catch (err) {
       console.error("[/api/workbooks/paper/watch]", err.message);
       res.status(500).json({ error: "Could not keep the notes." });
+    }
+  });
+
+  const SHOT_MAX = 12, SHOT_BYTES = 120000, SHOT_KINDS = ["extra_face", "no_face", "left_tab"];
+  router.post("/paper/:code/watch/shot", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code)) return res.status(404).json({ error: "No such paper." });
+      const pRef = db().collection("sharedPapers").doc(code);
+      const p = await pRef.get();
+      if (!p.exists) return res.status(404).json({ error: "No such paper." });
+      const a = p.data();
+      if (a.ownerUid === req.user.uid || !(a.head && a.head.camera)) return res.json({ ok: true, kept: false });
+      const b = req.body || {};
+      const img = String(b.img || "");
+      if (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(img) || img.length > SHOT_BYTES) return res.status(400).json({ error: "Not a picture." });
+      const k = SHOT_KINDS.includes(b.k) ? b.k : null;
+      if (!k) return res.status(400).json({ error: "Not a picture." });
+      const wRef = pRef.collection("watch").doc(req.user.uid);
+      const kept = await db().runTransaction(async (tx) => {
+        const w = await tx.get(wRef);
+        const n = (w.exists && w.data().shots) || 0;
+        if (n >= SHOT_MAX) return false;
+        tx.set(wRef, { shots: n + 1 }, { merge: true });
+        tx.set(wRef.collection("shots").doc(), { k, t: Math.max(0, Math.min(86400, Math.round(Number(b.t)) || 0)), img, at: stamp() });
+        return true;
+      });
+      res.json({ ok: true, kept });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/watch/shot]", err.message);
+      res.status(500).json({ error: "Could not keep the picture." });
+    }
+  });
+
+  router.get("/paper/:code/watch/:uid/shots", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code)) return res.status(404).json({ error: "No such paper." });
+      const pRef = db().collection("sharedPapers").doc(code);
+      const p = await pRef.get();
+      if (!p.exists) return res.status(404).json({ error: "No such paper." });
+      if (p.data().ownerUid !== req.user.uid && !isAdmin(req)) return res.status(403).json({ error: "These pictures are for the teacher who shared the paper." });
+      const snap = await pRef.collection("watch").doc(String(req.params.uid || "")).collection("shots").limit(SHOT_MAX + 5).get();
+      const shots = snap.docs.map((d) => ({ k: d.data().k, t: d.data().t || 0, img: d.data().img })).sort((x, y) => x.t - y.t);
+      res.json({ ok: true, shots });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/watch/shots]", err.message);
+      res.status(500).json({ error: "Could not read the pictures." });
     }
   });
 
@@ -860,7 +912,7 @@ module.exports = function () {
       const numbers = await examNumbers(pRef);
       const students = snap.docs.map((d) => {
         const x = d.data();
-        return { uid: d.id, examNo: numbers.get(d.id) || "", name: x.name || "Student", events: x.events || [], flags: x.flags || 0, secs: x.secs || 0, checks: x.checks || 0, state: x.state || "on", updatedAt: x.updatedAt && x.updatedAt.toMillis ? x.updatedAt.toMillis() : 0 };
+        return { uid: d.id, examNo: numbers.get(d.id) || "", name: x.name || "Student", events: x.events || [], flags: x.flags || 0, shots: x.shots || 0, secs: x.secs || 0, checks: x.checks || 0, state: x.state || "on", updatedAt: x.updatedAt && x.updatedAt.toMillis ? x.updatedAt.toMillis() : 0 };
       }).sort((a, b) => b.flags - a.flags || a.name.localeCompare(b.name));
       res.json({ ok: true, camera: !!(p.data().head && p.data().head.camera), students });
     } catch (err) {

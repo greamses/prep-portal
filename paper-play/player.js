@@ -307,7 +307,7 @@ function mountWatchList(camera) {
   const box = document.createElement("section");
   box.className = "pp-live pp-watchlist";
   box.innerHTML = `<h2 class="pp-live__cap">${camera ? "Camera check" : "Leaving the page"} <button type="button" class="pp-btn pp-watchlist__refresh"></button></h2>
-    <p class="pp-watchlist__how">${camera ? "Each student's camera is read on their own device. Nothing but these notes reaches you, and they are a prompt to take a look, not proof." : "Students may not leave the exam page once it has started. Each time one does, it is noted here, and they are warned out loud."}</p>
+    <p class="pp-watchlist__how">${camera ? "Each student's camera is read on their own device. You get these notes and, when something is flagged, a still picture from that moment. They are a prompt to take a look, not proof." : "Students may not leave the exam page once it has started. Each time one does, it is noted here, and they are warned out loud."}</p>
     <div class="pp-watchlist__who"><p class="pp-live__none">Reading the notes…</p></div>`;
   document.querySelector(".xm-preview").prepend(box);
   faceOf(box.querySelector(".pp-watchlist__refresh"), UI.refresh(16), "Read the notes again");
@@ -322,11 +322,27 @@ function mountWatchList(camera) {
       list.innerHTML = d.students.length ? d.students.map((s) => {
         const state = s.state === "unavailable" ? " · the face check could not run on their device" : s.state === "starting" ? " · only just started" : "";
         const n = s.flags ? `${s.flags} note${s.flags === 1 ? "" : "s"}` : "no notes";
-        return `<details class="pp-watchlist__one"${s.flags ? "" : " data-quiet"}><summary><b>${esc(s.name)}</b>${s.examNo ? ` <span class="pp-exno">No. ${esc(s.examNo)}</span>` : ""} · ${n}${state}</summary>`
-          + (s.events.length ? `<ul>${s.events.map((e) => `<li>${esc(sayNote(e))}</li>`).join("")}</ul>` : `<p>Nothing to look at.</p>`) + `</details>`;
+        const pics = s.shots ? ` · ${s.shots} picture${s.shots === 1 ? "" : "s"}` : "";
+        return `<details class="pp-watchlist__one"${s.flags || s.shots ? "" : " data-quiet"} data-uid="${esc(s.uid)}"${s.shots ? " data-shots" : ""}><summary><b>${esc(s.name)}</b>${s.examNo ? ` <span class="pp-exno">No. ${esc(s.examNo)}</span>` : ""} · ${n}${pics}${state}</summary>`
+          + (s.events.length ? `<ul>${s.events.map((e) => `<li>${esc(sayNote(e))}</li>`).join("")}</ul>` : `<p>Nothing to look at.</p>`)
+          + (s.shots ? `<div class="pp-shots"><p class="pp-live__none">Opening the pictures…</p></div>` : "") + `</details>`;
       }).join("") : `<p class="pp-live__none">Nobody has started the paper yet.</p>`;
     } catch (e) { list.innerHTML = `<p class="pp-live__none">${esc(String((e && e.message) || e).slice(0, 120))}</p>`; }
   }
+  /* the pictures are fetched only when a student's line is opened: they are the heavy part */
+  const when = (x) => sayNote({ k: x.k, t: x.t, d: 0 }).replace(/ for 0 s$/, "");
+  list.addEventListener("toggle", async (e) => {
+    const det = e.target;
+    if (!det.matches || !det.matches("details[data-shots]") || !det.open || det.dataset.loaded) return;
+    det.dataset.loaded = "1";
+    const holder = det.querySelector(".pp-shots");
+    try {
+      const d = await api(`/api/workbooks/paper/${code}/watch/${encodeURIComponent(det.dataset.uid)}/shots`);
+      holder.innerHTML = d.shots.length
+        ? d.shots.map((x) => `<figure class="pp-shot"><a href="${x.img}" target="_blank" rel="noopener"><img src="${x.img}" alt="Camera picture, ${esc(when(x))}" loading="lazy" /></a><figcaption>${esc(when(x))}</figcaption></figure>`).join("")
+        : `<p class="pp-live__none">No pictures.</p>`;
+    } catch (err) { det.dataset.loaded = ""; holder.innerHTML = `<p class="pp-live__none">${esc(String((err && err.message) || err).slice(0, 120))}</p>`; }
+  }, true);
   box.querySelector(".pp-watchlist__refresh").addEventListener("click", () => read(true));
   addEventListener("focus", () => read(false));
   read(true);
@@ -472,11 +488,20 @@ async function open() {
         if (kind === "left_tab") {
           voice.say(leaveWarning(info.count), { force: true });
           if (!isOwner) showLeaveWarning({ count: info.count, away: info.away });
-        } else voice.say(kind);
+        } else {
+          voice.say(kind);
+          /* a second face is shown as well as said: it is the one flag a student must act on at once */
+          if (kind === "extra_face") showLeaveWarning({
+            title: "Only you may be in the picture",
+            text: isOwner
+              ? "The camera can see more than one face. A student sees this, is told out loud, and a still picture is sent to you."
+              : "The camera can see more than one face. Anyone with you must leave the room now: nobody may help you in an exam. A picture has been taken for your teacher.",
+          });
+        }
       };
       watcher = createWatch(isOwner
         ? { code, test: true, send: async () => {}, onWarn: warn }
-        : { code, camera: !!head.camera, name: () => live.name, send: (p) => api(`/api/workbooks/paper/${code}/watch`, p), onWarn: warn });
+        : { code, camera: !!head.camera, name: () => live.name, send: (p) => api(`/api/workbooks/paper/${code}/watch`, p), snap: (x) => api(`/api/workbooks/paper/${code}/watch/shot`, x), onWarn: warn });
       await watcher.begin();
     }
     if (!isOwner) {

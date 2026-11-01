@@ -63,7 +63,8 @@ export function instructionSections(head, questions) {
   conduct.push("Work on your own. Do not talk, copy from anyone, or look up the answers.");
   conduct.push("Once the exam has started, do not leave the page: no other tab or window, no back button, no closing it. You are warned out loud, it is recorded, and your teacher is told.");
   if (head.camera) {
-    conduct.push("Camera check: your camera is looked at on this device only. No picture, video or sound is sent or saved; your teacher gets a short list of notes (such as 'face not in view'). Keep your face in view, alone in the picture, and stay on the exam page.");
+    conduct.push("Camera check: your camera is looked at on this device. Your teacher gets a short list of notes (such as 'face not in view') and, when something is flagged, a still picture from that moment. No video or sound is sent. Keep your face in view, alone in the picture, and stay on the exam page.");
+    conduct.push("Dress as you would for the exam hall, in your uniform or neat, decent clothes, and sit in a quiet, well-lit room. A picture of you may be taken during the exam.");
   }
   out.push({ title: "Time and conduct", lines: conduct });
 

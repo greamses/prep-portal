@@ -1,9 +1,11 @@
 /* ============================================================================
-   Exam camera check: events only
+   Exam camera check: notes, and a still picture when something needs a look
    ----------------------------------------------------------------------------
-   The student's camera is read on THEIR OWN device. No picture, no video, no sound
-   is sent or stored: the only thing that leaves is a short list of notes (see
-   exam-watch-core.js), a few hundred bytes for a whole exam.
+   The student's camera is read on THEIR OWN device. No video and no sound is ever
+   sent. What leaves is a short list of notes (see exam-watch-core.js) and, at the
+   moment something is flagged (a second face, no face, coming back after leaving
+   the page), ONE small still picture from the camera for the teacher, at most
+   MAX_SHOTS in an exam. The consent cover says so before the camera opens.
 
      const w = createWatch({ code, send, name });
      await w.begin();     // consent cover → camera → starts looking; resolves when it is running
@@ -25,6 +27,11 @@
 
 import { createTracker } from "./exam-watch-core.js";
 import { makeCover } from "/utils/components/pp-cover.js";
+
+/** Still pictures one exam may send, so a long exam cannot fill the teacher's list (or our storage). */
+export const MAX_SHOTS = 12;
+/** The flags that take a picture: what the camera shows at that moment is the evidence. */
+const SHOT_KINDS = ["extra_face", "no_face", "left_tab"];
 
 const LIB = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.esm.js";
 const MODELS = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/";
@@ -67,8 +74,27 @@ function ensureCss() {
  * @param every   ms between looks at the camera
  * @param load    () → Promise<(video) → Promise<number>>   the face counter (tests give a fake)
  */
-export function createWatch({ code, send, name = () => "", hold, every = 1000, load = loadDetector, test = false, camera = true, onWarn = () => {} }) {
-  const tracker = createTracker({ ...(hold ? { hold } : {}), onWarn: (k, info) => { if (active) onWarn(k, info); } });
+export function createWatch({ code, send, snap = async () => {}, name = () => "", hold, every = 1000, load = loadDetector, test = false, camera = true, onWarn = () => {} }) {
+  const tracker = createTracker({ ...(hold ? { hold } : {}), onWarn: (k, info) => {
+    if (!active) return;
+    onWarn(k, info);
+    if (SHOT_KINDS.includes(k)) shoot(k, info && info.t);
+  } });
+  let shots = 0;
+  /* One still frame from the camera, as a small JPEG (320 px wide, about 15 KB), the moment a flag is raised. Sent once and
+     forgotten here: nothing is kept on the device. Never throws: the exam must go on without it. */
+  function shoot(kind, at) {
+    if (test || !video || video.readyState < 2 || shots >= MAX_SHOTS) return;
+    try {
+      const w = 320, h = Math.round(w * ((video.videoHeight || 240) / (video.videoWidth || 320)));
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      c.getContext("2d").drawImage(video, 0, 0, w, h);
+      const img = c.toDataURL("image/jpeg", 0.6);
+      shots++;
+      Promise.resolve(snap({ k: kind, t: Math.round(at ?? t()), img })).catch(() => {});
+    } catch { /* no picture this time */ }
+  }
   let active = true;               // false once the paper is checked: nothing is warned or noted until it is sat again
   let t0 = 0, stream = null, video = null, box = null, timer = 0, saveTimer = 0, detect = null, stopped = false;
   let state = "starting";        // starting | on | unavailable | stopped
@@ -141,12 +167,13 @@ export function createWatch({ code, send, name = () => "", hold, every = 1000, l
       paper.innerHTML = `<h2 class="pp-cover__title">${test ? "Camera check: a test run" : "This exam has a camera check"}</h2>
         <p class="pp-cover__text">${test ? "This is what your students see and what runs on their device. While you test, nothing is recorded and nothing is sent to anyone." : "Your teacher has asked for one. Here is exactly what it does:"}</p>
         <ul class="pp-cover__list">
-          <li>Your camera is looked at <b>on this device only</b>.</li>
-          <li><b>No picture, video or sound</b> is sent or saved, by us or by your teacher.</li>
+          <li>Your camera is looked at <b>on this device</b>. No video and no sound is ever sent.</li>
           <li>Your teacher gets a short list of notes, such as "face not in view for 14 seconds" or "left the exam page".</li>
+          <li>When something needs a look (a second face, no face, or coming back after leaving the page) <b>a still picture is taken</b> and sent to your teacher only.</li>
           <li>It only looks for a face, or more than one. It does not judge where your eyes go.</li>
         </ul>
-        <p class="pp-cover__text">Sit where your face is lit and in view, with nobody else in the picture.</p>
+        <p class="pp-cover__text"><b>Dress as you would for the exam hall</b>, in your uniform or neat, decent clothes, since a picture may be taken.</p>
+        <p class="pp-cover__text">Sit where your face is lit and in view, alone in a quiet room, with nobody else in the picture.</p>
         <p class="pp-cover__err" role="alert"></p>
         <div class="pp-cover__go"><button type="button" class="pp-btn">${test ? "Allow the camera and test" : "Allow the camera and begin"}</button></div>`;
       const btn = cover.querySelector("button"), err = cover.querySelector(".pp-cover__err");
