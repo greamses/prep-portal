@@ -1,0 +1,101 @@
+/* Writing maths on screen: a student guide laid out as A4 pages, read here or printed / kept as a PDF.
+   It does NOT load workbook.css: that sheet locks printing behind a subscription, and this guide is free to print.
+   The few hero rules it needs are here. */
+.wb-paint { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; opacity: 0.24; }
+.wb-paint svg { width: 100%; height: 100%; display: block; }
+[data-theme="dark"] .wb-paint { opacity: 0.13; }
+.wb-main { position: relative; z-index: 1; font-family: var(--font-mono); padding-top: clamp(1.4rem, 4vw, 3rem); }
+.wb-hero { text-align: center; margin-bottom: clamp(1.4rem, 3vw, 2.4rem); }
+.wb-eyebrow { display: inline-flex; align-items: center; gap: 0.5rem; font-size: var(--text-mono-xs, 0.72rem); letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary); }
+.wb-eyebrow svg { width: 15px; height: 15px; }
+.wb-title { font-family: var(--font-display); font-weight: 900; font-size: var(--text-h1, clamp(1.9rem, 5vw, 3.1rem)); line-height: var(--leading-tight, 1.05); margin: 0.5rem 0 0.6rem; }
+.wb-title em { font-style: normal; color: var(--accent-primary); }
+.mt-main { max-width: 230mm; margin: 0 auto; padding: 0 16px 4rem; }
+.mt-lede { max-width: 38rem; margin: 0.6rem auto 0; color: var(--text-secondary); font-size: 0.92rem; line-height: 1.55; }
+.mt-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin-top: 1.1rem; }
+.mt-actions .pp-btn { text-decoration: none; display: inline-flex; align-items: center; gap: 0.45rem; }
+.mt-actions svg { width: 16px; height: 16px; }
+
+.mt-book { display: grid; gap: 1.6rem; }
+.mt-page {
+  --c: #2d5f9a;
+  position: relative; box-sizing: border-box; width: 100%; max-width: 210mm; min-height: 297mm; margin: 0 auto;
+  padding: 14mm 15mm 16mm; background: #fffdf7; color: #1d1b18;
+  box-shadow: 0 2px 6px rgba(29, 27, 24, 0.08), 0 14px 34px rgba(29, 27, 24, 0.12);
+  font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 10.5pt; line-height: 1.5;
+}
+.mt-run { display: flex; justify-content: space-between; gap: 1rem; padding-bottom: 2mm; margin-bottom: 6mm; border-bottom: 0.3mm solid #d9d1c2; font-size: 8pt; letter-spacing: 0.06em; text-transform: uppercase; color: #8a8174; }
+
+.mt-cover { padding: 7mm 8mm; margin-bottom: 7mm; background: color-mix(in srgb, var(--c) 8%, #fffdf7); border-left: 1.4mm solid var(--c); }
+.mt-cover h2 { margin: 0 0 2mm; font-family: "Unbounded", sans-serif; font-weight: 900; font-size: 19pt; line-height: 1.15; color: var(--c); }
+.mt-cover p { margin: 0; max-width: 140mm; }
+
+.mt-h { display: flex; align-items: center; gap: 3mm; margin: 7mm 0 3mm; font-family: "Unbounded", sans-serif; font-weight: 700; font-size: 12.5pt; color: #1d1b18; break-after: avoid; }
+.mt-h b { display: inline-grid; place-items: center; width: 7.5mm; height: 7.5mm; border-radius: 50%; background: var(--c); color: #fff; font-size: 9.5pt; flex: none; }
+.mt-page > .mt-h:first-of-type { margin-top: 0; }
+.mt-cover + .mt-h { margin-top: 0; }
+
+.mt-steps { margin: 0 0 3mm; padding-left: 6mm; }
+.mt-steps li { margin: 1.2mm 0; }
+kbd { display: inline-block; padding: 0.2mm 1.6mm; font: 600 9pt "JetBrains Mono", monospace; background: #fff; border: 0.25mm solid #cfc6b6; border-bottom-width: 0.6mm; color: #1d1b18; }
+.mt-note { margin: 2mm 0 0; color: #5b5448; font-size: 9.5pt; }
+
+.mt-t { width: 100%; border-collapse: collapse; break-inside: avoid; table-layout: fixed; }
+.mt-t:not(.mt-t--two) th:nth-child(1) { width: 32%; } .mt-t:not(.mt-t--two) th:nth-child(2) { width: 30%; }
+.mt-t th { text-align: left; padding: 1.6mm 3mm; font-size: 8pt; letter-spacing: 0.06em; text-transform: uppercase; color: #fff; background: var(--c); font-weight: 600; }
+.mt-t td { padding: 2mm 3mm; border-bottom: 0.25mm solid #e6dfd2; vertical-align: middle; }
+.mt-t tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--c) 4%, transparent); }
+.mt-t td:nth-child(1), .mt-t--two td:nth-child(3) { width: 30%; }
+.mt-t--two td { width: 25%; }
+.mt-t:not(.mt-t--two) td:nth-child(3) { color: #5b5448; font-size: 9pt; }
+.mt-t--two td:nth-child(3) { border-left: 0.25mm solid #e6dfd2; }
+code { font: 600 9.5pt "JetBrains Mono", monospace; color: #1d1b18; background: #f3eee4; padding: 0.4mm 1.4mm; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mt-t .pp-note__eq svg { display: inline-block; vertical-align: middle; max-width: 100%; height: auto; }
+.pp-note__eq { font-size: 11pt; }
+.pp-note__eq.is-source { font: 9pt "JetBrains Mono", monospace; color: #8a8174; }
+
+.mt-trap { margin: 3mm 0 0; padding: 2.6mm 4mm; background: #fff6d6; border-left: 1mm solid #e3b23c; font-size: 9.5pt; break-inside: avoid; }
+.mt-trap b { margin-right: 1.6mm; font-family: "Unbounded", sans-serif; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.04em; }
+.mt-foot { position: absolute; left: 15mm; right: 15mm; bottom: 8mm; margin: 0; text-align: center; font-size: 8pt; letter-spacing: 0.08em; color: #8a8174; }
+
+@media (max-width: 720px) {
+  .mt-page { min-height: 0; padding: 18px 16px 40px; font-size: 13px; }
+  .mt-t th, .mt-t td { padding: 6px 6px; }
+  .mt-t:not(.mt-t--two) td:nth-child(3) { font-size: 11px; }
+  .mt-t--two, .mt-t--two tbody, .mt-t--two tr { display: block; }
+  .mt-t--two thead { display: none; }
+  .mt-t--two tr { display: grid; grid-template-columns: 1fr 1fr; }
+  .mt-t--two td { width: auto; }
+  .mt-t--two td:nth-child(3) { border-left: 0; }
+}
+
+/* theme.css prints with a 2cm margin and strips every colour (and is loaded after this sheet), so the page box is claimed with the
+   higher-specificity :left/:right/:first pages and the colours with !important on our own, more specific selectors */
+@page { size: A4; margin: 0; }
+@page :left { margin: 0; } @page :right { margin: 0; } @page :first { margin: 0; }
+@media print {
+  html, body { background: #fff !important; padding: 0 !important; margin: 0 !important; }
+  body > *:not(.mt-main) { display: none !important; }
+  .site-nav, .wb-paint, .mt-hero, #pp-about, .pp-about, nav { display: none !important; }
+  .mt-main { max-width: none; padding: 0; margin: 0; }
+  .mt-book { display: block; }
+  .mt-page { box-shadow: none; max-width: none; width: 210mm; height: 296mm; min-height: 0; overflow: hidden; break-after: page; margin: 0; padding: 12mm 15mm 14mm; font-size: 9.6pt; line-height: 1.42; }
+  .mt-t td { padding: 1.35mm 3mm; }
+  .mt-t th { padding: 1.3mm 3mm; }
+  .mt-h { margin: 5mm 0 2.4mm; }
+  .mt-trap { margin-top: 2.4mm; padding: 2mm 4mm; }
+  .mt-cover { padding: 5.5mm 7mm; margin-bottom: 5mm; }
+  .mt-run { margin-bottom: 5mm; }
+  .mt-page:last-child { break-after: auto; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .mt-page { background: #fffdf7 !important; color: #1d1b18 !important; }
+  .mt-run, .mt-foot, .mt-note, .mt-t:not(.mt-t--two) td:nth-child(3) { color: #6f675b !important; }
+  .mt-cover { background: #edf1f6 !important; }
+  .mt-cover h2 { color: #2d5f9a !important; }
+  .mt-h b { background: #2d5f9a !important; color: #fff !important; }
+  .mt-t th { background: #2d5f9a !important; color: #fff !important; }
+  .mt-t tbody tr:nth-child(even) td { background: #f5f6f7 !important; }
+  .mt-trap { background: #fff6d6 !important; }
+  code { background: #f3eee4 !important; }
+  kbd { background: #fff !important; }
+}

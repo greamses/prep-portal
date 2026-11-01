@@ -473,6 +473,23 @@ export const PAGES = [
     priority: "0.7",
   },
   {
+    file: "prep-math/activity/maths-typing/index.html",
+    section: "workbooks",
+    name: "Writing Maths on Screen",
+    title: "Writing Maths on Screen: How to Type Fractions, Powers & Roots",
+    desc: "A free student guide to typing maths in an on-screen answer: fractions, mixed numbers, powers, roots, bases, logs and signs. Print it or download the PDF.",
+    intro:
+      "Answering a maths paper on screen means writing maths with a keyboard. This guide shows every way to do it in a Prep Portal answer box: you type the maths the way you would say it, such as 2 1/3 or x^2, and it is set the way it looks in a textbook. Each table shows what you type, what you get, and how it is said, with the common slips marked.",
+    points: [
+      "Fractions, mixed numbers, powers and roots",
+      "Number bases, logarithms, signs and Greek letters",
+      "Trigonometry, geometry, sets, sums, integrals and matrices",
+      "Free to read, print or keep as a PDF",
+    ],
+    access: "free",
+    priority: "0.6",
+  },
+  {
     file: "prep-math/activity/geometry-workbook/index.html",
     section: "workbooks",
     name: "Geometry Workbook",

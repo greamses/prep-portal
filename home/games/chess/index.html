@@ -140,6 +140,7 @@
     </div>
 
     <script type="module" src="./src/main.js"></script>
+  <script type="module">import("/utils/components/tooltip.js").then((m) => m.mountTooltips());</script>
     <!-- seo:about -->
     <section id="pp-about" class="pp-about" data-access="premium" hidden>
       <nav class="pp-about-crumbs" aria-label="Breadcrumb">
@@ -171,6 +172,5 @@
       </ul>
     </section>
     <!-- /seo:about -->
-  <script type="module">import("/utils/components/tooltip.js").then((m) => m.mountTooltips());</script>
-</body>
+  </body>
 </html>

@@ -1139,3 +1139,7 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 /* the student's own words, written in American school cursive: in the answer fields, the marked lines and the blanks table */
 .xp-script__t, .xp-bfill__row span { font-family: "Playwrite US Trad", "Segoe Script", "Brush Script MT", cursive; font-weight: 300; font-size: 1.02em; }
 div.xp-ta.xp-rich { line-height: 7.5mm; }
+
+/* the booklet card's link to the full guide (prep-math/activity/maths-typing) */
+.xp-mathtip__more { display: block; margin-top: 2mm; font: 600 8.5pt "JetBrains Mono", monospace; color: var(--ci, #2d5f9a); text-decoration: underline; text-underline-offset: 0.6mm; }
+.xp-mathtip__more:hover { text-decoration-thickness: 0.5mm; }

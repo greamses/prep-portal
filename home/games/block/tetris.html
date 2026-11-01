@@ -180,6 +180,7 @@
       }
     </script>
     <script type="module" src='./main.js'></script>
+  <script type="module">import("/utils/components/tooltip.js").then((m) => m.mountTooltips());</script>
     <!-- seo:about -->
     <section id="pp-about" class="pp-about" data-access="login" hidden>
       <nav class="pp-about-crumbs" aria-label="Breadcrumb">
@@ -211,7 +212,6 @@
     </section>
     <script type="module" src="/utils/auth/login-guard.js"></script>
     <!-- /seo:about -->
-  <script type="module">import("/utils/components/tooltip.js").then((m) => m.mountTooltips());</script>
-</body>
+  </body>
 
 </html>
