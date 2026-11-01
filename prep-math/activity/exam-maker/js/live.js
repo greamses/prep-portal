@@ -99,6 +99,77 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
 
   /* Every answer field is a rich-field (rich-field.js): Alt + = writes an equation in place, as in the sticky notes */
 
+  /* ── LOCKING AN ANSWER ──────────────────────────────────────────────────
+     A small padlock by every question number (on the paper, in the booklet and on the OMR rows). Locked, the answer cannot be changed by
+     a stray click or key; to change it the student unlocks it, and is asked first. The lock is kept with the answers. */
+  const LOCK_SHUT = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.6" fill="#fff"/></svg>';
+  const LOCK_OPEN = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10.5V8a4 4 0 0 1 7.6-1.7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+  const isLocked = (id) => answers["lock:" + id] === true;
+  function lockKey(id) {
+    const k = document.createElement("span");
+    k.className = "xp-lock";
+    k.dataset.qid = id;
+    k.setAttribute("role", "switch");
+    k.tabIndex = 0;
+    k.setAttribute("data-nomath", "");
+    return k;
+  }
+  function paintLocks() {
+    document.querySelectorAll(".xm-sheet .xp-lock, .xo-drawer .xp-lock").forEach((k) => {
+      const shut = isLocked(k.dataset.qid);
+      k.innerHTML = shut ? LOCK_SHUT : LOCK_OPEN;
+      k.classList.toggle("is-shut", shut);
+      k.setAttribute("aria-checked", String(shut));
+      k.setAttribute("aria-label", shut ? "Answer locked. Unlock it to change it" : "Lock this answer");
+      k.dataset.tip = shut ? "Locked. Press to unlock" : "Lock this answer";
+      k.hidden = checked;
+    });
+    document.querySelectorAll(".xm-sheet [data-qid], .xo-drawer [data-qid]").forEach((el) => {
+      if (el.classList.contains("xp-lock")) return;
+      el.classList.toggle("is-locked", !checked && isLocked(el.dataset.qid));
+    });
+    document.querySelectorAll(".xm-sheet .xp-rich, .xo-drawer .xp-rich").forEach((f) => {
+      const owner = f.closest("[data-qid]");
+      if (owner) f.disabled = checked || isLocked(owner.dataset.qid);
+    });
+  }
+  const numberOf = (id) => {
+    const q = sheet.querySelector(`.xp-q[data-qid="${id}"] .xp-n`);
+    return q ? q.textContent.trim() : "";
+  };
+  function askUnlock(key) {
+    document.querySelector(".xp-unlock")?.remove();
+    const id = key.dataset.qid, n = numberOf(id);
+    const pop = document.createElement("div");
+    pop.className = "pp-receipt xp-unlock";
+    pop.setAttribute("role", "dialog");
+    pop.setAttribute("aria-label", "Unlock this answer?");
+    pop.innerHTML = `<div class="pp-receipt__paper"><b>Unlock ${n ? `question ${n}` : "this answer"}?</b><p>You locked this answer. Unlock it only if you mean to change it.</p>`
+      + `<div class="xp-unlock__row"><button type="button" class="pp-btn pp-btn--ghost" data-no>Keep it locked</button><button type="button" class="pp-btn" data-ok>Unlock</button></div></div>`;
+    document.body.appendChild(pop);
+    const r = key.getBoundingClientRect();
+    pop.style.left = `${Math.max(8, Math.min(r.left - 20, innerWidth - pop.offsetWidth - 8))}px`;
+    pop.style.top = `${r.bottom + 8 + pop.offsetHeight > innerHeight - 8 ? Math.max(8, r.top - pop.offsetHeight - 8) : r.bottom + 8}px`;
+    const close = () => { pop.remove(); document.removeEventListener("pointerdown", away, true); document.removeEventListener("keydown", esc, true); key.focus(); };
+    const away = (e) => { if (!pop.contains(e.target)) close(); };
+    const esc = (e) => { if (e.key === "Escape") { e.preventDefault(); close(); } };
+    pop.querySelector("[data-no]").addEventListener("click", close);
+    pop.querySelector("[data-ok]").addEventListener("click", () => { delete answers["lock:" + id]; keep(); paintLocks(); close(); onChange(); });
+    document.addEventListener("pointerdown", away, true);
+    document.addEventListener("keydown", esc, true);
+    pop.querySelector("[data-ok]").focus();
+  }
+  if (!window.__xpLocks) {
+    window.__xpLocks = true;
+    const press = (k) => {
+      if (checked) return;
+      if (isLocked(k.dataset.qid)) askUnlock(k);
+      else { answers["lock:" + k.dataset.qid] = true; keep(); paintLocks(); onChange(); }
+    };
+    document.addEventListener("click", (e) => { const k = e.target.closest && e.target.closest(".xp-lock"); if (k) { e.preventDefault(); e.stopPropagation(); press(k); } }, true);
+    document.addEventListener("keydown", (e) => { const k = e.target.classList && e.target.classList.contains("xp-lock") ? e.target : null; if (k && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); press(k); } });
+  }
+
   /* a shaded choice shows on the question AND on the OMR sheet, whichever was clicked */
   const paintPick = (id, got) => {
     sheet.querySelectorAll(`.xp-q--mcq[data-qid="${id}"] .xp-opts li`).forEach((li, k) => {
@@ -127,7 +198,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
           li.classList.toggle("is-picked", got === i);
           li.setAttribute("aria-checked", String(got === i));
           const pick = () => {
-            if (checked) return;
+            if (checked || isLocked(q.id)) return;
             answers[q.id] = i; keep();
             paintPick(q.id, i);
             onChange();
@@ -171,8 +242,18 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
       box.addEventListener("input", () => { answers[q.id] = box.value; keep(); onChange(); });
       if (lines) lines.replaceWith(box); else blk.appendChild(box);
     });
+    /* a lock key by every question number, on the paper and in the booklet */
+    sheet.querySelectorAll(".xp-q[data-qid]").forEach((el) => {
+      const n = el.querySelector(":scope > .xp-n");
+      if (n && !el.querySelector(":scope > .xp-lock")) n.after(lockKey(el.dataset.qid));
+    });
+    sheet.querySelectorAll(".xp-ans[data-qid]").forEach((blk) => {
+      const tag = blk.querySelector(".xp-ans__tag b");
+      if (tag && !blk.querySelector(".xp-lock")) tag.after(lockKey(blk.dataset.qid));
+    });
     /* the drawer comes last: with an answer booklet it takes the booklet's pages (and the fields made on them) out of the paper */
     mountDrawer();
+    paintLocks();
     paintAttempts();
     if (checked && !held) { showResults(questions); paintStamp(true); announce(); }
   }
@@ -252,11 +333,12 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   function wireOmr(root) {
     root.querySelectorAll(".xp-omr li[data-qid], .xo-omr li[data-qid]").forEach((li) => {
       const id = li.dataset.qid;
+      if (!li.querySelector(":scope > .xp-lock")) li.appendChild(lockKey(id));
       li.querySelectorAll("b").forEach((b) => {
         b.classList.toggle("is-picked", answers[id] === Number(b.dataset.i));
         b.tabIndex = 0; b.setAttribute("role", "radio");
         const pick = () => {
-          if (checked) return;
+          if (checked || isLocked(id)) return;
           answers[id] = Number(b.dataset.i); keep(); paintPick(id, answers[id]); onChange();
         };
         b.addEventListener("click", pick);
