@@ -211,69 +211,229 @@ async function makePdf({ pages, root, image, name, step }) {
 }
 
 /* ── Word ────────────────────────────────────────────────────────────────────
-   The printed content read in order: a block element starts a new paragraph, text keeps its bold, italic, underline, size and
-   colour, a table stays a table, and a picture (an image, a drawing, a formula, a canvas) goes in as an image at its own size. */
+   The printed content read in order, keeping how it LOOKS as far as Word (and Google Docs, which reads the same file) can:
+     · things laid side by side (two columns of questions, a row of header fields, a grid of options) become a borderless table
+       with the same column widths;
+     · a block's background becomes shading, its borders paragraph borders (a ruled answer line is an empty bordered paragraph),
+       its left edge an indent and its margins the spacing around it;
+     · text keeps its font, size, weight, slant, underline, colour and highlight;
+     · a picture (an image, a drawing, a formula, a canvas) goes in as an image at its own size, never wider than its column. */
 const BLOCK = /^(block|flex|grid|list-item|table|flow-root|table-row-group|table-header-group|table-footer-group)$/;
 const SKIP_TAGS = /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|BUTTON|DIALOG|OPTION|IFRAME|VIDEO|AUDIO|LINK|META)$/;
-function hex(color) {
-  const m = String(color).match(/rgba?\(([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?/);
-  if (!m || (m[4] !== undefined && +m[4] < 0.3)) return null;
-  const v = [m[1], m[2], m[3]].map((x) => Math.round(+x));
-  if (v.every((x) => x < 70)) return null;          // ink: leave it to the document's own black
-  return v.map((x) => x.toString(16).padStart(2, "0")).join("").toUpperCase();
+function rgba(color) {
+  const m = String(color).match(/rgba?\(([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+%?))?/);
+  if (!m) return null;
+  let a = m[4] === undefined ? 1 : m[4].endsWith("%") ? parseFloat(m[4]) / 100 : +m[4];
+  return [Math.round(+m[1]), Math.round(+m[2]), Math.round(+m[3]), a];
 }
+const hexOf = (v) => v.slice(0, 3).map((x) => x.toString(16).padStart(2, "0")).join("").toUpperCase();
+/* a text colour worth keeping (plain ink is left to the document's own black) */
+function hex(color) {
+  const v = rgba(color);
+  if (!v || v[3] < 0.3 || v.slice(0, 3).every((x) => x < 70)) return null;
+  return hexOf(v);
+}
+/* a background worth shading (white and the site's paper are the page itself); a see-through one is mixed onto white */
+function fillOf(color) {
+  const v = rgba(color);
+  if (!v || v[3] < 0.08) return null;
+  const mix = v.slice(0, 3).map((x) => Math.round(255 - (255 - x) * v[3]));
+  if (mix.every((x) => x >= 246)) return null;
+  return hexOf(mix);
+}
+function fontOf(cs) {
+  const f = String(cs.fontFamily || "").split(",")[0].replace(/["']/g, "").trim();
+  if (!f || /^(ui-)?monospace$/i.test(f)) return "Courier New";
+  if (/^serif$/i.test(f)) return "Times New Roman";
+  if (/^(sans-serif|system-ui|-apple-system)$/i.test(f)) return "Arial";
+  if (/^STIX/i.test(f)) return "Cambria Math";
+  return f;
+}
+const twipPx = (px) => Math.max(0, Math.round(px * 15));        // 1 CSS px = 15 twips (1440 a 96 px inch)
+
 async function makeDocx({ pages, root, image, name, step }) {
   const D = await import(LIB.docx);
-  const { Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType, HeadingLevel, AlignmentType, PageBreak, BorderStyle } = D;
+  const { Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType, HeadingLevel, AlignmentType, PageBreak, BorderStyle, ShadingType, VerticalAlign } = D;
   const sizeFrom = pages && pages[0] ? pages[0].getBoundingClientRect() : null;
   const pageW = sizeFrom ? sizeFrom.width * PX_MM : A4.w, pageH = sizeFrom ? sizeFrom.height * PX_MM : A4.h;
-  const marginMm = 15;
-  const maxW = Math.round(((pageW - 2 * marginMm) / PX_MM));   // widest picture, in CSS px
+  const marginMm = 12;
+  const textW = Math.round((pageW - 2 * marginMm) / PX_MM);      // the writing width, in CSS px
   const twip = (mm) => Math.round((mm / 25.4) * 1440);
+  const NONE = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
 
-  const picture = (png) => {
+  const borderOf = (cs, side) => {
+    const w = parseFloat(cs[`border${side}Width`]), st = cs[`border${side}Style`];
+    if (!w || st === "none" || st === "hidden") return null;
+    const v = rgba(cs[`border${side}Color`]);
+    if (!v || v[3] < 0.15) return null;
+    return { style: st === "dashed" ? BorderStyle.DASHED : st === "dotted" ? BorderStyle.DOTTED : st === "double" ? BorderStyle.DOUBLE : BorderStyle.SINGLE, size: Math.max(2, Math.round(w * 6)), color: hexOf(v), space: 2 };
+  };
+  const picture = (png, maxW) => {
     if (!png) return null;
     let w = png.cssW || png.w / 2, h = png.cssH || png.h / 2;
     if (w > maxW) { h = (h * maxW) / w; w = maxW; }
     return new ImageRun({ data: png.data, transformation: { width: Math.max(1, Math.round(w)), height: Math.max(1, Math.round(h)) } });
   };
+  const visibleKids = (el) => [...el.children].filter((k) => {
+    const s = getComputedStyle(k);
+    if (s.display === "none" || s.visibility === "hidden" || s.position === "absolute" || s.position === "fixed") return false;
+    const r = k.getBoundingClientRect();
+    return r.width > 2 && r.height > 2;
+  });
+  const hasWords = (el) => /\S/.test(el.textContent || "") || !!el.querySelector("img, svg, canvas, mjx-container, input, textarea, select");
 
-  /* one walk of a piece of the page → a list of docx blocks */
-  async function blocks(rootEl) {
+  /* side by side → rows of cells (each cell a list of elements), or null when the pieces stack */
+  function layoutRows(el, cs) {
+    const multi = (parseInt(cs.columnCount, 10) || 1) > 1;
+    const flexRow = /flex/.test(cs.display) && !/column/.test(cs.flexDirection);
+    const grid = /grid/.test(cs.display);
+    if (!multi && !flexRow && !grid) return null;
+    if ([...el.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.nodeValue.trim())) return null;
+    const kids = visibleKids(el);
+    const wide = kids.filter((k) => k.getBoundingClientRect().width >= 60);
+    if (kids.length < 2 || wide.length < 2) return null;
+    const rect = (k) => k.getBoundingClientRect();
+    if (multi) {
+      /* CSS columns: the children of each column, by where they start */
+      const cols = [];
+      for (const k of kids) {
+        const x = rect(k).left;
+        let c = cols.find((col) => Math.abs(col.x - x) < 24);
+        if (!c) { c = { x, els: [], w: rect(k).width }; cols.push(c); }
+        c.els.push(k);
+      }
+      if (cols.length < 2) return null;
+      cols.sort((a, b) => a.x - b.x);
+      return [cols.map((c) => ({ els: c.els, w: c.w, x: c.x }))];
+    }
+    const rows = [];
+    for (const k of [...kids].sort((a, b) => rect(a).top - rect(b).top || rect(a).left - rect(b).left)) {
+      const r = rect(k);
+      let row = rows.find((rw) => r.top < rw.bottom - 2 && r.bottom > rw.top + 2);
+      if (!row) { row = { top: r.top, bottom: r.bottom, cells: [] }; rows.push(row); }
+      row.bottom = Math.max(row.bottom, r.bottom);
+      row.cells.push({ els: [k], w: r.width, x: r.left });
+    }
+    if (rows.every((rw) => rw.cells.length < 2)) return null;
+    return rows.map((rw) => rw.cells.sort((a, b) => a.x - b.x));
+  }
+
+  /* one walk of a piece of the page (a page, a table cell) → a list of docx blocks */
+  async function blocks(rootEl, ctx) {
     const out = [];
-    let runs = [], para = {}, carry = null;
+    let runs = [], carry = null;
+    let cur = null, firstOfCur = false;               // the innermost block: its look goes on the paragraph
+    const shadeOf = (el) => {
+      for (let e = el; e && e !== ctx.el.parentElement; e = e.parentElement) {
+        const f = fillOf(getComputedStyle(e).backgroundColor);
+        if (f) return f;
+        if (e === ctx.el) break;
+      }
+      return null;
+    };
+    const paraOf = (closing) => {
+      const p = {};
+      if (!cur) return p;
+      const cs = getComputedStyle(cur), r = cur.getBoundingClientRect();
+      const tag = cur.tagName;
+      if (/^H[1-3]$/.test(tag)) p.heading = [HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3][+tag[1] - 1];
+      if (cs.textAlign === "center") p.alignment = AlignmentType.CENTER;
+      else if (cs.textAlign === "right" || cs.textAlign === "end") p.alignment = AlignmentType.RIGHT;
+      else if (cs.textAlign === "justify") p.alignment = AlignmentType.JUSTIFIED;
+      const left = r.left + parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth || 0) - ctx.left;
+      const right = ctx.left + ctx.width - (r.right - parseFloat(cs.paddingRight) - parseFloat(cs.borderRightWidth || 0));
+      /* a small box (a "[6 marks]" tag, a badge) keeps its words on one line: no squeezing indents; one in the right half sits at the right */
+      if (r.width < 140) {
+        if (!p.alignment && right < 10 && left > ctx.width / 2) p.alignment = AlignmentType.RIGHT;
+        else if (left > 2) p.indent = { left: twipPx(Math.min(left, ctx.width - 140)) };
+      }
+      else if (left > 2 || right > 6) p.indent = { left: twipPx(Math.max(0, left)), right: twipPx(Math.max(0, Math.min(right, ctx.width / 2))) };
+      p.spacing = { before: firstOfCur ? twipPx(Math.min(40, parseFloat(cs.marginTop) + parseFloat(cs.paddingTop))) : 0, after: closing ? twipPx(Math.min(40, parseFloat(cs.marginBottom) + parseFloat(cs.paddingBottom))) : 0 };
+      const lh = parseFloat(cs.lineHeight), fs = parseFloat(cs.fontSize);
+      if (lh && fs) p.spacing.line = Math.round(Math.max(1, Math.min(2.4, lh / fs)) * 240 * 0.86);
+      const shade = shadeOf(cur);
+      if (shade) p.shading = { type: ShadingType.CLEAR, fill: shade, color: "auto" };
+      const b = {};
+      for (const side of ["Top", "Bottom", "Left", "Right"]) { const x = borderOf(cs, side); if (x) b[side.toLowerCase()] = x; }
+      if (Object.keys(b).length) p.border = b;
+      return p;
+    };
     /* a label on its own (a question number, an option letter: "1", "A", "(b)") joins the line after it, as it sits on the page */
-    const flush = (end = false) => {
+    const flush = (closing = false, end = false) => {
       const has = runs.some((r) => r.__text !== undefined ? r.__text.trim() : true);
       const words = runs.map((r) => (r.__text === undefined ? "\u0001" : r.__text)).join("").trim();
-      if (has && !end && words.length <= 4 && !words.includes("\u0001") && /^[(\[]?[A-Za-z0-9ivx]{1,3}[.)\]:]?$/.test(words)) {
-        carry = { runs: runs.slice(), para: { ...para } };
-        runs = []; para = {};
-        return;
+      if (has && !end && !closing && words.length <= 4 && !words.includes("\u0001") && /^[(\[]?[A-Za-z0-9ivx]{1,3}[.)\]:]?$/.test(words)) {
+        carry = { runs: runs.slice() }; runs = []; return;
       }
-      if (carry && (has || end)) {
-        runs = [...carry.runs, { run: new TextRun({ text: "  " }), __text: " " }, ...runs];
-        para = { ...carry.para, ...para };
-        carry = null;
+      if (has && !end && closing && words.length <= 4 && !words.includes("\u0001") && /^[(\[]?[A-Za-z0-9ivx]{1,3}[.)\]:]?$/.test(words) && cur && cur.getBoundingClientRect().width < 60) {
+        carry = { runs: runs.slice() }; runs = []; return;
       }
-      if (runs.some((r) => r.__text !== undefined ? r.__text.trim() : true)) out.push(new Paragraph({ children: runs.map((r) => r.run), ...para }));
-      runs = []; para = {};
+      if (carry && (has || end)) { runs = [...carry.runs, { run: new TextRun({ text: "  " }), __text: " " }, ...runs]; carry = null; }
+      if (runs.some((r) => r.__text !== undefined ? r.__text.trim() : true)) { out.push(new Paragraph({ children: runs.map((r) => r.run), ...paraOf(closing) })); firstOfCur = false; }
+      runs = [];
     };
-    const textRun = (text, cs, extra = {}) => {
+    const textRun = (text, cs, el) => {
       const pt = parseFloat(cs.fontSize) * 0.75;
       const color = hex(cs.color);
-      const run = new TextRun({
+      let inlineBg = el && /^inline/.test(cs.display) ? fillOf(cs.backgroundColor) : null;
+      const ink = rgba(cs.color);
+      if (!inlineBg && el && ink && ink.slice(0, 3).every((x) => x > 200)) {
+        for (let e = el; e && e !== ctx.el; e = e.parentElement) { const f = fillOf(getComputedStyle(e).backgroundColor); if (f) { inlineBg = f; break; } }
+      }
+      runs.push({ run: new TextRun({
         text,
+        font: fontOf(cs),
         bold: (parseInt(cs.fontWeight, 10) || 400) >= 600,
         italics: cs.fontStyle === "italic",
         underline: /underline/.test(cs.textDecorationLine) ? {} : undefined,
         strike: /line-through/.test(cs.textDecorationLine),
-        size: Math.round(Math.max(7, Math.min(30, pt || 11)) * 2),
+        size: Math.round(Math.max(6, Math.min(36, pt || 11)) * 2),
+        characterSpacing: parseFloat(cs.letterSpacing) ? Math.round(parseFloat(cs.letterSpacing) * 15) : undefined,
         ...(color ? { color } : {}),
-        ...extra,
-      });
-      runs.push({ run, __text: text });
+        ...(inlineBg ? { shading: { type: ShadingType.CLEAR, fill: inlineBg, color: "auto" } } : {}),
+      }), __text: text });
     };
+    async function table(rows) {
+      const maxCols = Math.max(...rows.map((r) => r.length));
+      rows.forEach((r) => r.forEach((c) => { if (c.els.some((e) => /\S/.test(e.textContent || ""))) c.w = Math.max(c.w, Math.min(110, 12 + 7.5 * Math.max(...c.els.map((e) => (e.textContent || "").trim().length)))); }));
+      const widths = rows.find((r) => r.length === maxCols).map((c) => c.w);
+      const total = widths.reduce((a, b) => a + b, 0) || ctx.width;
+      const scale = Math.min(1, ctx.width / total);
+      const trs = [];
+      for (const row of rows) {
+        const cells = [];
+        for (let i = 0; i < maxCols; i++) {
+          const c = row[i];
+          if (!c) { cells.push(new TableCell({ children: [new Paragraph("")], borders: { top: NONE, bottom: NONE, left: NONE, right: NONE } })); continue; }
+          const kids = [];
+          for (const el of c.els) {
+            const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+            kids.push(...(await blocks(el, { el, left: r.left, width: r.width * scale })));
+            void cs;
+          }
+          const one = c.els.length === 1 ? getComputedStyle(c.els[0]) : null;
+          const shade = one ? fillOf(one.backgroundColor) : null;
+          const b = {};
+          for (const side of ["Top", "Bottom", "Left", "Right"]) b[side.toLowerCase()] = (one && borderOf(one, side)) || NONE;
+          cells.push(new TableCell({
+            children: kids.length ? kids : [new Paragraph("")],
+            width: { size: twipPx(c.w * scale), type: WidthType.DXA },
+            borders: b,
+            margins: { top: 40, bottom: 40, left: 80, right: 80 },
+            verticalAlign: VerticalAlign.TOP,
+            ...(shade ? { shading: { type: ShadingType.CLEAR, fill: shade, color: "auto" } } : {}),
+          }));
+        }
+        trs.push(new TableRow({ children: cells, cantSplit: false }));
+      }
+      out.push(new Table({
+        rows: trs,
+        columnWidths: widths.map((w) => twipPx(w * scale)),
+        width: { size: twipPx(total * scale), type: WidthType.DXA },
+        borders: { top: NONE, bottom: NONE, left: NONE, right: NONE, insideHorizontal: NONE, insideVertical: NONE },
+      }));
+    }
+
     async function walk(node, pre) {
       if (node.nodeType === Node.TEXT_NODE) {
         const parent = node.parentElement;
@@ -283,7 +443,8 @@ async function makeDocx({ pages, root, image, name, step }) {
         if (!/pre/.test(cs.whiteSpace) && !pre) t = t.replace(/\s+/g, " ");
         if (!t || (!t.trim() && !runs.length)) return;
         if (cs.textTransform === "uppercase") t = t.toUpperCase();
-        textRun(t, cs);
+        else if (cs.textTransform === "capitalize") t = t.replace(/\b\w/g, (c) => c.toUpperCase());
+        textRun(t, cs, parent);
         return;
       }
       if (node.nodeType !== Node.ELEMENT_NODE) return;
@@ -291,55 +452,79 @@ async function makeDocx({ pages, root, image, name, step }) {
       if (SKIP_TAGS.test(tag)) return;
       const cs = getComputedStyle(el);
       if (cs.display === "none" || cs.visibility === "hidden") return;
+      const rect = el.getBoundingClientRect();
       /* text kept only for screen readers (a formula's source beside its picture): clipped to a pixel, so not on the page */
-      { const r = el.getBoundingClientRect(); if (r.width <= 1.5 && r.height <= 1.5 && (cs.overflow === "hidden" || cs.clipPath !== "none" || cs.clip !== "auto")) return; }
+      if (rect.width <= 1.5 && rect.height <= 1.5 && (cs.overflow === "hidden" || cs.clipPath !== "none" || cs.clip !== "auto")) return;
       /* pictures */
       if (tag === "MJX-CONTAINER" || (el.classList && (el.classList.contains("pp-note__eq") || el.classList.contains("wb-m")) && el.querySelector("svg"))) {
         const svg = el.querySelector("svg");
-        if (svg) { const p = picture(await svgToPng(svg).catch(() => null)); if (p) runs.push({ run: p }); }
+        if (svg) { const p = picture(await svgToPng(svg).catch(() => null), ctx.width); if (p) runs.push({ run: p }); }
         return;
       }
       if (tag === "svg" || tag === "SVG") {
-        const r = el.getBoundingClientRect();
-        if (r.width < 14 && r.height < 14) return;           // an icon
-        const p = picture(await svgToPng(el).catch(() => null));
-        if (p) { if (r.width > 120) flush(); runs.push({ run: p }); if (r.width > 120) flush(); }
+        if (rect.width < 14 && rect.height < 14) return;           // an icon
+        const p = picture(await svgToPng(el).catch(() => null), ctx.width);
+        if (p) { if (rect.width > 120) flush(); runs.push({ run: p }); if (rect.width > 120) flush(); }
         return;
       }
-      if (tag === "IMG") { const p = picture(await imgToPng(el)); if (p) runs.push({ run: p }); return; }
-      if (tag === "CANVAS") { try { const png = await canvasToPng(el); const r = el.getBoundingClientRect(); const p = picture({ ...png, cssW: r.width, cssH: r.height }); if (p) { flush(); runs.push({ run: p }); flush(); } } catch { /* a tainted canvas */ } return; }
+      if (tag === "IMG") { const p = picture(await imgToPng(el), ctx.width); if (p) runs.push({ run: p }); return; }
+      if (tag === "CANVAS") { try { const png = await canvasToPng(el); const p = picture({ ...png, cssW: rect.width, cssH: rect.height }, ctx.width); if (p) { flush(); runs.push({ run: p }); flush(); } } catch { /* a tainted canvas */ } return; }
       if (el.getAttribute("aria-hidden") === "true") return;
       if (tag === "BR") { runs.push({ run: new TextRun({ text: "", break: 1 }), __text: " " }); return; }
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
         const type = (el.getAttribute("type") || "").toLowerCase();
-        if (type === "checkbox" || type === "radio") { textRun(el.checked ? "[x] " : "[ ] ", cs); return; }
+        if (type === "checkbox" || type === "radio") { textRun(el.checked ? "☒ " : "☐ ", cs, el); return; }
         if (type === "hidden" || type === "file") return;
         const v = tag === "SELECT" ? (el.selectedOptions[0] ? el.selectedOptions[0].textContent : "") : el.value;
-        if (v) textRun(v, cs);
-        return;
-      }
-      if (tag === "TABLE") {
-        flush();
-        const rows = [];
-        for (const tr of el.rows) {
-          if (getComputedStyle(tr).display === "none") continue;
-          const cells = [];
-          for (const td of tr.cells) {
-            if (getComputedStyle(td).display === "none") continue;
-            const kids = await blocks(td);
-            cells.push(new TableCell({ children: kids.length ? kids : [new Paragraph("")], columnSpan: td.colSpan > 1 ? td.colSpan : undefined }));
-          }
-          if (cells.length) rows.push(new TableRow({ children: cells }));
-        }
-        if (rows.length) out.push(new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+        if (v) textRun(v, cs, el);
         return;
       }
       const block = BLOCK.test(cs.display) || /^H[1-6]$/.test(tag);
-      if (block) {
+      /* an empty drawn thing: a ruled answer line or a writing box (a block), or a tick box / digit box (inline) */
+      if (!hasWords(el)) {
+        /* a small empty box with a border is a tick box, written in the line like the one on paper */
+        if (rect.width >= 8 && rect.width <= 40 && rect.height >= 8 && rect.height <= 40 && borderOf(cs, "Bottom") && borderOf(cs, "Top")) { textRun("☐ ", cs, el); return; }
+        const rows = block ? visibleKids(el) : [];
+        if (rows.length > 1) { flush(); for (const k of rows) await walk(k, pre); return; }
+        if (block && rect.height >= 6) {
+          flush();
+          const b = {};
+          for (const side of ["Top", "Bottom", "Left", "Right"]) { const x = borderOf(cs, side); if (x) b[side.toLowerCase()] = x; }
+          const shade = fillOf(cs.backgroundColor);
+          if (Object.keys(b).length || shade || rect.height >= 14) {
+            out.push(new Paragraph({
+              children: [new TextRun({ text: "", size: 2 })],
+              spacing: { before: 0, after: twipPx(Math.min(30, parseFloat(cs.marginBottom) || 0)), line: Math.max(240, twipPx(rect.height)), lineRule: "exact" },
+              indent: { left: twipPx(Math.max(0, rect.left - ctx.left)), right: twipPx(Math.max(0, ctx.left + ctx.width - rect.right)) },
+              ...(Object.keys(b).length ? { border: b } : {}),
+              ...(shade ? { shading: { type: ShadingType.CLEAR, fill: shade, color: "auto" } } : {}),
+            }));
+          }
+          return;
+        }
+        if (!block && rect.width >= 8 && rect.width <= 40 && rect.height >= 8 && borderOf(cs, "Bottom") && borderOf(cs, "Top")) { textRun("☐ ", cs, el); return; }
+        if (!block) return;
+      }
+      if (tag === "TABLE") {
         flush();
-        if (/^H[1-3]$/.test(tag)) para.heading = [HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3][+tag[1] - 1];
-        if (cs.textAlign === "center") para.alignment = AlignmentType.CENTER;
-        else if (cs.textAlign === "right" || cs.textAlign === "end") para.alignment = AlignmentType.RIGHT;
+        const rows = [...el.rows].filter((tr) => getComputedStyle(tr).display !== "none")
+          .map((tr) => [...tr.cells].filter((td) => getComputedStyle(td).display !== "none").map((td) => ({ els: [td], w: td.getBoundingClientRect().width, x: td.getBoundingClientRect().left })));
+        if (rows.length) {
+          await table(rows);
+          /* a real table keeps its ruling */
+          const last = out[out.length - 1];
+          void last;
+        }
+        return;
+      }
+      if (block) {
+        const rows = layoutRows(el, cs);
+        if (rows) { flush(); await table(rows); return; }
+        flush();
+      }
+      const prev = cur, prevFirst = firstOfCur;
+      if (block) {
+        cur = el; firstOfCur = true;
         if (cs.display === "list-item" || tag === "LI") {
           const ol = el.parentElement && el.parentElement.tagName === "OL";
           const idx = ol ? [...el.parentElement.children].indexOf(el) + 1 : 0;
@@ -348,36 +533,37 @@ async function makeDocx({ pages, root, image, name, step }) {
       }
       /* a pseudo-element's words (labels drawn in CSS, such as an option letter) */
       const before = getComputedStyle(el, "::before").content;
-      if (before && before !== "none" && before !== "normal" && /^["']/.test(before)) { const t = before.slice(1, -1).replace(/\\A/g, " "); if (t.trim()) textRun(t + " ", cs); }
+      if (before && before !== "none" && before !== "normal" && /^["']/.test(before)) { const t = before.slice(1, -1).replace(/\\A/g, " "); if (t.trim()) textRun(t + " ", cs, el); }
       const isPre = pre || tag === "PRE";
       for (const k of el.childNodes) await walk(k, isPre);
-      if (block) flush();
+      if (block) { flush(true); cur = prev; firstOfCur = prevFirst && false; }
     }
     await walk(rootEl, false);
-    flush(true);
+    flush(false, true);
     return out;
   }
 
+  const ctxOf = (el) => { const r = el.getBoundingClientRect(), cs = getComputedStyle(el); const pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0; const w = r.width - pl - pr; return { el, left: r.left + pl, width: Math.min(textW, w) }; };
   const children = [];
   if (image) {
     const cv = await image();
     const png = await canvasToPng(cv);
-    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [picture({ ...png, cssW: cv.width / 2, cssH: cv.height / 2 })] }));
+    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [picture({ ...png, cssW: cv.width / 2, cssH: cv.height / 2 }, textW)] }));
   } else if (pages && pages.length) {
     for (let i = 0; i < pages.length; i++) {
       step(`Page ${i + 1} of ${pages.length}`);
       if (i) children.push(new Paragraph({ children: [new PageBreak()] }));
-      children.push(...(await blocks(pages[i])));
+      children.push(...(await blocks(pages[i], ctxOf(pages[i]))));
     }
   } else if (root) {
     step("Reading the page");
-    children.push(...(await blocks(root)));
+    children.push(...(await blocks(root, ctxOf(root))));
   }
   if (!children.length) throw new Error("There was nothing to put in the document.");
   const doc = new Document({
     creator: "Prep Portal",
     title: name,
-    styles: { default: { document: { run: { font: "Calibri", size: 22 } } } },
+    styles: { default: { document: { run: { font: "Arial", size: 21 } } } },
     sections: [{
       properties: { page: { size: { width: twip(pageW), height: twip(pageH) }, margin: { top: twip(marginMm), bottom: twip(marginMm), left: twip(marginMm), right: twip(marginMm) } } },
       children,
