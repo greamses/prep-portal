@@ -373,6 +373,7 @@ ${(answersArr[i] || '').trim() || '[No answer provided]'}`;
     
     return `You are a ${_cfg.subject} examiner marking a ${profile.label} student (age ${profile.age}) in Nigeria.
 Mark ALL questions below as one combined exam paper and compute a single cumulative score.${_topicLine}
+READ THE WHOLE QUESTION FIRST and work out exactly what the final answer has to be: which quantity, in what form, with which units, and how many parts. An answer that correctly finds a DIFFERENT thing is not the answer: finding n when the question asks for n^2, the radius when it asks for the area, or one root when it asks for both, earns the marks for the correct working that led there but NOT the mark for the answer. Check every part of the question is answered before giving full marks.
 
 ${qBlocks}
 

@@ -900,6 +900,7 @@ module.exports = function () {
       }
 
       const prompt = `You are a fair, encouraging examiner. Grade the student's answer out of 10.
+READ THE WHOLE QUESTION FIRST and work out exactly what the final answer has to be: which quantity, in what form, with which units, and how many parts. An answer that correctly finds a DIFFERENT thing is not the answer: finding n when the question asks for n^2, the radius when it asks for the area, or one root when it asks for both, earns the marks for the correct working that led there but NOT the mark for the answer. Check every part of the question is answered before giving full marks.
 QUESTION: ${question}
 ${model ? `MODEL ANSWER / KEY POINTS: ${model}` : ""}
 STUDENT ANSWER: ${answer}
