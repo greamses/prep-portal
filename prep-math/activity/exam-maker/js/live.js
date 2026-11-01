@@ -372,6 +372,7 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
     const wrap = document.createElement("div");
     wrap.className = `${article.className.replace(/\bxp--wm\b/, "").trim()} xp-live xo-book`;
     wrap.setAttribute("style", article.getAttribute("style") || "");
+    wrap.dataset.tpl = article.dataset.tpl || "default";      // the booklet is dressed as the paper is
     wrap.appendChild(book);
     drawer.append(head, wrap);
     document.body.append(drawer, tab);

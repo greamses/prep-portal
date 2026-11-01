@@ -932,3 +932,11 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 
 /* the template picker in the setup */
 .xm-tplpick .xm-ico { width: 3.4rem; }
+
+/* the answer booklet's own parts, in each template */
+.xp[data-tpl="textbook"] .xp-bpage__run { font-family: var(--tb-sans); color: var(--c); border-bottom: 0.9mm solid var(--c); }
+.xp[data-tpl="textbook"] .xp-ans__tag b { font-family: var(--tb-sans); font-weight: 800; color: var(--c); }
+.xp[data-tpl="textbook"] .xp-bindex h3, .xp[data-tpl="textbook"] .xp-bindex a em { font-family: var(--tb-sans); color: var(--c); }
+.xp[data-tpl="classroom"] .xp-bpage__run { color: var(--c); border-bottom: 0.6mm dashed var(--c); }
+.xp[data-tpl="classroom"] .xp-ans__tag b { color: var(--c); }
+.xp[data-tpl="classroom"] .xp-bindex h3, .xp[data-tpl="classroom"] .xp-bindex a em { color: var(--c); }
