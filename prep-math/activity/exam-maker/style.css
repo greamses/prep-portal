@@ -839,27 +839,57 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
    rounded-friendly type, a yellow subject tab, numbers in yellow dots, dotted answer lines). Each keeps the site's own pieces: the
    header and the section heads are still receipts and the labels still sticky notes. Choosing one also sets a matching colour. */
 
-/* ── textbook ── */
-.xp[data-tpl="textbook"] { font-family: "STIX Two Text", "Times New Roman", Georgia, serif; font-size: 10.6pt; line-height: 1.55; }
-.xp[data-tpl="textbook"] .xp-top { background: none; color: #1d1b18; border-radius: 0; border-top: 1.5mm solid var(--c); border-bottom: 0.5mm solid var(--c); padding: 3mm 1mm; margin: 0; }
-.xp[data-tpl="textbook"] .xp-head__logo { background: none; border-radius: 0; padding: 0; }
-.xp[data-tpl="textbook"] .xp-head__school { font-size: 13pt; color: var(--c); letter-spacing: 0.02em; }
-.xp[data-tpl="textbook"] .xp-head__term { color: #1d1b18; text-transform: none; font-style: italic; letter-spacing: 0.03em; font-size: 10pt; opacity: 1; }
-.xp[data-tpl="textbook"] .xp-head__subject { background: none; color: var(--c); border: 0.5mm solid var(--c); border-radius: 0; font-size: 11pt; padding: 2mm 3.4mm; }
-.xp[data-tpl="textbook"] .xp-cell span { color: var(--c); }
-.xp[data-tpl="textbook"] .xp-student { text-transform: none; letter-spacing: 0; font-size: 10.5pt; font-weight: 600; border-top: 0; margin-top: 2mm; }
-.xp[data-tpl="textbook"] .xp-student .xp-student__short { flex: 0 0 24mm; }
-.xp[data-tpl="textbook"] .xp-student em { border-radius: 0; border: 0.5mm solid var(--c); background: none; width: 22mm; }
-.xp[data-tpl="textbook"] .xp-banner { --pp-paper: #fff; }
-.xp[data-tpl="textbook"] .xp-banner__tag { background: var(--c); color: #fff; transform: none; border-radius: 0; padding: 1.3mm 3.4mm; letter-spacing: 0.1em; }
+/* ── textbook ──
+   A chapter-test page: a serif body, a sans for everything that labels or directs, ONE blue, and a small orange mark. A double rule under the
+   head, the subject set as the title, hanging numbers, hairline rules. The head and the part heads are still our receipts and tags. */
+.xp[data-tpl="textbook"] {
+  --tb-sans: "Franklin Gothic Medium", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --tb-serif: "STIX Two Text", "Century Schoolbook", "Times New Roman", Georgia, serif;
+  --tb-orange: #e5741a; --tb-rule: #c9d4e3;
+  font-family: var(--tb-serif); font-size: 10.8pt; line-height: 1.5;
+}
+/* the head */
+.xp[data-tpl="textbook"] .xp-receipt .xp-receipt__paper { padding: 5mm 7mm 4.6mm; }
+.xp[data-tpl="textbook"] .xp-top:not(.xp-tb-top) { background: none; color: #1d1b18; border-radius: 0; border-bottom: 0.9mm solid var(--c); padding: 2mm 0 2.4mm; margin: 0; }
+.xp[data-tpl="textbook"] .xp-tb-top { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4.5mm; background: none; border-radius: 0; margin: 0; padding: 0 0 3mm; border-bottom: 1mm solid var(--c); color: #1d1b18; }
+.xp[data-tpl="textbook"] .xp-tb-top::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2.4mm; border-top: 0.3mm solid #1d1b18; }
+.xp[data-tpl="textbook"] .xp-head__logo { width: 15mm; height: 15mm; background: none; border-radius: 0; padding: 0; }
+.xp[data-tpl="textbook"] .xp-head__logo--none { border: 0.35mm dashed var(--c); }
+.xp[data-tpl="textbook"] .xp-head__school { font-family: var(--tb-sans); font-weight: 800; font-size: 11.5pt; letter-spacing: 0.09em; color: var(--c); line-height: 1.15; }
+.xp[data-tpl="textbook"] .xp-head__term { font-family: var(--tb-serif); font-style: italic; font-size: 9.6pt; letter-spacing: 0; text-transform: none; color: #1d1b18; opacity: 1; margin-top: 1mm; }
+.xp[data-tpl="textbook"] .xp-tb-facts { display: grid; grid-auto-flow: column; gap: 0; margin: 0; }
+.xp[data-tpl="textbook"] .xp-tb-facts > div { padding: 0 3mm; border-left: 0.3mm solid var(--tb-rule); min-width: 15mm; }
+.xp[data-tpl="textbook"] .xp-tb-facts > div:first-child { border-left: 0; }
+.xp[data-tpl="textbook"] .xp-tb-facts dt { font-family: var(--tb-sans); font-weight: 700; font-size: 6.4pt; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c); }
+.xp[data-tpl="textbook"] .xp-tb-facts dd { margin: 0.4mm 0 0; font-family: var(--tb-serif); font-weight: 700; font-size: 10pt; white-space: nowrap; }
+.xp[data-tpl="textbook"] .xp-tb-title { margin-top: 6.2mm; display: flex; align-items: center; }
+.xp[data-tpl="textbook"] .xp-tb-title::before { content: ""; flex: none; width: 2.6mm; height: 8.5mm; background: var(--tb-orange); margin-right: 3.4mm; }
+.xp[data-tpl="textbook"] .xp-head__subject { max-width: none; padding: 0; background: none; border: 0; border-radius: 0; color: #1d1b18; font-family: var(--tb-serif); font-weight: 700; font-size: 25pt; line-height: 1.05; letter-spacing: -0.015em; text-align: left; }
+.xp[data-tpl="textbook"] .xp-student { margin-top: 5mm; padding-top: 0; border-top: 0; align-items: flex-end; gap: 2.4mm; font-family: var(--tb-sans); font-weight: 700; font-size: 7.6pt; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c); }
+.xp[data-tpl="textbook"] .xp-student i { border-bottom: 0.35mm solid #1d1b18; height: 6.5mm; }
+.xp[data-tpl="textbook"] .xp-student .xp-student__short { flex: 0 0 25mm; }
+.xp[data-tpl="textbook"] .xp-student em { width: 23mm; height: 9.5mm; background: none; border: 0.5mm solid var(--c); border-radius: 0; }
+.xp[data-tpl="textbook"] .xp-student input.xp-name { font-family: var(--tb-serif); }
+/* a part head: a square blue tag, the part's name in sans capitals, its directions in italic, the marks in a small outline */
+.xp[data-tpl="textbook"] .xp-banner { --pp-paper: #fff; gap: 1.2mm 4mm; padding: 3.6mm 6.5mm; }
+.xp[data-tpl="textbook"] .xp-banner__tag { background: var(--c); color: #fff; transform: none; border-radius: 0; padding: 1.2mm 3.2mm; font-family: var(--tb-sans); font-weight: 800; font-size: 7.6pt; letter-spacing: 0.16em; }
 .xp[data-tpl="textbook"] .xp-banner__tag::before { display: none; }
-.xp[data-tpl="textbook"] .xp-banner__name { font-family: inherit; font-weight: 800; font-size: 13pt; color: var(--c); }
-.xp[data-tpl="textbook"] .xp-banner__rule { font-size: 9.5pt; color: #3a3a3a; }
-.xp[data-tpl="textbook"] .xp-n { background: none; color: var(--c); width: auto; min-width: 6.4mm; height: auto; border-radius: 0; font-size: 11.5pt; font-weight: 800; display: block; text-align: right; margin-top: 0; }
+.xp[data-tpl="textbook"] .xp-banner__name { font-family: var(--tb-sans); font-weight: 800; font-size: 10.6pt; letter-spacing: 0.08em; text-transform: uppercase; color: #1d1b18; }
+.xp[data-tpl="textbook"] .xp-banner__rule { font-family: var(--tb-serif); font-style: italic; font-size: 9.6pt; color: #3d4654; }
+.xp[data-tpl="textbook"] .xp-banner__marks { margin-left: auto; padding: 0.6mm 2.6mm; border: 0.3mm solid var(--c); font-family: var(--tb-sans); font-weight: 700; font-size: 7.6pt; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c); }
+/* the problems */
+.xp[data-tpl="textbook"] .xp-q { gap: 2.4mm; }
+.xp[data-tpl="textbook"] .xp-n { background: none; color: var(--c); width: 7.4mm; min-width: 7.4mm; height: auto; border-radius: 0; font-family: var(--tb-sans); font-weight: 800; font-size: 11pt; display: block; text-align: right; margin-top: 0; line-height: 1.4; }
 .xp[data-tpl="textbook"] .xp-n::after { content: "."; }
-.xp[data-tpl="textbook"] .xp-marks { font-style: italic; font-weight: 600; }
-.xp[data-tpl="textbook"] .xp-opts b { font-family: "Unbounded", "JetBrains Mono", monospace; }
-.xp[data-tpl="textbook"] .xp-lines i, .xp[data-tpl="textbook"] div.xp-ta { border-bottom-color: #8b97a8; }
+.xp[data-tpl="textbook"] .xp-marks { font-family: var(--tb-serif); font-style: italic; font-weight: 500; font-size: 8.6pt; color: #4a5568; }
+.xp[data-tpl="textbook"] .xp-cols { column-rule: 0.25mm solid var(--tb-rule); }
+.xp[data-tpl="textbook"] .xp-opts b { border-width: 0.3mm; border-color: var(--c); color: var(--c); font-family: var(--tb-sans); font-weight: 700; }
+.xp[data-tpl="textbook"] .xp-blank { border-bottom: 0.35mm solid #1d1b18; }
+.xp[data-tpl="textbook"] .xp-lines i, .xp[data-tpl="textbook"] div.xp-ta { border-bottom-color: #a7b6cb; }
+.xp[data-tpl="textbook"] div.xp-ta { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(7.5mm - 0.3mm), #a7b6cb calc(7.5mm - 0.3mm), #a7b6cb 7.5mm); }
+.xp[data-tpl="textbook"] .xp-svg__frame { border-radius: 0; border-color: var(--tb-rule); }
+.xp[data-tpl="textbook"] .xp-svg figcaption { font-family: var(--tb-sans); letter-spacing: 0.12em; }
+.xp[data-tpl="textbook"] .xp-key__no { font-family: var(--tb-sans); }
 
 /* ── classroom ── */
 .xp[data-tpl="classroom"] { font-family: "Trebuchet MS", "Segoe UI", Verdana, sans-serif; font-size: 10.2pt; line-height: 1.6; }
@@ -885,11 +915,11 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 .xp[data-tpl="classroom"] .xp-blank { border-bottom: 0.5mm dotted var(--c); }
 
 @media print {
-  .xp[data-tpl="textbook"] .xp-top { border-top: 1.5mm solid var(--c) !important; border-bottom: 0.5mm solid var(--c) !important; background: none !important; color: #1d1b18 !important; }
-  .xp[data-tpl="textbook"] .xp-head__school, .xp[data-tpl="textbook"] .xp-head__subject, .xp[data-tpl="textbook"] .xp-banner__name, .xp[data-tpl="textbook"] .xp-n { color: var(--c) !important; }
-  .xp[data-tpl="textbook"] .xp-head__term { color: #1d1b18 !important; }
-  .xp[data-tpl="textbook"] .xp-head__subject { background: none !important; }
+  .xp[data-tpl="textbook"] .xp-tb-top, .xp[data-tpl="textbook"] .xp-top:not(.xp-tb-top) { border-bottom-color: var(--c) !important; background: none !important; color: #1d1b18 !important; }
+  .xp[data-tpl="textbook"] .xp-head__school, .xp[data-tpl="textbook"] .xp-tb-facts dt, .xp[data-tpl="textbook"] .xp-banner__marks, .xp[data-tpl="textbook"] .xp-n, .xp[data-tpl="textbook"] .xp-student, .xp[data-tpl="textbook"] .xp-opts b { color: var(--c) !important; }
+  .xp[data-tpl="textbook"] .xp-head__subject, .xp[data-tpl="textbook"] .xp-banner__name, .xp[data-tpl="textbook"] .xp-head__term { color: #1d1b18 !important; background: none !important; }
   .xp[data-tpl="textbook"] .xp-n { background: none !important; }
+  .xp[data-tpl="textbook"] .xp-tb-title::before { background: #e5741a !important; }
   .xp[data-tpl="textbook"] .xp-banner__tag { background: var(--c) !important; color: #fff !important; }
   .xp[data-tpl="classroom"] .xp-top { background: var(--c) !important; color: #fff !important; }
   .xp[data-tpl="classroom"] .xp-head__school, .xp[data-tpl="classroom"] .xp-head__term { color: #fff !important; }

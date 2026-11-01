@@ -173,6 +173,27 @@ function banner(type, qs, idx, attempt) {
 function header(h, total, mini = false) {
   const tl = [h.term, h.year].filter(Boolean).join(" · ");
   const cell = (k, v) => `<div class="xp-cell"><span>${k}</span><b>${esc(v) || "&nbsp;"}</b></div>`;
+  /* The TEXTBOOK head is a chapter-test page: the school and the facts of the exam above a double rule, the subject set as the
+     title, then Name / Date / Period. It keeps the classes the rest of the page looks for (logo, school, subject, student row). */
+  if (h.template === "textbook" && !mini) {
+    const fact = (k, v) => `<div><dt>${k}</dt><dd>${esc(v) || "&nbsp;"}</dd></div>`;
+    return `<header class="xp-head xp-head--tb" data-nomath>
+    <div class="pp-receipt xp-receipt"><div class="pp-receipt__paper xp-receipt__paper">
+      <div class="xp-top xp-tb-top">
+        ${h.logo
+          ? `<span class="xp-head__logo"><img src="${h.logo}" alt="" /></span>`
+          : `<span class="xp-head__logo xp-head__logo--none"><i>School<br>logo</i></span>`}
+        <div class="xp-head__words">
+          <p class="xp-head__school">${esc(h.school) || "School name"}</p>
+          <p class="xp-head__term">${esc(tl) || "Term · Year"} Examination</p>
+        </div>
+        <dl class="xp-tb-facts">${fact("Class", h.klass)}${fact("Date", h.date)}${fact("Time", h.time)}${fact("Marks", total ? String(total) : "")}</dl>
+      </div>
+      <div class="xp-tb-title"><div class="xp-head__subject">${esc(h.subject) || "Subject"}</div></div>
+      <div class="xp-student"><span>Name</span><i></i><span>Date</span><i class="xp-student__short"></i><span>Period</span><i class="xp-student__short"></i><span>Score</span><em></em></div>
+    </div></div>
+  </header>`;
+  }
   return `<header class="xp-head${mini ? " xp-head--mini" : ""}" data-nomath>
     <div class="pp-receipt xp-receipt"><div class="pp-receipt__paper xp-receipt__paper">
       <div class="xp-top">
