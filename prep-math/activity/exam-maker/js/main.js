@@ -886,9 +886,29 @@ function setLiveFaces() {
 $("xm-live").addEventListener("click", () => setLive(!live.on));
 
 $("xm-check").addEventListener("click", () => {
-  if (live.checked) live.reopen(); else live.check(state.questions);
+  if (live.checked) { live.reopen(); live.setAi({ on: false, status: "off", text: "" }); }
+  else { live.check(state.questions); markOnScreen(); }
   clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces(); syncClock();
 });
+
+/* The written answers (short answer and theory) of the maker's own run are marked by AI when "AI marking of written answers" is on in the
+   setup: sent in one call, the marks come back onto the paper, and the maker can still change any of them. */
+async function markOnScreen() {
+  if (!state.head.aiMark) return;
+  const answers = live.writtenAnswers(state.questions);
+  if (!Object.keys(answers).length) return;
+  live.setAi({ on: true, status: "working", text: "Marking with AI…" });
+  try {
+    const { api } = await import("/utils/components/workbook/account.js");
+    const r = await api("/api/workbooks/paper-mark-preview", { questions: state.questions.filter((q) => q.type === "sub" || q.type === "theory").map((q) => ({ id: q.id, type: q.type, text: q.text, marks: q.marks, answer: q.answer })), answers, subject: state.head.subject, klass: state.head.klass });
+    if (!live.checked) return;                         // reopened while it was marking
+    if (r.marks && r.marks.length) live.applyAiMarks(r.marks.map((m) => ({ ...m, by: "ai", ai: m.m })));
+    else live.setAi({ on: true, status: "done", text: "" });
+  } catch (e) {
+    if (live.checked) live.setAi({ on: true, status: "failed", text: String((e && e.message) || e).slice(0, 120) });
+  }
+  clearTimeout(drawTimer); draw(); paintScore();
+}
 $("xm-clear").addEventListener("click", () => { live.clear(); clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces(); clock.stop(); syncClock(); });
 
 /* however printing starts (the button, Ctrl+P), empty answer boxes print as ruled

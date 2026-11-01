@@ -662,6 +662,29 @@ module.exports = function () {
     }
   });
 
+  /* The paper's OWNER answering it on screen in the Exam Maker has no shared script to queue: the written answers are sent here and marked
+     straight away (one call, inside the same per-minute allowance the queue uses), and the marks come back to the page. */
+  router.post("/paper-mark-preview", authenticate, async (req, res) => {
+    try {
+      const v = await access.canUse(req, "prep-math-activities", "exam-maker");
+      if (!v.allowed) return res.status(v.reason === "premium-required" ? 402 : 403).json({ error: "AI marking needs a subscription." });
+      const b = req.body || {};
+      const given = b.answers && typeof b.answers === "object" ? b.answers : {};
+      const items = (Array.isArray(b.questions) ? b.questions : []).filter((q) => q && WRITTEN.includes(q.type)).slice(0, 12).map((q) => ({
+        id: String(q.id).slice(0, 60), text: clip(q.text, 1500), max: Math.max(1, Math.min(100, Math.round(Number(q.marks)) || 1)), model: clip(q.answer, 1500), answer: clip(given[q.id], 4000),
+      })).filter((it) => it.answer.trim());
+      if (!items.length) return res.json({ ok: true, marks: [], none: true });
+      if (!(await marker.takeToken())) return res.status(429).json({ error: "The AI is busy marking other scripts. Try again in a moment." });
+      let out;
+      try { out = await markScript({ items, name: "Owner", subject: clip(b.subject, 60), klass: clip(b.klass, 40) }); }
+      catch (e) { return res.status(e && e.retryable ? 429 : 502).json({ error: String((e && e.message) || "The AI could not mark this.").slice(0, 160) }); }
+      res.json({ ok: true, provider: out.provider, marks: out.marks });
+    } catch (err) {
+      console.error("[/api/workbooks/paper-mark-preview]", err.message);
+      res.status(500).json({ error: "Could not mark the answers." });
+    }
+  });
+
   /* The teacher pushes the line along: marks waiting scripts now, a few at a time, within the limit the AI providers allow.
      The queue has no background worker, so it only moves when someone asks; this is how the teacher asks. */
   router.post("/paper/:code/marking/run", authenticate, async (req, res) => {
