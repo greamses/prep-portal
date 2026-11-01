@@ -170,7 +170,6 @@ export function createWatch({ code, send, snap = async () => {}, name = () => ""
           <li>Your camera is looked at <b>on this device</b>. No video and no sound is ever sent.</li>
           <li>Your teacher gets a short list of notes, such as "face not in view for 14 seconds" or "left the exam page".</li>
           <li>When something needs a look (a second face, no face, or coming back after leaving the page) <b>a still picture is taken</b> and sent to your teacher only.</li>
-          <li>It only looks for a face, or more than one. It does not judge where your eyes go.</li>
         </ul>
         <p class="pp-cover__text"><b>Dress as you would for the exam hall</b>, in your uniform or neat, decent clothes, since a picture may be taken.</p>
         <p class="pp-cover__text">Sit where your face is lit and in view, alone in a quiet room, with nobody else in the picture.</p>
