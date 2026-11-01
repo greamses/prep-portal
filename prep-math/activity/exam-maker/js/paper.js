@@ -258,7 +258,9 @@ function omrGrid(numbered) {
 function examNoGrid(head) {
   const n = Math.max(4, Math.min(12, Math.round(Number(head.examDigits)) || 8));
   const col = (c) => `<div class="xp-exno__col" data-c="${c}"><u class="xp-exno__box"></u>${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => `<b data-d="${d}" data-nomath>${d}</b>`).join("")}</div>`;
-  return `<div class="xp-exno" data-n="${n}" data-nomath><p class="xp-exno__cap"><b>Exam number</b> Write each digit in its box, then shade the same digit in the column below it.</p><div class="xp-exno__grid">${Array.from({ length: n }, (_, c) => col(c)).join("")}</div></div>`;
+  const mine = /^\d+$/.test(String(head.myExamNo || "")) ? String(head.myExamNo) : "";
+  const film = `<span class="xp-watch" role="link" tabindex="0" data-film="exno" data-no="${mine}" data-n="${n}" aria-label="Watch PrepBot show you how to fill it in" data-tip="Watch PrepBot show you how to fill it in"><span class="xp-watch__bot" aria-hidden="true">${ICON_PREPBOT}</span><span class="xp-watch__play" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span></span>`;
+  return `<div class="xp-exno" data-n="${n}" data-nomath><p class="xp-exno__cap"><b>Exam number</b>${mine ? ` Yours is <strong class="xp-exno__mine">${mine}</strong>.` : ""} Write each digit in its box, then shade the same digit in the column below it. ${film}</p><div class="xp-exno__grid">${Array.from({ length: n }, (_, c) => col(c)).join("")}</div></div>`;
 }
 
 function omrSheet(numbered, extra = "", title = ["Answer sheet", "Multiple choice"], head = null) {

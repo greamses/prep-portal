@@ -165,7 +165,7 @@ export function createWatch({ code, send, snap = async () => {}, name = () => ""
       ensureCss();
       const { root: cover, paper } = makeCover({ label: "This exam has a camera check", tag: test ? "Test run" : "Camera check", colour: test ? 4 : 3 });
       paper.innerHTML = `<h2 class="pp-cover__title">${test ? "Camera check: a test run" : "This exam has a camera check"}</h2>
-        <p class="pp-cover__text">${test ? "This is what your students see and what runs on their device. While you test, nothing is recorded and nothing is sent to anyone." : "Your teacher has asked for one. Here is exactly what it does:"}</p>
+        ${test ? "" : `<p class="pp-cover__text">Your teacher has asked for one. Here is exactly what it does:</p>`}
         <ul class="pp-cover__list">
           <li>Your camera is looked at <b>on this device</b>. No video and no sound is ever sent.</li>
           <li>Your teacher gets a short list of notes, such as "face not in view for 14 seconds" or "left the exam page".</li>

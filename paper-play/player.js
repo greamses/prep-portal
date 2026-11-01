@@ -26,6 +26,7 @@ import { api, currentUser } from "/utils/components/workbook/account.js";
 import { openRoom, idFor } from "/utils/live/index.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { faceOf } from "/utils/components/workbook/icons.js";
+import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
 import { mountTools } from "/prep-math/activity/exam-maker/js/tools.js";
 import { mountAnnotator, annotatedView } from "/paper-play/annotate.js";
 
@@ -408,6 +409,47 @@ function typeset() {
   return queue;
 }
 
+/* ── every PrepBot tutorial for this paper, in one place ─────────────────────
+   A PrepBot key on the toolbar opens a little receipt listing the films (writing maths; filling in the exam number, when the paper has
+   one) and the printable maths guide. The same films are also on the cards where they are needed (the booklet, the exam number grid). */
+function mountTutorials() {
+  const bar = document.querySelector(".wb-toolbar");
+  if (!bar || bar.querySelector(".xm-tuts")) return;
+  const key = document.createElement("button");
+  key.type = "button";
+  key.className = "pp-btn pp-btn--ghost xm-tuts";
+  faceOf(key, `<span class="xm-tuts__bot">${ICON_PREPBOT}</span>`, "PrepBot's tutorials");
+  bar.insertBefore(key, bar.querySelector("#xm-check"));
+  let pop = null;
+  const shut = () => { pop && pop.remove(); pop = null; document.removeEventListener("pointerdown", away, true); };
+  const away = (e) => { if (pop && !pop.contains(e.target) && !key.contains(e.target)) shut(); };
+  key.addEventListener("click", () => {
+    if (pop) return shut();
+    const n = Math.max(4, Math.min(12, Math.round(Number(head.examDigits)) || 8));
+    pop = document.createElement("div");
+    pop.className = "pp-receipt xm-tutpop";
+    pop.setAttribute("role", "dialog");
+    pop.setAttribute("aria-label", "PrepBot's tutorials");
+    pop.innerHTML = `<div class="pp-receipt__paper"><b class="xm-tutpop__h">PrepBot's tutorials</b>
+      <button type="button" class="xm-tutpop__row" data-go="maths"><span class="xm-tutpop__ico">${ICON_PREPBOT}</span><span><b>Writing maths on screen</b><small>Fractions, mixed numbers, powers, bases and division, typed into an answer</small></span></button>
+      ${head.examNo ? `<button type="button" class="xm-tutpop__row" data-go="exno"><span class="xm-tutpop__ico">${ICON_PREPBOT}</span><span><b>Filling in your exam number</b><small>Copying your number into the grid, one bubble in each column</small></span></button>` : ""}
+      <button type="button" class="xm-tutpop__row" data-go="guide"><span class="xm-tutpop__ico">${UI.doc(18)}</span><span><b>The maths typing guide</b><small>Every fraction, power, root and sign. Read, print or keep the PDF</small></span></button></div>`;
+    document.body.appendChild(pop);
+    const r = key.getBoundingClientRect();
+    pop.style.top = `${r.bottom + 8}px`;
+    pop.style.left = `${Math.max(8, Math.min(r.right - pop.offsetWidth, innerWidth - pop.offsetWidth - 8))}px`;
+    pop.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-go]");
+      if (!b) return;
+      shut();
+      if (b.dataset.go === "guide") window.open("/prep-math/activity/maths-typing/", "_blank", "noopener");
+      else if (b.dataset.go === "exno") import("/prep-math/activity/exam-maker/js/exno-tutor.js").then((m) => m.openExamNoFilm({ no: head.myExamNo || "", n })).catch(() => {});
+      else import("/prep-math/activity/exam-maker/js/eq-tutor.js").then((m) => m.openEquationFilm()).catch(() => {});
+    });
+    document.addEventListener("pointerdown", away, true);
+  });
+}
+
 function draw() {
   const mj = window.MathJax;
   try { mj && mj.typesetClear && mj.typesetClear([sheet]); } catch { /* nothing typeset yet */ }
@@ -423,7 +465,7 @@ async function open() {
   if (!code) { say("That link isn't right.", true); return; }
   try {
     const r = await api(`/api/workbooks/paper/${code}`);
-    head = { ...BLANK_HEAD, ...r.head, key: false };
+    head = { ...BLANK_HEAD, ...r.head, key: false, myExamNo: r.examNoMine || "" };
     base = (r.questions || []).map(clean);
     questions = base;
     try { const seed = Number(localStorage.getItem(seedKey())); if (seed) questions = shuffled(base, seed); } catch { /* shown as written */ }
@@ -518,7 +560,8 @@ async function open() {
     $("xm-check").hidden = false; $("xm-clear").hidden = false;
     /* the workbook tool rail, for working out beside the paper */
     mountTools({ sheet, viewport: document.querySelector(".xm-viewport"), toolbar: document.querySelector(".wb-toolbar"), families: head.railTools }).on();
-    say(`${questions.length} questions · ${paperMarks(questions, head.attempt)} marks${triesNote()}.`);
+    say(`${questions.length} questions · ${paperMarks(questions, head.attempt)} marks${triesNote()}.${head.examNo && head.myExamNo ? ` Your exam number is ${head.myExamNo}: shade it on the front of your answer sheet.` : ""}`);
+    mountTutorials();
     draw();
     syncClock();
     joinLive();
@@ -575,7 +618,8 @@ $("xm-check").addEventListener("click", () => {
   else if (live.checked && !canTryAgain()) say(tries === 1 ? "That was your one try. Your score has gone to your teacher." : `You have used all ${tries} tries. Your score has gone to your teacher.`);
   else if (live.checked) say(`Scored${triesNote()}. Press the arrow to answer again.`);
   /* a paper that asks for an exam number: say so if it was not shaded, so the teacher can tell whose paper it is */
-  if (live.checked && head.examNo && !isOwner && !live.examNo) say("Your exam number is not complete. Shade every digit on the OMR sheet so your teacher knows whose paper this is, then check again.", true);
+  if (live.checked && head.examNo && !isOwner && !live.examNo) say(`Your exam number is not complete. ${head.myExamNo ? `Yours is ${head.myExamNo}. ` : ""}Shade every digit on the OMR sheet so your teacher knows whose paper this is, then check again.`, true);
+  else if (live.checked && head.examNo && !isOwner && head.myExamNo && live.examNo && live.examNo !== head.myExamNo) say(`The exam number you shaded, ${live.examNo}, is not yours. Your exam number is ${head.myExamNo}: your teacher has it, so your paper is still yours, but shade it correctly next time.`, true);
   if (live.checked && live.held) say("Your paper is in. Your teacher will go through it and release your results; you will be told.");
   /* written answers go to the AI marking line (after the messages above, so its own message is the one left showing) */
   if (live.checked) queueMarking(); else stopMarking();

@@ -78,7 +78,9 @@ export function createLive(sheet, { onChange = () => {}, store = KEY, getAttempt
   /* PrepBot's film on writing maths: from the booklet's card, or from a corrected line on the marked script (with that line) */
   if (!window.__xpEqFilm) {
     window.__xpEqFilm = true;
-    const go = (w) => import("./eq-tutor.js").then((m) => m.openEquationFilm(w.dataset.fix ? { line: w.dataset.line || "", fix: w.dataset.fix } : {})).catch(() => {});
+    const go = (w) => (w.dataset.film === "exno"
+      ? import("./exno-tutor.js").then((m) => m.openExamNoFilm({ no: w.dataset.no || "", n: +w.dataset.n || 8 }))
+      : import("./eq-tutor.js").then((m) => m.openEquationFilm(w.dataset.fix ? { line: w.dataset.line || "", fix: w.dataset.fix } : {}))).catch(() => {});
     document.addEventListener("click", (e) => { const w = e.target.closest && e.target.closest(".xp-watch"); if (w) { e.preventDefault(); go(w); } });
     document.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("xp-watch")) { e.preventDefault(); go(e.target); } });
   }

@@ -481,6 +481,32 @@ module.exports = function () {
     }
   });
 
+  /* EXAM NUMBERS. A paper that asks for one (head.examNo) gives each student their own the first time they open the link: random,
+     head.examDigits long, never starting with 0, unique on that paper, and the same on every later visit. Kept at
+     sharedPapers/{code}/examNos/{uid} = { no }, with sharedPapers/{code}/examNoTaken/{no} = { uid } so two students can never share one. */
+  async function issueExamNo(pRef, head, uid) {
+    const mine = pRef.collection("examNos").doc(uid);
+    const have = await mine.get();
+    if (have.exists && have.data().no) return String(have.data().no);
+    const n = Math.max(4, Math.min(12, Math.round(Number(head && head.examDigits)) || 8));
+    const rnd = require("crypto").randomInt;
+    for (let tries = 0; tries < 8; tries++) {
+      let no = String(1 + rnd(9));
+      while (no.length < n) no += String(rnd(10));
+      const got = await db().runTransaction(async (tx) => {
+        const m = await tx.get(mine);
+        if (m.exists && m.data().no) return String(m.data().no);
+        const taken = pRef.collection("examNoTaken").doc(no);
+        if ((await tx.get(taken)).exists) return null;
+        tx.set(taken, { uid });
+        tx.set(mine, { no, at: stamp() });
+        return no;
+      });
+      if (got) return got;
+    }
+    return "";
+  }
+
   router.get("/paper/:code", authenticate, async (req, res) => {
     try {
       const code = String(req.params.code || "").toUpperCase();
@@ -490,7 +516,10 @@ module.exports = function () {
       const a = snap.data();
       /* how many tries this person has used already, so a returning student is not offered another */
       const mine = await snap.ref.collection("results").doc(req.user.uid).get();
-      res.json({ ok: true, code, title: a.title, head: a.head, questions: a.questions, ownerName: a.ownerName, owner: a.ownerUid === req.user.uid,
+      const owner = a.ownerUid === req.user.uid;
+      let examNoMine = "";
+      if (!owner && a.head && a.head.examNo) { try { examNoMine = await issueExamNo(snap.ref, a.head, req.user.uid); } catch (e) { console.error("[examNo]", e.message); } }
+      res.json({ ok: true, code, title: a.title, head: a.head, questions: a.questions, ownerName: a.ownerName, owner, examNoMine,
         tries: a.head && a.head.tries != null ? a.head.tries : 1, used: mine.exists ? mine.data().attempts || 0 : 0 });
     } catch (err) {
       console.error("[/api/workbooks/paper]", err.message);
@@ -598,10 +627,11 @@ module.exports = function () {
     return { p, pRef: p.ref };
   };
   const uidOk = (u) => /^[A-Za-z0-9_-]{1,128}$/.test(String(u || ""));
-  /* the exam number each student shaded, from the score they sent: uid -> digits (the teacher's lists show it beside the name) */
+  /* each student's exam number: the one the paper issued them, else the one they shaded (older papers): uid -> digits (the teacher's lists show it beside the name) */
   const examNumbers = async (pRef) => {
     const m = new Map();
     try { (await pRef.collection("results").limit(500).get()).docs.forEach((d) => { if (d.data().examNo) m.set(d.id, String(d.data().examNo)); }); } catch (_) { /* a list without numbers is still a list */ }
+    try { (await pRef.collection("examNos").limit(500).get()).docs.forEach((d) => { if (d.data().no) m.set(d.id, String(d.data().no)); }); } catch (_) { /* as shaded */ }
     return m;
   };
 
@@ -1010,7 +1040,11 @@ module.exports = function () {
       const rRef = pRef.collection("results").doc(req.user.uid);
       const p = await profile(req.user.uid);
       const typed = clip(String(b.name || "").replace(/\s+/g, " ").trim(), 60);
-      const examNo = String(b.examNo || "").replace(/[^0-9]/g, "").slice(0, 12);
+      const shaded = String(b.examNo || "").replace(/[^0-9]/g, "").slice(0, 12);
+      /* the number the paper issued is the student's number; what they shaded is kept beside it when it differs */
+      let issued = "";
+      try { const e = await pRef.collection("examNos").doc(req.user.uid).get(); if (e.exists) issued = String(e.data().no || ""); } catch (_) { /* as shaded */ }
+      const examNo = issued || shaded;
       const pct = Math.round((100 * won) / outOf);
       /* the answers themselves, kept only for a paper whose results are held for the teacher (the student's page is rebuilt from them when the results are released) */
       const keepAnswers = {};
@@ -1037,7 +1071,7 @@ module.exports = function () {
         t.set(rRef, {
           ...heldFields,
           uid: req.user.uid, name: typed || (prev && prev.name) || nameOf(req, p), email: req.user.email || null,
-          lastWon: won, lastOutOf: outOf, lastPct: pct, grade: gradeOf(pct), bestPct: best, attempts, ...(examNo ? { examNo } : {}),
+          lastWon: won, lastOutOf: outOf, lastPct: pct, grade: gradeOf(pct), bestPct: best, attempts, ...(examNo ? { examNo } : {}), ...(issued && shaded && shaded !== issued ? { examNoShaded: shaded } : {}),
           firstAt: prev ? prev.firstAt : stamp(), lastAt: stamp(),
         }, { merge: true });
         if (!prev) t.set(pRef, { students: admin.firestore.FieldValue.increment(1) }, { merge: true });

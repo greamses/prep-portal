@@ -1143,3 +1143,8 @@ div.xp-ta.xp-rich { line-height: 7.5mm; }
 /* the booklet card's link to the full guide (prep-math/activity/maths-typing) */
 .xp-mathtip__more { display: block; margin-top: 2mm; font: 600 8.5pt "JetBrains Mono", monospace; color: var(--ci, #2d5f9a); text-decoration: underline; text-underline-offset: 0.6mm; }
 .xp-mathtip__more:hover { text-decoration-thickness: 0.5mm; }
+
+/* the student's own exam number in the grid's caption, and PrepBot's film key beside it */
+.xp-exno__mine { font-weight: 800; letter-spacing: 0.06em; color: var(--ci, #2d5f9a); }
+.xp-exno__cap .xp-watch { vertical-align: middle; margin-left: 1.5mm; }
+@media print { .xp-exno__cap .xp-watch { display: none !important; } }
