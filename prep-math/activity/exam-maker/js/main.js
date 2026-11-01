@@ -85,7 +85,8 @@ const live = createLive(sheet, {
   /* the OMR toggle on a paper that has no sheet makes one */
   ensureOmr: () => { state.head.omr = true; $("xm-omr").checked = true; clearTimeout(drawTimer); draw(); save(); },
   /* every question answered and the writing has stopped: score it, stamp it, suggest printing */
-  onComplete: () => { if (!live.checked) $("xm-check").click(); },
+  /* every question answered: nothing is marked until Check is pressed (or the time runs out); the score line says it is ready */
+  onComplete: () => { if (!live.checked) { const el = $("xm-score"); if (el) el.textContent = "Every question answered · press the tick to mark it"; } },
   onPrint: () => $("xm-print").click(),
 });
 

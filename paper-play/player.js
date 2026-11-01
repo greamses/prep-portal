@@ -336,7 +336,9 @@ const live = createLive(sheet, { onChange: () => paintScore(), store: `xm-live-p
   /* the OMR sheet is the learner's to open, even when the paper was shared without one */
   ensureOmr: () => { head.omr = true; draw(); },
   /* every question answered and the writing has stopped: score it, stamp it, suggest printing */
-  onComplete: () => { if (!live.checked) $("xm-check").click(); },
+  /* every question has an answer: the paper is NOT handed in for the student (it only goes in when they press Check, or when the time
+     is up); they are told it is ready, so they can look back over it first */
+  onComplete: () => { if (!live.checked) say("Every question has an answer. Look back over your work, then press the tick to hand it in."); },
   onPrint: () => window.print(),
   /* a name typed after the score went in is sent along, without counting as a new attempt */
   onName: () => { if (live.checked) sendResult(); tell(); } });
