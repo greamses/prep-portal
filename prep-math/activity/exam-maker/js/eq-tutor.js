@@ -35,6 +35,7 @@ const CSS = `
 .eqt-key { min-width: 54px; height: 46px; padding: 0 12px; display: inline-grid; place-items: center; background: #fff8d6; border-radius: 0; font: 800 15px/1 "JetBrains Mono", monospace; box-shadow: 0 5px 0 #d9cf9e, 0 8px 16px rgba(29, 27, 24, 0.18); transition: transform 0.12s, box-shadow 0.12s; }
 .eqt-key.is-down { transform: translateY(4px); box-shadow: 0 1px 0 #d9cf9e, 0 3px 6px rgba(29, 27, 24, 0.18); background: #ffe98a; }
 .eqt-tap { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; border: 3px solid #3b4cca; opacity: 0; pointer-events: none; }
+.eqt-ex .eqt-row { font-size: 17px; }
 .eqt-note { margin-top: 12px; font: 600 15px/1.3 "Shantell Sans", "Segoe Print", cursive; color: #1c7a3a; min-height: 20px; }
 `;
 const addCss = () => { if (!document.getElementById("eqt-css")) document.head.appendChild(Object.assign(document.createElement("style"), { id: "eqt-css", textContent: CSS })); };
@@ -60,6 +61,61 @@ export async function openEquationFilm({ line = "", fix = "" } = {}) {
     ks.forEach((k) => k.classList.remove("is-down"));
   };
 
+
+  /* THE FULL LESSON (from the booklet's card): after the first sum, worked examples of each kind of maths a paper asks for. Each one is
+     typed on a fresh line the way it is said, shown set underneath while it is typed, and put in with Enter. The card keeps the last
+     three lines so it never overflows. */
+  const example = (label, typedText, say) => ({
+    say,
+    async show(stage, opts) {
+      const { gsap, instant } = opts;
+      const ex = stage.querySelector('[data-e="ex"]'), pv = stage.querySelector('[data-e="preview"]');
+      const row = document.createElement("div");
+      row.className = "eqt-row";
+      row.innerHTML = `<span class="eqt-words">${esc(label)}</span><span class="eqt-slot"><span class="eqt-box"></span></span>`;
+      ex.appendChild(row);
+      while (ex.children.length > 3) ex.firstElementChild.remove();
+      const box = row.querySelector(".eqt-box");
+      row.after(pv);
+      const paint = (txt) => { box.textContent = txt; pv.hidden = !txt; try { pv.replaceChildren(set(toTeX(txt))); } catch { pv.textContent = txt; } };
+      if (!instant && gsap) {
+        gsap.from(row, { opacity: 0, y: 8, duration: 0.4, ease: "expo.out" });
+        await new Promise((r) => setTimeout(r, 900));
+        for (let i = 1; i <= typedText.length; i++) { paint(typedText.slice(0, i)); await new Promise((r) => setTimeout(r, 170)); }
+        await new Promise((r) => setTimeout(r, 1400));
+        await press(stage, ["enter"], opts);
+      }
+      row.querySelector(".eqt-slot").replaceChildren(set(toTeX(typedText)));
+      pv.hidden = true;
+    },
+  });
+  const LESSON = [
+    example("Fraction: ", "(x + 1)/2",
+      "Now a trap with fractions. Look at the new line. I want x plus one, ALL over two. If I type x plus one slash two, the slash takes only what came since the last plus sign, so I would get x plus a half. That is a different answer. The cure is brackets. Put brackets round the whole top, then the slash, then the bottom. Watch: the brackets tell the box where the top starts and stops, and they disappear once it is set, because a fraction line does the same job."),
+    example("Mixed number: ", "2 1/3 + 1 1/2",
+      "Mixed numbers next, the ones with a whole number and a fraction together, like two and a third. Here is how you say it: two, then a space, then one slash three. The space is the important part. Look at the preview as I type. Without the space, two followed by one slash three would read as twenty-one thirds, which is nowhere near two and a third. So whole number, space, fraction. Then plus one and a half, the same way."),
+        example("Power: ", "x^2 + 3x",
+      "On to powers. A power is written small and high, like the two in x squared. To type it, use the little hat, the key above the six, and then the power. So x, hat, two. That hat means lift what comes next up into the power. Look at the preview: the two has jumped up. Then I carry on with plus three x on the ordinary line, because the power only lifts the ONE thing straight after the hat."),
+    example("Power: ", "2^(n + 1) = 10^(-3)",
+      "So what if the power is more than one character, like n plus one, or minus three? This is where everybody slips. If you type two, hat, n plus one, only the n goes up, and the plus one stays on the line. So put the whole power in brackets: two, hat, open bracket, n plus one, close bracket. Same for a negative power: ten, hat, bracket, minus three, bracket. The brackets vanish once it is set; they only told the box how much to lift."),
+    example("Base: ", "1011_2 = 11_10",
+      "Number bases next, which papers love to ask about. A base is written small and LOW, after the number, like the little two in one zero one one base two. For low, use the underscore, the line beside the zero key. So one zero one one, underscore, two. Then equals eleven, underscore, ten, which means eleven in base ten, our everyday counting. If the base has two digits, like ten, it still drops down whole, because a number counts as one piece."),
+    example("Base: ", "45_b = 37_10",
+      "And when the base is unknown, the question uses a letter, like b. You write it exactly the same way: forty-five, underscore, b. That says forty-five counted in some base b, and the rest of your working finds b. Here is a tip for your working lines: write the base on EVERY line where it matters. A marker cannot tell forty-five in base b from forty-five in base ten unless the little letter is there, and that small slip costs marks."),
+        example("Division: ", "12 div 4 = 3",
+      "Now division. Sometimes you want the division sign itself, the line with a dot above and a dot below, not a fraction. For that, type the word d i v between the numbers. So twelve, div, four, equals three. Watch the preview turn the word into the sign. Keep the slash for fractions and div for the division sign, and your working will look exactly like the working in your textbook, which is what the marker is used to reading."),
+    example("Dividing fractions: ", "3/4 div 1/2 = 3/2",
+      "Last example, dividing one fraction by another. Three quarters divided by one half. Type three slash four, then div, then one slash two. The div ends the first fraction, the same way a plus would, so each fraction stays in its own place. Equals three slash two, which is one and a half. If you ever see the preview put a fraction somewhere you did not mean, press backspace and add brackets: the preview is there so you catch it before Enter."),
+    {
+      say: "Let us put it all together. Alt and equals opens the box. Slash makes a fraction, with brackets round a top or bottom that has more than one piece. A space separates the whole number from the fraction in a mixed number. The hat lifts a power, and the underscore drops a base, with brackets when either is longer than one character. Div gives the division sign. Check the picture underneath, press Enter, and double-click a formula if you need to change it.",
+      show(stage, { gsap, instant }) {
+        const note = stage.querySelector('[data-e="note"]');
+        note.textContent = "/  fraction   ·   space  mixed number   ·   ^  power   ·   _  base   ·   div  ÷";
+        if (!instant && gsap) gsap.from(note, { opacity: 0, y: 6, duration: 0.5, ease: "expo.out" });
+      },
+    },
+  ];
+
   await openTv({
     title: own ? "Writing your correct line" : "Writing maths in an answer",
     build(stage) {
@@ -67,6 +123,7 @@ export async function openEquationFilm({ line = "", fix = "" } = {}) {
         <div class="eqt-head">Your answer page</div>
         ${own ? `<div class="eqt-row eqt-row--wrong" data-e="wrong" style="opacity:0"><s>${esc(line)}</s><span class="eqt-x" aria-label="crossed out"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4.3 4.5C8 7.9 14 14.3 19.7 19.8c.5.5-.1 1-.6.6C13.2 15.7 8.3 10.7 3.9 5.7c-.4-.5 0-1.5.4-1.2Z"/><path fill="currentColor" d="M19.5 4.4c-4.2 4.2-9.7 9.8-13.3 15.3-.3.5-.8.2-.5-.3C8.6 14 13.6 8.3 18.9 3.9c.5-.3 1 .2.6.5Z"/></svg></span></div>` : ""}
         <div class="eqt-row" data-e="line"><span class="eqt-words">${words}</span><span class="eqt-slot" data-e="slot"></span><span class="eqt-caret" data-e="caret"></span></div>
+        <div class="eqt-ex" data-e="ex"></div>
         <div class="eqt-preview" data-e="preview" hidden></div>
         <div class="eqt-note" data-e="note"></div>
         <div class="eqt-keys"><span class="eqt-key" data-k="alt">Alt</span><span class="eqt-key" data-k="eq">=</span><span class="eqt-key" data-k="enter">Enter</span></div>
@@ -132,6 +189,6 @@ export async function openEquationFilm({ line = "", fix = "" } = {}) {
           slot.replaceChildren(Object.assign(document.createElement("span"), { className: "eqt-box", textContent: typed }));
         },
       },
-    ],
+    ].concat(own ? [] : LESSON),
   });
 }
