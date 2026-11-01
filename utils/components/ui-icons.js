@@ -320,6 +320,18 @@ Object.assign(UI, {
     tri("M2.4 4.4a1.4 1.4 0 0 1 1.4-1.4H9a3 3 0 0 1 3 3V21a2.4 2.4 0 0 0-2.4-2.4H3.8a1.4 1.4 0 0 1-1.4-1.4z", PAPER) +
       tri("M21.6 4.4A1.4 1.4 0 0 0 20.2 3H15a3 3 0 0 0-3 3V21a2.4 2.4 0 0 1 2.4-2.4h5.8a1.4 1.4 0 0 0 1.4-1.4z", GOLD)
   ),
+  /* the question bank: an archive box (open it), and the same box with something going in (save to it) */
+  archive: svg(r(4, 9.4, 16, 11.6, PAPER, 1.6) + r(2.4, 4, 19.2, 5.8, GOLD, 1.5) + r(9, 12.6, 6, 2.6, "#fff", 1.3)),
+  archiveIn: svg(
+    r(3.4, 12.4, 17.2, 9, PAPER, 1.6) + r(2.4, 10.4, 19.2, 3.4, GOLD, 1.4) +
+      r(10.8, 1.6, 2.4, 6.4, LOUD, 1.2) + tri("M7.4 6.6h9.2L12 11.6z", LOUD) + r(9, 15.8, 6, 2.4, "#fff", 1.2)
+  ),
+  /* save, as a NEW one: the disk with a green plus badge */
+  savePlus: svg(
+    tri("M3.4 5.4a2 2 0 0 1 2-2h11l4.2 4.2v11a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z", PAPER) +
+      r(7, 3.4, 8.4, 5.6, "#fff", 0.8) + r(12.4, 4.4, 2, 3.6, PAPER, 0.5) + r(6.6, 13, 8, 7.6, GOLD, 1) +
+      dot(18, 18, 5.2, LEAF) + r(17, 15, 2, 6, "#fff", 1) + r(15, 17, 6, 2, "#fff", 1)
+  ),
   userPlus: svg(
     dot(9, 7.6, 3.8, PAPER) + tri("M2.4 20.6c0-4.2 3-6.8 6.6-6.8s6.6 2.6 6.6 6.8z", PAPER) +
       r(17.9, 7.6, 2.4, 9, LEAF, 1.2) + r(14.6, 10.9, 9, 2.4, LEAF, 1.2)
