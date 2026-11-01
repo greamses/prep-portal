@@ -65,6 +65,19 @@ addEventListener("pagehide", flush);
 /* ── the paper ─────────────────────────────────────────────────────────── */
 
 const sheet = $("xm-sheet");
+/* A question's number on the paper takes you to its editing receipt in the rail (not while the paper is being answered) */
+sheet.addEventListener("click", (e) => {
+  if (sheet.classList.contains("xp-live")) return;
+  const n = e.target.closest && e.target.closest(".xp-n");
+  const q = n && n.closest("[data-qid]");
+  if (!q) return;
+  const card = document.querySelector(`.xm-card[data-id="${CSS.escape(q.dataset.qid)}"]`);
+  if (!card) return;
+  const rec = card.closest(".xm-qreceipt") || card;
+  rec.scrollIntoView({ behavior: "smooth", block: "center" });
+  rec.classList.remove("is-flash"); void rec.offsetWidth; rec.classList.add("is-flash");
+  setTimeout(() => { const f = card.querySelector('textarea[data-f="text"]') || card.querySelector("textarea, input"); if (f) f.focus({ preventScroll: true }); }, 500);
+});
 let drawTimer = 0;
 const live = createLive(sheet, {
   onChange: () => paintScore(),

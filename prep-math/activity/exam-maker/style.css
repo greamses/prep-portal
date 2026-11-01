@@ -1039,3 +1039,10 @@ div.xp-ta .pp-note__eqbox { line-height: 1.2; }
 .xp-watch__play svg { width: 2.6mm; height: 2.6mm; margin-left: 0.3mm; }
 .xp-watch:hover .xp-watch__play, .xp-watch:focus-visible .xp-watch__play { transform: scale(1.15); }
 .xp-watch:focus-visible { outline: 0.4mm solid var(--ci); outline-offset: 0.6mm; }
+
+/* a question number on the paper (in the setup, not while answering) opens its editing receipt */
+.xm-sheet:not(.xp-live) .xp-n { cursor: pointer; transition: transform 0.15s ease; }
+.xm-sheet:not(.xp-live) .xp-n:hover { transform: scale(1.12); }
+.xm-qreceipt.is-flash { animation: xm-flash 1.4s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes xm-flash { 0% { transform: translateX(0); filter: drop-shadow(0 0 0 rgba(59, 76, 202, 0)); } 15% { transform: translateX(-6px); filter: drop-shadow(0 6px 18px rgba(59, 76, 202, 0.45)); } 100% { transform: none; filter: drop-shadow(0 0 0 rgba(59, 76, 202, 0)); } }
+@media (prefers-reduced-motion: reduce) { .xm-qreceipt.is-flash { animation: none; outline: 2px solid #3b4cca; outline-offset: 3px; } }
