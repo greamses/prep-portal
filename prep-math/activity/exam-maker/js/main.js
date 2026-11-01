@@ -827,12 +827,13 @@ async function fromCbt() {
    bubbles shaded by clicking, the blanks typed on. "Share link" keeps a copy of
    the paper on the server and hands back /paper/<code>, which anyone with an
    account can open and sit for mock preparation. */
+let aiNote = "";        // what the AI marking is doing or why it stopped, shown beside the score
 function paintScore() {
   const el = $("xm-score");
   if (!live.on) { el.textContent = ""; return; }
   const s = live.score(state.questions);
   if (live.checked) {
-    el.textContent = `${s.won} of ${s.outOf} marks · grade ${live.gradeFor(s.pct).g}` + (s.pending ? ` · mark your ${s.pending} written answer${s.pending === 1 ? "" : "s"}` : "");
+    el.textContent = `${s.won} of ${s.outOf} marks · grade ${live.gradeFor(s.pct).g}` + (s.pending ? ` · mark your ${s.pending} written answer${s.pending === 1 ? "" : "s"}` : "") + (aiNote ? ` · ${aiNote}` : "");
   } else {
     el.textContent = `${s.answered} of ${s.total} answered`;
   }
@@ -886,7 +887,7 @@ function setLiveFaces() {
 $("xm-live").addEventListener("click", () => setLive(!live.on));
 
 $("xm-check").addEventListener("click", () => {
-  if (live.checked) { live.reopen(); live.setAi({ on: false, status: "off", text: "" }); }
+  if (live.checked) { live.reopen(); live.setAi({ on: false, status: "off", text: "" }); aiNote = ""; }
   else { live.check(state.questions); markOnScreen(); }
   clearTimeout(drawTimer); draw(); paintScore(); setLiveFaces(); syncClock();
 });
@@ -898,14 +899,15 @@ async function markOnScreen() {
   const answers = live.writtenAnswers(state.questions);
   if (!Object.keys(answers).length) return;
   live.setAi({ on: true, status: "working", text: "Marking with AI…" });
+  aiNote = "AI is marking the written answers…"; paintScore();
   try {
     const { api } = await import("/utils/components/workbook/account.js");
     const r = await api("/api/workbooks/paper-mark-preview", { questions: state.questions.filter((q) => q.type === "sub" || q.type === "theory").map((q) => ({ id: q.id, type: q.type, text: q.text, marks: q.marks, answer: q.answer })), answers, subject: state.head.subject, klass: state.head.klass });
     if (!live.checked) return;                         // reopened while it was marking
-    if (r.marks && r.marks.length) live.applyAiMarks(r.marks.map((m) => ({ ...m, by: "ai", ai: m.m })));
-    else live.setAi({ on: true, status: "done", text: "" });
+    if (r.marks && r.marks.length) { live.applyAiMarks(r.marks.map((m) => ({ ...m, by: "ai", ai: m.m }))); aiNote = "marked by AI"; }
+    else { live.setAi({ on: true, status: "done", text: "" }); aiNote = ""; }
   } catch (e) {
-    if (live.checked) live.setAi({ on: true, status: "failed", text: String((e && e.message) || e).slice(0, 120) });
+    if (live.checked) { live.setAi({ on: true, status: "failed", text: "" }); aiNote = `the AI could not mark: ${String((e && e.message) || e).slice(0, 140)}. Press the arrow, then Check again to retry, or mark them yourself`; }
   }
   clearTimeout(drawTimer); draw(); paintScore();
 }

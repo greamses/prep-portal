@@ -59,9 +59,11 @@ function parseMarks(text, items) {
   const list = Array.isArray(data && data.marks) ? data.marks : null;
   if (!list) return null;
   const byId = new Map(list.map((x) => [String(x && x.id), x]));
+  /* a model that answers with 1, 2, 3 (or a shortened id) instead of the id it was given is read by ORDER, when it gave one entry per question */
+  const useOrder = list.length === items.length && !items.every((it) => byId.has(it.id));
   const out = [];
-  for (const it of items) {
-    const x = byId.get(it.id);
+  for (const [k, it] of items.entries()) {
+    const x = useOrder ? list[k] : byId.get(it.id);
     if (!x) return null;                               // a question left out: the reply is not usable
     const m = Math.round(Number(x.m));
     if (!Number.isFinite(m)) return null;
@@ -114,19 +116,21 @@ async function markScript(job, { providers } = {}) {
   ].filter(Boolean);
   if (!chain.length) throw new Error("No AI provider is set up.");
   const user = buildPrompt(job);
-  let busy = null, bad = null;
+  let busy = null;
+  const why = [];
   for (const [name, call] of chain) {
     try {
       const text = await call(SYSTEM, user);
       const marks = parseMarks(text, job.items);
       if (marks) return { marks, provider: name };
-      bad = new Error(`${name} gave a reply that could not be read as marks`);
+      why.push(`${name}: its reply could not be read as marks`);
     } catch (e) {
-      if (e && e.retryable) busy = e; else bad = e;
+      if (e && e.retryable) busy = e;
+      why.push(`${name}: ${String((e && e.message) || e).slice(0, 80)}`);
     }
   }
   if (busy) throw busy;           // at least one was only busy: wait and try again
-  throw bad || new Error("The AI gave no usable reply.");
+  throw new Error(`The AI could not mark this (${why.join("; ")}).`);
 }
 
 module.exports = { markScript, buildPrompt, parseMarks, Busy, SYSTEM };
