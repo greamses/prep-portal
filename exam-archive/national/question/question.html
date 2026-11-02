@@ -191,7 +191,6 @@
       /* the results, as a PDF, a Word file or a Google Doc, beside Print */
       import { mountDownload } from "/utils/components/doc-export.js";
       mountDownload(document.querySelector('[onclick="Quiz.print()"]'), {
-        label: "Download",
         root: () => document.getElementById("results-screen"),
         name: () => `Prep Portal results ${(document.getElementById("res-score") || {}).textContent || ""}`.trim(),
         before: async () => { const el = document.getElementById("review-list"); try { if (window.MathJax && MathJax.typesetPromise) await MathJax.typesetPromise([el]); } catch (_) { /* plain */ } },

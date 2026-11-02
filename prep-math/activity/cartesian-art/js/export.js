@@ -264,7 +264,6 @@ export function initExport() {
   $("#export-download")?.addEventListener("click", () => downloadPNG(readOpts()));
   $("#export-print")?.addEventListener("click", () => printArt(readOpts()));
   import("/utils/components/doc-export.js").then(({ mountDownload }) => mountDownload($("#export-print"), {
-    label: "Download",
     image: () => composeImage(readOpts()),
     name: () => state.puzzle?.title || "Cartesian Art",
   })).catch(() => {});

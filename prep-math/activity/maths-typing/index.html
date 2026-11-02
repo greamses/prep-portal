@@ -277,7 +277,6 @@
       addEventListener("beforeprint", pageBox);
       document.getElementById("mt-print").addEventListener("click", () => print());
       import("/utils/components/doc-export.js").then(({ mountDownload }) => mountDownload(document.getElementById("mt-print"), {
-        label: "Download",
         pages: () => [...document.querySelectorAll(".mt-page")],
         name: "Writing maths on screen",
         pdfUrl: "./writing-maths-on-screen.pdf",

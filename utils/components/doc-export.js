@@ -644,7 +644,7 @@ function save(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
-/** Make the file: "pdf" | "docx" | "docx-edit" | "gdocs". Used by the menu, and directly by any page that wants it. */
+/** Make the file: "pdf" | "docx" | "gdocs". Used by the menu, and directly by any page that wants it. */
 export async function exportDoc(kind, opts, step = () => {}) {
   const name = safeName(typeof opts.name === "function" ? opts.name() : opts.name);
   if (kind === "pdf" && opts.pdfUrl) { const a = Object.assign(document.createElement("a"), { href: opts.pdfUrl, download: "" }); document.body.appendChild(a); a.click(); a.remove(); return {}; }
@@ -669,7 +669,6 @@ export async function exportDoc(kind, opts, step = () => {}) {
     const job = { pages, root, image: opts.image, name, step };
     try {
       if (kind === "pdf") { save(await makePdf(job), `${name}.pdf`); return {}; }
-      if (kind === "docx-edit") { save(await makeDocx(job), `${name} (editable).docx`); return {}; }
       const blob = await makeDocxExact(job);
       if (kind === "docx") { save(blob, `${name}.docx`); return {}; }
       step("Putting it in your Google Drive");
@@ -685,18 +684,16 @@ const CHOICES = [
   { kind: "pdf", icon: fileIcon("#d6503f", "PDF"), title: "PDF", say: "The pages exactly as they print" },
   { kind: "docx", icon: fileIcon("#2f6db5", "DOCX"), title: "Word", say: "Exactly as it prints, one picture per page (.docx)" },
   { kind: "gdocs", icon: fileIcon("#2f9a5a", "DOCS"), title: "Google Docs", say: "Exactly as it prints, saved to your own Google Drive" },
-  { kind: "docx-edit", icon: fileIcon("#5b7fb0", "EDIT"), title: "Word, to edit", say: "The words as text you can change; the layout is close, not exact" },
 ];
 const CSS = `
-.pp-dl-pop.pp-receipt { position: fixed; z-index: 2147482500; width: min(21rem, 94vw); }
-.pp-dl-pop .pp-receipt__paper { padding: 1rem 1rem 0.85rem; display: grid; gap: 0.3rem; font-family: var(--font-mono, "JetBrains Mono"), monospace; }
-.pp-dl-pop__h { font-family: var(--font-display, "Unbounded"), sans-serif; font-size: 0.9rem; margin-bottom: 0.25rem; }
-.pp-dl-pop__row { display: grid !important; grid-template-columns: 2.2rem 1fr; gap: 0.6rem; align-items: center; padding: 0.45rem 0.4rem !important; text-align: left; width: 100%; font: inherit; color: inherit; cursor: pointer; }
-.pp-dl-pop__row svg { display: block; width: 2rem; height: 2rem; }
-.pp-dl-pop__row b { display: block; font-size: 0.8rem; }
-.pp-dl-pop__row small { display: block; font-size: 0.68rem; line-height: 1.35; color: var(--text-secondary, #6f675b); }
+.pp-dl-pop.pp-receipt { position: fixed; z-index: 2147482500; width: auto; }
+.pp-dl-pop .pp-receipt__paper { padding: 0.8rem 0.9rem 0.7rem; font-family: var(--font-mono, "JetBrains Mono"), monospace; }
+.pp-dl-pop__icons { display: flex; gap: 0.5rem; justify-content: center; }
+.pp-dl-pop__row { display: grid !important; place-items: center; width: 3.2rem; height: 3.2rem; padding: 0.3rem !important; cursor: pointer; }
+.pp-dl-pop__row svg { display: block; width: 2.2rem; height: 2.2rem; }
 .pp-dl-pop__row[disabled] { opacity: 0.55; cursor: progress; }
-.pp-dl-pop__msg { min-height: 1.1em; margin: 0.3rem 0 0; font-size: 0.72rem; line-height: 1.4; color: var(--text-secondary, #6f675b); }
+.pp-dl-pop__msg { max-width: 12.5rem; min-height: 0; margin: 0.45rem auto 0; font-size: 0.68rem; line-height: 1.4; text-align: center; color: var(--text-secondary, #6f675b); }
+.pp-dl-pop__msg:empty { display: none; }
 .pp-dl-pop__msg.is-bad { color: var(--accent-danger, #c0392b); }
 .pp-dl-pop__msg a { color: inherit; font-weight: 700; }
 .pp-dl-key svg { display: block; }
@@ -717,10 +714,7 @@ export function mountDownload(printBtn, opts = {}) {
   key.type = "button";
   key.className = `${printBtn.className} pp-dl-key`.replace(/\bxm-icon-only\b/, "").trim();
   key.removeAttribute("id");
-  const iconOnly = !printBtn.textContent.trim() || printBtn.querySelector(".wb-btn__name");
-  if (printBtn.querySelector(".wb-btn__ico")) key.innerHTML = `<span class="wb-btn__ico" aria-hidden="true">${ICON_DL}</span><em class="wb-btn__name">Download</em>`;
-  else if (iconOnly) key.innerHTML = ICON_DL;
-  else key.innerHTML = `${ICON_DL} ${esc(opts.label || "Download")}`;
+  key.innerHTML = printBtn.querySelector(".wb-btn__ico") ? `<span class="wb-btn__ico" aria-hidden="true">${ICON_DL}</span><em class="wb-btn__name">Download</em>` : ICON_DL;
   key.setAttribute("aria-label", "Download as PDF, Word or Google Docs");
   key.dataset.tip = "Download: PDF, Word or Google Docs";
   key.setAttribute("aria-haspopup", "dialog");
@@ -738,9 +732,9 @@ export function mountDownload(printBtn, opts = {}) {
     pop.className = "pp-receipt pp-dl-pop";
     pop.setAttribute("role", "dialog");
     pop.setAttribute("aria-label", "Download");
-    pop.innerHTML = `<div class="pp-receipt__paper"><b class="pp-dl-pop__h">Download</b>
-      ${CHOICES.map((c) => `<button type="button" class="pp-btn pp-btn--ghost pp-dl-pop__row" data-kind="${c.kind}">${c.icon}<span><b>${c.title}</b><small>${c.say}</small></span></button>`).join("")}
-      <p class="pp-dl-pop__msg" role="status"></p></div>`;
+    pop.innerHTML = `<div class="pp-receipt__paper"><div class="pp-dl-pop__icons">
+      ${CHOICES.map((c) => `<button type="button" class="pp-btn pp-btn--ghost pp-dl-pop__row" data-kind="${c.kind}" aria-label="${c.title}: ${c.say}" data-tip="${c.title}: ${c.say}">${c.icon}</button>`).join("")}
+      </div><p class="pp-dl-pop__msg" role="status"></p></div>`;
     document.body.appendChild(pop);
     const r = key.getBoundingClientRect();
     const below = r.bottom + 8 + pop.offsetHeight < innerHeight;

@@ -79,7 +79,6 @@ export function initModal() {
   });
   
   import('/utils/components/doc-export.js').then(({ mountDownload }) => mountDownload(document.getElementById('print-btn'), {
-    label: 'Download',
     root: () => document.querySelector('#theory-results .ta-paper') || document.getElementById('theory-results'),
     name: () => 'Theory answer sheet',
   })).catch(() => {});
