@@ -71,6 +71,23 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
 
   const both = await filmBoth(id);
   let doc = both.draft || both.published || startFrom(coded?.steps, title);
+  /* THE OLD FILM IS KEPT. Opening the editor on a coded film used to bring only its words across, so a
+     save left the voice over an empty stage. Now the drawing is traced in at once whenever the document
+     has nothing on the stage: the words already edited here are kept, and any beats added after the
+     coded film's last one stay, so adding to a film never wipes it. */
+  let restored = false;
+  if (coded && !(doc.els && doc.els.length)) {
+    try {
+      const { traceFilm } = await import("./film-trace.js");
+      const traced = traceFilm(coded, doc.title || title);
+      if (traced.els && traced.els.length) {
+        traced.steps.forEach((st, i) => { if (doc.steps && doc.steps[i] && doc.steps[i].say) st.say = doc.steps[i].say; });
+        (doc.steps || []).slice(traced.steps.length).forEach((st) => traced.steps.push(st));
+        doc = normalise(traced, doc.title || title);
+        restored = true;
+      }
+    } catch (err) { console.error("film trace on open failed", err); }
+  }
   let step = 0;
   let picked = null;        // the selected element's id
   let dirty = false;
@@ -943,7 +960,11 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
   paintAll();
   box.querySelector('[data-f="down"]').hidden = !both.published;
   box.querySelector('[data-f="trace"]').hidden = !(coded && coded.build);
-  say(both.draft ? "A draft is open" : both.published ? "Opened from what is published" : "A new film");
+  if (restored) {
+    /* a saved draft that had lost its pictures is changed now: say so, and let Save keep them */
+    if (both.draft || both.published) { dirty = true; say("The pictures from the original film are back on the stage. Save to keep them."); }
+    else say("The original film is on the stage: its pictures and its words. Add to it or change it.");
+  } else say(both.draft ? "A draft is open" : both.published ? "Opened from what is published" : "A new film");
   return live;
 }
 
