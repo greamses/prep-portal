@@ -390,7 +390,12 @@ export async function playLesson(kind, title = "", strip = null) {
   const coded = (SCENES[kind] || ratioScene)();
   const saved = await docFor(kind);
   let made = coded;
-  if (saved) {
+  /* A SAVED FILM WITH NOTHING ON ITS STAGE (words only: saved before the editor kept the drawing) never plays
+     as a blank screen: the coded film's drawing plays, with the saved words where there is one for the beat. */
+  if (saved && !(saved.doc.els || []).length && coded && coded.steps) {
+    const words = saved.doc.steps || [];
+    made = { build: coded.build, steps: coded.steps.map((st, i) => (words[i] && words[i].say ? { ...st, say: words[i].say } : st)) };
+  } else if (saved) {
     const { playable } = await import("./filmdoc.js");
     const film = playable(saved.doc, title);
     made = { build: film.build, steps: film.steps };

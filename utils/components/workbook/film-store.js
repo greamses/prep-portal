@@ -57,6 +57,9 @@ function user() {
         off = auth.onAuthStateChanged((u) => { clearTimeout(giveUp); off(); done(u || null); });
       });
     })().catch(() => null);
+    /* "nobody" is not kept: a page asked before the sign-in had finished would otherwise hide the edit key for
+       the whole visit. The next question asks again (and finds the account once it has arrived). */
+    who.then((u) => { if (!u) who = null; });
   }
   return who;
 }

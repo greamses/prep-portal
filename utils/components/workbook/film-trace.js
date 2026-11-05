@@ -80,6 +80,9 @@ function readStage(stage) {
       kit: art ? null : { box: box.className, inner: inner.className.replace(/\s*vm-t__in--hl\b/g, ""), bs: styleOf(box), is: styleOf(inner) },
       fs: art ? 0 : Math.round((parseFloat(getComputedStyle(inner).fontSize) / 10) * 100) / 100,
       ink: art ? "" : hexOf(getComputedStyle(inner).color),
+      /* WORDS WITH MARKS IN THEM: a sentence whose words are underlined, crossed out or written over has
+         elements inside it, and its plain text would run them together ("wearytired"); its markup is kept */
+      rich: !art && inner.children.length ? inner.innerHTML : "",
     });
   });
   return seen;
@@ -128,7 +131,7 @@ export function traceFilm(coded, title = "") {
        on the screen and looks different from that: a picture quietly prepared while it was hidden just comes
        on with its new drawing, and an identical redraw is no change at all. */
     const shown = new Map();
-    was.forEach((m, tileId) => { if (m.art) shown.set(tileId, m.html); });
+    was.forEach((m, tileId) => { if (m.art) shown.set(tileId, m.html); else if (m.rich) shown.set(tileId, m.rich); });
 
     coded.steps.forEach((s, i) => {
       const now = run(i);
@@ -139,13 +142,21 @@ export function traceFilm(coded, title = "") {
           /* a mark the film draws part-way through: it joins the stage here */
           const el = make(m, tileId, els);
           byTile.set(tileId, el);
-          if (m.art) shown.set(tileId, m.html);
+          if (m.art) shown.set(tileId, m.html); else if (m.rich) shown.set(tileId, m.rich);
           if (m.on > 0.02) acts.push({ el: el.id, do: "pop", delay: 0 });
           return;
         }
         const el = byTile.get(tileId);
         if (!el) return;
         /* a drawing that was redrawn on this beat (and perhaps came on with it) */
+        /* a marked sentence whose marks changed (a word crossed out, another written above it) is redrawn */
+        const markup = m.art ? m.html : (m.rich || (before.rich ? m.text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])) : ""));
+        if (!m.art && markup && m.on > 0.02 && (shown.get(tileId) ?? "") !== markup) {
+          acts.push({ el: el.id, do: "redraw", svg: markup, ...(before.on <= 0.02 ? { pop: 1 } : {}), delay: 0 });
+          shown.set(tileId, markup);
+          if (moved(before, m)) acts.push({ el: el.id, do: "move", tx: m.x, ty: m.y, delay: 0 });
+          return;
+        }
         if (m.art && m.on > 0.02 && shown.get(tileId) !== m.html) {
           acts.push({ el: el.id, do: "redraw", svg: m.html, ...(before.on <= 0.02 ? { pop: 1 } : {}), delay: 0 });
           shown.set(tileId, m.html);
@@ -184,7 +195,7 @@ function make(m, tileId, els) {
   el.y = m.y;
   if (m.art) { el.svg = m.html; el.w = m.w; }
   else {
-    el.text = m.text; el.kit = m.kit;
+    el.text = m.text; el.kit = m.rich ? { ...m.kit, html: m.rich } : m.kit;
     /* shown in the inspector as they really are; they are only APPLIED once someone changes them (el.custom) */
     if (m.fs > 0) el.fs = m.fs; else el.size = m.size;
     if (m.ink) el.ink = m.ink; else el.c = m.c;

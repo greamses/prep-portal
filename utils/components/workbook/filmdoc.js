@@ -247,6 +247,8 @@ export function mountEl(stage, el) {
     if (el.kit.bs) box.style.cssText += `;${el.kit.bs}`;
     if (el.kit.inner) inner.className = el.kit.inner;
     if (el.kit.is) inner.style.cssText += `;${el.kit.is}`;
+    /* words with marks inside them are drawn with their marks */
+    if (el.kit.html) inner.innerHTML = el.kit.html;
     box.style.left = `${el.x}%`;
     box.style.top = `${el.y}%`;
     inner.style.opacity = "0";
