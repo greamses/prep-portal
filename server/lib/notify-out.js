@@ -92,7 +92,8 @@ async function mailTo(uids, n) {
       const pref = await db().collection("emailPrefs").doc(uid).get();
       if (pref.exists && pref.data().off === true) return;
       const user = await admin.auth().getUser(uid);
-      if (!user.email) return;
+      /* a student who signed up with a username has a login address, not a mailbox */
+      if (!user.email || /@prepportal\.com$/i.test(user.email)) return;
       const r = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },

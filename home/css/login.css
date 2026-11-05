@@ -595,3 +595,10 @@
     gap: 0.6rem;
   }
 }
+
+/* a student with no email address: the switch to a username and the teacher's code */
+.auth-modal .auth-noemail { display: block; margin: -0.2rem 0 0.9rem; padding: 0; background: none !important; border: 0; box-shadow: none !important;
+  font: 600 0.74rem/1.4 var(--font-mono, "JetBrains Mono"), monospace; color: var(--accent-secondary, #2f6ea8); text-decoration: underline;
+  text-underline-offset: 3px; cursor: pointer; text-align: left; transform: none !important; }
+.auth-modal .auth-noemail[hidden] { display: none; }
+.auth-modal .auth-noemail__note { margin: -0.3rem 0 0.8rem; font-size: 0.7rem; line-height: 1.45; color: var(--text-secondary, #6b655c); }

@@ -27,6 +27,7 @@ const admin = require("firebase-admin");
 const { authenticate } = require("../middleware/auth");
 const access = require("../lib/access");
 const { notifyStudents } = require("../lib/notices");
+const { ensureTeacherCode } = require("../lib/teacher-code");
 
 function makeCode() {
   const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
@@ -160,24 +161,9 @@ module.exports = function () {
   router.post("/class-code", authenticate, async (req, res) => {
     try {
       const p = await profile(req.user.uid);
-      const verdict = await access.canUse(req, "classroom");
-      if (!verdict.allowed) return deny(res, verdict);
       if (!isTeacher(req, p)) return res.status(403).json({ error: "Only teachers have a class code." });
-
-      const tcRef = db().collection("teacherClass").doc(req.user.uid);
-      const tc = await tcRef.get();
-      if (tc.exists && tc.data().code) return res.json({ ok: true, code: tc.data().code });
-
-      let code;
-      for (let i = 0; i < 6; i++) {
-        const c = makeCode();
-        if (!(await db().collection("classCodes").doc(c).get()).exists) { code = c; break; }
-      }
-      if (!code) return res.status(500).json({ error: "Could not generate a code — try again." });
-
-      const teacherName = displayName(req, p);
-      await db().collection("classCodes").doc(code).set({ teacherUid: req.user.uid, teacherName, createdAt: stamp() });
-      await tcRef.set({ code, teacherName, createdAt: stamp() }, { merge: true });
+      /* every teacher has a code (students with no email sign up with it), so it is not behind the classroom plan */
+      const code = await ensureTeacherCode(req.user.uid, displayName(req, p));
       res.json({ ok: true, code });
     } catch (e) {
       console.error("[/api/classroom/class-code]", e.message);
@@ -193,8 +179,9 @@ module.exports = function () {
       const snap = await db().collection("teacherStudents").doc(req.user.uid).collection("roster").get();
       const ms = (x) => (x && x.toMillis ? x.toMillis() : 0);
       const students = snap.docs.map((d) => ({ studentUid: d.id, ...d.data() })).sort((a, b) => ms(b.joinedAt) - ms(a.joinedAt));
-      const tc = await db().collection("teacherClass").doc(req.user.uid).get();
-      res.json({ code: tc.exists ? tc.data().code || null : null, students });
+      /* the roster always shows the teacher's code: it is made here if the teacher has none yet */
+      const code = await ensureTeacherCode(req.user.uid, displayName(req, p)).catch(() => null);
+      res.json({ code, students });
     } catch (e) {
       console.error("[/api/classroom/roster]", e.message);
       res.status(500).json({ error: e.message });

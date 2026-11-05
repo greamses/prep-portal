@@ -108,7 +108,7 @@ export function injectAuthModal() {
         <p>Continue your learning journey.</p>
       </div>
 
-      ${field({ label: "Email Address", type: "email", id: "login-email", placeholder: "student@email.com", icon: AUTH_ICONS.email })}
+      ${field({ label: "Email or username", type: "text", id: "login-email", placeholder: "student@email.com or your username", icon: AUTH_ICONS.email })}
       ${field({ label: "Password", type: "password", id: "login-password", placeholder: "••••••••", icon: AUTH_ICONS.lock, password: true })}
 
       <div class="auth-options">
@@ -149,7 +149,13 @@ export function injectAuthModal() {
       <div id="role-fields-container" class="role-fields"></div>
 
       ${field({ label: "Full Name", type: "text", id: "signup-name", placeholder: "Emmanuel Daniel", icon: AUTH_ICONS.user })}
-      ${field({ label: "Email Address", type: "email", id: "signup-email", placeholder: "student@email.com", icon: AUTH_ICONS.email })}
+      <div id="signup-email-wrap">${field({ label: "Email Address", type: "email", id: "signup-email", placeholder: "student@email.com", icon: AUTH_ICONS.email })}</div>
+      <div id="signup-noemail-fields" hidden>
+        ${field({ label: "Choose a username", type: "text", id: "signup-username", placeholder: "for example ada.okafor", icon: AUTH_ICONS.user })}
+        ${field({ label: "Your teacher's code", type: "text", id: "signup-teacher-code", placeholder: "6 letters and numbers, from your teacher", icon: AUTH_ICONS.lock })}
+        <p class="auth-noemail__note">You will log in with your username and password. Your teacher's code puts you in their class.</p>
+      </div>
+      <button type="button" class="auth-noemail" id="signup-noemail-toggle">No email address? Use a username and your teacher's code</button>
       ${field({ label: "Password", type: "password", id: "signup-password", placeholder: "Create a strong password", icon: AUTH_ICONS.lock, password: true })}
 
       <button type="submit" class="auth-submit">
@@ -246,10 +252,28 @@ function initializeAuthModal(authContainer) {
     }
   }
 
+  /* NO EMAIL ADDRESS (students only): the email box gives way to a username and the teacher's code */
+  let noEmail = false;
+  function setNoEmail(on) {
+    noEmail = !!on && selectedRole === "student";
+    const wrap = document.getElementById("signup-email-wrap");
+    const extra = document.getElementById("signup-noemail-fields");
+    const toggle = document.getElementById("signup-noemail-toggle");
+    wrap.hidden = noEmail;
+    extra.hidden = !noEmail;
+    document.getElementById("signup-email").required = !noEmail;
+    document.getElementById("signup-username").required = noEmail;
+    document.getElementById("signup-teacher-code").required = noEmail;
+    toggle.hidden = selectedRole !== "student";
+    toggle.textContent = noEmail ? "I have an email address" : "No email address? Use a username and your teacher's code";
+    document.getElementById("google-signup").hidden = noEmail;
+  }
+  document.getElementById("signup-noemail-toggle").addEventListener("click", () => setNoEmail(!noEmail));
   roleButtons.forEach((btn) => {
-    btn.addEventListener("click", () => updateRoleFields(btn.dataset.role));
+    btn.addEventListener("click", () => { updateRoleFields(btn.dataset.role); setNoEmail(false); });
   });
   updateRoleFields("student");
+  setNoEmail(false);
 
   // Custom-Select Validation checker
   function validateSignupFields(isGoogle = false) {
@@ -285,8 +309,9 @@ function initializeAuthModal(authContainer) {
       const name = document.getElementById("signup-name");
       const email = document.getElementById("signup-email");
       const password = document.getElementById("signup-password");
+      const who = noEmail ? [document.getElementById("signup-username"), document.getElementById("signup-teacher-code")] : [email];
 
-      for (const input of [name, email, password]) {
+      for (const input of [name, ...who, password]) {
         if (!input.checkValidity()) {
           input.reportValidity();
           return false;
@@ -432,7 +457,8 @@ function initializeAuthModal(authContainer) {
     .getElementById("login-form")
     .addEventListener("submit", async (e) => {
       e.preventDefault();
-      const email = document.getElementById("login-email").value;
+      const typed = document.getElementById("login-email").value.trim();
+      const email = typed.includes("@") ? typed : `${typed.toLowerCase()}@prepportal.com`;
       const password = document.getElementById("login-password").value;
       try {
         const result = await signInWithEmailAndPassword(auth, email, password);
@@ -454,6 +480,32 @@ function initializeAuthModal(authContainer) {
       const name = document.getElementById("signup-name").value;
       const email = document.getElementById("signup-email").value;
       const password = document.getElementById("signup-password").value;
+
+      if (noEmail) {
+        const submit = e.target.querySelector(".auth-submit");
+        submit.disabled = true;
+        try {
+          const base = location.port === "5500" ? "http://127.0.0.1:5000" : "";
+          const r = await fetch(`${base}/api/auth/username-signup`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username: document.getElementById("signup-username").value.trim(),
+              teacherCode: document.getElementById("signup-teacher-code").value.trim(),
+              password, name, extra: collectExtraData("student"),
+            }),
+          });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(d.error || "The account could not be made. Try again.");
+          await signInWithEmailAndPassword(auth, d.email, password);
+          closeModal();
+          goToDashboard();
+        } catch (err) {
+          console.error(err);
+          alert(err.message);
+        } finally { submit.disabled = false; }
+        return;
+      }
 
       try {
         const userCredential = await createUserWithEmailAndPassword(
