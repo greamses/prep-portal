@@ -458,7 +458,7 @@ function initializeAuthModal(authContainer) {
     .addEventListener("submit", async (e) => {
       e.preventDefault();
       const typed = document.getElementById("login-email").value.trim();
-      const email = typed.includes("@") ? typed : `${typed.toLowerCase()}@prepportal.com`;
+      const email = typed.includes("@") ? typed : `${typed.toLowerCase()}@prepportal.com.ng`;
       const password = document.getElementById("login-password").value;
       try {
         const result = await signInWithEmailAndPassword(auth, email, password);

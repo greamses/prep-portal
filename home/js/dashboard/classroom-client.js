@@ -245,11 +245,48 @@ export async function mountTeacherClassroom(layout) {
 function setStat(layout, id, val) { const el = layout.querySelector("#" + id); if (el) el.textContent = val; }
 
 function rosterItem(s) {
+  /* a student who signed up with a username: shown by username, with a key to give them a new password */
+  const userAcct = /@prepportal\.com\.ng$/i.test(s.email || "");
+  const sub = userAcct ? `Username: ${esc(s.username || (s.email || "").split("@")[0])}` : esc(s.email || "");
   return `<li class="db-roster-item">
       <div class="db-roster-avatar">${(s.name || "S").slice(0, 1).toUpperCase()}</div>
       <div><div class="db-roster-name">${esc(s.name || "Student")}</div>
-      <div class="db-roster-sub">${esc(s.email || "")}</div></div>
+      <div class="db-roster-sub">${sub}</div></div>
+      ${userAcct ? `<button type="button" class="db-pill pill-blue db-roster-reset" data-reset-pw="${esc(s.studentUid)}" data-name="${esc(s.name || "this student")}" style="margin-left:auto;border:none;cursor:pointer">New password</button>` : ""}
     </li>`;
+}
+
+/* A TEACHER GIVES A STUDENT A NEW PASSWORD (a username account cannot reset its own by email). One press asks
+   first; the server makes an easy new password, signs the student out everywhere, and it is shown to copy. */
+if (!window.__ccResetPw) {
+  window.__ccResetPw = true;
+  document.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-reset-pw]");
+    if (!b) return;
+    const name = b.dataset.name;
+    const { root, close } = modal(`<h3>A new password for ${esc(name)}</h3>
+      <p class="cc-msg">Their old password stops working at once. You will see the new one here to give them.</p>
+      <div class="cc-row"><button class="btn btn-yellow" id="cc-pw-go" type="button">Make a new password</button>
+        <button class="btn btn-ghost" id="cc-pw-cancel" type="button">Cancel</button></div>
+      <p id="cc-pw-msg" class="cc-msg"></p>`);
+    root.querySelector("#cc-pw-cancel").onclick = close;
+    root.querySelector("#cc-pw-go").onclick = async (ev) => {
+      ev.target.disabled = true;
+      const msg = root.querySelector("#cc-pw-msg");
+      try {
+        const d = await api("/api/classroom/student-password", { method: "POST", body: JSON.stringify({ studentUid: b.dataset.resetPw }) });
+        root.querySelector(".cc-row").outerHTML = `<div class="cc-code" id="cc-pw-val">${esc(d.password)}</div>
+          <p class="cc-msg">Username: <b>${esc(d.username)}</b></p>
+          <div class="cc-row"><button class="btn btn-yellow" id="cc-pw-copy" type="button">Copy password</button>
+            <button class="btn btn-ghost" id="cc-pw-done" type="button">Done</button></div>`;
+        root.querySelector("#cc-pw-done").onclick = close;
+        root.querySelector("#cc-pw-copy").onclick = async () => { try { await navigator.clipboard.writeText(d.password); msg.textContent = "Copied"; msg.className = "cc-msg cc-msg--ok"; } catch (_) {} };
+      } catch (err) {
+        ev.target.disabled = false;
+        msg.textContent = err.message; msg.className = "cc-msg cc-msg--err";
+      }
+    };
+  });
 }
 
 function actItem(a) {

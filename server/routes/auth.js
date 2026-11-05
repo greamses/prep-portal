@@ -34,6 +34,9 @@ module.exports = function () {
       if (!idToken) return res.status(400).json({ error: "idToken required" });
       // Verify the ID token (rejects expired/forged) before minting a cookie.
       const decoded = await admin.auth().verifyIdToken(idToken);
+      /* a username account made around the sign-up form (no teacher's code, so no mark) gets no session, and goes */
+      const ua = require("../lib/username-accounts");
+      if (ua.unmarked(decoded)) { await ua.removeUnmarked(decoded); return res.status(403).json({ error: "This account was not made with a teacher's code." }); }
       // Grant the admin an `admin:true` custom claim so Firestore rules can
       // recognise admin writes (dashboard role/plan edits, money collections)
       // without hardcoding the email in the rules. Takes effect on next token
@@ -60,8 +63,9 @@ module.exports = function () {
   router.post("/logout", clear);
 
   /* ══ A STUDENT WITH NO EMAIL ADDRESS ═══════════════════════════════════════
-     Signs up with a USERNAME and their TEACHER'S CODE. The account's login is <username>@prepportal.com (it is
-     never written to: notify-out.js sends no mail to that domain). The code is checked here, on the server, so
+     Signs up with a USERNAME and their TEACHER'S CODE. The account's login is <username>@prepportal.com.ng (it is
+     never written to: notify-out.js sends no mail to these logins), and it is MARKED (custom claim ppUser) so an
+     account made on that domain any other way can be told apart and refused (lib/username-accounts.js). The code is checked here, on the server, so
      there is no such account without a teacher, and the student joins that teacher's class at once.
 
        POST /api/auth/username-signup  { username, password, teacherCode, name, extra }  →  { ok, email, teacherName }
@@ -90,7 +94,7 @@ module.exports = function () {
       const teacher = await teacherOf(b.teacherCode);
       if (!teacher) return res.status(400).json({ error: "That teacher code is not right. Ask your teacher for their code." });
 
-      const email = `${username}@prepportal.com`;
+      const email = `${username}@prepportal.com.ng`;
       let user;
       try {
         user = await admin.auth().createUser({ email, password, displayName: name, emailVerified: false });
@@ -99,6 +103,8 @@ module.exports = function () {
         if (e && e.code === "auth/invalid-password") return res.status(400).json({ error: "The password needs at least 6 characters." });
         throw e;
       }
+      /* the mark: set before the first sign-in, so the student's very first token carries it */
+      await admin.auth().setCustomUserClaims(user.uid, { ppUser: true });
       const extra = {};
       STUDENT_EXTRA.forEach((k) => { if (b.extra && typeof b.extra[k] === "string") extra[k] = b.extra[k].slice(0, 120); });
       const db = admin.firestore(), stamp = admin.firestore.FieldValue.serverTimestamp();

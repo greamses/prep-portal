@@ -171,6 +171,39 @@ module.exports = function () {
     }
   });
 
+  /* ── POST /student-password — a teacher gives a student a new password ──
+     For students who signed up with a username (no email address, so "forgot password" cannot reach them).
+     { studentUid, password? } — with no password one is made: two easy syllables and two figures. Only a
+     student in THIS teacher's class, and only a username account; the administrator may reset any of them. */
+  const SYL = ["ba", "be", "bi", "bo", "da", "de", "di", "do", "fa", "fe", "ka", "ke", "ko", "la", "le", "li", "lo", "ma", "me", "mi", "mo", "na", "ne", "no", "pa", "pe", "ra", "re", "ro", "sa", "se", "so", "ta", "te", "to", "wa", "ya", "yo"];
+  const easyPassword = () => { const r = (n) => require("crypto").randomInt(n); return SYL[r(SYL.length)] + SYL[r(SYL.length)] + SYL[r(SYL.length)] + String(10 + r(90)); };
+  router.post("/student-password", authenticate, async (req, res) => {
+    try {
+      const p = await profile(req.user.uid);
+      if (!isTeacher(req, p)) return res.status(403).json({ error: "Teachers only." });
+      const studentUid = String((req.body && req.body.studentUid) || "");
+      if (!/^[A-Za-z0-9]{10,128}$/.test(studentUid)) return res.status(400).json({ error: "Choose a student." });
+      if (!isAdmin(req)) {
+        const inClass = await db().collection("teacherStudents").doc(req.user.uid).collection("roster").doc(studentUid).get();
+        if (!inClass.exists) return res.status(403).json({ error: "That student is not in your class." });
+      }
+      const student = await admin.auth().getUser(studentUid);
+      if (!require("../lib/username-accounts").onDomain(student.email)) {
+        return res.status(400).json({ error: "This student signed up with an email address, so they reset their own password from the login page." });
+      }
+      let password = String((req.body && req.body.password) || "").trim();
+      if (password && password.length < 6) return res.status(400).json({ error: "A password needs at least 6 characters." });
+      if (!password) password = easyPassword();
+      await admin.auth().updateUser(studentUid, { password });
+      /* signed out everywhere, so the old password stops working at once */
+      await admin.auth().revokeRefreshTokens(studentUid).catch(() => {});
+      res.json({ ok: true, password, username: student.email.split("@")[0] });
+    } catch (e) {
+      console.error("[/api/classroom/student-password]", e.message);
+      res.status(500).json({ error: "The password could not be changed. Try again." });
+    }
+  });
+
   // ── GET /roster — teacher's students + class code ────────────────
   router.get("/roster", authenticate, async (req, res) => {
     try {

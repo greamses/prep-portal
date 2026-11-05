@@ -6,7 +6,11 @@ service cloud.firestore {
        AUTH HELPERS
     ───────────────────────────── */
     function isLoggedIn() {
-      return request.auth != null;
+      /* A username account (…@prepportal.com.ng) counts only if the server made it with a teacher's code (claim
+         ppUser): one made directly with Firebase, around the sign-up form, is treated as not signed in. */
+      return request.auth != null
+        && !(request.auth.token.get('email', '').matches('.*@prepportal[.]com[.]ng$')
+             && request.auth.token.get('ppUser', false) != true);
     }
 
     // Admin is identified by your specific email
