@@ -75,6 +75,9 @@ export const VERBS = {
   dim: { label: "Dim it", needs: ["amount"] },
   hide: { label: "Take it off", needs: [] },
   turn: { label: "Turn to", needs: ["degrees"] },
+  /* a drawing that changes as the lesson goes on (a bar is cut, a brace is drawn under it): the coded films
+     redraw their pictures, and a trace has to be able to say so */
+  redraw: { label: "Change the drawing", needs: ["drawing"] },
 };
 export const VERB_IDS = Object.keys(VERBS);
 
@@ -234,9 +237,32 @@ export function elHtml(el) {
 
 /** Put one element on a stage, hidden, ready for its act. */
 export function mountEl(stage, el) {
+  if (el.type === "text" && el.kit && !el.custom) {
+    /* A TILE TRACED FROM A CODED FILM looks exactly as it did on the TV: its own classes (the chip, its colour,
+       its size, its wrapping) and its own inline style. Nothing of the editor's defaults is laid over it until
+       the size, colour, wrap or alignment is changed by hand (el.custom). */
+    const box = tile(stage, el.id, el.text || "", el.x, el.y, { bare: true });
+    const inner = box.firstChild;
+    if (el.kit.box) box.className = el.kit.box;
+    if (el.kit.bs) box.style.cssText += `;${el.kit.bs}`;
+    if (el.kit.inner) inner.className = el.kit.inner;
+    if (el.kit.is) inner.style.cssText += `;${el.kit.is}`;
+    box.style.left = `${el.x}%`;
+    box.style.top = `${el.y}%`;
+    inner.style.opacity = "0";
+    return box;
+  }
   if (el.type === "text") {
     const box = tile(stage, el.id, el.text || "", el.x, el.y, { bare: true });
     const inner = box.firstChild;
+    /* a traced tile that has been changed by hand keeps its chip and wrapping, with the new size and colour on top */
+    if (el.kit) {
+      if (el.kit.box) box.className = el.kit.box;
+      if (el.kit.bs) box.style.cssText += `;${el.kit.bs}`;
+      if (el.kit.inner) inner.className = el.kit.inner;
+      if (el.kit.is) inner.style.cssText += `;${el.kit.is}`;
+      box.style.left = `${el.x}%`; box.style.top = `${el.y}%`; inner.style.opacity = "0";
+    }
     /* measured in stage units like everything else, so a film laid out once
        reads the same on a phone and on a television */
     inner.style.fontSize = `calc(var(--u) * ${Number(el.fs) || BASE_FS})`;
@@ -281,7 +307,7 @@ export const EASES = [
 ];
 
 /** Run one act against the kit's verbs. */
-function run(a, k, stage) {
+function run(a, k, stage, gsap = null, instant = true) {
   const d = Number(a.delay) || 0;
   /* how long and in what manner, when the film says (explain.js acts()) */
   const o = (a.dur || a.ease) ? { dur: Number(a.dur) || 0, ease: a.ease || "" } : undefined;
@@ -290,7 +316,9 @@ function run(a, k, stage) {
     case "fly": return k.fly(a.el, Number(a.fx) || 0, Number(a.fy) || 0, d, o);
     case "move": return k.move(a.el, Number(a.tx) || 0, Number(a.ty) || 0, d, o);
     case "flip": {
-      k.flip(a.el, a.text ?? "", undefined, d);
+      /* a traced tile turns over the way the coded film turned it (its colour class); a written one keeps its ink */
+      const kitTile = stage?.querySelector(`[data-t="${a.el}"]`)?.firstChild?.classList.contains("vm-t__in--bare") === false;
+      k.flip(a.el, a.text ?? "", kitTile && a.c != null ? a.c : undefined, d);
       /* the kit changes colour by swapping a class, which an inline colour
          would beat; a document's words carry their own, so it is set here */
       if (a.ink) {
@@ -300,6 +328,15 @@ function run(a, k, stage) {
       return undefined;
     }
     case "roll": return k.roll(a.el, a.text ?? "", d);
+    case "redraw": {
+      const inner = stage?.querySelector(`[data-t="${a.el}"]`)?.firstChild;
+      if (!inner || !a.svg) return undefined;
+      const swap = () => { inner.innerHTML = a.svg; if (a.pop) inner.style.opacity = "1"; };
+      if (!gsap || instant) { swap(); return undefined; }
+      /* the new drawing settles in where the old one was */
+      gsap.timeline({ delay: d }).to(inner, { opacity: a.pop ? 0 : 0.35, duration: 0.15 }).add(swap).to(inner, { opacity: 1, duration: 0.35, ease: "power1.out" });
+      return undefined;
+    }
     case "pulse": return k.pulse(a.el, d);
     case "dim": return k.dim(a.el, a.amount == null ? 0.35 : Number(a.amount), d, o);
     case "hide": return k.hide(a.el, d, o);
@@ -346,7 +383,7 @@ export function playable(raw, fallbackTitle = "") {
     hold: s.hold || 0,
     show(stage, { gsap, instant } = {}) {
       const k = acts(stage, gsap, instant);
-      s.acts.forEach((a) => run(a, k, stage));
+      s.acts.forEach((a) => run(a, k, stage, gsap, instant));
     },
   }));
   return { title: doc.title, build, steps };

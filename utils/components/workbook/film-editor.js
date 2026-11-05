@@ -68,6 +68,10 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
   if (live) return live;
   needCss("/utils/components/workbook/film-editor.css");
   needCss("/utils/components/colour-wheel.css");
+  /* the TV's own tile styles: the review screen must draw a film exactly as the set does */
+  needCss("/utils/components/workbook/video.css");
+  /* the films' typeface: the line breaks on the review screen are the TV's only if the letters are the same width */
+  if (!document.querySelector('link[href*="JetBrains+Mono"]')) needCss("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap");
 
   const both = await filmBoth(id);
   let doc = both.draft || both.published || startFrom(coded?.steps, title);
@@ -87,6 +91,24 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
         restored = true;
       }
     } catch (err) { console.error("film trace on open failed", err); }
+  }
+  /* A FILM TRACED BEFORE THE LOOK WAS RECORDED (its words drawn plain and at one size, so they scattered on
+     the stage): each traced text is matched to its tile in the coded film by name and given that tile's own
+     look back. Only the look is added; places, words, beats and anything changed by hand are left alone. */
+  if (coded && !restored && (doc.els || []).some((e) => e.type === "text" && !e.kit)) {
+    try {
+      const { traceFilm } = await import("./film-trace.js");
+      const byName = new Map(traceFilm(coded, doc.title || title).els.filter((e) => e.kit).map((e) => [e.name, e]));
+      let n = 0;
+      doc.els.forEach((e) => {
+        const t = e.type === "text" && !e.kit && byName.get(e.name);
+        if (!t) return;
+        e.kit = t.kit;
+        if (!e.custom) { e.fs = t.fs; e.ink = t.ink; }
+        n++;
+      });
+      if (n) { doc = normalise(doc, doc.title || title); restored = true; }
+    } catch (err) { console.error("film look on open failed", err); }
   }
   let step = 0;
   let picked = null;        // the selected element's id
@@ -165,7 +187,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
         ${key("undo", UI.undo(20), "Step back (Ctrl+Z)", "1", ' disabled')}
         ${key("trace", UI.layers(20), "Trace the coded film", "2", " hidden")}
         ${key("preview", UI.again(20), "Watch it on the real set", "2")}
-        ${key("save", UI.edit(20), "Save the draft", "1")}
+        ${key("save", UI.save(20), "Save the draft", "1")}
         ${key("publish", UI.share(20), "Publish it to everybody", "3")}
         ${key("down", UI.noFill(20), "Take it down", "1", " hidden")}
         ${key("close", UI.close(20), "Close the editor", "4")}
@@ -180,7 +202,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
             <div class="fe__corner"></div>
             <div class="fe__stage" data-f="stage"></div>
             <button type="button" class="pp-btn wb-tint-2 fe__play" data-f="play"
-                    aria-label="Play this beat" data-tip="Play this beat" data-tip-side="left">${UI.again(18)}</button>
+                    aria-label="Play from this beat" data-tip="Play from this beat (Space)" data-tip-side="left">${UI.play(18)}</button>
           </div>
         </div>
         <div class="fe__add">
@@ -476,7 +498,38 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
    * timings. The stage stays a stage — a thing can be dragged the moment it
    * lands.
    */
-  async function playBeat() {
+  /* PLAY AND PAUSE ON THE REVIEW SCREEN. Play runs the film from the beat that is open to the end, beat after
+     beat, with the real animations; the timeline and the inspector follow along. Pause stops at the beat it
+     has reached and leaves it open, ready to be changed. Each beat is given the time its animations take and
+     a breath after, so the order and the movement can be judged without waiting through the words. */
+  let playing = false, playTimer = 0;
+  const playKey = () => box.querySelector('[data-f="play"]');
+  function setPlayKey() {
+    const k = playKey();
+    if (!k) return;
+    k.innerHTML = playing ? UI.pause(18) : UI.play(18);
+    const t = playing ? "Pause" : "Play from this beat (Space)";
+    k.setAttribute("aria-label", t); k.dataset.tip = t;
+  }
+  function pause() { playing = false; clearTimeout(playTimer); setPlayKey(); paintAll(); }
+  async function playOn() {
+    if (playing) return pause();
+    playing = true; setPlayKey();
+    const next = async () => {
+      if (!playing || !box.isConnected) return;
+      const ms = await playBeat(true);
+      playTimer = setTimeout(() => {
+        if (!playing) return;
+        if (step >= doc.steps.length - 1) { pause(); return; }
+        step++;
+        paintGrid();
+        paintSide();
+        next();
+      }, ms);
+    };
+    next();
+  }
+  async function playBeat(onward = false) {
     const g = await engine();
     stage.innerHTML = "";
     const tv = document.createElement("div");
@@ -490,7 +543,9 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     /* the marks are left as the beat ends them, then the cutting room's own
        handles go back on */
     const wait = Math.max(900, 400 + (doc.steps[step]?.acts || []).reduce((t, a) => Math.max(t, (Number(a.delay) || 0) + (Number(a.dur) || 0.8)), 0) * 1000);
+    if (onward) return wait + 700;
     setTimeout(() => { if (box.isConnected) paintStage(); }, wait);
+    return wait;
   }
 
   let wheel = null;
@@ -510,6 +565,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
           const now = doc.els.find((x) => x.id === picked);
           if (!now || now.ink === hex) return;
           now.ink = hex;
+          now.custom = true;
           touched();
           paintStage();
         },
@@ -635,6 +691,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
         + row("And goes", `<input type="color" data-ac="ink" value="${esc(a?.ink || el.ink)}">`);
       if (n === "amount") return row("Down to", `<input type="number" data-ac="amount" value="${a?.amount ?? 0.35}" min="0" max="1" step="0.05">`);
       if (n === "degrees") return row("Degrees", `<input type="number" data-ac="deg" value="${a?.deg ?? 0}" step="5">`);
+      if (n === "drawing") return row("New drawing (SVG)", `<textarea data-ac="svg" rows="4" spellcheck="false">${esc(a?.svg ?? el.svg ?? "")}</textarea>`);
       return "";
     };
     return `<div class="fe-acts">
@@ -717,7 +774,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     const ink = e.target.closest("[data-ink]")?.dataset.ink;
     if (ink) {
       const el = doc.els.find((x) => x.id === picked);
-      if (el) { remember(); el.ink = ink; touched(); paintAll(); }
+      if (el) { remember(); el.ink = ink; el.custom = true; touched(); paintAll(); }
       return;
     }
     const partDel = e.target.closest("[data-part-del]")?.dataset.partDel;
@@ -742,7 +799,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     } else if (k === "el-done") {
       pick(null);
     } else if (k === "play") {
-      playBeat();
+      playOn();
     } else if (k === "fold-side" || k === "fold-time") {
       /* MORE STAGE. The inspector and the beats both fold away, because for
          long stretches of laying a film out you want neither: you want the
@@ -872,6 +929,7 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
     if (p) {
       const target = el || doc.steps[step];
       target[p] = e.target.type === "number" ? Number(e.target.value) : e.target.value;
+      if (el && ["fs", "tw", "align"].includes(p)) el.custom = true;
       touched();
       if (el) paintStage(); else paintGrid();
       /* turning wrapping on and off adds or removes the alignment question */
@@ -929,6 +987,8 @@ export async function openFilmEditor({ id, title = "", coded = null, onPlay = nu
       stepBack();
       return;
     }
+    /* Space plays from this beat, or pauses (not while typing, and not on a focused key, which Space presses) */
+    if (e.key === " " && !e.target.closest("input, textarea, select, button, [contenteditable]")) { e.preventDefault(); playOn(); return; }
     /* NUDGING. Half a percent a press, two with shift — a drag gets a mark
        roughly where it goes and the arrows put it exactly there, which is the
        difference between a layout that nearly lines up and one that does. */

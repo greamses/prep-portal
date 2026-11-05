@@ -269,6 +269,7 @@ Object.assign(UI, {
   gear: svg(spokes(PAPER) + dot(12, 12, 6.6, PAPER) + dot(12, 12, 3.4, "#fff") + dot(12, 12, 1.7, LOUD)),
   bolt: svg(tri("M13.6 1.8 4.2 13.8h6.4l-1.2 8.4 10.4-12.4h-6.4z", GOLD)),
   play: svg(tri("M6.6 3.8 20.4 12 6.6 20.2z", LEAF)),
+  pause: svg(r(5.6, 4, 4.6, 16, PAPER, 1.4) + r(13.8, 4, 4.6, 16, PAPER, 1.4)),
   /* a sheet with lines: coach, notes */
   doc: svg(
     tri("M4 4.4a2 2 0 0 1 2-2h8.4L20 8v11.6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z", PAPER) +
