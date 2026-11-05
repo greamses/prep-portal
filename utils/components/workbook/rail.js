@@ -443,10 +443,24 @@ export function mountBuilder(cfg) {
     }
   }
 
+  /* A WORKBOOK FROM A LINK. `?only=bs-solve` (a section or an exercise, several with commas) builds a workbook of
+     just those, each at its usual number of questions; `&open=1` opens it straight on the paper. The home page's
+     cards use this, so a card for "Function machines" lands on a workbook of function machines, already open.
+     The rest of the visitor's settings (paper, school heading, answers) are kept as they were. */
+  const linked = (() => {
+    try {
+      const q = new URLSearchParams(location.search);
+      const ids = String(q.get("only") || "").split(",").map((v) => v.trim()).filter(Boolean);
+      const picks = {};
+      exercises.forEach((ex) => { if (ids.includes(ex.id) || ids.includes(ex.group)) picks[ex.id] = ex.defaultCount || 4; });
+      return { picks: Object.keys(picks).length ? picks : null, open: q.has("open") || Object.keys(picks).length > 0 };
+    } catch { return { picks: null, open: false }; }
+  })();
+
   function start() {
     const saved = load();
     if (extra.write) extra.write(saved || {});
-    fillPicks(saved?.chosen || starter);
+    fillPicks(linked.picks || saved?.chosen || starter);
 
     $("wb-title").value = saved?.title ?? title;
     $("wb-paper").value = saved?.paper ?? "a4";
@@ -597,6 +611,16 @@ export function mountBuilder(cfg) {
         .then(render);
     }
     render();
+    /* opened from a link: straight onto the paper (the preview modal) once it exists */
+    if (linked.open) {
+      let tries = 0;
+      const tryOpen = () => {
+        const go = document.querySelector(".wb-openbar__go");
+        if (go) { go.click(); return; }
+        if (++tries < 40) setTimeout(tryOpen, 100);
+      };
+      setTimeout(tryOpen, 150);
+    }
     /* built again, set, if MathJax arrives after the first build */
     whenMath(render);
   }

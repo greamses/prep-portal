@@ -141,9 +141,9 @@ export const BANDS = [
   {
     tag: "Maths",
     cards: [
-      { art: "balance", title: "Balance scales", tag: "Algebra", line: "Take the same off both pans and the bag gives itself up.", href: "/prep-math/activity/algebra-workbook/" },
-      { art: "train", title: "Function machines", tag: "Functions", line: "Put a number on the card and ride it coach by coach.", href: "/prep-math/activity/algebra-workbook/" },
-      { art: "tiles", title: "Completing the square", tag: "Algebra", line: "Lay x² and its strips, then fill the corner that is missing.", href: "/prep-math/activity/algebra-workbook/" },
+      { art: "balance", title: "Balance scales", tag: "Algebra", line: "Take the same off both pans and the bag gives itself up.", href: "/prep-math/activity/algebra-workbook/?only=bs-solve&open=1" },
+      { art: "train", title: "Function machines", tag: "Functions", line: "Put a number on the card and ride it coach by coach.", href: "/prep-math/activity/algebra-workbook/?only=fn-machine&open=1" },
+      { art: "tiles", title: "Completing the square", tag: "Algebra", line: "Lay x² and its strips, then fill the corner that is missing.", href: "/prep-math/activity/algebra-workbook/?only=cs-tiles&open=1" },
       { art: "graph", title: "Graphs of functions", tag: "Graphs", line: "Tap the points, rule the line, read the rule back off it.", href: "/prep-math/activity/cartesian-art/" },
       { art: "blocks", title: "Manipulatives", tag: "Number", line: "Blocks, abacuses, tiles and charts on one endless table.", href: "/prep-math/activity/base-blocks/" },
       { art: "moves", title: "Algebra Moves", tag: "Algebra", line: "Type an equation, then name each move that solves it.", href: "/prep-math/activity/algebra-moves/" },
