@@ -214,9 +214,45 @@ function itemNode(section, entry) {
  * The flat list of blocks the whole workbook is made of. Rows of two are made
  * HERE, so that pagination never has to reason about columns.
  */
+/**
+ * MIXED PRACTICE: the questions of every chosen exercise, shuffled into ONE numbered run (off the workbook's own
+ * seed, so a code always gives the same paper). A question no longer sits under its own section's heading, so
+ * it carries a small label of what kind it is and what to do. The key follows the same numbering.
+ */
+function mixedRun(sections, o) {
+  const all = [];
+  sections.forEach((section) => section.items.forEach((entry) => all.push({ section, entry })));
+  const order = stream(o.seed, seedFrom("mixed")).shuffle(all);
+  let n = 1;
+  return order.map(({ section, entry }) => {
+    const out = { section, entry: { ...entry, first: n } };
+    n += entry.k || 1;
+    return out;
+  });
+}
+
 export function blocksOf(sections, o, subject) {
   const blocks = [{ kind: "cover", node: coverBlock(o, subject) }];
   const state = {}; // scratch for sectionHead — "have I printed the key yet?"
+
+  if (o.mixed && sections.length > 1) {
+    const run = mixedRun(sections, o);
+    const head = el("div", "wb-sec wb-sec--mixed");
+    head.innerHTML =
+      `<h2 class="wb-sec__title"><span class="wb-sec__letter wb-sec__letter--c0">A</span>Mixed practice</h2>` +
+      `<p class="wb-sec__say">${sections.length} kinds of question, mixed together. Each one says what to do.</p>`;
+    blocks.push({ kind: "head", node: head });
+    run.forEach(({ section, entry }) => {
+      const row = el("div", "wb-row wb-row--1 wb-row--mix");
+      const node = itemNode(section, entry);
+      node.querySelector(".wb-item__body").insertAdjacentHTML("afterbegin",
+        `<p class="wb-mix__kind"><b>${section.ex.heading}</b> ${section.ex.instruction(section.opts)}</p>`);
+      row.appendChild(node);
+      blocks.push({ kind: "row", node: row });
+    });
+    if (o.answers) blocks.push(...answerBlocks(sections, o, run));
+    return blocks;
+  }
 
   sections.forEach((section, i) => {
     const head = headBlock(section, sectionLetter(i), o, subject, state, i);
@@ -241,7 +277,7 @@ export function blocksOf(sections, o, subject) {
 }
 
 /** The key, as its own section that always starts on a fresh page. */
-function answerBlocks(sections, o) {
+function answerBlocks(sections, o, run = null) {
   /* `wb-keypart` marks everything that is the key, so that on screen, while
      the paper is being done, it can be put away wherever the layout keeps it */
   const out = [{ kind: "break", node: el("div", "wb-break wb-keypart") }];
@@ -255,6 +291,20 @@ function answerBlocks(sections, o) {
     ),
   });
 
+  /* a mixed paper's key is ONE list, numbered as the questions were */
+  if (run) {
+    const rows = [];
+    run.forEach(({ section, entry }) => {
+      let n = entry.first;
+      (section.ex.answer(entry.item, section.opts) || []).forEach((a) => {
+        rows.push(`<li><span class="wb-answers__no">${n++}</span><span>${a}</span></li>`);
+      });
+    });
+    for (let k = 0; k < rows.length; k += 24) {
+      out.push({ kind: "row", node: el("div", "wb-answers wb-keypart", (k ? "" : `<h3 class="wb-answers__title">A · Mixed practice</h3>`) + `<ol class="wb-answers__list">${rows.slice(k, k + 24).join("")}</ol>`) });
+    }
+    return out;
+  }
   sections.forEach((section, i) => {
     const rows = [];
     let n = 1;
@@ -353,7 +403,11 @@ export function paginate(sheet, blocks, o) {
       inner.appendChild(next);
       const spills = overflows(inner);
       inner.removeChild(next);
-      if (spills && inner.childElementCount > 1) {
+      /* Moving the heading (and its worked example) on is right at the foot of a page, and wrong near the top:
+         a page left with nothing but the title block, or one question, looks as if the workbook were empty.
+         So on a page still less than half used, the heading stays and its questions follow overleaf. */
+      const used = (b.node.offsetTop - inner.offsetTop) / Math.max(1, inner.clientHeight);
+      if (spills && inner.childElementCount > 1 && used >= 0.5) {
         inner.removeChild(b.node);
         inner = newPage(sheet, mark, o.head);
         inner.appendChild(b.node);

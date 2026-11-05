@@ -189,6 +189,8 @@ export function mountBuilder(cfg) {
          pages by the printer (engine.js flow) */
       layout: $("wb-layout")?.value === "exam" ? "exam" : "learn",
       breakSections: !!$("wb-newpage")?.checked,
+      /* every question of every chosen exercise, shuffled into one numbered run (engine.js mixedRun) */
+      mixed: !!$("wb-mixed")?.checked,
       seed: seedFrom($("wb-seedcode").value),
       code: $("wb-seedcode").value.trim().toUpperCase(),
       chosen,
@@ -506,6 +508,12 @@ export function mountBuilder(cfg) {
         `<option value="exam">Exam · one flowing paper</option></select></label>` +
         `<label class="wb-toggle"><input type="checkbox" id="wb-newpage" /> Exam: start each section on a new page</label>`);
     }
+    if (paperField && !$("wb-mixed")) {
+      ($("wb-newpage")?.closest("label") || paperField).insertAdjacentHTML("afterend",
+        `<label class="wb-toggle"><input type="checkbox" id="wb-mixed" /> Mix the questions together</label>`);
+    }
+    /* a workbook from a card is mixed practice; otherwise it is as the visitor left it */
+    if ($("wb-mixed")) $("wb-mixed").checked = linked.picks ? true : !!saved?.mixed;
     if ($("wb-layout")) $("wb-layout").value = saved?.layout === "exam" ? "exam" : "learn";
     if ($("wb-newpage")) $("wb-newpage").checked = !!saved?.breakSections;
     $("wb-seedcode").value = saved?.code || seedCode((Math.random() * 0xffffffff) >>> 0);

@@ -4009,3 +4009,9 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 
 .wb-side-tab { outline: 0; }
 .wb-side-tab:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent-secondary, #6fb7e8) 80%, transparent); outline-offset: 1px; }
+
+/* ── mixed practice (engine.js mixedRun): each question says what kind it is and what to do ── */
+.wb-mix__kind { margin: 0 0 1.6mm; font-size: 8.4pt; line-height: 1.4; color: #5b5448; }
+.wb-mix__kind b { display: inline-block; margin-right: 1.4mm; padding: 0.2mm 1.6mm; font-family: var(--font-display, "Unbounded"), sans-serif; font-size: 7.2pt; letter-spacing: 0.02em; color: #2a2723; background: #fff3a8; }
+.wb-row--mix + .wb-row--mix { margin-top: 4mm; padding-top: 3mm; border-top: 0.25mm dashed #d9d1c2; }
+@media print { .wb-mix__kind b { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
