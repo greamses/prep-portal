@@ -453,6 +453,25 @@ export function mountBuilder(cfg) {
       const ids = String(q.get("only") || "").split(",").map((v) => v.trim()).filter(Boolean);
       const picks = {};
       exercises.forEach((ex) => { if (ids.includes(ex.id) || ids.includes(ex.group)) picks[ex.id] = ex.defaultCount || 4; });
+      /* A WORKBOOK WORTH OPENING: at least three kinds of exercise and ten questions. A section with fewer kinds
+         is joined by the next sections of the same chapter (a chapter runs from a group that names one to the
+         next that does), then the questions are shared out until there are ten. */
+      const MIN_KINDS = 3, MIN_QS = 10;
+      if (Object.keys(picks).length) {
+        const order = (groups || []).map((g) => g.id);
+        const chapterOf = new Map();
+        let ch = -1;
+        (groups || []).forEach((g, i) => { if (g.chapter || i === 0) ch = i; chapterOf.set(g.id, ch); });
+        const startGroup = exercises.find((ex) => picks[ex.id])?.group;
+        const myChapter = chapterOf.get(startGroup);
+        for (const gid of order.slice(order.indexOf(startGroup) + 1)) {
+          if (Object.keys(picks).length >= MIN_KINDS || chapterOf.get(gid) !== myChapter) break;
+          exercises.filter((ex) => ex.group === gid).forEach((ex) => { picks[ex.id] = ex.defaultCount || 4; });
+        }
+        const keys = Object.keys(picks);
+        let total = keys.reduce((n, k) => n + picks[k], 0), i = 0;
+        while (total < MIN_QS && keys.length) { const k = keys[i++ % keys.length]; if (picks[k] < 40) { picks[k]++; total++; } }
+      }
       return { picks: Object.keys(picks).length ? picks : null, open: q.has("open") || Object.keys(picks).length > 0 };
     } catch { return { picks: null, open: false }; }
   })();
