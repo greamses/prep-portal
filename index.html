@@ -143,62 +143,19 @@
 
     <nav class="site-nav" data-nav="main"></nav>
 
-    <!-- ═══ HERO ═══ -->
-    <section class="hero">
-      <!-- Paint splash background (injected from the shared icon module) -->
+    <!-- ═══ WHAT IS INSIDE: the wall of activity cards opens the page (home/js/showcase.js) ═══ -->
+    <section class="showcase-section showcase-section--top" id="whats-inside">
+      <!-- the paint splash that used to sit behind the hero, now behind the cards -->
       <div class="hero-paint" aria-hidden="true"></div>
-
-      <div class="hero-inner">
-        <h1 class="hero-title">
-          You can<br /><em class="hero-type">build</em
-          ><span class="hero-caret" aria-hidden="true"></span>.
-        </h1>
-        <div class="hero-actions">
-          <a
-            href="#book"
-            class="hero-btn hero-btn-primary"
-            data-auth-open="login"
-          >
-            <span>Register</span>
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(90 12 12)"><rect x="10.6" y="9" width="2.8" height="12" rx="1.4" fill="var(--accent-secondary)"/><path d="M12 2.6 19.4 11H4.6z" fill="var(--accent-danger)"/></g></svg>
-          </a>
-          <a href="#whats-inside" class="hero-btn hero-btn-secondary">
-            <span>See what's inside</span>
-          </a>
-        </div>
-
-        <div class="hero-stats">
-          <span class="pp-pill pp-pill--static theme-blue"
-            ><strong>4</strong> printable workbooks</span
-          >
-          <span class="pp-pill pp-pill--static theme-green"
-            ><strong>10+</strong> hands-on activities</span
-          >
-          <span class="pp-pill pp-pill--static theme-red"><strong>3D</strong> science lab</span>
-          <span class="pp-pill pp-pill--static theme-yellow"
-            ><strong>Free</strong> to start</span
-          >
-        </div>
-      </div>
+      <header class="showcase-head showcase-head--slim">
+        <p class="section-eyebrow">What's inside</p>
+      </header>
+      <div class="showcase-bands"></div>
     </section>
 
     <!-- ═══ PREPBOT'S ADVERT OF THE DAY (home/js/daily-ad.js) ═══ -->
     <section class="dad-section" aria-label="Today from PrepBot">
       <div class="dad-wrap" id="daily-ad"></div>
-    </section>
-
-    <!-- ═══ WHAT IS INSIDE (a wall of snapshots, home/js/showcase.js) ═══ -->
-    <section class="showcase-section" id="whats-inside">
-      <header class="showcase-head">
-        <p class="section-eyebrow">What's inside</p>
-        <h2 class="section-headline">Not a shelf of PDFs. <em>A workshop.</em></h2>
-        <p class="section-sub">
-          Balances you take the weights off, trains you send numbers through,
-          squares you build out of tiles, maps you drag the states onto, a 3D
-          lab bench — and workbooks that print with the answers. Tap any one.
-        </p>
-      </header>
-      <div class="showcase-bands"></div>
     </section>
 
     <!-- ═══ STUDENT PHOTOCARDS (torn-paper deck) ═══ -->
@@ -761,6 +718,7 @@
 
     <!-- Promo popup: "earn by referring" growth nudge (shown to everyone) -->
     <script src="/home/js/promo-popup.js"></script>
+    <script type="module" src="/home/js/join-popup.js"></script>
     <script type="module" src="/home/js/showcase.js"></script>
     <script type="module" src="/home/js/daily-ad.js"></script>
     <script type="module" src="/utils/prepbot/prepbot.js"></script>

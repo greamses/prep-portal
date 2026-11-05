@@ -78,4 +78,11 @@
 .showcase-grid .card-title { font-size: 1.02rem; margin-bottom: 0.4rem; }
 /* three lines here rather than the blog's two: these read as captions, and a
    sentence cut in half mid-word is worse than a line more */
-.showcase-grid .card-excerpt { margin-bottom: 0.7rem; -webkit-line-clamp: 3; line-clamp: 3; }
+.showcase-grid .card-excerpt { margin-bottom: 0.6rem; font-size: 0.7rem; line-height: 1.45; -webkit-line-clamp: 2; line-clamp: 2; }
+
+/* the cards open the page now (no hero above them): room under the nav, the paint wash behind, and only the
+   "What's inside" label over them */
+.showcase-section--top { position: relative; max-width: none; padding-top: clamp(1.4rem, 3vw, 2.2rem); }
+.showcase-section--top > .hero-paint { opacity: 0.32; }
+.showcase-section--top > .showcase-head, .showcase-section--top > .showcase-bands { position: relative; z-index: 1; max-width: 1200px; margin-left: auto; margin-right: auto; }
+.showcase-head--slim { margin-bottom: clamp(0.8rem, 2vw, 1.4rem); }

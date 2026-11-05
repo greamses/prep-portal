@@ -68,6 +68,8 @@
 
   function build() {
     if (shown || document.getElementById("pp-promo")) return;
+    /* a phone has room for one card in its corner: a signed-out visitor gets the sign-up card (join-popup.js) */
+    if (window.innerWidth < 600 && document.getElementById("pp-join")) return;
     shown = true;
     ensureComponents();
     injectStyles();
