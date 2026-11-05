@@ -75,7 +75,10 @@ const TOOLS = [
 // themselves they became a pad of notes stuck to a note.
 const NOTE_KEYS = ['[class*="pp-note__"]'];
 
-const SKIP = [".pp-plain", ".pp-select-trigger", ".pp-receipt", "svg *", '[class*="blockly"]', ...BARE, ...TOOLS, ...NOTE_KEYS];
+/* A SWITCH is a track and a knob that slides: it shows its own state by moving, so it is never dressed as paper and
+   never gets the "chosen" ink outline (the user: "they don't need outline since they visibly move"). */
+const SWITCHES = ['[role="switch"]'];
+const SKIP = [".pp-plain", ".pp-select-trigger", ".pp-receipt", "svg *", '[class*="blockly"]', ...BARE, ...TOOLS, ...NOTE_KEYS, ...SWITCHES];
 
 // Already notes, each with its own `transform` tilt and tape — a second tilt
 // would double it. A new note class that tilts itself belongs here.
