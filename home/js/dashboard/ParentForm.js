@@ -27,12 +27,18 @@ export function renderParentFields() {
             ${CHEVRON}
           </button>
           <div class="pp-select-menu">
-            <div class="pp-select-item" data-value="jss1">JSS 1</div>
-            <div class="pp-select-item" data-value="jss2">JSS 2</div>
-            <div class="pp-select-item" data-value="jss3">JSS 3</div>
-            <div class="pp-select-item" data-value="ss1">SS 1</div>
-            <div class="pp-select-item" data-value="ss2">SS 2</div>
-            <div class="pp-select-item" data-value="ss3">SS 3</div>
+            <div class="pp-select-item" data-value="grade1">Grade 1</div>
+            <div class="pp-select-item" data-value="grade2">Grade 2</div>
+            <div class="pp-select-item" data-value="grade3">Grade 3</div>
+            <div class="pp-select-item" data-value="grade4">Grade 4</div>
+            <div class="pp-select-item" data-value="grade5">Grade 5</div>
+            <div class="pp-select-item" data-value="grade6">Grade 6</div>
+            <div class="pp-select-item" data-value="grade7">Grade 7</div>
+            <div class="pp-select-item" data-value="grade8">Grade 8</div>
+            <div class="pp-select-item" data-value="grade9">Grade 9</div>
+            <div class="pp-select-item" data-value="grade10">Grade 10</div>
+            <div class="pp-select-item" data-value="grade11">Grade 11</div>
+            <div class="pp-select-item" data-value="grade12">Grade 12</div>
           </div>
           <input type="hidden" id="signup-child-class" required />
         </div>

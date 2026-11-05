@@ -437,6 +437,10 @@
 }
 
 .auth-modal .pp-select-menu {
+  /* twelve grades: the list scrolls inside itself rather than running off the form */
+  max-height: min(16rem, 50vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1.5px solid rgba(var(--shadow-color), 0.16);
   border-radius: 0;
   background: var(--surface-primary);
