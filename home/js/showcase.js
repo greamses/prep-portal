@@ -112,6 +112,7 @@ console.log(typeof age);`, file: "types.js", out: 1 }), css: WB_CSS };
   },
   /* the labs show themselves: a screenshot of each, taken from the lab (virtual-lab/<lab>/thumb.jpg) */
   lab: async () => ({ img: "/virtual-lab/chemistry/thumb.jpg", alt: "Inside the 3D chemistry lab" }),
+  moves: async () => ({ img: "/prep-math/activity/algebra-moves/thumb.jpg", alt: "An equation on the Algebra Moves canvas" }),
   tubes: async () => ({ img: "/virtual-lab/chemistry-2d/thumb.jpg", alt: "The chemistry bench, set up for a titration" }),
   /* the map the jigsaw drops its 37 states into */
   map: async () => {
@@ -124,7 +125,7 @@ console.log(typeof age);`, file: "types.js", out: 1 }), css: WB_CSS };
     return { svg: sceneSvg("front-page") };
   },
   studio: iconShot(I.editorial),
-  blocks: iconShot(I.games),
+  gamestudio: iconShot(I.games),   /* its own name: "blocks" is the Manipulatives picture above */
   exams: navScene("Exams"),
   blogs: navScene("Blogs"),
   play: navScene("Activities"),
@@ -143,9 +144,9 @@ export const BANDS = [
       { art: "balance", title: "Balance scales", tag: "Algebra", line: "Take the same off both pans and the bag gives itself up.", href: "/prep-math/activity/algebra-workbook/" },
       { art: "train", title: "Function machines", tag: "Functions", line: "Put a number on the card and ride it coach by coach.", href: "/prep-math/activity/algebra-workbook/" },
       { art: "tiles", title: "Completing the square", tag: "Algebra", line: "Lay x² and its strips, then fill the corner that is missing.", href: "/prep-math/activity/algebra-workbook/" },
-      { art: "graph", title: "Graphs of functions", tag: "Graphs", line: "Tap the points, rule the line, read the rule back off it.", href: "/prep-math/activity/algebra-workbook/" },
+      { art: "graph", title: "Graphs of functions", tag: "Graphs", line: "Tap the points, rule the line, read the rule back off it.", href: "/prep-math/activity/cartesian-art/" },
       { art: "blocks", title: "Manipulatives", tag: "Number", line: "Blocks, abacuses, tiles and charts on one endless table.", href: "/prep-math/activity/base-blocks/" },
-      { art: "tally", title: "Number Match", tag: "Number", line: "Every way of writing one number, poured out as notes.", href: "/prep-math/activity/number-match/" },
+      { art: "moves", title: "Algebra Moves", tag: "Algebra", line: "Type an equation, then name each move that solves it.", href: "/prep-math/activity/algebra-moves/" },
       { art: "shop", title: "The Toy Shop", tag: "Money", line: "Fill a basket, then work the bill, the sale and the tax out yourself.", href: "/prep-math/activity/toy-shop/" },
       { art: "pack", title: "Card Tricks", tag: "Number", line: "A real pack, and six tricks that turn out to be sums.", href: "/prep-math/activity/card-tricks/" },
     ],
@@ -171,7 +172,7 @@ export const BANDS = [
     tag: "Code",
     cards: [
       { art: "codebox", title: "JavaScript Workbook", tag: "Code", line: "Learn to code: an editor and a console on every page.", href: "/prep-math/activity/js-workbook/" },
-      { art: "blocks", title: "Game Studio", tag: "Blocks", line: "Build a page and a game out of blocks, and watch it run.", href: "/code/studio/" },
+      { art: "gamestudio", title: "Game Studio", tag: "Blocks", line: "Build a page and a game out of blocks, and watch it run.", href: "/code/studio/" },
     ],
   },
   {
