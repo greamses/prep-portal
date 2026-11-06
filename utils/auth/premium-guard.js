@@ -28,7 +28,7 @@ import {
 import {
   getFirestore, doc, getDoc,
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
-import { featureAndPartForPath, resolveUserAccess } from "/utils/features.js";
+import { featureAndPartForPath, resolveUserAccess, isAdminUser } from "/utils/features.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA2N3uI_XfSIVsto2Ku1g_qSezmD3qFmbk",
@@ -196,6 +196,9 @@ onAuthStateChanged(auth, async (user) => {
   // Resolution order (resolveAccess in /utils/features.js):
   //   part-disabled → per-user block → per-user grant → off/free/premium.
   const { featureId, partId } = featureAndPartForPath(location.pathname);
+  // The admin gets every page, every feature in every state: that is how a new
+  // one is tried out before it is opened to anyone else.
+  if (isAdminUser({ email: user.email })) return reveal();
 
   // The user's entitlement: cached, else one users/{uid} read.
   let ent = cachedEntitlement(user.uid);
@@ -226,6 +229,7 @@ onAuthStateChanged(auth, async (user) => {
       featureId,
       partId,
       profile: ent ? { isPremium: ent.premium, featureOverrides: ent.overrides } : null,
+      email: user && user.email,
     });
   } catch (e) {
     return reveal(); // resolver/config blew up → fail open

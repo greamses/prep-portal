@@ -290,10 +290,14 @@ export function featureForPath(pathname) {
  * @param {object}  [q.globalParts]  config/site.featureParts[featureId]
  * @param {object}  [q.override]     users/{uid}.featureOverrides[featureId]
  * @param {boolean} q.isPremium    caller-computed (server treats ADMIN_EMAIL as premium)
+ * @param {boolean} [q.isAdmin]    the site's admin: EVERY feature and part, whatever its state
  * @returns {{allowed: boolean, reason: string}}
  */
-export function resolveAccess({ featureId, partId, state, globalParts, override, isPremium }) {
+export function resolveAccess({ featureId, partId, state, globalParts, override, isPremium, isAdmin = false }) {
   void featureId; // part of the call signature for logging/symmetry; unused here
+  /* 0. The admin always gets in — including to a feature switched "off" for
+     everyone, which is how a new feature is tried out before it is opened. */
+  if (isAdmin) return { allowed: true, reason: "admin" };
   // 1. Which parts apply: an override with a parts map defines them outright;
   //    a grant without parts means "all parts"; otherwise the global parts map
   //    (absent entry ⇒ enabled).
@@ -376,7 +380,13 @@ export async function getFeatureState(id, apiBase = "") {
  * one call. `profile` is the users/{uid} doc data (or null) — supplies both
  * isPremium and featureOverrides.
  */
-export async function resolveUserAccess({ featureId, partId, profile, apiBase = "" }) {
+/** The site's admin account (the server reads the same from process.env.ADMIN_EMAIL). */
+export const ADMIN_EMAIL = "eemadanyel@gmail.com";
+/** Is this signed-in user the admin? (the email, or a profile marked role "admin") */
+export const isAdminUser = ({ email, profile } = {}) =>
+  (!!email && email === ADMIN_EMAIL) || (!!profile && (profile.email === ADMIN_EMAIL || profile.role === "admin"));
+
+export async function resolveUserAccess({ featureId, partId, profile, email = null, apiBase = "" }) {
   const cfg = await fetchFeatureConfig(apiBase);
   const state = cfg.states[featureId] || (BY_ID[featureId] && BY_ID[featureId].default) || "premium";
   return resolveAccess({
@@ -386,5 +396,6 @@ export async function resolveUserAccess({ featureId, partId, profile, apiBase = 
     globalParts: cfg.parts[featureId],
     override: profile && profile.featureOverrides && profile.featureOverrides[featureId],
     isPremium: !!(profile && profile.isPremium),
+    isAdmin: isAdminUser({ email, profile }),
   });
 }

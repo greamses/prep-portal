@@ -2080,6 +2080,7 @@ If (and only if) you're pointing the student to one specific page from the site 
         featureId: "prepbot",
         partId: "chat",
         profile: _pbProfile.profile,
+        email: user.email,
       });
       if (v.allowed) return "ok";
       return v.reason === "premium-required" ? "subscribe" : "off";

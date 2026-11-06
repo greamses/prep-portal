@@ -124,6 +124,9 @@ async function canUse(req, featureId, partId) {
     globalParts: cfg.parts[featureId],
     override: user.overrides[featureId],
     isPremium: user.isPremium,
+    /* the admin gets every feature, "off" ones included: that is how a new
+       feature is tested before it is opened to anyone else */
+    isAdmin: !!(req.user && req.user.email && req.user.email === process.env.ADMIN_EMAIL),
   });
 }
 

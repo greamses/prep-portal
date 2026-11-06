@@ -64,7 +64,7 @@ export function boardAllowed() {
       const user = auth.currentUser;
       if (!user) return false;
       const profile = await getProfile(user.uid).catch(() => null);
-      const v = await resolveUserAccess({ featureId: "whiteboard", profile: { ...(profile || {}), email: user.email } });
+      const v = await resolveUserAccess({ featureId: "whiteboard", profile: profile || {}, email: user.email });
       return !!v.allowed;
     } catch {
       return false;

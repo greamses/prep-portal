@@ -57,7 +57,7 @@ auth.onAuthStateChanged(async (user) => {
   if (!user) return;
   unwatch = watchProfile(user.uid, async (profile) => {
     try {
-      const v = await resolveUserAccess({ featureId: "prepbot", partId: "bench", profile });
+      const v = await resolveUserAccess({ featureId: "prepbot", partId: "bench", profile, email: user.email });
       account.bot = Boolean(v.allowed);
     } catch { account.bot = Boolean(profile && profile.isPremium); }
     tell();
