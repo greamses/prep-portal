@@ -53,7 +53,7 @@ function applyTheme(theme) {
   try {
     localStorage.setItem(THEME_KEY, theme);
   } catch (e) {}
-  document.querySelectorAll(".nav-theme-toggle").forEach((btn) => {
+  document.querySelectorAll(".nav-theme-toggle:not(.nav-bell__btn)").forEach((btn) => {
     btn.innerHTML = themeToggleIcon(theme);
     btn.setAttribute(
       "aria-label",

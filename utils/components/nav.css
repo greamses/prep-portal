@@ -645,8 +645,8 @@ body {
   align-items: center;
   justify-content: center;
   /* flat: just the icon, no paper, border or shadow — the same on every page */
-  border: 0;
-  border-radius: 0;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
   background: transparent;
   box-shadow: none;
   padding: 0;
