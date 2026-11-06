@@ -645,7 +645,8 @@ body {
   align-items: center;
   justify-content: center;
   /* flat: just the icon, no paper, border or shadow — the same on every page */
-  border: 2px solid var(--ink);
+  /* hairline ring, tinted from the text colour so it reads in light AND dark */
+  border: 1px solid color-mix(in srgb, var(--ink) 40%, transparent);
   border-radius: 50%;
   background: transparent;
   box-shadow: none;
