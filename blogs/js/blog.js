@@ -460,9 +460,10 @@ function renderCard(post, idx) {
   const rt = calcReadTime(post.content);
   const excerpt =
     post.excerpt || stripHtml(post.content || "").substring(0, 110);
-  const hasVideo = !!post.videoLink;
+  const videoCount = postVideoList(post).length;
+  const hasVideo = videoCount > 0;
   const hasPractice = !!post.practiceLink;
-  const videoThumb = getYouTubeThumbnail(post.videoLink);
+  const videoThumb = getYouTubeThumbnail(postVideoList(post)[0]?.url);
   const cardImage = post.featuredImage
     ? post.featuredImage
     : videoThumb
@@ -493,7 +494,7 @@ function renderCard(post, idx) {
         </div>
         <h2 class="card-title">${escHtml(post.title)}</h2>
         <div class="card-resource-row">
-          <span class="pp-pill pp-pill--static${hasVideo ? " theme-red" : ""}">${I.video}<span>Video</span></span>
+          <span class="pp-pill pp-pill--static${hasVideo ? " theme-red" : ""}">${I.video}<span>${videoCount > 1 ? videoCount + " Videos" : "Video"}</span></span>
           <span class="pp-pill pp-pill--static${hasPractice ? " theme-blue" : ""}">${I.practice}<span>Practice</span></span>
         </div>
         <p class="card-excerpt">${escHtml(excerpt)}...</p>
@@ -690,6 +691,55 @@ async function incViews(id) {
   } catch (_) {}
 }
 
+// ─── VIDEOS ───────────────────────────────────────────────
+// A post can carry several videos (the engine's Videos editor saves a
+// `videos` array of { title, url, duration }) plus the older single
+// `videoLink`. One list, de-duplicated by YouTube id, in the order set in the
+// engine; the first is the lead video.
+const videoKey = (url) =>
+  (String(url).match(/(?:v=|youtu\.be\/|embed\/)([\w-]{6,})/) || [])[1] || url;
+
+function postVideoList(post) {
+  const seen = new Set();
+  const out = [];
+  const add = (url, title, duration) => {
+    url = String(url || "").trim();
+    if (!url || seen.has(videoKey(url))) return;
+    seen.add(videoKey(url));
+    out.push({ url, title: String(title || "").trim(), duration: String(duration || "").trim() });
+  };
+  (post.videos || []).forEach((v) => add(v?.url, v?.title, v?.duration));
+  add(post.videoLink);
+  return out;
+}
+
+function renderVideoCard(post, v, i, n) {
+  const thumb = getYouTubeThumbnail(v.url);
+  const label = v.title || (n > 1 ? `Video ${i + 1}` : "Watch Video");
+  return `
+        <div class="resource-card video-resource" role="button" tabindex="0"
+          data-embed-url="${escHtml(getEmbedUrl(v.url, "video"))}"
+          data-raw-url="${escHtml(v.url)}"
+          data-embed-type="video"
+          data-embed-title="${escHtml(v.title || "Video: " + post.title)}">
+          <div class="video-thumb-area">
+            ${thumb ? `<img src="${escHtml(thumb)}" alt="" loading="lazy" onerror="this.parentElement.style.background='#222'">` : ""}
+            <div class="video-play-overlay">
+              <svg viewBox="0 0 50 50" fill="none">
+                <circle cx="25" cy="25" r="25" fill="rgba(0,0,0,0.5)"></circle>
+                <polygon points="20,15 20,35 38,25" fill="white"></polygon>
+              </svg>
+            </div>
+            ${n > 1 ? `<span class="video-order">${i + 1} / ${n}</span>` : ""}
+            ${v.duration ? `<span class="video-duration">${escHtml(v.duration)}</span>` : ""}
+          </div>
+          <div class="resource-card-footer">
+            <span class="resource-type-label">${escHtml(label)}</span>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="resource-open-arrow"><g transform="rotate(90 12 12)"><rect x="10.6" y="9" width="2.8" height="12" rx="1.4" fill="var(--accent-secondary)"/><path d="M12 2.6 19.4 11H4.6z" fill="var(--accent-danger)"/></g></svg>
+          </div>
+        </div>`;
+}
+
 function showSinglePost(post) {
   ensureLessonAssets();
 
@@ -705,7 +755,7 @@ function showSinglePost(post) {
   const views = (post.views || 0) + 1;
   const likes = post.likes || [];
   const liked = currentUser && likes.includes(currentUser.uid);
-  const videoThumb = getYouTubeThumbnail(post.videoLink);
+  const videoList = postVideoList(post);
   const practiceDomain = post.practiceLink
     ? getDomain(post.practiceLink)
     : null;
@@ -745,42 +795,15 @@ function showSinglePost(post) {
     ${post.featuredImage ? `<img class="post-featured-img" src="${escHtml(post.featuredImage)}" alt="${escHtml(post.title)}" loading="lazy">` : ""}
 
     ${
-      post.videoLink || post.practiceLink
+      videoList.length || post.practiceLink
         ? `
     <div class="resource-links-section">
       <div class="resource-links-heading">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M11.4 7.4 13.2 5.6a3.9 3.9 0 0 1 5.5 5.5l-1.8 1.8-2-2 1.8-1.8a1.1 1.1 0 0 0-1.5-1.5l-1.8 1.8z" fill="var(--accent-secondary)"/><path d="M12.6 16.6 10.8 18.4a3.9 3.9 0 0 1-5.5-5.5l1.8-1.8 2 2-1.8 1.8a1.1 1.1 0 0 0 1.5 1.5l1.8-1.8z" fill="var(--accent-secondary)"/><rect x="8.32" y="10.70" width="7.35" height="2.6" rx="1.3" fill="var(--accent-danger)" transform="rotate(-45.00 12.00 12.00)"/></svg>
         Learning Resources
       </div>
-      <div class="resource-links-grid">
-        ${
-          post.videoLink
-            ? `
-        <div class="resource-card video-resource" role="button" tabindex="0"
-          data-embed-url="${escHtml(getEmbedUrl(post.videoLink, "video"))}"
-          data-raw-url="${escHtml(post.videoLink)}"
-          data-embed-type="video"
-          data-embed-title="Video: ${escHtml(post.title)}">
-          <div class="video-thumb-area">
-            ${
-              videoThumb
-                ? `<img src="${escHtml(videoThumb)}" alt="Video thumbnail" loading="lazy" onerror="this.parentElement.style.background='#222'">`
-                : `<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#111"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:40px;height:40px;color:#fff"><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.4" fill="var(--accent-secondary)"/><path d="M9.6 8.4v7.2l6-3.6z" fill="#fff"/></svg></div>`
-            }
-            <div class="video-play-overlay">
-              <svg viewBox="0 0 50 50" fill="none">
-                <circle cx="25" cy="25" r="25" fill="rgba(0,0,0,0.5)"></circle>
-                <polygon points="20,15 20,35 38,25" fill="white"></polygon>
-              </svg>
-            </div>
-          </div>
-          <div class="resource-card-footer">
-            <span class="resource-type-label">Watch Video</span>
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="resource-open-arrow"><g transform="rotate(90 12 12)"><rect x="10.6" y="9" width="2.8" height="12" rx="1.4" fill="var(--accent-secondary)"/><path d="M12 2.6 19.4 11H4.6z" fill="var(--accent-danger)"/></g></svg>
-          </div>
-        </div>`
-            : ""
-        }
+      <div class="resource-links-grid${videoList.length > 1 ? " has-playlist" : ""}">
+        ${videoList.map((v, i) => renderVideoCard(post, v, i, videoList.length)).join("")}
 
         ${
           post.practiceLink
@@ -1335,6 +1358,7 @@ function normalizePost(data) {
     excerpt: data.excerpt || "",
     featuredImage: data.featuredImage || "",
     videoLink: data.videoLink || "",
+    videos: data.videos || [],
     practiceLink: data.practiceLink || "",
     subject: data.subject || Object.keys(SUBJECT_LABELS)[0] || "default",
     classLevel: data.classLevel || "ss-1",
@@ -1419,6 +1443,7 @@ async function openPostFromHash() {
       excerpt: d.excerpt || "",
       featuredImage: d.featuredImage || "",
       videoLink: d.videoLink || "",
+      videos: d.videos || [],
       practiceLink: d.practiceLink || "",
       subject: d.subject || Object.keys(SUBJECT_LABELS)[0] || "default",
       classLevel: d.classLevel || "ss-1",

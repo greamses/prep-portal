@@ -2029,3 +2029,22 @@ body:has(.embed-overlay.active) {
 .pager-gap { padding: 0 0.2rem; color: var(--text-tertiary); font-family: var(--font-mono); }
 .load-all-btn { margin-top: 1rem; }
 
+
+/* several videos: a numbered row of thumbnails, lead video first */
+.resource-links-grid.has-playlist { grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); }
+.video-order,
+.video-duration {
+  position: absolute;
+  z-index: 2;
+  padding: 0.2rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-body-xxs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+  color: #14130f;
+  background: #fff3a8;
+  box-shadow: 0 1px 1px rgba(20, 19, 15, 0.1), 3px 4px 8px -3px rgba(20, 19, 15, 0.35);
+}
+.video-order { top: 0.5rem; left: 0.5rem; transform: rotate(-2deg); }
+.video-duration { bottom: 0.5rem; right: 0.5rem; background: #bfe3ff; transform: rotate(2deg); }
+.resource-card-footer .resource-type-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
