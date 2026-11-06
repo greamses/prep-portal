@@ -15,10 +15,12 @@ const GRADE_VOICE = (g) =>
       : g <= 9 ? "ages 12 to 14: real vocabulary, explain the HOW and the WHY, simple equations"
         : "ages 15 to 18: exam level (WAEC/NECO), correct terminology, equations and units, the mechanism behind it";
 
-/* The two ways a lesson can run (the learner picks on the board):
-   "check"   — PrepBot stops to ask questions, to find out if it is landing;
-   "lecture" — PrepBot teaches straight through, turn after turn, and only
-               stops when the learner raises a hand (cuts in) with a question. */
+/* The ways a lesson can run (the learner picks on the board):
+   "check"    — PrepBot stops to ask questions, to find out if it is landing;
+   "lecture"  — PrepBot teaches straight through, turn after turn, and only
+                stops when the learner raises a hand (cuts in) with a question;
+   "homework" — the learner brings a problem; PrepBot never gives the answer:
+                one step at a time, the learner does each step, hints on demand. */
 const TURN_RULES = {
   check: `- End your turn with a question for the learner, as an ASK beat, then stop writing:
     {"ask":"<one question>","do":[<optional ops>]}
@@ -26,11 +28,23 @@ const TURN_RULES = {
   lecture: `- This is a LECTURE: never ask the learner a question and never wait for an answer. Teach straight through (a question you answer yourself in the next breath is fine).
 - A turn is 5 to 10 beats and stops at a natural pause; the lesson carries on in the next turn from exactly where you stopped, without repeating anything.
 - When the whole topic has been taught (usually after 3 to 6 turns), give a short summary beat, then write {"end":true} and stop.`,
+  homework: `- This is HOMEWORK HELP. The learner's problem is theirs to solve: NEVER write or say the final answer, and never do a step for them that they have not tried.
+- First turn: write the problem on the board (as the title), say in one or two beats what kind of problem it is and what the first step is about, without doing it, then ASK the learner to do that first step.
+- Every turn ends with an ASK beat asking the learner to do the NEXT step (one small step only), then stop writing:
+    {"ask":"<what you want them to try>","do":[<optional ops>]}
+- A turn is 2 to 6 beats: short, so the learner is doing most of the work.`,
 };
 const ANSWER_RULES = {
   check: `- If the learner answers your question: say plainly whether it is right; if not, show why on the board, kindly, without gushing either way.`,
   lecture: `- "[continue the lesson]" means nobody spoke: carry on teaching from where you stopped.
 - If the learner's latest words are a question (they raised their hand), answer it first, plainly and on the board, then carry on with the lesson.`,
+  homework: `- When the learner gives a step: work it out yourself first, carefully. If it is right, write it on the board as their line, say so in a few plain words (no gushing), and ask for the next step. If it is wrong, do not write the right one: point at exactly where it went wrong, say why, and ask them to try that step again.
+- "[hint please]" means they are stuck on the step you asked for. Give the NEXT hint up this ladder, one rung per request (count how many hints this step has had in the lesson so far):
+    1. a nudge: a question that points at what to look at;
+    2. the method: name the rule or move to use, and why it fits;
+    3. a worked example of the SAME move on DIFFERENT numbers, then ask them to do theirs the same way.
+  After the third hint, keep giving smaller and smaller pieces of the step, but still never the final answer.
+- When the learner reaches the final answer themselves, check it (put it back into the problem when you can), say it is right, write a one-line summary of the method, then {"end":true}.`,
 };
 
 function buildSystem({ grade = 8, style = "check" } = {}) {
@@ -116,7 +130,7 @@ function cleanInput(body = {}) {
     .map((t) => ({ role: t.role === "learner" ? "learner" : "tutor", text: clip(t.text, 600) }));
   while (transcript.reduce((s, t) => s + t.text.length, 0) > 4000) transcript.shift();
   const board = (Array.isArray(body.board) ? body.board.slice(-40) : []).filter((b) => b && typeof b === "object" && JSON.stringify(b).length < 400);
-  const style = body.style === "lecture" ? "lecture" : "check";
+  const style = ["lecture", "homework"].includes(body.style) ? body.style : "check";
   return { grade, learner, topic, transcript, board, style };
 }
 

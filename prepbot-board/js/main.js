@@ -35,6 +35,7 @@ const ICONS = {
   again: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.6 12a7.6 7.6 0 1 1-2.3-5.4" fill="none" stroke="var(--accent-secondary)" stroke-width="3.2" stroke-linecap="round"/><path d="M13.6 7.2l6.4-3.4.4 6.8z" fill="var(--accent-danger)"/></svg>`,
   mic: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.2" y="2.6" width="7.6" height="12.4" rx="3.8" fill="var(--accent-danger)"/><path d="M5.2 11.4a6.8 6.8 0 0 0 13.6 0" fill="none" stroke="var(--accent-secondary)" stroke-width="2.4" stroke-linecap="round"/><rect x="10.8" y="17.6" width="2.4" height="3.6" rx="1.2" fill="var(--accent-secondary)"/></svg>`,
   hand: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 11V5.4a1.4 1.4 0 0 1 2.8 0V10h.4V3.8a1.4 1.4 0 0 1 2.8 0V10h.4V5a1.4 1.4 0 0 1 2.8 0v6.4h.3V8.6a1.3 1.3 0 0 1 2.6 0v5.6c0 4.2-3 7.4-7 7.4-3.1 0-5.1-1.6-6.4-4l-2.3-4.4a1.4 1.4 0 0 1 2.3-1.5z" fill="var(--accent-primary)"/><path d="M8.2 11v2.4" stroke="var(--accent-warning)" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+  bulb: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6a7 7 0 0 0-4.2 12.6c.8.6 1.2 1.4 1.2 2.3v.5h6v-.5c0-.9.4-1.7 1.2-2.3A7 7 0 0 0 12 2.6z" fill="var(--accent-primary)"/><rect x="9" y="18.8" width="6" height="1.8" rx="0.9" fill="var(--accent-secondary)"/><rect x="10" y="21.2" width="4" height="1.6" rx="0.8" fill="var(--accent-secondary)"/><path d="M10.4 11.4l1.6 1.8 1.6-1.8" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   play: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.8 20.4 12 6.6 20.2z" fill="var(--accent-success)"/></svg>`,
   send: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 4.2 21 12 3.4 19.8l2.2-7.8z" fill="var(--accent-secondary)"/><path d="M5.6 12h7.6" stroke="var(--accent-primary)" stroke-width="2.4" stroke-linecap="round"/></svg>`,
 };
@@ -170,6 +171,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     if (!scheduler.busy && document.body.dataset.state !== "talking") return;
     streamCtrl?.abort();
     streamCtrl = null;
+    thinking(false);
     const rec = scheduler.interrupt();
     const said = rec.spoken.map((b) => b.say).join(" ");
     const cut = rec.partial ? ` [cut in during: "${rec.partial.say}"]` : "";
@@ -182,19 +184,42 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   }
 
   /** One turn: beats from `source` (an async iterator of raw beat objects). */
-  async function runTurn(source) {
+  /* PrepBot is thinking: from the moment the learner sends until the first
+     sentence arrives — the pencil hovers where it will write, the status line
+     says so with moving dots, and the send key turns over. Nothing is silent. */
+  const sendBtn = $("pb-send");
+  function thinking(on, label = "PrepBot is thinking") {
+    document.body.classList.toggle("is-thinking", on);
+    sendBtn.classList.toggle("is-busy", on);
+    sendBtn.setAttribute("aria-busy", String(on));
+    if (on) {
+      status.innerHTML = `${label}<span class="pb-dots" aria-hidden="true"><i></i><i></i><i></i></span>`;
+      current.think?.(true);
+    } else {
+      if (status.querySelector(".pb-dots")) status.textContent = "";
+      current.think?.(false);
+    }
+  }
+
+  async function runTurn(source, { label } = {}) {
     const turn = scheduler.begin();
     lesson.recorded = false;
     document.body.dataset.state = "talking";
+    thinking(true, label);
+    let first = true;
     try {
       for await (const raw of source) {
         if (turn !== scheduler.turn) return;
         const beat = cleanBeat(raw);
-        if (beat) scheduler.push(beat, turn);
+        if (beat) {
+          if (first) { first = false; thinking(false); }
+          scheduler.push(beat, turn);
+        }
       }
     } catch (e) {
-      if (e?.name !== "AbortError") { console.warn("[board] turn failed", e); showSay("Sorry, I lost my place. Ask me again?"); }
+      if (e?.name !== "AbortError") { console.warn("[board] turn failed", e); thinking(false); showSay("Sorry, I lost my place. Ask me again?"); }
     } finally {
+      if (first && turn === scheduler.turn) thinking(false);
       scheduler.done(turn);
     }
   }
@@ -245,14 +270,14 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     if (!text) return;
     if (scheduler.busy) cutIn();
     else keepRecord();
-    if (!lesson.topic) lesson.topic = text;
+    if (!lesson.topic && text !== HINT) lesson.topic = text;
     lesson.transcript.push({ role: "learner", text });
     lesson.hold = false;
     lesson.ended = false;
     lesson.run = 0;
     setRaise(false);
     status.textContent = "";
-    runTurn(liveBeats(text));
+    runTurn(liveBeats(text), { label: text === HINT ? "Finding you a hint" : style === "homework" && lesson.transcript.length > 1 ? "PrepBot is checking your step" : "PrepBot is thinking" });
   }
 
   /* ── two ways to teach ──────────────────────────────────────────────────
@@ -261,9 +286,18 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
      pauses it, and once the question is answered it carries on. */
   const STYLE_KEY = "pb-style";
   let style = "check";
-  try { if (localStorage.getItem(STYLE_KEY) === "lecture") style = "lecture"; } catch {}
+  try { const st = localStorage.getItem(STYLE_KEY); if (st === "lecture" || st === "homework") style = st; } catch {}
+  const HINT = "[hint please]";
+  const PLACEHOLDER = {
+    check: "Ask anything, or cut in while PrepBot talks…",
+    lecture: "Ask anything, or raise your hand to ask…",
+    homework: "Type your homework problem, then each step you try…",
+  };
   const styleBtns = [...document.querySelectorAll(".pb-style__btn")];
-  const showStyle = () => styleBtns.forEach((b) => b.setAttribute("aria-checked", String(b.dataset.style === style)));
+  const showStyle = () => {
+    styleBtns.forEach((b) => b.setAttribute("aria-checked", String(b.dataset.style === style)));
+    input.placeholder = PLACEHOLDER[style] || PLACEHOLDER.check;
+  };
   showStyle();
   styleBtns.forEach((b) => b.addEventListener("click", () => {
     style = b.dataset.style;
@@ -280,6 +314,12 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     keepRecord();
     runTurn(liveBeats("[continue the lesson]", { continuing: true }));
   }
+
+  /* homework: the hint key — "I'm stuck on this step" */
+  $("pb-hint").addEventListener("click", () => {
+    if (!lesson.topic) { showSay("Type your homework problem first, then ask for a hint."); input.focus({ preventScroll: true }); return; }
+    ask(HINT);
+  });
 
   /* the raised hand: pause the lecture; pressed again (now a play key), carry on */
   const raise = $("pb-raise");

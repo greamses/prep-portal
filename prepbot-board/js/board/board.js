@@ -42,6 +42,7 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null } =
   const items = new Map();       // id → built thing (box, mapper…)
   let graph = null;              // the graph on this page, if any
   let tl = null;
+  let thinkTw = null;
 
   function turnPage(animated = true) {
     if (ops.length) history.push(ops);
@@ -151,6 +152,22 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null } =
         }
         tl = timeline;
         timeline.eventCallback("onComplete", () => { if (tl === timeline) tl = null; pen.rest(); resolve(); });
+      });
+    },
+
+    /** PrepBot is thinking: the pencil hovers where the next line will go. */
+    think(on) {
+      if (!gsap) return;
+      if (thinkTw) { thinkTw.kill(); thinkTw = null; }
+      if (!on) { pen.rest(0.1); return; }
+      const C = layout.canvas.main;
+      const y = Math.min(C.y + C.h - 40, C.y + (C.h - layout.room()) + 50);
+      pen.to(C.x + 30, y, true);
+      pen.show();
+      const o = { t: 0 };
+      thinkTw = gsap.to(o, {
+        t: 1, duration: 1.4, repeat: -1, ease: "sine.inOut",
+        onUpdate: () => pen.to(C.x + 30 + Math.sin(o.t * Math.PI * 2) * 18, y - 10 + Math.cos(o.t * Math.PI * 4) * 8, true),
       });
     },
 

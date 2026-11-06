@@ -41,6 +41,7 @@
         <div class="pb-style" role="radiogroup" aria-label="How PrepBot teaches">
           <button type="button" class="pb-style__btn" data-style="check" role="radio" aria-checked="true" data-tip="PrepBot stops to ask you questions" data-tip-side="bottom">Checks in</button>
           <button type="button" class="pb-style__btn" data-style="lecture" role="radio" aria-checked="false" data-tip="PrepBot teaches straight through; raise your hand to ask" data-tip-side="bottom">Lecture</button>
+          <button type="button" class="pb-style__btn" data-style="homework" role="radio" aria-checked="false" data-tip="Bring a problem: you solve it, step by step, with hints when you need them" data-tip-side="bottom">Homework</button>
         </div>
         <button type="button" class="pb-ico" id="pb-new" data-tip="New board" data-tip-side="bottom" aria-label="New board" data-ico="again"></button>
       </header>
@@ -53,6 +54,7 @@
 
       <form class="pb-ask" id="pb-ask" autocomplete="off">
         <input id="pb-input" type="text" maxlength="400" placeholder="Ask anything, or cut in while PrepBot talks…" aria-label="Your question" />
+        <button type="button" class="pb-ico pb-hint" id="pb-hint" data-tip="I'm stuck: give me a hint" aria-label="Give me a hint" data-ico="bulb"></button>
         <button type="button" class="pb-ico pb-hand-up" id="pb-raise" data-tip="Raise your hand to ask a question" aria-label="Raise your hand" data-ico="hand"></button>
         <button type="button" class="pb-ico" id="pb-mic" data-tip="Hold to talk, or tap and pause" aria-label="Hold to talk" aria-pressed="false" data-ico="mic"></button>
         <button type="submit" class="pb-ico" id="pb-send" data-tip="Send" aria-label="Send" data-ico="send"></button>
