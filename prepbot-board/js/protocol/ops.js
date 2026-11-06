@@ -143,7 +143,7 @@ const SPEC = {
     if (typeof o.target !== "string") return null;
     const pens = ["yellow", "green", "blue", "orange", "red"];
     const given = tone(o.tone);
-    return { op: "highlight", id: idOf(o.id, "h"), target: o.target, tone: given && given !== "ink" ? given : pens[(penTurn++) % pens.length] };
+    return { op: "highlight", id: idOf(o.id, "h"), target: o.target, words: str(o.words, 80), tone: given && given !== "ink" ? given : pens[(penTurn++) % pens.length] };
   },
 
   /* Go back to an earlier SECTION of the canvas (1, 2, …) to point at what is
@@ -155,12 +155,27 @@ const SPEC = {
 
   underline(o) {
     if (typeof o.target !== "string") return null;
-    return { op: "underline", id: idOf(o.id, "u"), target: o.target, tone: tone(o.tone) || "orange" };
+    return { op: "underline", id: idOf(o.id, "u"), target: o.target, words: str(o.words, 80), tone: tone(o.tone) || "orange" };
   },
 
   circle(o) {
     if (typeof o.target !== "string") return null;
-    return { op: "circle", id: idOf(o.id, "c"), target: o.target, tone: tone(o.tone) || "red" };
+    return { op: "circle", id: idOf(o.id, "c"), target: o.target, words: str(o.words, 80), tone: tone(o.tone) || "red" };
+  },
+
+  /* A drawn diagram from the site's own library, in the figure panel. */
+  diagram(o) {
+    const NAMES = ["plant-cell", "animal-cell", "heart", "brain", "brain-section", "ear"];
+    const name = String(o.name || "").toLowerCase().replace(/\s+/g, "-");
+    if (!NAMES.includes(name)) return null;
+    return { op: "diagram", id: idOf(o.id, "d"), name };
+  },
+
+  /* Point at a named part of a diagram: an arrow to it and its name, drawn. */
+  label(o) {
+    const part = str(o.part, 60);
+    if (!part || typeof o.on !== "string") return null;
+    return { op: "label", id: idOf(o.id, "l"), on: o.on, part, text: str(o.text, 40) || part, tone: tone(o.tone) || "blue" };
   },
 
   /* A fresh board. The old one is kept in the lesson's history. */

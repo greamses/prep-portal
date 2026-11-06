@@ -22,7 +22,16 @@
 
 import { createLayout } from "./layout.js";
 import { cleanOp, boardSummary } from "../protocol/ops.js";
-import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, buildShape, buildHighlight, gridMapper, createPen, setPen } from "./render.js";
+import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, buildShape, buildHighlight, buildDiagram, buildLabel, gridMapper, createPen, setPen } from "./render.js";
+import { ensureDiagrams, loadedDiagram, findPart } from "./diagrams.js";
+
+/* the diagram names a list of ops asks for, so they can be loaded first */
+const diagramsIn = (list) => (list || []).filter((o) => o && o.op === "diagram" && o.name).map((o) => String(o.name).toLowerCase().replace(/\s+/g, "-"));
+/* a mark on a whole item, or on just some of its words */
+const markTarget = (t, words) => {
+  const box = words && t.wordBox ? t.wordBox(words) : null;
+  return box ? { ...t, box } : t;
+};
 
 const GAP = 140;               // canvas between two sections
 const COLUMNS = 2;             // sections across, before the next row (landscape)
@@ -42,6 +51,10 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
   const rough = el("filter", { id: "pb-rough", filterUnits: "userSpaceOnUse", x: -20, y: -20, width: C.w + 40, height: C.h + 40 }, defs);
   el("feTurbulence", { type: "fractalNoise", baseFrequency: "0.035", numOctaves: 2, seed: 7, result: "n" }, rough);
   el("feDisplacementMap", { in: "SourceGraphic", in2: "n", scale: 2.2 }, rough);
+  /* the highlighter's brush: bristly, uneven edges */
+  const brush = el("filter", { id: "pb-brush", filterUnits: "userSpaceOnUse", x: -20, y: -20, width: C.w + 40, height: C.h + 40 }, defs);
+  el("feTurbulence", { type: "fractalNoise", baseFrequency: "0.06 0.9", numOctaves: 2, seed: 3, result: "b" }, brush);
+  el("feDisplacementMap", { in: "SourceGraphic", in2: "b", scale: 7 }, brush);
   const world = el("g", { class: "pb-world" }, svg);
   const measure = el("g", { class: "pb-measure", opacity: 0 }, svg);
 
@@ -239,7 +252,22 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       case "circle": {
         const t = items.get(op.target);
         if (!t?.box) return null;
-        return buildMark(op, page, t);
+        return buildMark(op, page, markTarget(t, op.words));
+      }
+      case "diagram": {
+        const data = loadedDiagram(op.name);
+        if (!data) return null;
+        /* a diagram fills the figure panel: one to a section, like a graph */
+        if (graph) nextSection(animated);
+        const d = buildDiagram(op, cur.page, layout, data);
+        graph = d;
+        return d;
+      }
+      case "label": {
+        const d = items.get(op.on)?.diagram;
+        const part = d && findPart(d.data, op.part);
+        if (!part) return null;
+        return buildLabel(op, page, d, part, layout.canvas.w - 24);
       }
       case "shape": {
         const g = op.on === "grid" ? null : items.get(op.on);
@@ -248,7 +276,7 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       case "highlight": {
         const t = items.get(op.target);
         if (!t?.box) return null;
-        return buildHighlight(op, page, t);
+        return buildHighlight(op, page, markTarget(t, op.words));
       }
       default:
         return null;
@@ -284,7 +312,9 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
      * (or when finishNow() jumps it there). With no gsap, or seconds = 0, the
      * ops appear at once.
      */
-    play(beat, seconds = 2) {
+    async play(beat, seconds = 2) {
+      const wanted = diagramsIn(beat?.do);
+      if (wanted.length) await ensureDiagrams(wanted);
       const live = !!gsap && seconds > 0;
       setPen(live ? pen : null); // instant drawing: no pencil
       /* a learner who looked away a while ago is brought back to where PrepBot is drawing */
@@ -311,7 +341,8 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
     },
 
     /** Draw back a whole board at once: every section's ops, in order. */
-    restore(pages = []) {
+    async restore(pages = []) {
+      await ensureDiagrams(pages.flatMap((p) => diagramsIn(p)));
       pages.forEach((ops, i) => {
         if (i > 0 && ops.length) nextSection(false);
         apply(ops, false).forEach((b) => b.instant?.());

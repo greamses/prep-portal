@@ -226,9 +226,29 @@ export function buildWrite(op, page, measureLayer, layout) {
     lineBoxes.push({ g, box, w: line.w, h: size.h, atoms: line.atoms, up, down });
   }
   const box = union(lineBoxes.map((l) => l.box));
+  /* where a WORD or a PHRASE of this line is, on the board (for marking just it) */
+  const norm = (w) => String(w || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const words = [];
+  for (const l of lineBoxes) {
+    for (const a of l.atoms) {
+      const x0 = +a.node.getAttribute("x") || 0;
+      words.push({ w: a.kind === "text" ? norm(a.node.textContent) : "", box: { x: l.box.x + x0 * l.box.scale, y: l.box.y, w: a.w * l.box.scale, h: l.box.h } });
+    }
+  }
+  const wordBox = (phrase) => {
+    const want = String(phrase || "").split(/\s+/).map(norm).filter(Boolean);
+    if (!want.length) return null;
+    for (let i = 0; i + want.length <= words.length; i++) {
+      if (want.every((w, j) => words[i + j].w === w)) return union(words.slice(i, i + want.length).map((x) => x.box));
+    }
+    /* one word that only starts the same (plural, "the cell's") */
+    const hit = want.length === 1 && words.find((x) => x.w && (x.w.startsWith(want[0]) || want[0].startsWith(x.w)));
+    return hit ? hit.box : null;
+  };
   return {
     node: group,
     box,
+    wordBox,
     /* a brisk hand: about fourteen characters a second */
     weight: 0.3 + op.text.replace(/\$/g, "").length / 14,
     draw(tl, at, dur) {
@@ -512,20 +532,137 @@ export function buildShape(op, page, mapper) {
 }
 
 /** A highlighter swept behind something already on the board. */
+/**
+ * A highlighter BRUSH STROKE behind something already on the board: a band of
+ * ink with ragged, uneven edges and a tapered start and finish, as one sweep
+ * of a broad brush leaves it — uncovered left to right with the pencil.
+ */
 export function buildHighlight(op, page, target) {
   const b = target.box;
-  const pad = 8;
-  const r = el("rect", { x: b.x - pad, y: b.y - pad / 2, width: 0, height: b.h + pad, class: `pb-hl pb-ink-${op.tone}-fill` });
-  /* under the writing, so the ink stays on top of the marker */
-  page.insertBefore(r, target.node || null);
-  const w = b.w + pad * 2;
+  const padX = 10, padY = Math.max(4, b.h * 0.12);
+  const x0 = b.x - padX, x1 = b.x + b.w + padX;
+  const y0 = b.y + padY * 0.4, y1 = b.y + b.h - padY * 0.2;
+  /* a seeded wobble, so a stroke is the same every time it is drawn back */
+  let seed = [...String(op.id)].reduce((s, c) => s * 31 + c.charCodeAt(0), 7) >>> 0;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296);
+  const steps = Math.max(6, Math.round((x1 - x0) / 34));
+  const top = [], bot = [];
+  for (let i = 0; i <= steps; i++) {
+    const x = x0 + ((x1 - x0) * i) / steps;
+    const lift = i === 0 || i === steps ? (y1 - y0) * 0.22 : 0; // the brush lands and lifts: thinner at the ends
+    top.push([x, y0 + lift + (rnd() - 0.5) * (y1 - y0) * 0.16]);
+    bot.push([x, y1 - lift + (rnd() - 0.5) * (y1 - y0) * 0.16]);
+  }
+  const f = (p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
+  const d = `M${f(top[0])}` + top.slice(1).map((p) => `L${f(p)}`).join("")
+    + `Q${(x1 + 8).toFixed(1)} ${((y0 + y1) / 2).toFixed(1)} ${f(bot[bot.length - 1])}`
+    + bot.slice(0, -1).reverse().map((p) => `L${f(p)}`).join("")
+    + `Q${(x0 - 10).toFixed(1)} ${((y0 + y1) / 2 + 3).toFixed(1)} ${f(top[0])}Z`;
+  const g = el("g", { class: "pb-hlg" });
+  const clipId = `hlc-${op.id}-${Math.random().toString(36).slice(2, 6)}`;
+  const cp = el("clipPath", { id: clipId }, g);
+  const r = el("rect", { x: x0 - 14, y: b.y - 20, width: 0, height: b.h + 40 }, cp);
+  el("path", { d, class: `pb-hl pb-ink-${op.tone}-fill`, "clip-path": `url(#${clipId})` }, g);
+  /* under the writing, so the ink stays on top of the brush */
+  const under = target.node && target.node.parentNode === page ? target.node : page.firstChild;
+  page.insertBefore(g, under || null);
+  const w = x1 - x0 + 28;
   return {
-    node: r, box: b, weight: 0.4 + b.w / 1400,
+    node: g, box: b, weight: 0.4 + b.w / 1400,
     draw(tl, at, dur) {
       tl.to(r, { attr: { width: w }, duration: dur, ease: "power1.inOut" }, at);
-      PEN?.follow(tl, at, dur, (p) => [b.x - pad + p * w, b.y + b.h * 0.72], "power1.inOut");
+      PEN?.follow(tl, at, dur, (p) => [x0 - 14 + p * w, (y0 + y1) / 2 + Math.sin(p * 9) * (y1 - y0) * 0.18], "power1.inOut");
     },
     instant() { r.setAttribute("width", w); },
+  };
+}
+
+/* ── the drawn diagrams (diagrams.js) ─────────────────────────────────────── */
+
+/** A diagram drawn into the figure panel: uncovered as the pencil sweeps over it. */
+export function buildDiagram(op, page, layout, data) {
+  const F = layout.canvas.figure;
+  /* a drawing whose labels come in from the sides is drawn smaller, leaving
+     room for the names beside it inside the panel */
+  const sideLabels = !data.parts.some((p) => p.arrow);
+  const k = Math.min(F.w / data.w, (F.h - 34) / data.h) * (sideLabels ? 0.62 : 0.94);
+  const ox = F.x + (F.w - data.w * k) / 2, oy = F.y + (F.h - 34 - data.h * k) / 2;
+  const g = el("g", { class: "pb-diagram", "data-id": op.id }, page);
+  const clipId = `dgc-${op.id}-${Math.random().toString(36).slice(2, 6)}`;
+  const cp = el("clipPath", { id: clipId }, g);
+  const r = el("rect", { x: ox - 10, y: oy - 10, width: 0, height: data.h * k + 20 }, cp);
+  const art = el("g", { "clip-path": `url(#${clipId})` }, g);
+  const inner = el("g", { transform: `translate(${ox.toFixed(1)} ${oy.toFixed(1)}) scale(${k.toFixed(4)})` }, art);
+  inner.innerHTML = data.art;
+  let credit = null;
+  if (data.credit) {
+    credit = el("text", { x: F.x + F.w, y: F.y + F.h - 6, "text-anchor": "end", class: "pb-credit" }, g);
+    credit.textContent = data.credit;
+  }
+  const toBoard = (x, y) => [ox + x * k, oy + y * k];
+  const W = data.w * k + 20, H = data.h * k;
+  return {
+    node: g, box: { x: ox, y: oy, w: data.w * k, h: H }, weight: 1.6,
+    diagram: { data, toBoard, box: { x: ox, y: oy, w: data.w * k, h: H } },
+    draw(tl, at, dur) {
+      tl.to(r, { attr: { width: W }, duration: dur, ease: "power1.inOut" }, at);
+      /* the pencil sketches down and up the drawing as it is uncovered */
+      PEN?.follow(tl, at, dur, (p) => [ox - 10 + p * W, oy + H * (0.5 + 0.42 * Math.sin(p * Math.PI * 7))], "power1.inOut");
+      if (credit) tl.from(credit, { opacity: 0, duration: 0.3 }, at + dur);
+    },
+    instant() { r.setAttribute("width", W); },
+  };
+}
+
+/** An arrow to a named part of a diagram, and its name at the tail — both drawn. */
+export function buildLabel(op, page, d, part, maxX = Infinity) {
+  const B = d.box;
+  const [tipX, tipY] = d.toBoard(part.cx, part.cy);
+  let tailX, tailY;
+  if (part.arrow) {
+    [tailX, tailY] = d.toBoard(part.arrow[0], part.arrow[1]);
+    const t2 = d.toBoard(part.arrow[2], part.arrow[3]);
+    /* the library's own arrow, pulled out a little past the drawing's edge */
+    const dx = tailX - t2[0], dy = tailY - t2[1], len = Math.hypot(dx, dy) || 1;
+    tailX += (dx / len) * 40; tailY += (dy / len) * 40;
+  } else {
+    /* no arrow given: come in from the nearer side, outside the drawing */
+    let left = tipX < B.x + B.w / 2;
+    /* never off the edge of the section: no room on the right means the left */
+    if (!left && B.x + B.w + 30 + op.text.length * 14 + 16 > maxX) left = true;
+    tailX = left ? B.x - 30 : B.x + B.w + 30;
+    tailY = tipY;
+  }
+  /* names never sit on one another: a name that would land on an earlier one
+     slides down (then up) the side of the drawing until it is clear */
+  const taken = d.labels || (d.labels = []);
+  const anchorSide = tailX < tipX ? "end" : "start";
+  const estW = op.text.length * 14 + 16;
+  const boxAt = (y) => ({ x: anchorSide === "end" ? tailX - estW : tailX, y: y - 24, w: estW, h: 38 });
+  const clash = (y) => taken.some((t) => { const a = boxAt(y); return a.x < t.x + t.w && t.x < a.x + a.w && a.y < t.y + t.h && t.y < a.y + a.h; });
+  if (clash(tailY)) {
+    for (let k = 1; k <= 10; k++) {
+      const y = tailY + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 44;
+      if (!clash(y)) { tailY = y; break; }
+    }
+  }
+  taken.push(boxAt(tailY));
+  const g = el("g", { class: "pb-label", "data-id": op.id }, page);
+  const line = el("path", { d: `M${tailX.toFixed(1)} ${tailY.toFixed(1)}L${tipX.toFixed(1)} ${tipY.toFixed(1)}`, class: `pb-stroke pb-ink-${op.tone}-stroke` }, g);
+  const dot = el("circle", { cx: tipX, cy: tipY, r: 6, class: `pb-ink-${op.tone}-fill` }, g);
+  const anchor = tailX < tipX ? "end" : "start";
+  const t = el("text", { x: tailX + (anchor === "end" ? -8 : 8), y: tailY + 8, "text-anchor": anchor, "font-family": FONT, "font-weight": HAND.title, "font-size": 26, class: `pb-ink-${op.tone}-fill pb-label__text` }, g);
+  t.textContent = op.text;
+  const tw = (() => { try { return t.getComputedTextLength(); } catch { return op.text.length * 12; } })();
+  const tx = anchor === "end" ? tailX - 8 - tw : tailX + 8;
+  return {
+    node: g, box: { x: tx, y: tailY - 22, w: tw, h: 36 }, weight: 0.75,
+    draw(tl, at, dur) {
+      drawStroke(tl, line, at, dur * 0.55);
+      tl.from(dot, { attr: { r: 0 }, duration: 0.2 }, at + dur * 0.5);
+      tl.from(t, { opacity: 0, duration: dur * 0.35 }, at + dur * 0.6);
+      PEN?.follow(tl, at + dur * 0.6, dur * 0.4, (p) => [tx + p * tw, tailY]);
+    },
   };
 }
 

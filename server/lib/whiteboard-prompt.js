@@ -84,7 +84,7 @@ HOW TO DRAW — the ops you may put in "do" (use ONLY these, with these fields):
 - {"op":"arrow","id":"a1","on":"g1","from":[20,6],"to":[29,6],"label":"velocity"}
     An arrow on a graph in its units. With no graph, use "on":"grid": a 0 to 10 grid filling the right panel ([0,0] bottom left), good for force and vector pictures. "dashed":true for a guide line, "head":false for a plain line.
 - {"op":"underline","target":"w2"}, {"op":"circle","target":"w2"} and {"op":"highlight","target":"w2"}
-    Mark something ALREADY on the board by its id, while you talk about it (highlight = a marker swept behind it; use it for key lines. The highlighters change colour by themselves; give "tone" to choose one, e.g. green for a rule, red for a mistake).
+    Mark something ALREADY on the board by its id, while you talk about it. Add "words":"lit half" to mark only those WORDS of that line instead of all of it (highlight = a brush stroke of marker behind it; use it for the key words and lines. The highlighters change colour by themselves; give "tone" to choose one, e.g. green for a rule, red for a mistake).
 - {"op":"shape","id":"s1","kind":"circle","at":[5,5],"r":1.5,"fill":"yellow","label":"Sun"}
     DRAW A PICTURE out of shapes on the right-hand panel's 0 to 10 grid ([0,0] bottom left, "on":"grid", the default) or on a graph in its units ("on":"g1"). Kinds:
       circle {at, r, shade}    shade "left"/"right"/"top"/"bottom"/"full" darkens that half (moon phases, a fraction of a disc)
@@ -92,6 +92,16 @@ HOW TO DRAW — the ops you may put in "do" (use ONLY these, with these fields):
       polygon {points:[[x,y],...]}   curve {points:[[x,y],...]}  (a smooth line through the points: a leaf, a hill, a wave, a river)
       sector {at, r, from, to}   a slice of a disc, angles in degrees anticlockwise from 3 o'clock (pie charts, fractions, angles)
     "fill": a tone for a soft wash inside; "tone": the outline colour; "label": a word under it. Build a picture from several shapes over a few beats, each drawn while you talk about it: the Sun, the Earth and the Moon; a plant cell; a circuit; a triangle with its angles; half of a pizza.
+- {"op":"diagram","id":"d1","name":"plant-cell"}
+    A proper labelled-quality DRAWING from the library, in the right-hand panel. Use it whenever the topic is one of these, instead of building it from shapes:
+      plant-cell: cell wall, cell membrane, cytoplasm, vacuole, tonoplast, chloroplast, thylakoid membrane, starch grain, mitochondrion, peroxisome, nucleus, nucleolus, nuclear pore, rough endoplasmic reticulum, smooth endoplasmic reticulum, ribosome, Golgi apparatus, vesicle, plasmodesma
+      animal-cell: cell membrane, cytoplasm, nucleus, nucleolus, nuclear envelope, chromatin, mitochondrion, ribosome, rough endoplasmic reticulum, smooth endoplasmic reticulum, Golgi apparatus, lysosome, peroxisome, centrosome, secretory vesicle, flagellum, microtubule, cytoskeleton
+      heart: right atrium, left atrium, right ventricle, left ventricle, aorta, superior vena cava, inferior vena cava, pulmonary artery, pulmonary vein, tricuspid valve, mitral valve, pulmonary valve, aortic valve
+      brain (outside): brain stem, cerebellum, frontal lobe, occipital lobe, parietal lobe, temporal lobe
+      brain-section (inside): amygdala, cerebellum, cingulate gyrus, corpus callosum, frontal lobe, hippocampus, hypothalamus, medulla oblongata, occipital lobe, parietal lobe, pituitary gland, pons, thalamus
+      ear: auricle, external auditory canal, tympanic membrane, tympanic cavity, malleus, incus, stapes, semicircular canals, cochlea, vestibular nerve, cochlear nerve, round window, Eustachian tube
+- {"op":"label","on":"d1","part":"chloroplast"}
+    Point at a PART of that diagram (use the names above): an arrow to it with its name. Label each part in the beat that talks about it. For photosynthesis, draw the plant-cell and label the chloroplast, then explain the process with writing and arrows.
 - {"op":"look","section":1}
     Go BACK to an earlier section (the canvas keeps them all; numbers start at 1) to point at, underline or highlight what is there, then carry on. A {"op":"clear"} afterwards opens a new section at the end again.
 - {"op":"clear"}

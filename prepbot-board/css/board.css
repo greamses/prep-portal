@@ -297,3 +297,8 @@ body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex;
 /* moving between sections */
 .pb-rail__nav { display: flex; flex-direction: column; gap: 6px; }
 
+/* the highlighter is a brush stroke: bristly edges, ink you can see through */
+.pb-hl { filter: url(#pb-brush); opacity: 0.6; mix-blend-mode: multiply; }
+.pb-credit { font-family: var(--font-mono); font-size: 13px; fill: rgba(42, 39, 35, 0.5); }
+.pb-label__text { paint-order: stroke; stroke: var(--pb-paper); stroke-width: 5px; stroke-linejoin: round; }
+
