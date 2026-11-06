@@ -59,7 +59,7 @@ const SUBJECTS = [
     key: "engineering",
     collectionName: "engineering-posts",
     name: "Engineering Facts",
-    labels: { civil: "Civil Engineering", mechanical: "Mechanical Engineering", electrical: "Electrical Engineering" },
+    labels: { inventions: "Inventions", howitworks: "How It Works", amazing: "Amazing Builds", machines: "Cool Machines" },
   },
 ];
 const CLASS_LABELS = {

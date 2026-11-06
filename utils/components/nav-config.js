@@ -131,11 +131,12 @@ const NAV_CONFIG = [
       {
         text: "Engineering",
         icon: I.science,
-        description: "How things are built",
+        description: "Inventions and how things work",
         children: [
-          { text: "Civil Engineering", href: "/blogs/?s=engineering&f=civil", description: "Bridges, roads and buildings" },
-          { text: "Mechanical Engineering", href: "/blogs/?s=engineering&f=mechanical", description: "Engines, gears and machines" },
-          { text: "Electrical Engineering", href: "/blogs/?s=engineering&f=electrical", description: "Circuits, power and signals" },
+          { text: "Inventions", href: "/blogs/?s=engineering&f=inventions", description: "Who made it, and how" },
+          { text: "How It Works", href: "/blogs/?s=engineering&f=howitworks", description: "Open up everyday things" },
+          { text: "Amazing Builds", href: "/blogs/?s=engineering&f=amazing", description: "Dams, towers and bridges" },
+          { text: "Cool Machines", href: "/blogs/?s=engineering&f=machines", description: "Robots, rockets and racers" },
         ],
       },
     ],

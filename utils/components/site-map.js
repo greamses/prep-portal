@@ -212,9 +212,10 @@ export const SITE_PAGES = [
   { id: "blogs-animal", title: "Animal Biology Articles", href: "/blogs/?s=animal", category: "reading", blurb: "Discover amazing creatures.", keywords: ["animal biology", "animals", "wildlife"] },
   { id: "blogs-plants", title: "Plant Science Articles", href: "/blogs/?s=plants", category: "reading", blurb: "Explore green wonders.", keywords: ["plant science", "plants", "botany"] },
   { id: "blogs-human-body", title: "Human Body Facts", href: "/blogs/?s=humanbody", category: "reading", blurb: "Know your body.", keywords: ["human body", "anatomy"] },
-  { id: "blogs-civil", title: "Civil Engineering Articles", href: "/blogs/?s=engineering&f=civil", category: "reading", blurb: "Bridges, roads and buildings.", keywords: ["civil engineering", "bridges", "buildings"] },
-  { id: "blogs-mechanical", title: "Mechanical Engineering Articles", href: "/blogs/?s=engineering&f=mechanical", category: "reading", blurb: "Engines, gears and machines.", keywords: ["mechanical engineering", "engines", "machines"] },
-  { id: "blogs-electrical", title: "Electrical Engineering Articles", href: "/blogs/?s=engineering&f=electrical", category: "reading", blurb: "Circuits, power and signals.", keywords: ["electrical engineering", "circuits", "electricity"] },
+  { id: "blogs-inventions", title: "Inventions", href: "/blogs/?s=engineering&f=inventions", category: "reading", blurb: "Who made it, and how.", keywords: ["inventions", "inventors", "engineering"] },
+  { id: "blogs-howitworks", title: "How It Works", href: "/blogs/?s=engineering&f=howitworks", category: "reading", blurb: "Open up everyday things.", keywords: ["how it works", "how things work", "engineering"] },
+  { id: "blogs-amazing-builds", title: "Amazing Builds", href: "/blogs/?s=engineering&f=amazing", category: "reading", blurb: "Dams, towers and bridges.", keywords: ["bridges", "buildings", "dams", "engineering"] },
+  { id: "blogs-cool-machines", title: "Cool Machines", href: "/blogs/?s=engineering&f=machines", category: "reading", blurb: "Robots, rockets and racers.", keywords: ["machines", "robots", "engineering"] },
 
   // ── Games (math learning games) ─────────────────────────────────────
   { id: "game-free-throw", title: "Free Throw", href: "/home/games/free-throw/", category: "games", blurb: "Aim, shoot and score — a basketball math game.", keywords: ["free throw", "basketball game"] },

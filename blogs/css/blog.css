@@ -1983,6 +1983,7 @@ body:has(.embed-overlay.active) {
 .sci-anatomy { background: #ffc9d4; }
 .sci-senses { background: #e8c8ff; }
 .sci-health { background: #b8ece2; }
-.sci-civil { background: #fff3a8; }
-.sci-mechanical { background: #bfe3ff; }
-.sci-electrical { background: #ffd7a3; }
+.sci-inventions { background: #fff3a8; }
+.sci-howitworks { background: #bfe3ff; }
+.sci-amazing { background: #c8f0c0; }
+.sci-machines { background: #e8c8ff; }

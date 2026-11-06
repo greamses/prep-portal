@@ -953,14 +953,14 @@ export const PAGES = [
     section: "read",
     name: "Science Articles",
     title: "Science & Engineering Articles for Students: Animals, Plants, the Human Body",
-    desc: "Short, illustrated science articles for primary and secondary students: remarkable animals, plants, the human body and how things are engineered, each written to a class level.",
+    desc: "Short, illustrated science articles for primary and secondary students: remarkable animals, plants, the human body and how inventions work, each written to a class level.",
     intro:
       "Science reading for curious students. Every article takes one remarkable thing, an animal, a plant or a part of the body, and explains the biology behind it at a level marked for primary, junior or senior secondary.",
     points: [
       "Animal biology: behaviour, adaptation and survival",
       "Plant science",
       "The human body: organs, senses and health",
-      "Engineering: civil, mechanical and electrical",
+      "Engineering: inventions, how things work and amazing builds",
       "Written to a grade level, from Grade 1 to Grade 12",
     ],
     access: "free",
