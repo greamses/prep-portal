@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PrepBot Board | Prep Portal</title>
+    <meta name="robots" content="noindex" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;600;700&family=Shantell+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/prepbot-board/css/board.css" />
+  </head>
+  <body>
+    <div class="pb-paint" aria-hidden="true"></div>
+
+    <main class="pb-stage">
+      <header class="pb-top">
+        <a class="pb-ico" href="/" data-tip="Back to Prep Portal" data-tip-side="bottom" aria-label="Back to Prep Portal" data-ico="back"></a>
+        <h1 class="pb-title">PrepBot Board</h1>
+        <span class="pp-pill pp-pill--static" id="pb-mode">Topic</span>
+        <button type="button" class="pb-ico" id="pb-new" data-tip="New board" data-tip-side="bottom" aria-label="New board" data-ico="again"></button>
+      </header>
+
+      <div class="pb-boardwrap" id="pb-boardwrap">
+        <svg id="pb-board" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="PrepBot's whiteboard. Tap it to cut in."></svg>
+        <p class="pb-status" id="pb-status" aria-live="polite"></p>
+        <p class="pb-caption pp-sticky pp-sticky--c0 pp-sticky--tape" id="pb-caption" aria-live="polite"></p>
+      </div>
+
+      <form class="pb-ask" id="pb-ask" autocomplete="off">
+        <input id="pb-input" type="text" maxlength="400" placeholder="Ask anything, or cut in while PrepBot talks…" aria-label="Your question" />
+        <button type="button" class="pb-ico" id="pb-mic" data-tip="Talk" aria-label="Talk" data-ico="mic"></button>
+        <button type="submit" class="pb-ico" id="pb-send" data-tip="Send" aria-label="Send" data-ico="send"></button>
+      </form>
+    </main>
+
+    <script type="module" src="/prepbot-board/js/main.js"></script>
+  </body>
+</html>

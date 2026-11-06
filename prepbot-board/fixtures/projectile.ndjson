@@ -1,0 +1,8 @@
+{"say":"Let's look at a ball kicked across a football pitch.","do":[{"op":"write","id":"t","text":"Why does a kicked ball curve?","as":"title"}]}
+{"say":"The moment it leaves your foot, the ball is doing two things at once.","do":[{"op":"graph","id":"g","x":[0,40],"y":[0,8],"xlabel":"distance (m)","ylabel":"height (m)"}]}
+{"say":"Forward, it keeps the same speed, because nothing pushes it back.","do":[{"op":"write","id":"w1","text":"Forward: $x = u cos(theta) t$"}]}
+{"say":"Upward, gravity pulls on it every second, so it rises, slows down, then falls.","do":[{"op":"write","id":"w2","text":"Upward: $y = u sin(theta) t - (1/2) g t^2$"}]}
+{"say":"Put the two motions together and you get this curve. It is called a parabola.","do":[{"op":"plot","id":"p","on":"g","expr":"y = 0.6x - 0.015x^2","x":[0,40],"tone":"blue","label":"path of the ball"}]}
+{"say":"At the very top, the ball is still moving forward. It has only stopped going up.","do":[{"op":"point","id":"top","on":"g","x":20,"y":6,"label":"top"},{"op":"arrow","id":"v","on":"g","from":[20,6],"to":[29,6],"label":"still moving"}]}
+{"say":"So the curve is just two simple motions happening together.","do":[{"op":"write","id":"w3","text":"two motions at once!","as":"note"},{"op":"underline","target":"w3"}]}
+{"ask":"If you kick the ball harder at the same angle, what happens to where it lands?","do":[{"op":"circle","target":"w1"}]}

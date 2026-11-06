@@ -1,0 +1,138 @@
+/* PrepBot Board — the page and the board.
+   The board is PAPER written on by hand, like a sticky note: it keeps its
+   cream sheet and dark marker inks in both themes. Everything round it is the
+   site's own soft UI (theme tokens, receipt, sticky, pills). */
+
+:root {
+  --pb-paper: #fbf7ee;
+  --pb-rule: rgba(42, 39, 35, 0.07);
+  --pb-ink: #2a2723;
+  --pb-blue: #2c78b8;
+  --pb-red: #d2504a;
+  --pb-green: #3f9450;
+  --pb-orange: #dc7f22;
+}
+
+html, body { height: 100%; }
+body { margin: 0; background: var(--app-bg); overflow: hidden; }
+.site-nav, .pp-page-paint { display: none !important; }
+
+.pb-stage {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.6rem;
+  padding: 0.7rem clamp(0.6rem, 2vw, 1.4rem) 0.9rem;
+  box-sizing: border-box;
+}
+.pb-paint { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; opacity: 0.22; }
+.pb-paint svg { width: 100%; height: 100%; display: block; }
+[data-theme="dark"] .pb-paint { opacity: 0.12; }
+.pb-stage > * { position: relative; z-index: 1; }
+
+/* top bar */
+.pb-top { display: flex; align-items: center; gap: 0.7rem; min-height: 2.6rem; }
+.pb-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--weight-black);
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  color: var(--ink);
+}
+.pb-top .pp-pill { margin-left: auto; }
+.pb-ico {
+  width: 2.5rem; height: 2.5rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface-primary);
+  border: 2px solid color-mix(in srgb, var(--accent-secondary) 45%, transparent);
+  border-radius: 0;
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: none;
+}
+.pb-ico svg { width: 20px; height: 20px; }
+.pb-ico:disabled { opacity: 0.45; cursor: default; }
+.pb-ico.is-on { background: var(--accent-danger); border-color: transparent; }
+
+/* the board */
+.pb-boardwrap {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 8px 22px rgba(var(--shadow-color, 42, 39, 35), 0.16));
+}
+.pb-board { width: 100%; height: 100%; display: block; cursor: pointer; }
+.pb-paper { fill: var(--pb-paper); }
+
+.pb-measure { pointer-events: none; }
+.pb-grid line { stroke: var(--pb-rule); stroke-width: 2; }
+.pb-axes path { fill: none; stroke-width: 4; stroke-linecap: round; filter: url(#pb-rough); }
+.pb-ticks text { fill: rgba(42, 39, 35, 0.62); }
+.pb-stroke { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; filter: url(#pb-rough); }
+.pb-stroke.is-dashed { stroke-dasharray: 16 13; }
+.pb-curve { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.pb-math { overflow: visible; }
+
+.pb-ink-ink-stroke { stroke: var(--pb-ink); }
+.pb-ink-blue-stroke { stroke: var(--pb-blue); }
+.pb-ink-red-stroke { stroke: var(--pb-red); }
+.pb-ink-green-stroke { stroke: var(--pb-green); }
+.pb-ink-orange-stroke { stroke: var(--pb-orange); }
+.pb-ink-ink-fill { fill: var(--pb-ink); color: var(--pb-ink); }
+.pb-ink-blue-fill { fill: var(--pb-blue); color: var(--pb-blue); }
+.pb-ink-red-fill { fill: var(--pb-red); color: var(--pb-red); }
+.pb-ink-green-fill { fill: var(--pb-green); color: var(--pb-green); }
+.pb-ink-orange-fill { fill: var(--pb-orange); color: var(--pb-orange); }
+
+/* what PrepBot is saying: a sticky note pinned under the board */
+.pb-caption {
+  position: absolute;
+  left: 50%;
+  bottom: 0.6rem;
+  transform: translateX(-50%) rotate(-1deg);
+  max-width: min(46rem, 92%);
+  margin: 0;
+  font-size: clamp(0.9rem, 1.6vw, 1.1rem);
+  line-height: 1.35;
+  pointer-events: none;
+}
+.pb-caption:empty { display: none; }
+.pb-caption.is-asking { background: #bfe3ff; }
+
+/* the learner's side */
+.pb-ask { display: flex; gap: 0.5rem; align-items: center; }
+.pb-ask input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-md);
+  color: var(--ink);
+  background: var(--surface-primary);
+  border: 2px solid color-mix(in srgb, var(--accent-secondary) 40%, transparent);
+  border-radius: 0;
+  box-shadow: var(--shadow-sm);
+}
+.pb-ask input:focus { outline: none; border-color: var(--accent-secondary); }
+
+.pb-status {
+  position: absolute;
+  top: 0.8rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+.pb-status:empty { display: none; }
+
+@media (max-width: 640px) {
+  .pb-stage { padding: 0.5rem 0.5rem 0.7rem; gap: 0.45rem; }
+  .pb-caption { bottom: 0.3rem; }
+}

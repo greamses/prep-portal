@@ -1,0 +1,124 @@
+/* ============================================================================
+   PrepBot Board — where things go
+   ----------------------------------------------------------------------------
+   The model never chooses a coordinate. The board is a page with two regions:
+   MAIN, the column a teacher writes down line after line, and FIGURE, the
+   panel the graph or diagram is drawn in. A cursor walks down MAIN; a line
+   that is too wide is shrunk a little, then broken at an "=", and when MAIN is
+   full the board turns a page. So two things placed here can never overlap.
+
+   Logical units only (the SVG viewBox); the page scales the whole board.
+   Pure: no DOM — node-testable.
+   ========================================================================== */
+
+export const CANVAS = {
+  landscape: {
+    w: 1600, h: 900,
+    main: { x: 70, y: 64, w: 780, h: 790 },
+    figure: { x: 920, y: 96, w: 610, h: 610 },
+  },
+  portrait: {
+    w: 900, h: 1600,
+    figure: { x: 110, y: 70, w: 680, h: 680 },
+    main: { x: 64, y: 820, w: 772, h: 730 },
+  },
+};
+
+/* The writing sizes, in logical units: what a marker on a real board looks like
+   from a desk at the back. */
+export const SIZES = {
+  title: { font: 46, gap: 26 },
+  step: { font: 36, gap: 16 },
+  note: { font: 30, gap: 14 },
+};
+
+/** The smallest a line may be shrunk to fit before it is broken instead. */
+export const MIN_SCALE = 0.7;
+
+export function createLayout(orient = "landscape") {
+  const C = CANVAS[orient] || CANVAS.landscape;
+  let y = C.main.y;
+  const placed = [];
+
+  return {
+    canvas: C,
+    orient: C === CANVAS.portrait ? "portrait" : "landscape",
+
+    /** A new page: the cursor goes back to the top. */
+    reset() {
+      y = C.main.y;
+      placed.length = 0;
+    },
+
+    /** How a line of this width would have to be drawn: its scale, and whether
+        it would still not fit (and so wants breaking). */
+    fit(w) {
+      if (w <= C.main.w) return { scale: 1, tooWide: false };
+      const s = C.main.w / w;
+      return s >= MIN_SCALE ? { scale: s, tooWide: false } : { scale: MIN_SCALE, tooWide: true };
+    },
+
+    /**
+     * Place one line of writing of size {w, h} (unscaled). Returns where it
+     * goes, or { turn: true } when MAIN has no room left and the board must turn
+     * a page first (then call again).
+     */
+    place(kind, size, { force = false } = {}) {
+      const gap = (SIZES[kind] || SIZES.step).gap;
+      const { scale } = this.fit(size.w);
+      const h = size.h * scale;
+      const top = placed.length ? y + gap : y;
+      if (!force && placed.length && top + h > C.main.y + C.main.h) return { turn: true };
+      const box = { x: C.main.x, y: top, w: size.w * scale, h, scale };
+      placed.push(box);
+      y = top + h;
+      return box;
+    },
+
+    /** Room left in MAIN, in logical units. */
+    room() {
+      return C.main.y + C.main.h - y;
+    },
+
+    placed,
+  };
+}
+
+/** Greedy word wrap with a measuring function — words never split. */
+export function wrapWords(words, measure, maxW) {
+  const lines = [];
+  let cur = [];
+  for (const w of words) {
+    const next = cur.length ? [...cur, w] : [w];
+    if (cur.length && measure(next.join(" ")) > maxW) {
+      lines.push(cur.join(" "));
+      cur = [w];
+    } else cur = next;
+  }
+  if (cur.length) lines.push(cur.join(" "));
+  return lines;
+}
+
+/**
+ * Break a line of linear maths at its top-level "=" signs (not inside brackets),
+ * keeping the "=" at the start of each continuation: "y = a = b" → ["y", "= a", "= b"].
+ */
+export function splitAtEquals(src) {
+  const out = [];
+  let depth = 0, cur = "";
+  for (const ch of String(src)) {
+    if ("([{".includes(ch)) depth++;
+    else if (")]}".includes(ch)) depth = Math.max(0, depth - 1);
+    if (ch === "=" && depth === 0 && cur.trim()) {
+      out.push(cur.trim());
+      cur = "=";
+    } else cur += ch;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+
+/** Do two boxes overlap (touching edges do not count)? */
+export function overlaps(a, b) {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
