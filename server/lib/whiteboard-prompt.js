@@ -82,13 +82,21 @@ HOW TO DRAW — the ops you may put in "do" (use ONLY these, with these fields):
     A dot on a graph — make sure it really lies where you say (compute it).
 - {"op":"arrow","id":"a1","on":"g1","from":[20,6],"to":[29,6],"label":"velocity"}
     An arrow on a graph in its units. With no graph, use "on":"grid": a 0 to 10 grid filling the right panel ([0,0] bottom left), good for force and vector pictures. "dashed":true for a guide line, "head":false for a plain line.
-- {"op":"underline","target":"w2"} and {"op":"circle","target":"w2"}
-    Mark something ALREADY on the board by its id, while you talk about it.
+- {"op":"underline","target":"w2"}, {"op":"circle","target":"w2"} and {"op":"highlight","target":"w2"}
+    Mark something ALREADY on the board by its id, while you talk about it (highlight = a yellow marker swept behind it; use it for the key line).
+- {"op":"shape","id":"s1","kind":"circle","at":[5,5],"r":1.5,"fill":"yellow","label":"Sun"}
+    DRAW A PICTURE out of shapes on the right-hand panel's 0 to 10 grid ([0,0] bottom left, "on":"grid", the default) or on a graph in its units ("on":"g1"). Kinds:
+      circle {at, r, shade}    shade "left"/"right"/"top"/"bottom"/"full" darkens that half (moon phases, a fraction of a disc)
+      ellipse {at, w, h}  rect {at, w, h}   (at is the CENTRE)
+      polygon {points:[[x,y],...]}   curve {points:[[x,y],...]}  (a smooth line through the points: a leaf, a hill, a wave, a river)
+      sector {at, r, from, to}   a slice of a disc, angles in degrees anticlockwise from 3 o'clock (pie charts, fractions, angles)
+    "fill": a tone for a soft wash inside; "tone": the outline colour; "label": a word under it. Build a picture from several shapes over a few beats, each drawn while you talk about it: the Sun, the Earth and the Moon; a plant cell; a circuit; a triangle with its angles; half of a pizza.
 - {"op":"clear"}
-    A fresh board, when this one is full or you start a new part of the topic.
+    Start a NEW SECTION of the canvas beside this one (the earlier sections stay; the learner can look back at them). Use one section for each part of the explanation: the idea, then the picture or the maths, then a worked example. Start each new section with a short "title" write.
 Tones: "ink" (default for writing), "blue", "red", "green", "orange". Ids: short, letters then digits (w1, g1, p2), new for every new thing; reuse ids only to point at things already drawn.
 Draw the thing a sentence talks about IN that same beat — the picture and the words must agree. Draw first, then label.
-Use a graph ONLY for a real relationship between two quantities (height against distance, y against x, speed against time). Never invent a graph or a curve to decorate a topic that has none (moon phases, a cell, a reaction): for those, write the key ideas step by step and use arrows on the grid for directions and movement.
+Use a graph ONLY for a real relationship between two quantities (height against distance, y against x, speed against time). Never invent a graph or a curve to decorate a topic that has none (moon phases, a cell, a reaction): for those, DRAW A PICTURE with shapes on the grid, with arrows for directions and movement, and write the key ideas on the left. Keep shapes inside 0 to 10 and away from each other's labels.
+Pictures: make them BIG (use most of the 0 to 10 grid), give EVERY part its "label", and as you draw each part write its name and what it does as a line on the left. Get the science right in the picture too: a lit body's bright half faces the light source, so shade the half AWAY from the Sun.
 
 EXAMPLE OF A TURN (format only):
 {"say":"Let's watch a ball kicked across a pitch.","do":[{"op":"write","id":"w1","text":"Why does a kicked ball curve?","as":"title"}]}

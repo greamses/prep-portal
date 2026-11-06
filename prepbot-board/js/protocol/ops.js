@@ -17,7 +17,7 @@
    Pure: no DOM, no imports — node-testable (scripts/check-whiteboard.mjs).
    ========================================================================== */
 
-export const TONES = ["ink", "blue", "red", "green", "orange"];
+export const TONES = ["ink", "blue", "red", "green", "orange", "yellow"];
 
 const ID_RE = /^[a-z][a-z0-9_-]{0,23}$/i;
 const LIMIT = 1e6;
@@ -102,6 +102,44 @@ const SPEC = {
       op: "arrow", id: idOf(o.id, "a"), on, from: clampGrid(from), to: clampGrid(to),
       label: str(o.label, 30), dashed: !!o.dashed, head: o.head !== false, tone: tone(o.tone) || "red",
     };
+  },
+
+  /* A PICTURE, built from shapes the way a teacher draws one: on the figure
+     panel's 0–10 grid ("on":"grid", the default) or on a graph in its units.
+     circle {at, r, shade}  ellipse {at, w, h}  rect {at, w, h}  (at = centre)
+     polygon {points}  curve {points} (a smooth line through them)
+     sector {at, r, from, to} (a slice, degrees anticlockwise from 3 o'clock) */
+  shape(o) {
+    const KINDS = ["circle", "ellipse", "rect", "polygon", "curve", "sector"];
+    const kind = KINDS.includes(o.kind) ? o.kind : null;
+    if (!kind) return null;
+    const on = typeof o.on === "string" && o.on !== "grid" ? o.on : "grid";
+    const size = (v, d) => { const n = num(v); return n === null ? d : Math.max(0.05, Math.min(on === "grid" ? 10 : LIMIT, Math.abs(n))); };
+    const out = { op: "shape", id: idOf(o.id, "s"), kind, on, tone: tone(o.tone) || "ink", label: str(o.label, 30), dashed: !!o.dashed };
+    out.fill = o.fill === "none" || !o.fill ? null : tone(o.fill) || null;
+    if (["circle", "ellipse", "rect", "sector"].includes(kind)) {
+      out.at = pair(o.at) || [5, 5];
+      if (kind === "circle" || kind === "sector") out.r = size(o.r, 2);
+      else { out.w = size(o.w, 3); out.h = size(o.h, 2); }
+      if (kind === "circle") out.shade = ["left", "right", "top", "bottom", "full"].includes(o.shade) ? o.shade : null;
+      if (kind === "sector") {
+        const f = num(o.from), t = num(o.to);
+        out.from = f === null ? 0 : f;
+        out.to = t === null ? 90 : t;
+        if (out.to === out.from) return null;
+      }
+    } else {
+      const pts = (Array.isArray(o.points) ? o.points : []).slice(0, 24).map(pair).filter(Boolean);
+      if (pts.length < 2 || (kind === "polygon" && pts.length < 3)) return null;
+      out.points = pts;
+    }
+    return out;
+  },
+
+  /* A highlighter swept behind something already on the board. */
+  highlight(o) {
+    if (typeof o.target !== "string") return null;
+    return { op: "highlight", id: idOf(o.id, "h"), target: o.target, tone: tone(o.tone) || "yellow" };
   },
 
   underline(o) {

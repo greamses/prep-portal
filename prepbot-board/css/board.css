@@ -270,3 +270,18 @@ body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex;
 .pb-fontsel .pp-select-menu { left: calc(100% + 10px); top: 50%; transform: translateY(-50%); width: 15rem; }
 @media (max-width: 640px) { .pb-fontsel .pp-select-trigger { width: 2.2rem; height: 2.2rem; } }
 
+/* pictures: fills are soft washes of the ink; shading is the dark side */
+:root { --pb-yellow: #e9b72f; }
+.pb-ink-yellow-stroke { stroke: var(--pb-yellow); }
+.pb-ink-yellow-fill { fill: var(--pb-yellow); color: var(--pb-yellow); }
+.pb-fill { opacity: 0.28; stroke: none; }
+.pb-shade { fill: #2a2723; opacity: 0.78; stroke: none; }
+.pb-shape .pb-stroke { stroke-width: 4.5; }
+/* the highlighter: under the ink, the colour of a marker pen */
+.pb-hl { opacity: 0.42; mix-blend-mode: multiply; }
+
+/* the endless canvas: sections of paper laid on a slightly darker table */
+.pb-board { background: #ebe4d4; touch-action: none; cursor: default; }
+.pb-section .pb-paper { stroke: rgba(42, 39, 35, 0.1); stroke-width: 3; }
+.pb-section__no { font-family: var(--font-mono); font-size: 28px; font-weight: 700; fill: rgba(42, 39, 35, 0.28); }
+

@@ -379,6 +379,103 @@ export function buildArrow(op, page, mapper) {
   };
 }
 
+/* ── pictures ─────────────────────────────────────────────────────────────── */
+
+/** A smooth path through points (Catmull-Rom as cubic Béziers). */
+function smoothPath(pts) {
+  if (pts.length < 3) return "M" + pts.map((p) => p.join(" ")).join("L");
+  let d = `M${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += `C${c1[0].toFixed(1)} ${c1[1].toFixed(1)},${c2[0].toFixed(1)} ${c2[1].toFixed(1)},${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+  }
+  return d;
+}
+const ring = (cx, cy, rx, ry) => `M${cx + rx} ${cy}A${rx} ${ry} 0 1 1 ${cx - rx} ${cy}A${rx} ${ry} 0 1 1 ${cx + rx} ${cy}Z`;
+
+/**
+ * A shape drawn the way a hand draws it: the outline first (the pencil goes
+ * round it), then its fill or shading laid in, then its label.
+ */
+export function buildShape(op, page, mapper) {
+  const X = (v) => mapper.toX(v), Y = (v) => mapper.toY(v);
+  const sx = Math.abs(X(1) - X(0)), sy = Math.abs(Y(1) - Y(0));
+  let d, shadeD = null, box;
+  if (op.kind === "circle" || op.kind === "ellipse" || op.kind === "rect" || op.kind === "sector") {
+    const cx = X(op.at[0]), cy = Y(op.at[1]);
+    if (op.kind === "circle" || op.kind === "sector") {
+      const r = op.r * Math.min(sx, sy);
+      box = { x: cx - r, y: cy - r, w: 2 * r, h: 2 * r };
+      if (op.kind === "circle") {
+        d = ring(cx, cy, r, r);
+        const half = {
+          left: `M${cx} ${cy - r}A${r} ${r} 0 0 0 ${cx} ${cy + r}Z`,
+          right: `M${cx} ${cy - r}A${r} ${r} 0 0 1 ${cx} ${cy + r}Z`,
+          top: `M${cx - r} ${cy}A${r} ${r} 0 0 1 ${cx + r} ${cy}Z`,
+          bottom: `M${cx - r} ${cy}A${r} ${r} 0 0 0 ${cx + r} ${cy}Z`,
+          full: ring(cx, cy, r, r),
+        };
+        shadeD = op.shade ? half[op.shade] : null;
+      } else {
+        const a0 = (op.from * Math.PI) / 180, a1 = (op.to * Math.PI) / 180;
+        const p0 = [cx + r * Math.cos(a0), cy - r * Math.sin(a0)];
+        const p1 = [cx + r * Math.cos(a1), cy - r * Math.sin(a1)];
+        const sweep = op.to - op.from;
+        const large = Math.abs(sweep) % 360 > 180 ? 1 : 0;
+        d = `M${cx} ${cy}L${p0[0].toFixed(1)} ${p0[1].toFixed(1)}A${r} ${r} 0 ${large} ${sweep > 0 ? 0 : 1} ${p1[0].toFixed(1)} ${p1[1].toFixed(1)}Z`;
+      }
+    } else {
+      const rx = (op.w / 2) * sx, ry = (op.h / 2) * sy;
+      box = { x: cx - rx, y: cy - ry, w: 2 * rx, h: 2 * ry };
+      d = op.kind === "ellipse" ? ring(cx, cy, rx, ry) : `M${cx - rx} ${cy - ry}H${cx + rx}V${cy + ry}H${cx - rx}Z`;
+    }
+  } else {
+    const pts = op.points.map(([x, y]) => [X(x), Y(y)]);
+    d = op.kind === "polygon" ? "M" + pts.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join("L") + "Z" : smoothPath(pts);
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    box = { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+  }
+  const g = el("g", { class: "pb-shape", "data-id": op.id }, page);
+  const fill = op.fill && op.kind !== "curve" ? el("path", { d, class: `pb-fill pb-ink-${op.fill}-fill` }, g) : null;
+  const shade = shadeD ? el("path", { d: shadeD, class: "pb-shade" }, g) : null;
+  const line = el("path", { d, class: `pb-stroke pb-ink-${op.tone}-stroke${op.dashed ? " is-dashed" : ""}` }, g);
+  let t = null;
+  if (op.label) {
+    t = el("text", { x: box.x + box.w / 2, y: box.y + box.h + 32, "text-anchor": "middle", "font-family": FONT, "font-weight": HAND.text, "font-size": 26, class: `pb-ink-${op.tone === "ink" ? "blue" : op.tone}-fill` }, g);
+    t.textContent = op.label;
+  }
+  return {
+    node: g, box, weight: 0.55 + (op.points ? op.points.length * 0.05 : 0) + (fill || shade ? 0.25 : 0),
+    draw(tl, at, dur) {
+      const o = dur * (fill || shade ? 0.72 : 0.9);
+      drawStroke(tl, line, at, o, op.dashed);
+      if (fill) tl.from(fill, { opacity: 0, duration: dur - o }, at + o);
+      if (shade) tl.from(shade, { opacity: 0, duration: dur - o }, at + o);
+      if (t) tl.from(t, { opacity: 0, duration: 0.25 }, at + dur * 0.85);
+    },
+  };
+}
+
+/** A highlighter swept behind something already on the board. */
+export function buildHighlight(op, page, target) {
+  const b = target.box;
+  const pad = 8;
+  const r = el("rect", { x: b.x - pad, y: b.y - pad / 2, width: 0, height: b.h + pad, class: `pb-hl pb-ink-${op.tone}-fill` });
+  /* under the writing, so the ink stays on top of the marker */
+  page.insertBefore(r, target.node || null);
+  const w = b.w + pad * 2;
+  return {
+    node: r, box: b, weight: 0.4 + b.w / 1400,
+    draw(tl, at, dur) {
+      tl.to(r, { attr: { width: w }, duration: dur, ease: "power1.inOut" }, at);
+      PEN?.follow(tl, at, dur, (p) => [b.x - pad + p * w, b.y + b.h * 0.72], "power1.inOut");
+    },
+    instant() { r.setAttribute("width", w); },
+  };
+}
+
 /** Underline or circle round something already on the board. */
 export function buildMark(op, page, target) {
   const b = target.box;

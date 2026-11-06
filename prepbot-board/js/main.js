@@ -39,6 +39,8 @@ const ICONS = {
   checkin: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.4h16a1.6 1.6 0 0 1 1.6 1.6v9.6a1.6 1.6 0 0 1-1.6 1.6h-9l-4.6 3.6v-3.6H4a1.6 1.6 0 0 1-1.6-1.6V6A1.6 1.6 0 0 1 4 4.4z" fill="var(--accent-secondary)"/><path d="M10 9.2a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="14.4" r="1.1" fill="#fff"/></svg>`,
   lecture: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7.4" y="3" width="14" height="10" fill="#fffdf6" stroke="var(--accent-secondary)" stroke-width="1.6"/><path d="M10 10.2c1.6-2.8 3-3.8 4.4-3.8s2.4 1.2 4.2.6" fill="none" stroke="var(--accent-danger)" stroke-width="1.5" stroke-linecap="round"/><circle cx="5" cy="9.4" r="2.4" fill="var(--accent-primary)"/><path d="M1.6 21.4v-4.6a3.4 3.4 0 0 1 6.8 0v4.6z" fill="var(--accent-primary)"/><path d="M7 15.4l3.4-2.6" stroke="var(--accent-warning)" stroke-width="1.6" stroke-linecap="round"/></svg>`,
   homework: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.4" y="2.6" width="13.6" height="18.8" fill="var(--accent-secondary)"/><rect x="5.6" y="2.6" width="1.4" height="18.8" fill="#fff" opacity="0.5"/><rect x="8.6" y="7" width="6" height="1.6" fill="#fff"/><rect x="8.6" y="10.4" width="4.4" height="1.6" fill="#fff"/><path d="M19.2 8.2l2 2-7.4 7.4-2.8.8.8-2.8z" fill="var(--accent-primary)"/><path d="M19.2 8.2l2 2 .8-.8a1.4 1.4 0 0 0-2-2z" fill="var(--accent-danger)"/></svg>`,
+  overview: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.4" y="5" width="8.6" height="6.4" fill="var(--accent-secondary)"/><rect x="13" y="5" width="8.6" height="6.4" fill="var(--accent-primary)"/><rect x="2.4" y="13.4" width="8.6" height="6.4" fill="var(--accent-primary)"/><rect x="13" y="13.4" width="8.6" height="6.4" fill="var(--accent-danger)"/></svg>`,
+  follow: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.4" fill="none" stroke="var(--accent-secondary)" stroke-width="2.4"/><circle cx="12" cy="12" r="3.4" fill="var(--accent-danger)"/></svg>`,
   font: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19.4 8.4 4.6h2.4l5.4 14.8h-2.6l-1.3-3.8H6.9l-1.3 3.8zm4.6-6h3.9L9.6 7.6z" fill="var(--accent-secondary)"/><path d="M16.6 14.6c0-1.8 1.4-2.8 3.2-2.8 1 0 1.8.3 2.2.7v6.9h-2v-.6c-.5.5-1.1.8-1.9.8-1.7 0-2.9-1.1-2.9-2.6zm2.2.1c0 .7.5 1.1 1.2 1.1s1.3-.4 1.3-1.1-.6-1.1-1.3-1.1-1.2.4-1.2 1.1z" fill="var(--accent-danger)"/></svg>`,
   play: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.8 20.4 12 6.6 20.2z" fill="var(--accent-success)"/></svg>`,
   send: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 4.2 21 12 3.4 19.8l2.2-7.8z" fill="var(--accent-secondary)"/><path d="M5.6 12h7.6" stroke="var(--accent-primary)" stroke-width="2.4" stroke-linecap="round"/></svg>`,
@@ -107,10 +109,11 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   };
   let current = null;
   let builtAspect = 0;
+  let onTap = () => {};   // set once the learner's side is wired, below
   function build(replay = []) {
     builtAspect = aspectNow();
-    current = createBoard(svg, { gsap, canvas: makeCanvas(builtAspect) });
-    if (replay.length) current.play({ do: replay }, 0);
+    current = createBoard(svg, { gsap, canvas: makeCanvas(builtAspect), onTap: (e) => onTap(e) });
+    if (replay.length) current.restore(replay);
     window.__pbBoard = current;
   }
   const board = {
@@ -122,8 +125,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   };
   const redraw = () => {
     current.finishNow();
-    const pages = current.pages();
-    build(pages[pages.length - 1] || []);
+    build(current.pages());
   };
   build();
   let resizeT = null;
@@ -274,12 +276,13 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   }
 
   /* ── the learner's side ─────────────────────────────────────────────── */
-  svg.addEventListener("pointerdown", () => {
+  /* a TAP on the board cuts in (a drag only looks around the canvas) */
+  onTap = () => {
     if (!scheduler.busy && lesson.hold && style === "lecture" && form.hidden && lesson.topic && !lesson.ended) {
       lesson.hold = false; status.textContent = ""; lesson.run = 0; carryOn(); return;
     }
     cutIn();
-  });
+  };
   input.addEventListener("keydown", (e) => { if (e.key.length === 1 && scheduler.busy) cutIn(); });
   /** The learner said something (typed or spoken): the next turn. */
   function ask(text) {
@@ -447,6 +450,22 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     showSay("");
     document.body.dataset.state = "idle";
   });
+
+  /* the whole canvas at once, or back to where PrepBot is working */
+  const seeAll = $("pb-overview");
+  const showSeeAll = () => {
+    const all = current.following;
+    seeAll.innerHTML = ICONS[all ? "overview" : "follow"];
+    seeAll.dataset.tip = all ? "See the whole canvas" : "Back to where PrepBot is working";
+    seeAll.setAttribute("aria-label", seeAll.dataset.tip);
+  };
+  seeAll.addEventListener("click", () => {
+    if (current.following) current.overview(); else current.follow();
+    showSeeAll();
+  });
+  svg.addEventListener("pointerup", () => setTimeout(showSeeAll, 0));
+  svg.addEventListener("wheel", () => setTimeout(showSeeAll, 0), { passive: true });
+  setInterval(showSeeAll, 1500);
 
   window.__pb = { board, scheduler, voice, lesson, cutIn, redraw }; // for tests
 
