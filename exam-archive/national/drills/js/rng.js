@@ -27,7 +27,7 @@ export const ALL_OPERATIONS = [
   'add', 'multiply', 'divide', 'square', 'sqrt', 'cube', 'cuberoot', 'power4', 'fourthroot',
   'fracAdd', 'fracSub', 'fracMul', 'fracDiv',
   'rmm',
-  'intAdd', 'intSub', 'directed',
+  'intAdd', 'intSub', 'directed', 'intMul',
 ];
 
 export const ALL_FRACTION_TYPES = ['like', 'unlike', 'wholeFraction'];
@@ -136,6 +136,15 @@ function intTerms(rng, pool, count, op) {
   return { text, answer: total };
 }
 
+// Multiplication: both factors signed, at least one negative, so the
+// sign rule (− × − = +) is always in play.
+function intMulQuestion(rng, pool) {
+  let a = drawFrom(rng, pool) * (rng() < 0.5 ? -1 : 1);
+  let b = drawFrom(rng, pool) * (rng() < 0.5 ? -1 : 1);
+  if (a > 0 && b > 0) { if (rng() < 0.5) a = -a; else b = -b; }
+  return { text: `${signed(a)} × ${b < 0 ? `(${signed(b)})` : b}`, answer: a * b };
+}
+
 // Chemistry: "what is the relative molecular mass of this?" The formula is
 // the question, and the masses it needs ride along as a hint — exactly the
 // bracket a WAEC/NECO paper prints under the question, because the drill is
@@ -173,6 +182,7 @@ export function questionAt(seed, index, {
 
   if (op === 'rmm') return rmmQuestionAt(rng, compounds);
   if (op === 'intAdd' || op === 'intSub') return intTerms(rng, pool, 2, op);
+  if (op === 'intMul') return intMulQuestion(rng, pool);
   if (op === 'directed') return intTerms(rng, pool, 3, op);
 
   if (op === 'square') return { text: `${n}²`, answer: n * n };
