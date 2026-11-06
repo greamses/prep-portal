@@ -23,6 +23,7 @@ import {
 
 
 mountPaint(document.body);
+import("/utils/components/tooltip.js").then((m) => m.mountTooltips()).catch(() => {});
 // The single designated admin (matches firestore.rules + nav-builder.js).
 const ADMIN_EMAIL = "eemadanyel@gmail.com";
 
@@ -520,14 +521,76 @@ function filterPosts() {
   return f;
 }
 
+// ─── PAGINATION ───────────────────────────────────────────
+// Nine cards a page (a 3 x 3 wall); the filters and search reset to page 1.
+const CARDS_PER_PAGE = 9;
+let currentPage = 1;
+let lastFilterSig = "";
+
+const CHEV =
+  '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></svg>';
+
+// 1 … 4 5 [6] 7 8 … 12 — always the first, last and the pages around this one.
+function pageWindow(page, total) {
+  const keep = new Set([1, total, page - 1, page, page + 1]);
+  if (page <= 3) [2, 3, 4].forEach((n) => keep.add(n));
+  if (page >= total - 2) [total - 1, total - 2, total - 3].forEach((n) => keep.add(n));
+  const nums = [...keep].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  const out = [];
+  nums.forEach((n, i) => {
+    if (i && n - nums[i - 1] > 1) out.push("gap");
+    out.push(n);
+  });
+  return out;
+}
+
+function renderPager(total) {
+  const host = scienceGrid.parentElement;
+  host.querySelector(".blog-pager")?.remove();
+  if (total <= 1) return;
+  const nav = document.createElement("nav");
+  nav.className = "blog-pager";
+  nav.setAttribute("aria-label", "Pages");
+  const btn = (label, cls, attrs, inner) =>
+    `<button type="button" class="pager-btn ${cls}" ${attrs} aria-label="${label}" data-tip="${label}">${inner}</button>`;
+  nav.innerHTML =
+    btn("Previous page", "pager-prev", `data-page="${currentPage - 1}" ${currentPage === 1 ? "disabled" : ""}`, CHEV) +
+    pageWindow(currentPage, total)
+      .map((n) =>
+        n === "gap"
+          ? '<span class="pager-gap" aria-hidden="true">…</span>'
+          : `<button type="button" class="pager-btn pager-num${n === currentPage ? " is-current" : ""}" data-page="${n}" aria-label="Page ${n}"${n === currentPage ? ' aria-current="page"' : ""}>${n}</button>`,
+      )
+      .join("") +
+    btn("Next page", "pager-next", `data-page="${currentPage + 1}" ${currentPage === total ? "disabled" : ""}`, CHEV);
+  nav.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-page]");
+    if (!b || b.disabled) return;
+    currentPage = +b.dataset.page;
+    renderPosts();
+    scienceGrid.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  scienceGrid.insertAdjacentElement("afterend", nav);
+}
+
 function renderPosts() {
   const f = filterPosts();
+  document.querySelector(".blog-pager")?.remove();
   if (!f.length) {
     scienceGrid.innerHTML =
       '<div class="no-posts">No posts found for this filter.</div>';
     return;
   }
-  scienceGrid.innerHTML = f.map(renderCard).join("");
+  const sig = [currentSubject, currentClass, currentSearch].join("|");
+  if (sig !== lastFilterSig) {
+    currentPage = 1;
+    lastFilterSig = sig;
+  }
+  const pages = Math.ceil(f.length / CARDS_PER_PAGE);
+  currentPage = Math.min(Math.max(1, currentPage), pages);
+  const slice = f.slice((currentPage - 1) * CARDS_PER_PAGE, currentPage * CARDS_PER_PAGE);
+
+  scienceGrid.innerHTML = slice.map(renderCard).join("");
   scienceGrid.querySelectorAll(".science-card").forEach((card) => {
     card.addEventListener("click", (e) => {
       e.preventDefault();
@@ -535,6 +598,7 @@ function renderPosts() {
       if (post) showSinglePost(post);
     });
   });
+  renderPager(pages);
 
   // Offer the full archive on demand — only when the cheap feed page was capped
   // and we aren't already showing everything (and no filter is narrowing it).
@@ -550,7 +614,7 @@ function renderPosts() {
       more.textContent = "Loading…";
       loadPosts({ full: true });
     });
-    scienceGrid.insertAdjacentElement("afterend", more);
+    (scienceGrid.parentElement.querySelector(".blog-pager") || scienceGrid).insertAdjacentElement("afterend", more);
   }
 }
 

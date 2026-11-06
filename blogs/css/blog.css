@@ -1987,3 +1987,45 @@ body:has(.embed-overlay.active) {
 .sci-howitworks { background: #bfe3ff; }
 .sci-amazing { background: #c8f0c0; }
 .sci-machines { background: #e8c8ff; }
+
+/* pager: icon arrows + number pills under the card wall */
+.blog-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 2.2rem 0 0.5rem;
+}
+.pager-btn {
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 2px solid color-mix(in srgb, var(--accent-secondary) 45%, transparent);
+  border-radius: 0;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default);
+}
+.pager-btn svg { width: 18px; height: 18px; }
+.pager-prev svg { transform: rotate(180deg); }
+.pager-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.pager-btn:disabled { opacity: 0.4; cursor: default; }
+.pager-btn.is-current {
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+  border-color: transparent;
+  box-shadow: var(--shadow-cta, var(--shadow-sm));
+}
+.pager-gap { padding: 0 0.2rem; color: var(--text-tertiary); font-family: var(--font-mono); }
+.load-all-btn { margin-top: 1rem; }
+
