@@ -1816,8 +1816,16 @@ body:has(.embed-overlay.active) {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: calc(13px + 0.6rem) 1.8rem;
+  padding: 1rem 1.4rem;
+  /* the dropdown menus open below the bar, so the paper must not be masked
+     (a mask clips descendants): flat paper strip, same soft shadow */
+  -webkit-mask: none;
+  mask: none;
+  overflow: visible;
 }
+.filter-paper.pp-receipt__paper::before,
+.filter-paper.pp-receipt__paper::after { display: none; }
+.filter-bar.pp-receipt { z-index: 5; }
 .filter-paper .filter-search-row { flex: 1; min-width: 0; }
 @media (max-width: 640px) {
   .filter-paper.pp-receipt__paper { flex-wrap: wrap; }
@@ -1914,3 +1922,6 @@ body:has(.embed-overlay.active) {
 .sci-physics { background: #bfe3ff; }
 .sci-basicscience { background: #ffd7a3; }
 .sci-basictech { background: #b8ece2; }
+
+/* card description: smaller */
+.card-excerpt { font-size: var(--text-body-sm, 0.8rem); line-height: var(--leading-normal); }
