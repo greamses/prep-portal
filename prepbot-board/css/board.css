@@ -142,3 +142,10 @@ body { margin: 0; background: var(--app-bg); overflow: hidden; }
 .pb-embed .pb-top [data-ico="back"] { display: none; }
 .pb-embed .pb-stage { padding: 0.5rem 0.6rem 0.6rem; gap: 0.45rem; }
 .pb-embed .pb-paint { display: none; }
+
+/* the mic while it is listening: a red key that breathes */
+.pb-ico#pb-mic.is-on { animation: pb-listen 1.1s ease-in-out infinite; }
+.pb-ico#pb-mic.is-on svg rect:first-child { fill: #fff; }
+@keyframes pb-listen { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent-danger) 28%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .pb-ico#pb-mic.is-on { animation: none; } }
+

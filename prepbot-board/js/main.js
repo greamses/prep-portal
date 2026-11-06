@@ -9,6 +9,7 @@ import { cleanBeat } from "./protocol/ops.js";
 import { createVoice } from "./voice.js";
 import { createScheduler } from "./scheduler.js";
 import { liveTurn } from "./turn.js";
+import { createListener } from "/utils/prepbot/listen.js";
 import { loadMath } from "/utils/components/workbook/mathify.js";
 import { heroPaint } from "/utils/components/nav-icons.js";
 
@@ -74,6 +75,8 @@ const orient = () => (window.innerHeight > window.innerWidth * 1.15 ? "portrait"
 
   /* what was said, into the lesson's transcript (only what the learner heard) */
   function keepRecord() {
+    if (lesson.recorded) return;
+    lesson.recorded = true;
     const { spoken, partial } = scheduler.record();
     const said = spoken.map((b) => b.say).join(" ");
     const cut = partial ? ` [cut in during: "${partial.say}"]` : "";
@@ -88,7 +91,8 @@ const orient = () => (window.innerHeight > window.innerWidth * 1.15 ? "portrait"
     const rec = scheduler.interrupt();
     const said = rec.spoken.map((b) => b.say).join(" ");
     const cut = rec.partial ? ` [cut in during: "${rec.partial.say}"]` : "";
-    if (said || cut) lesson.transcript.push({ role: "tutor", text: (said + cut).trim() });
+    if (!lesson.recorded && (said || cut)) lesson.transcript.push({ role: "tutor", text: (said + cut).trim() });
+    lesson.recorded = true;
     document.body.dataset.state = "listening";
     showSay("Go on, I'm listening.", true);
   }
@@ -96,6 +100,7 @@ const orient = () => (window.innerHeight > window.innerWidth * 1.15 ? "portrait"
   /** One turn: beats from `source` (an async iterator of raw beat objects). */
   async function runTurn(source) {
     const turn = scheduler.begin();
+    lesson.recorded = false;
     document.body.dataset.state = "talking";
     try {
       for await (const raw of source) {
@@ -148,16 +153,76 @@ const orient = () => (window.innerHeight > window.innerWidth * 1.15 ? "portrait"
   /* ── the learner's side ─────────────────────────────────────────────── */
   svg.addEventListener("pointerdown", () => cutIn());
   input.addEventListener("keydown", (e) => { if (e.key.length === 1 && scheduler.busy) cutIn(); });
-  $("pb-ask").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const text = input.value.trim();
+  /** The learner said something (typed or spoken): the next turn. */
+  function ask(text) {
+    text = String(text || "").trim();
     if (!text) return;
-    input.value = "";
     if (scheduler.busy) cutIn();
     else keepRecord();
     if (!lesson.topic) lesson.topic = text;
     lesson.transcript.push({ role: "learner", text });
     runTurn(liveBeats(text));
+  }
+  $("pb-ask").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    input.value = "";
+    ask(text);
+  });
+
+  /* ── push-to-talk ──────────────────────────────────────────────────────
+     Hold the mic (or Space) and talk, let go to send. A quick tap instead
+     starts listening hands-free, and a pause of a second or two sends it.
+     Either way PrepBot stops talking the moment the mic opens. */
+  const mic = $("pb-mic");
+  const ear = createListener({
+    onText: (t) => { input.value = t; },
+    onState: (st) => {
+      mic.classList.toggle("is-on", st === "listening");
+      mic.setAttribute("aria-pressed", String(st === "listening"));
+      if (st === "denied") showSay("I can't hear you: the microphone is blocked. Allow it in your browser, or type instead.", true);
+      else if (st === "listening") showSay("I'm listening…", true);
+    },
+    onFinal: (t) => {
+      input.value = "";
+      if (t) ask(t);
+      else showSay("I didn't catch that. Hold the mic and try again, or type.", true);
+    },
+  });
+  if (!ear.supported) {
+    mic.disabled = true;
+    mic.dataset.tip = "Talking isn't available in this browser: type instead";
+  }
+  let downAt = 0, held = false;
+  const HOLD_MS = 350;
+  function micDown() {
+    if (!ear.supported) return;
+    if (ear.listening) { ear.stop(); return; } // a second tap sends
+    cutIn();
+    downAt = Date.now();
+    held = true;
+    ear.start();
+  }
+  function micUp() {
+    if (!held) return;
+    held = false;
+    if (Date.now() - downAt >= HOLD_MS) ear.stop(); // held: letting go sends
+    /* a quick tap: keep listening until a pause */
+  }
+  mic.addEventListener("pointerdown", (e) => { e.preventDefault(); micDown(); });
+  mic.addEventListener("pointerup", micUp);
+  mic.addEventListener("pointerleave", micUp);
+  mic.addEventListener("click", (e) => e.preventDefault());
+  /* Space, held, when not typing */
+  document.addEventListener("keydown", (e) => {
+    if (e.code !== "Space" || e.repeat || e.target === input || e.ctrlKey || e.metaKey) return;
+    e.preventDefault();
+    micDown();
+  });
+  document.addEventListener("keyup", (e) => {
+    if (e.code !== "Space" || e.target === input) return;
+    e.preventDefault();
+    micUp();
   });
   $("pb-new").addEventListener("click", () => {
     if (scheduler.busy) scheduler.interrupt();
