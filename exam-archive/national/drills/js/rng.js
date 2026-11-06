@@ -27,6 +27,7 @@ export const ALL_OPERATIONS = [
   'add', 'multiply', 'divide', 'square', 'sqrt', 'cube', 'cuberoot', 'power4', 'fourthroot',
   'fracAdd', 'fracSub', 'fracMul', 'fracDiv',
   'rmm',
+  'intAdd', 'intSub', 'directed',
 ];
 
 export const ALL_FRACTION_TYPES = ['like', 'unlike', 'wholeFraction'];
@@ -109,6 +110,32 @@ function fractionQuestionAt(rng, pool, n, op, type) {
 
 const FRACTION_OPS = ['fracAdd', 'fracSub', 'fracMul', 'fracDiv'];
 
+// Integers / directed numbers. Operands come from the range pool with a random
+// sign; a negative operand is bracketed after an operator, as on a paper
+// ("4 − (−6)"), and a leading negative is bare ("−3 + 5"). Answers may be
+// negative, so the typed field accepts one leading "-" (game.js).
+const MINUS = '−';
+const signed = (v) => (v < 0 ? `${MINUS}${-v}` : String(v));
+function intTerms(rng, pool, count, op) {
+  const vals = [];
+  for (let i = 0; i < count; i += 1) {
+    const mag = drawFrom(rng, pool);
+    const neg = rng() < 0.5;
+    vals.push(neg ? -mag : mag);
+  }
+  // A drill about signs needs at least one negative in play.
+  if (vals.every((v) => v > 0)) vals[Math.floor(rng() * count)] *= -1;
+  let text = signed(vals[0]);
+  let total = vals[0];
+  for (let i = 1; i < count; i += 1) {
+    const v = vals[i];
+    const minus = op === 'intSub' || (op === 'directed' && rng() < 0.5);
+    text += ` ${minus ? MINUS : '+'} ${v < 0 ? `(${signed(v)})` : v}`;
+    total += minus ? -v : v;
+  }
+  return { text, answer: total };
+}
+
 // Chemistry: "what is the relative molecular mass of this?" The formula is
 // the question, and the masses it needs ride along as a hint — exactly the
 // bracket a WAEC/NECO paper prints under the question, because the drill is
@@ -145,6 +172,8 @@ export function questionAt(seed, index, {
   const n = pool[Math.floor(rng() * pool.length)];
 
   if (op === 'rmm') return rmmQuestionAt(rng, compounds);
+  if (op === 'intAdd' || op === 'intSub') return intTerms(rng, pool, 2, op);
+  if (op === 'directed') return intTerms(rng, pool, 3, op);
 
   if (op === 'square') return { text: `${n}²`, answer: n * n };
   if (op === 'sqrt') return { text: `√${n * n}`, answer: n };

@@ -86,13 +86,15 @@ function isCorrectAnswer(typed, answer) {
 // Strip to digits plus at most one "/" and at most one "." — neither of
 // which can lead. Everything else a question ever answers with is digits.
 function sanitizeTyped(raw) {
+  // A leading "-" is kept (integer answers can be negative); any other is dropped.
+  const neg = raw.trimStart().startsWith('-') || raw.trimStart().startsWith('−');
   let s = raw.replace(/[^0-9/.]/g, '');
   for (const mark of ['/', '.']) {
     const at = s.indexOf(mark);
     if (at !== -1) s = s.slice(0, at + 1) + s.slice(at + 1).split(mark).join('');
   }
   if (s.startsWith('/') || s.startsWith('.')) s = s.slice(1);
-  return s.slice(0, 7);
+  return (neg ? '-' : '') + s.slice(0, 7);
 }
 
 function onInput() {
