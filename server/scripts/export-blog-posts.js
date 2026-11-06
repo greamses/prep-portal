@@ -182,6 +182,67 @@ function writeFile(file, content) {
   fs.writeFileSync(file, content);
 }
 
+// ─── VIDEOS ─────────────────────────────────────────────────
+// Mirrors blogs/js/blog.js postVideoList(): the engine's `videos` array plus the
+// older single `videoLink`, de-duplicated by YouTube id, lead video first.
+const ytId = (url) =>
+  (String(url).match(/(?:v=|youtu\.be\/|embed\/)([\w-]{6,})/) || [])[1] || "";
+const videoList = (post) => {
+  const seen = new Set();
+  const out = [];
+  const add = (url, title, duration) => {
+    url = String(url || "").trim();
+    const key = ytId(url) || url;
+    if (!url || seen.has(key)) return;
+    seen.add(key);
+    out.push({ url, id: ytId(url), title: String(title || "").trim(), duration: String(duration || "").trim() });
+  };
+  (post.videos || []).forEach((v) => add(v && v.url, v && v.title, v && v.duration));
+  add(post.videoLink);
+  return out;
+};
+
+function renderResources(post) {
+  const vids = videoList(post);
+  if (!vids.length && !post.practiceLink) return "";
+  const cards = vids
+    .map((v, i) => {
+      const href = v.id ? `https://www.youtube.com/watch?v=${v.id}` : v.url;
+      const thumb = v.id ? `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg` : "";
+      const label = v.title || (vids.length > 1 ? `Video ${i + 1}` : "Watch video");
+      return `
+        <a class="resource-card video-resource" href="${escHtml(href)}" target="_blank" rel="noopener">
+          <div class="video-thumb-area">
+            ${thumb ? `<img src="${escHtml(thumb)}" alt="${escHtml(label)}" loading="lazy" />` : ""}
+            <div class="video-play-overlay">
+              <svg viewBox="0 0 50 50" fill="none" aria-hidden="true"><circle cx="25" cy="25" r="25" fill="rgba(0,0,0,0.5)"></circle><polygon points="20,15 20,35 38,25" fill="white"></polygon></svg>
+            </div>
+            ${vids.length > 1 ? `<span class="video-order">${i + 1} / ${vids.length}</span>` : ""}
+            ${v.duration ? `<span class="video-duration">${escHtml(v.duration)}</span>` : ""}
+          </div>
+          <div class="resource-card-footer"><span class="resource-type-label">${escHtml(label)}</span></div>
+        </a>`;
+    })
+    .join("");
+  const practice = post.practiceLink
+    ? `
+        <a class="resource-card practice-resource" href="${escHtml(post.practiceLink)}" target="_blank" rel="noopener">
+          <div class="practice-card-body">
+            <div class="practice-site-row"><span class="practice-site-name">Interactive Activity</span></div>
+            <div class="practice-desc">Practise what you learned.</div>
+          </div>
+          <div class="resource-card-footer"><span class="resource-type-label">Open Lab</span></div>
+        </a>`
+    : "";
+  return `
+      <div class="resource-links-section">
+        <div class="resource-links-heading">Learning Resources</div>
+        <div class="resource-links-grid${vids.length > 1 ? " has-playlist" : ""}">${cards}${practice}
+        </div>
+      </div>
+`;
+}
+
 function renderPostPage({ subject, post, slug }) {
   const subjLbl = subject.labels[post.subject] || subject.name;
   const clsLbl = getClassLabel(post.classLevel);
@@ -213,6 +274,22 @@ function renderPostPage({ subject, post, slug }) {
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
   };
 
+  const videoLd = videoList(post)
+    .filter((v) => v.id)
+    .map((v, i) =>
+      `    <script type="application/ld+json">${JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        name: v.title || `${post.title} (video ${i + 1})`,
+        description: desc,
+        thumbnailUrl: [`https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`],
+        uploadDate: publishedIso || undefined,
+        embedUrl: `https://www.youtube.com/embed/${v.id}`,
+        contentUrl: `https://www.youtube.com/watch?v=${v.id}`,
+      })}</script>\n`,
+    )
+    .join("");
+
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -237,7 +314,7 @@ function renderPostPage({ subject, post, slug }) {
     <meta name="twitter:image" content="${escHtml(image)}" />
 
     <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
-
+${videoLd}
     <link rel="stylesheet" href="/blogs/css/render.css" />
     <link rel="stylesheet" href="/blogs/css/blog.css" />
     <link rel="stylesheet" href="/utils/components/nav.css" />
@@ -270,6 +347,7 @@ function renderPostPage({ subject, post, slug }) {
 
       ${post.featuredImage ? `<img class="post-featured-img" src="${escHtml(post.featuredImage)}" alt="${escHtml(post.title)}" loading="lazy" />` : ""}
 
+${renderResources(post)}
       <div class="single-post-body">${bodyHtml}</div>
 
       <div class="post-end">
