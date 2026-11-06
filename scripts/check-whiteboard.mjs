@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { cleanOp, cleanBeat, boardSummary } from "../prepbot-board/js/protocol/ops.js";
 import { createLayout, wrapWords, splitAtEquals, overlaps, CANVAS } from "../prepbot-board/js/board/layout.js";
 import { niceTicks, makeMapper, compileFn, samplePlot, pathOf } from "../prepbot-board/js/board/plot.js";
+import { createScheduler } from "../prepbot-board/js/scheduler.js";
 
 let n = 0;
 const t = (name, fn) => {
@@ -106,5 +107,58 @@ t("sample sub-range", () => {
   const l = samplePlot(compileFn("x"), m, [2, 4]);
   assert.ok(Math.abs(l[0][0][0] - 100) < 1e-6);
 });
+
+/* ── scheduler (async) ───────────────────────────────────────────────── */
+const tick = () => new Promise((r) => setTimeout(r, 2));
+function rig(opts = {}) {
+  const log = [];
+  const stops = [];
+  const voice = { prepare: (text) => { log.push("prep:" + text); let done; return {
+    duration: 0.01, ready: opts.slowReady ? new Promise(() => {}) : Promise.resolve(true),
+    play: () => new Promise((r) => { done = r; setTimeout(r, 5); }), stop: () => { stops.push(text); done?.(); } }; } };
+  const board = { play: (b) => { log.push("draw:" + b.say); return new Promise((r) => setTimeout(r, 5)); }, finishNow: () => log.push("finish") };
+  const ev = [];
+  const sch = createScheduler({ board, voice, clock: { sleep: () => tick() },
+    onBeat: (b) => ev.push("beat:" + b.say), onAsk: (b) => ev.push("ask:" + b.say), onIdle: () => ev.push("idle"), onEnd: () => ev.push("end") });
+  return { sch, log, ev, stops };
+}
+const until = async (f, ms = 2000) => { const t0 = Date.now(); while (!f()) { if (Date.now() - t0 > ms) throw new Error("timeout"); await tick(); } };
+
+await (async () => {
+  const { sch, ev } = rig();
+  sch.begin();
+  sch.push({ say: "one", do: [] }); sch.push({ say: "two", do: [] }); sch.done();
+  await until(() => ev.includes("idle"));
+  assert.deepEqual(ev, ["beat:one", "beat:two", "idle"]); n++;
+})();
+await (async () => {
+  const { sch, ev } = rig();
+  sch.begin();
+  sch.push({ say: "q", ask: true, do: [] }); sch.push({ say: "after", do: [] }); sch.done();
+  await until(() => ev.includes("ask:q"));
+  await new Promise((r) => setTimeout(r, 40));
+  assert.ok(!ev.includes("beat:after"), "beats after an ask are not said"); n++;
+})();
+await (async () => {
+  const { sch, ev, stops, log } = rig();
+  sch.begin();
+  sch.push({ say: "a", do: [] }); sch.push({ say: "b", do: [] }); sch.push({ say: "c", do: [] });
+  await until(() => ev.includes("beat:b"));
+  const rec = sch.interrupt();
+  assert.deepEqual(rec.spoken.map((b) => b.say), ["a"]);
+  assert.equal(rec.partial.say, "b");
+  assert.ok(stops.includes("b") && log.includes("finish"));
+  await new Promise((r) => setTimeout(r, 40));
+  assert.ok(!ev.includes("beat:c"), "nothing after an interrupt"); n++;
+  sch.push({ say: "stale", do: [] }, 1);
+  await new Promise((r) => setTimeout(r, 20));
+  assert.ok(!ev.includes("beat:stale")); n++;
+})();
+await (async () => {
+  const { sch, ev } = rig({ slowReady: true });
+  sch.begin(); sch.push({ say: "slow", do: [] }); sch.done();
+  await until(() => ev.includes("idle"));
+  assert.ok(ev.includes("beat:slow"), "a slow voice does not stall the lesson"); n++;
+})();
 
 console.log(`check-whiteboard: ${n} checks passed`);
