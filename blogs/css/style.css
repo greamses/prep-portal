@@ -1817,3 +1817,15 @@ table {
   box-shadow: var(--shadow-sm);
 }
 .log-container { border: 0; border-radius: 0; box-shadow: var(--shadow-md); }
+
+/* Modals with dropdowns: the menus open below the field, and a mask clips
+   its descendants, so these papers are flat (same soft shadow, no torn edge). */
+.modal-box .pp-receipt__paper:has(.pp-select, select) {
+  -webkit-mask: none;
+  mask: none;
+  overflow: visible;
+}
+.modal-box .pp-receipt__paper:has(.pp-select, select)::before,
+.modal-box .pp-receipt__paper:has(.pp-select, select)::after { display: none; }
+.modal-box .pp-receipt__paper:has(.pp-select, select) { padding: 1.8rem 2rem; }
+.modal-box .pp-select-menu { max-height: min(15rem, 38vh); overflow-y: auto; }
