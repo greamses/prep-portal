@@ -112,9 +112,42 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   let current = null;
   let builtAspect = 0;
   let onTap = () => {};   // set once the learner's side is wired, below
+  /* pictures: the site's image generator draws it, then Gemini (looking at
+     the picture) says where each part to be labelled is, as 0–1 spots */
+  const pictureService = {
+    async make(prompt, labels) {
+      const user = auth?.currentUser;
+      if (!user) throw new Error("signed out");
+      const token = await user.getIdToken();
+      const base = location.port === "5500" ? "http://127.0.0.1:5000" : "";
+      const styled = `A clear, colourful school textbook illustration of ${prompt}. Simple flat shapes, bold outlines, plain white background. No text, no letters, no labels, no numbers, no words anywhere.`;
+      const res = await fetch(`${base}/api/ai/image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ prompt: styled, feature: "whiteboard" }),
+      });
+      if (!res.ok) throw new Error("image " + res.status);
+      const data = await res.json();
+      if (!data.image) throw new Error("no image");
+      const src = `data:image/jpeg;base64,${data.image}`;
+      const size = await new Promise((r) => { const im = new Image(); im.onload = () => r({ w: im.naturalWidth || 1024, h: im.naturalHeight || 1024 }); im.onerror = () => r({ w: 1024, h: 1024 }); im.src = src; });
+      let spots = {};
+      if (labels.length) {
+        try {
+          const lr = await fetch(`${base}/api/whiteboard/locate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ image: data.image, parts: labels, about: prompt }),
+          });
+          if (lr.ok) spots = (await lr.json()).spots || {};
+        } catch {}
+      }
+      return { src, ...size, spots };
+    },
+  };
   function build(replay = []) {
     builtAspect = aspectNow();
-    current = createBoard(svg, { gsap, canvas: makeCanvas(builtAspect), onTap: (e) => onTap(e) });
+    current = createBoard(svg, { gsap, canvas: makeCanvas(builtAspect), onTap: (e) => onTap(e), picture: pictureService });
     if (replay.length) current.restore(replay);
     window.__pbBoard = current;
   }

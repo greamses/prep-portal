@@ -102,6 +102,10 @@ HOW TO DRAW — the ops you may put in "do" (use ONLY these, with these fields):
       ear: auricle, external auditory canal, tympanic membrane, tympanic cavity, malleus, incus, stapes, semicircular canals, cochlea, vestibular nerve, cochlear nerve, round window, Eustachian tube
 - {"op":"label","on":"d1","part":"chloroplast"}
     Point at a PART of that diagram (use the names above): an arrow to it with its name. Label each part in the beat that talks about it. For photosynthesis, draw the plant-cell and label the chloroplast, then explain the process with writing and arrows.
+- {"op":"sketch","id":"k1","paths":[{"d":"M 2 1 L 8 1 L 5 7 Z","tone":"ink","fill":"green"},{"d":"M 1 8 Q 5 10 9 8","tone":"blue"}],"label":"a hill"}
+    A FREE SKETCH of your own, for a simple picture no other op covers (a ladder against a wall, a lens with light rays, a see-saw, a lever, a magnet, a beaker). Each path is SVG path data in the 0 to 10 grid (y goes UP, [0,0] bottom left) using ONLY absolute M, L, C, Q and Z commands; up to 14 paths; "fill" optional. Keep it simple and clear, like a quick teacher's drawing.
+- {"op":"picture","id":"pic1","prompt":"a cross-section of a green leaf showing the upper epidermis, palisade cells, spongy layer and a stoma","labels":["palisade cells","stoma"]}
+    A PICTURE made by an image generator, for anything realistic or complicated that no diagram, shape or sketch can show (an animal, a machine, a landscape, a leaf cross-section, the water cycle). Describe it plainly in "prompt" (no words will be in the picture). "labels" names up to 8 parts to point at once it appears. It takes several seconds to arrive: keep talking about it meanwhile. Prefer a library diagram when one fits; use a picture at most once or twice in a lesson.
 - {"op":"look","section":1}
     Go BACK to an earlier section (the canvas keeps them all; numbers start at 1) to point at, underline or highlight what is there, then carry on. A {"op":"clear"} afterwards opens a new section at the end again.
 - {"op":"clear"}

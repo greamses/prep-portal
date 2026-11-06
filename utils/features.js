@@ -194,6 +194,7 @@ export const FEATURES = [
     // off = admin and granted users only, while it is being tried out
     default: "off",
     paths: ["/prepbot-board"],
+    usesImageGen: true, // pictures PrepBot draws on the board (picture op)
   },
   {
     id: "prepbot",

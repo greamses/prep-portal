@@ -163,6 +163,31 @@ const SPEC = {
     return { op: "circle", id: idOf(o.id, "c"), target: o.target, words: str(o.words, 80), tone: tone(o.tone) || "red" };
   },
 
+  /* A FREE SKETCH: PrepBot's own lines and curves, in grid units (0–10, y up)
+     or a graph's units. Only absolute M L C Q Z path commands are taken, so a
+     sketch is lines and curves and nothing else can ride in on it. */
+  sketch(o) {
+    const on = typeof o.on === "string" && o.on !== "grid" ? o.on : "grid";
+    const paths = (Array.isArray(o.paths) ? o.paths : []).slice(0, 14).map((p) => {
+      const d = typeof p?.d === "string" ? p.d.trim().slice(0, 1600) : "";
+      if (!d || !/^[MLCQZ0-9eE.,\s-]+$/.test(d) || !/^M/.test(d)) return null;
+      const nums = d.match(/-?\d*\.?\d+(?:e-?\d+)?/gi) || [];
+      if (nums.length < 2 || nums.length > 400) return null;
+      return { d, tone: tone(p.tone) || "ink", fill: p.fill && p.fill !== "none" ? tone(p.fill) || null : null };
+    }).filter(Boolean);
+    if (!paths.length) return null;
+    return { op: "sketch", id: idOf(o.id, "k"), on, paths, label: str(o.label, 40) };
+  },
+
+  /* A PICTURE made by the image generator, for what no diagram or sketch can
+     show; it takes a few seconds, so it fills in while PrepBot carries on. */
+  picture(o) {
+    const prompt = str(o.prompt, 300);
+    if (!prompt) return null;
+    const labels = (Array.isArray(o.labels) ? o.labels : []).slice(0, 8).map((l) => str(l, 40)).filter(Boolean);
+    return { op: "picture", id: idOf(o.id, "pic"), prompt, labels };
+  },
+
   /* A drawn diagram from the site's own library, in the figure panel. */
   diagram(o) {
     const NAMES = ["plant-cell", "animal-cell", "heart", "brain", "brain-section", "ear"];

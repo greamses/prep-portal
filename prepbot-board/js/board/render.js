@@ -577,6 +577,103 @@ export function buildHighlight(op, page, target) {
   };
 }
 
+/* ── free sketches ────────────────────────────────────────────────────────── */
+
+/** Absolute M/L/C/Q/Z path data in grid (or graph) units → board units. */
+function mapPath(d, mapper) {
+  const toks = d.match(/[MLCQZ]|-?\d*\.?\d+(?:e-?\d+)?/gi) || [];
+  let out = "", nums = [];
+  const flush = () => {
+    for (let i = 0; i + 1 < nums.length; i += 2) out += `${mapper.toX(nums[i]).toFixed(1)} ${mapper.toY(nums[i + 1]).toFixed(1)} `;
+    nums = [];
+  };
+  for (const t of toks) {
+    if (/^[MLCQZ]$/i.test(t)) { flush(); out += t.toUpperCase(); }
+    else nums.push(Number(t));
+  }
+  flush();
+  return out.trim();
+}
+
+/** PrepBot's own drawing: each line traced by the pencil, fills laid in after. */
+export function buildSketch(op, page, mapper) {
+  const g = el("g", { class: "pb-sketch", "data-id": op.id }, page);
+  const strokes = [], fills = [];
+  for (const p of op.paths) {
+    const d = mapPath(p.d, mapper);
+    if (!d) continue;
+    if (p.fill) fills.push(el("path", { d, class: `pb-fill pb-ink-${p.fill}-fill` }, g));
+    strokes.push(el("path", { d, class: `pb-stroke pb-ink-${p.tone}-stroke` }, g));
+  }
+  let box = null;
+  try { const b = g.getBBox(); box = { x: b.x, y: b.y, w: b.width, h: b.height }; } catch { box = { ...mapper.box }; }
+  let t = null;
+  if (op.label) {
+    t = el("text", { x: box.x + box.w / 2, y: box.y + box.h + 32, "text-anchor": "middle", "font-family": FONT, "font-weight": HAND.text, "font-size": 26, class: "pb-ink-blue-fill" }, g);
+    t.textContent = op.label;
+  }
+  return {
+    node: g, box, weight: 0.5 + strokes.length * 0.35,
+    draw(tl, at, dur) {
+      const each = (dur * 0.85) / Math.max(1, strokes.length);
+      strokes.forEach((s, i) => drawStroke(tl, s, at + i * each, each));
+      fills.forEach((f) => tl.from(f, { opacity: 0, duration: dur * 0.15 }, at + dur * 0.85));
+      if (t) tl.from(t, { opacity: 0, duration: 0.25 }, at + dur * 0.9);
+    },
+  };
+}
+
+/* ── generated pictures ───────────────────────────────────────────────────── */
+
+/**
+ * A picture from the image generator, in the figure panel. A frame is drawn at
+ * once with "PrepBot is drawing…"; when the picture arrives (seconds later) it
+ * is brushed in with the pencil, and any labels asked for are drawn on it,
+ * where the vision model found each part.
+ */
+export function buildPicture(op, page, layout, gsapRef) {
+  const F = layout.canvas.figure;
+  const g = el("g", { class: "pb-picture", "data-id": op.id }, page);
+  const frame = el("rect", { x: F.x + 10, y: F.y + 10, width: F.w - 20, height: F.h - 60, class: "pb-picture__frame" }, g);
+  const wait = el("text", { x: F.x + F.w / 2, y: F.y + F.h / 2, "text-anchor": "middle", class: "pb-picture__wait" }, g);
+  wait.textContent = "PrepBot is drawing…";
+  const item = {
+    node: g, box: { x: F.x, y: F.y, w: F.w, h: F.h - 40 }, weight: 0.4,
+    picture: { ready: false, queue: [], data: null, toBoard: null, box: null },
+    draw(tl, at, dur) {
+      drawStroke(tl, frame, at, dur * 0.8, true);
+      tl.from(wait, { opacity: 0, duration: 0.3 }, at);
+      if (gsapRef) gsapRef.to(wait, { opacity: 0.35, duration: 0.8, repeat: -1, yoyo: true, delay: at + 0.3 });
+    },
+    /** The picture has come: put it in, brushed on; then the labels. */
+    show(src, natural, animate) {
+      gsapRef?.killTweensOf(wait);
+      wait.remove();
+      frame.classList.add("is-done");
+      const k = Math.min((F.w - 30) / natural.w, (F.h - 80) / natural.h);
+      const w = natural.w * k, h = natural.h * k;
+      const x = F.x + (F.w - w) / 2, y = F.y + 15 + (F.h - 80 - h) / 2;
+      const clipId = `pcc-${op.id}-${Math.random().toString(36).slice(2, 6)}`;
+      const cp = el("clipPath", { id: clipId }, g);
+      const r = el("rect", { x: x - 6, y: y - 6, width: animate ? 0 : w + 12, height: h + 12 }, cp);
+      const img = el("image", { href: src, x, y, width: w, height: h, "clip-path": `url(#${clipId})`, preserveAspectRatio: "xMidYMid meet" }, g);
+      void img;
+      item.picture.toBoard = (u, v) => [x + u * w, y + v * h];
+      item.picture.box = { x, y, w, h };
+      item.box = { x, y, w, h };
+      if (animate && gsapRef) {
+        const o = { p: 0 };
+        gsapRef.to(r, { attr: { width: w + 12 }, duration: 1.4, ease: "power1.inOut" });
+        if (PEN) {
+          PEN.show();
+          gsapRef.to(o, { p: 1, duration: 1.4, ease: "power1.inOut", onUpdate: () => PEN?.to(x - 6 + o.p * (w + 12), y + h * (0.5 + 0.42 * Math.sin(o.p * Math.PI * 7))), onComplete: () => PEN?.rest() });
+        }
+      }
+    },
+  };
+  return item;
+}
+
 /* ── the drawn diagrams (diagrams.js) ─────────────────────────────────────── */
 
 /** A diagram drawn into the figure panel: uncovered as the pencil sweeps over it. */

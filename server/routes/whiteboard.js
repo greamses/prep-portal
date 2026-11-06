@@ -117,5 +117,40 @@ module.exports = function () {
     endTurn(uid, email, { tokens: tokens || Math.round(spoken / 3), chars: spoken });
   });
 
+  /* POST /api/whiteboard/locate — where are these parts on this picture?
+     Gemini looks at the generated picture and answers with a 0–1 spot for
+     each part it can see; a part it cannot find is left out (no label). */
+  router.post("/locate", authenticate, async (req, res) => {
+    const verdict = await access.canUse(req, "whiteboard");
+    if (!verdict.allowed) return res.status(403).json({ error: "feature_disabled" });
+    const image = typeof req.body?.image === "string" ? req.body.image.replace(/^data:[^,]+,/, "") : "";
+    const parts = (Array.isArray(req.body?.parts) ? req.body.parts : []).slice(0, 8).map((p) => String(p).slice(0, 40)).filter(Boolean);
+    if (!image || image.length > 3_000_000 || !parts.length) return res.status(400).json({ error: "image and parts needed" });
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) return res.status(503).json({ error: "not configured" });
+    const ask = `This is an illustration of ${String(req.body?.about || "a school topic").slice(0, 200)}. For each of these parts, give the point at the CENTRE of where it appears in the picture, as fractions of the image width and height (0 to 1, from the top-left corner). Leave out any part that is not clearly visible. Parts: ${parts.join("; ")}. Answer only JSON: {"<part>":[x,y],...}`;
+    const body = JSON.stringify({
+      contents: [{ role: "user", parts: [{ inlineData: { mimeType: "image/jpeg", data: image } }, { text: ask }] }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 400, responseMimeType: "application/json" },
+    });
+    const { GEMINI_MODELS } = require("../ai-models");
+    for (const url of GEMINI_MODELS) {
+      try {
+        const r = await fetch(`${url}?key=${key}`, { method: "POST", headers: { "Content-Type": "application/json" }, body });
+        if (!r.ok) continue;
+        const j = await r.json();
+        const text = (j.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("");
+        const raw = JSON.parse(text.replace(/```(?:json)?/g, "").trim() || "{}");
+        const spots = {};
+        for (const p of parts) {
+          const v = raw[p] || raw[Object.keys(raw).find((k) => k.toLowerCase() === p.toLowerCase())];
+          if (Array.isArray(v) && v.length === 2 && v.every((n) => Number.isFinite(+n) && +n >= 0 && +n <= 1)) spots[p] = [+v[0], +v[1]];
+        }
+        return res.json({ spots });
+      } catch (_) { /* next model */ }
+    }
+    res.json({ spots: {} });
+  });
+
   return router;
 };

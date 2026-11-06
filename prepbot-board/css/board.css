@@ -302,3 +302,9 @@ body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex;
 .pb-credit { font-family: var(--font-mono); font-size: 13px; fill: rgba(42, 39, 35, 0.5); }
 .pb-label__text { paint-order: stroke; stroke: var(--pb-paper); stroke-width: 5px; stroke-linejoin: round; }
 
+/* a picture coming: a dashed frame and a quiet note, until it is brushed in */
+.pb-picture__frame { fill: none; stroke: rgba(42, 39, 35, 0.25); stroke-width: 3; stroke-dasharray: 14 10; }
+.pb-picture__frame.is-done { stroke: transparent; }
+.pb-picture__wait { font-family: var(--font-mono); font-size: 22px; fill: rgba(42, 39, 35, 0.55); }
+.pb-sketch .pb-stroke { stroke-width: 4.5; }
+

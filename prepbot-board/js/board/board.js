@@ -22,7 +22,7 @@
 
 import { createLayout } from "./layout.js";
 import { cleanOp, boardSummary } from "../protocol/ops.js";
-import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, buildShape, buildHighlight, buildDiagram, buildLabel, gridMapper, createPen, setPen } from "./render.js";
+import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, buildShape, buildHighlight, buildDiagram, buildLabel, buildSketch, buildPicture, gridMapper, createPen, setPen } from "./render.js";
 import { ensureDiagrams, loadedDiagram, findPart } from "./diagrams.js";
 
 /* the diagram names a list of ops asks for, so they can be loaded first */
@@ -37,7 +37,10 @@ const GAP = 140;               // canvas between two sections
 const COLUMNS = 2;             // sections across, before the next row (landscape)
 const FOLLOW_AFTER_MS = 6000;  // a learner who looked away is brought back after this, when PrepBot draws
 
-export function createBoard(svg, { gsap, orient = "landscape", canvas = null, onTap = null } = {}) {
+/* pictures already made this visit, so a redraw (resize, a new hand) needs no new one */
+const pictureCache = new Map(); // prompt → Promise<{ src, w, h, spots }>
+
+export function createBoard(svg, { gsap, orient = "landscape", canvas = null, onTap = null, picture = null } = {}) {
   const shape = canvas || orient;
   let layout = createLayout(shape);   // the LIVE section's layout (each section has its own)
   const C = layout.canvas;
@@ -264,10 +267,25 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
         return d;
       }
       case "label": {
-        const d = items.get(op.on)?.diagram;
+        const it = items.get(op.on);
+        /* a label on a generated picture waits for the picture (and the spots found on it) */
+        if (it?.picture) { queuePictureLabel(it, op, page, layout); return null; }
+        const d = it?.diagram;
         const part = d && findPart(d.data, op.part);
         if (!part) return null;
         return buildLabel(op, page, d, part, layout.canvas.w - 24);
+      }
+      case "sketch": {
+        const g = op.on === "grid" ? null : items.get(op.on);
+        return buildSketch(op, page, g?.mapper || gridMapper(layout.canvas.figure));
+      }
+      case "picture": {
+        if (!picture) return null; // no image service on this page (tests, demos)
+        if (graph) nextSection(animated);
+        const it = buildPicture(op, cur.page, layout, gsap);
+        graph = it;
+        startPicture(it, op, animated);
+        return it;
       }
       case "shape": {
         const g = op.on === "grid" ? null : items.get(op.on);
@@ -280,6 +298,43 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       }
       default:
         return null;
+    }
+  }
+
+  /* ── generated pictures ──────────────────────────────────────────────── */
+  function startPicture(it, op, animated) {
+    const key = op.prompt + "|" + (op.labels || []).join(",");
+    if (!pictureCache.has(key)) {
+      pictureCache.set(key, picture.make(op.prompt, op.labels || []).catch((e) => { pictureCache.delete(key); throw e; }));
+    }
+    const lay = layout, page = cur.page;
+    pictureCache.get(key).then((got) => {
+      if (!it.node.isConnected) return; // the board was cleared or rebuilt meanwhile
+      it.show(got.src, { w: got.w, h: got.h }, animated && !!gsap);
+      it.picture.ready = true;
+      it.picture.spots = got.spots || {};
+      /* the labels named with the picture, then any asked for while it was coming */
+      const asked = (op.labels || []).map((part) => ({ op: "label", id: `${op.id}-${part}`.replace(/[^a-z0-9_-]/gi, "").slice(0, 24) || "lbl", on: op.id, part, text: part, tone: "blue" }));
+      [...asked, ...it.picture.queue].forEach((lo, i) => setTimeout(() => drawPictureLabel(it, lo, page, lay, animated), animated ? 1500 + i * 450 : 0));
+      it.picture.queue = [];
+    }).catch(() => {
+      if (!it.node.isConnected) return;
+      const t = it.node.querySelector(".pb-picture__wait");
+      if (t) { gsap?.killTweensOf(t); t.textContent = "The picture could not be drawn just now."; t.style.opacity = 1; }
+    });
+  }
+  function queuePictureLabel(it, op, page, lay) {
+    if (it.picture.ready) drawPictureLabel(it, op, page, lay, !!gsap);
+    else it.picture.queue.push(op);
+  }
+  function drawPictureLabel(it, op, page, lay, animated) {
+    const spot = it.picture.spots?.[op.part] || Object.entries(it.picture.spots || {}).find(([k]) => k.toLowerCase() === String(op.part).toLowerCase())?.[1];
+    if (!spot) return;
+    const d = { toBoard: it.picture.toBoard, box: it.picture.box, labels: it.picture.labels || (it.picture.labels = []) };
+    const lbl = buildLabel({ ...op, text: op.text || op.part }, page, d, { cx: spot[0], cy: spot[1] }, lay.canvas.w - 24);
+    if (animated && gsap) {
+      const t = gsap.timeline({ onComplete: () => pen.rest() });
+      lbl.draw(t, 0, 0.9);
     }
   }
 
