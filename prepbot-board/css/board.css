@@ -285,3 +285,15 @@ body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex;
 .pb-section .pb-paper { stroke: rgba(42, 39, 35, 0.1); stroke-width: 3; }
 .pb-section__no { font-family: var(--font-mono); font-size: 28px; font-weight: 700; fill: rgba(42, 39, 35, 0.28); }
 
+/* highlighters: each colour as a marker pen, soft enough to write over */
+.pb-hl.pb-ink-yellow-fill { fill: #f6d55c; }
+.pb-hl.pb-ink-green-fill { fill: #9fdc8f; }
+.pb-hl.pb-ink-blue-fill { fill: #9fd0f5; }
+.pb-hl.pb-ink-orange-fill { fill: #f7bd7d; }
+.pb-hl.pb-ink-red-fill { fill: #f5a7b8; }
+.pb-hl.pb-ink-ink-fill { fill: #f6d55c; }
+.pb-hl { opacity: 0.55; }
+
+/* moving between sections */
+.pb-rail__nav { display: flex; flex-direction: column; gap: 6px; }
+

@@ -152,8 +152,8 @@ t("scanner: plain prose falls back to sentences", () => {
   assert.equal(out[out.length - 1].say, "Gravity pulls it down.");
 });
 t("scanner: max beats", () => {
-  const { out } = feed([Array.from({ length: 20 }, (_, i) => `{"say":"b${i}"}`).join("\n")]);
-  assert.equal(out.length, 12);
+  const { out } = feed([Array.from({ length: 30 }, (_, i) => `{"say":"b${i}"}`).join("\n")]);
+  assert.equal(out.length, 18);
 });
 
 /* ── scheduler (async) ───────────────────────────────────────────────── */

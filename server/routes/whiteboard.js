@@ -90,7 +90,7 @@ module.exports = function () {
       if (closed || sent) break;
       if (!p.has()) continue;
       try {
-        const out = await p.run({ system, messages, maxTokens: 1100, temperature: 0.55, signal: ctrl.signal, onDelta });
+        const out = await p.run({ system, messages, maxTokens: 2000, temperature: 0.55, signal: ctrl.signal, onDelta });
         tokens += out?.tokens || 0;
         provider = p.name;
       } catch (e) {

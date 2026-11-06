@@ -25,12 +25,14 @@ import { cleanOp, boardSummary } from "../protocol/ops.js";
 import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, buildShape, buildHighlight, gridMapper, createPen, setPen } from "./render.js";
 
 const GAP = 140;               // canvas between two sections
+const COLUMNS = 2;             // sections across, before the next row (landscape)
 const FOLLOW_AFTER_MS = 6000;  // a learner who looked away is brought back after this, when PrepBot draws
 
 export function createBoard(svg, { gsap, orient = "landscape", canvas = null, onTap = null } = {}) {
-  const layout = createLayout(canvas || orient);
+  const shape = canvas || orient;
+  let layout = createLayout(shape);   // the LIVE section's layout (each section has its own)
   const C = layout.canvas;
-  const across = layout.orient !== "portrait"; // sections run to the right, or downwards
+  const across = layout.orient !== "portrait"; // a grid of sections, or one column on a phone
   svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
   svg.classList.add("pb-board", `pb-board--${layout.orient}`);
   svg.innerHTML = "";
@@ -44,10 +46,10 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
   const measure = el("g", { class: "pb-measure", opacity: 0 }, svg);
 
   /* ── sections ──────────────────────────────────────────────────────────── */
-  const sections = [];       // { g, page, ops, x, y }
+  const sections = [];       // { g, page, ops, x, y, layout, items, graph }
   let cur = null;
-  const items = new Map();   // id → built thing, in the CURRENT section
-  let graph = null;          // the graph in the current section, if any
+  let items = new Map();     // id → built thing, in the LIVE section
+  let graph = null;          // the graph in the live section, if any
   let tl = null;
   let thinkTw = null;
 
@@ -56,8 +58,9 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
 
   function addSection() {
     const i = sections.length;
-    const x = across ? i * (C.w + GAP) : 0;
-    const y = across ? 0 : i * (C.h + GAP);
+    /* a grid, read like a page: across, then the next row */
+    const x = across ? (i % COLUMNS) * (C.w + GAP) : 0;
+    const y = across ? Math.floor(i / COLUMNS) * (C.h + GAP) : i * (C.h + GAP);
     const g = el("g", { class: "pb-section", transform: `translate(${x} ${y})` }, world);
     el("rect", { class: "pb-paper", x: 0, y: 0, width: C.w, height: C.h }, g);
     if (i > 0 || sections.length) {
@@ -66,18 +69,25 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
     }
     const page = el("g", { class: "pb-page" }, g);
     g.appendChild(penLayer); // the pencil works in the live section
-    const s = { g, page, ops: [], x, y };
+    const s = { g, page, ops: [], x, y, layout: createLayout(shape), items: new Map(), graph: null, n: i + 1 };
     sections.push(s);
-    cur = s;
-    items.clear();
-    graph = null;
-    layout.reset();
+    enter(s);
     /* the first section's number appears once there is a second */
     if (sections.length === 2) {
       const t0 = el("text", { class: "pb-section__no", x: C.w - 34, y: 44, "text-anchor": "end" }, sections[0].g);
       t0.textContent = "1";
     }
     return s;
+  }
+
+  /* make a section the live one: its layout, its items, the pencil */
+  function enter(s) {
+    if (cur) { cur.graph = graph; }
+    cur = s;
+    layout = s.layout;
+    items = s.items;
+    graph = s.graph;
+    s.g.appendChild(penLayer);
   }
 
   /* ── the camera: the SVG viewBox, over the whole canvas ─────────────────── */
@@ -99,8 +109,8 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
   function viewAll(dur = 0.8) {
     following = false;
     lookedAt = Date.now();
-    const last = sections[sections.length - 1];
-    const W = last.x + C.w, H = last.y + C.h;
+    const W = Math.max(...sections.map((s) => s.x)) + C.w;
+    const H = Math.max(...sections.map((s) => s.y)) + C.h;
     const k = Math.max(W / C.w, H / C.h) * 1.06;
     glide({ x: W / 2 - (C.w * k) / 2, y: H / 2 - (C.h * k) / 2, w: C.w * k, h: C.h * k }, dur);
   }
@@ -182,8 +192,18 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
     const page = cur.page;
     switch (op.op) {
       case "clear":
-        if (cur.ops.length) nextSection(animated);
+        /* a new section always opens at the END of the canvas */
+        if (cur.ops.length || cur !== sections[sections.length - 1]) {
+          if (cur !== sections[sections.length - 1]) enter(sections[sections.length - 1]);
+          if (cur.ops.length) nextSection(animated);
+          else if (animated && following) focusLive(0.9);
+        }
         return null;
+      case "look": {
+        const s = sections[op.section - 1];
+        if (s && s !== cur) { enter(s); if (animated) focusLive(0.9); else focusLive(0); }
+        return null;
+      }
       case "write": {
         let w = buildWrite(op, page, measure, layout);
         if (w.turn) {
@@ -243,7 +263,7 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       if (!op) continue;
       let b = null;
       try { b = build(op, animated); } catch (e) { console.warn("[board] op skipped", op, e); b = null; }
-      if (op.op === "clear" || !b) continue;
+      if (op.op === "clear" || op.op === "look" || !b) continue;
       cur.ops.push(op);
       items.set(op.id, b);
       built.push(b);
@@ -327,9 +347,19 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
     follow() { focusLive(); },
     get following() { return following; },
 
-    /** What is in the live section, for the model's next turn. */
+    /** What is in the live section, for the model's next turn (with where it is). */
     summary() {
-      return boardSummary(cur.ops);
+      return [{ kind: "section", n: cur.n, of: sections.length }, ...boardSummary(cur.ops)];
+    },
+
+    /** Look at the section before / after the one in view (the learner moving round). */
+    step(dir) {
+      following = false;
+      lookedAt = Date.now();
+      const near = sections.map((s, i) => [i, Math.hypot(s.x - cam.x, s.y - cam.y)]).sort((a, b) => a[1] - b[1])[0][0];
+      const s = sections[Math.min(sections.length - 1, Math.max(0, near + dir))];
+      glide(sectionView(s), 0.7);
+      if (s === cur) following = true;
     },
 
     /** Every section so far, the live one last (each a list of ops). */

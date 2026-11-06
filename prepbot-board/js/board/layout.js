@@ -27,9 +27,9 @@ export const CANVAS = {
 /* The writing sizes, in logical units: what a marker on a real board looks like
    from a desk at the back. */
 export const SIZES = {
-  title: { font: 46, gap: 26 },
-  step: { font: 36, gap: 16 },
-  note: { font: 30, gap: 14 },
+  title: { font: 38, gap: 20 },
+  step: { font: 29, gap: 12 },
+  note: { font: 25, gap: 10 },
 };
 
 /**

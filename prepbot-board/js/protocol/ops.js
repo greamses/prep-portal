@@ -51,6 +51,7 @@ function looksLikeMaths(text) {
 }
 
 let auto = 0;
+let penTurn = 0;
 const idOf = (v, prefix) => (typeof v === "string" && ID_RE.test(v) ? v : `${prefix}${++auto}`);
 
 /* Each op: what it needs, made safe. Returning null drops the op. */
@@ -137,9 +138,19 @@ const SPEC = {
   },
 
   /* A highlighter swept behind something already on the board. */
+  /* (no tone given: the highlighters are used in turn, as a teacher picks up the next pen) */
   highlight(o) {
     if (typeof o.target !== "string") return null;
-    return { op: "highlight", id: idOf(o.id, "h"), target: o.target, tone: tone(o.tone) || "yellow" };
+    const pens = ["yellow", "green", "blue", "orange", "red"];
+    const given = tone(o.tone);
+    return { op: "highlight", id: idOf(o.id, "h"), target: o.target, tone: given && given !== "ink" ? given : pens[(penTurn++) % pens.length] };
+  },
+
+  /* Go back to an earlier SECTION of the canvas (1, 2, …) to point at what is
+     there: the camera moves to it, and marks and writing go into it. */
+  look(o) {
+    const n = Math.round(num(o.section) || 0);
+    return n >= 1 ? { op: "look", section: n } : null;
   },
 
   underline(o) {

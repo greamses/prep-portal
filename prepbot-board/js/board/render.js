@@ -223,7 +223,7 @@ export function buildWrite(op, page, measureLayer, layout) {
       else { a.node.setAttribute("x", x); a.node.setAttribute("y", up - (a.up)); }
       x += a.w + gap;
     }
-    lineBoxes.push({ g, box, w: line.w, h: size.h });
+    lineBoxes.push({ g, box, w: line.w, h: size.h, atoms: line.atoms, up, down });
   }
   const box = union(lineBoxes.map((l) => l.box));
   return {
@@ -242,15 +242,68 @@ export function buildWrite(op, page, measureLayer, layout) {
         const r = el("rect", { x: -8, y: -12, width: 0, height: l.h + 24 }, cp);
         l.g.setAttribute("clip-path", `url(#${clipId})`);
         tl.to(r, { attr: { width: l.w + 16 }, duration: d, ease: "none" }, t);
+        /* the pencil goes THROUGH the letters: up into an ascender, down into a
+           tail, a little loop over each small letter, a zigzag across maths */
+        const track = letterTrack(l);
         const lb = l.box;
-        PEN?.follow(tl, t, d, (p) => [
-          lb.x + p * lb.w,
-          lb.y + lb.h * 0.66 + Math.sin((p * lb.w) / 11) * lb.h * 0.14,
-        ]);
+        PEN?.follow(tl, t, d, (p) => {
+          const xl = p * l.w;
+          return [lb.x + xl * lb.scale, lb.y + yOnTrack(track, xl) * lb.scale];
+        });
         t += d;
       }
     },
   };
+}
+
+/* ── the pencil's way through a line of writing ─────────────────────────────
+   A list of [x, y] in the line's own units, x always increasing, so the lead
+   can be put at any x as the line is uncovered. Each letter gets a stroke of
+   its own shape: tall letters reach up to the top of the line, letters with a
+   tail dip below it, the rest loop round the middle of the small letters. */
+const TALL = /[bdfhklt]|[A-Z0-9?!]/;
+const TAIL = /[gjpqyz]/;
+function letterTrack(line) {
+  const up = line.up, h = line.h;
+  const xMid = up - h * 0.18, xTop = up - h * 0.42, top = up - h * 0.62, base = up, low = up + h * 0.22;
+  const pts = [[0, xMid]];
+  for (const a of line.atoms) {
+    const x0 = +a.node.getAttribute("x") || 0;
+    if (a.kind === "text") {
+      const s = a.node.textContent || "";
+      for (let i = 0; i < s.length; i++) {
+        let ex;
+        try { ex = a.node.getExtentOfChar(i); } catch { ex = null; }
+        if (!ex || !ex.width) continue;
+        const cx = ex.x, w = ex.width, ch = s[i];
+        if (TALL.test(ch)) pts.push([cx + w * 0.2, base], [cx + w * 0.45, top], [cx + w * 0.7, base], [cx + w, xMid]);
+        else if (TAIL.test(ch)) pts.push([cx + w * 0.25, xTop], [cx + w * 0.55, low], [cx + w * 0.8, base], [cx + w, xMid]);
+        else if (ch === " ") pts.push([cx + w, xMid]);
+        else pts.push([cx + w * 0.3, xTop], [cx + w * 0.65, base], [cx + w, xMid]);
+      }
+    } else {
+      /* maths: across the set expression, high and low over its parts */
+      const n = Math.max(2, Math.round(a.w / 14));
+      for (let i = 1; i <= n; i++) pts.push([x0 + (a.w * i) / n, i % 2 ? up - a.up * 0.7 : up - a.up * 0.15]);
+    }
+  }
+  pts.push([line.w, xMid]);
+  /* keep x increasing, so a position along the line has one height */
+  const out = [pts[0]];
+  for (const q of pts.slice(1)) if (q[0] > out[out.length - 1][0] + 0.01) out.push(q);
+  return out;
+}
+function yOnTrack(track, x) {
+  if (x <= track[0][0]) return track[0][1];
+  for (let i = 1; i < track.length; i++) {
+    const [x1, y1] = track[i];
+    if (x <= x1) {
+      const [x0, y0] = track[i - 1];
+      const k = (x - x0) / (x1 - x0 || 1);
+      return y0 + (y1 - y0) * k;
+    }
+  }
+  return track[track.length - 1][1];
 }
 
 /* ── the figure panel ────────────────────────────────────────────────────── */
