@@ -48,7 +48,8 @@ async function ready() {
     import("https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm"),
     loadMath(),
     import("/firebase-init.js").catch(() => null),
-    document.fonts.load('600 36px "Shantell Sans"').catch(() => {}),
+    document.fonts.load('300 36px "Playwrite US Trad"').catch(() => {}),
+    document.fonts.load('400 46px "Playwrite US Trad"').catch(() => {}),
     document.fonts.load('400 19px "JetBrains Mono"').catch(() => {}),
   ]);
   status.textContent = "";

@@ -14,7 +14,7 @@
 
 import { createLayout } from "./layout.js";
 import { cleanOp, boardSummary } from "../protocol/ops.js";
-import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, gridMapper } from "./render.js";
+import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, gridMapper, createPen, setPen } from "./render.js";
 
 export function createBoard(svg, { gsap, orient = "landscape" } = {}) {
   const layout = createLayout(orient);
@@ -33,6 +33,10 @@ export function createBoard(svg, { gsap, orient = "landscape" } = {}) {
   const measure = el("g", { class: "pb-measure", opacity: 0 }, svg);
 
   let page = el("g", { class: "pb-page" }, svg);
+  /* the pencil rides on its own top layer; new pages go in underneath it */
+  const penLayer = el("g", { class: "pb-penlayer" }, svg);
+  const pen = createPen(penLayer, gsap);
+  const newPage = () => { const g = el("g", { class: "pb-page" }); svg.insertBefore(g, penLayer); return g; };
   const history = [];            // earlier pages: their op lists
   let ops = [];                  // ops applied to this page
   const items = new Map();       // id → built thing (box, mapper…)
@@ -42,7 +46,7 @@ export function createBoard(svg, { gsap, orient = "landscape" } = {}) {
   function turnPage(animated = true) {
     if (ops.length) history.push(ops);
     const old = page;
-    page = el("g", { class: "pb-page" }, svg);
+    page = newPage();
     if (animated && gsap && old.childNodes.length) {
       gsap.to(old, { opacity: 0, y: -40, duration: 0.45, ease: "power2.in", onComplete: () => old.remove() });
     } else old.remove();
@@ -128,8 +132,9 @@ export function createBoard(svg, { gsap, orient = "landscape" } = {}) {
      * ops appear at once.
      */
     play(beat, seconds = 2) {
+      setPen(gsap && seconds > 0 ? pen : null); // instant drawing: no pencil
       const built = apply(beat?.do || []);
-      if (!built.length) return Promise.resolve();
+      if (!built.length) { pen.rest(); return Promise.resolve(); }
       if (!gsap || seconds <= 0) return Promise.resolve();
       return new Promise((resolve) => {
         const timeline = gsap.timeline({ onComplete: resolve, onInterrupt: resolve });
@@ -143,13 +148,14 @@ export function createBoard(svg, { gsap, orient = "landscape" } = {}) {
           at += d;
         }
         tl = timeline;
-        timeline.eventCallback("onComplete", () => { if (tl === timeline) tl = null; resolve(); });
+        timeline.eventCallback("onComplete", () => { if (tl === timeline) tl = null; pen.rest(); resolve(); });
       });
     },
 
     /** Jump whatever is being drawn to its end — the board stays as said. */
     finishNow() {
       if (tl) { const t = tl; tl = null; t.progress(1); }
+      pen.rest(0.2);
     },
 
     /** What is on this page, for the model's next turn. */
@@ -170,7 +176,8 @@ export function createBoard(svg, { gsap, orient = "landscape" } = {}) {
       items.clear();
       graph = null;
       page.remove();
-      page = el("g", { class: "pb-page" }, svg);
+      page = newPage();
+      pen.rest(0);
       layout.reset();
     },
   };

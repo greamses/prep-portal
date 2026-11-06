@@ -100,8 +100,10 @@ leading `--leading-tight 1.05 … --leading-relaxed 1.7`; sizes
 - **Shantell Sans** (handwritten, 600) → **only** for sticky notes / `.pp-sticky`
   / `.path-note`. Never for body copy.
   One deliberate exception: the **PrepBot Board** (`/prepbot-board/`) writes its
-  words in Shantell Sans, because the board is paper written on by hand, like a
-  sticky note. It keeps a fixed cream sheet and dark marker inks in both themes.
+  words in **Playwrite US Trad** (American school cursive, loaded on that page
+  only), because the board teaches the way a teacher writes on one; a pencil
+  follows the writing as it appears. It keeps a fixed cream sheet and dark
+  marker inks in both themes. Its captions stay sticky notes (Shantell Sans).
 - `--font-serif` aliases display. **Do not add new fonts to the main site.**
 
 ---

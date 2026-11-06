@@ -17,7 +17,9 @@ import { SIZES, splitAtEquals } from "./layout.js";
 import { makeMapper, gridMapper, compileFn, samplePlot, pathOf } from "./plot.js";
 
 const NS = "http://www.w3.org/2000/svg";
-export const FONT = `"Shantell Sans", "Segoe Print", "Bradley Hand", cursive`;
+/* American school cursive (Playwrite US Trad, a handwriting-teaching face):
+   the board teaches the way a teacher writes on one */
+export const FONT = `"Playwrite US Trad", "Segoe Script", "Brush Script MT", cursive`;
 const MONO = `"JetBrains Mono", Consolas, monospace`;
 
 export function el(tag, attrs = {}, parent = null) {
@@ -25,6 +27,57 @@ export function el(tag, attrs = {}, parent = null) {
   for (const [k, v] of Object.entries(attrs)) if (v !== undefined && v !== null) n.setAttribute(k, v);
   if (parent) parent.appendChild(n);
   return n;
+}
+
+/* ── the pencil ──────────────────────────────────────────────────────────── */
+
+let PEN = null;
+/** The board hands in its pencil; every drawing below moves it. */
+export function setPen(pen) { PEN = pen; }
+
+/**
+ * A pencil on the board's top layer, its LEAD at the point being drawn. It
+ * travels along a line of writing as the line is uncovered, and along every
+ * curve, arrow and underline as it is drawn, so the eye follows the hand.
+ */
+export function createPen(layer, gsap) {
+  const g = el("g", { class: "pb-pen", opacity: 0 }, layer);
+  const body = el("g", { transform: "rotate(-38)" }, g);
+  el("polygon", { points: "0,0 9,-3.4 9,3.4", fill: "#2a2723" }, body);
+  el("polygon", { points: "9,-3.4 30,-10 30,10 9,3.4", fill: "#f0d3a2" }, body);
+  el("rect", { x: 30, y: -10, width: 92, height: 20, fill: "#f4c95d" }, body);
+  el("rect", { x: 30, y: -2, width: 92, height: 4, fill: "#e0ad3c" }, body);
+  el("rect", { x: 122, y: -10, width: 11, height: 20, fill: "#c4bdb2" }, body);
+  el("rect", { x: 133, y: -10, width: 13, height: 20, fill: "#f07a7a" }, body);
+  let x = null, y = null, restT = null;
+  const place = () => g.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+  return {
+    /** Move the lead towards (tx, ty), a little smoothed, like a real hand. */
+    to(tx, ty, snap = false) {
+      if (x === null || snap) { x = tx; y = ty; }
+      else { x += (tx - x) * 0.55; y += (ty - y) * 0.55; }
+      place();
+    },
+    show() {
+      clearTimeout(restT);
+      if (gsap) gsap.to(g, { opacity: 1, duration: 0.15, overwrite: "auto" }); else g.setAttribute("opacity", 1);
+    },
+    /** Lift the pencil off the board when there is nothing to draw. */
+    rest(after = 0.7) {
+      clearTimeout(restT);
+      restT = setTimeout(() => { if (gsap) gsap.to(g, { opacity: 0, duration: 0.3 }); else g.setAttribute("opacity", 0); }, after * 1000);
+    },
+    /** Add a tween that walks the pencil along pointAt(p), p from 0 to 1. */
+    follow(tl, at, dur, pointAt, ease = "none") {
+      const o = { p: 0 };
+      const self = this;
+      tl.to(o, {
+        p: 1, duration: dur, ease,
+        onStart() { self.show(); const [a, b] = pointAt(0); self.to(a, b); },
+        onUpdate() { const [a, b] = pointAt(o.p); self.to(a, b); },
+      }, at);
+    },
+  };
 }
 
 /* ── maths ───────────────────────────────────────────────────────────────── */
@@ -85,10 +138,10 @@ function buildAtoms(op, measureLayer, maxW) {
   const font = (SIZES[op.as] || SIZES.step).font;
   const atoms = [];
   const textAtom = (s) => {
-    const n = el("text", { "font-size": font, "font-family": FONT, "font-weight": op.as === "title" ? 700 : 600, class: `pb-ink-${op.tone}-fill` }, measureLayer);
+    const n = el("text", { "font-size": font, "font-family": FONT, "font-weight": op.as === "title" ? 400 : 300, class: `pb-ink-${op.tone}-fill` }, measureLayer);
     n.textContent = s;
     const w = n.getComputedTextLength();
-    return { node: n, w, up: font * 0.78, down: font * 0.24, kind: "text" };
+    return { node: n, w, up: font * 0.98, down: font * 0.42, kind: "text" };
   };
   const mathAtom = (src) => {
     const m = mathSvg(src, font * 1.05);
@@ -170,6 +223,11 @@ export function buildWrite(op, page, measureLayer, layout) {
         const r = el("rect", { x: -8, y: -12, width: 0, height: l.h + 24 }, cp);
         l.g.setAttribute("clip-path", `url(#${clipId})`);
         tl.to(r, { attr: { width: l.w + 16 }, duration: d, ease: "none" }, t);
+        const lb = l.box;
+        PEN?.follow(tl, t, d, (p) => [
+          lb.x + p * lb.w,
+          lb.y + lb.h * 0.66 + Math.sin((p * lb.w) / 11) * lb.h * 0.14,
+        ]);
         t += d;
       }
     },
@@ -212,7 +270,7 @@ export function buildGraph(op, page, layout) {
     const t = el("text", { x: ox - 12, y: oy + 28, "text-anchor": "end", "font-family": MONO, "font-size": 19 }, nums);
     t.textContent = "0";
   }
-  const labels = el("g", { class: "pb-ink-blue-fill", "font-family": FONT, "font-weight": 600, "font-size": 26 }, g);
+  const labels = el("g", { class: "pb-ink-blue-fill", "font-family": FONT, "font-weight": 300, "font-size": 26 }, g);
   if (op.xlabel) { const t = el("text", { x: inner.x + inner.w, y: oy - 14, "text-anchor": "end" }, labels); t.textContent = op.xlabel; }
   if (op.ylabel) { const t = el("text", { x: ox + 14, y: inner.y + 6 }, labels); t.textContent = op.ylabel; }
   return {
@@ -246,7 +304,7 @@ export function buildPlot(op, page, graph) {
     const last = lines[lines.length - 1];
     const inside = last.filter(([x, y]) => y >= b.y && y <= b.y + b.h);
     const [lx, ly] = (inside.length ? inside : last)[Math.floor((inside.length || last.length) * 0.82)] || last[last.length - 1];
-    labelNode = el("text", { x: Math.min(lx + 10, b.x + b.w - 10), y: Math.max(ly - 14, b.y + 24), "font-family": FONT, "font-weight": 600, "font-size": 26, class: `pb-ink-${op.tone}-fill`, "text-anchor": "end" }, g);
+    labelNode = el("text", { x: Math.min(lx + 10, b.x + b.w - 10), y: Math.max(ly - 14, b.y + 24), "font-family": FONT, "font-weight": 300, "font-size": 26, class: `pb-ink-${op.tone}-fill`, "text-anchor": "end" }, g);
     labelNode.textContent = op.label;
   }
   return {
@@ -264,12 +322,13 @@ export function buildPoint(op, page, mapper) {
   const dot = el("circle", { cx: x, cy: y, r: 8, class: `pb-ink-${op.tone}-fill` }, g);
   let t = null;
   if (op.label) {
-    t = el("text", { x: x + 14, y: y - 12, "font-family": FONT, "font-weight": 600, "font-size": 26, class: `pb-ink-${op.tone}-fill` }, g);
+    t = el("text", { x: x + 14, y: y - 12, "font-family": FONT, "font-weight": 300, "font-size": 26, class: `pb-ink-${op.tone}-fill` }, g);
     t.textContent = op.label;
   }
   return {
     node: g, box: { x: x - 10, y: y - 10, w: 20, h: 20 }, weight: 0.5,
     draw(tl, at, dur) {
+      PEN?.follow(tl, at, Math.min(0.3, dur), () => [x, y]);
       tl.from(dot, { attr: { r: 0 }, duration: Math.min(0.35, dur), ease: "back.out(2)" }, at);
       if (t) tl.from(t, { opacity: 0, duration: 0.25 }, at + Math.min(0.3, dur));
     },
@@ -288,7 +347,7 @@ export function buildArrow(op, page, mapper) {
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
     const len = Math.hypot(x2 - x1, y2 - y1) || 1;
     const nx = -(y2 - y1) / len, ny = (x2 - x1) / len; // the side away from the line
-    t = el("text", { x: mx + nx * 30, y: my + ny * 30 + 8, "text-anchor": "middle", "font-family": FONT, "font-weight": 600, "font-size": 26, class: `pb-ink-${op.tone}-fill` }, g);
+    t = el("text", { x: mx + nx * 30, y: my + ny * 30 + 8, "text-anchor": "middle", "font-family": FONT, "font-weight": 300, "font-size": 26, class: `pb-ink-${op.tone}-fill` }, g);
     t.textContent = op.label;
   }
   return {
@@ -334,11 +393,13 @@ function drawStroke(tl, path, at, dur, dashed = false) {
   if (dashed) {
     /* a dashed line keeps its dashes: reveal it under a growing mask instead */
     tl.from(path, { opacity: 0, duration: dur }, at);
+    PEN?.follow(tl, at, dur, (p) => { const q = path.getPointAtLength(len * p); return [q.x, q.y]; });
     return;
   }
   path.style.strokeDasharray = `${len} ${len}`;
   path.style.strokeDashoffset = len;
   tl.to(path, { strokeDashoffset: 0, duration: dur, ease: "power1.inOut", onComplete: () => { path.style.strokeDasharray = ""; path.style.strokeDashoffset = ""; } }, at);
+  PEN?.follow(tl, at, dur, (p) => { const q = path.getPointAtLength(len * p); return [q.x, q.y]; }, "power1.inOut");
 }
 
 function arrowHead(x, y, angle, size = 18) {
