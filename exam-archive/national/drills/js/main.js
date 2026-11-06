@@ -42,7 +42,7 @@ const OPERATION_LABELS = {
   fracAdd: '+ Addition', fracSub: '− Subtraction', fracMul: '× Multiplication', fracDiv: '÷ Division',
   rmm: 'Σ Molecular Mass',
   intAdd: '+ Add Integers', intSub: '− Subtract Integers', directed: '± Directed Numbers', intMul: '× Multiply Integers', intDiv: '÷ Divide Integers',
-  algDistribute: 'a(x+b) Distribution', algFactorise: 'Factorisation', algQuadExpand: '(x+a)(x+b) Quadratic Expansion', algQuadFactorise: 'x²+bx+c Quadratic Factorisation',
+  algDistribute: 'a(x+b) Distribution', algFactorise: 'Factorisation', algQuadExpand: '(x+a)(x+b) Quadratic Expansion', algQuadFactorise: 'x²+bx+c Quadratic Factorisation', algMixed: 'Mixed Algebra (all four)',
 };
 
 // Category filters which operations are on offer. Basic keeps the default
@@ -56,7 +56,7 @@ const CATEGORY_OPERATIONS = {
   fractions: ['fracAdd', 'fracSub', 'fracMul', 'fracDiv'],
   chemistry: ['rmm'],
   integers: ['intAdd', 'intSub', 'intMul', 'intDiv', 'directed'],
-  algebra: ['algDistribute', 'algFactorise', 'algQuadExpand', 'algQuadFactorise'],
+  algebra: ['algDistribute', 'algFactorise', 'algQuadExpand', 'algQuadFactorise', 'algMixed'],
   // Tables (the grid filler) has no operations step — 'multiply' is a harmless
   // placeholder so the room doc still carries a valid, non-empty operations
   // list; the grid round ignores it entirely (see js/grid.js).

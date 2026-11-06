@@ -322,7 +322,7 @@ service cloud.firestore {
           'square', 'sqrt', 'cube', 'cuberoot', 'power4', 'fourthroot',
           'fracAdd', 'fracSub', 'fracMul', 'fracDiv',
           'rmm', 'intAdd', 'intSub', 'directed', 'intMul', 'intDiv',
-          'algDistribute', 'algFactorise', 'algQuadExpand', 'algQuadFactorise'
+          'algDistribute', 'algFactorise', 'algQuadExpand', 'algQuadFactorise', 'algMixed'
         ]) &&
         request.resource.data.tables is list &&
         request.resource.data.tables.size() > 0 &&

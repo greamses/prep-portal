@@ -110,9 +110,10 @@ export function checkAlgebra(typed, ans) {
 
 /* ── generators ── */
 const KINDS = ['distribute', 'factorise', 'quadExpand', 'quadFactorise'];
-export const ALGEBRA_OPS = ['algDistribute', 'algFactorise', 'algQuadExpand', 'algQuadFactorise'];
-const KIND_OF = Object.fromEntries(ALGEBRA_OPS.map((o, i) => [o, KINDS[i]]));
-export const isAlgebraOp = (op) => op in KIND_OF;
+const KIND_OPS = ['algDistribute', 'algFactorise', 'algQuadExpand', 'algQuadFactorise'];
+export const ALGEBRA_OPS = [...KIND_OPS, 'algMixed'];
+const KIND_OF = Object.fromEntries(KIND_OPS.map((o, i) => [o, KINDS[i]]));
+export const isAlgebraOp = (op) => ALGEBRA_OPS.includes(op);
 
 const signed = (v) => (v < 0 ? `${MINUS}${-v}` : String(v));
 const coef = (c) => (c === 1 ? '' : c === -1 ? MINUS : String(c));
@@ -125,6 +126,8 @@ const sgn = (rng) => (rng() < 0.5 ? -1 : 1);
 const nonzero = (rng, max) => sgn(rng) * (1 + Math.floor(rng() * max));
 
 export function algebraQuestion(rng, pool, op) {
+  // Mixed: one of the four types, drawn per question.
+  if (op === 'algMixed') op = pick(rng, KIND_OPS);
   const kind = KIND_OF[op];
   const k = Math.max(2, Math.min(12, small(rng, pool)));
   if (kind === 'distribute') {
