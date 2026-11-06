@@ -127,7 +127,7 @@ export function markdownToHtml(text) {
 // /api/ai/groq and /api/ai/gemini proxies, which use the server's app keys —
 // exactly the same path PrepBot, the writing evaluator and the math tutor use.
 
-const PUBLISHER_SYSTEM = `You are an expert educator for Nigerian students. Output only clean HTML. No markdown, no <img> tags. Use clear, practical examples relevant to Nigerian students.`;
+const PUBLISHER_SYSTEM = `You are an expert educator for Nigerian students. Output only clean HTML that follows the requested class skeleton exactly. No markdown, no <img> tags. Use clear, practical examples relevant to Nigerian students.`;
 
 export async function healthCheck() {
   const checks = { firestore: false, apiKeys: true, config: false };
@@ -159,7 +159,10 @@ function shapePost(raw, topic, modelUsed) {
 
   const titleMatch = raw.match(/<h1[^>]*>([^<]+)<\/h1>/i);
   const title = titleMatch ? titleMatch[1].trim() : topic.text;
-  const excerpt = raw
+  // Prefer the lesson's own hook line for the card excerpt; otherwise the
+  // first run of text (a structured lesson opens with a kicker + title).
+  const lede = raw.match(/<p[^>]*class="ln-lede"[^>]*>([\s\S]*?)<\/p>/i);
+  const excerpt = (lede ? lede[1] : raw)
     .replace(/<[^>]*>/g, " ")
     .replace(/\s+/g, " ")
     .trim()
@@ -199,7 +202,7 @@ export async function generateWithFallback(topic, onModelChange) {
           system: PUBLISHER_SYSTEM,
           prompt,
           temperature: 0.72,
-          maxTokens: 3500,
+          maxTokens: 7000,
         });
         const text = groqText(data);
         if (!text) throw new Error("Groq returned empty response");

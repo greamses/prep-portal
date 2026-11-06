@@ -276,38 +276,125 @@ export const SUBJECTS = {
 };
 
 // ─── SHARED PROMPT BUILDER (filled in from each subject's flavor) ──
+// Every lesson is written as ONE structured page that blogs/css/render.css
+// knows how to dress (headline, quick-facts sticky notes, two-column body,
+// comparison tables, feature notes, activity, quiz, vocabulary). The model is
+// given the exact skeleton, so new posts look like the best existing ones
+// instead of a bare run of <h3>/<p>.
+function gradeOfLevel(classLevel) {
+  const [type, n] = String(classLevel || "primary-4").split("-");
+  return +n + ({ primary: 0, jss: 6, ss: 9 }[type] ?? 0);
+}
+
 function makePromptBuilder(flavor) {
   return function buildSubjectPrompt(topic) {
-    const { text } = topic;
-    return `You are a ${flavor.educatorRole} creating an exciting lesson on: "${text}"
+    const { text, classLevel, complexity } = topic;
+    const grade = gradeOfLevel(classLevel);
+    const level =
+      grade <= 3
+        ? "Grades 1-3 (ages 6-8): very short sentences, one idea each, everyday words"
+        : grade <= 6
+          ? "Grades 4-6 (ages 9-11): short sentences, simple science words explained at once"
+          : grade <= 9
+            ? "Grades 7-9 (ages 12-14): real science vocabulary, explain the how and why"
+            : "Grades 10-12 (ages 15-18): exam-level detail, correct terminology, mechanisms and evolutionary reasons";
+    const depth = complexity === "simple" ? "light" : "full";
+    return `You are a ${flavor.educatorRole} writing one illustrated lesson page on: "${text}"
 
-## YOUR TEACHING STYLE:
-You teach like ${flavor.teachLike} — full of wonder, excitement, and "${flavor.powerLower} power" energy. Every lesson makes kids say "WHOA!" and want to learn more about ${flavor.domainPhrase}.
+READER: Grade ${grade} Nigerian student. ${level}.
+VOICE: ${flavor.teachLike} - warm, full of wonder, "${flavor.powerLower} power" energy, never boring. Use comparisons kids know (football, jollof, danfo buses, phones, games). Facts must be accurate.
 
-## LESSON STRUCTURE:
+OUTPUT: ONE block of HTML that starts with <div class="lesson-note"> and ends with </div>. No markdown, no <html>/<body>, no <style>, no <script>, no <img>, no inline style attributes, no emoji, no SVG. Use ONLY the classes shown below, exactly as written. Depth: ${depth}.
 
-**1. The Hook (2-3 sentences)** — Grab attention with a ${flavor.hookFlavor}-style wow fact or question.
+SKELETON (replace every [bracketed] part with real content; keep the class names):
 
-**2. Meet the ${flavor.Noun} (4-5 sentences)** — Describe what this ${flavor.noun} looks like, where it ${flavor.livesVerb}, and why it's unique.
+<div class="lesson-note">
+  <div class="ln-headline">
+    <div class="ln-kicker">${flavor.Noun} Facts · Grade ${grade}</div>
+    <h1 class="ln-h1">[Catchy title part]: <em>[the ${flavor.noun}'s name or the big idea]</em></h1>
+    <p class="ln-lede">[2-3 sentence hook: a wow fact or a question that makes the child stop and wonder]</p>
+  </div>
+  <div class="ln-byline">
+    <strong>Prep Portal Science Desk</strong><span class="ln-byline-dot">·</span>
+    <span>[3 topic words separated by · ]</span><span class="ln-byline-dot">·</span>
+    <span class="ln-level-badge">Grade ${grade}</span>
+  </div>
+  <div class="ln-facts-strip">
+    <div class="ln-facts-label">Quick Facts</div>
+    <div class="ln-facts-grid">
+      [exactly 3 of:]
+      <div class="ln-fact-item"><div class="ln-fact-num">[2-3 word label]</div><div class="ln-fact-text">[one sentence, with a real number or measurement when you can]</div></div>
+    </div>
+  </div>
+  <div class="ln-article-body">
+    <div class="ln-col">
+      <span class="ln-h2">[Meet the ${flavor.Noun} heading]</span>
+      <p class="ln-p">[4-5 sentences: what it looks like, where it ${flavor.livesVerb} (include Africa or Nigeria if true), why it is unique. Highlight 1-2 key terms with <span class="ln-chip blue">term</span>]</p>
+      <div class="ln-pull-quote"><span class="ln-quote-mark">"</span><p>[one amazing fact worth remembering]</p></div>
+      <span class="ln-h2">[How it works heading]</span>
+      <p class="ln-p">[the superpower explained simply, 5-6 sentences, comparisons kids know, key terms in <span class="ln-chip red">term</span>]</p>
+      <ul>
+        [3-4 of:] <li><span class="ln-chip green">[term]</span> - [one sentence]</li>
+      </ul>
+    </div>
+    <div class="ln-col">
+      <span class="ln-h2">[Why it matters heading]</span>
+      <p class="ln-p">[why this ability helps it survive, 4-5 sentences]</p>
+      <ol class="ln-process-list">
+        [3-4 of:] <li><span class="ln-process-title">Step 1 - [Name].</span><br>[one or two sentences]</li>
+      </ol>
+      <div class="ln-pull-quote"><span class="ln-quote-mark">"</span><p>[a surprising second fact]</p></div>
+    </div>
+  </div>
+  <div class="ln-table-section">
+    <div class="ln-table-title">[The ${flavor.noun} vs. a human child / vs. a similar ${flavor.noun}]</div>
+    <table class="ln-table">
+      <thead><tr><th></th><th>[${flavor.Noun}]</th><th>[Human / other]</th></tr></thead>
+      <tbody>
+        [4 rows of:] <tr><td>[trait]</td><td>[its version]</td><td>[the comparison]</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="ln-features">
+    <div class="ln-features-title">Imagine If You Had ${flavor.Noun === "Animal" ? "This Animal's" : "This"} ${flavor.powerWord} Power</div>
+    <div class="ln-features-grid">
+      [exactly 3 of:]
+      <div class="ln-feature-card"><div class="ln-feature-num">[short tag]</div><div class="ln-feature-label">[fun title]</div><div class="ln-feature-desc">[2 imaginative sentences about what you could do]</div></div>
+    </div>
+  </div>
+  <div class="ln-activity">
+    <div>
+      <div class="ln-activity-label">Try This</div>
+      <p class="ln-activity-text"><strong>[Activity name].</strong> [A safe hands-on activity using things found at home or school, 3-4 sentences]</p>
+    </div>
+  </div>
+  <div class="ln-table-section">
+    <div class="ln-table-title">Check Your Understanding</div>
+    <table class="ln-table">
+      <thead><tr><th>Question</th><th>Think about it</th></tr></thead>
+      <tbody>
+        [4 rows of a recall or reasoning question and its short answer:] <tr><td>[question]</td><td>[answer]</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="ln-table-section">
+    <div class="ln-table-title">Vocabulary Builder</div>
+    <table class="ln-table">
+      <thead><tr><th>Word</th><th>Definition</th></tr></thead>
+      <tbody>
+        [5-6 rows of:] <tr><td><strong>[word]</strong></td><td>[child-friendly definition]</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
-**3. The Amazing Ability (8-10 sentences)** — Explain the ${flavor.noun}'s superpower. Break down HOW it works in simple terms. Use comparisons kids understand.
+RULES:
+- Every section above must be present, in this order. Do not add other classes or sections.
+- Chip colours allowed: red, blue, green, amber, purple.
+- Keep each cell and paragraph short and concrete. Use the plain hyphen "-" and straight quotes.
+- Everything must be true. If unsure of a number, describe it without a number.
 
-**4. ${flavor.powerWord} Power Breakdown (3-4 sentences)** — If a human had this ${flavor.powerOwner}, what could they do? Make it fun and imaginative.
-
-**5. Quick Quiz (2-3 questions)** — Fun recall questions to check understanding.
-
-## LANGUAGE RULES:
-- Be EXCITED! Use exclamation points, "wow," "amazing," "incredible"
-- Short sentences for primary, longer for upper levels
-- Compare to things kids know (superheroes, sports, video games)
-- Never be boring — this is the coolest ${flavor.topicPhrase} ever!
-
-## CRITICAL FORMATTING:
-- Use only HTML tags (<h3>, <p>, <ul>, <li>)
-- No markdown
-- Keep paragraphs short
-
-Now write the lesson! Make it AMAZING!`;
+Now write the lesson page. Output only the HTML.`;
   };
 }
 
