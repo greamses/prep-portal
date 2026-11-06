@@ -7,6 +7,7 @@
 ═══════════════════════════════════════════════════════ */
 import { questionAt } from './rng.js';
 import { checkAlgebra } from './algebra.js';
+import { checkSubject } from './subject.js';
 import { mathReady, loadMath, svgFor } from '/utils/components/workbook/mathify.js';
 
 const $ = (id) => document.getElementById(id);
@@ -35,7 +36,7 @@ function toTex(t) {
 }
 function typedTex(t) {
   if (currentQuestion && currentQuestion.base) return `\\mathrm{${t}}`;
-  if (currentQuestion && currentQuestion.alg) {
+  if (currentQuestion && (currentQuestion.alg || currentQuestion.subject)) {
     return t.replace(/\*/g, '').replace(/\^(\d+)/g, '^{$1}').replace(/\^$/, '').replace(/-/g, '-');
   }
   const m = /^(-?)(\d+)\/(\d*)$/.exec(t);
@@ -102,7 +103,7 @@ function renderQuestion() {
   currentQuestion = questionAt(seed, currentIndex, questionOpts);
   // Chemistry formulas are not maths notation — only the rest is typeset.
   if (currentQuestion.hint && !currentQuestion.alg && !currentQuestion.math) questionText.textContent = currentQuestion.text;
-  else drawMath(questionText, toTex(currentQuestion.text), currentQuestion.text);
+  else drawMath(questionText, currentQuestion.tex || toTex(currentQuestion.text), currentQuestion.text);
   // A chemical formula is far longer than "7 × 8" — step the display size
   // down so C₆H₅CH₃ and CH₃CH₂CH₂CH₂OH still fit the card on a phone.
   questionText.classList.toggle('is-long', currentQuestion.text.length > 7);
@@ -111,7 +112,7 @@ function renderQuestion() {
   // other question type has no hint and the line collapses.
   questionHint.textContent = currentQuestion.hint || '';
   questionHint.hidden = !currentQuestion.hint;
-  inputEl.maxLength = currentQuestion.alg ? 24 : 7;
+  inputEl.maxLength = currentQuestion.subject ? 28 : currentQuestion.alg ? 24 : 7;
   inputEl.value = '';
   typedEl.textContent = '';
 }
@@ -122,7 +123,7 @@ function renderQuestion() {
 // same as before fractions existed — but parseFloat, not parseInt, because
 // a relative molecular mass is often a half (NaCl = 58.5, Cl being 35.5).
 function isCorrectAnswer(typed, answer) {
-  if (answer && typeof answer === 'object') return checkAlgebra(typed, answer);
+  if (answer && typeof answer === 'object') return answer.kind === 'subject' ? checkSubject(typed, answer) : checkAlgebra(typed, answer);
   if (currentQuestion && currentQuestion.base) return typed.toUpperCase().replace(/^0+(?=.)/, '') === answer;
   if (typeof answer === 'number') {
     const n = parseFloat(typed);
@@ -134,6 +135,7 @@ function isCorrectAnswer(typed, answer) {
 // Strip to digits plus at most one "/" and at most one "." — neither of
 // which can lead. Everything else a question ever answers with is digits.
 function sanitizeTyped(raw) {
+  if (currentQuestion && currentQuestion.subject) return raw.replace(/−/g, '-').replace(/[^0-9A-Za-z=^()+\-*/.]/g, '').slice(0, 28);
   if (currentQuestion && currentQuestion.base) return raw.replace(/[^0-9a-fA-F]/g, '').toUpperCase().slice(0, 10);
   if (currentQuestion && currentQuestion.alg) return raw.replace(/−/g, '-').replace(/X/g, 'x').replace(/[^0-9x^()+\-*]/g, '').slice(0, 24);
   // A leading "-" is kept (integer answers can be negative); any other is dropped.

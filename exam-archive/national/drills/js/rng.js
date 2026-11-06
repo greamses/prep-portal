@@ -7,6 +7,7 @@
 ═══════════════════════════════════════════════════════ */
 import { mulberry32, hashSeed, CONTENT_NS, BOT_NS } from '/utils/games/rng.js';
 import { algebraQuestion, isAlgebraOp, ALGEBRA_OPS } from './algebra.js';
+import { subjectQuestion, isSubjectOp, SUBJECT_OPS } from './subject.js';
 import { geometryQuestion, isGeometryOp, GEOMETRY_OPS } from './geometry.js';
 import { equationQuestion, baseQuestion, isEquationOp, isBaseOp, EQUATION_OPS, BASE_OPS } from './equations.js';
 import { compoundsFor, ALL_COMPOUND_SETS } from '/data/chem/rmm.js';
@@ -31,7 +32,7 @@ export const ALL_OPERATIONS = [
   'fracAdd', 'fracSub', 'fracMul', 'fracDiv',
   'rmm',
   'intAdd', 'intSub', 'directed', 'intMul', 'intDiv',
-  ...ALGEBRA_OPS, ...EQUATION_OPS, ...BASE_OPS, ...GEOMETRY_OPS,
+  ...ALGEBRA_OPS, ...EQUATION_OPS, ...BASE_OPS, ...GEOMETRY_OPS, ...SUBJECT_OPS,
 ];
 
 export const ALL_FRACTION_TYPES = ['like', 'unlike', 'wholeFraction'];
@@ -196,6 +197,7 @@ export function questionAt(seed, index, {
 
   if (op === 'rmm') return rmmQuestionAt(rng, compounds);
   if (op === 'intAdd' || op === 'intSub') return intTerms(rng, pool, 2, op);
+  if (isSubjectOp(op)) return subjectQuestion(rng, op);
   if (isGeometryOp(op)) return geometryQuestion(rng, pool, op);
   if (isEquationOp(op)) return equationQuestion(rng, pool, op);
   if (isBaseOp(op)) return baseQuestion(rng, pool, op);

@@ -47,6 +47,7 @@ const OPERATION_LABELS = {
   geoRect: 'Rectangle', geoTriangle: 'Triangle', geoTrapezium: 'Trapezium', geoParallelogram: 'Parallelogram',
   geoHyp: 'Find the hypotenuse', geoLeg: 'Find a short side', geoTrig: 'Sin, cos, tan ratios',
   geoCircumference: 'Circumference', geoCircleArea: 'Circle area', geoCuboid: 'Cuboid volume', geoCylinder: 'Cylinder volume', geoCone: 'Cone volume',
+  subOne: 'One step', subTwo: 'Two steps', subMulti: 'Brackets and fractions',
   eqOne: '1-Step Equations', eqTwo: '2-Step Equations', eqMulti: 'Multi-Step Equations',
   baseTo10: 'To Base 10', baseFrom10: 'From Base 10', baseToBase: 'Base to Base',
 };
@@ -64,6 +65,7 @@ const CATEGORY_OPERATIONS = {
   integers: ['intAdd', 'intSub', 'intMul', 'intDiv', 'directed'],
   algebra: ['algDistribute', 'algFactorise', 'algQuadExpand', 'algQuadFactorise', 'algMixed'],
   equations: ['eqOne', 'eqTwo', 'eqMulti'],
+  subject: ['subOne', 'subTwo', 'subMulti'],
   bases: ['baseTo10', 'baseFrom10', 'baseToBase'],
   angles: ['geoAngLine', 'geoAngTriangle', 'geoAngPolygon', 'geoAngParallel'],
   areas: ['geoRect', 'geoTriangle', 'geoTrapezium', 'geoParallelogram'],
@@ -85,6 +87,7 @@ const CATEGORY_DEFAULT_OPS = {
   integers: ['intAdd'],
   algebra: ['algDistribute'],
   equations: ['eqOne'],
+  subject: ['subOne'],
   bases: ['baseTo10'],
   angles: ['geoAngLine'],
   areas: ['geoRect'],
@@ -173,9 +176,9 @@ let timeLimit = mem.get('timeLimit', 60, [30, 60, 90, 120]);
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
-let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'equations', 'bases', 'angles', 'areas', 'pythag', 'circles', 'timestable', 'fracbars']);
+let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'equations', 'subject', 'bases', 'angles', 'areas', 'pythag', 'circles', 'timestable', 'fracbars']);
 let range = mem.get('range', 'all', RANGES.map((r) => r.key));
-if (categoryValue === 'algebra') range = '1-9'; // single digits only
+if (categoryValue === 'algebra' || categoryValue === 'subject') range = '1-9'; // single digits only
 // Tables (grid filler) only — how much of each 5×5 grid is blank. The grid is
 // always 5×5 with a fresh mix of 1..12 tables per grid, streamed one after the
 // next, so there is no size dial.
@@ -352,7 +355,7 @@ function renderOperationsPick() {
       if (isFractions) { renderDenominatorsPick(); topic.goTo('denominators'); return; }
       if (isBars) { renderBarsLevelStep(); topic.goTo('bars-level'); return; }
       // Algebra is single digits only: there is nothing to choose, so no step.
-      if (categoryValue === 'algebra') { range = '1-9'; saveContent(); flow.next(); return; }
+      if (categoryValue === 'algebra' || categoryValue === 'subject') { range = '1-9'; saveContent(); flow.next(); return; }
       renderRangePick();
       topic.goTo('range');
     },
@@ -500,7 +503,7 @@ const AREA_TOPICS = {
     ['basic', 'Arithmetic'], ['integers', 'Integers'], ['exponent', 'Powers & Roots'],
     ['fractions', 'Fractions'], ['bases', 'Number Bases'], ['timestable', 'Times Tables Grid'], ['fracbars', 'Fraction Bars'], ['planner', 'Planner'],
   ],
-  algebra: [['algebra', 'Expressions'], ['equations', 'Equations']],
+  algebra: [['algebra', 'Expressions'], ['equations', 'Equations'], ['subject', 'Change of Subject']],
   geometry: [['angles', 'Angles'], ['areas', 'Area & Perimeter'], ['pythag', 'Pythagoras & Trig'], ['circles', 'Circles & Volume']],
   science: [['chemistry', 'Molecular Mass']],
   words: [['vocab', 'Vocab'], ['grammar', 'Grammar']],
