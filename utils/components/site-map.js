@@ -211,7 +211,10 @@ export const SITE_PAGES = [
   },
   { id: "blogs-animal", title: "Animal Biology Articles", href: "/blogs/?s=animal", category: "reading", blurb: "Discover amazing creatures.", keywords: ["animal biology", "animals", "wildlife"] },
   { id: "blogs-plants", title: "Plant Science Articles", href: "/blogs/?s=plants", category: "reading", blurb: "Explore green wonders.", keywords: ["plant science", "plants", "botany"] },
-  { id: "blogs-human-body", title: "Human Body Facts", href: "/blogs/?s=human-body", category: "reading", blurb: "Know your body.", keywords: ["human body", "anatomy"] },
+  { id: "blogs-human-body", title: "Human Body Facts", href: "/blogs/?s=humanbody", category: "reading", blurb: "Know your body.", keywords: ["human body", "anatomy"] },
+  { id: "blogs-civil", title: "Civil Engineering Articles", href: "/blogs/?s=engineering&f=civil", category: "reading", blurb: "Bridges, roads and buildings.", keywords: ["civil engineering", "bridges", "buildings"] },
+  { id: "blogs-mechanical", title: "Mechanical Engineering Articles", href: "/blogs/?s=engineering&f=mechanical", category: "reading", blurb: "Engines, gears and machines.", keywords: ["mechanical engineering", "engines", "machines"] },
+  { id: "blogs-electrical", title: "Electrical Engineering Articles", href: "/blogs/?s=engineering&f=electrical", category: "reading", blurb: "Circuits, power and signals.", keywords: ["electrical engineering", "circuits", "electricity"] },
 
   // ── Games (math learning games) ─────────────────────────────────────
   { id: "game-free-throw", title: "Free Throw", href: "/home/games/free-throw/", category: "games", blurb: "Aim, shoot and score — a basketball math game.", keywords: ["free throw", "basketball game"] },

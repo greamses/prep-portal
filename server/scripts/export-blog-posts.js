@@ -49,6 +49,18 @@ const SUBJECTS = [
     name: "Animal Facts",
     labels: { animalfacts: "Animal Facts", zoology: "Zoology", wildlife: "Wildlife" },
   },
+  {
+    key: "humanbody",
+    collectionName: "humanbody-posts",
+    name: "Human Body Facts",
+    labels: { anatomy: "Anatomy", senses: "Senses & Brain", health: "Health & Immunity" },
+  },
+  {
+    key: "engineering",
+    collectionName: "engineering-posts",
+    name: "Engineering Facts",
+    labels: { civil: "Civil Engineering", mechanical: "Mechanical Engineering", electrical: "Electrical Engineering" },
+  },
 ];
 const CLASS_LABELS = {
   primary: (n) => `Grade ${n}`,

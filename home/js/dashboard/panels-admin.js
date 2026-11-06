@@ -32,6 +32,8 @@ export function buildAdminPanels(user, data, layout) {
         <p class="db-kicker" style="margin: 0;">Auto Content Engines:</p>
         <a href="/blogs/auto/?subject=animals" target="_blank" rel="noopener" class="brutal-btn-flat" style="text-decoration: none; padding: 6px 12px; font-size: 13px;">Animal Auto</a>
         <a href="/blogs/auto/?subject=plants" target="_blank" rel="noopener" class="brutal-btn-flat" style="text-decoration: none; padding: 6px 12px; font-size: 13px;">Plant Auto</a>
+        <a href="/blogs/auto/?subject=humanbody" target="_blank" rel="noopener" class="brutal-btn-flat" style="text-decoration: none; padding: 6px 12px; font-size: 13px;">Body Auto</a>
+        <a href="/blogs/auto/?subject=engineering" target="_blank" rel="noopener" class="brutal-btn-flat" style="text-decoration: none; padding: 6px 12px; font-size: 13px;">Engineering Auto</a>
       </div>
     </div>
 

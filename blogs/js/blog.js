@@ -214,6 +214,14 @@ async function initBlog() {
     renderPosts();
   });
 
+  // ?f=civil opens the page already filtered to one subject (nav deep links).
+  const preFilter = params.get("f");
+  if (preFilter && SUBJECT_LABELS[preFilter]) {
+    subjectMenu
+      ?.querySelector(`.pp-select-item[data-filter="${preFilter}"]`)
+      ?.click();
+  }
+
   // Attach search bar listener
   let st;
   searchInput.addEventListener("input", (e) => {

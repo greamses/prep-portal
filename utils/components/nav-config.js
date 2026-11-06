@@ -125,7 +125,17 @@ const NAV_CONFIG = [
         children: [
           { text: "Animal Biology Articles", href: "/blogs/?s=animal", description: "Discover amazing creatures" },
           { text: "Plant Science Articles", href: "/blogs/?s=plants", description: "Explore green wonders" },
-          { text: "Human Body Facts", href: "/blogs/?s=human-body", description: "Know your body" },
+          { text: "Human Body Facts", href: "/blogs/?s=humanbody", description: "Know your body" },
+        ],
+      },
+      {
+        text: "Engineering",
+        icon: I.science,
+        description: "How things are built",
+        children: [
+          { text: "Civil Engineering", href: "/blogs/?s=engineering&f=civil", description: "Bridges, roads and buildings" },
+          { text: "Mechanical Engineering", href: "/blogs/?s=engineering&f=mechanical", description: "Engines, gears and machines" },
+          { text: "Electrical Engineering", href: "/blogs/?s=engineering&f=electrical", description: "Circuits, power and signals" },
         ],
       },
     ],

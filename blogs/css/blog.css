@@ -1976,3 +1976,13 @@ body:has(.embed-overlay.active) {
 .embed-open-btn svg,
 .embed-close-btn svg { width: 18px; height: 18px; }
 .embed-frame-wrap { border-radius: 0; overflow: hidden; }
+
+/* subject tags for every blog subject (paper: same pastel in both themes) */
+.sci-plantfacts, .sci-botany, .sci-horticulture { background: #c8f0c0; }
+.sci-animalfacts, .sci-zoology, .sci-wildlife { background: #ffd7a3; }
+.sci-anatomy { background: #ffc9d4; }
+.sci-senses { background: #e8c8ff; }
+.sci-health { background: #b8ece2; }
+.sci-civil { background: #fff3a8; }
+.sci-mechanical { background: #bfe3ff; }
+.sci-electrical { background: #ffd7a3; }
