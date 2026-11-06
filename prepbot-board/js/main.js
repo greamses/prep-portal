@@ -5,6 +5,8 @@
    ?fixture=projectile plays a demo turn from a file (no AI). */
 
 import { createBoard } from "./board/board.js";
+import { makeCanvas } from "./board/layout.js";
+import { HANDS, setHand } from "./board/render.js";
 import { cleanBeat } from "./protocol/ops.js";
 import { createVoice } from "./voice.js";
 import { createScheduler } from "./scheduler.js";
@@ -48,19 +50,93 @@ async function ready() {
     import("https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm"),
     loadMath(),
     import("/firebase-init.js").catch(() => null),
-    document.fonts.load('300 36px "Playwrite US Trad"').catch(() => {}),
-    document.fonts.load('400 46px "Playwrite US Trad"').catch(() => {}),
     document.fonts.load('400 19px "JetBrains Mono"').catch(() => {}),
   ]);
   status.textContent = "";
   return { gsap: gsapMod.gsap || gsapMod.default, auth: fb?.auth || null };
 }
 
-const orient = () => (window.innerHeight > window.innerWidth * 1.15 ? "portrait" : "landscape");
+/* ── the hand the board writes in ───────────────────────────────────────── */
+const HAND_KEY = "pb-hand";
+const loadedHands = new Set();
+async function loadHand(key) {
+  const h = HANDS[key] || HANDS.trad;
+  if (!loadedHands.has(h.family)) {
+    /* the stylesheet has to ARRIVE before the font can be asked for: until it
+       has, fonts.load() finds no such face, resolves at once, and the words get
+       measured in a fallback (gaps between words, the wrong hand) */
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = `https://fonts.googleapis.com/css2?family=${h.css}&display=swap`;
+    const arrived = new Promise((r) => { link.onload = r; link.onerror = r; setTimeout(r, 5000); });
+    document.head.appendChild(link);
+    await arrived;
+    loadedHands.add(h.family);
+  }
+  await Promise.all([
+    document.fonts.load(`${h.text} 36px "${h.family}"`),
+    document.fonts.load(`${h.title} 46px "${h.family}"`),
+  ]).catch(() => {});
+  return h;
+}
+let handKey = "trad";
+try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAND_KEY) : "trad"; } catch {}
 
 (async () => {
   const { gsap, auth } = await ready();
-  const board = createBoard(svg, { gsap, orient: orient() });
+  await loadHand(handKey);
+  setHand(handKey);
+
+  /* ── the board, shaped like the space it is shown in ─────────────────────
+     The paper fills the whole of its frame (the page, a rail panel, a phone).
+     When the frame changes shape, or the hand changes, the board is built
+     again and this page is drawn back on at once — a board is just its ops. */
+  const wrap = $("pb-boardwrap");
+  const aspectNow = () => {
+    const r = wrap.getBoundingClientRect();
+    return r.width > 40 && r.height > 40 ? r.width / r.height : 16 / 9;
+  };
+  let current = null;
+  let builtAspect = 0;
+  function build(replay = []) {
+    builtAspect = aspectNow();
+    current = createBoard(svg, { gsap, canvas: makeCanvas(builtAspect) });
+    if (replay.length) current.play({ do: replay }, 0);
+    window.__pbBoard = current;
+  }
+  const board = {
+    play: (beat, s) => current.play(beat, s),
+    finishNow: () => current.finishNow(),
+    summary: () => current.summary(),
+    pages: () => current.pages(),
+    reset: () => current.reset(),
+  };
+  const redraw = () => {
+    current.finishNow();
+    const pages = current.pages();
+    build(pages[pages.length - 1] || []);
+  };
+  build();
+  let resizeT = null;
+  new ResizeObserver(() => {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(() => {
+      const a = aspectNow();
+      if (Math.abs(a - builtAspect) / builtAspect > 0.06) redraw();
+    }, 220);
+  }).observe(wrap);
+
+  /* the hand picker */
+  const picker = $("pb-hand");
+  picker.innerHTML = Object.entries(HANDS).map(([k, h]) => `<option value="${k}">${h.label}</option>`).join("");
+  picker.value = handKey;
+  picker.addEventListener("change", async () => {
+    handKey = picker.value;
+    try { localStorage.setItem(HAND_KEY, handKey); } catch {}
+    await loadHand(handKey);
+    setHand(handKey);
+    redraw();
+  });
   const voice = createVoice({ auth, muted: params.get("mute") === "1" });
   const lesson = { topic: "", grade: Math.min(12, Math.max(1, Number(params.get("grade")) || 8)), transcript: [] }; // transcript: [{ role: "tutor"|"learner", text }]
   let streamCtrl = null;
@@ -234,7 +310,7 @@ const orient = () => (window.innerHeight > window.innerWidth * 1.15 ? "portrait"
     document.body.dataset.state = "idle";
   });
 
-  window.__pb = { board, scheduler, voice, lesson, cutIn }; // for tests
+  window.__pb = { board, scheduler, voice, lesson, cutIn, redraw }; // for tests
 
   /* opened from a side rail or PrepBot's chat: a frame inside another page */
   if (params.get("embed") === "1") document.body.classList.add("pb-embed");

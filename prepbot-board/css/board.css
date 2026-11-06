@@ -40,7 +40,7 @@ body { margin: 0; background: var(--app-bg); overflow: hidden; }
   font-size: clamp(1rem, 2vw, 1.3rem);
   color: var(--ink);
 }
-.pb-top .pp-pill { margin-left: auto; }
+.pb-top .pb-hand-wrap { margin-left: auto; }
 .pb-ico {
   width: 2.5rem; height: 2.5rem;
   display: inline-flex; align-items: center; justify-content: center;
@@ -61,8 +61,8 @@ body { margin: 0; background: var(--app-bg); overflow: hidden; }
   position: relative;
   min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
   filter: drop-shadow(0 8px 22px rgba(var(--shadow-color, 42, 39, 35), 0.16));
 }
 .pb-board { width: 100%; height: 100%; display: block; cursor: pointer; }
@@ -148,4 +148,24 @@ body { margin: 0; background: var(--app-bg); overflow: hidden; }
 .pb-ico#pb-mic.is-on svg rect:first-child { fill: #fff; }
 @keyframes pb-listen { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent-danger) 28%, transparent); } }
 @media (prefers-reduced-motion: reduce) { .pb-ico#pb-mic.is-on { animation: none; } }
+
+/* the hand picker: a pill-dressed select */
+.pb-hand {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0.45rem 2rem 0.45rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--surface-primary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5.8 9.4 12 15.6l6.2-6.2' fill='none' stroke='%236fb7e8' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 0.55rem center / 14px;
+  border: 2px solid color-mix(in srgb, var(--accent-secondary) 45%, transparent);
+  border-radius: 0;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  max-width: 13rem;
+}
+.pb-hand:focus { outline: none; border-color: var(--accent-secondary); }
+.pb-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 640px) { .pb-hand { max-width: 9.5rem; } .pb-title { display: none; } }
 

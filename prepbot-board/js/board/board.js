@@ -16,8 +16,8 @@ import { createLayout } from "./layout.js";
 import { cleanOp, boardSummary } from "../protocol/ops.js";
 import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, gridMapper, createPen, setPen } from "./render.js";
 
-export function createBoard(svg, { gsap, orient = "landscape" } = {}) {
-  const layout = createLayout(orient);
+export function createBoard(svg, { gsap, orient = "landscape", canvas = null } = {}) {
+  const layout = createLayout(canvas || orient);
   const C = layout.canvas;
   svg.setAttribute("viewBox", `0 0 ${C.w} ${C.h}`);
   svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
@@ -138,9 +138,11 @@ export function createBoard(svg, { gsap, orient = "landscape" } = {}) {
       if (!gsap || seconds <= 0) return Promise.resolve();
       return new Promise((resolve) => {
         const timeline = gsap.timeline({ onComplete: resolve, onInterrupt: resolve });
+        /* each thing is drawn at a brisk hand's own pace (weight = seconds);
+           only when that would outrun the sentence is it squeezed, and never by
+           more than 40% — a beat with a lot to draw simply finishes after its words */
         const weight = built.reduce((s, b) => s + (b.weight || 1), 0);
-        /* the strokes fill the sentence, but never draw faster than a hand can */
-        const span = Math.max(seconds * 0.9, weight * 0.5);
+        const span = Math.min(weight, Math.max(seconds * 0.85, weight * 0.6));
         let at = 0;
         for (const b of built) {
           const d = (span * (b.weight || 1)) / weight;

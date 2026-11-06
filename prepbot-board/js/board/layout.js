@@ -32,17 +32,41 @@ export const SIZES = {
   note: { font: 30, gap: 14 },
 };
 
+/**
+ * A canvas the SHAPE of the space the board is shown in, so the paper fills
+ * it edge to edge (a panel, a phone, a wide screen) instead of sitting in it
+ * letterboxed. The height (landscape) or width (portrait) stays 900 units, so
+ * writing is the same size everywhere; the other side grows with the space.
+ */
+export function makeCanvas(aspect = 16 / 9) {
+  const a = Number.isFinite(aspect) && aspect > 0 ? aspect : 16 / 9;
+  if (a >= 1.05) {
+    const h = 900;
+    const w = Math.round(Math.min(2400, Math.max(1000, h * a)));
+    const s = Math.round(Math.min(h - 190, w * 0.42));
+    const figure = { x: w - s - 60, y: 96, w: s, h: s };
+    return { w, h, main: { x: 70, y: 64, w: figure.x - 70 - 50, h: 790 }, figure };
+  }
+  const w = 900;
+  const h = Math.round(Math.min(2400, Math.max(1000, w / a)));
+  const s = Math.round(Math.min(720, h * 0.44));
+  const figure = { x: Math.round((w - s) / 2), y: 70, w: s, h: s };
+  const top = figure.y + s + 60;
+  return { w, h, figure, main: { x: 64, y: top, w: 772, h: h - top - 50 } };
+}
+
 /** The smallest a line may be shrunk to fit before it is broken instead. */
 export const MIN_SCALE = 0.7;
 
-export function createLayout(orient = "landscape") {
-  const C = CANVAS[orient] || CANVAS.landscape;
+export function createLayout(shape = "landscape") {
+  /* a named shape, or a canvas made by makeCanvas() */
+  const C = typeof shape === "object" && shape ? shape : CANVAS[shape] || CANVAS.landscape;
   let y = C.main.y;
   const placed = [];
 
   return {
     canvas: C,
-    orient: C === CANVAS.portrait ? "portrait" : "landscape",
+    orient: C.h > C.w ? "portrait" : "landscape",
 
     /** A new page: the cursor goes back to the top. */
     reset() {

@@ -114,6 +114,8 @@ console.log(typeof age);`, file: "types.js", out: 1 }), css: WB_CSS };
   lab: async () => ({ img: "/virtual-lab/chemistry/thumb.jpg", alt: "Inside the 3D chemistry lab" }),
   moves: async () => ({ img: "/prep-math/activity/algebra-moves/thumb.jpg", alt: "An equation on the Algebra Moves canvas" }),
   tubes: async () => ({ img: "/virtual-lab/chemistry-2d/thumb.jpg", alt: "The chemistry bench, set up for a titration" }),
+  /* the PrepBot Board, mid-lesson: a screenshot of the board itself (prepbot-board/thumb.jpg) */
+  board: async () => ({ img: "/prepbot-board/thumb.jpg", alt: "PrepBot's whiteboard explaining why a kicked ball curves" }),
   /* the map the jigsaw drops its 37 states into */
   map: async () => {
     const { mapFrameSvg } = await import("/exam-archive/national/puzzles/js/mapjig.js");
@@ -141,6 +143,7 @@ export const BANDS = [
   {
     tag: "Maths",
     cards: [
+      { art: "board", title: "PrepBot Board", tag: "Explainer", line: "Ask anything: PrepBot talks it through while it draws each step on the board.", href: "/prepbot-board/" },
       { art: "balance", title: "Balance scales", tag: "Algebra", line: "Take the same off both pans and the bag gives itself up.", href: "/prep-math/activity/algebra-workbook/?only=bs-solve&open=1" },
       { art: "train", title: "Function machines", tag: "Functions", line: "Put a number on the card and ride it coach by coach.", href: "/prep-math/activity/algebra-workbook/?only=fn-machine&open=1" },
       { art: "tiles", title: "Completing the square", tag: "Algebra", line: "Lay x² and its strips, then fill the corner that is missing.", href: "/prep-math/activity/algebra-workbook/?only=cs-tiles&open=1" },

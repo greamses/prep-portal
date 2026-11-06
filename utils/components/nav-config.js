@@ -205,6 +205,7 @@ const NAV_CONFIG = [
           /* The workbenches: open-ended things to think with rather than an
              exercise to work through, which is why they sit with the tools and
              not with the activities. */
+          { text: "PrepBot Board", href: "/prepbot-board/", description: "Ask anything: PrepBot explains it, drawing on a whiteboard" },
           { text: "Manipulatives", href: "/prep-math/activity/base-blocks/", description: "Blocks, abacuses, algebra tiles and charts" },
           { text: "Cartesian Art", href: "/prep-math/activity/cartesian-art/", description: "Plot points to draw, then paint" },
           { text: "Sentence Studio", href: "/writing/blocks/", description: "Build writing out of blocks: sentences, paragraphs, whole compositions" },
