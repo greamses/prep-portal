@@ -1316,10 +1316,24 @@ async function loadPosts({ force = false, full = false } = {}) {
     renderPosts();
     if (changed) window.scrollTo(0, scrollY);
     if (window.location.hash) openPostFromHash();
+    if (!force) checkFeedFresh(full);
   } catch (err) {
     if (!allPosts.length)
       scienceGrid.innerHTML = `<div class="no-posts">Error: ${escHtml(err.message)}</div>`;
   }
+}
+
+// The feed is cached for 15 minutes to save reads, which hid a post published
+// minutes ago. One 1-document query tells us whether the newest post is still
+// the one we are showing; if not, reload the feed past the cache.
+async function checkFeedFresh(full) {
+  try {
+    const head = await getDocs(
+      query(collection(db, COLLECTION_NAME), orderBy("publishedAt", "desc"), limit(1)),
+    );
+    const newest = head.docs[0]?.id;
+    if (newest && newest !== allPosts[0]?.id) await loadPosts({ force: true, full });
+  } catch (_) {}
 }
 
 async function openPostFromHash() {
