@@ -6,12 +6,44 @@
    dependency during play.
 ═══════════════════════════════════════════════════════ */
 import { questionAt } from './rng.js';
+import { mathReady, loadMath } from '/utils/components/workbook/mathify.js';
 
 const $ = (id) => document.getElementById(id);
 
 // Mirrors seeded-room.js's START_BUFFER_MS. Used only to sanity-check the
 // startAt we're handed against our own clock — never to schedule anything.
 const START_BUFFER_MS = 3000;
+
+/* ── MathJax for the card ────────────────────────────────────────────
+   Questions and the typed answer are plain text in the room (graded as
+   text); here they are only DRAWN as maths. Until MathJax arrives (or if it
+   never does) the plain text shows. */
+loadMath();
+const SUPS = { '²': '2', '³': '3', '⁴': '4' };
+function toTex(t) {
+  return t
+    .replace(/⁴√(\d+)/g, '\\sqrt[4]{$1}')
+    .replace(/∛(\d+)/g, '\\sqrt[3]{$1}')
+    .replace(/√(\d+)/g, '\\sqrt{$1}')
+    .replace(/(\d+)([²³⁴])/g, (_, n, e) => `${n}^{${SUPS[e]}}`)
+    .replace(/(\d+)⁄(\d+)/g, '\\tfrac{$1}{$2}')
+    .replace(/−/g, '-').replace(/×/g, '\\times ').replace(/÷/g, '\\div ');
+}
+function typedTex(t) {
+  const m = /^(-?)(\d+)\/(\d*)$/.exec(t);
+  if (m) return `${m[1]}\\tfrac{${m[2]}}{${m[3] || '\\square'}}`;
+  return t.replace(/\/$/, '');
+}
+// Draw `tex` into `el`; falls back to `plain` text if MathJax isn't up.
+function drawMath(el, tex, plain) {
+  if (tex && mathReady()) {
+    try {
+      const svg = window.MathJax.tex2svg(tex, { display: false }).querySelector('svg');
+      if (svg) { svg.setAttribute('aria-label', plain); el.replaceChildren(svg); return; }
+    } catch { /* fall through to text */ }
+  }
+  el.textContent = plain;
+}
 
 const playBd = $('drill-play-bd');
 const cardEl = $('drill-card');
@@ -57,7 +89,9 @@ function renderRoster(roster) {
 
 function renderQuestion() {
   currentQuestion = questionAt(seed, currentIndex, questionOpts);
-  questionText.textContent = currentQuestion.text;
+  // Chemistry formulas are not maths notation — only the rest is typeset.
+  if (currentQuestion.hint) questionText.textContent = currentQuestion.text;
+  else drawMath(questionText, toTex(currentQuestion.text), currentQuestion.text);
   // A chemical formula is far longer than "7 × 8" — step the display size
   // down so C₆H₅CH₃ and CH₃CH₂CH₂CH₂OH still fit the card on a phone.
   questionText.classList.toggle('is-long', currentQuestion.text.length > 7);
@@ -101,7 +135,7 @@ function onInput() {
   if (!active) return;
   const digits = sanitizeTyped(inputEl.value);
   inputEl.value = digits;
-  typedEl.textContent = digits;
+  drawMath(typedEl, digits ? typedTex(digits) : '', digits);
   if (locked || digits === '') return;
   if (isCorrectAnswer(digits, currentQuestion.answer)) {
     locked = true;

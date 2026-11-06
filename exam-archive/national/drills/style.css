@@ -595,3 +595,6 @@ tbody .drill-grid-th { border-right-width: 2px; }
   .drill-bars-tray .drill-bar { height: 2.2rem; font-size: 0.64rem; }
   .drill-bars-sum { font-size: 1.3rem; }
 }
+
+/* MathJax-drawn question and typed answer (game.js drawMath) */
+.drill-text svg, #drill-typed svg { vertical-align: middle; max-width: 100%; }
