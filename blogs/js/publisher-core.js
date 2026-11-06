@@ -231,6 +231,7 @@ export async function executePublishCycle(
   onSchedule,
   onTopicSelected,
   onModelChange,
+  customTopic = null,
 ) {
   if (!subjectData || !subjectData.SUBJECT_TOPICS) {
     if (onLog) onLog("[CYCLE] Subject topics not loaded", "error");
@@ -244,7 +245,7 @@ export async function executePublishCycle(
   }
 
   const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
-  const topic = rand(subjectData.SUBJECT_TOPICS);
+  const topic = customTopic || rand(subjectData.SUBJECT_TOPICS);
   if (onTopicSelected) onTopicSelected(topic);
   if (onLog)
     onLog(

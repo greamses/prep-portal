@@ -259,7 +259,7 @@ function showRoutingBadge(provider, isFallback) {
   routingIndicator.innerHTML = `<div class="routing-badge ${cls}"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:11px;height:11px"><path d="M2.4 12.4h4l2.6-6.4 4.8 12 2.6-5.6h5.2" fill="none" stroke="var(--accent-danger)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg> ${lbl}</div>`;
 }
 
-async function runPublishCycle() {
+async function runPublishCycle(customTopic = null) {
   await executePublishCycle(
     addLog,
     scheduleNextRun,
@@ -273,7 +273,68 @@ async function runPublishCycle() {
         "info",
       );
     },
+    customTopic,
   );
+}
+
+// ─── WRITE ON MY OWN TOPIC ─────────────────────────────────
+const topicModal = document.getElementById("topicModal");
+const topicBtn = document.getElementById("customTopicBtn");
+const topicInput = document.getElementById("topicText");
+const topicSubject = document.getElementById("topicSubject");
+const topicGrade = document.getElementById("topicGrade");
+const writeTopicBtn = document.getElementById("writeTopicBtn");
+const cancelTopicBtn = document.getElementById("cancelTopicBtn");
+
+// Grade 1-12 -> the stored class level (primary-1..6, jss-1..3, ss-1..3).
+const gradeToClassLevel = (g) =>
+  g <= 6 ? `primary-${g}` : g <= 9 ? `jss-${g - 6}` : `ss-${g - 9}`;
+
+if (topicBtn && topicModal) {
+  topicBtn.addEventListener("click", () => {
+    const labels = subjectData?.SUBJECT_LABELS || {};
+    topicSubject.innerHTML = Object.entries(labels)
+      .map(([k, v]) => `<option value="${k}">${escapeHtml(v)}</option>`)
+      .join("");
+    topicModal.classList.add("active");
+    topicInput.focus();
+  });
+  cancelTopicBtn.addEventListener("click", () => topicModal.classList.remove("active"));
+  topicModal.addEventListener("click", (e) => {
+    if (e.target === topicModal) topicModal.classList.remove("active");
+  });
+  writeTopicBtn.addEventListener("click", async () => {
+    const text = topicInput.value.trim();
+    if (text.length < 3) {
+      addLog("[TOPIC] Type a topic first", "warn");
+      return;
+    }
+    if (!hasApiKeys()) {
+      if (currentUser) await loadApiKeys(currentUser, subjectConfig);
+      else {
+        addLog("[MAN] No user signed in", "error");
+        return;
+      }
+    }
+    const grade = +topicGrade.value;
+    const topic = {
+      text,
+      subject: topicSubject.value,
+      classLevel: gradeToClassLevel(grade),
+      complexity: grade <= 3 ? "simple" : "standard",
+    };
+    topicModal.classList.remove("active");
+    topicInput.value = "";
+    writeTopicBtn.classList.add("is-busy");
+    clearScheduler();
+    addLog(`[MAN] Writing on "${text}" for Grade ${grade}`, "info");
+    try {
+      await runPublishCycle(topic);
+      await renderRecentPosts();
+    } finally {
+      writeTopicBtn.classList.remove("is-busy");
+    }
+  });
 }
 
 // ─── CSS CLEANING UTILITY ──────────────────────────────────
