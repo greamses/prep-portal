@@ -27,10 +27,12 @@ function toTex(t) {
     .replace(/∛(\d+)/g, '\\sqrt[3]{$1}')
     .replace(/√(\d+)/g, '\\sqrt{$1}')
     .replace(/(\d+|x)([²³⁴])/g, (_, n, e) => `${n}^{${SUPS[e]}}`)
-    .replace(/(\d+)⁄(\d+)/g, '\\tfrac{$1}{$2}')
+    .replace(/(\d+|x)⁄(\d+)/g, '\\tfrac{$1}{$2}')
+    .replace(/([0-9A-F?]+)([₀-₉]+)/g, (_, d, u) => `${d === '?' ? '\\square ' : `\\mathrm{${d}}`}_{${[...u].map((c) => c.charCodeAt(0) - 0x2080).join('')}}`)
     .replace(/−/g, '-').replace(/×/g, '\\times ').replace(/÷/g, '\\div ');
 }
 function typedTex(t) {
+  if (currentQuestion && currentQuestion.base) return `\\mathrm{${t}}`;
   if (currentQuestion && currentQuestion.alg) {
     return t.replace(/\*/g, '').replace(/\^(\d+)/g, '^{$1}').replace(/\^$/, '').replace(/-/g, '-');
   }
@@ -97,7 +99,7 @@ function renderRoster(roster) {
 function renderQuestion() {
   currentQuestion = questionAt(seed, currentIndex, questionOpts);
   // Chemistry formulas are not maths notation — only the rest is typeset.
-  if (currentQuestion.hint && !currentQuestion.alg) questionText.textContent = currentQuestion.text;
+  if (currentQuestion.hint && !currentQuestion.alg && !currentQuestion.math) questionText.textContent = currentQuestion.text;
   else drawMath(questionText, toTex(currentQuestion.text), currentQuestion.text);
   // A chemical formula is far longer than "7 × 8" — step the display size
   // down so C₆H₅CH₃ and CH₃CH₂CH₂CH₂OH still fit the card on a phone.
@@ -119,6 +121,7 @@ function renderQuestion() {
 // a relative molecular mass is often a half (NaCl = 58.5, Cl being 35.5).
 function isCorrectAnswer(typed, answer) {
   if (answer && typeof answer === 'object') return checkAlgebra(typed, answer);
+  if (currentQuestion && currentQuestion.base) return typed.toUpperCase().replace(/^0+(?=.)/, '') === answer;
   if (typeof answer === 'number') {
     const n = parseFloat(typed);
     return Number.isFinite(n) && Math.abs(n - answer) < 1e-9;
@@ -129,6 +132,7 @@ function isCorrectAnswer(typed, answer) {
 // Strip to digits plus at most one "/" and at most one "." — neither of
 // which can lead. Everything else a question ever answers with is digits.
 function sanitizeTyped(raw) {
+  if (currentQuestion && currentQuestion.base) return raw.replace(/[^0-9a-fA-F]/g, '').toUpperCase().slice(0, 10);
   if (currentQuestion && currentQuestion.alg) return raw.replace(/−/g, '-').replace(/X/g, 'x').replace(/[^0-9x^()+\-*]/g, '').slice(0, 24);
   // A leading "-" is kept (integer answers can be negative); any other is dropped.
   const neg = raw.trimStart().startsWith('-') || raw.trimStart().startsWith('−');

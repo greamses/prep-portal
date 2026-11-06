@@ -43,6 +43,8 @@ const OPERATION_LABELS = {
   rmm: 'Σ Molecular Mass',
   intAdd: '+ Add Integers', intSub: '− Subtract Integers', directed: '± Directed Numbers', intMul: '× Multiply Integers', intDiv: '÷ Divide Integers',
   algDistribute: 'a(x+b) Distribution', algFactorise: 'Factorisation', algQuadExpand: '(x+a)(x+b) Quadratic Expansion', algQuadFactorise: 'x²+bx+c Quadratic Factorisation', algMixed: 'Mixed Algebra (all four)',
+  eqOne: '1-Step Equations', eqTwo: '2-Step Equations', eqMulti: 'Multi-Step Equations',
+  baseTo10: 'To Base 10', baseFrom10: 'From Base 10', baseToBase: 'Base to Base',
 };
 
 // Category filters which operations are on offer. Basic keeps the default
@@ -57,6 +59,8 @@ const CATEGORY_OPERATIONS = {
   chemistry: ['rmm'],
   integers: ['intAdd', 'intSub', 'intMul', 'intDiv', 'directed'],
   algebra: ['algDistribute', 'algFactorise', 'algQuadExpand', 'algQuadFactorise', 'algMixed'],
+  equations: ['eqOne', 'eqTwo', 'eqMulti'],
+  bases: ['baseTo10', 'baseFrom10', 'baseToBase'],
   // Tables (the grid filler) has no operations step — 'multiply' is a harmless
   // placeholder so the room doc still carries a valid, non-empty operations
   // list; the grid round ignores it entirely (see js/grid.js).
@@ -72,6 +76,8 @@ const CATEGORY_DEFAULT_OPS = {
   chemistry: ['rmm'],
   integers: ['intAdd'],
   algebra: ['algDistribute'],
+  equations: ['eqOne'],
+  bases: ['baseTo10'],
   timestable: ['multiply'],
   fracbars: ['fracAdd'],
 };
@@ -163,7 +169,7 @@ let timeLimit = mem.get('timeLimit', 60, [30, 60, 90, 120]);
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
-let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'timestable', 'fracbars']);
+let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'equations', 'bases', 'timestable', 'fracbars']);
 let range = mem.get('range', 'all', RANGES.map((r) => r.key));
 // Tables (grid filler) only — how much of each 5×5 grid is blank. The grid is
 // always 5×5 with a fresh mix of 1..12 tables per grid, streamed one after the
@@ -482,6 +488,8 @@ renderChoiceStep(topic, 'category', {
     { value: 'chemistry', label: 'Chemistry', checked: categoryValue === 'chemistry' },
     { value: 'integers', label: 'Integers', checked: categoryValue === 'integers' },
     { value: 'algebra', label: 'Algebra', checked: categoryValue === 'algebra' },
+    { value: 'equations', label: 'Equations', checked: categoryValue === 'equations' },
+    { value: 'bases', label: 'Number Bases', checked: categoryValue === 'bases' },
     { value: 'timestable', label: 'Tables', checked: categoryValue === 'timestable' },
     { value: 'fracbars', label: 'Fraction Bars', checked: categoryValue === 'fracbars' },
   ],
