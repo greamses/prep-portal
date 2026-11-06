@@ -39,6 +39,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 // must also bust the pages, so they go into the hash and get remapped too.
 const SHARED = [
   '/utils/components/setup-carousel.js',
+  '/utils/components/workbook/mathify.js', // drills typeset questions with it
   '/utils/components/avatar-picker.js',
   '/utils/components/admin-images.js',
   '/utils/ai-client.js',
