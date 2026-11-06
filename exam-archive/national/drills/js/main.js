@@ -163,6 +163,7 @@ if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // V
 
 let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'equations', 'bases', 'timestable', 'fracbars']);
 let range = mem.get('range', 'all', RANGES.map((r) => r.key));
+if (categoryValue === 'algebra') range = '1-9'; // single digits only
 // Tables (grid filler) only — how much of each 5×5 grid is blank. The grid is
 // always 5×5 with a fresh mix of 1..12 tables per grid, streamed one after the
 // next, so there is no size dial.
@@ -337,6 +338,8 @@ function renderOperationsPick() {
     onNext: () => {
       if (isFractions) { renderDenominatorsPick(); topic.goTo('denominators'); return; }
       if (isBars) { renderBarsLevelStep(); topic.goTo('bars-level'); return; }
+      // Algebra is single digits only: there is nothing to choose, so no step.
+      if (categoryValue === 'algebra') { range = '1-9'; saveContent(); flow.next(); return; }
       renderRangePick();
       topic.goTo('range');
     },
