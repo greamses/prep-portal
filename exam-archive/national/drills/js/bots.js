@@ -21,10 +21,13 @@ const RMM_PACE = 5;
 // Fraction Bars is slower again: one point is finding the common denominator
 // and then carrying about ten bars across, one at a time. Keyed off the room's
 // ACTIVITY (see leaderboard.js) — its operations list is only a placeholder.
+const ALG_PACE = 3;
 export const BARS_PACE = 6;
 
 export function botPaceFor(operations) {
-  return (operations || []).includes('rmm') ? RMM_PACE : 1;
+  const ops = operations || [];
+  if (ops.includes('rmm')) return RMM_PACE;
+  return ops.some((o) => o.startsWith('alg')) ? ALG_PACE : 1; // working an expression out is not 7 × 8
 }
 
 export function simulateBotScore(seed, botSlot, timeLimitSec, pace = 1) {

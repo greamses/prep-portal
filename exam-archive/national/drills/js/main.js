@@ -42,6 +42,7 @@ const OPERATION_LABELS = {
   fracAdd: '+ Addition', fracSub: '− Subtraction', fracMul: '× Multiplication', fracDiv: '÷ Division',
   rmm: 'Σ Molecular Mass',
   intAdd: '+ Add Integers', intSub: '− Subtract Integers', directed: '± Directed Numbers', intMul: '× Multiply Integers', intDiv: '÷ Divide Integers',
+  algDistribute: 'a(x+b) Distribution', algFactorise: 'Factorisation', algQuadExpand: '(x+a)(x+b) Quadratic Expansion', algQuadFactorise: 'x²+bx+c Quadratic Factorisation',
 };
 
 // Category filters which operations are on offer. Basic keeps the default
@@ -55,6 +56,7 @@ const CATEGORY_OPERATIONS = {
   fractions: ['fracAdd', 'fracSub', 'fracMul', 'fracDiv'],
   chemistry: ['rmm'],
   integers: ['intAdd', 'intSub', 'intMul', 'intDiv', 'directed'],
+  algebra: ['algDistribute', 'algFactorise', 'algQuadExpand', 'algQuadFactorise'],
   // Tables (the grid filler) has no operations step — 'multiply' is a harmless
   // placeholder so the room doc still carries a valid, non-empty operations
   // list; the grid round ignores it entirely (see js/grid.js).
@@ -69,6 +71,7 @@ const CATEGORY_DEFAULT_OPS = {
   fractions: [],
   chemistry: ['rmm'],
   integers: ['intAdd'],
+  algebra: ['algDistribute'],
   timestable: ['multiply'],
   fracbars: ['fracAdd'],
 };
@@ -160,7 +163,7 @@ let timeLimit = mem.get('timeLimit', 60, [30, 60, 90, 120]);
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
-let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'integers', 'timestable', 'fracbars']);
+let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'timestable', 'fracbars']);
 let range = mem.get('range', 'all', RANGES.map((r) => r.key));
 // Tables (grid filler) only — how much of each 5×5 grid is blank. The grid is
 // always 5×5 with a fresh mix of 1..12 tables per grid, streamed one after the
@@ -478,6 +481,7 @@ renderChoiceStep(topic, 'category', {
     { value: 'fractions', label: 'Fractions', checked: categoryValue === 'fractions' },
     { value: 'chemistry', label: 'Chemistry', checked: categoryValue === 'chemistry' },
     { value: 'integers', label: 'Integers', checked: categoryValue === 'integers' },
+    { value: 'algebra', label: 'Algebra', checked: categoryValue === 'algebra' },
     { value: 'timestable', label: 'Tables', checked: categoryValue === 'timestable' },
     { value: 'fracbars', label: 'Fraction Bars', checked: categoryValue === 'fracbars' },
   ],
