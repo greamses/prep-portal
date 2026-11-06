@@ -2,6 +2,7 @@
 import { auth, db } from "/firebase-init.js";
 import { getList, getProfile } from "/utils/data-service.js";
 import { getSubjectData, resolveSubjectKey } from "/blogs/js/data.js";
+import { mountPaint, dressArticle } from "/blogs/js/dress.js";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
@@ -20,6 +21,8 @@ import {
   arrayRemove,
 } from "firebase/firestore";
 
+
+mountPaint(document.body);
 // The single designated admin (matches firestore.rules + nav-builder.js).
 const ADMIN_EMAIL = "eemadanyel@gmail.com";
 
@@ -759,6 +762,8 @@ function showSinglePost(post) {
       }
     </section>`;
 
+  dressArticle(singlePostContent);
+  mountPaint(singlePostView);
   singlePostView.classList.add("active");
   singlePostView.scrollTop = 0;
   document.body.style.overflow = "hidden";

@@ -1784,3 +1784,133 @@ body:has(.embed-overlay.active) {
     border: 1px solid #ccc;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   PAPER DRESS — page chrome (paint wash, receipt, sticky tags, pills).
+   Built on the shared components; see DESIGN.md.
+══════════════════════════════════════════════════════════════════════ */
+.blog-paint {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.26;
+}
+.blog-paint svg { width: 100%; height: 100%; display: block; }
+[data-theme="dark"] .blog-paint { opacity: 0.15; }
+.science-container,
+.single-post-content { position: relative; z-index: 1; }
+.single-post-view > .close-post { z-index: 2; }
+
+/* filter bar = a receipt */
+.filter-bar.pp-receipt {
+  display: block;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 7px 16px rgba(var(--shadow-color, 42, 39, 35), 0.14));
+}
+.filter-paper.pp-receipt__paper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: calc(13px + 0.6rem) 1.8rem;
+}
+.filter-paper .filter-search-row { flex: 1; min-width: 0; }
+@media (max-width: 640px) {
+  .filter-paper.pp-receipt__paper { flex-wrap: wrap; }
+  .filter-paper .filter-dropdowns-row { width: 100%; }
+}
+.search-input {
+  border: 2px solid color-mix(in srgb, var(--accent-secondary) 40%, transparent);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* article header: subject = sticky note, class = pill, meta = quiet line */
+.sci-badge {
+  position: relative;
+  padding: 0.35rem 0.8rem 0.4rem;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #14130f;
+  border: 0;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transform: rotate(-2deg);
+}
+.sci-badge::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 40px;
+  height: 13px;
+  margin-left: -20px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 1px 2px rgba(20, 19, 15, 0.12);
+  transform: rotate(2deg);
+}
+.cls-badge {
+  background: var(--surface-primary);
+  color: var(--text-secondary);
+  border: 2px solid color-mix(in srgb, var(--accent-secondary) 50%, transparent);
+  box-shadow: var(--shadow-sm);
+}
+.post-badges { align-items: center; gap: 0.75rem; margin-bottom: 1.1rem; }
+.post-meta { border-bottom: 2px dashed color-mix(in srgb, var(--ink) 14%, transparent); }
+.post-featured-img { border: 0; }
+
+/* closing buttons on pre-rendered pages */
+.post-end {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 2rem 0 0.5rem;
+}
+
+/* reader controls: pills / key */
+.action-btn,
+.close-post,
+.comment-action-btn,
+.reply-like-btn,
+.reply-cancel-btn,
+.reply-delete-btn,
+.load-all-btn {
+  border: 2px solid color-mix(in srgb, var(--accent-secondary) 40%, transparent);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-sm);
+}
+.action-btn.liked,
+.comment-action-btn.liked,
+.reply-like-btn.liked { border-color: transparent; background: var(--accent-primary); }
+.resource-links-section,
+.comment-item,
+.add-comment-form {
+  background: var(--surface-primary);
+  border: 0;
+  box-shadow: var(--shadow-md);
+}
+.replies-section,
+.reply-form-area {
+  background: var(--surface-secondary);
+  border-top: 2px dashed color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.comments-section { border-top: 2px dashed color-mix(in srgb, var(--ink) 14%, transparent); }
+.resource-card { border: 0; }
+.comment-submit-btn,
+.reply-submit-btn { box-shadow: var(--shadow-cta, var(--shadow-sm)); }
+
+/* sticky notes are paper: keep the pastel in dark mode too */
+.sci-math { background: #fff3a8; }
+.sci-chemistry { background: #e8c8ff; }
+.sci-biology { background: #c8f0c0; }
+.sci-physics { background: #bfe3ff; }
+.sci-basicscience { background: #ffd7a3; }
+.sci-basictech { background: #b8ece2; }

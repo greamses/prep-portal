@@ -260,13 +260,14 @@ function renderPostPage({ subject, post, slug }) {
 
       <div class="single-post-body">${bodyHtml}</div>
 
-      <p style="margin-top:2rem;padding-top:1.5rem;border-top:var(--border-subtle,1px solid rgba(0,0,0,.1))">
-        <a href="${readerUrl}">Open in the interactive reader</a> to like, comment, or explore videos and practice links for this lesson.
-      </p>
-      <p><a href="/blogs/?s=${encodeURIComponent(subject.key)}">&larr; More ${escHtml(subject.name)} lessons</a></p>
+      <div class="post-end">
+        <a class="pp-btn" href="${readerUrl}">Open the interactive reader</a>
+        <a class="pp-btn pp-btn--ghost" href="/blogs/?s=${encodeURIComponent(subject.key)}">&larr; More ${escHtml(subject.name)} lessons</a>
+      </div>
     </div>
 
     <script src="/utils/components/nav-builder.js" type="module"></script>
+    <script src="/blogs/js/article-page.js" type="module"></script>
   </body>
 </html>
 `;

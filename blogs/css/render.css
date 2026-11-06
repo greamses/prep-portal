@@ -724,3 +724,239 @@
     font-size: var(--text-mono-xs);
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   PAPER DRESS — the lesson note is a receipt (shared .pp-receipt, wrapped
+   by blogs/js/dress.js). Facts, pull quote and feature cards are sticky
+   notes, kickers/levels are pills. Soft shadows, square corners, tokens.
+   Sticky notes are paper: fixed pastel + dark ink in both themes.
+══════════════════════════════════════════════════════════════════════ */
+.lesson-receipt { margin: 0 0 1.5rem; }
+.lesson-note.pp-receipt__paper {
+  padding: calc(13px + 0.5rem) 0;
+  overflow: clip;
+  border-radius: 0;
+  background: var(--pp-paper, var(--surface-primary));
+}
+/* the rails sit 6px in; keep every section clear of them */
+.lesson-note .ln-headline,
+.lesson-note .ln-byline,
+.lesson-note .ln-facts-strip,
+.lesson-note .ln-col,
+.lesson-note .ln-table-section,
+.lesson-note .ln-features,
+.lesson-note .ln-activity {
+  padding-left: clamp(1.4rem, 4vw, 2.4rem);
+  padding-right: clamp(1.4rem, 4vw, 2.4rem);
+  background: transparent;
+}
+
+/* dashed tear-lines between sections instead of hard rules */
+.lesson-note .ln-headline,
+.lesson-note .ln-byline,
+.lesson-note .ln-facts-strip,
+.lesson-note .ln-article-body,
+.lesson-note .ln-table-section,
+.lesson-note .ln-features,
+.lesson-note .ln-activity {
+  border: 0;
+  border-bottom: 2px dashed color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.lesson-note .ln-activity { border-bottom: 0; }
+.lesson-note .ln-col:first-child {
+  border-right: 2px dashed color-mix(in srgb, var(--ink) 14%, transparent);
+}
+@media (max-width: 768px) {
+  .lesson-note .ln-col:first-child {
+    border-right: 0;
+    border-bottom: 2px dashed color-mix(in srgb, var(--ink) 14%, transparent);
+  }
+}
+
+/* kicker + level = pills */
+.lesson-note .ln-kicker {
+  display: inline-flex;
+  padding: 0.35rem 0.7rem;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 2px solid color-mix(in srgb, var(--accent-secondary) 50%, transparent);
+  box-shadow: var(--shadow-sm);
+}
+.lesson-note .ln-kicker::before { display: none; }
+.lesson-note .ln-level-badge {
+  padding: 0.25rem 0.6rem;
+  font-size: var(--text-mono-xs);
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 2px solid color-mix(in srgb, var(--accent-secondary) 50%, transparent);
+}
+
+/* marker-pen highlight instead of a solid block */
+.lesson-note .ln-h1 em {
+  background: linear-gradient(transparent 55%, color-mix(in srgb, var(--accent-primary) 70%, transparent) 55%);
+  color: inherit;
+  padding: 0 2px;
+}
+.lesson-note .ln-lede {
+  border-left: 0;
+  padding-left: 0;
+  padding-bottom: 1.25rem;
+  font-family: var(--font-mono);
+}
+.lesson-note .ln-p,
+.lesson-note .ln-process-list,
+.lesson-note .ln-activity-text { font-family: var(--font-mono); }
+.lesson-note .ln-h2 {
+  border-bottom: 0;
+  background: linear-gradient(transparent 62%, color-mix(in srgb, var(--accent-primary) 65%, transparent) 62%);
+  padding: 0 4px;
+}
+
+/* quick facts = a wall of sticky notes */
+.lesson-note .ln-facts-label::after,
+.lesson-note .ln-table-title::after,
+.lesson-note .ln-features-title::after {
+  height: 0;
+  opacity: 1;
+  border-top: 2px dashed color-mix(in srgb, var(--ink) 18%, transparent);
+  background: none;
+}
+.lesson-note .ln-facts-grid { gap: 1.4rem 1.2rem; padding-top: 0.4rem; }
+.lesson-note .ln-fact-item,
+.lesson-note .ln-feature-card,
+.lesson-note .ln-pull-quote {
+  position: relative;
+  border: 0;
+  border-radius: 0;
+  color: #14130f;
+  background: var(--pp-note-bg, #fff3a8);
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.28);
+  transform: rotate(var(--pp-note-tilt, -1deg));
+}
+.lesson-note .ln-fact-item::before,
+.lesson-note .ln-feature-card::before,
+.lesson-note .ln-pull-quote::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 56px;
+  height: 18px;
+  margin-left: -28px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 1px 2px rgba(20, 19, 15, 0.12);
+  transform: rotate(-2deg);
+}
+.lesson-note .ln-fact-item { padding: 1.1rem 1rem 0.9rem; }
+.lesson-note .ln-fact-item:nth-child(6n + 1) { --pp-note-bg: #fff3a8; --pp-note-tilt: -1.5deg; }
+.lesson-note .ln-fact-item:nth-child(6n + 2) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.2deg; }
+.lesson-note .ln-fact-item:nth-child(6n + 3) { --pp-note-bg: #c8f0c0; --pp-note-tilt: -0.8deg; }
+.lesson-note .ln-fact-item:nth-child(6n + 4) { --pp-note-bg: #e8c8ff; --pp-note-tilt: 1.6deg; }
+.lesson-note .ln-fact-item:nth-child(6n + 5) { --pp-note-bg: #ffd7a3; --pp-note-tilt: -1.2deg; }
+.lesson-note .ln-fact-item:nth-child(6n + 6) { --pp-note-bg: #b8ece2; --pp-note-tilt: 0.9deg; }
+.lesson-note .ln-fact-num { color: #14130f; font-size: clamp(20px, 3vw, 26px); }
+.lesson-note .ln-fact-text { color: #3b372e; }
+
+/* pull quote = one more note, in the handwritten face */
+.lesson-note .ln-pull-quote {
+  --pp-note-bg: #fff3a8;
+  --pp-note-tilt: -0.8deg;
+  padding: 1.4rem 1.5rem 1.2rem;
+}
+.lesson-note .ln-pull-quote p {
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 600;
+  font-size: clamp(14px, 2vw, 16px);
+  letter-spacing: 0;
+}
+.lesson-note .ln-quote-mark { color: #14130f; }
+
+/* vocab chips: pills */
+.lesson-note .ln-chip {
+  border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  box-shadow: none;
+}
+
+/* pictures sit on the paper like prints */
+.lesson-note .ln-img-wrap {
+  padding: 0.5rem;
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-md);
+}
+
+/* table */
+.lesson-note .ln-table thead tr {
+  background: color-mix(in srgb, var(--accent-primary) 45%, var(--surface-primary));
+  color: var(--ink);
+}
+.lesson-note .ln-table tbody tr {
+  border-bottom: 2px dashed color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+/* feature cards = sticky notes */
+.lesson-note .ln-features-grid { gap: 1.4rem 1.2rem; padding-top: 0.4rem; }
+.lesson-note .ln-feature-card { padding: 1.2rem 1rem 1rem; }
+.lesson-note .ln-feature-card:nth-child(3n + 1) { --pp-note-bg: #bfe3ff; --pp-note-tilt: -1.2deg; border-top: 0; }
+.lesson-note .ln-feature-card:nth-child(3n + 2) { --pp-note-bg: #ffd7a3; --pp-note-tilt: 1deg; border-top: 0; }
+.lesson-note .ln-feature-card:nth-child(3n + 3) { --pp-note-bg: #c8f0c0; --pp-note-tilt: -0.6deg; border-top: 0; }
+.lesson-note .ln-feature-card:hover { transform: rotate(0deg) translateY(-3px); }
+.lesson-note .ln-feature-icon { background: rgba(255, 255, 255, 0.6) !important; border: 0; border-radius: 50%; }
+.lesson-note .ln-feature-num,
+.lesson-note .ln-feature-desc { color: #3b372e; }
+.lesson-note .ln-feature-label { color: #14130f; }
+
+/* activity */
+.lesson-note .ln-activity-icon {
+  background: var(--accent-primary);
+  border-radius: 50%;
+}
+.lesson-note .ln-activity-icon svg { color: var(--text-on-accent); }
+.lesson-note .ln-activity-text strong {
+  background: color-mix(in srgb, var(--accent-primary) 55%, transparent);
+  color: var(--ink);
+  padding: 0 4px;
+}
+.lesson-note .ln-core-idea {
+  border-left: 0;
+  padding: 0.2rem 0.6rem;
+  background: var(--surface-primary);
+  border: 2px solid color-mix(in srgb, var(--accent-primary) 60%, transparent);
+}
+
+/* tables inside a lesson: the generic article-table rules (ink header,
+   nowrap cells, block display) must not win here */
+.lesson-note .ln-table-section { background: transparent !important; }
+.single-post-body .lesson-note .ln-table { display: table; width: 100%; table-layout: auto; }
+.single-post-body .lesson-note .ln-table th,
+.single-post-body .lesson-note .ln-table td {
+  white-space: normal;
+  border: 0;
+  overflow-wrap: anywhere;
+}
+.single-post-body .lesson-note .ln-table th {
+  background: color-mix(in srgb, var(--accent-primary) 45%, var(--surface-primary));
+  color: var(--ink);
+}
+.single-post-body .lesson-note .ln-table tr:nth-child(even),
+.single-post-body .lesson-note .ln-table tbody tr:nth-child(odd) { background: transparent; }
+.single-post-body .lesson-note .ln-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+
+/* section heads: marker line that wraps with the text */
+.lesson-note .ln-h2 {
+  display: inline;
+  line-height: 1.7;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.lesson-note .ln-h2:first-child { display: inline; }
+.lesson-note .ln-article-body .ln-col > .ln-h2 + * { margin-top: 1rem; }
+/* inline-styled lists were set in the display face; body copy is mono */
+.lesson-note ul[style] {
+  font-family: var(--font-mono) !important;
+  font-size: clamp(14px, 1.8vw, 15px) !important;
+  font-weight: 400;
+  line-height: var(--leading-relaxed) !important;
+}
