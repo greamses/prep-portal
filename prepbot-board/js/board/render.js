@@ -682,7 +682,7 @@ export function buildDiagram(op, page, layout, data) {
   /* a drawing whose labels come in from the sides is drawn smaller, leaving
      room for the names beside it inside the panel */
   const sideLabels = !data.parts.some((p) => p.arrow);
-  const k = Math.min(F.w / data.w, (F.h - 34) / data.h) * (sideLabels ? 0.62 : 0.94);
+  const k = Math.min(F.w / data.w, (F.h - 34) / data.h) * (sideLabels ? (data.steps ? 0.74 : 0.62) : 0.94);
   const ox = F.x + (F.w - data.w * k) / 2, oy = F.y + (F.h - 34 - data.h * k) / 2;
   const g = el("g", { class: "pb-diagram", "data-id": op.id }, page);
   const clipId = `dgc-${op.id}-${Math.random().toString(36).slice(2, 6)}`;
@@ -698,6 +698,19 @@ export function buildDiagram(op, page, layout, data) {
   }
   const toBoard = (x, y) => [ox + x * k, oy + y * k];
   const W = data.w * k + 20, H = data.h * k;
+  if (data.steps) {
+    /* drawn in steps: only the outline (if any) now; the parts come as they are named */
+    r.setAttribute("width", W);
+    const lines = [...inner.querySelectorAll(".k-line")];
+    return {
+      node: g, box: { x: ox, y: oy, w: data.w * k, h: H }, weight: lines.length ? 1.2 : 0.15,
+      diagram: { data, toBoard, inner, k, drawn: new Set(), box: { x: ox, y: oy, w: data.w * k, h: H } },
+      draw(tl, at, dur) {
+        lines.forEach((ln) => traceLine(tl, ln, at, dur, toBoard));
+        if (credit) tl.from(credit, { opacity: 0, duration: 0.3 }, at + dur);
+      },
+    };
+  }
   return {
     node: g, box: { x: ox, y: oy, w: data.w * k, h: H }, weight: 1.6,
     diagram: { data, toBoard, box: { x: ox, y: oy, w: data.w * k, h: H } },
@@ -709,6 +722,35 @@ export function buildDiagram(op, page, layout, data) {
     },
     instant() { r.setAttribute("width", W); },
   };
+}
+
+/** One part of a step-by-step diagram, drawn into it: outlines traced by the
+    pencil, then the colour laid in. */
+export function buildPart(op, d, part) {
+  const g = el("g", { class: "pb-part", "data-part": part.name }, d.inner);
+  g.innerHTML = part.svg;
+  const lines = [...g.querySelectorAll(".k-line")];
+  const fills = [...g.querySelectorAll(".k-fill")];
+  /* the colour sits under the outline, as a pen drawing coloured in */
+  fills.forEach((f) => g.insertBefore(f, g.firstChild));
+  return {
+    node: g, box: d.box, weight: 0.5 + Math.min(1.3, lines.length * 0.3),
+    draw(tl, at, dur) {
+      const each = (dur * 0.75) / Math.max(1, lines.length);
+      lines.forEach((ln, i) => traceLine(tl, ln, at + i * each, each, d.toBoard));
+      fills.forEach((f) => tl.from(f, { opacity: 0, duration: dur * 0.3 }, at + dur * 0.7));
+    },
+  };
+}
+
+/* trace one outline inside a scaled diagram, the pencil on its point */
+function traceLine(tl, ln, at, dur, toBoard) {
+  let len = 0;
+  try { len = ln.getTotalLength(); } catch { len = 0; }
+  if (!len) { tl.from(ln, { opacity: 0, duration: dur }, at); return; }
+  tl.fromTo(ln, { attr: { "stroke-dasharray": `${len} ${len}`, "stroke-dashoffset": len } },
+    { attr: { "stroke-dashoffset": 0 }, duration: dur, ease: "none", onComplete: () => { ln.removeAttribute("stroke-dasharray"); ln.removeAttribute("stroke-dashoffset"); } }, at);
+  PEN?.follow(tl, at, dur, (p) => { const q = ln.getPointAtLength(len * p); return toBoard(q.x, q.y); }, "none");
 }
 
 /** An arrow to a named part of a diagram, and its name at the tail — both drawn. */

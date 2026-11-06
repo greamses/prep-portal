@@ -22,11 +22,11 @@
 
 import { createLayout } from "./layout.js";
 import { cleanOp, boardSummary } from "../protocol/ops.js";
-import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, buildShape, buildHighlight, buildDiagram, buildLabel, buildSketch, buildPicture, gridMapper, createPen, setPen } from "./render.js";
-import { ensureDiagrams, loadedDiagram, findPart } from "./diagrams.js";
+import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, buildShape, buildHighlight, buildDiagram, buildLabel, buildPart, buildSketch, buildPicture, gridMapper, createPen, setPen } from "./render.js";
+import { ensureDiagrams, loadedDiagram, findPart, stepDiagram, needsLoad } from "./diagrams.js";
 
 /* the diagram names a list of ops asks for, so they can be loaded first */
-const diagramsIn = (list) => (list || []).filter((o) => o && o.op === "diagram" && o.name).map((o) => String(o.name).toLowerCase().replace(/\s+/g, "-"));
+const diagramsIn = (list) => (list || []).filter((o) => o && o.op === "diagram" && o.name && needsLoad(String(o.name).toLowerCase().replace(/\s+/g, "-"), o.steps === true || o.steps === "true")).map((o) => String(o.name).toLowerCase().replace(/\s+/g, "-"));
 /* a mark on a whole item, or on just some of its words */
 const markTarget = (t, words) => {
   const box = words && t.wordBox ? t.wordBox(words) : null;
@@ -258,7 +258,9 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
         return buildMark(op, page, markTarget(t, op.words));
       }
       case "diagram": {
-        const data = loadedDiagram(op.name);
+        /* in steps: an empty panel the parts are drawn into one by one
+           (a painting with no parts to take apart is drawn whole instead) */
+        const data = (op.steps && stepDiagram(op.name)) || loadedDiagram(op.name);
         if (!data) return null;
         /* a diagram fills the figure panel: one to a section, like a graph */
         if (graph) nextSection(animated);
@@ -270,10 +272,12 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
         const it = items.get(op.on);
         /* a label on a generated picture waits for the picture (and the spots found on it) */
         if (it?.picture) { queuePictureLabel(it, op, page, layout); return null; }
-        const d = it?.diagram;
-        const part = d && findPart(d.data, op.part);
-        if (!part) return null;
-        return buildLabel(op, page, d, part, layout.canvas.w - 24);
+        return partAndLabel(op, it, page);
+      }
+      case "part": {
+        const it = items.get(op.on);
+        if (it?.picture) { if (op.label) queuePictureLabel(it, { ...op, op: "label" }, page, layout); return null; }
+        return partAndLabel(op, it, page);
       }
       case "sketch": {
         const g = op.on === "grid" ? null : items.get(op.on);
@@ -299,6 +303,30 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       default:
         return null;
     }
+  }
+
+  /* A part of a diagram: in a step diagram it is DRAWN first (once), then
+     named; in a whole drawing it is only named. */
+  function partAndLabel(op, it, page) {
+    const d = it?.diagram;
+    const part = d && findPart(d.data, op.part);
+    if (!part) return null;
+    const steps = [];
+    if (d.data.steps && part.svg && !d.drawn.has(part.name)) {
+      d.drawn.add(part.name);
+      steps.push(buildPart(op, d, part));
+    }
+    if (op.op === "label" || op.label !== false) steps.push(buildLabel({ ...op, text: op.text || op.part }, page, d, part, layout.canvas.w - 24));
+    if (!steps.length) return null;
+    if (steps.length === 1) return steps[0];
+    const weight = steps.reduce((t, b) => t + b.weight, 0);
+    return {
+      node: steps[1].node, box: steps[1].box, weight,
+      draw(tl, at, dur) {
+        let t = at;
+        for (const b of steps) { const each = (dur * b.weight) / weight; b.draw(tl, t, each); t += each; }
+      },
+    };
   }
 
   /* ── generated pictures ──────────────────────────────────────────────── */

@@ -20,6 +20,7 @@ const SRC = {
   ear: "/data/vocab/organs/ear.js",
 };
 export const DIAGRAM_NAMES = Object.keys(SRC);
+import { KITS } from "./kits.js";
 
 const cache = new Map();
 
@@ -40,8 +41,11 @@ export function loadDiagram(name) {
         cx: p.cx ?? p.spot?.cx,
         cy: p.cy ?? p.spot?.cy,
         arrow: p.arrow ? [p.arrow.x1, p.arrow.y1, p.arrow.x2, p.arrow.y2] : null,
+        /* a flat drawing's part can be drawn on its own: its outline, then its colour */
+        svg: !m.SVG && p.d ? `<path class="k-fill" d="${p.d}" fill="${p.fill || "#e9d6c4"}"/><path class="k-line" d="${p.d}" fill="none" stroke="#2a2723" stroke-width="2" stroke-linejoin="round"/>` : null,
       }));
-      return { name, w: m.MAP_W, h: m.MAP_H, art, parts, credit: String(m.CREDIT || "").replace(/<[^>]+>/g, "") };
+      const decor = !m.SVG && m.DECOR ? `<path class="k-line" d="${m.DECOR}" fill="#f1e4d4" stroke="#2a2723" stroke-width="2.4"/>` : "";
+      return { name, w: m.MAP_W, h: m.MAP_H, art, parts, decor, credit: String(m.CREDIT || "").replace(/<[^>]+>/g, "") };
     }).catch(() => null));
   }
   return cache.get(name);
@@ -72,3 +76,22 @@ export function findPart(diagram, name) {
   return diagram.parts.find((p) => norm(p.name) === want)
     || diagram.parts.find((p) => norm(p.name).includes(want) || want.includes(norm(p.name)));
 }
+
+/**
+ * A diagram to be drawn IN STEPS, one part at a time as PrepBot names it:
+ * the two cells from the step kits (kits.js), the heart and the brain from
+ * their own per-part outlines. A painting with no parts to take apart (the
+ * ear) has no step form: null, and the whole drawing is used instead.
+ */
+export function stepDiagram(name) {
+  const kit = KITS[name];
+  if (kit) {
+    return { name, w: kit.w, h: kit.h, art: "", decor: "", steps: true, credit: "",
+      parts: Object.entries(kit.parts).map(([n, p]) => ({ name: n, cx: p.cx, cy: p.cy, arrow: null, svg: p.svg })) };
+  }
+  const d = loadedDiagram(name);
+  if (!d || !d.parts.every((p) => p.svg)) return null;
+  return { ...d, art: d.decor, steps: true };
+}
+/** Does this diagram need its library file loaded first? (a kit does not) */
+export const needsLoad = (name, steps) => !(steps && KITS[name]);

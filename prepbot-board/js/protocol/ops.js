@@ -193,7 +193,15 @@ const SPEC = {
     const NAMES = ["plant-cell", "animal-cell", "heart", "brain", "brain-section", "ear"];
     const name = String(o.name || "").toLowerCase().replace(/\s+/g, "-");
     if (!NAMES.includes(name)) return null;
-    return { op: "diagram", id: idOf(o.id, "d"), name };
+    /* steps: the panel starts empty and each part is drawn when it is named */
+    return { op: "diagram", id: idOf(o.id, "d"), name, steps: o.steps === true || o.steps === "true" };
+  },
+
+  /* Draw ONE part of a step-by-step diagram, and name it. */
+  part(o) {
+    const part = str(o.part || o.name, 60);
+    if (!part || typeof o.on !== "string") return null;
+    return { op: "part", id: idOf(o.id, "pa"), on: o.on, part, text: str(o.text, 40) || part, tone: tone(o.tone) || "blue", label: o.label !== false };
   },
 
   /* Point at a named part of a diagram: an arrow to it and its name, drawn. */
