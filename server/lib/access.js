@@ -84,23 +84,26 @@ const USER_TTL_MS = 5 * 60 * 1000;
 const userCache = new Map(); // uid -> { value: {isPremium, overrides}, exp }
 
 async function getUserAccess(uid, email) {
-  if (email && email === process.env.ADMIN_EMAIL) {
-    return { isPremium: true, overrides: {} };
-  }
-  if (!uid) return { isPremium: false, overrides: {} };
+  /* The admin is always premium — and their OWN per-user overrides still count:
+     a feature switched "off" for everyone (a private trial, like the PrepBot
+     Board) is opened to the admin by granting it to them, exactly as for any
+     other tester. The browser side (premium-guard, features.js) already reads
+     the overrides; without this the server alone refused the admin. */
+  const isAdminUser = !!email && email === process.env.ADMIN_EMAIL;
+  if (!uid) return { isPremium: isAdminUser, overrides: {} };
   const hit = userCache.get(uid);
   if (hit && hit.exp > Date.now()) return hit.value;
   try {
     const snap = await admin.firestore().collection("users").doc(uid).get();
     const d = (snap.exists && snap.data()) || {};
     const value = {
-      isPremium: !!d.isPremium,
+      isPremium: isAdminUser || !!d.isPremium,
       overrides: d.featureOverrides && typeof d.featureOverrides === "object" ? d.featureOverrides : {},
     };
     userCache.set(uid, { value, exp: Date.now() + USER_TTL_MS });
     return value;
   } catch (_) {
-    return hit ? hit.value : { isPremium: false, overrides: {} }; // fail closed
+    return hit ? hit.value : { isPremium: isAdminUser, overrides: {} }; // fail closed (the admin stays premium)
   }
 }
 
