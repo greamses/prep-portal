@@ -66,7 +66,7 @@ function applyTheme(theme) {
 function buildThemeToggle() {
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "nav-theme-toggle";
+  btn.className = "nav-theme-toggle pp-plain"; // flat icon, never a sticky note
   const theme = currentTheme();
   btn.innerHTML = themeToggleIcon(theme);
   btn.setAttribute(

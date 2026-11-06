@@ -644,18 +644,22 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  border: var(--border-subtle);
-  background: var(--surface-primary);
+  /* flat: just the icon, no paper, border or shadow — the same on every page */
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  rotate: none;
   color: var(--ink);
   cursor: pointer;
   transition:
-    background-color var(--duration-smooth) var(--ease-default),
     color var(--duration-smooth) var(--ease-default),
     transform var(--duration-smooth) var(--ease-bounce);
 }
 .nav-theme-toggle:hover {
-  background: var(--surface-secondary);
+  background: transparent;
+  box-shadow: none;
   transform: translateY(-1px) rotate(-12deg);
 }
 .nav-theme-toggle:active {

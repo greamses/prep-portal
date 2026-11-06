@@ -49,7 +49,7 @@ export function mountBell(host, auth) {
 
   host.className = "nav-bell";
   host.hidden = true;
-  host.innerHTML = `<button type="button" class="nav-theme-toggle nav-bell__btn" aria-label="Notices" aria-haspopup="true" aria-expanded="false">${ICON}<b class="nav-bell__n" hidden></b></button>`
+  host.innerHTML = `<button type="button" class="nav-theme-toggle pp-plain nav-bell__btn" aria-label="Notices" aria-haspopup="true" aria-expanded="false">${ICON}<b class="nav-bell__n" hidden></b></button>`
     + `<div class="pp-receipt nav-bell__panel" hidden><div class="pp-receipt__paper nav-bell__paper"></div></div>`;
   const btn = host.querySelector(".nav-bell__btn");
   const badge = host.querySelector(".nav-bell__n");
