@@ -193,17 +193,18 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     redraw();
   });
   const voice = createVoice({ auth, muted: params.get("mute") === "1" });
+  let openMicForLesson = () => {}, heardSaid = () => {}, stillAt = 0; // stillAt: when PrepBot last stopped talking
   const lesson = { topic: "", grade: Math.min(12, Math.max(1, Number(params.get("grade")) || 8)), transcript: [] }; // transcript: [{ role: "tutor"|"learner", text }]
   let streamCtrl = null;
 
   const scheduler = createScheduler({
     board,
     voice,
-    onBeat: (beat) => { showSay(beat.say, false); if (status.textContent && !lesson.hold) status.textContent = ""; },
-    onAsk: () => { document.body.dataset.state = "asking"; showSay("Your turn: answer with the mic, or raise your hand to type."); },
+    onBeat: (beat) => { heardSaid(beat.say || beat.ask); showSay(beat.say, false); if (status.textContent && !lesson.hold) status.textContent = ""; },
+    onAsk: () => { stillAt = Date.now(); document.body.dataset.state = "asking"; showSay("Your turn: answer with the mic, or raise your hand to type."); },
     /* a lecture carries on by itself; checking in waits for the learner */
-    onIdle: () => { document.body.dataset.state = "idle"; if (style === "lecture") carryOn(); },
-    onEnd: () => { document.body.dataset.state = "idle"; lesson.ended = true; showSay("That's the lesson. Ask anything you want to go over again."); },
+    onIdle: () => { stillAt = Date.now(); document.body.dataset.state = "idle"; if (style === "lecture") carryOn(); },
+    onEnd: () => { stillAt = Date.now(); document.body.dataset.state = "idle"; lesson.ended = true; showSay("That's the lesson. Ask anything you want to go over again."); },
   });
 
   /* what was said, into the lesson's transcript (only what the learner heard) */
@@ -327,6 +328,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     else keepRecord();
     if (!lesson.topic && text !== HINT) lesson.topic = text;
     lesson.transcript.push({ role: "learner", text });
+    openMicForLesson();
     lesson.hold = false;
     lesson.ended = false;
     lesson.run = 0;
@@ -419,58 +421,126 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     ask(text);
   });
 
-  /* ── push-to-talk ──────────────────────────────────────────────────────
-     Hold the mic (or Space) and talk, let go to send. A quick tap instead
-     starts listening hands-free, and a pause of a second or two sends it.
-     Either way PrepBot stops talking the moment the mic opens. */
+  /* ── the open mic ──────────────────────────────────────────────────────
+     Once the lesson starts the mic stays ON, like talking to a teacher in the
+     room: speak at any time and PrepBot stops at once; after a second of
+     silence what you said is sent and PrepBot answers. Tap the mic to turn it
+     off (and on again). With it off, hold the mic (or Space) to talk once.
+     PrepBot's own voice comes back through the mic on a laptop's speakers, so
+     words that are mostly what PrepBot has just said are not taken as yours. */
   const mic = $("pb-mic");
+  const MIC_KEY = "pb-mic-off";
+  let micOpen = false;                    // listening all the time
+  let micOff = false;                     // the learner turned it off
+  try { micOff = localStorage.getItem(MIC_KEY) === "1"; } catch {}
+  let restartTimer = null, failures = 0;
+  let pushToTalk = false;                 // one held utterance while the open mic is off
+  const said = [];                        // PrepBot's last few sentences, to know its echo
+  const words = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9' ]+/g, " ").split(/\s+/).filter(Boolean);
+  function isEcho(text) {
+    const heard = words(text);
+    if (!heard.length) return true;
+    const pool = new Set(said.flatMap(words));
+    if (!pool.size) return false;
+    const hits = heard.filter((w) => pool.has(w)).length;
+    return hits / heard.length >= 0.6;
+  }
+  const speaking = () => scheduler.busy || document.body.dataset.state === "talking";
+  /* PrepBot is talking, or only just stopped (its echo is still arriving) */
+  const echoing = () => speaking() || Date.now() - stillAt < 1500;
+  /* what the learner said after PrepBot's echo, without the echo in front of it */
+  function ownWords(text) {
+    const pool = new Set(said.flatMap(words));
+    const w = String(text || "").trim().split(/\s+/);
+    let i = 0;
+    while (i < w.length - 1 && pool.has(words(w[i])[0])) i++;
+    return i >= 3 ? w.slice(i).join(" ") : text;
+  }
   const ear = createListener({
-    onText: (t) => { status.textContent = `“${t}”`; },
+    quietMs: 1000,
+    onText: (t) => {
+      if (speaking() && isEcho(t)) return;
+      status.textContent = `“${t}”`;
+      /* the learner is talking: PrepBot stops at once (two words, so a cough does not) */
+      if (speaking() && words(t).length >= 2) cutIn();
+    },
     onState: (st) => {
       mic.classList.toggle("is-on", st === "listening");
-      mic.setAttribute("aria-pressed", String(st === "listening"));
-      if (st === "denied") showSay("I can't hear you: the microphone is blocked. Allow it in your browser, or type instead.", true);
-      else if (st === "listening") showSay("I'm listening…", true);
+      mic.setAttribute("aria-pressed", String(micOpen || st === "listening"));
+      if (st === "denied") { setOpen(false, false); showSay("I can't hear you: the microphone is blocked. Allow it in your browser, or type instead.", true); }
+      else if (st === "error") failures++;
+      else if (st === "idle" && micOpen) {
+        /* the browser stops listening by itself now and then: start again */
+        clearTimeout(restartTimer);
+        restartTimer = setTimeout(() => { if (micOpen && !ear.listening) ear.start(); }, failures > 3 ? 3000 : 250);
+      }
     },
     onFinal: (t) => {
-      if (t) ask(t);
-      else showSay("I didn't catch that. Hold the mic and try again, or type.", true);
+      const was = pushToTalk;
+      pushToTalk = false;
+      if (t && !(echoing() && isEcho(t))) { failures = 0; ask(ownWords(t)); return; }
+      if (was) showSay("I didn't catch that. Hold the mic and try again, or type.", true);
     },
   });
+  function showMic() {
+    mic.classList.toggle("is-open", micOpen);
+    mic.dataset.tip = micOpen ? "The mic is on: just talk. Tap to turn it off" : "Tap to turn the mic on, or hold it to talk once";
+    mic.setAttribute("aria-label", micOpen ? "Turn the mic off" : "Turn the mic on");
+    mic.setAttribute("aria-pressed", String(micOpen));
+  }
+  function setOpen(on, byLearner = true) {
+    micOpen = on && ear.supported;
+    if (byLearner) { micOff = !on; try { localStorage.setItem(MIC_KEY, micOff ? "1" : "0"); } catch {} }
+    clearTimeout(restartTimer);
+    if (micOpen) { failures = 0; if (!ear.listening) ear.start(); }
+    else ear.cancel();
+    showMic();
+  }
+  /* the lesson has started: the mic opens by itself, unless it was turned off */
+  openMicForLesson = () => { if (!micOff && !micOpen && ear.supported) setOpen(true, false); };
+  heardSaid = (t) => { if (t) { said.push(t); if (said.length > 3) said.shift(); } };
   if (!ear.supported) {
     mic.disabled = true;
     mic.dataset.tip = "Talking isn't available in this browser: type instead";
-  }
+  } else showMic();
+
   let downAt = 0, held = false;
   const HOLD_MS = 350;
   function micDown() {
     if (!ear.supported) return;
-    if (ear.listening) { ear.stop(); return; } // a second tap sends
+    if (micOpen) { held = false; setOpen(false); showSay("Mic off. Tap it to talk again.", true); return; }
     cutIn();
     downAt = Date.now();
     held = true;
+    pushToTalk = true;
     ear.start();
   }
   function micUp() {
     if (!held) return;
     held = false;
-    if (Date.now() - downAt >= HOLD_MS) ear.stop(); // held: letting go sends
-    /* a quick tap: keep listening until a pause */
+    if (Date.now() - downAt >= HOLD_MS) { ear.stop(); return; } // held: letting go sends
+    /* a quick tap: the mic stays on from now on */
+    pushToTalk = false;
+    setOpen(true);
+    showSay("The mic is on. Just talk, and pause when you're done.", true);
   }
   mic.addEventListener("pointerdown", (e) => { e.preventDefault(); micDown(); });
   mic.addEventListener("pointerup", micUp);
   mic.addEventListener("pointerleave", micUp);
   mic.addEventListener("click", (e) => e.preventDefault());
-  /* Space, held, when not typing */
+  /* Space, held, when not typing: talk once (with the mic off) */
   document.addEventListener("keydown", (e) => {
     if (e.code !== "Space" || e.repeat || e.target === input || e.ctrlKey || e.metaKey) return;
     e.preventDefault();
+    if (micOpen) return;
     micDown();
   });
   document.addEventListener("keyup", (e) => {
     if (e.code !== "Space" || e.target === input) return;
     e.preventDefault();
-    micUp();
+    if (!held) return;
+    held = false;
+    ear.stop();
   });
   $("pb-new").addEventListener("click", () => {
     if (scheduler.busy) scheduler.interrupt();
@@ -526,6 +596,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     /* "/explainer <question>" from the chat: start on it straight away */
     lesson.topic = asked;
     lesson.transcript.push({ role: "learner", text: asked });
+    openMicForLesson();
     runTurn(liveBeats(asked));
   } else {
     showSay("Tap the mic and ask PrepBot anything, or raise your hand to type.");

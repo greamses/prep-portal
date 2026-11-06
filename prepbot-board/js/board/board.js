@@ -22,7 +22,7 @@
 
 import { createLayout } from "./layout.js";
 import { cleanOp, boardSummary } from "../protocol/ops.js";
-import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, buildShape, buildHighlight, buildDiagram, buildLabel, buildPart, buildSketch, buildPicture, gridMapper, createPen, setPen } from "./render.js";
+import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, buildShape, buildHighlight, buildDiagram, buildLabel, buildPart, buildEmphasis, buildSketch, buildPicture, gridMapper, createPen, setPen } from "./render.js";
 import { ensureDiagrams, loadedDiagram, findPart, stepDiagram, needsLoad } from "./diagrams.js";
 
 /* the diagram names a list of ops asks for, so they can be loaded first */
@@ -40,7 +40,7 @@ const FOLLOW_AFTER_MS = 6000;  // a learner who looked away is brought back afte
 /* pictures already made this visit, so a redraw (resize, a new hand) needs no new one */
 const pictureCache = new Map(); // prompt → Promise<{ src, w, h, spots }>
 
-export function createBoard(svg, { gsap, orient = "landscape", canvas = null, onTap = null, picture = null } = {}) {
+export function createBoard(svg, { gsap, orient = "landscape", canvas = null, onTap = null, picture = null, autoCam = true } = {}) {
   const shape = canvas || orient;
   let layout = createLayout(shape);   // the LIVE section's layout (each section has its own)
   const C = layout.canvas;
@@ -120,6 +120,7 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
   const sectionView = (s) => ({ x: s.x, y: s.y, w: C.w, h: C.h });
   function focusLive(dur = 0.8) {
     following = true;
+    zoomed = false;
     if (cur) glide(sectionView(cur), dur);
   }
   function viewAll(dur = 0.8) {
@@ -255,7 +256,7 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       case "circle": {
         const t = items.get(op.target);
         if (!t?.box) return null;
-        return buildMark(op, page, markTarget(t, op.words));
+        return again(markKey(op), () => buildMark(op, page, markTarget(t, op.words)), page);
       }
       case "diagram": {
         /* in steps: an empty panel the parts are drawn into one by one
@@ -298,7 +299,7 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       case "highlight": {
         const t = items.get(op.target);
         if (!t?.box) return null;
-        return buildHighlight(op, page, markTarget(t, op.words));
+        return again(markKey(op), () => buildHighlight(op, page, markTarget(t, op.words)), page);
       }
       default:
         return null;
@@ -316,17 +317,72 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       d.drawn.add(part.name);
       steps.push(buildPart(op, d, part));
     }
-    if (op.op === "label" || op.label !== false) steps.push(buildLabel({ ...op, text: op.text || op.part }, page, d, part, layout.canvas.w - 24));
+    if (op.op === "label" || op.label !== false) {
+      /* named before: that label is stressed, not written a second time */
+      const labels = d.named || (d.named = new Map());
+      const had = labels.get(part.name);
+      if (had && had.node.isConnected) {
+        if (!steps.length) return buildEmphasis(had, page);
+      } else {
+        const lbl = buildLabel({ ...op, text: op.text || op.part }, page, d, part, layout.canvas.w - 24);
+        labels.set(part.name, lbl);
+        steps.push(lbl);
+      }
+    }
     if (!steps.length) return null;
     if (steps.length === 1) return steps[0];
     const weight = steps.reduce((t, b) => t + b.weight, 0);
+    const u = union(steps.map((b) => b.focus || b.box));
     return {
-      node: steps[1].node, box: steps[1].box, weight,
+      node: steps[1].node, box: steps[1].box, focus: u, weight,
       draw(tl, at, dur) {
         let t = at;
         for (const b of steps) { const each = (dur * b.weight) / weight; b.draw(tl, t, each); t += each; }
       },
     };
+  }
+
+  /* The same mark asked for twice (a highlight on the same words, the same
+     ring): the one already there is stressed instead of a second laid over it. */
+  const markKey = (op) => `${op.op === "highlight" ? "hl" : op.op}|${op.target}|${String(op.words || "").toLowerCase().trim()}`;
+  function again(key, make, page) {
+    const marks = cur.marks || (cur.marks = new Map());
+    const had = marks.get(key);
+    if (had && had.node.isConnected) return buildEmphasis(had, page);
+    const b = make();
+    if (b) marks.set(key, b);
+    return b;
+  }
+
+  /* ── the camera follows the hand ─────────────────────────────────────────
+     While PrepBot draws, the view closes in on what this beat is drawing (a
+     part of a cell, a label, a line of working) and pans with it; a beat that
+     draws across the whole section, or a question, shows the whole section. */
+  function union(boxes) {
+    const ok = boxes.filter((b) => b && Number.isFinite(b.x) && Number.isFinite(b.w));
+    if (!ok.length) return null;
+    const x0 = Math.min(...ok.map((b) => b.x)), y0 = Math.min(...ok.map((b) => b.y));
+    const x1 = Math.max(...ok.map((b) => b.x + b.w)), y1 = Math.max(...ok.map((b) => b.y + b.h));
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }
+  let zoomed = false;
+  function frame(built, beat) {
+    const s = cur;
+    const whole = () => { if (zoomed) { zoomed = false; glide(sectionView(s), 0.9); } };
+    if (beat?.ask || beat?.end) return whole();
+    const u = union(built.map((b) => b.focus || b.box));
+    if (!u) return;
+    const aspect = C.w / C.h;
+    /* room round it, and a little more on the left where the rail sits */
+    const pad = 60;
+    let w = Math.max((u.w + pad * 2 + 70) * 1.15, (u.h + pad * 2) * 1.15 * aspect, C.w * 0.62);
+    if (w >= C.w * 0.82) return whole();
+    const h = w / aspect;
+    let x = s.x + u.x - 70 + (u.w + 70) / 2 - w / 2, y = s.y + u.y + u.h / 2 - h / 2;
+    x = Math.min(Math.max(x, s.x), s.x + C.w - w);
+    y = Math.min(Math.max(y, s.y), s.y + C.h - h);
+    zoomed = true;
+    glide({ x, y, w, h }, 0.9);
   }
 
   /* ── generated pictures ──────────────────────────────────────────────── */
@@ -403,6 +459,7 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       /* a learner who looked away a while ago is brought back to where PrepBot is drawing */
       if (live && !following && Date.now() - lookedAt > FOLLOW_AFTER_MS && (beat?.do || []).length) focusLive(0.7);
       const built = apply(beat?.do || [], live);
+      if (live && following && autoCam) frame(built, beat);
       if (!built.length) { pen.rest(); return Promise.resolve(); }
       if (!live) { built.forEach((b) => b.instant?.()); return Promise.resolve(); }
       return new Promise((resolve) => {

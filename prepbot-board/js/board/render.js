@@ -733,8 +733,17 @@ export function buildPart(op, d, part) {
   const fills = [...g.querySelectorAll(".k-fill")];
   /* the colour sits under the outline, as a pen drawing coloured in */
   fills.forEach((f) => g.insertBefore(f, g.firstChild));
+  /* where this part is, on the board (the camera closes in on it) */
+  let focus = d.box;
+  try {
+    const bb = g.getBBox();
+    if (bb.width || bb.height) {
+      const [x0, y0] = d.toBoard(bb.x, bb.y), [x1, y1] = d.toBoard(bb.x + bb.width, bb.y + bb.height);
+      focus = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    }
+  } catch { /* not laid out: the whole drawing */ }
   return {
-    node: g, box: d.box, weight: 0.5 + Math.min(1.3, lines.length * 0.3),
+    node: g, box: d.box, focus, weight: 0.5 + Math.min(1.3, lines.length * 0.3),
     draw(tl, at, dur) {
       const each = (dur * 0.75) / Math.max(1, lines.length);
       lines.forEach((ln, i) => traceLine(tl, ln, at + i * each, each, d.toBoard));
@@ -802,6 +811,30 @@ export function buildLabel(op, page, d, part, maxX = Infinity) {
       tl.from(t, { opacity: 0, duration: dur * 0.35 }, at + dur * 0.6);
       PEN?.follow(tl, at + dur * 0.6, dur * 0.4, (p) => [tx + p * tw, tailY]);
     },
+  };
+}
+
+/**
+ * Stress something ALREADY on the board (a label, a highlight, a ring) instead
+ * of drawing it a second time: it swells and settles twice, a soft glow ring
+ * is drawn round it and fades, and the pencil points at it. Leaves nothing new
+ * behind, so drawing the board back gives the same board.
+ */
+export function buildEmphasis(target, page) {
+  const node = target.node, b = target.focus || target.box;
+  const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+  return {
+    node, box: b, focus: b, weight: 0.9, emphasis: true,
+    draw(tl, at, dur) {
+      const ring = el("ellipse", { cx, cy, rx: b.w / 2 + 26, ry: b.h / 2 + 20, class: "pb-emph" }, page);
+      let len = 0;
+      try { len = ring.getTotalLength(); } catch { len = 0; }
+      if (len) tl.fromTo(ring, { attr: { "stroke-dasharray": `${len} ${len}`, "stroke-dashoffset": len } }, { attr: { "stroke-dashoffset": 0 }, duration: dur * 0.45, ease: "power1.inOut" }, at);
+      tl.to(ring, { opacity: 0, duration: dur * 0.35, onComplete: () => ring.remove() }, at + dur * 0.65);
+      tl.to(node, { scale: 1.1, svgOrigin: `${cx} ${cy}`, duration: dur * 0.2, ease: "power1.out", yoyo: true, repeat: 3 }, at);
+      PEN?.follow(tl, at, dur * 0.45, (p) => [cx + (b.w / 2 + 26) * Math.cos(-Math.PI / 2 + p * Math.PI * 2), cy + (b.h / 2 + 20) * Math.sin(-Math.PI / 2 + p * Math.PI * 2)], "power1.inOut");
+    },
+    instant() { /* nothing to add */ },
   };
 }
 

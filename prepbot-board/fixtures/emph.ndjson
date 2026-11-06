@@ -1,0 +1,5 @@
+{"say":"A plant cell.","do":[{"op":"write","id":"t","text":"The plant cell","as":"title"},{"op":"diagram","id":"d1","name":"plant-cell","steps":true}]}
+{"say":"The wall.","do":[{"op":"part","on":"d1","part":"cell wall"},{"op":"write","id":"w1","text":"The wall keeps its shape"},{"op":"highlight","target":"w1","words":"shape"}]}
+{"say":"The vacuole.","do":[{"op":"part","on":"d1","part":"vacuole"}]}
+{"say":"Remember, the wall!","do":[{"op":"label","on":"d1","part":"cell wall"},{"op":"highlight","target":"w1","words":"shape"}]}
+{"ask":"What does the wall do?","do":[]}
