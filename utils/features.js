@@ -187,6 +187,15 @@ export const FEATURES = [
     ],
   },
   {
+    id: "whiteboard",
+    label: "PrepBot Board",
+    desc: "Live whiteboard tutor: PrepBot talks while it draws each step",
+    group: "AI Assistant",
+    // off = admin and granted users only, while it is being tried out
+    default: "off",
+    paths: ["/prepbot-board"],
+  },
+  {
     id: "prepbot",
     label: "PrepBot AI",
     desc: "AI study-assistant chat launcher",

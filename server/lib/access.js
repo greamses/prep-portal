@@ -46,7 +46,8 @@ const CONFIG_TTL_MS = 60 * 1000;
 let _config = null; // { states, parts, aiQuota }
 let _configAt = 0;
 
-const AI_QUOTA_DEFAULTS = { windowTokens: 10000, monthTokens: 300000 };
+// boardTurnsPerDay / boardVoiceCharsPerDay: the PrepBot Board's daily caps (lib/board-usage.js)
+const AI_QUOTA_DEFAULTS = { windowTokens: 10000, monthTokens: 300000, boardTurnsPerDay: 60, boardVoiceCharsPerDay: 15000 };
 
 async function getSiteConfig() {
   if (_config && Date.now() - _configAt < CONFIG_TTL_MS) return _config;
@@ -65,6 +66,10 @@ async function getSiteConfig() {
       const m = Number(d.aiQuota.monthTokens);
       if (Number.isFinite(w) && w > 0) merged.aiQuota.windowTokens = w;
       if (Number.isFinite(m) && m > 0) merged.aiQuota.monthTokens = m;
+      for (const k of ["boardTurnsPerDay", "boardVoiceCharsPerDay"]) {
+        const v = Number(d.aiQuota[k]);
+        if (Number.isFinite(v) && v > 0) merged.aiQuota[k] = v;
+      }
     }
     _config = merged;
     _configAt = Date.now();

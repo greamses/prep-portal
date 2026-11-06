@@ -86,6 +86,7 @@ app.use("/api/bench", require("./routes/bench")());
 app.use("/api/partner", quota.guard, require("./routes/partner")());
 app.use("/api/auth",  require("./routes/auth")());
 app.use("/api/ai",    require("./routes/ai")());
+app.use("/api/whiteboard", require("./routes/whiteboard")());
 app.use("/api/activities", quota.guard, require("./routes/activities")());
 app.use("/api/classroom", quota.guard, require("./routes/classroom")());
 app.use("/api/classes", quota.guard, require("./routes/classes")());

@@ -39,6 +39,17 @@ const range = (v) => {
 };
 const tone = (v) => (TONES.includes(v) ? v : null);
 
+/* A line written without its $…$ that is plainly an equation ("2x + 5 - 5 = 17 - 5")
+   is set as maths, so it reads like the working it is. Words keep the hand. */
+const FN_WORDS = new Set(["sin", "cos", "tan", "log", "ln", "sqrt", "theta", "pi", "alpha", "beta"]);
+function looksLikeMaths(text) {
+  if (!text || text.includes("$") || !/[=<>]/.test(text)) return text;
+  if (!/^[\w\s().,+\-*/^=<>]+$/.test(text)) return text;
+  const words = text.match(/[a-z]{2,}/gi) || [];
+  if (words.some((w) => !FN_WORDS.has(w.toLowerCase()))) return text;
+  return `$${text}$`;
+}
+
 let auto = 0;
 const idOf = (v, prefix) => (typeof v === "string" && ID_RE.test(v) ? v : `${prefix}${++auto}`);
 
@@ -48,7 +59,7 @@ const SPEC = {
      between $…$ (linear, 1/2 and x^2, or TeX); `math` is the shorthand for a
      line that is only maths. */
   write(o) {
-    let text = str(o.text, 180);
+    let text = looksLikeMaths(str(o.text, 180));
     const math = str(o.math, 140);
     if (math) text = text ? `${text} $${math}$` : `$${math}$`;
     if (!text) return null;
@@ -127,8 +138,10 @@ export function cleanOp(raw) {
 export function cleanBeat(raw) {
   if (!raw || typeof raw !== "object") return null;
   if (raw.end === true) return { end: true, say: str(raw.say, 300), do: [] };
-  const ask = str(raw.ask, 300);
-  const say = ask || str(raw.say, 300);
+  /* what is SAID never carries maths markup: "$g$" is spoken as "g" */
+  const spoken = (v) => str(v, 300).replace(/\$/g, "");
+  const ask = spoken(raw.ask);
+  const say = ask || spoken(raw.say);
   const ops = (Array.isArray(raw.do) ? raw.do : []).slice(0, 8).map(cleanOp).filter(Boolean);
   if (!say && !ops.length) return null;
   const beat = { say, do: ops };

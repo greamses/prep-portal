@@ -174,7 +174,10 @@ module.exports = function () {
       // Gated as PrepBot's "voice" part (feature state + per-user overrides
       // + the voice sub-checkbox in admin Settings). 403 on any denial —
       // callers fall back to Web Speech regardless of the status code.
-      const verdict = await access.canUse(req, "prepbot", "voice");
+      let verdict = await access.canUse(req, "prepbot", "voice");
+      // the PrepBot Board speaks with the same voice (its daily voice allowance
+      // is counted by routes/whiteboard.js, which tells the board when to stop)
+      if (!verdict.allowed && req.body?.from === "board") verdict = await access.canUse(req, "whiteboard");
       if (!verdict.allowed) {
         return res.status(403).json({ error: "ElevenLabs voice is not available on your plan.", reason: verdict.reason });
       }

@@ -100,7 +100,7 @@ module.exports = function () {
           windowStart: admin.firestore.Timestamp.fromMillis(start),
           monthTokens,
           monthKey: mk,
-        });
+        }, { merge: true }); // merge: the PrepBot Board keeps its daily counts on this doc too
         return usageShape({ used, start, monthTokens, now, quota });
       });
     } catch (_) {

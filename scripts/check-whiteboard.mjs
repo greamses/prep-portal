@@ -4,6 +4,9 @@ import { cleanOp, cleanBeat, boardSummary } from "../prepbot-board/js/protocol/o
 import { createLayout, wrapWords, splitAtEquals, overlaps, CANVAS } from "../prepbot-board/js/board/layout.js";
 import { niceTicks, makeMapper, compileFn, samplePlot, pathOf } from "../prepbot-board/js/board/plot.js";
 import { createScheduler } from "../prepbot-board/js/scheduler.js";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const { createScanner } = require("../server/lib/whiteboard-protocol.js");
 
 let n = 0;
 const t = (name, fn) => {
@@ -108,6 +111,51 @@ t("sample sub-range", () => {
   assert.ok(Math.abs(l[0][0][0] - 100) < 1e-6);
 });
 
+/* ── server scanner ──────────────────────────────────────────────────── */
+const feed = (chunks, opts) => { const sc = createScanner(opts); const out = []; for (const c of chunks) out.push(...sc.push(c)); out.push(...sc.end()); return { out, sc }; };
+t("scanner: lines split mid-object", () => {
+  const { out } = feed(['{"say":"One.","do":[{"op":"write","te', 'xt":"a"}]}\n{"say":"Tw', 'o."}\n']);
+  assert.deepEqual(out.map((b) => b.say), ["One.", "Two."]);
+  assert.equal(out[0].do[0].op, "write");
+});
+t("scanner: fences, prose before, two per line", () => {
+  const { out } = feed(['Sure! ```json\n{"say":"A"}{"say":"B"}\n```']);
+  assert.deepEqual(out.map((b) => b.say), ["A", "B"]);
+});
+t("scanner: braces inside strings", () => {
+  const { out } = feed(['{"say":"Set {x}","do":[{"op":"write","text":"$f(x) = {x<0: -x, x}$"}]}']);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].do[0].text, "$f(x) = {x<0: -x, x}$");
+});
+t("scanner: trailing comma repaired", () => {
+  const { out } = feed(['{"say":"Hi","do":[{"op":"clear"},],}']);
+  assert.equal(out.length, 1);
+});
+t("scanner: unknown ops dropped server side", () => {
+  const { out } = feed(['{"say":"Hi","do":[{"op":"hack"},{"op":"write","text":"a"}]}']);
+  assert.equal(out[0].do.length, 1);
+});
+t("scanner: stops at ask", () => {
+  const { out, sc } = feed(['{"say":"A"}\n{"ask":"Why?"}\n{"say":"never"}']);
+  assert.deepEqual(out.map((b) => b.ask || b.say), ["A", "Why?"]);
+  assert.ok(sc.stopped);
+});
+t("scanner: wrapper array of beats", () => {
+  const { out } = feed(['{"beats":[{"say":"A"},{"say":"B"}]}']);
+  assert.deepEqual(out.map((b) => b.say), ["A", "B"]);
+});
+t("scanner: plain prose falls back to sentences", () => {
+  const text = "A kicked ball moves forward at a steady speed. ".repeat(9) + "Gravity pulls it down.";
+  const { out, sc } = feed([text.slice(0, 200), text.slice(200)]);
+  assert.ok(sc.stats.prose);
+  assert.ok(out.length >= 9);
+  assert.equal(out[out.length - 1].say, "Gravity pulls it down.");
+});
+t("scanner: max beats", () => {
+  const { out } = feed([Array.from({ length: 20 }, (_, i) => `{"say":"b${i}"}`).join("\n")]);
+  assert.equal(out.length, 12);
+});
+
 /* ── scheduler (async) ───────────────────────────────────────────────── */
 const tick = () => new Promise((r) => setTimeout(r, 2));
 function rig(opts = {}) {
@@ -162,3 +210,14 @@ await (async () => {
 })();
 
 console.log(`check-whiteboard: ${n} checks passed`);
+/* ── model quirks ── */
+{
+  const a = cleanOp({ op: "write", text: "2x + 5 - 5 = 17 - 5" });
+  assert.equal(a.text, "$2x + 5 - 5 = 17 - 5$");
+  const b = cleanOp({ op: "write", text: "Goal: isolate x" });
+  assert.equal(b.text, "Goal: isolate x");
+  const c = cleanOp({ op: "write", text: "sin(theta) = 0.5" });
+  assert.equal(c.text, "$sin(theta) = 0.5$");
+  assert.equal(cleanBeat({ say: "It falls due to $g$." }).say, "It falls due to g.");
+  console.log("check-whiteboard: model-quirk checks passed");
+}

@@ -69,6 +69,7 @@ const GATED = new Set([
   "/prep-math/drag",
   "/prep-math/manim-lab",
   "/prep-math/manim-lab/morph-test.html",
+  "/prepbot-board",
   "/results-compiler",
   "/tools/organ-tracer",
   "/virtual-lab/biology",

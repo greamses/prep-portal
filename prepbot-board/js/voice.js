@@ -49,7 +49,7 @@ export function createVoice({ auth = null, muted = false } = {}) {
     const res = await fetch(`${API_BASE}/api/tts/elevenlabs`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, from: "board" }),
       signal,
     });
     if (!res.ok) { const e = new Error("tts " + res.status); e.status = res.status; throw e; }
@@ -175,5 +175,7 @@ export function createVoice({ auth = null, muted = false } = {}) {
       return proxy;
     },
     mute(on) { mode = on ? "silent" : null; deciding = null; },
+    /** The server says today's PrepBot-voice allowance is used: the browser's voice from now on. */
+    useBrowser() { if (mode !== "silent") mode = "speechSynthesis" in window ? "browser" : "silent"; },
   };
 }

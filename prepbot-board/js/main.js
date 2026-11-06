@@ -8,6 +8,7 @@ import { createBoard } from "./board/board.js";
 import { cleanBeat } from "./protocol/ops.js";
 import { createVoice } from "./voice.js";
 import { createScheduler } from "./scheduler.js";
+import { liveTurn } from "./turn.js";
 import { loadMath } from "/utils/components/workbook/mathify.js";
 import { heroPaint } from "/utils/components/nav-icons.js";
 
@@ -59,7 +60,7 @@ const orient = () => (window.innerHeight > window.innerWidth * 1.15 ? "portrait"
   const { gsap, auth } = await ready();
   const board = createBoard(svg, { gsap, orient: orient() });
   const voice = createVoice({ auth, muted: params.get("mute") === "1" });
-  const lesson = { topic: "", transcript: [] }; // [{ role: "tutor"|"learner", text }]
+  const lesson = { topic: "", grade: Math.min(12, Math.max(1, Number(params.get("grade")) || 8)), transcript: [] }; // transcript: [{ role: "tutor"|"learner", text }]
   let streamCtrl = null;
 
   const scheduler = createScheduler({
@@ -120,9 +121,28 @@ const orient = () => (window.innerHeight > window.innerWidth * 1.15 ? "portrait"
     }
   }
 
-  /* the live turn is wired in step D */
-  async function* liveBeats(text) {
-    yield { say: "The live tutor is not switched on yet. Try the demo: add ?fixture=projectile to the address." };
+  /* the live turn: beats streamed from /api/whiteboard/turn */
+  function liveBeats(text) {
+    streamCtrl = new AbortController();
+    const body = {
+      grade: lesson.grade,
+      topic: lesson.topic,
+      learner: text,
+      transcript: lesson.transcript.slice(0, -1), // the learner's own words go in `learner`
+      board: board.summary(),
+    };
+    return liveTurn({
+      auth,
+      body,
+      signal: streamCtrl.signal,
+      onStart: (evt) => { if (evt.voice === false) voice.useBrowser(); },
+      onLimited: (evt) => showSay(evt.text, true),
+      onRefused: (info) => {
+        if (info.reason === "signed-out") showSay("Sign in to talk to PrepBot on the board.", true);
+        else if (info.premiumRequired) showSay("The PrepBot Board is part of Prep Portal Premium.", true);
+        else showSay("The PrepBot Board isn't open to you yet.", true);
+      },
+    });
   }
 
   /* ── the learner's side ─────────────────────────────────────────────── */

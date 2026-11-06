@@ -2,9 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- seo:head -->
+    <meta name="robots" content="noindex, nofollow" />
+    <!-- /seo:head -->
     <title>PrepBot Board | Prep Portal</title>
-    <meta name="robots" content="noindex" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Page access gate: feature "whiteboard" (off = admin-granted testers only) -->
+    <script type="module" src="/utils/auth/premium-guard.js"></script>
     <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
