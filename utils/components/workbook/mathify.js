@@ -373,7 +373,7 @@ const cache = new Map();   // tex → an <svg> to clone, or null if MathJax refu
  * its own needs its own outlines or it is an empty box of the right size (the
  * same trap utils/components/sticky-math.js documents).
  */
-function svgFor(tex) {
+export function svgFor(tex) {
   if (cache.has(tex)) return cache.get(tex);
   let svg = null;
   try {

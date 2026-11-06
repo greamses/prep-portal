@@ -7,7 +7,7 @@
 ═══════════════════════════════════════════════════════ */
 import { questionAt } from './rng.js';
 import { checkAlgebra } from './algebra.js';
-import { mathReady, loadMath } from '/utils/components/workbook/mathify.js';
+import { mathReady, loadMath, svgFor } from '/utils/components/workbook/mathify.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -42,7 +42,10 @@ function typedTex(t) {
 function drawMath(el, tex, plain) {
   if (tex && mathReady()) {
     try {
-      const svg = window.MathJax.tex2svg(tex, { display: false }).querySelector('svg');
+      // svgFor carries its own glyph outlines (the page's shared font cache
+      // would leave a cloned formula an empty box).
+      const made = svgFor(tex);
+      const svg = made && made.cloneNode(true);
       if (svg) { svg.setAttribute('aria-label', plain); el.replaceChildren(svg); return; }
     } catch { /* fall through to text */ }
   }
