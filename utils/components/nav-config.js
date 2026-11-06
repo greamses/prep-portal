@@ -123,9 +123,9 @@ const NAV_CONFIG = [
         icon: I.science,
         description: "Science made fun",
         children: [
-          { text: "Animal Biology Articles", href: "/blogs/?s=animal", description: "Discover amazing creatures" },
-          { text: "Plant Science Articles", href: "/blogs/?s=plants", description: "Explore green wonders" },
-          { text: "Human Body Facts", href: "/blogs/?s=humanbody", description: "Know your body" },
+          { text: "Amazing Animals", href: "/blogs/?s=animal", description: "Creatures that will surprise you" },
+          { text: "Green Wonders", href: "/blogs/?s=plants", description: "Plants with secret superpowers" },
+          { text: "Your Amazing Body", href: "/blogs/?s=humanbody", description: "What is going on inside you" },
         ],
       },
       {
