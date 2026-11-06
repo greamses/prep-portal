@@ -34,14 +34,18 @@ const ICONS = {
   back: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.6 3.9 7 11.1a1.25 1.25 0 0 0 0 1.8l7.6 7.2a1.3 1.3 0 0 0 1.8-1.9L10 12l6.4-6.2a1.3 1.3 0 0 0-1.8-1.9z" fill="var(--accent-secondary)"/></svg>`,
   again: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.6 12a7.6 7.6 0 1 1-2.3-5.4" fill="none" stroke="var(--accent-secondary)" stroke-width="3.2" stroke-linecap="round"/><path d="M13.6 7.2l6.4-3.4.4 6.8z" fill="var(--accent-danger)"/></svg>`,
   mic: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.2" y="2.6" width="7.6" height="12.4" rx="3.8" fill="var(--accent-danger)"/><path d="M5.2 11.4a6.8 6.8 0 0 0 13.6 0" fill="none" stroke="var(--accent-secondary)" stroke-width="2.4" stroke-linecap="round"/><rect x="10.8" y="17.6" width="2.4" height="3.6" rx="1.2" fill="var(--accent-secondary)"/></svg>`,
+  hand: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 11V5.4a1.4 1.4 0 0 1 2.8 0V10h.4V3.8a1.4 1.4 0 0 1 2.8 0V10h.4V5a1.4 1.4 0 0 1 2.8 0v6.4h.3V8.6a1.3 1.3 0 0 1 2.6 0v5.6c0 4.2-3 7.4-7 7.4-3.1 0-5.1-1.6-6.4-4l-2.3-4.4a1.4 1.4 0 0 1 2.3-1.5z" fill="var(--accent-primary)"/><path d="M8.2 11v2.4" stroke="var(--accent-warning)" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+  play: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.8 20.4 12 6.6 20.2z" fill="var(--accent-success)"/></svg>`,
   send: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 4.2 21 12 3.4 19.8l2.2-7.8z" fill="var(--accent-secondary)"/><path d="M5.6 12h7.6" stroke="var(--accent-primary)" stroke-width="2.4" stroke-linecap="round"/></svg>`,
 };
 document.querySelectorAll("[data-ico]").forEach((n) => { n.innerHTML = ICONS[n.dataset.ico] || ""; });
 import("/utils/components/tooltip.js").then((m) => m.mountTooltips()).catch(() => {});
 
-const showSay = (text, asking = false) => {
-  caption.textContent = text || "";
-  caption.classList.toggle("is-asking", !!asking);
+/* PrepBot's words are heard, not printed: the sentence goes to a hidden live
+   region (screen readers), and the board's own notes to the small status line */
+const showSay = (text, note = true) => {
+  if (note) status.textContent = text || "";
+  else caption.textContent = text || "";
 };
 
 async function ready() {
@@ -144,10 +148,11 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   const scheduler = createScheduler({
     board,
     voice,
-    onBeat: (beat) => showSay(beat.say, beat.ask),
-    onAsk: () => { document.body.dataset.state = "asking"; input.focus({ preventScroll: true }); },
-    onIdle: () => { document.body.dataset.state = "idle"; },
-    onEnd: () => { document.body.dataset.state = "idle"; },
+    onBeat: (beat) => { showSay(beat.say, false); if (status.textContent && !lesson.hold) status.textContent = ""; },
+    onAsk: () => { document.body.dataset.state = "asking"; showSay("Your turn: answer PrepBot's question."); input.focus({ preventScroll: true }); },
+    /* a lecture carries on by itself; checking in waits for the learner */
+    onIdle: () => { document.body.dataset.state = "idle"; if (style === "lecture") carryOn(); },
+    onEnd: () => { document.body.dataset.state = "idle"; lesson.ended = true; showSay("That's the lesson. Ask anything you want to go over again."); },
   });
 
   /* what was said, into the lesson's transcript (only what the learner heard) */
@@ -171,7 +176,9 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     if (!lesson.recorded && (said || cut)) lesson.transcript.push({ role: "tutor", text: (said + cut).trim() });
     lesson.recorded = true;
     document.body.dataset.state = "listening";
-    showSay("Go on, I'm listening.", true);
+    lesson.hold = true;
+    setRaise(true);
+    showSay(style === "lecture" ? "Hand up. Ask your question, or press play to carry on." : "Go on, I'm listening.");
   }
 
   /** One turn: beats from `source` (an async iterator of raw beat objects). */
@@ -204,13 +211,15 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   }
 
   /* the live turn: beats streamed from /api/whiteboard/turn */
-  function liveBeats(text) {
+  function liveBeats(text, { continuing = false } = {}) {
     streamCtrl = new AbortController();
     const body = {
       grade: lesson.grade,
+      style,
       topic: lesson.topic,
       learner: text,
-      transcript: lesson.transcript.slice(0, -1), // the learner's own words go in `learner`
+      // the learner's own words go in `learner` (a continuation has none in the transcript)
+      transcript: continuing ? lesson.transcript.slice() : lesson.transcript.slice(0, -1),
       board: board.summary(),
     };
     return liveTurn({
@@ -238,8 +247,60 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     else keepRecord();
     if (!lesson.topic) lesson.topic = text;
     lesson.transcript.push({ role: "learner", text });
+    lesson.hold = false;
+    lesson.ended = false;
+    lesson.run = 0;
+    setRaise(false);
+    status.textContent = "";
     runTurn(liveBeats(text));
   }
+
+  /* ── two ways to teach ──────────────────────────────────────────────────
+     Checks in: PrepBot asks and waits. Lecture: PrepBot teaches turn after
+     turn until the topic is done; a raised hand (or the mic, or typing)
+     pauses it, and once the question is answered it carries on. */
+  const STYLE_KEY = "pb-style";
+  let style = "check";
+  try { if (localStorage.getItem(STYLE_KEY) === "lecture") style = "lecture"; } catch {}
+  const styleBtns = [...document.querySelectorAll(".pb-style__btn")];
+  const showStyle = () => styleBtns.forEach((b) => b.setAttribute("aria-checked", String(b.dataset.style === style)));
+  showStyle();
+  styleBtns.forEach((b) => b.addEventListener("click", () => {
+    style = b.dataset.style;
+    try { localStorage.setItem(STYLE_KEY, style); } catch {}
+    showStyle();
+    document.body.dataset.style = style;
+  }));
+  document.body.dataset.style = style;
+
+  const MAX_RUN = 10; // a lecture goes on for at most this many turns by itself
+  function carryOn() {
+    if (style !== "lecture" || lesson.hold || lesson.ended || !lesson.topic || params.get("fixture")) return;
+    if ((lesson.run = (lesson.run || 0) + 1) > MAX_RUN) { showSay("Let's stop there. Ask anything to go on."); return; }
+    keepRecord();
+    runTurn(liveBeats("[continue the lesson]", { continuing: true }));
+  }
+
+  /* the raised hand: pause the lecture; pressed again (now a play key), carry on */
+  const raise = $("pb-raise");
+  function setRaise(up) {
+    raise.innerHTML = ICONS[up ? "play" : "hand"];
+    raise.dataset.tip = up ? "Carry on with the lesson" : "Raise your hand to ask a question";
+    raise.setAttribute("aria-label", up ? "Carry on" : "Raise your hand");
+    raise.classList.toggle("is-up", up);
+  }
+  raise.addEventListener("click", () => {
+    if (lesson.hold) {
+      lesson.hold = false;
+      setRaise(false);
+      status.textContent = "";
+      if (lesson.topic && !lesson.ended) { lesson.run = 0; carryOn(); }
+      return;
+    }
+    cutIn();
+    if (!lesson.hold) { lesson.hold = true; setRaise(true); showSay("Hand up. Ask your question, or press play to carry on."); }
+    input.focus({ preventScroll: true });
+  });
   $("pb-ask").addEventListener("submit", (e) => {
     e.preventDefault();
     const text = input.value.trim();
@@ -306,6 +367,11 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     board.reset();
     lesson.topic = "";
     lesson.transcript = [];
+    lesson.recorded = true; // the old lesson's words do not follow it onto the new board
+    lesson.hold = false;
+    lesson.ended = false;
+    lesson.run = 0;
+    setRaise(false);
     showSay("");
     document.body.dataset.state = "idle";
   });

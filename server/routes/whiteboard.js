@@ -72,9 +72,9 @@ module.exports = function () {
     let closed = false;
     res.on("close", () => { closed = true; ctrl.abort(); });
 
-    const system = buildSystem({ grade: input.grade });
+    const system = buildSystem({ grade: input.grade, style: input.style });
     const messages = [{ role: "user", content: buildUserMessage(input) }];
-    const scanner = createScanner();
+    const scanner = createScanner({ noAsk: input.style === "lecture" });
     let sent = 0, spoken = 0, tokens = 0, provider = null;
 
     const onDelta = (text) => {

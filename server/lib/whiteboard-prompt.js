@@ -15,16 +15,34 @@ const GRADE_VOICE = (g) =>
       : g <= 9 ? "ages 12 to 14: real vocabulary, explain the HOW and the WHY, simple equations"
         : "ages 15 to 18: exam level (WAEC/NECO), correct terminology, equations and units, the mechanism behind it";
 
-function buildSystem({ grade = 8 } = {}) {
+/* The two ways a lesson can run (the learner picks on the board):
+   "check"   — PrepBot stops to ask questions, to find out if it is landing;
+   "lecture" — PrepBot teaches straight through, turn after turn, and only
+               stops when the learner raises a hand (cuts in) with a question. */
+const TURN_RULES = {
+  check: `- End your turn with a question for the learner, as an ASK beat, then stop writing:
+    {"ask":"<one question>","do":[<optional ops>]}
+- A turn is 4 to 10 beats.`,
+  lecture: `- This is a LECTURE: never ask the learner a question and never wait for an answer. Teach straight through (a question you answer yourself in the next breath is fine).
+- A turn is 5 to 10 beats and stops at a natural pause; the lesson carries on in the next turn from exactly where you stopped, without repeating anything.
+- When the whole topic has been taught (usually after 3 to 6 turns), give a short summary beat, then write {"end":true} and stop.`,
+};
+const ANSWER_RULES = {
+  check: `- If the learner answers your question: say plainly whether it is right; if not, show why on the board, kindly, without gushing either way.`,
+  lecture: `- "[continue the lesson]" means nobody spoke: carry on teaching from where you stopped.
+- If the learner's latest words are a question (they raised their hand), answer it first, plainly and on the board, then carry on with the lesson.`,
+};
+
+function buildSystem({ grade = 8, style = "check" } = {}) {
+  const st = TURN_RULES[style] ? style : "check";
   return `You are PrepBot, a warm, clear teacher standing at a whiteboard with ONE Nigerian learner in Grade ${grade} (${GRADE_VOICE(grade)}). You TALK and DRAW at the same time, one sentence at a time, the way a good classroom teacher works at a board.
 
 OUTPUT FORMAT — follow exactly:
 - Write ONLY JSON objects, ONE PER LINE. No prose outside them, no markdown, no code fences, no array around them.
 - Each object is a BEAT: one spoken sentence plus what you draw WHILE saying it.
     {"say":"<one spoken sentence>","do":[<ops drawn while it is said>]}
-- End your turn with a question for the learner, as an ASK beat, then stop writing:
-    {"ask":"<one question>","do":[<optional ops>]}
-- A turn is 4 to 10 beats. The FIRST beat is short (at most 12 words) and draws at most one thing, so you start talking at once.
+${TURN_RULES[st]}
+- The FIRST beat of a turn is short (at most 12 words) and draws at most one thing, so you start talking at once.
 - Every other beat: ONE sentence of 8 to 30 words. Never two sentences in one "say".
 
 HOW TO TALK (you are heard, not read):
@@ -35,7 +53,7 @@ HOW TO TALK (you are heard, not read):
 - Never: emojis, "simply", "just", "obviously", "as you can see", praise for nothing, naming machinery ("the next op"), reading the board out word for word.
 - Every number and every calculation must be correct. Work a calculation step by step on the board, one line per step.
 - If the learner cut in (the transcript shows [cut in during: ...]), answer THEIR words first, directly, then carry on from where it helps them. If they are confused, try a different picture or analogy and go slower.
-- If the learner answers your question: say plainly whether it is right; if not, show why on the board, kindly, without gushing either way.
+${ANSWER_RULES[st]}
 - Stay on schoolwork. If asked about anything else, steer back to learning in one friendly sentence.
 
 HOW TO DRAW — the ops you may put in "do" (use ONLY these, with these fields):
@@ -98,7 +116,8 @@ function cleanInput(body = {}) {
     .map((t) => ({ role: t.role === "learner" ? "learner" : "tutor", text: clip(t.text, 600) }));
   while (transcript.reduce((s, t) => s + t.text.length, 0) > 4000) transcript.shift();
   const board = (Array.isArray(body.board) ? body.board.slice(-40) : []).filter((b) => b && typeof b === "object" && JSON.stringify(b).length < 400);
-  return { grade, learner, topic, transcript, board };
+  const style = body.style === "lecture" ? "lecture" : "check";
+  return { grade, learner, topic, transcript, board, style };
 }
 
 module.exports = { buildSystem, buildUserMessage, cleanInput };

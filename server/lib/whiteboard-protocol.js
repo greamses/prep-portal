@@ -49,7 +49,7 @@ function tryParse(text) {
 
 const SENTENCE = /[^.!?]+[.!?]+["')\]]*\s*/g;
 
-function createScanner({ maxBeats = MAX_BEATS, proseAfter = PROSE_AFTER } = {}) {
+function createScanner({ maxBeats = MAX_BEATS, proseAfter = PROSE_AFTER, noAsk = false } = {}) {
   let buf = "";          // text not yet consumed
   let pos = 0;           // scan position in buf
   let depth = 0, inStr = false, esc = false, start = -1;
@@ -64,6 +64,8 @@ function createScanner({ maxBeats = MAX_BEATS, proseAfter = PROSE_AFTER } = {}) 
 
   function emit(out, beat) {
     if (stopped || !beat) return;
+    /* a lecture never waits: a question the model asks anyway is just said */
+    if (noAsk && beat.ask) { beat.say = beat.ask; delete beat.ask; }
     out.push(beat);
     emitted++;
     if (beat.ask || beat.end || emitted >= maxBeats) stopped = true;

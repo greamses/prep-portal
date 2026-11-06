@@ -169,3 +169,29 @@ body { margin: 0; background: var(--app-bg); overflow: hidden; }
 .pb-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (max-width: 640px) { .pb-hand { max-width: 9.5rem; } .pb-title { display: none; } }
 
+/* how PrepBot teaches: a two-way switch of pills */
+.pb-style { display: inline-flex; box-shadow: var(--shadow-sm); }
+.pb-style__btn {
+  padding: 0.45rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 2px solid color-mix(in srgb, var(--accent-secondary) 45%, transparent);
+  border-radius: 0;
+  cursor: pointer;
+}
+.pb-style__btn + .pb-style__btn { border-left: 0; }
+.pb-style__btn[aria-checked="true"] { background: var(--accent-primary); color: var(--text-on-accent); border-color: transparent; }
+
+/* the raised hand only matters in a lecture */
+body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: none; }
+.pb-hand-up.is-up { background: color-mix(in srgb, var(--accent-success) 25%, var(--surface-primary)); }
+
+/* the status line, now the only words on the board's frame */
+.pb-status { top: auto; bottom: 0.7rem; padding: 0.35rem 0.7rem; background: color-mix(in srgb, var(--surface-primary) 92%, transparent); box-shadow: var(--shadow-sm); }
+@media (max-width: 640px) { .pb-style__btn { padding: 0.4rem 0.5rem; font-size: 0.6rem; } }
+
