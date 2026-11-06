@@ -36,6 +36,10 @@ const ICONS = {
   mic: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.2" y="2.6" width="7.6" height="12.4" rx="3.8" fill="var(--accent-danger)"/><path d="M5.2 11.4a6.8 6.8 0 0 0 13.6 0" fill="none" stroke="var(--accent-secondary)" stroke-width="2.4" stroke-linecap="round"/><rect x="10.8" y="17.6" width="2.4" height="3.6" rx="1.2" fill="var(--accent-secondary)"/></svg>`,
   hand: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 11V5.4a1.4 1.4 0 0 1 2.8 0V10h.4V3.8a1.4 1.4 0 0 1 2.8 0V10h.4V5a1.4 1.4 0 0 1 2.8 0v6.4h.3V8.6a1.3 1.3 0 0 1 2.6 0v5.6c0 4.2-3 7.4-7 7.4-3.1 0-5.1-1.6-6.4-4l-2.3-4.4a1.4 1.4 0 0 1 2.3-1.5z" fill="var(--accent-primary)"/><path d="M8.2 11v2.4" stroke="var(--accent-warning)" stroke-width="1.6" stroke-linecap="round"/></svg>`,
   bulb: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6a7 7 0 0 0-4.2 12.6c.8.6 1.2 1.4 1.2 2.3v.5h6v-.5c0-.9.4-1.7 1.2-2.3A7 7 0 0 0 12 2.6z" fill="var(--accent-primary)"/><rect x="9" y="18.8" width="6" height="1.8" rx="0.9" fill="var(--accent-secondary)"/><rect x="10" y="21.2" width="4" height="1.6" rx="0.8" fill="var(--accent-secondary)"/><path d="M10.4 11.4l1.6 1.8 1.6-1.8" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  checkin: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.4h16a1.6 1.6 0 0 1 1.6 1.6v9.6a1.6 1.6 0 0 1-1.6 1.6h-9l-4.6 3.6v-3.6H4a1.6 1.6 0 0 1-1.6-1.6V6A1.6 1.6 0 0 1 4 4.4z" fill="var(--accent-secondary)"/><path d="M10 9.2a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="14.4" r="1.1" fill="#fff"/></svg>`,
+  lecture: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7.4" y="3" width="14" height="10" fill="#fffdf6" stroke="var(--accent-secondary)" stroke-width="1.6"/><path d="M10 10.2c1.6-2.8 3-3.8 4.4-3.8s2.4 1.2 4.2.6" fill="none" stroke="var(--accent-danger)" stroke-width="1.5" stroke-linecap="round"/><circle cx="5" cy="9.4" r="2.4" fill="var(--accent-primary)"/><path d="M1.6 21.4v-4.6a3.4 3.4 0 0 1 6.8 0v4.6z" fill="var(--accent-primary)"/><path d="M7 15.4l3.4-2.6" stroke="var(--accent-warning)" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+  homework: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.4" y="2.6" width="13.6" height="18.8" fill="var(--accent-secondary)"/><rect x="5.6" y="2.6" width="1.4" height="18.8" fill="#fff" opacity="0.5"/><rect x="8.6" y="7" width="6" height="1.6" fill="#fff"/><rect x="8.6" y="10.4" width="4.4" height="1.6" fill="#fff"/><path d="M19.2 8.2l2 2-7.4 7.4-2.8.8.8-2.8z" fill="var(--accent-primary)"/><path d="M19.2 8.2l2 2 .8-.8a1.4 1.4 0 0 0-2-2z" fill="var(--accent-danger)"/></svg>`,
+  font: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19.4 8.4 4.6h2.4l5.4 14.8h-2.6l-1.3-3.8H6.9l-1.3 3.8zm4.6-6h3.9L9.6 7.6z" fill="var(--accent-secondary)"/><path d="M16.6 14.6c0-1.8 1.4-2.8 3.2-2.8 1 0 1.8.3 2.2.7v6.9h-2v-.6c-.5.5-1.1.8-1.9.8-1.7 0-2.9-1.1-2.9-2.6zm2.2.1c0 .7.5 1.1 1.2 1.1s1.3-.4 1.3-1.1-.6-1.1-1.3-1.1-1.2.4-1.2 1.1z" fill="var(--accent-danger)"/></svg>`,
   play: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.8 20.4 12 6.6 20.2z" fill="var(--accent-success)"/></svg>`,
   send: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 4.2 21 12 3.4 19.8l2.2-7.8z" fill="var(--accent-secondary)"/><path d="M5.6 12h7.6" stroke="var(--accent-primary)" stroke-width="2.4" stroke-linecap="round"/></svg>`,
 };
@@ -131,10 +135,19 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     }, 220);
   }).observe(wrap);
 
-  /* the hand picker */
+  /* the hand picker: the site's own dropdown (pp-select.js, a receipt list)
+     over a real <select>, its trigger shown as the rail's "Aa" icon */
   const picker = $("pb-hand");
   picker.innerHTML = Object.entries(HANDS).map(([k, h]) => `<option value="${k}">${h.label}</option>`).join("");
   picker.value = handKey;
+  const { enhanceSelect } = await import("/utils/components/pp-select.js");
+  const fontSel = enhanceSelect(picker, { className: "pb-fontsel" });
+  const fontTrigger = fontSel?.querySelector(".pp-select-trigger");
+  if (fontTrigger) {
+    fontTrigger.insertAdjacentHTML("afterbegin", `<span class="pb-fontsel__icon" aria-hidden="true">${ICONS.font}</span>`);
+    fontTrigger.setAttribute("aria-label", "The hand PrepBot writes in");
+    fontTrigger.dataset.tipSide = "right";
+  }
   picker.addEventListener("change", async () => {
     handKey = picker.value;
     try { localStorage.setItem(HAND_KEY, handKey); } catch {}
@@ -150,7 +163,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     board,
     voice,
     onBeat: (beat) => { showSay(beat.say, false); if (status.textContent && !lesson.hold) status.textContent = ""; },
-    onAsk: () => { document.body.dataset.state = "asking"; showSay("Your turn: answer PrepBot's question."); input.focus({ preventScroll: true }); },
+    onAsk: () => { document.body.dataset.state = "asking"; showSay("Your turn: answer with the mic, or raise your hand to type."); },
     /* a lecture carries on by itself; checking in waits for the learner */
     onIdle: () => { document.body.dataset.state = "idle"; if (style === "lecture") carryOn(); },
     onEnd: () => { document.body.dataset.state = "idle"; lesson.ended = true; showSay("That's the lesson. Ask anything you want to go over again."); },
@@ -179,8 +192,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     lesson.recorded = true;
     document.body.dataset.state = "listening";
     lesson.hold = true;
-    setRaise(true);
-    showSay(style === "lecture" ? "Hand up. Ask your question, or press play to carry on." : "Go on, I'm listening.");
+    showSay(style === "lecture" ? "Paused. Talk, raise your hand to type, or tap the board to carry on." : "Go on, I'm listening.");
   }
 
   /** One turn: beats from `source` (an async iterator of raw beat objects). */
@@ -262,7 +274,12 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   }
 
   /* ── the learner's side ─────────────────────────────────────────────── */
-  svg.addEventListener("pointerdown", () => cutIn());
+  svg.addEventListener("pointerdown", () => {
+    if (!scheduler.busy && lesson.hold && style === "lecture" && form.hidden && lesson.topic && !lesson.ended) {
+      lesson.hold = false; status.textContent = ""; lesson.run = 0; carryOn(); return;
+    }
+    cutIn();
+  });
   input.addEventListener("keydown", (e) => { if (e.key.length === 1 && scheduler.busy) cutIn(); });
   /** The learner said something (typed or spoken): the next turn. */
   function ask(text) {
@@ -321,25 +338,41 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     ask(HINT);
   });
 
-  /* the raised hand: pause the lecture; pressed again (now a play key), carry on */
+  /* THE RAISED HAND. The mic is always there to talk; raising a hand is how
+     you TYPE: it stops PrepBot and opens the typing box. Lowered again, the
+     box shuts and (in a lecture) PrepBot carries on. */
   const raise = $("pb-raise");
+  const form = $("pb-ask");
   function setRaise(up) {
-    raise.innerHTML = ICONS[up ? "play" : "hand"];
-    raise.dataset.tip = up ? "Carry on with the lesson" : "Raise your hand to ask a question";
-    raise.setAttribute("aria-label", up ? "Carry on" : "Raise your hand");
+    raise.innerHTML = ICONS[up ? (style === "lecture" ? "play" : "hand") : "hand"];
+    raise.dataset.tip = up ? (style === "lecture" ? "Lower your hand and carry on" : "Lower your hand") : "Raise your hand to type a question";
+    raise.setAttribute("aria-label", up ? "Lower your hand" : "Raise your hand");
     raise.classList.toggle("is-up", up);
+    raise.setAttribute("aria-pressed", String(up));
+    form.hidden = !up;
+    if (up) setTimeout(() => input.focus({ preventScroll: true }), 30);
+    else input.blur();
+  }
+  function handUp() {
+    cutIn();
+    lesson.hold = true;
+    setRaise(true);
+    showSay(style === "lecture" ? "Hand up. Type your question, or lower your hand to carry on." : "Hand up. Type your question.");
   }
   raise.addEventListener("click", () => {
-    if (lesson.hold) {
+    if (lesson.hold || !form.hidden) {
       lesson.hold = false;
       setRaise(false);
       status.textContent = "";
-      if (lesson.topic && !lesson.ended) { lesson.run = 0; carryOn(); }
+      if (style === "lecture" && lesson.topic && !lesson.ended) { lesson.run = 0; carryOn(); }
       return;
     }
-    cutIn();
-    if (!lesson.hold) { lesson.hold = true; setRaise(true); showSay("Hand up. Ask your question, or press play to carry on."); }
-    input.focus({ preventScroll: true });
+    handUp();
+  });
+  /* starting to type anywhere is a raised hand too */
+  document.addEventListener("keydown", (e) => {
+    if (e.target === input || e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1 || e.key === " ") return;
+    if (form.hidden) { handUp(); input.value = e.key; e.preventDefault(); }
   });
   $("pb-ask").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -354,7 +387,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
      Either way PrepBot stops talking the moment the mic opens. */
   const mic = $("pb-mic");
   const ear = createListener({
-    onText: (t) => { input.value = t; },
+    onText: (t) => { status.textContent = `“${t}”`; },
     onState: (st) => {
       mic.classList.toggle("is-on", st === "listening");
       mic.setAttribute("aria-pressed", String(st === "listening"));
@@ -362,7 +395,6 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
       else if (st === "listening") showSay("I'm listening…", true);
     },
     onFinal: (t) => {
-      input.value = "";
       if (t) ask(t);
       else showSay("I didn't catch that. Hold the mic and try again, or type.", true);
     },
@@ -435,6 +467,6 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     lesson.transcript.push({ role: "learner", text: asked });
     runTurn(liveBeats(asked));
   } else {
-    showSay("Ask PrepBot anything, and watch it worked out on the board.");
+    showSay("Tap the mic and ask PrepBot anything, or raise your hand to type.");
   }
 })();

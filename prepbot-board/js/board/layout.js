@@ -43,16 +43,18 @@ export function makeCanvas(aspect = 16 / 9) {
   if (a >= 1.05) {
     const h = 900;
     const w = Math.round(Math.min(2400, Math.max(1000, h * a)));
-    const s = Math.round(Math.min(h - 190, w * 0.42));
-    const figure = { x: w - s - 60, y: 96, w: s, h: s };
-    return { w, h, main: { x: 70, y: 64, w: figure.x - 70 - 50, h: 790 }, figure };
+    /* the icon rail sits on the left edge and the dock at the bottom: the
+       writing starts clear of the rail and stops above the dock */
+    const s = Math.round(Math.min(h - 230, w * 0.4));
+    const figure = { x: w - s - 60, y: 80, w: s, h: s };
+    return { w, h, main: { x: 130, y: 64, w: figure.x - 130 - 50, h: 700 }, figure };
   }
   const w = 900;
   const h = Math.round(Math.min(2400, Math.max(1000, w / a)));
-  const s = Math.round(Math.min(720, h * 0.44));
-  const figure = { x: Math.round((w - s) / 2), y: 70, w: s, h: s };
-  const top = figure.y + s + 60;
-  return { w, h, figure, main: { x: 64, y: top, w: 772, h: h - top - 50 } };
+  const s = Math.round(Math.min(680, h * 0.4));
+  const figure = { x: Math.round(110 + (w - 110 - 40 - s) / 2), y: 60, w: s, h: s };
+  const top = figure.y + s + 50;
+  return { w, h, figure, main: { x: 116, y: top, w: 900 - 116 - 36, h: h - top - 190 } };
 }
 
 /** The smallest a line may be shrunk to fit before it is broken instead. */

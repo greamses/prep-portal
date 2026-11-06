@@ -31,34 +31,40 @@
     <div class="pb-paint" aria-hidden="true"></div>
 
     <main class="pb-stage">
-      <header class="pb-top">
-        <a class="pb-ico" href="/" data-tip="Back to Prep Portal" data-tip-side="bottom" aria-label="Back to Prep Portal" data-ico="back"></a>
-        <h1 class="pb-title">PrepBot Board</h1>
-        <label class="pb-hand-wrap" data-tip="The hand PrepBot writes in" data-tip-side="bottom">
-          <span class="pb-visually-hidden">Handwriting</span>
-          <select id="pb-hand" class="pb-hand" aria-label="Handwriting"></select>
-        </label>
-        <div class="pb-style" role="radiogroup" aria-label="How PrepBot teaches">
-          <button type="button" class="pb-style__btn" data-style="check" role="radio" aria-checked="true" data-tip="PrepBot stops to ask you questions" data-tip-side="bottom">Checks in</button>
-          <button type="button" class="pb-style__btn" data-style="lecture" role="radio" aria-checked="false" data-tip="PrepBot teaches straight through; raise your hand to ask" data-tip-side="bottom">Lecture</button>
-          <button type="button" class="pb-style__btn" data-style="homework" role="radio" aria-checked="false" data-tip="Bring a problem: you solve it, step by step, with hints when you need them" data-tip-side="bottom">Homework</button>
-        </div>
-        <button type="button" class="pb-ico" id="pb-new" data-tip="New board" data-tip-side="bottom" aria-label="New board" data-ico="again"></button>
-      </header>
-
+      <!-- the board IS the screen -->
       <div class="pb-boardwrap" id="pb-boardwrap">
         <svg id="pb-board" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="PrepBot's whiteboard. Tap it to cut in."></svg>
-        <p class="pb-status" id="pb-status" aria-live="polite"></p>
         <p class="pb-visually-hidden" id="pb-caption" aria-live="polite"></p>
       </div>
 
-      <form class="pb-ask" id="pb-ask" autocomplete="off">
-        <input id="pb-input" type="text" maxlength="400" placeholder="Ask anything, or cut in while PrepBot talks…" aria-label="Your question" />
-        <button type="button" class="pb-ico pb-hint" id="pb-hint" data-tip="I'm stuck: give me a hint" aria-label="Give me a hint" data-ico="bulb"></button>
-        <button type="button" class="pb-ico pb-hand-up" id="pb-raise" data-tip="Raise your hand to ask a question" aria-label="Raise your hand" data-ico="hand"></button>
-        <button type="button" class="pb-ico" id="pb-mic" data-tip="Hold to talk, or tap and pause" aria-label="Hold to talk" aria-pressed="false" data-ico="mic"></button>
-        <button type="submit" class="pb-ico" id="pb-send" data-tip="Send" aria-label="Send" data-ico="send"></button>
-      </form>
+      <!-- the left rail: where you are, how PrepBot teaches, the hand it writes in, a new board -->
+      <nav class="pb-rail" aria-label="Board">
+        <a class="pb-ico" href="/" id="pb-back" data-tip="Back to Prep Portal" data-tip-side="right" aria-label="Back to Prep Portal" data-ico="back"></a>
+        <div class="pb-rail__group" role="radiogroup" aria-label="How PrepBot teaches">
+          <button type="button" class="pb-ico pb-style__btn" data-style="check" role="radio" aria-checked="true" data-tip="Checks in: PrepBot stops to ask you questions" data-tip-side="right" aria-label="Checks in" data-ico="checkin"></button>
+          <button type="button" class="pb-ico pb-style__btn" data-style="lecture" role="radio" aria-checked="false" data-tip="Lecture: PrepBot teaches straight through; raise your hand to ask" data-tip-side="right" aria-label="Lecture" data-ico="lecture"></button>
+          <button type="button" class="pb-ico pb-style__btn" data-style="homework" role="radio" aria-checked="false" data-tip="Homework: you solve it step by step, with hints" data-tip-side="right" aria-label="Homework" data-ico="homework"></button>
+        </div>
+        <!-- the site's own dropdown (pp-select.js) over a real <select>; its trigger dressed as an icon -->
+        <div class="pb-rail__fonts">
+          <select id="pb-hand" aria-label="The hand PrepBot writes in"></select>
+        </div>
+        <button type="button" class="pb-ico" id="pb-new" data-tip="New board" data-tip-side="right" aria-label="New board" data-ico="again"></button>
+      </nav>
+
+      <!-- the bottom dock: talk, a hint, a raised hand (which opens the typing box) -->
+      <div class="pb-dock">
+        <p class="pb-status" id="pb-status" aria-live="polite"></p>
+        <form class="pb-ask" id="pb-ask" autocomplete="off" hidden>
+          <input id="pb-input" type="text" maxlength="400" placeholder="Type your question…" aria-label="Your question" />
+          <button type="submit" class="pb-ico" id="pb-send" data-tip="Send" data-tip-side="top" aria-label="Send" data-ico="send"></button>
+        </form>
+        <div class="pb-dock__keys">
+          <button type="button" class="pb-ico pb-hint" id="pb-hint" data-tip="I'm stuck: give me a hint" data-tip-side="top" aria-label="Give me a hint" data-ico="bulb"></button>
+          <button type="button" class="pb-ico pb-ico--big" id="pb-mic" data-tip="Hold to talk, or tap and pause" data-tip-side="top" aria-label="Hold to talk" aria-pressed="false" data-ico="mic"></button>
+          <button type="button" class="pb-ico pb-hand-up" id="pb-raise" data-tip="Raise your hand to type a question" data-tip-side="top" aria-label="Raise your hand" data-ico="hand"></button>
+        </div>
+      </div>
     </main>
 
     <script type="module" src="/prepbot-board/js/main.js"></script>

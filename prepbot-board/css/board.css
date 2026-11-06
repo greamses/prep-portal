@@ -209,3 +209,64 @@ body:not([data-style="homework"]) .pb-hint { display: none; }
 body.is-thinking .pb-status { color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { .pb-dots i, #pb-send.is-busy svg { animation: none; } }
 
+/* ══ FULL SCREEN: the board is the screen; icons on the left and at the bottom ══ */
+.pb-stage { display: block; padding: 0; }
+.pb-boardwrap { position: absolute; inset: 0; filter: none; }
+.pb-paint { display: none; }
+
+.pb-rail {
+  position: absolute; z-index: 3;
+  left: 12px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.pb-rail__group { display: flex; flex-direction: column; gap: 6px; padding: 6px 0; border-block: 2px dashed color-mix(in srgb, var(--ink) 14%, transparent); }
+.pb-style__btn { padding: 0; }
+.pb-style__btn[aria-checked="true"] { background: var(--accent-primary); border-color: transparent; }
+.pb-rail__fonts { position: relative; }
+.pb-menu { position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%); width: 15rem; z-index: 5; }
+.pb-menu .pp-receipt__paper { display: flex; flex-direction: column; gap: 2px; padding: 1.1rem 1rem; }
+.pb-menu button {
+  text-align: left; padding: 0.45rem 0.6rem; font-size: 1.05rem; color: var(--ink);
+  background: transparent; border: 0; border-radius: 0; cursor: pointer;
+}
+.pb-menu button[aria-checked="true"] { background: color-mix(in srgb, var(--accent-primary) 40%, transparent); }
+.pb-menu button:hover { background: color-mix(in srgb, var(--accent-secondary) 18%, transparent); }
+
+.pb-dock {
+  position: absolute; z-index: 3;
+  left: 50%; bottom: 14px; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  width: min(40rem, calc(100vw - 7rem));
+  pointer-events: none;
+}
+.pb-dock > * { pointer-events: auto; }
+.pb-dock__keys { display: flex; gap: 12px; align-items: center; }
+.pb-ico--big { width: 3.4rem; height: 3.4rem; }
+.pb-ico--big svg { width: 26px; height: 26px; }
+.pb-ask { width: 100%; }
+.pb-ask[hidden] { display: none; }
+.pb-dock .pb-status { position: static; transform: none; max-width: 100%; text-align: center; }
+.pb-hand-up.is-up { background: color-mix(in srgb, var(--accent-primary) 55%, var(--surface-primary)); }
+body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex; }
+
+.pb-embed [data-ico="back"] { display: none; }
+@media (max-width: 640px) {
+  .pb-rail { left: 6px; gap: 7px; }
+  .pb-rail .pb-ico { width: 2.2rem; height: 2.2rem; }
+  .pb-dock { width: calc(100vw - 4.2rem); left: calc(50% + 1.6rem); }
+}
+
+/* the hand picker: the site's dropdown, its trigger an icon key like the rest
+   of the rail, its receipt list opening to the right */
+.pb-fontsel { position: relative; }
+.pb-fontsel .pp-select-trigger {
+  width: 2.5rem; height: 2.5rem; min-width: 0; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.pb-fontsel .pp-select-trigger > span:not(.pb-fontsel__icon),
+.pb-fontsel .pp-select-chevron { display: none; }
+.pb-fontsel__icon { display: inline-flex; }
+.pb-fontsel__icon svg { width: 20px; height: 20px; }
+.pb-fontsel .pp-select-menu { left: calc(100% + 10px); top: 50%; transform: translateY(-50%); width: 15rem; }
+@media (max-width: 640px) { .pb-fontsel .pp-select-trigger { width: 2.2rem; height: 2.2rem; } }
+
