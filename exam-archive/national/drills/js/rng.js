@@ -27,7 +27,7 @@ export const ALL_OPERATIONS = [
   'add', 'multiply', 'divide', 'square', 'sqrt', 'cube', 'cuberoot', 'power4', 'fourthroot',
   'fracAdd', 'fracSub', 'fracMul', 'fracDiv',
   'rmm',
-  'intAdd', 'intSub', 'directed', 'intMul',
+  'intAdd', 'intSub', 'directed', 'intMul', 'intDiv',
 ];
 
 export const ALL_FRACTION_TYPES = ['like', 'unlike', 'wholeFraction'];
@@ -145,6 +145,16 @@ function intMulQuestion(rng, pool) {
   return { text: `${signed(a)} × ${b < 0 ? `(${signed(b)})` : b}`, answer: a * b };
 }
 
+// Division: built from a product so it always divides evenly; at least one
+// of dividend/divisor negative.
+function intDivQuestion(rng, pool) {
+  const q = drawFrom(rng, pool) * (rng() < 0.5 ? -1 : 1);
+  let d = 1 + Math.floor(rng() * 12);
+  if (rng() < 0.5) d = -d;
+  if (q > 0 && d > 0) d = -d;
+  return { text: `${signed(q * d)} ÷ ${d < 0 ? `(${signed(d)})` : d}`, answer: q };
+}
+
 // Chemistry: "what is the relative molecular mass of this?" The formula is
 // the question, and the masses it needs ride along as a hint — exactly the
 // bracket a WAEC/NECO paper prints under the question, because the drill is
@@ -182,6 +192,7 @@ export function questionAt(seed, index, {
 
   if (op === 'rmm') return rmmQuestionAt(rng, compounds);
   if (op === 'intAdd' || op === 'intSub') return intTerms(rng, pool, 2, op);
+  if (op === 'intDiv') return intDivQuestion(rng, pool);
   if (op === 'intMul') return intMulQuestion(rng, pool);
   if (op === 'directed') return intTerms(rng, pool, 3, op);
 

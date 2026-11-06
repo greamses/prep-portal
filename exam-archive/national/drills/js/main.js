@@ -41,7 +41,7 @@ const OPERATION_LABELS = {
   power4: 'x⁴ Power 4', fourthroot: '⁴√x Fourth Root',
   fracAdd: '+ Addition', fracSub: '− Subtraction', fracMul: '× Multiplication', fracDiv: '÷ Division',
   rmm: 'Σ Molecular Mass',
-  intAdd: '+ Add Integers', intSub: '− Subtract Integers', directed: '± Directed Numbers', intMul: '× Multiply Integers',
+  intAdd: '+ Add Integers', intSub: '− Subtract Integers', directed: '± Directed Numbers', intMul: '× Multiply Integers', intDiv: '÷ Divide Integers',
 };
 
 // Category filters which operations are on offer. Basic keeps the default
@@ -54,7 +54,7 @@ const CATEGORY_OPERATIONS = {
   exponent: ['square', 'cube', 'power4', 'sqrt', 'cuberoot', 'fourthroot'],
   fractions: ['fracAdd', 'fracSub', 'fracMul', 'fracDiv'],
   chemistry: ['rmm'],
-  integers: ['intAdd', 'intSub', 'intMul', 'directed'],
+  integers: ['intAdd', 'intSub', 'intMul', 'intDiv', 'directed'],
   // Tables (the grid filler) has no operations step — 'multiply' is a harmless
   // placeholder so the room doc still carries a valid, non-empty operations
   // list; the grid round ignores it entirely (see js/grid.js).
