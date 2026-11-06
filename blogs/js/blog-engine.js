@@ -53,9 +53,9 @@ export function initBlogEngine(subjectData) {
   const SUBJECT_LABELS = subjectData.SUBJECT_LABELS || {};
   const SUBJECT_STYLES = subjectData.SUBJECT_STYLES || {};
   const CLASS_LABELS = subjectData.CLASS_LABELS || {
-    primary: (n) => `P${n}`,
-    jss: (n) => `JSS ${n}`,
-    ss: (n) => `SS ${n}`,
+    primary: (n) => `Grade ${n}`,
+    jss: (n) => `Grade ${+n + 6}`,
+    ss: (n) => `Grade ${+n + 9}`,
   };
   const CLASS_STYLES = subjectData.CLASS_STYLES || {
     primary: "cls-primary",
@@ -157,7 +157,7 @@ export function initBlogEngine(subjectData) {
   const getClassShort = (c) => {
     if (!c) return "--";
     const [t, n] = c.split("-");
-    return t === "primary" ? `P${n}` : `${t.toUpperCase()} ${n}`;
+    return `Grade ${+n + ({ primary: 0, jss: 6, ss: 9 }[t] ?? 0)}`;
   };
   const getClassStyle = (c) =>
     (c || "").startsWith("primary")

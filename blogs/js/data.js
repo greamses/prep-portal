@@ -21,9 +21,9 @@ import { SHARED_MODELS } from "/blogs/js/models.js";
 export const SUBJECT_MODELS = SHARED_MODELS;
 
 export const CLASS_LABELS = {
-  primary: (n) => `P${n}`,
-  jss: (n) => `JSS ${n}`,
-  ss: (n) => `SS ${n}`,
+  primary: (n) => `Grade ${n}`,
+  jss: (n) => `Grade ${+n + 6}`,
+  ss: (n) => `Grade ${+n + 9}`,
 };
 
 export const CLASS_STYLES = {

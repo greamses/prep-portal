@@ -164,9 +164,9 @@ async function initBlog() {
   SUBJECT_LABELS = subjectData.SUBJECT_LABELS || {};
   SUBJECT_STYLES = subjectData.SUBJECT_STYLES || {};
   CLASS_LABELS = subjectData.CLASS_LABELS || {
-    primary: (n) => `P${n}`,
-    jss: (n) => `JSS ${n}`,
-    ss: (n) => `SS ${n}`,
+    primary: (n) => `Grade ${n}`,
+    jss: (n) => `Grade ${+n + 6}`,
+    ss: (n) => `Grade ${+n + 9}`,
   };
   CLASS_STYLES = subjectData.CLASS_STYLES || {
     primary: "cls-primary",
@@ -374,9 +374,9 @@ const getClassLabel = (classLevel) => {
 const getClassShort = (classLevel) => {
   if (!classLevel) return "--";
   const [type, num] = classLevel.split("-");
-  if (type === "primary") return `P${num}`;
-  if (type === "jss") return `JSS ${num}`;
-  if (type === "ss") return `SS ${num}`;
+  if (type === "primary") return `Grade ${num}`;
+  if (type === "jss") return `Grade ${+num + 6}`;
+  if (type === "ss") return `Grade ${+num + 9}`;
   return classLevel;
 };
 const getClassStyle = (classLevel) => {
