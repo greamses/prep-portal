@@ -1283,6 +1283,29 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
 
     if (!skipUserBubble) await appendMessage("user", text);
 
+    // "/explainer <question>" — PrepBot works it out on the board (the PrepBot
+    // Board, prepbot-board/js/rail-tool.js), in a panel on this page.
+    const explainer = /^\/explain(?:er)?\b\s*([\s\S]*)$/i.exec(text);
+    if (explainer) {
+      isBusy = false;
+      sendBtn.classList.remove("loading");
+      const question = explainer[1].trim();
+      try {
+        const board = await import("/prepbot-board/js/rail-tool.js");
+        if (!(await board.boardAllowed())) {
+          await appendMessage("bot", "The PrepBot Board isn't open to your account yet.");
+          return;
+        }
+        await appendMessage("bot", question
+          ? "Opening the board. Watch, and tap it any time to cut in."
+          : "Opening the board. Ask your question there, or type /explainer followed by it here.");
+        await board.openBoard(question);
+      } catch (e) {
+        await appendMessage("bot", "I couldn't open the board just now. Please try again.");
+      }
+      return;
+    }
+
     // Natural-language navigation (quiz + site) — handled locally, no AI/tokens.
     if (await tryHandleNavigation(text)) {
       isBusy = false;

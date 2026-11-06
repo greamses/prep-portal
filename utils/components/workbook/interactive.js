@@ -24,6 +24,7 @@ import { ICON, faceOf } from "./icons.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { mountTooltips, hideTip } from "/utils/components/tooltip.js";
 import { needCss, openPanel, savedPanels } from "./panels.js";
+import { boardTool, boardAllowed } from "/prepbot-board/js/rail-tool.js";
 import { BOARDS } from "/utils/components/boards/index.js";
 import { mountBoard } from "/utils/components/boards/sheet.js";
 import { mountCounters } from "./counters.js";
@@ -3331,6 +3332,14 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       },
     },
     {
+      /* the PrepBot Board: the live whiteboard tutor, its own page in a frame */
+      id: "board",
+      label: boardTool.label,
+      icon: boardTool.icon,
+      size: boardTool.size,
+      open: (body) => boardTool.open(body),
+    },
+    {
       id: "gm",
       label: "Algebra moves",
       icon: TOOL_ICONS.gm,
@@ -3588,6 +3597,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     /* A key of its own, like the notes: drawing the problem is ONE thing to go
        to the rail for, and it is reached for before any arithmetic is. */
     { id: "model", label: "Models", of: [asSheet("barmodel"), asSheet("linemodel"), asSheet("vennmodel"), asSheet("nodesmodel"), asSheet("flowmodel")] },
+    /* PrepBot explaining it on a board: a key of its own, first reached for when stuck */
+    { id: "explain", label: "PrepBot Board", of: [asSheet("board")] },
     { id: "algebra", label: "Algebra", of: [asSheet("gm")] },
     /* a tool of its own, not folded in behind another: paper to work an equation out on */
     /* the English workbooks' own family — see `rail` below */
@@ -3640,6 +3651,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       + `</div>`;
   }).join("") + `</div></div>`;
   document.body.appendChild(side);
+  /* the board's key stays only for a learner the board is open to */
+  if (side.querySelector('[data-fam="explain"]')) {
+    boardAllowed().then((ok) => { if (!ok) side.querySelector('[data-fam="explain"]')?.remove(); });
+  }
 
   /* ── the name of the key under the pointer ──────────────────────────────
      The site's ONE tooltip (utils/components/tooltip.js), through `data-tip`.

@@ -22,6 +22,7 @@ import { openPanel, needCss, savedPanels } from "./panels.js";
 import { TOOL_ICONS } from "./instruments.js";
 import { mountTooltips } from "../tooltip.js";
 import { dropPin, restorePins } from "./pins.js";
+import { boardTool, boardAllowed } from "/prepbot-board/js/rail-tool.js";
 
 /* Each tool says only how to open itself. The components are imported when a
    key is first pressed, not before: a shop page should not pay for a long
@@ -44,6 +45,9 @@ const board = (id, label) => ({
 });
 
 const TOOLS = {
+  /* THE PREPBOT BOARD: the live whiteboard tutor, in a panel (its own page, in a frame).
+     The key is only left on the rail for a learner the board is open to. */
+  board: boardTool,
   /* a sticky note stuck anywhere on the page (workbook/pins.js); a page with a canvas of its own hands in its own */
   pin: { label: "Pin a sticky note anywhere", act: dropPin },
   /* THE CHEMISTRY BENCH, from any page that hangs the rail: the real bench in a panel
@@ -309,7 +313,7 @@ export const TOOL_IDS = Object.keys(TOOLS);
  *   at      "left" or "right" — which side of the window it sits against
  * → { el, open(id), destroy() }
  */
-export function mountTools(host = document.body, { tools = ["calculator", "graph", "art", "gm", "column", "times", "shortdiv", "pin", "note"], at = "left", extra = {} } = {}) {
+export function mountTools(host = document.body, { tools = ["board", "calculator", "graph", "art", "gm", "column", "times", "shortdiv", "pin", "note"], at = "left", extra = {} } = {}) {
   /* the rail fetches its own dress, so a page that wants tools needs one line
      and no stylesheet link of its own */
   needCss("/utils/components/workbook.css");
@@ -336,6 +340,10 @@ export function mountTools(host = document.body, { tools = ["calculator", "graph
     + `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="${at === "left" ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
   host.appendChild(el);
   mountTooltips();
+  /* the board's key stays only for a learner the board is open to */
+  if (ids.includes("board") && ALL.board === TOOLS.board) {
+    boardAllowed().then((ok) => { if (!ok) el.querySelector('[data-wbtool="board"]')?.remove(); });
+  }
 
   /* A page that fills the screen with one element (Algebra Moves' canvas)
      would leave the rail and its panels behind it, out of sight and out of

@@ -111,7 +111,7 @@ export function mountEnglishBook({
        pencil, the two organisers, the times-tables-free notes, and nothing
        to work a sum on (utils/components/workbook/organiser.js). */
     interactive: {
-      rail: ["draw", "plan", "note"],
+      rail: ["draw", "explain", "plan", "note"],
       railWithout: ["compass", "ruler", "protractor", "setsquare"],
       /* the SAME note the maths pages use — it is only called by what it is
          for here, because nobody drafting a paragraph is after an equation */

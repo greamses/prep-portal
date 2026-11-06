@@ -136,3 +136,9 @@ body { margin: 0; background: var(--app-bg); overflow: hidden; }
   .pb-stage { padding: 0.5rem 0.5rem 0.7rem; gap: 0.45rem; }
   .pb-caption { bottom: 0.3rem; }
 }
+
+/* in a panel on another page (side rail, or PrepBot's /explainer): no way out
+   but the panel's own close, and a little more room for the board */
+.pb-embed .pb-top [data-ico="back"] { display: none; }
+.pb-embed .pb-stage { padding: 0.5rem 0.6rem 0.6rem; gap: 0.45rem; }
+.pb-embed .pb-paint { display: none; }

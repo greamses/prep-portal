@@ -170,13 +170,22 @@ const orient = () => (window.innerHeight > window.innerWidth * 1.15 ? "portrait"
 
   window.__pb = { board, scheduler, voice, lesson, cutIn }; // for tests
 
+  /* opened from a side rail or PrepBot's chat: a frame inside another page */
+  if (params.get("embed") === "1") document.body.classList.add("pb-embed");
+
   const fixture = params.get("fixture");
+  const asked = (params.get("q") || "").trim().slice(0, 400);
   if (fixture && params.get("instant") === "1") {
     for await (const raw of fixtureBeats(fixture)) { const b = cleanBeat(raw); if (b) await board.play(b, 0); }
     document.body.dataset.done = "1";
   } else if (fixture) {
     lesson.topic = fixture;
     runTurn(fixtureBeats(fixture));
+  } else if (asked) {
+    /* "/explainer <question>" from the chat: start on it straight away */
+    lesson.topic = asked;
+    lesson.transcript.push({ role: "learner", text: asked });
+    runTurn(liveBeats(asked));
   } else {
     showSay("Ask PrepBot anything, and watch it worked out on the board.");
   }
