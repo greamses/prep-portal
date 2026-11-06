@@ -116,14 +116,6 @@ export const SITE_PAGES = [
     keywords: ["puzzles", "sudoku", "logic puzzle", "multiplayer sudoku", "versus", "1v1", "brain teaser", "timed puzzle"],
   },
   {
-    id: "geometry",
-    title: "Geometry — Perimeter & Circumference",
-    href: "/exam-archive/national/geometry/",
-    category: "exams",
-    blurb: "Timed multiplayer perimeter/circumference drills — circle, semicircle, quadrant, sector, triangle, rectangle, square. Pi = 22/7.",
-    keywords: ["geometry", "perimeter", "circumference", "circle", "triangle", "rectangle", "square", "sector", "multiplayer math", "versus", "1v1", "timed practice"],
-  },
-  {
     id: "vocab",
     title: "Vocab — A to Z Hangman",
     href: "/exam-archive/national/vocab/",

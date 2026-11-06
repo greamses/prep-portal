@@ -493,15 +493,17 @@ const AREAS = [
   { value: 'algebra', label: 'Algebra' },
   { value: 'geometry', label: 'Geometry' },
   { value: 'science', label: 'Science' },
+  { value: 'words', label: 'Word Speed' },
 ];
 const AREA_TOPICS = {
   numbers: [
     ['basic', 'Arithmetic'], ['integers', 'Integers'], ['exponent', 'Powers & Roots'],
-    ['fractions', 'Fractions'], ['bases', 'Number Bases'], ['timestable', 'Times Tables Grid'], ['fracbars', 'Fraction Bars'],
+    ['fractions', 'Fractions'], ['bases', 'Number Bases'], ['timestable', 'Times Tables Grid'], ['fracbars', 'Fraction Bars'], ['planner', 'Planner'],
   ],
   algebra: [['algebra', 'Expressions'], ['equations', 'Equations']],
   geometry: [['angles', 'Angles'], ['areas', 'Area & Perimeter'], ['pythag', 'Pythagoras & Trig'], ['circles', 'Circles & Volume']],
   science: [['chemistry', 'Molecular Mass']],
+  words: [['vocab', 'Vocab'], ['grammar', 'Grammar']],
 };
 const AREA_OF = {};
 Object.entries(AREA_TOPICS).forEach(([area, list]) => list.forEach(([v]) => { AREA_OF[v] = area; }));
@@ -509,7 +511,16 @@ const TOPIC_LABEL = {};
 Object.values(AREA_TOPICS).forEach((list) => list.forEach(([v, l]) => { TOPIC_LABEL[v] = l; }));
 let areaValue = AREA_OF[categoryValue] || 'numbers';
 
+// Topics that are whole games of their own: picking one opens that game (its
+// setup, rooms and scoring live on its page).
+const GAME_PAGES = {
+  vocab: '/exam-archive/national/vocab/',
+  grammar: '/exam-archive/national/grammar/',
+  planner: '/exam-archive/national/planner/',
+};
+
 function pickCategory(v) {
+  if (GAME_PAGES[v]) { window.location.href = GAME_PAGES[v]; return; }
   if (v !== categoryValue) {
     // Reset the whole branch — a range picked under Basic must not survive
     // into Fractions (which has no range at all). Re-picking the SAME

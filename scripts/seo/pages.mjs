@@ -147,20 +147,6 @@ export const PAGES = [
     ],
   },
   {
-    file: "exam-archive/national/geometry/index.html",
-    section: "races",
-    name: "Geometry Race",
-    title: "Perimeter & Circumference Race: Multiplayer Geometry Drills",
-    desc: "Race up to 10 players finding the perimeter of circles, semicircles, quadrants, sectors, triangles, rectangles and squares, with pi as 22/7. Bots fill empty seats.",
-    intro:
-      "A shape appears with its measurements, and the first to work out its perimeter scores. The Geometry Race covers the plane shapes that come up in junior and senior secondary mensuration, using pi as 22/7 the way exam questions do.",
-    points: [
-      "Circles, semicircles, quadrants and sectors",
-      "Triangles, rectangles and squares",
-      "Timed rounds for up to 10 players, or 1v1",
-    ],
-  },
-  {
     file: "exam-archive/national/vocab/index.html",
     section: "races",
     name: "Vocab",

@@ -9,6 +9,8 @@
     }
   },
   "redirects": [
+    { "source": "/exam-archive/national/geometry", "destination": "/exam-archive/national/drills/", "permanent": true },
+    { "source": "/exam-archive/national/geometry/:path*", "destination": "/exam-archive/national/drills/", "permanent": true },
     { "source": "/prep-math/activity/remainder-theorem-workbook", "destination": "/prep-math/activity/algebra-workbook/", "permanent": true },
     { "source": "/prep-math/activity/remainder-theorem-workbook/", "destination": "/prep-math/activity/algebra-workbook/", "permanent": true },
     { "source": "/prep-math/activity/remainder-theorem-workbook/:path*", "destination": "/prep-math/activity/algebra-workbook/", "permanent": true },
