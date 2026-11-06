@@ -1,3 +1,5 @@
+import { mountTooltips } from '/utils/components/tooltip.js';
+import { mountPaint } from '/blogs/js/dress.js';
 import { initUI } from '/blogs/js/ui-controller.js';
 import { getSubjectData } from '/blogs/js/data.js';
 
@@ -11,3 +13,6 @@ const loaderLabel = document.getElementById('loader-label');
 if (loaderLabel) loaderLabel.textContent = subjectData.SUBJECT_CONFIG.name;
 
 initUI(subjectData.SUBJECT_CONFIG, subjectData);
+
+mountTooltips();
+mountPaint();

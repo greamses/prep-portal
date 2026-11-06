@@ -52,7 +52,7 @@
 
     <div class="publisher-section">
       <div class="publisher-grid">
-        <div class="publisher-card">
+        <div class="publisher-card pp-receipt"><div class="pp-receipt__paper">
           <div class="status-badge" id="authStatus">
             <span class="status-dot red" id="statusDot"></span>Connecting...
           </div>
@@ -71,23 +71,17 @@
             </div>
           </div>
           <div class="btn-group">
-            <button class="btn btn-primary" id="forcePublishBtn">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6.6 3.8 20.4 12 6.6 20.2z" fill="var(--accent-success)"/></svg>Force Publish
-            </button>
-            <button class="btn" id="restartSchedulerBtn">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M19.6 12a7.6 7.6 0 1 1-2.3-5.4" fill="none" stroke="var(--accent-secondary)" stroke-width="3.2" stroke-linecap="round"/><path d="M13.6 7.2l6.4-3.4.4 6.8z" fill="var(--accent-danger)"/></svg>Restart
-            </button>
-            <button class="btn" id="testWriteBtn">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9.6" fill="var(--accent-success)"/><path d="M7.4 12.4l3 3 6.2-6.7" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Test DB
-            </button>
+            <button class="btn btn-primary" id="forcePublishBtn" data-tip="Force Publish" aria-label="Force Publish"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6.6 3.8 20.4 12 6.6 20.2z" fill="var(--accent-success)"/></svg></button>
+            <button class="btn" id="restartSchedulerBtn" data-tip="Restart" aria-label="Restart"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M19.6 12a7.6 7.6 0 1 1-2.3-5.4" fill="none" stroke="var(--accent-secondary)" stroke-width="3.2" stroke-linecap="round"/><path d="M13.6 7.2l6.4-3.4.4 6.8z" fill="var(--accent-danger)"/></svg></button>
+            <button class="btn" id="testWriteBtn" data-tip="Test DB" aria-label="Test DB"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9.6" fill="var(--accent-success)"/><path d="M7.4 12.4l3 3 6.2-6.7" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
           </div>
           <div class="next-run-info" id="nextRunDetail">
             Next run: calculating...
           </div>
           <div id="routingIndicator"></div>
-        </div>
+        </div></div>
 
-        <div class="publisher-card">
+        <div class="publisher-card pp-receipt"><div class="pp-receipt__paper">
           <div class="card-label">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 4.4a2 2 0 0 1 2-2h8.4L20 8v11.6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><path d="M14.4 2.4 20 8h-4.4a1.2 1.2 0 0 1-1.2-1.2z" fill="var(--accent-primary)"/><rect x="7.4" y="11.4" width="9" height="1.8" rx="0.9" fill="#fff"/><rect x="7.4" y="15" width="6" height="1.8" rx="0.9" fill="#fff"/></svg>
             Live Activity Log
@@ -96,22 +90,20 @@
             <div class="log-entry">
               <span class="log-time">[init]</span>
               <span class="log-info">
-                Science Publisher v1.0 — MathJax &bull; P1–SS3</span>
+                Science Publisher v1.0 — MathJax &bull; Grade 1–12</span>
             </div>
           </div>
-        </div>
+        </div></div>
       </div>
 
-      <div class="manage-section">
+      <div class="manage-section pp-receipt"><div class="pp-receipt__paper">
         <div class="manage-header">
           <div class="manage-header-title">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 4.4a2 2 0 0 1 2-2h8.4L20 8v11.6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><path d="M14.4 2.4 20 8h-4.4a1.2 1.2 0 0 1-1.2-1.2z" fill="var(--accent-primary)"/><rect x="7.4" y="11.4" width="9" height="1.8" rx="0.9" fill="#fff"/><rect x="7.4" y="15" width="6" height="1.8" rx="0.9" fill="#fff"/></svg>
             Manage Science Posts
             <span style="font-weight: 400; opacity: 0.6">(admin only)</span>
           </div>
-          <button class="btn btn-sm" id="refreshPostsBtn">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M19.6 12a7.6 7.6 0 1 1-2.3-5.4" fill="none" stroke="var(--accent-secondary)" stroke-width="3.2" stroke-linecap="round"/><path d="M13.6 7.2l6.4-3.4.4 6.8z" fill="var(--accent-danger)"/></svg>Refresh
-          </button>
+          <button class="btn btn-sm" id="refreshPostsBtn" data-tip="Refresh" aria-label="Refresh"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M19.6 12a7.6 7.6 0 1 1-2.3-5.4" fill="none" stroke="var(--accent-secondary)" stroke-width="3.2" stroke-linecap="round"/><path d="M13.6 7.2l6.4-3.4.4 6.8z" fill="var(--accent-danger)"/></svg></button>
         </div>
         <ul class="manage-posts-list" id="managePostsList">
           <li class="manage-loading">
@@ -119,7 +111,7 @@
             Loading posts...
           </li>
         </ul>
-      </div>
+      </div></div>
     </div>
 
     <!-- DELETE MODAL -->
@@ -130,16 +122,14 @@
       aria-modal="true"
       aria-label="Confirm delete"
     >
-      <div class="modal-box">
+      <div class="modal-box pp-receipt"><div class="pp-receipt__paper">
         <h3>Delete Post?</h3>
         <p id="confirmPostTitle">This action cannot be undone.</p>
         <div class="modal-actions">
-          <button class="btn btn-danger" id="confirmDeleteBtn">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="8.6" y="2.4" width="6.8" height="2.6" rx="1.3" fill="var(--accent-danger)"/><rect x="3" y="5" width="18" height="3.2" rx="1.6" fill="var(--accent-danger)"/><path d="M5.4 9.4h13.2l-1.1 10.4a2 2 0 0 1-2 1.8H8.5a2 2 0 0 1-2-1.8z" fill="var(--accent-secondary)"/><rect x="9.1" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/><rect x="13" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/></svg>Yes, Delete
-          </button>
-          <button class="btn" id="cancelDeleteBtn">Cancel</button>
+          <button class="btn btn-danger" id="confirmDeleteBtn" data-tip="Yes, Delete" aria-label="Yes, Delete"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="8.6" y="2.4" width="6.8" height="2.6" rx="1.3" fill="var(--accent-danger)"/><rect x="3" y="5" width="18" height="3.2" rx="1.6" fill="var(--accent-danger)"/><path d="M5.4 9.4h13.2l-1.1 10.4a2 2 0 0 1-2 1.8H8.5a2 2 0 0 1-2-1.8z" fill="var(--accent-secondary)"/><rect x="9.1" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/><rect x="13" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/></svg></button>
+          <button class="btn" id="cancelDeleteBtn" data-tip="Cancel" aria-label="Cancel"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/><rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg></button>
         </div>
-      </div>
+      </div></div>
     </div>
 
     <!-- META MODAL -->
@@ -150,7 +140,7 @@
       aria-modal="true"
       aria-label="Edit post details"
     >
-      <div class="modal-box">
+      <div class="modal-box pp-receipt"><div class="pp-receipt__paper">
         <h3>Edit Details</h3>
         <p class="modal-subtitle">
           Update title, subject, class level, and excerpt.
@@ -178,23 +168,23 @@
         <div class="form-field">
           <label>Class Level</label>
           <select id="metaClass">
-            <optgroup label="Primary">
-              <option value="primary-1">Primary 1</option>
-              <option value="primary-2">Primary 2</option>
-              <option value="primary-3">Primary 3</option>
-              <option value="primary-4">Primary 4</option>
-              <option value="primary-5">Primary 5</option>
-              <option value="primary-6">Primary 6</option>
+            <optgroup label="Grades 1–6">
+              <option value="primary-1">Grade 1</option>
+              <option value="primary-2">Grade 2</option>
+              <option value="primary-3">Grade 3</option>
+              <option value="primary-4">Grade 4</option>
+              <option value="primary-5">Grade 5</option>
+              <option value="primary-6">Grade 6</option>
             </optgroup>
-            <optgroup label="Junior Secondary">
-              <option value="jss-1">JSS 1</option>
-              <option value="jss-2">JSS 2</option>
-              <option value="jss-3">JSS 3</option>
+            <optgroup label="Grades 7–9">
+              <option value="jss-1">Grade 7</option>
+              <option value="jss-2">Grade 8</option>
+              <option value="jss-3">Grade 9</option>
             </optgroup>
-            <optgroup label="Senior Secondary">
-              <option value="ss-1">SS 1</option>
-              <option value="ss-2">SS 2</option>
-              <option value="ss-3">SS 3</option>
+            <optgroup label="Grades 10–12">
+              <option value="ss-1">Grade 10</option>
+              <option value="ss-2">Grade 11</option>
+              <option value="ss-3">Grade 12</option>
             </optgroup>
           </select>
         </div>
@@ -209,12 +199,10 @@
           ></textarea>
         </div>
         <div class="modal-actions">
-          <button class="btn btn-primary" id="saveMetaBtn">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3.4 5.4a2 2 0 0 1 2-2h11l4.2 4.2v11a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><rect x="7" y="3.4" width="8.4" height="5.6" rx="0.8" fill="#fff"/><rect x="12.4" y="4.4" width="2" height="3.6" rx="0.5" fill="var(--accent-secondary)"/><rect x="6.6" y="13" width="10.8" height="7.6" rx="1" fill="var(--accent-primary)"/></svg>Save Details
-          </button>
-          <button class="btn" id="cancelMetaBtn">Cancel</button>
+          <button class="btn btn-primary" id="saveMetaBtn" data-tip="Save Details" aria-label="Save Details"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3.4 5.4a2 2 0 0 1 2-2h11l4.2 4.2v11a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><rect x="7" y="3.4" width="8.4" height="5.6" rx="0.8" fill="#fff"/><rect x="12.4" y="4.4" width="2" height="3.6" rx="0.5" fill="var(--accent-secondary)"/><rect x="6.6" y="13" width="10.8" height="7.6" rx="1" fill="var(--accent-primary)"/></svg></button>
+          <button class="btn" id="cancelMetaBtn" data-tip="Cancel" aria-label="Cancel"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/><rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg></button>
         </div>
-      </div>
+      </div></div>
     </div>
 
     <!-- LINKS MODAL -->
@@ -225,7 +213,7 @@
       aria-modal="true"
       aria-label="Add resource links"
     >
-      <div class="modal-box">
+      <div class="modal-box pp-receipt"><div class="pp-receipt__paper">
         <h3>
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 20px; height: 20px; vertical-align: -3px; margin-right: 0.4rem;"><path d="M11.4 7.4 13.2 5.6a3.9 3.9 0 0 1 5.5 5.5l-1.8 1.8-2-2 1.8-1.8a1.1 1.1 0 0 0-1.5-1.5l-1.8 1.8z" fill="var(--accent-secondary)"/><path d="M12.6 16.6 10.8 18.4a3.9 3.9 0 0 1-5.5-5.5l1.8-1.8 2 2-1.8 1.8a1.1 1.1 0 0 0 1.5 1.5l1.8-1.8z" fill="var(--accent-secondary)"/><rect x="8.32" y="10.70" width="7.35" height="2.6" rx="1.3" fill="var(--accent-danger)" transform="rotate(-45.00 12.00 12.00)"/></svg>
           Resource Links
@@ -293,12 +281,10 @@
         </div>
 
         <div class="modal-actions">
-          <button class="btn btn-primary" id="saveLinksBtn">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3.4 5.4a2 2 0 0 1 2-2h11l4.2 4.2v11a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><rect x="7" y="3.4" width="8.4" height="5.6" rx="0.8" fill="#fff"/><rect x="12.4" y="4.4" width="2" height="3.6" rx="0.5" fill="var(--accent-secondary)"/><rect x="6.6" y="13" width="10.8" height="7.6" rx="1" fill="var(--accent-primary)"/></svg>Save Links
-          </button>
-          <button class="btn" id="cancelLinksBtn">Cancel</button>
+          <button class="btn btn-primary" id="saveLinksBtn" data-tip="Save Links" aria-label="Save Links"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3.4 5.4a2 2 0 0 1 2-2h11l4.2 4.2v11a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><rect x="7" y="3.4" width="8.4" height="5.6" rx="0.8" fill="#fff"/><rect x="12.4" y="4.4" width="2" height="3.6" rx="0.5" fill="var(--accent-secondary)"/><rect x="6.6" y="13" width="10.8" height="7.6" rx="1" fill="var(--accent-primary)"/></svg></button>
+          <button class="btn" id="cancelLinksBtn" data-tip="Cancel" aria-label="Cancel"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/><rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg></button>
         </div>
-      </div>
+      </div></div>
     </div>
 
     <!-- IMAGE EDITOR MODAL -->
@@ -309,7 +295,7 @@
       aria-modal="true"
       aria-label="Add images to post"
     >
-      <div class="modal-box">
+      <div class="modal-box pp-receipt"><div class="pp-receipt__paper">
         <h3>
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 20px; height: 20px; vertical-align: -3px; margin-right: 0.4rem;"><rect x="2.6" y="3.4" width="18.8" height="17.2" rx="2" fill="var(--accent-secondary)"/><circle cx="8.2" cy="9" r="2.2" fill="var(--accent-primary)"/><path d="M2.6 18.6 9.2 12l3.6 3.6 3.2-3.2 5.4 5.4v.8a1.6 1.6 0 0 1-1.6 1.6H4.2a1.6 1.6 0 0 1-1.6-1.6z" fill="var(--accent-success)"/></svg>Image Editor
         </h3>
@@ -337,12 +323,10 @@
         </div>
         <div class="para-blocks-list" id="paraBlocksList"></div>
         <div class="modal-actions">
-          <button class="btn btn-primary" id="saveImgBtn">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3.4 5.4a2 2 0 0 1 2-2h11l4.2 4.2v11a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><rect x="7" y="3.4" width="8.4" height="5.6" rx="0.8" fill="#fff"/><rect x="12.4" y="4.4" width="2" height="3.6" rx="0.5" fill="var(--accent-secondary)"/><rect x="6.6" y="13" width="10.8" height="7.6" rx="1" fill="var(--accent-primary)"/></svg>Save Images
-          </button>
-          <button class="btn" id="cancelImgBtn">Cancel</button>
+          <button class="btn btn-primary" id="saveImgBtn" data-tip="Save Images" aria-label="Save Images"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3.4 5.4a2 2 0 0 1 2-2h11l4.2 4.2v11a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><rect x="7" y="3.4" width="8.4" height="5.6" rx="0.8" fill="#fff"/><rect x="12.4" y="4.4" width="2" height="3.6" rx="0.5" fill="var(--accent-secondary)"/><rect x="6.6" y="13" width="10.8" height="7.6" rx="1" fill="var(--accent-primary)"/></svg></button>
+          <button class="btn" id="cancelImgBtn" data-tip="Cancel" aria-label="Cancel"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/><rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg></button>
         </div>
-      </div>
+      </div></div>
     </div>
 
     <!-- CONTENT EDITOR MODAL -->
@@ -353,7 +337,7 @@
       aria-modal="true"
       aria-label="Edit post content"
     >
-      <div class="modal-box">
+      <div class="modal-box pp-receipt"><div class="pp-receipt__paper">
         <h3>
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 20px; height: 20px; vertical-align: -3px; margin-right: 0.4rem;"><path d="M4 4.4a2 2 0 0 1 2-2h8.4L20 8v11.6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><path d="M14.4 2.4 20 8h-4.4a1.2 1.2 0 0 1-1.2-1.2z" fill="var(--accent-primary)"/><rect x="7.4" y="11.4" width="9" height="1.8" rx="0.9" fill="#fff"/><rect x="7.4" y="15" width="6" height="1.8" rx="0.9" fill="#fff"/></svg>Edit Content
         </h3>
@@ -376,12 +360,10 @@
           </div>
         </div>
         <div class="modal-actions">
-          <button class="btn btn-primary" id="saveContentBtn">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3.4 5.4a2 2 0 0 1 2-2h11l4.2 4.2v11a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><rect x="7" y="3.4" width="8.4" height="5.6" rx="0.8" fill="#fff"/><rect x="12.4" y="4.4" width="2" height="3.6" rx="0.5" fill="var(--accent-secondary)"/><rect x="6.6" y="13" width="10.8" height="7.6" rx="1" fill="var(--accent-primary)"/></svg>Save Content
-          </button>
-          <button class="btn" id="cancelContentBtn">Cancel</button>
+          <button class="btn btn-primary" id="saveContentBtn" data-tip="Save Content" aria-label="Save Content"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3.4 5.4a2 2 0 0 1 2-2h11l4.2 4.2v11a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><rect x="7" y="3.4" width="8.4" height="5.6" rx="0.8" fill="#fff"/><rect x="12.4" y="4.4" width="2" height="3.6" rx="0.5" fill="var(--accent-secondary)"/><rect x="6.6" y="13" width="10.8" height="7.6" rx="1" fill="var(--accent-primary)"/></svg></button>
+          <button class="btn" id="cancelContentBtn" data-tip="Cancel" aria-label="Cancel"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/><rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg></button>
         </div>
-      </div>
+      </div></div>
     </div>
 
     <!-- VIDEOS MODAL -->
@@ -392,7 +374,7 @@
       aria-modal="true"
       aria-label="Add video thumbnails"
     >
-      <div class="modal-box">
+      <div class="modal-box pp-receipt"><div class="pp-receipt__paper">
         <h3>
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 20px; height: 20px; vertical-align: -3px; margin-right: 0.4rem;"><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.4" fill="var(--accent-secondary)"/><path d="M9.6 8.4v7.2l6-3.6z" fill="#fff"/></svg>
           Video Thumbnails
@@ -405,19 +387,14 @@
           <div id="videoThumbnailsList" class="video-thumbnails-list">
             <!-- Video rows will be added here dynamically -->
           </div>
-          <button class="btn btn-sm" id="addVideoBtn" type="button">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="10.5" y="4" width="3" height="16" rx="1.5" fill="var(--accent-success)"/><rect x="4" y="10.5" width="16" height="3" rx="1.5" fill="var(--accent-success)"/></svg>
-            Add Video
-          </button>
+          <button class="btn btn-sm" id="addVideoBtn" type="button" data-tip="Add Video" aria-label="Add Video"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="10.5" y="4" width="3" height="16" rx="1.5" fill="var(--accent-success)"/><rect x="4" y="10.5" width="16" height="3" rx="1.5" fill="var(--accent-success)"/></svg></button>
         </div>
 
         <div class="modal-actions">
-          <button class="btn btn-primary" id="saveVideosBtn">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3.4 5.4a2 2 0 0 1 2-2h11l4.2 4.2v11a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><rect x="7" y="3.4" width="8.4" height="5.6" rx="0.8" fill="#fff"/><rect x="12.4" y="4.4" width="2" height="3.6" rx="0.5" fill="var(--accent-secondary)"/><rect x="6.6" y="13" width="10.8" height="7.6" rx="1" fill="var(--accent-primary)"/></svg>Save Videos
-          </button>
-          <button class="btn" id="cancelVideosBtn">Cancel</button>
+          <button class="btn btn-primary" id="saveVideosBtn" data-tip="Save Videos" aria-label="Save Videos"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3.4 5.4a2 2 0 0 1 2-2h11l4.2 4.2v11a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><rect x="7" y="3.4" width="8.4" height="5.6" rx="0.8" fill="#fff"/><rect x="12.4" y="4.4" width="2" height="3.6" rx="0.5" fill="var(--accent-secondary)"/><rect x="6.6" y="13" width="10.8" height="7.6" rx="1" fill="var(--accent-primary)"/></svg></button>
+          <button class="btn" id="cancelVideosBtn" data-tip="Cancel" aria-label="Cancel"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/><rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg></button>
         </div>
-      </div>
+      </div></div>
     </div>
 
     <script src="/utils/components/loader.js"></script>

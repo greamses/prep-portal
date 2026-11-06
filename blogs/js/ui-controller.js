@@ -413,7 +413,7 @@ function addVideoRow(title = "", url = "", duration = "") {
         <span class="video-preview-duration">${escapeHtml(duration) || "--:--"}</span>
       </div>
     </div>
-    <button class="btn-remove-video" type="button" title="Remove video">
+    <button class="btn-remove-video" type="button" data-tip="Remove video" aria-label="Remove video">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="16" height="16"><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg>
     </button>
   `;
@@ -506,29 +506,23 @@ async function renderRecentPosts() {
           </div>
         </div>
         <div class="manage-post-actions">
-          <button class="btn btn-sm btn-links links-btn" data-id="${post.id}" data-title="${escapeHtml(post.title || "Untitled")}" data-video="${escapeHtml(post.videoLink || "")}" data-practice="${escapeHtml(post.practiceLink || "")}">
+          <button class="btn btn-sm btn-links links-btn" data-id="${post.id}" data-title="${escapeHtml(post.title || "Untitled")}" data-video="${escapeHtml(post.videoLink || "")}" data-practice="${escapeHtml(post.practiceLink || "")}" data-tip="Links" aria-label="Links">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M11.4 7.4 13.2 5.6a3.9 3.9 0 0 1 5.5 5.5l-1.8 1.8-2-2 1.8-1.8a1.1 1.1 0 0 0-1.5-1.5l-1.8 1.8z" fill="var(--accent-secondary)"/><path d="M12.6 16.6 10.8 18.4a3.9 3.9 0 0 1-5.5-5.5l1.8-1.8 2 2-1.8 1.8a1.1 1.1 0 0 0 1.5 1.5l1.8-1.8z" fill="var(--accent-secondary)"/><rect x="8.32" y="10.70" width="7.35" height="2.6" rx="1.3" fill="var(--accent-danger)" transform="rotate(-45.00 12.00 12.00)"/></svg>
-            <span class="btn-label">Links</span>
           </button>
-          <button class="btn btn-sm btn-videos videos-btn" data-id="${post.id}" data-title="${escapeHtml(post.title || "Untitled")}" data-videos='${JSON.stringify(post.videos || []).replace(/'/g, "&apos;")}'>
+          <button class="btn btn-sm btn-videos videos-btn" data-id="${post.id}" data-title="${escapeHtml(post.title || "Untitled")}" data-videos='${JSON.stringify(post.videos || []).replace(/'/g, "&apos;")}' data-tip="Videos" aria-label="Videos">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.4" fill="var(--accent-secondary)"/><path d="M9.6 8.4v7.2l6-3.6z" fill="#fff"/></svg>
-            <span class="btn-label">Videos</span>
           </button>
-          <button class="btn btn-sm btn-edit img-btn" data-id="${post.id}" data-title="${escapeHtml(post.title || "Untitled")}" data-featured="${escapeHtml(post.featuredImage || "")}">
+          <button class="btn btn-sm btn-edit img-btn" data-id="${post.id}" data-title="${escapeHtml(post.title || "Untitled")}" data-featured="${escapeHtml(post.featuredImage || "")}" data-tip="Images" aria-label="Images">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="2.6" y="3.4" width="18.8" height="17.2" rx="2" fill="var(--accent-secondary)"/><circle cx="8.2" cy="9" r="2.2" fill="var(--accent-primary)"/><path d="M2.6 18.6 9.2 12l3.6 3.6 3.2-3.2 5.4 5.4v.8a1.6 1.6 0 0 1-1.6 1.6H4.2a1.6 1.6 0 0 1-1.6-1.6z" fill="var(--accent-success)"/></svg>
-            <span class="btn-label">Images</span>
           </button>
-          <button class="btn btn-sm meta-btn" data-id="${post.id}" data-title="${escapeHtml(post.title || "")}" data-subject="${escapeHtml(subj)}" data-class="${escapeHtml(cls)}" data-excerpt="${escapeHtml(post.excerpt || "")}">
+          <button class="btn btn-sm meta-btn" data-id="${post.id}" data-title="${escapeHtml(post.title || "")}" data-subject="${escapeHtml(subj)}" data-class="${escapeHtml(cls)}" data-excerpt="${escapeHtml(post.excerpt || "")}" data-tip="Edit" aria-label="Edit">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M14.6 6.2 17.8 9.4 8.4 18.8 5.2 15.6z" fill="var(--accent-primary)"/><path d="M16 4.8a2.2 2.2 0 0 1 3.2 3.2l-1.4 1.4-3.2-3.2z" fill="var(--accent-danger)"/><path d="M5.2 15.6 8.4 18.8 3.6 20.4z" fill="var(--accent-warning)"/></svg>
-            <span class="btn-label">Edit</span>
           </button>
-          <button class="btn btn-sm content-btn" data-id="${post.id}" data-title="${escapeHtml(post.title || "Untitled")}">
+          <button class="btn btn-sm content-btn" data-id="${post.id}" data-title="${escapeHtml(post.title || "Untitled")}" data-tip="Content" aria-label="Content">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 4.4a2 2 0 0 1 2-2h8.4L20 8v11.6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><path d="M14.4 2.4 20 8h-4.4a1.2 1.2 0 0 1-1.2-1.2z" fill="var(--accent-primary)"/><rect x="7.4" y="11.4" width="9" height="1.8" rx="0.9" fill="#fff"/><rect x="7.4" y="15" width="6" height="1.8" rx="0.9" fill="#fff"/></svg>
-            <span class="btn-label">Content</span>
           </button>
-          <button class="btn btn-sm btn-danger del-btn" data-id="${post.id}" data-title="${escapeHtml(post.title || "Untitled")}">
+          <button class="btn btn-sm btn-danger del-btn" data-id="${post.id}" data-title="${escapeHtml(post.title || "Untitled")}" data-tip="Delete" aria-label="Delete">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="8.6" y="2.4" width="6.8" height="2.6" rx="1.3" fill="var(--accent-danger)"/><rect x="3" y="5" width="18" height="3.2" rx="1.6" fill="var(--accent-danger)"/><path d="M5.4 9.4h13.2l-1.1 10.4a2 2 0 0 1-2 1.8H8.5a2 2 0 0 1-2-1.8z" fill="var(--accent-secondary)"/><rect x="9.1" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/><rect x="13" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/></svg>
-            <span class="btn-label">Delete</span>
           </button>
         </div>`;
       list.appendChild(li);
@@ -817,8 +811,7 @@ if (saveContentBtn) {
     content = cleanDuplicateCssLinks(content);
 
     saveContentBtn.disabled = true;
-    const originalText = saveContentBtn.innerHTML;
-    saveContentBtn.textContent = "Saving...";
+    saveContentBtn.classList.add("is-busy");
 
     try {
       await updatePostContent(pendingContentId, content);
@@ -834,7 +827,7 @@ if (saveContentBtn) {
     } finally {
       if (saveContentBtn) {
         saveContentBtn.disabled = false;
-        saveContentBtn.innerHTML = originalText;
+        saveContentBtn.classList.remove("is-busy");
       }
     }
   });
@@ -850,8 +843,7 @@ if (saveLinksBtn) {
     const video = videoUrlInput ? videoUrlInput.value.trim() : "";
     const practice = practiceUrlInput ? practiceUrlInput.value.trim() : "";
     saveLinksBtn.disabled = true;
-    const originalText = saveLinksBtn.innerHTML;
-    saveLinksBtn.textContent = "Saving...";
+    saveLinksBtn.classList.add("is-busy");
     try {
       await updatePostLinks(
         pendingLinksId,
@@ -868,7 +860,7 @@ if (saveLinksBtn) {
     } finally {
       if (saveLinksBtn) {
         saveLinksBtn.disabled = false;
-        saveLinksBtn.innerHTML = originalText;
+        saveLinksBtn.classList.remove("is-busy");
       }
     }
   });
@@ -900,8 +892,7 @@ if (saveVideosBtn) {
     });
 
     saveVideosBtn.disabled = true;
-    const originalText = saveVideosBtn.innerHTML;
-    saveVideosBtn.textContent = "Saving...";
+    saveVideosBtn.classList.add("is-busy");
 
     try {
       await updatePostVideos(pendingVideosId, videos, videos.length > 0);
@@ -917,7 +908,7 @@ if (saveVideosBtn) {
     } finally {
       if (saveVideosBtn) {
         saveVideosBtn.disabled = false;
-        saveVideosBtn.innerHTML = originalText;
+        saveVideosBtn.classList.remove("is-busy");
       }
     }
   });
@@ -948,8 +939,7 @@ if (saveImgBtn) {
     const hasAnyImg =
       !!featured || [...inputs].some((i) => i && i.value.trim());
     saveImgBtn.disabled = true;
-    const originalText = saveImgBtn.innerHTML;
-    saveImgBtn.textContent = "Saving...";
+    saveImgBtn.classList.add("is-busy");
     try {
       await updatePostImages(pendingImgId, newContent, featured, hasAnyImg);
       addLog(
@@ -965,7 +955,7 @@ if (saveImgBtn) {
     } finally {
       if (saveImgBtn) {
         saveImgBtn.disabled = false;
-        saveImgBtn.innerHTML = originalText;
+        saveImgBtn.classList.remove("is-busy");
       }
     }
   });
@@ -993,8 +983,7 @@ if (saveMetaBtn) {
       return;
     }
     saveMetaBtn.disabled = true;
-    const originalText = saveMetaBtn.innerHTML;
-    saveMetaBtn.textContent = "Saving...";
+    saveMetaBtn.classList.add("is-busy");
     try {
       await updatePostMeta(pendingMetaId, {
         title,
@@ -1011,7 +1000,7 @@ if (saveMetaBtn) {
     } finally {
       if (saveMetaBtn) {
         saveMetaBtn.disabled = false;
-        saveMetaBtn.innerHTML = originalText;
+        saveMetaBtn.classList.remove("is-busy");
       }
     }
   });
@@ -1025,8 +1014,7 @@ if (confirmDeleteBtn) {
       return;
     }
     confirmDeleteBtn.disabled = true;
-    const originalText = confirmDeleteBtn.innerHTML;
-    confirmDeleteBtn.textContent = "Deleting...";
+    confirmDeleteBtn.classList.add("is-busy");
     try {
       await deletePost(pendingDeleteId);
       addLog(`[DEL] ${getShortId(pendingDeleteId)}...`, "success");
@@ -1038,7 +1026,7 @@ if (confirmDeleteBtn) {
     } finally {
       if (confirmDeleteBtn) {
         confirmDeleteBtn.disabled = false;
-        confirmDeleteBtn.innerHTML = originalText;
+        confirmDeleteBtn.classList.remove("is-busy");
       }
     }
   });
