@@ -1925,3 +1925,54 @@ body:has(.embed-overlay.active) {
 
 /* card description: smaller */
 .card-excerpt { font-size: var(--text-body-sm, 0.8rem); line-height: var(--leading-normal); }
+
+/* ── EMBED MODAL (video / practice) — paper frame, icon-only buttons ──
+   Same soft dress as the rest: warm paper box, soft shadow, square
+   icon buttons (pill border). The player itself stays black. */
+.embed-overlay {
+  background: color-mix(in srgb, var(--ink) 55%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.embed-box {
+  background: var(--surface-primary);
+  border: 0;
+  border-radius: 0;
+  box-shadow: var(--shadow-xl);
+  padding: 0.6rem;
+  gap: 0.6rem;
+}
+.embed-header {
+  border-bottom: 0;
+  padding: 0.2rem 0.2rem 0;
+}
+.embed-title {
+  color: var(--ink);
+  font-size: var(--text-mono-sm);
+}
+.embed-open-btn,
+.embed-close-btn {
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 0;
+  justify-content: center;
+  background: var(--surface-primary);
+  border: 2px solid color-mix(in srgb, var(--accent-secondary) 45%, transparent);
+  border-radius: 0;
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  transition: transform var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default);
+}
+.embed-open-btn:hover,
+.embed-close-btn:hover {
+  background: var(--surface-primary);
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent-secondary) 45%, transparent);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.embed-close-btn { border-color: color-mix(in srgb, var(--accent-danger) 50%, transparent); }
+.embed-open-btn svg,
+.embed-close-btn svg { width: 18px; height: 18px; }
+.embed-frame-wrap { border-radius: 0; overflow: hidden; }

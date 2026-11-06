@@ -146,6 +146,7 @@ function assignDomElements() {
 
 async function initBlog() {
   assignDomElements();
+  bindGlobalListeners();
   ensureLessonAssets();
 
   // Extract key parameter from active browser URI
@@ -833,7 +834,7 @@ async function openEmbedModal(url, type, title, rawUrl) {
 
 function closeEmbedModal() {
   embedOverlay.classList.remove("active");
-  embedFrame.src = "";
+  embedFrame.src = "about:blank";
 }
 
 // ─── LIKE, SHARE, COMMENTS ────────────────────────────────
@@ -1343,18 +1344,23 @@ async function openPostFromHash() {
   } catch (_) {}
 }
 
-// Global window event listeners
-window.addEventListener("scroll", () =>
-  scrollTopBtn.classList.toggle("show", window.scrollY > 300),
-);
-scrollTopBtn.addEventListener("click", () =>
-  window.scrollTo({ top: 0, behavior: "smooth" }),
-);
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && singlePostView.classList.contains("active"))
-    closePostView();
-});
-embedCloseBtn.addEventListener("click", closeEmbedModal);
-embedOverlay.addEventListener("click", (e) => {
-  if (e.target === embedOverlay) closeEmbedModal();
-});
+// Global window event listeners. Bound from initBlog(): the elements they
+// need are only looked up once the DOM is ready, so binding at module load
+// threw and left the embed Close button (and Esc) dead.
+function bindGlobalListeners() {
+  window.addEventListener("scroll", () =>
+    scrollTopBtn.classList.toggle("show", window.scrollY > 300),
+  );
+  scrollTopBtn.addEventListener("click", () =>
+    window.scrollTo({ top: 0, behavior: "smooth" }),
+  );
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (embedOverlay.classList.contains("active")) closeEmbedModal();
+    else if (singlePostView.classList.contains("active")) closePostView();
+  });
+  embedCloseBtn.addEventListener("click", closeEmbedModal);
+  embedOverlay.addEventListener("click", (e) => {
+    if (e.target === embedOverlay) closeEmbedModal();
+  });
+}
