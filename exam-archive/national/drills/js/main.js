@@ -92,16 +92,8 @@ const FRACTION_TYPE_LABELS = { like: 'Like', unlike: 'Unlike', wholeFraction: 'W
 // numbers require practice through the range", not cherry-picked).
 const RANGES = [
   { key: 'all', label: 'All', min: 1, max: 100 },
-  { key: '1-9', label: '1–9', min: 1, max: 9 },
-  { key: '10-19', label: '10–19', min: 10, max: 19 },
-  { key: '20-29', label: '20–29', min: 20, max: 29 },
-  { key: '30-39', label: '30–39', min: 30, max: 39 },
-  { key: '40-49', label: '40–49', min: 40, max: 49 },
-  { key: '50-59', label: '50–59', min: 50, max: 59 },
-  { key: '60-69', label: '60–69', min: 60, max: 69 },
-  { key: '70-79', label: '70–79', min: 70, max: 79 },
-  { key: '80-89', label: '80–89', min: 80, max: 89 },
-  { key: '90-100', label: '90–100', min: 90, max: 100 },
+  { key: '1-9', label: 'Single digits', min: 1, max: 9 },
+  { key: '10-99', label: 'Double digits', min: 10, max: 99 },
 ];
 
 // Fractions don't use a "number range" at all — in rng.js the same pool feeds
