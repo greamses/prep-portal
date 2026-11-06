@@ -5,14 +5,14 @@
    must agree, so (v-u)/t, (v−u)÷t and 1/t(v-u) all count. Implicit
    multiplication binds tighter than "/" (ab/cd is (ab)/(cd)).
 ═══════════════════════════════════════════════════════ */
-export const SUBJECT_OPS = ['subOne', 'subTwo', 'subMulti'];
+export const SUBJECT_OPS = ['subOne', 'subTwo', 'subMulti', 'subPower'];
 export const isSubjectOp = (op) => SUBJECT_OPS.includes(op);
 
 /* ── a tiny evaluator: + − * / ^ ( ) numbers and single letters ── */
 function evaluate(src, env) {
-  const s = String(src).replace(/\s+/g, '').replace(/[−–]/g, '-').replace(/×/g, '*').replace(/÷/g, '/')
+  const s = String(src).replace(/sqrt/gi, '√').replace(/cbrt/gi, '∛').replace(/\s+/g, '').replace(/[−–]/g, '-').replace(/×/g, '*').replace(/÷/g, '/')
     .replace(/²/g, '^2').replace(/³/g, '^3').replace(/½/g, '(1/2)');
-  if (!s || /[^0-9A-Za-z.+\-*/^()]/.test(s)) return NaN;
+  if (!s || /[^0-9A-Za-z.+\-*/^()√∛π]/.test(s)) return NaN;
   let i = 0;
   const peek = () => s[i];
   const isLetter = (c) => !!c && /[A-Za-z]/.test(c);
@@ -32,7 +32,7 @@ function evaluate(src, env) {
   }
   function product() {
     let v = unary();
-    while (peek() === '(' || isLetter(peek())) v *= power(); // implicit: 2as, a(b+c)
+    while (peek() === '(' || isLetter(peek()) || peek() === '√' || peek() === '∛' || peek() === 'π') v *= power(); // implicit: 2as, a(b+c), 2πr
     return v;
   }
   function unary() {
@@ -43,16 +43,26 @@ function evaluate(src, env) {
   function power() {
     let base;
     if (peek() === '(') { i++; base = expr(); if (peek() !== ')') return NaN; i++; }
+    else if (peek() === '√' || peek() === '∛') {
+      const root = s[i++] === '√' ? Math.sqrt : Math.cbrt;
+      let arg;
+      if (peek() === '(') { i++; arg = expr(); if (peek() !== ')') return NaN; i++; } else arg = power();
+      base = root(arg);
+    }
+    else if (peek() === 'π') { i++; base = Math.PI; }
     else if (isLetter(peek())) { const name = s[i++]; if (!(name in env)) return NaN; base = env[name]; }
     else if (isDigit(peek())) { let n = ''; while (isDigit(peek())) n += s[i++]; base = Number(n); }
     else return NaN;
     if (peek() === '^') {
       i++;
-      let neg = false;
-      if (peek() === '-') { neg = true; i++; }
-      let e = ''; while (/[0-9]/.test(peek() || '')) e += s[i++];
-      if (!e) return NaN;
-      base = base ** (neg ? -Number(e) : Number(e));
+      if (peek() === '(') { i++; const e = expr(); if (peek() !== ')') return NaN; i++; base **= e; }
+      else {
+        let neg = false;
+        if (peek() === '-') { neg = true; i++; }
+        let e = ''; while (/[0-9.]/.test(peek() || '')) e += s[i++];
+        if (!e) return NaN;
+        base = base ** (neg ? -Number(e) : Number(e));
+      }
     }
     return base;
   }
@@ -60,18 +70,18 @@ function evaluate(src, env) {
   return i === s.length ? v : NaN;
 }
 
-const lettersIn = (src) => new Set(String(src).match(/[A-Za-z]/g) || []);
-const POINTS = [
-  [2.3, 3.1, 5.7, 7.9, 1.9, 4.3, 6.1, 8.3],
-  [3.7, 1.3, 2.9, 5.3, 6.7, 2.1, 9.1, 3.3],
-  [5.1, 4.7, 1.7, 3.9, 2.7, 7.3, 4.1, 1.1],
-];
-function envFor(vars, k) {
-  const env = {}; [...vars].sort().forEach((v, j) => { env[v] = POINTS[k][j % 8] + j * 0.37; }); return env;
+// letters that are variables: not the spelled-out sqrt / cbrt / pi
+const lettersIn = (src) => new Set((String(src).replace(/sqrt|cbrt|pi/gi, '').match(/[A-Za-z]/g) || []));
+// Deterministic pseudo-random positive points; roots can fail at some, so we
+// try many and judge on the ones where the EXPECTED answer is a real number.
+function envAt(vars, k) {
+  const env = {}; let x = (k + 1) * 7919;
+  [...vars].sort().forEach((v) => { x = (x * 1103515245 + 12345) % 2147483648; env[v] = 1.5 + (x % 7000) / 1000; });
+  return env;
 }
 
 export function checkSubject(typed, ans) {
-  let t = String(typed).trim();
+  let t = String(typed).trim().replace(/pi/gi, 'π');
   // allow "a = (v-u)/t"
   const eq = t.indexOf('=');
   if (eq >= 0) { if (t.slice(0, eq).trim() !== ans.find) return false; t = t.slice(eq + 1); }
@@ -79,13 +89,16 @@ export function checkSubject(typed, ans) {
   const want = lettersIn(ans.expr), got = lettersIn(t);
   for (const g of got) if (!want.has(g)) return false;
   const vars = new Set([...want, ...got]);
-  for (let k = 0; k < POINTS.length; k++) {
-    const env = envFor(vars, k);
-    const a = evaluate(t, env), b = evaluate(ans.expr, env);
-    if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
-    if (Math.abs(a - b) > 1e-8 * Math.max(1, Math.abs(b))) return false;
+  let agreed = 0;
+  for (let k = 0; k < 80 && agreed < 4; k++) {
+    const env = envAt(vars, k);
+    const b = evaluate(ans.expr, env);
+    if (!Number.isFinite(b)) continue;          // not a real number here: skip the point
+    const a = evaluate(t, env);
+    if (!Number.isFinite(a) || Math.abs(a - b) > 1e-8 * Math.max(1, Math.abs(b))) return false;
+    agreed += 1;
   }
-  return true;
+  return agreed >= 4;
 }
 
 /* ── the formulas ──
@@ -130,6 +143,23 @@ const T = {
     ['A = P + PRT/100', 'A = P + \\tfrac{PRT}{100}', 'R', '100(A-P)/(PT)'],
     ['S = n(a + l)/2', 'S = \\tfrac{n(a + l)}{2}', 'l', '2S/n - a'],
     ['S = n(a + l)/2', 'S = \\tfrac{n(a + l)}{2}', 'n', '2S/(a+l)'],
+  ],
+  subPower: [
+    ['A = πr²', 'A = \\pi r^{2}', 'r', '√(A/π)'],
+    ['V = πr²h', 'V = \\pi r^{2}h', 'r', '√(V/(πh))'],
+    ['V = πr²h', 'V = \\pi r^{2}h', 'h', 'V/(πr^2)'],
+    ['V = 4πr³/3', 'V = \\tfrac{4}{3}\\pi r^{3}', 'r', '∛(3V/(4π))'],
+    ['V = x³', 'V = x^{3}', 'x', '∛(V)'],
+    ['s = ½at²', 's = \\tfrac{1}{2}at^{2}', 't', '√(2s/a)'],
+    ['s = ½at²', 's = \\tfrac{1}{2}at^{2}', 'a', '2s/t^2'],
+    ['E = ½mv²', 'E = \\tfrac{1}{2}mv^{2}', 'v', '√(2E/m)'],
+    ['E = ½mv²', 'E = \\tfrac{1}{2}mv^{2}', 'm', '2E/v^2'],
+    ['c² = a² + b²', 'c^{2} = a^{2} + b^{2}', 'a', '√(c^2-b^2)'],
+    ['v² = u² + 2as', 'v^{2} = u^{2} + 2as', 'u', '√(v^2-2as)'],
+    ['d = √(x² + y²)', 'd = \\sqrt{x^{2} + y^{2}}', 'x', '√(d^2-y^2)'],
+    ['y = √x', 'y = \\sqrt{x}', 'x', 'y^2'],
+    ['t = √(2h/g)', 't = \\sqrt{\\tfrac{2h}{g}}', 'h', 'gt^2/2'],
+    ['T = 2π√(l/g)', 'T = 2\\pi\\sqrt{\\tfrac{l}{g}}', 'l', 'gT^2/(4π^2)'],
   ],
 };
 

@@ -47,7 +47,7 @@ const OPERATION_LABELS = {
   geoRect: 'Rectangle', geoTriangle: 'Triangle', geoTrapezium: 'Trapezium', geoParallelogram: 'Parallelogram',
   geoHyp: 'Find the hypotenuse', geoLeg: 'Find a short side', geoTrig: 'Sin, cos, tan ratios',
   geoCircumference: 'Circumference', geoCircleArea: 'Circle area', geoCuboid: 'Cuboid volume', geoCylinder: 'Cylinder volume', geoCone: 'Cone volume',
-  subOne: 'One step', subTwo: 'Two steps', subMulti: 'Brackets and fractions',
+  subOne: 'One step', subTwo: 'Two steps', subMulti: 'Brackets and fractions', subPower: 'Powers and roots',
   eqOne: '1-Step Equations', eqTwo: '2-Step Equations', eqMulti: 'Multi-Step Equations',
   baseTo10: 'To Base 10', baseFrom10: 'From Base 10', baseToBase: 'Base to Base',
 };
@@ -65,7 +65,7 @@ const CATEGORY_OPERATIONS = {
   integers: ['intAdd', 'intSub', 'intMul', 'intDiv', 'directed'],
   algebra: ['algDistribute', 'algFactorise', 'algQuadExpand', 'algQuadFactorise', 'algMixed'],
   equations: ['eqOne', 'eqTwo', 'eqMulti'],
-  subject: ['subOne', 'subTwo', 'subMulti'],
+  subject: ['subOne', 'subTwo', 'subMulti', 'subPower'],
   bases: ['baseTo10', 'baseFrom10', 'baseToBase'],
   angles: ['geoAngLine', 'geoAngTriangle', 'geoAngPolygon', 'geoAngParallel'],
   areas: ['geoRect', 'geoTriangle', 'geoTrapezium', 'geoParallelogram'],

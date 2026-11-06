@@ -135,7 +135,7 @@ function isCorrectAnswer(typed, answer) {
 // Strip to digits plus at most one "/" and at most one "." — neither of
 // which can lead. Everything else a question ever answers with is digits.
 function sanitizeTyped(raw) {
-  if (currentQuestion && currentQuestion.subject) return raw.replace(/−/g, '-').replace(/[^0-9A-Za-z=^()+\-*/.]/g, '').slice(0, 28);
+  if (currentQuestion && currentQuestion.subject) return raw.replace(/−/g, '-').replace(/[^0-9A-Za-z=^()+\-*/.√∛π]/g, '').slice(0, 28);
   if (currentQuestion && currentQuestion.base) return raw.replace(/[^0-9a-fA-F]/g, '').toUpperCase().slice(0, 10);
   if (currentQuestion && currentQuestion.alg) return raw.replace(/−/g, '-').replace(/X/g, 'x').replace(/[^0-9x^()+\-*]/g, '').slice(0, 24);
   // A leading "-" is kept (integer answers can be negative); any other is dropped.
