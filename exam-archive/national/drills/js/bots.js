@@ -27,7 +27,7 @@ export const BARS_PACE = 6;
 export function botPaceFor(operations) {
   const ops = operations || [];
   if (ops.includes('rmm')) return RMM_PACE;
-  return ops.some((o) => /^(alg|eq|base)/.test(o)) ? ALG_PACE : 1; // working an expression out is not 7 × 8
+  return ops.some((o) => /^(alg|eq|base|geo)/.test(o)) ? ALG_PACE : 1; // working an expression out is not 7 × 8
 }
 
 export function simulateBotScore(seed, botSlot, timeLimitSec, pace = 1) {

@@ -29,6 +29,8 @@ function toTex(t) {
     .replace(/(\d+|x)([²³⁴])/g, (_, n, e) => `${n}^{${SUPS[e]}}`)
     .replace(/(\d+|x)⁄(\d+)/g, '\\tfrac{$1}{$2}')
     .replace(/([0-9A-F?]+)([₀-₉]+)/g, (_, d, u) => `${d === '?' ? '\\square ' : `\\mathrm{${d}}`}_{${[...u].map((c) => c.charCodeAt(0) - 0x2080).join('')}}`)
+    .replace(/°/g, '^{\\circ}')
+    .replace(/\b(sin|cos|tan)\b/g, '\\$1 ')
     .replace(/−/g, '-').replace(/×/g, '\\times ').replace(/÷/g, '\\div ');
 }
 function typedTex(t) {

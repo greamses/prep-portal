@@ -43,6 +43,10 @@ const OPERATION_LABELS = {
   rmm: 'Σ Molecular Mass',
   intAdd: '+ Add Integers', intSub: '− Subtract Integers', directed: '± Directed Numbers', intMul: '× Multiply Integers', intDiv: '÷ Divide Integers',
   algDistribute: 'a(x+b) Distribution', algFactorise: 'Factorisation', algQuadExpand: '(x+a)(x+b) Quadratic Expansion', algQuadFactorise: 'x²+bx+c Quadratic Factorisation', algMixed: 'Mixed Algebra (all four)',
+  geoAngLine: 'Straight line', geoAngTriangle: 'Triangle', geoAngPolygon: 'Polygons', geoAngParallel: 'Parallel lines',
+  geoRect: 'Rectangle', geoTriangle: 'Triangle', geoTrapezium: 'Trapezium', geoParallelogram: 'Parallelogram',
+  geoHyp: 'Find the hypotenuse', geoLeg: 'Find a short side', geoTrig: 'Sin, cos, tan ratios',
+  geoCircumference: 'Circumference', geoCircleArea: 'Circle area', geoCuboid: 'Cuboid volume', geoCylinder: 'Cylinder volume', geoCone: 'Cone volume',
   eqOne: '1-Step Equations', eqTwo: '2-Step Equations', eqMulti: 'Multi-Step Equations',
   baseTo10: 'To Base 10', baseFrom10: 'From Base 10', baseToBase: 'Base to Base',
 };
@@ -61,6 +65,10 @@ const CATEGORY_OPERATIONS = {
   algebra: ['algDistribute', 'algFactorise', 'algQuadExpand', 'algQuadFactorise', 'algMixed'],
   equations: ['eqOne', 'eqTwo', 'eqMulti'],
   bases: ['baseTo10', 'baseFrom10', 'baseToBase'],
+  angles: ['geoAngLine', 'geoAngTriangle', 'geoAngPolygon', 'geoAngParallel'],
+  areas: ['geoRect', 'geoTriangle', 'geoTrapezium', 'geoParallelogram'],
+  pythag: ['geoHyp', 'geoLeg', 'geoTrig'],
+  circles: ['geoCircumference', 'geoCircleArea', 'geoCuboid', 'geoCylinder', 'geoCone'],
   // Tables (the grid filler) has no operations step — 'multiply' is a harmless
   // placeholder so the room doc still carries a valid, non-empty operations
   // list; the grid round ignores it entirely (see js/grid.js).
@@ -78,6 +86,10 @@ const CATEGORY_DEFAULT_OPS = {
   algebra: ['algDistribute'],
   equations: ['eqOne'],
   bases: ['baseTo10'],
+  angles: ['geoAngLine'],
+  areas: ['geoRect'],
+  pythag: ['geoHyp'],
+  circles: ['geoCircumference'],
   timestable: ['multiply'],
   fracbars: ['fracAdd'],
 };
@@ -161,7 +173,7 @@ let timeLimit = mem.get('timeLimit', 60, [30, 60, 90, 120]);
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
-let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'equations', 'bases', 'timestable', 'fracbars']);
+let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'equations', 'bases', 'angles', 'areas', 'pythag', 'circles', 'timestable', 'fracbars']);
 let range = mem.get('range', 'all', RANGES.map((r) => r.key));
 if (categoryValue === 'algebra') range = '1-9'; // single digits only
 // Tables (grid filler) only — how much of each 5×5 grid is blank. The grid is
@@ -312,7 +324,8 @@ player.start('name');
    out (the relative molecular mass) and the numbers are the compound's own.
    Switching category resets the whole branch, so nothing stale carries over. */
 const topic = createCarousel(topicMount);
-topic.addSlide('category', 'Category', () => {});
+topic.addSlide('area', 'Area', () => {});
+topic.addSlide('category', 'Topic', () => {});
 topic.addSlide('fraction-type', 'Fraction Type', () => {});
 topic.addSlide('operations', 'Operations', () => {});
 topic.addSlide('range', 'Number Range', () => {});
@@ -326,7 +339,7 @@ function renderOperationsPick() {
   const isFractions = categoryValue === 'fractions';
   const isBars = categoryValue === 'fracbars';
   renderMultiStep(topic, 'operations', {
-    title: isBars ? 'Add, subtract, or both?' : `Which ${categoryValue} operations?`,
+    title: isBars ? 'Add, subtract, or both?' : `Which ${(TOPIC_LABEL[categoryValue] || categoryValue).toLowerCase()} questions?`,
     colorOffset: 3,
     options: CATEGORY_OPERATIONS[categoryValue].map((op) => ({ value: op, label: OPERATION_LABELS[op] })),
     isChecked: (v) => operations.has(v),
@@ -473,47 +486,77 @@ function renderNumbersPick() {
   });
 }
 
-renderChoiceStep(topic, 'category', {
-  title: 'What category?',
-  name: 'drill-category',
-  options: [
-    { value: 'basic', label: 'Basic', checked: categoryValue === 'basic' },
-    { value: 'exponent', label: 'Exponent', checked: categoryValue === 'exponent' },
-    { value: 'fractions', label: 'Fractions', checked: categoryValue === 'fractions' },
-    { value: 'chemistry', label: 'Chemistry', checked: categoryValue === 'chemistry' },
-    { value: 'integers', label: 'Integers', checked: categoryValue === 'integers' },
-    { value: 'algebra', label: 'Algebra', checked: categoryValue === 'algebra' },
-    { value: 'equations', label: 'Equations', checked: categoryValue === 'equations' },
-    { value: 'bases', label: 'Number Bases', checked: categoryValue === 'bases' },
-    { value: 'timestable', label: 'Tables', checked: categoryValue === 'timestable' },
-    { value: 'fracbars', label: 'Fraction Bars', checked: categoryValue === 'fracbars' },
+/* Area → Topic. The four areas group the topics; a topic is what used to be
+   the flat "category" (its own operations, level and content steps follow). */
+const AREAS = [
+  { value: 'numbers', label: 'Numbers' },
+  { value: 'algebra', label: 'Algebra' },
+  { value: 'geometry', label: 'Geometry' },
+  { value: 'science', label: 'Science' },
+];
+const AREA_TOPICS = {
+  numbers: [
+    ['basic', 'Arithmetic'], ['integers', 'Integers'], ['exponent', 'Powers & Roots'],
+    ['fractions', 'Fractions'], ['bases', 'Number Bases'], ['timestable', 'Times Tables Grid'], ['fracbars', 'Fraction Bars'],
   ],
-  onPick: (v) => {
-    if (v !== categoryValue) {
-      // Reset the whole branch — a range picked under Basic must not survive
-      // into Fractions (which has no range at all). Re-picking the SAME
-      // category keeps the remembered picks.
-      categoryValue = v;
-      operations.clear();
-      CATEGORY_DEFAULT_OPS[v].forEach((op) => operations.add(op));
-      fractionTypes.clear();
-      tables.clear();
-      range = 'all';
-      denominators.clear();
-      DENOMINATORS.forEach((n) => denominators.add(n));
-      compounds.clear();
-      ALL_COMPOUND_SETS.forEach((k) => compounds.add(k));
-      updateStartDisabled();
-    }
+  algebra: [['algebra', 'Expressions'], ['equations', 'Equations']],
+  geometry: [['angles', 'Angles'], ['areas', 'Area & Perimeter'], ['pythag', 'Pythagoras & Trig'], ['circles', 'Circles & Volume']],
+  science: [['chemistry', 'Molecular Mass']],
+};
+const AREA_OF = {};
+Object.entries(AREA_TOPICS).forEach(([area, list]) => list.forEach(([v]) => { AREA_OF[v] = area; }));
+const TOPIC_LABEL = {};
+Object.values(AREA_TOPICS).forEach((list) => list.forEach(([v, l]) => { TOPIC_LABEL[v] = l; }));
+let areaValue = AREA_OF[categoryValue] || 'numbers';
 
-    if (v === 'timestable') { renderGridBlanksStep(); topic.goTo('grid-blanks'); }
-    else if (v === 'chemistry') { renderCompoundsPick(); topic.goTo('compounds'); }
-    else if (v === 'fractions') { renderFractionTypePick(); topic.goTo('fraction-type'); }
-    else { renderOperationsPick(); topic.goTo('operations'); }
+function pickCategory(v) {
+  if (v !== categoryValue) {
+    // Reset the whole branch — a range picked under Basic must not survive
+    // into Fractions (which has no range at all). Re-picking the SAME
+    // topic keeps the remembered picks.
+    categoryValue = v;
+    operations.clear();
+    CATEGORY_DEFAULT_OPS[v].forEach((op) => operations.add(op));
+    fractionTypes.clear();
+    tables.clear();
+    range = 'all';
+    denominators.clear();
+    DENOMINATORS.forEach((n) => denominators.add(n));
+    compounds.clear();
+    ALL_COMPOUND_SETS.forEach((k) => compounds.add(k));
+    updateStartDisabled();
+  }
+
+  if (v === 'timestable') { renderGridBlanksStep(); topic.goTo('grid-blanks'); }
+  else if (v === 'chemistry') { renderCompoundsPick(); topic.goTo('compounds'); }
+  else if (v === 'fractions') { renderFractionTypePick(); topic.goTo('fraction-type'); }
+  else { renderOperationsPick(); topic.goTo('operations'); }
+}
+
+function renderTopicPick() {
+  renderChoiceStep(topic, 'category', {
+    title: `Which ${AREAS.find((a) => a.value === areaValue).label.toLowerCase()} topic?`,
+    name: 'drill-category',
+    options: AREA_TOPICS[areaValue].map(([value, label]) => ({ value, label, checked: categoryValue === value })),
+    onPick: pickCategory,
+  });
+}
+
+renderChoiceStep(topic, 'area', {
+  title: 'What do you want to practise?',
+  name: 'drill-area',
+  options: AREAS.map((a) => ({ ...a, checked: areaValue === a.value })),
+  onPick: (v) => {
+    areaValue = v;
+    // A one-topic area has nothing to choose between.
+    if (AREA_TOPICS[v].length === 1) { pickCategory(AREA_TOPICS[v][0][0]); return; }
+    renderTopicPick();
+    topic.goTo('category');
   },
 });
+renderTopicPick();
 
-topic.start('category');
+topic.start('area');
 
 /* ── SECTION 3 — Game Options ─────────────────────────────────
    Mode → Room Size → Time Limit. Versus skips Room Size — it's always 1v1. */
@@ -617,7 +660,7 @@ const flow = createSectionFlow([
   {
     el: $('drill-section-topic'),
     chips: () => {
-      const cat = categoryValue[0].toUpperCase() + categoryValue.slice(1);
+      const cat = TOPIC_LABEL[categoryValue] || categoryValue;
       // Tables (grid filler) recaps its two dials: size and blank density.
       if (categoryValue === 'timestable') {
         return [
