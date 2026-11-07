@@ -131,5 +131,109 @@ module.exports = function () {
     res.json({ ok: true, removed: ids.length });
   }));
 
+  /* ══ BROWSING THE ONE BANK ═════════════════════════════════════════════════
+     The Exam Maker's "Question bank" browser. Nothing is loaded in bulk:
+
+       GET /api/bank/browse/subjects        the subject cards: count, exams, sources, topics, years
+                                            (from one summary document, rebuilt when it is old)
+       GET /api/bank/browse?subject=&scheme=&source=&topic=&year=&mine=1&after=
+                                            30 questions at a time, as Exam Maker questions
+
+     What a teacher sees: every public question; their own (mine=1); the gated
+     competition papers only if they are premium or the admin; verbatim past
+     papers only while "hide originals" is off (the admin always sees them). */
+  const access = require("../lib/access");
+  const SUMMARY_TTL = 6 * 60 * 60 * 1000;
+  let summaryMem = null;
+
+  async function siteFlags() {
+    try { const s = await db().collection("config").doc("site").get(); return s.exists ? s.data() : {}; } catch (_) { return {}; }
+  }
+
+  async function buildSummary() {
+    const snap = await bankCol().select("subject", "subjectLabel", "scheme", "source", "topic", "year", "owner", "visibility", "comp").get();
+    const subjects = {};
+    const bump = (o, k) => { if (k) o[k] = (o[k] || 0) + 1; };
+    snap.forEach((d) => {
+      const x = d.data();
+      if (x.owner || !x.subject) return;                       // a teacher's own: never in the shared summary
+      const s = subjects[x.subject] || (subjects[x.subject] = { label: x.subjectLabel || x.subject, count: 0, gated: 0, past: 0, schemes: {}, sources: {}, topics: {}, years: {}, comps: {} });
+      if (x.visibility === "gated") { s.gated++; bump(s.comps, x.comp ? `${x.comp.comp}|${x.comp.div}|${x.comp.year}|${x.comp.round}` : null); }
+      else s.count++;
+      if (x.source === "past") s.past++;
+      bump(s.schemes, x.scheme); bump(s.sources, x.source); bump(s.years, x.year);
+      bump(s.topics, x.topic && String(x.topic).slice(0, 60));
+    });
+    // keep the summary small: the 60 biggest topics per subject
+    for (const s of Object.values(subjects)) {
+      s.topics = Object.fromEntries(Object.entries(s.topics).sort((a, b) => b[1] - a[1]).slice(0, 60));
+    }
+    const out = { subjects, builtAt: Date.now(), total: snap.size };
+    await db().collection("config").doc("bankSummary").set(out);
+    return out;
+  }
+  async function summary(force) {
+    if (!force && summaryMem && Date.now() - summaryMem.builtAt < SUMMARY_TTL) return summaryMem;
+    if (!force) {
+      const d = await db().collection("config").doc("bankSummary").get();
+      if (d.exists && Date.now() - (d.data().builtAt || 0) < SUMMARY_TTL) return (summaryMem = d.data());
+    }
+    return (summaryMem = await buildSummary());
+  }
+
+  router.get("/browse/subjects", authenticate, guard(async (req, res) => {
+    const sum = await summary(isAdmin(req) && req.query.refresh === "1");
+    const premium = (await access.getUserAccess(req.user.uid, req.user.email)).isPremium;
+    const flags = await siteFlags();
+    const showPast = isAdmin(req) || !flags.hideOriginals;
+    const subjects = Object.entries(sum.subjects).map(([key, s]) => ({
+      key, label: s.label,
+      count: s.count - (showPast ? 0 : s.past) + (premium ? s.gated : 0),
+      schemes: s.schemes, sources: s.sources, topics: s.topics, years: s.years,
+      comps: premium ? s.comps : {},
+    })).filter((s) => s.count > 0).sort((a, b) => b.count - a.count);
+    const mine = (await bankCol().where("owner", "==", req.user.uid).count().get()).data().count;
+    res.json({ ok: true, subjects, mine, premium, showPast });
+  }));
+
+  router.get("/browse", authenticate, guard(async (req, res) => {
+    const q = req.query;
+    const str = (v) => String(v || "").trim().slice(0, 80);
+    const premium = (await access.getUserAccess(req.user.uid, req.user.email)).isPremium;
+    const flags = await siteFlags();
+    const showPast = isAdmin(req) || !flags.hideOriginals;
+    let base = bankCol();
+    if (q.mine === "1") base = base.where("owner", "==", req.user.uid);
+    if (str(q.subject)) base = base.where("subject", "==", str(q.subject));
+    if (str(q.scheme)) base = base.where("scheme", "==", str(q.scheme));
+    if (str(q.source)) base = base.where("source", "==", str(q.source));
+    if (str(q.topic)) base = base.where("topic", "==", str(q.topic));
+    if (str(q.year)) base = base.where("year", "==", str(q.year));
+    if (str(q.comp)) base = base.where("compKey", "==", str(q.comp));
+    base = base.orderBy(admin.firestore.FieldPath.documentId());
+    const ok = (x) => (x.owner ? x.owner === req.user.uid : true)
+      && (x.visibility === "gated" ? premium : true)
+      && (x.source === "past" ? showPast || x.owner : true);
+    const items = [];
+    let after = str(q.after) || null, done = false;
+    for (let round = 0; round < 6 && items.length < 30 && !done; round++) {
+      let page = base.limit(60);
+      if (after) page = page.startAfter(after);
+      const snap = await page.get();
+      if (snap.size < 60) done = true;
+      for (const d of snap.docs) {
+        after = d.id;
+        const x = d.data();
+        if (!ok(x)) continue;
+        items.push({
+          id: d.id, q: ONE.bankToEm(x),
+          meta: { source: x.source || "", scheme: x.scheme || "", year: x.year || "", topic: x.topic || "", comp: x.compKey || "", mine: x.owner === req.user.uid },
+        });
+        if (items.length >= 30) break;
+      }
+    }
+    res.json({ ok: true, items, next: done && items.length < 30 ? null : after });
+  }));
+
   return router;
 };

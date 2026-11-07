@@ -1214,3 +1214,35 @@ html.xm-bk-on { overflow: hidden; }
 .xm-tickbar .pp-btn { font-size: 0.72rem; display: inline-flex; align-items: center; gap: 0.3rem; }
 .xm-tickbar .pp-btn svg { width: 15px; height: 15px; }
 .xm-tickbar__del.is-armed { background: #f6d5cf !important; }
+
+/* ── Question bank browser (js/bankbrowse.js) ─────────────────────────────
+   Opens on subject cards; a card opens that subject with filters and a page
+   of questions to tick. Square corners, the site's soft paper. */
+.pp-receipt.xm-bb__card { width: min(58rem, 100%); }
+.xm-bb__crumbs { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; flex: none; }
+.xm-bb__back { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-secondary, #3b6fd4); text-decoration: underline; cursor: pointer; }
+.xm-bb__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 0.7rem; padding: 0.2rem; }
+.xm-bb__subj { display: grid; justify-items: center; gap: 0.35rem; padding: 0.95rem 0.6rem 0.8rem; border: 1px solid rgba(42, 39, 35, 0.14); border-radius: 0; background: #fffdf8; cursor: pointer; text-align: center; font: inherit; color: inherit; box-shadow: 0 2px 6px rgba(42, 39, 35, 0.08); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.xm-bb__subj:hover, .xm-bb__subj:focus-visible { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(42, 39, 35, 0.14); }
+.xm-bb__icon svg { width: 40px; height: 40px; display: block; }
+.xm-bb__name { font-weight: 800; font-size: 0.9rem; line-height: 1.2; }
+.xm-bb__num { font-size: 0.72rem; color: #6b655c; }
+.xm-bb__filters { display: grid; gap: 0.45rem; flex: none; font-size: 0.78rem; }
+.xm-bb__row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.xm-bb__row > b { min-width: 3.6rem; text-transform: capitalize; }
+.xm-bb__row select { max-width: 18rem; font-size: 0.78rem; }
+.xm-bb__chip { border: 1px solid rgba(42, 39, 35, 0.2); border-radius: 0; background: #fff; padding: 0.2rem 0.55rem; font: inherit; cursor: pointer; }
+.xm-bb__chip i { font-style: normal; color: #6b655c; font-size: 0.68rem; }
+.xm-bb__chip.is-on { background: #fff3a8; border-color: rgba(42, 39, 35, 0.5); font-weight: 700; }
+.xm-bb__list { display: grid; gap: 0.5rem; }
+.xm-bb__q { display: grid; grid-template-columns: auto 1fr; gap: 0.6rem; align-items: start; padding: 0.6rem 0.7rem; border: 1px solid rgba(42, 39, 35, 0.12); background: #fff; cursor: pointer; }
+.xm-bb__q.is-on { background: #fffbe0; border-color: rgba(42, 39, 35, 0.4); }
+.xm-bb__q input { margin-top: 0.25rem; }
+.xm-bb__qbody { display: grid; gap: 0.3rem; min-width: 0; font-size: 0.85rem; }
+.xm-bb__tags { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.xm-bb__text { overflow-wrap: anywhere; }
+.xm-bb__opts { margin: 0; padding-left: 1.4rem; list-style: upper-alpha; display: grid; gap: 0.1rem; font-size: 0.8rem; }
+.xm-bb__opts .is-key { font-weight: 800; }
+.xm-bb__listfoot { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.7rem 0 0.2rem; }
+.xm-bb__end { font-size: 0.75rem; color: #6b655c; }
+.xm-bb__foot { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex: none; padding-top: 0.6rem; border-top: 1px dashed rgba(42, 39, 35, 0.22); font-size: 0.82rem; }

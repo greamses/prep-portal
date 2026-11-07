@@ -18,6 +18,7 @@ import { examGate } from "/utils/components/exam-gate.js";
 import { showInstructions } from "./instructions.js";
 import { createWatch } from "/utils/components/exam-watch.js";
 import { openBank } from "./bank.js";
+import { openBankBrowser } from "./bankbrowse.js";
 import { saveExam, openExams, currentExamId, setCurrentExamId } from "./exams.js";
 import { shrink, loadHead } from "/utils/components/workbook/letterhead.js";
 import { loadMath, mathify } from "/utils/components/workbook/mathify.js";
@@ -434,6 +435,7 @@ function loadBank(qs, name) {
 }
 $("xm-qbank-save").addEventListener("click", () => openBank({ bench: bankBench, onLoad: loadBank, focusSave: true }));
 $("xm-qbank-open").addEventListener("click", () => openBank({ bench: bankBench, onLoad: loadBank }));
+$("xm-qbank-browse").addEventListener("click", () => openBankBrowser({ onAdd: loadBank }));
 /* the tick bar */
 $("xm-tickbar").addEventListener("click", (e) => {
   const b = e.target.closest("[data-tick]");
@@ -1053,6 +1055,7 @@ faceOf($("xm-exam-open"), UI.layers(18), "Everything I have built");
 showNewKey();
 faceOf($("xm-qbank-save"), UI.archiveIn(18), "Save these questions as a bank");
 faceOf($("xm-qbank-open"), UI.archive(18), "Open my question banks");
+faceOf($("xm-qbank-browse"), UI.search(18), "Browse the question bank by subject");
 faceOf($("xm-shuffle"), UI.shuffle(18), "Shuffle the questions and their answers");
 setLiveFaces();
 enhanceSelects(document.querySelector(".xm-rail"), { className: "pp-select--sm" });
