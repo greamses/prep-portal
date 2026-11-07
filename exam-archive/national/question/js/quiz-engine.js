@@ -723,6 +723,21 @@ const Quiz = (() => {
           (e) => e.type === type && (!wantYear || e.year === wantYear),
         );
         for (const lp of localPicks) {
+          // The one question bank holds these papers now: ask it for the whole
+          // paper in its printed order; the file is only the fallback.
+          if (type === "objective") {
+            try {
+              const qs = new URLSearchParams({ subject: subKey, type: examType, year: lp.year, full: "1" });
+              const r = await fetch(`${API_BASE}/api/questions?${qs}`);
+              const d = r.ok ? await r.json() : null;
+              if (d && d.full && Array.isArray(d.questions) && d.questions.length) {
+                localPool = localPool.concat(normalizeLocalObjective(d.questions, sub, lp.year));
+                continue;
+              }
+            } catch (e) {
+              console.warn("Paper from the bank failed for", lp.entry.path, e.message);
+            }
+          }
           try {
             const raw = await loadLocalRaw(lp.entry.path, lp.entry.varName);
             localPool = localPool.concat(

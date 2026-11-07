@@ -142,6 +142,26 @@ module.exports = function () {
       // per-question examtype is dirty ("posr-utme-aaua", "model", years…).
       if (type) base = base.where("scheme", "==", type);
 
+      // full=1: a whole hand-made paper (scripts/one-bank-local-papers.js) in its
+      // printed order — every question, not a random 60.
+      if (req.query.full === "1" && year && subject && type) {
+        const snap = await base.where("year", "==", year).get();
+        quota.addReads(snap.size);
+        const paper = snap.docs.filter((d) => typeof d.data().paperOrder === "number")
+          .sort((a, b) => a.data().paperOrder - b.data().paperOrder)
+          .slice(0, 300)
+          .map((d) => {
+            const x = d.data();
+            return {
+              id: d.id, question: x.question, options: x.options || [],
+              correctIndex: typeof x.answerIndex === "number" ? x.answerIndex : null,
+              answer: x.answer || "", explanation: x.explanation || "", hint: x.hint || "",
+              image: x.image || "", subject: x.subject, examType: x.scheme, examYear: x.year,
+            };
+          });
+        return res.json({ count: paper.length, subject, type, year, full: true, questions: paper });
+      }
+
       const pool = random ? Math.max(limit * 4, 80) : limit;
       let questions;
 
