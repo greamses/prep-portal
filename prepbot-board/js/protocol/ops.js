@@ -211,6 +211,32 @@ const SPEC = {
     return { op: "label", id: idOf(o.id, "l"), on: o.on, part, text: str(o.text, 40) || part, tone: tone(o.tone) || "blue" };
   },
 
+  /* An everyday OBJECT drawn properly (a bulb, a battery, a beaker…), on the
+     grid or a graph; its parts can be labelled like a diagram's. */
+  object(o) {
+    const NAMES = ["bulb", "battery", "switch", "magnet", "beaker", "test tube", "flask", "bunsen burner", "thermometer", "convex lens", "concave lens", "prism", "candle", "resistor",
+      "light bulb", "lamp", "cell", "bunsen", "burner", "conical flask", "lens", "bar magnet", "magnifying glass"];
+    const name = String(o.name || "").toLowerCase().replace(/[^a-z -]/g, "").trim();
+    if (!NAMES.includes(name) && !NAMES.includes(name.replace(/s$/, ""))) return null;
+    const on = typeof o.on === "string" && o.on !== "grid" ? o.on : "grid";
+    const n = num(o.size);
+    return { op: "object", id: idOf(o.id, "o"), name, on, at: pair(o.at) || [5, 5], size: n === null ? 3 : Math.max(0.5, Math.min(9, Math.abs(n))),
+      active: o.active === undefined ? undefined : !!o.active, steps: o.steps === true, label: str(o.label, 30), tone: tone(o.tone) || "ink" };
+  },
+
+  /* Things MOVING: particles travelling into a cell, or turned away from it. */
+  move(o) {
+    const EDGES = ["left", "right", "top", "bottom"];
+    const end = (v) => (typeof v === "string" ? (EDGES.includes(v) ? v : str(v, 60) || null) : pair(v));
+    const from = end(o.from), to = end(o.to);
+    if (!from || !to || typeof from === "string" && !EDGES.includes(from)) return null;
+    const on = typeof o.on === "string" && o.on !== "grid" ? o.on : "grid";
+    const c = num(o.count), sz = num(o.size);
+    return { op: "move", id: idOf(o.id, "m"), on, from, to, blocked: o.blocked === true, count: c === null ? 1 : Math.max(1, Math.min(6, Math.round(c))),
+      size: sz === null ? 0.35 : Math.max(0.1, Math.min(1.5, Math.abs(sz))), shape: ["dot", "square", "triangle"].includes(o.shape) ? o.shape : "dot",
+      label: str(o.label, 24), tone: tone(o.tone) || "orange" };
+  },
+
   /* A fresh board. The old one is kept in the lesson's history. */
   clear() {
     return { op: "clear" };
@@ -260,6 +286,8 @@ export function boardSummary(items, max = 40) {
     if (it.op === "graph") { out.x = it.x; out.y = it.y; }
     if (it.label && typeof it.label === "string") out.label = it.label;
     if (it.op === "diagram") { out.name = it.name; if (it.steps) out.steps = true; }
+    if (it.op === "object") out.name = it.name;
+    if (it.op === "move") { out.from = it.from; out.to = it.to; }
     if (it.part) out.part = it.part;
     return out;
   });

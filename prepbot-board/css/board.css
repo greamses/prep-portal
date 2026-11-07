@@ -313,3 +313,60 @@ body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex;
 .pb-picture__wait { font-family: var(--font-mono); font-size: 22px; fill: rgba(42, 39, 35, 0.55); }
 .pb-sketch .pb-stroke { stroke-width: 4.5; }
 
+
+/* ══ THE RIBBON: the tools along the top, office style, folding away ══════ */
+.pb-ribbon {
+  position: absolute; z-index: 4; left: 0; right: 0; top: 0;
+  display: flex; justify-content: center; pointer-events: none;
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.pb-ribbon > * { pointer-events: auto; }
+.pb-ribbon__bar {
+  display: flex; align-items: stretch; margin-top: 10px;
+  max-width: calc(100vw - 20px); overflow-x: auto; scrollbar-width: none;
+  padding: 8px 6px 4px; background: var(--surface-primary, #fffdf7);
+  border: 2px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  box-shadow: 0 10px 28px rgba(42, 39, 35, 0.12);
+}
+.pb-ribbon__bar::-webkit-scrollbar { display: none; }
+.pb-rgroup { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0 12px; flex: none; }
+.pb-rgroup + .pb-rgroup { border-left: 2px dashed color-mix(in srgb, var(--ink) 13%, transparent); }
+.pb-rgroup__keys { display: flex; gap: 6px; align-items: center; }
+.pb-rgroup__name { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.04em; color: color-mix(in srgb, var(--ink) 55%, transparent); }
+.pb-ribbon__fold {
+  align-self: center; flex: none; margin-left: 4px; width: 2rem; height: 2rem; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center; background: transparent; border: 0; cursor: pointer;
+}
+.pb-ribbon__fold svg, .pb-ribbon__tab svg { width: 20px; height: 20px; }
+.pb-ribbon__tab {
+  position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 12px 5px;
+  font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink);
+  background: var(--surface-primary, #fffdf7); border: 2px solid color-mix(in srgb, var(--ink) 10%, transparent); border-top: 0;
+  box-shadow: 0 8px 18px rgba(42, 39, 35, 0.12); cursor: pointer;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+/* folded: the whole ribbon slides up, only its pull tab hangs down */
+.pb-ribbon.is-folded { transform: translateY(-100%); }
+.pb-ribbon.is-folded .pb-ribbon__tab { opacity: 1; pointer-events: auto; }
+.pb-ribbon .pb-style__btn[aria-checked="true"] { background: var(--accent-primary); border-color: transparent; }
+/* the hand list opens downwards from the ribbon */
+.pb-ribbon .pb-fontsel .pp-select-menu { left: 50%; top: calc(100% + 8px); transform: translateX(-50%); max-height: 60vh; overflow-y: auto; }
+.pb-dock { bottom: 14px; }
+@media (max-width: 640px) {
+  .pb-rgroup { padding: 0 7px; }
+  .pb-ribbon .pb-ico, .pb-ribbon .pb-fontsel .pp-select-trigger { width: 2.15rem; height: 2.15rem; }
+  .pb-rgroup__name { font-size: 0.6rem; }
+  .pb-dock { width: calc(100vw - 1.5rem); left: 50%; }
+}
+@media (prefers-reduced-motion: reduce) { .pb-ribbon { transition: none; } }
+.pb-ribbon.is-folded .pb-ribbon__bar { box-shadow: none; }
+@media (max-width: 640px) {
+  /* a phone: the groups wrap onto a second row rather than scroll out of reach */
+  .pb-ribbon__bar { flex-wrap: wrap; justify-content: center; row-gap: 6px; overflow: visible; }
+  .pb-rgroup + .pb-rgroup { border-left: 0; }
+}
+
+/* moving particles: a solid body with a darker rim; the cross where one was turned away */
+.pb-move__body { stroke: rgba(42, 39, 35, 0.55); stroke-width: 2.5; }
+.pb-move__cross { stroke-width: 5; }

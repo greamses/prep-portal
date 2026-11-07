@@ -37,38 +37,66 @@
         <p class="pb-visually-hidden" id="pb-caption" aria-live="polite"></p>
       </div>
 
-      <!-- the left rail: where you are, how PrepBot teaches, the hand it writes in, a new board -->
-      <nav class="pb-rail" aria-label="Board">
-        <a class="pb-ico" href="/" id="pb-back" data-tip="Back to Prep Portal" data-tip-side="right" aria-label="Back to Prep Portal" data-ico="back"></a>
-        <div class="pb-rail__group" role="radiogroup" aria-label="How PrepBot teaches">
-          <button type="button" class="pb-ico pb-style__btn" data-style="check" role="radio" aria-checked="true" data-tip="Checks in: PrepBot stops to ask you questions" data-tip-side="right" aria-label="Checks in" data-ico="checkin"></button>
-          <button type="button" class="pb-ico pb-style__btn" data-style="lecture" role="radio" aria-checked="false" data-tip="Lecture: PrepBot teaches straight through; raise your hand to ask" data-tip-side="right" aria-label="Lecture" data-ico="lecture"></button>
-          <button type="button" class="pb-ico pb-style__btn" data-style="homework" role="radio" aria-checked="false" data-tip="Homework: you solve it step by step, with hints" data-tip-side="right" aria-label="Homework" data-ico="homework"></button>
+      <!-- THE RIBBON, office style: groups of keys along the top, each named
+           underneath; it slides up out of the way and back down -->
+      <header class="pb-ribbon" id="pb-ribbon" aria-label="Board tools">
+        <div class="pb-ribbon__bar">
+          <div class="pb-rgroup">
+            <div class="pb-rgroup__keys">
+              <a class="pb-ico" href="/" id="pb-back" data-tip="Back to Prep Portal" data-tip-side="bottom" aria-label="Back to Prep Portal" data-ico="back"></a>
+              <button type="button" class="pb-ico" id="pb-new" data-tip="New board" data-tip-side="bottom" aria-label="New board" data-ico="again"></button>
+            </div>
+            <span class="pb-rgroup__name">Board</span>
+          </div>
+          <div class="pb-rgroup">
+            <div class="pb-rgroup__keys" role="radiogroup" aria-label="How PrepBot teaches">
+              <button type="button" class="pb-ico pb-style__btn" data-style="check" role="radio" aria-checked="true" data-tip="Checks in: PrepBot stops to ask you questions" data-tip-side="bottom" aria-label="Checks in" data-ico="checkin"></button>
+              <button type="button" class="pb-ico pb-style__btn" data-style="lecture" role="radio" aria-checked="false" data-tip="Lecture: PrepBot teaches straight through; raise your hand to ask" data-tip-side="bottom" aria-label="Lecture" data-ico="lecture"></button>
+              <button type="button" class="pb-ico pb-style__btn" data-style="homework" role="radio" aria-checked="false" data-tip="Homework: you solve it step by step, with hints" data-tip-side="bottom" aria-label="Homework" data-ico="homework"></button>
+            </div>
+            <span class="pb-rgroup__name">Teaching</span>
+          </div>
+          <div class="pb-rgroup">
+            <!-- the site's own dropdown (pp-select.js) over a real <select>; its trigger dressed as an icon -->
+            <div class="pb-rgroup__keys pb-rail__fonts">
+              <select id="pb-hand" aria-label="The hand PrepBot writes in"></select>
+            </div>
+            <span class="pb-rgroup__name">Writing</span>
+          </div>
+          <div class="pb-rgroup">
+            <div class="pb-rgroup__keys">
+              <button type="button" class="pb-ico" id="pb-prev" data-tip="The section before" data-tip-side="bottom" aria-label="The section before" data-ico="prev"></button>
+              <button type="button" class="pb-ico" id="pb-next" data-tip="The section after" data-tip-side="bottom" aria-label="The section after" data-ico="next"></button>
+              <button type="button" class="pb-ico" id="pb-overview" data-tip="See the whole canvas" data-tip-side="bottom" aria-label="See the whole canvas" data-ico="overview"></button>
+            </div>
+            <span class="pb-rgroup__name">View</span>
+          </div>
+          <div class="pb-rgroup">
+            <div class="pb-rgroup__keys">
+              <button type="button" class="pb-ico" id="pb-mic" data-tip="Tap to turn the mic on, or hold it to talk once" data-tip-side="bottom" aria-label="Turn the mic on" aria-pressed="false" data-ico="mic"></button>
+              <button type="button" class="pb-ico pb-hand-up" id="pb-raise" data-tip="Raise your hand to type a question" data-tip-side="bottom" aria-label="Raise your hand" data-ico="hand"></button>
+              <button type="button" class="pb-ico pb-hint" id="pb-hint" data-tip="I am stuck: give me a hint" data-tip-side="bottom" aria-label="Give me a hint" data-ico="bulb"></button>
+            </div>
+            <span class="pb-rgroup__name">Talk</span>
+          </div>
+          <button type="button" class="pb-ribbon__fold" id="pb-fold" data-tip="Hide the tools" data-tip-side="bottom" aria-label="Hide the tools" aria-expanded="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7" fill="none" stroke="var(--accent-secondary)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </div>
-        <!-- the site's own dropdown (pp-select.js) over a real <select>; its trigger dressed as an icon -->
-        <div class="pb-rail__fonts">
-          <select id="pb-hand" aria-label="The hand PrepBot writes in"></select>
-        </div>
-        <div class="pb-rail__nav">
-          <button type="button" class="pb-ico" id="pb-prev" data-tip="The section before" data-tip-side="right" aria-label="The section before" data-ico="prev"></button>
-          <button type="button" class="pb-ico" id="pb-next" data-tip="The section after" data-tip-side="right" aria-label="The section after" data-ico="next"></button>
-        </div>
-        <button type="button" class="pb-ico" id="pb-overview" data-tip="See the whole canvas" data-tip-side="right" aria-label="See the whole canvas" data-ico="overview"></button>
-        <button type="button" class="pb-ico" id="pb-new" data-tip="New board" data-tip-side="right" aria-label="New board" data-ico="again"></button>
-      </nav>
+        <!-- the pull tab left showing when the ribbon is folded away -->
+        <button type="button" class="pb-ribbon__tab" id="pb-unfold" aria-label="Show the tools">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9l7 7 7-7" fill="none" stroke="var(--accent-secondary)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Tools</span>
+        </button>
+      </header>
 
-      <!-- the bottom dock: talk, a hint, a raised hand (which opens the typing box) -->
+      <!-- the bottom line: what PrepBot is doing, and the typing box (a raised hand) -->
       <div class="pb-dock">
         <p class="pb-status" id="pb-status" aria-live="polite"></p>
         <form class="pb-ask" id="pb-ask" autocomplete="off" hidden>
           <input id="pb-input" type="text" maxlength="400" placeholder="Type your question…" aria-label="Your question" />
           <button type="submit" class="pb-ico" id="pb-send" data-tip="Send" data-tip-side="top" aria-label="Send" data-ico="send"></button>
         </form>
-        <div class="pb-dock__keys">
-          <button type="button" class="pb-ico pb-hint" id="pb-hint" data-tip="I'm stuck: give me a hint" data-tip-side="top" aria-label="Give me a hint" data-ico="bulb"></button>
-          <button type="button" class="pb-ico pb-ico--big" id="pb-mic" data-tip="Hold to talk, or tap and pause" data-tip-side="top" aria-label="Hold to talk" aria-pressed="false" data-ico="mic"></button>
-          <button type="button" class="pb-ico pb-hand-up" id="pb-raise" data-tip="Raise your hand to type a question" data-tip-side="top" aria-label="Raise your hand" data-ico="hand"></button>
-        </div>
       </div>
     </main>
 

@@ -43,18 +43,19 @@ export function makeCanvas(aspect = 16 / 9) {
   if (a >= 1.05) {
     const h = 900;
     const w = Math.round(Math.min(2400, Math.max(1000, h * a)));
-    /* the icon rail sits on the left edge and the dock at the bottom: the
-       writing starts clear of the rail and stops above the dock */
-    const s = Math.round(Math.min(h - 230, w * 0.4));
-    const figure = { x: w - s - 60, y: 80, w: s, h: s };
-    return { w, h, main: { x: 130, y: 64, w: figure.x - 130 - 50, h: 700 }, figure };
+    /* the ribbon sits along the top and the status line at the bottom: the
+       writing starts below the ribbon and stops above the status line */
+    const s = Math.round(Math.min(h - 260, w * 0.4));
+    const figure = { x: w - s - 60, y: 130, w: s, h: s };
+    return { w, h, main: { x: 70, y: 120, w: figure.x - 70 - 50, h: 680 }, figure };
   }
   const w = 900;
   const h = Math.round(Math.min(2400, Math.max(1000, w / a)));
-  const s = Math.round(Math.min(680, h * 0.4));
-  const figure = { x: Math.round(110 + (w - 110 - 40 - s) / 2), y: 60, w: s, h: s };
+  const s = Math.round(Math.min(600, h * 0.36));
+  /* to the right, leaving room on the left for the names of its parts */
+  const figure = { x: w - s - 40, y: 230, w: s, h: s };
   const top = figure.y + s + 50;
-  return { w, h, figure, main: { x: 116, y: top, w: 900 - 116 - 36, h: h - top - 190 } };
+  return { w, h, figure, main: { x: 44, y: top, w: 900 - 44 - 36, h: h - top - 120 } };
 }
 
 /** The smallest a line may be shrunk to fit before it is broken instead. */

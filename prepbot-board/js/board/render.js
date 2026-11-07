@@ -754,7 +754,7 @@ export function buildPart(op, d, part) {
   const lines = [...g.querySelectorAll(".k-line")];
   const fills = [...g.querySelectorAll(".k-fill")];
   /* the colour sits under the outline, as a pen drawing coloured in */
-  fills.forEach((f) => g.insertBefore(f, g.firstChild));
+  lines.forEach((l) => g.appendChild(l)); // fills keep their own order underneath
   /* where this part is, on the board (the camera closes in on it) */
   let focus = d.box;
   try {
@@ -782,6 +782,113 @@ function traceLine(tl, ln, at, dur, toBoard) {
   tl.fromTo(ln, { attr: { "stroke-dasharray": `${len} ${len}`, "stroke-dashoffset": len } },
     { attr: { "stroke-dashoffset": 0 }, duration: dur, ease: "none", onComplete: () => { ln.removeAttribute("stroke-dasharray"); ln.removeAttribute("stroke-dashoffset"); } }, at);
   PEN?.follow(tl, at, dur, (p) => { const q = ln.getPointAtLength(len * p); return toBoard(q.x, q.y); }, "none");
+}
+
+/* ── objects (objects.js): a bulb, a battery, a beaker… ─────────────────────── */
+
+/**
+ * An everyday object, drawn part by part where it is put on the grid. It works
+ * like a small diagram: its parts can be labelled ("label" on its id), and
+ * with steps it starts empty and each "part" op draws the next piece.
+ */
+export function buildObject(op, page, mapper, obj) {
+  const X = (v) => mapper.toX(v), Y = (v) => mapper.toY(v);
+  const unit = Math.abs(X(1) - X(0));
+  const k = (op.size * unit) / obj.w;
+  const w = obj.w * k, h = obj.h * k;
+  const ox = X(op.at[0]) - w / 2, oy = Y(op.at[1]) - h / 2;
+  const g = el("g", { class: "pb-object", "data-id": op.id }, page);
+  const inner = el("g", { transform: `translate(${ox.toFixed(1)} ${oy.toFixed(1)}) scale(${k.toFixed(4)})` }, g);
+  const toBoard = (x, y) => [ox + x * k, oy + y * k];
+  const parts = Object.entries(obj.parts(op.active)).map(([name, p]) => ({ name, cx: p.cx, cy: p.cy, arrow: null, svg: p.svg }));
+  const box = { x: ox, y: oy, w, h };
+  const d = { data: { name: obj.key, w: obj.w, h: obj.h, parts, steps: !!op.steps }, toBoard, inner, k, drawn: new Set(), box };
+  /* drawn whole: every part now, one after another */
+  const built = op.steps ? [] : parts.map((p) => { d.drawn.add(p.name); return buildPart(op, d, p); });
+  let name = null;
+  if (op.label) {
+    name = el("text", { x: ox + w / 2, y: oy + h + 34, "text-anchor": "middle", "font-family": FONT, "font-weight": HAND.title, "font-size": 26, class: `pb-ink-${op.tone || "ink"}-fill pb-label__text` }, g);
+    name.textContent = op.label;
+  }
+  const weight = built.reduce((t, b) => t + b.weight, 0) || 0.3;
+  return {
+    node: g, box, focus: box, weight, diagram: d,
+    draw(tl, at, dur) {
+      let t = at;
+      for (const b of built) { const each = (dur * 0.9 * b.weight) / weight; b.draw(tl, t, each); t += each; }
+      if (name) tl.from(name, { opacity: 0, duration: Math.min(0.4, dur * 0.2) }, at + dur * 0.85);
+    },
+  };
+}
+
+/* ── things that MOVE: particles going into a cell, or turned away ────────── */
+
+/**
+ * Particles travelling from one place to another while the sentence is said:
+ * glucose going into a cell, water moving up a stem, electrons round a wire.
+ * "blocked" ones reach the edge of the drawing, are turned back (a red cross
+ * where they were stopped) and end up where they came from. A particle can
+ * ride with its name.
+ *
+ * `ends` = { from:[x,y], to:[x,y], stop:[x,y] | null } in board units, worked
+ * out by the board from the op (grid points, edges, a part of a diagram).
+ */
+export function buildMove(op, page, ends) {
+  const g = el("g", { class: "pb-move", "data-id": op.id }, page);
+  const n = op.count;
+  let seed = [...String(op.id)].reduce((s, c) => s * 31 + c.charCodeAt(0), 11) >>> 0;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296);
+  const [fx, fy] = ends.from, [tx, ty] = ends.to;
+  const len = Math.hypot(tx - fx, ty - fy) || 1;
+  const nx = -(ty - fy) / len, ny = (tx - fx) / len; // across the path, to spread a crowd
+  const r = ends.r;
+  const dots = [];
+  for (let i = 0; i < n; i++) {
+    const spread = n > 1 ? (i - (n - 1) / 2) * r * 2.6 : 0;
+    const jit = (rnd() - 0.5) * r * 1.2;
+    const off = [nx * (spread + jit), ny * (spread + jit)];
+    const node = el("g", { class: "pb-move__dot" }, g);
+    if (op.shape === "square") el("rect", { x: -r, y: -r, width: 2 * r, height: 2 * r, class: `pb-ink-${op.tone}-fill pb-move__body` }, node);
+    else if (op.shape === "triangle") el("path", { d: `M0 ${-r * 1.2}L${r * 1.1} ${r * 0.8}H${-r * 1.1}Z`, class: `pb-ink-${op.tone}-fill pb-move__body` }, node);
+    else el("circle", { r, class: `pb-ink-${op.tone}-fill pb-move__body` }, node);
+    if (op.label && i === Math.floor((n - 1) / 2)) {
+      const t = el("text", { y: -r - 10, "text-anchor": "middle", "font-family": FONT, "font-weight": HAND.title, "font-size": 22, class: `pb-ink-${op.tone}-fill pb-label__text` }, node);
+      t.textContent = op.label;
+    }
+    dots.push({ node, off });
+  }
+  /* where a dot is at p (0 → 1) along its trip */
+  const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const back = ends.stop ? [fx + (ends.stop[0] - fx) * 0.15 - nx * r * 3, fy + (ends.stop[1] - fy) * 0.15 - ny * r * 3] : null;
+  const at = (p) => {
+    if (!ends.stop) return lerp(ends.from, ends.to, p);
+    return p < 0.6 ? lerp(ends.from, ends.stop, p / 0.6) : lerp(ends.stop, back, (p - 0.6) / 0.4);
+  };
+  const place = (d, p) => { const [x, y] = at(p); d.node.setAttribute("transform", `translate(${(x + d.off[0]).toFixed(1)} ${(y + d.off[1]).toFixed(1)})`); };
+  dots.forEach((d) => place(d, 1)); // the end of the trip: drawn back as it finished
+  /* the cross where blocked ones were turned away */
+  let cross = null;
+  if (ends.stop) {
+    const [sx, sy] = ends.stop, c = r * 1.3;
+    cross = el("path", { d: `M${sx - c} ${sy - c}L${sx + c} ${sy + c}M${sx + c} ${sy - c}L${sx - c} ${sy + c}`, class: "pb-stroke pb-ink-red-stroke pb-move__cross" }, g);
+  }
+  const pts = [ends.from, ends.to, ...(ends.stop ? [ends.stop] : [])];
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  const box = { x: Math.min(...xs) - 30, y: Math.min(...ys) - 40, w: Math.max(...xs) - Math.min(...xs) + 60, h: Math.max(...ys) - Math.min(...ys) + 70 };
+  return {
+    node: g, box, focus: box, weight: 1.6 + 0.25 * (n - 1),
+    draw(tl, t0, dur) {
+      const stagger = n > 1 ? Math.min(0.35, (dur * 0.4) / (n - 1)) : 0;
+      const each = Math.max(0.6, dur - stagger * (n - 1));
+      dots.forEach((d, i) => {
+        const o = { p: 0 };
+        place(d, 0);
+        tl.fromTo(d.node, { opacity: 0 }, { opacity: 1, duration: 0.15 }, t0 + i * stagger);
+        tl.to(o, { p: 1, duration: each, ease: ends.stop ? "power1.inOut" : "power1.out", onUpdate: () => place(d, o.p) }, t0 + i * stagger);
+      });
+      if (cross) tl.fromTo(cross, { opacity: 0 }, { opacity: 1, duration: 0.2 }, t0 + each * 0.6);
+    },
+  };
 }
 
 /** An arrow to a named part of a diagram, and its name at the tail — both drawn. */

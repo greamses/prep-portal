@@ -183,7 +183,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   if (fontTrigger) {
     fontTrigger.insertAdjacentHTML("afterbegin", `<span class="pb-fontsel__icon" aria-hidden="true">${ICONS.font}</span>`);
     fontTrigger.setAttribute("aria-label", "The hand PrepBot writes in");
-    fontTrigger.dataset.tipSide = "right";
+    fontTrigger.dataset.tipSide = "bottom";
   }
   picker.addEventListener("change", async () => {
     handKey = picker.value;
@@ -497,7 +497,8 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     showMic();
   }
   /* the lesson has started: the mic opens by itself, unless it was turned off */
-  openMicForLesson = () => { if (!micOff && !micOpen && ear.supported) setOpen(true, false); };
+  /* the mic stays OFF until the learner turns it on (a tap) */
+  openMicForLesson = () => {};
   heardSaid = (t) => { if (t) { said.push(t); if (said.length > 3) said.shift(); } };
   if (!ear.supported) {
     mic.disabled = true;
@@ -578,6 +579,18 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   svg.addEventListener("pointerup", () => setTimeout(showSeeAll, 0));
   svg.addEventListener("wheel", () => setTimeout(showSeeAll, 0), { passive: true });
   setInterval(showSeeAll, 1500);
+
+  /* the ribbon slides up out of the way (and back down from its pull tab) */
+  const ribbon = $("pb-ribbon");
+  const FOLD_KEY = "pb-ribbon-folded";
+  const fold = (on) => {
+    ribbon.classList.toggle("is-folded", on);
+    $("pb-fold").setAttribute("aria-expanded", String(!on));
+    try { localStorage.setItem(FOLD_KEY, on ? "1" : "0"); } catch {}
+  };
+  $("pb-fold").addEventListener("click", () => fold(true));
+  $("pb-unfold").addEventListener("click", () => fold(false));
+  try { if (localStorage.getItem(FOLD_KEY) === "1") fold(true); } catch {}
 
   window.__pb = { board, scheduler, voice, lesson, cutIn, redraw }; // for tests
 

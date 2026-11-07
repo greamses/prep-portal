@@ -22,8 +22,9 @@
 
 import { createLayout } from "./layout.js";
 import { cleanOp, boardSummary } from "../protocol/ops.js";
-import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, buildShape, buildHighlight, buildDiagram, buildLabel, buildPart, buildEmphasis, buildSketch, buildPicture, gridMapper, createPen, setPen } from "./render.js";
+import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, buildShape, buildHighlight, buildDiagram, buildLabel, buildPart, buildEmphasis, buildObject, buildMove, buildSketch, buildPicture, gridMapper, createPen, setPen } from "./render.js";
 import { ensureDiagrams, loadedDiagram, findPart, stepDiagram, needsLoad } from "./diagrams.js";
+import { objectNamed } from "./objects.js";
 
 /* the diagram names a list of ops asks for, so they can be loaded first */
 const diagramsIn = (list) => (list || []).filter((o) => o && o.op === "diagram" && o.name && needsLoad(String(o.name).toLowerCase().replace(/\s+/g, "-"), o.steps === true || o.steps === "true")).map((o) => String(o.name).toLowerCase().replace(/\s+/g, "-"));
@@ -293,6 +294,14 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
         startPicture(it, op, animated);
         return it;
       }
+      case "object": {
+        const obj = objectNamed(op.name);
+        if (!obj) return null;
+        const g = op.on === "grid" ? null : items.get(op.on);
+        return buildObject(op, page, g?.mapper || gridMapper(layout.canvas.figure), obj);
+      }
+      case "move":
+        return buildMove(op, page, moveEnds(op));
       case "shape": {
         { const inside = intoDiagram(op, page); if (inside) return inside; }
         const g = op.on === "grid" ? null : items.get(op.on);
@@ -301,6 +310,12 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       case "highlight": {
         const t = items.get(op.target);
         if (!t?.box) return null;
+        /* never a highlight over a highlight: words already (partly) highlighted
+           are stressed instead */
+        const want = markTarget(t, op.words).box;
+        const over = [...(cur.marks || new Map()).entries()].find(([k, m]) => k.startsWith(`hl|${op.target}|`) && m.node.isConnected && m.box && want &&
+          m.box.x < want.x + want.w && want.x < m.box.x + m.box.w && m.box.y < want.y + want.h && want.y < m.box.y + m.box.h);
+        if (over) return buildEmphasis(over[1], page);
         return again(markKey(op), () => buildHighlight(op, page, markTarget(t, op.words)), page);
       }
       default:
@@ -317,6 +332,46 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
     const part = findPart(d.data, op.label);
     if (!part) return null;
     return partAndLabel({ op: "part", id: op.id, on: graph.node.dataset.id, part: part.name, text: op.label, tone: "blue", label: true }, items.get(graph.node.dataset.id), page);
+  }
+
+  /* Where a "move" starts, ends, and (blocked) is turned away, in board units.
+     Points are on the 0–10 grid of the figure panel (or a graph's own scale);
+     "to" may name a part of the diagram or object it is "on"; "from" may be
+     an edge: "left", "right", "top", "bottom" (outside the drawing). */
+  function moveEnds(op) {
+    const host = items.get(op.on);
+    const d = host?.diagram || null;
+    const m = host?.mapper || gridMapper(layout.canvas.figure);
+    const P = (v) => [m.toX(v[0]), m.toY(v[1])];
+    const F = layout.canvas.figure;
+    const area = d ? d.box : F;
+    let to;
+    if (typeof op.to === "string") {
+      const part = d && findPart(d.data, op.to);
+      to = part ? d.toBoard(part.cx, part.cy) : [area.x + area.w / 2, area.y + area.h / 2];
+    } else to = P(op.to);
+    let from;
+    if (typeof op.from === "string") {
+      const pad = 70;
+      from = {
+        left: [area.x - pad, to[1]], right: [area.x + area.w + pad, to[1]],
+        top: [to[0], area.y - pad], bottom: [to[0], area.y + area.h + pad],
+      }[op.from] || [area.x - pad, to[1]];
+    } else from = P(op.from);
+    /* blocked: stopped where the path first meets the drawing (its outer edge) */
+    let stop = null;
+    if (op.blocked) {
+      const inset = d ? 0.05 : 0;
+      const b = { x: area.x + area.w * inset, y: area.y + area.h * inset, w: area.w * (1 - 2 * inset), h: area.h * (1 - 2 * inset) };
+      const inside = (q) => q[0] >= b.x && q[0] <= b.x + b.w && q[1] >= b.y && q[1] <= b.y + b.h;
+      for (let i = 1; i <= 100; i++) {
+        const q = [from[0] + (to[0] - from[0]) * (i / 100), from[1] + (to[1] - from[1]) * (i / 100)];
+        if (inside(q)) { stop = q; break; }
+      }
+      if (!stop || (stop[0] === to[0] && stop[1] === to[1])) stop = [from[0] + (to[0] - from[0]) * 0.7, from[1] + (to[1] - from[1]) * 0.7];
+    }
+    const unit = Math.abs(m.toX(1) - m.toX(0));
+    return { from, to, stop, r: Math.max(6, Math.min(26, op.size * (host?.mapper ? 12 : unit))) };
   }
 
   /* A part of a diagram: in a step diagram it is DRAWN first (once), then
