@@ -20,7 +20,7 @@
    every field properly before it draws anything.
    ========================================================================== */
 
-const OPS = new Set(["write", "graph", "plot", "point", "arrow", "underline", "circle", "highlight", "shape", "clear", "look", "diagram", "label", "part", "object", "move", "sketch", "picture"]);
+const OPS = new Set(["write", "graph", "plot", "point", "arrow", "underline", "circle", "highlight", "shape", "clear", "look", "diagram", "label", "part", "object", "move", "sticky", "bars", "brace", "sketch", "picture"]);
 const MAX_BEATS = 18;
 const PROSE_AFTER = 400;
 

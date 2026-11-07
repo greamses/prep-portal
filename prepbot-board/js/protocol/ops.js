@@ -14,8 +14,10 @@
    (2, 3) on graph g", never a pixel: the board does the placing, so nothing it
    draws can land on top of anything else.
 
-   Pure: no DOM, no imports — node-testable (scripts/check-whiteboard.mjs).
+   Pure: no DOM (its one import is the objects' data) — node-testable (scripts/check-whiteboard.mjs).
    ========================================================================== */
+
+import { objectNamed } from "../board/objects.js";
 
 export const TONES = ["ink", "blue", "red", "green", "orange", "yellow"];
 
@@ -126,6 +128,7 @@ const SPEC = {
     const on = typeof o.on === "string" && o.on !== "grid" ? o.on : "grid";
     const size = (v, d) => { const n = num(v); return n === null ? d : Math.max(0.05, Math.min(on === "grid" ? 10 : LIMIT, Math.abs(n))); };
     const out = { op: "shape", id: idOf(o.id, "s"), kind, on, tone: tone(o.tone) || "ink", label: str(o.label, 30), dashed: !!o.dashed };
+    if (o.over) out.over = true;
     out.fill = o.fill === "none" || !o.fill ? null : tone(o.fill) || null;
     if (["circle", "ellipse", "rect", "sector"].includes(kind)) {
       out.at = pair(o.at) || [5, 5];
@@ -185,7 +188,7 @@ const SPEC = {
       return { d, tone: tone(p.tone) || "ink", fill: p.fill && p.fill !== "none" ? tone(p.fill) || null : null };
     }).filter(Boolean);
     if (!paths.length) return null;
-    return { op: "sketch", id: idOf(o.id, "k"), on, paths, label: str(o.label, 40) };
+    return { op: "sketch", id: idOf(o.id, "k"), on, paths, label: str(o.label, 40), ...(o.over ? { over: true } : {}) };
   },
 
   /* A PICTURE made by the image generator, for what no diagram or sketch can
@@ -223,14 +226,55 @@ const SPEC = {
   /* An everyday OBJECT drawn properly (a bulb, a battery, a beaker…), on the
      grid or a graph; its parts can be labelled like a diagram's. */
   object(o) {
-    const NAMES = ["bulb", "battery", "switch", "magnet", "beaker", "test tube", "flask", "bunsen burner", "thermometer", "convex lens", "concave lens", "prism", "candle", "resistor",
-      "light bulb", "lamp", "cell", "bunsen", "burner", "conical flask", "lens", "bar magnet", "magnifying glass"];
     const name = String(o.name || "").toLowerCase().replace(/[^a-z -]/g, "").trim();
-    if (!NAMES.includes(name) && !NAMES.includes(name.replace(/s$/, ""))) return null;
+    if (!objectNamed(name)) return null;
     const on = typeof o.on === "string" && o.on !== "grid" ? o.on : "grid";
     const n = num(o.size);
     return { op: "object", id: idOf(o.id, "o"), name, on, at: pair(o.at) || [5, 5], size: n === null ? 3 : Math.max(0.5, Math.min(9, Math.abs(n))),
-      active: o.active === undefined ? undefined : !!o.active, steps: o.steps === true, label: str(o.label, 30), tone: tone(o.tone) || "ink" };
+      active: o.active === undefined ? undefined : !!o.active, steps: o.steps === true, label: str(o.label, 30), tone: tone(o.tone) || "ink", ...(o.over ? { over: true } : {}) };
+  },
+
+  /* The PROBLEM the learner brought, stuck up as a note at the top. */
+  sticky(o) {
+    const text = looksLikeMaths(str(o.text, 420));
+    if (!text) return null;
+    return { op: "sticky", id: idOf(o.id, "q"), text, tone: tone(o.tone) || "ink" };
+  },
+
+  /* A BAR MODEL (box method): one row of equal units per quantity. */
+  bars(o) {
+    const rows = (Array.isArray(o.rows) ? o.rows : []).slice(0, 5).map((r, i) => {
+      if (!r || typeof r !== "object") return null;
+      const units = Math.round(num(r.units) ?? 1);
+      if (!(units >= 1 && units <= 12)) return null;
+      const out = { name: str(r.name, 18) || `Row ${i + 1}`, units };
+      const sh = num(r.shade);
+      if (sh) out.shade = Math.max(0, Math.min(units, Math.round(sh)));
+      if (r.tone) out.tone = tone(r.tone);
+      if (Array.isArray(r.texts)) out.texts = r.texts.slice(0, units).map((t) => str(String(t ?? ""), 8));
+      if (r.more && typeof r.more === "object") {
+        const w = num(r.more.w ?? r.more.units);
+        if (w) out.more = { w: Math.max(0.2, Math.min(6, Math.abs(w))), text: str(String(r.more.text ?? ""), 10) };
+      }
+      return out;
+    }).filter(Boolean);
+    if (!rows.length) return null;
+    return { op: "bars", id: idOf(o.id, "b"), rows };
+  },
+
+  /* A curly brace on a bar model: what a stretch of it is (or "?"). */
+  brace(o) {
+    if (typeof o.on !== "string") return null;
+    const side = ["above", "below", "right"].includes(o.side) ? o.side : "above";
+    const out = { op: "brace", id: idOf(o.id, "br"), on: o.on, side, text: str(String(o.text ?? ""), 16), tone: tone(o.tone) || null };
+    if (side === "right") out.rows = (Array.isArray(o.rows) ? o.rows : []).slice(0, 5).map((r) => (typeof r === "number" ? r : str(r, 18))).filter((r) => r !== "");
+    else {
+      out.row = typeof o.row === "number" ? o.row : str(o.row, 18) || 0;
+      const f = num(o.from), t = num(o.to);
+      if (f !== null) out.from = f;
+      if (t !== null) out.to = t;
+    }
+    return out;
   },
 
   /* Things MOVING: particles travelling into a cell, or turned away from it. */
@@ -296,6 +340,8 @@ export function boardSummary(items, max = 40) {
     if (it.label && typeof it.label === "string") out.label = it.label;
     if (it.op === "diagram") { out.name = it.name; if (it.steps) out.steps = true; }
     if (it.op === "object") out.name = it.name;
+    if (it.op === "bars") out.rows = it.rows.map((r) => `${r.name}:${r.units}${r.more ? "+" + r.more.w : ""}`);
+    if (it.op === "brace") { out.side = it.side; if (it.text) out.text = it.text; }
     if (it.op === "move") { out.from = it.from; out.to = it.to; }
     if (it.part) out.part = it.part;
     return out;

@@ -1,0 +1,7 @@
+{"say":"Here is the problem.","do":[{"op":"sticky","id":"q1","text":"Ada has 3 times as many sweets as Bola. Together they have 48 sweets. How many sweets does Bola have?"}]}
+{"say":"Bola first, one unit.","do":[{"op":"bars","id":"b1","rows":[{"name":"Bola","units":1},{"name":"Ada","units":3}]},{"op":"highlight","target":"q1","words":"3 times as many"}]}
+{"say":"Together 48.","do":[{"op":"brace","on":"b1","side":"right","rows":["Bola","Ada"],"text":"48"}]}
+{"say":"Bola is the question.","do":[{"op":"brace","on":"b1","row":"Bola","side":"above","text":"?"}]}
+{"say":"Ada below.","do":[{"op":"brace","on":"b1","row":"Ada","side":"below","text":"36"}]}
+{"say":"One unit.","do":[{"op":"write","id":"w1","text":"4 units = 48","as":"step"},{"op":"write","id":"w2","text":"1 unit = 48 ÷ 4 = 12","as":"step"}]}
+{"ask":"So how many sweets does Bola have?","do":[{"op":"circle","target":"w2","words":"12"}]}

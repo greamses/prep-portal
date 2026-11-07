@@ -605,8 +605,12 @@ export function buildHighlight(op, page, target) {
   const r = el("rect", { x: x0 - 14, y: b.y - 20, width: 0, height: b.h + 40 }, cp);
   el("path", { d, class: `pb-hl pb-ink-${op.tone}-fill`, "clip-path": `url(#${clipId})` }, g);
   /* under the writing, so the ink stays on top of the brush */
-  const under = target.node && target.node.parentNode === page ? target.node : page.firstChild;
-  page.insertBefore(g, under || null);
+  const sticky = target.node?.classList?.contains("pb-sticky");
+  if (sticky) target.node.insertBefore(g, target.node.querySelector(".pb-sticky__tape")); // on the paper, under its words
+  else {
+    const under = target.node && target.node.parentNode === page ? target.node : page.firstChild;
+    page.insertBefore(g, under || null);
+  }
   const w = x1 - x0 + 28;
   return {
     node: g, box: b, weight: 0.4 + b.w / 1400,
@@ -836,6 +840,149 @@ export function buildObject(op, page, mapper, obj) {
       let t = at;
       for (const b of built) { const each = (dur * 0.9 * b.weight) / weight; b.draw(tl, t, each); t += each; }
       if (name) tl.from(name, { opacity: 0, duration: Math.min(0.4, dur * 0.2) }, at + dur * 0.85);
+    },
+  };
+}
+
+/* ── the problem, stuck on the board ───────────────────────────────────────
+   A word problem, a sum or an assignment the learner brought is STUCK UP
+   first, on a yellow sticky note at the top of the column, so it stays in
+   sight the whole time it is being worked. Its words can be highlighted and
+   underlined like any other writing. */
+export function buildSticky(op, page, measureLayer, layout) {
+  const M = layout.canvas.main;
+  const pad = 22;
+  const top = layout.cursor("note");
+  const g = el("g", { class: "pb-sticky", "data-id": op.id }, page);
+  const paper = el("rect", { class: "pb-sticky__paper", x: M.x, y: top, width: 10, height: 10 }, g);
+  const tape = el("rect", { class: "pb-sticky__tape", x: M.x + 40, y: top - 12, width: 90, height: 24 }, g);
+  const w = buildWrite({ ...op, as: "note", tone: op.tone || "ink" }, g, measureLayer, layout, { x: M.x + pad, y: top + pad, maxW: Math.min(M.w, 760) - pad * 2 });
+  const box = { x: M.x, y: top, w: Math.min(M.w, 760), h: w.box.h + pad * 2 };
+  paper.setAttribute("width", box.w);
+  paper.setAttribute("height", box.h);
+  layout.reserve({ ...box, scale: 1 });
+  const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+  g.setAttribute("transform", `rotate(-0.8 ${cx.toFixed(1)} ${cy.toFixed(1)})`);
+  return {
+    node: g, box, wordBox: w.wordBox, focus: box, weight: 0.5 + w.weight,
+    draw(tl, at, dur) {
+      tl.fromTo(paper, { opacity: 0, attr: { y: top - 26 } }, { opacity: 1, attr: { y: top }, duration: 0.35, ease: "back.out(1.6)" }, at);
+      tl.fromTo(tape, { opacity: 0 }, { opacity: 1, duration: 0.2 }, at + 0.3);
+      w.draw(tl, at + 0.45, Math.max(0.4, dur - 0.45));
+    },
+  };
+}
+
+/* ── the bar model (box method) for word problems ───────────────────────────
+   Rows of equal units, drawn TO SCALE, one row per quantity; what is known
+   or wanted is a curly brace OVER or UNDER the stretch it covers (never a
+   number beside a bar); the only side brace is the total of two or more
+   stacked rows, down the right. Rows stack close and only move apart to make
+   room for a brace between them. */
+export function buildBars(op, page, layout) {
+  const F = layout.canvas.figure;
+  const g = el("g", { class: "pb-bars", "data-id": op.id }, page);
+  const nameW = Math.min(170, 22 + Math.max(...op.rows.map((r) => r.name.length)) * 15);
+  const span = Math.max(...op.rows.map((r) => r.units + (r.more ? r.more.w : 0)));
+  const u = Math.min(110, (F.w - nameW - 80) / span);
+  const H = 58, GAP = 16, ROOM = 56;
+  const x0 = F.x + nameW + 10;
+  const rows = op.rows.map((r, i) => ({ ...r, i, g: el("g", { class: "pb-bars__row" }, g), dy: 0 }));
+  /* each row's top: room above the first for a brace, close stacking after */
+  let y = F.y + ROOM + 10;
+  for (const r of rows) { r.y = y; y += H + GAP; }
+  const strokes = [];
+  for (const r of rows) {
+    const w = r.units * u;
+    if (r.shade) el("rect", { x: x0, y: r.y, width: r.shade * u, height: H, class: `pb-bars__shade pb-ink-${r.tone || "blue"}-fill` }, r.g);
+    const outline = el("path", { d: `M${x0} ${r.y}H${x0 + w}V${r.y + H}H${x0}Z`, class: "pb-stroke pb-ink-ink-stroke pb-bars__line" }, r.g);
+    strokes.push(outline);
+    if (r.units > 1) {
+      const d = Array.from({ length: r.units - 1 }, (_, k) => `M${x0 + (k + 1) * u} ${r.y}V${r.y + H}`).join("");
+      strokes.push(el("path", { d, class: "pb-stroke pb-ink-ink-stroke pb-bars__line" }, r.g));
+    }
+    if (r.more) {
+      const mx = x0 + w, mw = r.more.w * u;
+      strokes.push(el("path", { d: `M${mx} ${r.y}H${mx + mw}V${r.y + H}H${mx}`, class: "pb-stroke pb-ink-orange-stroke pb-bars__line" }, r.g));
+      if (r.more.text) { const t = el("text", { x: mx + mw / 2, y: r.y + H / 2 + 9, "text-anchor": "middle", "font-family": FONT, "font-size": 24, class: "pb-ink-orange-fill pb-label__text" }, r.g); t.textContent = r.more.text; }
+    }
+    (r.texts || []).forEach((tx, k) => {
+      if (!tx || k >= r.units) return;
+      const t = el("text", { x: x0 + (k + 0.5) * u, y: r.y + H / 2 + 9, "text-anchor": "middle", "font-family": FONT, "font-size": Math.min(26, u * 0.42), class: "pb-ink-ink-fill pb-bars__unit" }, r.g);
+      t.textContent = tx;
+    });
+    const nm = el("text", { x: x0 - 14, y: r.y + H / 2 + 9, "text-anchor": "end", "font-family": FONT, "font-weight": HAND.title, "font-size": 26, class: "pb-ink-ink-fill pb-label__text" }, r.g);
+    nm.textContent = r.name;
+    r.name_ = nm;
+  }
+  const box = () => {
+    const last = rows[rows.length - 1];
+    return { x: F.x, y: rows[0].y + rows[0].dy - ROOM, w: F.w, h: last.y + last.dy + H + ROOM - (rows[0].y + rows[0].dy - ROOM) };
+  };
+  const item = {
+    node: g, box: box(), focus: box(), weight: 0.6 + rows.length * 0.5,
+    bars: { rows, u, x0, H, GAP, ROOM, braces: [], g },
+    draw(tl, at, dur) {
+      const each = (dur * 0.85) / Math.max(1, strokes.length);
+      strokes.forEach((s, k) => drawStroke(tl, s, at + k * each, each));
+      rows.forEach((r) => { tl.from(r.name_, { opacity: 0, duration: 0.3 }, at + dur * 0.2); r.g.querySelectorAll(".pb-bars__shade, .pb-bars__unit").forEach((n) => tl.from(n, { opacity: 0, duration: 0.3 }, at + dur * 0.7)); });
+    },
+  };
+  item.refresh = () => { item.box = box(); item.focus = item.box; };
+  return item;
+}
+
+/** A curly brace on a bar model: over or under part of one row, or down the
+    right of several rows (their total). Rows move apart if it needs room. */
+export function buildBrace(op, page, bars, gsapRef) {
+  const B = bars.bars;
+  const find = (v) => (typeof v === "number" ? B.rows[v] : B.rows.find((r) => r.name.toLowerCase() === String(v).toLowerCase()));
+  const g = el("g", { class: "pb-brace", "data-id": op.id }, page);
+  const tone = op.tone || (op.text === "?" ? "red" : "blue");
+  let d, tx, ty, anchor = "middle", host;
+  if (op.side === "right") {
+    const rs = (op.rows || []).map(find).filter(Boolean);
+    const set = rs.length ? rs : B.rows;
+    const top = set[0].y + set[0].dy, bot = set[set.length - 1].y + set[set.length - 1].dy + B.H;
+    const x = Math.max(...set.map((r) => B.x0 + (r.units + (r.more ? r.more.w : 0)) * B.u)) + 14, w = 18, m = (top + bot) / 2;
+    d = `M${x} ${top}Q${x + w * 0.6} ${top} ${x + w * 0.6} ${top + 12}V${m - 12}Q${x + w * 0.6} ${m} ${x + w} ${m}Q${x + w * 0.6} ${m} ${x + w * 0.6} ${m + 12}V${bot - 12}Q${x + w * 0.6} ${bot} ${x} ${bot}`;
+    tx = x + w + 10; ty = m + 9; anchor = "start";
+    host = g;
+  } else {
+    const r = find(op.row ?? 0) || B.rows[0];
+    const ri = B.rows.indexOf(r);
+    const above = op.side !== "below";
+    /* room: a brace between two rows pushes the rows beneath down */
+    const needs = above ? ri > 0 && !B.rows[ri].roomAbove : ri < B.rows.length - 1 && !B.rows[ri].roomBelow;
+    if (needs) {
+      if (above) r.roomAbove = true; else r.roomBelow = true;
+      const from = above ? ri : ri + 1;
+      for (let k = from; k < B.rows.length; k++) {
+        B.rows[k].dy += B.ROOM - B.GAP + 10;
+        if (gsapRef) gsapRef.to(B.rows[k].g, { y: B.rows[k].dy, duration: 0.4, ease: "power2.inOut" });
+        else B.rows[k].g.setAttribute("transform", `translate(0 ${B.rows[k].dy})`);
+      }
+      bars.refresh?.();
+    }
+    const total = r.units + (r.more ? r.more.w : 0);
+    const a = Math.max(0, Math.min(total, op.from ?? 0)), b = Math.max(a + 0.2, Math.min(total, op.to ?? total));
+    const x0 = B.x0 + a * B.u, x1 = B.x0 + b * B.u, m = (x0 + x1) / 2;
+    const y = above ? r.y - 8 : r.y + B.H + 8, s = above ? -1 : 1, h = 18;
+    d = `M${x0} ${y}Q${x0} ${y + s * h * 0.6} ${x0 + 12} ${y + s * h * 0.6}H${m - 12}Q${m} ${y + s * h * 0.6} ${m} ${y + s * h}Q${m} ${y + s * h * 0.6} ${m + 12} ${y + s * h * 0.6}H${x1 - 12}Q${x1} ${y + s * h * 0.6} ${x1} ${y}`;
+    tx = m; ty = above ? y - h - 10 : y + h + 30;
+    host = r.g; // it moves with its row
+  }
+  if (host !== g) host.appendChild(g);
+  const path = el("path", { d, class: `pb-stroke pb-ink-${tone}-stroke pb-brace__line` }, g);
+  const t = el("text", { x: tx, y: ty, "text-anchor": anchor, "font-family": FONT, "font-weight": HAND.title, "font-size": 28, class: `pb-ink-${tone}-fill pb-label__text` }, g);
+  t.textContent = op.text || "";
+  bars.bars.braces.push(g);
+  const box = (() => { try { const bb = g.getBBox(); return { x: bb.x, y: bb.y, w: bb.width, h: bb.height }; } catch { return bars.box; } })();
+  return {
+    node: g, box, focus: bars.box, weight: 0.8,
+    draw(tl, at, dur) {
+      drawStroke(tl, path, at, dur * 0.6);
+      tl.from(t, { opacity: 0, duration: dur * 0.3 }, at + dur * 0.6);
     },
   };
 }

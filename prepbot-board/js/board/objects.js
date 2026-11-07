@@ -133,6 +133,147 @@ export const OBJECTS = {
       resistor: { cx: 60, cy: 8, svg: F(rect(25, 8, 70, 24), "#e7d3a8") + L(rect(25, 8, 70, 24)) + L("M40 8V32M52 8V32M64 8V32", "#c25454", 4) + L("M80 8V32", "#b88a2a", 4) },
     }),
   },
+
+  /* ── the everyday world, for word problems and stories ── */
+  person: {
+    w: 60, h: 132,
+    parts: () => ({
+      legs: { cx: 22, cy: 108, svg: F(rect(18, 78, 10, 44), "#4a5a78") + F(rect(32, 78, 10, 44), "#4a5a78") + L("M18 78V122H28V78M32 78V122H42V78") + F("M14 122H29V128H14Z", INK) + F("M31 122H46V128H31Z", INK) },
+      body: { cx: 46, cy: 52, svg: F("M18 30H42L45 80H15Z", "#5b8fd6") + L("M18 30H42L45 80H15Z") },
+      arms: { cx: 54, cy: 60, svg: L("M19 34L8 66M41 34L52 66", INK, 4.5) },
+      head: { cx: 30, cy: 14, svg: F(circ(30, 15, 12), "#e8b98a") + L(circ(30, 15, 12)) + F(circ(26, 14, 1.6), INK) + F(circ(34, 14, 1.6), INK) + L("M26 20Q30 23 34 20", INK, 1.8) },
+    }),
+  },
+  tree: {
+    w: 100, h: 132,
+    parts: () => ({
+      trunk: { cx: 58, cy: 104, svg: F("M43 70H57L60 126H40Z", "#8a5a3a") + L("M43 70L40 126H60L57 70") },
+      roots: { cx: 76, cy: 128, svg: L("M41 124Q32 128 24 130M59 124Q68 128 76 130", "#6b4630", 3) },
+      leaves: { cx: 14, cy: 38, svg: F("M50 6C72 6 88 20 86 38C98 46 96 68 80 74C70 86 30 86 20 74C4 68 2 46 14 38C12 20 28 6 50 6Z", "#7cc46a") + L("M50 6C72 6 88 20 86 38C98 46 96 68 80 74C70 86 30 86 20 74C4 68 2 46 14 38C12 20 28 6 50 6Z", "#3f8f3f") },
+    }),
+  },
+  house: {
+    w: 120, h: 110,
+    parts: () => ({
+      walls: { cx: 104, cy: 90, svg: F(rect(15, 46, 90, 61), "#f3e1c4") + L(rect(15, 46, 90, 61)) },
+      roof: { cx: 96, cy: 30, svg: F("M6 49L60 7L114 49Z", "#c25454") + L("M6 49L60 7L114 49Z") },
+      chimney: { cx: 88, cy: 16, svg: F(rect(82, 14, 12, 20), "#9a6b4b") + L("M82 30V14H94V24") },
+      door: { cx: 60, cy: 88, svg: F(rect(50, 72, 20, 35), "#8a5a3a") + L(rect(50, 72, 20, 35)) + F(circ(65, 90, 1.8), INK) },
+      window: { cx: 33, cy: 66, svg: F(rect(24, 58, 18, 16), "#9fd0f5") + L(rect(24, 58, 18, 16)) + L("M33 58V74M24 66H42", INK, 2) + F(rect(78, 58, 18, 16), "#9fd0f5") + L(rect(78, 58, 18, 16)) + L("M87 58V74M78 66H96", INK, 2) },
+    }),
+  },
+  car: {
+    w: 140, h: 72,
+    parts: (on) => {
+      const body = "M8 46Q8 34 20 32L40 30L56 12H100L116 30H128Q136 32 136 46V56H8Z";
+      const p = {
+        body: { cx: 128, cy: 48, svg: F(body, "#e35d5d") + L(body) },
+        windows: { cx: 70, cy: 22, svg: F("M60 16H78V30H48Z", "#d6ecf7") + L("M60 16H78V30H48Z", INK, 2.5) + F("M82 16H98L110 30H82Z", "#d6ecf7") + L("M82 16H98L110 30H82Z", INK, 2.5) },
+        wheels: { cx: 34, cy: 58, svg: F(circ(34, 58, 12), INK) + F(circ(34, 58, 5), "#c3c8cd") + F(circ(110, 58, 12), INK) + F(circ(110, 58, 5), "#c3c8cd") },
+        headlight: { cx: 133, cy: 40, svg: F(circ(132, 40, 3.5), "#f6d55c") },
+      };
+      if (on) p.exhaust = { cx: 2, cy: 50, svg: L("M6 50Q0 46 -6 50T-18 50", "#9aa0a6", 2.5) };
+      return p;
+    },
+  },
+  sun: {
+    w: 100, h: 100,
+    parts: () => ({
+      sun: { cx: 50, cy: 50, svg: F(circ(50, 50, 24), "#f6c544") + L(circ(50, 50, 24), "#e5801a", 3) },
+      rays: { cx: 92, cy: 50, svg: L("M50 4V16M50 84V96M4 50H16M84 50H96M17 17L26 26M74 74L83 83M83 17L74 26M26 74L17 83", "#e5801a", 4) },
+    }),
+  },
+  cloud: {
+    w: 120, h: 96,
+    parts: (on) => {
+      const c = "M28 62C12 62 6 50 12 40C10 26 26 18 38 24C44 8 70 6 78 22C92 16 108 26 104 40C116 44 114 62 98 62Z";
+      const p = { cloud: { cx: 60, cy: 30, svg: F(c, "#eef2f5") + L(c, "#7d848b", 3) } };
+      if (on) p.rain = { cx: 60, cy: 86, svg: L("M30 70L26 82M50 70L46 82M70 70L66 82M90 70L86 82M40 84L36 94M60 84L56 94M80 84L76 94", "#5a9bd0", 3) };
+      return p;
+    },
+  },
+  flower: {
+    w: 70, h: 132,
+    parts: () => ({
+      stem: { cx: 35, cy: 100, svg: L("M35 50V128", "#3f8f3f", 4) },
+      leaf: { cx: 52, cy: 92, svg: F("M36 96Q50 78 62 84Q52 100 36 96Z", "#7cc46a") + L("M36 96Q50 78 62 84Q52 100 36 96Z", "#3f8f3f", 2.5) },
+      petals: { cx: 56, cy: 18, svg: [[35, 12], [53, 25], [46, 46], [24, 46], [17, 25]].map(([x, y]) => F(circ(x, y, 12), "#f5a7b8") + L(circ(x, y, 12), "#c25484", 2.5)).join("") },
+      centre: { cx: 35, cy: 30, svg: F(circ(35, 30, 9), "#f6c544") + L(circ(35, 30, 9), "#b88a2a", 2.5) },
+    }),
+  },
+  leaf: {
+    w: 110, h: 70,
+    parts: () => ({
+      "leaf blade": { cx: 60, cy: 12, svg: F("M14 35C36 2 84 2 104 35C84 68 36 68 14 35Z", "#7cc46a") + L("M14 35C36 2 84 2 104 35C84 68 36 68 14 35Z", "#3f8f3f") },
+      midrib: { cx: 60, cy: 35, svg: L("M14 35H100", "#2f6f2f", 2.5) },
+      veins: { cx: 76, cy: 22, svg: L("M36 35L46 20M56 35L66 18M76 35L84 21M36 35L46 50M56 35L66 52M76 35L84 49", "#2f6f2f", 2) },
+      petiole: { cx: 6, cy: 38, svg: L("M14 35L0 42", "#3f8f3f", 4) },
+    }),
+  },
+  mountain: {
+    w: 140, h: 90,
+    parts: () => ({
+      mountain: { cx: 30, cy: 70, svg: F("M4 86L48 20L70 46L92 14L136 86Z", "#a7b3be") + L("M4 86L48 20L70 46L92 14L136 86Z") },
+      peak: { cx: 92, cy: 14, svg: F("M92 14L104 33L96 30L89 35L82 29Z", "#fff") + L("M82 29L89 35L96 30L104 33", INK, 2) },
+    }),
+  },
+  fish: {
+    w: 124, h: 64,
+    parts: () => ({
+      body: { cx: 50, cy: 54, svg: F("M10 32C30 6 80 6 96 32C80 58 30 58 10 32Z", "#f7a35c") + L("M10 32C30 6 80 6 96 32C80 58 30 58 10 32Z") },
+      tail: { cx: 114, cy: 32, svg: F("M94 32L120 12V52Z", "#e5801a") + L("M94 32L120 12V52Z") },
+      fin: { cx: 54, cy: 8, svg: F("M44 14Q56 0 70 12Z", "#e5801a") + L("M44 14Q56 0 70 12", INK, 2.5) },
+      gills: { cx: 32, cy: 32, svg: L("M32 20Q38 32 32 44", INK, 2.5) },
+      eye: { cx: 22, cy: 28, svg: F(circ(22, 28, 3.5), INK) },
+    }),
+  },
+  bird: {
+    w: 110, h: 80,
+    parts: () => ({
+      body: { cx: 54, cy: 62, svg: F("M28 44C34 28 70 26 84 40C78 58 42 62 28 44Z", "#5b8fd6") + L("M28 44C34 28 70 26 84 40C78 58 42 62 28 44Z") },
+      wing: { cx: 56, cy: 22, svg: F("M44 40Q58 8 76 18Q68 36 50 44Z", "#3d6fb8") + L("M44 40Q58 8 76 18Q68 36 50 44Z", INK, 2.5) },
+      head: { cx: 92, cy: 26, svg: F(circ(88, 34, 10), "#5b8fd6") + L(circ(88, 34, 10)) + F(circ(91, 31, 2), INK) },
+      beak: { cx: 106, cy: 36, svg: F("M97 31L108 36L97 39Z", "#f6c544") + L("M97 31L108 36L97 39Z", INK, 2) },
+      tail: { cx: 12, cy: 40, svg: F("M30 44L8 34L12 50Z", "#3d6fb8") + L("M30 44L8 34L12 50Z", INK, 2.5) },
+      legs: { cx: 58, cy: 74, svg: L("M50 54L48 72M62 54L64 72", INK, 2.5) },
+    }),
+  },
+  ball: {
+    w: 60, h: 60,
+    parts: () => ({ ball: { cx: 30, cy: 30, svg: F(circ(30, 30, 26), "#fff") + L(circ(30, 30, 26)) + F("M30 18L41 26L37 39H23L19 26Z", INK) + L("M30 18V5M41 26L54 22M37 39L45 50M23 39L15 50M19 26L6 22", INK, 2.5) } }),
+  },
+  "water drop": {
+    w: 52, h: 72,
+    parts: () => ({ drop: { cx: 26, cy: 46, svg: F("M26 4C37 22 47 34 47 47A21 21 0 0 1 5 47C5 34 15 22 26 4Z", "#9fd0f5") + L("M26 4C37 22 47 34 47 47A21 21 0 0 1 5 47C5 34 15 22 26 4Z", "#2e6ea3") + L("M15 46Q15 38 21 33", "#fff", 3) } }),
+  },
+  apple: {
+    w: 72, h: 80,
+    parts: () => ({
+      apple: { cx: 36, cy: 50, svg: F("M36 22C22 12 4 20 6 42C8 64 22 78 36 72C50 78 64 64 66 42C68 20 50 12 36 22Z", "#e35d5d") + L("M36 22C22 12 4 20 6 42C8 64 22 78 36 72C50 78 64 64 66 42C68 20 50 12 36 22Z") },
+      stalk: { cx: 38, cy: 10, svg: L("M36 22Q36 10 42 4", "#6b4630", 3.5) },
+      leaf: { cx: 52, cy: 10, svg: F("M40 12Q52 0 62 8Q52 18 40 12Z", "#7cc46a") + L("M40 12Q52 0 62 8Q52 18 40 12Z", "#3f8f3f", 2) },
+    }),
+  },
+  ladder: {
+    w: 50, h: 140,
+    parts: () => ({
+      rails: { cx: 6, cy: 70, svg: L("M8 4V136M42 4V136", "#8a5a3a", 5) },
+      rungs: { cx: 25, cy: 40, svg: L([20, 40, 60, 80, 100, 120].map((y) => `M8 ${y}H42`).join(""), "#8a5a3a", 4) },
+    }),
+  },
+  wall: {
+    w: 60, h: 150,
+    parts: () => ({ wall: { cx: 30, cy: 75, svg: F(rect(4, 4, 52, 142), "#e7c9a8") + L(rect(4, 4, 52, 142)) + L(Array.from({ length: 9 }, (_, i) => `M4 ${20 + i * 15}H56`).join("") + Array.from({ length: 10 }, (_, i) => `M${i % 2 ? 22 : 38} ${5 + i * 15}V${19 + i * 15}`).join(""), "#9a6b4b", 1.8) } }),
+  },
+  "plant pot": {
+    w: 80, h: 120,
+    parts: () => ({
+      pot: { cx: 72, cy: 100, svg: F("M10 74H70L62 116H18Z", "#c8692b") + L("M10 74H70L62 116H18Z") + F(rect(6, 68, 68, 10), "#d98a4b") + L(rect(6, 68, 68, 10)) },
+      soil: { cx: 40, cy: 70, svg: F(rect(10, 66, 60, 4), "#6b4630") },
+      stem: { cx: 40, cy: 50, svg: L("M40 66V24", "#3f8f3f", 4) },
+      leaves: { cx: 62, cy: 30, svg: F("M40 44Q24 26 10 34Q22 50 40 44Z", "#7cc46a") + L("M40 44Q24 26 10 34Q22 50 40 44Z", "#3f8f3f", 2.5) + F("M40 32Q56 12 70 20Q58 38 40 32Z", "#7cc46a") + L("M40 32Q56 12 70 20Q58 38 40 32Z", "#3f8f3f", 2.5) },
+    }),
+  },
 };
 
 export const OBJECT_NAMES = Object.keys(OBJECTS);
@@ -145,6 +286,10 @@ const ALIAS = {
   "conical flask": "flask", "erlenmeyer flask": "flask",
   lens: "convex lens", "magnifying glass": "convex lens", "bar magnet": "magnet",
   testtube: "test tube", "test-tube": "test tube",
+  man: "person", woman: "person", boy: "person", girl: "person", child: "person", human: "person", pupil: "person", student: "person",
+  home: "house", building: "house", vehicle: "car", taxi: "car", bus: "car",
+  raindrop: "water drop", drop: "water drop", droplet: "water drop", "rain cloud": "cloud",
+  football: "ball", "soccer ball": "ball", hill: "mountain", plant: "plant pot", "potted plant": "plant pot", bricks: "wall",
 };
 export function objectNamed(name) {
   const n = String(name || "").toLowerCase().replace(/[^a-z -]/g, "").replace(/\s+/g, " ").trim();

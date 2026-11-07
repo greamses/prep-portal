@@ -79,6 +79,18 @@ export function createLayout(shape = "landscape") {
       blocked.length = 0;
     },
 
+    /** Where the next thing in the column would start. */
+    cursor(kind = "step") {
+      const gap = (SIZES[kind] || SIZES.step).gap;
+      return placed.length ? y + gap : y;
+    },
+
+    /** Take a box of the column for something that is not a line (a sticky note). */
+    reserve(box) {
+      placed.push(box);
+      y = Math.max(y, box.y + box.h);
+    },
+
     /** Something written outside the flow: the column goes round it. */
     block(box) { if (box) blocked.push(box); },
 

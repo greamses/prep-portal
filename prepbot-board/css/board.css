@@ -384,3 +384,11 @@ body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex;
 .pb-doc__icon svg { width: 18px; height: 18px; }
 .pb-doc__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 0.8rem; }
 .pb-doc__x { border: 0; background: transparent; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 2px; color: var(--ink); }
+
+/* the learner's problem, stuck up: a yellow sticky with a strip of tape */
+.pb-sticky__paper { fill: #fff1a8; stroke: rgba(42, 39, 35, 0.12); stroke-width: 2; filter: drop-shadow(0 6px 8px rgba(42, 39, 35, 0.16)); }
+.pb-sticky__tape { fill: rgba(255, 255, 255, 0.55); stroke: rgba(42, 39, 35, 0.08); }
+/* the bar model */
+.pb-bars__line { stroke-width: 3.5; filter: none; }
+.pb-bars__shade { opacity: 0.32; }
+.pb-brace__line { stroke-width: 3.5; fill: none; filter: none; }

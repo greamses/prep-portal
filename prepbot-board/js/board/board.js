@@ -22,7 +22,7 @@
 
 import { createLayout } from "./layout.js";
 import { cleanOp, boardSummary } from "../protocol/ops.js";
-import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, buildShape, buildHighlight, buildDiagram, buildLabel, buildPart, buildEmphasis, buildObject, buildMove, buildSketch, buildPicture, gridMapper, createPen, setPen } from "./render.js";
+import { el, buildWrite, buildGraph, buildPlot, buildPoint, buildArrow, buildMark, buildShape, buildHighlight, buildDiagram, buildLabel, buildPart, buildEmphasis, buildObject, buildMove, buildSticky, buildBars, buildBrace, buildSketch, buildPicture, gridMapper, createPen, setPen } from "./render.js";
 import { ensureDiagrams, loadedDiagram, findPart, stepDiagram, needsLoad } from "./diagrams.js";
 import { objectNamed } from "./objects.js";
 
@@ -291,8 +291,10 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       }
       case "sketch": {
         { const inside = intoDiagram(op, page); if (inside) return inside; }
-        const g = op.on === "grid" ? null : items.get(op.on);
-        return buildSketch(op, page, g?.mapper || gridMapper(layout.canvas.figure));
+        return keepClear(op, animated, (o, pg) => {
+          const g = o.on === "grid" ? null : items.get(o.on);
+          return buildSketch(o, pg, g?.mapper || gridMapper(layout.canvas.figure));
+        });
       }
       case "picture": {
         if (!picture) return null; // no image service on this page (tests, demos)
@@ -305,21 +307,42 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       case "object": {
         const obj = objectNamed(op.name);
         if (!obj) return null;
-        const g = op.on === "grid" ? null : items.get(op.on);
-        return buildObject(op, page, g?.mapper || gridMapper(layout.canvas.figure), obj);
+        return keepClear(op, animated, (o, pg) => {
+          const g = o.on === "grid" ? null : items.get(o.on);
+          return buildObject(o, pg, g?.mapper || gridMapper(layout.canvas.figure), obj);
+        });
+      }
+      case "sticky":
+        return buildSticky(op, page, measure, layout);
+      case "bars": {
+        /* a bar model fills the figure panel, like a graph or a diagram */
+        if (graph) nextSection(animated);
+        const b = buildBars(op, cur.page, layout);
+        graph = b;
+        return b;
+      }
+      case "brace": {
+        const b = items.get(op.on);
+        if (!b?.bars) return null;
+        const key = `brace|${op.on}|${op.side}|${op.row ?? ""}|${(op.rows || []).join(",")}|${op.from ?? ""}|${op.to ?? ""}`;
+        return again(key, () => buildBrace(op, page, b, animated ? gsap : null), page);
       }
       case "move":
         return buildMove(op, page, moveEnds(op));
       case "shape": {
         { const inside = intoDiagram(op, page); if (inside) return inside; }
-        const g = op.on === "grid" ? null : items.get(op.on);
-        return buildShape(op, page, g?.mapper || gridMapper(layout.canvas.figure));
+        return keepClear(op, animated, (o, pg) => {
+          const g = o.on === "grid" ? null : items.get(o.on);
+          return buildShape(o, pg, g?.mapper || gridMapper(layout.canvas.figure));
+        });
       }
       case "highlight": {
         const t = items.get(op.target);
         if (!t?.box) return null;
         /* never a highlight over a highlight: words already (partly) highlighted
            are stressed instead */
+        /* yellow on a yellow sticky would not show: a green pen there */
+        if (t.node?.classList?.contains("pb-sticky") && op.tone === "yellow") op = { ...op, tone: "green" };
         const want = markTarget(t, op.words).box;
         const over = [...(cur.marks || new Map()).entries()].find(([k, m]) => k.startsWith(`hl|${op.target}|`) && m.node.isConnected && m.box && want &&
           m.box.x < want.x + want.w && want.x < m.box.x + m.box.w && m.box.y < want.y + want.h && want.y < m.box.y + m.box.h);
@@ -340,6 +363,60 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
     const part = findPart(d.data, op.label);
     if (!part) return null;
     return partAndLabel({ op: "part", id: op.id, on: graph.node.dataset.id, part: part.name, text: op.label, tone: "blue", label: true }, items.get(graph.node.dataset.id), page);
+  }
+
+  /* NEVER A DRAWING ON A DRAWING. A shape, sketch or object put on the grid
+     lands where it does not cover what is already drawn in the panel: moved
+     to the nearest clear place, or to a new section when the panel is taken
+     (by a diagram, a bar model, a picture) or full. Drawing ON something on
+     purpose (the Earth on its orbit, a flame on a candle) says "over". */
+  const PANEL = new Set(["shape", "sketch", "object"]);
+  const clash = (a, b) => {
+    const ix = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), iy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+    if (ix <= 0 || iy <= 0) return false;
+    return ix * iy > 0.12 * Math.min(a.w * a.h, b.w * b.h);
+  };
+  function keepClear(op, animated, make) {
+    let b = make(op, cur.page);
+    if (!b || op.over || op.on !== "grid") return b;
+    const F = layout.canvas.figure;
+    const drawn = () => cur.ops.filter((o) => PANEL.has(o.op) && o.on === "grid").map((o) => items.get(o.id)).filter((it) => it && it.box && it.node.isConnected && it !== b);
+    const occupied = graph && !graph.mapper; // a diagram, a bar model, a picture fills the panel
+    const hits = (box) => drawn().some((o) => clash(box, o.box)) || (occupied && clash(box, graph.box));
+    if (!hits(b.box)) return b;
+    if (!occupied) {
+      /* the nearest clear place on the grid, a whole grid step at a time */
+      const m = gridMapper(F), ux = m.toX(1) - m.toX(0), uy = m.toY(1) - m.toY(0);
+      const tries = [];
+      for (let dx = -8; dx <= 8; dx++) for (let dy = -8; dy <= 8; dy++) if (dx || dy) tries.push([dx, dy]);
+      tries.sort((p, q) => Math.hypot(...p) - Math.hypot(...q));
+      for (const [dx, dy] of tries) {
+        const nb = { x: b.box.x + dx * ux, y: b.box.y + dy * uy, w: b.box.w, h: b.box.h };
+        if (nb.x < F.x - 4 || nb.y < F.y - 4 || nb.x + nb.w > F.x + F.w + 4 || nb.y + nb.h > F.y + F.h + 4) continue;
+        if (hits(nb)) continue;
+        b.node.remove();
+        const moved = shifted(op, dx, dy);
+        const nb2 = make(moved, cur.page);
+        if (nb2) nb2.opUsed = moved;
+        return nb2;
+      }
+    }
+    /* nowhere clear: a fresh section */
+    b.node.remove();
+    nextSection(animated);
+    const nb = make(op, cur.page);
+    return nb;
+  }
+  function shifted(op, dx, dy) {
+    const mv = (p) => [Math.round((p[0] + dx) * 100) / 100, Math.round((p[1] + dy) * 100) / 100];
+    if (op.op === "sketch") {
+      /* every absolute point of its paths, moved */
+      const movePath = (d) => d.replace(/(-?\d*\.?\d+(?:e-?\d+)?)[\s,]+(-?\d*\.?\d+(?:e-?\d+)?)/gi, (_, x, y) => `${Math.round((+x + dx) * 100) / 100} ${Math.round((+y + dy) * 100) / 100}`);
+      return { ...op, paths: op.paths.map((p) => ({ ...p, d: movePath(p.d) })) };
+    }
+    if (op.at) return { ...op, at: mv(op.at) };
+    if (op.points) return { ...op, points: op.points.map(mv) };
+    return op;
   }
 
   /* Where writing goes when it is not the next line of the column: at a point
@@ -556,7 +633,7 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       let b = null;
       try { b = build(op, animated); } catch (e) { console.warn("[board] op skipped", op, e); b = null; }
       if (op.op === "clear" || op.op === "look" || !b) continue;
-      cur.ops.push(op);
+      cur.ops.push(b.opUsed || op);
       items.set(op.id, b);
       built.push(b);
     }
