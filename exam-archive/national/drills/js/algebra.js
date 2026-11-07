@@ -99,11 +99,16 @@ export function checkAlgebra(typed, ans) {
     return inner.reduce((g, c) => gcd(g, c), 0) === 1 && degree(inner) === 1;
   }
   if (ans.kind === 'quadFactorise') {
-    const two = /^(\([^()]+\))(\([^()]+\))$/.exec(t);
-    const sq = /^\(([^()]+)\)\^2$/.exec(t);
-    const groups = two ? [two[1], two[2]] : sq && ans.square ? [sq[1], sq[1]] : null;
+    // k(…)(…) or k(…)^2, k optional. Fully factorised: nothing left to take
+    // out of either bracket, so 2(x - 3)(x + 2) counts but (2x - 6)(x + 2) does not.
+    const two = /^(-?\d*)\(([^()]+)\)\(([^()]+)\)$/.exec(t);
+    const sq = /^(-?\d*)\(([^()]+)\)\^2$/.exec(t);
+    const groups = two ? [two[2], two[3]] : sq && ans.square ? [sq[2], sq[2]] : null;
     if (!groups) return false;
-    return groups.every((g) => { const q = parsePoly(g); return q && degree(q) === 1; });
+    return groups.every((g) => {
+      const q = parsePoly(g);
+      return q && degree(q) === 1 && q.reduce((h, c) => gcd(h, c), 0) === 1;
+    });
   }
   return true;
 }
@@ -122,6 +127,7 @@ const linear = (a, b) => `${coef(a)}x ${b < 0 ? MINUS : '+'} ${Math.abs(b)}`;
 // c in 1..12 from whichever pool the range gave
 const small = (rng, pool) => ((pool[Math.floor(rng() * pool.length)] - 1) % 12) + 1;
 const pick = (rng, arr) => arr[Math.floor(rng() * arr.length)];
+const int = (rng, lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
 const sgn = (rng) => (rng() < 0.5 ? -1 : 1);
 const nonzero = (rng, max) => sgn(rng) * (1 + Math.floor(rng() * max));
 
@@ -162,12 +168,17 @@ export function algebraQuestion(rng, pool, op) {
       answer: { alg: true, kind, poly: mul([a, p], [b, q]) },
     };
   }
-  // quadFactorise — monic, so every question has an answer in whole numbers
-  const mid = a + b, con = a * b;
+  // quadFactorise — k(x + a)(x + b): the roots −a and −b are always whole
+  // numbers. Half the time the x² coefficient k is 2–5 (a common factor to
+  // take out first); a quarter of them are a difference of two squares.
+  const lead = rng() < 0.5 ? 1 : int(rng, 2, 5);
+  let p = a, r = b;
+  if (rng() < 0.25) r = -p;              // difference of squares: k(x − a)(x + a)
+  const mid = lead * (p + r), con = lead * p * r;
   const middle = mid === 0 ? '' : ` ${mid < 0 ? MINUS : '+'} ${Math.abs(mid) === 1 ? '' : Math.abs(mid)}x`;
   return {
-    alg: true, hint: 'Factorise',
-    text: `x²${middle} ${con < 0 ? MINUS : '+'} ${Math.abs(con)}`,
-    answer: { alg: true, kind, poly: [con, mid, 1], square: a === b },
+    alg: true, hint: 'Factorise fully',
+    text: `${lead === 1 ? '' : lead}x²${middle} ${con < 0 ? MINUS : '+'} ${Math.abs(con)}`,
+    answer: { alg: true, kind, poly: [con, mid, lead], square: p === r },
   };
 }
