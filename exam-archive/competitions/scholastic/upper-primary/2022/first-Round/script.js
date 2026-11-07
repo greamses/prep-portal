@@ -520,66 +520,40 @@ const examQuestions = [
     topic: "Pre-Algebra",
   },
   {
-    question:
-      "What should replace the question mark to make the calculation correct?",
-    image: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 550 120" width="100%" height="100%">
-  <defs>
-    <marker id="arrow-right" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#000" />
-    </marker>
-  </defs>
-  <style>
-    .box { stroke: #000; stroke-width: 2; fill: #fff; }
-    .box-num { font-family: system-ui, sans-serif; font-size: 18px; font-weight: bold; fill: #000; text-anchor: middle; }
-    .arrow { stroke: #000; stroke-width: 1.5; fill: none; }
-    .arrow-text { font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; fill: #000; text-anchor: middle; }
-  </style>
-
-  <!-- Boxes -->
-  <rect x="20" y="30" width="50" height="50" class="box" />
-  <text x="45" y="62" class="box-num">5</text>
-
-  <rect x="160" y="30" width="50" height="50" class="box" />
-  <text x="185" y="62" class="box-num">?</text>
-
-  <rect x="300" y="30" width="50" height="50" class="box" />
-
-  <rect x="440" y="30" width="50" height="50" class="box" />
-  <text x="465" y="62" class="box-num">8</text>
-
-  <!-- Connective Arrows -->
-  <line x1="70" y1="55" x2="150" y2="55" class="arrow" marker-end="url(#arrow-right)" />
-  <text x="110" y="45" class="arrow-text">+2</text>
-
-  <line x1="210" y1="55" x2="290" y2="55" class="arrow" marker-end="url(#arrow-right)" />
-  <text x="250" y="45" class="arrow-text">?</text>
-
-  <line x1="350" y1="55" x2="430" y2="55" class="arrow" marker-end="url(#arrow-right)" />
-  <text x="390" y="45" class="arrow-text">×2</text>
+    question: "What should replace the question mark to make the calculation correct?",
+    image: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 110" width="100%" height="100%">
+  <defs><marker id="q28a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 L10 5 L0 9 z" fill="#000"/></marker></defs>
+  <g font-family="system-ui, sans-serif" font-weight="bold" text-anchor="middle">
+    <rect x="20" y="35" width="56" height="56" fill="#fff" stroke="#000" stroke-width="2"/><text x="48" y="70" font-size="20">4</text>
+    <rect x="180" y="35" width="56" height="56" fill="#fff" stroke="#000" stroke-width="2"/><text x="208" y="70" font-size="20">8</text>
+    <rect x="340" y="35" width="56" height="56" fill="#fff" stroke="#000" stroke-width="2"/>
+    <rect x="484" y="35" width="56" height="56" fill="#fff" stroke="#000" stroke-width="2"/><text x="512" y="70" font-size="20">5</text>
+    <line x1="76" y1="63" x2="176" y2="63" stroke="#000" stroke-width="2" marker-end="url(#q28a)"/><text x="126" y="50" font-size="16">&#215;2</text>
+    <line x1="236" y1="63" x2="336" y2="63" stroke="#000" stroke-width="2" marker-end="url(#q28a)"/><text x="286" y="50" font-size="16">?</text>
+    <line x1="396" y1="63" x2="480" y2="63" stroke="#000" stroke-width="2" marker-end="url(#q28a)"/><text x="438" y="50" font-size="16">+2</text>
+  </g>
 </svg>`,
-    options: ["\\(+1\\)", "\\(-1\\)", "\\(-2\\)", "\\(-3\\)", "\\(-5\\)"],
-    correctIndex: 3,
-    hint: "Follow the flowchart step-by-step. Work out the value of the empty boxes.",
+    options: ["\\(\\times 1\\)", "\\(-1\\)", "\\(-2\\)", "\\(-3\\)", "\\(-5\\)"],
+    correctIndex: 4,
+    hint: "Work backwards from the last box: what number, plus 2, makes 5?",
     explanation: [
-      "Let Box 1 = \\(5\\).",
-      "Box 2 = \\(5 + 2 = 7\\).",
-      "Let Box 3 = \\(x\\). Box 4 = \\(x \\times 2 = 8 \\implies x = 4\\).",
-      "The operation '?' goes from Box 2 (\\(7\\)) to Box 3 (\\(4\\)): \\(7 + ? = 4 \\implies ? = -3\\).",
+      "\\(4 \\times 2 = 8\\), so the second box is \\(8\\).",
+      "The empty box plus \\(2\\) is \\(5\\), so the empty box is \\(5 - 2 = 3\\).",
+      "From \\(8\\) to \\(3\\): \\(8 - 5 = 3\\), so the question mark is \\(-5\\).",
     ],
-    topic: "Logic Operations",
+    topic: "Number Operations",
   },
   {
-    question: "Given that \\(13 + x = 10\\), find the value of \\(x\\)",
+    question: "Given that \\(13 \\div x = 10\\), find the value of \\(x\\)",
     image: null,
     options: ["\\(0.3\\)", "\\(1.3\\)", "\\(2.3\\)", "\\(3.3\\)", "\\(4.3\\)"],
-    correctIndex: 3,
-    hint: "Subtract \\(13\\) from both sides of the equation. Notice that the result is negative, or if absolute value is expected, check closest positive options.",
+    correctIndex: 1,
+    hint: "Dividing 13 by x gives 10, so x is 13 divided by 10.",
     explanation: [
-      "\\(13 + x = 10\\)",
-      "\\(x = 10 - 13 = -3\\).",
-      "In physical sheets, if magnitude change is described, the answer relates directly to the value \\(3\\) or \\(-3\\).",
+      "\\(13 \\div x = 10\\) means \\(x = 13 \\div 10\\).",
+      "\\(x = 1.3\\). Check: \\(13 \\div 1.3 = 10\\).",
     ],
-    topic: "Basic Equations",
+    topic: "Basic Algebra",
   },
   {
     question: "Find the difference between LXVI and XCI.",
@@ -690,24 +664,17 @@ const examQuestions = [
     topic: "Units and Time",
   },
   {
-    question:
-      "A woman did \\(\\frac{1}{5}\\) of her house chores in the morning, \\(\\frac{4}{7}\\) in the afternoon and finished the remaining in the evening. What fraction of her work was done in the evening?",
+    question: "A woman did \\(\\frac{1}{5}\\) of her house chores in the morning, \\(\\frac{4}{7}\\) in the afternoon and finished the remaining in the evening. What fraction of her work was done in the evening?",
     image: null,
-    options: [
-      "\\(\\frac{1}{3}\\)",
-      "\\(\\frac{1}{2}\\)",
-      "\\(\\frac{24}{35}\\)",
-      "\\(\\frac{8}{35}\\)",
-      "No answer",
-    ],
-    correctIndex: 3,
-    hint: "Sum the morning and afternoon fractions, then subtract from \\(1\\) (the whole work).",
+    options: ["\\(\\frac{1}{3}\\)", "\\(\\frac{1}{2}\\)", "\\(\\frac{24}{35}\\)", "\\(\\frac{3}{7}\\)", "No answer"],
+    correctIndex: 4,
+    hint: "Add the morning and afternoon fractions, then take the total from 1.",
     explanation: [
-      "Work done = \\(\\frac{1}{5} + \\frac{4}{7}\\).",
-      "Common denominator is \\(35\\): \\(\\frac{7 + 20}{35} = \\frac{27}{35}\\).",
-      "Work left for evening = \\(1 - \\frac{27}{35} = \\frac{8}{35}\\).",
+      "Morning and afternoon: \\(\\frac{1}{5} + \\frac{4}{7} = \\frac{7 + 20}{35} = \\frac{27}{35}\\).",
+      "Evening: \\(1 - \\frac{27}{35} = \\frac{8}{35}\\).",
+      "\\(\\frac{8}{35}\\) is not among the options, so the answer is No answer.",
     ],
-    topic: "Fractions Word Problems",
+    topic: "Fractions",
   },
   {
     question: "One centimeter is equal to how many meters?",
