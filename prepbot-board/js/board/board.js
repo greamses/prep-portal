@@ -281,6 +281,7 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
         return partAndLabel(op, it, page);
       }
       case "sketch": {
+        { const inside = intoDiagram(op, page); if (inside) return inside; }
         const g = op.on === "grid" ? null : items.get(op.on);
         return buildSketch(op, page, g?.mapper || gridMapper(layout.canvas.figure));
       }
@@ -293,6 +294,7 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
         return it;
       }
       case "shape": {
+        { const inside = intoDiagram(op, page); if (inside) return inside; }
         const g = op.on === "grid" ? null : items.get(op.on);
         return buildShape(op, page, g?.mapper || gridMapper(layout.canvas.figure));
       }
@@ -304,6 +306,17 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       default:
         return null;
     }
+  }
+
+  /* A shape or sketch the model drew FOR a part of the step diagram in this
+     section (its label names a part: "mitochondria"): drawn as that part, in
+     its place inside the drawing, not loose on the grid beside it. */
+  function intoDiagram(op, page) {
+    const d = graph?.diagram;
+    if (!d || !d.data.steps || !op.label) return null;
+    const part = findPart(d.data, op.label);
+    if (!part) return null;
+    return partAndLabel({ op: "part", id: op.id, on: graph.node.dataset.id, part: part.name, text: op.label, tone: "blue", label: true }, items.get(graph.node.dataset.id), page);
   }
 
   /* A part of a diagram: in a step diagram it is DRAWN first (once), then

@@ -69,10 +69,22 @@ export async function ensureDiagrams(names) {
   }));
 }
 
-/** A part by name, forgiving of case, plural and "the". */
+/* other names a teacher (or the model) uses for a part, and Latin plurals */
+const ALIASES = {
+  mitochondria: "mitochondrion", mitochondrias: "mitochondrion", powerhouse: "mitochondrion",
+  nuclei: "nucleus", nucleoli: "nucleolus", vacuoles: "vacuole", "central vacuole": "vacuole", "sap vacuole": "vacuole",
+  "golgi body": "golgi apparatus", golgi: "golgi apparatus", "golgi complex": "golgi apparatus",
+  er: "rough endoplasmic reticulum", "endoplasmic reticulum": "rough endoplasmic reticulum", "rough er": "rough endoplasmic reticulum", "smooth er": "smooth endoplasmic reticulum",
+  "plasma membrane": "cell membrane", membrane: "cell membrane", "cell surface membrane": "cell membrane",
+  wall: "cell wall", grana: "thylakoid membrane", granum: "thylakoid membrane", thylakoid: "thylakoid membrane",
+  starch: "starch grain", plasmodesmata: "plasmodesma", lysosomes: "lysosome", ribosomes: "ribosome", centrioles: "centrosome", centriole: "centrosome",
+  chromosomes: "chromatin", dna: "chromatin", vesicles: "vesicle",
+};
+/** A part by name, forgiving of case, plural, "the" and other names for it. */
 export function findPart(diagram, name) {
   const norm = (s) => String(s || "").toLowerCase().replace(/^the\s+/, "").replace(/[^a-z ]/g, "").replace(/s$/, "").trim();
-  const want = norm(name);
+  const raw = String(name || "").toLowerCase().replace(/^the\s+/, "").replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
+  const want = norm(ALIASES[raw] || ALIASES[raw.replace(/s$/, "")] || raw);
   return diagram.parts.find((p) => norm(p.name) === want)
     || diagram.parts.find((p) => norm(p.name).includes(want) || want.includes(norm(p.name)));
 }

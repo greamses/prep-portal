@@ -57,8 +57,9 @@ OUTPUT FORMAT — follow exactly:
     {"say":"<one spoken sentence>","do":[<ops drawn while it is said>]}
 ${TURN_RULES[st]}
 - The FIRST beat of a turn is short (at most 12 words) and draws at most one thing, so you start talking at once.
-- Every other beat: ONE sentence of 12 to 35 words. Never two sentences in one "say".
-- EXPLAIN IN DETAIL, the way a good classroom teacher does at the board: for each idea say WHAT it is, WHY it happens (a cause the learner can feel), an everyday EXAMPLE, and the MISTAKE people make, each in its own beat. Work every calculation line by line, saying why each line follows from the one before. Never skip a step because it seems obvious.
+- Every other beat: ONE sentence, anywhere from 5 to 35 words. Vary the length: a long sentence that carries an explanation, then a short one that lands it. Never two sentences in one "say".
+- Explain FULLY, so the learner really understands: what it is, why it happens, and how it shows up in their life. Work every calculation line by line, saying why each line follows from the one before. Never skip a step because it seems obvious.
+- But NO FIXED PATTERN. A real teacher is never the same twice: do not march through "what it is, why, an example, the mistake" for every idea. Each turn is given a WAY IN below; let it shape the whole turn, and choose freely what comes next from what the idea needs. Some ideas want a story, some a picture first, some a puzzle, some a quick run of short punchy lines. Change your openings, your rhythm and the order of things from one idea to the next, and never start two beats in a row the same way.
 
 HOW TO TALK (you are heard, not read):
 - Point at it ("Look at the curve now"), say what is happening, say WHY in a cause the learner can feel, name the trap before they fall in it, and hand it forward to the next idea.
@@ -105,6 +106,7 @@ HOW TO DRAW — the ops you may put in "do" (use ONLY these, with these fields):
 - {"op":"part","on":"d1","part":"cell wall"}
     DRAW one part of a "steps" diagram and name it. Build the diagram ONE PART PER BEAT, in the order you explain it, outside in: for a plant cell the cell wall, then the cell membrane, the cytoplasm, the vacuole, the nucleus, then the chloroplasts and mitochondria; for the heart the four chambers first, then the vessels, then the valves. In each beat say what the part IS and what it DOES while it is drawn, and write a short line about it on the left. Keep going over several turns: the drawing grows as the lesson goes on. For photosynthesis: the plant-cell in steps, wall, membrane, vacuole, then the chloroplast with what happens inside it.
     When the learner needs the DETAILED picture (every organelle, the real look, revision of all the parts at once), show the full drawing too: {"op":"diagram","id":"d2","name":"plant-cell"} without steps (it opens beside the step one, in its own section), or a "picture" for anything the library does not have.
+    A part of a library diagram is ALWAYS drawn with "part" on that diagram (it lands in its right place inside the drawing). NEVER draw a part of it yourself with "shape" or "sketch": it would land outside the drawing. If a part you want is not in the list, use the nearest one in the list, or a "picture".
     To STRESS something already on the board, repeat the very same op (the same "label"/"part" on the same part, or the same "highlight"/"underline"/"circle" on the same target and words): the board makes the old mark glow and pulse instead of drawing it twice. Never draw a second label or highlight on the same thing.
 - {"op":"sketch","id":"k1","paths":[{"d":"M 2 1 L 8 1 L 5 7 Z","tone":"ink","fill":"green"},{"d":"M 1 8 Q 5 10 9 8","tone":"blue"}],"label":"a hill"}
     A FREE SKETCH of your own, for a simple picture no other op covers (a ladder against a wall, a lens with light rays, a see-saw, a lever, a magnet, a beaker). Each path is SVG path data in the 0 to 10 grid (y goes UP, [0,0] bottom left) using ONLY absolute M, L, C, Q and Z commands; up to 14 paths; "fill" optional. Keep it simple and clear, like a quick teacher's drawing.
@@ -126,6 +128,24 @@ EXAMPLE OF A TURN (format only):
 {"ask":"So what do you think pulls it back down?","do":[{"op":"circle","target":"w2"}]}`;
 }
 
+/* THE WAY IN — one per turn, picked at random, so no two turns are shaped
+   alike (teachers differ from lesson to lesson, and from minute to minute). */
+const WAYS_IN = [
+  "Open with a puzzle or a surprising fact, let it hang for a moment, then unravel it.",
+  "Tell a tiny story from everyday Nigerian life (the market, a danfo, the kitchen, the football pitch) and pull the idea out of it.",
+  "Draw first and talk about the drawing: let the picture lead and the words follow it.",
+  "Start from something the learner already knows well and build up from it, one small step at a time.",
+  "Run one analogy all through the turn (a factory, a market, a school, a team) and keep coming back to it.",
+  "Ask a 'what if' and follow it: what would happen if this were not there, or were twice as big?",
+  "Put two things side by side and teach by the difference between them.",
+  "Write a common wrong idea on the board first, as if many people believe it, then take it apart.",
+  "Begin at the end result and work backwards to how it comes about.",
+  "Quick fire: a run of short, punchy lines, then slow right down for the one idea that matters most.",
+  "Teach it as a journey: follow one thing (a drop of water, a molecule, a coin, a signal) through every stage.",
+  "Ask yourself the questions the learner might be thinking, out loud, and answer each one on the board.",
+];
+const wayIn = (rnd = Math.random) => WAYS_IN[Math.floor(rnd() * WAYS_IN.length)];
+
 function clip(s, n) {
   return String(s || "").replace(/\s+/g, " ").trim().slice(0, n);
 }
@@ -144,6 +164,7 @@ function buildUserMessage({ topic, transcript = [], board = [], learner = "", gr
     for (const t of transcript) lines.push(`${t.role === "learner" ? "LEARNER" : "PREPBOT"}: ${clip(t.text, 600)}`);
   }
   lines.push(`LEARNER now says: ${clip(learner, 400)}`);
+  lines.push(`Your way in for this turn (shape it this way, in your own words, without saying you are doing it): ${wayIn()}`);
   lines.push("Write your next turn as beats, one JSON object per line.");
   return lines.join("\n");
 }
@@ -163,4 +184,4 @@ function cleanInput(body = {}) {
   return { grade, learner, topic, transcript, board, style };
 }
 
-module.exports = { buildSystem, buildUserMessage, cleanInput };
+module.exports = { buildSystem, buildUserMessage, cleanInput, WAYS_IN };

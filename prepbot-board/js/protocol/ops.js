@@ -258,7 +258,9 @@ export function boardSummary(items, max = 40) {
     if (it.expr) out.expr = it.expr;
     if (it.on) out.on = it.on;
     if (it.op === "graph") { out.x = it.x; out.y = it.y; }
-    if (it.label) out.label = it.label;
+    if (it.label && typeof it.label === "string") out.label = it.label;
+    if (it.op === "diagram") { out.name = it.name; if (it.steps) out.steps = true; }
+    if (it.part) out.part = it.part;
     return out;
   });
 }
