@@ -123,6 +123,9 @@ function writeModule(file, exportName, value) {
     if (!x.subject) return;
     // Student-visible only: drop verbatim past originals when the switch is on.
     if (hideOriginals && x.source === "past") return;
+    // One bank: a teacher's own questions and the gated competition papers are
+    // never published as public files (lib/one-bank.js).
+    if (x.owner || x.visibility === "gated" || x.source === "teacher" || x.source === "competition") return;
     const q = slim(d.id, x);
     order[d.id] = ms(x.createdAt);
     // Class tab: real Grade classes only (legacy Primary/JSS/SSS mapped to Grade;

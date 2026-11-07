@@ -102,6 +102,8 @@ function listKeys(axis) {
 // AND an exam bucket — exactly as the export fans it out).
 function targetBuckets(rec) {
   const out = [];
+  // One bank: a teacher's own questions and the gated competition papers are never public files.
+  if (rec.owner || rec.visibility === "gated" || rec.source === "teacher" || rec.source === "competition") return out;
   const cl = normClass(rec.classLevel);
   if (cl && cl !== "unsorted" && CLASS_LABELS[cl] && rec.subject) out.push({ axis: "class", key: csKey(cl, rec.subject) });
   if (rec.scheme && EXAM_OF[rec.scheme] && rec.subject) out.push({ axis: "exam", key: csKey(rec.scheme, rec.subject) });

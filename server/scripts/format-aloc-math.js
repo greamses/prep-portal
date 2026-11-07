@@ -45,6 +45,19 @@ function fixLatex(s) {
   return out.replace(/\n(?=(?:u|eq|abla|ot|e|i|leq|geq|mid|parallel|subseteq)\b)/g, "\\n");
 }
 
+/* The model's JSON, read even when it writes LaTeX with ONE backslash (\( \sqrt …),
+   which is not a JSON escape: such a backslash is doubled before parsing. The real
+   escapes (\" \\ \/ \b \f \n \r \t \u) are left to JSON, and fixLatex turns the
+   ones that were really \beta, \frac, \neq, \rightarrow, \times back afterwards. */
+function parseLoose(text) {
+  let t = String(text || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
+  const m = t.match(/\{[\s\S]*\}/);
+  if (m) t = m[0];
+  try { return JSON.parse(t); } catch (_) { /* fall through */ }
+  try { return JSON.parse(t.replace(/\\(?!["\\/bfnrtu])/g, "\\\\")); } catch (_) { /* fall through */ }
+  return safeJson(text);
+}
+
 /* the numbers in a piece of text, in order, read the same way from both forms */
 function numbersOf(t) {
   const s = String(t)
@@ -97,7 +110,7 @@ Solution: ${JSON.stringify(typeof x.solution === "string" ? x.solution : "")}`;
     const x = d.data();
     let out;
     const t0 = Date.now();
-    try { out = safeJson(await callModelRaw(PROMPT(x), true, ["groq", "gemini"])); }
+    try { out = parseLoose(await callModelRaw(PROMPT(x), true, ["groq", "gemini"])); }
     catch (e) { held.push({ id: d.id, why: `model: ${e.message}` }); continue; }
     if (!out || typeof out.question !== "string" || !Array.isArray(out.options)) { held.push({ id: d.id, why: "no usable reply" }); continue; }
     const q = fixLatex(out.question).trim();
