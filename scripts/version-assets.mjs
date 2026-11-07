@@ -40,6 +40,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SHARED = [
   '/utils/components/setup-carousel.js',
   '/utils/components/workbook/mathify.js', // drills typeset questions with it
+  '/prep-math/activity/algebra-moves/js/editor.js', // drills types algebra answers into its boxes
   '/utils/components/avatar-picker.js',
   '/utils/components/admin-images.js',
   '/utils/ai-client.js',

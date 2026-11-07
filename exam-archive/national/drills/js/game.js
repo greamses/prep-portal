@@ -9,6 +9,7 @@ import { questionAt } from './rng.js';
 import { checkAlgebra } from './algebra.js';
 import { checkSubject } from './subject.js';
 import { typedToTex, plainToTex } from './typed-tex.js';
+import { createBoxInput } from './box-input.js';
 import { mathReady, loadMath, svgFor } from '/utils/components/workbook/mathify.js';
 
 const $ = (id) => document.getElementById(id);
@@ -129,6 +130,7 @@ function renderQuestion() {
   if (endCursor) endCursor.style.visibility = ''; // the caret starts at the end again
   drawnFor = '';
   caretBar.hidden = true;
+  box.reset(!!(currentQuestion.alg || currentQuestion.subject));
 }
 
 // Fraction answers ("3/8") are graded as an exact string match — typed with
@@ -242,6 +244,13 @@ function placeCaret() {
 }
 
 let drawnFor = null;               // the typed line the drawing shows
+
+// Algebra and Change-of-Subject answers are typed into Algebra Moves' boxes.
+const box = createBoxInput({
+  inputEl, typedEl, stageEl: answerStage, endCursor,
+  draw: (el, tex, plain) => drawMath(el, tex, plain),
+  onChange: (text) => { if (active) checkAnswer(forChecks(text)); },
+});
 function renderTyped() {
   const v = inputEl.value;
   if (!v) { typedEl.textContent = ''; drawnFor = ''; placeCaret(); return; }
@@ -251,7 +260,7 @@ function renderTyped() {
 }
 
 function onInput() {
-  if (!active) return;
+  if (!active || box.on) return;
   const raw = inputEl.value;
   const at = inputEl.selectionStart == null ? raw.length : inputEl.selectionStart;
   const digits = sanitizeTyped(raw);
@@ -260,6 +269,14 @@ function onInput() {
   const keep = Math.min(digits.length, sanitizeTyped(raw.slice(0, at)).length);
   try { inputEl.setSelectionRange(keep, keep); } catch { /* not focusable yet */ }
   renderTyped();
+  checkAnswer(digits);
+}
+
+/* Algebra Moves writes a power as ^(2) and a cube root as root_3(…); the
+   answer checks read ^2 and the root sign. */
+const forChecks = (text) => text.replace(/\^\((-?\d+)\)/g, '^$1').replace(/root_3\(/g, '∛(');
+
+function checkAnswer(digits) {
   if (locked || digits === '') return;
   if (isCorrectAnswer(digits, currentQuestion.answer)) {
     locked = true;
@@ -298,12 +315,12 @@ function endRound() {
 
 inputEl.addEventListener('input', onInput);
 // arrow keys, Home and End move the caret through the answer
-inputEl.addEventListener('keyup', (e) => { if (/^(Arrow|Home|End)/.test(e.key)) renderTyped(); });
+inputEl.addEventListener('keyup', (e) => { if (!box.on && /^(Arrow|Home|End)/.test(e.key)) renderTyped(); });
 inputEl.addEventListener('select', renderTyped);
 // a click on the answer puts the caret at that point in it
 answerStage.addEventListener('click', (e) => {
   const v = inputEl.value;
-  if (!active || !v) return;
+  if (!active || !v || box.on) return;
   const anchors = anchorsOf();
   let idx = v.length;
   if (anchors.length) {
