@@ -54,7 +54,7 @@ export function createScheduler({
         const { beat, clip } = entry;
 
         if (clip) {
-          await Promise.race([clip.ready, clock.sleep(readyWait)]);
+          await Promise.race([clip.ready, clock.sleep(clip.patience || readyWait)]); // a queued voice may ask for more patience
           if (myTurn !== turn) return;
         }
         onBeat(beat);

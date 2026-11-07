@@ -43,6 +43,13 @@ export const VOICES = [
   { id: "bm_lewis", kind: "kokoro", label: "Lewis: deep, British" },
   /* the free voice when there is no Kokoro host: MeloTTS on our Cloudflare worker */
   { id: "melo", kind: "melo", label: "Standard: clear, American" },
+  /* "Delayed": Kokoro on a free Hugging Face Space (a shared GPU, so it can wait in a queue) */
+  { id: "hf:af_heart", kind: "hf", label: "Heart: warm, American" },
+  { id: "hf:af_bella", kind: "hf", label: "Bella: bright, American" },
+  { id: "hf:am_michael", kind: "hf", label: "Michael: calm, American" },
+  { id: "hf:bf_emma", kind: "hf", label: "Emma: clear, British" },
+  { id: "hf:bm_george", kind: "hf", label: "George: steady, British" },
+  { id: "hf:bm_fable", kind: "hf", label: "Fable: storyteller, British" },
   /* Kokoro in THIS browser: natural, free, a one-time download (kokoro-local.js) */
   { id: "local:af_heart", kind: "local", label: "Heart: warm, American" },
   { id: "local:af_bella", kind: "local", label: "Bella: bright, American" },
@@ -63,7 +70,7 @@ export const VOICES = [
   { id: "onwK4e9ZLuTAKqWW03F9", label: "Daniel: calm, British" },
 ];
 
-VOICES.forEach((v) => { v.kind = v.kind || "eleven"; v.label = (v.kind === "eleven" ? "Premium · " : v.kind === "local" ? "Natural, on this device · " : "Free · ") + v.label; });
+VOICES.forEach((v) => { v.kind = v.kind || "eleven"; v.label = (v.kind === "eleven" ? "Premium · " : v.kind === "local" ? "Natural, on this device · " : v.kind === "hf" ? "Delayed · " : "Free · ") + v.label; });
 const kindOf = (id) => VOICES.find((v) => v.id === id)?.kind || "eleven";
 
 export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id, onEngine = null } = {}) {
@@ -95,12 +102,12 @@ export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id
     const res = await fetch(`${API_BASE}/api/tts/${free ? "kokoro" : "elevenlabs"}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify(free ? { text, voice: kindOf(voiceId) === "kokoro" ? voiceId : "melo" } : { text, from: "board", voiceId: kindOf(voiceId) === "eleven" ? voiceId : undefined }),
+      body: JSON.stringify(free ? { text, voice: ["kokoro", "hf"].includes(kindOf(voiceId)) ? voiceId : "melo" } : { text, from: "board", voiceId: kindOf(voiceId) === "eleven" ? voiceId : undefined }),
       signal,
     });
     if (!res.ok) {
       const e = new Error("tts " + res.status); e.status = res.status; e.free = free;
-      if (free && (res.status === 503 || res.status === 403)) kokoroDown = true;
+      if (free && (res.status === 503 || res.status === 403) && kindOf(voiceId) !== "hf") kokoroDown = true;
       throw e;
     }
     const data = await res.json();
@@ -215,7 +222,11 @@ export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id
         local.load().catch(() => {});
       }
       if (mode === "browser") return browserClip(text);
-      if (mode === "eleven") return elevenClip(text);
+      if (mode === "eleven") {
+        const c = elevenClip(text);
+        if (kindOf(voiceId) === "hf") c.patience = 25; // "Delayed": wait for the queue rather than go silent
+        return c;
+      }
       /* not decided yet: decide, then hand over to the chosen kind */
       let inner = null, stopped = false;
       const proxy = {
@@ -253,7 +264,7 @@ export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id
         const j = await r.json().catch(() => ({}));
         if (j.configured === false) kokoroDown = true;
         engine = j.engine || null;
-        onEngine?.(engine);
+        onEngine?.(engine, !!j.hf);
       } catch {}
     },
   };

@@ -181,11 +181,54 @@ module.exports = function () {
     "bm_george", "bm_fable", "bm_lewis", "bm_daniel",
   ]);
   const kokoroBase = () => String(process.env.KOKORO_URL || "").replace(/\/+$/, "");
+  const hfBase = () => String(process.env.HF_SPACE_URL || "").replace(/\/+$/, "");
+  const HF_VOICES = new Set(["af_heart", "af_bella", "af_nicole", "am_michael", "am_fenrir", "bf_emma", "bf_isabella", "bm_george", "bm_fable"]);
+  /* the "Delayed" voice: Kokoro on a free Hugging Face ZeroGPU Space, through
+     its Gradio API (queue in, wait for "complete", fetch the MP3 it made) */
+  async function hfSpeak(text, voice, signal) {
+    const base = hfBase();
+    const h = { "Content-Type": "application/json", ...(process.env.HF_TOKEN ? { Authorization: `Bearer ${process.env.HF_TOKEN}` } : {}) };
+    const r1 = await fetch(`${base}/gradio_api/call/tts`, { method: "POST", headers: h, body: JSON.stringify({ data: [text, voice] }), signal });
+    if (!r1.ok) throw new Error(`hf call ${r1.status}`);
+    const { event_id } = await r1.json();
+    const r2 = await fetch(`${base}/gradio_api/call/tts/${event_id}`, { headers: h, signal });
+    const sse = await r2.text();
+    const m = sse.match(/event:\s*complete\s*\ndata:\s*(.+)/);
+    if (!m) throw new Error("hf: " + (sse.match(/event:\s*error\s*\ndata:\s*(.+)/)?.[1] || "no result").slice(0, 200));
+    const out = JSON.parse(m[1])[0];
+    const url = out?.url || (out?.path ? `${base}/gradio_api/file=${out.path}` : null);
+    if (!url) throw new Error("hf: no file");
+    const r3 = await fetch(url, { headers: h, signal });
+    if (!r3.ok) throw new Error(`hf file ${r3.status}`);
+    return Buffer.from(await r3.arrayBuffer());
+  }
   router.post("/kokoro", authenticate, async (req, res) => {
     try {
       let verdict = await access.canUse(req, "whiteboard");
       if (!verdict.allowed) verdict = await access.canUse(req, "prepbot", "voice");
       if (!verdict.allowed) return res.status(403).json({ error: "voice not available", reason: verdict.reason });
+      /* "Delayed": Kokoro on the free Hugging Face Space */
+      if (String(req.body?.voice || "").startsWith("hf:")) {
+        if (!hfBase()) return res.status(503).json({ error: "The Hugging Face voice is not configured." });
+        const text = typeof req.body?.text === "string" ? req.body.text.trim().slice(0, 1200) : "";
+        if (!text) return res.status(400).json({ error: "text must be a non-empty string." });
+        const v = req.body.voice.slice(3);
+        const voice = HF_VOICES.has(v) ? v : "af_heart";
+        const key = `hf~${voice}|${text}`;
+        const hit = cacheGet(key);
+        if (hit) return res.json({ audioContent: hit, audioEncoding: "MP3", cached: "mem" });
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 55000);
+        try {
+          const buf = await hfSpeak(text, voice, ctrl.signal);
+          const b64 = buf.toString("base64");
+          cacheSet(key, b64);
+          return res.json({ audioContent: b64, audioEncoding: buf.slice(0, 4).toString("latin1") === "RIFF" ? "WAV" : "MP3", engine: "hf" });
+        } catch (e) {
+          console.error("[/api/tts/kokoro] hf", e.message);
+          return res.status(e.name === "AbortError" ? 504 : 502).json({ error: "The Hugging Face voice did not answer." });
+        } finally { clearTimeout(timer); }
+      }
       const base = kokoroBase();
       const worker = process.env.IMAGE_WORKER_URL;
       /* no Kokoro host: the free voice is MeloTTS on our Cloudflare worker */
@@ -249,14 +292,16 @@ module.exports = function () {
      now, so it is ready by the time the first sentence is asked for. */
   router.get("/kokoro/wake", authenticate, async (req, res) => {
     const base = kokoroBase();
-    if (!base) return res.json({ configured: !!process.env.IMAGE_WORKER_URL, engine: "melo" });
+    const hf = !!hfBase();
+    if (hf) fetch(hfBase(), { method: "GET" }).catch(() => {}); // wake the Space, do not wait
+    if (!base) return res.json({ configured: !!process.env.IMAGE_WORKER_URL, engine: "melo", hf });
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 50000);
     try {
       const r = await fetch(`${base}/health`, { signal: ctrl.signal });
-      res.json({ configured: true, ok: r.ok, engine: "kokoro" });
+      res.json({ configured: true, ok: r.ok, engine: "kokoro", hf });
     } catch (e) {
-      res.json({ configured: true, ok: false });
+      res.json({ configured: true, ok: false, hf });
     } finally { clearTimeout(timer); }
   });
 

@@ -204,8 +204,8 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   const voice = createVoice({
     auth, muted: params.get("mute") === "1", voiceId: voiceKey,
     /* Kokoro's twelve voices only when its host is up; otherwise the one standard free voice */
-    onEngine: (engine) => {
-      const keep = (v) => v.kind === "eleven" || (v.kind === "local" && local.supported) || v.kind === (engine === "kokoro" ? "kokoro" : "melo");
+    onEngine: (engine, hf) => {
+      const keep = (v) => v.kind === "eleven" || (v.kind === "local" && local.supported) || (v.kind === "hf" && hf) || v.kind === (engine === "kokoro" ? "kokoro" : "melo");
       [...voicePicker.options].forEach((o) => { const v = VOICES.find((x) => x.id === o.value); if (v && !keep(v)) o.remove(); });
       if (!VOICES.some((v) => v.id === voicePicker.value && keep(v)) || ![...voicePicker.options].some((o) => o.value === voiceKey)) {
         voiceKey = engine === "kokoro" ? "af_heart" : "melo";
