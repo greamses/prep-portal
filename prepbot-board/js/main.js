@@ -212,6 +212,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     voiceTrigger.dataset.tip = "The voice PrepBoard speaks in";
     voiceTrigger.dataset.tipSide = "bottom";
   }
+  if (params.get("mute") !== "1") setTimeout(() => voice.wake(), 400);
   voicePicker.addEventListener("change", () => {
     voiceKey = voicePicker.value;
     try { localStorage.setItem(VOICE_KEY, voiceKey); } catch {}

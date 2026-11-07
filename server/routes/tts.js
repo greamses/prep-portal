@@ -169,6 +169,78 @@ module.exports = function () {
   // billed API would be an open abuse vector. Callers fall back to the
   // free, unauthenticated Web Speech API on any failure (401, 503, network,
   // or ELEVENLABS_API_KEY simply not being set yet). ───────────────────
+  // ── POST /api/tts/kokoro — PrepBoard's FREE voice: Kokoro-82M (Apache 2.0)
+  // on our own small host (tools/kokoro-tts: a Docker image for Cloud Run or a
+  // Hugging Face Space). KOKORO_URL + KOKORO_TOKEN on this server; no key, no
+  // per-character bill. Same login gate and the same caches as ElevenLabs.
+  // 503 when not configured — the board then uses ElevenLabs or the browser.
+  const KOKORO_VOICES = new Set([
+    "af_heart", "af_bella", "af_nicole", "af_sarah", "af_aoede", "af_kore",
+    "am_michael", "am_fenrir", "am_puck", "am_echo",
+    "bf_emma", "bf_isabella", "bf_alice", "bf_lily",
+    "bm_george", "bm_fable", "bm_lewis", "bm_daniel",
+  ]);
+  const kokoroBase = () => String(process.env.KOKORO_URL || "").replace(/\/+$/, "");
+  router.post("/kokoro", authenticate, async (req, res) => {
+    try {
+      let verdict = await access.canUse(req, "whiteboard");
+      if (!verdict.allowed) verdict = await access.canUse(req, "prepbot", "voice");
+      if (!verdict.allowed) return res.status(403).json({ error: "voice not available", reason: verdict.reason });
+      const base = kokoroBase();
+      if (!base) return res.status(503).json({ error: "Kokoro is not configured." });
+      const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
+      if (!text) return res.status(400).json({ error: "text must be a non-empty string." });
+      if (text.length > 1200) return res.status(400).json({ error: "text too long (max 1200 chars)." });
+      const voice = KOKORO_VOICES.has(req.body?.voice) ? req.body.voice : "af_heart";
+
+      const { file: cacheFile, url: cacheUrl } = cacheFileFor(`kokoro~${voice}`, text);
+      try { if (fs.existsSync(cacheFile)) return res.json({ url: cacheUrl, audioEncoding: "MP3", cached: "disk" }); } catch (_) {}
+      const cacheKey = `kokoro~${voice}|${text}`;
+      const hit = cacheGet(cacheKey);
+      if (hit) return res.json({ audioContent: hit, audioEncoding: "MP3", cached: "mem" });
+
+      /* a host waking from sleep can take most of a minute */
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 55000);
+      let r;
+      try {
+        r = await fetch(`${base}/tts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.KOKORO_TOKEN || ""}` },
+          body: JSON.stringify({ text, voice, speed: 1.0 }),
+          signal: ctrl.signal,
+        });
+      } finally { clearTimeout(timer); }
+      if (!r.ok) {
+        console.error("[/api/tts/kokoro]", r.status, await r.text().catch(() => ""));
+        return res.status(502).json({ error: "Kokoro request failed." });
+      }
+      const buf = Buffer.from(await r.arrayBuffer());
+      const base64 = buf.toString("base64");
+      cacheSet(cacheKey, base64);
+      let outUrl = null;
+      try { fs.writeFileSync(cacheFile, buf); outUrl = cacheUrl; } catch (_) {}
+      res.json({ audioContent: base64, audioEncoding: "MP3", url: outUrl });
+    } catch (err) {
+      console.error("[/api/tts/kokoro]", err.message);
+      res.status(err.name === "AbortError" ? 504 : 500).json({ error: err.message });
+    }
+  });
+  /* GET /api/tts/kokoro/wake — the board opens: wake a sleeping voice host
+     now, so it is ready by the time the first sentence is asked for. */
+  router.get("/kokoro/wake", authenticate, async (req, res) => {
+    const base = kokoroBase();
+    if (!base) return res.json({ configured: false });
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 50000);
+    try {
+      const r = await fetch(`${base}/health`, { signal: ctrl.signal });
+      res.json({ configured: true, ok: r.ok });
+    } catch (e) {
+      res.json({ configured: true, ok: false });
+    } finally { clearTimeout(timer); }
+  });
+
   router.post("/elevenlabs", authenticate, async (req, res) => {
     try {
       // Gated as PrepBot's "voice" part (feature state + per-user overrides

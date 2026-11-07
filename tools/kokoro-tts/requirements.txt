@@ -1,0 +1,5 @@
+kokoro>=0.9.4
+fastapi>=0.110
+uvicorn>=0.29
+lameenc>=1.7
+numpy
