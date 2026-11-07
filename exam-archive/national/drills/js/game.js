@@ -8,7 +8,7 @@
 import { questionAt } from './rng.js';
 import { checkAlgebra } from './algebra.js';
 import { checkSubject } from './subject.js';
-import { typedToTex, CARET, CARET_TEX } from './typed-tex.js';
+import { typedToTex, plainToTex } from './typed-tex.js';
 import { mathReady, loadMath, svgFor } from '/utils/components/workbook/mathify.js';
 
 const $ = (id) => document.getElementById(id);
@@ -21,6 +21,17 @@ const START_BUFFER_MS = 3000;
    Questions and the typed answer are plain text in the room (graded as
    text); here they are only DRAWN as maths. Until MathJax arrives (or if it
    never does) the plain text shows. */
+// The typed answer is tagged piece by piece with \class{dc-FROM-TO}{…} so the
+// caret can be measured onto it; \class is MathJax's html extension, loaded
+// up front (an autoload in the middle of a synchronous tex2svg would fail).
+if (!window.MathJax) {
+  window.MathJax = {
+    loader: { load: ['[tex]/html'] },
+    tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']], packages: { '[+]': ['html'] } },
+    svg: { fontCache: 'global', scale: 1.0 },
+    startup: { typeset: false },
+  };
+}
 loadMath();
 const SUPS = { '²': '2', '³': '3', '⁴': '4' };
 function toTex(t) {
@@ -37,21 +48,11 @@ function toTex(t) {
 }
 /* The typed answer with the caret inside it at `at` (TeX). The algebra
    parser places the caret itself; for the plain answers it is just spliced in. */
-function typedTexWithCaret(t, at) {
-  if (currentQuestion && (currentQuestion.alg || currentQuestion.subject)) {
-    return typedToTex(t.slice(0, at) + CARET + t.slice(at));
-  }
-  const wrap = (s) => (!s ? '' : currentQuestion && (currentQuestion.base || currentQuestion.roman) ? `\\mathrm{${s}}` : s);
-  return `${wrap(t.slice(0, at))}${CARET_TEX}${wrap(t.slice(at))}`;
-}
 function typedTex(t) {
-  if (currentQuestion && (currentQuestion.base || currentQuestion.roman)) return `\\mathrm{${t}}`;
   if (currentQuestion && (currentQuestion.alg || currentQuestion.subject)) {
     return typedToTex(t); // "/" stacks into a fraction as it is typed
   }
-  const m = /^(-?)(\d+)\/(\d*)$/.exec(t);
-  if (m) return `${m[1]}\\tfrac{${m[2]}}{${m[3] || '\\square'}}`;
-  return t.replace(/\/$/, '');
+  return plainToTex(t, !!(currentQuestion && currentQuestion.roman));
 }
 // Draw `tex` into `el`; falls back to `plain` text if MathJax isn't up.
 function drawMath(el, tex, plain) {
@@ -125,7 +126,9 @@ function renderQuestion() {
   inputEl.maxLength = currentQuestion.roman ? 16 : currentQuestion.subject ? 28 : currentQuestion.alg ? 24 : 7;
   inputEl.value = '';
   typedEl.textContent = '';
-  if (endCursor) endCursor.style.display = ''; // the caret starts at the end again
+  if (endCursor) endCursor.style.visibility = ''; // the caret starts at the end again
+  drawnFor = '';
+  caretBar.hidden = true;
 }
 
 // Fraction answers ("3/8") are graded as an exact string match — typed with
@@ -170,14 +173,73 @@ function caretAt() {
   const c = inputEl.selectionStart;
   return c == null || c > v.length ? v.length : c;
 }
+/* ── The caret, drawn ON the answer (the Algebra Moves way) ──────────────
+   The typeset answer is never changed to show the caret. Each piece of it
+   carries the span of the line it came from; anchorsOf() reads where those
+   pieces landed, caretFor(k) finds where offset k sits among them, and a bar
+   is placed there over the drawing. */
+const caretBar = document.createElement('span');
+caretBar.className = 'drill-caret-bar';
+caretBar.hidden = true;
+answerStage.appendChild(caretBar);
+
+function anchorsOf() {
+  const host = answerStage.getBoundingClientRect();
+  const out = [];
+  typedEl.querySelectorAll('[class*="dc-"]').forEach((el) => {
+    const m = /dc-(\d+)-(\d+)/.exec(el.getAttribute('class') || '');
+    if (!m) return;
+    const r = el.getBoundingClientRect();
+    if (!r.width && !r.height) return;
+    out.push({ from: +m[1], to: +m[2], left: r.left - host.left, right: r.right - host.left, top: r.top - host.top, h: r.height, w: r.width });
+  });
+  return out;
+}
+function caretFor(k, anchors) {
+  // inside one piece (between the 2 and the 0 of 20): walk across its own box
+  for (const a of anchors) {
+    if (a.to - a.from > 1 && k > a.from && k < a.to) {
+      return { x: a.left + ((k - a.from) / (a.to - a.from)) * (a.right - a.left), top: a.top, h: a.h };
+    }
+  }
+  // otherwise beside the nearest edge of the nearest piece; ties go to the smallest
+  let best = null;
+  for (const a of anchors) {
+    for (const [at, x] of [[a.from, a.left], [a.to, a.right]]) {
+      const d = Math.abs(at - k);
+      if (!best || d < best.d || (d === best.d && a.w < best.w)) best = { d, x, top: a.top, h: a.h, w: a.w };
+    }
+  }
+  return best;
+}
+function placeCaret() {
+  const v = inputEl.value;
+  const svg = typedEl.querySelector('svg');
+  const anchors = v && svg ? anchorsOf() : [];
+  if (!anchors.length) {           // nothing typed, or plain text: the old cursor at the end
+    caretBar.hidden = true;
+    if (endCursor) endCursor.style.visibility = '';
+    return;
+  }
+  const spot = caretFor(caretAt(), anchors);
+  if (!spot) return;
+  if (endCursor) endCursor.style.visibility = 'hidden';
+  const h = Math.max(spot.h, 24);
+  caretBar.style.left = `${spot.x - 1.5}px`;
+  caretBar.style.top = `${spot.top + spot.h / 2 - h / 2}px`;
+  caretBar.style.height = `${h}px`;
+  caretBar.hidden = false;
+  // restart the blink so the caret is visible the moment it moves
+  caretBar.style.animation = 'none'; void caretBar.offsetWidth; caretBar.style.animation = '';
+}
+
+let drawnFor = null;               // the typed line the drawing shows
 function renderTyped() {
   const v = inputEl.value;
-  const at = caretAt();
-  const inside = !!v && at < v.length;
-  if (endCursor) endCursor.style.display = inside ? 'none' : '';
-  if (!v) { typedEl.textContent = ''; return; }
-  if (!inside) { drawMath(typedEl, typedTex(v), v); return; }
-  drawMath(typedEl, typedTexWithCaret(v, at), `${v.slice(0, at)}|${v.slice(at)}`);
+  if (!v) { typedEl.textContent = ''; drawnFor = ''; placeCaret(); return; }
+  // re-typeset only when the answer itself changed, never for a caret move
+  if (v !== drawnFor) { drawMath(typedEl, typedTex(v), v); drawnFor = v; }
+  placeCaret();
 }
 
 function onInput() {
@@ -234,11 +296,31 @@ inputEl.addEventListener('select', renderTyped);
 answerStage.addEventListener('click', (e) => {
   const v = inputEl.value;
   if (!active || !v) return;
-  const r = typedEl.getBoundingClientRect();
-  const idx = Math.max(0, Math.min(v.length, Math.round(((e.clientX - r.left) / Math.max(1, r.width)) * v.length)));
+  const anchors = anchorsOf();
+  let idx = v.length;
+  if (anchors.length) {
+    // nearest edge, measured on the piece's own line first and along it second,
+    // or a tap in a numerator lands in the denominator under it (Algebra Moves)
+    const host = answerStage.getBoundingClientRect();
+    const x = e.clientX - host.left, y = e.clientY - host.top;
+    let best = null;
+    for (const a of anchors) {
+      const dy = Math.max(0, a.top - y, y - (a.top + a.h));
+      for (const [at, ex] of [[a.from, a.left], [a.to, a.right]]) {
+        const d = Math.hypot(ex - x, dy * 2.2);
+        if (!best || d < best.d || (d === best.d && a.w < best.w)) best = { d, at, w: a.w };
+      }
+      // inside a many-figure piece, the nearest gap between its figures
+      if (a.to - a.from > 1 && x > a.left && x < a.right && !dy) {
+        const at = a.from + Math.round(((x - a.left) / (a.right - a.left)) * (a.to - a.from));
+        best = { d: -1, at, w: 0 };
+      }
+    }
+    idx = best ? best.at : v.length;
+  }
   inputEl.focus({ preventScroll: true });
   try { inputEl.setSelectionRange(idx, idx); } catch { /* ignore */ }
-  renderTyped();
+  placeCaret();
 });
 inputEl.addEventListener('blur', focusInput);
 cardEl.addEventListener('click', focusInput);

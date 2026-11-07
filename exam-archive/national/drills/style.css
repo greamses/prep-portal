@@ -598,3 +598,14 @@ tbody .drill-grid-th { border-right-width: 2px; }
 
 /* MathJax-drawn question and typed answer (game.js drawMath) */
 .drill-text svg, #drill-typed svg { vertical-align: middle; max-width: 100%; }
+
+/* The caret drawn over the typeset answer (game.js placeCaret): the answer is
+   never re-typeset to show it, the Algebra Moves way. */
+.drill-caret-bar {
+  position: absolute;
+  width: 3px;
+  background: currentColor;
+  pointer-events: none;
+  animation: drill-blink 1s step-end infinite;
+}
+.drill-caret-bar[hidden] { display: none; }
