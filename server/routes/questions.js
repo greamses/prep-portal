@@ -62,7 +62,8 @@ module.exports = function () {
       const cached = facetCache[type];
       if (cached && Date.now() - cached.at < FACET_TTL) return res.json(cached.data);
 
-      const snap = await db().collection("alocQuestions").where("queryType", "==", type).get();
+      // One bank: the archive is the bank's "past" questions (lib/one-bank.js).
+      const snap = await db().collection("cbtQuestions").where("scheme", "==", type).where("source", "==", "past").get();
       quota.addReads(snap.size);
       const subjCount = {};
       const yearsBySubject = {};
@@ -71,7 +72,7 @@ module.exports = function () {
         const s = x.subject;
         if (!s) return;
         subjCount[s] = (subjCount[s] || 0) + 1;
-        const y = String(x.examYear || "");
+        const y = String(x.year || x.examYear || "");
         if (validYear(y)) {
           (yearsBySubject[s] = yearsBySubject[s] || {});
           yearsBySubject[s][y] = (yearsBySubject[s][y] || 0) + 1;
@@ -111,7 +112,7 @@ module.exports = function () {
       const mapDoc = (d) => {
         const x = d.data();
         return {
-          id: x.alocId,
+          id: x.alocId ?? d.id,
           question: x.question,
           options: x.options || [],
           answerIndex: typeof x.answerIndex === "number" ? x.answerIndex : -1,
@@ -121,7 +122,7 @@ module.exports = function () {
           image: x.image || "",
           subject: x.subject,
           examType: x.examType,
-          examYear: x.examYear,
+          examYear: x.year || x.examYear || null,
         };
       };
       const shuffle = (a) => {
@@ -133,11 +134,13 @@ module.exports = function () {
       };
 
       // Base query (equality filters only → no composite index needed).
-      let base = db().collection("alocQuestions");
+      // One bank: the archive is the bank's "past" questions (lib/one-bank.js).
+      // Equality filters only, so Firestore merges single-field indexes.
+      let base = db().collection("cbtQuestions").where("source", "==", "past");
       if (subject) base = base.where("subject", "==", subject);
       // queryType = the clean type we fetched under (utme/wassce). ALOC's own
       // per-question examtype is dirty ("posr-utme-aaua", "model", years…).
-      if (type) base = base.where("queryType", "==", type);
+      if (type) base = base.where("scheme", "==", type);
 
       const pool = random ? Math.max(limit * 4, 80) : limit;
       let questions;
@@ -145,7 +148,7 @@ module.exports = function () {
       if (year) {
         // Prefer the selected year, then top up from other years for the same
         // subject/type so sparse years don't yield a near-empty paper.
-        const ySnap = await base.where("examYear", "==", year).limit(pool).get();
+        const ySnap = await base.where("year", "==", year).limit(pool).get();
         quota.addReads(ySnap.size);
         questions = shuffle(ySnap.docs.map(mapDoc));
         if (questions.length < limit) {

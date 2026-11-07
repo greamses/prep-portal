@@ -72,6 +72,19 @@ module.exports = function () {
   const sets = (uid) => db().collection("questionSets").doc(uid).collection("sets");
   const setId = (name) => require("crypto").createHash("sha1").update(String(name).trim().toLowerCase()).digest("hex").slice(0, 24);
   const { cleanQuestion } = require("../lib/question-bank");
+  // One bank (lib/one-bank.js): a named bank lists its questions' ids in cbtQuestions,
+  // where they are kept private to this teacher. The embedded copy stays as a fallback.
+  const ONE = require("../lib/one-bank");
+  const bankCol = () => db().collection(ONE.BANK);
+  async function questionsOf(uid, x) {
+    const ids = Array.isArray(x.ids) ? x.ids : [];
+    if (!ids.length) return x.questions || [];
+    const refs = ids.map((id) => bankCol().doc(id));
+    const docs = await db().getAll(...refs);
+    const got = docs.map((d) => (d.exists && d.data().owner === uid ? ONE.bankToEm(d.data()) : null));
+    // a question missing from the bank falls back to the set's own copy of it
+    return got.map((q, k) => q || (x.questions || [])[k]).filter(Boolean);
+  }
   const metaOf = (d) => { const x = d.data(); const types = {}; (x.questions || []).forEach((q) => { types[q.type] = (types[q.type] || 0) + 1; }); return { id: d.id, name: x.name, count: (x.questions || []).length, subject: x.subject || "", level: x.level || "", types, savedAt: ms(x.savedAt) }; };
 
   router.get("/sets", authenticate, guard(async (req, res) => {
@@ -81,7 +94,7 @@ module.exports = function () {
   router.get("/sets/:id", authenticate, guard(async (req, res) => {
     const d = await sets(req.user.uid).doc(String(req.params.id)).get();
     if (!d.exists) return res.status(404).json({ error: "That bank is not there any more." });
-    res.json({ ok: true, set: { ...metaOf(d), questions: d.data().questions || [] } });
+    res.json({ ok: true, set: { ...metaOf(d), questions: await questionsOf(req.user.uid, d.data()) } });
   }));
   router.post("/sets", authenticate, guard(async (req, res) => {
     const b = req.body || {};
@@ -92,7 +105,16 @@ module.exports = function () {
     if (JSON.stringify(questions).length > 900000) return res.status(400).json({ error: "That is too much for one bank. Save it as two banks." });
     const id = setId(name), ref = sets(req.user.uid).doc(id);
     const had = (await ref.get()).exists;
-    await ref.set({ name, questions, subject: String(b.subject || "").slice(0, 80), level: String(b.level || "").slice(0, 60), savedAt: admin.firestore.FieldValue.serverTimestamp() });
+    // into the one bank, private to this teacher
+    const meta = { subject: b.subject, level: b.level };
+    const made = questions.map((q) => ONE.emToBank(q, req.user.uid, meta));
+    const stamp = admin.firestore.FieldValue.serverTimestamp();
+    for (let i = 0; i < made.length; i += 400) {
+      const batch = db().batch();
+      made.slice(i, i + 400).forEach(({ id: qid, data }) => batch.set(bankCol().doc(qid), { ...data, updatedAt: stamp }, { merge: true }));
+      await batch.commit();
+    }
+    await ref.set({ name, questions, ids: made.map((m) => m.id), subject: String(b.subject || "").slice(0, 80), level: String(b.level || "").slice(0, 60), savedAt: admin.firestore.FieldValue.serverTimestamp() });
     res.json({ ok: true, id, name, count: questions.length, replaced: had });
   }));
   router.delete("/sets/:id", authenticate, guard(async (req, res) => {
