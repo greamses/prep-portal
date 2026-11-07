@@ -27,7 +27,29 @@ export const HANDS = {
   joined: { label: "British school hand", family: "Playwrite GB J", css: "Playwrite+GB+J:wght@100..400", text: 300, title: 400, up: 0.98, down: 0.42 },
   caveat: { label: "Quick notes (Caveat)", family: "Caveat", css: "Caveat:wght@500;700", text: 500, title: 700, up: 0.8, down: 0.28, size: 1.18 },
   print: { label: "Neat print (Patrick Hand)", family: "Patrick Hand", css: "Patrick+Hand", text: 400, title: 400, up: 0.82, down: 0.26, size: 1.05 },
-  kalam: { label: "Marker (Kalam)", family: "Kalam", css: "Kalam:wght@400;700", text: 400, title: 700, up: 0.9, down: 0.32 },
+  kalam: { label: "Marker (Kalam)", family: "Kalam", css: "Kalam:wght@400;700", text: 400, title: 700, up: 0.9, down: 0.32 },  /* more handwriting */
+  indie: { label: "Friendly hand (Indie Flower)", family: "Indie Flower", css: "Indie+Flower", text: 400, title: 400, up: 0.85, down: 0.3, size: 1.05 },
+  architect: { label: "Draughtsman (Architects Daughter)", family: "Architects Daughter", css: "Architects+Daughter", text: 400, title: 400, up: 0.85, down: 0.28, size: 1.0 },
+  handlee: { label: "Classroom (Handlee)", family: "Handlee", css: "Handlee", text: 400, title: 400, up: 0.85, down: 0.3, size: 1.05 },
+  gloria: { label: "Bubbly (Gloria Hallelujah)", family: "Gloria Hallelujah", css: "Gloria+Hallelujah", text: 400, title: 400, up: 0.9, down: 0.3, size: 0.95 },
+  shadows: { label: "Light pen (Shadows Into Light)", family: "Shadows Into Light", css: "Shadows+Into+Light", text: 400, title: 400, up: 0.8, down: 0.3, size: 1.15 },
+  covered: { label: "Pencil note (Covered By Your Grace)", family: "Covered By Your Grace", css: "Covered+By+Your+Grace", text: 400, title: 400, up: 0.9, down: 0.4, size: 1.15 },
+  reenie: { label: "Scribble (Reenie Beanie)", family: "Reenie Beanie", css: "Reenie+Beanie", text: 400, title: 400, up: 0.85, down: 0.4, size: 1.4 },
+  homemade: { label: "Ink pen (Homemade Apple)", family: "Homemade Apple", css: "Homemade+Apple", text: 400, title: 400, up: 1.0, down: 0.5, size: 0.9 },
+  nanum: { label: "Fine pen (Nanum Pen Script)", family: "Nanum Pen Script", css: "Nanum+Pen+Script", text: 400, title: 400, up: 0.8, down: 0.3, size: 1.3 },
+  italmod: { label: "Italian school hand (Playwrite IT Moderna)", family: "Playwrite IT Moderna", css: "Playwrite+IT+Moderna:wght@100..400", text: 300, title: 400, up: 0.98, down: 0.42 },
+  degrund: { label: "German school hand (Playwrite DE Grund)", family: "Playwrite DE Grund", css: "Playwrite+DE+Grund:wght@100..400", text: 300, title: 400, up: 0.98, down: 0.42 },
+  /* calligraphy: small bodies, long strokes, so a larger size and roomier loops */
+  dancing: { label: "Flowing script (Dancing Script)", family: "Dancing Script", css: "Dancing+Script:wght@500;700", text: 500, title: 700, up: 0.85, down: 0.35, size: 1.15 },
+  satisfy: { label: "Brush script (Satisfy)", family: "Satisfy", css: "Satisfy", text: 400, title: 400, up: 0.9, down: 0.4, size: 1.1 },
+  parisienne: { label: "Parisienne calligraphy", family: "Parisienne", css: "Parisienne", text: 400, title: 400, up: 0.95, down: 0.45, size: 1.2 },
+  allura: { label: "Allura calligraphy", family: "Allura", css: "Allura", text: 400, title: 400, up: 1.0, down: 0.5, size: 1.35 },
+  alexbrush: { label: "Alex Brush calligraphy", family: "Alex Brush", css: "Alex+Brush", text: 400, title: 400, up: 1.0, down: 0.5, size: 1.3 },
+  greatvibes: { label: "Great Vibes calligraphy", family: "Great Vibes", css: "Great+Vibes", text: 400, title: 400, up: 1.05, down: 0.55, size: 1.35 },
+  pinyon: { label: "Pinyon (formal copperplate)", family: "Pinyon Script", css: "Pinyon+Script", text: 400, title: 400, up: 1.05, down: 0.55, size: 1.3 },
+  italianno: { label: "Italianno calligraphy", family: "Italianno", css: "Italianno", text: 400, title: 400, up: 0.95, down: 0.45, size: 1.5 },
+  tangerine: { label: "Tangerine calligraphy", family: "Tangerine", css: "Tangerine:wght@400;700", text: 400, title: 700, up: 0.95, down: 0.45, size: 1.6 },
+  sacramento: { label: "Sacramento (thin monoline)", family: "Sacramento", css: "Sacramento", text: 400, title: 400, up: 0.9, down: 0.45, size: 1.5 },
 };
 let HAND = HANDS.trad;
 export let FONT = `"${HAND.family}", "Segoe Script", cursive`;
