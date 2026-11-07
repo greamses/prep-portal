@@ -33,7 +33,13 @@ if (!window.MathJax) {
     startup: { typeset: false },
   };
 }
-loadMath();
+// If MathJax arrives after a question is already showing as plain text,
+// typeset that question then (the next one would otherwise be the first set).
+loadMath().then((ok) => {
+  if (!ok || !active || !currentQuestion) return;
+  if (currentQuestion.hint && !currentQuestion.alg && !currentQuestion.math) return;
+  drawMath(questionText, currentQuestion.tex || toTex(currentQuestion.text), currentQuestion.text);
+});
 const SUPS = { '²': '2', '³': '3', '⁴': '4' };
 function toTex(t) {
   return t
@@ -124,7 +130,7 @@ function renderQuestion() {
   // other question type has no hint and the line collapses.
   questionHint.textContent = currentQuestion.hint || '';
   questionHint.hidden = !currentQuestion.hint;
-  inputEl.maxLength = currentQuestion.roman ? 16 : currentQuestion.subject ? 28 : currentQuestion.alg ? 24 : 7;
+  inputEl.maxLength = currentQuestion.pair ? 20 : currentQuestion.roman ? 16 : currentQuestion.subject ? 28 : currentQuestion.alg ? 24 : 7;
   inputEl.value = '';
   typedEl.textContent = '';
   if (endCursor) endCursor.style.visibility = ''; // the caret starts at the end again
@@ -146,7 +152,23 @@ function powers(raw) {
   return raw.replace(/²/g, '^2').replace(/³/g, '^3').replace(/[ˆ＾]/g, '^').replace(/×/g, '*');
 }
 
+/* Simultaneous equations: "3,-2", "x=3,y=-2" or "y=-2,x=3". */
+function pairCorrect(typed, ans) {
+  const t = typed.replace(/\s+/g, '').toLowerCase();
+  const num = '(-?\\d+(?:\\.\\d+)?)';
+  const named = { x: new RegExp(`x=${num}`).exec(t), y: new RegExp(`y=${num}`).exec(t) };
+  let x, y;
+  if (named.x && named.y) { x = +named.x[1]; y = +named.y[1]; }
+  else {
+    const m = new RegExp(`^${num},${num}$`).exec(t);
+    if (!m) return false;
+    x = +m[1]; y = +m[2];
+  }
+  return x === ans.x && y === ans.y;
+}
+
 function isCorrectAnswer(typed, answer) {
+  if (answer && answer.kind === 'pair') return pairCorrect(typed, answer);
   if (answer && typeof answer === 'object') return answer.kind === 'subject' ? checkSubject(typed, answer) : checkAlgebra(typed, answer);
   if (currentQuestion && currentQuestion.roman) return typed.toUpperCase() === answer;
   if (currentQuestion && currentQuestion.base) return typed.toUpperCase().replace(/^0+(?=.)/, '') === answer;
@@ -160,6 +182,7 @@ function isCorrectAnswer(typed, answer) {
 // Strip to digits plus at most one "/" and at most one "." — neither of
 // which can lead. Everything else a question ever answers with is digits.
 function sanitizeTyped(raw) {
+  if (currentQuestion && currentQuestion.pair) return raw.replace(/−/g, '-').replace(/[XY]/g, (c) => c.toLowerCase()).replace(/[^0-9xy=,.\-]/g, '').slice(0, 20);
   if (currentQuestion && currentQuestion.roman) return raw.toUpperCase().replace(/[^IVXLCDM]/g, '').slice(0, 16);
   if (currentQuestion && currentQuestion.subject) return powers(raw).replace(/−/g, '-').replace(/[^0-9A-Za-z=^()+\-*/.√∛π]/g, '').slice(0, 28);
   if (currentQuestion && currentQuestion.base) return raw.replace(/[^0-9a-fA-F]/g, '').toUpperCase().slice(0, 10);

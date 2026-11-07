@@ -54,7 +54,7 @@ const OPERATION_LABELS = {
   pctToDec: 'Percentages to decimals', pctToFrac: 'Percentages to fractions', fracToPct: 'Fractions to percentages',
   decToPct: 'Decimals to percentages', pctOf: 'Percentages of numbers',
   subOne: 'One step', subTwo: 'Two steps', subMulti: 'Brackets and fractions', subPower: 'Powers and roots',
-  eqOne: '1-Step Equations', eqTwo: '2-Step Equations', eqMulti: 'Multi-Step Equations',
+  eqOne: '1-Step Equations', eqTwo: '2-Step Equations', eqMulti: 'Multi-Step Equations', eqSystem: 'Simultaneous Equations',
   baseTo10: 'To Base 10', baseFrom10: 'From Base 10', baseToBase: 'Base to Base',
 };
 
@@ -70,7 +70,7 @@ const CATEGORY_OPERATIONS = {
   chemistry: ['rmm'],
   integers: ['intAdd', 'intSub', 'intMul', 'intDiv', 'directed'],
   algebra: ['algDistribute', 'algFactorise', 'algQuadExpand', 'algQuadFactorise', 'algMixed'],
-  equations: ['eqOne', 'eqTwo', 'eqMulti'],
+  equations: ['eqOne', 'eqTwo', 'eqMulti', 'eqSystem'],
   subject: ['subOne', 'subTwo', 'subMulti', 'subPower'],
   percent: ['pctToDec', 'pctToFrac', 'fracToPct', 'decToPct', 'pctOf'],
   bases: ['binTo10', 'binFrom10', 'binAdd', 'binSub', 'binMul', 'binDiv',

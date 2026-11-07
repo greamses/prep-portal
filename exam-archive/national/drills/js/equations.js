@@ -11,7 +11,38 @@ const sgn = (rng) => (rng() < 0.5 ? -1 : 1);
 const co = (c) => (c === 1 ? '' : c === -1 ? MINUS : String(c));
 const plus = (n) => (n < 0 ? `${MINUS} ${-n}` : `+ ${n}`);
 
-export const EQUATION_OPS = ['eqOne', 'eqTwo', 'eqMulti'];
+export const EQUATION_OPS = ['eqOne', 'eqTwo', 'eqMulti', 'eqSystem'];
+
+/* ── simultaneous equations ──
+   Built from the answer: x and y are whole numbers first, then two equations
+   with small coefficients that are not multiples of each other (so there is
+   exactly one solution). Typed as "x, y" (3, -2) or "x=3, y=-2". */
+const term = (c, v, first) => {
+  if (!c) return '';
+  const mag = Math.abs(c) === 1 ? '' : Math.abs(c);
+  if (first) return `${c < 0 ? '-' : ''}${mag}${v}`;
+  return ` ${c < 0 ? '-' : '+'} ${mag}${v}`;
+};
+function systemQuestion(rng, pool) {
+  const k = Math.max(2, small(rng, pool));
+  const x = sgn(rng) * int(rng, 1, Math.min(9, k + 2));
+  const y = sgn(rng) * int(rng, 1, Math.min(9, k + 2));
+  let a, b, c, d;
+  do {
+    a = int(rng, 1, 6); b = sgn(rng) * int(rng, 1, 6);
+    c = sgn(rng) * int(rng, 1, 6); d = sgn(rng) * int(rng, 1, 6);
+  } while (a * d - b * c === 0);
+  const e1 = `${term(a, 'x', true)}${term(b, 'y')} = ${a * x + b * y}`;
+  const e2 = `${term(c, 'x', true)}${term(d, 'y')} = ${c * x + d * y}`;
+  const tex = (s) => s.replace('=', '&=');
+  return {
+    math: true, pair: true,
+    hint: 'Solve together. Type x, y (for example 3, -2)',
+    text: `${e1};  ${e2}`.replace(/-/g, '−'),
+    tex: `\\begin{aligned} ${tex(e1)} \\\\ ${tex(e2)} \\end{aligned}`,
+    answer: { kind: 'pair', x, y },
+  };
+}
 export const BASE_OPS = ['baseTo10', 'baseFrom10', 'baseToBase', 'binTo10', 'binFrom10', 'binAdd', 'binSub', 'binMul', 'binDiv',
   'octAdd', 'octSub', 'octMul', 'octDiv', 'hexAdd', 'hexSub', 'hexMul', 'hexDiv'];
 export const isEquationOp = (op) => EQUATION_OPS.includes(op);
@@ -20,6 +51,7 @@ export const isBaseOp = (op) => BASE_OPS.includes(op);
 const eq = (text, x) => ({ math: true, hint: 'Solve for x', text: text.replace(/-/g, MINUS), answer: x });
 
 export function equationQuestion(rng, pool, op) {
+  if (op === 'eqSystem') return systemQuestion(rng, pool);
   const k = Math.max(2, small(rng, pool));
   const x = sgn(rng) * int(rng, 1, Math.min(12, k + 3));
   if (op === 'eqOne') {
