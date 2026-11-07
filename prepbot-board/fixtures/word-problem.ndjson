@@ -1,4 +1,4 @@
-{"say":"Here is the problem.","do":[{"op":"sticky","id":"q1","text":"Ada has 3 times as many sweets as Bola. Together they have 48 sweets. How many sweets does Bola have?"}]}
+{"say":"Here is the problem.","do":[{"op":"sticky","id":"q1","text":"Ada has 3 times as many sweets as Bola. Together they have 48 sweets, and each costs $2.50. How many sweets does Bola have?"}]}
 {"say":"Bola first, one unit.","do":[{"op":"bars","id":"b1","rows":[{"name":"Bola","units":1},{"name":"Ada","units":3}]},{"op":"highlight","target":"q1","words":"3 times as many"}]}
 {"say":"Together 48.","do":[{"op":"brace","on":"b1","side":"right","rows":["Bola","Ada"],"text":"48"}]}
 {"say":"Bola is the question.","do":[{"op":"brace","on":"b1","row":"Bola","side":"above","text":"?"}]}

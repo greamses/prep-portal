@@ -52,6 +52,21 @@ function looksLikeMaths(text) {
   return `$${text}$`;
 }
 
+/* The numbers in a problem, set as maths (so 3/4 is a real fraction and
+   12500 reads 12,500), with the words around them left in the hand. A "$"
+   for money becomes "＄" first, so it is never taken for the start of maths. */
+export function mathsNumbers(text) {
+  /* already done (ops are cleaned again on the board): leave it as it is */
+  if (/＄|\$\d[\d.,\/ ]*%?\$/.test(String(text || ""))) return text;
+  const money = String(text || "").replace(/\$(?=\s?\d)/g, "＄");
+  const group = (n) => n.replace(/^(\d+)/, (int) => (int.length >= 5 && !int.includes(",") ? int.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : int));
+  return money.split(/(\$[^$]+\$)/).map((part) => {
+    if (part.startsWith("$") && part.endsWith("$") && part.length > 2) return part;
+    return part.replace(/(^|[^\w.\/,])(\d+ \d+\/\d+|\d+\/\d+|\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)(%?)(?![\w\/])/g,
+      (_, pre, n, pct) => (pre === "＄" ? `$＄${group(n)}${pct}$` : `${pre}$${group(n)}${pct}$`));
+  }).join("");
+}
+
 let auto = 0;
 let penTurn = 0;
 const idOf = (v, prefix) => (typeof v === "string" && ID_RE.test(v) ? v : `${prefix}${++auto}`);
@@ -236,7 +251,7 @@ const SPEC = {
 
   /* The PROBLEM the learner brought, stuck up as a note at the top. */
   sticky(o) {
-    const text = looksLikeMaths(str(o.text, 420));
+    const text = mathsNumbers(looksLikeMaths(str(o.text, 420)));
     if (!text) return null;
     return { op: "sticky", id: idOf(o.id, "q"), text, tone: tone(o.tone) || "ink" };
   },

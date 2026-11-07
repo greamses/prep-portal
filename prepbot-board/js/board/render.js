@@ -125,7 +125,7 @@ const texCache = new Map();
 /** A piece of maths as an SVG element sized in board units at `font`, with
     its glyphs inside it (local font cache, as sticky-math.js does). */
 function mathSvg(src, font) {
-  const tex = toTeX(src);
+  const tex = toTeX(src).replace(/(\d),(?=\d{3}(?!\d))/g, "$1{,}");
   let proto = texCache.get(tex);
   if (proto === undefined) {
     proto = null;
@@ -188,7 +188,7 @@ function buildAtoms(op, measureLayer, maxW) {
     if (!m) return textAtom(src); // MathJax missing: the source still says it
     m.node.setAttribute("class", `pb-math pb-ink-${op.tone}-fill`);
     measureLayer.appendChild(m.node);
-    return { node: m.node, w: m.w, up: m.h - m.depth, down: m.depth, kind: "math" };
+    return { node: m.node, w: m.w, up: m.h - m.depth, down: m.depth, kind: "math", src };
   };
   for (const seg of segments(op.text)) {
     if (seg.text) {
@@ -273,7 +273,8 @@ export function buildWrite(op, page, measureLayer, layout, spot = null) {
   for (const l of lineBoxes) {
     for (const a of l.atoms) {
       const x0 = +a.node.getAttribute("x") || 0;
-      words.push({ w: a.kind === "text" ? norm(a.node.textContent) : "", box: { x: l.box.x + x0 * l.box.scale, y: l.box.y, w: a.w * l.box.scale, h: l.box.h } });
+      /* a number set as maths still counts as a word ("3 times as many") */
+      words.push({ w: a.kind === "text" ? norm(a.node.textContent) : norm(a.src), box: { x: l.box.x + x0 * l.box.scale, y: l.box.y, w: a.w * l.box.scale, h: l.box.h } });
     }
   }
   const wordBox = (phrase) => {
