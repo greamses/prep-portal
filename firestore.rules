@@ -328,7 +328,8 @@ service cloud.firestore {
           'geoRect', 'geoTriangle', 'geoTrapezium', 'geoParallelogram',
           'geoHyp', 'geoLeg', 'geoTrig',
           'geoCircumference', 'geoCircleArea', 'geoCuboid', 'geoCylinder', 'geoCone',
-          'subOne', 'subTwo', 'subMulti', 'subPower'
+          'subOne', 'subTwo', 'subMulti', 'subPower',
+          'pctToDec', 'pctToFrac', 'fracToPct', 'decToPct', 'pctOf'
         ]) &&
         request.resource.data.tables is list &&
         request.resource.data.tables.size() > 0 &&
