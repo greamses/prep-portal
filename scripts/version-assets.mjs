@@ -66,7 +66,6 @@ const VOCAB_SUBJECTS = [
   'nigeria-leaders',
 ];
 const PAGES = [
-  { name: 'geometry' },
   // The Chemistry category's questions come from the shared compound bank, so
   // editing a formula (or an atomic mass) must bust the drills page too.
   {

@@ -51,7 +51,6 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const GAMES = [
   { name: 'drills',   rules: 'drillRooms',   dir: 'drills' },
   { name: 'puzzles',  rules: 'puzzleRooms',  dir: 'puzzles' },
-  { name: 'geometry', rules: 'geometryRooms', dir: 'geometry' },
   { name: 'vocab',    rules: 'vocabRooms',   dir: 'vocab' },
   { name: 'grammar',  rules: 'grammarRooms', dir: 'grammar' },
 ];
