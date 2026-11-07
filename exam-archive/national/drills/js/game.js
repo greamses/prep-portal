@@ -8,6 +8,7 @@
 import { questionAt } from './rng.js';
 import { checkAlgebra } from './algebra.js';
 import { checkSubject } from './subject.js';
+import { typedToTex } from './typed-tex.js';
 import { mathReady, loadMath, svgFor } from '/utils/components/workbook/mathify.js';
 
 const $ = (id) => document.getElementById(id);
@@ -37,7 +38,7 @@ function toTex(t) {
 function typedTex(t) {
   if (currentQuestion && currentQuestion.base) return `\\mathrm{${t}}`;
   if (currentQuestion && (currentQuestion.alg || currentQuestion.subject)) {
-    return t.replace(/\*/g, '').replace(/\^(\d+)/g, '^{$1}').replace(/\^$/, '').replace(/-/g, '-');
+    return typedToTex(t); // "/" stacks into a fraction as it is typed
   }
   const m = /^(-?)(\d+)\/(\d*)$/.exec(t);
   if (m) return `${m[1]}\\tfrac{${m[2]}}{${m[3] || '\\square'}}`;
