@@ -407,3 +407,16 @@ body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex;
 .pb-ribbon .pb-style__btn[aria-checked="true"] { background: var(--accent-primary); border-color: color-mix(in srgb, var(--ink) 26%, transparent); }
 .pb-ribbon .pb-ico#pb-mic.is-on, .pb-ribbon .pb-ico#pb-mic.is-open { background: var(--accent-danger); border-color: transparent; }
 .pb-ribbon .pb-hand-up.is-up { background: color-mix(in srgb, var(--accent-primary) 55%, var(--surface-primary)); }
+
+/* the keyboard shortcuts list: a receipt under the ribbon */
+.pb-keys { position: fixed; z-index: 30; top: 96px; left: 50%; transform: translateX(-50%); width: min(30rem, calc(100vw - 24px)); }
+.pb-keys[hidden] { display: none; }
+.pb-keys__paper { padding: 1.1rem 1.2rem 1.4rem; }
+.pb-keys__list { max-height: min(64vh, 34rem); overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.pb-keys__title { margin: 0 0 6px; font-family: var(--font-display, Unbounded, sans-serif); font-size: 1rem; color: var(--ink); }
+.pb-keys__row { display: grid; grid-template-columns: 7.2rem 1fr; gap: 10px; align-items: baseline; font-size: 0.9rem; color: var(--ink); }
+.pb-keys__row kbd {
+  justify-self: start; font-family: var(--font-mono); font-size: 0.78rem; padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, var(--ink) 26%, transparent); background: var(--surface-primary); color: var(--ink);
+}
+.pb-keys__row span { font-family: var(--font-mono, "JetBrains Mono", monospace); font-weight: 400; font-size: 0.85rem; }

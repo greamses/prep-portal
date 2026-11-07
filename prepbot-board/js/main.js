@@ -46,6 +46,7 @@ const ICONS = {
   follow: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.4" fill="none" stroke="var(--accent-secondary)" stroke-width="2.4"/><circle cx="12" cy="12" r="3.4" fill="var(--accent-danger)"/></svg>`,
   upload: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.8h8.2L19 7.6v13.6H6z" fill="var(--accent-secondary)"/><path d="M14.2 2.8v4.8H19z" fill="var(--accent-primary)"/><path d="M12.5 18v-6.6M9.6 14.2l2.9-2.9 2.9 2.9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   doc: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.8h8.2L19 7.6v13.6H6z" fill="var(--accent-secondary)"/><path d="M14.2 2.8v4.8H19z" fill="var(--accent-primary)"/><path d="M8.8 12h7.4M8.8 15.4h7.4M8.8 18.4h4.6" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  keys: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1.8" y="5.6" width="20.4" height="12.8" fill="var(--accent-secondary)"/><path d="M5 9h2M9 9h2M13 9h2M17 9h2M5 12h2M9 12h2M13 12h2M17 12h2M7.5 15.2h9" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/></svg>`,
   voice: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 9.2h3.6L12 5v14l-4.9-4.2H3.5z" fill="var(--accent-secondary)"/><path d="M15 9a4.2 4.2 0 0 1 0 6M17.6 6.4a7.8 7.8 0 0 1 0 11.2" fill="none" stroke="var(--accent-danger)" stroke-width="2.2" stroke-linecap="round"/></svg>`,
   font: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19.4 8.4 4.6h2.4l5.4 14.8h-2.6l-1.3-3.8H6.9l-1.3 3.8zm4.6-6h3.9L9.6 7.6z" fill="var(--accent-secondary)"/><path d="M16.6 14.6c0-1.8 1.4-2.8 3.2-2.8 1 0 1.8.3 2.2.7v6.9h-2v-.6c-.5.5-1.1.8-1.9.8-1.7 0-2.9-1.1-2.9-2.6zm2.2.1c0 .7.5 1.1 1.2 1.1s1.3-.4 1.3-1.1-.6-1.1-1.3-1.1-1.2.4-1.2 1.1z" fill="var(--accent-danger)"/></svg>`,
   play: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.8 20.4 12 6.6 20.2z" fill="var(--accent-success)"/></svg>`,
@@ -740,6 +741,63 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   $("pb-fold").addEventListener("click", () => fold(true));
   $("pb-unfold").addEventListener("click", () => fold(false));
   try { if (localStorage.getItem(FOLD_KEY) === "1") fold(true); } catch {}
+
+  /* ── keyboard shortcuts ────────────────────────────────────────────────
+     Plain letters belong to typing (any letter raises the hand and starts
+     the question), so the shortcuts are Alt + a letter; Space (hold) talks,
+     the arrows move between sections, ? lists them all and Esc steps back. */
+  const click = (id) => () => $(id)?.click();
+  const openPicker = (sel) => () => sel?.querySelector(".pp-select-trigger")?.click();
+  const SHORTCUTS = [
+    { keys: "Space (hold)", what: "Talk while held, let go to send" },
+    { code: "KeyM", keys: "Alt+M", what: "Mic on or off", run: () => { if (!ear.supported) return; setOpen(!micOpen); showSay(micOpen ? "The mic is on. Just talk, and pause when you're done." : "Mic off.", true); } },
+    { code: "KeyH", keys: "Alt+H", what: "Raise or lower your hand (type a question)", run: click("pb-raise") },
+    { code: "KeyK", keys: "Alt+K", what: "A hint (homework)", run: () => { if (style === "homework") $("pb-hint").click(); } },
+    { code: "Digit1", keys: "Alt+1", what: "Teaching: checks in", run: () => document.querySelector('.pb-style__btn[data-style="check"]')?.click() },
+    { code: "Digit2", keys: "Alt+2", what: "Teaching: lecture", run: () => document.querySelector('.pb-style__btn[data-style="lecture"]')?.click() },
+    { code: "Digit3", keys: "Alt+3", what: "Teaching: homework", run: () => document.querySelector('.pb-style__btn[data-style="homework"]')?.click() },
+    { code: "KeyU", keys: "Alt+U", what: "Upload a PDF or a photo", run: click("pb-upload") },
+    { code: "KeyN", keys: "Alt+N", what: "New board", run: click("pb-new") },
+    { code: "KeyO", keys: "Alt+O", what: "Whole canvas / back to PrepBot", run: click("pb-overview") },
+    { keys: "← →", what: "The section before / after" },
+    { code: "KeyW", keys: "Alt+W", what: "Choose the handwriting", run: openPicker(fontSel) },
+    { code: "KeyV", keys: "Alt+V", what: "Choose the voice", run: openPicker(voiceSel) },
+    { code: "KeyT", keys: "Alt+T", what: "Hide or show the tools", run: () => fold(!ribbon.classList.contains("is-folded")) },
+    { keys: "?", what: "This list" },
+    { keys: "Esc", what: "Close this list, lower your hand, or stop PrepBot" },
+  ];
+  /* the list itself: the site's receipt, under the ribbon */
+  const keysBtn = $("pb-keys");
+  const keysPanel = document.createElement("div");
+  keysPanel.className = "pb-keys pp-receipt";
+  keysPanel.hidden = true;
+  keysPanel.setAttribute("role", "dialog");
+  keysPanel.setAttribute("aria-label", "Keyboard shortcuts");
+  keysPanel.innerHTML = `<div class="pp-receipt__paper pb-keys__paper"><div class="pb-keys__list"><p class="pb-keys__title">Keyboard shortcuts</p>${SHORTCUTS.map((s) => `<div class="pb-keys__row"><kbd>${s.keys}</kbd><span>${s.what}</span></div>`).join("")}</div></div>`;
+  document.body.appendChild(keysPanel);
+  const showKeys = (on) => { keysPanel.hidden = !on; keysBtn.setAttribute("aria-expanded", String(on)); };
+  keysBtn.addEventListener("click", () => showKeys(keysPanel.hidden));
+  document.addEventListener("pointerdown", (e) => { if (!keysPanel.hidden && !keysPanel.contains(e.target) && e.target !== keysBtn && !keysBtn.contains(e.target)) showKeys(false); });
+  /* the keys named in each tooltip */
+  const tipKey = { "pb-mic": "Alt+M", "pb-raise": "Alt+H", "pb-hint": "Alt+K", "pb-upload": "Alt+U", "pb-new": "Alt+N", "pb-overview": "Alt+O", "pb-prev": "←", "pb-next": "→", "pb-fold": "Alt+T" };
+  for (const [id, k] of Object.entries(tipKey)) { const n = $(id); if (n?.dataset.tip) n.dataset.tip += ` (${k})`; }
+  document.querySelectorAll(".pb-style__btn").forEach((b, i) => { b.dataset.tip += ` (Alt+${i + 1})`; });
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey) return;
+    const typing = e.target === input || e.target?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || "");
+    if (e.key === "Escape") {
+      if (!keysPanel.hidden) { showKeys(false); return; }
+      if (!form.hidden) { raise.click(); return; }
+      if (scheduler.busy || document.body.dataset.state === "talking") cutIn();
+      return;
+    }
+    if (e.altKey) {
+      const sc = SHORTCUTS.find((s) => s.code === e.code);
+      if (sc?.run) { e.preventDefault(); e.stopImmediatePropagation(); sc.run(); }
+      return;
+    }
+    if (e.key === "?" && !typing) { e.preventDefault(); e.stopImmediatePropagation(); showKeys(keysPanel.hidden); }
+  }, true);
 
   window.__pb = { board, scheduler, voice, lesson, cutIn, redraw }; // for tests
 
