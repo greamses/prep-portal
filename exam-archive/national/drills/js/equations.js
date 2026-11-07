@@ -12,7 +12,8 @@ const co = (c) => (c === 1 ? '' : c === -1 ? MINUS : String(c));
 const plus = (n) => (n < 0 ? `${MINUS} ${-n}` : `+ ${n}`);
 
 export const EQUATION_OPS = ['eqOne', 'eqTwo', 'eqMulti'];
-export const BASE_OPS = ['baseTo10', 'baseFrom10', 'baseToBase', 'binTo10', 'binFrom10', 'binAdd', 'binSub', 'binMul', 'binDiv'];
+export const BASE_OPS = ['baseTo10', 'baseFrom10', 'baseToBase', 'binTo10', 'binFrom10', 'binAdd', 'binSub', 'binMul', 'binDiv',
+  'octAdd', 'octSub', 'octMul', 'octDiv', 'hexAdd', 'hexSub', 'hexMul', 'hexDiv'];
 export const isEquationOp = (op) => EQUATION_OPS.includes(op);
 export const isBaseOp = (op) => BASE_OPS.includes(op);
 
@@ -65,30 +66,34 @@ export function baseQuestion(rng, pool, op) {
   const n = Math.max(3, pool[Math.floor(rng() * pool.length)] + int(rng, 0, 20));
   // Binary to / from denary: the same two drills with the base fixed at 2.
   const b = op.startsWith('bin') ? 2 : pick(rng, BASES);
-  if (op === 'binAdd') {
-    // two (sometimes three) binary numbers, answered in binary
-    const terms = [n, Math.max(1, pool[Math.floor(rng() * pool.length)] + int(rng, 0, 20))];
-    if (rng() < 0.25) terms.push(Math.max(1, int(rng, 1, 15)));
-    const sum = terms.reduce((a, c) => a + c, 0);
-    return { math: true, base: true, hint: 'Add in binary', text: `${terms.map((t) => `${show(t, 2)}${sub(2)}`).join(' + ')} = ?${sub(2)}`, answer: show(sum, 2) };
-  }
-  const bin = (v) => `${show(v, 2)}${sub(2)}`;
-  const binQ = (hint, text, v) => ({ math: true, base: true, hint, text: `${text} = ?${sub(2)}`, answer: show(v, 2) });
-  if (op === 'binSub') {
-    // never negative: the larger number comes first
-    const m = Math.max(2, pool[Math.floor(rng() * pool.length)] + int(rng, 0, 20));
-    const hi = Math.max(n, m), lo = Math.min(n, m) === hi ? hi - 1 : Math.min(n, m);
-    return binQ('Subtract in binary', `${bin(hi)} − ${bin(lo)}`, hi - lo);
-  }
-  if (op === 'binMul') {
-    // a few-figure number times a small one, so the working stays on the page
-    const a = Math.max(2, Math.min(n, 31)), c = int(rng, 2, 7);
-    return binQ('Multiply in binary', `${bin(a)} × ${bin(c)}`, a * c);
-  }
-  if (op === 'binDiv') {
-    // built from a product, so it always divides exactly
-    const d = int(rng, 2, 7), q = Math.max(1, Math.min(n, 31));
-    return binQ('Divide in binary', `${bin(d * q)} ÷ ${bin(d)}`, q);
+  // Arithmetic in binary, octal or hexadecimal, answered in the same base.
+  const ARITH = { bin: [2, 'binary', 31, 7], oct: [8, 'octal', 63, 7], hex: [16, 'hexadecimal', 255, 15] };
+  const m = /^(bin|oct|hex)(Add|Sub|Mul|Div)$/.exec(op);
+  if (m) {
+    const [B, word, cap, maxF] = ARITH[m[1]];
+    const w = (v) => `${show(v, B)}${sub(B)}`;
+    const q = (verb, text, v) => ({ math: true, base: true, hint: `${verb} in ${word}`, text: `${text} = ?${sub(B)}`, answer: show(v, B) });
+    const other = () => Math.max(2, pool[Math.floor(rng() * pool.length)] + int(rng, 0, 20));
+    const scale = B === 2 ? 1 : B === 8 ? 3 : 6; // octal and hex questions use bigger numbers
+    if (m[2] === 'Add') {
+      const terms = [n * scale, other() * scale];
+      if (rng() < 0.25) terms.push(int(rng, 1, 15) * scale);
+      return q('Add', terms.map(w).join(' + '), terms.reduce((x, y) => x + y, 0));
+    }
+    if (m[2] === 'Sub') {
+      // never negative: the larger number comes first
+      const x = n * scale, y = other() * scale;
+      const hi = Math.max(x, y), lo = Math.min(x, y) === hi ? hi - 1 : Math.min(x, y);
+      return q('Subtract', `${w(hi)} − ${w(lo)}`, hi - lo);
+    }
+    if (m[2] === 'Mul') {
+      // a number times one figure, so the working stays on the page
+      const x = Math.max(2, Math.min(n * scale, cap)), f = int(rng, 2, maxF);
+      return q('Multiply', `${w(x)} × ${w(f)}`, x * f);
+    }
+    // Div: built from a product, so it always divides exactly
+    const d = int(rng, 2, maxF), quo = Math.max(1, Math.min(n * scale, cap));
+    return q('Divide', `${w(d * quo)} ÷ ${w(d)}`, quo);
   }
   if (op === 'binTo10') op = 'baseTo10';
   if (op === 'binFrom10') op = 'baseFrom10';
