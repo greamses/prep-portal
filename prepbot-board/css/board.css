@@ -392,3 +392,18 @@ body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex;
 .pb-bars__line { stroke-width: 3.5; filter: none; }
 .pb-bars__shade { opacity: 0.32; }
 .pb-brace__line { stroke-width: 3.5; fill: none; filter: none; }
+
+/* the ribbon's and dock's keys: a thin grey outline, flat (no sticky-note shadow) */
+.pb-ribbon .pb-ico,
+.pb-ribbon .pb-fontsel .pp-select-trigger,
+.pb-dock .pb-ico {
+  border: 1px solid color-mix(in srgb, var(--ink) 26%, transparent);
+  box-shadow: none;
+  background: var(--surface-primary);
+}
+.pb-ribbon .pb-ico:hover,
+.pb-ribbon .pb-fontsel .pp-select-trigger:hover,
+.pb-dock .pb-ico:hover { border-color: color-mix(in srgb, var(--ink) 45%, transparent); }
+.pb-ribbon .pb-style__btn[aria-checked="true"] { background: var(--accent-primary); border-color: color-mix(in srgb, var(--ink) 26%, transparent); }
+.pb-ribbon .pb-ico#pb-mic.is-on, .pb-ribbon .pb-ico#pb-mic.is-open { background: var(--accent-danger); border-color: transparent; }
+.pb-ribbon .pb-hand-up.is-up { background: color-mix(in srgb, var(--accent-primary) 55%, var(--surface-primary)); }
