@@ -6,6 +6,11 @@
    checks use). Tolerant of half-typed input: an unclosed "(" shows as "(",
    a trailing "/" shows an empty box under the bar.
 ═══════════════════════════════════════════════════════ */
+/* The caret, when it sits inside the answer (moved by the arrow keys or a
+   click): a marker character in the typed string, drawn as a coloured bar. */
+export const CARET = '‸';
+export const CARET_TEX = '{\\color{#e8574d}{\\vert}}';
+
 const isLetter = (c) => !!c && /[A-Za-z]/.test(c);
 const isDigit = (c) => !!c && /[0-9.]/.test(c);
 
@@ -40,12 +45,13 @@ export function typedToTex(src) {
       const inner = peek() === '(' ? group().inner : atom().tex;
       tex = c === '√' ? '\\sqrt{' + inner + '}' : '\\sqrt[3]{' + inner + '}';
     } else if (c === 'π') { i++; tex = '\\pi '; }
+    else if (c === CARET) { i++; tex = CARET_TEX; }
     else if (isLetter(c)) { i++; tex = c; }
     else if (isDigit(c)) { let n = ''; while (isDigit(peek())) n += s[i++]; tex = n; }
     else { i++; tex = ''; }
     return { tex: tex + exponent(), grp };
   }
-  const startsAtom = (c) => c === '(' || c === '√' || c === '∛' || c === 'π' || isLetter(c) || isDigit(c) || c === '*';
+  const startsAtom = (c) => c === CARET || c === '(' || c === '√' || c === '∛' || c === 'π' || isLetter(c) || isDigit(c) || c === '*';
   function product() { // one or more atoms side by side
     let tex = '', n = 0, grp = null;
     while (i < s.length && startsAtom(peek())) {

@@ -12,7 +12,7 @@ const co = (c) => (c === 1 ? '' : c === -1 ? MINUS : String(c));
 const plus = (n) => (n < 0 ? `${MINUS} ${-n}` : `+ ${n}`);
 
 export const EQUATION_OPS = ['eqOne', 'eqTwo', 'eqMulti'];
-export const BASE_OPS = ['baseTo10', 'baseFrom10', 'baseToBase', 'binTo10', 'binFrom10', 'binAdd'];
+export const BASE_OPS = ['baseTo10', 'baseFrom10', 'baseToBase', 'binTo10', 'binFrom10', 'binAdd', 'binSub', 'binMul', 'binDiv'];
 export const isEquationOp = (op) => EQUATION_OPS.includes(op);
 export const isBaseOp = (op) => BASE_OPS.includes(op);
 
@@ -71,6 +71,24 @@ export function baseQuestion(rng, pool, op) {
     if (rng() < 0.25) terms.push(Math.max(1, int(rng, 1, 15)));
     const sum = terms.reduce((a, c) => a + c, 0);
     return { math: true, base: true, hint: 'Add in binary', text: `${terms.map((t) => `${show(t, 2)}${sub(2)}`).join(' + ')} = ?${sub(2)}`, answer: show(sum, 2) };
+  }
+  const bin = (v) => `${show(v, 2)}${sub(2)}`;
+  const binQ = (hint, text, v) => ({ math: true, base: true, hint, text: `${text} = ?${sub(2)}`, answer: show(v, 2) });
+  if (op === 'binSub') {
+    // never negative: the larger number comes first
+    const m = Math.max(2, pool[Math.floor(rng() * pool.length)] + int(rng, 0, 20));
+    const hi = Math.max(n, m), lo = Math.min(n, m) === hi ? hi - 1 : Math.min(n, m);
+    return binQ('Subtract in binary', `${bin(hi)} − ${bin(lo)}`, hi - lo);
+  }
+  if (op === 'binMul') {
+    // a few-figure number times a small one, so the working stays on the page
+    const a = Math.max(2, Math.min(n, 31)), c = int(rng, 2, 7);
+    return binQ('Multiply in binary', `${bin(a)} × ${bin(c)}`, a * c);
+  }
+  if (op === 'binDiv') {
+    // built from a product, so it always divides exactly
+    const d = int(rng, 2, 7), q = Math.max(1, Math.min(n, 31));
+    return binQ('Divide in binary', `${bin(d * q)} ÷ ${bin(d)}`, q);
   }
   if (op === 'binTo10') op = 'baseTo10';
   if (op === 'binFrom10') op = 'baseFrom10';

@@ -323,7 +323,7 @@ service cloud.firestore {
           'fracAdd', 'fracSub', 'fracMul', 'fracDiv',
           'rmm', 'intAdd', 'intSub', 'directed', 'intMul', 'intDiv',
           'algDistribute', 'algFactorise', 'algQuadExpand', 'algQuadFactorise', 'algMixed',
-          'eqOne', 'eqTwo', 'eqMulti', 'baseTo10', 'baseFrom10', 'baseToBase', 'binTo10', 'binFrom10', 'binAdd', 'romanToNum', 'numToRoman',
+          'eqOne', 'eqTwo', 'eqMulti', 'baseTo10', 'baseFrom10', 'baseToBase', 'binTo10', 'binFrom10', 'binAdd', 'binSub', 'binMul', 'binDiv', 'romanToNum', 'numToRoman',
           'geoAngLine', 'geoAngTriangle', 'geoAngPolygon', 'geoAngParallel',
           'geoRect', 'geoTriangle', 'geoTrapezium', 'geoParallelogram',
           'geoHyp', 'geoLeg', 'geoTrig',

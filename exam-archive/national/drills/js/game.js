@@ -8,7 +8,7 @@
 import { questionAt } from './rng.js';
 import { checkAlgebra } from './algebra.js';
 import { checkSubject } from './subject.js';
-import { typedToTex } from './typed-tex.js';
+import { typedToTex, CARET, CARET_TEX } from './typed-tex.js';
 import { mathReady, loadMath, svgFor } from '/utils/components/workbook/mathify.js';
 
 const $ = (id) => document.getElementById(id);
@@ -34,6 +34,15 @@ function toTex(t) {
     .replace(/°/g, '^{\\circ}')
     .replace(/\b(sin|cos|tan)\b/g, '\\$1 ')
     .replace(/−/g, '-').replace(/×/g, '\\times ').replace(/÷/g, '\\div ');
+}
+/* The typed answer with the caret inside it at `at` (TeX). The algebra
+   parser places the caret itself; for the plain answers it is just spliced in. */
+function typedTexWithCaret(t, at) {
+  if (currentQuestion && (currentQuestion.alg || currentQuestion.subject)) {
+    return typedToTex(t.slice(0, at) + CARET + t.slice(at));
+  }
+  const wrap = (s) => (!s ? '' : currentQuestion && (currentQuestion.base || currentQuestion.roman) ? `\\mathrm{${s}}` : s);
+  return `${wrap(t.slice(0, at))}${CARET_TEX}${wrap(t.slice(at))}`;
 }
 function typedTex(t) {
   if (currentQuestion && (currentQuestion.base || currentQuestion.roman)) return `\\mathrm{${t}}`;
@@ -116,6 +125,7 @@ function renderQuestion() {
   inputEl.maxLength = currentQuestion.roman ? 16 : currentQuestion.subject ? 28 : currentQuestion.alg ? 24 : 7;
   inputEl.value = '';
   typedEl.textContent = '';
+  if (endCursor) endCursor.style.display = ''; // the caret starts at the end again
 }
 
 // Fraction answers ("3/8") are graded as an exact string match — typed with
@@ -152,11 +162,34 @@ function sanitizeTyped(raw) {
   return (neg ? '-' : '') + s.slice(0, 7);
 }
 
+/* Draw the typed answer with the caret where the hidden input's selection
+   is: the blinking bar at the end, or a coloured bar inside the answer. */
+const endCursor = answerStage.querySelector('.drill-cursor');
+function caretAt() {
+  const v = inputEl.value;
+  const c = inputEl.selectionStart;
+  return c == null || c > v.length ? v.length : c;
+}
+function renderTyped() {
+  const v = inputEl.value;
+  const at = caretAt();
+  const inside = !!v && at < v.length;
+  if (endCursor) endCursor.style.display = inside ? 'none' : '';
+  if (!v) { typedEl.textContent = ''; return; }
+  if (!inside) { drawMath(typedEl, typedTex(v), v); return; }
+  drawMath(typedEl, typedTexWithCaret(v, at), `${v.slice(0, at)}|${v.slice(at)}`);
+}
+
 function onInput() {
   if (!active) return;
-  const digits = sanitizeTyped(inputEl.value);
+  const raw = inputEl.value;
+  const at = inputEl.selectionStart == null ? raw.length : inputEl.selectionStart;
+  const digits = sanitizeTyped(raw);
   inputEl.value = digits;
-  drawMath(typedEl, digits ? typedTex(digits) : '', digits);
+  // keep the caret where the player was typing (sanitising rewrites the value)
+  const keep = Math.min(digits.length, sanitizeTyped(raw.slice(0, at)).length);
+  try { inputEl.setSelectionRange(keep, keep); } catch { /* not focusable yet */ }
+  renderTyped();
   if (locked || digits === '') return;
   if (isCorrectAnswer(digits, currentQuestion.answer)) {
     locked = true;
@@ -194,6 +227,19 @@ function endRound() {
 }
 
 inputEl.addEventListener('input', onInput);
+// arrow keys, Home and End move the caret through the answer
+inputEl.addEventListener('keyup', (e) => { if (/^(Arrow|Home|End)/.test(e.key)) renderTyped(); });
+inputEl.addEventListener('select', renderTyped);
+// a click on the answer puts the caret at that point in it
+answerStage.addEventListener('click', (e) => {
+  const v = inputEl.value;
+  if (!active || !v) return;
+  const r = typedEl.getBoundingClientRect();
+  const idx = Math.max(0, Math.min(v.length, Math.round(((e.clientX - r.left) / Math.max(1, r.width)) * v.length)));
+  inputEl.focus({ preventScroll: true });
+  try { inputEl.setSelectionRange(idx, idx); } catch { /* ignore */ }
+  renderTyped();
+});
 inputEl.addEventListener('blur', focusInput);
 cardEl.addEventListener('click', focusInput);
 
