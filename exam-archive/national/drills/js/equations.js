@@ -12,7 +12,7 @@ const co = (c) => (c === 1 ? '' : c === -1 ? MINUS : String(c));
 const plus = (n) => (n < 0 ? `${MINUS} ${-n}` : `+ ${n}`);
 
 export const EQUATION_OPS = ['eqOne', 'eqTwo', 'eqMulti'];
-export const BASE_OPS = ['baseTo10', 'baseFrom10', 'baseToBase', 'binTo10', 'binFrom10'];
+export const BASE_OPS = ['baseTo10', 'baseFrom10', 'baseToBase', 'binTo10', 'binFrom10', 'binAdd'];
 export const isEquationOp = (op) => EQUATION_OPS.includes(op);
 export const isBaseOp = (op) => BASE_OPS.includes(op);
 
@@ -65,6 +65,13 @@ export function baseQuestion(rng, pool, op) {
   const n = Math.max(3, pool[Math.floor(rng() * pool.length)] + int(rng, 0, 20));
   // Binary to / from denary: the same two drills with the base fixed at 2.
   const b = op.startsWith('bin') ? 2 : pick(rng, BASES);
+  if (op === 'binAdd') {
+    // two (sometimes three) binary numbers, answered in binary
+    const terms = [n, Math.max(1, pool[Math.floor(rng() * pool.length)] + int(rng, 0, 20))];
+    if (rng() < 0.25) terms.push(Math.max(1, int(rng, 1, 15)));
+    const sum = terms.reduce((a, c) => a + c, 0);
+    return { math: true, base: true, hint: 'Add in binary', text: `${terms.map((t) => `${show(t, 2)}${sub(2)}`).join(' + ')} = ?${sub(2)}`, answer: show(sum, 2) };
+  }
   if (op === 'binTo10') op = 'baseTo10';
   if (op === 'binFrom10') op = 'baseFrom10';
   const base = { math: true, base: true };
