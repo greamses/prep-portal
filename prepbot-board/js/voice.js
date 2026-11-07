@@ -104,7 +104,7 @@ export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id
       throw e;
     }
     const data = await res.json();
-    return data.url || (data.audioContent ? `data:audio/mp3;base64,${data.audioContent}` : null);
+    return data.url || (data.audioContent ? `data:audio/${data.audioEncoding === "WAV" ? "wav" : "mpeg"};base64,${data.audioContent}` : null);
   }
 
   function silentClip(text) {

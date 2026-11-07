@@ -199,7 +199,7 @@ module.exports = function () {
       try { if (fs.existsSync(cacheFile)) return res.json({ url: cacheUrl, audioEncoding: "MP3", cached: "disk" }); } catch (_) {}
       const cacheKey = `kokoro~${voice}|${text}`;
       const hit = cacheGet(cacheKey);
-      if (hit) return res.json({ audioContent: hit, audioEncoding: "MP3", cached: "mem" });
+      if (hit) return res.json({ audioContent: hit, audioEncoding: Buffer.from(hit.slice(0, 8), "base64").toString("latin1").startsWith("RIFF") ? "WAV" : "MP3", cached: "mem" });
 
       if (!base) {
         const w = await fetch(worker, {
@@ -212,10 +212,10 @@ module.exports = function () {
           console.error("[/api/tts/kokoro] melo", w.status, j.error || "");
           return res.status(502).json({ error: "Free voice request failed." });
         }
+        /* MeloTTS answers in WAV (not MP3): say so, and keep it out of the .mp3 disk cache */
+        const wav = Buffer.from(j.audio.slice(0, 8), "base64").toString("latin1").startsWith("RIFF");
         cacheSet(cacheKey, j.audio);
-        let outUrl = null;
-        try { fs.writeFileSync(cacheFile, Buffer.from(j.audio, "base64")); outUrl = cacheUrl; } catch (_) {}
-        return res.json({ audioContent: j.audio, audioEncoding: "MP3", url: outUrl, engine: "melo" });
+        return res.json({ audioContent: j.audio, audioEncoding: wav ? "WAV" : "MP3", engine: "melo" });
       }
 
       /* a host waking from sleep can take most of a minute */
