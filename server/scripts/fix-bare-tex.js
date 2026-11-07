@@ -17,7 +17,7 @@ if (!admin.apps.length) admin.initializeApp({ credential: admin.credential.cert(
 const args = Object.fromEntries(process.argv.slice(2).map((a) => { const m = /^--([^=]+)(?:=(.*))?$/.exec(a); return m ? [m[1], m[2] ?? true] : [a, true]; }));
 const DRY = !!args.dry, UNDO = !!args.undo, SUBJECT = args.subject || "mathematics";
 
-const NAMES = "pi|infty|sqrt|int|sin|cos|tan|cot|sec|csc|log|ln|theta|alpha|beta|gamma|delta|lambda|mu|sigma|omega|phi|leq|geq|neq|cdot|times|div|pm|circ";
+const NAMES = "pi|infty|sqrt|int|sum|prod|lim|frac|ldots|cdots|angle|triangle|sin|cos|tan|cot|sec|csc|log|ln|theta|alpha|beta|gamma|delta|lambda|mu|sigma|omega|phi|leq|geq|neq|cdot|times|div|pm|circ";
 const BARE = new RegExp(`(^|[^\\\\a-zA-Z])(${NAMES})(?![a-zA-Z])`, "g");
 
 /** Inside one piece of maths: give the bare names their backslash; sqrt(x) -> \sqrt{x}. */
@@ -75,7 +75,7 @@ function repair(text) {
     changed++;
     if (shown.length < 40) shown.push(`${d.id} [${x.source}]\n   was: ${JSON.stringify(x.question).slice(0, 150)} | ${JSON.stringify(x.options || []).slice(0, 120)}\n   now: ${JSON.stringify(q).slice(0, 150)} | ${JSON.stringify(opts).slice(0, 120)}`);
     if (!DRY) {
-      await d.ref.update({ question: q, options: opts, preTexFix: { question: x.question, options: x.options || [] } });
+      await d.ref.update({ question: q, options: opts, preTexFix: x.preTexFix || { question: x.question, options: x.options || [] } });
       if (x.source === "past" && d.id.startsWith("aloc_")) await db.collection("alocQuestions").doc(d.id).update({ question: q, options: opts });
     }
   }
