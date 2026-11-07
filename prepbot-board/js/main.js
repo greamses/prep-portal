@@ -200,7 +200,20 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   const VOICE_KEY = "pb-voice";
   let voiceKey = VOICES[0].id;
   try { const v = localStorage.getItem(VOICE_KEY); if (VOICES.some((x) => x.id === v)) voiceKey = v; } catch {}
-  const voice = createVoice({ auth, muted: params.get("mute") === "1", voiceId: voiceKey });
+  const voice = createVoice({
+    auth, muted: params.get("mute") === "1", voiceId: voiceKey,
+    /* Kokoro's twelve voices only when its host is up; otherwise the one standard free voice */
+    onEngine: (engine) => {
+      const keep = (v) => v.kind === "eleven" || v.kind === (engine === "kokoro" ? "kokoro" : "melo");
+      [...voicePicker.options].forEach((o) => { const v = VOICES.find((x) => x.id === o.value); if (v && !keep(v)) o.remove(); });
+      if (!VOICES.some((v) => v.id === voicePicker.value && keep(v)) || ![...voicePicker.options].some((o) => o.value === voiceKey)) {
+        voiceKey = engine === "kokoro" ? "af_heart" : "melo";
+        voicePicker.value = voiceKey;
+        voice.setVoice(voiceKey);
+      }
+      voiceSel?.refresh?.();
+    },
+  });
   const voicePicker = $("pb-voice");
   voicePicker.innerHTML = VOICES.map((v) => `<option value="${v.id}">${v.label}</option>`).join("");
   voicePicker.value = voiceKey;

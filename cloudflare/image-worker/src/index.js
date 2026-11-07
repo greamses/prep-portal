@@ -24,6 +24,22 @@ export default {
       return new Response("Invalid JSON", { status: 400 });
     }
 
+    /* SPEECH: PrepBoard's free voice (MeloTTS, MIT). { tts: "<sentence>" }
+       → { audio: "<base64 MP3>" }. It shares the account's free daily
+       Workers AI allowance with the pictures, and costs very little of it. */
+    if (typeof body?.tts === "string") {
+      const text = body.tts.trim().slice(0, 1200);
+      if (!text) return new Response(JSON.stringify({ error: "text is empty" }), { status: 400, headers: { "Content-Type": "application/json" } });
+      try {
+        const out = await env.AI.run("@cf/myshell-ai/melotts", { prompt: text, lang: "en" });
+        const audio = typeof out === "string" ? out : out?.audio;
+        if (!audio) throw new Error("no audio");
+        return new Response(JSON.stringify({ audio }), { headers: { "Content-Type": "application/json" } });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message || "Speech failed" }), { status: 500, headers: { "Content-Type": "application/json" } });
+      }
+    }
+
     const prompt = String(body?.prompt || "").trim().slice(0, 500);
     if (!prompt) {
       return new Response(JSON.stringify({ error: "A prompt is required." }), {

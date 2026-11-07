@@ -40,6 +40,8 @@ export const VOICES = [
   { id: "bm_george", kind: "kokoro", label: "George: steady, British" },
   { id: "bm_fable", kind: "kokoro", label: "Fable: storyteller, British" },
   { id: "bm_lewis", kind: "kokoro", label: "Lewis: deep, British" },
+  /* the free voice when there is no Kokoro host: MeloTTS on our Cloudflare worker */
+  { id: "melo", kind: "melo", label: "Standard: clear, American" },
   /* ElevenLabs: paid, metered */
   { id: "Xb7hH8MSUJpSbSDYk0k2", label: "Alice: clear, British" },
   { id: "XrExE9yKIg1WjnnlVkGX", label: "Matilda: warm, American" },
@@ -53,10 +55,11 @@ export const VOICES = [
   { id: "onwK4e9ZLuTAKqWW03F9", label: "Daniel: calm, British" },
 ];
 
-VOICES.forEach((v) => { v.kind = v.kind || "eleven"; v.label = (v.kind === "kokoro" ? "Free · " : "Premium · ") + v.label; });
+VOICES.forEach((v) => { v.kind = v.kind || "eleven"; v.label = (v.kind === "eleven" ? "Premium · " : "Free · ") + v.label; });
 const kindOf = (id) => VOICES.find((v) => v.id === id)?.kind || "eleven";
 
-export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id } = {}) {
+export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id, onEngine = null } = {}) {
+  let engine = null; // which free voice the server has: "kokoro" | "melo"
   let kokoroDown = false; // the free host is not set up (503) or keeps failing: ElevenLabs, then the browser
   let mode = muted ? "silent" : null;      // "eleven" | "browser" | "silent"
   let fails = 0;
@@ -80,11 +83,11 @@ export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id
     if (!user) throw new Error("signed out");
     const token = await user.getIdToken();
     /* the free voice when it is chosen and up; the paid one otherwise */
-    const free = kindOf(voiceId) === "kokoro" && !kokoroDown;
+    const free = kindOf(voiceId) !== "eleven" && !kokoroDown;
     const res = await fetch(`${API_BASE}/api/tts/${free ? "kokoro" : "elevenlabs"}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify(free ? { text, voice: voiceId } : { text, from: "board", voiceId: kindOf(voiceId) === "eleven" ? voiceId : undefined }),
+      body: JSON.stringify(free ? { text, voice: kindOf(voiceId) === "kokoro" ? voiceId : "melo" } : { text, from: "board", voiceId: kindOf(voiceId) === "eleven" ? voiceId : undefined }),
       signal,
     });
     if (!res.ok) {
@@ -219,10 +222,11 @@ export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id
     /** Speak in another of the board's voices from the next sentence on. */
     setVoice(id) { if (VOICES.some((v) => v.id === id)) { voiceId = id; if (mode === "browser" && auth?.currentUser) { mode = null; deciding = null; fails = 0; } } },
     get voiceId() { return voiceId; },
+    get engine() { return engine; },
     /** The server says today's PrepBot-voice allowance is used: the browser's voice from now on. */
     useBrowser() {
       /* the free voice has no daily allowance: only the paid one is given up */
-      if (kindOf(voiceId) === "kokoro" && !kokoroDown) return;
+      if (kindOf(voiceId) !== "eleven" && !kokoroDown) return;
       if (mode !== "silent") mode = "speechSynthesis" in window ? "browser" : "silent";
     },
     /** Wake the free voice's host as the page opens (it may be asleep). */
@@ -234,6 +238,8 @@ export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id
         const r = await fetch(`${API_BASE}/api/tts/kokoro/wake`, { headers: { Authorization: `Bearer ${await user.getIdToken()}` } });
         const j = await r.json().catch(() => ({}));
         if (j.configured === false) kokoroDown = true;
+        engine = j.engine || null;
+        onEngine?.(engine);
       } catch {}
     },
   };

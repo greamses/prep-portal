@@ -187,17 +187,36 @@ module.exports = function () {
       if (!verdict.allowed) verdict = await access.canUse(req, "prepbot", "voice");
       if (!verdict.allowed) return res.status(403).json({ error: "voice not available", reason: verdict.reason });
       const base = kokoroBase();
-      if (!base) return res.status(503).json({ error: "Kokoro is not configured." });
+      const worker = process.env.IMAGE_WORKER_URL;
+      /* no Kokoro host: the free voice is MeloTTS on our Cloudflare worker */
+      if (!base && !worker) return res.status(503).json({ error: "No free voice is configured." });
       const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
       if (!text) return res.status(400).json({ error: "text must be a non-empty string." });
       if (text.length > 1200) return res.status(400).json({ error: "text too long (max 1200 chars)." });
-      const voice = KOKORO_VOICES.has(req.body?.voice) ? req.body.voice : "af_heart";
+      const voice = base ? (KOKORO_VOICES.has(req.body?.voice) ? req.body.voice : "af_heart") : "melo";
 
       const { file: cacheFile, url: cacheUrl } = cacheFileFor(`kokoro~${voice}`, text);
       try { if (fs.existsSync(cacheFile)) return res.json({ url: cacheUrl, audioEncoding: "MP3", cached: "disk" }); } catch (_) {}
       const cacheKey = `kokoro~${voice}|${text}`;
       const hit = cacheGet(cacheKey);
       if (hit) return res.json({ audioContent: hit, audioEncoding: "MP3", cached: "mem" });
+
+      if (!base) {
+        const w = await fetch(worker, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.IMAGE_WORKER_SECRET || ""}` },
+          body: JSON.stringify({ tts: text }),
+        });
+        const j = await w.json().catch(() => ({}));
+        if (!w.ok || !j.audio) {
+          console.error("[/api/tts/kokoro] melo", w.status, j.error || "");
+          return res.status(502).json({ error: "Free voice request failed." });
+        }
+        cacheSet(cacheKey, j.audio);
+        let outUrl = null;
+        try { fs.writeFileSync(cacheFile, Buffer.from(j.audio, "base64")); outUrl = cacheUrl; } catch (_) {}
+        return res.json({ audioContent: j.audio, audioEncoding: "MP3", url: outUrl, engine: "melo" });
+      }
 
       /* a host waking from sleep can take most of a minute */
       const ctrl = new AbortController();
@@ -230,12 +249,12 @@ module.exports = function () {
      now, so it is ready by the time the first sentence is asked for. */
   router.get("/kokoro/wake", authenticate, async (req, res) => {
     const base = kokoroBase();
-    if (!base) return res.json({ configured: false });
+    if (!base) return res.json({ configured: !!process.env.IMAGE_WORKER_URL, engine: "melo" });
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 50000);
     try {
       const r = await fetch(`${base}/health`, { signal: ctrl.signal });
-      res.json({ configured: true, ok: r.ok });
+      res.json({ configured: true, ok: r.ok, engine: "kokoro" });
     } catch (e) {
       res.json({ configured: true, ok: false });
     } finally { clearTimeout(timer); }
