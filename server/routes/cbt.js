@@ -763,6 +763,42 @@ module.exports = function () {
   });
 
   // ── GET /facets?scheme= — subjects for a scheme ─────────────────
+  // ── GET /competition?comp=&div=&year=&round=&k= — one competition paper ─
+  // The papers are "gated" questions in the one bank (scripts/one-bank-competitions.js).
+  // Handed out only to the admin, a premium member, or someone holding a share
+  // link (paperShares/{k}) made for exactly this paper — the same three ways in
+  // as utils/competition-gate.js, but here it is a lock on the questions, not
+  // only on the page.
+  router.get("/competition", authenticate, async (req, res) => {
+    try {
+      const part = (v) => String(v || "").trim().slice(0, 40);
+      const [comp, div, year, round] = [req.query.comp, req.query.div, req.query.year, req.query.round].map(part);
+      if (!comp || !div || !year || !round) return res.status(400).json({ error: "Which paper?" });
+      const compKey = `${comp}|${div}|${year}|${round}`;
+      let ok = (await require("../lib/access").getUserAccess(req.user.uid, req.user.email)).isPremium;
+      const k = part(req.query.k);
+      if (!ok && k) {
+        const s = await db().collection("paperShares").doc(k).get();
+        ok = s.exists && s.data().key === compKey;
+      }
+      if (!ok) return res.status(403).json({ error: "This paper is for premium members, or open it with a link from your teacher." });
+      const snap = await db().collection("cbtQuestions").where("compKey", "==", compKey).get();
+      quota.addReads(snap.size);
+      const docs = snap.docs.map((d) => d.data()).sort((a, b) => (a.compOrder || 0) - (b.compOrder || 0));
+      res.json({
+        timeLimit: docs.length ? docs[0].compTimeLimit || 0 : 0,
+        questions: docs.map((x) => ({
+          question: x.question, options: x.options || [], correctIndex: typeof x.answerIndex === "number" ? x.answerIndex : null,
+          answer: x.answer ?? null, explanation: x.explanation ?? "", hint: x.hint || "", image: x.image || null,
+          topic: x.topic || null, type: x.type || null, section: x.section || null,
+        })),
+      });
+    } catch (e) {
+      console.error("[/api/cbt/competition]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   router.get("/facets", async (req, res) => {
     try {
       const scheme = String(req.query.scheme || "").toLowerCase().trim();

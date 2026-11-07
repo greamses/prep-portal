@@ -179,7 +179,11 @@ service cloud.firestore {
     match /cbtQuestions/{id} {
       // The ONE question bank (server/lib/one-bank.js). A teacher's own
       // questions carry `owner`: only that teacher (and the admin) may read them.
-      allow read: if isAdmin() || (isLoggedIn() && (!('owner' in resource.data) || resource.data.owner == request.auth.uid));
+      // Competition papers are "gated": only the server hands them out (to the
+      // admin, a premium member, or a share-link holder), never a direct read.
+      allow read: if isAdmin() || (isLoggedIn() && (
+        (!('owner' in resource.data) && resource.data.get('visibility', 'public') != 'gated')
+        || resource.data.get('owner', null) == request.auth.uid));
       allow write: if isAdmin();
     }
 

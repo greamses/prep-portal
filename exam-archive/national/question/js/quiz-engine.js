@@ -865,12 +865,36 @@ const Quiz = (() => {
     if (!comp || !div || !year || !round) return [];
 
     window.__compQuiz = null;
-    const scriptPath = `../../../competitions/${comp}/${div}/${year}/${round}/script.js`;
+    // The paper comes from the ONE question bank (/api/cbt/competition), which
+    // hands it only to the admin, a premium member or a share-link holder. If
+    // the server cannot be reached, the round's old script is the fallback.
     try {
-      await import(scriptPath);
+      let u = window.firebaseAuth && window.firebaseAuth.currentUser;
+      for (let t = 0; !u && window.firebaseAuth && t < 25; t++) {            // sign-in can still be settling
+        await new Promise((r) => setTimeout(r, 200));
+        u = window.firebaseAuth.currentUser;
+      }
+      if (u) {
+        const qs = new URLSearchParams({ comp, div, year, round });
+        const k = (new URLSearchParams(location.search).get("k") || "").trim();
+        if (k) qs.set("k", k);
+        const r = await fetch(`${API_BASE}/api/cbt/competition?${qs}`, { headers: { Authorization: "Bearer " + (await u.getIdToken()) } });
+        if (r.ok) {
+          const d = await r.json();
+          if (d && Array.isArray(d.questions) && d.questions.length) window.__compQuiz = { questions: d.questions, timeLimit: d.timeLimit || 0 };
+        }
+      }
     } catch (e) {
-      console.warn("Competition script load failed:", scriptPath, e.message);
-      return [];
+      console.warn("Competition paper from the bank failed:", e.message);
+    }
+    if (!window.__compQuiz) {
+      const scriptPath = `../../../competitions/${comp}/${div}/${year}/${round}/script.js`;
+      try {
+        await import(scriptPath);
+      } catch (e) {
+        console.warn("Competition script load failed:", scriptPath, e.message);
+        return [];
+      }
     }
 
     const data = window.__compQuiz;
