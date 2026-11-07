@@ -54,7 +54,10 @@ function parseLoose(text) {
   const m = t.match(/\{[\s\S]*\}/);
   if (m) t = m[0];
   try { return JSON.parse(t); } catch (_) { /* fall through */ }
-  try { return JSON.parse(t.replace(/\\(?!["\\/bfnrtu])/g, "\\\\")); } catch (_) { /* fall through */ }
+  // \u is only an escape before four hex digits; \underline, \upsilon are LaTeX
+  try { return JSON.parse(t.replace(/\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g, "\\\\")); } catch (_) { /* fall through */ }
+  // a model that already doubled some backslashes and not others: undo the doubles, then redo them all
+  try { return JSON.parse(t.replace(/\\\\/g, "\\").replace(/\\(?!["/bfnrt]|u[0-9a-fA-F]{4})/g, "\\\\")); } catch (_) { /* fall through */ }
   return safeJson(text);
 }
 
