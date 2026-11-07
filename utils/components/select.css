@@ -164,15 +164,17 @@
     transform var(--duration-instant);
 }
 
+/* the highlight is BLACK with WHITE words, everywhere (user, 2026-11-07):
+   a colour fill clashed with the icons and colours in the lists */
 .pp-select-item:hover {
-  background: var(--accent-secondary);
-  color: var(--text-on-accent);
+  background: #1d1b18;
+  color: #fff;
   transform: translateX(2px);
 }
 
 .pp-select-item.active {
-  background: var(--accent-secondary);
-  color: var(--text-on-accent);
+  background: #1d1b18;
+  color: #fff;
 }
 
 /* ── Validation error state ──────────────────────────────── */
