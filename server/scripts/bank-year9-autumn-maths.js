@@ -12,7 +12,7 @@ const admin = require("firebase-admin");
 const { cleanQuestion } = require("../lib/question-bank");
 
 const UID = "Ieh3HiMxoVMAscvMTvsxp1wOAwH3";
-const NAME = "Year 9 Autumn Maths 2025/26";
+const NAME = "JSS 3 Autumn Maths 2025/26";
 const dry = process.argv.includes("--dry");
 
 const mcq = (text, options, answer, svg = "") => ({ type: "mcq", text, options, answer, marks: 1, lines: 0, svg });
@@ -107,7 +107,7 @@ const SECTION_B = [
   if (!admin.apps.length) admin.initializeApp({ credential: admin.credential.cert(require("../serviceAccountKey.json")) });
   const id = crypto.createHash("sha1").update(NAME.trim().toLowerCase()).digest("hex").slice(0, 24);
   await admin.firestore().collection("questionSets").doc(UID).collection("sets").doc(id).set({
-    name: NAME, questions, subject: "Mathematics", level: "Year 9", savedAt: admin.firestore.FieldValue.serverTimestamp(),
+    name: NAME, questions, subject: "Mathematics", level: "JSS 3 (Year 9)", savedAt: admin.firestore.FieldValue.serverTimestamp(),
   });
   console.log(`saved "${NAME}" (${id})`);
   process.exit(0);
