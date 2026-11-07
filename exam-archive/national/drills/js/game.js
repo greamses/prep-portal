@@ -136,6 +136,14 @@ function renderQuestion() {
 // Plain-number answers stay parse-tolerant (e.g. forgives a leading zero),
 // same as before fractions existed — but parseFloat, not parseInt, because
 // a relative molecular mass is often a half (NaCl = 58.5, Cl being 35.5).
+/* Phone keyboards offer ² and ³ as keys, and some give a modifier ˆ or a
+   full-width ＾ for ^. Read them all as a typed power BEFORE anything is
+   stripped: dropping the ² would turn 2x² + 7x − 4 into 2x2 + 7x − 4, which
+   is a different expression and is marked wrong. */
+function powers(raw) {
+  return raw.replace(/²/g, '^2').replace(/³/g, '^3').replace(/[ˆ＾]/g, '^').replace(/×/g, '*');
+}
+
 function isCorrectAnswer(typed, answer) {
   if (answer && typeof answer === 'object') return answer.kind === 'subject' ? checkSubject(typed, answer) : checkAlgebra(typed, answer);
   if (currentQuestion && currentQuestion.roman) return typed.toUpperCase() === answer;
@@ -151,9 +159,9 @@ function isCorrectAnswer(typed, answer) {
 // which can lead. Everything else a question ever answers with is digits.
 function sanitizeTyped(raw) {
   if (currentQuestion && currentQuestion.roman) return raw.toUpperCase().replace(/[^IVXLCDM]/g, '').slice(0, 16);
-  if (currentQuestion && currentQuestion.subject) return raw.replace(/−/g, '-').replace(/[^0-9A-Za-z=^()+\-*/.√∛π]/g, '').slice(0, 28);
+  if (currentQuestion && currentQuestion.subject) return powers(raw).replace(/−/g, '-').replace(/[^0-9A-Za-z=^()+\-*/.√∛π]/g, '').slice(0, 28);
   if (currentQuestion && currentQuestion.base) return raw.replace(/[^0-9a-fA-F]/g, '').toUpperCase().slice(0, 10);
-  if (currentQuestion && currentQuestion.alg) return raw.replace(/−/g, '-').replace(/X/g, 'x').replace(/[^0-9x^()+\-*]/g, '').slice(0, 24);
+  if (currentQuestion && currentQuestion.alg) return powers(raw).replace(/−/g, '-').replace(/X/g, 'x').replace(/[^0-9x^()+\-*]/g, '').slice(0, 24);
   // A leading "-" is kept (integer answers can be negative); any other is dropped.
   const neg = raw.trimStart().startsWith('-') || raw.trimStart().startsWith('−');
   let s = raw.replace(/[^0-9/.]/g, '');
