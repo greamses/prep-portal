@@ -160,10 +160,18 @@ function mathSvg(src, font) {
 /** "Speed $v = d/t$ here" → [{text}, {math}, {text}] */
 export function segments(text) {
   const out = [];
+  let tight = false; // the last piece ended with no space after it
   String(text).split(/(\$[^$]+\$)/).forEach((part) => {
     if (!part) return;
-    if (part.startsWith("$") && part.endsWith("$") && part.length > 2) out.push({ math: part.slice(1, -1).trim() });
-    else if (part.trim()) out.push({ text: part.trim() });
+    if (part.startsWith("$") && part.endsWith("$") && part.length > 2) {
+      /* maths written hard against the word before it */
+      out.push({ math: part.slice(1, -1).trim(), glue: tight && out.length > 0 });
+      tight = true;
+    } else if (part.trim()) {
+      /* punctuation (or a word) written hard against the maths before it: "2.50." */
+      out.push({ text: part.trim(), glue: tight && !/^\s/.test(part) && out.length > 0 });
+      tight = !/\s$/.test(part);
+    } else tight = false;
   });
   return out;
 }
@@ -192,9 +200,10 @@ function buildAtoms(op, measureLayer, maxW) {
   };
   for (const seg of segments(op.text)) {
     if (seg.text) {
-      for (const word of seg.text.split(" ")) atoms.push(textAtom(word));
+      seg.text.split(" ").forEach((word, i) => { const a = textAtom(word); if (i === 0 && seg.glue) a.glue = true; atoms.push(a); });
     } else {
       const a = mathAtom(seg.math);
+      if (seg.glue) a.glue = true;
       if (a.w > maxW) {
         a.node.remove();
         const parts = splitAtEquals(seg.math);
@@ -207,7 +216,7 @@ function buildAtoms(op, measureLayer, maxW) {
   const lines = [];
   let cur = [], w = 0;
   for (const a of atoms) {
-    const need = cur.length ? w + gap + a.w : a.w;
+    const need = cur.length ? w + (a.glue ? gap * 0.15 : gap) + a.w : a.w;
     if (cur.length && (need > maxW || a.breakBefore)) {
       lines.push({ atoms: cur, w });
       cur = [a];
@@ -258,12 +267,13 @@ export function buildWrite(op, page, measureLayer, layout, spot = null) {
     if (box.turn) return { turn: true, cleanup: () => { group.remove(); lines.forEach((l) => l.atoms.forEach((a) => a.node.remove())); } };
     const g = el("g", { transform: `translate(${box.x} ${box.y}) scale(${box.scale})` }, group);
     let x = 0;
-    for (const a of line.atoms) {
+    line.atoms.forEach((a, k) => {
+      if (k > 0) x += a.glue ? gap * 0.15 : gap; // a full stop sits right against its number
       g.appendChild(a.node);
       if (a.kind === "text") { a.node.setAttribute("x", x); a.node.setAttribute("y", up); }
       else { a.node.setAttribute("x", x); a.node.setAttribute("y", up - (a.up)); }
-      x += a.w + gap;
-    }
+      x += a.w;
+    });
     lineBoxes.push({ g, box, w: line.w, h: size.h, atoms: line.atoms, up, down });
   }
   const box = union(lineBoxes.map((l) => l.box));
