@@ -458,6 +458,10 @@ const COMP_REGISTRY = {
               { id: "finals", name: "Finals", live: true },
             ],
           },
+          // Papers known by their edition, not a year (the printed years disagree).
+          "3rd-edition": { label: "3rd Edition", order: 3, rounds: [{ id: "first-Round", name: "First Round", live: true }] },
+          "4th-edition": { label: "4th Edition", order: 4, rounds: [{ id: "first-Round", name: "First Round", live: true }] },
+          "5th-edition": { label: "5th Edition", order: 5, rounds: [{ id: "first-Round", name: "First Round", live: true }] },
         },
       },
       "junior-secondary": { name: "Junior Secondary", live: false, years: {} },
@@ -615,7 +619,9 @@ function buildCompYearGrid() {
   const div =
     COMP_REGISTRY[compState.competition]?.divisions[compState.division];
   if (!div) return;
-  const years = Object.keys(div.years).sort((a, b) => b - a);
+  // Years newest first; edition-labelled papers after them, newest edition first.
+  const rank = (k) => (Number.isFinite(Number(k)) ? 10000 + Number(k) : div.years[k].order || 0);
+  const years = Object.keys(div.years).sort((a, b) => rank(b) - rank(a));
   if (!years.length) {
     yearContainerComp().innerHTML =
       '<span class="picker-hint">No papers available yet for this division.</span>';
@@ -624,7 +630,7 @@ function buildCompYearGrid() {
   years.forEach((year) => {
     const chip = document.createElement("div");
     chip.className = `custom-chip year-chip${compState.year === year ? " checked" : ""}`;
-    chip.innerHTML = `<div class="status-dot live"></div><span>${year}</span>`;
+    chip.innerHTML = `<div class="status-dot live"></div><span>${div.years[year].label || year}</span>`;
     chip.onclick = () => {
       yearContainerComp()
         .querySelectorAll(".year-chip")
