@@ -12,7 +12,7 @@ const co = (c) => (c === 1 ? '' : c === -1 ? MINUS : String(c));
 const plus = (n) => (n < 0 ? `${MINUS} ${-n}` : `+ ${n}`);
 
 export const EQUATION_OPS = ['eqOne', 'eqTwo', 'eqMulti'];
-export const BASE_OPS = ['baseTo10', 'baseFrom10', 'baseToBase'];
+export const BASE_OPS = ['baseTo10', 'baseFrom10', 'baseToBase', 'binTo10', 'binFrom10'];
 export const isEquationOp = (op) => EQUATION_OPS.includes(op);
 export const isBaseOp = (op) => BASE_OPS.includes(op);
 
@@ -63,7 +63,10 @@ const show = (n, base) => n.toString(base).toUpperCase();
 
 export function baseQuestion(rng, pool, op) {
   const n = Math.max(3, pool[Math.floor(rng() * pool.length)] + int(rng, 0, 20));
-  const b = pick(rng, BASES);
+  // Binary to / from denary: the same two drills with the base fixed at 2.
+  const b = op.startsWith('bin') ? 2 : pick(rng, BASES);
+  if (op === 'binTo10') op = 'baseTo10';
+  if (op === 'binFrom10') op = 'baseFrom10';
   const base = { math: true, base: true };
   if (op === 'baseTo10') {
     return { ...base, hint: 'Convert to base 10', text: `${show(n, b)}${sub(b)} = ?${sub(10)}`, answer: String(n) };
