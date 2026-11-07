@@ -249,6 +249,12 @@ const SPEC = {
       active: o.active === undefined ? undefined : !!o.active, steps: o.steps === true, label: str(o.label, 30), tone: tone(o.tone) || "ink", ...(o.over ? { over: true } : {}) };
   },
 
+  /* Other ways PrepBot could explain what it just taught: shown to the learner as pills. */
+  suggest(o) {
+    const pills = (Array.isArray(o.pills) ? o.pills : []).slice(0, 6).map((p) => str(String(p ?? ""), 28)).filter(Boolean);
+    return pills.length ? { op: "suggest", pills } : null;
+  },
+
   /* The PROBLEM the learner brought, stuck up as a note at the top. */
   sticky(o) {
     const text = mathsNumbers(looksLikeMaths(str(o.text, 420)));

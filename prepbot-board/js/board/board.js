@@ -41,7 +41,7 @@ const FOLLOW_AFTER_MS = 6000;  // a learner who looked away is brought back afte
 /* pictures already made this visit, so a redraw (resize, a new hand) needs no new one */
 const pictureCache = new Map(); // prompt → Promise<{ src, w, h, spots }>
 
-export function createBoard(svg, { gsap, orient = "landscape", canvas = null, onTap = null, picture = null, autoCam = true } = {}) {
+export function createBoard(svg, { gsap, orient = "landscape", canvas = null, onTap = null, onMore = null, picture = null, autoCam = true } = {}) {
   const shape = canvas || orient;
   let layout = createLayout(shape);   // the LIVE section's layout (each section has its own)
   const C = layout.canvas;
@@ -85,8 +85,15 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       tag.textContent = String(i + 1);
     }
     const page = el("g", { class: "pb-page" }, g);
+    /* EACH SECTION IS ONE IDEA: a key on its corner asks PrepBot to go deeper into it */
+    const more = el("g", { class: "pb-more", "data-n": i + 1, role: "button", "aria-label": "Explain this part more", style: "display:none" }, g);
+    const mw = 250, mh = 50, mx = C.w - 30 - mw, my = C.h - 24 - mh; // bottom right: clear of the ribbon and the status line
+    el("rect", { x: mx, y: my, width: mw, height: mh, class: "pb-more__box" }, more);
+    el("path", { d: `M${mx + 22} ${my + 25}h18M${mx + 31} ${my + 16}v18`, class: "pb-more__plus" }, more);
+    const mt = el("text", { x: mx + 52, y: my + 33, class: "pb-more__text" }, more);
+    mt.textContent = "Explain more";
     g.appendChild(penLayer); // the pencil works in the live section
-    const s = { g, page, ops: [], x, y, layout: createLayout(shape), items: new Map(), graph: null, n: i + 1 };
+    const s = { g, page, ops: [], x, y, layout: createLayout(shape), items: new Map(), graph: null, n: i + 1, more };
     sections.push(s);
     enter(s);
     /* the first section's number appears once there is a second */
@@ -141,6 +148,14 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
     return Math.max(cam.w / r.width, cam.h / r.height);
   };
   svg.addEventListener("pointerdown", (e) => {
+    /* an idea's "Explain more" key: not a tap on the board, not a drag */
+    const key = e.target.closest?.(".pb-more");
+    if (key) {
+      e.stopPropagation();
+      const s = sections[Number(key.dataset.n) - 1];
+      if (s) onMore?.(ideaOf(s));
+      return;
+    }
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     drag = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, moved: false };
     try { svg.setPointerCapture(e.pointerId); } catch {}
@@ -197,6 +212,13 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
     e.preventDefault();
     zoomAt(e.clientX, e.clientY, Math.exp(e.deltaY * 0.0015));
   }, { passive: false });
+
+  /* what one section (idea) is about: its title, or the problem on its sticky, or its first line */
+  function ideaOf(s) {
+    const t = s.ops.find((o) => o.op === "write" && o.as === "title") || s.ops.find((o) => o.op === "sticky") || s.ops.find((o) => o.op === "write");
+    return { n: s.n, title: ((x) => (x.length > 70 ? x.slice(0, 68).replace(/\s+\S*$/, "") + "…" : x))(String(t?.text || "").replace(/\$/g, "")), summary: boardSummary(s.ops) };
+  }
+  const showMore = (s) => { if (s?.more && s.ops.length) s.more.style.display = ""; };
 
   /* ── building ops ──────────────────────────────────────────────────────── */
   function nextSection(animated = true) {
@@ -661,6 +683,7 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       /* a learner who looked away a while ago is brought back to where PrepBot is drawing */
       if (live && !following && Date.now() - lookedAt > FOLLOW_AFTER_MS && (beat?.do || []).length) focusLive(0.7);
       const built = apply(beat?.do || [], live);
+      showMore(cur);
       if (live && following && autoCam) frame(built, beat);
       if (!built.length) { pen.rest(); return Promise.resolve(); }
       if (!live) { built.forEach((b) => b.instant?.()); return Promise.resolve(); }
@@ -688,6 +711,7 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
       pages.forEach((ops, i) => {
         if (i > 0 && ops.length) nextSection(false);
         apply(ops, false).forEach((b) => b.instant?.());
+        showMore(cur);
       });
       focusLive(0);
     },

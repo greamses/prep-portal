@@ -117,6 +117,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   let current = null;
   let builtAspect = 0;
   let onTap = () => {};   // set once the learner's side is wired, below
+  let onMore = () => {};
   /* pictures: the site's image generator draws it, then Gemini (looking at
      the picture) says where each part to be labelled is, as 0–1 spots */
   const pictureService = {
@@ -152,7 +153,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   };
   function build(replay = []) {
     builtAspect = aspectNow();
-    current = createBoard(svg, { gsap, canvas: makeCanvas(builtAspect), onTap: (e) => onTap(e), picture: pictureService });
+    current = createBoard(svg, { gsap, canvas: makeCanvas(builtAspect), onTap: (e) => onTap(e), onMore: (idea) => onMore(idea), picture: pictureService });
     if (replay.length) current.restore(replay);
     window.__pbBoard = current;
   }
@@ -316,6 +317,8 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
       for await (const raw of source) {
         if (turn !== scheduler.turn) return;
         const beat = cleanBeat(raw);
+        const sug = beat?.do?.find((o) => o.op === "suggest");
+        if (sug) setPills(sug.pills);
         if (beat) {
           if (first) { first = false; thinking(false); }
           scheduler.push(beat, turn);
@@ -599,6 +602,40 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     held = false;
     ear.stop();
   });
+  /* ── another way, or more on one idea ────────────────────────────────────
+     Pills under the board: the ways PrepBot could explain it again (it says
+     which fit the topic at the end of each turn). And every section of the
+     board is one idea, with an "Explain more" key of its own. */
+  const pillsBox = $("pb-pills");
+  const MATHS = /\d|equation|fraction|ratio|percent|algebra|area|angle|sum|divide|multipl|solve|graph|shape|number/i;
+  const ASK_FOR = {
+    "simpler": "Explain that again more simply, please.",
+    "quiz me": "Ask me a question to check I understood.",
+    "step by step": "Go through it again step by step, slower.",
+    "worked example": "Show me a worked example of it.",
+    "real-life example": "Give me a real-life example of it.",
+    "analogy": "Explain it with an analogy.",
+  };
+  function setPills(list) {
+    const pills = (list || []).slice(0, 6);
+    pillsBox.innerHTML = pills.map((p) => `<button type="button" class="pp-pill pb-pill">${p.replace(/[<>&"]/g, "")}</button>`).join("");
+    pillsBox.hidden = !pills.length;
+  }
+  const defaultPills = () => (MATHS.test(lesson.topic || "") ? ["Bar model", "Number line", "Step by step", "Worked example", "Simpler"] : ["Diagram", "Real-life example", "Analogy", "Step by step", "Simpler", "Quiz me"]);
+  pillsBox.addEventListener("click", (e) => {
+    const b = e.target.closest(".pb-pill");
+    if (!b) return;
+    const label = b.textContent.trim();
+    ask(ASK_FOR[label.toLowerCase()] || `Explain it again using a ${label.toLowerCase()}, please.`);
+  });
+  /* the turn is over and PrepBot did not suggest any: the usual ones for the subject */
+  const afterTurn = () => { if (lesson.topic && pillsBox.hidden) setPills(defaultPills()); };
+  setInterval(() => { if (!scheduler.busy && document.body.dataset.state !== "talking") afterTurn(); }, 1200);
+  onMore = (idea) => {
+    const what = idea.title ? ` ("${idea.title}")` : "";
+    ask(`Explain part ${idea.n}${what} more, in more detail and in a different way.`);
+  };
+
   /* ── the learner's own document ─────────────────────────────────────────
      A PDF (its text read here, in the browser) or a photo of a page (read by
      the server's vision model, as are PDF pages that are only scans). The
@@ -693,7 +730,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   $("pb-doc-x").addEventListener("click", () => { lesson.material = ""; lesson.materialName = ""; showDoc(); showSay("Okay, I've put the document away.", true); });
 
   $("pb-new").addEventListener("click", () => {
-    lesson.material = ""; lesson.materialName = ""; showDoc();
+    lesson.material = ""; lesson.materialName = ""; showDoc(); setPills([]);
     if (scheduler.busy) scheduler.interrupt();
     board.reset();
     lesson.topic = "";
