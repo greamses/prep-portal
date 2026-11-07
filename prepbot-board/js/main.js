@@ -9,6 +9,7 @@ import { makeCanvas } from "./board/layout.js";
 import { HANDS, setHand } from "./board/render.js";
 import { cleanBeat } from "./protocol/ops.js";
 import { createVoice, VOICES } from "./voice.js";
+import { local } from "./kokoro-local.js";
 import { createScheduler } from "./scheduler.js";
 import { liveTurn } from "./turn.js";
 import { createListener } from "/utils/prepbot/listen.js";
@@ -204,7 +205,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     auth, muted: params.get("mute") === "1", voiceId: voiceKey,
     /* Kokoro's twelve voices only when its host is up; otherwise the one standard free voice */
     onEngine: (engine) => {
-      const keep = (v) => v.kind === "eleven" || v.kind === (engine === "kokoro" ? "kokoro" : "melo");
+      const keep = (v) => v.kind === "eleven" || (v.kind === "local" && local.supported) || v.kind === (engine === "kokoro" ? "kokoro" : "melo");
       [...voicePicker.options].forEach((o) => { const v = VOICES.find((x) => x.id === o.value); if (v && !keep(v)) o.remove(); });
       if (!VOICES.some((v) => v.id === voicePicker.value && keep(v)) || ![...voicePicker.options].some((o) => o.value === voiceKey)) {
         voiceKey = engine === "kokoro" ? "af_heart" : "melo";
@@ -226,10 +227,25 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     voiceTrigger.dataset.tipSide = "bottom";
   }
   if (params.get("mute") !== "1") setTimeout(() => voice.wake(), 400);
+  /* the natural voice on this device: downloaded once (about 90 MB), then from the browser's cache */
+  function getLocalVoice() {
+    if (!local.supported) return;
+    const first = !local.downloaded;
+    if (first) showSay("Getting the natural voice ready on this device (a download of 90 to 330 MB, only once)…", true);
+    local.load((pct) => {
+      if (!first) return;
+      if (pct < 100) status.textContent = `Downloading the natural voice: ${pct}%`;
+    }).then(() => {
+      if (local.fast) { if (first) showSay("The natural voice is ready. It works on this device from now on.", true); }
+      else showSay("This device is too slow to make the natural voice in time, so the free online voice will speak. It may work on a newer computer.", true);
+    }).catch(() => showSay("The natural voice could not be downloaded. The free online voice will speak instead.", true));
+  }
+  if (voiceKey.startsWith("local:") && params.get("mute") !== "1") getLocalVoice();
   voicePicker.addEventListener("change", () => {
     voiceKey = voicePicker.value;
     try { localStorage.setItem(VOICE_KEY, voiceKey); } catch {}
     voice.setVoice(voiceKey);
+    if (voiceKey.startsWith("local:")) getLocalVoice();
   });
   let openMicForLesson = () => {}, heardSaid = () => {}, stillAt = 0; // stillAt: when PrepBot last stopped talking
   const lesson = { topic: "", grade: Math.min(12, Math.max(1, Number(params.get("grade")) || 8)), transcript: [] }; // transcript: [{ role: "tutor"|"learner", text }]

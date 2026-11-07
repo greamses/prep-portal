@@ -18,6 +18,7 @@
    ========================================================================== */
 
 import { sayMaths } from "/utils/speech-maths.js";
+import { local } from "./kokoro-local.js";
 
 const API_BASE = location.port === "5500" ? "http://127.0.0.1:5000" : "";
 
@@ -42,6 +43,13 @@ export const VOICES = [
   { id: "bm_lewis", kind: "kokoro", label: "Lewis: deep, British" },
   /* the free voice when there is no Kokoro host: MeloTTS on our Cloudflare worker */
   { id: "melo", kind: "melo", label: "Standard: clear, American" },
+  /* Kokoro in THIS browser: natural, free, a one-time download (kokoro-local.js) */
+  { id: "local:af_heart", kind: "local", label: "Heart: warm, American" },
+  { id: "local:af_bella", kind: "local", label: "Bella: bright, American" },
+  { id: "local:am_michael", kind: "local", label: "Michael: calm, American" },
+  { id: "local:bf_emma", kind: "local", label: "Emma: clear, British" },
+  { id: "local:bm_george", kind: "local", label: "George: steady, British" },
+  { id: "local:bm_fable", kind: "local", label: "Fable: storyteller, British" },
   /* ElevenLabs: paid, metered */
   { id: "Xb7hH8MSUJpSbSDYk0k2", label: "Alice: clear, British" },
   { id: "XrExE9yKIg1WjnnlVkGX", label: "Matilda: warm, American" },
@@ -55,7 +63,7 @@ export const VOICES = [
   { id: "onwK4e9ZLuTAKqWW03F9", label: "Daniel: calm, British" },
 ];
 
-VOICES.forEach((v) => { v.kind = v.kind || "eleven"; v.label = (v.kind === "eleven" ? "Premium · " : "Free · ") + v.label; });
+VOICES.forEach((v) => { v.kind = v.kind || "eleven"; v.label = (v.kind === "eleven" ? "Premium · " : v.kind === "local" ? "Natural, on this device · " : "Free · ") + v.label; });
 const kindOf = (id) => VOICES.find((v) => v.id === id)?.kind || "eleven";
 
 export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id, onEngine = null } = {}) {
@@ -139,7 +147,7 @@ export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id
     return clip;
   }
 
-  function elevenClip(text) {
+  function elevenClip(text, getSrc = fetchEleven) {
     const ctrl = new AbortController();
     const audio = new Audio();
     audio.preload = "auto";
@@ -170,7 +178,7 @@ export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id
     };
     clip.ready = (async () => {
       try {
-        const src = await fetchEleven(sayMaths(text), ctrl.signal);
+        const src = await getSrc(sayMaths(text), ctrl.signal);
         if (!src || stopped) throw new Error("no audio");
         audio.src = src;
         await new Promise((res, rej) => {
@@ -200,6 +208,12 @@ export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id
     /** Start getting a sentence ready to say. */
     prepare(text) {
       if (mode === "silent" || !text) return silentClip(text);
+      /* the voice on this device: once it is loaded it needs no server and no sign-in;
+         until then the free online voice speaks (and the download goes on) */
+      if (kindOf(voiceId) === "local") {
+        if (local.fast) return elevenClip(text, (t) => local.say(t, voiceId.slice(6)));
+        local.load().catch(() => {});
+      }
       if (mode === "browser") return browserClip(text);
       if (mode === "eleven") return elevenClip(text);
       /* not decided yet: decide, then hand over to the chosen kind */
