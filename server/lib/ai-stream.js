@@ -1,5 +1,5 @@
 /* ============================================================================
-   Streaming model calls, cancellable — for the PrepBot Board.
+   Streaming model calls, cancellable — for PrepBoard.
    ----------------------------------------------------------------------------
    Each streamer calls onDelta(text) as the model writes, takes an AbortSignal
    (a learner cutting in stops the model at once — nothing more is generated or

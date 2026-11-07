@@ -1,5 +1,5 @@
 /* ============================================================================
-   PrepBot Board — POST /api/whiteboard/turn
+   PrepBoard — POST /api/whiteboard/turn
    ----------------------------------------------------------------------------
    One tutor turn, streamed as NDJSON (one JSON object per line):
      {type:"start", voice}              voice: may the PrepBot voice be used today
@@ -150,6 +150,35 @@ module.exports = function () {
       } catch (_) { /* next model */ }
     }
     res.json({ spots: {} });
+  });
+
+  /* POST /api/whiteboard/read — the words on a photographed or scanned page.
+     A PDF with real text is read in the browser; this is for pages that are
+     only pictures (a scan, a phone photo of homework). Up to 3 pages. */
+  router.post("/read", authenticate, async (req, res) => {
+    const verdict = await access.canUse(req, "whiteboard");
+    if (!verdict.allowed) return res.status(403).json({ error: "feature_disabled" });
+    const images = (Array.isArray(req.body?.images) ? req.body.images : []).slice(0, 3)
+      .map((s) => (typeof s === "string" ? s.replace(/^data:[^,]+,/, "") : "")).filter((s) => s && s.length < 1_400_000);
+    if (!images.length) return res.status(400).json({ error: "images needed" });
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) return res.status(503).json({ error: "not configured" });
+    const ask = "These are pages a school learner uploaded (notes, a worksheet, homework or a textbook page). Write out ALL the text on them, in reading order, exactly as written, keeping question numbers. Write maths in plain linear form (x^2, (a+b)/c, sqrt(x)). Where there is a diagram, picture, graph or table, describe it in one or two lines in [square brackets]. Output only the transcription.";
+    const body = JSON.stringify({
+      contents: [{ role: "user", parts: [...images.map((data) => ({ inlineData: { mimeType: "image/jpeg", data } })), { text: ask }] }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 4000 },
+    });
+    const { GEMINI_MODELS } = require("../ai-models");
+    for (const url of GEMINI_MODELS) {
+      try {
+        const r = await fetch(`${url}?key=${key}`, { method: "POST", headers: { "Content-Type": "application/json" }, body });
+        if (!r.ok) continue;
+        const j = await r.json();
+        const text = (j.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("").trim();
+        if (text) return res.json({ text: text.slice(0, 12000) });
+      } catch (_) { /* next model */ }
+    }
+    res.status(502).json({ error: "could not read the pages" });
   });
 
   return router;

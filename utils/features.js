@@ -188,7 +188,7 @@ export const FEATURES = [
   },
   {
     id: "whiteboard",
-    label: "PrepBot Board",
+    label: "PrepBoard",
     desc: "Live whiteboard tutor: PrepBot talks while it draws each step",
     group: "AI Assistant",
     // off = admin and granted users only, while it is being tried out

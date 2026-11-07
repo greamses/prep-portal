@@ -323,7 +323,7 @@ body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex;
 .pb-ribbon > * { pointer-events: auto; }
 .pb-ribbon__bar {
   display: flex; align-items: stretch; margin-top: 10px;
-  max-width: calc(100vw - 20px); overflow-x: auto; scrollbar-width: none;
+  max-width: calc(100vw - 20px); overflow: visible; flex-wrap: wrap; justify-content: center; row-gap: 6px;
   padding: 8px 6px 4px; background: var(--surface-primary, #fffdf7);
   border: 2px solid color-mix(in srgb, var(--ink) 10%, transparent);
   box-shadow: 0 10px 28px rgba(42, 39, 35, 0.12);
@@ -370,3 +370,17 @@ body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex;
 /* moving particles: a solid body with a darker rim; the cross where one was turned away */
 .pb-move__body { stroke: rgba(42, 39, 35, 0.55); stroke-width: 2.5; }
 .pb-move__cross { stroke-width: 5; }
+
+/* the hand and voice lists open below their keys, on top of everything, never clipped */
+.pb-ribbon .pb-fontsel { position: relative; }
+.pb-ribbon .pb-fontsel .pp-select-menu { z-index: 20; width: 17rem; max-height: min(60vh, 26rem); overflow-y: auto; }
+.pb-voicepick { display: inline-flex; }
+
+/* the learner's document, in use: a pill above the status line */
+.pb-doc { margin: 0; }
+.pb-doc[hidden] { display: none; }
+.pb-doc__pill { display: inline-flex; align-items: center; gap: 6px; max-width: min(28rem, 90vw); }
+.pb-doc__icon { display: inline-flex; }
+.pb-doc__icon svg { width: 18px; height: 18px; }
+.pb-doc__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 0.8rem; }
+.pb-doc__x { border: 0; background: transparent; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 2px; color: var(--ink); }

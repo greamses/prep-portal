@@ -1,5 +1,5 @@
 /* ============================================================================
-   PrepBot Board — drawing on the board
+   PrepBoard — drawing on the board
    ----------------------------------------------------------------------------
    Turns one op into SVG on the current page, and says how to draw it on: a
    stroke is drawn by its dash (the pen travelling along it), writing and
@@ -226,16 +226,35 @@ function buildAtoms(op, measureLayer, maxW) {
  * size)` returns a box or null (null = the board turned a page and placing is
  * done on the new page by the caller's retry). Returns { node, box, draw }.
  */
-export function buildWrite(op, page, measureLayer, layout) {
+export function buildWrite(op, page, measureLayer, layout, spot = null) {
   const C = layout.canvas.main;
-  const { lines, gap } = buildAtoms(op, measureLayer, C.w);
+  const { lines, gap } = buildAtoms(op, measureLayer, spot ? spot.maxW : C.w);
   const group = el("g", { class: `pb-write pb-write--${op.as}`, "data-id": op.id }, page);
   const lineBoxes = [];
-  for (const line of lines) {
+  /* written at a SPOT (beside a drawing, at a point): the lines stack there,
+     right-aligned when they sit to the left of something, lifted when above
+     it, then nudged by the board until they sit clear of what is already drawn */
+  let spotBoxes = null;
+  if (spot) {
+    const lineGap = (SIZES[op.as] || SIZES.step).gap * 0.6;
+    let y = 0;
+    spotBoxes = lines.map((line) => {
+      const up = Math.max(...line.atoms.map((a) => a.up)), down = Math.max(...line.atoms.map((a) => a.down));
+      const scale = Math.min(1, spot.maxW / line.w);
+      const b = { x: spot.align === "end" ? spot.x - line.w * scale : spot.x, y: spot.y + y, w: line.w * scale, h: (up + down) * scale, scale };
+      y += b.h + lineGap;
+      return b;
+    });
+    const total = y;
+    if (spot.lift) spotBoxes.forEach((b) => { b.y -= total; });
+    const moved = spot.adjust ? spot.adjust(union(spotBoxes)) : { dx: 0, dy: 0 };
+    spotBoxes.forEach((b) => { b.x += moved.dx; b.y += moved.dy; });
+  }
+  for (const [i, line] of lines.entries()) {
     const up = Math.max(...line.atoms.map((a) => a.up));
     const down = Math.max(...line.atoms.map((a) => a.down));
     const size = { w: line.w, h: up + down };
-    let box = layout.place(op.as, size);
+    let box = spotBoxes ? spotBoxes[i] : layout.place(op.as, size);
     if (box.turn) return { turn: true, cleanup: () => { group.remove(); lines.forEach((l) => l.atoms.forEach((a) => a.node.remove())); } };
     const g = el("g", { transform: `translate(${box.x} ${box.y}) scale(${box.scale})` }, group);
     let x = 0;

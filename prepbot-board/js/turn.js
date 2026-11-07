@@ -1,4 +1,4 @@
-/* PrepBot Board — one live turn from the server, as an async stream of beats.
+/* PrepBoard — one live turn from the server, as an async stream of beats.
 
      for await (const beat of liveTurn({ auth, body, signal, onStart, onLimited })) …
 

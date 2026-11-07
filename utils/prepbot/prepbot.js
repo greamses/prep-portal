@@ -1293,7 +1293,7 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
       try {
         const board = await import("/prepbot-board/js/rail-tool.js");
         if (!(await board.boardAllowed())) {
-          await appendMessage("bot", "The PrepBot Board isn't open to your account yet.");
+          await appendMessage("bot", "PrepBoard isn't open to your account yet.");
           return;
         }
         await appendMessage("bot", question

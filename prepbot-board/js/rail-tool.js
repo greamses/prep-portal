@@ -1,5 +1,5 @@
 /* ============================================================================
-   PrepBot Board, from anywhere
+   PrepBoard, from anywhere
    ----------------------------------------------------------------------------
    The board is its own page (/prepbot-board/), with its own sign-in check,
    voice and stream. Everywhere else reaches it through this file:
@@ -25,7 +25,7 @@ function frameInto(body, question) {
   body.classList.add("wb-panel__body--bare");
   const f = document.createElement("iframe");
   f.src = src(question);
-  f.title = "PrepBot Board";
+  f.title = "PrepBoard";
   f.setAttribute("allow", "autoplay; microphone; fullscreen");
   f.style.cssText = "display:block;width:100%;height:100%;min-height:420px;border:0;background:#fbf7ee";
   body.appendChild(f);
@@ -34,7 +34,7 @@ function frameInto(body, question) {
 
 /** The rail key: { label, size, icon, open(body) } as mountTools and the workbook rail expect. */
 export const boardTool = {
-  label: "PrepBot Board",
+  label: "PrepBoard",
   size: { w: 980, h: 640 },
   icon: BOARD_ICON,
   open: (body) => frameInto(body, ""),
@@ -44,7 +44,7 @@ export const boardTool = {
 export async function openBoard(question = "") {
   const { openPanel, needCss } = await import("/utils/components/workbook/panels.js");
   needCss("/utils/components/workbook.css");
-  const panel = openPanel({ title: "PrepBot Board", size: boardTool.size, icon: BOARD_ICON });
+  const panel = openPanel({ title: "PrepBoard", size: boardTool.size, icon: BOARD_ICON });
   panel.undo = frameInto(panel.body, question);
   return panel;
 }

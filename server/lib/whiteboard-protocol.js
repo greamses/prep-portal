@@ -1,5 +1,5 @@
 /* ============================================================================
-   PrepBot Board — turning a model's text into beats, as it streams
+   PrepBoard — turning a model's text into beats, as it streams
    ----------------------------------------------------------------------------
    The model is asked for one JSON object per beat. Models do not always do as
    asked: they wrap the objects in an array or a ```json fence, put two on one

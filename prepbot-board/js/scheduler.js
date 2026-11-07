@@ -1,5 +1,5 @@
 /* ============================================================================
-   PrepBot Board — keeping the voice and the pen together
+   PrepBoard — keeping the voice and the pen together
    ----------------------------------------------------------------------------
    Beats arrive one by one (from the stream, or a demo file). Each is SAID and
    DRAWN together: the next beat starts only when this one's sentence has been

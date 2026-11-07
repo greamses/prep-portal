@@ -1,4 +1,4 @@
-/* PrepBot Board — the page.
+/* PrepBoard — the page.
    A lesson is a run of TURNS. In each, beats stream in and the scheduler has
    them said and drawn together; the learner can cut in at any moment by
    tapping the board, typing, or the mic, and their words start the next turn.
@@ -8,7 +8,7 @@ import { createBoard } from "./board/board.js";
 import { makeCanvas } from "./board/layout.js";
 import { HANDS, setHand } from "./board/render.js";
 import { cleanBeat } from "./protocol/ops.js";
-import { createVoice } from "./voice.js";
+import { createVoice, VOICES } from "./voice.js";
 import { createScheduler } from "./scheduler.js";
 import { liveTurn } from "./turn.js";
 import { createListener } from "/utils/prepbot/listen.js";
@@ -43,6 +43,9 @@ const ICONS = {
   next: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.9 14.6 11.1 7a1.25 1.25 0 0 1 1.8 0l7.2 7.6a1.3 1.3 0 0 1-1.9 1.8L12 10l-6.2 6.4a1.3 1.3 0 0 1-1.9-1.8z" fill="var(--accent-secondary)" transform="rotate(90 12 12)"/></svg>`,
   overview: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.4" y="5" width="8.6" height="6.4" fill="var(--accent-secondary)"/><rect x="13" y="5" width="8.6" height="6.4" fill="var(--accent-primary)"/><rect x="2.4" y="13.4" width="8.6" height="6.4" fill="var(--accent-primary)"/><rect x="13" y="13.4" width="8.6" height="6.4" fill="var(--accent-danger)"/></svg>`,
   follow: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.4" fill="none" stroke="var(--accent-secondary)" stroke-width="2.4"/><circle cx="12" cy="12" r="3.4" fill="var(--accent-danger)"/></svg>`,
+  upload: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.8h8.2L19 7.6v13.6H6z" fill="var(--accent-secondary)"/><path d="M14.2 2.8v4.8H19z" fill="var(--accent-primary)"/><path d="M12.5 18v-6.6M9.6 14.2l2.9-2.9 2.9 2.9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  doc: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.8h8.2L19 7.6v13.6H6z" fill="var(--accent-secondary)"/><path d="M14.2 2.8v4.8H19z" fill="var(--accent-primary)"/><path d="M8.8 12h7.4M8.8 15.4h7.4M8.8 18.4h4.6" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  voice: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 9.2h3.6L12 5v14l-4.9-4.2H3.5z" fill="var(--accent-secondary)"/><path d="M15 9a4.2 4.2 0 0 1 0 6M17.6 6.4a7.8 7.8 0 0 1 0 11.2" fill="none" stroke="var(--accent-danger)" stroke-width="2.2" stroke-linecap="round"/></svg>`,
   font: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19.4 8.4 4.6h2.4l5.4 14.8h-2.6l-1.3-3.8H6.9l-1.3 3.8zm4.6-6h3.9L9.6 7.6z" fill="var(--accent-secondary)"/><path d="M16.6 14.6c0-1.8 1.4-2.8 3.2-2.8 1 0 1.8.3 2.2.7v6.9h-2v-.6c-.5.5-1.1.8-1.9.8-1.7 0-2.9-1.1-2.9-2.6zm2.2.1c0 .7.5 1.1 1.2 1.1s1.3-.4 1.3-1.1-.6-1.1-1.3-1.1-1.2.4-1.2 1.1z" fill="var(--accent-danger)"/></svg>`,
   play: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.8 20.4 12 6.6 20.2z" fill="var(--accent-success)"/></svg>`,
   send: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 4.2 21 12 3.4 19.8l2.2-7.8z" fill="var(--accent-secondary)"/><path d="M5.6 12h7.6" stroke="var(--accent-primary)" stroke-width="2.4" stroke-linecap="round"/></svg>`,
@@ -182,7 +185,8 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   const fontTrigger = fontSel?.querySelector(".pp-select-trigger");
   if (fontTrigger) {
     fontTrigger.insertAdjacentHTML("afterbegin", `<span class="pb-fontsel__icon" aria-hidden="true">${ICONS.font}</span>`);
-    fontTrigger.setAttribute("aria-label", "The hand PrepBot writes in");
+    fontTrigger.setAttribute("aria-label", "The hand PrepBoard writes in");
+    fontTrigger.dataset.tip = "The hand PrepBoard writes in";
     fontTrigger.dataset.tipSide = "bottom";
   }
   picker.addEventListener("change", async () => {
@@ -192,7 +196,27 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     setHand(handKey);
     redraw();
   });
-  const voice = createVoice({ auth, muted: params.get("mute") === "1" });
+  /* the voice PrepBoard speaks in: the site's dropdown again, an icon key in Talk */
+  const VOICE_KEY = "pb-voice";
+  let voiceKey = VOICES[0].id;
+  try { const v = localStorage.getItem(VOICE_KEY); if (VOICES.some((x) => x.id === v)) voiceKey = v; } catch {}
+  const voice = createVoice({ auth, muted: params.get("mute") === "1", voiceId: voiceKey });
+  const voicePicker = $("pb-voice");
+  voicePicker.innerHTML = VOICES.map((v) => `<option value="${v.id}">${v.label}</option>`).join("");
+  voicePicker.value = voiceKey;
+  const voiceSel = enhanceSelect(voicePicker, { className: "pb-fontsel" });
+  const voiceTrigger = voiceSel?.querySelector(".pp-select-trigger");
+  if (voiceTrigger) {
+    voiceTrigger.insertAdjacentHTML("afterbegin", `<span class="pb-fontsel__icon" aria-hidden="true">${ICONS.voice}</span>`);
+    voiceTrigger.setAttribute("aria-label", "The voice PrepBoard speaks in");
+    voiceTrigger.dataset.tip = "The voice PrepBoard speaks in";
+    voiceTrigger.dataset.tipSide = "bottom";
+  }
+  voicePicker.addEventListener("change", () => {
+    voiceKey = voicePicker.value;
+    try { localStorage.setItem(VOICE_KEY, voiceKey); } catch {}
+    voice.setVoice(voiceKey);
+  });
   let openMicForLesson = () => {}, heardSaid = () => {}, stillAt = 0; // stillAt: when PrepBot last stopped talking
   const lesson = { topic: "", grade: Math.min(12, Math.max(1, Number(params.get("grade")) || 8)), transcript: [] }; // transcript: [{ role: "tutor"|"learner", text }]
   let streamCtrl = null;
@@ -296,6 +320,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
       // the learner's own words go in `learner` (a continuation has none in the transcript)
       transcript: continuing ? lesson.transcript.slice() : lesson.transcript.slice(0, -1),
       board: board.summary(),
+      ...(lesson.material ? { material: lesson.material, materialName: lesson.materialName } : {}),
     };
     return liveTurn({
       auth,
@@ -305,8 +330,8 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
       onLimited: (evt) => showSay(evt.text, true),
       onRefused: (info) => {
         if (info.reason === "signed-out") showSay("Sign in to talk to PrepBot on the board.", true);
-        else if (info.premiumRequired) showSay("The PrepBot Board is part of Prep Portal Premium.", true);
-        else showSay("The PrepBot Board isn't open to you yet.", true);
+        else if (info.premiumRequired) showSay("PrepBoard is part of Prep Portal Premium.", true);
+        else showSay("PrepBoard isn't open to you yet.", true);
       },
     });
   }
@@ -543,7 +568,101 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     held = false;
     ear.stop();
   });
+  /* ── the learner's own document ─────────────────────────────────────────
+     A PDF (its text read here, in the browser) or a photo of a page (read by
+     the server's vision model, as are PDF pages that are only scans). The
+     text goes with every turn and PrepBoard teaches from it. */
+  const fileIn = $("pb-file");
+  const docChip = $("pb-doc");
+  const showDoc = () => {
+    docChip.hidden = !lesson.material;
+    $("pb-doc-name").textContent = lesson.materialName || "";
+  };
+  const loadScript = (src) => new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+  async function pdfLib() {
+    if (!window.pdfjsLib) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    return window.pdfjsLib;
+  }
+  const toJpeg = (canvas) => canvas.toDataURL("image/jpeg", 0.72);
+  function imageJpeg(file) {
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(file);
+      const im = new Image();
+      im.onload = () => {
+        const k = Math.min(1, 1600 / Math.max(im.naturalWidth, im.naturalHeight));
+        const c = document.createElement("canvas");
+        c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+        c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        res(toJpeg(c));
+      };
+      im.onerror = () => { URL.revokeObjectURL(url); rej(new Error("not an image")); };
+      im.src = url;
+    });
+  }
+  async function readPictures(images) {
+    const user = auth?.currentUser;
+    if (!user) throw new Error("signed out");
+    const r = await fetch("/api/whiteboard/read", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${await user.getIdToken()}` },
+      body: JSON.stringify({ images }),
+    });
+    if (!r.ok) throw new Error("read " + r.status);
+    return (await r.json()).text || "";
+  }
+  async function readPdf(file) {
+    const lib = await pdfLib();
+    const pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+    let text = "";
+    for (let i = 1; i <= Math.min(pdf.numPages, 15) && text.length < 9000; i++) {
+      const page = await pdf.getPage(i);
+      const tc = await page.getTextContent();
+      text += tc.items.map((it) => it.str + (it.hasEOL ? "\n" : " ")).join("") + "\n\n";
+    }
+    if (text.replace(/\s+/g, "").length >= 80) return text;
+    /* only pictures of pages: let the vision model read the first three */
+    const images = [];
+    for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+      const page = await pdf.getPage(i);
+      const vp = page.getViewport({ scale: Math.min(2, 1400 / page.getViewport({ scale: 1 }).width) });
+      const c = document.createElement("canvas");
+      c.width = vp.width; c.height = vp.height;
+      await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+      images.push(toJpeg(c));
+    }
+    return readPictures(images);
+  }
+  $("pb-upload").addEventListener("click", () => fileIn.click());
+  fileIn.addEventListener("change", async () => {
+    const file = fileIn.files?.[0];
+    fileIn.value = "";
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) { showSay("That file is too big. Try one under 25 MB, or a photo of the page.", true); return; }
+    if (scheduler.busy) cutIn();
+    thinking(true, `Reading ${file.name}`);
+    try {
+      const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+      const text = isPdf ? await readPdf(file) : await readPictures([await imageJpeg(file)]);
+      thinking(false);
+      if (!text.trim()) { showSay("I couldn't find any words in that file. Try a clearer photo or another PDF.", true); return; }
+      lesson.material = text.slice(0, 9000);
+      lesson.materialName = file.name.slice(0, 80);
+      showDoc();
+      ask(style === "homework"
+        ? `I've uploaded "${lesson.materialName}". Help me work through it.`
+        : `I've uploaded "${lesson.materialName}". Can you teach me what's in it?`);
+    } catch (e) {
+      console.warn("[board] upload", e);
+      thinking(false);
+      showSay(String(e?.message || "").includes("signed out") ? "Sign in to upload a document." : "Sorry, I couldn't read that file. Try another one, or a photo of the page.", true);
+    }
+  });
+  $("pb-doc-x").addEventListener("click", () => { lesson.material = ""; lesson.materialName = ""; showDoc(); showSay("Okay, I've put the document away.", true); });
+
   $("pb-new").addEventListener("click", () => {
+    lesson.material = ""; lesson.materialName = ""; showDoc();
     if (scheduler.busy) scheduler.interrupt();
     board.reset();
     lesson.topic = "";

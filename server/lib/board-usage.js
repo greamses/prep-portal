@@ -1,5 +1,5 @@
 /* ============================================================================
-   PrepBot Board — the learner's daily allowance
+   PrepBoard — the learner's daily allowance
    ----------------------------------------------------------------------------
    The site's AI pool (aiUsage/{uid}: tokensUsed per 5-hour window, monthTokens
    per month) only ever counts; it never refuses. The board is the first AI

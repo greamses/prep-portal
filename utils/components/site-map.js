@@ -203,7 +203,7 @@ export const SITE_PAGES = [
   },
   { id: "blogs-animal", title: "Amazing Animals", href: "/blogs/?s=animal", category: "reading", blurb: "Creatures that will surprise you.", keywords: ["animal biology", "animals", "wildlife"] },
   { id: "blogs-plants", title: "Green Wonders", href: "/blogs/?s=plants", category: "reading", blurb: "Plants with secret superpowers.", keywords: ["plant science", "plants", "botany"] },
-  { id: "prepbot-board", title: "PrepBot Board", href: "/prepbot-board/", category: "core", blurb: "Ask anything and PrepBot explains it out loud while it draws each step on a whiteboard. Type /explainer in the chat to open it.", keywords: ["whiteboard", "explainer", "explain", "tutor", "draw", "board", "prepbot board"] },
+  { id: "prepbot-board", title: "PrepBoard", href: "/prepbot-board/", category: "core", blurb: "Ask anything and PrepBot explains it out loud while it draws each step on a whiteboard. Type /explainer in the chat to open it.", keywords: ["whiteboard", "explainer", "explain", "tutor", "draw", "board", "prepbot board"] },
   { id: "blogs-human-body", title: "Your Amazing Body", href: "/blogs/?s=humanbody", category: "reading", blurb: "What is going on inside you.", keywords: ["human body", "anatomy"] },
   { id: "blogs-inventions", title: "Inventions", href: "/blogs/?s=engineering&f=inventions", category: "reading", blurb: "Who made it, and how.", keywords: ["inventions", "inventors", "engineering"] },
   { id: "blogs-howitworks", title: "How It Works", href: "/blogs/?s=engineering&f=howitworks", category: "reading", blurb: "Open up everyday things.", keywords: ["how it works", "how things work", "engineering"] },

@@ -5,7 +5,7 @@
     <!-- seo:head -->
     <meta name="robots" content="noindex, nofollow" />
     <!-- /seo:head -->
-    <title>PrepBot Board | Prep Portal</title>
+    <title>PrepBoard | Prep Portal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <!-- Page access gate: feature "whiteboard" (off = admin-granted testers only) -->
     <script type="module" src="/utils/auth/premium-guard.js"></script>
@@ -45,6 +45,8 @@
             <div class="pb-rgroup__keys">
               <a class="pb-ico" href="/" id="pb-back" data-tip="Back to Prep Portal" data-tip-side="bottom" aria-label="Back to Prep Portal" data-ico="back"></a>
               <button type="button" class="pb-ico" id="pb-new" data-tip="New board" data-tip-side="bottom" aria-label="New board" data-ico="again"></button>
+              <button type="button" class="pb-ico" id="pb-upload" data-tip="Upload a PDF or a photo of a page to learn from" data-tip-side="bottom" aria-label="Upload a PDF or a photo" data-ico="upload"></button>
+              <input type="file" id="pb-file" accept="application/pdf,image/*" hidden />
             </div>
             <span class="pb-rgroup__name">Board</span>
           </div>
@@ -75,6 +77,7 @@
             <div class="pb-rgroup__keys">
               <button type="button" class="pb-ico" id="pb-mic" data-tip="Tap to turn the mic on, or hold it to talk once" data-tip-side="bottom" aria-label="Turn the mic on" aria-pressed="false" data-ico="mic"></button>
               <button type="button" class="pb-ico pb-hand-up" id="pb-raise" data-tip="Raise your hand to type a question" data-tip-side="bottom" aria-label="Raise your hand" data-ico="hand"></button>
+              <div class="pb-rail__fonts pb-voicepick"><select id="pb-voice" aria-label="The voice PrepBoard speaks in"></select></div>
               <button type="button" class="pb-ico pb-hint" id="pb-hint" data-tip="I am stuck: give me a hint" data-tip-side="bottom" aria-label="Give me a hint" data-ico="bulb"></button>
             </div>
             <span class="pb-rgroup__name">Talk</span>
@@ -92,6 +95,7 @@
 
       <!-- the bottom line: what PrepBot is doing, and the typing box (a raised hand) -->
       <div class="pb-dock">
+        <p class="pb-doc" id="pb-doc" hidden><span class="pp-pill pb-doc__pill"><span class="pb-doc__icon" data-ico="doc"></span><span class="pb-doc__name" id="pb-doc-name"></span><button type="button" class="pb-doc__x" id="pb-doc-x" aria-label="Stop using this document">&times;</button></span></p>
         <p class="pb-status" id="pb-status" aria-live="polite"></p>
         <form class="pb-ask" id="pb-ask" autocomplete="off" hidden>
           <input id="pb-input" type="text" maxlength="400" placeholder="Type your question…" aria-label="Your question" />

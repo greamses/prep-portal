@@ -1,5 +1,5 @@
 /* ============================================================================
-   PrepBot Board — graphs, computed
+   PrepBoard — graphs, computed
    ----------------------------------------------------------------------------
    A curve on the board is computed from its equation by the site's own
    expression engine (the one behind Cartesian Art's grapher), never drawn

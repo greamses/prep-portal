@@ -1,5 +1,5 @@
 /* ============================================================================
-   PrepBot Board — the board: an endless canvas of SECTIONS
+   PrepBoard — the board: an endless canvas of SECTIONS
    ----------------------------------------------------------------------------
    The canvas never runs out. An explanation is laid out in sections, side by
    side (stacked, on a phone): each the size of the screen, with its writing
@@ -223,6 +223,14 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
         return null;
       }
       case "write": {
+        if (op.at || op.beside) {
+          const spot = writeSpot(op);
+          if (spot) {
+            const w = buildWrite(op, page, measure, layout, spot);
+            layout.block(w.box);
+            return w;
+          }
+        }
         let w = buildWrite(op, page, measure, layout);
         if (w.turn) {
           w.cleanup();
@@ -332,6 +340,55 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
     const part = findPart(d.data, op.label);
     if (!part) return null;
     return partAndLabel({ op: "part", id: op.id, on: graph.node.dataset.id, part: part.name, text: op.label, tone: "blue", label: true }, items.get(graph.node.dataset.id), page);
+  }
+
+  /* Where writing goes when it is not the next line of the column: at a point
+     of the figure grid (or a graph's own scale), or beside something already
+     drawn ("right", "left", "below", "above" of it). It stays on the section
+     and clear of the other writing and drawings. */
+  function writeSpot(op) {
+    const W = layout.canvas.w, margin = 36;
+    let x, y, align = "start", lift = false, maxW;
+    if (op.beside) {
+      const it = items.get(op.beside);
+      let b = it && (it.focus || it.box);
+      /* beside one PART of a diagram or object */
+      if (it?.diagram && op.part) {
+        const part = findPart(it.diagram.data, op.part);
+        if (part) { const [px, py] = it.diagram.toBoard(part.cx, part.cy); b = { x: px - 20, y: py - 20, w: 40, h: 40 }; }
+      }
+      if (!b) return null;
+      const gapX = 26, gapY = 18;
+      if (op.side === "left") { x = b.x - gapX; align = "end"; y = b.y; maxW = Math.min(520, x - margin); }
+      else if (op.side === "below") { x = b.x; y = b.y + b.h + gapY; maxW = W - margin - x; }
+      else if (op.side === "above") { x = b.x; y = b.y - gapY; lift = true; maxW = W - margin - x; }
+      else { x = b.x + b.w + gapX; y = b.y; maxW = W - margin - x; }
+    } else {
+      const host = op.on && op.on !== "grid" ? items.get(op.on) : null;
+      const m = host?.mapper || gridMapper(layout.canvas.figure);
+      x = m.toX(op.at[0]); y = m.toY(op.at[1]);
+      maxW = W - margin - x;
+    }
+    /* too little room on that side: bring it in until a short line fits */
+    const least = 240;
+    if (maxW < least) {
+      if (align === "end") { align = "start"; x = margin; maxW = least; }
+      else { x = Math.max(margin, W - margin - least); maxW = least; }
+    }
+    maxW = Math.min(maxW, 620);
+    /* clear of the writing, labels and things drawn in this section */
+    const others = [...items.values()].filter((it) => it.box && !it.diagram?.data?.steps && !it.mapper && !it.picture && !(it.diagram && it.box.w > 300));
+    const adjust = (box) => {
+      const hits = (dy) => others.some((o) => { const b = o.box; return box.x < b.x + b.w && b.x < box.x + box.w && box.y + dy < b.y + b.h && b.y < box.y + box.h + dy; });
+      const H = layout.canvas.h;
+      for (let k = 0; k <= 16; k++) {
+        const dy = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 36;
+        if (box.y + dy < 20 || box.y + box.h + dy > H - 20) continue;
+        if (!hits(dy)) return { dx: 0, dy };
+      }
+      return { dx: 0, dy: 0 };
+    };
+    return { x, y, align, lift, maxW, adjust };
   }
 
   /* Where a "move" starts, ends, and (blocked) is turned away, in board units.

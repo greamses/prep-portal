@@ -1,5 +1,5 @@
 /* ============================================================================
-   PrepBot Board — the drawn diagrams it can call on
+   PrepBoard — the drawn diagrams it can call on
    ----------------------------------------------------------------------------
    A plant cell or the inside of a heart is too much to build out of circles
    while talking. The site already has these drawn, part by part, for the Vocab

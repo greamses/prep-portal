@@ -1,5 +1,5 @@
 /* ============================================================================
-   PrepBot Board — what a beat may ask the board to do
+   PrepBoard — what a beat may ask the board to do
    ----------------------------------------------------------------------------
    The tutor speaks in BEATS: one sentence, and the strokes drawn while it is
    said. A beat comes from a language model, so nothing in it is trusted: every
@@ -65,7 +65,16 @@ const SPEC = {
     if (math) text = text ? `${text} $${math}$` : `$${math}$`;
     if (!text) return null;
     const as = ["title", "step", "note"].includes(o.as) ? o.as : "step";
-    return { op: "write", id: idOf(o.id, "w"), text, as, tone: tone(o.tone) || (as === "note" ? "blue" : "ink") };
+    const out = { op: "write", id: idOf(o.id, "w"), text, as, tone: tone(o.tone) || (as === "note" ? "blue" : "ink") };
+    /* anywhere on the board: at a grid point, or beside something drawn */
+    const at = pair(o.at);
+    if (at) { out.at = at; if (typeof o.on === "string" && o.on !== "grid") out.on = o.on; }
+    else if (typeof o.beside === "string" && ID_RE.test(o.beside)) {
+      out.beside = o.beside;
+      out.side = ["left", "right", "below", "above"].includes(o.side) ? o.side : "right";
+      if (typeof o.part === "string") out.part = str(o.part, 60);
+    }
+    return out;
   },
 
   /* Axes in the figure panel. One graph to a page. */

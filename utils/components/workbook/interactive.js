@@ -3332,7 +3332,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       },
     },
     {
-      /* the PrepBot Board: the live whiteboard tutor, its own page in a frame */
+      /* PrepBoard: the live whiteboard tutor, its own page in a frame */
       id: "board",
       label: boardTool.label,
       icon: boardTool.icon,
@@ -3598,7 +3598,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        to the rail for, and it is reached for before any arithmetic is. */
     { id: "model", label: "Models", of: [asSheet("barmodel"), asSheet("linemodel"), asSheet("vennmodel"), asSheet("nodesmodel"), asSheet("flowmodel")] },
     /* PrepBot explaining it on a board: a key of its own, first reached for when stuck */
-    { id: "explain", label: "PrepBot Board", of: [asSheet("board")] },
+    { id: "explain", label: "PrepBoard", of: [asSheet("board")] },
     { id: "algebra", label: "Algebra", of: [asSheet("gm")] },
     /* a tool of its own, not folded in behind another: paper to work an equation out on */
     /* the English workbooks' own family — see `rail` below */

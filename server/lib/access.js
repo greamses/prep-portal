@@ -46,7 +46,7 @@ const CONFIG_TTL_MS = 60 * 1000;
 let _config = null; // { states, parts, aiQuota }
 let _configAt = 0;
 
-// boardTurnsPerDay / boardVoiceCharsPerDay: the PrepBot Board's daily caps (lib/board-usage.js)
+// boardTurnsPerDay / boardVoiceCharsPerDay: PrepBoard's daily caps (lib/board-usage.js)
 const AI_QUOTA_DEFAULTS = { windowTokens: 10000, monthTokens: 300000, boardTurnsPerDay: 60, boardVoiceCharsPerDay: 15000 };
 
 async function getSiteConfig() {

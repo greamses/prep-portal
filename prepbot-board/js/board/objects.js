@@ -1,5 +1,5 @@
 /* ============================================================================
-   PrepBot Board — everyday OBJECTS it can draw
+   PrepBoard — everyday OBJECTS it can draw
    ----------------------------------------------------------------------------
    Asked to draw a light bulb free-hand, a model draws something nobody would
    call a bulb. These are drawn properly once, part by part, the way a teacher

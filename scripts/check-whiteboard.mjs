@@ -1,4 +1,4 @@
-// Checks for the PrepBot Board's pure modules: node scripts/check-whiteboard.mjs
+// Checks for PrepBoard's pure modules: node scripts/check-whiteboard.mjs
 import assert from "node:assert/strict";
 import { cleanOp, cleanBeat, boardSummary } from "../prepbot-board/js/protocol/ops.js";
 import { createLayout, wrapWords, splitAtEquals, overlaps, CANVAS } from "../prepbot-board/js/board/layout.js";

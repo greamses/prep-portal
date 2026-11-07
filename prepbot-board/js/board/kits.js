@@ -1,5 +1,5 @@
 /* ============================================================================
-   PrepBot Board — diagrams drawn IN STEPS
+   PrepBoard — diagrams drawn IN STEPS
    ----------------------------------------------------------------------------
    A teacher does not put a finished cell on the board: they draw the wall,
    say what it is for, then the vacuole, then the chloroplasts, one part at a

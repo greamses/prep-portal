@@ -1,5 +1,5 @@
 /* ============================================================================
-   PrepBot Board — where things go
+   PrepBoard — where things go
    ----------------------------------------------------------------------------
    The model never chooses a coordinate. The board is a page with two regions:
    MAIN, the column a teacher writes down line after line, and FIGURE, the
@@ -66,6 +66,7 @@ export function createLayout(shape = "landscape") {
   const C = typeof shape === "object" && shape ? shape : CANVAS[shape] || CANVAS.landscape;
   let y = C.main.y;
   const placed = [];
+  const blocked = [];
 
   return {
     canvas: C,
@@ -75,7 +76,11 @@ export function createLayout(shape = "landscape") {
     reset() {
       y = C.main.y;
       placed.length = 0;
+      blocked.length = 0;
     },
+
+    /** Something written outside the flow: the column goes round it. */
+    block(box) { if (box) blocked.push(box); },
 
     /** How a line of this width would have to be drawn: its scale, and whether
         it would still not fit (and so wants breaking). */
@@ -94,7 +99,11 @@ export function createLayout(shape = "landscape") {
       const gap = (SIZES[kind] || SIZES.step).gap;
       const { scale } = this.fit(size.w);
       const h = size.h * scale;
-      const top = placed.length ? y + gap : y;
+      let top = placed.length ? y + gap : y;
+      /* step past anything written freely across the column */
+      for (const b of blocked) {
+        if (b.x < C.main.x + size.w * scale && C.main.x < b.x + b.w && top < b.y + b.h && b.y < top + h) top = b.y + b.h + gap;
+      }
       if (!force && placed.length && top + h > C.main.y + C.main.h) return { turn: true };
       const box = { x: C.main.x, y: top, w: size.w * scale, h, scale };
       placed.push(box);

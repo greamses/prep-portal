@@ -1,5 +1,5 @@
 /* ============================================================================
-   PrepBot Board — the voice
+   PrepBoard — the voice
    ----------------------------------------------------------------------------
    One sentence at a time. `prepare(text)` starts fetching a sentence's audio
    at once and hands back a CLIP the scheduler can wait on, time the board by,
@@ -24,7 +24,22 @@ const API_BASE = location.port === "5500" ? "http://127.0.0.1:5000" : "";
 /** Roughly how long a sentence takes to say, in seconds. */
 export const estimate = (text) => 0.5 + String(text || "").split(/\s+/).filter(Boolean).length * 0.36;
 
-export function createVoice({ auth = null, muted = false } = {}) {
+/* The voices the board can speak in (ElevenLabs' default voices; the server
+   accepts only these). */
+export const VOICES = [
+  { id: "Xb7hH8MSUJpSbSDYk0k2", label: "Alice: clear, British" },
+  { id: "XrExE9yKIg1WjnnlVkGX", label: "Matilda: warm, American" },
+  { id: "EXAVITQu4vr4xnSDxMaL", label: "Sarah: soft, American" },
+  { id: "cgSgspJ2msm6clMCkdW9", label: "Jessica: bright, American" },
+  { id: "pFZP5JQG7iQjIQuC4Bku", label: "Lily: gentle, British" },
+  { id: "JBFqnCBsd6RMkjVDRZzb", label: "George: warm, British" },
+  { id: "nPczCjzI2devNBz1zQrb", label: "Brian: deep, American" },
+  { id: "cjVigY5qzO86Huf0OWal", label: "Eric: friendly, American" },
+  { id: "IKne3meq5aSn9XLyUdCD", label: "Charlie: easy-going, Australian" },
+  { id: "onwK4e9ZLuTAKqWW03F9", label: "Daniel: calm, British" },
+];
+
+export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id } = {}) {
   let mode = muted ? "silent" : null;      // "eleven" | "browser" | "silent"
   let fails = 0;
   let deciding = null;
@@ -49,7 +64,7 @@ export function createVoice({ auth = null, muted = false } = {}) {
     const res = await fetch(`${API_BASE}/api/tts/elevenlabs`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ text, from: "board" }),
+      body: JSON.stringify({ text, from: "board", voiceId }),
       signal,
     });
     if (!res.ok) { const e = new Error("tts " + res.status); e.status = res.status; throw e; }
@@ -175,6 +190,9 @@ export function createVoice({ auth = null, muted = false } = {}) {
       return proxy;
     },
     mute(on) { mode = on ? "silent" : null; deciding = null; },
+    /** Speak in another of the board's voices from the next sentence on. */
+    setVoice(id) { if (VOICES.some((v) => v.id === id)) { voiceId = id; if (mode === "browser" && auth?.currentUser) { mode = null; deciding = null; fails = 0; } } },
+    get voiceId() { return voiceId; },
     /** The server says today's PrepBot-voice allowance is used: the browser's voice from now on. */
     useBrowser() { if (mode !== "silent") mode = "speechSynthesis" in window ? "browser" : "silent"; },
   };

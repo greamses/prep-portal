@@ -175,7 +175,7 @@ module.exports = function () {
       // + the voice sub-checkbox in admin Settings). 403 on any denial —
       // callers fall back to Web Speech regardless of the status code.
       let verdict = await access.canUse(req, "prepbot", "voice");
-      // the PrepBot Board speaks with the same voice (its daily voice allowance
+      // PrepBoard speaks with the same voice (its daily voice allowance
       // is counted by routes/whiteboard.js, which tells the board when to stop)
       if (!verdict.allowed && req.body?.from === "board") verdict = await access.canUse(req, "whiteboard");
       if (!verdict.allowed) {
@@ -191,7 +191,25 @@ module.exports = function () {
       // "premade" voices. Those are API-usable on every plan, including
       // free; the old classic voices (e.g. "Rachel") were reclassified as
       // Voice-Library voices and now 402 for free accounts via the API.
-      const { text, voiceId = "Xb7hH8MSUJpSbSDYk0k2" } = req.body;
+      const board = req.body?.from === "board";
+      /* The board's voices: ElevenLabs' default (premade) voices, usable on
+         every plan. Only these, so the endpoint cannot be used to spend on
+         any voice at all. A board sentence uses the most natural model
+         (multilingual v2, a little more expression); everything else keeps
+         the fast one it always had. */
+      const BOARD_VOICES = new Set([
+        "Xb7hH8MSUJpSbSDYk0k2", "XrExE9yKIg1WjnnlVkGX", "EXAVITQu4vr4xnSDxMaL", "cgSgspJ2msm6clMCkdW9", "pFZP5JQG7iQjIQuC4Bku",
+        "JBFqnCBsd6RMkjVDRZzb", "nPczCjzI2devNBz1zQrb", "cjVigY5qzO86Huf0OWal", "IKne3meq5aSn9XLyUdCD", "onwK4e9ZLuTAKqWW03F9",
+        ...String(process.env.BOARD_EXTRA_VOICES || "").split(",").map((v) => v.trim()).filter(Boolean),
+      ]);
+      const ALICE = "Xb7hH8MSUJpSbSDYk0k2";
+      let { text, voiceId = ALICE } = req.body;
+      if (board && !BOARD_VOICES.has(voiceId)) voiceId = ALICE;
+      if (!board && voiceId !== ALICE && !BOARD_VOICES.has(voiceId)) voiceId = ALICE;
+      const MODEL = board ? "eleven_multilingual_v2" : "eleven_turbo_v2_5";
+      const SETTINGS = board
+        ? { stability: 0.38, similarity_boost: 0.8, style: 0.28, use_speaker_boost: true }
+        : { stability: 0.45, similarity_boost: 0.75 };
       if (typeof text !== "string" || text.trim().length === 0) {
         return res.status(400).json({ error: "text must be a non-empty string." });
       }
@@ -199,7 +217,8 @@ module.exports = function () {
         return res.status(400).json({ error: `text too long (max ${MAX_CHARS} chars).` });
       }
 
-      const { file: cacheFile, url: cacheUrl } = cacheFileFor(voiceId, text);
+      const cacheVoice = board ? `${voiceId}~v2` : voiceId; // a board line in the natural model is its own recording
+      const { file: cacheFile, url: cacheUrl } = cacheFileFor(cacheVoice, text);
 
       // 1) Static disk hit — hand back the static URL so the browser loads it
       // straight off the CDN/static layer. No ElevenLabs call, no bytes here.
@@ -210,13 +229,13 @@ module.exports = function () {
       } catch (_) {}
 
       // 2) Warm-instance memory hit.
-      const cacheKey = `${voiceId}|${text}`;
+      const cacheKey = `${cacheVoice}|${text}`;
       const cached = cacheGet(cacheKey);
       if (cached) {
         return res.json({ audioContent: cached, audioEncoding: "MP3", cached: "mem" });
       }
 
-      const elResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      const say = (vid) => fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}`, {
         method: "POST",
         headers: {
           "xi-api-key": apiKey,
@@ -225,8 +244,8 @@ module.exports = function () {
         },
         body: JSON.stringify({
           text,
-          model_id: "eleven_turbo_v2_5",
-          voice_settings: { stability: 0.45, similarity_boost: 0.75 },
+          model_id: MODEL,
+          voice_settings: SETTINGS,
         }),
         // NOT sending `apply_text_normalization`. It is ElevenLabs' own
         // normaliser and it handles numbers, dates, currency and
@@ -238,6 +257,12 @@ module.exports = function () {
         // it to do and nothing to risk a 400 over.
       });
 
+      let elResponse = await say(voiceId);
+      /* a voice this account cannot use (402/404): say it in Alice instead */
+      if (!elResponse.ok && voiceId !== ALICE && [400, 401, 402, 404, 422].includes(elResponse.status)) {
+        console.warn("[/api/tts/elevenlabs] voice", voiceId, elResponse.status, "— falling back to Alice");
+        elResponse = await say(ALICE);
+      }
       if (!elResponse.ok) {
         const detail = await elResponse.text().catch(() => "");
         console.error("[/api/tts/elevenlabs]", elResponse.status, detail);
