@@ -164,6 +164,16 @@ ${HERE} :where(${BUTTONS.join(", ")}):where(:not(${SKIP.join(", ")})) {
     opacity 0.2s ease;
 }
 
+/* A WORDED note needs room round its words. The note's dress (paper, tilt, shadow) is given to
+   every button, but padding used to come only from component classes (.pp-btn, …), so a plain
+   <button> with words and no such class wore the note with its words pressed to the edges.
+   This is the default for those, at the weight of the bare element: one step above theme.css's
+   universal * { padding: 0 } reset (which would otherwise win, coming later), below any class that pads a
+   button. Only buttons with no icon or picture inside (an icon button keeps the size it was drawn at). */
+${HERE} button:where(:not(${SKIP.join(", ")}, :has(svg), :has(img))) {
+  padding: 0.45rem 0.9rem 0.5rem;
+}
+
 /* A note is paper in every theme, so what's drawn ON it must be too. Icons
    and labels inside buttons reach for --ink / --text-secondary / the
    surfaces, which flip to cream in dark mode and vanish on a pastel. Every
