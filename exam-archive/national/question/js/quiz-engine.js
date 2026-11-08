@@ -347,9 +347,9 @@ const Quiz = (() => {
     } else if (PAGE_CONFIG.source === "cbt" || PAGE_CONFIG.source === "cbtlocal") {
       // Our own bank — use the descriptive "…-style" scheme label (never an exam body's name).
       const CBT_LABELS = {
-        cee: "Common Entrance style", utme: "UTME-style", wassce: "WASSCE-style",
-        postutme: "Post-UTME style", sat: "SAT-style", igcse: "IGCSE-style",
-        alevel: "A-Level-style", practice: "Practice",
+        cee: "Common Entrance", utme: "UTME", wassce: "WASSCE",
+        postutme: "Post-UTME", sat: "SAT", igcse: "IGCSE",
+        alevel: "A Level", practice: "Practice",
       };
       const schemeLabel = CBT_LABELS[PAGE_CONFIG.scheme] || "Practice";
       const subs = (PAGE_CONFIG.subjects || []).map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(" & ") || "Practice";

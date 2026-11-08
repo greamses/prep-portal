@@ -34,7 +34,7 @@ export async function openBank({ bench, onLoad, focusSave = false }) {
     <div class="pp-receipt xm-bk__card" role="dialog" aria-modal="true" aria-labelledby="xm-bk-h">
       <div class="pp-receipt__paper xm-bk__paper">
         <header class="xm-bk__head">
-          <div><p class="xm-bk__eyebrow">Exam Maker</p><h2 id="xm-bk-h">Question bank</h2></div>
+          <div><p class="xm-bk__eyebrow">Paper Test</p><h2 id="xm-bk-h">Question bank</h2></div>
           <button type="button" class="pp-btn pp-btn--ghost xm-bk__close"></button>
         </header>
 

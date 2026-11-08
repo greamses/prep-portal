@@ -125,13 +125,13 @@
             <div>
               <label for="cb-scheme">Scheme</label>
               <select id="cb-scheme">
-                <option value="utme">UTME-style</option>
-                <option value="wassce">WASSCE-style</option>
-                <option value="postutme">Post-UTME style</option>
-                <option value="cee">Common Entrance style</option>
-                <option value="sat">SAT-style</option>
-                <option value="igcse">IGCSE-style</option>
-                <option value="alevel">A-Level-style</option>
+                <option value="utme">UTME</option>
+                <option value="wassce">WASSCE</option>
+                <option value="postutme">Post-UTME</option>
+                <option value="cee">Common Entrance</option>
+                <option value="sat">SAT</option>
+                <option value="igcse">IGCSE</option>
+                <option value="alevel">A Level</option>
                 <option value="practice">Practice (general bank)</option>
               </select>
             </div>
@@ -344,8 +344,8 @@
       ["verbal","Verbal Reasoning"],["generalstudies","General Studies"],["furthermaths","Further Mathematics"],
       ["ict","ICT"],["businessstudies","Business Studies"],
     ];
-    const SCHEMES = { practice:"Practice", cee:"Common Entrance style", utme:"UTME-style", wassce:"WASSCE-style", postutme:"Post-UTME style", sat:"SAT-style", igcse:"IGCSE-style", alevel:"A-Level-style" };
-    const SCHEME_LABEL = { utme: "UTME-style", wassce: "WASSCE-style", postutme: "Post-UTME style", cee: "Common Entrance style", sat: "SAT-style", igcse: "IGCSE-style", alevel: "A-Level-style", practice: "Practice" };
+    const SCHEMES = { practice:"Practice", cee:"Common Entrance", utme:"UTME", wassce:"WASSCE", postutme:"Post-UTME", sat:"SAT", igcse:"IGCSE", alevel:"A Level" };
+    const SCHEME_LABEL = { utme: "UTME", wassce: "WASSCE", postutme: "Post-UTME", cee: "Common Entrance", sat: "SAT", igcse: "IGCSE", alevel: "A Level", practice: "Practice" };
     const FREE_TYPES = ["short","theory","subjective"];
     const optList = (pairs, sel) => pairs.map(([k,v]) => `<option value="${esc(k)}"${k===sel?" selected":""}>${esc(v)}</option>`).join("");
 

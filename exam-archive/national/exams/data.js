@@ -73,15 +73,15 @@ import("/utils/components/tooltip.js").then((m) => m.mountTooltips()).catch(() =
 // ════════════════════════════════════════════════════════════════════
 
 const NAT_EXAM_TYPES = [
-  { id: "utme", name: "UTME-style", queryType: "utme", live: true },
-  { id: "wassce", name: "WASSCE-style", queryType: "wassce", live: true },
-  { id: "postutme", name: "Post-UTME style", queryType: "postutme", live: true },
-  { id: "cee", name: "Common Entrance style", queryType: "cee", live: true },
+  { id: "utme", name: "UTME", queryType: "utme", live: true },
+  { id: "wassce", name: "WASSCE", queryType: "wassce", live: true },
+  { id: "postutme", name: "Post-UTME", queryType: "postutme", live: true },
+  { id: "cee", name: "Common Entrance", queryType: "cee", live: true },
 ];
 const INTL_EXAM_TYPES = [
-  { id: "sat", name: "SAT-style", queryType: "sat", live: true },
-  { id: "igcse", name: "IGCSE-style", queryType: "igcse", live: true },
-  { id: "alevel", name: "A-Level-style", queryType: "alevel", live: true },
+  { id: "sat", name: "SAT", queryType: "sat", live: true },
+  { id: "igcse", name: "IGCSE", queryType: "igcse", live: true },
+  { id: "alevel", name: "A Level", queryType: "alevel", live: true },
 ];
 const PRACTICE_EXAM_TYPES = [
   { id: "practice", name: "Practice", queryType: "practice", live: true },
@@ -401,7 +401,7 @@ function relabelCbtSteps() {
   const set = (sel, txt) => { const el = document.querySelector(sel); if (el) el.textContent = txt; };
   const isClass = cbtState.axis === "class";
   set('.step-card-1 .step-title[data-cat="national"]', isClass ? "Class" : "Exam");
-  set('.step-card-1 .step-sub[data-cat="national"]', isClass ? "Pick your class" : "Pick an exam style");
+  set('.step-card-1 .step-sub[data-cat="national"]', isClass ? "Pick your class" : "Pick an exam");
   set('.step-card-2 .step-title[data-cat="national"]', "Subject");
   set('.step-card-2 .step-sub[data-cat="national"]', "Pick a subject");
   set('#subject-row .step-title', "Topic");

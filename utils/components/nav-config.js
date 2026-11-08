@@ -48,34 +48,30 @@ const NAV_CONFIG = [
 
     children: [
       {
-        text: "Nigerian",
+        text: "Digital Quizzes",
         icon: I.national,
-        description: "Original, exam-style CBT",
+        description: "Timed tests on screen, marked as you go",
         children: [
-          { text: "Common Entrance style", href: "/exam-archive/national/exams/", description: "Junior-secondary entrance practice" },
-          { text: "UTME-style", href: "/exam-archive/national/exams/", description: "University matriculation practice" },
-          { text: "WASSCE-style", href: "/exam-archive/national/exams/", description: "Senior-school certificate practice" },
-          { text: "Post-UTME style", href: "/exam-archive/national/exams/?cat=national", description: "University screening practice" },
+          { text: "Nigerian exams", href: "/exam-archive/national/exams/", description: "Common Entrance, UTME, WASSCE and Post-UTME" },
+          { text: "International exams", href: "/exam-archive/national/exams/?cat=international", description: "SAT, IGCSE and A Level" },
+          { text: "Practice questions", href: "/exam-archive/national/exams/?cat=practice", description: "All subjects, mixed difficulty" },
         ],
       },
       {
-        text: "International",
+        text: "Paper Test",
         icon: I.international,
-        description: "Original, exam-style CBT",
+        description: "Set a test to print and sit on paper",
         children: [
-          { text: "SAT-style", href: "/exam-archive/national/exams/?cat=international", description: "US college-admissions practice" },
-          { text: "IGCSE-style", href: "/exam-archive/national/exams/?cat=international", description: "International GCSE practice" },
-          { text: "A-Level-style", href: "/exam-archive/national/exams/?cat=international", description: "Advanced-level practice" },
+          { text: "Set a paper test", href: "/prep-math/activity/exam-maker/", description: "Multiple choice, short answer and theory, with your school header — pick questions from the question bank" },
         ],
       },
       {
         text: "Practice",
         icon: I.tools,
-        description: "Mixed revision bank — not exam-specific",
+        description: "Quick skills and races",
         children: [
-          { text: "Practice questions", href: "/exam-archive/national/exams/?cat=practice", description: "All subjects, mixed difficulty" },
           { text: "Math Tricks", href: "/prep-math/mental-math/", description: "Quick calculation tips" },
-          { text: "Drills", href: "/exam-archive/national/drills/", description: "Timed times-tables — multiplayer or 1v1, bots fill empty seats" },
+          { text: "Drills", href: "/exam-archive/national/drills/", description: "Timed maths, algebra, geometry and word races — multiplayer or 1v1, bots fill empty seats" },
           { text: "Puzzles", href: "/exam-archive/national/puzzles/", description: "Timed Sudoku, Slider & Jigsaw races — multiplayer or 1v1, bots fill empty seats" },
         ],
       },
@@ -230,7 +226,7 @@ const NAV_CONFIG = [
       anyone else (editorials/index.html).
   ========================= */
   {
-    text: "Editorials",
+    text: "Workbooks",
     icon: I.editorial,
     description: "Workbooks to print, or to do on screen",
     children: [
@@ -240,7 +236,6 @@ const NAV_CONFIG = [
         description: "Print them, or do them on screen",
         children: [
           { text: "Maths Workbook", href: "/prep-math/activity/maths-workbook/", description: "Place value, sums, division, fractions, time, multiplying, prime factors, bar models, number bases" },
-          { text: "Exam Maker", href: "/prep-math/activity/exam-maker/", description: "Set a printable exam paper: multiple choice, short answer and theory, with your school header" },
           { text: "Geometry Workbook", href: "/prep-math/activity/geometry-workbook/", description: "Angles, polygons, Pythagoras, circles, solids, area" },
           { text: "Algebra Workbook", href: "/prep-math/activity/algebra-workbook/", description: "From the bar model to quadratics, simultaneous equations, matrices, vectors and logic" },
           { text: "Statistics Workbook", href: "/prep-math/activity/statistics-workbook/", description: "Pictograms, bar charts, line graphs, pie charts, scatter graphs" },

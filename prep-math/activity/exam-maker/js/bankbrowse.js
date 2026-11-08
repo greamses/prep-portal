@@ -34,7 +34,7 @@ export async function openBankBrowser({ onAdd }) {
     <div class="pp-receipt xm-bk__card xm-bb__card" role="dialog" aria-modal="true" aria-labelledby="xm-bb-h">
       <div class="pp-receipt__paper xm-bk__paper">
         <header class="xm-bk__head">
-          <div><p class="xm-bk__eyebrow">Exam Maker</p><h2 id="xm-bb-h">Question bank</h2></div>
+          <div><p class="xm-bk__eyebrow">Paper Test</p><h2 id="xm-bb-h">Question bank</h2></div>
           <button type="button" class="pp-btn pp-btn--ghost xm-bk__close"></button>
         </header>
         <div class="xm-bb__crumbs" id="xm-bb-crumbs"></div>

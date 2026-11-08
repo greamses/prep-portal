@@ -49,9 +49,9 @@ const SUBJECT_LABELS = {
 // Exam styles, split into the National + International tabs.
 const EXAMS = {
   national: {
-    utme: "UTME-style", wassce: "WASSCE-style", postutme: "Post-UTME style", cee: "Common Entrance style",
+    utme: "UTME", wassce: "WASSCE", postutme: "Post-UTME", cee: "Common Entrance",
   },
-  international: { sat: "SAT-style", igcse: "IGCSE-style", alevel: "A-Level-style" },
+  international: { sat: "SAT", igcse: "IGCSE", alevel: "A Level" },
 };
 const EXAM_OF = {}; // scheme key → region
 for (const region of Object.keys(EXAMS)) for (const k of Object.keys(EXAMS[region])) EXAM_OF[k] = region;

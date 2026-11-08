@@ -42,8 +42,8 @@ const SUBJECT_LABELS = {
   ict: "ICT", businessstudies: "Business Studies",
 };
 const EXAMS = {
-  national: { utme: "UTME-style", wassce: "WASSCE-style", postutme: "Post-UTME style", cee: "Common Entrance style" },
-  international: { sat: "SAT-style", igcse: "IGCSE-style", alevel: "A-Level-style" },
+  national: { utme: "UTME", wassce: "WASSCE", postutme: "Post-UTME", cee: "Common Entrance" },
+  international: { sat: "SAT", igcse: "IGCSE", alevel: "A Level" },
 };
 const EXAM_OF = {};
 for (const region of Object.keys(EXAMS)) for (const k of Object.keys(EXAMS[region])) EXAM_OF[k] = region;

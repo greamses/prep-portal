@@ -79,7 +79,7 @@ export const SITE_PAGES = [
     title: "International Exams",
     href: "/exam-archive/national/exams/?cat=international",
     category: "exams",
-    blurb: "SAT-, IGCSE- and A-Level-style practice.",
+    blurb: "SAT-, IGCSE- and A Level practice.",
     keywords: ["sat", "igcse", "cambridge", "a-level", "alevel", "international exam", "international exams"],
   },
   {
