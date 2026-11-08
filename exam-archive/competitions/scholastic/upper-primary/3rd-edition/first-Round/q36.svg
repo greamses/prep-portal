@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <!-- A square split into a top half and a bottom half by a horizontal line -->
+  <!-- top half: two small squares; the right one has a shaded triangle -->
+  <polygon points="100,20 100,100 180,100" fill="#3a3a3a" />
+  <!-- bottom half: a diagonal shades the lower-left half of it -->
+  <polygon points="20,100 20,180 180,180" fill="#3a3a3a" />
+  <rect x="20" y="20" width="160" height="160" fill="none" stroke="black" stroke-width="3" />
+  <line x1="20" y1="100" x2="180" y2="100" stroke="black" stroke-width="3" />
+  <line x1="100" y1="20" x2="100" y2="100" stroke="black" stroke-width="2.5" />
+  <line x1="100" y1="20" x2="180" y2="100" stroke="black" stroke-width="2" />
+  <line x1="20" y1="100" x2="180" y2="180" stroke="black" stroke-width="2" />
+</svg>

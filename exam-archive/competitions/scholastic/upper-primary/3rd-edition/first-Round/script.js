@@ -141,7 +141,7 @@ const quizData = [
   { question: "Calculate the value of \\(2 - \\frac{1}{2} + \\frac{1}{3} - \\frac{1}{4}\\).", image: null,
     options: [], correctIndex: null, answer: "\\(\\frac{19}{12} = 1\\frac{7}{12}\\)",
     explanation: ["Over \\(12\\): \\(\\frac{24 - 6 + 4 - 3}{12} = \\frac{19}{12}\\).", "\\(= 1\\frac{7}{12}\\)."], topic: "Fractions" },
-  { question: "What fraction of the square is shaded if the line inside divides the square into two equal parts?", image: "./q36.jpg",
+  { question: "What fraction of the square is shaded if the line inside divides the square into two equal parts?", image: "./q36.svg",
     options: [], correctIndex: null, answer: "\\(\\frac{3}{8}\\)",
     explanation: ["The line splits the square into a top half and a bottom half.", "Top half: its right-hand quarter has a triangle shaded, half of a quarter \\(= \\frac{1}{8}\\).", "Bottom half: the diagonal shades half of it \\(= \\frac{1}{4}\\).", "Shaded \\(= \\frac{1}{8} + \\frac{1}{4} = \\frac{3}{8}\\)."], topic: "Fractions" },
   { question: "Find the total surface area of a cube whose edges are \\(7\\text{ cm}\\) each.", image: null,

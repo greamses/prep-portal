@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 308 200" width="100%" height="100%">
+  <!-- A wall of grey and striped tiles laid like a chessboard (8 by 5); some tiles have fallen off. -->
+  <defs><pattern id="q20s" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="12" fill="#ffffff"/><rect width="6" height="12" fill="#d24b4b"/></pattern></defs>
+  <rect x="10" y="10" width="36" height="36" fill="#6e6e6e" stroke="#222" stroke-width="1"/>
+  <rect x="46" y="10" width="36" height="36" fill="url(#q20s)" stroke="#222" stroke-width="1"/>
+  <rect x="82" y="10" width="36" height="36" fill="#6e6e6e" stroke="#222" stroke-width="1"/>
+  <rect x="118" y="10" width="36" height="36" fill="url(#q20s)" stroke="#222" stroke-width="1"/>
+  <rect x="154" y="10" width="36" height="36" fill="#6e6e6e" stroke="#222" stroke-width="1"/>
+  <rect x="190" y="10" width="36" height="36" fill="url(#q20s)" stroke="#222" stroke-width="1"/>
+  <rect x="226" y="10" width="36" height="36" fill="#6e6e6e" stroke="#222" stroke-width="1"/>
+  <rect x="262" y="10" width="36" height="36" fill="url(#q20s)" stroke="#222" stroke-width="1"/>
+  <rect x="10" y="46" width="36" height="36" fill="url(#q20s)" stroke="#222" stroke-width="1"/>
+  <rect x="46" y="46" width="36" height="36" fill="#6e6e6e" stroke="#222" stroke-width="1"/>
+  <rect x="82" y="46" width="36" height="36" fill="url(#q20s)" stroke="#222" stroke-width="1"/>
+  <rect x="118" y="46" width="36" height="36" fill="#ffffff"/>
+  <rect x="154" y="46" width="36" height="36" fill="#ffffff"/>
+  <rect x="190" y="46" width="36" height="36" fill="#ffffff"/>
+  <rect x="226" y="46" width="36" height="36" fill="#ffffff"/>
+  <rect x="262" y="46" width="36" height="36" fill="#6e6e6e" stroke="#222" stroke-width="1"/>
+  <rect x="10" y="82" width="36" height="36" fill="#6e6e6e" stroke="#222" stroke-width="1"/>
+  <rect x="46" y="82" width="36" height="36" fill="#ffffff"/>
+  <rect x="82" y="82" width="36" height="36" fill="#ffffff"/>
+  <rect x="118" y="82" width="36" height="36" fill="#ffffff"/>
+  <rect x="154" y="82" width="36" height="36" fill="#ffffff"/>
+  <rect x="190" y="82" width="36" height="36" fill="#ffffff"/>
+  <rect x="226" y="82" width="36" height="36" fill="#ffffff"/>
+  <rect x="262" y="82" width="36" height="36" fill="url(#q20s)" stroke="#222" stroke-width="1"/>
+  <rect x="10" y="118" width="36" height="36" fill="url(#q20s)" stroke="#222" stroke-width="1"/>
+  <rect x="46" y="118" width="36" height="36" fill="#ffffff"/>
+  <rect x="82" y="118" width="36" height="36" fill="#ffffff"/>
+  <rect x="118" y="118" width="36" height="36" fill="#ffffff"/>
+  <rect x="154" y="118" width="36" height="36" fill="#ffffff"/>
+  <rect x="190" y="118" width="36" height="36" fill="#ffffff"/>
+  <rect x="226" y="118" width="36" height="36" fill="#ffffff"/>
+  <rect x="262" y="118" width="36" height="36" fill="#6e6e6e" stroke="#222" stroke-width="1"/>
+  <rect x="10" y="154" width="36" height="36" fill="#6e6e6e" stroke="#222" stroke-width="1"/>
+  <rect x="46" y="154" width="36" height="36" fill="url(#q20s)" stroke="#222" stroke-width="1"/>
+  <rect x="82" y="154" width="36" height="36" fill="#6e6e6e" stroke="#222" stroke-width="1"/>
+  <rect x="118" y="154" width="36" height="36" fill="url(#q20s)" stroke="#222" stroke-width="1"/>
+  <rect x="154" y="154" width="36" height="36" fill="#6e6e6e" stroke="#222" stroke-width="1"/>
+  <rect x="190" y="154" width="36" height="36" fill="url(#q20s)" stroke="#222" stroke-width="1"/>
+  <rect x="226" y="154" width="36" height="36" fill="#6e6e6e" stroke="#222" stroke-width="1"/>
+  <rect x="262" y="154" width="36" height="36" fill="url(#q20s)" stroke="#222" stroke-width="1"/>
+  <polygon points="118,46 262,46 262,154 46,154 46,82 118,82" fill="none" stroke="#222" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <rect x="10" y="10" width="288" height="180" fill="none" stroke="#222" stroke-width="2.5"/>
+</svg>
