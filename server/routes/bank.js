@@ -112,16 +112,48 @@ module.exports = function () {
     await shelf(req.user.uid).set({ folders: { [key]: admin.firestore.FieldValue.arrayUnion(...all) } }, { merge: true });
     res.json({ ok: true, path });
   }));
-  // DELETE /folders { subject, path }  an empty folder only
+  /* the teacher's sets in one subject (a subject's sets are few: the 300 a list shows) */
+  const setsIn = async (uid, key) => (await sets(uid).limit(500).get()).docs.filter((d) => subjKey(d.data().subject) === key);
+  const under = (f, path) => f === path || f.startsWith(path + "/");
+
+  // DELETE /folders { subject, path, recursive }  a folder; with recursive, the folders and sets inside it too
   router.delete("/folders", authenticate, guard(async (req, res) => {
     const key = subjKey(req.body && req.body.subject), path = cleanPath(req.body && req.body.path);
+    if (!path) return res.status(400).json({ error: "Which folder?" });
     const sh = await shelf(req.user.uid).get();
     const list = (sh.exists && sh.data().folders && sh.data().folders[key]) || [];
-    if (list.some((f) => f.startsWith(path + "/"))) return res.status(409).json({ error: "Empty the folder first." });
-    const inside = await sets(req.user.uid).where("folder", "==", path).limit(50).get();
-    if (inside.docs.some((d) => subjKey(d.data().subject) === key)) return res.status(409).json({ error: "Empty the folder first." });
-    await shelf(req.user.uid).set({ folders: { [key]: admin.firestore.FieldValue.arrayRemove(path) } }, { merge: true });
-    res.json({ ok: true });
+    const inside = (await setsIn(req.user.uid, key)).filter((d) => under(d.data().folder || "", path));
+    if (!(req.body && req.body.recursive) && (list.some((f) => f.startsWith(path + "/")) || inside.length)) return res.status(409).json({ error: "Empty the folder first." });
+    for (let i = 0; i < inside.length; i += 400) {
+      const batch = db().batch();
+      inside.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+    const gone = list.filter((f) => under(f, path));
+    if (gone.length) await shelf(req.user.uid).set({ folders: { [key]: admin.firestore.FieldValue.arrayRemove(...gone) } }, { merge: true });
+    res.json({ ok: true, sets: inside.length, folders: gone.length });
+  }));
+  // POST /folders/move { subject, from, to }  rename a folder, or move it into another: everything inside goes with it
+  router.post("/folders/move", authenticate, guard(async (req, res) => {
+    const key = subjKey(req.body && req.body.subject);
+    const from = cleanPath(req.body && req.body.from), to = cleanPath(req.body && req.body.to);
+    if (!from || !to) return res.status(400).json({ error: "Which folder, and where to?" });
+    if (to === from) return res.json({ ok: true, path: to });
+    if (to.startsWith(from + "/")) return res.status(400).json({ error: "A folder cannot go inside itself." });
+    const sh = await shelf(req.user.uid).get();
+    const list = (sh.exists && sh.data().folders && sh.data().folders[key]) || [];
+    if (list.includes(to)) return res.status(409).json({ error: "There is a folder of that name there already." });
+    const swap = (f) => (under(f, from) ? to + f.slice(from.length) : f);
+    const parts = to.split("/"), above = parts.slice(0, -1).map((_, i) => parts.slice(0, i + 1).join("/"));
+    const next = [...new Set([...list.map(swap), ...above])];
+    const inside = (await setsIn(req.user.uid, key)).filter((d) => under(d.data().folder || "", from));
+    for (let i = 0; i < inside.length; i += 400) {
+      const batch = db().batch();
+      inside.slice(i, i + 400).forEach((d) => batch.set(d.ref, { folder: swap(d.data().folder || "") }, { merge: true }));
+      await batch.commit();
+    }
+    await shelf(req.user.uid).set({ folders: { [key]: next } }, { merge: true });
+    res.json({ ok: true, path: to, moved: inside.length });
   }));
   // POST /sets/:id/move { folder }
   router.post("/sets/:id/move", authenticate, guard(async (req, res) => {
@@ -129,6 +161,45 @@ module.exports = function () {
     if (!(await ref.get()).exists) return res.status(404).json({ error: "That bank is not there any more." });
     await ref.set({ folder: cleanPath(req.body && req.body.folder) }, { merge: true });
     res.json({ ok: true });
+  }));
+  // POST /sets/move { ids, folder }  several at once
+  router.post("/sets/move", authenticate, guard(async (req, res) => {
+    const ids = (Array.isArray(req.body && req.body.ids) ? req.body.ids : []).slice(0, 300).map(String);
+    const folder = cleanPath(req.body && req.body.folder);
+    const batch = db().batch();
+    ids.forEach((id) => batch.set(sets(req.user.uid).doc(id), { folder }, { merge: true }));
+    if (ids.length) await batch.commit();
+    res.json({ ok: true, moved: ids.length });
+  }));
+  /* a name not yet taken by another set (sets are kept by their name: setId) */
+  async function freeName(uid, want) {
+    let name = want, n = 2;
+    while ((await sets(uid).doc(setId(name)).get()).exists && n < 50) name = `${want} (${n++})`;
+    return name;
+  }
+  // POST /sets/:id/rename { name }  → { id, name } (the set is kept under its new name)
+  router.post("/sets/:id/rename", authenticate, guard(async (req, res) => {
+    const ref = sets(req.user.uid).doc(String(req.params.id));
+    const d = await ref.get();
+    if (!d.exists) return res.status(404).json({ error: "That bank is not there any more." });
+    const name = String((req.body && req.body.name) || "").replace(/\s+/g, " ").trim().slice(0, 100);
+    if (!name) return res.status(400).json({ error: "Give it a name." });
+    const id = setId(name);
+    if (id === ref.id) { await ref.set({ name }, { merge: true }); return res.json({ ok: true, id, name }); }
+    if ((await sets(req.user.uid).doc(id).get()).exists) return res.status(409).json({ error: "There is a set of that name already." });
+    await sets(req.user.uid).doc(id).set({ ...d.data(), name });
+    await ref.delete();
+    res.json({ ok: true, id, name });
+  }));
+  // POST /sets/:id/copy { folder }  → { id, name } a copy, "Name (copy)", in that folder
+  router.post("/sets/:id/copy", authenticate, guard(async (req, res) => {
+    const d = await sets(req.user.uid).doc(String(req.params.id)).get();
+    if (!d.exists) return res.status(404).json({ error: "That bank is not there any more." });
+    const x = d.data();
+    const name = await freeName(req.user.uid, `${x.name} (copy)`.slice(0, 100));
+    const id = setId(name);
+    await sets(req.user.uid).doc(id).set({ ...x, name, folder: cleanPath(req.body && req.body.folder), savedAt: admin.firestore.FieldValue.serverTimestamp() });
+    res.json({ ok: true, id, name });
   }));
   /* GET /comp-links  the admin: every competition paper's Paper Test link and its password
      (made by server/scripts/comp-links.js), for copying out in one go */

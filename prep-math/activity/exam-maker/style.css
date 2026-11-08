@@ -1370,3 +1370,87 @@ html.xm-focus .xm-modal .xm-preview { width: min(250mm, 100%); }
 .xm-desk [hidden] { display: none !important; }
 /* icon-only buttons on the top bar and the tick bar, the size of the paper toolbar's */
 .xm-topbar .pp-btn, .xm-tickbar .xm-tickbar__del { display: inline-grid; place-items: center; padding: 0.42rem; line-height: 0; }
+
+/* ══ THE BANK AS A FILE EXPLORER (js/bank.js) ═══════════════════════════════════════════
+   Four views, a path bar, selection, drag and drop and a right-click menu. Items are not
+   buttons (they select, open, drag and take a menu), so the sticky-note dress leaves them be. */
+.xm-fx__bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+.xm-fx__crumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 0.15rem 0.35rem; flex: 1 1 16rem; min-width: 0; font-size: 0.82rem; }
+.xm-fx__crumb { padding: 0.2rem 0.35rem; color: var(--text-secondary); text-decoration: none; border-bottom: 1.5px solid transparent; }
+.xm-fx__crumb:hover { color: var(--ink); border-bottom-color: currentColor; }
+.xm-fx__crumb[aria-current="page"] { color: var(--ink); font-weight: 700; }
+.xm-fx__crumb.is-drop { background: rgba(255, 229, 0, 0.45); }
+.xm-fx__sep { color: var(--text-tertiary); }
+.xm-fx__find { display: flex; align-items: center; gap: 0.3rem; flex: 0 1 12rem; min-width: 8rem; }
+.xm-fx__findico { display: inline-flex; opacity: 0.6; }
+.xm-fx__find .xm-qb__line { width: 100%; font-size: 0.82rem; }
+
+.xm-fx { position: relative; min-height: 9rem; margin-bottom: 1.2rem; outline: none; user-select: none; -webkit-user-select: none; }
+.xm-fx:focus-visible { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-secondary) 35%, transparent); }
+.xm-fx__empty { margin: 1.4rem 0; font-size: 0.82rem; color: var(--text-tertiary); text-align: center; }
+.xm-fx__item { position: relative; cursor: default; color: inherit; border: 1px solid transparent; outline: none; }
+.xm-fx__item:hover { background: rgba(111, 168, 220, 0.1); border-color: rgba(111, 168, 220, 0.25); }
+.xm-fx__item.is-sel { background: rgba(111, 168, 220, 0.22); border-color: rgba(111, 168, 220, 0.6); }
+.xm-fx__item:focus-visible { border-color: var(--accent-secondary); }
+.xm-fx__item.is-cut { opacity: 0.45; }
+.xm-fx__item.is-drag { opacity: 0.5; }
+.xm-fx__item.is-drop { background: rgba(255, 229, 0, 0.35); border-color: #d8b21a; border-style: dashed; }
+.xm-fx__ico svg { display: block; width: 100%; height: 100%; }
+.xm-fx__name { min-width: 0; overflow-wrap: anywhere; font-weight: 700; }
+.xm-fx__name small { display: block; font-weight: 400; font-size: 0.68rem; color: var(--text-tertiary); }
+.xm-fx__date, .xm-fx__type, .xm-fx__meta { font-size: 0.7rem; color: var(--text-tertiary); }
+.xm-fx__rename { width: 100%; font: inherit; font-weight: 700; text-align: inherit; background: #fff; }
+
+/* large and medium icons: tiles in a grid, the name under the picture */
+.xm-fx[data-view="large"], .xm-fx[data-view="medium"] { display: grid; gap: 0.5rem; align-content: start; }
+.xm-fx[data-view="large"] { grid-template-columns: repeat(auto-fill, minmax(8.4rem, 1fr)); }
+.xm-fx[data-view="medium"] { grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr)); }
+.xm-fx[data-view="large"] .xm-fx__item, .xm-fx[data-view="medium"] .xm-fx__item { display: grid; justify-items: center; align-content: start; gap: 0.3rem; padding: 0.7rem 0.4rem 0.6rem; text-align: center; }
+.xm-fx[data-view="large"] .xm-fx__ico { width: 4.2rem; height: 4.2rem; }
+.xm-fx[data-view="medium"] .xm-fx__ico { width: 2.8rem; height: 2.8rem; }
+.xm-fx[data-view="large"] .xm-fx__name { font-size: 0.82rem; line-height: 1.25; }
+.xm-fx[data-view="medium"] .xm-fx__name { font-size: 0.74rem; line-height: 1.25; }
+.xm-fx[data-view="large"] .xm-fx__date, .xm-fx[data-view="large"] .xm-fx__type,
+.xm-fx[data-view="medium"] .xm-fx__date, .xm-fx[data-view="medium"] .xm-fx__type, .xm-fx[data-view="medium"] .xm-fx__meta { display: none; }
+
+/* list: small icons, in columns that read down then across */
+.xm-fx[data-view="list"] { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 0.1rem 1rem; align-content: start; }
+.xm-fx[data-view="list"] .xm-fx__item { display: flex; align-items: center; gap: 0.5rem; padding: 0.28rem 0.4rem; break-inside: avoid; font-size: 0.8rem; }
+.xm-fx[data-view="list"] .xm-fx__ico { flex: none; width: 1.25rem; height: 1.25rem; }
+.xm-fx[data-view="list"] .xm-fx__name { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xm-fx[data-view="list"] .xm-fx__date, .xm-fx[data-view="list"] .xm-fx__type, .xm-fx[data-view="list"] .xm-fx__meta { display: none; }
+
+/* details: a table, with name, date modified, type, size */
+.xm-fx[data-view="details"] { display: grid; }
+.xm-fx__head { display: grid; grid-template-columns: minmax(0, 1fr) 8rem 7.5rem 7rem; gap: 0.8rem; padding: 0.4rem 0.5rem 0.4rem calc(0.5rem + 1.3rem + 0.8rem); font: 700 0.66rem/1 var(--font-mono, "JetBrains Mono"), monospace; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); border-bottom: 1px solid rgba(42, 39, 35, 0.14); }
+.xm-fx[data-view="details"] .xm-fx__item { display: grid; grid-template-columns: 1.3rem minmax(0, 1fr) 8rem 7.5rem 7rem; align-items: center; gap: 0.8rem; padding: 0.32rem 0.5rem; font-size: 0.8rem; }
+.xm-fx[data-view="details"] .xm-fx__ico { width: 1.3rem; height: 1.3rem; }
+.xm-fx[data-view="details"] .xm-fx__name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 640px) {
+  .xm-fx__head { display: none; }
+  .xm-fx[data-view="details"] .xm-fx__item { grid-template-columns: 1.3rem minmax(0, 1fr) auto; }
+  .xm-fx[data-view="details"] .xm-fx__date, .xm-fx[data-view="details"] .xm-fx__type { display: none; }
+}
+
+/* the right-click menu */
+.xm-fx__menu { position: fixed; z-index: 20000; min-width: 13rem; padding: 0.35rem 0; background: #fffdf8; color: #2a2723; border: 1px solid rgba(42, 39, 35, 0.16); box-shadow: 0 10px 28px rgba(42, 39, 35, 0.22); font-family: var(--font-mono, "JetBrains Mono"), monospace; font-size: 0.8rem; }
+.xm-fx__menu hr { margin: 0.3rem 0; border: 0; border-top: 1px solid rgba(42, 39, 35, 0.12); }
+.xm-fx__mhead { margin: 0.25rem 0 0.1rem; padding: 0 0.9rem; font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; color: #9a948a; }
+.xm-fx__mi { display: grid; grid-template-columns: 1.2rem 1fr auto; align-items: center; gap: 0.55rem; padding: 0.38rem 0.9rem; color: inherit; text-decoration: none; outline: none; }
+.xm-fx__mi:hover, .xm-fx__mi:focus { background: rgba(111, 168, 220, 0.18); }
+.xm-fx__mi.is-off { opacity: 0.4; pointer-events: none; }
+.xm-fx__mi.is-on { font-weight: 700; }
+.xm-fx__mico { display: inline-flex; width: 0.95rem; height: 0.95rem; }
+.xm-fx__mico svg { width: 100%; height: 100%; }
+.xm-fx__mi kbd { font: inherit; font-size: 0.68rem; color: #9a948a; }
+
+/* a question asked in the panel (Delete?) */
+.xm-fx__ask { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 0.7rem; margin-bottom: 0.8rem; padding: 0.6rem 0.8rem; background: #fff1ef; font-size: 0.82rem; }
+.xm-fx__ask > span { flex: 1 1 14rem; }
+
+/* the bank's worded buttons are sticky notes, so they need a note's room */
+.xm-qb .xm-qb__chip { padding: 0.3rem 0.7rem 0.35rem; border-bottom: 0; color: inherit; }
+.xm-qb .xm-qb__chip.is-on { --pp-note-bg: #cfe6ff; font-weight: 700; }
+.xm-qb .xm-qb__chips { gap: 0.4rem 0.5rem; }
+.xm-qb .xm-qb__more { padding: 0.35rem 0.9rem 0.4rem; border-bottom: 0; }
+.xm-qb .xm-qb__copyall { padding: 0.45rem 0.9rem 0.5rem; }
