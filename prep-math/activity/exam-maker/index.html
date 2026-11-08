@@ -75,12 +75,20 @@
         <h1 class="wb-title">Paper Test Builder<em>.</em></h1>
       </header>
 
-      <div class="wb-work xm-work">
-        <!-- ═══ THE BENCH ═══ -->
-        <aside class="xm-rail">
-          <div class="pp-receipt xm-receipt">
+      <!-- ═══ THE DESK: the setup across the screen, the questions under it; the paper opens over it ═══ -->
+      <div class="xm-desk xm-rail">
+        <div class="xm-topbar" role="toolbar" aria-label="The paper">
+          <span class="xm-topbar__count"><span data-ui="doc"></span> <span id="xm-topcount"></span></span>
+          <span class="wb-toolbar__spacer"></span>
+          <button class="pp-btn" data-proxy="xm-share" type="button"><span data-ui="link"></span> Share link</button>
+          <button class="pp-btn" data-proxy="xm-print" type="button"><span data-ui="print"></span> Print</button>
+          <button class="pp-btn xm-topbar__open" id="xm-open-paper" type="button"><span data-ui="doc"></span> Open the paper</button>
+        </div>
+
+        <div class="xm-setup">
+          <div class="pp-receipt xm-receipt xm-setup__paper">
             <div class="pp-receipt__paper xm-paper">
-              <h2 class="wb-rail__title"><span data-ui="doc"></span> First-page header</h2>
+              <h2 class="wb-rail__title"><span data-ui="doc"></span> The paper</h2>
               <div class="wb-row2">
                 <label class="wb-field xm-span2"><span>School name</span>
                   <input class="wb-input" data-h="school" maxlength="64" autocomplete="off" placeholder="St Mary's International School" /></label>
@@ -110,51 +118,62 @@
                 <span>Paper colour</span>
                 <div class="xm-swatches" id="xm-swatches"></div>
               </div>
-              <div class="wb-row2">
-                <div class="wb-field xm-span2"><span>Paper</span>
+              <div class="wb-field"><span>Paper size</span>
                   <div class="xm-icons" id="xm-papers" role="radiogroup" aria-label="Paper size"></div><input type="hidden" id="xm-paper" value="a4" /></div>
-                <label class="wb-toggle"><input type="checkbox" id="xm-key" /> Answer key</label>
-                <label class="wb-field"><span>Tries allowed (0 is no limit)</span><input class="wb-input" id="xm-tries" type="number" min="0" max="20" step="1" /></label>
-                <label class="wb-toggle" title="Counts down from the time allowed when the paper is answered on screen."><input type="checkbox" id="xm-timer" /> Timer on screen</label>
-                <label class="wb-toggle"><input type="checkbox" id="xm-omr" /> OMR answer sheet</label>
-                <label class="wb-toggle" title="Read on the student's own device. You get a short list of notes, and a still picture when something is flagged (a second face, no face, leaving the page). Students are asked to dress as for the exam hall."><input type="checkbox" id="xm-camera" /> Camera check</label>
-                <label class="wb-toggle xm-span2" title="The student reads the instructions and presses Begin; the timer starts then."><input type="checkbox" id="xm-instructions" /> Instructions page</label>
-                <div class="wb-field xm-span2" id="xm-instr-wrap" hidden>
-                  <span>Your own instructions (optional; added to the page)</span>
-                  <textarea class="wb-input" data-h="instrText" rows="4" maxlength="1500" placeholder="For example: Calculators are allowed. Write your working. Do not leave the page."></textarea>
-                  <button class="pp-btn pp-btn--ghost xm-icon-only" id="xm-instr-preview" type="button"></button>
-                </div>
-                <label class="wb-toggle" title="Written answers go on a sheet of their own."><input type="checkbox" id="xm-tsheet" /> Theory answer sheet</label>
-                <label class="wb-toggle xm-span2" title="Each finished script joins a queue and is marked at the rate the AI allows, so every student is marked."><input type="checkbox" id="xm-aimark" /> AI marking of written answers</label>
-                <label class="wb-toggle" title="Students do not see their marks until you have gone through the AI marking, corrected it, marked up their answers and pressed Release. They are then told."><input type="checkbox" id="xm-hold" /> Hold results for review</label>
-                <label class="wb-toggle" title="The student writes the number and shades it on the OMR sheet or answer booklet."><input type="checkbox" id="xm-examno" /> Exam number</label>
-                <label class="wb-field" id="xm-exdigits-wrap" hidden><span>Digits in the exam number</span><input class="wb-input" id="xm-exdigits" type="number" min="4" max="12" step="1" /></label>
-                <label class="wb-toggle xm-span2" title="The OMR sheet in front, then lined pages for the written answers."><input type="checkbox" id="xm-booklet" /> Answer booklet</label>
-                <label class="wb-toggle xm-span2" title="Prints without the browser's date, title line and page numbers."><input type="checkbox" id="xm-clean" /> Clean print (no browser date or title)</label>
-                <label class="wb-toggle"><input type="checkbox" id="xm-tint" /> Tinted headings</label>
-                <fieldset class="wb-fieldset xm-span2 xm-each">
+                <fieldset class="wb-fieldset xm-tplpick">
+                  <legend>Paper template</legend>
+                  <div class="xm-icons" id="xm-templates" role="radiogroup" aria-label="Paper template"></div>
+                </fieldset>
+              <div class="xm-group"><h3>Sections</h3>
+                <fieldset class="wb-fieldset xm-each">
                   <legend>Marks for each question</legend>
                   <label class="wb-field"><span class="xm-sec" data-sec="mcq"></span><input class="wb-input" data-each="mcq" type="number" min="0" max="100" /></label>
                   <label class="wb-field"><span class="xm-sec" data-sec="fill"></span><input class="wb-input" data-each="fill" type="number" min="0" max="100" /></label>
                   <label class="wb-field"><span class="xm-sec" data-sec="sub"></span><input class="wb-input" data-each="sub" type="number" min="0" max="100" /></label>
                   <label class="wb-field"><span class="xm-sec" data-sec="theory"></span><input class="wb-input" data-each="theory" type="number" min="0" max="100" /></label>
                 </fieldset>
-                <fieldset class="wb-fieldset xm-span2 xm-each xm-attempt">
+                <fieldset class="wb-fieldset xm-each xm-attempt">
                   <legend>How many to attempt (empty is all of them)</legend>
                   <label class="wb-field"><span class="xm-sec" data-sec="mcq"></span><input class="wb-input" data-attempt="mcq" type="number" min="0" max="200" placeholder="all" /></label>
                   <label class="wb-field"><span class="xm-sec" data-sec="fill"></span><input class="wb-input" data-attempt="fill" type="number" min="0" max="200" placeholder="all" /></label>
                   <label class="wb-field"><span class="xm-sec" data-sec="sub"></span><input class="wb-input" data-attempt="sub" type="number" min="0" max="200" placeholder="all" /></label>
                   <label class="wb-field"><span class="xm-sec" data-sec="theory"></span><input class="wb-input" data-attempt="theory" type="number" min="0" max="200" placeholder="all" /></label>
                 </fieldset>
-                <fieldset class="wb-fieldset xm-span2 xm-tplpick">
-                  <legend>Paper template</legend>
-                  <div class="xm-icons" id="xm-templates" role="radiogroup" aria-label="Paper template"></div>
-                </fieldset>
-                <fieldset class="wb-fieldset xm-span2 xm-railpick">
-                  <legend>Tools on the side rail</legend>
-                  <div class="xm-icons" id="xm-railtools" role="group" aria-label="Tools on the side rail during the exam"></div>
-                </fieldset>
-                <fieldset class="wb-fieldset xm-span2 xm-breaks">
+              </div>
+            </div>
+          </div>
+
+          <div class="pp-receipt xm-receipt xm-setup__sit">
+            <div class="pp-receipt__paper xm-paper">
+              <h2 class="wb-rail__title"><span data-ui="pen"></span> How it is sat</h2>
+              <div class="xm-group"><h3>On screen</h3>
+                <div class="xm-toggles">
+                <label class="wb-toggle" title="Counts down from the time allowed when the paper is answered on screen."><input type="checkbox" id="xm-timer" /> Timer on screen</label>
+                <label class="wb-toggle" title="Read on the student's own device. You get a short list of notes, and a still picture when something is flagged (a second face, no face, leaving the page). Students are asked to dress as for the exam hall."><input type="checkbox" id="xm-camera" /> Camera check</label>
+                <label class="wb-toggle" title="The student reads the instructions and presses Begin; the timer starts then."><input type="checkbox" id="xm-instructions" /> Instructions page</label>
+                <label class="wb-toggle" title="The student writes the number and shades it on the OMR sheet or answer booklet."><input type="checkbox" id="xm-examno" /> Exam number</label>
+                <label class="wb-toggle" title="Students do not see their marks until you have gone through the AI marking, corrected it, marked up their answers and pressed Release. They are then told."><input type="checkbox" id="xm-hold" /> Hold results for review</label>
+                <label class="wb-toggle" title="Each finished script joins a queue and is marked at the rate the AI allows, so every student is marked."><input type="checkbox" id="xm-aimark" /> AI marking of written answers</label>
+                </div>
+                <label class="wb-field"><span>Tries allowed (0 is no limit)</span><input class="wb-input" id="xm-tries" type="number" min="0" max="20" step="1" /></label>
+                <label class="wb-field" id="xm-exdigits-wrap" hidden><span>Digits in the exam number</span><input class="wb-input" id="xm-exdigits" type="number" min="4" max="12" step="1" /></label>
+                <div class="wb-field xm-span2" id="xm-instr-wrap" hidden>
+                  <span>Your own instructions (optional; added to the page)</span>
+                  <textarea class="wb-input" data-h="instrText" rows="4" maxlength="1500" placeholder="For example: Calculators are allowed. Write your working. Do not leave the page."></textarea>
+                  <button class="pp-btn pp-btn--ghost xm-icon-only" id="xm-instr-preview" type="button"></button>
+                </div>
+              </div>
+              <div class="xm-group"><h3>Answers and print</h3>
+                <div class="xm-toggles">
+                <label class="wb-toggle"><input type="checkbox" id="xm-key" /> Answer key</label>
+                <label class="wb-toggle"><input type="checkbox" id="xm-omr" /> OMR answer sheet</label>
+                <label class="wb-toggle" title="Written answers go on a sheet of their own."><input type="checkbox" id="xm-tsheet" /> Theory answer sheet</label>
+                <label class="wb-toggle" title="The OMR sheet in front, then lined pages for the written answers."><input type="checkbox" id="xm-booklet" /> Answer booklet</label>
+                <label class="wb-toggle" title="Prints without the browser's date, title line and page numbers."><input type="checkbox" id="xm-clean" /> Clean print (no browser date or title)</label>
+                <label class="wb-toggle"><input type="checkbox" id="xm-tint" /> Tinted headings</label>
+                </div>
+              </div>
+                <fieldset class="wb-fieldset xm-breaks">
                   <legend>Start on a new page</legend>
                   <label class="wb-toggle"><input type="checkbox" data-break="mcq" /><span class="xm-sec" data-sec="mcq"></span></label>
                   <label class="wb-toggle"><input type="checkbox" data-break="fill" /><span class="xm-sec" data-sec="fill"></span></label>
@@ -162,11 +181,14 @@
                   <label class="wb-toggle"><input type="checkbox" data-break="theory" /><span class="xm-sec" data-sec="theory"></span></label>
                   <label class="wb-toggle"><input type="checkbox" data-break="key" /> Answer key</label>
                 </fieldset>
-              </div>
+                <fieldset class="wb-fieldset xm-railpick">
+                  <legend>Tools on the side rail</legend>
+                  <div class="xm-icons" id="xm-railtools" role="group" aria-label="Tools on the side rail during the exam"></div>
+                </fieldset>
             </div>
           </div>
 
-          <div class="pp-receipt xm-receipt">
+          <div class="pp-receipt xm-receipt xm-setup__ai">
             <div class="pp-receipt__paper xm-paper">
               <h2 class="wb-rail__title"><span data-ui="sparkles"></span> Write with our models</h2>
               <p class="xm-hint">The model writes the questions; the layout of the paper is ours. Maths is typeset for you.</p>
@@ -188,8 +210,9 @@
               <p class="xm-status" id="xm-ai-status" role="status"></p>
             </div>
           </div>
+        </div>
 
-          <div class="pp-receipt xm-receipt">
+          <div class="pp-receipt xm-receipt xm-qsec">
             <div class="pp-receipt__paper xm-paper">
               <h2 class="wb-rail__title"><span data-ui="list"></span> Questions <span class="xm-count" id="xm-count"></span></h2>
               <div class="xm-bar__add">
@@ -219,11 +242,14 @@
               <div id="xm-list"></div>
             </div>
           </div>
-        </aside>
+      </div>
 
-        <!-- ═══ THE PAPER ═══ -->
+      <!-- ═══ THE PAPER, over the desk ═══ -->
+      <div class="xm-modal xm-main" id="xm-paper-modal" hidden>
+        <div class="xm-modal__shade" data-close-paper></div>
         <section class="wb-preview xm-preview">
           <div class="wb-toolbar">
+            <button class="pp-btn xm-modal__close" type="button" data-close-paper aria-label="Close the paper"><span data-ui="close"></span> Close</button>
             <span class="wb-toolbar__count"><span data-ui="doc"></span> <span id="xm-summary"></span></span>
             <span class="wb-toolbar__spacer"></span>
             <span class="xm-score" id="xm-score" role="status"></span>

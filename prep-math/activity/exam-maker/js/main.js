@@ -74,6 +74,8 @@ sheet.addEventListener("click", (e) => {
   const card = document.querySelector(`.xm-card[data-id="${CSS.escape(q.dataset.qid)}"]`);
   if (!card) return;
   const rec = card.closest(".xm-qreceipt") || card;
+  const modal = document.getElementById("xm-paper-modal");
+  if (modal && !modal.hidden) { modal.hidden = true; document.documentElement.classList.remove("xm-paper-open"); }
   rec.scrollIntoView({ behavior: "smooth", block: "center" });
   rec.classList.remove("is-flash"); void rec.offsetWidth; rec.classList.add("is-flash");
   setTimeout(() => { const f = card.querySelector('textarea[data-f="text"]') || card.querySelector("textarea, input"); if (f) f.focus({ preventScroll: true }); }, 500);
@@ -1056,6 +1058,33 @@ faceOf($("xm-qbank-open"), UI.archive(18), "Question bank");
 faceOf($("xm-shuffle"), UI.shuffle(18), "Shuffle the questions and their answers");
 setLiveFaces();
 enhanceSelects(document.querySelector(".xm-rail"), { className: "pp-select--sm" });
+
+/* ── the paper opens over the desk ─────────────────────────────────────────
+   The setup fills the screen; the paper is a sheet laid over it, opened from the top bar and shut
+   with Close, the shade, or Escape. Answering on screen happens in it too. The top bar's Share and
+   Print press the paper's own buttons, and its count follows the paper's. */
+const paperModal = $("xm-paper-modal");
+/* on <body>, out of <main>'s stacking layer, so it covers the nav */
+document.body.appendChild(paperModal);
+function showPaper(on) {
+  paperModal.hidden = !on;
+  document.documentElement.classList.toggle("xm-paper-open", on);
+  if (on) { dispatchEvent(new Event("resize")); paperModal.querySelector(".xm-viewport")?.focus?.({ preventScroll: true }); }
+}
+$("xm-open-paper").addEventListener("click", () => showPaper(true));
+paperModal.addEventListener("click", (e) => { if (e.target.closest("[data-close-paper]")) showPaper(false); });
+addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || paperModal.hidden || document.documentElement.classList.contains("xm-focus")) return;
+  if (document.querySelector(".xm-bk, .wb-panel:focus-within")) return;
+  showPaper(false);
+});
+document.querySelectorAll("[data-proxy]").forEach((b) => b.addEventListener("click", () => $(b.dataset.proxy)?.click()));
+{
+  const from = $("xm-summary"), to = $("xm-topcount");
+  const copy = () => { to.textContent = from.textContent; };
+  new MutationObserver(copy).observe(from, { childList: true, characterData: true, subtree: true });
+  copy();
+}
 mountTooltips();
 
 /* For the site's owner a paper that has no logo of its own opens with Prep Portal's logo, not the empty "School logo" box, and gets it back

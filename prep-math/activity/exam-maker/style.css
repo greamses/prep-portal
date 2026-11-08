@@ -1303,3 +1303,68 @@ html.xm-bk-on { overflow: hidden; }
 .xm-qb__movesel { max-width: 12rem; font-size: 0.78rem; }
 .xm-qb__linknote { margin: 0; font-size: 0.78rem; color: #6f675b; }
 .xm-qb__copyall { justify-self: start; margin-top: 0.3rem; }
+
+/* ══ THE DESK (2026-11-08): the setup across the screen, the paper in a modal ══════════════
+   The Paper Test Builder used to be a narrow scrolling column beside the paper. Now the
+   setup is three receipts side by side (the paper / how it is sat / write with our
+   models), the questions run full width under them, and the paper opens over it all.
+   Scoped to .xm-desk and .xm-modal: the shared-paper player uses this file too. */
+.wb-main.xm-main { max-width: min(1560px, 100%); }
+.xm-main .wb-hero { padding-bottom: 0.4rem; }
+.xm-desk { display: grid; gap: 1.4rem; min-width: 0; }
+/* the old sticky, scrolling column is gone: the desk is the page */
+html:not(.xm-focus) .xm-desk.xm-rail { position: static; height: auto; overflow: visible; padding: 0; }
+
+/* the top bar: the count, and the way to the paper, always in reach */
+.xm-topbar { position: sticky; top: 4.6rem; z-index: 30; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 0.7rem; padding: 0.7rem 1rem; background: var(--surface-primary, #fffdf8); border: 1px solid rgba(42, 39, 35, 0.1); box-shadow: 0 6px 18px rgba(42, 39, 35, 0.1); }
+.xm-topbar__count { display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary); }
+.xm-topbar__open { --pp-note-bg: #cfe6ff; font-weight: 800; }
+
+/* three receipts across; two, then one, as the screen narrows */
+.xm-setup { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(1rem, 2vw, 1.6rem); align-items: start; }
+@media (max-width: 1240px) { .xm-setup { grid-template-columns: repeat(2, minmax(0, 1fr)); } .xm-setup__ai { grid-column: 1 / -1; } }
+@media (max-width: 780px) { .xm-setup { grid-template-columns: minmax(0, 1fr); } }
+.xm-desk .wb-rail__title { margin: 0 0 0.2rem; }
+.xm-group { display: grid; gap: 0.55rem; }
+.xm-group h3 { margin: 0; font: 700 0.68rem/1 var(--font-mono, "JetBrains Mono"), monospace; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
+.xm-toggles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem 0.9rem; }
+.xm-setup__ai .xm-ai-extra { min-height: 6rem; }
+
+/* the questions: full width, the cards two (or three) across */
+.xm-qsec .xm-paper { gap: 0.8rem; }
+.xm-qsec .xm-bar__add { align-items: center; }
+.xm-qsec #xm-exam-title { flex: 1 1 14rem; min-width: 10rem; }
+.xm-desk #xm-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 30rem), 1fr)); gap: 1.1rem; align-items: start; }
+
+/* LINE INPUTS, not boxes: a line under each field (a textarea is ruled like writing paper) */
+.xm-desk .wb-input, .xm-desk .wb-input:hover {
+  border: 0; border-bottom: 1.5px solid color-mix(in srgb, var(--ink) 32%, transparent); border-radius: 0;
+  background: transparent; box-shadow: none; padding: 0.45rem 0.1rem;
+}
+.xm-desk .wb-input:focus, .xm-desk .wb-input:focus-visible { outline: none; box-shadow: none; border-bottom-color: var(--accent-secondary); }
+.xm-desk textarea.wb-input {
+  line-height: 1.7em; padding-top: 0.1rem; resize: vertical;
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(1.7em - 1px), color-mix(in srgb, var(--ink) 12%, transparent) calc(1.7em - 1px), color-mix(in srgb, var(--ink) 12%, transparent) 1.7em);
+  background-attachment: local;
+}
+.xm-desk input[type="number"].wb-input { max-width: 7rem; }
+
+/* THE PAPER, over the desk */
+.xm-modal { position: fixed; inset: 0; z-index: 10000; display: flex; justify-content: center; visibility: visible; font-family: var(--font-mono); }
+.xm-modal[hidden] { display: none; }
+.xm-modal__shade { position: absolute; inset: 0; background: rgba(29, 27, 24, 0.5); }
+.xm-modal .xm-preview { position: relative; width: min(232mm, 100%); height: 100%; overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; padding: 0 clamp(0.4rem, 2vw, 1.2rem) 2.5rem; background: var(--app-bg, #f0ece3); box-shadow: 0 0 40px rgba(29, 27, 24, 0.35); }
+.xm-modal .wb-toolbar { position: sticky; top: 0; z-index: 5; margin: 0 calc(-1 * clamp(0.4rem, 2vw, 1.2rem)) 0.6rem; padding: 0.7rem clamp(0.4rem, 2vw, 1.2rem); background: var(--surface-primary, #fffdf8); box-shadow: 0 4px 14px rgba(29, 27, 24, 0.12); flex-wrap: wrap; gap: 0.4rem 0.5rem; }
+html.xm-paper-open, html.xm-paper-open body { overflow: hidden !important; }
+/* answering on screen: the paper is all there is, so it can be wider */
+html.xm-focus .xm-modal .xm-preview { width: min(250mm, 100%); }
+
+@media print {
+  .xm-desk { display: none !important; }
+  .xm-modal, .xm-modal[hidden] { display: block !important; position: static !important; inset: auto; }
+  .xm-modal__shade, .xm-modal__close { display: none !important; }
+  .xm-modal .xm-preview { width: auto !important; height: auto !important; overflow: visible !important; padding: 0 !important; background: none !important; box-shadow: none !important; }
+  html.xm-paper-open, html.xm-paper-open body { overflow: visible !important; }
+}
+/* a field switched off stays off: .wb-field's own display must not beat [hidden] */
+.xm-desk [hidden] { display: none !important; }

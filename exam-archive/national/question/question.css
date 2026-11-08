@@ -910,7 +910,7 @@ body {
   margin-top: 0.6rem;
   padding: 0.7rem 0.85rem;
   background: var(--surface-secondary, var(--off));
-  border-left: 3px solid color-mix(in srgb, var(--blue) 45%, transparent);
+  border: 0;
   border-radius: 0;
   font-size: 0.72rem;
   line-height: 1.65;
@@ -1184,6 +1184,7 @@ body {
   
   .review-expl {
     background: var(--off) !important;
+    border: 0 !important;
   }
   
   .theory-score-badge {

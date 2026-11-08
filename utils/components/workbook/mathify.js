@@ -55,6 +55,25 @@ export const mathReady = () => typeof window !== "undefined" && typeof window.Ma
 let loading = null;
 const waiting = new Set();
 
+/* MONEY SIGNS. MathJax's SVG font has no ₦ (or €, or the other currency signs), and a formula
+   holding one does not just miss the glyph: it throws "Math input error" for the whole formula
+   ("$₦5,250.00$" in a competition paper). Wrapped as \text{₦} it is drawn from the page's own
+   font and sets fine. So every formula is filtered before TeX reads it: a currency sign that is
+   not already inside \text{…} is wrapped. Added once, to whichever MathJax the page has. */
+const CURRENCY = /[₠-⃏]/;
+export function guardCurrency() {
+  const mj = typeof window !== "undefined" ? window.MathJax : null;
+  const doc = mj && mj.startup && mj.startup.document;
+  if (!doc || mj.__ppCurrency) return;
+  const jax = [].concat(doc.inputJax || []).find((j) => j && j.name === "TeX");
+  if (!jax || !jax.preFilters) return;
+  jax.preFilters.add(({ math }) => {
+    if (!CURRENCY.test(math.math)) return;
+    math.math = math.math.replace(/\\text\{[^{}]*\}|[₠-⃏]/g, (m) => (m.length === 1 ? `\\text{${m}}` : m));
+  }, -10);
+  mj.__ppCurrency = true;
+}
+
 /** Load MathJax (once), configured the way the rest of the site configures it. */
 export function loadMath() {
   if (typeof window === "undefined") return Promise.resolve(false);
@@ -87,6 +106,7 @@ export function loadMath() {
     }
   }).then((ok) => {
     if (ok) {
+      try { guardCurrency(); } catch { /* an older MathJax: the signs stay as they were */ }
       const all = [...waiting];
       waiting.clear();
       all.forEach((fn) => { try { fn(); } catch { /* a host that has gone is not our business */ } });
