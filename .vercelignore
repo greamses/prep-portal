@@ -26,3 +26,7 @@ prep-math/drag
 home/games/aliens
 home/games/maze
 home/games/drone
+
+# Never upload installed packages: the build installs its own, and with outputDirectory "."
+# anything uploaded is served.
+node_modules
