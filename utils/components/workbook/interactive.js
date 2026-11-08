@@ -3018,7 +3018,6 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       { id: "transversal", label: "Transversal angles", at: "/prep-math/activity/transversals/" },
       { id: "pythagoras", label: "Pythagoras", at: "/prep-math/activity/pythagoras/" },
       { id: "surface", label: "Surface area", at: "/prep-math/activity/surface-area/" },
-      { id: "art", label: "Cartesian Art", at: "/prep-math/activity/cartesian-art/" },
     ].map((g) => ({
       id: g.id,
       label: g.label,
@@ -3590,7 +3589,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     { id: "count", label: "Counting", of: [asSheet("chart"), asSheet("shift"), asSheet("bench")] },
     { id: "shapes", label: "Shapes and graphs", of: [
       asSheet("angles"), asSheet("transversal"), asSheet("pythagoras"),
-      asSheet("surface"), asSheet("art"),
+      asSheet("surface"), asSheet("graph"),
     ] },
     /* a table looked up is its own errand: one key, not folded in behind the boards */
     { id: "tables", label: "Times tables", of: [asSheet("tables")] },

@@ -231,6 +231,9 @@ export default async function middleware(request) {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    // The competition papers as files (server/papers/*.paper) are for the API only.
+    if (path.startsWith("/server/papers")) return new Response("Not found", { status: 404 });
+
     // Only gate real page navigations, never asset/data fetches.
     const accept = request.headers.get("accept") || "";
     if (!accept.includes("text/html")) return;

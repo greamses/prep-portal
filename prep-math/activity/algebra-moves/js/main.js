@@ -26,7 +26,7 @@ window.__prepbotPage = {
 /* The side rail: the formula book (formulas and rules) beside the workbook's
    own calculator, digit-shift card and notes. */
 mountTools(document.body, {
-  tools: ["board", "formulas", "guide", "pin", "calculator", "graph", "art", "shift", "note"],
+  tools: ["board", "formulas", "guide", "pin", "calculator", "graph", "shift", "note"],
   extra: {
     // Every press sticks another note on the canvas.
     pin: { label: "Pin a sticky note on the canvas", act: pinNote },

@@ -841,6 +841,24 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   /* opened from a side rail or PrepBot's chat: a frame inside another page */
   if (params.get("embed") === "1") document.body.classList.add("pb-embed");
 
+  /* "Load question" on the page around the frame (rail-tool.js sendQuestion): a fresh
+     board, the question laid down as the lesson's material (the learner's own line is
+     cut at 400 characters, a question with its options can be longer), and PrepBot
+     asked to explain it. Only a page of this site may send one. */
+  window.addEventListener("message", (e) => {
+    if (e.origin !== location.origin || e.data?.type !== "pp-board-question") return;
+    const text = String(e.data.text || "").trim().slice(0, 8000);
+    if (!text) return;
+    $("pb-new").click();
+    lesson.material = text;
+    lesson.materialName = String(e.data.name || "This question").slice(0, 80);
+    showDoc();
+    ask(style === "homework"
+      ? `Help me work through ${lesson.materialName.toLowerCase()} one step at a time.`
+      : `Explain ${lesson.materialName.toLowerCase()} to me.`);
+  });
+  if (window.parent !== window) { try { window.parent.postMessage({ type: "pp-board-ready" }, location.origin); } catch { /* not our page */ } }
+
   const fixture = params.get("fixture");
   const asked = (params.get("q") || "").trim().slice(0, 400);
   if (fixture && params.get("instant") === "1") {

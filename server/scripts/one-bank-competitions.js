@@ -82,6 +82,18 @@ const answerIndexOf = (q) => (typeof q.correctIndex === "number" ? q.correctInde
         createdAt: now, migratedAt: now,
       }];
     });
+    /* the same paper as a file the server reads first (routes/cbt.js /competition): no
+       Firestore read per open, and the paper still opens when the read quota runs out.
+       server/papers/ is blocked from the web by middleware.js; only the function reads it. */
+    const paperFile = path.join(__dirname, "..", "papers", `${compKey.replace(/\|/g, "__")}.paper`);
+    fs.mkdirSync(path.dirname(paperFile), { recursive: true });
+    fs.writeFileSync(paperFile, JSON.stringify({
+      timeLimit: data.timeLimit || 0,
+      questions: writes.map(([, d]) => ({
+        question: d.question, options: d.options, correctIndex: d.answerIndex, answer: d.answer,
+        explanation: d.explanation, hint: d.hint, image: d.image, topic: d.topic, type: d.type, section: d.section,
+      })),
+    }));
     console.log(`  ${String(writes.length).padStart(3)}  ${compKey}  (time ${data.timeLimit}s)`);
     total += writes.length;
     if (!DRY) {

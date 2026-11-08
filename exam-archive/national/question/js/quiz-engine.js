@@ -1470,6 +1470,16 @@ const Quiz = (() => {
     const q = allQuestions[idx];
     const total = allQuestions.length;
 
+    // The question on screen, as plain text, for PrepBoard's "Load question" (question.html).
+    {
+      const plain = (s) => String(s || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+      const opts = (q.options || []).map((o, i) => `${String.fromCharCode(65 + i)}) ${plain(o)}`);
+      window.__cbtQuestion = {
+        name: `Question ${idx + 1}`,
+        text: [plain(q.question), q.image ? "[The question has a diagram.]" : "", opts.length ? `Options: ${opts.join("   ")}` : ""].filter(Boolean).join("\n"),
+      };
+    }
+
     const counterLabel = document.getElementById("q-counter-label");
     const progressFill = document.getElementById("progress-fill");
 

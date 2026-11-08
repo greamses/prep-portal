@@ -114,32 +114,6 @@ const TOOLS = {
       return () => f.remove();
     },
   },
-  /* CARTESIAN ART, the whole studio: plot points to draw a picture, and the equation grapher inside it. In a frame
-     of its own like the graph above, but with its nav and intro (it is the page, not the embed). */
-  art: {
-    label: "Cartesian Art",
-    size: { w: 980, h: 680 },
-    async open(body) {
-      body.classList.add("wb-panel__body--bare");
-      const f = document.createElement("iframe");
-      /* inside a panel the site's own nav is noise (same dress as the workbook's studios) */
-      f.addEventListener("load", () => {
-        try {
-          const doc = f.contentDocument;
-          if (!doc) return;
-          doc.documentElement.classList.add("pp-geo-fs", "pp-in-panel");
-          const dress = doc.createElement("style");
-          dress.textContent = "html.pp-in-panel .site-nav { display: none !important; } html.pp-in-panel body { padding-top: 0 !important; }";
-          doc.head.appendChild(dress);
-        } catch { /* a frame we cannot read into stays as it is */ }
-      });
-      f.src = "/prep-math/activity/cartesian-art/";
-      f.title = "Cartesian Art";
-      f.style.cssText = "display:block;width:100%;height:100%;min-height:420px;border:0;background:#fffdf8";
-      body.appendChild(f);
-      return () => f.remove();
-    },
-  },
   calculator: {
     label: "Calculator",
     size: { w: 340, h: 500 },
@@ -313,7 +287,7 @@ export const TOOL_IDS = Object.keys(TOOLS);
  *   at      "left" or "right" — which side of the window it sits against
  * → { el, open(id), destroy() }
  */
-export function mountTools(host = document.body, { tools = ["board", "calculator", "graph", "art", "gm", "column", "times", "shortdiv", "pin", "note"], at = "left", extra = {} } = {}) {
+export function mountTools(host = document.body, { tools = ["board", "calculator", "graph", "gm", "column", "times", "shortdiv", "pin", "note"], at = "left", extra = {} } = {}) {
   /* the rail fetches its own dress, so a page that wants tools needs one line
      and no stylesheet link of its own */
   needCss("/utils/components/workbook.css");
@@ -341,7 +315,7 @@ export function mountTools(host = document.body, { tools = ["board", "calculator
   host.appendChild(el);
   mountTooltips();
   /* the board's key stays only for a learner the board is open to */
-  if (ids.includes("board") && ALL.board === TOOLS.board) {
+  if (ids.includes("board")) { // a page's own board key (with "Load question") is PrepBoard too
     boardAllowed().then((ok) => { if (!ok) el.querySelector('[data-wbtool="board"]')?.remove(); });
   }
 

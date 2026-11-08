@@ -782,6 +782,15 @@ module.exports = function () {
         ok = s.exists && s.data().key === compKey;
       }
       if (!ok) return res.status(403).json({ error: "This paper is for premium members, or open it with a link from your teacher." });
+      /* The paper as a file in the deployment first (written by one-bank-competitions.js,
+         kept off the web by middleware.js): no Firestore read, so it still opens when
+         the daily read quota has run out. The bank is the fallback for a paper with no file. */
+      try {
+        const fs = require("fs"), path = require("path");
+        const file = path.join(__dirname, "..", "papers", `${compKey.replace(/[^A-Za-z0-9_|-]/g, "").replace(/\|/g, "__")}.paper`);
+        const paper = JSON.parse(fs.readFileSync(file, "utf8"));
+        if (paper && Array.isArray(paper.questions) && paper.questions.length) return res.json(paper);
+      } catch (_) { /* no file for this paper: read the bank */ }
       const snap = await db().collection("cbtQuestions").where("compKey", "==", compKey).get();
       quota.addReads(snap.size);
       const docs = snap.docs.map((d) => d.data()).sort((a, b) => (a.compOrder || 0) - (b.compOrder || 0));
