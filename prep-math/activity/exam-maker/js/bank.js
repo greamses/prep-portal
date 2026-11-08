@@ -106,7 +106,6 @@ export async function openBank({ bench, onLoad, focusSave = false }) {
         </header>
         <form class="xm-qb__save" id="xm-qb-save">
           <input class="xm-qb__line" id="xm-qb-name" maxlength="100" autocomplete="off" placeholder="Name" value="${esc(now.name || "")}" aria-label="Name for these questions" />
-          <select class="xm-qb__line xm-qb__subj" id="xm-qb-subj" aria-label="Subject"></select>
           <button type="submit" class="xm-qb__icon" id="xm-qb-go"${now.questions.length ? "" : " disabled"}></button>
         </form>
         <p class="xm-qb__msg" id="xm-qb-msg" role="status"></p>
@@ -122,10 +121,10 @@ export async function openBank({ bench, onLoad, focusSave = false }) {
   const $ = (id) => box.querySelector(`#${id}`);
   const body = $("xm-qb-body");
   const close = () => { shutMenu(); box.remove(); document.documentElement.classList.remove("xm-bk-on"); document.removeEventListener("keydown", onKey, true); };
-  box.addEventListener("click", (e) => { if (e.target === box) close(); });
+  box.addEventListener("click", (e) => { if (e.target === box || e.target.closest(".xm-qb__close")) close(); });
   faceOf(box.querySelector(".xm-qb__close"), UI.close(18), "Close");
   faceOf(box.querySelector(".xm-qb__back"), UI.chevronLeft(18), "Up a folder");
-  faceOf($("xm-qb-go"), UI.archiveIn(18), "Save the editor's questions in this folder");
+  faceOf($("xm-qb-go"), UI.archiveIn(18), "Save the editor's questions in the folder that is open");
   faceOf($("xm-qb-add"), UI.download(18), "Add the ticked questions to the editor");
 
   let sets = [], folders = {}, cards = { subjects: [], mine: 0 };
@@ -174,14 +173,6 @@ export async function openBank({ bench, onLoad, focusSave = false }) {
       return sortDir === "desc" ? -d : d;
     };
     return [...fItems.sort(by), ...sItems.sort(by)];
-  }
-
-  function fillSubjectSelect() {
-    const s_ = $("xm-qb-subj");
-    const want = cur ? cur.key : keyOf(now.subject);
-    const list = subjects().sort((a, b) => a.label.localeCompare(b.label));
-    if (!list.some((s) => s.key === want)) list.unshift({ key: want, label: String(now.subject || "General").split("·")[0].trim() || "General" });
-    s_.innerHTML = list.map((s) => `<option value="${esc(s.key)}"${s.key === want ? " selected" : ""}>${esc(s.label)}</option>`).join("");
   }
 
   /* ── drawing ── */
@@ -243,7 +234,6 @@ export async function openBank({ bench, onLoad, focusSave = false }) {
     const top = cur && !cur.path && !query;
     box.querySelector(".xm-qb__back").hidden = !cur;
     $("xm-qb-title").textContent = !cur ? "Question bank" : cur.path ? leaf(cur.path) : cur.label;
-    fillSubjectSelect();
     const compLinks = cur && /^Competitions(\/|$)/.test(cur.path) && links && links.length ? links.filter((l) => (l.folder || "").startsWith(cur.path)) : [];
     body.innerHTML = `
       <div class="xm-fx__bar">
@@ -676,9 +666,9 @@ export async function openBank({ bench, onLoad, focusSave = false }) {
     const cur0 = bench();
     if (!name) { $("xm-qb-name").focus(); return; }
     if (!cur0.questions.length) { msg("The editor is empty."); return; }
-    const s_ = $("xm-qb-subj");
-    const label = s_.options[s_.selectedIndex] ? s_.options[s_.selectedIndex].textContent : (cur0.subject || "");
-    const folder = cur && cur.key === keyOf(label) ? cur.path : "";
+    /* into the subject and folder that are open; at the top, under the editor's own subject */
+    const label = cur ? cur.label : String(cur0.subject || "General").split("·")[0].trim() || "General";
+    const folder = cur ? cur.path : "";
     const same = sets.find((s) => s.name.trim().toLowerCase() === name.toLowerCase());
     const goBtn = $("xm-qb-go");
     if (same && goBtn.dataset.armed !== "1") { goBtn.dataset.armed = "1"; msg("Replace it? Press again."); setTimeout(() => { goBtn.dataset.armed = ""; }, 5000); return; }

@@ -1458,3 +1458,6 @@ html.xm-focus .xm-modal .xm-preview { width: min(250mm, 100%); }
    squeezed to the panel's height, it gave the explorer a short row and its tiles ran over the bank */
 .xm-qb .xm-bk__scroll { display: block; }
 .xm-qb .xm-bk__scroll > * + * { margin-top: 0.6rem; }
+/* in the modal the paper's viewport takes the paper's whole height and the modal scrolls: as a flex
+   child it was squeezed to the window and, hiding its overflow, clipped the paper so nothing scrolled */
+.xm-modal .xm-viewport { flex: none; overflow-y: visible; }
