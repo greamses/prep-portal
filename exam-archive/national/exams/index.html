@@ -353,18 +353,21 @@
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M11.4 7.4 13.2 5.6a3.9 3.9 0 0 1 5.5 5.5l-1.8 1.8-2-2 1.8-1.8a1.1 1.1 0 0 0-1.5-1.5l-1.8 1.8z" fill="var(--accent-secondary)"/><path d="M12.6 16.6 10.8 18.4a3.9 3.9 0 0 1-5.5-5.5l1.8-1.8 2 2-1.8 1.8a1.1 1.1 0 0 0 1.5 1.5l1.8-1.8z" fill="var(--accent-secondary)"/><rect x="8.32" y="10.70" width="7.35" height="2.6" rx="1.3" fill="var(--accent-danger)" transform="rotate(-45.00 12.00 12.00)"/></svg>
             <span class="share-label">Copy link</span>
           </button>
-          <!-- Admin, Competitions tab only: shown once the chosen paper has a
-               link out, and takes that link back. -->
-          <button
-            class="builder-share builder-withdraw"
-            id="withdraw-btn"
-            type="button"
-            hidden
-            title="Stop the shared link to this paper from working"
-          >
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9.4" fill="var(--accent-danger)"/><rect x="6.2" y="10.6" width="11.6" height="2.8" rx="1.4" fill="#fff"/></svg>
-            <span class="withdraw-label">Withdraw link</span>
-          </button>
+          <!-- Admin, Competitions tab only: the picked paper's password. Learners
+               open a competition paper only with it (utils/competition-gate.js). -->
+          <div class="comp-pass" id="comp-pass" hidden>
+            <input type="text" aria-label="Paper password" placeholder="Paper password" autocomplete="off" spellcheck="false" />
+            <button class="builder-share" type="button" title="Save this paper's password (empty locks it to you)">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10.5" fill="var(--accent-warning, #d98b2b)"/><path d="M8 10.5V7.6a4 4 0 0 1 8 0v2.9h-2.6V7.6a1.4 1.4 0 0 0-2.8 0v2.9z" fill="var(--accent-secondary)"/><circle cx="12" cy="15.4" r="1.6" fill="#fff"/></svg>
+              <span>Save password</span>
+            </button>
+            <span class="comp-pass__note" data-note></span>
+          </div>
+          <style>
+            .comp-pass:not([hidden]) { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+            .comp-pass input { width: 11rem; padding: 6px 2px; border: 0; border-bottom: 2px solid color-mix(in srgb, var(--ink, #2a2723) 45%, transparent); border-radius: 0; background: transparent; font: inherit; font-size: 14px; color: inherit; outline: none; }
+            .comp-pass__note { font-size: 12px; opacity: .7; }
+          </style>
           <button
             class="builder-share builder-assign"
             id="assign-btn"

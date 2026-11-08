@@ -763,25 +763,65 @@ module.exports = function () {
   });
 
   // ── GET /facets?scheme= — subjects for a scheme ─────────────────
-  // ── GET /competition?comp=&div=&year=&round=&k= — one competition paper ─
+  // ── Competition papers: one password per paper ───────────────────
   // The papers are "gated" questions in the one bank (scripts/one-bank-competitions.js).
-  // Handed out only to the admin, a premium member, or someone holding a share
-  // link (paperShares/{k}) made for exactly this paper — the same three ways in
-  // as utils/competition-gate.js, but here it is a lock on the questions, not
-  // only on the page.
+  // Only the admin opens one without its password. The admin sets each paper's
+  // password on the Exam Builder's Competitions tab; it is kept in
+  // compPasswords/{comp__div__year__round}, which the rules let only the admin
+  // touch (the catch-all), and this server reads with the admin SDK.
+  // No password set = nobody but the admin gets in.
+  const compPart = (v) => String(v || "").trim().slice(0, 40);
+  const compKeyOf = (q) => {
+    const [comp, div, year, round] = [q.comp, q.div, q.year, q.round].map(compPart);
+    return comp && div && year && round ? `${comp}|${div}|${year}|${round}` : "";
+  };
+  const passCache = new Map(); // compKey → { pw, exp }
+  async function paperPassword(compKey) {
+    const hit = passCache.get(compKey);
+    if (hit && hit.exp > Date.now()) return hit.pw;
+    const snap = await db().collection("compPasswords").doc(compKey.replace(/\|/g, "__").replace(/[^A-Za-z0-9_-]/g, "-")).get();
+    const pw = snap.exists ? String(snap.data().password || "") : "";
+    passCache.set(compKey, { pw, exp: Date.now() + 2 * 60 * 1000 });
+    return pw;
+  }
+  const tries = new Map(); // uid → { n, until }  (wrong passwords: 10 per 10 minutes)
+  async function paperOpen(req, compKey, given) {
+    if (req.user.email && req.user.email === process.env.ADMIN_EMAIL) return { ok: true };
+    const t = tries.get(req.user.uid);
+    if (t && t.n >= 10 && t.until > Date.now()) return { ok: false, status: 429, error: "Too many tries. Wait a few minutes." };
+    const pw = await paperPassword(compKey);
+    const a = Buffer.from(String(given || "").trim()), b = Buffer.from(pw);
+    const ok = !!pw && a.length === b.length && require("crypto").timingSafeEqual(a, b);
+    if (!ok) {
+      const n = t && t.until > Date.now() ? t.n + 1 : 1;
+      tries.set(req.user.uid, { n, until: Date.now() + 10 * 60 * 1000 });
+      return { ok: false, status: 403, error: pw ? (given ? "That password is not right." : "This paper needs its password.") : "This paper is not open yet." };
+    }
+    tries.delete(req.user.uid);
+    return { ok: true };
+  }
+
+  // POST /competition/unlock {comp, div, year, round, password} — the question page's password box
+  router.post("/competition/unlock", authenticate, async (req, res) => {
+    try {
+      const compKey = compKeyOf(req.body || {});
+      if (!compKey) return res.status(400).json({ error: "Which paper?" });
+      const v = await paperOpen(req, compKey, req.body.password);
+      if (!v.ok) return res.status(v.status).json({ error: v.error });
+      res.json({ ok: true });
+    } catch (e) {
+      console.error("[/api/cbt/competition/unlock]", e.message);
+      res.status(500).json({ error: "Could not check the password. Try again." });
+    }
+  });
+
+  // GET /competition?comp=&div=&year=&round=  (header X-Paper-Password) — one competition paper
   router.get("/competition", authenticate, async (req, res) => {
     try {
-      const part = (v) => String(v || "").trim().slice(0, 40);
-      const [comp, div, year, round] = [req.query.comp, req.query.div, req.query.year, req.query.round].map(part);
-      if (!comp || !div || !year || !round) return res.status(400).json({ error: "Which paper?" });
-      const compKey = `${comp}|${div}|${year}|${round}`;
-      let ok = (await require("../lib/access").getUserAccess(req.user.uid, req.user.email)).isPremium;
-      const k = part(req.query.k);
-      if (!ok && k) {
-        const s = await db().collection("paperShares").doc(k).get();
-        ok = s.exists && s.data().key === compKey;
-      }
-      if (!ok) return res.status(403).json({ error: "This paper is for premium members, or open it with a link from your teacher." });
+      const compKey = compKeyOf(req.query);
+      if (!compKey) return res.status(400).json({ error: "Which paper?" });
+      const v = await paperOpen(req, compKey, req.get("x-paper-password"));
+      if (!v.ok) return res.status(v.status).json({ error: v.error });
       /* The paper as a file in the deployment first (written by one-bank-competitions.js,
          kept off the web by middleware.js): no Firestore read, so it still opens when
          the daily read quota has run out. The bank is the fallback for a paper with no file. */

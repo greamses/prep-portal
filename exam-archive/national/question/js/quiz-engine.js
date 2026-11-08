@@ -890,27 +890,35 @@ const Quiz = (() => {
     if (!comp || !div || !year || !round) return [];
 
     window.__compQuiz = null;
-    // The paper comes from the ONE question bank (/api/cbt/competition), which
-    // hands it only to the admin, a premium member or a share-link holder. If
-    // the server cannot be reached, the round's old script is the fallback.
+    // The paper comes from the server (/api/cbt/competition), which hands it over only
+    // to the admin or with the paper's PASSWORD. The password box is
+    // utils/competition-gate.js: it keeps what was typed in sessionStorage and says
+    // "pp-comp-unlocked" once the server has accepted it, and then this asks again.
+    const passKey = `pp-comp-pw:${[comp, div, year, round].join("|")}`;
+    const unlocked = () => new Promise((r) => window.addEventListener("pp-comp-unlocked", r, { once: true }));
     try {
       let u = window.firebaseAuth && window.firebaseAuth.currentUser;
       for (let t = 0; !u && window.firebaseAuth && t < 25; t++) {            // sign-in can still be settling
         await new Promise((r) => setTimeout(r, 200));
         u = window.firebaseAuth.currentUser;
       }
-      if (u) {
+      for (let attempt = 0; u && attempt < 6; attempt++) {
+        let pw = "";
+        try { pw = sessionStorage.getItem(passKey) || ""; } catch { /* none */ }
         const qs = new URLSearchParams({ comp, div, year, round });
-        const k = (new URLSearchParams(location.search).get("k") || "").trim();
-        if (k) qs.set("k", k);
-        const r = await fetch(`${API_BASE}/api/cbt/competition?${qs}`, { headers: { Authorization: "Bearer " + (await u.getIdToken()) } });
+        const headers = { Authorization: "Bearer " + (await u.getIdToken()) };
+        if (pw) headers["X-Paper-Password"] = pw;
+        const r = await fetch(`${API_BASE}/api/cbt/competition?${qs}`, { headers });
         if (r.ok) {
           const d = await r.json();
           if (d && Array.isArray(d.questions) && d.questions.length) window.__compQuiz = { questions: d.questions, timeLimit: d.timeLimit || 0 };
+          break;
         }
+        if (r.status !== 403) break;
+        await unlocked();                       // locked: wait for the password box
       }
     } catch (e) {
-      console.warn("Competition paper from the bank failed:", e.message);
+      console.warn("Competition paper failed:", e.message);
     }
     // No fallback: the paper lives only in the bank now.
     if (!window.__compQuiz) return [];

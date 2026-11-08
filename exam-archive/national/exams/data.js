@@ -300,6 +300,9 @@ const EXAM_BADGES = {
   igcse: ["IGCSE", "var(--accent-tertiary, #7a5bc7)"],
   alevel: ["A LVL", "var(--accent-secondary)"],
   practice: ["PRAC", "var(--accent-primary)"],
+  // the competitions (Competitions tab)
+  scholastic: ["SCH", "var(--accent-tertiary, #7a5bc7)"],
+  anmc: ["ANMC", "var(--accent-success, #3f9b6b)"],
 };
 function examBadge(key) {
   const b = EXAM_BADGES[key];
@@ -583,7 +586,9 @@ function buildCompGrid() {
   Object.entries(COMP_REGISTRY).forEach(([id, comp]) => {
     const chip = document.createElement("div");
     chip.className = `custom-chip comp-chip${!comp.live ? " disabled" : ""}`;
-    chip.innerHTML = `<div class="status-dot ${comp.live ? "live" : "offline"}"></div><span>${comp.name}</span>`;
+    const badge = examBadge(id);
+    if (badge) chip.classList.add("has-badge");
+    chip.innerHTML = `${badge || `<div class="status-dot ${comp.live ? "live" : "offline"}"></div>`}<span>${comp.name}</span>`;
     if (comp.live) chip.onclick = () => selectComp(id, chip);
     else {
       chip.style.pointerEvents = "none";
@@ -1169,131 +1174,71 @@ function targetUrl() {
   return `../question/question.html?${params.toString()}`;
 }
 
-// ── Competition papers: premium, or by invitation ─────────────────────
-// The admin and PREMIUM users see the Competitions tab and can open any
-// competition paper. Anyone else needs a link the admin made. Such a link is the
-// paper's ordinary URL plus `k`, a code naming a `paperShares/{code}` document
-// that records which paper it is for; /utils/competition-gate.js checks the two
-// agree before the question page shows anything. One code per paper: copying
-// the link again hands back the same one, so withdrawing it (deleting the
-// document) withdraws every copy that was sent. Making and withdrawing those
-// links is the admin's alone (the rules let nobody else write a share): a
-// premium user's Copy link is the paper's plain URL, which opens for another
-// premium user.
+// ── Competition papers: one password per paper ───────────────────────
+// Every signed-in learner sees the Competitions tab, but a paper opens only with
+// its password (utils/competition-gate.js asks, server/routes/cbt.js checks).
+// The admin opens everything, and sets each paper's password here, on the
+// "Paper password" line under the picker. Passwords live in
+// compPasswords/{comp__div__year__round}, which the rules let only the admin
+// read or write. Clearing a password locks the paper to everyone but the admin.
 const ADMIN_EMAIL = "eemadanyel@gmail.com";
 let compIsAdmin = false;
 
-function newShareCode() {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-  const bytes = crypto.getRandomValues(new Uint8Array(12));
-  return [...bytes].map((b) => alphabet[b % alphabet.length]).join("");
-}
-
-// The paper the Competitions tab currently has picked, as stored on a share.
 const compPaperKey = () =>
   [compState.competition, compState.division, compState.year, compState.round].join("|");
+const compPassDoc = (key) => key.replace(/\|/g, "__").replace(/[^A-Za-z0-9_-]/g, "-");
 
-// Every share made for one paper (normally one; the query takes whatever is there).
-async function compSharesFor(key) {
-  const { db } = await import("/firebase-init.js");
-  const { collection, query, where, getDocs } = await import("firebase/firestore");
-  return (await getDocs(query(collection(db, "paperShares"), where("key", "==", key)))).docs;
-}
+const passRow = document.getElementById("comp-pass");
+const passIn = passRow && passRow.querySelector("input");
+const passSave = passRow && passRow.querySelector("button");
+const passNote = passRow && passRow.querySelector("[data-note]");
+let passFor = null; // the paper whose password the line is showing
 
-async function compShareUrl() {
-  const rel = targetUrl();
-  const user = await ppCurrentUser();
-  if (!rel || !user) return null;
-  const { db } = await import("/firebase-init.js");
-  const { doc, setDoc, serverTimestamp } = await import("firebase/firestore");
-  const { competition, division, year, round } = compState;
+async function refreshCompLink() {
+  if (!passRow) return;
+  const show = compIsAdmin && activeCat === "competition" && !beginBtn.disabled;
+  passRow.hidden = !show;
+  if (!show) return;
   const key = compPaperKey();
-
-  let code;
-  const made = await compSharesFor(key);
-  if (made.length) code = made[0].id;
-  else {
-    code = newShareCode();
-    await setDoc(doc(db, "paperShares", code), {
-      key, comp: competition, div: division, year: String(year), round,
-      createdBy: user.uid, createdAt: serverTimestamp(),
-    });
+  if (passFor === key) return;
+  passFor = key;
+  passIn.value = "";
+  passNote.textContent = "";
+  try {
+    const { db } = await import("/firebase-init.js");
+    const { doc, getDoc } = await import("firebase/firestore");
+    const snap = await getDoc(doc(db, "compPasswords", compPassDoc(key)));
+    if (passFor !== key) return;
+    passIn.value = snap.exists() ? snap.data().password || "" : "";
+    passNote.textContent = passIn.value ? "" : "No password yet: only you can open it.";
+  } catch (e) {
+    passFor = null;
+    passNote.textContent = "Could not read the password.";
+    console.warn("[builder] paper password:", e);
   }
-  compLinkOut = key;
-  syncWithdraw();
-  return `${rel}&k=${code}`;
 }
 
-// ── Withdraw: take a paper's link back ────────────────────────────────
-// The button shows only while the picked paper HAS a link out. Withdrawing
-// deletes the share document(s), so every copy of the link that was sent stops
-// opening the paper from then on; "Copy link" afterwards makes a fresh code.
-const withdrawBtn = document.getElementById("withdraw-btn");
-const withdrawLabel = withdrawBtn && withdrawBtn.querySelector(".withdraw-label");
-let compLinkOut = null; // the paper key known to have a link out, or null
-let withdrawArmTimer = null;
-
-function disarmWithdraw() {
-  clearTimeout(withdrawArmTimer);
-  if (!withdrawBtn) return;
-  withdrawBtn.classList.remove("is-armed");
-  if (withdrawLabel) withdrawLabel.textContent = "Withdraw link";
-}
-
-function syncWithdraw() {
-  if (!withdrawBtn) return;
-  const share = document.getElementById("share-btn");
-  const show = activeCat === "competition" && !beginBtn.disabled
-    && compLinkOut === compPaperKey() && !(share && share.hidden);
-  if (withdrawBtn.hidden === !show) return;
-  withdrawBtn.hidden = !show;
-  disarmWithdraw();
-}
-
-// Ask once per picked paper whether a link is out for it.
-let compLinkAsked = null;
-function refreshCompLink() {
-  if (!withdrawBtn || !compIsAdmin || activeCat !== "competition" || beginBtn.disabled) { syncWithdraw(); return; }
-  const key = compPaperKey();
-  if (compLinkAsked === key) { syncWithdraw(); return; }
-  compLinkAsked = key;
-  compSharesFor(key)
-    .then((docs) => { if (compPaperKey() === key) { compLinkOut = docs.length ? key : null; syncWithdraw(); } })
-    .catch((e) => { compLinkAsked = null; console.warn("[builder] could not check for a shared link:", e); });
-}
-
-if (withdrawBtn) {
-  // Begin's disabled state is the one signal every picker step funnels through;
-  // the step flow shows/hides Copy link, and Withdraw follows it.
+if (passRow) {
   new MutationObserver(refreshCompLink).observe(beginBtn, { attributes: true, attributeFilter: ["disabled"] });
-  const share = document.getElementById("share-btn");
-  if (share) new MutationObserver(refreshCompLink).observe(share, { attributes: true, attributeFilter: ["hidden"] });
-
-  withdrawBtn.onclick = async () => {
-    // Two presses: sent links cannot be un-withdrawn.
-    if (!withdrawBtn.classList.contains("is-armed")) {
-      withdrawBtn.classList.add("is-armed");
-      if (withdrawLabel) withdrawLabel.textContent = "Press again to withdraw";
-      withdrawArmTimer = setTimeout(disarmWithdraw, 4000);
-      return;
-    }
-    disarmWithdraw();
+  const save = async () => {
     const key = compPaperKey();
-    withdrawBtn.disabled = true;
+    const password = passIn.value.trim();
+    passSave.disabled = true;
     try {
-      const { deleteDoc } = await import("firebase/firestore");
-      const docs = await compSharesFor(key);
-      await Promise.all(docs.map((d) => deleteDoc(d.ref)));
-      compLinkOut = null;
-      compLinkAsked = key;
-      setStatus("Link withdrawn — copies already sent no longer open this paper.", true);
+      const { db } = await import("/firebase-init.js");
+      const { doc, setDoc, deleteDoc, serverTimestamp } = await import("firebase/firestore");
+      const ref = doc(db, "compPasswords", compPassDoc(key));
+      if (password) await setDoc(ref, { key, password, updatedAt: serverTimestamp() });
+      else await deleteDoc(ref);
+      passNote.textContent = password ? "Saved. Learners open this paper with it." : "Cleared: only you can open it now.";
     } catch (e) {
-      console.error("[builder] could not withdraw the link:", e);
-      setStatus("Could not withdraw the link — try again.", false);
+      console.error("[builder] could not save the password:", e);
+      passNote.textContent = "Could not save it. Try again.";
     }
-    withdrawBtn.disabled = false;
-    syncWithdraw();
+    passSave.disabled = false;
   };
+  passSave.onclick = save;
+  passIn.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); save(); } });
 }
 
 beginBtn.onclick = () => {
@@ -1343,7 +1288,7 @@ if (shareBtn) {
     if (shareBtn.disabled) return;
     let rel;
     try {
-      rel = activeCat === "competition" && compIsAdmin ? await compShareUrl() : targetUrl();
+      rel = targetUrl();
       /* A paper shared by someone who has the written answers carries a pass for THAT paper, so the
          person who opens it gets the written questions, the paper and the tools free. A sharer
          without that access just gets the plain link. */
@@ -1505,8 +1450,7 @@ document.querySelectorAll(".cat-tab").forEach((btn) => {
 // ── Bootstrap ──────────────────────────────────────────────────────
 // Tabs: National (exam) · International (exam) · Class (the old "practice" tab,
 // relabelled). Competitions (third-party papers: Scholastic, ANMC) is shown to
-// the admin and to premium users; the admin can also share a paper by link
-// with someone who is neither — see compShareUrl() above.
+// every signed-in learner; each paper opens with its password (see above).
 const compTab = document.querySelector('.cat-tab[data-tab="competition"]');
 document.querySelectorAll(".cat-tab").forEach((b) => {
   if (b.dataset.tab === "competition") b.style.display = "none";
@@ -1515,8 +1459,7 @@ document.querySelectorAll(".cat-tab").forEach((b) => {
 ppCurrentUser().then(async (user) => {
   if (!compTab || !user) return;
   compIsAdmin = user.email === ADMIN_EMAIL;
-  if (!compIsAdmin && !(await isPickerPremium())) return;
-  compTab.style.display = "";
+  compTab.style.display = ""; // every paper still needs its password (or the admin)
   // Arrived by a ?cat=competition link — land on it now it is known to be theirs.
   if (initialCat === "competition" && activeCat !== "competition") compTab.click();
 });

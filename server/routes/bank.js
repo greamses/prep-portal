@@ -140,7 +140,7 @@ module.exports = function () {
                                             30 questions at a time, as Exam Maker questions
 
      What a teacher sees: every public question; their own (mine=1); the gated
-     competition papers only if they are premium or the admin; verbatim past
+     competition papers only for the admin (everyone else opens them by password); verbatim past
      papers only while "hide originals" is off (the admin always sees them). */
   const access = require("../lib/access");
   const SUMMARY_TTL = 6 * 60 * 60 * 1000;
@@ -188,9 +188,9 @@ module.exports = function () {
     const showPast = isAdmin(req) || !flags.hideOriginals;
     const subjects = Object.entries(sum.subjects).map(([key, s]) => ({
       key, label: s.label,
-      count: s.count - (showPast ? 0 : s.past) + (premium ? s.gated : 0),
+      count: s.count - (showPast ? 0 : s.past) + (isAdmin(req) ? s.gated : 0),
       schemes: s.schemes, sources: s.sources, topics: s.topics, years: s.years,
-      comps: premium ? s.comps : {},
+      comps: isAdmin(req) ? s.comps : {},
     })).filter((s) => s.count > 0).sort((a, b) => b.count - a.count);
     const mine = (await bankCol().where("owner", "==", req.user.uid).count().get()).data().count;
     res.json({ ok: true, subjects, mine, premium, showPast });
@@ -199,7 +199,6 @@ module.exports = function () {
   router.get("/browse", authenticate, guard(async (req, res) => {
     const q = req.query;
     const str = (v) => String(v || "").trim().slice(0, 80);
-    const premium = (await access.getUserAccess(req.user.uid, req.user.email)).isPremium;
     const flags = await siteFlags();
     const showPast = isAdmin(req) || !flags.hideOriginals;
     let base = bankCol();
@@ -212,7 +211,7 @@ module.exports = function () {
     if (str(q.comp)) base = base.where("compKey", "==", str(q.comp));
     base = base.orderBy(admin.firestore.FieldPath.documentId());
     const ok = (x) => (x.owner ? x.owner === req.user.uid : true)
-      && (x.visibility === "gated" ? premium : true)
+      && (x.visibility === "gated" ? isAdmin(req) : true) // competition papers: password-only, so never browsable
       && (x.source === "past" ? showPast || x.owner : true);
     const items = [];
     let after = str(q.after) || null, done = false;
