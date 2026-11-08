@@ -25,9 +25,9 @@ const authPaths = [
   path.join(os.homedir(), ".local", "share", "com.vercel.cli", "auth.json"),
   path.join(os.homedir(), "Library", "Application Support", "com.vercel.cli", "auth.json"),
 ];
+// VERCEL_TOKEN (a token from the dashboard) wins over the CLI's saved login
 const authFile = authPaths.find((p) => fs.existsSync(p));
-if (!authFile) { console.error("No Vercel CLI login found. Run `vercel login` first."); process.exit(1); }
-const token = JSON.parse(fs.readFileSync(authFile, "utf8")).token;
+const token = process.env.VERCEL_TOKEN || (authFile ? JSON.parse(fs.readFileSync(authFile, "utf8")).token : null);
 if (!token) { console.error("The Vercel CLI login has no token. Run `vercel login`."); process.exit(1); }
 
 const API = "https://api.vercel.com";
