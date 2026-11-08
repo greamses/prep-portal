@@ -30,3 +30,15 @@ home/games/drone
 # Never upload installed packages: the build installs its own, and with outputDirectory "."
 # anything uploaded is served.
 node_modules
+
+# The question papers live in the ONE question bank now (server/lib/one-bank.js);
+# their old script files are kept in git but no longer served. Their SVG
+# diagrams ARE still served (the bank points at them).
+exam-archive/competitions/**/script.js
+exam-archive/competitions/anmc/anmc-13th.js
+exam-archive/national/competitions
+exam-archive/national/waec/math/*.js
+exam-archive/national/waec/english/*.js
+exam-archive/national/waec/physics/*.js
+exam-archive/national/waec/chemistry/chemistry-2024.js
+exam-archive/national/jamb/chemistry/*.js

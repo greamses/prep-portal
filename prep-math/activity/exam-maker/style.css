@@ -1246,3 +1246,43 @@ html.xm-bk-on { overflow: hidden; }
 .xm-bb__listfoot { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.7rem 0 0.2rem; }
 .xm-bb__end { font-size: 0.75rem; color: #6b655c; }
 .xm-bb__foot { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex: none; padding-top: 0.6rem; border-top: 1px dashed rgba(42, 39, 35, 0.22); font-size: 0.82rem; }
+
+/* ── Question bank, minimal (js/bank.js) ─────────────────────────────────
+   Subject cards; inside a card, saved sets then the shared bank. Icons carry
+   the actions; inputs are a single line, not boxes. */
+.pp-receipt.xm-qb__card { width: min(52rem, 100%); }
+.xm-qb__head { display: flex; align-items: center; gap: 0.6rem; flex: none; }
+.xm-qb__head h2 { flex: 1; margin: 0; font: 800 1.2rem/1.2 var(--font-display, "Unbounded"), sans-serif; }
+.xm-qb__icon, .xm-qb__back { display: inline-grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; }
+.xm-qb__icon:hover:not(:disabled), .xm-qb__back:hover { background: rgba(42, 39, 35, 0.07); }
+.xm-qb__icon:disabled { opacity: 0.35; cursor: default; }
+.xm-qb__icon svg, .xm-qb__back svg { width: 18px; height: 18px; display: block; }
+.xm-qb__icon.is-armed { background: #f6d5cf; }
+.xm-qb__line { min-width: 0; padding: 0.35rem 0.1rem; border: 0; border-bottom: 1.5px solid rgba(42, 39, 35, 0.35); border-radius: 0; background: transparent; font: inherit; color: inherit; outline: none; }
+.xm-qb__line:focus { border-bottom-color: var(--accent-secondary, #3b6fd4); }
+.xm-qb__save { display: flex; align-items: center; gap: 0.7rem; flex: none; }
+.xm-qb__save #xm-qb-name { flex: 1; }
+.xm-qb__subj { width: 11rem; }
+.xm-qb__msg { min-height: 1em; margin: -0.4rem 0 0; font-size: 0.72rem; color: #6f675b; flex: none; }
+.xm-qb__sec { display: grid; gap: 0.35rem; margin-bottom: 1.2rem; }
+.xm-qb__sec h3 { margin: 0 0 0.2rem; font: 700 0.72rem/1 var(--font-mono, "JetBrains Mono"), monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #8a8174; }
+.xm-qb__set { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 0.4rem; padding: 0.15rem 0; border-bottom: 1px solid rgba(42, 39, 35, 0.1); }
+.xm-qb__setname { font-weight: 700; font-size: 0.86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xm-qb__setnum { font-size: 0.72rem; color: #8a8174; }
+.xm-qb__chips { display: flex; flex-wrap: wrap; gap: 0.25rem 0.9rem; font-size: 0.78rem; }
+.xm-qb__chip { padding: 0.1rem 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; font: inherit; color: #6f675b; cursor: pointer; }
+.xm-qb__chip.is-on { color: inherit; font-weight: 700; border-bottom-color: currentColor; }
+.xm-qb__selects { display: flex; flex-wrap: wrap; gap: 0.8rem; font-size: 0.78rem; }
+.xm-qb__selects .xm-qb__line { max-width: 14rem; }
+.xm-qb__list { display: grid; gap: 0; margin-top: 0.4rem; }
+.xm-qb__q { display: grid; grid-template-columns: auto 1fr; gap: 0.6rem; padding: 0.6rem 0.2rem; border-bottom: 1px solid rgba(42, 39, 35, 0.1); cursor: pointer; }
+.xm-qb__q.is-on { background: rgba(255, 243, 168, 0.45); }
+.xm-qb__q input { margin-top: 0.2rem; accent-color: var(--accent-secondary, #3b6fd4); }
+.xm-qb__qbody { display: grid; gap: 0.25rem; min-width: 0; font-size: 0.85rem; }
+.xm-qb__text { overflow-wrap: anywhere; }
+.xm-qb__tag { font-size: 0.68rem; color: #8a8174; }
+.xm-qb__more { justify-self: center; margin: 0.6rem 0; padding: 0.2rem 0.4rem; border: 0; border-bottom: 1.5px solid currentColor; border-radius: 0; background: none; font: inherit; font-size: 0.78rem; cursor: pointer; }
+.xm-qb__foot { display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem; flex: none; padding-top: 0.4rem; font-weight: 700; }
+/* icons only: the name each icon carries stays for screen readers and the tooltip, not on screen */
+.xm-qb .wb-btn__name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.xm-qb__back[hidden], .xm-qb__foot[hidden] { display: none; }

@@ -82,8 +82,8 @@ module.exports = function () {
     const refs = ids.map((id) => bankCol().doc(id));
     const docs = await db().getAll(...refs);
     const got = docs.map((d) => (d.exists && d.data().owner === uid ? ONE.bankToEm(d.data()) : null));
-    // a question missing from the bank falls back to the set's own copy of it
-    return got.map((q, k) => q || (x.questions || [])[k]).filter(Boolean);
+    // the bank is the only source (no fallback to the set's old embedded copy)
+    return got.filter(Boolean);
   }
   const metaOf = (d) => { const x = d.data(); const types = {}; (x.questions || []).forEach((q) => { types[q.type] = (types[q.type] || 0) + 1; }); return { id: d.id, name: x.name, count: (x.questions || []).length, subject: x.subject || "", level: x.level || "", types, savedAt: ms(x.savedAt) }; };
 

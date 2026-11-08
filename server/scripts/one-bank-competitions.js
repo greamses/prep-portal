@@ -71,9 +71,10 @@ const answerIndexOf = (q) => (typeof q.correctIndex === "number" ? q.correctInde
         source: "competition", scheme: "competition", visibility: "gated",
         compKey, comp: { comp: p.comp, div: p.div, year: p.year, round: p.round },
         compOrder: n + 1, compTimeLimit: data.timeLimit || 0,
-        type: q.type || (opts.length >= 2 ? "objective" : "theory"),
+        // a question with no options is fill-in-the-blank
+        type: opts.length >= 2 ? (q.type || "objective") : "subjective",
         question: q.question || "", options: opts,
-        answerIndex: ai, answer: q.answer ?? (ai !== null && opts[ai] !== undefined ? null : null),
+        answerIndex: ai, answer: opts.length >= 2 ? null : (q.answer ?? ([].concat(q.explanation || "").join(" ").trim() || null)),
         explanation: q.explanation ?? "", hint: q.hint || "", topic: q.topic || null,
         section: q.section || null, image,
         subject: q.subject || "mathematics",

@@ -732,11 +732,11 @@ const Quiz = (() => {
               const d = r.ok ? await r.json() : null;
               if (d && d.full && Array.isArray(d.questions) && d.questions.length) {
                 localPool = localPool.concat(normalizeLocalObjective(d.questions, sub, lp.year));
-                continue;
               }
             } catch (e) {
               console.warn("Paper from the bank failed for", lp.entry.path, e.message);
             }
+            continue; // no fallback: these papers live only in the bank now
           }
           try {
             const raw = await loadLocalRaw(lp.entry.path, lp.entry.varName);
@@ -902,15 +902,8 @@ const Quiz = (() => {
     } catch (e) {
       console.warn("Competition paper from the bank failed:", e.message);
     }
-    if (!window.__compQuiz) {
-      const scriptPath = `../../../competitions/${comp}/${div}/${year}/${round}/script.js`;
-      try {
-        await import(scriptPath);
-      } catch (e) {
-        console.warn("Competition script load failed:", scriptPath, e.message);
-        return [];
-      }
-    }
+    // No fallback: the paper lives only in the bank now.
+    if (!window.__compQuiz) return [];
 
     const data = window.__compQuiz;
     if (!data?.questions?.length) return [];
@@ -929,7 +922,11 @@ const Quiz = (() => {
       return {
         question: q.question || "",
         options: opts,
-        _answer: ci >= 0 && opts[ci] !== undefined ? opts[ci] : null,
+        // A question with no options is fill-in-the-blank: its answer is the model answer.
+        _answer: opts.length >= 2
+          ? (ci >= 0 && opts[ci] !== undefined ? opts[ci] : null)
+          : (q.answer || (Array.isArray(q.explanation) ? q.explanation.join(" ") : q.explanation) || null),
+        markScheme: opts.length >= 2 ? undefined : (q.answer || ""),
         explanation: Array.isArray(q.explanation)
           ? q.explanation.join("\n")
           : q.explanation || "",
@@ -939,7 +936,7 @@ const Quiz = (() => {
             : q.image
           : "",
         hint: q.hint || "",
-        type: q.type || "objective",
+        type: opts.length >= 2 ? (q.type || "objective") : "subjective",
         subject: comp,
         examType: comp,
         examYear: year,
