@@ -493,7 +493,15 @@ const COMP_REGISTRY = {
           "5th-edition": { label: "5th Edition", order: 5, rounds: [{ id: "first-Round", name: "First Round", live: true }] },
         },
       },
-      "junior-secondary": { name: "Junior Secondary", live: false, years: {} },
+      "junior-secondary": {
+        name: "Junior Secondary", live: true,
+        years: {
+          "2nd-edition": { label: "2nd Edition", order: 2, rounds: [{ id: "first-Round", name: "First Round", live: true }] },
+          "3rd-edition": { label: "3rd Edition", order: 3, rounds: [{ id: "first-Round", name: "First Round", live: true }] },
+          "4th-edition": { label: "4th Edition", order: 4, rounds: [{ id: "first-Round", name: "First Round", live: true }] },
+          "5th-edition": { label: "5th Edition", order: 5, rounds: [{ id: "first-Round", name: "First Round", live: true }] },
+        },
+      },
       "senior-secondary": { name: "Senior Secondary", live: false, years: {} },
     },
   },

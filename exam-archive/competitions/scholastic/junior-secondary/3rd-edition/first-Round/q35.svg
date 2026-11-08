@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 280" width="100%" height="100%">
+  <line x1="150" y1="140" x2="150" y2="25" stroke="black" stroke-width="2"/>
+  <path d="M144 35 L150 22 L156 35" fill="black"/>
+  <line x1="150" y1="140" x2="103.5" y2="40.3" stroke="black" stroke-width="2"/>
+  <text x="98" y="33" font-family="'Times New Roman', serif" font-size="15" text-anchor="middle">Y</text>
+  <line x1="150" y1="140" x2="258.6" y2="122.8" stroke="black" stroke-width="2"/>
+  <text x="272" y="126" font-family="'Times New Roman', serif" font-size="15" text-anchor="middle">V</text>
+  <line x1="150" y1="140" x2="191.2" y2="242.0" stroke="black" stroke-width="2"/>
+  <text x="196" y="260" font-family="'Times New Roman', serif" font-size="15" text-anchor="middle">W</text>
+  <line x1="150" y1="140" x2="73.6" y2="219.1" stroke="black" stroke-width="2"/>
+  <text x="64" y="234" font-family="'Times New Roman', serif" font-size="15" text-anchor="middle">X</text>
+  <g font-family="'Times New Roman', serif" font-size="14"><text x="150" y="16" text-anchor="middle">North</text><text x="130" y="88">25°</text><text x="166" y="112">81°</text><text x="172" y="172">77°</text><text x="112" y="178">66°</text><text x="128" y="142">O</text></g>
+</svg>

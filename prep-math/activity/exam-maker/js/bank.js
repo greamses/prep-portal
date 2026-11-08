@@ -19,7 +19,7 @@ import { TYPES, esc, textHtml } from "./model.js";
 
 const EXAMS = { utme: "UTME", wassce: "WASSCE", postutme: "Post-UTME", cee: "Common Entrance", practice: "Practice", sat: "SAT", igcse: "IGCSE", alevel: "A Level", competition: "Competition" };
 const SOURCES = { past: "Past", ai: "Practice", manual: "Written", rephrased: "Reworded", competition: "Competition", teacher: "Mine" };
-const SCHOLASTIC_EDITION = { 2022: "1st Edition", 2025: "2nd Edition", "3rd-edition": "3rd Edition", "4th-edition": "4th Edition", "5th-edition": "5th Edition" };
+const SCHOLASTIC_EDITION = { 2022: "1st Edition", 2025: "2nd Edition", "2nd-edition": "2nd Edition", "3rd-edition": "3rd Edition", "4th-edition": "4th Edition", "5th-edition": "5th Edition" };
 const compName = (k) => {
   const [c, , y, r] = String(k).split("|");
   const when = c === "scholastic" ? SCHOLASTIC_EDITION[y] || y : y;
