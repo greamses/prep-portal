@@ -1286,3 +1286,20 @@ html.xm-bk-on { overflow: hidden; }
 /* icons only: the name each icon carries stays for screen readers and the tooltip, not on screen */
 .xm-qb .wb-btn__name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .xm-qb__back[hidden], .xm-qb__foot[hidden] { display: none; }
+
+/* ── Folders (js/bank.js) ───────────────────────────────────────────────
+   Every card in the bank is a folder: a manila body with a tab on its top
+   left (a cut corner, not a rounded one), the subject's icon or a folder
+   inside. Folders hold folders, as deep as the teacher likes. */
+.xm-qb .xm-qb__folder { position: relative; margin-top: 11px; background: #f8e3a3; border: 1px solid rgba(122, 88, 20, 0.28); box-shadow: 0 2px 0 rgba(122, 88, 20, 0.16), 0 4px 10px rgba(42, 39, 35, 0.08); }
+.xm-qb .xm-qb__folder::before { content: ""; position: absolute; left: -1px; top: -11px; width: 46%; height: 11px; background: #f1d17f; border: 1px solid rgba(122, 88, 20, 0.28); border-bottom: 0; clip-path: polygon(0 0, 78% 0, 100% 100%, 0 100%); }
+.xm-qb .xm-qb__folder:hover, .xm-qb .xm-qb__folder:focus-visible { background: #fbe9b6; }
+.xm-qb .xm-qb__folders .xm-qb__folder { background: #fdf0c8; }
+.xm-qb .xm-qb__folders .xm-qb__folder::before { background: #f8e3a3; }
+.xm-qb__folders { margin-bottom: 0.9rem; }
+.xm-qb__newfolder { display: flex; align-items: center; gap: 0.5rem; margin: 0 0 1.1rem; max-width: 22rem; }
+.xm-qb__newfolder .xm-qb__line { flex: 1; font-size: 0.85rem; }
+.xm-qb__set { grid-template-columns: 1fr auto auto auto auto; }
+.xm-qb__movesel { max-width: 12rem; font-size: 0.78rem; }
+.xm-qb__linknote { margin: 0; font-size: 0.78rem; color: #6f675b; }
+.xm-qb__copyall { justify-self: start; margin-top: 0.3rem; }

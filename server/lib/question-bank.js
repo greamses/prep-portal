@@ -25,8 +25,9 @@ function cleanQuestion(q) {
     svg: typeof (q && q.svg) === "string" && /^\s*<svg[\s>]/i.test(q.svg) ? clip(q.svg, 30000) : "",
   };
   if (type === "mcq") {
-    out.options = [0, 1, 2, 3].map((k) => clip(q && q.options && q.options[k], 400));
-    out.answer = Math.max(0, Math.min(3, Math.round(Number(q && q.answer)) || 0));
+    const n = Array.isArray(q && q.options) && q.options.length > 4 && String(q.options[4] || "").trim() ? 5 : 4;
+    out.options = Array.from({ length: n }, (_, k) => clip(q && q.options && q.options[k], 400));
+    out.answer = Math.max(0, Math.min(n - 1, Math.round(Number(q && q.answer)) || 0));
   } else { out.options = []; out.answer = clip(q && q.answer, 3000); }
   return out;
 }

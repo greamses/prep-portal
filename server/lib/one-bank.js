@@ -58,14 +58,15 @@ function emToBank(q, uid, meta = {}) {
 function bankToEm(x) {
   const type = x.emType || BANK_TO_EM[x.type] || "theory";
   const isMcq = type === "mcq";
-  const opts = Array.isArray(x.options) ? x.options.slice(0, 4) : [];
+  const opts = Array.isArray(x.options) ? x.options.slice(0, 5) : [];
   while (isMcq && opts.length < 4) opts.push("");
   return {
     type, text: x.question || "",
     options: isMcq ? opts : [],
     answer: isMcq ? (typeof x.answerIndex === "number" ? x.answerIndex : 0) : String(x.answer ?? ""),
     marks: x.marks || (isMcq ? 1 : 0), lines: x.lines || 0,
-    svg: typeof x.image === "string" && /^\s*<svg[\s>]/i.test(x.image) ? x.image : "",
+    /* a diagram kept as a file (the competition papers) travels as its inline copy */
+    svg: typeof x.image === "string" && /^\s*<svg[\s>]/i.test(x.image) ? x.image : (typeof x.svgInline === "string" ? x.svgInline : ""),
   };
 }
 

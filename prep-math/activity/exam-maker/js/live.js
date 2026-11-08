@@ -4,6 +4,7 @@ import { UI } from "/utils/components/ui-icons.js";
 import { richField } from "./rich-field.js";
 import { textHtml } from "./model.js";
 import { toTeX } from "/utils/components/math-linear.js";
+import { checkBlank } from "/utils/blank-check.js";
 
 /* ============================================================================
    The paper, answered on screen
@@ -56,11 +57,15 @@ export function matches(typed, answer) {
   if (!t) return false;
   /* "a / b" (spaces round the slash), "a | b", "a; b" and "a or b" are alternatives; "1/2" is one fraction */
   const options = String(answer || "").split(/\s*(?:\s\/\s|\||;|\bor\b)\s*/i).map(norm).filter(Boolean);
-  return options.some((o) => {
+  if (options.some((o) => {
     if (o === t) return true;
     const a = parseFloat(o), b = parseFloat(t);
     return Number.isFinite(a) && Number.isFinite(b) && a === b && /^-?[\d.]+$/.test(o) && /^-?[\d.]+$/.test(t);
-  });
+  })) return true;
+  /* the CBT page's checker as well (utils/blank-check.js): a unit after a number, "x = 6",
+     3/5 for 0.6, factors in another order */
+  const raw = String(answer || "").split(/\s*(?:\s\/\s|\|)\s*/).map((x) => plainTex(x).replace(/\$/g, "")).filter(Boolean);
+  return checkBlank(typed, raw) === true;
 }
 
 /* `store` is where this paper's answers are kept; a shared paper has its own, so

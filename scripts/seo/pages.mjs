@@ -68,11 +68,11 @@ export const PAGES = [
   {
     file: "exam-archive/national/exams/index.html",
     section: "exams",
-    name: "CBT Exam Builder",
-    title: "Free CBT Practice: WAEC, NECO & JAMB-style Exam Builder",
+    name: "CBT Builder",
+    title: "Free CBT Practice: WAEC, NECO & JAMB-style CBT Builder",
     desc: "Build a free CBT practice exam in seconds. Pick a class, subject and topics and sit an original WAEC, NECO, JAMB, Common Entrance, IGCSE or SAT paper, marked instantly.",
     intro:
-      "The Exam Builder turns a question bank into a computer-based test you can sit straight away. Choose your class, a subject and the topics you want, and it sets a timed paper in the style of the exam you are preparing for. Every question is original and written to the syllabus, and the paper is marked the moment you submit, with the working shown for the ones you missed.",
+      "The CBT Builder turns a question bank into a computer-based test you can sit straight away. Choose your class, a subject and the topics you want, and it sets a timed paper in the style of the exam you are preparing for. Every question is original and written to the syllabus, and the paper is marked the moment you submit, with the working shown for the ones you missed.",
     points: [
       "Common Entrance, WASSCE, NECO, UTME and Post-UTME papers for Nigerian students",
       "IGCSE, A-Level and SAT papers for international exams",
@@ -445,8 +445,8 @@ export const PAGES = [
   {
     file: "prep-math/activity/exam-maker/index.html",
     section: "workbooks",
-    name: "Paper Test",
-    title: "Paper Test: Set a Printable Exam with MCQ, Subjective & Theory Questions",
+    name: "Paper Test Builder",
+    title: "Paper Test Builder: Set a Printable Exam with MCQ, Subjective & Theory Questions",
     desc: "Set a printable exam paper: write multiple-choice, subjective and theory questions or have them generated, add diagrams, and print in colour with your school header.",
     intro:
       "An exam paper builder for teachers. Write your own questions or have the models draft them, then the paper lays them out for you: a coloured header with your school's name and logo, multiple choice in two columns, and ruled space for written answers.",

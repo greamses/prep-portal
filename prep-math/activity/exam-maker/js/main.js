@@ -298,7 +298,7 @@ function card(q, i) {
   const opts = q.type === "mcq"
     ? `<div class="xm-opts">${q.options.map((o, k) => `
         <label class="xm-opt"><input type="radio" name="a-${q.id}" data-f="answer" data-k="${k}" ${q.answer === k ? "checked" : ""} title="The correct answer" />
-          <b>${"ABCD"[k]}</b><input class="wb-input" data-f="opt" data-k="${k}" value="${esc(o)}" autocomplete="off" placeholder="Option ${"ABCD"[k]}" /></label>`).join("")}</div>`
+          <b>${"ABCDE"[k]}</b><input class="wb-input" data-f="opt" data-k="${k}" value="${esc(o)}" autocomplete="off" placeholder="Option ${"ABCDE"[k]}" /></label>`).join("")}</div>`
     : `<label class="wb-field"><span>Model answer or marking note</span><textarea class="wb-input" data-f="answerText" rows="2">${esc(q.answer)}</textarea></label>`;
   return `<div class="pp-receipt xm-qreceipt"><div class="pp-receipt__paper xm-card" data-id="${q.id}">
     <div class="xm-card__top">

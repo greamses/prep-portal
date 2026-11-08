@@ -76,25 +76,67 @@ module.exports = function () {
   // where they are kept private to this teacher. The embedded copy stays as a fallback.
   const ONE = require("../lib/one-bank");
   const bankCol = () => db().collection(ONE.BANK);
-  async function questionsOf(uid, x) {
+  async function questionsOf(uid, x, admin = false) {
     const ids = Array.isArray(x.ids) ? x.ids : [];
     if (!ids.length) return x.questions || [];
     const refs = ids.map((id) => bankCol().doc(id));
     const docs = await db().getAll(...refs);
-    const got = docs.map((d) => (d.exists && d.data().owner === uid ? ONE.bankToEm(d.data()) : null));
+    /* the teacher's own questions; the admin's sets may also point at the gated competition papers */
+    const mayHave = (d) => d.owner === uid || (admin && d.visibility === "gated");
+    const got = docs.map((d) => (d.exists && mayHave(d.data()) ? ONE.bankToEm(d.data()) : null));
     // the bank is the only source (no fallback to the set's old embedded copy)
     return got.filter(Boolean);
   }
-  const metaOf = (d) => { const x = d.data(); const types = {}; (x.questions || []).forEach((q) => { types[q.type] = (types[q.type] || 0) + 1; }); return { id: d.id, name: x.name, count: (x.questions || []).length, subject: x.subject || "", level: x.level || "", types, savedAt: ms(x.savedAt) }; };
+  const metaOf = (d) => { const x = d.data(); const types = {}; (x.questions || []).forEach((q) => { types[q.type] = (types[q.type] || 0) + 1; }); return { id: d.id, name: x.name, count: x.count != null ? x.count : (x.questions || []).length, subject: x.subject || "", level: x.level || "", folder: x.folder || "", types, savedAt: ms(x.savedAt) }; };
+  /* FOLDERS. A set sits in a folder of its subject: `folder` is a path ("Competitions/Scholastic"), "" the
+     subject itself. Folders are kept as paths per subject on questionSets/{uid} { folders: { [subjectKey]: [path] } },
+     so an empty one stays until it is deleted. */
+  const subjKey = (s) => String(s || "").split("·")[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, "") || "general";
+  const cleanPath = (p) => String(p || "").split("/").map((x) => x.replace(/\s+/g, " ").trim().slice(0, 60)).filter(Boolean).slice(0, 6).join("/");
+  const shelf = (uid) => db().collection("questionSets").doc(uid);
 
   router.get("/sets", authenticate, guard(async (req, res) => {
-    const snap = await sets(req.user.uid).orderBy("savedAt", "desc").limit(300).get();
-    res.json({ ok: true, sets: snap.docs.map(metaOf) });
+    const [snap, sh] = await Promise.all([sets(req.user.uid).orderBy("savedAt", "desc").limit(300).get(), shelf(req.user.uid).get()]);
+    res.json({ ok: true, sets: snap.docs.map(metaOf), folders: (sh.exists && sh.data().folders) || {} });
   }));
   router.get("/sets/:id", authenticate, guard(async (req, res) => {
     const d = await sets(req.user.uid).doc(String(req.params.id)).get();
     if (!d.exists) return res.status(404).json({ error: "That bank is not there any more." });
-    res.json({ ok: true, set: { ...metaOf(d), questions: await questionsOf(req.user.uid, d.data()) } });
+    res.json({ ok: true, set: { ...metaOf(d), questions: await questionsOf(req.user.uid, d.data(), isAdmin(req)) } });
+  }));
+  // POST /folders { subject, path }  make a folder (and the folders above it)
+  router.post("/folders", authenticate, guard(async (req, res) => {
+    const key = subjKey(req.body && req.body.subject), path = cleanPath(req.body && req.body.path);
+    if (!path) return res.status(400).json({ error: "Name the folder." });
+    const parts = path.split("/"), all = parts.map((_, i) => parts.slice(0, i + 1).join("/"));
+    await shelf(req.user.uid).set({ folders: { [key]: admin.firestore.FieldValue.arrayUnion(...all) } }, { merge: true });
+    res.json({ ok: true, path });
+  }));
+  // DELETE /folders { subject, path }  an empty folder only
+  router.delete("/folders", authenticate, guard(async (req, res) => {
+    const key = subjKey(req.body && req.body.subject), path = cleanPath(req.body && req.body.path);
+    const sh = await shelf(req.user.uid).get();
+    const list = (sh.exists && sh.data().folders && sh.data().folders[key]) || [];
+    if (list.some((f) => f.startsWith(path + "/"))) return res.status(409).json({ error: "Empty the folder first." });
+    const inside = await sets(req.user.uid).where("folder", "==", path).limit(50).get();
+    if (inside.docs.some((d) => subjKey(d.data().subject) === key)) return res.status(409).json({ error: "Empty the folder first." });
+    await shelf(req.user.uid).set({ folders: { [key]: admin.firestore.FieldValue.arrayRemove(path) } }, { merge: true });
+    res.json({ ok: true });
+  }));
+  // POST /sets/:id/move { folder }
+  router.post("/sets/:id/move", authenticate, guard(async (req, res) => {
+    const ref = sets(req.user.uid).doc(String(req.params.id));
+    if (!(await ref.get()).exists) return res.status(404).json({ error: "That bank is not there any more." });
+    await ref.set({ folder: cleanPath(req.body && req.body.folder) }, { merge: true });
+    res.json({ ok: true });
+  }));
+  /* GET /comp-links  the admin: every competition paper's Paper Test link and its password
+     (made by server/scripts/comp-links.js), for copying out in one go */
+  router.get("/comp-links", authenticate, guard(async (req, res) => {
+    if (!isAdmin(req)) return res.status(403).json({ error: "Only the admin sees these." });
+    const snap = await db().collection("compLinks").get();
+    const links = snap.docs.map((d) => d.data()).sort((a, b) => (a.order || 0) - (b.order || 0));
+    res.json({ ok: true, links: links.map((l) => ({ name: l.name, folder: l.folder, url: l.url, password: l.password, minutes: l.minutes, tries: l.tries })) });
   }));
   router.post("/sets", authenticate, guard(async (req, res) => {
     const b = req.body || {};
@@ -114,7 +156,7 @@ module.exports = function () {
       made.slice(i, i + 400).forEach(({ id: qid, data }) => batch.set(bankCol().doc(qid), { ...data, updatedAt: stamp }, { merge: true }));
       await batch.commit();
     }
-    await ref.set({ name, questions, ids: made.map((m) => m.id), subject: String(b.subject || "").slice(0, 80), level: String(b.level || "").slice(0, 60), savedAt: admin.firestore.FieldValue.serverTimestamp() });
+    await ref.set({ name, questions, ids: made.map((m) => m.id), subject: String(b.subject || "").slice(0, 80), level: String(b.level || "").slice(0, 60), folder: cleanPath(b.folder), savedAt: admin.firestore.FieldValue.serverTimestamp() });
     res.json({ ok: true, id, name, count: questions.length, replaced: had });
   }));
   router.delete("/sets/:id", authenticate, guard(async (req, res) => {

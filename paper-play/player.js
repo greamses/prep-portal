@@ -493,10 +493,51 @@ function draw() {
   typeset();
 }
 
+/* The password box: one line and a button, over the page. Resolves with what was typed, or null for Back. */
+function askPassword(error = "") {
+  return new Promise((resolve) => {
+    const box = document.createElement("div");
+    box.className = "pp-pwbox";
+    box.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--bg, #f0ece3);font-family:'JetBrains Mono',ui-monospace,monospace;text-align:center;color:var(--ink, #2a2723)";
+    box.innerHTML = `<form style="max-width:26rem;width:100%" autocomplete="off">
+      <h1 style="font-family:Unbounded,system-ui,sans-serif;font-size:1.3rem;margin:0 0 .5rem">This paper is locked</h1>
+      <p style="font-size:.85rem;line-height:1.6;opacity:.75;margin:0 0 1.4rem">Type the password that came with the link.</p>
+      <input name="pw" aria-label="Paper password" placeholder="Password" autocapitalize="characters" spellcheck="false"
+        style="width:100%;box-sizing:border-box;padding:.5rem .1rem;border:0;border-bottom:2px solid currentColor;border-radius:0;background:transparent;font:inherit;font-size:1.1rem;letter-spacing:.15em;text-align:center;color:inherit;outline:none">
+      <p data-msg style="min-height:1.4em;font-size:.8rem;color:#b5473a;margin:.6rem 0 .8rem"></p>
+      <button type="submit">Open the paper</button> <button type="button" data-back>Back</button>
+    </form>`;
+    document.body.appendChild(box);
+    const form = box.querySelector("form");
+    form.querySelector("[data-msg]").textContent = error;
+    form.pw.focus();
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const v = form.pw.value.trim();
+      if (!v) { form.querySelector("[data-msg]").textContent = "Type the password first."; return; }
+      box.remove(); resolve(v);
+    });
+    box.querySelector("[data-back]").addEventListener("click", () => { box.remove(); resolve(null); });
+  });
+}
+
 async function open() {
   if (!code) { say("That link isn't right.", true); return; }
   try {
-    const r = await api(`/api/workbooks/paper/${code}`);
+    /* a paper with a password (the competition links): ask for it, keep it for this tab */
+    const PW = `pp-paper-pw:${code}`;
+    let pw = "";
+    try { pw = sessionStorage.getItem(PW) || ""; } catch { /* asked for again */ }
+    let r;
+    for (;;) {
+      try { r = await api(`/api/workbooks/paper/${code}${pw ? `?pw=${encodeURIComponent(pw)}` : ""}`); break; }
+      catch (e) {
+        if (!/password|too many tries/i.test(String(e && e.message))) throw e;
+        pw = await askPassword(pw ? e.message : "");
+        if (pw == null) { say("This paper needs its password.", true); return; }
+      }
+    }
+    try { if (pw) sessionStorage.setItem(PW, pw); } catch { /* not kept */ }
     head = { ...BLANK_HEAD, ...r.head, key: false, myExamNo: r.examNoMine || "" };
     base = (r.questions || []).map(clean);
     questions = base;

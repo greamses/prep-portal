@@ -327,6 +327,12 @@ Object.assign(UI, {
     r(3.4, 12.4, 17.2, 9, PAPER, 1.6) + r(2.4, 10.4, 19.2, 3.4, GOLD, 1.4) +
       r(10.8, 1.6, 2.4, 6.4, LOUD, 1.2) + tri("M7.4 6.6h9.2L12 11.6z", LOUD) + r(9, 15.8, 6, 2.4, "#fff", 1.2)
   ),
+  /* a folder (the question bank's folders), and a folder with a green plus (make one) */
+  folder: svg(tri("M2.4 6a1.6 1.6 0 0 1 1.6-1.6h5.2l2.2 2.4h8.6a1.6 1.6 0 0 1 1.6 1.6V18a1.6 1.6 0 0 1-1.6 1.6H4A1.6 1.6 0 0 1 2.4 18z", GOLD) + r(2.4, 9.4, 19.2, 10.2, WARM, 1.6)),
+  folderPlus: svg(
+    tri("M2.4 6a1.6 1.6 0 0 1 1.6-1.6h5.2l2.2 2.4h8.6a1.6 1.6 0 0 1 1.6 1.6V18a1.6 1.6 0 0 1-1.6 1.6H4A1.6 1.6 0 0 1 2.4 18z", GOLD) + r(2.4, 9.4, 19.2, 10.2, WARM, 1.6) +
+      r(11, 11.2, 2, 7, "#fff", 1) + r(8.5, 13.7, 7, 2, "#fff", 1)
+  ),
   /* save, as a NEW one: the disk with a green plus badge */
   savePlus: svg(
     tri("M3.4 5.4a2 2 0 0 1 2-2h11l4.2 4.2v11a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z", PAPER) +

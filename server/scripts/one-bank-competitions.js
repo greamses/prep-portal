@@ -80,6 +80,8 @@ const answerIndexOf = (q) => (typeof q.correctIndex === "number" ? q.correctInde
         accept: opts.length >= 2 ? null : (Array.isArray(q.accept) && q.accept.length ? q.accept.map(String) : (q.answer ? acceptFrom(q.answer) : [])),
         explanation: q.explanation ?? "", hint: q.hint || "", topic: q.topic || null,
         section: q.section || null, image,
+        /* the diagram's own SVG too, for the Paper Test Builder, whose questions carry their drawing inline */
+        svgInline: image && image.endsWith(".svg") ? (() => { try { return fs.readFileSync(path.join(__dirname, "..", "..", image.replace(/^\//, "")), "utf8").slice(0, 30000); } catch { return null; } })() : null,
         subject: q.subject || "mathematics",
         origin: { file: path.relative(path.join(__dirname, "..", ".."), p.file).replace(/\\/g, "/"), index: n },
         createdAt: now, migratedAt: now,

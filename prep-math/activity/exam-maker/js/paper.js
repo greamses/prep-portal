@@ -112,7 +112,7 @@ const figure = (q, cols = false) => {
   return s ? `<figure class="xp-svg"><div class="xp-svg__frame">${s}</div><figcaption data-nomath>Figure ${++figNo}</figcaption></figure>` : "";
 };
 
-const letter = (i) => "ABCD"[i];
+const letter = (i) => "ABCDE"[i];
 
 function mcq(q, no) {
   return `<div class="xp-q xp-q--mcq" data-qid="${q.id}">
@@ -250,7 +250,7 @@ function omrGrid(numbered) {
   const PER = 15;
   const cols = [];
   for (let i = 0; i < rows.length; i += PER) cols.push(rows.slice(i, i + PER));
-  const li = ({ q, n }) => `<li data-qid="${q.id}"><span class="xp-omr__n" data-nomath>${n}</span>${[0, 1, 2, 3].map((i) => `<b data-i="${i}" data-nomath>${letter(i)}</b>`).join("")}</li>`;
+  const li = ({ q, n }) => `<li data-qid="${q.id}"><span class="xp-omr__n" data-nomath>${n}</span>${q.options.map((_, i) => `<b data-i="${i}" data-nomath>${letter(i)}</b>`).join("")}</li>`;
   return `<div class="xp-omr__grid">${cols.map((c) => `<ol>${c.map(li).join("")}</ol>`).join("")}</div>`;
 }
 

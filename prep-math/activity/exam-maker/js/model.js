@@ -118,15 +118,16 @@ export function clean(q) {
   if (type === "mcq") {
     const o = Array.isArray(q && q.options) ? q.options.map(str) : [];
     while (o.length < 4) o.push("");
-    out.options = o.slice(0, 4).map((s) => fixTex(s, true).trim());
+    /* four options, or five when a fifth is written (competition papers run A to E) */
+    out.options = o.slice(0, o.length > 4 && String(o[4]).trim() ? 5 : 4).map((s) => fixTex(s, true).trim());
     let a = q && q.answer;
-    if (typeof a === "string" && /^[A-Da-d]$/.test(a.trim())) a = "ABCD".indexOf(a.trim().toUpperCase());
+    if (typeof a === "string" && /^[A-Ea-e]$/.test(a.trim())) a = "ABCDE".indexOf(a.trim().toUpperCase());
     /* an answer given as the option's own text, not its index */
     if (typeof a === "string" && !/^\d$/.test(a.trim())) {
       const k = out.options.findIndex((o) => norm(o) === norm(a));
       if (k >= 0) a = k;
     }
-    out.answer = num(a, 0, 0, 3);
+    out.answer = num(a, 0, 0, out.options.length - 1);
   }
   return out;
 }
@@ -441,7 +442,7 @@ export function shuffled(questions, seed) {
   };
   return mix(questions).map((q) => {
     if (q.type !== "mcq") return q;
-    const order = mix([0, 1, 2, 3]);
+    const order = mix(q.options.map((_, i) => i));
     return { ...q, options: order.map((i) => q.options[i]), answer: order.indexOf(q.answer) };
   });
 }

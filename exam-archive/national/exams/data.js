@@ -1178,69 +1178,11 @@ function targetUrl() {
 // ── Competition papers: one password per paper ───────────────────────
 // Every signed-in learner sees the Competitions tab, but a paper opens only with
 // its password (utils/competition-gate.js asks, server/routes/cbt.js checks).
-// The admin opens everything, and sets each paper's password here, on the
-// "Paper password" line under the picker. Passwords live in
-// compPasswords/{comp__div__year__round}, which the rules let only the admin
-// read or write. Clearing a password locks the paper to everyone but the admin.
+// The passwords are made with the paper links, in the Paper Test Builder's
+// question bank (Mathematics > Competitions): see server/routes/bank.js comp-links.
 const ADMIN_EMAIL = "eemadanyel@gmail.com";
 let compIsAdmin = false;
-
-const compPaperKey = () =>
-  [compState.competition, compState.division, compState.year, compState.round].join("|");
-const compPassDoc = (key) => key.replace(/\|/g, "__").replace(/[^A-Za-z0-9_-]/g, "-");
-
-const passRow = document.getElementById("comp-pass");
-const passIn = passRow && passRow.querySelector("input");
-const passSave = passRow && passRow.querySelector("button");
-const passNote = passRow && passRow.querySelector("[data-note]");
-let passFor = null; // the paper whose password the line is showing
-
-async function refreshCompLink() {
-  if (!passRow) return;
-  const show = compIsAdmin && activeCat === "competition" && !beginBtn.disabled;
-  passRow.hidden = !show;
-  if (!show) return;
-  const key = compPaperKey();
-  if (passFor === key) return;
-  passFor = key;
-  passIn.value = "";
-  passNote.textContent = "";
-  try {
-    const { db } = await import("/firebase-init.js");
-    const { doc, getDoc } = await import("firebase/firestore");
-    const snap = await getDoc(doc(db, "compPasswords", compPassDoc(key)));
-    if (passFor !== key) return;
-    passIn.value = snap.exists() ? snap.data().password || "" : "";
-    passNote.textContent = passIn.value ? "" : "No password yet: only you can open it.";
-  } catch (e) {
-    passFor = null;
-    passNote.textContent = "Could not read the password.";
-    console.warn("[builder] paper password:", e);
-  }
-}
-
-if (passRow) {
-  new MutationObserver(refreshCompLink).observe(beginBtn, { attributes: true, attributeFilter: ["disabled"] });
-  const save = async () => {
-    const key = compPaperKey();
-    const password = passIn.value.trim();
-    passSave.disabled = true;
-    try {
-      const { db } = await import("/firebase-init.js");
-      const { doc, setDoc, deleteDoc, serverTimestamp } = await import("firebase/firestore");
-      const ref = doc(db, "compPasswords", compPassDoc(key));
-      if (password) await setDoc(ref, { key, password, updatedAt: serverTimestamp() });
-      else await deleteDoc(ref);
-      passNote.textContent = password ? "Saved. Learners open this paper with it." : "Cleared: only you can open it now.";
-    } catch (e) {
-      console.error("[builder] could not save the password:", e);
-      passNote.textContent = "Could not save it. Try again.";
-    }
-    passSave.disabled = false;
-  };
-  passSave.onclick = save;
-  passIn.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); save(); } });
-}
+function refreshCompLink() { /* the password line moved to the Paper Test Builder */ }
 
 beginBtn.onclick = () => {
   if (beginBtn.disabled) return;

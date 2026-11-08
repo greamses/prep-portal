@@ -62,7 +62,7 @@ const NAV_CONFIG = [
         icon: I.international,
         description: "Set a test to print and sit on paper",
         children: [
-          { text: "Set a paper test", href: "/prep-math/activity/exam-maker/", description: "Multiple choice, short answer and theory, with your school header — pick questions from the question bank" },
+          { text: "Paper Test Builder", href: "/prep-math/activity/exam-maker/", description: "Multiple choice, short answer and theory, with your school header — pick questions from the question bank" },
         ],
       },
       {

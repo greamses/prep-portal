@@ -413,8 +413,9 @@ module.exports = function () {
         svg: typeof (q && q.svg) === "string" && /^\s*<svg[\s>]/i.test(q.svg) ? clip(q.svg, 30000) : "",
       };
       if (type === "mcq") {
-        out.options = [0, 1, 2, 3].map((k) => clip(q && q.options && q.options[k], 400));
-        out.answer = Math.max(0, Math.min(3, Math.round(Number(q && q.answer)) || 0));
+        const n = Array.isArray(q && q.options) && q.options.length > 4 && String(q.options[4] || "").trim() ? 5 : 4;
+        out.options = Array.from({ length: n }, (_, k) => clip(q && q.options && q.options[k], 400));
+        out.answer = Math.max(0, Math.min(n - 1, Math.round(Number(q && q.answer)) || 0));
       } else { out.options = []; out.answer = clip(q && q.answer, 3000); }
       return out;
     }).filter((q) => q.text.trim());
@@ -507,6 +508,7 @@ module.exports = function () {
     return "";
   }
 
+  const pwTries = new Map(); // uid → { n, until }: wrong paper passwords
   router.get("/paper/:code", authenticate, async (req, res) => {
     try {
       const code = String(req.params.code || "").toUpperCase();
@@ -514,9 +516,22 @@ module.exports = function () {
       const snap = await db().collection("sharedPapers").doc(code).get();
       if (!snap.exists) return res.status(404).json({ error: "That paper doesn't exist any more." });
       const a = snap.data();
+      const owner = a.ownerUid === req.user.uid;
+      /* a paper with a password (the competition links, server/scripts/comp-links.js): everyone
+         but its owner and the admin sends it as ?pw=. 10 wrong tries per person per 10 minutes. */
+      if (a.password && !owner && !isAdmin(req)) {
+        const t = pwTries.get(req.user.uid);
+        if (t && t.n >= 10 && t.until > Date.now()) return res.status(429).json({ error: "Too many tries. Wait a few minutes.", needPassword: true });
+        const given = Buffer.from(String(req.query.pw || "").trim().toUpperCase());
+        const want = Buffer.from(String(a.password).toUpperCase());
+        if (!(given.length === want.length && require("crypto").timingSafeEqual(given, want))) {
+          pwTries.set(req.user.uid, { n: t && t.until > Date.now() ? t.n + 1 : 1, until: Date.now() + 10 * 60 * 1000 });
+          return res.status(403).json({ error: req.query.pw ? "That password is not right." : "This paper needs its password.", needPassword: true });
+        }
+        pwTries.delete(req.user.uid);
+      }
       /* how many tries this person has used already, so a returning student is not offered another */
       const mine = await snap.ref.collection("results").doc(req.user.uid).get();
-      const owner = a.ownerUid === req.user.uid;
       let examNoMine = "";
       if (!owner && a.head && a.head.examNo) { try { examNoMine = await issueExamNo(snap.ref, a.head, req.user.uid); } catch (e) { console.error("[examNo]", e.message); } }
       res.json({ ok: true, code, title: a.title, head: a.head, questions: a.questions, ownerName: a.ownerName, owner, examNoMine,
