@@ -516,6 +516,7 @@ const COMP_REGISTRY = {
         name: "Upper Primary",
         live: true,
         years: {
+          "15th": { rounds: [{ id: "first-round", name: "First Round", live: true }] },
           "14th": { rounds: [{ id: "main", name: "Main Paper", live: true }] },
           "13th": {
             rounds: [
