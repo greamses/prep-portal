@@ -312,6 +312,16 @@ const Quiz = (() => {
 
   // AI-mark a free-response answer via our server (keys stay server-side).
   // `type` lets the server route the model (short/blank → Groq, theory → Gemini).
+  /* A fill-in-the-blank with a key (competition papers): checked exactly. */
+  function hasKey(q) {
+    return q.type === "subjective" && Array.isArray(q._accept) && q._accept.length > 0 && !!window.__blankCheck;
+  }
+  function keyedMark(q, answer) {
+    if (!hasKey(q)) return null;
+    const ok = window.__blankCheck.checkBlank(answer, q._accept) === true;
+    return { keyed: true, ok, score: ok ? 1 : 0, outOf: 1, feedback: ok ? "Correct." : "Not right." };
+  }
+
   async function markTheory(question, answer, markScheme, type) {
     try {
       const headers = { "Content-Type": "application/json" };
@@ -909,6 +919,8 @@ const Quiz = (() => {
     if (!data?.questions?.length) return [];
 
     if (data.timeLimit > 0) window.__compTimeLimit = data.timeLimit;
+    // A blank with a key is checked exactly (utils/blank-check.js), not by the AI.
+    try { window.__blankCheck = await import("/utils/blank-check.js"); } catch (e) { console.warn("blank check:", e.message); }
 
     const imgBase = `../../competitions/${comp}/${div}/${year}/${round}/`;
     return data.questions.map((q) => {
@@ -927,6 +939,7 @@ const Quiz = (() => {
           ? (ci >= 0 && opts[ci] !== undefined ? opts[ci] : null)
           : (q.answer || (Array.isArray(q.explanation) ? q.explanation.join(" ") : q.explanation) || null),
         markScheme: opts.length >= 2 ? undefined : (q.answer || ""),
+        _accept: opts.length >= 2 ? null : (Array.isArray(q.accept) && q.accept.length ? q.accept : null),
         explanation: Array.isArray(q.explanation)
           ? q.explanation.join("\n")
           : q.explanation || "",
@@ -1675,7 +1688,14 @@ const Quiz = (() => {
     }
 
     const showMark = submitted || (immediate && revealed[idx]);
-    if (showMark && theoryMarks[idx]) {
+    if (showMark && theoryMarks[idx] && theoryMarks[idx].keyed) {
+      const m = theoryMarks[idx];
+      const mEl = document.createElement("div");
+      mEl.className = "theory-score-badge";
+      mEl.style.cssText = "margin-top:12px;";
+      mEl.textContent = m.ok ? "Correct" : "Not right";
+      optWrap.appendChild(mEl);
+    } else if (showMark && theoryMarks[idx]) {
       const m = theoryMarks[idx];
       const mEl = document.createElement("div");
       mEl.style.cssText =
@@ -1701,7 +1721,7 @@ const Quiz = (() => {
     revealed[idx] = true;
     if (btn) { btn.disabled = true; btn.textContent = "Marking…"; }
     try {
-      theoryMarks[idx] = await markTheory(q.question, answer, q.markScheme || q._answer || "", q.type);
+      theoryMarks[idx] = keyedMark(q, answer) || await markTheory(q.question, answer, q.markScheme || q._answer || "", q.type);
     } catch (e) {
       console.warn(`Immediate marking Q${idx + 1}:`, e.message);
     }
@@ -1756,6 +1776,14 @@ const Quiz = (() => {
     if (q.type !== "objective") {
       const mark = theoryMarks[idx];
       let html = "";
+      if (mark && mark.keyed) {
+        strip.classList.add(mark.ok ? "correct" : "wrong");
+        if (label) label.textContent = mark.ok ? "Correct!" : `Wrong — you wrote: ${userAnswers[idx]}`;
+        if (ans) html += `<p class="expl-line">${mark.ok ? "Answer" : "Correct answer"}: <strong>${escFmt(ans)}</strong></p>`;
+        html += buildExpl(q.explanation);
+        if (expl) expl.innerHTML = html;
+        return;
+      }
       if (mark) {
         strip.classList.add("neutral");
         if (label) label.textContent = `AI Mark: ${mark.score}/${mark.outOf}`;
@@ -1883,7 +1911,7 @@ const Quiz = (() => {
       if (!answer.trim()) continue;
       if (theoryMarks[i]) continue; // already marked (e.g. in immediate mode)
       try {
-        const result = await markTheory(q.question, answer, q.markScheme || q._answer || "", q.type);
+        const result = keyedMark(q, answer) || await markTheory(q.question, answer, q.markScheme || q._answer || "", q.type);
         theoryMarks[i] = result;
         updateDots();
         if (currentIndex === i) renderQuestion(i);
@@ -1916,10 +1944,18 @@ const Quiz = (() => {
       wrong = 0,
       skipped = 0;
     const scorable = allQuestions.filter(
-      (q) => q.type === "objective" && q._answer !== null,
+      (q) => (q.type === "objective" && q._answer !== null) || hasKey(q),
     );
 
     allQuestions.forEach((q, i) => {
+      // a keyed blank counts like an objective question
+      if (hasKey(q)) {
+        const typed = String(userAnswers[i] || "").trim();
+        if (!typed) skipped++;
+        else if (keyedMark(q, typed).ok) correct++;
+        else wrong++;
+        return;
+      }
       if (q.type !== "objective") return;
       const chosen = userAnswers[i];
       const ans = q._answer;
@@ -2024,6 +2060,23 @@ const Quiz = (() => {
           explEl.innerHTML = lines
             .map((l) => `<p class="expl-line">${escFmt(l)}</p>`)
             .join("");
+          body.appendChild(explEl);
+        }
+      } else if (hasKey(q)) {
+        const typed = String(chosen || "").trim();
+        const ok = typed && keyedMark(q, typed).ok;
+        numEl.classList.add(!typed ? "rq-skip" : ok ? "rq-ok" : "rq-bad");
+        if (typed) ansEl.classList.add(ok ? "ok" : "bad");
+        ansEl.innerHTML = !typed
+          ? `Not answered — Correct: <strong>${escFmt(ans || q._accept[0])}</strong>`
+          : ok ? `Correct: <strong>${esc(typed)}</strong>`
+          : `You: <strong>${esc(typed)}</strong>  |  Correct: <strong>${escFmt(ans || q._accept[0])}</strong>`;
+        body.appendChild(ansEl);
+        if (q.explanation) {
+          const explEl = document.createElement("div");
+          explEl.className = "review-expl";
+          explEl.innerHTML = (Array.isArray(q.explanation) ? q.explanation : [q.explanation])
+            .map((l) => `<p class="expl-line">${escFmt(l)}</p>`).join("");
           body.appendChild(explEl);
         }
       } else {

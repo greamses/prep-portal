@@ -12,7 +12,7 @@ const quizData = [
   q("Corresponding sides of two similar triangles are in the ratio \\(2 : 3\\). If the area of the small triangle is \\(48\\text{ cm}^{2}\\), then the area of the large triangle is:", ["\\(230\\text{ cm}^{2}\\)", "\\(106\\text{ cm}^{2}\\)", "\\(107\\text{ cm}^{2}\\)", "\\(108\\text{ cm}^{2}\\)", "\\(200\\text{ cm}^{2}\\)"], 3, ["Areas are in the ratio \\(2^{2} : 3^{2} = 4 : 9\\).", "\\(48 \\times \\frac{9}{4} = 108\\text{ cm}^{2}\\)."], "Similarity"),
   q("If \\(a = 2b - c\\), find the value of \\(b\\) when \\(a = 11\\) and \\(c = 23\\).", ["\\(17\\)", "\\(7\\)", "\\(8\\)", "\\(14\\)", "\\(16\\)"], 0, ["\\(11 = 2b - 23\\), so \\(2b = 34\\) and \\(b = 17\\)."], "Algebra"),
   q("Find the simple interest on \\(₦30,000.00\\) for \\(3\\tfrac{1}{2}\\) years at \\(5\\%\\) per annum.", ["\\(₦5,250.00\\)", "\\(₦5,775.00\\)", "\\(₦10,750.00\\)", "\\(₦11,550.00\\)", "\\(₦15,770.00\\)"], 0, ["\\(\\frac{30\\,000 \\times 5 \\times 3.5}{100} = ₦5,250\\)."], "Simple Interest"),
-  q("The following numbers are prime numbers EXCEPT", ["\\(100\\)", "\\(87\\)", "\\(13\\)", "\\(7\\)", "\\(2\\)"], 0, ["\\(100 = 2^{2} \\times 5^{2}\\) is not prime.", "Note: \\(87 = 3 \\times 29\\) is not prime either, so the paper has two correct options."], "Prime Numbers"),
+  q("The following numbers are prime numbers EXCEPT", ["\\(100\\)", "\\(11\\)", "\\(13\\)", "\\(7\\)", "\\(2\\)"], 0, ["\\(100 = 2^{2} \\times 5^{2}\\) is not prime.", "\\(11, 13, 7\\) and \\(2\\) are all prime."], "Prime Numbers"),
   q("Find the sum of the prime factors of \\(84\\).", ["\\(4\\)", "\\(6\\)", "\\(8\\)", "\\(10\\)", "\\(12\\)"], 4, ["\\(84 = 2^{2} \\times 3 \\times 7\\); the prime factors are \\(2, 3, 7\\).", "\\(2 + 3 + 7 = 12\\)."], "Prime Factors"),
   q("Rohan bought a bike for \\(\\$75000\\). He wants to sell it making a \\(20\\%\\) profit. What is the selling price of the bike?", ["\\(\\$5000\\)", "\\(\\$60000\\)", "\\(\\$80000\\)", "\\(\\$90000\\)"], 3, ["\\(120\\%\\) of \\(75\\,000 = \\$90\\,000\\)."], "Profit and Loss"),
   q("The cost price of a shirt is \\(\\$2500\\). The shopkeeper sold \\(10\\) shirts at \\(15\\%\\) profit. What is the total profit made?", ["\\(\\$1750\\)", "\\(\\$4500\\)", "\\(\\$1500\\)", "\\(\\$2500\\)", "\\(\\$3750\\)"], 4, ["Profit on one shirt \\(= 15\\%\\) of \\(2500 = \\$375\\).", "On \\(10\\) shirts: \\(\\$3750\\)."], "Profit and Loss"),
@@ -34,21 +34,30 @@ const quizData = [
   q("Which one of the following angles can be constructed using ruler and compasses only?", ["\\(115^{\\circ}\\)", "\\(125^{\\circ}\\)", "\\(135^{\\circ}\\)", "\\(145^{\\circ}\\)", "\\(155^{\\circ}\\)"], 2, ["\\(135^{\\circ} = 90^{\\circ} + 45^{\\circ}\\), both constructible by bisecting."], "Construction"),
   q("Which of the following are factors of \\(6a^{2} - 2ab - 3ab + b^{2}\\)? I \\((3a - b)\\) II \\((2a + b)\\) III \\((2a - b)\\)", ["I only", "I and II only", "I and III only", "II and III only", "None of them"], 2, ["\\(2a(3a - b) - b(3a - b) = (3a - b)(2a - b)\\)."], "Factorisation"),
   q("In the expansion of \\((x - 2)(x + 9)\\), what is the coefficient of \\(x\\)?", ["\\(-18\\)", "\\(-2\\)", "\\(+1\\)", "\\(+7\\)", "\\(+9\\)"], 3, ["\\(x^{2} + 9x - 2x - 18 = x^{2} + 7x - 18\\)."], "Expansion"),
-  q("The exact value of \\(285^{2} - 215^{2}\\) is (printed on the paper as \\(2852 - 2152\\))", ["\\(70\\)", "\\(140\\)", "\\(5000\\)", "\\(49000\\)", "\\(35000\\)"], 4, ["Difference of two squares: \\((285 - 215)(285 + 215) = 70 \\times 500 = 35\\,000\\)."], "Difference of Two Squares"),
+  q("The exact value of \\(285^{2} - 215^{2}\\) is", ["\\(70\\)", "\\(140\\)", "\\(5000\\)", "\\(49000\\)", "\\(35000\\)"], 4, ["Difference of two squares: \\((285 - 215)(285 + 215) = 70 \\times 500 = 35\\,000\\)."], "Difference of Two Squares"),
   q("If \\(x^{2} + 14x + k\\) is a perfect square, then \\(k =\\)", ["\\(4\\)", "\\(7\\)", "\\(28\\)", "\\(49\\)", "\\(196\\)"], 3, ["\\(k = \\left(\\frac{14}{2}\\right)^{2} = 49\\)."], "Completing the Square"),
   q("When a sum of money is shared between \\(40\\) people, they each get \\(₦800\\). If the same money is shared equally between \\(50\\) people, how much will each get?", ["\\(₦600\\)", "\\(₦640\\)", "\\(₦810\\)", "\\(₦960\\)", "\\(₦1000\\)"], 1, ["Total \\(= 40 \\times 800 = ₦32\\,000\\); \\(32\\,000 \\div 50 = ₦640\\)."], "Proportion"),
   q("Expand the brackets and hence solve the equation \\((4a + 3)(a - 2) - (2a - 3)(2a + 3) = 0\\).", ["\\(2\\)", "\\(0.6\\)", "\\(0.4\\)", "\\(-2\\)", "\\(-3\\)"], 1, ["\\((4a^{2} - 5a - 6) - (4a^{2} - 9) = -5a + 3 = 0\\).", "\\(a = 0.6\\)."], "Algebra"),
   // ── SECTION B: THEORY ──
   s("Find the product of the L.C.M. and H.C.F. of the numbers \\(9\\), \\(12\\) and \\(18\\).", "\\(108\\)", ["LCM \\(= 36\\), HCF \\(= 3\\); \\(36 \\times 3 = 108\\)."], "HCF and LCM"),
   s("A bag contains \\(3\\) black, \\(5\\) white and \\(7\\) yellow balls. If a ball is picked, what is the probability that it is either black or white?", "\\(\\frac{8}{15}\\)", ["\\(\\frac{3 + 5}{15} = \\frac{8}{15}\\)."], "Probability"),
-  s("The sum of the roots of the quadratic equation \\(3x^{2} - 9x + 5 = 0\\) is (printed as \\(3x^{2} - 9z + 5 = 0\\))", "\\(3\\)", ["Sum of roots \\(= -\\frac{b}{a} = \\frac{9}{3} = 3\\)."], "Quadratic Equations"),
+  s("The sum of the roots of the quadratic equation \\(3x^{2} - 9x + 5 = 0\\) is", "\\(3\\)", ["Sum of roots \\(= -\\frac{b}{a} = \\frac{9}{3} = 3\\)."], "Quadratic Equations"),
   s("Calculate the value of \\(x\\) in the diagram.", "\\(x = 73\\)", ["A hexagon's angles add up to \\(720^{\\circ}\\).", "\\(135 + 115 + 105 + 2x + x + 2x = 720\\), so \\(5x = 365\\) and \\(x = 73\\)."], "Polygons", { image: "./q34.svg" }),
   s("State the bearing of \\(W\\) from \\(O\\).", "\\(158^{\\circ}\\)", ["\\(V\\) is \\(81^{\\circ}\\) clockwise from North and \\(W\\) a further \\(77^{\\circ}\\).", "\\(81 + 77 = 158^{\\circ}\\)."], "Bearings", { image: "./q35.svg" }),
-  s("I think of a number, add \\(14\\) to the number and multiply the result by \\(3\\). If my final answer is \\(51\\), what number did I think of? (The paper prints \"1 and 14\"; read it as \"add 14\".)", "\\(3\\)", ["\\(3(n + 14) = 51\\), so \\(n + 14 = 17\\) and \\(n = 3\\)."], "Algebra"),
+  s("I think of a number, add \\(14\\) to the number and multiply the result by \\(3\\). If my final answer is \\(51\\), what number did I think of?", "\\(3\\)", ["\\(3(n + 14) = 51\\), so \\(n + 14 = 17\\) and \\(n = 3\\)."], "Algebra"),
   s("A trapezium has an area of \\(135\\text{ m}^{2}\\). Its two parallel sides are \\(19\\text{ m}\\) and \\(d\\text{ m}\\) long and the distance between them is \\(9\\text{ m}\\). Find the value of \\(d\\).", "\\(d = 11\\)", ["\\(\\frac{1}{2}(19 + d) \\times 9 = 135\\), so \\(19 + d = 30\\) and \\(d = 11\\)."], "Mensuration"),
   s("If \\(9 = \\frac{x - 4}{z^{2}}\\), find \\(z\\) when \\(x = 40\\).", "\\(z = \\pm 2\\)", ["\\(9z^{2} = 36\\), so \\(z^{2} = 4\\) and \\(z = \\pm 2\\)."], "Algebra"),
   s("The triangles are similar. Hence calculate the length of side \\(MN\\), given that \\(XY = 8\\text{ cm}\\).", "\\(7.5\\text{ km}\\)", ["Matching angles: \\(X \\leftrightarrow L\\) (\\(82^{\\circ}\\)), \\(Z \\leftrightarrow M\\) (\\(62^{\\circ}\\)), \\(Y \\leftrightarrow N\\) (\\(36^{\\circ}\\)).", "\\(LN = 6\\text{ km}\\) matches \\(XY = 8\\text{ cm}\\), so the scale is \\(\\frac{6}{8}\\).", "\\(MN\\) matches \\(YZ = 10\\text{ cm}\\): \\(MN = 10 \\times \\frac{6}{8} = 7.5\\text{ km}\\)."], "Similarity", { image: "./q39.svg" }),
   s("A shop sells coffee in similar small and large jars. The small jars are of height \\(9\\text{ cm}\\) and diameter \\(6\\text{ cm}\\). If the radius of the large jar is \\(5\\text{ cm}\\), calculate its height.", "\\(15\\text{ cm}\\)", ["Small radius \\(= 3\\text{ cm}\\); scale factor \\(= \\frac{5}{3}\\).", "Height \\(= 9 \\times \\frac{5}{3} = 15\\text{ cm}\\)."], "Similarity"),
 ];
+
+// BLANK KEYS: what each fill-in-the-blank accepts, typed plainly (utils/blank-check.js).
+// The first is the answer shown; numbers may come with or without their unit.
+const BLANK_KEYS = {"38": ["±2", "2 or -2", "-2 or 2", "2, -2", "-2, 2"]};
+for (const [n, accept] of Object.entries(BLANK_KEYS)) {
+  const q = quizData[n - 1];
+  q.accept = accept;
+  if (!q.answer) q.answer = accept[0];
+}
 
 setupQuiz(quizData, 2400);

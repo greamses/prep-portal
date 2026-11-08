@@ -56,6 +56,8 @@ const answerIndexOf = (q) => (typeof q.correctIndex === "number" ? q.correctInde
 
 (async () => {
   const db = admin.firestore();
+  /* a fill-in-the-blank's key: its own `accept`, or one made from a short answer */
+  const { acceptFrom } = await import(require("url").pathToFileURL(path.join(__dirname, "..", "..", "utils", "blank-check.js")).href);
   const now = admin.firestore.FieldValue.serverTimestamp();
   let total = 0;
   for (const p of papers()) {
@@ -75,6 +77,7 @@ const answerIndexOf = (q) => (typeof q.correctIndex === "number" ? q.correctInde
         type: opts.length >= 2 ? (q.type || "objective") : "subjective",
         question: q.question || "", options: opts,
         answerIndex: ai, answer: opts.length >= 2 ? null : (q.answer ?? ([].concat(q.explanation || "").join(" ").trim() || null)),
+        accept: opts.length >= 2 ? null : (Array.isArray(q.accept) && q.accept.length ? q.accept.map(String) : (q.answer ? acceptFrom(q.answer) : [])),
         explanation: q.explanation ?? "", hint: q.hint || "", topic: q.topic || null,
         section: q.section || null, image,
         subject: q.subject || "mathematics",
@@ -90,7 +93,7 @@ const answerIndexOf = (q) => (typeof q.correctIndex === "number" ? q.correctInde
     fs.writeFileSync(paperFile, JSON.stringify({
       timeLimit: data.timeLimit || 0,
       questions: writes.map(([, d]) => ({
-        question: d.question, options: d.options, correctIndex: d.answerIndex, answer: d.answer,
+        question: d.question, options: d.options, correctIndex: d.answerIndex, answer: d.answer, accept: d.accept,
         explanation: d.explanation, hint: d.hint, image: d.image, topic: d.topic, type: d.type, section: d.section,
       })),
     }));

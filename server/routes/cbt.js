@@ -798,7 +798,7 @@ module.exports = function () {
         timeLimit: docs.length ? docs[0].compTimeLimit || 0 : 0,
         questions: docs.map((x) => ({
           question: x.question, options: x.options || [], correctIndex: typeof x.answerIndex === "number" ? x.answerIndex : null,
-          answer: x.answer ?? null, explanation: x.explanation ?? "", hint: x.hint || "", image: x.image || null,
+          answer: x.answer ?? null, accept: x.accept || null, explanation: x.explanation ?? "", hint: x.hint || "", image: x.image || null,
           topic: x.topic || null, type: x.type || null, section: x.section || null,
         })),
       });

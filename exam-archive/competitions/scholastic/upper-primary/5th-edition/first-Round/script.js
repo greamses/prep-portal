@@ -158,4 +158,13 @@ const quizData = [
     explanation: ["\\(1\\) hour \\(= 3600\\) seconds; \\(3600 : 300 = 12 : 1\\)."], topic: "Ratio" },
 ];
 
+// BLANK KEYS: what each fill-in-the-blank accepts, typed plainly (utils/blank-check.js).
+// The first is the answer shown; numbers may come with or without their unit.
+const BLANK_KEYS = {"31": ["an equilateral triangle", "equilateral"]};
+for (const [n, accept] of Object.entries(BLANK_KEYS)) {
+  const q = quizData[n - 1];
+  q.accept = accept;
+  if (!q.answer) q.answer = accept[0];
+}
+
 setupQuiz(quizData, 2400);

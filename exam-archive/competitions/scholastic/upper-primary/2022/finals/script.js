@@ -956,4 +956,13 @@ const examQuestions = [
   },
 ];
 
+// BLANK KEYS: what each fill-in-the-blank accepts, typed plainly (utils/blank-check.js).
+// The first is the answer shown; numbers may come with or without their unit.
+const BLANK_KEYS = {"25": ["$0.05", "5 cents"], "26": ["150 cm"], "27": ["36"], "28": ["$7040"], "29": ["110 pages"], "30": ["848"], "31": ["3"], "32": ["22 cm²"], "33": ["99 cm"], "34": ["3:4"], "35": ["42 kg"], "36": ["22"], "37": ["71.5 kobo"], "38": ["Sunday"], "39": ["44"], "40": ["50 g"], "41": ["$3.25"], "42": ["27 years"], "43": ["26 2/3 m", "80/3 m"], "44": ["12:1"], "45": ["$16"]};
+for (const [n, accept] of Object.entries(BLANK_KEYS)) {
+  const q = examQuestions[n - 1];
+  q.accept = accept;
+  if (!q.answer) q.answer = accept[0];
+}
+
 setupQuiz(examQuestions, 3600);
