@@ -288,13 +288,40 @@ function natUpdateReadyState() {
   setStatus("Select: " + need.join(" • "), false);
 }
 
+/* A neutral badge for each exam: a round seal with the exam's initials, in
+   the site's own colours. Deliberately NOT the exam bodies' logos (those are
+   their trademarks, and the site is not affiliated with them). */
+const EXAM_BADGES = {
+  utme: ["UTME", "var(--accent-secondary)"],
+  wassce: ["WASSCE", "var(--accent-success, #3f9b6b)"],
+  postutme: ["POST", "var(--accent-warning, #d98b2b)"],
+  cee: ["CE", "var(--accent-primary)"],
+  sat: ["SAT", "var(--accent-danger, #d4574b)"],
+  igcse: ["IGCSE", "var(--accent-tertiary, #7a5bc7)"],
+  alevel: ["A LVL", "var(--accent-secondary)"],
+  practice: ["PRAC", "var(--accent-primary)"],
+};
+function examBadge(key) {
+  const b = EXAM_BADGES[key];
+  if (!b) return null;
+  const [text, fill] = b;
+  const size = text.length <= 2 ? 15 : text.length <= 3 ? 12 : text.length <= 4 ? 10 : 8;
+  return `<svg class="exam-badge" viewBox="0 0 40 40" aria-hidden="true">
+    <circle cx="20" cy="20" r="19" fill="${fill}"/>
+    <circle cx="20" cy="20" r="15.5" fill="none" stroke="#fff" stroke-width="1.4" stroke-dasharray="2 2.2" opacity=".85"/>
+    <text x="20" y="20" dy=".36em" text-anchor="middle" font-family="Unbounded, 'JetBrains Mono', sans-serif" font-weight="800" font-size="${size}" fill="#fff" letter-spacing="-.2">${text}</text>
+  </svg>`;
+}
+
 function cbtChips(box, items, selectedId, onPick, { dot = false, empty = "Nothing here yet." } = {}) {
   box.innerHTML = "";
   if (!items.length) { box.innerHTML = `<span class="picker-hint">${empty}</span>`; return; }
   items.forEach((it) => {
     const chip = document.createElement("div");
     chip.className = `custom-chip ${it.id === selectedId ? "checked" : ""}`;
-    const lead = dot ? `<div class="status-dot live"></div>` : `<div class="chip-check-box"></div>`;
+    const badge = dot && cbtState.axis !== "class" ? examBadge(it.id) : null;
+    const lead = badge || (dot ? `<div class="status-dot live"></div>` : `<div class="chip-check-box"></div>`);
+    if (badge) chip.classList.add("has-badge");
     chip.innerHTML = `${lead}<span>${it.label}</span>${it.count != null ? `<span class="chip-count">${it.count}</span>` : ""}`;
     chip.onclick = () => {
       box.querySelectorAll(".custom-chip").forEach((c) => c.classList.remove("checked"));

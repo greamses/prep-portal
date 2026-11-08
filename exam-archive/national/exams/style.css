@@ -1343,3 +1343,8 @@ body {
 .builder-cta .cta-ico svg { width: 100%; height: 100%; display: block; }
 .builder-cta .cta-name { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 .builder-cta { padding-left: 1rem; padding-right: 1rem; }
+
+/* Exam badges on the exam chips (data.js examBadge): a neutral seal with the
+   exam's initials, not the exam body's logo. */
+.custom-chip.has-badge { gap: 0.6rem; }
+.custom-chip .exam-badge { width: 34px; height: 34px; flex: none; display: block; }
