@@ -1385,7 +1385,7 @@ html.xm-focus .xm-modal .xm-preview { width: min(250mm, 100%); }
 .xm-fx__findico { display: inline-flex; opacity: 0.6; }
 .xm-fx__find .xm-qb__line { width: 100%; font-size: 0.82rem; }
 
-.xm-fx { position: relative; min-height: 9rem; margin-bottom: 1.2rem; outline: none; user-select: none; -webkit-user-select: none; }
+.xm-fx { position: relative; min-height: min-content; margin-bottom: 1.2rem; outline: none; user-select: none; -webkit-user-select: none; }
 .xm-fx:focus-visible { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-secondary) 35%, transparent); }
 .xm-fx__empty { margin: 1.4rem 0; font-size: 0.82rem; color: var(--text-tertiary); text-align: center; }
 .xm-fx__item { position: relative; cursor: default; color: inherit; border: 1px solid transparent; outline: none; }
@@ -1454,3 +1454,7 @@ html.xm-focus .xm-modal .xm-preview { width: min(250mm, 100%); }
 .xm-qb .xm-qb__chips { gap: 0.4rem 0.5rem; }
 .xm-qb .xm-qb__more { padding: 0.35rem 0.9rem 0.4rem; border-bottom: 0; }
 .xm-qb .xm-qb__copyall { padding: 0.45rem 0.9rem 0.5rem; }
+/* the bank's scroller stacks its parts (path bar, explorer, links, bank) as plain blocks: as a grid
+   squeezed to the panel's height, it gave the explorer a short row and its tiles ran over the bank */
+.xm-qb .xm-bk__scroll { display: block; }
+.xm-qb .xm-bk__scroll > * + * { margin-top: 0.6rem; }
