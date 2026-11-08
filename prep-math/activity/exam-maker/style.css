@@ -1368,3 +1368,5 @@ html.xm-focus .xm-modal .xm-preview { width: min(250mm, 100%); }
 }
 /* a field switched off stays off: .wb-field's own display must not beat [hidden] */
 .xm-desk [hidden] { display: none !important; }
+/* icon-only buttons on the top bar and the tick bar, the size of the paper toolbar's */
+.xm-topbar .pp-btn, .xm-tickbar .xm-tickbar__del { display: inline-grid; place-items: center; padding: 0.42rem; line-height: 0; }

@@ -347,7 +347,7 @@ function paintTickBar() {
   bar.querySelector("[data-tick-count]").textContent = `${t} of ${n} ticked`;
   const del = bar.querySelector('[data-tick="del"]');
   del.disabled = t === n || !n;
-  del.querySelector("b").textContent = n - t ? `Delete unticked (${n - t})` : "Delete unticked";
+  faceOf(del, UI.trash(18), n - t ? `Delete the ${n - t} unticked` : "Delete the unticked questions");
 }
 function renderList() {
   list.innerHTML = state.questions.length
@@ -1079,6 +1079,11 @@ addEventListener("keydown", (e) => {
   showPaper(false);
 });
 document.querySelectorAll("[data-proxy]").forEach((b) => b.addEventListener("click", () => $(b.dataset.proxy)?.click()));
+/* icons only: the words are the tooltip and the label (a button never shows both) */
+document.querySelectorAll('[data-proxy="xm-share"]').forEach((b) => faceOf(b, UI.link(18), "Share link"));
+document.querySelectorAll('[data-proxy="xm-print"]').forEach((b) => faceOf(b, UI.print(18), "Print"));
+faceOf($("xm-open-paper"), UI.eye ? UI.eye(18) : UI.doc(18), "Open the paper");
+paperModal.querySelectorAll(".xm-modal__close").forEach((b) => faceOf(b, UI.close(18), "Close the paper"));
 {
   const from = $("xm-summary"), to = $("xm-topcount");
   const copy = () => { to.textContent = from.textContent; };
