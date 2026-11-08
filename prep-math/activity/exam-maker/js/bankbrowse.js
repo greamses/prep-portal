@@ -19,7 +19,13 @@ import { TYPES, esc, textHtml } from "./model.js";
 const EXAMS = { utme: "UTME", wassce: "WASSCE", postutme: "Post-UTME", cee: "Common Entrance", practice: "Practice", sat: "SAT", igcse: "IGCSE", alevel: "A Level", competition: "Competition", own: "Mine" };
 const SOURCES = { past: "Past papers", ai: "Written for practice", manual: "Hand written", rephrased: "Reworded", competition: "Competition papers", teacher: "Mine" };
 const plural = (n, w) => `${n.toLocaleString()} ${w}${n === 1 ? "" : "s"}`;
-const compName = (k) => { const [c, , y, r] = String(k).split("|"); return `${c === "anmc" ? "ANMC" : c === "scholastic" ? "Scholastic" : c} ${y} ${String(r || "").replace(/-/g, " ")}`; };
+// Scholastic papers are known by edition (the paper years disagree with the editions)
+const SCHOLASTIC_EDITION = { 2022: "1st Edition", 2025: "2nd Edition", "3rd-edition": "3rd Edition", "4th-edition": "4th Edition", "5th-edition": "5th Edition" };
+const compName = (k) => {
+  const [c, , y, r] = String(k).split("|");
+  const when = c === "scholastic" ? SCHOLASTIC_EDITION[y] || y : y;
+  return `${c === "anmc" ? "ANMC" : c === "scholastic" ? "Scholastic" : c} ${when} ${String(r || "").replace(/-/g, " ")}`;
+};
 const typeset = (el) => { if (window.MathJax && window.MathJax.typesetPromise) window.MathJax.typesetPromise([el]).catch(() => {}); };
 
 /** Open the browser over the page. onAdd(questions, label) puts the ticked questions in the editor. */

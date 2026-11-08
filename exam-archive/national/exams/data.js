@@ -474,12 +474,14 @@ const COMP_REGISTRY = {
         live: true,
         years: {
           2022: {
+            label: "1st Edition", order: 1,
             rounds: [
               { id: "first-Round", name: "First Round", live: true },
               { id: "finals", name: "Finals", live: true },
             ],
           },
           2025: {
+            label: "2nd Edition", order: 2,
             rounds: [
               { id: "first-Round", name: "First Round", live: true },
               { id: "finals", name: "Finals", live: true },
@@ -647,7 +649,8 @@ function buildCompYearGrid() {
     COMP_REGISTRY[compState.competition]?.divisions[compState.division];
   if (!div) return;
   // Years newest first; edition-labelled papers after them, newest edition first.
-  const rank = (k) => (Number.isFinite(Number(k)) ? 10000 + Number(k) : div.years[k].order || 0);
+  // a paper with an `order` (an edition) sorts by it; plain years by the year
+  const rank = (k) => (div.years[k].order != null ? div.years[k].order : Number.isFinite(Number(k)) ? 10000 + Number(k) : 0);
   const years = Object.keys(div.years).sort((a, b) => rank(b) - rank(a));
   if (!years.length) {
     yearContainerComp().innerHTML =
