@@ -232,7 +232,7 @@ body {
   background: var(--surface-secondary);
 }
 
-.wb-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.wb-row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.75rem; }
 
 .wb-fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; }
 
@@ -1031,7 +1031,7 @@ html.wb-modal-on .wb-main { z-index: auto; }
   border: var(--border-subtle);
   box-shadow: 0 12px 28px -8px rgba(20, 19, 15, 0.35);
 }
-html.wb-has-openbar .wb-main { padding-bottom: 6rem; }
+/* (the bar is at the top now: no room needed at the foot) */
 html.wb-modal-on .wb-openbar { visibility: hidden; }
 @media print { .wb-openbar { display: none !important; } }
 .wb-openbar__count {
@@ -4015,3 +4015,53 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .wb-mix__kind b { display: inline-block; margin-right: 1.4mm; padding: 0.2mm 1.6mm; font-family: var(--font-display, "Unbounded"), sans-serif; font-size: 7.2pt; letter-spacing: 0.02em; color: #2a2723; background: #fff3a8; }
 .wb-row--mix + .wb-row--mix { margin-top: 4mm; padding-top: 3mm; border-top: 0.25mm dashed #d9d1c2; }
 @media print { .wb-mix__kind b { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+
+/* ══ THE DESK (2026-11-08): the Paper Test Builder's layout on every workbook ═══════════════
+   rail.js: a top bar over the setup (sticky, icons only: save, My workbooks, print, open), the
+   dials dealt into a card per column, the list of exercises a card across them, and lines
+   instead of boxes. The booklet still opens in its modal. */
+.wb-openbar.wb-topbar {
+  position: sticky; top: 4.6rem; bottom: auto; left: auto; transform: none; z-index: 30;
+  width: 100%; max-width: none; margin: 0 0 1.4rem; padding: 0.6rem 1rem;
+  gap: 0.6rem; box-shadow: 0 6px 18px rgba(42, 39, 35, 0.1);
+}
+.wb-topbar__spacer { flex: 1; }
+.wb-topbar .wb-topbar__btn { display: inline-grid; place-items: center; padding: 0.42rem; line-height: 0; }
+.wb-topbar .wb-topbar__btn svg { width: 18px; height: 18px; display: block; }
+
+/* the card it all sat on gives way: no paper, no edge, no shadow, just the layout */
+.wb-rail .pp-receipt.wb-rail__shell { filter: none; }
+.wb-rail .wb-rail__shell > .wb-rail__paper { background: transparent; -webkit-mask: none; mask: none; padding: 0; gap: 1.4rem clamp(1rem, 2vw, 1.6rem); }
+.wb-rail .wb-rail__shell > .wb-rail__paper::before, .wb-rail .wb-rail__shell > .wb-rail__paper::after { display: none; }
+.wb-rail__dials { gap: 0 clamp(1rem, 2vw, 1.6rem); }
+/* a card per column of dials, and one for the exercises */
+.wb-rail__card { min-width: 0; }
+.wb-rail .wb-rail__card > .wb-rail__col, .wb-rail .wb-rail__card > .wb-rail__cardpaper { padding: 1.3rem 1.25rem 1.4rem; }
+.wb-rail__paper > .wb-rail__card--picks { grid-column: 1 / -1; order: 1; }
+.wb-rail__cardpaper > .wb-fieldset--picks { margin: 0; }
+
+/* LINE INPUTS, not boxes, on the setup (the code keeps its box: it is a thing to read out) */
+.wb-rail .wb-input:not(.wb-seed__code), .wb-rail .wb-input:not(.wb-seed__code):hover {
+  border: 0; border-bottom: 1.5px solid color-mix(in srgb, var(--ink) 32%, transparent); border-radius: 0;
+  background: transparent; box-shadow: none; padding-left: 0.1rem; padding-right: 0.1rem;
+}
+.wb-rail .wb-input:not(.wb-seed__code):focus, .wb-rail .wb-input:not(.wb-seed__code):focus-visible { outline: none; box-shadow: none; border-bottom-color: var(--accent-secondary); }
+.wb-rail textarea.wb-input { line-height: 1.7em; resize: vertical; }
+@media print { .wb-openbar.wb-topbar { display: none !important; } }
+
+/* MY WORKBOOKS (workbook/myworkbooks.js): a panel over the page, the file explorer in it */
+.wb-mw { position: fixed; inset: 0; z-index: 10020; display: grid; place-items: center; padding: 1rem; background: rgba(29, 27, 24, 0.45); }
+.wb-mw__card { width: min(56rem, 100%); }
+.wb-mw .wb-mw__paper { display: flex; flex-direction: column; gap: 0.8rem; height: min(44rem, calc(100vh - 3rem)); padding: 1.3rem 1.4rem 1.1rem; overflow: hidden; color: #2a2723; font-family: var(--font-mono, "JetBrains Mono"), monospace; }
+.wb-mw__head { display: flex; align-items: center; gap: 0.6rem; flex: none; }
+.wb-mw__head h2 { flex: 1; margin: 0; font: 800 1.2rem/1.2 var(--font-display, "Unbounded"), sans-serif; }
+.wb-mw__icon { display: inline-grid; place-items: center; width: 34px; height: 34px; padding: 0; color: inherit; cursor: pointer; }
+.wb-mw__icon:disabled { opacity: 0.35; }
+.wb-mw__icon svg { width: 18px; height: 18px; display: block; }
+.wb-mw__save { display: flex; align-items: center; gap: 0.7rem; flex: none; }
+.wb-mw__save .pp-fx__line { flex: 1; font-size: 0.9rem; }
+.wb-mw__msg { margin: -0.3rem 0 0; min-height: 1em; font-size: 0.74rem; color: #6f675b; flex: none; }
+.wb-mw__scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.2rem 0.3rem 0.6rem 0.1rem; }
+.wb-mw__none { color: #8a8174; font-size: 0.8rem; }
+html.wb-mw-on { overflow: hidden; }
+@media (max-width: 640px) { .wb-mw .wb-mw__paper { height: calc(100vh - 2rem); padding: 1rem; } }

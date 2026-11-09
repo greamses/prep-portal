@@ -43,6 +43,7 @@ import { enhanceSelects } from "/utils/components/pp-select.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { mountDownload } from "/utils/components/doc-export.js";
 import { mountTooltips } from "/utils/components/tooltip.js";
+import { openMyWorkbooks, workbookId } from "./myworkbooks.js";
 
 const $ = (id) => document.getElementById(id);
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -352,17 +353,37 @@ export function mountBuilder(cfg) {
     backdrop.hidden = true;
     document.body.appendChild(backdrop);
 
-    /* Floats at the foot of the window, so it is in reach from anywhere in
-       the setup. On the body, not in the setup card: the card's paper clips,
-       and a sticky bar inside it never sticks. */
+    /* THE TOP BAR (2026-11-08, the Paper Test Builder's): over the setup, sticky as the page
+       scrolls, how long the workbook is, then icons only: save it to My workbooks, My workbooks,
+       print, and open the booklet. Outside the setup card: the card's paper clips, and a
+       sticky bar inside it never sticks. */
     const bar = document.createElement("div");
-    bar.className = "wb-openbar";
+    bar.className = "wb-openbar wb-topbar";
+    bar.setAttribute("role", "toolbar");
+    bar.setAttribute("aria-label", "The workbook");
     bar.innerHTML =
       `<span class="wb-openbar__count"><span data-icon="page"></span><span class="wb-openbar__pages"></span></span>` +
-      `<button type="button" class="pp-btn wb-tint-2 wb-openbar__go">Open the workbook</button>`;
-    document.body.appendChild(bar);
-    document.documentElement.classList.add("wb-has-openbar");
+      `<span class="wb-topbar__spacer"></span>` +
+      `<button type="button" class="pp-btn wb-topbar__btn" data-top="save"></button>` +
+      `<button type="button" class="pp-btn wb-topbar__btn" data-top="files"></button>` +
+      `<button type="button" class="pp-btn wb-topbar__btn" data-top="print"></button>` +
+      `<button type="button" class="pp-btn wb-tint-2 wb-topbar__btn wb-openbar__go"></button>`;
+    (document.querySelector(".wb-work") || document.body).before(bar);
+    document.documentElement.classList.add("wb-has-topbar");
     const go = bar.querySelector(".wb-openbar__go");
+    faceOf(go, UI.eye(18), "Open the workbook");
+    faceOf(bar.querySelector('[data-top="save"]'), UI.savePlus(18), "Save this workbook to My workbooks");
+    faceOf(bar.querySelector('[data-top="files"]'), UI.folder(18), "My workbooks");
+    faceOf(bar.querySelector('[data-top="print"]'), UI.print(18), "Print");
+    const mine = (focusSave) => openMyWorkbooks({
+      wb: workbookId(), wbName: title || document.title, store,
+      settings: () => { save(readOptions()); try { return localStorage.getItem(store) || "{}"; } catch { return "{}"; } },
+      count: () => readOptions().chosen.reduce((n, c) => n + (Number(c.count) || 0), 0),
+      focusSave,
+    });
+    bar.querySelector('[data-top="save"]').addEventListener("click", () => mine(true));
+    bar.querySelector('[data-top="files"]').addEventListener("click", () => mine(false));
+    bar.querySelector('[data-top="print"]').addEventListener("click", () => $("wb-print")?.click());
 
     const open = () => {
       preview.inert = false;
@@ -429,16 +450,33 @@ export function mountBuilder(cfg) {
       dialItems = [...card.children].filter((el) => !el.matches(".wb-rail__title, .wb-fieldset--picks"));
       const titleEl = card.querySelector(".wb-rail__title");
       if (titleEl) titleEl.after(dials); else card.prepend(dials);
+      /* the setup as the Paper Test Builder's desk: the card it all sat on gives way to a card per
+         column of dials and one for the list of exercises, across the page (workbook.css .wb-desk) */
+      card.parentElement?.classList.add("wb-rail__shell");
+      const picks = card.querySelector(":scope > .wb-fieldset--picks");
+      if (picks) {
+        const w = document.createElement("div");
+        w.className = "pp-receipt wb-rail__card wb-rail__card--picks";
+        const paper = document.createElement("div");
+        paper.className = "pp-receipt__paper wb-rail__cardpaper";
+        w.appendChild(paper);
+        picks.before(w);
+        paper.appendChild(picks);
+      }
     }
     const n = Math.max(1, parseInt(getComputedStyle(card).getPropertyValue("--wb-rail-cols"), 10) || 1);
     if (Number(dials.dataset.cols) === n) return;
     dials.dataset.cols = String(n);
-    const cols = Array.from({ length: n }, () => {
+    const cards = Array.from({ length: n }, () => {
+      const w = document.createElement("div");
+      w.className = "pp-receipt wb-rail__card";
       const c = document.createElement("div");
-      c.className = "wb-rail__col";
-      return c;
+      c.className = "pp-receipt__paper wb-rail__col";
+      w.appendChild(c);
+      return w;
     });
-    dials.replaceChildren(...cols);
+    const cols = cards.map((w) => w.firstChild);
+    dials.replaceChildren(...cards);
     for (const el of dialItems) {
       const shortest = cols.reduce((a, b) => (b.offsetHeight < a.offsetHeight ? b : a));
       shortest.appendChild(el);
