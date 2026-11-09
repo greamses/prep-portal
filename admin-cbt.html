@@ -38,6 +38,9 @@
     input, select, textarea { width:100%; box-sizing:border-box; padding:.6rem .7rem; border-radius:0; font-family:inherit; font-size:.85rem;
       border:2px solid color-mix(in srgb, var(--ink) 14%, transparent); background: var(--surface-secondary); color: var(--ink); }
     textarea { resize:vertical; min-height:60px; }
+    /* line inputs, as on the workbooks and the Paper Test Builder (textareas keep their box: they hold code and paragraphs) */
+    input:not([type=checkbox]):not([type=radio]):not([type=file]) { border:0; border-bottom:1.5px solid color-mix(in srgb, var(--ink) 32%, transparent); background:transparent; padding-left:.1rem; padding-right:.1rem; }
+    input:not([type=checkbox]):not([type=radio]):not([type=file]):focus { outline:none; border-bottom-color: var(--accent-secondary); }
     .cb-row { display:flex; gap:.7rem; flex-wrap:wrap; align-items:flex-end; }
     .cb-row > div { flex:1 1 150px; }
     button { padding:.6rem 1.1rem; border:none; border-radius:0; cursor:pointer; font-weight:700; font-family:var(--font-display);
@@ -97,6 +100,10 @@
       border:2px solid color-mix(in srgb,var(--ink) 12%,transparent); margin:auto 0; }
     .qm-head { display:flex; align-items:center; justify-content:space-between; margin:0 0 .5rem; }
     .qm-head h2 { font-family:var(--font-display); font-size:1.05rem; margin:0; }
+    /* the bank's explorer (utils/components/file-explorer.css does the rest) */
+    .ed-fx { margin-top:.4rem; }
+    .ed-list-head { font-family:var(--font-display); font-size:.85rem; margin:1.4rem 0 .2rem; }
+    .ed-list-head:empty { display:none; }
     .qm-badge { font-size:.6rem; padding:.2rem .5rem; border-radius:0; text-transform:uppercase; letter-spacing:.05em;
       background: color-mix(in srgb,var(--accent-secondary) 22%,transparent); color:var(--ink); }
   </style>
@@ -270,29 +277,12 @@
       <div class="cb-panel" data-panel="edit">
         <div class="cb-card">
           <h2>Browse &amp; edit questions</h2>
-          <div class="cb-row">
-            <div><label>Class</label><select id="ed-class"></select></div>
-            <div><label>Subject</label><select id="ed-subject"></select></div>
-            <div><label>Topic</label><select id="ed-topic"></select></div>
-            <div><label>Paper</label><select id="ed-paper"></select></div>
-            <div style="flex:0 0 auto"><button id="ed-load" class="ghost" type="button">Load</button></div>
-          </div>
-          <p class="ed-meta" style="margin:.5rem 0 0">Click a question below to edit it. To add a new one, use the <strong>Add</strong> tab.</p>
+          <p class="ed-meta">Classes hold subjects, subjects hold topics, and a topic's questions fill papers of 60. Open a topic or a paper to edit its questions below. Drag a topic or a paper onto another folder to re-file its questions; right-click for the rest. A new folder in a subject is a new topic.</p>
+          <p id="ed-fx-msg" class="ed-msg" role="status"></p>
+          <div id="ed-fx" class="ed-fx"></div>
 
-          <!-- Topic manager for the selected class + subject -->
-          <details id="ed-tm-wrap" style="margin-top:.7rem">
-            <summary style="cursor:pointer;font-size:.72rem;color:var(--text-secondary)">Manage topics for this class &amp; subject</summary>
-            <div style="margin-top:.5rem">
-              <div id="ed-tm-list"></div>
-              <div class="cb-row" style="margin-top:.5rem">
-                <div style="flex:1 1 60%"><input id="ed-tm-new" placeholder="New topic name (e.g. Algebraic expressions)" /></div>
-                <div style="flex:0 0 auto"><button id="ed-tm-add" class="ghost" type="button">+ Add topic</button></div>
-              </div>
-              <p id="ed-tm-msg" class="ed-msg"></p>
-            </div>
-          </details>
-
-          <p id="ed-list-msg" class="ed-meta" style="margin-top:.6rem"></p>
+          <h3 id="ed-list-head" class="ed-list-head"></h3>
+          <p id="ed-list-msg" class="ed-meta"></p>
           <div id="ed-list"></div>
         </div>
 
@@ -315,6 +305,7 @@
     import { onAuthStateChanged } from "firebase/auth";
     import { heroPaint } from "/utils/components/nav-icons.js";
     import { enhanceSelect, enhanceSelects } from "/utils/components/pp-select.js";
+    import { mountExplorer, FOLDER_SVG, SHEET_SVG } from "/utils/components/file-explorer.js";
 
     document.querySelector(".cb-paint").innerHTML = heroPaint();
     const API = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
@@ -488,57 +479,175 @@
       finally { btn.disabled = false; }
     }
 
-    /* ════════════════════ EDIT TAB — browse cascade ════════════════════ */
-    async function loadClasses(){
-      try{
-        const d = await (await fetch(`${API}/api/cbt/classes`,{headers:await authHeader()})).json();
-        const counts = Object.fromEntries((d.classes||[]).map(c=>[c.key,c.count]));
-        $("ed-class").innerHTML = CLASSES.map(([k,v])=>`<option value="${k}">${esc(v)}${counts[k]?` (${counts[k]})`:""}</option>`).join("");
-      }catch(_){ $("ed-class").innerHTML = CLASSES.map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join(""); }
+    /* ════════════════════ EDIT TAB — the bank as a file explorer ════════════════════
+       utils/components/file-explorer.js: classes are the roots, subjects the folders in
+       them, topics the folders in those, papers (60 questions) the files. The server
+       re-files questions when a topic or paper moves (/api/cbt/tree/op). */
+    let browse = { cls: "grade1", subject: "", topic: "", papers: [] }; // what the list below shows
+    let tree = null, fx = null;
+    let fxFolders = {}, fxFiles = [];
+    const pending = {};              // root → [path]: a new subject folder, kept here until it is named
+    const info = new Map();          // `${root}|${path}` → { subj, topic? }
+    const seg = (s) => String(s).replace(/\//g, "∕");
+    const unseg = (s) => String(s).replace(/∕/g, "/");
+    const depth = (p) => (p ? p.split("/").length : 0);
+    const parentOf = (p) => (p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "");
+    const leafOf = (p) => p.slice(p.lastIndexOf("/") + 1);
+    const fxMsg = (t) => { const m = $("ed-fx-msg"); m.textContent = t || ""; m.className = "ed-msg"; };
+    async function api(path, body) {
+      const r = await fetch(`${API}${path}`, body
+        ? { method: "POST", headers: { "Content-Type": "application/json", ...(await authHeader()) }, body: JSON.stringify(body) }
+        : { headers: await authHeader() });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || `Failed (${r.status})`);
+      return d;
     }
-    async function loadSubjects(){
-      const cls=$("ed-class").value;
-      try{
-        const d = await (await fetch(`${API}/api/cbt/subjects?class=${cls}`)).json();
-        const subs = (d.subjects||[]);
-        $("ed-subject").innerHTML = subs.length
-          ? subs.map(s=>`<option value="${s.key}">${esc(s.label)} (${s.count})</option>`).join("")
-          : `<option value="">— no questions yet —</option>`;
-      }catch(_){ $("ed-subject").innerHTML=`<option value="">—</option>`; }
+    const treeOp = (body) => api("/api/cbt/tree/op", body);
+
+    function buildTree() {
+      fxFolders = {}; fxFiles = []; info.clear();
+      const size = (tree && tree.paperSize) || 60;
+      const add = (root, path, x) => { (fxFolders[root] = fxFolders[root] || []).push(path); info.set(`${root}|${path}`, x); };
+      for (const t of (tree && tree.tree) || []) {
+        const sp = seg(t.label || t.subj);
+        add(t.cl, sp, { subj: t.subj });
+        for (const tp of t.topics) {
+          const path = `${sp}/${seg(tp.name)}`;
+          add(t.cl, path, { subj: t.subj, topic: tp.name });
+          const papers = Math.ceil(tp.count / size);
+          for (let n = 1; n <= papers; n++) {
+            fxFiles.push({ id: `${t.cl}~${t.subj}~${tp.key}~${n}`, root: t.cl, folder: path, name: `Paper ${n}`, count: n < papers ? size : tp.count - size * (papers - 1), date: 0 });
+          }
+        }
+      }
+      for (const [root, list] of Object.entries(pending)) for (const p of list) if (!info.has(`${root}|${p}`)) (fxFolders[root] = fxFolders[root] || []).push(p);
     }
-    async function loadTopics(){
-      const cls=$("ed-class").value, subject=$("ed-subject").value;
-      if(!subject){ $("ed-topic").innerHTML=`<option value="">—</option>`; $("ed-paper").innerHTML=`<option value="">—</option>`; return; }
-      try{
-        const d = await (await fetch(`${API}/api/cbt/topics?class=${cls}&subject=${subject}`)).json();
-        const topics = d.topics||[];
-        $("ed-topic").innerHTML = topics.length
-          ? topics.map(t=>`<option value="${esc(t.topic)}">${esc(t.topic)} (${t.count} · ${t.papers} paper${t.papers===1?"":"s"})</option>`).join("")
-          : `<option value="">— no topics yet —</option>`;
-      }catch(_){ $("ed-topic").innerHTML=`<option value="">—</option>`; }
-      await loadPapers();
+    async function refreshTree(fresh = true) {
+      tree = await api(`/api/cbt/tree${fresh ? "?fresh=1" : ""}`);
+      buildTree();
     }
-    async function loadPapers(){
-      const cls=$("ed-class").value, subject=$("ed-subject").value, topic=$("ed-topic").value;
-      if(!subject||!topic){ $("ed-paper").innerHTML=`<option value="">—</option>`; return; }
-      try{
-        const d = await (await fetch(`${API}/api/cbt/papers?class=${cls}&subject=${subject}&topic=${encodeURIComponent(topic)}`)).json();
-        const list = d.list||[];
-        $("ed-paper").innerHTML = `<option value="">All papers (${d.count||0})</option>` + list.map(p=>`<option value="${p.paper}">${esc(p.label)}</option>`).join("");
-      }catch(_){ $("ed-paper").innerHTML=`<option value="">All papers</option>`; }
+    const at = (root, path) => info.get(`${root}|${path}`);
+    const isPending = (root, path) => (pending[root] || []).includes(path) && !at(root, path);
+    const unpend = (root, path) => { pending[root] = (pending[root] || []).filter((p) => p !== path); };
+    function topicAt(root, path) {
+      const x = depth(path) === 2 && at(root, path);
+      if (!x) throw new Error("Papers go into a topic: open a subject and drop them on one of its topics.");
+      return x;
+    }
+    const subjectNames = () => Object.values((tree && tree.subjects) || {}).slice(0, 6).join(", ");
+
+    function mountBank() {
+      fx = mountExplorer($("ed-fx"), {
+        key: "cb-fx",
+        top: "Question bank",
+        rootType: "Class",
+        roots: () => ((tree && tree.classes) || [])
+          .filter((c) => c.key !== "unsorted" || c.count || (fxFolders.unsorted || []).length)
+          .map((c) => ({ key: c.key, label: c.label, icon: FOLDER_SVG, meta: `${c.count} question${c.count === 1 ? "" : "s"}` })),
+        files: () => fxFiles,
+        folders: () => fxFolders,
+        file: { type: "Paper", icon: SHEET_SVG, word: ["question", "questions"], open: "Edit its questions" },
+        openMany: (n) => `Edit the questions of these ${n} papers`,
+        empty: "Nothing here yet. Right-click for a new folder: in a class it is a subject, in a subject it is a topic.",
+        msg: fxMsg,
+        open: (ids) => {
+          const ps = ids.map((id) => id.split("~"));
+          const [cl, subj, tk] = ps[0];
+          const t = ((tree && tree.tree) || []).find((x) => x.cl === cl && x.subj === subj);
+          const tp = t && t.topics.find((x) => x.key === tk);
+          browse = { cls: cl, subject: subj, topic: tp ? tp.name : "", papers: ps.filter((p) => p[2] === tk).map((p) => Number(p[3])) };
+          loadList();
+          $("ed-list-head").scrollIntoView({ behavior: "smooth", block: "start" });
+        },
+        onNavigate: (w) => {
+          try { localStorage.setItem("cb-fx-where", JSON.stringify(w || "~")); } catch { /* not kept */ }
+          if (!w) return;
+          const x = at(w.root, w.path) || {};
+          browse = { cls: w.root, subject: x.subj || "", topic: x.topic || "", papers: [] };
+          if (x.topic) loadList(); else showNothing();
+        },
+        ops: {
+          async newFolder(root, label, path) {
+            const d = depth(path);
+            if (d === 1) { (pending[root] = pending[root] || []).push(path); fxMsg(`Name the new folder after a subject (${subjectNames()}…).`); return; }
+            if (d > 2) throw new Error("A topic holds papers, not folders.");
+            if (!at(root, parentOf(path))) throw new Error("Name the subject folder first.");
+            (pending[root] = pending[root] || []).push(path); // a topic, once it has a name
+            fxMsg("Name the new topic.");
+          },
+          async moveFolder(root, label, from, to) {
+            if (isPending(root, from)) {
+              if (depth(from) === 1) {
+                if (depth(to) !== 1) throw new Error("A subject folder sits in a class.");
+                await treeOp({ op: "newSubject", class: root, subject: leafOf(to) });
+              } else {
+                const up = depth(to) === 2 && at(root, parentOf(to));
+                if (!up || up.topic) throw new Error("A topic goes into a subject.");
+                await treeOp({ op: "newTopic", class: root, subject: up.subj, topic: unseg(leafOf(to)) });
+              }
+              unpend(root, from);
+              return;
+            }
+            const x = at(root, from);
+            if (!x) throw new Error("That folder is not there any more.");
+            if (!x.topic) {
+              if (depth(to) !== 1) throw new Error("A subject sits in a class, not inside another folder.");
+              await treeOp({ op: "moveSubject", class: root, subject: x.subj, toSubject: unseg(leafOf(to)) });
+              return;
+            }
+            const up = depth(to) === 2 && at(root, parentOf(to));
+            if (!up || up.topic) throw new Error("A topic goes into a subject.");
+            const r = await treeOp({ op: "moveTopic", class: root, subject: x.subj, topic: x.topic, toSubject: up.subj, toTopic: unseg(leafOf(to)) });
+            if (r.moved) fxMsg(`Re-filed ${r.moved} question${r.moved === 1 ? "" : "s"}.`);
+          },
+          async deleteFolder(root, label, path) {
+            if (isPending(root, path)) { unpend(root, path); return; }
+            const x = at(root, path);
+            if (!x) return;
+            await treeOp(x.topic ? { op: "deleteTopic", class: root, subject: x.subj, topic: x.topic } : { op: "deleteSubject", class: root, subject: x.subj });
+          },
+          async moveFiles(ids, folder) {
+            const root = fx.where().root, x = topicAt(root, folder);
+            await treeOp({ op: "movePapers", ids, class: root, toSubject: x.subj, toTopic: x.topic });
+          },
+          async copyFile(id, folder) {
+            const root = fx.where().root, x = topicAt(root, folder);
+            await treeOp({ op: "copyPapers", ids: [id], class: root, toSubject: x.subj, toTopic: x.topic });
+          },
+          renameFile() { throw new Error("Papers are numbered for you. Rename the topic instead, or drag the paper to another topic."); },
+          deleteFile: (id) => treeOp({ op: "deletePapers", ids: [id] }),
+          refresh: () => refreshTree(true),
+        },
+      });
+      let w = "~";
+      try { w = JSON.parse(localStorage.getItem("cb-fx-where") || '"~"') || "~"; } catch { /* the top */ }
+      if (w !== "~" && w.root) { fx.go({ root: w.root }); if (w.path && at(w.root, w.path)) fx.go({ path: w.path }); }
+      else fx.go("~");
+    }
+
+    function showNothing(){
+      $("ed-list-head").textContent = "";
+      $("ed-list").innerHTML = "";
+      $("ed-list-msg").textContent = "Open a topic or a paper above to see its questions.";
     }
 
     async function loadList(){
-      const cls=$("ed-class").value, subject=$("ed-subject").value, topic=$("ed-topic").value, paper=$("ed-paper").value;
-      if(!subject){ $("ed-list").innerHTML=""; $("ed-list-msg").textContent="Pick a class and subject."; return; }
+      const { cls, subject, topic, papers } = browse;
+      if(!subject || !topic){ showNothing(); return; }
+      const cl = ((tree && tree.classes) || []).find((c) => c.key === cls);
+      $("ed-list-head").textContent = `${cl ? cl.label : cls} › ${(tree && tree.subjects && tree.subjects[subject]) || subject} › ${topic}${papers.length ? ` › ${papers.length === 1 ? `Paper ${papers[0]}` : `Papers ${papers.join(", ")}`}` : ""}`;
       $("ed-list-msg").textContent="Loading…";
       try{
-        const qs = new URLSearchParams({ class:cls, subject }); if(topic) qs.set("topic",topic); if(paper) qs.set("paper",paper);
-        const d = await (await fetch(`${API}/api/cbt/list?${qs}`,{headers:await authHeader()})).json();
-        $("ed-list-msg").textContent=`${d.count||0} question(s).`;
+        const runs = papers.length ? papers : [0];
+        let items = [];
+        for (const p of runs) {
+          const qs = new URLSearchParams({ class:cls, subject, topic }); if(p) qs.set("paper", String(p));
+          const d = await (await fetch(`${API}/api/cbt/list?${qs}`,{headers:await authHeader()})).json();
+          items = items.concat(d.questions || []);
+        }
+        $("ed-list-msg").textContent=`${items.length} question(s).`;
         const PENCIL='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="15" height="15"><path d="M14.6 6.2 17.8 9.4 8.4 18.8 5.2 15.6z" fill="var(--accent-primary)"/><path d="M16 4.8a2.2 2.2 0 0 1 3.2 3.2l-1.4 1.4-3.2-3.2z" fill="var(--accent-danger)"/><path d="M5.2 15.6 8.4 18.8 3.6 20.4z" fill="var(--accent-warning)"/><rect x="12" y="19" width="9.4" height="2.4" rx="1.2" fill="var(--text-tertiary)"/></svg>';
         const TRASH='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="15" height="15"><rect x="8.6" y="2.4" width="6.8" height="2.6" rx="1.3" fill="var(--accent-danger)"/><rect x="3" y="5" width="18" height="3.2" rx="1.6" fill="var(--accent-danger)"/><path d="M5.4 9.4h13.2l-1.1 10.4a2 2 0 0 1-2 1.8H8.5a2 2 0 0 1-2-1.8z" fill="var(--accent-secondary)"/><rect x="9.1" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/><rect x="13" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/></svg>';
-        const items = d.questions||[];
         $("ed-list").innerHTML = items.map(q=>`
           <div class="ed-list-item">
             <div class="q">${esc((q.question||"").slice(0,160))}
@@ -554,38 +663,16 @@
         });
       }catch(e){ $("ed-list-msg").textContent="Failed: "+e.message; }
     }
-    async function refreshBrowse(){ await loadTopics(); await loadList(); loadTopicMgr(); }
-
-    /* ── Topic manager ── */
-    async function loadTopicMgr(){
-      const cls=$("ed-class").value, subject=$("ed-subject").value;
-      const list=$("ed-tm-list");
-      if(!subject){ list.innerHTML='<span class="ed-meta">Pick a subject.</span>'; return; }
-      try{
-        const d = await (await fetch(`${API}/api/cbt/topic-list?class=${cls}&subject=${subject}`,{headers:await authHeader()})).json();
-        const topics=d.topics||[];
-        list.innerHTML = topics.length
-          ? topics.map(t=>`<span class="tm-chip">${esc(t.name)}<button data-rm="${esc(t.name)}" title="Remove topic" type="button">×</button></span>`).join("")
-          : '<span class="ed-meta">No topics yet — add the syllabus topics for this class & subject.</span>';
-        list.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>topicMutate("remove", b.dataset.rm));
-      }catch(e){ list.innerHTML=`<span class="ed-msg ed-msg--err">${esc(e.message)}</span>`; }
-    }
-    async function topicMutate(action, name){
-      const cls=$("ed-class").value, subject=$("ed-subject").value;
-      if(!subject){ $("ed-tm-msg").textContent="Pick a subject first."; return; }
-      try{
-        const r = await fetch(`${API}/api/cbt/topic-list`,{method:"POST",headers:{"Content-Type":"application/json",...(await authHeader())},body:JSON.stringify({class:cls,subject,action,name})});
-        const d = await r.json(); if(!r.ok) throw new Error(d.error||"Failed");
-        $("ed-tm-msg").textContent=""; $("ed-tm-new").value="";
-        loadTopicMgr(); loadTopics();
-      }catch(e){ $("ed-tm-msg").textContent=e.message; $("ed-tm-msg").className="ed-msg ed-msg--err"; }
+    async function refreshBrowse(){
+      try { await refreshTree(true); if (fx) fx.paint(); } catch (e) { fxMsg(e.message); }
+      await loadList();
     }
 
     /* ════════════════════ Shared question form (Add tab + Edit modal) ════════════════════ */
     function questionFormHTML(isEdit, q){
       q = q || {};
-      const presetClass = isEdit ? (q.classLevel||"") : ($("ed-class") && $("ed-class").value || "grade1");
-      const presetSubject = isEdit ? (q.subject||"") : ($("ed-subject") && $("ed-subject").value || "mathematics");
+      const presetClass = isEdit ? (q.classLevel||"") : (browse.cls || "grade1");
+      const presetSubject = isEdit ? (q.subject||"") : (browse.subject || "mathematics");
       const presetScheme = isEdit ? (q.scheme||"practice") : "practice";
       return `
         <div class="cb-row">
@@ -835,11 +922,9 @@
 
       wireTabs();
 
-      // Edit-tab cascade.
-      await loadClasses();
-      await loadSubjects();
-      await loadTopics();
-      loadTopicMgr();
+      // Edit tab: the bank as a file explorer.
+      try { await refreshTree(false); } catch (e) { fxMsg(e.message); }
+      mountBank();
 
       // Import + Rephrase option lists (before enhancement so the dropdowns mirror them).
       wireImport();
@@ -853,14 +938,6 @@
       // Turn every remaining native <select> into the custom dropdown.
       enhanceSelects(document);
 
-      // Edit-tab handlers.
-      $("ed-class").onchange=async()=>{ await loadSubjects(); await loadTopics(); loadTopicMgr(); loadList(); };
-      $("ed-subject").onchange=async()=>{ await loadTopics(); loadTopicMgr(); loadList(); };
-      $("ed-topic").onchange=async()=>{ await loadPapers(); loadList(); };
-      $("ed-paper").onchange=loadList;
-      $("ed-load").onclick=loadList;
-      $("ed-tm-add").onclick=()=>{ const v=$("ed-tm-new").value.trim(); if(v) topicMutate("add", v); };
-      ic("ed-load","refresh","Load");
       ic("im-go","upload","Import to bank"); ic("im-tmpl","copy","Copy AI prompt"); ic("rp-go","wand","Rephrase originals");
 
       // Data-tab handlers.
@@ -875,7 +952,6 @@
       loadOrig();
       loadArchive();
       loadStats();
-      loadList();
     });
   </script>
   <!-- every dropdown is a receipt -->

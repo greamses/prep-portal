@@ -564,7 +564,7 @@ module.exports = function () {
   // and concurrent admins — cost ZERO reads while staying accurate after edits.
   let _statsCache = null, _statsAt = 0;
   const STATS_TTL = 10 * 60 * 1000; // backstop; writes invalidate immediately
-  const invalidateStats = () => { _statsCache = null; _statsAt = 0; };
+  const invalidateStats = () => { _statsCache = null; _statsAt = 0; _treeCache = null; }; // _treeCache: the explorer's tree (GET /tree)
 
   // How many questions already sit in a class/subject/topic bucket. Uses the
   // count aggregate → billed as ONE read regardless of bucket size.
@@ -1377,6 +1377,228 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
       res.json({ ok: true, imported: written });
     } catch (e) {
       console.error("[/api/cbt/import]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  /* ══ THE BANK AS A FILE EXPLORER (admin-cbt.html, utils/components/file-explorer.js) ══
+     Classes are the roots, subjects the folders in them, topics the folders in those, and
+     each topic's papers (60 questions each) the files. Moving a topic or a paper RE-FILES its
+     questions (class, subject, topic and paper fields), copying makes new questions, and the
+     topic a paper left is renumbered so its papers stay 1, 2, 3… full to 60.
+
+       GET  /tree                                   { classes, subjects, tree: [{ cl, subj, topics: [{ name, key, count }] }] }
+       POST /tree/op { op, … }
+         newSubject  { class, subject }
+         newTopic    { class, subject, topic }
+         moveTopic   { class, subject, topic, toSubject, toTopic }      (a rename is a move in place)
+         moveSubject { class, subject, toSubject }
+         deleteTopic { class, subject, topic }     deleteSubject { class, subject }
+         movePapers / copyPapers { ids: ["cl~subj~topicKey~n"], class, toSubject, toTopic }
+         deletePapers { ids }                                                                    */
+  let _treeCache = null, _treeAt = 0;
+  const treeDirty = () => { _clCache = null; invalidateStats(); };
+  const col = () => db().collection("cbtQuestions");
+  const byPaper = (a, b) => (a.data().paperNo || 0) - (b.data().paperNo || 0) || msOf(a.data().createdAt) - msOf(b.data().createdAt);
+  const subjectOf = (s) => {
+    const k = subjKey(s);
+    if (SUBJECT_LABELS[k]) return k;
+    const hit = Object.entries(SUBJECT_LABELS).find(([, v]) => v.toLowerCase() === String(s || "").trim().toLowerCase());
+    return hit ? hit[0] : null;
+  };
+  async function commitAll(ops) {
+    for (let i = 0; i < ops.length; i += 400) {
+      const b = db().batch();
+      ops.slice(i, i + 400).forEach((fn) => fn(b));
+      await b.commit();
+    }
+  }
+  // Put these question docs into class/subject/topic, after what is there already.
+  async function refile(docs, cl, subj, topicName, copy = false) {
+    const name = String(topicName || GENERAL_TOPIC).trim().slice(0, 120) || GENERAL_TOPIC;
+    const tk = topicKeyOf(name), cst = cstKey(cl, subj, tk);
+    let n = await bucketCount(cst);
+    await ensureTopic(cl, subj, name);
+    const ops = docs.sort(byPaper).map((d) => {
+      const x = d.data();
+      const paperNo = paperNoForCount(n++);
+      const f = {
+        classLevel: cl, grade: classLabel(cl), subject: subj, subjectLabel: subjLabel(subj),
+        schemeSubject: `${x.scheme || "practice"}__${subj}`, topic: name, topicKey: tk,
+        classSubject: csKey(cl, subj), classSubjectTopic: cst, paperNo, paperKey: paperKeyOf(cl, subj, tk, paperNo), updatedAt: stamp(),
+      };
+      if (!copy) return (b) => b.update(d.ref, f);
+      const { compKey, ...rest } = x; // a copy is the bank's own, never part of a competition paper
+      return (b) => b.set(col().doc(), { ...rest, ...f, createdAt: stamp() });
+    });
+    await commitAll(ops);
+    return docs.length;
+  }
+  // Renumber a topic's papers 1, 2, 3… of 60 after questions left it.
+  async function repaper(cl, subj, tk) {
+    const docs = (await col().where("classSubjectTopic", "==", cstKey(cl, subj, tk)).get()).docs.sort(byPaper);
+    quota.addReads(docs.length);
+    const ops = [];
+    docs.forEach((d, i) => {
+      const p = Math.floor(i / PAPER_SIZE) + 1;
+      if (d.data().paperNo !== p) ops.push((b) => b.update(d.ref, { paperNo: p, paperKey: paperKeyOf(cl, subj, tk, p) }));
+    });
+    await commitAll(ops);
+  }
+  async function dropTopic(cl, subj, tk) {
+    const ref = topicRegRef(cl, subj);
+    await db().runTransaction(async (tx) => {
+      const s = await tx.get(ref);
+      const topics = (s.exists && Array.isArray(s.data().topics)) ? s.data().topics : [];
+      tx.set(ref, { classLevel: cl, subject: subj, topics: topics.filter((t) => (t.key || topicKeyOf(t.name)) !== tk), updatedAt: stamp() }, { merge: true });
+    });
+  }
+  const paperDocs = async (id) => {
+    const [cl, subj, tk, n] = String(id).split("~");
+    const p = parseInt(n, 10);
+    if (!cl || !subj || !tk || !(p > 0)) return null;
+    const docs = (await col().where("paperKey", "==", paperKeyOf(cl, subj, tk, p)).get()).docs;
+    quota.addReads(docs.length);
+    return { cl, subj, tk, docs };
+  };
+
+  router.get("/tree", authenticate, requireAdmin, async (req, res) => {
+    try {
+      if (_treeCache && Date.now() - _treeAt < 2 * 60 * 1000 && !req.query.fresh) return res.json(_treeCache);
+      const regs = (await db().collection("cbtTopics").get()).docs;
+      quota.addReads(regs.length);
+      const tree = await Promise.all(regs.map(async (d) => {
+        const x = d.data();
+        const cl = x.classLevel, subj = x.subject;
+        const list = Array.isArray(x.topics) ? x.topics.filter((t) => t && t.name) : [];
+        const topics = await Promise.all(list.map(async (t) => {
+          const key = t.key || topicKeyOf(t.name);
+          return { name: String(t.name).slice(0, 120), key, count: await keyCount("classSubjectTopic", cstKey(cl, subj, key)) };
+        }));
+        return { cl, subj, label: subjLabel(subj), topics };
+      }));
+      const keys = [...CLASS_LEVELS.map((c) => c.key), "unsorted"];
+      const classes = await Promise.all(keys.map(async (k) => ({ key: k, label: classLabel(k), count: await keyCount("classLevel", k) })));
+      _treeCache = { ok: true, paperSize: PAPER_SIZE, classes, subjects: SUBJECT_LABELS, tree: tree.filter((t) => t.cl && t.subj) };
+      _treeAt = Date.now();
+      res.json(_treeCache);
+    } catch (e) {
+      console.error("[/api/cbt/tree]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.post("/tree/op", authenticate, requireAdmin, async (req, res) => {
+    const b = req.body || {};
+    const bad = (m) => res.status(400).json({ error: m });
+    try {
+      const cl = classKey(b.class);
+      const subj = b.subject ? subjectOf(b.subject) : null;
+      const topic = String(b.topic || "").trim().slice(0, 120);
+      const tk = topic ? topicKeyOf(topic) : "";
+      const toSubj = b.toSubject ? subjectOf(b.toSubject) : null;
+      const toTopic = String(b.toTopic || "").replace(/\//g, " ").replace(/\s+/g, " ").trim().slice(0, 120);
+      let out = {};
+      switch (b.op) {
+        case "newSubject": {
+          if (!cl || !subj) return bad(`"${b.subject}" is not one of the bank's subjects.`);
+          const ref = topicRegRef(cl, subj);
+          const s = await ref.get();
+          if (!s.exists) await ref.set({ classLevel: cl, subject: subj, topics: [], updatedAt: stamp() });
+          break;
+        }
+        case "newTopic": {
+          if (!cl || !subj || !topic) return bad("Which class, subject and topic?");
+          await ensureTopic(cl, subj, topic);
+          break;
+        }
+        case "moveTopic": {
+          if (!cl || !subj || !tk || !toSubj || !toTopic) return bad("A topic goes into a subject.");
+          const toKey = topicKeyOf(toTopic);
+          const docs = (await col().where("classSubjectTopic", "==", cstKey(cl, subj, tk)).get()).docs;
+          quota.addReads(docs.length);
+          if (toSubj === subj && toKey === tk) {
+            // the same topic, a new spelling: rename it where it is
+            await commitAll(docs.map((d) => (bb) => bb.update(d.ref, { topic: toTopic, updatedAt: stamp() })));
+            const ref = topicRegRef(cl, subj);
+            await db().runTransaction(async (tx) => {
+              const s = await tx.get(ref);
+              const topics = ((s.exists && s.data().topics) || []).map((t) => ((t.key || topicKeyOf(t.name)) === tk ? { name: toTopic, key: tk } : t));
+              tx.set(ref, { topics, updatedAt: stamp() }, { merge: true });
+            });
+          } else {
+            out.moved = await refile(docs, cl, toSubj, toTopic);
+            await dropTopic(cl, subj, tk);
+          }
+          break;
+        }
+        case "moveSubject": {
+          if (!cl || !subj) return bad("Which subject?");
+          if (!toSubj) return bad(`"${b.toSubject}" is not one of the bank's subjects; a subject folder is named after one.`);
+          if (toSubj === subj) break;
+          const docs = (await col().where("classSubject", "==", csKey(cl, subj)).get()).docs;
+          quota.addReads(docs.length);
+          const groups = new Map();
+          docs.forEach((d) => { const t = d.data().topic || GENERAL_TOPIC; if (!groups.has(t)) groups.set(t, []); groups.get(t).push(d); });
+          for (const t of (await getTopicList(cl, subj))) if (!groups.has(t.name)) await ensureTopic(cl, toSubj, t.name);
+          for (const [t, ds] of groups) await refile(ds, cl, toSubj, t);
+          await topicRegRef(cl, subj).delete();
+          out.moved = docs.length;
+          break;
+        }
+        case "deleteTopic": {
+          if (!cl || !subj || !tk) return bad("Which topic?");
+          const docs = (await col().where("classSubjectTopic", "==", cstKey(cl, subj, tk)).get()).docs;
+          await commitAll(docs.map((d) => (bb) => bb.delete(d.ref)));
+          await dropTopic(cl, subj, tk);
+          out.deleted = docs.length;
+          break;
+        }
+        case "deleteSubject": {
+          if (!cl || !subj) return bad("Which subject?");
+          const docs = (await col().where("classSubject", "==", csKey(cl, subj)).get()).docs;
+          await commitAll(docs.map((d) => (bb) => bb.delete(d.ref)));
+          await topicRegRef(cl, subj).delete();
+          out.deleted = docs.length;
+          break;
+        }
+        case "movePapers":
+        case "copyPapers": {
+          const copy = b.op === "copyPapers";
+          if (!cl || !toSubj || !toTopic) return bad("Papers go into a topic: open a subject, then drop them on a topic.");
+          const left = new Set();
+          let n = 0;
+          for (const id of (Array.isArray(b.ids) ? b.ids : []).slice(0, 50)) {
+            const p = await paperDocs(id);
+            if (!p) continue;
+            if (!copy && p.cl === cl && p.subj === toSubj && p.tk === topicKeyOf(toTopic)) continue;
+            n += await refile(p.docs, cl, toSubj, toTopic, copy);
+            if (!copy) left.add(`${p.cl}~${p.subj}~${p.tk}`);
+          }
+          for (const k of left) { const [c, s, t] = k.split("~"); await repaper(c, s, t); }
+          out[copy ? "copied" : "moved"] = n;
+          break;
+        }
+        case "deletePapers": {
+          const left = new Set();
+          let n = 0;
+          for (const id of (Array.isArray(b.ids) ? b.ids : []).slice(0, 50)) {
+            const p = await paperDocs(id);
+            if (!p) continue;
+            await commitAll(p.docs.map((d) => (bb) => bb.delete(d.ref)));
+            n += p.docs.length;
+            left.add(`${p.cl}~${p.subj}~${p.tk}`);
+          }
+          for (const k of left) { const [c, s, t] = k.split("~"); await repaper(c, s, t); }
+          out.deleted = n;
+          break;
+        }
+        default: return bad("Unknown operation.");
+      }
+      treeDirty();
+      res.json({ ok: true, ...out });
+    } catch (e) {
+      console.error("[/api/cbt/tree/op]", b.op, e.message);
       res.status(500).json({ error: e.message });
     }
   });
