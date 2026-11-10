@@ -23,6 +23,19 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const lower = (s) => String(s || "").replace(/^([A-Z])(?=[a-z])/, (m) => m.toLowerCase());
 const LEAD = ["Right,", "So,", "Next,", "Now,", "And", "On we go:", "Then"];
 const pick = (list, k) => list[k % list.length];
+const cap = (t) => String(t || "").replace(/^\s*([a-z])/, (m) => m.toUpperCase());
+/* the board's question, said the way a teacher says it: what we are looking
+   at, the question, then the answer ("6 and 8. What goes under the line? It's 4, in the ones column.") */
+function teacherLine(lead, text, answer, where) {
+  const parts = String(text || "").split(/\s+—\s+/);
+  const q = parts.pop() || "";
+  const ctx = parts.join(", ");
+  const asked = /\?\s*$/.test(q);
+  /* after "Right," the sentence carries on in lower case; after "On we go:" it starts afresh */
+  const first = /[.:]$/.test(lead) ? cap : lower;
+  const open = ctx ? `${first(ctx)}. ${cap(q)}` : first(q);
+  return `${lead} ${open}${asked ? "" : "."} ${answer}${where ? `, ${where}` : ""}.`.replace(/\s+/g, " ").trim();
+}
 
 /* the figure that goes next: the board itself is asked which digit it accepts */
 function nextFigure(board) {
@@ -85,8 +98,13 @@ export function createToolDriver({ api, speak }) {
     }
     const el = await waitFor(`.bd-board--${op.name}`);
     if (!el || !live()) return;
+    await sleep(250); // the panel puts back what it last showed: let it, then replace it
     const fields = [...el.querySelectorAll(".bd-sum__in")];
-    for (let i = 0; i < fields.length && i < (op.values || []).length; i++) {
+    /* column addition takes the whole sum in ONE box ("456 + 378") */
+    let values = (op.values || []).map(String);
+    if (fields.length === 1 && values.length > 1) values = [values.join(/[+\-−]/.test(values.slice(1).join("")) ? " " : " + ")];
+    op = { ...op, values };
+    for (let i = 0; i < fields.length && i < values.length; i++) {
       if (!live()) return;
       if (fields[i].tagName === "SELECT") { fields[i].value = op.values[i]; fields[i].dispatchEvent(new Event("change", { bubbles: true })); }
       else await type(fields[i], op.values[i]);
@@ -94,6 +112,12 @@ export function createToolDriver({ api, speak }) {
     if (!op.values?.length) return; // just the board, for the learner
     el.querySelector(".bd-act--set")?.click();
     await sleep(500);
+    /* the board did not take the sum: say so rather than work some other sum */
+    const set = el.__board?.thing;
+    if (!set || /^(type|put|enter|that|those|use)/i.test(el.querySelector(".bd-say")?.textContent || "")) {
+      await speak("Hmm, the board didn't take that sum, so let's work it here on the board instead.");
+      return;
+    }
     if (!op.work || !live()) return;
 
     /* WORKED, a figure at a time: the board's question, its answer, then the figure */
@@ -104,7 +128,7 @@ export function createToolDriver({ api, speak }) {
       if (a.done) break;
       const bring = el.querySelector(".bd-bring");
       if (bring) {
-        await speak(`${pick(LEAD, k)} ${lower(a.text) || "bring the next figure down"}. Nothing to work out there, it just comes down.`);
+        await speak(teacherLine(pick(LEAD, k), a.text || "Bring the next figure down", "Nothing to work out, it just comes down", ""));
         if (!live()) return;
         bring.click();
         await sleep(450);
@@ -112,7 +136,7 @@ export function createToolDriver({ api, speak }) {
       }
       const figure = nextFigure(el.__board);
       if (figure === null || !el.querySelector(".bd-in")) break;
-      await speak(`${pick(LEAD, k)} ${lower(a.text) || "what goes down?"} ${figure}${a.where ? `, ${a.where}` : ""}.`);
+      await speak(teacherLine(pick(LEAD, k), a.text || "What goes down?", `It's ${figure}`, a.where || ""));
       if (!live()) return;
       for (const ch of figure) {
         const cells = [...el.querySelectorAll(".bd-in")];
@@ -127,7 +151,7 @@ export function createToolDriver({ api, speak }) {
     }
     if (live()) {
       const said = el.querySelector(".bd-say")?.textContent || "";
-      if (said) await speak(said.replace(/^Done[.!:]?\s*/i, "And that's it: "));
+      if (said) await speak(said.replace(/^Done[.!:]?\s*[—-]?\s*/i, "And there's our answer: "));
     }
   }
 

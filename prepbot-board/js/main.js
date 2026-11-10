@@ -248,6 +248,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   tools = createToolDriver({
     api: toolRail,
     speak: async (text) => {
+      console.debug("[tool]", text);
       showSay(text, false);
       const clip = voice.prepare(text);
       await Promise.race([clip.ready, new Promise((r) => setTimeout(r, (clip.patience || 3) * 1000))]);
