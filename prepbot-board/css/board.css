@@ -490,3 +490,24 @@ body:not(.pb-show-tools) .wb-tools { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .wb-tools .wb-tools__btn { transition: none; } }
 .wb-tools .wb-tools__paper { padding-inline: 0.6rem; gap: 0.4rem; }
+
+/* sticky-ui.css flattens icon keys inside receipts; on PrepBoard the tool keys and the
+   tools' own buttons ("Set it", "Show me one", "Rub it out") are sticky notes — the
+   doubled classes only lift these rules above that one */
+.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn { background: #fff3a8; border: 0; box-shadow: 0 1px 1px rgba(20, 19, 15, 0.1), 4px 6px 10px -4px rgba(20, 19, 15, 0.3); }
+.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn:nth-child(4n + 2) { background: #bfe3ff; }
+.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn:nth-child(4n + 3) { background: #e8c8ff; }
+.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn:nth-child(4n + 4) { background: #ffd7a3; }
+.wb-panel .bd-board .pp-btn.bd-act.bd-act {
+  background: #fff3a8; border: 0; border-radius: 0;
+  font-family: "Shantell Sans", "Segoe Print", cursive; font-weight: 700; color: #14130f;
+  padding: 0.5rem 0.9rem 0.55rem;
+  box-shadow: 0 1px 1px rgba(20, 19, 15, 0.1), 5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  rotate: -2deg; transform: none;
+}
+.wb-panel .bd-board .bd-acts .pp-btn.bd-act.bd-act:nth-child(2n) { background: #bfe3ff; rotate: 1.5deg; }
+.wb-panel .bd-board .pp-btn.bd-act.bd-act:hover { translate: 0 -2px; background-color: inherit; filter: brightness(0.98); }
+.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn.wb-tools__btn:hover { background: #fff3a8; translate: 0 -2px; }
+.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn.wb-tools__btn:nth-child(4n + 2):hover { background: #bfe3ff; }
+.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn.wb-tools__btn:nth-child(4n + 3):hover { background: #e8c8ff; }
+.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn.wb-tools__btn:nth-child(4n + 4):hover { background: #ffd7a3; }
