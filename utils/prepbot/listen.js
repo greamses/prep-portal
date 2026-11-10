@@ -24,6 +24,7 @@ export function createListener({
   onText = () => {},    // (text) the words so far, as they come
   onFinal = () => {},   // (text) listening has stopped; this is what was said ("" if nothing)
   onState = () => {},   // ("listening" | "idle" | "denied" | "error")
+  onError = () => {},   // (code) the browser's reason: "no-speech", "audio-capture", "network", …
 } = {}) {
   if (!Recognition) {
     return { supported: false, start() { onState("error"); }, stop() {}, cancel() {}, get listening() { return false; } };
@@ -53,6 +54,9 @@ export function createListener({
       if (quietMs) quiet = setTimeout(() => stop(), quietMs);
     };
     r.onerror = (e) => {
+      onError(e.error);
+      /* a browser without this accent's model: plain English next time */
+      if (e.error === "language-not-supported" && lang !== "en-US") { lang = "en-US"; return; }
       if (e.error === "not-allowed" || e.error === "service-not-allowed") onState("denied");
       else if (e.error !== "no-speech" && e.error !== "aborted") onState("error");
     };

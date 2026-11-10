@@ -274,6 +274,70 @@ export const OBJECTS = {
       leaves: { cx: 62, cy: 30, svg: F("M40 44Q24 26 10 34Q22 50 40 44Z", "#7cc46a") + L("M40 44Q24 26 10 34Q22 50 40 44Z", "#3f8f3f", 2.5) + F("M40 32Q56 12 70 20Q58 38 40 32Z", "#7cc46a") + L("M40 32Q56 12 70 20Q58 38 40 32Z", "#3f8f3f", 2.5) },
     }),
   },
+
+  /* ── the things word problems are about: bags, boxes, coins, books… ── */
+  bag: {
+    w: 90, h: 100,
+    parts: () => ({
+      bag: { cx: 45, cy: 66, svg: F("M12 34H78L84 96H6Z", "#d9a066") + L("M12 34H78L84 96H6Z") },
+      handles: { cx: 45, cy: 14, svg: L("M28 34V22Q28 8 45 8Q62 8 62 22V34", "#8a5a3a", 4) },
+    }),
+  },
+  box: {
+    w: 100, h: 90,
+    parts: () => ({
+      box: { cx: 40, cy: 60, svg: F("M8 30H72V86H8Z", "#d9a066") + L("M8 30H72V86H8Z") + F("M72 30L92 14V70L72 86Z", "#b8844f") + L("M72 30L92 14V70L72 86Z") + F("M8 30L28 14H92L72 30Z", "#e8bb85") + L("M8 30L28 14H92L72 30Z") },
+      tape: { cx: 40, cy: 30, svg: L("M40 30V86", "#8a5a3a", 3) },
+    }),
+  },
+  coin: {
+    w: 60, h: 60,
+    parts: () => ({ coin: { cx: 30, cy: 30, svg: F(circ(30, 30, 26), "#f2c14e") + L(circ(30, 30, 26), "#b88a2a", 3) + L(circ(30, 30, 19), "#b88a2a", 2) } }),
+  },
+  book: {
+    w: 110, h: 80,
+    parts: () => ({
+      cover: { cx: 20, cy: 40, svg: F("M6 10Q30 4 55 12Q80 4 104 10V72Q80 66 55 74Q30 66 6 72Z", "#5b8fd6") + L("M6 10Q30 4 55 12Q80 4 104 10V72Q80 66 55 74Q30 66 6 72Z") },
+      pages: { cx: 80, cy: 30, svg: L("M55 12V74M16 24Q34 20 48 26M16 36Q34 32 48 38M62 26Q78 20 94 24M62 38Q78 32 94 36", "#fff", 2.5) },
+    }),
+  },
+  bottle: {
+    w: 50, h: 130,
+    parts: () => ({
+      bottle: { cx: 25, cy: 90, svg: F("M18 4H32V24Q44 34 44 50V120Q44 126 38 126H12Q6 126 6 120V50Q6 34 18 24Z", "#cfe6f7", 0.95) + L("M18 4H32V24Q44 34 44 50V120Q44 126 38 126H12Q6 126 6 120V50Q6 34 18 24Z") },
+      cap: { cx: 25, cy: 6, svg: F(rect(16, 0, 18, 10), "#c25454") + L(rect(16, 0, 18, 10)) },
+      liquid: { cx: 25, cy: 100, svg: F("M6.5 70H43.5V120Q43.5 125.5 38 125.5H12Q6.5 125.5 6.5 120Z", "#5a9bd0", 0.7) },
+    }),
+  },
+  cup: {
+    w: 90, h: 80,
+    parts: () => ({
+      cup: { cx: 36, cy: 50, svg: F("M8 14H66L60 74H14Z", "#f3e1c4") + L("M8 14H66L60 74H14Z") },
+      handle: { cx: 80, cy: 40, svg: L("M64 26Q86 26 84 44Q82 60 62 58", INK, 4) },
+    }),
+  },
+  pencil: {
+    w: 140, h: 30,
+    parts: () => ({
+      pencil: { cx: 70, cy: 15, svg: F("M20 6H118V24H20Z", "#f4c95d") + L("M20 6H118V24H20Z") + F("M118 6H134V24H118Z", "#f08a8a") + L("M118 6H134V24H118Z") + F("M20 6L2 15L20 24Z", "#f0d3a2") + L("M20 6L2 15L20 24Z") + F("M2 15L8 12V18Z", INK) },
+    }),
+  },
+  sweet: {
+    w: 110, h: 50,
+    parts: () => ({ sweet: { cx: 55, cy: 25, svg: F(circ(55, 25, 17), "#f5a7b8") + L(circ(55, 25, 17), "#c25484", 3) + F("M38 25L14 10V40Z", "#f5a7b8") + L("M38 25L14 10V40Z", "#c25484", 3) + F("M72 25L96 10V40Z", "#f5a7b8") + L("M72 25L96 10V40Z", "#c25484", 3) } }),
+  },
+  orange: {
+    w: 70, h: 74,
+    parts: () => ({ orange: { cx: 35, cy: 42, svg: F(circ(35, 42, 28), "#f7a35c") + L(circ(35, 42, 28), "#c8692b", 3) + F("M35 14Q44 4 54 8Q46 18 35 14Z", "#7cc46a") } }),
+  },
+  egg: {
+    w: 56, h: 72,
+    parts: () => ({ egg: { cx: 28, cy: 40, svg: F("M28 4C44 4 52 30 52 46A24 24 0 0 1 4 46C4 30 12 4 28 4Z", "#fbf3e2") + L("M28 4C44 4 52 30 52 46A24 24 0 0 1 4 46C4 30 12 4 28 4Z") } }),
+  },
+  counter: {
+    w: 50, h: 50,
+    parts: () => ({ counter: { cx: 25, cy: 25, svg: F(circ(25, 25, 21), "#9fd0f5") + L(circ(25, 25, 21), "#2e6ea3", 3) } }),
+  },
 };
 
 export const OBJECT_NAMES = Object.keys(OBJECTS);
@@ -289,6 +353,10 @@ const ALIAS = {
   man: "person", woman: "person", boy: "person", girl: "person", child: "person", human: "person", pupil: "person", student: "person",
   home: "house", building: "house", vehicle: "car", taxi: "car", bus: "car",
   raindrop: "water drop", drop: "water drop", droplet: "water drop", "rain cloud": "cloud",
+  handbag: "bag", sack: "bag", "school bag": "bag", schoolbag: "bag", basket: "bag", parcel: "box", carton: "box", crate: "box",
+  money: "coin", coins: "coin", dollar: "coin", textbook: "book", notebook: "book", exercise: "book",
+  "water bottle": "bottle", mug: "cup", glass: "cup", pen: "pencil", crayon: "pencil", candy: "sweet", sweets: "sweet", toffee: "sweet",
+  token: "counter", marble: "counter", bead: "counter", item: "counter",
   football: "ball", "soccer ball": "ball", hill: "mountain", plant: "plant pot", "potted plant": "plant pot", bricks: "wall",
 };
 export function objectNamed(name) {

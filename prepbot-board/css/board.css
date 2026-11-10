@@ -460,3 +460,12 @@ body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex;
 .pb-pills[hidden] { display: none; }
 .pb-pill { cursor: pointer; border: 1px solid color-mix(in srgb, var(--ink) 26%, transparent); background: var(--surface-primary); color: var(--ink); box-shadow: none; }
 .pb-pill:hover { background: #1d1b18; color: #fff; border-color: #1d1b18; }
+
+/* the site's tools rail: out of sight until the Tools key (or PrepBot) puts it up */
+body:not(.pb-show-tools) .wb-tools { display: none; }
+.wb-tools { z-index: 6; }
+#pb-toolsbtn.is-up { border-color: color-mix(in srgb, var(--ink) 45%, transparent); }
+.pb-ribbon #pb-toolsbtn.is-up::after {
+  content: ""; position: absolute; right: -6px; top: -6px; width: 15px; height: 15px; border-radius: 50%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8' fill='%232f8f4e'/%3E%3Cpath d='M4.4 8.3l2.4 2.4 4.8-5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}

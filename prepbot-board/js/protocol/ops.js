@@ -241,12 +241,28 @@ const SPEC = {
   /* An everyday OBJECT drawn properly (a bulb, a battery, a beaker…), on the
      grid or a graph; its parts can be labelled like a diagram's. */
   object(o) {
-    const name = String(o.name || "").toLowerCase().replace(/[^a-z -]/g, "").trim();
+    let name = String(o.name || "").toLowerCase().replace(/[^a-z -]/g, "").trim();
     if (!objectNamed(name)) return null;
+    /* an object standing in for something else ("apple" labelled "bag"): draw the thing the label names */
+    const named = objectNamed(String(o.label || "").toLowerCase().replace(/[^a-z -]/g, "").trim());
+    if (named && named.key !== objectNamed(name).key) name = named.key;
     const on = typeof o.on === "string" && o.on !== "grid" ? o.on : "grid";
     const n = num(o.size);
     return { op: "object", id: idOf(o.id, "o"), name, on, at: pair(o.at) || [5, 5], size: n === null ? 3 : Math.max(0.5, Math.min(9, Math.abs(n))),
       active: o.active === undefined ? undefined : !!o.active, steps: o.steps === true, label: str(o.label, 30), tone: tone(o.tone) || "ink", ...(o.over ? { over: true } : {}) };
+  },
+
+  /* One of the site's TOOLS, put up on the page (and a sum worked on it). */
+  tool(o) {
+    const NAMES = ["column", "times", "criss", "shortdiv", "longdiv", "calculator", "barmodel", "linemodel", "graph", "gm", "note"];
+    const ALIAS = { addition: "column", "column addition": "column", subtraction: "column", multiplication: "times", "long multiplication": "times",
+      "short division": "shortdiv", "long division": "longdiv", division: "longdiv", "bar model": "barmodel", "number line": "linemodel",
+      grapher: "graph", "algebra moves": "gm", algebra: "gm", sticky: "note" };
+    const raw = String(o.name || "").toLowerCase().trim();
+    const name = NAMES.includes(raw) ? raw : ALIAS[raw];
+    if (!name) return null;
+    const values = (Array.isArray(o.values) ? o.values : []).slice(0, 4).map((v) => str(String(v ?? ""), 40)).filter((v) => v !== "");
+    return { op: "tool", name, values, work: o.work === true };
   },
 
   /* Other ways PrepBot could explain what it just taught: shown to the learner as pills. */

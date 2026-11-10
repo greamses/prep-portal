@@ -10,6 +10,8 @@ import { HANDS, setHand } from "./board/render.js";
 import { cleanBeat } from "./protocol/ops.js";
 import { createVoice, VOICES } from "./voice.js";
 import { local } from "./kokoro-local.js";
+import { createToolDriver, TOOL_NAMES } from "./tools.js";
+import { mountTools } from "/utils/components/workbook/toolbar.js";
 import { createScheduler } from "./scheduler.js";
 import { liveTurn } from "./turn.js";
 import { createListener } from "/utils/prepbot/listen.js";
@@ -44,6 +46,7 @@ const ICONS = {
   next: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.9 14.6 11.1 7a1.25 1.25 0 0 1 1.8 0l7.2 7.6a1.3 1.3 0 0 1-1.9 1.8L12 10l-6.2 6.4a1.3 1.3 0 0 1-1.9-1.8z" fill="var(--accent-secondary)" transform="rotate(90 12 12)"/></svg>`,
   overview: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.4" y="5" width="8.6" height="6.4" fill="var(--accent-secondary)"/><rect x="13" y="5" width="8.6" height="6.4" fill="var(--accent-primary)"/><rect x="2.4" y="13.4" width="8.6" height="6.4" fill="var(--accent-primary)"/><rect x="13" y="13.4" width="8.6" height="6.4" fill="var(--accent-danger)"/></svg>`,
   follow: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.4" fill="none" stroke="var(--accent-secondary)" stroke-width="2.4"/><circle cx="12" cy="12" r="3.4" fill="var(--accent-danger)"/></svg>`,
+  toolbox: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18v11H3z" fill="var(--accent-secondary)"/><path d="M8.6 9V6.2c0-.7.5-1.2 1.2-1.2h4.4c.7 0 1.2.5 1.2 1.2V9" fill="none" stroke="var(--accent-secondary)" stroke-width="2"/><path d="M3 13.4h18" stroke="#fff" stroke-width="1.6"/><rect x="10.4" y="12" width="3.2" height="3" fill="var(--accent-primary)"/></svg>`,
   upload: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.8h8.2L19 7.6v13.6H6z" fill="var(--accent-secondary)"/><path d="M14.2 2.8v4.8H19z" fill="var(--accent-primary)"/><path d="M12.5 18v-6.6M9.6 14.2l2.9-2.9 2.9 2.9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   doc: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.8h8.2L19 7.6v13.6H6z" fill="var(--accent-secondary)"/><path d="M14.2 2.8v4.8H19z" fill="var(--accent-primary)"/><path d="M8.8 12h7.4M8.8 15.4h7.4M8.8 18.4h4.6" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>`,
   keys: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1.8" y="5.6" width="20.4" height="12.8" fill="var(--accent-secondary)"/><path d="M5 9h2M9 9h2M13 9h2M17 9h2M5 12h2M9 12h2M13 12h2M17 12h2M7.5 15.2h9" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/></svg>`,
@@ -157,8 +160,20 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     if (replay.length) current.restore(replay);
     window.__pbBoard = current;
   }
+  /* the site's tools, on a rail of their own (hidden until the Tools key or PrepBot puts one up) */
+  const toolRail = mountTools(document.body, { tools: TOOL_NAMES, at: "left" });
+  let tools = null; // the driver, made once the voice exists (below)
   const board = {
-    play: (beat, s) => current.play(beat, s),
+    /* a beat that puts up a TOOL: drawn and said first, then the tool is used (a sum worked on it) */
+    play: async (beat, s) => {
+      const t0 = Date.now();
+      await current.play(beat, s);
+      const uses = (beat?.do || []).filter((o) => o.op === "tool");
+      if (!uses.length || !s || !tools) return;
+      document.body.classList.add("pb-show-tools");
+      await new Promise((r) => setTimeout(r, Math.max(0, s * 1000 - (Date.now() - t0) + 150)));
+      for (const op of uses) await tools.use(op);
+    },
     finishNow: () => current.finishNow(),
     summary: () => current.summary(),
     pages: () => current.pages(),
@@ -229,6 +244,16 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     voiceTrigger.dataset.tipSide = "bottom";
   }
   if (params.get("mute") !== "1") setTimeout(() => voice.wake(), 400);
+  /* PrepBot working a sum on a tool talks in the lesson's voice, a sentence at a time */
+  tools = createToolDriver({
+    api: toolRail,
+    speak: async (text) => {
+      showSay(text, false);
+      const clip = voice.prepare(text);
+      await Promise.race([clip.ready, new Promise((r) => setTimeout(r, (clip.patience || 3) * 1000))]);
+      await clip.play();
+    },
+  });
   /* the natural voice on this device: downloaded once (about 90 MB), then from the browser's cache */
   function getLocalVoice() {
     if (!local.supported) return;
@@ -275,6 +300,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
 
   /** The learner cut in (tap, typing, mic). Stops everything at once. */
   function cutIn() {
+    tools?.stop();
     if (!scheduler.busy && document.body.dataset.state !== "talking") return;
     streamCtrl?.abort();
     streamCtrl = null;
@@ -496,13 +522,27 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   let pushToTalk = false;                 // one held utterance while the open mic is off
   const said = [];                        // PrepBot's last few sentences, to know its echo
   const words = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9' ]+/g, " ").split(/\s+/).filter(Boolean);
+  /* PrepBot's own voice coming back through the mic. Judged on the words that
+     carry meaning only, and only on four or more of them: a short answer
+     ("in the chloroplast") naturally reuses the question's words, and was
+     being thrown away as an echo — which is why the mic seemed deaf. */
+  const SMALL = new Set("a an the and or but so to of in on at for with is are was were be it its this that these those i you we he she they my your our their me him her us them do does did not no yes".split(" "));
   function isEcho(text) {
+    const heard = words(text).filter((w) => !SMALL.has(w));
+    if (heard.length < 4) return false;
+    const pool = new Set(said.flatMap(words));
+    if (!pool.size) return false;
+    const hits = heard.filter((w) => pool.has(w)).length;
+    return hits / heard.length >= 0.75;
+  }
+  /* while PrepBot is still TALKING, anything that is mostly its own words is its echo
+     (strict: this decides whether to stop it mid-sentence) */
+  function isEchoNow(text) {
     const heard = words(text);
     if (!heard.length) return true;
     const pool = new Set(said.flatMap(words));
     if (!pool.size) return false;
-    const hits = heard.filter((w) => pool.has(w)).length;
-    return hits / heard.length >= 0.6;
+    return heard.filter((w) => pool.has(w)).length / heard.length >= 0.6;
   }
   const speaking = () => scheduler.busy || document.body.dataset.state === "talking";
   /* PrepBot is talking, or only just stopped (its echo is still arriving) */
@@ -517,8 +557,19 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   }
   const ear = createListener({
     quietMs: 1000,
+    /* say WHY nothing was heard, instead of a silent mic */
+    onError: (code) => {
+      const WHY = {
+        "no-speech": "I didn't hear anything. Check the right microphone is chosen, and speak a little closer.",
+        "audio-capture": "No microphone was found. Plug one in or choose it in your computer's sound settings.",
+        network: "Talking needs the internet for this browser's speech service. Check the connection, or type instead.",
+        "service-not-allowed": "This browser won't let pages listen. Chrome or Edge work best; or type instead.",
+        "language-not-supported": "Switching the listening language to standard English.",
+      };
+      if (WHY[code] && (code !== "no-speech" || pushToTalk)) showSay(WHY[code], true);
+    },
     onText: (t) => {
-      if (speaking() && isEcho(t)) return;
+      if (speaking() && isEchoNow(t)) return;
       status.textContent = `“${t}”`;
       /* the learner is talking: PrepBot stops at once (two words, so a cough does not) */
       if (speaking() && words(t).length >= 2) cutIn();
@@ -526,7 +577,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     onState: (st) => {
       mic.classList.toggle("is-on", st === "listening");
       mic.setAttribute("aria-pressed", String(micOpen || st === "listening"));
-      if (st === "denied") { setOpen(false, false); showSay("I can't hear you: the microphone is blocked. Allow it in your browser, or type instead.", true); }
+      if (st === "denied") { setOpen(false, false); showSay("I can't hear you: the microphone is blocked. Click the lock icon by the address, allow the microphone, then try again.", true); }
       else if (st === "error") failures++;
       else if (st === "idle" && micOpen) {
         /* the browser stops listening by itself now and then: start again */
@@ -537,7 +588,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     onFinal: (t) => {
       const was = pushToTalk;
       pushToTalk = false;
-      if (t && !(echoing() && isEcho(t))) { failures = 0; ask(ownWords(t)); return; }
+      if (t && !(speaking() ? isEchoNow(t) : echoing() && isEcho(t))) { failures = 0; ask(ownWords(t)); return; }
       if (was) showSay("I didn't catch that. Hold the mic and try again, or type.", true);
     },
   });
@@ -703,6 +754,11 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     return readPictures(images);
   }
   $("pb-upload").addEventListener("click", () => fileIn.click());
+  /* the tools rail: hidden until wanted (PrepBot putting a tool up shows it too) */
+  const toolsBtn = $("pb-toolsbtn");
+  const syncTools = () => toolsBtn.classList.toggle("is-up", document.body.classList.contains("pb-show-tools"));
+  toolsBtn.addEventListener("click", () => { document.body.classList.toggle("pb-show-tools"); syncTools(); });
+  new MutationObserver(syncTools).observe(document.body, { attributes: true, attributeFilter: ["class"] });
   fileIn.addEventListener("change", async () => {
     const file = fileIn.files?.[0];
     fileIn.value = "";
