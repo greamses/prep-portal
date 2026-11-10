@@ -1,6 +1,6 @@
 """
-PrepBoard's "Delayed" voice: Kokoro-82M (Apache 2.0) on a FREE Hugging Face
-Gradio Space with ZeroGPU (free accounts may host up to two of these).
+PrepBoard's "Delayed" voice: Kokoro-82M (Apache 2.0) on a Hugging Face
+Gradio Space, on ZeroGPU when the account has it, otherwise on the free CPU.
 
 A shared GPU is lent to each request, so a sentence can wait in a queue first:
 that is why PrepBoard calls this voice "Delayed".
@@ -10,8 +10,15 @@ API (Gradio):  POST /gradio_api/call/tts  {"data": [text, voice]}  -> event id
 """
 import gradio as gr
 import numpy as np
-import spaces
 import torch
+
+# ZeroGPU when the Space has it; on free CPU hardware the same code runs on the CPU
+try:
+    import spaces
+    GPU = spaces.GPU
+except Exception:  # no "spaces" package: a plain CPU Space
+    def GPU(**_):
+        return lambda f: f
 from kokoro import KModel, KPipeline
 
 VOICES = [
@@ -27,7 +34,7 @@ for v in VOICES:
     pipes[v[0]].load_voice(v)
 
 
-@spaces.GPU(duration=30)
+@GPU(duration=30)
 def speak(ps, ref_s):
     return model(ps, ref_s.to(model.device), 1.0).cpu().numpy()
 
