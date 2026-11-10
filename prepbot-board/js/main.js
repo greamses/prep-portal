@@ -163,6 +163,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   /* the site's tools, on a rail of their own (hidden until the Tools key or PrepBot puts one up) */
   const toolRail = mountTools(document.body, { tools: TOOL_NAMES, at: "left" });
   let tools = null; // the driver, made once the voice exists (below)
+  let toolsAuto = false; // the rail was brought out by PrepBot (not the learner), so it goes away again
   const board = {
     /* a beat that puts up a TOOL: drawn and said first, then the tool is used (a sum worked on it) */
     play: async (beat, s) => {
@@ -170,7 +171,8 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
       await current.play(beat, s);
       const uses = (beat?.do || []).filter((o) => o.op === "tool");
       if (!uses.length || !s || !tools) return;
-      document.body.classList.add("pb-show-tools");
+      /* the rail comes out for the tool, and goes back when PrepBot puts the tool away */
+      if (!document.body.classList.contains("pb-show-tools")) { toolsAuto = true; document.body.classList.add("pb-show-tools"); }
       await new Promise((r) => setTimeout(r, Math.max(0, s * 1000 - (Date.now() - t0) + 150)));
       for (const op of uses) await tools.use(op);
     },
@@ -247,6 +249,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   /* PrepBot working a sum on a tool talks in the lesson's voice, a sentence at a time */
   tools = createToolDriver({
     api: toolRail,
+    onIdle: () => { if (toolsAuto) { toolsAuto = false; document.body.classList.remove("pb-show-tools"); } },
     speak: async (text) => {
       console.debug("[tool]", text);
       showSay(text, false);
@@ -787,7 +790,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   $("pb-doc-x").addEventListener("click", () => { lesson.material = ""; lesson.materialName = ""; showDoc(); showSay("Okay, I've put the document away.", true); });
 
   $("pb-new").addEventListener("click", () => {
-    lesson.material = ""; lesson.materialName = ""; showDoc(); setPills([]);
+    lesson.material = ""; lesson.materialName = ""; showDoc(); setPills([]); tools?.closeAll();
     if (scheduler.busy) scheduler.interrupt();
     board.reset();
     lesson.topic = "";

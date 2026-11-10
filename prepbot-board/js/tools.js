@@ -64,13 +64,26 @@ async function waitFor(sel, ms = 6000) {
  * @param api     mountTools()'s handle: { open(id), isOpen(id) }
  * @param speak   (text) => Promise — said aloud (and captioned) by the page
  */
-export function createToolDriver({ api, speak }) {
+export function createToolDriver({ api, speak, onIdle = () => {} }) {
   let run = 0; // a newer run (or stop) makes an older one give up
+  const mine = new Set(); // tools PrepBot put up (and so puts away)
 
+  /* ALWAYS A FRESH TOOL: a panel that is already open (or was brought back
+     from last time) still holds an old sum, and puts it back into the boxes
+     a moment after it opens — over the sum PrepBot is typing. Closing it
+     first forgets that, so the new one opens empty. */
   async function put(id) {
     if (!api || !TOOL_NAMES.includes(id)) return false;
-    if (!api.isOpen(id)) await api.open(id);
+    if (api.isOpen(id)) await api.open(id); // (the key toggles: this closes it, forgetting its sum)
+    await api.open(id);
+    mine.add(id);
     return true;
+  }
+  /** Put away a tool PrepBot put up (and the rail, if nothing else is open). */
+  async function away(id) {
+    if (api?.isOpen(id) && mine.has(id)) await api.open(id);
+    mine.delete(id);
+    if (!mine.size) onIdle();
   }
 
   async function type(field, value) {
@@ -152,12 +165,17 @@ export function createToolDriver({ api, speak }) {
     if (live()) {
       const said = el.querySelector(".bd-say")?.textContent || "";
       if (said) await speak(said.replace(/^Done[.!:]?\s*[—-]?\s*/i, "And there's our answer: "));
+      /* worked and said: a moment to look at it, then it is put away */
+      await sleep(2500);
+      if (live()) await away(op.name);
     }
   }
 
   return {
     use,
-    /** The learner cut in, or a new board: whatever a tool was doing stops. */
+    /** The learner cut in: whatever a tool was doing stops (the tool stays, to look at). */
     stop() { run++; },
+    /** A new board, or the lesson moves on: every tool PrepBot put up is put away. */
+    async closeAll() { run++; for (const id of [...mine]) await away(id); },
   };
 }
