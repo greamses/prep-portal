@@ -9,6 +9,7 @@ import { makeCanvas } from "./board/layout.js";
 import { HANDS, setHand } from "./board/render.js";
 import { cleanBeat } from "./protocol/ops.js";
 import { createVoice, VOICES } from "./voice.js";
+import { voicePicker } from "/utils/components/voice-avatars.js";
 import { local } from "./kokoro-local.js";
 import { createToolDriver, TOOL_NAMES } from "./tools.js";
 import { mountTools, TOOL_IDS } from "/utils/components/workbook/toolbar.js";
@@ -226,34 +227,37 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     redraw();
   });
   /* the voice PrepBoard speaks in: the site's dropdown again, an icon key in Talk */
-  const VOICE_KEY = "pb-voice";
-  let voiceKey = VOICES[0].id;
+  const VOICE_KEY = "pb-voice2"; // a new key: everyone starts on Teacher Dansum's voice
+  let voiceKey = "dansum";
+  let voicePick = null;
+  const premiumFirst = (list) => [...list.filter((v) => v.kind === "eleven"), ...list.filter((v) => v.kind !== "eleven")];
   try { const v = localStorage.getItem(VOICE_KEY); if (VOICES.some((x) => x.id === v)) voiceKey = v; } catch {}
   const voice = createVoice({
     auth, muted: params.get("mute") === "1", voiceId: voiceKey,
     /* Kokoro's twelve voices only when its host is up; otherwise the one standard free voice */
     onEngine: (engine, hf) => {
       const keep = (v) => v.kind === "eleven" || (v.kind === "local" && local.supported) || (v.kind === "hf" && hf) || v.kind === (engine === "kokoro" ? "kokoro" : "melo");
-      [...voicePicker.options].forEach((o) => { const v = VOICES.find((x) => x.id === o.value); if (v && !keep(v)) o.remove(); });
-      if (!VOICES.some((v) => v.id === voicePicker.value && keep(v)) || ![...voicePicker.options].some((o) => o.value === voiceKey)) {
-        voiceKey = engine === "kokoro" ? "af_heart" : "melo";
-        voicePicker.value = voiceKey;
+      if (!VOICES.some((v) => v.id === voiceKey && keep(v))) {
+        voiceKey = "dansum";
         voice.setVoice(voiceKey);
       }
-      voiceSel?.refresh?.();
+      voicePick?.setVoices(premiumFirst(VOICES.filter(keep)));
+      voicePick?.set(voiceKey);
     },
   });
-  const voicePicker = $("pb-voice");
-  voicePicker.innerHTML = VOICES.map((v) => `<option value="${v.id}">${v.label}</option>`).join("");
-  voicePicker.value = voiceKey;
-  const voiceSel = enhanceSelect(voicePicker, { className: "pb-fontsel" });
-  const voiceTrigger = voiceSel?.querySelector(".pp-select-trigger");
-  if (voiceTrigger) {
-    voiceTrigger.insertAdjacentHTML("afterbegin", `<span class="pb-fontsel__icon" aria-hidden="true">${ICONS.voice}</span>`);
-    voiceTrigger.setAttribute("aria-label", "The voice PrepBoard speaks in");
-    voiceTrigger.dataset.tip = "The voice PrepBoard speaks in";
-    voiceTrigger.dataset.tipSide = "bottom";
-  }
+  /* the voices as faces (utils/components/voice-avatars.js): the names only in the tooltips */
+  voicePick = voicePicker({
+    voices: premiumFirst(VOICES.filter((v) => v.kind === "eleven" || v.kind === "melo")),
+    value: voiceKey,
+    label: "The voice PrepBoard speaks in",
+    onPick: (id) => {
+      voiceKey = id;
+      try { localStorage.setItem(VOICE_KEY, voiceKey); } catch {}
+      voice.setVoice(voiceKey);
+      if (voiceKey.startsWith("local:")) getLocalVoice();
+    },
+  });
+  $("pb-voice").replaceWith(voicePick.el);
   if (params.get("mute") !== "1") setTimeout(() => voice.wake(), 400);
   /* PrepBot working a sum on a tool talks in the lesson's voice, a sentence at a time */
   tools = createToolDriver({
@@ -281,12 +285,6 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     }).catch(() => showSay("The natural voice could not be downloaded. The free online voice will speak instead.", true));
   }
   if (voiceKey.startsWith("local:") && params.get("mute") !== "1") getLocalVoice();
-  voicePicker.addEventListener("change", () => {
-    voiceKey = voicePicker.value;
-    try { localStorage.setItem(VOICE_KEY, voiceKey); } catch {}
-    voice.setVoice(voiceKey);
-    if (voiceKey.startsWith("local:")) getLocalVoice();
-  });
   let openMicForLesson = () => {}, heardSaid = () => {}, stillAt = 0; // stillAt: when PrepBot last stopped talking
   const lesson = { topic: "", grade: Math.min(12, Math.max(1, Number(params.get("grade")) || 8)), transcript: [] }; // transcript: [{ role: "tutor"|"learner", text }]
   let streamCtrl = null;
@@ -885,7 +883,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     { keys: "0", what: "Back to where PrepBot is working" },
     { keys: "Home / End", what: "The first / last section" },
     { code: "KeyW", keys: "Alt+W", what: "Choose the handwriting", run: openPicker(fontSel) },
-    { code: "KeyV", keys: "Alt+V", what: "Choose the voice", run: openPicker(voiceSel) },
+    { code: "KeyV", keys: "Alt+V", what: "Choose the voice", run: () => voicePick?.open() },
     { code: "KeyT", keys: "Alt+T", what: "Hide or show the tools", run: () => fold(!ribbon.classList.contains("is-folded")) },
     { keys: "?", what: "This list" },
     { keys: "Esc", what: "Close this list, lower your hand, or stop PrepBot" },

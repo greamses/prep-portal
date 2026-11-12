@@ -22,6 +22,7 @@ import {
   ICON_ASK, ICON_SLEEP, ICON_WAKE, ICON_WIGGLE,
   ICON_TALK_MODE, ICON_BEEP_MODE, ICON_PREPBOT, MOUTH_SHAPES, ICON_MUTE_MODE } from "./icons.js";
 import { sayMaths } from "/utils/speech-maths.js";
+import { getVoiceKey } from "/utils/components/voice-avatars.js";
 
 // Same pastel set as --pp-note-bg (components.css) — the bubble cycles
 // through these so it reads as "multicoloured" rather than a single card.
@@ -79,6 +80,7 @@ export class PrepbotTeacher {
     this.audioCtx = null;
     this.elevenLabsAvailable = true;
     this.elevenLabsCache = new Map();
+    window.addEventListener("pp-voice-change", (e) => { this._voiceKey = e.detail?.id || null; });
     this.typeTimer = null;
     this.rhythmTimer = null;
     this.boundaryFallbackTimer = null;
@@ -343,7 +345,12 @@ export class PrepbotTeacher {
 
   async _tryElevenLabs(text) {
     if (!this.elevenLabsAvailable || !this.auth) return null;
-    if (this.elevenLabsCache.has(text)) return this.elevenLabsCache.get(text);
+    /* the voice the learner chose (Teacher Dansum's own by default): one voice all lesson,
+       so it is read once, when the first line is said */
+    if (!this._voiceKey) this._voiceKey = getVoiceKey();
+    const voiceId = this._voiceKey;
+    const memo = `${voiceId}|${text}`;
+    if (this.elevenLabsCache.has(memo)) return this.elevenLabsCache.get(memo);
     const user = await this._authReady();
     if (!user) return null;
     const ask = async () => {
@@ -351,7 +358,7 @@ export class PrepbotTeacher {
       const res = await fetch("/api/tts/elevenlabs", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, voiceId }),
       });
       if (!res.ok) {
         this.elevenLabsAvailable = false; // persistent server-side verdict for this session
@@ -371,7 +378,7 @@ export class PrepbotTeacher {
         if (!this.elevenLabsAvailable) return null;
         url = await ask();
       }
-      if (url) this.elevenLabsCache.set(text, url); // never re-fetch this line this session
+      if (url) this.elevenLabsCache.set(memo, url); // never re-fetch this line this session
       return url;
     } catch {
       return null; // transient twice over — something has to say the line

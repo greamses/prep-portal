@@ -282,7 +282,7 @@ module.exports = function () {
       cacheSet(cacheKey, base64);
       let outUrl = null;
       try { fs.writeFileSync(cacheFile, buf); outUrl = cacheUrl; } catch (_) {}
-      res.json({ audioContent: base64, audioEncoding: "MP3", url: outUrl });
+      res.json({ audioContent: base64, audioEncoding: "MP3", url: outUrl, voice: voiceId === own ? "dansum" : voiceId });
     } catch (err) {
       console.error("[/api/tts/kokoro]", err.message);
       res.status(err.name === "AbortError" ? 504 : 500).json({ error: err.message });
@@ -304,6 +304,31 @@ module.exports = function () {
       res.json({ configured: true, ok: false, hf });
     } finally { clearTimeout(timer); }
   });
+
+  /* ── "dansum": Teacher Dansum's own ElevenLabs voice, the default ────────
+     Found on the account by its NAME (GET /v1/voices), so no id has to be
+     copied anywhere; DANSUM_VOICE_ID in the environment wins when it is set.
+     Remembered for six hours, and a failed look-up is tried again after ten
+     minutes (until then the default is Alice). */
+  let dansum = { id: process.env.DANSUM_VOICE_ID || null, at: process.env.DANSUM_VOICE_ID ? Infinity : 0, failedAt: 0 };
+  async function dansumId(apiKey) {
+    if (dansum.id && Date.now() - dansum.at < 6 * 3600e3) return dansum.id;
+    if (!dansum.id && Date.now() - dansum.failedAt < 10 * 60e3) return null;
+    try {
+      const r = await fetch("https://api.elevenlabs.io/v1/voices", { headers: { "xi-api-key": apiKey } });
+      if (!r.ok) throw new Error(`voices ${r.status}`);
+      const { voices = [] } = await r.json();
+      const name = (v) => String(v.name || "").trim().toLowerCase();
+      const hit = voices.find((v) => name(v) === "dansum") || voices.find((v) => name(v).includes("dansum"));
+      if (!hit) throw new Error("no voice named dansum on this account");
+      dansum = { id: hit.voice_id, at: Date.now(), failedAt: 0 };
+      return hit.voice_id;
+    } catch (e) {
+      console.warn("[/api/tts/elevenlabs] dansum look-up:", e.message);
+      dansum = { ...dansum, failedAt: Date.now() };
+      return dansum.id; // an older id still serves
+    }
+  }
 
   router.post("/elevenlabs", authenticate, async (req, res) => {
     try {
@@ -333,15 +358,17 @@ module.exports = function () {
          any voice at all. A board sentence uses the most natural model
          (multilingual v2, a little more expression); everything else keeps
          the fast one it always had. */
+      /* the voices PrepBot and PrepBoard offer (utils/components/voice-avatars.js):
+         Teacher Dansum's own and five of ElevenLabs' default voices */
       const BOARD_VOICES = new Set([
-        "Xb7hH8MSUJpSbSDYk0k2", "XrExE9yKIg1WjnnlVkGX", "EXAVITQu4vr4xnSDxMaL", "cgSgspJ2msm6clMCkdW9", "pFZP5JQG7iQjIQuC4Bku",
-        "JBFqnCBsd6RMkjVDRZzb", "nPczCjzI2devNBz1zQrb", "cjVigY5qzO86Huf0OWal", "IKne3meq5aSn9XLyUdCD", "onwK4e9ZLuTAKqWW03F9",
+        "Xb7hH8MSUJpSbSDYk0k2", "nPczCjzI2devNBz1zQrb", "XrExE9yKIg1WjnnlVkGX", "IKne3meq5aSn9XLyUdCD", "pFZP5JQG7iQjIQuC4Bku",
         ...String(process.env.BOARD_EXTRA_VOICES || "").split(",").map((v) => v.trim()).filter(Boolean),
       ]);
       const ALICE = "Xb7hH8MSUJpSbSDYk0k2";
-      let { text, voiceId = ALICE } = req.body;
-      if (board && !BOARD_VOICES.has(voiceId)) voiceId = ALICE;
-      if (!board && voiceId !== ALICE && !BOARD_VOICES.has(voiceId)) voiceId = ALICE;
+      const own = await dansumId(apiKey);
+      let { text, voiceId } = req.body;
+      /* no voice asked for, "dansum", or one not on the list: Teacher Dansum's voice (Alice when it cannot be found) */
+      if (!voiceId || voiceId === "dansum" || !(BOARD_VOICES.has(voiceId) || voiceId === own)) voiceId = own || ALICE;
       const MODEL = board ? "eleven_multilingual_v2" : "eleven_turbo_v2_5";
       const SETTINGS = board
         ? { stability: 0.38, similarity_boost: 0.8, style: 0.28, use_speaker_boost: true }
@@ -393,11 +420,13 @@ module.exports = function () {
         // it to do and nothing to risk a 400 over.
       });
 
+      let fellBack = false; // said in Alice instead: never remembered as the asked-for voice
       let elResponse = await say(voiceId);
       /* a voice this account cannot use (402/404): say it in Alice instead */
       if (!elResponse.ok && voiceId !== ALICE && [400, 401, 402, 404, 422].includes(elResponse.status)) {
         console.warn("[/api/tts/elevenlabs] voice", voiceId, elResponse.status, "— falling back to Alice");
         elResponse = await say(ALICE);
+        fellBack = true;
       }
       if (!elResponse.ok) {
         const detail = await elResponse.text().catch(() => "");
@@ -407,6 +436,7 @@ module.exports = function () {
 
       const buf = Buffer.from(await elResponse.arrayBuffer());
       const base64 = buf.toString("base64");
+      if (fellBack) return res.json({ audioContent: base64, audioEncoding: "MP3", voice: ALICE });
       cacheSet(cacheKey, base64); // remember it so the next identical line is free
 
       // Best-effort persist to the static folder so it can be committed and

@@ -4,6 +4,8 @@ import { auth, db } from "/firebase-init.js";
 import { doc, getDoc } from "firebase/firestore";
 import { heroPaint } from "/utils/components/nav-icons.js";
 import { UI } from "/utils/components/ui-icons.js";
+import { voicePicker, getVoiceKey, setVoiceKey } from "/utils/components/voice-avatars.js";
+import { sayMaths } from "/utils/speech-maths.js";
 import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS, SITE_CHAT_MODELS } from "/utils/ai-models.js";
 import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSitePageMatch } from "/utils/components/site-map.js";
 
@@ -493,6 +495,7 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
           <div class="chat-header-info"><h4>${BOT_NAME}</h4><div class="chat-status"><span class="chat-status-dot"></span><span>AI & Voice Synced</span></div></div>
         </div>
         <div class="chat-header-actions">
+          <span id="chat-voice-slot"></span>
           <button class="chat-icon-btn chat-icon-btn--multi" id="chat-model-btn" title="Choose which AI model answers">${PB_ICONS.sparkle}</button>
           <button class="chat-icon-btn chat-icon-btn--multi" id="chat-byuk-btn" title="Use your own API key (Key Mode)">${PB_ICONS.key}</button>
           <button class="chat-icon-btn chat-icon-btn--multi" id="chat-clear-btn" title="Clear Chat">${PB_ICONS.trash}</button>
@@ -686,11 +689,41 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
     };
   }
 
-  function speak(text, btn) {
+  let voiceAudio = null;
+  let elevenOff = false; // the server said no (plan, or not set up): the browser's voice from then on
+  async function speakEleven(text, btn) {
+    const user = auth.currentUser;
+    if (!user || elevenOff) return false;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("/api/tts/elevenlabs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text: sayMaths(text).slice(0, 2400), voiceId: getVoiceKey() }),
+      });
+      if (!res.ok) { if (res.status === 403 || res.status === 503) elevenOff = true; return false; }
+      const data = await res.json();
+      const src = data.url || (data.audioContent ? `data:audio/mp3;base64,${data.audioContent}` : null);
+      if (!src) return false;
+      voiceAudio?.pause();
+      voiceAudio = new Audio(src);
+      const wave = document.createElement("div");
+      wave.className = "soundwave";
+      wave.innerHTML = "<span></span><span></span><span></span>";
+      voiceAudio.onplay = () => btn.appendChild(wave);
+      voiceAudio.onended = voiceAudio.onpause = () => wave.remove();
+      await voiceAudio.play();
+      return true;
+    } catch (_) { return false; }
+  }
+
+  async function speak(text, btn) {
     // On a page with a PrepBot tutor, the tutor says it: one voice all through.
     const tutor = window.__prepbotPage;
     if (tutor && typeof tutor.say === "function") { tutor.say(text); return; }
     synth.cancel();
+    voiceAudio?.pause();
+    if (await speakEleven(text, btn)) return;
     const cleanText = text.replace(/\\\(|\\\)|\\\[|\\\]/g, "");
     const utter = new SpeechSynthesisUtterance(cleanText);
     const wave = document.createElement("div");
@@ -2261,6 +2294,14 @@ If (and only if) you're pointing the student to one specific page from the site 
   document.getElementById("chat-close").onclick = () => toggleChat(false);
   document.getElementById("chat-clear-btn").onclick = () =>
     document.getElementById("chat-clear-bar").classList.add("visible");
+
+  /* ── the voice PrepBot speaks in: faces, not names (utils/components/voice-avatars.js) ── */
+  {
+    const slot = document.getElementById("chat-voice-slot");
+    const pick = voicePicker({ value: getVoiceKey(), label: "The voice PrepBot speaks in", onPick: (id) => setVoiceKey(id) });
+    pick.key.classList.add("chat-voice-key");
+    slot?.replaceWith(pick.el);
+  }
 
   /* ── the model picker ── */
   document.getElementById("chat-model-btn").onclick = () => {

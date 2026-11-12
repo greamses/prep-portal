@@ -19,6 +19,7 @@
 
 import { sayMaths } from "/utils/speech-maths.js";
 import { local } from "./kokoro-local.js";
+import { ELEVEN_VOICES } from "/utils/components/voice-avatars.js";
 
 const API_BASE = location.port === "5500" ? "http://127.0.0.1:5000" : "";
 
@@ -57,20 +58,38 @@ export const VOICES = [
   { id: "local:bf_emma", kind: "local", label: "Emma: clear, British" },
   { id: "local:bm_george", kind: "local", label: "George: steady, British" },
   { id: "local:bm_fable", kind: "local", label: "Fable: storyteller, British" },
-  /* ElevenLabs: paid, metered */
-  { id: "Xb7hH8MSUJpSbSDYk0k2", label: "Alice: clear, British" },
-  { id: "XrExE9yKIg1WjnnlVkGX", label: "Matilda: warm, American" },
-  { id: "EXAVITQu4vr4xnSDxMaL", label: "Sarah: soft, American" },
-  { id: "cgSgspJ2msm6clMCkdW9", label: "Jessica: bright, American" },
-  { id: "pFZP5JQG7iQjIQuC4Bku", label: "Lily: gentle, British" },
-  { id: "JBFqnCBsd6RMkjVDRZzb", label: "George: warm, British" },
-  { id: "nPczCjzI2devNBz1zQrb", label: "Brian: deep, American" },
-  { id: "cjVigY5qzO86Huf0OWal", label: "Eric: friendly, American" },
-  { id: "IKne3meq5aSn9XLyUdCD", label: "Charlie: easy-going, Australian" },
-  { id: "onwK4e9ZLuTAKqWW03F9", label: "Daniel: calm, British" },
+  /* ElevenLabs: paid, metered — Teacher Dansum's own voice first (the default), then five more,
+     each a drawn character (utils/components/voice-avatars.js) */
+  ...ELEVEN_VOICES.map((v) => ({ id: v.id, label: `${v.name}: ${v.note}`, look: v.look })),
 ];
 
-VOICES.forEach((v) => { v.kind = v.kind || "eleven"; v.label = (v.kind === "eleven" ? "Premium · " : v.kind === "local" ? "Natural, on this device · " : v.kind === "hf" ? "Delayed · " : "Free · ") + v.label; });
+/* the free voices get a face too: the same voice the same face wherever it runs */
+const FACE = {
+  skin: ["#f3d2b3", "#d9a679", "#a8714a", "#6e4429", "#4a2c1a"],
+  hairC: ["#1b1410", "#5a3a22", "#c98b3c", "#2a1a10", "#8a4b25", "#3a2a20"],
+  shirt: ["#c2527a", "#4f7a3a", "#d98b2b", "#7058a8", "#3b8f86", "#2f6f8f", "#b5653a"],
+  bg: ["#f6d6e0", "#dcebcf", "#f8e3c2", "#e2dbf3", "#d3eeea", "#cfe6ef", "#f1dccb"],
+};
+function freeLook(id) {
+  const base = id.replace(/^(hf|local):/, "");
+  let h = 7;
+  for (const c of base) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const pick = (arr, n) => arr[(h >>> n) % arr.length];
+  const she = /^.f_/.test(base) || base === "melo";
+  return {
+    skin: pick(FACE.skin, 1), hairC: pick(FACE.hairC, 4), shirt: pick(FACE.shirt, 7), bg: pick(FACE.bg, 10),
+    hair: she ? pick(["bob", "long", "puffs"], 13) : pick(["short", "side", "curly"], 13),
+    glasses: (h >>> 16) % 4 === 0, beard: !she && (h >>> 18) % 3 === 0, earrings: she && (h >>> 20) % 3 === 0,
+  };
+}
+const GROUP = { eleven: "Premium", kokoro: "Free", melo: "Free", local: "Free, made on this device", hf: "Free, may be delayed" };
+VOICES.forEach((v) => {
+  v.kind = v.kind || "eleven";
+  [v.name, v.note = ""] = v.label.split(": ");
+  v.look = v.look || freeLook(v.id);
+  v.group = GROUP[v.kind];
+  v.label = (v.kind === "eleven" ? "Premium · " : v.kind === "local" ? "Natural, on this device · " : v.kind === "hf" ? "Delayed · " : "Free · ") + v.label;
+});
 const kindOf = (id) => VOICES.find((v) => v.id === id)?.kind || "eleven";
 
 export function createVoice({ auth = null, muted = false, voiceId = VOICES[0].id, onEngine = null } = {}) {
