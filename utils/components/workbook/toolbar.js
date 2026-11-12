@@ -23,6 +23,7 @@ import { TOOL_ICONS } from "./instruments.js";
 import { mountTooltips } from "../tooltip.js";
 import { dropPin, restorePins } from "./pins.js";
 import { boardTool, boardAllowed } from "/prepbot-board/js/rail-tool.js";
+import { toolAccess, adminKey, dressAccess } from "./tool-access.js";
 
 /* Each tool says only how to open itself. The components are imported when a
    key is first pressed, not before: a shop page should not pay for a long
@@ -172,7 +173,9 @@ const TOOLS = {
     },
   },
   ...Object.fromEntries(["burger", "mountain", "venn", "roundabout", "oreo", "tchart", "causes", "sequence", "senses", "fishbone", "flow", "table"].map((kind) => [kind, {
-    label: kind,
+    label: ({ burger: "Paragraph burger", mountain: "Story mountain", venn: "Venn diagram organiser", roundabout: "Story merry-go-round",
+      oreo: "OREO", tchart: "T-chart", causes: "Cause and effect", sequence: "Sequence chain", senses: "Five senses",
+      fishbone: "Fishbone", flow: "Flow chart", table: "Table" })[kind] || kind,
     size: { w: 720, h: 620 },
     async open(body) {
       needCss("/utils/components/sticky-note.css");
@@ -314,6 +317,24 @@ export function mountTools(host = document.body, { tools = ["board", "calculator
     + `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="${at === "left" ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
   host.appendChild(el);
   mountTooltips();
+  /* WHICH TOOLS STUDENTS SEE (the admin's list, config/tools): a hidden tool's key
+     is taken off the rail for a student; the admin keeps it, marked, and gets a
+     key of their own to change the list */
+  toolAccess().then(({ hidden, admin }) => {
+    const mark = () => el.querySelectorAll("[data-wbtool]").forEach((k) => {
+      const off = hidden.has(k.dataset.wbtool);
+      if (admin) k.classList.toggle("is-off-for-students", off);
+      else if (off) { open.get(k.dataset.wbtool)?.close(); k.remove(); }
+    });
+    mark();
+    if (admin) {
+      dressAccess();
+      adminKey(el.querySelector(".wb-tools__paper"), {
+        tools: Object.entries(ALL).map(([id, t]) => ({ id, label: t.label })),
+        hidden, onChange: mark, side: at === "left" ? "right" : "left",
+      });
+    }
+  });
   /* the board's key stays only for a learner the board is open to */
   if (ids.includes("board")) { // a page's own board key (with "Load question") is PrepBoard too
     boardAllowed().then((ok) => { if (!ok) el.querySelector('[data-wbtool="board"]')?.remove(); });
@@ -365,6 +386,7 @@ export function mountTools(host = document.body, { tools = ["board", "calculator
     if (ALL[id]?.act) { ALL[id].act(); return; }
     const spec = ALL[id];
     const key = el.querySelector(`[data-wbtool="${id}"]`);
+    if (!key) return; // not on this rail (or hidden from students)
     key.setAttribute("aria-pressed", "true");
     const panel = openPanel({
       title: spec.label,

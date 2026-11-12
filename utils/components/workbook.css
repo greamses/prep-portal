@@ -3797,6 +3797,8 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   filter: drop-shadow(0 6px 14px rgba(var(--shadow-color, 42, 39, 35), 0.16));
 }
 .wb-tools { transition: transform 0.25s ease; }
+/* a long rail (PrepBoard carries every tool) scrolls inside the window rather than running off it */
+.wb-tools__paper { max-height: calc(100vh - 2rem); overflow-y: auto; scrollbar-width: thin; }
 .wb-tools--left { left: 0; }
 .wb-tools--right { right: 0; }
 /* slid away: the rail leaves the window and only its tab stays */

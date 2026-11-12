@@ -462,7 +462,6 @@ body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex;
 .pb-pill:hover { background: #1d1b18; color: #fff; border-color: #1d1b18; }
 
 /* the site's tools rail: out of sight until the Tools key (or PrepBot) puts it up */
-body:not(.pb-show-tools) .wb-tools { display: none; }
 .wb-tools { z-index: 6; }
 #pb-toolsbtn.is-up { border-color: color-mix(in srgb, var(--ink) 45%, transparent); }
 .pb-ribbon #pb-toolsbtn.is-up::after {

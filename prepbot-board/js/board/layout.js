@@ -47,7 +47,8 @@ export function makeCanvas(aspect = 16 / 9) {
        writing starts below the ribbon and stops above the status line */
     const s = Math.round(Math.min(h - 260, w * 0.4));
     const figure = { x: w - s - 60, y: 130, w: s, h: s };
-    return { w, h, main: { x: 70, y: 120, w: figure.x - 70 - 50, h: 680 }, figure };
+    /* the writing starts clear of the tools rail down the left edge */
+    return { w, h, main: { x: 120, y: 120, w: figure.x - 120 - 50, h: 680 }, figure };
   }
   const w = 900;
   const h = Math.round(Math.min(2400, Math.max(1000, w / a)));

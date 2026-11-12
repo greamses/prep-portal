@@ -48,6 +48,7 @@ import { mountChance, mountPack } from "./chance.js";
 import { mountSplit, splitRight } from "./fracbar.js";
 import { mountTree, treeRight, treeOf } from "./factortree.js";
 import { mountStrike, strikeRight } from "./strike.js";
+import { toolAccess, adminKey, dressAccess } from "./tool-access.js";
 import { mountRegroup } from "./regroup.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
@@ -3682,6 +3683,43 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     fly.innerHTML = `<div class="wb-side__flypaper pp-receipt__paper">${rest.map(keyHtml).join("")}</div>`;
     document.body.appendChild(fly);
     flies.set(f.id, fly);
+  });
+
+  /* ── WHICH TOOLS STUDENTS SEE (the admin's list, config/tools — tool-access.js) ──
+     A student's rail loses the switched-off keys: a family whose face key is gone
+     shows its next key instead, and a family with nothing left goes. The admin
+     keeps every key (the switched-off ones marked) and a key to change the list. */
+  toolAccess().then(({ hidden, admin }) => {
+    const keyOf = (host, k) => host?.querySelector(`[${k.attr}="${k.id}"]`);
+    const mark = () => {
+      for (const f of FAMILIES) {
+        const fam = side.querySelector(`[data-fam="${f.id}"]`);
+        const fly = flies.get(f.id);
+        for (const k of f.of) {
+          const off = hidden.has(k.id);
+          for (const node of [keyOf(fam, k), keyOf(fly, k)]) {
+            if (!node) continue;
+            if (admin) node.classList.toggle("is-off-for-students", off);
+            else if (off) node.remove();
+          }
+        }
+        if (admin || !fam) continue;
+        if (!fam.querySelector(".wb-side__btn")) {
+          const next = fly?.querySelector(".wb-side__btn");
+          if (next) fam.insertBefore(next, fam.querySelector(".wb-side__more"));
+        }
+        if (fly && !fly.querySelector(".wb-side__btn")) { fly.remove(); flies.delete(f.id); fam.querySelector(".wb-side__more")?.remove(); }
+        if (!fam.querySelector(".wb-side__btn")) fam.remove();
+      }
+    };
+    mark();
+    if (admin) {
+      dressAccess();
+      adminKey(side.querySelector(".wb-side__keys"), {
+        tools: FAMILIES.flatMap((f) => f.of.map((k) => ({ id: k.id, label: k.label }))),
+        hidden, onChange: mark, side: "right",
+      });
+    }
   });
 
   /* ── opening a family ───────────────────────────────────────────────────*/

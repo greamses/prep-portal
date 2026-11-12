@@ -11,7 +11,7 @@ import { cleanBeat } from "./protocol/ops.js";
 import { createVoice, VOICES } from "./voice.js";
 import { local } from "./kokoro-local.js";
 import { createToolDriver, TOOL_NAMES } from "./tools.js";
-import { mountTools } from "/utils/components/workbook/toolbar.js";
+import { mountTools, TOOL_IDS } from "/utils/components/workbook/toolbar.js";
 import { createScheduler } from "./scheduler.js";
 import { liveTurn } from "./turn.js";
 import { createListener } from "/utils/prepbot/listen.js";
@@ -161,7 +161,10 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     window.__pbBoard = current;
   }
   /* the site's tools, on a rail of their own (hidden until the Tools key or PrepBot puts one up) */
-  const toolRail = mountTools(document.body, { tools: TOOL_NAMES, at: "left" });
+  /* THE FULL TOOLS RAIL, in every teaching mode: every tool the site's rail has
+     (but PrepBoard itself), minus any the admin has switched off for students */
+  const toolRail = mountTools(document.body, { tools: TOOL_IDS.filter((id) => id !== "board"), at: "left" });
+  const railShut = () => toolRail.el.classList.contains("is-shut");
   let tools = null; // the driver, made once the voice exists (below)
   let toolsAuto = false; // the rail was brought out by PrepBot (not the learner), so it goes away again
   const board = {
@@ -172,7 +175,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
       const uses = (beat?.do || []).filter((o) => o.op === "tool");
       if (!uses.length || !s || !tools) return;
       /* the rail comes out for the tool, and goes back when PrepBot puts the tool away */
-      if (!document.body.classList.contains("pb-show-tools")) { toolsAuto = true; document.body.classList.add("pb-show-tools"); }
+      if (railShut()) { toolsAuto = true; toolRail.slide(false); }
       await new Promise((r) => setTimeout(r, Math.max(0, s * 1000 - (Date.now() - t0) + 150)));
       for (const op of uses) await tools.use(op);
     },
@@ -249,7 +252,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   /* PrepBot working a sum on a tool talks in the lesson's voice, a sentence at a time */
   tools = createToolDriver({
     api: toolRail,
-    onIdle: () => { if (toolsAuto) { toolsAuto = false; document.body.classList.remove("pb-show-tools"); } },
+    onIdle: () => { if (toolsAuto) { toolsAuto = false; toolRail.slide(true); } },
     speak: async (text) => {
       console.debug("[tool]", text);
       showSay(text, false);
@@ -760,9 +763,11 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   $("pb-upload").addEventListener("click", () => fileIn.click());
   /* the tools rail: hidden until wanted (PrepBot putting a tool up shows it too) */
   const toolsBtn = $("pb-toolsbtn");
-  const syncTools = () => toolsBtn.classList.toggle("is-up", document.body.classList.contains("pb-show-tools"));
-  toolsBtn.addEventListener("click", () => { document.body.classList.toggle("pb-show-tools"); syncTools(); });
-  new MutationObserver(syncTools).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  /* the ribbon's Tools key slides the rail away and back (as the rail's own tab does) */
+  const syncTools = () => toolsBtn.classList.toggle("is-up", !railShut());
+  toolsBtn.addEventListener("click", () => { toolRail.slide(!railShut()); syncTools(); });
+  new MutationObserver(syncTools).observe(toolRail.el, { attributes: true, attributeFilter: ["class"] });
+  syncTools();
   fileIn.addEventListener("change", async () => {
     const file = fileIn.files?.[0];
     fileIn.value = "";
