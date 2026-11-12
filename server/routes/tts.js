@@ -310,7 +310,9 @@ module.exports = function () {
      copied anywhere; DANSUM_VOICE_ID in the environment wins when it is set.
      Remembered for six hours, and a failed look-up is tried again after ten
      minutes (until then the default is Alice). */
-  let dansum = { id: process.env.DANSUM_VOICE_ID || null, at: process.env.DANSUM_VOICE_ID ? Infinity : 0, failedAt: 0 };
+  /* the id copied from ElevenLabs (Voices -> dansum -> ID): the API key cannot list voices (401), so no look-up is needed */
+  const DANSUM_ID = process.env.DANSUM_VOICE_ID || "zx35xzfMWW5snAUoDAyW";
+  let dansum = { id: DANSUM_ID, at: Infinity, failedAt: 0 };
   async function dansumId(apiKey) {
     if (dansum.id && Date.now() - dansum.at < 6 * 3600e3) return dansum.id;
     if (!dansum.id && Date.now() - dansum.failedAt < 10 * 60e3) return null;
