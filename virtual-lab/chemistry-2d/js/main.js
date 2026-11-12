@@ -4229,6 +4229,60 @@ window.addEventListener("keydown", (e) => {
   else if ((e.key === "Delete" || e.key === "Backspace") && selected && selected.key !== "cap") { e.preventDefault(); removeItem(selected); }
 });
 
+/* ── MORE KEYS ───────────────────────────────────────────────────────────
+     Tab / Shift+Tab pick the next / previous piece on the bench (left to right)
+     arrows move the picked piece (Shift: further) — what stands on it comes too
+     .  what can be done with the picked piece
+     D the drawer · / find in the drawer · F full screen
+     G guide · N notebook · P practicals · R results table · B PrepBot's experiments
+     1 a few drops at a time · 2 a full measure · ? the keys
+   (Esc, + − 0, O, H and Delete were already here.) */
+window.addEventListener("keydown", (e) => {
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  const done = () => e.preventDefault();
+  const click = (sel) => document.querySelector(sel)?.click();
+  if (k === "?") { done(); say("Keys: Tab pick a piece · arrows move it · . what can be done · D drawer · / find · F full screen · G guide · N notebook · P practicals · R results · B PrepBot · 1 drops · 2 a measure · + − 0 zoom · O note · H help · Delete · Esc"); return; }
+  if (k === "Tab") {
+    /* the pieces standing on the bench itself, left to right (what sits on them comes with them) */
+    const free = state.items.filter((o) => nodes[o.id] && !o.on && !o.held && !o.rack).sort((a, b) => a.x - b.x);
+    if (!free.length) return;
+    done();
+    const at = free.indexOf(selected);
+    select(free[(at + (e.shiftKey ? -1 : 1) + free.length) % free.length]);
+    return;
+  }
+  if (k.startsWith("Arrow") && selected) {
+    done();
+    if (selected.on || selected.held || selected.rack) { say("That piece is standing on something: move what it stands on, or drag it off."); return; }
+    const st = e.shiftKey ? 40 : 10;
+    if (k === "ArrowLeft") selected.x -= st;
+    if (k === "ArrowRight") selected.x += st;
+    if (k === "ArrowUp") selected.y -= st;
+    if (k === "ArrowDown") selected.y += st;
+    keepIn(selected);
+    place(selected);
+    follow(selected, false);
+    showHandles();
+    save();
+    return;
+  }
+  if (k === "." && selected) { done(); $("cl-dots")?.click(); return; }
+  if (k === "d") { done(); $("cl-drawer-key")?.click(); return; }
+  if (k === "/") {
+    done();
+    if (document.querySelector(".cl-stage").classList.contains("is-shut")) setDrawer(false);
+    $("cl-search")?.focus();
+    return;
+  }
+  if (k === "f") { done(); $("cl-fs")?.click(); return; }
+  const SHEETS = { g: "cl-sheet-setups", n: "cl-sheet-notebook", p: "cl-sheet-tasks", r: "cl-sheet-table", b: "cl-sheet-bot" };
+  if (SHEETS[k]) { done(); click(`[data-sheet="${SHEETS[k]}"]`); return; }
+  if (k === "1") { done(); click('[data-dose="drops"]'); return; }
+  if (k === "2") { done(); click('[data-dose="portion"]'); }
+});
+
 // ── the observation note, put away and brought back ──
 $("cl-note-key").addEventListener("click", () => setNotes(state.notes === false));
 $("cl-say").addEventListener("click", () => { clearTimeout(noteTimer); $("cl-say").classList.remove("is-shown"); });
