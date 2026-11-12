@@ -34,7 +34,7 @@ import { placeFill, worthOf } from "./shift.js";
 import { barSetup, barParts, barMissing, barMoney, barFractions } from "./bar-films.js";
 import { fracLike, fracEqual, fracUnlike, fracMixed } from "./fraction-films.js";
 import { ctxInference, ctxDefinition, ctxExample, ctxAntonym, ctxSynonym } from "./context-films.js";
-import { loss25, score80, score90, profit20, ps4Loss, bikeProfit20, bikeProfit10, shoeDiscount, withdraw10 } from "./cbt-films.js";
+import { loss25, score80, score90, profit20, ps4Loss, bikeProfit20, bikeProfit10, shoeDiscount, withdraw10, pagesLeft, hatProfit30, decrease15 } from "./cbt-films.js";
 
 /* The strip's dress. A page that is not a workbook does not link video.css,
    and an unstyled strip is not merely plain — it is invisible, which is how
@@ -339,6 +339,9 @@ const SCENES = {
   "bike-profit-10": bikeProfit10,
   "shoe-discount-20": shoeDiscount,
   "withdraw-10": withdraw10,
+  "pages-left-80": pagesLeft,
+  "hat-profit-30": hatProfit30,
+  "decrease-15": decrease15,
 };
 /**
  * WHAT EVERY FILM IS CALLED, in one place.
@@ -379,6 +382,9 @@ export const FILMS = [
   { id: "bike-profit-10", name: "A 10% profit: the selling price (two ways)", of: "Scholastic JS 5th edition first round, Q28" },
   { id: "shoe-discount-20", name: "Reduced by 20%: the new price (two ways)", of: "Scholastic 2022 finals, Q45" },
   { id: "withdraw-10", name: "Take out 10%: the new balance (two ways)", of: "Scholastic 2025 first round, Q29" },
+  { id: "pages-left-80", name: "Read 80%: the pages left (two ways)", of: "ANMC 15th first round, Q19" },
+  { id: "hat-profit-30", name: "A 30% profit on 55 kobo (two ways)", of: "Scholastic 2022 finals, Q37" },
+  { id: "decrease-15", name: "Decrease 1,500 kg by 15% (two ways)", of: "Scholastic JS 5th edition first round, Q7" },
 ];
 
 /** The coded film behind an id, for the editor to trace and to take a script from. */

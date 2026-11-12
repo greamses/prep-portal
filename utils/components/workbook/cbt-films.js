@@ -219,9 +219,9 @@ function partWhole(cfg) {
       mB: () => main(FWD ? [{ k: "a", tex: `${N}\\ \\text{boxes}` }, { k: "e", tex: "=" }, { k: "b", tex: t(WHOLE) }]
         : [{ k: "a", tex: `${K}\\ \\text{boxes}` }, { k: "e", tex: "=" }, { k: "b", tex: t(known) }]),
       mC: () => main([{ k: "a", tex: "1\\ \\text{box}" }, { k: "e", tex: "=" }, { k: "b", tex: FWD ? `${t(WHOLE)} \\div ${N}` : `${t(known)} \\div ${K}` }, { k: "e2", tex: "=" }, { k: "c", tex: t(UNIT), color: BLUE }]),
-      mD: () => main(FWD ? [{ k: "a", tex: `${K}\\ \\text{boxes}` }, { k: "e", tex: "=" }, { k: "b", tex: `${K} \\times ${t(UNIT)}` }, { k: "e2", tex: "=" }, { k: "c", tex: t(known), color: GREEN }]
+      mD: () => main(FWD ? [{ k: "a", tex: `${K}\\ \\text{${K === 1 ? "box" : "boxes"}}` }, { k: "e", tex: "=" }, { k: "b", tex: `${K} \\times ${t(UNIT)}` }, { k: "e2", tex: "=" }, { k: "c", tex: t(known), color: GREEN }]
         : [{ k: "a", tex: `${N}\\ \\text{boxes}` }, { k: "e", tex: "=" }, { k: "b", tex: `${N} \\times ${t(UNIT)}` }, { k: "e2", tex: "=" }, { k: "c", tex: t(WHOLE), color: GREEN }]),
-      mE: () => main([{ k: "a", tex: `\\text{${FWD ? L.answer : L.whole}}` }, { k: "e", tex: "=" }, { k: "c", tex: `${L.money ? `\\text{${L.money}}` : ""}${t(FWD ? known : WHOLE)}`, color: GREEN }], () => "", 9),
+      mE: () => main([{ k: "a", tex: `\\text{${FWD ? L.answer : L.whole}}` }, { k: "e", tex: "=" }, { k: "c", tex: `${L.money ? `\\text{${L.money}}` : ""}${t(FWD ? known : WHOLE)}${L.suffix ? `\\ \\text{${L.suffix}}` : ""}`, color: GREEN }], () => "", 9),
       /* the margin */
       sA: () => side([[{ k: "a", tex: `${B.pct} \\div ${B.by} = ${B.top}` }], [{ k: "b", tex: `100 \\div ${B.by} = ${B.bot}` }]]),
       sT: () => svgBox(SIDE_W, 20, mathRow([{ k: "a", tex: cfg.trap }], { cx: SIDE_W / 2, y: 10, em: 5.4 }).svg
@@ -313,7 +313,7 @@ function partWhole(cfg) {
       "b3.bare": (s, H) => { mb(s, "bar").slice(0, N).forEach((n) => H.show(n)); plain(s); H.show(braceOf(s, "below-0-0")); },
       "b3.fill": (s, H) => mb(s, "num").slice(1, N).forEach((n, i) => H.write(n, i * (N > 6 ? 0.25 : 0.6))),
       /* the loss leaves, or the profit grows on past the whole */
-      "f.rest": (s, H) => {
+      "b3.away": (s, H) => {
         const b = mb(s, "bar"), nums = mb(s, "num");
         if (OVER) {
           b.slice(N).forEach((n, i) => H.grow(n, i * 0.5));
@@ -323,7 +323,7 @@ function partWhole(cfg) {
         }
         H.draw(braceOf(s, REST), 0.5);
       },
-      "f.part": (s, H) => H.draw(braceOf(s, "above-0-0"), 0),
+      "b3.part": (s, H) => H.draw(braceOf(s, "above-0-0"), 0),
       "b3.rest": (s, H) => mb(s, "num").slice(1).forEach((n, i) => H.write(n, i * 1.0)),
 
       /* the working under the bar */
@@ -776,11 +776,11 @@ function forwardFilm(c) {
           cue: { "mC.div": "shared", "b3.one": `that's ${c.U}` }, pause: 0.6 });
       push(`And every box is the same size. So every box is ${c.U}.`,
         { add: ["b3.fill"], cue: { "b3.fill": "every box is" }, pause: 0.8 });
-      push(c.restLine, { add: ["f.rest"], cue: { "f.rest": c.restCue }, pause: 0.8 });
-      push(c.partLine, { add: ["f.part"], cue: { "f.part": c.partCue }, pause: 0.8 });
+      push(c.restLine, { add: ["b3.away"], cue: { "b3.away": c.restCue }, pause: 0.8 });
+      push(c.partLine, { add: ["b3.part"], cue: { "b3.part": c.partCue }, pause: 0.8 });
       push("Now wait. This is where people fall.", { pause: 0.7 });
       push(c.trapLine, { on: ["sT"], add: ["sT.all"], cue: { "sT.all": c.trapCue }, pause: 1 });
-      push(`So, ${word(K)} boxes. ${word(K)} times ${c.U}...`,
+      push(c.timesLine || `So, ${word(K)} boxes. ${word(K)} times ${c.U}...`,
         { on: ["mD"], off: ["mC", "sT"], add: ["mD.ask"], cue: { "mD.ask": "times" }, pause: 0.5 });
       push(`${c.P}.`, { add: ["mD.ans"], pause: 0.8 });
       push(`Let's check it. ${c.checkLine}`, { on: ["sC"], add: ["sC.a"], cue: { "sC.a": "check" }, pause: 0.5 });
@@ -897,4 +897,60 @@ export const withdraw10 = () => forwardFilm({
   answerLine: "So the new balance is 9,000 dollars.",
   r2Line: "You took out ten percent, so ninety percent is left. Ninety over a hundred.",
   closing: "Two ways, one answer. Ten percent is one box of the whole. Take it off, and count what's left.",
+});
+
+/* ANMC upper primary, 15th edition first round, Q19: the answer is what is LEFT, so the one box
+   left is the part, and the four boxes read are the rest */
+export const pagesLeft = () => forwardFilm({
+  question: "Tom is reading a 600 page book. He has read 80%. How many pages are left?",
+  whole: 600, N: 5, K: 1, by: 20, pct: 80, boxTop: 4, boxBot: 5, boxBy: 20, keepPct: 20,
+  W: "600", U: "120", P: "120",
+  labels: { part: "left", rest: "read", whole: "the book", answer: "pages left", money: "", suffix: "pages", wordTop: "left", wordBottom: "book" },
+  fracTop: "100\\% - 80\\% = 20\\%", trap: "80\\%\\ \\text{of}\\ 600 = 480",
+  story: ["Tom is reading a book. It has 600 pages.", "He has read eighty percent of it.", "So how many pages are left for him to read?"],
+  want: "the pages left", wholePhrase: "the whole book", wholeCap: "The whole book", newPhrase: "the pages left", newCap: "The pages left",
+  restLine: "He has read eighty percent. That's four boxes. Those pages are done.", restCue: "four boxes",
+  partLine: "So the pages left are the one box that's left.", partCue: "one box",
+  trapLine: "Some people find eighty percent of 600, get 480, and stop. That's the pages he read, not the pages left.", trapCue: "eighty percent of 600",
+  timesLine: "So the pages left are one box...",
+  checkLine: "120 left, plus the 480 he read...",
+  answerLine: "So there are 120 pages left.",
+  r2Line: "He read eighty percent, so twenty percent is left. Twenty over a hundred.",
+  closing: "Two ways, one answer. Read the question to the end: it asked for the pages left, not the pages read.",
+});
+
+/* Upper primary, 2022 finals, Q37: a profit of three boxes, on a box of 5.5 kobo */
+export const hatProfit30 = () => forwardFilm({
+  question: "A hat cost me 55 kobo. At what price must I sell it to make a profit of 30%?",
+  whole: 55, N: 10, K: 13, by: 10, pct: 30, boxTop: 3, boxBot: 10, boxBy: 10, keepPct: 130,
+  W: "55", U: "5.5", P: "71.5",
+  labels: { part: "selling price", rest: "profit", whole: "cost price", answer: "selling price", money: "", suffix: "kobo", wordTop: "sell", wordBottom: "cost" },
+  fracTop: "100\\% + 30\\% = 130\\%", trap: "55 + 30 = 85",
+  story: ["A hat cost fifty five kobo.", "We want to sell it and make a profit of thirty percent.", "So what price do we sell it for?"],
+  want: "the selling price", wholePhrase: "what the hat cost", wholeCap: "What the hat cost", newPhrase: "the selling price", newCap: "The selling price",
+  restLine: "A profit of thirty percent is three more boxes. They grow on past what it cost.", restCue: "three more boxes",
+  partLine: "So we sell it for all thirteen boxes.", partCue: "all thirteen",
+  trapLine: "Some people add thirty to fifty five and get eighty five. Thirty kobo? No. It's thirty percent, three boxes.", trapCue: "add thirty",
+  checkLine: "71.5, take away the three profit boxes, 16.5...",
+  answerLine: "So we sell the hat for 71.5 kobo.",
+  r2Line: "A profit of thirty percent means we sell it for a hundred and thirty percent of what it cost. A hundred and thirty over a hundred.",
+  closing: "Two ways, one answer. Thirty percent is three boxes of ten. A profit grows the bar by that many boxes.",
+});
+
+/* Junior secondary, 5th edition first round, Q7: twenty boxes of 75 kg */
+export const decrease15 = () => forwardFilm({
+  question: "Decrease 1500 kg by 15%.",
+  whole: 1500, N: 20, K: 17, by: 5, pct: 15, boxTop: 3, boxBot: 20, boxBy: 5, keepPct: 85,
+  W: "1,500", U: "75", P: "1,275",
+  labels: { part: "what is left", rest: "taken off", whole: "start", answer: "what is left", money: "", suffix: "kg", wordTop: "left", wordBottom: "start" },
+  fracTop: "100\\% - 15\\% = 85\\%", trap: "1500 - 15",
+  story: ["We start with 1,500 kilograms.", "We decrease it by fifteen percent.", "So how much is left?"],
+  want: "what is left", wholePhrase: "the 1,500 kilograms", wholeCap: "The 1,500 kilograms", newPhrase: "what is left", newCap: "What is left",
+  restLine: "Decrease by fifteen percent. That's three boxes taken off.", restCue: "three boxes",
+  partLine: "So what's left is the other seventeen boxes.", partCue: "other seventeen",
+  trapLine: "Some people take fifteen kilograms away. No. It's fifteen percent, three boxes.", trapCue: "fifteen kilograms",
+  checkLine: "1,275, plus the three boxes taken off, 225...",
+  answerLine: "So 1,275 kilograms are left.",
+  r2Line: "Decrease by fifteen percent, so eighty five percent is left. Eighty five over a hundred.",
+  closing: "Two ways, one answer. Fifteen percent is three boxes of twenty. Take them off the whole bar.",
 });

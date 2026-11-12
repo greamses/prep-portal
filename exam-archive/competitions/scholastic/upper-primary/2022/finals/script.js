@@ -833,7 +833,7 @@ const examQuestions = [
       "\\(\\text{Selling Price} = \\text{Cost Price} \\times (100\\% + \\text{Profit}\\%)\\).",
       "\\(\\text{Selling Price} = 55 \\times 1.30 = 71.5\\text{ kobo}\\).",
     ],
-    topic: "Business Mathematics",
+    topic: "Business Mathematics", film: "hat-profit-30"
   },
   {
     question:
