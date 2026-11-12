@@ -120,13 +120,13 @@ export function mountVennModel(el, { saved = null, onChange = () => {} } = {}) {
     + `<button type="button" class="pp-plain vn-set" data-set="blank" aria-pressed="false">Blank</button>`
     + `<button type="button" class="pp-plain vn-set" data-set="primes" aria-pressed="false">Prime factors</button>`
     + `</span>`
-    + key("item", 2, "Write a new item")
-    + key("ringPlus", 1, "One more ring")
-    + key("ringLess", 1, "Take the last ring off")
-    + `<span class="vn-primeskey" hidden>` + key("build", 1, "Set the two numbers") + `</span>`
-    + key("tone", 2, "The colour of the picked item")
-    + key("undo", 1, "Step back")
-    + key("del", 4, "Take the picked item off")
+    + key("item", 2, "Write a new item (N)")
+    + key("ringPlus", 1, "One more ring (+)")
+    + key("ringLess", 1, "Take the last ring off (−)")
+    + `<span class="vn-primeskey" hidden>` + key("build", 1, "Set the two numbers (P)") + `</span>`
+    + key("tone", 2, "The colour of the picked item (C)")
+    + key("undo", 1, "Step back (Ctrl+Z)")
+    + key("del", 4, "Take the picked item off (Delete)")
     + `<div class="vn-pot" data-pot hidden><div class="pp-receipt"><div class="pp-receipt__paper">`
     + `<div class="vn-pot__in">`
     + TONES.map((hex, i) => `<button type="button" class="pp-plain vn-chip" data-tone="${i}"`
@@ -467,6 +467,82 @@ export function mountVennModel(el, { saved = null, onChange = () => {} } = {}) {
     if (twice(`s${id}`)) writeSet(id);
   });
 
+  /* ── THE KEYBOARD ─────────────────────────────────────────────────────
+     The diagram takes the keys from a press anywhere on it until a press elsewhere:
+       N new item · Tab / Shift+Tab pick the next / previous item
+       arrows nudge the picked item (Shift: further) · Enter write on it
+       1 2 3 drop it into that ring's own part · B the part ALL the rings share
+       0 take it back out of the rings · + − one more ring / one fewer
+       C colour · P the two numbers (prime factors) · Delete · Ctrl+Z · Esc · ? the list */
+  board.tabIndex = 0;
+  board.setAttribute("aria-label", "Venn diagram — press ? for the keys");
+  let armed = false;
+  const arm = (e) => { armed = el.contains(e.target); };
+  document.addEventListener("pointerdown", arm, true);
+  board.addEventListener("focus", () => { armed = true; });
+  board.addEventListener("pointerdown", () => board.focus({ preventScroll: true }), true);
+  const press = (t) => tools.querySelector(`[data-t="${t}"]`)?.click();
+  /** Where an item goes for "into ring i's own part", "the shared middle", or "out". */
+  function spotFor(where) {
+    const pct = layoutOf(model.sets.length);
+    const mx = pct.reduce((a, c) => a + c[0], 0) / pct.length;
+    const my = pct.reduce((a, c) => a + c[1], 0) / pct.length;
+    if (where === "middle") return [mx, my];
+    if (where === "out") return [12 + (model.items.length % 6) * 14, 88];
+    const [cx, cy, r] = pct[where];
+    const dx = cx - mx, dy = cy - my, d = Math.hypot(dx, dy) || 1;
+    return [cx + (dx / d) * r * 0.45, cy + (dy / d) * r * 0.45];
+  }
+  /* items dropped into the same place are fanned out a little, not stacked on top of each other */
+  function settle(it, [x, y]) {
+    const near = model.items.filter((o) => o !== it && Math.hypot(o.x - x, o.y - y) < 4).length;
+    it.x = Math.max(2, Math.min(98, x + [0, 6, -6][near % 3]));
+    it.y = Math.max(2, Math.min(98, y + Math.floor(near / 3) * 5));
+  }
+  const onKey = (e) => {
+    if (!armed || !el.isConnected) return;
+    if (e.target.closest?.(".vn-write, input, textarea, select")) return;
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const done = () => { e.preventDefault(); e.stopPropagation(); };
+    if ((e.ctrlKey || e.metaKey) && k === "z") { done(); stepBack(); return; }
+    if (e.ctrlKey || e.metaKey) return;
+    if (k === "?") { done(); flash("Keys: N new item · Tab pick · arrows nudge · 1 2 3 into a ring · B shared middle · 0 out · Enter write · + − rings · C colour · Delete · Ctrl+Z"); return; }
+    if (k === "Escape") { picked = null; pot.hidden = true; numsSheet.hidden = true; paintItems(); return; }
+    if (k === "n") { done(); press("item"); return; }
+    if (k === "+" || k === "=") { done(); press("ringPlus"); return; }
+    if (k === "-" || k === "_") { done(); press("ringLess"); return; }
+    if (k === "c") { done(); press("tone"); return; }
+    if (k === "p" && model.preset === "primes") { done(); press("build"); return; }
+    if (k === "Tab" && model.items.length) {
+      done();
+      const order = [...model.items].sort((a, b) => a.y - b.y || a.x - b.x);
+      const cur = order.findIndex((it) => it.id === picked);
+      picked = order[(cur + (e.shiftKey ? -1 : 1) + order.length) % order.length].id;
+      paintItems();
+      return;
+    }
+    const it = model.items.find((n) => n.id === picked);
+    if (!it) return;
+    if (k === "Delete" || k === "Backspace") { done(); press("del"); return; }
+    if (k === "Enter") { done(); writeItem(it.id); return; }
+    if (k.startsWith("Arrow")) {
+      done();
+      const st = e.shiftKey ? 6 : 1.5;
+      change(() => {
+        if (k === "ArrowLeft") it.x = Math.max(1, it.x - st);
+        if (k === "ArrowRight") it.x = Math.min(99, it.x + st);
+        if (k === "ArrowUp") it.y = Math.max(1, it.y - st);
+        if (k === "ArrowDown") it.y = Math.min(99, it.y + st);
+      });
+      return;
+    }
+    const ring = { 1: 0, 2: 1, 3: 2 }[k];
+    if (ring != null && ring < model.sets.length) { done(); change(() => settle(it, spotFor(ring))); return; }
+    if (k === "b") { done(); change(() => settle(it, spotFor("middle"))); return; }
+    if (k === "0") { done(); change(() => settle(it, spotFor("out"))); return; }
+  };
+  document.addEventListener("keydown", onKey, true);
+
   paintAll();
   syncSetTabs();
   mountTooltips();
@@ -478,6 +554,8 @@ export function mountVennModel(el, { saved = null, onChange = () => {} } = {}) {
     clear() { model = blankVenn(); picked = null; paintAll(); syncSetTabs(); },
     dispose() {
       document.removeEventListener("pointerdown", shut, true);
+      document.removeEventListener("pointerdown", arm, true);
+      document.removeEventListener("keydown", onKey, true);
       pot.remove();
       numsSheet.remove();
       el.classList.remove("is-venning");
