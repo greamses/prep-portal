@@ -158,6 +158,7 @@ const examQuestions = [
       "\\(0.80 \\times M = 56 \\implies M = \\frac{56}{0.80} = 70\\).",
     ],
     topic: "Percentages",
+    film: "score-80", // PrepBot works it two ways (utils/components/workbook/cbt-films.js)
   },
   {
     question:
