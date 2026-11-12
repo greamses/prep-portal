@@ -48,7 +48,7 @@ import { mountChance, mountPack } from "./chance.js";
 import { mountSplit, splitRight } from "./fracbar.js";
 import { mountTree, treeRight, treeOf } from "./factortree.js";
 import { mountStrike, strikeRight } from "./strike.js";
-import { toolAccess, adminKey, dressAccess } from "./tool-access.js";
+import { toolAccess, adminChooser, dressAccess, studentSees, adminNow } from "./tool-access.js";
 import { mountRegroup } from "./regroup.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
@@ -3562,6 +3562,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     return m && { id: m.id, label: m.label, icon: m.icon || "", attr: "data-mode" };
   };
 
+  const adminWhole = adminNow(); // the admin always gets every family, to choose from
+  const pageDefaultIds = new Set(); // what this workbook gives students when nothing has been chosen
   const FAMILIES = [
     /* The pencil first: it is the one thing on this rail a child reaches for
        without being told to, and the measuring tools are behind it. */
@@ -3608,7 +3610,15 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     /* and may drop single keys out of a family it otherwise wants: an English
        page wants the pencil and the eraser out of "Drawing" and has no use
        for the compass, the ruler or the set square */
-    .map((f) => ({ ...f, of: f.of.filter((k) => k && !(railWithout || []).includes(k.id)) }))
+    /* EVERY RAIL CARRIES EVERY TOOL: the workbook's own choices (rail, railWithout)
+       are only what students see until the admin chooses (tool-access.js); the
+       admin is given the whole rail */
+    .map((f) => {
+      const of = f.of.filter(Boolean);
+      const mine = of.filter((k) => !(railWithout || []).includes(k.id));
+      (!rail || rail.includes(f.id)) && mine.forEach((k) => pageDefaultIds.add(k.id));
+      return { ...f, of: adminWhole ? of : mine };
+    })
     .filter((f) => f.of.length)
     /**
      * A WORKBOOK MAY SAY WHICH FAMILIES IT WANTS. Left alone it gets all of
@@ -3618,8 +3628,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
      * with the writing. `interactive.rail` names the families to keep, in the
      * order they should appear.
      */
-    .filter((f) => !rail || rail.includes(f.id))
-    .sort((a, b) => (rail ? rail.indexOf(a.id) - rail.indexOf(b.id) : 0));
+    .filter((f) => adminWhole || !rail || rail.includes(f.id))
+    .sort((a, b) => (rail ? (rail.includes(a.id) ? rail.indexOf(a.id) : 99) - (rail.includes(b.id) ? rail.indexOf(b.id) : 99) : 0));
 
   const ARROW =
     '<svg viewBox="0 0 8 8" width="7" height="7" aria-hidden="true" class="wb-side__tick">'
@@ -3689,14 +3699,15 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
      A student's rail loses the switched-off keys: a family whose face key is gone
      shows its next key instead, and a family with nothing left goes. The admin
      keeps every key (the switched-off ones marked) and a key to change the list. */
-  toolAccess().then(({ hidden, admin }) => {
+  toolAccess().then(({ cfg, admin }) => {
+    const pageDefault = [...pageDefaultIds];
     const keyOf = (host, k) => host?.querySelector(`[${k.attr}="${k.id}"]`);
     const mark = () => {
       for (const f of FAMILIES) {
         const fam = side.querySelector(`[data-fam="${f.id}"]`);
         const fly = flies.get(f.id);
         for (const k of f.of) {
-          const off = hidden.has(k.id);
+          const off = !studentSees(cfg, k.id, { pageDefault });
           for (const node of [keyOf(fam, k), keyOf(fly, k)]) {
             if (!node) continue;
             if (admin) node.classList.toggle("is-off-for-students", off);
@@ -3715,9 +3726,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     mark();
     if (admin) {
       dressAccess();
-      adminKey(side.querySelector(".wb-side__keys"), {
-        tools: FAMILIES.flatMap((f) => f.of.map((k) => ({ id: k.id, label: k.label, icon: k.icon }))),
-        hidden, onChange: mark, side: "right",
+      adminChooser(side.querySelector(".wb-side__keys"), {
+        keys: () => [side, ...flies.values()].flatMap((root) => [...root.querySelectorAll(".wb-side__btn")]),
+        idOf: (k) => k.dataset.sheet || k.dataset.tool || k.dataset.mode || null,
+        cfg, pageDefault, onChange: mark, side: "right",
       });
     }
   });

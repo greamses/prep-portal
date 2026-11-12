@@ -34,7 +34,7 @@ const PAGE_CONFIG = {
     attempt:   parseInt(urlParams.get('attempt') || '0', 10) || 0,
     // k = a pass for this one paper, made by a share link (checked with the server, see sharedSeat)
     pass:      (urlParams.get('k') || '').trim().toUpperCase(),
-    timed:     (urlParams.get('timer') || '').toLowerCase() === 'on',
+    timed:     /^(on|1|true)$/i.test(urlParams.get('timer') || ''),
     grade:     (urlParams.get('grade') || '').trim(),
     limit:     parseInt(urlParams.get('n') || urlParams.get('limit') || '20', 10) || 20,
     // feedback=on → reveal the correct answer + explanation the instant a

@@ -23,7 +23,7 @@ import { TOOL_ICONS } from "./instruments.js";
 import { mountTooltips } from "../tooltip.js";
 import { dropPin, restorePins } from "./pins.js";
 import { boardTool, boardAllowed } from "/prepbot-board/js/rail-tool.js";
-import { toolAccess, adminKey, dressAccess } from "./tool-access.js";
+import { toolAccess, adminChooser, dressAccess, studentSees } from "./tool-access.js";
 
 /* Each tool says only how to open itself. The components are imported when a
    key is first pressed, not before: a shop page should not pay for a long
@@ -307,7 +307,13 @@ export function mountTools(host = document.body, { tools = ["board", "calculator
   /* A page can bring tools of its own (Algebra Moves' formula book): the same
      { label, size, open(body) } a built-in tool is, joining the same rail. */
   const ALL = { ...TOOLS, ...extra };
-  const ids = tools.filter((id) => ALL[id]);
+  /* EVERY RAIL CARRIES EVERY TOOL (the admin decides what students see,
+     tool-access.js). The page's own list is only what students see there until
+     the admin has chosen for the page. */
+  const pageDefault = tools.filter((id) => ALL[id]);
+  if (pageDefault.includes("gm") && !pageDefault.includes("formulas") && ALL.formulas) pageDefault.push("formulas");
+  const ids = [...new Set([...TOOL_IDS, ...pageDefault])].filter((id) => ALL[id])
+    .filter((id) => !(id === "board" && location.pathname.startsWith("/prepbot-board"))); // not PrepBoard inside PrepBoard
   // Algebra Moves on the rail brings its formula book: the icon sits just beneath it
   if (ids.includes("gm") && !ids.includes("formulas") && ALL.formulas) ids.splice(ids.indexOf("gm") + 1, 0, "formulas");
   if (ids.includes("pin") && ALL.pin === TOOLS.pin) restorePins();
@@ -343,6 +349,8 @@ export function mountTools(host = document.body, { tools = ["board", "calculator
        chemistry bench's drawer). Whether it is away is remembered on this machine. */
     + `<button type="button" class="wb-tools__tab" aria-label="Put the tools away" aria-expanded="true" data-tip="Slide the tools away" data-tip-side="${at === "left" ? "right" : "left"}">`
     + `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="${at === "left" ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
+  /* kept out of sight until it is known which tools this student sees (no flash of all of them) */
+  el.style.visibility = "hidden";
   host.appendChild(el);
   /* each group's receipt of keys */
   const flies = new Map(groups.map((g) => {
@@ -393,10 +401,17 @@ export function mountTools(host = document.body, { tools = ["board", "calculator
   /* WHICH TOOLS STUDENTS SEE (the admin's list, config/tools): a hidden tool's key
      is taken off the rail for a student; the admin keeps it, marked, and gets a
      key of their own to change the list */
-  toolAccess().then(({ hidden, admin }) => {
+  const reveal = () => { el.style.visibility = ""; };
+  const fallback = setTimeout(() => {
+    /* the list could not be read in time: the page's own tools only */
+    [el, ...flies.values()].forEach((root) => root.querySelectorAll("[data-wbtool]").forEach((k) => { if (!pageDefault.includes(k.dataset.wbtool)) k.remove(); }));
+    reveal();
+  }, 5000);
+  toolAccess().then(({ cfg, admin }) => {
+    clearTimeout(fallback);
     const mark = () => {
       [el, ...flies.values()].forEach((root) => root.querySelectorAll("[data-wbtool]").forEach((k) => {
-        const off = hidden.has(k.dataset.wbtool);
+        const off = !studentSees(cfg, k.dataset.wbtool, { pageDefault });
         if (admin) k.classList.toggle("is-off-for-students", off);
         else if (off) { open.get(k.dataset.wbtool)?.close(); k.remove(); }
       }));
@@ -407,11 +422,13 @@ export function mountTools(host = document.body, { tools = ["board", "calculator
       });
     };
     mark();
+    reveal();
     if (admin) {
       dressAccess();
-      adminKey(el.querySelector(".wb-tools__paper"), {
-        tools: Object.entries(ALL).map(([id, t]) => ({ id, label: t.label, icon: t.icon || TOOL_ICONS[id] || TOOL_ICONS.note })),
-        hidden, onChange: mark, side: at === "left" ? "right" : "left",
+      adminChooser(el.querySelector(".wb-tools__paper"), {
+        keys: () => [el, ...flies.values()].flatMap((root) => [...root.querySelectorAll("[data-wbtool]")]),
+        idOf: (k) => k.dataset.wbtool || null,
+        cfg, pageDefault, onChange: mark, side: at === "left" ? "right" : "left",
       });
     }
   });

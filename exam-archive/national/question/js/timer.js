@@ -11,13 +11,7 @@
 
   const enabled =
     window.__timerEnabled === true ||
-    (new URLSearchParams(location.search).get('timer') || '').toLowerCase() === 'on';
-
-  // Timer off → hide the timer sticky note entirely.
-  if (!enabled) {
-    disp.style.display = 'none';
-    return;
-  }
+    /^(on|1|true)$/i.test(new URLSearchParams(location.search).get('timer') || '');
 
   let remaining = 0;
   let intervalId = null;
@@ -92,16 +86,32 @@
     intervalId = setInterval(tick, 1000);
   }
 
-  // Wait for the questions to load, then begin counting down.
-  disp.textContent = '--:--';
-  let waited = 0;
-  const waiter = setInterval(() => {
-    if (getCount() > 0) {
-      clearInterval(waiter);
-      start();
-    } else if ((waited += 250) > 30000) {
-      clearInterval(waiter);
-      start();
-    }
-  }, 250);
+  /* ON: the sticky note shows, and once the questions are in the countdown starts.
+     OFF: it is hidden and stops. The Timed Exam switch in the exam settings can
+     turn it on (or off) DURING the paper — it used to be read only once, at load,
+     so switching it on mid-paper did nothing. */
+  let waiter = null;
+  function turnOn() {
+    disp.style.display = '';
+    if (intervalId || waiter) return;
+    disp.textContent = '--:--';
+    let waited = 0;
+    waiter = setInterval(() => {
+      if (getCount() > 0 || (waited += 250) > 30000) {
+        clearInterval(waiter);
+        waiter = null;
+        if (!isFinished()) start();
+      }
+    }, 250);
+  }
+  function turnOff() {
+    if (waiter) { clearInterval(waiter); waiter = null; }
+    stop();
+    disp.style.display = 'none';
+  }
+
+  if (enabled) turnOn(); else turnOff();
+  window.addEventListener('exam-settings', (e) => {
+    if (e.detail?.timed) turnOn(); else turnOff();
+  });
 })();
