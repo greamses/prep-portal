@@ -392,6 +392,8 @@ async function docFor(kind) {
 export async function playLesson(kind, title = "", strip = null) {
   if (tvOpen) return;
   const coded = (SCENES[kind] || ratioScene)();
+  /* a film written in MathJax builds once MathJax is up */
+  if (coded?.ready) { try { await coded.ready; } catch { /* plain text will do */ } }
   const saved = await docFor(kind);
   let made = coded;
   /* A SAVED FILM WITH NOTHING ON ITS STAGE (words only: saved before the editor kept the drawing) never plays

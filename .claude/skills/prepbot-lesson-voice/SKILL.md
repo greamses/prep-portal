@@ -150,6 +150,22 @@ Where the words and the drawing disagree, the child believes the drawing.
   boxes. Only then swap to the drawing with four boxes, which has the same
   geometry, to write in them.
 
+### Screen, sound and maths (2026-11-12: *"Too much information is congested … Use the center. Only use the side for extra calculations"*)
+
+- **Layout:** the question sits small at the top. The CENTRE holds the one thing
+  being worked (the drawing, then ONE line of working under it, replaced as it
+  moves on). The SIDE holds only margin sums: 25 ÷ 25 = 1, the check, the trap.
+  No side column of running notes.
+- **Maths in MathJax** (`utils/components/workbook/film-math.js`: `texAt`,
+  `mathifyPic` for a bar model's figures, `mathLoad` as the film's `ready`).
+  Reduce a fraction where it stands: strike its top and bottom, then write the
+  new figures small beside them (cbt-films.js `reduceMarks`).
+- **Sound and screen changes** (`film-fx.js`): the drawing hand makes its own
+  sounds (pencil for bars and braces, tick for figures, pen for strikes, snip
+  for cuts). Use `H.sound("ding" | "warn" …)` for meaning, and
+  `push(..., { transition: "wipe" | "fade" | "iris" | "slide" | "page" })` for
+  a new scene (a new method).
+
 ## 5. Where the lesson's own content comes from
 
 Prefer the component's own words over words written into the film:

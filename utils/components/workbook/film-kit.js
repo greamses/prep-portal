@@ -33,6 +33,8 @@ import { discSvg, one as oneCounter } from "./counters.js";
 import { moneySvg, bill, billSvg } from "./purse.js";
 import { down, num, esc } from "./video-kit.js";
 import { stackText } from "./stackfrac.js";
+/* the drawing is heard as it is drawn, and a step can change the screen (./film-fx.js) */
+import { sfx, transition } from "./film-fx.js";
 
 /** The marks of a model, addressed the way the drawing names them. */
 export const mb = (svg, kind, row = null) => {
@@ -306,6 +308,7 @@ export function hand(gsap, instant) {
   if (instant || !gsap) {
     return {
       show: on, grow: on, write: on, draw: on, mark: on, deal: on, drop: on,
+      sound: () => {},   // a step replayed at once is not heard
       away: (nodes) => [...(nodes || [])].forEach((n) => n.remove()),
       score: on,
       wipe: (n, to) => { if (n) n.setAttribute("fill", to); },
@@ -340,9 +343,12 @@ export function hand(gsap, instant) {
   }
   return {
     show: on,
+    /** An effect by name (./film-fx.js SFX), heard only when the step is played, never when it is replayed. */
+    sound: (name, delay = 0) => sfx(name, delay),
     /* A BAR IS A LENGTH, so it arrives by GETTING longer — from its left end,
        the way a hand draws one. This is the thing the lesson is about. */
     grow(n, delay = 0) {
+      if (n) sfx("draw", delay);
       if (!n) return;
       n.style.opacity = "1";
       const o = from(n, "left");
@@ -353,6 +359,7 @@ export function hand(gsap, instant) {
        so the child sees the cut being MADE — a bar that merely changes colour
        in two halves has not been cut in front of anybody. */
     cut(svg, x, y, h, delay = 0) {
+      if (svg) sfx("snip", delay);
       if (!svg) return;
       const { line, len } = knife(svg, x, y, h);
       gsap.fromTo(line, { strokeDasharray: len, strokeDashoffset: len },
@@ -412,6 +419,7 @@ export function hand(gsap, instant) {
      * a hand would draw it, one after another along the bar.
      */
     score(n, delay = 0, dur = 0.34) {
+      if (n) sfx("strike", delay);
       if (!n) return;
       n.style.opacity = "1";
       const len = typeof n.getTotalLength === "function" ? n.getTotalLength() : 12;
@@ -432,6 +440,7 @@ export function hand(gsap, instant) {
        the plain way — and they come DOWN onto the table, because that is what
        a hand putting something down looks like. */
     deal(n, delay = 0) {
+      if (n) sfx("pop", delay);
       if (!n) return;
       gsap.fromTo(n, { opacity: 0, scale: 0.4, y: "-=14" },
         { opacity: 1, scale: 1, y: "+=14", duration: 0.4, delay, ease: "back.out(1.9)",
@@ -444,6 +453,7 @@ export function hand(gsap, instant) {
      * and it is SVG-safe — the transform is cleared when it lands.
      */
     drop(n, delay = 0) {
+      if (n) sfx("pop", delay);
       if (!n) return;
       const o = from(n);
       gsap.fromTo(n, { opacity: 0, scale: 0.3, yPercent: -40, ...o },
@@ -580,6 +590,7 @@ export function hand(gsap, instant) {
        reading order. It does not fade up — that looks like a label appearing,
        not like somebody writing. */
     write(n, delay = 0) {
+      if (n) sfx("tick", delay);
       if (!n) return;
       const o = from(n);
       gsap.fromTo(n, { opacity: 0, scale: 0.35, ...o },
@@ -590,13 +601,14 @@ export function hand(gsap, instant) {
        words land on it once it has arrived. Nothing is scaled, so nothing can
        end up spanning the wrong bars. */
     draw(g, delay = 0) {
+      if (g) sfx("draw", delay);
       if (!g) return;
       g.style.opacity = "1";
       const path = g.querySelector("path");
       /* ALL of the words, not the first of them: a brace labelled with a
          stacked fraction carries two figures and a rule, and fading in only
          the numerator leaves the fraction half-written */
-      const label = [...g.querySelectorAll("text")];
+      const label = [...g.querySelectorAll(":scope > text, :scope > svg")];
       if (path) {
         const len = path.getTotalLength();
         gsap.fromTo(path, { strokeDasharray: len, strokeDashoffset: len }, {
@@ -610,6 +622,7 @@ export function hand(gsap, instant) {
        over in place, so it is plainly the same box being answered. */
     flip(n, text, delay = 0) {
       if (!n) return;
+      sfx("flip", delay);
       const o = from(n);
       gsap.timeline({ delay, onComplete: settle(n) })
         .set(n, { opacity: 1, ...o })
@@ -657,7 +670,7 @@ export function cueAt(text, phrase, codedText = "") {
 }
 
 export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = {}, lines = [],
-  asks = [], paperMm = PAPER_MM, picW = PIC_W, build: extra = null, steps: write }) {
+  asks = [], paperMm = PAPER_MM, picW = PIC_W, build: extra = null, steps: write, ready = null }) {
   const PIC_IDS = Object.keys(pics);
   const TRAY_IDS = Object.keys(trays);
   const LINE_IDS = lines.map((l) => l.id);
@@ -685,7 +698,7 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
   let tiles = new Set();
   let drawn = [];
   const push = (say, { on = [], off = [], add = [], play = () => {}, look: at = null, lookAt = null,
-    hold = 0, pause = null, cue = null } = {}) => {
+    hold = 0, pause = null, cue = null, transition: change = null } = {}) => {
     const beforeTiles = new Set(tiles);
     const beforeDrawn = drawn.slice();
     on.forEach((t) => tiles.add(t));
@@ -696,7 +709,7 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
        counts them down on the screen) */
     /* `pause`: seconds of silence after the words (prepbot-tv.js), e.g. after a question */
     /* `cue`: { stageKey: "words in the line" } - that stage waits until those words are said */
-    events.push({ say, beforeTiles, beforeDrawn, on, off, add, play, look: at, lookAt, hold, pause, cue });
+    events.push({ say, beforeTiles, beforeDrawn, on, off, add, play, look: at, lookAt, hold, pause, cue, change });
   };
 
   write({ push, look });
@@ -756,9 +769,12 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
       TRAY_IDS.forEach((id) => bits(stage, id).forEach((n) => { n.style.opacity = "0"; }));
       ev.beforeDrawn.forEach((k) => stages[k]?.(svgOf(stage, picOf(k)), already, stage, bits));
 
+      /* a new scene: the screen changes (./film-fx.js transition), only when played, never when replayed */
+      if (ev.change && !how.instant) transition(stage, ev.change, how.gsap);
       ev.on.forEach((id, j) => {
         if (ev.beforeTiles.has(id)) return;
-        if (pics[id] || trays[id]) S.put(id, { on: 1 }); else S.pop(id, 0.2 + j * 0.12);
+        if (pics[id] || trays[id]) S.put(id, { on: 1 });
+        else { S.pop(id, 0.2 + j * 0.12); if (!how.instant) sfx("pop", 0.2 + j * 0.12); }
       });
       ev.add.forEach((k) => {
         const run = () => stages[k]?.(svgOf(stage, picOf(k)), H, stage, bits);
@@ -780,7 +796,8 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
       ev.play(S, H, stage);
     },
   }));
-  return { build, steps };
+  /* `ready`: a promise the player waits for before the first build (MathJax, for a film written in it) */
+  return { build, steps, ...(ready ? { ready } : {}) };
 }
 
 /* Where the working column starts, and how wide it may run. The drawing ends
