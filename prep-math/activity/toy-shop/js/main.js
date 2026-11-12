@@ -24,6 +24,7 @@ import { deliver } from "./van.js";
 import { UI } from "/utils/components/ui-icons.js";
 import { mountTools } from "/utils/components/workbook/toolbar.js";
 import { sayLeft, left as walletLeft, unlimited } from "./wallet.js";
+import { studioKeys } from "/utils/components/studio-keys.js";
 
 const $ = (id) => document.getElementById(id);
 const show = (which) => {
@@ -283,6 +284,45 @@ async function start() {
 
   paintShelf();
   paintBar();
+  wireKeys();
+}
+
+/* ── THE KEYBOARD ───────────────────────────────────────────────────────────
+   In the shop:  ← → (or Tab) pick a toy · + (or A) one more of it · − one fewer
+                 G go to the till · W watch PrepBot shop
+   At the till:  P go and pay · B back to the shop
+   Paying:       H hand it over · B back to the bill
+   ? the keys. Never while typing in a box (the bill's own boxes keep their keys). */
+let pickedToy = 0;
+function wireKeys() {
+  const cards = () => [...document.querySelectorAll("#ts-shelf .ts-card")];
+  const mark = () => cards().forEach((c, i) => c.classList.toggle("is-keyed", i === pickedToy));
+  /* the shelf is drawn again on every change to the basket: the picked card stays picked */
+  new MutationObserver(mark).observe($("ts-shelf"), { childList: true });
+  const pick = (by) => {
+    const all = cards();
+    if (!all.length) return;
+    pickedToy = (pickedToy + by + all.length) % all.length;
+    mark();
+    all[pickedToy].scrollIntoView({ block: "nearest", behavior: "smooth" });
+  };
+  const toy = () => FEED?.products?.[pickedToy];
+  const shop = () => !$("ts-shop").hidden;
+  const till = () => !$("ts-till").hidden;
+  const press = (id) => { const b = $(id); if (b && !b.disabled && b.offsetParent) b.click(); };
+  const more = () => { if (shop() && toy()) document.querySelector(`#ts-shelf .ts-card[data-id="${toy().id}"] [data-add]`)?.click(); };
+  const fewer = () => { if (shop() && toy()) basket.take(toy().id); };
+  studioKeys({
+    ArrowRight: () => shop() && pick(1), ArrowLeft: () => shop() && pick(-1),
+    Tab: (e) => shop() && pick(e.shiftKey ? -1 : 1),
+    "+": more, "=": more, a: more, "-": fewer, "_": fewer,
+    g: () => shop() && press("ts-go"),
+    w: () => shop() && press("ts-watch"),
+    p: () => till() && press("ts-topay"),
+    h: () => press("ts-buy"),
+    b: () => (till() ? press("ts-back") : press("ts-pay-back")),
+  }, { help: "Keys: in the shop ← → (or Tab) pick a toy · + or A one more · − one fewer · G the till · W watch PrepBot shop — at the till P go and pay · B back — paying H hand it over · B back to the bill" });
+  mark();
 }
 
 start();

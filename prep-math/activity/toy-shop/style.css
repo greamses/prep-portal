@@ -529,3 +529,6 @@
   outline-offset: 3px;
   transition: outline-color 0.2s ease;
 }
+
+/* the toy picked from the keyboard */
+.ts-card.is-keyed { outline: 3px solid #2a2723; outline-offset: 4px; }
