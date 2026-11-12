@@ -283,6 +283,12 @@ function kept(key) {
 
 export const TOOL_IDS = Object.keys(TOOLS);
 
+/* Families that fold behind one key when two or more of them are on a rail */
+const ORGANISER_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="2.5" y="3" width="8.5" height="7.5" fill="#6fb7e8"/><rect x="13" y="3" width="8.5" height="7.5" fill="#f4c95d"/><rect x="2.5" y="13.5" width="8.5" height="7.5" fill="#f08a8a"/><rect x="13" y="13.5" width="8.5" height="7.5" fill="#8fd07a"/></svg>`;
+const GROUPS = {
+  plan: { label: "Organisers", icon: ORGANISER_ICON, members: ["burger", "mountain", "venn", "roundabout", "oreo", "tchart", "causes", "sequence", "senses", "fishbone", "flow", "table"] },
+};
+
 /**
  * Hang the rail on `host` (the body, normally).
  *
@@ -305,27 +311,97 @@ export function mountTools(host = document.body, { tools = ["board", "calculator
   const el = document.createElement("aside");
   el.className = `wb-tools wb-tools--${at}`;
   el.setAttribute("aria-label", "Tools");
+  const tipSide = at === "left" ? "right" : "left";
+  const keyHtml = (id) => `<button type="button" class="wb-tools__btn" data-wbtool="${id}"`
+    + ` aria-pressed="false" aria-label="${ALL[id].label}"`
+    + ` data-tip="${ALL[id].label}" data-tip-side="${tipSide}">`
+    + `${ALL[id].icon || TOOL_ICONS[id] || TOOL_ICONS.note}</button>`;
+  /* A FAMILY UNDER ONE KEY: twelve organisers down the rail were a list, not a
+     rail. Two or more of a group on this rail fold behind one key, which opens
+     them in a little receipt beside it (on the body: the rail scrolls, and a
+     scroller would clip it). */
+  const groups = Object.entries(GROUPS)
+    .map(([gid, g]) => ({ gid, ...g, members: ids.filter((id) => g.members.includes(id)) }))
+    .filter((g) => g.members.length >= 2);
+  const inGroup = new Map(groups.flatMap((g) => g.members.map((id) => [id, g])));
+  const railHtml = ids.map((id) => {
+    const g = inGroup.get(id);
+    if (!g) return keyHtml(id);
+    if (g.members[0] !== id) return ""; // the group's key stands where its first member would
+    return `<button type="button" class="wb-tools__btn wb-tools__group" data-wbgroup="${g.gid}" aria-expanded="false"`
+      + ` aria-label="${g.label}" data-tip="${g.label}" data-tip-side="${tipSide}">${g.icon}`
+      + `<svg class="wb-tools__corner" viewBox="0 0 8 8" width="7" height="7" aria-hidden="true"><path d="M8 8H2.6L8 2.6Z" fill="currentColor"/></svg></button>`;
+  }).join("");
   el.innerHTML = `<div class="wb-tools__paper pp-receipt__paper">`
-    + ids.map((id) => `<button type="button" class="wb-tools__btn" data-wbtool="${id}"`
-      + ` aria-pressed="false" aria-label="${ALL[id].label}"`
-      + ` data-tip="${ALL[id].label}" data-tip-side="${at === "left" ? "right" : "left"}">`
-      + `${ALL[id].icon || TOOL_ICONS[id] || TOOL_ICONS.note}</button>`).join("")
+    + railHtml
     + `</div>`
     /* the tab on the rail's inner edge: slides the whole rail away, and back (like the
        chemistry bench's drawer). Whether it is away is remembered on this machine. */
     + `<button type="button" class="wb-tools__tab" aria-label="Put the tools away" aria-expanded="true" data-tip="Slide the tools away" data-tip-side="${at === "left" ? "right" : "left"}">`
     + `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="${at === "left" ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
   host.appendChild(el);
+  /* each group's receipt of keys */
+  const flies = new Map(groups.map((g) => {
+    const fly = document.createElement("div");
+    fly.className = `wb-tools__fly wb-tools__fly--${at} pp-receipt`;
+    fly.dataset.wbgroup = g.gid;
+    fly.hidden = true;
+    fly.setAttribute("role", "group");
+    fly.setAttribute("aria-label", g.label);
+    fly.innerHTML = `<div class="wb-tools__flypaper pp-receipt__paper"><p class="wb-tools__flyname">${g.label}</p><div class="wb-tools__flykeys">${g.members.map(keyHtml).join("")}</div></div>`;
+    document.body.appendChild(fly);
+    return [g.gid, fly];
+  }));
+  const shutFlies = () => {
+    flies.forEach((f) => { f.hidden = true; });
+    el.querySelectorAll(".wb-tools__group").forEach((k) => k.setAttribute("aria-expanded", "false"));
+  };
+  const keyFor = (id) => el.querySelector(`[data-wbtool="${id}"]`) || [...flies.values()].map((f) => f.querySelector(`[data-wbtool="${id}"]`)).find(Boolean) || null;
+  /* a group's key wears the tick while any tool behind it is open */
+  const syncGroups = () => groups.forEach((g) => {
+    const k = el.querySelector(`[data-wbgroup="${g.gid}"]`);
+    if (k) k.setAttribute("aria-pressed", String(g.members.some((id) => open.has(id))));
+  });
+  el.addEventListener("click", (e) => {
+    const gk = e.target.closest("[data-wbgroup]");
+    if (!gk) return;
+    const fly = flies.get(gk.dataset.wbgroup);
+    const was = !fly.hidden;
+    shutFlies();
+    if (was) return;
+    fly.hidden = false;
+    gk.setAttribute("aria-expanded", "true");
+    const r = gk.getBoundingClientRect();
+    fly.style.top = `${Math.max(8, Math.min(window.innerHeight - fly.offsetHeight - 8, r.top - 12))}px`;
+    if (at === "left") fly.style.left = `${r.right + 10}px`; else fly.style.right = `${window.innerWidth - r.left + 10}px`;
+  });
+  flies.forEach((fly) => fly.addEventListener("click", (e) => {
+    const k = e.target.closest("[data-wbtool]");
+    if (!k) return;
+    shutFlies();
+    toggle(k.dataset.wbtool);
+  }));
+  document.addEventListener("pointerdown", (e) => {
+    if (e.target.closest(".wb-tools__fly, .wb-tools__group")) return;
+    shutFlies();
+  });
   mountTooltips();
   /* WHICH TOOLS STUDENTS SEE (the admin's list, config/tools): a hidden tool's key
      is taken off the rail for a student; the admin keeps it, marked, and gets a
      key of their own to change the list */
   toolAccess().then(({ hidden, admin }) => {
-    const mark = () => el.querySelectorAll("[data-wbtool]").forEach((k) => {
-      const off = hidden.has(k.dataset.wbtool);
-      if (admin) k.classList.toggle("is-off-for-students", off);
-      else if (off) { open.get(k.dataset.wbtool)?.close(); k.remove(); }
-    });
+    const mark = () => {
+      [el, ...flies.values()].forEach((root) => root.querySelectorAll("[data-wbtool]").forEach((k) => {
+        const off = hidden.has(k.dataset.wbtool);
+        if (admin) k.classList.toggle("is-off-for-students", off);
+        else if (off) { open.get(k.dataset.wbtool)?.close(); k.remove(); }
+      }));
+      if (!admin) flies.forEach((fly, gid) => {
+        if (fly.querySelector("[data-wbtool]")) return;
+        fly.remove(); flies.delete(gid);
+        el.querySelector(`[data-wbgroup="${gid}"]`)?.remove();
+      });
+    };
     mark();
     if (admin) {
       dressAccess();
@@ -385,7 +461,7 @@ export function mountTools(host = document.body, { tools = ["board", "calculator
     // A tool that DOES something (drop a pin) rather than open a panel.
     if (ALL[id]?.act) { ALL[id].act(); return; }
     const spec = ALL[id];
-    const key = el.querySelector(`[data-wbtool="${id}"]`);
+    const key = keyFor(id);
     if (!key) return; // not on this rail (or hidden from students)
     key.setAttribute("aria-pressed", "true");
     const panel = openPanel({
@@ -397,10 +473,12 @@ export function mountTools(host = document.body, { tools = ["board", "calculator
         const was = open.get(id);
         open.delete(id);
         key.setAttribute("aria-pressed", "false");
+        syncGroups();
         if (was && was.undo) was.undo();
       },
     });
     open.set(id, panel);
+    syncGroups();
     /* the component is imported and mounted after the panel is up, so the
        panel is never a blank rectangle waiting on a network */
     panel.undo = await spec.open(panel.body);
@@ -424,6 +502,7 @@ export function mountTools(host = document.body, { tools = ["board", "calculator
       document.removeEventListener("fullscreenchange", follow);
       document.removeEventListener("webkitfullscreenchange", follow);
       [...open.values()].forEach((p) => p.close({ keep: true }));
+      flies.forEach((f) => f.remove());
       el.remove();
     },
   };
