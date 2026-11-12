@@ -956,3 +956,6 @@ export const decrease15 = () => forwardFilm({
   r2Line: "Decrease by fifteen percent, so eighty five percent is left. Eighty five over a hundred.",
   closing: "Two ways, one answer. Fifteen percent is three boxes of twenty. Take them off the whole bar.",
 });
+
+/* the drawing helpers, for the films in ./cbt-shapes.js */
+export { mathRow, svgBox, centred, PAPER, PIC_W, K_ };

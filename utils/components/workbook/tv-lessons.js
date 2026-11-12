@@ -35,6 +35,7 @@ import { barSetup, barParts, barMissing, barMoney, barFractions } from "./bar-fi
 import { fracLike, fracEqual, fracUnlike, fracMixed } from "./fraction-films.js";
 import { ctxInference, ctxDefinition, ctxExample, ctxAntonym, ctxSynonym } from "./context-films.js";
 import { loss25, score80, score90, profit20, ps4Loss, bikeProfit20, bikeProfit10, shoeDiscount, withdraw10, pagesLeft, hatProfit30, decrease15 } from "./cbt-films.js";
+import { stairs24 } from "./cbt-shapes.js";
 
 /* The strip's dress. A page that is not a workbook does not link video.css,
    and an unstyled strip is not merely plain — it is invisible, which is how
@@ -342,6 +343,7 @@ const SCENES = {
   "pages-left-80": pagesLeft,
   "hat-profit-30": hatProfit30,
   "decrease-15": decrease15,
+  "stairs-24": stairs24,
 };
 /**
  * WHAT EVERY FILM IS CALLED, in one place.
@@ -385,6 +387,7 @@ export const FILMS = [
   { id: "pages-left-80", name: "Read 80%: the pages left (two ways)", of: "ANMC 15th first round, Q19", topic: "percent", thumb: { n: 5, k: 1 } },
   { id: "hat-profit-30", name: "A 30% profit on 55 kobo (two ways)", of: "Scholastic 2022 finals, Q37", topic: "percent", thumb: { n: 10, k: 13 } },
   { id: "decrease-15", name: "Decrease 1,500 kg by 15% (two ways)", of: "Scholastic JS 5th edition first round, Q7", topic: "percent", thumb: { n: 20, k: 17 } },
+  { id: "stairs-24", name: "Blocks in a staircase (two ways)", of: "Scholastic 2022 first round, Q24", topic: "patterns" },
 ];
 
 /** The coded film behind an id, for the editor to trace and to take a script from. */

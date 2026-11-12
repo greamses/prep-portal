@@ -471,6 +471,7 @@ const examQuestions = [
       "Total blocks needed = \\(21 \\times 2 = 42\\text{ blocks}\\).",
     ],
     topic: "Patterns and Geometry",
+    film: "stairs-24", // PrepBot works it two ways (utils/components/workbook/cbt-shapes.js)
   },
   {
     question:
