@@ -61,9 +61,10 @@ export function adminKey(rail, { tools, hidden, onChange = () => {}, side = "rig
   const draw = () => {
     pop.innerHTML = `<div class="pp-receipt__paper pp-tool-access__paper">
       <p class="pp-tool-access__title">Tools students can see</p>
-      <p class="pp-tool-access__note">On every side rail on the site. You always see them all.</p>
-      <div class="pp-tool-access__list">${list.map((t) => `
-        <label class="pp-tool-access__row"><input type="checkbox" data-id="${t.id}" ${hidden.has(t.id) ? "" : "checked"}/><span>${t.label}</span></label>`).join("")}
+      <p class="pp-tool-access__note">Ticked tools show on every side rail on the site. Tap one to switch it. You always see them all.</p>
+      <div class="pp-tool-access__grid">${list.map((t) => `
+        <button type="button" class="pp-tool-access__ico${hidden.has(t.id) ? "" : " is-on"}" data-id="${t.id}" aria-pressed="${!hidden.has(t.id)}"
+          aria-label="${t.label}" data-tip="${t.label}" data-tip-side="top">${t.icon || ""}</button>`).join("")}
       </div>
       <div class="pp-tool-access__acts">
         <button type="button" class="pp-btn pp-worded" data-act="all">All on</button>
@@ -85,10 +86,12 @@ export function adminKey(rail, { tools, hidden, onChange = () => {}, side = "rig
   });
   pop.addEventListener("click", async (e) => {
     const act = e.target.closest("[data-act]")?.dataset.act;
-    if (act === "all") { pop.querySelectorAll("input[data-id]").forEach((c) => { c.checked = true; }); return; }
+    const ico = e.target.closest(".pp-tool-access__ico");
+    if (ico) { const on = !ico.classList.contains("is-on"); ico.classList.toggle("is-on", on); ico.setAttribute("aria-pressed", String(on)); return; }
+    if (act === "all") { pop.querySelectorAll(".pp-tool-access__ico").forEach((c) => { c.classList.add("is-on"); c.setAttribute("aria-pressed", "true"); }); return; }
     if (act !== "save") return;
     const next = new Set();
-    pop.querySelectorAll("input[data-id]").forEach((c) => { if (!c.checked) next.add(c.dataset.id); });
+    pop.querySelectorAll(".pp-tool-access__ico").forEach((c) => { if (!c.classList.contains("is-on")) next.add(c.dataset.id); });
     const said = pop.querySelector(".pp-tool-access__said");
     try {
       said.textContent = "Saving…";
@@ -120,8 +123,12 @@ export function dressAccess() {
 .pp-tool-access__paper { padding: 1rem 1.1rem 1.2rem; }
 .pp-tool-access__title { margin: 0; font-family: var(--font-display, Unbounded, sans-serif); font-size: 0.95rem; color: #2a2723; }
 .pp-tool-access__note { margin: 0.2rem 0 0.6rem; font-size: 0.75rem; color: #6b655c; }
-.pp-tool-access__list { max-height: min(52vh, 24rem); overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
-.pp-tool-access__row { display: flex; gap: 0.5rem; align-items: center; font-family: var(--font-mono, monospace); font-size: 0.8rem; color: #2a2723; padding: 3px 0; cursor: pointer; }
+.pp-tool-access__grid { max-height: min(52vh, 24rem); overflow-y: auto; display: grid; grid-template-columns: repeat(5, 2.4rem); gap: 0.55rem; padding: 6px 4px; }
+.pp-tool-access__ico { position: relative; display: grid; place-items: center; width: 2.4rem; height: 2.4rem; padding: 0; cursor: pointer;
+  background: #fffdf8; border: 1px solid rgba(42,39,35,0.25); opacity: 0.45; }
+.pp-tool-access__ico.is-on { opacity: 1; }
+.pp-tool-access__ico.is-on::after { content: ""; position: absolute; right: -6px; top: -6px; width: 14px; height: 14px; border-radius: 50%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8' fill='%232f8f4e'/%3E%3Cpath d='M4.4 8.3l2.4 2.4 4.8-5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat; }
 .pp-tool-access__acts { display: flex; gap: 0.6rem; margin-top: 0.7rem; }
 .pp-tool-access__said { margin: 0.5rem 0 0; font-size: 0.75rem; color: #2f8f4e; min-height: 1em; }
 /* the admin sees a hidden tool, struck through, so it can still be tried */

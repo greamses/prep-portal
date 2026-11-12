@@ -3716,7 +3716,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     if (admin) {
       dressAccess();
       adminKey(side.querySelector(".wb-side__keys"), {
-        tools: FAMILIES.flatMap((f) => f.of.map((k) => ({ id: k.id, label: k.label }))),
+        tools: FAMILIES.flatMap((f) => f.of.map((k) => ({ id: k.id, label: k.label, icon: k.icon }))),
         hidden, onChange: mark, side: "right",
       });
     }

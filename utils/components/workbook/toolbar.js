@@ -410,7 +410,7 @@ export function mountTools(host = document.body, { tools = ["board", "calculator
     if (admin) {
       dressAccess();
       adminKey(el.querySelector(".wb-tools__paper"), {
-        tools: Object.entries(ALL).map(([id, t]) => ({ id, label: t.label })),
+        tools: Object.entries(ALL).map(([id, t]) => ({ id, label: t.label, icon: t.icon || TOOL_ICONS[id] || TOOL_ICONS.note })),
         hidden, onChange: mark, side: at === "left" ? "right" : "left",
       });
     }
