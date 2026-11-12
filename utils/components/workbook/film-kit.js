@@ -735,7 +735,8 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
        line nobody had measured ended up written across the bars. The column
        is anchored by its LEFT edge at SIDE_X and given a width to wrap in,
        which is a thing a teacher's board has and a stage had not. */
-    lines.forEach((l) => side(stage, l.id, l.text, l.x ?? SIDE_X, l.y, l.c ?? 0, l.size ?? 2.5,
+    lines.filter((l) => l.receipt).forEach((l) => receiptLabel(stage, l.id, l.text, l.sub || "", l.x ?? 50, l.y));
+    lines.filter((l) => !l.receipt).forEach((l) => side(stage, l.id, l.text, l.x ?? SIDE_X, l.y, l.c ?? 0, l.size ?? 2.5,
       { w: l.w ?? SIDE_W, html: !!l.html, lh: l.lh ?? null }));
     if (extra) extra(stage);
   };
@@ -862,6 +863,51 @@ export function asked(stage, id, text, raw = false) {
  * own and wrong for a sentence — a centred sentence grows both ways, and the
  * way it grows is into the picture.
  */
+/**
+ * A LABEL ON A LITTLE RECEIPT, centred on (x, y): the site's own receipt component (wrapper for
+ * the shadow, paper for the torn teeth and the punched holes), never a copy of it. A small kicker
+ * line over the words, with a dashed rule between, the way a till slip reads. The receipt's
+ * stylesheet comes with the page (components.css or sticky-ui.css); a page with neither is given
+ * components.css.
+ */
+function receiptCss() {
+  if (typeof document === "undefined" || document.getElementById("vm-rcpt-css")) return;
+  const probe = document.createElement("div");
+  probe.className = "pp-receipt__paper";
+  probe.style.cssText = "position:absolute;left:-999px;top:-999px";
+  document.body.appendChild(probe);
+  const cs = getComputedStyle(probe);
+  const has = (cs.maskImage && cs.maskImage !== "none") || (cs.webkitMaskImage && cs.webkitMaskImage !== "none");
+  probe.remove();
+  if (!has) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "/utils/components/components.css";
+    document.head.appendChild(link);
+  }
+  const st = document.createElement("style");
+  st.id = "vm-rcpt-css";
+  st.textContent = `
+.vm-rcpt.pp-receipt { display:inline-block; transform: rotate(-1.2deg); }
+.vm-rcpt .pp-receipt__paper { padding: calc(var(--u) * .9) calc(var(--u) * 3) calc(var(--u) * 1.1); text-align:center; white-space:nowrap;
+  font-family: var(--font-mono, "JetBrains Mono", monospace); color:#2a2723; background-color:#fffdf8; }
+.vm-rcpt__k { display:block; font-size: calc(var(--u) * 1.15); font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:#6b645b; }
+.vm-rcpt__rule { display:block; margin: calc(var(--u) * .45) 0 calc(var(--u) * .4); border-top: 1px dashed rgba(42,39,35,.45); }
+.vm-rcpt__t { display:block; font-size: calc(var(--u) * 1.75); font-weight:800; }
+.vm-rcpt__dot { display:inline-block; width: calc(var(--u) * .7); height: calc(var(--u) * .7); border-radius:50%; background: var(--accent-warning, #e8b93a); margin: 0 calc(var(--u) * .6); vertical-align: middle; }
+`;
+  document.head.appendChild(st);
+}
+
+export function receiptLabel(stage, id, text, sub, x, y) {
+  receiptCss();
+  const box = tile(stage, id, "", x, down(y), { bare: true });
+  box.firstChild.innerHTML = `<span class="pp-receipt vm-rcpt"><span class="pp-receipt__paper">`
+    + (sub ? `<span class="vm-rcpt__k">${esc(sub)}</span><span class="vm-rcpt__rule"></span>` : "")
+    + `<span class="vm-rcpt__t"><span class="vm-rcpt__dot"></span>${esc(text)}<span class="vm-rcpt__dot"></span></span></span></span>`;
+  return box;
+}
+
 export function side(stage, id, text, x, y, c, sizeU, { w = SIDE_W, html = false, lh = null } = {}) {
   const box = tile(stage, id, String(text), x, down(y), { c });
   box.classList.add("vm-t--left", "vm-t--wrap");

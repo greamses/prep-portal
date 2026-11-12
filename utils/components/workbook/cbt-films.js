@@ -226,10 +226,11 @@ function partWhole(cfg) {
       sA: SIDE_AT, sT: SIDE_AT, sC: SIDE_AT, s2A: SIDE_AT, s2B: SIDE_AT, s2C: { x: 79.5, y: 37 },
       r2: centred(MAIN_W, 18), eq: centred(EQ_W, 15),
     },
-    /* only the name of the method, small, in the corner under the step counter */
+    /* the name of the method on a little receipt, centred under the working (*"put the method label
+       centered below … a cute receipt design"*) */
     lines: [
-      { id: "m1", text: "1 · The box method", x: 2.5, y: 12.5, c: 1, size: 1.7, w: 32 },
-      { id: "m2", text: "2 · Equivalent fractions", x: 2.5, y: 12.5, c: 1, size: 1.7, w: 32 },
+      { id: "m1", receipt: true, sub: "Method 1", text: "The box method", y: 49 },
+      { id: "m2", receipt: true, sub: "Method 2", text: "Equivalent fractions", y: 49 },
     ],
     stages: {
       /* the bar */
