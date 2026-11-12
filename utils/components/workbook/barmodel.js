@@ -198,7 +198,8 @@ function braceSpots(model) {
     const row = br.at === "above" ? Math.min(...bars.map((b) => b.row)) : Math.max(...bars.map((b) => b.row));
     /* a second brace on the same side of the same row, overlapping, goes a
        step further out */
-    const level = spots.filter((s) => s.row === row && s.at === br.at && s.x0 < x1 && x0 < s.x1).length;
+    /* (braces that only TOUCH end to end — one over each split piece — sit side by side, on one level) */
+    const level = spots.filter((s) => s.row === row && s.at === br.at && s.x0 < x1 - 2 && x0 < s.x1 - 2).length;
     spots.push({ br, x0, x1, row, at: br.at, level });
   });
   return spots;
@@ -542,20 +543,33 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
           if (b.n < 2) return;
           /* the pieces carry their own share of a figure written for the whole bar (or its brace) */
           const was = totalOf(b);
-          if (was && !(b.labels.every((x) => figure(x) !== null))) shareOut(b, was);
+          const fromBrace = was && b.labels.every((x) => !String(x || "").trim());
+          if (was && !fromBrace && !(b.labels.every((x) => figure(x) !== null))) shareOut(b, was);
           const unit = b.w / b.n;
           const made = [];
           for (let i = 0; i < b.n; i++) {
             made.push({
+              /* the pieces tile the bar exactly: each ends where the next begins */
               id: i === 0 ? b.id : seq++, x: Math.round(b.x + i * unit), row: b.row,
-              w: Math.round(unit), n: 1, tone: b.tone, labels: [b.labels[i] || ""],
+              w: Math.round(b.x + (i + 1) * unit) - Math.round(b.x + i * unit), n: 1, tone: b.tone, labels: [b.labels[i] || ""],
             });
           }
           const at = model.bars.indexOf(b);
           model.bars.splice(at, 1, ...made);
+          /* A FIGURE ON A BRACE IS SPLIT WITH ITS BAR. A brace saying 57 000
+             over a bar of three units becomes three braces, one over each
+             piece, each saying 19 000 — the same side, following the units'
+             own lines. A brace that is words ("?", "Ada's share") or spans
+             other bars as well stays one brace over all the pieces. */
+          const own = model.braces.filter((br) => br.at !== "side" && br.ids.length === 1 && br.ids[0] === b.id && figure(br.text) !== null);
           model.braces.forEach((br) => {
-            if (!br.ids.includes(b.id)) return;
+            if (own.includes(br) || !br.ids.includes(b.id)) return;
             br.ids = [...new Set([...br.ids.filter((x) => x !== b.id), ...made.map((m) => m.id)])];
+          });
+          own.forEach((br) => {
+            const share = write(figure(br.text) / made.length, MARKED(br.text));
+            model.braces = model.braces.filter((x) => x !== br);
+            made.forEach((m) => model.braces.push({ id: seq++, ids: [m.id], at: br.at, text: share }));
           });
           made.forEach((m) => picked.add(m.id));
         });
