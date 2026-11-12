@@ -740,6 +740,24 @@ export function createBoard(svg, { gsap, orient = "landscape", canvas = null, on
 
     /** See every section at once. */
     overview() { viewAll(); },
+    /** Closer (f < 1) or further (f > 1), about the middle of the view — from the keyboard. */
+    zoom(f) {
+      const k = Math.min(6, Math.max(0.35, (cam.w * f) / C.w)) * C.w / cam.w;
+      const cx = cam.x + cam.w / 2, cy = cam.y + cam.h / 2;
+      following = false; lookedAt = Date.now();
+      glide({ x: cx - (cam.w * k) / 2, y: cy - (cam.h * k) / 2, w: cam.w * k, h: cam.h * k }, 0); // at once: held keys stack up exactly
+    },
+    /** Slide the view by a share of itself (dx, dy in views). */
+    pan(dx, dy) {
+      following = false; lookedAt = Date.now();
+      glide({ x: cam.x + dx * cam.w, y: cam.y + dy * cam.h, w: cam.w, h: cam.h }, 0);
+    },
+    /** The first section, or the last. */
+    edge(last) {
+      following = false; lookedAt = Date.now();
+      const s = last ? sections[sections.length - 1] : sections[0];
+      if (s) { glide(sectionView(s), 0.7); if (s === cur) following = true; }
+    },
     /** Back to the section PrepBot is working in, and keep following it. */
     follow() { focusLive(); },
     get following() { return following; },

@@ -511,6 +511,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   document.addEventListener("keydown", (e) => {
     if (inTool(e)) return;
     if (e.target === input || e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1 || e.key === " ") return;
+    if ("+=-_0".includes(e.key) && form.hidden) return; // the canvas's own keys: zoom, and back to PrepBot
     if (form.hidden) { handUp(); input.value = e.key; e.preventDefault(); }
   });
   $("pb-ask").addEventListener("submit", (e) => {
@@ -830,6 +831,14 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   document.addEventListener("keydown", (e) => {
     if (inTool(e)) return;
     if (e.target === input || e.ctrlKey || e.metaKey || e.altKey) return;
+    /* THE CANVAS ITSELF: Shift + arrows slide the view, + − closer and further,
+       0 back to where PrepBot is working, Home / End the first / last section */
+    const PAN = { ArrowLeft: [-0.25, 0], ArrowRight: [0.25, 0], ArrowUp: [0, -0.25], ArrowDown: [0, 0.25] };
+    if (e.shiftKey && PAN[e.key]) { current.pan(...PAN[e.key]); showSeeAll(); e.preventDefault(); return; }
+    if (e.key === "+" || e.key === "=") { current.zoom(0.8); showSeeAll(); e.preventDefault(); return; }
+    if (e.key === "-" || e.key === "_") { current.zoom(1.25); showSeeAll(); e.preventDefault(); return; }
+    if (e.key === "0") { current.follow(); showSeeAll(); e.preventDefault(); return; }
+    if (e.key === "Home" || e.key === "End") { current.edge(e.key === "End"); showSeeAll(); e.preventDefault(); return; }
     if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") { current.step(-1); showSeeAll(); e.preventDefault(); }
     else if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "PageDown") { current.step(1); showSeeAll(); e.preventDefault(); }
   });
@@ -871,6 +880,10 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     { code: "KeyN", keys: "Alt+N", what: "New board", run: click("pb-new") },
     { code: "KeyO", keys: "Alt+O", what: "Whole canvas / back to PrepBot", run: click("pb-overview") },
     { keys: "← →", what: "The section before / after" },
+    { keys: "Shift + arrows", what: "Slide the canvas" },
+    { keys: "+ −", what: "Closer / further" },
+    { keys: "0", what: "Back to where PrepBot is working" },
+    { keys: "Home / End", what: "The first / last section" },
     { code: "KeyW", keys: "Alt+W", what: "Choose the handwriting", run: openPicker(fontSel) },
     { code: "KeyV", keys: "Alt+V", what: "Choose the voice", run: openPicker(voiceSel) },
     { code: "KeyT", keys: "Alt+T", what: "Hide or show the tools", run: () => fold(!ribbon.classList.contains("is-folded")) },
