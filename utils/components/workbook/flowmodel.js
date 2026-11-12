@@ -129,14 +129,14 @@ export function mountFlowModel(el, { saved = null, onChange = () => {} } = {}) {
     + `<button type="button" class="pp-plain fl-set" data-set="blank" aria-pressed="false">Blank</button>`
     + `<button type="button" class="pp-plain fl-set" data-set="machine" aria-pressed="false">Function machine</button>`
     + `</span>`
-    + key("stadium", 2, "Start or end")
-    + key("box", 2, "Something you do")
-    + key("diamond", 2, "A question, with two ways out")
+    + key("stadium", 2, "Start or end (S)")
+    + key("box", 2, "Something you do (B)")
+    + key("diamond", 2, "A question, with two ways out (D)")
     + `<button type="button" class="pp-btn wb-tint-1 fl-key" data-t="link" aria-label="Join two shapes"`
-    + ` aria-pressed="false" data-tip="Join two shapes — tap one, then the other" data-tip-side="down">${ICON.link}</button>`
-    + key("tone", 3, "The colour of the picked shape or line")
-    + key("undo", 1, "Step back")
-    + key("del", 4, "Take the picked one off")
+    + ` aria-pressed="false" data-tip="Join two shapes — tap one, then the other (L)" data-tip-side="down">${ICON.link}</button>`
+    + key("tone", 3, "The colour of the picked shape or line (C)")
+    + key("undo", 1, "Step back (Ctrl+Z)")
+    + key("del", 4, "Take the picked one off (Delete)")
     + `<div class="fl-pot" data-pot hidden><div class="pp-receipt"><div class="pp-receipt__paper">`
     + `<div class="fl-pot__in">`
     + TONES.map((hex, i) => `<button type="button" class="pp-plain fl-chip" data-tone="${i}"`
@@ -459,6 +459,82 @@ export function mountFlowModel(el, { saved = null, onChange = () => {} } = {}) {
     }
   });
 
+  /* ── THE KEYBOARD ─────────────────────────────────────────────────────
+     The board takes the keys from a press anywhere on it until a press elsewhere.
+     Keys: S start or end · B a step · D a question · A the next step, joined · L join (then Enter on two shapes) · Tab pick · arrows move · Enter write · M function machine · C colour · Delete · Ctrl+Z · Esc */
+  board.tabIndex = 0;
+  board.setAttribute("aria-label", "Model board — press ? for the keys");
+  let armed = false;
+  const arm = (e) => { armed = el.contains(e.target); };
+  document.addEventListener("pointerdown", arm, true);
+  board.addEventListener("focus", () => { armed = true; });
+  board.addEventListener("pointerdown", () => board.focus({ preventScroll: true }), true);
+  const press = (t) => tools.querySelector(`[data-t="${t}"]`)?.click();
+  const pickedNode = () => (picked?.kind === "node" ? model.nodes.find((n) => n.id === picked.id) : null);
+  const onKey = (e) => {
+    if (!armed || !el.isConnected) return;
+    if (e.target.closest?.(".fl-write, input, textarea, select")) return;
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const done = () => { e.preventDefault(); e.stopPropagation(); };
+    if ((e.ctrlKey || e.metaKey) && k === "z") { done(); stepBack(); return; }
+    if (e.ctrlKey || e.metaKey) return;
+    if (k === "?") { done(); flash('Keys: S start or end · B a step · D a question · A the next step, joined · L join (then Enter on two shapes) · Tab pick · arrows move · Enter write · M function machine · C colour · Delete · Ctrl+Z · Esc'.replace(/^[^:]*: /, "Keys: ")); return; }
+    if (k === "Escape") { if (linking) setLinking(false); picked = null; pot.hidden = true; paint(); return; }
+    if (k === "Tab" && model.nodes.length) {
+      done();
+      const order = [...model.nodes].sort((a, b) => a.y - b.y || a.x - b.x);
+      const cur = order.findIndex((n) => picked?.kind === "node" && n.id === picked.id);
+      picked = { kind: "node", id: order[(cur + (e.shiftKey ? -1 : 1) + order.length) % order.length].id };
+      paint();
+      return;
+    }
+    if (k === "l") { done(); press("link"); return; }
+    if (k === "c") { done(); press("tone"); return; }
+    if (k === "s") { done(); press("stadium"); return; }
+    if (k === "b") { done(); press("box"); return; }
+    if (k === "d") { done(); press("diamond"); return; }
+    if (k === "m") { done(); tools.querySelector('[data-set="machine"]')?.click(); return; }
+    const n = pickedNode();
+    if (k === "Delete" || k === "Backspace") { if (picked) { done(); press("del"); } return; }
+    if (k === "Enter" && picked) {
+      done();
+      /* while joining, Enter is the tap: the first one picks where the line starts, the second where it ends */
+      if (linking && n) {
+        if (pendingA == null) { pendingA = n.id; paint(); return; }
+        if (pendingA !== n.id) change(() => addLink(pendingA, n.id));
+        pendingA = null;
+        paint();
+        return;
+      }
+      if (picked.kind === "node") writeNode(picked.id); else writeLink(picked.id);
+      return;
+    }
+    if (k === "a" && n) {
+      done();
+      /* THE NEXT STEP, joined: a box under it (beside it, on a function machine's row), ready to write in */
+      let made = null;
+      change(() => {
+        const row = model.preset === "machine";
+        made = addNode("box", Math.max(4, Math.min(96, row ? n.x + 18 : n.x)), Math.max(4, Math.min(96, row ? n.y : n.y + 22)));
+        addLink(n.id, made.id);
+        picked = { kind: "node", id: made.id };
+      });
+      writeNode(made.id);
+      return;
+    }
+    if (k.startsWith("Arrow") && n) {
+      done();
+      const st = e.shiftKey ? 8 : 2;
+      change(() => {
+        if (k === "ArrowLeft") n.x = Math.max(4, n.x - st);
+        if (k === "ArrowRight") n.x = Math.min(96, n.x + st);
+        if (k === "ArrowUp") n.y = Math.max(4, n.y - st);
+        if (k === "ArrowDown") n.y = Math.min(96, n.y + st);
+      });
+    }
+  };
+  document.addEventListener("keydown", onKey, true);
+
   paint();
   syncTabs();
   mountTooltips();
@@ -470,6 +546,8 @@ export function mountFlowModel(el, { saved = null, onChange = () => {} } = {}) {
     clear() { model = blankFlow(); picked = null; paint(); syncTabs(); },
     dispose() {
       document.removeEventListener("pointerdown", shut, true);
+      document.removeEventListener("pointerdown", arm, true);
+      document.removeEventListener("keydown", onKey, true);
       pot.remove();
       el.classList.remove("is-flowing");
       el.innerHTML = printed;

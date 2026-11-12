@@ -94,12 +94,12 @@ export function mountNodesModel(el, { saved = null, onChange = () => {} } = {}) 
     + `<button type="button" class="pp-plain nd-set" data-mode="graph" aria-pressed="false">Graph</button>`
     + `<button type="button" class="pp-plain nd-set" data-mode="tree" aria-pressed="false">Tree</button>`
     + `</span>`
-    + key("node", 2, "Add a node")
+    + key("node", 2, "Add a node (N)")
     + `<button type="button" class="pp-btn wb-tint-1 nd-key" data-t="link" aria-label="Join two nodes"`
-    + ` aria-pressed="false" data-tip="Join two nodes — tap one, then the other" data-tip-side="down">${ICON.link}</button>`
-    + key("tone", 2, "The colour of the picked node or line")
-    + key("undo", 1, "Step back")
-    + key("del", 4, "Take the picked one off")
+    + ` aria-pressed="false" data-tip="Join two nodes — tap one, then the other (L)" data-tip-side="down">${ICON.link}</button>`
+    + key("tone", 2, "The colour of the picked node or line (C)")
+    + key("undo", 1, "Step back (Ctrl+Z)")
+    + key("del", 4, "Take the picked one off (Delete)")
     + `<div class="nd-pot" data-pot hidden><div class="pp-receipt"><div class="pp-receipt__paper">`
     + `<div class="nd-pot__in">`
     + TONES.map((hex, i) => `<button type="button" class="pp-plain nd-chip" data-tone="${i}"`
@@ -405,6 +405,85 @@ export function mountNodesModel(el, { saved = null, onChange = () => {} } = {}) 
     if (twice(`l${id}`)) writeLink(id);
   });
 
+  /* ── THE KEYBOARD ─────────────────────────────────────────────────────
+     The board takes the keys from a press anywhere on it until a press elsewhere.
+     Keys: N new node · A a joined node · L join (then Enter on two nodes) · Tab pick · arrows move · Enter write · G graph · T tree · C colour · Delete · Ctrl+Z · Esc */
+  board.tabIndex = 0;
+  board.setAttribute("aria-label", "Model board — press ? for the keys");
+  let armed = false;
+  const arm = (e) => { armed = el.contains(e.target); };
+  document.addEventListener("pointerdown", arm, true);
+  board.addEventListener("focus", () => { armed = true; });
+  board.addEventListener("pointerdown", () => board.focus({ preventScroll: true }), true);
+  const press = (t) => tools.querySelector(`[data-t="${t}"]`)?.click();
+  const pickedNode = () => (picked?.kind === "node" ? model.nodes.find((n) => n.id === picked.id) : null);
+  const onKey = (e) => {
+    if (!armed || !el.isConnected) return;
+    if (e.target.closest?.(".nd-write, input, textarea, select")) return;
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const done = () => { e.preventDefault(); e.stopPropagation(); };
+    if ((e.ctrlKey || e.metaKey) && k === "z") { done(); stepBack(); return; }
+    if (e.ctrlKey || e.metaKey) return;
+    if (k === "?") { done(); flash('Keys: N new node · A a joined node · L join (then Enter on two nodes) · Tab pick · arrows move · Enter write · G graph · T tree · C colour · Delete · Ctrl+Z · Esc'.replace(/^[^:]*: /, "Keys: ")); return; }
+    if (k === "Escape") { if (linking) setLinking(false); picked = null; pot.hidden = true; paintAll(); return; }
+    if (k === "Tab" && model.nodes.length) {
+      done();
+      const order = [...model.nodes].sort((a, b) => a.y - b.y || a.x - b.x);
+      const cur = order.findIndex((n) => picked?.kind === "node" && n.id === picked.id);
+      picked = { kind: "node", id: order[(cur + (e.shiftKey ? -1 : 1) + order.length) % order.length].id };
+      paintAll();
+      return;
+    }
+    if (k === "l") { done(); press("link"); return; }
+    if (k === "c") { done(); press("tone"); return; }
+    if (k === "n") { done(); press("node"); return; }
+    if (k === "g" || k === "t") { done(); tools.querySelector(`[data-mode="${k === "g" ? "graph" : "tree"}"]`)?.click(); return; }
+    const n = pickedNode();
+    if (k === "Delete" || k === "Backspace") { if (picked) { done(); press("del"); } return; }
+    if (k === "Enter" && picked) {
+      done();
+      /* while joining, Enter is the tap: the first one picks where the line starts, the second where it ends */
+      if (linking && n) {
+        if (pendingA == null) { pendingA = n.id; paintAll(); return; }
+        if (pendingA !== n.id) change(() => addLink(pendingA, n.id));
+        pendingA = null;
+        paintAll();
+        return;
+      }
+      if (picked.kind === "node") writeNode(picked.id); else writeLink(picked.id);
+      return;
+    }
+    if (k === "a" && n) {
+      done();
+      /* A JOINED NODE, ready to name: under it in a tree, beside it in a web — the fast way to grow either */
+      const kids = model.links.filter((l) => l.a === n.id).length;
+      let made = null;
+      change(() => {
+        const tree = model.mode === "tree";
+        const off = [0, -14, 14, -28, 28][kids % 5];
+        made = { id: seq++, text: "", tone,
+          x: Math.max(4, Math.min(96, tree ? n.x + off : n.x + 16)),
+          y: Math.max(4, Math.min(96, tree ? n.y + 20 : n.y + off)) };
+        model.nodes.push(made);
+        addLink(n.id, made.id);
+        picked = { kind: "node", id: made.id };
+      });
+      writeNode(made.id);
+      return;
+    }
+    if (k.startsWith("Arrow") && n) {
+      done();
+      const st = e.shiftKey ? 8 : 2;
+      change(() => {
+        if (k === "ArrowLeft") n.x = Math.max(4, n.x - st);
+        if (k === "ArrowRight") n.x = Math.min(96, n.x + st);
+        if (k === "ArrowUp") n.y = Math.max(4, n.y - st);
+        if (k === "ArrowDown") n.y = Math.min(96, n.y + st);
+      });
+    }
+  };
+  document.addEventListener("keydown", onKey, true);
+
   paintAll();
   syncTabs();
   mountTooltips();
@@ -416,6 +495,8 @@ export function mountNodesModel(el, { saved = null, onChange = () => {} } = {}) 
     clear() { model = blankNodes(); picked = null; paintAll(); syncTabs(); },
     dispose() {
       document.removeEventListener("pointerdown", shut, true);
+      document.removeEventListener("pointerdown", arm, true);
+      document.removeEventListener("keydown", onKey, true);
       pot.remove();
       el.classList.remove("is-noding");
       el.innerHTML = printed;
