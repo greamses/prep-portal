@@ -283,8 +283,10 @@ function partWhole(cfg) {
           H.sound("snip", (k - 1) * CUT_GAP + 0.3);
         }
       },
-      "b1.base": (s, H) => { mb(s, "bar").forEach((n) => H.show(n)); H.show(braceOf(s, "below-0-0")); },
-      "b1.pct": (s, H) => mb(s, "num").forEach((n, i) => H.write(n, i * 0.35)),
+      /* ONLY THE WHOLE'S N BOXES: a profit's extra boxes are in the drawing (it is the longest row),
+         but they do not exist until the profit is spoken of ("it cuts the 100% into 6 instead of 5") */
+      "b1.base": (s, H) => { mb(s, "bar").slice(0, N).forEach((n) => H.show(n)); H.show(braceOf(s, "below-0-0")); },
+      "b1.pct": (s, H) => mb(s, "num").slice(0, N).forEach((n, i) => H.write(n, i * 0.35)),
       /* the whole, as it stood when it was cut (a profit's extra boxes are not there yet) */
       "b2.base": (s, H) => {
         mb(s, "bar").slice(0, N).forEach((n) => H.show(n));
