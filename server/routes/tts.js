@@ -372,7 +372,9 @@ module.exports = function () {
       const own = await dansumId(apiKey);
       let { text, voiceId } = req.body;
       /* no voice asked for, "dansum", or one not on the list: Teacher Dansum's voice (Alice when it cannot be found) */
-      if (!voiceId || voiceId === "dansum" || !(BOARD_VOICES.has(voiceId) || voiceId === own)) voiceId = own || ALICE;
+      /* "dansum" asks for Teacher Dansum's own voice; no voice, or one not on the list, is Alice (the default since 2026-11-12) */
+      if (voiceId === "dansum") voiceId = own || ALICE;
+      else if (!voiceId || !(BOARD_VOICES.has(voiceId) || voiceId === own)) voiceId = ALICE;
       const MODEL = board || lesson ? "eleven_multilingual_v2" : "eleven_turbo_v2_5";
       /* A CLONED VOICE WANTS STEADY SETTINGS: low stability and high style made the user's own voice
          wobble and sound read out ("It is my voice but robotic"). A touch slower, as a teacher talks. */

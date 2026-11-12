@@ -300,9 +300,10 @@ export function loss25() {
       push("But they did not make money. They actually sold it at a loss.", { pause: 0.6 });
       push("They lost twenty five percent. Twenty five percent of what they bought it for, you get?", { pause: 1 });
       push("So what they bought it for... that's the big number we don't know yet. That's the one we're hunting, right?",
-        { on: ["m1"], pause: 0.8 });
+        { pause: 0.8 });
       push("So picture it like this. One whole bar. That bar is what they bought it for.",
-        { on: ["b0"], add: ["b0.bar", "b0.brace"], cue: { "b0.bar": "whole bar", "b0.brace": "bought it for" }, pause: 0.5 });
+        { on: ["b0", "m1"], add: ["b0.bar", "b0.brace"], cue: { "b0.bar": "whole bar", "b0.brace": "bought it for" },
+          transition: { kind: "card", title: "Method 1", sub: "The box method", hold: 1.6 }, pause: 0.5 });
       push("We don't know it yet, so let's just put a question mark inside it. Just like that.",
         { add: ["b0.q"], cue: { "b0.q": "question mark" }, pause: 1 });
 
@@ -349,7 +350,7 @@ export function loss25() {
 
       /* ── METHOD TWO: EQUIVALENT FRACTIONS ── */
       push("Now let me show you another way. No boxes this time. Just fractions.",
-        { on: ["m2"], off: ["b3", "mE", "m1"], transition: "wipe", pause: 0.6 });
+        { on: ["m2"], off: ["b3", "mE", "m1"], transition: { kind: "card", title: "Method 2", sub: "Equivalent fractions", hold: 1.6 }, pause: 0.6 });
       push("They lost twenty five percent. So what part did they still get?", { pause: 1.5 });
       push("A hundred percent minus twenty five percent. Seventy five percent.",
         { on: ["r2"], add: ["r2.pct"], cue: { "r2.pct": "hundred percent" }, pause: 0.6 });

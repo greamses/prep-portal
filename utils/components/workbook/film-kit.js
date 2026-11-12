@@ -34,7 +34,7 @@ import { moneySvg, bill, billSvg } from "./purse.js";
 import { down, num, esc } from "./video-kit.js";
 import { stackText } from "./stackfrac.js";
 /* the drawing is heard as it is drawn, and a step can change the screen (./film-fx.js) */
-import { sfx, transition } from "./film-fx.js";
+import { sfx, transition, cardTime } from "./film-fx.js";
 
 /** The marks of a model, addressed the way the drawing names them. */
 export const mb = (svg, kind, row = null) => {
@@ -669,6 +669,9 @@ export function cueAt(text, phrase, codedText = "") {
   return (was / (len(codedText) / WPS)) * (len(text) / WPS);
 }
 
+/* a title card's time on the screen, which the voice and the marks of its step wait out */
+const leadOf = (ev) => (ev.change && typeof ev.change === "object" && ev.change.kind === "card" ? cardTime(ev.change.hold) : 0);
+
 export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = {}, lines = [],
   asks = [], paperMm = PAPER_MM, picW = PIC_W, build: extra = null, steps: write, ready = null }) {
   const PIC_IDS = Object.keys(pics);
@@ -741,6 +744,8 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
     say: ev.say,
     hold: ev.hold,
     ...(ev.pause != null ? { pause: ev.pause } : {}),
+    /* `lead`: seconds the voice waits before speaking (a title card on the screen) */
+    ...(leadOf(ev) ? { lead: leadOf(ev) } : {}),
     /* `this` is the step as it is PLAYED, which may carry new words from the film editor */
     show(stage, how) {
       const said = (this && typeof this.say === "string" && this.say) || ev.say;
@@ -770,7 +775,10 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
       ev.beforeDrawn.forEach((k) => stages[k]?.(svgOf(stage, picOf(k)), already, stage, bits));
 
       /* a new scene: the screen changes (./film-fx.js transition), only when played, never when replayed */
-      if (ev.change && !how.instant) transition(stage, ev.change, how.gsap);
+      if (ev.change && !how.instant) {
+        const c = typeof ev.change === "string" ? { kind: ev.change } : ev.change;
+        transition(stage, c.kind, how.gsap, c);
+      }
       ev.on.forEach((id, j) => {
         if (ev.beforeTiles.has(id)) return;
         if (pics[id] || trays[id]) S.put(id, { on: 1 });
@@ -778,7 +786,8 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
       });
       ev.add.forEach((k) => {
         const run = () => stages[k]?.(svgOf(stage, picOf(k)), H, stage, bits);
-        const wait = how.instant || !ev.cue?.[k] ? 0 : cueAt(said, ev.cue[k], ev.say);
+        /* a title card holds the screen first: the words, and so the marks, come after it */
+        const wait = how.instant ? 0 : (ev.cue?.[k] ? cueAt(said, ev.cue[k], ev.say) : 0) + leadOf(ev);
         /* a step left before its words arrive leaves a drawing that is no longer on the screen */
         if (wait > 0.05) setTimeout(() => { if (stage.contains(svgOf(stage, picOf(k)) || stage)) run(); }, wait * 1000);
         else run();

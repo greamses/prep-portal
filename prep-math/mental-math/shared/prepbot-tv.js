@@ -275,6 +275,11 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     paintControls();
     teacher.show();
     if (!speak) return;
+    /* a title card on the screen: PrepBot waits for it to lift before speaking */
+    if (steps[index].lead) {
+      await new Promise((r) => setTimeout(r, steps[index].lead * 1000));
+      if (mine !== token || closed) return;
+    }
     /* and the next line is fetched while this one is said */
     if (steps[index + 1]?.say) teacher.prepare?.(steps[index + 1].say);
     teacher.speak([{ text: steps[index].say, mode: "speech" }], { colorSeed: index });

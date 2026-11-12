@@ -21,8 +21,6 @@
 const SKIN = { a: "#f3d2b3", b: "#d9a679", c: "#a8714a", d: "#6e4429", e: "#4a2c1a" };
 
 export const ELEVEN_VOICES = [
-  { id: "dansum", name: "Teacher Dansum", note: "the teacher's own voice",
-    look: { skin: SKIN.d, hair: "short", hairC: "#1b1410", shirt: "#2f6f8f", bg: "#cfe6ef", beard: true, glasses: true } },
   { id: "Xb7hH8MSUJpSbSDYk0k2", name: "Alice", note: "clear, British",
     look: { skin: SKIN.a, hair: "bob", hairC: "#c98b3c", shirt: "#c2527a", bg: "#f6d6e0" } },
   { id: "nPczCjzI2devNBz1zQrb", name: "Brian", note: "deep, American",
@@ -33,8 +31,12 @@ export const ELEVEN_VOICES = [
     look: { skin: SKIN.c, hair: "curly", hairC: "#2a1a10", shirt: "#7058a8", bg: "#e2dbf3", cap: "#d9534f" } },
   { id: "pFZP5JQG7iQjIQuC4Bku", name: "Lily", note: "gentle, British",
     look: { skin: SKIN.a, hair: "long", hairC: "#8a4b25", shirt: "#3b8f86", bg: "#d3eeea", glasses: true } },
+  { id: "dansum", name: "Teacher Dansum", note: "the teacher's own voice",
+    look: { skin: SKIN.d, hair: "short", hairC: "#1b1410", shirt: "#2f6f8f", bg: "#cfe6ef", beard: true, glasses: true } },
 ];
-export const DEFAULT_VOICE = "dansum";
+/* Alice, ElevenLabs' clear educator, since 2026-11-12: the cloned voice was not close enough
+   ("I dont think eleven labs have cloned it perfectly"). Teacher Dansum's stays in the picker. */
+export const DEFAULT_VOICE = "Xb7hH8MSUJpSbSDYk0k2";
 export const voiceOf = (id) => ELEVEN_VOICES.find((v) => v.id === id) || null;
 
 /** One character's face (head and shoulders), 48×48, filled shapes only. */
@@ -75,7 +77,7 @@ export function avatarSvg(look = {}) {
 }
 
 /* ── PrepBot's chosen voice (the chat and the lesson teacher share it) ── */
-const KEY = "pp-voice";
+const KEY = "pp-voice2"; // a new key: everyone starts on the new default
 export function getVoiceKey() {
   try { const v = localStorage.getItem(KEY); if (voiceOf(v)) return v; } catch {}
   return DEFAULT_VOICE;

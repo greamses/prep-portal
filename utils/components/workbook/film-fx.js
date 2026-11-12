@@ -34,9 +34,16 @@ function audio() {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
     ctx = new AC();
+    /* LOUD ENOUGH TO HEAR ("make it louder"), through a limiter so two at once never crackle */
     master = ctx.createGain();
-    master.gain.value = 0.22;
-    master.connect(ctx.destination);
+    master.gain.value = 0.85;
+    const limit = ctx.createDynamicsCompressor();
+    limit.threshold.value = -10;
+    limit.knee.value = 6;
+    limit.ratio.value = 8;
+    limit.attack.value = 0.003;
+    limit.release.value = 0.12;
+    master.connect(limit).connect(ctx.destination);
   }
   if (ctx.state === "suspended") ctx.resume().catch(() => {});
   return ctx;
@@ -161,14 +168,37 @@ const WAYS = {
     return g.fromTo(d, { rotationY: 0 }, { rotationY: -100, duration: 0.85, ease: "power2.in" });
   },
 };
+/* A TITLE CARD: the whole screen turns to paper, the name of what comes next is written big in
+   the middle, it holds, and then it lifts away to show it. A new method starts on its own screen. */
+WAYS.card = (g, d, { title = "", sub = "", hold = 1.6 } = {}) => {
+  d.style.display = "grid";
+  d.style.placeItems = "center";
+  d.innerHTML = `<div style="text-align:center;font-family:var(--font-display,'Unbounded',sans-serif);color:#2a2723">`
+    + `<div class="vm-card__t" style="font-size:calc(var(--u,9px) * 6.2);font-weight:800;letter-spacing:.01em">${title}</div>`
+    + (sub ? `<div class="vm-card__s" style="margin-top:calc(var(--u,9px) * 1.2);font-family:var(--font-mono,monospace);font-size:calc(var(--u,9px) * 2.4);color:#6b645b">${sub}</div>` : "")
+    + `<div class="vm-card__r" style="margin:calc(var(--u,9px) * 1.6) auto 0;height:calc(var(--u,9px) * .45);width:calc(var(--u,9px) * 18);background:var(--accent-warning,#e8b93a);transform-origin:0 50%"></div></div>`;
+  const tl = g.timeline();
+  tl.fromTo(d, { xPercent: -101 }, { xPercent: 0, duration: 0.55, ease: "power3.out" })
+    .fromTo(d.querySelector(".vm-card__t"), { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "back.out(1.6)" }, 0.3)
+    .fromTo(d.querySelector(".vm-card__r"), { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out" }, 0.55);
+  const s = d.querySelector(".vm-card__s");
+  if (s) tl.fromTo(s, { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.7);
+  tl.to(d, { xPercent: 101, duration: 0.6, ease: "power3.in" }, 0.55 + hold);
+  sfx("whoosh", 0.55 + hold);
+  sfx("ding", 0.6);
+  return tl;
+};
+/** How long a title card keeps the screen, so the voice can wait for it. */
+export const cardTime = (hold = 1.6) => 1.15 + hold;
+
 export const TRANSITIONS = Object.keys(WAYS);
 
 /** Change the screen in one of the TRANSITIONS. Without gsap (or replaying a step instantly) nothing happens. */
-export function transition(stage, kind = "wipe", gsap = null) {
+export function transition(stage, kind = "wipe", gsap = null, opts = {}) {
   if (!stage || !gsap || !WAYS[kind]) return;
   const d = SHEET(stage);
   sfx("whoosh", 0.02);
-  const tw = WAYS[kind](gsap, d);
+  const tw = WAYS[kind](gsap, d, opts);
   const done = () => d.remove();
   if (tw && typeof tw.eventCallback === "function") tw.eventCallback("onComplete", done);
   else setTimeout(done, 1000);

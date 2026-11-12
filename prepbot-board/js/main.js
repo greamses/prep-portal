@@ -227,8 +227,8 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     redraw();
   });
   /* the voice PrepBoard speaks in: the site's dropdown again, an icon key in Talk */
-  const VOICE_KEY = "pb-voice2"; // a new key: everyone starts on Teacher Dansum's voice
-  let voiceKey = "dansum";
+  const VOICE_KEY = "pb-voice3"; // a new key: everyone starts on Alice (the default since 2026-11-12)
+  let voiceKey = "Xb7hH8MSUJpSbSDYk0k2";
   let voicePick = null;
   const premiumFirst = (list) => [...list.filter((v) => v.kind === "eleven"), ...list.filter((v) => v.kind !== "eleven")];
   try { const v = localStorage.getItem(VOICE_KEY); if (VOICES.some((x) => x.id === v)) voiceKey = v; } catch {}
@@ -238,7 +238,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
     onEngine: (engine, hf) => {
       const keep = (v) => v.kind === "eleven" || (v.kind === "local" && local.supported) || (v.kind === "hf" && hf) || v.kind === (engine === "kokoro" ? "kokoro" : "melo");
       if (!VOICES.some((v) => v.id === voiceKey && keep(v))) {
-        voiceKey = "dansum";
+        voiceKey = "Xb7hH8MSUJpSbSDYk0k2";
         voice.setVoice(voiceKey);
       }
       voicePick?.setVoices(premiumFirst(VOICES.filter(keep)));
