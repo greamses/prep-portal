@@ -143,8 +143,8 @@ export function loss25() {
       },
       "b2.lose": (s, H) => {
         const bars = mb(s, "bar");
-        H.tint(bars[BOXES - 1], bars[0].getAttribute("fill"), 3.0);
-        H.draw(braceOf(s, "above-0-1"), 3.5);
+        H.tint(bars[BOXES - 1], bars[0].getAttribute("fill"), 2.4);
+        H.draw(braceOf(s, "above-0-1"), 2.9);
       },
       "b2.sold": (s, H) => H.draw(braceOf(s, "above-0-0"), 0.6),
       "b3.base": (s, H) => {
@@ -189,18 +189,18 @@ export function loss25() {
        longest after a question, so the child answers in their head before PrepBot does. */
     steps: ({ push, look }) => {
       /* ── METHOD ONE: THE BOX METHOD ── */
-      push("So um, someone bought a computer set.", { on: ["a1"], pause: 0.5 });
+      push("Someone bought a computer set.", { on: ["a1"], pause: 0.5 });
       push("Later, they sold that same computer set... for fifty seven thousand naira.", { pause: 0.4 });
-      push("But hmm. They did not make money o. They actually sold it at a loss.", { pause: 0.6 });
-      push("They lost twenty five percent. Twenty five percent of what they BOUGHT it for, you get?", { pause: 1 });
+      push("But they did not make money. They actually sold it at a loss.", { pause: 0.6 });
+      push("They lost twenty five percent. Twenty five percent of what they bought it for, you get?", { pause: 1 });
       push("So what they bought it for... that's the big number we don't know yet. That's the one we're hunting, right?",
         { on: ["m1"], pause: 0.8 });
-      push("So picture it like this, eh. One whole bar. That bar is what they bought it for.",
+      push("So picture it like this. One whole bar. That bar is what they bought it for.",
         { on: ["b0"], add: ["b0.bar", "b0.brace"], pause: 0.5 });
       push("We don't know it yet, so let's just put a question mark inside it. Just like that.",
         { add: ["b0.q"], pause: 1 });
 
-      push("Now, twenty five percent. Hmm. Twenty five out of a hundred... what is that, in a simpler way?",
+      push("Now, twenty five percent. Twenty five out of a hundred... what is that, in a simpler way?",
         { pause: 1.6 });
       push("It's a quarter. One out of four.", { on: ["l1"], pause: 0.6 });
       push("So I'm going to cut our bar into four equal boxes. Watch.", { pause: 0.5 });
@@ -208,64 +208,64 @@ export function loss25() {
       push("Four boxes now, all the same size. And each box is twenty five percent.",
         { on: ["b1"], off: ["b0"], add: ["b1.base", "b1.pct"], pause: 0.8 });
 
-      push("Okay so. They lost twenty five percent. That's ONE box.",
+      push("They lost twenty five percent. That's one box.",
         { on: ["b2"], off: ["b1"], add: ["b2.base", "b2.lose"], pause: 0.5 });
       push("That box is gone. They never got it back.", { on: ["l2"], pause: 0.8 });
-      push("Now wait, eh. This is where people fall.", { pause: 0.7 });
-      push("Some people will quickly take twenty five percent of fifty seven thousand. Don't do that o.",
+      push("Now wait. This is where people fall.", { pause: 0.7 });
+      push("Some people will quickly take twenty five percent of fifty seven thousand. Don't do that.",
         { pause: 0.6 });
-      push("The loss is a quarter of what they BOUGHT it for. The big bar. Not a quarter of fifty seven thousand.",
+      push("The loss is a quarter of what they bought it for. The big bar. Not a quarter of fifty seven thousand.",
         { look: look.mark("b2", "bar", BOXES - 1), lookAt: { lit: true, delay: 0.4, hold: 2.2 }, pause: 1 });
       push("So, what did they actually collect when they sold it?", { pause: 1.5 });
       push("The other three boxes. Just the three.", { add: ["b2.sold"], pause: 0.5 });
-      push("And that's the fifty seven thousand. So fifty seven thousand is not the full bar o. It's what is left after the loss.",
+      push("And that's the fifty seven thousand. So fifty seven thousand is not the full bar. It's what is left after the loss.",
         { on: ["l3"], look: look.brace("b2", "above-0-0"), lookAt: { lit: true, delay: 0.5, hold: 2.0 }, pause: 0.6 });
       push("Three boxes, fifty seven thousand. You follow me so far?", { pause: 1.4 });
 
-      push("Now. If three boxes make fifty seven thousand... how much is ONE box?",
+      push("Now. If three boxes make fifty seven thousand... how much is one box?",
         { on: ["b3"], off: ["b2"], add: ["b3.base"], pause: 1.8 });
-      push("Hmm, we share fifty seven thousand into three. That's nineteen thousand.",
+      push("We share fifty seven thousand into three. That's nineteen thousand.",
         { on: ["l4"], add: ["b3.one"], pause: 0.6 });
-      push("And all the boxes are the same size, eh. So nineteen thousand, nineteen thousand, nineteen thousand... the lost one too.",
+      push("And all the boxes are the same size. So nineteen thousand, nineteen thousand, nineteen thousand... the lost one too.",
         { add: ["b3.rest"], pause: 0.8 });
       push("And what they bought it for is the whole bar. All four boxes.", { pause: 0.5 });
       push("Four times nineteen thousand... seventy six thousand.", { on: ["l5"], add: ["b3.cost"], pause: 0.8 });
-      push("Let's check it sha. They lost one box, nineteen thousand. Seventy six thousand minus nineteen thousand...",
+      push("Let's check it. They lost one box, nineteen thousand. Seventy six thousand minus nineteen thousand...",
         { on: ["l6"], pause: 0.4 });
       push("Fifty seven thousand. That's exactly the price in the question. It works.", { pause: 0.6 });
       push("So the answer is E. Seventy six thousand naira.", { pause: 1.4 });
 
       /* ── METHOD TWO: EQUIVALENT FRACTIONS ── */
-      push("Okay. Now let me show you another way. No boxes this time. Just fractions.",
+      push("Now let me show you another way. No boxes this time. Just fractions.",
         { on: ["m2"], off: ["b3", "m1", "l1", "l2", "l3", "l4", "l5", "l6"], pause: 0.6 });
       push("They lost twenty five percent. So what part did they still get?", { pause: 1.5 });
       push("A hundred percent minus twenty five percent. Seventy five percent.", { on: ["k1"], pause: 0.6 });
-      push("Seventy five percent is seventy five over a hundred. Hmm, we can make that smaller.",
+      push("Seventy five percent is seventy five over a hundred. We can make that smaller.",
         { on: ["k2"], pause: 0.5 });
       push("Divide the top and the bottom by twenty five... and you get three over four. Three quarters.",
         { on: ["eq"], add: ["eq.left"], pause: 0.6 });
-      push("And look, eh. It's the same thing as before. Three boxes out of four.", { pause: 0.8 });
+      push("And look. It's the same thing as before. Three boxes out of four.", { pause: 0.8 });
       push("So, the selling price, over what they bought it for. Fifty seven thousand on top.",
         { add: ["eq.sold"], pause: 0.4 });
       push("And underneath, what they bought it for. We don't know it, so... question mark.",
         { add: ["eq.cost"], pause: 0.5 });
       push("Top goes with top, bottom goes with bottom. You get?", { pause: 1 });
-      push("Now these two fractions are EQUAL. And to make equal fractions, you multiply the top and the bottom by the same number.",
+      push("Now these two fractions are equal. And to make equal fractions, you multiply the top and the bottom by the same number.",
         { pause: 0.6 });
       push("So look at the tops. Three becomes fifty seven thousand. Three times what?",
         { add: ["eq.over"], pause: 1.8 });
-      push("Hmm. Fifty seven thousand divided by three. Nineteen thousand.",
+      push("Fifty seven thousand divided by three. Nineteen thousand.",
         { on: ["k3"], pause: 0.5 });
       push("Same as one box, you see?", { pause: 0.9 });
-      push("And whatever you do to the top, you must do to the bottom o. Otherwise they won't be equal again.",
+      push("And whatever you do to the top, you must do to the bottom. Otherwise they won't be equal again.",
         { add: ["eq.under"], pause: 0.6 });
       push("So four times nineteen thousand... seventy six thousand.",
         { on: ["k4"], add: ["eq.ans"], pause: 0.6 });
       push("There's our question mark. Seventy six thousand naira. Same answer as the boxes.",
         { on: ["k5"], pause: 1 });
-      push("So you see. Two ways, one answer. The boxes help you SEE it. The fractions say the same thing with numbers.",
+      push("So you see. Two ways, one answer. The boxes help you see it. The fractions say the same thing with numbers.",
         { play: (S, H, stage) => runLit(H, stage, ["k1", "k2", "k3", "k4"]), pause: 0.8 });
-      push("Just remember this one thing, eh. A loss, or a profit, is always a part of what they BOUGHT it for. The whole bar. Don't forget it o.");
+      push("Just remember this one thing. A loss, or a profit, is always a part of what they bought it for. The whole bar. Don't forget it.");
     },
   });
 }

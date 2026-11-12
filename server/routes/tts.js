@@ -374,8 +374,10 @@ module.exports = function () {
       /* no voice asked for, "dansum", or one not on the list: Teacher Dansum's voice (Alice when it cannot be found) */
       if (!voiceId || voiceId === "dansum" || !(BOARD_VOICES.has(voiceId) || voiceId === own)) voiceId = own || ALICE;
       const MODEL = board || lesson ? "eleven_multilingual_v2" : "eleven_turbo_v2_5";
+      /* A CLONED VOICE WANTS STEADY SETTINGS: low stability and high style made the user's own voice
+         wobble and sound read out ("It is my voice but robotic"). A touch slower, as a teacher talks. */
       const SETTINGS = lesson
-        ? { stability: 0.3, similarity_boost: 0.85, style: 0.4, use_speaker_boost: true }
+        ? { stability: 0.5, similarity_boost: 0.8, style: 0.12, use_speaker_boost: true, speed: 0.94 }
         : board
           ? { stability: 0.38, similarity_boost: 0.8, style: 0.28, use_speaker_boost: true }
           : { stability: 0.45, similarity_boost: 0.75 };
@@ -386,7 +388,13 @@ module.exports = function () {
         return res.status(400).json({ error: `text too long (max ${MAX_CHARS} chars).` });
       }
 
-      const cacheVoice = lesson ? `${voiceId}~lesson` : board ? `${voiceId}~v2` : voiceId; // a board line in the natural model is its own recording
+      /* THE LINES EITHER SIDE. Each short line used to be recorded alone, so every sentence began and
+         ended flat, like a list being read. ElevenLabs takes the text before and after as context and
+         says the line the way it would sound in the middle of the talk (it does not say them). */
+      const around = (v) => (lesson && typeof v === "string" ? v.slice(-600).trim() : "");
+      const prevText = around(req.body?.previousText), nextText = around(req.body?.nextText).slice(0, 600);
+      const ctxTag = prevText || nextText ? `~${crypto.createHash("sha1").update(`${prevText}|${nextText}`).digest("hex").slice(0, 10)}` : "";
+      const cacheVoice = lesson ? `${voiceId}~lesson2${ctxTag}` : board ? `${voiceId}~v2` : voiceId; // a board line in the natural model is its own recording
       const { file: cacheFile, url: cacheUrl } = cacheFileFor(cacheVoice, text);
 
       // 1) Static disk hit — hand back the static URL so the browser loads it
@@ -404,6 +412,7 @@ module.exports = function () {
         return res.json({ audioContent: cached, audioEncoding: "MP3", cached: "mem" });
       }
 
+      let plain = false; // true: the lesson extras were refused, so ask without them
       const say = (vid) => fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}`, {
         method: "POST",
         headers: {
@@ -414,7 +423,9 @@ module.exports = function () {
         body: JSON.stringify({
           text,
           model_id: MODEL,
-          voice_settings: SETTINGS,
+          voice_settings: plain ? { stability: 0.5, similarity_boost: 0.8 } : SETTINGS,
+          ...(prevText && !plain ? { previous_text: prevText } : {}),
+          ...(nextText && !plain ? { next_text: nextText } : {}),
         }),
         // NOT sending `apply_text_normalization`. It is ElevenLabs' own
         // normaliser and it handles numbers, dates, currency and
@@ -428,6 +439,12 @@ module.exports = function () {
 
       let fellBack = false; // said in Alice instead: never remembered as the asked-for voice
       let elResponse = await say(voiceId);
+      /* the same voice first, without the lesson extras, before ever changing whose voice it is */
+      if (!elResponse.ok && lesson && [400, 422].includes(elResponse.status)) {
+        console.warn("[/api/tts/elevenlabs] lesson extras refused:", (await elResponse.text().catch(() => "")).slice(0, 200));
+        plain = true;
+        elResponse = await say(voiceId);
+      }
       /* a voice this account cannot use (402/404): say it in Alice instead */
       if (!elResponse.ok && voiceId !== ALICE && [400, 401, 402, 404, 422].includes(elResponse.status)) {
         console.warn("[/api/tts/elevenlabs] voice", voiceId, elResponse.status, "— falling back to Alice");

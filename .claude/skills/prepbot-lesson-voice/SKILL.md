@@ -43,7 +43,9 @@ Each step should do most of these, in roughly this order:
   "a FIFTH" — the user asked for exactly this: *"20 percent is a fifth. Better
   said that way."* A fraction a child can picture beats a percentage they cannot.
 - **CAPITALS for the one word carrying the sentence** — "a total is a BRACE,
-  never a number beside a bar". One or two per step, no more.
+  never a number beside a bar". One or two per step, no more. **Not in a line a
+  cloned ElevenLabs voice will say** (the films): it reads a capitalised word
+  as shouting or spells it out. Lean on the word with the sentence instead.
 - **An aside is allowed and wanted.** "a calculator would just TELL me, and then
   neither of us would know a thing." It is what makes it a person.
 - **Vary the openings.** Rotate them off a counter that spans the whole lesson,
@@ -72,14 +74,12 @@ What makes it work:
 - **Short spoken lines, one idea each.** A line is one breath. Build a step's
   `say` from a list of these (`say(...lines)` joined with spaces). Do not
   write paragraphs.
-- **Fillers and thinking sounds, sparingly:** "so", "so um", "hmm", "okay so",
-  "now wait". Use one or two per step, at the START of a thought, the way a
-  teacher thinks out loud. Never put two together.
-- **Check-ins:** "you get?", "right?", "you follow me so far?", "you see?". End
-  about every second step on one, so the child feels asked.
-- **Warm particles:** "eh", "o", "sha", the way the user speaks. Use them at the
-  end of a line to soften it or press a warning ("Don't do that o."). One or
-  two per step.
+- **NO FILLERS** (2026-11-12, after hearing them: *"remove the fillers and
+  leave the breathing space"*). No "um", "hmm", "eh", "o", "sha", "okay so".
+  On a synthetic voice they sound put on. What the sample was really asking
+  for is the SPACE: short lines with silences between them (`pause`).
+- **Check-ins stay** ("you get?", "right?", "you follow me so far?"). They are
+  questions, not fillers, and they come before a pause.
 - **Plain words for the maths terms.** Say "what they bought it for" before (and
   more often than) "cost price". Say "a quarter" before "twenty five percent".
 - **Numbers in words** in the line ("fifty seven thousand"), since that is how
@@ -87,6 +87,13 @@ What makes it work:
 - **"Just" is fine here** when it means "only" or "like this" ("just the three",
   "just like that"). It is still banned in its belittling sense ("you just
   divide").
+
+**Why a voice can sound robotic even when it is the right voice:** every line
+is recorded on its own, so each sentence starts and ends flat. The TV sends
+each line's neighbours as `previous_text` / `next_text`
+(prepbot-tv.js `setLineContext`, server/routes/tts.js `lesson`), so a line is
+said as part of the talk. A clone also wants steady settings (stability about
+0.5, style low). High style and low stability make it wobble.
 
 The same rules still hold underneath: point at what is drawn, say why, name
 the trap, and keep the words in step with the picture. This register replaces

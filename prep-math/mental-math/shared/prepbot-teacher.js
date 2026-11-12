@@ -80,6 +80,7 @@ export class PrepbotTeacher {
     this.audioCtx = null;
     this.elevenLabsAvailable = true;
     this.elevenLabsCache = new Map();
+    this.lineContext = new Map();   // spoken line -> { prev, next }: what is said either side of it (films)
     window.addEventListener("pp-voice-change", (e) => { this._voiceKey = e.detail?.id || null; });
     this.typeTimer = null;
     this.rhythmTimer = null;
@@ -349,7 +350,8 @@ export class PrepbotTeacher {
        so it is read once, when the first line is said */
     if (!this._voiceKey) this._voiceKey = getVoiceKey();
     const voiceId = this._voiceKey;
-    const memo = `${voiceId}|${text}`;
+    const ctx = this.lineContext.get(text) || {};
+    const memo = `${voiceId}|${ctx.prev || ""}|${text}|${ctx.next || ""}`;
     if (this.elevenLabsCache.has(memo)) return this.elevenLabsCache.get(memo);
     const user = await this._authReady();
     if (!user) return null;
@@ -359,7 +361,7 @@ export class PrepbotTeacher {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         /* a lesson line asks for the expressive model: a teacher, not a reader */
-        body: JSON.stringify({ text, voiceId, ...(this.lessonVoice ? { from: "lesson" } : {}) }),
+        body: JSON.stringify({ text, voiceId, ...(this.lessonVoice ? { from: "lesson", previousText: ctx.prev, nextText: ctx.next } : {}) }),
       });
       if (!res.ok) {
         this.elevenLabsAvailable = false; // persistent server-side verdict for this session
@@ -582,6 +584,11 @@ export class PrepbotTeacher {
 
   /** Fetch a line's voice now, so it starts the moment it is needed (no-op when muted or on the browser voice).
       Resolves when the audio is ready, or false. */
+  /** A film tells the teacher what is said either side of a line, so it is spoken as part of the talk. */
+  setLineContext(text, prev = "", next = "") {
+    if (text) this.lineContext.set(sayMaths(text), { prev: prev ? sayMaths(prev) : "", next: next ? sayMaths(next) : "" });
+  }
+
   prepare(text) {
     /* nothing to fetch for the browser's own voice: never hold a step up for it */
     if (this.voiceMode !== "talk" || !text || !this.elevenLabsAvailable || !this.auth?.currentUser) return Promise.resolve(false);

@@ -190,7 +190,12 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
   let auth = null;
   try { auth = (await import("/firebase-init.js")).auth || null; } catch { /* the free voice */ }
   const teacher = new PrepbotTeacher({ root: box.querySelector(".mm-prepbot"), boundsEl: screen, auth, menu: { ask: b("ask"), voice: b("voice"), sleep: b("sleep"), poke: b("poke") } });
-  teacher.lessonVoice = true;   // the films ask for the expressive voice (server/routes/tts.js "lesson")
+  teacher.lessonVoice = true;   // the films ask for the lesson voice (server/routes/tts.js "lesson")
+  /* each line is spoken knowing the two lines either side of it, so the talk flows instead of restarting */
+  steps.forEach((st, k) => {
+    const near = (a, b) => steps.slice(Math.max(0, a), Math.max(0, b)).map((x) => x.say || "").filter(Boolean).join(" ");
+    teacher.setLineContext?.(st.say, near(k - 2, k), near(k + 1, k + 3));
+  });
   /* the voice changed in the middle of a line: say the step again in the new one */
   teacher.onVoiceChange = () => { if (!closed && index >= 0) go(index); };
   let gsap = null;
