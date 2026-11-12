@@ -53,6 +53,15 @@ import { mountRegroup } from "./regroup.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
+
+/* The rail's tools by Alt + a letter (see "THE RAIL FROM THE KEYBOARD") */
+const RAIL_ALT = {
+  pencil: "P", eraser: "E", ruler: "R", protractor: "A", setsquare: "Q", compass: "O",
+  calculator: "C", column: "L", times: "X", criss: "Z", shortdiv: "H", longdiv: "D", fraction: "F",
+  chart: "V", shift: "U", bench: "W", graph: "G", tables: "T",
+  barmodel: "B", linemodel: "N", vennmodel: "Y", gm: "M", board: "K", note: "S",
+};
+const RAIL_BY_CODE = Object.fromEntries(Object.entries(RAIL_ALT).map(([id, ch]) => [`Key${ch}`, id]));
 const SNAP_MM = 4.5;                // how close to a corner counts as on it
 
 const svgPoint = (svg, clientX, clientY) => {
@@ -3639,7 +3648,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
      where the rail leaves room */
   const keyHtml = (k) =>
     `<button type="button" class="wb-side__btn" ${k.attr}="${k.id}" aria-pressed="false"`
-    + ` aria-label="${k.label}" data-tip="${k.label}" data-tip-side="right">${k.icon}<em>${k.label}</em></button>`;
+    + ` aria-label="${k.label}" data-tip="${k.label}${RAIL_ALT[k.id] ? ` (Alt+${RAIL_ALT[k.id]})` : ""}" data-tip-side="right">${k.icon}<em>${k.label}</em></button>`;
 
   /* The rail is the site's receipt — the one .pp-receipt component, used as it
      is meant to be used, in three parts: the wrapper (`side`) casts the shadow,
@@ -3732,6 +3741,28 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         cfg, pageDefault, onChange: mark, side: "right",
       });
     }
+  });
+
+  /* ── THE RAIL FROM THE KEYBOARD ──────────────────────────────────────────
+     Alt + a letter takes a tool off the rail (or puts it back), wherever the
+     focus is — answer boxes keep every plain key. Read by e.code, so Option on
+     a Mac works too. Alt+0 puts every instrument away. */
+  document.addEventListener("keydown", (e) => {
+    if (!live || !e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.code === "Digit0") { e.preventDefault(); putToolsAway(); return; }
+    const id = RAIL_BY_CODE[e.code];
+    if (!id) return;
+    const key = [side, ...flies.values()].map((r) => r.querySelector(`[data-mode="${id}"], [data-tool="${id}"], [data-sheet="${id}"]`)).find(Boolean);
+    if (!key) return;
+    e.preventDefault();
+    key.click();
+    /* an instrument just put on the paper is ready for the arrows */
+    setTimeout(() => {
+      const el = out[id]?.el;
+      if (!el) return;
+      if (!el.hasAttribute("tabindex")) el.tabIndex = 0;
+      el.focus({ preventScroll: true });
+    }, 0);
   });
 
   /* ── opening a family ───────────────────────────────────────────────────*/
@@ -4146,6 +4177,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     });
     el.addEventListener("keydown", (e) => {
       const step = e.shiftKey ? 5 : 1;
+      /* MOVING it from the keyboard: ↑ ↓ up and down, Alt + ← → across (a millimetre a press, Shift five) */
+      if (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        st.x += (e.key === "ArrowLeft" ? -1 : 1) * step * MM; st.on = null; place(); e.preventDefault(); return;
+      }
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        st.y += (e.key === "ArrowUp" ? -1 : 1) * step * MM; st.on = null; place(); e.preventDefault(); return;
+      }
       if (e.key === "ArrowLeft") { st.rot -= step; place(); e.preventDefault(); }
       if (e.key === "ArrowRight") { st.rot += step; place(); e.preventDefault(); }
       if (spec.compass && (e.key === "+" || e.key === "=" || e.key === "-")) {
