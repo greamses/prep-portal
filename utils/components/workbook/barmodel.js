@@ -730,6 +730,21 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
         b.labels = [write(was.v * (b.w / whole), was.marked)];
         right.labels = [write(was.v - was.v * (b.w / whole), was.marked)];
       }
+      /* A BRACE IS CUT WITH ITS BAR. A brace saying 57 000 over three boxes,
+         cut after the first box, becomes a brace of 19 000 over the one box
+         and a brace of 38 000 over the other two — each piece keeps its share,
+         on its own side, following the cut. A brace of words ("?") goes over
+         both pieces, the same stretch it was drawn over. */
+      const part = (b.w) / whole;
+      model.braces.filter((br) => br.ids.includes(b.id)).forEach((br) => {
+        if (br.at !== "side" && br.ids.length === 1 && figure(br.text) !== null) {
+          const v = figure(br.text), m = MARKED(br.text);
+          br.text = write(v * part, m);
+          model.braces.push({ id: seq++, ids: [right.id], at: br.at, text: write(v - v * part, m) });
+        } else if (!br.ids.includes(right.id)) {
+          br.ids = [...br.ids, right.id];
+        }
+      });
       model.bars.push(right);
       picked = new Set([b.id, right.id]);
     });
