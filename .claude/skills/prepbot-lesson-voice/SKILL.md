@@ -124,6 +124,25 @@ Animate the thing being talked about:
 
 Where the words and the drawing disagree, the child believes the drawing.
 
+### Timing (2026-11-12: *"The actions dont match the words … No pause, nothing"*)
+
+- **One breath per step.** A step is one or two short lines, and it draws the
+  ONE thing those lines talk about. A long step makes its drawing finish
+  seconds before the words reach it.
+- **Delay a mark to its word.** A stage's delay is when the word that names
+  the mark is spoken. Allow about 2.5 words a second, so "That's ONE box" at
+  the end of a ten-word line lands at about 3 s.
+- **Real silences.** `push(say, { pause })` gives seconds of quiet after the
+  words: about 1.5 to 1.8 after a question the child should answer in their
+  head, 0.5 to 1 after an ordinary line. The TV fetches the next line's audio
+  while this one plays, so the gaps come out even.
+- **"..." in a line** gives a small spoken hesitation ("Four times nineteen
+  thousand... seventy six thousand").
+- **A bar that is cut stays on screen.** Draw the cut lines down through the
+  same bar (`b0.cut` in cbt-films.js). Never clear it away and redraw four
+  boxes. Only then swap to the drawing with four boxes, which has the same
+  geometry, to write in them.
+
 ## 5. Where the lesson's own content comes from
 
 Prefer the component's own words over words written into the film:
