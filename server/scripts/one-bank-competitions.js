@@ -79,7 +79,7 @@ const answerIndexOf = (q) => (typeof q.correctIndex === "number" ? q.correctInde
         answerIndex: ai, answer: opts.length >= 2 ? null : (q.answer ?? ([].concat(q.explanation || "").join(" ").trim() || null)),
         accept: opts.length >= 2 ? null : (Array.isArray(q.accept) && q.accept.length ? q.accept.map(String) : (q.answer ? acceptFrom(q.answer) : [])),
         explanation: q.explanation ?? "", hint: q.hint || "", topic: q.topic || null,
-        section: q.section || null, image,
+        section: q.section || null, image, film: q.film || null,
         /* the diagram's own SVG too, for the Paper Test Builder, whose questions carry their drawing inline */
         svgInline: image && image.endsWith(".svg") ? (() => { try { return fs.readFileSync(path.join(__dirname, "..", "..", image.replace(/^\//, "")), "utf8").slice(0, 30000); } catch { return null; } })() : null,
         subject: q.subject || "mathematics",
@@ -97,6 +97,7 @@ const answerIndexOf = (q) => (typeof q.correctIndex === "number" ? q.correctInde
       questions: writes.map(([, d]) => ({
         question: d.question, options: d.options, correctIndex: d.answerIndex, answer: d.answer, accept: d.accept,
         explanation: d.explanation, hint: d.hint, image: d.image, topic: d.topic, type: d.type, section: d.section,
+        ...(d.film ? { film: d.film } : {}),
       })),
     }));
     console.log(`  ${String(writes.length).padStart(3)}  ${compKey}  (time ${data.timeLimit}s)`);

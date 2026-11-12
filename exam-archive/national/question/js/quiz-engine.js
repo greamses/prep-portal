@@ -957,6 +957,7 @@ const Quiz = (() => {
             : q.image
           : "",
         hint: q.hint || "",
+        film: q.film || null,
         type: opts.length >= 2 ? (q.type || "objective") : "subjective",
         subject: comp,
         examType: comp,
@@ -1842,6 +1843,16 @@ const Quiz = (() => {
     // for linear equations, otherwise the explanation revealed step by
     // step). All the heavy lifting lives in animator.js.
     if (acts && window.MathAnimator) window.MathAnimator.mountButton(acts, q);
+
+    // A question that names a film: PrepBot works it on his TV (utils/components/workbook/cbt-films.js)
+    if (acts && q.film && !acts.querySelector("[data-tvlesson]")) {
+      import("/utils/components/workbook/tv-lessons.js")
+        .then(({ lessonStrip }) => {
+          if (!acts.isConnected || acts.querySelector("[data-tvlesson]")) return;
+          acts.insertAdjacentHTML("beforeend", lessonStrip(q.film, "How to solve this question"));
+        })
+        .catch((e) => console.warn("PrepBot film:", e.message));
+    }
   }
 
   function selectOption(opt, btn, grid, idx) {

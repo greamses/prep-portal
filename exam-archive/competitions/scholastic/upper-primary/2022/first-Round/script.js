@@ -104,6 +104,7 @@ const examQuestions = [
       "\\(\\text{Cost Price} = \\frac{₦57,000}{0.75} = ₦76,000\\).",
     ],
     topic: "Percentage Loss and Profit",
+    film: "loss-25", // PrepBot works it two ways (utils/components/workbook/cbt-films.js)
   },
   {
     question:
