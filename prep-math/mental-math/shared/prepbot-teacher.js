@@ -358,7 +358,8 @@ export class PrepbotTeacher {
       const res = await fetch("/api/tts/elevenlabs", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ text, voiceId }),
+        /* a lesson line asks for the expressive model: a teacher, not a reader */
+        body: JSON.stringify({ text, voiceId, ...(this.lessonVoice ? { from: "lesson" } : {}) }),
       });
       if (!res.ok) {
         this.elevenLabsAvailable = false; // persistent server-side verdict for this session
@@ -577,6 +578,14 @@ export class PrepbotTeacher {
     clearTimeout(this.talkSafetyTimer);
     if (this.audioEl) { try { this.audioEl.pause(); this.audioEl.removeAttribute("src"); this.audioEl.load?.(); } catch { /* already gone */ } this.audioEl = null; }
     if (window.speechSynthesis) speechSynthesis.cancel();
+  }
+
+  /** Fetch a line's voice now, so it starts the moment it is needed (no-op when muted or on the browser voice).
+      Resolves when the audio is ready, or false. */
+  prepare(text) {
+    /* nothing to fetch for the browser's own voice: never hold a step up for it */
+    if (this.voiceMode !== "talk" || !text || !this.elevenLabsAvailable || !this.auth?.currentUser) return Promise.resolve(false);
+    return this._tryElevenLabs(sayMaths(text)).then((u) => !!u).catch(() => false);
   }
 
   _speakLineAsync(text) {

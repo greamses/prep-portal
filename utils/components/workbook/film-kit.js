@@ -660,7 +660,7 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
   let tiles = new Set();
   let drawn = [];
   const push = (say, { on = [], off = [], add = [], play = () => {}, look: at = null, lookAt = null,
-    hold = 0 } = {}) => {
+    hold = 0, pause = null } = {}) => {
     const beforeTiles = new Set(tiles);
     const beforeDrawn = drawn.slice();
     on.forEach((t) => tiles.add(t));
@@ -669,7 +669,8 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
     /* `hold`: seconds the film waits after this step's words, for the
        learner to do the thing it has just asked them to do (prepbot-tv.js
        counts them down on the screen) */
-    events.push({ say, beforeTiles, beforeDrawn, on, off, add, play, look: at, lookAt, hold });
+    /* `pause`: seconds of silence after the words (prepbot-tv.js), e.g. after a question */
+    events.push({ say, beforeTiles, beforeDrawn, on, off, add, play, look: at, lookAt, hold, pause });
   };
 
   write({ push, look });
@@ -700,6 +701,7 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
   const steps = events.map((ev) => ({
     say: ev.say,
     hold: ev.hold,
+    ...(ev.pause != null ? { pause: ev.pause } : {}),
     show(stage, how) {
       const S = acts(stage, how.gsap, how.instant);
       const already = hand(how.gsap, true);

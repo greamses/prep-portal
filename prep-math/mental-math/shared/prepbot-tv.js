@@ -190,6 +190,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
   let auth = null;
   try { auth = (await import("/firebase-init.js")).auth || null; } catch { /* the free voice */ }
   const teacher = new PrepbotTeacher({ root: box.querySelector(".mm-prepbot"), boundsEl: screen, auth, menu: { ask: b("ask"), voice: b("voice"), sleep: b("sleep"), poke: b("poke") } });
+  teacher.lessonVoice = true;   // the films ask for the expressive voice (server/routes/tts.js "lesson")
   /* the voice changed in the middle of a line: say the step again in the new one */
   teacher.onVoiceChange = () => { if (!closed && index >= 0) go(index); };
   let gsap = null;
@@ -257,11 +258,20 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     for (let k = 0; k < index; k++) {
       if (!steps[k].once) steps[k].show?.(stage, { gsap, instant: true });
     }
+    /* THE DRAWING STARTS WHEN THE VOICE DOES. A line's audio is fetched first (a
+       moment at most, and usually already fetched while the step before was said),
+       so the hand draws while the words about it are being heard, not seconds ahead. */
+    if (speak && playing) {
+      await Promise.race([teacher.prepare?.(steps[index].say), new Promise((r) => setTimeout(r, 2500))]);
+      if (mine !== token || closed) return;
+    }
     steps[index].show?.(stage, { gsap, instant: !gsap });
     scale();
     paintControls();
     teacher.show();
     if (!speak) return;
+    /* and the next line is fetched while this one is said */
+    if (steps[index + 1]?.say) teacher.prepare?.(steps[index + 1].say);
     teacher.speak([{ text: steps[index].say, mode: "speech" }], { colorSeed: index });
     try { await teacher.narrationDone; } catch { /* stopped */ }
     if (mine !== token || closed || !playing) return;
@@ -276,7 +286,9 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
       const left = await think(steps[index].hold, mine);
       if (!left) return;
     }
-    await new Promise((r) => setTimeout(r, 450));
+    /* A PAUSE IS PART OF THE LESSON. A step may ask for one (`pause`, seconds): the
+       silence after a question, or after a thing worth letting sink in. */
+    await new Promise((r) => setTimeout(r, 1000 * (steps[index].pause ?? 0.45)));
     if (mine === token && !closed && playing) go(index + 1);
   }
 

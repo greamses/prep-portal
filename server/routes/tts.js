@@ -355,6 +355,8 @@ module.exports = function () {
       // free; the old classic voices (e.g. "Rachel") were reclassified as
       // Voice-Library voices and now 402 for free accounts via the API.
       const board = req.body?.from === "board";
+      /* a lesson film: the expressive model, a looser delivery, its own recordings */
+      const lesson = req.body?.from === "lesson";
       /* The board's voices: ElevenLabs' default (premade) voices, usable on
          every plan. Only these, so the endpoint cannot be used to spend on
          any voice at all. A board sentence uses the most natural model
@@ -371,10 +373,12 @@ module.exports = function () {
       let { text, voiceId } = req.body;
       /* no voice asked for, "dansum", or one not on the list: Teacher Dansum's voice (Alice when it cannot be found) */
       if (!voiceId || voiceId === "dansum" || !(BOARD_VOICES.has(voiceId) || voiceId === own)) voiceId = own || ALICE;
-      const MODEL = board ? "eleven_multilingual_v2" : "eleven_turbo_v2_5";
-      const SETTINGS = board
-        ? { stability: 0.38, similarity_boost: 0.8, style: 0.28, use_speaker_boost: true }
-        : { stability: 0.45, similarity_boost: 0.75 };
+      const MODEL = board || lesson ? "eleven_multilingual_v2" : "eleven_turbo_v2_5";
+      const SETTINGS = lesson
+        ? { stability: 0.3, similarity_boost: 0.85, style: 0.4, use_speaker_boost: true }
+        : board
+          ? { stability: 0.38, similarity_boost: 0.8, style: 0.28, use_speaker_boost: true }
+          : { stability: 0.45, similarity_boost: 0.75 };
       if (typeof text !== "string" || text.trim().length === 0) {
         return res.status(400).json({ error: "text must be a non-empty string." });
       }
@@ -382,7 +386,7 @@ module.exports = function () {
         return res.status(400).json({ error: `text too long (max ${MAX_CHARS} chars).` });
       }
 
-      const cacheVoice = board ? `${voiceId}~v2` : voiceId; // a board line in the natural model is its own recording
+      const cacheVoice = lesson ? `${voiceId}~lesson` : board ? `${voiceId}~v2` : voiceId; // a board line in the natural model is its own recording
       const { file: cacheFile, url: cacheUrl } = cacheFileFor(cacheVoice, text);
 
       // 1) Static disk hit — hand back the static URL so the browser loads it
