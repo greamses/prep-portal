@@ -89,6 +89,17 @@ const TYPED = {
 
 const OPS = ["+", "-", "*", "/", "^", "^2", "^3", "^-1", "!", "%", "C", "P"];
 
+/* ALT + A LETTER: the keys that are not things you type — modes, memory, the
+   tape — work from the keyboard wherever the calculator has the focus, even
+   while typing on its screen (where plain letters spell sin, cos, …). Read by
+   e.code, so Option on a Mac does not turn them into accented letters. */
+const ALT = {
+  KeyS: "SHIFT", KeyD: "MODE", KeyH: "HIST", KeyM: "MAT", KeyG: "GRAPH", KeyF: "FX",
+  KeyV: "SOLVE", KeyX: "DX", KeyI: "INTEG", KeyA: "Ans", KeyR: "sqrt(", KeyQ: "^2",
+  KeyT: "SD", KeyP: "M+", KeyO: "MR", KeyN: "neg", KeyC: "AC", KeyK: "MORE",
+};
+const ALT_NAME = Object.fromEntries(Object.entries(ALT).map(([code, k]) => [k, `Alt+${code.slice(3)}`]));
+
 /** A result's own rough shape, so history shows it the way the screen did. */
 const say = (v) => format(v);
 
@@ -839,7 +850,18 @@ export function mountCalculator(el, { state = null, onChange = () => {}, onClose
     press(shift && b.dataset.s ? b.dataset.s : b.dataset.k);
   });
 
+  /* each key's name says its shortcut */
+  el.querySelectorAll("[data-k]").forEach((b) => {
+    const sc = ALT_NAME[b.dataset.k];
+    if (sc) b.dataset.tip = `${b.getAttribute("aria-label") || b.dataset.k} (${sc})`;
+  });
   el.addEventListener("keydown", (e) => {
+    if (e.altKey && !e.ctrlKey && !e.metaKey && ALT[e.code]) {
+      e.preventDefault();
+      e.stopPropagation();
+      press(ALT[e.code]);
+      return;
+    }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === "Escape" && onClose) { onClose(); return; }
     /* a REAL <input> — a matrix cell, a coefficient, or the screen itself —
