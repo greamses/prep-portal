@@ -532,6 +532,7 @@ const Quiz = (() => {
             : q.explanation || "",
           image: q.image || "",
           hint: q.hint || "",
+          film: (q && q.film) || null,
           type: "objective",
           subject: sub,
           examType: PAGE_CONFIG.examType,
@@ -559,6 +560,7 @@ const Quiz = (() => {
               : "",
           image: (q && q.image) || "",
           hint: (q && q.hint) || "",
+          film: (q && q.film) || null,
           type: "theory",
           subject: sub,
           examType: PAGE_CONFIG.examType,
@@ -683,6 +685,8 @@ const Quiz = (() => {
             video: q.video || "",
             videoScope: q.videoScope || "question",
             hint: q.hint || "",
+            film: (q && q.film) || null,
+          film: (q && q.film) || null,
             // Keep the real free-response style (short/subjective/theory) so the
             // viewer can pick the right input; default to theory.
             type: isMcq ? "objective" : (isFree(q.type) ? q.type : "theory"),
@@ -1758,6 +1762,19 @@ const Quiz = (() => {
     if (submitBtn) submitBtn.style.display = isLast ? "inline-flex" : "none";
   }
 
+  /* A question that names a film (bank field `film`): PrepBot works it on his TV
+     (utils/components/workbook/cbt-films.js). Shown wherever the answer is shown:
+     the feedback strip under the question, and every question in the results review. */
+  function mountFilm(box, q) {
+    if (!box || !q || !q.film || box.querySelector("[data-tvlesson]")) return;
+    import("/utils/components/workbook/tv-lessons.js")
+      .then(({ lessonStrip }) => {
+        if (!box.isConnected || box.querySelector("[data-tvlesson]")) return;
+        box.insertAdjacentHTML("beforeend", lessonStrip(q.film, "How to solve this question"));
+      })
+      .catch((e) => console.warn("PrepBot film:", e.message));
+  }
+
   function renderFeedback(idx) {
     const strip = document.getElementById("feedback-strip");
     const label = document.getElementById("feedback-label");
@@ -1844,15 +1861,7 @@ const Quiz = (() => {
     // step). All the heavy lifting lives in animator.js.
     if (acts && window.MathAnimator) window.MathAnimator.mountButton(acts, q);
 
-    // A question that names a film: PrepBot works it on his TV (utils/components/workbook/cbt-films.js)
-    if (acts && q.film && !acts.querySelector("[data-tvlesson]")) {
-      import("/utils/components/workbook/tv-lessons.js")
-        .then(({ lessonStrip }) => {
-          if (!acts.isConnected || acts.querySelector("[data-tvlesson]")) return;
-          acts.insertAdjacentHTML("beforeend", lessonStrip(q.film, "How to solve this question"));
-        })
-        .catch((e) => console.warn("PrepBot film:", e.message));
-    }
+    mountFilm(acts, q);
   }
 
   function selectOption(opt, btn, grid, idx) {
@@ -2080,6 +2089,12 @@ const Quiz = (() => {
             .map((l) => `<p class="expl-line">${escFmt(l)}</p>`)
             .join("");
           body.appendChild(explEl);
+        }
+        if (q.film) {
+          const filmEl = document.createElement("div");
+          filmEl.className = "review-film";
+          body.appendChild(filmEl);
+          mountFilm(filmEl, q);
         }
       } else if (hasKey(q)) {
         const typed = String(chosen || "").trim();

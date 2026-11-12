@@ -876,6 +876,7 @@ module.exports = function () {
     answer: x.answer || null,
     explanation: x.explanation || "", hint: x.hint || "", image: x.image || null,
     video: x.video || null, videoScope: x.videoScope || "question",
+    film: x.film || null,
     paper: x.paperNo || x.paper || null, topic: x.topic || null,
     classLevel: x.classLevel || null, grade: x.grade || null,
     subject: x.subject, subjectLabel: x.subjectLabel, scheme: x.scheme,
