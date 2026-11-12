@@ -70,8 +70,8 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
     <div class="bd-paper" role="group" aria-label="${kind.name}"></div>
     <p class="bd-say" role="status" aria-live="polite"></p>
     <div class="bd-acts">
-      <button class="pp-btn bd-act" type="button" data-do="show">${ICONS.show} Show me one</button>
-      <button class="pp-btn bd-act" type="button" data-do="rub">${ICONS.rub} Rub it out</button>
+      <button class="pp-btn bd-act" type="button" data-do="show" data-tip="Show me one (H)">${ICONS.show} Show me one</button>
+      <button class="pp-btn bd-act" type="button" data-do="rub" data-tip="Rub it out (R)">${ICONS.rub} Rub it out</button>
     </div>`;
   host.appendChild(el);
 
@@ -101,6 +101,8 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
     fillSum();
     draw();
     tell(out.message, "ok");
+    /* set from the keyboard: the pen goes straight to the first figure (or the bring-down) */
+    if (e.submitter == null || e.submitter.matches?.(".bd-act--set")) (boxes[0] || el.querySelector(".bd-bring"))?.focus?.();
   });
 
   /* ── the page ──────────────────────────────────────────────────────────── */
@@ -298,6 +300,33 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
   draw();
   tell(kind.ask(thing).text);
 
+  /* ── THE KEYBOARD ─────────────────────────────────────────────────────
+     The board takes the keys from a press anywhere on it until a press elsewhere.
+     The figures are typed as they always were (Enter offers a box, arrows step
+     between boxes); beside them:
+       W go to the next figure's box · S the sum (type a new one, Enter sets it)
+       B or Space bring the figure down (the one step that is fetched, not typed)
+       H show me one · R rub it out · ? the keys */
+  let armed = false;
+  const arm = (e) => { armed = el.contains(e.target); };
+  document.addEventListener("pointerdown", arm, true);
+  el.addEventListener("focusin", () => { armed = true; });
+  const onKey = (e) => {
+    if (!armed || !el.isConnected || e.ctrlKey || e.metaKey || e.altKey) return;
+    /* the sum's own boxes keep every key (a fraction board takes letters there) */
+    if (e.target.closest?.(".bd-sum")) return;
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const done = () => { e.preventDefault(); e.stopPropagation(); };
+    const bring = el.querySelector(".bd-bring");
+    if ((k === "b" || k === " ") && bring) { done(); bring.click(); setTimeout(() => (boxes[0] || el.querySelector(".bd-bring"))?.focus(), 0); return; }
+    if (k === "w") { done(); (boxes[0] || bring)?.focus(); return; }
+    if (k === "s") { done(); ins[0]?.focus(); ins[0]?.select?.(); return; }
+    if (k === "h") { done(); el.querySelector('[data-do="show"]')?.click(); return; }
+    if (k === "r") { done(); el.querySelector('[data-do="rub"]')?.click(); return; }
+    if (k === "?") { done(); tell("Keys: type the figure (Enter offers it) · W the next box · B or Space bring down · H show me one · R rub it out · S a new sum"); }
+  };
+  document.addEventListener("keydown", onKey, true);
+
   /* The board itself, on its own element — so a test can work the sum through
      from outside without guessing what it is being asked for. */
   el.__board = { thing, kind, draw };
@@ -307,6 +336,6 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
     thing,
     kind,
     focus: () => boxes[0]?.focus(),
-    destroy: () => el.remove(),
+    destroy: () => { el.remove(); document.removeEventListener("pointerdown", arm, true); document.removeEventListener("keydown", onKey, true); },
   };
 }
