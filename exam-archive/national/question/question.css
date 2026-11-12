@@ -1265,3 +1265,8 @@ body {
 .res-attempt__chips { display: inline-flex; flex-wrap: wrap; gap: 0.4rem; }
 .res-attempt__chip { min-width: 2.6rem; }
 .res-attempt__chip.is-on { background: #fff3a8; outline: 2px solid var(--ink, #14130f); outline-offset: 1px; }
+
+/* the hint key is an icon only (the words are its tooltip) */
+.hint-btn--icon { width: 2.2rem; height: 2.2rem; padding: 0; justify-content: center; }
+.hint-btn--icon svg { width: 1.3rem; height: 1.3rem; display: block; }
+.hint-btn--icon.is-open { background: var(--surface-tertiary, #ddd8ce); }

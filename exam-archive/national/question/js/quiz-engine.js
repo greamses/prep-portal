@@ -1539,10 +1539,14 @@ const Quiz = (() => {
     if (hintWrap) {
       hintWrap.innerHTML = "";
       if (q.hint && window.__hintsEnabled !== false) {
+        /* ONE hint key, and it is an icon (the bulb the "Show Hints" setting wears); the words are its tooltip */
         const hBtn = document.createElement("button");
-        hBtn.className = "hint-btn";
+        hBtn.className = "hint-btn hint-btn--icon";
         hBtn.type = "button";
-        hBtn.textContent = "Show hint";
+        hBtn.innerHTML = HINT_BULB;
+        hBtn.dataset.tip = "Show the hint";
+        hBtn.setAttribute("aria-label", "Show the hint");
+        hBtn.setAttribute("aria-expanded", "false");
         const hText = document.createElement("div");
         hText.className = "hint-text";
         hText.innerHTML = escFmt(q.hint);
@@ -1550,7 +1554,11 @@ const Quiz = (() => {
         hBtn.addEventListener("click", () => {
           const open = !hText.hidden;
           hText.hidden = open;
-          hBtn.textContent = open ? "Show hint" : "Hide hint";
+          const label = open ? "Show the hint" : "Hide the hint";
+          hBtn.dataset.tip = label;
+          hBtn.setAttribute("aria-label", label);
+          hBtn.setAttribute("aria-expanded", String(!open));
+          hBtn.classList.toggle("is-open", !open);
           if (!open) typesetEl(hText);
         });
         hintWrap.appendChild(hBtn);
@@ -1605,32 +1613,7 @@ const Quiz = (() => {
     });
     optWrap.appendChild(grid);
 
-    if (!locked && q.hint) {
-      const h = document.createElement("div");
-      h.className = "hint-row";
-
-      const lbl = document.createElement("button");
-      lbl.type = "button";
-      lbl.className = "hint-lbl";
-      lbl.textContent = "Hint";
-      lbl.setAttribute("aria-expanded", "false");
-
-      const body = document.createElement("span");
-      body.className = "hint-body";
-      body.innerHTML = escFmt(q.hint);
-      body.hidden = true;
-
-      lbl.addEventListener("click", () => {
-        const opening = body.hidden;
-        body.hidden = !opening;
-        lbl.setAttribute("aria-expanded", String(opening));
-        h.classList.toggle("hint-row--open", opening);
-      });
-
-      h.appendChild(lbl);
-      h.appendChild(body);
-      optWrap.appendChild(h);
-    }
+    // (one hint key only: the bulb above the options; the second "Hint" label here was removed)
   }
 
   // Stop the browser/password-managers autofilling email/name into answer fields.
@@ -1775,6 +1758,13 @@ const Quiz = (() => {
       .catch((e) => console.warn("PrepBot film:", e.message));
   }
 
+  const HINT_BULB = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
+    + '<path d="M12 2.5a6.5 6.5 0 013.8 11.7c-.5.4-.7.9-.7 1.5H8.9c0-.6-.2-1.1-.7-1.5A6.5 6.5 0 0112 2.5z" fill="var(--accent-warning)"/>'
+    + '<path d="M10.5 6A3.2 3.2 0 0112.8 5.3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.85"/>'
+    + '<rect x="9.2" y="16.4" width="5.6" height="1.9" rx="0.95" fill="var(--accent-secondary)"/>'
+    + '<path d="M10 18.7h4v.5a1.5 1.5 0 01-1.5 1.5h-1A1.5 1.5 0 0110 19.2z" fill="var(--accent-secondary)"/>'
+    + '</svg>';
+
   function renderFeedback(idx) {
     const strip = document.getElementById("feedback-strip");
     const label = document.getElementById("feedback-label");
@@ -1859,7 +1849,7 @@ const Quiz = (() => {
     // Offer an animated walkthrough for science questions (graph + steps
     // for linear equations, otherwise the explanation revealed step by
     // step). All the heavy lifting lives in animator.js.
-    if (acts && window.MathAnimator) window.MathAnimator.mountButton(acts, q);
+    // (the "Watch solution" button was removed: PrepBot's film key is the walkthrough)
 
     mountFilm(acts, q);
   }
