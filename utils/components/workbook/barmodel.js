@@ -234,22 +234,22 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
     (foldable ? `<button type="button" class="pp-btn wb-tint-2 mbb-open">Build the model on a board</button>` : "") +
     `<div class="mbb-tools" role="toolbar" aria-label="Bar model tools">` +
     (start ? key("copy", 3, "Put the printed model on the board") : "") +
-    key("new", 2, "A new bar") +
-    key("more", 1, "Cut into one more equal unit") +
-    key("less", 1, "One equal unit fewer") +
-    key("uup", 1, "Halve every unit — units of units") +
-    key("udn", 1, "Put every pair of units back together") +
-    key("split", 2, "Split the picked bars into their units") +
-    key("join", 2, "Join the picked pieces into one bar, keeping their lines") +
-    key("cut", 3, "Cut: tap a bar where it should break", ' aria-pressed="false"') +
-    key("fill", 2, "Write the same figure in every box of the picked bars") +
-    key("above", 4, "A brace over the picked bars") +
-    key("below", 4, "A brace under the picked bars") +
-    key("side", 4, "A total down the right of the picked (stacked) bars") +
-    key("tone", 2, "The colour of the picked bars") +
-    key("many", 3, "Pick several: taps add to the picking", ' aria-pressed="false"') +
-    key("undo", 1, "Step back", " disabled") +
-    key("del", 4, "Take the picked bars and braces off") +
+    key("new", 2, "A new bar (N)") +
+    key("more", 1, "Cut into one more equal unit (+)") +
+    key("less", 1, "One equal unit fewer (−)") +
+    key("uup", 1, "Halve every unit — units of units (])") +
+    key("udn", 1, "Put every pair of units back together ([)") +
+    key("split", 2, "Split the picked bars into their units (S)") +
+    key("join", 2, "Join the picked pieces into one bar, keeping their lines (J)") +
+    key("cut", 3, "Cut: tap a bar where it should break (X)", ' aria-pressed="false"') +
+    key("fill", 2, "Write the same figure in every box of the picked bars (F)") +
+    key("above", 4, "A brace over the picked bars (O)") +
+    key("below", 4, "A brace under the picked bars (U)") +
+    key("side", 4, "A total down the right of the picked (stacked) bars (T)") +
+    key("tone", 2, "The colour of the picked bars (C)") +
+    key("many", 3, "Pick several: taps add to the picking (M)", ' aria-pressed="false"') +
+    key("undo", 1, "Step back (Ctrl+Z)", " disabled") +
+    key("del", 4, "Take the picked bars and braces off (Delete)") +
     (foldable ? key("fold", 1, "Fold the board away") : "") +
     `<div class="mbb-pot" data-pot hidden>` +
     `<div class="pp-receipt"><div class="pp-receipt__paper"><div class="mbb-pot__in">` +
@@ -375,6 +375,41 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
   }
 
   const pickedBars = () => model.bars.filter((b) => picked.has(b.id));
+
+  /* ── A FIGURE IS SHARED OUT WHEN ITS BAR IS SPLIT ──────────────────────
+     A bar that says 60 and is cut into 3 equal units is three 20s — that is
+     the whole point of the model, and writing the 20s in by hand after the
+     cut was the step children got wrong. The same with a brace: a brace that
+     says 60 over a bar of 3 units puts 20 in each of them. Only figures are
+     shared ("?" or words are left as they are), and a prepbill mark stays on. */
+  const MARKED = (t) => String(t || "").includes(MARK_CHAR);
+  const figure = (t) => {
+    const x = String(t || "").replace(MARK_CHAR, "").replace(/[,\s]/g, "");
+    return /^-?\d+(\.\d+)?$/.test(x) ? Number(x) : null;
+  };
+  const nice = (v) => {
+    const r = Math.round(v * 100) / 100;
+    return String(Number.isInteger(r) ? r : r.toFixed(2).replace(/0+$/, "").replace(/\.$/, ""));
+  };
+  const write = (v, marked) => (marked ? MARK_CHAR : "") + nice(v);
+  /** What a bar is known to be worth in all: its units added up (every one a
+      figure), its one figure when the rest are empty, or a brace's figure over
+      it alone. null when that is not known. */
+  function totalOf(b, labels = b.labels) {
+    const filled = labels.filter((t) => String(t || "").trim());
+    if (filled.length && filled.every((t) => figure(t) !== null)) {
+      if (filled.length === labels.length) return { v: filled.reduce((a, t) => a + figure(t), 0), marked: filled.some(MARKED) };
+      if (filled.length === 1) return { v: figure(filled[0]), marked: MARKED(filled[0]) };
+    }
+    if (filled.length) return null;
+    const br = model.braces.find((x) => x.at !== "side" && x.ids.length === 1 && x.ids[0] === b.id && figure(x.text) !== null);
+    return br ? { v: figure(br.text), marked: MARKED(br.text) } : null;
+  }
+  /** After a bar's units change: each unit its share of what the bar was worth. */
+  function shareOut(b, was) {
+    if (!was) return;
+    b.labels = Array.from({ length: b.n }, () => write(was.v / b.n, was.marked));
+  }
   const snap = (v) => Math.round(v / SNAP) * SNAP;
   /**
    * An end near a line of another bar catches it.
@@ -473,8 +508,10 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
     if (!bars.length) { flash("Tap a bar first to pick it."); return; }
     if (t === "more" || t === "less") {
       change(() => bars.forEach((b) => {
+        const was = totalOf(b);
         b.n = Math.max(1, Math.min(20, b.n + (t === "more" ? 1 : -1)));
         b.labels = Array.from({ length: b.n }, (_, i) => b.labels[i] || "");
+        shareOut(b, was);
       }));
     } else if (t === "uup" || t === "udn") {
       /* UNITS OF UNITS. Halving every unit at once is how a bar model
@@ -482,6 +519,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
          getting there by pressing Units + three times is both slow and wrong,
          because it passes through fifths and sevenths on the way. */
       change(() => bars.forEach((b) => {
+        const was = totalOf(b);
         if (t === "uup") {
           const n = Math.min(20, b.n * 2);
           if (n === b.n) return;
@@ -492,6 +530,7 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
           b.labels = Array.from({ length: n }, (_, i) => b.labels[i * 2] || "");
           b.n = n;
         }
+        shareOut(b, was);
       }));
     } else if (t === "split") {
       /* EVERY UNIT BECOMES A BAR OF ITS OWN, so the pieces can be dragged
@@ -501,6 +540,9 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
       change(() => {
         bars.forEach((b) => {
           if (b.n < 2) return;
+          /* the pieces carry their own share of a figure written for the whole bar (or its brace) */
+          const was = totalOf(b);
+          if (was && !(b.labels.every((x) => figure(x) !== null))) shareOut(b, was);
           const unit = b.w / b.n;
           const made = [];
           for (let i = 0; i < b.n; i++) {
@@ -664,9 +706,16 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
       if (cutX - b.x < 10 || b.x + b.w - cutX < 10) { flash("Too near the end to cut."); return; }
     }
     change(() => {
+      const was = b.n === 1 ? totalOf(b) : null;
       const right = { id: seq++, x: cutX, row: b.row, w: b.x + b.w - cutX, n: b.n > 1 ? b.n - k : 1, tone: b.tone, labels: b.n > 1 ? b.labels.slice(k) : [""] };
+      const whole = b.w;
       b.w = cutX - b.x;
       if (b.n > 1) { b.n = k; b.labels = b.labels.slice(0, k); }
+      /* one figure for a plain bar, cut where it is cut: each piece its part of it */
+      if (was && figure(b.labels[0]) !== null) {
+        b.labels = [write(was.v * (b.w / whole), was.marked)];
+        right.labels = [write(was.v - was.v * (b.w / whole), was.marked)];
+      }
       model.bars.push(right);
       picked = new Set([b.id, right.id]);
     });
@@ -752,6 +801,72 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
     }));
   }
 
+  /* ── THE KEYBOARD ─────────────────────────────────────────────────────
+     The board takes the keys once it has been clicked (or tabbed to):
+       N new bar · Tab / Shift+Tab pick the next / previous bar · Ctrl+A every bar
+       ← → move the picked bars (Shift: ten times as far) · ↑ ↓ up or down a row
+       Alt+← Alt+→ shorter / longer · + − units · ] [ halve / pair units
+       S split · J join · X cut · F fill · O U T brace over / under / total
+       C colour · M pick several · Enter write on the bar · Delete take off
+       Ctrl+Z step back · Esc put the picking down */
+  board.tabIndex = 0;
+  board.setAttribute("aria-label", "Bar model board — press ? for the keys");
+  svg.addEventListener("pointerdown", () => board.focus({ preventScroll: true }), true);
+  /* the board has the keys from a press anywhere on it until a press somewhere else
+     (a focus check alone lost them whenever a key's own click moved the focus) */
+  let armed = false;
+  const arm = (e) => { armed = el.contains(e.target); };
+  document.addEventListener("pointerdown", arm, true);
+  board.addEventListener("focus", () => { armed = true; });
+  const press = (t) => tools.querySelector(`[data-t="${t}"]`)?.click();
+  const KEYS = { n: "new", "+": "more", "=": "more", "-": "less", "_": "less", "]": "uup", "[": "udn",
+    s: "split", j: "join", x: "cut", f: "fill", o: "above", u: "below", t: "side", c: "tone", m: "many" };
+  /* on the document: the focus may be on the page body after a key's own click */
+  const onKey = (e) => {
+    if (e.target.closest?.(".mbb-write, input, textarea, select")) return;
+    if (!armed || !el.isConnected) return;
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const bars = pickedBars();
+    if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); stepBack(); return; }
+    if ((e.ctrlKey || e.metaKey) && k === "a") { e.preventDefault(); picked = new Set(model.bars.map((b) => b.id)); paint(); return; }
+    if (e.ctrlKey || e.metaKey) return;
+    if (k === "?") { e.preventDefault(); flash("Keys: N new · Tab pick · arrows move · Alt+arrows length · + − units · S split · J join · X cut · F fill · O U T braces · Enter write · Delete · Ctrl+Z"); return; }
+    if (k === "Escape") { picked.clear(); pickedBraces.clear(); cutting = false; pot.hidden = true; paint(); return; }
+    if (k === "Delete" || k === "Backspace") { e.preventDefault(); press("del"); return; }
+    if (k === "Tab" && model.bars.length) {
+      e.preventDefault();
+      const order = [...model.bars].sort((a, b) => a.row - b.row || a.x - b.x);
+      const cur = order.findIndex((b) => picked.has(b.id));
+      const next = order[(cur + (e.shiftKey ? -1 : 1) + order.length) % order.length];
+      picked = new Set([next.id]);
+      pickedBraces.clear();
+      paint();
+      return;
+    }
+    if (k === "Enter" && bars.length === 1) {
+      e.preventDefault();
+      const b = bars[0];
+      const i = Math.max(0, b.labels.findIndex((t) => !String(t || "").trim()));
+      editBar(b, b.x + (i + 0.5) * (b.w / b.n));
+      return;
+    }
+    if (k.startsWith("Arrow") && bars.length) {
+      e.preventDefault();
+      const step = e.shiftKey ? 50 : SNAP;
+      change(() => bars.forEach((b) => {
+        if (e.altKey && (k === "ArrowLeft" || k === "ArrowRight")) b.w = Math.max(20, Math.min(W - b.x, b.w + (k === "ArrowRight" ? step : -step)));
+        else if (k === "ArrowLeft") b.x = Math.max(0, b.x - step);
+        else if (k === "ArrowRight") b.x = Math.min(W - b.w, b.x + step);
+        else if (k === "ArrowUp") b.row = Math.max(0, b.row - 1);
+        else if (k === "ArrowDown") b.row = Math.min(rows(), b.row + 1);
+      }));
+      return;
+    }
+    const t = KEYS[k];
+    if (t) { e.preventDefault(); e.stopPropagation(); press(t); }
+  };
+  document.addEventListener("keydown", onKey, true);
+
   paint();
   /* the keys say what they are the way everything else on the bench does */
   mountTooltips();
@@ -762,6 +877,8 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
     clear() { model = blank(); picked.clear(); pickedBraces.clear(); paint(); },
     dispose() {
       document.removeEventListener("pointerdown", shutPot, true);
+      document.removeEventListener("pointerdown", arm, true);
+      document.removeEventListener("keydown", onKey, true);
       el.classList.remove("is-building");
       el.innerHTML = printed;
     },

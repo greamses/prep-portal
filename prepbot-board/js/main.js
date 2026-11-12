@@ -24,6 +24,12 @@ try {
 } catch {}
 
 const $ = (id) => document.getElementById(id);
+/* A KEY MEANT FOR A TOOL is left to it: typing a figure into a bar model or a
+   calculator must not raise PrepBoard's hand, and the arrows on a bar model
+   move a bar, not the board. (A tool that has taken a key says so with
+   preventDefault.) */
+const inTool = (e) => e.defaultPrevented
+  || !!e.target?.closest?.(".wb-panel, .wb-tools, .wb-tools__fly, .pp-tool-access, textarea, select, [contenteditable='true'], input:not(#pb-input)");
 const svg = $("pb-board");
 const caption = $("pb-caption");
 const status = $("pb-status");
@@ -503,6 +509,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   });
   /* starting to type anywhere is a raised hand too */
   document.addEventListener("keydown", (e) => {
+    if (inTool(e)) return;
     if (e.target === input || e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1 || e.key === " ") return;
     if (form.hidden) { handUp(); input.value = e.key; e.preventDefault(); }
   });
@@ -648,6 +655,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   mic.addEventListener("click", (e) => e.preventDefault());
   /* Space, held, when not typing: talk once (with the mic off) */
   document.addEventListener("keydown", (e) => {
+    if (inTool(e)) return;
     if (e.code !== "Space" || e.repeat || e.target === input || e.ctrlKey || e.metaKey) return;
     e.preventDefault();
     if (micOpen) return;
@@ -820,6 +828,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   $("pb-prev").addEventListener("click", () => { current.step(-1); showSeeAll(); });
   $("pb-next").addEventListener("click", () => { current.step(1); showSeeAll(); });
   document.addEventListener("keydown", (e) => {
+    if (inTool(e)) return;
     if (e.target === input || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") { current.step(-1); showSeeAll(); e.preventDefault(); }
     else if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "PageDown") { current.step(1); showSeeAll(); e.preventDefault(); }
@@ -885,6 +894,7 @@ try { handKey = HANDS[localStorage.getItem(HAND_KEY)] ? localStorage.getItem(HAN
   for (const [id, k] of Object.entries(tipKey)) { const n = $(id); if (n?.dataset.tip) n.dataset.tip += ` (${k})`; }
   document.querySelectorAll(".pb-style__btn").forEach((b, i) => { b.dataset.tip += ` (Alt+${i + 1})`; });
   document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" && inTool(e)) return;
     if (e.ctrlKey || e.metaKey) return;
     const typing = e.target === input || e.target?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || "");
     if (e.key === "Escape") {
