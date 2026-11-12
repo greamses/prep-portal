@@ -167,18 +167,38 @@ export function stairs24() {
       mC: () => main([{ k: "a", tex: "1 + 2 + 3 + 4 + 5 + 6" }, { k: "e", tex: "=" }, { k: "b", tex: "21", color: BLUE }]),
       mD: () => main([{ k: "a", tex: "21 \\times 2" }, { k: "e", tex: "=" }, { k: "b", tex: "42", color: GREEN }]),
       mE: () => main([{ k: "a", tex: "6 \\times 7" }, { k: "e", tex: "=" }, { k: "b", tex: "42\\ \\text{blocks}", color: GREEN }], 9),
+      /* GAUSS'S PAIRS: 1 + 2 + ... + 6 with the ends joined, each pair making 7 */
+      gp: () => {
+        const r = mathRow([1, 2, 3, 4, 5, 6].flatMap((v, i) => (i ? [{ k: `p${i}`, tex: "+" }, { k: `n${v}`, tex: String(v) }] : [{ k: `n${v}`, tex: String(v) }])),
+          { cx: 75, y: 44, em: 9 });
+        const x = (v) => r.at[`n${v}`].x;
+        const arc = (a, b, lift, key) => {
+          const y0 = 34, top = y0 - lift;
+          return `<g data-mb="brace" data-mb-key="${key}"><path d="M${x(a).toFixed(2)} ${y0} C${x(a).toFixed(2)} ${top} ${x(b).toFixed(2)} ${top} ${x(b).toFixed(2)} ${y0}" fill="none" stroke="${RED}" stroke-width="0.9" stroke-linecap="round"/>`
+            + texAt("7", (x(a) + x(b)) / 2, top + lift * 0.25 - 1.5, { em: 5.5, color: RED }) + `</g>`;
+        };
+        return svgBox(150, 50, r.svg + arc(1, 6, 26, "a1") + arc(2, 5, 17, "a2") + arc(3, 4, 9, "a3"));
+      },
+      fA: () => main([{ k: "a", tex: "3 \\times 7" }, { k: "e", tex: "=" }, { k: "b", tex: "\\dfrac{6 \\times 7}{2}" }, { k: "e2", tex: "=" }, { k: "c", tex: "21", color: BLUE }]),
+      fB: () => main([{ k: "a", tex: "1 + 2 + \\cdots + n" }, { k: "e", tex: "=" }, { k: "b", tex: "\\dfrac{n(n+1)}{2}", color: BLUE }]),
+      fC: () => main([{ k: "a", tex: "\\text{blocks}" }, { k: "e", tex: "=" }, { k: "b", tex: "2 \\times \\dfrac{n(n+1)}{2}" }, { k: "e2", tex: "=" }, { k: "c", tex: "n(n+1)", color: GREEN }]),
+      fD: () => main([{ k: "a", tex: "n = 100:" }, { k: "b", tex: "100 \\times 101" }, { k: "e", tex: "=" }, { k: "c", tex: "10{,}100", color: GREEN }]),
+      gR: () => main([{ k: "a", tex: "\\text{blocks}" }, { k: "e", tex: "=" }, { k: "b", tex: "n \\times (n + 1)", color: GREEN }]),
+      sF: () => side([[{ k: "a", tex: "n = 3:\\ 3 \\times 4 = 12\\ \\checkmark" }], [{ k: "b", tex: "n = 6:\\ 6 \\times 7 = 42\\ \\checkmark" }]], 4.6),
+      sG: () => side([[{ k: "a", tex: "10 \\times 11 = 110" }], [{ k: "b", tex: "100 \\times 101 = 10{,}100" }]], 4.8),
       sI: () => svgBox(SIDE_W, 46, `<svg x="10" y="0" width="28" height="34.5" viewBox="0 0 120 148">${ISO}</svg>`
         + texAt("\\text{2 blocks deep}", SIDE_W / 2, 43, { em: 4.4, color: RED, attrs: 'data-mb="num" data-k="t"' })),
       s3: () => side([[{ k: "a", tex: "3 \\times 4 = 12" }], [{ k: "b", tex: "\\checkmark\\ \\text{all 12 blocks}", color: GREEN }]]),
     },
     picAt: {
-      iso: at(17), big: at(15), p3: at(18), p6: at(17), r3: at(17), r6: at(16),
+      iso: at(17), big: at(15), p3: at(18), p6: at(17), r3: at(17), r6: at(13.5),
       mA: at(38.5), mB: at(38.5), mC: at(38.5), mD: at(38.5), mE: at(38),
-      sI: { x: 79.5, y: 18 }, s3: { x: 79.5, y: 22 },
+      sI: { x: 79.5, y: 18 }, s3: { x: 79.5, y: 22 }, sF: { x: 79.5, y: 20 }, sG: { x: 79.5, y: 20 },
+      gp: at(14), fA: at(38.5), fB: at(38.5), fC: at(20), fD: at(31), gR: at(37.5),
     },
     lines: [
-      { id: "m1", receipt: true, sub: "Method 1", text: "Look from the side", y: 49 },
-      { id: "m2", receipt: true, sub: "Method 2", text: "Make a rectangle", y: 49 },
+      { id: "m1", receipt: true, sub: "Method 1", text: "Look from the side", y: 50.5 },
+      { id: "m2", receipt: true, sub: "Method 2", text: "Make a rectangle", y: 50.5 },
     ],
     stages: {
       "iso.build": (s, H) => build(s, H, "k", 12, 0.22),
@@ -199,6 +219,19 @@ export function stairs24() {
       "r6.front": (s, H) => { for (let i = 1; i <= 6; i++) write(s, H, column("f", i), (i - 1) * 0.25, 0.05); },
       "r6.back": (s, H) => { let d = 0; for (let i = 6; i >= 1; i--) for (let h = 7; h > i; h--) { const n = key(s, `b${i}_${h}`); if (n) H.drop(n, d); d += 0.07; } },
       "r6.frame": (s, H) => { H.draw(braceOf(s, "frame"), 0); write(s, H, ["wa", "hu"], 0.6, 0.5); },
+      "gp.row": (s, H) => write(s, H, ["n1", "p1", "n2", "p2", "n3", "p3", "n4", "p4", "n5", "p5", "n6"], 0, 0.12),
+      "gp.a1": (s, H) => H.draw(braceOf(s, "a1"), 0),
+      "gp.a2": (s, H) => H.draw(braceOf(s, "a2"), 0),
+      "gp.a3": (s, H) => H.draw(braceOf(s, "a3"), 0),
+      "fA.all": (s, H) => write(s, H, ["a", "e", "b", "e2", "c"], 0, 0.45),
+      "fB.all": (s, H) => write(s, H, ["a", "e", "b"], 0, 0.6),
+      "fC.all": (s, H) => { write(s, H, ["a", "e", "b"], 0, 0.5); write(s, H, ["e2", "c"], 2.2, 0.5); H.sound("ding", 2.8); },
+      "fD.all": (s, H) => { write(s, H, ["a", "b", "e"], 0, 0.4); write(s, H, ["c"], 1.8); H.sound("ding", 2.0); },
+      "gR.all": (s, H) => write(s, H, ["a", "e", "b"], 0, 0.5),
+      "sF.a": (s, H) => write(s, H, ["a"], 0),
+      "sF.b": (s, H) => write(s, H, ["b"], 0),
+      "sG.a": (s, H) => write(s, H, ["a"], 0),
+      "sG.b": (s, H) => { write(s, H, ["b"], 0); H.sound("ding", 0.6); },
       "mE.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.4); write(s, H, ["b"], 1.0); H.sound("ding", 1.2); },
     },
     steps: ({ push }) => {
@@ -225,8 +258,23 @@ export function stairs24() {
       push("So she needs forty two blocks. Here they are, all forty two. Option A.",
         { on: ["big"], off: ["p6"], add: ["big.build"], cue: { "big.build": "here they are" }, pause: 1.4 });
 
+      push("Now, what if she wanted a hundred stairs? Nobody wants to add up a hundred numbers. Let's find a shortcut.",
+        { on: ["gp"], off: ["big", "mD"], add: ["gp.row"], cue: { "gp.row": "add up" }, pause: 0.8 });
+      push("Pair them from the ends. One and six make seven. Two and five, seven. Three and four, seven.",
+        { add: ["gp.a1", "gp.a2", "gp.a3"], cue: { "gp.a1": "one and six", "gp.a2": "two and five", "gp.a3": "three and four" }, pause: 0.6 });
+      push("Three pairs of seven. Twenty one, the same as before. And three pairs is half of six.",
+        { on: ["fA"], add: ["fA.all"], cue: { "fA.all": "three pairs" }, pause: 0.8 });
+      push("So for any number of stairs, call it n: there are n over two pairs, and each pair makes n plus one. So the side is n times n plus one, over two.",
+        { on: ["fB"], off: ["fA"], add: ["fB.all"], cue: { "fB.all": "so the side" }, pause: 0.8 });
+      push("And the staircase is two blocks deep, so we double it. The two cancels the half. Blocks equal n times n plus one.",
+        { on: ["fC"], off: ["fB", "gp"], add: ["fC.all"], cue: { "fC.all": "double it" }, pause: 0.8 });
+      push("Check it. Three stairs: three times four, twelve. Six stairs: six times seven, forty two.",
+        { on: ["sF"], add: ["sF.a", "sF.b"], cue: { "sF.a": "three stairs", "sF.b": "six stairs" }, pause: 0.8 });
+      push("So a hundred stairs is a hundred times a hundred and one. Ten thousand one hundred blocks.",
+        { on: ["fD"], add: ["fD.all"], cue: { "fD.all": "a hundred times" }, pause: 1.2 });
+
       push("Now a quicker way. It's a lovely one.",
-        { on: ["m2"], off: ["p6", "big", "mD", "m1"], transition: { kind: "card", title: "Method 2", sub: "Make a rectangle", hold: 1.6 }, pause: 0.6 });
+        { on: ["m2"], off: ["p6", "big", "mD", "m1", "fC", "fD", "sF"], transition: { kind: "card", title: "Method 2", sub: "Make a rectangle", hold: 1.6 }, pause: 0.6 });
       push("Back to three stairs. Here's the front layer of the staircase.",
         { on: ["r3"], add: ["r3.front"], cue: { "r3.front": "front layer" }, pause: 0.6 });
       push("Now take the back layer, turn it upside down, and put it on top.",
@@ -240,7 +288,12 @@ export function stairs24() {
           cue: { "r6.front": "same thing", "r6.back": "six across", "r6.frame": "one more" }, pause: 0.8 });
       push("Six times seven... forty two.", { on: ["mE"], add: ["mE.all"], cue: { "mE.all": "six times" }, pause: 1 });
       push("Same answer, and no adding up at all.", { pause: 0.8 });
-      push("So for a staircase two blocks deep, the blocks are the number of stairs, times one more. Three times four. Six times seven. Try ten stairs yourself.");
+      push("And the rectangle gives us the formula straight away. It's always n across, and one more, n plus one, up. So the blocks are n times n plus one.",
+        { on: ["gR"], off: ["mE"], add: ["gR.all"], cue: { "gR.all": "so the blocks" }, pause: 0.8 });
+      push("Ten stairs: ten times eleven, a hundred and ten.", { on: ["sG"], add: ["sG.a"], cue: { "sG.a": "ten times" }, pause: 0.6 });
+      push("A hundred stairs: a hundred times a hundred and one. Ten thousand one hundred.",
+        { add: ["sG.b"], cue: { "sG.b": "a hundred times" }, pause: 1 });
+      push("Two ways, one formula. For a staircase two blocks deep, the blocks are n times n plus one. Try twenty stairs yourself.");
     },
   });
 }
