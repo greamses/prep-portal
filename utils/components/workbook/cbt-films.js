@@ -156,75 +156,107 @@ export function loss25() {
       "eq.ans": (s, H) => H.flip(markOf(s, "cost"), f(COST), 0.4),
     },
     steps: ({ push, look }) => {
+      /* Spoken the way the user wrote it out (2026-11-12): short breaths, "so", "um", "hmm", "eh",
+         a check-in every few lines. See .claude/skills/prepbot-lesson-voice, section 2b. */
+      const say = (...lines) => lines.join(" ");
+
       /* ── METHOD ONE: THE BOX METHOD ── */
-      push(`Read the question with me first, slowly, because every word in it is doing a job. A computer set was `
-        + `SOLD for fifty-seven thousand, and the seller made a loss of twenty-five per cent on the cost price. `
-        + `The cost price is what he paid for it in the first place, and that is the number we are hunting. `
-        + `So I draw the cost price as one whole bar, and I put a question mark in it, because we do not know it yet.`,
-        { on: ["a1", "b0", "m1"], add: ["b0.draw"] });
+      push(say(
+        "So um, someone bought a computer set.",
+        "Later, they sold that same computer set for fifty seven thousand naira.",
+        "But hmm, they did not make money o. They actually sold it at a loss.",
+        "They lost twenty five percent. Twenty five percent of what they BOUGHT it for, you get?",
+        "So what they bought it for is the big number we don't know yet. That is the one we are hunting, right?",
+        "So picture it like this, eh. One whole bar. That bar is what they bought it for.",
+        "We don't know it yet, so let's just put a question mark inside it. Just like that.",
+      ), { on: ["a1", "b0", "m1"], add: ["b0.draw"] });
 
-      push(`Now, twenty-five per cent. Say it the friendly way: twenty-five out of a hundred is a QUARTER. `
-        + `So I cut the cost price into four equal boxes, and each box is twenty-five per cent of it. `
-        + `Watch the cuts: one, two, three. Four boxes, all the same size, and together they are still the whole `
-        + `cost price. Cutting a bar never changes how much there is.`,
-        { on: ["b1", "l1"], off: ["b0"], add: ["b1.cut"] });
+      push(say(
+        "Now, twenty five percent. Hmm, twenty five out of a hundred. What is that, in a simpler way?",
+        "It is a quarter. One out of four.",
+        "So I'm going to cut our bar into four equal boxes. Watch. One cut, two cuts, three cuts.",
+        "Four boxes now, all the same size, and each box is twenty five percent.",
+        "And see, the bar is still the same bar o. Cutting it did not make it bigger or smaller.",
+      ), { on: ["b1", "l1"], off: ["b0"], add: ["b1.cut"] });
 
-      push(`A loss of twenty-five per cent means he lost ONE of those boxes. He did not get it back when he sold. `
-        + `So I colour the last box differently and label it: lost. And here is the trap. Lots of people take `
-        + `twenty-five per cent of fifty-seven thousand. Do not. The loss is a quarter of the COST price, the bar `
-        + `we do not know, not a quarter of the selling price.`,
-        { on: ["b2", "l2"], off: ["b1"], add: ["b2.lose"],
-          look: look.mark("b2", "bar", BOXES - 1), lookAt: { lit: true, delay: 1.2, hold: 2.2 } });
+      push(say(
+        "Okay so, they lost twenty five percent. That's ONE box.",
+        "Let me colour that last box differently and write lost on it. That box is gone, they never got it back.",
+        "Now wait, eh, this is where people fall.",
+        "Some people will quickly take twenty five percent of fifty seven thousand. Don't do that o.",
+        "The loss is a quarter of what they BOUGHT it for, the big bar we don't know. Not a quarter of fifty seven thousand.",
+      ), { on: ["b2", "l2"], off: ["b1"], add: ["b2.lose"],
+        look: look.mark("b2", "bar", BOXES - 1), lookAt: { lit: true, delay: 1.6, hold: 2.2 } });
 
-      push(`So what did he actually get paid? The other three boxes. Three boxes is the fifty-seven thousand. `
-        + `That one sentence is the whole question, and the picture gave it to us: three equal boxes make `
-        + `fifty-seven thousand.`,
-        { on: ["l3"], add: ["b2.sold"],
-          look: look.brace("b2", "above-0-0"), lookAt: { lit: true, delay: 0.9, hold: 2.0 } });
+      push(say(
+        "So, what did they actually collect when they sold it?",
+        "The other three boxes. Just the three.",
+        "And that is the fifty seven thousand. So fifty seven thousand is not the full bar o, it's what is left after the loss.",
+        "Three boxes, fifty seven thousand. You follow me so far?",
+      ), { on: ["l3"], add: ["b2.sold"],
+        look: look.brace("b2", "above-0-0"), lookAt: { lit: true, delay: 1.2, hold: 2.0 } });
 
-      push(`If three boxes are fifty-seven thousand, how much is ONE box? Share it into three. Fifty-seven `
-        + `thousand divided by three is nineteen thousand. Find one box first, always. Then I write nineteen `
-        + `thousand in every box, the lost one too, because all four boxes are the same size.`,
-        { on: ["b3", "l4"], off: ["b2"], add: ["b3.each"],
-          look: look.tile("l4"), lookAt: { delay: 2.4, hold: 2.0 } });
+      push(say(
+        "Now, if three boxes make fifty seven thousand, how much is ONE box?",
+        "Hmm, we share fifty seven thousand into three.",
+        "Fifty seven thousand divided by three. That's nineteen thousand.",
+        "So one box is nineteen thousand. Let me write it in every box, the lost one too,",
+        "because remember, all the boxes are the same size, eh.",
+      ), { on: ["b3", "l4"], off: ["b2"], add: ["b3.each"],
+        look: look.tile("l4"), lookAt: { delay: 2.8, hold: 2.0 } });
 
-      push(`And the cost price is all four boxes. Four nineteen thousands: seventy-six thousand. So the computer `
-        + `cost seventy-six thousand. Check it, every time. He lost one box, nineteen thousand. Seventy-six `
-        + `thousand take away nineteen thousand is fifty-seven thousand, the price in the question. It comes back, `
-        + `so the answer is option E.`,
-        { on: ["l5", "l6"], add: ["b3.cost"] });
+      push(say(
+        "And what they bought it for is the whole bar. All four boxes.",
+        "Four times nineteen thousand. Seventy six thousand.",
+        "So they bought it for seventy six thousand naira.",
+        "Let's check it sha. They lost one box, nineteen thousand. Seventy six thousand minus nineteen thousand is",
+        "fifty seven thousand. That's exactly the price in the question. It works.",
+        "So the answer is E, seventy six thousand.",
+      ), { on: ["l5", "l6"], add: ["b3.cost"] });
 
       /* ── METHOD TWO: EQUIVALENT FRACTIONS ── */
-      push(`Now the same question a second way, with no boxes at all, so you can choose the one you like. `
-        + `If he lost twenty-five per cent, what part of the cost price did he still get? A hundred per cent take `
-        + `away twenty-five per cent: seventy-five per cent.`,
-        { on: ["m2", "k1"], off: ["b3", "m1", "l1", "l2", "l3", "l4", "l5", "l6"] });
+      push(say(
+        "Okay, now let me show you another way. No boxes this time, just fractions.",
+        "So, they lost twenty five percent. What part did they still get?",
+        "A hundred percent minus twenty five percent. Seventy five percent.",
+        "So they sold it for seventy five percent of what they bought it for, right?",
+      ), { on: ["m2", "k1"], off: ["b3", "m1", "l1", "l2", "l3", "l4", "l5", "l6"] });
 
-      push(`Seventy-five per cent is seventy-five out of a hundred, and that fraction makes smaller. Divide the top `
-        + `and the bottom by twenty-five, and you get three quarters. Three quarters of the cost price. Notice it `
-        + `is the very same three boxes out of four we drew a minute ago, written as a fraction.`,
-        { on: ["k2", "eq"], add: ["eq.left"] });
+      push(say(
+        "Seventy five percent is seventy five over a hundred. Hmm, we can make that smaller.",
+        "Divide the top and the bottom by twenty five, and you get three over four. Three quarters.",
+        "And look, eh, it's the same thing as before. Three boxes out of four.",
+      ), { on: ["k2", "eq"], add: ["eq.left"] });
 
-      push(`So write the sentence as two fractions that are EQUAL. Sold over cost. On the left, three over four. `
-        + `On the right, the real money: fifty-seven thousand on top, because that is what he sold it for, and a `
-        + `question mark underneath, because the cost is what we want. Top goes with top, bottom goes with bottom.`,
-        { add: ["eq.right"] });
+      push(say(
+        "Now, the selling price over what they bought it for. That's also three quarters.",
+        "So on the other side, I put fifty seven thousand on top, because that is what they sold it for.",
+        "And underneath, what they bought it for. We don't know it, so, question mark.",
+        "Top goes with top, bottom goes with bottom. You get?",
+      ), { add: ["eq.right"] });
 
-      push(`Equivalent fractions are made by multiplying the top and the bottom by the SAME number. So look at the `
-        + `tops. What turns three into fifty-seven thousand? Fifty-seven thousand divided by three is nineteen `
-        + `thousand. So the top was multiplied by nineteen thousand. Same number as one box, you see.`,
-        { on: ["k3"], add: ["eq.over"],
-          look: look.tile("k3"), lookAt: { delay: 2.2, hold: 2.0 } });
+      push(say(
+        "Now, these two fractions are EQUAL. Equivalent fractions.",
+        "And to make equivalent fractions, you multiply the top and the bottom by the same number.",
+        "So look at the tops. Three becomes fifty seven thousand. Three times what?",
+        "Hmm, fifty seven thousand divided by three. Nineteen thousand.",
+        "So the top was multiplied by nineteen thousand. Same as one box, you see?",
+      ), { on: ["k3"], add: ["eq.over"],
+        look: look.tile("k3"), lookAt: { delay: 2.6, hold: 2.0 } });
 
-      push(`And whatever you do to the top, you must do to the bottom, or the fractions stop being equal. `
-        + `Four times nineteen thousand is seventy-six thousand. So the question mark is seventy-six thousand, `
-        + `and the cost price is seventy-six thousand, the same answer as the boxes gave us.`,
-        { on: ["k4", "k5"], add: ["eq.under", "eq.ans"] });
+      push(say(
+        "And whatever you do to the top, you must do to the bottom o. Otherwise they won't be equal again.",
+        "So four times nineteen thousand. Seventy six thousand.",
+        "There's our question mark. Seventy six thousand naira. Same answer as the boxes.",
+      ), { on: ["k4", "k5"], add: ["eq.under", "eq.ans"] });
 
-      push(`Two ways, one answer. The boxes let you SEE that three quarters of the cost is fifty-seven thousand. `
-        + `The fractions say the same thing in numbers. And whichever you use, remember the trap: a loss or a profit `
-        + `is a part of the COST price, so the cost price is the whole, the four boxes, the bottom of the fraction.`,
-        { play: (S, H, stage) => runLit(H, stage, ["k1", "k2", "k3", "k4"]) });
+      push(say(
+        "So you see, two ways, one answer.",
+        "The boxes help you SEE it. Three boxes out of four is fifty seven thousand.",
+        "The fractions say the same thing with numbers.",
+        "Just remember this one thing, eh. A loss, or a profit, is always a part of what they BOUGHT it for.",
+        "That's the whole bar. The four boxes. The bottom of the fraction. Don't forget it o.",
+      ), { play: (S, H, stage) => runLit(H, stage, ["k1", "k2", "k3", "k4"]) });
     },
   });
 }

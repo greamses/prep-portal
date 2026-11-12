@@ -50,6 +50,49 @@ Each step should do most of these, in roughly this order:
   not one board. Twenty figures pass on one Toy Shop bill, and a tutor who says
   "Right" twenty times has stopped being listened to by the third.
 
+## 2b. Talk like the user talks (2026-11-12, the house register)
+
+The user wrote out how a film should SOUND, and this is now the default for
+every new narration:
+
+> so um, someone bought a computer set
+> later, they sold that same computer set for fifty seven thousand naira
+> but hmm, they did not make money o, they actually sold it at a loss
+> they lost twenty five percent
+> twenty five percent of what they bought it for, you get
+> so what they bought it for is the big number we dont know yet, that is the one we are hunting, right
+> so picture it like this, eh
+> draw one whole bar in your mind, that bar is what they bought it for
+> we dont know it yet so lets just put a question mark inside it, just like that
+> [...]
+> you follow me so far
+
+What makes it work:
+
+- **Short spoken lines, one idea each.** A line is one breath. Build a step's
+  `say` from a list of these (`say(...lines)` joined with spaces). Do not
+  write paragraphs.
+- **Fillers and thinking sounds, sparingly:** "so", "so um", "hmm", "okay so",
+  "now wait". Use one or two per step, at the START of a thought, the way a
+  teacher thinks out loud. Never put two together.
+- **Check-ins:** "you get?", "right?", "you follow me so far?", "you see?". End
+  about every second step on one, so the child feels asked.
+- **Warm particles:** "eh", "o", "sha", the way the user speaks. Use them at the
+  end of a line to soften it or press a warning ("Don't do that o."). One or
+  two per step.
+- **Plain words for the maths terms.** Say "what they bought it for" before (and
+  more often than) "cost price". Say "a quarter" before "twenty five percent".
+- **Numbers in words** in the line ("fifty seven thousand"), since that is how
+  they are said.
+- **"Just" is fine here** when it means "only" or "like this" ("just the three",
+  "just like that"). It is still banned in its belittling sense ("you just
+  divide").
+
+The same rules still hold underneath: point at what is drawn, say why, name
+the trap, and keep the words in step with the picture. This register replaces
+the longer, written-sounding sentences of the older films. The first film in it
+is `loss-25` (utils/components/workbook/cbt-films.js).
+
 ## 3. Never
 
 - **No emojis.** Site-wide rule, and they are unspeakable anyway.
