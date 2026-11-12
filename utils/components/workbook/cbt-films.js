@@ -113,10 +113,14 @@ const centred = (wMm, y) => ({ x: 50 - (wMm * K_) / 2, y });
      cfg.steps({ push, look, BOXES })   the narration, using the stage keys below
    ------------------------------------------------------------------------*/
 function partWhole(cfg) {
-  const { N, K, known } = cfg;
+  /* FORWARD: the whole is known and the part is found (a price after a loss, a profit, a discount).
+     Otherwise the part is known and the whole is found. */
+  const FWD = !!cfg.forward;
+  const { N, K } = cfg;
   const BOXES = N;
-  const UNIT = known / K;
-  const WHOLE = UNIT * N;
+  const UNIT = FWD ? cfg.whole / N : cfg.known / K;
+  const WHOLE = FWD ? cfg.whole : UNIT * N;
+  const known = FWD ? UNIT * K : cfg.known;      // the part, whichever way round it was given
   const L = cfg.labels;
   const f = (n) => n.toLocaleString("en-US");
   const t = (n) => f(n).replace(/,/g, "{,}");  // a figure in TeX
@@ -154,10 +158,12 @@ function partWhole(cfg) {
   /* the equivalent-fraction board: K/N = known/?, with the arrows that say "times the same number" */
   const EQ_W = 150, EQ_H = 62;
   const eqSvg = () => {
-    const r = mathRow([{ k: "L", frac: [String(K), String(N)] }, { gap: 6 }, { k: "eq", tex: "=" }, { gap: 6 }, { k: "R", frac: [t(known), "?"] }],
+    const r = mathRow([{ k: "L", frac: [String(K), String(N)] }, { gap: 6 }, { k: "eq", tex: "=" }, { gap: 6 }, { k: "R", frac: FWD ? ["?", t(WHOLE)] : [t(known), "?"] }],
       { cx: EQ_W / 2 - 6, y: 34, em: 11 });
     const Lf = r.at.L, Rr = r.at.R;
-    const ans = texAt(t(WHOLE), Rr.x, Rr.botBase, { em: 11, color: GREEN, attrs: 'data-mb="num" data-k="ans"' });
+    const ans = FWD
+      ? texAt(t(known), Rr.x, Rr.topBase, { em: 11, color: GREEN, attrs: 'data-mb="num" data-k="ans"' })
+      : texAt(t(WHOLE), Rr.x, Rr.botBase, { em: 11, color: GREEN, attrs: 'data-mb="num" data-k="ans"' });
     const word = (k, txt, y) => texAt(`\\text{${txt}}`, Rr.x + Rr.w / 2 + 4, y, { em: 5, color: GREY, anchor: "start", attrs: `data-mb="name" data-k="${k}"` });
     /* AN ARROW'S HEAD LIES ALONG THE ARROW. It is worked out from the direction the curve is
        travelling as it arrives (from its control point to its end), so it points where the curve
@@ -174,7 +180,7 @@ function partWhole(cfg) {
       return `<g data-mb="brace" data-mb-key="${k}"><path d="M${x1.toFixed(2)} ${y.toFixed(2)} Q${cx.toFixed(2)} ${cy.toFixed(2)} ${x2.toFixed(2)} ${y.toFixed(2)} ${head(0.45)} ${head(-0.45)}" fill="none" stroke="${RED}" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"/></g>`;
     };
     const topY = Lf.topBase - Lf.topAsc - 2, botY = Lf.botBase + 3;
-    const end = Rr.x - Rr.topW / 2 - 3;
+    const end = Rr.x - Math.max(Rr.topW, Rr.botW) / 2 - 3;
     return svgBox(EQ_W, EQ_H, r.svg + ans
       + word("ws", L.wordTop, Lf.topBase) + word("wc", L.wordBottom, Lf.botBase)
       + arc("over", Lf.x + 2, end, topY, true) + arc("under", Lf.x + 2, end, botY, false)
@@ -190,6 +196,9 @@ function partWhole(cfg) {
     if (n.getAttribute("data-mb") === "cut") H.score(n, start + i * gap, 0.4); else H.write(n, start + i * gap);
   });
   const fracKeys = (k) => [`${k}n`, `${k}r`, `${k}d`];
+  /* THE BOXES THAT WILL BE LOST STAY THE WHOLE'S COLOUR until the words about them take it away:
+     the drawing gives them their colour, so without this they were pink before anyone said why */
+  const plain = (s) => { const b = mb(s, "bar"); b.slice(SHARED, N).forEach((n) => { n.style.fill = b[0].getAttribute("fill"); }); };
   const B = cfg.box, F = cfg.frac;
 
   return film({
@@ -199,23 +208,28 @@ function partWhole(cfg) {
     asks: [{ id: "a1", text: cfg.question }],
     pics: {
       /* ── method one: the bar ── */
-      b0: () => bars([{ parts: [part("?", N, "a")], below: [{ from: 0, to: 1, text: `${L.whole} = ?` }] }]),
-      b1: () => bars([{ parts: boxes(`${100 / N}%`), below: [{ from: 0, to: N, text: `${L.whole} = ?` }] }]),
+      b0: () => bars([{ parts: [part(FWD ? f(WHOLE) : "?", N, "a")], below: [{ from: 0, to: 1, text: FWD ? L.whole : `${L.whole} = ?` }] }]),
+      b1: () => bars([{ parts: boxes(`${100 / N}%`), below: [{ from: 0, to: N, text: FWD ? `${L.whole} = ${f(WHOLE)}` : `${L.whole} = ?` }] }]),
       b2: () => bars([{ parts: boxes(`${100 / N}%`, "d"), above: tops, below: lows(`${L.whole} = ?`) }]),
-      b3: () => bars([{ parts: boxes(f(UNIT), "d"), above: tops, below: lows(L.whole) }]),
+      b3: () => bars([{ parts: boxes(f(UNIT), "d"), above: FWD ? tops.map((b, i) => (i ? b : { ...b, text: `${L.part} = ?` })) : tops,
+        below: lows(FWD ? `${L.whole} = ${f(WHOLE)}` : L.whole) }]),
       /* the working under it, one line at a time */
       mA: () => main([{ k: "p", tex: `${B.pct}\\%` }, { k: "e1", tex: "=" }, { k: "f", frac: [String(B.pct), "100"] }, { k: "e2", tex: "=" }, { k: "q", frac: [String(B.top), String(B.bot)], color: BLUE }],
         (at) => reduceMarks(at.f, "f", String(B.top), String(B.bot), 8)),
-      mB: () => main([{ k: "a", tex: `${K}\\ \\text{boxes}` }, { k: "e", tex: "=" }, { k: "b", tex: t(known) }]),
-      mC: () => main([{ k: "a", tex: "1\\ \\text{box}" }, { k: "e", tex: "=" }, { k: "b", tex: `${t(known)} \\div ${K}` }, { k: "e2", tex: "=" }, { k: "c", tex: t(UNIT), color: BLUE }]),
-      mD: () => main([{ k: "a", tex: `${N}\\ \\text{boxes}` }, { k: "e", tex: "=" }, { k: "b", tex: `${N} \\times ${t(UNIT)}` }, { k: "e2", tex: "=" }, { k: "c", tex: t(WHOLE), color: GREEN }]),
-      mE: () => main([{ k: "a", tex: `\\text{${L.whole}}` }, { k: "e", tex: "=" }, { k: "c", tex: `${L.money ? `\\text{${L.money}}` : ""}${t(WHOLE)}`, color: GREEN }], () => "", 9),
+      mB: () => main(FWD ? [{ k: "a", tex: `${N}\\ \\text{boxes}` }, { k: "e", tex: "=" }, { k: "b", tex: t(WHOLE) }]
+        : [{ k: "a", tex: `${K}\\ \\text{boxes}` }, { k: "e", tex: "=" }, { k: "b", tex: t(known) }]),
+      mC: () => main([{ k: "a", tex: "1\\ \\text{box}" }, { k: "e", tex: "=" }, { k: "b", tex: FWD ? `${t(WHOLE)} \\div ${N}` : `${t(known)} \\div ${K}` }, { k: "e2", tex: "=" }, { k: "c", tex: t(UNIT), color: BLUE }]),
+      mD: () => main(FWD ? [{ k: "a", tex: `${K}\\ \\text{boxes}` }, { k: "e", tex: "=" }, { k: "b", tex: `${K} \\times ${t(UNIT)}` }, { k: "e2", tex: "=" }, { k: "c", tex: t(known), color: GREEN }]
+        : [{ k: "a", tex: `${N}\\ \\text{boxes}` }, { k: "e", tex: "=" }, { k: "b", tex: `${N} \\times ${t(UNIT)}` }, { k: "e2", tex: "=" }, { k: "c", tex: t(WHOLE), color: GREEN }]),
+      mE: () => main([{ k: "a", tex: `\\text{${FWD ? L.answer : L.whole}}` }, { k: "e", tex: "=" }, { k: "c", tex: `${L.money ? `\\text{${L.money}}` : ""}${t(FWD ? known : WHOLE)}`, color: GREEN }], () => "", 9),
       /* the margin */
       sA: () => side([[{ k: "a", tex: `${B.pct} \\div ${B.by} = ${B.top}` }], [{ k: "b", tex: `100 \\div ${B.by} = ${B.bot}` }]]),
       sT: () => svgBox(SIDE_W, 20, mathRow([{ k: "a", tex: cfg.trap }], { cx: SIDE_W / 2, y: 10, em: 5.4 }).svg
         + `<line data-mb="cut" data-k="x" x1="4" y1="14" x2="${SIDE_W - 4}" y2="3" stroke="${RED}" stroke-width="0.8" stroke-linecap="round"/>`
         + texAt("\\text{not this}", SIDE_W / 2, 19, { em: 4, color: RED, attrs: 'data-mb="num" data-k="n"' })),
-      sC: () => side([[{ k: "a", tex: OVER ? `${t(WHOLE)} + ${t(UNIT * (K - N))}` : `${t(WHOLE)} - ${t(UNIT * (N - K))}` }], [{ k: "b", tex: `= ${t(known)}\\ \\checkmark`, color: GREEN }]]),
+      sC: () => side(FWD
+        ? [[{ k: "a", tex: OVER ? `${t(known)} - ${t(UNIT * (K - N))}` : `${t(known)} + ${t(UNIT * (N - K))}` }], [{ k: "b", tex: `= ${t(WHOLE)}\\ \\checkmark`, color: GREEN }]]
+        : [[{ k: "a", tex: OVER ? `${t(WHOLE)} + ${t(UNIT * (K - N))}` : `${t(WHOLE)} - ${t(UNIT * (N - K))}` }], [{ k: "b", tex: `= ${t(known)}\\ \\checkmark`, color: GREEN }]]),
       /* ── method two ── */
       r2: () => {
         const top = mathRow([{ k: "p", tex: F.top }], { cx: MAIN_W / 2, y: 9, em: 7.5 });
@@ -225,8 +239,8 @@ function partWhole(cfg) {
       },
       eq: () => eqSvg(),
       s2A: () => side([[{ k: "a", tex: `${F.pct} \\div ${F.by} = ${K}` }], [{ k: "b", tex: `100 \\div ${F.by} = ${N}` }]]),
-      s2B: () => side([[{ k: "a", tex: `${t(known)} \\div ${K}` }], [{ k: "b", tex: `= ${t(UNIT)}`, color: BLUE }]]),
-      s2C: () => side([[{ k: "a", tex: `${N} \\times ${t(UNIT)}` }], [{ k: "b", tex: `= ${t(WHOLE)}`, color: GREEN }]]),
+      s2B: () => side([[{ k: "a", tex: FWD ? `${t(WHOLE)} \\div ${N}` : `${t(known)} \\div ${K}` }], [{ k: "b", tex: `= ${t(UNIT)}`, color: BLUE }]]),
+      s2C: () => side([[{ k: "a", tex: FWD ? `${K} \\times ${t(UNIT)}` : `${N} \\times ${t(UNIT)}` }], [{ k: "b", tex: `= ${t(FWD ? known : WHOLE)}`, color: GREEN }]]),
     },
     picAt: {
       b0: BAR_AT, b1: BAR_AT, b2: BAR_AT, b3: BAR_AT,
@@ -274,6 +288,7 @@ function partWhole(cfg) {
       /* the whole, as it stood when it was cut (a profit's extra boxes are not there yet) */
       "b2.base": (s, H) => {
         mb(s, "bar").slice(0, N).forEach((n) => H.show(n));
+        plain(s);
         mb(s, "num").slice(0, N).forEach((n) => H.show(n));
         H.show(braceOf(s, "below-0-0"));
       },
@@ -294,6 +309,21 @@ function partWhole(cfg) {
         ["above-0-0", REST, "below-0-0"].forEach((k) => H.show(braceOf(s, k)));
       },
       "b3.one": (s, H) => H.write(mb(s, "num")[0], 0),
+      /* forward: the whole, already cut, before anything is taken off it or added on */
+      "b3.bare": (s, H) => { mb(s, "bar").slice(0, N).forEach((n) => H.show(n)); plain(s); H.show(braceOf(s, "below-0-0")); },
+      "b3.fill": (s, H) => mb(s, "num").slice(1, N).forEach((n, i) => H.write(n, i * (N > 6 ? 0.25 : 0.6))),
+      /* the loss leaves, or the profit grows on past the whole */
+      "f.rest": (s, H) => {
+        const b = mb(s, "bar"), nums = mb(s, "num");
+        if (OVER) {
+          b.slice(N).forEach((n, i) => H.grow(n, i * 0.5));
+          nums.slice(N).forEach((n, i) => H.write(n, 0.5 + i * 0.5));
+        } else {
+          b.slice(K).forEach((n, i) => H.tint(n, b[0].getAttribute("fill"), i * 0.3));
+        }
+        H.draw(braceOf(s, REST), 0.5);
+      },
+      "f.part": (s, H) => H.draw(braceOf(s, "above-0-0"), 0),
       "b3.rest": (s, H) => mb(s, "num").slice(1).forEach((n, i) => H.write(n, i * 1.0)),
 
       /* the working under the bar */
@@ -317,13 +347,16 @@ function partWhole(cfg) {
       "r2.cut": (s, H) => { write(s, H, ["fxs", "fxn", "fys", "fyn"], 0, 0.55); write(s, H, ["e2", ...fracKeys("q")], 2.4, 0.3); },
       "s2A.all": (s, H) => write(s, H, ["a", "b"], 0.6, 0.9),
       "eq.left": (s, H) => write(s, H, fracKeys("L"), 0, 0.35),
-      "eq.sold": (s, H) => write(s, H, ["eq", "Rn", "ws"], 0, 0.45),
-      "eq.cost": (s, H) => write(s, H, ["Rr", "Rd", "wc"], 0, 0.45),
+      /* forward, the bottom (the whole) is written first, so the "=" goes with it */
+      "eq.sold": (s, H) => write(s, H, FWD ? ["Rn", "ws"] : ["eq", "Rn", "ws"], 0, 0.45),
+      "eq.cost": (s, H) => write(s, H, FWD ? ["eq", "Rr", "Rd", "wc"] : ["Rr", "Rd", "wc"], 0, 0.45),
+      "eq.underArc": (s, H) => H.draw(braceOf(s, "under"), 0),
+      "eq.underX": (s, H) => write(s, H, ["xu"], 0),
       "eq.over": (s, H) => H.draw(braceOf(s, "over"), 0),
       "eq.overX": (s, H) => write(s, H, ["xo"], 0),
       "eq.under": (s, H) => { H.draw(braceOf(s, "under"), 0); write(s, H, ["xu"], 0.6); },
       "eq.ans": (s, H) => {
-        const q = key(s, "Rd");
+        const q = key(s, FWD ? "Rn" : "Rd");
         if (q) q.style.opacity = "0";
         write(s, H, ["ans"], 0.1);
         H.sound("ding", 0.5);
@@ -698,3 +731,170 @@ export function profit20() {
     },
   });
 }
+
+/* ═══ THE FORWARD FILMS: THE WHOLE IS KNOWN, FIND THE NEW AMOUNT ═══════════
+   A price after a loss, a profit, a discount or a withdrawal. One narration,
+   written once, that each question fills with its own story and numbers:
+
+     story   [three opening lines]
+     W, P, U the whole, the answer and one box, as they are SAID ("165,500")
+     pct     the percentage; N, K boxes in the whole, boxes in the answer; by what divides 100
+     restLine, partLine   what happens to the boxes (a box lost, a box gained)
+     trapLine, trapCue    the wrong move, struck in the margin
+     r2Line   method two's first line (says the percentage of the whole kept)
+   ------------------------------------------------------------------------*/
+function forwardFilm(c) {
+  const { N, K, by } = c;
+  const word = (n) => String(n);
+  const pctBox = 100 / N;
+  return partWhole({
+    forward: true, N, K, whole: c.whole,
+    question: c.question, labels: c.labels,
+    box: { pct: c.pct, top: c.boxTop, bot: c.boxBot, by: c.boxBy },
+    frac: { top: c.fracTop, pct: c.keepPct, by },
+    trap: c.trap,
+    steps: ({ push }) => {
+      push(c.story[0], { on: ["a1"], transition: "iris", pause: 0.5 });
+      push(c.story[1], { pause: 0.5 });
+      push(c.story[2], { pause: 0.8 });
+      push(`So we know the whole: ${c.W}. What we want is ${c.want}.`, { pause: 0.8 });
+      push(`Picture ${c.wholePhrase} as one whole bar. ${c.W}.`,
+        { on: ["b0", "m1"], add: ["b0.bar", "b0.brace", "b0.q"], cue: { "b0.bar": "whole bar", "b0.q": `${c.W}.` },
+          transition: { kind: "card", title: "Method 1", sub: "The box method", hold: 1.6 }, pause: 0.6 });
+      push(`Now, ${c.pct} percent. ${c.pct} out of a hundred... how do we say that more simply?`,
+        { on: ["mA"], add: ["mA.frac"], cue: { "mA.frac": `${c.pct} out of a hundred` }, pause: 1.6 });
+      push(`Divide the top and the bottom by ${c.boxBy}. ${c.boxTop} over ${c.boxBot}.`,
+        { on: ["sA"], add: ["mA.cut", "sA.all"], cue: { "mA.cut": "divide", "sA.all": "divide" }, pause: 0.6 });
+      push(`So we cut the bar into ${word(N)} equal boxes.`, { off: ["mA", "sA"], pause: 0.4 });
+      push("Watch the cuts.", { add: ["b0.cut"], cue: { "b0.cut": "watch" }, pause: 0.8 });
+      push(`${word(N)} boxes, all the same size. Each box is ${pctBox} percent.`,
+        { on: ["b1"], off: ["b0"], add: ["b1.base", "b1.pct"], cue: { "b1.pct": `${pctBox} percent` }, pause: 0.8 });
+      push(`All ${word(N)} boxes together make ${c.W}.`, { on: ["mB"], add: ["mB.all"], cue: { "mB.all": "together" }, pause: 0.6 });
+      push("So how much is one box?", { pause: 1.6 });
+      push(`${c.W} shared into ${word(N)}. That's ${c.U}.`,
+        { on: ["b3", "mC"], off: ["b1", "mB"], add: ["b3.bare", "mC.ask", "mC.div", "b3.one"],
+          cue: { "mC.div": "shared", "b3.one": `that's ${c.U}` }, pause: 0.6 });
+      push(`And every box is the same size. So every box is ${c.U}.`,
+        { add: ["b3.fill"], cue: { "b3.fill": "every box is" }, pause: 0.8 });
+      push(c.restLine, { add: ["f.rest"], cue: { "f.rest": c.restCue }, pause: 0.8 });
+      push(c.partLine, { add: ["f.part"], cue: { "f.part": c.partCue }, pause: 0.8 });
+      push("Now wait. This is where people fall.", { pause: 0.7 });
+      push(c.trapLine, { on: ["sT"], add: ["sT.all"], cue: { "sT.all": c.trapCue }, pause: 1 });
+      push(`So, ${word(K)} boxes. ${word(K)} times ${c.U}...`,
+        { on: ["mD"], off: ["mC", "sT"], add: ["mD.ask"], cue: { "mD.ask": "times" }, pause: 0.5 });
+      push(`${c.P}.`, { add: ["mD.ans"], pause: 0.8 });
+      push(`Let's check it. ${c.checkLine}`, { on: ["sC"], add: ["sC.a"], cue: { "sC.a": "check" }, pause: 0.5 });
+      push(`${c.W}. That's where we started. It works.`, { add: ["sC.b"], pause: 0.6 });
+      push(c.answerLine, { on: ["mE"], off: ["mD", "sC"], add: ["mE.all"], cue: { "mE.all": c.P }, pause: 1.4 });
+
+      push("Now the same question with fractions.",
+        { on: ["m2"], off: ["b3", "mE", "m1"], transition: { kind: "card", title: "Method 2", sub: "Equivalent fractions", hold: 1.6 }, pause: 0.6 });
+      push(c.r2Line, { on: ["r2"], add: ["r2.pct", "r2.frac"], cue: { "r2.frac": "over a hundred" }, pause: 0.6 });
+      push(`Divide the top and the bottom by ${by}... ${word(K)} over ${word(N)}.`,
+        { on: ["s2A"], add: ["r2.cut", "s2A.all"], cue: { "r2.cut": "divide", "s2A.all": "divide" }, pause: 0.6 });
+      push(`${word(K)} over ${word(N)} is the same as ${c.newPhrase} over ${c.wholePhrase}.`,
+        { on: ["eq"], off: ["r2", "s2A"], transition: "fade", add: ["eq.left"], cue: { "eq.left": `${word(K)} over ${word(N)}` }, pause: 0.6 });
+      push(`${c.wholeCap} goes underneath. ${c.W}.`, { add: ["eq.cost"], cue: { "eq.cost": "underneath" }, pause: 0.5 });
+      push(`${c.newCap}, we don't know. So... question mark on top.`, { add: ["eq.sold"], cue: { "eq.sold": "question mark" }, pause: 0.6 });
+      push(`Look at the bottoms. ${word(N)} becomes ${c.W}. ${word(N)} times what?`,
+        { add: ["eq.underArc"], cue: { "eq.underArc": "becomes" }, pause: 1.8 });
+      push(`${c.W} divided by ${word(N)}. ${c.U}.`, { on: ["s2B"], add: ["s2B.all", "eq.underX"], cue: { "eq.underX": `${c.U}.` }, pause: 0.6 });
+      push(`Same as one box, you see? So the top is multiplied by ${c.U} too.`, { add: ["eq.over", "eq.overX"], cue: { "eq.over": "top", "eq.overX": "top" }, pause: 0.6 });
+      push(`${word(K)} times ${c.U}... ${c.P}.`,
+        { on: ["s2C"], add: ["s2C.all", "eq.ans"], cue: { "s2C.all": "times", "eq.ans": `${c.P}.` }, pause: 0.6 });
+      push(`There's our question mark. ${c.P}. Same answer as the boxes.`,
+        { look: (stage) => stage.querySelector('[data-t="eq"] [data-k="ans"]'), lookAt: { lit: true, delay: 0.6, hold: 2.2 }, pause: 1 });
+      push(c.closing);
+    },
+  });
+}
+
+/* Junior Secondary, 2nd edition first round, Q40 */
+export const ps4Loss = () => forwardFilm({
+  question: "Emeka bought a PS4 for ₦165,500. He sold it to Kelechi at a 20% loss. What did Kelechi pay?",
+  whole: 165500, N: 5, K: 4, by: 20, pct: 20, boxTop: 1, boxBot: 5, boxBy: 20, keepPct: 80,
+  W: "165,500", U: "33,100", P: "132,400",
+  labels: { part: "Kelechi paid", rest: "loss", whole: "Emeka paid", answer: "Kelechi paid", money: "₦", wordTop: "sold", wordBottom: "bought" },
+  fracTop: "100\\% - 20\\% = 80\\%", trap: "165{,}500 - 20",
+  story: ["Emeka bought a PS4 for 165,500 naira.", "He sold it to Kelechi, at a loss of twenty percent.", "So Kelechi paid less than Emeka did. How much less?"],
+  want: "what Kelechi paid", wholePhrase: "what Emeka paid", wholeCap: "What Emeka paid", newPhrase: "what Kelechi paid", newCap: "What Kelechi paid",
+  restLine: "Emeka lost twenty percent. That's one box gone.", restCue: "one box",
+  partLine: "So Kelechi paid for the other four boxes.", partCue: "other four",
+  trapLine: "Some people take twenty away from 165,500. Twenty naira? No. It's twenty percent, one whole box.", trapCue: "take twenty away",
+  checkLine: "132,400, plus the one box Emeka lost, 33,100...",
+  answerLine: "So Kelechi paid 132,400 naira.",
+  r2Line: "Emeka lost twenty percent, so Kelechi paid eighty percent of it. Eighty over a hundred.",
+  closing: "Two ways, one answer. A loss is a part of what was paid first. Take the boxes away from the whole bar.",
+});
+
+/* Junior Secondary, 3rd edition first round, Q7 */
+export const bikeProfit20 = () => forwardFilm({
+  question: "Rohan bought a bike for $75000. He wants to sell it making a 20% profit. What is the selling price of the bike?",
+  whole: 75000, N: 5, K: 6, by: 20, pct: 20, boxTop: 1, boxBot: 5, boxBy: 20, keepPct: 120,
+  W: "75,000", U: "15,000", P: "90,000",
+  labels: { part: "selling price", rest: "profit", whole: "cost price", answer: "selling price", money: "$", wordTop: "sell", wordBottom: "cost" },
+  fracTop: "100\\% + 20\\% = 120\\%", trap: "75{,}000 + 20",
+  story: ["Rohan bought a bike for 75,000 dollars.", "He wants to sell it, and make a profit of twenty percent.", "So he'll sell it for more than he paid. How much more?"],
+  want: "the selling price", wholePhrase: "what he paid", wholeCap: "What he paid", newPhrase: "the selling price", newCap: "The selling price",
+  restLine: "A profit of twenty percent is one more box. It grows on past what he paid.", restCue: "one more box",
+  partLine: "So he sells it for all six boxes.", partCue: "all six",
+  trapLine: "Some people add twenty to 75,000. Twenty dollars? No. It's twenty percent, one whole box.", trapCue: "add twenty",
+  checkLine: "90,000, take away the profit box, 15,000...",
+  answerLine: "So the selling price is 90,000 dollars.",
+  r2Line: "A profit of twenty percent means he sells it for a hundred and twenty percent of what he paid. A hundred and twenty over a hundred.",
+  closing: "Two ways, one answer. A profit is a part of what was paid. It grows the bar by that many boxes.",
+});
+
+/* Junior Secondary, 5th edition first round, Q28 */
+export const bikeProfit10 = () => forwardFilm({
+  question: "Fubara bought a bike for ₦200000. He wants to sell it making a 10% profit. What is the selling price of the bike?",
+  whole: 200000, N: 10, K: 11, by: 10, pct: 10, boxTop: 1, boxBot: 10, boxBy: 10, keepPct: 110,
+  W: "200,000", U: "20,000", P: "220,000",
+  labels: { part: "selling price", rest: "profit", whole: "cost price", answer: "selling price", money: "₦", wordTop: "sell", wordBottom: "cost" },
+  fracTop: "100\\% + 10\\% = 110\\%", trap: "200{,}000 + 10",
+  story: ["Fubara bought a bike for 200,000 naira.", "He wants to sell it, and make a profit of ten percent.", "So he'll sell it for more than he paid. How much more?"],
+  want: "the selling price", wholePhrase: "what he paid", wholeCap: "What he paid", newPhrase: "the selling price", newCap: "The selling price",
+  restLine: "A profit of ten percent is one more box. It grows on past what he paid.", restCue: "one more box",
+  partLine: "So he sells it for all eleven boxes.", partCue: "all eleven",
+  trapLine: "Some people add ten to 200,000. Ten naira? No. It's ten percent, one whole box.", trapCue: "add ten",
+  checkLine: "220,000, take away the profit box, 20,000...",
+  answerLine: "So the selling price is 220,000 naira.",
+  r2Line: "A profit of ten percent means he sells it for a hundred and ten percent of what he paid. A hundred and ten over a hundred.",
+  closing: "Two ways, one answer. A profit is a part of what was paid. It grows the bar by that many boxes.",
+});
+
+/* Upper Primary, 2022 finals, Q45 */
+export const shoeDiscount = () => forwardFilm({
+  question: "If a shoe cost $20 and is reduced by 20%, how much will the new price be?",
+  whole: 20, N: 5, K: 4, by: 20, pct: 20, boxTop: 1, boxBot: 5, boxBy: 20, keepPct: 80,
+  W: "20", U: "4", P: "16",
+  labels: { part: "new price", rest: "taken off", whole: "old price", answer: "new price", money: "$", wordTop: "new", wordBottom: "old" },
+  fracTop: "100\\% - 20\\% = 80\\%", trap: "20 - 20 = 0",
+  story: ["A shoe costs twenty dollars.", "The price is reduced by twenty percent.", "So the new price is less. How much is it?"],
+  want: "the new price", wholePhrase: "the old price", wholeCap: "The old price", newPhrase: "the new price", newCap: "The new price",
+  restLine: "Reduced by twenty percent. That's one box taken off.", restCue: "one box",
+  partLine: "So the new price is the other four boxes.", partCue: "other four",
+  trapLine: "Some people take twenty from twenty and get nothing. A free shoe? No. It's twenty percent, one box.", trapCue: "take twenty from twenty",
+  checkLine: "16, plus the box taken off, 4...",
+  answerLine: "So the new price is 16 dollars.",
+  r2Line: "Reduced by twenty percent, so the new price is eighty percent of the old one. Eighty over a hundred.",
+  closing: "Two ways, one answer. A reduction is a part of the old price. Take those boxes off the whole bar.",
+});
+
+/* Upper Primary, 2025 first round, Q29 */
+export const withdraw10 = () => forwardFilm({
+  question: "You had $10,000.00 in your account, you withdrew 10% of your current balance. How much money is your new balance?",
+  whole: 10000, N: 10, K: 9, by: 10, pct: 10, boxTop: 1, boxBot: 10, boxBy: 10, keepPct: 90,
+  W: "10,000", U: "1,000", P: "9,000",
+  labels: { part: "new balance", rest: "withdrawn", whole: "old balance", answer: "new balance", money: "$", wordTop: "new", wordBottom: "old" },
+  fracTop: "100\\% - 10\\% = 90\\%", trap: "10{,}000 - 10",
+  story: ["You had 10,000 dollars in your account.", "You took out ten percent of it.", "So how much is left in the account?"],
+  want: "the new balance", wholePhrase: "the old balance", wholeCap: "The old balance", newPhrase: "the new balance", newCap: "The new balance",
+  restLine: "You took out ten percent. That's one box.", restCue: "one box",
+  partLine: "So what's left is the other nine boxes.", partCue: "other nine",
+  trapLine: "Some people take ten dollars away. No. It's ten percent, one whole box.", trapCue: "ten dollars",
+  checkLine: "9,000, plus the box you took out, 1,000...",
+  answerLine: "So the new balance is 9,000 dollars.",
+  r2Line: "You took out ten percent, so ninety percent is left. Ninety over a hundred.",
+  closing: "Two ways, one answer. Ten percent is one box of the whole. Take it off, and count what's left.",
+});

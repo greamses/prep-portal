@@ -952,7 +952,7 @@ const examQuestions = [
     explanation: [
       "\\(\\text{New Price} = 20 \\times (100\\% - 20\\%) = 20 \\times 0.80 = \\$16\\).",
     ],
-    topic: "Percentages (Discount)",
+    topic: "Percentages (Discount)", film: "shoe-discount-20"
   },
 ];
 

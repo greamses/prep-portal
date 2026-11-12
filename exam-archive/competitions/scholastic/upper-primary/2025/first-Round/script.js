@@ -553,7 +553,8 @@ const quizData = [
     "\\( = 1{,}000 \\)",
     "\\( \\text{New balance} = 10{,}000 - 1{,}000 \\)",
     "\\( = \\$9{,}000 \\)"
-  ]
+  ],
+  film: "withdraw-10" // PrepBot works it two ways (utils/components/workbook/cbt-films.js)
 },
 {
   question: "A triangle in which two sides are equal is called a _____ triangle?",

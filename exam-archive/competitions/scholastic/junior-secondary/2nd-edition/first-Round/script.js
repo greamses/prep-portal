@@ -47,7 +47,7 @@ const quizData = [
   q("Convert \\(37_{\\text{ten}}\\) to a number in base two.", ["\\(101001_{2}\\)", "\\(100101_{2}\\)", "\\(11101_{2}\\)", "\\(110010_{2}\\)", "\\(101101_{2}\\)"], 1, ["\\(37 = 32 + 4 + 1 = 100101_{2}\\)."], "Number Bases"),
   q("How much interest does \\(₦600\\) make in \\(5\\) years at \\(7\\%\\) per annum?", ["\\(₦140\\)", "\\(₦21\\)", "\\(₦300\\)", "\\(₦210\\)", "\\(₦165\\)"], 3, ["\\(\\frac{600 \\times 7 \\times 5}{100} = ₦210\\)."], "Simple Interest"),
   q("What is the reciprocal of \\(0.5\\)?", ["\\(1\\)", "\\(4\\)", "\\(\\frac{1}{2}\\)", "\\(0.25\\)", "\\(2\\)"], 4, ["\\(1 \\div 0.5 = 2\\)."], "Number"),
-  q("Emeka bought a PS4 for \\(₦165,500\\). He sold it to Kelechi at a \\(20\\%\\) loss. What did Kelechi pay?", ["\\(₦180000\\)", "\\(₦135600\\)", "\\(₦132400\\)", "\\(₦140000\\)", "\\(₦152400\\)"], 2, ["\\(80\\%\\) of \\(165\\,500 = ₦132\\,400\\)."], "Profit and Loss"),
+  q("Emeka bought a PS4 for \\(₦165,500\\). He sold it to Kelechi at a \\(20\\%\\) loss. What did Kelechi pay?", ["\\(₦180000\\)", "\\(₦135600\\)", "\\(₦132400\\)", "\\(₦140000\\)", "\\(₦152400\\)"], 2, ["\\(80\\%\\) of \\(165\\,500 = ₦132\\,400\\)."], "Profit and Loss", { film: "ps4-loss-20" }),
   // ── SECTION B: SUBJECTIVE ──
   s("A photograph measures \\(8\\text{ cm}\\) by \\(10\\text{ cm}\\). It is enlarged so that the shorter side becomes \\(12\\text{ cm}\\) and the longer side \\(x\\text{ cm}\\). Find \\(x\\).", "\\(15\\)", ["Scale factor \\(= 12 \\div 8 = 1.5\\); \\(x = 10 \\times 1.5 = 15\\)."], "Similarity"),
   s("Factorise \\(18ax^{2} - 12xay\\).", "\\(6ax(3x - 2y)\\)", ["The common factor is \\(6ax\\): \\(6ax(3x - 2y)\\)."], "Factorisation"),

@@ -34,7 +34,7 @@ import { placeFill, worthOf } from "./shift.js";
 import { barSetup, barParts, barMissing, barMoney, barFractions } from "./bar-films.js";
 import { fracLike, fracEqual, fracUnlike, fracMixed } from "./fraction-films.js";
 import { ctxInference, ctxDefinition, ctxExample, ctxAntonym, ctxSynonym } from "./context-films.js";
-import { loss25, score80, score90, profit20 } from "./cbt-films.js";
+import { loss25, score80, score90, profit20, ps4Loss, bikeProfit20, bikeProfit10, shoeDiscount, withdraw10 } from "./cbt-films.js";
 
 /* The strip's dress. A page that is not a workbook does not link video.css,
    and an unstyled strip is not merely plain — it is invisible, which is how
@@ -334,6 +334,11 @@ const SCENES = {
   "score-80": score80,
   "score-90": score90,
   "profit-20": profit20,
+  "ps4-loss-20": ps4Loss,
+  "bike-profit-20": bikeProfit20,
+  "bike-profit-10": bikeProfit10,
+  "shoe-discount-20": shoeDiscount,
+  "withdraw-10": withdraw10,
 };
 /**
  * WHAT EVERY FILM IS CALLED, in one place.
@@ -369,6 +374,11 @@ export const FILMS = [
   { id: "score-80", name: "56 marks is 80%: find the full marks (two ways)", of: "Scholastic 2022 first round, Q8" },
   { id: "score-90", name: "72 marks is 90%: find the full marks (two ways)", of: "Scholastic 4th edition first round, Q10" },
   { id: "profit-20", name: "Sold at a 20% profit: find the cost price (two ways)", of: "Scholastic 4th edition first round, Q15" },
+  { id: "ps4-loss-20", name: "Sold at a 20% loss: what was paid (two ways)", of: "Scholastic JS 2nd edition first round, Q40" },
+  { id: "bike-profit-20", name: "A 20% profit: the selling price (two ways)", of: "Scholastic JS 3rd edition first round, Q7" },
+  { id: "bike-profit-10", name: "A 10% profit: the selling price (two ways)", of: "Scholastic JS 5th edition first round, Q28" },
+  { id: "shoe-discount-20", name: "Reduced by 20%: the new price (two ways)", of: "Scholastic 2022 finals, Q45" },
+  { id: "withdraw-10", name: "Take out 10%: the new balance (two ways)", of: "Scholastic 2025 first round, Q29" },
 ];
 
 /** The coded film behind an id, for the editor to trace and to take a script from. */
