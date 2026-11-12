@@ -125,8 +125,44 @@ const introStep = (title) => ({
   },
 });
 
-export async function openTv({ title = "", build = () => {}, steps: told = [], onEdit = null } = {}) {
-  const steps = told.length ? [introStep(title), ...told, outroStep()] : told;
+/* ── VIDEO CARDS: other films on the same topic, played in this same set ─────────
+   `related` is [{ id, name, of, thumb }] and `onPick(id)` plays one. The cards close the film
+   and end it (an "Up next" screen after the outro), and the cards key in the control bar
+   brings them up at any moment. Nobody leaves the question page: the next film plays here. */
+function thumbSvg(thumb) {
+  /* the film's own bar in miniature: n boxes, k of them the part, the rest tinted (or grown past) */
+  const n = Math.max(1, thumb?.n || 4), k = Math.max(0, thumb?.k ?? n - 1);
+  const row = Math.max(n, k), w = 84 / row;
+  let out = "";
+  for (let i = 0; i < row; i++) {
+    const rest = k > n ? i >= n : i >= k;
+    out += `<rect x="${(8 + i * w).toFixed(2)}" y="20" width="${(w).toFixed(2)}" height="14" fill="${rest ? "#ffd9cf" : "#bfe3ff"}" stroke="#2a2723" stroke-width="0.9"/>`;
+  }
+  return `<svg viewBox="0 0 100 56" aria-hidden="true"><rect width="100" height="56" fill="#fffdf8"/>`
+    + `<path d="M8 15 Q50 6 ${(8 + Math.min(k, row) * w).toFixed(1)} 15" fill="none" stroke="#c0453f" stroke-width="1.2"/>`
+    + out + `<circle cx="50" cy="45" r="7" fill="#2a2723"/><path d="M47.5 41.6v6.8l5.8-3.4z" fill="#fff"/></svg>`;
+}
+const cardsHtml = (related) => `<ul class="mm-tv-cards" role="list">`
+  + related.slice(0, 4).map((r, i) => `<li style="animation-delay:${(0.2 + i * 0.15).toFixed(2)}s">`
+    + `<button type="button" class="mm-tv-card pp-plain" data-pick="${esc(r.id)}" aria-label="Watch: ${esc(r.name)}">`
+    + `<span class="mm-tv-card__thumb">${thumbSvg(r.thumb)}</span>`
+    + `<span class="mm-tv-card__name">${esc(r.name)}</span>`
+    + (r.of ? `<span class="mm-tv-card__of">${esc(r.of)}</span>` : "")
+    + `</button></li>`).join("") + `</ul>`;
+const upNextStep = (related) => ({
+  say: "Want another one like this? Pick a card. Each one is a different question on the same idea, "
+    + "and it plays right here.",
+  show(stage) {
+    const box = document.createElement("div");
+    box.className = "mm-tv-upnext";
+    box.innerHTML = `<p class="mm-tv-upnext__lead">Watch another one</p>${cardsHtml(related)}`;
+    stage.appendChild(box);
+  },
+});
+
+export async function openTv({ title = "", build = () => {}, steps: told = [], onEdit = null, related = [], onPick = null } = {}) {
+  const more = related.length && typeof onPick === "function";
+  const steps = told.length ? [introStep(title), ...told, outroStep(), ...(more ? [upNextStep(related)] : [])] : told;
   open?.close();
   css("/prep-math/mental-math/shared/prepbot-teacher.css");
   css("/prep-math/mental-math/shared/prepbot-tv.css");
@@ -169,6 +205,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     `<button class="mm-tv-btn" data-tv="next" type="button" aria-label="Next step" title="Next step (Right arrow)" aria-keyshortcuts="ArrowRight">${ICON_NEXT}</button>` +
     `</div>` +
     (onEdit ? `<button class="mm-tv-btn" data-tv="edit" type="button" aria-label="Edit this film" title="Edit this film">${UI.edit(22)}</button>` : "") +
+    (more ? `<button class="mm-tv-btn" data-tv="more" type="button" aria-label="More videos like this" title="More videos like this (M)" aria-keyshortcuts="M">${UI.cards(22)}</button>` : "") +
     `<button class="mm-tv-btn" data-tv="save" type="button" aria-label="Download this explanation" title="Download this explanation (D)" aria-keyshortcuts="D">${UI.download(22)}</button>` +
     `<button class="mm-tv-btn" data-tv="full" type="button" aria-label="Fullscreen" title="Full screen (F)" aria-keyshortcuts="F">${ICON_FULLSCREEN}</button>` +
     `<button class="mm-tv-btn" data-tv="close" type="button" aria-label="Turn the TV off" title="Turn the TV off (Esc)" aria-keyshortcuts="Escape">${ICON_CLOSE}</button>` +
@@ -475,6 +512,35 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
      (film-editor.js). Only the admin is ever handed an onEdit. */
   q("edit")?.addEventListener("click", () => { close(); onEdit(); });
 
+  /* THE CARDS: on the end screen, or brought up over the film by the cards key (the film pauses) */
+  if (more) {
+    const sheet = document.createElement("div");
+    sheet.className = "mm-tv-morepanel";
+    sheet.hidden = true;
+    sheet.innerHTML = `<div class="mm-tv-upnext"><p class="mm-tv-upnext__lead">More like this</p>${cardsHtml(related)}</div>`
+      + `<button type="button" class="mm-tv-morepanel__x pp-plain" aria-label="Back to the film" data-tip="Back to the film">${ICON_CLOSE}</button>`;
+    screen.appendChild(sheet);
+    const showMore = (on) => {
+      sheet.hidden = !on;
+      q("more").setAttribute("aria-pressed", String(on));
+      if (on && playing) toggle();
+    };
+    q("more").addEventListener("click", () => showMore(sheet.hidden));
+    sheet.querySelector(".mm-tv-morepanel__x").addEventListener("click", () => showMore(false));
+    /* a card, wherever it is shown, plays its film in this set */
+    box.addEventListener("click", (e) => {
+      const card = e.target.closest?.("[data-pick]");
+      if (!card) return;
+      e.preventDefault();
+      onPick(card.dataset.pick);
+    });
+    window.addEventListener("keydown", (e) => {
+      if (closed || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.target.closest?.("input, textarea, select, [contenteditable='true']")) return;
+      if (e.key === "m" || e.key === "M") { e.preventDefault(); e.stopImmediatePropagation(); showMore(sheet.hidden); }
+      else if (e.key === "Escape" && !sheet.hidden) { e.preventDefault(); e.stopImmediatePropagation(); showMore(false); }
+    }, true);
+  }
   q("full").addEventListener("click", () => { if (document.fullscreenElement) document.exitFullscreen?.(); else tv.requestFullscreen?.(); });
   box.addEventListener("click", (e) => { if (e.target === box) close(); });
   window.addEventListener("keydown", onKey, true);

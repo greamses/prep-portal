@@ -373,18 +373,18 @@ export const FILMS = [
   { id: "ctx-example", name: "Example clues", of: "Comprehension ch 2" },
   { id: "ctx-antonym", name: "Antonym clues", of: "Comprehension ch 2" },
   { id: "ctx-synonym", name: "Synonym clues", of: "Comprehension ch 2" },
-  { id: "loss-25", name: "A 25% loss: find the cost price (two ways)", of: "Scholastic 2022 first round, Q6" },
-  { id: "score-80", name: "56 marks is 80%: find the full marks (two ways)", of: "Scholastic 2022 first round, Q8" },
-  { id: "score-90", name: "72 marks is 90%: find the full marks (two ways)", of: "Scholastic 4th edition first round, Q10" },
-  { id: "profit-20", name: "Sold at a 20% profit: find the cost price (two ways)", of: "Scholastic 4th edition first round, Q15" },
-  { id: "ps4-loss-20", name: "Sold at a 20% loss: what was paid (two ways)", of: "Scholastic JS 2nd edition first round, Q40" },
-  { id: "bike-profit-20", name: "A 20% profit: the selling price (two ways)", of: "Scholastic JS 3rd edition first round, Q7" },
-  { id: "bike-profit-10", name: "A 10% profit: the selling price (two ways)", of: "Scholastic JS 5th edition first round, Q28" },
-  { id: "shoe-discount-20", name: "Reduced by 20%: the new price (two ways)", of: "Scholastic 2022 finals, Q45" },
-  { id: "withdraw-10", name: "Take out 10%: the new balance (two ways)", of: "Scholastic 2025 first round, Q29" },
-  { id: "pages-left-80", name: "Read 80%: the pages left (two ways)", of: "ANMC 15th first round, Q19" },
-  { id: "hat-profit-30", name: "A 30% profit on 55 kobo (two ways)", of: "Scholastic 2022 finals, Q37" },
-  { id: "decrease-15", name: "Decrease 1,500 kg by 15% (two ways)", of: "Scholastic JS 5th edition first round, Q7" },
+  { id: "loss-25", name: "A 25% loss: find the cost price (two ways)", of: "Scholastic 2022 first round, Q6", topic: "percent", thumb: { n: 4, k: 3 } },
+  { id: "score-80", name: "56 marks is 80%: find the full marks (two ways)", of: "Scholastic 2022 first round, Q8", topic: "percent", thumb: { n: 5, k: 4 } },
+  { id: "score-90", name: "72 marks is 90%: find the full marks (two ways)", of: "Scholastic 4th edition first round, Q10", topic: "percent", thumb: { n: 10, k: 9 } },
+  { id: "profit-20", name: "Sold at a 20% profit: find the cost price (two ways)", of: "Scholastic 4th edition first round, Q15", topic: "percent", thumb: { n: 5, k: 6 } },
+  { id: "ps4-loss-20", name: "Sold at a 20% loss: what was paid (two ways)", of: "Scholastic JS 2nd edition first round, Q40", topic: "percent", thumb: { n: 5, k: 4 } },
+  { id: "bike-profit-20", name: "A 20% profit: the selling price (two ways)", of: "Scholastic JS 3rd edition first round, Q7", topic: "percent", thumb: { n: 5, k: 6 } },
+  { id: "bike-profit-10", name: "A 10% profit: the selling price (two ways)", of: "Scholastic JS 5th edition first round, Q28", topic: "percent", thumb: { n: 10, k: 11 } },
+  { id: "shoe-discount-20", name: "Reduced by 20%: the new price (two ways)", of: "Scholastic 2022 finals, Q45", topic: "percent", thumb: { n: 5, k: 4 } },
+  { id: "withdraw-10", name: "Take out 10%: the new balance (two ways)", of: "Scholastic 2025 first round, Q29", topic: "percent", thumb: { n: 10, k: 9 } },
+  { id: "pages-left-80", name: "Read 80%: the pages left (two ways)", of: "ANMC 15th first round, Q19", topic: "percent", thumb: { n: 5, k: 1 } },
+  { id: "hat-profit-30", name: "A 30% profit on 55 kobo (two ways)", of: "Scholastic 2022 finals, Q37", topic: "percent", thumb: { n: 10, k: 13 } },
+  { id: "decrease-15", name: "Decrease 1,500 kg by 15% (two ways)", of: "Scholastic JS 5th edition first round, Q7", topic: "percent", thumb: { n: 20, k: 17 } },
 ];
 
 /** The coded film behind an id, for the editor to trace and to take a script from. */
@@ -445,7 +445,19 @@ export async function playLesson(kind, title = "", strip = null) {
   strip?.classList.add("is-playing");
   try {
     const { openTv } = await import("/prep-math/mental-math/shared/prepbot-tv.js");
-    await openTv({ title, build: sized, steps: made.steps, onEdit: await editorFor(kind, title, coded) });
+    /* VIDEO CARDS: the other films on the same topic, played in this same set, on this same page */
+    const me = FILMS.find((f) => f.id === kind);
+    const related = me?.topic ? FILMS.filter((f) => f.topic === me.topic && f.id !== kind)
+      .sort((a, b) => Math.abs((a.thumb?.k ?? 0) - (a.thumb?.n ?? 0)) - Math.abs((b.thumb?.k ?? 0) - (b.thumb?.n ?? 0)))
+      .slice(0, 4) : [];
+    const onPick = (id) => {
+      const next = FILMS.find((f) => f.id === id);
+      document.querySelector(".mm-tv-overlay [data-tv='close']")?.click();
+      tvOpen = false;
+      strip?.classList.remove("is-playing");
+      setTimeout(() => playLesson(id, next?.name || ""), 120);
+    };
+    await openTv({ title, build: sized, steps: made.steps, onEdit: await editorFor(kind, title, coded), related, onPick });
     const refit = () => {
       const st = document.querySelector(".mm-tv-overlay [data-tv='stage'] .vm-tv");
       if (st) st.style.setProperty("--u", `${st.parentElement.clientWidth / 100}px`);
