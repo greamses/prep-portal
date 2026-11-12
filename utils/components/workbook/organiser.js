@@ -708,17 +708,17 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
       <p class="og__say">${esc(spec.say)}</p>
       <span class="og__keys">
         <button type="button" class="pp-btn wb-tint-2 og__key" data-og="pin"
-                aria-label="Put a pin on the board" data-tip="A pin: somewhere a note can go">${PIN_ICON}</button>
+                aria-label="Put a pin on the board" data-tip="A pin: somewhere a note can go (P)">${PIN_ICON}</button>
         <button type="button" class="pp-btn wb-tint-2 og__key" data-og="note"
-                aria-label="Write a sticky note" data-tip="Write a note, then drag it onto a pin">${NOTE_ICON}</button>
+                aria-label="Write a sticky note" data-tip="Write a note, then drag it onto a pin (N)">${NOTE_ICON}</button>
         ${spec.presets ? `<span class="og__sets">${Object.entries(spec.presets).map(([id, t]) =>
           `<button type="button" class="pp-plain og__set" data-set="${id}" aria-pressed="false">${esc(t.label)}</button>`).join("")}</span>` : ""}
-        ${spec.grid ? `<button type="button" class="pp-btn wb-tint-1 og__key" data-og="row+" aria-label="One more row" data-tip="One more row">+ row</button>
-        <button type="button" class="pp-btn wb-tint-1 og__key" data-og="row-" aria-label="One row fewer" data-tip="Take the last row off">&minus; row</button>
-        <button type="button" class="pp-btn wb-tint-1 og__key" data-og="col+" aria-label="One more column" data-tip="One more column">+ col</button>
-        <button type="button" class="pp-btn wb-tint-1 og__key" data-og="col-" aria-label="One column fewer" data-tip="Take the last column off">&minus; col</button>` : ""}
+        ${spec.grid ? `<button type="button" class="pp-btn wb-tint-1 og__key" data-og="row+" aria-label="One more row" data-tip="One more row (R)">+ row</button>
+        <button type="button" class="pp-btn wb-tint-1 og__key" data-og="row-" aria-label="One row fewer" data-tip="Take the last row off (Shift+R)">&minus; row</button>
+        <button type="button" class="pp-btn wb-tint-1 og__key" data-og="col+" aria-label="One more column" data-tip="One more column (C)">+ col</button>
+        <button type="button" class="pp-btn wb-tint-1 og__key" data-og="col-" aria-label="One column fewer" data-tip="Take the last column off (Shift+C)">&minus; col</button>` : ""}
         <button type="button" class="pp-btn wb-tint-4 og__key" data-og="clear"
-                aria-label="Take the picked pin off" data-tip="Take the picked pin off">${BIN_ICON}</button>
+                aria-label="Take the picked pin off" data-tip="Take the picked pin off (Delete)">${BIN_ICON}</button>
       </span>
     </div>
     <div class="og__sheet" data-sheet>
@@ -1176,6 +1176,77 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
     pad.open(makeNote(note.runs ? { runs: note.runs, paper: note.paper || 0 } : {}));
   }
 
+  /* ── THE KEYBOARD ─────────────────────────────────────────────────────
+     The sheet takes the keys from a press anywhere on it until a press elsewhere:
+       Enter (or Tab) start writing in the first box — Tab then goes box to box
+       Esc leave the box (the keys below work again)
+       N write a sticky note · P put a pin · [ ] pick the previous / next pin
+       arrows move the picked pin (Shift: further) · Delete take the pin off
+       R / Shift+R a row more / fewer · C / Shift+C a column more / fewer (tables) · ? the list */
+  sheet.tabIndex = -1;
+  let armed = false;
+  const arm = (e) => { armed = el.contains(e.target); };
+  document.addEventListener("pointerdown", arm, true);
+  el.addEventListener("focusin", () => { armed = true; });
+  const pressOg = (k) => el.querySelector(`[data-og="${k}"]`)?.click();
+  const boxes = () => [...el.querySelectorAll("textarea[data-field]")];
+  const say = el.querySelector(".og__say");
+  const SAID = say.textContent;
+  let saying = 0;
+  const flashKeys = () => {
+    say.textContent = "Keys: Enter write in a box (Tab to the next, Esc out) · N note · P pin · [ ] pick a pin · arrows move it · Delete" + (spec.grid ? " · R / C more rows / columns (Shift: fewer)" : "");
+    clearTimeout(saying);
+    saying = setTimeout(() => { say.textContent = SAID; }, 4000);
+  };
+  const onKey = (e) => {
+    if (!armed || !el.isConnected) return;
+    const inBox = e.target.closest?.("textarea, input, [contenteditable='true']");
+    if (inBox) {
+      /* in a box the keys are the writing's; Esc lets go of the box */
+      if (e.key === "Escape" && el.contains(inBox)) { e.preventDefault(); e.stopPropagation(); inBox.blur(); sheet.focus({ preventScroll: true }); }
+      return;
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const done = () => { e.preventDefault(); e.stopPropagation(); };
+    if (k === "?") { done(); flashKeys(); return; }
+    if (k === "Enter" || k === "Tab") {
+      const all = boxes();
+      if (!all.length) return;
+      done();
+      all[e.shiftKey ? all.length - 1 : 0].focus();
+      return;
+    }
+    if (k === "n") { done(); pressOg("note"); return; }
+    if (k === "p") { done(); pressOg("pin"); return; }
+    if (spec.grid && k === "r") { done(); pressOg(e.shiftKey ? "row-" : "row+"); return; }
+    if (spec.grid && k === "c") { done(); pressOg(e.shiftKey ? "col-" : "col+"); return; }
+    if ((k === "[" || k === "]") && state.pins.length) {
+      done();
+      const order = [...state.pins].sort((a, b) => a.y - b.y || a.x - b.x);
+      const cur = order.findIndex((p) => p.id === picked);
+      picked = order[(cur + (k === "[" ? -1 : 1) + order.length) % order.length].id;
+      paintPins();
+      return;
+    }
+    const pin = state.pins.find((p) => p.id === picked);
+    if (!pin) return;
+    if (k === "Delete" || k === "Backspace") { done(); pressOg("clear"); return; }
+    if (k === "Escape") { picked = null; paintPins(); return; }
+    if (k.startsWith("Arrow")) {
+      done();
+      const st = e.shiftKey ? 4 : 1;
+      if (k === "ArrowLeft") pin.x = Math.max(1, pin.x - st);
+      if (k === "ArrowRight") pin.x = Math.min(96, pin.x + st);
+      if (k === "ArrowUp") pin.y = Math.max(1, pin.y - st);
+      if (k === "ArrowDown") pin.y = Math.min(94, pin.y + st);
+      paintPins();
+      paintNotes();
+      tell();
+    }
+  };
+  document.addEventListener("keydown", onKey, true);
+
   const watch = new ResizeObserver(() => paintNotes());
   watch.observe(sheet);
   paintAll();
@@ -1191,7 +1262,11 @@ export function mountOrganiser(host, { kind = "burger", saved = null, onChange =
       preset: state.preset,
       layout: { ...state.layout },
     }),
-    dispose() { watch.disconnect(); pad?.destroy?.(); el.remove(); },
+    dispose() {
+      watch.disconnect(); pad?.destroy?.(); el.remove();
+      document.removeEventListener("pointerdown", arm, true);
+      document.removeEventListener("keydown", onKey, true);
+    },
   };
 }
 
