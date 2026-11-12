@@ -427,5 +427,21 @@
       </ul>
     </section>
     <!-- /seo:about -->
-  </body>
+  
+    <!-- the keyboard (utils/components/studio-keys.js) — ? shows the list -->
+    <script type="module">
+      import { studioKeys, flip, press } from "/utils/components/studio-keys.js";
+      const MODES = ["none", "vert_opp", "corresponding", "alt_int", "alt_ext", "cons_int", "cons_ext", "quiz_equal_supp", "quiz_pick", "quiz_identify"];
+      const map = {
+        e: () => press('[data-answer="equal"]'), s: () => press('[data-answer="supplementary"]'),
+        Enter: () => press("#quiz-next"), n: () => press("#quiz-next"),
+        v: () => flip("t-values"), a: () => flip("t-names"), x: () => flip("t-vertices"), c: () => flip("t-center"),
+        r: () => flip("t-arcs"), k: () => flip("t-colors"), p: () => flip("t-protractor"), g: () => flip("t-grid"),
+        "+": () => press("#btn-zoom-in"), "=": () => press("#btn-zoom-in"), "-": () => press("#btn-zoom-out"),
+        o: () => press("#fab"),
+      };
+      MODES.forEach((m, i) => { map[String(i)] = () => press(`[data-mode="${m}"]`); });
+      studioKeys(map, { help: "Keys: 0 none · 1 vertically opposite · 2 corresponding · 3 alternate interior · 4 alternate exterior · 5 co-interior · 6 co-exterior · 7 8 9 the quizzes · E equal · S supplementary · Enter next · V values · A names · X vertices · C centre · R arcs · K colours · P protractor · G grid · + − zoom · O settings · Alt+1–5 the other studios" });
+    </script>
+</body>
 </html>

@@ -163,3 +163,14 @@ if (document.readyState === "loading") {
 } else {
   start();
 }
+
+
+/* Alt+1 … Alt+5: straight to that studio (read by e.code, so Option on a Mac works too) */
+document.addEventListener("keydown", (e) => {
+  if (!e.altKey || e.ctrlKey || e.metaKey) return;
+  const m = /^Digit([1-9])$/.exec(e.code);
+  const tab = m && GEOMETRY_TABS[Number(m[1]) - 1];
+  if (!tab || isCurrent(tab.href)) return;
+  e.preventDefault();
+  location.href = tab.href;
+});

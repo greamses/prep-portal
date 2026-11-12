@@ -382,5 +382,22 @@
       </ul>
     </section>
     <!-- /seo:about -->
-  </body>
+  
+    <!-- the keyboard (utils/components/studio-keys.js) — ? shows the list -->
+    <script type="module">
+      import { studioKeys, nudge, flip, press } from "/utils/components/studio-keys.js";
+      studioKeys({
+        ArrowUp: () => nudge("sl-sides", 1), "+": () => nudge("sl-sides", 1), "=": () => nudge("sl-sides", 1),
+        ArrowDown: () => nudge("sl-sides", -1), "-": () => nudge("sl-sides", -1),
+        ArrowRight: (e) => nudge("sl-rot", e.shiftKey ? 45 : 15), ArrowLeft: (e) => nudge("sl-rot", e.shiftKey ? -45 : -15),
+        "]": () => nudge("sl-radius", 10), "[": () => nudge("sl-radius", -10),
+        n: () => press('.anim-mode-btn[data-mode="none"]'), i: () => press('.anim-mode-btn[data-mode="interior"]'), e: () => press('.anim-mode-btn[data-mode="exterior"]'),
+        ".": () => nudge("sl-anim", 20), ",": () => nudge("sl-anim", -20),
+        p: () => flip("t-protractors"), l: () => flip("t-labels"), v: () => flip("t-vertices"), c: () => flip("t-center"),
+        s: () => flip("t-sidelabels"), d: () => flip("t-diagonals"), r: () => flip("t-radii"), f: () => flip("t-fill"), g: () => flip("t-grid"),
+        z: () => press("#btn-zoom-in"), x: () => press("#btn-zoom-out"), 0: () => press("#btn-zoom-reset"),
+        o: () => press("#fab"),
+      }, { help: "Keys: ↑ ↓ (or + −) sides · ← → turn it (Shift: more) · [ ] size · N I E none / interior / exterior · , . play the turn · P protractors · L labels · V vertices · C centre · S side labels · D diagonals · R radii · F fill · G grid · Z X 0 zoom · O settings · Alt+1–5 the other studios" });
+    </script>
+</body>
 </html>

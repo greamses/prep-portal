@@ -467,5 +467,19 @@
       </ul>
     </section>
     <!-- /seo:about -->
-  </body>
+  
+    <!-- the keyboard (utils/components/studio-keys.js) — ? shows the list -->
+    <script type="module">
+      import { studioKeys, nudge, flip, press } from "/utils/components/studio-keys.js";
+      const shape = (v) => () => press(`#shape-options input[name="shape"][value="${v}"]`);
+      studioKeys({
+        ArrowRight: (e) => nudge("progress-slider", e.shiftKey ? 10 : 2), ArrowLeft: (e) => nudge("progress-slider", e.shiftKey ? -10 : -2),
+        Home: () => { const s = document.getElementById("progress-slider"); s.value = s.min || 0; s.dispatchEvent(new Event("input", { bubbles: true })); },
+        End: () => { const s = document.getElementById("progress-slider"); s.value = s.max || 100; s.dispatchEvent(new Event("input", { bubbles: true })); },
+        1: shape("sphere"), 2: shape("cone"), 3: shape("cylinder"), 4: shape("cube"), 5: shape("cuboid"),
+        r: () => press("#rotate-btn"), l: () => flip("toggle-labels"), t: () => flip("toggle-explanation"), k: () => flip("toggle-colors"),
+        o: () => press("#settings-btn"),
+      }, { help: "Keys: ← → open it out (Shift: faster) · Home End all closed / all open · 1 sphere · 2 cone · 3 cylinder · 4 cube · 5 cuboid · R rotate · L labels · T explanation · K colours · O settings · Alt+1–5 the other studios" });
+    </script>
+</body>
 </html>
