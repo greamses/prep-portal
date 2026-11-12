@@ -149,13 +149,13 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
   el.classList.add("is-lining");
   el.innerHTML =
     `<div class="lm-tools" role="toolbar" aria-label="Number line tools">`
-    + key("mark", 2, "Put a mark on the line")
-    + key("jump", 2, "A jump over the line")
-    + key("under", 3, "A jump under the line")
-    + key("range", 1, "What the line runs from, to, and in what steps")
-    + key("tone", 2, "The colour of the picked mark or jump")
-    + key("undo", 1, "Step back")
-    + key("del", 4, "Take the picked one off")
+    + key("mark", 2, "Put a mark on the line (M)")
+    + key("jump", 2, "A jump over the line (J)")
+    + key("under", 3, "A jump under the line (U)")
+    + key("range", 1, "What the line runs from, to, and in what steps (R)")
+    + key("tone", 2, "The colour of the picked mark or jump (C)")
+    + key("undo", 1, "Step back (Ctrl+Z)")
+    + key("del", 4, "Take the picked one off (Delete)")
     + `<div class="lm-pot" data-pot hidden><div class="pp-receipt"><div class="pp-receipt__paper">`
     + `<div class="lm-pot__in">`
     + TONES.map((hex, i) => `<button type="button" class="pp-plain lm-chip" data-tone="${i}"`
@@ -526,6 +526,74 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
     input.addEventListener("blur", () => done(true));
   }
 
+  /* ── THE KEYBOARD ─────────────────────────────────────────────────────
+     The line takes the keys from a press anywhere on it until a press somewhere else:
+       M mark · J jump over · U jump under · R the line's range · C colour
+       Tab / Shift+Tab pick the next / previous mark or jump
+       ← → move the picked mark, or the whole jump, one step (Shift: five steps)
+       Alt+← Alt+→ move only the END of the picked jump (longer or shorter)
+       Enter write on it · Delete take it off · Ctrl+Z step back · Esc put it down · ? the list */
+  board.tabIndex = 0;
+  board.setAttribute("aria-label", "Number line board — press ? for the keys");
+  let armed = false;
+  const arm = (e) => { armed = el.contains(e.target); };
+  document.addEventListener("pointerdown", arm, true);
+  board.addEventListener("focus", () => { armed = true; });
+  svg.addEventListener("pointerdown", () => board.focus({ preventScroll: true }), true);
+  const press = (t) => tools.querySelector(`[data-t="${t}"]`)?.click();
+  const KEYS = { m: "mark", j: "jump", u: "under", r: "range", c: "tone" };
+  const things = () => [
+    ...line.marks.map((m) => ({ kind: "mark", id: m.id, x: m.at })),
+    ...line.jumps.map((j) => ({ kind: "jump", id: j.id, x: Math.min(j.from, j.to) })),
+  ].sort((a, b) => a.x - b.x);
+  const onKey = (e) => {
+    if (!armed || !el.isConnected) return;
+    if (e.target.closest?.(".lm-write, input, textarea, select")) return;
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); e.stopPropagation(); stepBack(); return; }
+    if (e.ctrlKey || e.metaKey) return;
+    const done = () => { e.preventDefault(); e.stopPropagation(); };
+    if (k === "?") { done(); flash("Keys: M mark · J jump · U jump under · R range · Tab pick · arrows move · Alt+arrows the jump's end · Enter write · Delete · Ctrl+Z · Esc"); return; }
+    if (k === "Escape") { picked = null; pot.hidden = true; rangeSheet.hidden = true; paint(); return; }
+    if (k === "Delete" || k === "Backspace") { done(); press("del"); return; }
+    if (k === "Enter" && picked) { done(); write(); return; }
+    if (k === "Tab") {
+      const all = things();
+      if (!all.length) return;
+      done();
+      const cur = picked ? all.findIndex((t) => t.kind === picked.kind && t.id === picked.id) : -1;
+      const next = all[(cur + (e.shiftKey ? -1 : 1) + all.length) % all.length];
+      picked = { kind: next.kind, id: next.id };
+      paint();
+      return;
+    }
+    if ((k === "ArrowLeft" || k === "ArrowRight") && picked) {
+      done();
+      const st = (Number(line.step) > 0 ? Number(line.step) : 1) * (e.shiftKey ? 5 : 1) * (k === "ArrowLeft" ? -1 : 1);
+      change(() => {
+        if (picked.kind === "mark") {
+          const m = line.marks.find((x) => x.id === picked.id);
+          if (!m) return;
+          const v = onStep(m.at + st);
+          if (m.text === showValue(m.at, den())) m.text = showValue(v, den()); // its words were its value: they move with it
+          m.at = v;
+        } else {
+          const j = line.jumps.find((x) => x.id === picked.id);
+          if (!j) return;
+          if (e.altKey) j.to = onStep(j.to + st);
+          else {
+            const a = onStep(j.from + st), b = onStep(j.to + st);
+            if (b - a === j.to - j.from) { j.from = a; j.to = b; } // the whole jump moves, if it fits on the line
+          }
+        }
+      });
+      return;
+    }
+    const t = KEYS[k];
+    if (t) { done(); press(t); }
+  };
+  document.addEventListener("keydown", onKey, true);
+
   paint();
   mountTooltips();
 
@@ -535,6 +603,8 @@ export function mountLineModel(el, { saved = null, onChange = () => {} } = {}) {
     clear() { line = blankLine(); picked = null; paint(); },
     dispose() {
       document.removeEventListener("pointerdown", shut, true);
+      document.removeEventListener("pointerdown", arm, true);
+      document.removeEventListener("keydown", onKey, true);
       /* if a sheet was ever shown, it now lives on document.body, well
          outside `el` — the innerHTML reset below cannot reach it */
       pot.remove();

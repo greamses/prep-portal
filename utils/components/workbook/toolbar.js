@@ -416,9 +416,13 @@ export function mountTools(host = document.body, { tools = ["board", "calculator
         else if (off) { open.get(k.dataset.wbtool)?.close(); k.remove(); }
       }));
       if (!admin) flies.forEach((fly, gid) => {
-        if (fly.querySelector("[data-wbtool]")) return;
+        const left = fly.querySelectorAll("[data-wbtool]");
+        if (left.length > 1) return;
+        /* one tool left in a group is just that tool, on the rail itself; none, and the group goes */
+        const gk = el.querySelector(`[data-wbgroup="${gid}"]`);
+        if (left.length === 1 && gk) gk.replaceWith(left[0]);
+        else gk?.remove();
         fly.remove(); flies.delete(gid);
-        el.querySelector(`[data-wbgroup="${gid}"]`)?.remove();
       });
     };
     mark();
