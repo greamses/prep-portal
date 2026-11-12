@@ -421,42 +421,43 @@ const examQuestions = [
   {
     question:
       "Ololade Abigail can build this set of \\(3\\) stairs with \\(12\\text{ blocks}\\). How many blocks will she need to build a set of \\(6\\) stairs?",
-    image: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="100%" height="100%">
-  <style>
-    .isometric-face { stroke: #1e293b; stroke-dasharray: none; stroke-linejoin: round; stroke-width: 1.2; }
-    .top-face { fill: #38bdf8; }
-    .left-face { fill: #0284c7; }
-    .right-face { fill: #0369a1; }
-    .top-face-active { fill: #4ade80; }
-    .left-face-active { fill: #16a34a; }
-    .right-face-active { fill: #15803d; }
-  </style>
-
-  <!-- ISOMETRIC BLOCK DRAWING (Double Column Staircase of Width 2) -->
-  
-  <!-- Back column (Row 3, Step 3) -->
-  <!-- Left block -->
-  <path d="M 50,75 L 70,65 L 90,75 L 70,85 z" class="isometric-face top-face" />
-  <path d="M 50,75 L 50,135 L 70,145 L 70,85 z" class="isometric-face left-face" />
-  <!-- Right block -->
-  <path d="M 70,65 L 90,55 L 110,65 L 90,75 z" class="isometric-face top-face-active" />
-  <path d="M 110,65 L 110,125 L 90,115 L 90,75 z" class="isometric-face right-face-active" />
-
-  <!-- Middle column (Row 2, Step 2) -->
-  <!-- Left block -->
-  <path d="M 90,95 L 110,85 L 130,95 L 110,105 z" class="isometric-face top-face" />
-  <path d="M 90,95 L 90,135 L 110,145 L 110,105 z" class="isometric-face left-face" />
-  <!-- Right block -->
-  <path d="M 110,85 L 130,75 L 150,85 L 130,95 z" class="isometric-face top-face-active" />
-  <path d="M 150,85 L 150,125 L 130,115 L 130,95 z" class="isometric-face right-face-active" />
-
-  <!-- Front column (Row 1, Step 1) -->
-  <!-- Left block -->
-  <path d="M 130,115 L 150,105 L 170,115 L 150,125 z" class="isometric-face top-face" />
-  <path d="M 130,115 L 130,135 L 150,145 L 150,125 z" class="isometric-face left-face" />
-  <!-- Right block -->
-  <path d="M 150,105 L 170,95 L 190,105 L 170,115 z" class="isometric-face top-face-active" />
-  <path d="M 190,105 L 190,125 L 170,115 L 170,115 z" class="isometric-face right-face-active" />
+    image: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 148" width="100%" height="100%" role="img" aria-label="A staircase of 12 cubes: 3 steps high and 2 blocks wide">
+  <path d="M28.8,92.0 L49.6,104.0 L49.6,80.0 L28.8,68.0 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M70.4,92.0 L49.6,104.0 L49.6,80.0 L70.4,68.0 Z" fill="#94a3b8" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M49.6,56.0 L70.4,68.0 L49.6,80.0 L28.8,68.0 Z" fill="#f1f5f9" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M28.8,68.0 L49.6,80.0 L49.6,56.0 L28.8,44.0 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M70.4,68.0 L49.6,80.0 L49.6,56.0 L70.4,44.0 Z" fill="#94a3b8" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M49.6,32.0 L70.4,44.0 L49.6,56.0 L28.8,44.0 Z" fill="#f1f5f9" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M28.8,44.0 L49.6,56.0 L49.6,32.0 L28.8,20.0 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M70.4,44.0 L49.6,56.0 L49.6,32.0 L70.4,20.0 Z" fill="#94a3b8" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M49.6,8.0 L70.4,20.0 L49.6,32.0 L28.8,20.0 Z" fill="#f1f5f9" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M8.0,104.0 L28.8,116.0 L28.8,92.0 L8.0,80.0 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M49.6,104.0 L28.8,116.0 L28.8,92.0 L49.6,80.0 Z" fill="#94a3b8" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M28.8,68.0 L49.6,80.0 L28.8,92.0 L8.0,80.0 Z" fill="#f1f5f9" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M49.6,104.0 L70.4,116.0 L70.4,92.0 L49.6,80.0 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M91.1,104.0 L70.4,116.0 L70.4,92.0 L91.1,80.0 Z" fill="#94a3b8" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M70.4,68.0 L91.1,80.0 L70.4,92.0 L49.6,80.0 Z" fill="#f1f5f9" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M8.0,80.0 L28.8,92.0 L28.8,68.0 L8.0,56.0 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M49.6,80.0 L28.8,92.0 L28.8,68.0 L49.6,56.0 Z" fill="#94a3b8" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M28.8,44.0 L49.6,56.0 L28.8,68.0 L8.0,56.0 Z" fill="#f1f5f9" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M49.6,80.0 L70.4,92.0 L70.4,68.0 L49.6,56.0 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M91.1,80.0 L70.4,92.0 L70.4,68.0 L91.1,56.0 Z" fill="#94a3b8" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M70.4,44.0 L91.1,56.0 L70.4,68.0 L49.6,56.0 Z" fill="#f1f5f9" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M8.0,56.0 L28.8,68.0 L28.8,44.0 L8.0,32.0 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M49.6,56.0 L28.8,68.0 L28.8,44.0 L49.6,32.0 Z" fill="#94a3b8" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M28.8,20.0 L49.6,32.0 L28.8,44.0 L8.0,32.0 Z" fill="#f1f5f9" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M28.8,116.0 L49.6,128.0 L49.6,104.0 L28.8,92.0 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M70.4,116.0 L49.6,128.0 L49.6,104.0 L70.4,92.0 Z" fill="#94a3b8" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M49.6,80.0 L70.4,92.0 L49.6,104.0 L28.8,92.0 Z" fill="#f1f5f9" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M70.4,116.0 L91.1,128.0 L91.1,104.0 L70.4,92.0 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M111.9,116.0 L91.1,128.0 L91.1,104.0 L111.9,92.0 Z" fill="#94a3b8" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M91.1,80.0 L111.9,92.0 L91.1,104.0 L70.4,92.0 Z" fill="#f1f5f9" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M28.8,92.0 L49.6,104.0 L49.6,80.0 L28.8,68.0 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M70.4,92.0 L49.6,104.0 L49.6,80.0 L70.4,68.0 Z" fill="#94a3b8" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M49.6,56.0 L70.4,68.0 L49.6,80.0 L28.8,68.0 Z" fill="#f1f5f9" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M49.6,128.0 L70.4,140.0 L70.4,116.0 L49.6,104.0 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M91.1,128.0 L70.4,140.0 L70.4,116.0 L91.1,104.0 Z" fill="#94a3b8" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M70.4,92.0 L91.1,104.0 L70.4,116.0 L49.6,104.0 Z" fill="#f1f5f9" stroke="#1f2937" stroke-width="1.2" stroke-linejoin="round"/>
 </svg>`,
     options: ["\\(42\\)", "\\(30\\)", "\\(36\\)", "\\(21\\)", "\\(52\\)"],
     correctIndex: 0,
