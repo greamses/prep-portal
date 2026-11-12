@@ -34,7 +34,7 @@ import { placeFill, worthOf } from "./shift.js";
 import { barSetup, barParts, barMissing, barMoney, barFractions } from "./bar-films.js";
 import { fracLike, fracEqual, fracUnlike, fracMixed } from "./fraction-films.js";
 import { ctxInference, ctxDefinition, ctxExample, ctxAntonym, ctxSynonym } from "./context-films.js";
-import { loss25, score80 } from "./cbt-films.js";
+import { loss25, score80, score90, profit20 } from "./cbt-films.js";
 
 /* The strip's dress. A page that is not a workbook does not link video.css,
    and an unstyled strip is not merely plain — it is invisible, which is how
@@ -332,6 +332,8 @@ const SCENES = {
   /* one CBT question each, worked with its own numbers (./cbt-films.js) */
   "loss-25": loss25,
   "score-80": score80,
+  "score-90": score90,
+  "profit-20": profit20,
 };
 /**
  * WHAT EVERY FILM IS CALLED, in one place.
@@ -365,6 +367,8 @@ export const FILMS = [
   { id: "ctx-synonym", name: "Synonym clues", of: "Comprehension ch 2" },
   { id: "loss-25", name: "A 25% loss: find the cost price (two ways)", of: "Scholastic 2022 first round, Q6" },
   { id: "score-80", name: "56 marks is 80%: find the full marks (two ways)", of: "Scholastic 2022 first round, Q8" },
+  { id: "score-90", name: "72 marks is 90%: find the full marks (two ways)", of: "Scholastic 4th edition first round, Q10" },
+  { id: "profit-20", name: "Sold at a 20% profit: find the cost price (two ways)", of: "Scholastic 4th edition first round, Q15" },
 ];
 
 /** The coded film behind an id, for the editor to trace and to take a script from. */

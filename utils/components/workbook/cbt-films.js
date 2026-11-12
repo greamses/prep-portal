@@ -122,11 +122,19 @@ function partWhole(cfg) {
   const t = (n) => f(n).replace(/,/g, "{,}");  // a figure in TeX
   /* the boxes share 120 mm, 48 units, in the middle of the screen */
   const BAR_MM = 120;
-  const PART_MM = BAR_MM / N;
+  /* A PART CAN BE MORE THAN THE WHOLE: a profit. Then the boxes run on past the whole (6 boxes
+     sold against a cost of 5), so the longest row is what has to fit the 120 mm */
+  const OVER = K > N;
+  const ROW = Math.max(N, K), SHARED = Math.min(N, K);
+  const PART_MM = BAR_MM / ROW;
 
-  const boxes = (text, restTone = "a") => Array.from({ length: N }, (_, i) => part(text, 1, i >= K ? restTone : "a"));
+  const boxes = (text, restTone = "a") => Array.from({ length: ROW }, (_, i) => part(text, 1, i >= SHARED ? restTone : "a"));
   const bars = (rows) => mathifyPic(modelSvg(rows, { cap: PART_MM, label: "" }));
-  const tops = [{ from: 0, to: K, text: L.part }, { from: K, to: N, text: L.rest }];
+  /* the braces: the part over the top; under it, the whole (and, past the whole, the profit) */
+  const tops = OVER ? [{ from: 0, to: K, text: L.part }] : [{ from: 0, to: K, text: L.part }, { from: K, to: N, text: L.rest }];
+  const lows = (whole) => (OVER ? [{ from: 0, to: N, text: whole }, { from: N, to: K, text: L.rest }] : [{ from: 0, to: N, text: whole }]);
+  const REST = OVER ? "below-0-1" : "above-0-1";
+  const CUT_GAP = N > 6 ? 0.32 : 0.95;
 
   /* the working under the bar, one line at a time */
   const MAIN_W = 150, MAIN_H = 30;
@@ -193,8 +201,8 @@ function partWhole(cfg) {
       /* ── method one: the bar ── */
       b0: () => bars([{ parts: [part("?", N, "a")], below: [{ from: 0, to: 1, text: `${L.whole} = ?` }] }]),
       b1: () => bars([{ parts: boxes(`${100 / N}%`), below: [{ from: 0, to: N, text: `${L.whole} = ?` }] }]),
-      b2: () => bars([{ parts: boxes(`${100 / N}%`, "d"), above: tops, below: [{ from: 0, to: N, text: `${L.whole} = ?` }] }]),
-      b3: () => bars([{ parts: boxes(f(UNIT), "d"), above: tops, below: [{ from: 0, to: N, text: L.whole }] }]),
+      b2: () => bars([{ parts: boxes(`${100 / N}%`, "d"), above: tops, below: lows(`${L.whole} = ?`) }]),
+      b3: () => bars([{ parts: boxes(f(UNIT), "d"), above: tops, below: lows(L.whole) }]),
       /* the working under it, one line at a time */
       mA: () => main([{ k: "p", tex: `${B.pct}\\%` }, { k: "e1", tex: "=" }, { k: "f", frac: [String(B.pct), "100"] }, { k: "e2", tex: "=" }, { k: "q", frac: [String(B.top), String(B.bot)], color: BLUE }],
         (at) => reduceMarks(at.f, "f", String(B.top), String(B.bot), 8)),
@@ -207,7 +215,7 @@ function partWhole(cfg) {
       sT: () => svgBox(SIDE_W, 20, mathRow([{ k: "a", tex: cfg.trap }], { cx: SIDE_W / 2, y: 10, em: 5.4 }).svg
         + `<line data-mb="cut" data-k="x" x1="4" y1="14" x2="${SIDE_W - 4}" y2="3" stroke="${RED}" stroke-width="0.8" stroke-linecap="round"/>`
         + texAt("\\text{not this}", SIDE_W / 2, 19, { em: 4, color: RED, attrs: 'data-mb="num" data-k="n"' })),
-      sC: () => side([[{ k: "a", tex: `${t(WHOLE)} - ${t(UNIT * (N - K))}` }], [{ k: "b", tex: `= ${t(known)}\\ \\checkmark`, color: GREEN }]]),
+      sC: () => side([[{ k: "a", tex: OVER ? `${t(WHOLE)} + ${t(UNIT * (K - N))}` : `${t(WHOLE)} - ${t(UNIT * (N - K))}` }], [{ k: "b", tex: `= ${t(known)}\\ \\checkmark`, color: GREEN }]]),
       /* ── method two ── */
       r2: () => {
         const top = mathRow([{ k: "p", tex: F.top }], { cx: MAIN_W / 2, y: 9, em: 7.5 });
@@ -257,27 +265,33 @@ function partWhole(cfg) {
             line.setAttribute("stroke", INK); line.setAttribute("stroke-width", bar.getAttribute("stroke-width") || "0.5");
             s.appendChild(line);
           }
-          H.score(line, (k - 1) * 0.95, 0.45);
-          H.sound("snip", (k - 1) * 0.95 + 0.3);
+          H.score(line, (k - 1) * CUT_GAP, 0.45);
+          H.sound("snip", (k - 1) * CUT_GAP + 0.3);
         }
       },
       "b1.base": (s, H) => { mb(s, "bar").forEach((n) => H.show(n)); H.show(braceOf(s, "below-0-0")); },
       "b1.pct": (s, H) => mb(s, "num").forEach((n, i) => H.write(n, i * 0.35)),
+      /* the whole, as it stood when it was cut (a profit's extra boxes are not there yet) */
       "b2.base": (s, H) => {
-        mb(s, "bar").forEach((n) => H.show(n));
-        mb(s, "num").forEach((n) => H.show(n));
+        mb(s, "bar").slice(0, N).forEach((n) => H.show(n));
+        mb(s, "num").slice(0, N).forEach((n) => H.show(n));
         H.show(braceOf(s, "below-0-0"));
       },
-      /* the boxes not in the part take their own colour, and their brace */
+      /* a loss: the boxes not sold take their own colour. A profit: the extra boxes GROW on past the whole */
       "b2.lose": (s, H) => {
-        const b = mb(s, "bar");
-        b.slice(K).forEach((n, i) => H.tint(n, b[0].getAttribute("fill"), i * 0.3));
-        H.draw(braceOf(s, "above-0-1"), 0.5);
+        const b = mb(s, "bar"), nums = mb(s, "num");
+        if (OVER) {
+          b.slice(N).forEach((n, i) => H.grow(n, i * 0.5));
+          nums.slice(N).forEach((n, i) => H.write(n, 0.5 + i * 0.5));
+        } else {
+          b.slice(K).forEach((n, i) => H.tint(n, b[0].getAttribute("fill"), i * 0.3));
+        }
+        H.draw(braceOf(s, REST), 0.5);
       },
       "b2.sold": (s, H) => H.draw(braceOf(s, "above-0-0"), 0),
       "b3.base": (s, H) => {
         mb(s, "bar").forEach((n) => H.show(n));
-        ["above-0-0", "above-0-1", "below-0-0"].forEach((k) => H.show(braceOf(s, k)));
+        ["above-0-0", REST, "below-0-0"].forEach((k) => H.show(braceOf(s, k)));
       },
       "b3.one": (s, H) => H.write(mb(s, "num")[0], 0),
       "b3.rest": (s, H) => mb(s, "num").slice(1).forEach((n, i) => H.write(n, i * 1.0)),
@@ -515,6 +529,172 @@ export function score80() {
       push("There's our question mark. Seventy marks. Same answer as the boxes.",
         { look: (stage) => stage.querySelector('[data-t="eq"] [data-k="ans"]'), lookAt: { lit: true, delay: 0.6, hold: 2.2 }, pause: 1 });
       push("Two ways, one answer. And remember: the eighty percent is a part of the full marks, never a part of the fifty six.");
+    },
+  });
+}
+
+/* ═══ 90% OF THE MARKS: FIND THE FULL MARKS ═══════════════════════════════
+   Scholastic upper primary, 4th edition first round, Q10: "A boy who obtains
+   72 marks in a subject gets 90% of the total marks. What is the full marks?" */
+export function score90() {
+  return partWhole({
+    N: 10, K: 9, known: 72,
+    question: "A boy who obtains 72 marks in a subject gets 90% of the total marks. What is the full marks of the subject?",
+    labels: { part: "got 72", rest: "missed", whole: "full marks", money: "", wordTop: "got", wordBottom: "full" },
+    box: { pct: 90, top: 9, bot: 10, by: 10 },
+    frac: { top: "\\text{he got } 90\\%", pct: 90, by: 10 },
+    trap: "72 + 10\\%\\ \\text{of}\\ 72",
+    steps: ({ push, look, BOXES }) => {
+      push("A boy wrote an exam.", { on: ["a1"], transition: "iris", pause: 0.5 });
+      push("He got seventy two marks.", { pause: 0.4 });
+      push("And those seventy two marks are ninety percent of the full marks.", { pause: 0.6 });
+      push("Nearly all of it, but not all. So he missed a few marks, right?", { pause: 1 });
+      push("The question is... what were the full marks? That's the number we're hunting.", { pause: 0.8 });
+      push("Picture it like this. One whole bar. That bar is the full marks.",
+        { on: ["b0", "m1"], add: ["b0.bar", "b0.brace"], cue: { "b0.bar": "whole bar", "b0.brace": "full marks" },
+          transition: { kind: "card", title: "Method 1", sub: "The box method", hold: 1.6 }, pause: 0.5 });
+      push("We don't know it yet, so we put a question mark inside it.",
+        { add: ["b0.q"], cue: { "b0.q": "question mark" }, pause: 1 });
+      push("Now, ninety percent. Ninety out of a hundred... can we say that in a simpler way?",
+        { on: ["mA"], add: ["mA.frac"], cue: { "mA.frac": "ninety out of a hundred" }, pause: 1.6 });
+      push("Divide the top and the bottom by ten. Nine over ten. Nine tenths.",
+        { on: ["sA"], add: ["mA.cut", "sA.all"], cue: { "mA.cut": "divide", "sA.all": "divide" }, pause: 0.6 });
+      push("Nine tenths means: cut the whole into ten equal boxes, and he got nine of them.", { off: ["mA", "sA"], pause: 0.6 });
+      push("So, ten equal boxes. Watch the cuts.", { add: ["b0.cut"], cue: { "b0.cut": "watch" }, pause: 0.8 });
+      push("Ten boxes, all the same size. Each box is ten percent.",
+        { on: ["b1"], off: ["b0"], add: ["b1.base", "b1.pct"], cue: { "b1.pct": "ten percent" }, pause: 0.8 });
+      push("He got nine of the boxes. Those nine are his seventy two marks.",
+        { on: ["b2"], off: ["b1"], add: ["b2.base", "b2.sold"], cue: { "b2.sold": "nine of the boxes" }, pause: 0.5 });
+      push("And this last box, he missed.", { add: ["b2.lose"], cue: { "b2.lose": "last box" }, pause: 0.8 });
+      push("Now wait. This is where people fall.", { pause: 0.7 });
+      push("Some people take ten percent of seventy two and add it on. Don't do that.",
+        { on: ["sT"], add: ["sT.all"], cue: { "sT.all": "ten percent of seventy two" }, pause: 0.6 });
+      push("The ten percent is a part of the full marks. The big bar. Not a part of seventy two.",
+        { look: look.mark("b2", "bar", BOXES - 1), lookAt: { lit: true, delay: 0.4, hold: 2.2 }, pause: 1 });
+      push("So, nine boxes make seventy two.",
+        { on: ["mB"], off: ["sT"], add: ["mB.all"], cue: { "mB.all": "nine boxes" },
+          look: look.brace("b2", "above-0-0"), lookAt: { lit: true, delay: 0.5, hold: 2.0 }, pause: 0.6 });
+      push("You follow me so far?", { pause: 1.4 });
+      push("If nine boxes make seventy two... how much is one box?",
+        { on: ["b3", "mC"], off: ["b2", "mB"], add: ["b3.base", "mC.ask"], cue: { "mC.ask": "one box" }, pause: 1.8 });
+      push("We share seventy two into nine. That's eight.",
+        { add: ["mC.div", "b3.one"], cue: { "mC.div": "seventy two", "b3.one": "eight" }, pause: 0.6 });
+      push("And every box is the same size, so every box is eight. Even the one he missed.",
+        { add: ["b3.rest"], cue: { "b3.rest": "every box is eight" }, pause: 0.8 });
+      push("The full marks are the whole bar. All ten boxes.",
+        { on: ["mD"], off: ["mC"], add: ["mD.ask"], cue: { "mD.ask": "all ten boxes" }, pause: 0.5 });
+      push("Ten times eight... eighty.", { add: ["mD.ans"], cue: { "mD.ans": "eighty" }, pause: 0.8 });
+      push("Let's check it. Eighty, minus the eight he missed...",
+        { on: ["sC"], add: ["sC.a"], cue: { "sC.a": "eighty, minus" }, pause: 0.4 });
+      push("Seventy two. That's his score. It works.", { add: ["sC.b"], pause: 0.6 });
+      push("So the full marks are eighty.",
+        { on: ["mE"], off: ["mD", "sC"], add: ["mE.all"], cue: { "mE.all": "eighty" }, pause: 1.4 });
+      push("Now the same question with fractions. No boxes this time.",
+        { on: ["m2"], off: ["b3", "mE", "m1"], transition: { kind: "card", title: "Method 2", sub: "Equivalent fractions", hold: 1.6 }, pause: 0.6 });
+      push("He got ninety percent. As a fraction, that's ninety over a hundred.",
+        { on: ["r2"], add: ["r2.pct", "r2.frac"], cue: { "r2.pct": "ninety percent", "r2.frac": "ninety over" }, pause: 0.5 });
+      push("Divide the top and the bottom by ten... nine tenths.",
+        { on: ["s2A"], add: ["r2.cut", "s2A.all"], cue: { "r2.cut": "divide", "s2A.all": "divide" }, pause: 0.6 });
+      push("So nine tenths of the full marks is seventy two. Two fractions that are equal.", { pause: 0.6 });
+      push("Nine over ten on this side.",
+        { on: ["eq"], off: ["r2", "s2A"], transition: "fade", add: ["eq.left"], cue: { "eq.left": "nine over ten" }, pause: 0.4 });
+      push("And on the other side, his marks over the full marks. Seventy two on top.",
+        { add: ["eq.sold"], cue: { "eq.sold": "seventy two on top" }, pause: 0.4 });
+      push("The full marks we don't know. So... question mark.", { add: ["eq.cost"], cue: { "eq.cost": "question mark" }, pause: 0.6 });
+      push("To keep two fractions equal, you multiply the top and the bottom by the same number.", { pause: 0.6 });
+      push("Look at the tops. Nine becomes seventy two. Nine times what?", { add: ["eq.over"], cue: { "eq.over": "nine becomes" }, pause: 1.8 });
+      push("Seventy two divided by nine. Eight.", { on: ["s2B"], add: ["s2B.all", "eq.overX"], cue: { "eq.overX": "eight" }, pause: 0.5 });
+      push("Same as one box, you see?", { pause: 0.9 });
+      push("So the bottom is multiplied by eight too.", { add: ["eq.under"], cue: { "eq.under": "bottom" }, pause: 0.6 });
+      push("Ten times eight... eighty.",
+        { on: ["s2C"], add: ["s2C.all", "eq.ans"], cue: { "s2C.all": "ten times", "eq.ans": "eighty" }, pause: 0.6 });
+      push("There's our question mark. Eighty marks. Same answer as the boxes.",
+        { look: (stage) => stage.querySelector('[data-t="eq"] [data-k="ans"]'), lookAt: { lit: true, delay: 0.6, hold: 2.2 }, pause: 1 });
+      push("Two ways, one answer. The ninety percent is a part of the full marks, never a part of the seventy two.");
+    },
+  });
+}
+
+/* ═══ SOLD AT A 20% PROFIT: FIND THE COST PRICE ════════════════════════════
+   Scholastic upper primary, 4th edition first round, Q15: "Laura sold a shirt
+   at the rate of 1200 and made a profit of 20%. What was the cost price?"
+   The part is MORE than the whole: the bar grows past the cost by one box. */
+export function profit20() {
+  return partWhole({
+    N: 5, K: 6, known: 1200,
+    question: "Laura sold a shirt at the rate of ₦1200 and made a profit of 20%. What was the cost price?",
+    labels: { part: "sold for 1,200", rest: "profit", whole: "cost price", money: "₦", wordTop: "sold", wordBottom: "cost" },
+    box: { pct: 20, top: 1, bot: 5, by: 20 },
+    frac: { top: "100\\% + 20\\% = 120\\%", pct: 120, by: 20 },
+    trap: "1{,}200 - 20\\%\\ \\text{of}\\ 1{,}200",
+    steps: ({ push, look }) => {
+      push("Laura bought a shirt.", { on: ["a1"], transition: "iris", pause: 0.5 });
+      push("Then she sold it for one thousand two hundred naira.", { pause: 0.4 });
+      push("And she made money on it. A profit of twenty percent.", { pause: 0.6 });
+      push("Twenty percent of what she paid for it, you get?", { pause: 1 });
+      push("So what she paid... the cost price. That's the number we're hunting.", { pause: 0.8 });
+      push("Picture it like this. One whole bar. That bar is what she paid for the shirt.",
+        { on: ["b0", "m1"], add: ["b0.bar", "b0.brace"], cue: { "b0.bar": "whole bar", "b0.brace": "what she paid" },
+          transition: { kind: "card", title: "Method 1", sub: "The box method", hold: 1.6 }, pause: 0.5 });
+      push("We don't know it yet, so we put a question mark inside it.", { add: ["b0.q"], cue: { "b0.q": "question mark" }, pause: 1 });
+      push("Now, twenty percent. Twenty out of a hundred... what is that, in a simpler way?",
+        { on: ["mA"], add: ["mA.frac"], cue: { "mA.frac": "twenty out of a hundred" }, pause: 1.6 });
+      push("Divide the top and the bottom by twenty. One fifth.",
+        { on: ["sA"], add: ["mA.cut", "sA.all"], cue: { "mA.cut": "divide", "sA.all": "divide" }, pause: 0.6 });
+      push("So we cut what she paid into five equal boxes.", { off: ["mA", "sA"], pause: 0.5 });
+      push("One cut... two... three... four.", { add: ["b0.cut"], cue: { "b0.cut": "one cut" }, pause: 0.6 });
+      push("Five boxes, all the same size. Each box is twenty percent.",
+        { on: ["b1"], off: ["b0"], add: ["b1.base", "b1.pct"], cue: { "b1.pct": "twenty percent" }, pause: 0.8 });
+      push("Now the profit. She made twenty percent more. That's one more box.",
+        { on: ["b2"], off: ["b1"], add: ["b2.base", "b2.lose"], cue: { "b2.lose": "one more box" }, pause: 0.6 });
+      push("So she sold it for all six boxes. Five for what she paid, and one for her profit.",
+        { add: ["b2.sold"], cue: { "b2.sold": "all six boxes" }, pause: 0.8 });
+      push("Now wait. This is where people fall.", { pause: 0.7 });
+      push("Some people take twenty percent of one thousand two hundred and take it away. Don't do that.",
+        { on: ["sT"], add: ["sT.all"], cue: { "sT.all": "twenty percent of one thousand two hundred" }, pause: 0.6 });
+      push("The profit is twenty percent of what she paid. Not twenty percent of the selling price.",
+        { look: (stage) => stage.querySelectorAll('[data-t="b2"] [data-mb="bar"]')[5], lookAt: { lit: true, delay: 0.4, hold: 2.2 }, pause: 1 });
+      push("So, six boxes make one thousand two hundred.",
+        { on: ["mB"], off: ["sT"], add: ["mB.all"], cue: { "mB.all": "six boxes" },
+          look: look.brace("b2", "above-0-0"), lookAt: { lit: true, delay: 0.5, hold: 2.0 }, pause: 0.6 });
+      push("You follow me so far?", { pause: 1.4 });
+      push("If six boxes make one thousand two hundred... how much is one box?",
+        { on: ["b3", "mC"], off: ["b2", "mB"], add: ["b3.base", "mC.ask"], cue: { "mC.ask": "one box" }, pause: 1.8 });
+      push("We share one thousand two hundred into six. That's two hundred.",
+        { add: ["mC.div", "b3.one"], cue: { "mC.div": "one thousand two hundred", "b3.one": "two hundred" }, pause: 0.6 });
+      push("And every box is the same size. So two hundred in every box. The profit box too.",
+        { add: ["b3.rest"], cue: { "b3.rest": "so two hundred" }, pause: 0.8 });
+      push("What she paid is the first five boxes.",
+        { on: ["mD"], off: ["mC"], add: ["mD.ask"], cue: { "mD.ask": "five boxes" }, pause: 0.5 });
+      push("Five times two hundred... one thousand.", { add: ["mD.ans"], cue: { "mD.ans": "one thousand" }, pause: 0.8 });
+      push("Let's check it. One thousand, plus the two hundred profit...",
+        { on: ["sC"], add: ["sC.a"], cue: { "sC.a": "one thousand, plus" }, pause: 0.4 });
+      push("One thousand two hundred. That's the selling price. It works.", { add: ["sC.b"], pause: 0.6 });
+      push("So the cost price is one thousand naira.",
+        { on: ["mE"], off: ["mD", "sC"], add: ["mE.all"], cue: { "mE.all": "one thousand naira" }, pause: 1.4 });
+      push("Now the same question with fractions.",
+        { on: ["m2"], off: ["b3", "mE", "m1"], transition: { kind: "card", title: "Method 2", sub: "Equivalent fractions", hold: 1.6 }, pause: 0.6 });
+      push("She made a profit of twenty percent. So she sold it for a hundred and twenty percent of what she paid.",
+        { on: ["r2"], add: ["r2.pct"], cue: { "r2.pct": "a hundred and twenty percent" }, pause: 0.6 });
+      push("A hundred and twenty over a hundred.", { add: ["r2.frac"], cue: { "r2.frac": "a hundred and twenty over" }, pause: 0.5 });
+      push("Divide the top and the bottom by twenty... six fifths.",
+        { on: ["s2A"], add: ["r2.cut", "s2A.all"], cue: { "r2.cut": "divide", "s2A.all": "divide" }, pause: 0.6 });
+      push("Six fifths of what she paid is one thousand two hundred. Two fractions that are equal.", { pause: 0.6 });
+      push("Six over five on this side.",
+        { on: ["eq"], off: ["r2", "s2A"], transition: "fade", add: ["eq.left"], cue: { "eq.left": "six over five" }, pause: 0.4 });
+      push("And on the other side, the selling price over the cost price. One thousand two hundred on top.",
+        { add: ["eq.sold"], cue: { "eq.sold": "one thousand two hundred on top" }, pause: 0.4 });
+      push("The cost price we don't know. So... question mark.", { add: ["eq.cost"], cue: { "eq.cost": "question mark" }, pause: 0.6 });
+      push("Look at the tops. Six becomes one thousand two hundred. Six times what?", { add: ["eq.over"], cue: { "eq.over": "six becomes" }, pause: 1.8 });
+      push("One thousand two hundred divided by six. Two hundred.",
+        { on: ["s2B"], add: ["s2B.all", "eq.overX"], cue: { "eq.overX": "two hundred." }, pause: 0.5 });
+      push("Same as one box, you see? So the bottom is multiplied by two hundred too.",
+        { add: ["eq.under"], cue: { "eq.under": "bottom" }, pause: 0.6 });
+      push("Five times two hundred... one thousand.",
+        { on: ["s2C"], add: ["s2C.all", "eq.ans"], cue: { "s2C.all": "five times", "eq.ans": "one thousand" }, pause: 0.6 });
+      push("There's our question mark. One thousand naira. Same answer as the boxes.",
+        { look: (stage) => stage.querySelector('[data-t="eq"] [data-k="ans"]'), lookAt: { lit: true, delay: 0.6, hold: 2.2 }, pause: 1 });
+      push("Two ways, one answer. A profit, like a loss, is always a part of what was paid. The whole bar.");
     },
   });
 }

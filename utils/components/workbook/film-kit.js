@@ -786,11 +786,13 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
         else { S.pop(id, 0.2 + j * 0.12); if (!how.instant) sfx("pop", 0.2 + j * 0.12); }
       });
       ev.add.forEach((k) => {
-        const run = () => stages[k]?.(svgOf(stage, picOf(k)), H, stage, bits);
+        /* the drawing as it is NOW: a step left before its words arrive rebuilds the screen, and a mark
+           still waiting must not land on the new drawing (or on one no longer in the page) */
+        const target = svgOf(stage, picOf(k));
+        const run = () => stages[k]?.(target, H, stage, bits);
         /* a title card holds the screen first: the words, and so the marks, come after it */
         const wait = how.instant ? 0 : (ev.cue?.[k] ? cueAt(said, ev.cue[k], ev.say) : 0) + leadOf(ev);
-        /* a step left before its words arrive leaves a drawing that is no longer on the screen */
-        if (wait > 0.05) setTimeout(() => { if (stage.contains(svgOf(stage, picOf(k)) || stage)) run(); }, wait * 1000);
+        if (wait > 0.05) setTimeout(() => { if (!target || target.isConnected) run(); }, wait * 1000);
         else run();
       });
 

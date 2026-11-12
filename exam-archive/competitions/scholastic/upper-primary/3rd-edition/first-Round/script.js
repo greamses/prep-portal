@@ -67,7 +67,7 @@ const quizData = [
   { question: "A computer set was sold for \\(₦57,000\\) at a loss of \\(25\\%\\) on the cost price. Find the cost price.", image: null,
     options: ["\\(₦16,750\\)", "\\(₦45,600\\)", "\\(₦85,000\\)", "\\(₦140,000\\)", "\\(₦76,000\\)"], correctIndex: 4,
     hint: "The selling price is 75% of the cost price.",
-    explanation: ["\\(75\\%\\) of the cost price \\(= ₦57,000\\).", "Cost price \\(= 57\\,000 \\div 0.75 = ₦76,000\\)."], topic: "Profit and Loss" },
+    explanation: ["\\(75\\%\\) of the cost price \\(= ₦57,000\\).", "Cost price \\(= 57\\,000 \\div 0.75 = ₦76,000\\)."], topic: "Profit and Loss", film: "loss-25" },
   { question: "The value of \\(3 \\times 4^{2} - (16 \\div 2)\\) is?", image: null,
     options: ["\\(40\\)", "\\(3\\)", "\\(20\\)", "\\(8\\)", "\\(140\\)"], correctIndex: 0,
     hint: "Brackets and powers first.",
