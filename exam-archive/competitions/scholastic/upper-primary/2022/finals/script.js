@@ -636,6 +636,7 @@ const examQuestions = [
   {
     question:
       "A 'stair-step' figure is made of alternating black and white squares in each row. Rows \\(1\\) through \\(4\\) are shown. All rows begin and end with a white square. The number of black squares in the \\(37^{\\text{th}}\\) row is?",
+    film: "stair-rows-37",
     image: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" width="100%" height="100%">
   <style>
     .sq-white { fill: #fff; stroke: #000; stroke-width: 1.5; }

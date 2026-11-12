@@ -255,6 +255,7 @@ export const firstRound = [
     question:
       "The sum of the first \\( n \\) positive integers is \\( \\dfrac{n(n+1)}{2} \\). Evaluate \\( 1+2+3+\\cdots+200 \\).",
     image: null,
+    film: "sum-200",
     type: "objective",
     options: [
       "\\( 20100 \\)",
@@ -1717,6 +1718,7 @@ export const finals = [
     question:
       "The sum of the first \\( n \\) odd numbers is \\( n^2 \\). Evaluate \\( 1+3+5+\\cdots+29 \\).",
     image: null,
+    film: "odd-29",
     type: "objective",
     options: [
       "\\( 169 \\)",

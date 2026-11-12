@@ -35,7 +35,7 @@ import { barSetup, barParts, barMissing, barMoney, barFractions } from "./bar-fi
 import { fracLike, fracEqual, fracUnlike, fracMixed } from "./fraction-films.js";
 import { ctxInference, ctxDefinition, ctxExample, ctxAntonym, ctxSynonym } from "./context-films.js";
 import { loss25, score80, score90, profit20, ps4Loss, bikeProfit20, bikeProfit10, shoeDiscount, withdraw10, pagesLeft, hatProfit30, decrease15 } from "./cbt-films.js";
-import { stairs24 } from "./cbt-shapes.js";
+import { stairs24, sum200, odd29, odd21, stairRows37, series123 } from "./cbt-shapes.js";
 
 /* The strip's dress. A page that is not a workbook does not link video.css,
    and an unstyled strip is not merely plain — it is invisible, which is how
@@ -344,6 +344,11 @@ const SCENES = {
   "hat-profit-30": hatProfit30,
   "decrease-15": decrease15,
   "stairs-24": stairs24,
+  "sum-200": sum200,
+  "odd-29": odd29,
+  "odd-21": odd21,
+  "stair-rows-37": stairRows37,
+  "series-123": series123,
 };
 /**
  * WHAT EVERY FILM IS CALLED, in one place.
@@ -388,6 +393,11 @@ export const FILMS = [
   { id: "hat-profit-30", name: "A 30% profit on 55 kobo (two ways)", of: "Scholastic 2022 finals, Q37", topic: "percent", thumb: { n: 10, k: 13 } },
   { id: "decrease-15", name: "Decrease 1,500 kg by 15% (two ways)", of: "Scholastic JS 5th edition first round, Q7", topic: "percent", thumb: { n: 20, k: 17 } },
   { id: "stairs-24", name: "Blocks in a staircase (two ways)", of: "Scholastic 2022 first round, Q24", topic: "patterns" },
+  { id: "sum-200", name: "1 + 2 + ... + 200 (two ways)", of: "ANMC 13th first round, Q14", topic: "patterns" },
+  { id: "odd-29", name: "1 + 3 + 5 + ... + 29 (two ways)", of: "ANMC 13th finals, Q12", topic: "patterns" },
+  { id: "odd-21", name: "1 + 3 + 5 + ... + 21 (two ways)", of: "ANMC 14th main, Q68", topic: "patterns" },
+  { id: "stair-rows-37", name: "Black squares in row 37 (two ways)", of: "Scholastic 2022 finals, Q27", topic: "patterns" },
+  { id: "series-123", name: "The series 1, 2, 2, 3, 3, 3 (two ways)", of: "ANMC 12th main, Q55 and Q57", topic: "patterns" },
 ];
 
 /** The coded film behind an id, for the editor to trace and to take a script from. */

@@ -297,3 +297,319 @@ export function stairs24() {
     },
   });
 }
+
+
+/* ═══ PATTERN FILMS: sums, odd numbers, stair rows, a repeating series ═══════
+   The same kit, one small toolkit per film (`kit()`): a centred working line,
+   the margin, places on the screen, and writing marks by name. */
+function kit() {
+  const key = (s, k) => (s ? s.querySelector(`[data-k="${k}"]`) : null);
+  const write = (s, H, keys, start = 0, gap = 0.3) => keys.forEach((k, i) => {
+    const n = key(s, k);
+    if (!n) return;
+    if (n.getAttribute("data-mb") === "cut") H.score(n, start + i * gap, 0.4); else H.write(n, start + i * gap);
+  });
+  const main = (pieces, em = 8) => svgBox(150, 30, mathRow(pieces, { cx: 75, y: 17, em }).svg);
+  const side = (rows, em = 5) => svgBox(48, 12 * rows.length + 4, rows.map((pieces, i) => mathRow(pieces, { cx: 24, y: 9 + i * 12, em }).svg).join(""));
+  const at = (y) => centred(150, y);
+  const SIDE = { x: 79.5, y: 18 };
+  const line = (k, tex, color) => ({ k, tex, ...(color ? { color } : {}) });
+  return { key, write, main, side, at, SIDE, line };
+}
+/* a row of figures with arcs joining the ends, each arc labelled with what its pair makes */
+function pairedRow(numbers, pairs, label, em = 8.5) {
+  const pieces = numbers.flatMap((v, i) => (i ? [{ k: `p${i}`, tex: "+" }, { k: `n${i}`, tex: String(v) }] : [{ k: `n${i}`, tex: String(v) }])).filter((x) => x.tex !== "");
+  const r = mathRow(pieces, { cx: 75, y: 44, em });
+  const x = (i) => r.at[`n${i}`].x;
+  const arcs = pairs.map(([a, b, lift], j) => {
+    const y0 = 34, top = y0 - lift;
+    return `<g data-mb="brace" data-mb-key="a${j + 1}"><path d="M${x(a).toFixed(2)} ${y0} C${x(a).toFixed(2)} ${top} ${x(b).toFixed(2)} ${top} ${x(b).toFixed(2)} ${y0}" fill="none" stroke="${RED}" stroke-width="0.9" stroke-linecap="round"/>`
+      + texAt(label, (x(a) + x(b)) / 2, top + lift * 0.25 - 1.5, { em: 5, color: RED }) + `</g>`;
+  }).join("");
+  return svgBox(150, 50, r.svg + arcs);
+}
+const rowKeys = (n) => Array.from({ length: n }, (_, i) => (i ? [`p${i}`, `n${i}`] : [`n${i}`])).flat();
+
+/* ── ANMC 13th first round, Q14: 1 + 2 + ... + 200 ── */
+export function sum200() {
+  const { write, main, side, at, SIDE, line } = kit();
+  return film({
+    paperMm: PAPER, picW: PIC_W, ready: mathLoad(),
+    asks: [{ id: "a1", text: "The sum of the first n positive integers is n(n+1)/2. Evaluate 1 + 2 + 3 + ... + 200." }],
+    pics: {
+      row: () => pairedRow([1, 2, 3, "\\cdots", 198, 199, 200], [[0, 6, 26], [1, 5, 17], [2, 4, 9]], "201"),
+      sP: () => side([[line("a", "200 \\div 2 = 100")], [line("b", "\\text{pairs}")]]),
+      mA: () => main([line("a", "100 \\times 201"), line("e", "="), line("b", "20{,}100", GREEN)]),
+      r6: () => svgBox(150, 56, rectangle(6, 6, 75 - 18, 50)),
+      m6: () => main([line("a", "1 + 2 + \\cdots + 6"), line("e", "="), line("b", "\\dfrac{6 \\times 7}{2}"), line("e2", "="), line("c", "21", BLUE)]),
+      mN: () => main([line("a", "1 + 2 + \\cdots + n"), line("e", "="), line("b", "\\dfrac{n(n+1)}{2}", BLUE)]),
+      mH: () => main([line("a", "\\dfrac{200 \\times 201}{2}"), line("e", "="), line("b", "\\dfrac{40{,}200}{2}"), line("e2", "="), line("c", "20{,}100", GREEN)]),
+    },
+    picAt: { row: at(15), sP: SIDE, mA: at(36), r6: at(13.5), m6: at(37.5), mN: at(37.5), mH: at(37.5) },
+    lines: [
+      { id: "m1", receipt: true, sub: "Method 1", text: "Pair from the ends", y: 50.5 },
+      { id: "m2", receipt: true, sub: "Method 2", text: "Two staircases", y: 50.5 },
+    ],
+    stages: {
+      "row.all": (s, H) => write(s, H, rowKeys(7), 0, 0.12),
+      "row.a1": (s, H) => H.draw(braceOf(s, "a1"), 0),
+      "row.a2": (s, H) => H.draw(braceOf(s, "a2"), 0),
+      "row.a3": (s, H) => H.draw(braceOf(s, "a3"), 0),
+      "sP.all": (s, H) => write(s, H, ["a", "b"], 0, 0.5),
+      "mA.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.4); write(s, H, ["b"], 1.6); H.sound("ding", 1.8); },
+      "r6.front": (s, H) => { for (let i = 1; i <= 6; i++) for (let h = 1; h <= i; h++) { const n = s?.querySelector(`[data-k="f${i}_${h}"]`); if (n) H.write(n, (i - 1) * 0.3 + h * 0.05); } },
+      "r6.back": (s, H) => { let d = 0; for (let i = 6; i >= 1; i--) for (let h = 7; h > i; h--) { const n = s?.querySelector(`[data-k="b${i}_${h}"]`); if (n) H.drop(n, d); d += 0.07; } },
+      "r6.frame": (s, H) => { H.draw(braceOf(s, "frame"), 0); write(s, H, ["wa", "hu"], 0.6, 0.5); },
+      "m6.all": (s, H) => write(s, H, ["a", "e", "b", "e2", "c"], 0, 0.45),
+      "mN.all": (s, H) => write(s, H, ["a", "e", "b"], 0, 0.6),
+      "mH.a": (s, H) => write(s, H, ["a"], 0),
+      "mH.b": (s, H) => { write(s, H, ["e", "b", "e2"], 0, 0.6); write(s, H, ["c"], 2.4); H.sound("ding", 2.6); },
+    },
+    steps: ({ push }) => {
+      push("Add up every whole number from one to two hundred.", { on: ["a1"], transition: "iris", pause: 0.6 });
+      push("Two hundred numbers. Adding them one by one would take all day. There's a quicker way.", { pause: 0.8 });
+      push("Write them out. One, two, three, all the way to two hundred.",
+        { on: ["row", "m1"], add: ["row.all"], cue: { "row.all": "write them" },
+          transition: { kind: "card", title: "Method 1", sub: "Pair from the ends", hold: 1.6 }, pause: 0.5 });
+      push("Pair the first with the last. One and two hundred make two hundred and one.", { add: ["row.a1"], cue: { "row.a1": "one and two hundred" }, pause: 0.6 });
+      push("Two and a hundred and ninety nine. Two hundred and one again.", { add: ["row.a2"], cue: { "row.a2": "two and" }, pause: 0.5 });
+      push("Three and a hundred and ninety eight. Two hundred and one. Every pair makes the same.", { add: ["row.a3"], cue: { "row.a3": "three and" }, pause: 0.8 });
+      push("How many pairs? Two hundred numbers, two in each pair. A hundred pairs.", { on: ["sP"], add: ["sP.all"], cue: { "sP.all": "two hundred numbers" }, pause: 0.6 });
+      push("A hundred pairs of two hundred and one... twenty thousand one hundred.", { on: ["mA"], add: ["mA.all"], cue: { "mA.all": "a hundred pairs of" }, pause: 1.2 });
+      push("Now let's see why the formula in the question works. Here's a small staircase. One, two, three, four, five, six.",
+        { on: ["r6", "m2"], off: ["row", "sP", "mA", "m1"], add: ["r6.front"], cue: { "r6.front": "small staircase" },
+          transition: { kind: "card", title: "Method 2", sub: "Two staircases", hold: 1.6 }, pause: 0.5 });
+      push("Put a second staircase on top, upside down.", { add: ["r6.back"], cue: { "r6.back": "second staircase" }, pause: 0.6 });
+      push("It makes a rectangle. Six across, seven up. Six times seven, forty two.", { add: ["r6.frame"], cue: { "r6.frame": "a rectangle" }, pause: 0.6 });
+      push("But that's two staircases. One staircase is half of it. Forty two over two, twenty one. One plus two, up to six.",
+        { on: ["m6"], add: ["m6.all"], cue: { "m6.all": "one staircase" }, pause: 0.8 });
+      push("So for any number n, the sum is n times n plus one, over two. That's the formula in the question.",
+        { on: ["mN"], off: ["m6"], add: ["mN.all"], cue: { "mN.all": "the sum is" }, pause: 0.8 });
+      push("For two hundred: two hundred times two hundred and one, over two.", { on: ["mH"], off: ["mN"], add: ["mH.a"], cue: { "mH.a": "two hundred times" }, pause: 0.6 });
+      push("That's forty thousand two hundred, over two... twenty thousand one hundred.", { add: ["mH.b"], cue: { "mH.b": "forty thousand" }, pause: 1 });
+      push("Two ways, one answer. Pair from the ends, or make a rectangle and take half.");
+    },
+  });
+}
+
+/* ── the sum of the first n odd numbers: ANMC 13th finals Q12 (to 29), 14th Q68 (to 21) ── */
+function lSquare(n, cell, ox, oy) {
+  const tone = ["#bfe3ff", "#ffd9cf", "#d6f0cf", "#fff3a8", "#e2dbf3"];
+  let out = "";
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    const layer = Math.max(i, j) + 1;
+    out += `<rect data-mb="cell" data-k="L${layer}_${i}_${j}" x="${(ox + i * cell).toFixed(2)}" y="${(oy - (j + 1) * cell).toFixed(2)}" width="${cell}" height="${cell}" fill="${tone[(layer - 1) % tone.length]}" stroke="${INK}" stroke-width="0.5"/>`;
+  }
+  return out;
+}
+function oddSum({ last, question, answerSay }) {
+  const n = (last + 1) / 2, sq = n * n, pairSum = last + 1;
+  const { write, main, side, at, SIDE, line } = kit();
+  const layer = (s, H, L, start = 0) => { for (let i = 0; i < L; i++) for (let j = 0; j < L; j++) if (Math.max(i, j) + 1 === L) { const c = s?.querySelector(`[data-k="L${L}_${i}_${j}"]`); if (c) H.write(c, start + (i + j) * 0.08); } };
+  const cells = (L) => Array.from({ length: L }, (_, k) => 2 * k + 1).join(" + ");
+  return film({
+    paperMm: PAPER, picW: PIC_W, ready: mathLoad(),
+    asks: [{ id: "a1", text: question }],
+    pics: {
+      sqr: () => svgBox(150, 46, lSquare(4, 9, 75 - 18, 44)),
+      m1: () => main([line("a", "1"), line("e", "="), line("b", "1 \\times 1", BLUE)]),
+      m2: () => main([line("a", cells(2)), line("e", "= 4 ="), line("b", "2 \\times 2", BLUE)]),
+      m3: () => main([line("a", cells(3)), line("e", "= 9 ="), line("b", "3 \\times 3", BLUE)]),
+      m4: () => main([line("a", cells(4)), line("e", "= 16 ="), line("b", "4 \\times 4", BLUE)]),
+      sN: () => side([[line("a", `(${last} + 1) \\div 2`)], [line("b", `= ${n}\\ \\text{odds}`, BLUE)]]),
+      mS: () => main([line("a", `${n} \\times ${n}`), line("e", "="), line("b", String(sq), GREEN)]),
+      row: () => pairedRow([1, 3, 5, "\\cdots", last - 4, last - 2, last], [[0, 6, 26], [1, 5, 17], [2, 4, 9]], String(pairSum)),
+      mM: () => main([line("a", `\\text{middle} = (1 + ${last}) \\div 2`), line("e", "="), line("b", String(n), BLUE)]),
+      mT: () => main([line("a", `${n}\\ \\text{numbers} \\times ${n}`), line("e", "="), line("b", String(sq), GREEN)]),
+    },
+    picAt: { sqr: at(14), m1: at(38), m2: at(38), m3: at(38), m4: at(38), sN: SIDE, mS: at(38), row: at(15), mM: at(36), mT: at(36) },
+    lines: [
+      { id: "k1", receipt: true, sub: "Method 1", text: "Build a square", y: 50.5 },
+      { id: "k2", receipt: true, sub: "Method 2", text: "Middle times count", y: 50.5 },
+    ],
+    stages: {
+      "sqr.l1": (s, H) => layer(s, H, 1), "sqr.l2": (s, H) => layer(s, H, 2), "sqr.l3": (s, H) => layer(s, H, 3), "sqr.l4": (s, H) => layer(s, H, 4),
+      "m1.all": (s, H) => write(s, H, ["a", "e", "b"], 0.3, 0.3),
+      "m2.all": (s, H) => write(s, H, ["a", "e", "b"], 0.3, 0.3),
+      "m3.all": (s, H) => write(s, H, ["a", "e", "b"], 0.3, 0.3),
+      "m4.all": (s, H) => write(s, H, ["a", "e", "b"], 0.3, 0.3),
+      "sN.all": (s, H) => write(s, H, ["a", "b"], 0, 0.8),
+      "mS.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.4); write(s, H, ["b"], 1.4); H.sound("ding", 1.6); },
+      "row.all": (s, H) => write(s, H, rowKeys(7), 0, 0.12),
+      "row.a1": (s, H) => H.draw(braceOf(s, "a1"), 0),
+      "row.a2": (s, H) => H.draw(braceOf(s, "a2"), 0),
+      "row.a3": (s, H) => H.draw(braceOf(s, "a3"), 0),
+      "mM.all": (s, H) => write(s, H, ["a", "e", "b"], 0, 0.5),
+      "mT.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.4); write(s, H, ["b"], 1.4); H.sound("ding", 1.6); },
+    },
+    steps: ({ push }) => {
+      push(`Add up the odd numbers. One, three, five, all the way to ${last}.`, { on: ["a1"], transition: "iris", pause: 0.6 });
+      push("There's a picture hiding in these numbers. Let's draw it.", { pause: 0.6 });
+      push("Start with one square.",
+        { on: ["sqr", "k1", "m1"], add: ["sqr.l1", "m1.all"], cue: { "sqr.l1": "one square" },
+          transition: { kind: "card", title: "Method 1", sub: "Build a square", hold: 1.6 }, pause: 0.5 });
+      push("Add three, wrapped round the corner. Now it's a two by two square.", { on: ["m2"], off: ["m1"], add: ["sqr.l2", "m2.all"], cue: { "sqr.l2": "add three", "m2.all": "two by two" }, pause: 0.6 });
+      push("Add five. Three by three.", { on: ["m3"], off: ["m2"], add: ["sqr.l3", "m3.all"], cue: { "sqr.l3": "add five", "m3.all": "three by three" }, pause: 0.6 });
+      push("Add seven. Four by four. Every odd number wraps one more layer round the square.",
+        { on: ["m4"], off: ["m3"], add: ["sqr.l4", "m4.all"], cue: { "sqr.l4": "add seven", "m4.all": "four by four" }, pause: 0.8 });
+      push("So the answer is always a square. The only question is, how big?", { pause: 1.2 });
+      push(`How many odd numbers are there from one to ${last}? Add one, and halve it. ${n} odd numbers.`,
+        { on: ["sN"], add: ["sN.all"], cue: { "sN.all": "add one" }, pause: 0.8 });
+      push(`So it's a ${n} by ${n} square. ${n} times ${n}... ${sq}.`, { on: ["mS"], off: ["m4"], add: ["mS.all"], cue: { "mS.all": "times" }, pause: 1.2 });
+      push(`Now another way. Pair from the ends. One and ${last} make ${pairSum}.`,
+        { on: ["row", "k2"], off: ["sqr", "mS", "sN", "k1"], add: ["row.all", "row.a1"], cue: { "row.a1": `one and ${last}` },
+          transition: { kind: "card", title: "Method 2", sub: "Middle times count", hold: 1.6 }, pause: 0.6 });
+      push(`Three and ${last - 2}, ${pairSum} again. Five and ${last - 4}, ${pairSum}. Every pair makes the same.`,
+        { add: ["row.a2", "row.a3"], cue: { "row.a2": "three and", "row.a3": "five and" }, pause: 0.6 });
+      push(`So the numbers balance round the middle. The middle is half of ${pairSum}. That's ${n}.`, { on: ["mM"], add: ["mM.all"], cue: { "mM.all": "the middle" }, pause: 0.8 });
+      push(`${n} numbers, all balancing at ${n}. ${n} times ${n}... ${sq}.`, { on: ["mT"], off: ["mM"], add: ["mT.all"], cue: { "mT.all": "balancing" }, pause: 1.2 });
+      push(`Two ways, one answer. ${answerSay} The sum of the first n odd numbers is n squared.`);
+    },
+  });
+}
+export const odd29 = () => oddSum({ last: 29, question: "The sum of the first n odd numbers is n². Evaluate 1 + 3 + 5 + ... + 29.", answerSay: "Two hundred and twenty five." });
+export const odd21 = () => oddSum({ last: 21, question: "What is the value of 1 + 3 + 5 + 7 + ... + 17 + 19 + 21?", answerSay: "Eleven times eleven." });
+
+/* ── Scholastic 2022 finals Q27: a stair-step of black and white squares ── */
+function bwRows(n, cell, cx, top) {
+  let out = "";
+  for (let r = 1; r <= n; r++) {
+    const count = 2 * r - 1, x0 = cx - (count * cell) / 2, y = top + (r - 1) * cell;
+    for (let i = 0; i < count; i++) {
+      out += `<rect data-mb="cell" data-k="r${r}_${i}" x="${(x0 + i * cell).toFixed(2)}" y="${y.toFixed(2)}" width="${cell}" height="${cell}" fill="${i % 2 ? INK : "#fffdf8"}" stroke="${INK}" stroke-width="0.5"/>`;
+    }
+    out += texAt(`\\text{row ${r}}`, x0 - 3, y + cell * 0.72, { em: 4.2, color: BLUE, anchor: "end", attrs: `data-mb="num" data-k="rl${r}"` });
+  }
+  return out;
+}
+export function stairRows37() {
+  const { write, main, side, at, SIDE, line } = kit();
+  const row = (s, H, r, start = 0) => { write(s, H, [`rl${r}`], start); for (let i = 0; i < 2 * r - 1; i++) { const c = s?.querySelector(`[data-k="r${r}_${i}"]`); if (c) H.write(c, start + 0.2 + i * 0.1); } };
+  return film({
+    paperMm: PAPER, picW: PIC_W, ready: mathLoad(),
+    asks: [{ id: "a1", text: "A 'stair-step' figure is made of alternating black and white squares in each row. All rows begin and end with a white square. The number of black squares in the 37th row is?" }],
+    pics: {
+      bw: () => svgBox(150, 46, bwRows(4, 8.5, 75, 4)),
+      sT: () => side([[line("a", "\\text{row 1: } 0")], [line("b", "\\text{row 2: } 1")], [line("c", "\\text{row 3: } 2")], [line("d", "\\text{row 4: } 3")]], 4.6),
+      mR: () => main([line("a", "\\text{black}"), line("e", "="), line("b", "\\text{row} - 1", BLUE)]),
+      m37: () => main([line("a", "37 - 1"), line("e", "="), line("b", "36", GREEN)]),
+      sO: () => side([[line("a", "1,\\ 3,\\ 5,\\ 7")], [line("b", "\\text{row } n: 2n - 1", BLUE)]], 4.8),
+      m73: () => main([line("a", "2 \\times 37 - 1"), line("e", "="), line("b", "73\\ \\text{squares}", BLUE)]),
+      mB: () => main([line("a", "(73 - 1) \\div 2"), line("e", "="), line("b", "36", GREEN)]),
+    },
+    picAt: { bw: at(14), sT: { x: 79.5, y: 15 }, mR: at(38), m37: at(38), sO: SIDE, m73: at(38), mB: at(38) },
+    lines: [
+      { id: "k1", receipt: true, sub: "Method 1", text: "Spot the pattern", y: 50.5 },
+      { id: "k2", receipt: true, sub: "Method 2", text: "Count every square", y: 50.5 },
+    ],
+    stages: {
+      "bw.r1": (s, H) => row(s, H, 1), "bw.r2": (s, H) => row(s, H, 2), "bw.r3": (s, H) => row(s, H, 3), "bw.r4": (s, H) => row(s, H, 4),
+      "sT.a": (s, H) => write(s, H, ["a"], 0), "sT.b": (s, H) => write(s, H, ["b"], 0), "sT.c": (s, H) => write(s, H, ["c"], 0), "sT.d": (s, H) => write(s, H, ["d"], 0),
+      "mR.all": (s, H) => write(s, H, ["a", "e", "b"], 0, 0.5),
+      "m37.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.4); write(s, H, ["b"], 1.3); H.sound("ding", 1.5); },
+      "sO.all": (s, H) => write(s, H, ["a", "b"], 0, 1.2),
+      "m73.all": (s, H) => write(s, H, ["a", "e", "b"], 0, 0.5),
+      "mB.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.5); write(s, H, ["b"], 1.6); H.sound("ding", 1.8); },
+    },
+    steps: ({ push }) => {
+      push("Here's a stair-step figure. Row one... row two... row three... row four.",
+        { on: ["a1", "bw"], add: ["bw.r1", "bw.r2", "bw.r3", "bw.r4"], cue: { "bw.r1": "row one", "bw.r2": "row two", "bw.r3": "row three", "bw.r4": "row four" }, transition: "iris", pause: 0.6 });
+      push("Every row starts white and ends white, and the colours take turns.", { pause: 0.6 });
+      push("We want the black squares in row thirty seven. We won't draw thirty seven rows.", { pause: 1 });
+      push("Count the black squares in each row. Row one, none. Row two, one. Row three, two. Row four, three.",
+        { on: ["sT", "k1"], add: ["sT.a", "sT.b", "sT.c", "sT.d"], cue: { "sT.a": "row one,", "sT.b": "row two,", "sT.c": "row three,", "sT.d": "row four," },
+          transition: { kind: "card", title: "Method 1", sub: "Spot the pattern", hold: 1.6 }, pause: 0.6 });
+      push("The black squares are always one less than the row number.", { on: ["mR"], add: ["mR.all"], cue: { "mR.all": "always" }, pause: 0.8 });
+      push("So row thirty seven has thirty seven take away one... thirty six black squares.", { on: ["m37"], off: ["mR"], add: ["m37.all"], cue: { "m37.all": "thirty seven take away" }, pause: 1.2 });
+      push("Another way. How many squares are in each row? One, three, five, seven. The odd numbers.",
+        { on: ["sO", "k2"], off: ["sT", "m37", "k1"], add: ["sO.all"], cue: { "sO.all": "one, three" },
+          transition: { kind: "card", title: "Method 2", sub: "Count every square", hold: 1.6 }, pause: 0.6 });
+      push("Row thirty seven: two times thirty seven, take away one. Seventy three squares.", { on: ["m73"], add: ["m73.all"], cue: { "m73.all": "two times" }, pause: 0.8 });
+      push("It starts and ends white, so there's one more white than black. Take that one away, and halve it. Thirty six.",
+        { on: ["mB"], off: ["m73"], add: ["mB.all"], cue: { "mB.all": "take that one away" }, pause: 1 });
+      push("Two ways, one answer. Thirty six black squares in row thirty seven.");
+    },
+  });
+}
+
+/* ── ANMC 12th main, Q55 and Q57: the series 1, 2, 2, 3, 3, 3, ... ── */
+function seriesRows(k, cell, ox, top) {
+  let out = "";
+  let total = 0;
+  for (let j = 1; j <= k; j++) {
+    total += j;
+    const y = top + (j - 1) * cell;
+    for (let i = 0; i < j; i++) {
+      out += `<g data-mb="cell" data-k="s${j}_${i}"><rect x="${(ox + i * cell).toFixed(2)}" y="${y.toFixed(2)}" width="${cell}" height="${cell}" fill="${j % 2 ? "#bfe3ff" : "#d6f0cf"}" stroke="${INK}" stroke-width="0.45"/>`
+        + texAt(String(j), ox + (i + 0.5) * cell, y + cell * 0.72, { em: cell * 0.62 }) + `</g>`;
+    }
+    out += texAt(`\\to ${total}`, ox + j * cell + 2.5, y + cell * 0.72, { em: cell * 0.62, color: RED, anchor: "start", attrs: `data-mb="num" data-k="t${j}"` });
+  }
+  return out;
+}
+export function series123() {
+  const { write, main, side, at, SIDE, line } = kit();
+  const rowIn = (s, H, j, start = 0) => { for (let i = 0; i < j; i++) { const c = s?.querySelector(`[data-k="s${j}_${i}"]`); if (c) H.write(c, start + i * 0.12); } };
+  return film({
+    paperMm: PAPER, picW: PIC_W, ready: mathLoad(),
+    asks: [{ id: "a1", text: "Series: 1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, ... (each number is repeated as many times as its value). What is the 25th number? What is the sum of the first 20 numbers?" }],
+    pics: {
+      st: () => svgBox(150, 54, seriesRows(7, 6.4, 75 - 30, 2)),
+      mQ: () => main([line("a", "21 < 25 \\le 28")]),
+      m25: () => main([line("a", "25\\text{th number}"), line("e", "="), line("b", "7", GREEN)]),
+      mS: () => main([line("a", "1 + 4 + 9 + 16 + 25"), line("e", "="), line("b", "55", BLUE)]),
+      s6: () => side([[line("a", "5 \\times 6 = 30")]]),
+      mT: () => main([line("a", "55 + 30"), line("e", "="), line("b", "85", GREEN)]),
+      mF: () => main([line("a", "\\text{row } n \\text{ ends at}"), line("b", "\\dfrac{n(n+1)}{2}", BLUE)]),
+      sF: () => side([[line("a", "\\tfrac{6 \\times 7}{2} = 21")], [line("b", "\\tfrac{7 \\times 8}{2} = 28")]], 4.8),
+      mR: () => main([line("a", "\\text{row } n \\text{ adds to}"), line("b", "n \\times n", BLUE)]),
+    },
+    picAt: { st: at(13), mQ: at(38.5), m25: at(38.5), mS: at(38.5), s6: SIDE, mT: at(38.5), mF: at(38.5), sF: SIDE, mR: at(38.5) },
+    lines: [
+      { id: "k1", receipt: true, sub: "Method 1", text: "Build the staircase", y: 50.5 },
+      { id: "k2", receipt: true, sub: "Method 2", text: "Use the formula", y: 50.5 },
+    ],
+    stages: {
+      "st.r1": (s, H) => rowIn(s, H, 1), "st.r2": (s, H) => rowIn(s, H, 2), "st.r3": (s, H) => rowIn(s, H, 3),
+      "st.r47": (s, H) => { [4, 5, 6, 7].forEach((j, n) => rowIn(s, H, j, n * 0.6)); },
+      ...Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((j) => [`st.t${j}`, (s, H) => write(s, H, [`t${j}`], 0)])),
+      "mQ.all": (s, H) => write(s, H, ["a"], 0),
+      "m25.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.4); write(s, H, ["b"], 1.2); H.sound("ding", 1.4); },
+      "mS.all": (s, H) => write(s, H, ["a", "e", "b"], 0, 0.8),
+      "s6.all": (s, H) => write(s, H, ["a"], 0),
+      "mT.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.4); write(s, H, ["b"], 1.2); H.sound("ding", 1.4); },
+      "mF.all": (s, H) => write(s, H, ["a", "b"], 0, 0.6),
+      "sF.a": (s, H) => write(s, H, ["a"], 0), "sF.b": (s, H) => write(s, H, ["b"], 0),
+      "mR.all": (s, H) => write(s, H, ["a", "b"], 0, 0.6),
+    },
+    steps: ({ push, look }) => {
+      push("Here's a series. One, two, two, three, three, three. Each number appears as many times as it says.", { on: ["a1"], transition: "iris", pause: 0.6 });
+      push("Two questions. What's the twenty fifth number? And what do the first twenty add up to?", { pause: 1 });
+      push("Put each number on its own row. One. Two, two. Three, three, three.",
+        { on: ["st", "k1"], add: ["st.r1", "st.r2", "st.r3"], cue: { "st.r1": "one.", "st.r2": "two, two", "st.r3": "three, three" },
+          transition: { kind: "card", title: "Method 1", sub: "Build the staircase", hold: 1.6 }, pause: 0.5 });
+      push("Four, four, four, four. And so on, down to the sevens.", { add: ["st.r47"], cue: { "st.r47": "four, four" }, pause: 0.6 });
+      push("Now count where each row ends. One... three... six... ten... fifteen... twenty one... twenty eight.",
+        { add: ["st.t1", "st.t2", "st.t3", "st.t4", "st.t5", "st.t6", "st.t7"],
+          cue: { "st.t1": "one...", "st.t2": "three...", "st.t3": "six...", "st.t4": "ten...", "st.t5": "fifteen...", "st.t6": "twenty one...", "st.t7": "twenty eight" }, pause: 0.8 });
+      push("Those are the staircase numbers again. One plus two plus three, and so on.", { pause: 0.8 });
+      push("Row six ends at twenty one. Row seven ends at twenty eight. So the twenty fifth number is in row seven.",
+        { on: ["mQ"], add: ["mQ.all"], cue: { "mQ.all": "so the twenty fifth" }, pause: 0.8 });
+      push("Every number in row seven is a seven. So the twenty fifth number is seven.", { on: ["m25"], off: ["mQ"], add: ["m25.all"], cue: { "m25.all": "so the twenty fifth" }, pause: 1.2 });
+      push("Now the sum of the first twenty. Row five ends at fifteen, so the first fifteen numbers are rows one to five.", { off: ["m25"], pause: 0.8 });
+      push("Row one adds to one. Row two, four. Row three, nine. Row four, sixteen. Row five, twenty five. Fifty five.",
+        { on: ["mS"], add: ["mS.all"], cue: { "mS.all": "row one adds" }, pause: 0.8 });
+      push("That's fifteen numbers. Five more to reach twenty, and they're all sixes. Five sixes, thirty.", { on: ["s6"], add: ["s6.all"], cue: { "s6.all": "five sixes" }, pause: 0.8 });
+      push("Fifty five and thirty... eighty five.", { on: ["mT"], off: ["mS"], add: ["mT.all"], cue: { "mT.all": "fifty five and" }, pause: 1.2 });
+      push("Now with the formula. Row n ends at n times n plus one, over two.",
+        { on: ["mF", "k2"], off: ["mT", "s6", "k1"], add: ["mF.all"], cue: { "mF.all": "row n ends" },
+          transition: { kind: "card", title: "Method 2", sub: "Use the formula", hold: 1.6 }, pause: 0.6 });
+      push("Try six: six times seven over two, twenty one. Too small. Seven: seven times eight over two, twenty eight. That passes twenty five.",
+        { on: ["sF"], add: ["sF.a", "sF.b"], cue: { "sF.a": "try six", "sF.b": "seven:" }, pause: 0.8 });
+      push("So the twenty fifth number is in row seven. It's seven.", { pause: 0.8 });
+      push("And row n adds to n times n, because it's n copies of n. That's how we got one, four, nine, sixteen, twenty five.",
+        { on: ["mR"], off: ["mF"], add: ["mR.all"], cue: { "mR.all": "row n adds" }, pause: 0.8 });
+      push("Two answers: the twenty fifth number is seven, and the first twenty add up to eighty five.");
+    },
+  });
+}
