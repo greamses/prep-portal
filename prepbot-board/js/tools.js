@@ -74,7 +74,7 @@ export function createToolDriver({ api, speak, onIdle = () => {} }) {
      first forgets that, so the new one opens empty. */
   async function put(id) {
     if (!api || !TOOL_NAMES.includes(id)) return false;
-    if (!document.querySelector(`.wb-tools [data-wbtool="${id}"]`)) return false; // switched off for students
+    if (!document.querySelector(`.wb-tools [data-wbtool="${id}"], .wb-tools__fly [data-wbtool="${id}"]`)) return false; // switched off for students
     if (api.isOpen(id)) await api.open(id); // (the key toggles: this closes it, forgetting its sum)
     await api.open(id);
     mine.add(id);

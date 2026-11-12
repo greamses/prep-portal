@@ -286,6 +286,10 @@ export const TOOL_IDS = Object.keys(TOOLS);
 /* Families that fold behind one key when two or more of them are on a rail */
 const ORGANISER_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="2.5" y="3" width="8.5" height="7.5" fill="#6fb7e8"/><rect x="13" y="3" width="8.5" height="7.5" fill="#f4c95d"/><rect x="2.5" y="13.5" width="8.5" height="7.5" fill="#f08a8a"/><rect x="13" y="13.5" width="8.5" height="7.5" fill="#8fd07a"/></svg>`;
 const GROUPS = {
+  /* the written methods: one sum, worked on the paper that suits it */
+  sums: { label: "Written sums", icon: TOOL_ICONS.column || ORGANISER_ICON, members: ["column", "times", "criss", "shortdiv", "longdiv"] },
+  /* drawing the problem before any arithmetic */
+  models: { label: "Models", icon: TOOL_ICONS.barmodel || ORGANISER_ICON, members: ["barmodel", "linemodel", "vennmodel", "nodesmodel", "flowmodel"] },
   plan: { label: "Organisers", icon: ORGANISER_ICON, members: ["burger", "mountain", "venn", "roundabout", "oreo", "tchart", "causes", "sequence", "senses", "fishbone", "flow", "table"] },
 };
 
