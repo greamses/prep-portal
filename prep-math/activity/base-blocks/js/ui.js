@@ -475,6 +475,10 @@ export function mountUI({
     all: () => run(() => { ops.selectAll(); say("Everything selected."); }),
     clear: () => { closeMenus(); run(() => { store.selection = new Set(); }); },
     keys: () => toggleMenu("keys", $("[data-menu='keys']")),
+    add: () => toggleMenu("add", $("[data-menu='add']")),
+    base: () => toggleMenu("base", $("[data-menu='base']")),
+    type: () => toggleMenu("type", $("[data-menu='type']")),
+    read: () => $("#bb-board-btn")?.click(),
   };
 
   window.addEventListener("keydown", (e) => {
@@ -506,6 +510,24 @@ export function mountUI({
     if (PAN[k]) { e.preventDefault(); onPan(...PAN[k]); return; }
     if (k === "+" || k === "=") { e.preventDefault(); onZoom(0.8); return; }
     if (k === "-" || k === "_") { e.preventDefault(); onZoom(1.25); return; }
+
+    /* THE ADD PANEL BY KEY: [ ] walk its families, a digit puts that piece or
+       tool on the canvas (the digits only highlight when the panel is shut) */
+    if (openMenu === "add") {
+      const tabs = [...document.querySelectorAll("#bb-dock-tabs [data-group]")];
+      if ((k === "[" || k === "]") && tabs.length) {
+        e.preventDefault();
+        const at = tabs.findIndex((b) => b.getAttribute("aria-selected") === "true");
+        tabs[(at + (k === "]" ? 1 : -1) + tabs.length) % tabs.length].click();
+        return;
+      }
+      if (k >= "1" && k <= "9") {
+        const offers = [...document.querySelectorAll("#bb-dock-panel button")].filter((b) => !b.disabled && b.offsetParent);
+        const b = offers[Number(k) - 1];
+        if (b) { e.preventDefault(); b.click(); }
+        return;
+      }
+    }
 
     // everything with an entry of its own
     const act = KEYS.get(k);

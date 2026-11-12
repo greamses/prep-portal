@@ -44,6 +44,17 @@ export const SHORTCUTS = [
     ],
   },
   {
+    name: "Putting things on",
+    items: [
+      { keys: "N", k: "n", act: "add", does: "Open the Add panel" },
+      { keys: "[ / ]", act: null, does: "In the Add panel: the family before / after" },
+      { keys: "1 … 9", act: null, does: "In the Add panel: put that one on the canvas" },
+      { keys: "X", k: "x", act: "base", does: "Choose the working base" },
+      { keys: "I", k: "i", act: "type", does: "Type a number and see it built" },
+      { keys: "O", k: "o", act: "read", does: "Read the canvas as a number" },
+    ],
+  },
+  {
     name: "How a piece lands",
     items: [
       { keys: "G", k: "g", act: "snapGrid", does: "Snap to the squares of the paper" },
