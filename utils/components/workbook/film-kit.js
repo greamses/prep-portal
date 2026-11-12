@@ -631,6 +631,31 @@ export function hand(gsap, instant) {
    `look` finds it, and it swells where it stands or takes a colour. The
    screen never moves.
    ------------------------------------------------------------------------*/
+/**
+ * WHEN A PHRASE IS SAID, in seconds from the start of its line: about 2.4 words a second, a little
+ * longer for each "..." and full stop before it. The words are whatever the step SAYS NOW, so a line
+ * re-written in the film editor still draws on its word. A phrase the new words no longer contain is
+ * placed where it fell in the coded line, as a share of the new one.
+ */
+export function cueAt(text, phrase, codedText = "") {
+  const WPS = 2.4;
+  const at = (t) => {
+    const i = String(t || "").toLowerCase().indexOf(String(phrase).toLowerCase());
+    if (i < 0) return null;
+    const before = t.slice(0, i);
+    const words = before.split(/\s+/).filter(Boolean).length;
+    const dots = (before.match(/\.\.\./g) || []).length;
+    const stops = (before.replace(/\.\.\./g, "").match(/[.?!]/g) || []).length;
+    return words / WPS + dots * 0.35 + stops * 0.25;
+  };
+  const hit = at(text);
+  if (hit != null) return hit;
+  const was = at(codedText);
+  if (was == null) return 0;
+  const len = (t) => String(t || "").split(/\s+/).filter(Boolean).length || 1;
+  return (was / (len(codedText) / WPS)) * (len(text) / WPS);
+}
+
 export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = {}, lines = [],
   asks = [], paperMm = PAPER_MM, picW = PIC_W, build: extra = null, steps: write }) {
   const PIC_IDS = Object.keys(pics);
@@ -660,7 +685,7 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
   let tiles = new Set();
   let drawn = [];
   const push = (say, { on = [], off = [], add = [], play = () => {}, look: at = null, lookAt = null,
-    hold = 0, pause = null } = {}) => {
+    hold = 0, pause = null, cue = null } = {}) => {
     const beforeTiles = new Set(tiles);
     const beforeDrawn = drawn.slice();
     on.forEach((t) => tiles.add(t));
@@ -670,7 +695,8 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
        learner to do the thing it has just asked them to do (prepbot-tv.js
        counts them down on the screen) */
     /* `pause`: seconds of silence after the words (prepbot-tv.js), e.g. after a question */
-    events.push({ say, beforeTiles, beforeDrawn, on, off, add, play, look: at, lookAt, hold, pause });
+    /* `cue`: { stageKey: "words in the line" } - that stage waits until those words are said */
+    events.push({ say, beforeTiles, beforeDrawn, on, off, add, play, look: at, lookAt, hold, pause, cue });
   };
 
   write({ push, look });
@@ -702,7 +728,9 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
     say: ev.say,
     hold: ev.hold,
     ...(ev.pause != null ? { pause: ev.pause } : {}),
+    /* `this` is the step as it is PLAYED, which may carry new words from the film editor */
     show(stage, how) {
+      const said = (this && typeof this.say === "string" && this.say) || ev.say;
       const S = acts(stage, how.gsap, how.instant);
       const already = hand(how.gsap, true);
       const H = hand(how.gsap, how.instant);
@@ -732,7 +760,13 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
         if (ev.beforeTiles.has(id)) return;
         if (pics[id] || trays[id]) S.put(id, { on: 1 }); else S.pop(id, 0.2 + j * 0.12);
       });
-      ev.add.forEach((k) => stages[k]?.(svgOf(stage, picOf(k)), H, stage, bits));
+      ev.add.forEach((k) => {
+        const run = () => stages[k]?.(svgOf(stage, picOf(k)), H, stage, bits);
+        const wait = how.instant || !ev.cue?.[k] ? 0 : cueAt(said, ev.cue[k], ev.say);
+        /* a step left before its words arrive leaves a drawing that is no longer on the screen */
+        if (wait > 0.05) setTimeout(() => { if (stage.contains(svgOf(stage, picOf(k)) || stage)) run(); }, wait * 1000);
+        else run();
+      });
 
       if (ev.look && !how.instant && how.gsap) {
         const n = ev.look(stage);

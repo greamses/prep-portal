@@ -396,7 +396,13 @@ export async function playLesson(kind, title = "", strip = null) {
   let made = coded;
   /* A SAVED FILM WITH NOTHING ON ITS STAGE (words only: saved before the editor kept the drawing) never plays
      as a blank screen: the coded film's drawing plays, with the saved words where there is one for the beat. */
-  if (saved && !(saved.doc.els || []).length && coded && coded.steps) {
+  /* A SAVED FILM WITH THE CODED FILM'S OWN STEPS is the coded film with new words. The editor's trace
+     reads tiles only; it cannot see a mark drawn INSIDE a picture (a cut line, a bar growing, a brace,
+     a "?" turning over), so playing the trace lost them ("When I edited the audio, the cut and some
+     other animations disappeared"). Same number of steps: the coded drawing plays, with the saved words.
+     Only a film whose steps were added or taken away plays its own saved drawing. */
+  const sameSteps = saved && coded && coded.steps && (saved.doc.steps || []).length === coded.steps.length;
+  if (saved && coded && coded.steps && (sameSteps || !(saved.doc.els || []).length)) {
     const words = saved.doc.steps || [];
     made = { build: coded.build, steps: coded.steps.map((st, i) => (words[i] && words[i].say ? { ...st, say: words[i].say } : st)) };
   } else if (saved) {

@@ -104,9 +104,9 @@ export function loss25() {
     ],
     /* ONE STAGE PER THING THE HAND DOES, so each can be drawn while the line about it is said */
     stages: {
-      "b0.bar": (s, H) => H.grow(mb(s, "bar")[0], 1.7),
-      "b0.q": (s, H) => H.write(mb(s, "num")[0], 3.0),
-      "b0.brace": (s, H) => H.draw(braceOf(s, "below-0-0"), 3.4),
+      "b0.bar": (s, H) => H.grow(mb(s, "bar")[0], 0),
+      "b0.q": (s, H) => H.write(mb(s, "num")[0], 0),
+      "b0.brace": (s, H) => H.draw(braceOf(s, "below-0-0"), 0),
       /* THE BAR IS CUT WHERE IT STANDS: the question mark steps aside and three lines are drawn
          down through the same bar, one after another. Nothing is cleared away and redrawn. */
       "b0.cut": (s, H) => {
@@ -127,7 +127,7 @@ export function loss25() {
             line.setAttribute("stroke", INK); line.setAttribute("stroke-width", bar.getAttribute("stroke-width") || "0.5");
             s.appendChild(line);
           }
-          H.score(line, 0.15 + (k - 1) * 0.95, 0.45);
+          H.score(line, (k - 1) * 0.95, 0.45);
         }
       },
       /* the cut bar, as the drawing that has four boxes: it lands exactly on the one just cut */
@@ -135,7 +135,7 @@ export function loss25() {
         mb(s, "bar").forEach((n) => H.show(n));
         H.draw(braceOf(s, "below-0-0"));
       },
-      "b1.pct": (s, H) => mb(s, "num").forEach((n, i) => H.write(n, 3.0 + i * 0.35)),
+      "b1.pct": (s, H) => mb(s, "num").forEach((n, i) => H.write(n, i * 0.35)),
       "b2.base": (s, H) => {
         mb(s, "bar").forEach((n) => H.show(n));
         mb(s, "num").forEach((n) => H.show(n));
@@ -143,10 +143,10 @@ export function loss25() {
       },
       "b2.lose": (s, H) => {
         const bars = mb(s, "bar");
-        H.tint(bars[BOXES - 1], bars[0].getAttribute("fill"), 2.4);
-        H.draw(braceOf(s, "above-0-1"), 2.9);
+        H.tint(bars[BOXES - 1], bars[0].getAttribute("fill"), 0);
+        H.draw(braceOf(s, "above-0-1"), 0.5);
       },
-      "b2.sold": (s, H) => H.draw(braceOf(s, "above-0-0"), 0.6),
+      "b2.sold": (s, H) => H.draw(braceOf(s, "above-0-0"), 0),
       "b3.base": (s, H) => {
         mb(s, "bar").forEach((n) => H.show(n));
         H.draw(braceOf(s, "above-0-0"));
@@ -155,35 +155,35 @@ export function loss25() {
         if (t) t.textContent = "?";             // stepping back un-answers it
         H.draw(braceOf(s, "below-0-0"));
       },
-      "b3.one": (s, H) => H.write(mb(s, "num")[0], 3.2),
-      "b3.rest": (s, H) => mb(s, "num").slice(1).forEach((n, i) => H.write(n, 2.8 + i * 1.0)),
+      "b3.one": (s, H) => H.write(mb(s, "num")[0], 0),
+      "b3.rest": (s, H) => mb(s, "num").slice(1).forEach((n, i) => H.write(n, i * 1.0)),
       "b3.cost": (s, H) => {
         const t = braceOf(s, "below-0-0")?.querySelector("text");
-        if (t) H.flip(t, `cost price = ${f(COST)}`, 2.2);
+        if (t) H.flip(t, `cost price = ${f(COST)}`, 0);
       },
       "eq.left": (s, H) => {
-        H.write(markOf(s, "top"), 3.6);
-        H.grow(mb(s, "bar", 0)[0], 3.9);
-        H.write(markOf(s, "bot"), 4.3);
+        H.write(markOf(s, "top"), 0);
+        H.grow(mb(s, "bar", 0)[0], 0.3);
+        H.write(markOf(s, "bot"), 0.7);
       },
       "eq.sold": (s, H) => {
-        H.write(markOf(s, "eq"), 1.8);
-        H.write(markOf(s, "sold"), 3.4);
-        H.write(markOf(s, "ws"), 3.8);
+        H.write(markOf(s, "eq"), 0);
+        H.write(markOf(s, "sold"), 0.4);
+        H.write(markOf(s, "ws"), 0.8);
       },
+      "eq.rule": (s, H) => H.grow(mb(s, "bar", 1)[0], 0.3),
       "eq.cost": (s, H) => {
-        H.grow(mb(s, "bar", 1)[0], 0.3);
         const q = markOf(s, "cost");
         if (q) q.textContent = "?";            // stepping back puts the question mark back
-        H.write(q, 3.6);
-        H.write(markOf(s, "wc"), 4.0);
+        H.write(q, 0);
+        H.write(markOf(s, "wc"), 0.4);
       },
-      "eq.over": (s, H) => H.draw(braceOf(s, "over"), 1.6),
-      "eq.under": (s, H) => H.draw(braceOf(s, "under"), 1.8),
-      "eq.ans": (s, H) => H.flip(markOf(s, "cost"), f(COST), 2.2),
+      "eq.over": (s, H) => H.draw(braceOf(s, "over"), 0),
+      "eq.under": (s, H) => H.draw(braceOf(s, "under"), 0),
+      "eq.ans": (s, H) => H.flip(markOf(s, "cost"), f(COST), 0),
     },
-    /* THE DELAYS IN THE STAGES ARE WHERE THE WORD LANDS: about two and a half words a second, so a
-       mark drawn at 3.0 s arrives on the word that names it, not at the start of the sentence.
+    /* EACH MARK WAITS FOR ITS WORDS: `cue` names the phrase a stage is drawn on (film-kit cueAt), so a
+       line re-worded in the film editor still draws on its word.
        SPOKEN THE WAY THE USER SPEAKS (.claude/skills/prepbot-lesson-voice, 2b), ONE BREATH A STEP.
        Each step says one thing and draws that thing while it is said; `pause` is the silence after,
        longest after a question, so the child answers in their head before PrepBot does. */
@@ -196,20 +196,20 @@ export function loss25() {
       push("So what they bought it for... that's the big number we don't know yet. That's the one we're hunting, right?",
         { on: ["m1"], pause: 0.8 });
       push("So picture it like this. One whole bar. That bar is what they bought it for.",
-        { on: ["b0"], add: ["b0.bar", "b0.brace"], pause: 0.5 });
+        { on: ["b0"], add: ["b0.bar", "b0.brace"], cue: { "b0.bar": "whole bar", "b0.brace": "bought it for" }, pause: 0.5 });
       push("We don't know it yet, so let's just put a question mark inside it. Just like that.",
-        { add: ["b0.q"], pause: 1 });
+        { add: ["b0.q"], cue: { "b0.q": "question mark" }, pause: 1 });
 
       push("Now, twenty five percent. Twenty five out of a hundred... what is that, in a simpler way?",
         { pause: 1.6 });
       push("It's a quarter. One out of four.", { on: ["l1"], pause: 0.6 });
       push("So I'm going to cut our bar into four equal boxes. Watch.", { pause: 0.5 });
-      push("One cut... two cuts... three cuts.", { add: ["b0.cut"], pause: 0.6 });
+      push("One cut... two cuts... three cuts.", { add: ["b0.cut"], cue: { "b0.cut": "one cut" }, pause: 0.6 });
       push("Four boxes now, all the same size. And each box is twenty five percent.",
-        { on: ["b1"], off: ["b0"], add: ["b1.base", "b1.pct"], pause: 0.8 });
+        { on: ["b1"], off: ["b0"], add: ["b1.base", "b1.pct"], cue: { "b1.pct": "twenty five percent" }, pause: 0.8 });
 
       push("They lost twenty five percent. That's one box.",
-        { on: ["b2"], off: ["b1"], add: ["b2.base", "b2.lose"], pause: 0.5 });
+        { on: ["b2"], off: ["b1"], add: ["b2.base", "b2.lose"], cue: { "b2.lose": "one box" }, pause: 0.5 });
       push("That box is gone. They never got it back.", { on: ["l2"], pause: 0.8 });
       push("Now wait. This is where people fall.", { pause: 0.7 });
       push("Some people will quickly take twenty five percent of fifty seven thousand. Don't do that.",
@@ -217,7 +217,7 @@ export function loss25() {
       push("The loss is a quarter of what they bought it for. The big bar. Not a quarter of fifty seven thousand.",
         { look: look.mark("b2", "bar", BOXES - 1), lookAt: { lit: true, delay: 0.4, hold: 2.2 }, pause: 1 });
       push("So, what did they actually collect when they sold it?", { pause: 1.5 });
-      push("The other three boxes. Just the three.", { add: ["b2.sold"], pause: 0.5 });
+      push("The other three boxes. Just the three.", { add: ["b2.sold"], cue: { "b2.sold": "three" }, pause: 0.5 });
       push("And that's the fifty seven thousand. So fifty seven thousand is not the full bar. It's what is left after the loss.",
         { on: ["l3"], look: look.brace("b2", "above-0-0"), lookAt: { lit: true, delay: 0.5, hold: 2.0 }, pause: 0.6 });
       push("Three boxes, fifty seven thousand. You follow me so far?", { pause: 1.4 });
@@ -225,11 +225,11 @@ export function loss25() {
       push("Now. If three boxes make fifty seven thousand... how much is one box?",
         { on: ["b3"], off: ["b2"], add: ["b3.base"], pause: 1.8 });
       push("We share fifty seven thousand into three. That's nineteen thousand.",
-        { on: ["l4"], add: ["b3.one"], pause: 0.6 });
+        { on: ["l4"], add: ["b3.one"], cue: { "b3.one": "nineteen thousand" }, pause: 0.6 });
       push("And all the boxes are the same size. So nineteen thousand, nineteen thousand, nineteen thousand... the lost one too.",
-        { add: ["b3.rest"], pause: 0.8 });
+        { add: ["b3.rest"], cue: { "b3.rest": "so nineteen thousand" }, pause: 0.8 });
       push("And what they bought it for is the whole bar. All four boxes.", { pause: 0.5 });
-      push("Four times nineteen thousand... seventy six thousand.", { on: ["l5"], add: ["b3.cost"], pause: 0.8 });
+      push("Four times nineteen thousand... seventy six thousand.", { on: ["l5"], add: ["b3.cost"], cue: { "b3.cost": "seventy six thousand" }, pause: 0.8 });
       push("Let's check it. They lost one box, nineteen thousand. Seventy six thousand minus nineteen thousand...",
         { on: ["l6"], pause: 0.4 });
       push("Fifty seven thousand. That's exactly the price in the question. It works.", { pause: 0.6 });
@@ -243,24 +243,24 @@ export function loss25() {
       push("Seventy five percent is seventy five over a hundred. We can make that smaller.",
         { on: ["k2"], pause: 0.5 });
       push("Divide the top and the bottom by twenty five... and you get three over four. Three quarters.",
-        { on: ["eq"], add: ["eq.left"], pause: 0.6 });
+        { on: ["eq"], add: ["eq.left"], cue: { "eq.left": "three over four" }, pause: 0.6 });
       push("And look. It's the same thing as before. Three boxes out of four.", { pause: 0.8 });
       push("So, the selling price, over what they bought it for. Fifty seven thousand on top.",
-        { add: ["eq.sold"], pause: 0.4 });
+        { add: ["eq.sold"], cue: { "eq.sold": "fifty seven thousand on top" }, pause: 0.4 });
       push("And underneath, what they bought it for. We don't know it, so... question mark.",
-        { add: ["eq.cost"], pause: 0.5 });
+        { add: ["eq.rule", "eq.cost"], cue: { "eq.cost": "question mark" }, pause: 0.5 });
       push("Top goes with top, bottom goes with bottom. You get?", { pause: 1 });
       push("Now these two fractions are equal. And to make equal fractions, you multiply the top and the bottom by the same number.",
         { pause: 0.6 });
       push("So look at the tops. Three becomes fifty seven thousand. Three times what?",
-        { add: ["eq.over"], pause: 1.8 });
+        { add: ["eq.over"], cue: { "eq.over": "three becomes" }, pause: 1.8 });
       push("Fifty seven thousand divided by three. Nineteen thousand.",
         { on: ["k3"], pause: 0.5 });
       push("Same as one box, you see?", { pause: 0.9 });
       push("And whatever you do to the top, you must do to the bottom. Otherwise they won't be equal again.",
-        { add: ["eq.under"], pause: 0.6 });
+        { add: ["eq.under"], cue: { "eq.under": "to the bottom" }, pause: 0.6 });
       push("So four times nineteen thousand... seventy six thousand.",
-        { on: ["k4"], add: ["eq.ans"], pause: 0.6 });
+        { on: ["k4"], add: ["eq.ans"], cue: { "eq.ans": "seventy six thousand" }, pause: 0.6 });
       push("There's our question mark. Seventy six thousand naira. Same answer as the boxes.",
         { on: ["k5"], pause: 1 });
       push("So you see. Two ways, one answer. The boxes help you see it. The fractions say the same thing with numbers.",
