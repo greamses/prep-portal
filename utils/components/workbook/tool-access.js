@@ -145,8 +145,8 @@ export function dressAccess() {
 /* the checkboxes, ON the icons while the admin is choosing */
 .pp-choose { position: relative; opacity: 1 !important; outline: none !important; }
 .pp-choose::before { content: "" !important; display: block !important; position: absolute !important; right: 2px !important; top: 2px !important; left: auto !important; bottom: auto !important;
-  width: 15px !important; height: 15px !important; z-index: 2; transform: none !important; rotate: none !important;
-  background: #fff !important; border: 2px solid #2a2723 !important; box-sizing: border-box; box-shadow: none !important; }
+  width: 11px !important; height: 11px !important; z-index: 2; transform: none !important; rotate: none !important;
+  border-radius: 50% !important; background: #fff !important; border: 1.5px solid #2a2723 !important; box-sizing: border-box; box-shadow: none !important; }
 .pp-choose.pp-choose--on::before { background: #2f8f4e !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.4l2.9 2.9 6-6.3' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important; background-position: center !important; background-size: 100% 100% !important; background-repeat: no-repeat !important; border-color: #2f8f4e !important; }
 .pp-choose::after { display: none !important; } /* the open-tool tick steps aside for the checkbox */
 .pp-tool-admin[aria-pressed="true"] { border-style: solid; border-color: #2a2723; background: #fff3a8; }
