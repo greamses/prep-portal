@@ -858,6 +858,54 @@ export async function mountAlgebraMoves(frame, { drawer = true } = {}) {
     say(`${left} more ${left === 1 ? "step" : "steps"} to ${end}.`, "ok");
   });
 
+  /* ── THE KEYBOARD ─────────────────────────────────────────────────────
+     Taken while the workspace was the last thing pressed (it can sit in a panel
+     beside other things). Not while typing — there the keys belong to the box.
+       Tab / Shift+Tab   pick the next / previous term of the card being worked
+                         (it opens that term's moves, as a tap does)
+       1 – 9             do that move from the moves showing
+       ← →               step between the moves showing (Enter does the one lit)
+       N  a new problem  ·  W  how many steps are left  ·  + − 0  zoom in, out, back
+       Ctrl+Z / Ctrl+Y   a step back / forward  ·  Esc  close the moves  ·  ?  the keys */
+  let armed = !frame.closest(".wb-panel"); // on its own page the workspace is the page
+  document.addEventListener("pointerdown", (e) => { armed = frame.contains(e.target) || (!frame.closest(".wb-panel") && !e.target.closest?.(".wb-panel, .wb-tools")); }, true);
+  let termAt = -1;
+  document.addEventListener("keydown", (e) => {
+    if (!armed || !frame.isConnected) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const typing = e.target.closest?.("input, textarea, [contenteditable='true'], [contenteditable='']");
+    if (typing) return;
+    const k = e.key;
+    const moves = [...(menu?.el?.querySelectorAll(".am-move") || [])].filter(() => !menu.el.hidden);
+    const done = () => { e.preventDefault(); e.stopPropagation(); };
+    if (k === "?") { done(); say("Keys: Tab pick a term · 1–9 do a move · ← → choose a move, Enter does it · N new problem · W steps left · + − 0 zoom · Ctrl+Z back · Ctrl+Y forward · Esc close"); return; }
+    if (moves.length && /^[1-9]$/.test(k) && moves[Number(k) - 1]) { done(); moves[Number(k) - 1].click(); return; }
+    if (moves.length && (k === "ArrowRight" || k === "ArrowLeft")) {
+      done();
+      const i = moves.indexOf(document.activeElement);
+      const next = moves[(i + (k === "ArrowRight" ? 1 : -1) + moves.length) % moves.length];
+      next.focus();
+      return;
+    }
+    if (k === "Tab") {
+      const card = active && cards.includes(active) ? active : cards[cards.length - 1];
+      const hits = card ? [...card.el.querySelectorAll(".am-hit")] : [];
+      if (!hits.length) return;
+      done();
+      termAt = (termAt + (e.shiftKey ? -1 : 1) + hits.length) % hits.length;
+      const hit = hits[termAt];
+      /* the same click a tap makes: it picks the term and offers its moves */
+      hit.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      return;
+    }
+    const lower = k.toLowerCase();
+    if (lower === "n") { done(); $("#am-add")?.click(); return; }
+    if (lower === "w") { done(); $("#am-work")?.click(); return; }
+    if (k === "+" || k === "=") { done(); $("#am-zoom-in")?.click(); return; }
+    if (k === "-" || k === "_") { done(); $("#am-zoom-out")?.click(); return; }
+    if (k === "0") { done(); $("#am-zoom-reset")?.click(); }
+  }, true);
+
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { menu.close(); closeDrawer(); }
     /* Ctrl+Z steps the card being worked back a line, Ctrl+Y (or
