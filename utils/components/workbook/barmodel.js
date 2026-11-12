@@ -583,6 +583,19 @@ export function mountBarModel(el, { saved = null, onChange = () => {} } = {}) {
       if (mine.length < 2) { flash("Pick two or more pieces on the same row to join."); return; }
       change(() => {
         const first = mine[0];
+        /* THE BRACES JOIN TOO. Pieces that each carry their own figure on a
+           brace (19 000 and 38 000 over a bar that was cut) come back together
+           under ONE brace with the figures added (57 000) — on each side where
+           every piece has one. Where only some do, the whole is not known, and
+           their braces simply move onto the joined bar as they always did. */
+        for (const side of ["above", "below"]) {
+          const each = mine.map((b) => model.braces.find((br) => br.at === side && br.ids.length === 1 && br.ids[0] === b.id && figure(br.text) !== null));
+          if (each.some((br) => !br)) continue;
+          const total = each.reduce((t, br) => t + figure(br.text), 0);
+          const marked = each.some((br) => MARKED(br.text));
+          model.braces = model.braces.filter((br) => !each.includes(br));
+          model.braces.push({ id: seq++, ids: [first.id], at: side, text: write(total, marked) });
+        }
         const right = Math.max(...mine.map((b) => b.x + b.w));
         const labels = mine.flatMap((b) => Array.from({ length: b.n }, (_, i) => b.labels[i] || ""));
         const gone = new Set(mine.slice(1).map((b) => b.id));
