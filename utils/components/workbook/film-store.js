@@ -155,3 +155,46 @@ export async function allFilms() {
 
 /** Forget what is cached for a film — after a write from another tab. */
 export const forget = (id) => cache.delete(id);
+
+/* ── KEPT AUDIO ────────────────────────────────────────────────────────────
+   *"If I like the audio part of a video, we can save the mp3 so we dont have to
+   keep dragging 11labs into it."* Kept recordings live on CLOUDINARY (the free
+   host the site's images use), not in Firestore, whose reads are counted. The
+   server signs the uploads and keeps a small manifest beside them
+   (server/routes/tts.js keep-line / keep-done / kept). A line is keyed by its
+   exact words and the words either side, so a re-worded line is a new line.
+
+     keptAudio(id)                 Map(key -> MP3 url), empty if none
+     keepAudio(id, lines, onStep)  lines: [{ key, b64 }] */
+const API = location.port === "5500" ? "http://127.0.0.1:5000" : "";
+
+export async function keptAudio(id) {
+  try {
+    const r = await fetch(`${API}/api/tts/kept?film=${encodeURIComponent(id)}`);
+    const { lines = {} } = r.ok ? await r.json() : {};
+    return new Map(Object.entries(lines));
+  } catch { return new Map(); }
+}
+
+export async function keepAudio(id, lines, onStep = () => {}) {
+  const u = await user();
+  if (!u) throw new Error("sign in as the admin first");
+  const post = async (path, body) => {
+    const r = await fetch(`${API}/api/tts/${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${await u.getIdToken()}` },
+      body: JSON.stringify(body),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || `${path} ${r.status}`);
+    return data;
+  };
+  const kept = {};
+  let n = 0;
+  for (const l of lines) {
+    kept[l.key] = (await post("keep-line", { film: id, key: l.key, b64: l.b64 })).url;
+    onStep(++n, lines.length);
+  }
+  await post("keep-done", { film: id, lines: kept });
+  return n;
+}

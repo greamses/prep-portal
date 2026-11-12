@@ -476,6 +476,92 @@ module.exports = function () {
     }
   });
 
+  /* ── KEPT FILM AUDIO, on Cloudinary ──────────────────────────────────────
+     *"If I like the audio part of a video, we can save the mp3 so we dont have to keep
+     dragging 11labs into it"* - and not in Firestore, whose reads are counted: the MP3s go
+     to Cloudinary, the free host the site's images already use (no card on file), and a
+     small manifest beside them says which lines a film has kept.
+
+       POST /api/tts/keep-line  {film, key, b64}   (admin)  one line's MP3  -> { url }
+       POST /api/tts/keep-done  {film, lines}      (admin)  the manifest {key: url}
+       GET  /api/tts/kept?film=                    (anyone) the manifest, cached here */
+  const CLOUD = () => ({ name: process.env.CLOUDINARY_CLOUD_NAME, key: process.env.CLOUDINARY_API_KEY, secret: process.env.CLOUDINARY_API_SECRET });
+  const isAdmin = (req) => !!req.user && req.user.email === process.env.ADMIN_EMAIL;
+  const filmOk = (f) => typeof f === "string" && /^[a-z0-9-]{2,60}$/.test(f);
+  const keyOk = (k) => typeof k === "string" && /^[a-f0-9]{8,32}$/.test(k);
+  const ROOT = "prep-portal/film-audio";
+  async function cloudUpload(kind, params, file) {
+    const c = CLOUD();
+    if (!c.name || !c.key || !c.secret) throw Object.assign(new Error("Cloudinary is not configured on this server."), { status: 503 });
+    const timestamp = Math.floor(Date.now() / 1000);
+    const signed = { ...params, timestamp };
+    const sign = Object.keys(signed).sort().map((k) => `${k}=${signed[k]}`).join("&");
+    const form = new URLSearchParams();
+    Object.entries(signed).forEach(([k, v]) => form.set(k, String(v)));
+    form.set("file", file);
+    form.set("api_key", c.key);
+    form.set("signature", crypto.createHash("sha1").update(sign + c.secret).digest("hex"));
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${c.name}/${kind}/upload`, {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: form,
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(data?.error?.message || `Cloudinary ${r.status}`), { status: 502 });
+    return data;
+  }
+
+  router.post("/keep-line", authenticate, async (req, res) => {
+    try {
+      if (!isAdmin(req)) return res.status(403).json({ error: "Only the admin keeps a film's audio." });
+      const { film, key, b64 } = req.body || {};
+      if (!filmOk(film) || !keyOk(key) || typeof b64 !== "string" || b64.length < 100 || b64.length > 3_000_000) {
+        return res.status(400).json({ error: "film, key and the recording are needed." });
+      }
+      /* audio is a "video" resource on Cloudinary */
+      const data = await cloudUpload("video", { public_id: `${ROOT}/${film}/${key}`, overwrite: "true" }, `data:audio/mpeg;base64,${b64}`);
+      res.json({ url: data.secure_url });
+    } catch (e) {
+      console.error("[/api/tts/keep-line]", e.message);
+      res.status(e.status || 500).json({ error: e.message });
+    }
+  });
+
+  const keptCache = new Map(); // film -> { at, lines }
+  router.post("/keep-done", authenticate, async (req, res) => {
+    try {
+      if (!isAdmin(req)) return res.status(403).json({ error: "Only the admin keeps a film's audio." });
+      const { film, lines } = req.body || {};
+      if (!filmOk(film) || !lines || typeof lines !== "object") return res.status(400).json({ error: "film and lines are needed." });
+      const clean = {};
+      for (const [k, u] of Object.entries(lines)) if (keyOk(k) && typeof u === "string" && u.startsWith("https://res.cloudinary.com/")) clean[k] = u;
+      const json = JSON.stringify({ film, lines: clean, at: Date.now() });
+      await cloudUpload("raw", { public_id: `${ROOT}/${film}/manifest.json`, overwrite: "true", invalidate: "true" },
+        `data:application/json;base64,${Buffer.from(json).toString("base64")}`);
+      keptCache.set(film, { at: Date.now(), lines: clean });
+      res.json({ count: Object.keys(clean).length });
+    } catch (e) {
+      console.error("[/api/tts/keep-done]", e.message);
+      res.status(e.status || 500).json({ error: e.message });
+    }
+  });
+
+  router.get("/kept", async (req, res) => {
+    const film = String(req.query.film || "");
+    if (!filmOk(film)) return res.status(400).json({ error: "Which film?" });
+    const hit = keptCache.get(film);
+    if (hit && Date.now() - hit.at < 120000) return res.json({ lines: hit.lines });
+    const name = CLOUD().name;
+    if (!name) return res.json({ lines: {} });
+    try {
+      const r = await fetch(`https://res.cloudinary.com/${name}/raw/upload/${ROOT}/${film}/manifest.json?cb=${Date.now()}`);
+      const lines = r.ok ? ((await r.json())?.lines || {}) : {};
+      keptCache.set(film, { at: Date.now(), lines });
+      res.set("Cache-Control", "public, max-age=60, s-maxage=120");
+      res.json({ lines });
+    } catch {
+      res.json({ lines: {} });
+    }
+  });
+
   // ── GET /api/tts/voices — list available voices ───────────────────
   router.get("/voices", authenticate, async (req, res) => {
     try {

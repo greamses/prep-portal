@@ -589,3 +589,7 @@
 @media (max-width: 640px) { .mm-tv-cards { grid-template-columns: 1fr; } .mm-tv-cards > li:nth-child(n+3) { display: none; } }
 /* the site's button dress must not pale the close key over the cards */
 .mm-tv-morepanel .mm-tv-morepanel__x.pp-plain { background: #2a2723 !important; box-shadow: 0 4px 10px -4px rgba(0,0,0,.4) !important; }
+/* the keep key's count: how many lines play from kept recordings */
+.mm-tv-btn[data-tv="keep"] { position: relative; }
+.mm-tv-keep__n { position: absolute; right: -4px; bottom: -4px; font: 700 9px/1 var(--font-mono, monospace); color: #fff; background: var(--accent-success, #3f8f5a); padding: 2px 3px; }
+.mm-tv-keep__n:empty { display: none; }

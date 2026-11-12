@@ -344,7 +344,27 @@ export class PrepbotTeacher {
     return this._authWait;
   }
 
+  /** A line's key for kept audio: its words and the words either side (cyrb53, hex). */
+  keyOf(spoken) {
+    const ctx = this.lineContext?.get(spoken) || {};
+    const str = `${ctx.prev || ""}\u0001${spoken}\u0001${ctx.next || ""}`;
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0; i < str.length; i++) {
+      const ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (h2 >>> 0).toString(16).padStart(8, "0") + (h1 >>> 0).toString(16).padStart(8, "0");
+  }
+
   async _tryElevenLabs(text) {
+    /* KEPT AUDIO FIRST: a film the admin kept plays its own recordings, for everybody, signed in or not */
+    if (this.kept?.size) {
+      const k = this.keyOf(text);
+      if (this.kept.has(k)) return this.kept.get(k);
+    }
     if (!this.elevenLabsAvailable || !this.auth) return null;
     /* the voice the learner chose (Teacher Dansum's own by default): one voice all lesson,
        so it is read once, when the first line is said */
@@ -590,6 +610,7 @@ export class PrepbotTeacher {
   }
 
   prepare(text) {
+    if (this.voiceMode === "talk" && text && this.kept?.size && this.kept.has(this.keyOf(sayMaths(text)))) return Promise.resolve(true);
     /* nothing to fetch for the browser's own voice: never hold a step up for it */
     if (this.voiceMode !== "talk" || !text || !this.elevenLabsAvailable || !this.auth?.currentUser) return Promise.resolve(false);
     return this._tryElevenLabs(sayMaths(text)).then((u) => !!u).catch(() => false);

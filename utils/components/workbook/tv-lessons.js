@@ -460,7 +460,7 @@ export async function playLesson(kind, title = "", strip = null) {
       strip?.classList.remove("is-playing");
       setTimeout(() => playLesson(id, next?.name || ""), 120);
     };
-    await openTv({ title, build: sized, steps: made.steps, onEdit: await editorFor(kind, title, coded), related, onPick });
+    await openTv({ title, build: sized, steps: made.steps, onEdit: await editorFor(kind, title, coded), related, onPick, filmId: kind });
     const refit = () => {
       const st = document.querySelector(".mm-tv-overlay [data-tv='stage'] .vm-tv");
       if (st) st.style.setProperty("--u", `${st.parentElement.clientWidth / 100}px`);

@@ -31,6 +31,7 @@ import { ICON_PREPBOT } from "./icons.js";
 import { SVG_ROTATE } from "/utils/components/game-viewport.js";
 import { ICON_PLAY, ICON_PAUSE, ICON_PREV, ICON_NEXT, ICON_FULLSCREEN, ICON_CLOSE } from "./icons.js";
 import { UI } from "/utils/components/ui-icons.js";
+import { sayMaths } from "/utils/speech-maths.js";
 
 const css = (href) => {
   if ([...document.styleSheets].some((s) => s.href && s.href.endsWith(href.split("/").pop()))) return;
@@ -160,7 +161,7 @@ const upNextStep = (related) => ({
   },
 });
 
-export async function openTv({ title = "", build = () => {}, steps: told = [], onEdit = null, related = [], onPick = null } = {}) {
+export async function openTv({ title = "", build = () => {}, steps: told = [], onEdit = null, related = [], onPick = null, filmId = "" } = {}) {
   const more = related.length && typeof onPick === "function";
   const steps = told.length ? [introStep(title), ...told, outroStep(), ...(more ? [upNextStep(related)] : [])] : told;
   open?.close();
@@ -205,6 +206,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     `<button class="mm-tv-btn" data-tv="next" type="button" aria-label="Next step" title="Next step (Right arrow)" aria-keyshortcuts="ArrowRight">${ICON_NEXT}</button>` +
     `</div>` +
     (onEdit ? `<button class="mm-tv-btn" data-tv="edit" type="button" aria-label="Edit this film" title="Edit this film">${UI.edit(22)}</button>` : "") +
+    (onEdit && filmId ? `<button class="mm-tv-btn" data-tv="keep" type="button" aria-label="Keep this audio" title="Keep this audio: play these recordings from now on, with no voice service">${UI.speaker(22)}<span class="mm-tv-keep__n" aria-hidden="true"></span></button>` : "") +
     (more ? `<button class="mm-tv-btn" data-tv="more" type="button" aria-label="More videos like this" title="More videos like this (M)" aria-keyshortcuts="M">${UI.cards(22)}</button>` : "") +
     `<button class="mm-tv-btn" data-tv="save" type="button" aria-label="Download this explanation" title="Download this explanation (D)" aria-keyshortcuts="D">${UI.download(22)}</button>` +
     `<button class="mm-tv-btn" data-tv="full" type="button" aria-label="Fullscreen" title="Full screen (F)" aria-keyshortcuts="F">${ICON_FULLSCREEN}</button>` +
@@ -512,6 +514,53 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
      (film-editor.js). Only the admin is ever handed an onEdit. */
   q("edit")?.addEventListener("click", () => { close(); onEdit(); });
 
+  /* KEPT AUDIO: the recordings the admin kept for this film play instead of the voice service */
+  if (filmId) {
+    try {
+      const { keptAudio } = await import("/utils/components/workbook/film-store.js");
+      teacher.kept = await Promise.race([keptAudio(filmId), new Promise((r) => setTimeout(() => r(new Map()), 3000))]);
+    } catch { teacher.kept = new Map(); }
+  }
+  /* THE KEEP KEY (admin): every line's recording, fetched where it has not been heard yet, kept for good */
+  if (q("keep")) {
+    const keepKey = q("keep");
+    const said = steps.map((st) => st.say).filter(Boolean);
+    const paint = (txt) => { keepKey.querySelector(".mm-tv-keep__n").textContent = txt; };
+    const keptNow = () => said.filter((t) => teacher.kept?.has(teacher.keyOf(sayMaths(t)))).length;
+    const label = () => { const k = keptNow(); keepKey.title = k ? `Kept: ${k} of ${said.length} lines play from their recordings. Press to keep them again (re-worded lines are recorded fresh).` : "Keep this audio: play these recordings from now on, with no voice service"; paint(k ? `${k}/${said.length}` : ""); };
+    label();
+    const b64 = async (url) => {
+      if (url.startsWith("data:")) return url.slice(url.indexOf(",") + 1);
+      const buf = new Uint8Array(await (await fetch(url)).arrayBuffer());
+      let bin = "";
+      for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+      return btoa(bin);
+    };
+    keepKey.addEventListener("click", async () => {
+      if (keepKey.disabled) return;
+      if (playing) toggle();
+      keepKey.disabled = true;
+      const lines = [];
+      try {
+        for (let i = 0; i < said.length; i++) {
+          paint(`${i + 1}/${said.length}`);
+          const spoken = sayMaths(said[i]);
+          const url = await teacher._tryElevenLabs(spoken);
+          if (!url) throw new Error(`line ${i + 1} has no recording (is the voice service on?)`);
+          lines.push({ key: teacher.keyOf(spoken), b64: await b64(url), text: said[i] });
+        }
+        const { keepAudio, keptAudio } = await import("/utils/components/workbook/film-store.js");
+        await keepAudio(filmId, lines, (n, all) => paint(`saving ${n}/${all}`));
+        teacher.kept = await keptAudio(filmId);
+        label();
+        keepKey.setAttribute("aria-pressed", "true");
+      } catch (e) {
+        paint("!");
+        keepKey.title = `Could not keep the audio: ${e.message}`;
+        console.warn("[keep audio]", e);
+      } finally { keepKey.disabled = false; }
+    });
+  }
   /* THE CARDS: on the end screen, or brought up over the film by the cards key (the film pauses) */
   if (more) {
     const sheet = document.createElement("div");
