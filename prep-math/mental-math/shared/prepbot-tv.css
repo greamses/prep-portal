@@ -593,3 +593,25 @@
 .mm-tv-btn[data-tv="keep"] { position: relative; }
 .mm-tv-keep__n { position: absolute; right: -4px; bottom: -4px; font: 700 9px/1 var(--font-mono, monospace); color: #fff; background: var(--accent-success, #3f8f5a); padding: 2px 3px; }
 .mm-tv-keep__n:empty { display: none; }
+
+/* ── saved voice: the badge by the title, and the saving receipt on the screen ── */
+.mm-tv-saved { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; padding: 3px 7px; vertical-align: middle;
+  font: 700 11px/1 var(--font-mono, monospace); color: #fff; background: var(--accent-success, #3f8f5a); white-space: nowrap; }
+.mm-tv-saved[hidden] { display: none; }
+.mm-tv-saved svg { width: 13px; height: 13px; }
+.mm-tv-saved svg * { fill: #fff; stroke: #fff; }
+.mm-tv-keepbox.pp-receipt { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 420; width: min(78%, 360px); display: block; }
+.mm-tv-keepbox[hidden] { display: none; }
+.mm-tv-keepbox .pp-receipt__paper { padding: 12px 22px 14px; background-color: #fffdf8; text-align: center; font-family: var(--font-mono, monospace); color: #2a2723; }
+.mm-tv-keepbox__t { margin: 0; font: 800 15px/1.2 var(--font-display, "Unbounded", sans-serif); }
+.mm-tv-keepbox__s { margin: 6px 0 0; font-size: 12px; line-height: 1.4; color: #5c564d; }
+.mm-tv-keepbox__bar { margin: 10px 0 0; height: 8px; background: #ece6dc; overflow: hidden; }
+.mm-tv-keepbox__bar[hidden] { display: none; }
+.mm-tv-keepbox__bar i { display: block; height: 100%; width: 0; background: var(--accent-secondary, #2f6f8f); transition: width .25s ease; }
+.mm-tv-keepbox__n { margin: 6px 0 0; font-size: 11px; font-weight: 700; color: #6b645b; }
+.mm-tv-keepbox__n:empty { display: none; }
+.mm-tv-keepbox[data-kind="ok"] .mm-tv-keepbox__t { color: var(--accent-success, #2f7d4a); }
+.mm-tv-keepbox[data-kind="ok"] .mm-tv-keepbox__bar i { background: var(--accent-success, #3f8f5a); }
+.mm-tv-keepbox[data-kind="bad"] .mm-tv-keepbox__t { color: var(--accent-danger, #c0453f); }
+.mm-tv-btn[data-tv="keep"].is-busy { animation: mmKeepBusy 1s ease-in-out infinite; }
+@keyframes mmKeepBusy { 50% { opacity: .45; } }

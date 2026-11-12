@@ -206,7 +206,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     `<button class="mm-tv-btn" data-tv="next" type="button" aria-label="Next step" title="Next step (Right arrow)" aria-keyshortcuts="ArrowRight">${ICON_NEXT}</button>` +
     `</div>` +
     (onEdit ? `<button class="mm-tv-btn" data-tv="edit" type="button" aria-label="Edit this film" title="Edit this film">${UI.edit(22)}</button>` : "") +
-    (onEdit && filmId ? `<button class="mm-tv-btn" data-tv="keep" type="button" aria-label="Keep this audio" title="Keep this audio: play these recordings from now on, with no voice service">${UI.speaker(22)}<span class="mm-tv-keep__n" aria-hidden="true"></span></button>` : "") +
+    (onEdit && filmId ? `<button class="mm-tv-btn" data-tv="keep" type="button" disabled aria-label="Keep this audio" title="Keep this audio: play these recordings from now on, with no voice service">${UI.speaker(22)}<span class="mm-tv-keep__n" aria-hidden="true"></span></button>` : "") +
     (more ? `<button class="mm-tv-btn" data-tv="more" type="button" aria-label="More videos like this" title="More videos like this (M)" aria-keyshortcuts="M">${UI.cards(22)}</button>` : "") +
     `<button class="mm-tv-btn" data-tv="save" type="button" aria-label="Download this explanation" title="Download this explanation (D)" aria-keyshortcuts="D">${UI.download(22)}</button>` +
     `<button class="mm-tv-btn" data-tv="full" type="button" aria-label="Fullscreen" title="Full screen (F)" aria-keyshortcuts="F">${ICON_FULLSCREEN}</button>` +
@@ -514,20 +514,75 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
      (film-editor.js). Only the admin is ever handed an onEdit. */
   q("edit")?.addEventListener("click", () => { close(); onEdit(); });
 
-  /* KEPT AUDIO: the recordings the admin kept for this film play instead of the voice service */
+  /* ── SAVED VOICE ──────────────────────────────────────────────────────────
+     The recordings the admin kept for this film play instead of the voice service.
+     *"No notification to show that a voice is saved. Also a better saving progress
+     and saving completion is needed."* So:
+       - a "Voice saved" badge by the title whenever this film plays from its recordings
+       - a short notice on opening ("Playing the saved voice")
+       - while saving, a receipt on the screen: what is being done, a bar for each stage
+       - at the end, a clear done (or a plain reason it could not) */
+  const said = steps.map((st) => st.say).filter(Boolean);
   if (filmId) {
     try {
       const { keptAudio } = await import("/utils/components/workbook/film-store.js");
       teacher.kept = await Promise.race([keptAudio(filmId), new Promise((r) => setTimeout(() => r(new Map()), 3000))]);
     } catch { teacher.kept = new Map(); }
   }
-  /* THE KEEP KEY (admin): every line's recording, fetched where it has not been heard yet, kept for good */
+  const keptNow = () => said.filter((t) => teacher.kept?.has(teacher.keyOf(sayMaths(t)))).length;
+
+  /* the badge by the title */
+  const badge = document.createElement("span");
+  badge.className = "mm-tv-saved";
+  badge.hidden = true;
+  badge.innerHTML = `${UI.speaker(14)}<span class="mm-tv-saved__t"></span>`;
+  box.querySelector(".mm-tv-title")?.after(badge);
+  const paintBadge = () => {
+    const k = keptNow();
+    badge.hidden = !k;
+    badge.querySelector(".mm-tv-saved__t").textContent = k === said.length ? "Voice saved" : `Voice saved: ${k} of ${said.length} lines`;
+    badge.dataset.tip = k === said.length
+      ? "Every line plays from its saved recording: no voice service is used"
+      : `${k} of ${said.length} lines play from saved recordings; the rest are spoken live (re-worded lines are new lines)`;
+  };
+  paintBadge();
+
+  /* the receipt on the screen: notices, and the saving in progress */
+  const note = document.createElement("div");
+  note.className = "mm-tv-keepbox pp-receipt";
+  note.hidden = true;
+  note.setAttribute("role", "status");
+  note.setAttribute("aria-live", "polite");
+  note.innerHTML = `<div class="pp-receipt__paper"><p class="mm-tv-keepbox__t"></p><p class="mm-tv-keepbox__s"></p>`
+    + `<div class="mm-tv-keepbox__bar"><i></i></div><p class="mm-tv-keepbox__n"></p></div>`;
+  screen.appendChild(note);
+  let noteTimer = 0;
+  const say = ({ title = "", sub = "", frac = null, count = "", kind = "", hold = 0 }) => {
+    clearTimeout(noteTimer);
+    note.hidden = false;
+    note.dataset.kind = kind;
+    note.querySelector(".mm-tv-keepbox__t").textContent = title;
+    note.querySelector(".mm-tv-keepbox__s").textContent = sub;
+    note.querySelector(".mm-tv-keepbox__n").textContent = count;
+    const bar = note.querySelector(".mm-tv-keepbox__bar");
+    bar.hidden = frac == null;
+    if (frac != null) bar.firstChild.style.width = `${Math.round(Math.max(0, Math.min(1, frac)) * 100)}%`;
+    if (hold) noteTimer = setTimeout(() => { note.hidden = true; }, hold * 1000);
+  };
+  if (keptNow()) say({ title: "Playing the saved voice", sub: keptNow() === said.length ? "Every line comes from its saved recording." : `${keptNow()} of ${said.length} lines come from saved recordings.`, kind: "ok", hold: 3.5 });
+
+  /* THE KEEP KEY (admin) */
   if (q("keep")) {
     const keepKey = q("keep");
-    const said = steps.map((st) => st.say).filter(Boolean);
+    keepKey.disabled = false;   // ready now: the saved recordings have been looked up
     const paint = (txt) => { keepKey.querySelector(".mm-tv-keep__n").textContent = txt; };
-    const keptNow = () => said.filter((t) => teacher.kept?.has(teacher.keyOf(sayMaths(t)))).length;
-    const label = () => { const k = keptNow(); keepKey.title = k ? `Kept: ${k} of ${said.length} lines play from their recordings. Press to keep them again (re-worded lines are recorded fresh).` : "Keep this audio: play these recordings from now on, with no voice service"; paint(k ? `${k}/${said.length}` : ""); };
+    const label = () => {
+      const k = keptNow();
+      keepKey.dataset.tip = k ? `Voice saved (${k} of ${said.length} lines). Press to save it again: re-worded lines are recorded fresh.` : "Save this voice: every line is recorded once and played from the recording from now on";
+      keepKey.setAttribute("aria-label", keepKey.dataset.tip);
+      keepKey.removeAttribute("title");
+      paint(k ? (k === said.length ? "✓" : `${k}/${said.length}`) : "");
+    };
     label();
     const b64 = async (url) => {
       if (url.startsWith("data:")) return url.slice(url.indexOf(",") + 1);
@@ -540,25 +595,35 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
       if (keepKey.disabled) return;
       if (playing) toggle();
       keepKey.disabled = true;
+      keepKey.classList.add("is-busy");
       const lines = [];
+      const total = said.length;
       try {
-        for (let i = 0; i < said.length; i++) {
-          paint(`${i + 1}/${said.length}`);
+        /* stage 1 of 2: a recording for every line (the ones already heard come from memory) */
+        for (let i = 0; i < total; i++) {
+          say({ title: "Saving this voice", sub: "Step 1 of 2: recording every line", frac: i / total, count: `Line ${i + 1} of ${total}` });
           const spoken = sayMaths(said[i]);
           const url = await teacher._tryElevenLabs(spoken);
-          if (!url) throw new Error(`line ${i + 1} has no recording (is the voice service on?)`);
+          if (!url) throw new Error(`Line ${i + 1} could not be recorded. Is the premium voice on for this account?`);
           lines.push({ key: teacher.keyOf(spoken), b64: await b64(url), text: said[i] });
         }
+        /* stage 2 of 2: up to the saved place, one line at a time */
         const { keepAudio, keptAudio } = await import("/utils/components/workbook/film-store.js");
-        await keepAudio(filmId, lines, (n, all) => paint(`saving ${n}/${all}`));
+        await keepAudio(filmId, lines, (n, all) => say({ title: "Saving this voice", sub: "Step 2 of 2: storing the recordings", frac: n / all, count: `${n} of ${all} saved` }));
         teacher.kept = await keptAudio(filmId);
         label();
+        paintBadge();
         keepKey.setAttribute("aria-pressed", "true");
+        say({ title: "Voice saved", sub: `All ${total} lines will play from these recordings, for everyone, with no voice service.`, frac: 1, count: "Done", kind: "ok", hold: 6 });
+        try { (await import("/utils/components/workbook/film-fx.js")).sfx("ding"); } catch { /* quiet */ }
       } catch (e) {
         paint("!");
-        keepKey.title = `Could not keep the audio: ${e.message}`;
+        say({ title: "The voice was not saved", sub: e.message || "Something went wrong. Nothing was changed: try again.", kind: "bad", hold: 9 });
         console.warn("[keep audio]", e);
-      } finally { keepKey.disabled = false; }
+      } finally {
+        keepKey.disabled = false;
+        keepKey.classList.remove("is-busy");
+      }
     });
   }
   /* THE CARDS: on the end screen, or brought up over the film by the cards key (the film pauses) */
