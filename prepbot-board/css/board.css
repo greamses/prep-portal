@@ -469,34 +469,8 @@ body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8' fill='%232f8f4e'/%3E%3Cpath d='M4.4 8.3l2.4 2.4 4.8-5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
 
-/* the tools rail: each key a sticky note (the site's papers in turn, a small tilt,
-   a soft shadow, lifting on hover); an open tool shows the green tick, not a fill */
-.wb-tools .wb-tools__btn {
-  position: relative;
-  background: #fff3a8;
-  rotate: -2deg;
-  box-shadow: 0 1px 1px rgba(20, 19, 15, 0.1), 4px 6px 10px -4px rgba(20, 19, 15, 0.3);
-  margin: 2px 0;
-  transition: translate 0.2s ease, rotate 0.2s ease;
-}
-.wb-tools .wb-tools__btn:nth-child(4n + 2) { background: #bfe3ff; rotate: 1.5deg; }
-.wb-tools .wb-tools__btn:nth-child(4n + 3) { background: #e8c8ff; rotate: 1.2deg; }
-.wb-tools .wb-tools__btn:nth-child(4n + 4) { background: #ffd7a3; rotate: -1.4deg; }
-.wb-tools .wb-tools__btn:hover { translate: 0 -2px; }
-.wb-tools .wb-tools__btn[aria-pressed="true"]::after {
-  content: ""; position: absolute; right: -6px; top: -6px; width: 14px; height: 14px; border-radius: 50%;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8' fill='%232f8f4e'/%3E%3Cpath d='M4.4 8.3l2.4 2.4 4.8-5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-}
-@media (prefers-reduced-motion: reduce) { .wb-tools .wb-tools__btn { transition: none; } }
-.wb-tools .wb-tools__paper { padding-inline: 0.6rem; gap: 0.4rem; }
-
-/* sticky-ui.css flattens icon keys inside receipts; on PrepBoard the tool keys and the
-   tools' own buttons ("Set it", "Show me one", "Rub it out") are sticky notes — the
-   doubled classes only lift these rules above that one */
-.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn { background: #fff3a8; border: 0; box-shadow: 0 1px 1px rgba(20, 19, 15, 0.1), 4px 6px 10px -4px rgba(20, 19, 15, 0.3); }
-.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn:nth-child(4n + 2) { background: #bfe3ff; }
-.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn:nth-child(4n + 3) { background: #e8c8ff; }
-.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn:nth-child(4n + 4) { background: #ffd7a3; }
+/* the tools' own buttons ("Set it", "Show me one", "Rub it out") are sticky notes on PrepBoard;
+   the rail keys themselves are left to the shared rail (workbook/toolbar.js), as on every page */
 .wb-panel .bd-board .pp-btn.bd-act.bd-act {
   background: #fff3a8; border: 0; border-radius: 0;
   font-family: "Shantell Sans", "Segoe Print", cursive; font-weight: 700; color: #14130f;
@@ -506,20 +480,6 @@ body:not([data-style="lecture"]) .pb-hand-up:not(.is-up) { display: inline-flex;
 }
 .wb-panel .bd-board .bd-acts .pp-btn.bd-act.bd-act:nth-child(2n) { background: #bfe3ff; rotate: 1.5deg; }
 .wb-panel .bd-board .pp-btn.bd-act.bd-act:hover { translate: 0 -2px; background-color: inherit; filter: brightness(0.98); }
-.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn.wb-tools__btn:hover { background: #fff3a8; translate: 0 -2px; }
-.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn.wb-tools__btn:nth-child(4n + 2):hover { background: #bfe3ff; }
-.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn.wb-tools__btn:nth-child(4n + 3):hover { background: #e8c8ff; }
-.wb-tools .wb-tools__paper .wb-tools__btn.wb-tools__btn.wb-tools__btn:nth-child(4n + 4):hover { background: #ffd7a3; }
-/* the organisers' receipt: the same sticky-note keys as the rail */
-.wb-tools__fly .wb-tools__flykeys .wb-tools__btn.wb-tools__btn { position: relative; background: #fff3a8; border: 0; rotate: -2deg; box-shadow: 0 1px 1px rgba(20, 19, 15, 0.1), 4px 6px 10px -4px rgba(20, 19, 15, 0.3); }
-.wb-tools__fly .wb-tools__flykeys .wb-tools__btn.wb-tools__btn:nth-child(4n + 2) { background: #bfe3ff; rotate: 1.5deg; }
-.wb-tools__fly .wb-tools__flykeys .wb-tools__btn.wb-tools__btn:nth-child(4n + 3) { background: #e8c8ff; rotate: 1.2deg; }
-.wb-tools__fly .wb-tools__flykeys .wb-tools__btn.wb-tools__btn:nth-child(4n + 4) { background: #ffd7a3; rotate: -1.4deg; }
-.wb-tools__fly .wb-tools__btn[aria-pressed="true"]::after, .wb-tools .wb-tools__group[aria-pressed="true"]::after {
-  content: ""; position: absolute; right: -6px; top: -6px; width: 14px; height: 14px; border-radius: 50%;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8' fill='%232f8f4e'/%3E%3Cpath d='M4.4 8.3l2.4 2.4 4.8-5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-}
-
 /* the voice key in Talk: the chosen voice's face (utils/components/voice-avatars.js) */
 .pb-voicepick .pp-vpick__key { width: 2.4rem; height: 2.4rem; }
 .pb-ribbon .pb-voicepick .pp-vpick__key { width: 2.15rem; height: 2.15rem; }
