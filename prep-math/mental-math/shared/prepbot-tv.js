@@ -31,6 +31,10 @@ import { ICON_PREPBOT } from "./icons.js";
 import { SVG_ROTATE } from "/utils/components/game-viewport.js";
 import { ICON_PLAY, ICON_PAUSE, ICON_PREV, ICON_NEXT, ICON_FULLSCREEN, ICON_CLOSE } from "./icons.js";
 import { UI } from "/utils/components/ui-icons.js";
+/* the off key is a power button; the tuck key folds the controls away for more screen */
+const ICON_POWER = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.05 6.4a8 8 0 1 0 9.9 0" fill="none" stroke="var(--accent-danger, #c0453f)" stroke-width="2.6" stroke-linecap="round"/><rect x="10.7" y="2.2" width="2.6" height="10" rx="1.3" fill="var(--accent-danger, #c0453f)"/></svg>`;
+const ICON_TUCK = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ICON_UNTUCK = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 15l7-7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 import { sayMaths } from "/utils/speech-maths.js";
 
 const css = (href) => {
@@ -229,7 +233,8 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     (more ? `<button class="mm-tv-btn" data-tv="more" type="button" aria-label="More videos like this" title="More videos like this (M)" aria-keyshortcuts="M">${UI.cards(22)}</button>` : "") +
     `<button class="mm-tv-btn" data-tv="save" type="button" aria-label="Download this explanation" title="Download this explanation (D)" aria-keyshortcuts="D">${UI.download(22)}</button>` +
     `<button class="mm-tv-btn" data-tv="full" type="button" aria-label="Fullscreen" title="Full screen (F)" aria-keyshortcuts="F">${ICON_FULLSCREEN}</button>` +
-    `<button class="mm-tv-btn" data-tv="close" type="button" aria-label="Turn the TV off" title="Turn the TV off (Esc)" aria-keyshortcuts="Escape">${ICON_CLOSE}</button>` +
+    `<button class="mm-tv-btn" data-tv="hide" type="button" aria-label="Hide the controls for more room" data-tip="Hide the controls for more room (C)" aria-keyshortcuts="C">${ICON_TUCK}</button>` +
+    `<button class="mm-tv-btn" data-tv="close" type="button" aria-label="Turn the TV off" data-tip="Turn the TV off (Esc)" aria-keyshortcuts="Escape">${ICON_POWER}</button>` +
     `</div></div>` +
     `<div class="mm-tv-stand" aria-hidden="true"><div class="mm-tv-stand-neck"></div><div class="mm-tv-stand-base"></div></div>` +
     `</div>`;
@@ -679,6 +684,30 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
       else if (e.key === "Escape" && !sheet.hidden) { e.preventDefault(); e.stopImmediatePropagation(); showMore(false); }
     }, true);
   }
+  /* MORE LEARNING SPACE (*"the black part of the Tv where the buttons can be hidden"*): the bar of keys
+     and the frame fold away and the screen grows; a small tab on the screen, or C, brings them back.
+     Remembered on this device. */
+  const col = box.querySelector(".mm-tv-col");
+  const untuck = document.createElement("button");
+  untuck.type = "button";
+  untuck.className = "mm-tv-untuck pp-plain";
+  untuck.innerHTML = ICON_UNTUCK;
+  untuck.setAttribute("aria-label", "Show the controls");
+  untuck.dataset.tip = "Show the controls (C)";
+  screen.appendChild(untuck);
+  const tuck = (on) => {
+    tv.classList.toggle("mm-tv--bare", on);
+    col?.classList.toggle("is-bare", on);
+    try { localStorage.setItem("pp-tv-bare", on ? "1" : "0"); } catch { /* private mode */ }
+  };
+  try { if (localStorage.getItem("pp-tv-bare") === "1") tuck(true); } catch { /* no memory */ }
+  q("hide").addEventListener("click", () => tuck(true));
+  untuck.addEventListener("click", () => tuck(false));
+  window.addEventListener("keydown", (e) => {
+    if (closed || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.closest?.("input, textarea, select, [contenteditable='true']")) return;
+    if (e.key === "c" || e.key === "C") { e.preventDefault(); e.stopImmediatePropagation(); tuck(!tv.classList.contains("mm-tv--bare")); }
+  }, true);
   q("full").addEventListener("click", () => { if (document.fullscreenElement) document.exitFullscreen?.(); else tv.requestFullscreen?.(); });
   box.addEventListener("click", (e) => { if (e.target === box) close(); });
   window.addEventListener("keydown", onKey, true);

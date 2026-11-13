@@ -621,3 +621,18 @@
 .mm-tv-card__saved { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
   background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
 .mm-tv-card__saved svg { width: 16px; height: 16px; }
+
+/* the step count is no longer shown on the screen (*"Remove the steps sticky note"*); it stays in the page for screen readers */
+.mm-tv-step-sticker.pp-sticky { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; opacity: 0; }
+
+/* ── the controls tucked away: no bar, no frame, no stand; the screen takes the room ── */
+.mm-tv.mm-tv--bare { padding: 0; background: transparent; box-shadow: none; }
+.mm-tv.mm-tv--bare .mm-tv-panel { display: none; }
+.mm-tv-col.is-bare .mm-tv-stand { display: none; }
+.mm-tv-overlay .mm-tv-col.is-bare { width: min(1280px, 100%, calc((100vh - 32px) * 16 / 9)); }
+.mm-tv-untuck { display: none; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); z-index: 30;
+  width: 46px; height: 20px; padding: 0; border: 0; border-radius: 0; cursor: pointer; place-items: center;
+  background: rgba(20, 19, 15, .55); color: #fff; opacity: .55; transition: opacity .15s, height .15s; }
+.mm-tv-untuck svg { width: 16px; height: 16px; }
+.mm-tv.mm-tv--bare .mm-tv-untuck { display: grid; }
+.mm-tv.mm-tv--bare .mm-tv-screen:hover .mm-tv-untuck, .mm-tv-untuck:focus-visible { opacity: 1; height: 24px; }

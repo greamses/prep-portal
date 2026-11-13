@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>PrepBot Video Thumbnails</title>
+  <!--
+    YOUTUBE THUMBNAILS FOR PREPBOT'S FILMS (1280 x 720) - ONE COMPONENT
+    (*"use one component, the name of the film is the only change, and probably each
+    subject uses a different color scheme"*)
+
+    Every thumbnail is the same picture: the subject on a tag, the film's name big,
+    a "2 WAYS" stamp, PrepBot beside a TV showing the subject's sign, the address.
+    Only the NAME changes from film to film; the COLOURS come from the subject
+    (SUBJECTS below). A new subject is one entry there.
+
+    ?film=<id>      one thumbnail        (&shot=1: exactly 1280 x 720, for the PNG)
+    (no film)       the gallery: every film's PNG to download (png/<id>.png)
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/utils/components/theme.css" />
+  <style>
+    :root { --ink: #2a2723; --paper: #fffdf8; --bg: #f3efe7; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: "JetBrains Mono", monospace; }
+    body.shot { background: var(--paper); }
+    .wrap { padding: 24px 16px 48px; max-width: 1320px; margin: 0 auto; }
+    h1 { font: 900 22px/1.2 Unbounded, sans-serif; margin: 0 0 6px; }
+    .lead { margin: 0 0 18px; color: #5c564d; font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .card { background: #fff; border: 1px solid rgba(42,39,35,.14); box-shadow: 0 8px 18px -12px rgba(42,39,35,.5); padding: 10px; }
+    .card img { display: block; width: 100%; aspect-ratio: 16/9; background: var(--paper); border: 1px solid rgba(42,39,35,.12); }
+    .card p { margin: 8px 0 2px; font-weight: 700; font-size: 12.5px; }
+    .card small { color: #6b645b; font-size: 11px; }
+    .card .row { display: flex; gap: 12px; margin-top: 8px; }
+    .card a { font-size: 12px; font-weight: 700; color: #2f6f8f; }
+    .scale { transform-origin: 0 0; }
+
+    /* ── THE THUMBNAIL: one component, coloured by its subject (--deep, --soft, --wash, --pop) ── */
+    .thumb { position: relative; width: 1280px; height: 720px; overflow: hidden; background: var(--wash); }
+    .thumb__blob { position: absolute; border-radius: 50%; background: var(--soft); }
+    .thumb__blob--a { width: 760px; height: 760px; left: -260px; top: -300px; }
+    .thumb__blob--b { width: 520px; height: 520px; right: -120px; bottom: -220px; }
+    .thumb__band { position: absolute; left: 0; right: 0; bottom: 0; height: 74px; background: var(--deep); }
+    .thumb__left { position: absolute; left: 60px; top: 56px; width: 640px; height: 520px; display: flex; flex-direction: column; }
+    .thumb__topic { align-self: flex-start; font: 800 26px/1 "JetBrains Mono", monospace; letter-spacing: .16em; text-transform: uppercase;
+      background: var(--deep); color: #fff; padding: 12px 18px; transform: rotate(-2deg); }
+    .thumb__title { margin: 28px 0 0; font: 900 68px/1.03 Unbounded, sans-serif; letter-spacing: -.012em; color: var(--ink); }
+    .thumb__title em { font-style: normal; color: var(--deep); background: linear-gradient(transparent 60%, var(--pop) 60%); }
+    .thumb__stamp { margin-top: auto; align-self: flex-start; font: 900 38px/1 Unbounded, sans-serif; color: var(--ink); background: var(--pop);
+      padding: 16px 24px; transform: rotate(-3deg); box-shadow: 0 10px 22px -10px rgba(0,0,0,.4); }
+    .thumb__tv { position: absolute; right: 70px; top: 96px; width: 470px; transform: rotate(2.5deg); }
+    .thumb__tv-set { background: var(--ink); padding: 14px; box-shadow: 0 28px 44px -18px rgba(0,0,0,.5); }
+    .thumb__tv-screen { aspect-ratio: 16 / 10; background: var(--paper); display: grid; place-items: center; overflow: hidden; }
+    .thumb__tv-screen svg { width: 86%; height: 86%; }
+    .thumb__tv-foot { width: 120px; height: 26px; margin: 0 auto; background: var(--ink); clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%); }
+    .thumb__bot { position: absolute; right: 410px; top: 330px; width: 230px; height: 230px; transform: rotate(-8deg); filter: drop-shadow(0 14px 16px rgba(0,0,0,.25)); }
+    .thumb__bot svg { width: 100%; height: 100%; }
+    .thumb__brand { position: absolute; left: 60px; bottom: 18px; font: 900 34px/1 Unbounded, sans-serif; color: #fff; }
+    .thumb__brand span { color: var(--pop); }
+    .thumb__url { position: absolute; right: 60px; bottom: 26px; font: 800 22px/1 "JetBrains Mono", monospace; color: #fff; letter-spacing: .03em; }
+  </style>
+</head>
+<body>
+  <div class="wrap" id="gallery" hidden>
+    <h1>PrepBot video thumbnails</h1>
+    <p class="lead">1280 × 720, ready for YouTube. One design for every film: only the name changes, and each subject has its own colours.</p>
+    <div class="grid" id="grid"></div>
+  </div>
+  <div id="one" hidden><div class="scale" id="scale"><div id="slot"></div></div></div>
+  <script type="module">
+    import { FILMS } from "/utils/components/workbook/tv-lessons.js";
+    import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
+
+    /* ONE ENTRY PER SUBJECT: its name on the tag, its colours, and the sign on the TV */
+    const SUBJECTS = {
+      percent: { name: "Percentages", deep: "#1f5f86", soft: "#cfe6f3", wash: "#eef6fb", pop: "#f2c14e",
+        sign: (c) => `<svg viewBox="0 0 160 100"><text x="80" y="76" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="900" font-size="84" fill="${c.deep}">%</text></svg>` },
+      ratio: { name: "Ratio", deep: "#2b6e43", soft: "#d5ecd7", wash: "#f1f8f1", pop: "#f5a547",
+        sign: (c) => `<svg viewBox="0 0 160 100">${[0, 1, 2].map((i) => `<rect x="${18 + i * 26}" y="22" width="24" height="24" fill="${c.soft}" stroke="${c.deep}" stroke-width="3"/>`).join("")}`
+          + `${[0, 1].map((i) => `<rect x="${18 + i * 26}" y="56" width="24" height="24" fill="${c.pop}" stroke="${c.deep}" stroke-width="3"/>`).join("")}`
+          + `<text x="128" y="66" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="900" font-size="34" fill="${c.deep}">3:2</text></svg>` },
+      patterns: { name: "Patterns", deep: "#5a3f93", soft: "#e2d9f3", wash: "#f6f2fb", pop: "#f08a5d",
+        sign: (c) => `<svg viewBox="0 0 160 100">${[1, 2, 3, 4].flatMap((h, x) => Array.from({ length: h }, (_, y) => `<rect x="${32 + x * 24}" y="${86 - (y + 1) * 18}" width="24" height="18" fill="${(x + y) % 2 ? c.soft : c.pop}" stroke="${c.deep}" stroke-width="2.6"/>`)).join("")}</svg>` },
+      maths: { name: "Maths", deep: "#a8392f", soft: "#f6d6cf", wash: "#fdf3f0", pop: "#f2c14e",
+        sign: (c) => `<svg viewBox="0 0 160 100"><text x="80" y="66" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="900" font-size="44" fill="${c.deep}">+ − × ÷</text></svg>` },
+    };
+
+    /* THE COMPONENT: everything is fixed but the name, and the subject's colours */
+    function thumbnail({ name, topic }) {
+      const s = SUBJECTS[topic] || SUBJECTS.maths;
+      const title = name.replace(/\s*\(two ways\)\s*$/i, "")
+        .replace(/(\d[\d,.]*%|[₦$]\d[\d,]*|\d+\s*:\s*\d+(?:\s*:\s*\d+)*|\b\d[\d,]*\b)/, "<em>$1</em>");
+      return `<div class="thumb" style="--deep:${s.deep};--soft:${s.soft};--wash:${s.wash};--pop:${s.pop}">`
+        + `<span class="thumb__blob thumb__blob--a"></span><span class="thumb__blob thumb__blob--b"></span>`
+        + `<div class="thumb__left"><span class="thumb__topic">${s.name}</span><h2 class="thumb__title">${title}</h2><span class="thumb__stamp">2 WAYS</span></div>`
+        + `<div class="thumb__tv"><div class="thumb__tv-set"><div class="thumb__tv-screen">${s.sign(s)}</div></div><div class="thumb__tv-foot"></div></div>`
+        + `<div class="thumb__bot">${ICON_PREPBOT}</div>`
+        + `<div class="thumb__band"></div><div class="thumb__brand">Prep<span>Bot</span></div><div class="thumb__url">prepportal.com.ng</div>`
+        + `</div>`;
+    }
+
+    const params = new URLSearchParams(location.search);
+    const id = params.get("film");
+    if (!id) {
+      document.getElementById("gallery").hidden = false;
+      document.getElementById("grid").innerHTML = FILMS.filter((f) => f.topic).map((f) => `
+        <div class="card">
+          <a href="?film=${f.id}" target="_blank" rel="noopener"><img src="png/${f.id}.png" alt="Thumbnail: ${f.name}" loading="lazy"></a>
+          <p>${f.name}</p><small>${f.of || ""}</small>
+          <div class="row"><a href="png/${f.id}.png" download="prepbot-${f.id}.png">Download</a><a href="?film=${f.id}" target="_blank" rel="noopener">Open</a></div>
+        </div>`).join("");
+    } else {
+      const f = FILMS.find((x) => x.id === id) || { name: id };
+      document.getElementById("one").hidden = false;
+      document.getElementById("slot").innerHTML = thumbnail(f);
+      if (params.get("shot")) document.body.classList.add("shot");
+      else {
+        const fit = () => { const k = Math.min(1, (innerWidth - 32) / 1280); const sc = document.getElementById("scale"); sc.style.transform = `scale(${k})`; sc.style.margin = "16px"; };
+        fit(); addEventListener("resize", fit);
+      }
+      await document.fonts.ready;
+      document.body.dataset.ready = "1";
+    }
+  </script>
+</body>
+</html>
