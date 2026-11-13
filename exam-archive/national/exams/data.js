@@ -527,6 +527,13 @@ const COMP_REGISTRY = {
           "12th": { rounds: [{ id: "main", name: "Main Paper", live: true }] },
         },
       },
+      "junior-secondary": {
+        name: "Junior Secondary",
+        live: true,
+        years: {
+          "19th": { rounds: [{ id: "first-round", name: "First Round", live: true }] },
+        },
+      },
     },
   },
   olympiad: { name: "National Olympiad", live: false, divisions: {} },
