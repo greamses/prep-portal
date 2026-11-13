@@ -131,6 +131,91 @@ const build = (s, H, key, count, gap) => {
   for (let i = 0; i < count; i++) { const n = s?.querySelector(`[data-k="${key}${i}"]`); if (n) H.drop(n, i * gap); }
 };
 
+
+/* ── A STAIRCASE THAT TURNS ────────────────────────────────────────────────
+   (*"adding the rotation of the staircase to different perspectives and
+   numbering can add more details to the visuals"*) A tiny 3D renderer: real
+   cubes, seen from any side, drawn back to front, with the faces between two
+   touching cubes left out. Blocks can DROP in one at a time, carry their
+   NUMBERS, take a colour by layer, and the whole staircase can TURN.
+   It runs its own frames and stops when its drawing leaves the screen; a step
+   replayed at once is drawn at its last frame. */
+function liveStairs(host, { n = 3, depth = 2, size = 9, cx = 75, cy = 32, tilt = 0.52 } = {}) {
+  const NS = "http://www.w3.org/2000/svg";
+  const g = document.createElementNS(NS, "g");
+  host.replaceChildren(g);   // one staircase per drawing: a new view replaces the last
+  const cubes = [];
+  for (let x = 0; x < n; x++) for (let y = 0; y < depth; y++) for (let z = 0; z <= x; z++) cubes.push({ x, y, z });
+  /* the builder's order: bottom first, back before front, left to right */
+  cubes.sort((a, b) => a.z - b.z || b.y - a.y || a.x - b.x);
+  cubes.forEach((c, i) => { c.i = i; });
+  const has = new Set(cubes.map((c) => `${c.x},${c.y},${c.z}`));
+  const ox = n / 2, oy = depth / 2, oz = n / 2;
+  const sinT = Math.sin(tilt), cosT = Math.cos(tilt);
+  const FACES = [
+    { d: [0, 0, 1], q: [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]] },
+    { d: [0, 0, -1], q: [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]] },
+    { d: [1, 0, 0], q: [[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]] },
+    { d: [-1, 0, 0], q: [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]] },
+    { d: [0, 1, 0], q: [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]] },
+    { d: [0, -1, 0], q: [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]] },
+  ];
+  const shade = (base, k) => {
+    const h = base.replace("#", "");
+    const ch = [0, 2, 4].map((i) => Math.round(parseInt(h.slice(i, i + 2), 16) * k));
+    return `rgb(${ch.map((v) => Math.max(0, Math.min(255, v))).join(",")})`;
+  };
+  return {
+    count: cubes.length,
+    /* t: { th: turn (radians), shown: (i) => 0..1 how far block i has fallen in, label: (i) => text|"", colour: (c) => hex } */
+    draw({ th = -0.6, shown = () => 1, label = () => "", colour = () => "#e8edf3" } = {}) {
+      const ct = Math.cos(th), st = Math.sin(th);
+      const P = (x, y, z) => {
+        const X = x - ox, Y = y - oy, Z = z - oz;
+        const xr = X * ct - Y * st, yr = X * st + Y * ct;
+        return [cx + xr * size, cy + (yr * sinT - Z * cosT) * size, yr * cosT + Z * sinT];
+      };
+      const vis = (dx, dy, dz) => (dx * st + dy * ct) * cosT + dz * sinT > 0.0001;
+      const parts = [];
+      cubes.forEach((c) => {
+        const k = shown(c.i);
+        if (k <= 0) return;
+        const drop = (1 - k) * 2.6;
+        const centre = P(c.x + 0.5, c.y + 0.5, c.z + 0.5 + drop);
+        let svg = "";
+        const base = colour(c);
+        FACES.forEach(({ d, q }) => {
+          if (has.has(`${c.x + d[0]},${c.y + d[1]},${c.z + d[2]}`)) return;
+          if (!vis(...d)) return;
+          const light = d[2] === 1 ? 1.04 : d[2] === -1 ? 0.6 : 0.78 + 0.14 * (d[0] * ct - d[1] * st);
+          const pts = q.map(([a, b, e]) => P(c.x + a, c.y + b, c.z + e + drop));
+          svg += `<path d="M${pts.map((p) => `${p[0].toFixed(2)},${p[1].toFixed(2)}`).join("L")}Z" fill="${shade(base, light)}" stroke="#1f2937" stroke-width="${(size * 0.055).toFixed(2)}" stroke-linejoin="round"/>`;
+        });
+        const lab = label(c.i);
+        if (lab) svg += `<text x="${centre[0].toFixed(2)}" y="${(centre[1] + size * 0.18).toFixed(2)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="800" font-size="${(size * 0.48).toFixed(2)}" fill="#c0453f" opacity="${Math.min(1, k * 1.4).toFixed(2)}">${lab}</text>`;
+        parts.push([centre[2], svg]);
+      });
+      parts.sort((a, b) => a[0] - b[0]);
+      g.innerHTML = parts.map((p) => p[1]).join("");
+    },
+  };
+}
+/** Run `frame(t)` for `secs` seconds (t from 0 to 1), unless the drawing has left the screen; at once when replayed. */
+function animate(host, H, secs, frame, delay = 0) {
+  const instant = H.grow === H.show;
+  if (instant) { frame(1); return; }
+  frame(0);
+  const t0 = performance.now() + delay * 1000;
+  const tick = (now) => {
+    if (!host.isConnected) return;
+    const t = Math.max(0, Math.min(1, (now - t0) / (secs * 1000)));
+    frame(t);
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+
 export function stairs24() {
   const K = PIC_W / PAPER;
   const PIC = (h) => svgBox(150, h, "");
@@ -156,8 +241,8 @@ export function stairs24() {
     asks: [{ id: "a1", text: "Ololade Abigail can build this set of 3 stairs with 12 blocks. How many blocks will she need to build a set of 6 stairs?" }],
     pics: {
       /* the staircase in the question, built block by block; and at the end the six-stair one, all 42 */
-      iso: () => isoPic(3, 11, "k", 60),
-      big: () => isoPic(6, 6.2, "g", 60),
+      iso: () => svgBox(150, 60, `<g data-live="iso"></g>`),
+      big: () => svgBox(150, 60, `<g data-live="big"></g>`),
       p3: () => svgBox(150, 48, profile(3, 11, 75 - 16.5, 40)),
       p6: () => svgBox(150, 52, profile(6, 6.4, 75 - 19.2, 46, "d")),
       r3: () => svgBox(150, 52, rectangle(3, 9.5, 75 - 14.25, 46)),
@@ -186,7 +271,7 @@ export function stairs24() {
       gR: () => main([{ k: "a", tex: "\\text{blocks}" }, { k: "e", tex: "=" }, { k: "b", tex: "n \\times (n + 1)", color: GREEN }]),
       sF: () => side([[{ k: "a", tex: "n = 3:\\ 3 \\times 4 = 12\\ \\checkmark" }], [{ k: "b", tex: "n = 6:\\ 6 \\times 7 = 42\\ \\checkmark" }]], 4.6),
       sG: () => side([[{ k: "a", tex: "10 \\times 11 = 110" }], [{ k: "b", tex: "100 \\times 101 = 10{,}100" }]], 4.8),
-      sI: () => svgBox(SIDE_W, 46, `<svg x="10" y="0" width="28" height="34.5" viewBox="0 0 120 148">${ISO}</svg>`
+      sI: () => svgBox(SIDE_W, 46, `<g data-live="side"></g>`
         + texAt("\\text{2 blocks deep}", SIDE_W / 2, 43, { em: 4.4, color: RED, attrs: 'data-mb="num" data-k="t"' })),
       s3: () => side([[{ k: "a", tex: "3 \\times 4 = 12" }], [{ k: "b", tex: "\\checkmark\\ \\text{all 12 blocks}", color: GREEN }]]),
     },
@@ -201,14 +286,54 @@ export function stairs24() {
       { id: "m2", receipt: true, sub: "Method 2", text: "Make a rectangle", y: 50.5 },
     ],
     stages: {
-      "iso.build": (s, H) => build(s, H, "k", 12, 0.22),
-      "big.build": (s, H) => build(s, H, "g", 42, 0.07),
+      "iso.build": (s, H) => {
+        const st = liveStairs(s.querySelector('[data-live="iso"]'), { n: 3, size: 10.5, cy: 34 });
+        const gap = 0.22;
+        if (H.grow !== H.show) for (let i = 0; i < st.count; i++) H.sound("pop", 0.2 + i * gap);
+        animate(s, H, 0.4 + st.count * gap, (t) => {
+          const now = t * (0.4 + st.count * gap);
+          st.draw({ th: -0.6, shown: (i) => Math.max(0, Math.min(1, (now - i * gap) / 0.35)) });
+        });
+      },
+      /* "And it took her twelve blocks": a full turn, every block numbered as it is counted */
+      "iso.count": (s, H) => {
+        const st = liveStairs(s.querySelector('[data-live="iso"]'), { n: 3, size: 10.5, cy: 34 });
+        if (H.grow !== H.show) for (let i = 0; i < st.count; i++) H.sound("tick", 0.3 + i * 0.32);
+        animate(s, H, 5.2, (t) => {
+          const now = t * 5.2;
+          st.draw({ th: -0.6 + ease(t) * Math.PI * 2, label: (i) => (now >= 0.3 + i * 0.32 ? String(i + 1) : "") });
+        });
+      },
+      /* the 42, built fast, then turned to be seen from the other side, and counted */
+      "big.build": (s, H) => {
+        const host = s.querySelector('[data-live="big"]');
+        const st = liveStairs(host, { n: 6, size: 6.4, cy: 36 });
+        const gap = 0.06, build = 0.4 + st.count * gap;
+        if (H.grow !== H.show) for (let i = 0; i < st.count; i += 3) H.sound("pop", 0.2 + i * gap);
+        animate(s, H, build + 3.2, (t) => {
+          const now = t * (build + 3.2);
+          const turn = Math.max(0, now - build) / 3.2;
+          st.draw({ th: -0.6 + ease(Math.min(1, turn)) * Math.PI, shown: (i) => Math.max(0, Math.min(1, (now - i * gap) / 0.3)) });
+          let tag = host.querySelector(".big-count");
+          if (now >= build) {
+            if (!tag) { tag = document.createElementNS("http://www.w3.org/2000/svg", "text"); tag.setAttribute("class", "big-count"); host.appendChild(tag); }
+            tag.setAttribute("x", "128"); tag.setAttribute("y", "14"); tag.setAttribute("text-anchor", "middle");
+            tag.setAttribute("font-family", "JetBrains Mono, monospace"); tag.setAttribute("font-weight", "800"); tag.setAttribute("font-size", "7");
+            tag.setAttribute("fill", "#2f7d4a"); tag.textContent = "42 blocks";
+          }
+        });
+      },
       ...columnStages("p3", "c", 3),
       ...columnStages("p6", "d", 6),
       "mA.sum": (s, H) => write(s, H, ["a"], 0),
       "mA.ans": (s, H) => { write(s, H, ["e", "b"], 0, 0.35); },
       "mB.all": (s, H) => write(s, H, ["a", "e", "b"], 0, 0.45),
-      "sI.all": (s, H) => write(s, H, ["t"], 0.6),
+      /* "Behind": the margin's staircase turns to show its back layer, in its own colour */
+      "sI.all": (s, H) => {
+        write(s, H, ["t"], 0.6);
+        const st = liveStairs(s.querySelector('[data-live="side"]'), { n: 3, size: 6.2, cx: 24, cy: 20 });
+        animate(s, H, 2.6, (t) => st.draw({ th: -0.6 - ease(t) * 1.3, colour: (c) => (c.y === 0 ? "#ffd9cf" : "#bfe3ff") }));
+      },
       "mC.sum": (s, H) => write(s, H, ["a"], 0),
       "mC.ans": (s, H) => write(s, H, ["e", "b"], 0, 0.35),
       "mD.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.4); write(s, H, ["b"], 1.2); H.sound("ding", 1.4); },
@@ -236,7 +361,7 @@ export function stairs24() {
     },
     steps: ({ push }) => {
       push("Ololade built a staircase. Three stairs.", { on: ["a1", "iso"], add: ["iso.build"], transition: "iris", pause: 0.8 });
-      push("And it took her twelve blocks.", { pause: 0.6 });
+      push("And it took her twelve blocks.", { add: ["iso.count"], pause: 0.6 });
       push("Now she wants six stairs. How many blocks will that take?", { pause: 1.4 });
       push("Here's a trick. Don't count the blocks yet. Look at the staircase from the side.", { pause: 0.6 });
       push("From the side, the first step is one square. The next is two. The top is three.",

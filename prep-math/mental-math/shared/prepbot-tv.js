@@ -143,6 +143,24 @@ function thumbSvg(thumb) {
     + `<path d="M8 15 Q50 6 ${(8 + Math.min(k, row) * w).toFixed(1)} 15" fill="none" stroke="#c0453f" stroke-width="1.2"/>`
     + out + `<circle cx="50" cy="45" r="7" fill="#2a2723"/><path d="M47.5 41.6v6.8l5.8-3.4z" fill="#fff"/></svg>`;
 }
+/* films whose voice is saved (looked up once per film, from the server's cached manifest) */
+const savedFilms = new Set();
+const lookedUp = new Set();
+const SAVED_TICK = () => `<span class="mm-tv-card__saved" data-tip="Voice saved" aria-label="Voice saved">${UI.check(12)}</span>`;
+function markSaved(root) {
+  root?.querySelectorAll?.("[data-pick]").forEach((b) => {
+    if (savedFilms.has(b.dataset.pick) && !b.querySelector(".mm-tv-card__saved")) b.querySelector(".mm-tv-card__thumb")?.insertAdjacentHTML("beforeend", SAVED_TICK());
+  });
+}
+async function lookUpSaved(related, root) {
+  const todo = related.filter((r) => !lookedUp.has(r.id));
+  todo.forEach((r) => lookedUp.add(r.id));
+  try {
+    const { keptAudio } = await import("/utils/components/workbook/film-store.js");
+    await Promise.all(todo.map(async (r) => { if ((await keptAudio(r.id)).size) savedFilms.add(r.id); }));
+  } catch { /* no ticks, no harm */ }
+  markSaved(root);
+}
 const cardsHtml = (related) => `<ul class="mm-tv-cards" role="list">`
   + related.slice(0, 4).map((r, i) => `<li style="animation-delay:${(0.2 + i * 0.15).toFixed(2)}s">`
     + `<button type="button" class="mm-tv-card pp-plain" data-pick="${esc(r.id)}" aria-label="Watch: ${esc(r.name)}">`
@@ -158,6 +176,7 @@ const upNextStep = (related) => ({
     box.className = "mm-tv-upnext";
     box.innerHTML = `<p class="mm-tv-upnext__lead">Watch another one</p>${cardsHtml(related)}`;
     stage.appendChild(box);
+    markSaved(box);
   },
 });
 
@@ -535,7 +554,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
   const badge = document.createElement("span");
   badge.className = "mm-tv-saved";
   badge.hidden = true;
-  badge.innerHTML = `${UI.speaker(14)}<span class="mm-tv-saved__t"></span>`;
+  badge.innerHTML = `${UI.check(14)}<span class="mm-tv-saved__t"></span>`;
   box.querySelector(".mm-tv-title")?.after(badge);
   const paintBadge = () => {
     const k = keptNow();
@@ -575,7 +594,11 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
   if (q("keep")) {
     const keepKey = q("keep");
     keepKey.disabled = false;   // ready now: the saved recordings have been looked up
-    const paint = (txt) => { keepKey.querySelector(".mm-tv-keep__n").textContent = txt; };
+    const paint = (txt) => {
+      const n = keepKey.querySelector(".mm-tv-keep__n");
+      n.classList.toggle("is-tick", txt === "✓");
+      if (txt === "✓") n.innerHTML = UI.check(11); else n.textContent = txt;
+    };
     const label = () => {
       const k = keptNow();
       keepKey.dataset.tip = k ? `Voice saved (${k} of ${said.length} lines). Press to save it again: re-worded lines are recorded fresh.` : "Save this voice: every line is recorded once and played from the recording from now on";
@@ -634,6 +657,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     sheet.innerHTML = `<div class="mm-tv-upnext"><p class="mm-tv-upnext__lead">More like this</p>${cardsHtml(related)}</div>`
       + `<button type="button" class="mm-tv-morepanel__x pp-plain" aria-label="Back to the film" data-tip="Back to the film">${ICON_CLOSE}</button>`;
     screen.appendChild(sheet);
+    lookUpSaved(related, box);
     const showMore = (on) => {
       sheet.hidden = !on;
       q("more").setAttribute("aria-pressed", String(on));

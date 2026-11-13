@@ -598,8 +598,7 @@
 .mm-tv-saved { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; padding: 3px 7px; vertical-align: middle;
   font: 700 11px/1 var(--font-mono, monospace); color: #fff; background: var(--accent-success, #3f8f5a); white-space: nowrap; }
 .mm-tv-saved[hidden] { display: none; }
-.mm-tv-saved svg { width: 13px; height: 13px; }
-.mm-tv-saved svg * { fill: #fff; stroke: #fff; }
+.mm-tv-saved svg { width: 15px; height: 15px; background: #fff; border-radius: 50%; }
 .mm-tv-keepbox.pp-receipt { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 420; width: min(78%, 360px); display: block; }
 .mm-tv-keepbox[hidden] { display: none; }
 .mm-tv-keepbox .pp-receipt__paper { padding: 12px 22px 14px; background-color: #fffdf8; text-align: center; font-family: var(--font-mono, monospace); color: #2a2723; }
@@ -615,3 +614,10 @@
 .mm-tv-keepbox[data-kind="bad"] .mm-tv-keepbox__t { color: var(--accent-danger, #c0453f); }
 .mm-tv-btn[data-tv="keep"].is-busy { animation: mmKeepBusy 1s ease-in-out infinite; }
 @keyframes mmKeepBusy { 50% { opacity: .45; } }
+/* the tick on saved things: the keep key, and a video card whose film's voice is saved */
+.mm-tv-keep__n.is-tick { padding: 1px; line-height: 0; border-radius: 50%; background: #fff; }
+.mm-tv-keep__n.is-tick svg { width: 13px; height: 13px; display: block; }
+.mm-tv-card__thumb { position: relative; }
+.mm-tv-card__saved { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.mm-tv-card__saved svg { width: 16px; height: 16px; }
