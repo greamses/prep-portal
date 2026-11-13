@@ -186,6 +186,21 @@ const upNextStep = (related) => ({
   },
 });
 
+/** Save a film's YouTube thumbnail (tools/film-thumbnail/png/<id>.png). False when it has none. */
+async function downloadThumb(id) {
+  const res = await fetch(`/tools/film-thumbnail/png/${encodeURIComponent(id)}.png`);
+  if (!res.ok || !/image\/png/.test(res.headers.get("content-type") || "")) return false;
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `prepbot-${id}.png`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return true;
+}
+
 export async function openTv({ title = "", build = () => {}, steps: told = [], onEdit = null, related = [], onPick = null, filmId = "" } = {}) {
   const more = related.length && typeof onPick === "function";
   const steps = told.length ? [introStep(title), ...told, outroStep(), ...(more ? [upNextStep(related)] : [])] : told;
@@ -233,7 +248,9 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     (onEdit ? `<button class="mm-tv-btn" data-tv="edit" type="button" aria-label="Edit this film" title="Edit this film">${UI.edit(22)}</button>` : "") +
     (onEdit && filmId ? `<button class="mm-tv-btn" data-tv="keep" type="button" disabled aria-label="Keep this audio" title="Keep this audio: play these recordings from now on, with no voice service">${UI.speaker(22)}<span class="mm-tv-keep__n" aria-hidden="true"></span></button>` : "") +
     (more ? `<button class="mm-tv-btn" data-tv="more" type="button" aria-label="More videos like this" title="More videos like this (M)" aria-keyshortcuts="M">${UI.cards(22)}</button>` : "") +
-    `<button class="mm-tv-btn" data-tv="save" type="button" aria-label="Download this explanation" title="Download this explanation (D)" aria-keyshortcuts="D">${UI.download(22)}</button>` +
+    (filmId
+      ? `<button class="mm-tv-btn" data-tv="save" type="button" aria-label="Download this film's thumbnail" title="Download this film's thumbnail (D)" aria-keyshortcuts="D">${UI.download(22)}</button>`
+      : `<button class="mm-tv-btn" data-tv="save" type="button" aria-label="Download this explanation" title="Download this explanation (D)" aria-keyshortcuts="D">${UI.download(22)}</button>`) +
     `<button class="mm-tv-btn" data-tv="full" type="button" aria-label="Fullscreen" title="Full screen (F)" aria-keyshortcuts="F">${ICON_FULLSCREEN}</button>` +
     `<button class="mm-tv-btn" data-tv="hide" type="button" aria-label="Hide the controls for more room" data-tip="Hide the controls for more room (C)" aria-keyshortcuts="C">${ICON_TUCK}</button>` +
     `<button class="mm-tv-btn" data-tv="close" type="button" aria-label="Turn the TV off" data-tip="Turn the TV off (Esc)" aria-keyshortcuts="Escape">${ICON_POWER}</button>` +
@@ -525,12 +542,16 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     const key = q("save");
     key.disabled = true;
     try {
+      /* a film with a thumbnail (*"use the download button for downloading the thumbnail"*):
+         the key hands over its 1280 x 720 YouTube picture from tools/film-thumbnail/png */
+      if (filmId && await downloadThumb(filmId)) return;
       const { downloadSheet } = await import("./lesson-sheet.js");
       downloadSheet({ title, steps });
     } catch (err) {
-      console.error("PrepBot could not make the sheet", err);
+      console.error("PrepBot could not make the download", err);
+    } finally {
+      key.disabled = false;
     }
-    key.disabled = false;
   });
 
   /* STRAIGHT FROM THE SET TO THE CUTTING ROOM. A film is judged watching it,
