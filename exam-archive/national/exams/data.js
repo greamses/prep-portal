@@ -539,6 +539,7 @@ const COMP_REGISTRY = {
               { id: "second-round", name: "Second Round", live: true },
             ],
           },
+          "23rd": { rounds: [{ id: "first-round", name: "First Round", live: true }] },
           "19th": { rounds: [{ id: "first-round", name: "First Round", live: true }] },
         },
       },
