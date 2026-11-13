@@ -91,11 +91,14 @@
     /* THE COMPONENT: everything is fixed but the name, and the subject's colours */
     function thumbnail({ name, topic }) {
       const s = SUBJECTS[topic] || SUBJECTS.maths;
-      const title = name.replace(/\s*\(two ways\)\s*$/i, "")
+      /* the stamp counts the film's ways from its name: "(three ways)" is 3 WAYS */
+      const WAYS = { two: 2, three: 3, four: 4 };
+      const ways = WAYS[(name.match(/\((two|three|four) ways\)\s*$/i) || [])[1]?.toLowerCase()] || 2;
+      const title = name.replace(/\s*\((?:two|three|four) ways\)\s*$/i, "")
         .replace(/(\d[\d,.]*%|[₦$]\d[\d,]*|\d+\s*:\s*\d+(?:\s*:\s*\d+)*|\b\d[\d,]*\b)/, "<em>$1</em>");
       return `<div class="thumb" style="--deep:${s.deep};--soft:${s.soft};--wash:${s.wash};--pop:${s.pop}">`
         + `<span class="thumb__blob thumb__blob--a"></span><span class="thumb__blob thumb__blob--b"></span>`
-        + `<div class="thumb__left"><span class="thumb__topic">${s.name}</span><h2 class="thumb__title">${title}</h2><span class="thumb__stamp">2 WAYS</span></div>`
+        + `<div class="thumb__left"><span class="thumb__topic">${s.name}</span><h2 class="thumb__title">${title}</h2><span class="thumb__stamp">${ways} WAYS</span></div>`
         + `<div class="thumb__tv"><div class="thumb__tv-set"><div class="thumb__tv-screen">${s.sign(s)}</div></div><div class="thumb__tv-foot"></div></div>`
         + `<div class="thumb__bot">${ICON_PREPBOT}</div>`
         + `<div class="thumb__band"></div><div class="thumb__brand">Prep<span>Bot</span></div><div class="thumb__url">prepportal.com.ng</div>`

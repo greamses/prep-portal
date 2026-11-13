@@ -8,6 +8,10 @@
                  staircase is 12 / 6 = 2 deep; 1 + ... + 6 = 21, times 2.
                  Method 2, make a rectangle: the back layer turned upside down
                  on the front fills n by (n + 1): 3 x 4 = 12, so 6 x 7 = 42.
+                 Method 3, count the pattern (slow, but where most of us start):
+                 1, 2, 3 stairs take 2, 6, 12 blocks; the jumps are NOT the same,
+                 they grow (+4, +6, +8, +10, +12), so 20, 30, 42; and every count
+                 is n x (n + 1): 1 x 2, 2 x 3, 3 x 4.
 
    Same layout and kit as ./cbt-films.js: the question small at the top, the
    one picture being worked in the centre, extra sums in the margin, the method
@@ -290,16 +294,49 @@ export function stairs24() {
       sI: () => svgBox(SIDE_W, 46, `<g data-live="side"></g>`
         + texAt("\\text{2 blocks deep}", SIDE_W / 2, 43, { em: 4.4, color: RED, attrs: 'data-mb="num" data-k="t"' })),
       s3: () => side([[{ k: "a", tex: "3 \\times 4 = 12" }], [{ k: "b", tex: "\\checkmark\\ \\text{all 12 blocks}", color: GREEN }]]),
+      /* METHOD 3: one, two and three stairs side by side, each with its count under it */
+      q: () => svgBox(150, 52, [1, 2, 3].map((n, j) => {
+        const cx = 30 + j * 45;
+        return `<g data-live="q${n}"></g>`
+          + texAt(`\\text{${n} stair${n > 1 ? "s" : ""}}`, cx, 5, { em: 4.6, color: INK, attrs: `data-mb="num" data-k="w${n}"` })
+          + texAt(String(n * (n + 1)), cx, 49, { em: 8, color: BLUE, attrs: `data-mb="num" data-k="c${n}"` });
+      }).join("")),
+      /* the counts in a row, an arrow over each jump saying how big it is, and under each count what it is made of */
+      sq: () => {
+        const X = (i) => 15 + i * 24;
+        const arrow = (i) => {
+          const x1 = X(i) + 4, x2 = X(i + 1) - 4, y = 19, cx = (x1 + x2) / 2, cy = y - 10;
+          const dx = x2 - cx, dy = y - cy, len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
+          const head = (turn) => {
+            const c = Math.cos(turn), s2 = Math.sin(turn);
+            return `M${x2.toFixed(2)} ${y} l${((-ux * c + uy * s2) * 3.4).toFixed(2)} ${((-uy * c - ux * s2) * 3.4).toFixed(2)}`;
+          };
+          return `<g data-mb="brace" data-mb-key="j${i + 1}"><path d="M${x1.toFixed(2)} ${y} Q${cx.toFixed(2)} ${cy} ${x2.toFixed(2)} ${y} ${head(0.45)} ${head(-0.45)}" fill="none" stroke="${RED}" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"/></g>`
+            + texAt(`+${2 * (i + 2)}`, cx, 9, { em: 5.6, color: RED, attrs: `data-mb="num" data-k="d${i + 1}"` });
+        };
+        let out = "";
+        for (let i = 0; i < 6; i++) {
+          const n = i + 1;
+          out += texAt(String(n * (n + 1)), X(i), 30, { em: 9, color: n === 6 ? GREEN : INK, attrs: `data-mb="num" data-k="t${n}"` });
+          out += texAt(`${n} \\times ${n + 1}`, X(i), 42, { em: 5.2, color: BLUE, attrs: `data-mb="num" data-k="f${n}"` });
+          if (i < 5) out += arrow(i);
+        }
+        return svgBox(150, 46, out);
+      },
+      sJ: () => side([[{ k: "a", tex: "4,\\ 6,\\ 8,\\ \\ldots" }], [{ k: "b", tex: "\\text{up 2 each time}", color: RED }]], 4.8),
+      g3: () => main([{ k: "a", tex: "\\text{blocks}" }, { k: "e", tex: "=" }, { k: "b", tex: "n \\times (n + 1)", color: GREEN }]),
     },
     picAt: {
       iso: at(17), big: at(15), p3: at(18), p6: at(17), r3: at(17), r6: at(13.5),
       mA: at(38.5), mB: at(38.5), mC: at(38.5), mD: at(38.5), mE: at(38),
       sI: { x: 79.5, y: 18 }, s3: { x: 79.5, y: 22 }, sF: { x: 79.5, y: 20 }, sG: { x: 79.5, y: 20 },
       gp: at(14), fA: at(38.5), fB: at(38.5), fC: at(20), fD: at(31), gR: at(37.5),
+      q: at(14), sq: at(15), sJ: { x: 79.5, y: 16 }, g3: at(36),
     },
     lines: [
       { id: "m1", receipt: true, sub: "Method 1", text: "Look from the side", y: 50.5 },
       { id: "m2", receipt: true, sub: "Method 2", text: "Make a rectangle", y: 50.5 },
+      { id: "m3", receipt: true, sub: "Method 3", text: "Count the pattern", y: 50.5 },
     ],
     stages: {
       "iso.build": (s, H) => {
@@ -384,6 +421,25 @@ export function stairs24() {
       "sF.b": (s, H) => write(s, H, ["b"], 0),
       "sG.a": (s, H) => write(s, H, ["a"], 0),
       "sG.b": (s, H) => { write(s, H, ["b"], 0); H.sound("ding", 0.6); },
+      /* METHOD 3: each small staircase drops in, block by block, and its count is written under it */
+      ...Object.fromEntries([1, 2, 3].map((n) => [`q.s${n}`, (s, H) => {
+        const st = liveStairs(s.querySelector(`[data-live="q${n}"]`), { n, size: 6.4, cx: 30 + (n - 1) * 45, cy: 26 });
+        const gap = 0.16, secs = 0.35 + st.count * gap;
+        if (H.grow !== H.show) for (let i = 0; i < st.count; i++) H.sound("pop", 0.1 + i * gap);
+        animate(s, H, secs, (t) => {
+          const now = t * secs;
+          st.draw({ shown: (i) => Math.max(0, Math.min(1, (now - i * gap) / 0.3)) });
+        });
+        write(s, H, [`w${n}`], 0);
+        write(s, H, [`c${n}`], secs);
+      }])),
+      "sq.row": (s, H) => write(s, H, ["t1", "t2", "t3"], 0, 0.5),
+      /* a jump: its arrow is drawn, then how big it is */
+      ...Object.fromEntries([1, 2, 3, 4, 5].map((j) => [`sq.j${j}`, (s, H) => { H.draw(braceOf(s, `j${j}`), 0); write(s, H, [`d${j}`], 0.45); H.sound("tick", 0.5); }])),
+      ...Object.fromEntries([4, 5, 6].map((n) => [`sq.t${n}`, (s, H) => { write(s, H, [`t${n}`], 0); if (n === 6) H.sound("ding", 0.3); }])),
+      "sq.f": (s, H) => write(s, H, ["f1", "f2", "f3", "f4", "f5", "f6"], 0, 0.45),
+      "sJ.all": (s, H) => { write(s, H, ["a"], 0); write(s, H, ["b"], 0.9); },
+      "g3.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.4); write(s, H, ["b"], 1.0); H.sound("ding", 1.2); },
       "mE.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.4); write(s, H, ["b"], 1.0); H.sound("ding", 1.2); },
     },
     steps: ({ push }) => {
@@ -445,7 +501,28 @@ export function stairs24() {
       push("Ten stairs: ten times eleven, a hundred and ten.", { on: ["sG"], add: ["sG.a"], cue: { "sG.a": "ten times" }, pause: 0.6 });
       push("A hundred stairs: a hundred times a hundred and one. Ten thousand one hundred.",
         { add: ["sG.b"], cue: { "sG.b": "a hundred times" }, pause: 1 });
-      push("Two ways, one formula. For a staircase two blocks deep, the blocks are n times n plus one. Try twenty stairs yourself.");
+
+      push("One more way. It's slower, but honestly, it's where most of us would start.",
+        { on: ["m3"], off: ["gR", "sG", "m2", "r6", "mE"], transition: { kind: "card", title: "Method 3", sub: "Count the pattern", hold: 1.6 }, pause: 0.6 });
+      push("Build the small ones and count. One stair takes two blocks. Two stairs take six. Three stairs, twelve.",
+        { on: ["q"], add: ["q.s1", "q.s2", "q.s3"], cue: { "q.s1": "one stair", "q.s2": "two stairs", "q.s3": "three stairs" }, pause: 0.8 });
+      push("Now write the counts in a row. Two, six, twelve.",
+        { on: ["sq"], off: ["q"], add: ["sq.row"], cue: { "sq.row": "two, six" }, pause: 0.6 });
+      push("How big is each jump? Two to six, that's four. Six to twelve, that's six.",
+        { add: ["sq.j1", "sq.j2"], cue: { "sq.j1": "two to six", "sq.j2": "six to twelve" }, pause: 0.8 });
+      push("So the jump is NOT the same every time. It grows. Four, then six. It goes up by two each time.",
+        { on: ["sJ"], add: ["sJ.all"], cue: { "sJ.all": "four, then six" }, pause: 0.8 });
+      push("So the next jump is eight. Twelve and eight, twenty. That's four stairs.",
+        { add: ["sq.j3", "sq.t4"], cue: { "sq.j3": "next jump", "sq.t4": "twelve and eight" }, pause: 0.6 });
+      push("Then a jump of ten. Thirty. Five stairs.",
+        { add: ["sq.j4", "sq.t5"], cue: { "sq.j4": "a jump of ten", "sq.t5": "thirty" }, pause: 0.6 });
+      push("Then a jump of twelve. Forty two. Six stairs, forty two blocks. The same answer again.",
+        { add: ["sq.j5", "sq.t6"], cue: { "sq.j5": "a jump of twelve", "sq.t6": "forty two" }, pause: 1 });
+      push("And look at those counts. Two is one times two. Six is two times three. Twelve is three times four. All the way to six times seven.",
+        { off: ["sJ"], add: ["sq.f"], cue: { "sq.f": "two is one" }, pause: 0.8 });
+      push("Each one is the number of stairs, times one more. n times n plus one. The very same formula.",
+        { on: ["g3"], add: ["g3.all"], cue: { "g3.all": "n times" }, pause: 1 });
+      push("Three ways, one formula. For a staircase two blocks deep, the blocks are n times n plus one. Try twenty stairs yourself.");
     },
   });
 }

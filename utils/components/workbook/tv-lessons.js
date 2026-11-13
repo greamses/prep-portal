@@ -407,7 +407,7 @@ export const FILMS = [
   { id: "decrease-15", name: "Decrease 1,500 kg by 15% (two ways)", of: "Scholastic JS 5th edition first round, Q7", topic: "percent", thumb: { n: 20, k: 17 } },
   { id: "discount-35", name: "A 35% discount on 195 (two ways)", of: "Scholastic 2022 first round, Q46", topic: "percent", thumb: { n: 20, k: 13 } },
   { id: "alloy-26", name: "26% copper: how much alloy? (two ways)", of: "Scholastic 2025 finals, Q33", topic: "percent", thumb: { n: 50, k: 13 } },
-  { id: "stairs-24", name: "Blocks in a staircase (two ways)", of: "Scholastic 2022 first round, Q24", topic: "patterns" },
+  { id: "stairs-24", name: "Blocks in a staircase (three ways)", of: "Scholastic 2022 first round, Q24", topic: "patterns" },
   { id: "sum-200", name: "1 + 2 + ... + 200 (two ways)", of: "ANMC 13th first round, Q14", topic: "patterns" },
   { id: "odd-29", name: "1 + 3 + 5 + ... + 29 (two ways)", of: "ANMC 13th finals, Q12", topic: "patterns" },
   { id: "odd-21", name: "1 + 3 + 5 + ... + 21 (two ways)", of: "ANMC 14th main, Q68", topic: "patterns" },
