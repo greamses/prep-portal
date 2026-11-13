@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>PrepBot Social Kit</title>
+  <!--
+    THE PICTURES FOR OUR SOCIAL MEDIA ACCOUNTS (the PrepBot videos), one component like the
+    YouTube thumbnails (tools/film-thumbnail): the same paper, paint colours, PrepBot and
+    lettering, drawn at each platform's exact upload size.
+
+      profile pictures   PrepBot (800 x 800) and the Prep Portal mark (800 x 800); both stay
+                         inside the circle every platform crops a profile picture to
+      banners            YouTube 2560 x 1440 (everything inside the 1546 x 423 middle that
+                         shows on every device), Facebook 1640 x 624, X 1500 x 500,
+                         LinkedIn 1584 x 396 (kept clear of where the profile picture sits)
+
+    ?asset=<id>&shot=1   one picture at exactly its size (for the PNG)
+    (nothing)            the gallery: every PNG to download (png/<id>.png)
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/utils/components/theme.css" />
+  <style>
+    :root { --ink: #2a2723; --paper: #fffdf8; --bg: #f3efe7; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: "JetBrains Mono", monospace; }
+    body.shot { background: var(--paper); }
+    .wrap { padding: 24px 16px 48px; max-width: 1320px; margin: 0 auto; }
+    h1 { font: 900 22px/1.2 Unbounded, sans-serif; margin: 0 0 6px; }
+    .lead { margin: 0 0 18px; color: #5c564d; font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .card { background: #fff; border: 1px solid rgba(42,39,35,.14); box-shadow: 0 8px 18px -12px rgba(42,39,35,.5); padding: 10px; }
+    .card img { display: block; width: 100%; background: var(--paper); border: 1px solid rgba(42,39,35,.12); }
+    .card p { margin: 8px 0 2px; font-weight: 700; font-size: 12.5px; }
+    .card small { color: #6b645b; font-size: 11px; }
+    .card .row { display: flex; gap: 12px; margin-top: 8px; }
+    .card a { font-size: 12px; font-weight: 700; color: #2f6f8f; }
+    .scale { transform-origin: 0 0; }
+
+    /* ── ONE ASSET: the paper, paint blobs round the edge, and the content in its safe box ── */
+    .art { position: relative; overflow: hidden; background: var(--paper); }
+    .art__blob { position: absolute; border-radius: 50%; }
+    .art__safe { position: absolute; display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 0.9); }
+    .art__bot { width: calc(var(--u) * 7.4); height: calc(var(--u) * 7.4); flex: none; filter: drop-shadow(0 calc(var(--u) * .25) calc(var(--u) * .3) rgba(0,0,0,.18)); }
+    .art__bot svg { width: 100%; height: 100%; }
+    .art__text { display: flex; flex-direction: column; gap: calc(var(--u) * 0.32); min-width: 0; }
+    .art__name { font: 900 calc(var(--u) * 3.3)/0.95 Unbounded, sans-serif; letter-spacing: -.02em; color: var(--ink); white-space: nowrap; }
+    .art__name span { color: #2f7fb8; }
+    .art__tag { font: 800 calc(var(--u) * 0.95)/1.25 "JetBrains Mono", monospace; color: #4a453e; white-space: nowrap; }
+    .art__chips { display: flex; gap: calc(var(--u) * 0.35); margin-top: calc(var(--u) * 0.2); }
+    .art__chip { font: 800 calc(var(--u) * 0.62)/1 "JetBrains Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: #fff; padding: calc(var(--u) * .3) calc(var(--u) * .45); }
+    .art__url { font: 800 calc(var(--u) * 0.7)/1 "JetBrains Mono", monospace; color: #2a2723; letter-spacing: .04em; margin-top: calc(var(--u) * 0.25); }
+    .art__icon { position: absolute; inset: 0; display: grid; place-items: center; }
+    .art__icon svg, .art__icon img { width: 66%; height: 66%; }
+  </style>
+</head>
+<body>
+  <div class="wrap" id="gallery" hidden>
+    <h1>PrepBot social media kit</h1>
+    <p class="lead">Profile pictures and banners for the PrepBot video channels, each at the size its platform asks for. Banners keep their words inside the part every device shows.</p>
+    <div class="grid" id="grid"></div>
+  </div>
+  <div id="one" hidden><div class="scale" id="scale"><div id="slot"></div></div></div>
+  <script type="module">
+    import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
+
+    /* the paint colours of the site's mark, and the three film subjects as they are on the thumbnails */
+    const PAINT = ["#6fb7e8", "#f4c95d", "#f07a7a", "#7cc47c", "#f0a868", "#b49be0"];
+    const CHIPS = [["Percentages", "#1f5f86"], ["Ratio", "#2b6e43"], ["Patterns", "#5a3f93"]];
+
+    /* every asset: its size, and for a banner the safe box its words must stay inside */
+    const ASSETS = [
+      { id: "profile-prepbot", name: "Profile picture: PrepBot", note: "800 x 800, for YouTube, Facebook, X, Instagram, TikTok", w: 800, h: 800, icon: "bot" },
+      { id: "profile-prepportal", name: "Profile picture: Prep Portal mark", note: "800 x 800, the site's own mark", w: 800, h: 800, icon: "mark" },
+      { id: "youtube-banner", name: "YouTube channel banner", note: "2560 x 1440; the words sit in the 1546 x 423 middle every device shows", w: 2560, h: 1440, safe: [507, 508, 1546, 423] },
+      { id: "facebook-cover", name: "Facebook cover", note: "1640 x 624; phones crop the sides, so the words stay central", w: 1640, h: 624, safe: [300, 150, 1040, 324] },
+      { id: "x-header", name: "X (Twitter) header", note: "1500 x 500; the left is left clear for the profile picture", w: 1500, h: 500, safe: [380, 50, 1080, 370] },
+      { id: "linkedin-banner", name: "LinkedIn banner", note: "1584 x 396; the left is left clear for the profile picture", w: 1584, h: 396, safe: [430, 40, 1110, 316] },
+    ];
+
+    /* paint blobs around the edges, placed the same way every time (seeded), never in the safe box's middle */
+    function blobs(w, h) {
+      let seed = w * 7 + h;
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      const out = [];
+      const n = 7;
+      for (let i = 0; i < n; i++) {
+        const along = (i + rnd() * 0.6) / n;
+        const top = i % 2 === 0;
+        const size = Math.min(w, h) * (0.32 + rnd() * 0.3);
+        const x = along * w - size / 2;
+        const y = top ? -size * (0.55 + rnd() * 0.15) : h - size * (0.45 - rnd() * 0.1);
+        out.push(`<span class="art__blob" style="left:${x.toFixed(0)}px;top:${y.toFixed(0)}px;width:${size.toFixed(0)}px;height:${size.toFixed(0)}px;background:${PAINT[i % PAINT.length]};opacity:.55"></span>`);
+      }
+      return out.join("");
+    }
+
+    function art(a) {
+      if (a.icon) {
+        const inner = a.icon === "bot" ? ICON_PREPBOT : `<img src="/logo/logo-light.svg" alt="">`;
+        const bg = a.icon === "bot" ? "#dceefa" : "#fffdf8";
+        return `<div class="art" style="width:${a.w}px;height:${a.h}px;background:${bg}"><div class="art__icon">${inner}</div></div>`;
+      }
+      const [x, y, sw, sh] = a.safe;
+      const u = Math.min(sw / 26, sh / 9.6);   // one unit: everything in the box is sized from it
+      return `<div class="art" style="width:${a.w}px;height:${a.h}px;--u:${u.toFixed(2)}px">${blobs(a.w, a.h)}`
+        + `<div class="art__safe" style="left:${x}px;top:${y}px;width:${sw}px;height:${sh}px">`
+        + `<div class="art__bot">${ICON_PREPBOT}</div>`
+        + `<div class="art__text"><div class="art__name">Prep<span>Bot</span></div>`
+        + `<div class="art__tag">Maths, explained step by step.</div>`
+        + `<div class="art__chips">${CHIPS.map(([t, c]) => `<span class="art__chip" style="background:${c}">${t}</span>`).join("")}</div>`
+        + `<div class="art__url">prepportal.com.ng</div></div></div></div>`;
+    }
+
+    const params = new URLSearchParams(location.search);
+    const id = params.get("asset");
+    if (!id) {
+      document.getElementById("gallery").hidden = false;
+      document.getElementById("grid").innerHTML = ASSETS.map((a) => `
+        <div class="card">
+          <a href="?asset=${a.id}" target="_blank" rel="noopener"><img src="png/${a.id}.png" alt="${a.name}" loading="lazy" style="aspect-ratio:${a.w}/${a.h}"></a>
+          <p>${a.name}</p><small>${a.note}</small>
+          <div class="row"><a href="png/${a.id}.png" download="prepbot-${a.id}.png">Download</a><a href="?asset=${a.id}" target="_blank" rel="noopener">Open</a></div>
+        </div>`).join("");
+    } else {
+      const a = ASSETS.find((x) => x.id === id) || ASSETS[0];
+      document.getElementById("one").hidden = false;
+      document.getElementById("slot").innerHTML = art(a);
+      if (params.get("shot")) document.body.classList.add("shot");
+      else {
+        const fit = () => { const k = Math.min(1, (innerWidth - 32) / a.w); const sc = document.getElementById("scale"); sc.style.transform = `scale(${k})`; sc.style.margin = "16px"; };
+        fit(); addEventListener("resize", fit);
+      }
+      await document.fonts.ready;
+      document.body.dataset.ready = "1";
+    }
+  </script>
+</body>
+</html>
