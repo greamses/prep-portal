@@ -36,7 +36,7 @@ const edition = (comp, div, year) => {
   const n = parseInt(year, 10) || 0;
   return { label: `${n}${["th", "st", "nd", "rd"][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]} Edition`, n };
 };
-const roundName = (r) => ({ "first-round": "First Round", finals: "Finals", main: "Main Paper" })[String(r).toLowerCase()] || r;
+const roundName = (r) => ({ "first-round": "First Round", "second-round": "Second Round", finals: "Finals", main: "Main Paper" })[String(r).toLowerCase()] || r;
 
 const ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O, 1/I: easy to type from a phone
 const make = (n) => Array.from({ length: n }, () => ALPHA[crypto.randomInt(ALPHA.length)]).join("");
