@@ -221,7 +221,7 @@ function partWhole(cfg) {
       mC: () => main([{ k: "a", tex: "1\\ \\text{box}" }, { k: "e", tex: "=" }, { k: "b", tex: FWD ? `${t(WHOLE)} \\div ${N}` : `${t(known)} \\div ${K}` }, { k: "e2", tex: "=" }, { k: "c", tex: t(UNIT), color: BLUE }]),
       mD: () => main(FWD ? [{ k: "a", tex: `${K}\\ \\text{${K === 1 ? "box" : "boxes"}}` }, { k: "e", tex: "=" }, { k: "b", tex: `${K} \\times ${t(UNIT)}` }, { k: "e2", tex: "=" }, { k: "c", tex: t(known), color: GREEN }]
         : [{ k: "a", tex: `${N}\\ \\text{boxes}` }, { k: "e", tex: "=" }, { k: "b", tex: `${N} \\times ${t(UNIT)}` }, { k: "e2", tex: "=" }, { k: "c", tex: t(WHOLE), color: GREEN }]),
-      mE: () => main([{ k: "a", tex: `\\text{${FWD ? L.answer : L.whole}}` }, { k: "e", tex: "=" }, { k: "c", tex: `${L.money ? `\\text{${L.money}}` : ""}${t(FWD ? known : WHOLE)}${L.suffix ? `\\ \\text{${L.suffix}}` : ""}`, color: GREEN }], () => "", 9),
+      mE: () => main([{ k: "a", tex: `\\text{${FWD ? L.answer : L.whole}}` }, { k: "e", tex: "=" }, { k: "c", tex: `${L.money ? (L.money === "$" ? "\\$" : `\\text{${L.money}}`) : ""}${t(FWD ? known : WHOLE)}${L.suffix ? `\\ \\text{${L.suffix}}` : ""}`, color: GREEN }], () => "", 9),
       /* the margin */
       sA: () => side([[{ k: "a", tex: `${B.pct} \\div ${B.by} = ${B.top}` }], [{ k: "b", tex: `100 \\div ${B.by} = ${B.bot}` }]]),
       sT: () => svgBox(SIDE_W, 20, mathRow([{ k: "a", tex: cfg.trap }], { cx: SIDE_W / 2, y: 10, em: 5.4 }).svg

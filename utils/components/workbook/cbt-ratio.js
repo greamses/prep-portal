@@ -52,7 +52,9 @@ export function ratioFilm(cfg) {
   const asks = cfg.ask === "all" ? ratio.map((_, i) => i) : [cfg.ask];
   const m = cfg.money || "";
   const money = (v) => `${m}${fmt(v)}`;
-  const moneyTex = (v) => `${m ? `\\text{${m}}` : ""}${tex(v)}`;
+  /* a "$" inside \text{} opens maths mode and breaks the whole expression (it showed as raw
+     "dfrac..." in the Taiwo film), so a dollar is written \$ */
+  const moneyTex = (v) => `${m ? (m === "$" ? "\\$" : `\\text{${m}}`) : ""}${tex(v)}`;
 
   /* the bars: one row each, as many boxes as the ratio says, all the same size */
   const maxR = Math.max(...ratio);
