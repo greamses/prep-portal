@@ -1303,7 +1303,8 @@ const Quiz = (() => {
     allQuestions.forEach((_, i) => {
       const d = document.createElement("button");
       d.className = "q-dot";
-      d.title = `Q${i + 1}`;
+      d.textContent = i + 1;
+      d.setAttribute("aria-label", `Question ${i + 1}`);
       d.addEventListener("click", () => renderQuestion(i));
       c.appendChild(d);
     });

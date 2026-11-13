@@ -196,9 +196,15 @@ body {
 }
 
 .q-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+  min-width: 1.9rem;
+  height: 1.9rem;
+  padding: 0 0.3rem;
+  border-radius: 0;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
   border: 2px solid color-mix(in srgb, var(--ink) 22%, transparent);
   background: transparent;
   cursor: pointer;
@@ -206,7 +212,7 @@ body {
   flex-shrink: 0;
 }
 
-.q-dot:hover { transform: scale(1.25); }
+.q-dot:hover { transform: none; }
 
 .q-dot.answered {
   background: var(--yellow);
@@ -216,7 +222,7 @@ body {
 .q-dot.current {
   background: var(--ink);
   border-color: var(--ink);
-  transform: scale(1.2);
+  color: var(--surface-primary, #fff);
 }
 
 .q-dot.correct {
@@ -1270,3 +1276,11 @@ body {
 .hint-btn--icon { width: 2.2rem; height: 2.2rem; padding: 0; justify-content: center; }
 .hint-btn--icon svg { width: 1.3rem; height: 1.3rem; display: block; }
 .hint-btn--icon.is-open { background: var(--surface-tertiary, #ddd8ce); }
+
+/* the note dress (buttons.css) paints every key's paper, so an answered question
+   is marked with a small ink badge in its corner rather than a fill */
+.q-dots .q-dot.answered::after {
+  content: ""; position: absolute; right: -4px; bottom: -4px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--ink); box-shadow: 0 0 0 2px var(--surface-primary, #fff);
+}
