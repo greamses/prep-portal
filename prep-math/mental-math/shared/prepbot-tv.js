@@ -31,6 +31,8 @@ import { ICON_PREPBOT } from "./icons.js";
 import { SVG_ROTATE } from "/utils/components/game-viewport.js";
 import { ICON_PLAY, ICON_PAUSE, ICON_PREV, ICON_NEXT, ICON_FULLSCREEN, ICON_CLOSE } from "./icons.js";
 import { UI } from "/utils/components/ui-icons.js";
+/* a theatre curtain that opens like a real one (./tv-curtain.js) */
+import { makeCurtain } from "./tv-curtain.js";
 /* the off key is a power button; the tuck key folds the controls away for more screen */
 const ICON_POWER = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.05 6.4a8 8 0 1 0 9.9 0" fill="none" stroke="var(--accent-danger, #c0453f)" stroke-width="2.6" stroke-linecap="round"/><rect x="10.7" y="2.2" width="2.6" height="10" rx="1.3" fill="var(--accent-danger, #c0453f)"/></svg>`;
 const ICON_TUCK = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -245,6 +247,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
   const tv = box.querySelector(".mm-tv");
   const screen = box.querySelector(".mm-tv-screen");
   const stage = q("stage"), progress = q("progress"), curtain = q("curtain");
+  const drapes = makeCurtain(curtain);
   const bot = box.querySelector(".mm-prepbot");
   /* not on stage until the curtain goes up */
   bot.style.opacity = "0";
@@ -487,12 +490,9 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
       bot.style.opacity = "1";
     }
     teacher.poke?.();
-    if (gsap) {
-      const [left, right] = curtain.children;
-      await new Promise((done) => gsap.timeline({ onComplete: done })
-        .to(left, { xPercent: -101, duration: 0.7, ease: "power2.inOut" }, 0.45)
-        .to(right, { xPercent: 101, duration: 0.7, ease: "power2.inOut" }, 0.45));
-    }
+    /* the drapes are gathered to the sides, swing and settle, and the curtain goes */
+    await new Promise((r) => setTimeout(r, 350));
+    await drapes.open();
     if (closed) return;
     curtain.style.display = "none";
     teacher.scheduleIdle();

@@ -823,6 +823,7 @@ const examQuestions = [
   {
     question:
       "In a catalogue, an electric oven is listed at \\(₦195\\). A shop sells the oven at a discount of \\(35\\%\\). Find the sale price.",
+    film: "discount-35",
     image: null,
     options: [],
     correctIndex: null,

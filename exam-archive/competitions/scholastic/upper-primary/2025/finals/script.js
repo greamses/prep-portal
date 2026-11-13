@@ -665,6 +665,7 @@ const quizData = [
   },
   {
     question: "An alloy contains \\( 26\\% \\) of copper. What quantity of alloy is required to get \\( 130 \\text{ g} \\) of copper?",
+    film: "alloy-26",
     image: null,
     options: [
       "\\( 33.8 \\text{ g} \\)",

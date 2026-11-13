@@ -37,6 +37,7 @@ import { ctxInference, ctxDefinition, ctxExample, ctxAntonym, ctxSynonym } from 
 import { loss25, score80, score90, profit20, ps4Loss, bikeProfit20, bikeProfit10, shoeDiscount, withdraw10, pagesLeft, hatProfit30, decrease15 } from "./cbt-films.js";
 import { stairs24, sum200, odd29, odd21, stairRows37, series123 } from "./cbt-shapes.js";
 import { share600Idowu, share600Kehinde, share4000, share45000, ratio45sum135, angles1234, boys34, girls35, ratio35small45 } from "./cbt-ratio.js";
+import { discount35, alloy26 } from "./cbt-percent1.js";
 
 /* The strip's dress. A page that is not a workbook does not link video.css,
    and an unstyled strip is not merely plain — it is invisible, which is how
@@ -359,6 +360,8 @@ const SCENES = {
   "ratio-boys-34": boys34,
   "ratio-girls-35": girls35,
   "ratio-small-45": ratio35small45,
+  "discount-35": discount35,
+  "alloy-26": alloy26,
 };
 /**
  * WHAT EVERY FILM IS CALLED, in one place.
@@ -402,6 +405,8 @@ export const FILMS = [
   { id: "pages-left-80", name: "Read 80%: the pages left (two ways)", of: "ANMC 15th first round, Q19", topic: "percent", thumb: { n: 5, k: 1 } },
   { id: "hat-profit-30", name: "A 30% profit on 55 kobo (two ways)", of: "Scholastic 2022 finals, Q37", topic: "percent", thumb: { n: 10, k: 13 } },
   { id: "decrease-15", name: "Decrease 1,500 kg by 15% (two ways)", of: "Scholastic JS 5th edition first round, Q7", topic: "percent", thumb: { n: 20, k: 17 } },
+  { id: "discount-35", name: "A 35% discount on 195 (two ways)", of: "Scholastic 2022 first round, Q46", topic: "percent", thumb: { n: 20, k: 13 } },
+  { id: "alloy-26", name: "26% copper: how much alloy? (two ways)", of: "Scholastic 2025 finals, Q33", topic: "percent", thumb: { n: 50, k: 13 } },
   { id: "stairs-24", name: "Blocks in a staircase (two ways)", of: "Scholastic 2022 first round, Q24", topic: "patterns" },
   { id: "sum-200", name: "1 + 2 + ... + 200 (two ways)", of: "ANMC 13th first round, Q14", topic: "patterns" },
   { id: "odd-29", name: "1 + 3 + 5 + ... + 29 (two ways)", of: "ANMC 13th finals, Q12", topic: "patterns" },
