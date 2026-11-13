@@ -60,7 +60,7 @@ const quizData = [
     ]
   },
   {
-    question: "Two numbers are in the ratio \\( 4:5 \\). If the sum of the numbers is \\( 135 \\), find the numbers.",
+    question: "Two numbers are in the ratio \\( 4:5 \\). If the sum of the numbers is \\( 135 \\), find the numbers.", film: "ratio-sum-135",
     image: null,
     options: [
       "\\( 60 \\text{ and } 65 \\)",
@@ -830,7 +830,7 @@ const quizData = [
     ]
   },
   {
-    question: "The ratio of boys to girls in a school is \\( 3:5 \\). If there are \\( 312 \\) boys, how many girls are in the school?",
+    question: "The ratio of boys to girls in a school is \\( 3:5 \\). If there are \\( 312 \\) boys, how many girls are in the school?", film: "ratio-girls-35",
     image: null,
     options: [
       "\\( 104 \\)",

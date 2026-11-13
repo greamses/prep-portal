@@ -848,7 +848,7 @@ const quizData = [
   ]
 },
 {
-  question: "Taiwo, Kehinde and Idowu are to share \\( \\$600 \\) in the ratio \\( 3:2:1 \\) respectively. What is Idowu's share?",
+  question: "Taiwo, Kehinde and Idowu are to share \\( \\$600 \\) in the ratio \\( 3:2:1 \\) respectively. What is Idowu's share?", film: "ratio-600-idowu",
   image: null,
   options: [
     "\\( \\$100 \\)",

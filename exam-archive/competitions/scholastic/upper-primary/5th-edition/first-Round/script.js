@@ -92,7 +92,7 @@ const quizData = [
     options: ["3 out of 9", "3 out of 10", "3 out of 13", "1 out of 13", "2 out of 13"], correctIndex: 4,
     hint: "Count all the letters, then count the M's.",
     explanation: ["MATHEMATICIAN has \\(13\\) letters, \\(2\\) of them M.", "The chance is \\(2\\) out of \\(13\\)."], topic: "Probability" },
-  { question: "Taiwo, Kehinde and Idowu are to share \\(\\$600\\) in the ratio \\(3:2:1\\) respectively. What is Kehinde's share?", image: null,
+  { question: "Taiwo, Kehinde and Idowu are to share \\(\\$600\\) in the ratio \\(3:2:1\\) respectively. What is Kehinde's share?", film: "ratio-600-kehinde", image: null,
     options: ["\\(\\$600\\)", "\\(\\$800\\)", "\\(\\$100\\)", "\\(\\$300\\)", "\\(\\$200\\)"], correctIndex: 4,
     hint: "There are 6 parts in all.",
     explanation: ["Kehinde gets \\(\\frac{2}{6}\\) of \\(\\$600 = \\$200\\)."], topic: "Ratio" },

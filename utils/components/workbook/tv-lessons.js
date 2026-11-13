@@ -36,6 +36,7 @@ import { fracLike, fracEqual, fracUnlike, fracMixed } from "./fraction-films.js"
 import { ctxInference, ctxDefinition, ctxExample, ctxAntonym, ctxSynonym } from "./context-films.js";
 import { loss25, score80, score90, profit20, ps4Loss, bikeProfit20, bikeProfit10, shoeDiscount, withdraw10, pagesLeft, hatProfit30, decrease15 } from "./cbt-films.js";
 import { stairs24, sum200, odd29, odd21, stairRows37, series123 } from "./cbt-shapes.js";
+import { share600Idowu, share600Kehinde, share4000, share45000, ratio45sum135, angles1234, boys34, girls35, ratio35small45 } from "./cbt-ratio.js";
 
 /* The strip's dress. A page that is not a workbook does not link video.css,
    and an unstyled strip is not merely plain — it is invisible, which is how
@@ -349,6 +350,15 @@ const SCENES = {
   "odd-21": odd21,
   "stair-rows-37": stairRows37,
   "series-123": series123,
+  "ratio-600-idowu": share600Idowu,
+  "ratio-600-kehinde": share600Kehinde,
+  "ratio-4000": share4000,
+  "ratio-45000": share45000,
+  "ratio-sum-135": ratio45sum135,
+  "ratio-angles-1234": angles1234,
+  "ratio-boys-34": boys34,
+  "ratio-girls-35": girls35,
+  "ratio-small-45": ratio35small45,
 };
 /**
  * WHAT EVERY FILM IS CALLED, in one place.
@@ -398,6 +408,15 @@ export const FILMS = [
   { id: "odd-21", name: "1 + 3 + 5 + ... + 21 (two ways)", of: "ANMC 14th main, Q68", topic: "patterns" },
   { id: "stair-rows-37", name: "Black squares in row 37 (two ways)", of: "Scholastic 2022 finals, Q27", topic: "patterns" },
   { id: "series-123", name: "The series 1, 2, 2, 3, 3, 3 (two ways)", of: "ANMC 12th main, Q55 and Q57", topic: "patterns" },
+  { id: "ratio-600-idowu", name: "Share $600 in 3:2:1: Idowu's share (two ways)", of: "Scholastic 2025 R1 Q45, 4th ed Q20", topic: "ratio", thumb: { n: 6, k: 1 } },
+  { id: "ratio-600-kehinde", name: "Share $600 in 3:2:1: Kehinde's share (two ways)", of: "Scholastic 5th ed Q23", topic: "ratio", thumb: { n: 6, k: 2 } },
+  { id: "ratio-4000", name: "Share ₦4,000 in 1:3:4: the largest share (two ways)", of: "ANMC 12th main, Q27", topic: "ratio", thumb: { n: 8, k: 4 } },
+  { id: "ratio-45000", name: "Share ₦45,000 in 5:4:3: the least share (two ways)", of: "Scholastic JS 5th ed Q8", topic: "ratio", thumb: { n: 12, k: 3 } },
+  { id: "ratio-sum-135", name: "Two numbers in 4:5 that add to 135 (two ways)", of: "Scholastic 2025 finals, Q4", topic: "ratio", thumb: { n: 9, k: 4 } },
+  { id: "ratio-angles-1234", name: "Angles in the ratio 1:2:3:4 (two ways)", of: "ANMC 12th main, Q47", topic: "ratio", thumb: { n: 10, k: 4 } },
+  { id: "ratio-boys-34", name: "Boys to girls 3:4, 60 girls (two ways)", of: "Scholastic 2022 first round, Q1", topic: "ratio", thumb: { n: 4, k: 3 } },
+  { id: "ratio-girls-35", name: "Boys to girls 3:5, 312 boys (two ways)", of: "Scholastic 2025 finals, Q41", topic: "ratio", thumb: { n: 3, k: 5 } },
+  { id: "ratio-small-45", name: "Ratio 3:5, the smaller is 45 (two ways)", of: "ANMC 15th first round, Q31", topic: "ratio", thumb: { n: 3, k: 5 } },
 ];
 
 /** The coded film behind an id, for the editor to trace and to take a script from. */

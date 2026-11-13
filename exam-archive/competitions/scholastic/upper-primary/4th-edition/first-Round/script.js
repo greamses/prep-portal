@@ -80,7 +80,7 @@ const quizData = [
     options: ["\\(2.7\\text{ m}\\)", "\\(3.3\\text{ m}\\)", "\\(4.5\\text{ m}\\)", "\\(5.2\\text{ m}\\)", "\\(16.8\\text{ m}\\)"], correctIndex: 0,
     hint: "Volume = length × width × height.",
     explanation: ["\\(16.2 = 3 \\times 2 \\times h\\), so \\(h = 2.7\\text{ m}\\)."], topic: "Mensuration" },
-  { question: "Taiwo, Kehinde and Idowu are to share \\(\\$600\\) in the ratio \\(3:2:1\\) respectively. What is Idowu's share?", image: null,
+  { question: "Taiwo, Kehinde and Idowu are to share \\(\\$600\\) in the ratio \\(3:2:1\\) respectively. What is Idowu's share?", film: "ratio-600-idowu", image: null,
     options: ["\\(\\$600\\)", "\\(\\$800\\)", "\\(\\$100\\)", "\\(\\$300\\)", "\\(\\$16\\)"], correctIndex: 2,
     hint: "There are 6 parts in all.",
     explanation: ["\\(3 + 2 + 1 = 6\\) parts; Idowu gets \\(\\frac{1}{6}\\) of \\(\\$600 = \\$100\\)."], topic: "Ratio" },
