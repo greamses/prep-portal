@@ -636,3 +636,12 @@
 .mm-tv-untuck svg { width: 16px; height: 16px; }
 .mm-tv.mm-tv--bare .mm-tv-untuck { display: grid; }
 .mm-tv.mm-tv--bare .mm-tv-screen:hover .mm-tv-untuck, .mm-tv-untuck:focus-visible { opacity: 1; height: 24px; }
+
+/* controls hidden = NO frame at all (*"I still see the black frame when I toggle it off"*): the dimmed
+   page round the set and the fullscreen black become the screen's own paper, edge to edge, and the
+   dark inner shadow goes, so the lesson simply fills the view */
+.mm-tv-overlay:has(.mm-tv--bare) { padding: 0; background: var(--surface-secondary, #f6f2ea); }
+.mm-tv-overlay .mm-tv-col.is-bare { width: min(100vw, calc(100vh * 16 / 9)); }
+.mm-tv.mm-tv--bare .mm-tv-screen { box-shadow: none; }
+.mm-tv.mm-tv--bare:fullscreen { background: var(--surface-secondary, #f6f2ea); }
+.mm-tv.mm-tv--bare:fullscreen .mm-tv-screen { max-height: 100vh; }

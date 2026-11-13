@@ -151,7 +151,6 @@ function liveStairs(host, { n = 3, depth = 2, size = 9, cx = 75, cy = 32, tilt =
   cubes.forEach((c, i) => { c.i = i; });
   const has = new Set(cubes.map((c) => `${c.x},${c.y},${c.z}`));
   const ox = n / 2, oy = depth / 2, oz = n / 2;
-  const sinT = Math.sin(tilt), cosT = Math.cos(tilt);
   const FACES = [
     { d: [0, 0, 1], q: [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]] },
     { d: [0, 0, -1], q: [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]] },
@@ -167,9 +166,11 @@ function liveStairs(host, { n = 3, depth = 2, size = 9, cx = 75, cy = 32, tilt =
   };
   return {
     count: cubes.length,
-    /* t: { th: turn (radians), shown: (i) => 0..1 how far block i has fallen in, label: (i) => text|"", colour: (c) => hex } */
-    draw({ th = -0.6, shown = () => 1, label = () => "", colour = () => "#e8edf3" } = {}) {
+    /* t: { th: turn (radians), tilt: how far we look down on it (0 = level, straight from the side),
+       shown: (i) => 0..1 how far block i has fallen in, label: (i) => text|"", colour: (c) => hex } */
+    draw({ th = -0.6, tilt: tl = tilt, shown = () => 1, label = () => "", colour = () => "#e8edf3" } = {}) {
       const ct = Math.cos(th), st = Math.sin(th);
+      const sinT = Math.sin(tl), cosT = Math.cos(tl);
       const P = (x, y, z) => {
         const X = x - ox, Y = y - oy, Z = z - oz;
         const xr = X * ct - Y * st, yr = X * st + Y * ct;
@@ -184,15 +185,30 @@ function liveStairs(host, { n = 3, depth = 2, size = 9, cx = 75, cy = 32, tilt =
         const centre = P(c.x + 0.5, c.y + 0.5, c.z + 0.5 + drop);
         let svg = "";
         const base = colour(c);
+        let best = null;   // the face turned most towards us: the number is printed on it
         FACES.forEach(({ d, q }) => {
           if (has.has(`${c.x + d[0]},${c.y + d[1]},${c.z + d[2]}`)) return;
           if (!vis(...d)) return;
           const light = d[2] === 1 ? 1.04 : d[2] === -1 ? 0.6 : 0.78 + 0.14 * (d[0] * ct - d[1] * st);
           const pts = q.map(([a, b, e]) => P(c.x + a, c.y + b, c.z + e + drop));
           svg += `<path d="M${pts.map((p) => `${p[0].toFixed(2)},${p[1].toFixed(2)}`).join("L")}Z" fill="${shade(base, light)}" stroke="#1f2937" stroke-width="${(size * 0.055).toFixed(2)}" stroke-linejoin="round"/>`;
+          const facing = (d[0] * st + d[1] * ct) * cosT + d[2] * sinT;
+          if (!best || facing > best.facing) best = { facing, pts };
         });
         const lab = label(c.i);
-        if (lab) svg += `<text x="${centre[0].toFixed(2)}" y="${(centre[1] + size * 0.18).toFixed(2)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="800" font-size="${(size * 0.48).toFixed(2)}" fill="#c0453f" opacity="${Math.min(1, k * 1.4).toFixed(2)}">${lab}</text>`;
+        /* (*"the number labels on the blocks are not perfectly positioned"*) a number sits ON a face,
+           in its middle, and lies flat on it: the face's two edges are the text's own axes, chosen so
+           it always reads left to right and the right way up */
+        if (lab && best && best.facing > 0.18) {
+          const [p0, p1, , p3] = best.pts;
+          let u = [p1[0] - p0[0], p1[1] - p0[1]], v = [p3[0] - p0[0], p3[1] - p0[1]];
+          if (Math.abs(v[0]) > Math.abs(u[0])) [u, v] = [v, u];
+          if (u[0] < 0) u = [-u[0], -u[1]];
+          if (v[1] < 0) v = [-v[0], -v[1]];
+          const mid = best.pts.reduce((m, q) => [m[0] + q[0] / 4, m[1] + q[1] / 4], [0, 0]);
+          const m = [u[0], u[1], v[0], v[1], mid[0], mid[1]].map((n) => n.toFixed(3)).join(" ");
+          svg += `<text transform="matrix(${m})" x="0" y="0.2" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="800" font-size="0.56" fill="#c0453f" opacity="${Math.min(1, k * 1.4).toFixed(2)}">${lab}</text>`;
+        }
         parts.push([centre[2], svg]);
       });
       parts.sort((a, b) => a[0] - b[0]);
@@ -304,6 +320,17 @@ export function stairs24() {
           st.draw({ th: -0.6 + ease(t) * Math.PI * 2, label: (i) => (now >= 0.3 + i * 0.32 ? String(i + 1) : "") });
         });
       },
+      /* "Look at the staircase from the side" (*"the rotation is use to show the side view"*): the
+         staircase turns square on and the eye comes down level, until all you see is its side,
+         one square, two, three: the very picture Method 1 then draws */
+      "iso.side": (s, H) => {
+        const st = liveStairs(s.querySelector('[data-live="iso"]'), { n: 3, size: 10.5, cy: 34 });
+        if (H.grow !== H.show) H.sound("whoosh", 0.1);
+        animate(s, H, 2.4, (t) => {
+          const k = ease(t);
+          st.draw({ th: -0.6 + 0.6 * k, tilt: 0.52 * (1 - k), colour: (c) => (k > 0.6 && c.y === 1 ? FRONT : "#e8edf3") });
+        });
+      },
       /* the 42, built fast, then turned to be seen from the other side, and counted */
       "big.build": (s, H) => {
         const host = s.querySelector('[data-live="big"]');
@@ -328,11 +355,11 @@ export function stairs24() {
       "mA.sum": (s, H) => write(s, H, ["a"], 0),
       "mA.ans": (s, H) => { write(s, H, ["e", "b"], 0, 0.35); },
       "mB.all": (s, H) => write(s, H, ["a", "e", "b"], 0, 0.45),
-      /* "Behind": the margin's staircase turns to show its back layer, in its own colour */
+      /* "Behind": the margin's staircase starts square on, the side view, then turns to show the layer behind it, in its own colour */
       "sI.all": (s, H) => {
         write(s, H, ["t"], 0.6);
         const st = liveStairs(s.querySelector('[data-live="side"]'), { n: 3, size: 6.2, cx: 24, cy: 20 });
-        animate(s, H, 2.6, (t) => st.draw({ th: -0.6 - ease(t) * 1.3, colour: (c) => (c.y === 0 ? "#ffd9cf" : "#bfe3ff") }));
+        animate(s, H, 2.6, (t) => st.draw({ th: -ease(t) * 1.9, tilt: 0.52 * ease(t), colour: (c) => (c.y === 0 ? "#ffd9cf" : "#bfe3ff") }));
       },
       "mC.sum": (s, H) => write(s, H, ["a"], 0),
       "mC.ans": (s, H) => write(s, H, ["e", "b"], 0, 0.35),
@@ -363,7 +390,7 @@ export function stairs24() {
       push("Ololade built a staircase. Three stairs.", { on: ["a1", "iso"], add: ["iso.build"], transition: "iris", pause: 0.8 });
       push("And it took her twelve blocks.", { add: ["iso.count"], pause: 0.6 });
       push("Now she wants six stairs. How many blocks will that take?", { pause: 1.4 });
-      push("Here's a trick. Don't count the blocks yet. Look at the staircase from the side.", { pause: 0.6 });
+      push("Here's a trick. Don't count the blocks yet. Look at the staircase from the side.", { add: ["iso.side"], cue: { "iso.side": "look at" }, pause: 0.6 });
       push("From the side, the first step is one square. The next is two. The top is three.",
         { on: ["p3", "m1"], off: ["iso"], add: ["p3.c1", "p3.c2", "p3.c3"],
           cue: { "p3.c1": "one square", "p3.c2": "two", "p3.c3": "three" },
