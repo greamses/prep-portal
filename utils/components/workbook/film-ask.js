@@ -118,8 +118,11 @@ export function fitInk(inner) {
 function wordsHtml(str, used, marks) {
   let out = "";
   let last = 0;
-  KEY_RE.lastIndex = 0;
-  for (let m; (m = KEY_RE.exec(str));) {
+  /* a question may name its OWN keywords ({ keys: [...] }), so "of" is picked out only where it is
+     the keyword, and nothing else in that question is */
+  const RE = used.re || KEY_RE;
+  RE.lastIndex = 0;
+  for (let m; (m = RE.exec(str));) {
     const key = m[1].toLowerCase().replace(/\s+/g, " ");
     out += esc(str.slice(last, m.index));
     if (used.hl < LIMIT.hl && !used.keys.has(key)) {
@@ -158,13 +161,14 @@ function sentenceHtml(s, used, marks, state) {
  * The question as markup. `raw` text is markup already (a film that marks its own words, e.g. the
  * context-clue films): it is centred and typed, but its words are its own.
  */
-export function askHtml(text, raw = false) {
+export function askHtml(text, raw = false, { keys = null } = {}) {
   if (raw) return { html: String(text), tall: false };
   /* a sentence ends at . ? ! before a capital, not at the "..." inside 1 + 2 + ... + 200 */
   const sentences = String(text).split(/(?<=[^.][.?!])\s+(?=[A-Z])/).filter(Boolean);
   let asks = sentences.map((s) => /\?$/.test(s.trim()) || ASKING.test(s.trim()));
   if (!asks.some(Boolean)) asks = sentences.map((_, i) => i === sentences.length - 1);
-  const used = { circle: 0, box: 0, hl: 0, keys: new Set() };
+  const used = { circle: 0, box: 0, hl: 0, keys: new Set(),
+    re: keys && keys.length ? new RegExp(`\\b(${keys.slice().sort((a, b) => b.length - a.length).map((k) => k.replace(/ /g, "\\s+")).join("|")})\\b`, "gi") : null };
   const marks = { n: 0 };
   const state = { tall: false };
   /* the sentences are marked in reading order, but the UNDERLINE is drawn last: it is the pen
@@ -263,6 +267,18 @@ export function askCss() {
 /* a word turned over in place (swapWord) */
 .fa-w.fa-swap { display: inline-block; animation: fa-swap 0.6s ease both; color: #c0453f; }
 @keyframes fa-swap { 0% { transform: scaleY(1); } 45% { transform: scaleY(0); } 100% { transform: scaleY(1); } }
+/* THE KEYWORD BOXED, with its note hanging under it (noteKeyword) */
+.fa-em--hl.fa-kwbox { position: relative; outline: 0.12em solid #2f6f8f; outline-offset: 0.12em; background-size: 100% 100%; }
+.fa-em--hl.fa-kwbox--draw { animation: fa-kwbox 0.7s ease both; }
+@keyframes fa-kwbox { from { outline-color: rgba(47,111,143,0); outline-offset: 0.6em; } to { outline-color: #2f6f8f; outline-offset: 0.12em; } }
+.fa-kwnote { position: absolute; left: 50%; top: calc(100% + 0.55em); transform: translateX(-50%) rotate(-2deg); z-index: 5;
+  white-space: nowrap; padding: 0.3em 0.7em 0.35em; font: 700 0.72em/1.1 "Shantell Sans", "Segoe Print", cursive; color: #14130f;
+  background: var(--note, #fff3a8); box-shadow: 0 1px 1px rgba(20,19,15,.1), 3px 5px 8px -3px rgba(20,19,15,.3); pointer-events: none; }
+.fa-kwnote::before { content: ""; position: absolute; top: -0.45em; left: 50%; width: 2.6em; height: 0.8em; transform: translateX(-50%) rotate(-4deg);
+  background: rgba(255,255,255,.55); box-shadow: 0 1px 1px rgba(0,0,0,.12); }
+.fa-kwnote--up { top: auto; bottom: calc(100% + 0.55em); }
+.fa-kwnote--in { animation: fa-kwnote 0.5s cubic-bezier(.2,1.4,.4,1) 0.5s both; }
+@keyframes fa-kwnote { from { opacity: 0; transform: translateX(-50%) translateY(-0.6em) rotate(-8deg) scale(0.7); } to { opacity: 1; transform: translateX(-50%) rotate(-2deg); } }
 /* THE ACTION ON A KEYWORD: when PrepBot says it, it jumps, and a red ring goes round it */
 .fa-em--hl { display: inline-block; }
 .fa-em--hl.fa-act { animation: fa-act 1.8s ease both; }
@@ -363,4 +379,28 @@ export function swapWord(inner, from, to, { instant = false } = {}) {
   w.innerHTML = [...to].map((ch) => `<span class="fa-ch is-on">${ch.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</span>`).join("");
   if (!instant) { w.classList.remove("fa-swap"); void w.offsetWidth; w.classList.add("fa-swap"); sfx("flip", 0); }
   fitInk(inner);
+}
+
+
+/**
+ * THE KEYWORD, BOXED AND EXPLAINED: *"box the keyword and put a little note of what it is"*. A box is
+ * drawn round the keyword where it stands in the question, and a little taped note hangs under it
+ * saying what the word tells you to DO ("discount: take boxes away").
+ */
+export function noteKeyword(inner, key, note, { instant = false, tone = "#fff3a8" } = {}) {
+  const w = inner?.querySelector(`[data-k="kw-${key.replace(/ /g, "-")}"]`);
+  if (!w) return;
+  w.classList.add("fa-kwbox");
+  if (!instant) { w.classList.remove("fa-kwbox--draw"); void w.offsetWidth; w.classList.add("fa-kwbox--draw"); sfx("draw", 0); }
+  if (!w.querySelector(".fa-kwnote")) {
+    const n = document.createElement("span");
+    n.className = "fa-kwnote" + (instant ? "" : " fa-kwnote--in");
+    n.style.setProperty("--note", tone);
+    n.textContent = note;
+    w.appendChild(n);
+  }
+  /* a keyword on the question's FIRST line hangs its note above it, so the note never covers the
+     line underneath; on a later line it hangs below (the question sits at the top of the screen) */
+  const wr = w.getBoundingClientRect(), ir = inner.getBoundingClientRect();
+  w.querySelector(".fa-kwnote")?.classList.toggle("fa-kwnote--up", wr.top - ir.top < wr.height * 0.5);
 }

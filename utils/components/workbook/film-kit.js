@@ -740,7 +740,7 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
       const at = trayAt[id] || {};
       art(stage, id, at.x ?? 30, down(at.y ?? 27), at.w ?? 46, trays[id]());
     });
-    asks.forEach((a) => asked(stage, a.id, a.text, !!a.html));
+    asks.forEach((a) => asked(stage, a.id, a.text, !!a.html, a.keys || null));
     /* THE WORKING STANDS IN A COLUMN OF ITS OWN, clear of the drawing.
        Centred tiles grew towards the picture as their text got longer, so a
        line nobody had measured ended up written across the bars. The column
@@ -867,7 +867,7 @@ const says = (box, text, raw = false) => {
   return box;
 };
 
-export function asked(stage, id, text, raw = false) {
+export function asked(stage, id, text, raw = false, keys = null) {
   /* clear of the step counter in the top corner, and narrower than the
      screen: a line of words running the full width of a television is a line
      nobody finishes reading */
@@ -879,7 +879,7 @@ export function asked(stage, id, text, raw = false) {
   box.firstChild.style.setProperty("font-weight", "700");
   /* CENTRED, its figures in MathJax, and carrying the teacher's marks (./film-ask.js) */
   if (raw) return says(box, text, raw);
-  const { html, tall } = askHtml(text);
+  const { html, tall } = askHtml(text, false, { keys });
   box.firstChild.innerHTML = html;
   if (tall || html.includes('class="sf"')) box.classList.add("vm-ask--tall");
   /* the marks are drawn to the words' measured size, once the words are on the screen */

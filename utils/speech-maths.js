@@ -249,7 +249,17 @@ export function sayMaths(text, { numbers = true } = {}) {
     s = s.replace(/(?<![\w.])\d+(?:\.\d+)?(?!\w|\.\d)/g, (n) => sayNumber(n));
   }
 
+  /* A WORD IN CAPITALS IS STRESSED, NOT SPELLED. Lesson lines write the one word that carries a
+     sentence in capitals ("ADD boxes"), and a voice reads capitals as letters: the user heard
+     "a d d". So a capitalised word is said as a word — except a real abbreviation, which is
+     spelled on purpose (LCM, HCF, BODMAS …). */
+  s = s.replace(/\b[A-Z]{2,}\b/g, (w) => (SPELLED.has(w) ? w : w.toLowerCase()));
+
   return s.replace(/[ \t]{2,}/g, " ").replace(/\s+([,.;:!?])/g, "$1").trim();
 }
+
+/* abbreviations that ARE spelled out loud, so their capitals stay */
+const SPELLED = new Set(["LCM", "HCF", "GCF", "GCD", "BODMAS", "PEMDAS", "ANMC", "WAEC", "NECO", "JAMB", "UTME", "SSCE", "BECE",
+  "SAT", "TV", "UK", "USA", "AP", "GP", "PDF", "VAT", "ID", "OK", "AM", "PM", "DNA", "CBT", "JSS", "SS", "NMC"]);
 
 export default sayMaths;

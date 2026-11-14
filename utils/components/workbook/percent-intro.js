@@ -18,7 +18,7 @@
 import { film } from "./film-kit.js";
 import { mathLoad } from "./film-math.js";
 import { mathRow, svgBox, centred, PAPER, PIC_W } from "./cbt-films.js";
-import { rollAsk, swapWord } from "./film-ask.js";
+import { rollAsk, swapWord, noteKeyword } from "./film-ask.js";
 
 const INK = "#2a2723", BLUE = "#2f6f8f", GREEN = "#2f7d4a", PURPLE = "#6b4fa0", RED = "#c0453f";
 const SKY = "#bfe3ff", BUTTER = "#fff3a8", LEAF = "#c8f0c0", PALE = "#e6e0d6";
@@ -254,108 +254,226 @@ export function pctChange() {
   });
 }
 
-/* ═══ 3. KEYWORDS, REVERSE PERCENTAGES AND TRAPS ═══════════════════════════ */
-function keywordTable() {
+/* ═══ 3. PERCENTAGE KEYWORDS, MADE SIMPLE (the long lesson) ════════════════
+   *"Focus strongly on the percentages keywords video ... box the keyword and put a little note of
+   what it is ... explain the keywords table and show in examples. Other keywords are interest,
+   profit, loss, commission. The video can be very detailed, 10 minutes minimum ... let the user see
+   you use the keywords very well and note how it is simple. Also show the equivalent fraction way."*
+   Every example is the same four moves: read the question and BOX its keyword (a note says what it
+   means), draw the whole as equal boxes, let the keyword act on the boxes, then the same answer as
+   one multiplication by an equivalent fraction. */
+function keywordTable5() {
   const COLS = [
-    { head: "Take a part", fill: SKY, words: ["of", "per cent of", "what is 20%"] },
-    { head: "Add boxes", fill: LEAF, words: ["increase by", "profit", "rise", "more than"] },
-    { head: "Take boxes away", fill: "#ffd7a3", words: ["decrease by", "discount", "loss", "off"] },
-    { head: "Find the whole", fill: "#e8c8ff", words: ["was", "original", "before", "cost price"] },
+    { head: "Take a part", fill: SKY, words: ["of", "commission", "interest", "tax"] },
+    { head: "Add on", fill: LEAF, words: ["increase by", "profit", "rise", "more than"] },
+    { head: "Take away", fill: "#ffd7a3", words: ["decrease by", "discount", "loss", "off"] },
+    { head: "Find the whole", fill: "#e8c8ff", words: ["original", "was", "before", "cost price"] },
+    { head: "Out of", fill: BUTTER, words: ["out of", "what percent", "as a percentage", ""] },
   ];
-  const X0 = 9, W = 33, HH = 8, RH = 6, TOP = 2;
+  const X0 = 7.5, W = 27, HH = 8, RH = 6.2, TOP = 2;
   let o = "";
   COLS.forEach((c, j) => {
     const x = X0 + j * W;
     o += `<g data-mb="bar" data-k="th${j}"><rect x="${x}" y="${TOP}" width="${W}" height="${HH}" fill="${c.fill}" stroke="${INK}" stroke-width="0.6"/>`
-      + `<text x="${x + W / 2}" y="${TOP + 5.4}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="800" font-size="3.3" fill="${INK}">${c.head}</text></g>`;
+      + `<text x="${x + W / 2}" y="${TOP + 5.3}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="800" font-size="3.1" fill="${INK}">${c.head}</text></g>`;
     c.words.forEach((w, i) => {
       const y = TOP + HH + i * RH;
       o += `<g data-mb="num" data-k="t${j}-${i}"><rect x="${x}" y="${y}" width="${W}" height="${RH}" fill="#fffdf8" stroke="${INK}" stroke-width="0.4"/>`
-        + `<text x="${x + W / 2}" y="${y + 4.2}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="600" font-size="3.3" fill="${INK}">${w}</text></g>`;
+        + `<text x="${x + W / 2}" y="${y + 4.3}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="600" font-size="3.1" fill="${INK}">${w}</text></g>`;
     });
   });
   return svgBox(150, TOP * 2 + HH + 4 * RH, o);
 }
-/** a bar of n boxes (5 = 100%), with `extra` boxes after it and `pale` boxes at its end */
-function boxesBar(label, n, value, { extra = 0, pale = 0, tone = SKY, extraValue = value } = {}) {
-  const U = 18, X0 = 30, Y = 6, HB = 10;
-  let o = `<g data-mb="name" data-k="bl">${S(X0 - 3, Y + 7, 4.4, label, "end")}</g>`;
-  for (let i = 0; i < n + extra; i++) {
-    const gone = i >= n - pale && i < n, more = i >= n;
-    o += `<g data-mb="bar" data-k="b${i}"><rect x="${X0 + i * U}" y="${Y}" width="${U}" height="${HB}" fill="${gone ? PALE : more ? LEAF : tone}" stroke="${INK}" stroke-width="0.7"/>`
-      + S(X0 + i * U + U / 2, Y + 6.8, 4.2, more ? extraValue : value) + (gone ? `<path d="M${X0 + i * U} ${Y + HB} L${X0 + (i + 1) * U} ${Y}" stroke="${RED}" stroke-width="0.8"/>` : "") + `</g>`;
+
+/** The whole as n equal boxes (each worth `val`), `extra` boxes added on, the last `pale` taken away */
+function kbar({ n, val, top, extra = 0, pale = 0 }) {
+  const U = Math.min(17, 124 / (n + extra)), X0 = 75 - (U * (n + extra)) / 2, Y = 9, HB = 10;
+  const fs = Math.min(4.4, U * 0.42);
+  let o = `<g data-mb="name" data-k="top"><path d="M${X0} ${Y - 1.5} V${Y - 3} H${X0 + n * U} V${Y - 1.5}" fill="none" stroke="${INK}" stroke-width="0.5"/>`
+    + `<text data-k="topv" x="${X0 + (n * U) / 2}" y="${Y - 4.2}" text-anchor="middle" font-family="STIX Two Text, serif" font-size="4.6" fill="${INK}">${top}</text></g>`;
+  for (let i = 0; i < n; i++) {
+    o += `<rect data-mb="bar" data-k="b${i}" x="${(X0 + i * U).toFixed(2)}" y="${Y}" width="${U.toFixed(2)}" height="${HB}" fill="${SKY}" stroke="${INK}" stroke-width="0.6"/>`;
+    o += `<g data-mb="num" data-k="v${i}">${S(X0 + i * U + U / 2, Y + 6.6, fs, String(val))}</g>`;
   }
-  return svgBox(150, 22, o);
+  for (let j = 0; j < extra; j++) {
+    const x = X0 + (n + j) * U;
+    o += `<g data-mb="bar" data-k="x${j}"><rect x="${x.toFixed(2)}" y="${Y}" width="${U.toFixed(2)}" height="${HB}" fill="${LEAF}" stroke="${INK}" stroke-width="0.6"/>${S(x + U / 2, Y + 6.6, fs, String(val))}</g>`;
+  }
+  for (let i = n - pale; i < n; i++) {
+    const x = X0 + i * U;
+    o += `<g data-mb="num" data-k="p${i}"><rect x="${x.toFixed(2)}" y="${Y}" width="${U.toFixed(2)}" height="${HB}" fill="${PALE}" stroke="${INK}" stroke-width="0.6"/>`
+      + `${S(x + U / 2, Y + 6.6, fs, String(val), "middle", "#9a948a")}<path d="M${x.toFixed(2)} ${Y + HB} L${(x + U).toFixed(2)} ${Y}" stroke="${RED}" stroke-width="0.7"/></g>`;
+  }
+  o += `<g data-mb="name" data-k="hund">${S(X0 + (n * U) / 2, Y + HB + 5.2, 3.8, "100%", "middle", "#6b645b")}</g>`;
+  return svgBox(150, 26, o);
 }
-const growBoxes = (n, from = 0) => (s, H) => { const lb = key(s, "bl"); if (lb) H.write(lb, 0); for (let i = from; i < n; i++) { const g = key(s, `b${i}`); if (g) H.grow(g, 0.3 + (i - from) * 0.25); } };
+const kbarStages = (id, { n, extra = 0, pale = 0, part = 0, topTo = null }) => ({
+  [`${id}.base`]: (s, H) => { H.write(key(s, "top"), 0); for (let i = 0; i < n; i++) H.grow(key(s, `b${i}`), 0.3 + i * Math.min(0.2, 2.2 / n)); H.write(key(s, "hund"), 0.5); },
+  [`${id}.fill`]: (s, H) => { for (let i = 0; i < n; i++) H.write(key(s, `v${i}`), 0.1 + i * Math.min(0.15, 1.8 / n)); },
+  [`${id}.part`]: (s, H) => { for (let i = 0; i < part; i++) H.lit(key(s, `b${i}`), 0.2 + i * 0.25, 3, RED); },
+  [`${id}.add`]: (s, H) => { for (let j = 0; j < extra; j++) H.grow(key(s, `x${j}`), 0.2 + j * 0.3); },
+  [`${id}.take`]: (s, H) => { for (let i = n - pale; i < n; i++) H.write(key(s, `p${i}`), 0.2 + (i - n + pale) * 0.3); },
+  [`${id}.whole`]: (s, H) => { const t = key(s, "topv"); if (t && topTo != null) { t.textContent = topTo; t.setAttribute("fill", GREEN); } H.sound("ding", 0.2); },
+});
 
 export function pctTraps() {
-  const act = (id, k) => (svg, H, stage) => {
-    if (isInstant(H)) return;
-    const n = stage?.querySelector(`[data-t="${id}"] [data-k="kw-${k}"]`);
-    if (!n) return;
-    n.classList.remove("fa-act"); void n.offsetWidth; n.classList.add("fa-act");
-    H.sound("pop", 0);
+  const kw = (id, k, note, tone) => (svg, H, stage) => {
+    const inner = stage?.querySelector(`[data-t="${id}"]`)?.firstChild;
+    noteKeyword(inner, k, note, { instant: isInstant(H), tone });
   };
-  const col = (j, n) => (s, H) => { H.write(key(s, `th${j}`), 0); for (let i = 0; i < n; i++) H.write(key(s, `t${j}-${i}`), 0.3 + i * 0.3); };
+  const col = (j, n) => (s, H) => { H.write(key(s, `th${j}`), 0); for (let i = 0; i < n; i++) H.write(key(s, `t${j}-${i}`), 0.4 + i * 0.35); };
+  const TAKE = "#bfe3ff", ADD = "#c8f0c0", AWAY = "#ffd7a3", WHOLE = "#e8c8ff", OUT = "#fff3a8";
+
+  /* the eleven examples: the question, its keyword(s) and their notes, the boxes, the two working lines */
+  const EX = [
+    { id: "e1", q: "Find 20% of 60.", keys: [["of", "of: take a part", TAKE]], bar: { n: 5, val: 12, top: "60", part: 1 },
+      mB: "60 \\div 5 = 12\\ \\text{a box, and } 20\\% \\text{ is one box}", mF: "20\\% = \\tfrac{20}{100} = \\tfrac{1}{5},\\quad \\tfrac{1}{5} \\times 60 = 12" },
+    { id: "e2", q: "A salesman earns 5% commission on sales of $400. How much commission does he earn?", keys: [["commission", "commission: a part of the sales", TAKE]], bar: { n: 20, val: 20, top: "$400", part: 1 },
+      mB: "400 \\div 20 = 20\\ \\text{a box: one box is } \\$20", mF: "5\\% = \\tfrac{5}{100} = \\tfrac{1}{20},\\quad \\tfrac{1}{20} \\times 400 = \\$20" },
+    { id: "e3", q: "Ade saves $500 at 10% interest for one year. Find the interest, and the total he then has.", keys: [["interest", "interest: a part, added on", TAKE]], bar: { n: 10, val: 50, top: "$500", part: 1, extra: 1 },
+      mB: "\\text{interest} = \\$50,\\quad \\text{total} = 500 + 50 = \\$550", mF: "\\tfrac{1}{10} \\times 500 = 50,\\quad \\tfrac{11}{10} \\times 500 = \\$550" },
+    { id: "e4", q: "Increase 80 by 25%.", keys: [["increase", "increase by: add on", ADD]], bar: { n: 4, val: 20, top: "80", extra: 1 },
+      mB: "80 + 20 = 100", mF: "100\\% + 25\\% = \\tfrac{5}{4},\\quad \\tfrac{5}{4} \\times 80 = 100" },
+    { id: "e5", q: "A trader buys a bag for $60 and sells it at a 20% profit. What is the selling price?", keys: [["profit", "profit: add on to the cost", ADD]], bar: { n: 5, val: 12, top: "$60", extra: 1 },
+      mB: "60 + 12 = \\$72", mF: "120\\% = \\tfrac{6}{5},\\quad \\tfrac{6}{5} \\times 60 = \\$72" },
+    { id: "e6", q: "A shirt costs $80. In a sale there is a 25% discount. What is the sale price?", keys: [["discount", "discount: take away", AWAY]], bar: { n: 4, val: 20, top: "$80", pale: 1 },
+      mB: "80 - 20 = \\$60", mF: "100\\% - 25\\% = \\tfrac{3}{4},\\quad \\tfrac{3}{4} \\times 80 = \\$60" },
+    { id: "e7", q: "A phone bought for $150 is sold at a 20% loss. What is the selling price?", keys: [["loss", "loss: take away from the cost", AWAY]], bar: { n: 5, val: 30, top: "$150", pale: 1 },
+      mB: "150 - 30 = \\$120", mF: "80\\% = \\tfrac{4}{5},\\quad \\tfrac{4}{5} \\times 150 = \\$120" },
+    { id: "e8", q: "Shoes that cost $50 are sold with 30% off. How much are they now?", keys: [["off", "off: take away", AWAY]], bar: { n: 10, val: 5, top: "$50", pale: 3 },
+      mB: "50 - 15 = \\$35", mF: "70\\% = \\tfrac{7}{10},\\quad \\tfrac{7}{10} \\times 50 = \\$35" },
+    { id: "e9", q: "A pupil scores 18 out of 24 in a test. What is that as a percentage?", keys: [["out of", "out of: make a fraction", OUT]], bar: { n: 4, val: 6, top: "24", part: 3 },
+      mB: "18 = 3\\ \\text{of the } 4\\ \\text{boxes} = \\tfrac{3}{4} = 75\\%", mF: "\\tfrac{18}{24} = \\tfrac{3}{4} = \\tfrac{75}{100} = 75\\%" },
+    { id: "e10", q: "After a 20% discount, a shirt costs $80. What was the original price?", keys: [["discount", "discount: take away", AWAY], ["original", "original: the whole, before", WHOLE]], bar: { n: 5, val: 20, top: "original ?", pale: 1, topTo: "$100" },
+      mB: "80 \\div 4 = 20,\\quad 5 \\times 20 = \\$100", mF: "80 \\div \\tfrac{4}{5} = 80 \\times \\tfrac{5}{4} = \\$100" },
+    { id: "e11", q: "A bag is sold for $72 at a 20% profit. Find the cost price.", keys: [["profit", "profit: add on", ADD], ["cost price", "cost price: the whole", WHOLE]], bar: { n: 5, val: 12, top: "cost price ?", extra: 1, topTo: "$60" },
+      mB: "72 \\div 6 = 12,\\quad 5 \\times 12 = \\$60", mF: "72 \\div \\tfrac{6}{5} = 72 \\times \\tfrac{5}{6} = \\$60" },
+  ];
+  const asks = [{ id: "a0", text: "Percentage questions use a few keywords. Learn what each one tells you to do, and every question becomes simple." },
+    ...EX.map((e) => ({ id: e.id, text: e.q, keys: e.keys.map((k) => k[0]) })),
+    { id: "t1", text: "A price of $100 goes up by 20%, then down by 20%. What is it now?", keys: ["up", "down"] }];
+  const pics = { kw: () => keywordTable5() };
+  const picAt = { kw: centred(150, 15) };
+  const stages = { "kw.c0": col(0, 4), "kw.c1": col(1, 4), "kw.c2": col(2, 4), "kw.c3": col(3, 4), "kw.c4": col(4, 3) };
+  EX.forEach((e) => {
+    pics[`${e.id}b`] = () => kbar(e.bar);
+    pics[`${e.id}B`] = () => main([L("a", e.mB)], 6.4);
+    pics[`${e.id}F`] = () => main([L("a", e.mF)], 6.4);
+    picAt[`${e.id}b`] = centred(150, 24); picAt[`${e.id}B`] = at(38); picAt[`${e.id}F`] = at(38);
+    Object.assign(stages, kbarStages(`${e.id}b`, e.bar));
+    stages[`${e.id}B.all`] = (s, H) => { write(s, H, ["a"], 0); H.sound("ding", 0.8); };
+    stages[`${e.id}F.all`] = (s, H) => { write(s, H, ["a"], 0); H.sound("ding", 0.8); };
+    e.keys.forEach(([k, note, tone], j) => { stages[`k.${e.id}.${j}`] = kw(e.id, k, note, tone); });
+  });
+  pics.u1 = () => kbar({ n: 5, val: 20, top: "$100", extra: 1 });
+  pics.u2 = () => kbar({ n: 5, val: 24, top: "$120", pale: 1 });
+  pics.mU = () => main([L("a", "\\tfrac{6}{5} \\times \\tfrac{4}{5} = \\tfrac{24}{25} = 96\\%"), L("e", "\\quad"), L("b", "\\$96,\\ \\text{not } \\$100", RED)], 6.4);
+  picAt.u1 = centred(150, 24); picAt.u2 = centred(150, 24); picAt.mU = at(38);
+  Object.assign(stages, kbarStages("u1", { n: 5, extra: 1 }), kbarStages("u2", { n: 5, pale: 1 }));
+  stages["mU.all"] = (s, H) => line(s, H, true);
+  stages["k.t1.0"] = kw("t1", "up", "up 20% of $100", ADD);
+  stages["k.t1.1"] = kw("t1", "down", "down 20% of $120!", AWAY);
+
+  /* the words for each example: [read and box the keyword, draw the boxes, the keyword acts, the fraction way] */
+  const SAY = {
+    e1: ["First, find twenty per cent OF sixty. The keyword is 'of', so I'll box it. 'Of' means take a PART. We're not adding anything or taking anything away; we just want a piece of the sixty.",
+      "Draw sixty as the whole, a hundred per cent. Twenty per cent is a fifth, so cut it into five equal boxes. Sixty shared into five is twelve in every box.",
+      "Twenty per cent is ONE of those boxes. So twenty per cent of sixty is twelve. Notice how simple that was: the keyword told us what to do, and the boxes did the rest.",
+      "And the fraction way, in one line. Twenty per cent is twenty out of a hundred, which is one fifth. 'Of' means multiply, so one fifth times sixty: twelve. Same answer."],
+    e2: ["Next keyword: commission. A salesman earns five per cent commission on sales of four hundred dollars. Commission is the salesman's share, a PART of what he sold, so it belongs in the 'take a part' column.",
+      "The whole is the sales, four hundred dollars. Five per cent is a twentieth, so cut it into twenty boxes. Four hundred shared into twenty is twenty dollars a box.",
+      "His commission is one of those boxes: twenty dollars. That's it.",
+      "The fraction way: five per cent is five over a hundred, one twentieth. One twentieth of four hundred is twenty dollars."],
+    e3: ["Now interest. Ade saves five hundred dollars at ten per cent interest for a year. Interest is also a PART of the money, but here's the thing to notice: interest gets ADDED to the money in the account.",
+      "Draw the five hundred dollars. Ten per cent is a tenth, so cut it into ten boxes of fifty.",
+      "The interest is one box: fifty dollars. And because interest is added on, his total is the ten boxes plus one more: five hundred and fifty dollars.",
+      "The fraction way: the interest is one tenth of five hundred, fifty. The total is eleven tenths of five hundred: five hundred and fifty. Two questions, one picture."],
+    e4: ["Now the 'add on' column. Increase eighty by twenty-five per cent. 'Increase by' means the amount gets BIGGER: we keep all of it, and add some more on.",
+      "Draw eighty. Twenty-five per cent is a quarter, so four boxes of twenty.",
+      "Increasing by twenty-five per cent adds ONE more box of twenty on the end. Eighty plus twenty: a hundred.",
+      "The fraction way: we keep a hundred per cent and add twenty-five, so it's a hundred and twenty-five per cent, five quarters. Five quarters of eighty is a hundred."],
+    e5: ["Profit is in the same column. A trader buys a bag for sixty dollars and sells it at a twenty per cent profit. Profit means he sells for MORE than he paid, so profit adds on to the cost.",
+      "The cost is the whole: sixty dollars. Twenty per cent is a fifth: five boxes of twelve.",
+      "A twenty per cent profit adds one more box of twelve. Sixty plus twelve: the selling price is seventy-two dollars.",
+      "The fraction way: a hundred and twenty per cent is six fifths. Six fifths of sixty is seventy-two dollars."],
+    e6: ["Now the 'take away' column. A shirt costs eighty dollars, and there's a twenty-five per cent discount. A discount takes money OFF the price: the price goes down.",
+      "Draw the eighty dollars. Twenty-five per cent is a quarter: four boxes of twenty.",
+      "The discount takes one box away. Watch it go pale. Eighty take away twenty: the sale price is sixty dollars.",
+      "The fraction way: a hundred per cent take away twenty-five is seventy-five per cent, three quarters. Three quarters of eighty is sixty dollars."],
+    e7: ["Loss is the opposite of profit. A phone bought for a hundred and fifty dollars is sold at a twenty per cent loss. A loss means it's sold for LESS than it cost, so loss takes away from the cost.",
+      "The cost is the whole: a hundred and fifty. Twenty per cent is a fifth: five boxes of thirty.",
+      "The loss takes one box away. A hundred and fifty take away thirty: the selling price is a hundred and twenty dollars.",
+      "The fraction way: eighty per cent is four fifths. Four fifths of a hundred and fifty is a hundred and twenty."],
+    e8: ["'Off' is a little word with a big job. Shoes that cost fifty dollars are sold with thirty per cent off. Off means take away, just like discount.",
+      "Thirty per cent is three tenths, so cut the fifty dollars into ten boxes of five.",
+      "Thirty per cent off takes THREE boxes away. Fifty take away fifteen: thirty-five dollars.",
+      "The fraction way: seventy per cent is left, seven tenths. Seven tenths of fifty is thirty-five dollars."],
+    e9: ["Now the 'out of' column, which goes the other way. A pupil scores eighteen out of twenty-four. What's that as a percentage? 'Out of' tells you to write it as a FRACTION first.",
+      "Draw the twenty-four marks as the whole. Eighteen and twenty-four are both made of sixes, so cut it into four boxes of six.",
+      "Eighteen is three of the four boxes: three quarters. And three quarters of a hundred per cent is seventy-five per cent.",
+      "The fraction way: eighteen over twenty-four simplifies to three quarters, and three quarters is seventy-five over a hundred: seventy-five per cent."],
+    e10: ["Now the column that catches everybody: find the WHOLE. After a twenty per cent discount, a shirt costs eighty dollars. What was the original price? Two keywords: discount, take away; and original, the whole BEFORE the change.",
+      "The original price is the whole: five boxes, but we don't know them yet. The discount took one box away, so the eighty dollars is what's LEFT: four boxes.",
+      "Four boxes are eighty, so one box is twenty, and the original, all five boxes, is a hundred dollars. Not ninety-six! Taking twenty per cent of eighty would be using the wrong whole.",
+      "The fraction way: eighty dollars is four fifths of the original. So divide by four fifths, which is the same as multiplying by five quarters: a hundred dollars."],
+    e11: ["One more of those. A bag is sold for seventy-two dollars at a twenty per cent profit. Find the cost price. Profit adds on, and cost price is the whole before the profit.",
+      "The cost price is five boxes, and the profit added a sixth. So the seventy-two dollars is SIX boxes.",
+      "Six boxes are seventy-two, so one box is twelve, and the cost price, five boxes, is sixty dollars.",
+      "The fraction way: seventy-two is six fifths of the cost. Divide by six fifths, times five sixths: sixty dollars."],
+  };
+  const COLS = { e1: "Take a part", e2: "Take a part", e3: "Take a part", e4: "Add on", e5: "Add on", e6: "Take away", e7: "Take away", e8: "Take away", e9: "Out of", e10: "Find the whole", e11: "Find the whole" };
+
   return film({
     paperMm: PAPER, picW: PIC_W, ready: mathLoad(),
-    asks: [
-      { id: "a1", text: "A shirt was sold at a 20% discount for $80. What was the original price?" },
-      { id: "t1", text: "A price of $100 goes up by 20%, then down by 20%. What is it now?" },
-    ],
-    pics: {
-      kw: () => keywordTable(),
-      r1: () => boxesBar("Sale", 4, "20"),
-      r2: () => boxesBar("Original", 5, "20"),
-      w1: () => boxesBar("Wrong", 4, "20", { extra: 1, extraValue: "16" }),
-      u1: () => boxesBar("Up 20%", 5, "20", { extra: 1 }),
-      u2: () => boxesBar("Down 20%", 5, "24", { pale: 1 }),
-      mR1: () => main([L("a", "80 \\div 4"), L("e", "="), L("b", "20\\ \\text{a box}", BLUE)]),
-      mR2: () => main([L("a", "5 \\times 20"), L("e", "="), L("b", "\\$100", GREEN)]),
-      mW: () => main([L("a", "80 + 20\\%\\ \\text{of}\\ 80 = 96"), L("e", "\\quad"), L("b", "\\text{wrong!}", RED)], 6.6),
-      mU1: () => main([L("a", "100 + 20 = 120"), L("e", "\\quad"), L("b", "\\tfrac{120}{5} = 24\\ \\text{a box}", BLUE)], 6.6),
-      mU2: () => main([L("a", "120 - 24"), L("e", "="), L("b", "96 \\ne 100", RED)]),
-    },
-    picAt: { kw: centred(150, 14), r1: centred(150, 15), r2: centred(150, 15), w1: centred(150, 15), u1: centred(150, 15), u2: centred(150, 15),
-      mR1: at(37.5), mR2: at(37.5), mW: at(37.5), mU1: at(37.5), mU2: at(37.5) },
+    asks, pics, picAt,
     lines: [
-      { id: "k1", receipt: true, sub: "Spot it", text: "what does the per cent do?", y: 50.5 },
-      { id: "k2", receipt: true, sub: "Reverse", text: "find the 100% first", y: 50.5 },
-      { id: "k3", receipt: true, sub: "The trap", text: "the 100% moves", y: 50.5 },
+      { id: "kt", receipt: true, sub: "The table", text: "five things a per cent can do", y: 50.5 },
+      ...["Take a part", "Add on", "Take away", "Out of", "Find the whole"].map((t, i) => ({ id: `kc${i}`, receipt: true, sub: "Keyword", text: t, y: 50.5 })),
+      { id: "kx", receipt: true, sub: "The trap", text: "the whole moves", y: 50.5 },
     ],
-    stages: {
-      "kw.c0": col(0, 3), "kw.c1": col(1, 4), "kw.c2": col(2, 4), "kw.c3": col(3, 4),
-      "x.disc": act("a1", "discount"),
-      "r1.grow": growBoxes(4),
-      "r2.grow": (s, H) => { for (let i = 0; i < 4; i++) H.show(key(s, `b${i}`)); H.show(key(s, "bl")); H.grow(key(s, "b4"), 0.3); },
-      "w1.grow": (s, H) => { for (let i = 0; i < 4; i++) H.show(key(s, `b${i}`)); H.show(key(s, "bl")); H.grow(key(s, "b4"), 0.3); },
-      "u1.grow": growBoxes(6),
-      "u2.grow": (s, H) => { growBoxes(5)(s, H); },
-      "mR1.all": (s, H) => line(s, H), "mR2.all": (s, H) => line(s, H, true), "mW.all": (s, H) => line(s, H), "mU1.all": (s, H) => line(s, H), "mU2.all": (s, H) => line(s, H, true),
-    },
+    stages,
     steps: ({ push }) => {
-      push("A shirt was sold at a twenty per cent discount for eighty dollars. What was the original price? This is where most people go wrong, so let's first sort out what each percentage word tells you to DO.",
-        { on: ["a1"], transition: "iris", pause: 0.6 });
-      push("Here's a table. 'Of' means take a part: twenty per cent OF sixty is one fifth of it.",
-        { on: ["kw", "k1"], add: ["kw.c0"], cue: { "kw.c0": "'Of' means" }, transition: card("Spot it", "what does the per cent do?"), pause: 0.4 });
-      push("Increase by, profit, rise and more than ADD boxes to the whole. Decrease by, discount, loss and off TAKE boxes away.",
-        { add: ["kw.c1", "kw.c2"], cue: { "kw.c1": "increase by", "kw.c2": "decrease by" }, pause: 0.4 });
-      push("And words like was, original, before and cost price tell you the number you're looking for is the WHOLE, the hundred per cent, from before the change.",
-        { add: ["kw.c3"], cue: { "kw.c3": "words like was" }, pause: 0.8 });
-      push("Back to the shirt. DISCOUNT takes a box away, and ORIGINAL asks for the whole. So the whole is five boxes, and after twenty per cent off, eighty dollars is what's LEFT: four boxes.",
-        { on: ["r1", "k2"], off: ["kw", "k1"], add: ["x.disc", "r1.grow"], cue: { "x.disc": "DISCOUNT", "r1.grow": "four boxes" }, transition: card("Reverse", "find the 100% first"), pause: 0.6 });
-      push("Four boxes are eighty, so one box is eighty shared into four... twenty dollars.",
-        { on: ["mR1"], add: ["mR1.all"], cue: { "mR1.all": "one box is" }, pause: 0.6 });
-      push("The original price is all five boxes. Five times twenty... one hundred dollars.",
-        { on: ["r2", "mR2"], off: ["r1", "mR1"], add: ["r2.grow", "mR2.all"], cue: { "r2.grow": "all five", "mR2.all": "five times" }, pause: 0.8 });
-      push("Here's the trap. A lot of people take twenty per cent of eighty, sixteen, and add it back on: ninety-six. Wrong! The twenty per cent was a fifth of the ORIGINAL, not of the sale price. The boxes in eighty are twenties, not sixteens.",
-        { on: ["w1", "mW", "k3"], off: ["r2", "mR2", "k2"], add: ["w1.grow", "mW.all"], cue: { "mW.all": "a lot of people" }, transition: card("The trap", "the 100% moves"), pause: 0.8 });
-      push("The same trap in another dress. A hundred dollars goes UP by twenty per cent: one more box of twenty, a hundred and twenty.",
-        { on: ["t1", "u1", "mU1"], off: ["a1", "w1", "mW"], add: ["u1.grow", "mU1.all"], cue: { "u1.grow": "one more box", "mU1.all": "a hundred and twenty" }, pause: 0.6 });
-      push("Then DOWN by twenty per cent. But twenty per cent of what? Of a hundred and twenty now: the new whole. Its fifths are twenty-fours. Take one away... ninety-six. NOT back to a hundred.",
-        { on: ["u2", "mU2"], off: ["u1", "mU1"], add: ["u2.grow", "mU2.all"], cue: { "u2.grow": "its fifths", "mU2.all": "take one away" }, pause: 1 });
-      push("So before you work out any percentage, ask: a per cent of WHAT? Find the hundred per cent first, the whole the per cent belongs to, and draw it as five boxes. The keywords help, but the whole decides.");
+      push("Percentage questions look like they're all different, but they're built from a handful of keywords. In this lesson we'll learn what each keyword tells you to do, and then use them on question after question. You'll see how simple they become.",
+        { on: ["a0"], transition: "iris", pause: 0.6 });
+      push("Here's the table. The first column: take a PART. 'Of', commission, interest and tax all mean a piece of the amount. Twenty per cent of something, a five per cent commission, ten per cent interest: each is a part.",
+        { on: ["kw", "kt"], add: ["kw.c0"], cue: { "kw.c0": "the first column" }, transition: card("The table", "five things a per cent can do"), pause: 0.6 });
+      push("The second column: ADD ON. Increase by, profit, rise and more than. The amount gets bigger: you keep all of it and add the part on top.",
+        { add: ["kw.c1"], cue: { "kw.c1": "the second column" }, pause: 0.6 });
+      push("The third column: TAKE AWAY. Decrease by, discount, loss and off. The amount gets smaller: the part is taken away.",
+        { add: ["kw.c2"], cue: { "kw.c2": "the third column" }, pause: 0.6 });
+      push("The fourth column: find the WHOLE. Original, was, before and cost price. These tell you the number you want is the hundred per cent, from BEFORE the change. This is where most mistakes happen, so we'll take it slowly.",
+        { add: ["kw.c3"], cue: { "kw.c3": "the fourth column" }, pause: 0.6 });
+      push("And the last column: OUT OF. Out of, what percent, as a percentage. These go the other way: you're given two amounts and you turn them into a per cent.",
+        { add: ["kw.c4"], cue: { "kw.c4": "the last column" }, pause: 0.6 });
+      push("Here's the whole method, and it's the same every time. One: find the keyword and box it. Two: draw the whole as equal boxes. Three: let the keyword act on the boxes. Then we'll check it the fraction way. Let's go.", { pause: 1 });
+
+      let prev = ["kw", "a0", "kt"];
+      let colOn = null;
+      EX.forEach((e, idx) => {
+        const s = SAY[e.id], colIdx = ["Take a part", "Add on", "Take away", "Out of", "Find the whole"].indexOf(COLS[e.id]);
+        const newCol = `kc${colIdx}`;
+        const changeCol = newCol !== colOn;
+        push(s[0], { on: [e.id, ...(changeCol ? [newCol] : [])], off: [...prev, ...(changeCol && colOn ? [colOn] : [])],
+          add: e.keys.map((_, j) => `k.${e.id}.${j}`), cue: Object.fromEntries(e.keys.map(([k], j) => [`k.${e.id}.${j}`, j ? k : s[0].split(" ").slice(0, 3).join(" ")])),
+          ...(changeCol ? { transition: card("Keyword", COLS[e.id]) } : {}), pause: 0.6 });
+        colOn = newCol;
+        push(s[1], { on: [`${e.id}b`], add: [`${e.id}b.base`, ...(e.bar.topTo ? [] : [`${e.id}b.fill`])], cue: { [`${e.id}b.fill`]: "shared into" }, pause: 0.6 });
+        const acts = [...(e.bar.topTo ? [`${e.id}b.fill`] : []), ...(e.bar.part ? [`${e.id}b.part`] : []), ...(e.bar.extra ? [`${e.id}b.add`] : []), ...(e.bar.pale ? [`${e.id}b.take`] : []), ...(e.bar.topTo ? [`${e.id}b.whole`] : [])];
+        push(s[2], { on: [`${e.id}B`], add: [...acts, `${e.id}B.all`], pause: 0.8 });
+        push(s[3], { on: [`${e.id}F`], off: [`${e.id}B`], add: [`${e.id}F.all`], cue: { [`${e.id}F.all`]: "the fraction way" }, pause: idx === EX.length - 1 ? 1 : 0.8 });
+        prev = [e.id, `${e.id}b`, `${e.id}F`];
+      });
+
+      /* the trap */
+      push("Now a trap that uses two keywords at once. A price of a hundred dollars goes UP by twenty per cent, then DOWN by twenty per cent. Most people say it's back to a hundred. Let's see.",
+        { on: ["t1", "kx"], off: [...prev, colOn], add: ["k.t1.0", "k.t1.1"], cue: { "k.t1.0": "goes up", "k.t1.1": "then down" }, transition: card("The trap", "the whole moves"), pause: 0.6 });
+      push("Up twenty per cent: the whole is a hundred, five boxes of twenty, and we add one more. A hundred and twenty.",
+        { on: ["u1"], add: ["u1.base", "u1.fill", "u1.add"], cue: { "u1.add": "add one more" }, pause: 0.6 });
+      push("Now down twenty per cent. But twenty per cent of WHAT? Of the new price, a hundred and twenty. That's the new whole: five boxes of twenty-four. Take one away... ninety-six dollars.",
+        { on: ["u2"], off: ["u1"], add: ["u2.base", "u2.fill", "u2.take"], cue: { "u2.take": "take one away" }, pause: 0.8 });
+      push("The fraction way shows it straight away: six fifths, then four fifths, is twenty-four twenty-fifths: ninety-six per cent of where you started. The second per cent belongs to a different whole.",
+        { on: ["mU"], add: ["mU.all"], cue: { "mU.all": "six fifths" }, pause: 1 });
+      push("So that's every percentage question. Box the keyword. Ask which column it's in: take a part, add on, take away, find the whole, or out of. Draw the whole as equal boxes and let the keyword act on them, or do the same thing in one line with an equivalent fraction. A few words, one method, and it really is that simple.");
     },
   });
 }

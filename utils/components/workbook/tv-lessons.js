@@ -436,7 +436,7 @@ export const FILMS = [
   { id: "avg-range-mode", group: "Mean, median, mode and range from a list", name: "Range plus mode of twenty numbers", of: "ANMC 22nd first round, Q32", topic: "averages" },
   { id: "pct-what", lesson: true, name: "What is a percentage?", of: "Percentages, lesson 1", topic: "percent", thumb: { n: 5, k: 1 } },
   { id: "pct-change", lesson: true, name: "Percent of, increase and decrease", of: "Percentages, lesson 2", topic: "percent", thumb: { n: 5, k: 6 } },
-  { id: "pct-traps", lesson: true, name: "Keywords, reverse percentages and traps", of: "Percentages, lesson 3", topic: "percent", thumb: { n: 5, k: 4 } },
+  { id: "pct-traps", lesson: true, name: "Percentage keywords, made simple", of: "Percentages, lesson 3", topic: "percent", thumb: { n: 5, k: 4 } },
   { id: "loss-25", group: "Reverse: the price before the change", name: "A 25% loss: find the cost price (two ways)", of: "Scholastic 2022 first round, Q6", topic: "percent", thumb: { n: 4, k: 3 } },
   { id: "score-80", group: "A part is known: find the whole", name: "56 marks is 80%: find the full marks (two ways)", of: "Scholastic 2022 first round, Q8", topic: "percent", thumb: { n: 5, k: 4 } },
   { id: "score-90", group: "A part is known: find the whole", name: "72 marks is 90%: find the full marks (two ways)", of: "Scholastic 4th edition first round, Q10", topic: "percent", thumb: { n: 10, k: 9 } },
