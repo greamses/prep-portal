@@ -24,6 +24,7 @@ on:
       - data/spelling/lower-primary.js
       - tools/spelling-audio/*.mjs
       - tools/spelling-audio/package.json
+      - tools/spelling-audio/redo.txt
       - .github/workflows/spelling-audio.yml
 
 concurrency:
@@ -71,7 +72,7 @@ jobs:
         working-directory: tools/spelling-audio
         run: |
           VOICE=$(node -p "require('fs').readFileSync('voice-name.mjs','utf8').match(/'([a-z_]+)';/)[1]")
-          node record.mjs --bank ${{ matrix.bank }} --part ${{ matrix.part }} --kinds ${{ inputs.kinds || 'w,d,s' }} \
+          node record.mjs --bank ${{ matrix.bank }} --part ${{ matrix.part }} --kinds ${{ inputs.kinds || 'w,d,s' }} --redo redo.txt \
             --have "$GITHUB_WORKSPACE/store/${{ matrix.bank }}/$VOICE" --out "$GITHUB_WORKSPACE/new/${{ matrix.bank }}/$VOICE"
       - name: Hand the new clips on
         if: always()
@@ -124,6 +125,11 @@ jobs:
           git config user.email "bot@users.noreply.github.com"
           # Only the clip list: page stamps are left to the deploy (version-assets runs before it),
           # so a commit pushed while this ran can never conflict with the bot's.
+          # the redo list has been recorded again: empty it, so the next run does not repeat it
+          if [ -s tools/spelling-audio/redo.txt ] && [ "${{ needs.record.result }}" = "success" ]; then
+            : > tools/spelling-audio/redo.txt
+            git add tools/spelling-audio/redo.txt
+          fi
           git add data/spelling/audio.js
           if git diff --cached --quiet; then echo "Nothing new."; else
             git commit -q -m "Spelling: list the Kokoro clips (spelling-audio@${{ steps.store.outputs.sha }})"

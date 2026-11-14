@@ -8,21 +8,26 @@
 //     --part  an even slice of the list, so several machines share it (1/3 = the first third)
 //     --have  the clips already made (the spelling-audio branch's list/voice folder): skipped
 //     --out   where to write the new ones (the workflow commits them to the branch)
+//     --redo  a file of clips to record AGAIN even though they exist ("secondary/0806-w", one
+//             a line): how a bad recording is replaced. The workflow empties it afterwards.
 //
 // A clip already made is never recorded twice, so a stopped run just carries on.
 //
 // The words are spoken from the list's own IPA, so a rare word sounds as the list says;
 // in a sentence the word keeps that IPA and Kokoro reads the words around it.
 import { load, speak, linePhonemes, mp3, fromDictionary } from './voice.mjs';
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { VOICE } from './voice-name.mjs';
 
-// The lists, and how each writes its IPA: the secondary list in espeak style (what Kokoro
-// reads), the primary lists dictionary-style (converted by fromDictionary).
+// The lists. Their IPA comes in two styles: espeak's (stress mark just before the vowel, what
+// Kokoro was trained on) and the dictionary's (dots, stress mark at the START of the syllable).
+// The primary lists are all dictionary-style, and so is the end of the secondary list, where a
+// stress mark before a consonant made Kokoro say "acynical" for "cynical". fromDictionary turns
+// either into espeak style (it leaves espeak-style IPA as it is), so every list goes through it.
 const LISTS = {
-  secondary: { file: 'secondary.js', name: 'SPELLING_SECONDARY', ipa: (p) => p },
+  secondary: { file: 'secondary.js', name: 'SPELLING_SECONDARY', ipa: fromDictionary },
   upper: { file: 'upper-primary.js', name: 'SPELLING_UPPER_PRIMARY', ipa: fromDictionary },
   lower: { file: 'lower-primary.js', name: 'SPELLING_LOWER_PRIMARY', ipa: fromDictionary },
 };
@@ -49,6 +54,14 @@ const HAVE = arg('have', null), OUT = arg('out', null);
 if (!OUT) { console.error('--out <dir> is needed'); process.exit(2); }
 mkdirSync(OUT, { recursive: true });
 const done = new Set(HAVE && existsSync(HAVE) ? readdirSync(HAVE).map((f) => f.replace(/\.mp3$/, '')) : []);
+// clips to record again: drop them from "done"
+const REDO = arg('redo', null);
+if (REDO && existsSync(REDO)) {
+  for (const line of readFileSync(REDO, 'utf8').split(/\r?\n/)) {
+    const m = /^(\w+)\/(\d{4}-[wds])$/.exec(line.trim());
+    if (m && m[1] === arg('bank', 'secondary')) done.delete(m[2]);
+  }
+}
 const t0 = Date.now();
 const todo = [];
 for (const k of kinds) for (let i = FROM; i < TO; i++) if (!done.has(`${pad(i)}-${k}`)) todo.push([k, i]);
