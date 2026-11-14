@@ -312,6 +312,7 @@ export function hand(gsap, instant) {
       show: on, grow: on, write: on, draw: on, mark: on, deal: on, drop: on,
       sound: () => {},   // a step replayed at once is not heard
       away: (nodes) => [...(nodes || [])].forEach((n) => n.remove()),
+      fade: (nodes) => [...(nodes || [])].forEach((n) => n.remove()),
       score: on,
       wipe: (n, to) => { if (n) n.setAttribute("fill", to); },
       cross: (n, ink) => {
@@ -471,6 +472,14 @@ export function hand(gsap, instant) {
      * counters are plainly BECOMING the number rather than being swept away
      * before it.
      */
+    /* A LINE THAT GOES because two boxes MERGE: it fades where it stands (nothing moves), and is
+       then gone, so the boxes either side are one box. */
+    fade(nodes, delay = 0) {
+      const list = [...(nodes || [])];
+      if (!list.length) return;
+      sfx("snip", delay);
+      gsap.to(list, { opacity: 0, duration: 0.5, delay, ease: "power1.in", onComplete: () => list.forEach((n) => n.remove()) });
+    },
     away(nodes, delay = 0) {
       const list = [...(nodes || [])];
       if (!list.length) return;

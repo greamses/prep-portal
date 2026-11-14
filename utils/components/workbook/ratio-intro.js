@@ -18,7 +18,7 @@
 
 import { modelSvg } from "/prep-math/activity/maths-workbook/js/modelart.js";
 import { braceOf, film, mb, part } from "./film-kit.js";
-import { mathLoad, mathifyPic } from "./film-math.js";
+import { mathLoad, mathifyPic, texAt } from "./film-math.js";
 import { mathRow, svgBox, centred, PAPER, PIC_W, K_ } from "./cbt-films.js";
 
 const BLUE = "#2f6f8f", GREEN = "#2f7d4a";
@@ -59,11 +59,61 @@ const showBars = (s, H) => { mb(s, "name").forEach((n) => H.show(n)); mb(s, "bar
 const fill = (s, H) => mb(s, "num").forEach((n, i) => H.write(n, i * 0.08));
 const card = (title, sub) => ({ kind: "card", title, sub, hold: 1.6 });
 
+/* ── BOXES THAT CUT AND MERGE ─────────────────────────────────────────────
+   *"Use the boxes to show how ratio scales. If it goes up, it cuts, if it goes down it merges.
+   Always show merging animation."* A row is one long box with its dividing lines drawn SEPARATELY
+   (each its own mark), so a ratio going up is lines being DRAWN through the boxes (a cut), and
+   going down is lines FADING (two boxes merging into one). The rows share one box size, so the
+   bars keep their length whatever happens to the numbers.
+     rows   [{ name, n }]   n: the finest cells the row is ever cut into
+     unit   the width of one finest cell (picture units; 150 across)
+     labels { key: { every, text } }  a number written in each merged box of `every` cells */
+const SKY = "#bfe3ff", BUTTER = "#fff3a8", INKC = "#2a2723";
+function boxRows(rows, unit, labels = {}) {
+  const X0 = 26, ROW = 11, GAP = 6, TOP = 4;
+  let out = "";
+  rows.forEach((r, i) => {
+    const y = TOP + i * (ROW + GAP), w = r.n * unit;
+    out += texAt(`\\text{${r.name}}`, X0 - 3, y + ROW * 0.68, { em: 4.4, anchor: "end", attrs: 'data-mb="name"' });
+    out += `<rect data-mb="bar" data-mb-row="${i}" x="${X0}" y="${y}" width="${w.toFixed(2)}" height="${ROW}" fill="${r.fill || (i % 2 ? BUTTER : SKY)}" stroke="${INKC}" stroke-width="0.7"/>`;
+    for (let k = 1; k < r.n; k++) {
+      const x = (X0 + k * unit).toFixed(2);
+      out += `<g data-mb="brace" data-mb-key="d${i}-${k}"><path d="M${x} ${y} V${y + ROW}" fill="none" stroke="${INKC}" stroke-width="0.55"/></g>`;
+    }
+    Object.entries(labels).forEach(([key, { every, text }]) => {
+      for (let g = 0; g < r.n / every; g++) {
+        out += texAt(text, X0 + (g + 0.5) * every * unit, y + ROW * 0.7, { em: 4.6, attrs: `data-mb="num" data-k="${key}-${i}-${g}"` });
+      }
+    });
+  });
+  return svgBox(150, TOP * 2 + rows.length * ROW + (rows.length - 1) * GAP, out);
+}
+const divs = (s, row, keep) => [...(s?.querySelectorAll(`[data-mb-key^="d${row}-"]`) || [])]
+  .filter((g) => keep(Number(g.dataset.mbKey.split("-")[1])));
+/** Grow a row, then draw its lines that pass `which`, one after another. */
+const growRow = (row, which, gap = 0.06) => (s, H) => {
+  const n = mb(s, "name")[row], bar = s?.querySelector(`[data-mb="bar"][data-mb-row="${row}"]`);
+  if (n) H.write(n, 0);
+  if (bar) H.grow(bar, 0.15);
+  divs(s, row, which).forEach((g, j) => H.draw(g, 0.75 + j * gap));
+};
+/** CUT: draw the lines that pass `which`, in every row. */
+const cutRows = (rows, which, gap = 0.05) => (s, H) => rows.forEach((row) => divs(s, row, which).forEach((g, j) => H.draw(g, 0.1 + j * gap)));
+/** MERGE: the lines that pass `which` fade, and each merged box gets its number. */
+const mergeRows = (rows, which, labelKey = null) => (s, H) => {
+  /* only the lines ON the paper merge away; a line not yet drawn (a later cut) is left for later */
+  rows.forEach((row) => H.fade(divs(s, row, which).filter((g) => g.style.opacity !== "0"), 0.15));
+  if (labelKey) [...(s?.querySelectorAll(`[data-k^="${labelKey}-"]`) || [])].forEach((n, i) => H.write(n, 0.9 + i * 0.12));
+};
+const showRows = (rows, which) => (s, H) => {
+  mb(s, "name").forEach((n) => H.show(n));
+  rows.forEach((row) => { H.show(s?.querySelector(`[data-mb="bar"][data-mb-row="${row}"]`)); divs(s, row, which).forEach((g) => H.show(g)); });
+};
+
 /* ═══ 1. WHAT A RATIO IS ═══════════════════════════════════════════════════ */
 export function ratioWhat() {
-  const CAP = 104 / 12;
-  const KIDS = ["Boys", "Girls"];
   const PRICE = ["Old", "New"];
+  const at15 = centred(150, 15);
   return film({
     paperMm: PAPER, picW: PIC_W, ready: mathLoad(),
     asks: [
@@ -71,8 +121,12 @@ export function ratioWhat() {
       { id: "a2", text: "A price of $80 is increased in the ratio 5:4. What is the new price?" },
     ],
     pics: {
-      c1: () => bars(KIDS, [12, 8], { cap: CAP }),
-      c2: () => bars(KIDS, [3, 2], { text: "4", unit: 4, cap: CAP }),
+      /* 12 : 8, merged in fours */
+      g12: () => boxRows([{ name: "Boys", n: 12 }, { name: "Girls", n: 8 }], 100 / 12, { m4: { every: 4, text: "4" } }),
+      /* 30 : 20, merged in tens */
+      g30: () => boxRows([{ name: "Boys", n: 30 }, { name: "Girls", n: 20 }], 100 / 30, { m10: { every: 10, text: "10" } }),
+      /* 3 : 2 cut into halves, quarters and thirds: twelve finest cells to every box */
+      gS: () => boxRows([{ name: "Boys", n: 36 }, { name: "Girls", n: 24 }], 100 / 36),
       p1: () => bars(PRICE, [4, 5], { below: { 0: [{ from: 0, to: 4, text: "$80" }] } }),
       p2: () => bars(PRICE, [4, 5], { text: "20", below: { 0: [{ from: 0, to: 4, text: "$80" }] } }),
       p3: () => bars(PRICE, [4, 3], { text: "20", below: { 0: [{ from: 0, to: 4, text: "$80" }] } }),
@@ -83,21 +137,32 @@ export function ratioWhat() {
       m4: () => main([L("a", "80 \\div 4"), L("e", "="), L("b", "20", BLUE)]),
       m5: () => main([L("a", "5 \\times 20"), L("e", "="), L("b", "\\$100", GREEN)]),
       m6: () => main([L("a", "3 \\times 20"), L("e", "="), L("b", "\\$60", GREEN)]),
-      m7: () => main([L("a", "3 : 2"), L("e1", "="), L("b", "6 : 4"), L("e2", "="), L("c", "9 : 6"), L("e3", "="), L("d", "12 : 8", BLUE)], 7),
+      mS1: () => main([L("a", "3 : 2"), L("e", "\\xrightarrow{\\ \\times 2\\ }"), L("b", "6 : 4", BLUE)]),
+      mS2: () => main([L("a", "6 : 4"), L("e", "\\xrightarrow{\\ \\times 2\\ }"), L("b", "12 : 8", BLUE)]),
+      mS3: () => main([L("a", "12 : 8"), L("e", "\\xrightarrow{\\ \\div 4\\ }"), L("b", "3 : 2", BLUE)]),
+      mS4: () => main([L("a", "3 : 2"), L("e", "\\xrightarrow{\\ \\times 3\\ }"), L("b", "9 : 6", BLUE)]),
     },
     picAt: {
-      c1: barAt(12, 1, CAP), c2: barAt(12, 1, CAP), p1: barAt(5), p2: barAt(5), p3: barAt(4),
-      m1: at(37.5), m2: at(37.5), m3: at(37.5), m4: at(37.5), m5: at(37.5), m6: at(37.5), m7: at(37.5), s1: { x: 79.5, y: 16 },
+      g12: at15, g30: at15, gS: at15, p1: barAt(5), p2: barAt(5), p3: barAt(4),
+      m1: at(37.5), m2: at(37.5), m3: at(37.5), m4: at(37.5), m5: at(37.5), m6: at(37.5),
+      mS1: at(37.5), mS2: at(37.5), mS3: at(37.5), mS4: at(37.5), s1: { x: 79.5, y: 16 },
     },
     lines: [
       { id: "k1", receipt: true, sub: "Idea 1", text: "What a ratio is", y: 50.5 },
       { id: "k2", receipt: true, sub: "Idea 2", text: "Ratio or actual value?", y: 50.5 },
       { id: "k3", receipt: true, sub: "Idea 3", text: "Increase and decrease", y: 50.5 },
-      { id: "k4", receipt: true, sub: "Idea 4", text: "Scaling", y: 50.5 },
+      { id: "k4", receipt: true, sub: "Idea 4", text: "Scaling: cut up, merge down", y: 50.5 },
     ],
     stages: {
-      "c1.r0": rowStage(0), "c1.r1": rowStage(1),
-      "c2.all": (s, H) => { showBars(s, H); fill(s, H); },
+      "g12.r0": growRow(0, () => true), "g12.r1": growRow(1, () => true),
+      "g12.merge": mergeRows([0, 1], (k) => k % 4 !== 0, "m4"),
+      "g30.r0": growRow(0, () => true, 0.03), "g30.r1": growRow(1, () => true, 0.03),
+      "g30.merge": mergeRows([0, 1], (k) => k % 10 !== 0, "m10"),
+      "gS.base": (s, H) => { growRow(0, (k) => k % 12 === 0)(s, H); growRow(1, (k) => k % 12 === 0)(s, H); },
+      "gS.cut2": cutRows([0, 1], (k) => k % 6 === 0 && k % 12 !== 0, 0.12),
+      "gS.cut4": cutRows([0, 1], (k) => k % 3 === 0 && k % 6 !== 0, 0.08),
+      "gS.merge": mergeRows([0, 1], (k) => k % 12 !== 0),
+      "gS.cut3": cutRows([0, 1], (k) => k % 4 === 0 && k % 12 !== 0, 0.1),
       "p1.r0": rowStage(0), "p1.r1": rowStage(1),
       "p1.old": (s, H) => H.draw(braceOf(s, "below-0-0"), 0),
       "p2.base": (s, H) => { showBars(s, H); H.show(braceOf(s, "below-0-0")); },
@@ -106,35 +171,34 @@ export function ratioWhat() {
       "p3.all": (s, H) => { mb(s, "name").forEach((n) => H.show(n)); mb(s, "bar", 0).forEach((b) => H.show(b)); H.show(braceOf(s, "below-0-0"));
         mb(s, "bar", 1).forEach((b, j) => H.grow(b, 0.2 + j * 0.25)); fill(s, H); },
       "m1.all": (s, H) => write(s, H, ["a"], 0),
-      "m2.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.5); write(s, H, ["b"], 1.3); },
-      "m3.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.5); write(s, H, ["b"], 1.3); },
+      ...Object.fromEntries(["m2", "m3", "m4", "mS1", "mS2", "mS3", "mS4"].map((m) => [`${m}.all`, (s, H) => { write(s, H, ["a", "e"], 0, 0.5); write(s, H, ["b"], 1.3); }])),
       "s1.all": (s, H) => { write(s, H, ["a"], 0); write(s, H, ["b"], 1.2); },
-      "m4.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.5); write(s, H, ["b"], 1.3); },
       "m5.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.5); write(s, H, ["b"], 1.3); H.sound("ding", 1.5); },
       "m6.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.5); write(s, H, ["b"], 1.3); H.sound("ding", 1.5); },
-      "m7.all": (s, H) => write(s, H, ["a", "e1", "b", "e2", "c", "e3", "d"], 0, 0.55),
     },
     steps: ({ push }) => {
       push("Here's a class with twelve boys and eight girls, and the question wants the ratio of boys to girls. Before we answer it, let's be clear about what a ratio actually is, because the whole topic rests on it.",
         { on: ["a1"], transition: "iris", pause: 0.6 });
 
       /* ── IDEA 1 ── */
-      push("Let me draw them. One box for every boy... twelve boxes. One box for every girl... eight boxes. Look at the two rows side by side, because a ratio is simply a way of COMPARING two amounts.",
-        { on: ["c1", "k1"], add: ["c1.r0", "c1.r1"], cue: { "c1.r0": "every boy", "c1.r1": "every girl" }, transition: card("Idea 1", "What a ratio is"), pause: 0.6 });
+      push("Let me draw them. One box for every boy... twelve boxes. One box for every girl... eight boxes, all the same size. Look at the two rows side by side, because a ratio is simply a way of COMPARING two amounts.",
+        { on: ["g12", "k1"], add: ["g12.r0", "g12.r1"], cue: { "g12.r0": "every boy", "g12.r1": "every girl" }, transition: card("Idea 1", "What a ratio is"), pause: 0.6 });
       push("Written as a ratio, boys to girls is twelve to eight, with two dots between them that we read as 'to'. Boys go first because the question said boys first. The order is part of the answer, so never swap it.",
         { on: ["m1"], add: ["m1.all"], cue: { "m1.all": "twelve to eight" }, pause: 0.6 });
-      push("Now watch what happens when I put the children into groups of four. The boys make three groups, and the girls make two. So for every three boys there are two girls. Twelve to eight says exactly the same thing as three to two.",
-        { on: ["c2", "m2"], off: ["c1", "m1"], add: ["c2.all", "m2.all"], cue: { "m2.all": "for every three" }, pause: 0.8 });
+      push("Now watch the boxes MERGE, four at a time. The lines between them fade away... and the boys become three big boxes, the girls two, each big box holding four children. So for every three boys there are two girls. Twelve to eight is three to two: merging made the numbers smaller, but the bars haven't changed at all.",
+        { on: ["m2"], off: ["m1"], add: ["g12.merge", "m2.all"], cue: { "g12.merge": "the lines between", "m2.all": "for every three" }, pause: 0.8 });
 
       /* ── IDEA 2 ── */
       push("Here's the bit everybody gets wrong. The ratio three to two does NOT mean there are three boys. There are twelve. Three and two are the ratio; twelve and eight are the actual values. A ratio only tells you how the groups compare.",
         { on: ["s1", "k2"], off: ["k1"], add: ["s1.all"], cue: { "s1.all": "actual values" }, transition: card("Idea 2", "Ratio or actual value?"), pause: 0.8 });
-      push("Think of another class with thirty boys and twenty girls. Different children, bigger numbers... and the same ratio, because thirty to twenty is three to two as well. Lots of different classes can share one ratio. That's why a ratio alone can't tell you how many.",
-        { on: ["m3"], off: ["m2"], add: ["m3.all"], cue: { "m3.all": "thirty to twenty" }, pause: 0.8 });
+      push("Think of another class, with thirty boys and twenty girls. Thirty boxes for the boys... and twenty for the girls. Different children, bigger numbers.",
+        { on: ["g30"], off: ["g12", "m2", "s1"], add: ["g30.r0", "g30.r1"], cue: { "g30.r0": "thirty boxes", "g30.r1": "twenty for" }, pause: 0.6 });
+      push("Now merge them, ten at a time. Watch the lines go... three big boxes of boys, two big boxes of girls. Thirty to twenty is three to two as well. Lots of different classes share one ratio, and that's why a ratio alone can't tell you how many.",
+        { on: ["m3"], add: ["g30.merge", "m3.all"], cue: { "g30.merge": "watch the lines", "m3.all": "thirty to twenty is" }, pause: 0.8 });
 
       /* ── IDEA 3 ── */
       push("Now a price of eighty dollars is increased in the ratio five to four. That means new price to old price is five to four. So the old price is four boxes, and the new price is five boxes of exactly the same size.",
-        { on: ["a2", "p1", "k3"], off: ["a1", "c2", "s1", "m3", "k2"], add: ["p1.r0", "p1.r1"], cue: { "p1.r0": "four boxes", "p1.r1": "five boxes" },
+        { on: ["a2", "p1", "k3"], off: ["a1", "g30", "m3", "k2"], add: ["p1.r0", "p1.r1"], cue: { "p1.r0": "four boxes", "p1.r1": "five boxes" },
           transition: card("Idea 3", "Increase and decrease"), pause: 0.6 });
       push("The old price, all four boxes, is eighty dollars. So one box is eighty shared into four... twenty dollars. Write twenty in every box, because every box is the same size.",
         { on: ["p2", "m4"], off: ["p1"], add: ["p1.old", "p2.base", "m4.all", "p2.fill"], cue: { "m4.all": "shared into", "p2.fill": "write twenty" }, pause: 0.8 });
@@ -143,11 +207,17 @@ export function ratioWhat() {
       push("Decrease it in the ratio three to four instead, and the new price is only three of those boxes. Three times twenty... sixty dollars. When the first number is the smaller one, the amount goes DOWN.",
         { on: ["p3", "m6"], off: ["p2", "m5"], add: ["p3.all", "m6.all"], cue: { "m6.all": "three times twenty" }, pause: 1 });
 
-      /* ── IDEA 4 ── */
-      push("Last idea: scaling. Multiply both numbers of a ratio by the same number and the ratio doesn't change. Three to two... six to four... nine to six... twelve to eight. Every one of them describes the very same class.",
-        { on: ["a1", "m7", "k4"], off: ["a2", "p3", "m6", "k3"], add: ["m7.all"], cue: { "m7.all": "three to two" }, transition: card("Idea 4", "Scaling"), pause: 0.8 });
-      push("Dividing works the same way. Twelve to eight, divide both by four, and you're back to three to two — which is what we did with the groups. The rule is: whatever you do to one side, do to the other.", { pause: 1 });
-      push("So, a ratio compares two amounts. Its numbers are not the actual values. It can be scaled up or down without changing, and a ratio like five to four can grow an amount, or shrink it.");
+      /* ── IDEA 4: SCALING, ON THE BOXES ── */
+      push("Last idea: scaling. Here's three to two as boxes. Now I CUT every box in two... and three to two becomes six to four. The bars are just as long as before; there are simply more, smaller boxes.",
+        { on: ["a1", "gS", "mS1", "k4"], off: ["a2", "p3", "m6", "k3"], add: ["gS.base", "gS.cut2", "mS1.all"], cue: { "gS.cut2": "cut every box", "mS1.all": "becomes six" },
+          transition: card("Idea 4", "Scaling: cut up, merge down"), pause: 0.6 });
+      push("Cut every box in two again... six to four becomes twelve to eight. Cutting makes the numbers BIGGER, and both rows are cut the same way, so the comparison never changes.",
+        { on: ["mS2"], off: ["mS1"], add: ["gS.cut4", "mS2.all"], cue: { "gS.cut4": "in two again", "mS2.all": "becomes twelve" }, pause: 0.8 });
+      push("Going down is the other way round: we MERGE. Watch the lines fade, four boxes at a time... and twelve to eight is back to three to two. Up, we cut. Down, we merge.",
+        { on: ["mS3"], off: ["mS2"], add: ["gS.merge", "mS3.all"], cue: { "gS.merge": "watch the lines", "mS3.all": "back to three" }, pause: 0.8 });
+      push("And cut every box into three instead... nine to six. Whatever you multiply or divide one side by, you do to the other, because every box in both rows is cut, or merged, the same way.",
+        { on: ["mS4"], off: ["mS3"], add: ["gS.cut3", "mS4.all"], cue: { "gS.cut3": "into three", "mS4.all": "nine to six" }, pause: 1 });
+      push("So, a ratio compares two amounts. Its numbers are not the actual values. Cutting the boxes scales it up, merging scales it down, and a ratio like five to four can grow an amount, or shrink it.");
     },
   });
 }
@@ -243,7 +313,8 @@ export function ratioParts() {
 
 /* ═══ 3. COMPOUND RATIO ════════════════════════════════════════════════════ */
 export function ratioCompound() {
-  const AB = barAt(3), BC = barAt(5), ABC = barAt(15);
+  /* each person keeps their own colour in every picture they are in */
+  const ADE = { name: "Ade", n: 8, fill: "#bfe3ff" }, BOLA = { name: "Bola", n: 12, fill: "#fff3a8" }, CHIDI = { name: "Chidi", n: 15, fill: "#c8f0c0" };
   return film({
     paperMm: PAPER, picW: PIC_W, ready: mathLoad(),
     asks: [
@@ -251,9 +322,11 @@ export function ratioCompound() {
       { id: "a2", text: "Together, Ade, Bola and Chidi have $175. How much does each of them have?" },
     ],
     pics: {
-      r1: () => bars(["Ade", "Bola"], [2, 3]),
-      r2: () => bars(["Bola", "Chidi"], [4, 5]),
-      r3: () => bars(["Ade", "Bola", "Chidi"], [8, 12, 15]),
+      /* the same box size throughout (one fifteenth of the bar), so a cut is a cut and the rows of
+         the joined ratio are exactly the rows that were cut: Ade 2 boxes of 4, Bola 3 of 4, and so on */
+      r1: () => boxRows([ADE, BOLA], 100 / 15),
+      r2: () => boxRows([BOLA, CHIDI], 100 / 15),
+      r3: () => boxRows([ADE, BOLA, CHIDI], 100 / 15),
       r4: () => bars(["Ade", "Bola", "Chidi"], [8, 12, 15], { text: "5", total: "$175" }),
       m1: () => main([L("a", "A : B = 2 : 3"), L("e", ",\\quad"), L("b", "B : C = 4 : 5")], 7),
       mL: () => main([L("a", "\\text{LCM}(3, 4)"), L("e", "="), L("b", "12", BLUE)]),
@@ -265,7 +338,7 @@ export function ratioCompound() {
       m7: () => main([L("a", "8 \\times 5,\\ 12 \\times 5,\\ 15 \\times 5"), L("e", "\\to"), L("b", "\\$40,\\ \\$60,\\ \\$75", GREEN)], 6.2),
       sK: () => side([[L("a", "40 : 60 = 2 : 3\\ \\checkmark", GREEN)], [L("b", "60 : 75 = 4 : 5\\ \\checkmark", GREEN)]], 4.4),
     },
-    picAt: { r1: AB, r2: BC, r3: ABC, r4: barAt(15, 1, null, true),
+    picAt: { r1: centred(150, 15), r2: centred(150, 15), r3: centred(150, 13), r4: barAt(15, 1, null, true),
       m1: at(37.5), mL: at(37.5), m2: at(37.5), m3: at(37.5), m4: at(37.5), m5: at(37.5), m6: at(37.5), m7: at(37.5), sK: { x: 79.5, y: 16 } },
     lines: [
       { id: "k1", receipt: true, sub: "Idea 1", text: "Make the shared one match", y: 50.5 },
@@ -273,9 +346,11 @@ export function ratioCompound() {
       { id: "k3", receipt: true, sub: "Idea 3", text: "Share in the joined ratio", y: 50.5 },
     ],
     stages: {
-      "r1.r0": rowStage(0), "r1.r1": rowStage(1),
-      "r2.r0": rowStage(0), "r2.r1": rowStage(1),
-      "r3.r0": rowStage(0), "r3.r1": rowStage(1), "r3.r2": rowStage(2),
+      "r1.r0": growRow(0, (k) => k % 4 === 0), "r1.r1": growRow(1, (k) => k % 4 === 0),
+      "r1.cut": cutRows([0, 1], (k) => k % 4 !== 0, 0.06),
+      "r2.r0": growRow(0, (k) => k % 3 === 0), "r2.r1": growRow(1, (k) => k % 3 === 0),
+      "r2.cut": cutRows([0, 1], (k) => k % 3 !== 0, 0.05),
+      "r3.r0": growRow(0, () => true, 0.03), "r3.r1": growRow(1, () => true, 0.03), "r3.r2": growRow(2, () => true, 0.03),
       "r4.all": (s, H) => { showBars(s, H); H.draw(braceOf(s, "total"), 0.2); fill(s, H); },
       "r3.ends": (s, H) => { [0, 2].forEach((i) => mb(s, "bar", i).forEach((b) => H.lit(b, 0.2, 2.6))); },
       "m1.all": (s, H) => write(s, H, ["a", "e", "b"], 0, 0.7),
@@ -301,8 +376,10 @@ export function ratioCompound() {
         { on: ["r2"], off: ["r1"], add: ["r2.r0", "r2.r1"], cue: { "r2.r0": "Bola, four", "r2.r1": "Chidi, five" }, pause: 0.8 });
       push("So find a number that both three and four go into: the lowest common multiple, twelve. Bola will be twelve boxes in both ratios.",
         { on: ["mL"], off: ["m1"], add: ["mL.all"], cue: { "mL.all": "lowest common" }, pause: 0.6 });
-      push("Scale the first ratio by four: two to three becomes eight to twelve. Scale the second by three: four to five becomes twelve to fifteen. Remember, scaling both sides never changes a ratio.",
-        { on: ["m2"], off: ["mL"], add: ["m2.a", "m2.b"], cue: { "m2.a": "by four", "m2.b": "by three" }, pause: 0.8 });
+      push("Back to the first ratio. To make Bola twelve, CUT every box into four. Ade's two boxes become eight, and Bola's three become twelve. Two to three is now eight to twelve, and the bars haven't changed length at all.",
+        { on: ["r1", "m2"], off: ["r2", "mL"], add: ["r1.cut", "m2.a"], cue: { "r1.cut": "cut every box", "m2.a": "is now eight" }, pause: 0.8 });
+      push("Now the second ratio. Cut every box into three. Bola's four boxes become twelve, and Chidi's five become fifteen. Four to five is twelve to fifteen. Cutting both rows the same way never changes a ratio.",
+        { on: ["r2"], off: ["r1"], add: ["r2.cut", "m2.b"], cue: { "r2.cut": "cut every box", "m2.b": "four to five is" }, pause: 0.8 });
       push("Now Bola matches, so the three can stand together. Ade, eight boxes. Bola, twelve. Chidi, fifteen. Ade to Bola to Chidi is eight to twelve to fifteen.",
         { on: ["r3", "m3"], off: ["r2", "m2"], add: ["r3.r0", "r3.r1", "r3.r2", "m3.all"], cue: { "r3.r0": "Ade, eight", "r3.r1": "Bola, twelve", "r3.r2": "Chidi, fifteen", "m3.all": "Ade to Bola to" }, pause: 0.8 });
       push("And the question only wants Ade to Chidi. Leave Bola out: eight to fifteen.",
