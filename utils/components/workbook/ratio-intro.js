@@ -20,7 +20,7 @@ import { modelSvg } from "/prep-math/activity/maths-workbook/js/modelart.js";
 import { braceOf, film, mb, part } from "./film-kit.js";
 import { mathLoad, mathifyPic, texAt } from "./film-math.js";
 import { mathRow, svgBox, centred, PAPER, PIC_W, K_ } from "./cbt-films.js";
-import { rollAsk } from "./film-ask.js";
+import { rollAsk, rollAskRatio, swapWord } from "./film-ask.js";
 
 const BLUE = "#2f6f8f", GREEN = "#2f7d4a", PURPLE = "#6b4fa0";
 /* the same step as EQUIVALENT FRACTIONS, beside the ratio */
@@ -199,6 +199,12 @@ export function ratioWhat() {
       "gS.cut3": cutRows([0, 1], (k) => k % 4 === 0 && k % 12 !== 0, 0.1),
       "rs.v128": rollTo(12, 8), "rs.v32": rollTo(3, 2, "÷ 4"), "rs.v3020": rollTo(30, 20), "rs.v32b": rollTo(3, 2, "÷ 10"),
       "rs.base": rollTo(3, 2), "rs.v64": rollTo(6, 4, "× 2"), "rs.v128b": rollTo(12, 8, "× 2"), "rs.v32c": rollTo(3, 2, "÷ 4"), "rs.v96": rollTo(9, 6, "× 3"),
+      /* the price question turns into the decrease: 5:4 rolls down to 3:4 and "increased" turns over */
+      "q2.down": (svg, H, stage) => {
+        const inner = stage?.querySelector('[data-t="a2"]')?.firstChild, instant = H.show === H.grow;
+        swapWord(inner, "increased", "decreased", { instant });
+        rollAskRatio(inner, "5:4", [3, 4], { instant });
+      },
       "q.up": rollQ([["12", 30], ["8", 20]]), "q.down": rollQ([["12", 12], ["8", 8]]),
       "p1.r0": rowStage(0), "p1.r1": rowStage(1),
       "p1.old": (s, H) => H.draw(braceOf(s, "below-0-0"), 0),
@@ -240,8 +246,8 @@ export function ratioWhat() {
         { on: ["p2", "m4"], off: ["p1"], add: ["p1.old", "p2.base", "m4.all", "p2.fill"], cue: { "m4.all": "shared into", "p2.fill": "write twenty" }, pause: 0.8 });
       push("The new price is five boxes. Five times twenty... one hundred dollars. The bigger number came first in the ratio, five to four, so the price went UP.",
         { on: ["m5"], off: ["m4"], add: ["p2.new", "m5.all"], cue: { "m5.all": "five times" }, pause: 0.8 });
-      push("Decrease it in the ratio three to four instead, and the new price is only three of those boxes. Three times twenty... sixty dollars. When the first number is the smaller one, the amount goes DOWN.",
-        { on: ["p3", "m6"], off: ["p2", "m5"], add: ["p3.all", "m6.all"], cue: { "m6.all": "three times twenty" }, pause: 1 });
+      push("Now watch the question change: DECREASED in the ratio three to four instead. The new price is only three of those boxes. Three times twenty... sixty dollars. When the first number is the smaller one, the amount goes DOWN.",
+        { on: ["p3", "m6"], off: ["p2", "m5"], add: ["q2.down", "p3.all", "m6.all"], cue: { "q2.down": "DECREASED", "p3.all": "only three", "m6.all": "three times twenty" }, pause: 1 });
 
       /* ── IDEA 4: SCALING, ON THE BOXES ── */
       push("Last idea: scaling. Back to our class, twelve boys and eight girls, as three to two in boxes. Now I CUT every box in two... and the numbers roll up: six to four, six quarters. The bars are just as long as before; there are simply more, smaller boxes.",

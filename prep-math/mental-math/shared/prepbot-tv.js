@@ -216,9 +216,11 @@ async function downloadThumb(id) {
   return true;
 }
 
-export async function openTv({ title = "", build = () => {}, steps: told = [], onEdit = null, related = [], onPick = null, filmId = "" } = {}) {
+export async function openTv({ title = "", build = () => {}, steps: told = [], onEdit = null, related = [], onPick = null, filmId = "", question = "", topic = "" } = {}) {
   const more = related.length && typeof onPick === "function";
-  const steps = told.length ? [introStep(title), ...told, outroStep(), ...(more ? [upNextStep(related)] : [])] : told;
+  /* the chapters of the film: the title card, the question, each idea or method, the practice card */
+  const firstTold = told.length && !told[0].chapter ? [{ ...told[0], chapter: "The question" }, ...told.slice(1)] : told;
+  const steps = told.length ? [{ ...introStep(title), chapter: "Intro" }, ...firstTold, { ...outroStep(), chapter: "Practise it yourself" }, ...(more ? [upNextStep(related)] : [])] : told;
   open?.close();
   css("/prep-math/mental-math/shared/prepbot-teacher.css");
   css("/prep-math/mental-math/shared/prepbot-tv.css");
@@ -260,6 +262,9 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     `<button class="mm-tv-btn mm-tv-btn--play" data-tv="play" type="button" aria-label="Play or pause" title="Play or pause (Space)" aria-keyshortcuts="Space"><span>${ICON_PAUSE}</span></button>` +
     `<button class="mm-tv-btn" data-tv="next" type="button" aria-label="Next step" title="Next step (Right arrow)" aria-keyshortcuts="ArrowRight">${ICON_NEXT}</button>` +
     `</div>` +
+    /* THE TOOLS KEY: *"aside the play, arrow and power icons, move every other icon to a tool icon"* */
+    `<div class="mm-tv-toolwrap"><button class="mm-tv-btn" data-tv="tools" type="button" aria-label="Tools" data-tip="Tools" aria-expanded="false">${UI.gear(22)}</button>` +
+    `<div class="mm-tv-tools pp-receipt" hidden><div class="pp-receipt__paper"><div class="mm-tv-tools__grid">` +
     (onEdit ? `<button class="mm-tv-btn" data-tv="edit" type="button" aria-label="Edit this film" title="Edit this film">${UI.edit(22)}</button>` : "") +
     (onEdit && filmId ? `<button class="mm-tv-btn" data-tv="keep" type="button" disabled aria-label="Keep this audio" title="Keep this audio: play these recordings from now on, with no voice service">${UI.speaker(22)}<span class="mm-tv-keep__n" aria-hidden="true"></span></button>` : "") +
     (onEdit && filmId ? `<button class="mm-tv-btn" data-tv="redo" type="button" aria-label="Record this line again" data-tip="Record this line again: a new take replaces the saved one">${UI.refresh(22)}</button>` : "") +
@@ -269,6 +274,8 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
       : `<button class="mm-tv-btn" data-tv="save" type="button" aria-label="Download this explanation" title="Download this explanation (D)" aria-keyshortcuts="D">${UI.download(22)}</button>`) +
     `<button class="mm-tv-btn" data-tv="full" type="button" aria-label="Fullscreen" title="Full screen (F)" aria-keyshortcuts="F">${ICON_FULLSCREEN}</button>` +
     `<button class="mm-tv-btn" data-tv="hide" type="button" aria-label="Hide the controls for more room" data-tip="Hide the controls for more room (C)" aria-keyshortcuts="C">${ICON_TUCK}</button>` +
+    (onEdit && filmId ? `<button class="mm-tv-btn" data-tv="desc" type="button" aria-label="YouTube description with timestamps" data-tip="YouTube description with timestamps, to copy">${UI.doc(22)}</button>` : "") +
+    `</div></div></div></div>` +
     `<button class="mm-tv-btn" data-tv="close" type="button" aria-label="Turn the TV off" data-tip="Turn the TV off (Esc)" aria-keyshortcuts="Escape">${ICON_POWER}</button>` +
     `</div></div>` +
     `<div class="mm-tv-stand" aria-hidden="true"><div class="mm-tv-stand-neck"></div><div class="mm-tv-stand-base"></div></div>` +
@@ -324,6 +331,20 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
   watchStage?.observe(stage);
 
   let index = -1;       // the step on the screen; -1 before the first
+  /* THE CLOCK FOR THE CHAPTERS. A film played straight through from its first step records when
+     each step began; that run is kept (per film) and becomes the description's timestamps. Any
+     jump (back, forward, a pause mid-run) spoils the run, and the times fall back to estimates. */
+  const TIMES_KEY = `pp-tv-times:${filmId}`;
+  let run = null;
+  const markTime = (i, speak) => {
+    if (!speak || !playing) { run = null; return; }
+    if (i === 0) { run = { t0: performance.now(), at: [0] }; return; }
+    if (!run || run.at.length !== i) { run = null; return; }
+    run.at[i] = (performance.now() - run.t0) / 1000;
+    if (i === steps.length - 1 || steps[i].chapter === "Practise it yourself") {
+      try { localStorage.setItem(TIMES_KEY, JSON.stringify(run.at)); } catch { /* not kept */ }
+    }
+  };
   /* THE SET WAITS TO BE TURNED ON. It used to start talking the moment the
      curtain opened, which gives nobody time to read the first picture or to
      turn the sound down — and a lesson that begins before you asked for it is
@@ -352,6 +373,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     const mine = ++token;
     teacher.stop();
     index = Math.max(0, Math.min(steps.length - 1, i));
+    markTime(index, speak);
     stage.innerHTML = "";
     build(stage);
     /* A STEP MARKED `once` IS NOT REPLAYED. Every step rebuilds the screen by
@@ -828,6 +850,84 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     if (e.target.closest?.("input, textarea, select, [contenteditable='true']")) return;
     if (e.key === "c" || e.key === "C") { e.preventDefault(); e.stopImmediatePropagation(); tuck(!tv.classList.contains("mm-tv--bare")); }
   }, true);
+  /* ── THE TOOLS MENU: a receipt of every key but play, the arrows and power ── */
+  const toolsBox = box.querySelector(".mm-tv-tools"), toolsKey = q("tools");
+  const showTools = (on) => { if (!toolsBox) return; toolsBox.hidden = !on; toolsKey?.setAttribute("aria-expanded", String(on)); };
+  toolsKey?.addEventListener("click", (e) => { e.stopPropagation(); showTools(toolsBox.hidden); });
+  /* a key in the menu does its thing, and the menu folds away */
+  toolsBox?.addEventListener("click", (e) => { if (e.target.closest(".mm-tv-btn")) setTimeout(() => showTools(false), 0); });
+  box.addEventListener("pointerdown", (e) => { if (toolsBox && !toolsBox.hidden && !e.target.closest(".mm-tv-toolwrap")) showTools(false); });
+
+  /* ── THE YOUTUBE DESCRIPTION, with timestamps ─────────────────────────────
+     *"Add description I can copy ... descriptions for youtube with timestamps."* The chapters are
+     the film's own: the title card, the question, every Idea / Method card, the practice card.
+     Times come from the last time this film was played straight through (that run is the video
+     you recorded); until then they are estimated from the words, and the panel says so. YouTube
+     wants the first chapter at 0:00, and each one at least ten seconds long. */
+  const fmtT = (x) => { const t = Math.max(0, Math.round(x)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
+  const estimate = () => {
+    const at = [];
+    let t = 0;
+    steps.forEach((st, i) => {
+      at[i] = t;
+      const say = st.say || "";
+      t += (st.lead || 0) + say.split(/\s+/).filter(Boolean).length / 2.4 + (say.match(/\.\.\./g) || []).length * 0.35 + (st.hold || 0) + (st.pause ?? 0.45) + 0.4;
+    });
+    return at;
+  };
+  const TAG = { percent: "percentages", ratio: "ratio", patterns: "patterns" };
+  const describe = () => {
+    let at = null;
+    try { at = JSON.parse(localStorage.getItem(TIMES_KEY) || "null"); } catch { at = null; }
+    const last = steps.findIndex((st) => st.chapter === "Practise it yourself");
+    const real = Array.isArray(at) && at.length > last;
+    if (!real) at = estimate();
+    const ch = [];
+    steps.forEach((st, i) => {
+      if (!st.chapter || at[i] == null) return;
+      if (ch.length && at[i] - ch[ch.length - 1].t < 10) return;
+      ch.push({ t: ch.length ? at[i] : 0, name: st.chapter });
+    });
+    const tags = ["#PrepBot", "#maths", TAG[topic] ? `#${TAG[topic]}` : "", "#mathstutorial", "#learnmaths"].filter(Boolean).join(" ");
+    const text = [
+      `${title} | PrepBot TV`, "",
+      ...(question ? [question, ""] : []),
+      "PrepBot works it through step by step: every step is drawn on the board and said out loud, so you see WHY it works, not just the answer. Pause at any step and try the next one yourself.", "",
+      "Chapters", ...ch.map((c) => `${fmtT(c.t)} ${c.name}`), "",
+      "Practise this, and many more like it, at https://www.prepportal.com.ng", "",
+      tags,
+    ].join("\n");
+    return { text, real };
+  };
+  if (q("desc")) {
+    const desc = document.createElement("div");
+    desc.className = "mm-tv-descbox pp-receipt";
+    desc.hidden = true;
+    desc.innerHTML = `<div class="pp-receipt__paper"><p class="mm-tv-descbox__t">YouTube description</p><p class="mm-tv-descbox__s"></p>`
+      + `<textarea class="mm-tv-descbox__text" readonly spellcheck="false" aria-label="The description"></textarea>`
+      + `<div class="mm-tv-descbox__keys"><button type="button" class="mm-tv-btn" data-d="copy" aria-label="Copy the description" data-tip="Copy">${UI.copy(20)}</button>`
+      + `<button type="button" class="mm-tv-btn" data-d="close" aria-label="Close" data-tip="Close">${ICON_CLOSE}</button></div></div>`;
+    screen.appendChild(desc);
+    const area = desc.querySelector("textarea");
+    q("desc").addEventListener("click", () => {
+      if (playing) toggle();
+      const { text, real } = describe();
+      area.value = text;
+      desc.querySelector(".mm-tv-descbox__s").textContent = real
+        ? "Timestamps from your last full play-through of this film."
+        : "Timestamps are ESTIMATED from the words. Play the film straight through once (no skipping), then open this again for exact times.";
+      desc.hidden = false;
+    });
+    desc.querySelector('[data-d="close"]').addEventListener("click", () => { desc.hidden = true; });
+    desc.querySelector('[data-d="copy"]').addEventListener("click", async (e) => {
+      const key = e.currentTarget;
+      try { await navigator.clipboard.writeText(area.value); } catch { area.select(); document.execCommand?.("copy"); }
+      key.dataset.tip = "Copied";
+      try { (await import("/utils/components/workbook/film-fx.js")).sfx("ding"); } catch { /* quiet */ }
+      setTimeout(() => { key.dataset.tip = "Copy"; }, 2000);
+    });
+  }
+
   q("full").addEventListener("click", () => { if (document.fullscreenElement) document.exitFullscreen?.(); else tv.requestFullscreen?.(); });
   box.addEventListener("click", (e) => { if (e.target === box) close(); });
   window.addEventListener("keydown", onKey, true);

@@ -755,6 +755,9 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
   const steps = events.map((ev) => ({
     say: ev.say,
     hold: ev.hold,
+    /* a title card starts a CHAPTER (the YouTube description's timestamps are made from these) */
+    ...(ev.change && typeof ev.change === "object" && ev.change.kind === "card"
+      ? { chapter: [ev.change.title, ev.change.sub].filter(Boolean).join(": ") } : {}),
     ...(ev.pause != null ? { pause: ev.pause } : {}),
     /* `lead`: seconds the voice waits before speaking (a title card on the screen) */
     ...(leadOf(ev) ? { lead: leadOf(ev) } : {}),
@@ -827,7 +830,7 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
   /* `ready`: a promise the player waits for before the first build (MathJax, for a film written in it;
      and every film that opens on a word problem, whose numbers are set in MathJax) */
   const wait = asks.length ? Promise.all([ready, mathLoad().catch(() => false)]) : ready;
-  return { build, steps, ...(wait ? { ready: wait } : {}) };
+  return { build, steps, question: asks[0]?.text || "", ...(wait ? { ready: wait } : {}) };
 }
 
 /* Where the working column starts, and how wide it may run. The drawing ends

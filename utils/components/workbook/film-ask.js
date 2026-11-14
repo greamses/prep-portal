@@ -260,6 +260,9 @@ export function askCss() {
   stroke-dasharray: 1; stroke-dashoffset: 0; }
 .fa-em--circle .fa-ink path { stroke: #c0453f; stroke-width: 2.4; }
 .fa-em--box .fa-ink path { stroke: #2f6f8f; }
+/* a word turned over in place (swapWord) */
+.fa-w.fa-swap { display: inline-block; animation: fa-swap 0.6s ease both; color: #c0453f; }
+@keyframes fa-swap { 0% { transform: scaleY(1); } 45% { transform: scaleY(0); } 100% { transform: scaleY(1); } }
 /* THE ACTION ON A KEYWORD: when PrepBot says it, it jumps, and a red ring goes round it */
 .fa-em--hl { display: inline-block; }
 .fa-em--hl.fa-act { animation: fa-act 1.8s ease both; }
@@ -313,4 +316,50 @@ export function rollAsk(inner, from, to, { instant = false, secs = 1 } = {}) {
   };
   requestAnimationFrame(tick);
   sfx("tick", 0);
+}
+
+/** ROLL A RATIO in the question ("5:4" to 3:4): each side counts to its new value, in its own box. */
+export function rollAskRatio(inner, from, to, { instant = false, secs = 1 } = {}) {
+  const el = [...(inner?.querySelectorAll(".fa-mj") || [])].find((e) => e.dataset.tex === String(from));
+  if (!el) return;
+  const start = (el.dataset.now || String(from)).split(":").map(Number);
+  const put = (v) => { const svg = texInline(v.join(":")); if (svg) el.innerHTML = svg; el.dataset.now = v.join(":"); };
+  if (instant || typeof requestAnimationFrame !== "function") { put(to); fitInk(inner); return; }
+  const t0 = performance.now();
+  let last = start.join(":");
+  const tick = (now) => {
+    if (!el.isConnected) return;
+    const k = Math.min(1, (now - t0) / (secs * 1000)), e = 1 - Math.pow(1 - k, 3);
+    const v = start.map((s, i) => Math.round(s + (to[i] - s) * e));
+    if (v.join(":") !== last) { put(v); last = v.join(":"); }
+    if (k < 1) requestAnimationFrame(tick); else { put(to); fitInk(inner); }
+  };
+  requestAnimationFrame(tick);
+  sfx("tick", 0);
+}
+
+/** TURN A WORD in the question over to another ("increased" to "decreased"), where it stands. */
+export function swapWord(inner, from, to, { instant = false } = {}) {
+  let w = [...(inner?.querySelectorAll(".fa-w") || [])].find((x) => x.textContent === from || x.dataset.was === from);
+  /* a question built again for a later step was never typed, so its words are plain text: wrap this one */
+  if (!w && inner) {
+    const walker = document.createTreeWalker(inner, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) => (n.parentElement.closest("svg, .fa-mj") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+    });
+    for (let n; !w && (n = walker.nextNode());) {
+      const i = n.data.search(new RegExp(`\\b${from}\\b`));
+      if (i < 0) continue;
+      const rest = n.splitText(i);
+      rest.splitText(from.length);
+      w = document.createElement("span");
+      w.className = "fa-w";
+      rest.replaceWith(w);
+      w.textContent = from;
+    }
+  }
+  if (!w) return;
+  w.dataset.was = from;
+  w.innerHTML = [...to].map((ch) => `<span class="fa-ch is-on">${ch.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</span>`).join("");
+  if (!instant) { w.classList.remove("fa-swap"); void w.offsetWidth; w.classList.add("fa-swap"); sfx("flip", 0); }
+  fitInk(inner);
 }
