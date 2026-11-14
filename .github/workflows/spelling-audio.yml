@@ -118,12 +118,13 @@ jobs:
       - name: List the clips for the site, pinned to that commit
         run: |
           node tools/spelling-audio/manifest.mjs --root store --sha ${{ steps.store.outputs.sha }}
-          node scripts/version-assets.mjs
       - name: Commit the list if it changed
         run: |
           git config user.name "prep-portal-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add data/spelling/audio.js exam-archive/national/*/index.html
+          # Only the clip list: page stamps are left to the deploy (version-assets runs before it),
+          # so a commit pushed while this ran can never conflict with the bot's.
+          git add data/spelling/audio.js
           if git diff --cached --quiet; then echo "Nothing new."; else
             git commit -q -m "Spelling: list the Kokoro clips (spelling-audio@${{ steps.store.outputs.sha }})"
             # version-assets may also restamp pages it does not commit; stash those for the rebase

@@ -125,6 +125,14 @@ export function createCarousel(mountEl) {
   return { addSlide, setAction, getEl, goTo, start, back, current: () => stack[stack.length - 1] };
 }
 
+/* An option may carry `tip`: a short label on the note, with the details in the
+   site's hover tooltip (utils/components/tooltip.js reads data-tip). */
+function tipFor(label, opt) {
+  if (!opt.tip) return;
+  label.dataset.tip = opt.tip;
+  label.setAttribute('aria-label', `${String(opt.label).replace(/<[^>]*>/g, '')}: ${opt.tip}`);
+}
+
 /* Single-select. Picking an option advances immediately; the nav's Skip arrow
    advances with whatever is already selected. */
 export function renderChoiceStep(carousel, id, { title, subtitle, name, options, colorOffset = 0, onPick, skipLabel }) {
@@ -141,6 +149,7 @@ export function renderChoiceStep(carousel, id, { title, subtitle, name, options,
     const label = document.createElement('label');
     label.className = `pp-sticky pp-sticky--tape sticky-choice pp-sticky--c${(colorOffset + i) % 6}${disabled ? ' is-disabled' : ''}`;
     label.innerHTML = `<input type="radio" name="${groupName}" value="${opt.value}" ${opt.checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} /><span>${opt.label}${opt.note ? ` <em>(${opt.note})</em>` : ''}</span>`;
+    tipFor(label, opt);
     if (!disabled) {
       // 'click' on the INPUT — deliberately not 'change' (never fires for an
       // already-checked radio, so a pre-selected default would strand you), and
@@ -176,6 +185,7 @@ export function renderMultiStep(carousel, id, { title, subtitle, options, isChec
     const label = document.createElement('label');
     label.className = `pp-sticky pp-sticky--tape sticky-choice pp-sticky--c${(colorOffset + i) % 6}${disabled ? ' is-disabled' : ''}`;
     label.innerHTML = `<input type="checkbox" value="${opt.value}" ${!disabled && isChecked(opt.value) ? 'checked' : ''} ${disabled ? 'disabled' : ''} /><span>${opt.label}${opt.note ? ` <em>(${opt.note})</em>` : ''}</span>`;
+    tipFor(label, opt);
     if (!disabled) {
       label.querySelector('input').addEventListener('change', (e) => onToggle(opt.value, e.target.checked));
     }

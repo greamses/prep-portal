@@ -656,22 +656,21 @@ tbody .drill-grid-th { border-right-width: 2px; }
   width: var(--face);
   height: var(--face);
   padding: 0;
-  /* A round frame: the one shape exempt from the no-rounded-corners rule is the circle.
-     !important because the receipt's icon-button rule (square, 1px border) outranks a class. */
-  border: 3px solid var(--accent-secondary) !important;
-  border-radius: 50% !important;
-  background: color-mix(in srgb, var(--accent-secondary) 14%, var(--app-bg, #fff)) !important;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-secondary) 18%, transparent), 0 8px 18px -12px rgba(20, 19, 15, 0.5) !important;
+  /* Just the boy: no frame, no background (the user's call). !important because the
+     receipt's icon-button rule (square, 1px border, paper fill) outranks a class. */
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
   cursor: pointer;
-  overflow: hidden;
+  overflow: visible;
   flex: none;
-  transition: box-shadow 0.15s ease;
 }
-.spell-face:hover, .spell-face:focus-visible { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-primary) 45%, transparent), 0 8px 18px -12px rgba(20, 19, 15, 0.5) !important; outline: none; }
+.spell-face:hover svg, .spell-face:focus-visible svg { filter: drop-shadow(0 4px 6px rgba(20, 19, 15, 0.25)); }
+.spell-face:focus-visible { outline: 2px dashed var(--accent-primary); outline-offset: 2px; }
 .spell-face svg { width: 100%; height: 100%; display: block; transform-origin: 50% 85%; pointer-events: none; }
 .spell-face:disabled { cursor: default; opacity: 0.55; }
 /* The mouth does the talking (boy.js); the head only nods gently with it. */
-.spell-face.is-talking { border-color: var(--accent-primary) !important; }
 .spell-face.is-talking svg { animation: spell-talk 0.6s ease-in-out infinite alternate; }
 @keyframes spell-talk {
   from { transform: translateY(0); }

@@ -53,12 +53,18 @@ const OPERATION_LABELS = {
   octAdd: 'Octal addition', octSub: 'Octal subtraction', octMul: 'Octal multiplication', octDiv: 'Octal division',
   hexAdd: 'Hex addition', hexSub: 'Hex subtraction', hexMul: 'Hex multiplication', hexDiv: 'Hex division',
   romanToNum: 'Roman to number', numToRoman: 'Number to Roman',
-  spellSay: 'Read out', spellIpa: 'Transcribe (IPA)',
+  spellSay: 'Read out', spellIpa: 'Transcribe',
   pctToDec: 'Percentages to decimals', pctToFrac: 'Percentages to fractions', fracToPct: 'Fractions to percentages',
   decToPct: 'Decimals to percentages', pctOf: 'Percentages of numbers',
   subOne: 'One step', subTwo: 'Two steps', subMulti: 'Brackets and fractions', subPower: 'Powers and roots',
   eqOne: '1-Step Equations', eqTwo: '2-Step Equations', eqMulti: 'Multi-Step Equations', eqSystem: 'Simultaneous Equations',
   baseTo10: 'To Base 10', baseFrom10: 'From Base 10', baseToBase: 'Base to Base',
+};
+
+// Details shown on hover where a label is kept to a word or two.
+const OPERATION_TIPS = {
+  spellSay: 'The boy says the word; you spell it. Tap him or press Enter to hear it again.',
+  spellIpa: "You see the word's sounds in IPA (the dictionary's phonetic letters) and spell the word.",
 };
 
 // Category filters which operations are on offer. Basic keeps the default
@@ -378,7 +384,7 @@ function renderOperationsPick() {
   renderMultiStep(topic, 'operations', {
     title: isBars ? 'Add, subtract, or both?' : categoryValue === 'spelling' ? 'Hear the word, or read its sounds?' : `Which ${(TOPIC_LABEL[categoryValue] || categoryValue).toLowerCase()} questions?`,
     colorOffset: 3,
-    options: CATEGORY_OPERATIONS[categoryValue].map((op) => ({ value: op, label: OPERATION_LABELS[op] })),
+    options: CATEGORY_OPERATIONS[categoryValue].map((op) => ({ value: op, label: OPERATION_LABELS[op], tip: OPERATION_TIPS[op] })),
     isChecked: (v) => operations.has(v),
     onToggle: (v, checked) => {
       if (checked) operations.add(v); else operations.delete(v);
@@ -403,7 +409,7 @@ function renderSpellBankStep() {
   renderChoiceStep(topic, 'spell-bank', {
     title: 'Which word list?',
     name: 'drill-spell-bank',
-    options: BANK_KEYS.map((k) => ({ value: k, label: `${BANKS[k].label} · ${BANKS[k].rows.length} words`, checked: spellBank === k })),
+    options: BANK_KEYS.map((k) => ({ value: k, label: BANKS[k].label, tip: `${BANKS[k].rows.length} words in ${setCount(k)} sets of ten, from the most common to the rarest`, checked: spellBank === k })),
     onPick: (v) => {
       if (v !== spellBank) { spellBank = v; spellSets.clear(); spellSets.add(1); }
       saveContent();
@@ -447,8 +453,8 @@ function renderSpellPaceStep() {
     subtitle: 'The clock comes from the number of words.',
     name: 'drill-spell-pace',
     options: [
-      { value: 'normal', label: `Normal · 10 words a minute (${t(false)})`, checked: !spellFocus },
-      { value: 'focus', label: `Focus · 20 a minute, one wrong letter and you are out (${t(true)})`, checked: spellFocus },
+      { value: 'normal', label: 'Normal', tip: `10 words a minute: ${t(false)} for your sets. Skip a word if you are stuck.`, checked: !spellFocus },
+      { value: 'focus', label: 'Focus', tip: `20 words a minute: ${t(true)}. One wrong letter (or a skip) and you are out, and off the leaderboard.`, checked: spellFocus },
     ],
     onPick: (v) => {
       spellFocus = v === 'focus';
@@ -467,8 +473,8 @@ function renderSpellMasterStep() {
     subtitle: 'Word Master brings back every word you skipped until you can spell it.',
     name: 'drill-spell-master',
     options: [
-      { value: 'on', label: 'Word Master: practise the words I missed', checked: spellMaster },
-      { value: 'off', label: 'Straight to the results', checked: !spellMaster },
+      { value: 'on', label: 'Master', tip: 'Word Master: after the round, every word you skipped comes back until you can spell it. Then the results.', checked: spellMaster },
+      { value: 'off', label: 'Results', tip: 'Go straight to the leaderboard when the round ends.', checked: !spellMaster },
     ],
     onPick: (v) => { spellMaster = v === 'on'; saveContent(); flow.next(); }, // last step of this section
   });
