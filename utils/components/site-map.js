@@ -191,7 +191,10 @@ export const SITE_PAGES = [
   { id: "writing-trainer", title: "Writing Trainer", href: "/writing/trainer.html", category: "writing", blurb: "Guided writing practice.", keywords: ["writing trainer", "writing practice"] },
   { id: "grammar-police", title: "Grammar Police", href: "/writing/activity/grammar-police/", category: "writing", blurb: "Catch grammar mistakes in a fast-paced game.", keywords: ["grammar police", "grammar game", "grammar correction", "fix the grammar"] },
 
-  // ── Reading ─────────────────────────────────────────────────────────
+  // ── Media: PrepBot's videos, then reading ──────────────────────────────
+  { id: "media-videos", title: "PrepBot Videos", href: "/media/videos/", category: "reading", overview: true,
+    blurb: "Every PrepBot TV lesson: ratio, percentages, averages, sequences, algebra derivations, drawn step by step.",
+    keywords: ["videos", "video lessons", "prepbot tv", "media", "watch", "tutorial", "lesson videos"] },
   {
     id: "blogs",
     title: "Blogs",

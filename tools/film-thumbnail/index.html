@@ -132,6 +132,10 @@
       averages: { name: "Averages", note: "#b8ece2", note2: "#fff3a8", deep: "#5fb8a8", word: "share it fairly",
         sign: () => `<svg viewBox="0 0 160 110">${[2, 7, 4, 6, 6].map((h, i) => `<rect x="${22 + i * 24}" y="${96 - h * 11}" width="20" height="${h * 11}" fill="${["#bfe3ff", "#fff3a8", "#bfe3ff", "#fff3a8", "#bfe3ff"][i]}" stroke="${INK}" stroke-width="3"/>`).join("")}`
           + `<path d="M14 41 H146" stroke="#c0453f" stroke-width="3.4" stroke-dasharray="9 6"/></svg>` },
+      algebra: { name: "Algebra", note: "#e8c8ff", note2: "#bfe3ff", deep: "#b8a8e8", word: "complete the square",
+        sign: () => `<svg viewBox="0 0 160 110"><rect x="30" y="14" width="62" height="62" fill="#bfe3ff" stroke="${INK}" stroke-width="3"/><rect x="92" y="14" width="16" height="62" fill="#fff3a8" stroke="${INK}" stroke-width="3"/>`
+          + `<rect x="30" y="76" width="62" height="16" fill="#fff3a8" stroke="${INK}" stroke-width="3"/><rect x="92" y="76" width="16" height="16" fill="#ffd7a3" stroke="#c0453f" stroke-width="3" stroke-dasharray="5 3"/>`
+          + `<text x="61" y="52" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="900" font-size="22" fill="${INK}">x²</text></svg>` },
       maths: { name: "Maths", note: "#ffd7a3", note2: "#bfe3ff", deep: "#f0a868", word: "work it out",
         sign: () => `<svg viewBox="0 0 160 110"><text x="80" y="70" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="900" font-size="46" fill="${INK}">+ − × ÷</text></svg>` },
     };
@@ -169,6 +173,7 @@
       ratio: { title: "Ratio, step by step", blurb: ["What a ratio is", "Part, whole, difference", "Compound ratio", "Squares and cubes", "Ages, shapes"] },
       percent: { title: "Percentages, step by step", blurb: ["Out of a hundred", "Percent of an amount", "Increase, decrease", "Reverse percentages"] },
       averages: { title: "Mean, median, mode, range", blurb: ["Share it fairly", "Median and mode", "Totals", "Competition questions"] },
+      algebra: { title: "Algebra derivations", blurb: ["The quadratic formula", "Completing the square", "With pictures"] },
       patterns: { title: "Sequences and series", blurb: ["Find the rule", "The nth term", "Adding a series", "Shapes that grow"] },
     };
     function playlistCover(topic) {

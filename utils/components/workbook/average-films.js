@@ -25,6 +25,7 @@ import { film } from "./film-kit.js";
 import { mathLoad } from "./film-math.js";
 import { mathRow, svgBox, centred, PAPER, PIC_W } from "./cbt-films.js";
 import { rollAsk } from "./film-ask.js";
+import { tableLine, tableCol } from "./film-table.js";
 
 const INK = "#2a2723", BLUE = "#2f6f8f", GREEN = "#2f7d4a", PURPLE = "#6b4fa0", RED = "#c0453f";
 const SKY = "#bfe3ff", BUTTER = "#fff3a8", LEAF = "#c8f0c0", PEACH = "#ffd7a3", PALE = "#e6e0d6";
@@ -193,7 +194,6 @@ export function avgMMR() {
     paperMm: PAPER, picW: PIC_W, ready: mathLoad(),
     asks: [{ id: "a1", text: "The marks of seven pupils are 7, 3, 9, 3, 5, 8 and 4. Find the median, the mode and the range." }],
     pics: {
-      tb: () => statsTable(),
       cd: () => cards(V),
       c8: () => cards([...V, 6]),
       mM: () => main([L("a", "\\text{median}"), L("e", "="), L("b", "5", GREEN)]),
@@ -202,14 +202,20 @@ export function avgMMR() {
       mO: () => main([L("a", "\\text{mode}"), L("e", "="), L("b", "3\\ \\ (\\text{not } 2)", GREEN)]),
       mR: () => main([L("a", "9 - 3"), L("e", "="), L("b", "6", GREEN)]),
     },
-    picAt: { tb: centred(150, 13), cd: centred(150, 15), c8: centred(150, 15), mM: at(36), mW: at(36), m8: at(36), mO: at(36), mR: at(36) },
+    picAt: { cd: centred(150, 15), c8: centred(150, 15), mM: at(36), mW: at(36), m8: at(36), mO: at(36), mR: at(36) },
     lines: [
+      tableLine("tb", [
+        { head: "Mean", tone: 3, cells: ["share out equally", "total ÷ how many"] },
+        { head: "Median", tone: 0, cells: ["the middle one", "in ORDER first"] },
+        { head: "Mode", tone: 2, cells: ["the most often", "a value, not a count"] },
+        { head: "Range", tone: 4, cells: ["the spread", "biggest − smallest"] },
+      ], { y: 24, w: 86, size: 1.6 }),
       { id: "k1", receipt: true, sub: "The four", text: "mean, median, mode, range", y: 50.5 },
       { id: "k2", receipt: true, sub: "Median", text: "in order, then the middle", y: 50.5 },
       { id: "k3", receipt: true, sub: "Mode and range", text: "most often; biggest − smallest", y: 50.5 },
     ],
     stages: {
-      "tb.r0": (s, H) => H.write(key(s, "tr0"), 0), "tb.r1": (s, H) => H.write(key(s, "tr1"), 0), "tb.r2": (s, H) => H.write(key(s, "tr2"), 0), "tb.r3": (s, H) => H.write(key(s, "tr3"), 0),
+      "tb.r0": tableCol("tb", 0), "tb.r1": tableCol("tb", 1), "tb.r2": tableCol("tb", 2), "tb.r3": tableCol("tb", 3),
       "cd.deal": dealCards(7), "cd.wrong": (s, H) => { const g = key(s, "k3"); if (g) H.lit(g.querySelector("rect"), 0.2, 3); },
       "cd.sort": sortCards, "cd.mid": litSorted([3]),
       "c8.deal": (s, H) => { dealCards(8)(s, H); }, "c8.sort": sortCards, "c8.mid": litSorted([3, 4]),

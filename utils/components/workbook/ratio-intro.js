@@ -21,6 +21,7 @@ import { braceOf, film, mb, part } from "./film-kit.js";
 import { mathLoad, mathifyPic, texAt } from "./film-math.js";
 import { mathRow, svgBox, centred, PAPER, PIC_W, K_ } from "./cbt-films.js";
 import { rollAsk, rollAskRatio, swapWord } from "./film-ask.js";
+import { tableLine, tableCol } from "./film-table.js";
 
 const BLUE = "#2f6f8f", GREEN = "#2f7d4a", PURPLE = "#6b4fa0";
 /* the same step as EQUIVALENT FRACTIONS, beside the ratio */
@@ -318,7 +319,6 @@ export function ratioParts() {
       q0: () => bars(N, R),
       qW: () => bars(N, R, { total: "8 boxes" }),
       qD: () => bars(N, R, { below: { 1: [{ from: 3, to: 5, text: "2 boxes" }] } }),
-      kw: () => keywordTable(),
       qS: () => bars(N, R, { text: "8", total: "64" }),
       qP: () => bars(N, R, { text: "7", below: { 0: [{ from: 0, to: 3, text: "21" }] } }),
       qA: () => bars(N, R, { text: "9", below: { 1: [{ from: 3, to: 5, text: "18" }] } }),
@@ -347,7 +347,7 @@ export function ratioParts() {
       mT3: () => main([L("a", "\\text{Bola} = \\text{Ade} + 2 \\times \\text{Ade}"), L("e", "\\quad"), L("b", "1 : 3", BLUE)], 6.4),
       sK: () => side([[L("a", "\\text{Ade } 27,\\ \\text{Bola } 45")], [L("b", "45 - 27 = 18\\ \\checkmark", GREEN)]], 4.2),
     },
-    picAt: { q0: AT, qW: ATT, qD: AT, qS: ATT, qP: AT, qA: AT, kw: centred(150, 14), tr1: T(), tr2: T(), tr3: T(),
+    picAt: { q0: AT, qW: ATT, qD: AT, qS: ATT, qP: AT, qA: AT, tr1: T(), tr2: T(), tr3: T(),
       mPP: at(37.5), mPW: at(37.5), mPD: at(37.5), mS: at(37.5), mP: at(37.5), mD: at(37.5), mA: at(37.5),
       mT1: at(37.5), mT2: at(37.5), mT3: at(37.5), sK: { x: 79.5, y: 16 } },
     lines: [
@@ -356,15 +356,18 @@ export function ratioParts() {
       { id: "k3", receipt: true, sub: "Part to difference", text: "the gap between them", y: 50.5 },
       { id: "k4", receipt: true, sub: "Spot it", text: "sum, difference or one part?", y: 50.5 },
       { id: "k5", receipt: true, sub: "The trap", text: "relationship before keyword", y: 50.5 },
+      tableLine("kw", [
+        { head: "The whole (sum)", tone: 2, cells: ["share", "altogether", "in all", "total", "together"] },
+        { head: "The gap (difference)", tone: 4, cells: ["more than", "less than", "fewer than", "difference", "exceeds"] },
+        { head: "One part", tone: 3, cells: ["gets", "has", "receives", "is given", "'s share is"] },
+      ], { y: 26, w: 80, size: 1.6 }),
     ],
     stages: {
       "q0.r0": rowStage(0), "q0.r1": rowStage(1),
       "qW.all": (s, H) => { showBars(s, H); H.draw(braceOf(s, "total"), 0.2); },
       "qD.all": (s, H) => { showBars(s, H); H.draw(braceOf(s, "below-1-0"), 0.2); mb(s, "bar", 1).slice(3).forEach((b) => H.lit(b, 0.3, 2.4)); },
-      "kw.heads": (s, H) => mb(s, "bar").forEach((n, i) => H.write(n, i * 0.25)),
-      "kw.c0": (s, H) => [0, 1, 2, 3, 4].forEach((i) => H.write(key(s, `t0-${i}`), i * 0.35)),
-      "kw.c1": (s, H) => [0, 1, 2, 3, 4].forEach((i) => H.write(key(s, `t1-${i}`), i * 0.35)),
-      "kw.c2": (s, H) => [0, 1, 2, 3, 4].forEach((i) => H.write(key(s, `t2-${i}`), i * 0.35)),
+      "kw.heads": () => {},
+      "kw.c0": tableCol("kw", 0), "kw.c1": tableCol("kw", 1), "kw.c2": tableCol("kw", 2),
       "qS.all": (s, H) => { showBars(s, H); H.draw(braceOf(s, "total"), 0.2); },
       "qP.all": (s, H) => { showBars(s, H); H.draw(braceOf(s, "below-0-0"), 0.2); },
       "qA.all": (s, H) => { showBars(s, H); H.draw(braceOf(s, "below-1-0"), 0.2); },

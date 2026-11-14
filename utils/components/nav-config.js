@@ -79,10 +79,10 @@ const NAV_CONFIG = [
   },
 
   /* =========================
-      BLOGS
+      MEDIA (was Blogs): PrepBot's videos, then the reading
   ========================= */
   {
-    text: "Blogs",
+    text: "Media",
     icon: I.blogs,
 
     image: `
@@ -111,9 +111,22 @@ const NAV_CONFIG = [
       </g>
     </svg>`,
 
-    description: "Learn with stories",
+    description: "Videos and stories to learn from",
 
     children: [
+      {
+        text: "PrepBot Videos",
+        icon: I.math,
+        description: "Lessons drawn step by step",
+        children: [
+          { text: "All videos", href: "/media/videos/", description: "Every PrepBot lesson in one place" },
+          { text: "Ratio", href: "/media/videos/?t=ratio", description: "Boxes, sharing, compound ratio" },
+          { text: "Percentages", href: "/media/videos/?t=percent", description: "Keywords, increase and decrease" },
+          { text: "Averages", href: "/media/videos/?t=averages", description: "Mean, median, mode and range" },
+          { text: "Sequences", href: "/media/videos/?t=patterns", description: "Rules, nth term, series" },
+          { text: "Algebra", href: "/media/videos/?t=algebra", description: "Derivations, step by step" },
+        ],
+      },
       {
         text: "Science",
         icon: I.science,

@@ -19,6 +19,7 @@ import { film } from "./film-kit.js";
 import { mathLoad } from "./film-math.js";
 import { mathRow, svgBox, centred, PAPER, PIC_W } from "./cbt-films.js";
 import { rollAsk, swapWord, noteKeyword } from "./film-ask.js";
+import { tableLine, tableCol } from "./film-table.js";
 
 const INK = "#2a2723", BLUE = "#2f6f8f", GREEN = "#2f7d4a", PURPLE = "#6b4fa0", RED = "#c0453f";
 const SKY = "#bfe3ff", BUTTER = "#fff3a8", LEAF = "#c8f0c0", PALE = "#e6e0d6", PART = "#f4c95d";
@@ -91,12 +92,13 @@ function hundred() {
 const shade = (n) => vis(Array.from({ length: n }, (_, r) => `row${r}`), Array.from({ length: 10 - n }, (_, r) => `row${n + r}`));
 /** "20% = 20/100 = 1/5": the per cent, the fraction out of a hundred, and its simplest name */
 function pctRoller() {
-  return svgBox(150, 30, `<g data-mb="num" data-k="pr">`
+  return svgBox(150, 38, `<g data-mb="num" data-k="pr">`
     + T("p", 46, 20, 12, "end") + S(47.5, 20, 12, "%", "start") + S(66, 20, 12, "=")
     + T("fn", 80, 14, 8.5) + `<line x1="72" y1="16.8" x2="88" y2="16.8" stroke="${INK}" stroke-width="0.7"/>` + T("fd", 80, 25.5, 8.5)
     + `<g data-k="simp" style="opacity:0">${S(96, 20, 12, "=")}` + T("sn", 108, 14, 8.5, "middle", PURPLE)
     + `<line x1="102" y1="16.8" x2="114" y2="16.8" stroke="${PURPLE}" stroke-width="0.7"/>` + T("sd", 108, 25.5, 8.5, "middle", PURPLE)
-    + T("sw", 120, 20, 6.5, "start", PURPLE, 'font-style="italic"') + `</g></g>`);
+    + T("sw", 120, 20, 6.5, "start", PURPLE, 'font-style="italic"')
+    + S(66, 33, 8, "=") + T("dc", 72, 33, 8, "start", BLUE) + S(98, 33, 5.5, "as a decimal", "start", BLUE) + `</g></g>`);
 }
 const showPr = (s, H) => { const g = key(s, "pr"); if (g) H.show(g); };
 
@@ -121,16 +123,16 @@ export function pctWhat() {
       "hs.s20": shade(2),
       "pr.v20": (s, H) => { showPr(s, H); roll({ p: 20, fn: 20, fd: 100 })(s, H); },
       "hs.fifths": linesTo(H_LINES, hLines([2, 4, 6, 8])),
-      "pr.fifth": (s, H) => { roll({ sn: 1, sd: 5, sw: "a fifth" })(s, H); vis(["simp"])(s, H); },
+      "pr.fifth": (s, H) => { roll({ sn: 1, sd: 5, sw: "a fifth", dc: "0.2" })(s, H); vis(["simp"])(s, H); },
       "q.50": q([["20\\%", 50]]),
       "hs.s50": shade(5), "hs.halves": linesTo(H_LINES, hLines([5])),
-      "pr.v50": roll({ p: 50, fn: 50, fd: 100, sn: 1, sd: 2, sw: "a half" }),
+      "pr.v50": roll({ p: 50, fn: 50, fd: 100, sn: 1, sd: 2, sw: "a half", dc: "0.5" }),
       "q.10": q([["20\\%", 10]]),
       "hs.s10": shade(1), "hs.tenths": linesTo(H_LINES, hLines([1, 2, 3, 4, 5, 6, 7, 8, 9])),
-      "pr.v10": roll({ p: 10, fn: 10, fd: 100, sn: 1, sd: 10, sw: "a tenth" }),
+      "pr.v10": roll({ p: 10, fn: 10, fd: 100, sn: 1, sd: 10, sw: "a tenth", dc: "0.1" }),
       "q.40": q([["20\\%", 40]]),
       "hs.s40": shade(4), "hs.fifths2": linesTo(H_LINES, hLines([2, 4, 6, 8])),
-      "pr.v40": roll({ p: 40, fn: 40, fd: 100, sn: 2, sd: 5, sw: "two fifths" }),
+      "pr.v40": roll({ p: 40, fn: 40, fd: 100, sn: 2, sd: 5, sw: "two fifths", dc: "0.4" }),
     },
     steps: ({ push }) => {
       push("What is twenty per cent as a fraction? To answer it, you only need to know what those two words, per cent, actually mean.",
@@ -139,18 +141,18 @@ export function pctWhat() {
         { on: ["hs", "k1"], add: ["hs.draw"], cue: { "hs.draw": "here's a square" }, transition: card("Idea 1", "Per cent: out of a hundred"), pause: 0.6 });
       push("Twenty per cent is twenty of those hundred squares: these two rows. As a fraction, that's twenty over a hundred.",
         { on: ["pr"], add: ["hs.s20", "pr.v20"], cue: { "hs.s20": "twenty of those", "pr.v20": "as a fraction" }, pause: 0.6 });
-      push("But we can say it more simply. Watch the lines MERGE: every two rows become one strip, and the square is five equal strips. Our twenty squares are ONE strip out of five. Twenty per cent is a FIFTH.",
+      push("But we can say it more simply. Watch the lines MERGE: every two rows become one strip, and the square is five equal strips. Our twenty squares are ONE strip out of five. Twenty per cent is a FIFTH. And as a decimal, twenty hundredths is 0.2.",
         { on: ["k2"], off: ["k1"], add: ["hs.fifths", "pr.fifth"], cue: { "hs.fifths": "watch the lines", "pr.fifth": "one strip out of five" },
           transition: card("Idea 2", "Merge to the simplest fraction"), pause: 0.8 });
       push("Twenty over a hundred and one fifth are equivalent fractions: the same amount of the square, said with smaller numbers. Merging is simplifying.", { pause: 0.8 });
-      push("Same question, new number. Watch it roll to fifty per cent. Fifty squares: half the square. Merge into two strips, and it's one of the two. Fifty per cent is a HALF.",
+      push("Same question, new number. Watch it roll to fifty per cent. Fifty squares: half the square. Merge into two strips, and it's one of the two. Fifty per cent is a HALF, and as a decimal, 0.5.",
         { on: ["k3"], off: ["k2"], add: ["q.50", "hs.s50", "hs.halves", "pr.v50"], cue: { "q.50": "watch it roll", "hs.s50": "fifty squares", "hs.halves": "merge into two", "pr.v50": "is a half" },
           transition: card("Idea 3", "Same square, new per cent"), pause: 0.8 });
-      push("Now ten per cent. One row of ten. Cut the square into ten strips, and it's one of the ten: a TENTH. Ten per cent is a tenth, and that one is worth remembering, because ten per cent of anything is just that amount divided by ten.",
+      push("Now ten per cent. One row of ten. Cut the square into ten strips, and it's one of the ten: a TENTH. Ten per cent is a tenth, and that one is worth remembering, because ten per cent of anything is just that amount divided by ten. As a decimal it's 0.1.",
         { add: ["q.10", "hs.s10", "hs.tenths", "pr.v10"], cue: { "q.10": "now ten", "hs.tenths": "cut the square", "pr.v10": "a tenth" }, pause: 0.8 });
-      push("And forty per cent: four rows. Merge into fifths again, and that's two strips of the five. Forty per cent is two fifths.",
+      push("And forty per cent: four rows. Merge into fifths again, and that's two strips of the five. Forty per cent is two fifths, or 0.4 as a decimal.",
         { add: ["q.40", "hs.s40", "hs.fifths2", "pr.v40"], cue: { "q.40": "and forty", "hs.fifths2": "merge into fifths", "pr.v40": "two strips" }, pause: 1 });
-      push("So a per cent is a fraction out of a hundred. Merge the hundred squares into equal strips to find its simplest name: twenty per cent is a fifth, fifty is a half, ten is a tenth.");
+      push("So a per cent is a fraction out of a hundred, and a decimal is the same thing written with a point: twenty per cent is twenty hundredths, 0.2. Merge the hundred squares into equal strips to find its simplest name: twenty per cent is a fifth, fifty is a half, ten is a tenth.");
     },
   });
 }
@@ -201,8 +203,8 @@ export function pctChange() {
       bar: () => amountBar(),
       or: () => ofRoller(),
       mI: () => main([L("a", "80 + 16"), L("e", "="), L("b", "96", GREEN)]),
-      mI2: () => main([L("a", "6 \\times 16 = 96"), L("e", "\\qquad"), L("b", "120\\% = \\tfrac{6}{5}", PURPLE)], 7),
-      mD: () => main([L("a", "80 - 16 = 64"), L("e", "\\qquad"), L("b", "80\\% = \\tfrac{4}{5}", PURPLE)], 7),
+      mI2: () => main([L("a", "6 \\times 16 = 96"), L("e", "\\qquad"), L("b", "120\\% = \\tfrac{6}{5} = 1.2,\\ \\ 1.2 \\times 80 = 96", PURPLE)], 6.4),
+      mD: () => main([L("a", "80 - 16 = 64"), L("e", "\\qquad"), L("b", "80\\% = \\tfrac{4}{5} = 0.8,\\ \\ 0.8 \\times 80 = 64", PURPLE)], 6.4),
     },
     picAt: { bar: centred(150, 15), or: at(35), mI: at(37.5), mI2: at(37.5), mD: at(37.5) },
     lines: [
@@ -215,11 +217,11 @@ export function pctChange() {
       "bar.draw": (s, H) => { H.grow(key(s, "bb"), 0.1); roll({ tv: 60 })(s, H); H.write(key(s, "top"), 0.7); },
       "bar.cut5": linesTo(TENTHS, FIFTHS),
       "bar.l12": fifthLabels(12),
-      "or.v": (s, H) => { H.show(key(s, "or")); roll({ op: 20, oa: 60, on: 12, ofw: "a fifth of 60" })(s, H); vis(["ofr"])(s, H); },
+      "or.v": (s, H) => { H.show(key(s, "or")); roll({ op: 20, oa: 60, on: 12, ofw: "a fifth of 60 = 0.2 × 60" })(s, H); vis(["ofr"])(s, H); },
       "q.80": q("a1", [["60", 80]]),
       "bar.r80": (s, H) => { roll({ tv: 80 })(s, H); fifthLabels(16)(s, H); },
-      "or.r80": roll({ oa: 80, on: 16, ofw: "a fifth of 80" }),
-      "or.r10": roll({ op: 10, on: 8, ofw: "a tenth of 80" }),
+      "or.r80": roll({ oa: 80, on: 16, ofw: "a fifth of 80 = 0.2 × 80" }),
+      "or.r10": roll({ op: 10, on: 8, ofw: "a tenth of 80 = 0.1 × 80" }),
       "q.10": q("a1", [["20\\%", 10, "\\%"]]),
       "bar.cut10": (s, H) => { linesTo(TENTHS, TENTHS)(s, H); vis(LT, LF(6))(s, H); roll(Object.fromEntries(Array.from({ length: 10 }, (_, j) => [`ltv${j}`, 8])))(s, H);
         LT.forEach((k, j) => { const g = key(s, k); if (g) H.write(g, 0.4 + j * 0.08); }); },
@@ -234,7 +236,7 @@ export function pctChange() {
         { on: ["a1"], transition: "iris", pause: 0.6 });
       push("Draw sixty as one bar. All of it is a hundred per cent. Now, twenty per cent is a fifth, so CUT the bar into five equal boxes.",
         { on: ["bar", "k1"], add: ["bar.draw", "bar.cut5"], cue: { "bar.draw": "draw sixty", "bar.cut5": "cut the bar" }, transition: card("Idea 1", "A per cent OF an amount"), pause: 0.6 });
-      push("Sixty shared into five is twelve. Twelve in every box. So twenty per cent of sixty, one box, is twelve.",
+      push("Sixty shared into five is twelve. Twelve in every box. So twenty per cent of sixty, one box, is twelve. With decimals it's one step: twenty per cent is 0.2, and 0.2 times 60 is 12.",
         { on: ["or"], add: ["bar.l12", "or.v"], cue: { "bar.l12": "twelve in every", "or.v": "so twenty per cent" }, pause: 0.8 });
       push("Same question, new number: watch sixty roll up to eighty. The bar is still five boxes, but now each is eighty shared into five... sixteen. Twenty per cent of eighty is sixteen.",
         { on: ["k2"], off: ["k1"], add: ["q.80", "bar.r80", "or.r80"], cue: { "q.80": "watch sixty", "bar.r80": "eighty shared", "or.r80": "twenty per cent of eighty" }, transition: card("Idea 2", "Same question, new numbers"), pause: 0.8 });
@@ -244,9 +246,9 @@ export function pctChange() {
         { on: ["a2", "k3"], off: ["a1", "or", "k2"], add: ["bar.merge5", "bar.ext"], cue: { "bar.merge5": "first merge", "bar.ext": "one more box" }, transition: card("Idea 3", "Increase: one box more"), pause: 0.6 });
       push("Eighty plus sixteen... ninety-six. Count the boxes: six fifths, which is a hundred and twenty per cent of the old amount.",
         { on: ["mI"], add: ["mI.all"], cue: { "mI.all": "eighty plus" }, pause: 0.6 });
-      push("Six boxes of sixteen is ninety-six too. So increasing by twenty per cent is the same as finding a hundred and twenty per cent.",
+      push("Six boxes of sixteen is ninety-six too. So increasing by twenty per cent is the same as finding a hundred and twenty per cent. As a decimal that's 1.2: 1.2 times 80 is 96.",
         { on: ["mI2"], off: ["mI"], add: ["mI2.all"], cue: { "mI2.all": "six boxes" }, pause: 0.8 });
-      push("Now watch the question turn round: DECREASE eighty by twenty per cent. The extra box goes, and one of the five boxes goes too; it fades, it's taken away. Four boxes left: eighty take away sixteen is sixty-four, four fifths, eighty per cent.",
+      push("Now watch the question turn round: DECREASE eighty by twenty per cent. The extra box goes, and one of the five boxes goes too; it fades, it's taken away. Four boxes left: eighty take away sixteen is sixty-four, four fifths, eighty per cent. As a decimal, 0.8 times 80 is 64.",
         { on: ["mD", "k4"], off: ["mI2", "k3"], add: ["q.dec", "bar.gone", "mD.all"], cue: { "q.dec": "turn round", "bar.gone": "the extra box goes", "mD.all": "four boxes left" },
           transition: card("Idea 4", "Decrease: one box gone"), pause: 1 });
       push("So: a per cent of an amount is that many boxes of it. Increase by a per cent and boxes are added; decrease, and boxes are taken away. Cut for smaller per cents, merge for bigger ones.");
@@ -350,27 +352,27 @@ export function pctTraps() {
   /* the eleven examples: the question, its keyword(s) and their notes, the boxes, the two working lines */
   const EX = [
     { id: "e1", q: "Find 20% of 60.", keys: [["of", "of: take a part", TAKE]], bar: { n: 5, val: 12, top: "60", part: 1 },
-      mB: "60 \\div 5 = 12\\ \\text{a box, and } 20\\% \\text{ is one box}", mF: "20\\% = \\tfrac{20}{100} = \\tfrac{1}{5},\\quad \\tfrac{1}{5} \\times 60 = 12" },
+      mB: "60 \\div 5 = 12\\ \\text{a box, and } 20\\% \\text{ is one box}", mF: "20\\% = \\tfrac{20}{100} = \\tfrac{1}{5},\\quad \\tfrac{1}{5} \\times 60 = 12\\quad (0.2 \\times 60 = 12)" },
     { id: "e2", q: "A salesman earns 5% commission on sales of $400. How much commission does he earn?", keys: [["commission", "commission: a part of the sales", TAKE]], bar: { n: 20, val: 20, top: "$400", part: 1 },
-      mB: "400 \\div 20 = 20\\ \\text{a box: one box is } \\$20", mF: "5\\% = \\tfrac{5}{100} = \\tfrac{1}{20},\\quad \\tfrac{1}{20} \\times 400 = \\$20" },
+      mB: "400 \\div 20 = 20\\ \\text{a box: one box is } \\$20", mF: "5\\% = \\tfrac{5}{100} = \\tfrac{1}{20},\\quad \\tfrac{1}{20} \\times 400 = \\$20\\quad (0.05 \\times 400 = 20)" },
     { id: "e3", q: "Ade saves $500 at 10% interest for one year. Find the interest, and the total he then has.", keys: [["interest", "interest: a part, added on", TAKE]], bar: { n: 10, val: 50, top: "$500", part: 1, extra: 1 },
-      mB: "\\text{interest} = \\$50,\\quad \\text{total} = 500 + 50 = \\$550", mF: "\\tfrac{1}{10} \\times 500 = 50,\\quad \\tfrac{11}{10} \\times 500 = \\$550" },
+      mB: "\\text{interest} = \\$50,\\quad \\text{total} = 500 + 50 = \\$550", mF: "\\tfrac{1}{10} \\times 500 = 50,\\quad \\tfrac{11}{10} \\times 500 = \\$550\\quad (1.1 \\times 500 = 550)" },
     { id: "e4", q: "Increase 80 by 25%.", keys: [["increase", "increase by: add on", ADD]], bar: { n: 4, val: 20, top: "80", extra: 1 },
-      mB: "80 + 20 = 100", mF: "100\\% + 25\\% = \\tfrac{5}{4},\\quad \\tfrac{5}{4} \\times 80 = 100" },
+      mB: "80 + 20 = 100", mF: "100\\% + 25\\% = \\tfrac{5}{4},\\quad \\tfrac{5}{4} \\times 80 = 100\\quad (1.25 \\times 80 = 100)" },
     { id: "e5", q: "A trader buys a bag for $60 and sells it at a 20% profit. What is the selling price?", keys: [["profit", "profit: add on to the cost", ADD]], bar: { n: 5, val: 12, top: "$60", extra: 1 },
-      mB: "60 + 12 = \\$72", mF: "120\\% = \\tfrac{6}{5},\\quad \\tfrac{6}{5} \\times 60 = \\$72" },
+      mB: "60 + 12 = \\$72", mF: "120\\% = \\tfrac{6}{5},\\quad \\tfrac{6}{5} \\times 60 = \\$72\\quad (1.2 \\times 60 = 72)" },
     { id: "e6", q: "A shirt costs $80. In a sale there is a 25% discount. What is the sale price?", keys: [["discount", "discount: take away", AWAY]], bar: { n: 4, val: 20, top: "$80", pale: 1 },
-      mB: "80 - 20 = \\$60", mF: "100\\% - 25\\% = \\tfrac{3}{4},\\quad \\tfrac{3}{4} \\times 80 = \\$60" },
+      mB: "80 - 20 = \\$60", mF: "100\\% - 25\\% = \\tfrac{3}{4},\\quad \\tfrac{3}{4} \\times 80 = \\$60\\quad (0.75 \\times 80 = 60)" },
     { id: "e7", q: "A phone bought for $150 is sold at a 20% loss. What is the selling price?", keys: [["loss", "loss: take away from the cost", AWAY]], bar: { n: 5, val: 30, top: "$150", pale: 1 },
-      mB: "150 - 30 = \\$120", mF: "80\\% = \\tfrac{4}{5},\\quad \\tfrac{4}{5} \\times 150 = \\$120" },
+      mB: "150 - 30 = \\$120", mF: "80\\% = \\tfrac{4}{5},\\quad \\tfrac{4}{5} \\times 150 = \\$120\\quad (0.8 \\times 150 = 120)" },
     { id: "e8", q: "Shoes that cost $50 are sold with 30% off. How much are they now?", keys: [["off", "off: take away", AWAY]], bar: { n: 10, val: 5, top: "$50", pale: 3 },
-      mB: "50 - 15 = \\$35", mF: "70\\% = \\tfrac{7}{10},\\quad \\tfrac{7}{10} \\times 50 = \\$35" },
+      mB: "50 - 15 = \\$35", mF: "70\\% = \\tfrac{7}{10},\\quad \\tfrac{7}{10} \\times 50 = \\$35\\quad (0.7 \\times 50 = 35)" },
     { id: "e9", q: "A pupil scores 18 out of 24 in a test. What is that as a percentage?", keys: [["out of", "out of: make a fraction", OUT]], bar: { n: 4, val: 6, top: "24", part: 3 },
-      mB: "18 = 3\\ \\text{of the } 4\\ \\text{boxes} = \\tfrac{3}{4} = 75\\%", mF: "\\tfrac{18}{24} = \\tfrac{3}{4} = \\tfrac{75}{100} = 75\\%" },
+      mB: "18 = 3\\ \\text{of the } 4\\ \\text{boxes} = \\tfrac{3}{4} = 75\\%", mF: "\\tfrac{18}{24} = \\tfrac{3}{4} = \\tfrac{75}{100} = 75\\%\\quad (18 \\div 24 = 0.75 = 75\\%)" },
     { id: "e10", q: "After a 20% discount, a shirt costs $80. What was the original price?", keys: [["discount", "discount: take away", AWAY], ["original", "original: the whole, before", WHOLE]], bar: { n: 5, val: 20, top: "original ?", pale: 1, topTo: "$100" },
-      mB: "80 \\div 4 = 20,\\quad 5 \\times 20 = \\$100", mF: "80 \\div \\tfrac{4}{5} = 80 \\times \\tfrac{5}{4} = \\$100" },
+      mB: "80 \\div 4 = 20,\\quad 5 \\times 20 = \\$100", mF: "80 \\div \\tfrac{4}{5} = 80 \\times \\tfrac{5}{4} = \\$100\\quad (80 \\div 0.8 = 100)" },
     { id: "e11", q: "A bag is sold for $72 at a 20% profit. Find the cost price.", keys: [["profit", "profit: add on", ADD], ["cost price", "cost price: the whole", WHOLE]], bar: { n: 5, val: 12, top: "cost price ?", extra: 1, topTo: "$60" },
-      mB: "72 \\div 6 = 12,\\quad 5 \\times 12 = \\$60", mF: "72 \\div \\tfrac{6}{5} = 72 \\times \\tfrac{5}{6} = \\$60" },
+      mB: "72 \\div 6 = 12,\\quad 5 \\times 12 = \\$60", mF: "72 \\div \\tfrac{6}{5} = 72 \\times \\tfrac{5}{6} = \\$60\\quad (72 \\div 1.2 = 60)" },
   ];
   /* ── PER CENT TO FRACTION, BEFORE ANY BOXES ARE DRAWN ─────────────────────────────────────
      *"Show how you reduce your percentages to fractions. First start with prime reduction before
@@ -393,9 +395,23 @@ export function pctTraps() {
   const asks = [{ id: "a0", text: "Percentage questions use a few keywords. Learn what each one tells you to do, and every question becomes simple." },
     ...EX.map((e) => ({ id: e.id, text: e.q, keys: e.keys.map((k) => k[0]) })),
     { id: "t1", text: "A price of $100 goes up by 20%, then down by 20%. What is it now?", keys: ["up", "down"] }];
-  const pics = { kw: () => keywordTable5() };
-  const picAt = { kw: centred(150, 15) };
-  const stages = { "kw.c0": col(0, 4), "kw.c1": col(1, 4), "kw.c2": col(2, 4), "kw.c3": col(3, 4), "kw.c4": col(4, 3) };
+  /* the table is the site's own receipt with sticky-note headers (./film-table.js) */
+  const KWCOLS = [
+    { head: "Take a part", tone: 0, cells: ["of", "commission", "interest", "tax"] },
+    { head: "Add on", tone: 2, cells: ["increase by", "profit", "rise", "more than"] },
+    { head: "Take away", tone: 4, cells: ["decrease by", "discount", "loss", "off"] },
+    { head: "Find the whole", tone: 1, cells: ["original", "was", "before", "cost price"] },
+    { head: "Out of", tone: 3, cells: ["out of", "what percent", "as a percentage"] },
+  ];
+  const pics = {
+    /* why "of" means multiply: equivalent fractions */
+    wy1: () => main([L("a", "\\dfrac{20}{100} = \\dfrac{?}{60}"), L("e", "\\qquad"), L("b", "\\text{20 is to 100 as ? is to 60}", PURPLE)], 6.6),
+    wy2: () => main([L("a", "? = \\dfrac{20}{100} \\times 60 = 12"), L("e", "\\qquad"), L("b", "\\text{move the 60: it multiplies}", PURPLE)], 6.6),
+    wy3: () => main([L("a", "\\dfrac{20}{100} = \\dfrac{12}{?}"), L("e", "\\Rightarrow"), L("b", "\\dfrac{100}{20} = \\dfrac{?}{12},\\quad ? = \\dfrac{100}{20} \\times 12 = 60", GREEN)], 6.2),
+  };
+  const picAt = { wy1: at(30), wy2: at(30), wy3: at(30) };
+  const stages = { "kw.c0": tableCol("kw", 0), "kw.c1": tableCol("kw", 1), "kw.c2": tableCol("kw", 2), "kw.c3": tableCol("kw", 3), "kw.c4": tableCol("kw", 4),
+    ...Object.fromEntries(["wy1", "wy2", "wy3"].map((k) => [`${k}.all`, (s, H) => { write(s, H, ["a", "e"], 0, 0.6); write(s, H, ["b"], 1.6); if (k !== "wy1") H.sound("ding", 1.8); }])) };
   EX.forEach((e) => {
     pics[`${e.id}b`] = () => kbar(e.bar);
     pics[`${e.id}B`] = () => main([L("a", e.mB)], 6.4);
@@ -430,47 +446,47 @@ export function pctTraps() {
     e1: ["First, find twenty per cent OF sixty. The keyword is 'of', so I'll box it. 'Of' means take a PART. We're not adding anything or taking anything away; we just want a piece of the sixty.",
       "Draw sixty as the whole, a hundred per cent. Twenty per cent is a fifth, so cut it into five equal boxes. Sixty shared into five is twelve in every box.",
       "Twenty per cent is ONE of those boxes. So twenty per cent of sixty is twelve. Notice how simple that was: the keyword told us what to do, and the boxes did the rest.",
-      "And the fraction way, in one line. Twenty per cent is twenty out of a hundred, which is one fifth. 'Of' means multiply, so one fifth times sixty: twelve. Same answer."],
+      "And the fraction way, in one line. Twenty per cent is twenty out of a hundred, which is one fifth. 'Of' means multiply, so one fifth times sixty: twelve. Same answer. As a decimal, twenty per cent is 0.2, and 0.2 times 60 is 12 too."],
     e2: ["Next keyword: commission. A salesman earns five per cent commission on sales of four hundred dollars. Commission is the salesman's share, a PART of what he sold, so it belongs in the 'take a part' column.",
       "The whole is the sales, four hundred dollars. Five per cent is a twentieth, so cut it into twenty boxes. Four hundred shared into twenty is twenty dollars a box.",
       "His commission is one of those boxes: twenty dollars. That's it.",
-      "The fraction way: five per cent is five over a hundred, one twentieth. One twentieth of four hundred is twenty dollars."],
+      "The fraction way: five per cent is five over a hundred, one twentieth. One twentieth of four hundred is twenty dollars. As a decimal, five per cent is 0.05: 0.05 times 400 is 20."],
     e3: ["Now interest. Ade saves five hundred dollars at ten per cent interest for a year. Interest is also a PART of the money, but here's the thing to notice: interest gets ADDED to the money in the account.",
       "Draw the five hundred dollars. Ten per cent is a tenth, so cut it into ten boxes of fifty.",
       "The interest is one box: fifty dollars. And because interest is added on, his total is the ten boxes plus one more: five hundred and fifty dollars.",
-      "The fraction way: the interest is one tenth of five hundred, fifty. The total is eleven tenths of five hundred: five hundred and fifty. Two questions, one picture."],
+      "The fraction way: the interest is one tenth of five hundred, fifty. The total is eleven tenths of five hundred: five hundred and fifty. Two questions, one picture. As decimals: 0.1 of 500 is 50, and the total is 1.1 times 500, 550."],
     e4: ["Now the 'add on' column. Increase eighty by twenty-five per cent. 'Increase by' means the amount gets BIGGER: we keep all of it, and add some more on.",
       "Draw eighty. Twenty-five per cent is a quarter, so four boxes of twenty.",
       "Increasing by twenty-five per cent adds ONE more box of twenty on the end. Eighty plus twenty: a hundred.",
-      "The fraction way: we keep a hundred per cent and add twenty-five, so it's a hundred and twenty-five per cent, five quarters. Five quarters of eighty is a hundred."],
+      "The fraction way: we keep a hundred per cent and add twenty-five, so it's a hundred and twenty-five per cent, five quarters. Five quarters of eighty is a hundred. As a decimal, a hundred and twenty-five per cent is 1.25: 1.25 times 80 is 100."],
     e5: ["Profit is in the same column. A trader buys a bag for sixty dollars and sells it at a twenty per cent profit. Profit means he sells for MORE than he paid, so profit adds on to the cost.",
       "The cost is the whole: sixty dollars. Twenty per cent is a fifth: five boxes of twelve.",
       "A twenty per cent profit adds one more box of twelve. Sixty plus twelve: the selling price is seventy-two dollars.",
-      "The fraction way: a hundred and twenty per cent is six fifths. Six fifths of sixty is seventy-two dollars."],
+      "The fraction way: a hundred and twenty per cent is six fifths. Six fifths of sixty is seventy-two dollars. As a decimal, a hundred and twenty per cent is 1.2: 1.2 times 60 is 72."],
     e6: ["Now the 'take away' column. A shirt costs eighty dollars, and there's a twenty-five per cent discount. A discount takes money OFF the price: the price goes down.",
       "Draw the eighty dollars. Twenty-five per cent is a quarter: four boxes of twenty.",
       "The discount takes one box away. Watch it go pale. Eighty take away twenty: the sale price is sixty dollars.",
-      "The fraction way: a hundred per cent take away twenty-five is seventy-five per cent, three quarters. Three quarters of eighty is sixty dollars."],
+      "The fraction way: a hundred per cent take away twenty-five is seventy-five per cent, three quarters. Three quarters of eighty is sixty dollars. As a decimal, seventy-five per cent is 0.75: 0.75 times 80 is 60."],
     e7: ["Loss is the opposite of profit. A phone bought for a hundred and fifty dollars is sold at a twenty per cent loss. A loss means it's sold for LESS than it cost, so loss takes away from the cost.",
       "The cost is the whole: a hundred and fifty. Twenty per cent is a fifth: five boxes of thirty.",
       "The loss takes one box away. A hundred and fifty take away thirty: the selling price is a hundred and twenty dollars.",
-      "The fraction way: eighty per cent is four fifths. Four fifths of a hundred and fifty is a hundred and twenty."],
+      "The fraction way: eighty per cent is four fifths. Four fifths of a hundred and fifty is a hundred and twenty. As a decimal, eighty per cent is 0.8: 0.8 times 150 is 120."],
     e8: ["'Off' is a little word with a big job. Shoes that cost fifty dollars are sold with thirty per cent off. Off means take away, just like discount.",
       "Thirty per cent is three tenths, so cut the fifty dollars into ten boxes of five.",
       "Thirty per cent off takes THREE boxes away. Fifty take away fifteen: thirty-five dollars.",
-      "The fraction way: seventy per cent is left, seven tenths. Seven tenths of fifty is thirty-five dollars."],
+      "The fraction way: seventy per cent is left, seven tenths. Seven tenths of fifty is thirty-five dollars. As a decimal, seventy per cent is 0.7: 0.7 times 50 is 35."],
     e9: ["Now the 'out of' column, which goes the other way. A pupil scores eighteen out of twenty-four. What's that as a percentage? 'Out of' tells you to write it as a FRACTION first.",
       "Draw the twenty-four marks as the whole. Eighteen and twenty-four are both made of sixes, so cut it into four boxes of six.",
       "Eighteen is three of the four boxes: three quarters. And three quarters of a hundred per cent is seventy-five per cent.",
-      "The fraction way: eighteen over twenty-four simplifies to three quarters, and three quarters is seventy-five over a hundred: seventy-five per cent."],
+      "The fraction way: eighteen over twenty-four simplifies to three quarters, and three quarters is seventy-five over a hundred: seventy-five per cent. As a decimal: 18 divided by 24 is 0.75, which is 75 per cent."],
     e10: ["Now the column that catches everybody: find the WHOLE. After a twenty per cent discount, a shirt costs eighty dollars. What was the original price? Two keywords: discount, take away; and original, the whole BEFORE the change.",
       "The original price is the whole: five boxes, but we don't know them yet. The discount took one box away, so the eighty dollars is what's LEFT: four boxes.",
       "Four boxes are eighty, so one box is twenty, and the original, all five boxes, is a hundred dollars. Not ninety-six! Taking twenty per cent of eighty would be using the wrong whole.",
-      "The fraction way: eighty dollars is four fifths of the original. So divide by four fifths, which is the same as multiplying by five quarters: a hundred dollars."],
+      "The fraction way: eighty dollars is four fifths of the original. So divide by four fifths, which is the same as multiplying by five quarters: a hundred dollars. As a decimal: 80 dollars is 0.8 of the original, so divide by 0.8: 100."],
     e11: ["One more of those. A bag is sold for seventy-two dollars at a twenty per cent profit. Find the cost price. Profit adds on, and cost price is the whole before the profit.",
       "The cost price is five boxes, and the profit added a sixth. So the seventy-two dollars is SIX boxes.",
       "Six boxes are seventy-two, so one box is twelve, and the cost price, five boxes, is sixty dollars.",
-      "The fraction way: seventy-two is six fifths of the cost. Divide by six fifths, times five sixths: sixty dollars."],
+      "The fraction way: seventy-two is six fifths of the cost. Divide by six fifths, times five sixths: sixty dollars. As a decimal: 72 is 1.2 times the cost, so divide by 1.2: 60."],
   };
   const COLS = { e1: "Take a part", e2: "Take a part", e3: "Take a part", e4: "Add on", e5: "Add on", e6: "Take away", e7: "Take away", e8: "Take away", e9: "Out of", e10: "Find the whole", e11: "Find the whole" };
 
@@ -478,6 +494,8 @@ export function pctTraps() {
     paperMm: PAPER, picW: PIC_W, ready: mathLoad(),
     asks, pics, picAt,
     lines: [
+      tableLine("kw", KWCOLS, { y: 25, w: 94, size: 1.5 }),
+      { id: "kw0", receipt: true, sub: "Why 'of' multiplies", text: "equivalent fractions", y: 50.5 },
       { id: "kt", receipt: true, sub: "The table", text: "five things a per cent can do", y: 50.5 },
       ...["Take a part", "Add on", "Take away", "Out of", "Find the whole"].map((t, i) => ({ id: `kc${i}`, receipt: true, sub: "Keyword", text: t, y: 50.5 })),
       { id: "kx", receipt: true, sub: "The trap", text: "the whole moves", y: 50.5 },
@@ -496,9 +514,16 @@ export function pctTraps() {
         { add: ["kw.c3"], cue: { "kw.c3": "the fourth column" }, pause: 0.6 });
       push("And the last column: OUT OF. Out of, what percent, as a percentage. These go the other way: you're given two amounts and you turn them into a per cent.",
         { add: ["kw.c4"], cue: { "kw.c4": "the last column" }, pause: 0.6 });
+      /* WHY "OF" MEANS MULTIPLY: equivalent fractions */
+      push("Before the examples, one question everybody should ask: why does 'of' mean multiply? It comes from equivalent fractions. Twenty per cent of sixty means: twenty is to a hundred as the answer is to sixty. Twenty out of a hundred, and the same share out of sixty.",
+        { on: ["wy1", "kw0"], off: ["kw", "kt"], add: ["wy1.all"], cue: { "wy1.all": "twenty is to" }, transition: card("Why 'of' multiplies", "equivalent fractions"), pause: 0.6 });
+      push("So twenty over a hundred equals question mark over sixty. To get the question mark on its own, move the sixty to the other side. It was dividing the question mark, so on the other side it MULTIPLIES. The answer is twenty over a hundred, times sixty: twelve. That's why 'of' turns into times.",
+        { on: ["wy2"], off: ["wy1"], add: ["wy2.all"], cue: { "wy2.all": "move the sixty" }, pause: 0.8 });
+      push("And sometimes it's the other way round: we're given the PART and we need the whole. Twenty per cent of a number is twelve. Then twenty over a hundred equals twelve over question mark. Turn both fractions upside down, a hundred over twenty equals question mark over twelve, and move the twelve across: a hundred over twenty, times twelve, is sixty. Same idea, the whole is the unknown.",
+        { on: ["wy3"], off: ["wy2"], add: ["wy3.all"], cue: { "wy3.all": "turn both" }, pause: 1 });
       push("Here's the whole method, and it's the same every time. One: find the keyword and box it. Two: draw the whole as equal boxes. Three: let the keyword act on the boxes. Then we'll check it the fraction way. Let's go.", { pause: 1 });
 
-      let prev = ["kw", "a0", "kt"];
+      let prev = ["wy3", "a0", "kw0"];
       let colOn = null;
       EX.forEach((e, idx) => {
         const s = SAY[e.id], colIdx = ["Take a part", "Add on", "Take away", "Out of", "Find the whole"].indexOf(COLS[e.id]);
