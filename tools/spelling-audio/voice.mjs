@@ -12,6 +12,20 @@ export async function load(dtype = 'fp32') {
 // kokoro-js's own touch-ups on espeak output, so hand-made IPA matches what it was trained on.
 const tidy = (p) => p.replace(/ʲ/g, 'j').replace(/r/g, 'ɹ').replace(/x/g, 'k').replace(/ɬ/g, 'l').replace(/̃/g, '');
 
+/* The primary lists write IPA dictionary-style: syllables split by dots and the
+   stress mark at the START of the stressed syllable (/ˈæk.ni/). espeak, which
+   Kokoro was trained on, puts the mark just before the syllable's VOWEL
+   (/ˈakni/ -> "akn" with the mark on a), uses ɛ for the "e" of bed, and a for
+   the "a" of cat. This rewrites the one into the other. */
+const V = 'aeiouæɑɒɔəɜɪʊʌɛɐɚɝ';
+export function fromDictionary(ipa) {
+  let p = ipa.replace(/[()]/g, '').replace(/\s+/g, ' ').trim();
+  p = p.replace(new RegExp(`([ˈˌ])([^${V}.ˈˌ ]*)`, 'g'), (m, mark, cons) => cons + mark);
+  p = p.replace(/\./g, '');
+  p = p.replace(/æ/g, 'a').replace(/e(?![ɪəʊ])/g, 'ɛ');
+  return tidy(p);
+}
+
 const PUNCT = /(\s*[;:,.!?¡¿—…"«»“”(){}[\]]+\s*)+/g;
 async function textPhonemes(text) {
   const out = [];
