@@ -59,12 +59,18 @@
     .thumb__tags { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 34px; }
     .thumb .pp-pill { font-size: 22px; padding: 12px 20px; gap: 12px; border-width: 3px; color: #2a2723; cursor: default;
       box-shadow: 0 6px 14px -6px rgba(42,39,35,.35); }
-    .thumb .pp-pill svg { width: 26px; height: 26px; }
-    .thumb__tags .pp-pill:first-child { background: #f4c95d; border-color: #2a2723; }
+    /* the tags are sticky notes, taped on, each its own paper and its own tilt */
+    .thumb__tags { gap: 26px; align-items: center; }
+    .thumb__tag.pp-sticky { position: relative; display: inline-flex; align-items: center; gap: 12px; padding: 14px 24px 15px;
+      font-size: 28px; font-weight: 800; }
+    .thumb__tag.pp-sticky--tape::before { width: 70px; height: 22px; top: -12px; }
+    .thumb__tag svg { width: 28px; height: 28px; }
+    /* the logo, faint, behind everything */
+    .thumb__mark { position: absolute; width: 420px; height: 420px; left: 50%; top: 66%; transform: translate(-50%, -50%) rotate(-8deg); opacity: .1; pointer-events: none; }
 
     /* the notes: the subject's sign, PrepBot on top */
     .thumb__notes { position: absolute; right: 70px; top: 96px; width: 400px; height: 420px; }
-    .thumb .pp-sticky { position: absolute; display: block; padding: 0; }
+    .thumb__notes .pp-sticky { position: absolute; display: block; padding: 0; }
     .thumb__back.pp-sticky { left: 34px; top: 26px; width: 340px; height: 320px; --pp-note-tilt: -7deg; background: var(--note2); }
     .thumb__front.pp-sticky { left: 0; top: 0; width: 360px; height: 340px; --pp-note-tilt: 3deg; background: var(--note);
       display: grid; place-items: center; }
@@ -122,11 +128,12 @@
       const title = name.replace(/\s*\((?:two|three|four) ways\)\s*$/i, "")
         .replace(/(\d[\d,.]*%|[₦$]\d[\d,]*|\d+\s*:\s*\d+(?:\s*:\s*\d+)*|\b\d[\d,]*\b)/, "<em>$1</em>");
       return `<div class="thumb" style="--note:${s.note};--note2:${s.note2};--note-deep:${s.deep}">`
+        + `<img class="thumb__mark" src="/logo/logo-light.svg" alt="">`
         + `<div class="thumb__card pp-receipt"><div class="pp-receipt__paper">`
         + `<p class="thumb__kicker"><i></i>PrepBot TV · ${s.name}</p><span class="thumb__rule"></span>`
         + `<h2 class="thumb__title">${title}</h2>`
-        + `<div class="thumb__tags"><span class="pp-pill" style="--tile:${INK}">${UI.play(26)}${first}</span>`
-        + `<span class="pp-pill" style="--tile:${s.deep}">${UI.steps ? UI.steps(26) : ""}Step by step</span></div>`
+        + `<div class="thumb__tags"><span class="thumb__tag pp-sticky pp-sticky--tape pp-sticky--c0" style="--pp-note-tilt:-3deg">${UI.play(28)}${first}</span>`
+        + `<span class="thumb__tag pp-sticky pp-sticky--c3" style="--pp-note-tilt:2deg">${UI.steps ? UI.steps(28) : ""}Step by step</span></div>`
         + `</div></div>`
         + `<div class="thumb__notes"><span class="thumb__back pp-sticky"></span>`
         + `<div class="thumb__front pp-sticky pp-sticky--tape">${s.sign()}<span class="thumb__word">${s.word}</span>`

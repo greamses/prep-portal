@@ -167,13 +167,27 @@ async function lookUpSaved(related, root) {
   } catch { /* no ticks, no harm */ }
   markSaved(root);
 }
-const cardsHtml = (related) => `<ul class="mm-tv-cards" role="list">`
-  + related.slice(0, 4).map((r, i) => `<li style="animation-delay:${(0.2 + i * 0.15).toFixed(2)}s">`
-    + `<button type="button" class="mm-tv-card pp-plain" data-pick="${esc(r.id)}" aria-label="Watch: ${esc(r.name)}">`
-    + `<span class="mm-tv-card__thumb">${thumbSvg(r.thumb)}</span>`
-    + `<span class="mm-tv-card__name">${esc(r.name)}</span>`
-    + (r.of ? `<span class="mm-tv-card__of">${esc(r.of)}</span>` : "")
-    + `</button></li>`).join("") + `</ul>`;
+/* THE CARDS, IN THEIR CATEGORIES. *"I should see the three intro cards with the other ratio cards
+   but in its category."* Every film on the topic is offered, grouped by `group` in the order the
+   groups come ("Lessons" before "Worked questions"), each card showing the film's own thumbnail. */
+const cardHtml = (r, i) => `<li style="animation-delay:${(0.2 + Math.min(i, 8) * 0.08).toFixed(2)}s">`
+  + `<button type="button" class="mm-tv-card pp-plain" data-pick="${esc(r.id)}" aria-label="Watch: ${esc(r.name)}">`
+  + `<span class="mm-tv-card__thumb">${r.img ? `<img src="${esc(r.img)}" alt="" loading="lazy">` : thumbSvg(r.thumb)}</span>`
+  + `<span class="mm-tv-card__name">${esc(r.name)}</span>`
+  + (r.of ? `<span class="mm-tv-card__of">${esc(r.of)}</span>` : "")
+  + `</button></li>`;
+const cardsHtml = (related) => {
+  const groups = [];
+  related.forEach((r) => {
+    const g = r.group || "";
+    let set = groups.find((x) => x.name === g);
+    if (!set) groups.push(set = { name: g, items: [] });
+    set.items.push(r);
+  });
+  let n = 0;
+  return `<div class="mm-tv-cardsets">` + groups.map((g) => (g.name ? `<p class="mm-tv-cards__group">${esc(g.name)}</p>` : "")
+    + `<ul class="mm-tv-cards" role="list">${g.items.map((r) => cardHtml(r, n++)).join("")}</ul>`).join("") + `</div>`;
+};
 const upNextStep = (related) => ({
   say: "Want another one like this? Pick a card. Each one is a different question on the same idea, "
     + "and it plays right here.",

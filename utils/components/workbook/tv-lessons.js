@@ -417,9 +417,9 @@ export const FILMS = [
   { id: "odd-21", name: "1 + 3 + 5 + ... + 21 (two ways)", of: "ANMC 14th main, Q68", topic: "patterns" },
   { id: "stair-rows-37", name: "Black squares in row 37 (two ways)", of: "Scholastic 2022 finals, Q27", topic: "patterns" },
   { id: "series-123", name: "The series 1, 2, 2, 3, 3, 3 (two ways)", of: "ANMC 12th main, Q55 and Q57", topic: "patterns" },
-  { id: "ratio-what", name: "What is a ratio?", of: "Ratio, lesson 1", topic: "ratio", thumb: { n: 3, k: 2 } },
-  { id: "ratio-parts", name: "Part to part, part to whole, part to difference", of: "Ratio, lesson 2", topic: "ratio", thumb: { n: 8, k: 3 } },
-  { id: "ratio-compound", name: "Compound ratio", of: "Ratio, lesson 3", topic: "ratio", thumb: { n: 15, k: 8 } },
+  { id: "ratio-what", lesson: true, name: "What is a ratio?", of: "Ratio, lesson 1", topic: "ratio", thumb: { n: 3, k: 2 } },
+  { id: "ratio-parts", lesson: true, name: "Part to part, part to whole, part to difference", of: "Ratio, lesson 2", topic: "ratio", thumb: { n: 8, k: 3 } },
+  { id: "ratio-compound", lesson: true, name: "Compound ratio", of: "Ratio, lesson 3", topic: "ratio", thumb: { n: 15, k: 8 } },
   { id: "ratio-600-idowu", name: "Share $600 in 3:2:1: Idowu's share (two ways)", of: "Scholastic 2025 R1 Q45, 4th ed Q20", topic: "ratio", thumb: { n: 6, k: 1 } },
   { id: "ratio-600-kehinde", name: "Share $600 in 3:2:1: Kehinde's share (two ways)", of: "Scholastic 5th ed Q23", topic: "ratio", thumb: { n: 6, k: 2 } },
   { id: "ratio-4000", name: "Share ₦4,000 in 1:3:4: the largest share (two ways)", of: "ANMC 12th main, Q27", topic: "ratio", thumb: { n: 8, k: 4 } },
@@ -491,9 +491,10 @@ export async function playLesson(kind, title = "", strip = null) {
     const { openTv } = await import("/prep-math/mental-math/shared/prepbot-tv.js");
     /* VIDEO CARDS: the other films on the same topic, played in this same set, on this same page */
     const me = FILMS.find((f) => f.id === kind);
+    /* every other film on the topic, in its category: the lessons first, then the worked questions */
     const related = me?.topic ? FILMS.filter((f) => f.topic === me.topic && f.id !== kind)
-      .sort((a, b) => Math.abs((a.thumb?.k ?? 0) - (a.thumb?.n ?? 0)) - Math.abs((b.thumb?.k ?? 0) - (b.thumb?.n ?? 0)))
-      .slice(0, 4) : [];
+      .map((f) => ({ ...f, group: f.lesson ? "Lessons" : "Worked questions", img: `/tools/film-thumbnail/png/${f.id}.png` }))
+      .sort((a, b) => (a.lesson ? 0 : 1) - (b.lesson ? 0 : 1)) : [];
     const onPick = (id) => {
       const next = FILMS.find((f) => f.id === id);
       document.querySelector(".mm-tv-overlay [data-tv='close']")?.click();
