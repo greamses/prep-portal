@@ -133,8 +133,8 @@ function tipFor(label, opt) {
   label.setAttribute('aria-label', `${String(opt.label).replace(/<[^>]*>/g, '')}: ${opt.tip}`);
 }
 
-/* Single-select. Picking an option advances immediately; the nav's Skip arrow
-   advances with whatever is already selected. */
+/* Single-select. Picking an option advances immediately; there is no Skip
+   (re-clicking the ticked option moves on), unless the page names one (skipLabel). */
 export function renderChoiceStep(carousel, id, { title, subtitle, name, options, colorOffset = 0, onPick, skipLabel }) {
   const container = carousel.getEl(id);
   container.innerHTML = '';
@@ -161,14 +161,17 @@ export function renderChoiceStep(carousel, id, { title, subtitle, name, options,
   });
   container.appendChild(wrap);
 
-  // Skip = accept the current selection and move on.
-  carousel.setAction(id, {
-    label: skipLabel || 'Skip',
+  // Picking an option already moves on (and clicking the one already ticked
+  // does too), so a one-choice step needs no forward button. The yellow "Skip"
+  // that used to sit here was redundant, and the user disliked it. A page that
+  // wants one asks by name (Writing: "Use this").
+  carousel.setAction(id, skipLabel ? {
+    label: skipLabel,
     onNext: () => {
       const checked = wrap.querySelector('input:checked');
       onPick(checked ? checked.value : options.find((o) => !o.disabled).value);
     },
-  });
+  } : null);
 }
 
 /* Multi-select. There's nothing to auto-advance on, so the nav arrow is the
