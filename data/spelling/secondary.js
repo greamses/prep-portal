@@ -4,7 +4,7 @@
    Read out says the word, Transcribe shows the IPA, and the player spells it.
    Each entry is [word, IPA, definition, sentence]. The sentence always contains
    the word, so the drill can blank it out; definitions never contain it.
-   The list is dealt in sets of twenty, in this order (set 1 = the first twenty).
+   The list is dealt in sets of ten, in this order (set 1 = the first ten).
 
    Typed in from a competition list (849 numbered entries) and tidied, because a
    spelling bank that teaches a misspelling is worse than none:

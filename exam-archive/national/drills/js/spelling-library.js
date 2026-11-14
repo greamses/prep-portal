@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════
-   DRILLS — the Spelling library. The whole word bank, twenty words a set,
+   DRILLS — the Spelling library. The whole word bank, ten words a set,
    to study before (or between) rounds: each word with its IPA, its meaning
    and a sentence using it, and the boy's face beside it to say it aloud.
 
@@ -7,7 +7,7 @@
    them, and the sets ticked in the setup are marked on it. Opened from the
    Word Sets step: openSpellingLibrary({ sets: [1, 2], start: 1 }).
 ═══════════════════════════════════════════════════════ */
-import { SET_COUNT, setWords, sayWord, hush, faceButton, canSpeak, clipFor } from './spelling.js';
+import { SET_COUNT, SET_SIZE, setWords, sayWord, hush, faceButton, canSpeak, clipFor } from './spelling.js';
 import { UI } from '/utils/components/ui-icons.js';
 
 let bd = null;
@@ -78,7 +78,7 @@ function showSet(n) {
   current = Math.min(Math.max(1, n), SET_COUNT);
   hush();
   const words = setWords(current);
-  const first = (current - 1) * 20 + 1;
+  const first = (current - 1) * SET_SIZE + 1;
   title.textContent = `Set ${current} · words ${first} to ${first + words.length - 1}`;
   const ol = document.createElement('ol');
   ol.className = 'spell-lib-list';

@@ -268,7 +268,7 @@ function getTablesPool() {
   if (categoryValue === 'timestable') return [1];
   if (categoryValue === 'fracbars') return [1]; // same — the sums are dealt by js/bars.js
   if (categoryValue === 'chemistry') return [1];
-  if (categoryValue === 'spelling') return [...spellSets].sort((a, b) => a - b); // the sets of twenty
+  if (categoryValue === 'spelling') return [...spellSets].sort((a, b) => a - b); // the sets of ten
   if (categoryValue === 'fractions') return [...denominators];
   if (isNumbersMode()) return [...tables];
   const list = rangesFor(categoryValue);
@@ -386,12 +386,12 @@ function renderOperationsPick() {
   });
 }
 
-/* Spelling: which sets of twenty words. The library (every set, with meanings
+/* Spelling: which sets of ten words. The library (every set, with meanings
    and the boy to say each word) opens from here, on the first ticked set. */
 function renderSpellSetsPick() {
   renderMultiStep(topic, 'spell-sets', {
     title: 'Which sets of words?',
-    subtitle: `Twenty words a set, ${SET_COUNT} sets. Study a set in the library first.`,
+    subtitle: `Ten words a set, ${SET_COUNT} sets. Study a set in the library first.`,
     grid: true,
     colorOffset: 2,
     options: Array.from({ length: SET_COUNT }, (_, i) => ({ value: String(i + 1), label: String(i + 1) })),

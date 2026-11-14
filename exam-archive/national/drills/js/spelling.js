@@ -23,11 +23,11 @@ export const BANK = SPELLING_SECONDARY;   // [word, IPA, definition, sentence]
 // The deck's own stream: past CONTENT_NS + index (0..), BOT_NS and NAME_NS.
 const DECK_NS = 3_000_000;
 
-/* ── Sets of twenty ───────────────────────────────────────────────────
-   The bank is learned twenty words at a time, in its own order: set 1 is the
-   first twenty, set 41 the last seven. A room carries its sets as `tables`
+/* ── Sets of ten ──────────────────────────────────────────────────────
+   The bank is learned ten words at a time (the user's choice; it was twenty),
+   in its own order: set 1 is the first ten, set 81 the last seven. A room carries its sets as `tables`
    (the room doc's list of numbers), so joiners and bots deal the same words. */
-export const SET_SIZE = 20;
+export const SET_SIZE = 10;
 export const SET_COUNT = Math.ceil(BANK.length / SET_SIZE);
 export const setOf = (i) => Math.floor(i / SET_SIZE) + 1;
 export function setWords(n) {
