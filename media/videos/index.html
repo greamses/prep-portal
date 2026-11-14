@@ -35,6 +35,7 @@
       .mv__kicker { margin: 0; font: 800 13px/1 "JetBrains Mono", monospace; letter-spacing: .2em; text-transform: uppercase; color: #6b655c; }
       .mv__title { margin: 12px 0 8px; font: 900 clamp(26px, 4vw, 40px)/1.08 Unbounded, sans-serif; }
       .mv__lead { margin: 0; font-size: 14px; line-height: 1.55; color: #5c564d; }
+      .mv__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
       .mv__tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 0 0 26px; }
       .mv__tabs .pp-pill { font-size: 12px; }
       .mv__tabs .pp-pill[aria-pressed="true"] { background: var(--accent-primary, #f4c95d); color: #2a2723; border-color: #2a2723; }
@@ -63,11 +64,7 @@
   <body>
     <nav class="site-nav" data-nav="main"></nav>
     <main class="mv">
-      <header class="mv__head pp-receipt"><div class="pp-receipt__paper">
-        <p class="mv__kicker">Media · PrepBot TV</p>
-        <h1 class="mv__title">PrepBot Videos</h1>
-        <p class="mv__lead">Every lesson drawn and explained step by step, then real competition questions worked out, most of them two ways. Pick a topic, press a card, and the video plays right here.</p>
-      </div></header>
+      <h1 class="mv__sr">PrepBot Videos</h1>
       <div class="mv__tabs" role="tablist" aria-label="Topics" id="tabs"></div>
       <div id="list"></div>
     </main>
