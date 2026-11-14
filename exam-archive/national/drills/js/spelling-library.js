@@ -7,7 +7,7 @@
    them, and the sets ticked in the setup are marked on it. Opened from the
    Word Sets step: openSpellingLibrary({ sets: [1, 2], start: 1 }).
 ═══════════════════════════════════════════════════════ */
-import { SET_COUNT, setWords, sayWord, hush, faceButton, canSpeak } from './spelling.js';
+import { SET_COUNT, setWords, sayWord, hush, faceButton, canSpeak, clipFor } from './spelling.js';
 import { UI } from '/utils/components/ui-icons.js';
 
 let bd = null;
@@ -36,10 +36,10 @@ function sentenceWithWord(sentence, word) {
   return p;
 }
 
-function row({ row: [word, ipa, def, use] }, n) {
+function row({ i: at, row: [word, ipa, def, use] }, n) {
   const li = document.createElement('li');
   li.className = 'spell-lib-row';
-  const face = faceButton({ size: 46, label: `Hear "${word}"`, onPress: (b) => sayWord(word, b) });
+  const face = faceButton({ size: 46, label: `Hear "${word}"`, onPress: (b) => sayWord(word, b, { clip: clipFor(at, 'w') }) });
   if (!canSpeak) face.disabled = true;
   const body = document.createElement('div');
   body.className = 'spell-lib-body';
@@ -67,7 +67,7 @@ function row({ row: [word, ipa, def, use] }, n) {
   hearUse.setAttribute('aria-label', `Hear "${word}" in a sentence`);
   hearUse.dataset.tip = 'Hear the sentence';
   hearUse.disabled = !canSpeak;
-  hearUse.addEventListener('click', () => sayWord(use, face, { rate: 0.95 }));
+  hearUse.addEventListener('click', () => sayWord(use, face, { rate: 0.95, clip: clipFor(at, 's') }));
   useLine.append(hearUse, sentenceWithWord(use, word));
   body.append(head, d, useLine);
   li.append(face, body);

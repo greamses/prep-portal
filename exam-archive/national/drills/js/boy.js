@@ -1,0 +1,204 @@
+/* ═══════════════════════════════════════════════════════
+   The boy who says the spelling words: his face, his voice, and his mouth.
+
+   The face is media/characters/boy-face.svg put INTO the page (not an <img>),
+   because its mouth is a group of shapes (<g class="mouth">) that moves. The
+   mouth closes from the bottom up, about the line of the top lip
+   (data-hinge): fully shut, the dark of the mouth narrows to a closed smile.
+
+   He talks two ways:
+     a recording (Kokoro, made once by tools/spelling-audio): the mouth follows
+       the loudness of the sound as it plays, so it opens on each syllable and
+       shuts in the gaps;
+     the browser's voice, when there is no recording: the browser gives no
+       sound to measure, so the mouth flaps in a syllable rhythm while it talks.
+   Only the latest line counts: a line cut off by a newer one does not shut or
+   open the face it is no longer talking through.
+═══════════════════════════════════════════════════════ */
+export const FACE_SRC = '/media/characters/boy-face.svg';
+
+const REST = 0.12;          // the mouth at rest: a closed smile
+const SHUT = 0.1;           // the narrowest it goes while talking
+let faceText = null;
+const faceSvg = () => (faceText ||= fetch(FACE_SRC).then((r) => (r.ok ? r.text() : '')).catch(() => ''));
+
+function setMouth(face, open) {
+  const g = face && face.querySelector('.mouth');
+  if (!g) return;
+  const y = Number(g.dataset.hinge) || 0;
+  const s = SHUT + (1 - SHUT) * Math.max(0, Math.min(1, open));
+  g.setAttribute('transform', `translate(0 ${y}) scale(1 ${s.toFixed(3)}) translate(0 ${-y})`);
+}
+
+/** The face as a button. Tapping it calls onPress(button). */
+export function faceButton({ size = 88, label = 'Hear the word', tip = label, onPress } = {}) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'spell-face';
+  b.style.setProperty('--face', `${size}px`);
+  b.setAttribute('aria-label', label);
+  b.dataset.tip = tip;
+  faceSvg().then((t) => {
+    if (!t) return;
+    b.insertAdjacentHTML('beforeend', t);
+    const svg = b.querySelector('svg');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.removeAttribute('width'); svg.removeAttribute('height');
+    svg.querySelector('title')?.remove();
+    setMouth(b, b.classList.contains('is-talking') ? 0.6 : REST);
+  });
+  if (onPress) b.addEventListener('click', (e) => { e.stopPropagation(); onPress(b); });
+  return b;
+}
+
+/* ── Who is talking ─────────────────────────────────────────────── */
+let face = null;
+let lineNo = 0;
+let raf = 0;
+function startTalking(f) {
+  stopTalking();
+  face = f;
+  if (face) face.classList.add('is-talking');
+}
+function stopTalking() {
+  cancelAnimationFrame(raf);
+  raf = 0;
+  if (face) { face.classList.remove('is-talking'); setMouth(face, REST); }
+  face = null;
+}
+
+/* ── A recording, with the mouth following its loudness ─────────────
+   The clip is decoded once and its loudness worked out 60 times a second;
+   while it plays, the mouth reads the loudness at the clip's play position.
+   Nothing is measured live, so it works the same on every browser, before
+   any tap has started the page's audio, and with the sound turned down. */
+const FPS = 60;
+let audio = null;
+let decoder = null;
+const envelopes = new Map();     // url -> Promise<Float32Array|null>
+function player() {
+  if (!audio) { audio = new Audio(); audio.preload = 'auto'; }
+  return audio;
+}
+function envelopeOf(url) {
+  if (envelopes.has(url)) return envelopes.get(url);
+  const p = (async () => {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      decoder ||= new AC();
+      const data = await (await fetch(url)).arrayBuffer();
+      const buf = await decoder.decodeAudioData(data);
+      const ch = buf.getChannelData(0);
+      const hop = Math.max(1, Math.round(buf.sampleRate / FPS));
+      const env = new Float32Array(Math.ceil(ch.length / hop));
+      let peak = 0;
+      for (let f = 0; f < env.length; f++) {
+        let sum = 0;
+        const from = f * hop, to = Math.min(ch.length, from + hop);
+        for (let i = from; i < to; i++) sum += ch[i] * ch[i];
+        env[f] = Math.sqrt(sum / Math.max(1, to - from));
+        peak = Math.max(peak, env[f]);
+      }
+      // 0..1 against the clip's own loudest moment, with a floor for breath noise
+      for (let f = 0; f < env.length; f++) env[f] = Math.max(0, (env[f] / (peak || 1) - 0.08) / 0.92);
+      return env;
+    } catch { return null; }
+  })();
+  envelopes.set(url, p);
+  return p;
+}
+
+/** Move the mouth while line `me` lasts. `level()` gives 0..1, or null to flap. */
+function moveMouth(me, level) {
+  cancelAnimationFrame(raf);
+  let open = 0;
+  const step = () => {
+    if (me !== lineNo || !face) return;
+    let want = level();
+    if (want == null) want = 0.55 + 0.45 * Math.sin(performance.now() / 70);   // a syllable rhythm
+    // opens quickly, closes a little slower: lips, not a shutter
+    open += (want - open) * (want > open ? 0.65 : 0.4);
+    setMouth(face, open);
+    raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+}
+
+function playClip(url, me, onFail) {
+  const a = player();
+  let env = null;
+  envelopeOf(url).then((e) => { env = e; });
+  a.onended = () => { if (me === lineNo) stopTalking(); };
+  a.onerror = () => { if (me === lineNo) onFail(); };
+  a.src = url;
+  const p = a.play();
+  if (p && p.catch) p.catch(() => { if (me === lineNo) onFail(); });
+  moveMouth(me, () => {
+    if (a.paused && a.currentTime === 0) return 0;          // not started yet: shut
+    if (!env) return null;                                   // still decoding: flap
+    return env[Math.min(env.length - 1, Math.floor(a.currentTime * FPS))] || 0;
+  });
+}
+/** Fetch and decode clips ahead of time (the next word), so the mouth is ready on the first syllable. */
+export function preloadClip(url) { if (url) envelopeOf(url); }
+
+/* ── The browser's voice ────────────────────────────────────────── */
+export const canSpeak = typeof window !== 'undefined' && ('speechSynthesis' in window || typeof Audio !== 'undefined');
+const hasSynth = typeof window !== 'undefined' && 'speechSynthesis' in window;
+let voice = null;
+function pickVoice() {
+  try {
+    const all = speechSynthesis.getVoices();
+    if (!all.length) return;
+    const en = all.filter((v) => /^en[-_]/i.test(v.lang) || v.lang === 'en');
+    voice = en.find((v) => /en[-_]GB/i.test(v.lang)) || en.find((v) => /en[-_]US/i.test(v.lang)) || en[0] || null;
+  } catch { /* no speech here */ }
+}
+if (hasSynth) {
+  pickVoice();
+  speechSynthesis.addEventListener?.('voiceschanged', pickVoice);
+}
+// A phone lets a page make sound only after a touch: the first tap or key
+// anywhere unlocks both the speech engine and the audio context.
+if (typeof document !== 'undefined') {
+  const unlock = () => {
+    try { if (hasSynth) { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } } catch { /* ignore */ }
+    try { player(); } catch { /* ignore */ }
+  };
+  document.addEventListener('pointerdown', unlock, { once: true, capture: true });
+  document.addEventListener('keydown', unlock, { once: true, capture: true });
+}
+
+function synthesise(text, me, rate) {
+  if (!hasSynth) { stopTalking(); return; }
+  try {
+    if (!voice) pickVoice();
+    const u = new SpeechSynthesisUtterance(text);
+    if (voice) u.voice = voice;
+    u.lang = voice ? voice.lang : 'en-GB';
+    u.rate = rate;
+    u.onend = u.onerror = () => { if (me === lineNo) stopTalking(); };
+    speechSynthesis.speak(u);
+    moveMouth(me, () => null);   // nothing to measure: the mouth flaps while he talks
+  } catch { stopTalking(); }
+}
+
+/**
+ * Say a line through `f` (a face button, or null). With `clip`, play that
+ * recording; without one, or if it will not play, use the browser's voice.
+ */
+export function sayWord(text, f = null, { rate = 0.8, clip = null } = {}) {
+  hush();
+  const me = ++lineNo;
+  startTalking(f);
+  if (clip) playClip(clip, me, () => { if (me === lineNo) synthesise(text, me, rate); });
+  else synthesise(text, me, rate);
+  return true;
+}
+
+export function hush() {
+  lineNo++;
+  stopTalking();
+  try { if (hasSynth) speechSynthesis.cancel(); } catch { /* ignore */ }
+  try { if (audio) audio.pause(); } catch { /* ignore */ }
+}

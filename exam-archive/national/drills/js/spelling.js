@@ -78,7 +78,8 @@ export function blanked(sentence, word) {
 export function spellingQuestion(seed, index, op, sets) {
   const d = deckFor(seed, sets);
   const [word, ipa, def, use] = BANK[d[index % d.length]];
-  const common = { word, ipa, def, use, gap: blanked(use, word), answer: word, set: setOf(d[index % d.length]) };
+  const i = d[index % d.length];
+  const common = { i, word, ipa, def, use, gap: blanked(use, word), answer: word, set: setOf(i) };
   if (op === 'spellIpa') return { ...common, spell: 'ipa', text: `/${ipa}/`, hint: 'Spell the word' };
   return { ...common, spell: 'say', text: '', hint: 'Listen, then spell the word' };
 }
@@ -95,79 +96,17 @@ export const sanitizeSpelling = (raw) => raw
   .replace(/^ /, '')
   .slice(0, 40);
 
-/* ── The voice ────────────────────────────────────────────────────────
-   The browser's own speech. A British or American English voice is picked
-   once the list of voices has loaded (Chrome fills it in a beat after the
-   page). A phone only lets a page speak after the player has touched it, so
-   the first tap or key anywhere on the page says nothing out loud to unlock
-   it: by the time a round starts, Read out can talk. */
-let voice = null;
-function pickVoice() {
-  try {
-    const all = speechSynthesis.getVoices();
-    if (!all.length) return;
-    const en = all.filter((v) => /^en[-_]/i.test(v.lang) || v.lang === 'en');
-    voice = en.find((v) => /en[-_]GB/i.test(v.lang)) || en.find((v) => /en[-_]US/i.test(v.lang)) || en[0] || null;
-  } catch { /* no speech here */ }
-}
-export const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window;
-if (canSpeak) {
-  pickVoice();
-  speechSynthesis.addEventListener?.('voiceschanged', pickVoice);
-  const unlock = () => {
-    try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch { /* ignore */ }
-  };
-  document.addEventListener('pointerdown', unlock, { once: true, capture: true });
-  document.addEventListener('keydown', unlock, { once: true, capture: true });
-}
+/* ── The voice and the face live in ./boy.js ─────────────────────────── */
+export { sayWord, hush, canSpeak, faceButton, FACE_SRC } from './boy.js';
 
-/* Whoever is talking (the boy's face) is told when speech starts and stops,
-   so it can move while it talks. Only the latest line counts: a line that was
-   cut off by a newer one does not stop the face mid-word. */
-let talker = null;
-let lineNo = 0;
-const setTalking = (on) => { if (talker) talker.classList.toggle('is-talking', on); };
-
-/** Say a word (or a definition, or a sentence), a little slower than talking pace. */
-export function sayWord(text, face = null, { rate = 0.8 } = {}) {
-  if (!canSpeak) return false;
-  try {
-    speechSynthesis.cancel();
-    setTalking(false);
-    talker = face;
-    const me = ++lineNo;
-    if (!voice) pickVoice();
-    const u = new SpeechSynthesisUtterance(text);
-    if (voice) u.voice = voice;
-    u.lang = voice ? voice.lang : 'en-GB';
-    u.rate = rate;
-    u.onstart = () => { if (me === lineNo) setTalking(true); };
-    u.onend = u.onerror = () => { if (me === lineNo) setTalking(false); };
-    setTalking(true); // some browsers never fire onstart
-    speechSynthesis.speak(u);
-    return true;
-  } catch { return false; }
-}
-export function hush() {
-  lineNo++;
-  setTalking(false);
-  try { if (canSpeak) speechSynthesis.cancel(); } catch { /* ignore */ }
-}
-
-/** The boy who says the words: his face, as a button. */
-export const FACE_SRC = '/media/characters/boy-face.svg';
-export function faceButton({ size = 88, label = 'Hear the word', tip = label, onPress } = {}) {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.className = 'spell-face';
-  b.style.setProperty('--face', `${size}px`);
-  b.setAttribute('aria-label', label);
-  b.dataset.tip = tip;
-  const img = document.createElement('img');
-  img.src = FACE_SRC;
-  img.alt = '';
-  img.draggable = false;
-  b.appendChild(img);
-  if (onPress) b.addEventListener('click', (e) => { e.stopPropagation(); onPress(b); });
-  return b;
+/* ── Recorded clips ───────────────────────────────────────────────────
+   Kokoro recordings of every word, definition and sentence, made once by
+   tools/spelling-audio (no credits) and served from /media/spelling. The
+   manifest says which exist; anything missing is spoken by the browser. */
+import { CLIPS } from '/data/spelling/audio.js';
+const pad = (i) => String(i + 1).padStart(4, '0');
+/** URL of the recording of bank entry `i` ('w' word, 'd' definition, 's' sentence), or null. */
+export function clipFor(i, kind) {
+  if (!CLIPS || !CLIPS[kind] || !CLIPS[kind].has(i)) return null;
+  return `/media/spelling/${CLIPS.dir}/${pad(i)}-${kind}.mp3`;
 }

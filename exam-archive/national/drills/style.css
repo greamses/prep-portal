@@ -664,14 +664,15 @@ tbody .drill-grid-th { border-right-width: 2px; }
   overflow: hidden;
   flex: none;
 }
-.spell-face img { width: 92%; height: 92%; display: block; transform-origin: 50% 85%; pointer-events: none; }
+.spell-face svg { width: 92%; height: 92%; display: block; transform-origin: 50% 85%; pointer-events: none; overflow: hidden; }
 .spell-face:disabled { cursor: default; opacity: 0.55; }
-.spell-face.is-talking img { animation: spell-talk 0.32s ease-in-out infinite alternate; }
+/* The mouth does the talking (boy.js); the head only nods gently with it. */
+.spell-face.is-talking svg { animation: spell-talk 0.6s ease-in-out infinite alternate; }
 @keyframes spell-talk {
   from { transform: translateY(0) scale(1, 1); }
-  to   { transform: translateY(-3%) scale(1.03, 0.97) rotate(-2deg); }
+  to   { transform: translateY(-1.5%) rotate(-1.5deg); }
 }
-@media (prefers-reduced-motion: reduce) { .spell-face.is-talking img { animation: none; } .spell-face.is-talking { outline: 3px solid var(--accent-primary); } }
+@media (prefers-reduced-motion: reduce) { .spell-face.is-talking svg { animation: none; } .spell-face.is-talking { outline: 3px solid var(--accent-primary); } }
 
 /* What a spelling bee lets you ask for, on the card: the meaning, and the
    word used in a sentence with the word itself blanked out. */

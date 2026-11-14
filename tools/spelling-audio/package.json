@@ -1,0 +1,12 @@
+{
+  "name": "spelling-audio",
+  "private": true,
+  "type": "module",
+  "description": "Records the Drills spelling bank with Kokoro (local, free). See README.md.",
+  "scripts": { "record": "node record.mjs" },
+  "dependencies": {
+    "@breezystack/lamejs": "1.2.7",
+    "kokoro-js": "1.2.1",
+    "phonemizer": "1.2.1"
+  }
+}

@@ -11,7 +11,7 @@ import { checkSubject } from './subject.js';
 import { typedToTex, plainToTex } from './typed-tex.js';
 import { createBoxInput } from './box-input.js';
 import { mathReady, loadMath, svgFor } from '/utils/components/workbook/mathify.js';
-import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak, faceButton } from './spelling.js';
+import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak, faceButton, clipFor } from './spelling.js';
 import { UI } from '/utils/components/ui-icons.js';
 
 const $ = (id) => document.getElementById(id);
@@ -130,9 +130,11 @@ function renderRoster(roster) {
    scores nothing, and moves on. */
 const speakBtn = faceButton({
   size: 104, label: 'Hear the word again', tip: 'Hear it again (Enter)',
-  onPress: (b) => { if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.word, b); focusInput(); },
+  onPress: (b) => { if (currentQuestion && currentQuestion.spell) sayTheWord(b); focusInput(); },
 });
 const talker = () => (currentQuestion && currentQuestion.spell === 'say' ? speakBtn : null);
+// The word, its definition, its sentence: a Kokoro recording when there is one.
+const sayTheWord = (b = speakBtn) => sayWord(currentQuestion.word, b, { clip: clipFor(currentQuestion.i, 'w') });
 
 const meaningEl = document.createElement('div');
 meaningEl.className = 'drill-meaning';
@@ -158,10 +160,10 @@ const spellTools = document.createElement('div');
 spellTools.className = 'drill-spell-tools';
 spellTools.hidden = true;
 const defBtn = toolBtn('drill-hear-def', UI.book(22), 'Hear the definition', () => {
-  if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.def, talker(), { rate: 0.95 });
+  if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.def, talker(), { rate: 0.95, clip: clipFor(currentQuestion.i, 'd') });
 });
 const useBtn = toolBtn('drill-hear-use', UI.speech(22), 'Hear it in a sentence', () => {
-  if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.use, talker(), { rate: 0.95 });
+  if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.use, talker(), { rate: 0.95, clip: clipFor(currentQuestion.i, 's') });
 });
 const skipBtn = toolBtn('drill-skip', UI.skip(22), 'Skip: show the spelling', () => skipWord());
 const toolRow = document.createElement('div');
@@ -202,7 +204,7 @@ function renderSpelling(q) {
     questionText.classList.toggle('is-longest', q.text.length > 26);
   } else {
     questionText.replaceChildren(speakBtn);
-    sayWord(q.word, speakBtn);
+    sayTheWord();
   }
   questionHint.textContent = q.spell === 'say' && !canSpeak
     ? 'This browser cannot speak. Choose Transcribe instead.'
@@ -462,7 +464,7 @@ inputEl.addEventListener('input', onInput);
 inputEl.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter' || !active || !currentQuestion || !currentQuestion.spell) return;
   e.preventDefault();
-  if (currentQuestion.spell === 'say' && !locked) sayWord(currentQuestion.word, speakBtn);
+  if (currentQuestion.spell === 'say' && !locked) sayTheWord();
 });
 // arrow keys, Home and End move the caret through the answer
 inputEl.addEventListener('keyup', (e) => { if (!box.on && /^(Arrow|Home|End)/.test(e.key)) renderTyped(); });
