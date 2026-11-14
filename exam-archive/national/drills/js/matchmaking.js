@@ -15,7 +15,7 @@ import { createRoomClient } from '/utils/games/seeded-room.js';
 export const { matchmake, createCodeRoom, joinRoomByCode } = createRoomClient({
   rooms: 'drillRooms',
   pointers: 'drillRoomPointers',
-  contentKeys: ['operations', 'tables', 'fractionTypes', 'compounds', 'activity', 'gridBlanks', 'barsLevel'],
+  contentKeys: ['operations', 'tables', 'fractionTypes', 'compounds', 'activity', 'gridBlanks', 'barsLevel', 'spellFocus'],
   // Two players share a room only if they would be playing the same thing. The
   // grid activity buckets purely on its own dial (its operations/tables are
   // placeholders); the arithmetic bucket is left byte-for-byte as it was, so
@@ -28,6 +28,6 @@ export const { matchmake, createCodeRoom, joinRoomByCode } = createRoomClient({
       [...c.tables].sort((a, b) => a - b).join(','),
       [...(c.fractionTypes || [])].sort().join(','),
       [...(c.compounds || [])].sort().join(','),
-    ].join('_');
+    ].join('_') + (c.spellFocus ? '_focus' : '');   // a Focus spelling room never meets a Normal one
   },
 });

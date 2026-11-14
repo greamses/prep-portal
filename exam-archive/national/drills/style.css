@@ -788,3 +788,9 @@ tbody .drill-grid-th { border-right-width: 2px; }
 .drill-answer-stage.is-spell.is-long { font-size: clamp(1.1rem, 4.6vw, 1.7rem); }
 .drill-answer-stage.is-spell.is-longest { font-size: clamp(0.95rem, 3.8vw, 1.3rem); letter-spacing: -0.01em; }
 #drill-typed .drill-spell-caret { height: 1.1em; margin: 0 1px; }
+
+/* Focus mode: the card when a wrong letter ends the round; Word Master's phase. */
+.drill-card.is-out .drill-card-face.pp-receipt__paper { box-shadow: inset 0 0 0 3px var(--accent-danger); }
+.drill-card.is-mastering .drill-card-face.pp-receipt__paper { box-shadow: inset 0 0 0 3px var(--accent-primary); }
+.drill-spell-time { margin: 0.4rem 0 0; font-size: 0.92rem; line-height: 1.5; color: var(--text-secondary); }
+.drill-out-note { list-style: none; margin: 0 0 0.8rem; padding: 0.6rem 0.8rem; font-size: 0.85rem; font-weight: 600; color: var(--accent-danger); text-align: center; }

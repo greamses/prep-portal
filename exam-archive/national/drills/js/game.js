@@ -11,7 +11,7 @@ import { checkSubject } from './subject.js';
 import { typedToTex, plainToTex } from './typed-tex.js';
 import { createBoxInput } from './box-input.js';
 import { mathReady, loadMath, svgFor } from '/utils/components/workbook/mathify.js';
-import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak, faceButton, clipFor, preloadClip } from './spelling.js';
+import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak, faceButton, clipFor, preloadClip, onTrack, wordsInSets } from './spelling.js';
 import { UI } from '/utils/components/ui-icons.js';
 
 const $ = (id) => document.getElementById(id);
@@ -100,6 +100,41 @@ let score = 0;
 let endAt = 0;
 let rafId = null;
 let resolveRound = null;
+/* ── Word Master ──────────────────────────────────────────────────────
+   Every word you skip (and so were shown) is kept. With Word Master on, when
+   the clock runs out the round does not close: the missed words come back one
+   by one, and a word you skip again goes to the back of the line, until each
+   has been spelled right. Your score was already handed in when the clock
+   stopped (so the room's leaderboard is not held up and mastering earns no
+   points); only your own results wait until you are done. */
+let masterOn = false;
+/* Focus mode: twice the pace, and the first wrong letter (or a skip) puts you
+   out. You are handed in as out (-1), which every board leaves off. */
+let focusOn = false;
+let roundWords = Infinity;    // a spelling round ends early once every word has been tried
+// How long the round took this player, for ranking spelling rounds on time.
+let roundStartAt = 0;
+let roundLimitMs = 0;
+let lastTimeMs = null;
+/** The time the last round took, in ms (to the end of the list, or the whole clock). */
+export const lastRoundTimeMs = () => lastTimeMs;
+let missed = [];              // questions skipped during the timed round
+let mastering = false;        // the after-the-clock phase
+let masterQueue = [];
+let masterDone = Promise.resolve();
+let finishMaster = () => {};
+const MISS_KEY = 'ppSpellMisses';   // how often each word has been missed, across rounds
+function noteMiss(q) {
+  if (!missed.some((m) => m.bank === q.bank && m.i === q.i)) missed.push(q);
+  try {
+    const t = JSON.parse(localStorage.getItem(MISS_KEY) || '{}');
+    const k = `${q.bank}:${q.i}`;
+    t[k] = (t[k] || 0) + 1;
+    localStorage.setItem(MISS_KEY, JSON.stringify(t));
+  } catch { /* private mode: the round still works */ }
+}
+/** Resolves when the player has finished Word Master (at once, if there was nothing to master). */
+export const masterFinished = () => masterDone;
 let roundId = 0;         // a Skip timer from an old round must not move a new one on
 
 function focusInput() {
@@ -134,7 +169,7 @@ const speakBtn = faceButton({
 });
 const talker = () => (currentQuestion && currentQuestion.spell === 'say' ? speakBtn : null);
 // The word, its definition, its sentence: a Kokoro recording when there is one.
-const sayTheWord = (b = speakBtn) => sayWord(currentQuestion.word, b, { clip: clipFor(currentQuestion.i, 'w') });
+const sayTheWord = (b = speakBtn) => sayWord(currentQuestion.word, b, { clip: clipFor(currentQuestion.bank, currentQuestion.i, 'w') });
 
 const meaningEl = document.createElement('div');
 meaningEl.className = 'drill-meaning';
@@ -160,10 +195,10 @@ const spellTools = document.createElement('div');
 spellTools.className = 'drill-spell-tools';
 spellTools.hidden = true;
 const defBtn = toolBtn('drill-hear-def', UI.book(22), 'Hear the definition', () => {
-  if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.def, talker(), { rate: 0.95, clip: clipFor(currentQuestion.i, 'd') });
+  if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.def, talker(), { rate: 0.95, clip: clipFor(currentQuestion.bank, currentQuestion.i, 'd') });
 });
 const useBtn = toolBtn('drill-hear-use', UI.speech(22), 'Hear it in a sentence', () => {
-  if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.use, talker(), { rate: 0.95, clip: clipFor(currentQuestion.i, 's') });
+  if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.use, talker(), { rate: 0.95, clip: clipFor(currentQuestion.bank, currentQuestion.i, 's') });
 });
 const skipBtn = toolBtn('drill-skip', UI.skip(22), 'Skip: show the spelling', () => skipWord());
 const toolRow = document.createElement('div');
@@ -177,6 +212,7 @@ answerStage.after(spellTools);
 
 function skipWord() {
   if (!active || locked || !currentQuestion || !currentQuestion.spell) return;
+  if (focusOn && !mastering) { dropOut(); return; }
   locked = true;
   const round = roundId;
   hush();
@@ -184,14 +220,15 @@ function skipWord() {
   revealEl.hidden = false;
   toolRow.hidden = true;
   useEl.textContent = currentQuestion.use;   // the sentence, whole, while the answer shows
+  if (!mastering) noteMiss(currentQuestion);
   setTimeout(() => {
     if (round !== roundId) return;   // that round is over; endRound tidied up
     revealEl.hidden = true;
     toolRow.hidden = false;
     locked = false;
     if (!active) return;
-    currentIndex += 1;
-    renderQuestion();
+    if (mastering) { masterQueue.push(masterQueue.shift()); nextMasterWord(); return; }
+    advance();
   }, 1600);
 }
 function renderSpelling(q) {
@@ -220,8 +257,8 @@ function renderSpelling(q) {
   // Long words are typed in a smaller face, sized by the word itself so it does not jump as you type.
   answerStage.classList.toggle('is-long', q.word.length > 11);
   answerStage.classList.toggle('is-longest', q.word.length > 18);
-  preloadClip(clipFor(q.i, 'd'));
-  preloadClip(clipFor(q.i, 's'));
+  preloadClip(clipFor(q.bank, q.i, 'd'));
+  preloadClip(clipFor(q.bank, q.i, 's'));
   inputEl.maxLength = 40;
   inputEl.value = '';
   typedEl.textContent = '';
@@ -443,7 +480,40 @@ function onInput() {
   const keep = Math.min(digits.length, sanitizeTyped(raw.slice(0, at)).length);
   try { inputEl.setSelectionRange(keep, keep); } catch { /* not focusable yet */ }
   renderTyped();
+  if (focusOn && !mastering && currentQuestion && currentQuestion.spell && digits && !onTrack(digits, currentQuestion.word)) {
+    dropOut();
+    return;
+  }
   checkAnswer(digits);
+}
+
+/* Focus mode: out. The word is shown, then the round closes for this player,
+   who is handed in as -1 (no place on the board). */
+function dropOut() {
+  if (!active || locked) return;
+  locked = true;
+  if (rafId) cancelAnimationFrame(rafId);   // the clock stops: out is out, even at 0:00
+  timeRemainingEl.textContent = 'Out';
+  hush();
+  const round = roundId;
+  revealEl.textContent = `Out! ${currentQuestion.word}`;
+  revealEl.hidden = false;
+  toolRow.hidden = true;
+  useEl.textContent = currentQuestion.use;
+  cardEl.classList.add('is-out');
+  setTimeout(() => {
+    if (round !== roundId) return;
+    cardEl.classList.remove('is-out');
+    score = -1;
+    masterOn = false;
+    timeUp();
+  }, 2000);
+}
+/** After a word is done with: the next, or the end once every word has been tried. */
+function advance() {
+  currentIndex += 1;
+  if (currentQuestion && currentQuestion.spell && currentIndex >= roundWords) { timeUp(); return; }
+  renderQuestion();
 }
 
 /* Algebra Moves writes a power as ^(2) and a cube root as root_3(…); the
@@ -454,14 +524,16 @@ function checkAnswer(digits) {
   if (locked || digits === '') return;
   if (isCorrectAnswer(digits, currentQuestion.answer)) {
     locked = true;
-    score += 1;
-    scoreNote.textContent = `${score} correct`;
+    if (!mastering) {
+      score += 1;
+      scoreNote.textContent = `${score} correct`;
+    }
     cardEl.classList.add('correct-flash');
     setTimeout(() => {
       cardEl.classList.remove('correct-flash');
       locked = false;
-      currentIndex += 1;
-      renderQuestion();
+      if (mastering) { masterQueue.shift(); nextMasterWord(); return; }
+      advance();
     }, 120);
   }
 }
@@ -470,15 +542,47 @@ function tick() {
   if (!active) return;
   const remainingMs = endAt - Date.now();
   if (remainingMs <= 0) {
-    endRound();
+    timeUp();
     return;
   }
   timeRemainingEl.textContent = `${Math.ceil(remainingMs / 1000)}s left`;
   rafId = requestAnimationFrame(tick);
 }
 
+/* The clock has stopped: the score is handed in now, whatever happens next. */
+function timeUp() {
+  if (rafId) cancelAnimationFrame(rafId);
+  if (!resolveRound && !mastering && !active) return;
+  if (resolveRound) lastTimeMs = Math.max(0, Math.min(Date.now() - roundStartAt, roundLimitMs));
+  const finalScore = score;
+  if (resolveRound) resolveRound(finalScore);
+  resolveRound = null;
+  if (masterOn && missed.length && finalScore >= 0) { startMaster(); return; }
+  endRound();
+}
+
+function startMaster() {
+  mastering = true;
+  masterQueue = missed.slice();
+  locked = false;
+  hush();
+  timerNote.textContent = 'Word Master';
+  cardEl.classList.add('is-mastering');
+  nextMasterWord();
+}
+function nextMasterWord() {
+  if (!masterQueue.length) { endRound(); return; }
+  const left = masterQueue.length;
+  timeRemainingEl.textContent = `Round over. Master ${left === 1 ? 'the last word' : `${left} words`} you missed`;
+  currentQuestion = masterQueue[0];
+  renderSpelling(currentQuestion);
+  focusInput();
+}
+
 function endRound() {
   active = false;
+  mastering = false;
+  cardEl.classList.remove('is-mastering');
   hush();
   spellTools.hidden = true;
   revealEl.hidden = true;
@@ -490,6 +594,7 @@ function endRound() {
   const finalScore = score;
   if (resolveRound) resolveRound(finalScore);
   resolveRound = null;
+  finishMaster();
 }
 
 inputEl.addEventListener('input', onInput);
@@ -545,7 +650,7 @@ cardEl.addEventListener('click', focusInput);
 
 // Resolves with the player's final correct-answer count once the local
 // timer hits zero.
-export function startRound({ seed: roomSeed, timeLimit, startAt, operations, tables, fractionTypes, compounds, roster }) {
+export function startRound({ seed: roomSeed, timeLimit, startAt, operations, tables, fractionTypes, compounds, roster, master = false, focus = false }) {
   return new Promise((resolve) => {
     seed = roomSeed;
     questionOpts = { operations, tables, fractionTypes, compounds };
@@ -554,6 +659,13 @@ export function startRound({ seed: roomSeed, timeLimit, startAt, operations, tab
     locked = false;
     resolveRound = resolve;
     roundId += 1;
+    masterOn = !!master && !focus;     // a Focus round has no Word Master: one slip and you are out
+    focusOn = !!focus;
+    roundWords = (operations || []).some((o) => /^spell/.test(o)) ? wordsInSets(tables) : Infinity;
+    missed = [];
+    mastering = false;
+    masterQueue = [];
+    masterDone = new Promise((r) => { finishMaster = r; });
 
     scoreNote.textContent = '0 correct';
     timerNote.textContent = `${timeLimit}s round`;
@@ -594,6 +706,9 @@ export function startRound({ seed: roomSeed, timeLimit, startAt, operations, tab
         questionText.hidden = false;
         answerStage.hidden = false;
         endAt = anchorAt + timeLimit * 1000;
+        roundStartAt = anchorAt;
+        roundLimitMs = timeLimit * 1000;
+        lastTimeMs = null;
         renderQuestion();
         focusInput();
         rafId = requestAnimationFrame(tick);

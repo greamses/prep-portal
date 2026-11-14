@@ -10,12 +10,12 @@ import { UNIT_NUMBERS } from './rng.js';
 import { COMPOUND_SETS, ALL_COMPOUND_SETS } from '/data/chem/rmm.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
-import { startRound } from './game.js';
+import { startRound, masterFinished, lastRoundTimeMs } from './game.js';
 import { startGridRound } from './grid.js';
 import { startBarsRound } from './bars.js';
-import { SET_COUNT, setsLabel } from './spelling.js';
+import { BANKS, BANK_KEYS, setCount, setId, setsLabel, roundSeconds, clockLabel, SECONDS_PER_WORD } from './spelling.js';
 import { openSpellingLibrary } from './spelling-library.js';
-import { finishRound } from './leaderboard.js';
+import { finishRound, rankDrill } from './leaderboard.js';
 import { renderLeaderboard } from '/utils/games/leaderboard-view.js';
 import {
   createCarousel, createSectionFlow,
@@ -216,8 +216,16 @@ const denominators = new Set(savedDenoms.length ? savedDenoms : DENOMINATORS); /
 const savedSets = mem.get('compounds', ALL_COMPOUND_SETS, Array.isArray).filter((k) => ALL_COMPOUND_SETS.includes(k));
 const compounds = new Set(savedSets.length ? savedSets : ALL_COMPOUND_SETS); // Chemistry only — tick-all default
 // Spelling only — which sets of twenty words (set 1 = the bank's first twenty). Sent as the room's `tables`.
-const spellSets = new Set(mem.get('spellSets', [1], Array.isArray).filter((n) => Number.isInteger(n) && n >= 1 && n <= SET_COUNT));
+// Spelling: which list, which of its sets of ten (set numbers 1..n), Normal or
+// Focus pace, and whether missed words are mastered after the clock. The sets
+// go to the room as ids (list code + set number: see BANKS in spelling.js).
+let spellBank = mem.get('spellBank', 'secondary', BANK_KEYS);
+const spellSets = new Set(mem.get('spellSets', [1], Array.isArray).filter((n) => Number.isInteger(n) && n >= 1 && n <= setCount(spellBank)));
 if (!spellSets.size) spellSets.add(1);
+let spellFocus = mem.get('spellFocus', false, [true, false]);
+let spellMaster = mem.get('spellMaster', true, [true, false]);
+const spellIds = () => [...spellSets].sort((a, b) => a - b).map((n) => setId(spellBank, n));
+const spellTime = () => roundSeconds(spellIds(), spellFocus);
 // Chemistry's single operation is never offered as a step, so a remembered
 // setup that somehow lost it would leave the player unable to start.
 if (categoryValue === 'chemistry') operations.add('rmm');
@@ -228,7 +236,7 @@ const saveContent = () => mem.save({
   tables: [...tables], operations: [...operations],
   fractionTypes: [...fractionTypes], denominators: [...denominators],
   compounds: [...compounds],
-  spellSets: [...spellSets],
+  spellSets: [...spellSets], spellBank, spellFocus, spellMaster,
   gridBlanks,
   barsLevel,
 });
@@ -268,7 +276,7 @@ function getTablesPool() {
   if (categoryValue === 'timestable') return [1];
   if (categoryValue === 'fracbars') return [1]; // same — the sums are dealt by js/bars.js
   if (categoryValue === 'chemistry') return [1];
-  if (categoryValue === 'spelling') return [...spellSets].sort((a, b) => a - b); // the sets of ten
+  if (categoryValue === 'spelling') return spellIds(); // the sets of ten, as list code + set number
   if (categoryValue === 'fractions') return [...denominators];
   if (isNumbersMode()) return [...tables];
   const list = rangesFor(categoryValue);
@@ -359,7 +367,10 @@ topic.addSlide('denominators', 'Denominators', () => {});
 topic.addSlide('compounds', 'Compounds', () => {});
 topic.addSlide('grid-blanks', 'Blanks', () => {});
 topic.addSlide('bars-level', 'Level', () => {});
+topic.addSlide('spell-bank', 'Word List', () => {});
 topic.addSlide('spell-sets', 'Word Sets', () => {});
+topic.addSlide('spell-pace', 'Pace', () => {});
+topic.addSlide('spell-master', 'Word Master', () => {});
 
 function renderOperationsPick() {
   const isFractions = categoryValue === 'fractions';
@@ -388,28 +399,79 @@ function renderOperationsPick() {
 
 /* Spelling: which sets of ten words. The library (every set, with meanings
    and the boy to say each word) opens from here, on the first ticked set. */
+function renderSpellBankStep() {
+  renderChoiceStep(topic, 'spell-bank', {
+    title: 'Which word list?',
+    name: 'drill-spell-bank',
+    options: BANK_KEYS.map((k) => ({ value: k, label: `${BANKS[k].label} · ${BANKS[k].rows.length} words`, checked: spellBank === k })),
+    onPick: (v) => {
+      if (v !== spellBank) { spellBank = v; spellSets.clear(); spellSets.add(1); }
+      saveContent();
+      renderOperationsPick();
+      topic.goTo('operations');
+    },
+  });
+}
+
 function renderSpellSetsPick() {
+  const count = setCount(spellBank);
   renderMultiStep(topic, 'spell-sets', {
-    title: 'Which sets of words?',
-    subtitle: `Ten words a set, ${SET_COUNT} sets. Study a set in the library first.`,
+    title: `Which ${BANKS[spellBank].label} sets?`,
+    subtitle: `Ten words a set, ${count} sets. Study a set in the library first.`,
     grid: true,
     colorOffset: 2,
-    options: Array.from({ length: SET_COUNT }, (_, i) => ({ value: String(i + 1), label: String(i + 1) })),
+    options: Array.from({ length: count }, (_, i) => ({ value: String(i + 1), label: String(i + 1) })),
     isChecked: (v) => spellSets.has(Number(v)),
     onToggle: (v, checked) => {
       const n = Number(v);
       if (checked) spellSets.add(n); else spellSets.delete(n);
       updateStartDisabled();
+      renderTimeStep();
     },
     nextLabel: 'Next',
-    onNext: () => { range = '1-9'; saveContent(); flow.next(); }, // last step of this section
+    onNext: () => { range = '1-9'; saveContent(); renderSpellPaceStep(); topic.goTo('spell-pace'); },
   });
   const lib = document.createElement('button');
   lib.type = 'button';
   lib.className = 'pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c4 drill-spell-lib-btn';
   lib.textContent = 'Open the library';
-  lib.addEventListener('click', () => openSpellingLibrary({ sets: [...spellSets] }));
+  lib.addEventListener('click', () => openSpellingLibrary({ bank: spellBank, sets: [...spellSets] }));
   topic.getEl('spell-sets').appendChild(lib);
+}
+
+/* The pace sets the clock: the round lasts as long as its words need. */
+function renderSpellPaceStep() {
+  const t = (focus) => clockLabel(roundSeconds(spellIds(), focus));
+  renderChoiceStep(topic, 'spell-pace', {
+    title: 'Normal or Focus?',
+    subtitle: 'The clock comes from the number of words.',
+    name: 'drill-spell-pace',
+    options: [
+      { value: 'normal', label: `Normal · 10 words a minute (${t(false)})`, checked: !spellFocus },
+      { value: 'focus', label: `Focus · 20 a minute, one wrong letter and you are out (${t(true)})`, checked: spellFocus },
+    ],
+    onPick: (v) => {
+      spellFocus = v === 'focus';
+      saveContent();
+      renderTimeStep();
+      if (spellFocus) { flow.next(); return; }   // nothing to master: one slip ends a Focus round
+      renderSpellMasterStep();
+      topic.goTo('spell-master');
+    },
+  });
+}
+
+function renderSpellMasterStep() {
+  renderChoiceStep(topic, 'spell-master', {
+    title: 'When the round ends',
+    subtitle: 'Word Master brings back every word you skipped until you can spell it.',
+    name: 'drill-spell-master',
+    options: [
+      { value: 'on', label: 'Word Master: practise the words I missed', checked: spellMaster },
+      { value: 'off', label: 'Straight to the results', checked: !spellMaster },
+    ],
+    onPick: (v) => { spellMaster = v === 'on'; saveContent(); flow.next(); }, // last step of this section
+  });
 }
 
 function renderFractionTypePick() {
@@ -574,6 +636,7 @@ const GAME_PAGES = {
 
 function pickCategory(v) {
   if (GAME_PAGES[v]) { window.location.href = GAME_PAGES[v]; return; }
+  queueMicrotask(renderTimeStep);   // spelling's clock comes from its words, every other topic's is chosen
   if (v !== categoryValue) {
     // Reset the whole branch — a range picked under Basic must not survive
     // into Fractions (which has no range at all). Re-picking the SAME
@@ -594,6 +657,7 @@ function pickCategory(v) {
   if (v === 'timestable') { renderGridBlanksStep(); topic.goTo('grid-blanks'); }
   else if (v === 'chemistry') { renderCompoundsPick(); topic.goTo('compounds'); }
   else if (v === 'fractions') { renderFractionTypePick(); topic.goTo('fraction-type'); }
+  else if (v === 'spelling') { renderSpellBankStep(); topic.goTo('spell-bank'); }
   else { renderOperationsPick(); topic.goTo('operations'); }
 }
 
@@ -657,18 +721,37 @@ renderChoiceStep(options, 'size', {
   ],
   onPick: (v) => { roomSize = Number(v); mem.save({ roomSize }); options.goTo('time'); },
 });
-renderChoiceStep(options, 'time', {
-  title: 'How long is the round?',
-  name: 'drill-time',
-  colorOffset: 4,
-  options: [
-    { value: '30', label: '30s', checked: timeLimit === 30 },
-    { value: '60', label: '60s', checked: timeLimit === 60 },
-    { value: '90', label: '90s', checked: timeLimit === 90 },
-    { value: '120', label: '120s', checked: timeLimit === 120 },
-  ],
-  onPick: (v) => { timeLimit = Number(v); mem.save({ timeLimit }); flow.next(); }, // last step of this section
-});
+/* The round's length. Spelling has none to choose: its clock comes from the
+   number of words (10 a minute, or 20 in Focus), so the step just says so. */
+function renderTimeStep() {
+  if (categoryValue === 'spelling') {
+    const words = spellIds().length ? roundSeconds(spellIds(), false) / SECONDS_PER_WORD.normal : 0;
+    const note = document.createElement('p');
+    note.className = 'drill-spell-time';
+    note.textContent = `${words} words at ${spellFocus ? '20' : '10'} a minute: ${clockLabel(spellTime())}. ` +
+      'The round ends sooner if you finish the list.';
+    renderCustomStep(options, 'time', {
+      title: 'How long is the round?',
+      content: note,
+      nextLabel: 'Next',
+      onNext: () => flow.next(),
+    });
+    return;
+  }
+  renderChoiceStep(options, 'time', {
+    title: 'How long is the round?',
+    name: 'drill-time',
+    colorOffset: 4,
+    options: [
+      { value: '30', label: '30s', checked: timeLimit === 30 },
+      { value: '60', label: '60s', checked: timeLimit === 60 },
+      { value: '90', label: '90s', checked: timeLimit === 90 },
+      { value: '120', label: '120s', checked: timeLimit === 120 },
+    ],
+    onPick: (v) => { timeLimit = Number(v); mem.save({ timeLimit }); flow.next(); }, // last step of this section
+  });
+}
+renderTimeStep();
 
 options.start('mode');
 
@@ -751,7 +834,7 @@ const flow = createSectionFlow([
       const out = [{ label: cat }, ...[...operations].map((o) => ({ label: opName(o) }))];
       // Spelling has no number range (the words are the content), and its labels are words, not "+ Addition".
       if (categoryValue === 'spelling') {
-        return [{ label: cat }, ...[...operations].map((o) => ({ label: OPERATION_LABELS[o] })), { label: `Sets ${setsLabel([...spellSets])}` }];
+        return [{ label: cat }, { label: BANKS[spellBank].label }, ...[...operations].map((o) => ({ label: OPERATION_LABELS[o] })), { label: `Sets ${setsLabel([...spellSets])}` }, { label: spellFocus ? 'Focus' : spellMaster ? 'Word Master' : 'Normal' }];
       }
       if (categoryValue === 'fractions') out.push({ label: `${denominators.size} denominators` });
       else if (isNumbersMode()) out.push({ label: `${tables.size} numbers` });
@@ -764,7 +847,7 @@ const flow = createSectionFlow([
   },
   {
     el: $('drill-section-options'),
-    chips: () => optionsChips({ mode, roomSize, timeLabel: `${timeLimit}s` }),
+    chips: () => optionsChips({ mode, roomSize, timeLabel: categoryValue === 'spelling' ? clockLabel(spellTime()) : `${timeLimit}s` }),
   },
   {
     el: $('drill-section-room'),
@@ -897,11 +980,23 @@ function buildRoster({ size, botsNeeded, seed }, myName) {
    half the room hasn't finished isn't winning it. */
 function renderResults(ranked, settled = true) {
   const repaint = resultsBd.classList.contains('open');
-  renderLeaderboard(leaderboardEl, ranked, {
+  // A Focus drop-out is handed in as -1 and does not make the board. If that
+  // was you, the board says so above the others.
+  const outSelf = ranked.some((r) => r.isSelf && !r.pending && r.score < 0);
+  const shown = ranked.filter((r) => r.pending || r.score >= 0);
+  renderLeaderboard(leaderboardEl, shown, {
     settled, repaint,
+    compare: rankDrill,
+    meta: (row) => (row.timeMs != null ? `in ${clockLabel(Math.round(row.timeMs / 1000))}` : null),
     pendingLabel: (s) => (s ? 'no score' : 'still playing…'),
     metaClass: 'pp-lb-pending',
   });
+  if (outSelf) {
+    const note = document.createElement('li');
+    note.className = 'drill-out-note';
+    note.textContent = 'You dropped out: in Focus mode one wrong letter ends your round, and you are left off the board.';
+    leaderboardEl.prepend(note);
+  }
   resultsBd.classList.add('open');
   resultsBd.setAttribute('aria-hidden', 'false');
   document.body.classList.add('drill-nav-hidden');
@@ -913,6 +1008,7 @@ function hideResults() {
 }
 
 // ── Round orchestration (shared by all three matchmaking paths) ─────────
+const isSpellingRoom = (room) => (room.operations || []).some((o) => /^spell/.test(o));
 async function playRoundAndShowResults(room, myName) {
   const roster = buildRoster(room, myName);
   // The ROOM decides which surface plays — a grid room predates nothing here,
@@ -944,16 +1040,20 @@ async function playRoundAndShowResults(room, myName) {
         fractionTypes: room.fractionTypes,
         compounds: room.compounds,
         roster,
+        // Word Master is this player's own choice; Focus is the room's rule.
+        master: isSpellingRoom(room) && !room.spellFocus && spellMaster,
+        focus: isSpellingRoom(room) && !!room.spellFocus,
       });
-
-  // The round overlay just closed but the leaderboard read (grace delay +
-  // one getDocs) hasn't landed yet — show a small "tallying" modal instead
-  // of letting the bare setup page show through in between.
-  showAwaiting();
+  const spelling = isSpellingRoom(room);
+  // The score is handed in now (so the room's board is never held up); this
+  // player's own results wait until Word Master is done.
+  let mastered = false;
+  let liveRows = null;
+  const masterP = spelling ? masterFinished() : Promise.resolve();
+  masterP.then(() => { mastered = true; });
 
   let ranked;
-  try {
-    ranked = await finishRound({
+  const board = (async () => { try { return await finishRound({
       roomId: room.roomId,
       seed: room.seed,
       timeLimit: room.timeLimit,
@@ -969,9 +1069,16 @@ async function playRoundAndShowResults(room, myName) {
       // activity.
       activity: room.activity,
       gridBlanks: room.gridBlanks,
+      // Spelling bots work through the room's own word list, at its pace.
+      tables: room.tables,
+      spellFocus: !!room.spellFocus,
+      // Spelling ranks words right, then time: how long this player took.
+      myMetrics: spelling ? { timeMs: lastRoundTimeMs() } : undefined,
       // The board goes up straight away and fills in as the room finishes,
       // instead of holding everyone behind the awaiting overlay.
       onUpdate: (rows) => {
+        liveRows = rows;
+        if (!mastered) return;      // still mastering words: the board waits
         hideAwaiting();
         // Same avatar override the settled board applies, or your own face
         // would swap out from under you when the last player lands.
@@ -980,12 +1087,23 @@ async function playRoundAndShowResults(room, myName) {
         renderResults(rows, false);
       },
       myScore,
-    });
-  } catch (e) {
-    // Silent here meant a broken leaderboard looked like a working one.
-    console.error('[drills] finishRound failed — showing a local-only board:', e);
-    ranked = [{ name: myName, score: myScore, isBot: false, isSelf: true, avatarSeed: getAvatarSeed() }];
+    }); } catch (e) {
+      // Silent here meant a broken leaderboard looked like a working one.
+      console.error('[drills] finishRound failed — showing a local-only board:', e);
+      return [{ name: myName, score: myScore, isBot: false, isSelf: true, avatarSeed: getAvatarSeed() }];
+    } })();
+  await masterP;
+  // The round overlay just closed but the leaderboard read (grace delay +
+  // one getDocs) hasn't landed yet — show a small "tallying" modal instead
+  // of letting the bare setup page show through in between.
+  showAwaiting();
+  if (liveRows) {
+    hideAwaiting();
+    const me = liveRows.find((r) => r.isSelf);
+    if (me) me.avatarSeed = getAvatarSeed();
+    renderResults(liveRows, false);
   }
+  ranked = await board;
   // Show the player's own chosen avatar on the leaderboard, not the
   // uid-derived one leaderboard.js falls back to.
   const selfRow = ranked.find((r) => r.isSelf);
@@ -1027,7 +1145,7 @@ async function runMultiplayer({ timeLimit, operationsList, tablesList, fractionT
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus, displayName: myName },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -1048,7 +1166,7 @@ async function runMultiplayerCreate({ timeLimit, operationsList, tablesList, fra
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus, displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for other players…') },
     );
   } catch (e) {
@@ -1114,7 +1232,7 @@ async function runVersusCreate({ timeLimit, operationsList, tablesList, fraction
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, displayName: myName },
+      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus, displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for your opponent…') },
     );
   } catch (e) {
@@ -1144,6 +1262,7 @@ async function runVersusJoin({ myName }) {
 }
 
 async function runDrill() {
+  const chosenTime = timeLimit;
   startBtn.disabled = true;
   // The setup is proven good the moment a round starts with it — next visit
   // jumps straight to the last section with these picks as chips.
@@ -1156,6 +1275,8 @@ async function runDrill() {
   const fractionTypesList = categoryValue === 'fractions' ? [...fractionTypes] : [];
   const compoundsList = categoryValue === 'chemistry' ? [...compounds] : [];
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
+  // Spelling's clock is the words' own (10 a minute, 20 in Focus), not the chosen time.
+  const timeLimit = categoryValue === 'spelling' ? spellTime() : chosenTime;
 
   if (mode === 'versus') {
     if (roomAction === 'join') await runVersusJoin({ timeLimit, myName });

@@ -47,3 +47,30 @@ export function simulateBotScore(seed, botSlot, timeLimitSec, pace = 1) {
   }
   return correct;
 }
+
+/* ── Spelling bots ────────────────────────────────────────────────────
+   A spelling round has a fixed number of words and is ranked on words right,
+   then on time (who got through the list first). So a spelling bot works
+   through the words one by one: some it skips (no point, time still spent),
+   and it stops when the words run out or the clock does. In Focus mode a
+   slip puts the bot out, like a player: it is handed in as -1, off the board.
+   Seconds per word are drawn around the round's own pace (6 s Normal, 3 s
+   Focus), so the best bots finish with a little time to spare. */
+export function simulateSpellingBot(seed, botSlot, timeLimitSec, words, focus) {
+  const rng = botRng(seed, botSlot);
+  const per = focus ? 3 : 6;
+  const speed = per * (0.55 + rng() * 0.7);        // this bot's usual seconds per word
+  const missRate = 0.04 + rng() * 0.16;            // a word it cannot spell
+  let t = 0, score = 0;
+  for (let w = 0; w < words; w++) {
+    const took = speed * (0.6 + rng() * 0.8);
+    if (t + took > timeLimitSec) return { score, timeMs: Math.round(timeLimitSec * 1000) };
+    t += took;
+    if (rng() < missRate) {
+      if (focus) return { score: -1, timeMs: Math.round(t * 1000) };   // out on the first slip
+      continue;
+    }
+    score += 1;
+  }
+  return { score, timeMs: Math.round(t * 1000) };
+}

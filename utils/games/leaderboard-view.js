@@ -56,6 +56,9 @@ export function launchConfetti() {
  * @param {function}    [o.meta]             (row, ctx) -> detail string for a FINISHED row, or null
  * @param {function}    [o.pendingLabel]     (settled) -> detail string for a PENDING row
  * @param {string}      [o.metaClass]        class for the detail <small> (default 'pp-lb-meta')
+ * @param {function}    [o.compare]          (a, b) -> order for FINISHED rows when a game ranks on more
+ *                                           than score (Drills spelling: words, then time). Two rows tie
+ *                                           only if compare calls them equal. Default: score alone.
  * @returns {{ sorted: Array, topTie: boolean }}
  */
 export function renderLeaderboard(listEl, ranked, o = {}) {
@@ -65,7 +68,9 @@ export function renderLeaderboard(listEl, ranked, o = {}) {
     meta = null,
     pendingLabel = (s) => (s ? 'no score' : 'still playing…'),
     metaClass = 'pp-lb-meta',
+    compare = null,
   } = o;
+  const cmp = compare || ((a, b) => b.score - a.score);
 
   listEl.innerHTML = '';
   const total = ranked.length;
@@ -73,13 +78,13 @@ export function renderLeaderboard(listEl, ranked, o = {}) {
   // exists. A score shared with anyone shows a tie marker; a tie for the top has
   // NO winner (nobody crowned, no confetti on a draw).
   const done = ranked.filter((r) => !r.pending);
-  const topScore = done.length ? Math.max(...done.map((r) => r.score)) : 0;
-  const topTie = done.filter((r) => r.score === topScore).length > 1;
-  const sorted = ranked.slice().sort((a, b) => ((a.pending ? 1 : 0) - (b.pending ? 1 : 0)) || (b.score - a.score));
+  const sorted = ranked.slice().sort((a, b) => ((a.pending ? 1 : 0) - (b.pending ? 1 : 0)) || cmp(a, b));
+  const best = sorted.find((r) => !r.pending);
+  const topTie = !!best && done.filter((r) => cmp(r, best) === 0).length > 1;
 
   sorted.forEach((row, i) => {
-    const rankNum = 1 + done.filter((r) => r.score > row.score).length;
-    const tiedHere = done.filter((r) => r.score === row.score).length > 1;
+    const rankNum = 1 + done.filter((r) => cmp(r, row) < 0).length;
+    const tiedHere = done.filter((r) => cmp(r, row) === 0).length > 1;
     const isWinner = settled && !row.pending && rankNum === 1 && !topTie;
     const tilt = (i % 2 === 0 ? -1 : 1) * (1.5 + (i % 3));
 
