@@ -176,7 +176,7 @@ const divStages = (id) => ({
   /* the equation as it stands: the tops and the signs */
   [`${id}.top`]: (s, H) => ["t1n", "p1", "t2n", "p2", "t3n", "e", "t4n"].forEach((k, i) => H.write(key(s, k), i * 0.12)),
   /* ÷ a under every term, one term at a time */
-  [`${id}.div`]: (s, H) => ["t1", "t2", "t3", "t4"].forEach((k, i) => { H.write(key(s, `${k}d`), 0.4 + i * 0.7); if (!isInstant(H)) H.sound("tick", 0.4 + i * 0.7); }),
+  [`${id}.div`]: (s, H) => ["t1", "t2", "t3", "t4"].forEach((k, i) => { H.write(key(s, `${k}r`), 0.25 + i * 0.7); H.write(key(s, `${k}d`), 0.4 + i * 0.7); if (!isInstant(H)) H.sound("tick", 0.4 + i * 0.7); }),
   /* the a's that cancel, struck through; what is left, written small */
   [`${id}.cancel`]: (s, H) => {
     ["k1", "k2"].forEach((k, i) => H.draw(s?.querySelector(`[data-mb-key="${k}"]`), 0.3 + i * 0.4));
@@ -217,7 +217,7 @@ function transferPic(pieces, { move, op, to = null, sign = "-", em = EMS }) {
     + `</g><g data-k="meta" data-op="${op}"></g>`);
 }
 const transferStages = (id) => ({
-  [`${id}.show`]: (sv, H) => [...(sv?.querySelectorAll('[data-mb="num"]') || [])].filter((n) => n.dataset.k !== "neg").forEach((n, i) => H.write(n, i * 0.1)),
+  [`${id}.show`]: (sv, H) => [...(sv?.querySelectorAll('[data-mb="num"], [data-mb="cut"]') || [])].filter((n) => n.dataset.k !== "neg").forEach((n, i) => H.write(n, i * 0.1)),
   [`${id}.go`]: (sv, H) => {
     const g = key(sv, "mvT"), meta = key(sv, "meta"), aft = key(sv, "after"), tgt = key(sv, "tgt");
     if (!g || !meta) return;
@@ -266,6 +266,10 @@ export function quadFormula() {
     T1a: () => transferPic([{ k: "x", tex: "x" }, { k: "op", tex: "+" }, { k: "m", tex: "3" }, { k: "e", tex: "=" }, { k: "r", tex: "5" }], { move: "m", op: "op" }),
     T1b: () => transferPic([{ k: "x", tex: "x" }, { k: "op", tex: "+" }, { k: "m", tex: "3" }, { k: "e", tex: "=" }, { k: "r", tex: "-5" }], { move: "m", op: "op" }),
     n5: () => line1("x = 2\\ \\ \\text{or}\\ \\ x = -8", GREEN),
+    n5b: () => line1("x = 2\\ \\ \\text{or}\\ \\ x = -8", GREEN),
+    ck0: () => line1("\\text{check in } x^{2} + 6x = 16", PURPLE, 6),
+    ck1: () => line1("x = 2:\\ \\ 2^{2} + 6(2) = 4 + 12 = 16\\ \\checkmark"),
+    ck2: () => line1("x = -8:\\ \\ (-8)^{2} + 6(-8) = 64 - 48 = 16\\ \\checkmark"),
     /* part 2, the stack */
     g1: () => line1("ax^{2} + bx + c = 0"),
     dv: () => divPic(),
@@ -300,13 +304,14 @@ export function quadFormula() {
     rule1: at(UNDER), rule2: at(UNDER),
     n3s: at(SLOT[0]), r1: at(SLOT[1]), r2: at(SLOT[2]), r3: at(SLOT[3]),
     r3b: at(SLOT[0]), T1a: at(SLOT[1]), T1b: at(SLOT[2]), n5: at(SLOT[3]),
+    n5b: at(SLOT[0]), ck0: at(SLOT[1]), ck1: at(SLOT[2]), ck2: at(SLOT[3]),
     g1: at(SLOT[0]), dv: at(SLOT[1]), T2: at(SLOT[2]), g3: at(SLOT[3]),
     g5s: at(TALL[0]), g6: at(TALL[1]), rs1: at(TALL[2]),
     rs1b: at(TALL[0]), rs2: at(TALL[1]),
     T3: at(TALL[0]), g8a: at(TALL[1]),
     c1: at(SLOT[0]), c2: at(SLOT[1]), c3: at(SLOT[2]), d1: at(SLOT[3]),
   };
-  const simple = ["f0", "n1u", "n2u", "n3u", "rule1", "rule2", "n3s", "r1", "r2", "r3", "r3b", "rs1", "rs1b", "rs2", "g8a", "n5", "g1", "g3", "g3u", "g4u", "g5u", "g5s", "g6", "g8", "c1", "c2", "c3", "d1"];
+  const simple = ["f0", "n1u", "n2u", "n3u", "rule1", "rule2", "n3s", "r1", "r2", "r3", "r3b", "rs1", "rs1b", "rs2", "g8a", "n5", "n5b", "ck0", "ck1", "ck2", "g1", "g3", "g3u", "g4u", "g5u", "g5s", "g6", "g8", "c1", "c2", "c3", "d1"];
   const stages = {
     ...geoStages("gn"), ...geoStages("gg"), ...divStages("dv"), ...transferStages("T1a"), ...transferStages("T1b"), ...transferStages("T2"), ...transferStages("T3"),
     ...Object.fromEntries(simple.map((k) => [`${k}.all`, (s, H) => { H.write(key(s, "a"), 0.1); if (["n3u", "n5", "g5u", "g8", "c3", "f0"].includes(k)) H.sound("ding", 0.6); }])),
@@ -364,12 +369,18 @@ export function quadFormula() {
         { on: ["r3b", "T1a"], off: ["n3s", "r1", "r2", "r3"], add: ["r3b.all", "T1a.show", "T1a.go"], cue: { "T1a.go": "move the three" }, pause: 0.8 });
       push("The second: x plus three equals minus five. Move the three across the same way: x equals minus five take away three, which is minus eight.",
         { on: ["T1b"], add: ["T1b.show", "T1b.go"], cue: { "T1b.go": "move the three" }, pause: 0.8 });
-      push("So x is two, or x is minus eight. Two answers. Check the first: two squared is four, plus six twos is twelve, sixteen. It works.",
-        { on: ["n5"], add: ["n5.all"], cue: { "n5.all": "so x is two" }, pause: 1 });
+      push("So x is two, or x is minus eight. Two answers, one from each equation.",
+        { on: ["n5"], add: ["n5.all"], cue: { "n5.all": "so x is two" }, pause: 0.8 });
+      push("Never trust an answer you haven't checked. Put each one back into the question we started with: x squared plus six x equals sixteen.",
+        { on: ["n5b", "ck0"], off: ["r3b", "T1a", "T1b", "n5"], add: ["n5b.all", "ck0.all"], cue: { "ck0.all": "put each one back" }, pause: 0.6 });
+      push("x equals two. Two squared is four. Six times two is twelve. Four and twelve make sixteen, exactly what the question says. So two works.",
+        { on: ["ck1"], add: ["ck1.all"], cue: { "ck1.all": "two squared" }, pause: 0.8 });
+      push("Now x equals minus eight. Minus eight squared is PLUS sixty-four, because a negative times a negative is positive. Six times minus eight is minus forty-eight. Sixty-four take away forty-eight is sixteen. That works too, so both answers are right.",
+        { on: ["ck2"], add: ["ck2.all"], cue: { "ck2.all": "minus eight squared" }, pause: 1 });
 
       /* ── PART 2: LETTERS ── */
       push("Now the real thing. Any quadratic looks like this: a x squared, plus b x, plus c, equals nought. a, b and c are just numbers we haven't been told. We'll do exactly what we just did, step by step, down the middle of the board.",
-        { on: ["a3", "g1", "k2"], off: ["a2", "r3b", "T1a", "T1b", "n5", "k1"], add: ["g1.all"], cue: { "g1.all": "any quadratic" }, transition: { kind: "card", title: "Part 2", sub: "The same steps, with letters", hold: 1.6 }, pause: 0.6 });
+        { on: ["a3", "g1", "k2"], off: ["a2", "n5b", "ck0", "ck1", "ck2", "k1"], add: ["g1.all"], cue: { "g1.all": "any quadratic" }, transition: { kind: "card", title: "Part 2", sub: "The same steps, with letters", hold: 1.6 }, pause: 0.6 });
       push("Step one. Our picture started with x squared, ONE square, not a lots of them. So divide every term by a. Watch: a x squared over a, b x over a, c over a, and nought over a.",
         { on: ["dv"], add: ["dv.top", "dv.div"], cue: { "dv.div": "watch" }, pause: 0.8 });
       push("Now cancel. In the first term, the a on top and the a underneath cancel: a over a is one, so it's just x squared. And nought divided by a is nought.",
