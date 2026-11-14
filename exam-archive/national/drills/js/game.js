@@ -11,6 +11,8 @@ import { checkSubject } from './subject.js';
 import { typedToTex, plainToTex } from './typed-tex.js';
 import { createBoxInput } from './box-input.js';
 import { mathReady, loadMath, svgFor } from '/utils/components/workbook/mathify.js';
+import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak } from './spelling.js';
+import { UI } from '/utils/components/ui-icons.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -98,6 +100,7 @@ let score = 0;
 let endAt = 0;
 let rafId = null;
 let resolveRound = null;
+let roundId = 0;         // a Skip timer from an old round must not move a new one on
 
 function focusInput() {
   if (active) inputEl.focus({ preventScroll: true });
@@ -117,8 +120,92 @@ function renderRoster(roster) {
   rosterEl.hidden = false;
 }
 
+/* ── Spelling ─────────────────────────────────────────────────────────
+   Read out: the question is a big speaker (tap it, or press Enter, to hear
+   the word again). Transcribe: the question is the word's IPA. Both get a
+   Skip under the answer, because a word you cannot spell would otherwise
+   hold you for the rest of the round: Skip shows the spelling, scores
+   nothing, and moves on. */
+const speakBtn = document.createElement('button');
+speakBtn.type = 'button';
+speakBtn.className = 'drill-speak';
+speakBtn.innerHTML = UI.speaker(56);
+speakBtn.setAttribute('aria-label', 'Hear the word again');
+speakBtn.dataset.tip = 'Hear it again (Enter)';
+speakBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.word);
+  focusInput();
+});
+
+const spellTools = document.createElement('div');
+spellTools.className = 'drill-spell-tools';
+spellTools.hidden = true;
+const skipBtn = document.createElement('button');
+skipBtn.type = 'button';
+skipBtn.className = 'drill-skip';
+skipBtn.innerHTML = UI.skip(22);
+skipBtn.setAttribute('aria-label', 'Skip this word');
+skipBtn.dataset.tip = 'Skip: show the spelling';
+const revealEl = document.createElement('p');
+revealEl.className = 'drill-reveal';
+revealEl.hidden = true;
+spellTools.append(skipBtn, revealEl);
+answerStage.after(spellTools);
+
+function skipWord() {
+  if (!active || locked || !currentQuestion || !currentQuestion.spell) return;
+  locked = true;
+  const round = roundId;
+  hush();
+  revealEl.textContent = currentQuestion.word;
+  revealEl.hidden = false;
+  skipBtn.hidden = true;
+  setTimeout(() => {
+    if (round !== roundId) return;   // that round is over; endRound tidied up
+    revealEl.hidden = true;
+    skipBtn.hidden = false;
+    locked = false;
+    if (!active) return;
+    currentIndex += 1;
+    renderQuestion();
+  }, 1600);
+}
+skipBtn.addEventListener('click', (e) => { e.stopPropagation(); skipWord(); focusInput(); });
+
+function renderSpelling(q) {
+  questionText.classList.remove('is-long', 'is-longest');
+  questionText.classList.toggle('is-ipa', q.spell === 'ipa');
+  questionText.classList.toggle('is-speak', q.spell === 'say');
+  if (q.spell === 'ipa') {
+    questionText.textContent = q.text;
+    questionText.classList.toggle('is-long', q.text.length > 16);
+    questionText.classList.toggle('is-longest', q.text.length > 26);
+  } else {
+    questionText.replaceChildren(speakBtn);
+    sayWord(q.word);
+  }
+  questionHint.textContent = q.spell === 'say' && !canSpeak
+    ? 'This browser cannot speak. Choose Transcribe instead.'
+    : q.hint;
+  questionHint.hidden = false;
+  spellTools.hidden = false;
+  answerStage.classList.add('is-spell');
+  inputEl.maxLength = 40;
+  inputEl.value = '';
+  typedEl.textContent = '';
+  if (endCursor) endCursor.style.visibility = '';
+  drawnFor = '';
+  caretBar.hidden = true;
+  box.reset(false);
+}
+
 function renderQuestion() {
   currentQuestion = questionAt(seed, currentIndex, questionOpts);
+  if (currentQuestion.spell) { renderSpelling(currentQuestion); return; }
+  questionText.classList.remove('is-ipa', 'is-speak');
+  spellTools.hidden = true;
+  answerStage.classList.remove('is-spell');
   // Chemistry formulas are not maths notation — only the rest is typeset.
   if (currentQuestion.hint && !currentQuestion.alg && !currentQuestion.math) questionText.textContent = currentQuestion.text;
   else drawMath(questionText, currentQuestion.tex || toTex(currentQuestion.text), currentQuestion.text);
@@ -168,6 +255,7 @@ function pairCorrect(typed, ans) {
 }
 
 function isCorrectAnswer(typed, answer) {
+  if (currentQuestion && currentQuestion.spell) return spelledRight(typed, answer);
   if (answer && answer.kind === 'pair') return pairCorrect(typed, answer);
   if (answer && typeof answer === 'object') return answer.kind === 'subject' ? checkSubject(typed, answer) : checkAlgebra(typed, answer);
   if (currentQuestion && currentQuestion.roman) return typed.toUpperCase() === answer;
@@ -182,6 +270,7 @@ function isCorrectAnswer(typed, answer) {
 // Strip to digits plus at most one "/" and at most one "." — neither of
 // which can lead. Everything else a question ever answers with is digits.
 function sanitizeTyped(raw) {
+  if (currentQuestion && currentQuestion.spell) return sanitizeSpelling(raw);
   if (currentQuestion && currentQuestion.pair) return raw.replace(/−/g, '-').replace(/[XY]/g, (c) => c.toLowerCase()).replace(/[^0-9xy=,.\-]/g, '').slice(0, 20);
   if (currentQuestion && currentQuestion.roman) return raw.toUpperCase().replace(/[^IVXLCDM]/g, '').slice(0, 16);
   if (currentQuestion && currentQuestion.subject) return powers(raw).replace(/−/g, '-').replace(/[^0-9A-Za-z=^()+\-*/.√∛π]/g, '').slice(0, 28);
@@ -277,6 +366,8 @@ const box = createBoxInput({
 function renderTyped() {
   const v = inputEl.value;
   if (!v) { typedEl.textContent = ''; drawnFor = ''; placeCaret(); return; }
+  // A spelling is letters, not maths: shown as typed, the caret at its end.
+  if (currentQuestion && currentQuestion.spell) { typedEl.textContent = v; drawnFor = v; placeCaret(); return; }
   // re-typeset only when the answer itself changed, never for a caret move
   if (v !== drawnFor) { drawMath(typedEl, typedTex(v), v); drawnFor = v; }
   placeCaret();
@@ -328,6 +419,10 @@ function tick() {
 
 function endRound() {
   active = false;
+  hush();
+  spellTools.hidden = true;
+  revealEl.hidden = true;
+  skipBtn.hidden = false;
   if (rafId) cancelAnimationFrame(rafId);
   playBd.classList.remove('open');
   playBd.setAttribute('aria-hidden', 'true');
@@ -337,6 +432,13 @@ function endRound() {
 }
 
 inputEl.addEventListener('input', onInput);
+// Spelling: Enter says the word again (Read out). There is nothing to submit,
+// because a right spelling is taken the moment its last letter goes in.
+inputEl.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' || !active || !currentQuestion || !currentQuestion.spell) return;
+  e.preventDefault();
+  if (currentQuestion.spell === 'say' && !locked) sayWord(currentQuestion.word);
+});
 // arrow keys, Home and End move the caret through the answer
 inputEl.addEventListener('keyup', (e) => { if (!box.on && /^(Arrow|Home|End)/.test(e.key)) renderTyped(); });
 inputEl.addEventListener('select', renderTyped);
@@ -383,6 +485,7 @@ export function startRound({ seed: roomSeed, timeLimit, startAt, operations, tab
     currentIndex = 0;
     locked = false;
     resolveRound = resolve;
+    roundId += 1;
 
     scoreNote.textContent = '0 correct';
     timerNote.textContent = `${timeLimit}s round`;

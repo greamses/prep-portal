@@ -51,6 +51,7 @@ const OPERATION_LABELS = {
   octAdd: 'Octal addition', octSub: 'Octal subtraction', octMul: 'Octal multiplication', octDiv: 'Octal division',
   hexAdd: 'Hex addition', hexSub: 'Hex subtraction', hexMul: 'Hex multiplication', hexDiv: 'Hex division',
   romanToNum: 'Roman to number', numToRoman: 'Number to Roman',
+  spellSay: 'Read out', spellIpa: 'Transcribe (IPA)',
   pctToDec: 'Percentages to decimals', pctToFrac: 'Percentages to fractions', fracToPct: 'Fractions to percentages',
   decToPct: 'Decimals to percentages', pctOf: 'Percentages of numbers',
   subOne: 'One step', subTwo: 'Two steps', subMulti: 'Brackets and fractions', subPower: 'Powers and roots',
@@ -76,6 +77,7 @@ const CATEGORY_OPERATIONS = {
   bases: ['binTo10', 'binFrom10', 'binAdd', 'binSub', 'binMul', 'binDiv',
     'octAdd', 'octSub', 'octMul', 'octDiv', 'hexAdd', 'hexSub', 'hexMul', 'hexDiv', 'baseTo10', 'baseFrom10', 'baseToBase'],
   roman: ['romanToNum', 'numToRoman'],
+  spelling: ['spellSay', 'spellIpa'],
   angles: ['geoAngLine', 'geoAngTriangle', 'geoAngPolygon', 'geoAngParallel'],
   areas: ['geoRect', 'geoTriangle', 'geoTrapezium', 'geoParallelogram'],
   pythag: ['geoHyp', 'geoLeg', 'geoTrig'],
@@ -100,6 +102,7 @@ const CATEGORY_DEFAULT_OPS = {
   percent: ['pctToDec'],
   bases: ['baseTo10'],
   roman: ['romanToNum'],
+  spelling: ['spellSay'],
   angles: ['geoAngLine'],
   areas: ['geoRect'],
   pythag: ['geoHyp'],
@@ -187,9 +190,9 @@ let timeLimit = mem.get('timeLimit', 60, [30, 60, 90, 120]);
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
-let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'equations', 'subject', 'percent', 'bases', 'roman', 'angles', 'areas', 'pythag', 'circles', 'timestable', 'fracbars']);
+let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'equations', 'subject', 'percent', 'bases', 'roman', 'spelling', 'angles', 'areas', 'pythag', 'circles', 'timestable', 'fracbars']);
 let range = mem.get('range', 'all', RANGES.map((r) => r.key));
-if (categoryValue === 'algebra' || categoryValue === 'subject' || categoryValue === 'percent' || categoryValue === 'roman') range = '1-9'; // single digits only
+if (categoryValue === 'algebra' || categoryValue === 'subject' || categoryValue === 'percent' || categoryValue === 'roman' || categoryValue === 'spelling') range = '1-9'; // single digits only
 // Tables (grid filler) only — how much of each 5×5 grid is blank. The grid is
 // always 5×5 with a fresh mix of 1..12 tables per grid, streamed one after the
 // next, so there is no size dial.
@@ -353,7 +356,7 @@ function renderOperationsPick() {
   const isFractions = categoryValue === 'fractions';
   const isBars = categoryValue === 'fracbars';
   renderMultiStep(topic, 'operations', {
-    title: isBars ? 'Add, subtract, or both?' : `Which ${(TOPIC_LABEL[categoryValue] || categoryValue).toLowerCase()} questions?`,
+    title: isBars ? 'Add, subtract, or both?' : categoryValue === 'spelling' ? 'Hear the word, or read its sounds?' : `Which ${(TOPIC_LABEL[categoryValue] || categoryValue).toLowerCase()} questions?`,
     colorOffset: 3,
     options: CATEGORY_OPERATIONS[categoryValue].map((op) => ({ value: op, label: OPERATION_LABELS[op] })),
     isChecked: (v) => operations.has(v),
@@ -366,7 +369,7 @@ function renderOperationsPick() {
       if (isFractions) { renderDenominatorsPick(); topic.goTo('denominators'); return; }
       if (isBars) { renderBarsLevelStep(); topic.goTo('bars-level'); return; }
       // Algebra is single digits only: there is nothing to choose, so no step.
-      if (categoryValue === 'algebra' || categoryValue === 'subject' || categoryValue === 'percent' || categoryValue === 'roman') { range = '1-9'; saveContent(); flow.next(); return; }
+      if (categoryValue === 'algebra' || categoryValue === 'subject' || categoryValue === 'percent' || categoryValue === 'roman' || categoryValue === 'spelling') { range = '1-9'; saveContent(); flow.next(); return; }
       renderRangePick();
       topic.goTo('range');
     },
@@ -517,7 +520,7 @@ const AREA_TOPICS = {
   algebra: [['algebra', 'Expressions'], ['equations', 'Equations'], ['subject', 'Change of Subject']],
   geometry: [['angles', 'Angles'], ['areas', 'Area & Perimeter'], ['pythag', 'Pythagoras & Trig'], ['circles', 'Circles & Volume']],
   science: [['chemistry', 'Molecular Mass']],
-  words: [['vocab', 'Vocab'], ['grammar', 'Grammar']],
+  words: [['spelling', 'Spelling'], ['vocab', 'Vocab'], ['grammar', 'Grammar']],
 };
 const AREA_OF = {};
 Object.entries(AREA_TOPICS).forEach(([area, list]) => list.forEach(([v]) => { AREA_OF[v] = area; }));
@@ -710,6 +713,8 @@ const flow = createSectionFlow([
         ];
       }
       const out = [{ label: cat }, ...[...operations].map((o) => ({ label: opName(o) }))];
+      // Spelling has no number range (the words are the content), and its labels are words, not "+ Addition".
+      if (categoryValue === 'spelling') return [{ label: cat }, ...[...operations].map((o) => ({ label: OPERATION_LABELS[o] }))];
       if (categoryValue === 'fractions') out.push({ label: `${denominators.size} denominators` });
       else if (isNumbersMode()) out.push({ label: `${tables.size} numbers` });
       else {

@@ -71,7 +71,8 @@ const PAGES = [
   // editing a formula (or an atomic mass) must bust the drills page too.
   {
     name: 'drills',
-    extra: ['/data/chem/rmm.js', '/data/chem/masses.js', '/data/chem/iupac.js'],
+    // Spelling deals from the shared word bank and draws its buttons from ui-icons.
+    extra: ['/data/chem/rmm.js', '/data/chem/masses.js', '/data/chem/iupac.js', '/data/spelling/secondary.js', '/utils/components/ui-icons.js'],
   },
   // The map jigsaw draws its states from the shared Nigeria map data, so a
   // stale copy of it against fresh page code must bust the puzzles page too.

@@ -8,6 +8,7 @@
 import { mulberry32, hashSeed, CONTENT_NS, BOT_NS } from '/utils/games/rng.js';
 import { algebraQuestion, isAlgebraOp, ALGEBRA_OPS } from './algebra.js';
 import { romanQuestion, isRomanOp, ROMAN_OPS } from './roman.js';
+import { spellingQuestion, isSpellingOp, SPELLING_OPS } from './spelling.js';
 import { percentQuestion, isPercentOp, PERCENT_OPS } from './percent.js';
 import { subjectQuestion, isSubjectOp, SUBJECT_OPS } from './subject.js';
 import { geometryQuestion, isGeometryOp, GEOMETRY_OPS } from './geometry.js';
@@ -34,7 +35,7 @@ export const ALL_OPERATIONS = [
   'fracAdd', 'fracSub', 'fracMul', 'fracDiv',
   'rmm',
   'intAdd', 'intSub', 'directed', 'intMul', 'intDiv',
-  ...ALGEBRA_OPS, ...EQUATION_OPS, ...BASE_OPS, ...GEOMETRY_OPS, ...SUBJECT_OPS, ...PERCENT_OPS, ...ROMAN_OPS,
+  ...ALGEBRA_OPS, ...EQUATION_OPS, ...BASE_OPS, ...GEOMETRY_OPS, ...SUBJECT_OPS, ...PERCENT_OPS, ...ROMAN_OPS, ...SPELLING_OPS,
 ];
 
 export const ALL_FRACTION_TYPES = ['like', 'unlike', 'wholeFraction'];
@@ -199,6 +200,7 @@ export function questionAt(seed, index, {
 
   if (op === 'rmm') return rmmQuestionAt(rng, compounds);
   if (op === 'intAdd' || op === 'intSub') return intTerms(rng, pool, 2, op);
+  if (isSpellingOp(op)) return spellingQuestion(seed, index, op);
   if (isRomanOp(op)) return romanQuestion(rng, op);
   if (isPercentOp(op)) return percentQuestion(rng, pool, op);
   if (isSubjectOp(op)) return subjectQuestion(rng, op);
