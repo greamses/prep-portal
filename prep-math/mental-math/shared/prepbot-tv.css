@@ -705,3 +705,6 @@
   font: 12px/1.45 var(--font-mono, "JetBrains Mono", monospace); color: #2a2723; background: #faf7f1; border: 1px solid rgba(42,39,35,.25); border-radius: 0; }
 .mm-tv-descbox__keys { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 .mm-tv-descbox .mm-tv-btn { color: #2a2723; }
+
+/* a save that failed: the speaker key itself says so (its tooltip has the reason) */
+.mm-tv-btn[data-tv="keep"].is-bad { color: #c0453f; }

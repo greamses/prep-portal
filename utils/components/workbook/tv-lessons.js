@@ -39,6 +39,7 @@ import { stairs24, sum200, odd29, odd21, stairRows37, series123 } from "./cbt-sh
 import { share600Idowu, share600Kehinde, share4000, share45000, ratio45sum135, angles1234, boys34, girls35, ratio35small45 } from "./cbt-ratio.js";
 import { ratioWhat, ratioParts, ratioCompound } from "./ratio-intro.js";
 import { pctWhat, pctChange, pctTraps } from "./percent-intro.js";
+import { seqRule, seqNth, seqSum, seqNext17, seqNext36, seqMissing, seqWrong, seqTimes2, seqSum10106, seqSumOdd33, seqAlternating, seqTwoSeries, seqLetters } from "./seq-films.js";
 import { avgMean, avgMMR, avgTotals, avgThirteenth, avgSixth, avgGrandfather, avgSwap, avgGroups, avgMedianMode, avgMeanMedian, avgRangeMode } from "./average-films.js";
 import { ratioSquareCube, ratioPerimeter, ratioArea, ratioVolume, ratioAges } from "./ratio-shapes.js";
 import { discount35, alloy26 } from "./cbt-percent1.js";
@@ -356,6 +357,9 @@ const SCENES = {
   "stair-rows-37": stairRows37,
   "series-123": series123,
   "pct-what": pctWhat,
+  "seq-rule": seqRule, "seq-nth": seqNth, "seq-sum": seqSum,
+  "seq-next-17": seqNext17, "seq-next-36": seqNext36, "seq-missing": seqMissing, "seq-wrong": seqWrong, "seq-x2": seqTimes2,
+  "seq-sum-10-106": seqSum10106, "seq-sum-odd-33": seqSumOdd33, "seq-alt": seqAlternating, "seq-two": seqTwoSeries, "seq-letters": seqLetters,
   "avg-mean": avgMean,
   "avg-mmr": avgMMR,
   "avg-totals": avgTotals,
@@ -447,12 +451,25 @@ export const FILMS = [
   { id: "decrease-15", group: "After a change: the new amount", name: "Decrease 1,500 kg by 15% (two ways)", of: "Scholastic JS 5th edition first round, Q7", topic: "percent", thumb: { n: 20, k: 17 } },
   { id: "discount-35", group: "After a change: the new amount", name: "A 35% discount on 195 (two ways)", of: "Scholastic 2022 first round, Q46", topic: "percent", thumb: { n: 20, k: 13 } },
   { id: "alloy-26", group: "A part is known: find the whole", name: "26% copper: how much alloy? (two ways)", of: "Scholastic 2025 finals, Q33", topic: "percent", thumb: { n: 50, k: 13 } },
-  { id: "stairs-24", name: "Blocks in a staircase (three ways)", of: "Scholastic 2022 first round, Q24", topic: "patterns" },
-  { id: "sum-200", name: "1 + 2 + ... + 200 (two ways)", of: "ANMC 13th first round, Q14", topic: "patterns" },
-  { id: "odd-29", name: "1 + 3 + 5 + ... + 29 (two ways)", of: "ANMC 13th finals, Q12", topic: "patterns" },
-  { id: "odd-21", name: "1 + 3 + 5 + ... + 21 (two ways)", of: "ANMC 14th main, Q68", topic: "patterns" },
-  { id: "stair-rows-37", name: "Black squares in row 37 (two ways)", of: "Scholastic 2022 finals, Q27", topic: "patterns" },
-  { id: "series-123", name: "The series 1, 2, 2, 3, 3, 3 (two ways)", of: "ANMC 12th main, Q55 and Q57", topic: "patterns" },
+  { id: "seq-rule", lesson: true, name: "Sequences: find the rule", of: "Sequences, lesson 1", topic: "patterns" },
+  { id: "seq-nth", lesson: true, name: "The nth term", of: "Sequences, lesson 2", topic: "patterns" },
+  { id: "seq-sum", lesson: true, name: "Adding a series", of: "Sequences, lesson 3", topic: "patterns" },
+  { id: "seq-next-17", group: "What comes next?", name: "2, 3, 5, 8, 12, 17: what next?", of: "Scholastic JS 2nd edition first round", topic: "patterns" },
+  { id: "seq-next-36", group: "What comes next?", name: "5, 6, 8, 12, 20, 36: what next?", of: "ANMC 23rd second round, Q62", topic: "patterns" },
+  { id: "seq-missing", group: "What comes next?", name: "1, 1, 2, 4, 7, ?: the missing term", of: "ANMC 23rd first round", topic: "patterns" },
+  { id: "seq-wrong", group: "What comes next?", name: "3, 7, 15, 39 ...: the wrong number", of: "ANMC 21st first round", topic: "patterns" },
+  { id: "seq-x2", group: "What comes next?", name: "Times 2, take 1: the 4th term", of: "ANMC 23rd second round, Q55", topic: "patterns" },
+  { id: "seq-letters", group: "The nth term", name: "A = 1, B = 3 ...: J + K + L", of: "ANMC 22nd second round", topic: "patterns" },
+  { id: "seq-sum-10-106", group: "Adding a series", name: "10 + 12 + ... + 106 (two ways)", of: "ANMC 21st first round", topic: "patterns" },
+  { id: "seq-sum-odd-33", group: "Adding a series", name: "1 + 3 + 5 + ... + 33 (two ways)", of: "ANMC 23rd second round, Q16", topic: "patterns" },
+  { id: "seq-alt", group: "Adding a series", name: "1 - 2 + 3 - ... + 73 (two ways)", of: "ANMC 22nd first round", topic: "patterns" },
+  { id: "seq-two", group: "Adding a series", name: "5 + 10 + ... + 40 - 4 - ... - 32 (two ways)", of: "ANMC 22nd second round", topic: "patterns" },
+  { id: "stairs-24", group: "Shapes that grow", name: "Blocks in a staircase (three ways)", of: "Scholastic 2022 first round, Q24", topic: "patterns" },
+  { id: "sum-200", group: "Adding a series", name: "1 + 2 + ... + 200 (two ways)", of: "ANMC 13th first round, Q14", topic: "patterns" },
+  { id: "odd-29", group: "Adding a series", name: "1 + 3 + 5 + ... + 29 (two ways)", of: "ANMC 13th finals, Q12", topic: "patterns" },
+  { id: "odd-21", group: "Adding a series", name: "1 + 3 + 5 + ... + 21 (two ways)", of: "ANMC 14th main, Q68", topic: "patterns" },
+  { id: "stair-rows-37", group: "The nth term", name: "Black squares in row 37 (two ways)", of: "Scholastic 2022 finals, Q27", topic: "patterns" },
+  { id: "series-123", group: "The nth term", name: "The series 1, 2, 2, 3, 3, 3 (two ways)", of: "ANMC 12th main, Q55 and Q57", topic: "patterns" },
   { id: "ratio-what", lesson: true, name: "What is a ratio?", of: "Ratio, lesson 1", topic: "ratio", thumb: { n: 3, k: 2 } },
   { id: "ratio-parts", lesson: true, name: "Part to part, part to whole, part to difference", of: "Ratio, lesson 2", topic: "ratio", thumb: { n: 8, k: 3 } },
   { id: "ratio-compound", lesson: true, name: "Compound ratio", of: "Ratio, lesson 3", topic: "ratio", thumb: { n: 15, k: 8 } },

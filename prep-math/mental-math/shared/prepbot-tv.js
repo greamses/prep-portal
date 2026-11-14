@@ -649,7 +649,17 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     + `<div class="mm-tv-keepbox__bar"><i></i></div><p class="mm-tv-keepbox__n"></p></div>`;
   screen.appendChild(note);
   let noteTimer = 0;
-  const say = ({ title = "", sub = "", frac = null, count = "", kind = "", hold = 0 }) => {
+  /* NOTHING ABOUT SAVING IS SHOWN ON THE SCREEN: *"remove the saving details on the frame, it already
+     shows on the icon"*. The screen is what gets recorded. The progress, the done and any failure go
+     to the speaker key instead: its count, its busy pulse, and its tooltip. */
+  const say = ({ title = "", sub = "", count = "", kind = "" }) => {
+    const k = box.querySelector('[data-tv="keep"]');
+    if (!k) return;
+    const tip = [title, sub, count].filter(Boolean).join(" · ");
+    if (tip) { k.dataset.tip = tip; k.setAttribute("aria-label", tip); }
+    k.classList.toggle("is-bad", kind === "bad");
+  };
+  const sayOnScreen = ({ title = "", sub = "", frac = null, count = "", kind = "", hold = 0 }) => {
     clearTimeout(noteTimer);
     note.hidden = false;
     note.dataset.kind = kind;
@@ -661,6 +671,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     if (frac != null) bar.firstChild.style.width = `${Math.round(Math.max(0, Math.min(1, frac)) * 100)}%`;
     if (hold) noteTimer = setTimeout(() => { note.hidden = true; }, hold * 1000);
   };
+  void sayOnScreen;
   if (keptNow()) say({ title: "Playing the saved voice", sub: keptNow() === said.length ? "Every line comes from its saved recording." : `${keptNow()} of ${said.length} lines come from saved recordings.`, kind: "ok", hold: 3.5 });
 
   /* THE KEEP KEY (admin) */
