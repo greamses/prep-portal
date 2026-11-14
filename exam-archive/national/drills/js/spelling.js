@@ -18,6 +18,7 @@ import { mulberry32, hashSeed } from '/utils/games/rng.js';
 import { SPELLING_SECONDARY } from '/data/spelling/secondary.js';
 import { SPELLING_UPPER_PRIMARY } from '/data/spelling/upper-primary.js';
 import { SPELLING_LOWER_PRIMARY } from '/data/spelling/lower-primary.js';
+import { ORDER } from '/data/spelling/popularity.js';
 
 export const SPELLING_OPS = ['spellSay', 'spellIpa'];
 export const isSpellingOp = (op) => SPELLING_OPS.includes(op);
@@ -38,14 +39,21 @@ const DECK_NS = 3_000_000;
 
 /* ── Sets of ten ──────────────────────────────────────────────────────
    A list is learned ten words at a time (the user's choice; it was twenty),
-   in its own order: set 1 is its first ten. */
+   from the most common words to the rarest (data/spelling/popularity.js):
+   set 1 is the ten most familiar. An entry keeps its index in the list file
+   (`i`), which is what its recordings are named by. */
 export const SET_SIZE = 10;
 export const setCount = (bank) => Math.ceil(BANKS[bank].rows.length / SET_SIZE);
 export const SET_COUNT = setCount('secondary');
-export const setOf = (i) => Math.floor(i / SET_SIZE) + 1;
+const orderOf = (bank) => (ORDER && ORDER[bank] && ORDER[bank].length === BANKS[bank].rows.length
+  ? ORDER[bank] : BANKS[bank].rows.map((_, i) => i));
+const placeOf = {};   // bank -> (index -> place in the popularity order)
+for (const k of Object.keys(BANKS)) { placeOf[k] = new Map(); orderOf(k).forEach((i, at) => placeOf[k].set(i, at)); }
+/** The set (1..) that list entry `i` falls in. */
+export const setOf = (i, bank = 'secondary') => Math.floor((placeOf[bank].get(i) ?? i) / SET_SIZE) + 1;
 export function setWords(bank, n) {
   if (typeof bank === 'number') { n = bank; bank = 'secondary'; }   // older calls: setWords(n)
-  return BANKS[bank].rows.slice((n - 1) * SET_SIZE, n * SET_SIZE).map((row, k) => ({ bank, i: (n - 1) * SET_SIZE + k, row }));
+  return orderOf(bank).slice((n - 1) * SET_SIZE, n * SET_SIZE).map((i) => ({ bank, i, row: BANKS[bank].rows[i] }));
 }
 /** A room's set id -> { bank, n }, and back. */
 export function parseSet(id) {
@@ -122,11 +130,14 @@ export function blanked(sentence, word) {
 export function spellingQuestion(seed, index, op, sets) {
   const d = deckFor(seed, sets);
   const [bank, i] = d[index % d.length];
-  const [word, ipa, def, use] = BANKS[bank].rows[i];
-  const common = { bank, i, word, ipa, def, use, gap: blanked(use, word), answer: word, set: setOf(i) };
+  const [word, ipa, def, use, pos = '', origin = ''] = BANKS[bank].rows[i];
+  const common = { bank, i, word, ipa, def, use, pos, origin, gap: blanked(use, word), answer: word, set: setOf(i, bank) };
   if (op === 'spellIpa') return { ...common, spell: 'ipa', text: `/${ipa}/`, hint: 'Spell the word' };
   return { ...common, spell: 'say', text: '', hint: 'Listen, then spell the word' };
 }
+
+/** "noun · from Greek": the part of speech and language of origin, for a card or the library. */
+export const aboutWord = (pos, origin) => [pos, origin && `from ${origin}`].filter(Boolean).join(' · ');
 
 /** Letters only: case, accents, spaces, hyphens and apostrophes do not count. */
 export const letters = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');

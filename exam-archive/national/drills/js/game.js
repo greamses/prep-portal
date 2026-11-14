@@ -11,7 +11,7 @@ import { checkSubject } from './subject.js';
 import { typedToTex, plainToTex } from './typed-tex.js';
 import { createBoxInput } from './box-input.js';
 import { mathReady, loadMath, svgFor } from '/utils/components/workbook/mathify.js';
-import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak, faceButton, clipFor, preloadClip, onTrack, wordsInSets } from './spelling.js';
+import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak, faceButton, clipFor, preloadClip, onTrack, wordsInSets, aboutWord } from './spelling.js';
 import { UI } from '/utils/components/ui-icons.js';
 
 const $ = (id) => document.getElementById(id);
@@ -174,11 +174,14 @@ const sayTheWord = (b = speakBtn) => sayWord(currentQuestion.word, b, { clip: cl
 const meaningEl = document.createElement('div');
 meaningEl.className = 'drill-meaning';
 meaningEl.hidden = true;
+// A spelling bee also tells you the part of speech and where the word comes from.
+const aboutEl = document.createElement('p');
+aboutEl.className = 'drill-about';
 const defEl = document.createElement('p');
 defEl.className = 'drill-def';
 const useEl = document.createElement('p');
 useEl.className = 'drill-use';
-meaningEl.append(defEl, useEl);
+meaningEl.append(aboutEl, defEl, useEl);
 questionHint.after(meaningEl);
 
 function toolBtn(cls, icon, label, onPress) {
@@ -247,6 +250,8 @@ function renderSpelling(q) {
     ? 'This browser cannot speak. Choose Transcribe instead.'
     : q.hint;
   questionHint.hidden = false;
+  aboutEl.textContent = aboutWord(q.pos, q.origin);
+  aboutEl.hidden = !aboutEl.textContent;
   defEl.textContent = q.def;
   useEl.textContent = q.gap;
   meaningEl.hidden = false;

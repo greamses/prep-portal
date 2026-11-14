@@ -7,7 +7,7 @@
    them, and the sets ticked in the setup are marked on it. Opened from the
    Word Sets step: openSpellingLibrary({ sets: [1, 2], start: 1 }).
 ═══════════════════════════════════════════════════════ */
-import { SET_COUNT, SET_SIZE, setWords, sayWord, hush, faceButton, canSpeak, clipFor } from './spelling.js';
+import { BANKS, setCount, SET_SIZE, setWords, aboutWord, sayWord, hush, faceButton, canSpeak, clipFor } from './spelling.js';
 import { UI } from '/utils/components/ui-icons.js';
 
 let bd = null;
@@ -16,6 +16,8 @@ let list = null;
 let title = null;
 let chosen = new Set();
 let current = 1;
+let bank = 'secondary';
+let kicker = null;
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -36,7 +38,7 @@ function sentenceWithWord(sentence, word) {
   return p;
 }
 
-function row({ i: at, row: [word, ipa, def, use] }, n) {
+function row({ i: at, row: [word, ipa, def, use, pos = '', origin = ''] }, n) {
   const li = document.createElement('li');
   li.className = 'spell-lib-row';
   const face = faceButton({ size: 46, label: `Hear "${word}"`, onPress: (b) => sayWord(word, b, { clip: clipFor(at, 'w') }) });
@@ -55,6 +57,12 @@ function row({ i: at, row: [word, ipa, def, use] }, n) {
   i.className = 'spell-lib-ipa';
   i.textContent = `/${ipa}/`;
   head.append(num, w, i);
+  if (pos || origin) {
+    const a = document.createElement('span');
+    a.className = 'spell-lib-about';
+    a.textContent = aboutWord(pos, origin);
+    head.append(a);
+  }
   const d = document.createElement('p');
   d.className = 'spell-lib-def';
   d.textContent = def;
@@ -75,9 +83,9 @@ function row({ i: at, row: [word, ipa, def, use] }, n) {
 }
 
 function showSet(n) {
-  current = Math.min(Math.max(1, n), SET_COUNT);
+  current = Math.min(Math.max(1, n), setCount(bank));
   hush();
-  const words = setWords(current);
+  const words = setWords(bank, current);
   const first = (current - 1) * SET_SIZE + 1;
   title.textContent = `Set ${current} · words ${first} to ${first + words.length - 1}`;
   const ol = document.createElement('ol');
@@ -116,17 +124,9 @@ function build() {
       </div>
     </div>`;
   title = bd.querySelector('.spell-lib-title');
+  kicker = bd.querySelector('.spell-lib-kicker');
   strip = bd.querySelector('.spell-lib-strip');
   list = bd.querySelector('.spell-lib-scroll');
-  for (let n = 1; n <= SET_COUNT; n++) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.dataset.set = n;
-    b.textContent = n;
-    b.setAttribute('aria-label', `Set ${n}`);
-    b.addEventListener('click', () => showSet(n));
-    strip.appendChild(b);
-  }
   const [prev, next] = bd.querySelectorAll('.spell-lib-step');
   prev.innerHTML = UI.chevronLeft(20);
   prev.setAttribute('aria-label', 'Previous set'); prev.dataset.tip = 'Previous set';
@@ -147,8 +147,25 @@ function build() {
   document.body.appendChild(bd);
 }
 
-export function openSpellingLibrary({ sets = [1], start } = {}) {
+/* The numbered strip: one button per set of this list. */
+function buildStrip() {
+  strip.replaceChildren();
+  for (let n = 1; n <= setCount(bank); n++) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.set = n;
+    b.textContent = n;
+    b.setAttribute('aria-label', `Set ${n}`);
+    b.addEventListener('click', () => showSet(n));
+    strip.appendChild(b);
+  }
+}
+
+export function openSpellingLibrary({ bank: list = 'secondary', sets = [1], start } = {}) {
   if (!bd) build();
+  bank = BANKS[list] ? list : 'secondary';
+  kicker.textContent = `${BANKS[bank].label} spelling library`;
+  buildStrip();
   chosen = new Set(sets);
   strip.querySelectorAll('button').forEach((b) => b.classList.toggle('is-chosen', chosen.has(Number(b.dataset.set))));
   bd.classList.add('open');
