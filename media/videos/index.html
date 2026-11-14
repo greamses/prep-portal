@@ -10,7 +10,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@500;700;800&family=Shantell+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/utils/components/theme.css" />
-    <link rel="stylesheet" href="/utils/components/components.css" />
+    <!-- the blogs page's own sheet: the same receipt cards, filter bar and dropdowns -->
+    <link rel="stylesheet" href="/blogs/css/render.css" />
+    <link rel="stylesheet" href="/blogs/css/blog.css" />
     <link rel="stylesheet" href="/utils/components/nav.css" />
     <script type="importmap">
       {
@@ -24,105 +26,108 @@
     </script>
     <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
     <style>
-      /* MEDIA: PREPBOT VIDEOS. Every TV film in one place, by topic, then (inside a topic) lessons
-         first and the worked questions by type — the same order as the TV's own video cards. */
-      body { margin: 0; background-color: var(--bg, #faf7f1); color: var(--ink, #2a2723); font-family: "JetBrains Mono", monospace;
-        background-image: linear-gradient(rgba(42,39,35,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(42,39,35,.05) 1px, transparent 1px);
-        background-size: 40px 40px; }
-      .mv { max-width: 1180px; margin: 0 auto; padding: 28px 16px 64px; }
-      .mv__head.pp-receipt { display: block; max-width: 720px; margin: 0 auto 26px; transform: rotate(-0.8deg); }
-      .mv__head .pp-receipt__paper { padding: 26px 34px 28px; background-color: #fffdf8; text-align: center; }
-      .mv__kicker { margin: 0; font: 800 13px/1 "JetBrains Mono", monospace; letter-spacing: .2em; text-transform: uppercase; color: #6b655c; }
-      .mv__title { margin: 12px 0 8px; font: 900 clamp(26px, 4vw, 40px)/1.08 Unbounded, sans-serif; }
-      .mv__lead { margin: 0; font-size: 14px; line-height: 1.55; color: #5c564d; }
-      .mv__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-      .mv__tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 0 0 26px; }
-      .mv__tabs .pp-pill { font-size: 12px; }
-      .mv__tabs .pp-pill[aria-pressed="true"] { background: var(--accent-primary, #f4c95d); color: #2a2723; border-color: #2a2723; }
-      .mv__topic { margin: 34px 0 6px; font: 900 22px/1.2 Unbounded, sans-serif; }
-      .mv__group { margin: 18px 0 10px; display: flex; align-items: center; gap: 12px; font: 800 12px/1 "JetBrains Mono", monospace;
-        letter-spacing: .16em; text-transform: uppercase; color: #6b645b; }
-      .mv__group::after { content: ""; flex: 1; border-top: 2px dashed rgba(42,39,35,.22); }
-      .mv__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px; }
-      .mv-card { display: flex; flex-direction: column; text-align: left; padding: 10px; background: #fff; border: 1px solid rgba(42,39,35,.14);
-        box-shadow: 0 8px 18px -12px rgba(42,39,35,.5); cursor: pointer; font: inherit; color: inherit; transition: transform .15s ease, box-shadow .15s ease; }
-      .mv-card:hover, .mv-card:focus-visible { transform: translateY(-3px); box-shadow: 0 14px 24px -12px rgba(42,39,35,.55); outline: none; }
-      .mv-card:focus-visible { outline: 2px solid var(--accent-secondary, #6fb7e8); outline-offset: 2px; }
-      .mv-card__thumb { position: relative; display: block; aspect-ratio: 16 / 9; background: #faf7f1; border: 1px solid rgba(42,39,35,.12); overflow: hidden; }
-      .mv-card__thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
-      .mv-card__note.pp-sticky { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-3deg); max-width: 80%;
-        font-size: 14px; text-align: center; }
-      .mv-card__play { position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; border-radius: 50%; background: #2a2723;
-        display: grid; place-items: center; }
-      .mv-card__play svg { width: 16px; height: 16px; }
-      .mv-card__name { margin: 10px 2px 4px; font-weight: 800; font-size: 13.5px; line-height: 1.35; }
-      .mv-card__of { margin: 0 2px; font-size: 11.5px; color: #6b645b; }
-      @media (max-width: 560px) { .mv__grid { grid-template-columns: 1fr; } }
+      /* MEDIA: PREPBOT VIDEOS. Built exactly like the blogs page (blogs/index.html): a receipt filter
+         bar (search + dropdowns, never tag pills) over a grid of .science-card receipts. The only
+         addition is the film's thumbnail at the top of the card, kept at the video's 16:9. */
+      .mv-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      .science-card .card-featured-img { height: auto; aspect-ratio: 16 / 9; }
+      .mv-empty { grid-column: 1 / -1; text-align: center; padding: 2rem 1rem; font-family: var(--font-mono); color: var(--text-secondary); }
     </style>
   </head>
 
   <body>
     <nav class="site-nav" data-nav="main"></nav>
-    <main class="mv">
-      <h1 class="mv__sr">PrepBot Videos</h1>
-      <div class="mv__tabs" role="tablist" aria-label="Topics" id="tabs"></div>
-      <div id="list"></div>
-    </main>
+    <h1 class="mv-sr">PrepBot Videos</h1>
+
+    <div class="science-container">
+      <div class="filter-bar pp-receipt">
+        <div class="filter-paper pp-receipt__paper">
+          <div class="filter-search-row">
+            <div class="search-wrapper">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="search-icon"><rect x="14.28" y="16.40" width="7.64" height="3.4" rx="1.7" fill="var(--accent-primary)" transform="rotate(45.00 18.10 18.10)"/><circle cx="10.4" cy="10.4" r="7.6" fill="var(--accent-secondary)"/><circle cx="10.4" cy="10.4" r="4.6" fill="#fff"/></svg>
+              <input type="text" class="search-input" id="searchInput" placeholder="Search videos..." aria-label="Search videos" />
+            </div>
+          </div>
+          <div class="filter-dropdowns-row">
+            <select id="topicSel" aria-label="Topic"></select>
+            <select id="typeSel" aria-label="Type of video"></select>
+          </div>
+        </div>
+      </div>
+
+      <div id="grid" class="science-grid"></div>
+    </div>
+
     <script src="/utils/components/nav-builder.js" type="module"></script>
     <script type="module">
       import { FILMS, playLesson } from "/utils/components/workbook/tv-lessons.js";
+      import { enhanceSelect } from "/utils/components/pp-select.js";
 
       /* the topics, in the order a learner meets them; a film without a topic is filed by where it lives */
       const TOPICS = [
-        ["ratio", "Ratio"], ["percent", "Percentages"], ["averages", "Averages"], ["patterns", "Sequences and patterns"],
-        ["workbook", "Workbook lessons"], ["english", "English"], ["algebra", "Algebra"],
+        ["ratio", "Ratio"], ["percent", "Percentages"], ["averages", "Averages"], ["patterns", "Sequences"],
+        ["algebra", "Algebra"], ["workbook", "Workbook lessons"], ["english", "English"],
       ];
       const topicOf = (f) => f.topic || (/^Comprehension/.test(f.of || "") ? "english" : /algebra|quadratic/i.test(f.of || "") ? "algebra" : "workbook");
-      const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="#fff"/></svg>';
+      const typeOf = (f) => (f.lesson ? "Lessons" : (f.group || (f.topic ? "Worked questions" : "Lessons")));
+      const ARROW = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:13px;height:13px;flex-shrink:0"><g transform="rotate(90 12 12)"><rect x="10.6" y="9" width="2.8" height="12" rx="1.4" fill="var(--accent-secondary)"/><path d="M12 2.6 19.4 11H4.6z" fill="var(--accent-danger)"/></g></svg>`;
       const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
-      const films = FILMS.map((f) => ({ ...f, t: topicOf(f) }));
+
+      const tIndex = Object.fromEntries(TOPICS.map(([t], i) => [t, i]));
+      const films = FILMS.map((f, i) => ({ ...f, t: topicOf(f), type: typeOf(f), i }))
+        /* topic by topic; inside a topic the lessons first, then the questions, as the TV lists them */
+        .sort((a, b) => (tIndex[a.t] - tIndex[b.t]) || ((b.type === "Lessons") - (a.type === "Lessons")) || (a.i - b.i));
       const present = TOPICS.filter(([t]) => films.some((f) => f.t === t));
+      const nameOf = Object.fromEntries(TOPICS);
 
-      const card = (f) => `<button type="button" class="mv-card pp-plain" data-play="${esc(f.id)}" aria-label="Play: ${esc(f.name)}">`
-        + `<span class="mv-card__thumb">${f.topic ? `<img src="/tools/film-thumbnail/png/${esc(f.id)}.png" alt="" loading="lazy">` : `<span class="mv-card__note pp-sticky pp-sticky--c${f.name.length % 6}">${esc(f.name)}</span>`}`
-        + `<span class="mv-card__play">${PLAY}</span></span>`
-        + `<span class="mv-card__name">${esc(f.name)}</span>${f.of ? `<span class="mv-card__of">${esc(f.of)}</span>` : ""}</button>`;
+      const card = (f, n) => `<a class="science-card pp-receipt science-card--p${n % 6}" href="/media/videos/?v=${encodeURIComponent(f.id)}" data-play="${esc(f.id)}">`
+        + `<div class="card-inner pp-receipt__paper">`
+        + (f.topic ? `<img class="card-featured-img" src="/tools/film-thumbnail/png/${esc(f.id)}.png" alt="" loading="lazy">` : "")
+        + `<div class="card-badges"><span class="pp-sticky pp-sticky--c${tIndex[f.t] % 6}">${esc(nameOf[f.t])}</span></div>`
+        + `<h2 class="card-title">${esc(f.name)}</h2>`
+        + `<p class="card-excerpt">${esc(f.type === "Lessons" ? (f.of || "Lesson") : f.type)}</p>`
+        + `<div class="read-more">Watch ${ARROW}</div>`
+        + `</div></a>`;
 
-      function render(only) {
-        const html = present.filter(([t]) => !only || t === only).map(([t, name]) => {
-          const list = films.filter((f) => f.t === t);
-          const groups = [];
-          [...list.filter((f) => f.lesson), ...list.filter((f) => !f.lesson)].forEach((f) => {
-            const g = f.lesson ? "Lessons" : (f.group || (f.topic ? "Worked questions" : "Lessons"));
-            let set = groups.find((x) => x.g === g);
-            if (!set) groups.push(set = { g, items: [] });
-            set.items.push(f);
-          });
-          return `<section><h2 class="mv__topic">${esc(name)}</h2>`
-            + groups.map((x) => `<p class="mv__group">${esc(x.g)}</p><div class="mv__grid">${x.items.map(card).join("")}</div>`).join("")
-            + `</section>`;
-        }).join("");
-        document.getElementById("list").innerHTML = html;
+      const q = new URLSearchParams(location.search);
+      const topicSel = document.getElementById("topicSel"), typeSel = document.getElementById("typeSel"), search = document.getElementById("searchInput");
+      topicSel.innerHTML = [["", "All topics"], ...present].map(([t, n]) => `<option value="${t}">${esc(n)}</option>`).join("");
+      if (present.some(([t]) => t === q.get("t"))) topicSel.value = q.get("t");
+
+      /* the types follow the topic: ratio has Ages, Shapes...; averages has its own */
+      function fillTypes() {
+        const keep = typeSel.value;
+        const types = [...new Set(films.filter((f) => !topicSel.value || f.t === topicSel.value).map((f) => f.type))];
+        typeSel.innerHTML = [["", "All videos"], ...types.map((t) => [t, t])].map(([v, n]) => `<option value="${esc(v)}">${esc(n)}</option>`).join("");
+        typeSel.value = types.includes(keep) ? keep : "";
       }
-      const tabs = document.getElementById("tabs");
-      const pick = new URLSearchParams(location.search).get("t");
-      tabs.innerHTML = [["", "All"], ...present].map(([t, name]) => `<button type="button" class="pp-pill" role="tab" data-t="${t}" aria-pressed="${(pick || "") === t}">${esc(name)}</button>`).join("");
-      tabs.addEventListener("click", (e) => {
-        const b = e.target.closest("[data-t]");
-        if (!b) return;
-        tabs.querySelectorAll("[data-t]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-        render(b.dataset.t || null);
+
+      function render() {
+        const words = search.value.trim().toLowerCase();
+        const list = films.filter((f) => (!topicSel.value || f.t === topicSel.value) && (!typeSel.value || f.type === typeSel.value)
+          && (!words || `${f.name} ${f.of || ""} ${f.type} ${nameOf[f.t]}`.toLowerCase().includes(words)));
+        document.getElementById("grid").innerHTML = list.length ? list.map(card).join("") : `<p class="mv-empty">No videos match that yet.</p>`;
         const u = new URL(location.href);
-        if (b.dataset.t) u.searchParams.set("t", b.dataset.t); else u.searchParams.delete("t");
+        if (topicSel.value) u.searchParams.set("t", topicSel.value); else u.searchParams.delete("t");
         history.replaceState(null, "", u);
-      });
-      document.getElementById("list").addEventListener("click", (e) => {
+      }
+
+      fillTypes();
+      enhanceSelect(topicSel, { className: "pp-select--filter" });
+      enhanceSelect(typeSel, { className: "pp-select--filter" });
+      topicSel.addEventListener("change", () => { fillTypes(); render(); });
+      typeSel.addEventListener("change", render);
+      search.addEventListener("input", render);
+
+      const play = (id) => { const f = FILMS.find((x) => x.id === id); if (f) playLesson(id, f.name); };
+      document.getElementById("grid").addEventListener("click", (e) => {
         const c = e.target.closest("[data-play]");
-        if (!c) return;
-        const f = FILMS.find((x) => x.id === c.dataset.play);
-        playLesson(c.dataset.play, f?.name || "");
+        if (!c || e.ctrlKey || e.metaKey || e.shiftKey) return;   // a new tab opens the shareable link
+        e.preventDefault();
+        play(c.dataset.play);
       });
-      render(pick || null);
+      render();
+      if (q.get("v")) play(q.get("v"));   // /media/videos/?v=<film> opens straight on that film
     </script>
   </body>
 </html>
