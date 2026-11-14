@@ -113,6 +113,8 @@ jobs:
           git add data/spelling/audio.js exam-archive/national/drills/index.html
           if git diff --cached --quiet; then echo "Nothing new."; else
             git commit -q -m "Spelling: list the Kokoro clips (spelling-audio@${{ steps.store.outputs.sha }})"
-            git pull -q --rebase
+            # version-assets may also restamp other pages; those are not ours to commit,
+            # and a rebase refuses to run over them unless they are stashed first.
+            git pull -q --rebase --autostash
             git push -q
           fi
