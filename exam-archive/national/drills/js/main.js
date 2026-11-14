@@ -1268,7 +1268,6 @@ async function runVersusJoin({ myName }) {
 }
 
 async function runDrill() {
-  const chosenTime = timeLimit;
   startBtn.disabled = true;
   // The setup is proven good the moment a round starts with it — next visit
   // jumps straight to the last section with these picks as chips.
@@ -1282,17 +1281,17 @@ async function runDrill() {
   const compoundsList = categoryValue === 'chemistry' ? [...compounds] : [];
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
   // Spelling's clock is the words' own (10 a minute, 20 in Focus), not the chosen time.
-  const timeLimit = categoryValue === 'spelling' ? spellTime() : chosenTime;
+  const roundTime = categoryValue === 'spelling' ? spellTime() : timeLimit;
 
   if (mode === 'versus') {
-    if (roomAction === 'join') await runVersusJoin({ timeLimit, myName });
-    else await runVersusCreate({ timeLimit, operationsList, tablesList, fractionTypesList, compoundsList, myName });
+    if (roomAction === 'join') await runVersusJoin({ timeLimit: roundTime, myName });
+    else await runVersusCreate({ timeLimit: roundTime, operationsList, tablesList, fractionTypesList, compoundsList, myName });
     return;
   }
 
-  if (roomAction === 'join') await runMultiplayerJoin({ timeLimit, myName });
-  else if (roomAction === 'create') await runMultiplayerCreate({ timeLimit, operationsList, tablesList, fractionTypesList, compoundsList, myName });
-  else await runMultiplayer({ timeLimit, operationsList, tablesList, fractionTypesList, compoundsList, myName });
+  if (roomAction === 'join') await runMultiplayerJoin({ timeLimit: roundTime, myName });
+  else if (roomAction === 'create') await runMultiplayerCreate({ timeLimit: roundTime, operationsList, tablesList, fractionTypesList, compoundsList, myName });
+  else await runMultiplayer({ timeLimit: roundTime, operationsList, tablesList, fractionTypesList, compoundsList, myName });
 }
 
 startBtn.addEventListener('click', runDrill);
