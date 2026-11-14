@@ -613,7 +613,7 @@
 .mm-tv-keepbox[data-kind="ok"] .mm-tv-keepbox__t { color: var(--accent-success, #2f7d4a); }
 .mm-tv-keepbox[data-kind="ok"] .mm-tv-keepbox__bar i { background: var(--accent-success, #3f8f5a); }
 .mm-tv-keepbox[data-kind="bad"] .mm-tv-keepbox__t { color: var(--accent-danger, #c0453f); }
-.mm-tv-btn[data-tv="keep"].is-busy { animation: mmKeepBusy 1s ease-in-out infinite; }
+.mm-tv-btn[data-tv="keep"].is-busy, .mm-tv-btn[data-tv="redo"].is-busy { animation: mmKeepBusy 1s ease-in-out infinite; }
 @keyframes mmKeepBusy { 50% { opacity: .45; } }
 /* the tick on saved things: the keep key, and a video card whose film's voice is saved */
 .mm-tv-keep__n.is-tick { padding: 1px; line-height: 0; border-radius: 50%; background: #fff; }

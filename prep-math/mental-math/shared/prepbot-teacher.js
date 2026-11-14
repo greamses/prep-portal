@@ -359,9 +359,10 @@ export class PrepbotTeacher {
     return (h2 >>> 0).toString(16).padStart(8, "0") + (h1 >>> 0).toString(16).padStart(8, "0");
   }
 
-  async _tryElevenLabs(text) {
-    /* KEPT AUDIO FIRST: a film the admin kept plays its own recordings, for everybody, signed in or not */
-    if (this.kept?.size) {
+  async _tryElevenLabs(text, { fresh = false } = {}) {
+    /* KEPT AUDIO FIRST: a film the admin kept plays its own recordings, for everybody, signed in or not.
+       `fresh` asks for a NEW take of the line (the admin re-recording one they did not like). */
+    if (this.kept?.size && !fresh) {
       const k = this.keyOf(text);
       if (this.kept.has(k)) return this.kept.get(k);
     }
@@ -372,7 +373,7 @@ export class PrepbotTeacher {
     const voiceId = this._voiceKey;
     const ctx = this.lineContext.get(text) || {};
     const memo = `${voiceId}|${ctx.prev || ""}|${text}|${ctx.next || ""}`;
-    if (this.elevenLabsCache.has(memo)) return this.elevenLabsCache.get(memo);
+    if (this.elevenLabsCache.has(memo) && !fresh) return this.elevenLabsCache.get(memo);
     const user = await this._authReady();
     if (!user) return null;
     const ask = async () => {
@@ -402,6 +403,8 @@ export class PrepbotTeacher {
         url = await ask();
       }
       if (url) this.elevenLabsCache.set(memo, url); // never re-fetch this line this session
+      /* a line just recorded by the voice service: the TV keeps it (admin), so watching IS saving */
+      if (url) try { this.onFresh?.(text, url); } catch { /* the line is still said */ }
       return url;
     } catch {
       return null; // transient twice over — something has to say the line

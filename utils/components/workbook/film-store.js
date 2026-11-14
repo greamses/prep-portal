@@ -165,7 +165,9 @@ export const forget = (id) => cache.delete(id);
    exact words and the words either side, so a re-worded line is a new line.
 
      keptAudio(id)                 Map(key -> MP3 url), empty if none
-     keepAudio(id, lines, onStep)  lines: [{ key, b64 }] */
+     keepAudio(id, lines, onStep, { merge })  lines: [{ key, b64 }]; `merge` (a Map of what is already
+                                   kept) is kept too, so ONE line can be saved without losing the rest.
+                                   Returns the manifest written: { key: url } */
 const API = location.port === "5500" ? "http://127.0.0.1:5000" : "";
 
 export async function keptAudio(id) {
@@ -176,7 +178,7 @@ export async function keptAudio(id) {
   } catch { return new Map(); }
 }
 
-export async function keepAudio(id, lines, onStep = () => {}) {
+export async function keepAudio(id, lines, onStep = () => {}, { merge = null } = {}) {
   const u = await user();
   if (!u) throw new Error("sign in as the admin first");
   const post = async (path, body) => {
@@ -189,12 +191,12 @@ export async function keepAudio(id, lines, onStep = () => {}) {
     if (!r.ok) throw new Error(data.error || `${path} ${r.status}`);
     return data;
   };
-  const kept = {};
+  const kept = merge ? Object.fromEntries(merge) : {};
   let n = 0;
   for (const l of lines) {
     kept[l.key] = (await post("keep-line", { film: id, key: l.key, b64: l.b64 })).url;
     onStep(++n, lines.length);
   }
   await post("keep-done", { film: id, lines: kept });
-  return n;
+  return kept;
 }

@@ -6,102 +6,133 @@
   <meta name="robots" content="noindex" />
   <title>PrepBot Video Thumbnails</title>
   <!--
-    YOUTUBE THUMBNAILS FOR PREPBOT'S FILMS (1280 x 720) - ONE COMPONENT
-    (*"use one component, the name of the film is the only change, and probably each
-    subject uses a different color scheme"*)
+    YOUTUBE THUMBNAILS FOR PREPBOT'S FILMS (1280 x 720) - ONE COMPONENT, BUILT FROM OURS
 
-    Every thumbnail is the same picture: the subject on a tag, the film's name big,
-    a "2 WAYS" stamp, PrepBot beside a TV showing the subject's sign, the address.
-    Only the NAME changes from film to film; the COLOURS come from the subject
-    (SUBJECTS below). A new subject is one entry there.
+    *"The thumbnails doesn't use our UI components. It is also poorly designed. Stick with our
+    colours too."* So the thumbnail is made of the site's own pieces, at poster size:
+      - the film's name on a RECEIPT (.pp-receipt wrapper > .pp-receipt__paper: shadow, teeth, holes)
+      - its tags as PILLS (.pp-pill)
+      - the subject's sign on taped STICKY NOTES (.pp-sticky, the six note papers), PrepBot on top
+      - the address on a pill, on the site's cream paper with the workbook's faint squares
+    and only the theme's colours: ink #2a2723, cream paper, the note pastels, the yellow accent.
+    A subject is one entry in SUBJECTS (its note paper and its sign); the NAME is the only other change.
 
     ?film=<id>      one thumbnail        (&shot=1: exactly 1280 x 720, for the PNG)
     (no film)       the gallery: every film's PNG to download (png/<id>.png)
   -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@500;700;800&family=Shantell+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/utils/components/theme.css" />
+  <link rel="stylesheet" href="/utils/components/components.css" />
   <style>
-    :root { --ink: #2a2723; --paper: #fffdf8; --bg: #f3efe7; }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--ink); font-family: "JetBrains Mono", monospace; }
-    body.shot { background: var(--paper); }
+    body { margin: 0; background: var(--app-bg, #f0ece3); color: var(--ink, #2a2723); font-family: "JetBrains Mono", monospace; }
+    body.shot { background: var(--bg, #faf7f1); }
     .wrap { padding: 24px 16px 48px; max-width: 1320px; margin: 0 auto; }
     h1 { font: 900 22px/1.2 Unbounded, sans-serif; margin: 0 0 6px; }
-    .lead { margin: 0 0 18px; color: #5c564d; font-size: 13px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-    .card { background: #fff; border: 1px solid rgba(42,39,35,.14); box-shadow: 0 8px 18px -12px rgba(42,39,35,.5); padding: 10px; }
-    .card img { display: block; width: 100%; aspect-ratio: 16/9; background: var(--paper); border: 1px solid rgba(42,39,35,.12); }
-    .card p { margin: 8px 0 2px; font-weight: 700; font-size: 12.5px; }
-    .card small { color: #6b645b; font-size: 11px; }
-    .card .row { display: flex; gap: 12px; margin-top: 8px; }
-    .card a { font-size: 12px; font-weight: 700; color: #2f6f8f; }
+    .lead { margin: 0 0 18px; color: var(--text-secondary, #6b655c); font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+    .card.pp-receipt { display: block; }
+    .card .pp-receipt__paper { padding: 14px 20px 16px; background-color: var(--surface-primary, #fffdf8); }
+    .card img { display: block; width: 100%; aspect-ratio: 16/9; background: var(--bg, #faf7f1); }
+    .card p { margin: 10px 0 2px; font-weight: 700; font-size: 12.5px; }
+    .card small { color: var(--text-secondary, #6b655c); font-size: 11px; }
+    .card .row { display: flex; gap: 10px; margin-top: 10px; }
     .scale { transform-origin: 0 0; }
 
-    /* ── THE THUMBNAIL: one component, coloured by its subject (--deep, --soft, --wash, --pop) ── */
-    .thumb { position: relative; width: 1280px; height: 720px; overflow: hidden; background: var(--wash); }
-    .thumb__blob { position: absolute; border-radius: 50%; background: var(--soft); }
-    .thumb__blob--a { width: 760px; height: 760px; left: -260px; top: -300px; }
-    .thumb__blob--b { width: 520px; height: 520px; right: -120px; bottom: -220px; }
-    .thumb__band { position: absolute; left: 0; right: 0; bottom: 0; height: 74px; background: var(--deep); }
-    .thumb__left { position: absolute; left: 60px; top: 56px; width: 640px; height: 520px; display: flex; flex-direction: column; }
-    .thumb__topic { align-self: flex-start; font: 800 26px/1 "JetBrains Mono", monospace; letter-spacing: .16em; text-transform: uppercase;
-      background: var(--deep); color: #fff; padding: 12px 18px; transform: rotate(-2deg); }
-    .thumb__title { margin: 28px 0 0; font: 900 68px/1.03 Unbounded, sans-serif; letter-spacing: -.012em; color: var(--ink); }
-    .thumb__title em { font-style: normal; color: var(--deep); background: linear-gradient(transparent 60%, var(--pop) 60%); }
-    .thumb__stamp { margin-top: auto; align-self: flex-start; font: 900 38px/1 Unbounded, sans-serif; color: var(--ink); background: var(--pop);
-      padding: 16px 24px; transform: rotate(-3deg); box-shadow: 0 10px 22px -10px rgba(0,0,0,.4); }
-    .thumb__tv { position: absolute; right: 70px; top: 96px; width: 470px; transform: rotate(2.5deg); }
-    .thumb__tv-set { background: var(--ink); padding: 14px; box-shadow: 0 28px 44px -18px rgba(0,0,0,.5); }
-    .thumb__tv-screen { aspect-ratio: 16 / 10; background: var(--paper); display: grid; place-items: center; overflow: hidden; }
-    .thumb__tv-screen svg { width: 86%; height: 86%; }
-    .thumb__tv-foot { width: 120px; height: 26px; margin: 0 auto; background: var(--ink); clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%); }
-    .thumb__bot { position: absolute; right: 410px; top: 330px; width: 230px; height: 230px; transform: rotate(-8deg); filter: drop-shadow(0 14px 16px rgba(0,0,0,.25)); }
+    /* ── THE THUMBNAIL ─────────────────────────────────────────────────────────
+       --note: the subject's note paper; --note2: the one tucked behind it */
+    .thumb { position: relative; width: 1280px; height: 720px; overflow: hidden; color: #2a2723;
+      background-color: #faf7f1;
+      background-image: linear-gradient(rgba(42,39,35,.055) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(42,39,35,.055) 1.5px, transparent 1.5px);
+      background-size: 48px 48px; background-position: -1px -1px; }
+
+    /* the receipt: the film's name */
+    .thumb__card.pp-receipt { position: absolute; left: 64px; top: 58px; width: 700px; transform: rotate(-1.2deg); }
+    .thumb__card .pp-receipt__paper { padding: 46px 58px 50px; background-color: #fffdf8; }
+    .thumb__kicker { display: flex; align-items: center; gap: 16px; margin: 0;
+      font: 800 24px/1 "JetBrains Mono", monospace; letter-spacing: .2em; text-transform: uppercase; color: #6b655c; }
+    .thumb__kicker i { width: 16px; height: 16px; border-radius: 50%; background: var(--note-deep); flex: none; }
+    .thumb__rule { display: block; margin: 22px 0 24px; border-top: 3px dashed rgba(42,39,35,.35); }
+    .thumb__title { margin: 0; font: 900 60px/1.08 Unbounded, sans-serif; letter-spacing: -.015em; color: #2a2723; text-wrap: balance; }
+    .thumb__title em { font-style: normal; padding: 0 .08em; background: linear-gradient(transparent 58%, #f4c95d 58%, #f4c95d 92%, transparent 92%); }
+    .thumb__tags { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 34px; }
+    .thumb .pp-pill { font-size: 22px; padding: 12px 20px; gap: 12px; border-width: 3px; color: #2a2723; cursor: default;
+      box-shadow: 0 6px 14px -6px rgba(42,39,35,.35); }
+    .thumb .pp-pill svg { width: 26px; height: 26px; }
+    .thumb__tags .pp-pill:first-child { background: #f4c95d; border-color: #2a2723; }
+
+    /* the notes: the subject's sign, PrepBot on top */
+    .thumb__notes { position: absolute; right: 70px; top: 96px; width: 400px; height: 420px; }
+    .thumb .pp-sticky { position: absolute; display: block; padding: 0; }
+    .thumb__back.pp-sticky { left: 34px; top: 26px; width: 340px; height: 320px; --pp-note-tilt: -7deg; background: var(--note2); }
+    .thumb__front.pp-sticky { left: 0; top: 0; width: 360px; height: 340px; --pp-note-tilt: 3deg; background: var(--note);
+      display: grid; place-items: center; }
+    .thumb__front.pp-sticky--tape::before { width: 120px; height: 34px; top: -18px; }
+    .thumb__front svg { width: 82%; height: 72%; }
+    .thumb__word { position: absolute; left: 40px; right: 0; bottom: 26px; text-align: center;
+      font: 800 34px/1 "Shantell Sans", cursive; color: #14130f; }
+    .thumb__bot { position: absolute; left: -150px; bottom: -96px; width: 190px; height: 190px; transform: rotate(-9deg);
+      filter: drop-shadow(0 12px 14px rgba(42,39,35,.28)); }
     .thumb__bot svg { width: 100%; height: 100%; }
-    .thumb__brand { position: absolute; left: 60px; bottom: 18px; font: 900 34px/1 Unbounded, sans-serif; color: #fff; }
-    .thumb__brand span { color: var(--pop); }
-    .thumb__url { position: absolute; right: 60px; bottom: 26px; font: 800 22px/1 "JetBrains Mono", monospace; color: #fff; letter-spacing: .03em; }
+
+    .thumb__brand { position: absolute; left: 70px; bottom: 44px; display: flex; align-items: center; gap: 14px;
+      font: 900 30px/1 Unbounded, sans-serif; color: #2a2723; }
+    .thumb__brand span { background: linear-gradient(transparent 55%, #f4c95d 55%); padding: 0 .06em; }
+    .thumb__url.pp-pill { position: absolute; right: 70px; bottom: 38px; font-size: 24px; text-transform: none; letter-spacing: .02em;
+      font-weight: 800; background: #fffdf8; }
   </style>
 </head>
 <body>
   <div class="wrap" id="gallery" hidden>
     <h1>PrepBot video thumbnails</h1>
-    <p class="lead">1280 × 720, ready for YouTube. One design for every film: only the name changes, and each subject has its own colours.</p>
+    <p class="lead">1280 × 720, ready for YouTube. One design for every film: only the name changes, and each subject has its own note paper.</p>
     <div class="grid" id="grid"></div>
   </div>
   <div id="one" hidden><div class="scale" id="scale"><div id="slot"></div></div></div>
   <script type="module">
     import { FILMS } from "/utils/components/workbook/tv-lessons.js";
     import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
+    import { UI } from "/utils/components/ui-icons.js";
 
-    /* ONE ENTRY PER SUBJECT: its name on the tag, its colours, and the sign on the TV */
+    const INK = "#2a2723";
+    /* ONE ENTRY PER SUBJECT: its name, its note papers (the site's sticky pastels), a deeper dot
+       for the kicker (the theme's accents), the word on the note, and the sign drawn in ink */
     const SUBJECTS = {
-      percent: { name: "Percentages", deep: "#1f5f86", soft: "#cfe6f3", wash: "#eef6fb", pop: "#f2c14e",
-        sign: (c) => `<svg viewBox="0 0 160 100"><text x="80" y="76" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="900" font-size="84" fill="${c.deep}">%</text></svg>` },
-      ratio: { name: "Ratio", deep: "#2b6e43", soft: "#d5ecd7", wash: "#f1f8f1", pop: "#f5a547",
-        sign: (c) => `<svg viewBox="0 0 160 100">${[0, 1, 2].map((i) => `<rect x="${18 + i * 26}" y="22" width="24" height="24" fill="${c.soft}" stroke="${c.deep}" stroke-width="3"/>`).join("")}`
-          + `${[0, 1].map((i) => `<rect x="${18 + i * 26}" y="56" width="24" height="24" fill="${c.pop}" stroke="${c.deep}" stroke-width="3"/>`).join("")}`
-          + `<text x="128" y="66" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="900" font-size="34" fill="${c.deep}">3:2</text></svg>` },
-      patterns: { name: "Patterns", deep: "#5a3f93", soft: "#e2d9f3", wash: "#f6f2fb", pop: "#f08a5d",
-        sign: (c) => `<svg viewBox="0 0 160 100">${[1, 2, 3, 4].flatMap((h, x) => Array.from({ length: h }, (_, y) => `<rect x="${32 + x * 24}" y="${86 - (y + 1) * 18}" width="24" height="18" fill="${(x + y) % 2 ? c.soft : c.pop}" stroke="${c.deep}" stroke-width="2.6"/>`)).join("")}</svg>` },
-      maths: { name: "Maths", deep: "#a8392f", soft: "#f6d6cf", wash: "#fdf3f0", pop: "#f2c14e",
-        sign: (c) => `<svg viewBox="0 0 160 100"><text x="80" y="66" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="900" font-size="44" fill="${c.deep}">+ − × ÷</text></svg>` },
+      percent: { name: "Percentages", note: "#bfe3ff", note2: "#fff3a8", deep: "#6fb7e8", word: "per cent",
+        sign: () => `<svg viewBox="0 0 160 110"><text x="80" y="88" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="900" font-size="96" fill="${INK}">%</text></svg>` },
+      ratio: { name: "Ratio", note: "#c8f0c0", note2: "#ffd7a3", deep: "#7cc47c", word: "share it out",
+        sign: () => `<svg viewBox="0 0 160 110">${[0, 1, 2].map((i) => `<rect x="${6 + i * 26}" y="20" width="24" height="24" fill="#fff3a8" stroke="${INK}" stroke-width="3.2"/>`).join("")}`
+          + `${[0, 1].map((i) => `<rect x="${6 + i * 26}" y="54" width="24" height="24" fill="#bfe3ff" stroke="${INK}" stroke-width="3.2"/>`).join("")}`
+          + `<text x="124" y="66" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="900" font-size="30" fill="${INK}">3:2</text></svg>` },
+      patterns: { name: "Patterns", note: "#e8c8ff", note2: "#b8ece2", deep: "#b8a8e8", word: "spot the rule",
+        sign: () => `<svg viewBox="0 0 160 110">${[1, 2, 3, 4].flatMap((h, x) => Array.from({ length: h }, (_, y) => `<rect x="${32 + x * 24}" y="${96 - (y + 1) * 20}" width="24" height="20" fill="${(x + y) % 2 ? "#fffdf8" : "#fff3a8"}" stroke="${INK}" stroke-width="2.8"/>`)).join("")}</svg>` },
+      maths: { name: "Maths", note: "#ffd7a3", note2: "#bfe3ff", deep: "#f0a868", word: "work it out",
+        sign: () => `<svg viewBox="0 0 160 110"><text x="80" y="70" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="900" font-size="46" fill="${INK}">+ − × ÷</text></svg>` },
     };
 
-    /* THE COMPONENT: everything is fixed but the name, and the subject's colours */
+    /* THE COMPONENT: everything is fixed but the name, and the subject's papers */
     function thumbnail({ name, topic }) {
       const s = SUBJECTS[topic] || SUBJECTS.maths;
-      /* the stamp counts the film's ways from its name: "(three ways)" is 3 WAYS */
+      /* the first pill counts the film's ways from its name: "(three ways)" is 3 WAYS; a film
+         with no ways in its name is a lesson */
       const WAYS = { two: 2, three: 3, four: 4 };
-      const ways = WAYS[(name.match(/\((two|three|four) ways\)\s*$/i) || [])[1]?.toLowerCase()] || 2;
+      const w = (name.match(/\((two|three|four) ways\)\s*$/i) || [])[1];
+      const first = w ? `${WAYS[w.toLowerCase()]} ways` : "Lesson";
       const title = name.replace(/\s*\((?:two|three|four) ways\)\s*$/i, "")
         .replace(/(\d[\d,.]*%|[₦$]\d[\d,]*|\d+\s*:\s*\d+(?:\s*:\s*\d+)*|\b\d[\d,]*\b)/, "<em>$1</em>");
-      return `<div class="thumb" style="--deep:${s.deep};--soft:${s.soft};--wash:${s.wash};--pop:${s.pop}">`
-        + `<span class="thumb__blob thumb__blob--a"></span><span class="thumb__blob thumb__blob--b"></span>`
-        + `<div class="thumb__left"><span class="thumb__topic">${s.name}</span><h2 class="thumb__title">${title}</h2><span class="thumb__stamp">${ways} WAYS</span></div>`
-        + `<div class="thumb__tv"><div class="thumb__tv-set"><div class="thumb__tv-screen">${s.sign(s)}</div></div><div class="thumb__tv-foot"></div></div>`
-        + `<div class="thumb__bot">${ICON_PREPBOT}</div>`
-        + `<div class="thumb__band"></div><div class="thumb__brand">Prep<span>Bot</span></div><div class="thumb__url">prepportal.com.ng</div>`
+      return `<div class="thumb" style="--note:${s.note};--note2:${s.note2};--note-deep:${s.deep}">`
+        + `<div class="thumb__card pp-receipt"><div class="pp-receipt__paper">`
+        + `<p class="thumb__kicker"><i></i>PrepBot TV · ${s.name}</p><span class="thumb__rule"></span>`
+        + `<h2 class="thumb__title">${title}</h2>`
+        + `<div class="thumb__tags"><span class="pp-pill" style="--tile:${INK}">${UI.play(26)}${first}</span>`
+        + `<span class="pp-pill" style="--tile:${s.deep}">${UI.steps ? UI.steps(26) : ""}Step by step</span></div>`
+        + `</div></div>`
+        + `<div class="thumb__notes"><span class="thumb__back pp-sticky"></span>`
+        + `<div class="thumb__front pp-sticky pp-sticky--tape">${s.sign()}<span class="thumb__word">${s.word}</span>`
+        + `<div class="thumb__bot">${ICON_PREPBOT}</div></div></div>`
+        + `<div class="thumb__brand">Learning with <span>PrepBot</span></div>`
+        + `<span class="thumb__url pp-pill" style="--tile:${s.deep}">prepportal.com.ng</span>`
         + `</div>`;
     }
 
@@ -110,11 +141,11 @@
     if (!id) {
       document.getElementById("gallery").hidden = false;
       document.getElementById("grid").innerHTML = FILMS.filter((f) => f.topic).map((f) => `
-        <div class="card">
+        <div class="card pp-receipt"><div class="pp-receipt__paper">
           <a href="?film=${f.id}" target="_blank" rel="noopener"><img src="png/${f.id}.png" alt="Thumbnail: ${f.name}" loading="lazy"></a>
           <p>${f.name}</p><small>${f.of || ""}</small>
-          <div class="row"><a href="png/${f.id}.png" download="prepbot-${f.id}.png">Download</a><a href="?film=${f.id}" target="_blank" rel="noopener">Open</a></div>
-        </div>`).join("");
+          <div class="row"><a class="pp-pill" href="png/${f.id}.png" download="prepbot-${f.id}.png">${UI.download(15)}Download</a><a class="pp-pill" href="?film=${f.id}" target="_blank" rel="noopener">${UI.external ? UI.external(15) : ""}Open</a></div>
+        </div></div>`).join("");
     } else {
       const f = FILMS.find((x) => x.id === id) || { name: id };
       document.getElementById("one").hidden = false;

@@ -37,6 +37,7 @@ import { ctxInference, ctxDefinition, ctxExample, ctxAntonym, ctxSynonym } from 
 import { loss25, score80, score90, profit20, ps4Loss, bikeProfit20, bikeProfit10, shoeDiscount, withdraw10, pagesLeft, hatProfit30, decrease15 } from "./cbt-films.js";
 import { stairs24, sum200, odd29, odd21, stairRows37, series123 } from "./cbt-shapes.js";
 import { share600Idowu, share600Kehinde, share4000, share45000, ratio45sum135, angles1234, boys34, girls35, ratio35small45 } from "./cbt-ratio.js";
+import { ratioWhat, ratioParts, ratioCompound } from "./ratio-intro.js";
 import { discount35, alloy26 } from "./cbt-percent1.js";
 
 /* The strip's dress. A page that is not a workbook does not link video.css,
@@ -351,6 +352,9 @@ const SCENES = {
   "odd-21": odd21,
   "stair-rows-37": stairRows37,
   "series-123": series123,
+  "ratio-what": ratioWhat,
+  "ratio-parts": ratioParts,
+  "ratio-compound": ratioCompound,
   "ratio-600-idowu": share600Idowu,
   "ratio-600-kehinde": share600Kehinde,
   "ratio-4000": share4000,
@@ -413,6 +417,9 @@ export const FILMS = [
   { id: "odd-21", name: "1 + 3 + 5 + ... + 21 (two ways)", of: "ANMC 14th main, Q68", topic: "patterns" },
   { id: "stair-rows-37", name: "Black squares in row 37 (two ways)", of: "Scholastic 2022 finals, Q27", topic: "patterns" },
   { id: "series-123", name: "The series 1, 2, 2, 3, 3, 3 (two ways)", of: "ANMC 12th main, Q55 and Q57", topic: "patterns" },
+  { id: "ratio-what", name: "What is a ratio?", of: "Ratio, lesson 1", topic: "ratio", thumb: { n: 3, k: 2 } },
+  { id: "ratio-parts", name: "Part to part, part to whole, part to difference", of: "Ratio, lesson 2", topic: "ratio", thumb: { n: 8, k: 3 } },
+  { id: "ratio-compound", name: "Compound ratio", of: "Ratio, lesson 3", topic: "ratio", thumb: { n: 15, k: 8 } },
   { id: "ratio-600-idowu", name: "Share $600 in 3:2:1: Idowu's share (two ways)", of: "Scholastic 2025 R1 Q45, 4th ed Q20", topic: "ratio", thumb: { n: 6, k: 1 } },
   { id: "ratio-600-kehinde", name: "Share $600 in 3:2:1: Kehinde's share (two ways)", of: "Scholastic 5th ed Q23", topic: "ratio", thumb: { n: 6, k: 2 } },
   { id: "ratio-4000", name: "Share ₦4,000 in 1:3:4: the largest share (two ways)", of: "ANMC 12th main, Q27", topic: "ratio", thumb: { n: 8, k: 4 } },

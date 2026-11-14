@@ -247,6 +247,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     `</div>` +
     (onEdit ? `<button class="mm-tv-btn" data-tv="edit" type="button" aria-label="Edit this film" title="Edit this film">${UI.edit(22)}</button>` : "") +
     (onEdit && filmId ? `<button class="mm-tv-btn" data-tv="keep" type="button" disabled aria-label="Keep this audio" title="Keep this audio: play these recordings from now on, with no voice service">${UI.speaker(22)}<span class="mm-tv-keep__n" aria-hidden="true"></span></button>` : "") +
+    (onEdit && filmId ? `<button class="mm-tv-btn" data-tv="redo" type="button" aria-label="Record this line again" data-tip="Record this line again: a new take replaces the saved one">${UI.refresh(22)}</button>` : "") +
     (more ? `<button class="mm-tv-btn" data-tv="more" type="button" aria-label="More videos like this" title="More videos like this (M)" aria-keyshortcuts="M">${UI.cards(22)}</button>` : "") +
     (filmId
       ? `<button class="mm-tv-btn" data-tv="save" type="button" aria-label="Download this film's thumbnail" title="Download this film's thumbnail (D)" aria-keyshortcuts="D">${UI.download(22)}</button>`
@@ -640,6 +641,67 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
       for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
       return btoa(bin);
     };
+    /* WATCHING IS SAVING. *"When I am watching a video, please save audio alongside, we can correct
+       the section I dont like and resave it."* Every line the voice service records while the admin
+       watches is kept at once (only that line; the rest of the manifest stays), so a film watched
+       through is a film saved, and the redo key below re-records just the line on the screen. */
+    const lineOf = new Map(said.map((t) => [sayMaths(t), t]));
+    const fresh = [];
+    let pumping = false;
+    const pump = async () => {
+      if (pumping) return;
+      pumping = true;
+      keepKey.classList.add("is-busy");
+      try {
+        const { keepAudio } = await import("/utils/components/workbook/film-store.js");
+        while (fresh.length) {
+          const { spoken, url } = fresh.shift();
+          const key = teacher.keyOf(spoken);
+          const kept = await keepAudio(filmId, [{ key, b64: await b64(url), text: lineOf.get(spoken) }], () => {}, { merge: teacher.kept || new Map() });
+          teacher.kept = new Map(Object.entries(kept));
+          label();
+          paintBadge();
+        }
+      } catch (e) {
+        paint("!");
+        say({ title: "A line was not saved", sub: e.message || "Play it again to try once more.", kind: "bad", hold: 7 });
+        console.warn("[keep as you watch]", e);
+      } finally {
+        pumping = false;
+        keepKey.classList.remove("is-busy");
+      }
+    };
+    teacher.onFresh = (spoken, url) => {
+      if (!lineOf.has(spoken)) return;   // PrepBot's other chatter is not part of the film
+      fresh.push({ spoken, url });
+      pump();
+    };
+    const savedNow = async () => { while (pumping || fresh.length) await new Promise((r) => setTimeout(r, 150)); };
+
+    /* RECORD THIS LINE AGAIN: a new take of the line on the screen replaces the kept one, and is played */
+    q("redo")?.addEventListener("click", async () => {
+      const redo = q("redo");
+      if (index < 0 || redo.disabled || !steps[index]?.say) return;
+      const at = index;
+      if (playing) toggle();
+      teacher.stop();
+      redo.disabled = true;
+      redo.classList.add("is-busy");
+      say({ title: "Recording this line again", sub: `Step ${at + 1} of ${steps.length}: a new take` });
+      try {
+        const url = await teacher._tryElevenLabs(sayMaths(steps[at].say), { fresh: true });
+        if (!url) throw new Error("The voice service gave nothing back. Is the premium voice on for this account?");
+        await savedNow();
+        say({ title: "New take saved", sub: "Playing it now. Not right? Press again for another take.", kind: "ok", hold: 4 });
+        go(at);
+      } catch (e) {
+        say({ title: "The line was not recorded", sub: e.message || "Try again.", kind: "bad", hold: 7 });
+      } finally {
+        redo.disabled = false;
+        redo.classList.remove("is-busy");
+      }
+    });
+
     keepKey.addEventListener("click", async () => {
       if (keepKey.disabled) return;
       if (playing) toggle();
