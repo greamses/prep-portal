@@ -21,7 +21,7 @@ import { mathRow, svgBox, centred, PAPER, PIC_W } from "./cbt-films.js";
 import { rollAsk, swapWord, noteKeyword } from "./film-ask.js";
 
 const INK = "#2a2723", BLUE = "#2f6f8f", GREEN = "#2f7d4a", PURPLE = "#6b4fa0", RED = "#c0453f";
-const SKY = "#bfe3ff", BUTTER = "#fff3a8", LEAF = "#c8f0c0", PALE = "#e6e0d6";
+const SKY = "#bfe3ff", BUTTER = "#fff3a8", LEAF = "#c8f0c0", PALE = "#e6e0d6", PART = "#f4c95d";
 const L = (k, t, color) => ({ k, tex: t, ...(color ? { color } : {}) });
 const main = (pieces, em = 8) => svgBox(150, 30, mathRow(pieces, { cx: 75, y: 17, em }).svg);
 const at = (y) => centred(150, y);
@@ -264,7 +264,7 @@ export function pctChange() {
    one multiplication by an equivalent fraction. */
 function keywordTable5() {
   const COLS = [
-    { head: "Take a part", fill: SKY, words: ["of", "commission", "interest", "tax"] },
+    { head: "Take a part", fill: PART, words: ["of", "commission", "interest", "tax"] },
     { head: "Add on", fill: LEAF, words: ["increase by", "profit", "rise", "more than"] },
     { head: "Take away", fill: "#ffd7a3", words: ["decrease by", "discount", "loss", "off"] },
     { head: "Find the whole", fill: "#e8c8ff", words: ["original", "was", "before", "cost price"] },
@@ -310,7 +310,19 @@ function kbar({ n, val, top, extra = 0, pale = 0 }) {
 const kbarStages = (id, { n, extra = 0, pale = 0, part = 0, topTo = null }) => ({
   [`${id}.base`]: (s, H) => { H.write(key(s, "top"), 0); for (let i = 0; i < n; i++) H.grow(key(s, `b${i}`), 0.3 + i * Math.min(0.2, 2.2 / n)); H.write(key(s, "hund"), 0.5); },
   [`${id}.fill`]: (s, H) => { for (let i = 0; i < n; i++) H.write(key(s, `v${i}`), 0.1 + i * Math.min(0.15, 1.8 / n)); },
-  [`${id}.part`]: (s, H) => { for (let i = 0; i < part; i++) H.lit(key(s, `b${i}`), 0.2 + i * 0.25, 3, RED); },
+  /* THE PART IS COLOURED, and stays coloured: *"why not color the box of emphasis different. This
+     visual cues help"*. Each action has its colour: a part is yellow, boxes added on are green,
+     boxes taken away go pale and are struck out. */
+  [`${id}.part`]: (s, H) => {
+    for (let i = 0; i < part; i++) {
+      const b = key(s, `b${i}`);
+      if (!b) continue;
+      if (isInstant(H)) { b.setAttribute("fill", PART); continue; }
+      setTimeout(() => { b.style.transition = "fill .45s"; b.setAttribute("fill", PART); }, (0.2 + i * 0.3) * 1000);
+      H.lit(b, 0.2 + i * 0.3, 1.2, RED);
+    }
+    if (!isInstant(H)) H.sound("pop", 0.2);
+  },
   [`${id}.add`]: (s, H) => { for (let j = 0; j < extra; j++) H.grow(key(s, `x${j}`), 0.2 + j * 0.3); },
   [`${id}.take`]: (s, H) => { for (let i = n - pale; i < n; i++) H.write(key(s, `p${i}`), 0.2 + (i - n + pale) * 0.3); },
   [`${id}.whole`]: (s, H) => { const t = key(s, "topv"); if (t && topTo != null) { t.textContent = topTo; t.setAttribute("fill", GREEN); } H.sound("ding", 0.2); },
@@ -322,7 +334,7 @@ export function pctTraps() {
     noteKeyword(inner, k, note, { instant: isInstant(H), tone });
   };
   const col = (j, n) => (s, H) => { H.write(key(s, `th${j}`), 0); for (let i = 0; i < n; i++) H.write(key(s, `t${j}-${i}`), 0.4 + i * 0.35); };
-  const TAKE = "#bfe3ff", ADD = "#c8f0c0", AWAY = "#ffd7a3", WHOLE = "#e8c8ff", OUT = "#fff3a8";
+  const TAKE = "#f8d77a", ADD = "#c8f0c0", AWAY = "#ffd7a3", WHOLE = "#e8c8ff", OUT = "#fff3a8";
 
   /* the eleven examples: the question, its keyword(s) and their notes, the boxes, the two working lines */
   const EX = [
