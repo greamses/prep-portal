@@ -187,6 +187,37 @@ const divStages = (id) => ({
   },
 });
 
+/** THE DISCRIMINANT AS A PICTURE: three sketches of a quadratic's curve, the answers being where it
+ *  meets the x-axis. Twice (b² − 4ac > 0), once (= 0), never (< 0). Drawn on with the pen. */
+function discGraphs() {
+  const AX = 32, SY = 3.1, SU = 6.2, Z = 1.35;   // Z: drawn bigger than the paper ruler                 // x-axis height; units per y, per u
+  const panels = [
+    { cx: 25, k: -4, sign: "b^{2} - 4ac > 0", says: "\\text{crosses twice: two answers}", col: GREEN },
+    { cx: 75, k: 0, sign: "b^{2} - 4ac = 0", says: "\\text{touches once: one answer}", col: BLUE },
+    { cx: 125, k: 4, sign: "b^{2} - 4ac < 0", says: "\\text{never meets it: none}", col: RED },
+  ];
+  const pen = (k, d, col, w = 0.7, dash = "") => `<g data-mb="brace" data-mb-key="${k}"><path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"${dash ? ` stroke-dasharray="${dash}"` : ""}/></g>`;
+  let o = "";
+  panels.forEach((P, i) => {
+    o += pen(`ax${i}`, `M${P.cx - 21} ${AX} L${P.cx + 21} ${AX}`, INK, 0.5);
+    const um = Math.min(3, Math.sqrt(8 - P.k));
+    const pts = [];
+    for (let j = 0; j <= 40; j++) { const u = -um + (2 * um * j) / 40; pts.push(`${(P.cx + u * SU).toFixed(2)} ${(AX - (u * u + P.k) * SY).toFixed(2)}`); }
+    o += pen(`cv${i}`, "M" + pts.join(" L"), P.col, 0.9);
+    const roots = P.k < 0 ? [-Math.sqrt(-P.k), Math.sqrt(-P.k)] : P.k === 0 ? [0] : [];
+    roots.forEach((u, r) => { o += `<circle data-mb="num" data-k="dt${i}${r}" cx="${(P.cx + u * SU).toFixed(2)}" cy="${AX}" r="1.5" fill="${P.col}" stroke="${INK}" stroke-width="0.35"/>`; });
+    o += texAt(P.sign, P.cx, 51, { em: 4.8, color: P.col, attrs: `data-mb="num" data-k="ls${i}"` });
+    o += texAt(P.says, P.cx, 58, { em: 4.2, color: INK, attrs: `data-mb="num" data-k="lw${i}"` });
+  });
+  return svgBox(150 * Z, 61 * Z, `<g transform="scale(${Z})">${o}</g>`);
+}
+const discStages = (id) => Object.fromEntries([0, 1, 2].map((i) => [`${id}.p${i}`, (s, H) => {
+  H.draw(s?.querySelector(`[data-mb-key="ax${i}"]`), 0.1);
+  H.draw(s?.querySelector(`[data-mb-key="cv${i}"]`), 0.6);
+  [0, 1].forEach((r) => { const d = key(s, `dt${i}${r}`); if (d) { H.write(d, 1.8 + r * 0.4); if (!isInstant(H)) H.sound("pop", 1.8 + r * 0.4); } });
+  H.write(key(s, `ls${i}`), 2.4); H.write(key(s, `lw${i}`), 2.9);
+}]));
+
 /**
  * TRANSFER: a term (and the sign in front of it) leaves one side of the equation and lands on the
  * other with its sign changed. `pieces` as for mathRow; `move` the key of the travelling term, `op`
@@ -292,6 +323,26 @@ export function quadFormula() {
     g8a: () => line1("x = -\\dfrac{b}{2a} \\pm \\dfrac{\\sqrt{b^{2} - 4ac}}{2a}", null, 6.6),
     g8: () => line1("x = \\dfrac{-b \\pm \\sqrt{b^{2} - 4ac}}{2a}", GREEN, 10),
     /* part 3 */
+    dF: () => line1("x = \\dfrac{-b \\pm \\sqrt{\\underbrace{b^{2} - 4ac}_{\\text{discriminant}}}}{2a}", null, 7.2),
+    dN: () => line1("b^{2} - 4ac\\ \\text{ is the discriminant}", PURPLE, 6),
+    dW: () => line1("\\left(x + \\dfrac{b}{2a}\\right)^{2} = \\dfrac{b^{2} - 4ac}{4a^{2}}", null, 6.6),
+    e1a: () => line1("x^{2} + 6x - 16 = 0:\\ \\ a = 1,\\ b = 6,\\ c = -16"),
+    e1b: () => line1("b^{2} - 4ac = 36 - 4(1)(-16) = 36 + 64 = 100", PURPLE),
+    e1c: () => line1("x = \\dfrac{-6 \\pm \\sqrt{100}}{2} = \\dfrac{-6 \\pm 10}{2}:\\ \\ x = 2 \\text{ or } -8", null, 6.4),
+    e1d: () => line1("100 > 0:\\ \\ \\text{two different answers}", GREEN),
+    e2a: () => line1("x^{2} + 6x + 9 = 0:\\ \\ a = 1,\\ b = 6,\\ c = 9"),
+    e2b: () => line1("b^{2} - 4ac = 36 - 4(1)(9) = 36 - 36 = 0", PURPLE),
+    e2c: () => line1("x = \\dfrac{-6 \\pm \\sqrt{0}}{2} = \\dfrac{-6 \\pm 0}{2} = -3", null, 6.4),
+    e2d: () => line1("0:\\ \\ \\text{one answer}\\quad (x + 3)^{2} = 0", BLUE),
+    e3a: () => line1("x^{2} + 6x + 13 = 0:\\ \\ a = 1,\\ b = 6,\\ c = 13"),
+    e3b: () => line1("b^{2} - 4ac = 36 - 4(1)(13) = 36 - 52 = -16", PURPLE),
+    e3c: () => line1("x = \\dfrac{-6 \\pm \\sqrt{-16}}{2}\\ \\ ?", null, 6.4),
+    e3d: () => line1("-16 < 0:\\ \\ \\text{no real answer}\\quad (x + 3)^{2} = -4", RED),
+    e4a: () => line1("x^{2} + 6x + 4 = 0:\\ \\ a = 1,\\ b = 6,\\ c = 4"),
+    e4b: () => line1("b^{2} - 4ac = 36 - 16 = 20", PURPLE),
+    e4c: () => line1("x = \\dfrac{-6 \\pm \\sqrt{20}}{2} = \\dfrac{-6 \\pm 2\\sqrt{5}}{2} = -3 \\pm \\sqrt{5}", null, 6.4),
+    e4d: () => line1("100 = 10^{2}:\\ \\text{whole answers}\\qquad 20:\\ \\text{surds}", PURPLE, 6),
+    dg: () => discGraphs(),
     c1: () => line1("a = 1,\\ \\ b = 6,\\ \\ c = -16"),
     c2: () => line1("x = \\dfrac{-6 \\pm \\sqrt{36 + 64}}{2} = \\dfrac{-6 \\pm 10}{2}", null, 6.6),
     c3: () => line1("x = 2\\ \\ \\text{or}\\ \\ x = -8\\ \\ \\checkmark", GREEN),
@@ -310,10 +361,12 @@ export function quadFormula() {
     rs1b: at(TALL[0]), rs2: at(TALL[1]),
     T3: at(TALL[0]), g8a: at(TALL[1]),
     c1: at(SLOT[0]), c2: at(SLOT[1]), c3: at(SLOT[2]), d1: at(SLOT[3]),
+    dF: at(17), dN: at(35), dW: at(16), dg: centred(150 * 1.35, 9),
+    ...Object.fromEntries([1, 2, 3, 4].flatMap((n) => [[`e${n}a`, at(12)], [`e${n}b`, at(19)], [`e${n}c`, at(27)], [`e${n}d`, at(37)]])),
   };
-  const simple = ["f0", "n1u", "n2u", "n3u", "rule1", "rule2", "n3s", "r1", "r2", "r3", "r3b", "rs1", "rs1b", "rs2", "g8a", "n5", "n5b", "ck0", "ck1", "ck2", "g1", "g3", "g3u", "g4u", "g5u", "g5s", "g6", "g8", "c1", "c2", "c3", "d1"];
+  const simple = ["f0", "n1u", "n2u", "n3u", "rule1", "rule2", "n3s", "r1", "r2", "r3", "r3b", "rs1", "rs1b", "rs2", "g8a", "n5", "n5b", "ck0", "ck1", "ck2", "g1", "g3", "g3u", "g4u", "g5u", "g5s", "g6", "g8", "c1", "c2", "c3", "d1", "dF", "dN", "dW", ...[1, 2, 3, 4].flatMap((n) => ["a", "b", "c", "d"].map((l) => `e${n}${l}`))];
   const stages = {
-    ...geoStages("gn"), ...geoStages("gg"), ...divStages("dv"), ...transferStages("T1a"), ...transferStages("T1b"), ...transferStages("T2"), ...transferStages("T3"),
+    ...geoStages("gn"), ...geoStages("gg"), ...divStages("dv"), ...transferStages("T1a"), ...transferStages("T1b"), ...transferStages("T2"), ...transferStages("T3"), ...discStages("dg"),
     ...Object.fromEntries(simple.map((k) => [`${k}.all`, (s, H) => { H.write(key(s, "a"), 0.1); if (["n3u", "n5", "g5u", "g8", "c3", "f0"].includes(k)) H.sound("ding", 0.6); }])),
   };
 
@@ -323,12 +376,14 @@ export function quadFormula() {
       { id: "a1", text: "Where does the quadratic formula come from? Derive it by completing the square, with a picture." },
       { id: "a2", text: "Solve \\(x^{2} + 6x = 16\\) by completing the square." },
       { id: "a3", text: "Now any quadratic: \\(ax^{2} + bx + c = 0\\). Solve it for \\(x\\)." },
+      { id: "a4", text: "How many answers does a quadratic have? Read it from \\(b^{2} - 4ac\\) before you solve." },
     ],
     pics, picAt,
     lines: [
       { id: "k1", receipt: true, sub: "Part 1", text: "Completing the square, with numbers", y: 50.5 },
       { id: "k2", receipt: true, sub: "Part 2", text: "The same steps, with letters", y: 50.5 },
       { id: "k3", receipt: true, sub: "Part 3", text: "Check it, and read the root", y: 50.5 },
+      { id: "k4", receipt: true, sub: "Part 4", text: "The discriminant: how many answers?", y: 50.5 },
     ],
     stages,
     steps: ({ push }) => {
@@ -427,8 +482,53 @@ export function quadFormula() {
         { on: ["c2"], add: ["c2.all"], cue: { "c2.all": "so x is" }, pause: 0.8 });
       push("Minus six plus ten, over two, is two. Minus six minus ten, over two, is minus eight. The same two answers the picture gave us.",
         { on: ["c3"], add: ["c3.all"], cue: { "c3.all": "the same two" }, pause: 1 });
-      push("And the part under the root, b squared minus four a c, tells you how many answers there are before you finish. Positive: two answers. Nought: one. Negative: there's no real square root, so no real answer at all.",
-        { on: ["d1"], add: ["d1.all"], cue: { "d1.all": "positive" }, pause: 1 });
+      /* ── PART 4: THE DISCRIMINANT ── */
+      push("Look again at the formula. One small piece of it, the part under the square root, b squared minus four a c, is so useful that it has its own name. It's called the DISCRIMINANT. To discriminate means to tell things apart, and this number tells quadratics apart: it tells you how many answers there are, before you've even finished solving.",
+        { on: ["a4", "k4", "dF", "dN"], off: ["a3", "k3", "c1", "c2", "c3"], add: ["dF.all", "dN.all"], cue: { "dN.all": "called the discriminant" }, transition: { kind: "card", title: "Part 4", sub: "The discriminant", hold: 1.6 }, pause: 0.8 });
+      push("Why should one number decide that? Go back to the line just before we took the square root. On the left, x plus b over two a, all squared. That's the area of a square, from our picture, and an area can never be negative. On the bottom right, four a squared is a square too, so it's always positive. So everything depends on the TOP: b squared minus four a c.",
+        { on: ["dW"], off: ["dF", "dN"], add: ["dW.all"], cue: { "dW.all": "go back to the line" }, pause: 1 });
+      push("And here's the second reason. The plus or minus means we take the square root, then ADD it, and also SUBTRACT it. What we get depends entirely on what that square root turns out to be. There are only three possibilities: it's a positive number, it's nought, or it doesn't exist. Let's see each one with an example.",
+        { pause: 0.8 });
+
+      /* case 1: positive */
+      push("First, our old friend: x squared plus six x minus sixteen equals nought. a is one, b is six, c is minus sixteen. Work out the discriminant FIRST. b squared is thirty-six. Four a c is four times one times minus sixteen, minus sixty-four, and taking away minus sixty-four is adding sixty-four. Thirty-six plus sixty-four is a hundred.",
+        { on: ["e1a", "e1b"], off: ["dW"], add: ["e1a.all", "e1b.all"], cue: { "e1b.all": "work out the discriminant" }, pause: 0.8 });
+      push("A hundred is positive, so its square root is a real number: ten. Now the plus or minus does its job. Minus six PLUS ten is four, over two is two. Minus six MINUS ten is minus sixteen, over two is minus eight. Adding ten and taking ten give two DIFFERENT numbers.",
+        { on: ["e1c"], add: ["e1c.all"], cue: { "e1c.all": "now the plus or minus" }, pause: 0.8 });
+      push("So that's the first rule. When the discriminant is positive, bigger than nought, there are two different answers.",
+        { on: ["e1d"], add: ["e1d.all"], cue: { "e1d.all": "the first rule" }, pause: 1 });
+
+      /* case 2: zero */
+      push("Second example: x squared plus six x plus nine equals nought. Same a and b, but c is nine. The discriminant: thirty-six, take away four times one times nine, which is thirty-six. Thirty-six take away thirty-six is nought.",
+        { on: ["e2a", "e2b"], off: ["e1a", "e1b", "e1c", "e1d"], add: ["e2a.all", "e2b.all"], cue: { "e2b.all": "the discriminant" }, pause: 0.8 });
+      push("The square root of nought is nought. So plus or minus nought: adding nothing and taking away nothing give the SAME number. Minus six over two is minus three, and that's the only answer.",
+        { on: ["e2c"], add: ["e2c.all"], cue: { "e2c.all": "the square root of nought" }, pause: 0.8 });
+      push("Look at the question again and you'll see why. x squared plus six x plus nine is EXACTLY our completed square, x plus three, all squared, with the nine unit squares already in the corner. A square equal to nought has a side of nought, so x plus three is nought, and x is minus three. When the discriminant is nought, there's one answer. You'll sometimes hear it called a repeated root.",
+        { on: ["e2d"], add: ["e2d.all"], cue: { "e2d.all": "look at the question" }, pause: 1 });
+
+      /* case 3: negative */
+      push("Third example: x squared plus six x plus thirteen equals nought. c is thirteen now. The discriminant: thirty-six, take away four times thirteen, fifty-two. Thirty-six take away fifty-two is minus sixteen. A negative number.",
+        { on: ["e3a", "e3b"], off: ["e2a", "e2b", "e2c", "e2d"], add: ["e3a.all", "e3b.all"], cue: { "e3b.all": "the discriminant" }, pause: 0.8 });
+      push("Put it in the formula and we're asked for the square root of minus sixteen. Is there a number that times itself makes minus sixteen? Four times four is sixteen. Minus four times minus four is ALSO plus sixteen. A positive times a positive is positive, a negative times a negative is positive. Nothing we know squares to a negative.",
+        { on: ["e3c"], add: ["e3c.all"], cue: { "e3c.all": "square root of minus sixteen" }, pause: 1 });
+      push("Completing the square shows the same thing: this question is x plus three, all squared, equals minus four. A square with an area of minus four. You can't draw one. So when the discriminant is negative, there's no real answer. Later on you'll meet new numbers invented for exactly this, but no ordinary number will do.",
+        { on: ["e3d"], add: ["e3d.all"], cue: { "e3d.all": "completing the square shows" }, pause: 1 });
+
+      /* bonus: perfect square or not */
+      push("One more thing the discriminant tells you. Try x squared plus six x plus four equals nought. The discriminant is thirty-six take away sixteen, which is twenty. Positive, so two answers.",
+        { on: ["e4a", "e4b"], off: ["e3a", "e3b", "e3c", "e3d"], add: ["e4a.all", "e4b.all"], cue: { "e4b.all": "the discriminant is" }, pause: 0.8 });
+      push("But twenty isn't a perfect square. No whole number times itself makes twenty. So we tidy the root: twenty is four times five, and the root of four is two, so the root of twenty is two root five. Divide everything by two, and x is minus three plus or minus root five.",
+        { on: ["e4c"], add: ["e4c.all"], cue: { "e4c.all": "twenty is four times five" }, pause: 1 });
+      push("So look at the discriminant before you start. In the first example it was a hundred, which is ten squared, a perfect square, and the answers were whole numbers. That also means the quadratic factorises: x minus two, times x plus eight. When the discriminant is not a perfect square, like twenty, the answers are surds, and it won't factorise neatly.",
+        { on: ["e4d"], add: ["e4d.all"], cue: { "e4d.all": "look at the discriminant" }, pause: 1 });
+
+      /* the picture of it */
+      push("Here's the whole idea as a picture. Draw the curve of a quadratic. Its answers are the places where the curve meets the x-axis, because that's where it equals nought. When the discriminant is positive, the curve dips below the axis and crosses it twice: two answers.",
+        { on: ["dg"], off: ["e4a", "e4b", "e4c", "e4d"], add: ["dg.p0"], cue: { "dg.p0": "draw the curve" }, pause: 0.8 });
+      push("When the discriminant is nought, the bottom of the curve just TOUCHES the axis at one point: one answer.",
+        { add: ["dg.p1"], cue: { "dg.p1": "just touches" }, pause: 0.8 });
+      push("And when the discriminant is negative, the whole curve sits above the axis and never meets it: no real answers. Three cases, and one small number, b squared minus four a c, tells you which one you're in.",
+        { add: ["dg.p2"], cue: { "dg.p2": "never meets it" }, pause: 1.2 });
       push("So the quadratic formula is just completing the square, done once with letters, so you never have to do it again. A square, some bars cut in half, one missing corner, and the same steps every time.");
     },
   });
