@@ -97,7 +97,7 @@ export const sanitizeSpelling = (raw) => raw
   .slice(0, 40);
 
 /* ── The voice and the face live in ./boy.js ─────────────────────────── */
-export { sayWord, hush, canSpeak, faceButton, FACE_SRC } from './boy.js';
+export { sayWord, hush, canSpeak, faceButton, preloadClip, FACE_SRC } from './boy.js';
 
 /* ── Recorded clips ───────────────────────────────────────────────────
    Kokoro recordings of every word, definition and sentence, made by

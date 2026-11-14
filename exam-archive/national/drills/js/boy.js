@@ -34,7 +34,7 @@ function setMouth(face, open) {
 export function faceButton({ size = 88, label = 'Hear the word', tip = label, onPress } = {}) {
   const b = document.createElement('button');
   b.type = 'button';
-  b.className = 'spell-face';
+  b.className = 'spell-face pp-plain';   // pp-plain: not a sticky note, a round face
   b.style.setProperty('--face', `${size}px`);
   b.setAttribute('aria-label', label);
   b.dataset.tip = tip;
@@ -68,26 +68,31 @@ function stopTalking() {
 }
 
 /* ── A recording, with the mouth following its loudness ─────────────
-   The clip is decoded once and its loudness worked out 60 times a second;
-   while it plays, the mouth reads the loudness at the clip's play position.
-   Nothing is measured live, so it works the same on every browser, before
-   any tap has started the page's audio, and with the sound turned down. */
+   The clip is decoded once, its loudness worked out 60 times a second, and
+   it is PLAYED through Web Audio from that same decoded sound. The mouth then
+   reads the loudness at the audio clock's own position, less the device's
+   output delay (a phone or Bluetooth speaker plays what it is given 0.1 to
+   0.2 s later), so lips and sound line up exactly. Until the sound starts
+   the mouth stays shut, rather than flapping out of time while it loads. */
 const FPS = 60;
-let audio = null;
-let decoder = null;
-const envelopes = new Map();     // url -> Promise<Float32Array|null>
-function player() {
-  if (!audio) { audio = new Audio(); audio.preload = 'auto'; }
-  return audio;
+let ctx = null;
+let source = null;
+const clips = new Map();        // url -> Promise<{ buf, env } | null>
+function audioCtx() {
+  if (!ctx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    ctx = AC ? new AC() : null;
+  }
+  return ctx;
 }
-function envelopeOf(url) {
-  if (envelopes.has(url)) return envelopes.get(url);
+function clipData(url) {
+  if (clips.has(url)) return clips.get(url);
   const p = (async () => {
     try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      decoder ||= new AC();
+      const c = audioCtx();
+      if (!c) return null;
       const data = await (await fetch(url)).arrayBuffer();
-      const buf = await decoder.decodeAudioData(data);
+      const buf = await new Promise((ok, bad) => { const r = c.decodeAudioData(data, ok, bad); if (r && r.then) r.then(ok, bad); });
       const ch = buf.getChannelData(0);
       const hop = Math.max(1, Math.round(buf.sampleRate / FPS));
       const env = new Float32Array(Math.ceil(ch.length / hop));
@@ -99,12 +104,13 @@ function envelopeOf(url) {
         env[f] = Math.sqrt(sum / Math.max(1, to - from));
         peak = Math.max(peak, env[f]);
       }
-      // 0..1 against the clip's own loudest moment, with a floor for breath noise
-      for (let f = 0; f < env.length; f++) env[f] = Math.max(0, (env[f] / (peak || 1) - 0.08) / 0.92);
-      return env;
-    } catch { return null; }
+      // 0..1 against the clip's own loudest moment, with a floor for breath noise;
+      // a gentle curve so ordinary syllables open the mouth well, not just the peaks
+      for (let f = 0; f < env.length; f++) env[f] = Math.pow(Math.max(0, (env[f] / (peak || 1) - 0.1) / 0.9), 0.7);
+      return { buf, env };
+    } catch { clips.delete(url); return null; }
   })();
-  envelopes.set(url, p);
+  clips.set(url, p);
   return p;
 }
 
@@ -116,8 +122,8 @@ function moveMouth(me, level) {
     if (me !== lineNo || !face) return;
     let want = level();
     if (want == null) want = 0.55 + 0.45 * Math.sin(performance.now() / 70);   // a syllable rhythm
-    // opens quickly, closes a little slower: lips, not a shutter
-    open += (want - open) * (want > open ? 0.65 : 0.4);
+    // opens quickly and closes nearly as quickly: lips, not a shutter, but no lag behind the sound
+    open += (want - open) * (want > open ? 0.75 : 0.55);
     setMouth(face, open);
     raf = requestAnimationFrame(step);
   };
@@ -125,22 +131,31 @@ function moveMouth(me, level) {
 }
 
 function playClip(url, me, onFail) {
-  const a = player();
-  let env = null;
-  envelopeOf(url).then((e) => { env = e; });
-  a.onended = () => { if (me === lineNo) stopTalking(); };
-  a.onerror = () => { if (me === lineNo) onFail(); };
-  a.src = url;
-  const p = a.play();
-  if (p && p.catch) p.catch(() => { if (me === lineNo) onFail(); });
-  moveMouth(me, () => {
-    if (a.paused && a.currentTime === 0) return 0;          // not started yet: shut
-    if (!env) return null;                                   // still decoding: flap
-    return env[Math.min(env.length - 1, Math.floor(a.currentTime * FPS))] || 0;
+  moveMouth(me, () => 0);                              // shut while the clip loads
+  clipData(url).then(async (data) => {
+    if (me !== lineNo) return;
+    const c = audioCtx();
+    if (!data || !c) { onFail(); return; }
+    // resume() can wait forever when the page may not make sound yet: give it a moment, no more
+    if (c.state !== 'running') { try { await Promise.race([c.resume(), new Promise((r) => setTimeout(r, 400))]); } catch { /* not allowed yet */ } }
+    if (me !== lineNo) return;
+    if (c.state !== 'running') { onFail(); return; }  // the page may not make sound yet: the browser voice tries
+    const src = c.createBufferSource();
+    src.buffer = data.buf;
+    src.connect(c.destination);
+    const at = c.currentTime + 0.02;
+    const lag = (c.outputLatency || 0) + (c.baseLatency || 0);
+    src.onended = () => { if (me === lineNo) stopTalking(); };
+    src.start(at);
+    source = src;
+    moveMouth(me, () => {
+      const t = c.currentTime - at - lag;
+      return t < 0 ? 0 : (data.env[Math.floor(t * FPS)] || 0);
+    });
   });
 }
-/** Fetch and decode clips ahead of time (the next word), so the mouth is ready on the first syllable. */
-export function preloadClip(url) { if (url) envelopeOf(url); }
+/** Fetch and decode clips ahead of time (the next word), so the first syllable is not late. */
+export function preloadClip(url) { if (url) clipData(url); }
 
 /* ── The browser's voice ────────────────────────────────────────── */
 export const canSpeak = typeof window !== 'undefined' && ('speechSynthesis' in window || typeof Audio !== 'undefined');
@@ -163,7 +178,7 @@ if (hasSynth) {
 if (typeof document !== 'undefined') {
   const unlock = () => {
     try { if (hasSynth) { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } } catch { /* ignore */ }
-    try { player(); } catch { /* ignore */ }
+    try { const c = audioCtx(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ }
   };
   document.addEventListener('pointerdown', unlock, { once: true, capture: true });
   document.addEventListener('keydown', unlock, { once: true, capture: true });
@@ -200,5 +215,6 @@ export function hush() {
   lineNo++;
   stopTalking();
   try { if (hasSynth) speechSynthesis.cancel(); } catch { /* ignore */ }
-  try { if (audio) audio.pause(); } catch { /* ignore */ }
+  try { if (source) { source.onended = null; source.stop(); } } catch { /* already stopped */ }
+  source = null;
 }

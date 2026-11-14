@@ -11,7 +11,7 @@ import { checkSubject } from './subject.js';
 import { typedToTex, plainToTex } from './typed-tex.js';
 import { createBoxInput } from './box-input.js';
 import { mathReady, loadMath, svgFor } from '/utils/components/workbook/mathify.js';
-import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak, faceButton, clipFor } from './spelling.js';
+import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak, faceButton, clipFor, preloadClip } from './spelling.js';
 import { UI } from '/utils/components/ui-icons.js';
 
 const $ = (id) => document.getElementById(id);
@@ -215,7 +215,13 @@ function renderSpelling(q) {
   meaningEl.hidden = false;
   defBtn.hidden = useBtn.hidden = !canSpeak;
   spellTools.hidden = false;
+  cardEl.classList.add('is-spell');          // grows to fit a long sentence instead of cropping its buttons
   answerStage.classList.add('is-spell');
+  // Long words are typed in a smaller face, sized by the word itself so it does not jump as you type.
+  answerStage.classList.toggle('is-long', q.word.length > 11);
+  answerStage.classList.toggle('is-longest', q.word.length > 18);
+  preloadClip(clipFor(q.i, 'd'));
+  preloadClip(clipFor(q.i, 's'));
   inputEl.maxLength = 40;
   inputEl.value = '';
   typedEl.textContent = '';
@@ -231,7 +237,8 @@ function renderQuestion() {
   questionText.classList.remove('is-ipa', 'is-speak');
   spellTools.hidden = true;
   meaningEl.hidden = true;
-  answerStage.classList.remove('is-spell');
+  cardEl.classList.remove('is-spell');
+  answerStage.classList.remove('is-spell', 'is-long', 'is-longest');
   // Chemistry formulas are not maths notation — only the rest is typeset.
   if (currentQuestion.hint && !currentQuestion.alg && !currentQuestion.math) questionText.textContent = currentQuestion.text;
   else drawMath(questionText, currentQuestion.tex || toTex(currentQuestion.text), currentQuestion.text);
@@ -389,11 +396,38 @@ const box = createBoxInput({
   draw: (el, tex, plain) => drawMath(el, tex, plain),
   onChange: (text) => { if (active) checkAnswer(forChecks(text)); },
 });
+/* Spelling answers are plain text, so the caret is a real element placed at
+   the input's caret position, between the letters. A click on the answer puts
+   the caret at the letter clicked. */
+const spellCaret = document.createElement('span');
+spellCaret.className = 'drill-cursor drill-spell-caret';
+spellCaret.setAttribute('aria-hidden', 'true');
+function drawSpellingCaret(v) {
+  const at = caretAt();
+  typedEl.replaceChildren(document.createTextNode(v.slice(0, at)), spellCaret, document.createTextNode(v.slice(at)));
+  if (endCursor) endCursor.style.visibility = 'hidden';
+  caretBar.hidden = true;
+  spellCaret.style.animation = 'none'; void spellCaret.offsetWidth; spellCaret.style.animation = '';
+}
+function spellingOffsetAt(x, y) {
+  let node = null, off = 0;
+  if (document.caretPositionFromPoint) { const p = document.caretPositionFromPoint(x, y); if (p) { node = p.offsetNode; off = p.offset; } }
+  else if (document.caretRangeFromPoint) { const r = document.caretRangeFromPoint(x, y); if (r) { node = r.startContainer; off = r.startOffset; } }
+  if (!node || !typedEl.contains(node)) return null;
+  const [before] = typedEl.childNodes;
+  return node === before ? off : before.textContent.length + (node.nodeType === 3 ? off : 0);
+}
+// Any caret move in the hidden input (arrows, Home/End, held keys, selection) redraws it.
+document.addEventListener('selectionchange', () => {
+  if (active && currentQuestion && currentQuestion.spell && document.activeElement === inputEl && inputEl.value) renderTyped();
+});
+
 function renderTyped() {
   const v = inputEl.value;
   if (!v) { typedEl.textContent = ''; drawnFor = ''; placeCaret(); return; }
-  // A spelling is letters, not maths: shown as typed, the caret at its end.
-  if (currentQuestion && currentQuestion.spell) { typedEl.textContent = v; drawnFor = v; placeCaret(); return; }
+  // A spelling is letters, not maths: shown as typed, with the caret drawn
+  // where it really is, so the arrow keys, Home and End move it.
+  if (currentQuestion && currentQuestion.spell) { drawSpellingCaret(v); drawnFor = v; return; }
   // re-typeset only when the answer itself changed, never for a caret move
   if (v !== drawnFor) { drawMath(typedEl, typedTex(v), v); drawnFor = v; }
   placeCaret();
@@ -473,6 +507,13 @@ inputEl.addEventListener('select', renderTyped);
 answerStage.addEventListener('click', (e) => {
   const v = inputEl.value;
   if (!active || !v || box.on) return;
+  if (currentQuestion && currentQuestion.spell) {
+    const at = spellingOffsetAt(e.clientX, e.clientY);
+    inputEl.focus({ preventScroll: true });
+    if (at != null) { try { inputEl.setSelectionRange(at, at); } catch { /* ignore */ } }
+    renderTyped();
+    return;
+  }
   const anchors = anchorsOf();
   let idx = v.length;
   if (anchors.length) {
