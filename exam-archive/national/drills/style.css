@@ -622,14 +622,6 @@ tbody .drill-grid-th { border-right-width: 2px; }
 }
 .drill-text.is-ipa.is-long { font-size: 2rem; }
 .drill-text.is-ipa.is-longest { font-size: 1.5rem; }
-.drill-speak {
-  display: inline-grid;
-  place-items: center;
-  width: 5.5rem;
-  height: 5.5rem;
-  padding: 0;
-  cursor: pointer;
-}
 .drill-answer-stage.is-spell {
   flex-wrap: wrap;
   max-width: 100%;
@@ -644,15 +636,7 @@ tbody .drill-grid-th { border-right-width: 2px; }
   gap: 0.4rem;
   min-height: 2.6rem;
 }
-.drill-spell-tools[hidden], .drill-skip[hidden], .drill-reveal[hidden] { display: none; }
-.drill-skip {
-  display: inline-grid;
-  place-items: center;
-  width: 2.6rem;
-  height: 2.6rem;
-  padding: 0;
-  cursor: pointer;
-}
+.drill-spell-tools[hidden], .drill-spell-row[hidden], .drill-reveal[hidden], .drill-meaning[hidden], .drill-spell-btn[hidden] { display: none; }
 /* Skip shows the right spelling for a moment before the next word. */
 .drill-reveal {
   margin: 0;
@@ -662,3 +646,129 @@ tbody .drill-grid-th { border-right-width: 2px; }
   color: var(--accent-danger);
   overflow-wrap: anywhere;
 }
+
+/* The boy who says the words (spelling.js faceButton). He bobs and his face
+   squashes a little while the voice is talking, and keeps still otherwise. */
+.spell-face {
+  --face: 88px;
+  display: inline-grid;
+  place-items: center;
+  width: var(--face);
+  height: var(--face);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent-secondary-soft, #e9f2fb);
+  box-shadow: 0 6px 16px -10px rgba(20, 19, 15, 0.45);
+  cursor: pointer;
+  overflow: hidden;
+  flex: none;
+}
+.spell-face img { width: 92%; height: 92%; display: block; transform-origin: 50% 85%; pointer-events: none; }
+.spell-face:disabled { cursor: default; opacity: 0.55; }
+.spell-face.is-talking img { animation: spell-talk 0.32s ease-in-out infinite alternate; }
+@keyframes spell-talk {
+  from { transform: translateY(0) scale(1, 1); }
+  to   { transform: translateY(-3%) scale(1.03, 0.97) rotate(-2deg); }
+}
+@media (prefers-reduced-motion: reduce) { .spell-face.is-talking img { animation: none; } .spell-face.is-talking { outline: 3px solid var(--accent-primary); } }
+
+/* What a spelling bee lets you ask for, on the card: the meaning, and the
+   word used in a sentence with the word itself blanked out. */
+.drill-meaning {
+  max-width: 34ch;
+  margin: 0.1rem auto 0;
+  text-align: center;
+}
+.drill-def {
+  margin: 0;
+  font-family: var(--font-body, var(--font-mono));
+  font-weight: 600;
+  font-size: 0.86rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+.drill-use {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-body, var(--font-mono));
+  font-weight: 500;
+  font-size: 0.82rem;
+  font-style: italic;
+  line-height: 1.35;
+  color: var(--text-tertiary);
+}
+.drill-spell-row { display: flex; gap: 0.5rem; justify-content: center; }
+.drill-spell-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0;
+  cursor: pointer;
+}
+.drill-spell-lib-btn { display: block; width: fit-content; margin: 0.9rem auto 0; padding: 0.5rem 1.1rem; font-size: 0.85rem; cursor: pointer; }
+
+/* ── The Spelling library (js/spelling-library.js) ───────────────── */
+.spell-lib-bd { z-index: 60; }
+.spell-lib { width: min(620px, 100%); max-height: min(86vh, 820px); display: flex; }
+.spell-lib-paper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 1.4rem 1.1rem 1rem;
+  overflow: hidden;
+}
+.spell-lib-kicker {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.spell-lib-title { margin: 0; text-align: center; font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; }
+.spell-lib-sub { margin: 0 0 0.3rem; text-align: center; font-size: 0.74rem; color: var(--text-tertiary); }
+.spell-lib-strip {
+  display: flex;
+  gap: 0.3rem;
+  overflow-x: auto;
+  padding: 0.25rem 0.1rem 0.45rem;
+  scrollbar-width: thin;
+}
+.spell-lib-strip button {
+  flex: none;
+  min-width: 2.1rem;
+  height: 2.1rem;
+  padding: 0 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+}
+.spell-lib-strip button.is-chosen { box-shadow: inset 0 -4px 0 var(--accent-success); }
+.spell-lib-strip button.is-current { background: var(--accent-primary); color: var(--text-on-accent, #14130f); }
+.spell-lib-scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 0.3rem; }
+.spell-lib-list { list-style: none; margin: 0; padding: 0; }
+.spell-lib-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.65rem 0;
+  border-bottom: 1.5px dashed rgba(20, 19, 15, 0.12);
+}
+.spell-lib-body { min-width: 0; flex: 1; }
+.spell-lib-head { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.5rem; }
+.spell-lib-num { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-tertiary); }
+.spell-lib-word { font-size: 1.02rem; color: var(--ink); overflow-wrap: anywhere; }
+.spell-lib-ipa { font-family: "Charis SIL", "Segoe UI", "Noto Sans", serif; font-size: 0.95rem; color: var(--accent-secondary); }
+.spell-lib-def { margin: 0.15rem 0 0; font-family: var(--font-body, var(--font-mono)); font-weight: 500; font-size: 0.82rem; line-height: 1.4; color: var(--text-secondary); }
+.spell-lib-useline { display: flex; gap: 0.4rem; align-items: flex-start; margin-top: 0.25rem; }
+.spell-lib-use { margin: 0; font-family: var(--font-body, var(--font-mono)); font-weight: 500; font-size: 0.8rem; font-style: italic; line-height: 1.4; color: var(--text-tertiary); }
+.spell-lib-use mark { background: none; color: var(--ink); font-style: normal; font-weight: 700; }
+.spell-lib-hear { flex: none; display: inline-grid; place-items: center; width: 1.7rem; height: 1.7rem; padding: 0; cursor: pointer; }
+.spell-lib-foot { display: flex; justify-content: center; gap: 0.6rem; padding-top: 0.6rem; }
+.spell-lib-foot button { display: inline-grid; place-items: center; width: 2.5rem; height: 2.5rem; padding: 0; cursor: pointer; }

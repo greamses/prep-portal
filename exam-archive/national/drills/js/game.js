@@ -11,7 +11,7 @@ import { checkSubject } from './subject.js';
 import { typedToTex, plainToTex } from './typed-tex.js';
 import { createBoxInput } from './box-input.js';
 import { mathReady, loadMath, svgFor } from '/utils/components/workbook/mathify.js';
-import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak } from './spelling.js';
+import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak, faceButton } from './spelling.js';
 import { UI } from '/utils/components/ui-icons.js';
 
 const $ = (id) => document.getElementById(id);
@@ -121,36 +121,56 @@ function renderRoster(roster) {
 }
 
 /* ── Spelling ─────────────────────────────────────────────────────────
-   Read out: the question is a big speaker (tap it, or press Enter, to hear
-   the word again). Transcribe: the question is the word's IPA. Both get a
-   Skip under the answer, because a word you cannot spell would otherwise
-   hold you for the rest of the round: Skip shows the spelling, scores
-   nothing, and moves on. */
-const speakBtn = document.createElement('button');
-speakBtn.type = 'button';
-speakBtn.className = 'drill-speak';
-speakBtn.innerHTML = UI.speaker(56);
-speakBtn.setAttribute('aria-label', 'Hear the word again');
-speakBtn.dataset.tip = 'Hear it again (Enter)';
-speakBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.word);
-  focusInput();
+   Read out: the question is the boy's face; he says the word (tap him, or
+   press Enter, to hear it again). Transcribe: the question is the word's IPA.
+   Under either sits what a spelling bee lets you ask for: the definition and
+   the word used in a sentence (shown with the word blanked out), each of
+   which the boy will read aloud. Skip, because a word you cannot spell would
+   otherwise hold you for the rest of the round: it shows the spelling,
+   scores nothing, and moves on. */
+const speakBtn = faceButton({
+  size: 104, label: 'Hear the word again', tip: 'Hear it again (Enter)',
+  onPress: (b) => { if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.word, b); focusInput(); },
 });
+const talker = () => (currentQuestion && currentQuestion.spell === 'say' ? speakBtn : null);
 
+const meaningEl = document.createElement('div');
+meaningEl.className = 'drill-meaning';
+meaningEl.hidden = true;
+const defEl = document.createElement('p');
+defEl.className = 'drill-def';
+const useEl = document.createElement('p');
+useEl.className = 'drill-use';
+meaningEl.append(defEl, useEl);
+questionHint.after(meaningEl);
+
+function toolBtn(cls, icon, label, onPress) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = `drill-spell-btn ${cls}`;
+  b.innerHTML = icon;
+  b.setAttribute('aria-label', label);
+  b.dataset.tip = label;
+  b.addEventListener('click', (e) => { e.stopPropagation(); onPress(); focusInput(); });
+  return b;
+}
 const spellTools = document.createElement('div');
 spellTools.className = 'drill-spell-tools';
 spellTools.hidden = true;
-const skipBtn = document.createElement('button');
-skipBtn.type = 'button';
-skipBtn.className = 'drill-skip';
-skipBtn.innerHTML = UI.skip(22);
-skipBtn.setAttribute('aria-label', 'Skip this word');
-skipBtn.dataset.tip = 'Skip: show the spelling';
+const defBtn = toolBtn('drill-hear-def', UI.book(22), 'Hear the definition', () => {
+  if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.def, talker(), { rate: 0.95 });
+});
+const useBtn = toolBtn('drill-hear-use', UI.speech(22), 'Hear it in a sentence', () => {
+  if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.use, talker(), { rate: 0.95 });
+});
+const skipBtn = toolBtn('drill-skip', UI.skip(22), 'Skip: show the spelling', () => skipWord());
+const toolRow = document.createElement('div');
+toolRow.className = 'drill-spell-row';
+toolRow.append(defBtn, useBtn, skipBtn);
 const revealEl = document.createElement('p');
 revealEl.className = 'drill-reveal';
 revealEl.hidden = true;
-spellTools.append(skipBtn, revealEl);
+spellTools.append(toolRow, revealEl);
 answerStage.after(spellTools);
 
 function skipWord() {
@@ -160,19 +180,18 @@ function skipWord() {
   hush();
   revealEl.textContent = currentQuestion.word;
   revealEl.hidden = false;
-  skipBtn.hidden = true;
+  toolRow.hidden = true;
+  useEl.textContent = currentQuestion.use;   // the sentence, whole, while the answer shows
   setTimeout(() => {
     if (round !== roundId) return;   // that round is over; endRound tidied up
     revealEl.hidden = true;
-    skipBtn.hidden = false;
+    toolRow.hidden = false;
     locked = false;
     if (!active) return;
     currentIndex += 1;
     renderQuestion();
   }, 1600);
 }
-skipBtn.addEventListener('click', (e) => { e.stopPropagation(); skipWord(); focusInput(); });
-
 function renderSpelling(q) {
   questionText.classList.remove('is-long', 'is-longest');
   questionText.classList.toggle('is-ipa', q.spell === 'ipa');
@@ -183,12 +202,16 @@ function renderSpelling(q) {
     questionText.classList.toggle('is-longest', q.text.length > 26);
   } else {
     questionText.replaceChildren(speakBtn);
-    sayWord(q.word);
+    sayWord(q.word, speakBtn);
   }
   questionHint.textContent = q.spell === 'say' && !canSpeak
     ? 'This browser cannot speak. Choose Transcribe instead.'
     : q.hint;
   questionHint.hidden = false;
+  defEl.textContent = q.def;
+  useEl.textContent = q.gap;
+  meaningEl.hidden = false;
+  defBtn.hidden = useBtn.hidden = !canSpeak;
   spellTools.hidden = false;
   answerStage.classList.add('is-spell');
   inputEl.maxLength = 40;
@@ -205,6 +228,7 @@ function renderQuestion() {
   if (currentQuestion.spell) { renderSpelling(currentQuestion); return; }
   questionText.classList.remove('is-ipa', 'is-speak');
   spellTools.hidden = true;
+  meaningEl.hidden = true;
   answerStage.classList.remove('is-spell');
   // Chemistry formulas are not maths notation — only the rest is typeset.
   if (currentQuestion.hint && !currentQuestion.alg && !currentQuestion.math) questionText.textContent = currentQuestion.text;
@@ -422,7 +446,8 @@ function endRound() {
   hush();
   spellTools.hidden = true;
   revealEl.hidden = true;
-  skipBtn.hidden = false;
+  toolRow.hidden = false;
+  meaningEl.hidden = true;
   if (rafId) cancelAnimationFrame(rafId);
   playBd.classList.remove('open');
   playBd.setAttribute('aria-hidden', 'true');
@@ -437,7 +462,7 @@ inputEl.addEventListener('input', onInput);
 inputEl.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter' || !active || !currentQuestion || !currentQuestion.spell) return;
   e.preventDefault();
-  if (currentQuestion.spell === 'say' && !locked) sayWord(currentQuestion.word);
+  if (currentQuestion.spell === 'say' && !locked) sayWord(currentQuestion.word, speakBtn);
 });
 // arrow keys, Home and End move the caret through the answer
 inputEl.addEventListener('keyup', (e) => { if (!box.on && /^(Arrow|Home|End)/.test(e.key)) renderTyped(); });

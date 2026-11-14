@@ -19,32 +19,68 @@ import { SPELLING_SECONDARY } from '/data/spelling/secondary.js';
 export const SPELLING_OPS = ['spellSay', 'spellIpa'];
 export const isSpellingOp = (op) => SPELLING_OPS.includes(op);
 
-const BANK = SPELLING_SECONDARY;
+export const BANK = SPELLING_SECONDARY;   // [word, IPA, definition, sentence]
 // The deck's own stream: past CONTENT_NS + index (0..), BOT_NS and NAME_NS.
 const DECK_NS = 3_000_000;
 
-// One shuffle per seed, kept for the round.
-let deckSeed = null;
+/* ── Sets of twenty ───────────────────────────────────────────────────
+   The bank is learned twenty words at a time, in its own order: set 1 is the
+   first twenty, set 41 the last seven. A room carries its sets as `tables`
+   (the room doc's list of numbers), so joiners and bots deal the same words. */
+export const SET_SIZE = 20;
+export const SET_COUNT = Math.ceil(BANK.length / SET_SIZE);
+export const setOf = (i) => Math.floor(i / SET_SIZE) + 1;
+export function setWords(n) {
+  return BANK.slice((n - 1) * SET_SIZE, n * SET_SIZE).map((row, k) => ({ i: (n - 1) * SET_SIZE + k, row }));
+}
+const validSets = (sets) => {
+  const ok = (sets || []).filter((n) => Number.isInteger(n) && n >= 1 && n <= SET_COUNT);
+  return ok.length ? [...new Set(ok)].sort((a, b) => a - b) : [1];
+};
+/** "1-3, 7" from [1, 2, 3, 7]: for summaries. */
+export function setsLabel(sets) {
+  const s = validSets(sets);
+  const out = [];
+  for (let k = 0; k < s.length; k++) {
+    let j = k;
+    while (j + 1 < s.length && s[j + 1] === s[j] + 1) j++;
+    out.push(j > k ? `${s[k]}-${s[j]}` : `${s[k]}`);
+    k = j;
+  }
+  return out.join(', ');
+}
+
+// One shuffle per seed and set choice, kept for the round. A round runs the
+// chosen sets' words in a seeded order and never repeats one until all are used.
+let deckKey = null;
 let deck = null;
-function deckFor(seed) {
-  if (deckSeed === seed && deck) return deck;
+function deckFor(seed, sets) {
+  const s = validSets(sets);
+  const key = `${seed}|${s.join(',')}`;
+  if (deckKey === key && deck) return deck;
   const rng = mulberry32(hashSeed(seed, DECK_NS));
-  deck = BANK.map((_, i) => i);
+  deck = s.flatMap((n) => setWords(n).map((w) => w.i));
   for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
-  deckSeed = seed;
+  deckKey = key;
   return deck;
 }
 
-export function spellingQuestion(seed, index, op) {
-  const d = deckFor(seed);
-  const [word, ipa] = BANK[d[index % d.length]];
-  if (op === 'spellIpa') {
-    return { spell: 'ipa', word, ipa, text: `/${ipa}/`, hint: 'Spell the word', answer: word };
-  }
-  return { spell: 'say', word, ipa, text: '', hint: 'Listen, then spell the word', answer: word };
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** The sentence with the word blanked out, so reading it never gives the spelling away. */
+export function blanked(sentence, word) {
+  const re = new RegExp(escapeRe(word), 'gi');
+  return sentence.replace(re, (m) => '_'.repeat(Math.max(5, Math.min(m.length, 9))));
+}
+
+export function spellingQuestion(seed, index, op, sets) {
+  const d = deckFor(seed, sets);
+  const [word, ipa, def, use] = BANK[d[index % d.length]];
+  const common = { word, ipa, def, use, gap: blanked(use, word), answer: word, set: setOf(d[index % d.length]) };
+  if (op === 'spellIpa') return { ...common, spell: 'ipa', text: `/${ipa}/`, hint: 'Spell the word' };
+  return { ...common, spell: 'say', text: '', hint: 'Listen, then spell the word' };
 }
 
 /** Letters only: case, accents, spaces, hyphens and apostrophes do not count. */
@@ -85,18 +121,53 @@ if (canSpeak) {
   document.addEventListener('keydown', unlock, { once: true, capture: true });
 }
 
-/** Say a word, a little slower than talking pace. */
-export function sayWord(word) {
+/* Whoever is talking (the boy's face) is told when speech starts and stops,
+   so it can move while it talks. Only the latest line counts: a line that was
+   cut off by a newer one does not stop the face mid-word. */
+let talker = null;
+let lineNo = 0;
+const setTalking = (on) => { if (talker) talker.classList.toggle('is-talking', on); };
+
+/** Say a word (or a definition, or a sentence), a little slower than talking pace. */
+export function sayWord(text, face = null, { rate = 0.8 } = {}) {
   if (!canSpeak) return false;
   try {
     speechSynthesis.cancel();
+    setTalking(false);
+    talker = face;
+    const me = ++lineNo;
     if (!voice) pickVoice();
-    const u = new SpeechSynthesisUtterance(word);
+    const u = new SpeechSynthesisUtterance(text);
     if (voice) u.voice = voice;
     u.lang = voice ? voice.lang : 'en-GB';
-    u.rate = 0.8;
+    u.rate = rate;
+    u.onstart = () => { if (me === lineNo) setTalking(true); };
+    u.onend = u.onerror = () => { if (me === lineNo) setTalking(false); };
+    setTalking(true); // some browsers never fire onstart
     speechSynthesis.speak(u);
     return true;
   } catch { return false; }
 }
-export function hush() { try { if (canSpeak) speechSynthesis.cancel(); } catch { /* ignore */ } }
+export function hush() {
+  lineNo++;
+  setTalking(false);
+  try { if (canSpeak) speechSynthesis.cancel(); } catch { /* ignore */ }
+}
+
+/** The boy who says the words: his face, as a button. */
+export const FACE_SRC = '/media/characters/boy-face.svg';
+export function faceButton({ size = 88, label = 'Hear the word', tip = label, onPress } = {}) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'spell-face';
+  b.style.setProperty('--face', `${size}px`);
+  b.setAttribute('aria-label', label);
+  b.dataset.tip = tip;
+  const img = document.createElement('img');
+  img.src = FACE_SRC;
+  img.alt = '';
+  img.draggable = false;
+  b.appendChild(img);
+  if (onPress) b.addEventListener('click', (e) => { e.stopPropagation(); onPress(b); });
+  return b;
+}

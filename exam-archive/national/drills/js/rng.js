@@ -200,7 +200,7 @@ export function questionAt(seed, index, {
 
   if (op === 'rmm') return rmmQuestionAt(rng, compounds);
   if (op === 'intAdd' || op === 'intSub') return intTerms(rng, pool, 2, op);
-  if (isSpellingOp(op)) return spellingQuestion(seed, index, op);
+  if (isSpellingOp(op)) return spellingQuestion(seed, index, op, tables); // `tables` holds the chosen sets of twenty
   if (isRomanOp(op)) return romanQuestion(rng, op);
   if (isPercentOp(op)) return percentQuestion(rng, pool, op);
   if (isSubjectOp(op)) return subjectQuestion(rng, op);

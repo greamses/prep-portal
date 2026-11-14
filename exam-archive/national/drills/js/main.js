@@ -13,6 +13,8 @@ import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { startGridRound } from './grid.js';
 import { startBarsRound } from './bars.js';
+import { SET_COUNT, setsLabel } from './spelling.js';
+import { openSpellingLibrary } from './spelling-library.js';
 import { finishRound } from './leaderboard.js';
 import { renderLeaderboard } from '/utils/games/leaderboard-view.js';
 import {
@@ -213,6 +215,9 @@ const savedDenoms = mem.get('denominators', DENOMINATORS, Array.isArray).filter(
 const denominators = new Set(savedDenoms.length ? savedDenoms : DENOMINATORS); // Fractions only — tick-all default
 const savedSets = mem.get('compounds', ALL_COMPOUND_SETS, Array.isArray).filter((k) => ALL_COMPOUND_SETS.includes(k));
 const compounds = new Set(savedSets.length ? savedSets : ALL_COMPOUND_SETS); // Chemistry only — tick-all default
+// Spelling only — which sets of twenty words (set 1 = the bank's first twenty). Sent as the room's `tables`.
+const spellSets = new Set(mem.get('spellSets', [1], Array.isArray).filter((n) => Number.isInteger(n) && n >= 1 && n <= SET_COUNT));
+if (!spellSets.size) spellSets.add(1);
 // Chemistry's single operation is never offered as a step, so a remembered
 // setup that somehow lost it would leave the player unable to start.
 if (categoryValue === 'chemistry') operations.add('rmm');
@@ -223,6 +228,7 @@ const saveContent = () => mem.save({
   tables: [...tables], operations: [...operations],
   fractionTypes: [...fractionTypes], denominators: [...denominators],
   compounds: [...compounds],
+  spellSets: [...spellSets],
   gridBlanks,
   barsLevel,
 });
@@ -262,6 +268,7 @@ function getTablesPool() {
   if (categoryValue === 'timestable') return [1];
   if (categoryValue === 'fracbars') return [1]; // same — the sums are dealt by js/bars.js
   if (categoryValue === 'chemistry') return [1];
+  if (categoryValue === 'spelling') return [...spellSets].sort((a, b) => a - b); // the sets of twenty
   if (categoryValue === 'fractions') return [...denominators];
   if (isNumbersMode()) return [...tables];
   const list = rangesFor(categoryValue);
@@ -277,8 +284,9 @@ function updateStartDisabled() {
   const needsFractionType = isFractions && fractionTypes.size === 0;
   const needsDenominators = isFractions && denominators.size === 0;
   const needsCompounds = categoryValue === 'chemistry' && compounds.size === 0;
+  const needsSets = categoryValue === 'spelling' && spellSets.size === 0;
   startBtn.disabled = operations.size === 0
-    || needsNumbers || needsFractionType || needsDenominators || needsCompounds;
+    || needsNumbers || needsFractionType || needsDenominators || needsCompounds || needsSets;
 }
 
 function updateStartLabel() {
@@ -351,6 +359,7 @@ topic.addSlide('denominators', 'Denominators', () => {});
 topic.addSlide('compounds', 'Compounds', () => {});
 topic.addSlide('grid-blanks', 'Blanks', () => {});
 topic.addSlide('bars-level', 'Level', () => {});
+topic.addSlide('spell-sets', 'Word Sets', () => {});
 
 function renderOperationsPick() {
   const isFractions = categoryValue === 'fractions';
@@ -368,12 +377,39 @@ function renderOperationsPick() {
     onNext: () => {
       if (isFractions) { renderDenominatorsPick(); topic.goTo('denominators'); return; }
       if (isBars) { renderBarsLevelStep(); topic.goTo('bars-level'); return; }
+      if (categoryValue === 'spelling') { renderSpellSetsPick(); topic.goTo('spell-sets'); return; }
       // Algebra is single digits only: there is nothing to choose, so no step.
-      if (categoryValue === 'algebra' || categoryValue === 'subject' || categoryValue === 'percent' || categoryValue === 'roman' || categoryValue === 'spelling') { range = '1-9'; saveContent(); flow.next(); return; }
+      if (categoryValue === 'algebra' || categoryValue === 'subject' || categoryValue === 'percent' || categoryValue === 'roman') { range = '1-9'; saveContent(); flow.next(); return; }
       renderRangePick();
       topic.goTo('range');
     },
   });
+}
+
+/* Spelling: which sets of twenty words. The library (every set, with meanings
+   and the boy to say each word) opens from here, on the first ticked set. */
+function renderSpellSetsPick() {
+  renderMultiStep(topic, 'spell-sets', {
+    title: 'Which sets of words?',
+    subtitle: `Twenty words a set, ${SET_COUNT} sets. Study a set in the library first.`,
+    grid: true,
+    colorOffset: 2,
+    options: Array.from({ length: SET_COUNT }, (_, i) => ({ value: String(i + 1), label: String(i + 1) })),
+    isChecked: (v) => spellSets.has(Number(v)),
+    onToggle: (v, checked) => {
+      const n = Number(v);
+      if (checked) spellSets.add(n); else spellSets.delete(n);
+      updateStartDisabled();
+    },
+    nextLabel: 'Next',
+    onNext: () => { range = '1-9'; saveContent(); flow.next(); }, // last step of this section
+  });
+  const lib = document.createElement('button');
+  lib.type = 'button';
+  lib.className = 'pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c4 drill-spell-lib-btn';
+  lib.textContent = 'Open the library';
+  lib.addEventListener('click', () => openSpellingLibrary({ sets: [...spellSets] }));
+  topic.getEl('spell-sets').appendChild(lib);
 }
 
 function renderFractionTypePick() {
@@ -714,7 +750,9 @@ const flow = createSectionFlow([
       }
       const out = [{ label: cat }, ...[...operations].map((o) => ({ label: opName(o) }))];
       // Spelling has no number range (the words are the content), and its labels are words, not "+ Addition".
-      if (categoryValue === 'spelling') return [{ label: cat }, ...[...operations].map((o) => ({ label: OPERATION_LABELS[o] }))];
+      if (categoryValue === 'spelling') {
+        return [{ label: cat }, ...[...operations].map((o) => ({ label: OPERATION_LABELS[o] })), { label: `Sets ${setsLabel([...spellSets])}` }];
+      }
       if (categoryValue === 'fractions') out.push({ label: `${denominators.size} denominators` });
       else if (isNumbersMode()) out.push({ label: `${tables.size} numbers` });
       else {
