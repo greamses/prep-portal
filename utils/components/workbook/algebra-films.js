@@ -31,45 +31,68 @@ const isInstant = (H) => H.show === H.grow;
 const card = (title, sub) => ({ kind: "card", title, sub, hold: 1.6 });
 const tex = (t, x, y, k, { em = 4.6, color = INK, anchor = "middle" } = {}) => texAt(t, x, y, { em, color, anchor, attrs: `data-mb="num" data-k="${k}"` });
 
+/* the square's side, in the drawing's millimetres; the film draws 0.4 screen units to the mm
+   (PIC_W 60 across PAPER 150), and anchors a picture by its FIRST box: the x² square */
+const GS = 46, MM = 60 / 150;
+/** where the square's corner must land so the finished square is centred, its top at `top` */
+const geoAt = (bars, top) => { const H2 = (bars ? 24 : 18) / 2; return { x: 50 - ((GS + H2) * MM) / 2, y: top }; };
+
 /* ── THE PICTURE ──────────────────────────────────────────────────────────
    labels: { x, sq, strip, w, half, hw, corner, big } as TeX */
-function geo(lab) {
-  const X = 44, Y = 8, S = 30, W = 14, H2 = W / 2;
+function geo(lab, { bars = 0 } = {}) {
+  /* `bars`: with numbers, 6x is drawn as 6 bars (each x long, 1 wide) so it can be counted, and the
+     corner fills with 3 x 3 unit squares; with letters, b/a x is one strip */
+  /* bigger, and centred: the finished square (S + W/2 across) sits in the middle of the 150 */
+  const S = GS, W = bars ? 24 : 18, H2 = W / 2, U = bars ? W / bars : 0, X = 75 - (S + H2) / 2, Y = 9;
   const P = X + S + H2;                  // where the strip is cut
   let o = "";
   /* the x² square */
   o += `<rect data-mb="bar" data-k="sq" x="${X}" y="${Y}" width="${S}" height="${S}" fill="${SKY}" stroke="${INK}" stroke-width="0.7"/>`;
-  o += tex(lab.sq, X + S / 2, Y + S / 2 + 2, "lsq", { em: 6 });
-  o += tex(lab.x, X + S / 2, Y - 2, "lxt");
-  o += tex(lab.x, X - 3, Y + S / 2 + 1.5, "lxl", { anchor: "end" });
+  o += tex(lab.sq, X + S / 2, Y + S / 2 + 2.6, "lsq", { em: 8 });
+  o += tex(lab.x, X + S / 2, Y - 2.4, "lxt", { em: 5.6 });
+  o += tex(lab.x, X - 3, Y + S / 2 + 2, "lxl", { anchor: "end", em: 5.6 });
   /* the strip, as two halves (one rect each), shown together first */
-  o += `<rect data-mb="bar" data-k="s1" x="${X + S}" y="${Y}" width="${H2}" height="${S}" fill="${BUTTER}" stroke="${INK}" stroke-width="0.7"/>`;
-  o += `<g data-k="mv" style="transform-box: view-box; transform-origin: ${P}px ${Y + S}px">`
-    + `<rect data-mb="bar" data-k="s2" x="${P}" y="${Y}" width="${H2}" height="${S}" fill="${BUTTER}" stroke="${INK}" stroke-width="0.7"/>`
-    + `</g>`;
+  const strip = (x0, n, k0) => (bars
+    ? Array.from({ length: n }, (_, i) => `<rect data-mb="bar" data-k="bar${k0 + i}" x="${(x0 + i * U).toFixed(2)}" y="${Y}" width="${U.toFixed(2)}" height="${S}" fill="${BUTTER}" stroke="${INK}" stroke-width="0.6"/>`).join("")
+    : `<rect data-mb="bar" data-k="s${k0 ? 2 : 1}" x="${x0}" y="${Y}" width="${H2}" height="${S}" fill="${BUTTER}" stroke="${INK}" stroke-width="0.7"/>`);
+  o += strip(X + S, bars / 2, 0);
+  o += `<g data-k="mv" data-px="${P}" data-py="${Y + S}" data-dx="${-(S + H2)}">` + strip(P, bars / 2, bars ? bars / 2 : 1) + `</g>`;
   /* the strip's own labels (before the cut) */
-  o += tex(lab.strip, X + S + H2, Y + S / 2 + 2, "lstrip", { em: 5 });
-  o += tex(lab.w, X + S + H2, Y - 2, "lw");
+  o += tex(lab.strip, X + S + H2, Y + S / 2 + 2.4, "lstrip", { em: 6 });
+  o += tex(lab.w, X + S + H2, Y - 2.4, "lw", { em: 5.6 });
   /* the cut */
   o += `<g data-mb="brace" data-mb-key="cut"><path d="M${P} ${Y - 1} V${Y + S + 1}" fill="none" stroke="${RED}" stroke-width="0.8" stroke-dasharray="2 1.2"/></g>`;
   /* after the cut: the halves' labels; the moved half's labels sit where it lands */
-  o += tex(lab.half, X + S + H2 / 2, Y + S / 2 + 2, "lh1", { em: 3.8 });
-  o += tex(lab.hw, X + S + H2 / 2, Y - 2, "lhw1", { em: 3.8 });
-  o += tex(lab.half, X + S / 2, Y + S + H2 / 2 + 1.4, "lh2", { em: 3.8 });
-  o += tex(lab.hw, X - 3, Y + S + H2 / 2 + 1.4, "lhw2", { em: 3.8, anchor: "end" });
+  o += tex(lab.half, X + S + H2 / 2, Y + S / 2 + 2, "lh1", { em: 4.8 });
+  o += tex(lab.hw, X + S + H2 / 2, Y - 2.4, "lhw1", { em: 5 });
+  o += tex(lab.half, X + S / 2, Y + S + H2 / 2 + 1.8, "lh2", { em: 4.8 });
+  o += tex(lab.hw, X - 3, Y + S + H2 / 2 + 1.8, "lhw2", { em: 5, anchor: "end" });
   /* the missing corner */
   o += `<g data-mb="brace" data-mb-key="corner"><path d="M${X + S} ${Y + S} h${H2} v${H2} h${-H2} z" fill="none" stroke="${PURPLE}" stroke-width="0.7" stroke-dasharray="1.5 1"/></g>`;
-  o += `<rect data-mb="num" data-k="cfill" x="${X + S}" y="${Y + S}" width="${H2}" height="${H2}" fill="${PEACH}" stroke="${PURPLE}" stroke-width="0.7"/>`;
-  o += tex(lab.corner, X + S + H2 + 3, Y + S + H2 / 2 + 1.4, "lc", { em: 3.8, color: PURPLE, anchor: "start" });
+  if (bars) {
+    /* the corner as unit squares, (bars/2) by (bars/2): 3 x 3 = 9 to count */
+    const m = bars / 2;
+    for (let r = 0; r < m; r++) for (let q = 0; q < m; q++) {
+      o += `<rect data-mb="num" data-k="cu${r * m + q}" x="${(X + S + q * U).toFixed(2)}" y="${(Y + S + r * U).toFixed(2)}" width="${U.toFixed(2)}" height="${U.toFixed(2)}" fill="${PEACH}" stroke="${PURPLE}" stroke-width="0.5"/>`;
+    }
+  } else {
+    o += `<rect data-mb="num" data-k="cfill" x="${X + S}" y="${Y + S}" width="${H2}" height="${H2}" fill="${PEACH}" stroke="${PURPLE}" stroke-width="0.7"/>`;
+  }
+  o += tex(lab.corner, X + S + H2 + 3, Y + S + H2 / 2 + 1.8, "lc", { em: 5, color: PURPLE, anchor: "start" });
   /* the whole square */
   o += `<g data-mb="brace" data-mb-key="big"><path d="M${X} ${Y} h${S + H2} v${S + H2} h${-(S + H2)} z" fill="none" stroke="${GREEN}" stroke-width="1.3"/></g>`;
-  o += tex(lab.big, X + (S + H2) / 2, Y + S + H2 + 6, "lbig", { em: 4.6, color: GREEN });
-  return svgBox(150, 58, o);
+  o += tex(lab.big, X + (S + H2) / 2, Y + S + H2 + 7.5, "lbig", { em: 6, color: GREEN });
+  return svgBox(150, 78, o);
 }
 const fadeOut = (s, H, ks) => ks.forEach((k) => { const n = key(s, k); if (!n) return; n.style.transition = isInstant(H) ? "" : "opacity .4s"; n.style.opacity = "0"; });
 const geoStages = (p) => ({
   [`${p}.sq`]: (s, H) => { H.grow(key(s, "sq"), 0.1); ["lxt", "lxl", "lsq"].forEach((k, i) => H.write(key(s, k), 0.7 + i * 0.35)); },
-  [`${p}.strip`]: (s, H) => { H.grow(key(s, "s1"), 0.1); H.grow(key(s, "s2"), 0.1); H.write(key(s, "lstrip"), 0.8); H.write(key(s, "lw"), 1.1); },
+  [`${p}.strip`]: (s, H) => {
+    const bs = [...(s?.querySelectorAll('[data-k^="bar"]') || [])];
+    if (bs.length) bs.forEach((b, i) => H.grow(b, 0.1 + i * 0.35));   // six bars, one after another
+    else { H.grow(key(s, "s1"), 0.1); H.grow(key(s, "s2"), 0.1); }
+    H.write(key(s, "lstrip"), 0.4 + bs.length * 0.35); H.write(key(s, "lw"), 0.7 + bs.length * 0.35);
+  },
   /* the knife comes down the middle of the strip */
   [`${p}.cut`]: (s, H) => {
     H.draw(s?.querySelector('[data-mb-key="cut"]'), 0.1);
@@ -79,17 +102,34 @@ const geoStages = (p) => ({
   },
   /* one half TURNS and slides under the square */
   [`${p}.move`]: (s, H) => {
-    const g = key(s, "mv"), X = 44, S = 30, W = 14;
+    /* THE HALF TURNS ABOUT ITS FOOT AND SLIDES UNDER THE SQUARE, in the drawing's own units (an SVG
+       transform attribute, so every browser puts it in the same place): it ends lying along the
+       square's bottom edge, x long and half the strip deep — one bar beside, one bar under. */
+    const g = key(s, "mv");
     if (!g) return;
-    const to = `translate(${-(S + W / 2)}px, 0px) rotate(90deg)`;
-    fadeOut(s, H, ["cut"]);
+    const px = Number(g.dataset.px), py = Number(g.dataset.py), dx = Number(g.dataset.dx);
+    const set = (k) => g.setAttribute("transform", `translate(${(dx * k).toFixed(3)} 0) rotate(${(90 * k).toFixed(3)} ${px} ${py})`);
     const c = s?.querySelector('[data-mb-key="cut"]'); if (c) { c.style.transition = isInstant(H) ? "" : "opacity .3s"; c.style.opacity = "0"; }
-    if (isInstant(H)) g.style.transform = to;
-    else { g.style.transition = "transform 1.4s cubic-bezier(.5,0,.2,1)"; requestAnimationFrame(() => { g.style.transform = to; }); H.sound("flip", 0.1); }
+    if (isInstant(H) || typeof requestAnimationFrame !== "function") set(1);
+    else {
+      const t0 = performance.now() + 150;
+      const tick = (now) => {
+        if (!g.isConnected) return;
+        const t = Math.max(0, Math.min(1, (now - t0) / 1400)), e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        set(e);
+        if (t < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+      H.sound("flip", 0.1);
+    }
     ["lh2", "lhw2"].forEach((k, i) => H.write(key(s, k), 1.5 + i * 0.3));
   },
   [`${p}.corner`]: (s, H) => { H.draw(s?.querySelector('[data-mb-key="corner"]'), 0.1); },
-  [`${p}.fill`]: (s, H) => { H.write(key(s, "cfill"), 0.1); H.write(key(s, "lc"), 0.5); if (!isInstant(H)) H.sound("pop", 0.2); },
+  [`${p}.fill`]: (s, H) => {
+    const cu = [...(s?.querySelectorAll('[data-k^="cu"]') || [])];
+    if (cu.length) { cu.forEach((n, i) => { H.write(n, 0.1 + i * 0.3); if (!isInstant(H)) H.sound("tick", 0.1 + i * 0.3); }); H.write(key(s, "lc"), 0.3 + cu.length * 0.3); }
+    else { H.write(key(s, "cfill"), 0.1); H.write(key(s, "lc"), 0.5); if (!isInstant(H)) H.sound("pop", 0.2); }
+  },
   [`${p}.big`]: (s, H) => { H.draw(s?.querySelector('[data-mb-key="big"]'), 0.1); H.write(key(s, "lbig"), 0.8); if (!isInstant(H)) H.sound("ding", 0.9); },
 });
 const ALL = (p) => [`${p}.sq`, `${p}.strip`, `${p}.cut`, `${p}.move`, `${p}.corner`, `${p}.fill`, `${p}.big`];
@@ -116,11 +156,11 @@ export function quadFormula() {
     d1: ["b^{2} - 4ac > 0:\\ \\text{two answers}\\quad = 0:\\ \\text{one}\\quad < 0:\\ \\text{none}", PURPLE, 5.6],
   };
   const pics = {
-    gn: () => geo({ x: "x", sq: "x^{2}", strip: "6x", w: "6", half: "3x", hw: "3", corner: "9", big: "(x + 3)^{2}" }),
+    gn: () => geo({ x: "x", sq: "x^{2}", strip: "6x", w: "6", half: "3x", hw: "3", corner: "9", big: "(x + 3)^{2}" }, { bars: 6 }),
     gg: () => geo({ x: "x", sq: "x^{2}", strip: "\\tfrac{b}{a}x", w: "\\tfrac{b}{a}", half: "\\tfrac{b}{2a}x", hw: "\\tfrac{b}{2a}", corner: "\\left(\\tfrac{b}{2a}\\right)^{2}", big: "\\left(x + \\tfrac{b}{2a}\\right)^{2}" }),
     ...Object.fromEntries(Object.entries(EQ).map(([k, [t, c, em]]) => [k, () => main([L("a", t, c)], em || 7.4)])),
   };
-  const picAt = { gn: centred(150, 11), gg: centred(150, 11), ...Object.fromEntries(Object.keys(EQ).map((k) => [k, at(35.5)])) };
+  const picAt = { gn: geoAt(6, 13.5), gg: geoAt(0, 13.5), ...Object.fromEntries(Object.keys(EQ).map((k) => [k, at(38.5)])) };
   const stages = {
     ...geoStages("gn"), ...geoStages("gg"),
     ...Object.fromEntries(Object.keys(EQ).map((k) => [`${k}.all`, (s, H) => { const n = key(s, "a"); if (n) H.write(n, 0.1); if (["n3", "n5", "g5", "g8", "c3"].includes(k)) H.sound("ding", 0.6); }])),
@@ -143,8 +183,8 @@ export function quadFormula() {
     paperMm: PAPER, picW: PIC_W, ready: mathLoad(),
     asks: [
       { id: "a1", text: "Where does the quadratic formula come from? Derive it by completing the square, with a picture." },
-      { id: "a2", html: true, text: "Solve <i>x</i>² + 6<i>x</i> = 16 by completing the square." },
-      { id: "a3", html: true, text: "Now any quadratic: <i>ax</i>² + <i>bx</i> + <i>c</i> = 0. Solve it for <i>x</i>." },
+      { id: "a2", text: "Solve \\(x^{2} + 6x = 16\\) by completing the square." },
+      { id: "a3", text: "Now any quadratic: \\(ax^{2} + bx + c = 0\\). Solve it for \\(x\\)." },
     ],
     pics, picAt,
     lines: [
@@ -162,15 +202,15 @@ export function quadFormula() {
       /* ── PART 1: NUMBERS ── */
       push("Here's the equation: x squared plus six x equals sixteen. We don't know x, so we'll draw what each part MEANS. x squared is the area of a square whose sides are x long.",
         merge({ on: ["a2", "gn", "k1"], off: ["a1"], add: ["gn.sq"] }, eq("n1")), { });
-      push("And six x is the area of a strip that's x tall and six wide. Lay it beside the square. Together, the square and the strip have an area of sixteen. That's all the equation says.",
+      push("And six x is six bars, each x long and one wide: one, two, three, four, five, six. Lay them beside the square. Together, the square and the strip have an area of sixteen. That's all the equation says.",
         { add: ["gn.strip"], cue: { "gn.strip": "six x is" }, pause: 0.8 });
-      push("Now the clever part. Cut the strip straight down the middle. Each half is three wide, so each half has an area of three x.",
+      push("Now the clever part. Split the six bars down the middle: three bars on one side, three on the other. Each group of three bars has an area of three x.",
         { add: ["gn.cut"], cue: { "gn.cut": "cut the strip" }, pause: 0.6 });
-      push("Take one half, turn it round, and lay it along the bottom of the square. Watch it move. Nothing has been added or lost: the area is still sixteen. But look at the shape now.",
+      push("Take one group of three bars, turn it round, and lay it along the bottom of the square. Watch it move. Nothing has been added or lost: the area is still sixteen. But look at the shape now.",
         { add: ["gn.move"], cue: { "gn.move": "take one half" }, pause: 0.8 });
       push("It's ALMOST a square. A big square with sides of x plus three, except for one little corner that's missing: a corner three by three, so nine.",
         { add: ["gn.corner"], cue: { "gn.corner": "except for one" }, pause: 0.8 });
-      push("So let's fill it in. Add nine to the picture to complete the square. But an equation is a balance: whatever we add to one side, we must add to the other. So nine goes on BOTH sides.",
+      push("So let's fill it in with little unit squares: one, two, three, four, five, six, seven, eight, nine. Adding nine completes the square. But an equation is a balance: whatever we add to one side, we must add to the other. So nine goes on BOTH sides.",
         merge({ add: ["gn.fill"], cue: { "gn.fill": "fill it in" } }, eq("n2")), { pause: 0.8 });
       push("Now the left side is a perfect square, sides x plus three, so its area is x plus three, squared. And the right side is sixteen plus nine, twenty-five. That's why it's called completing the square: we added the missing corner.",
         merge({ add: ["gn.big"], cue: { "gn.big": "now the left side" } }, eq("n3")), { pause: 0.8 });

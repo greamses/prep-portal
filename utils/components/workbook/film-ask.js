@@ -163,6 +163,13 @@ function sentenceHtml(s, used, marks, state) {
  */
 export function askHtml(text, raw = false, { keys = null } = {}) {
   if (raw) return { html: String(text), tall: false };
+  /* MATHS WRITTEN AS TeX: anything inside \( … \) is set by MathJax as it stands ("Solve
+     \(x^{2} + 6x = 16\)"), kept out of the number-marking, and typed as one piece. It is swapped
+     for a placeholder of capital letters (no digit for the number-marker to catch) and put back
+     at the end. */
+  const texParts = [];
+  const tag = (i) => `QTEX${String.fromCharCode(65 + (i % 26))}${String.fromCharCode(65 + Math.floor(i / 26))}Q`;
+  text = String(text).replace(/\\\((.+?)\\\)/g, (_, t) => { texParts.push(t); return tag(texParts.length - 1); });
   /* a sentence ends at . ? ! before a capital, not at the "..." inside 1 + 2 + ... + 200 */
   const sentences = String(text).split(/(?<=[^.][.?!])\s+(?=[A-Z])/).filter(Boolean);
   let asks = sentences.map((s) => /\?$/.test(s.trim()) || ASKING.test(s.trim()));
@@ -177,7 +184,12 @@ export function askHtml(text, raw = false, { keys = null } = {}) {
   const html = parts.map((p) => (p.ask
     ? `<span class="fa-em fa-em--ul" style="--d:${marks.n++}">${p.html}</span>`
     : p.html)).join(" ");
-  return { html, tall: state.tall };
+  const out = texParts.reduce((h, t, i) => h.replace(tag(i), () => {
+    const svg = texInline(t);
+    if (/\\(d?frac|sqrt)/.test(t)) state.tall = true;
+    return svg ? `<span class="fa-mj fa-nb" data-tex="${esc(t)}">${svg}</span>` : esc(t);
+  }), html);
+  return { html: out, tall: state.tall };
 }
 
 /**
