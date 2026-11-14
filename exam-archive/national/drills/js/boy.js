@@ -7,14 +7,17 @@
    (data-hinge): fully shut, the dark of the mouth narrows to a closed smile.
 
    He talks two ways:
-     a recording (Kokoro, made once by tools/spelling-audio): the mouth follows
-       the loudness of the sound as it plays, so it opens on each syllable and
-       shuts in the gaps;
+     a recording (Kokoro, made once by tools/spelling-audio): the mouth makes
+       the SHAPE of each sound (js/visemes.js: lips shut for m/b/p, round for
+       "oo", wide for "ee", open for "a"...), each vowel on its syllable's swell
+       of loudness, and opens as far as the sound is loud;
      the browser's voice, when there is no recording: the browser gives no
        sound to measure, so the mouth flaps in a syllable rhythm while it talks.
    Only the latest line counts: a line cut off by a newer one does not shut or
    open the face it is no longer talking through.
 ═══════════════════════════════════════════════════════ */
+import { SHAPES, unitsFromIpa, unitsFromText, track } from './visemes.js';
+
 export const FACE_SRC = '/media/characters/boy-face.svg';
 
 const REST = 0.12;          // the mouth at rest: a closed smile
@@ -22,12 +25,17 @@ const SHUT = 0.1;           // the narrowest it goes while talking
 let faceText = null;
 const faceSvg = () => (faceText ||= fetch(FACE_SRC).then((r) => (r.ok ? r.text() : '')).catch(() => ''));
 
-function setMouth(face, open) {
+/* The mouth squeezed to a shape: `sy` how open (0.1 shut .. 1 as drawn), `sx`
+   how wide (0.5 pursed .. 1 as drawn), about the top lip's line and the
+   mouth's own middle. */
+function setMouth(face, sy, sx = 1) {
   const g = face && face.querySelector('.mouth');
   if (!g) return;
   const y = Number(g.dataset.hinge) || 0;
-  const s = SHUT + (1 - SHUT) * Math.max(0, Math.min(1, open));
-  g.setAttribute('transform', `translate(0 ${y}) scale(1 ${s.toFixed(3)}) translate(0 ${-y})`);
+  if (!g.dataset.cx) { try { const bb = g.getBBox(); g.dataset.cx = (bb.x + bb.width / 2).toFixed(1); } catch { g.dataset.cx = '618'; } }
+  const x = Number(g.dataset.cx);
+  const v = Math.max(SHUT, Math.min(1, sy));
+  g.setAttribute('transform', `translate(${x} ${y}) scale(${sx.toFixed(3)} ${v.toFixed(3)}) translate(${-x} ${-y})`);
 }
 
 /** The face as a button. Tapping it calls onPress(button). */
@@ -45,7 +53,7 @@ export function faceButton({ size = 88, label = 'Hear the word', tip = label, on
     svg.setAttribute('aria-hidden', 'true');
     svg.removeAttribute('width'); svg.removeAttribute('height');
     svg.querySelector('title')?.remove();
-    setMouth(b, b.classList.contains('is-talking') ? 0.6 : REST);
+    setMouth(b, REST);
   });
   if (onPress) b.addEventListener('click', (e) => { e.stopPropagation(); onPress(b); });
   return b;
@@ -114,24 +122,34 @@ function clipData(url) {
   return p;
 }
 
-/** Move the mouth while line `me` lasts. `level()` gives 0..1, or null to flap. */
-function moveMouth(me, level) {
+/** Move the mouth while line `me` lasts. `target()` gives { sx, sy }, or null to flap. */
+function moveMouth(me, target) {
   cancelAnimationFrame(raf);
-  let open = 0;
+  let sy = REST, sx = 1;
   const step = () => {
     if (me !== lineNo || !face) return;
-    let want = level();
-    if (want == null) want = 0.55 + 0.45 * Math.sin(performance.now() / 70);   // a syllable rhythm
-    // opens quickly and closes nearly as quickly: lips, not a shutter, but no lag behind the sound
-    open += (want - open) * (want > open ? 0.75 : 0.55);
-    setMouth(face, open);
+    let want = target();
+    if (want == null) want = { sx: 1, sy: 0.3 + 0.5 * (0.5 + 0.5 * Math.sin(performance.now() / 70)) };   // a syllable rhythm
+    // lips move fast, but not in one jump: most of the way each frame
+    sy += (want.sy - sy) * 0.6;
+    sx += (want.sx - sx) * 0.5;
+    setMouth(face, sy, sx);
     raf = requestAnimationFrame(step);
   };
   raf = requestAnimationFrame(step);
 }
 
-function playClip(url, me, onFail) {
-  moveMouth(me, () => 0);                              // shut while the clip loads
+/* The shape to make at this moment: the sound's own shape, opened as far as
+   the sound is loud (a shout opens wider than a whisper); lips pressed shut
+   stay shut however loud the vowel either side of them is. */
+function shapeAt(name, loud) {
+  const sh = SHAPES[name] || SHAPES.rest;
+  if (name === 'rest' || name === 'M') return sh;
+  return { sx: sh.sx, sy: SHUT + (sh.sy - SHUT) * (0.45 + 0.55 * Math.min(1, loud * 1.4)) };
+}
+
+function playClip(url, me, onFail, units) {
+  moveMouth(me, () => SHAPES.rest);                    // a closed smile while the clip loads
   clipData(url).then(async (data) => {
     if (me !== lineNo) return;
     const c = audioCtx();
@@ -149,9 +167,12 @@ function playClip(url, me, onFail) {
     src.start(at);
     console.info('[spelling voice] Kokoro recording:', url);
     source = src;
+    const shapes = track(data.env, units || [], FPS);   // the shape for every frame of the clip
     moveMouth(me, () => {
       const t = c.currentTime - at - lag;
-      return t < 0 ? 0 : (data.env[Math.floor(t * FPS)] || 0);
+      if (t < 0) return SHAPES.rest;
+      const f = Math.floor(t * FPS);
+      return shapeAt(shapes[f] || 'rest', data.env[f] || 0);
     });
   });
 }
@@ -204,11 +225,13 @@ function synthesise(text, me, rate) {
  * Say a line through `f` (a face button, or null). With `clip`, play that
  * recording; without one, or if it will not play, use the browser's voice.
  */
-export function sayWord(text, f = null, { rate = 0.8, clip = null } = {}) {
+export function sayWord(text, f = null, { rate = 0.8, clip = null, ipa = null } = {}) {
   hush();
   const me = ++lineNo;
   startTalking(f);
-  if (clip) playClip(clip, me, () => { if (me === lineNo) { console.info('[spelling voice] the recording would not play:', clip); synthesise(text, me, rate); } });
+  // a word's sounds come from its IPA; a definition's or sentence's from its spelling
+  const units = ipa ? unitsFromIpa(ipa) : unitsFromText(text);
+  if (clip) playClip(clip, me, () => { if (me === lineNo) { console.info('[spelling voice] the recording would not play:', clip); synthesise(text, me, rate); } }, units);
   else synthesise(text, me, rate);
   return true;
 }

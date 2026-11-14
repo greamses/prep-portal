@@ -41,7 +41,7 @@ function sentenceWithWord(sentence, word) {
 function row({ i: at, row: [word, ipa, def, use, pos = '', origin = ''] }, n) {
   const li = document.createElement('li');
   li.className = 'spell-lib-row';
-  const face = faceButton({ size: 46, label: `Hear "${word}"`, onPress: (b) => sayWord(word, b, { clip: clipFor(at, 'w') }) });
+  const face = faceButton({ size: 46, label: `Hear "${word}"`, onPress: (b) => sayWord(word, b, { clip: clipFor(bank, at, 'w'), ipa }) });
   if (!canSpeak) face.disabled = true;
   const body = document.createElement('div');
   body.className = 'spell-lib-body';
@@ -75,7 +75,7 @@ function row({ i: at, row: [word, ipa, def, use, pos = '', origin = ''] }, n) {
   hearUse.setAttribute('aria-label', `Hear "${word}" in a sentence`);
   hearUse.dataset.tip = 'Hear the sentence';
   hearUse.disabled = !canSpeak;
-  hearUse.addEventListener('click', () => sayWord(use, face, { rate: 0.95, clip: clipFor(at, 's') }));
+  hearUse.addEventListener('click', () => sayWord(use, face, { rate: 0.95, clip: clipFor(bank, at, 's') }));
   useLine.append(hearUse, sentenceWithWord(use, word));
   body.append(head, d, useLine);
   li.append(face, body);

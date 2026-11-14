@@ -339,7 +339,7 @@
 .pp-nav-btn[hidden] { display: none; }
 
 .pp-nav-btn--back { --pp-note-bg: #f0ece2; --pp-note-tilt: 1.5deg; color: #5a544a; }
-.pp-nav-btn--next { --pp-note-bg: #f4c95d; }
+.pp-nav-btn--next { --pp-note-bg: #bfe3ff; }   /* the palette's blue (it was the yellow #f4c95d, which the user disliked) */
 
 /* ── SECTION FLOW ───────────────────────────────────────────────────────
    One selector on screen at a time (see createSectionFlow in

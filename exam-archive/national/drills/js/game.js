@@ -169,7 +169,7 @@ const speakBtn = faceButton({
 });
 const talker = () => (currentQuestion && currentQuestion.spell === 'say' ? speakBtn : null);
 // The word, its definition, its sentence: a Kokoro recording when there is one.
-const sayTheWord = (b = speakBtn) => sayWord(currentQuestion.word, b, { clip: clipFor(currentQuestion.bank, currentQuestion.i, 'w') });
+const sayTheWord = (b = speakBtn) => sayWord(currentQuestion.word, b, { clip: clipFor(currentQuestion.bank, currentQuestion.i, 'w'), ipa: currentQuestion.ipa });
 
 const meaningEl = document.createElement('div');
 meaningEl.className = 'drill-meaning';
