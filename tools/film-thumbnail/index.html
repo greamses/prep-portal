@@ -87,6 +87,22 @@
     .thumb__brand span { background: linear-gradient(transparent 55%, #f4c95d 55%); padding: 0 .06em; }
     .thumb__url.pp-pill { position: absolute; right: 70px; bottom: 38px; font-size: 24px; text-transform: none; letter-spacing: .02em;
       font-weight: 800; background: #fffdf8; }
+
+    /* ── THE PLAYLIST COVER: the topic on the receipt, how many videos on a note, and the playlist's
+       own video thumbnails fanned out like photos pinned to the board ── */
+    .pl__fan { position: absolute; right: 40px; top: 70px; width: 520px; height: 470px; }
+    .pl__shot { position: absolute; width: 380px; aspect-ratio: 16 / 9; background: #fffdf8; padding: 8px;
+      box-shadow: 0 2px 2px rgba(42,39,35,.12), 10px 16px 26px -10px rgba(42,39,35,.45); }
+    .pl__shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .pl__shot--0 { left: 0; top: 230px; transform: rotate(-7deg); }
+    .pl__shot--1 { left: 120px; top: 120px; transform: rotate(4deg); }
+    .pl__shot--2 { left: 60px; top: 0; transform: rotate(-3deg); }
+    .pl__shot::before { content: ""; position: absolute; top: -12px; left: 50%; width: 90px; height: 26px; transform: translateX(-50%) rotate(-3deg);
+      background: rgba(255,255,255,.55); box-shadow: 0 1px 2px rgba(0,0,0,.14); }
+    .pl__count.pp-sticky { position: absolute; display: inline-flex; align-items: baseline; gap: 12px; padding: 16px 26px 18px; font-size: 30px; font-weight: 800; }
+    .pl__count b { font: 900 54px/1 Unbounded, sans-serif; }
+    .pl__topics { margin: 26px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 10px 12px; }
+    .pl__topics li { font: 700 19px/1 "JetBrains Mono", monospace; color: #2a2723; padding: 9px 14px; border: 2px dashed rgba(42,39,35,.3); background: #fffdf8; }
   </style>
 </head>
 <body>
@@ -146,11 +162,54 @@
         + `</div>`;
     }
 
+
+    /* THE PLAYLIST COVER: ?playlist=<topic>. The subject's papers and sign, its name big, how many
+       videos (a sticky note), what it covers (from the lesson names), and three of its videos fanned */
+    const PLAYLISTS = {
+      ratio: { title: "Ratio, step by step", blurb: ["What a ratio is", "Part, whole, difference", "Compound ratio", "Squares and cubes", "Ages, shapes"] },
+      percent: { title: "Percentages, step by step", blurb: ["Out of a hundred", "Percent of an amount", "Increase, decrease", "Reverse percentages"] },
+      averages: { title: "Mean, median, mode, range", blurb: ["Share it fairly", "Median and mode", "Totals", "Competition questions"] },
+      patterns: { title: "Sequences and series", blurb: ["Find the rule", "The nth term", "Adding a series", "Shapes that grow"] },
+    };
+    function playlistCover(topic) {
+      const s = SUBJECTS[topic] || SUBJECTS.maths, pl = PLAYLISTS[topic] || { title: s.name, blurb: [] };
+      const films = FILMS.filter((f) => f.topic === topic);
+      const lessons = films.filter((f) => f.lesson), rest = films.filter((f) => !f.lesson);
+      const picks = [...lessons, ...rest].slice(0, 3).reverse();
+      return `<div class="thumb" style="--note:${s.note};--note2:${s.note2};--note-deep:${s.deep}">`
+        + `<img class="thumb__mark" src="/logo/logo-light.svg" alt="">`
+        + `<div class="thumb__card pp-receipt" style="width:640px"><div class="pp-receipt__paper">`
+        + `<p class="thumb__kicker"><i></i>PrepBot TV · Playlist</p><span class="thumb__rule"></span>`
+        + `<h2 class="thumb__title">${pl.title}</h2>`
+        + `<ul class="pl__topics">${pl.blurb.map((b) => `<li>${b}</li>`).join("")}</ul>`
+        + `</div></div>`
+        + `<div class="pl__fan">${picks.map((f, i) => `<div class="pl__shot pl__shot--${i}"><img src="png/${f.id}.png" alt=""></div>`).join("")}</div>`
+        + `<span class="pl__count pp-sticky pp-sticky--tape" style="left:600px;top:520px;--pp-note-bg:${s.note};--pp-note-tilt:-4deg"><b>${films.length}</b> videos</span>`
+        + `<div class="thumb__brand">Learning with <span>PrepBot</span></div>`
+        + `<span class="thumb__url pp-pill" style="--tile:${s.deep}">prepportal.com.ng</span>`
+        + `</div>`;
+    }
     const params = new URLSearchParams(location.search);
-    const id = params.get("film");
-    if (!id) {
+    const id = params.get("film"), plist = params.get("playlist");
+    if (plist) {
+      document.getElementById("one").hidden = false;
+      document.getElementById("slot").innerHTML = playlistCover(plist);
+      if (params.get("shot")) document.body.classList.add("shot");
+      else {
+        const fit = () => { const k = Math.min(1, (innerWidth - 32) / 1280); const sc = document.getElementById("scale"); sc.style.transform = `scale(${k})`; sc.style.margin = "16px"; };
+        fit(); addEventListener("resize", fit);
+      }
+      await document.fonts.ready;
+      await Promise.all([...document.images].map((im) => (im.complete ? 0 : new Promise((r) => { im.onload = im.onerror = r; }))));
+      document.body.dataset.ready = "1";
+    } else if (!id) {
       document.getElementById("gallery").hidden = false;
-      document.getElementById("grid").innerHTML = FILMS.filter((f) => f.topic).map((f) => `
+      document.getElementById("grid").innerHTML = Object.keys(PLAYLISTS).map((t) => `
+        <div class="card pp-receipt"><div class="pp-receipt__paper">
+          <a href="?playlist=${t}" target="_blank" rel="noopener"><img src="png/playlist-${t}.png" alt="Playlist cover: ${PLAYLISTS[t].title}" loading="lazy"></a>
+          <p>Playlist: ${PLAYLISTS[t].title}</p><small>${FILMS.filter((f) => f.topic === t).length} videos</small>
+          <div class="row"><a class="pp-pill" href="png/playlist-${t}.png" download="prepbot-playlist-${t}.png">${UI.download(15)}Download</a><a class="pp-pill" href="?playlist=${t}" target="_blank" rel="noopener">Open</a></div>
+        </div></div>`).join("") + FILMS.filter((f) => f.topic).map((f) => `
         <div class="card pp-receipt"><div class="pp-receipt__paper">
           <a href="?film=${f.id}" target="_blank" rel="noopener"><img src="png/${f.id}.png" alt="Thumbnail: ${f.name}" loading="lazy"></a>
           <p>${f.name}</p><small>${f.of || ""}</small>
