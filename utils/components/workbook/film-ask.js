@@ -299,11 +299,12 @@ export function askCss() {
  * question stays on the screen; only its figure turns over, up or down, and its circle is redrawn
  * to the new size. `from` is the figure as the question was written (its TeX), `to` the new one.
  */
-export function rollAsk(inner, from, to, { instant = false, secs = 1 } = {}) {
+export function rollAsk(inner, from, to, { instant = false, secs = 1, suffix = "" } = {}) {
   const el = [...(inner?.querySelectorAll(".fa-mj") || [])].find((e) => e.dataset.tex === String(from));
   if (!el) return;
-  const start = Number(el.dataset.now ?? from);
-  const put = (v) => { const svg = texInline(String(v)); if (svg) el.innerHTML = svg; el.dataset.now = String(v); };
+  const start = Number(el.dataset.now ?? String(from).replace(/[^\d.]/g, ""));
+  /* `suffix`: what follows the figure in its TeX (a percentage keeps its sign: "20\%" rolls to "50\%") */
+  const put = (v) => { const svg = texInline(`${v}${suffix}`); if (svg) el.innerHTML = svg; el.dataset.now = String(v); };
   if (instant || start === to || typeof requestAnimationFrame !== "function") { put(to); fitInk(inner); return; }
   const t0 = performance.now();
   let last = start;
