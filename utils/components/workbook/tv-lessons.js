@@ -38,6 +38,7 @@ import { loss25, score80, score90, profit20, ps4Loss, bikeProfit20, bikeProfit10
 import { stairs24, sum200, odd29, odd21, stairRows37, series123 } from "./cbt-shapes.js";
 import { share600Idowu, share600Kehinde, share4000, share45000, ratio45sum135, angles1234, boys34, girls35, ratio35small45 } from "./cbt-ratio.js";
 import { ratioWhat, ratioParts, ratioCompound } from "./ratio-intro.js";
+import { ratioSquareCube, ratioPerimeter, ratioArea, ratioVolume, ratioAges } from "./ratio-shapes.js";
 import { discount35, alloy26 } from "./cbt-percent1.js";
 
 /* The strip's dress. A page that is not a workbook does not link video.css,
@@ -355,6 +356,11 @@ const SCENES = {
   "ratio-what": ratioWhat,
   "ratio-parts": ratioParts,
   "ratio-compound": ratioCompound,
+  "ratio-square-cube": ratioSquareCube,
+  "ratio-perimeter": ratioPerimeter,
+  "ratio-area": ratioArea,
+  "ratio-volume": ratioVolume,
+  "ratio-ages": ratioAges,
   "ratio-600-idowu": share600Idowu,
   "ratio-600-kehinde": share600Kehinde,
   "ratio-4000": share4000,
@@ -420,15 +426,20 @@ export const FILMS = [
   { id: "ratio-what", lesson: true, name: "What is a ratio?", of: "Ratio, lesson 1", topic: "ratio", thumb: { n: 3, k: 2 } },
   { id: "ratio-parts", lesson: true, name: "Part to part, part to whole, part to difference", of: "Ratio, lesson 2", topic: "ratio", thumb: { n: 8, k: 3 } },
   { id: "ratio-compound", lesson: true, name: "Compound ratio", of: "Ratio, lesson 3", topic: "ratio", thumb: { n: 15, k: 8 } },
-  { id: "ratio-600-idowu", name: "Share $600 in 3:2:1: Idowu's share (two ways)", of: "Scholastic 2025 R1 Q45, 4th ed Q20", topic: "ratio", thumb: { n: 6, k: 1 } },
-  { id: "ratio-600-kehinde", name: "Share $600 in 3:2:1: Kehinde's share (two ways)", of: "Scholastic 5th ed Q23", topic: "ratio", thumb: { n: 6, k: 2 } },
-  { id: "ratio-4000", name: "Share ₦4,000 in 1:3:4: the largest share (two ways)", of: "ANMC 12th main, Q27", topic: "ratio", thumb: { n: 8, k: 4 } },
-  { id: "ratio-45000", name: "Share ₦45,000 in 5:4:3: the least share (two ways)", of: "Scholastic JS 5th ed Q8", topic: "ratio", thumb: { n: 12, k: 3 } },
-  { id: "ratio-sum-135", name: "Two numbers in 4:5 that add to 135 (two ways)", of: "Scholastic 2025 finals, Q4", topic: "ratio", thumb: { n: 9, k: 4 } },
-  { id: "ratio-angles-1234", name: "Angles in the ratio 1:2:3:4 (two ways)", of: "ANMC 12th main, Q47", topic: "ratio", thumb: { n: 10, k: 4 } },
-  { id: "ratio-boys-34", name: "Boys to girls 3:4, 60 girls (two ways)", of: "Scholastic 2022 first round, Q1", topic: "ratio", thumb: { n: 4, k: 3 } },
-  { id: "ratio-girls-35", name: "Boys to girls 3:5, 312 boys (two ways)", of: "Scholastic 2025 finals, Q41", topic: "ratio", thumb: { n: 3, k: 5 } },
-  { id: "ratio-small-45", name: "Ratio 3:5, the smaller is 45 (two ways)", of: "ANMC 15th first round, Q31", topic: "ratio", thumb: { n: 3, k: 5 } },
+  { id: "ratio-square-cube", lesson: true, name: "Square and cube ratios", of: "Ratio, lesson 4", topic: "ratio", thumb: { n: 9, k: 4 } },
+  { id: "ratio-600-idowu", group: "Sharing a total", name: "Share $600 in 3:2:1: Idowu's share (two ways)", of: "Scholastic 2025 R1 Q45, 4th ed Q20", topic: "ratio", thumb: { n: 6, k: 1 } },
+  { id: "ratio-600-kehinde", group: "Sharing a total", name: "Share $600 in 3:2:1: Kehinde's share (two ways)", of: "Scholastic 5th ed Q23", topic: "ratio", thumb: { n: 6, k: 2 } },
+  { id: "ratio-4000", group: "Sharing a total", name: "Share ₦4,000 in 1:3:4: the largest share (two ways)", of: "ANMC 12th main, Q27", topic: "ratio", thumb: { n: 8, k: 4 } },
+  { id: "ratio-45000", group: "Sharing a total", name: "Share ₦45,000 in 5:4:3: the least share (two ways)", of: "Scholastic JS 5th ed Q8", topic: "ratio", thumb: { n: 12, k: 3 } },
+  { id: "ratio-sum-135", group: "Sharing a total", name: "Two numbers in 4:5 that add to 135 (two ways)", of: "Scholastic 2025 finals, Q4", topic: "ratio", thumb: { n: 9, k: 4 } },
+  { id: "ratio-angles-1234", group: "Sharing a total", name: "Angles in the ratio 1:2:3:4 (two ways)", of: "ANMC 12th main, Q47", topic: "ratio", thumb: { n: 10, k: 4 } },
+  { id: "ratio-boys-34", group: "One share is known", name: "Boys to girls 3:4, 60 girls (two ways)", of: "Scholastic 2022 first round, Q1", topic: "ratio", thumb: { n: 4, k: 3 } },
+  { id: "ratio-girls-35", group: "One share is known", name: "Boys to girls 3:5, 312 boys (two ways)", of: "Scholastic 2025 finals, Q41", topic: "ratio", thumb: { n: 3, k: 5 } },
+  { id: "ratio-small-45", group: "One share is known", name: "Ratio 3:5, the smaller is 45 (two ways)", of: "ANMC 15th first round, Q31", topic: "ratio", thumb: { n: 3, k: 5 } },
+  { id: "ratio-ages", group: "Ages", name: "Four times as old, then twice (two ways)", of: "Ratio in ages", topic: "ratio", thumb: { n: 4, k: 1 } },
+  { id: "ratio-perimeter", group: "Perimeter, area and volume", name: "Sides 2:3: the larger perimeter (two ways)", of: "Ratio in perimeter", topic: "ratio", thumb: { n: 3, k: 2 } },
+  { id: "ratio-area", group: "Perimeter, area and volume", name: "Sides 2:3: the larger area (two ways)", of: "Ratio in area", topic: "ratio", thumb: { n: 9, k: 4 } },
+  { id: "ratio-volume", group: "Perimeter, area and volume", name: "Edges 2:3: the larger volume (two ways)", of: "Ratio in volume", topic: "ratio", thumb: { n: 27, k: 8 } },
 ];
 
 /** The coded film behind an id, for the editor to trace and to take a script from. */
@@ -493,7 +504,8 @@ export async function playLesson(kind, title = "", strip = null) {
     const me = FILMS.find((f) => f.id === kind);
     /* every other film on the topic, in its category: the lessons first, then the worked questions */
     const related = me?.topic ? FILMS.filter((f) => f.topic === me.topic && f.id !== kind)
-      .map((f) => ({ ...f, group: f.lesson ? "Lessons" : "Worked questions", img: `/tools/film-thumbnail/png/${f.id}.png` }))
+      /* the lessons first, then the questions BY TYPE (sharing a total, one share known, ages ...) in the order FILMS lists them */
+      .map((f) => ({ ...f, group: f.lesson ? "Lessons" : (f.group || "Worked questions"), img: `/tools/film-thumbnail/png/${f.id}.png` }))
       .sort((a, b) => (a.lesson ? 0 : 1) - (b.lesson ? 0 : 1)) : [];
     const onPick = (id) => {
       const next = FILMS.find((f) => f.id === id);

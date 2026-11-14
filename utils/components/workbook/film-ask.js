@@ -43,13 +43,15 @@ const MATH = new RegExp([
   `${CUR}?${NUMBER}(?:\\/\\d+)?%?(?:st|nd|rd|th)?`,                                 // 750, ₱800, 3/4, 35%, 37th
 ].join("|"), "g");
 
-const KEYWORDS = ["more than", "less than", "fewer than", "times as many", "times as much", "equally", "each",
-  "the rest", "left over", "is left", "are left", "altogether", "in total", "total", "remaining", "twice", "half",
+/* the longer phrase first: "twice more than" is ONE relationship, not "twice" and "more than" */
+const KEYWORDS = ["twice more than", "times more than", "twice as many as", "twice as many", "more than", "less than", "fewer than",
+  "times as many", "times as much", "equally", "each", "share", "gets", "receives",
+  "the rest", "left over", "is left", "are left", "altogether", "in all", "in total", "total", "remaining", "twice", "half",
   "discount", "profit", "loss", "repeated", "alternating", "begin and end", "sum", "difference", "product", "per"];
 const KEY_RE = new RegExp(`\\b(${KEYWORDS.map((k) => k.replace(/ /g, "\\s+")).join("|")})\\b`, "gi");
 const ASKING = /^(find|evaluate|calculate|work out|simplify|solve|what|how|which|who|when|where|show)\b/i;
 
-const LIMIT = { circle: 4, box: 2, hl: 3 };
+const LIMIT = { circle: 4, box: 2, hl: 4 };
 
 /** One run of maths as TeX, its currency sign kept OUT of the maths (₦ breaks MathJax). */
 function texOfToken(tok) {
@@ -122,7 +124,8 @@ function wordsHtml(str, used, marks) {
     out += esc(str.slice(last, m.index));
     if (used.hl < LIMIT.hl && !used.keys.has(key)) {
       used.hl++; used.keys.add(key);
-      out += `<span class="fa-em fa-em--hl" style="--d:${marks.n++}">${esc(m[1])}</span>`;
+      /* named, so a film can point at it while it is talked about: data-k="kw-more-than" */
+      out += `<span class="fa-em fa-em--hl" data-k="kw-${key.replace(/ /g, "-")}" style="--d:${marks.n++}">${esc(m[1])}</span>`;
     } else out += esc(m[1]);
     last = m.index + m[0].length;
   }
@@ -257,6 +260,15 @@ export function askCss() {
   stroke-dasharray: 1; stroke-dashoffset: 0; }
 .fa-em--circle .fa-ink path { stroke: #c0453f; stroke-width: 2.4; }
 .fa-em--box .fa-ink path { stroke: #2f6f8f; }
+/* THE ACTION ON A KEYWORD: when PrepBot says it, it jumps, and a red ring goes round it */
+.fa-em--hl { display: inline-block; }
+.fa-em--hl.fa-act { animation: fa-act 1.8s ease both; }
+@keyframes fa-act {
+  0% { transform: none; box-shadow: 0 0 0 0 rgba(192,69,63,0); }
+  20% { transform: translateY(-0.18em) scale(1.18) rotate(-2deg); box-shadow: 0 0 0 0.12em #c0453f; }
+  75% { transform: translateY(-0.08em) scale(1.08); box-shadow: 0 0 0 0.12em #c0453f; }
+  100% { transform: none; box-shadow: 0 0 0 0.1em rgba(192,69,63,.85); }
+}
 .fa-em--hl { background: linear-gradient(transparent 52%, #ffe27a 52%, #ffe27a 92%, transparent 92%) no-repeat 0 0 / 100% 100%;
   -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 .fa-em--ul { background: linear-gradient(#2f8f4e, #2f8f4e) no-repeat 0 100% / 100% 0.12em; padding-bottom: 0.06em;
@@ -276,4 +288,29 @@ export function askCss() {
 }
 `;
   document.head.appendChild(st);
+}
+
+/**
+ * ROLL A NUMBER IN THE QUESTION to a new value, like a counter: *"If you are doing examples with
+ * same question but different numbers ... just role up the number to the new one."* The same
+ * question stays on the screen; only its figure turns over, up or down, and its circle is redrawn
+ * to the new size. `from` is the figure as the question was written (its TeX), `to` the new one.
+ */
+export function rollAsk(inner, from, to, { instant = false, secs = 1 } = {}) {
+  const el = [...(inner?.querySelectorAll(".fa-mj") || [])].find((e) => e.dataset.tex === String(from));
+  if (!el) return;
+  const start = Number(el.dataset.now ?? from);
+  const put = (v) => { const svg = texInline(String(v)); if (svg) el.innerHTML = svg; el.dataset.now = String(v); };
+  if (instant || start === to || typeof requestAnimationFrame !== "function") { put(to); fitInk(inner); return; }
+  const t0 = performance.now();
+  let last = start;
+  const tick = (now) => {
+    if (!el.isConnected) return;
+    const k = Math.min(1, (now - t0) / (secs * 1000));
+    const v = Math.round(start + (to - start) * (1 - Math.pow(1 - k, 3)));
+    if (v !== last) { put(v); last = v; }
+    if (k < 1) requestAnimationFrame(tick); else { put(to); fitInk(inner); }
+  };
+  requestAnimationFrame(tick);
+  sfx("tick", 0);
 }

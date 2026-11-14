@@ -20,8 +20,11 @@ import { modelSvg } from "/prep-math/activity/maths-workbook/js/modelart.js";
 import { braceOf, film, mb, part } from "./film-kit.js";
 import { mathLoad, mathifyPic, texAt } from "./film-math.js";
 import { mathRow, svgBox, centred, PAPER, PIC_W, K_ } from "./cbt-films.js";
+import { rollAsk } from "./film-ask.js";
 
-const BLUE = "#2f6f8f", GREEN = "#2f7d4a";
+const BLUE = "#2f6f8f", GREEN = "#2f7d4a", PURPLE = "#6b4fa0";
+/* the same step as EQUIVALENT FRACTIONS, beside the ratio */
+const FR = (a, b, c, d) => [L("g", "\\qquad"), L("f", `\\dfrac{${a}}{${b}} = \\dfrac{${c}}{${d}}`, PURPLE)];
 
 /* ── the shared pieces ─────────────────────────────────────────────────── */
 const L = (k, t, color) => ({ k, tex: t, ...(color ? { color } : {}) });
@@ -111,6 +114,47 @@ const showRows = (rows, which) => (s, H) => {
 };
 
 /* ═══ 1. WHAT A RATIO IS ═══════════════════════════════════════════════════ */
+/* THE ROLLING RATIO: one line, "a : b" with its fraction a/b beside it and what was done over the
+   colon, whose figures roll to each new value. The same comparison is never written out again as
+   a new line; the numbers turn over, up when the boxes are cut, down when they merge. */
+function ratioRoller() {
+  const T = (k, x, y, size, anchor, fill = INKC, w = 400) => `<text data-k="${k}" x="${x}" y="${y}" text-anchor="${anchor}" font-family="STIX Two Text, Cambria Math, serif" font-weight="${w}" font-size="${size}" fill="${fill}">0</text>`;
+  return svgBox(150, 30, `<g data-mb="num" data-k="rs">`
+    + T("ra", 58, 21, 13, "end") + `<text x="63" y="20" text-anchor="middle" font-family="STIX Two Text, serif" font-size="13" fill="${INKC}">:</text>` + T("rb", 68, 21, 13, "start")
+    + T("op", 63, 8.5, 6, "middle", "#c0453f", 700)
+    + T("fn", 104, 13.5, 8.5, "middle", PURPLE) + `<line x1="97" y1="16.2" x2="111" y2="16.2" stroke="${PURPLE}" stroke-width="0.7"/>` + T("fd", 104, 24.5, 8.5, "middle", PURPLE)
+    + `</g>`);
+}
+/** Roll the ratio line to a : b (and its fraction), with `op` written over the colon */
+const rollTo = (a, b, op = "") => (s, H) => {
+  const instant = H.show === H.grow;
+  const g = key(s, "rs");
+  if (g) H.show(g);
+  const set = (k, v) => {
+    const el = key(s, k);
+    if (!el) return;
+    const from = Number(el.textContent) || 0;
+    if (instant || from === v || from === 0) { el.textContent = String(v); return; }
+    const t0 = performance.now();
+    const tick = (now) => {
+      if (!el.isConnected) return;
+      const t = Math.min(1, (now - t0) / 900);
+      el.textContent = String(Math.round(from + (v - from) * (1 - Math.pow(1 - t, 3))));
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+  set("ra", a); set("rb", b); set("fn", a); set("fd", b);
+  const o = key(s, "op");
+  if (o) o.textContent = op;
+  if (!instant && op) H.sound("tick", 0);
+};
+/** roll the numbers in the question itself (./film-ask.js rollAsk) */
+const rollQ = (pairs) => (svg, H, stage) => {
+  const inner = stage?.querySelector('[data-t="a1"]')?.firstChild;
+  pairs.forEach(([from, to]) => rollAsk(inner, from, to, { instant: H.show === H.grow }));
+};
+
 export function ratioWhat() {
   const PRICE = ["Old", "New"];
   const at15 = centred(150, 15);
@@ -121,31 +165,21 @@ export function ratioWhat() {
       { id: "a2", text: "A price of $80 is increased in the ratio 5:4. What is the new price?" },
     ],
     pics: {
-      /* 12 : 8, merged in fours */
       g12: () => boxRows([{ name: "Boys", n: 12 }, { name: "Girls", n: 8 }], 100 / 12, { m4: { every: 4, text: "4" } }),
-      /* 30 : 20, merged in tens */
       g30: () => boxRows([{ name: "Boys", n: 30 }, { name: "Girls", n: 20 }], 100 / 30, { m10: { every: 10, text: "10" } }),
-      /* 3 : 2 cut into halves, quarters and thirds: twelve finest cells to every box */
       gS: () => boxRows([{ name: "Boys", n: 36 }, { name: "Girls", n: 24 }], 100 / 36),
       p1: () => bars(PRICE, [4, 5], { below: { 0: [{ from: 0, to: 4, text: "$80" }] } }),
       p2: () => bars(PRICE, [4, 5], { text: "20", below: { 0: [{ from: 0, to: 4, text: "$80" }] } }),
       p3: () => bars(PRICE, [4, 3], { text: "20", below: { 0: [{ from: 0, to: 4, text: "$80" }] } }),
-      m1: () => main([L("a", "12 : 8")]),
-      m2: () => main([L("a", "12 : 8"), L("e", "="), L("b", "3 : 2", BLUE)]),
-      m3: () => main([L("a", "30 : 20"), L("e", "="), L("b", "3 : 2", BLUE)]),
+      rs: () => ratioRoller(),
       s1: () => side([[L("a", "\\text{actual: } 12,\\ 8")], [L("b", "\\text{ratio: } 3 : 2", BLUE)]]),
       m4: () => main([L("a", "80 \\div 4"), L("e", "="), L("b", "20", BLUE)]),
       m5: () => main([L("a", "5 \\times 20"), L("e", "="), L("b", "\\$100", GREEN)]),
       m6: () => main([L("a", "3 \\times 20"), L("e", "="), L("b", "\\$60", GREEN)]),
-      mS1: () => main([L("a", "3 : 2"), L("e", "\\xrightarrow{\\ \\times 2\\ }"), L("b", "6 : 4", BLUE)]),
-      mS2: () => main([L("a", "6 : 4"), L("e", "\\xrightarrow{\\ \\times 2\\ }"), L("b", "12 : 8", BLUE)]),
-      mS3: () => main([L("a", "12 : 8"), L("e", "\\xrightarrow{\\ \\div 4\\ }"), L("b", "3 : 2", BLUE)]),
-      mS4: () => main([L("a", "3 : 2"), L("e", "\\xrightarrow{\\ \\times 3\\ }"), L("b", "9 : 6", BLUE)]),
     },
     picAt: {
       g12: at15, g30: at15, gS: at15, p1: barAt(5), p2: barAt(5), p3: barAt(4),
-      m1: at(37.5), m2: at(37.5), m3: at(37.5), m4: at(37.5), m5: at(37.5), m6: at(37.5),
-      mS1: at(37.5), mS2: at(37.5), mS3: at(37.5), mS4: at(37.5), s1: { x: 79.5, y: 16 },
+      rs: at(37.5), m4: at(37.5), m5: at(37.5), m6: at(37.5), s1: { x: 79.5, y: 16 },
     },
     lines: [
       { id: "k1", receipt: true, sub: "Idea 1", text: "What a ratio is", y: 50.5 },
@@ -163,6 +197,9 @@ export function ratioWhat() {
       "gS.cut4": cutRows([0, 1], (k) => k % 3 === 0 && k % 6 !== 0, 0.08),
       "gS.merge": mergeRows([0, 1], (k) => k % 12 !== 0),
       "gS.cut3": cutRows([0, 1], (k) => k % 4 === 0 && k % 12 !== 0, 0.1),
+      "rs.v128": rollTo(12, 8), "rs.v32": rollTo(3, 2, "÷ 4"), "rs.v3020": rollTo(30, 20), "rs.v32b": rollTo(3, 2, "÷ 10"),
+      "rs.base": rollTo(3, 2), "rs.v64": rollTo(6, 4, "× 2"), "rs.v128b": rollTo(12, 8, "× 2"), "rs.v32c": rollTo(3, 2, "÷ 4"), "rs.v96": rollTo(9, 6, "× 3"),
+      "q.up": rollQ([["12", 30], ["8", 20]]), "q.down": rollQ([["12", 12], ["8", 8]]),
       "p1.r0": rowStage(0), "p1.r1": rowStage(1),
       "p1.old": (s, H) => H.draw(braceOf(s, "below-0-0"), 0),
       "p2.base": (s, H) => { showBars(s, H); H.show(braceOf(s, "below-0-0")); },
@@ -170,8 +207,7 @@ export function ratioWhat() {
       "p2.new": (s, H) => mb(s, "bar", 1).forEach((b) => H.lit(b, 0.2, 2.4)),
       "p3.all": (s, H) => { mb(s, "name").forEach((n) => H.show(n)); mb(s, "bar", 0).forEach((b) => H.show(b)); H.show(braceOf(s, "below-0-0"));
         mb(s, "bar", 1).forEach((b, j) => H.grow(b, 0.2 + j * 0.25)); fill(s, H); },
-      "m1.all": (s, H) => write(s, H, ["a"], 0),
-      ...Object.fromEntries(["m2", "m3", "m4", "mS1", "mS2", "mS3", "mS4"].map((m) => [`${m}.all`, (s, H) => { write(s, H, ["a", "e"], 0, 0.5); write(s, H, ["b"], 1.3); }])),
+      "m4.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.5); write(s, H, ["b"], 1.3); },
       "s1.all": (s, H) => { write(s, H, ["a"], 0); write(s, H, ["b"], 1.2); },
       "m5.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.5); write(s, H, ["b"], 1.3); H.sound("ding", 1.5); },
       "m6.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.5); write(s, H, ["b"], 1.3); H.sound("ding", 1.5); },
@@ -183,22 +219,22 @@ export function ratioWhat() {
       /* ── IDEA 1 ── */
       push("Let me draw them. One box for every boy... twelve boxes. One box for every girl... eight boxes, all the same size. Look at the two rows side by side, because a ratio is simply a way of COMPARING two amounts.",
         { on: ["g12", "k1"], add: ["g12.r0", "g12.r1"], cue: { "g12.r0": "every boy", "g12.r1": "every girl" }, transition: card("Idea 1", "What a ratio is"), pause: 0.6 });
-      push("Written as a ratio, boys to girls is twelve to eight, with two dots between them that we read as 'to'. Boys go first because the question said boys first. The order is part of the answer, so never swap it.",
-        { on: ["m1"], add: ["m1.all"], cue: { "m1.all": "twelve to eight" }, pause: 0.6 });
-      push("Now watch the boxes MERGE, four at a time. The lines between them fade away... and the boys become three big boxes, the girls two, each big box holding four children. So for every three boys there are two girls. Twelve to eight is three to two: merging made the numbers smaller, but the bars haven't changed at all.",
-        { on: ["m2"], off: ["m1"], add: ["g12.merge", "m2.all"], cue: { "g12.merge": "the lines between", "m2.all": "for every three" }, pause: 0.8 });
+      push("Written as a ratio, boys to girls is twelve to eight, with two dots between them that we read as 'to'. And beside it, the same comparison as a fraction: twelve over eight. Boys go first because the question said boys first, so never swap the order.",
+        { on: ["rs"], add: ["rs.v128"], cue: { "rs.v128": "twelve to eight" }, pause: 0.6 });
+      push("Now watch the boxes MERGE, four at a time. The lines between them fade away... and the boys become three big boxes, the girls two. Watch the numbers roll down with them: twelve to eight becomes three to two, and twelve eighths becomes three halves. The bars haven't changed at all.",
+        { add: ["g12.merge", "rs.v32"], cue: { "g12.merge": "the lines between", "rs.v32": "roll down" }, pause: 0.8 });
 
       /* ── IDEA 2 ── */
       push("Here's the bit everybody gets wrong. The ratio three to two does NOT mean there are three boys. There are twelve. Three and two are the ratio; twelve and eight are the actual values. A ratio only tells you how the groups compare.",
         { on: ["s1", "k2"], off: ["k1"], add: ["s1.all"], cue: { "s1.all": "actual values" }, transition: card("Idea 2", "Ratio or actual value?"), pause: 0.8 });
-      push("Think of another class, with thirty boys and twenty girls. Thirty boxes for the boys... and twenty for the girls. Different children, bigger numbers.",
-        { on: ["g30"], off: ["g12", "m2", "s1"], add: ["g30.r0", "g30.r1"], cue: { "g30.r0": "thirty boxes", "g30.r1": "twenty for" }, pause: 0.6 });
-      push("Now merge them, ten at a time. Watch the lines go... three big boxes of boys, two big boxes of girls. Thirty to twenty is three to two as well. Lots of different classes share one ratio, and that's why a ratio alone can't tell you how many.",
-        { on: ["m3"], add: ["g30.merge", "m3.all"], cue: { "g30.merge": "watch the lines", "m3.all": "thirty to twenty is" }, pause: 0.8 });
+      push("Now change the class. Watch the question: thirty boys and twenty girls. Thirty boxes for the boys, and twenty for the girls. Different children, bigger numbers.",
+        { on: ["g30"], off: ["g12", "s1"], add: ["q.up", "rs.v3020", "g30.r0", "g30.r1"], cue: { "q.up": "watch the question", "rs.v3020": "thirty boys", "g30.r0": "thirty boxes", "g30.r1": "twenty for" }, pause: 0.6 });
+      push("Merge them, ten at a time. Watch the lines go... three big boxes of boys, two of girls. Thirty to twenty rolls down to three to two as well, just as thirty twentieths is three halves. Lots of different classes share one ratio, and that's why a ratio alone can't tell you how many.",
+        { add: ["g30.merge", "rs.v32b"], cue: { "g30.merge": "watch the lines", "rs.v32b": "rolls down" }, pause: 0.8 });
 
       /* ── IDEA 3 ── */
       push("Now a price of eighty dollars is increased in the ratio five to four. That means new price to old price is five to four. So the old price is four boxes, and the new price is five boxes of exactly the same size.",
-        { on: ["a2", "p1", "k3"], off: ["a1", "g30", "m3", "k2"], add: ["p1.r0", "p1.r1"], cue: { "p1.r0": "four boxes", "p1.r1": "five boxes" },
+        { on: ["a2", "p1", "k3"], off: ["a1", "g30", "rs", "k2"], add: ["p1.r0", "p1.r1"], cue: { "p1.r0": "four boxes", "p1.r1": "five boxes" },
           transition: card("Idea 3", "Increase and decrease"), pause: 0.6 });
       push("The old price, all four boxes, is eighty dollars. So one box is eighty shared into four... twenty dollars. Write twenty in every box, because every box is the same size.",
         { on: ["p2", "m4"], off: ["p1"], add: ["p1.old", "p2.base", "m4.all", "p2.fill"], cue: { "m4.all": "shared into", "p2.fill": "write twenty" }, pause: 0.8 });
@@ -208,40 +244,91 @@ export function ratioWhat() {
         { on: ["p3", "m6"], off: ["p2", "m5"], add: ["p3.all", "m6.all"], cue: { "m6.all": "three times twenty" }, pause: 1 });
 
       /* ── IDEA 4: SCALING, ON THE BOXES ── */
-      push("Last idea: scaling. Here's three to two as boxes. Now I CUT every box in two... and three to two becomes six to four. The bars are just as long as before; there are simply more, smaller boxes.",
-        { on: ["a1", "gS", "mS1", "k4"], off: ["a2", "p3", "m6", "k3"], add: ["gS.base", "gS.cut2", "mS1.all"], cue: { "gS.cut2": "cut every box", "mS1.all": "becomes six" },
-          transition: card("Idea 4", "Scaling: cut up, merge down"), pause: 0.6 });
-      push("Cut every box in two again... six to four becomes twelve to eight. Cutting makes the numbers BIGGER, and both rows are cut the same way, so the comparison never changes.",
-        { on: ["mS2"], off: ["mS1"], add: ["gS.cut4", "mS2.all"], cue: { "gS.cut4": "in two again", "mS2.all": "becomes twelve" }, pause: 0.8 });
-      push("Going down is the other way round: we MERGE. Watch the lines fade, four boxes at a time... and twelve to eight is back to three to two. Up, we cut. Down, we merge.",
-        { on: ["mS3"], off: ["mS2"], add: ["gS.merge", "mS3.all"], cue: { "gS.merge": "watch the lines", "mS3.all": "back to three" }, pause: 0.8 });
-      push("And cut every box into three instead... nine to six. Whatever you multiply or divide one side by, you do to the other, because every box in both rows is cut, or merged, the same way.",
-        { on: ["mS4"], off: ["mS3"], add: ["gS.cut3", "mS4.all"], cue: { "gS.cut3": "into three", "mS4.all": "nine to six" }, pause: 1 });
+      push("Last idea: scaling. Back to our class, twelve boys and eight girls, as three to two in boxes. Now I CUT every box in two... and the numbers roll up: six to four, six quarters. The bars are just as long as before; there are simply more, smaller boxes.",
+        { on: ["a1", "gS", "rs", "k4"], off: ["a2", "p3", "m6", "k3"], add: ["q.down", "gS.base", "rs.base", "gS.cut2", "rs.v64"],
+          cue: { "gS.cut2": "cut every box", "rs.v64": "roll up" }, transition: card("Idea 4", "Scaling: cut up, merge down"), pause: 0.6 });
+      push("Cut every box in two again... twelve to eight, twelve eighths. Cutting makes the numbers BIGGER, and both rows are cut the same way, so the comparison never changes.",
+        { add: ["gS.cut4", "rs.v128b"], cue: { "gS.cut4": "in two again", "rs.v128b": "twelve to eight" }, pause: 0.8 });
+      push("Going down is the other way round: we MERGE. Watch the lines fade, four boxes at a time... and the numbers roll back down to three to two. Up, we cut. Down, we merge. That's simplifying a fraction: twelve eighths to three halves.",
+        { add: ["gS.merge", "rs.v32c"], cue: { "gS.merge": "watch the lines", "rs.v32c": "roll back" }, pause: 0.8 });
+      push("And cut every box into three instead... nine to six, nine sixths. Whatever you multiply or divide one side by, you do to the other, because every box in both rows is cut, or merged, the same way.",
+        { add: ["gS.cut3", "rs.v96"], cue: { "gS.cut3": "into three", "rs.v96": "nine to six" }, pause: 1 });
       push("So, a ratio compares two amounts. Its numbers are not the actual values. Cutting the boxes scales it up, merging scales it down, and a ratio like five to four can grow an amount, or shrink it.");
     },
   });
 }
 
 /* ═══ 2. THE PARTS OF A RATIO ══════════════════════════════════════════════ */
+/* THE KEYWORD TABLE. *"List keywords in a table when talking about keywords."* Three columns, one
+   for each thing a number in a problem can be; each column's words come in as they are read. */
+function keywordTable() {
+  const COLS = [
+    { head: "The whole (sum)", fill: "#c8f0c0", words: ["share", "altogether", "in all", "total", "together"] },
+    { head: "The gap (difference)", fill: "#ffd7a3", words: ["more than", "less than", "fewer than", "difference", "exceeds"] },
+    { head: "One part", fill: "#bfe3ff", words: ["gets", "has", "receives", "is given", "'s share is"] },
+  ];
+  const X0 = 9, W = 44, HH = 8, RH = 6, TOP = 2;
+  let out = "";
+  COLS.forEach((c, j) => {
+    const x = X0 + j * W;
+    out += `<g data-mb="bar" data-mb-row="${j}"><rect x="${x}" y="${TOP}" width="${W}" height="${HH}" fill="${c.fill}" stroke="#2a2723" stroke-width="0.6"/>`
+      + `<text x="${x + W / 2}" y="${TOP + 5.4}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="800" font-size="3.6" fill="#2a2723">${c.head}</text></g>`;
+    c.words.forEach((w, i) => {
+      const y = TOP + HH + i * RH;
+      out += `<g data-mb="num" data-k="t${j}-${i}"><rect x="${x}" y="${y}" width="${W}" height="${RH}" fill="#fffdf8" stroke="#2a2723" stroke-width="0.4"/>`
+        + `<text x="${x + W / 2}" y="${y + 4.2}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="600" font-size="3.4" fill="#2a2723">${w.replace(/'/g, "&#8217;")}</text></g>`;
+    });
+  });
+  return svgBox(150, TOP * 2 + HH + 5 * RH, out);
+}
+
 export function ratioParts() {
   const N = ["Ade", "Bola"];
   const R = [3, 5];
   const AT = barAt(5);
   const ATT = barAt(5, 1, null, true);
+  const T = () => barAt(3, 1, 30);
+  /* one keyword on the screen jumps while it is said (./film-ask.js .fa-act) */
+  const act = (k) => (svg, H, stage) => {
+    const n = stage?.querySelector(`[data-k="kw-${k}"]`);
+    /* only when the step is PLAYED: a replayed step (the instant hand, whose show and grow are one) is silent */
+    if (!n || H.show === H.grow) return;
+    n.classList.remove("fa-act");
+    void n.offsetWidth;
+    n.classList.add("fa-act");
+    H.sound("pop", 0);
+  };
   return film({
     paperMm: PAPER, picW: PIC_W, ready: mathLoad(),
     asks: [
       { id: "a1", text: "Ade and Bola share some sweets in the ratio 3:5. Bola gets 18 more sweets than Ade. How many sweets are there altogether?" },
       { id: "a2", text: "Ade and Bola share 64 sweets in the ratio 3:5." },
       { id: "a3", text: "In the ratio 3:5, Ade gets 21 sweets." },
+      { id: "t1", text: "Bola has 2 more than Ade." },
+      { id: "t2", text: "Bola has twice as many as Ade." },
+      { id: "t3", text: "Bola has twice more than Ade." },
     ],
     pics: {
       q0: () => bars(N, R),
       qW: () => bars(N, R, { total: "8 boxes" }),
       qD: () => bars(N, R, { below: { 1: [{ from: 3, to: 5, text: "2 boxes" }] } }),
+      kw: () => keywordTable(),
       qS: () => bars(N, R, { text: "8", total: "64" }),
       qP: () => bars(N, R, { text: "7", below: { 0: [{ from: 0, to: 3, text: "21" }] } }),
       qA: () => bars(N, R, { text: "9", below: { 1: [{ from: 3, to: 5, text: "18" }] } }),
+      /* the traps: the same two people, three different relationships */
+      tr1: () => mathifyPic(modelSvg([
+        { name: "Ade", parts: [part("Ade", 1, "a")] },
+        { name: "Bola", parts: [part("Ade", 1, "b"), part("2", 0.35, "d")], above: [{ from: 1, to: 2, text: "2 more" }] },
+      ], { cap: 30, label: "" })),
+      tr2: () => mathifyPic(modelSvg([
+        { name: "Ade", parts: [part("", 1, "a")] },
+        { name: "Bola", parts: [part("", 1, "b"), part("", 1, "b")], below: [{ from: 0, to: 2, text: "twice Ade" }] },
+      ], { cap: 30, label: "" })),
+      tr3: () => mathifyPic(modelSvg([
+        { name: "Ade", parts: [part("", 1, "a")] },
+        { name: "Bola", parts: [part("", 1, "b"), part("", 1, "d"), part("", 1, "d")], above: [{ from: 1, to: 3, text: "twice Ade, MORE" }] },
+      ], { cap: 30, label: "" })),
       mPP: () => main([L("a", "\\text{Ade} : \\text{Bola}"), L("e", "="), L("b", "3 : 5", BLUE)]),
       mPW: () => main([L("a", "\\text{Ade}"), L("e", "="), L("b", "\\dfrac{3}{8}\\ \\text{of the whole}", BLUE)]),
       mPD: () => main([L("a", "5 - 3"), L("e", "="), L("b", "2\\ \\text{boxes more}", BLUE)]),
@@ -249,25 +336,39 @@ export function ratioParts() {
       mP: () => main([L("a", "21 \\div 3"), L("e", "="), L("b", "7\\ \\text{a box}", BLUE)]),
       mD: () => main([L("a", "18 \\div 2"), L("e", "="), L("b", "9\\ \\text{a box}", BLUE)]),
       mA: () => main([L("a", "8 \\times 9"), L("e", "="), L("b", "72\\ \\text{sweets}", GREEN)]),
+      mT1: () => main([L("a", "\\text{Bola} = \\text{Ade} + 2"), L("e", "\\quad"), L("b", "\\text{a number, not a ratio}", BLUE)], 6.4),
+      mT2: () => main([L("a", "\\text{Bola} = 2 \\times \\text{Ade}"), L("e", "\\quad"), L("b", "\\text{Ade} : \\text{Bola} = 1 : 2", BLUE)], 6.4),
+      mT3: () => main([L("a", "\\text{Bola} = \\text{Ade} + 2 \\times \\text{Ade}"), L("e", "\\quad"), L("b", "1 : 3", BLUE)], 6.4),
       sK: () => side([[L("a", "\\text{Ade } 27,\\ \\text{Bola } 45")], [L("b", "45 - 27 = 18\\ \\checkmark", GREEN)]], 4.2),
     },
-    picAt: { q0: AT, qW: ATT, qD: AT, qS: ATT, qP: AT, qA: AT,
-      mPP: at(37.5), mPW: at(37.5), mPD: at(37.5), mS: at(37.5), mP: at(37.5), mD: at(37.5), mA: at(37.5), sK: { x: 79.5, y: 16 } },
+    picAt: { q0: AT, qW: ATT, qD: AT, qS: ATT, qP: AT, qA: AT, kw: centred(150, 14), tr1: T(), tr2: T(), tr3: T(),
+      mPP: at(37.5), mPW: at(37.5), mPD: at(37.5), mS: at(37.5), mP: at(37.5), mD: at(37.5), mA: at(37.5),
+      mT1: at(37.5), mT2: at(37.5), mT3: at(37.5), sK: { x: 79.5, y: 16 } },
     lines: [
       { id: "k1", receipt: true, sub: "Part to part", text: "one share to the other", y: 50.5 },
       { id: "k2", receipt: true, sub: "Part to whole", text: "one share to all of it", y: 50.5 },
       { id: "k3", receipt: true, sub: "Part to difference", text: "the gap between them", y: 50.5 },
       { id: "k4", receipt: true, sub: "Spot it", text: "sum, difference or one part?", y: 50.5 },
+      { id: "k5", receipt: true, sub: "The trap", text: "relationship before keyword", y: 50.5 },
     ],
     stages: {
       "q0.r0": rowStage(0), "q0.r1": rowStage(1),
       "qW.all": (s, H) => { showBars(s, H); H.draw(braceOf(s, "total"), 0.2); },
       "qD.all": (s, H) => { showBars(s, H); H.draw(braceOf(s, "below-1-0"), 0.2); mb(s, "bar", 1).slice(3).forEach((b) => H.lit(b, 0.3, 2.4)); },
+      "kw.heads": (s, H) => mb(s, "bar").forEach((n, i) => H.write(n, i * 0.25)),
+      "kw.c0": (s, H) => [0, 1, 2, 3, 4].forEach((i) => H.write(key(s, `t0-${i}`), i * 0.35)),
+      "kw.c1": (s, H) => [0, 1, 2, 3, 4].forEach((i) => H.write(key(s, `t1-${i}`), i * 0.35)),
+      "kw.c2": (s, H) => [0, 1, 2, 3, 4].forEach((i) => H.write(key(s, `t2-${i}`), i * 0.35)),
       "qS.all": (s, H) => { showBars(s, H); H.draw(braceOf(s, "total"), 0.2); },
       "qP.all": (s, H) => { showBars(s, H); H.draw(braceOf(s, "below-0-0"), 0.2); },
       "qA.all": (s, H) => { showBars(s, H); H.draw(braceOf(s, "below-1-0"), 0.2); },
       "qS.fill": fill, "qP.fill": fill, "qA.fill": fill,
-      ...Object.fromEntries(["mPP", "mPW", "mPD", "mS", "mP", "mD"].map((m) => [`${m}.all`, (s, H) => { write(s, H, ["a", "e"], 0, 0.5); write(s, H, ["b"], 1.3); }])),
+      "tr1.all": (s, H) => { rowStage(0)(s, H); rowStage(1)(s, H); mb(s, "num").forEach((n) => H.write(n, 0.9)); H.draw(braceOf(s, "above-1-0"), 1.4); },
+      "tr2.all": (s, H) => { rowStage(0)(s, H); rowStage(1)(s, H); H.draw(braceOf(s, "below-1-0"), 1.2); },
+      "tr3.all": (s, H) => { rowStage(0)(s, H); rowStage(1)(s, H); H.draw(braceOf(s, "above-1-0"), 1.4); },
+      "kwa.share": act("share"), "kwa.altogether": act("altogether"), "kwa.gets": act("gets"), "kwa.more": act("more-than"),
+      "kwb.more": act("more-than"), "kwb.twice": act("twice-as-many-as"), "kwb.twicemore": act("twice-more-than"),
+      ...Object.fromEntries(["mPP", "mPW", "mPD", "mS", "mP", "mD", "mT1", "mT2", "mT3"].map((m) => [`${m}.all`, (s, H) => { write(s, H, ["a", "e"], 0, 0.5); write(s, H, ["b"], 1.3); }])),
       "mA.all": (s, H) => { write(s, H, ["a", "e"], 0, 0.5); write(s, H, ["b"], 1.3); H.sound("ding", 1.5); },
       "sK.all": (s, H) => { write(s, H, ["a"], 0); write(s, H, ["b"], 1.2); H.sound("ding", 1.4); },
     },
@@ -290,23 +391,42 @@ export function ratioParts() {
         { on: ["qD", "mPD", "k3"], off: ["qW", "mPW", "k2"], add: ["qD.all", "mPD.all"], cue: { "mPD.all": "two boxes more" },
           transition: card("Part to difference", "the gap between them"), pause: 0.8 });
 
-      /* spotting it */
-      push("Here's the skill that matters: reading which of these a problem gives you. Words like share, altogether, in all or total give you the WHOLE. 'They share sixty-four sweets' means all eight boxes are sixty-four.",
-        { on: ["a2", "qS", "k4"], off: ["a1", "qD", "mPD", "k3"], add: ["qS.all"], cue: { "qS.all": "they share" },
-          transition: card("Spot it", "sum, difference or one part?"), pause: 0.6 });
+      /* spotting it: the table of keywords */
+      push("Here's the skill that matters: reading WHICH of these a problem gives you. Some words are clues, so let's put them in a table. Words like share, altogether, in all, total and together point at the WHOLE.",
+        { on: ["kw", "k4"], off: ["a1", "qD", "mPD", "k3"], add: ["kw.heads", "kw.c0"], cue: { "kw.c0": "words like share" },
+          transition: card("Spot it", "sum, difference or one part?"), pause: 0.5 });
+      push("More than, less than, fewer than, difference and exceeds point at the GAP between the shares.",
+        { add: ["kw.c1"], cue: { "kw.c1": "more than" }, pause: 0.5 });
+      push("And gets, has, receives, or one person's share, point at ONE PART. Let's use the table on some examples.",
+        { add: ["kw.c2"], cue: { "kw.c2": "gets" }, pause: 0.8 });
+
+      /* the examples, the keyword acting as it is said */
+      push("'Ade and Bola SHARE sixty-four sweets.' Share is a whole word, so sixty-four is all eight boxes together.",
+        { on: ["a2", "qS"], off: ["kw"], add: ["kwa.share", "qS.all"], cue: { "kwa.share": "Share is", "qS.all": "all eight" }, pause: 0.6 });
       push("So one box is sixty-four shared into eight... eight sweets. Write eight in every box.",
         { on: ["mS"], add: ["mS.all", "qS.fill"], cue: { "mS.all": "shared into", "qS.fill": "write eight" }, pause: 0.8 });
-      push("If a problem names ONE person's share — 'Ade gets twenty-one' — that's a part. Twenty-one is Ade's three boxes, so one box is twenty-one shared into three... seven.",
-        { on: ["a3", "qP", "mP"], off: ["a2", "qS", "mS"], add: ["qP.all", "mP.all", "qP.fill"], cue: { "mP.all": "shared into three", "qP.fill": "seven." }, pause: 0.8 });
-      push("And words like more than, less than, or difference point at the GAP. Back to our question: Bola gets eighteen MORE than Ade. That eighteen is the two extra boxes, not anybody's share.",
-        { on: ["a1", "qA"], off: ["a3", "qP", "mP"], add: ["qA.all"], cue: { "qA.all": "eighteen more" }, pause: 0.6 });
+      push("'Ade GETS twenty-one sweets.' Gets, with one name: that's a part. Twenty-one is Ade's three boxes, so one box is twenty-one shared into three... seven.",
+        { on: ["a3", "qP", "mP"], off: ["a2", "qS", "mS"], add: ["kwa.gets", "qP.all", "mP.all", "qP.fill"], cue: { "kwa.gets": "Gets, with", "qP.all": "Ade's three boxes", "mP.all": "shared into three", "qP.fill": "seven." }, pause: 0.8 });
+      push("Back to our question: Bola gets eighteen MORE THAN Ade. More than is a gap word, so that eighteen is the two extra boxes, not anybody's share.",
+        { on: ["a1", "qA"], off: ["a3", "qP", "mP"], add: ["kwa.more", "qA.all"], cue: { "kwa.more": "More than is", "qA.all": "two extra boxes" }, pause: 0.6 });
       push("So one box is eighteen shared into two... nine sweets. Nine in every box.",
         { on: ["mD"], add: ["mD.all", "qA.fill"], cue: { "mD.all": "shared into two", "qA.fill": "nine sweets" }, pause: 0.8 });
-      push("The question wants ALL the sweets: that's all eight boxes. Eight times nine... seventy-two sweets.",
-        { on: ["mA"], off: ["mD"], add: ["mA.all"], cue: { "mA.all": "eight times" }, pause: 0.8 });
+      push("The question asks for the sweets ALTOGETHER: a whole word, so that's all eight boxes. Eight times nine... seventy-two sweets.",
+        { on: ["mA"], off: ["mD"], add: ["kwa.altogether", "mA.all"], cue: { "kwa.altogether": "ALTOGETHER", "mA.all": "eight times" }, pause: 0.8 });
       push("Check it. Ade has three nines, twenty-seven; Bola has five nines, forty-five. Forty-five take away twenty-seven is eighteen. It works.",
         { on: ["sK"], add: ["sK.all"], cue: { "sK.all": "check it" }, pause: 1 });
-      push("So before you calculate anything, ask what the number in the problem IS: the whole, one part, or the difference. Match it to the right boxes, find one box, and the rest follows.");
+
+      /* ── THE TRAP: keywords without the relationship ── */
+      push("Now a warning. Keywords are clues, not rules, and if you grab one without reading the relationship around it, you'll fall straight into a trap. Watch three sentences that look almost the same.",
+        { on: ["k5"], off: ["a1", "qA", "mA", "sK", "k4"], transition: card("The trap", "relationship before keyword"), pause: 0.6 });
+      push("'Bola has TWO MORE than Ade.' More than: a gap. Bola is Ade, and then two more sweets on the end. The gap is two actual sweets. That's a number, not a ratio at all.",
+        { on: ["t1", "tr1", "mT1"], add: ["kwb.more", "tr1.all", "mT1.all"], cue: { "kwb.more": "More than:", "tr1.all": "Bola is Ade", "mT1.all": "a number, not" }, pause: 0.8 });
+      push("'Bola has TWICE AS MANY as Ade.' There's no gap word here. Twice means times two: Ade is one box, Bola is two of the same boxes. Ade to Bola is one to two.",
+        { on: ["t2", "tr2", "mT2"], off: ["t1", "tr1", "mT1"], add: ["kwb.twice", "tr2.all", "mT2.all"], cue: { "kwb.twice": "Twice means", "tr2.all": "Ade is one box", "mT2.all": "one to two" }, pause: 0.8 });
+      push("'Bola has TWICE MORE than Ade.' This one has TWO keywords, twice and more than, and you need both. Bola has Ade's amount, and then MORE on top, and the more is twice Ade. One box, plus two boxes: three boxes. One to three!",
+        { on: ["t3", "tr3", "mT3"], off: ["t2", "tr2", "mT2"], add: ["kwb.twicemore", "tr3.all", "mT3.all"], cue: { "kwb.twicemore": "TWO keywords", "tr3.all": "and then MORE", "mT3.all": "one box, plus" }, pause: 1 });
+      push("Three sentences, three different answers: plus two, times two, and times three. A child who only spotted 'more than' or only spotted 'twice' would get two of them wrong. So read the WHOLE relationship first, draw it, and only then let the keywords help.", { pause: 1 });
+      push("So before you calculate anything, ask what the number in the problem IS: the whole, one part, or the difference. Read the relationship, match it to the right boxes, find one box, and the rest follows.");
     },
   });
 }
@@ -330,7 +450,7 @@ export function ratioCompound() {
       r4: () => bars(["Ade", "Bola", "Chidi"], [8, 12, 15], { text: "5", total: "$175" }),
       m1: () => main([L("a", "A : B = 2 : 3"), L("e", ",\\quad"), L("b", "B : C = 4 : 5")], 7),
       mL: () => main([L("a", "\\text{LCM}(3, 4)"), L("e", "="), L("b", "12", BLUE)]),
-      m2: () => main([L("a", "2 : 3 = 8 : 12"), L("e", ",\\quad"), L("b", "4 : 5 = 12 : 15")], 7),
+      m2: () => main([L("a", "2 : 3 = 8 : 12\\ \\left(\\tfrac{2}{3} = \\tfrac{8}{12}\\right)"), L("e", ",\\quad"), L("b", "4 : 5 = 12 : 15\\ \\left(\\tfrac{4}{5} = \\tfrac{12}{15}\\right)")], 5.6),
       m3: () => main([L("a", "A : B : C"), L("e", "="), L("b", "8 : 12 : 15", BLUE)]),
       m4: () => main([L("a", "A : C"), L("e", "="), L("b", "8 : 15", GREEN)]),
       m5: () => main([L("a", "\\dfrac{2}{3} \\times \\dfrac{4}{5}"), L("e", "="), L("b", "\\dfrac{8}{15}", GREEN)]),

@@ -63,6 +63,7 @@ let open = null;      // the set that is up now: one at a time
  * It rides along to the printed sheet too (lesson-sheet.js walks the same
  * steps), which is the one place a child keeps after the TV goes off.
  */
+const SHARED_FILM = "prepbot-shared"; // the one recording of the lines every film says
 const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 const SITE = "prepportal.com.ng";
 const outroStep = () => ({
@@ -583,13 +584,22 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
        - while saving, a receipt on the screen: what is being done, a bar for each stage
        - at the end, a clear done (or a plain reason it could not) */
   const said = steps.map((st) => st.say).filter(Boolean);
+  /* *"We dont need to save the outro voice on every video. It is the same one."* The closing lines
+     are said word for word in every film, so they are ONE recording, kept under a shared name */
+  teacher.sharedLines = new Set([sayMaths(outroStep().say), sayMaths(upNextStep([]).say)]);
+  teacher.sharedKept = new Map();
   if (filmId) {
     try {
       const { keptAudio } = await import("/utils/components/workbook/film-store.js");
-      teacher.kept = await Promise.race([keptAudio(filmId), new Promise((r) => setTimeout(() => r(new Map()), 3000))]);
-    } catch { teacher.kept = new Map(); }
+      const wait = (p) => Promise.race([p, new Promise((r) => setTimeout(() => r(new Map()), 3000))]);
+      [teacher.kept, teacher.sharedKept] = await Promise.all([wait(keptAudio(filmId)), wait(keptAudio(SHARED_FILM))]);
+    } catch { teacher.kept = new Map(); teacher.sharedKept = new Map(); }
   }
-  const keptNow = () => said.filter((t) => teacher.kept?.has(teacher.keyOf(sayMaths(t)))).length;
+  /* is this line saved? A shared line (the outro) in the ONE shared recording, any other in this film's */
+  const isShared = (spoken) => teacher.sharedLines.has(spoken);
+  const keyFor = (spoken) => teacher.keyOf(spoken, isShared(spoken));
+  const isKept = (t) => { const sp = sayMaths(t); return !!(isShared(sp) ? teacher.sharedKept : teacher.kept)?.has(keyFor(sp)); };
+  const keptNow = () => said.filter(isKept).length;
 
   /* the badge by the title */
   const badge = document.createElement("span");
@@ -670,9 +680,14 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
         const { keepAudio } = await import("/utils/components/workbook/film-store.js");
         while (fresh.length) {
           const { spoken, url } = fresh.shift();
-          const key = teacher.keyOf(spoken);
-          const kept = await keepAudio(filmId, [{ key, b64: await b64(url), text: lineOf.get(spoken) }], () => {}, { merge: teacher.kept || new Map() });
-          teacher.kept = new Map(Object.entries(kept));
+          const key = keyFor(spoken);
+          if (isShared(spoken)) {
+            const kept = await keepAudio(SHARED_FILM, [{ key, b64: await b64(url), text: lineOf.get(spoken) }], () => {}, { merge: teacher.sharedKept || new Map() });
+            teacher.sharedKept = new Map(Object.entries(kept));
+          } else {
+            const kept = await keepAudio(filmId, [{ key, b64: await b64(url), text: lineOf.get(spoken) }], () => {}, { merge: teacher.kept || new Map() });
+            teacher.kept = new Map(Object.entries(kept));
+          }
           label();
           paintBadge();
         }
@@ -725,21 +740,29 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
       const total = said.length;
       try {
         /* stage 1 of 2: a recording for every line (the ones already heard come from memory) */
+        /* *"If we saved some part of a video's audio, no need to resave again."* Only the lines with
+           no recording yet are recorded; the saved ones are left exactly as they are. */
+        const shared = [];
         for (let i = 0; i < total; i++) {
-          say({ title: "Saving this voice", sub: "Step 1 of 2: recording every line", frac: i / total, count: `Line ${i + 1} of ${total}` });
+          if (isKept(said[i])) continue;
+          say({ title: "Saving this voice", sub: "Step 1 of 2: recording the lines not saved yet", frac: i / total, count: `Line ${i + 1} of ${total}` });
           const spoken = sayMaths(said[i]);
-          const url = await teacher._tryElevenLabs(spoken);
+          const url = await teacher._tryElevenLabs(spoken, { fresh: true });
           if (!url) throw new Error(`Line ${i + 1} could not be recorded. Is the premium voice on for this account?`);
-          lines.push({ key: teacher.keyOf(spoken), b64: await b64(url), text: said[i] });
+          (isShared(spoken) ? shared : lines).push({ key: keyFor(spoken), b64: await b64(url), text: said[i] });
         }
-        /* stage 2 of 2: up to the saved place, one line at a time */
-        const { keepAudio, keptAudio } = await import("/utils/components/workbook/film-store.js");
-        await keepAudio(filmId, lines, (n, all) => say({ title: "Saving this voice", sub: "Step 2 of 2: storing the recordings", frac: n / all, count: `${n} of ${all} saved` }));
-        teacher.kept = await keptAudio(filmId);
+        /* stage 2 of 2: up to the saved place, one line at a time, beside what is already kept */
+        const { keepAudio } = await import("/utils/components/workbook/film-store.js");
+        const all = lines.length + shared.length;
+        const step = (n) => say({ title: "Saving this voice", sub: "Step 2 of 2: storing the recordings", frac: n / Math.max(1, all), count: `${n} of ${all} saved` });
+        if (lines.length) teacher.kept = new Map(Object.entries(await keepAudio(filmId, lines, (n) => step(n), { merge: teacher.kept || new Map() })));
+        if (shared.length) teacher.sharedKept = new Map(Object.entries(await keepAudio(SHARED_FILM, shared, (n) => step(lines.length + n), { merge: teacher.sharedKept || new Map() })));
         label();
         paintBadge();
         keepKey.setAttribute("aria-pressed", "true");
-        say({ title: "Voice saved", sub: `All ${total} lines will play from these recordings, for everyone, with no voice service.`, frac: 1, count: "Done", kind: "ok", hold: 6 });
+        say({ title: all ? "Voice saved" : "Already saved", sub: all
+          ? `${all} new line${all === 1 ? "" : "s"} saved; every line now plays from its recording, for everyone. The closing lines are one recording shared by every film.`
+          : "Every line of this film already has its recording, so nothing was recorded again.", frac: 1, count: "Done", kind: "ok", hold: 6 });
         try { (await import("/utils/components/workbook/film-fx.js")).sfx("ding"); } catch { /* quiet */ }
       } catch (e) {
         paint("!");

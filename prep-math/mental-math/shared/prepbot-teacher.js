@@ -345,8 +345,9 @@ export class PrepbotTeacher {
   }
 
   /** A line's key for kept audio: its words and the words either side (cyrb53, hex). */
-  keyOf(spoken) {
-    const ctx = this.lineContext?.get(spoken) || {};
+  keyOf(spoken, bare = false) {
+    /* `bare`: a line said the same way in EVERY film (the outro) is keyed by its words alone */
+    const ctx = bare ? {} : (this.lineContext?.get(spoken) || {});
     const str = `${ctx.prev || ""}\u0001${spoken}\u0001${ctx.next || ""}`;
     let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
     for (let i = 0; i < str.length; i++) {
@@ -362,6 +363,11 @@ export class PrepbotTeacher {
   async _tryElevenLabs(text, { fresh = false } = {}) {
     /* KEPT AUDIO FIRST: a film the admin kept plays its own recordings, for everybody, signed in or not.
        `fresh` asks for a NEW take of the line (the admin re-recording one they did not like). */
+    /* A SHARED LINE (the outro, the "another one?" line) has ONE recording for every film */
+    if (!fresh && this.sharedLines?.has(text)) {
+      const k = this.keyOf(text, true);
+      if (this.sharedKept?.has(k)) return this.sharedKept.get(k);
+    }
     if (this.kept?.size && !fresh) {
       const k = this.keyOf(text);
       if (this.kept.has(k)) return this.kept.get(k);
