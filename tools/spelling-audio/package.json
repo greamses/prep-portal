@@ -2,8 +2,11 @@
   "name": "spelling-audio",
   "private": true,
   "type": "module",
-  "description": "Records the Drills spelling bank with Kokoro (local, free). See README.md.",
-  "scripts": { "record": "node record.mjs" },
+  "description": "Records the Drills spelling bank with Kokoro on GitHub Actions; clips live on the spelling-audio branch. See README.md.",
+  "scripts": {
+    "record": "node record.mjs",
+    "manifest": "node manifest.mjs"
+  },
   "dependencies": {
     "@breezystack/lamejs": "1.2.7",
     "kokoro-js": "1.2.1",

@@ -100,13 +100,15 @@ export const sanitizeSpelling = (raw) => raw
 export { sayWord, hush, canSpeak, faceButton, FACE_SRC } from './boy.js';
 
 /* ── Recorded clips ───────────────────────────────────────────────────
-   Kokoro recordings of every word, definition and sentence, made once by
-   tools/spelling-audio (no credits) and served from /media/spelling. The
-   manifest says which exist; anything missing is spoken by the browser. */
+   Kokoro recordings of every word, definition and sentence, made by
+   tools/spelling-audio on GitHub's machines. They live on the repo's
+   spelling-audio branch (never in this one) and are served by jsDelivr;
+   data/spelling/audio.js lists which exist. Anything missing is spoken by
+   the browser. */
 import { CLIPS } from '/data/spelling/audio.js';
 const pad = (i) => String(i + 1).padStart(4, '0');
 /** URL of the recording of bank entry `i` ('w' word, 'd' definition, 's' sentence), or null. */
 export function clipFor(i, kind) {
-  if (!CLIPS || !CLIPS[kind] || !CLIPS[kind].has(i)) return null;
-  return `/media/spelling/${CLIPS.dir}/${pad(i)}-${kind}.mp3`;
+  if (!CLIPS || !CLIPS.base || !CLIPS[kind] || !CLIPS[kind].has(i)) return null;
+  return `${CLIPS.base}${pad(i)}-${kind}.mp3`;
 }

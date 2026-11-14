@@ -1,0 +1,118 @@
+name: Spelling audio
+
+# Records the Drills spelling bank (data/spelling/secondary.js) with Kokoro, a free speech
+# model, on GitHub's machines. The clips are committed to the repo's `spelling-audio` branch,
+# which holds nothing else, and the site plays them through jsDelivr (a free CDN for public
+# GitHub repos). They never land on anyone's own disk: local clones are set not to fetch that
+# branch. Only the small list of which clips exist (data/spelling/audio.js) comes back here.
+#
+# Runs when the word bank or the recorder changes, or from the Actions tab. A clip already on
+# the branch is skipped, so a re-run only records what is missing. See tools/spelling-audio.
+
+on:
+  workflow_dispatch:
+    inputs:
+      kinds:
+        description: "What to record: w (words), d (definitions), s (sentences)"
+        default: "w,d,s"
+  push:
+    branches-ignore: [spelling-audio]
+    paths:
+      - data/spelling/secondary.js
+      - tools/spelling-audio/*.mjs
+      - tools/spelling-audio/package.json
+      - .github/workflows/spelling-audio.yml
+
+concurrency:
+  group: spelling-audio
+  cancel-in-progress: false
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        sets: ["1-5", "6-10", "11-15", "16-20", "21-25", "26-30", "31-35", "36-41"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: The clips made so far
+        uses: actions/checkout@v4
+        with:
+          ref: spelling-audio
+          path: store
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install the recorder
+        working-directory: tools/spelling-audio
+        run: npm install --no-audit --no-fund
+      - name: Cache the Kokoro model
+        uses: actions/cache@v4
+        with:
+          path: tools/spelling-audio/node_modules/@huggingface/transformers/.cache
+          key: kokoro-82m-v1.0-onnx
+      - name: Record what is missing in sets ${{ matrix.sets }}
+        working-directory: tools/spelling-audio
+        run: |
+          VOICE=$(node -p "require('fs').readFileSync('voice-name.mjs','utf8').match(/'([a-z_]+)';/)[1]")
+          node record.mjs --sets ${{ matrix.sets }} --kinds ${{ inputs.kinds || 'w,d,s' }} \
+            --have "$GITHUB_WORKSPACE/store/secondary/$VOICE" --out "$GITHUB_WORKSPACE/new/secondary/$VOICE"
+      - name: Hand the new clips on
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clips-${{ strategy.job-index }}
+          path: new
+          if-no-files-found: ignore
+          retention-days: 3
+
+  publish:
+    needs: record
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: spelling-audio
+          path: store
+      - name: Gather the new clips
+        uses: actions/download-artifact@v4
+        with:
+          pattern: clips-*
+          merge-multiple: true
+          path: store
+      - name: Commit them to the spelling-audio branch
+        id: store
+        working-directory: store
+        run: |
+          git config user.name "prep-portal-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "No new clips."; else
+            git commit -q -m "Spelling audio: $(git diff --cached --name-only | wc -l) new clips"
+            git push -q
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: List the clips for the site, pinned to that commit
+        run: |
+          VOICE=$(node -p "require('fs').readFileSync('tools/spelling-audio/voice-name.mjs','utf8').match(/'([a-z_]+)';/)[1]")
+          node tools/spelling-audio/manifest.mjs --dir "store/secondary/$VOICE" --sha ${{ steps.store.outputs.sha }}
+          node scripts/version-assets.mjs
+      - name: Commit the list if it changed
+        run: |
+          git config user.name "prep-portal-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/spelling/audio.js exam-archive/national/drills/index.html
+          if git diff --cached --quiet; then echo "Nothing new."; else
+            git commit -q -m "Spelling: list the Kokoro clips (spelling-audio@${{ steps.store.outputs.sha }})"
+            git pull -q --rebase
+            git push -q
+          fi
