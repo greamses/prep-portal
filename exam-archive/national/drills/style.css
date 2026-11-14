@@ -674,7 +674,7 @@ tbody .drill-grid-th { border-right-width: 2px; }
 .spell-face.is-talking svg { animation: spell-talk 0.6s ease-in-out infinite alternate; }
 @keyframes spell-talk {
   from { transform: translateY(0); }
-  to   { transform: translateY(-1.5%) rotate(-1.5deg); }
+  to   { transform: translateY(-1%); }   /* a gentle nod, no tilt: the mouth must not seem to swing sideways */
 }
 @media (prefers-reduced-motion: reduce) { .spell-face.is-talking svg { animation: none; } .spell-face.is-talking { outline: 3px solid var(--accent-primary); } }
 

@@ -7,9 +7,9 @@
    teeth for f and v, teeth nearly together for s and sh, a wide flat mouth
    for "ee", a round one for "oo" and "o", wide open for "a".
 
-   The boy's mouth is one drawing, so a shape is how far it is squeezed:
-   `sy` how open (1 = the drawing as made, 0.1 = shut), `sx` how wide
-   (1 = as drawn, 0.5 = pursed round).
+   The boy's mouth is one drawing, so a shape is how far it is opened:
+   `sy` (1 = the drawing as made, 0.1 = shut, 1.4 = wider open than drawn).
+   Its width never changes.
 
    WHEN. The recording has no timings, but its loudness does: every syllable
    is a swell of sound. So each vowel (a syllable's core) is pinned to one of
@@ -19,16 +19,20 @@
 ═══════════════════════════════════════════════════════ */
 
 export const SHAPES = {
+  // Only how OPEN the mouth is changes: a mouth does not slide or squeeze
+  // sideways (the user: "Human mouths don't go sideways"), so every shape keeps
+  // the drawn width (sx 1). Open sounds open wider than the drawing (sy > 1:
+  // "widen the opening"); shut lips stay shut.
   rest: { sx: 1, sy: 0.12 },   // a closed smile
-  A: { sx: 0.96, sy: 1 },      // father, cat, cut: wide open
-  E: { sx: 0.95, sy: 0.55 },   // bed, the "uh" of about, bird: half open
-  I: { sx: 1.04, sy: 0.32 },   // see, sit: wide and flat
-  O: { sx: 0.62, sy: 0.78 },   // hot, saw, go: round
-  U: { sx: 0.5, sy: 0.42 },    // boot, put, w: pursed
-  M: { sx: 0.92, sy: 0.1 },    // m, b, p: lips pressed together
-  F: { sx: 0.92, sy: 0.2 },    // f, v: bottom lip to the top teeth
-  S: { sx: 0.98, sy: 0.24 },   // s, z, sh, ch, j, th: teeth nearly together
-  C: { sx: 0.9, sy: 0.4 },     // t, d, n, l, k, g, r, h...: a little open
+  A: { sx: 1, sy: 1.4 },       // father, cat, cut: wide open
+  O: { sx: 1, sy: 1.15 },      // hot, saw, go
+  E: { sx: 1, sy: 0.85 },      // bed, the "uh" of about, bird
+  U: { sx: 1, sy: 0.6 },       // boot, put, w: lips forward, a small opening
+  C: { sx: 1, sy: 0.55 },      // t, d, n, l, k, g, r, h...
+  I: { sx: 1, sy: 0.45 },      // see, sit: teeth close, lips apart
+  S: { sx: 1, sy: 0.28 },      // s, z, sh, ch, j, th: teeth nearly together
+  F: { sx: 1, sy: 0.2 },       // f, v: bottom lip to the top teeth
+  M: { sx: 1, sy: 0.1 },       // m, b, p: lips pressed together
 };
 
 /* ── Sounds from IPA (either style: espeak's or the dictionary's) ── */

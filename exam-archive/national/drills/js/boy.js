@@ -34,7 +34,7 @@ function setMouth(face, sy, sx = 1) {
   const y = Number(g.dataset.hinge) || 0;
   if (!g.dataset.cx) { try { const bb = g.getBBox(); g.dataset.cx = (bb.x + bb.width / 2).toFixed(1); } catch { g.dataset.cx = '618'; } }
   const x = Number(g.dataset.cx);
-  const v = Math.max(SHUT, Math.min(1, sy));
+  const v = Math.max(SHUT, Math.min(1.45, sy));   // opens past the drawing for the open vowels
   g.setAttribute('transform', `translate(${x} ${y}) scale(${sx.toFixed(3)} ${v.toFixed(3)}) translate(${-x} ${-y})`);
 }
 
@@ -132,7 +132,7 @@ function moveMouth(me, target) {
     if (want == null) want = { sx: 1, sy: 0.3 + 0.5 * (0.5 + 0.5 * Math.sin(performance.now() / 70)) };   // a syllable rhythm
     // lips move fast, but not in one jump: most of the way each frame
     sy += (want.sy - sy) * 0.6;
-    sx += (want.sx - sx) * 0.5;
+    sx = 1;                                        // the width never changes: mouths open, they do not slide sideways
     setMouth(face, sy, sx);
     raf = requestAnimationFrame(step);
   };
