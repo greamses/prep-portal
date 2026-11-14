@@ -147,6 +147,7 @@ function playClip(url, me, onFail) {
     const lag = (c.outputLatency || 0) + (c.baseLatency || 0);
     src.onended = () => { if (me === lineNo) stopTalking(); };
     src.start(at);
+    console.info('[spelling voice] Kokoro recording:', url);
     source = src;
     moveMouth(me, () => {
       const t = c.currentTime - at - lag;
@@ -186,6 +187,7 @@ if (typeof document !== 'undefined') {
 
 function synthesise(text, me, rate) {
   if (!hasSynth) { stopTalking(); return; }
+  console.info('[spelling voice] browser speech (no recording could play):', text);
   try {
     if (!voice) pickVoice();
     const u = new SpeechSynthesisUtterance(text);
@@ -206,7 +208,7 @@ export function sayWord(text, f = null, { rate = 0.8, clip = null } = {}) {
   hush();
   const me = ++lineNo;
   startTalking(f);
-  if (clip) playClip(clip, me, () => { if (me === lineNo) synthesise(text, me, rate); });
+  if (clip) playClip(clip, me, () => { if (me === lineNo) { console.info('[spelling voice] the recording would not play:', clip); synthesise(text, me, rate); } });
   else synthesise(text, me, rate);
   return true;
 }
