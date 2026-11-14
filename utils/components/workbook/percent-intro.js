@@ -291,10 +291,14 @@ function kbar({ n, val, top, extra = 0, pale = 0 }) {
   const fs = Math.min(4.4, U * 0.42);
   let o = `<g data-mb="name" data-k="top"><path d="M${X0} ${Y - 1.5} V${Y - 3} H${X0 + n * U} V${Y - 1.5}" fill="none" stroke="${INK}" stroke-width="0.5"/>`
     + `<text data-k="topv" x="${X0 + (n * U) / 2}" y="${Y - 4.2}" text-anchor="middle" font-family="STIX Two Text, serif" font-size="4.6" fill="${INK}">${top}</text></g>`;
-  for (let i = 0; i < n; i++) {
-    o += `<rect data-mb="bar" data-k="b${i}" x="${(X0 + i * U).toFixed(2)}" y="${Y}" width="${U.toFixed(2)}" height="${HB}" fill="${SKY}" stroke="${INK}" stroke-width="0.6"/>`;
-    o += `<g data-mb="num" data-k="v${i}">${S(X0 + i * U + U / 2, Y + 6.6, fs, String(val))}</g>`;
-  }
+  /* THE WHOLE COMES IN AS ONE BAR, AND IS CUT: *"use the cutting animation instead of the drawing
+     animation. Only use drawing animation for unequal boxes or extra boxes"*. The bar (every box's
+     paper inside one outline) grows once; the cut lines are then drawn through it, one by one. */
+  o += `<g data-mb="bar" data-k="whole">`;
+  for (let i = 0; i < n; i++) o += `<rect data-k="b${i}" x="${(X0 + i * U).toFixed(2)}" y="${Y}" width="${(U + 0.05).toFixed(2)}" height="${HB}" fill="${SKY}"/>`;
+  o += `<rect x="${X0}" y="${Y}" width="${(n * U).toFixed(2)}" height="${HB}" fill="none" stroke="${INK}" stroke-width="0.6"/></g>`;
+  for (let i = 1; i < n; i++) o += `<g data-mb="brace" data-mb-key="cut${i}"><path d="M${(X0 + i * U).toFixed(2)} ${Y} V${Y + HB}" fill="none" stroke="${INK}" stroke-width="0.6"/></g>`;
+  for (let i = 0; i < n; i++) o += `<g data-mb="num" data-k="v${i}">${S(X0 + i * U + U / 2, Y + 6.6, fs, String(val))}</g>`;
   for (let j = 0; j < extra; j++) {
     const x = X0 + (n + j) * U;
     o += `<g data-mb="bar" data-k="x${j}"><rect x="${x.toFixed(2)}" y="${Y}" width="${U.toFixed(2)}" height="${HB}" fill="${LEAF}" stroke="${INK}" stroke-width="0.6"/>${S(x + U / 2, Y + 6.6, fs, String(val))}</g>`;
@@ -308,7 +312,14 @@ function kbar({ n, val, top, extra = 0, pale = 0 }) {
   return svgBox(150, 26, o);
 }
 const kbarStages = (id, { n, extra = 0, pale = 0, part = 0, topTo = null }) => ({
-  [`${id}.base`]: (s, H) => { H.write(key(s, "top"), 0); for (let i = 0; i < n; i++) H.grow(key(s, `b${i}`), 0.3 + i * Math.min(0.2, 2.2 / n)); H.write(key(s, "hund"), 0.5); },
+  [`${id}.base`]: (s, H) => {
+    H.write(key(s, "top"), 0);
+    H.grow(key(s, "whole"), 0.2);
+    H.write(key(s, "hund"), 0.6);
+    /* the knife: one cut after another through the whole bar */
+    for (let i = 1; i < n; i++) H.draw(s?.querySelector(`[data-mb-key="cut${i}"]`), 1 + (i - 1) * Math.min(0.3, 2.4 / n));
+    if (n > 1 && !isInstant(H)) H.sound("snip", 1);
+  },
   [`${id}.fill`]: (s, H) => { for (let i = 0; i < n; i++) H.write(key(s, `v${i}`), 0.1 + i * Math.min(0.15, 1.8 / n)); },
   /* THE PART IS COLOURED, and stays coloured: *"why not color the box of emphasis different. This
      visual cues help"*. Each action has its colour: a part is yellow, boxes added on are green,
@@ -361,6 +372,24 @@ export function pctTraps() {
     { id: "e11", q: "A bag is sold for $72 at a 20% profit. Find the cost price.", keys: [["profit", "profit: add on", ADD], ["cost price", "cost price: the whole", WHOLE]], bar: { n: 5, val: 12, top: "cost price ?", extra: 1, topTo: "$60" },
       mB: "72 \\div 6 = 12,\\quad 5 \\times 12 = \\$60", mF: "72 \\div \\tfrac{6}{5} = 72 \\times \\tfrac{5}{6} = \\$60" },
   ];
+  /* ── PER CENT TO FRACTION, BEFORE ANY BOXES ARE DRAWN ─────────────────────────────────────
+     *"Show how you reduce your percentages to fractions. First start with prime reduction before
+     going to HCF reduction. Also state that this helps us to draw the smallest amount of boxes that
+     correctly represent the idea."* So each example first divides top and bottom by one small prime
+     at a time (2, 3, 5 …), then does the same in one jump with the HCF, and the bottom number of the
+     simplest fraction is how many boxes get drawn. */
+  const PCT = { e1: [20, 100], e2: [5, 100], e3: [10, 100], e4: [25, 100], e5: [20, 100], e6: [25, 100], e7: [20, 100],
+    e8: [30, 100], e9: [18, 24], e10: [20, 100], e11: [20, 100] };
+  const gcd = (x, y) => (y ? gcd(y, x % y) : x);
+  const primeSteps = (a, b) => {
+    const out = [];
+    for (let q = 2; q <= Math.min(a, b);) {
+      if (a % q === 0 && b % q === 0) { a /= q; b /= q; out.push([q, a, b]); } else q++;
+    }
+    return out;
+  };
+  const WHY = { 2: "Both are even, so divide both by 2", 3: "Both are in the 3 times table, so divide both by 3", 5: "Both end in 5 or 0, so divide both by 5", 7: "Both are in the 7 times table, so divide both by 7" };
+  const OPEN = ["Before we draw anything, let's turn the per cent into a fraction.", "First, the fraction, the same way as before.", "As always, reduce the per cent first.", "Fraction first."];
   const asks = [{ id: "a0", text: "Percentage questions use a few keywords. Learn what each one tells you to do, and every question becomes simple." },
     ...EX.map((e) => ({ id: e.id, text: e.q, keys: e.keys.map((k) => k[0]) })),
     { id: "t1", text: "A price of $100 goes up by 20%, then down by 20%. What is it now?", keys: ["up", "down"] }];
@@ -376,6 +405,16 @@ export function pctTraps() {
     stages[`${e.id}B.all`] = (s, H) => { write(s, H, ["a"], 0); H.sound("ding", 0.8); };
     stages[`${e.id}F.all`] = (s, H) => { write(s, H, ["a"], 0); H.sound("ding", 0.8); };
     e.keys.forEach(([k, note, tone], j) => { stages[`k.${e.id}.${j}`] = kw(e.id, k, note, tone); });
+    /* the reduction: the prime chain, then the HCF jump */
+    const [pa, pb] = PCT[e.id], steps = primeSteps(pa, pb), h = gcd(pa, pb), fa = pa / h, fb = pb / h;
+    const chain = [L("s0", `\\dfrac{${pa}}{${pb}}`)];
+    steps.forEach(([q, x, y], k) => { chain.push(L(`o${k}`, `\\xrightarrow{\\ \\div ${q}\\ }`, PURPLE)); chain.push(L(`s${k + 1}`, `\\dfrac{${x}}{${y}}`, k === steps.length - 1 ? GREEN : null)); });
+    pics[`${e.id}P`] = () => main(chain, steps.length > 2 ? 6 : 6.8);
+    pics[`${e.id}H`] = () => main([L("a", `\\text{HCF}(${pa}, ${pb}) = ${h}`, PURPLE), L("e", "\\quad"), L("b", `\\dfrac{${pa} \\div ${h}}{${pb} \\div ${h}} = \\dfrac{${fa}}{${fb}} \\to ${fb}\\ \\text{boxes}`, GREEN)], 6.2);
+    picAt[`${e.id}P`] = at(22); picAt[`${e.id}H`] = at(34);
+    stages[`${e.id}P.all`] = (sv, H) => { const ks = ["s0", ...steps.flatMap((_, k) => [`o${k}`, `s${k + 1}`])]; ks.forEach((k, i) => { const n = key(sv, k); if (n) H.write(n, i === 0 ? 0 : 1.2 + (i - 1) * 1.1); }); };
+    stages[`${e.id}H.all`] = (sv, H) => { write(sv, H, ["a"], 0); write(sv, H, ["b"], 1.6); H.sound("ding", 1.9); };
+    e.reduce = { pa, pb, steps, h, fa, fb };
   });
   pics.u1 = () => kbar({ n: 5, val: 20, top: "$100", extra: 1 });
   pics.u2 = () => kbar({ n: 5, val: 24, top: "$120", pale: 1 });
@@ -469,7 +508,19 @@ export function pctTraps() {
           add: e.keys.map((_, j) => `k.${e.id}.${j}`), cue: Object.fromEntries(e.keys.map(([k], j) => [`k.${e.id}.${j}`, j ? k : s[0].split(" ").slice(0, 3).join(" ")])),
           ...(changeCol ? { transition: card("Keyword", COLS[e.id]) } : {}), pause: 0.6 });
         colOn = newCol;
-        push(s[1], { on: [`${e.id}b`], add: [`${e.id}b.base`, ...(e.bar.topTo ? [] : [`${e.id}b.fill`])], cue: { [`${e.id}b.fill`]: "shared into" }, pause: 0.6 });
+        {
+          const r = e.reduce, isPct = r.pb === 100;
+          const start = isPct ? `${r.pa} per cent is ${r.pa} out of 100: the fraction ${r.pa}/${r.pb}.` : `${r.pa} out of ${r.pb} is the fraction ${r.pa}/${r.pb}.`;
+          const chainSay = r.steps.map(([q, x, y]) => `${WHY[q] || `Both divide by ${q}`}: ${x}/${y}.`).join(" ");
+          push(`${OPEN[Math.min(idx, OPEN.length - 1)]} ${start} Now reduce it one small prime at a time. ${chainSay} Nothing else divides both, so ${r.fa}/${r.fb} is as simple as it goes.`,
+            { on: [`${e.id}P`], add: [`${e.id}P.all`], cue: { [`${e.id}P.all`]: "one small prime" }, pause: 0.6 });
+          push(`Or reduce it in one jump with the highest common factor. The biggest number that divides both ${r.pa} and ${r.pb} is ${r.h}. Divide both by ${r.h}: ${r.fa}/${r.fb}, the same fraction in one step. `
+            + (idx === 0
+              ? `And here's why we bother: the bottom number, ${r.fb}, tells us how many boxes to draw. ${r.fb} boxes is the SMALLEST number of boxes that shows ${isPct ? `${r.pa} per cent` : `${r.pa} out of ${r.pb}`} exactly. A hundred boxes would show the same idea, but ${r.fb} is far easier to draw and to work with.`
+              : `So we draw ${r.fb} boxes: the fewest boxes that show it exactly.`),
+            { on: [`${e.id}H`], add: [`${e.id}H.all`], cue: { [`${e.id}H.all`]: "highest common factor" }, pause: 0.8 });
+        }
+        push(s[1], { on: [`${e.id}b`], off: [`${e.id}P`, `${e.id}H`], add: [`${e.id}b.base`, ...(e.bar.topTo ? [] : [`${e.id}b.fill`])], cue: { [`${e.id}b.fill`]: "shared into" }, pause: 0.6 });
         const acts = [...(e.bar.topTo ? [`${e.id}b.fill`] : []), ...(e.bar.part ? [`${e.id}b.part`] : []), ...(e.bar.extra ? [`${e.id}b.add`] : []), ...(e.bar.pale ? [`${e.id}b.take`] : []), ...(e.bar.topTo ? [`${e.id}b.whole`] : [])];
         push(s[2], { on: [`${e.id}B`], add: [...acts, `${e.id}B.all`], pause: 0.8 });
         push(s[3], { on: [`${e.id}F`], off: [`${e.id}B`], add: [`${e.id}F.all`], cue: { [`${e.id}F.all`]: "the fraction way" }, pause: idx === EX.length - 1 ? 1 : 0.8 });
