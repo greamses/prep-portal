@@ -90,6 +90,19 @@ function svgOf(tex) {
   return svg;
 }
 
+/**
+ * A formula to sit INSIDE A LINE OF WORDS: MathJax's own inline <svg> (sized in ex, its baseline
+ * set by its vertical-align), as markup. Null when no MathJax can be had or the TeX will not go.
+ */
+export function texInline(tex) {
+  const svg = engine ? svgOf(tex) : null;
+  if (!svg) return null;
+  const copy = svg.cloneNode(true);
+  copy.setAttribute("aria-hidden", "true");
+  copy.setAttribute("focusable", "false");
+  return copy.outerHTML;
+}
+
 /** TeX as plain words and signs, for when no MathJax can be had: never the source. */
 export function plainOf(tex) {
   return String(tex)

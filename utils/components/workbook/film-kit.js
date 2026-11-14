@@ -35,6 +35,8 @@ import { down, num, esc } from "./video-kit.js";
 import { stackText } from "./stackfrac.js";
 /* the drawing is heard as it is drawn, and a step can change the screen (./film-fx.js) */
 import { sfx, transition, cardTime } from "./film-fx.js";
+import { askHtml, typeAsk, askCss, fitInk } from "./film-ask.js";
+import { mathLoad } from "./film-math.js";
 
 /** The marks of a model, addressed the way the drawing names them. */
 export const mb = (svg, kind, row = null) => {
@@ -783,6 +785,11 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
       ev.on.forEach((id, j) => {
         if (ev.beforeTiles.has(id)) return;
         if (pics[id] || trays[id]) S.put(id, { on: 1 });
+        /* THE WORD PROBLEM IS TYPED OUT, then marked up (./film-ask.js); replayed, it is simply there */
+        else if (ASK_IDS.includes(id) && !how.instant && how.gsap) {
+          S.put(id, { on: 1 });
+          typeAsk(stage.querySelector(`[data-t="${id}"]`), how.gsap);
+        }
         else { S.pop(id, 0.2 + j * 0.12); if (!how.instant) sfx("pop", 0.2 + j * 0.12); }
       });
       ev.add.forEach((k) => {
@@ -808,8 +815,10 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
       ev.play(S, H, stage);
     },
   }));
-  /* `ready`: a promise the player waits for before the first build (MathJax, for a film written in it) */
-  return { build, steps, ...(ready ? { ready } : {}) };
+  /* `ready`: a promise the player waits for before the first build (MathJax, for a film written in it;
+     and every film that opens on a word problem, whose numbers are set in MathJax) */
+  const wait = asks.length ? Promise.all([ready, mathLoad().catch(() => false)]) : ready;
+  return { build, steps, ...(wait ? { ready: wait } : {}) };
 }
 
 /* Where the working column starts, and how wide it may run. The drawing ends
@@ -850,12 +859,21 @@ export function asked(stage, id, text, raw = false) {
   /* clear of the step counter in the top corner, and narrower than the
      screen: a line of words running the full width of a television is a line
      nobody finishes reading */
-  const box = tile(stage, id, String(text), 52, down(7.5), { c: 0 });
-  box.classList.add("vm-t--wrap");
+  askCss();
+  const box = tile(stage, id, "", 52, down(7.5), { c: 0 });
+  box.classList.add("vm-t--wrap", "vm-ask");
   box.style.setProperty("--w", "74");
   box.firstChild.style.setProperty("font-size", "calc(var(--u) * 2)");
   box.firstChild.style.setProperty("font-weight", "700");
-  return says(box, text, raw);
+  /* CENTRED, its figures in MathJax, and carrying the teacher's marks (./film-ask.js) */
+  if (raw) return says(box, text, raw);
+  const { html, tall } = askHtml(text);
+  box.firstChild.innerHTML = html;
+  if (tall || html.includes('class="sf"')) box.classList.add("vm-ask--tall");
+  /* the marks are drawn to the words' measured size, once the words are on the screen */
+  fitInk(box.firstChild);
+  requestAnimationFrame(() => fitInk(box.firstChild));
+  return box;
 }
 
 /**
