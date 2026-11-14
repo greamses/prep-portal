@@ -39,6 +39,7 @@ import { stairs24, sum200, odd29, odd21, stairRows37, series123 } from "./cbt-sh
 import { share600Idowu, share600Kehinde, share4000, share45000, ratio45sum135, angles1234, boys34, girls35, ratio35small45 } from "./cbt-ratio.js";
 import { ratioWhat, ratioParts, ratioCompound } from "./ratio-intro.js";
 import { pctWhat, pctChange, pctTraps } from "./percent-intro.js";
+import { avgMean, avgMMR, avgTotals, avgThirteenth, avgSixth, avgGrandfather, avgSwap, avgGroups, avgMedianMode, avgMeanMedian, avgRangeMode } from "./average-films.js";
 import { ratioSquareCube, ratioPerimeter, ratioArea, ratioVolume, ratioAges } from "./ratio-shapes.js";
 import { discount35, alloy26 } from "./cbt-percent1.js";
 
@@ -355,6 +356,17 @@ const SCENES = {
   "stair-rows-37": stairRows37,
   "series-123": series123,
   "pct-what": pctWhat,
+  "avg-mean": avgMean,
+  "avg-mmr": avgMMR,
+  "avg-totals": avgTotals,
+  "avg-13th": avgThirteenth,
+  "avg-sixth": avgSixth,
+  "avg-grandfather": avgGrandfather,
+  "avg-swap": avgSwap,
+  "avg-groups": avgGroups,
+  "avg-median-mode": avgMedianMode,
+  "avg-mean-median": avgMeanMedian,
+  "avg-range-mode": avgRangeMode,
   "pct-change": pctChange,
   "pct-traps": pctTraps,
   "ratio-what": ratioWhat,
@@ -407,6 +419,17 @@ export const FILMS = [
   { id: "ctx-example", name: "Example clues", of: "Comprehension ch 2" },
   { id: "ctx-antonym", name: "Antonym clues", of: "Comprehension ch 2" },
   { id: "ctx-synonym", name: "Synonym clues", of: "Comprehension ch 2" },
+  { id: "avg-mean", lesson: true, name: "What is the mean?", of: "Averages, lesson 1", topic: "averages" },
+  { id: "avg-mmr", lesson: true, name: "Median, mode and range", of: "Averages, lesson 2", topic: "averages" },
+  { id: "avg-totals", lesson: true, name: "Averages through totals, and a trap", of: "Averages, lesson 3", topic: "averages" },
+  { id: "avg-13th", group: "One joins or leaves the group", name: "Mean 3, then 5: the thirteenth number (two ways)", of: "ANMC 23rd second round, Q33", topic: "averages" },
+  { id: "avg-sixth", group: "One joins or leaves the group", name: "Mean of six is 60, of five is 50 (two ways)", of: "ANMC 23rd first round, Q31", topic: "averages" },
+  { id: "avg-grandfather", group: "One joins or leaves the group", name: "The grandfather's age (two ways)", of: "ANMC 22nd first round, Q31", topic: "averages" },
+  { id: "avg-swap", group: "One joins or leaves the group", name: "A boy leaves, a girl joins (two ways)", of: "ANMC 22nd second round, Q31", topic: "averages" },
+  { id: "avg-groups", group: "Groups and totals", name: "30 boys, x girls, total 468 (two ways)", of: "ANMC 21st first round, Q31", topic: "averages" },
+  { id: "avg-median-mode", group: "Mean, median, mode and range from a list", name: "Median and mode of 5, 9, 3, 5, 7, 8", of: "ANMC 19th first round, Q32", topic: "averages" },
+  { id: "avg-mean-median", group: "Mean, median, mode and range from a list", name: "Mean plus median of eight marks", of: "ANMC 22nd second round, Q32", topic: "averages" },
+  { id: "avg-range-mode", group: "Mean, median, mode and range from a list", name: "Range plus mode of twenty numbers", of: "ANMC 22nd first round, Q32", topic: "averages" },
   { id: "pct-what", lesson: true, name: "What is a percentage?", of: "Percentages, lesson 1", topic: "percent", thumb: { n: 5, k: 1 } },
   { id: "pct-change", lesson: true, name: "Percent of, increase and decrease", of: "Percentages, lesson 2", topic: "percent", thumb: { n: 5, k: 6 } },
   { id: "pct-traps", lesson: true, name: "Keywords, reverse percentages and traps", of: "Percentages, lesson 3", topic: "percent", thumb: { n: 5, k: 4 } },
