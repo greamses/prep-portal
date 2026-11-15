@@ -36,13 +36,23 @@ import { openRoom, idFor } from '/utils/live/index.js';
 import { UI } from '/utils/components/ui-icons.js';
 import { heroPaint } from '/utils/components/nav-icons.js';
 
-// the girl is the one with both hands down (made from girl.svg by tools/character-trace/hands-down.mjs)
-const KID = { boy: '/media/characters/boy.svg', girl: '/media/characters/girl-hands-down.svg' };
-/* Where each drawing's eyes and mouth are, in % of the picture: for the tears and the frown
-   of a speller who has lost. mouth = [centre x, centre y, width, height]. */
-const FACE = {
-  boy: { eyes: [[39.5, 25.5], [67.5, 25.5]], mouth: [55, 30.7, 26, 5.6], skin: '#f6bf98', lip: '#8a3b2b' },
-  girl: { eyes: [[39, 19.6], [60.5, 19.6]], mouth: [49.6, 24, 15, 2.8], skin: '#f3c3a9', lip: '#a4523f' },
+/* The spellers, and where things are on each drawing, in % of the picture:
+     hip    where the legs start (the rig splits there; sitting hides hip to knee)
+     knee   where a seated child's shins start
+     hands  the bottom of the hanging hands (the body is cut just under them)
+     eyes / mouth  for the tears and the frown of a speller who has lost
+                   (mouth = [centre x, centre y, width, height])
+   The first girl has both hands down (girl-hands-down.svg, made by
+   tools/character-trace/hands-down.mjs); boy-hoodie and girl-overalls came as pictures. */
+const KIDS = {
+  boy: { src: '/media/characters/boy.svg', girl: false, hip: 64, knee: 80, hands: 73,
+    eyes: [[39.5, 25.5], [67.5, 25.5]], mouth: [55, 30.7, 26, 5.6], skin: '#f6bf98', lip: '#8a3b2b' },
+  girl: { src: '/media/characters/girl-hands-down.svg', girl: true, hip: 64, knee: 80, hands: 73,
+    eyes: [[39, 19.6], [60.5, 19.6]], mouth: [49.6, 24, 15, 2.8], skin: '#f3c3a9', lip: '#a4523f' },
+  boy2: { src: '/media/characters/boy-hoodie.svg', girl: false, hip: 54, knee: 77, hands: 65,
+    eyes: [[40, 12.2], [59, 12.2]], mouth: [49, 16.3, 15, 2.2], skin: '#f0b089', lip: '#8a3b2b' },
+  girl2: { src: '/media/characters/girl-overalls.svg', girl: true, hip: 59, knee: 78, hands: 68,
+    eyes: [[38, 16.4], [62, 16.4]], mouth: [50, 21, 17, 2.6], skin: '#8a4733', lip: '#3e1a12' },
 };
 const MIC_KEY = 'ppSpellMic';          // the same choice as the drill's mic
 const GRACE = 12;                      // seconds past the clock before a silent turn is called a miss
@@ -121,7 +131,7 @@ const voiceFor = (() => {
     let all = [];
     try { all = synth ? synth.getVoices().filter((v) => /^en[-_]?/i.test(v.lang)) : []; } catch { /* none */ }
     if (!all.length) return null;          // not loaded yet: ask again next time
-    const want = kid === 'girl' ? /female|zira|hazel|susan|libby|sonia|aria|jenny|samantha|karen|moira|serena|emma/i
+    const want = KIDS[kid]?.girl ? /female|zira|hazel|susan|libby|sonia|aria|jenny|samantha|karen|moira|serena|emma/i
       : /male|david|george|ryan|guy|daniel|alex|arthur|thomas|oliver/i;
     cache[kid] = all.find((v) => want.test(v.name) && !/female/i.test(kid === 'boy' ? v.name : '')) || all.find((v) => /en[-_]GB/i.test(v.lang)) || all[0];
     return cache[kid];
@@ -165,79 +175,73 @@ function hallSvg() {
   </svg>`;
 }
 
-/* The audience: rows of chairs filling the hall, the backs of heads above most of them. */
+/* The audience: rows of chairs filling the hall, people sitting in most of them, seen from
+   behind (media/characters/audience-back-*.svg). A row's people are cut off at the bottom of
+   its chair backs, and every other one is mirrored. Their raised arms, for the clapping,
+   are drawn over them. 1600 x 270. */
+const AUDIENCE = ['/media/characters/audience-back-1.svg'];
+const AUD_ASPECT = 623 / 1983;               // width / height of the drawing
 function audienceSvg(seed) {
   let s = (seed >>> 0) || 1;
   const rnd = () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
-  const hairs = ['#1b1410', '#2b1d14', '#120d0a', '#3a2a1c', '#4a3322'];
-  const wraps = ['#d0632f', '#2f7d6d', '#7c3f98', '#c79a1d'];
-  const rows = [{ y: 52, k: 0.78 }, { y: 136, k: 0.92 }, { y: 228, k: 1.08 }];
-  const skins = ['#6b4026', '#8d5a3b', '#4a2c1a', '#a8714d', '#7a4a2e'];
-  let out = '', hands = '';
+  const rows = [{ y: 84, k: 0.74 }, { y: 162, k: 0.9 }, { y: 244, k: 1.08 }];
+  let defs = '', out = '', hands = '';
   rows.forEach((row, r) => {
-    const gap = 96 * row.k, w = 74 * row.k, h = 64 * row.k;
-    for (let x = (r % 2 ? gap / 2 : 0) - 30; x < 1640; x += gap) {
+    const gap = 98 * row.k, w = 76 * row.k, h = 66 * row.k;
+    defs += `<clipPath id="bee-row${r}"><rect x="-200" y="-300" width="2000" height="${row.y + h + 300}"/></clipPath>`;
+    let people = '', chairs = '';
+    let n = 0;
+    for (let x = (r % 2 ? gap / 2 : 0) - 34; x < 1640; x += gap, n++) {
       const cx = x + w / 2;
-      if (rnd() < 0.82) {
-        const hr = 24 * row.k;
-        out += `<ellipse cx="${cx}" cy="${row.y - h * 0.15}" rx="${hr}" ry="${hr * 1.12}" fill="${hairs[Math.floor(rnd() * hairs.length)]}"/>`;
-        // their hands, up in front of their faces: drawn last, over every row behind them
-        if (rnd() < 0.8) {
-          const headY = row.y - h * 0.15, skin = skins[Math.floor(rnd() * skins.length)];
-          const sleeve = ['#c9d4e6', '#e7c9a8', '#b9d7c2', '#e3b8b8', '#d9cfe8'][Math.floor(rnd() * 5)];
+      if (rnd() < 0.84) {
+        const pw = 96 * row.k, H = pw / AUD_ASPECT, top = row.y - 0.25 * H;
+        const flip = n % 2 ? ` transform="translate(${2 * cx} 0) scale(-1 1)"` : '';
+        const tone = (0.82 + rnd() * 0.24).toFixed(2);
+        people += `<image href="${AUDIENCE[Math.floor(rnd() * AUDIENCE.length)]}" x="${cx - pw / 2}" y="${top}" width="${pw}" height="${H}" style="filter:brightness(${tone})"${flip}/>`;
+        // their arms, up above their heads, clapping
+        if (rnd() < 0.85) {
           const arm = (side) => {
-            const sx = cx + side * hr * 1.35, sy = headY + hr * 0.95;          // the shoulder
-            const hx = cx + side * hr * 0.55, hy = headY - hr * 1.25;          // the hand, above the head
+            const sx = cx + side * pw * 0.3, sy = top + 0.2 * H;           // the shoulder
+            const hx = cx + side * pw * 0.12, hy = top - 0.015 * H;        // the hand, over the head
             return `<g class="bee-hand bee-hand--${side < 0 ? 'l' : 'r'}">` +
-              `<line x1="${sx}" y1="${sy}" x2="${hx}" y2="${hy + hr * 0.3}" stroke="${sleeve}" stroke-width="${hr * 0.55}" stroke-linecap="round"/>` +
-              `<ellipse cx="${hx}" cy="${hy}" rx="${hr * 0.36}" ry="${hr * 0.5}" fill="${skin}"/></g>`;
+              `<line x1="${sx}" y1="${sy}" x2="${hx}" y2="${hy + pw * 0.08}" stroke="#1c365f" stroke-width="${pw * 0.15}" stroke-linecap="round"/>` +
+              `<ellipse cx="${hx}" cy="${hy}" rx="${pw * 0.085}" ry="${pw * 0.12}" fill="#5a3622"/></g>`;
           };
           hands += `<g class="bee-aud-hands" style="--d:-${(rnd() * 0.3).toFixed(2)}s">${arm(-1)}${arm(1)}</g>`;
         }
-        if (rnd() < 0.18) out += `<path d="M${cx - hr * 1.1} ${row.y - h * 0.3} Q${cx} ${row.y - h * 1.15} ${cx + hr * 1.1} ${row.y - h * 0.3} Z" fill="${wraps[Math.floor(rnd() * wraps.length)]}"/>`;
-        out += `<rect x="${cx - hr * 1.5}" y="${row.y + h * 0.18}" width="${hr * 3}" height="${h}" fill="${['#c9d4e6', '#e7c9a8', '#b9d7c2', '#e3b8b8', '#d9cfe8'][Math.floor(rnd() * 5)]}" opacity=".85"/>`;
       }
-      out += `<rect x="${x}" y="${row.y}" width="${w}" height="${h}" fill="#2f4c7a"/><rect x="${x + 5 * row.k}" y="${row.y + 5 * row.k}" width="${w - 10 * row.k}" height="${h * 0.45}" fill="#3c5d92"/>`;
+      chairs += `<rect x="${x}" y="${row.y}" width="${w}" height="${h}" fill="#2f4c7a"/><rect x="${x + 5 * row.k}" y="${row.y + 5 * row.k}" width="${w - 10 * row.k}" height="${h * 0.45}" fill="#3c5d92"/>`;
     }
+    out += `<g clip-path="url(#bee-row${r})">${people}</g>${chairs}`;
   });
-  return `<svg viewBox="0 0 1600 270" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${out}${hands}</svg>`;
+  return `<svg viewBox="0 0 1600 270" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>${defs}</defs>${out}${hands}</svg>`;
 }
 
-/* The judges' table: three judges, the head judge in the middle. Her mouth is a <g
-   class="mouth"> so the talking-mouth code (js/boy.js) moves it as she speaks. 300 x 160. */
+/* The judges' table: the head judge (media/characters/judge-woman.svg) and a judge
+   (judge-man.svg), seen from the waist up behind it. Her mouth is a <g class="mouth"> drawn
+   over the picture's own, so the talking-mouth code (js/boy.js) opens it as she speaks.
+   300 x 220: the table top is at 165, at their waists. */
 function judgesSvg() {
-  const judge = (cx, { skin, hair, shirt, tie, headwrap, glasses, head }) => `
-    <path d="M${cx - 33} 128 Q${cx - 33} 80 ${cx} 78 Q${cx + 33} 80 ${cx + 33} 128 Z" fill="${shirt}"/>
-    <rect x="${cx - 7}" y="66" width="14" height="14" fill="${skin}"/>
-    <path d="M${cx - 8} 79 L${cx} 95 L${cx + 8} 79 Z" fill="#f4f1ea"/>
-    ${tie ? `<path d="M${cx - 2.6} 81 h5.2 l2.4 16 -5 5 -5 -5 Z" fill="${tie}"/>` : ''}
-    <circle cx="${cx - 17}" cy="51" r="4.5" fill="${skin}"/><circle cx="${cx + 17}" cy="51" r="4.5" fill="${skin}"/>
-    <ellipse cx="${cx}" cy="49" rx="17" ry="20" fill="${skin}"/>
-    ${headwrap ? `<path d="M${cx - 22} 42 Q${cx - 26} 14 ${cx} 16 Q${cx + 28} 12 ${cx + 24} 40 Q${cx + 34} 22 ${cx + 20} 14 Q${cx} 2 ${cx - 22} 20 Z" fill="${headwrap}"/><path d="M${cx - 21} 40 Q${cx} 26 ${cx + 21} 40 L${cx + 20} 33 Q${cx} 20 ${cx - 20} 33 Z" fill="${headwrap}" opacity=".75"/>`
-      : `<path d="M${cx - 17} 44 Q${cx - 18} 26 ${cx} 27 Q${cx + 18} 26 ${cx + 17} 44 Q${cx + 12} 33 ${cx} 34 Q${cx - 12} 33 ${cx - 17} 44 Z" fill="${hair}"/>`}
-    <path d="M${cx - 10} 42 h6 M${cx + 4} 42 h6" stroke="#2a1d16" stroke-width="1.6" stroke-linecap="round"/>
-    <circle cx="${cx - 6.5}" cy="48" r="2.1" fill="#2a1d16"/><circle cx="${cx + 6.5}" cy="48" r="2.1" fill="#2a1d16"/>
-    ${glasses ? `<circle cx="${cx - 6.5}" cy="48" r="5" fill="none" stroke="#3b3b3b" stroke-width="1.3"/><circle cx="${cx + 6.5}" cy="48" r="5" fill="none" stroke="#3b3b3b" stroke-width="1.3"/><path d="M${cx - 1.5} 48 h3" stroke="#3b3b3b" stroke-width="1.3"/>` : ''}
-    <path d="M${cx - 1.5} 51 q1.5 4 3 0" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="1.2"/>
-    ${head ? `<g class="mouth" data-hinge="58"><path d="M${cx - 6.5} 58 Q${cx} 58.6 ${cx + 6.5} 58 Q${cx + 4} 66 ${cx} 66 Q${cx - 4} 66 ${cx - 6.5} 58 Z" fill="#5e2420"/><path d="M${cx - 4.5} 58.4 h9 v2 h-9 Z" fill="#f4f1ea"/></g>`
-      : `<path d="M${cx - 5.5} 58.5 Q${cx} 62.5 ${cx + 5.5} 58.5" fill="none" stroke="#5e2420" stroke-width="1.8" stroke-linecap="round"/>`}`;
-  const hands = (cx, skin, shirt, d) => {
+  const W = { x: 53, y: 9, h: 300, aspect: 543 / 1936 }, M = { x: 167, y: 3, h: 305, aspect: 636 / 2033 };
+  const ww = W.h * W.aspect, mw = M.h * M.aspect;
+  // her mouth: 50.5% across and 14.9% down the picture
+  const mx = W.x + 0.505 * ww, my = W.y + 0.149 * W.h;
+  const hands = (cx, skin, sleeve, d) => {
     const arm = (side) => `<g class="bee-hand bee-hand--${side < 0 ? 'l' : 'r'}">` +
-      `<line x1="${cx + side * 24}" y1="100" x2="${cx + side * 10}" y2="88" stroke="${shirt}" stroke-width="9" stroke-linecap="round"/>` +
-      `<line x1="${cx + side * 24}" y1="100" x2="${cx + side * 10}" y2="88" stroke="rgba(0,0,0,.18)" stroke-width="9" stroke-linecap="round" stroke-dasharray="0 1"/>` +
-      `<ellipse cx="${cx + side * 8}" cy="83" rx="5.5" ry="8" fill="${skin}" stroke="rgba(0,0,0,.25)" stroke-width=".8"/></g>`;
+      `<line x1="${cx + side * 32}" y1="166" x2="${cx + side * 13}" y2="148" stroke="${sleeve}" stroke-width="13" stroke-linecap="round"/>` +
+      `<ellipse cx="${cx + side * 10}" cy="140" rx="8" ry="11" fill="${skin}" stroke="rgba(0,0,0,.25)" stroke-width="1"/></g>`;
     return `<g class="bee-hands" style="--d:${d}s">${arm(-1)}${arm(1)}</g>`;
   };
-  const card = (cx, text) => `<rect x="${cx - 26}" y="104" width="52" height="16" fill="#fbf8f1"/><text x="${cx}" y="115.5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" font-weight="700" fill="#2a2723">${text}</text>`;
-  return `<svg viewBox="0 0 300 160" aria-hidden="true">
-    ${judge(52, { skin: '#8d5a3b', hair: '#1a1210', shirt: '#2d3e5c', tie: '#9b2f3a', glasses: true })}
-    ${judge(150, { skin: '#6b4026', headwrap: '#c6531f', shirt: '#7c3f98', head: true })}
-    ${judge(248, { skin: '#a8714d', hair: '#22160f', shirt: '#2f6e5c', tie: '#d9b44a' })}
-    ${hands(52, '#8d5a3b', '#253350', -0.05)}${hands(150, '#6b4026', '#69337f', -0.17)}${hands(248, '#a8714d', '#265c4c', -0.1)}
-    <rect x="0" y="94" width="300" height="10" fill="#27406b"/>
-    <rect x="0" y="104" width="300" height="56" fill="#2f4c7a"/>
-    <rect x="0" y="104" width="300" height="5" fill="#d9b44a"/>
-    ${card(52, 'JUDGE')}${card(150, 'HEAD JUDGE')}${card(248, 'JUDGE')}
+  const card = (cx, text) => `<rect x="${cx - 34}" y="178" width="68" height="20" fill="#fbf8f1"/><text x="${cx}" y="192.5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#2a2723">${text}</text>`;
+  return `<svg viewBox="0 0 300 220" aria-hidden="true">
+    <image href="/media/characters/judge-woman.svg" x="${W.x}" y="${W.y}" width="${ww}" height="${W.h}"/>
+    <g class="mouth" data-hinge="${(my - 2.4).toFixed(2)}" transform="translate(${mx.toFixed(2)} ${(my - 2.4).toFixed(2)}) scale(1 0.12) translate(${(-mx).toFixed(2)} ${(-(my - 2.4)).toFixed(2)})"><ellipse cx="${mx.toFixed(2)}" cy="${(my + 1).toFixed(2)}" rx="5.6" ry="3.8" fill="#5e2420"/></g>
+    <image href="/media/characters/judge-man.svg" x="${M.x}" y="${M.y}" width="${mw}" height="${M.h}"/>
+    ${hands(W.x + ww / 2, '#f0c3a3', '#1d2b55', -0.12)}${hands(M.x + mw / 2, '#f2b394', '#1c3561', -0.04)}
+    <rect x="6" y="160" width="290" height="12" fill="#27406b"/>
+    <rect x="6" y="172" width="290" height="48" fill="#2f4c7a"/>
+    <rect x="6" y="172" width="290" height="5" fill="#d9b44a"/>
+    ${card(W.x + ww / 2, 'HEAD JUDGE')}${card(M.x + mw / 2, 'JUDGE')}
   </svg>`;
 }
 
@@ -314,17 +318,20 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   // the spellers, in their chairs, tags on
   const kids = seats.map((s) => {
     const spot = seatSpot(seats.length, s.seat);
-    const f = FACE[s.kid];
+    const f = KIDS[s.kid];
     const el = document.createElement('div');
     el.className = `bee-kid bee-kid--${spot.row}${s === mySeat ? ' is-me' : ''}`;
     el.style.setProperty('--x', spot.x);
     el.style.setProperty('--y', spot.y);
+    el.style.setProperty('--hip', f.hip);
+    el.style.setProperty('--knee', f.knee);
+    el.style.setProperty('--hands', f.hands);
     /* The rig. The picture is one flat drawing, so it is used three times: the body
        (head to hips, with the hands), and each leg on its own from the hip down. Walking,
        the legs take turns to lift (a leg coming towards you looks shorter) while the body
        bobs and sways. Sitting, the body comes down onto the knees: from the front a seated
        child's thighs point at you and are not seen. See bee.css. */
-    const pic = () => { const i = document.createElement('img'); i.src = KID[s.kid]; i.alt = ''; i.draggable = false; return i; };
+    const pic = () => { const i = document.createElement('img'); i.src = f.src; i.alt = ''; i.draggable = false; return i; };
     const rig = document.createElement('div');
     rig.className = 'bee-kid-rig';
     const body = document.createElement('div');
@@ -367,6 +374,16 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   document.body.append(bd);
   document.body.classList.add('drill-nav-hidden');
   if (!document.fullscreenElement) beeFullscreen();   // allowed only if the Start tap is still fresh
+  // Came in some other way (a friend's code, the lobby's Start now): the first tap or key
+  // anywhere in the bee takes it to the full screen. Not the exit or full-screen buttons.
+  const firstTap = (e) => {
+    if (e.target.closest?.('.bee-leave, .bee-full')) return;
+    bd.removeEventListener('pointerdown', firstTap, true);
+    bd.removeEventListener('keydown', firstTap, true);
+    if (!document.fullscreenElement) beeFullscreen();
+  };
+  bd.addEventListener('pointerdown', firstTap, true);
+  bd.addEventListener('keydown', firstTap, true);
 
   /* ── Pace: 1 as it happens, less to catch up, 0 to skip to the end ── */
   let gone = false, skipping = false, pace = 1;
@@ -388,7 +405,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       const v = voiceFor(kid);
       if (v) u.voice = v;
       u.lang = v ? v.lang : 'en-GB';
-      u.pitch = kid === 'girl' ? 1.55 : 1.3;
+      u.pitch = KIDS[kid]?.girl ? 1.55 : 1.3;
       u.rate = 0.95;
       synth.speak(u);
     } catch { /* no speech here */ }

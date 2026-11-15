@@ -25,8 +25,8 @@
 .bee-hall .bee-banner.pp-sticky { position: absolute; z-index: 1; top: 10%; left: 50%; translate: -50% 0; font-size: 4.2cqh; padding: 0.8cqh 2.6cqh; }
 
 /* the judges' table, on the stage at the left */
-.bee-judges { position: absolute; z-index: 6; left: 9.6%; bottom: 33.3%; width: 25cqw; aspect-ratio: 300 / 160; }
-.bee-judges svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.bee-judges { position: absolute; z-index: 6; left: 9.4%; bottom: 33.3%; width: 26cqw; aspect-ratio: 300 / 220; }
+.bee-judges svg { display: block; width: 100%; height: 100%; overflow: hidden; }   /* below the table: nothing */
 
 /* the microphone at the front of the stage, and the audience in front of the stage */
 .bee-stand { position: absolute; z-index: 9; left: 44%; top: 67.5%; width: 3cqh; height: 27cqh; transform: translate(-50%, -100%); pointer-events: none; }
@@ -66,14 +66,15 @@
 .bee-kid-body, .bee-leg { height: 100%; transition: clip-path 0.45s ease-in-out, transform 0.45s ease-in-out; }
 .bee-leg { position: absolute; inset: 0; }
 
-/* sitting (the default): the body comes down onto the knees, only shins and feet below */
-.bee-kid-body { position: relative; z-index: 1; clip-path: inset(0 -40% 36% -40%); transform: translateY(16%); }
-.bee-leg--l { clip-path: inset(80% 50% 0 17%); transform-origin: 36% 64%; }
-.bee-leg--r { clip-path: inset(80% 17% 0 50%); transform-origin: 64% 64%; }
+/* Each child sets --hip, --knee and --hands (% of the drawing's height; js/bee.js KIDS).
+   Sitting (the default): the body comes down onto the knees, only shins and feet below. */
+.bee-kid-body { position: relative; z-index: 1; clip-path: inset(0 -40% calc((100 - var(--hip, 64)) * 1%) -40%); transform: translateY(calc((var(--knee, 80) - var(--hip, 64)) * 1%)); }
+.bee-leg--l { clip-path: inset(calc(var(--knee, 80) * 1%) 50% 0 17%); transform-origin: 36% calc(var(--hip, 64) * 1%); }
+.bee-leg--r { clip-path: inset(calc(var(--knee, 80) * 1%) 17% 0 50%); transform-origin: 64% calc(var(--hip, 64) * 1%); }
 /* standing up: the whole child, legs from the hips */
-.bee-kid.is-standing .bee-kid-body { clip-path: inset(0 -40% 27% -40%); transform: none; }
-.bee-kid.is-standing .bee-leg--l { clip-path: inset(62% 50% 0 17%); }
-.bee-kid.is-standing .bee-leg--r { clip-path: inset(62% 17% 0 50%); }
+.bee-kid.is-standing .bee-kid-body { clip-path: inset(0 -40% calc((100 - var(--hands, 73)) * 1%) -40%); transform: none; }
+.bee-kid.is-standing .bee-leg--l { clip-path: inset(calc((var(--hip, 64) - 2) * 1%) 50% 0 17%); }
+.bee-kid.is-standing .bee-leg--r { clip-path: inset(calc((var(--hip, 64) - 2) * 1%) 17% 0 50%); }
 /* walking: the legs take turns to lift (coming towards you, a lifted leg looks shorter),
    the body bobs on each step and sways from foot to foot */
 .bee-kid.is-walking .bee-leg--l { animation: bee-step-l 0.62s ease-in-out infinite; }
@@ -89,7 +90,7 @@
   position: absolute; left: 50%; top: 36%; translate: -50% 0; rotate: -3deg;
   min-width: 2.1em; padding: 0.1em 0.35em; font-size: 1em; line-height: 1.25; text-align: center;
 }
-.bee-kid .bee-you.pp-pill { position: absolute; z-index: 2; left: 50%; top: -1.9em; translate: -50% 5.2cqh; font-size: 0.72em; padding: 0.1em 0.5em; white-space: nowrap; background: var(--surface-primary); transition: translate 0.45s; }
+.bee-kid .bee-you.pp-pill { position: absolute; z-index: 2; left: 50%; top: -1.9em; translate: -50% calc((var(--knee, 80) - var(--hip, 64)) * 0.32cqh); font-size: 0.72em; padding: 0.1em 0.5em; white-space: nowrap; background: var(--surface-primary); transition: translate 0.45s; }
 .bee-kid.is-standing .bee-you.pp-pill { translate: -50% 0; }
 
 /* the microphone, and leaving the stage (stage right, behind the curtain) */
@@ -154,6 +155,23 @@
 .bee-tools[hidden], .bee-heard[hidden], .bee-skip[hidden], .bee-results[hidden] { display: none; }
 .bee-heard { margin: 0; font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-secondary); }
 .bee-bd.is-my-turn .bee-panel { --pp-paper: color-mix(in srgb, var(--accent-primary) 14%, var(--surface-primary)); }
+
+/* A wide screen (a laptop, a phone on its side): the hall fills the whole screen, as
+   large as it fits, and the round, the buttons and the speller's panel sit over it. The
+   bands either side (or above and below) are the theatre's dark. A tall screen keeps the
+   panel under the hall, where there is room for it. */
+@media (min-aspect-ratio: 4/3) {
+  .bee-bd { display: block; padding: 0; overflow: hidden; background: #1d0c10; }
+  .bee-bd > .bee-blob { display: none; }
+  .bee-hall {
+    position: absolute; left: 50%; top: 50%; translate: -50% -50%;
+    width: min(100vw, calc(100dvh * 16 / 9)); box-shadow: none;
+  }
+  .bee-top { position: absolute; z-index: 20; top: 0.6rem; left: 0.6rem; right: 0.6rem; width: auto; pointer-events: none; }
+  .bee-top > * { pointer-events: auto; }
+  .bee-bd .bee-panel.pp-receipt { position: absolute; z-index: 20; left: 50%; top: auto; bottom: 0.6rem; translate: -50% 0; width: min(640px, 92vw); }
+  .bee-paper { padding: 0.9rem 1rem 0.85rem; gap: 0.3rem; }
+}
 
 /* the placings */
 .bee-results { position: fixed; inset: 0; z-index: 60; display: flex; justify-content: center; overflow-y: auto; padding: 1.5rem; background: color-mix(in srgb, var(--app-bg) 88%, transparent); backdrop-filter: blur(6px); }
