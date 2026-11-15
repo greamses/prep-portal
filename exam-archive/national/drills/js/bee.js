@@ -200,46 +200,47 @@ function hallSvg() {
   </svg>`;
 }
 
-/* The audience: rows of chairs filling the hall, people sitting in most of them, seen from
-   behind (media/characters/audience-back-*.svg). A row's people are cut off at the bottom of
-   its chair backs, and every other one is mirrored. Their raised arms, for the clapping,
-   are drawn over them. 1600 x 270. */
+/* The audience: two rows of eight, seen from behind (media/characters/audience-back-*.svg),
+   nearer the camera than the stage, so bigger than the spellers, and the front row bigger
+   than the back. Each person is cut off at the bottom of their chair back; every other one is
+   mirrored. Their raised arms, for the clapping, are drawn over them. 1600 x 288 (the bottom
+   32% of the hall, which starts below the stage's front edge). */
 const AUDIENCE = ['/media/characters/audience-back-1.svg'];
 const AUD_ASPECT = 623 / 1983;               // width / height of the drawing
 function audienceSvg(seed) {
   let s = (seed >>> 0) || 1;
   const rnd = () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
-  const rows = [{ y: 84, k: 0.74 }, { y: 162, k: 0.9 }, { y: 244, k: 1.08 }];
+  // head top, person width, the eight seats' centres, chair back size
+  const rows = [
+    { top: 22, pw: 160, xs: Array.from({ length: 8 }, (_, i) => 100 + i * 200), cw: 170, ch: 120 },
+    { top: 96, pw: 205, xs: Array.from({ length: 8 }, (_, i) => 10 + i * 226), cw: 214, ch: 150 },
+  ];
   let defs = '', out = '', hands = '';
   rows.forEach((row, r) => {
-    const gap = 98 * row.k, w = 76 * row.k, h = 66 * row.k;
-    defs += `<clipPath id="bee-row${r}"><rect x="-200" y="-300" width="2000" height="${row.y + h + 300}"/></clipPath>`;
+    const H = row.pw / AUD_ASPECT;
+    const chairTop = row.top + 0.24 * H;
+    defs += `<clipPath id="bee-row${r}"><rect x="-200" y="-300" width="2000" height="${chairTop + row.ch + 300}"/></clipPath>`;
     let people = '', chairs = '';
-    let n = 0;
-    for (let x = (r % 2 ? gap / 2 : 0) - 34; x < 1640; x += gap, n++) {
-      const cx = x + w / 2;
-      if (rnd() < 0.84) {
-        const pw = 96 * row.k, H = pw / AUD_ASPECT, top = row.y - 0.25 * H;
-        const flip = n % 2 ? ` transform="translate(${2 * cx} 0) scale(-1 1)"` : '';
-        const tone = (0.82 + rnd() * 0.24).toFixed(2);
-        people += `<image href="${AUDIENCE[Math.floor(rnd() * AUDIENCE.length)]}" x="${cx - pw / 2}" y="${top}" width="${pw}" height="${H}" style="filter:brightness(${tone})"${flip}/>`;
-        // their arms, up above their heads, clapping
-        if (rnd() < 0.85) {
-          const arm = (side) => {
-            const sx = cx + side * pw * 0.3, sy = top + 0.2 * H;           // the shoulder
-            const hx = cx + side * pw * 0.12, hy = top - 0.015 * H;        // the hand, over the head
-            return `<g class="bee-hand bee-hand--${side < 0 ? 'l' : 'r'}">` +
-              `<line x1="${sx}" y1="${sy}" x2="${hx}" y2="${hy + pw * 0.08}" stroke="#1c365f" stroke-width="${pw * 0.15}" stroke-linecap="round"/>` +
-              `<ellipse cx="${hx}" cy="${hy}" rx="${pw * 0.085}" ry="${pw * 0.12}" fill="#5a3622"/></g>`;
-          };
-          hands += `<g class="bee-aud-hands" style="--d:-${(rnd() * 0.3).toFixed(2)}s">${arm(-1)}${arm(1)}</g>`;
-        }
-      }
-      chairs += `<rect x="${x}" y="${row.y}" width="${w}" height="${h}" fill="#2f4c7a"/><rect x="${x + 5 * row.k}" y="${row.y + 5 * row.k}" width="${w - 10 * row.k}" height="${h * 0.45}" fill="#3c5d92"/>`;
-    }
+    row.xs.forEach((cx, n) => {
+      const pw = row.pw, top = row.top;
+      const flip = (n + r) % 2 ? ` transform="translate(${2 * cx} 0) scale(-1 1)"` : '';
+      const tone = (0.84 + rnd() * 0.22).toFixed(2);
+      people += `<image href="${AUDIENCE[Math.floor(rnd() * AUDIENCE.length)]}" x="${cx - pw / 2}" y="${top}" width="${pw}" height="${H}" style="filter:brightness(${tone})"${flip}/>`;
+      // their arms, up above their heads, clapping (shown only while the hall claps)
+      const arm = (side) => {
+        const sx = cx + side * pw * 0.3, sy = top + 0.2 * H;             // the shoulder
+        const hx = cx + side * pw * 0.12, hy = top - 0.015 * H;          // the hand, over the head
+        return `<g class="bee-hand bee-hand--${side < 0 ? 'l' : 'r'}">` +
+          `<line x1="${sx}" y1="${sy}" x2="${hx}" y2="${hy + pw * 0.08}" stroke="#1c365f" stroke-width="${pw * 0.15}" stroke-linecap="round"/>` +
+          `<ellipse cx="${hx}" cy="${hy}" rx="${pw * 0.085}" ry="${pw * 0.12}" fill="#5a3622"/></g>`;
+      };
+      hands += `<g class="bee-aud-hands" style="--d:-${(rnd() * 0.3).toFixed(2)}s">${arm(-1)}${arm(1)}</g>`;
+      const x = cx - row.cw / 2, k = row.cw / 100;
+      chairs += `<rect x="${x}" y="${chairTop}" width="${row.cw}" height="${row.ch}" fill="#2f4c7a"/><rect x="${x + 6 * k}" y="${chairTop + 6 * k}" width="${row.cw - 12 * k}" height="${row.ch * 0.45}" fill="#3c5d92"/>`;
+    });
     out += `<g clip-path="url(#bee-row${r})">${people}</g>${chairs}`;
   });
-  return `<svg viewBox="0 0 1600 270" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>${defs}</defs>${out}${hands}</svg>`;
+  return `<svg viewBox="0 0 1600 288" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>${defs}</defs>${out}${hands}</svg>`;
 }
 
 /* The judges' table: the head judge (media/characters/judge-woman.svg) and a judge
