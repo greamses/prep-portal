@@ -63,12 +63,18 @@ export function faceButton({ size = 88, label = 'Hear the word', tip = label, on
 let face = null;
 let lineNo = 0;
 let raf = 0;
+let talking = false, stoppedAt = 0;
+/** Whether he is talking now, or stopped less than `grace` ms ago (the mic ignores that). */
+export const isTalking = (grace = 0) => talking || Date.now() - stoppedAt < grace;
 function startTalking(f) {
   stopTalking();
+  talking = true;
   face = f;
   if (face) face.classList.add('is-talking');
 }
 function stopTalking() {
+  if (talking) stoppedAt = Date.now();
+  talking = false;
   cancelAnimationFrame(raf);
   raf = 0;
   if (face) { face.classList.remove('is-talking'); setMouth(face, REST); }

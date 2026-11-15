@@ -11,7 +11,8 @@ import { checkSubject } from './subject.js';
 import { typedToTex, plainToTex } from './typed-tex.js';
 import { createBoxInput } from './box-input.js';
 import { mathReady, loadMath, svgFor } from '/utils/components/workbook/mathify.js';
-import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak, faceButton, clipFor, preloadClip, onTrack, wordsInSets, aboutWord, aboutText } from './spelling.js';
+import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak, faceButton, clipFor, preloadClip, onTrack, wordsInSets, aboutWord, aboutText, isTalking } from './spelling.js';
+import { canListen, createSpellMic } from './spell-mic.js';
 import { UI } from '/utils/components/ui-icons.js';
 
 const $ = (id) => document.getElementById(id);
@@ -209,13 +210,52 @@ const useBtn = toolBtn('drill-hear-use', UI.speech(22), 'Hear it in a sentence',
   if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.use, talker(), { rate: 0.95, clip: clipFor(currentQuestion.bank, currentQuestion.i, 's') });
 });
 const skipBtn = toolBtn('drill-skip', UI.skip(22), 'Skip: show the spelling', () => skipWord());
+/* Spell it out loud: with the mic on, the letters said ("F, O, R...") go into the
+   answer as typed ones do (js/spell-mic.js). It stays on from word to word, and the
+   choice is remembered on this device. */
+const MIC_KEY = 'ppSpellMic';
+let micWanted = false;
+try { micWanted = localStorage.getItem(MIC_KEY) === '1'; } catch { /* storage blocked */ }
+const heardEl = document.createElement('p');
+heardEl.className = 'drill-heard';
+heardEl.hidden = true;
+const spellMic = createSpellMic({
+  quiet: () => !isTalking(350),            // his own voice must not type
+  onHeard: (items, text) => {
+    if (!active || locked || !currentQuestion || !currentQuestion.spell) return;
+    heardEl.textContent = items.length ? `Heard: ${text}` : `Heard "${text}". Say the letters one by one.`;
+    if (!items.length) return;
+    let v = inputEl.value;
+    for (const it of items) v = it.back ? v.slice(0, -1) : it.clear ? '' : v + it.ch;
+    inputEl.value = v;
+    try { inputEl.setSelectionRange(v.length, v.length); } catch { /* not focusable */ }
+    onInput();
+  },
+  onState: (on, why) => {
+    micBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    micBtn.classList.toggle('is-on', on);
+    heardEl.hidden = !on && !why;
+    if (on) heardEl.textContent = 'Listening. Say the letters one by one.';
+    else if (why === 'denied') { micWanted = false; saveMic(); heardEl.textContent = 'The microphone is blocked. Allow it in the browser to spell out loud.'; }
+    else if (why === 'error') { micWanted = false; saveMic(); heardEl.textContent = 'No microphone was found.'; }
+  },
+});
+const saveMic = () => { try { localStorage.setItem(MIC_KEY, micWanted ? '1' : '0'); } catch { /* storage blocked */ } };
+const micBtn = toolBtn('drill-mic', UI.mic(22), 'Spell out loud: mic on or off (Alt+M)', () => {
+  micWanted = !spellMic.on;
+  saveMic();
+  if (micWanted) spellMic.start(); else spellMic.stop();
+});
+micBtn.setAttribute('aria-pressed', 'false');
+micBtn.setAttribute('aria-keyshortcuts', 'Alt+M');
+micBtn.hidden = !canListen;
 const toolRow = document.createElement('div');
 toolRow.className = 'drill-spell-row';
-toolRow.append(rootBtn, defBtn, useBtn, skipBtn);
+toolRow.append(micBtn, rootBtn, defBtn, useBtn, skipBtn);
 const revealEl = document.createElement('p');
 revealEl.className = 'drill-reveal';
 revealEl.hidden = true;
-spellTools.append(toolRow, revealEl);
+spellTools.append(toolRow, revealEl, heardEl);
 answerStage.after(spellTools);
 
 function skipWord() {
@@ -263,6 +303,7 @@ function renderSpelling(q) {
   useEl.textContent = q.gap;
   meaningEl.hidden = false;
   rootBtn.hidden = defBtn.hidden = useBtn.hidden = !canSpeak;
+  if (micWanted && canListen && !spellMic.on) spellMic.start();
   spellTools.hidden = false;
   cardEl.classList.add('is-spell');          // grows to fit a long sentence instead of cropping its buttons
   answerStage.classList.add('is-spell');
@@ -284,6 +325,7 @@ function renderSpelling(q) {
 function renderQuestion() {
   currentQuestion = questionAt(seed, currentIndex, questionOpts);
   if (currentQuestion.spell) { renderSpelling(currentQuestion); return; }
+  if (spellMic.on) spellMic.stop();
   questionText.classList.remove('is-ipa', 'is-speak');
   spellTools.hidden = true;
   meaningEl.hidden = true;
@@ -595,6 +637,8 @@ function nextMasterWord() {
 function endRound() {
   active = false;
   mastering = false;
+  if (spellMic.on) spellMic.stop();         // the choice is kept for the next round
+  heardEl.hidden = true;
   cardEl.classList.remove('is-mastering');
   hush();
   spellTools.hidden = true;
@@ -615,6 +659,11 @@ inputEl.addEventListener('input', onInput);
 // because a right spelling is taken the moment its last letter goes in.
 inputEl.addEventListener('keydown', (e) => {
   // Alt+R reads the part of speech, origin and root (by key position: Alt+R types ® on a Mac)
+  if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyM') {
+    e.preventDefault();
+    if (active && currentQuestion && currentQuestion.spell && !micBtn.hidden) micBtn.click();
+    return;
+  }
   if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyR') {
     e.preventDefault();
     if (active && currentQuestion && currentQuestion.spell && !locked && !rootBtn.hidden) rootBtn.click();

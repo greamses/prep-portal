@@ -349,6 +349,12 @@ Object.assign(UI, {
       r(6.2, 7.2, 11.6, 1.8, "#fff", 0.9) + r(6.2, 10.6, 7.2, 1.8, "#fff", 0.9)
   ),
   eye: svg(tri("M1.8 12S5.6 4.8 12 4.8 22.2 12 22.2 12 18.4 19.2 12 19.2 1.8 12 1.8 12z", PAPER) + dot(12, 12, 4.4, "#fff") + dot(12, 12, 2.3, LOUD)),
+  /* the microphone: say it instead of typing it */
+  mic: svg(
+    r(8.4, 2.4, 7.2, 12, PAPER, 3.6) + r(10.2, 5, 3.6, 1.4, "#fff", 0.7) + r(10.2, 8, 3.6, 1.4, "#fff", 0.7) +
+      `<path d="M5.4 11.2a6.6 6.6 0 0 0 13.2 0" fill="none" stroke="${GOLD}" stroke-width="2.4" stroke-linecap="round"/>` +
+      r(10.8, 17.6, 2.4, 3.2, GOLD, 1.2) + r(7.6, 19.8, 8.8, 2.4, GOLD, 1.2)
+  ),
   /* where a word comes from: a sprout, and its roots under the ground */
   roots: svg(
     tri("M11 9.4C6.4 9.6 4 7 3.8 3.2c3.9-.2 6.8 2 7.2 6.2z", LEAF) + tri("M13 9.4c.3-4.3 3.2-6.6 7.2-6.4-.2 3.8-2.7 6.4-7.2 6.4z", LEAF) +
