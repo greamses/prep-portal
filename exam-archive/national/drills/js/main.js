@@ -16,7 +16,7 @@ import { startGridRound } from './grid.js';
 import { startBarsRound } from './bars.js';
 import { BANKS, BANK_KEYS, setCount, setId, setsLabel, roundSeconds, clockLabel, LEVELS, LEVEL_KEYS, levelOf, perMinute, wordsInSets } from './spelling.js';
 import { openSpellingLibrary } from './spelling-library.js';
-import { startBee } from './bee.js';
+import { startBee, beeFullscreen } from './bee.js';
 import { beeSeconds } from './bee-logic.js';
 import { finishRound, rankDrill } from './leaderboard.js';
 import { renderLeaderboard } from '/utils/games/leaderboard-view.js';
@@ -1309,6 +1309,8 @@ async function runVersusJoin({ myName }) {
 }
 
 async function runDrill() {
+  // the Spelling Bee is held on the whole screen; a browser allows that only inside this tap
+  if (isBee()) beeFullscreen();
   startBtn.disabled = true;
   // The setup is proven good the moment a round starts with it — next visit
   // jumps straight to the last section with these picks as chips.

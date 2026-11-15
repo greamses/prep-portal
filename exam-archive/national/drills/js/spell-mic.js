@@ -92,7 +92,7 @@ export function parseSpoken(text) {
  * `quiet()` says whether hearing should count now (false while the boy talks);
  * `onState(on, why)` reports it switching on or off (why: 'denied', 'error').
  */
-export function createSpellMic({ onHeard, quiet = () => true, onState = () => {} }) {
+export function createSpellMic({ onHeard, quiet = () => true, onState = () => {}, interim = true }) {
   let rec = null;
   let on = false;
   let restarting = 0;
@@ -105,7 +105,9 @@ export function createSpellMic({ onHeard, quiet = () => true, onState = () => {}
     rec = new Recognition();
     rec.lang = 'en-GB';
     rec.continuous = true;
-    rec.interimResults = true;                  // letters as they are said, not after a pause
+    // letters as they are said, not after a pause. The Spelling Bee turns this off: a letter
+    // there can never be taken back, so only the recogniser's final word may put one in.
+    rec.interimResults = interim;
     rec.maxAlternatives = 1;
     applied = []; seen = [];
     rec.onresult = (e) => {
