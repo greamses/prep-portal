@@ -1,0 +1,56 @@
+name: Spelling audition
+
+# Records "B. I. R. D. Bird." in many Kokoro voices (tools/spelling-audio/audition.mjs), so
+# the Spelling Bee's boy and girl voices can be chosen by ear. The clips go to the
+# spelling-audio branch under audition/ and are played through jsDelivr; nothing lands on
+# anyone's own disk.
+
+on:
+  workflow_dispatch:
+  push:
+    branches-ignore: [spelling-audio]
+    paths:
+      - tools/spelling-audio/audition.mjs
+      - .github/workflows/spelling-audition.yml
+
+concurrency:
+  group: spelling-audio
+  cancel-in-progress: false
+
+jobs:
+  audition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: spelling-audio
+          path: store
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install the recorder
+        working-directory: tools/spelling-audio
+        run: npm install --no-audit --no-fund
+      - name: Cache the Kokoro model
+        uses: actions/cache@v4
+        with:
+          path: tools/spelling-audio/node_modules/@huggingface/transformers/.cache
+          key: kokoro-82m-v1.0-onnx
+      - name: Record the voices
+        working-directory: tools/spelling-audio
+        run: node audition.mjs --out "$GITHUB_WORKSPACE/store/audition"
+      - name: Commit them to the spelling-audio branch
+        working-directory: store
+        run: |
+          git config user.name "prep-portal-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "Nothing new."; else
+            git commit -q -m "Spelling audition: speller voices"
+            git push -q
+          fi
+          echo "Listen at https://cdn.jsdelivr.net/gh/${GITHUB_REPOSITORY}@$(git rev-parse HEAD)/audition/<voice>.mp3"
