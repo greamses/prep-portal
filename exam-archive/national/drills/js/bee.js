@@ -362,7 +362,18 @@ function setItem(hall, el, v = {}) {
     el.style.setProperty('--isy', sy);
   }
 }
+/** A seat (its child and its chair) moved by x, y (% of the hall) from where the seating put it. */
+function placeSeat(hall, seat, x = 0, y = 0) {
+  hall.querySelectorAll(`[data-seat="${seat}"]`).forEach((el) => {
+    el.style.setProperty('--x', +el.dataset.bx + x);
+    el.style.setProperty('--y', +el.dataset.by + y);
+  });
+}
 function applyItems(hall, items = {}) {
+  for (const [id, v] of Object.entries(items)) {
+    const m = /^seat-(\d+)$/.exec(id);
+    if (m) placeSeat(hall, m[1], v.x || 0, v.y || 0);
+  }
   hall.querySelectorAll('[data-item]').forEach((el) => setItem(hall, el, items[el.dataset.item] || {}));
   for (const [id, v] of Object.entries(items)) {
     if (id.startsWith('kid-') && v.s != null) hall.style.setProperty(`--t-tall-${id.slice(4)}`, v.s);
@@ -420,7 +431,16 @@ function makeEditor(hall, items) {
       const move = (m) => {
         const dx = m.clientX - start.x, dy = m.clientY - start.y;
         if (!handle) {                                   // inside the box: move it
-          if (kind === 'kid') return;
+          if (kind === 'kid') {                          // a speller: their seat (child and chair) moves
+            if (!el.classList.contains('is-at-mic') && !el.classList.contains('is-walking')) {
+              const sv = (items[`seat-${el.dataset.seat}`] ||= { x: 0, y: 0 });
+              if (sv.x0 == null) { sv.x0 = sv.x; sv.y0 = sv.y; }
+              sv.x = +(sv.x0 + dx / hr.width * 100).toFixed(2);
+              sv.y = +(sv.y0 + dy / hr.height * 100).toFixed(2);
+              placeSeat(hall, el.dataset.seat, sv.x, sv.y);
+            }
+            return;
+          }
           v.x = start.vx; v.y = start.vy; shift(dx, dy);
           setItem(hall, el, v);
           return;
@@ -453,7 +473,10 @@ function makeEditor(hall, items) {
         const ddy = /[ns]/.test(handle) ? (want.top != null ? want.top - r1.top : want.bottom - r1.bottom) : 0;
         if (ddx || ddy) { shift(ddx, ddy); setItem(hall, el, v); }
       };
-      const up = () => { box.removeEventListener('pointermove', move); box.removeEventListener('pointerup', up); box.removeEventListener('pointercancel', up); };
+      const up = () => {
+        const sv = items[`seat-${el.dataset.seat}`];
+        if (sv) { delete sv.x0; delete sv.y0; }
+        box.removeEventListener('pointermove', move); box.removeEventListener('pointerup', up); box.removeEventListener('pointercancel', up); };
       box.addEventListener('pointermove', move);
       box.addEventListener('pointerup', up);
       box.addEventListener('pointercancel', up);
@@ -727,6 +750,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.style.setProperty('--y', spot.y);
     el.style.setProperty('--tall', `var(--t-tall-${s.kid}, ${f.tall})`);
     el.dataset.kid = s.kid;
+    el.dataset.seat = s.seat; el.dataset.bx = spot.x; el.dataset.by = spot.y;
     el.dataset.label = `${{ boy: 'Boy, blue T-shirt', girl: 'Girl, pigtails', boy2: 'Boy, hoodie', girl2: 'Girl, pink and yellow', girl3: 'Girl, curly hair' }[s.kid] || s.kid} (every one)`;
     el.style.setProperty('--hip', f.hip);
     el.style.setProperty('--knee', f.knee);
@@ -755,7 +779,11 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       t.style.cssText = `left:${x}%;top:${y + 1.6}%;animation-delay:${n * 0.45}s`;
       return t;
     });
-    body.append(pic(), tag, frown, ...tears);
+    // a mouth over the drawing's own, opening and shutting while the child speaks (bee.css)
+    const mouth = document.createElement('span');
+    mouth.className = 'bee-kid-mouth';
+    mouth.style.cssText = `left:${f.mouth[0] - f.mouth[2] * 0.3}%;top:${f.mouth[1] - f.mouth[3] * 0.2}%;width:${f.mouth[2] * 0.6}%;height:${f.mouth[3] * 1.4}%`;
+    body.append(pic(), tag, frown, ...tears, mouth);
     const legL = document.createElement('div');
     legL.className = 'bee-leg bee-leg--l';
     legL.append(pic());
@@ -769,6 +797,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     chair.className = `bee-chair bee-chair--${spot.row}`;
     chair.style.setProperty('--x', spot.x);
     chair.style.setProperty('--y', spot.y);
+    chair.dataset.seat = s.seat; chair.dataset.bx = spot.x; chair.dataset.by = spot.y;
     chair.innerHTML = CHAIR;
     hall.append(chair);
     if (s === mySeat) { const you = document.createElement('span'); you.className = 'pp-pill pp-pill--static bee-you'; you.textContent = 'You'; el.append(you); }
@@ -881,8 +910,11 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const queue = [];
   let talkingNow = null;            // the Audio (or utterance) playing
   const started = (item) => { if (item.onStart && !item.onStartDone) { item.onStartDone = true; item.onStart(); } };
+  let speakingKid = null;           // the child at the microphone: their mouth moves as they speak
+  const mouthOn = (on) => speakingKid?.classList.toggle('is-talking', on);
   function next() {
     talkingNow = null;
+    mouthOn(false);
     if (gone || !pace) { queue.splice(0).forEach(started); return; }   // no time to speak: still show them
     const item = queue.shift();
     if (!item) return;
@@ -899,6 +931,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       }
       talkingNow = a;
       a.__letter = !!item.letter;
+      a.onplaying = () => { if (talkingNow === a) mouthOn(true); };
       const fallBack = () => { if (talkingNow === a) { queue.unshift({ ...item, url: rest }); next(); } };
       a.onended = () => { if (talkingNow === a) next(); };
       a.onerror = fallBack;
@@ -915,6 +948,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       u.rate = 0.88;                                 // unhurried: a whole vowel, not a clipped one
       talkingNow = u;
       u.__letter = !!item.letter;
+      u.onstart = () => { if (talkingNow === u) mouthOn(true); };
       u.onend = u.onerror = () => { if (talkingNow === u) next(); };
       synth.speak(u);
     } catch { next(); }
@@ -929,6 +963,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const spellerBusy = () => !!talkingNow || queue.length > 0;
   function spellerHush() {
     queue.length = 0;
+    mouthOn(false);
     const t = talkingNow;
     talkingNow = null;
     try { if (t instanceof Audio) t.pause(); else if (t) synth?.cancel(); } catch { /* gone */ }
@@ -1311,6 +1346,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       preloadClip(clipFor('phrases', PHRASE.yourWordIs, 'd'));
       clearScreen(); stopClock();
       say(`${who(seat)}, to the microphone.`);
+      speakingKid = el;                              // whose mouth moves when the speller speaks
       await walk(el, 'mic');
       if (gone) break;
       // "Your word is ..." and the word
