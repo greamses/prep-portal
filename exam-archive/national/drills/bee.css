@@ -21,7 +21,7 @@
   box-shadow: var(--shadow-md);
 }
 .bee-backdrop, .bee-backdrop svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.bee-hall .bee-banner.pp-sticky { position: absolute; z-index: 2; top: calc(10.5% + var(--iy, 0) * 1%); left: calc(12% + var(--ix, 0) * 1%); font-size: calc(3.6cqh * var(--is, 1)); padding: 0.7cqh 2.2cqh; }
+.bee-hall .bee-banner.pp-sticky { position: absolute; z-index: 2; top: calc(10.5% + var(--iy, 0) * 1%); left: calc(12% + var(--ix, 0) * 1%); font-size: 3.6cqh; padding: 0.7cqh 2.2cqh; transform-origin: 50% 100%; scale: var(--isx, 1) var(--isy, 1); }
 
 /* the judges' table, on the stage at the left */
 .bee-judges { position: absolute; z-index: 6; left: 11%; bottom: 33.3%; width: calc(20cqw * var(--t-judges, 1)); aspect-ratio: 300 / 220; }
@@ -54,7 +54,7 @@
 .bee-abc-edit input { min-width: 0; padding: 0.3rem 0.45rem; font: inherit; border: var(--border-subtle); background: var(--surface-primary); color: var(--ink); }
 
 /* the microphone at the front of the stage, and the audience in front of the stage */
-.bee-stand { position: absolute; z-index: 9; left: calc(41.2% + var(--ix, 0) * 1%); top: calc(67.5% + var(--iy, 0) * 1%); width: calc(5.9cqh * var(--t-mic, 1) * var(--is, 1)); height: calc(29.5cqh * var(--t-mic, 1) * var(--is, 1)); transform: translate(-50%, -100%); pointer-events: none; }
+.bee-stand { position: absolute; z-index: 9; left: calc(41.2% + var(--ix, 0) * 1%); top: calc(67.5% + var(--iy, 0) * 1%); width: calc(5.9cqh * var(--t-mic, 1) * var(--isx, 1)); height: calc(29.5cqh * var(--t-mic, 1) * var(--isy, 1)); transform: translate(-50%, -100%); pointer-events: none; }
 .bee-stand svg { display: block; width: 100%; height: 100%; }
 .bee-audience { position: absolute; z-index: 12; left: 0; right: 0; bottom: 0; height: 32%; pointer-events: none; }
 .bee-audience svg { display: block; width: 100%; height: 100%; }
@@ -169,7 +169,7 @@
    its own, and it is sized in cqh like everything on the stage. */
 .bee-tv {
   position: absolute; z-index: 1; left: calc(58% + var(--ix, 0) * 1%); top: calc(10% + var(--iy, 0) * 1%); translate: -50% 0;
-  width: calc(44cqw * var(--is, 1)); aspect-ratio: 16 / 9; max-height: calc(22cqh * var(--is, 1)); padding: 0.55cqh 0.55cqh 1.5cqh;
+  width: calc(44cqw * var(--isx, 1)); height: calc(22cqh * var(--isy, 1)); padding: 0.55cqh 0.55cqh 1.5cqh;
   background: linear-gradient(180deg, #2b2f35, #121417 60%, #1b1e22);
   border-radius: 0.5cqh;
   box-shadow: 0 0.15cqh 0 rgba(255, 255, 255, 0.08) inset, 0 1.6cqh 2.8cqh -0.4cqh rgba(40, 20, 6, 0.45), 0 0.3cqh 0.6cqh rgba(0, 0, 0, 0.35);
@@ -272,4 +272,31 @@
 .bee-knob--ne { right: -5px; top: -5px; cursor: nesw-resize; }
 .bee-knob--sw { left: -5px; bottom: -5px; cursor: nesw-resize; }
 .bee-knob--se { right: -5px; bottom: -5px; cursor: nwse-resize; }
+.bee-knob--n { left: calc(50% - 5px); top: -5px; cursor: ns-resize; }
+.bee-knob--s { left: calc(50% - 5px); bottom: -5px; cursor: ns-resize; }
+.bee-knob--e { right: -5px; top: calc(50% - 5px); cursor: ew-resize; }
+.bee-knob--w { left: -5px; top: calc(50% - 5px); cursor: ew-resize; }
 .bee-edit-btn { font-size: 0.8rem; padding: 0.35rem 0.8rem; justify-self: start; }
+
+/* ── the TV's letters: Scrabble tiles ── */
+.bee-tv .bee-letters.bee-tiles { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.7cqh; letter-spacing: 0; text-shadow: none; min-height: 7.4cqh; }
+.bee-letters.is-mine::after { display: none; }
+.bee-tile {
+  position: relative; width: 6.2cqh; height: 6.6cqh; display: grid; place-items: center;
+  background: linear-gradient(160deg, #f8e7c1, #ebcf96 70%, #ddbb7c);
+  border-radius: 0.6cqh;
+  box-shadow: 0 0.45cqh 0 #b8925a, 0 0.7cqh 1cqh rgba(0, 0, 0, 0.45), inset 0 0.15cqh 0 rgba(255, 255, 255, 0.7);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.bee-tile-letter { font-family: var(--font-display); font-weight: 800; font-size: 4.1cqh; line-height: 1; color: #2b2116; }
+.bee-tile-score { position: absolute; right: 0.55cqh; bottom: 0.35cqh; font-family: var(--font-display); font-weight: 700; font-size: 1.5cqh; color: #2b2116; }
+.bee-tile.is-space { width: 3cqh; background: none; box-shadow: none; }
+.bee-tile.is-caret { background: rgba(244, 201, 93, 0.12); box-shadow: inset 0 0 0 0.3cqh #f4c95d; animation: bee-caret 1s steps(2) infinite; }
+.bee-tile.is-new { animation: bee-tile-in 0.32s cubic-bezier(.2, 1.4, .5, 1) both; }
+@keyframes bee-tile-in { from { transform: translateY(-80%) rotate(-8deg) scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.bee-tile.is-ok { background: linear-gradient(160deg, #b9f0c4, #6fd187 70%, #4fb96a); box-shadow: 0 0.45cqh 0 #2f8a47, 0 0.7cqh 1cqh rgba(0, 0, 0, 0.45), inset 0 0.15cqh 0 rgba(255, 255, 255, 0.6); animation: bee-tile-flip 0.35s ease both; }
+.bee-tile.is-bad { background: linear-gradient(160deg, #ffc2c2, #f26a6a 70%, #d94848); box-shadow: 0 0.45cqh 0 #9c2a2a, 0 0.7cqh 1cqh rgba(0, 0, 0, 0.45), inset 0 0.15cqh 0 rgba(255, 255, 255, 0.6); animation: bee-tile-shake 0.45s ease both; }
+.bee-tile.is-gap { background: rgba(242, 106, 106, 0.18); box-shadow: inset 0 0 0 0.3cqh #f26a6a; }
+@keyframes bee-tile-flip { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+@keyframes bee-tile-shake { 0%, 100% { transform: none; } 25% { transform: translateX(-12%); } 50% { transform: translateX(10%); } 75% { transform: translateX(-6%); } }
+@media (prefers-reduced-motion: reduce) { .bee-tile.is-new, .bee-tile.is-ok, .bee-tile.is-bad { animation: none; } }

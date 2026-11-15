@@ -348,15 +348,16 @@ function setItem(hall, el, v = {}) {
     if (v.s != null) hall.style.setProperty(`--t-tall-${el.dataset.kid}`, v.s);
     return;
   }
-  const x = v.x || 0, y = v.y || 0, sc = v.s ?? 1;
+  const x = v.x || 0, y = v.y || 0, sx = v.sx ?? v.s ?? 1, sy = v.sy ?? v.s ?? 1;
   if (kind === 'svg') {
     el.style.transformBox = 'fill-box';
     el.style.transformOrigin = '50% 100%';
-    el.style.transform = x || y || sc !== 1 ? `translate(${x}px, ${y}px) scale(${sc})` : '';
+    el.style.transform = x || y || sx !== 1 || sy !== 1 ? `translate(${x}px, ${y}px) scale(${sx}, ${sy})` : '';
   } else {
     el.style.setProperty('--ix', x);
     el.style.setProperty('--iy', y);
-    el.style.setProperty('--is', sc);
+    el.style.setProperty('--isx', sx);
+    el.style.setProperty('--isy', sy);
   }
 }
 function applyItems(hall, items = {}) {
@@ -391,7 +392,7 @@ function makeEditor(hall, items) {
     tag.className = 'bee-tbox-tag';
     tag.textContent = el.dataset.label || el.getAttribute('aria-label') || '';
     box.append(tag);
-    for (const c of ['nw', 'ne', 'sw', 'se']) {
+    for (const c of itemKind(el) === 'kid' ? ['nw', 'ne', 'sw', 'se'] : ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']) {
       const k = document.createElement('span');
       k.className = `bee-knob bee-knob--${c}`;
       k.dataset.corner = c;
@@ -401,26 +402,54 @@ function makeEditor(hall, items) {
     box.addEventListener('pointerdown', (e) => {
       e.preventDefault(); e.stopPropagation();
       const v = valueOf(el), kind = itemKind(el);
-      const start = { x: e.clientX, y: e.clientY, vx: v.x || 0, vy: v.y || 0, s: v.s ?? 1 };
-      const r = el.getBoundingClientRect();
-      const anchor = { x: r.left + r.width / 2, y: r.bottom };
-      const d0 = Math.hypot(e.clientX - anchor.x, e.clientY - anchor.y) || 1;
-      const corner = e.target.dataset?.corner;
+      const sx0 = v.sx ?? v.s ?? 1, sy0 = v.sy ?? v.s ?? 1;
+      const start = { x: e.clientX, y: e.clientY, vx: v.x || 0, vy: v.y || 0 };
+      const r0 = box.getBoundingClientRect();
+      const handle = e.target.dataset?.corner || '';
       const hr = hall.getBoundingClientRect();
       // screen pixels -> the item's own units
       const svg = el.ownerSVGElement;
       const unit = kind === 'svg' ? 1 / (svg.getScreenCTM()?.a || 1) : null;
+      const shift = (dx, dy) => {
+        if (kind === 'svg') { v.x = +((v.x || 0) + dx * unit).toFixed(1); v.y = +((v.y || 0) + dy * unit).toFixed(1); }
+        else { v.x = +((v.x || 0) + dx / hr.width * 100).toFixed(2); v.y = +((v.y || 0) + dy / hr.height * 100).toFixed(2); }
+      };
       box.setPointerCapture(e.pointerId);
       const move = (m) => {
-        if (corner) {
-          const d = Math.hypot(m.clientX - anchor.x, m.clientY - anchor.y);
-          v.s = Math.max(0.2, Math.min(4, +(start.s * d / d0).toFixed(3)));
-        } else if (kind !== 'kid') {
-          const dx = m.clientX - start.x, dy = m.clientY - start.y;
-          if (kind === 'svg') { v.x = +(start.vx + dx * unit).toFixed(1); v.y = +(start.vy + dy * unit).toFixed(1); }
-          else { v.x = +(start.vx + dx / hr.width * 100).toFixed(2); v.y = +(start.vy + dy / hr.height * 100).toFixed(2); }
+        const dx = m.clientX - start.x, dy = m.clientY - start.y;
+        if (!handle) {                                   // inside the box: move it
+          if (kind === 'kid') return;
+          v.x = start.vx; v.y = start.vy; shift(dx, dy);
+          setItem(hall, el, v);
+          return;
         }
+        // a handle: the edges it holds follow the pointer, the opposite edges stay put
+        let { left, right, top, bottom } = r0;
+        if (handle.includes('w')) left += dx;
+        if (handle.includes('e')) right += dx;
+        if (handle.includes('n')) top += dy;
+        if (handle.includes('s')) bottom += dy;
+        const w = Math.max(8, right - left), h = Math.max(8, bottom - top);
+        if (kind === 'kid') {                             // a speller keeps their shape
+          const k = Math.max(w / r0.width, h / r0.height);
+          v.s = Math.max(0.2, Math.min(4, +(sx0 * k).toFixed(3)));
+          setItem(hall, el, v);
+          return;
+        }
+        if (/[ew]/.test(handle)) v.sx = Math.max(0.15, Math.min(5, +(sx0 * w / r0.width).toFixed(3)));
+        if (/[ns]/.test(handle)) v.sy = Math.max(0.15, Math.min(5, +(sy0 * h / r0.height).toFixed(3)));
+        if (v.sx == null) v.sx = sx0;
+        if (v.sy == null) v.sy = sy0;
+        delete v.s;
+        v.x = start.vx; v.y = start.vy;
         setItem(hall, el, v);
+        // then slide it so the edges that were not held are where they were
+        const r1 = el.getBoundingClientRect();
+        const want = { left: handle.includes('w') ? null : r0.left, right: handle.includes('w') ? r0.right : null,
+          top: handle.includes('n') ? null : r0.top, bottom: handle.includes('n') ? r0.bottom : null };
+        const ddx = /[ew]/.test(handle) ? (want.left != null ? want.left - r1.left : want.right - r1.right) : 0;
+        const ddy = /[ns]/.test(handle) ? (want.top != null ? want.top - r1.top : want.bottom - r1.bottom) : 0;
+        if (ddx || ddy) { shift(ddx, ddy); setItem(hall, el, v); }
       };
       const up = () => { box.removeEventListener('pointermove', move); box.removeEventListener('pointerup', up); box.removeEventListener('pointercancel', up); };
       box.addEventListener('pointermove', move);
@@ -768,7 +797,33 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const wait = (ms) => (gone || !pace ? Promise.resolve() : sleep(ms * pace));
   const say = (text) => { statusEl.textContent = text; };
   const who = (s) => `Number ${s.tag}, ${s.name}${s === mySeat ? ' (you)' : ''}`;
-  const showLetters = (typed, cls = '') => { lettersEl.textContent = spaced(typed); lettersEl.className = `bee-letters ${cls}`; };
+  /* The TV shows the letters as Scrabble tiles: a cream tile each, the letter and its score.
+     A tile that is new since the last time drops in; the ones already up stay still. */
+  const SCORE = { a: 1, b: 3, c: 3, d: 2, e: 1, f: 4, g: 2, h: 4, i: 1, j: 8, k: 5, l: 1, m: 3, n: 1, o: 1, p: 3, q: 10, r: 1, s: 1, t: 1, u: 1, v: 4, w: 4, x: 8, y: 4, z: 10 };
+  const norm1 = (c) => c.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  let shown = '';
+  function tile(ch, cls = '') {
+    const t = document.createElement('span');
+    t.className = `bee-tile ${cls}`;
+    if (ch === ' ') { t.classList.add('is-space'); return t; }
+    const l = document.createElement('span');
+    l.className = 'bee-tile-letter';
+    l.textContent = ch === '_' ? '' : ch.toUpperCase();
+    t.append(l);
+    const pts = SCORE[norm1(ch)];
+    if (pts) { const n = document.createElement('span'); n.className = 'bee-tile-score'; n.textContent = pts; t.append(n); }
+    return t;
+  }
+  const showLetters = (typed, cls = '') => {
+    typed = String(typed || '');
+    lettersEl.className = `bee-letters bee-tiles ${cls}`;
+    const keep = typed.startsWith(shown) && lettersEl.querySelector('.bee-tile') ? shown.length : 0;
+    if (!keep) lettersEl.replaceChildren();
+    else lettersEl.querySelectorAll('.bee-tile.is-caret').forEach((x) => x.remove());
+    for (let i = keep; i < typed.length; i++) lettersEl.append(tile(typed[i], 'is-new'));
+    if (cls.includes('is-mine')) lettersEl.append(tile('_', 'is-caret'));
+    shown = typed;
+  };
   /* A spelling marked: every letter up to the first mistake green, the first wrong letter red,
      the letters after it as they were. A missing letter is a red gap where it should be. */
   function showMarked(typed, word) {
@@ -777,16 +832,15 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     let bad = 0;
     while (bad < t.length && bad < w.length && norm(t[bad]) === norm(w[bad])) bad++;
     const right = bad >= t.length && t.length === w.length;
-    lettersEl.className = 'bee-letters is-marked';
-    lettersEl.replaceChildren();
-    const put = (ch, cls) => {
-      const sp = document.createElement('span');
-      sp.className = cls;
-      sp.textContent = ch === ' ' ? '\u00a0' : ch.toUpperCase();
-      lettersEl.append(sp);
-    };
-    for (let i = 0; i < t.length; i++) put(t[i], right || i < bad ? 'is-ok' : i === bad ? 'is-bad' : '');
-    if (!right && bad >= t.length) put('_', 'is-bad is-gap');     // stopped short: the letter that was missing
+    // the tiles already up are kept, and coloured in turn: green, then the red one, then as they were
+    showLetters(t);
+    const tiles = [...lettersEl.querySelectorAll('.bee-tile')];
+    tiles.forEach((x, i) => {
+      const cls = right || i < bad ? 'is-ok' : i === bad ? 'is-bad' : '';
+      if (cls) setTimeout(() => x.classList.add(cls), Math.min(i, 14) * 70);
+    });
+    if (!right && bad >= t.length) lettersEl.append(tile('_', 'is-bad is-gap is-new'));   // stopped short: the missing letter
+    shown = '';
   }
   function pills() {
     roundEl.textContent = `Round ${bee.round}`;
@@ -837,7 +891,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         a.playbackRate = first.pitch;
       }
       talkingNow = a;
-      const fallBack = () => { if (talkingNow === a) { queue.unshift({ text: item.text, kid: item.kid, url: rest }); next(); } };
+      a.__letter = !!item.letter;
+      const fallBack = () => { if (talkingNow === a) { queue.unshift({ text: item.text, kid: item.kid, url: rest, letter: item.letter }); next(); } };
       a.onended = () => { if (talkingNow === a) next(); };
       a.onerror = fallBack;
       a.play().catch(fallBack);
@@ -852,14 +907,25 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       u.pitch = KIDS[item.kid]?.girl ? 1.55 : 1.3;
       u.rate = 0.88;                                 // unhurried: a whole vowel, not a clipped one
       talkingNow = u;
+      u.__letter = !!item.letter;
       u.onend = u.onerror = () => { if (talkingNow === u) next(); };
       synth.speak(u);
     } catch { next(); }
   }
   /** A speller says something: their recording(s) `url` (a url, or a list to try in turn), else `text` in the browser's voice. */
-  function spellerSays(text, kid, url = null) {
+  function spellerSays(text, kid, url = null, { now = false } = {}) {
     if (gone || !pace) return;
-    queue.push({ text, kid, url });
+    // a letter is said the moment it goes in: whatever letter is still being said (or waiting)
+    // gives way, so the voice keeps up with the typing
+    if (now) {
+      for (let i = queue.length - 1; i >= 0; i--) if (queue[i].letter) queue.splice(i, 1);
+      if (talkingNow && talkingNow.__letter) {
+        const t = talkingNow;
+        talkingNow = null;
+        try { if (t instanceof Audio) t.pause(); else synth?.cancel(); } catch { /* gone */ }
+      }
+    }
+    queue.push({ text, kid, url, letter: now });
     if (!talkingNow) next();
   }
   const spellerBusy = () => !!talkingNow || queue.length > 0;
@@ -878,7 +944,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   /** Say the letters of `after` that are not in `before` (the letters are only ever added to). */
   function sayNewLetters(before, after, kid) {
     if (!after.startsWith(before)) before = '';
-    for (const ch of after.slice(before.length)) spellerSays(letterName(ch), kid, letterClip(ch, kid));
+    for (const ch of after.slice(before.length)) spellerSays(letterName(ch), kid, letterClip(ch, kid), { now: true });
   }
 
   /* ── The live room ───────────────────────────────────────────── */
@@ -1111,7 +1177,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       await wait(Math.min(2200, b.ms / 3));
       for (let n = 1; n <= b.typed.length && !gone && pace; n++) {
         showLetters(b.typed.slice(0, n));
-        spellerSays(letterName(b.typed[n - 1]), seat.kid, letterClip(b.typed[n - 1], seat.kid));
+        spellerSays(letterName(b.typed[n - 1]), seat.kid, letterClip(b.typed[n - 1], seat.kid), { now: true });
         await wait(720);
       }
     }
