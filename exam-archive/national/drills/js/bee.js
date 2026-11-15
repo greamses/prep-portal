@@ -32,6 +32,10 @@ import { spellingQuestion, sayWord, hush, canSpeak, clipFor, preloadClip, isTalk
 import { canListen, createSpellMic } from './spell-mic.js';
 import { seatSpellers, createBee, botSpelling } from './bee-logic.js';
 import { SPELLING_PHRASES, PHRASE } from '/data/spelling/phrases.js';
+import { LETTER } from '/data/spelling/letters.js';
+import { SPELLER_VOICES } from '/data/spelling/speller-voices.js';
+// a namespace import: an audio.js written before the spellers were recorded has no SPELLER_CLIPS
+import * as AUDIO from '/data/spelling/audio.js';
 import { openRoom, idFor } from '/utils/live/index.js';
 import { UI } from '/utils/components/ui-icons.js';
 import { heroPaint } from '/utils/components/nav-icons.js';
@@ -40,18 +44,20 @@ import { heroPaint } from '/utils/components/nav-icons.js';
      hip    where the legs start (the rig splits there; sitting hides hip to knee)
      knee   where a seated child's shins start
      hands  the bottom of the hanging hands (the body is cut just under them)
+     tall   how tall the child is beside the others (the hoodie boy is older and taller);
+            every size the child takes (chair, microphone, walking off) is times this
      eyes / mouth  for the tears and the frown of a speller who has lost
                    (mouth = [centre x, centre y, width, height])
    The first girl has both hands down (girl-hands-down.svg, made by
    tools/character-trace/hands-down.mjs); boy-hoodie and girl-overalls came as pictures. */
 const KIDS = {
-  boy: { src: '/media/characters/boy.svg', girl: false, hip: 64, knee: 80, hands: 73,
+  boy: { src: '/media/characters/boy.svg', girl: false, tall: 1, hip: 64, knee: 80, hands: 73,
     eyes: [[39.5, 25.5], [67.5, 25.5]], mouth: [55, 30.7, 26, 5.6], skin: '#f6bf98', lip: '#8a3b2b' },
-  girl: { src: '/media/characters/girl-hands-down.svg', girl: true, hip: 64, knee: 80, hands: 73,
+  girl: { src: '/media/characters/girl-hands-down.svg', girl: true, tall: 1, hip: 64, knee: 80, hands: 73,
     eyes: [[39, 19.6], [60.5, 19.6]], mouth: [49.6, 24, 15, 2.8], skin: '#f3c3a9', lip: '#a4523f' },
-  boy2: { src: '/media/characters/boy-hoodie.svg', girl: false, hip: 54, knee: 77, hands: 65,
+  boy2: { src: '/media/characters/boy-hoodie.svg', girl: false, tall: 1.16, hip: 54, knee: 77, hands: 65,
     eyes: [[40, 12.2], [59, 12.2]], mouth: [49, 16.3, 15, 2.2], skin: '#f0b089', lip: '#8a3b2b' },
-  girl2: { src: '/media/characters/girl-overalls.svg', girl: true, hip: 59, knee: 78, hands: 68,
+  girl2: { src: '/media/characters/girl-overalls.svg', girl: true, tall: 0.98, hip: 59, knee: 78, hands: 68,
     eyes: [[38, 16.4], [62, 16.4]], mouth: [50, 21, 17, 2.6], skin: '#8a4733', lip: '#3e1a12' },
 };
 /* The hall's reactions (clapping for a right word, tears for a wrong one) are switched off
@@ -337,6 +343,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.className = `bee-kid bee-kid--${spot.row}${s === mySeat ? ' is-me' : ''}`;
     el.style.setProperty('--x', spot.x);
     el.style.setProperty('--y', spot.y);
+    el.style.setProperty('--tall', f.tall);
     el.style.setProperty('--hip', f.hip);
     el.style.setProperty('--knee', f.knee);
     el.style.setProperty('--hands', f.hands);
@@ -411,29 +418,70 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     leftEl.textContent = `${n} ${n === 1 ? 'speller' : 'spellers'} left`;
   }
 
-  /* A speller says something in their own (browser) voice. */
-  function spellerSays(text, kid) {
-    if (!synth || gone || !pace) return;
+  /* ── The spellers' voices: their own Kokoro recordings (data/spelling/speller-voices.js:
+     a girl's voice and a boy's), each letter by name and the whole word. They are played
+     ONE AFTER ANOTHER from a queue, so letters typed fast are all said, none cut off. A clip
+     not recorded (yet) is said with the browser's voice instead. ── */
+  const pad4 = (i) => String(i + 1).padStart(4, '0');
+  const voiceOf = (kid) => SPELLER_VOICES[KIDS[kid]?.girl ? 'girl' : 'boy'];
+  function spellerClip(kid, list, i) {
+    const c = AUDIO.SPELLER_CLIPS?.[voiceOf(kid)]?.[list];
+    return c && c.base && c.w.has(i) ? `${c.base}${pad4(i)}-w.mp3` : null;
+  }
+  const letterClip = (ch, kid) => spellerClip(kid, 'letters', LETTER[ch.toLowerCase()]);
+  const wordClip = (q, kid) => spellerClip(kid, q.bank, q.i);
+  const queue = [];
+  let talkingNow = null;            // the Audio (or utterance) playing
+  function next() {
+    talkingNow = null;
+    if (gone || !pace) { queue.length = 0; return; }
+    const item = queue.shift();
+    if (!item) return;
+    if (item.url) {
+      const a = new Audio(item.url);
+      talkingNow = a;
+      const on = () => { if (talkingNow === a) next(); };
+      a.onended = on;
+      a.onerror = () => { if (talkingNow === a) { queue.unshift({ text: item.text, kid: item.kid }); next(); } };
+      a.play().catch(() => { if (talkingNow === a) { queue.unshift({ text: item.text, kid: item.kid }); next(); } });
+      return;
+    }
+    if (!synth) { next(); return; }
     try {
-      const u = new SpeechSynthesisUtterance(text);
-      const v = voiceFor(kid);
+      const u = new SpeechSynthesisUtterance(item.text);
+      const v = voiceFor(item.kid);
       if (v) u.voice = v;
       u.lang = v ? v.lang : 'en-GB';
-      u.pitch = KIDS[kid]?.girl ? 1.55 : 1.3;
+      u.pitch = KIDS[item.kid]?.girl ? 1.55 : 1.3;
       u.rate = 0.88;                                 // unhurried: a whole vowel, not a clipped one
+      talkingNow = u;
+      u.onend = u.onerror = () => { if (talkingNow === u) next(); };
       synth.speak(u);
-    } catch { /* no speech here */ }
+    } catch { next(); }
   }
-  /** Wait for the spellers' voice to finish (a letter typed fast queues up). */
-  async function spellerDone(max = 9000) {
+  /** A speller says something: their recording `url` if there is one, else `text` in the browser's voice. */
+  function spellerSays(text, kid, url = null) {
+    if (gone || !pace) return;
+    queue.push({ text, kid, url });
+    if (!talkingNow) next();
+  }
+  const spellerBusy = () => !!talkingNow || queue.length > 0;
+  function spellerHush() {
+    queue.length = 0;
+    const t = talkingNow;
+    talkingNow = null;
+    try { if (t instanceof Audio) t.pause(); else if (t) synth?.cancel(); } catch { /* gone */ }
+  }
+  /** Wait for the speller to finish what is queued. */
+  async function spellerDone(max = 12000) {
     const t0 = Date.now();
     await sleep(150);
-    while (synth && !gone && pace && (synth.speaking || synth.pending) && Date.now() - t0 < max) await sleep(120);
+    while (!gone && pace && spellerBusy() && Date.now() - t0 < max) await sleep(120);
   }
   /** Say the letters of `after` that are not in `before` (the letters are only ever added to). */
   function sayNewLetters(before, after, kid) {
     if (!after.startsWith(before)) before = '';
-    for (const ch of after.slice(before.length)) spellerSays(letterName(ch), kid);
+    for (const ch of after.slice(before.length)) spellerSays(letterName(ch), kid, letterClip(ch, kid));
   }
 
   /* ── The live room ───────────────────────────────────────────── */
@@ -533,7 +581,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   }
   const mic = createSpellMic({
     interim: false,                                    // a letter here cannot be taken back: final words only
-    quiet: () => !isTalking(350) && !(synth && synth.speaking),
+    quiet: () => !isTalking(350) && !spellerBusy(),
     onHeard: (items, text) => {
       if (!finishMine) return;
       const said = items.filter((it) => it.ch).length;
@@ -656,7 +704,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       await wait(Math.min(2200, b.ms / 3));
       for (let n = 1; n <= b.typed.length && !gone && pace; n++) {
         showLetters(b.typed.slice(0, n));
-        spellerSays(letterName(b.typed[n - 1]), seat.kid);
+        spellerSays(letterName(b.typed[n - 1]), seat.kid, letterClip(b.typed[n - 1], seat.kid));
         await wait(720);
       }
     }
@@ -688,6 +736,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     clearInterval(beat); clearInterval(tick);
     if (finishMine) finishMine(true);
     hush();
+    spellerHush();
     try { synth?.cancel(); } catch { /* ignore */ }
     if (mic.on) mic.stop();
     for (const w of [...waiters.values()]) w({ ok: false, t: '' });
@@ -710,7 +759,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   fullBtn.addEventListener('click', () => { if (document.fullscreenElement) leaveFullscreen(); else beeFullscreen(); });
   const onFull = () => fullBtn.setAttribute('aria-pressed', document.fullscreenElement ? 'true' : 'false');
   document.addEventListener('fullscreenchange', onFull);
-  skipBtn.addEventListener('click', () => { skipping = true; pace = 0; hush(); try { synth?.cancel(); } catch { /* ignore */ } skipBtn.hidden = true; settle(); });
+  skipBtn.addEventListener('click', () => { skipping = true; pace = 0; hush(); try { synth?.cancel(); } catch { /* ignore */ } spellerHush(); skipBtn.hidden = true; settle(); });
 
   function showResults() {
     const champ = seats[bee.champion];
@@ -770,6 +819,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         : await theirSpell(seat, q, k);
       if (gone) break;
       await spellerDone();            // the last letter is said before the judge answers
+      // and, done, the speller says the word, as at a real bee
+      if (r.t && !gone && pace) { spellerSays(q.word, seat.kid, wordClip(q, seat.kid)); await spellerDone(); }
       if (gone) break;
       // the verdict
       if (r.ok) {

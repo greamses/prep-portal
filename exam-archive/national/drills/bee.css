@@ -50,11 +50,11 @@
    hip down. Hips are at 64% of the drawing's height, knees at 80%. */
 .bee-kid {
   position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%);
-  height: 27cqh; font-size: 2.8cqh;
+  height: calc(27cqh * var(--tall, 1)); font-size: 2.8cqh;
   transform: translate(-50%, -100%);
   transition: left 1.7s ease-in-out, top 1.7s ease-in-out, height 1.7s ease-in-out, font-size 1.7s ease-in-out;
 }
-.bee-kid--back { z-index: 2; height: 24.5cqh; }
+.bee-kid--back { z-index: 2; height: calc(24.5cqh * var(--tall, 1)); }
 .bee-kid--front { z-index: 4; }
 .bee-kid::before {                                       /* a shadow on the floor, under the feet */
   content: ""; position: absolute; left: 12%; right: 12%; bottom: -1.2%; height: 4%;
@@ -99,8 +99,8 @@
 
 /* the microphone, and leaving the stage (stage right, behind the curtain) */
 /* only a little bigger than in the chair: a step or two nearer, not a giant */
-.bee-kid.is-at-mic { left: 38.5%; top: 67%; height: 31cqh; font-size: 3.2cqh; z-index: 8; }
-.bee-kid.is-off { left: 108%; top: 63%; height: 29cqh; font-size: 3cqh; z-index: 8; transition-duration: 2.6s; }
+.bee-kid.is-at-mic { left: 38.5%; top: 67%; height: calc(31cqh * var(--tall, 1)); font-size: 3.2cqh; z-index: 8; }
+.bee-kid.is-off { left: 108%; top: 63%; height: calc(29cqh * var(--tall, 1)); font-size: 3cqh; z-index: 8; transition-duration: 2.6s; }
 .bee-kid.is-walking { z-index: 8; }
 .bee-kid.is-gone { visibility: hidden; }
 .bee-kid.is-champion .bee-tag.pp-sticky { outline: 0.2em solid #f4c95d; }
