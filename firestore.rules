@@ -196,6 +196,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // The Spelling Bee hall's settings (drills/js/bee.js): each person's size, and what the
+    // spellers' voice is given for each letter. Everyone's bee reads them; only the admin's
+    // settings panel writes them.
+    match /beeSettings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Formulas the admin added to Algebra Moves' shelf, beyond the static
     // bank the page ships with. Written only through the Admin SDK (see
     // POST /api/algebra/formulas, which solves a formula before it ever

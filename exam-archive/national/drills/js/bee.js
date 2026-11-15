@@ -46,6 +46,9 @@ for (const who of Object.keys(LETTER_VOICES)) {
 // a namespace import: an audio.js written before the spellers were recorded has no SPELLER_CLIPS
 import * as AUDIO from '/data/spelling/audio.js';
 import { openRoom, idFor } from '/utils/live/index.js';
+import { auth, db } from '/firebase-init.js';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { ADMIN_EMAIL } from '/utils/features.js';
 import { UI } from '/utils/components/ui-icons.js';
 import { heroPaint } from '/utils/components/nav-icons.js';
 
@@ -60,9 +63,9 @@ import { heroPaint } from '/utils/components/nav-icons.js';
    The first girl has both hands down (girl-hands-down.svg, made by
    tools/character-trace/hands-down.mjs); boy-hoodie and girl-overalls came as pictures. */
 const KIDS = {
-  boy: { src: '/media/characters/boy.svg', girl: false, tall: 1, hip: 64, knee: 80, hands: 73,
+  boy: { src: '/media/characters/boy.svg', girl: false, tall: 0.78, hip: 64, knee: 80, hands: 73,
     eyes: [[39.5, 25.5], [67.5, 25.5]], mouth: [55, 30.7, 26, 5.6], skin: '#f6bf98', lip: '#8a3b2b' },
-  girl: { src: '/media/characters/girl-hands-down.svg', girl: true, tall: 1, hip: 64, knee: 80, hands: 73,
+  girl: { src: '/media/characters/girl-hands-down.svg', girl: true, tall: 0.86, hip: 64, knee: 80, hands: 73,
     eyes: [[39, 19.6], [60.5, 19.6]], mouth: [49.6, 24, 15, 2.8], skin: '#f3c3a9', lip: '#a4523f' },
   boy2: { src: '/media/characters/boy-hoodie.svg', girl: false, tall: 1.16, hip: 54, knee: 77, hands: 65,
     eyes: [[40, 12.2], [59, 12.2]], mouth: [49, 16.3, 15, 2.2], skin: '#f0b089', lip: '#8a3b2b' },
@@ -168,8 +171,11 @@ const voiceFor = (() => {
    name ("F" is "eff"), but written-out names are read as words or spelled ("eff" came out
    E-F-F, "ar" as "er"). Only A is read as a word (the article "a"), so it alone is written
    out. */
-const LETTER_WORD = { a: 'ay', ' ': 'space', '-': 'hyphen', "'": 'apostrophe' };
-const letterName = (ch) => LETTER_WORD[ch.toLowerCase()] || ch.toUpperCase();
+const LETTER_WORD = { a: 'Ay.', ' ': 'space', '-': 'hyphen', "'": 'apostrophe' };
+const DEFAULT_LETTER = (ch) => LETTER_WORD[ch.toLowerCase()] || ch.toUpperCase();
+/* a better spelling for a letter, set in the hall's settings (the ABC chart) and saved for everyone */
+const LETTER_SAID = {};
+const letterName = (ch) => LETTER_SAID[ch.toLowerCase()] || DEFAULT_LETTER(ch);
 
 /* Where the chairs are, in % of the hall: on the stage, a back row and a front row. The
    back row sits half a chair across, so its spellers show between the front row's. */
@@ -294,10 +300,13 @@ function judgesSvg() {
   </svg>`;
 }
 
-/* ── The sizes panel (open the page with ?tune=1) ─────────────────────
-   A slider for each person and for the microphone: each one is a CSS variable on the hall
-   (--t-...), so a change shows at once. The values are kept on this device, and "Copy
-   sizes" puts them on the clipboard, to be sent and made everyone's (TUNE_DEFAULTS). */
+/* ── The hall's settings (the admin's panel) ─────────────────────────
+   Each person's size, and what the spellers' (browser) voice is given for each letter, are
+   kept in ONE Firestore document, beeSettings/hall, that every bee reads when it opens. The
+   panel opens from a button in the top bar for the admin (or anyone with ?tune=1, who can
+   try things but not save): sliders change the hall at once, the ABC chart says a letter
+   in the girl's or the boy's voice and takes a better spelling for it, and "Save for
+   everyone" writes the document. */
 const TUNE = [
   ['tall-boy', 'Boy, blue T-shirt'], ['tall-girl', 'Girl, pigtails'], ['tall-boy2', 'Boy, hoodie'],
   ['tall-girl2', 'Girl, pink and yellow'], ['tall-girl3', 'Girl, curly hair'],
@@ -305,42 +314,42 @@ const TUNE = [
   ['judges', 'Judges and table'], ['judge-woman', 'Head judge'], ['judge-man', 'Judge'],
   ['aud-row0', 'Audience, back row'], ['aud-row1', 'Audience, front row'],
 ];
-// everyone's sizes; a slider left alone uses these (the children's own heights are in KIDS)
-const TUNE_DEFAULTS = {};
-const TUNE_KEY = 'ppBeeTune';
-function tuneStart(name) {
-  if (name.startsWith('tall-')) return KIDS[name.slice(5)]?.tall ?? 1;
-  return TUNE_DEFAULTS[name] ?? 1;
-}
-function applyTune(hall) {
-  let saved = {};
-  try { saved = JSON.parse(localStorage.getItem(TUNE_KEY) || '{}'); } catch { /* storage blocked */ }
+const SETTINGS_DOC = ['beeSettings', 'hall'];
+let settings = { sizes: {}, letters: {} };           // what was saved (beeSettings/hall)
+const settingsReady = getDoc(doc(db, ...SETTINGS_DOC))
+  .then((snap) => {
+    const d = snap.exists() ? snap.data() : {};
+    settings = { sizes: d.sizes || {}, letters: d.letters || {} };
+    Object.assign(LETTER_SAID, settings.letters);
+  })
+  .catch((e) => console.warn('[bee] settings not read; the defaults stand:', e));
+const tuneStart = (name) => settings.sizes[name] ?? (name.startsWith('tall-') ? KIDS[name.slice(5)]?.tall ?? 1 : 1);
+function applySizes(hall, sizes) {
   for (const [name] of TUNE) {
-    const v = saved[name] ?? TUNE_DEFAULTS[name];
-    if (v != null) hall.style.setProperty(`--t-${name}`, v);
+    const v = sizes[name];
+    if (v != null) hall.style.setProperty(`--t-${name}`, v); else hall.style.removeProperty(`--t-${name}`);
   }
-  return saved;
 }
-function mountTuner(hall, top) {
-  const saved = applyTune(hall);
+const isAdminHere = () => (auth.currentUser?.email || '') === ADMIN_EMAIL;
+
+function mountTuner(hall, top, { say }) {
+  const sizes = { ...settings.sizes };
+  const letters = { ...settings.letters };
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'bee-tune-btn';
   btn.innerHTML = UI.settings(18);
-  btn.setAttribute('aria-label', 'Sizes');
-  btn.dataset.tip = 'Sizes';
+  btn.setAttribute('aria-label', 'Hall settings');
+  btn.dataset.tip = 'Hall settings';
   const panel = document.createElement('div');
   panel.className = 'pp-receipt bee-tune';
   panel.hidden = true;
   const paper = document.createElement('div');
   paper.className = 'pp-receipt__paper bee-tune-paper';
-  const head = document.createElement('p');
-  head.className = 'bee-tune-head';
-  head.textContent = 'Sizes';
-  paper.append(head);
-  const values = { ...saved };
-  const save = () => { try { localStorage.setItem(TUNE_KEY, JSON.stringify(values)); } catch { /* storage blocked */ } };
-  for (const [name, label] of TUNE) {
+  const heading = (t) => { const h = document.createElement('p'); h.className = 'bee-tune-head'; h.textContent = t; paper.append(h); };
+
+  heading('Sizes');
+  const rows = TUNE.map(([name, label]) => {
     const row = document.createElement('label');
     row.className = 'bee-tune-row';
     const text = document.createElement('span');
@@ -348,46 +357,110 @@ function mountTuner(hall, top) {
     const out = document.createElement('output');
     const input = document.createElement('input');
     input.type = 'range'; input.min = '0.4'; input.max = '2'; input.step = '0.01';
-    input.value = String(values[name] ?? tuneStart(name));
-    out.textContent = Number(input.value).toFixed(2);
+    const set = (v) => { input.value = String(v); out.textContent = Number(v).toFixed(2); };
+    set(tuneStart(name));
     input.addEventListener('input', () => {
-      values[name] = Number(input.value);
+      sizes[name] = Number(input.value);
       hall.style.setProperty(`--t-${name}`, input.value);
       out.textContent = Number(input.value).toFixed(2);
-      save();
     });
     row.append(text, input, out);
     paper.append(row);
+    return { name, set };
+  });
+
+  // the ABC chart: a letter said as the spellers' voice says it; a better spelling tried and kept
+  heading('Letters: click one to hear it');
+  let kid = 'girl';
+  const voices = document.createElement('div');
+  voices.className = 'bee-abc-voices';
+  for (const [k, label] of [['girl', 'Girl\u2019s voice'], ['boy', 'Boy\u2019s voice']]) {
+    const v = document.createElement('button');
+    v.type = 'button';
+    v.className = `pp-btn pp-btn--ghost bee-abc-voice${k === kid ? ' is-on' : ''}`;
+    v.textContent = label;
+    v.addEventListener('click', () => { kid = k; voices.querySelectorAll('button').forEach((x) => x.classList.toggle('is-on', x === v)); });
+    voices.append(v);
   }
-  const copy = document.createElement('button');
-  copy.type = 'button';
-  copy.className = 'pp-btn bee-tune-copy';
-  copy.textContent = 'Copy sizes';
-  copy.addEventListener('click', async () => {
-    const all = Object.fromEntries(TUNE.map(([n]) => [n, values[n] ?? tuneStart(n)]));
-    const text = JSON.stringify(all);
-    try { await navigator.clipboard.writeText(text); copy.textContent = 'Copied'; } catch { prompt('Copy these sizes:', text); }
-    setTimeout(() => { copy.textContent = 'Copy sizes'; }, 1600);
+  paper.append(voices);
+  const grid = document.createElement('div');
+  grid.className = 'bee-abc';
+  const edit = document.createElement('div');
+  edit.className = 'bee-abc-edit';
+  edit.innerHTML = '<span class="bee-abc-which"></span><input type="text" maxlength="24" aria-label="What the voice is given for this letter" /><button type="button" class="pp-btn pp-btn--ghost">Hear</button>';
+  const which = edit.querySelector('.bee-abc-which'), said = edit.querySelector('input'), hear = edit.querySelector('button');
+  let current = null;
+  const sayLetter = () => { if (current != null) say(said.value.trim() || letterName(current), kid === 'girl' ? 'girl' : 'boy'); };
+  const keys = 'abcdefghijklmnopqrstuvwxyz'.split('').concat([' ', '-', "'"]);
+  for (const ch of keys) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'bee-abc-key';
+    b.textContent = ch === ' ' ? 'space' : ch === '-' ? 'hyphen' : ch === "'" ? "'" : ch.toUpperCase();
+    b.classList.toggle('is-changed', !!letters[ch]);
+    if (b.textContent.length > 1) b.classList.add('is-word');
+    b.addEventListener('click', () => {
+      current = ch;
+      grid.querySelectorAll('.bee-abc-key').forEach((x) => x.classList.toggle('is-current', x === b));
+      which.textContent = `${b.textContent} is said as`;
+      said.value = letters[ch] ?? letterName(ch);
+      edit.hidden = false;
+      sayLetter();
+    });
+    grid.append(b);
+  }
+  edit.hidden = true;
+  said.addEventListener('input', () => {
+    if (current == null) return;
+    const v = said.value.trim();
+    if (v && v !== DEFAULT_LETTER(current)) letters[current] = v; else delete letters[current];
+    LETTER_SAID[current] = letters[current];
+    if (!letters[current]) delete LETTER_SAID[current];
+    grid.querySelectorAll('.bee-abc-key')[keys.indexOf(current)].classList.toggle('is-changed', !!letters[current]);
+  });
+  said.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sayLetter(); } e.stopPropagation(); });
+  hear.addEventListener('click', sayLetter);
+  paper.append(grid, edit);
+
+  const note = document.createElement('p');
+  note.className = 'bee-tune-note';
+  const foot = document.createElement('div');
+  foot.className = 'bee-tune-foot';
+  const save = document.createElement('button');
+  save.type = 'button';
+  save.className = 'pp-btn bee-tune-save bee-tune-keep';
+  save.textContent = 'Save for everyone';
+  save.addEventListener('click', async () => {
+    if (!isAdminHere()) { note.textContent = 'Only the admin account can save. Sign in as the admin.'; return; }
+    save.disabled = true;
+    try {
+      await setDoc(doc(db, ...SETTINGS_DOC), { sizes, letters, updatedAt: serverTimestamp() });
+      settings = { sizes: { ...sizes }, letters: { ...letters } };
+      note.textContent = 'Saved. Every bee from now on uses these.';
+    } catch (e) {
+      note.textContent = `Not saved: ${e.code || e.message || e}`;
+    }
+    save.disabled = false;
   });
   const reset = document.createElement('button');
   reset.type = 'button';
-  reset.className = 'pp-btn pp-btn--ghost bee-tune-copy';
-  reset.textContent = 'Reset';
+  reset.className = 'pp-btn pp-btn--ghost bee-tune-save bee-tune-undo';
+  reset.textContent = 'Undo changes';
   reset.addEventListener('click', () => {
-    for (const k of Object.keys(values)) delete values[k];
-    save();
-    for (const [name] of TUNE) hall.style.removeProperty(`--t-${name}`);
-    applyTune(hall);
-    paper.querySelectorAll('.bee-tune-row').forEach((row, i) => {
-      const v = tuneStart(TUNE[i][0]);
-      row.querySelector('input').value = v;
-      row.querySelector('output').textContent = Number(v).toFixed(2);
-    });
+    for (const k of Object.keys(sizes)) delete sizes[k];
+    Object.assign(sizes, settings.sizes);
+    applySizes(hall, sizes);
+    rows.forEach((r) => r.set(tuneStart(r.name)));
+    for (const k of Object.keys(letters)) { delete letters[k]; delete LETTER_SAID[k]; }
+    Object.assign(letters, settings.letters);
+    Object.assign(LETTER_SAID, settings.letters);
+    grid.querySelectorAll('.bee-abc-key').forEach((x, i) => x.classList.toggle('is-changed', !!letters[keys[i]]));
+    edit.hidden = true;
+    note.textContent = 'Back to what was saved.';
   });
-  const foot = document.createElement('div');
-  foot.className = 'bee-tune-foot';
-  foot.append(copy, reset);
-  paper.append(foot);
+  foot.append(reset, save);
+  paper.append(foot, note);
+  if (!isAdminHere()) note.textContent = 'You can try sizes and letters here; only the admin can save them.';
   panel.append(paper);
   btn.addEventListener('click', () => { panel.hidden = !panel.hidden; });
   top.querySelector('.bee-full').before(btn);
@@ -540,7 +613,12 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   });
   document.body.append(bd);
   document.body.classList.add('drill-nav-hidden');
-  if (/[?&]tune=1\b/.test(location.search)) mountTuner(hall, $('.bee-top'));
+  // everyone's bee: the saved sizes; the admin (or ?tune=1): the settings panel
+  settingsReady.then(() => {
+    if (gone) return;
+    applySizes(hall, settings.sizes);
+    if (isAdminHere() || /[?&]tune=1\b/.test(location.search)) mountTuner(hall, $('.bee-top'), { say: (text, kid) => spellerSays(text, kid) });
+  });
   if (!document.fullscreenElement) beeFullscreen();   // allowed only if the Start tap is still fresh
   // Came in some other way (a friend's code, the lobby's Start now): the first tap or key
   // anywhere in the bee takes it to the full screen. Not the exit or full-screen buttons.
