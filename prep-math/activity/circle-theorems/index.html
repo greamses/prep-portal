@@ -230,6 +230,12 @@
     <script type="module" src="/utils/components/nav-builder.js"></script>
     <script type="module" src="/utils/components/geometry-tabs.js"></script>
     <script type="module" src="./index.js"></script>
+  
+    <!-- the list of the keys index.js already takes (utils/components/studio-keys.js) -->
+    <script type="module">
+      import { studioKeys } from "/utils/components/studio-keys.js";
+      studioKeys({}, { help: "Keys: 1–8 the theorems · E explore · W why? · Q find it · ← → the steps of why · N a new question · R reset the drawing · Alt+1–5 the other studios" });
+    </script>
     <!-- seo:about -->
     <section id="pp-about" class="pp-about" data-access="premium" hidden>
       <nav class="pp-about-crumbs" aria-label="Breadcrumb">
@@ -267,11 +273,5 @@
       </ul>
     </section>
     <!-- /seo:about -->
-  
-    <!-- the list of the keys index.js already takes (utils/components/studio-keys.js) -->
-    <script type="module">
-      import { studioKeys } from "/utils/components/studio-keys.js";
-      studioKeys({}, { help: "Keys: 1–8 the theorems · E explore · W why? · Q find it · ← → the steps of why · N a new question · R reset the drawing · Alt+1–5 the other studios" });
-    </script>
-</body>
+  </body>
 </html>

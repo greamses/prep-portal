@@ -507,6 +507,15 @@
     <script src="/utils/components/geo-memory.js"></script>
     <script>geoMemory("pythagoras");</script>
     <script type="module" src="./index.js"></script>
+  
+    <!-- the keyboard (utils/components/studio-keys.js) — ? shows the list (Space and ← → were already here) -->
+    <script type="module">
+      import { studioKeys, flip, press } from "/utils/components/studio-keys.js";
+      studioKeys({
+        o: () => press("#settings-btn"), v: () => press("#reset-view-btn"),
+        l: () => flip("toggle-labels"), t: () => flip("toggle-explanation"),
+      }, { help: "Keys: Space play or pause · ← → step through the slide · V reset the view · L labels · T explanation · O settings · Alt+1–5 the other studios" });
+    </script>
     <!-- seo:about -->
     <section id="pp-about" class="pp-about" data-access="premium" hidden>
       <nav class="pp-about-crumbs" aria-label="Breadcrumb">
@@ -544,14 +553,5 @@
       </ul>
     </section>
     <!-- /seo:about -->
-  
-    <!-- the keyboard (utils/components/studio-keys.js) — ? shows the list (Space and ← → were already here) -->
-    <script type="module">
-      import { studioKeys, flip, press } from "/utils/components/studio-keys.js";
-      studioKeys({
-        o: () => press("#settings-btn"), v: () => press("#reset-view-btn"),
-        l: () => flip("toggle-labels"), t: () => flip("toggle-explanation"),
-      }, { help: "Keys: Space play or pause · ← → step through the slide · V reset the view · L labels · T explanation · O settings · Alt+1–5 the other studios" });
-    </script>
-</body>
+  </body>
 </html>
