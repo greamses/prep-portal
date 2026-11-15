@@ -112,6 +112,19 @@
 .bee-kid.is-sad .bee-kid-rig { filter: saturate(0.85); }
 @keyframes bee-tear { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(330%) scale(1); opacity: 0; } }
 
+/* clapping: the judges' and the audience's hands come up and meet, each at their own beat */
+.bee-hands, .bee-aud-hands { display: none; }
+.bee-bd.is-clapping :is(.bee-hands, .bee-aud-hands) { display: inline; }
+/* each arm turns about its own shoulder (or elbow): the outer bottom corner of its box */
+.bee-hand { transform-box: fill-box; }
+.bee-hand--l { transform-origin: 0% 100%; }
+.bee-hand--r { transform-origin: 100% 100%; }
+.bee-bd.is-clapping .bee-hand--l { animation: bee-clap-l 0.3s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.bee-bd.is-clapping .bee-hand--r { animation: bee-clap-r 0.3s ease-in-out infinite; animation-delay: var(--d, 0s); }
+@keyframes bee-clap-l { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(9deg); } }
+@keyframes bee-clap-r { 0%, 100% { transform: rotate(10deg); } 50% { transform: rotate(-9deg); } }
+@media (prefers-reduced-motion: reduce) { .bee-bd.is-clapping :is(.bee-hand--l, .bee-hand--r) { animation: none; } }
+
 .bee-bd.is-instant :is(.bee-kid, .bee-kid-body, .bee-leg, .bee-you) { transition: none !important; }
 @media (prefers-reduced-motion: reduce) {
   :is(.bee-kid, .bee-kid-body, .bee-leg) { transition: none; }

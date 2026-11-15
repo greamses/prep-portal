@@ -82,6 +82,32 @@ function tone(freqs, { gap = 0.12, len = 0.5, type = 'sine', vol = 0.16 } = {}) 
   } catch { /* no sound here */ }
 }
 const chime = () => tone([660, 880, 1320], { len: 0.45 });
+/* Applause: a crowd of short claps (bursts of noise, each dying away fast), thick at
+   first and thinning out, through a band filter so it sounds like hands and not hiss. */
+function applause(seconds = 2.4, crowd = 40) {
+  try {
+    actx ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state !== 'running') actx.resume();
+    const rate = actx.sampleRate, n = Math.floor(rate * seconds);
+    const buf = actx.createBuffer(1, n, rate), d = buf.getChannelData(0);
+    const claps = Math.floor(seconds * crowd);
+    for (let c = 0; c < claps; c++) {
+      const start = Math.floor(seconds * Math.pow(Math.random(), 1.5) * 0.92 * rate);
+      const len = Math.floor(rate * (0.008 + Math.random() * 0.018));
+      const amp = 0.2 + Math.random() * 0.35;
+      for (let i = 0; i < len && start + i < n; i++) d[start + i] += (Math.random() * 2 - 1) * amp * Math.exp(-i / (len * 0.22));
+    }
+    for (let i = Math.floor(n * 0.65); i < n; i++) d[i] *= (n - i) / (n * 0.35);
+    const src = actx.createBufferSource();
+    src.buffer = buf;
+    const band = actx.createBiquadFilter();
+    band.type = 'bandpass'; band.frequency.value = 1400; band.Q.value = 0.55;
+    const gain = actx.createGain();
+    gain.gain.value = 0.55;
+    src.connect(band).connect(gain).connect(actx.destination);
+    src.start();
+  } catch { /* no sound here */ }
+}
 const bell = () => tone([1568, 1568], { gap: 0.02, len: 1.4, type: 'triangle', vol: 0.2 });
 
 /* ── The spellers' voices: the browser's own speech (Web Speech API) ───────
@@ -146,7 +172,8 @@ function audienceSvg(seed) {
   const hairs = ['#1b1410', '#2b1d14', '#120d0a', '#3a2a1c', '#4a3322'];
   const wraps = ['#d0632f', '#2f7d6d', '#7c3f98', '#c79a1d'];
   const rows = [{ y: 52, k: 0.78 }, { y: 136, k: 0.92 }, { y: 228, k: 1.08 }];
-  let out = '';
+  const skins = ['#6b4026', '#8d5a3b', '#4a2c1a', '#a8714d', '#7a4a2e'];
+  let out = '', hands = '';
   rows.forEach((row, r) => {
     const gap = 96 * row.k, w = 74 * row.k, h = 64 * row.k;
     for (let x = (r % 2 ? gap / 2 : 0) - 30; x < 1640; x += gap) {
@@ -154,13 +181,26 @@ function audienceSvg(seed) {
       if (rnd() < 0.82) {
         const hr = 24 * row.k;
         out += `<ellipse cx="${cx}" cy="${row.y - h * 0.15}" rx="${hr}" ry="${hr * 1.12}" fill="${hairs[Math.floor(rnd() * hairs.length)]}"/>`;
+        // their hands, up in front of their faces: drawn last, over every row behind them
+        if (rnd() < 0.8) {
+          const headY = row.y - h * 0.15, skin = skins[Math.floor(rnd() * skins.length)];
+          const sleeve = ['#c9d4e6', '#e7c9a8', '#b9d7c2', '#e3b8b8', '#d9cfe8'][Math.floor(rnd() * 5)];
+          const arm = (side) => {
+            const sx = cx + side * hr * 1.35, sy = headY + hr * 0.95;          // the shoulder
+            const hx = cx + side * hr * 0.55, hy = headY - hr * 1.25;          // the hand, above the head
+            return `<g class="bee-hand bee-hand--${side < 0 ? 'l' : 'r'}">` +
+              `<line x1="${sx}" y1="${sy}" x2="${hx}" y2="${hy + hr * 0.3}" stroke="${sleeve}" stroke-width="${hr * 0.55}" stroke-linecap="round"/>` +
+              `<ellipse cx="${hx}" cy="${hy}" rx="${hr * 0.36}" ry="${hr * 0.5}" fill="${skin}"/></g>`;
+          };
+          hands += `<g class="bee-aud-hands" style="--d:-${(rnd() * 0.3).toFixed(2)}s">${arm(-1)}${arm(1)}</g>`;
+        }
         if (rnd() < 0.18) out += `<path d="M${cx - hr * 1.1} ${row.y - h * 0.3} Q${cx} ${row.y - h * 1.15} ${cx + hr * 1.1} ${row.y - h * 0.3} Z" fill="${wraps[Math.floor(rnd() * wraps.length)]}"/>`;
         out += `<rect x="${cx - hr * 1.5}" y="${row.y + h * 0.18}" width="${hr * 3}" height="${h}" fill="${['#c9d4e6', '#e7c9a8', '#b9d7c2', '#e3b8b8', '#d9cfe8'][Math.floor(rnd() * 5)]}" opacity=".85"/>`;
       }
       out += `<rect x="${x}" y="${row.y}" width="${w}" height="${h}" fill="#2f4c7a"/><rect x="${x + 5 * row.k}" y="${row.y + 5 * row.k}" width="${w - 10 * row.k}" height="${h * 0.45}" fill="#3c5d92"/>`;
     }
   });
-  return `<svg viewBox="0 0 1600 270" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${out}</svg>`;
+  return `<svg viewBox="0 0 1600 270" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${out}${hands}</svg>`;
 }
 
 /* The judges' table: three judges, the head judge in the middle. Her mouth is a <g
@@ -181,11 +221,19 @@ function judgesSvg() {
     <path d="M${cx - 1.5} 51 q1.5 4 3 0" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="1.2"/>
     ${head ? `<g class="mouth" data-hinge="58"><path d="M${cx - 6.5} 58 Q${cx} 58.6 ${cx + 6.5} 58 Q${cx + 4} 66 ${cx} 66 Q${cx - 4} 66 ${cx - 6.5} 58 Z" fill="#5e2420"/><path d="M${cx - 4.5} 58.4 h9 v2 h-9 Z" fill="#f4f1ea"/></g>`
       : `<path d="M${cx - 5.5} 58.5 Q${cx} 62.5 ${cx + 5.5} 58.5" fill="none" stroke="#5e2420" stroke-width="1.8" stroke-linecap="round"/>`}`;
+  const hands = (cx, skin, shirt, d) => {
+    const arm = (side) => `<g class="bee-hand bee-hand--${side < 0 ? 'l' : 'r'}">` +
+      `<line x1="${cx + side * 24}" y1="100" x2="${cx + side * 10}" y2="88" stroke="${shirt}" stroke-width="9" stroke-linecap="round"/>` +
+      `<line x1="${cx + side * 24}" y1="100" x2="${cx + side * 10}" y2="88" stroke="rgba(0,0,0,.18)" stroke-width="9" stroke-linecap="round" stroke-dasharray="0 1"/>` +
+      `<ellipse cx="${cx + side * 8}" cy="83" rx="5.5" ry="8" fill="${skin}" stroke="rgba(0,0,0,.25)" stroke-width=".8"/></g>`;
+    return `<g class="bee-hands" style="--d:${d}s">${arm(-1)}${arm(1)}</g>`;
+  };
   const card = (cx, text) => `<rect x="${cx - 26}" y="104" width="52" height="16" fill="#fbf8f1"/><text x="${cx}" y="115.5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" font-weight="700" fill="#2a2723">${text}</text>`;
   return `<svg viewBox="0 0 300 160" aria-hidden="true">
     ${judge(52, { skin: '#8d5a3b', hair: '#1a1210', shirt: '#2d3e5c', tie: '#9b2f3a', glasses: true })}
     ${judge(150, { skin: '#6b4026', headwrap: '#c6531f', shirt: '#7c3f98', head: true })}
     ${judge(248, { skin: '#a8714d', hair: '#22160f', shirt: '#2f6e5c', tie: '#d9b44a' })}
+    ${hands(52, '#8d5a3b', '#253350', -0.05)}${hands(150, '#6b4026', '#69337f', -0.17)}${hands(248, '#a8714d', '#265c4c', -0.1)}
     <rect x="0" y="94" width="300" height="10" fill="#27406b"/>
     <rect x="0" y="104" width="300" height="56" fill="#2f4c7a"/>
     <rect x="0" y="104" width="300" height="5" fill="#d9b44a"/>
@@ -403,6 +451,15 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     if (gone || !pace || !canSpeak) return;
     const i = PHRASE[name];
     sayWord(SPELLING_PHRASES[i][2], judge, { rate: 0.95, clip: clipFor('phrases', i, 'd') });
+  }
+  /** The judges and the hall clap. */
+  let clapTimer = 0;
+  function clap(seconds = 2.4) {
+    if (gone || !pace) return;
+    clearTimeout(clapTimer);
+    bd.classList.add('is-clapping');
+    applause(seconds, seconds > 3 ? 55 : 40);
+    clapTimer = setTimeout(() => bd.classList.remove('is-clapping'), seconds * 1000);
   }
   async function spoken(max = 6000) {
     const t0 = Date.now();
@@ -690,7 +747,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         judgeSays('correct');
         if (pace) chime();
         await spoken();
-        await wait(800);
+        say('Correct! The hall claps.');
+        clap(2.4);
+        await wait(2200);
       } else {
         showLetters(r.t || '', 'is-wrong');
         say(r.t ? 'The judge: "Incorrect."' : 'Time is up. The judge: "Incorrect."');
@@ -730,6 +789,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     kids[champ.seat].classList.add('is-champion');
     say(`${who(champ)} is the champion!`);
     chime();
+    clap(5);
     await walk(kids[champ.seat], 'mic');
     await wait(1200);
     if (!gone) showResults();
