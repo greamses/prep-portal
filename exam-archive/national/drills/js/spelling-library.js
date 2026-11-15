@@ -3,9 +3,10 @@
    to study before (or between) rounds: each word with its IPA, its meaning
    and a sentence using it, and the boy's face beside it to say it aloud.
 
-   One set shows at a time; the numbered strip along the top moves between
-   them, and the sets ticked in the setup are marked on it. Opened from the
-   Word Sets step: openSpellingLibrary({ sets: [1, 2], start: 1 }).
+   One set shows at a time. Only the sets ticked in the setup are in it (all of
+   them when none is ticked): the numbered strip along the top and the arrows
+   move between those. Opened from the Word Sets step:
+   openSpellingLibrary({ sets: [1, 2], start: 1 }).
 ═══════════════════════════════════════════════════════ */
 import { BANKS, setCount, SET_SIZE, setWords, aboutText, aboutLine, sayWord, hush, faceButton, canSpeak, clipFor } from './spelling.js';
 import { UI } from '/utils/components/ui-icons.js';
@@ -15,9 +16,11 @@ let strip = null;
 let list = null;
 let title = null;
 let chosen = new Set();
+let order = [1];          // the sets in the library, in order: the ticked ones
 let current = 1;
 let bank = 'secondary';
 let kicker = null;
+let sub = null;
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -95,8 +98,14 @@ function row({ i: at, row: [word, ipa, def, use, pos = '', origin = ''] }, n) {
   return li;
 }
 
+/** Step `by` sets along the library's own sets (the ticked ones), stopping at either end. */
+function step(by) {
+  const k = Math.min(Math.max(0, order.indexOf(current) + by), order.length - 1);
+  showSet(order[k]);
+}
+
 function showSet(n) {
-  current = Math.min(Math.max(1, n), setCount(bank));
+  current = order.includes(n) ? n : order[0];
   hush();
   const words = setWords(bank, current);
   const first = (current - 1) * SET_SIZE + 1;
@@ -126,7 +135,7 @@ function build() {
       <div class="spell-lib-paper pp-receipt__paper">
         <p class="spell-lib-kicker">Spelling library</p>
         <p class="spell-lib-title"></p>
-        <p class="spell-lib-sub">Tap the boy to hear a word. Ticked sets are the ones your round will use.</p>
+        <p class="spell-lib-sub"></p>
         <nav class="spell-lib-strip" aria-label="Sets"></nav>
         <div class="spell-lib-scroll"></div>
         <div class="spell-lib-foot">
@@ -138,6 +147,7 @@ function build() {
     </div>`;
   title = bd.querySelector('.spell-lib-title');
   kicker = bd.querySelector('.spell-lib-kicker');
+  sub = bd.querySelector('.spell-lib-sub');
   strip = bd.querySelector('.spell-lib-strip');
   list = bd.querySelector('.spell-lib-scroll');
   const [prev, next] = bd.querySelectorAll('.spell-lib-step');
@@ -145,7 +155,7 @@ function build() {
   prev.setAttribute('aria-label', 'Previous set'); prev.dataset.tip = 'Previous set';
   next.innerHTML = UI.chevronRight(20);
   next.setAttribute('aria-label', 'Next set'); next.dataset.tip = 'Next set';
-  [prev, next].forEach((b) => b.addEventListener('click', () => showSet(current + Number(b.dataset.step))));
+  [prev, next].forEach((b) => b.addEventListener('click', () => step(Number(b.dataset.step))));
   const close = bd.querySelector('.spell-lib-close');
   close.innerHTML = UI.close(20);
   close.setAttribute('aria-label', 'Close the library'); close.dataset.tip = 'Close';
@@ -154,16 +164,16 @@ function build() {
   document.addEventListener('keydown', (e) => {
     if (!bd.classList.contains('open')) return;
     if (e.key === 'Escape') closeSpellingLibrary();
-    else if (e.key === 'ArrowRight') showSet(current + 1);
-    else if (e.key === 'ArrowLeft') showSet(current - 1);
+    else if (e.key === 'ArrowRight') step(1);
+    else if (e.key === 'ArrowLeft') step(-1);
   });
   document.body.appendChild(bd);
 }
 
-/* The numbered strip: one button per set of this list. */
+/* The numbered strip: one button per set in the library. */
 function buildStrip() {
   strip.replaceChildren();
-  for (let n = 1; n <= setCount(bank); n++) {
+  for (const n of order) {
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.set = n;
@@ -178,12 +188,19 @@ export function openSpellingLibrary({ bank: list = 'secondary', sets = [1], star
   if (!bd) build();
   bank = BANKS[list] ? list : 'secondary';
   kicker.textContent = `${BANKS[bank].label} spelling library`;
+  const count = setCount(bank);
+  chosen = new Set(sets.filter((n) => n >= 1 && n <= count));
+  order = chosen.size ? [...chosen].sort((a, b) => a - b) : Array.from({ length: count }, (_, k) => k + 1);
   buildStrip();
-  chosen = new Set(sets);
-  strip.querySelectorAll('button').forEach((b) => b.classList.toggle('is-chosen', chosen.has(Number(b.dataset.set))));
+  // one set needs no strip and no arrows
+  strip.hidden = order.length < 2;
+  bd.querySelectorAll('.spell-lib-step').forEach((b) => { b.hidden = order.length < 2; });
+  sub.textContent = chosen.size
+    ? `Tap the boy to hear a word. ${chosen.size === 1 ? 'This is the set' : `These are the ${chosen.size} sets`} your round will use.`
+    : 'Tap the boy to hear a word. Tick sets in the setup to study just those.';
   bd.classList.add('open');
   bd.setAttribute('aria-hidden', 'false');
-  showSet(start || Math.min(...(chosen.size ? chosen : [1])));
+  showSet(start || order[0]);
 }
 
 export function closeSpellingLibrary() {
