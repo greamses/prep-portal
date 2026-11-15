@@ -52,15 +52,17 @@ function tone(freqs, { gap = 0.12, len = 0.5, type = 'sine', vol = 0.16 } = {}) 
 const chime = () => tone([660, 880, 1320], { len: 0.45 });
 const bell = () => tone([1568, 1568], { gap: 0.02, len: 1.4, type: 'triangle', vol: 0.2 });
 
-/* Where the seats are, in % of the hall: a back row and a front row. */
+/* Where the chairs are, in % of the hall: a back row and a front row. The back row
+   sits half a chair across, so its spellers show between the front row's. */
 function seatSpot(count, seat) {
   const back = count > 5 ? Math.ceil(count / 2) : 0;
   const inBack = seat < back;
   const n = inBack ? back : count - back;
   const j = inBack ? seat : seat - back;
-  const step = Math.min(13, n > 1 ? 60 / (n - 1) : 0);
-  return { x: 60 + (j - (n - 1) / 2) * step, y: inBack ? 46 : 62, row: inBack ? 'back' : 'front' };
+  const step = Math.min(13, n > 1 ? 58 / (n - 1) : 0);
+  return { x: (inBack ? 55 : 61.5) + (j - (n - 1) / 2) * step, y: inBack ? 55 : 72, row: inBack ? 'back' : 'front' };
 }
+const CHAIR = '<svg viewBox="0 0 100 125" preserveAspectRatio="none"><rect x="12" y="0" width="76" height="66" fill="var(--bee-chair)"/><rect x="20" y="8" width="60" height="42" fill="var(--bee-chair-in)"/><rect x="4" y="62" width="92" height="15" fill="var(--bee-chair)"/><rect x="8" y="77" width="9" height="48" fill="var(--bee-chair-leg)"/><rect x="83" y="77" width="9" height="48" fill="var(--bee-chair-leg)"/></svg>';
 
 const spaced = (s) => s.toUpperCase().split('').join(' ');
 const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.max(0, sec) % 60).padStart(2, '0')}`;
@@ -94,8 +96,6 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       <div class="bee-wall"><span class="pp-sticky pp-sticky--c0 pp-sticky--tape bee-banner">Spelling Bee</span></div>
       <div class="bee-floor"></div>
       <div class="bee-exit" aria-hidden="true"></div>
-      <div class="bee-bench bee-bench--back"></div>
-      <div class="bee-bench bee-bench--front"></div>
       <div class="bee-desk"><span class="pp-pill pp-pill--static bee-desk-label">Pronouncer</span></div>
       <div class="bee-stand" aria-hidden="true"><svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><rect x="5" y="2" width="10" height="17" rx="5" fill="var(--text-secondary)"/><rect x="8.6" y="18" width="2.8" height="76" fill="var(--text-tertiary)"/><rect x="1" y="93" width="18" height="5" rx="2.5" fill="var(--text-secondary)"/></svg></div>
     </div>
@@ -127,7 +127,6 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const hall = $('.bee-hall'), statusEl = $('.bee-status'), lettersEl = $('.bee-letters'), inputEl = $('.bee-input');
   const clockEl = $('.bee-clock'), toolsEl = $('.bee-tools'), heardEl = $('.bee-heard'), skipBtn = $('.bee-skip');
   const roundEl = $('.bee-round'), leftEl = $('.bee-left');
-  hall.classList.toggle('is-one-row', seats.length <= 5);
 
   // the pronouncer, at the desk: the face that says the words
   const face = faceButton({ size: 64, label: 'The pronouncer', tip: 'The pronouncer' });
@@ -141,12 +140,28 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.className = `bee-kid bee-kid--${spot.row}${s === mySeat ? ' is-me' : ''}`;
     el.style.setProperty('--x', spot.x);
     el.style.setProperty('--y', spot.y);
-    const img = document.createElement('img');
-    img.src = KID[s.kid]; img.alt = ''; img.draggable = false;
+    // The picture is one flat drawing, so it sits the way a seated child looks from the
+    // front: the thighs point at you and are not seen. Two copies of the picture, the body
+    // (head to hips) and the legs (knees to feet); seated, the body comes down onto the
+    // knees. Standing, the two meet again as the whole drawing. See bee.css.
+    const pic = () => { const i = document.createElement('img'); i.src = KID[s.kid]; i.alt = ''; i.draggable = false; return i; };
+    const body = document.createElement('div');
+    body.className = 'bee-kid-body';
     const tag = document.createElement('span');
     tag.className = `pp-sticky ${s === mySeat ? 'pp-sticky--c4' : 'pp-sticky--c3'} bee-tag`;
     tag.textContent = s.tag;
-    el.append(img, tag);
+    body.append(pic(), tag);
+    const legs = document.createElement('div');
+    legs.className = 'bee-kid-legs';
+    legs.append(pic());
+    el.append(body, legs);
+    // the chair stays where it is when its speller goes to the microphone, or leaves
+    const chair = document.createElement('div');
+    chair.className = `bee-chair bee-chair--${spot.row}`;
+    chair.style.setProperty('--x', spot.x);
+    chair.style.setProperty('--y', spot.y);
+    chair.innerHTML = CHAIR;
+    hall.append(chair);
     if (s === mySeat) { const you = document.createElement('span'); you.className = 'pp-pill pp-pill--static bee-you'; you.textContent = 'You'; el.append(you); }
     el.setAttribute('aria-label', `Number ${s.tag}, ${s.name}`);
     hall.append(el);

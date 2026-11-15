@@ -24,14 +24,20 @@
 .bee-wall .bee-banner { position: absolute; top: 5cqh; left: 4cqw; font-size: 4.2cqh; padding: 1cqh 2.4cqh; }
 .bee-floor { position: absolute; inset: 50% 0 0 0; background: color-mix(in srgb, var(--accent-warning) 26%, var(--surface-primary)); border-top: var(--border-subtle); }
 .bee-exit { position: absolute; left: 0; top: 56%; width: 2.2%; height: 44%; background: color-mix(in srgb, var(--ink) 16%, transparent); }
-.bee-bench {
-  position: absolute; left: 22%; right: 2%; height: 9cqh;
-  background: color-mix(in srgb, var(--accent-secondary) 45%, var(--surface-primary));
-  border: var(--border-subtle); box-shadow: var(--shadow-sm);
+/* a chair: it stands on (--x, --y) like its speller, and stays when they get up */
+.bee-hall {
+  --bee-chair: color-mix(in srgb, var(--accent-secondary) 55%, var(--surface-primary));
+  --bee-chair-in: color-mix(in srgb, var(--accent-secondary) 30%, var(--surface-primary));
+  --bee-chair-leg: color-mix(in srgb, var(--accent-secondary) 55%, var(--text-secondary));
 }
-.bee-bench--back { top: 38%; z-index: 3; }
-.bee-bench--front { top: 54%; z-index: 5; }
-.bee-hall.is-one-row .bee-bench--back { display: none; }
+.bee-chair {
+  position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%);
+  width: 15cqh; height: 17.5cqh; transform: translate(-50%, -100%);
+  filter: drop-shadow(0 0.4cqh 0.5cqh rgba(var(--shadow-color, 42, 39, 35), 0.18));
+}
+.bee-chair svg { display: block; width: 100%; height: 100%; }
+.bee-chair--back { z-index: 1; }
+.bee-chair--front { z-index: 3; }
 
 .bee-desk { position: absolute; z-index: 6; left: 2.5%; top: 56%; width: 17%; display: grid; justify-items: center; }
 .bee-desk .spell-face { --face: 17cqh !important; }
@@ -40,33 +46,43 @@
   background: color-mix(in srgb, var(--accent-primary) 55%, var(--surface-primary)); border: var(--border-subtle); box-shadow: var(--shadow-sm);
 }
 .bee-desk .bee-desk-label { position: absolute; bottom: -4.6cqh; font-size: 2.3cqh; padding: 0.3cqh 1.2cqh; white-space: nowrap; }
-.bee-stand { position: absolute; z-index: 9; left: 51.5%; top: 99%; width: 3cqh; height: 30cqh; transform: translate(-50%, -100%); pointer-events: none; }
+.bee-stand { position: absolute; z-index: 9; left: 31.5%; top: 99%; width: 3cqh; height: 30cqh; transform: translate(-50%, -100%); pointer-events: none; }
 .bee-stand svg { display: block; width: 100%; height: 100%; }
 
 /* a speller: the picture stands on (--x, --y), feet first */
 .bee-kid {
   position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%);
-  height: 30cqh; font-size: 3cqh;
+  height: 32cqh; font-size: 3cqh;
   transform: translate(-50%, -100%);
   transition: left 1.5s ease-in-out, top 1.5s ease-in-out, height 1.5s ease-in-out, font-size 1.5s ease-in-out;
 }
 .bee-kid--back { z-index: 2; }
 .bee-kid--front { z-index: 4; }
 .bee-kid img { display: block; height: 100%; width: auto; user-select: none; }
+/* Sitting. The drawing's hips are at 64% of its height and its knees at 80%. Seated, the
+   body (head to hips) drops by that 16% onto the knees, and only knees-to-feet show below
+   it. Standing (walking, at the microphone, leaving), body and legs meet as the whole
+   drawing. The change is animated, so a speller is seen to stand up and to sit down. */
+.bee-kid-body, .bee-kid-legs { height: 100%; transition: clip-path 0.45s ease-in-out, transform 0.45s ease-in-out; }
+.bee-kid-body { position: relative; z-index: 1; clip-path: inset(0 -40% 36% -40%); transform: translateY(16%); }
+.bee-kid-legs { position: absolute; inset: 0; clip-path: inset(80% 0 0 0); }
+.bee-kid:is(.is-walking, .is-at-mic, .is-off) .bee-kid-body { clip-path: inset(0 -40% 19.6% -40%); transform: none; }
+.bee-kid .bee-you.pp-pill { translate: -50% 5.2cqh; }
+.bee-kid:is(.is-walking, .is-at-mic, .is-off) .bee-you.pp-pill { translate: -50% 0; }
 .bee-kid .bee-tag.pp-sticky {
   position: absolute; left: 50%; top: 36%; translate: -50% 0; rotate: -3deg;
   min-width: 2.1em; padding: 0.1em 0.35em; font-size: 1em; line-height: 1.25; text-align: center;
 }
-.bee-kid .bee-you.pp-pill { position: absolute; left: 50%; top: -1.9em; translate: -50% 0; font-size: 0.72em; padding: 0.1em 0.5em; white-space: nowrap; background: var(--surface-primary); }
+.bee-kid .bee-you.pp-pill { position: absolute; z-index: 2; left: 50%; top: -1.9em; font-size: 0.72em; padding: 0.1em 0.5em; white-space: nowrap; background: var(--surface-primary); }
 .bee-kid.is-walking { z-index: 8; }
 .bee-kid.is-walking img { animation: bee-step 0.32s ease-in-out infinite alternate; }
 @keyframes bee-step { from { transform: translateY(0) rotate(-2deg); } to { transform: translateY(-3%) rotate(2deg); } }
-.bee-kid.is-at-mic { left: 46.5%; top: 98%; height: 46cqh; font-size: 4.6cqh; z-index: 8; }
+.bee-kid.is-at-mic { left: 26.5%; top: 98%; height: 46cqh; font-size: 4.6cqh; z-index: 8; }
 .bee-kid.is-off { left: -12%; top: 98%; height: 46cqh; font-size: 4.6cqh; z-index: 8; }
 .bee-kid.is-gone { visibility: hidden; }
 .bee-kid.is-champion .bee-tag.pp-sticky { outline: 0.2em solid var(--accent-primary); }
 .bee-bd.is-instant .bee-kid { transition: none; }
-@media (prefers-reduced-motion: reduce) { .bee-kid { transition: none; } .bee-kid.is-walking img { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .bee-kid, .bee-kid-body, .bee-kid-legs { transition: none; } .bee-kid.is-walking img { animation: none; } }
 
 /* under the hall: what is happening, the letters, the clock, the speller's tools */
 .bee-panel { position: relative; width: min(100%, 620px); flex: none; }
