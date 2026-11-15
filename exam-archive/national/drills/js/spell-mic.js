@@ -80,7 +80,12 @@ export function parseSpoken(text) {
 }
 
 /**
- * The mic. `onHeard(items, text)` gets each phrase's letters and commands;
+ * The mic. `onHeard(items, text)` gets what to do to the answer, in order: letters
+ * ({ ch }), { back } and { clear }. Letters arrive AS THEY ARE SAID: the recogniser's
+ * first guesses are used at once, and when it changes its mind ("bee" -> "dee") the
+ * letters it took back are taken off again ({ back }) before the new ones go in.
+ * Commands ("delete", "clear") wait for its final word, as they cannot be undone.
+ * `reset()` (a new word) means the letters said so far belong to the last word;
  * `quiet()` says whether hearing should count now (false while the boy talks);
  * `onState(on, why)` reports it switching on or off (why: 'denied', 'error').
  */
@@ -88,21 +93,41 @@ export function createSpellMic({ onHeard, quiet = () => true, onState = () => {}
   let rec = null;
   let on = false;
   let restarting = 0;
+  let applied = [];     // per result of this session: the letters already put in the answer
+  let seen = [];        // per result: the letters it holds now (reset() makes them all "applied")
+  const same = (a, b) => a.ch === b.ch;
 
   function begin() {
     if (!Recognition || rec) return;
     rec = new Recognition();
     rec.lang = 'en-GB';
     rec.continuous = true;
-    rec.interimResults = false;
+    rec.interimResults = true;                  // letters as they are said, not after a pause
     rec.maxAlternatives = 1;
+    applied = []; seen = [];
     rec.onresult = (e) => {
       for (let k = e.resultIndex; k < e.results.length; k++) {
-        if (!e.results[k].isFinal) continue;
+        const final = e.results[k].isFinal;
         const text = e.results[k][0].transcript;
-        if (!quiet()) continue;                    // the boy is talking: that is his voice
         const items = parseSpoken(text);
-        onHeard(items, text);
+        const letters = items.filter((it) => it.ch);
+        seen[k] = letters;
+        if (!quiet()) { applied[k] = letters; continue; }   // the boy is talking: his voice, not theirs
+        const had = applied[k] || [];
+        const ops = [];
+        if (items.some((it) => !it.ch)) {
+          // a command in it: wait for the final word, then replay this phrase whole, in order
+          if (!final) continue;
+          for (let n = 0; n < had.length; n++) ops.push({ back: true });
+          ops.push(...items);
+        } else {
+          let keep = 0;
+          while (keep < had.length && keep < letters.length && same(had[keep], letters[keep])) keep++;
+          for (let n = keep; n < had.length; n++) ops.push({ back: true });
+          ops.push(...letters.slice(keep));
+        }
+        applied[k] = letters;
+        if (ops.length || (final && !letters.length && text.trim())) onHeard(ops, text);   // a word said whole: say so
       }
     };
     rec.onerror = (e) => {
@@ -132,5 +157,7 @@ export function createSpellMic({ onHeard, quiet = () => true, onState = () => {}
     if (r) { r.onend = null; try { r.abort(); } catch { /* already stopped */ } }
     onState(false);
   }
-  return { start, stop, get on() { return on; } };
+  /** A new word: whatever was heard up to now was for the last one. */
+  function reset() { applied = seen.map((x) => (x ? [...x] : x)); }
+  return { start, stop, reset, get on() { return on; } };
 }

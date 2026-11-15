@@ -223,7 +223,7 @@ const spellMic = createSpellMic({
   quiet: () => !isTalking(350),            // his own voice must not type
   onHeard: (items, text) => {
     if (!active || locked || !currentQuestion || !currentQuestion.spell) return;
-    heardEl.textContent = items.length ? `Heard: ${text}` : `Heard "${text}". Say the letters one by one.`;
+    heardEl.textContent = items.length ? `Heard: ${text.trim()}` : `Heard "${text.trim()}". Say the letters one by one.`;
     if (!items.length) return;
     let v = inputEl.value;
     for (const it of items) v = it.back ? v.slice(0, -1) : it.clear ? '' : v + it.ch;
@@ -304,6 +304,7 @@ function renderSpelling(q) {
   meaningEl.hidden = false;
   rootBtn.hidden = defBtn.hidden = useBtn.hidden = !canSpeak;
   if (micWanted && canListen && !spellMic.on) spellMic.start();
+  spellMic.reset();                          // letters said from now on are for this word
   spellTools.hidden = false;
   cardEl.classList.add('is-spell');          // grows to fit a long sentence instead of cropping its buttons
   answerStage.classList.add('is-spell');
