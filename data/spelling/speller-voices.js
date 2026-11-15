@@ -14,4 +14,4 @@ export const LETTER_VOICES = {
   girl: { name: 'Lily', id: 'pFZP5JQG7iQjIQuC4Bku', pitch: 1 },
   boy: { name: 'George', id: 'JBFqnCBsd6RMkjVDRZzb', pitch: 1 },
 };
-export const SPELLER_VOICES = { girl: 'bf_lily', boy: 'bm_fable' };
+export const SPELLER_VOICES = { girl: 'af_heart', boy: 'bm_fable' };
