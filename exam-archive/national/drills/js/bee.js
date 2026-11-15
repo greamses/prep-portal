@@ -62,7 +62,7 @@ import { heroPaint } from '/utils/components/nav-icons.js';
                    (mouth = [centre x, centre y, width, height])
    The first girl has both hands down (girl-hands-down.svg, made by
    tools/character-trace/hands-down.mjs); boy-hoodie and girl-overalls came as pictures. */
-const KIDS = {
+export const KIDS = {
   // the boy in the blue T-shirt with his mouth closed (boy-closed.svg; boy.svg, grinning, stays for the films)
   boy: { src: '/media/characters/boy-closed.svg', girl: false, tall: 0.78, hip: 63.5, knee: 81, hands: 72,
     eyes: [[39.4, 23.1], [68, 23.1]], mouth: [55, 29.2, 15, 2.2], skin: '#f6c09c', lip: '#8a3b2b' },
@@ -91,6 +91,30 @@ const ELEVEN_LETTERS = false;
 const KID_NAMES = { boy: 'Boy, blue T-shirt', girl: 'Girl, pigtails', boy2: 'Boy, hoodie', girl2: 'Girl, pink and yellow', girl3: 'Girl, curly hair', boy3: 'Boy, curly hair' };
 export const BEE_SPELLERS = Object.keys(KID_NAMES).map((key) => ({ key, name: KID_NAMES[key], src: KIDS[key].src }));
 export const BEE_SIZE = 5;            // a bee is for five spellers (the user, 2026-11-15)
+/* A child's mouth, open by `o` (0 shut .. 1 as open as a speaking child opens it). The upper
+   edge follows the drawn smile (a curve through the corners, dipping in the middle); the lower
+   lip comes down from it, deepest in the middle, so a dark opening appears along the smile and
+   closes back onto it. In % of the drawing (the mouth's SVG has no aspect of its own). */
+export function mouthPath(f, o) {
+  const [cx, cy, w, h] = f.mouth;
+  const half = w * 0.28, x1 = cx - half, x2 = cx + half;
+  const top = cy - h * 0.1, dip = h * 0.22;           // the smile: its corners and how far it dips
+  const open = h * 0.75 * o;                          // how far the lower lip comes down
+  // the upper lip's edge: a gentle curve along the smile; the lower lip's: a rounded U under it
+  const inner = `M${x1} ${top} C${cx - half * 0.5} ${top + dip * 1.3} ${cx + half * 0.5} ${top + dip * 1.3} ${x2} ${top}` +
+    ` C${x2 - half * 0.15} ${top + dip + open * 1.25} ${x1 + half * 0.15} ${top + dip + open * 1.25} ${x1} ${top} Z`;
+  // a hint of the lower lip just under the opening
+  const low = `M${x1 + half * 0.35} ${top + dip + open + h * 0.28} Q${cx} ${top + dip + open + h * 0.42} ${x2 - half * 0.35} ${top + dip + open + h * 0.28}`;
+  return { inner, low };
+}
+export function setMouth(el, o) {
+  const svg = el.querySelector('.bee-kid-mouth');
+  const f = KIDS[el.dataset.kid];
+  if (!svg || !f) return;
+  const { inner, low } = mouthPath(f, o);
+  svg.querySelector('.bee-lips-in').setAttribute('d', o > 0.02 ? inner : '');
+  svg.querySelector('.bee-lips-low').setAttribute('d', o > 0.02 ? low : '');
+}
 const MIC_KEY = 'ppSpellMic';          // the same choice as the drill's mic
 const GRACE = 12;                      // seconds past the clock before a silent turn is called a miss
 
@@ -788,9 +812,13 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       return t;
     });
     // a mouth over the drawing's own, opening and shutting while the child speaks (bee.css)
-    const mouth = document.createElement('span');
-    mouth.className = 'bee-kid-mouth';
-    mouth.style.cssText = `left:${f.mouth[0] - f.mouth[2] * 0.2}%;top:${f.mouth[1] - f.mouth[3] * 0.1}%;width:${f.mouth[2] * 0.4}%;height:${f.mouth[3] * 0.8}%`;
+    // the speaking mouth: an SVG over the drawing, in % of it, whose path follows the drawn smile
+    const mouth = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    mouth.setAttribute('class', 'bee-kid-mouth');
+    mouth.setAttribute('viewBox', '0 0 100 100');
+    mouth.setAttribute('preserveAspectRatio', 'none');
+    mouth.setAttribute('aria-hidden', 'true');
+    mouth.innerHTML = '<path class="bee-lips-in" d=""/><path class="bee-lips-low" d=""/>';
     body.append(pic(), tag, frown, ...tears, mouth);
     const legL = document.createElement('div');
     legL.className = 'bee-leg bee-leg--l';
@@ -825,8 +853,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.style.setProperty('--hands', f.hands);
     el.dataset.kid = kid;
     el.dataset.label = `${KID_NAMES[kid] || kid} (every one)`;
-    const mouth = el.querySelector('.bee-kid-mouth');
-    if (mouth) mouth.style.cssText = `left:${f.mouth[0] - f.mouth[2] * 0.2}%;top:${f.mouth[1] - f.mouth[3] * 0.1}%;width:${f.mouth[2] * 0.4}%;height:${f.mouth[3] * 0.8}%`;
+    setMouth(el, 0);
     const frown = el.querySelector('.bee-frown');
     if (frown) frown.style.cssText = `left:${f.mouth[0] - f.mouth[2] / 2}%;top:${f.mouth[1] - f.mouth[3] / 2}%;width:${f.mouth[2]}%;height:${f.mouth[3] * 1.6}%`;
     el.querySelectorAll('.bee-tear').forEach((t, n) => { t.style.left = `${f.eyes[n][0]}%`; t.style.top = `${f.eyes[n][1] + 1.6}%`; });
@@ -937,7 +964,26 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   let talkingNow = null;            // the Audio (or utterance) playing
   const started = (item) => { if (item.onStart && !item.onStartDone) { item.onStartDone = true; item.onStart(); } };
   let speakingKid = null;           // the child at the microphone: their mouth moves as they speak
-  const mouthOn = (on) => speakingKid?.classList.toggle('is-talking', on);
+  let talking = false, mouthRaf = 0, mouthO = 0, mouthGoal = 0, nextBeat = 0;
+  const mouthOn = (on) => {
+    talking = on;
+    speakingKid?.classList.toggle('is-talking', on);
+    if (!mouthRaf) mouthRaf = requestAnimationFrame(mouthTick);
+  };
+  function mouthTick(now) {
+    mouthRaf = 0;
+    if (!speakingKid) return;
+    if (talking) {
+      if (now >= nextBeat) {                        // a syllable: open by some amount, then nearly shut
+        mouthGoal = mouthGoal > 0.35 ? 0.05 + Math.random() * 0.15 : 0.45 + Math.random() * 0.55;
+        nextBeat = now + 70 + Math.random() * 90;
+      }
+    } else mouthGoal = 0;
+    mouthO += (mouthGoal - mouthO) * 0.45;
+    setMouth(speakingKid, mouthO);
+    if (talking || mouthO > 0.01) mouthRaf = requestAnimationFrame(mouthTick);
+    else setMouth(speakingKid, 0);
+  }
   function next() {
     talkingNow = null;
     mouthOn(false);
