@@ -789,7 +789,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     // a mouth over the drawing's own, opening and shutting while the child speaks (bee.css)
     const mouth = document.createElement('span');
     mouth.className = 'bee-kid-mouth';
-    mouth.style.cssText = `left:${f.mouth[0] - f.mouth[2] * 0.3}%;top:${f.mouth[1] - f.mouth[3] * 0.2}%;width:${f.mouth[2] * 0.6}%;height:${f.mouth[3] * 1.4}%`;
+    mouth.style.cssText = `left:${f.mouth[0] - f.mouth[2] * 0.2}%;top:${f.mouth[1] - f.mouth[3] * 0.1}%;width:${f.mouth[2] * 0.4}%;height:${f.mouth[3] * 0.8}%`;
     body.append(pic(), tag, frown, ...tears, mouth);
     const legL = document.createElement('div');
     legL.className = 'bee-leg bee-leg--l';
@@ -825,7 +825,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.dataset.kid = kid;
     el.dataset.label = `${KID_NAMES[kid] || kid} (every one)`;
     const mouth = el.querySelector('.bee-kid-mouth');
-    if (mouth) mouth.style.cssText = `left:${f.mouth[0] - f.mouth[2] * 0.3}%;top:${f.mouth[1] - f.mouth[3] * 0.2}%;width:${f.mouth[2] * 0.6}%;height:${f.mouth[3] * 1.4}%`;
+    if (mouth) mouth.style.cssText = `left:${f.mouth[0] - f.mouth[2] * 0.2}%;top:${f.mouth[1] - f.mouth[3] * 0.1}%;width:${f.mouth[2] * 0.4}%;height:${f.mouth[3] * 0.8}%`;
     const frown = el.querySelector('.bee-frown');
     if (frown) frown.style.cssText = `left:${f.mouth[0] - f.mouth[2] / 2}%;top:${f.mouth[1] - f.mouth[3] / 2}%;width:${f.mouth[2]}%;height:${f.mouth[3] * 1.6}%`;
     el.querySelectorAll('.bee-tear').forEach((t, n) => { t.style.left = `${f.eyes[n][0]}%`; t.style.top = `${f.eyes[n][1] + 1.6}%`; });
