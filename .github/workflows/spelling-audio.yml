@@ -23,6 +23,7 @@ on:
       - data/spelling/upper-primary.js
       - data/spelling/lower-primary.js
       - data/spelling/roots.js
+      - data/spelling/phrases.js
       - tools/spelling-audio/*.mjs
       - tools/spelling-audio/package.json
       - tools/spelling-audio/redo.txt
@@ -51,6 +52,7 @@ jobs:
           - { bank: upper, part: 5/5 }
           - { bank: secondary, part: 1/2 }
           - { bank: secondary, part: 2/2 }
+          - { bank: phrases, part: 1/1 }
     steps:
       - uses: actions/checkout@v4
       - name: The clips made so far

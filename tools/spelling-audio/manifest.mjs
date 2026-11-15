@@ -17,7 +17,7 @@ if (!root || !sha) { console.error('usage: node manifest.mjs --root <dir> --sha 
 const REPO = process.env.GITHUB_REPOSITORY || 'greamses/prep-portal';
 
 const lists = {};
-for (const bank of ['secondary', 'upper', 'lower']) {
+for (const bank of ['secondary', 'upper', 'lower', 'phrases']) {
   const dir = join(root, bank, VOICE);
   const have = { w: [], d: [], s: [], o: [] };
   if (existsSync(dir)) {
@@ -40,5 +40,5 @@ writeFileSync(new URL('../../data/spelling/audio.js', import.meta.url),
   `   they live on the repo's spelling-audio branch and are served by jsDelivr, pinned to a\n` +
   `   commit. Per list: w / d / s / o = entry indexes (0-based) with a word / definition /\n` +
   `   sentence / part-of-speech-origin-and-root clip. Anything not listed is spoken with the browser's voice. Voice: ${VOICE}. */\n` +
-  `export const CLIPS = {\n${lists.secondary}${lists.upper}${lists.lower}};\n`);
+  `export const CLIPS = {\n${lists.secondary}${lists.upper}${lists.lower}${lists.phrases}};\n`);
 console.log(`audio.js written @ ${sha.slice(0, 8)}`);

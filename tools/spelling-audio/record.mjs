@@ -33,6 +33,8 @@ const LISTS = {
   secondary: { file: 'secondary.js', name: 'SPELLING_SECONDARY', ipa: fromDictionary },
   upper: { file: 'upper-primary.js', name: 'SPELLING_UPPER_PRIMARY', ipa: fromDictionary },
   lower: { file: 'lower-primary.js', name: 'SPELLING_LOWER_PRIMARY', ipa: fromDictionary },
+  // the Spelling Bee judge's lines ("Your word is,", "Correct."): text only, so kind d alone
+  phrases: { file: 'phrases.js', name: 'SPELLING_PHRASES', ipa: fromDictionary, only: 'd' },
 };
 const arg = (name, dflt) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : dflt; };
 const LIST = LISTS[arg('bank', 'secondary')];
@@ -41,7 +43,7 @@ const BANK = (await import(new URL(`../../data/spelling/${LIST.file}`, import.me
 const [pi, pn] = String(arg('part', '1/1')).split('/').map(Number);
 const per = Math.ceil(BANK.length / pn);
 const FROM = (pi - 1) * per, TO = Math.min(BANK.length, pi * per);
-const kinds = arg('kinds', 'w,d,s,o').split(',').filter((k) => 'wdso'.includes(k));
+const kinds = arg('kinds', 'w,d,s,o').split(',').filter((k) => (LIST.only || 'wdso').includes(k));
 const pad = (i) => String(i + 1).padStart(4, '0');
 
 // A clip that came out (almost) silent or far too short is a bad render: fp16 does that now
