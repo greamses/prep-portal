@@ -814,6 +814,13 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       await spoken();
       speak('w');
       await spoken();
+      // the speller says the word back before spelling it, as at a real bee (in their own voice,
+      // on every device: it needs nothing sent)
+      if (!gone && pace && !results.has(k)) {
+        say(`${who(seat)} says the word back.`);    // never the word itself: it is spelled on screen
+        spellerSays(q.word, seat.kid, wordClip(q, seat.kid));
+        await spellerDone();
+      }
       const r = seat.bot != null ? await botSpell(seat, q, k)
         : seat === mySeat ? await mySpell(q, k)
         : await theirSpell(seat, q, k);
