@@ -28,12 +28,15 @@ for (const bank of ['secondary', 'upper', 'lower', 'phrases']) {
   }
   for (const k of 'wdso') have[k].sort((a, b) => a - b);
   const any = have.w.length + have.d.length + have.s.length + have.o.length;
-  lists[bank] = `  ${bank}: {\n    base: '${any ? `https://cdn.jsdelivr.net/gh/${REPO}@${sha}/${bank}/${VOICE}/` : ''}',\n` +
+  lists[bank] = `  ${bank}: {\n    base: '${any ? `https://raw.githubusercontent.com/${REPO}/${sha}/${bank}/${VOICE}/` : ''}',\n` +
     `    w: new Set(${JSON.stringify(have.w)}),\n    d: new Set(${JSON.stringify(have.d)}),\n    s: new Set(${JSON.stringify(have.s)}),\n` +
     `    o: new Set(${JSON.stringify(have.o)}),\n  },\n`;
   console.log(`${bank}: ${have.w.length} words, ${have.d.length} definitions, ${have.s.length} sentences, ${have.o.length} origin lines`);
 }
 
+// Served straight from GitHub (raw.githubusercontent.com: audio/mpeg, Access-Control-Allow-
+// Origin *, pinned to the commit), NOT jsDelivr: jsDelivr refuses any file of a repo version
+// over 50 MB, and the spelling-audio branch passed that with the spellers' 3,418 clips.
 // The Spelling Bee's spellers: in each speller voice, which words (w) of each list, and
 // which letters, are recorded.
 const { SPELLER_VOICES } = await import(new URL('../../data/spelling/speller-voices.js', import.meta.url));
@@ -43,7 +46,7 @@ for (const voice of [...new Set(Object.values(SPELLER_VOICES))]) {
   for (const bank of ['secondary', 'upper', 'lower', 'letters']) {
     const dir = join(root, bank, voice);
     const w = existsSync(dir) ? readdirSync(dir).map((f) => /^(\d{4})-w\.mp3$/.exec(f)).filter(Boolean).map((m) => Number(m[1]) - 1).sort((a, b) => a - b) : [];
-    banks += `    ${bank}: { base: '${w.length ? `https://cdn.jsdelivr.net/gh/${REPO}@${sha}/${bank}/${voice}/` : ''}', w: new Set(${JSON.stringify(w)}) },\n`;
+    banks += `    ${bank}: { base: '${w.length ? `https://raw.githubusercontent.com/${REPO}/${sha}/${bank}/${voice}/` : ''}', w: new Set(${JSON.stringify(w)}) },\n`;
     console.log(`speller ${voice} ${bank}: ${w.length}`);
   }
   spellers += `  ${voice}: {\n${banks}  },\n`;
