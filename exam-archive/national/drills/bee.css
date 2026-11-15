@@ -300,3 +300,42 @@
 @keyframes bee-tile-flip { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
 @keyframes bee-tile-shake { 0%, 100% { transform: none; } 25% { transform: translateX(-12%); } 50% { transform: translateX(10%); } 75% { transform: translateX(-6%); } }
 @media (prefers-reduced-motion: reduce) { .bee-tile.is-new, .bee-tile.is-ok, .bee-tile.is-bad { animation: none; } }
+
+/* ── the intro and the rounds ──
+   The stage starts behind closed curtains, which sweep open; a new round sends a light
+   across the stage; titles on the TV are tiles that drop in one after another. */
+.bee-curtain {
+  position: absolute; z-index: 11; top: 0; bottom: 33.3%; width: 51%; pointer-events: none;
+  background: repeating-linear-gradient(90deg, #8f2a36 0 2.6cqw, #6e1f2a 2.6cqw 3.6cqw, #a8343f 3.6cqw 5.6cqw);
+  box-shadow: inset 0 -1.2cqh 2cqh rgba(0, 0, 0, 0.35), 0 0 3cqh rgba(0, 0, 0, 0.45);
+  transition: transform 1.9s cubic-bezier(.6, .05, .25, 1);
+}
+.bee-curtain--l { left: 0; transform-origin: 0 0; }
+.bee-curtain--r { right: 0; transform-origin: 100% 0; }
+.bee-bd.is-curtains-open .bee-curtain--l { transform: translateX(-102%) scaleX(0.35); }
+.bee-bd.is-curtains-open .bee-curtain--r { transform: translateX(102%) scaleX(0.35); }
+.bee-bd.is-instant .bee-curtain { transition: none; }
+.bee-hall.is-sweep::after {
+  content: ""; position: absolute; inset: 0 0 33.3% 0; z-index: 10; pointer-events: none;
+  background: linear-gradient(100deg, transparent 35%, rgba(255, 244, 214, 0.42) 50%, transparent 65%);
+  background-size: 260% 100%; animation: bee-sweep 1.5s ease-in-out forwards;
+}
+@keyframes bee-sweep { from { background-position: 120% 0; } to { background-position: -40% 0; } }
+.bee-letters.is-title .bee-tile { animation: bee-tile-in 0.45s cubic-bezier(.2, 1.4, .5, 1) both; }
+.bee-letters.is-round .bee-tile { background: linear-gradient(160deg, #fff1b8, #f4c95d 70%, #dba636); box-shadow: 0 0.45cqh 0 #a8781f, 0 0.7cqh 1cqh rgba(0, 0, 0, 0.45), inset 0 0.15cqh 0 rgba(255, 255, 255, 0.7); }
+@media (prefers-reduced-motion: reduce) {
+  .bee-curtain { transition-duration: 0.01s; }
+  .bee-hall.is-sweep::after { animation: none; }
+}
+
+/* the title on the closed curtains, gone as they open */
+.bee-marquee {
+  position: absolute; z-index: 11; left: 50%; top: 24%; translate: -50% 0; pointer-events: none;
+  display: flex; gap: 1cqh; align-items: center; transition: opacity 0.7s ease, scale 0.7s ease;
+}
+.bee-marquee .bee-tile { width: 9cqh; height: 9.6cqh; }
+.bee-marquee .bee-tile-letter { font-size: 6cqh; }
+.bee-marquee .bee-tile-score { font-size: 2.1cqh; }
+.bee-marquee .bee-tile.is-space { width: 4cqh; }
+.bee-marquee .bee-tile:not(.is-space) { background: linear-gradient(160deg, #fff1b8, #f4c95d 70%, #dba636); box-shadow: 0 0.6cqh 0 #a8781f, 0 1cqh 1.6cqh rgba(0, 0, 0, 0.5), inset 0 0.2cqh 0 rgba(255, 255, 255, 0.7); }
+.bee-bd.is-curtains-open .bee-marquee { opacity: 0; scale: 1.15; }

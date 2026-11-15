@@ -681,6 +681,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         <span class="bee-tv-brand" aria-hidden="true"></span>
         <span class="bee-tv-led" aria-hidden="true"></span>
       </div>
+      <div class="bee-curtain bee-curtain--l" aria-hidden="true"></div>
+      <div class="bee-curtain bee-curtain--r" aria-hidden="true"></div>
+      <div class="bee-marquee" aria-hidden="true"></div>
       <div class="bee-audience"></div>
     </div>
     <div class="bee-results" hidden>
@@ -877,11 +880,13 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const wordClip = (q, kid) => (SPELLER_RECORDINGS ? spellerClip(kid, q.bank, q.i) : null);
   const queue = [];
   let talkingNow = null;            // the Audio (or utterance) playing
+  const started = (item) => { if (item.onStart && !item.onStartDone) { item.onStartDone = true; item.onStart(); } };
   function next() {
     talkingNow = null;
-    if (gone || !pace) { queue.length = 0; return; }
+    if (gone || !pace) { queue.splice(0).forEach(started); return; }   // no time to speak: still show them
     const item = queue.shift();
     if (!item) return;
+    started(item);
     // recordings to try in turn: [{ url, pitch? }] (a plain url string is one with no pitch)
     const tries = Array.isArray(item.url) ? item.url : item.url ? [{ url: item.url }] : [];
     if (tries.length) {
@@ -894,13 +899,13 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       }
       talkingNow = a;
       a.__letter = !!item.letter;
-      const fallBack = () => { if (talkingNow === a) { queue.unshift({ text: item.text, kid: item.kid, url: rest, letter: item.letter }); next(); } };
+      const fallBack = () => { if (talkingNow === a) { queue.unshift({ ...item, url: rest }); next(); } };
       a.onended = () => { if (talkingNow === a) next(); };
       a.onerror = fallBack;
       a.play().catch(fallBack);
       return;
     }
-    if (!synth) { next(); return; }
+    if (!synth) { setTimeout(next, 350); return; }
     try {
       const u = new SpeechSynthesisUtterance(item.text);
       const v = voiceFor(item.kid);
@@ -915,19 +920,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     } catch { next(); }
   }
   /** A speller says something: their recording(s) `url` (a url, or a list to try in turn), else `text` in the browser's voice. */
-  function spellerSays(text, kid, url = null, { now = false } = {}) {
-    if (gone || !pace) return;
-    // a letter is said the moment it goes in: whatever letter is still being said (or waiting)
-    // gives way, so the voice keeps up with the typing
-    if (now) {
-      for (let i = queue.length - 1; i >= 0; i--) if (queue[i].letter) queue.splice(i, 1);
-      if (talkingNow && talkingNow.__letter) {
-        const t = talkingNow;
-        talkingNow = null;
-        try { if (t instanceof Audio) t.pause(); else synth?.cancel(); } catch { /* gone */ }
-      }
-    }
-    queue.push({ text, kid, url, letter: now });
+  function spellerSays(text, kid, url = null, { onStart = null } = {}) {
+    if (gone || !pace) { onStart?.(); return; }
+    // one after another, each said in full: the next waits until the last has finished
+    queue.push({ text, kid, url, onStart });
     if (!talkingNow) next();
   }
   const spellerBusy = () => !!talkingNow || queue.length > 0;
@@ -938,15 +934,36 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     try { if (t instanceof Audio) t.pause(); else if (t) synth?.cancel(); } catch { /* gone */ }
   }
   /** Wait for the speller to finish what is queued. */
-  async function spellerDone(max = 12000) {
+  async function spellerDone(max = 30000) {
     const t0 = Date.now();
     await sleep(150);
     while (!gone && pace && spellerBusy() && Date.now() - t0 < max) await sleep(120);
   }
-  /** Say the letters of `after` that are not in `before` (the letters are only ever added to). */
+  /* The TV shows a letter only as the speller says it, and the next only once that one has
+     been said in full: the letters typed are kept (`committed`, the answer) and come up on the
+     screen at the pace of the voice. */
+  let onScreen = '', screenCls = '';
+  const reveal = (ch) => { onScreen += ch; showLetters(onScreen, screenCls); };
+  function clearScreen(cls = '') { onScreen = ''; screenCls = cls; showLetters('', cls); }
+  /** A title on the TV ("SPELLING BEE", "ROUND 2"): its tiles drop in one after another. */
+  function tvTitle(text, cls = '') {
+    onScreen = ''; screenCls = '';
+    showLetters('', '');
+    showLetters(text, `is-title ${cls}`);
+    lettersEl.querySelectorAll('.bee-tile').forEach((t, i) => { t.style.animationDelay = `${i * 80}ms`; });
+    shown = '';                                   // the next spelling starts afresh
+  }
+  /** A light sweeps across the stage (a new round). */
+  function sweep() {
+    hall.classList.remove('is-sweep');
+    void hall.offsetWidth;
+    hall.classList.add('is-sweep');
+    setTimeout(() => hall.classList.remove('is-sweep'), 1600);
+  }
+  /** Say (and then show) the letters of `after` that are not in `before` (letters are only ever added). */
   function sayNewLetters(before, after, kid) {
     if (!after.startsWith(before)) before = '';
-    for (const ch of after.slice(before.length)) spellerSays(letterName(ch), kid, letterClip(ch, kid), { now: true });
+    for (const ch of after.slice(before.length)) spellerSays(letterName(ch), kid, letterClip(ch, kid), { onStart: () => reveal(ch) });
   }
 
   /* ── The live room ───────────────────────────────────────────── */
@@ -1039,7 +1056,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     committed = v;
     if (inputEl.value !== v) inputEl.value = v;
     keepEnd();
-    showLetters(v, 'is-mine');
+    if (fromMic) { for (const ch of v.slice(before.length)) reveal(ch); }
     // each letter is said as it goes in, in my voice (a letter I said into the mic I have already said)
     if (!fromMic) sayNewLetters(before, v, mySeat.kid);
     try { room?.send('spell', { k: nowK, v }); } catch { /* ignore */ }
@@ -1121,7 +1138,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       say(`Your word, number ${mySeat.tag}. Spell it letter by letter (no backspaces), then press Done.`);
       committed = '';
       inputEl.disabled = false; inputEl.value = '';
-      showLetters('', 'is-mine');
+      clearScreen('is-mine');
       toolsBtn.hidden = false;                     // the tools, folded away in the top bar
       bd.classList.add('is-my-turn');
       inputEl.focus();
@@ -1152,9 +1169,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     if (results.has(k)) return Promise.resolve(results.get(k));
     return new Promise((resolve) => {
       say(`${who(seat)} is spelling.`);
-      showLetters('');
+      clearScreen();
       let heard = '';
-      theirTyping = (v) => { showLetters(v); sayNewLetters(heard, v, seat.kid); heard = v; };
+      theirTyping = (v) => { sayNewLetters(heard, v, seat.kid); heard = v; };
       const started = Date.now();
       let watch = 0;
       const finish = (r) => { clearInterval(watch); stopClock(); theirTyping = null; resolve(r); };
@@ -1174,13 +1191,14 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   async function botSpell(seat, q, k) {
     const b = botSpelling(seed, seat.bot, k, q.word);
     say(`${who(seat)} is spelling.`);
-    showLetters('');
+    clearScreen();
     if (pace) {
       await wait(Math.min(2200, b.ms / 3));
       for (let n = 1; n <= b.typed.length && !gone && pace; n++) {
-        showLetters(b.typed.slice(0, n));
-        spellerSays(letterName(b.typed[n - 1]), seat.kid, letterClip(b.typed[n - 1], seat.kid), { now: true });
-        await wait(720);
+        const ch = b.typed[n - 1];
+        spellerSays(letterName(ch), seat.kid, letterClip(ch, seat.kid), { onStart: () => reveal(ch) });
+        await spellerDone();
+        await wait(250);
       }
     }
     return { ok: b.ok, t: b.typed };
@@ -1265,8 +1283,20 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   (async () => {
     pills();
     say(`Welcome to the Spelling Bee. ${seats.length} spellers. One wrong letter and you leave the stage.`);
+    // the title, dropping onto the closed curtains tile by tile
+    const marquee = $('.bee-marquee');
+    [...'SPELLING BEE'].forEach((ch, i) => { const t = tile(ch === ' ' ? ' ' : ch, 'is-new'); t.style.animationDelay = `${300 + i * 90}ms`; marquee.append(t); });
     await Promise.race([joined, sleep(2500)]);
-    await wait(2200);
+    await wait(1200);
+    bd.classList.add('is-curtains-open');           // the curtains sweep open on the stage
+    await wait(2000);
+    if (!gone && pace) {
+      say(`Round 1. ${bee.alive.length} spellers.`);
+      sweep();
+      tvTitle('ROUND 1', 'is-round');
+      await wait(2200);
+    }
+    clearScreen();
     while (!gone && bee.champion == null) {
       const seat = seats[bee.current], el = kids[seat.seat], k = bee.turn, q = question(k);
       nowK = k; nowQ = q;
@@ -1279,7 +1309,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       skipBtn.hidden = skipping || bee.alive.some((s) => seats[s].uid);
       preloadClip(clipFor(q.bank, q.i, 'w'));
       preloadClip(clipFor('phrases', PHRASE.yourWordIs, 'd'));
-      showLetters(''); stopClock();
+      clearScreen(); stopClock();
       say(`${who(seat)}, to the microphone.`);
       await walk(el, 'mic');
       if (gone) break;
@@ -1338,7 +1368,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       pills();
       if (ev.roundEnd && bee.champion == null) {
         say(`Round ${bee.round}. ${bee.alive.length} spellers left.`);
-        await wait(1600);
+        if (pace) { sweep(); tvTitle(`ROUND ${bee.round}`, 'is-round'); }
+        await wait(2400);
+        clearScreen();
       }
     }
     if (gone) return;
@@ -1349,6 +1381,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const champ = seats[bee.champion];
     kids[champ.seat].classList.add('is-champion');
     say(`${who(champ)} is the champion!`);
+    sweep();
+    tvTitle('CHAMPION', 'is-round');
     chime();
     if (REACTIONS) clap(5);
     await walk(kids[champ.seat], 'mic');
