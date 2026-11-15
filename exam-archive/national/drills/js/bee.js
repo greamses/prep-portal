@@ -164,13 +164,12 @@ const voiceFor = (() => {
 })();
 /* Each letter by its NAME, written as it sounds: a lone "A." is read as the word "a"
    (cut short), and "I." and "O." as words too. */
-const LETTER_WORD = {
-  a: 'ay', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'jee', h: 'aitch', i: 'eye',
-  j: 'jay', k: 'kay', l: 'ell', m: 'em', n: 'en', o: 'oh', p: 'pee', q: 'queue', r: 'ar',
-  s: 'ess', t: 'tee', u: 'you', v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zed',
-  ' ': 'space', '-': 'hyphen', "'": 'apostrophe',
-};
-const letterName = (ch) => LETTER_WORD[ch.toLowerCase()] || ch;
+/* What the browser's voice is given for a letter. A capital letter on its own is read as its
+   name ("F" is "eff"), but written-out names are read as words or spelled ("eff" came out
+   E-F-F, "ar" as "er"). Only A is read as a word (the article "a"), so it alone is written
+   out. */
+const LETTER_WORD = { a: 'ay', ' ': 'space', '-': 'hyphen', "'": 'apostrophe' };
+const letterName = (ch) => LETTER_WORD[ch.toLowerCase()] || ch.toUpperCase();
 
 /* Where the chairs are, in % of the hall: on the stage, a back row and a front row. The
    back row sits half a chair across, so its spellers show between the front row's. */
@@ -261,24 +260,24 @@ function audienceSvg(seed) {
 /* The judges' table: the head judge (media/characters/judge-woman.svg) and a judge
    (judge-man.svg), seen from the waist up behind it. Her mouth is a <g class="mouth"> drawn
    over the picture's own, so the talking-mouth code (js/boy.js) opens it as she speaks.
-   300 x 220: the table top is at 165, at their waists. */
+   300 x 220: the table top is at 136, at their waists; its front runs down to the stage. */
 function judgesSvg() {
-  const W = { x: 53, y: 50, h: 300, aspect: 543 / 1936 }, M = { x: 167, y: 44, h: 305, aspect: 636 / 2033 };
+  const W = { x: 53, y: 26, h: 300, aspect: 543 / 1936 }, M = { x: 167, y: 20, h: 305, aspect: 636 / 2033 };
   const ww = W.h * W.aspect, mw = M.h * M.aspect;
   // her mouth: 50.5% across and 14.9% down the picture
   const mx = W.x + 0.505 * ww, my = W.y + 0.149 * W.h;
   const hands = (cx, skin, sleeve, d) => {
     const arm = (side) => `<g class="bee-hand bee-hand--${side < 0 ? 'l' : 'r'}">` +
-      `<line x1="${cx + side * 32}" y1="166" x2="${cx + side * 13}" y2="148" stroke="${sleeve}" stroke-width="13" stroke-linecap="round"/>` +
-      `<ellipse cx="${cx + side * 10}" cy="140" rx="8" ry="11" fill="${skin}" stroke="rgba(0,0,0,.25)" stroke-width="1"/></g>`;
+      `<line x1="${cx + side * 32}" y1="142" x2="${cx + side * 13}" y2="124" stroke="${sleeve}" stroke-width="13" stroke-linecap="round"/>` +
+      `<ellipse cx="${cx + side * 10}" cy="116" rx="8" ry="11" fill="${skin}" stroke="rgba(0,0,0,.25)" stroke-width="1"/></g>`;
     return `<g class="bee-hands" style="--d:${d}s">${arm(-1)}${arm(1)}</g>`;
   };
   // a judge's chair: a tall padded back, standing up behind the shoulders
-  const chair = (cx, top, w) => `<rect x="${cx - w / 2}" y="${top}" width="${w}" height="${172 - top}" fill="#3b2a22"/>` +
-    `<rect x="${cx - w / 2 + 6}" y="${top + 6}" width="${w - 12}" height="${172 - top - 6}" fill="#5a4033"/>`;
-  const card = (cx, text) => `<rect x="${cx - 34}" y="178" width="68" height="20" fill="#fbf8f1"/><text x="${cx}" y="192.5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#2a2723">${text}</text>`;
+  const chair = (cx, top, w) => `<rect x="${cx - w / 2}" y="${top}" width="${w}" height="${148 - top}" fill="#3b2a22"/>` +
+    `<rect x="${cx - w / 2 + 6}" y="${top + 6}" width="${w - 12}" height="${148 - top - 6}" fill="#5a4033"/>`;
+  const card = (cx, text) => `<rect x="${cx - 34}" y="160" width="68" height="20" fill="#fbf8f1"/><text x="${cx}" y="174.5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#2a2723">${text}</text>`;
   // each judge grows or shrinks from the middle of their place at the table (the sizes panel)
-  const sized = (cx, v, inner) => `<g style="transform-origin: ${cx.toFixed(1)}px 172px; transform: scale(var(${v}, 1))">${inner}</g>`;
+  const sized = (cx, v, inner) => `<g style="transform-origin: ${cx.toFixed(1)}px 148px; transform: scale(var(${v}, 1))">${inner}</g>`;
   return `<svg viewBox="0 0 300 220" aria-hidden="true">
     ${sized(W.x + ww / 2, '--t-judge-woman', `${chair(W.x + ww / 2, W.y + 0.11 * W.h, ww * 1.12)}
     <image href="/media/characters/judge-woman.svg" x="${W.x}" y="${W.y}" width="${ww}" height="${W.h}"/>
@@ -287,9 +286,10 @@ function judgesSvg() {
     ${sized(M.x + mw / 2, '--t-judge-man', `${chair(M.x + mw / 2, M.y + 0.11 * M.h, mw * 1.12)}
     <image href="/media/characters/judge-man.svg" x="${M.x}" y="${M.y}" width="${mw}" height="${M.h}"/>
     ${hands(M.x + mw / 2, '#f2b394', '#1c3561', -0.04)}`)}
-    <rect x="6" y="160" width="290" height="12" fill="#27406b"/>
-    <rect x="6" y="172" width="290" height="48" fill="#2f4c7a"/>
-    <rect x="6" y="172" width="290" height="5" fill="#d9b44a"/>
+    <rect x="6" y="136" width="290" height="12" fill="#27406b"/>
+    <rect x="6" y="148" width="290" height="72" fill="#2f4c7a"/>
+    <rect x="6" y="148" width="290" height="5" fill="#d9b44a"/>
+    <rect x="6" y="210" width="290" height="10" fill="#22375e"/>
     ${card(W.x + ww / 2, 'HEAD JUDGE')}${card(M.x + mw / 2, 'JUDGE')}
   </svg>`;
 }
