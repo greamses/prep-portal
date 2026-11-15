@@ -29,7 +29,7 @@
 .bee-judges svg { display: block; width: 100%; height: 100%; overflow: hidden; }   /* below the table: nothing */
 
 /* the microphone at the front of the stage, and the audience in front of the stage */
-.bee-stand { position: absolute; z-index: 9; left: 44%; top: 67.5%; width: 3cqh; height: 27cqh; transform: translate(-50%, -100%); pointer-events: none; }
+.bee-stand { position: absolute; z-index: 9; left: 41.2%; top: 67.5%; width: 5.9cqh; height: 29.5cqh; transform: translate(-50%, -100%); pointer-events: none; }
 .bee-stand svg { display: block; width: 100%; height: 100%; }
 .bee-audience { position: absolute; z-index: 12; left: 0; right: 0; bottom: 0; height: 30%; pointer-events: none; }
 .bee-audience svg { display: block; width: 100%; height: 100%; }
@@ -69,12 +69,16 @@
 /* Each child sets --hip, --knee and --hands (% of the drawing's height; js/bee.js KIDS).
    Sitting (the default): the body comes down onto the knees, only shins and feet below. */
 .bee-kid-body { position: relative; z-index: 1; clip-path: inset(0 -40% calc((100 - var(--hip, 64)) * 1%) -40%); transform: translateY(calc((var(--knee, 80) - var(--hip, 64)) * 1%)); }
-.bee-leg--l { clip-path: inset(calc(var(--knee, 80) * 1%) 50% 0 17%); transform-origin: 36% calc(var(--hip, 64) * 1%); }
-.bee-leg--r { clip-path: inset(calc(var(--knee, 80) * 1%) 17% 0 50%); transform-origin: 64% calc(var(--hip, 64) * 1%); }
+/* A leg is cut as a six-point shape: between the hanging hands it is kept narrow (so the
+   hands are not in it), below them it is as wide as the picture (so the shoes are whole).
+   Sitting, the shape is just knee to feet. Same six points both ways, so it can animate. */
+.bee-kid { --k: calc(var(--knee, 80) * 1%); --h: calc((var(--hip, 64) - 2) * 1%); --a: calc(var(--hands, 73) * 1%); }
+.bee-leg--l { clip-path: polygon(-10% var(--k), 50% var(--k), 50% 100%, -10% 100%, -10% var(--k), -10% var(--k)); transform-origin: 36% calc(var(--hip, 64) * 1%); }
+.bee-leg--r { clip-path: polygon(50% var(--k), 110% var(--k), 110% var(--k), 110% var(--k), 110% 100%, 50% 100%); transform-origin: 64% calc(var(--hip, 64) * 1%); }
 /* standing up: the whole child, legs from the hips */
 .bee-kid.is-standing .bee-kid-body { clip-path: inset(0 -40% calc((100 - var(--hands, 73)) * 1%) -40%); transform: none; }
-.bee-kid.is-standing .bee-leg--l { clip-path: inset(calc((var(--hip, 64) - 2) * 1%) 50% 0 17%); }
-.bee-kid.is-standing .bee-leg--r { clip-path: inset(calc((var(--hip, 64) - 2) * 1%) 17% 0 50%); }
+.bee-kid.is-standing .bee-leg--l { clip-path: polygon(17% var(--h), 50% var(--h), 50% 100%, -10% 100%, -10% var(--a), 17% var(--a)); }
+.bee-kid.is-standing .bee-leg--r { clip-path: polygon(50% var(--h), 83% var(--h), 83% var(--a), 110% var(--a), 110% 100%, 50% 100%); }
 /* walking: the legs take turns to lift (coming towards you, a lifted leg looks shorter),
    the body bobs on each step and sways from foot to foot */
 .bee-kid.is-walking .bee-leg--l { animation: bee-step-l 0.62s ease-in-out infinite; }
@@ -94,8 +98,9 @@
 .bee-kid.is-standing .bee-you.pp-pill { translate: -50% 0; }
 
 /* the microphone, and leaving the stage (stage right, behind the curtain) */
-.bee-kid.is-at-mic { left: 39%; top: 67%; height: 42cqh; font-size: 4.4cqh; z-index: 8; }
-.bee-kid.is-off { left: 108%; top: 63%; height: 34cqh; font-size: 3.6cqh; z-index: 8; transition-duration: 2.6s; }
+/* only a little bigger than in the chair: a step or two nearer, not a giant */
+.bee-kid.is-at-mic { left: 38.5%; top: 67%; height: 31cqh; font-size: 3.2cqh; z-index: 8; }
+.bee-kid.is-off { left: 108%; top: 63%; height: 29cqh; font-size: 3cqh; z-index: 8; transition-duration: 2.6s; }
 .bee-kid.is-walking { z-index: 8; }
 .bee-kid.is-gone { visibility: hidden; }
 .bee-kid.is-champion .bee-tag.pp-sticky { outline: 0.2em solid #f4c95d; }

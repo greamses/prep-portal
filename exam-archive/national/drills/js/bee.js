@@ -54,6 +54,9 @@ const KIDS = {
   girl2: { src: '/media/characters/girl-overalls.svg', girl: true, hip: 59, knee: 78, hands: 68,
     eyes: [[38, 16.4], [62, 16.4]], mouth: [50, 21, 17, 2.6], skin: '#8a4733', lip: '#3e1a12' },
 };
+/* The hall's reactions (clapping for a right word, tears for a wrong one) are switched off
+   until the user's clapping and crying pictures arrive (2026-11-15). The code stays. */
+const REACTIONS = false;
 const MIC_KEY = 'ppSpellMic';          // the same choice as the drill's mic
 const GRACE = 12;                      // seconds past the clock before a silent turn is called a miss
 
@@ -137,8 +140,15 @@ const voiceFor = (() => {
     return cache[kid];
   };
 })();
-const LETTER_WORD = { ' ': 'space', '-': 'hyphen', "'": 'apostrophe' };
-const letterName = (ch) => LETTER_WORD[ch] || `${ch.toUpperCase()}.`;
+/* Each letter by its NAME, written as it sounds: a lone "A." is read as the word "a"
+   (cut short), and "I." and "O." as words too. */
+const LETTER_WORD = {
+  a: 'ay', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'jee', h: 'aitch', i: 'eye',
+  j: 'jay', k: 'kay', l: 'ell', m: 'em', n: 'en', o: 'oh', p: 'pee', q: 'queue', r: 'ar',
+  s: 'ess', t: 'tee', u: 'you', v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zed',
+  ' ': 'space', '-': 'hyphen', "'": 'apostrophe',
+};
+const letterName = (ch) => LETTER_WORD[ch.toLowerCase()] || ch;
 
 /* Where the chairs are, in % of the hall: on the stage, a back row and a front row. The
    back row sits half a chair across, so its spellers show between the front row's. */
@@ -222,7 +232,7 @@ function audienceSvg(seed) {
    over the picture's own, so the talking-mouth code (js/boy.js) opens it as she speaks.
    300 x 220: the table top is at 165, at their waists. */
 function judgesSvg() {
-  const W = { x: 53, y: 9, h: 300, aspect: 543 / 1936 }, M = { x: 167, y: 3, h: 305, aspect: 636 / 2033 };
+  const W = { x: 53, y: 50, h: 300, aspect: 543 / 1936 }, M = { x: 167, y: 44, h: 305, aspect: 636 / 2033 };
   const ww = W.h * W.aspect, mw = M.h * M.aspect;
   // her mouth: 50.5% across and 14.9% down the picture
   const mx = W.x + 0.505 * ww, my = W.y + 0.149 * W.h;
@@ -232,8 +242,12 @@ function judgesSvg() {
       `<ellipse cx="${cx + side * 10}" cy="140" rx="8" ry="11" fill="${skin}" stroke="rgba(0,0,0,.25)" stroke-width="1"/></g>`;
     return `<g class="bee-hands" style="--d:${d}s">${arm(-1)}${arm(1)}</g>`;
   };
+  // a judge's chair: a tall padded back, standing up behind the shoulders
+  const chair = (cx, top, w) => `<rect x="${cx - w / 2}" y="${top}" width="${w}" height="${172 - top}" fill="#3b2a22"/>` +
+    `<rect x="${cx - w / 2 + 6}" y="${top + 6}" width="${w - 12}" height="${172 - top - 6}" fill="#5a4033"/>`;
   const card = (cx, text) => `<rect x="${cx - 34}" y="178" width="68" height="20" fill="#fbf8f1"/><text x="${cx}" y="192.5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#2a2723">${text}</text>`;
   return `<svg viewBox="0 0 300 220" aria-hidden="true">
+    ${chair(W.x + ww / 2, W.y + 0.11 * W.h, ww * 1.12)}${chair(M.x + mw / 2, M.y + 0.11 * M.h, mw * 1.12)}
     <image href="/media/characters/judge-woman.svg" x="${W.x}" y="${W.y}" width="${ww}" height="${W.h}"/>
     <g class="mouth" data-hinge="${(my - 2.4).toFixed(2)}" transform="translate(${mx.toFixed(2)} ${(my - 2.4).toFixed(2)}) scale(1 0.12) translate(${(-mx).toFixed(2)} ${(-(my - 2.4)).toFixed(2)})"><ellipse cx="${mx.toFixed(2)}" cy="${(my + 1).toFixed(2)}" rx="5.6" ry="3.8" fill="#5e2420"/></g>
     <image href="/media/characters/judge-man.svg" x="${M.x}" y="${M.y}" width="${mw}" height="${M.h}"/>
@@ -406,7 +420,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       if (v) u.voice = v;
       u.lang = v ? v.lang : 'en-GB';
       u.pitch = KIDS[kid]?.girl ? 1.55 : 1.3;
-      u.rate = 0.95;
+      u.rate = 0.88;                                 // unhurried: a whole vowel, not a clipped one
       synth.speak(u);
     } catch { /* no speech here */ }
   }
@@ -764,15 +778,13 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         judgeSays('correct');
         if (pace) chime();
         await spoken();
-        say('Correct! The hall claps.');
-        clap(2.4);
-        await wait(2200);
+        if (REACTIONS) { say('Correct! The hall claps.'); clap(2.4); await wait(2200); } else await wait(800);
       } else {
         showLetters(r.t || '', 'is-wrong');
         say(r.t ? 'The judge: "Incorrect."' : 'Time is up. The judge: "Incorrect."');
         judgeSays('incorrect');
         if (pace) bell();
-        el.classList.add('is-sad');
+        if (REACTIONS) el.classList.add('is-sad');
         await spoken();
         await wait(700);
         showLetters(q.word, 'is-answer');
@@ -806,7 +818,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     kids[champ.seat].classList.add('is-champion');
     say(`${who(champ)} is the champion!`);
     chime();
-    clap(5);
+    if (REACTIONS) clap(5);
     await walk(kids[champ.seat], 'mic');
     await wait(1200);
     if (!gone) showResults();
