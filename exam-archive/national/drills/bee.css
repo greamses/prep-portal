@@ -21,7 +21,7 @@
   box-shadow: var(--shadow-md);
 }
 .bee-backdrop, .bee-backdrop svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.bee-hall .bee-banner.pp-sticky { position: absolute; z-index: 2; top: 10.5%; left: 12%; font-size: 3.6cqh; padding: 0.7cqh 2.2cqh; }
+.bee-hall .bee-banner.pp-sticky { position: absolute; z-index: 2; top: calc(10.5% + var(--iy, 0) * 1%); left: calc(12% + var(--ix, 0) * 1%); font-size: calc(3.6cqh * var(--is, 1)); padding: 0.7cqh 2.2cqh; }
 
 /* the judges' table, on the stage at the left */
 .bee-judges { position: absolute; z-index: 6; left: 11%; bottom: 33.3%; width: calc(20cqw * var(--t-judges, 1)); aspect-ratio: 300 / 220; }
@@ -54,7 +54,7 @@
 .bee-abc-edit input { min-width: 0; padding: 0.3rem 0.45rem; font: inherit; border: var(--border-subtle); background: var(--surface-primary); color: var(--ink); }
 
 /* the microphone at the front of the stage, and the audience in front of the stage */
-.bee-stand { position: absolute; z-index: 9; left: 41.2%; top: 67.5%; width: calc(5.9cqh * var(--t-mic, 1)); height: calc(29.5cqh * var(--t-mic, 1)); transform: translate(-50%, -100%); pointer-events: none; }
+.bee-stand { position: absolute; z-index: 9; left: calc(41.2% + var(--ix, 0) * 1%); top: calc(67.5% + var(--iy, 0) * 1%); width: calc(5.9cqh * var(--t-mic, 1) * var(--is, 1)); height: calc(29.5cqh * var(--t-mic, 1) * var(--is, 1)); transform: translate(-50%, -100%); pointer-events: none; }
 .bee-stand svg { display: block; width: 100%; height: 100%; }
 .bee-audience { position: absolute; z-index: 12; left: 0; right: 0; bottom: 0; height: 32%; pointer-events: none; }
 .bee-audience svg { display: block; width: 100%; height: 100%; }
@@ -168,8 +168,8 @@
    light, hung from the wall with its shadow under it. A picture in the hall: its colours are
    its own, and it is sized in cqh like everything on the stage. */
 .bee-tv {
-  position: absolute; z-index: 1; left: 58%; top: 10%; translate: -50% 0;
-  width: 44cqw; aspect-ratio: 16 / 9; max-height: 22cqh; padding: 0.55cqh 0.55cqh 1.5cqh;
+  position: absolute; z-index: 1; left: calc(58% + var(--ix, 0) * 1%); top: calc(10% + var(--iy, 0) * 1%); translate: -50% 0;
+  width: calc(44cqw * var(--is, 1)); aspect-ratio: 16 / 9; max-height: calc(22cqh * var(--is, 1)); padding: 0.55cqh 0.55cqh 1.5cqh;
   background: linear-gradient(180deg, #2b2f35, #121417 60%, #1b1e22);
   border-radius: 0.5cqh;
   box-shadow: 0 0.15cqh 0 rgba(255, 255, 255, 0.08) inset, 0 1.6cqh 2.8cqh -0.4cqh rgba(40, 20, 6, 0.45), 0 0.3cqh 0.6cqh rgba(0, 0, 0, 0.35);
@@ -255,3 +255,21 @@
 .bee-results-row.is-me { background: color-mix(in srgb, var(--accent-primary) 18%, transparent); font-weight: 700; }
 .bee-results-place { display: grid; place-items: center; font-family: var(--font-mono); font-weight: 600; }
 .bee-results-meta { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-tertiary); }
+
+/* ── the hall editor: a box over every item, with corner knobs ── */
+.bee-edit-layer { position: absolute; inset: 0; z-index: 40; pointer-events: none; }
+.bee-edit-layer[hidden] { display: none; }
+.bee-tbox { position: absolute; pointer-events: auto; cursor: move; outline: 1.5px dashed #2f8cff; outline-offset: -1px; background: rgba(47, 140, 255, 0.04); touch-action: none; }
+.bee-tbox[hidden] { display: none; }
+.bee-tbox--kid { cursor: default; outline-color: #f4a53a; }
+.bee-tbox:hover { background: rgba(47, 140, 255, 0.12); z-index: 2; }
+.bee-tbox-tag { position: absolute; left: 0; top: -1.35rem; padding: 0.05rem 0.35rem; font-family: var(--font-mono); font-size: 0.62rem; white-space: nowrap; color: #fff; background: #2f8cff; pointer-events: none; opacity: 0; }
+.bee-tbox:hover .bee-tbox-tag { opacity: 1; }
+.bee-tbox--kid .bee-tbox-tag { background: #f4a53a; color: #1f1a12; }
+.bee-knob { position: absolute; width: 10px; height: 10px; background: #fff; outline: 1.5px solid #2f8cff; }
+.bee-tbox--kid .bee-knob { outline-color: #f4a53a; }
+.bee-knob--nw { left: -5px; top: -5px; cursor: nwse-resize; }
+.bee-knob--ne { right: -5px; top: -5px; cursor: nesw-resize; }
+.bee-knob--sw { left: -5px; bottom: -5px; cursor: nesw-resize; }
+.bee-knob--se { right: -5px; bottom: -5px; cursor: nwse-resize; }
+.bee-edit-btn { font-size: 0.8rem; padding: 0.35rem 0.8rem; justify-self: start; }

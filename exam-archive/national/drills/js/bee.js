@@ -230,12 +230,11 @@ function audienceSvg(seed) {
     { top: 22, pw: 160, xs: Array.from({ length: 8 }, (_, i) => 100 + i * 200), cw: 170, ch: 120 },
     { top: 96, pw: 205, xs: Array.from({ length: 8 }, (_, i) => 10 + i * 226), cw: 214, ch: 150 },
   ];
-  let defs = '', out = '', hands = '';
+  let defs = '', out = '';
   rows.forEach((row, r) => {
     const H = row.pw / AUDIENCE[0].aspect;          // the man's height sets the row's chair line
     const chairTop = row.top + 0.24 * H;
     defs += `<clipPath id="bee-row${r}"><rect x="-200" y="-300" width="2000" height="${chairTop + row.ch + 300}"/></clipPath>`;
-    let people = '', chairs = '';
     row.xs.forEach((cx, n) => {
       // the three people take turns, so no two neighbours are the same; each is drawn at the
       // same height (H), so their own proportions set their width
@@ -243,7 +242,7 @@ function audienceSvg(seed) {
       const top = row.top, pw = H * who.aspect;
       const flip = (n + r) % 2 ? ` transform="translate(${2 * cx} 0) scale(-1 1)"` : '';
       const tone = (0.9 + rnd() * 0.16).toFixed(2);
-      people += `<image href="${who.src}" x="${cx - pw / 2}" y="${top}" width="${pw}" height="${H}" style="filter:brightness(${tone})"${flip}/>`;
+      const person = `<image href="${who.src}" x="${cx - pw / 2}" y="${top}" width="${pw}" height="${H}" style="filter:brightness(${tone})"${flip}/>`;
       // their arms, up above their heads, clapping (shown only while the hall claps)
       const arm = (side) => {
         const sx = cx + side * pw * 0.3, sy = top + 0.2 * H;             // the shoulder
@@ -252,13 +251,12 @@ function audienceSvg(seed) {
           `<line x1="${sx}" y1="${sy}" x2="${hx}" y2="${hy + pw * 0.08}" stroke="#1c365f" stroke-width="${pw * 0.15}" stroke-linecap="round"/>` +
           `<ellipse cx="${hx}" cy="${hy}" rx="${pw * 0.085}" ry="${pw * 0.12}" fill="#5a3622"/></g>`;
       };
-      hands += `<g class="bee-aud-hands" style="--d:-${(rnd() * 0.3).toFixed(2)}s">${arm(-1)}${arm(1)}</g>`;
+      const hands = `<g class="bee-aud-hands" style="--d:-${(rnd() * 0.3).toFixed(2)}s">${arm(-1)}${arm(1)}</g>`;
       const x = cx - row.cw / 2, k = row.cw / 100;
-      chairs += `<rect x="${x}" y="${chairTop}" width="${row.cw}" height="${row.ch}" fill="#2f4c7a"/><rect x="${x + 6 * k}" y="${chairTop + 6 * k}" width="${row.cw - 12 * k}" height="${row.ch * 0.45}" fill="#3c5d92"/>`;
+      const chair = `<rect x="${x}" y="${chairTop}" width="${row.cw}" height="${row.ch}" fill="#2f4c7a"/><rect x="${x + 6 * k}" y="${chairTop + 6 * k}" width="${row.cw - 12 * k}" height="${row.ch * 0.45}" fill="#3c5d92"/>`;
+      // ONE item: this person and their chair, moved and sized on their own (the hall editor)
+      out += `<g class="bee-item" data-item="aud-${r}-${n}" data-label="${r ? 'Front' : 'Back'} row, seat ${n + 1}" data-bottom="${chairTop + row.ch}"><g clip-path="url(#bee-row${r})">${person}</g>${chair}${hands}</g>`;
     });
-    // the whole row grows or shrinks from the middle of its chair line (the sizes panel)
-    out += `<g class="bee-aud-row" style="transform-origin: 800px ${chairTop + row.ch}px; transform: scale(var(--t-aud-row${r}, 1))"><g clip-path="url(#bee-row${r})">${people}</g>${chairs}${hands}</g>`;
-    hands = '';
   });
   return `<svg viewBox="0 0 1600 288" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>${defs}</defs>${out}</svg>`;
 }
@@ -283,20 +281,21 @@ function judgesSvg() {
     `<rect x="${cx - w / 2 + 6}" y="${top + 6}" width="${w - 12}" height="${148 - top - 6}" fill="#5a4033"/>`;
   const card = (cx, text) => `<rect x="${cx - 34}" y="160" width="68" height="20" fill="#fbf8f1"/><text x="${cx}" y="174.5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#2a2723">${text}</text>`;
   // each judge grows or shrinks from the middle of their place at the table (the sizes panel)
-  const sized = (cx, v, inner) => `<g style="transform-origin: ${cx.toFixed(1)}px 148px; transform: scale(var(${v}, 1))">${inner}</g>`;
+  const sized = (id, label, inner) => `<g class="bee-item" data-item="${id}" data-label="${label}">${inner}</g>`;
   return `<svg viewBox="0 0 300 220" aria-hidden="true">
-    ${sized(W.x + ww / 2, '--t-judge-woman', `${chair(W.x + ww / 2, W.y + 0.11 * W.h, ww * 1.12)}
+    ${sized('judge-woman', 'Head judge', `${chair(W.x + ww / 2, W.y + 0.11 * W.h, ww * 1.12)}
     <image href="/media/characters/judge-woman.svg" x="${W.x}" y="${W.y}" width="${ww}" height="${W.h}"/>
     <g class="mouth" data-hinge="${(my - 2.4).toFixed(2)}" transform="translate(${mx.toFixed(2)} ${(my - 2.4).toFixed(2)}) scale(1 0.12) translate(${(-mx).toFixed(2)} ${(-(my - 2.4)).toFixed(2)})"><ellipse cx="${mx.toFixed(2)}" cy="${(my + 1).toFixed(2)}" rx="5.6" ry="3.8" fill="#5e2420"/></g>
     ${hands(W.x + ww / 2, '#f0c3a3', '#1d2b55', -0.12)}`)}
-    ${sized(M.x + mw / 2, '--t-judge-man', `${chair(M.x + mw / 2, M.y + 0.11 * M.h, mw * 1.12)}
+    ${sized('judge-man', 'Judge', `${chair(M.x + mw / 2, M.y + 0.11 * M.h, mw * 1.12)}
     <image href="/media/characters/judge-man.svg" x="${M.x}" y="${M.y}" width="${mw}" height="${M.h}"/>
     ${hands(M.x + mw / 2, '#f2b394', '#1c3561', -0.04)}`)}
+    <g class="bee-item" data-item="judge-table" data-label="Judges' table">
     <rect x="6" y="136" width="290" height="12" fill="#27406b"/>
     <rect x="6" y="148" width="290" height="72" fill="#2f4c7a"/>
     <rect x="6" y="148" width="290" height="5" fill="#d9b44a"/>
     <rect x="6" y="210" width="290" height="10" fill="#22375e"/>
-    ${card(W.x + ww / 2, 'HEAD JUDGE')}${card(M.x + mw / 2, 'JUDGE')}
+    ${card(W.x + ww / 2, 'HEAD JUDGE')}${card(M.x + mw / 2, 'JUDGE')}</g>
   </svg>`;
 }
 
@@ -315,11 +314,11 @@ const TUNE = [
   ['aud-row0', 'Audience, back row'], ['aud-row1', 'Audience, front row'],
 ];
 const SETTINGS_DOC = ['beeSettings', 'hall'];
-let settings = { sizes: {}, letters: {} };           // what was saved (beeSettings/hall)
+let settings = { sizes: {}, items: {}, letters: {} };   // what was saved (beeSettings/hall)
 const settingsReady = getDoc(doc(db, ...SETTINGS_DOC))
   .then((snap) => {
     const d = snap.exists() ? snap.data() : {};
-    settings = { sizes: d.sizes || {}, letters: d.letters || {} };
+    settings = { sizes: d.sizes || {}, items: d.items || {}, letters: d.letters || {} };
     Object.assign(LETTER_SAID, settings.letters);
   })
   .catch((e) => console.warn('[bee] settings not read; the defaults stand:', e));
@@ -332,8 +331,140 @@ function applySizes(hall, sizes) {
 }
 const isAdminHere = () => (auth.currentUser?.email || '') === ADMIN_EMAIL;
 
+/* ── Moving and resizing (the hall editor) ──────────────────────────────
+   Every thing in the hall is an item: an element with data-item. Its place and size are kept
+   as items[id] = { x, y, s }: a shift and a scale. Three kinds:
+     html  the TV, the banner, the microphone: x, y in % of the hall, read by their CSS
+           (--ix, --iy, --is)
+     svg   a judge, the judges' table, each audience person: x, y in the drawing's own units,
+           applied as a CSS transform on their <g>, grown from the middle of their base
+     kid   a speller: only s, the height of every child drawn like them (--t-tall-<kid>);
+           where they sit comes from the seating
+   The editor puts a box over each one, kept in step with it as it moves (a speller walking). */
+const itemKind = (el) => (el.classList.contains('bee-kid') ? 'kid' : el instanceof SVGElement ? 'svg' : 'html');
+function setItem(hall, el, v = {}) {
+  const kind = itemKind(el);
+  if (kind === 'kid') {
+    if (v.s != null) hall.style.setProperty(`--t-tall-${el.dataset.kid}`, v.s);
+    return;
+  }
+  const x = v.x || 0, y = v.y || 0, sc = v.s ?? 1;
+  if (kind === 'svg') {
+    el.style.transformBox = 'fill-box';
+    el.style.transformOrigin = '50% 100%';
+    el.style.transform = x || y || sc !== 1 ? `translate(${x}px, ${y}px) scale(${sc})` : '';
+  } else {
+    el.style.setProperty('--ix', x);
+    el.style.setProperty('--iy', y);
+    el.style.setProperty('--is', sc);
+  }
+}
+function applyItems(hall, items = {}) {
+  hall.querySelectorAll('[data-item]').forEach((el) => setItem(hall, el, items[el.dataset.item] || {}));
+  for (const [id, v] of Object.entries(items)) {
+    if (id.startsWith('kid-') && v.s != null) hall.style.setProperty(`--t-tall-${id.slice(4)}`, v.s);
+  }
+}
+function makeEditor(hall, items) {
+  const layer = document.createElement('div');
+  layer.className = 'bee-edit-layer';
+  layer.hidden = true;
+  hall.append(layer);
+  let raf = 0;
+  const boxes = new Map();          // element -> box
+  const idOf = (el) => (itemKind(el) === 'kid' ? `kid-${el.dataset.kid}` : el.dataset.item);
+  const valueOf = (el) => {
+    const id = idOf(el);
+    if (!items[id]) {
+      // a speller starts at their drawing's height as it stands (saved, else their own)
+      const k = el.dataset.kid;
+      items[id] = itemKind(el) === 'kid'
+        ? { s: Number(hall.style.getPropertyValue(`--t-tall-${k}`)) || KIDS[k]?.tall || 1 }
+        : { x: 0, y: 0, s: 1 };
+    }
+    return items[id];
+  };
+  function boxFor(el) {
+    const box = document.createElement('div');
+    box.className = `bee-tbox bee-tbox--${itemKind(el)}`;
+    const tag = document.createElement('span');
+    tag.className = 'bee-tbox-tag';
+    tag.textContent = el.dataset.label || el.getAttribute('aria-label') || '';
+    box.append(tag);
+    for (const c of ['nw', 'ne', 'sw', 'se']) {
+      const k = document.createElement('span');
+      k.className = `bee-knob bee-knob--${c}`;
+      k.dataset.corner = c;
+      box.append(k);
+    }
+    // drag: inside the box moves it (not a speller), a corner resizes it about its base
+    box.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const v = valueOf(el), kind = itemKind(el);
+      const start = { x: e.clientX, y: e.clientY, vx: v.x || 0, vy: v.y || 0, s: v.s ?? 1 };
+      const r = el.getBoundingClientRect();
+      const anchor = { x: r.left + r.width / 2, y: r.bottom };
+      const d0 = Math.hypot(e.clientX - anchor.x, e.clientY - anchor.y) || 1;
+      const corner = e.target.dataset?.corner;
+      const hr = hall.getBoundingClientRect();
+      // screen pixels -> the item's own units
+      const svg = el.ownerSVGElement;
+      const unit = kind === 'svg' ? 1 / (svg.getScreenCTM()?.a || 1) : null;
+      box.setPointerCapture(e.pointerId);
+      const move = (m) => {
+        if (corner) {
+          const d = Math.hypot(m.clientX - anchor.x, m.clientY - anchor.y);
+          v.s = Math.max(0.2, Math.min(4, +(start.s * d / d0).toFixed(3)));
+        } else if (kind !== 'kid') {
+          const dx = m.clientX - start.x, dy = m.clientY - start.y;
+          if (kind === 'svg') { v.x = +(start.vx + dx * unit).toFixed(1); v.y = +(start.vy + dy * unit).toFixed(1); }
+          else { v.x = +(start.vx + dx / hr.width * 100).toFixed(2); v.y = +(start.vy + dy / hr.height * 100).toFixed(2); }
+        }
+        setItem(hall, el, v);
+      };
+      const up = () => { box.removeEventListener('pointermove', move); box.removeEventListener('pointerup', up); box.removeEventListener('pointercancel', up); };
+      box.addEventListener('pointermove', move);
+      box.addEventListener('pointerup', up);
+      box.addEventListener('pointercancel', up);
+    });
+    layer.append(box);
+    return box;
+  }
+  // keep every box over its item, as things move
+  function follow() {
+    const hr = hall.getBoundingClientRect();
+    for (const el of hall.querySelectorAll('[data-item], .bee-kid')) {
+      if (el.closest('.bee-edit-layer')) continue;
+      let box = boxes.get(el);
+      if (!box) { box = boxFor(el); boxes.set(el, box); }
+      const r = el.getBoundingClientRect();
+      // what can be seen of it: an audience member ends at their chair's foot (data-bottom),
+      // and nothing goes past the hall's edges
+      let top = r.top, bottom = r.bottom, left = r.left, right = r.right;
+      if (el.dataset.bottom && el.getScreenCTM) { const m = el.getScreenCTM(); if (m) bottom = Math.min(bottom, m.f + m.d * Number(el.dataset.bottom)); }
+      top = Math.max(top, hr.top); bottom = Math.min(bottom, hr.bottom); left = Math.max(left, hr.left); right = Math.min(right, hr.right);
+      const hidden = right - left < 2 || bottom - top < 2 || el.classList.contains('is-gone');
+      box.hidden = hidden;
+      if (hidden) continue;
+      box.style.left = `${left - hr.left}px`; box.style.top = `${top - hr.top}px`;
+      box.style.width = `${right - left}px`; box.style.height = `${bottom - top}px`;
+    }
+    raf = requestAnimationFrame(follow);
+  }
+  return {
+    get on() { return !layer.hidden; },
+    toggle(on) {
+      layer.hidden = !on;
+      hall.classList.toggle('is-editing', on);
+      cancelAnimationFrame(raf);
+      if (on) follow();
+    },
+  };
+}
+
 function mountTuner(hall, top, { say }) {
   const sizes = { ...settings.sizes };
+  const items = JSON.parse(JSON.stringify(settings.items || {}));
   const letters = { ...settings.letters };
   const btn = document.createElement('button');
   btn.type = 'button';
@@ -348,26 +479,22 @@ function mountTuner(hall, top, { say }) {
   paper.className = 'pp-receipt__paper bee-tune-paper';
   const heading = (t) => { const h = document.createElement('p'); h.className = 'bee-tune-head'; h.textContent = t; paper.append(h); };
 
-  heading('Sizes');
-  const rows = TUNE.map(([name, label]) => {
-    const row = document.createElement('label');
-    row.className = 'bee-tune-row';
-    const text = document.createElement('span');
-    text.textContent = label;
-    const out = document.createElement('output');
-    const input = document.createElement('input');
-    input.type = 'range'; input.min = '0.4'; input.max = '2'; input.step = '0.01';
-    const set = (v) => { input.value = String(v); out.textContent = Number(v).toFixed(2); };
-    set(tuneStart(name));
-    input.addEventListener('input', () => {
-      sizes[name] = Number(input.value);
-      hall.style.setProperty(`--t-${name}`, input.value);
-      out.textContent = Number(input.value).toFixed(2);
-    });
-    row.append(text, input, out);
-    paper.append(row);
-    return { name, set };
+  heading('Move and resize');
+  const editBtn = document.createElement('button');
+  editBtn.type = 'button';
+  editBtn.className = 'pp-btn pp-btn--ghost bee-edit-btn';
+  editBtn.textContent = 'Show the boxes';
+  const editHint = document.createElement('p');
+  editHint.className = 'bee-tune-note';
+  editHint.textContent = 'Each thing in the hall gets its own box: drag inside it to move it, drag a corner to resize it. A speller\u2019s box resizes every child drawn like them.';
+  editBtn.addEventListener('click', () => {
+    const on = !editor.on;
+    editor.toggle(on);
+    editBtn.textContent = on ? 'Hide the boxes' : 'Show the boxes';
+    if (on) panel.hidden = true;            // out of the way of the boxes; the settings button brings it back
   });
+  paper.append(editBtn, editHint);
+  const editor = makeEditor(hall, items);
 
   // the ABC chart: a letter said as the spellers' voice says it; a better spelling tried and kept
   heading('Letters: click one to hear it');
@@ -434,8 +561,8 @@ function mountTuner(hall, top, { say }) {
     if (!isAdminHere()) { note.textContent = 'Only the admin account can save. Sign in as the admin.'; return; }
     save.disabled = true;
     try {
-      await setDoc(doc(db, ...SETTINGS_DOC), { sizes, letters, updatedAt: serverTimestamp() });
-      settings = { sizes: { ...sizes }, letters: { ...letters } };
+      await setDoc(doc(db, ...SETTINGS_DOC), { sizes, items, letters, updatedAt: serverTimestamp() });
+      settings = { sizes: { ...sizes }, items: JSON.parse(JSON.stringify(items)), letters: { ...letters } };
       note.textContent = 'Saved. Every bee from now on uses these.';
     } catch (e) {
       note.textContent = `Not saved: ${e.code || e.message || e}`;
@@ -450,7 +577,9 @@ function mountTuner(hall, top, { say }) {
     for (const k of Object.keys(sizes)) delete sizes[k];
     Object.assign(sizes, settings.sizes);
     applySizes(hall, sizes);
-    rows.forEach((r) => r.set(tuneStart(r.name)));
+    for (const k of Object.keys(items)) delete items[k];
+    Object.assign(items, JSON.parse(JSON.stringify(settings.items || {})));
+    applyItems(hall, items);
     for (const k of Object.keys(letters)) { delete letters[k]; delete LETTER_SAID[k]; }
     Object.assign(letters, settings.letters);
     Object.assign(LETTER_SAID, settings.letters);
@@ -507,10 +636,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     </div>
     <div class="bee-hall">
       <div class="bee-backdrop"></div>
-      <span class="pp-sticky pp-sticky--c0 pp-sticky--tape bee-banner">Spelling Bee</span>
+      <span class="pp-sticky pp-sticky--c0 pp-sticky--tape bee-banner bee-item" data-item="banner" data-label="Banner">Spelling Bee</span>
       <div class="bee-judges"></div>
-      <div class="bee-stand" aria-hidden="true"><svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><rect x="5" y="2" width="10" height="17" rx="5" fill="#3b3b3b"/><rect x="6.5" y="5" width="7" height="2" fill="#6b6b6b"/><rect x="8.8" y="18" width="2.4" height="76" fill="#8a8f96"/><rect x="1" y="93" width="18" height="5" rx="2.5" fill="#3b3b3b"/></svg></div>
-      <div class="bee-tv" aria-label="The screen">
+      <div class="bee-stand bee-item" data-item="mic" data-label="Microphone" aria-hidden="true"><svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><rect x="5" y="2" width="10" height="17" rx="5" fill="#3b3b3b"/><rect x="6.5" y="5" width="7" height="2" fill="#6b6b6b"/><rect x="8.8" y="18" width="2.4" height="76" fill="#8a8f96"/><rect x="1" y="93" width="18" height="5" rx="2.5" fill="#3b3b3b"/></svg></div>
+      <div class="bee-tv bee-item" data-item="tv" data-label="TV" aria-label="The screen">
         <div class="bee-tv-screen">
           <div class="bee-spell">
             <p class="bee-letters"></p>
@@ -563,6 +692,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.style.setProperty('--x', spot.x);
     el.style.setProperty('--y', spot.y);
     el.style.setProperty('--tall', `var(--t-tall-${s.kid}, ${f.tall})`);
+    el.dataset.kid = s.kid;
+    el.dataset.label = `${{ boy: 'Boy, blue T-shirt', girl: 'Girl, pigtails', boy2: 'Boy, hoodie', girl2: 'Girl, pink and yellow', girl3: 'Girl, curly hair' }[s.kid] || s.kid} (every one)`;
     el.style.setProperty('--hip', f.hip);
     el.style.setProperty('--knee', f.knee);
     el.style.setProperty('--hands', f.hands);
@@ -617,6 +748,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   settingsReady.then(() => {
     if (gone) return;
     applySizes(hall, settings.sizes);
+    applyItems(hall, settings.items);
     if (isAdminHere() || /[?&]tune=1\b/.test(location.search)) mountTuner(hall, $('.bee-top'), { say: (text, kid) => spellerSays(text, kid) });
   });
   if (!document.fullscreenElement) beeFullscreen();   // allowed only if the Start tap is still fresh
