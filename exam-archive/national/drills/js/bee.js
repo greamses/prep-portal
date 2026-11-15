@@ -74,6 +74,11 @@ const KIDS = {
 /* The hall's reactions (clapping for a right word, tears for a wrong one) are switched off
    until the user's clapping and crying pictures arrive (2026-11-15). The code stays. */
 const REACTIONS = false;
+/* The spellers speak with the browser's own voice (the Web Speech API): the user's choice,
+   2026-11-15, after hearing the recordings. Their recordings stay made and listed (ElevenLabs
+   letters in media/spelling-letters, Kokoro words and letters on the spelling-audio branch);
+   true plays them again. The judge is always the recorded voice. */
+const SPELLER_RECORDINGS = false;
 const MIC_KEY = 'ppSpellMic';          // the same choice as the drill's mic
 const GRACE = 12;                      // seconds past the clock before a silent turn is called a miss
 
@@ -594,6 +599,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const ready = {};
   for (const who of Object.keys(LETTER_VOICES)) lettersReady[who].then((ok) => { ready[who] = ok; });
   function letterClip(ch, kid) {
+    if (!SPELLER_RECORDINGS) return [];
     const i = LETTER[ch.toLowerCase()];
     const who = KIDS[kid]?.girl ? 'girl' : 'boy';
     const list = [];
@@ -602,7 +608,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     if (k) list.push({ url: k });
     return list;
   }
-  const wordClip = (q, kid) => spellerClip(kid, q.bank, q.i);
+  const wordClip = (q, kid) => (SPELLER_RECORDINGS ? spellerClip(kid, q.bank, q.i) : null);
   const queue = [];
   let talkingNow = null;            // the Audio (or utterance) playing
   function next() {
