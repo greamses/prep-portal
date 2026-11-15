@@ -7,7 +7,7 @@
    them, and the sets ticked in the setup are marked on it. Opened from the
    Word Sets step: openSpellingLibrary({ sets: [1, 2], start: 1 }).
 ═══════════════════════════════════════════════════════ */
-import { BANKS, setCount, SET_SIZE, setWords, aboutWord, sayWord, hush, faceButton, canSpeak, clipFor } from './spelling.js';
+import { BANKS, setCount, SET_SIZE, setWords, aboutText, aboutLine, sayWord, hush, faceButton, canSpeak, clipFor } from './spelling.js';
 import { UI } from '/utils/components/ui-icons.js';
 
 let bd = null;
@@ -57,15 +57,28 @@ function row({ i: at, row: [word, ipa, def, use, pos = '', origin = ''] }, n) {
   i.className = 'spell-lib-ipa';
   i.textContent = `/${ipa}/`;
   head.append(num, w, i);
-  if (pos || origin) {
-    const a = document.createElement('span');
-    a.className = 'spell-lib-about';
-    a.textContent = aboutWord(pos, origin);
-    head.append(a);
-  }
   const d = document.createElement('p');
   d.className = 'spell-lib-def';
   d.textContent = def;
+  // the part of speech, the language and the root, which the boy reads out too
+  const about = aboutText(word, pos, origin, true);
+  let aboutLineEl = null;
+  if (about) {
+    aboutLineEl = document.createElement('div');
+    aboutLineEl.className = 'spell-lib-useline spell-lib-aboutline';
+    const hearRoot = document.createElement('button');
+    hearRoot.type = 'button';
+    hearRoot.className = 'spell-lib-hear';
+    hearRoot.innerHTML = UI.roots(16);
+    hearRoot.setAttribute('aria-label', `Hear where "${word}" comes from`);
+    hearRoot.dataset.tip = 'Hear the origin and root';
+    hearRoot.disabled = !canSpeak;
+    hearRoot.addEventListener('click', () => sayWord(aboutLine(word, pos, origin), face, { rate: 0.95, clip: clipFor(bank, at, 'o') }));
+    const a = document.createElement('p');
+    a.className = 'spell-lib-about';
+    a.textContent = about;
+    aboutLineEl.append(hearRoot, a);
+  }
   const useLine = document.createElement('div');
   useLine.className = 'spell-lib-useline';
   const hearUse = document.createElement('button');
@@ -77,7 +90,7 @@ function row({ i: at, row: [word, ipa, def, use, pos = '', origin = ''] }, n) {
   hearUse.disabled = !canSpeak;
   hearUse.addEventListener('click', () => sayWord(use, face, { rate: 0.95, clip: clipFor(bank, at, 's') }));
   useLine.append(hearUse, sentenceWithWord(use, word));
-  body.append(head, d, useLine);
+  body.append(head, d, ...(aboutLineEl ? [aboutLineEl] : []), useLine);
   li.append(face, body);
   return li;
 }

@@ -2,7 +2,7 @@ name: Spelling audio
 
 # Records the Drills spelling lists (data/spelling/lower-primary.js, upper-primary.js,
 # secondary.js) with Kokoro, a free speech model, on GitHub's machines. The clips are
-# committed to the repo's `spelling-audio` branch (<list>/<voice>/NNNN-w|d|s.mp3), which holds
+# committed to the repo's `spelling-audio` branch (<list>/<voice>/NNNN-w|d|s|o.mp3), which holds
 # nothing else, and the site plays them through jsDelivr (a free CDN for public GitHub repos).
 # They never land on anyone's own disk: local clones are set not to fetch that branch. Only
 # the small list of which clips exist (data/spelling/audio.js) comes back here.
@@ -14,14 +14,15 @@ on:
   workflow_dispatch:
     inputs:
       kinds:
-        description: "What to record: w (words), d (definitions), s (sentences)"
-        default: "w,d,s"
+        description: "What to record: w (words), d (definitions), s (sentences), o (part of speech, origin and root)"
+        default: "w,d,s,o"
   push:
     branches-ignore: [spelling-audio]
     paths:
       - data/spelling/secondary.js
       - data/spelling/upper-primary.js
       - data/spelling/lower-primary.js
+      - data/spelling/roots.js
       - tools/spelling-audio/*.mjs
       - tools/spelling-audio/package.json
       - tools/spelling-audio/redo.txt
@@ -72,7 +73,7 @@ jobs:
         working-directory: tools/spelling-audio
         run: |
           VOICE=$(node -p "require('fs').readFileSync('voice-name.mjs','utf8').match(/'([a-z_]+)';/)[1]")
-          node record.mjs --bank ${{ matrix.bank }} --part ${{ matrix.part }} --kinds ${{ inputs.kinds || 'w,d,s' }} --redo redo.txt \
+          node record.mjs --bank ${{ matrix.bank }} --part ${{ matrix.part }} --kinds ${{ inputs.kinds || 'w,d,s,o' }} --redo redo.txt \
             --have "$GITHUB_WORKSPACE/store/${{ matrix.bank }}/$VOICE" --out "$GITHUB_WORKSPACE/new/${{ matrix.bank }}/$VOICE"
       - name: Hand the new clips on
         if: always()

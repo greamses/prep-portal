@@ -11,7 +11,7 @@ import { checkSubject } from './subject.js';
 import { typedToTex, plainToTex } from './typed-tex.js';
 import { createBoxInput } from './box-input.js';
 import { mathReady, loadMath, svgFor } from '/utils/components/workbook/mathify.js';
-import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak, faceButton, clipFor, preloadClip, onTrack, wordsInSets, aboutWord } from './spelling.js';
+import { sanitizeSpelling, spelledRight, sayWord, hush, canSpeak, faceButton, clipFor, preloadClip, onTrack, wordsInSets, aboutWord, aboutText } from './spelling.js';
 import { UI } from '/utils/components/ui-icons.js';
 
 const $ = (id) => document.getElementById(id);
@@ -200,13 +200,17 @@ spellTools.hidden = true;
 const defBtn = toolBtn('drill-hear-def', UI.book(22), 'Hear the definition', () => {
   if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.def, talker(), { rate: 0.95, clip: clipFor(currentQuestion.bank, currentQuestion.i, 'd') });
 });
+// What a bee also tells you when asked: the part of speech, the language, and the root.
+const rootBtn = toolBtn('drill-hear-root', UI.roots(22), 'Hear the part of speech, origin and root', () => {
+  if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.about, talker(), { rate: 0.95, clip: clipFor(currentQuestion.bank, currentQuestion.i, 'o') });
+});
 const useBtn = toolBtn('drill-hear-use', UI.speech(22), 'Hear it in a sentence', () => {
   if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.use, talker(), { rate: 0.95, clip: clipFor(currentQuestion.bank, currentQuestion.i, 's') });
 });
 const skipBtn = toolBtn('drill-skip', UI.skip(22), 'Skip: show the spelling', () => skipWord());
 const toolRow = document.createElement('div');
 toolRow.className = 'drill-spell-row';
-toolRow.append(defBtn, useBtn, skipBtn);
+toolRow.append(rootBtn, defBtn, useBtn, skipBtn);
 const revealEl = document.createElement('p');
 revealEl.className = 'drill-reveal';
 revealEl.hidden = true;
@@ -223,6 +227,8 @@ function skipWord() {
   revealEl.hidden = false;
   toolRow.hidden = true;
   useEl.textContent = currentQuestion.use;   // the sentence, whole, while the answer shows
+  // and the root, written out now that the spelling is no secret
+  aboutEl.textContent = aboutText(currentQuestion.word, currentQuestion.pos, currentQuestion.origin, true);
   if (!mastering) noteMiss(currentQuestion);
   setTimeout(() => {
     if (round !== roundId) return;   // that round is over; endRound tidied up
@@ -255,7 +261,7 @@ function renderSpelling(q) {
   defEl.textContent = q.def;
   useEl.textContent = q.gap;
   meaningEl.hidden = false;
-  defBtn.hidden = useBtn.hidden = !canSpeak;
+  rootBtn.hidden = defBtn.hidden = useBtn.hidden = !canSpeak;
   spellTools.hidden = false;
   cardEl.classList.add('is-spell');          // grows to fit a long sentence instead of cropping its buttons
   answerStage.classList.add('is-spell');
@@ -264,6 +270,7 @@ function renderSpelling(q) {
   answerStage.classList.toggle('is-longest', q.word.length > 18);
   preloadClip(clipFor(q.bank, q.i, 'd'));
   preloadClip(clipFor(q.bank, q.i, 's'));
+  preloadClip(clipFor(q.bank, q.i, 'o'));
   inputEl.maxLength = 40;
   inputEl.value = '';
   typedEl.textContent = '';

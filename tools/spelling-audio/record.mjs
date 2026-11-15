@@ -3,10 +3,11 @@
 // repo's `spelling-audio` branch and served to the site by jsDelivr, so they are never on
 // anyone's own disk (a local clone is set not to fetch that branch).
 //
-//   node record.mjs --bank <lower|upper|secondary> --have <dir> --out <dir> [--part 1/3] [--kinds w,d,s]
+//   node record.mjs --bank <lower|upper|secondary> --have <dir> --out <dir> [--part 1/3] [--kinds w,d,s,o]
 //     --bank  which word list (data/spelling/<file>.js, see LISTS)
 //     --part  an even slice of the list, so several machines share it (1/3 = the first third)
 //     --have  the clips already made (the spelling-audio branch's list/voice folder): skipped
+//     --kinds w word, d definition, s sentence, o the part of speech, origin and root
 //     --out   where to write the new ones (the workflow commits them to the branch)
 //     --redo  a file of clips to record AGAIN even though they exist ("secondary/0806-w", one
 //             a line): how a bad recording is replaced. The workflow empties it afterwards.
@@ -20,6 +21,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { resolve } from 'node:path';
 
 import { VOICE } from './voice-name.mjs';
+// the 'o' line ("It is a noun, from Greek. The root is ..."), the same words the site falls back to
+import { aboutLine } from '../../data/spelling/roots.js';
 
 // The lists. Their IPA comes in two styles: espeak's (stress mark just before the vowel, what
 // Kokoro was trained on) and the dictionary's (dots, stress mark at the START of the syllable).
@@ -38,7 +41,7 @@ const BANK = (await import(new URL(`../../data/spelling/${LIST.file}`, import.me
 const [pi, pn] = String(arg('part', '1/1')).split('/').map(Number);
 const per = Math.ceil(BANK.length / pn);
 const FROM = (pi - 1) * per, TO = Math.min(BANK.length, pi * per);
-const kinds = arg('kinds', 'w,d,s').split(',').filter((k) => 'wds'.includes(k));
+const kinds = arg('kinds', 'w,d,s,o').split(',').filter((k) => 'wdso'.includes(k));
 const pad = (i) => String(i + 1).padStart(4, '0');
 
 // A clip that came out (almost) silent or far too short is a bad render: fp16 does that now
@@ -58,7 +61,7 @@ const done = new Set(HAVE && existsSync(HAVE) ? readdirSync(HAVE).map((f) => f.r
 const REDO = arg('redo', null);
 if (REDO && existsSync(REDO)) {
   for (const line of readFileSync(REDO, 'utf8').split(/\r?\n/)) {
-    const m = /^(\w+)\/(\d{4}-[wds])$/.exec(line.trim());
+    const m = /^(\w+)\/(\d{4}-[wdso])$/.exec(line.trim());
     if (m && m[1] === arg('bank', 'secondary')) done.delete(m[2]);
   }
 }
@@ -71,9 +74,10 @@ await load('fp16');
 let made = 0, redone = 0, failed = 0;
 for (const [k, i] of todo) {
   const name = `${pad(i)}-${k}`;
-      const [word, rawIpa, def, use] = BANK[i];
+      const [word, rawIpa, def, use, pos = '', origin = ''] = BANK[i];
       const ipa = LIST.ipa(rawIpa);
-      const phon = k === 'w' ? ipa : k === 'd' ? await linePhonemes(def) : await linePhonemes(use, word, ipa);
+      const phon = k === 'w' ? ipa : k === 'd' ? await linePhonemes(def)
+        : k === 'o' ? await linePhonemes(aboutLine(word, pos, origin)) : await linePhonemes(use, word, ipa);
       const opts = { voice: VOICE, lift: 1, speed: 1 };   // her own voice and pace: nothing tweaked
       let clip = await speak(phon, opts);
       if (!good(clip.audio, clip.rate)) {

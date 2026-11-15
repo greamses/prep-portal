@@ -131,13 +131,18 @@ export function spellingQuestion(seed, index, op, sets) {
   const d = deckFor(seed, sets);
   const [bank, i] = d[index % d.length];
   const [word, ipa, def, use, pos = '', origin = ''] = BANKS[bank].rows[i];
-  const common = { bank, i, word, ipa, def, use, pos, origin, gap: blanked(use, word), answer: word, set: setOf(i, bank) };
+  const common = { bank, i, word, ipa, def, use, pos, origin, gap: blanked(use, word), answer: word, set: setOf(i, bank), about: aboutLine(word, pos, origin) };
   if (op === 'spellIpa') return { ...common, spell: 'ipa', text: `/${ipa}/`, hint: 'Spell the word' };
   return { ...common, spell: 'say', text: '', hint: 'Listen, then spell the word' };
 }
 
 /** "noun · from Greek": the part of speech and language of origin, for a card or the library. */
 export const aboutWord = (pos, origin) => [pos, origin && `from ${origin}`].filter(Boolean).join(' · ');
+/* The root of each word (data/spelling/roots.js). aboutLine is what the boy SAYS:
+   "It is an adjective, from Latin. The root is fortuitus, meaning happening by chance."
+   aboutText(word, pos, origin, true) shows it, once the word is done or in the library. */
+import { aboutLine, aboutText } from '/data/spelling/roots.js';
+export { aboutLine, aboutText };
 
 /** Letters only: case, accents, spaces, hyphens and apostrophes do not count. */
 export const letters = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
@@ -162,7 +167,8 @@ export { sayWord, hush, canSpeak, faceButton, preloadClip, FACE_SRC } from './bo
    the browser. */
 import { CLIPS } from '/data/spelling/audio.js';
 const pad = (i) => String(i + 1).padStart(4, '0');
-/** URL of the recording of entry `i` of list `bank` ('w' word, 'd' definition, 's' sentence), or null. */
+/** URL of the recording of entry `i` of list `bank` ('w' word, 'd' definition, 's' sentence,
+    'o' part of speech + origin + root), or null. */
 export function clipFor(bank, i, kind) {
   const c = CLIPS && CLIPS[bank];
   if (!c || !c.base || !c[kind] || !c[kind].has(i)) return null;

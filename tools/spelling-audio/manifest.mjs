@@ -19,25 +19,26 @@ const REPO = process.env.GITHUB_REPOSITORY || 'greamses/prep-portal';
 const lists = {};
 for (const bank of ['secondary', 'upper', 'lower']) {
   const dir = join(root, bank, VOICE);
-  const have = { w: [], d: [], s: [] };
+  const have = { w: [], d: [], s: [], o: [] };
   if (existsSync(dir)) {
     for (const f of readdirSync(dir)) {
-      const m = /^(\d{4})-([wds])\.mp3$/.exec(f);
+      const m = /^(\d{4})-([wdso])\.mp3$/.exec(f);
       if (m) have[m[2]].push(Number(m[1]) - 1);
     }
   }
-  for (const k of 'wds') have[k].sort((a, b) => a - b);
-  const any = have.w.length + have.d.length + have.s.length;
+  for (const k of 'wdso') have[k].sort((a, b) => a - b);
+  const any = have.w.length + have.d.length + have.s.length + have.o.length;
   lists[bank] = `  ${bank}: {\n    base: '${any ? `https://cdn.jsdelivr.net/gh/${REPO}@${sha}/${bank}/${VOICE}/` : ''}',\n` +
-    `    w: new Set(${JSON.stringify(have.w)}),\n    d: new Set(${JSON.stringify(have.d)}),\n    s: new Set(${JSON.stringify(have.s)}),\n  },\n`;
-  console.log(`${bank}: ${have.w.length} words, ${have.d.length} definitions, ${have.s.length} sentences`);
+    `    w: new Set(${JSON.stringify(have.w)}),\n    d: new Set(${JSON.stringify(have.d)}),\n    s: new Set(${JSON.stringify(have.s)}),\n` +
+    `    o: new Set(${JSON.stringify(have.o)}),\n  },\n`;
+  console.log(`${bank}: ${have.w.length} words, ${have.d.length} definitions, ${have.s.length} sentences, ${have.o.length} origin lines`);
 }
 
 writeFileSync(new URL('../../data/spelling/audio.js', import.meta.url),
   `/* Which Kokoro recordings of each spelling list exist, and where (written by\n` +
   `   tools/spelling-audio/manifest.mjs on GitHub Actions). The clips are not in this branch:\n` +
   `   they live on the repo's spelling-audio branch and are served by jsDelivr, pinned to a\n` +
-  `   commit. Per list: w / d / s = entry indexes (0-based) with a word / definition /\n` +
-  `   sentence clip. Anything not listed is spoken with the browser's voice. Voice: ${VOICE}. */\n` +
+  `   commit. Per list: w / d / s / o = entry indexes (0-based) with a word / definition /\n` +
+  `   sentence / part-of-speech-origin-and-root clip. Anything not listed is spoken with the browser's voice. Voice: ${VOICE}. */\n` +
   `export const CLIPS = {\n${lists.secondary}${lists.upper}${lists.lower}};\n`);
 console.log(`audio.js written @ ${sha.slice(0, 8)}`);

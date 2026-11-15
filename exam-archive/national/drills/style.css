@@ -798,3 +798,5 @@ tbody .drill-grid-th { border-right-width: 2px; }
 .drill-about { margin: 0 0 0.15rem; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; color: var(--accent-secondary); }
 .drill-about[hidden] { display: none; }
 .spell-lib-about { flex-basis: 100%; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; color: var(--accent-secondary); }
+/* the about line has its own row, with the button that reads it out */
+.spell-lib-aboutline .spell-lib-about { flex: 1 1 auto; margin: 0; align-self: center; text-transform: none; }
