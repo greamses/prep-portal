@@ -33,7 +33,16 @@ import { canListen, createSpellMic } from './spell-mic.js';
 import { seatSpellers, createBee, botSpelling } from './bee-logic.js';
 import { SPELLING_PHRASES, PHRASE } from '/data/spelling/phrases.js';
 import { LETTER } from '/data/spelling/letters.js';
-import { SPELLER_VOICES } from '/data/spelling/speller-voices.js';
+import { SPELLER_VOICES, LETTER_VOICES } from '/data/spelling/speller-voices.js';
+
+/* The letters' ElevenLabs recordings (scripts/make-bee-letters.mjs) are on the site itself,
+   once they have been made. One look at the first file of each says whether they are there,
+   so a missing set costs one request, not one per letter. */
+const lettersReady = {};
+for (const who of Object.keys(LETTER_VOICES)) {
+  lettersReady[who] = fetch(`/media/spelling-letters/${who}/0001.mp3`, { method: 'HEAD' })
+    .then((r) => r.ok && /audio/.test(r.headers.get('content-type') || '')).catch(() => false);
+}
 // a namespace import: an audio.js written before the spellers were recorded has no SPELLER_CLIPS
 import * as AUDIO from '/data/spelling/audio.js';
 import { openRoom, idFor } from '/utils/live/index.js';
@@ -428,7 +437,19 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const c = AUDIO.SPELLER_CLIPS?.[voiceOf(kid)]?.[list];
     return c && c.base && c.w.has(i) ? `${c.base}${pad4(i)}-w.mp3` : null;
   }
-  const letterClip = (ch, kid) => spellerClip(kid, 'letters', LETTER[ch.toLowerCase()]);
+  /* A letter: the ElevenLabs recording, pitched up for a child (LETTER_VOICES), if that set
+     has been made; else the Kokoro one; else (in next()) the browser's voice. */
+  const ready = {};
+  for (const who of Object.keys(LETTER_VOICES)) lettersReady[who].then((ok) => { ready[who] = ok; });
+  function letterClip(ch, kid) {
+    const i = LETTER[ch.toLowerCase()];
+    const who = KIDS[kid]?.girl ? 'girl' : 'boy';
+    const list = [];
+    if (i != null && ready[who]) list.push({ url: `/media/spelling-letters/${who}/${pad4(i)}.mp3`, pitch: LETTER_VOICES[who].pitch });
+    const k = spellerClip(kid, 'letters', i);
+    if (k) list.push({ url: k });
+    return list;
+  }
   const wordClip = (q, kid) => spellerClip(kid, q.bank, q.i);
   const queue = [];
   let talkingNow = null;            // the Audio (or utterance) playing
@@ -437,13 +458,21 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     if (gone || !pace) { queue.length = 0; return; }
     const item = queue.shift();
     if (!item) return;
-    if (item.url) {
-      const a = new Audio(item.url);
+    // recordings to try in turn: [{ url, pitch? }] (a plain url string is one with no pitch)
+    const tries = Array.isArray(item.url) ? item.url : item.url ? [{ url: item.url }] : [];
+    if (tries.length) {
+      const [first, ...rest] = tries;
+      const a = new Audio(first.url);
+      if (first.pitch && first.pitch !== 1) {
+        // higher AND a touch quicker, as a child's voice is: the pitch is not held
+        a.preservesPitch = false; a.mozPreservesPitch = false; a.webkitPreservesPitch = false;
+        a.playbackRate = first.pitch;
+      }
       talkingNow = a;
-      const on = () => { if (talkingNow === a) next(); };
-      a.onended = on;
-      a.onerror = () => { if (talkingNow === a) { queue.unshift({ text: item.text, kid: item.kid }); next(); } };
-      a.play().catch(() => { if (talkingNow === a) { queue.unshift({ text: item.text, kid: item.kid }); next(); } });
+      const fallBack = () => { if (talkingNow === a) { queue.unshift({ text: item.text, kid: item.kid, url: rest }); next(); } };
+      a.onended = () => { if (talkingNow === a) next(); };
+      a.onerror = fallBack;
+      a.play().catch(fallBack);
       return;
     }
     if (!synth) { next(); return; }
@@ -459,7 +488,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       synth.speak(u);
     } catch { next(); }
   }
-  /** A speller says something: their recording `url` if there is one, else `text` in the browser's voice. */
+  /** A speller says something: their recording(s) `url` (a url, or a list to try in turn), else `text` in the browser's voice. */
   function spellerSays(text, kid, url = null) {
     if (gone || !pace) return;
     queue.push({ text, kid, url });
