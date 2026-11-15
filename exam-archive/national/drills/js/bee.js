@@ -63,8 +63,9 @@ import { heroPaint } from '/utils/components/nav-icons.js';
    The first girl has both hands down (girl-hands-down.svg, made by
    tools/character-trace/hands-down.mjs); boy-hoodie and girl-overalls came as pictures. */
 const KIDS = {
-  boy: { src: '/media/characters/boy.svg', girl: false, tall: 0.78, hip: 64, knee: 80, hands: 73,
-    eyes: [[39.5, 25.5], [67.5, 25.5]], mouth: [55, 30.7, 26, 5.6], skin: '#f6bf98', lip: '#8a3b2b' },
+  // the boy in the blue T-shirt with his mouth closed (boy-closed.svg; boy.svg, grinning, stays for the films)
+  boy: { src: '/media/characters/boy-closed.svg', girl: false, tall: 0.78, hip: 63.5, knee: 81, hands: 72,
+    eyes: [[39.4, 23.1], [68, 23.1]], mouth: [55, 29.2, 15, 2.2], skin: '#f6c09c', lip: '#8a3b2b' },
   girl: { src: '/media/characters/girl-hands-down.svg', girl: true, tall: 0.86, hip: 64, knee: 80, hands: 73,
     eyes: [[39, 19.6], [60.5, 19.6]], mouth: [49.6, 24, 15, 2.8], skin: '#f3c3a9', lip: '#a4523f' },
   boy2: { src: '/media/characters/boy-hoodie.svg', girl: false, tall: 1.16, hip: 54, knee: 77, hands: 65,
