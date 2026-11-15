@@ -81,7 +81,9 @@ const REACTIONS = false;
    2026-11-15, after hearing the recordings. Their recordings stay made and listed (ElevenLabs
    letters in media/spelling-letters, Kokoro words and letters on the spelling-audio branch);
    true plays them again. The judge is always the recorded voice. */
-const SPELLER_RECORDINGS = false;
+const SPELLER_RECORDINGS = true;     // 2026-11-15: back to Kokoro, read from each letter's and word's transcription
+// the ElevenLabs letters (media/spelling-letters) are kept, but Kokoro's are played instead
+const ELEVEN_LETTERS = false;
 const MIC_KEY = 'ppSpellMic';          // the same choice as the drill's mic
 const GRACE = 12;                      // seconds past the clock before a silent turn is called a miss
 
@@ -867,7 +869,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const i = LETTER[ch.toLowerCase()];
     const who = KIDS[kid]?.girl ? 'girl' : 'boy';
     const list = [];
-    if (i != null && ready[who]) list.push({ url: `/media/spelling-letters/${who}/${pad4(i)}.mp3`, pitch: LETTER_VOICES[who].pitch });
+    if (ELEVEN_LETTERS && i != null && ready[who]) list.push({ url: `/media/spelling-letters/${who}/${pad4(i)}.mp3`, pitch: LETTER_VOICES[who].pitch });
     const k = spellerClip(kid, 'letters', i);
     if (k) list.push({ url: k });
     return list;
