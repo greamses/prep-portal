@@ -471,7 +471,6 @@ function renderSpellPaceStep() {
 function renderSpellMasterStep() {
   renderChoiceStep(topic, 'spell-master', {
     title: 'When the round ends',
-    subtitle: 'Word Master brings back every word you skipped until you can spell it.',
     name: 'drill-spell-master',
     options: [
       { value: 'on', label: 'Master', tip: 'Word Master: after the round, every word you skipped comes back until you can spell it. Then the results.', checked: spellMaster },
