@@ -164,6 +164,9 @@ function playClip(url, me, onFail, units) {
     const at = c.currentTime + 0.02;
     const lag = (c.outputLatency || 0) + (c.baseLatency || 0);
     src.onended = () => { if (me === lineNo) stopTalking(); };
+    // never two voices: a browser line still waiting to start (Windows' speech engine can take
+    // over a second) is dropped the moment the recording plays
+    try { if (hasSynth) speechSynthesis.cancel(); } catch { /* ignore */ }
     src.start(at);
     console.info('[spelling voice] Kokoro recording:', url);
     source = src;
@@ -216,6 +219,9 @@ function synthesise(text, me, rate) {
     u.lang = voice ? voice.lang : 'en-GB';
     u.rate = rate;
     u.onend = u.onerror = () => { if (me === lineNo) stopTalking(); };
+    // cancel() does not always catch a line the engine has not started yet: if this one
+    // only gets going after a newer line (a recording, say) took over, it stops at once
+    u.onstart = () => { if (me !== lineNo) { try { speechSynthesis.cancel(); } catch { /* ignore */ } } };
     speechSynthesis.speak(u);
     moveMouth(me, () => null);   // nothing to measure: the mouth flaps while he talks
   } catch { stopTalking(); }

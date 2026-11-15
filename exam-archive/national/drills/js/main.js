@@ -13,7 +13,7 @@ import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound, masterFinished, lastRoundTimeMs } from './game.js';
 import { startGridRound } from './grid.js';
 import { startBarsRound } from './bars.js';
-import { BANKS, BANK_KEYS, setCount, setId, setsLabel, roundSeconds, clockLabel, SECONDS_PER_WORD } from './spelling.js';
+import { BANKS, BANK_KEYS, setCount, setId, setsLabel, roundSeconds, clockLabel, LEVELS, LEVEL_KEYS, levelOf, perMinute, wordsInSets } from './spelling.js';
 import { openSpellingLibrary } from './spelling-library.js';
 import { finishRound, rankDrill } from './leaderboard.js';
 import { renderLeaderboard } from '/utils/games/leaderboard-view.js';
@@ -223,15 +223,17 @@ const savedSets = mem.get('compounds', ALL_COMPOUND_SETS, Array.isArray).filter(
 const compounds = new Set(savedSets.length ? savedSets : ALL_COMPOUND_SETS); // Chemistry only — tick-all default
 // Spelling only — which sets of twenty words (set 1 = the bank's first twenty). Sent as the room's `tables`.
 // Spelling: which list, which of its sets of ten (set numbers 1..n), Normal or
-// Focus pace, and whether missed words are mastered after the clock. The sets
+// Focus (one slip and you are out), whether missed words are mastered after the
+// clock, and the difficulty level, which is the pace and so the clock. The sets
 // go to the room as ids (list code + set number: see BANKS in spelling.js).
 let spellBank = mem.get('spellBank', 'secondary', BANK_KEYS);
 const spellSets = new Set(mem.get('spellSets', [1], Array.isArray).filter((n) => Number.isInteger(n) && n >= 1 && n <= setCount(spellBank)));
 if (!spellSets.size) spellSets.add(1);
 let spellFocus = mem.get('spellFocus', false, [true, false]);
 let spellMaster = mem.get('spellMaster', true, [true, false]);
+let spellLevel = mem.get('spellLevel', 'easy', LEVEL_KEYS);
 const spellIds = () => [...spellSets].sort((a, b) => a - b).map((n) => setId(spellBank, n));
-const spellTime = () => roundSeconds(spellIds(), spellFocus);
+const spellTime = () => roundSeconds(spellIds(), spellLevel);
 // Chemistry's single operation is never offered as a step, so a remembered
 // setup that somehow lost it would leave the player unable to start.
 if (categoryValue === 'chemistry') operations.add('rmm');
@@ -242,7 +244,7 @@ const saveContent = () => mem.save({
   tables: [...tables], operations: [...operations],
   fractionTypes: [...fractionTypes], denominators: [...denominators],
   compounds: [...compounds],
-  spellSets: [...spellSets], spellBank, spellFocus, spellMaster,
+  spellSets: [...spellSets], spellBank, spellFocus, spellMaster, spellLevel,
   gridBlanks,
   barsLevel,
 });
@@ -445,16 +447,15 @@ function renderSpellSetsPick() {
   topic.getEl('spell-sets').appendChild(lib);
 }
 
-/* The pace sets the clock: the round lasts as long as its words need. */
+/* Normal or Focus: whether a slip puts you out. The pace is the difficulty level (the round step). */
 function renderSpellPaceStep() {
-  const t = (focus) => clockLabel(roundSeconds(spellIds(), focus));
   renderChoiceStep(topic, 'spell-pace', {
     title: 'Normal or Focus?',
-    subtitle: 'The clock comes from the number of words.',
+    subtitle: 'Focus is for when you want no second chances.',
     name: 'drill-spell-pace',
     options: [
-      { value: 'normal', label: 'Normal', tip: `10 words a minute: ${t(false)} for your sets. Skip a word if you are stuck.`, checked: !spellFocus },
-      { value: 'focus', label: 'Focus', tip: `20 words a minute: ${t(true)}. One wrong letter (or a skip) and you are out, and off the leaderboard.`, checked: spellFocus },
+      { value: 'normal', label: 'Normal', tip: 'Skip a word if you are stuck, and carry on.', checked: !spellFocus },
+      { value: 'focus', label: 'Focus', tip: 'One wrong letter (or a skip) and you are out, and off the leaderboard.', checked: spellFocus },
     ],
     onPick: (v) => {
       spellFocus = v === 'focus';
@@ -727,20 +728,21 @@ renderChoiceStep(options, 'size', {
   ],
   onPick: (v) => { roomSize = Number(v); mem.save({ roomSize }); options.goTo('time'); },
 });
-/* The round's length. Spelling has none to choose: its clock comes from the
-   number of words (10 a minute, or 20 in Focus), so the step just says so. */
+/* The round's length. Spelling picks a difficulty level instead: its pace, so
+   its clock is the number of words times the level's seconds a word. */
 function renderTimeStep() {
   if (categoryValue === 'spelling') {
-    const words = spellIds().length ? roundSeconds(spellIds(), false) / SECONDS_PER_WORD.normal : 0;
-    const note = document.createElement('p');
-    note.className = 'drill-spell-time';
-    note.textContent = `${words} words at ${spellFocus ? '20' : '10'} a minute: ${clockLabel(spellTime())}. ` +
-      'The round ends sooner if you finish the list.';
-    renderCustomStep(options, 'time', {
-      title: 'How long is the round?',
-      content: note,
-      nextLabel: 'Next',
-      onNext: () => flow.next(),
+    const words = wordsInSets(spellIds());
+    renderChoiceStep(options, 'time', {
+      title: 'Difficulty level',
+      subtitle: `${words} words. The round ends sooner if you finish them.`,
+      name: 'drill-spell-level',
+      colorOffset: 4,
+      options: LEVELS.map((l) => ({
+        value: l.key, label: l.label, checked: spellLevel === l.key,
+        tip: `${perMinute(l.key)} words a minute: ${clockLabel(roundSeconds(spellIds(), l.key))}.`,
+      })),
+      onPick: (v) => { spellLevel = levelOf(v).key; saveContent(); flow.next(); }, // last step of this section
     });
     return;
   }
@@ -853,7 +855,7 @@ const flow = createSectionFlow([
   },
   {
     el: $('drill-section-options'),
-    chips: () => optionsChips({ mode, roomSize, timeLabel: categoryValue === 'spelling' ? clockLabel(spellTime()) : `${timeLimit}s` }),
+    chips: () => optionsChips({ mode, roomSize, timeLabel: categoryValue === 'spelling' ? `${levelOf(spellLevel).label} ${clockLabel(spellTime())}` : `${timeLimit}s` }),
   },
   {
     el: $('drill-section-room'),

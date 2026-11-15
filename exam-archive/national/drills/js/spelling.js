@@ -85,17 +85,27 @@ export function setsLabel(sets) {
 }
 
 /* ── Time comes from the words ────────────────────────────────────────
-   The user's rule: a spelling round lasts as long as its words need, at
-   10 words a minute in Normal mode and 20 a minute in Focus mode (where the
-   first wrong letter puts you out). The round also ends early once every word
-   has been tried. */
-export const SECONDS_PER_WORD = { normal: 6, focus: 3 };
+   The user's rule: a spelling round lasts as long as its words need, at the
+   pace of the difficulty level picked in the setup. The easiest gives 10 s a
+   word (60 words in 10 minutes). Focus (the first wrong letter puts you out) is
+   a separate choice and does not change the pace. The round also ends early
+   once every word has been tried. */
+export const LEVELS = [
+  { key: 'easy', label: 'Easy', sec: 10 },      //  6 words a minute
+  { key: 'medium', label: 'Medium', sec: 6 },   // 10 a minute
+  { key: 'hard', label: 'Hard', sec: 4 },       // 15 a minute
+  { key: 'expert', label: 'Expert', sec: 3 },   // 20 a minute
+];
+export const LEVEL_KEYS = LEVELS.map((l) => l.key);
+export const levelOf = (key) => LEVELS.find((l) => l.key === key) || LEVELS[0];
+/** Words a minute at a level: "6". */
+export const perMinute = (key) => 60 / levelOf(key).sec;
 /** How many words the chosen sets hold. */
 export function wordsInSets(ids) {
   return validSets(ids).reduce((sum, id) => { const { bank, n } = parseSet(id); return sum + setWords(bank, n).length; }, 0);
 }
 /** The round's length in seconds for these sets. */
-export const roundSeconds = (ids, focus) => wordsInSets(ids) * SECONDS_PER_WORD[focus ? 'focus' : 'normal'];
+export const roundSeconds = (ids, level) => wordsInSets(ids) * levelOf(level).sec;
 /** "3:20" from 200. */
 export const clockLabel = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 

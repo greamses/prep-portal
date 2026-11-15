@@ -320,12 +320,12 @@ service cloud.firestore {
         request.resource.data.status == 'waiting' &&
         request.resource.data.playerCount == 1 &&
         request.resource.data.size in [2, 5, 10] &&
-        // A spelling round's clock comes from its words (6 s a word, 3 s in Focus),
+        // A spelling round's clock comes from its words (3 to 10 s a word, by level),
         // up to a whole list; every other round picks one of the four.
         (request.resource.data.timeLimit in [30, 60, 90, 120] ||
           (request.resource.data.operations.hasAny(['spellSay', 'spellIpa']) &&
            request.resource.data.timeLimit is int &&
-           request.resource.data.timeLimit >= 3 && request.resource.data.timeLimit <= 6000)) &&
+           request.resource.data.timeLimit >= 3 && request.resource.data.timeLimit <= 10000)) &&
         request.resource.data.operations is list &&
         request.resource.data.operations.size() > 0 &&
         request.resource.data.operations.hasOnly([

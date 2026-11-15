@@ -58,7 +58,7 @@ export function simulateBotScore(seed, botSlot, timeLimitSec, pace = 1) {
    Focus), so the best bots finish with a little time to spare. */
 export function simulateSpellingBot(seed, botSlot, timeLimitSec, words, focus) {
   const rng = botRng(seed, botSlot);
-  const per = focus ? 3 : 6;
+  const per = words ? timeLimitSec / words : 6;      // the level's seconds a word (the clock is words x that)
   const speed = per * (0.55 + rng() * 0.7);        // this bot's usual seconds per word
   const missRate = 0.04 + rng() * 0.16;            // a word it cannot spell
   let t = 0, score = 0;
