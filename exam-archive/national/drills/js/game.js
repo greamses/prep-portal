@@ -201,9 +201,10 @@ const defBtn = toolBtn('drill-hear-def', UI.book(22), 'Hear the definition', () 
   if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.def, talker(), { rate: 0.95, clip: clipFor(currentQuestion.bank, currentQuestion.i, 'd') });
 });
 // What a bee also tells you when asked: the part of speech, the language, and the root.
-const rootBtn = toolBtn('drill-hear-root', UI.roots(22), 'Hear the part of speech, origin and root', () => {
+const rootBtn = toolBtn('drill-hear-root', UI.roots(22), 'Hear the part of speech, origin and root (Alt+R)', () => {
   if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.about, talker(), { rate: 0.95, clip: clipFor(currentQuestion.bank, currentQuestion.i, 'o') });
 });
+rootBtn.setAttribute('aria-keyshortcuts', 'Alt+R');
 const useBtn = toolBtn('drill-hear-use', UI.speech(22), 'Hear it in a sentence', () => {
   if (currentQuestion && currentQuestion.spell) sayWord(currentQuestion.use, talker(), { rate: 0.95, clip: clipFor(currentQuestion.bank, currentQuestion.i, 's') });
 });
@@ -613,6 +614,12 @@ inputEl.addEventListener('input', onInput);
 // Spelling: Enter says the word again (Read out). There is nothing to submit,
 // because a right spelling is taken the moment its last letter goes in.
 inputEl.addEventListener('keydown', (e) => {
+  // Alt+R reads the part of speech, origin and root (by key position: Alt+R types ® on a Mac)
+  if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyR') {
+    e.preventDefault();
+    if (active && currentQuestion && currentQuestion.spell && !locked && !rootBtn.hidden) rootBtn.click();
+    return;
+  }
   if (e.key !== 'Enter' || !active || !currentQuestion || !currentQuestion.spell) return;
   e.preventDefault();
   if (currentQuestion.spell === 'say' && !locked) sayTheWord();
