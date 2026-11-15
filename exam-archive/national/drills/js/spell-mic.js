@@ -14,6 +14,7 @@
      "delete" / "back" / "backspace" / "undo"   takes the last letter off
      "clear" / "start again"                    empties the answer
      "space", "hyphen" / "dash", "apostrophe"   for the words that have them
+     "done" / "finished"                        hands the spelling in (the Spelling Bee)
 
    Whatever is heard while the boy is talking (and a moment after) is dropped,
    so his own voice never types into the answer.
@@ -56,6 +57,7 @@ for (const [ch, names] of Object.entries(NAMES)) for (const n of names) if (!LET
 const MARKS = { space: ' ', hyphen: '-', dash: '-', apostrophe: "'" };
 const BACK = new Set(['delete', 'back', 'backspace', 'undo', 'rub', 'erase']);
 const CLEAR = new Set(['clear', 'restart']);
+const DONE = new Set(['done', 'finished', 'finish', 'submit']);   // the Spelling Bee: "that is my spelling"
 
 /**
  * What a heard phrase means, in order: letters (strings of one character),
@@ -71,6 +73,7 @@ export function parseSpoken(text) {
   for (const w of words) {
     if (BACK.has(w)) out.push({ back: true });
     else if (CLEAR.has(w)) out.push({ clear: true });
+    else if (DONE.has(w)) out.push({ done: true });
     else if (MARKS[w]) out.push({ ch: MARKS[w] });
     else if (LETTER.has(w)) out.push({ ch: LETTER.get(w) });
     // a run like "f o r" sometimes comes back with no spaces only as capitals ("FOR"): it

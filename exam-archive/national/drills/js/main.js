@@ -5,7 +5,8 @@
    anonymous pool matching; Versus is always a private 1v1 via a shared
    room code (create-and-share, or join-with-code).
 ═══════════════════════════════════════════════════════ */
-import { auth } from '/firebase-init.js';
+import { auth, db } from '/firebase-init.js';
+import { collection, getDocs } from 'firebase/firestore';
 import { UNIT_NUMBERS } from './rng.js';
 import { COMPOUND_SETS, ALL_COMPOUND_SETS } from '/data/chem/rmm.js';
 import { botName } from './bots.js';
@@ -15,6 +16,8 @@ import { startGridRound } from './grid.js';
 import { startBarsRound } from './bars.js';
 import { BANKS, BANK_KEYS, setCount, setId, setsLabel, roundSeconds, clockLabel, LEVELS, LEVEL_KEYS, levelOf, perMinute, wordsInSets } from './spelling.js';
 import { openSpellingLibrary } from './spelling-library.js';
+import { startBee } from './bee.js';
+import { beeSeconds } from './bee-logic.js';
 import { finishRound, rankDrill } from './leaderboard.js';
 import { renderLeaderboard } from '/utils/games/leaderboard-view.js';
 import {
@@ -53,7 +56,7 @@ const OPERATION_LABELS = {
   octAdd: 'Octal addition', octSub: 'Octal subtraction', octMul: 'Octal multiplication', octDiv: 'Octal division',
   hexAdd: 'Hex addition', hexSub: 'Hex subtraction', hexMul: 'Hex multiplication', hexDiv: 'Hex division',
   romanToNum: 'Roman to number', numToRoman: 'Number to Roman',
-  spellSay: 'Read out', spellIpa: 'Transcribe',
+  spellSay: 'Read out', spellIpa: 'Transcribe', spellBee: 'Spelling Bee',
   pctToDec: 'Percentages to decimals', pctToFrac: 'Percentages to fractions', fracToPct: 'Fractions to percentages',
   decToPct: 'Decimals to percentages', pctOf: 'Percentages of numbers',
   subOne: 'One step', subTwo: 'Two steps', subMulti: 'Brackets and fractions', subPower: 'Powers and roots',
@@ -65,6 +68,7 @@ const OPERATION_LABELS = {
 const OPERATION_TIPS = {
   spellSay: 'The boy says the word; you spell it. Tap him or press Enter to hear it again.',
   spellIpa: "You see the word's sounds in IPA (the dictionary's phonetic letters) and spell the word.",
+  spellBee: 'A bee in a hall: spellers take turns at the microphone, one word each. Spell it wrong and you leave the stage. The last one standing wins.',
 };
 
 // Category filters which operations are on offer. Basic keeps the default
@@ -85,7 +89,7 @@ const CATEGORY_OPERATIONS = {
   bases: ['binTo10', 'binFrom10', 'binAdd', 'binSub', 'binMul', 'binDiv',
     'octAdd', 'octSub', 'octMul', 'octDiv', 'hexAdd', 'hexSub', 'hexMul', 'hexDiv', 'baseTo10', 'baseFrom10', 'baseToBase'],
   roman: ['romanToNum', 'numToRoman'],
-  spelling: ['spellSay', 'spellIpa'],
+  spelling: ['spellSay', 'spellIpa', 'spellBee'],
   angles: ['geoAngLine', 'geoAngTriangle', 'geoAngPolygon', 'geoAngParallel'],
   areas: ['geoRect', 'geoTriangle', 'geoTrapezium', 'geoParallelogram'],
   pythag: ['geoHyp', 'geoLeg', 'geoTrig'],
@@ -234,6 +238,8 @@ let spellMaster = mem.get('spellMaster', true, [true, false]);
 let spellLevel = mem.get('spellLevel', 'easy', LEVEL_KEYS);
 const spellIds = () => [...spellSets].sort((a, b) => a - b).map((n) => setId(spellBank, n));
 const spellTime = () => roundSeconds(spellIds(), spellLevel);
+// The Spelling Bee: the room's clock is the seconds each speller gets at the microphone.
+const isBee = () => categoryValue === 'spelling' && operations.has('spellBee');
 // Chemistry's single operation is never offered as a step, so a remembered
 // setup that somehow lost it would leave the player unable to start.
 if (categoryValue === 'chemistry') operations.add('rmm');
@@ -390,7 +396,13 @@ function renderOperationsPick() {
     isChecked: (v) => operations.has(v),
     onToggle: (v, checked) => {
       if (checked) operations.add(v); else operations.delete(v);
+      // the Spelling Bee is a game of its own: ticking it unticks the drills, and the other way round
+      if (checked && categoryValue === 'spelling') {
+        const drop = v === 'spellBee' ? [...operations].filter((o) => o !== 'spellBee') : ['spellBee'];
+        if (drop.some((o) => operations.has(o))) { drop.forEach((o) => operations.delete(o)); renderOperationsPick(); }
+      }
       updateStartDisabled();
+      if (categoryValue === 'spelling') renderTimeStep();
     },
     nextLabel: 'Next',
     onNext: () => {
@@ -434,10 +446,14 @@ function renderSpellSetsPick() {
       const n = Number(v);
       if (checked) spellSets.add(n); else spellSets.delete(n);
       updateStartDisabled();
-      renderTimeStep();
+      if (categoryValue === 'spelling') renderTimeStep();
     },
     nextLabel: 'Next',
-    onNext: () => { range = '1-9'; saveContent(); renderSpellPaceStep(); topic.goTo('spell-pace'); },
+    onNext: () => {
+      range = '1-9'; saveContent();
+      if (isBee()) { flow.next(); return; }       // a bee has one rule: no Focus, no Word Master
+      renderSpellPaceStep(); topic.goTo('spell-pace');
+    },
   });
   const lib = document.createElement('button');
   lib.type = 'button';
@@ -460,7 +476,7 @@ function renderSpellPaceStep() {
     onPick: (v) => {
       spellFocus = v === 'focus';
       saveContent();
-      renderTimeStep();
+      if (categoryValue === 'spelling') renderTimeStep();
       if (spellFocus) { flow.next(); return; }   // nothing to master: one slip ends a Focus round
       renderSpellMasterStep();
       topic.goTo('spell-master');
@@ -734,12 +750,12 @@ function renderTimeStep() {
     const words = wordsInSets(spellIds());
     renderChoiceStep(options, 'time', {
       title: 'Difficulty level',
-      subtitle: `${words} words. The round ends sooner if you finish them.`,
+      subtitle: isBee() ? 'How long each speller has at the microphone.' : `${words} words. The round ends sooner if you finish them.`,
       name: 'drill-spell-level',
       colorOffset: 4,
       options: LEVELS.map((l) => ({
         value: l.key, label: l.label, checked: spellLevel === l.key,
-        tip: `${perMinute(l.key)} words a minute: ${clockLabel(roundSeconds(spellIds(), l.key))}.`,
+        tip: isBee() ? `${beeSeconds(l.key)} seconds for each word.` : `${perMinute(l.key)} words a minute: ${clockLabel(roundSeconds(spellIds(), l.key))}.`,
       })),
       onPick: (v) => { spellLevel = levelOf(v).key; saveContent(); flow.next(); }, // last step of this section
     });
@@ -841,7 +857,7 @@ const flow = createSectionFlow([
       const out = [{ label: cat }, ...[...operations].map((o) => ({ label: opName(o) }))];
       // Spelling has no number range (the words are the content), and its labels are words, not "+ Addition".
       if (categoryValue === 'spelling') {
-        return [{ label: cat }, { label: BANKS[spellBank].label }, ...[...operations].map((o) => ({ label: OPERATION_LABELS[o] })), { label: `Sets ${setsLabel([...spellSets])}` }, { label: spellFocus ? 'Focus' : spellMaster ? 'Word Master' : 'Normal' }];
+        return [{ label: cat }, { label: BANKS[spellBank].label }, ...[...operations].map((o) => ({ label: OPERATION_LABELS[o] })), { label: `Sets ${setsLabel([...spellSets])}` }, ...(isBee() ? [] : [{ label: spellFocus ? 'Focus' : spellMaster ? 'Word Master' : 'Normal' }])];
       }
       if (categoryValue === 'fractions') out.push({ label: `${denominators.size} denominators` });
       else if (isNumbersMode()) out.push({ label: `${tables.size} numbers` });
@@ -854,7 +870,7 @@ const flow = createSectionFlow([
   },
   {
     el: $('drill-section-options'),
-    chips: () => optionsChips({ mode, roomSize, timeLabel: categoryValue === 'spelling' ? `${levelOf(spellLevel).label} ${clockLabel(spellTime())}` : `${timeLimit}s` }),
+    chips: () => optionsChips({ mode, roomSize, timeLabel: isBee() ? `${levelOf(spellLevel).label} ${beeSeconds(spellLevel)}s a word` : categoryValue === 'spelling' ? `${levelOf(spellLevel).label} ${clockLabel(spellTime())}` : `${timeLimit}s` }),
   },
   {
     el: $('drill-section-room'),
@@ -1016,7 +1032,31 @@ function hideResults() {
 
 // ── Round orchestration (shared by all three matchmaking paths) ─────────
 const isSpellingRoom = (room) => (room.operations || []).some((o) => /^spell/.test(o));
+/* The Spelling Bee runs in its own hall (js/bee.js) and shows its own placings. It needs
+   every real player's uid, so all devices seat them alike: read once from the room. */
+async function playBee(room, myName) {
+  const uid = auth.currentUser.uid;
+  const want = Math.max(1, room.size - (room.botsNeeded || 0));
+  let humans = [];
+  for (let tries = 0; tries < 3; tries++) {
+    try {
+      const snap = await getDocs(collection(db, 'drillRooms', room.roomId, 'players'));
+      humans = snap.docs.map((d) => ({ uid: d.id, name: (d.data().displayName || 'Player').slice(0, 20) }));
+    } catch (e) { console.warn('[bee] could not read the players:', e); }
+    if (humans.length >= want) break;
+    await new Promise((r) => setTimeout(r, 700));
+  }
+  if (!humans.some((h) => h.uid === uid)) humans.push({ uid, name: myName });
+  humans = humans.sort((a, b) => (a.uid < b.uid ? -1 : 1)).slice(0, room.size);
+  await startBee({
+    roomId: room.roomId, seed: room.seed, sets: room.tables, turnSeconds: room.timeLimit,
+    humans, botsNeeded: Math.max(0, room.size - humans.length), me: { uid, name: myName },
+  });
+  startBtn.disabled = false;
+}
+
 async function playRoundAndShowResults(room, myName) {
+  if ((room.operations || []).includes('spellBee')) { await playBee(room, myName); return; }
   const roster = buildRoster(room, myName);
   // The ROOM decides which surface plays — a grid room predates nothing here,
   // but a joiner who came by code never touched this client's setup, so read it
@@ -1152,7 +1192,7 @@ async function runMultiplayer({ timeLimit, operationsList, tablesList, fractionT
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus && !isBee(), displayName: myName },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -1173,7 +1213,7 @@ async function runMultiplayerCreate({ timeLimit, operationsList, tablesList, fra
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus && !isBee(), displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for other players…') },
     );
   } catch (e) {
@@ -1239,7 +1279,7 @@ async function runVersusCreate({ timeLimit, operationsList, tablesList, fraction
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus, displayName: myName },
+      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus && !isBee(), displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for your opponent…') },
     );
   } catch (e) {
@@ -1282,7 +1322,7 @@ async function runDrill() {
   const compoundsList = categoryValue === 'chemistry' ? [...compounds] : [];
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
   // Spelling's clock is the words' own (10 a minute, 20 in Focus), not the chosen time.
-  const roundTime = categoryValue === 'spelling' ? spellTime() : timeLimit;
+  const roundTime = isBee() ? beeSeconds(spellLevel) : categoryValue === 'spelling' ? spellTime() : timeLimit;
 
   if (mode === 'versus') {
     if (roomAction === 'join') await runVersusJoin({ timeLimit: roundTime, myName });

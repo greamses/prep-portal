@@ -1,0 +1,104 @@
+/* ══ The Spelling Bee (js/bee.js): a hall, a stage, a microphone ═══════
+   The hall is a container, so everything on the stage is sized in cqh (a
+   hundredth of the hall's height) and the scene scales as one picture. */
+.bee-bd {
+  position: fixed; inset: 0; z-index: 55; overflow-y: auto;
+  display: flex; flex-direction: column; align-items: center; gap: 0.7rem;
+  padding: 0.8rem 0.8rem 1.2rem;
+  background: var(--app-bg);
+}
+.bee-blob { position: absolute; inset: 0; opacity: 0.3; pointer-events: none; }
+.bee-blob svg { width: 100%; height: 100%; }
+.bee-top { position: relative; display: flex; align-items: center; gap: 0.5rem; width: min(100%, 980px); }
+.bee-top .bee-leave { margin-left: auto; display: inline-grid; place-items: center; width: 2.2rem; height: 2.2rem; padding: 0; cursor: pointer; }
+
+.bee-hall {
+  position: relative; flex: none; overflow: hidden;
+  width: min(100%, 980px, calc(54dvh * 16 / 9)); aspect-ratio: 16 / 9;
+  container-type: size;
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-md);
+}
+.bee-wall { position: absolute; inset: 0 0 50% 0; background: var(--surface-primary); }
+.bee-wall .bee-banner { position: absolute; top: 5cqh; left: 4cqw; font-size: 4.2cqh; padding: 1cqh 2.4cqh; }
+.bee-floor { position: absolute; inset: 50% 0 0 0; background: color-mix(in srgb, var(--accent-warning) 26%, var(--surface-primary)); border-top: var(--border-subtle); }
+.bee-exit { position: absolute; left: 0; top: 56%; width: 2.2%; height: 44%; background: color-mix(in srgb, var(--ink) 16%, transparent); }
+.bee-bench {
+  position: absolute; left: 22%; right: 2%; height: 9cqh;
+  background: color-mix(in srgb, var(--accent-secondary) 45%, var(--surface-primary));
+  border: var(--border-subtle); box-shadow: var(--shadow-sm);
+}
+.bee-bench--back { top: 38%; z-index: 3; }
+.bee-bench--front { top: 54%; z-index: 5; }
+.bee-hall.is-one-row .bee-bench--back { display: none; }
+
+.bee-desk { position: absolute; z-index: 6; left: 2.5%; top: 56%; width: 17%; display: grid; justify-items: center; }
+.bee-desk .spell-face { --face: 17cqh !important; }
+.bee-desk::after {
+  content: ""; width: 100%; height: 7cqh; margin-top: -0.6cqh; position: relative;
+  background: color-mix(in srgb, var(--accent-primary) 55%, var(--surface-primary)); border: var(--border-subtle); box-shadow: var(--shadow-sm);
+}
+.bee-desk .bee-desk-label { position: absolute; bottom: -4.6cqh; font-size: 2.3cqh; padding: 0.3cqh 1.2cqh; white-space: nowrap; }
+.bee-stand { position: absolute; z-index: 9; left: 51.5%; top: 99%; width: 3cqh; height: 30cqh; transform: translate(-50%, -100%); pointer-events: none; }
+.bee-stand svg { display: block; width: 100%; height: 100%; }
+
+/* a speller: the picture stands on (--x, --y), feet first */
+.bee-kid {
+  position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%);
+  height: 30cqh; font-size: 3cqh;
+  transform: translate(-50%, -100%);
+  transition: left 1.5s ease-in-out, top 1.5s ease-in-out, height 1.5s ease-in-out, font-size 1.5s ease-in-out;
+}
+.bee-kid--back { z-index: 2; }
+.bee-kid--front { z-index: 4; }
+.bee-kid img { display: block; height: 100%; width: auto; user-select: none; }
+.bee-kid .bee-tag.pp-sticky {
+  position: absolute; left: 50%; top: 36%; translate: -50% 0; rotate: -3deg;
+  min-width: 2.1em; padding: 0.1em 0.35em; font-size: 1em; line-height: 1.25; text-align: center;
+}
+.bee-kid .bee-you.pp-pill { position: absolute; left: 50%; top: -1.9em; translate: -50% 0; font-size: 0.72em; padding: 0.1em 0.5em; white-space: nowrap; background: var(--surface-primary); }
+.bee-kid.is-walking { z-index: 8; }
+.bee-kid.is-walking img { animation: bee-step 0.32s ease-in-out infinite alternate; }
+@keyframes bee-step { from { transform: translateY(0) rotate(-2deg); } to { transform: translateY(-3%) rotate(2deg); } }
+.bee-kid.is-at-mic { left: 46.5%; top: 98%; height: 46cqh; font-size: 4.6cqh; z-index: 8; }
+.bee-kid.is-off { left: -12%; top: 98%; height: 46cqh; font-size: 4.6cqh; z-index: 8; }
+.bee-kid.is-gone { visibility: hidden; }
+.bee-kid.is-champion .bee-tag.pp-sticky { outline: 0.2em solid var(--accent-primary); }
+.bee-bd.is-instant .bee-kid { transition: none; }
+@media (prefers-reduced-motion: reduce) { .bee-kid { transition: none; } .bee-kid.is-walking img { animation: none; } }
+
+/* under the hall: what is happening, the letters, the clock, the speller's tools */
+.bee-panel { position: relative; width: min(100%, 620px); flex: none; }
+.bee-paper { display: grid; justify-items: center; gap: 0.45rem; padding: 1.3rem 1rem 1.2rem; text-align: center; }
+.bee-status { margin: 0; font-size: 0.95rem; line-height: 1.45; color: var(--text-secondary); min-height: 1.45em; }
+.bee-spell { position: relative; width: 100%; min-height: 2.6rem; display: grid; place-items: center; }
+.bee-letters {
+  margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(1.1rem, 4.4vw, 1.9rem);
+  letter-spacing: 0.04em; word-break: break-word; color: var(--ink); min-height: 1.3em;
+}
+.bee-letters.is-mine::after { content: ""; display: inline-block; width: 3px; height: 1.05em; margin-left: 0.2em; vertical-align: -0.12em; background: var(--accent-secondary); animation: bee-caret 1s steps(2) infinite; }
+@keyframes bee-caret { 50% { opacity: 0; } }
+.bee-letters.is-right { color: var(--accent-success); }
+.bee-letters.is-wrong { color: var(--accent-danger); text-decoration: line-through; }
+.bee-letters.is-answer { color: var(--accent-secondary); }
+.bee-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; font-size: 16px; }
+.bee-input:disabled { pointer-events: none; }
+.bee-clock { margin: 0; font-family: var(--font-mono); font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); min-height: 1.3em; }
+.bee-clock.is-low { color: var(--accent-danger); }
+.bee-tools { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+.bee-tools[hidden], .bee-heard[hidden], .bee-skip[hidden], .bee-results[hidden] { display: none; }
+.bee-heard { margin: 0; font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-secondary); }
+.bee-bd.is-my-turn .bee-panel { --pp-paper: color-mix(in srgb, var(--accent-primary) 14%, var(--surface-primary)); }
+
+/* the placings */
+.bee-results { position: fixed; inset: 0; z-index: 60; display: flex; justify-content: center; overflow-y: auto; padding: 1.5rem; background: color-mix(in srgb, var(--app-bg) 88%, transparent); backdrop-filter: blur(6px); }
+.bee-results-card { width: min(440px, 100%); margin: auto 0; }
+.bee-results-paper { display: grid; gap: 0.5rem; padding: 1.5rem 1.1rem 1.3rem; text-align: center; }
+.bee-results-kicker { margin: 0; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); }
+.bee-results-title { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; line-height: 1.3; }
+.bee-results-list { list-style: none; margin: 0.4rem 0 0.6rem; padding: 0; display: grid; gap: 0.3rem; text-align: left; }
+.bee-results-row { display: grid; grid-template-columns: 1.8rem 1fr auto; align-items: center; gap: 0.5rem; padding: 0.4rem 0.5rem; border-bottom: var(--border-subtle); font-size: 0.88rem; }
+.bee-results-row.is-me { background: color-mix(in srgb, var(--accent-primary) 18%, transparent); font-weight: 700; }
+.bee-results-place { display: grid; place-items: center; font-family: var(--font-mono); font-weight: 600; }
+.bee-results-meta { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-tertiary); }

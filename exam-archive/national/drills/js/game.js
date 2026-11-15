@@ -226,7 +226,7 @@ const spellMic = createSpellMic({
     heardEl.textContent = items.length ? `Heard: ${text.trim()}` : `Heard "${text.trim()}". Say the letters one by one.`;
     if (!items.length) return;
     let v = inputEl.value;
-    for (const it of items) v = it.back ? v.slice(0, -1) : it.clear ? '' : v + it.ch;
+    for (const it of items) v = it.back ? v.slice(0, -1) : it.clear ? '' : it.ch ? v + it.ch : v;   // "done" means nothing here
     inputEl.value = v;
     try { inputEl.setSelectionRange(v.length, v.length); } catch { /* not focusable */ }
     onInput();
