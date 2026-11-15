@@ -34,11 +34,29 @@ for (const bank of ['secondary', 'upper', 'lower', 'phrases']) {
   console.log(`${bank}: ${have.w.length} words, ${have.d.length} definitions, ${have.s.length} sentences, ${have.o.length} origin lines`);
 }
 
+// The Spelling Bee's spellers: in each speller voice, which words (w) of each list, and
+// which letters, are recorded.
+const { SPELLER_VOICES } = await import(new URL('../../data/spelling/speller-voices.js', import.meta.url));
+let spellers = '';
+for (const voice of [...new Set(Object.values(SPELLER_VOICES))]) {
+  let banks = '';
+  for (const bank of ['secondary', 'upper', 'lower', 'letters']) {
+    const dir = join(root, bank, voice);
+    const w = existsSync(dir) ? readdirSync(dir).map((f) => /^(\d{4})-w\.mp3$/.exec(f)).filter(Boolean).map((m) => Number(m[1]) - 1).sort((a, b) => a - b) : [];
+    banks += `    ${bank}: { base: '${w.length ? `https://cdn.jsdelivr.net/gh/${REPO}@${sha}/${bank}/${voice}/` : ''}', w: new Set(${JSON.stringify(w)}) },\n`;
+    console.log(`speller ${voice} ${bank}: ${w.length}`);
+  }
+  spellers += `  ${voice}: {\n${banks}  },\n`;
+}
+
 writeFileSync(new URL('../../data/spelling/audio.js', import.meta.url),
   `/* Which Kokoro recordings of each spelling list exist, and where (written by\n` +
   `   tools/spelling-audio/manifest.mjs on GitHub Actions). The clips are not in this branch:\n` +
   `   they live on the repo's spelling-audio branch and are served by jsDelivr, pinned to a\n` +
   `   commit. Per list: w / d / s / o = entry indexes (0-based) with a word / definition /\n` +
   `   sentence / part-of-speech-origin-and-root clip. Anything not listed is spoken with the browser's voice. Voice: ${VOICE}. */\n` +
-  `export const CLIPS = {\n${lists.secondary}${lists.upper}${lists.lower}${lists.phrases}};\n`);
+  `export const CLIPS = {\n${lists.secondary}${lists.upper}${lists.lower}${lists.phrases}};\n` +
+  `/* The Spelling Bee's spellers, by voice (data/spelling/speller-voices.js): per list, the\n` +
+  `   words recorded (w); and the letters by name (data/spelling/letters.js). */\n` +
+  `export const SPELLER_CLIPS = {\n${spellers}};\n`);
 console.log(`audio.js written @ ${sha.slice(0, 8)}`);

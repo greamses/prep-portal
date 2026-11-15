@@ -24,6 +24,8 @@ on:
       - data/spelling/lower-primary.js
       - data/spelling/roots.js
       - data/spelling/phrases.js
+      - data/spelling/letters.js
+      - data/spelling/speller-voices.js
       - tools/spelling-audio/*.mjs
       - tools/spelling-audio/package.json
       - tools/spelling-audio/redo.txt
@@ -53,6 +55,20 @@ jobs:
           - { bank: secondary, part: 1/2 }
           - { bank: secondary, part: 2/2 }
           - { bank: phrases, part: 1/1 }
+          # The Spelling Bee's spellers, in their own voices (data/spelling/speller-voices.js):
+          # each letter's name, and every word, which a speller says when they are done.
+          - { bank: letters, part: 1/1, voice: bf_lily, kinds: w }
+          - { bank: letters, part: 1/1, voice: bm_fable, kinds: w }
+          - { bank: lower, part: 1/1, voice: bf_lily, kinds: w }
+          - { bank: lower, part: 1/1, voice: bm_fable, kinds: w }
+          - { bank: upper, part: 1/2, voice: bf_lily, kinds: w }
+          - { bank: upper, part: 2/2, voice: bf_lily, kinds: w }
+          - { bank: upper, part: 1/2, voice: bm_fable, kinds: w }
+          - { bank: upper, part: 2/2, voice: bm_fable, kinds: w }
+          - { bank: secondary, part: 1/2, voice: bf_lily, kinds: w }
+          - { bank: secondary, part: 2/2, voice: bf_lily, kinds: w }
+          - { bank: secondary, part: 1/2, voice: bm_fable, kinds: w }
+          - { bank: secondary, part: 2/2, voice: bm_fable, kinds: w }
     steps:
       - uses: actions/checkout@v4
       - name: The clips made so far
@@ -71,11 +87,14 @@ jobs:
         with:
           path: tools/spelling-audio/node_modules/@huggingface/transformers/.cache
           key: kokoro-82m-v1.0-onnx
-      - name: Record what is missing in ${{ matrix.bank }} ${{ matrix.part }}
+      - name: Record what is missing in ${{ matrix.bank }} ${{ matrix.part }} ${{ matrix.voice }}
         working-directory: tools/spelling-audio
         run: |
-          VOICE=$(node -p "require('fs').readFileSync('voice-name.mjs','utf8').match(/'([a-z_]+)';/)[1]")
-          node record.mjs --bank ${{ matrix.bank }} --part ${{ matrix.part }} --kinds ${{ inputs.kinds || 'w,d,s,o' }} --redo redo.txt \
+          # the row's own voice (a speller's), or the lists' voice
+          VOICE="${{ matrix.voice }}"
+          if [ -z "$VOICE" ]; then VOICE=$(node -p "require('fs').readFileSync('voice-name.mjs','utf8').match(/'([a-z_]+)';/)[1]"); fi
+          export VOICE
+          node record.mjs --bank ${{ matrix.bank }} --part ${{ matrix.part }} --kinds ${{ matrix.kinds || inputs.kinds || 'w,d,s,o' }} --redo redo.txt \
             --have "$GITHUB_WORKSPACE/store/${{ matrix.bank }}/$VOICE" --out "$GITHUB_WORKSPACE/new/${{ matrix.bank }}/$VOICE"
       - name: Hand the new clips on
         if: always()

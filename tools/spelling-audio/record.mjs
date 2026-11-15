@@ -35,6 +35,9 @@ const LISTS = {
   lower: { file: 'lower-primary.js', name: 'SPELLING_LOWER_PRIMARY', ipa: fromDictionary },
   // the Spelling Bee judge's lines ("Your word is,", "Correct."): text only, so kind d alone
   phrases: { file: 'phrases.js', name: 'SPELLING_PHRASES', ipa: fromDictionary, only: 'd' },
+  // the letters by name, for the Spelling Bee's spellers (in their own voices): a letter's
+  // name is short, so a clip as short as 0.12 s is a good one
+  letters: { file: 'letters.js', name: 'SPELLING_LETTERS', ipa: fromDictionary, only: 'w', min: 0.12 },
 };
 const arg = (name, dflt) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : dflt; };
 const LIST = LISTS[arg('bank', 'secondary')];
@@ -51,7 +54,7 @@ const pad = (i) => String(i + 1).padStart(4, '0');
 const good = (a, rate) => {
   let peak = 0;
   for (const v of a) peak = Math.max(peak, Math.abs(v));
-  return peak > 0.05 && a.length > rate * 0.25;
+  return peak > 0.05 && a.length > rate * (LIST.min ?? 0.25);
 };
 let precise = null;
 
