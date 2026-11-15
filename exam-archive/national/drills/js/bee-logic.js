@@ -27,7 +27,7 @@ export const beeSeconds = (level) => BEE_SECONDS[level] || BEE_SECONDS.easy;
  * Who sits where. `humans` is [{ uid, name }] (any order: it is sorted here, so
  * every device seats them alike); bots fill the rest. The seats are shuffled by
  * the seed so real players are not always numbers 1 and 2.
- * → [{ seat, tag, name, uid | null, bot: slot | null, kid: 'boy' | 'girl' | 'boy2' | 'girl2' }]
+ * → [{ seat, tag, name, uid | null, bot: slot | null, kid: 'boy' | 'girl' | 'boy2' | 'girl2' | 'girl3' }]
  */
 export function seatSpellers(seed, humans, botsNeeded) {
   const people = [...humans].sort((a, b) => (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0))
@@ -39,7 +39,7 @@ export function seatSpellers(seed, humans, botsNeeded) {
     [people[i], people[j]] = [people[j], people[i]];
   }
   // boys and girls sit turn about, and the four children (js/bee.js KIDS) take turns
-  const KINDS = ['boy', 'girl', 'boy2', 'girl2', 'girl', 'boy', 'girl2', 'boy2'];
+  const KINDS = ['boy', 'girl', 'boy2', 'girl2', 'boy', 'girl3', 'boy2', 'girl', 'boy', 'girl3'];
   const first = Math.floor(rng() * 4) * 2;
   return people.map((p, seat) => ({ ...p, seat, tag: seat + 1, kid: KINDS[(seat + first) % KINDS.length] }));
 }

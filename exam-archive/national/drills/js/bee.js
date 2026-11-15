@@ -68,6 +68,8 @@ const KIDS = {
     eyes: [[40, 12.2], [59, 12.2]], mouth: [49, 16.3, 15, 2.2], skin: '#f0b089', lip: '#8a3b2b' },
   girl2: { src: '/media/characters/girl-overalls.svg', girl: true, tall: 0.98, hip: 59, knee: 78, hands: 68,
     eyes: [[38, 16.4], [62, 16.4]], mouth: [50, 21, 17, 2.6], skin: '#8a4733', lip: '#3e1a12' },
+  girl3: { src: '/media/characters/girl-curly.svg', girl: true, tall: 1.12, hip: 58, knee: 76, hands: 66,
+    eyes: [[40, 17.9], [61, 17.9]], mouth: [50, 22, 14, 2.2], skin: '#7d4a2e', lip: '#3e1a12' },
 };
 /* The hall's reactions (clapping for a right word, tears for a wrong one) are switched off
    until the user's clapping and crying pictures arrive (2026-11-15). The code stays. */
@@ -205,8 +207,11 @@ function hallSvg() {
    than the back. Each person is cut off at the bottom of their chair back; every other one is
    mirrored. Their raised arms, for the clapping, are drawn over them. 1600 x 288 (the bottom
    32% of the hall, which starts below the stage's front edge). */
-const AUDIENCE = ['/media/characters/audience-back-1.svg'];
-const AUD_ASPECT = 623 / 1983;               // width / height of the drawing
+const AUDIENCE = [
+  { src: '/media/characters/audience-back-1.svg', aspect: 623 / 1983 },   // a man, denim jacket
+  { src: '/media/characters/audience-back-2.svg', aspect: 514 / 1854 },   // a woman, dark bob, blazer
+  { src: '/media/characters/audience-back-3.svg', aspect: 586 / 2078 },   // a woman, long hair, green jumper
+];
 function audienceSvg(seed) {
   let s = (seed >>> 0) || 1;
   const rnd = () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
@@ -217,15 +222,18 @@ function audienceSvg(seed) {
   ];
   let defs = '', out = '', hands = '';
   rows.forEach((row, r) => {
-    const H = row.pw / AUD_ASPECT;
+    const H = row.pw / AUDIENCE[0].aspect;          // the man's height sets the row's chair line
     const chairTop = row.top + 0.24 * H;
     defs += `<clipPath id="bee-row${r}"><rect x="-200" y="-300" width="2000" height="${chairTop + row.ch + 300}"/></clipPath>`;
     let people = '', chairs = '';
     row.xs.forEach((cx, n) => {
-      const pw = row.pw, top = row.top;
+      // the three people take turns, so no two neighbours are the same; each is drawn at the
+      // same height (H), so their own proportions set their width
+      const who = AUDIENCE[(n + r * 2 + (seed % 3)) % AUDIENCE.length];
+      const top = row.top, pw = H * who.aspect;
       const flip = (n + r) % 2 ? ` transform="translate(${2 * cx} 0) scale(-1 1)"` : '';
-      const tone = (0.84 + rnd() * 0.22).toFixed(2);
-      people += `<image href="${AUDIENCE[Math.floor(rnd() * AUDIENCE.length)]}" x="${cx - pw / 2}" y="${top}" width="${pw}" height="${H}" style="filter:brightness(${tone})"${flip}/>`;
+      const tone = (0.9 + rnd() * 0.16).toFixed(2);
+      people += `<image href="${who.src}" x="${cx - pw / 2}" y="${top}" width="${pw}" height="${H}" style="filter:brightness(${tone})"${flip}/>`;
       // their arms, up above their heads, clapping (shown only while the hall claps)
       const arm = (side) => {
         const sx = cx + side * pw * 0.3, sy = top + 0.2 * H;             // the shoulder
@@ -238,9 +246,11 @@ function audienceSvg(seed) {
       const x = cx - row.cw / 2, k = row.cw / 100;
       chairs += `<rect x="${x}" y="${chairTop}" width="${row.cw}" height="${row.ch}" fill="#2f4c7a"/><rect x="${x + 6 * k}" y="${chairTop + 6 * k}" width="${row.cw - 12 * k}" height="${row.ch * 0.45}" fill="#3c5d92"/>`;
     });
-    out += `<g clip-path="url(#bee-row${r})">${people}</g>${chairs}`;
+    // the whole row grows or shrinks from the middle of its chair line (the sizes panel)
+    out += `<g class="bee-aud-row" style="transform-origin: 800px ${chairTop + row.ch}px; transform: scale(var(--t-aud-row${r}, 1))"><g clip-path="url(#bee-row${r})">${people}</g>${chairs}${hands}</g>`;
+    hands = '';
   });
-  return `<svg viewBox="0 0 1600 288" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>${defs}</defs>${out}${hands}</svg>`;
+  return `<svg viewBox="0 0 1600 288" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>${defs}</defs>${out}</svg>`;
 }
 
 /* The judges' table: the head judge (media/characters/judge-woman.svg) and a judge
@@ -262,17 +272,121 @@ function judgesSvg() {
   const chair = (cx, top, w) => `<rect x="${cx - w / 2}" y="${top}" width="${w}" height="${172 - top}" fill="#3b2a22"/>` +
     `<rect x="${cx - w / 2 + 6}" y="${top + 6}" width="${w - 12}" height="${172 - top - 6}" fill="#5a4033"/>`;
   const card = (cx, text) => `<rect x="${cx - 34}" y="178" width="68" height="20" fill="#fbf8f1"/><text x="${cx}" y="192.5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#2a2723">${text}</text>`;
+  // each judge grows or shrinks from the middle of their place at the table (the sizes panel)
+  const sized = (cx, v, inner) => `<g style="transform-origin: ${cx.toFixed(1)}px 172px; transform: scale(var(${v}, 1))">${inner}</g>`;
   return `<svg viewBox="0 0 300 220" aria-hidden="true">
-    ${chair(W.x + ww / 2, W.y + 0.11 * W.h, ww * 1.12)}${chair(M.x + mw / 2, M.y + 0.11 * M.h, mw * 1.12)}
+    ${sized(W.x + ww / 2, '--t-judge-woman', `${chair(W.x + ww / 2, W.y + 0.11 * W.h, ww * 1.12)}
     <image href="/media/characters/judge-woman.svg" x="${W.x}" y="${W.y}" width="${ww}" height="${W.h}"/>
     <g class="mouth" data-hinge="${(my - 2.4).toFixed(2)}" transform="translate(${mx.toFixed(2)} ${(my - 2.4).toFixed(2)}) scale(1 0.12) translate(${(-mx).toFixed(2)} ${(-(my - 2.4)).toFixed(2)})"><ellipse cx="${mx.toFixed(2)}" cy="${(my + 1).toFixed(2)}" rx="5.6" ry="3.8" fill="#5e2420"/></g>
+    ${hands(W.x + ww / 2, '#f0c3a3', '#1d2b55', -0.12)}`)}
+    ${sized(M.x + mw / 2, '--t-judge-man', `${chair(M.x + mw / 2, M.y + 0.11 * M.h, mw * 1.12)}
     <image href="/media/characters/judge-man.svg" x="${M.x}" y="${M.y}" width="${mw}" height="${M.h}"/>
-    ${hands(W.x + ww / 2, '#f0c3a3', '#1d2b55', -0.12)}${hands(M.x + mw / 2, '#f2b394', '#1c3561', -0.04)}
+    ${hands(M.x + mw / 2, '#f2b394', '#1c3561', -0.04)}`)}
     <rect x="6" y="160" width="290" height="12" fill="#27406b"/>
     <rect x="6" y="172" width="290" height="48" fill="#2f4c7a"/>
     <rect x="6" y="172" width="290" height="5" fill="#d9b44a"/>
     ${card(W.x + ww / 2, 'HEAD JUDGE')}${card(M.x + mw / 2, 'JUDGE')}
   </svg>`;
+}
+
+/* ── The sizes panel (open the page with ?tune=1) ─────────────────────
+   A slider for each person and for the microphone: each one is a CSS variable on the hall
+   (--t-...), so a change shows at once. The values are kept on this device, and "Copy
+   sizes" puts them on the clipboard, to be sent and made everyone's (TUNE_DEFAULTS). */
+const TUNE = [
+  ['tall-boy', 'Boy, blue T-shirt'], ['tall-girl', 'Girl, pigtails'], ['tall-boy2', 'Boy, hoodie'],
+  ['tall-girl2', 'Girl, pink and yellow'], ['tall-girl3', 'Girl, curly hair'],
+  ['at-mic', 'Speller at the microphone'], ['mic', 'Microphone stand'],
+  ['judges', 'Judges and table'], ['judge-woman', 'Head judge'], ['judge-man', 'Judge'],
+  ['aud-row0', 'Audience, back row'], ['aud-row1', 'Audience, front row'],
+];
+// everyone's sizes; a slider left alone uses these (the children's own heights are in KIDS)
+const TUNE_DEFAULTS = {};
+const TUNE_KEY = 'ppBeeTune';
+function tuneStart(name) {
+  if (name.startsWith('tall-')) return KIDS[name.slice(5)]?.tall ?? 1;
+  return TUNE_DEFAULTS[name] ?? 1;
+}
+function applyTune(hall) {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(TUNE_KEY) || '{}'); } catch { /* storage blocked */ }
+  for (const [name] of TUNE) {
+    const v = saved[name] ?? TUNE_DEFAULTS[name];
+    if (v != null) hall.style.setProperty(`--t-${name}`, v);
+  }
+  return saved;
+}
+function mountTuner(hall, top) {
+  const saved = applyTune(hall);
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'bee-tune-btn';
+  btn.innerHTML = UI.settings(18);
+  btn.setAttribute('aria-label', 'Sizes');
+  btn.dataset.tip = 'Sizes';
+  const panel = document.createElement('div');
+  panel.className = 'pp-receipt bee-tune';
+  panel.hidden = true;
+  const paper = document.createElement('div');
+  paper.className = 'pp-receipt__paper bee-tune-paper';
+  const head = document.createElement('p');
+  head.className = 'bee-tune-head';
+  head.textContent = 'Sizes';
+  paper.append(head);
+  const values = { ...saved };
+  const save = () => { try { localStorage.setItem(TUNE_KEY, JSON.stringify(values)); } catch { /* storage blocked */ } };
+  for (const [name, label] of TUNE) {
+    const row = document.createElement('label');
+    row.className = 'bee-tune-row';
+    const text = document.createElement('span');
+    text.textContent = label;
+    const out = document.createElement('output');
+    const input = document.createElement('input');
+    input.type = 'range'; input.min = '0.4'; input.max = '2'; input.step = '0.01';
+    input.value = String(values[name] ?? tuneStart(name));
+    out.textContent = Number(input.value).toFixed(2);
+    input.addEventListener('input', () => {
+      values[name] = Number(input.value);
+      hall.style.setProperty(`--t-${name}`, input.value);
+      out.textContent = Number(input.value).toFixed(2);
+      save();
+    });
+    row.append(text, input, out);
+    paper.append(row);
+  }
+  const copy = document.createElement('button');
+  copy.type = 'button';
+  copy.className = 'pp-btn bee-tune-copy';
+  copy.textContent = 'Copy sizes';
+  copy.addEventListener('click', async () => {
+    const all = Object.fromEntries(TUNE.map(([n]) => [n, values[n] ?? tuneStart(n)]));
+    const text = JSON.stringify(all);
+    try { await navigator.clipboard.writeText(text); copy.textContent = 'Copied'; } catch { prompt('Copy these sizes:', text); }
+    setTimeout(() => { copy.textContent = 'Copy sizes'; }, 1600);
+  });
+  const reset = document.createElement('button');
+  reset.type = 'button';
+  reset.className = 'pp-btn pp-btn--ghost bee-tune-copy';
+  reset.textContent = 'Reset';
+  reset.addEventListener('click', () => {
+    for (const k of Object.keys(values)) delete values[k];
+    save();
+    for (const [name] of TUNE) hall.style.removeProperty(`--t-${name}`);
+    applyTune(hall);
+    paper.querySelectorAll('.bee-tune-row').forEach((row, i) => {
+      const v = tuneStart(TUNE[i][0]);
+      row.querySelector('input').value = v;
+      row.querySelector('output').textContent = Number(v).toFixed(2);
+    });
+  });
+  const foot = document.createElement('div');
+  foot.className = 'bee-tune-foot';
+  foot.append(copy, reset);
+  paper.append(foot);
+  panel.append(paper);
+  btn.addEventListener('click', () => { panel.hidden = !panel.hidden; });
+  top.querySelector('.bee-full').before(btn);
+  top.after(panel);
 }
 
 const spaced = (s) => s.toUpperCase().split('').join(' ');
@@ -353,7 +467,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.className = `bee-kid bee-kid--${spot.row}${s === mySeat ? ' is-me' : ''}`;
     el.style.setProperty('--x', spot.x);
     el.style.setProperty('--y', spot.y);
-    el.style.setProperty('--tall', f.tall);
+    el.style.setProperty('--tall', `var(--t-tall-${s.kid}, ${f.tall})`);
     el.style.setProperty('--hip', f.hip);
     el.style.setProperty('--knee', f.knee);
     el.style.setProperty('--hands', f.hands);
@@ -404,6 +518,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   });
   document.body.append(bd);
   document.body.classList.add('drill-nav-hidden');
+  if (/[?&]tune=1\b/.test(location.search)) mountTuner(hall, $('.bee-top'));
   if (!document.fullscreenElement) beeFullscreen();   // allowed only if the Start tap is still fresh
   // Came in some other way (a friend's code, the lobby's Start now): the first tap or key
   // anywhere in the bee takes it to the full screen. Not the exit or full-screen buttons.
