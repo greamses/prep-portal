@@ -24,7 +24,7 @@
 .bee-hall .bee-banner.pp-sticky { position: absolute; z-index: 2; top: 10.5%; left: 12%; font-size: 3.6cqh; padding: 0.7cqh 2.2cqh; }
 
 /* the judges' table, on the stage at the left */
-.bee-judges { position: absolute; z-index: 6; left: 11%; bottom: 33.3%; width: calc(20cqw * var(--t-judges, 1)); aspect-ratio: 300 / 220; }
+.bee-judges { position: absolute; z-index: 6; left: 11%; bottom: 38.5%; width: calc(20cqw * var(--t-judges, 1)); aspect-ratio: 300 / 220; }
 .bee-judges svg { display: block; width: 100%; height: 100%; overflow: hidden; }   /* below the table: nothing */
 
 /* the sizes panel (?tune=1) */
@@ -149,37 +149,60 @@
   .bee-tear { animation-duration: 2.4s; }
 }
 
-/* The TV on the back wall, behind the spellers: what is happening, the letters as they are
-   spelled, the clock, and (on my turn) the keys. A picture in the hall, so its colours are
-   its own and it is sized in cqh like everything on the stage. */
+/* The TV on the back wall, behind the spellers: only the spelling. A flat screen in a thin
+   black bezel with a chin, a soft reflection across the glass, a maker's mark and a standby
+   light, hung from the wall with its shadow under it. A picture in the hall: its colours are
+   its own, and it is sized in cqh like everything on the stage. */
 .bee-tv {
-  position: absolute; z-index: 1; left: 58%; top: 9.5%; translate: -50% 0;
-  width: 46cqw; height: 21.5cqh; padding: 0.9cqh;
-  background: #1e2227; box-shadow: 0 1cqh 2.4cqh rgba(20, 10, 4, 0.35);
+  position: absolute; z-index: 1; left: 58%; top: 10%; translate: -50% 0;
+  width: 44cqw; aspect-ratio: 16 / 9; max-height: 22cqh; padding: 0.55cqh 0.55cqh 1.5cqh;
+  background: linear-gradient(180deg, #2b2f35, #121417 60%, #1b1e22);
+  border-radius: 0.5cqh;
+  box-shadow: 0 0.15cqh 0 rgba(255, 255, 255, 0.08) inset, 0 1.6cqh 2.8cqh -0.4cqh rgba(40, 20, 6, 0.45), 0 0.3cqh 0.6cqh rgba(0, 0, 0, 0.35);
 }
 .bee-tv-screen {
   position: relative; width: 100%; height: 100%; overflow: hidden;
-  display: grid; align-content: center; justify-items: center; gap: 0.5cqh; padding: 1cqh 2cqh; text-align: center;
-  background: radial-gradient(ellipse at 50% 35%, #1b4466, #0b1c2c 75%); color: #eaf4ff;
+  display: grid; place-items: center; padding: 1cqh 2.4cqh; text-align: center;
+  background: radial-gradient(ellipse at 50% 45%, #13324d, #071421 72%, #03080e);
+  box-shadow: 0 0 0 0.12cqh #000 inset, 0 0 2.4cqh rgba(0, 0, 0, 0.7) inset;
 }
-.bee-tv .bee-status { margin: 0; font-size: 2.5cqh; line-height: 1.3; color: #b9d4ea; }
-.bee-tv .bee-spell { position: relative; width: 100%; min-height: 6.4cqh; display: grid; place-items: center; }
+/* light from the hall caught on the glass */
+.bee-tv-glare {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.09) 0 18%, rgba(255, 255, 255, 0) 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 40%);
+}
+.bee-tv-brand { position: absolute; left: 50%; bottom: 0.45cqh; translate: -50% 0; width: 3.2cqh; height: 0.5cqh; background: #5d636b; border-radius: 0.25cqh; }
+.bee-tv-led { position: absolute; right: 1.6cqh; bottom: 0.55cqh; width: 0.45cqh; height: 0.45cqh; border-radius: 50%; background: #3bd16f; box-shadow: 0 0 0.6cqh #3bd16f; }
+.bee-tv .bee-spell { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
 .bee-tv .bee-letters {
-  margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 5.4cqh; line-height: 1.15;
-  letter-spacing: 0.04em; word-break: break-word; color: #ffffff; min-height: 1.2em;
+  margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 6.2cqh; line-height: 1.15;
+  letter-spacing: 0.12em; word-break: break-word; color: #f4f8ff; min-height: 1.2em;
+  text-shadow: 0 0 1.2cqh rgba(140, 200, 255, 0.35);
 }
+.bee-tv .bee-letters.is-marked span { letter-spacing: 0; margin: 0 0.06em; }
+.bee-tv .bee-letters .is-ok { color: #6fe08a; text-shadow: 0 0 1.2cqh rgba(80, 220, 120, 0.45); }
+.bee-tv .bee-letters .is-bad { color: #ff5c5c; text-shadow: 0 0 1.2cqh rgba(255, 70, 70, 0.55); }
 .bee-letters.is-mine::after { content: ""; display: inline-block; width: 0.08em; height: 1em; margin-left: 0.2em; vertical-align: -0.1em; background: #f4c95d; animation: bee-caret 1s steps(2) infinite; }
 @keyframes bee-caret { 50% { opacity: 0; } }
-.bee-tv .bee-letters.is-right { color: #86e29a; }
-.bee-tv .bee-letters.is-wrong { color: #ff8f8f; text-decoration: line-through; }
-.bee-tv .bee-letters.is-answer { color: #8fd0ff; }
 .bee-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; font-size: 16px; }
 .bee-input:disabled { pointer-events: none; }
-.bee-tv .bee-clock { margin: 0; font-family: var(--font-mono); font-weight: 600; font-size: 2.3cqh; color: #b9d4ea; min-height: 1.2em; }
-.bee-tv .bee-clock.is-low { color: #ffb27a; }
-.bee-tv :is(.bee-heard, .bee-keys) { margin: 0; font-family: var(--font-mono); font-size: 1.8cqh; color: #8fb3cf; }
-.bee-heard[hidden], .bee-keys[hidden], .bee-skip[hidden], .bee-results[hidden], .bee-tools[hidden], .bee-tools-btn[hidden] { display: none; }
-.bee-bd.is-my-turn .bee-tv { box-shadow: 0 0 0 0.6cqh #f4c95d, 0 1cqh 2.4cqh rgba(20, 10, 4, 0.35); }
+.bee-heard[hidden], .bee-skip[hidden], .bee-results[hidden], .bee-tools[hidden], .bee-tools-btn[hidden] { display: none; }
+.bee-bd.is-my-turn .bee-tv { box-shadow: 0 0 0 0.5cqh #f4c95d, 0 1.6cqh 2.8cqh -0.4cqh rgba(40, 20, 6, 0.45); }
+
+/* the top bar's words: what is happening (and what the mic heard), and the clock */
+.bee-say {
+  min-width: 0; max-width: min(46vw, 560px); display: flex; flex-direction: column; gap: 0.1rem;
+  padding: 0.3rem 0.65rem; background: color-mix(in srgb, var(--surface-primary) 92%, transparent);
+  box-shadow: var(--shadow-sm); font-size: 0.82rem; line-height: 1.3; color: var(--ink);
+}
+.bee-say .bee-status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bee-say .bee-heard { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bee-say:has(.bee-status:empty) { display: none; }
+.bee-top .bee-clock { font-family: var(--font-mono); font-weight: 600; }
+.bee-top .bee-clock:empty { display: none; }
+.bee-top .bee-clock.is-low { color: var(--accent-danger); }
+.bee-tools .bee-keys { order: 2; flex-basis: 100%; margin: 0.2rem 0 0; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-secondary); white-space: nowrap; }
 
 /* the top bar: the toolbox (folded away until its button is pressed) and skip */
 .bee-top .bee-spacer { flex: 1; }
@@ -187,7 +210,7 @@
 .bee-top .bee-tools-btn { display: inline-grid; place-items: center; width: 2.2rem; height: 2.2rem; padding: 0; cursor: pointer; }
 .bee-tools {
   position: absolute; z-index: 25; top: calc(100% + 0.45rem); right: 0;
-  display: flex; gap: 0.45rem; padding: 0.5rem;
+  display: flex; flex-wrap: wrap; gap: 0.45rem; padding: 0.5rem; width: max-content; max-width: 92vw;
   background: var(--surface-primary); box-shadow: var(--shadow-md);
 }
 .bee-top .bee-skip { font-size: 0.8rem; padding: 0.35rem 0.8rem; }

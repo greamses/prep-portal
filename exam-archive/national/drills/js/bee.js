@@ -416,11 +416,13 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     <div class="bee-top">
       <span class="pp-pill pp-pill--static bee-round"></span>
       <span class="pp-pill pp-pill--static bee-left"></span>
+      <span class="bee-say"><span class="bee-status" aria-live="polite"></span><span class="bee-heard" hidden></span></span>
+      <span class="pp-pill pp-pill--static bee-clock"></span>
       <span class="bee-spacer"></span>
       <button type="button" class="pp-btn pp-btn--ghost bee-skip" hidden>Skip to the result</button>
       <div class="bee-toolbox">
         <button type="button" class="bee-tools-btn" hidden></button>
-        <div class="bee-tools" hidden></div>
+        <div class="bee-tools" hidden><p class="bee-keys">Keys: Enter done &middot; 1 word &middot; 2 meaning &middot; 3 sentence &middot; 4 origin &middot; 5 mic</p></div>
       </div>
       <button type="button" class="bee-full"></button>
       <button type="button" class="bee-leave"></button>
@@ -430,17 +432,16 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       <span class="pp-sticky pp-sticky--c0 pp-sticky--tape bee-banner">Spelling Bee</span>
       <div class="bee-judges"></div>
       <div class="bee-stand" aria-hidden="true"><svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><rect x="5" y="2" width="10" height="17" rx="5" fill="#3b3b3b"/><rect x="6.5" y="5" width="7" height="2" fill="#6b6b6b"/><rect x="8.8" y="18" width="2.4" height="76" fill="#8a8f96"/><rect x="1" y="93" width="18" height="5" rx="2.5" fill="#3b3b3b"/></svg></div>
-      <div class="bee-tv">
+      <div class="bee-tv" aria-label="The screen">
         <div class="bee-tv-screen">
-          <p class="bee-status" aria-live="polite"></p>
           <div class="bee-spell">
             <p class="bee-letters"></p>
             <input class="bee-input" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" aria-label="Spell the word, one letter at a time. Letters cannot be taken back." disabled />
           </div>
-          <p class="bee-clock"></p>
-          <p class="bee-heard" hidden></p>
-          <p class="bee-keys" hidden>Enter: done &middot; 1 word &middot; 2 meaning &middot; 3 sentence &middot; 4 origin &middot; 5 mic</p>
+          <span class="bee-tv-glare" aria-hidden="true"></span>
         </div>
+        <span class="bee-tv-brand" aria-hidden="true"></span>
+        <span class="bee-tv-led" aria-hidden="true"></span>
       </div>
       <div class="bee-audience"></div>
     </div>
@@ -553,6 +554,25 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const say = (text) => { statusEl.textContent = text; };
   const who = (s) => `Number ${s.tag}, ${s.name}${s === mySeat ? ' (you)' : ''}`;
   const showLetters = (typed, cls = '') => { lettersEl.textContent = spaced(typed); lettersEl.className = `bee-letters ${cls}`; };
+  /* A spelling marked: every letter up to the first mistake green, the first wrong letter red,
+     the letters after it as they were. A missing letter is a red gap where it should be. */
+  function showMarked(typed, word) {
+    const t = String(typed || ''), w = String(word || '');
+    const norm = (c) => c.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    let bad = 0;
+    while (bad < t.length && bad < w.length && norm(t[bad]) === norm(w[bad])) bad++;
+    const right = bad >= t.length && t.length === w.length;
+    lettersEl.className = 'bee-letters is-marked';
+    lettersEl.replaceChildren();
+    const put = (ch, cls) => {
+      const sp = document.createElement('span');
+      sp.className = cls;
+      sp.textContent = ch === ' ' ? '\u00a0' : ch.toUpperCase();
+      lettersEl.append(sp);
+    };
+    for (let i = 0; i < t.length; i++) put(t[i], right || i < bad ? 'is-ok' : i === bad ? 'is-bad' : '');
+    if (!right && bad >= t.length) put('_', 'is-bad is-gap');     // stopped short: the letter that was missing
+  }
   function pills() {
     roundEl.textContent = `Round ${bee.round}`;
     const n = bee.alive.length;
@@ -819,7 +839,6 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       inputEl.disabled = false; inputEl.value = '';
       showLetters('', 'is-mine');
       toolsBtn.hidden = false;                     // the tools, folded away in the top bar
-      keysEl.hidden = false;
       bd.classList.add('is-my-turn');
       inputEl.focus();
       if (micWanted && canListen) mic.start();
@@ -834,7 +853,6 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         toolsEl.hidden = true;
         toolsBtn.hidden = true;
         toolsBtn.setAttribute('aria-expanded', 'false');
-        keysEl.hidden = true;
         bd.classList.remove('is-my-turn');
         const typed = committed;
         // if the hall already called this turn a miss (this device was away), that stands
@@ -1004,21 +1022,20 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       if (gone) break;
       // the verdict
       if (r.ok) {
-        showLetters(r.t || q.word, 'is-right');
+        showMarked(r.t || q.word, q.word);
         say('The judge: "Correct."');
         judgeSays('correct');
         if (pace) chime();
         await spoken();
         if (REACTIONS) { say('Correct! The hall claps.'); clap(2.4); await wait(2200); } else await wait(800);
       } else {
-        showLetters(r.t || '', 'is-wrong');
+        showMarked(r.t || '', q.word);
         say(r.t ? 'The judge: "Incorrect."' : 'Time is up. The judge: "Incorrect."');
         judgeSays('incorrect');
         if (pace) bell();
         if (REACTIONS) el.classList.add('is-sad');
         await spoken();
         await wait(700);
-        showLetters(q.word, 'is-answer');
         say(`The word was "${q.word}". ${seat === mySeat ? 'You leave' : `Number ${seat.tag} leaves`} the stage.`);
         await wait(2000);
       }
