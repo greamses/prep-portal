@@ -73,6 +73,8 @@ const KIDS = {
     eyes: [[38, 16.4], [62, 16.4]], mouth: [50, 21, 17, 2.6], skin: '#8a4733', lip: '#3e1a12' },
   girl3: { src: '/media/characters/girl-curly.svg', girl: true, tall: 1.12, hip: 58, knee: 76, hands: 66,
     eyes: [[40, 17.9], [61, 17.9]], mouth: [50, 22, 14, 2.2], skin: '#7d4a2e', lip: '#3e1a12' },
+  boy3: { src: '/media/characters/boy-curly.svg', girl: false, tall: 0.84, hip: 63, knee: 78, hands: 68,
+    eyes: [[38, 20.6], [61, 20.6]], mouth: [50, 25.4, 15, 2.2], skin: '#b8673f', lip: '#5e2a1c' },
 };
 /* The hall's reactions (clapping for a right word, tears for a wrong one) are switched off
    until the user's clapping and crying pictures arrive (2026-11-15). The code stays. */
@@ -84,6 +86,10 @@ const REACTIONS = false;
 const SPELLER_RECORDINGS = true;     // 2026-11-15: back to Kokoro, read from each letter's and word's transcription
 // the ElevenLabs letters (media/spelling-letters) are kept, but Kokoro's are played instead
 const ELEVEN_LETTERS = false;
+/* The spellers a player may choose to be (the setup's "Choose your speller"). */
+const KID_NAMES = { boy: 'Boy, blue T-shirt', girl: 'Girl, pigtails', boy2: 'Boy, hoodie', girl2: 'Girl, pink and yellow', girl3: 'Girl, curly hair', boy3: 'Boy, curly hair' };
+export const BEE_SPELLERS = Object.keys(KID_NAMES).map((key) => ({ key, name: KID_NAMES[key], src: KIDS[key].src }));
+export const BEE_SIZE = 5;            // a bee is for five spellers (the user, 2026-11-15)
 const MIC_KEY = 'ppSpellMic';          // the same choice as the drill's mic
 const GRACE = 12;                      // seconds past the clock before a silent turn is called a miss
 
@@ -661,7 +667,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  *   me      { uid, name }
  */
 export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, me }) {
-  const seats = seatSpellers(seed, humans, botsNeeded);
+  const myKid = KIDS[me.kid] ? me.kid : null;
+  const seats = seatSpellers(seed, humans.map((h) => (h.uid === me.uid && myKid ? { ...h, kid: myKid } : h)), botsNeeded);
   const bee = createBee(seats.length);
   const mySeat = seats.find((s) => s.uid === me.uid) || null;
   const question = (k) => spellingQuestion(seed, k, 'spellSay', sets);
@@ -751,7 +758,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.style.setProperty('--tall', `var(--t-tall-${s.kid}, ${f.tall})`);
     el.dataset.kid = s.kid;
     el.dataset.seat = s.seat; el.dataset.bx = spot.x; el.dataset.by = spot.y;
-    el.dataset.label = `${{ boy: 'Boy, blue T-shirt', girl: 'Girl, pigtails', boy2: 'Boy, hoodie', girl2: 'Girl, pink and yellow', girl3: 'Girl, curly hair' }[s.kid] || s.kid} (every one)`;
+    el.dataset.label = `${KID_NAMES[s.kid] || s.kid} (every one)`;
     el.style.setProperty('--hip', f.hip);
     el.style.setProperty('--knee', f.knee);
     el.style.setProperty('--hands', f.hands);
@@ -805,6 +812,24 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     hall.append(el);
     return el;
   });
+  /** A seat's child becomes another drawing (a player's chosen speller, told by the live room). */
+  function changeKid(seat, kid) {
+    const f = KIDS[kid], el = kids[seat.seat];
+    if (!f || !el) return;
+    seat.kid = kid;
+    el.querySelectorAll('img').forEach((i) => { i.src = f.src; });
+    el.style.setProperty('--tall', `var(--t-tall-${kid}, ${f.tall})`);
+    el.style.setProperty('--hip', f.hip);
+    el.style.setProperty('--knee', f.knee);
+    el.style.setProperty('--hands', f.hands);
+    el.dataset.kid = kid;
+    el.dataset.label = `${KID_NAMES[kid] || kid} (every one)`;
+    const mouth = el.querySelector('.bee-kid-mouth');
+    if (mouth) mouth.style.cssText = `left:${f.mouth[0] - f.mouth[2] * 0.3}%;top:${f.mouth[1] - f.mouth[3] * 0.2}%;width:${f.mouth[2] * 0.6}%;height:${f.mouth[3] * 1.4}%`;
+    const frown = el.querySelector('.bee-frown');
+    if (frown) frown.style.cssText = `left:${f.mouth[0] - f.mouth[2] / 2}%;top:${f.mouth[1] - f.mouth[3] / 2}%;width:${f.mouth[2]}%;height:${f.mouth[3] * 1.6}%`;
+    el.querySelectorAll('.bee-tear').forEach((t, n) => { t.style.left = `${f.eyes[n][0]}%`; t.style.top = `${f.eyes[n][1] + 1.6}%`; });
+  }
   document.body.append(bd);
   document.body.classList.add('drill-nav-hidden');
   // everyone's bee: the saved sizes; the admin (or ?tune=1): the settings panel
@@ -1018,13 +1043,22 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const joined = openRoom({ ns: 'bee', code: roomId, me: { id: idFor(me.uid), name: me.name } }).then((r) => {
     if (gone) { r.leave(); return; }
     room = r;
-    r.presence.set({ seat: mySeat ? mySeat.seat : -1 });
-    r.on('presence', (people) => { const t = Date.now(); for (const p of people) present.set(String(p.id).split(':')[0], t); });
+    r.presence.set({ seat: mySeat ? mySeat.seat : -1, kid: myKid });
+    r.on('presence', (people) => {
+      const t = Date.now();
+      for (const p of people) {
+        const uid = String(p.id).split(':')[0];
+        present.set(uid, t);
+        // another player's chosen speller: their seat takes that drawing
+        const seat = seats.find((s) => s.uid === uid);
+        if (seat && seat !== mySeat && p.kid && KIDS[p.kid] && seat.kid !== p.kid) changeKid(seat, p.kid);
+      }
+    });
     r.on('state', (s) => { for (const [key, v] of Object.entries(s || {})) { const m = /^r(\d+)$/.exec(key); if (m && v) land(Number(m[1]), v); } });
     r.on('spell', (p) => { if (p && p.k === nowK && theirTyping) theirTyping(String(p.v || '')); });
     r.on('ask', (p) => { if (p && p.k === nowK && nowQ) speak(p.kind); });
   }).catch((e) => console.warn('[bee] no live room; playing on this device only:', e));
-  const beat = setInterval(() => { try { room?.presence.set({ seat: mySeat ? mySeat.seat : -1 }); } catch { /* ignore */ } }, 5000);
+  const beat = setInterval(() => { try { room?.presence.set({ seat: mySeat ? mySeat.seat : -1, kid: myKid }); } catch { /* ignore */ } }, 5000);
   /** Am I the one device that calls a silent turn? The lowest uid here, not counting the speller. */
   function amArbiter(spellerUid) {
     const t = Date.now();

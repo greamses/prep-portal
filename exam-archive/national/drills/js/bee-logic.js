@@ -31,7 +31,7 @@ export const beeSeconds = (level) => BEE_SECONDS[level] || BEE_SECONDS.easy;
  */
 export function seatSpellers(seed, humans, botsNeeded) {
   const people = [...humans].sort((a, b) => (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0))
-    .map((h) => ({ name: h.name || 'Player', uid: h.uid, bot: null }));
+    .map((h) => ({ name: h.name || 'Player', uid: h.uid, bot: null, chosen: h.kid || null }));
   for (let slot = 0; slot < botsNeeded; slot++) people.push({ name: botName(seed, slot), uid: null, bot: slot });
   const rng = mulberry32(hashSeed(seed, 7001));
   for (let i = people.length - 1; i > 0; i--) {
@@ -39,9 +39,10 @@ export function seatSpellers(seed, humans, botsNeeded) {
     [people[i], people[j]] = [people[j], people[i]];
   }
   // boys and girls sit turn about, and the four children (js/bee.js KIDS) take turns
-  const KINDS = ['boy', 'girl', 'boy2', 'girl2', 'boy', 'girl3', 'boy2', 'girl', 'boy', 'girl3'];
+  const KINDS = ['boy', 'girl', 'boy2', 'girl2', 'boy3', 'girl3', 'boy2', 'girl', 'boy3', 'girl3'];
   const first = Math.floor(rng() * 4) * 2;
-  return people.map((p, seat) => ({ ...p, seat, tag: seat + 1, kid: KINDS[(seat + first) % KINDS.length] }));
+  // a player's own choice of speller wins; everyone else takes the seat's turn
+  return people.map(({ chosen, ...p }, seat) => ({ ...p, seat, tag: seat + 1, kid: chosen || KINDS[(seat + first) % KINDS.length] }));
 }
 
 /**
