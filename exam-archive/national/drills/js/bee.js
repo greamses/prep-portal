@@ -416,6 +416,12 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     <div class="bee-top">
       <span class="pp-pill pp-pill--static bee-round"></span>
       <span class="pp-pill pp-pill--static bee-left"></span>
+      <span class="bee-spacer"></span>
+      <button type="button" class="pp-btn pp-btn--ghost bee-skip" hidden>Skip to the result</button>
+      <div class="bee-toolbox">
+        <button type="button" class="bee-tools-btn" hidden></button>
+        <div class="bee-tools" hidden></div>
+      </div>
       <button type="button" class="bee-full"></button>
       <button type="button" class="bee-leave"></button>
     </div>
@@ -424,20 +430,19 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       <span class="pp-sticky pp-sticky--c0 pp-sticky--tape bee-banner">Spelling Bee</span>
       <div class="bee-judges"></div>
       <div class="bee-stand" aria-hidden="true"><svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><rect x="5" y="2" width="10" height="17" rx="5" fill="#3b3b3b"/><rect x="6.5" y="5" width="7" height="2" fill="#6b6b6b"/><rect x="8.8" y="18" width="2.4" height="76" fill="#8a8f96"/><rect x="1" y="93" width="18" height="5" rx="2.5" fill="#3b3b3b"/></svg></div>
-      <div class="bee-audience"></div>
-    </div>
-    <div class="pp-receipt bee-panel">
-      <div class="pp-receipt__paper bee-paper">
-        <p class="bee-status" aria-live="polite"></p>
-        <div class="bee-spell">
-          <p class="bee-letters"></p>
-          <input class="bee-input" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" aria-label="Spell the word, one letter at a time. Letters cannot be taken back." disabled />
+      <div class="bee-tv">
+        <div class="bee-tv-screen">
+          <p class="bee-status" aria-live="polite"></p>
+          <div class="bee-spell">
+            <p class="bee-letters"></p>
+            <input class="bee-input" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" aria-label="Spell the word, one letter at a time. Letters cannot be taken back." disabled />
+          </div>
+          <p class="bee-clock"></p>
+          <p class="bee-heard" hidden></p>
+          <p class="bee-keys" hidden>Enter: done &middot; 1 word &middot; 2 meaning &middot; 3 sentence &middot; 4 origin &middot; 5 mic</p>
         </div>
-        <p class="bee-clock"></p>
-        <div class="bee-tools" hidden></div>
-        <p class="bee-heard" hidden></p>
-        <button type="button" class="pp-btn pp-btn--ghost bee-skip" hidden>Skip to the result</button>
       </div>
+      <div class="bee-audience"></div>
     </div>
     <div class="bee-results" hidden>
       <div class="pp-receipt bee-results-card">
@@ -457,6 +462,17 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   judge.innerHTML = judgesSvg();
   const hall = $('.bee-hall'), statusEl = $('.bee-status'), lettersEl = $('.bee-letters'), inputEl = $('.bee-input');
   const clockEl = $('.bee-clock'), toolsEl = $('.bee-tools'), heardEl = $('.bee-heard'), skipBtn = $('.bee-skip');
+  const toolsBtn = $('.bee-tools-btn'), keysEl = $('.bee-keys');
+  // the speller's tools live in the top bar, folded away behind one button
+  toolsBtn.innerHTML = UI.menu(18);
+  toolsBtn.setAttribute('aria-label', 'Ask the judge (keys 1 to 5)');
+  toolsBtn.dataset.tip = 'Ask the judge (keys 1 to 5)';
+  toolsBtn.setAttribute('aria-expanded', 'false');
+  toolsBtn.addEventListener('click', () => {
+    toolsEl.hidden = !toolsEl.hidden;
+    toolsBtn.setAttribute('aria-expanded', toolsEl.hidden ? 'false' : 'true');
+    if (!inputEl.disabled) inputEl.focus();
+  });
   const roundEl = $('.bee-round'), leftEl = $('.bee-left');
 
   // the spellers, in their chairs, tags on
@@ -748,7 +764,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       else if (why === 'error') heardEl.textContent = 'No microphone was found. Type the letters.';
     },
   });
-  const micBtn = tool('drill-mic', UI.mic(22), 'Spell out loud: mic on or off', () => {
+  const micBtn = tool('drill-mic', UI.mic(22), 'Spell out loud: mic on or off (5)', () => {
     micWanted = !mic.on;
     try { localStorage.setItem(MIC_KEY, micWanted ? '1' : '0'); } catch { /* storage blocked */ }
     if (micWanted) mic.start(); else mic.stop();
@@ -756,14 +772,17 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   });
   micBtn.hidden = !canListen;
   micBtn.setAttribute('aria-pressed', 'false');
-  tool('bee-again', UI.speaker(22), 'May I have the word again?', () => ask('w')).hidden = !canSpeak;
-  tool('bee-def', UI.book(22), 'May I have the definition?', () => ask('d')).hidden = !canSpeak;
-  tool('bee-use', UI.speech(22), 'May I have it in a sentence?', () => ask('s')).hidden = !canSpeak;
-  tool('bee-root', UI.roots(22), 'May I have the part of speech and the origin?', () => ask('o')).hidden = !canSpeak;
+  tool('bee-again', UI.speaker(22), 'May I have the word again? (1)', () => ask('w')).hidden = !canSpeak;
+  tool('bee-def', UI.book(22), 'May I have the definition? (2)', () => ask('d')).hidden = !canSpeak;
+  tool('bee-use', UI.speech(22), 'May I have it in a sentence? (3)', () => ask('s')).hidden = !canSpeak;
+  tool('bee-root', UI.roots(22), 'May I have the part of speech and the origin? (4)', () => ask('o')).hidden = !canSpeak;
   tool('bee-done', UI.check(22), 'Done: that is my spelling (Enter)', () => { if (finishMine && committed) finishMine(false); else inputEl.focus(); });
   inputEl.addEventListener('input', () => onType(false));
   inputEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); if (finishMine && committed) finishMine(false); return; }
+    // 1 to 5 ask the judge (no figure is ever part of a spelling, so they are free keys)
+    const keyed = { 1: () => ask('w'), 2: () => ask('d'), 3: () => ask('s'), 4: () => ask('o'), 5: () => micBtn.click() }[e.key];
+    if (keyed && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); if (finishMine) keyed(); return; }
     if (/^(Backspace|Delete|ArrowLeft|ArrowRight|ArrowUp|ArrowDown|Home|End)$/.test(e.key)) {
       e.preventDefault();
       if (e.key === 'Backspace' || e.key === 'Delete') heardEl.hidden = false, heardEl.textContent = 'There are no backspaces at a spelling bee. Carry on, then press Done.';
@@ -772,6 +791,11 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   ['select', 'click', 'focus'].forEach((t) => inputEl.addEventListener(t, keepEnd));
   inputEl.addEventListener('paste', (e) => e.preventDefault());   // letters come one at a time
   $('.bee-spell').addEventListener('click', () => { if (!inputEl.disabled) inputEl.focus(); });
+  // a key pressed anywhere in the bee during my turn (after a click on the tools, say) goes to the answer
+  bd.addEventListener('keydown', (e) => {
+    if (!finishMine || e.target === inputEl || e.target.closest?.('.bee-tune') || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key.length === 1 || e.key === 'Enter') inputEl.focus();
+  }, true);
 
   let tick = 0;
   function runClock(seconds, onEnd) {
@@ -794,7 +818,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       committed = '';
       inputEl.disabled = false; inputEl.value = '';
       showLetters('', 'is-mine');
-      toolsEl.hidden = false;
+      toolsBtn.hidden = false;                     // the tools, folded away in the top bar
+      keysEl.hidden = false;
       bd.classList.add('is-my-turn');
       inputEl.focus();
       if (micWanted && canListen) mic.start();
@@ -807,6 +832,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         heardEl.hidden = true;
         inputEl.disabled = true; inputEl.blur();
         toolsEl.hidden = true;
+        toolsBtn.hidden = true;
+        toolsBtn.setAttribute('aria-expanded', 'false');
+        keysEl.hidden = true;
         bd.classList.remove('is-my-turn');
         const typed = committed;
         // if the hall already called this turn a miss (this device was away), that stands
