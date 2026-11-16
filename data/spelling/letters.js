@@ -14,5 +14,12 @@ export const SPELLING_LETTERS = [
   ['y', 'wˈaɪ'], ['z', 'zˈɛd'],
   [' ', 'spˈeɪs'], ['-', 'hˈaɪfən'], ["'", 'ɐpˈɒstɹəfi'],
 ];
+/* What Kokoro is given to READ for each letter (the user, 2026-11-15: "use the letters for the
+   letter names pronunciation instead of the IPA"): the letter itself, as a short sentence, the
+   same text the browser's voice gets in the hall. espeak (what turns Kokoro's text into sounds)
+   reads a capital "A" as the letter (ˈeɪ) but "Ay" as "eye", so A stays "A."; the three marks
+   are said by name. The IPA above is kept only for reference. */
+const LETTER_TEXT = { ' ': 'Space.', '-': 'Hyphen.', "'": 'Apostrophe.' };
+export const sayLetter = (ch) => LETTER_TEXT[ch.toLowerCase()] || `${ch.toUpperCase()}.`;
 /** Clip number of a letter: LETTER.b -> 1. */
 export const LETTER = Object.fromEntries(SPELLING_LETTERS.map((row, i) => [row[0], i]));

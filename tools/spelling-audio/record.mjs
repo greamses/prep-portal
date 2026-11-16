@@ -37,12 +37,15 @@ const LISTS = {
   phrases: { file: 'phrases.js', name: 'SPELLING_PHRASES', ipa: fromDictionary, only: 'd' },
   // the letters by name, for the Spelling Bee's spellers (in their own voices): a letter's
   // name is short, so a clip as short as 0.12 s is a good one
-  letters: { file: 'letters.js', name: 'SPELLING_LETTERS', ipa: fromDictionary, only: 'w', min: 0.12 },
+  // read from the letter as written (letters.js sayLetter, "B."), not its IPA
+  letters: { file: 'letters.js', name: 'SPELLING_LETTERS', ipa: fromDictionary, only: 'w', min: 0.12, text: 'sayLetter' },
 };
 const arg = (name, dflt) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : dflt; };
 const LIST = LISTS[arg('bank', 'secondary')];
 if (!LIST) { console.error(`--bank must be one of ${Object.keys(LISTS).join(', ')}`); process.exit(2); }
-const BANK = (await import(new URL(`../../data/spelling/${LIST.file}`, import.meta.url)))[LIST.name];
+const MOD = await import(new URL(`../../data/spelling/${LIST.file}`, import.meta.url));
+const BANK = MOD[LIST.name];
+const asText = LIST.text ? MOD[LIST.text] : null;   // a list read from text, not from its IPA
 const [pi, pn] = String(arg('part', '1/1')).split('/').map(Number);
 const per = Math.ceil(BANK.length / pn);
 const FROM = (pi - 1) * per, TO = Math.min(BANK.length, pi * per);
@@ -81,7 +84,7 @@ for (const [k, i] of todo) {
   const name = `${pad(i)}-${k}`;
       const [word, rawIpa, def, use, pos = '', origin = ''] = BANK[i];
       const ipa = LIST.ipa(rawIpa);
-      const phon = k === 'w' ? ipa : k === 'd' ? await linePhonemes(def)
+      const phon = k === 'w' ? (asText ? await linePhonemes(asText(word)) : ipa) : k === 'd' ? await linePhonemes(def)
         : k === 'o' ? await linePhonemes(aboutLine(word, pos, origin)) : await linePhonemes(use, word, ipa);
       const opts = { voice: VOICE, lift: 1, speed: 1 };   // her own voice and pace: nothing tweaked
       let clip = await speak(phon, opts);

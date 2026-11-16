@@ -1002,7 +1002,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     speakingKid?.classList.toggle('is-talking', on);
     if (on) {
       const n = syllablesOf(text);
-      sylBeat = { t0: performance.now(), n, slot: Math.max(120, (ms || n * 300) / n), amp: [] };
+      sylBeat = { t0: performance.now(), n, slot: Math.max(160, (ms || n * 300) / n), amp: [] };
       for (let i = 0; i < n; i++) sylBeat.amp.push(0.7 + Math.random() * 0.3);
     } else sylBeat = null;
     if (!mouthRaf) mouthRaf = requestAnimationFrame(mouthTick);
@@ -1012,10 +1012,16 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     if (!speakingKid) return;
     let goal = 0;
     if (talking && sylBeat) {
+      // rAF's clock can read a touch EARLIER than performance.now() did at the start: before
+      // the first syllable, the mouth simply waits (a negative slot once made it NaN for good)
       const k = (now - sylBeat.t0) / sylBeat.slot, i = Math.floor(k);
-      if (i < sylBeat.n) goal = Math.sin(Math.PI * (k - i)) * sylBeat.amp[i];
+      // open for the first 65% of the syllable's slot, then fully shut, so each syllable is its
+      // own flap and two never run together
+      const ph = k - i;
+      if (i >= 0 && i < sylBeat.n && ph < 0.65) goal = Math.sin((Math.PI * ph) / 0.65) * sylBeat.amp[i];
     }
-    mouthO += (goal - mouthO) * 0.5;
+    mouthO += (goal - mouthO) * 0.6;
+    if (!Number.isFinite(mouthO)) mouthO = 0;
     setMouth(speakingKid, mouthO);
     if (talking || mouthO > 0.01) mouthRaf = requestAnimationFrame(mouthTick);
     else setMouth(speakingKid, 0);
