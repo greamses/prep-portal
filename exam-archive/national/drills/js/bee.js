@@ -401,7 +401,8 @@ function audienceSvg(seed) {
       const x = cx - row.cw / 2, k = row.cw / 100;
       const chair = `<rect x="${x}" y="${chairTop}" width="${row.cw}" height="${row.ch}" fill="#2f4c7a"/><rect x="${x + 6 * k}" y="${chairTop + 6 * k}" width="${row.cw - 12 * k}" height="${row.ch * 0.45}" fill="#3c5d92"/>`;
       // ONE item: this person and their chair, moved and sized on their own (the hall editor)
-      out += `<g class="bee-item" data-item="aud-${r}-${n}" data-label="${r ? 'Front' : 'Back'} row, seat ${n + 1}" data-bottom="${chairTop + row.ch}"><g clip-path="url(#bee-row${r})">${person}</g>${chair}${hands}</g>`;
+      // the body in its own group, so it can stand up for the champion (bee.css .bee-aud-body)
+      out += `<g class="bee-item" data-item="aud-${r}-${n}" data-label="${r ? 'Front' : 'Back'} row, seat ${n + 1}" data-bottom="${chairTop + row.ch}"><g clip-path="url(#bee-row${r})"><g class="bee-aud-body">${person}</g></g>${chair}${hands}</g>`;
     });
   });
   return `<svg viewBox="0 0 1600 288" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>${defs}</defs>${out}</svg>`;
@@ -907,13 +908,16 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
             <input class="bee-input" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" aria-label="Spell the word, one letter at a time. Letters cannot be taken back." disabled />
           </div>
           <div class="bee-tv-idle" aria-hidden="true"><svg class="bee-bot" viewBox="0 0 64 64" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="#1f2a37" stroke-width="2.6" stroke-linecap="round"/><circle class="bee-bot-ball" cx="32" cy="6" r="3.2" fill="#f4c95d"/><rect x="4" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="52" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="11" y="16" width="42" height="38" rx="14" fill="#7cc4f0"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="#1f2a37"/><circle class="bee-bot-eye" cx="26" cy="31.5" r="3.1" fill="#f4c95d"/><circle class="bee-bot-eye" cx="38" cy="31.5" r="3.1" fill="#f4c95d"/><path class="bee-bot-mouth" d="M24 48 L40 48" stroke="#1f2a37" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg><p class="bee-tv-logo"><small>Prep</small>Spelling Bee</p></div>
-          <div class="bee-tv-host" aria-hidden="true"><svg class="bee-bot" viewBox="0 0 64 64" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="#1f2a37" stroke-width="2.6" stroke-linecap="round"/><circle class="bee-bot-ball" cx="32" cy="6" r="3.2" fill="#f4c95d"/><rect x="4" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="52" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="11" y="16" width="42" height="38" rx="14" fill="#7cc4f0"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="#1f2a37"/><circle class="bee-bot-eye" cx="26" cy="31.5" r="3.1" fill="#f4c95d"/><circle class="bee-bot-eye" cx="38" cy="31.5" r="3.1" fill="#f4c95d"/><path class="bee-bot-mouth" d="M24 48 L40 48" stroke="#1f2a37" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg><p class="bee-tv-host-line"></p></div>
+          <div class="bee-tv-host" aria-hidden="true"><svg class="bee-bot" viewBox="0 0 64 64" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="#1f2a37" stroke-width="2.6" stroke-linecap="round"/><circle class="bee-bot-ball" cx="32" cy="6" r="3.2" fill="#f4c95d"/><rect x="4" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="52" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="11" y="16" width="42" height="38" rx="14" fill="#7cc4f0"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="#1f2a37"/><circle class="bee-bot-eye" cx="26" cy="31.5" r="3.1" fill="#f4c95d"/><circle class="bee-bot-eye" cx="38" cy="31.5" r="3.1" fill="#f4c95d"/><path class="bee-bot-mouth" d="M24 48 L40 48" stroke="#1f2a37" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg><p class="bee-tv-host-line"></p><div class="bee-tv-award"><svg class="bee-trophy" viewBox="0 0 64 72" aria-hidden="true"><path d="M14 8 H4 V16 Q4 30 18 32" fill="none" stroke="#d4a937" stroke-width="4"/><path d="M50 8 H60 V16 Q60 30 46 32" fill="none" stroke="#d4a937" stroke-width="4"/><path d="M14 4 H50 V20 Q50 40 32 42 Q14 40 14 20 Z" fill="#f2c94c"/><path d="M20 8 H26 V22 Q26 32 32 36 Q22 34 20 22 Z" fill="#fff0b3" opacity=".75"/><rect x="28" y="42" width="8" height="10" fill="#d4a937"/><rect x="18" y="52" width="28" height="7" fill="#b8902e"/><rect x="13" y="59" width="38" height="9" fill="#7a5c1c"/><rect x="22" y="61.5" width="20" height="4" fill="#f2c94c"/></svg><span class="bee-tv-prize"><b>5,000</b> PrepCoins</span></div></div>
           <span class="bee-tv-static" aria-hidden="true"></span>
           <span class="bee-tv-glare" aria-hidden="true"></span>
         </div>
         <span class="bee-tv-brand" aria-hidden="true"></span>
         <span class="bee-tv-led" aria-hidden="true"></span>
       </div>
+      <div class="bee-spot" aria-hidden="true"><span class="bee-spot-beam"></span></div>
+      <div class="bee-flood" aria-hidden="true"></div>
+      <div class="bee-confetti" aria-hidden="true"></div>
       <div class="bee-curtain bee-curtain--l" aria-hidden="true"><span class="bee-tieback"></span></div>
       <div class="bee-curtain bee-curtain--r" aria-hidden="true"><span class="bee-tieback"></span></div>
       <div class="bee-marquee" aria-hidden="true"></div>
@@ -1301,12 +1305,13 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   /* The big opening on the TV: it flickers on through static, the screen goes white, PrepBot
      pops up and welcomes everyone to the Prep Spelling Bee, the title lands, then the screen
      settles for the spelling. */
-  async function tvIntro() {
+  /* PrepBot speaks on the TV: the line shows under him and his mouth moves while it is said. */
+  async function host(text) {
     const tv = hall.querySelector('.bee-tv'), line = tv.querySelector('.bee-tv-host-line');
-    const bot = tv.querySelector('.bee-tv-host .bee-bot'), mouthEl = bot.querySelector('.bee-bot-mouth');
+    const mouthEl = tv.querySelector('.bee-tv-host .bee-bot-mouth');
     const SHAPES = ['M24 48 L40 48', 'M25 47 Q32 50.5 39 47', 'M24.5 46 Q32 53 39.5 46', 'M27 46.5 Q32 52 37 46.5'];
     let flap = 0;
-    const host = async (text) => {
+    {
       line.textContent = text;
       line.classList.remove('is-in'); void line.offsetWidth; line.classList.add('is-in');
       sayWord(text, null, { rate: 0.98 });
@@ -1315,7 +1320,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       for (let t = 0; t < 120 && isTalking() && !gone && pace; t++) await sleep(100);
       clearInterval(flap); mouthEl.setAttribute('d', SHAPES[0]);
       await wait(250);
-    };
+    }
+  }
+  async function tvIntro() {
+    const tv = hall.querySelector('.bee-tv');
     tv.classList.remove('is-idle');
     tv.classList.add('is-off');
     await wait(500);
@@ -1338,6 +1346,58 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   function endIntro(tv) {
     tv.classList.add('is-glitch-out');
     setTimeout(() => tv.classList.remove('is-white', 'is-host', 'is-title-card', 'is-glitch', 'is-glitch-out', 'is-off'), 380);
+  }
+  /* The audience stand for the champion, one here and one there, and clap (the sound only; no
+     hands), swaying a little as they do. */
+  function ovation(seconds = 9) {
+    const bodies = [...hall.querySelectorAll('.bee-aud-body')];
+    bodies.forEach((b) => {
+      if (Math.random() < 0.82) {
+        b.style.setProperty('--up-d', `${(Math.random() * 1.6).toFixed(2)}s`);
+        b.style.setProperty('--sway-d', `${(0.35 + Math.random() * 0.3).toFixed(2)}s`);
+        b.classList.add('is-up');
+      }
+    });
+    hall.classList.add('is-ovation');
+    for (let t = 0; t < seconds; t += 2.2) setTimeout(() => { if (!gone) applause(2.6, 70); }, t * 1000);
+    setTimeout(() => { hall.classList.remove('is-ovation'); bodies.forEach((b) => b.classList.remove('is-up')); }, seconds * 1000);
+  }
+  /* Confetti poured over the stage from above. */
+  function confetti(count = 160) {
+    const box = hall.querySelector('.bee-confetti');
+    const colours = ['#f4c95d', '#f26a6a', '#6fe08a', '#7cc4f0', '#f28fb0', '#b48cf2', '#ffffff'];
+    for (let i = 0; i < count; i++) {
+      const c = document.createElement('i');
+      c.style.cssText = `left:${(Math.random() * 100).toFixed(1)}%;background:${colours[i % colours.length]};` +
+        `animation-delay:${(Math.random() * 2.2).toFixed(2)}s;animation-duration:${(3 + Math.random() * 2.5).toFixed(2)}s;` +
+        `--drift:${(Math.random() * 16 - 8).toFixed(1)}cqw;--spin:${Math.floor(360 + Math.random() * 720)}deg;` +
+        `width:${(0.7 + Math.random() * 0.7).toFixed(2)}cqh;height:${(1.1 + Math.random() * 0.9).toFixed(2)}cqh`;
+      box.append(c);
+    }
+    setTimeout(() => box.replaceChildren(), 8000);
+  }
+  /* PrepBot presents the award: the hall stands, he congratulates the champion on the TV, the
+     trophy and the prize money come up, and confetti pours down on the stage. */
+  async function award(champ) {
+    const tv = hall.querySelector('.bee-tv');
+    const name = SPELLER_NAMES[champ.kid] || champ.name;
+    ovation(10);
+    tv.classList.remove('is-idle');
+    tv.classList.add('is-glitch');
+    await wait(500);
+    tv.classList.replace('is-glitch', 'is-white');
+    tv.classList.add('is-host');
+    await wait(600);
+    await host(champ === mySeat ? 'Congratulations! You are the champion of the Prep Spelling Bee!' : `Congratulations, ${name}! You are the champion of the Prep Spelling Bee!`);
+    if (gone) return;
+    tv.classList.add('is-award');
+    confetti();
+    chime();
+    await host('Here is your trophy, and your prize money: five thousand PrepCoins!');
+    if (gone) return;
+    await host('Well done, every speller. See you at the next bee!');
+    await wait(1200);
+    tv.classList.remove('is-white', 'is-host', 'is-award');
   }
   /** A light sweeps across the stage (a new round). */
   function sweep() {
@@ -1601,6 +1661,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
 
   /* ── Walking ─────────────────────────────────────────────────── */
   async function walk(el, to) {
+    if (to !== 'mic') hall.classList.remove('is-spot');     // the spotlight goes off as they leave
     el.classList.remove('is-gone');
     el.classList.add('is-standing');
     await wait(450);                               // up out of the chair first
@@ -1609,6 +1670,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.classList.toggle('is-off', to === 'off');
     await wait(to === 'off' ? 2600 : 1700);
     el.classList.remove('is-walking');
+    if (to === 'mic') hall.classList.add('is-spot');        // and on, on the speller at the microphone
     if (to === 'seat') { el.classList.remove('is-standing'); await wait(450); }
     if (to === 'off') el.classList.add('is-gone');
   }
@@ -1818,9 +1880,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     sweep();
     tvTitle('CHAMPION', 'is-round');
     chime();
-    if (REACTIONS) clap(5);
     await walk(kids[champ.seat], 'mic');
-    await wait(1200);
+    if (!gone) await award(champ);
     if (!gone) showResults();
   })();
 

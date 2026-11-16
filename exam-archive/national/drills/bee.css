@@ -450,3 +450,52 @@
   .bee-tv-static, .bee-tv.is-glitch .bee-tv-screen, .bee-tv.is-glitch .bee-tv-screen::after { animation: none !important; }
   .bee-tv-idle .bee-bot, .bee-tv-host .bee-bot { animation: none !important; transform: none; }
 }
+
+/* ── lights ──
+   The flood: warm light from two lamps high in the corners over the stage, on once the curtains
+   open. The spotlight: the hall dims a little round a bright circle on whoever is at the
+   microphone, under a beam from above. */
+.bee-flood {
+  position: absolute; inset: 0 0 33.3% 0; z-index: 10; pointer-events: none; opacity: 0; transition: opacity 1.2s ease 0.6s;
+  background:
+    conic-gradient(from 135deg at 0% 0%, rgba(255, 236, 190, 0.22) 0deg, rgba(255, 236, 190, 0) 32deg) ,
+    conic-gradient(from 193deg at 100% 0%, rgba(255, 236, 190, 0) 0deg, rgba(255, 236, 190, 0.22) 32deg, rgba(255, 236, 190, 0) 33deg),
+    linear-gradient(180deg, rgba(255, 240, 205, 0.12), rgba(255, 240, 205, 0) 70%);
+  mix-blend-mode: screen;
+}
+.bee-bd.is-curtains-open .bee-flood { opacity: 1; }
+.bee-spot { position: absolute; inset: 0; z-index: 7; pointer-events: none; opacity: 0; transition: opacity 0.6s ease;
+  background: radial-gradient(ellipse 9cqw 26cqh at 39.4% 50%, rgba(0, 0, 0, 0) 60%, rgba(10, 6, 20, 0.32) 100%); }
+.bee-spot-beam {
+  position: absolute; left: 39.4%; top: 0; width: 20cqw; height: 70%; translate: -50% 0; z-index: 9;
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  background: linear-gradient(180deg, rgba(255, 248, 220, 0.34), rgba(255, 248, 220, 0.12));
+  mix-blend-mode: screen;
+}
+.bee-hall.is-spot .bee-spot { opacity: 1; }
+.bee-bd.is-instant .bee-spot { transition: none; }
+
+/* the audience on their feet: each body rises behind its chair, in its own time, and sways */
+.bee-aud-body { transform-box: fill-box; transform-origin: 50% 100%; transition: translate 0.7s cubic-bezier(.3, 1.3, .5, 1); transition-delay: var(--up-d, 0s); }
+.bee-hall.is-ovation .bee-aud-body.is-up { translate: 0 -16%; animation: bee-aud-sway var(--sway-d, 0.45s) ease-in-out var(--up-d, 0s) infinite alternate; }
+@keyframes bee-aud-sway { from { rotate: -1.6deg; } to { rotate: 1.6deg; } }
+
+/* confetti, poured over the stage */
+.bee-confetti { position: absolute; inset: 0; z-index: 12; pointer-events: none; overflow: hidden; }
+.bee-confetti i { position: absolute; top: -4%; animation: bee-confetti 4s cubic-bezier(.3, .4, .6, 1) both; }
+@keyframes bee-confetti {
+  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translate(var(--drift, 0), 112cqh) rotate(var(--spin, 540deg)); opacity: 0.7; }
+}
+/* the award on the TV: the trophy and the prize money */
+.bee-tv-award { display: none; align-items: center; gap: 1.4cqh; }
+.bee-tv.is-award .bee-tv-award { display: flex; animation: bee-title-slam 0.6s cubic-bezier(.2, 1.4, .4, 1); }
+.bee-tv.is-award .bee-tv-host .bee-bot { height: 34%; }
+.bee-trophy { height: 7cqh; width: auto; filter: drop-shadow(0 0.4cqh 0.6cqh rgba(0, 0, 0, 0.25)); }
+.bee-tv-prize { font-family: var(--font-mono); font-size: 2.4cqh; font-weight: 700; color: #1d2433; padding: 0.5cqh 1.2cqh; background: linear-gradient(160deg, #fff1b8, #f4c95d); box-shadow: 0 0.3cqh 0 #a8781f; }
+.bee-tv-prize b { font-family: var(--font-display); font-size: 1.3em; }
+@media (prefers-reduced-motion: reduce) {
+  .bee-confetti i { animation-duration: 0.01s; }
+  .bee-hall.is-ovation .bee-aud-body.is-up { animation: none; }
+}
