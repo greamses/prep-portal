@@ -91,10 +91,29 @@ const ELEVEN_LETTERS = false;
 // 2026-11-15: "When I click the letters, they sound well but when they are said by the spellers,
 // they sound awkward"); the WORD the speller says stays their Kokoro recording
 const KOKORO_LETTERS = false;
+// how a speller says each letter: a little slower than speech, and a pause after it
+const LETTER_RATE = 0.75;
+const LETTER_PAUSE_MS = 350;
 /* The spellers a player may choose to be (the setup's "Choose your speller"). */
 const KID_NAMES = { boy: 'Boy, blue T-shirt', girl: 'Girl, pigtails', boy2: 'Boy, hoodie', girl2: 'Girl, pink and yellow', girl3: 'Girl, curly hair', boy3: 'Boy, curly hair' };
 export const BEE_SPELLERS = Object.keys(KID_NAMES).map((key) => ({ key, name: KID_NAMES[key], src: KIDS[key].src }));
 export const BEE_SIZE = 5;            // a bee is for five spellers (the user, 2026-11-15)
+/* How many syllables are said: a letter's name ("W" is "double-you", three), or a word's vowel
+   groups (a silent final e, as in "make", not counted; "-le" as in "table" is). At least one. */
+const LETTER_SYLLABLES = { w: 3, space: 1, hyphen: 2, apostrophe: 4 };
+export function syllablesOf(text) {
+  const words = String(text || '').toLowerCase().match(/[a-z]+/g) || [];
+  let n = 0;
+  for (const w of words) {
+    if (w.length === 1) { n += LETTER_SYLLABLES[w] || 1; continue; }
+    if (LETTER_SYLLABLES[w]) { n += LETTER_SYLLABLES[w]; continue; }
+    let c = (w.match(/[aeiouy]+/g) || []).length;
+    if (/[^aeiouy]e$/.test(w) && !/[^aeiouy]le$/.test(w) && c > 1) c--;
+    if (/(ed)$/.test(w) && !/[td]ed$/.test(w) && c > 1) c--;
+    n += Math.max(1, c);
+  }
+  return Math.max(1, n);
+}
 /* A child's mouth, open by `o` (0 shut .. 1 as open as a speaking child opens it). The upper
    edge follows the drawn smile (a curve through the corners, dipping in the middle); the lower
    lip comes down from it, deepest in the middle, so a dark opening appears along the smile and
@@ -972,22 +991,29 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   let talkingNow = null;            // the Audio (or utterance) playing
   const started = (item) => { if (item.onStart && !item.onStartDone) { item.onStartDone = true; item.onStart(); } };
   let speakingKid = null;           // the child at the microphone: their mouth moves as they speak
-  let talking = false, mouthRaf = 0, mouthO = 0, mouthGoal = 0, nextBeat = 0;
-  const mouthOn = (on) => {
+  /* The mouth opens once for each syllable of what is said (syllablesOf), the openings spread
+     evenly over how long it is said: each opens and closes fully (a half sine) in its own slot,
+     and after the last the mouth stays shut until the sound ends. */
+  let talking = false, mouthRaf = 0, mouthO = 0, beat = null;
+  const mouthOn = (on, text = '', ms = 0) => {
     talking = on;
     speakingKid?.classList.toggle('is-talking', on);
+    if (on) {
+      const n = syllablesOf(text);
+      beat = { t0: performance.now(), n, slot: Math.max(120, (ms || n * 300) / n), amp: [] };
+      for (let i = 0; i < n; i++) beat.amp.push(0.7 + Math.random() * 0.3);
+    } else beat = null;
     if (!mouthRaf) mouthRaf = requestAnimationFrame(mouthTick);
   };
   function mouthTick(now) {
     mouthRaf = 0;
     if (!speakingKid) return;
-    if (talking) {
-      if (now >= nextBeat) {                        // a syllable: open by some amount, then nearly shut
-        mouthGoal = mouthGoal > 0.35 ? 0.05 + Math.random() * 0.15 : 0.45 + Math.random() * 0.55;
-        nextBeat = now + 70 + Math.random() * 90;
-      }
-    } else mouthGoal = 0;
-    mouthO += (mouthGoal - mouthO) * 0.45;
+    let goal = 0;
+    if (talking && beat) {
+      const k = (now - beat.t0) / beat.slot, i = Math.floor(k);
+      if (i < beat.n) goal = Math.sin(Math.PI * (k - i)) * beat.amp[i];
+    }
+    mouthO += (goal - mouthO) * 0.5;
     setMouth(speakingKid, mouthO);
     if (talking || mouthO > 0.01) mouthRaf = requestAnimationFrame(mouthTick);
     else setMouth(speakingKid, 0);
@@ -1011,9 +1037,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       }
       talkingNow = a;
       a.__letter = !!item.letter;
-      a.onplaying = () => { if (talkingNow === a) mouthOn(true); };
+      a.onplaying = () => { if (talkingNow === a) mouthOn(true, item.text, isFinite(a.duration) ? (a.duration * 1000) / (a.playbackRate || 1) : 0); };
       const fallBack = () => { if (talkingNow === a) { queue.unshift({ ...item, url: rest }); next(); } };
-      a.onended = () => { if (talkingNow === a) next(); };
+      a.onended = () => { if (talkingNow !== a) return; if (item.letter) afterLetter(a); else next(); };
       a.onerror = fallBack;
       a.play().catch(fallBack);
       return;
@@ -1025,19 +1051,26 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       if (v) u.voice = v;
       u.lang = v ? v.lang : 'en-GB';
       u.pitch = KIDS[item.kid]?.girl ? 1.55 : 1.3;
-      u.rate = 0.88;                                 // unhurried: a whole vowel, not a clipped one
+      // unhurried: a whole vowel, not a clipped one; a letter slower still (the user: "make it longer")
+      u.rate = item.letter ? LETTER_RATE : 0.88;
       talkingNow = u;
       u.__letter = !!item.letter;
-      u.onstart = () => { if (talkingNow === u) mouthOn(true); };
-      u.onend = u.onerror = () => { if (talkingNow === u) next(); };
+      // the browser does not say how long it will take: about 0.3 s a syllable at rate 1
+      u.onstart = () => { if (talkingNow === u) mouthOn(true, item.text, (syllablesOf(item.text) * 300) / u.rate); };
+      u.onend = u.onerror = () => { if (talkingNow !== u) return; if (item.letter) afterLetter(u); else next(); };
       synth.speak(u);
     } catch { next(); }
   }
+  // after each letter, a short silence before the next one (still busy, so nothing jumps ahead)
+  function afterLetter(t) {
+    mouthOn(false);
+    setTimeout(() => { if (talkingNow === t) next(); }, LETTER_PAUSE_MS);
+  }
   /** A speller says something: their recording(s) `url` (a url, or a list to try in turn), else `text` in the browser's voice. */
-  function spellerSays(text, kid, url = null, { onStart = null } = {}) {
+  function spellerSays(text, kid, url = null, { onStart = null, letter = false } = {}) {
     if (gone || !pace) { onStart?.(); return; }
     // one after another, each said in full: the next waits until the last has finished
-    queue.push({ text, kid, url, onStart });
+    queue.push({ text, kid, url, onStart, letter });
     if (!talkingNow) next();
   }
   const spellerBusy = () => !!talkingNow || queue.length > 0;
@@ -1078,7 +1111,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   /** Say (and then show) the letters of `after` that are not in `before` (letters are only ever added). */
   function sayNewLetters(before, after, kid) {
     if (!after.startsWith(before)) before = '';
-    for (const ch of after.slice(before.length)) spellerSays(letterName(ch), kid, letterClip(ch, kid), { onStart: () => reveal(ch) });
+    for (const ch of after.slice(before.length)) spellerSays(letterName(ch), kid, letterClip(ch, kid), { onStart: () => reveal(ch), letter: true });
   }
 
   /* ── The live room ───────────────────────────────────────────── */
@@ -1320,7 +1353,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       await wait(Math.min(2200, b.ms / 3));
       for (let n = 1; n <= b.typed.length && !gone && pace; n++) {
         const ch = b.typed[n - 1];
-        spellerSays(letterName(ch), seat.kid, letterClip(ch, seat.kid), { onStart: () => reveal(ch) });
+        spellerSays(letterName(ch), seat.kid, letterClip(ch, seat.kid), { onStart: () => reveal(ch), letter: true });
         await spellerDone();
         await wait(250);
       }
