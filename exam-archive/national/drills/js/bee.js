@@ -50,6 +50,7 @@ import { auth, db } from '/firebase-init.js';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ADMIN_EMAIL } from '/utils/features.js';
 import { UI } from '/utils/components/ui-icons.js';
+import { hideTip } from '/utils/components/tooltip.js';
 import { heroPaint } from '/utils/components/nav-icons.js';
 
 /* The spellers, and where things are on each drawing, in % of the picture:
@@ -85,13 +86,21 @@ const REACTIONS = false;
    letters in media/spelling-letters, Kokoro words and letters on the spelling-audio branch);
    true plays them again. The judge is always the recorded voice. */
 const SPELLER_RECORDINGS = true;     // 2026-11-15: back to Kokoro, read from each letter's and word's transcription
-// the ElevenLabs letters (media/spelling-letters) are kept, but Kokoro's are played instead
-const ELEVEN_LETTERS = false;
-// The spellers' voice, switched in the hall's top bar (the user: "add voice switch button and make
-// sure the letters join in the switch"): 'browser' says letters AND words in the browser's voice,
-// 'kokoro' plays the recordings for both. Never a mix. Remembered on this device.
+// The spellers' voice, picked from the speaker's list in the hall's top bar (the user: "add voice
+// switch button and make sure the letters join in the switch"; then "show a dropdown list of the
+// sounds including 11labs"). The letters always follow the choice:
+//   browser — letters and word in the browser's voice
+//   kokoro  — letters and word from the Kokoro recordings
+//   eleven  — letters from the ElevenLabs recordings (media/spelling-letters); ElevenLabs never
+//             recorded the words, so the word is the Kokoro recording
+// Remembered on this device.
 const VOICE_KEY = 'ppBeeSpellerVoice';
-let spellerVoice = (() => { try { return localStorage.getItem(VOICE_KEY) === 'kokoro' ? 'kokoro' : 'browser'; } catch { return 'browser'; } })();
+const SPELLER_VOICE_CHOICES = [
+  { key: 'browser', label: 'Browser voice' },
+  { key: 'kokoro', label: 'Kokoro (recorded)' },
+  { key: 'eleven', label: 'ElevenLabs letters' },
+];
+let spellerVoice = (() => { try { const v = localStorage.getItem(VOICE_KEY); return SPELLER_VOICE_CHOICES.some((c) => c.key === v) ? v : 'browser'; } catch { return 'browser'; } })();
 // how a speller says each letter: a little slower than speech, and a pause after it
 const LETTER_RATE = 0.7;
 const LETTER_PAUSE_MS = 500;
@@ -741,7 +750,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         <button type="button" class="bee-tools-btn" hidden></button>
         <div class="bee-tools" hidden><p class="bee-keys">Keys: Enter done &middot; 1 word &middot; 2 meaning &middot; 3 sentence &middot; 4 origin &middot; 5 mic</p></div>
       </div>
-      <button type="button" class="bee-voice"></button>
+      <div class="bee-toolbox bee-voicebox">
+        <button type="button" class="bee-voice"></button>
+        <div class="bee-tools bee-voices" role="menu" hidden></div>
+      </div>
       <button type="button" class="bee-full"></button>
       <button type="button" class="bee-leave"></button>
     </div>
@@ -900,7 +912,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   // Came in some other way (a friend's code, the lobby's Start now): the first tap or key
   // anywhere in the bee takes it to the full screen. Not the exit or full-screen buttons.
   const firstTap = (e) => {
-    if (e.target.closest?.('.bee-leave, .bee-full, .bee-voice')) return;
+    if (e.target.closest?.('.bee-leave, .bee-full, .bee-voicebox')) return;
     bd.removeEventListener('pointerdown', firstTap, true);
     bd.removeEventListener('keydown', firstTap, true);
     if (!document.fullscreenElement) beeFullscreen();
@@ -979,16 +991,15 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const ready = {};
   for (const who of Object.keys(LETTER_VOICES)) lettersReady[who].then((ok) => { ready[who] = ok; });
   function letterClip(ch, kid) {
-    if (!SPELLER_RECORDINGS || spellerVoice !== 'kokoro') return [];
+    if (spellerVoice === 'browser') return [];
     const i = LETTER[ch.toLowerCase()];
     const who = KIDS[kid]?.girl ? 'girl' : 'boy';
     const list = [];
-    if (ELEVEN_LETTERS && i != null && ready[who]) list.push({ url: `/media/spelling-letters/${who}/${pad4(i)}.mp3`, pitch: LETTER_VOICES[who].pitch });
-    const k = spellerClip(kid, 'letters', i);
-    if (k) list.push({ url: k });
+    if (spellerVoice === 'eleven' && i != null && ready[who]) list.push({ url: `/media/spelling-letters/${who}/${pad4(i)}.mp3`, pitch: LETTER_VOICES[who].pitch });
+    if (spellerVoice === 'kokoro' && SPELLER_RECORDINGS) { const k = spellerClip(kid, 'letters', i); if (k) list.push({ url: k }); }
     return list;
   }
-  const wordClip = (q, kid) => (SPELLER_RECORDINGS && spellerVoice === 'kokoro' ? spellerClip(kid, q.bank, q.i) : null);
+  const wordClip = (q, kid) => (SPELLER_RECORDINGS && spellerVoice !== 'browser' ? spellerClip(kid, q.bank, q.i) : null);
   const queue = [];
   let talkingNow = null;            // the Audio (or utterance) playing
   const started = (item) => { if (item.onStart && !item.onStartDone) { item.onStartDone = true; item.onStart(); } };
@@ -1413,20 +1424,45 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   leaveBtn.setAttribute('aria-label', 'Leave the bee');
   leaveBtn.dataset.tip = 'Leave the bee';
   leaveBtn.addEventListener('click', () => leave({ place: myPlace(), champion: null, placings: bee.placings }));
-  // the spellers' voice: one switch for the letters and the words together
-  const voiceBtn = $('.bee-voice');
+  // the spellers' voice: the speaker opens a list; the letters (and the word) follow the choice
+  const voiceBtn = $('.bee-voice'), voiceList = $('.bee-voices');
   voiceBtn.innerHTML = UI.speaker(18);
+  voiceBtn.setAttribute('aria-haspopup', 'menu');
+  voiceBtn.setAttribute('aria-expanded', 'false');
   const showVoice = () => {
-    const tip = spellerVoice === 'kokoro' ? 'Speller voice: recorded (tap for the browser voice)' : 'Speller voice: browser (tap for the recorded voice)';
+    const tip = `Speller voice: ${SPELLER_VOICE_CHOICES.find((c) => c.key === spellerVoice).label}`;
     voiceBtn.dataset.tip = tip;
     voiceBtn.setAttribute('aria-label', tip);
-    voiceBtn.setAttribute('aria-pressed', spellerVoice === 'kokoro' ? 'true' : 'false');
+    voiceList.querySelectorAll('.bee-voice-opt').forEach((b) => {
+      const on = b.dataset.voice === spellerVoice;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
   };
+  for (const c of SPELLER_VOICE_CHOICES) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'bee-voice-opt';
+    b.setAttribute('role', 'menuitemradio');
+    b.dataset.voice = c.key;
+    b.textContent = c.label;
+    b.addEventListener('click', () => {
+      spellerVoice = c.key;
+      try { localStorage.setItem(VOICE_KEY, spellerVoice); } catch { /* not kept */ }
+      setOpen(false);
+    });
+    voiceList.append(b);
+  }
   showVoice();
-  voiceBtn.addEventListener('click', () => {
-    spellerVoice = spellerVoice === 'kokoro' ? 'browser' : 'kokoro';
-    try { localStorage.setItem(VOICE_KEY, spellerVoice); } catch { /* not kept */ }
-    showVoice();
+  // the button's tooltip would sit over the list: none while it is open
+  const setOpen = (open) => {
+    voiceList.hidden = !open;
+    voiceBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) { delete voiceBtn.dataset.tip; hideTip(); } else showVoice();
+  };
+  voiceBtn.addEventListener('click', () => setOpen(voiceList.hidden));
+  document.addEventListener('pointerdown', (e) => {
+    if (!voiceList.hidden && !e.target.closest?.('.bee-voicebox')) setOpen(false);
   });
   const fullBtn = $('.bee-full');
   fullBtn.innerHTML = UI.expand(18);
