@@ -29,6 +29,14 @@ export const beeSeconds = (level) => BEE_SECONDS[level] || BEE_SECONDS.easy;
  * the seed so real players are not always numbers 1 and 2.
  * → [{ seat, tag, name, uid | null, bot: slot | null, kid: 'boy' | 'girl' | 'boy2' | 'girl2' | 'girl3' }]
  */
+/** The six children in the order the bots take them (a bee's seed decides it; the waiting room
+ *  shows the same children the hall will). */
+export function spellerPool(seed) {
+  const pool = ['boy', 'girl', 'boy2', 'girl2', 'boy3', 'girl3'];
+  const rng = mulberry32(hashSeed(seed, 7002));
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  return pool;
+}
 export function seatSpellers(seed, humans, botsNeeded) {
   const people = [...humans].sort((a, b) => (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0))
     .map((h) => ({ name: h.name || 'Player', uid: h.uid, bot: null, chosen: h.kid || null }));
@@ -41,8 +49,7 @@ export function seatSpellers(seed, humans, botsNeeded) {
   // Every speller is a different child (js/bee.js KIDS; there are six, a bee has five). The
   // players' own choices come first, in seat order (the first to choose a child keeps it);
   // the rest take the children nobody chose, shuffled by the seed.
-  const pool = ['boy', 'girl', 'boy2', 'girl2', 'boy3', 'girl3'];
-  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  const pool = spellerPool(seed);
   const used = new Set();
   const kidOf = people.map((p) => (p.chosen && pool.includes(p.chosen) && !used.has(p.chosen) ? (used.add(p.chosen), p.chosen) : null));
   const left = pool.filter((k) => !used.has(k));

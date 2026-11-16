@@ -16,7 +16,7 @@ import { startGridRound } from './grid.js';
 import { startBarsRound } from './bars.js';
 import { BANKS, BANK_KEYS, setCount, setId, setsLabel, roundSeconds, clockLabel, LEVELS, LEVEL_KEYS, levelOf, perMinute, wordsInSets } from './spelling.js';
 import { openSpellingLibrary } from './spelling-library.js';
-import { startBee, beeFullscreen, BEE_SPELLERS, BEE_SIZE } from './bee.js';
+import { startBee, beeFullscreen, BEE_SPELLERS, BEE_SIZE, spellerPool } from './bee.js';
 import { beeSeconds } from './bee-logic.js';
 import { finishRound, rankDrill } from './leaderboard.js';
 import { renderLeaderboard } from '/utils/games/leaderboard-view.js';
@@ -396,12 +396,15 @@ function renderBeeKidStep() {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = `bee-pick-kid${k.key === beeKid ? ' is-picked' : ''}`;
-    b.setAttribute('aria-label', k.name);
     b.setAttribute('aria-pressed', k.key === beeKid ? 'true' : 'false');
+    b.setAttribute('aria-label', `${k.call}, ${k.name}`);
     b.dataset.tip = k.name;
     const img = document.createElement('img');
     img.src = k.src; img.alt = ''; img.loading = 'lazy';
-    b.append(img);
+    const cap = document.createElement('span');
+    cap.className = 'bee-pick-name';
+    cap.textContent = k.call;
+    b.append(img, cap);
     b.addEventListener('click', () => {
       beeKid = k.key;
       mem.save({ beeKid });
@@ -865,7 +868,7 @@ const opName = (o) => (OPERATION_LABELS[o] || o).split(' ').slice(1).join(' ') |
 const flow = createSectionFlow([
   {
     el: $('drill-section-player'),
-    chips: () => playerChips(myName(), avatarUrl(getAvatarSeed())),
+    chips: () => (isBee() ? playerChips(myName(), spellerOf(beeKid).src) : playerChips(myName(), avatarUrl(getAvatarSeed()))),
   },
   {
     el: $('drill-section-topic'),
@@ -944,20 +947,23 @@ function clearLobbyReveal() {
   lobbyRevealTimers = [];
 }
 
-function seatSticker(i, avatarSeed, label) {
+function seatSticker(i, avatarSeed, label, src = null) {
   const el = document.createElement('span');
-  const empty = !avatarSeed;
-  el.className = `pp-sticky pp-sticky--tape pp-lobby-seat ${empty ? 'is-empty' : stickyColor(i)}`;
+  const empty = !avatarSeed && !src;
+  el.className = `pp-sticky pp-sticky--tape pp-lobby-seat ${empty ? 'is-empty' : stickyColor(i)}${src ? ' is-speller' : ''}`;
   el.innerHTML = empty
     ? '<span class="pp-lobby-seat-mark">?</span>'
-    : `<img src="${avatarUrl(avatarSeed)}" alt="" loading="lazy" /><span>${label}</span>`;
+    : `<img src="${src || avatarUrl(avatarSeed)}" alt="" loading="lazy" /><span>${label}</span>`;
   return el;
 }
+// the Spelling Bee: a sticker is the speller (their picture and name), not the profile avatar
+const spellerOf = (key) => BEE_SPELLERS.find((k) => k.key === key) || BEE_SPELLERS[0];
 
 function renderLobbySeats(playerCount, size) {
   lobbySeats.innerHTML = '';
   for (let i = 0; i < size; i++) {
-    if (i === 0) lobbySeats.appendChild(seatSticker(i, getAvatarSeed(), 'You'));
+    if (i === 0 && isBee()) { const k = spellerOf(beeKid); lobbySeats.appendChild(seatSticker(i, null, `${k.call} (you)`, k.src)); }
+    else if (i === 0) lobbySeats.appendChild(seatSticker(i, getAvatarSeed(), 'You'));
     else if (i < playerCount) lobbySeats.appendChild(seatSticker(i, `Guest${i}`, 'Player'));
     else lobbySeats.appendChild(seatSticker(i, null));
   }
@@ -980,6 +986,11 @@ function revealBotsStaggered(size, botsNeeded, seed, revealMs) {
     const timer = setTimeout(() => {
       const seatEl = lobbySeats.children[seatIndex];
       if (!seatEl) return;
+      if (isBee()) {                    // the child this bot will be in the hall
+        const k = spellerOf(spellerPool(seed).filter((x) => x !== beeKid)[i]);
+        seatEl.replaceWith(seatSticker(seatIndex, null, k.call, k.src));
+        return;
+      }
       const name = botName(seed, i);
       seatEl.replaceWith(seatSticker(seatIndex, name, name));
     }, elapsed);

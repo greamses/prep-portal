@@ -65,7 +65,9 @@ import { heroPaint } from '/utils/components/nav-icons.js';
    tools/character-trace/hands-down.mjs); boy-hoodie and girl-overalls came as pictures. */
 export const KIDS = {
   // the boy in the blue T-shirt with his mouth closed (boy-closed.svg; boy.svg, grinning, stays for the films)
-  boy: { src: '/media/characters/boy-closed.svg', girl: false, tall: 0.78, hip: 63.5, knee: 81, hands: 72,
+  // sitY: how far he sits up when seated (% of his height): his shins are shorter than the chair
+  // is high, so on the seat his feet hang clear of the floor
+  boy: { src: '/media/characters/boy-closed.svg', girl: false, tall: 0.78, hip: 63.5, knee: 81, hands: 72, sitY: -14,
     eyes: [[39.4, 23.1], [68, 23.1]], mouth: [55, 29.2, 15, 2.2], skin: '#f6c09c', lip: '#8a3b2b' },
   girl: { src: '/media/characters/girl-hands-down.svg', girl: true, tall: 0.86, hip: 64, knee: 80, hands: 73,
     eyes: [[39, 19.6], [60.5, 19.6]], mouth: [49.6, 24, 15, 2.8], skin: '#f3c3a9', lip: '#a4523f' },
@@ -112,7 +114,11 @@ const LETTER_RATE = 0.7;
 const LETTER_PAUSE_MS = 500;
 /* The spellers a player may choose to be (the setup's "Choose your speller"). */
 const KID_NAMES = { boy: 'Boy, blue T-shirt', girl: 'Girl, pigtails', boy2: 'Boy, hoodie', girl2: 'Girl, pink and yellow', girl3: 'Girl, curly hair', boy3: 'Boy, curly hair' };
-export const BEE_SPELLERS = Object.keys(KID_NAMES).map((key) => ({ key, name: KID_NAMES[key], src: KIDS[key].src }));
+// each speller's own name: the same child is always called the same (on the selection card, the
+// waiting room's stickers, their placard, the announcements and the results)
+export const SPELLER_NAMES = { boy: 'Leo', girl: 'Mia', boy2: 'Sam', girl2: 'Amara', girl3: 'Zainab', boy3: 'Tunde' };
+export const BEE_SPELLERS = Object.keys(KID_NAMES).map((key) => ({ key, name: KID_NAMES[key], call: SPELLER_NAMES[key], src: KIDS[key].src }));
+export { spellerPool } from './bee-logic.js';
 export const BEE_SIZE = 5;            // a bee is for five spellers (the user, 2026-11-15)
 /* How many syllables are said: a letter's name ("W" is "double-you", three), or a word's vowel
    groups (a silent final e, as in "make", not counted; "-le" as in "table" is). At least one. */
@@ -248,6 +254,36 @@ const DEFAULT_LETTER = (ch) => LETTER_WORD[ch.toLowerCase()] || ch.toUpperCase()
 /* a better spelling for a letter, set in the hall's settings (the ABC chart) and saved for everyone */
 const LETTER_SAID = {};
 const letterName = (ch) => LETTER_SAID[ch.toLowerCase()] || DEFAULT_LETTER(ch);
+/* ElevenLabs, live: a letter whose spelling was changed on the ABC chart is said by ElevenLabs
+   from THAT text (the server's /api/tts/elevenlabs, which keeps each line it has made), since the
+   recorded letters cannot change (the user: "They dont seem to respond to my new inputs"). A
+   refused or failed request leaves the recording. */
+const elevenDone = new Map(), elevenAsked = new Map();
+const withStop = (t) => { t = String(t || '').trim(); return /[.!?]$/.test(t) ? t : `${t}.`; };
+function elevenUrl(text, who) {
+  const key = `${who}|${text}`;
+  if (elevenAsked.has(key)) return elevenAsked.get(key);
+  const ask = (async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return null;
+      const token = await user.getIdToken();
+      const res = await fetch('/api/tts/elevenlabs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text, voiceId: LETTER_VOICES[who].id }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const url = data.url || (data.audioContent ? `data:audio/mp3;base64,${data.audioContent}` : null);
+      if (url) elevenDone.set(key, url);
+      return url;
+    } catch { return null; }
+  })();
+  elevenAsked.set(key, ask);
+  ask.then((u) => { if (!u) elevenAsked.delete(key); });   // a failure may be tried again later
+  return ask;
+}
 
 /* Where the chairs are, in % of the hall: on the stage, a back row and a front row. The
    back row sits half a chair across, so its spellers show between the front row's. */
@@ -351,7 +387,19 @@ function judgesSvg() {
   // a judge's chair: a tall padded back, standing up behind the shoulders
   const chair = (cx, top, w) => `<rect x="${cx - w / 2}" y="${top}" width="${w}" height="${148 - top}" fill="#3b2a22"/>` +
     `<rect x="${cx - w / 2 + 6}" y="${top + 6}" width="${w - 12}" height="${148 - top - 6}" fill="#5a4033"/>`;
-  const card = (cx, text) => `<rect x="${cx - 34}" y="160" width="68" height="20" fill="#fbf8f1"/><text x="${cx}" y="174.5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#2a2723">${text}</text>`;
+  // a folded tent card standing on the table: its face, a darker back fold showing at the top,
+  // a shadow on the wood
+  const card = (cx, title, role) => `<ellipse cx="${cx}" cy="136.5" rx="27" ry="1.6" fill="rgba(0,0,0,.28)"/>` +
+    `<polygon points="${cx - 25},121 ${cx + 25},121 ${cx + 27},136 ${cx - 27},136" fill="#fdfbf5"/>` +
+    `<polygon points="${cx - 25},121 ${cx + 25},121 ${cx + 24},119.4 ${cx - 24},119.4" fill="#d8d2c4"/>` +
+    `<rect x="${cx - 27}" y="134.6" width="54" height="1.4" fill="#e6dfd0"/>` +
+    `<line x1="${cx - 20}" y1="124" x2="${cx + 20}" y2="124" stroke="#c9a33a" stroke-width=".8"/>` +
+    `<text x="${cx}" y="129.6" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="6.4" font-weight="700" fill="#1d2433">${title}</text>` +
+    `<text x="${cx}" y="134" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="3.6" letter-spacing=".5" fill="#6b5a2e">${role}</text>`;
+  // a brass desk bell and a glass of water
+  const bell = (cx) => `<ellipse cx="${cx}" cy="136.4" rx="8" ry="1.4" fill="rgba(0,0,0,.3)"/><rect x="${cx - 7.5}" y="133.5" width="15" height="2.8" rx="1" fill="#5b3f22"/>` +
+    `<path d="M${cx - 6} 133.6 Q${cx - 6} 125.5 ${cx} 125.5 Q${cx + 6} 125.5 ${cx + 6} 133.6 Z" fill="#e2b84a"/><path d="M${cx - 3.5} 131 Q${cx - 3.2} 127 ${cx} 126.6" stroke="#fff3c4" stroke-width="1" fill="none" opacity=".8"/><rect x="${cx - .8}" y="122.6" width="1.6" height="3" fill="#b8902e"/><circle cx="${cx}" cy="122.4" r="1.4" fill="#e2b84a"/>`;
+  const glass = (cx) => `<ellipse cx="${cx}" cy="136.3" rx="4" ry=".9" fill="rgba(0,0,0,.25)"/><polygon points="${cx - 3.4},124.5 ${cx + 3.4},124.5 ${cx + 2.8},136 ${cx - 2.8},136" fill="rgba(210,235,250,.55)" stroke="rgba(255,255,255,.8)" stroke-width=".5"/><polygon points="${cx - 3.1},128 ${cx + 3.1},128 ${cx + 2.8},136 ${cx - 2.8},136" fill="rgba(120,185,230,.55)"/>`;
   // each judge grows or shrinks from the middle of their place at the table (the sizes panel)
   const sized = (id, label, inner) => `<g class="bee-item" data-item="${id}" data-label="${label}">${inner}</g>`;
   return `<svg viewBox="0 0 300 220" aria-hidden="true">
@@ -362,12 +410,24 @@ function judgesSvg() {
     ${sized('judge-man', 'Judge', `${chair(M.x + mw / 2, M.y + 0.11 * M.h, mw * 1.12)}
     <image href="/media/characters/judge-man.svg" x="${M.x}" y="${M.y}" width="${mw}" height="${M.h}"/>
     ${hands(M.x + mw / 2, '#f2b394', '#1c3561', -0.04)}`)}
+    <defs>
+      <linearGradient id="bee-cloth" x1="0" x2="1" y1="0" y2="0">${Array.from({ length: 13 }, (_, i) => `<stop offset="${(i / 12).toFixed(3)}" stop-color="${i % 2 ? '#1a2d55' : '#25407a'}"/>`).join('')}</linearGradient>
+      <linearGradient id="bee-wood" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#9a6537"/><stop offset=".55" stop-color="#7a4b27"/><stop offset="1" stop-color="#5a3519"/></linearGradient>
+      <linearGradient id="bee-gold" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f6dc85"/><stop offset=".5" stop-color="#d4a937"/><stop offset="1" stop-color="#9c7720"/></linearGradient>
+    </defs>
     <g class="bee-item" data-item="judge-table" data-label="Judges' table">
-    <rect x="6" y="136" width="290" height="12" fill="#27406b"/>
-    <rect x="6" y="148" width="290" height="72" fill="#2f4c7a"/>
-    <rect x="6" y="148" width="290" height="5" fill="#d9b44a"/>
-    <rect x="6" y="210" width="290" height="10" fill="#22375e"/>
-    ${card(W.x + ww / 2, 'HEAD JUDGE')}${card(M.x + mw / 2, 'JUDGE')}</g>
+    <rect x="2" y="134" width="298" height="10" fill="url(#bee-wood)"/>
+    <rect x="2" y="134" width="298" height="1.4" fill="#b98250"/>
+    <rect x="2" y="144" width="298" height="2.5" fill="#3e2410"/>
+    <path d="M4 146 H298 V212 Q291 216 284 212 Q277 216 270 212 Q263 216 256 212 Q249 216 242 212 Q235 216 228 212 Q221 216 214 212 Q207 216 200 212 Q193 216 186 212 Q179 216 172 212 Q165 216 158 212 Q151 216 144 212 Q137 216 130 212 Q123 216 116 212 Q109 216 102 212 Q95 216 88 212 Q81 216 74 212 Q67 216 60 212 Q53 216 46 212 Q39 216 32 212 Q25 216 18 212 Q11 216 4 212 Z" fill="url(#bee-cloth)"/>
+    <rect x="4" y="146" width="294" height="12" fill="#1c3260"/>
+    <rect x="4" y="157" width="294" height="3" fill="url(#bee-gold)"/>
+    ${Array.from({ length: 49 }, (_, i) => `<rect x="${5 + i * 6}" y="211.5" width="2" height="5.5" fill="#d4a937"/>`).join('')}
+    <rect x="102" y="170" width="98" height="28" fill="#13234a" stroke="url(#bee-gold)" stroke-width="1.6"/>
+    <text x="151" y="181.5" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="6" letter-spacing="1.6" fill="#e9c86a">PREP</text>
+    <text x="151" y="192" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="8.4" font-weight="700" letter-spacing=".8" fill="#f6dc85">SPELLING BEE</text>
+    ${glass(W.x + ww / 2 - 33)}${bell(128)}${glass(M.x + mw / 2 + 31)}
+    ${card(W.x + ww / 2, 'Mrs. Okafor', 'HEAD JUDGE')}${card(M.x + mw / 2, 'Mr. Bello', 'JUDGE')}</g>
   </svg>`;
 }
 
@@ -432,6 +492,11 @@ function setItem(hall, el, v = {}) {
     el.style.setProperty('--isy', sy);
   }
 }
+/** Where a child sits on their chair (seated only): moved in the editor, saved per child. */
+function sitVars(el, kid) {
+  el.style.setProperty('--sit-x', `var(--t-sitx-${kid}, 0)`);
+  el.style.setProperty('--sit-y', `var(--t-sity-${kid}, ${KIDS[kid]?.sitY || 0})`);
+}
 /** A seat (its child and its chair) moved by x, y (% of the hall) from where the seating put it. */
 function placeSeat(hall, seat, x = 0, y = 0) {
   hall.querySelectorAll(`[data-seat="${seat}"]`).forEach((el) => {
@@ -447,6 +512,8 @@ function applyItems(hall, items = {}) {
   hall.querySelectorAll('[data-item]').forEach((el) => setItem(hall, el, items[el.dataset.item] || {}));
   for (const [id, v] of Object.entries(items)) {
     if (id.startsWith('kid-') && v.s != null) hall.style.setProperty(`--t-tall-${id.slice(4)}`, v.s);
+    if (id.startsWith('kid-') && v.sitx != null) hall.style.setProperty(`--t-sitx-${id.slice(4)}`, v.sitx);
+    if (id.startsWith('kid-') && v.sity != null) hall.style.setProperty(`--t-sity-${id.slice(4)}`, v.sity);
   }
 }
 function makeEditor(hall, items) {
@@ -501,13 +568,19 @@ function makeEditor(hall, items) {
       const move = (m) => {
         const dx = m.clientX - start.x, dy = m.clientY - start.y;
         if (!handle) {                                   // inside the box: move it
-          if (kind === 'kid') {                          // a speller: their seat (child and chair) moves
-            if (!el.classList.contains('is-at-mic') && !el.classList.contains('is-walking')) {
-              const sv = (items[`seat-${el.dataset.seat}`] ||= { x: 0, y: 0 });
-              if (sv.x0 == null) { sv.x0 = sv.x; sv.y0 = sv.y; }
-              sv.x = +(sv.x0 + dx / hr.width * 100).toFixed(2);
-              sv.y = +(sv.y0 + dy / hr.height * 100).toFixed(2);
-              placeSeat(hall, el.dataset.seat, sv.x, sv.y);
+          if (kind === 'kid') {                          // a speller: only the child moves, on their chair
+            if (!el.classList.contains('is-standing') && !el.classList.contains('is-at-mic') && !el.classList.contains('is-walking')) {
+              const k = el.dataset.kid;
+              if (v.sitx0 == null) {
+                const cs = getComputedStyle(el);
+                v.sitx0 = v.sitx ?? (parseFloat(cs.getPropertyValue(`--t-sitx-${k}`)) || 0);
+                v.sity0 = v.sity ?? (parseFloat(hall.style.getPropertyValue(`--t-sity-${k}`)) || KIDS[k]?.sitY || 0);
+              }
+              // % of the child's own box (translate's percentages)
+              v.sitx = +(v.sitx0 + dx / r0.width * 100).toFixed(1);
+              v.sity = +(v.sity0 + dy / r0.height * 100).toFixed(1);
+              hall.style.setProperty(`--t-sitx-${k}`, v.sitx);
+              hall.style.setProperty(`--t-sity-${k}`, v.sity);
             }
             return;
           }
@@ -544,8 +617,7 @@ function makeEditor(hall, items) {
         if (ddx || ddy) { shift(ddx, ddy); setItem(hall, el, v); }
       };
       const up = () => {
-        const sv = items[`seat-${el.dataset.seat}`];
-        if (sv) { delete sv.x0; delete sv.y0; }
+        delete v.sitx0; delete v.sity0;
         box.removeEventListener('pointermove', move); box.removeEventListener('pointerup', up); box.removeEventListener('pointercancel', up); };
       box.addEventListener('pointermove', move);
       box.addEventListener('pointerup', up);
@@ -753,6 +825,11 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const seats = seatSpellers(seed, humans.map((h) => (h.uid === me.uid && myKid ? { ...h, kid: myKid } : h)), botsNeeded);
   const bee = createBee(seats.length);
   const mySeat = seats.find((s) => s.uid === me.uid) || null;
+  // a speller's name: the child's own; a real player's name after it
+  const nameOf = (s) => {
+    const n = SPELLER_NAMES[s.kid] || s.name;
+    return s === mySeat ? `${n} (you)` : s.uid && s.name && s.name !== n ? `${n} (${s.name})` : n;
+  };
   const question = (k) => spellingQuestion(seed, k, 'spellSay', sets);
 
   /* ── The screen ──────────────────────────────────────────────── */
@@ -783,7 +860,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     </div>
     <div class="bee-hall">
       <div class="bee-backdrop"></div>
-      <span class="pp-sticky pp-sticky--c0 pp-sticky--tape bee-banner bee-item" data-item="banner" data-label="Banner">Spelling Bee</span>
+      <span class="pp-sticky pp-sticky--c0 pp-sticky--tape bee-banner bee-item" data-item="banner" data-label="Banner">Prep Spelling Bee</span>
       <div class="bee-judges"></div>
       <div class="bee-stand bee-item" data-item="mic" data-label="Microphone" aria-hidden="true"><svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><rect x="5" y="2" width="10" height="17" rx="5" fill="#3b3b3b"/><rect x="6.5" y="5" width="7" height="2" fill="#6b6b6b"/><rect x="8.8" y="18" width="2.4" height="76" fill="#8a8f96"/><rect x="1" y="93" width="18" height="5" rx="2.5" fill="#3b3b3b"/></svg></div>
       <div class="bee-tv bee-item" data-item="tv" data-label="TV" aria-label="The screen">
@@ -792,20 +869,23 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
             <p class="bee-letters"></p>
             <input class="bee-input" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" aria-label="Spell the word, one letter at a time. Letters cannot be taken back." disabled />
           </div>
+          <div class="bee-tv-idle" aria-hidden="true"><svg class="bee-bot" viewBox="0 0 64 64" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="#1f2a37" stroke-width="2.6" stroke-linecap="round"/><circle class="bee-bot-ball" cx="32" cy="6" r="3.2" fill="#f4c95d"/><rect x="4" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="52" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="11" y="16" width="42" height="38" rx="14" fill="#7cc4f0"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="#1f2a37"/><circle class="bee-bot-eye" cx="26" cy="31.5" r="3.1" fill="#f4c95d"/><circle class="bee-bot-eye" cx="38" cy="31.5" r="3.1" fill="#f4c95d"/><path class="bee-bot-mouth" d="M24 48 L40 48" stroke="#1f2a37" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg><p class="bee-tv-logo"><small>Prep</small>Spelling Bee</p></div>
+          <div class="bee-tv-host" aria-hidden="true"><svg class="bee-bot" viewBox="0 0 64 64" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="#1f2a37" stroke-width="2.6" stroke-linecap="round"/><circle class="bee-bot-ball" cx="32" cy="6" r="3.2" fill="#f4c95d"/><rect x="4" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="52" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="11" y="16" width="42" height="38" rx="14" fill="#7cc4f0"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="#1f2a37"/><circle class="bee-bot-eye" cx="26" cy="31.5" r="3.1" fill="#f4c95d"/><circle class="bee-bot-eye" cx="38" cy="31.5" r="3.1" fill="#f4c95d"/><path class="bee-bot-mouth" d="M24 48 L40 48" stroke="#1f2a37" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg><p class="bee-tv-host-line"></p></div>
+          <span class="bee-tv-static" aria-hidden="true"></span>
           <span class="bee-tv-glare" aria-hidden="true"></span>
         </div>
         <span class="bee-tv-brand" aria-hidden="true"></span>
         <span class="bee-tv-led" aria-hidden="true"></span>
       </div>
-      <div class="bee-curtain bee-curtain--l" aria-hidden="true"></div>
-      <div class="bee-curtain bee-curtain--r" aria-hidden="true"></div>
+      <div class="bee-curtain bee-curtain--l" aria-hidden="true"><span class="bee-tieback"></span></div>
+      <div class="bee-curtain bee-curtain--r" aria-hidden="true"><span class="bee-tieback"></span></div>
       <div class="bee-marquee" aria-hidden="true"></div>
       <div class="bee-audience"></div>
     </div>
     <div class="bee-results" hidden>
       <div class="pp-receipt bee-results-card">
         <div class="pp-receipt__paper bee-results-paper">
-          <p class="bee-results-kicker">Spelling Bee</p>
+          <p class="bee-results-kicker">Prep Spelling Bee</p>
           <p class="bee-results-title"></p>
           <ol class="bee-results-list"></ol>
           <button type="button" class="pp-btn bee-results-close">Back to the setup</button>
@@ -845,6 +925,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.dataset.kid = s.kid;
     el.dataset.seat = s.seat; el.dataset.bx = spot.x; el.dataset.by = spot.y;
     el.dataset.label = `${KID_NAMES[s.kid] || s.kid} (every one)`;
+    sitVars(el, s.kid);
     el.style.setProperty('--hip', f.hip);
     el.style.setProperty('--knee', f.knee);
     el.style.setProperty('--hands', f.hands);
@@ -858,9 +939,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     rig.className = 'bee-kid-rig';
     const body = document.createElement('div');
     body.className = 'bee-kid-body';
+    // a numbered placard on a lanyard, the speller's name under the number
     const tag = document.createElement('span');
-    tag.className = `pp-sticky ${s === mySeat ? 'pp-sticky--c4' : 'pp-sticky--c3'} bee-tag`;
-    tag.textContent = s.tag;
+    tag.className = `bee-tag${s === mySeat ? ' is-me' : ''}`;
+    tag.innerHTML = `<b class="bee-tag-no">${s.tag}</b><span class="bee-tag-name">${SPELLER_NAMES[s.kid] || ''}</span>`;
     // a lost speller's face: a frown over the smile, and tears
     const frown = document.createElement('span');
     frown.className = 'bee-frown';
@@ -895,10 +977,13 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     chair.style.setProperty('--x', spot.x);
     chair.style.setProperty('--y', spot.y);
     chair.dataset.seat = s.seat; chair.dataset.bx = spot.x; chair.dataset.by = spot.y;
+    chair.classList.add('bee-item');
+    chair.dataset.item = `chair-${s.seat}`;
+    chair.dataset.label = `Chair ${s.tag}`;
     chair.innerHTML = CHAIR;
     hall.append(chair);
     if (s === mySeat) { const you = document.createElement('span'); you.className = 'pp-pill pp-pill--static bee-you'; you.textContent = 'You'; el.append(you); }
-    el.setAttribute('aria-label', `Number ${s.tag}, ${s.name}`);
+    el.setAttribute('aria-label', `Number ${s.tag}, ${nameOf(s)}`);
     hall.append(el);
     return el;
   });
@@ -918,6 +1003,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.style.setProperty('--hands', f.hands);
     el.dataset.kid = kid;
     el.dataset.label = `${KID_NAMES[kid] || kid} (every one)`;
+    sitVars(el, kid);
+    const nm = el.querySelector('.bee-tag-name');
+    if (nm) nm.textContent = SPELLER_NAMES[kid] || '';
+    el.setAttribute('aria-label', `Number ${seat.tag}, ${nameOf(seat)}`);
     setMouth(el, 0);
     const frown = el.querySelector('.bee-frown');
     if (frown) frown.style.cssText = `left:${f.mouth[0] - f.mouth[2] / 2}%;top:${f.mouth[1] - f.mouth[3] / 2}%;width:${f.mouth[2]}%;height:${f.mouth[3] * 1.6}%`;
@@ -925,12 +1014,25 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   }
   document.body.append(bd);
   document.body.classList.add('drill-nav-hidden');
+  const warmEleven = () => {
+    if (spellerVoice !== 'eleven') return;
+    settingsReady.then(() => { for (const t of Object.values(LETTER_SAID)) for (const who of ['girl', 'boy']) elevenUrl(withStop(t), who); });
+  };
+  warmEleven();
+  document.addEventListener('bee-voice', warmEleven);
   // everyone's bee: the saved sizes; the admin (or ?tune=1): the settings panel
   settingsReady.then(() => {
     if (gone) return;
     applySizes(hall, settings.sizes);
     applyItems(hall, settings.items);
-    if (isAdminHere() || /[?&]tune=1\b/.test(location.search)) mountTuner(hall, $('.bee-top'), { say: (text, kid, ch = null) => spellerSays(text, kid, ch != null ? letterClip(ch, kid) : null, { letter: ch != null }) });
+    if (isAdminHere() || /[?&]tune=1\b/.test(location.search)) mountTuner(hall, $('.bee-top'), { say: (text, kid, ch = null) => {
+      if (ch != null && spellerVoice === 'eleven') {
+        const who = KIDS[kid]?.girl ? 'girl' : 'boy';
+        elevenUrl(withStop(text), who).then((u) => spellerSays(text, kid, u ? [{ url: u }] : letterClip(ch, kid), { letter: true }));
+        return;
+      }
+      spellerSays(text, kid, ch != null ? letterClip(ch, kid) : null, { letter: ch != null });
+    } });
   });
   if (!document.fullscreenElement) beeFullscreen();   // allowed only if the Start tap is still fresh
   // Came in some other way (a friend's code, the lobby's Start now): the first tap or key
@@ -948,7 +1050,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   let gone = false, skipping = false, pace = 1;
   const wait = (ms) => (gone || !pace ? Promise.resolve() : sleep(ms * pace));
   const say = (text) => { statusEl.textContent = text; };
-  const who = (s) => `Number ${s.tag}, ${s.name}${s === mySeat ? ' (you)' : ''}`;
+  const who = (s) => `Number ${s.tag}, ${nameOf(s)}`;
   /* The TV shows the letters as Scrabble tiles: a cream tile each, the letter and its score.
      A tile that is new since the last time drops in; the ones already up stay still. */
   const SCORE = { a: 1, b: 3, c: 3, d: 2, e: 1, f: 4, g: 2, h: 4, i: 1, j: 8, k: 5, l: 1, m: 3, n: 1, o: 1, p: 3, q: 10, r: 1, s: 1, t: 1, u: 1, v: 4, w: 4, x: 8, y: 4, z: 10 };
@@ -975,6 +1077,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     for (let i = keep; i < typed.length; i++) lettersEl.append(tile(typed[i], 'is-new'));
     if (cls.includes('is-mine')) lettersEl.append(tile('_', 'is-caret'));
     shown = typed;
+    // nothing on the screen: the TV shows the Prep Spelling Bee
+    hall.querySelector('.bee-tv')?.classList.toggle('is-idle', !typed && !cls.includes('is-mine'));
   };
   /* A spelling marked: every letter up to the first mistake green, the first wrong letter red,
      the letters after it as they were. A missing letter is a red gap where it should be. */
@@ -1019,7 +1123,15 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const i = LETTER[ch.toLowerCase()];
     const who = KIDS[kid]?.girl ? 'girl' : 'boy';
     const list = [];
-    if (spellerVoice === 'eleven' && i != null && ready[who]) list.push({ url: `/media/spelling-letters/${who}/${pad4(i)}.mp3`, pitch: LETTER_VOICES[who].pitch });
+    if (spellerVoice === 'eleven') {
+      // a spelling changed on the chart: ElevenLabs saying that text (once it has been made)
+      const own = LETTER_SAID[ch.toLowerCase()];
+      if (own) {
+        const live = elevenDone.get(`${who}|${withStop(own)}`);
+        if (live) list.push({ url: live }); else elevenUrl(withStop(own), who);
+      }
+      if (i != null && ready[who]) list.push({ url: `/media/spelling-letters/${who}/${pad4(i)}.mp3`, pitch: LETTER_VOICES[who].pitch });
+    }
     if (spellerVoice === 'kokoro' && SPELLER_RECORDINGS) { const k = spellerClip(kid, 'letters', i); if (k) list.push({ url: k }); }
     return list;
   }
@@ -1146,6 +1258,47 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     showLetters(text, `is-title ${cls}`);
     lettersEl.querySelectorAll('.bee-tile').forEach((t, i) => { t.style.animationDelay = `${i * 80}ms`; });
     shown = '';                                   // the next spelling starts afresh
+  }
+  /* The big opening on the TV: it flickers on through static, the screen goes white, PrepBot
+     pops up and welcomes everyone to the Prep Spelling Bee, the title lands, then the screen
+     settles for the spelling. */
+  async function tvIntro() {
+    const tv = hall.querySelector('.bee-tv'), line = tv.querySelector('.bee-tv-host-line');
+    const bot = tv.querySelector('.bee-tv-host .bee-bot'), mouthEl = bot.querySelector('.bee-bot-mouth');
+    const SHAPES = ['M24 48 L40 48', 'M25 47 Q32 50.5 39 47', 'M24.5 46 Q32 53 39.5 46', 'M27 46.5 Q32 52 37 46.5'];
+    let flap = 0;
+    const host = async (text) => {
+      line.textContent = text;
+      line.classList.remove('is-in'); void line.offsetWidth; line.classList.add('is-in');
+      sayWord(text, null, { rate: 0.98 });
+      flap = setInterval(() => { mouthEl.setAttribute('d', SHAPES[1 + Math.floor(Math.random() * 3)]); setTimeout(() => mouthEl.setAttribute('d', SHAPES[0]), 90); }, 190);
+      await sleep(400);
+      for (let t = 0; t < 120 && isTalking() && !gone && pace; t++) await sleep(100);
+      clearInterval(flap); mouthEl.setAttribute('d', SHAPES[0]);
+      await wait(250);
+    };
+    tv.classList.remove('is-idle');
+    tv.classList.add('is-off');
+    await wait(500);
+    tv.classList.replace('is-off', 'is-glitch');      // static, rolling bars, a flicker
+    await wait(1300);
+    tv.classList.replace('is-glitch', 'is-white');    // the picture comes up white
+    await wait(450);
+    tv.classList.add('is-host');                      // PrepBot pops up
+    await wait(700);
+    await host('Hello, learners! Welcome to the Prep Spelling Bee!');
+    if (gone || !pace) return endIntro(tv);
+    await host(`${seats.length} spellers. Listen to your word, spell it letter by letter, and do not miss a single one.`);
+    if (gone || !pace) return endIntro(tv);
+    await host('Are you ready? Let the bee begin!');
+    tv.classList.add('is-title-card');                // the title lands under him
+    sweep();
+    await wait(1600);
+    endIntro(tv);
+  }
+  function endIntro(tv) {
+    tv.classList.add('is-glitch-out');
+    setTimeout(() => tv.classList.remove('is-white', 'is-host', 'is-title-card', 'is-glitch', 'is-glitch-out', 'is-off'), 380);
   }
   /** A light sweeps across the stage (a new round). */
   function sweep() {
@@ -1496,7 +1649,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
 
   function showResults() {
     const champ = seats[bee.champion];
-    $('.bee-results-title').textContent = champ === mySeat ? 'You are the champion!' : `Champion: number ${champ.tag}, ${champ.name}`;
+    $('.bee-results-title').textContent = champ === mySeat ? 'You are the champion!' : `Champion: number ${champ.tag}, ${nameOf(champ)}`;
     const list = $('.bee-results-list');
     const rows = [...bee.placings].sort((a, b) => a.place - b.place || a.seat - b.seat);
     for (const p of rows) {
@@ -1508,7 +1661,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       if (p.place === 1) place.innerHTML = UI.trophy(20); else place.textContent = p.place;
       const name = document.createElement('span');
       name.className = 'bee-results-name';
-      name.textContent = `No. ${s.tag} ${s.name}${s === mySeat ? ' (you)' : ''}`;
+      name.textContent = `No. ${s.tag} ${nameOf(s)}`;
       const meta = document.createElement('span');
       meta.className = 'bee-results-meta';
       meta.textContent = p.place === 1 ? `won in round ${p.round}` : `out in round ${p.round}`;
@@ -1522,14 +1675,15 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
 
   (async () => {
     pills();
-    say(`Welcome to the Spelling Bee. ${seats.length} spellers. One wrong letter and you leave the stage.`);
+    say(`Welcome to the Prep Spelling Bee. ${seats.length} spellers. One wrong letter and you leave the stage.`);
     // the title, dropping onto the closed curtains tile by tile
     const marquee = $('.bee-marquee');
-    [...'SPELLING BEE'].forEach((ch, i) => { const t = tile(ch === ' ' ? ' ' : ch, 'is-new'); t.style.animationDelay = `${300 + i * 90}ms`; marquee.append(t); });
+    [...'PREP SPELLING BEE'].forEach((ch, i) => { const t = tile(ch === ' ' ? ' ' : ch, 'is-new'); t.style.animationDelay = `${300 + i * 70}ms`; marquee.append(t); });
     await Promise.race([joined, sleep(2500)]);
     await wait(1200);
-    bd.classList.add('is-curtains-open');           // the curtains sweep open on the stage
-    await wait(2000);
+    bd.classList.add('is-curtains-open');           // the curtains sweep open and are tied back in gold
+    await wait(1900);
+    if (!gone && pace) await tvIntro();
     if (!gone && pace) {
       say(`Round 1. ${bee.alive.length} spellers.`);
       sweep();
