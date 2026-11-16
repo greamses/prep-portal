@@ -376,7 +376,8 @@ module.exports = function () {
          given as IPA comes as an SSML phoneme tag, which only ElevenLabs' English Flash v2 reads;
          otherwise the model the recorded letters were made with, so the two sound alike. */
       const letter = req.body?.from === "letter";
-      const LETTER_VOICES = new Set(["pFZP5JQG7iQjIQuC4Bku", "JBFqnCBsd6RMkjVDRZzb"]);
+      // + the children's voices (the small boy, two girls: data/spelling/speller-voices.js)
+      const LETTER_VOICES = new Set(["pFZP5JQG7iQjIQuC4Bku", "JBFqnCBsd6RMkjVDRZzb", "atemG3csutMIyK7AbS5c", "IR4Yywb88oVWHqzWLjAs", "hpp4J3VqNfWAUOO0d1Us"]);
       const ipaLetter = letter && typeof text === "string" && /<phoneme[\s>]/.test(text);
       if (letter && typeof text === "string" && text.length > 120) return res.status(400).json({ error: "A letter is a short line." });
       /* no voice asked for, "dansum", or one not on the list: Teacher Dansum's voice (Alice when it cannot be found) */

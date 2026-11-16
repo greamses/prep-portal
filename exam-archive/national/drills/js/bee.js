@@ -957,6 +957,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       <div class="bee-lamp bee-lamp--r" aria-hidden="true"><svg viewBox="0 0 60 90" aria-hidden="true"><defs><linearGradient id="bee-can-r" x1="0" x2="1"><stop offset="0" stop-color="#16171a"/><stop offset=".35" stop-color="#4b4f56"/><stop offset=".6" stop-color="#2b2e33"/><stop offset="1" stop-color="#101113"/></linearGradient><radialGradient id="bee-lens-r" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fffdf2"/><stop offset=".55" stop-color="#ffe9a8"/><stop offset="1" stop-color="#d9a441"/></radialGradient></defs><rect x="22" y="0" width="16" height="7" fill="#2b2e33"/><rect x="28" y="6" width="4" height="9" fill="#3b3f45"/><path d="M10 40 V18 Q10 14 14 14 H46 Q50 14 50 18 V40" fill="none" stroke="#3b3f45" stroke-width="4"/><circle cx="10" cy="40" r="3.2" fill="#55595f"/><circle cx="50" cy="40" r="3.2" fill="#55595f"/><rect x="15" y="22" width="30" height="46" rx="4" fill="url(#bee-can-r)"/><rect x="17" y="27" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="17" y="32" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="13" y="66" width="34" height="6" rx="1.5" fill="#202226"/><path d="M13 72 L4 86 H16 L20 72 Z" fill="#26282c"/><path d="M47 72 L56 86 H44 L40 72 Z" fill="#26282c"/><ellipse class="bee-lens" cx="30" cy="73" rx="12" ry="3.4" fill="url(#bee-lens-r)"/></svg></div>
       <div class="bee-lamp bee-lamp--spot" aria-hidden="true"><svg viewBox="0 0 60 90" aria-hidden="true"><defs><linearGradient id="bee-can-s" x1="0" x2="1"><stop offset="0" stop-color="#16171a"/><stop offset=".35" stop-color="#4b4f56"/><stop offset=".6" stop-color="#2b2e33"/><stop offset="1" stop-color="#101113"/></linearGradient><radialGradient id="bee-lens-s" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fffdf2"/><stop offset=".55" stop-color="#ffe9a8"/><stop offset="1" stop-color="#d9a441"/></radialGradient></defs><rect x="22" y="0" width="16" height="7" fill="#2b2e33"/><rect x="28" y="6" width="4" height="9" fill="#3b3f45"/><path d="M10 40 V18 Q10 14 14 14 H46 Q50 14 50 18 V40" fill="none" stroke="#3b3f45" stroke-width="4"/><circle cx="10" cy="40" r="3.2" fill="#55595f"/><circle cx="50" cy="40" r="3.2" fill="#55595f"/><rect x="15" y="22" width="30" height="46" rx="4" fill="url(#bee-can-s)"/><rect x="17" y="27" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="17" y="32" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="13" y="66" width="34" height="6" rx="1.5" fill="#202226"/><path d="M13 72 L4 86 H16 L20 72 Z" fill="#26282c"/><path d="M47 72 L56 86 H44 L40 72 Z" fill="#26282c"/><ellipse class="bee-lens" cx="30" cy="73" rx="12" ry="3.4" fill="url(#bee-lens-s)"/></svg></div>
       <div class="bee-spot" aria-hidden="true"><span class="bee-spot-beam"></span></div>
+      <div class="bee-footlights" aria-hidden="true">${Array.from({ length: 11 }, () => '<span></span>').join('')}</div>
       <div class="bee-flood" aria-hidden="true"></div>
       <div class="bee-confetti" aria-hidden="true"></div>
       <div class="bee-curtain bee-curtain--l" aria-hidden="true"><span class="bee-tieback"></span></div>
@@ -1098,7 +1099,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   document.body.classList.add('drill-nav-hidden');
   const warmEleven = () => {
     if (spellerVoice !== 'eleven') return;
-    settingsReady.then(() => { for (const who of ['girl', 'boy']) for (const [ch, t] of Object.entries(LETTER_SAID[who])) elevenUrl(elevenText(ch, t), who); });
+    // every voice a girl or a boy speaks in: their children's sets, or the grown-up one
+    const setsOf = (g) => [...new Set(Object.keys(KIDS).filter((k) => genderOf(k) === g).map((k) => KID_LETTER_SET[k] || g))];
+    settingsReady.then(() => { for (const g of ['girl', 'boy']) for (const [ch, t] of Object.entries(LETTER_SAID[g])) for (const set of setsOf(g)) elevenUrl(elevenText(ch, t), set); });
   };
   warmEleven();
   document.addEventListener('bee-voice', warmEleven);
@@ -1109,7 +1112,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     applyItems(hall, settings.items);
     if (isAdminHere() || /[?&]tune=1\b/.test(location.search)) mountTuner(hall, $('.bee-top'), { say: (text, kid, ch = null) => {
       if (ch != null && spellerVoice === 'eleven') {
-        const who = KIDS[kid]?.girl ? 'girl' : 'boy';
+        const who = KID_LETTER_SET[kid] && LETTER_VOICES[KID_LETTER_SET[kid]] ? KID_LETTER_SET[kid] : KIDS[kid]?.girl ? 'girl' : 'boy';
         const shown = isIpa(text) ? DEFAULT_LETTER(ch) : text;     // the browser's fallback cannot read IPA
         elevenUrl(elevenText(ch, text), who).then((u) => spellerSays(shown, kid, u ? [{ url: u }] : letterClip(ch, kid), { letter: true }));
         return;
@@ -1208,14 +1211,15 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const who = KIDS[kid]?.girl ? 'girl' : 'boy';
     const list = [];
     if (spellerVoice === 'eleven') {
-      // a spelling changed on the chart: ElevenLabs saying that text (once it has been made)
-      const own = LETTER_SAID[who][ch.toLowerCase()];
-      if (own) {
-        const live = elevenDone.get(`${who}|${elevenText(ch, own)}`);
-        if (live) list.push({ url: live }); else elevenUrl(elevenText(ch, own), who);
-      }
       // a child's voice for the small boy and the girls, once its set is on the site
       const set = KID_LETTER_SET[kid] && ready[KID_LETTER_SET[kid]] ? KID_LETTER_SET[kid] : who;
+      // a spelling changed on the chart (the girls' or the boys'): ElevenLabs saying that text in
+      // this child's voice (once it has been made)
+      const own = LETTER_SAID[who][ch.toLowerCase()];
+      if (own) {
+        const live = elevenDone.get(`${set}|${elevenText(ch, own)}`);
+        if (live) list.push({ url: live }); else elevenUrl(elevenText(ch, own), set);
+      }
       if (i != null && ready[set]) list.push({ url: `/media/spelling-letters/${set}/${pad4(i)}.mp3`, pitch: LETTER_VOICES[set]?.pitch || 1 });
     }
     if (spellerVoice === 'kokoro' && SPELLER_RECORDINGS) { const k = spellerClip(kid, 'letters', i); if (k) list.push({ url: k }); }
@@ -1393,12 +1397,28 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   }
   /* The man on the panel speaks (the champion): the browser's voice, a man's where it has one,
      while he nods a little. Resolves when he has finished. */
-  function judgeManSays(text) {
+  function judgeManSays(text, clip = null) {
     const judges = hall.querySelector('.bee-judges');
     return new Promise((resolve) => {
-      if (!synth || !pace) { resolve(); return; }
+      if (!pace) { resolve(); return; }
       let ended = false;
       const end = () => { if (ended) return; ended = true; judges.classList.remove('is-man-talking'); resolve(); };
+      // his own recorded voice (media/spelling-judge); the browser's if it will not play
+      if (clip) {
+        try {
+          hush();
+          const a = new Audio(clip);
+          a.onplaying = () => judges.classList.add('is-man-talking');
+          a.onended = end;
+          a.onerror = () => { clip = null; judges.classList.remove('is-man-talking'); speak(); };
+          a.play().catch(() => { if (!ended) speak(); });
+          setTimeout(end, 9000);
+          return;
+        } catch { /* the browser's voice, below */ }
+      }
+      speak();
+      function speak() {
+      if (!synth) { end(); return; }
       try {
         hush();
         const u = new SpeechSynthesisUtterance(text);
@@ -1411,6 +1431,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         synth.speak(u);
         setTimeout(end, 1500 + text.length * 110);   // never wait for ever
       } catch { end(); }
+      }
     });
   }
   /* The audience stand for the champion, one here and one there, and clap (the sound only; no
@@ -1448,11 +1469,11 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const tv = hall.querySelector('.bee-tv');
     const name = SPELLER_NAMES[champ.kid] || champ.name;
     sfx.drumroll(2.6);
-    await judgeManSays('Ladies and gentlemen, the champion of the Prep Spelling Bee is...');
+    await judgeManSays('Ladies and gentlemen, the champion of the Prep Spelling Bee is...', '/media/spelling-judge/champion-is.mp3');
     await wait(900);
     if (gone) return;
     sfx.fanfare();
-    await judgeManSays(champ === mySeat ? `${name}! That is you!` : `${name}!`);
+    await judgeManSays(champ === mySeat ? `${name}! That is you!` : `${name}!`, `/media/spelling-judge/${champ === mySeat ? 'you' : 'name'}-${champ.kid}.mp3`);
     if (gone) return;
     ovation(10);
     tv.classList.remove('is-idle');
@@ -1742,7 +1763,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
 
   /* ── Walking ─────────────────────────────────────────────────── */
   async function walk(el, to) {
-    if (to !== 'mic') hall.classList.remove('is-spot');     // the spotlight goes off as they leave
+    spotOn(el);                                             // the spotlight finds them and follows
     el.classList.remove('is-gone');
     el.classList.add('is-standing');
     await wait(450);                               // up out of the chair first
@@ -1751,9 +1772,39 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.classList.toggle('is-off', to === 'off');
     await wait(to === 'off' ? 2600 : 1700);
     el.classList.remove('is-walking');
-    if (to === 'mic') hall.classList.add('is-spot');        // and on, on the speller at the microphone
     if (to === 'seat') { el.classList.remove('is-standing'); await wait(450); }
     if (to === 'off') el.classList.add('is-gone');
+    if (to !== 'mic') spotOff();                            // back in the chair (or gone): the light goes off
+  }
+  /* The spotlight: the lamp on the lighting bar turns to the speller and its beam runs from the
+     lens to them, every frame while it is on, so it follows them as they walk. */
+  let spotEl = null, spotRaf = 0;
+  function spotOn(el) {
+    spotEl = el;
+    hall.classList.add('is-spot');
+    if (!spotRaf) spotRaf = requestAnimationFrame(spotTick);
+  }
+  function spotOff() {
+    spotEl = null;
+    hall.classList.remove('is-spot');
+  }
+  function spotTick() {
+    spotRaf = 0;
+    if (!spotEl || gone) return;
+    const hr = hall.getBoundingClientRect(), kr = spotEl.getBoundingClientRect();
+    const lamp = hall.querySelector('.bee-lamp--spot'), beam = hall.querySelector('.bee-spot-beam');
+    if (hr.width && kr.width) {
+      const lx = hr.width * 0.394, ly = hr.height * 0.072 + lamp.offsetHeight * 0.82;     // the lens
+      const tx = kr.left + kr.width / 2 - hr.left, ty = kr.top + kr.height * 0.98 - hr.top;  // the speller's feet
+      const dx = tx - lx, dy = ty - ly, len = Math.hypot(dx, dy), ang = Math.atan2(-dx, dy) * 180 / Math.PI;
+      lamp.style.rotate = `${ang.toFixed(1)}deg`;
+      beam.style.left = `${lx}px`; beam.style.top = `${ly}px`;
+      beam.style.height = `${len}px`; beam.style.width = `${Math.max(kr.width * 1.5, hr.width * 0.08)}px`;
+      beam.style.rotate = `${ang.toFixed(1)}deg`;
+      hall.style.setProperty('--spot-x', `${((tx / hr.width) * 100).toFixed(2)}%`);
+      hall.style.setProperty('--spot-y', `${(((kr.top + kr.height * 0.5 - hr.top) / hr.height) * 100).toFixed(2)}%`);
+    }
+    spotRaf = requestAnimationFrame(spotTick);
   }
   // with no time to walk (catching up, skipping), the classes are still set, so everyone ends in the right place
   const settle = () => { bd.classList.toggle('is-instant', !pace); };
