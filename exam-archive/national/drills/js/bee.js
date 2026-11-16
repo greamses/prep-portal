@@ -212,6 +212,37 @@ function tone(freqs, { gap = 0.12, len = 0.5, type = 'sine', vol = 0.16 } = {}) 
   } catch { /* no sound here */ }
 }
 const chime = () => tone([660, 880, 1320], { len: 0.45 });
+/* The hall's sound effects, made here (no files): noise shaped by filters, and tones. */
+function noise(seconds, { type = 'bandpass', freq = 1200, to = null, q = 0.8, vol = 0.3, attack = 0.02, at = 0 } = {}) {
+  try {
+    actx ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state !== 'running') actx.resume();
+    const n = Math.floor(actx.sampleRate * seconds), buf = actx.createBuffer(1, n, actx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const src = actx.createBufferSource(); src.buffer = buf;
+    const f = actx.createBiquadFilter(); f.type = type; f.Q.value = q;
+    const t0 = actx.currentTime + at;
+    f.frequency.setValueAtTime(freq, t0);
+    if (to) f.frequency.exponentialRampToValueAtTime(to, t0 + seconds);
+    const g = actx.createGain();
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + attack); g.gain.exponentialRampToValueAtTime(0.001, t0 + seconds);
+    src.connect(f).connect(g).connect(actx.destination);
+    src.start(t0); src.stop(t0 + seconds + 0.05);
+  } catch { /* no sound here */ }
+}
+const sfx = {
+  swish: () => { noise(1.4, { freq: 300, to: 2400, q: 0.7, vol: 0.25, attack: 0.5 }); noise(1.2, { freq: 2600, to: 500, q: 0.6, vol: 0.12, attack: 0.4, at: 0.25 }); },
+  static: (s = 1.2) => noise(s, { type: 'highpass', freq: 2500, q: 0.2, vol: 0.12, attack: 0.03 }),
+  clunk: () => { tone([70], { len: 0.35, type: 'sine', vol: 0.35 }); noise(0.08, { freq: 3000, q: 1, vol: 0.25, attack: 0.002 }); },
+  tick: () => noise(0.03, { type: 'highpass', freq: 4000, q: 1, vol: 0.35, attack: 0.001 }),
+  buzz: () => tone([110, 104], { gap: 0, len: 0.6, type: 'sawtooth', vol: 0.07 }),
+  pop: () => { noise(0.12, { freq: 1800, q: 0.5, vol: 0.5, attack: 0.002 }); noise(0.9, { type: 'highpass', freq: 5000, q: 0.3, vol: 0.06, attack: 0.05, at: 0.05 }); },
+  drumroll: (s = 2.4) => {
+    for (let t = 0; t < s; t += 0.045) noise(0.05, { freq: 1600, q: 0.6, vol: 0.08 + 0.18 * (t / s), attack: 0.002, at: t });
+    noise(1.6, { type: 'highpass', freq: 3500, q: 0.4, vol: 0.22, attack: 0.005, at: s });   // the cymbal
+  },
+  fanfare: () => { tone([523, 659, 784, 1047], { gap: 0.16, len: 0.5, type: 'sawtooth', vol: 0.05 }); tone([262, 330, 392, 523], { gap: 0.16, len: 0.6, type: 'triangle', vol: 0.08 }); },
+};
 /* Applause: a crowd of short claps (bursts of noise, each dying away fast), thick at
    first and thinning out, through a band filter so it sounds like hands and not hiss. */
 function applause(seconds = 2.4, crowd = 40) {
@@ -438,6 +469,11 @@ function judgesSvg() {
   // a brass desk bell and a glass of water
   const bell = (cx) => `<ellipse cx="${cx}" cy="136.4" rx="8" ry="1.4" fill="rgba(0,0,0,.3)"/><rect x="${cx - 7.5}" y="133.5" width="15" height="2.8" rx="1" fill="#5b3f22"/>` +
     `<path d="M${cx - 6} 133.6 Q${cx - 6} 125.5 ${cx} 125.5 Q${cx + 6} 125.5 ${cx + 6} 133.6 Z" fill="#e2b84a"/><path d="M${cx - 3.5} 131 Q${cx - 3.2} 127 ${cx} 126.6" stroke="#fff3c4" stroke-width="1" fill="none" opacity=".8"/><rect x="${cx - .8}" y="122.6" width="1.6" height="3" fill="#b8902e"/><circle cx="${cx}" cy="122.4" r="1.4" fill="#e2b84a"/>`;
+  // a desk microphone: a weighted base, a gooseneck curving up to the judge, a mesh head
+  const deskMic = (cx, lean) => `<ellipse cx="${cx}" cy="136.4" rx="7" ry="1.3" fill="rgba(0,0,0,.3)"/><rect x="${cx - 6}" y="132.6" width="12" height="3.6" rx="1.2" fill="#24272b"/><circle cx="${cx + 3}" cy="134.2" r=".9" fill="#d64541"/>` +
+    `<path d="M${cx} 132.8 C${cx} 124 ${cx + lean * 2} 118 ${cx + lean * 7} 113.5" fill="none" stroke="#3a3e44" stroke-width="1.6" stroke-linecap="round"/>` +
+    `<path d="M${cx} 132.8 C${cx} 124 ${cx + lean * 2} 118 ${cx + lean * 7} 113.5" fill="none" stroke="#7d848c" stroke-width=".5" stroke-dasharray=".8 .6"/>` +
+    `<rect x="${cx + lean * 7 - 2.2}" y="107.5" width="4.4" height="7" rx="2" fill="#2c2f33" stroke="#8a9199" stroke-width=".4" transform="rotate(${lean * 28} ${cx + lean * 7} 113.5)"/>`;
   const glass = (cx) => `<ellipse cx="${cx}" cy="136.3" rx="4" ry=".9" fill="rgba(0,0,0,.25)"/><polygon points="${cx - 3.4},124.5 ${cx + 3.4},124.5 ${cx + 2.8},136 ${cx - 2.8},136" fill="rgba(210,235,250,.55)" stroke="rgba(255,255,255,.8)" stroke-width=".5"/><polygon points="${cx - 3.1},128 ${cx + 3.1},128 ${cx + 2.8},136 ${cx - 2.8},136" fill="rgba(120,185,230,.55)"/>`;
   // each judge grows or shrinks from the middle of their place at the table (the sizes panel)
   const sized = (id, label, inner) => `<g class="bee-item" data-item="${id}" data-label="${label}">${inner}</g>`;
@@ -447,7 +483,7 @@ function judgesSvg() {
     <g class="mouth" data-hinge="${(my - 2.4).toFixed(2)}" transform="translate(${mx.toFixed(2)} ${(my - 2.4).toFixed(2)}) scale(1 0.12) translate(${(-mx).toFixed(2)} ${(-(my - 2.4)).toFixed(2)})"><ellipse cx="${mx.toFixed(2)}" cy="${(my + 1).toFixed(2)}" rx="5.6" ry="3.8" fill="#5e2420"/></g>
     ${hands(W.x + ww / 2, '#f0c3a3', '#1d2b55', -0.12)}`)}
     ${sized('judge-man', 'Judge', `${chair(M.x + mw / 2, M.y + 0.11 * M.h, mw * 1.12)}
-    <image href="/media/characters/judge-man.svg" x="${M.x}" y="${M.y}" width="${mw}" height="${M.h}"/>
+    <image class="bee-jm" href="/media/characters/judge-man.svg" x="${M.x}" y="${M.y}" width="${mw}" height="${M.h}"/>
     ${hands(M.x + mw / 2, '#f2b394', '#1c3561', -0.04)}`)}
     <defs>
       <linearGradient id="bee-cloth" x1="0" x2="1" y1="0" y2="0">${Array.from({ length: 13 }, (_, i) => `<stop offset="${(i / 12).toFixed(3)}" stop-color="${i % 2 ? '#1a2d55' : '#25407a'}"/>`).join('')}</linearGradient>
@@ -466,6 +502,7 @@ function judgesSvg() {
     <text x="151" y="181.5" text-anchor="middle" style="font-family: var(--font-mono)" font-size="5.6" font-weight="700" letter-spacing="1.6" fill="#e9c86a">PREP</text>
     <text x="151" y="192" text-anchor="middle" style="font-family: var(--font-display)" font-size="7.6" font-weight="800" letter-spacing=".4" fill="#f6dc85">SPELLING BEE</text>
     ${glass(W.x + ww / 2 - 33)}${bell(128)}${glass(M.x + mw / 2 + 31)}
+    ${deskMic(W.x + ww / 2 + 22, -1)}${deskMic(M.x + mw / 2 - 22, 1)}
     ${card(W.x + ww / 2, 'Mrs. Chen', 'HEAD JUDGE')}${card(M.x + mw / 2, 'Mr. Whitmore', 'JUDGE')}</g>
   </svg>`;
 }
@@ -882,9 +919,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       <span class="pp-pill pp-pill--static bee-round"></span>
       <span class="pp-pill pp-pill--static bee-left"></span>
       <span class="bee-say"><span class="bee-status" aria-live="polite"></span><span class="bee-heard" hidden></span></span>
-      <span class="pp-pill pp-pill--static bee-clock"></span>
+<span class="bee-clock" hidden aria-live="off"><svg viewBox="0 0 48 56" aria-hidden="true"><defs><linearGradient id="bee-sw-metal" x1="0" x2="1"><stop offset="0" stop-color="#9aa3ad"/><stop offset=".45" stop-color="#eef1f4"/><stop offset="1" stop-color="#7b848e"/></linearGradient><radialGradient id="bee-sw-face" cx=".45" cy=".4" r=".7"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9ecef"/></radialGradient></defs><rect x="20" y="0" width="8" height="5" rx="1.5" fill="url(#bee-sw-metal)"/><rect x="22" y="4" width="4" height="4" fill="#7b848e"/><rect x="36" y="6" width="5" height="4" rx="1.2" transform="rotate(40 38.5 8)" fill="url(#bee-sw-metal)"/><circle cx="24" cy="32" r="22" fill="url(#bee-sw-metal)"/><circle cx="24" cy="32" r="19" fill="url(#bee-sw-face)"/><circle class="bee-sw-ring" cx="24" cy="32" r="16" fill="none" stroke="#3bb273" stroke-width="3" pathLength="100" stroke-dasharray="100 100" transform="rotate(-90 24 32)"/><line x1="24" y1="14.2" x2="24" y2="16.4" stroke="#2a2f36" stroke-width="1" transform="rotate(0 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(30 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(60 24 32)"/><line x1="24" y1="14.2" x2="24" y2="16.4" stroke="#2a2f36" stroke-width="1" transform="rotate(90 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(120 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(150 24 32)"/><line x1="24" y1="14.2" x2="24" y2="16.4" stroke="#2a2f36" stroke-width="1" transform="rotate(180 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(210 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(240 24 32)"/><line x1="24" y1="14.2" x2="24" y2="16.4" stroke="#2a2f36" stroke-width="1" transform="rotate(270 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(300 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(330 24 32)"/><line class="bee-sw-hand" x1="24" y1="32" x2="24" y2="16" stroke="#d64541" stroke-width="1.4" stroke-linecap="round"/><circle cx="24" cy="32" r="1.8" fill="#2a2f36"/></svg><b class="bee-clock-n"></b></span>
       <span class="bee-spacer"></span>
-      <button type="button" class="pp-btn pp-btn--ghost bee-skip" hidden>Skip to the result</button>
+      <button type="button" class="bee-skip" hidden></button>
       <div class="bee-toolbox">
         <button type="button" class="bee-tools-btn" hidden></button>
         <div class="bee-tools" hidden><p class="bee-keys">Keys: Enter done &middot; 1 word &middot; 2 meaning &middot; 3 sentence &middot; 4 origin &middot; 5 mic</p></div>
@@ -900,7 +937,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       <div class="bee-backdrop"></div>
       <span class="pp-sticky pp-sticky--c0 pp-sticky--tape bee-banner bee-item" data-item="banner" data-label="Banner">Prep Spelling Bee</span>
       <div class="bee-judges"></div>
-      <div class="bee-stand bee-item" data-item="mic" data-label="Microphone" aria-hidden="true"><svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><rect x="5" y="2" width="10" height="17" rx="5" fill="#3b3b3b"/><rect x="6.5" y="5" width="7" height="2" fill="#6b6b6b"/><rect x="8.8" y="18" width="2.4" height="76" fill="#8a8f96"/><rect x="1" y="93" width="18" height="5" rx="2.5" fill="#3b3b3b"/></svg></div>
+      <div class="bee-stand bee-item" data-item="mic" data-label="Microphone" aria-hidden="true"><svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><defs><linearGradient id="bee-chrome" x1="0" x2="1"><stop offset="0" stop-color="#6d737a"/><stop offset=".45" stop-color="#f1f3f5"/><stop offset="1" stop-color="#5b6168"/></linearGradient><pattern id="bee-mesh" width="1.4" height="1.4" patternUnits="userSpaceOnUse"><rect width="1.4" height="1.4" fill="#2c2f33"/><circle cx=".7" cy=".7" r=".42" fill="#6b7077"/></pattern></defs><path d="M10 85 L2.2 98.6 M10 85 L17.8 98.6 M10 85 L10 99" stroke="#25282c" stroke-width="1.6" stroke-linecap="round"/><rect x="8.4" y="80" width="3.2" height="6" rx="1" fill="#25282c"/><rect x="9.1" y="22" width="1.8" height="59" fill="url(#bee-chrome)"/><rect x="8.3" y="48" width="3.4" height="3" rx="1" fill="#25282c"/><path d="M10.6 30 Q14 40 11 52 Q9 62 12.5 80" fill="none" stroke="#111" stroke-width=".55" opacity=".85"/><rect x="8.4" y="18" width="3.2" height="5" rx="1" fill="#25282c"/><rect x="7.2" y="10" width="5.6" height="9" rx="1.6" fill="#1d1f22"/><rect x="7.6" y="16.2" width="4.8" height=".8" fill="#9aa1a9"/><path d="M5.8 10.5 Q5.8 2 10 2 Q14.2 2 14.2 10.5 Z" fill="url(#bee-mesh)" stroke="#9aa1a9" stroke-width=".5"/><rect x="5.6" y="9.8" width="8.8" height="1.4" rx=".6" fill="url(#bee-chrome)"/><path d="M7.4 4.6 Q8.4 3.2 10 3" stroke="#fff" stroke-width=".5" fill="none" opacity=".5"/></svg></div>
       <div class="bee-tv bee-item" data-item="tv" data-label="TV" aria-label="The screen">
         <div class="bee-tv-screen">
           <div class="bee-spell">
@@ -915,6 +952,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         <span class="bee-tv-brand" aria-hidden="true"></span>
         <span class="bee-tv-led" aria-hidden="true"></span>
       </div>
+      <div class="bee-truss" aria-hidden="true"></div>
+      <div class="bee-lamp bee-lamp--l" aria-hidden="true"><svg viewBox="0 0 60 90" aria-hidden="true"><defs><linearGradient id="bee-can-l" x1="0" x2="1"><stop offset="0" stop-color="#16171a"/><stop offset=".35" stop-color="#4b4f56"/><stop offset=".6" stop-color="#2b2e33"/><stop offset="1" stop-color="#101113"/></linearGradient><radialGradient id="bee-lens-l" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fffdf2"/><stop offset=".55" stop-color="#ffe9a8"/><stop offset="1" stop-color="#d9a441"/></radialGradient></defs><rect x="22" y="0" width="16" height="7" fill="#2b2e33"/><rect x="28" y="6" width="4" height="9" fill="#3b3f45"/><path d="M10 40 V18 Q10 14 14 14 H46 Q50 14 50 18 V40" fill="none" stroke="#3b3f45" stroke-width="4"/><circle cx="10" cy="40" r="3.2" fill="#55595f"/><circle cx="50" cy="40" r="3.2" fill="#55595f"/><rect x="15" y="22" width="30" height="46" rx="4" fill="url(#bee-can-l)"/><rect x="17" y="27" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="17" y="32" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="13" y="66" width="34" height="6" rx="1.5" fill="#202226"/><path d="M13 72 L4 86 H16 L20 72 Z" fill="#26282c"/><path d="M47 72 L56 86 H44 L40 72 Z" fill="#26282c"/><ellipse class="bee-lens" cx="30" cy="73" rx="12" ry="3.4" fill="url(#bee-lens-l)"/></svg></div>
+      <div class="bee-lamp bee-lamp--r" aria-hidden="true"><svg viewBox="0 0 60 90" aria-hidden="true"><defs><linearGradient id="bee-can-r" x1="0" x2="1"><stop offset="0" stop-color="#16171a"/><stop offset=".35" stop-color="#4b4f56"/><stop offset=".6" stop-color="#2b2e33"/><stop offset="1" stop-color="#101113"/></linearGradient><radialGradient id="bee-lens-r" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fffdf2"/><stop offset=".55" stop-color="#ffe9a8"/><stop offset="1" stop-color="#d9a441"/></radialGradient></defs><rect x="22" y="0" width="16" height="7" fill="#2b2e33"/><rect x="28" y="6" width="4" height="9" fill="#3b3f45"/><path d="M10 40 V18 Q10 14 14 14 H46 Q50 14 50 18 V40" fill="none" stroke="#3b3f45" stroke-width="4"/><circle cx="10" cy="40" r="3.2" fill="#55595f"/><circle cx="50" cy="40" r="3.2" fill="#55595f"/><rect x="15" y="22" width="30" height="46" rx="4" fill="url(#bee-can-r)"/><rect x="17" y="27" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="17" y="32" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="13" y="66" width="34" height="6" rx="1.5" fill="#202226"/><path d="M13 72 L4 86 H16 L20 72 Z" fill="#26282c"/><path d="M47 72 L56 86 H44 L40 72 Z" fill="#26282c"/><ellipse class="bee-lens" cx="30" cy="73" rx="12" ry="3.4" fill="url(#bee-lens-r)"/></svg></div>
+      <div class="bee-lamp bee-lamp--spot" aria-hidden="true"><svg viewBox="0 0 60 90" aria-hidden="true"><defs><linearGradient id="bee-can-s" x1="0" x2="1"><stop offset="0" stop-color="#16171a"/><stop offset=".35" stop-color="#4b4f56"/><stop offset=".6" stop-color="#2b2e33"/><stop offset="1" stop-color="#101113"/></linearGradient><radialGradient id="bee-lens-s" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fffdf2"/><stop offset=".55" stop-color="#ffe9a8"/><stop offset="1" stop-color="#d9a441"/></radialGradient></defs><rect x="22" y="0" width="16" height="7" fill="#2b2e33"/><rect x="28" y="6" width="4" height="9" fill="#3b3f45"/><path d="M10 40 V18 Q10 14 14 14 H46 Q50 14 50 18 V40" fill="none" stroke="#3b3f45" stroke-width="4"/><circle cx="10" cy="40" r="3.2" fill="#55595f"/><circle cx="50" cy="40" r="3.2" fill="#55595f"/><rect x="15" y="22" width="30" height="46" rx="4" fill="url(#bee-can-s)"/><rect x="17" y="27" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="17" y="32" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="13" y="66" width="34" height="6" rx="1.5" fill="#202226"/><path d="M13 72 L4 86 H16 L20 72 Z" fill="#26282c"/><path d="M47 72 L56 86 H44 L40 72 Z" fill="#26282c"/><ellipse class="bee-lens" cx="30" cy="73" rx="12" ry="3.4" fill="url(#bee-lens-s)"/></svg></div>
       <div class="bee-spot" aria-hidden="true"><span class="bee-spot-beam"></span></div>
       <div class="bee-flood" aria-hidden="true"></div>
       <div class="bee-confetti" aria-hidden="true"></div>
@@ -1330,6 +1371,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     tv.classList.add('is-off');
     await wait(500);
     tv.classList.replace('is-off', 'is-glitch');      // static, rolling bars, a flicker
+    if (pace) sfx.static(1.3);
     await wait(1300);
     tv.classList.replace('is-glitch', 'is-white');    // the picture comes up white
     await wait(450);
@@ -1348,6 +1390,28 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   function endIntro(tv) {
     tv.classList.add('is-glitch-out');
     setTimeout(() => tv.classList.remove('is-white', 'is-host', 'is-title-card', 'is-glitch', 'is-glitch-out', 'is-off'), 380);
+  }
+  /* The man on the panel speaks (the champion): the browser's voice, a man's where it has one,
+     while he nods a little. Resolves when he has finished. */
+  function judgeManSays(text) {
+    const judges = hall.querySelector('.bee-judges');
+    return new Promise((resolve) => {
+      if (!synth || !pace) { resolve(); return; }
+      let ended = false;
+      const end = () => { if (ended) return; ended = true; judges.classList.remove('is-man-talking'); resolve(); };
+      try {
+        hush();
+        const u = new SpeechSynthesisUtterance(text);
+        const all = synth.getVoices().filter((v) => /^en[-_]?/i.test(v.lang));
+        const v = all.find((x) => /\b(male|david|george|ryan|guy|daniel|mark|thomas|arthur|fred)\b/i.test(x.name) && !/female/i.test(x.name)) || all[0];
+        if (v) { u.voice = v; u.lang = v.lang; }
+        u.pitch = 0.85; u.rate = 0.92;
+        u.onstart = () => judges.classList.add('is-man-talking');
+        u.onend = u.onerror = end;
+        synth.speak(u);
+        setTimeout(end, 1500 + text.length * 110);   // never wait for ever
+      } catch { end(); }
+    });
   }
   /* The audience stand for the champion, one here and one there, and clap (the sound only; no
      hands), swaying a little as they do. */
@@ -1383,6 +1447,13 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   async function award(champ) {
     const tv = hall.querySelector('.bee-tv');
     const name = SPELLER_NAMES[champ.kid] || champ.name;
+    sfx.drumroll(2.6);
+    await judgeManSays('Ladies and gentlemen, the champion of the Prep Spelling Bee is...');
+    await wait(900);
+    if (gone) return;
+    sfx.fanfare();
+    await judgeManSays(champ === mySeat ? `${name}! That is you!` : `${name}!`);
+    if (gone) return;
     ovation(10);
     tv.classList.remove('is-idle');
     tv.classList.add('is-glitch');
@@ -1394,6 +1465,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     if (gone) return;
     tv.classList.add('is-award');
     confetti();
+    sfx.pop();
     chime();
     await host('Here is your trophy, and your prize money: five thousand PrepCoins!');
     if (gone) return;
@@ -1579,16 +1651,23 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   function runClock(seconds, onEnd) {
     clearInterval(tick);
     const end = Date.now() + seconds * 1000;
+    const ring = clockEl.querySelector('.bee-sw-ring'), hand = clockEl.querySelector('.bee-sw-hand'), num = clockEl.querySelector('.bee-clock-n');
+    let lastTick = null;
+    clockEl.hidden = false;
     const paint = () => {
-      const left = Math.ceil((end - Date.now()) / 1000);
-      clockEl.textContent = clock(left);
+      const ms = Math.max(0, end - Date.now()), left = Math.ceil(ms / 1000), frac = ms / (seconds * 1000);
+      num.textContent = clock(left);
+      ring.setAttribute('stroke-dasharray', `${(frac * 100).toFixed(2)} 100`);
+      ring.setAttribute('stroke', frac > 0.5 ? '#3bb273' : frac > 0.2 ? '#e0a526' : '#d64541');
+      hand.setAttribute('transform', `rotate(${((1 - frac) * 360).toFixed(1)} 24 32)`);
       clockEl.classList.toggle('is-low', left <= 10);
+      if (left <= 5 && left > 0 && left !== lastTick) { lastTick = left; if (pace) sfx.tick(); }   // the last seconds tick
       if (left <= 0) { clearInterval(tick); onEnd?.(); }
     };
     paint();
-    tick = setInterval(paint, 250);
+    tick = setInterval(paint, 100);
   }
-  const stopClock = () => { clearInterval(tick); clockEl.textContent = ''; clockEl.classList.remove('is-low'); };
+  const stopClock = () => { clearInterval(tick); clockEl.hidden = true; clockEl.classList.remove('is-low'); };
 
   function mySpell(q, k) {
     return new Promise((resolve) => {
@@ -1741,6 +1820,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   document.addEventListener('pointerdown', (e) => {
     if (!voiceList.hidden && !e.target.closest?.('.bee-voicebox')) setOpen(false);
   });
+  skipBtn.innerHTML = UI.skip(18);
+  skipBtn.dataset.tip = 'Skip to the result';
+  skipBtn.setAttribute('aria-label', 'Skip to the result');
   const fullBtn = $('.bee-full');
   fullBtn.innerHTML = UI.expand(18);
   fullBtn.setAttribute('aria-label', 'Full screen');
@@ -1785,7 +1867,11 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     await Promise.race([joined, sleep(2500)]);
     await wait(1200);
     bd.classList.add('is-curtains-open');           // the curtains sweep open and are tied back in gold
-    await wait(1900);
+    if (pace) sfx.swish();
+    setTimeout(() => { if (!gone && pace) sfx.clunk(); }, 1300);   // the flood lamps come on
+    await wait(1200);
+    if (!gone && pace) ovation(4.5);                // the hall stands and claps, then sits
+    await wait(4700);
     if (!gone && pace) await tvIntro();
     if (!gone && pace) {
       say(`Round 1. ${bee.alive.length} spellers.`);
@@ -1844,7 +1930,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         showMarked(r.t || '', q.word);
         say(r.t ? 'The judge: "Incorrect."' : 'Time is up. The judge: "Incorrect."');
         judgeSays('incorrect');
-        if (pace) bell();
+        if (pace) { bell(); sfx.buzz(); }
         if (REACTIONS) el.classList.add('is-sad');
         await spoken();
         await wait(700);
