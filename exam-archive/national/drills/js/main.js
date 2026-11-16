@@ -965,7 +965,7 @@ const spellerOf = (key) => BEE_SPELLERS.find((k) => k.key === key) || BEE_SPELLE
 function renderLobbySeats(playerCount, size) {
   lobbySeats.innerHTML = '';
   for (let i = 0; i < size; i++) {
-    if (i === 0 && isBee()) { const k = spellerOf(beeKid); lobbySeats.appendChild(seatSticker(i, null, `${k.call} (you)`, k.face)); }
+    if (i === 0 && isBee()) { const k = spellerOf(beeKid); lobbySeats.appendChild(seatSticker(i, null, myName(), k.face)); }
     else if (i === 0) lobbySeats.appendChild(seatSticker(i, getAvatarSeed(), 'You'));
     else if (i < playerCount) lobbySeats.appendChild(seatSticker(i, `Guest${i}`, 'Player'));
     else lobbySeats.appendChild(seatSticker(i, null));

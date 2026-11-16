@@ -612,3 +612,6 @@
 .bee-voice-cols span { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); }
 .bee-voice-pick .bee-ic { width: 1.8rem; height: 1.8rem; }
 .bee-bd .bee-tune { width: min(460px, 94vw); }
+
+/* a player's own name can be long: the placard keeps it to one line */
+.bee-kid .bee-tag-name { max-width: 7.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

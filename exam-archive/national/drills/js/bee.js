@@ -1105,10 +1105,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const bee = createBee(seats.length);
   const mySeat = seats.find((s) => s.uid === me.uid) || null;
   // a speller's name: the child's own; a real player's name after it
-  const nameOf = (s) => {
-    const n = SPELLER_NAMES[s.kid] || s.name;
-    return s === mySeat ? `${n} (you)` : s.uid && s.name && s.name !== n ? `${n} (${s.name})` : n;
-  };
+  /* A speller's name: a real player is called by their OWN name; a bot by its child's fixed name
+     (the user: "show players own name on their character. Only show fixed name for bots"). */
+  const ownName = (s) => (s.uid && s.name ? s.name : SPELLER_NAMES[s.kid] || s.name || 'Speller');
+  const nameOf = (s) => (s === mySeat ? `${ownName(s)} (you)` : ownName(s));
   const question = (k) => spellingQuestion(seed, k, 'spellSay', sets);
 
   /* ── The screen ──────────────────────────────────────────────── */
@@ -1233,7 +1233,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     // a numbered placard on a lanyard, the speller's name under the number
     const tag = document.createElement('span');
     tag.className = `bee-tag${s === mySeat ? ' is-me' : ''}`;
-    tag.innerHTML = `<b class="bee-tag-no">${s.tag}</b><span class="bee-tag-name">${SPELLER_NAMES[s.kid] || ''}</span>`;
+    tag.innerHTML = `<b class="bee-tag-no">${s.tag}</b><span class="bee-tag-name"></span>`;
+    tag.querySelector('.bee-tag-name').textContent = ownName(s);      // a player's own name, as typed
     // a lost speller's face: a frown over the smile, and tears
     const frown = document.createElement('span');
     frown.className = 'bee-frown';
@@ -1296,7 +1297,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.dataset.label = `${KID_NAMES[kid] || kid} (every one)`;
     sitVars(el, kid);
     const nm = el.querySelector('.bee-tag-name');
-    if (nm) nm.textContent = SPELLER_NAMES[kid] || '';
+    if (nm) nm.textContent = ownName(seat);
     el.setAttribute('aria-label', `Number ${seat.tag}, ${nameOf(seat)}`);
     setMouth(el, 0);
     const frown = el.querySelector('.bee-frown');
@@ -1735,13 +1736,14 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
      trophy and the prize money come up, and confetti pours down on the stage. */
   async function award(champ) {
     const tv = hall.querySelector('.bee-tv');
-    const name = SPELLER_NAMES[champ.kid] || champ.name;
+    const name = ownName(champ);
+    const bot = !champ.uid;                          // only a bot's fixed name is recorded
     sfx.drumroll(2.6);
     await judgeManSays('Ladies and gentlemen, the champion of the Prep Spelling Bee is...', '/media/spelling-judge/champion-is.mp3');
     await wait(900);
     if (gone) return;
     sfx.fanfare();
-    await judgeManSays(champ === mySeat ? `${name}! That is you!` : `${name}!`, `/media/spelling-judge/${champ === mySeat ? 'you' : 'name'}-${champ.kid}.mp3`);
+    await judgeManSays(champ === mySeat ? `${name}! That is you!` : `${name}!`, bot ? `/media/spelling-judge/name-${champ.kid}.mp3` : null);
     if (gone) return;
     ovation(10);
     tv.classList.remove('is-idle');
@@ -1751,7 +1753,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     tv.classList.add('is-host');
     await wait(600);
     await host(champ === mySeat ? 'Congratulations! You are the champion of the Prep Spelling Bee!' : `Congratulations, ${name}! You are the champion of the Prep Spelling Bee!`,
-      HOST(champ === mySeat ? 'champion-you' : `champion-${champ.kid}`));
+      champ === mySeat ? HOST('champion-you') : bot ? HOST(`champion-${champ.kid}`) : null);
     if (gone) return;
     tv.classList.add('is-award');
     confetti();
