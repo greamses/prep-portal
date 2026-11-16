@@ -384,6 +384,30 @@ const toDataUrl = async (url) => {
   const blob = await (await fetch(url)).blob();
   return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
 };
+/* A real player's name, said by the judge in Kokoro (the server's free Hugging Face Kokoro), made
+   once as they enter the bee; never ElevenLabs (the user: "Dont use elevenlabs to call out the
+   player's name so we dont burn tokens"). Resolves to an audio URL, or null (no access, no answer). */
+const nameMemo = new Map();
+function kokoroSays(text, voice = 'hf:bm_george') {
+  const key = `${voice}|${text}`;
+  if (nameMemo.has(key)) return nameMemo.get(key);
+  const ask = (async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return null;
+      const res = await fetch('/api/tts/kokoro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await user.getIdToken()}` },
+        body: JSON.stringify({ text, voice }),
+      });
+      if (!res.ok) return null;
+      const d = await res.json();
+      return d.url || (d.audioContent ? `data:audio/${d.audioEncoding === 'WAV' ? 'wav' : 'mp3'};base64,${d.audioContent}` : null);
+    } catch { return null; }
+  })();
+  nameMemo.set(key, ask);
+  return ask;
+}
 function elevenUrl(text, who) {
   const key = `${who}|${text}`;
   if (elevenAsked.has(key)) return elevenAsked.get(key);
@@ -1110,6 +1134,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const ownName = (s) => (s.uid && s.name ? s.name : SPELLER_NAMES[s.kid] || s.name || 'Speller');
   const nameOf = (s) => (s === mySeat ? `${ownName(s)} (you)` : ownName(s));
   const question = (k) => spellingQuestion(seed, k, 'spellSay', sets);
+  // the judge's voice says each real player's name, made once now, ready for the end
+  const nameClips = new Map();
+  for (const s of seats) if (s.uid && s.name) nameClips.set(s, kokoroSays(s === mySeat ? `${s.name}! That is you!` : `${s.name}!`));
 
   /* ── The screen ──────────────────────────────────────────────── */
   const bd = document.createElement('div');
@@ -1743,7 +1770,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     await wait(900);
     if (gone) return;
     sfx.fanfare();
-    await judgeManSays(champ === mySeat ? `${name}! That is you!` : `${name}!`, bot ? `/media/spelling-judge/name-${champ.kid}.mp3` : null);
+    const playerName = bot ? null : await Promise.race([nameClips.get(champ) || Promise.resolve(null), sleep(4000).then(() => null)]);
+    await judgeManSays(champ === mySeat ? `${name}! That is you!` : `${name}!`, bot ? `/media/spelling-judge/name-${champ.kid}.mp3` : playerName);
     if (gone) return;
     ovation(10);
     tv.classList.remove('is-idle');
@@ -1752,8 +1780,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     tv.classList.replace('is-glitch', 'is-white');
     tv.classList.add('is-host');
     await wait(600);
-    await host(champ === mySeat ? 'Congratulations! You are the champion of the Prep Spelling Bee!' : `Congratulations, ${name}! You are the champion of the Prep Spelling Bee!`,
-      champ === mySeat ? HOST('champion-you') : bot ? HOST(`champion-${champ.kid}`) : null);
+    // PrepBot never says a player's name (his voice is ElevenLabs): a congratulation without it
+    if (champ === mySeat) await host('Congratulations! You are the champion of the Prep Spelling Bee!', HOST('champion-you'));
+    else if (bot) await host(`Congratulations, ${name}! You are the champion of the Prep Spelling Bee!`, HOST(`champion-${champ.kid}`));
+    else await host('Congratulations to our champion! What a wonderful speller you are. You are the champion of the Prep Spelling Bee!', HOST('champion-player'));
     if (gone) return;
     tv.classList.add('is-award');
     confetti();
