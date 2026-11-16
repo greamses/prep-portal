@@ -38,11 +38,15 @@ export function seatSpellers(seed, humans, botsNeeded) {
     const j = Math.floor(rng() * (i + 1));
     [people[i], people[j]] = [people[j], people[i]];
   }
-  // boys and girls sit turn about, and the four children (js/bee.js KIDS) take turns
-  const KINDS = ['boy', 'girl', 'boy2', 'girl2', 'boy3', 'girl3', 'boy2', 'girl', 'boy3', 'girl3'];
-  const first = Math.floor(rng() * 4) * 2;
-  // a player's own choice of speller wins; everyone else takes the seat's turn
-  return people.map(({ chosen, ...p }, seat) => ({ ...p, seat, tag: seat + 1, kid: chosen || KINDS[(seat + first) % KINDS.length] }));
+  // Every speller is a different child (js/bee.js KIDS; there are six, a bee has five). The
+  // players' own choices come first, in seat order (the first to choose a child keeps it);
+  // the rest take the children nobody chose, shuffled by the seed.
+  const pool = ['boy', 'girl', 'boy2', 'girl2', 'boy3', 'girl3'];
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  const used = new Set();
+  const kidOf = people.map((p) => (p.chosen && pool.includes(p.chosen) && !used.has(p.chosen) ? (used.add(p.chosen), p.chosen) : null));
+  const left = pool.filter((k) => !used.has(k));
+  return people.map(({ chosen, ...p }, seat) => ({ ...p, seat, tag: seat + 1, kid: kidOf[seat] || left.shift() || pool[seat % pool.length] }));
 }
 
 /**

@@ -387,7 +387,7 @@ topic.addSlide('spell-bank', 'Word List', () => {});
 topic.addSlide('spell-sets', 'Word Sets', () => {});
 topic.addSlide('spell-pace', 'Pace', () => {});
 topic.addSlide('spell-master', 'Word Master', () => {});
-topic.addSlide('bee-kid', 'Your Speller', () => {});
+
 /* The Spelling Bee: choose the speller you will be on the stage. */
 function renderBeeKidStep() {
   const grid = document.createElement('div');
@@ -409,9 +409,9 @@ function renderBeeKidStep() {
     });
     grid.append(b);
   }
-  renderCustomStep(topic, 'bee-kid', {
+  renderCustomStep(options, 'speller', {
     title: 'Choose your speller',
-    subtitle: 'This is you on the stage.',
+    subtitle: 'This is you on the stage. Every speller in the hall is a different child.',
     content: grid,
     nextLabel: 'Next',
     onNext: () => { mem.save({ beeKid }); flow.next(); },
@@ -484,7 +484,7 @@ function renderSpellSetsPick() {
     nextLabel: 'Next',
     onNext: () => {
       range = '1-9'; saveContent();
-      if (isBee()) { renderBeeKidStep(); topic.goTo('bee-kid'); return; }   // a bee: no Focus, no Word Master; choose your speller
+      if (isBee()) { flow.next(); return; }       // a bee: no Focus, no Word Master (the speller is chosen in the last section)
       renderSpellPaceStep(); topic.goTo('spell-pace');
     },
   });
@@ -747,6 +747,7 @@ const options = createCarousel(optionsMount);
 options.addSlide('mode', 'Mode', () => {});
 options.addSlide('size', 'Room Size', () => {});
 options.addSlide('time', 'Time Limit', () => {});
+options.addSlide('speller', 'Your Speller', () => {});
 
 /* The Spelling Bee is for five players: no Versus, no room of ten (renderModeSize). */
 function renderModeSize() {
@@ -795,7 +796,8 @@ function renderTimeStep() {
         value: l.key, label: l.label, checked: spellLevel === l.key,
         tip: isBee() ? `${beeSeconds(l.key)} seconds for each word.` : `${perMinute(l.key)} words a minute: ${clockLabel(roundSeconds(spellIds(), l.key))}.`,
       })),
-      onPick: (v) => { spellLevel = levelOf(v).key; saveContent(); flow.next(); }, // last step of this section
+      // the Spelling Bee: next, choose your speller; otherwise this is the section's last step
+      onPick: (v) => { spellLevel = levelOf(v).key; saveContent(); if (isBee()) { renderBeeKidStep(); options.goTo('speller'); } else flow.next(); },
     });
     return;
   }
@@ -908,7 +910,7 @@ const flow = createSectionFlow([
   },
   {
     el: $('drill-section-options'),
-    chips: () => optionsChips({ mode: isBee() ? 'multiplayer' : mode, roomSize: isBee() ? BEE_SIZE : roomSize, timeLabel: isBee() ? `${levelOf(spellLevel).label} ${beeSeconds(spellLevel)}s a word` : categoryValue === 'spelling' ? `${levelOf(spellLevel).label} ${clockLabel(spellTime())}` : `${timeLimit}s` }),
+    chips: () => [...optionsChips({ mode: isBee() ? 'multiplayer' : mode, roomSize: isBee() ? BEE_SIZE : roomSize, timeLabel: isBee() ? `${levelOf(spellLevel).label} ${beeSeconds(spellLevel)}s a word` : categoryValue === 'spelling' ? `${levelOf(spellLevel).label} ${clockLabel(spellTime())}` : `${timeLimit}s` }), ...(isBee() ? [{ label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [])],
   },
   {
     el: $('drill-section-room'),

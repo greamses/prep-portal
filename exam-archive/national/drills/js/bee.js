@@ -87,6 +87,10 @@ const REACTIONS = false;
 const SPELLER_RECORDINGS = true;     // 2026-11-15: back to Kokoro, read from each letter's and word's transcription
 // the ElevenLabs letters (media/spelling-letters) are kept, but Kokoro's are played instead
 const ELEVEN_LETTERS = false;
+// the letters themselves: the browser's voice, as the hall settings' ABC chart says them (the user,
+// 2026-11-15: "When I click the letters, they sound well but when they are said by the spellers,
+// they sound awkward"); the WORD the speller says stays their Kokoro recording
+const KOKORO_LETTERS = false;
 /* The spellers a player may choose to be (the setup's "Choose your speller"). */
 const KID_NAMES = { boy: 'Boy, blue T-shirt', girl: 'Girl, pigtails', boy2: 'Boy, hoodie', girl2: 'Girl, pink and yellow', girl3: 'Girl, curly hair', boy3: 'Boy, curly hair' };
 export const BEE_SPELLERS = Object.keys(KID_NAMES).map((key) => ({ key, name: KID_NAMES[key], src: KIDS[key].src }));
@@ -842,10 +846,14 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     return el;
   });
   /** A seat's child becomes another drawing (a player's chosen speller, told by the live room). */
-  function changeKid(seat, kid) {
+  function changeKid(seat, kid, swapping = false) {
     const f = KIDS[kid], el = kids[seat.seat];
     if (!f || !el) return;
+    // no two spellers alike: whoever has this child already (not a player who chose it) takes this seat's
+    const other = seats.find((x) => x !== seat && x.kid === kid);
+    const was = seat.kid;
     seat.kid = kid;
+    if (other && !swapping && was) changeKid(other, was, true);
     el.querySelectorAll('img').forEach((i) => { i.src = f.src; });
     el.style.setProperty('--tall', `var(--t-tall-${kid}, ${f.tall})`);
     el.style.setProperty('--hip', f.hip);
@@ -950,7 +958,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const ready = {};
   for (const who of Object.keys(LETTER_VOICES)) lettersReady[who].then((ok) => { ready[who] = ok; });
   function letterClip(ch, kid) {
-    if (!SPELLER_RECORDINGS) return [];
+    if (!SPELLER_RECORDINGS || !KOKORO_LETTERS) return [];
     const i = LETTER[ch.toLowerCase()];
     const who = KIDS[kid]?.girl ? 'girl' : 'boy';
     const list = [];
