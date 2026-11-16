@@ -552,3 +552,9 @@
 }
 .bee-bd.is-curtains-open .bee-footlights::before { opacity: 1; }
 .bee-bd.is-curtains-open .bee-footlights span::before { opacity: 1; transition-delay: 1.4s; }
+
+/* the IPA keys under the letter's box */
+.bee-ipa { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }
+.bee-ipa[hidden] { display: none; }
+.bee-ipa-key { height: 1.7rem; padding: 0; border: 0; cursor: pointer; font-family: var(--font-mono); font-size: 0.9rem; color: var(--ink); background: var(--surface-secondary, rgba(0, 0, 0, 0.05)); }
+.bee-ipa-key:hover { background: var(--surface-primary); box-shadow: inset 0 -2px 0 var(--accent-primary); }

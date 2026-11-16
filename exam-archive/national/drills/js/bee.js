@@ -871,9 +871,51 @@ function mountTuner(hall, top, { say }) {
     if (L[current]) LETTER_SAID[kid][current] = L[current]; else delete LETTER_SAID[kid][current];
     refreshKeys();
   });
-  said.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sayLetter(); } e.stopPropagation(); });
+  /* Typing IPA: a row of the symbols English needs (tap one: it goes in where the cursor is), and
+     while the box holds IPA (it starts with "/") the keyboard helps: ' is the stress mark, , the
+     second stress, : the long mark, and Shift with a letter is the IPA letter like it (capitals
+     mean nothing in IPA). */
+  const IPA_KEYS = ['ˈ', 'ˌ', 'ː', 'ə', 'ɪ', 'iː', 'ʊ', 'uː', 'ɛ', 'æ', 'ʌ', 'ɑː', 'ɒ', 'ɔː', 'ɜː', 'eɪ', 'aɪ', 'ɔɪ', 'əʊ', 'aʊ', 'ɪə', 'eə', 'θ', 'ð', 'ʃ', 'ʒ', 'tʃ', 'dʒ', 'ŋ', 'j', 'ɹ', '/'];
+  const SHIFT_IPA = { E: 'ɛ', A: 'æ', I: 'ɪ', U: 'ʊ', O: 'ɔ', V: 'ʌ', Q: 'ɑ', B: 'ɒ', '@': 'ə', '#': 'ɜ', T: 'θ', D: 'ð', S: 'ʃ', Z: 'ʒ', N: 'ŋ', R: 'ɹ' };
+  const PLAIN_IPA = { "'": 'ˈ', ',': 'ˌ', ':': 'ː' };
+  const putIn = (t) => {
+    const a = said.selectionStart ?? said.value.length, b = said.selectionEnd ?? a;
+    said.value = said.value.slice(0, a) + t + said.value.slice(b);
+    said.setSelectionRange(a + t.length, a + t.length);
+    said.dispatchEvent(new Event('input'));
+  };
+  const ipaRow = document.createElement('div');
+  ipaRow.className = 'bee-ipa';
+  for (const k of IPA_KEYS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pp-plain bee-ipa-key';
+    b.textContent = k;
+    const hint = Object.entries(SHIFT_IPA).find(([, v]) => v === k) || Object.entries(PLAIN_IPA).find(([, v]) => v === k);
+    b.dataset.tip = hint ? `${k}  (${/[A-Z@#]/.test(hint[0]) ? 'Shift+' : ''}${hint[0] === '#' ? '3' : hint[0] === '@' ? '2' : hint[0]})` : k;
+    b.setAttribute('aria-label', `Insert ${k}`);
+    b.addEventListener('mousedown', (e) => e.preventDefault());   // keep the cursor in the box
+    b.addEventListener('click', () => {
+      if (!said.value.trim().startsWith('/')) { said.value = `/${said.value.replace(/\//g, '')}`; }
+      said.focus();
+      putIn(k === '/' ? '/' : k);
+    });
+    ipaRow.append(b);
+  }
+  said.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); sayLetter(); e.stopPropagation(); return; }
+    if (said.value.trim().startsWith('/') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const k = e.shiftKey && e.key === '3' ? '#' : e.key;
+      const sym = (e.shiftKey && SHIFT_IPA[k]) || PLAIN_IPA[k];
+      if (sym) { e.preventDefault(); putIn(sym); }
+    }
+    e.stopPropagation();
+  });
   hear.addEventListener('click', sayLetter);
-  paper.append(grid, edit);
+  paper.append(grid, edit, ipaRow);
+  const showIpaRow = () => { ipaRow.hidden = edit.hidden; };
+  new MutationObserver(showIpaRow).observe(edit, { attributes: true, attributeFilter: ['hidden'] });
+  showIpaRow();
 
   // undo, save, and a one-line note
   const note = document.createElement('p');
