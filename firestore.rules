@@ -203,6 +203,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+    // the Spelling Bee's letters as saved on the ABC chart, recorded once in each speller voice
+    // (one doc per voice set) so every player hears them
+    match /beeLetterClips/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
 
     // Formulas the admin added to Algebra Moves' shelf, beyond the static
     // bank the page ships with. Written only through the Admin SDK (see

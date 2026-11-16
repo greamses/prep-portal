@@ -329,6 +329,18 @@ const withStop = (t) => { t = String(t || '').trim(); return /[.!?]$/.test(t) ? 
 const elevenText = (ch, t) => (isIpa(t)
   ? `<phoneme alphabet="ipa" ph="${ipaOf(t)}">${ch === ' ' ? 'space' : ch.toUpperCase()}</phoneme>.`
   : withStop(t));
+/* The ABC chart's saved letters, recorded in each voice when the admin saves (one Firestore doc
+   per voice set: beeLetterClips/<set> = { clips: { <letter>: { text, data } } }), so every player
+   hears them, not only one who may use ElevenLabs live. */
+const SAVED_CLIPS = {};
+const setsOfGender = (g) => [...new Set(Object.keys(KIDS).filter((k) => genderOf(k) === g).map((k) => KID_LETTER_SET[k] || g))];
+const savedClipsReady = Promise.all(Object.keys(LETTER_VOICES).map((set) => getDoc(doc(db, 'beeLetterClips', set))
+  .then((d) => { SAVED_CLIPS[set] = (d.exists() && d.data().clips) || {}; }).catch(() => { SAVED_CLIPS[set] = {}; })));
+const toDataUrl = async (url) => {
+  if (url.startsWith('data:')) return url;
+  const blob = await (await fetch(url)).blob();
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
+};
 function elevenUrl(text, who) {
   const key = `${who}|${text}`;
   if (elevenAsked.has(key)) return elevenAsked.get(key);
@@ -470,10 +482,16 @@ function judgesSvg() {
   const bell = (cx) => `<ellipse cx="${cx}" cy="136.4" rx="8" ry="1.4" fill="rgba(0,0,0,.3)"/><rect x="${cx - 7.5}" y="133.5" width="15" height="2.8" rx="1" fill="#5b3f22"/>` +
     `<path d="M${cx - 6} 133.6 Q${cx - 6} 125.5 ${cx} 125.5 Q${cx + 6} 125.5 ${cx + 6} 133.6 Z" fill="#e2b84a"/><path d="M${cx - 3.5} 131 Q${cx - 3.2} 127 ${cx} 126.6" stroke="#fff3c4" stroke-width="1" fill="none" opacity=".8"/><rect x="${cx - .8}" y="122.6" width="1.6" height="3" fill="#b8902e"/><circle cx="${cx}" cy="122.4" r="1.4" fill="#e2b84a"/>`;
   // a desk microphone: a weighted base, a gooseneck curving up to the judge, a mesh head
-  const deskMic = (cx, lean) => `<ellipse cx="${cx}" cy="136.4" rx="7" ry="1.3" fill="rgba(0,0,0,.3)"/><rect x="${cx - 6}" y="132.6" width="12" height="3.6" rx="1.2" fill="#24272b"/><circle cx="${cx + 3}" cy="134.2" r=".9" fill="#d64541"/>` +
-    `<path d="M${cx} 132.8 C${cx} 124 ${cx + lean * 2} 118 ${cx + lean * 7} 113.5" fill="none" stroke="#3a3e44" stroke-width="1.6" stroke-linecap="round"/>` +
-    `<path d="M${cx} 132.8 C${cx} 124 ${cx + lean * 2} 118 ${cx + lean * 7} 113.5" fill="none" stroke="#7d848c" stroke-width=".5" stroke-dasharray=".8 .6"/>` +
-    `<rect x="${cx + lean * 7 - 2.2}" y="107.5" width="4.4" height="7" rx="2" fill="#2c2f33" stroke="#8a9199" stroke-width=".4" transform="rotate(${lean * 28} ${cx + lean * 7} 113.5)"/>`;
+  const deskMic = (cx, lean) => {
+    const hx = cx + lean * 12, hy = 104;                         // where the head is, near the judge's chin
+    return `<ellipse cx="${cx}" cy="136.6" rx="11" ry="1.8" fill="rgba(0,0,0,.32)"/>` +
+      `<path d="M${cx - 10} 136 Q${cx - 10} 130.5 ${cx - 6} 130.5 H${cx + 6} Q${cx + 10} 130.5 ${cx + 10} 136 Z" fill="#222428"/>` +
+      `<rect x="${cx - 8}" y="131.6" width="16" height="1" fill="#5c6168"/><circle cx="${cx + 5}" cy="133.6" r="1.3" fill="#d64541"/><rect x="${cx - 7}" y="132.8" width="5" height="1.6" fill="#3a3d42"/>` +
+      `<path d="M${cx} 131 C${cx} 120 ${cx + lean * 3} 112 ${hx} ${hy + 4}" fill="none" stroke="#2d3035" stroke-width="2.6" stroke-linecap="round"/>` +
+      `<path d="M${cx} 131 C${cx} 120 ${cx + lean * 3} 112 ${hx} ${hy + 4}" fill="none" stroke="#8a9199" stroke-width=".8" stroke-dasharray="1.1 .8"/>` +
+      `<g transform="rotate(${lean * 30} ${hx} ${hy + 4})"><rect x="${hx - 3.6}" y="${hy - 7}" width="7.2" height="11.5" rx="3.4" fill="url(#bee-desk-mesh)" stroke="#9aa1a9" stroke-width=".6"/>` +
+      `<rect x="${hx - 3.8}" y="${hy + 2.2}" width="7.6" height="2" rx=".8" fill="#9aa1a9"/><circle cx="${hx}" cy="${hy - 2.5}" r="3.6" fill="none" stroke="rgba(255,255,255,.18)" stroke-width=".5"/></g>`;
+  };
   const glass = (cx) => `<ellipse cx="${cx}" cy="136.3" rx="4" ry=".9" fill="rgba(0,0,0,.25)"/><polygon points="${cx - 3.4},124.5 ${cx + 3.4},124.5 ${cx + 2.8},136 ${cx - 2.8},136" fill="rgba(210,235,250,.55)" stroke="rgba(255,255,255,.8)" stroke-width=".5"/><polygon points="${cx - 3.1},128 ${cx + 3.1},128 ${cx + 2.8},136 ${cx - 2.8},136" fill="rgba(120,185,230,.55)"/>`;
   // each judge grows or shrinks from the middle of their place at the table (the sizes panel)
   const sized = (id, label, inner) => `<g class="bee-item" data-item="${id}" data-label="${label}">${inner}</g>`;
@@ -488,6 +506,7 @@ function judgesSvg() {
     <defs>
       <linearGradient id="bee-cloth" x1="0" x2="1" y1="0" y2="0">${Array.from({ length: 13 }, (_, i) => `<stop offset="${(i / 12).toFixed(3)}" stop-color="${i % 2 ? '#1a2d55' : '#25407a'}"/>`).join('')}</linearGradient>
       <linearGradient id="bee-wood" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#9a6537"/><stop offset=".55" stop-color="#7a4b27"/><stop offset="1" stop-color="#5a3519"/></linearGradient>
+      <pattern id="bee-desk-mesh" width="1.2" height="1.2" patternUnits="userSpaceOnUse"><rect width="1.2" height="1.2" fill="#26292d"/><circle cx=".6" cy=".6" r=".36" fill="#6b7077"/></pattern>
       <linearGradient id="bee-gold" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f6dc85"/><stop offset=".5" stop-color="#d4a937"/><stop offset="1" stop-color="#9c7720"/></linearGradient>
     </defs>
     <g class="bee-item" data-item="judge-table" data-label="Judges' table">
@@ -854,7 +873,25 @@ function mountTuner(hall, top, { say }) {
     try {
       await setDoc(doc(db, ...SETTINGS_DOC), { sizes, items, letters, updatedAt: serverTimestamp() });
       settings = { sizes: { ...sizes }, items: JSON.parse(JSON.stringify(items)), letters: normLetters(letters) };
-      note.textContent = 'Saved for every bee.';
+      // the saved letters, recorded in every ElevenLabs voice of that group, for every player
+      note.textContent = 'Saved. Recording the letters in each voice...';
+      let made = 0, failed = 0;
+      for (const g of ['girl', 'boy']) {
+        for (const set of setsOfGender(g)) {
+          const clips = {};
+          for (const [ch, t] of Object.entries(letters[g])) {
+            const said = elevenText(ch, t);
+            const old = SAVED_CLIPS[set]?.[ch];
+            if (old && old.text === said) { clips[ch] = old; continue; }
+            const url = await elevenUrl(said, set);
+            if (!url) { failed++; continue; }
+            try { clips[ch] = { text: said, data: await toDataUrl(url) }; made++; } catch { failed++; }
+          }
+          await setDoc(doc(db, 'beeLetterClips', set), { clips, updatedAt: serverTimestamp() });
+          SAVED_CLIPS[set] = clips;
+        }
+      }
+      note.textContent = failed ? `Saved; ${made} letters recorded, ${failed} could not be (ElevenLabs refused).` : `Saved for every bee${made ? `, ${made} letters recorded in each voice` : ''}.`;
     } catch (e) {
       note.textContent = `Not saved: ${e.code || e.message || e}`;
     }
@@ -1100,8 +1137,12 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const warmEleven = () => {
     if (spellerVoice !== 'eleven') return;
     // every voice a girl or a boy speaks in: their children's sets, or the grown-up one
-    const setsOf = (g) => [...new Set(Object.keys(KIDS).filter((k) => genderOf(k) === g).map((k) => KID_LETTER_SET[k] || g))];
-    settingsReady.then(() => { for (const g of ['girl', 'boy']) for (const [ch, t] of Object.entries(LETTER_SAID[g])) for (const set of setsOf(g)) elevenUrl(elevenText(ch, t), set); });
+    // (only what was not already recorded at saving)
+    Promise.all([settingsReady, savedClipsReady]).then(() => {
+      for (const g of ['girl', 'boy']) for (const [ch, t] of Object.entries(LETTER_SAID[g])) for (const set of setsOfGender(g)) {
+        if (SAVED_CLIPS[set]?.[ch]?.text !== elevenText(ch, t)) elevenUrl(elevenText(ch, t), set);
+      }
+    });
   };
   warmEleven();
   document.addEventListener('bee-voice', warmEleven);
@@ -1217,8 +1258,12 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       // this child's voice (once it has been made)
       const own = LETTER_SAID[who][ch.toLowerCase()];
       if (own) {
-        const live = elevenDone.get(`${set}|${elevenText(ch, own)}`);
-        if (live) list.push({ url: live }); else elevenUrl(elevenText(ch, own), set);
+        const said = elevenText(ch, own), kept = SAVED_CLIPS[set]?.[ch.toLowerCase()];
+        if (kept && kept.text === said) list.push({ url: kept.data });         // recorded when it was saved
+        else {
+          const live = elevenDone.get(`${set}|${said}`);
+          if (live) list.push({ url: live }); else elevenUrl(said, set);
+        }
       }
       if (i != null && ready[set]) list.push({ url: `/media/spelling-letters/${set}/${pad4(i)}.mp3`, pitch: LETTER_VOICES[set]?.pitch || 1 });
     }
