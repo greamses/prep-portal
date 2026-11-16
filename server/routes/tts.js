@@ -371,14 +371,25 @@ module.exports = function () {
       const ALICE = "Xb7hH8MSUJpSbSDYk0k2";
       const own = await dansumId(apiKey);
       let { text, voiceId } = req.body;
+      /* A Spelling Bee letter (drills/js/bee.js): one of the two speller voices (Lily, the girl's;
+         George, the boy's: data/spelling/speller-voices.js), never swapped for Alice. A letter
+         given as IPA comes as an SSML phoneme tag, which only ElevenLabs' English Flash v2 reads;
+         otherwise the model the recorded letters were made with, so the two sound alike. */
+      const letter = req.body?.from === "letter";
+      const LETTER_VOICES = new Set(["pFZP5JQG7iQjIQuC4Bku", "JBFqnCBsd6RMkjVDRZzb"]);
+      const ipaLetter = letter && typeof text === "string" && /<phoneme[\s>]/.test(text);
+      if (letter && typeof text === "string" && text.length > 120) return res.status(400).json({ error: "A letter is a short line." });
       /* no voice asked for, "dansum", or one not on the list: Teacher Dansum's voice (Alice when it cannot be found) */
       /* "dansum" asks for Teacher Dansum's own voice; no voice, or one not on the list, is Alice (the default since 2026-11-12) */
-      if (voiceId === "dansum") voiceId = own || ALICE;
+      if (letter) voiceId = LETTER_VOICES.has(voiceId) ? voiceId : "pFZP5JQG7iQjIQuC4Bku";
+      else if (voiceId === "dansum") voiceId = own || ALICE;
       else if (!voiceId || !(BOARD_VOICES.has(voiceId) || voiceId === own)) voiceId = ALICE;
-      const MODEL = board || lesson ? "eleven_multilingual_v2" : "eleven_turbo_v2_5";
+      const MODEL = ipaLetter ? "eleven_flash_v2" : board || lesson || letter ? "eleven_multilingual_v2" : "eleven_turbo_v2_5";
       /* A CLONED VOICE WANTS STEADY SETTINGS: low stability and high style made the user's own voice
          wobble and sound read out ("It is my voice but robotic"). A touch slower, as a teacher talks. */
-      const SETTINGS = lesson
+      const SETTINGS = letter
+        ? { stability: 0.6, similarity_boost: 0.8 }                  // as the recorded letters were made
+        : lesson
         ? { stability: 0.5, similarity_boost: 0.8, style: 0.12, use_speaker_boost: true, speed: 0.94 }
         : board
           ? { stability: 0.38, similarity_boost: 0.8, style: 0.28, use_speaker_boost: true }
@@ -396,7 +407,7 @@ module.exports = function () {
       const around = (v) => (lesson && typeof v === "string" ? v.slice(-600).trim() : "");
       const prevText = around(req.body?.previousText), nextText = around(req.body?.nextText).slice(0, 600);
       const ctxTag = prevText || nextText ? `~${crypto.createHash("sha1").update(`${prevText}|${nextText}`).digest("hex").slice(0, 10)}` : "";
-      const cacheVoice = lesson ? `${voiceId}~lesson2${ctxTag}` : board ? `${voiceId}~v2` : voiceId; // a board line in the natural model is its own recording
+      const cacheVoice = letter ? `${voiceId}~letter${ipaLetter ? "-ipa" : ""}` : lesson ? `${voiceId}~lesson2${ctxTag}` : board ? `${voiceId}~v2` : voiceId; // a board line in the natural model is its own recording
       const { file: cacheFile, url: cacheUrl } = cacheFileFor(cacheVoice, text);
 
       // 1) Static disk hit — hand back the static URL so the browser loads it

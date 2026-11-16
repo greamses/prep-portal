@@ -252,14 +252,38 @@ const voiceFor = (() => {
 const LETTER_WORD = { a: 'Ay.', ' ': 'space', '-': 'hyphen', "'": 'apostrophe' };
 const DEFAULT_LETTER = (ch) => LETTER_WORD[ch.toLowerCase()] || ch.toUpperCase();
 /* a better spelling for a letter, set in the hall's settings (the ABC chart) and saved for everyone */
-const LETTER_SAID = {};
-const letterName = (ch) => LETTER_SAID[ch.toLowerCase()] || DEFAULT_LETTER(ch);
+// what each voice is given for a letter, set on the ABC chart: the girl's and the boy's apart
+const LETTER_SAID = { girl: {}, boy: {} };
+const genderOf = (k) => (k === 'girl' || k === 'boy' ? k : KIDS[k]?.girl ? 'girl' : 'boy');
+/** The saved letters as { girl, boy }: an older save (one list for both) goes to both. */
+function normLetters(v = {}) {
+  if (v && (typeof v.girl === 'object' || typeof v.boy === 'object')) return { girl: { ...(v.girl || {}) }, boy: { ...(v.boy || {}) } };
+  const flat = Object.fromEntries(Object.entries(v || {}).filter(([, t]) => typeof t === 'string'));
+  return { girl: { ...flat }, boy: { ...flat } };
+}
+function setLetterSaid(v) {
+  const n = normLetters(v);
+  for (const g of ['girl', 'boy']) { for (const k of Object.keys(LETTER_SAID[g])) delete LETTER_SAID[g][k]; Object.assign(LETTER_SAID[g], n[g]); }
+}
+/* A letter's spelling on the ABC chart may be IPA between slashes ("/eɪ/"). Only ElevenLabs can
+   say IPA (an SSML phoneme tag, read by its English Flash model); the browser's voice says the
+   letter as usual. */
+const isIpa = (t) => /^\/[^/]+\/$/.test(String(t || '').trim());
+const ipaOf = (t) => String(t).trim().slice(1, -1).replace(/["<>&]/g, '');
+const letterName = (ch, who = 'girl') => {
+  const own = LETTER_SAID[genderOf(who)][ch.toLowerCase()];
+  return own && !isIpa(own) ? own : DEFAULT_LETTER(ch);
+};
 /* ElevenLabs, live: a letter whose spelling was changed on the ABC chart is said by ElevenLabs
    from THAT text (the server's /api/tts/elevenlabs, which keeps each line it has made), since the
    recorded letters cannot change (the user: "They dont seem to respond to my new inputs"). A
    refused or failed request leaves the recording. */
 const elevenDone = new Map(), elevenAsked = new Map();
 const withStop = (t) => { t = String(t || '').trim(); return /[.!?]$/.test(t) ? t : `${t}.`; };
+// what ElevenLabs is given for a letter: its IPA as a phoneme tag, or the spelling as a sentence
+const elevenText = (ch, t) => (isIpa(t)
+  ? `<phoneme alphabet="ipa" ph="${ipaOf(t)}">${ch === ' ' ? 'space' : ch.toUpperCase()}</phoneme>.`
+  : withStop(t));
 function elevenUrl(text, who) {
   const key = `${who}|${text}`;
   if (elevenAsked.has(key)) return elevenAsked.get(key);
@@ -271,7 +295,7 @@ function elevenUrl(text, who) {
       const res = await fetch('/api/tts/elevenlabs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ text, voiceId: LETTER_VOICES[who].id }),
+        body: JSON.stringify({ text, voiceId: LETTER_VOICES[who].id, from: 'letter' }),
       });
       if (!res.ok) return null;
       const data = await res.json();
@@ -394,8 +418,8 @@ function judgesSvg() {
     `<polygon points="${cx - 25},121 ${cx + 25},121 ${cx + 24},119.4 ${cx - 24},119.4" fill="#d8d2c4"/>` +
     `<rect x="${cx - 27}" y="134.6" width="54" height="1.4" fill="#e6dfd0"/>` +
     `<line x1="${cx - 20}" y1="124" x2="${cx + 20}" y2="124" stroke="#c9a33a" stroke-width=".8"/>` +
-    `<text x="${cx}" y="129.6" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="6.4" font-weight="700" fill="#1d2433">${title}</text>` +
-    `<text x="${cx}" y="134" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="3.6" letter-spacing=".5" fill="#6b5a2e">${role}</text>`;
+    `<text x="${cx}" y="129.6" text-anchor="middle" style="font-family: var(--font-display)" font-size="5.6" font-weight="700" fill="#1d2433">${title}</text>` +
+    `<text x="${cx}" y="134" text-anchor="middle" style="font-family: var(--font-mono)" font-size="3.4" font-weight="700" letter-spacing=".5" fill="#6b5a2e">${role}</text>`;
   // a brass desk bell and a glass of water
   const bell = (cx) => `<ellipse cx="${cx}" cy="136.4" rx="8" ry="1.4" fill="rgba(0,0,0,.3)"/><rect x="${cx - 7.5}" y="133.5" width="15" height="2.8" rx="1" fill="#5b3f22"/>` +
     `<path d="M${cx - 6} 133.6 Q${cx - 6} 125.5 ${cx} 125.5 Q${cx + 6} 125.5 ${cx + 6} 133.6 Z" fill="#e2b84a"/><path d="M${cx - 3.5} 131 Q${cx - 3.2} 127 ${cx} 126.6" stroke="#fff3c4" stroke-width="1" fill="none" opacity=".8"/><rect x="${cx - .8}" y="122.6" width="1.6" height="3" fill="#b8902e"/><circle cx="${cx}" cy="122.4" r="1.4" fill="#e2b84a"/>`;
@@ -424,10 +448,10 @@ function judgesSvg() {
     <rect x="4" y="157" width="294" height="3" fill="url(#bee-gold)"/>
     ${Array.from({ length: 49 }, (_, i) => `<rect x="${5 + i * 6}" y="211.5" width="2" height="5.5" fill="#d4a937"/>`).join('')}
     <rect x="102" y="170" width="98" height="28" fill="#13234a" stroke="url(#bee-gold)" stroke-width="1.6"/>
-    <text x="151" y="181.5" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="6" letter-spacing="1.6" fill="#e9c86a">PREP</text>
-    <text x="151" y="192" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="8.4" font-weight="700" letter-spacing=".8" fill="#f6dc85">SPELLING BEE</text>
+    <text x="151" y="181.5" text-anchor="middle" style="font-family: var(--font-mono)" font-size="5.6" font-weight="700" letter-spacing="1.6" fill="#e9c86a">PREP</text>
+    <text x="151" y="192" text-anchor="middle" style="font-family: var(--font-display)" font-size="7.6" font-weight="800" letter-spacing=".4" fill="#f6dc85">SPELLING BEE</text>
     ${glass(W.x + ww / 2 - 33)}${bell(128)}${glass(M.x + mw / 2 + 31)}
-    ${card(W.x + ww / 2, 'Mrs. Okafor', 'HEAD JUDGE')}${card(M.x + mw / 2, 'Mr. Bello', 'JUDGE')}</g>
+    ${card(W.x + ww / 2, 'Mrs. Chen', 'HEAD JUDGE')}${card(M.x + mw / 2, 'Mr. Whitmore', 'JUDGE')}</g>
   </svg>`;
 }
 
@@ -451,7 +475,7 @@ const settingsReady = getDoc(doc(db, ...SETTINGS_DOC))
   .then((snap) => {
     const d = snap.exists() ? snap.data() : {};
     settings = { sizes: d.sizes || {}, items: d.items || {}, letters: d.letters || {} };
-    Object.assign(LETTER_SAID, settings.letters);
+    setLetterSaid(settings.letters);
   })
   .catch((e) => console.warn('[bee] settings not read; the defaults stand:', e));
 const tuneStart = (name) => settings.sizes[name] ?? (name.startsWith('tall-') ? KIDS[name.slice(5)]?.tall ?? 1 : 1);
@@ -658,152 +682,151 @@ function makeEditor(hall, items) {
   };
 }
 
+/* The hall's settings (the admin, or ?tune=1): a small panel of icon buttons. Move-and-resize
+   boxes for everything in the hall; the ABC chart, for the girl's voice and the boy's voice
+   apart, said in the voice picked from the speaker's list; undo and save for everyone. */
 function mountTuner(hall, top, { say }) {
   const sizes = { ...settings.sizes };
   const items = JSON.parse(JSON.stringify(settings.items || {}));
-  const letters = { ...settings.letters };
-  const btn = document.createElement('button');
-  btn.type = 'button';
+  const letters = normLetters(settings.letters);
+  const icon = (cls, svg, tip) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `pp-plain bee-ic ${cls}`;
+    b.innerHTML = svg;
+    b.dataset.tip = tip;
+    b.setAttribute('aria-label', tip);
+    return b;
+  };
+  const row = (label, ...kids) => {
+    const r = document.createElement('div');
+    r.className = 'bee-tune-row';
+    if (label) { const l = document.createElement('span'); l.className = 'bee-tune-head'; l.textContent = label; r.append(l); }
+    r.append(...kids);
+    return r;
+  };
+  const group = (...kids) => { const g = document.createElement('div'); g.className = 'bee-ic-group'; g.append(...kids); return g; };
+
+  const btn = icon('bee-tune-btn', UI.settings(18), 'Hall settings');
   btn.className = 'bee-tune-btn';
-  btn.innerHTML = UI.settings(18);
-  btn.setAttribute('aria-label', 'Hall settings');
-  btn.dataset.tip = 'Hall settings';
   const panel = document.createElement('div');
-  panel.className = 'pp-receipt bee-tune';
+  panel.className = 'bee-tune';
   panel.hidden = true;
   const paper = document.createElement('div');
-  paper.className = 'pp-receipt__paper bee-tune-paper';
-  const heading = (t) => { const h = document.createElement('p'); h.className = 'bee-tune-head'; h.textContent = t; paper.append(h); };
+  paper.className = 'bee-tune-paper';
 
-  heading('Move and resize');
-  const editBtn = document.createElement('button');
-  editBtn.type = 'button';
-  editBtn.className = 'pp-btn pp-btn--ghost bee-edit-btn';
-  editBtn.textContent = 'Show the boxes';
-  const editHint = document.createElement('p');
-  editHint.className = 'bee-tune-note';
-  editHint.textContent = 'Each thing in the hall gets its own box: drag inside it to move it, drag a corner to resize it. A speller\u2019s box resizes every child drawn like them.';
-  editBtn.addEventListener('click', () => {
+  // the hall: everything in its own box
+  const editor = makeEditor(hall, items);
+  const boxes = icon('', UI.transform(18), 'Move and resize things in the hall');
+  boxes.addEventListener('click', () => {
     const on = !editor.on;
     editor.toggle(on);
-    editBtn.textContent = on ? 'Hide the boxes' : 'Show the boxes';
+    boxes.classList.toggle('is-on', on);
     if (on) panel.hidden = true;            // out of the way of the boxes; the settings button brings it back
   });
-  paper.append(editBtn, editHint);
-  const editor = makeEditor(hall, items);
+  paper.append(row('Hall', group(boxes)));
 
-  // the ABC chart: a letter said as the spellers' voice says it; a better spelling tried and kept
-  heading('Letters: click one to hear it');
+  // the letters: which child's voice, and which voice engine
   let kid = 'girl';
-  const voices = document.createElement('div');
-  voices.className = 'bee-abc-voices';
-  for (const [k, label] of [['girl', 'Girl\u2019s voice'], ['boy', 'Boy\u2019s voice']]) {
-    const v = document.createElement('button');
-    v.type = 'button';
-    v.className = `pp-btn pp-btn--ghost bee-abc-voice${k === kid ? ' is-on' : ''}`;
-    v.textContent = label;
-    v.addEventListener('click', () => { kid = k; voices.querySelectorAll('button').forEach((x) => x.classList.toggle('is-on', x === v)); });
-    voices.append(v);
-  }
-  paper.append(voices);
-  // which voice says them: the same choice as the speaker's list in the top bar
-  const engines = document.createElement('div');
-  engines.className = 'bee-abc-voices';
-  const showEngine = () => engines.querySelectorAll('button').forEach((x) => x.classList.toggle('is-on', x.dataset.voice === spellerVoice));
-  for (const c of SPELLER_VOICE_CHOICES) {
-    const v = document.createElement('button');
-    v.type = 'button';
-    v.className = 'pp-btn pp-btn--ghost bee-abc-voice';
-    v.dataset.voice = c.key;
-    v.textContent = c.label;
-    v.addEventListener('click', () => setSpellerVoice(c.key));
-    engines.append(v);
-  }
+  const faces = group(...['girl', 'boy'].map((k) => {
+    const f = icon(`bee-ic-face${k === kid ? ' is-on' : ''}`, `<img src="${KIDS[k].src}" alt="" />`, k === 'girl' ? 'The girls\u2019 voice' : 'The boys\u2019 voice');
+    f.dataset.who = k;
+    f.addEventListener('click', () => { kid = k; faces.querySelectorAll('.bee-ic').forEach((x) => x.classList.toggle('is-on', x === f)); refreshKeys(); if (current != null) pick(current); });
+    return f;
+  }));
+  const ENGINE_ICON = { browser: UI.monitor(18), kokoro: UI.cpu(18), eleven: UI.sparkle(18) };
+  const engines = group(...SPELLER_VOICE_CHOICES.map((c) => {
+    const e = icon('', ENGINE_ICON[c.key], c.label);
+    e.dataset.voice = c.key;
+    e.addEventListener('click', () => setSpellerVoice(c.key));
+    return e;
+  }));
+  const showEngine = () => engines.querySelectorAll('.bee-ic').forEach((x) => x.classList.toggle('is-on', x.dataset.voice === spellerVoice));
   showEngine();
   document.addEventListener('bee-voice', showEngine);
-  paper.append(engines);
+  paper.append(row('Letters', faces, engines));
+
+  // the ABC chart: plain tiles; a changed one is marked
   const grid = document.createElement('div');
   grid.className = 'bee-abc';
+  const keys = 'abcdefghijklmnopqrstuvwxyz'.split('').concat([' ', '-', "'"]);
+  const keyLabel = (ch) => (ch === ' ' ? 'space' : ch === '-' ? '-' : ch === "'" ? "'" : ch.toUpperCase());
+  let current = null;
   const edit = document.createElement('div');
   edit.className = 'bee-abc-edit';
-  edit.innerHTML = '<span class="bee-abc-which"></span><input type="text" maxlength="24" aria-label="What the voice is given for this letter" /><button type="button" class="pp-btn pp-btn--ghost">Hear</button>';
-  const which = edit.querySelector('.bee-abc-which'), said = edit.querySelector('input'), hear = edit.querySelector('button');
-  let current = null;
-  // in the voice picked from the speaker's list: a recording if that voice has one, else the
-  // browser saying the text in the box
-  const sayLetter = () => { if (current != null) say(said.value.trim() || letterName(current), kid === 'girl' ? 'girl' : 'boy', current); };
-  const keys = 'abcdefghijklmnopqrstuvwxyz'.split('').concat([' ', '-', "'"]);
+  edit.innerHTML = '<span class="bee-abc-which"></span><input type="text" maxlength="24" placeholder="A spelling, or /IPA/" />';
+  const which = edit.querySelector('.bee-abc-which'), said = edit.querySelector('input');
+  said.setAttribute('aria-label', 'What this voice is given for the letter: a spelling, or IPA between slashes (said by ElevenLabs only)');
+  said.dataset.tip = 'A spelling ("Ay."), or IPA between slashes ("/eɪ/"): IPA is said by ElevenLabs only';
+  const hear = icon('', UI.speaker(18), 'Hear it');
+  edit.append(hear);
+  const sayLetter = () => { if (current != null) say(said.value.trim() || letterName(current, kid), kid, current); };
+  const refreshKeys = () => grid.querySelectorAll('.bee-abc-key').forEach((x, i) => x.classList.toggle('is-changed', !!letters[kid][keys[i]]));
+  function pick(ch) {
+    current = ch;
+    grid.querySelectorAll('.bee-abc-key').forEach((x, i) => x.classList.toggle('is-current', keys[i] === ch));
+    which.textContent = keyLabel(ch);
+    said.value = letters[kid][ch] ?? letterName(ch, kid);
+    edit.hidden = false;
+  }
   for (const ch of keys) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'bee-abc-key';
-    b.textContent = ch === ' ' ? 'space' : ch === '-' ? 'hyphen' : ch === "'" ? "'" : ch.toUpperCase();
-    b.classList.toggle('is-changed', !!letters[ch]);
-    if (b.textContent.length > 1) b.classList.add('is-word');
-    b.addEventListener('click', () => {
-      current = ch;
-      grid.querySelectorAll('.bee-abc-key').forEach((x) => x.classList.toggle('is-current', x === b));
-      which.textContent = `${b.textContent} is said as`;
-      said.value = letters[ch] ?? letterName(ch);
-      edit.hidden = false;
-      sayLetter();
-    });
+    b.className = `pp-plain bee-abc-key${ch === ' ' ? ' is-word' : ''}`;
+    b.textContent = keyLabel(ch);
+    b.setAttribute('aria-label', `Letter ${ch === ' ' ? 'space' : ch === '-' ? 'hyphen' : ch === "'" ? 'apostrophe' : ch.toUpperCase()}`);
+    b.addEventListener('click', () => { pick(ch); sayLetter(); });
     grid.append(b);
   }
+  refreshKeys();
   edit.hidden = true;
   said.addEventListener('input', () => {
     if (current == null) return;
-    const v = said.value.trim();
-    if (v && v !== DEFAULT_LETTER(current)) letters[current] = v; else delete letters[current];
-    LETTER_SAID[current] = letters[current];
-    if (!letters[current]) delete LETTER_SAID[current];
-    grid.querySelectorAll('.bee-abc-key')[keys.indexOf(current)].classList.toggle('is-changed', !!letters[current]);
+    const v = said.value.trim(), L = letters[kid];
+    if (v && v !== DEFAULT_LETTER(current)) L[current] = v; else delete L[current];
+    if (L[current]) LETTER_SAID[kid][current] = L[current]; else delete LETTER_SAID[kid][current];
+    refreshKeys();
   });
   said.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sayLetter(); } e.stopPropagation(); });
   hear.addEventListener('click', sayLetter);
   paper.append(grid, edit);
 
+  // undo, save, and a one-line note
   const note = document.createElement('p');
   note.className = 'bee-tune-note';
-  const foot = document.createElement('div');
-  foot.className = 'bee-tune-foot';
-  const save = document.createElement('button');
-  save.type = 'button';
-  save.className = 'pp-btn bee-tune-save bee-tune-keep';
-  save.textContent = 'Save for everyone';
+  const undo = icon('bee-tune-undo', UI.undo(18), 'Undo changes');
+  const save = icon('bee-tune-keep', UI.save(18), 'Save for everyone');
   save.addEventListener('click', async () => {
-    if (!isAdminHere()) { note.textContent = 'Only the admin account can save. Sign in as the admin.'; return; }
+    if (!isAdminHere()) { note.textContent = 'Only the admin account can save.'; return; }
     save.disabled = true;
     try {
       await setDoc(doc(db, ...SETTINGS_DOC), { sizes, items, letters, updatedAt: serverTimestamp() });
-      settings = { sizes: { ...sizes }, items: JSON.parse(JSON.stringify(items)), letters: { ...letters } };
-      note.textContent = 'Saved. Every bee from now on uses these.';
+      settings = { sizes: { ...sizes }, items: JSON.parse(JSON.stringify(items)), letters: normLetters(letters) };
+      note.textContent = 'Saved for every bee.';
     } catch (e) {
       note.textContent = `Not saved: ${e.code || e.message || e}`;
     }
     save.disabled = false;
   });
-  const reset = document.createElement('button');
-  reset.type = 'button';
-  reset.className = 'pp-btn pp-btn--ghost bee-tune-save bee-tune-undo';
-  reset.textContent = 'Undo changes';
-  reset.addEventListener('click', () => {
+  undo.addEventListener('click', () => {
     for (const k of Object.keys(sizes)) delete sizes[k];
     Object.assign(sizes, settings.sizes);
     applySizes(hall, sizes);
     for (const k of Object.keys(items)) delete items[k];
     Object.assign(items, JSON.parse(JSON.stringify(settings.items || {})));
     applyItems(hall, items);
-    for (const k of Object.keys(letters)) { delete letters[k]; delete LETTER_SAID[k]; }
-    Object.assign(letters, settings.letters);
-    Object.assign(LETTER_SAID, settings.letters);
-    grid.querySelectorAll('.bee-abc-key').forEach((x, i) => x.classList.toggle('is-changed', !!letters[keys[i]]));
+    const back = normLetters(settings.letters);
+    letters.girl = back.girl; letters.boy = back.boy;
+    setLetterSaid(settings.letters);
+    refreshKeys();
     edit.hidden = true;
     note.textContent = 'Back to what was saved.';
   });
-  foot.append(reset, save);
-  paper.append(foot, note);
-  if (!isAdminHere()) note.textContent = 'You can try sizes and letters here; only the admin can save them.';
+  const foot = document.createElement('div');
+  foot.className = 'bee-tune-foot';
+  foot.append(note, group(undo, save));
+  paper.append(foot);
+  if (!isAdminHere()) note.textContent = 'Only the admin can save.';
   panel.append(paper);
   btn.addEventListener('click', () => { panel.hidden = !panel.hidden; });
   top.querySelector('.bee-full').before(btn);
@@ -1016,7 +1039,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   document.body.classList.add('drill-nav-hidden');
   const warmEleven = () => {
     if (spellerVoice !== 'eleven') return;
-    settingsReady.then(() => { for (const t of Object.values(LETTER_SAID)) for (const who of ['girl', 'boy']) elevenUrl(withStop(t), who); });
+    settingsReady.then(() => { for (const who of ['girl', 'boy']) for (const [ch, t] of Object.entries(LETTER_SAID[who])) elevenUrl(elevenText(ch, t), who); });
   };
   warmEleven();
   document.addEventListener('bee-voice', warmEleven);
@@ -1028,9 +1051,11 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     if (isAdminHere() || /[?&]tune=1\b/.test(location.search)) mountTuner(hall, $('.bee-top'), { say: (text, kid, ch = null) => {
       if (ch != null && spellerVoice === 'eleven') {
         const who = KIDS[kid]?.girl ? 'girl' : 'boy';
-        elevenUrl(withStop(text), who).then((u) => spellerSays(text, kid, u ? [{ url: u }] : letterClip(ch, kid), { letter: true }));
+        const shown = isIpa(text) ? DEFAULT_LETTER(ch) : text;     // the browser's fallback cannot read IPA
+        elevenUrl(elevenText(ch, text), who).then((u) => spellerSays(shown, kid, u ? [{ url: u }] : letterClip(ch, kid), { letter: true }));
         return;
       }
+      if (ch != null && isIpa(text)) text = DEFAULT_LETTER(ch);
       spellerSays(text, kid, ch != null ? letterClip(ch, kid) : null, { letter: ch != null });
     } });
   });
@@ -1125,10 +1150,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const list = [];
     if (spellerVoice === 'eleven') {
       // a spelling changed on the chart: ElevenLabs saying that text (once it has been made)
-      const own = LETTER_SAID[ch.toLowerCase()];
+      const own = LETTER_SAID[who][ch.toLowerCase()];
       if (own) {
-        const live = elevenDone.get(`${who}|${withStop(own)}`);
-        if (live) list.push({ url: live }); else elevenUrl(withStop(own), who);
+        const live = elevenDone.get(`${who}|${elevenText(ch, own)}`);
+        if (live) list.push({ url: live }); else elevenUrl(elevenText(ch, own), who);
       }
       if (i != null && ready[who]) list.push({ url: `/media/spelling-letters/${who}/${pad4(i)}.mp3`, pitch: LETTER_VOICES[who].pitch });
     }
@@ -1310,7 +1335,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   /** Say (and then show) the letters of `after` that are not in `before` (letters are only ever added). */
   function sayNewLetters(before, after, kid) {
     if (!after.startsWith(before)) before = '';
-    for (const ch of after.slice(before.length)) spellerSays(letterName(ch), kid, letterClip(ch, kid), { onStart: () => reveal(ch), letter: true });
+    for (const ch of after.slice(before.length)) spellerSays(letterName(ch, kid), kid, letterClip(ch, kid), { onStart: () => reveal(ch), letter: true });
   }
 
   /* ── The live room ───────────────────────────────────────────── */
@@ -1552,7 +1577,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       await wait(Math.min(2200, b.ms / 3));
       for (let n = 1; n <= b.typed.length && !gone && pace; n++) {
         const ch = b.typed[n - 1];
-        spellerSays(letterName(ch), seat.kid, letterClip(ch, seat.kid), { onStart: () => reveal(ch), letter: true });
+        spellerSays(letterName(ch, seat.kid), seat.kid, letterClip(ch, seat.kid), { onStart: () => reveal(ch), letter: true });
         await spellerDone();
         await wait(250);
       }
