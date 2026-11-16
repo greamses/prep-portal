@@ -525,10 +525,8 @@
 .bee-lamp .bee-lens { opacity: 0.25; transition: opacity 0.25s; }
 .bee-bd.is-curtains-open :is(.bee-lamp--l, .bee-lamp--r) .bee-lens { opacity: 1; filter: drop-shadow(0 0 0.8cqh #ffe9a8); transition-delay: 1.3s; }
 .bee-hall.is-spot .bee-lamp--spot .bee-lens { opacity: 1; filter: drop-shadow(0 0 0.8cqh #fff6d6); }
-/* the man on the panel nods as he speaks */
 .bee-judges .bee-jm { transform-box: fill-box; transform-origin: 50% 85%; }
-.bee-judges.is-man-talking .bee-jm { animation: bee-nod 0.45s ease-in-out infinite alternate; }
-@keyframes bee-nod { from { transform: rotate(-1.2deg); } to { transform: rotate(1.2deg) translateY(-0.6%); } }
+/* he does not move while he speaks: his mouth is drawn on his lips and must stay there */
 
 /* footlights: a row of little lamps along the front edge of the stage, glowing up onto it */
 .bee-footlights {
