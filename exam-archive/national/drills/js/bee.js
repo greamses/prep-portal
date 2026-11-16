@@ -458,8 +458,9 @@ function audienceSvg(seed) {
 function judgesSvg() {
   const W = { x: 53, y: 26, h: 300, aspect: 543 / 1936 }, M = { x: 167, y: 20, h: 305, aspect: 636 / 2033 };
   const ww = W.h * W.aspect, mw = M.h * M.aspect;
-  // her mouth: 50.5% across and 14.9% down the picture
+  // her mouth: 50.5% across and 14.9% down the picture; his: 50% across, 15.2% down
   const mx = W.x + 0.505 * ww, my = W.y + 0.149 * W.h;
+  const jx = M.x + 0.5 * mw, jy = M.y + 0.152 * M.h;
   const hands = (cx, skin, sleeve, d) => {
     const arm = (side) => `<g class="bee-hand bee-hand--${side < 0 ? 'l' : 'r'}">` +
       `<line x1="${cx + side * 32}" y1="142" x2="${cx + side * 13}" y2="124" stroke="${sleeve}" stroke-width="13" stroke-linecap="round"/>` +
@@ -492,7 +493,17 @@ function judgesSvg() {
       `<g transform="rotate(${lean * 30} ${hx} ${hy + 4})"><rect x="${hx - 3.6}" y="${hy - 7}" width="7.2" height="11.5" rx="3.4" fill="url(#bee-desk-mesh)" stroke="#9aa1a9" stroke-width=".6"/>` +
       `<rect x="${hx - 3.8}" y="${hy + 2.2}" width="7.6" height="2" rx=".8" fill="#9aa1a9"/><circle cx="${hx}" cy="${hy - 2.5}" r="3.6" fill="none" stroke="rgba(255,255,255,.18)" stroke-width=".5"/></g>`;
   };
-  const glass = (cx) => `<ellipse cx="${cx}" cy="136.3" rx="4" ry=".9" fill="rgba(0,0,0,.25)"/><polygon points="${cx - 3.4},124.5 ${cx + 3.4},124.5 ${cx + 2.8},136 ${cx - 2.8},136" fill="rgba(210,235,250,.55)" stroke="rgba(255,255,255,.8)" stroke-width=".5"/><polygon points="${cx - 3.1},128 ${cx + 3.1},128 ${cx + 2.8},136 ${cx - 2.8},136" fill="rgba(120,185,230,.55)"/>`;
+  // a tumbler of water: clear tapered glass with a thick base, the water inside with its surface,
+  // the table seen through it, and light caught down one side
+  const glass = (cx) => `<ellipse cx="${cx}" cy="136.4" rx="5.4" ry="1.1" fill="rgba(0,0,0,.22)"/>` +
+    `<path d="M${cx - 4.6} 121 L${cx - 3.7} 135.6 Q${cx} 136.9 ${cx + 3.7} 135.6 L${cx + 4.6} 121 Z" fill="rgba(225,240,250,.22)" stroke="rgba(255,255,255,.75)" stroke-width=".45"/>` +
+    `<path d="M${cx - 4.25} 126.2 L${cx - 3.75} 134.2 Q${cx} 135.3 ${cx + 3.75} 134.2 L${cx + 4.25} 126.2 Z" fill="url(#bee-water)"/>` +
+    `<ellipse cx="${cx}" cy="126.2" rx="4.25" ry=".8" fill="rgba(235,248,255,.75)" stroke="rgba(255,255,255,.9)" stroke-width=".3"/>` +
+    `<path d="M${cx - 3.7} 134.2 Q${cx} 136.6 ${cx + 3.7} 134.2 L${cx + 3.6} 135.6 Q${cx} 136.9 ${cx - 3.6} 135.6 Z" fill="rgba(200,225,240,.7)"/>` +
+    `<rect x="${cx - 3.3}" y="128.6" width="6.6" height="1.6" fill="rgba(122,75,39,.35)"/>` +
+    `<path d="M${cx - 3.6} 122.2 L${cx - 3.0} 134" stroke="rgba(255,255,255,.85)" stroke-width=".7" stroke-linecap="round"/>` +
+    `<path d="M${cx + 3.1} 123 L${cx + 2.8} 130" stroke="rgba(255,255,255,.45)" stroke-width=".4" stroke-linecap="round"/>` +
+    `<ellipse cx="${cx}" cy="121" rx="4.6" ry=".85" fill="none" stroke="rgba(255,255,255,.8)" stroke-width=".4"/>`;
   // each judge grows or shrinks from the middle of their place at the table (the sizes panel)
   const sized = (id, label, inner) => `<g class="bee-item" data-item="${id}" data-label="${label}">${inner}</g>`;
   return `<svg viewBox="0 0 300 220" aria-hidden="true">
@@ -502,10 +513,12 @@ function judgesSvg() {
     ${hands(W.x + ww / 2, '#f0c3a3', '#1d2b55', -0.12)}`)}
     ${sized('judge-man', 'Judge', `${chair(M.x + mw / 2, M.y + 0.11 * M.h, mw * 1.12)}
     <image class="bee-jm" href="/media/characters/judge-man.svg" x="${M.x}" y="${M.y}" width="${mw}" height="${M.h}"/>
+    <g class="bee-jm-mouth" data-x="${jx.toFixed(2)}" data-hinge="${(jy - 1.6).toFixed(2)}" transform="translate(${jx.toFixed(2)} ${(jy - 1.6).toFixed(2)}) scale(1 0.08) translate(${(-jx).toFixed(2)} ${(-(jy - 1.6)).toFixed(2)})"><ellipse cx="${jx.toFixed(2)}" cy="${(jy + 0.6).toFixed(2)}" rx="4.4" ry="2.9" fill="#4e1d19"/></g>
     ${hands(M.x + mw / 2, '#f2b394', '#1c3561', -0.04)}`)}
     <defs>
       <linearGradient id="bee-cloth" x1="0" x2="1" y1="0" y2="0">${Array.from({ length: 13 }, (_, i) => `<stop offset="${(i / 12).toFixed(3)}" stop-color="${i % 2 ? '#1a2d55' : '#25407a'}"/>`).join('')}</linearGradient>
       <linearGradient id="bee-wood" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#9a6537"/><stop offset=".55" stop-color="#7a4b27"/><stop offset="1" stop-color="#5a3519"/></linearGradient>
+      <linearGradient id="bee-water" x1="0" x2="1"><stop offset="0" stop-color="rgba(150,200,230,.55)"/><stop offset=".45" stop-color="rgba(200,230,248,.35)"/><stop offset="1" stop-color="rgba(120,175,215,.6)"/></linearGradient>
       <pattern id="bee-desk-mesh" width="1.2" height="1.2" patternUnits="userSpaceOnUse"><rect width="1.2" height="1.2" fill="#26292d"/><circle cx=".6" cy=".6" r=".36" fill="#6b7077"/></pattern>
       <linearGradient id="bee-gold" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f6dc85"/><stop offset=".5" stop-color="#d4a937"/><stop offset="1" stop-color="#9c7720"/></linearGradient>
     </defs>
@@ -1447,13 +1460,19 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     return new Promise((resolve) => {
       if (!pace) { resolve(); return; }
       let ended = false;
-      const end = () => { if (ended) return; ended = true; judges.classList.remove('is-man-talking'); resolve(); };
+      // his mouth: opening and shutting, by a different amount each time, while he is speaking
+      const mouthG = judges.querySelector('.bee-jm-mouth');
+      const mx0 = mouthG?.dataset.x, hinge = mouthG?.dataset.hinge;
+      const setOpen = (o) => mouthG?.setAttribute('transform', `translate(${mx0} ${hinge}) scale(1 ${o}) translate(${-mx0} ${-hinge})`);
+      let flap = 0, open = false;
+      const startFlap = () => { if (flap) return; flap = setInterval(() => { open = !open; setOpen(open ? 0.55 + Math.random() * 0.45 : 0.1); }, 140); };
+      const end = () => { if (ended) return; ended = true; clearInterval(flap); setOpen(0.08); judges.classList.remove('is-man-talking'); resolve(); };
       // his own recorded voice (media/spelling-judge); the browser's if it will not play
       if (clip) {
         try {
           hush();
           const a = new Audio(clip);
-          a.onplaying = () => judges.classList.add('is-man-talking');
+          a.onplaying = () => { judges.classList.add('is-man-talking'); startFlap(); };
           a.onended = end;
           a.onerror = () => { clip = null; judges.classList.remove('is-man-talking'); speak(); };
           a.play().catch(() => { if (!ended) speak(); });
@@ -1471,7 +1490,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         const v = all.find((x) => /\b(male|david|george|ryan|guy|daniel|mark|thomas|arthur|fred)\b/i.test(x.name) && !/female/i.test(x.name)) || all[0];
         if (v) { u.voice = v; u.lang = v.lang; }
         u.pitch = 0.85; u.rate = 0.92;
-        u.onstart = () => judges.classList.add('is-man-talking');
+        u.onstart = () => { judges.classList.add('is-man-talking'); startFlap(); };
         u.onend = u.onerror = end;
         synth.speak(u);
         setTimeout(end, 1500 + text.length * 110);   // never wait for ever
@@ -1969,6 +1988,14 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     if (!gone && pace) ovation(4.5);                // the hall stands and claps, then sits
     await wait(4700);
     if (!gone && pace) await tvIntro();
+    if (!gone && pace) {                            // the judges introduce themselves
+      judgeSays('intro');
+      await sleep(500);
+      for (let t = 0; t < 140 && isTalking() && !gone; t++) await sleep(100);
+      await wait(300);
+      if (!gone && pace) await judgeManSays('And I am Mr. Whitmore. Good luck to every one of our spellers!', '/media/spelling-judge/intro.mp3');
+      await wait(400);
+    }
     if (!gone && pace) {
       say(`Round 1. ${bee.alive.length} spellers.`);
       sweep();
