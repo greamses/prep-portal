@@ -583,3 +583,14 @@
 .bee-bd.is-curtains-open :is(.bee-beam--l, .bee-beam--r, .bee-pool--l, .bee-pool--r) { opacity: 1; transition-delay: 1.3s; }
 .bee-hall.is-spot :is(.bee-beam--spot, .bee-pool--spot) { opacity: 1; }
 .bee-bd.is-instant :is(.bee-beam, .bee-pool) { transition: none; }
+
+/* the judge spelling the word after a miss: the right spelling, in green tiles */
+.bee-letters.is-answer .bee-tile { background: linear-gradient(160deg, #b9f0c4, #6fd187 70%, #4fb96a); box-shadow: 0 0.45cqh 0 #2f8a47, 0 0.7cqh 1cqh rgba(0, 0, 0, 0.45), inset 0 0.15cqh 0 rgba(255, 255, 255, 0.6); }
+
+/* my turn: the speller's tools (again, meaning, sentence, origin, mic, done) are icons right in the
+   top bar, not folded under a button, so a phone can tap them; each one's key is in its tooltip */
+.bee-top .bee-toolbox:not(.bee-voicebox) .bee-tools { position: static; display: flex; flex-wrap: nowrap; gap: 0.2rem; padding: 0; width: auto; max-width: none; background: none; box-shadow: none; }
+.bee-top .bee-toolbox:not(.bee-voicebox) .bee-tools[hidden] { display: none; }
+.bee-top .bee-tools .bee-keys { display: none; }
+.bee-top .bee-tools .drill-spell-btn { width: 2.2rem; height: 2.2rem; padding: 0; display: inline-grid; place-items: center; }
+.bee-top .bee-tools .drill-spell-btn[hidden] { display: none; }

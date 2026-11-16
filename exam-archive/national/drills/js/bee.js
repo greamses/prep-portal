@@ -297,6 +297,25 @@ const bell = () => tone([1568, 1568], { gap: 0.02, len: 1.4, type: 'triangle', v
    A child's voice is the browser's English voice, pitched up: a girl's
    higher than a boy's, and a girl's voice for a girl where one is offered. */
 const synth = typeof window !== 'undefined' && 'speechSynthesis' in window ? window.speechSynthesis : null;
+/* The browser's voices: every speller sounds like themselves. Each child takes a different
+   voice of their own sex where the device has several (girls in turn through the women's voices,
+   boys through the men's), and each has their own pitch and pace, so even a device with one or two
+   voices makes six different children. Leo and Mia are the youngest (highest); Sam and Zainab the
+   oldest. */
+const BROWSER_VOICE = {
+  // the boys all speak in Sam's voice (the user: "Use sams voice for all the boys. Just tweak the
+  // pitches for younger boys"): the same voice, higher for the younger two
+  boy: { pick: 2, pitch: 1.45, rate: 0.88 },   // Leo, the youngest
+  boy3: { pick: 2, pitch: 1.25, rate: 0.86 },  // Tunde
+  boy2: { pick: 2, pitch: 1.05, rate: 0.84 },  // Sam
+  // and the girls all in Zainab's voice ("Use zainab's voice for all the girls with different
+  // pitches too"): higher for the younger two
+  girl: { pick: 2, pitch: 1.6, rate: 0.88 },   // Mia, the youngest
+  girl2: { pick: 2, pitch: 1.42, rate: 0.86 }, // Amara
+  girl3: { pick: 2, pitch: 1.25, rate: 0.85 }, // Zainab
+};
+const FEMALE = /\b(female|woman|zira|hazel|susan|libby|sonia|aria|jenny|samantha|karen|moira|serena|emma|ava|allison|kate|fiona|tessa|victoria|natasha|clara|michelle|amy|joanna|salli|kimberly|ivy|mia|olivia|maisie|ana)\b/i;
+const MALE = /\b(male|man|david|george|ryan|guy|daniel|alex|arthur|thomas|oliver|mark|james|fred|tom|aaron|eric|christopher|roger|brian|matthew|joey|justin|william|liam|steffan)\b/i;
 const voiceFor = (() => {
   const cache = {};
   return (kid) => {
@@ -304,9 +323,10 @@ const voiceFor = (() => {
     let all = [];
     try { all = synth ? synth.getVoices().filter((v) => /^en[-_]?/i.test(v.lang)) : []; } catch { /* none */ }
     if (!all.length) return null;          // not loaded yet: ask again next time
-    const want = KIDS[kid]?.girl ? /female|zira|hazel|susan|libby|sonia|aria|jenny|samantha|karen|moira|serena|emma/i
-      : /male|david|george|ryan|guy|daniel|alex|arthur|thomas|oliver/i;
-    cache[kid] = all.find((v) => want.test(v.name) && !/female/i.test(kid === 'boy' ? v.name : '')) || all.find((v) => /en[-_]GB/i.test(v.lang)) || all[0];
+    const girl = !!KIDS[kid]?.girl;
+    const mine = all.filter((v) => (girl ? FEMALE.test(v.name) : MALE.test(v.name) && !/female/i.test(v.name)));
+    const pool = mine.length ? mine : all;
+    cache[kid] = pool[(BROWSER_VOICE[kid]?.pick || 0) % pool.length];
     return cache[kid];
   };
 })();
@@ -1425,9 +1445,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       const v = voiceFor(item.kid);
       if (v) u.voice = v;
       u.lang = v ? v.lang : 'en-GB';
-      u.pitch = KIDS[item.kid]?.girl ? 1.55 : 1.3;
+      u.pitch = BROWSER_VOICE[item.kid]?.pitch ?? (KIDS[item.kid]?.girl ? 1.55 : 1.3);   // each child their own
       // unhurried: a whole vowel, not a clipped one; a letter slower still (the user: "make it longer")
-      u.rate = item.letter ? LETTER_RATE : 0.88;
+      const own = BROWSER_VOICE[item.kid]?.rate ?? 0.88;          // each child's own pace; letters slower still
+      u.rate = item.letter ? LETTER_RATE * (own / 0.88) : own;
       talkingNow = u;
       u.__letter = !!item.letter;
       // the browser does not say how long it will take: about 0.3 s a syllable at rate 1
@@ -1720,6 +1741,23 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     else if (kind === 'o') sayWord(q.about, judge, { rate: 0.95, clip: clipFor(q.bank, q.i, 'o') });
   }
   /** "Your word is," / "Correct." / "Incorrect.": the judge's own lines. */
+  /* After "Incorrect": the head judge spells the word ("The correct spelling is: B. L. A. N. K.
+     Blank.") while the TV shows it, tile by tile, in green. */
+  async function judgeSpells(word) {
+    const letters = [...String(word)];
+    const names = letters.map((ch) => { const n = DEFAULT_LETTER(ch); return /[.!?]$/.test(n) ? n : `${n}.`; });
+    say(`The judge: "The correct spelling is ${letters.join(' ').toUpperCase()}."`);
+    clearScreen('is-answer');
+    if (canSpeak) sayWord(`The correct spelling is: ${names.join(' ')} ${word}.`, judge, { rate: 0.9 });
+    await wait(1700);                                // "The correct spelling is"
+    for (const ch of letters) {
+      if (gone || !pace) break;
+      reveal(ch);
+      await wait(620);
+    }
+    await spoken(15000);                             // a long word takes a while to spell
+    await wait(500);
+  }
   function judgeSays(name) {
     if (gone || !pace || !canSpeak) return;
     const i = PHRASE[name];
@@ -1858,7 +1896,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       committed = '';
       inputEl.disabled = false; inputEl.value = '';
       clearScreen('is-mine');
-      toolsBtn.hidden = false;                     // the tools, folded away in the top bar
+      toolsEl.hidden = false;                      // the tools, as icons along the top bar (a phone has no keys 1 to 5)
       bd.classList.add('is-my-turn');
       inputEl.focus();
       if (micWanted && canListen) mic.start();
@@ -2021,7 +2059,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   leaveBtn.addEventListener('click', () => leave({ place: myPlace(), champion: null, placings: bee.placings }));
   // the spellers' voice: the speaker opens a list; the letters (and the word) follow the choice
   const voiceBtn = $('.bee-voice'), voiceList = $('.bee-voices');
-  voiceBtn.innerHTML = UI.speaker(18);
+  voiceBtn.innerHTML = UI.users(18);          // the spellers' voices (the speaker icon is "hear the word again")
   voiceBtn.setAttribute('aria-haspopup', 'menu');
   voiceBtn.setAttribute('aria-expanded', 'false');
   const showVoice = () => {
@@ -2178,8 +2216,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         if (REACTIONS) el.classList.add('is-sad');
         await spoken();
         await wait(700);
+        // the head judge spells the word as it should be, before the speller leaves
+        if (!gone && pace) await judgeSpells(q.word);
         say(`The word was "${q.word}". ${seat === mySeat ? 'You leave' : `Number ${seat.tag} leaves`} the stage.`);
-        await wait(2000);
+        await wait(1200);
       }
       const ev = bee.apply(r.ok);
       await walk(el, r.ok ? 'seat' : 'off');
