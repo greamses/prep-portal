@@ -59,6 +59,8 @@ jobs:
           # each letter's name, and every word, which a speller says when they are done.
           - { bank: letters, part: 1/1, voice: af_heart, kinds: w }
           - { bank: letters, part: 1/1, voice: bm_fable, kinds: w }
+          # the head judge's own letters (the lists' voice), for spelling a missed word
+          - { bank: letters, part: 1/1, voice: bf_emma, kinds: w }
           - { bank: lower, part: 1/1, voice: af_heart, kinds: w }
           - { bank: lower, part: 1/1, voice: bm_fable, kinds: w }
           - { bank: upper, part: 1/2, voice: af_heart, kinds: w }

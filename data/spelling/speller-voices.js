@@ -21,6 +21,10 @@ export const LETTER_VOICES = {
 /* Mr. Whitmore, the judge who announces the champion: his lines are recorded once in this voice
    (media/spelling-judge/: champion-is, name-<kid>, you-<kid>). */
 export const JUDGE_VOICE = { name: 'Mr. Whitmore', id: 'CwhRBWXzGAHq8TQ4Fs17' };
+/* Mrs. Chen, the head judge: the word lists' own Kokoro voice (tools/spelling-audio/voice-name.mjs). */
+export const JUDGE_KOKORO = 'bf_emma';
+/* Names for the recorded Kokoro voices, shown in the hall's settings. */
+export const KOKORO_NAMES = { af_heart: 'Heart (US)', bm_fable: 'Fable (UK)', bf_lily: 'Lily (UK)', bf_emma: 'Emma (UK, Mrs. Chen)' };
 export const SPELLER_VOICES = { girl: 'af_heart', boy: 'bm_fable' };
 /* Children's voices for the ElevenLabs letters: the small boy (Leo, kid "boy") and the girls.
    Recorded with scripts/make-bee-letters.mjs --set <name> into media/spelling-letters/<name>/;

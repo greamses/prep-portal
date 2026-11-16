@@ -41,7 +41,10 @@ for (const bank of ['secondary', 'upper', 'lower', 'phrases']) {
 // which letters, are recorded.
 const { SPELLER_VOICES } = await import(new URL('../../data/spelling/speller-voices.js', import.meta.url));
 let spellers = '';
-for (const voice of [...new Set(Object.values(SPELLER_VOICES))]) {
+// every voice with recorded letters (the spellers' and the judge's), so the hall's settings can
+// offer any of them
+const lettered = existsSync(join(root, 'letters')) ? readdirSync(join(root, 'letters')) : [];
+for (const voice of [...new Set([...Object.values(SPELLER_VOICES), ...lettered])]) {
   let banks = '';
   for (const bank of ['secondary', 'upper', 'lower', 'letters']) {
     const dir = join(root, bank, voice);

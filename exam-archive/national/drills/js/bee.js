@@ -33,7 +33,7 @@ import { canListen, createSpellMic } from './spell-mic.js';
 import { seatSpellers, createBee, botSpelling } from './bee-logic.js';
 import { SPELLING_PHRASES, PHRASE } from '/data/spelling/phrases.js';
 import { LETTER } from '/data/spelling/letters.js';
-import { SPELLER_VOICES, LETTER_VOICES, KID_LETTER_SET } from '/data/spelling/speller-voices.js';
+import { SPELLER_VOICES, LETTER_VOICES, KID_LETTER_SET, JUDGE_KOKORO, KOKORO_NAMES } from '/data/spelling/speller-voices.js';
 
 /* The letters' ElevenLabs recordings (scripts/make-bee-letters.mjs) are on the site itself,
    once they have been made. One look at the first file of each says whether they are there,
@@ -51,6 +51,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ADMIN_EMAIL } from '/utils/features.js';
 import { UI } from '/utils/components/ui-icons.js';
 import { hideTip } from '/utils/components/tooltip.js';
+import { enhanceSelect } from '/utils/components/pp-select.js';
 import { heroPaint } from '/utils/components/nav-icons.js';
 // the PrepBot tutor's TV curtain: white satin drapes that gather to the sides as it opens
 import { makeCurtain } from '/prep-math/mental-math/shared/tv-curtain.js';
@@ -597,11 +598,18 @@ const TUNE = [
   ['aud-row0', 'Audience, back row'], ['aud-row1', 'Audience, front row'],
 ];
 const SETTINGS_DOC = ['beeSettings', 'hall'];
-let settings = { sizes: {}, items: {}, letters: {} };   // what was saved (beeSettings/hall)
+let settings = { sizes: {}, items: {}, letters: {}, voices: {} };   // what was saved (beeSettings/hall)
+/* Each speller's recorded voices, as picked in the hall's settings: kokoro[kid] a Kokoro voice
+   (their words and Kokoro letters), eleven[kid] an ElevenLabs letter set. Empty: the defaults. */
+const VOICE_PICKS = { kokoro: {}, eleven: {} };
+const setVoicePicks = (v = {}) => {
+  for (const k of ['kokoro', 'eleven']) { for (const x of Object.keys(VOICE_PICKS[k])) delete VOICE_PICKS[k][x]; Object.assign(VOICE_PICKS[k], (v && v[k]) || {}); }
+};
 const settingsReady = getDoc(doc(db, ...SETTINGS_DOC))
   .then((snap) => {
     const d = snap.exists() ? snap.data() : {};
-    settings = { sizes: d.sizes || {}, items: d.items || {}, letters: d.letters || {} };
+    settings = { sizes: d.sizes || {}, items: d.items || {}, letters: d.letters || {}, voices: d.voices || {} };
+    setVoicePicks(settings.voices);
     setLetterSaid(settings.letters);
   })
   .catch((e) => console.warn('[bee] settings not read; the defaults stand:', e));
@@ -853,6 +861,60 @@ function mountTuner(hall, top, { say }) {
   });
   paper.append(row('Hall', group(boxes)));
 
+  /* Voices: each speller's recorded voices, picked from every one there is: a Kokoro voice (their
+     words, and their letters with Kokoro) and an ElevenLabs letter set. A play button beside each
+     plays its "B". Saved with the rest, for every bee. */
+  const picks = { kokoro: { ...VOICE_PICKS.kokoro }, eleven: { ...VOICE_PICKS.eleven } };
+  const kokoroVoices = Object.keys(AUDIO.SPELLER_CLIPS || {}).filter((v) => AUDIO.SPELLER_CLIPS[v].letters?.base);
+  const elevenSets = Object.keys(LETTER_VOICES);
+  const voicesBox = document.createElement('div');
+  voicesBox.className = 'bee-voice-picks';
+  const play = (url) => { try { const a = new Audio(url); a.play().catch(() => {}); } catch { /* no sound */ } };
+  const choose = (opts, value, onPick, tip) => {
+    const sel = document.createElement('select');
+    sel.className = 'bee-voice-sel';
+    sel.setAttribute('aria-label', tip);
+    sel.dataset.tip = tip;
+    for (const [v, label] of opts) { const o = document.createElement('option'); o.value = v; o.textContent = label; sel.append(o); }
+    sel.value = value;
+    sel.addEventListener('change', () => onPick(sel.value));
+    sel.addEventListener('keydown', (e) => e.stopPropagation());
+    return sel;
+  };
+  for (const kid of ['boy', 'boy3', 'boy2', 'girl', 'girl2', 'girl3']) {
+    const line = document.createElement('div');
+    line.className = 'bee-voice-pick';
+    const face = document.createElement('span');
+    face.className = 'pp-face';
+    face.style.cssText = faceStyle(kid);
+    face.dataset.tip = SPELLER_NAMES[kid];
+    const name = document.createElement('span');
+    name.className = 'bee-voice-name';
+    name.textContent = SPELLER_NAMES[kid];
+    const defK = SPELLER_VOICES[KIDS[kid].girl ? 'girl' : 'boy'];
+    const k = choose(kokoroVoices.map((v) => [v, `${KOKORO_NAMES[v] || v}${v === defK ? ' *' : ''}`]), picks.kokoro[kid] || defK,
+      (v) => { picks.kokoro[kid] = v; VOICE_PICKS.kokoro[kid] = v; }, `${SPELLER_NAMES[kid]}'s Kokoro voice`);
+    const kPlay = icon('', UI.play(16), 'Hear this Kokoro voice');
+    kPlay.addEventListener('click', () => { const v = k.value, c = AUDIO.SPELLER_CLIPS?.[v]?.letters; if (c?.base) play(`${c.base}0002-w.mp3`); });
+    const defE = KID_LETTER_SET[kid] || (KIDS[kid].girl ? 'girl' : 'boy');
+    const e = choose(elevenSets.map((v) => [v, `${LETTER_VOICES[v].name}${v === defE ? ' *' : ''}`]), picks.eleven[kid] || defE,
+      (v) => { picks.eleven[kid] = v; VOICE_PICKS.eleven[kid] = v; }, `${SPELLER_NAMES[kid]}'s ElevenLabs letters`);
+    const ePlay = icon('', UI.play(16), 'Hear these ElevenLabs letters');
+    ePlay.addEventListener('click', () => play(`/media/spelling-letters/${e.value}/0002.mp3`));
+    line.append(face, name, k, kPlay, e, ePlay);
+    voicesBox.append(line);
+    // the site's own dropdown, its small size (built while the panel is hidden, so it is asked for)
+    for (const sel of [k, e]) enhanceSelect(sel, { className: 'pp-select--auto pp-select--sm' });
+  }
+  const voicesHead = document.createElement('div');
+  voicesHead.className = 'bee-tune-row';
+  const vh = document.createElement('span'); vh.className = 'bee-tune-head'; vh.textContent = 'Voices'; voicesHead.append(vh);
+  const cols = document.createElement('div');
+  cols.className = 'bee-voice-pick bee-voice-cols';
+  cols.innerHTML = '<span></span><span></span><span>Kokoro</span><span></span><span>ElevenLabs</span><span></span>';
+  voicesBox.prepend(cols);
+  paper.append(voicesHead, voicesBox);
+
   // the letters: which child's voice, and which voice engine
   let kid = 'girl';
   const faces = group(...['girl', 'boy'].map((k) => {
@@ -969,8 +1031,8 @@ function mountTuner(hall, top, { say }) {
     if (!isAdminHere()) { note.textContent = 'Only the admin account can save.'; return; }
     save.disabled = true;
     try {
-      await setDoc(doc(db, ...SETTINGS_DOC), { sizes, items, letters, updatedAt: serverTimestamp() });
-      settings = { sizes: { ...sizes }, items: JSON.parse(JSON.stringify(items)), letters: normLetters(letters) };
+      await setDoc(doc(db, ...SETTINGS_DOC), { sizes, items, letters, voices: picks, updatedAt: serverTimestamp() });
+      settings = { sizes: { ...sizes }, items: JSON.parse(JSON.stringify(items)), letters: normLetters(letters), voices: JSON.parse(JSON.stringify(picks)) };
       // the saved letters, recorded in every ElevenLabs voice of that group, for every player
       note.textContent = 'Saved. Recording the letters in each voice...';
       let made = 0, failed = 0;
@@ -1002,6 +1064,13 @@ function mountTuner(hall, top, { say }) {
     for (const k of Object.keys(items)) delete items[k];
     Object.assign(items, JSON.parse(JSON.stringify(settings.items || {})));
     applyItems(hall, items);
+    setVoicePicks(settings.voices);
+    picks.kokoro = { ...VOICE_PICKS.kokoro }; picks.eleven = { ...VOICE_PICKS.eleven };
+    voicesBox.querySelectorAll('.bee-voice-pick:not(.bee-voice-cols)').forEach((line, n) => {
+      const kid = ['boy', 'boy3', 'boy2', 'girl', 'girl2', 'girl3'][n], [k, e] = line.querySelectorAll('select');
+      k.value = picks.kokoro[kid] || SPELLER_VOICES[KIDS[kid].girl ? 'girl' : 'boy'];
+      e.value = picks.eleven[kid] || KID_LETTER_SET[kid] || (KIDS[kid].girl ? 'girl' : 'boy');
+    });
     const back = normLetters(settings.letters);
     letters.girl = back.girl; letters.boy = back.boy;
     setLetterSaid(settings.letters);
@@ -1340,7 +1409,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
      ONE AFTER ANOTHER from a queue, so letters typed fast are all said, none cut off. A clip
      not recorded (yet) is said with the browser's voice instead. ── */
   const pad4 = (i) => String(i + 1).padStart(4, '0');
-  const voiceOf = (kid) => SPELLER_VOICES[KIDS[kid]?.girl ? 'girl' : 'boy'];
+  const voiceOf = (kid) => {
+    const pick = VOICE_PICKS.kokoro[kid];
+    return pick && AUDIO.SPELLER_CLIPS?.[pick] ? pick : SPELLER_VOICES[KIDS[kid]?.girl ? 'girl' : 'boy'];
+  };
   function spellerClip(kid, list, i) {
     const c = AUDIO.SPELLER_CLIPS?.[voiceOf(kid)]?.[list];
     return c && c.base && c.w.has(i) ? `${c.base}${pad4(i)}-w.mp3` : null;
@@ -1356,7 +1428,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const list = [];
     if (spellerVoice === 'eleven') {
       // a child's voice for the small boy and the girls, once its set is on the site
-      const set = KID_LETTER_SET[kid] && ready[KID_LETTER_SET[kid]] ? KID_LETTER_SET[kid] : who;
+      const picked = VOICE_PICKS.eleven[kid];
+      const set = picked && ready[picked] ? picked : KID_LETTER_SET[kid] && ready[KID_LETTER_SET[kid]] ? KID_LETTER_SET[kid] : who;
       // a spelling changed on the chart (the girls' or the boys'): ElevenLabs saying that text in
       // this child's voice (once it has been made)
       const own = LETTER_SAID[who][ch.toLowerCase()];
@@ -1756,11 +1829,33 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   /** "Your word is," / "Correct." / "Incorrect.": the judge's own lines. */
   /* After "Incorrect": the head judge spells the word ("The correct spelling is: B. L. A. N. K.
      Blank.") while the TV shows it, tile by tile, in green. */
-  async function judgeSpells(word) {
+  async function judgeSpells(word, q = null) {
     const letters = [...String(word)];
     const names = letters.map((ch) => { const n = DEFAULT_LETTER(ch); return /[.!?]$/.test(n) ? n : `${n}.`; });
     say(`The judge: "The correct spelling is ${letters.join(' ').toUpperCase()}."`);
     const row = answerRow();                          // the speller's marked try stays, under it
+    // in her own Kokoro voice when every piece is recorded: the phrase, each letter, the word
+    const jl = AUDIO.SPELLER_CLIPS?.[JUDGE_KOKORO]?.letters;
+    const letterAt = (ch) => { const i = LETTER[ch.toLowerCase()]; return jl && jl.base && i != null && jl.w.has(i) ? `${jl.base}${pad4(i)}-w.mp3` : null; };
+    const intro = PHRASE.correctIs != null ? clipFor('phrases', PHRASE.correctIs, 'd') : null;
+    const wordAt = q ? clipFor(q.bank, q.i, 'w') : null;
+    if (canSpeak && intro && wordAt && letters.every(letterAt)) {
+      const sayClip = async (text, clip) => {
+        sayWord(text, judge, { rate: 0.95, clip });
+        await sleep(160);
+        for (let t = 0; t < 120 && isTalking() && !gone && pace; t++) await sleep(60);
+      };
+      await sayClip('The correct spelling is,', intro);
+      for (const ch of letters) {
+        if (gone || !pace) break;
+        row.append(tile(ch, 'is-new'));
+        await sayClip(DEFAULT_LETTER(ch), letterAt(ch));
+        await wait(140);
+      }
+      if (!gone && pace) await sayClip(word, wordAt);
+      await wait(400);
+      return;
+    }
     if (canSpeak) sayWord(`The correct spelling is: ${names.join(' ')} ${word}.`, judge, { rate: 0.9 });
     await wait(1700);                                // "The correct spelling is"
     for (const ch of letters) {
@@ -2230,7 +2325,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         await spoken();
         await wait(700);
         // the head judge spells the word as it should be, before the speller leaves
-        if (!gone && pace) await judgeSpells(q.word);
+        if (!gone && pace) await judgeSpells(q.word, q);
         say(`The word was "${q.word}". ${seat === mySeat ? 'You leave' : `Number ${seat.tag} leaves`} the stage.`);
         await wait(1200);
       }

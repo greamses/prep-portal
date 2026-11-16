@@ -600,3 +600,15 @@
 .bee-letters.bee-answer .bee-tile { background: linear-gradient(160deg, #b9f0c4, #6fd187 70%, #4fb96a); box-shadow: 0 0.45cqh 0 #2f8a47, 0 0.7cqh 1cqh rgba(0, 0, 0, 0.45), inset 0 0.15cqh 0 rgba(255, 255, 255, 0.6); }
 .bee-tv .bee-spell:has(.bee-answer) .bee-tile { width: 4.6cqh; height: 5cqh; }
 .bee-tv .bee-spell:has(.bee-answer) .bee-tile-letter { font-size: 3.1cqh; }
+
+/* the hall settings' Voices: a line per speller (face, name, a Kokoro voice and an ElevenLabs set,
+   each with a play button) */
+.bee-voice-picks { display: grid; gap: 4px; }
+.bee-voice-pick { display: grid; grid-template-columns: 26px 3.4rem minmax(0, 1fr) 1.8rem minmax(0, 1fr) 1.8rem; align-items: center; gap: 4px; }
+.bee-voice-name { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; }
+.bee-voice-pick .pp-select { min-width: 0; width: 100%; }
+.bee-voice-pick .pp-select-trigger { width: 100%; min-width: 0; overflow: hidden; }
+.bee-voice-pick .pp-select-trigger > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bee-voice-cols span { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); }
+.bee-voice-pick .bee-ic { width: 1.8rem; height: 1.8rem; }
+.bee-bd .bee-tune { width: min(460px, 94vw); }

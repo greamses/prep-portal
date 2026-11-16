@@ -12,6 +12,8 @@ export const SPELLING_PHRASES = [
   ['incorrect', '', 'Incorrect.'],
   // the head judge introduces herself after PrepBot's welcome (Mr. Whitmore follows, in his voice)
   ['intro', '', 'Good afternoon, everyone. I am Mrs. Chen, your head judge. Listen carefully, and spell clearly.'],
+  // after "Incorrect": she spells the word (her letters: list "letters" in her voice, recorded too)
+  ['correctIs', '', 'The correct spelling is,'],
 ];
 /** Clip number of a phrase: PHRASE.correct -> 1. */
 export const PHRASE = Object.fromEntries(SPELLING_PHRASES.map((row, i) => [row[0], i]));
