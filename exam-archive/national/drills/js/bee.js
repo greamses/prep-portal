@@ -994,24 +994,24 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   /* The mouth opens once for each syllable of what is said (syllablesOf), the openings spread
      evenly over how long it is said: each opens and closes fully (a half sine) in its own slot,
      and after the last the mouth stays shut until the sound ends. */
-  let talking = false, mouthRaf = 0, mouthO = 0, beat = null;
+  let talking = false, mouthRaf = 0, mouthO = 0, sylBeat = null;
   const mouthOn = (on, text = '', ms = 0) => {
     talking = on;
     speakingKid?.classList.toggle('is-talking', on);
     if (on) {
       const n = syllablesOf(text);
-      beat = { t0: performance.now(), n, slot: Math.max(120, (ms || n * 300) / n), amp: [] };
-      for (let i = 0; i < n; i++) beat.amp.push(0.7 + Math.random() * 0.3);
-    } else beat = null;
+      sylBeat = { t0: performance.now(), n, slot: Math.max(120, (ms || n * 300) / n), amp: [] };
+      for (let i = 0; i < n; i++) sylBeat.amp.push(0.7 + Math.random() * 0.3);
+    } else sylBeat = null;
     if (!mouthRaf) mouthRaf = requestAnimationFrame(mouthTick);
   };
   function mouthTick(now) {
     mouthRaf = 0;
     if (!speakingKid) return;
     let goal = 0;
-    if (talking && beat) {
-      const k = (now - beat.t0) / beat.slot, i = Math.floor(k);
-      if (i < beat.n) goal = Math.sin(Math.PI * (k - i)) * beat.amp[i];
+    if (talking && sylBeat) {
+      const k = (now - sylBeat.t0) / sylBeat.slot, i = Math.floor(k);
+      if (i < sylBeat.n) goal = Math.sin(Math.PI * (k - i)) * sylBeat.amp[i];
     }
     mouthO += (goal - mouthO) * 0.5;
     setMouth(speakingKid, mouthO);
