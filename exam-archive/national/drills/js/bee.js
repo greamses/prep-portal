@@ -1072,7 +1072,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       <div class="bee-lamp bee-lamp--l" aria-hidden="true"><svg viewBox="0 0 60 90" aria-hidden="true"><defs><linearGradient id="bee-can-l" x1="0" x2="1"><stop offset="0" stop-color="#16171a"/><stop offset=".35" stop-color="#4b4f56"/><stop offset=".6" stop-color="#2b2e33"/><stop offset="1" stop-color="#101113"/></linearGradient><radialGradient id="bee-lens-l" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fffdf2"/><stop offset=".55" stop-color="#ffe9a8"/><stop offset="1" stop-color="#d9a441"/></radialGradient></defs><rect x="22" y="0" width="16" height="7" fill="#2b2e33"/><rect x="28" y="6" width="4" height="9" fill="#3b3f45"/><path d="M10 40 V18 Q10 14 14 14 H46 Q50 14 50 18 V40" fill="none" stroke="#3b3f45" stroke-width="4"/><circle cx="10" cy="40" r="3.2" fill="#55595f"/><circle cx="50" cy="40" r="3.2" fill="#55595f"/><rect x="15" y="22" width="30" height="46" rx="4" fill="url(#bee-can-l)"/><rect x="17" y="27" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="17" y="32" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="13" y="66" width="34" height="6" rx="1.5" fill="#202226"/><path d="M13 72 L4 86 H16 L20 72 Z" fill="#26282c"/><path d="M47 72 L56 86 H44 L40 72 Z" fill="#26282c"/><ellipse class="bee-lens" cx="30" cy="73" rx="12" ry="3.4" fill="url(#bee-lens-l)"/></svg></div>
       <div class="bee-lamp bee-lamp--r" aria-hidden="true"><svg viewBox="0 0 60 90" aria-hidden="true"><defs><linearGradient id="bee-can-r" x1="0" x2="1"><stop offset="0" stop-color="#16171a"/><stop offset=".35" stop-color="#4b4f56"/><stop offset=".6" stop-color="#2b2e33"/><stop offset="1" stop-color="#101113"/></linearGradient><radialGradient id="bee-lens-r" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fffdf2"/><stop offset=".55" stop-color="#ffe9a8"/><stop offset="1" stop-color="#d9a441"/></radialGradient></defs><rect x="22" y="0" width="16" height="7" fill="#2b2e33"/><rect x="28" y="6" width="4" height="9" fill="#3b3f45"/><path d="M10 40 V18 Q10 14 14 14 H46 Q50 14 50 18 V40" fill="none" stroke="#3b3f45" stroke-width="4"/><circle cx="10" cy="40" r="3.2" fill="#55595f"/><circle cx="50" cy="40" r="3.2" fill="#55595f"/><rect x="15" y="22" width="30" height="46" rx="4" fill="url(#bee-can-r)"/><rect x="17" y="27" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="17" y="32" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="13" y="66" width="34" height="6" rx="1.5" fill="#202226"/><path d="M13 72 L4 86 H16 L20 72 Z" fill="#26282c"/><path d="M47 72 L56 86 H44 L40 72 Z" fill="#26282c"/><ellipse class="bee-lens" cx="30" cy="73" rx="12" ry="3.4" fill="url(#bee-lens-r)"/></svg></div>
       <div class="bee-lamp bee-lamp--spot" aria-hidden="true"><svg viewBox="0 0 60 90" aria-hidden="true"><defs><linearGradient id="bee-can-s" x1="0" x2="1"><stop offset="0" stop-color="#16171a"/><stop offset=".35" stop-color="#4b4f56"/><stop offset=".6" stop-color="#2b2e33"/><stop offset="1" stop-color="#101113"/></linearGradient><radialGradient id="bee-lens-s" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fffdf2"/><stop offset=".55" stop-color="#ffe9a8"/><stop offset="1" stop-color="#d9a441"/></radialGradient></defs><rect x="22" y="0" width="16" height="7" fill="#2b2e33"/><rect x="28" y="6" width="4" height="9" fill="#3b3f45"/><path d="M10 40 V18 Q10 14 14 14 H46 Q50 14 50 18 V40" fill="none" stroke="#3b3f45" stroke-width="4"/><circle cx="10" cy="40" r="3.2" fill="#55595f"/><circle cx="50" cy="40" r="3.2" fill="#55595f"/><rect x="15" y="22" width="30" height="46" rx="4" fill="url(#bee-can-s)"/><rect x="17" y="27" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="17" y="32" width="26" height="2" fill="#5d6168" opacity=".6"/><rect x="13" y="66" width="34" height="6" rx="1.5" fill="#202226"/><path d="M13 72 L4 86 H16 L20 72 Z" fill="#26282c"/><path d="M47 72 L56 86 H44 L40 72 Z" fill="#26282c"/><ellipse class="bee-lens" cx="30" cy="73" rx="12" ry="3.4" fill="url(#bee-lens-s)"/></svg></div>
-      <div class="bee-spot" aria-hidden="true"><span class="bee-spot-beam"></span></div>
+      <div class="bee-spot" aria-hidden="true"></div>
+      <span class="bee-pool bee-pool--l" aria-hidden="true"></span><span class="bee-pool bee-pool--r" aria-hidden="true"></span><span class="bee-pool bee-pool--spot" aria-hidden="true"></span>
+      <span class="bee-beam bee-beam--l" aria-hidden="true"></span><span class="bee-beam bee-beam--r" aria-hidden="true"></span><span class="bee-beam bee-beam--spot" aria-hidden="true"></span>
       <div class="bee-footlights" aria-hidden="true">${Array.from({ length: 11 }, () => '<span></span>').join('')}</div>
       <div class="bee-flood" aria-hidden="true"></div>
       <div class="bee-confetti" aria-hidden="true"></div>
@@ -1952,20 +1954,43 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     spotRaf = 0;
     if (!spotEl || gone) return;
     const hr = hall.getBoundingClientRect(), kr = spotEl.getBoundingClientRect();
-    const lamp = hall.querySelector('.bee-lamp--spot'), beam = hall.querySelector('.bee-spot-beam');
     if (hr.width && kr.width) {
-      const lx = hr.width * 0.394, ly = hr.height * 0.072 + lamp.offsetHeight * 0.82;     // the lens
-      const tx = kr.left + kr.width / 2 - hr.left, ty = kr.top + kr.height * 0.98 - hr.top;  // the speller's feet
-      const dx = tx - lx, dy = ty - ly, len = Math.hypot(dx, dy), ang = Math.atan2(-dx, dy) * 180 / Math.PI;
-      lamp.style.rotate = `${ang.toFixed(1)}deg`;
-      beam.style.left = `${lx}px`; beam.style.top = `${ly}px`;
-      beam.style.height = `${len}px`; beam.style.width = `${Math.max(kr.width * 1.5, hr.width * 0.08)}px`;
-      beam.style.rotate = `${ang.toFixed(1)}deg`;
+      const tx = kr.left + kr.width / 2 - hr.left, ty = kr.top + kr.height * 0.985 - hr.top;  // the speller's feet
+      aim('spot', tx, ty, Math.max(kr.width * 1.7, hr.width * 0.07));
       hall.style.setProperty('--spot-x', `${((tx / hr.width) * 100).toFixed(2)}%`);
       hall.style.setProperty('--spot-y', `${(((kr.top + kr.height * 0.5 - hr.top) / hr.height) * 100).toFixed(2)}%`);
     }
     spotRaf = requestAnimationFrame(spotTick);
   }
+  /* A lamp on the lighting bar aimed at (tx, ty) in the hall (px): it turns about its clamp so
+     its lens points there; the beam spreads from the lens to that point; and the light lands
+     there as an ellipse of width w on the floor. */
+  function aim(which, tx, ty, w) {
+    const lamp = hall.querySelector(`.bee-lamp--${which}`), beam = hall.querySelector(`.bee-beam--${which}`), pool = hall.querySelector(`.bee-pool--${which}`);
+    if (!lamp || !beam || !pool) return;
+    const px = lamp.offsetLeft, py = lamp.offsetTop;            // the clamp (the lamp turns about its top middle)
+    const L = lamp.offsetHeight * (73 / 90);                   // clamp to lens, in the lamp's drawing
+    const a = Math.atan2(-(tx - px), ty - py);                 // clockwise from straight down
+    const lx = px - L * Math.sin(a), ly = py + L * Math.cos(a);
+    const deg = (a * 180) / Math.PI;
+    lamp.style.rotate = `${deg.toFixed(2)}deg`;
+    const len = Math.hypot(tx - lx, ty - ly);
+    const lens = lamp.offsetWidth * 0.4;                       // the beam is as wide as the lens where it leaves it
+    beam.style.left = `${lx}px`; beam.style.top = `${ly}px`; beam.style.height = `${len}px`; beam.style.width = `${w}px`;
+    beam.style.rotate = `${(Math.atan2(-(tx - lx), ty - ly) * 180 / Math.PI).toFixed(2)}deg`;
+    const t = Math.min(49, (lens / w) * 50);
+    beam.style.clipPath = `polygon(${(50 - t).toFixed(2)}% 0, ${(50 + t).toFixed(2)}% 0, 100% 100%, 0 100%)`;
+    pool.style.left = `${tx}px`; pool.style.top = `${ty}px`; pool.style.width = `${w}px`; pool.style.height = `${(w * 0.26).toFixed(1)}px`;
+  }
+  // the two flood lamps, aimed at the stage left and right of the middle, kept aimed as the hall resizes
+  const aimFloods = () => {
+    const W = hall.clientWidth, H = hall.clientHeight;
+    if (!W) return;
+    aim('l', W * 0.42, H * 0.645, W * 0.26);         // the open floor in front of the TV, left and right
+    aim('r', W * 0.68, H * 0.645, W * 0.26);
+  };
+  aimFloods();
+  new ResizeObserver(aimFloods).observe(hall);
   // with no time to walk (catching up, skipping), the classes are still set, so everyone ends in the right place
   const settle = () => { bd.classList.toggle('is-instant', !pace); };
 
