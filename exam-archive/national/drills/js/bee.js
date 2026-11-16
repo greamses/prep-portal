@@ -166,6 +166,26 @@ export function mouthPath(f, o) {
   const low = `M${x1 + half * 0.35} ${top + dip + open + h * 0.28} Q${cx} ${top + dip + open + h * 0.42} ${x2 - half * 0.35} ${top + dip + open + h * 0.28}`;
   return { inner, low };
 }
+/* A judge's mouth: the same lips as a speller's (mouthPath), drawn in the judges' picture at
+   data-mouth = "cx,cy,width,height" (its own units), open by o (0 shut .. 1). */
+export function drawJudgeLips(g, o) {
+  if (!g) return;
+  const [cx, cy, w, h] = g.dataset.mouth.split(',').map(Number);
+  const { inner, low } = mouthPath({ mouth: [cx, cy, w, h] }, Math.max(0, Math.min(1, o)));
+  g.querySelector('.bee-lips-in').setAttribute('d', o > 0.03 ? inner : '');
+  g.querySelector('.bee-lips-low').setAttribute('d', o > 0.03 ? low : '');
+}
+/* The head judge speaks through the shared speech code, which opens a `.mouth` group by scaling
+   it (boy.js setMouth). Hers is empty: how far it is scaled is read and drawn as lips. */
+function followJudgeMouth(judges) {
+  const g = judges.querySelector('.mouth'), lips = judges.querySelector('.bee-jw-lips');
+  if (!g || !lips) return;
+  new MutationObserver(() => {
+    const m = /scale\(\s*[\d.]+\s+([\d.]+)\s*\)/.exec(g.getAttribute('transform') || '');
+    const sy = m ? Number(m[1]) : 0.12;
+    drawJudgeLips(lips, (sy - 0.14) / 0.9);
+  }).observe(g, { attributes: true, attributeFilter: ['transform'] });
+}
 export function setMouth(el, o) {
   const svg = el.querySelector('.bee-kid-mouth');
   const f = KIDS[el.dataset.kid];
@@ -509,11 +529,12 @@ function judgesSvg() {
   return `<svg viewBox="0 0 300 220" aria-hidden="true">
     ${sized('judge-woman', 'Head judge', `${chair(W.x + ww / 2, W.y + 0.11 * W.h, ww * 1.12)}
     <image href="/media/characters/judge-woman.svg" x="${W.x}" y="${W.y}" width="${ww}" height="${W.h}"/>
-    <g class="mouth" data-hinge="${(my - 2.4).toFixed(2)}" transform="translate(${mx.toFixed(2)} ${(my - 2.4).toFixed(2)}) scale(1 0.12) translate(${(-mx).toFixed(2)} ${(-(my - 2.4)).toFixed(2)})"><ellipse cx="${mx.toFixed(2)}" cy="${(my + 1).toFixed(2)}" rx="5.6" ry="3.8" fill="#5e2420"/></g>
+    <g class="mouth" data-hinge="${(my - 2.4).toFixed(2)}" data-cx="${mx.toFixed(2)}" transform="scale(1 0.12)"></g>
+    <g class="bee-judge-lips bee-jw-lips" data-mouth="${mx.toFixed(2)},${(my - 0.4).toFixed(2)},10.5,3.2"><path class="bee-lips-in" d=""/><path class="bee-lips-low" d=""/></g>
     ${hands(W.x + ww / 2, '#f0c3a3', '#1d2b55', -0.12)}`)}
     ${sized('judge-man', 'Judge', `${chair(M.x + mw / 2, M.y + 0.11 * M.h, mw * 1.12)}
     <image class="bee-jm" href="/media/characters/judge-man.svg" x="${M.x}" y="${M.y}" width="${mw}" height="${M.h}"/>
-    <g class="bee-jm-mouth" data-x="${jx.toFixed(2)}" data-hinge="${(jy - 1.6).toFixed(2)}" transform="translate(${jx.toFixed(2)} ${(jy - 1.6).toFixed(2)}) scale(1 0.08) translate(${(-jx).toFixed(2)} ${(-(jy - 1.6)).toFixed(2)})"><ellipse cx="${jx.toFixed(2)}" cy="${(jy + 0.6).toFixed(2)}" rx="4.4" ry="2.9" fill="#4e1d19"/></g>
+    <g class="bee-judge-lips bee-jm-lips" data-mouth="${jx.toFixed(2)},${(jy - 0.6).toFixed(2)},11,3"><path class="bee-lips-in" d=""/><path class="bee-lips-low" d=""/></g>
     ${hands(M.x + mw / 2, '#f2b394', '#1c3561', -0.04)}`)}
     <defs>
       <linearGradient id="bee-cloth" x1="0" x2="1" y1="0" y2="0">${Array.from({ length: 13 }, (_, i) => `<stop offset="${(i / 12).toFixed(3)}" stop-color="${i % 2 ? '#1a2d55' : '#25407a'}"/>`).join('')}</linearGradient>
@@ -1073,6 +1094,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   $('.bee-audience').innerHTML = audienceSvg(seed);
   const judge = $('.bee-judges');
   judge.innerHTML = judgesSvg();
+  followJudgeMouth(judge);              // her lips follow the speech code's mouth
   const hall = $('.bee-hall'), statusEl = $('.bee-status'), lettersEl = $('.bee-letters'), inputEl = $('.bee-input');
   const clockEl = $('.bee-clock'), toolsEl = $('.bee-tools'), heardEl = $('.bee-heard'), skipBtn = $('.bee-skip');
   const toolsBtn = $('.bee-tools-btn'), keysEl = $('.bee-keys');
@@ -1503,12 +1525,11 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       if (!pace) { resolve(); return; }
       let ended = false;
       // his mouth: opening and shutting, by a different amount each time, while he is speaking
-      const mouthG = judges.querySelector('.bee-jm-mouth');
-      const mx0 = mouthG?.dataset.x, hinge = mouthG?.dataset.hinge;
-      const setOpen = (o) => mouthG?.setAttribute('transform', `translate(${mx0} ${hinge}) scale(1 ${o}) translate(${-mx0} ${-hinge})`);
+      const lips = judges.querySelector('.bee-jm-lips');
+      const setOpen = (o) => drawJudgeLips(lips, o);
       let flap = 0, open = false;
-      const startFlap = () => { if (flap) return; flap = setInterval(() => { open = !open; setOpen(open ? 0.55 + Math.random() * 0.45 : 0.1); }, 140); };
-      const end = () => { if (ended) return; ended = true; clearInterval(flap); setOpen(0.08); judges.classList.remove('is-man-talking'); resolve(); };
+      const startFlap = () => { if (flap) return; flap = setInterval(() => { open = !open; setOpen(open ? 0.45 + Math.random() * 0.55 : 0); }, 140); };
+      const end = () => { if (ended) return; ended = true; clearInterval(flap); setOpen(0); judges.classList.remove('is-man-talking'); resolve(); };
       // his own recorded voice (media/spelling-judge); the browser's if it will not play
       if (clip) {
         try {

@@ -105,7 +105,12 @@
 
 /* Each child sets --hip, --knee and --hands (% of the drawing's height; js/bee.js KIDS).
    Sitting (the default): the body comes down onto the knees, only shins and feet below. */
-.bee-kid-body { position: relative; z-index: 1; clip-path: inset(0 -40% calc((100 - var(--hip, 64)) * 1%) -40%); transform: translateY(calc((var(--knee, 80) - var(--hip, 64)) * 1%)); }
+/* Sitting, the body is cut at the hips in the middle but down to the fingertips at the two sides,
+   where the hands hang (so the hands are whole and the thighs, which point at you, are not seen).
+   Standing, the same eight points all sit at the fingertips. */
+.bee-kid-body { position: relative; z-index: 1; --hh: calc(var(--hands, 73) * 1%); --hp: calc(var(--hip, 64) * 1%);
+  clip-path: polygon(-40% 0, 140% 0, 140% var(--hh), 73% var(--hh), 73% var(--hp), 27% var(--hp), 27% var(--hh), -40% var(--hh));
+  transform: translateY(calc((var(--knee, 80) - var(--hip, 64)) * 1%)); }
 /* A leg is cut as a six-point shape: between the hanging hands it is kept narrow (so the
    hands are not in it), below them it is as wide as the picture (so the shoes are whole).
    Sitting, the shape is just knee to feet. Same six points both ways, so it can animate. */
@@ -113,7 +118,7 @@
 .bee-leg--l { clip-path: polygon(-10% var(--k), 50% var(--k), 50% 100%, -10% 100%, -10% var(--k), -10% var(--k)); transform-origin: 36% calc(var(--hip, 64) * 1%); }
 .bee-leg--r { clip-path: polygon(50% var(--k), 110% var(--k), 110% var(--k), 110% var(--k), 110% 100%, 50% 100%); transform-origin: 64% calc(var(--hip, 64) * 1%); }
 /* standing up: the whole child, legs from the hips */
-.bee-kid.is-standing .bee-kid-body { clip-path: inset(0 -40% calc((100 - var(--hands, 73)) * 1%) -40%); transform: none; }
+.bee-kid.is-standing .bee-kid-body { clip-path: polygon(-40% 0, 140% 0, 140% var(--hh), 73% var(--hh), 73% var(--hh), 27% var(--hh), 27% var(--hh), -40% var(--hh)); transform: none; }
 .bee-kid.is-standing .bee-leg--l { clip-path: polygon(17% var(--h), 50% var(--h), 50% 100%, -10% 100%, -10% var(--a), 17% var(--a)); }
 .bee-kid.is-standing .bee-leg--r { clip-path: polygon(50% var(--h), 83% var(--h), 83% var(--a), 110% var(--a), 110% 100%, 50% 100%); }
 /* walking: the legs take turns to lift (coming towards you, a lifted leg looks shorter),
@@ -558,3 +563,7 @@
 .bee-ipa[hidden] { display: none; }
 .bee-ipa-key { height: 1.7rem; padding: 0; border: 0; cursor: pointer; font-family: var(--font-mono); font-size: 0.9rem; color: var(--ink); background: var(--surface-secondary, rgba(0, 0, 0, 0.05)); }
 .bee-ipa-key:hover { background: var(--surface-primary); box-shadow: inset 0 -2px 0 var(--accent-primary); }
+
+/* the judges' mouths: the spellers' lips, in the judges' picture */
+.bee-judge-lips .bee-lips-in { fill: #4d1814; stroke: #7a2e24; stroke-width: 0.6px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.bee-judge-lips .bee-lips-low { fill: none; stroke: rgba(170, 70, 60, 0.55); stroke-width: 0.9px; vector-effect: non-scaling-stroke; stroke-linecap: round; }
