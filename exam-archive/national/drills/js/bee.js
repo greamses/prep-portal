@@ -101,6 +101,12 @@ const SPELLER_VOICE_CHOICES = [
   { key: 'eleven', label: 'ElevenLabs letters' },
 ];
 let spellerVoice = (() => { try { const v = localStorage.getItem(VOICE_KEY); return SPELLER_VOICE_CHOICES.some((c) => c.key === v) ? v : 'browser'; } catch { return 'browser'; } })();
+// choose the spellers' voice from anywhere (the speaker's list, the ABC chart): every list showing it follows
+function setSpellerVoice(v) {
+  spellerVoice = v;
+  try { localStorage.setItem(VOICE_KEY, v); } catch { /* not kept */ }
+  document.dispatchEvent(new CustomEvent('bee-voice', { detail: v }));
+}
 // how a speller says each letter: a little slower than speech, and a pause after it
 const LETTER_RATE = 0.7;
 const LETTER_PAUSE_MS = 500;
@@ -628,6 +634,22 @@ function mountTuner(hall, top, { say }) {
     voices.append(v);
   }
   paper.append(voices);
+  // which voice says them: the same choice as the speaker's list in the top bar
+  const engines = document.createElement('div');
+  engines.className = 'bee-abc-voices';
+  const showEngine = () => engines.querySelectorAll('button').forEach((x) => x.classList.toggle('is-on', x.dataset.voice === spellerVoice));
+  for (const c of SPELLER_VOICE_CHOICES) {
+    const v = document.createElement('button');
+    v.type = 'button';
+    v.className = 'pp-btn pp-btn--ghost bee-abc-voice';
+    v.dataset.voice = c.key;
+    v.textContent = c.label;
+    v.addEventListener('click', () => setSpellerVoice(c.key));
+    engines.append(v);
+  }
+  showEngine();
+  document.addEventListener('bee-voice', showEngine);
+  paper.append(engines);
   const grid = document.createElement('div');
   grid.className = 'bee-abc';
   const edit = document.createElement('div');
@@ -635,7 +657,9 @@ function mountTuner(hall, top, { say }) {
   edit.innerHTML = '<span class="bee-abc-which"></span><input type="text" maxlength="24" aria-label="What the voice is given for this letter" /><button type="button" class="pp-btn pp-btn--ghost">Hear</button>';
   const which = edit.querySelector('.bee-abc-which'), said = edit.querySelector('input'), hear = edit.querySelector('button');
   let current = null;
-  const sayLetter = () => { if (current != null) say(said.value.trim() || letterName(current), kid === 'girl' ? 'girl' : 'boy'); };
+  // in the voice picked from the speaker's list: a recording if that voice has one, else the
+  // browser saying the text in the box
+  const sayLetter = () => { if (current != null) say(said.value.trim() || letterName(current), kid === 'girl' ? 'girl' : 'boy', current); };
   const keys = 'abcdefghijklmnopqrstuvwxyz'.split('').concat([' ', '-', "'"]);
   for (const ch of keys) {
     const b = document.createElement('button');
@@ -906,7 +930,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     if (gone) return;
     applySizes(hall, settings.sizes);
     applyItems(hall, settings.items);
-    if (isAdminHere() || /[?&]tune=1\b/.test(location.search)) mountTuner(hall, $('.bee-top'), { say: (text, kid) => spellerSays(text, kid) });
+    if (isAdminHere() || /[?&]tune=1\b/.test(location.search)) mountTuner(hall, $('.bee-top'), { say: (text, kid, ch = null) => spellerSays(text, kid, ch != null ? letterClip(ch, kid) : null, { letter: ch != null }) });
   });
   if (!document.fullscreenElement) beeFullscreen();   // allowed only if the Start tap is still fresh
   // Came in some other way (a friend's code, the lobby's Start now): the first tap or key
@@ -1446,14 +1470,11 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     b.setAttribute('role', 'menuitemradio');
     b.dataset.voice = c.key;
     b.textContent = c.label;
-    b.addEventListener('click', () => {
-      spellerVoice = c.key;
-      try { localStorage.setItem(VOICE_KEY, spellerVoice); } catch { /* not kept */ }
-      setOpen(false);
-    });
+    b.addEventListener('click', () => { setSpellerVoice(c.key); setOpen(false); });
     voiceList.append(b);
   }
   showVoice();
+  document.addEventListener('bee-voice', () => { if (voiceList.hidden) showVoice(); else voiceList.querySelectorAll('.bee-voice-opt').forEach((b) => b.classList.toggle('is-on', b.dataset.voice === spellerVoice)); });
   // the button's tooltip would sit over the list: none while it is open
   const setOpen = (open) => {
     voiceList.hidden = !open;

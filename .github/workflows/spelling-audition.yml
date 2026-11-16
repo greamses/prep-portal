@@ -50,7 +50,7 @@ jobs:
           git config user.email "bot@users.noreply.github.com"
           git add -A
           if git diff --cached --quiet; then echo "Nothing new."; else
-            git commit -q -m "Spelling audition: speller voices"
+            git commit -q -m "Spelling audition: new takes"
             git push -q
           fi
           echo "Listen at https://cdn.jsdelivr.net/gh/${GITHUB_REPOSITORY}@$(git rev-parse HEAD)/audition/<voice>.mp3"
