@@ -33,13 +33,13 @@ import { canListen, createSpellMic } from './spell-mic.js';
 import { seatSpellers, createBee, botSpelling } from './bee-logic.js';
 import { SPELLING_PHRASES, PHRASE } from '/data/spelling/phrases.js';
 import { LETTER } from '/data/spelling/letters.js';
-import { SPELLER_VOICES, LETTER_VOICES } from '/data/spelling/speller-voices.js';
+import { SPELLER_VOICES, LETTER_VOICES, KID_LETTER_SET } from '/data/spelling/speller-voices.js';
 
 /* The letters' ElevenLabs recordings (scripts/make-bee-letters.mjs) are on the site itself,
    once they have been made. One look at the first file of each says whether they are there,
    so a missing set costs one request, not one per letter. */
 const lettersReady = {};
-for (const who of Object.keys(LETTER_VOICES)) {
+for (const who of new Set([...Object.keys(LETTER_VOICES), ...Object.values(KID_LETTER_SET)])) {
   lettersReady[who] = fetch(`/media/spelling-letters/${who}/0001.mp3`, { method: 'HEAD' })
     .then((r) => r.ok && /audio/.test(r.headers.get('content-type') || '')).catch(() => false);
 }
@@ -1160,7 +1160,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   /* A letter: the ElevenLabs recording, pitched up for a child (LETTER_VOICES), if that set
      has been made; else the Kokoro one; else (in next()) the browser's voice. */
   const ready = {};
-  for (const who of Object.keys(LETTER_VOICES)) lettersReady[who].then((ok) => { ready[who] = ok; });
+  for (const who of Object.keys(lettersReady)) lettersReady[who].then((ok) => { ready[who] = ok; });
   function letterClip(ch, kid) {
     if (spellerVoice === 'browser') return [];
     const i = LETTER[ch.toLowerCase()];
@@ -1173,7 +1173,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         const live = elevenDone.get(`${who}|${elevenText(ch, own)}`);
         if (live) list.push({ url: live }); else elevenUrl(elevenText(ch, own), who);
       }
-      if (i != null && ready[who]) list.push({ url: `/media/spelling-letters/${who}/${pad4(i)}.mp3`, pitch: LETTER_VOICES[who].pitch });
+      // a child's voice for the small boy and the girls, once its set is on the site
+      const set = KID_LETTER_SET[kid] && ready[KID_LETTER_SET[kid]] ? KID_LETTER_SET[kid] : who;
+      if (i != null && ready[set]) list.push({ url: `/media/spelling-letters/${set}/${pad4(i)}.mp3`, pitch: LETTER_VOICES[set]?.pitch || 1 });
     }
     if (spellerVoice === 'kokoro' && SPELLER_RECORDINGS) { const k = spellerClip(kid, 'letters', i); if (k) list.push({ url: k }); }
     return list;

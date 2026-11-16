@@ -15,3 +15,9 @@ export const LETTER_VOICES = {
   boy: { name: 'George', id: 'JBFqnCBsd6RMkjVDRZzb', pitch: 1 },
 };
 export const SPELLER_VOICES = { girl: 'af_heart', boy: 'bm_fable' };
+/* Children's voices for the ElevenLabs letters: the small boy (Leo, kid "boy") and the girls.
+   Recorded with scripts/make-bee-letters.mjs --set <name> into media/spelling-letters/<name>/;
+   until a set is on the site, those spellers keep the girl's or boy's set above. Add the
+   voice's id to LETTER_VOICES (same name) too, so a letter changed on the ABC chart can be said
+   live in it. */
+export const KID_LETTER_SET = { boy: 'kidboy', girl: 'kidgirl', girl2: 'kidgirl', girl3: 'kidgirl' };
