@@ -272,9 +272,12 @@ export function createSectionFlow(sections, { onChange } = {}) {
         const note = document.createElement('span');
         note.className = `pp-recap-note pp-sticky pp-sticky--tape pp-sticky--c${colour % 6}`;
         colour += 1;
-        note.innerHTML = chip.avatar
-          ? `<img src="${chip.avatar}" alt="" /><span>${chip.label}</span>`
-          : `<span>${chip.label}</span>`;
+        // a picture: an avatar image, or a face cropped from a drawing (`face`: the box's CSS)
+        note.innerHTML = chip.face
+          ? `<span class="pp-face" style="${chip.face}"></span><span>${chip.label}</span>`
+          : chip.avatar
+            ? `<img src="${chip.avatar}" alt="" /><span>${chip.label}</span>`
+            : `<span>${chip.label}</span>`;
         s.recapEl.appendChild(note);
       });
     });

@@ -287,3 +287,7 @@
 @media (hover: none) {
   .avatar-remove { opacity: 1; }
 }
+
+/* a face cropped from a drawing, as an avatar (setup-carousel chips' `face`, the Spelling Bee's
+   speller cards and waiting-room stickers): the drawing is the background, placed by the caller */
+.pp-face { display: inline-block; flex: none; width: 26px; height: 26px; border-radius: 50%; background-color: var(--surface-secondary, #f3eee4); background-repeat: no-repeat; }

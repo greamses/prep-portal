@@ -117,7 +117,21 @@ const KID_NAMES = { boy: 'Boy, blue T-shirt', girl: 'Girl, pigtails', boy2: 'Boy
 // each speller's own name: the same child is always called the same (on the selection card, the
 // waiting room's stickers, their placard, the announcements and the results)
 export const SPELLER_NAMES = { boy: 'Leo', girl: 'Mia', boy2: 'Sam', girl2: 'Amara', girl3: 'Zainab', boy3: 'Tunde' };
-export const BEE_SPELLERS = Object.keys(KID_NAMES).map((key) => ({ key, name: KID_NAMES[key], call: SPELLER_NAMES[key], src: KIDS[key].src }));
+/* A speller's face as an avatar: the drawing as the background of a square (round) box, sized
+   and placed so the face (between the eyes, a little below them) fills it. Works at any box size.
+   The drawings' widths over heights (their viewBoxes). */
+const ASPECT = { boy: 570 / 1535, girl: 1835 / 4316, boy2: 636 / 2076, girl2: 664 / 1902, girl3: 600 / 2115, boy3: 836 / 2247 };
+export function faceStyle(key) {
+  const f = KIDS[key];
+  if (!f) return '';
+  const [[x1, y], [x2]] = f.eyes;
+  const F = Math.min(0.92, ((x2 - x1) / 100) * 3.1);          // the share of the drawing's width shown
+  const cx = (x1 + x2) / 200, cy = y / 100 + ((f.mouth[1] - y) / 100) * 0.15;
+  const r = 1 / (F * ASPECT[key]);                             // the drawing's height over the box's
+  const px = ((0.5 - cx / F) / (1 - 1 / F)) * 100, py = ((0.5 - cy * r) / (1 - r)) * 100;
+  return `background-image:url('${f.src}');background-size:${(100 / F).toFixed(1)}% auto;background-position:${px.toFixed(1)}% ${py.toFixed(1)}%;background-repeat:no-repeat`;
+}
+export const BEE_SPELLERS = Object.keys(KID_NAMES).map((key) => ({ key, name: KID_NAMES[key], call: SPELLER_NAMES[key], src: KIDS[key].src, face: faceStyle(key) }));
 export { spellerPool } from './bee-logic.js';
 export const BEE_SIZE = 5;            // a bee is for five spellers (the user, 2026-11-15)
 /* How many syllables are said: a letter's name ("W" is "double-you", three), or a word's vowel

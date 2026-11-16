@@ -815,11 +815,11 @@ tbody .drill-grid-th { border-right-width: 2px; }
 
 /* the Spelling Bee: choose your speller (main.js renderBeeKidStep) */
 .bee-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin-top: 0.4rem; }
-.bee-pick-kid { display: grid; grid-template-rows: 1fr auto; place-items: end center; height: 11rem; padding: 0.4rem; cursor: pointer; }
-.bee-pick-kid img { height: 100%; min-height: 0; width: auto; max-width: 100%; object-fit: contain; }
+.bee-pick-kid { display: grid; justify-items: center; gap: 0.35rem; padding: 0.6rem 0.4rem 0.5rem; cursor: pointer; }
+.bee-pick-kid .bee-pick-face { width: 4.6rem; height: 4.6rem; }
 .bee-pick-name { margin-top: 0.3rem; font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; }
 .bee-pick-kid.is-picked { outline: 3px solid var(--accent-primary); outline-offset: -3px; }
 @media (min-width: 640px) { .bee-pick { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 
 /* the Spelling Bee's waiting room: a sticker is the speller, so the picture is a whole child */
-.pp-lobby-seat.is-speller img { width: auto; height: 46px; border-radius: 0; object-fit: contain; }
+.pp-lobby-seat .pp-face { width: 30px; height: 30px; }
