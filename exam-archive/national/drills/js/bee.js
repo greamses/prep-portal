@@ -1313,6 +1313,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   /* A spelling marked: every letter up to the first mistake green, the first wrong letter red,
      the letters after it as they were. A missing letter is a red gap where it should be. */
   function showMarked(typed, word) {
+    hall.querySelector('.bee-tv')?.classList.remove('is-idle');
     const t = String(typed || ''), w = String(word || '');
     const norm = (c) => c.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     let bad = 0;
@@ -1488,7 +1489,19 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
      screen at the pace of the voice. */
   let onScreen = '', screenCls = '';
   const reveal = (ch) => { onScreen += ch; showLetters(onScreen, screenCls); };
-  function clearScreen(cls = '') { onScreen = ''; screenCls = cls; showLetters('', cls); }
+  function clearScreen(cls = '') { onScreen = ''; screenCls = cls; clearAnswer(); showLetters('', cls); }
+  /* The right spelling, built tile by tile on a row ABOVE the speller's marked one (a miss). */
+  let answerEl = null;
+  function clearAnswer() { answerEl?.remove(); answerEl = null; }
+  function answerRow() {
+    clearAnswer();
+    answerEl = document.createElement('p');
+    answerEl.className = 'bee-letters bee-tiles bee-answer';
+    answerEl.setAttribute('aria-label', 'The correct spelling');
+    lettersEl.before(answerEl);
+    hall.querySelector('.bee-tv')?.classList.remove('is-idle');   // the TV is showing a spelling, not the logo
+    return answerEl;
+  }
   /** A title on the TV ("SPELLING BEE", "ROUND 2"): its tiles drop in one after another. */
   function tvTitle(text, cls = '') {
     onScreen = ''; screenCls = '';
@@ -1747,12 +1760,12 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const letters = [...String(word)];
     const names = letters.map((ch) => { const n = DEFAULT_LETTER(ch); return /[.!?]$/.test(n) ? n : `${n}.`; });
     say(`The judge: "The correct spelling is ${letters.join(' ').toUpperCase()}."`);
-    clearScreen('is-answer');
+    const row = answerRow();                          // the speller's marked try stays, under it
     if (canSpeak) sayWord(`The correct spelling is: ${names.join(' ')} ${word}.`, judge, { rate: 0.9 });
     await wait(1700);                                // "The correct spelling is"
     for (const ch of letters) {
       if (gone || !pace) break;
-      reveal(ch);
+      row.append(tile(ch, 'is-new'));
       await wait(620);
     }
     await spoken(15000);                             // a long word takes a while to spell

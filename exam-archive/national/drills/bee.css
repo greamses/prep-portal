@@ -221,7 +221,7 @@
 }
 .bee-tv-brand { position: absolute; left: 50%; bottom: 0.45cqh; translate: -50% 0; width: 3.2cqh; height: 0.5cqh; background: #5d636b; border-radius: 0.25cqh; }
 .bee-tv-led { position: absolute; right: 1.6cqh; bottom: 0.55cqh; width: 0.45cqh; height: 0.45cqh; border-radius: 50%; background: #3bd16f; box-shadow: 0 0 0.6cqh #3bd16f; }
-.bee-tv .bee-spell { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
+.bee-tv .bee-spell { position: relative; width: 100%; height: 100%; display: grid; place-items: center; align-content: center; gap: 1.2cqh; }
 .bee-tv .bee-letters {
   margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 6.2cqh; line-height: 1.15;
   letter-spacing: 0.12em; word-break: break-word; color: #f4f8ff; min-height: 1.2em;
@@ -594,3 +594,9 @@
 .bee-top .bee-tools .bee-keys { display: none; }
 .bee-top .bee-tools .drill-spell-btn { width: 2.2rem; height: 2.2rem; padding: 0; display: inline-grid; place-items: center; }
 .bee-top .bee-tools .drill-spell-btn[hidden] { display: none; }
+
+/* the right spelling above the speller's marked try: green tiles, a little smaller */
+.bee-tv .bee-letters.bee-answer { margin: 0; min-height: 0; }
+.bee-letters.bee-answer .bee-tile { background: linear-gradient(160deg, #b9f0c4, #6fd187 70%, #4fb96a); box-shadow: 0 0.45cqh 0 #2f8a47, 0 0.7cqh 1cqh rgba(0, 0, 0, 0.45), inset 0 0.15cqh 0 rgba(255, 255, 255, 0.6); }
+.bee-tv .bee-spell:has(.bee-answer) .bee-tile { width: 4.6cqh; height: 5cqh; }
+.bee-tv .bee-spell:has(.bee-answer) .bee-tile-letter { font-size: 3.1cqh; }
