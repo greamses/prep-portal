@@ -441,13 +441,13 @@ function elevenUrl(text, who) {
 
 /* Where the chairs are, in % of the hall: on the stage, a back row and a front row. The
    back row sits half a chair across, so its spellers show between the front row's. */
-function seatSpot(count, seat) {
+function seatSpot(count, seat, cup = false) {
   const back = count > 5 ? Math.ceil(count / 2) : 0;
   const inBack = seat < back;
   const n = inBack ? back : count - back;
   const j = inBack ? seat : seat - back;
-  const step = Math.min(10.5, n > 1 ? 40 / (n - 1) : 0);
-  return { x: (inBack ? 64 : 68) + (j - (n - 1) / 2) * step, y: inBack ? 57.5 : 65.5, row: inBack ? 'back' : 'front' };
+  const step = Math.min(10.5, n > 1 ? (cup ? 24 : 40) / (n - 1) : 0);   // a tournament: two pulpits, the chairs further right
+  return { x: (inBack ? 64 : 68) + (cup ? 9 : 0) + (j - (n - 1) / 2) * step, y: inBack ? 57.5 : 65.5, row: inBack ? 'back' : 'front' };
 }
 const CHAIR = '<svg viewBox="0 0 100 125" preserveAspectRatio="none"><rect x="12" y="0" width="76" height="64" fill="#3f6fae"/><rect x="18" y="6" width="64" height="40" fill="#5a8bc8"/><rect x="4" y="60" width="92" height="16" fill="#335c94"/><rect x="8" y="76" width="8" height="49" fill="#59606b"/><rect x="84" y="76" width="8" height="49" fill="#59606b"/><rect x="26" y="76" width="6" height="40" fill="#474d57"/><rect x="68" y="76" width="6" height="40" fill="#474d57"/></svg>';
 
@@ -1174,7 +1174,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  *   humans  [{ uid, name }] every real player in the room
  *   me      { uid, name }
  */
-export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, me, mode = 'spell', operations = [] }) {
+export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, me, mode = 'spell', operations = [], cup = false }) {
   const isMath = mode === 'math';                  // the Math Bee: a minute each at the pulpit
   const BEE_NAME = isMath ? 'Prep Math Bee' : 'Prep Spelling Bee';
   const myKid = KIDS[me.kid] ? me.kid : null;
@@ -1222,6 +1222,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       <span class="pp-sticky pp-sticky--c0 pp-sticky--tape bee-banner bee-item" data-item="banner" data-label="Banner">${BEE_NAME}</span>
       <div class="bee-platform" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="none"><rect x="6" y="6" width="96" height="34" fill="#6e4421"/><rect x="4" y="2" width="100" height="6" fill="#a06a3a"/><rect x="6" y="8" width="96" height="2" fill="#3e2410" opacity=".5"/><rect x="102" y="18" width="12" height="22" fill="#5a3519"/><rect x="101" y="15" width="14" height="4" fill="#a06a3a"/><rect x="112" y="29" width="8" height="11" fill="#4a2a12"/><rect x="111" y="26" width="9" height="4" fill="#a06a3a"/></svg></div>
       <div class="bee-pulpit bee-item" data-item="pulpit" data-label="Pulpit" aria-hidden="true"><svg viewBox="0 0 100 110" preserveAspectRatio="none"><defs><linearGradient id="bee-pw" x1="0" x2="1"><stop offset="0" stop-color="#5a3519"/><stop offset=".45" stop-color="#8a5a2f"/><stop offset="1" stop-color="#4a2a12"/></linearGradient><linearGradient id="bee-pt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#a06a3a"/><stop offset="1" stop-color="#6e4421"/></linearGradient></defs><polygon points="4,14 96,14 90,24 10,24" fill="url(#bee-pt)"/><rect x="4" y="11" width="92" height="4" fill="#b98250"/><polygon points="12,24 88,24 84,104 16,104" fill="url(#bee-pw)"/><rect x="10" y="102" width="80" height="8" fill="#3e2410"/><rect x="22" y="40" width="56" height="32" fill="#13234a" stroke="#d4a937" stroke-width="1.6"/><text x="50" y="53" text-anchor="middle" style="font-family: var(--font-mono)" font-size="7" font-weight="700" letter-spacing="1.4" fill="#e9c86a">PREP</text><text x="50" y="65" text-anchor="middle" style="font-family: var(--font-display)" font-size="9.5" font-weight="800" fill="#f6dc85">MATH BEE</text><path d="M70 12 C70 4 74 0 80 -4" fill="none" stroke="#2d3035" stroke-width="2"/><rect x="77" y="-10" width="7" height="9" rx="3" fill="#2c2f33" transform="rotate(30 80 -5)"/></svg></div>
+      <div class="bee-platform bee-platform--2" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="none"><rect x="6" y="6" width="96" height="34" fill="#6e4421"/><rect x="4" y="2" width="100" height="6" fill="#a06a3a"/><rect x="6" y="8" width="96" height="2" fill="#3e2410" opacity=".5"/><rect x="102" y="18" width="12" height="22" fill="#5a3519"/><rect x="101" y="15" width="14" height="4" fill="#a06a3a"/><rect x="112" y="29" width="8" height="11" fill="#4a2a12"/><rect x="111" y="26" width="9" height="4" fill="#a06a3a"/></svg></div>
+      <div class="bee-pulpit bee-pulpit--2" aria-hidden="true"><svg viewBox="0 0 100 110" preserveAspectRatio="none"><defs><linearGradient id="bee-pw" x1="0" x2="1"><stop offset="0" stop-color="#5a3519"/><stop offset=".45" stop-color="#8a5a2f"/><stop offset="1" stop-color="#4a2a12"/></linearGradient><linearGradient id="bee-pt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#a06a3a"/><stop offset="1" stop-color="#6e4421"/></linearGradient></defs><polygon points="4,14 96,14 90,24 10,24" fill="url(#bee-pt)"/><rect x="4" y="11" width="92" height="4" fill="#b98250"/><polygon points="12,24 88,24 84,104 16,104" fill="url(#bee-pw)"/><rect x="10" y="102" width="80" height="8" fill="#3e2410"/><rect x="22" y="40" width="56" height="32" fill="#13234a" stroke="#d4a937" stroke-width="1.6"/><text x="50" y="53" text-anchor="middle" style="font-family: var(--font-mono)" font-size="7" font-weight="700" letter-spacing="1.4" fill="#e9c86a">PREP</text><text x="50" y="65" text-anchor="middle" style="font-family: var(--font-display)" font-size="9.5" font-weight="800" fill="#f6dc85">MATH BEE</text><path d="M70 12 C70 4 74 0 80 -4" fill="none" stroke="#2d3035" stroke-width="2"/><rect x="77" y="-10" width="7" height="9" rx="3" fill="#2c2f33" transform="rotate(30 80 -5)"/></svg></div>
       <div class="bee-judges"></div>
       <div class="bee-stand bee-item" data-item="mic" data-label="Microphone" aria-hidden="true"><svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><defs><linearGradient id="bee-chrome" x1="0" x2="1"><stop offset="0" stop-color="#6d737a"/><stop offset=".45" stop-color="#f1f3f5"/><stop offset="1" stop-color="#5b6168"/></linearGradient><pattern id="bee-mesh" width="1.4" height="1.4" patternUnits="userSpaceOnUse"><rect width="1.4" height="1.4" fill="#2c2f33"/><circle cx=".7" cy=".7" r=".42" fill="#6b7077"/></pattern></defs><path d="M10 85 L2.2 98.6 M10 85 L17.8 98.6 M10 85 L10 99" stroke="#25282c" stroke-width="1.6" stroke-linecap="round"/><rect x="8.4" y="80" width="3.2" height="6" rx="1" fill="#25282c"/><rect x="9.1" y="22" width="1.8" height="59" fill="url(#bee-chrome)"/><rect x="8.3" y="48" width="3.4" height="3" rx="1" fill="#25282c"/><path d="M10.6 30 Q14 40 11 52 Q9 62 12.5 80" fill="none" stroke="#111" stroke-width=".55" opacity=".85"/><rect x="8.4" y="18" width="3.2" height="5" rx="1" fill="#25282c"/><rect x="7.2" y="10" width="5.6" height="9" rx="1.6" fill="#1d1f22"/><rect x="7.6" y="16.2" width="4.8" height=".8" fill="#9aa1a9"/><path d="M5.8 10.5 Q5.8 2 10 2 Q14.2 2 14.2 10.5 Z" fill="url(#bee-mesh)" stroke="#9aa1a9" stroke-width=".5"/><rect x="5.6" y="9.8" width="8.8" height="1.4" rx=".6" fill="url(#bee-chrome)"/><path d="M7.4 4.6 Q8.4 3.2 10 3" stroke="#fff" stroke-width=".5" fill="none" opacity=".5"/></svg></div>
       <div class="bee-tv bee-item" data-item="tv" data-label="TV" aria-label="The screen">
@@ -1232,7 +1234,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
           </div>
           <div class="bee-tv-idle" aria-hidden="true"><svg class="bee-bot" viewBox="0 0 64 64" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="#1f2a37" stroke-width="2.6" stroke-linecap="round"/><circle class="bee-bot-ball" cx="32" cy="6" r="3.2" fill="#f4c95d"/><rect x="4" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="52" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="11" y="16" width="42" height="38" rx="14" fill="#7cc4f0"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="#1f2a37"/><circle class="bee-bot-eye" cx="26" cy="31.5" r="3.1" fill="#f4c95d"/><circle class="bee-bot-eye" cx="38" cy="31.5" r="3.1" fill="#f4c95d"/><path class="bee-bot-mouth" d="M24 48 L40 48" stroke="#1f2a37" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg><p class="bee-tv-logo"><small>Prep</small>${isMath ? 'Math Bee' : 'Spelling Bee'}</p></div>
           <div class="bee-tv-host" aria-hidden="true"><svg class="bee-bot" viewBox="0 0 64 64" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="#1f2a37" stroke-width="2.6" stroke-linecap="round"/><circle class="bee-bot-ball" cx="32" cy="6" r="3.2" fill="#f4c95d"/><rect x="4" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="52" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="11" y="16" width="42" height="38" rx="14" fill="#7cc4f0"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="#1f2a37"/><circle class="bee-bot-eye" cx="26" cy="31.5" r="3.1" fill="#f4c95d"/><circle class="bee-bot-eye" cx="38" cy="31.5" r="3.1" fill="#f4c95d"/><path class="bee-bot-mouth" d="M24 48 L40 48" stroke="#1f2a37" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg><p class="bee-tv-host-line"></p><div class="bee-tv-award"><svg class="bee-trophy" viewBox="0 0 64 72" aria-hidden="true"><path d="M14 8 H4 V16 Q4 30 18 32" fill="none" stroke="#d4a937" stroke-width="4"/><path d="M50 8 H60 V16 Q60 30 46 32" fill="none" stroke="#d4a937" stroke-width="4"/><path d="M14 4 H50 V20 Q50 40 32 42 Q14 40 14 20 Z" fill="#f2c94c"/><path d="M20 8 H26 V22 Q26 32 32 36 Q22 34 20 22 Z" fill="#fff0b3" opacity=".75"/><rect x="28" y="42" width="8" height="10" fill="#d4a937"/><rect x="18" y="52" width="28" height="7" fill="#b8902e"/><rect x="13" y="59" width="38" height="9" fill="#7a5c1c"/><rect x="22" y="61.5" width="20" height="4" fill="#f2c94c"/></svg><span class="bee-tv-prize"><b>5,000</b> PrepCoins</span></div></div>
-          <div class="bee-tv-math"><div class="bee-mfig" aria-hidden="true"></div><p class="bee-mh"></p><p class="bee-mq"></p><p class="bee-ma"></p><p class="bee-mn"></p><input class="bee-math-input" type="text" inputmode="text" enterkeyhint="go" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" aria-label="Your answer: type it and press Enter" disabled /></div>
+          <div class="bee-tv-math"><div class="bee-mfig" aria-hidden="true"></div><p class="bee-mh"></p><p class="bee-mq"></p><p class="bee-ma"></p><p class="bee-mn"></p><div class="bee-duel"><div class="bee-duel-side" data-side="0"><p class="bee-duel-name"></p><p class="bee-duel-ans"></p></div><p class="bee-duel-score"></p><div class="bee-duel-side" data-side="1"><p class="bee-duel-name"></p><p class="bee-duel-ans"></p></div></div><input class="bee-math-input" type="text" inputmode="text" enterkeyhint="go" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" aria-label="Your answer: type it and press Enter" disabled /></div>
           <div class="bee-tv-curtain" aria-hidden="true"></div>
           <span class="bee-tv-static" aria-hidden="true"></span>
           <span class="bee-tv-glare" aria-hidden="true"></span>
@@ -1255,6 +1257,15 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       <div class="bee-marquee" aria-hidden="true"></div>
       <div class="bee-audience"></div>
     </div>
+    <div class="bee-cup" hidden>
+      <div class="pp-receipt bee-cup-card">
+        <div class="pp-receipt__paper bee-cup-paper">
+          <p class="bee-results-kicker">${BEE_NAME} tournament</p>
+          <p class="bee-results-title bee-cup-title"></p>
+          <div class="bee-cup-body"></div>
+        </div>
+      </div>
+    </div>
     <div class="bee-results" hidden>
       <div class="pp-receipt bee-results-card">
         <div class="pp-receipt__paper bee-results-paper">
@@ -1267,6 +1278,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     </div>`;
   const $ = (q) => bd.querySelector(q);
   if (isMath) bd.classList.add('is-math');
+  if (isMath && cup) bd.classList.add('is-cup');
   $('.bee-blob').innerHTML = heroPaint();
   $('.bee-backdrop').innerHTML = hallSvg();
   $('.bee-audience').innerHTML = audienceSvg(seed);
@@ -1291,7 +1303,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
 
   // the spellers, in their chairs, tags on
   const kids = seats.map((s) => {
-    const spot = seatSpot(seats.length, s.seat);
+    const spot = seatSpot(seats.length, s.seat, cup);
     const f = KIDS[s.kid];
     const el = document.createElement('div');
     el.className = `bee-kid bee-kid--${spot.row}${s === mySeat ? ' is-me' : ''}`;
@@ -1883,20 +1895,39 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   let shownKey = '';
   /* a bot's working: in a thought bubble over its head at the pulpit (not on the TV), a line at a time */
   /* a bot's working: a thought cloud over ITS head (it goes where the bot goes), a line at a time */
-  let thought = null;
+  const thoughts = new Map();     // the child's element -> their thought cloud
   const CLOUD = '<svg class="bee-think__shape" viewBox="0 0 200 120" preserveAspectRatio="none" aria-hidden="true">'
     + '<path d="M38 96 C14 98 6 74 22 62 C10 44 28 24 50 30 C56 10 88 4 104 20 C118 4 150 8 154 30 C178 24 196 46 182 64 C198 78 186 102 162 98 C154 116 124 118 112 104 C98 118 66 118 58 102 C52 106 42 104 38 96 Z"/></svg>';
-  function setWork(lines, kidEl) {
-    if (!thought) {
-      thought = document.createElement('div');
-      thought.className = 'bee-think';
-      thought.setAttribute('aria-hidden', 'true');
-      thought.innerHTML = `<div class="bee-think__cloud">${CLOUD}<div class="bee-think__lines"></div></div>`
+  /* setWork(lines, kid, on): that child's cloud shows `lines` (on: shown even empty, "..." while they
+     start thinking); setWork([]) with no child puts every cloud away */
+  function setWork(lines, kidEl, on = lines.length > 0) {
+    if (!kidEl) { for (const t of thoughts.values()) { t.classList.remove('is-on'); t.querySelector('.bee-think__lines').replaceChildren(); } return; }
+    let t = thoughts.get(kidEl);
+    if (!t) {
+      t = document.createElement('div');
+      t.className = 'bee-think';
+      t.setAttribute('aria-hidden', 'true');
+      t.innerHTML = `<div class="bee-think__cloud">${CLOUD}<div class="bee-think__lines"></div></div>`
         + '<span class="bee-think__dot bee-think__dot--1"></span><span class="bee-think__dot bee-think__dot--2"></span><span class="bee-think__dot bee-think__dot--3"></span>';
+      kidEl.append(t);
+      thoughts.set(kidEl, t);
     }
-    if (kidEl && thought.parentElement !== kidEl) kidEl.append(thought);
-    thought.querySelector('.bee-think__lines').replaceChildren(...lines.map((tex) => { const el = document.createElement('p'); drawMath(el, tex, ''); return el; }));
-    thought.classList.toggle('is-on', lines.length > 0);
+    t.classList.toggle('is-right', kidEl.classList.contains('is-at-mic2'));
+    t.querySelector('.bee-think__lines').replaceChildren(...lines.map((tex) => { const el = document.createElement('p'); drawMath(el, tex, ''); return el; }));
+    t.classList.toggle('is-on', on);
+  }
+  /* a bot works a question out in its cloud across its thinking time; returns stop() */
+  function think(kidEl, tr) {
+    if (tr.easy || !pace) return () => {};
+    const lines = tr.ok ? working(tr.q) : [...setupLines(tr.q), texFor(tr.q, sanitizeFor(tr.q, tr.v))];
+    const t0 = Date.now(), span = Math.max(1000, tr.dt * 1000 - 700);
+    let shown = -1;
+    setWork([], kidEl, true);
+    const iv = setInterval(() => {
+      const want = lines.filter((_, j) => Date.now() - t0 >= ((j + 1) * span) / (lines.length + 1)).length;
+      if (want !== shown) { shown = want; setWork(lines.slice(0, shown), kidEl, true); }
+    }, 90);
+    return () => { clearInterval(iv); setWork([], kidEl, false); };
   }
   function showMath(q, typed, c, w) {
     const tv = hall.querySelector('.bee-tv');
@@ -1937,14 +1968,14 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const roomW = (box.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - fig) * 0.96;
     let roomH = box.height * 0.2;
     if (el.classList.contains('bee-mq')) {
-      const others = ['.bee-mh', '.bee-ma', '.bee-mn'].reduce((sum, k) => sum + ($(k)?.getBoundingClientRect().height || 0), 0);
+      const others = ['.bee-mh', '.bee-ma', '.bee-mn', '.bee-duel'].reduce((sum, k) => sum + ($(k)?.getBoundingClientRect().height || 0), 0);
       roomH = (box.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - others) * 0.92;
     }
     const k = Math.min(1, roomW / r.width, roomH / r.height);
     // the formula drawn smaller in place (it has a viewBox): nothing left hanging out of its box
     if (k < 1) { svg.style.width = `${r.width * k}px`; svg.style.height = `${r.height * k}px`; }
   }
-  if (window.__beeTest) window.__beeTest.show = (q, typed = '') => showMath(q, typed, 0, 0);   // the tests' window onto the TV
+  if (window.__beeTest) { window.__beeTest.show = (q, typed = '') => showMath(q, typed, 0, 0); window.__beeTest.q = () => lastShow?.[0] || null; }   // the tests' window onto the TV
   function hideMath() { shownKey = ''; setWork([]); hall.querySelector('.bee-tv').classList.remove('is-math-q', 'is-ok', 'is-bad'); }
   function mathFlash(ok) {
     const tv = hall.querySelector('.bee-tv');
@@ -2043,7 +2074,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
      five seconds, the bot's working written out on the TV line by line as it thinks (bee-maths.js).
      How quick and how sure it is come from the seed, and so does every answer, so the count is the
      same on every screen; the screen plays it out. */
-  async function botMath(seat) {
+  function botPlan(seat) {
     const skill = 0.72 + seeded(seat, 1) * 0.24, quick = 0.8 + seeded(seat, 2) * 0.5;
     const plan = [];
     let t = 0;
@@ -2060,7 +2091,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       if (!ok) { for (let n = i; n < i + 6; n++) { v = slip(q, n); if (!answerIsRight(q, sanitizeFor(q, v))) break; } }
       plan.push({ i, q, at: t, dt, easy, ok, v });
     }
-    const r = { c: plan.filter((p) => p.ok).length, w: plan.filter((p) => !p.ok).length };
+    return { plan, r: { c: plan.filter((p) => p.ok).length, w: plan.filter((p) => !p.ok).length } };
+  }
+  async function botMath(seat) {
+    const { plan, r } = botPlan(seat);
     if (!pace) return r;
     runClock(MATH_SECONDS);
     const start = Date.now();
@@ -2074,11 +2108,11 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       const lines = p.easy ? [] : p.ok ? working(p.q) : [...setupLines(p.q), texFor(p.q, sanitizeFor(p.q, p.v))];
       const due = start + p.at * 1000, from = due - p.dt * 1000, span = Math.max(1000, p.dt * 1000 - 700);
       let shown = 0;
-      if (!p.easy) { setWork([], kids[seat.seat]); thought.classList.add('is-on'); }
+      if (!p.easy) setWork([], kids[seat.seat], true);
       while (Date.now() < due && !gone && pace) {
         const el = Date.now() - from;
         const want = lines.filter((_, j) => el >= ((j + 1) * span) / (lines.length + 1)).length;
-        if (want !== shown) { shown = want; setWork(lines.slice(0, shown), kids[seat.seat]); thought.classList.add('is-on'); }
+        if (want !== shown) { shown = want; setWork(lines.slice(0, shown), kids[seat.seat], true); }
         await sleep(80);
       }
       if (gone || !pace) break;
@@ -2127,6 +2161,368 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       }, 1000);
     });
   }
+  /* ══ THE MATH BEE TOURNAMENT ════════════════════════════════════════════
+     1. The qualifying round: everyone answers for one minute at once (each on their own TV); the
+        table ranks them (most right, then fewest wrong); the top four go through.
+     2. The knockout: 1st against 4th and 2nd against 3rd, then the final. Two contestants at two
+        pulpits race the SAME questions: the first right answer takes the point, first to five wins.
+        A wrong answer can be tried again (a player) or is the bot's last word on that question.
+     A match with a player in it is kept by ONE device (the lowest uid of the players in it): it
+     says when each question starts, takes the answers in the order they come and awards the
+     points ('dq' / 'dans' / 'dpt', and 'dst' every three seconds); the result is published (key
+     9000 + match). A match of two bots is worked out from the seed, the same on every screen. */
+  const CUP_POINTS = 5, CUP_Q_SECONDS = 20, CUP_MAX_Q = 40;
+  const cupQ = (m, i) => questionAt(seed, 70000 + m * 200 + i, { operations, tables: sets });
+  const cupName = (s) => `No. ${s.tag} ${nameOf(s)}`;
+  const escH = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const roundName = (r, B) => ['Final', 'Semi-final', 'Quarter-final'][Math.log2(B) - 1 - r] || `Round ${r + 1}`;
+  const roundsName = (r, B) => ['The final', 'The semi-finals', 'The quarter-finals'][Math.log2(B) - 1 - r] || `Round ${r + 1}`;
+  const readCupQ = (m, i) => readAloud(spokenQ(cupQ(m, i)));
+  const prefetchCup = (m, i) => { kokoroSays(spokenQ(cupQ(m, i)), Q_VOICE); };
+  const seedOf = new Map();         // seat -> their place in the qualifying table
+
+  /* a bot's go at question i of match m: when it answers (seconds after the question), and right or not */
+  function botTry(seat, m, i) {
+    const q = cupQ(m, i), easy = isEasy(q), s = seeded(seat, 5000 + m * 97 + i);
+    const quick = 0.8 + seeded(seat, 2) * 0.5, skill = 0.72 + seeded(seat, 1) * 0.24;
+    const sure = easy || (q.answer && (q.answer.kind === 'factorise' || q.answer.kind === 'distribute'));
+    const dt = easy ? (0.9 + s * 1.4) * quick : Math.max(5, (5 + s * 4) * quick);
+    const ok = sure || seeded(seat, 6000 + m * 97 + i) < skill - 0.08;
+    let v = answerText(q);
+    if (!ok) { for (let n = i; n < i + 6; n++) { v = slip(q, n); if (!answerIsRight(q, sanitizeFor(q, v))) break; } }
+    return { q, dt, ok, v, easy };
+  }
+  /* two bots: every point worked out from the seed (the higher seed, side 0, wins a tie) */
+  function simulateMatch(m, sides) {
+    const sc = [0, 0], log = [];
+    for (let i = 0; i < CUP_MAX_Q && Math.max(...sc) < CUP_POINTS; i++) {
+      const tries = sides.map((s) => botTry(s, m, i));
+      const right = tries.map((t, n) => ({ n, t })).filter((x) => x.t.ok).sort((a, b) => a.t.dt - b.t.dt);
+      const win = right.length ? right[0].n : -1;
+      if (win >= 0) sc[win]++;
+      log.push({ i, tries, win, t: win >= 0 ? right[0].t.dt : Math.max(...tries.map((t) => t.dt)) });
+    }
+    return { w: sc[1] > sc[0] ? 1 : 0, sc };
+  }
+
+  /* ── the TV in a match: the question (and diagram) as ever; under it each side's name and answer,
+     and the score between them. Kept above the heads of the two at the pulpits. ── */
+  function showDuel(q, sides, sc, typed, st) {
+    $('.bee-tv-math').classList.add('is-duel');
+    showMath(q, '', 0, 0);
+    sides.forEach((s, n) => {
+      const el = $(`.bee-duel-side[data-side="${n}"]`);
+      el.className = `bee-duel-side${st[n] ? ` is-${st[n]}` : ''}`;
+      el.querySelector('.bee-duel-name').textContent = cupName(s);
+      const t = q ? sanitizeFor(q, String(typed[n] || '')) : '';
+      const a = el.querySelector('.bee-duel-ans');
+      drawMath(a, t ? texFor(q, t) : '', t);
+      const svg = a.querySelector('svg');
+      if (svg) {
+        const r = svg.getBoundingClientRect(), room = el.getBoundingClientRect().width * 0.95;
+        if (r.width > room) { svg.style.width = `${room}px`; svg.style.height = `${(r.height * room) / r.width}px`; }
+      }
+    });
+    $('.bee-duel-score').textContent = `${sc[0]} – ${sc[1]}`;
+  }
+  function duelOff() { $('.bee-tv-math').classList.remove('is-duel'); hideMath(); }
+
+  /* ── the board over the hall: the qualifying table, then the bracket ── */
+  async function showBoard(title, html, ms) {
+    const el = $('.bee-cup');
+    el.querySelector('.bee-cup-title').textContent = title;
+    el.querySelector('.bee-cup-body').innerHTML = html;
+    el.hidden = false;
+    await wait(ms);
+    el.hidden = true;
+  }
+  function tableHtml(table) {
+    const rows = table.map((r) => {
+      const s = seats[r.seat];
+      return `<tr class="${s === mySeat ? 'is-me' : ''}${r.through ? '' : ' is-out'}"><td>${r.place}</td><td class="bee-cup-nm">${escH(cupName(s))}</td><td>${r.c}</td><td>${r.w}</td><td><span class="bee-cup-tag">${r.through ? 'Through' : 'Out'}</span></td></tr>`;
+    }).join('');
+    return `<table class="bee-cup-table"><thead><tr><th>#</th><th>Contestant</th><th>Right</th><th>Wrong</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+  function webHtml(rounds, now, B) {
+    const total = Math.log2(B), cols = [];
+    const card = (mt) => `<div class="bee-web-match${mt === now ? ' is-now' : ''}${mt.w ? ' is-done' : ''}">${['a', 'b'].map((k, n) => {
+      const s = mt[k], win = mt.w && s === mt.w, lose = mt.w && s && s !== mt.w;
+      return `<div class="bee-web-p${win ? ' is-win' : ''}${lose ? ' is-lose' : ''}${s && s === mySeat ? ' is-me' : ''}"><span class="bee-web-seed">${s ? seedOf.get(s.seat) : ''}</span><span class="bee-web-nm">${s ? escH(cupName(s)) : 'to be decided'}</span><span class="bee-web-sc">${mt.sc ? mt.sc[n] : ''}</span></div>`;
+    }).join('')}</div>`;
+    for (let r = 0; r < total; r++) {
+      const rd = rounds[r] || Array.from({ length: B / 2 ** (r + 1) }, () => ({ a: null, b: null, w: null, sc: null }));
+      cols.push(`<div class="bee-web-col"><p class="bee-web-head">${roundsName(r, B)}</p><div class="bee-web-games">${rd.map(card).join('')}</div></div>`);
+    }
+    const champ = rounds[total - 1]?.[0]?.w;
+    cols.push(`<div class="bee-web-col bee-web-col--champ"><p class="bee-web-head">Champion</p><div class="bee-web-games"><div class="bee-web-match bee-web-champ${champ ? ' is-done' : ''}"><div class="bee-web-p${champ ? ' is-win' : ''}">${champ ? `${UI.trophy(16)}<span class="bee-web-nm">${escH(cupName(champ))}</span>` : '<span class="bee-web-nm">?</span>'}</div></div></div></div>`);
+    return `<div class="bee-web">${cols.join('')}</div>`;
+  }
+
+  /* ── the qualifying minute: another player's count, when it comes (a player gone: none) ── */
+  function waitQual(s) {
+    const k = 1000 + s.seat;
+    if (results.has(k)) return Promise.resolve(results.get(k));
+    return new Promise((resolve) => {
+      const started = Date.now();
+      const iv = setInterval(() => {
+        if (gone) { clearInterval(iv); resolve({ c: 0, w: 0 }); return; }
+        if ((Date.now() - started) / 1000 > MATH_SECONDS + GRACE && amArbiter(s.uid)) publish(k, { u: s.uid, c: 0, w: 0, to: 1 });
+      }, 1000);
+      waiters.set(k, (r) => { clearInterval(iv); resolve(r); });
+    });
+  }
+
+  /* ── a match played out from the seed (two bots), on this screen ── */
+  async function playSim(m, sides) {
+    const sc = [0, 0];
+    for (let i = 0; i < CUP_MAX_Q && Math.max(...sc) < CUP_POINTS; i++) {
+      if (gone || !pace) break;
+      const q = cupQ(m, i), tries = sides.map((s) => botTry(s, m, i));
+      const typed = ['', ''], st = ['', ''];
+      const draw = () => showDuel(q, sides, sc, typed, st);
+      draw(); readCupQ(m, i); prefetchCup(m, i + 1);
+      const stops = sides.map((s, n) => think(kids[s.seat], tries[n]));
+      const t0 = Date.now();
+      let win = -1;
+      for (const n of [0, 1].sort((a, b) => tries[a].dt - tries[b].dt)) {
+        while (Date.now() - t0 < tries[n].dt * 1000 && !gone && pace) await sleep(60);
+        if (gone || !pace) break;
+        stops[n]();
+        typed[n] = tries[n].v; st[n] = tries[n].ok ? 'ok' : 'bad';
+        answered(sides[n], tries[n].v, tries[n].ok);
+        draw();
+        if (tries[n].ok) { win = n; break; }
+      }
+      stops.forEach((f) => f());
+      if (gone || !pace) break;
+      if (win >= 0) { sc[win]++; st[win] = 'point'; }
+      draw();
+      await sleep(1300);
+    }
+    return simulateMatch(m, sides);         // the result is the seed's, whatever this screen got to see
+  }
+
+  /* ── a match with a player in it ── */
+  function liveMatch(m, sides) {
+    const k = 9000 + m;
+    const boss = sides.filter((s) => s.uid).map((s) => s.uid).sort()[0];   // the device that keeps the score
+    const iBoss = boss === me.uid;
+    const mine = sides.indexOf(mySeat);                                     // -1: watching
+    const inp = $('.bee-math-input');
+    return new Promise((resolve) => {
+      let i = -1, q = null, over = false, awarded = false, lastHeard = Date.now();
+      const sc = [0, 0], typed = ['', ''], st = ['', ''];
+      let stops = [], botTimers = [], qTimer = 0, nextTimer = 0;
+      const draw = () => { if (q) showDuel(q, sides, sc, typed, st); };
+      const send = (type, p) => { try { room?.send(type, { m, ...p }); } catch { /* the others catch up on the next 'dst' */ } };
+      const clear = () => { stops.forEach((f) => f()); stops = []; botTimers.forEach(clearTimeout); botTimers = []; clearTimeout(qTimer); clearTimeout(nextTimer); };
+      function begin(n, s0) {
+        if (over || n <= i) return;
+        clear();
+        i = n; q = cupQ(m, i); awarded = false; lastHeard = Date.now();
+        if (s0) { sc[0] = s0[0]; sc[1] = s0[1]; }
+        typed[0] = typed[1] = ''; st[0] = st[1] = '';
+        draw(); readCupQ(m, i); prefetchCup(m, i + 1); prefetchCup(m, i + 2);
+        sides.forEach((s, side) => {
+          if (s.uid) return;
+          const tr = botTry(s, m, i);
+          stops.push(think(kids[s.seat], tr));
+          if (iBoss) botTimers.push(setTimeout(() => take(side, tr.v, tr.ok, true), tr.dt * 1000));
+        });
+        if (mine >= 0) { inp.value = ''; inp.disabled = false; inp.focus(); }
+        if (iBoss) qTimer = setTimeout(() => point(-1), CUP_Q_SECONDS * 1000);
+      }
+      function shown(side, v, ok) {
+        typed[side] = String(v); st[side] = ok ? 'ok' : 'bad';
+        if (!sides[side].uid) setWork([], kids[sides[side].seat], false);
+        answered(sides[side], v, ok);
+        draw();
+      }
+      // the score keeper: an answer, in the order they come
+      function take(side, v, ok, tell) {
+        if (over || awarded) return;
+        shown(side, v, ok);
+        if (tell) send('dans', { i, side, v, ok });
+        if (ok) point(side);
+      }
+      function scored(side) {
+        if (side >= 0) st[side] = 'point';
+        else if (pace) say('Nobody has it: the next question.');
+        draw();
+      }
+      function point(side) {
+        if (over || awarded) return;
+        awarded = true; clear();
+        if (side >= 0) sc[side]++;
+        send('dpt', { i, side, sc: [...sc] });
+        scored(side);
+        nextTimer = setTimeout(() => {
+          if ((side >= 0 && sc[side] >= CUP_POINTS) || i + 1 >= CUP_MAX_Q) { publish(k, { w: sc[1] > sc[0] ? 1 : 0, sc: [...sc] }); return; }
+          send('dq', { i: i + 1, sc: [...sc] });
+          begin(i + 1);
+        }, 1400);
+      }
+      // me at a pulpit: type, Enter (a wrong answer may be tried again)
+      const onInput = () => {
+        if (!q || awarded) return;
+        inp.value = sanitizeFor(q, inp.value.replace(/[\r\n]/g, ''));
+        typed[mine] = inp.value; st[mine] = '';
+        draw();
+        send('dtype', { i, side: mine, v: inp.value });
+      };
+      const onKey = (e) => {
+        e.stopPropagation();
+        if (e.key !== 'Enter' || over || awarded || !q) return;
+        e.preventDefault();
+        const v = inp.value.trim();
+        if (!v) return;
+        const ok = answerIsRight(q, v);
+        if (iBoss) take(mine, v, ok, true);
+        else { shown(mine, v, ok); send('dans', { i, side: mine, v, ok }); }
+        if (!ok) inp.value = '';
+      };
+      if (mine >= 0) { inp.addEventListener('input', onInput); inp.addEventListener('keydown', onKey); bd.classList.add('is-my-turn'); }
+      duelWatch = {
+        m,
+        dq: (p) => { lastHeard = Date.now(); if (!iBoss) begin(p.i, p.sc); },
+        dst: (p) => { lastHeard = Date.now(); if (!iBoss && p.i > i) begin(p.i, p.sc); },
+        dans: (p) => {
+          lastHeard = Date.now();
+          if (p.i !== i) return;
+          if (iBoss) { if (sides[p.side]?.uid && p.side !== mine) take(p.side, p.v, !!p.ok, false); }
+          else if (p.side !== mine) shown(p.side, p.v, !!p.ok);
+        },
+        dpt: (p) => {
+          lastHeard = Date.now();
+          if (iBoss || p.i !== i) return;
+          awarded = true; clear();
+          if (Array.isArray(p.sc)) { sc[0] = p.sc[0]; sc[1] = p.sc[1]; }
+          scored(p.side);
+        },
+        dtype: (p) => { if (p.i === i && p.side !== mine && !awarded) { typed[p.side] = String(p.v || ''); st[p.side] = ''; draw(); } },
+      };
+      const beat = iBoss ? setInterval(() => send('dst', { i, sc: [...sc] }), 3000) : 0;
+      // the score keeper's device gone: after a while, the match goes to the other side
+      const watch = setInterval(() => {
+        if (gone) { finish({ w: 0, sc: [...sc] }); return; }
+        if (iBoss || Date.now() - lastHeard < 25000) return;
+        const seen = present.get(boss);
+        if ((!seen || Date.now() - seen > 15000) && amArbiter(boss)) publish(k, { w: sides.findIndex((s) => s.uid === boss) === 0 ? 1 : 0, sc: [...sc], to: 1 });
+      }, 1000);
+      function finish(r) {
+        if (over) return;
+        over = true;
+        clear(); clearInterval(beat); clearInterval(watch);
+        duelWatch = null;
+        if (mine >= 0) { inp.removeEventListener('input', onInput); inp.removeEventListener('keydown', onKey); inp.disabled = true; inp.blur(); bd.classList.remove('is-my-turn'); }
+        resolve(r);
+      }
+      if (results.has(k)) { finish(results.get(k)); return; }
+      waiters.set(k, finish);
+      if (iBoss) setTimeout(() => { if (!over) { send('dq', { i: 0, sc: [0, 0] }); begin(0); } }, 900);
+    });
+  }
+
+  /* ── one match: both to their pulpits, the race, back to their chairs ── */
+  async function playMatch(m, sides, title) {
+    const humans = sides.filter((s) => s.uid);
+    pace = skipping && !humans.length ? 0 : 1;
+    settle();
+    if (!pace) return simulateMatch(m, sides);
+    say(`${title}: ${who(sides[0])} against ${who(sides[1])}. First to ${CUP_POINTS}.`);
+    sweep();
+    tvTitle(title.toUpperCase(), 'is-round');
+    for (let n = 0; n < 3; n++) prefetchCup(m, n);
+    await Promise.all([walk(kids[sides[0].seat], 'mic'), walk(kids[sides[1].seat], 'mic2')]);
+    if (gone) return { w: 0, sc: [0, 0] };
+    clearScreen();
+    const res = humans.length ? await liveMatch(m, sides) : await playSim(m, sides);
+    if (gone) return res;
+    setWork([]);
+    duelOff();
+    const w = sides[res.w];
+    say(`${who(w)} wins, ${Math.max(...res.sc)} to ${Math.min(...res.sc)}.`);
+    if (pace) { chime(); await wait(1800); }
+    await Promise.all(sides.map((s) => walk(kids[s.seat], 'seat')));
+    return res;
+  }
+
+  async function mathCup() {
+    loadMath().then((ok) => { if (ok && lastShow && !gone) { shownKey = ''; showMath(...lastShow); } });
+    for (const s of seats) prefetchQs(s, 0, 2);
+    const B = seats.length >= 8 ? 8 : seats.length >= 4 ? 4 : 2;
+    // 1. the qualifying minute, everyone at once
+    if (!gone && pace) {
+      say(`The qualifying round: one minute, everyone at once. The top ${B} go through to the knockout.`);
+      sweep(); tvTitle('QUALIFYING', 'is-round'); await wait(2600);
+    }
+    clearScreen();
+    const quals = await Promise.all(seats.map((s) => (s === mySeat ? myMath(s) : s.uid ? waitQual(s) : Promise.resolve(botPlan(s).r))));
+    if (gone) return;
+    hideMath(); stopClock(); clearScreen();
+    seats.forEach((s, n) => mathResults.set(s.seat, { c: quals[n].c || 0, w: quals[n].w || 0 }));
+    const table = seats.map((s) => ({ seat: s.seat, ...mathResults.get(s.seat) }))
+      .sort((a, b) => b.c - a.c || a.w - b.w || a.seat - b.seat)
+      .map((r, n) => ({ ...r, place: n + 1, through: n < B }));
+    table.forEach((r) => seedOf.set(r.seat, r.place));
+    if (pace) { chime(); readAloud('The qualifying table.'); }
+    await showBoard('The qualifying table', tableHtml(table), 8000);
+    table.filter((r) => !r.through).forEach((r) => kids[r.seat].classList.add('is-out'));
+    // 2. the knockout: 1 v 4 and 2 v 3 (1 v 8, 4 v 5, 2 v 7, 3 v 6 in a bracket of eight)
+    const seeds = table.slice(0, B).map((r) => seats[r.seat]);
+    const order = B === 8 ? [[0, 7], [3, 4], [1, 6], [2, 5]] : B === 4 ? [[0, 3], [1, 2]] : [[0, 1]];
+    let round = order.map(([a, b]) => ({ a: seeds[a], b: seeds[b], w: null, sc: null }));
+    const rounds = [round];
+    let m = 0;
+    for (;;) {
+      const r = rounds.length - 1;
+      for (const mt of round) {
+        if (gone) return;
+        // nothing more can happen to a player: offer the end
+        skipBtn.hidden = skipping || seats.some((s) => s.uid && !kids[s.seat].classList.contains('is-out'));
+        await showBoard(roundsName(r, B), webHtml(rounds, mt, B), 4500);
+        const res = await playMatch(m++, [mt.a, mt.b], roundName(r, B));
+        if (gone) return;
+        mt.w = res.w === 0 ? mt.a : mt.b;
+        mt.sc = res.sc;
+        kids[(mt.w === mt.a ? mt.b : mt.a).seat].classList.add('is-out');
+        await showBoard(roundsName(r, B), webHtml(rounds, null, B), 3500);
+      }
+      if (round.length === 1) break;
+      const next = [];
+      for (let j = 0; j < round.length; j += 2) next.push({ a: round[j].w, b: round[j + 1].w, w: null, sc: null });
+      rounds.push(next);
+      round = next;
+    }
+    const champ = round[0].w;
+    // the placings: how far each got, then the qualifying table (losers of a round share a place)
+    const depth = new Map(table.map((r) => [r.seat, -1]));
+    const label = new Map(table.map((r) => [r.seat, `Qualifying: ${r.c} right`]));
+    rounds.forEach((rd, ri) => rd.forEach((mt) => {
+      const loser = mt.w === mt.a ? mt.b : mt.a;
+      depth.set(loser.seat, ri);
+      label.set(loser.seat, ri === rounds.length - 1 ? `Runner-up, ${mt.sc[0]}–${mt.sc[1]}` : `Out in the ${roundName(ri, B).toLowerCase()}`);
+    }));
+    depth.set(champ.seat, rounds.length);
+    label.set(champ.seat, 'Champion');
+    mathRanking = table.map((r) => ({ ...r, d: depth.get(r.seat), label: label.get(r.seat) }))
+      .sort((a, b) => b.d - a.d || a.place - b.place)
+      .map((r, _, all) => ({ ...r, place: 1 + all.filter((x) => x.d > r.d).length + (r.d === -1 ? all.filter((x) => x.d === -1 && seedOf.get(x.seat) < seedOf.get(r.seat)).length : 0) }));
+    pace = 1; settle();
+    skipBtn.hidden = true;
+    stopClock(); clearScreen();
+    await showBoard('The champion', webHtml(rounds, null, B), 3500);
+    kids[champ.seat].classList.remove('is-out');
+    kids[champ.seat].classList.add('is-champion');
+    say(`${who(champ)} wins the tournament!`);
+    sweep();
+    tvTitle('CHAMPION', 'is-round');
+    chime();
+    await walk(kids[champ.seat], 'mic');
+    if (!gone) await award(champ);
+    if (!gone) showMathResults(champ);
+  }
+
   async function mathBee() {
     loadMath().then((ok) => { if (ok && lastShow && !gone) { shownKey = ''; showMath(...lastShow); } });
     if (seats[0]) prefetchQs(seats[0], 0, 3);
@@ -2188,7 +2584,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       name.textContent = `No. ${s.tag} ${nameOf(s)}`;
       const meta = document.createElement('span');
       meta.className = 'bee-results-meta';
-      meta.textContent = `${p.c} correct${p.w ? `, ${p.w} wrong` : ''}`;
+      meta.textContent = p.label || `${p.c} correct${p.w ? `, ${p.w} wrong` : ''}`;
       li.append(place, name, meta);
       list.append(li);
     }
@@ -2218,6 +2614,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   let nowK = -1, nowQ = null;      // the turn on this screen
   let theirTyping = null;          // (v) => void, while somebody else is spelling
   let mathWatch = null;            // { seat, ans(p), type(p) }, while somebody else is at the pulpit
+  let duelWatch = null;            // { m, dq(p), dans(p), dpt(p), dtype(p), dst(p) }, during a tournament match
   function land(k, r) {
     if (results.has(k)) return;
     results.set(k, r);
@@ -2244,6 +2641,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     r.on('ask', (p) => { if (p && p.k === nowK && nowQ) speak(p.kind); });
     r.on('mans', (p) => { if (p && mathWatch && p.s === mathWatch.seat.seat) mathWatch.ans(p); });
     r.on('mtype', (p) => { if (p && mathWatch && p.s === mathWatch.seat.seat) mathWatch.type(p); });
+    for (const kind of ['dq', 'dans', 'dpt', 'dtype', 'dst']) r.on(kind, (p) => { if (p && duelWatch && p.m === duelWatch.m) duelWatch[kind]?.(p); });
   }).catch((e) => console.warn('[bee] no live room; playing on this device only:', e));
   const beat = setInterval(() => { try { room?.presence.set({ seat: mySeat ? mySeat.seat : -1, kid: myKid }); } catch { /* ignore */ } }, 5000);
   /** Am I the one device that calls a silent turn? The lowest uid here, not counting the speller. */
@@ -2513,23 +2911,25 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.classList.add('is-standing');
     await wait(450);                               // up out of the chair first
     // the Math Bee: a short contestant steps down off the pulpit's platform before walking away
-    if (isMath && el.classList.contains('is-up') && to !== 'mic') {
+    if (isMath && el.classList.contains('is-up') && to !== 'mic' && to !== 'mic2') {
       el.classList.remove('is-up');
-      hall.querySelector('.bee-platform')?.classList.remove('is-on');
+      hall.querySelector(el.dataset.pulpit === '2' ? '.bee-platform--2' : '.bee-platform:not(.bee-platform--2)')?.classList.remove('is-on');
       await wait(650);
     }
     el.classList.add('is-walking');
     el.classList.toggle('is-at-mic', to === 'mic');
+    el.classList.toggle('is-at-mic2', to === 'mic2');
     el.classList.toggle('is-off', to === 'off');
     await wait(to === 'off' ? 2600 : 1700);
     el.classList.remove('is-walking');
     // ...and climbs onto it at the pulpit to be seen (as high as they are short of an average child)
-    if (isMath && to === 'mic') {
+    if (isMath && (to === 'mic' || to === 'mic2')) {
       const tall = parseFloat(getComputedStyle(el).getPropertyValue('--tall')) || 1;
       const lift = Math.max(0, 1 - tall);
+      el.dataset.pulpit = to === 'mic2' ? '2' : '1';
       if (lift > 0.01) {
         el.style.setProperty('--lift', lift.toFixed(3));
-        const pf = hall.querySelector('.bee-platform');
+        const pf = hall.querySelector(to === 'mic2' ? '.bee-platform--2' : '.bee-platform:not(.bee-platform--2)');
         pf?.style.setProperty('--lift', lift.toFixed(3));
         pf?.classList.add('is-on');
         await wait(80);
@@ -2539,7 +2939,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     }
     if (to === 'seat') { el.classList.remove('is-standing'); await wait(450); }
     if (to === 'off') el.classList.add('is-gone');
-    if (to !== 'mic') spotOff();                            // back in the chair (or gone): the light goes off
+    if (to !== 'mic' && to !== 'mic2') spotOff();             // back in the chair (or gone): the light goes off
   }
   /* The spotlight: the lamp on the lighting bar turns to the speller and its beam runs from the
      lens to them, every frame while it is on, so it follows them as they walk. */
@@ -2720,7 +3120,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       if (!gone && pace) await judgeManSays('And I am Mr. Whitmore. Good luck to every one of our spellers!', '/media/spelling-judge/intro.mp3');
       await wait(400);
     }
-    if (isMath) { await mathBee(); return; }        // the Math Bee has its own turns
+    if (isMath) { await (cup ? mathCup() : mathBee()); return; }        // the Math Bee has its own turns
     if (!gone && pace) {
       say(`Round 1. ${bee.alive.length} spellers.`);
       sweep();

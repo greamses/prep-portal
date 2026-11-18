@@ -207,7 +207,7 @@ let startNowFn = null;
 // Every field starts from the player's LAST game (setup-memory.js) so
 // nothing has to be re-picked visit after visit.
 const mem = createSetupMemory('drills');
-let mode = mem.get('mode', 'multiplayer', ['multiplayer', 'versus']);
+let mode = mem.get('mode', 'multiplayer', ['multiplayer', 'versus', 'cup']);   // cup: the Math Bee tournament
 let roomSize = mem.get('roomSize', 5, [5, 10]);
 let timeLimit = mem.get('timeLimit', 60, [30, 60, 90, 120]);
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
@@ -263,6 +263,8 @@ function syncMathOps() {
   for (const t of mathTopics) CATEGORY_OPERATIONS[t].forEach((op) => operations.add(op));
 }
 if (categoryValue === 'mathbee') syncMathOps();
+if (mode === 'cup' && categoryValue !== 'mathbee') mode = 'multiplayer';   // a tournament is the Math Bee's only
+const isMathCup = () => isMathBee() && mode === 'cup';
 // the speller this player chooses to be, at the Spelling Bee (remembered)
 let beeKid = mem.get('beeKid', BEE_SPELLERS[0].key, BEE_SPELLERS.map((k) => k.key));
 // Chemistry's single operation is never offered as a step, so a remembered
@@ -285,7 +287,7 @@ const saveContent = () => mem.save({
 // Bars, 'drill' for everything else. Written to the room doc so a code-joiner
 // plays the host's surface.
 const gameActivity = () => (
-  categoryValue === 'timestable' ? 'grid' : categoryValue === 'fracbars' ? 'bars' : isMathBee() ? 'mathbee' : 'drill'
+  categoryValue === 'timestable' ? 'grid' : categoryValue === 'fracbars' ? 'bars' : isMathBee() ? (mode === 'cup' ? 'mathcup' : 'mathbee') : 'drill'
 );
 
 function getCurrentUser() {
@@ -724,6 +726,7 @@ function pickCategory(v) {
   if (GAME_PAGES[v]) { window.location.href = GAME_PAGES[v]; return; }
   queueMicrotask(renderTimeStep);   // spelling's clock comes from its words, every other topic's is chosen
   queueMicrotask(renderModeSize);   // the Math Bee is offered for the number topics only
+  if (v !== 'mathbee' && mode === 'cup') { mode = 'multiplayer'; mem.save({ mode }); }
   if (v !== categoryValue) {
     // Reset the whole branch — a range picked under Basic must not survive
     // into Fractions (which has no range at all). Re-picking the SAME
@@ -824,7 +827,10 @@ renderChoiceStep(options, 'mode', {
   title: 'How do you want to play?',
   subtitle: isBee() ? 'The Spelling Bee is held for five spellers.' : isMathBee() ? 'The Math Bee is held for five contestants.' : undefined,
   name: 'drill-mode',
-  options: isAnyBee() ? [{ value: 'multiplayer', label: 'Multiplayer', checked: true }] : [
+  options: isMathBee() ? [
+    { value: 'multiplayer', label: 'Classic', checked: mode !== 'cup', tip: 'One minute each at the pulpit; the most correct answers wins.' },
+    { value: 'cup', label: 'Tournament', checked: mode === 'cup', tip: 'A qualifying minute for everyone at once, ranked in a table; then the top four race head to head, two at a time on the stage, the same questions, first to five, until the final.' },
+  ] : isBee() ? [{ value: 'multiplayer', label: 'Multiplayer', checked: true }] : [
     { value: 'multiplayer', label: 'Multiplayer', checked: mode === 'multiplayer' },
     { value: 'versus', label: 'Versus', checked: mode === 'versus' },
   ],
@@ -989,7 +995,7 @@ const flow = createSectionFlow([
   },
   {
     el: $('drill-section-options'),
-    chips: () => isMathBee() ? [{ label: 'Math Bee' }, { label: '5 players' }, { label: '1 minute each' }, { label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [...optionsChips({ mode: isBee() ? 'multiplayer' : mode, roomSize: isBee() ? BEE_SIZE : roomSize, timeLabel: isBee() ? `${levelOf(spellLevel).label} ${beeSeconds(spellLevel)}s a word` : categoryValue === 'spelling' ? `${levelOf(spellLevel).label} ${clockLabel(spellTime())}` : `${timeLimit}s` }), ...(isBee() ? [{ label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [])],
+    chips: () => isMathBee() ? [{ label: isMathCup() ? 'Tournament' : 'Math Bee' }, { label: '5 players' }, { label: isMathCup() ? 'Qualifier, then knockout' : '1 minute each' }, { label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [...optionsChips({ mode: isBee() ? 'multiplayer' : mode, roomSize: isBee() ? BEE_SIZE : roomSize, timeLabel: isBee() ? `${levelOf(spellLevel).label} ${beeSeconds(spellLevel)}s a word` : categoryValue === 'spelling' ? `${levelOf(spellLevel).label} ${clockLabel(spellTime())}` : `${timeLimit}s` }), ...(isBee() ? [{ label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [])],
   },
   {
     el: $('drill-section-room'),
@@ -1186,6 +1192,7 @@ async function playBee(room, myName, extra = {}) {
 async function playRoundAndShowResults(room, myName) {
   if ((room.operations || []).includes('spellBee')) { await playBee(room, myName); return; }
   if (room.activity === 'mathbee') { await playBee(room, myName, { mode: 'math', operations: room.operations }); return; }
+  if (room.activity === 'mathcup') { await playBee(room, myName, { mode: 'math', operations: room.operations, cup: true }); return; }
   const roster = buildRoster(room, myName);
   // The ROOM decides which surface plays — a grid room predates nothing here,
   // but a joiner who came by code never touched this client's setup, so read it
