@@ -1219,6 +1219,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     <div class="bee-hall">
       <div class="bee-backdrop"></div>
       <span class="pp-sticky pp-sticky--c0 pp-sticky--tape bee-banner bee-item" data-item="banner" data-label="Banner">${BEE_NAME}</span>
+      <div class="bee-platform" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="none"><rect x="6" y="6" width="96" height="34" fill="#6e4421"/><rect x="4" y="2" width="100" height="6" fill="#a06a3a"/><rect x="6" y="8" width="96" height="2" fill="#3e2410" opacity=".5"/><rect x="102" y="18" width="12" height="22" fill="#5a3519"/><rect x="101" y="15" width="14" height="4" fill="#a06a3a"/><rect x="112" y="29" width="8" height="11" fill="#4a2a12"/><rect x="111" y="26" width="9" height="4" fill="#a06a3a"/></svg></div>
       <div class="bee-pulpit bee-item" data-item="pulpit" data-label="Pulpit" aria-hidden="true"><svg viewBox="0 0 100 110" preserveAspectRatio="none"><defs><linearGradient id="bee-pw" x1="0" x2="1"><stop offset="0" stop-color="#5a3519"/><stop offset=".45" stop-color="#8a5a2f"/><stop offset="1" stop-color="#4a2a12"/></linearGradient><linearGradient id="bee-pt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#a06a3a"/><stop offset="1" stop-color="#6e4421"/></linearGradient></defs><polygon points="4,14 96,14 90,24 10,24" fill="url(#bee-pt)"/><rect x="4" y="11" width="92" height="4" fill="#b98250"/><polygon points="12,24 88,24 84,104 16,104" fill="url(#bee-pw)"/><rect x="10" y="102" width="80" height="8" fill="#3e2410"/><rect x="22" y="40" width="56" height="32" fill="#13234a" stroke="#d4a937" stroke-width="1.6"/><text x="50" y="53" text-anchor="middle" style="font-family: var(--font-mono)" font-size="7" font-weight="700" letter-spacing="1.4" fill="#e9c86a">PREP</text><text x="50" y="65" text-anchor="middle" style="font-family: var(--font-display)" font-size="9.5" font-weight="800" fill="#f6dc85">MATH BEE</text><path d="M70 12 C70 4 74 0 80 -4" fill="none" stroke="#2d3035" stroke-width="2"/><rect x="77" y="-10" width="7" height="9" rx="3" fill="#2c2f33" transform="rotate(30 80 -5)"/></svg></div>
       <div class="bee-judges"></div>
       <div class="bee-stand bee-item" data-item="mic" data-label="Microphone" aria-hidden="true"><svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><defs><linearGradient id="bee-chrome" x1="0" x2="1"><stop offset="0" stop-color="#6d737a"/><stop offset=".45" stop-color="#f1f3f5"/><stop offset="1" stop-color="#5b6168"/></linearGradient><pattern id="bee-mesh" width="1.4" height="1.4" patternUnits="userSpaceOnUse"><rect width="1.4" height="1.4" fill="#2c2f33"/><circle cx=".7" cy=".7" r=".42" fill="#6b7077"/></pattern></defs><path d="M10 85 L2.2 98.6 M10 85 L17.8 98.6 M10 85 L10 99" stroke="#25282c" stroke-width="1.6" stroke-linecap="round"/><rect x="8.4" y="80" width="3.2" height="6" rx="1" fill="#25282c"/><rect x="9.1" y="22" width="1.8" height="59" fill="url(#bee-chrome)"/><rect x="8.3" y="48" width="3.4" height="3" rx="1" fill="#25282c"/><path d="M10.6 30 Q14 40 11 52 Q9 62 12.5 80" fill="none" stroke="#111" stroke-width=".55" opacity=".85"/><rect x="8.4" y="18" width="3.2" height="5" rx="1" fill="#25282c"/><rect x="7.2" y="10" width="5.6" height="9" rx="1.6" fill="#1d1f22"/><rect x="7.6" y="16.2" width="4.8" height=".8" fill="#9aa1a9"/><path d="M5.8 10.5 Q5.8 2 10 2 Q14.2 2 14.2 10.5 Z" fill="url(#bee-mesh)" stroke="#9aa1a9" stroke-width=".5"/><rect x="5.6" y="9.8" width="8.8" height="1.4" rx=".6" fill="url(#bee-chrome)"/><path d="M7.4 4.6 Q8.4 3.2 10 3" stroke="#fff" stroke-width=".5" fill="none" opacity=".5"/></svg></div>
@@ -2494,11 +2495,31 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     el.classList.remove('is-gone');
     el.classList.add('is-standing');
     await wait(450);                               // up out of the chair first
+    // the Math Bee: a short contestant steps down off the pulpit's platform before walking away
+    if (isMath && el.classList.contains('is-up') && to !== 'mic') {
+      el.classList.remove('is-up');
+      hall.querySelector('.bee-platform')?.classList.remove('is-on');
+      await wait(650);
+    }
     el.classList.add('is-walking');
     el.classList.toggle('is-at-mic', to === 'mic');
     el.classList.toggle('is-off', to === 'off');
     await wait(to === 'off' ? 2600 : 1700);
     el.classList.remove('is-walking');
+    // ...and climbs onto it at the pulpit to be seen (as high as they are short of an average child)
+    if (isMath && to === 'mic') {
+      const tall = parseFloat(getComputedStyle(el).getPropertyValue('--tall')) || 1;
+      const lift = Math.max(0, 1 - tall);
+      if (lift > 0.01) {
+        el.style.setProperty('--lift', lift.toFixed(3));
+        const pf = hall.querySelector('.bee-platform');
+        pf?.style.setProperty('--lift', lift.toFixed(3));
+        pf?.classList.add('is-on');
+        await wait(80);
+        el.classList.add('is-up');
+        await wait(650);
+      }
+    }
     if (to === 'seat') { el.classList.remove('is-standing'); await wait(450); }
     if (to === 'off') el.classList.add('is-gone');
     if (to !== 'mic') spotOff();                            // back in the chair (or gone): the light goes off
