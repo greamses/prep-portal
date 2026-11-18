@@ -626,8 +626,13 @@ let settings = { sizes: {}, items: {}, letters: {}, voices: {} };   // what was 
 /* Each speller's recorded voices, as picked in the hall's settings: kokoro[kid] a Kokoro voice
    (their words and Kokoro letters), eleven[kid] an ElevenLabs letter set. Empty: the defaults. */
 const VOICE_PICKS = { kokoro: {}, eleven: {} };
+/* Volume and pitch for each speller in each voice engine (the hall's settings, "Letters"):
+   VOICE_TUNE[engine][kid] = { vol 0..1, pitch 0.7..1.4 (1 as recorded or as the voice is) }. */
+const VOICE_TUNE = { browser: {}, kokoro: {}, eleven: {} };
+const tuneOf = (engine, kid) => ({ vol: 1, pitch: 1, ...(VOICE_TUNE[engine]?.[kid] || {}) });
 const setVoicePicks = (v = {}) => {
   for (const k of ['kokoro', 'eleven']) { for (const x of Object.keys(VOICE_PICKS[k])) delete VOICE_PICKS[k][x]; Object.assign(VOICE_PICKS[k], (v && v[k]) || {}); }
+  for (const e of Object.keys(VOICE_TUNE)) { for (const x of Object.keys(VOICE_TUNE[e])) delete VOICE_TUNE[e][x]; Object.assign(VOICE_TUNE[e], (v && v.tune && v.tune[e]) || {}); }
 };
 const settingsReady = getDoc(doc(db, ...SETTINGS_DOC))
   .then((snap) => {
@@ -844,7 +849,7 @@ function makeEditor(hall, items) {
 /* The hall's settings (the admin, or ?tune=1): a small panel of icon buttons. Move-and-resize
    boxes for everything in the hall; the ABC chart, for the girl's voice and the boy's voice
    apart, said in the voice picked from the speaker's list; undo and save for everyone. */
-function mountTuner(hall, top, { say }) {
+function mountTuner(hall, top, { say, hush = () => {} }) {
   const sizes = { ...settings.sizes };
   const items = JSON.parse(JSON.stringify(settings.items || {}));
   const letters = normLetters(settings.letters);
@@ -939,12 +944,15 @@ function mountTuner(hall, top, { say }) {
   voicesBox.prepend(cols);
   paper.append(voicesHead, voicesBox);
 
-  // the letters: which child's voice, and which voice engine
+  // the letters: which speller (any of the six), and which voice engine; the spellings are kept
+  // for the girls and for the boys (a speller's group)
   let kid = 'girl';
-  const faces = group(...['girl', 'boy'].map((k) => {
-    const f = icon(`bee-ic-face${k === kid ? ' is-on' : ''}`, `<img src="${KIDS[k].src}" alt="" />`, k === 'girl' ? 'The girls\u2019 voice' : 'The boys\u2019 voice');
+  const g = () => genderOf(kid);
+  const SPELLER_ORDER = ['boy', 'boy3', 'boy2', 'girl', 'girl2', 'girl3'];
+  const faces = group(...SPELLER_ORDER.map((k) => {
+    const f = icon(`bee-ic-face${k === kid ? ' is-on' : ''}`, `<span class="pp-face" style="${faceStyle(k)}"></span>`, SPELLER_NAMES[k]);
     f.dataset.who = k;
-    f.addEventListener('click', () => { kid = k; faces.querySelectorAll('.bee-ic').forEach((x) => x.classList.toggle('is-on', x === f)); refreshKeys(); if (current != null) pick(current); });
+    f.addEventListener('click', () => { kid = k; faces.querySelectorAll('.bee-ic').forEach((x) => x.classList.toggle('is-on', x === f)); refreshKeys(); showTune(); if (current != null) pick(current); });
     return f;
   }));
   const ENGINE_ICON = { browser: UI.monitor(18), kokoro: UI.cpu(18), eleven: UI.sparkle(18) };
@@ -956,8 +964,43 @@ function mountTuner(hall, top, { say }) {
   }));
   const showEngine = () => engines.querySelectorAll('.bee-ic').forEach((x) => x.classList.toggle('is-on', x.dataset.voice === spellerVoice));
   showEngine();
-  document.addEventListener('bee-voice', showEngine);
-  paper.append(row('Letters', faces, engines));
+  document.addEventListener('bee-voice', () => { showEngine(); showTune(); });
+  paper.append(row('Letters', faces), row('', engines));
+
+  // this speller's volume and pitch in this engine, and the whole alphabet through them
+  const tunes = picks.tune = JSON.parse(JSON.stringify(settings.voices?.tune || { browser: {}, kokoro: {}, eleven: {} }));
+  for (const e of ['browser', 'kokoro', 'eleven']) tunes[e] ||= {};
+  const slider = (label, min, max, step, onInput) => {
+    const wrap = document.createElement('label');
+    wrap.className = 'bee-tune-slide';
+    wrap.innerHTML = `<span>${label}</span><input type="range" min="${min}" max="${max}" step="${step}" /><output></output>`;
+    const inp = wrap.querySelector('input'), out = wrap.querySelector('output');
+    inp.addEventListener('input', () => { out.textContent = Number(inp.value).toFixed(2); onInput(Number(inp.value)); });
+    inp.addEventListener('keydown', (ev) => ev.stopPropagation());
+    return { wrap, inp, out };
+  };
+  const setTune = (field, v) => {
+    const e = spellerVoice, cur = { ...tuneOf(e, kid), [field]: v };
+    tunes[e][kid] = cur; VOICE_TUNE[e][kid] = cur;
+  };
+  const vol = slider('Volume', 0, 1, 0.05, (v) => setTune('vol', v));
+  const pit = slider('Pitch', 0.7, 1.4, 0.01, (v) => setTune('pitch', v));
+  function showTune() {
+    const t = tuneOf(spellerVoice, kid);
+    vol.inp.value = t.vol; vol.out.textContent = t.vol.toFixed(2);
+    pit.inp.value = t.pitch; pit.out.textContent = t.pitch.toFixed(2);
+  }
+  const atoz = icon('', UI.play(18), 'Hear A to Z in this voice');
+  atoz.addEventListener('click', () => { hush(); for (const ch of 'abcdefghijklmnopqrstuvwxyz') say(letterName(ch, kid), kid, ch); });
+  const stopAll = icon('', UI.pause(18), 'Stop');
+  stopAll.addEventListener('click', () => hush());
+  const resetT = icon('', UI.undo(18), 'Volume and pitch back to 1 for this speller in this voice');
+  resetT.addEventListener('click', () => { delete tunes[spellerVoice][kid]; delete VOICE_TUNE[spellerVoice][kid]; showTune(); });
+  const tuneBox = document.createElement('div');
+  tuneBox.className = 'bee-tune-box';
+  tuneBox.append(vol.wrap, pit.wrap, group(atoz, stopAll, resetT));
+  paper.append(tuneBox);
+  showTune();
 
   // the ABC chart: plain tiles; a changed one is marked
   const grid = document.createElement('div');
@@ -974,12 +1017,12 @@ function mountTuner(hall, top, { say }) {
   const hear = icon('', UI.speaker(18), 'Hear it');
   edit.append(hear);
   const sayLetter = () => { if (current != null) say(said.value.trim() || letterName(current, kid), kid, current); };
-  const refreshKeys = () => grid.querySelectorAll('.bee-abc-key').forEach((x, i) => x.classList.toggle('is-changed', !!letters[kid][keys[i]]));
+  const refreshKeys = () => grid.querySelectorAll('.bee-abc-key').forEach((x, i) => x.classList.toggle('is-changed', !!letters[g()][keys[i]]));
   function pick(ch) {
     current = ch;
     grid.querySelectorAll('.bee-abc-key').forEach((x, i) => x.classList.toggle('is-current', keys[i] === ch));
     which.textContent = keyLabel(ch);
-    said.value = letters[kid][ch] ?? letterName(ch, kid);
+    said.value = letters[g()][ch] ?? letterName(ch, kid);
     edit.hidden = false;
   }
   for (const ch of keys) {
@@ -995,9 +1038,9 @@ function mountTuner(hall, top, { say }) {
   edit.hidden = true;
   said.addEventListener('input', () => {
     if (current == null) return;
-    const v = said.value.trim(), L = letters[kid];
+    const v = said.value.trim(), L = letters[g()];
     if (v && v !== DEFAULT_LETTER(current)) L[current] = v; else delete L[current];
-    if (L[current]) LETTER_SAID[kid][current] = L[current]; else delete LETTER_SAID[kid][current];
+    if (L[current]) LETTER_SAID[g()][current] = L[current]; else delete LETTER_SAID[g()][current];
     refreshKeys();
   });
   /* Typing IPA: a row of the symbols English needs (tap one: it goes in where the cursor is), and
@@ -1090,6 +1133,8 @@ function mountTuner(hall, top, { say }) {
     applyItems(hall, items);
     setVoicePicks(settings.voices);
     picks.kokoro = { ...VOICE_PICKS.kokoro }; picks.eleven = { ...VOICE_PICKS.eleven };
+    picks.tune = JSON.parse(JSON.stringify(VOICE_TUNE));
+    showTune();
     voicesBox.querySelectorAll('.bee-voice-pick:not(.bee-voice-cols)').forEach((line, n) => {
       const kid = ['boy', 'boy3', 'boy2', 'girl', 'girl2', 'girl3'][n], [k, e] = line.querySelectorAll('select');
       k.value = picks.kokoro[kid] || SPELLER_VOICES[KIDS[kid].girl ? 'girl' : 'boy'];
@@ -1351,15 +1396,17 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     applySizes(hall, settings.sizes);
     applyItems(hall, settings.items);
     if (isAdminHere() || /[?&]tune=1\b/.test(location.search)) mountTuner(hall, $('.bee-top'), { say: (text, kid, ch = null) => {
-      if (ch != null && spellerVoice === 'eleven') {
-        const who = KID_LETTER_SET[kid] && LETTER_VOICES[KID_LETTER_SET[kid]] ? KID_LETTER_SET[kid] : KIDS[kid]?.girl ? 'girl' : 'boy';
+      const g = genderOf(kid);
+      if (ch != null && spellerVoice === 'eleven' && (LETTER_SAID[g][ch] || text !== DEFAULT_LETTER(ch))) {
+        const who = VOICE_PICKS.eleven[kid] && LETTER_VOICES[VOICE_PICKS.eleven[kid]] ? VOICE_PICKS.eleven[kid]
+          : KID_LETTER_SET[kid] && LETTER_VOICES[KID_LETTER_SET[kid]] ? KID_LETTER_SET[kid] : g;
         const shown = isIpa(text) ? DEFAULT_LETTER(ch) : text;     // the browser's fallback cannot read IPA
         elevenUrl(elevenText(ch, text), who).then((u) => spellerSays(shown, kid, u ? [{ url: u }] : letterClip(ch, kid), { letter: true }));
         return;
       }
       if (ch != null && isIpa(text)) text = DEFAULT_LETTER(ch);
       spellerSays(text, kid, ch != null ? letterClip(ch, kid) : null, { letter: ch != null });
-    } });
+    }, hush: () => spellerHush() });
   });
   if (!document.fullscreenElement) beeFullscreen();   // allowed only if the Start tap is still fresh
   // Came in some other way (a friend's code, the lobby's Start now): the first tap or key
@@ -1524,10 +1571,15 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     if (tries.length) {
       const [first, ...rest] = tries;
       const a = new Audio(first.url);
-      if (first.pitch && first.pitch !== 1) {
+      // this speller's volume and pitch for the engine that made the recording (the settings)
+      const engine = /raw\.githubusercontent/.test(first.url) ? 'kokoro' : 'eleven';
+      const t = tuneOf(engine, item.kid);
+      a.volume = Math.max(0, Math.min(1, t.vol));
+      const rate = (first.pitch || 1) * t.pitch;
+      if (Math.abs(rate - 1) > 0.001) {
         // higher AND a touch quicker, as a child's voice is: the pitch is not held
         a.preservesPitch = false; a.mozPreservesPitch = false; a.webkitPreservesPitch = false;
-        a.playbackRate = first.pitch;
+        a.playbackRate = rate;
       }
       talkingNow = a;
       a.__letter = !!item.letter;
@@ -1547,7 +1599,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       const v = voiceFor(item.kid);
       if (v) u.voice = v;
       u.lang = v ? v.lang : 'en-GB';
-      u.pitch = BROWSER_VOICE[item.kid]?.pitch ?? (KIDS[item.kid]?.girl ? 1.55 : 1.3);   // each child their own
+      const bt = tuneOf('browser', item.kid);
+      u.pitch = Math.max(0, Math.min(2, (BROWSER_VOICE[item.kid]?.pitch ?? (KIDS[item.kid]?.girl ? 1.55 : 1.3)) * bt.pitch));   // each child their own
+      u.volume = Math.max(0, Math.min(1, bt.vol));
       // unhurried: a whole vowel, not a clipped one; a letter slower still (the user: "make it longer")
       const own = BROWSER_VOICE[item.kid]?.rate ?? 0.88;          // each child's own pace; letters slower still
       u.rate = item.letter ? LETTER_RATE * (own / 0.88) : own;
