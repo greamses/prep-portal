@@ -425,7 +425,6 @@ topic.addSlide('category', 'Topic', () => {});
 topic.addSlide('fraction-type', 'Fraction Type', () => {});
 topic.addSlide('operations', 'Operations', () => {});
 topic.addSlide('mathbee-topics', 'Topics', () => {});
-topic.addSlide('mathbee-kinds', 'Questions', () => {});
 topic.addSlide('range', 'Number Range', () => {});
 topic.addSlide('numbers', 'Numbers', () => {});
 topic.addSlide('denominators', 'Denominators', () => {});
@@ -774,11 +773,48 @@ function pickCategory(v) {
 }
 
 /* The Math Bee: which topics its questions come from, grouped as the drills' areas. */
+/* The Math Bee's topics, grouped as the drills' areas. Clicking a topic opens its kinds of question
+   under its row to tick one by one (number bases: converting, adding in the same base...); its own
+   box ticks or unticks the whole topic. Every topic ticked keeps at least one kind. */
+const mathOpen = new Set();          // the topics whose kinds are showing
 function renderMathTopicsStep() {
-  // the same ticked sticky notes as every other multi-pick step, one row per area
   const box = document.createElement('div');
   box.className = 'mb-topics';
   let n = 0;
+  const kindsPanel = (t) => {
+    const panel = document.createElement('div');
+    panel.className = 'mb-opts';
+    const title = document.createElement('p');
+    title.className = 'mb-opts__title';
+    title.textContent = `${TOPIC_LABEL[t] || t}: which questions?`;
+    panel.append(title);
+    let k = 0;
+    for (const [sub, ops] of kindsOf(t)) {
+      if (sub) {
+        const h = document.createElement('p');
+        h.className = 'mb-kinds__sub';
+        h.textContent = sub;
+        panel.append(h);
+      }
+      const wrap = document.createElement('div');
+      wrap.className = 'pp-carousel-choices sticky-row mb-opts__row';
+      for (const op of ops) {
+        const label = document.createElement('label');
+        label.className = `pp-sticky sticky-choice mb-opt pp-sticky--c${(1 + k++) % 6}`;
+        label.innerHTML = `<input type="checkbox" value="${op}" ${mathOps.has(op) ? 'checked' : ''} /><span>${kindLabel(op)}</span>`;
+        label.querySelector('input').addEventListener('change', (e) => {
+          if (e.target.checked) mathOps.add(op);
+          else if (kindsIn(t).some((o) => o !== op && mathOps.has(o))) mathOps.delete(op);
+          else e.target.checked = true;                       // every topic keeps at least one kind
+          syncMathOps(); saveContent(); updateStartDisabled();
+          renderMathTopicsStep();
+        });
+        wrap.append(label);
+      }
+      panel.append(wrap);
+    }
+    return panel;
+  };
   for (const [group, list] of MATH_BEE_GROUPS) {
     const head = document.createElement('p');
     head.className = 'mb-topics__head';
@@ -786,68 +822,44 @@ function renderMathTopicsStep() {
     const wrap = document.createElement('div');
     wrap.className = 'pp-carousel-choices sticky-row';
     for (const t of list) {
-      const label = document.createElement('label');
-      label.className = `pp-sticky pp-sticky--tape sticky-choice pp-sticky--c${(3 + n++) % 6}`;
-      label.innerHTML = `<input type="checkbox" value="${t}" ${mathTopics.has(t) ? 'checked' : ''} /><span>${TOPIC_LABEL[t] || t}</span>`;
-      label.querySelector('input').addEventListener('change', (e) => {
-        if (e.target.checked) mathTopics.add(t);
-        else if (mathTopics.size > 1) mathTopics.delete(t);
-        else e.target.checked = true;                      // at least one topic stays ticked
+      const on = mathTopics.has(t), open = mathOpen.has(t);
+      const all = kindsIn(t), some = all.filter((op) => mathOps.has(op)).length;
+      const chip = document.createElement('div');
+      chip.className = `pp-sticky pp-sticky--tape sticky-choice mb-topic pp-sticky--c${(3 + n++) % 6}${open ? ' is-open' : ''}`;
+      chip.setAttribute('role', 'button');
+      chip.tabIndex = 0;
+      chip.setAttribute('aria-expanded', open ? 'true' : 'false');
+      chip.dataset.tip = open ? 'Hide its kinds of question' : 'Choose its kinds of question';
+      chip.innerHTML = `<input type="checkbox" value="${t}" ${on ? 'checked' : ''} aria-label="Ask ${TOPIC_LABEL[t] || t}" /><span>${TOPIC_LABEL[t] || t}</span>`
+        + `${on && some < all.length ? `<em class="mb-topic__n">${some}/${all.length}</em>` : ''}`
+        + `<svg class="mb-topic__caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      // the box: the whole topic in or out
+      const tick = chip.querySelector('input');
+      tick.addEventListener('click', (e) => e.stopPropagation());
+      tick.addEventListener('change', (e) => {
+        if (e.target.checked) { mathTopics.add(t); mathOpen.add(t); }
+        else if (mathTopics.size > 1) { mathTopics.delete(t); mathOpen.delete(t); }
+        else e.target.checked = true;                         // at least one topic stays ticked
         syncMathOps(); saveContent(); updateStartDisabled();
+        renderMathTopicsStep();
       });
-      wrap.append(label);
+      // the topic itself: its kinds of question open and close (ticked first if it was not)
+      const toggle = () => {
+        if (!mathTopics.has(t)) { mathTopics.add(t); mathOpen.add(t); syncMathOps(); saveContent(); updateStartDisabled(); }
+        else if (mathOpen.has(t)) mathOpen.delete(t); else mathOpen.add(t);
+        renderMathTopicsStep();
+      };
+      chip.addEventListener('click', toggle);
+      chip.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+      wrap.append(chip);
     }
     box.append(head, wrap);
+    // the open topics of this row, under it
+    for (const t of list) if (mathOpen.has(t) && mathTopics.has(t)) box.append(kindsPanel(t));
   }
   renderCustomStep(topic, 'mathbee-topics', {
     title: 'Which topics?',
-    subtitle: 'Questions come from every topic you tick. Next, choose the kinds of question in each.',
-    content: box,
-    nextLabel: 'Next',
-    onNext: () => { syncMathOps(); saveContent(); updateStartDisabled(); renderMathKindsStep(); topic.goTo('mathbee-kinds'); },
-  });
-}
-
-/* The Math Bee: which kinds of question in each topic ticked (each keeps at least one). */
-function renderMathKindsStep() {
-  const box = document.createElement('div');
-  box.className = 'mb-topics mb-kinds';
-  let n = 0;
-  for (const [, list] of MATH_BEE_GROUPS) {
-    for (const t of list) {
-      if (!mathTopics.has(t)) continue;
-      const head = document.createElement('p');
-      head.className = 'mb-topics__head';
-      head.textContent = TOPIC_LABEL[t] || t;
-      box.append(head);
-      for (const [sub, ops] of kindsOf(t)) {
-        if (sub) {
-          const h = document.createElement('p');
-          h.className = 'mb-kinds__sub';
-          h.textContent = sub;
-          box.append(h);
-        }
-        const wrap = document.createElement('div');
-        wrap.className = 'pp-carousel-choices sticky-row';
-        for (const op of ops) {
-          const label = document.createElement('label');
-          label.className = `pp-sticky pp-sticky--tape sticky-choice pp-sticky--c${(3 + n++) % 6}`;
-          label.innerHTML = `<input type="checkbox" value="${op}" ${mathOps.has(op) ? 'checked' : ''} /><span>${kindLabel(op)}</span>`;
-          label.querySelector('input').addEventListener('change', (e) => {
-            if (e.target.checked) mathOps.add(op);
-            else if (kindsIn(t).some((o) => o !== op && mathOps.has(o))) mathOps.delete(op);
-            else e.target.checked = true;                   // every topic keeps at least one kind
-            syncMathOps(); saveContent(); updateStartDisabled();
-          });
-          wrap.append(label);
-        }
-        box.append(wrap);
-      }
-    }
-  }
-  renderCustomStep(topic, 'mathbee-kinds', {
-    title: 'Which questions?',
-    subtitle: 'Tick the kinds of question to ask in each topic.',
+    subtitle: 'Tick the topics to ask from. Click a topic to choose its kinds of question.',
     content: box,
     nextLabel: 'Next',
     onNext: () => { syncMathOps(); saveContent(); updateStartDisabled(); flow.next(); },
