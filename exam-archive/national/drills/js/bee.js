@@ -34,6 +34,7 @@ import { seatSpellers, createBee, botSpelling } from './bee-logic.js';
 import { questionAt } from './rng.js';
 import { answerIsRight, sanitizeFor, texFor, drawMath, toTex } from './game.js';
 import { answerText, isEasy, working, slip, setupLines } from './bee-maths.js';
+import { geoFigure } from './geo-figure.js';
 import { loadMath } from '/utils/components/workbook/mathify.js';
 import { sayMaths } from '/utils/speech-maths.js';
 import { SPELLING_PHRASES, PHRASE } from '/data/spelling/phrases.js';
@@ -1231,7 +1232,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
           </div>
           <div class="bee-tv-idle" aria-hidden="true"><svg class="bee-bot" viewBox="0 0 64 64" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="#1f2a37" stroke-width="2.6" stroke-linecap="round"/><circle class="bee-bot-ball" cx="32" cy="6" r="3.2" fill="#f4c95d"/><rect x="4" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="52" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="11" y="16" width="42" height="38" rx="14" fill="#7cc4f0"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="#1f2a37"/><circle class="bee-bot-eye" cx="26" cy="31.5" r="3.1" fill="#f4c95d"/><circle class="bee-bot-eye" cx="38" cy="31.5" r="3.1" fill="#f4c95d"/><path class="bee-bot-mouth" d="M24 48 L40 48" stroke="#1f2a37" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg><p class="bee-tv-logo"><small>Prep</small>${isMath ? 'Math Bee' : 'Spelling Bee'}</p></div>
           <div class="bee-tv-host" aria-hidden="true"><svg class="bee-bot" viewBox="0 0 64 64" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="#1f2a37" stroke-width="2.6" stroke-linecap="round"/><circle class="bee-bot-ball" cx="32" cy="6" r="3.2" fill="#f4c95d"/><rect x="4" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="52" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="11" y="16" width="42" height="38" rx="14" fill="#7cc4f0"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="#1f2a37"/><circle class="bee-bot-eye" cx="26" cy="31.5" r="3.1" fill="#f4c95d"/><circle class="bee-bot-eye" cx="38" cy="31.5" r="3.1" fill="#f4c95d"/><path class="bee-bot-mouth" d="M24 48 L40 48" stroke="#1f2a37" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg><p class="bee-tv-host-line"></p><div class="bee-tv-award"><svg class="bee-trophy" viewBox="0 0 64 72" aria-hidden="true"><path d="M14 8 H4 V16 Q4 30 18 32" fill="none" stroke="#d4a937" stroke-width="4"/><path d="M50 8 H60 V16 Q60 30 46 32" fill="none" stroke="#d4a937" stroke-width="4"/><path d="M14 4 H50 V20 Q50 40 32 42 Q14 40 14 20 Z" fill="#f2c94c"/><path d="M20 8 H26 V22 Q26 32 32 36 Q22 34 20 22 Z" fill="#fff0b3" opacity=".75"/><rect x="28" y="42" width="8" height="10" fill="#d4a937"/><rect x="18" y="52" width="28" height="7" fill="#b8902e"/><rect x="13" y="59" width="38" height="9" fill="#7a5c1c"/><rect x="22" y="61.5" width="20" height="4" fill="#f2c94c"/></svg><span class="bee-tv-prize"><b>5,000</b> PrepCoins</span></div></div>
-          <div class="bee-tv-math"><p class="bee-mh"></p><p class="bee-mq"></p><p class="bee-ma"></p><p class="bee-mn"></p><input class="bee-math-input" type="text" inputmode="text" enterkeyhint="go" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" aria-label="Your answer: type it and press Enter" disabled /></div>
+          <div class="bee-tv-math"><div class="bee-mfig" aria-hidden="true"></div><p class="bee-mh"></p><p class="bee-mq"></p><p class="bee-ma"></p><p class="bee-mn"></p><input class="bee-math-input" type="text" inputmode="text" enterkeyhint="go" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" aria-label="Your answer: type it and press Enter" disabled /></div>
           <div class="bee-tv-curtain" aria-hidden="true"></div>
           <span class="bee-tv-static" aria-hidden="true"></span>
           <span class="bee-tv-glare" aria-hidden="true"></span>
@@ -1901,33 +1902,49 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const tv = hall.querySelector('.bee-tv');
     tv.classList.remove('is-idle');
     tv.classList.add('is-math-q');
+    lastShow = [q, typed, c, w];
     const key = q ? `${q.text}|${q.hint || ''}` : '';
     if (key !== shownKey) {
-      shownKey = key;
+      const tvm = $('.bee-tv-math'), fig = q ? geoFigure(q) : '';
+      $('.bee-mfig').innerHTML = fig;                       // a geometry question comes with its diagram
+      tvm.classList.toggle('has-fig', !!fig);
       $('.bee-mh').textContent = q?.hint || '';
       drawMath($('.bee-mq'), q ? qTex(q) : '', q ? q.text : '');
+      // drawn as plain text (MathJax not up yet): drawn again with MathJax as soon as it is
+      shownKey = !q || $('.bee-mq svg') ? key : '';
       fitTV($('.bee-mq'));
       setWork([]);
     }
     const t = q ? sanitizeFor(q, String(typed ?? '')) : '';
     drawMath($('.bee-ma'), t ? texFor(q, t) : '', t);
     fitTV($('.bee-ma'));
+    fitTV($('.bee-mq'));                                   // a tall answer (a fraction) leaves the question less room
     $('.bee-ma').classList.toggle('is-empty', !t);
     $('.bee-mn').textContent = `${c} correct${w ? ` · ${w} wrong` : ''}`;
   }
-  /* shrink a typeset line to the room the TV has for it (never larger than drawn) */
+  /* shrink a typeset line to the room the TV really has left for it: its width less the diagram's
+     column, its height less the instruction, the answer and the count (never larger than drawn) */
+  let lastShow = null;
   function fitTV(el) {
+    el.style.height = ''; el.style.width = '';
     const svg = el.querySelector('svg');
     if (!svg) return;
-    svg.style.transform = '';
-    const box = el.getBoundingClientRect(), r = svg.getBoundingClientRect();
-    const tvm = $('.bee-tv-math').getBoundingClientRect();
-    const roomW = tvm.width * 0.94, roomH = el.classList.contains('bee-mq') ? tvm.height * 0.48 : tvm.height * 0.22;
-    const k = Math.min(1, roomW / (r.width || 1), roomH / (r.height || 1));
-    if (k < 1) { svg.style.transformOrigin = '50% 50%'; svg.style.transform = `scale(${k})`; el.style.height = `${r.height * k}px`; el.style.width = `${r.width * k}px`; }
-    else { el.style.height = ''; el.style.width = ''; }
-    void box;
+    svg.style.width = ''; svg.style.height = '';
+    const r = svg.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    const tvm = $('.bee-tv-math'), box = tvm.getBoundingClientRect(), cs = getComputedStyle(tvm);
+    const fig = tvm.classList.contains('has-fig') ? $('.bee-mfig').getBoundingClientRect().width + parseFloat(cs.columnGap || 0) : 0;
+    const roomW = (box.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - fig) * 0.96;
+    let roomH = box.height * 0.2;
+    if (el.classList.contains('bee-mq')) {
+      const others = ['.bee-mh', '.bee-ma', '.bee-mn'].reduce((sum, k) => sum + ($(k)?.getBoundingClientRect().height || 0), 0);
+      roomH = (box.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - others) * 0.92;
+    }
+    const k = Math.min(1, roomW / r.width, roomH / r.height);
+    // the formula drawn smaller in place (it has a viewBox): nothing left hanging out of its box
+    if (k < 1) { svg.style.width = `${r.width * k}px`; svg.style.height = `${r.height * k}px`; }
   }
+  if (window.__beeTest) window.__beeTest.show = (q, typed = '') => showMath(q, typed, 0, 0);   // the tests' window onto the TV
   function hideMath() { shownKey = ''; setWork([]); hall.querySelector('.bee-tv').classList.remove('is-math-q', 'is-ok', 'is-bad'); }
   function mathFlash(ok) {
     const tv = hall.querySelector('.bee-tv');
@@ -2111,7 +2128,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     });
   }
   async function mathBee() {
-    loadMath();
+    loadMath().then((ok) => { if (ok && lastShow && !gone) { shownKey = ''; showMath(...lastShow); } });
     if (seats[0]) prefetchQs(seats[0], 0, 3);
     if (!gone && pace) { say('One minute each.'); sweep(); tvTitle('ONE MINUTE', 'is-round'); await wait(2200); }
     clearScreen();
