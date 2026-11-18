@@ -83,3 +83,18 @@ html, body { overflow-x: clip !important; overflow-y: visible !important; }
 .xm-pushoffer p { margin: 0 0 0.75rem; }
 .xm-pushoffer__row { display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap; }
 @media print { .xm-pushoffer { display: none !important; } }
+
+/* the result page: a receipt over the paper (the student back from a notification, the dashboard or the link) */
+.xm-result { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(30, 24, 16, 0.35); }
+.xm-result__card { width: min(360px, 100%); }
+.xm-result .pp-receipt__paper { display: grid; justify-items: center; gap: 0.35rem; padding: 1.4rem 1.2rem 1.2rem; text-align: center; }
+.xm-result__kicker { margin: 0; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
+.xm-result__title { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; }
+.xm-result__score { margin: 0.4rem 0 0; font-family: var(--font-mono); font-size: 1rem; }
+.xm-result__score b { font-family: var(--font-display); font-size: 2.6rem; line-height: 1; }
+.xm-result__pct { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; color: var(--accent-primary); }
+.xm-result__grade { margin: 0.2rem 0; display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; }
+.xm-result__grade span { display: inline-grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: 50%; border: 2px solid currentColor; font-family: var(--font-display); font-size: 1.2rem; }
+.xm-result__more { display: grid; grid-template-columns: auto auto; gap: 0.15rem 0.8rem; margin: 0.3rem 0 0.6rem; font-family: var(--font-mono); font-size: 0.8rem; }
+.xm-result__more dt { color: var(--text-secondary); text-align: right; }
+.xm-result__more dd { margin: 0; font-weight: 700; text-align: left; }

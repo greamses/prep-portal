@@ -545,6 +545,7 @@ async function open() {
     $("pp-title").innerHTML = `${(r.title || "Mock paper").replace(/[<>&]/g, "")}<em>.</em>`;
     $("pp-eyebrow").textContent = r.ownerName ? `A mock paper from ${r.ownerName}` : "A mock paper";
     document.title = `Prep Portal | ${r.title || "Mock paper"}`;
+    paperTitle = r.title || "Mock paper";
     /* the paper is the learner's: its tools (framed activity pages) are let in without a subscription */
     document.documentElement.dataset.ppPaperPass = "1";
     /* whoever holds the link has the paper free, and that includes printing it marked */
@@ -574,6 +575,7 @@ async function open() {
         draw(); faces();
         $("xm-check").hidden = true; $("xm-clear").hidden = true;
         say(`Your teacher has marked your paper: ${rv.score.won} of ${rv.score.outOf}, grade ${rv.score.grade}.`);
+        showResultCard(rv.score, { marked: true });
         api(`/api/workbooks/paper/${code}/mark`).then((r) => { if (r.status === "done" && r.result) live.applyAiMarks(r.result.marks); }).catch(() => {});
         return;
       }
@@ -590,6 +592,7 @@ async function open() {
         draw(); faces();
         $("xm-check").hidden = true; $("xm-clear").hidden = true;
         say(`Your result: ${rv.score.won} of ${rv.score.outOf}, grade ${rv.score.grade}. Your marked paper is below.`);
+        showResultCard(rv.score, { marked: true });
         return;
       }
       sheet.dataset.paper = head.paper === "letter" ? "letter" : "a4";
@@ -599,6 +602,7 @@ async function open() {
       say(rv && rv.handedIn
         ? `Your result: ${rv.score.won} of ${rv.score.outOf} (${rv.score.pct}%), grade ${rv.score.grade}. You have used ${tries === 1 ? "your one try" : `all ${tries} tries`} on this paper.`
         : `You have used ${tries === 1 ? "your one try" : `all ${tries} tries`} on this paper, so it cannot be answered again. Your teacher has your score.`);
+      if (rv && rv.handedIn) showResultCard(rv.score);
       return;
     }
     /* the instructions page, when the teacher set one: read first, then Begin. Once per tab, so a
@@ -682,6 +686,38 @@ function faces() {
   $("xm-check").hidden = spent || locked; $("xm-clear").hidden = spent || locked;
 }
 let locked = false;               // came back with no tries left: the paper is shown, not answerable
+let paperTitle = "Mock paper";
+
+/* THE RESULT PAGE. A student who comes back to a paper they have sat (from the "your result went in"
+   notification, the dashboard's My results, or the link) sees their result first: a receipt with the
+   score, the percentage, the grade, their best and their tries. "See my marked paper" goes on to it. */
+const GRADE_WORD = { A: "Excellent", B: "Very good", C: "Good", D: "Fair", E: "Pass", F: "Try again" };
+function showResultCard(score, { marked = false } = {}) {
+  if (!score || !score.outOf) return;
+  const pct = score.pct != null ? score.pct : Math.round((100 * score.won) / score.outOf);
+  const g = String(score.grade || "");
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const card = document.createElement("div");
+  card.className = "xm-result";
+  card.setAttribute("role", "dialog");
+  card.setAttribute("aria-label", "Your result");
+  card.innerHTML = `<div class="pp-receipt xm-result__card"><div class="pp-receipt__paper">
+      <p class="xm-result__kicker">Your result</p>
+      <p class="xm-result__title">${esc(paperTitle)}</p>
+      <p class="xm-result__score"><b>${score.won}</b> of ${score.outOf}</p>
+      <p class="xm-result__pct">${pct}%</p>
+      ${g ? `<p class="xm-result__grade"><span>${esc(g)}</span>${esc(GRADE_WORD[g] || "")}</p>` : ""}
+      <dl class="xm-result__more">
+        ${score.best != null && score.best !== pct ? `<dt>Best</dt><dd>${score.best}%</dd>` : ""}
+        <dt>Tries</dt><dd>${used || 1}${tries ? ` of ${tries}` : ""}</dd>
+      </dl>
+      <button type="button" class="pp-btn xm-result__go">${marked ? "See my marked paper" : "See the paper"}</button>
+    </div></div>`;
+  document.body.appendChild(card);
+  const go = card.querySelector(".xm-result__go");
+  go.addEventListener("click", () => card.remove());
+  go.focus();
+}
 function triesNote() {
   if (isOwner || tries === 0) return "";
   const left = Math.max(0, tries - used);
