@@ -44,7 +44,7 @@ loadMath().then((ok) => {
   drawMath(questionText, currentQuestion.tex || toTex(currentQuestion.text), currentQuestion.text);
 });
 const SUPS = { '²': '2', '³': '3', '⁴': '4' };
-function toTex(t) {
+export function toTex(t) {
   return t
     .replace(/⁴√(\d+)/g, '\\sqrt[4]{$1}')
     .replace(/∛(\d+)/g, '\\sqrt[3]{$1}')
@@ -58,14 +58,16 @@ function toTex(t) {
 }
 /* The typed answer with the caret inside it at `at` (TeX). The algebra
    parser places the caret itself; for the plain answers it is just spliced in. */
-function typedTex(t) {
-  if (currentQuestion && (currentQuestion.alg || currentQuestion.subject)) {
+/** A typed answer as TeX, for any question (the Math Bee draws its answers with it). */
+export function texFor(q, t) {
+  if (q && (q.alg || q.subject)) {
     return typedToTex(t); // "/" stacks into a fraction as it is typed
   }
-  return plainToTex(t, !!(currentQuestion && currentQuestion.roman));
+  return plainToTex(t, !!(q && q.roman));
 }
+function typedTex(t) { return texFor(currentQuestion, t); }
 // Draw `tex` into `el`; falls back to `plain` text if MathJax isn't up.
-function drawMath(el, tex, plain) {
+export function drawMath(el, tex, plain) {
   if (tex && mathReady()) {
     try {
       // svgFor carries its own glyph outlines (the page's shared font cache
@@ -408,13 +410,14 @@ export function answerIsRight(q, typed) {
 
 // Strip to digits plus at most one "/" and at most one "." — neither of
 // which can lead. Everything else a question ever answers with is digits.
-function sanitizeTyped(raw) {
-  if (currentQuestion && currentQuestion.spell) return sanitizeSpelling(raw);
-  if (currentQuestion && currentQuestion.pair) return raw.replace(/−/g, '-').replace(/[XY]/g, (c) => c.toLowerCase()).replace(/[^0-9xy=,.\-]/g, '').slice(0, 20);
-  if (currentQuestion && currentQuestion.roman) return raw.toUpperCase().replace(/[^IVXLCDM]/g, '').slice(0, 16);
-  if (currentQuestion && currentQuestion.subject) return powers(raw).replace(/−/g, '-').replace(/[^0-9A-Za-z=^()+\-*/.√∛π]/g, '').slice(0, 28);
-  if (currentQuestion && currentQuestion.base) return raw.replace(/[^0-9a-fA-F]/g, '').toUpperCase().slice(0, 10);
-  if (currentQuestion && currentQuestion.alg) return powers(raw).replace(/−/g, '-').replace(/X/g, 'x').replace(/[^0-9x^()+\-*]/g, '').slice(0, 24);
+/** The drills' cleaning of a typed answer, for any question (the Math Bee uses it too). */
+export function sanitizeFor(q, raw) {
+  if (q && q.spell) return sanitizeSpelling(raw);
+  if (q && q.pair) return raw.replace(/−/g, '-').replace(/[XY]/g, (c) => c.toLowerCase()).replace(/[^0-9xy=,.\-]/g, '').slice(0, 20);
+  if (q && q.roman) return raw.toUpperCase().replace(/[^IVXLCDM]/g, '').slice(0, 16);
+  if (q && q.subject) return powers(raw).replace(/−/g, '-').replace(/[^0-9A-Za-z=^()+\-*/.√∛π]/g, '').slice(0, 28);
+  if (q && q.base) return raw.replace(/[^0-9a-fA-F]/g, '').toUpperCase().slice(0, 10);
+  if (q && q.alg) return powers(raw).replace(/−/g, '-').replace(/X/g, 'x').replace(/[^0-9x^()+\-*]/g, '').slice(0, 24);
   // A leading "-" is kept (integer answers can be negative); any other is dropped.
   const neg = raw.trimStart().startsWith('-') || raw.trimStart().startsWith('−');
   let s = raw.replace(/[^0-9/.]/g, '');
@@ -425,6 +428,7 @@ function sanitizeTyped(raw) {
   if (s.startsWith('/') || s.startsWith('.')) s = s.slice(1);
   return (neg ? '-' : '') + s.slice(0, 7);
 }
+function sanitizeTyped(raw) { return sanitizeFor(currentQuestion, raw); }
 
 /* Draw the typed answer with the caret where the hidden input's selection
    is: the blinking bar at the end, or a coloured bar inside the answer. */

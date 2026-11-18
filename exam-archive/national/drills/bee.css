@@ -649,3 +649,12 @@
 .bee-mh { margin: 0; font-family: var(--font-mono); font-size: 2.2cqh; font-weight: 700; letter-spacing: 0.06em; color: #9fd3f5; text-transform: uppercase; }
 .bee-mh:empty { display: none; }
 .bee-tv-math { grid-template-rows: auto 1fr auto auto; }
+
+/* the Math Bee's TV: hint, question, a bot's working (line by line), the answer, the count */
+.bee-tv-math { grid-template-rows: auto auto 1fr auto auto; }
+.bee-mq, .bee-ma, .bee-mw p { line-height: 1.2; }
+.bee-mq mjx-container, .bee-ma mjx-container, .bee-mw mjx-container { margin: 0 !important; }
+.bee-mw { display: grid; align-content: center; justify-items: center; gap: 0.6cqh; min-height: 0; overflow: hidden; font-family: var(--font-mono); font-size: 3.6cqh; color: #cfe6ff; }
+.bee-mw p { margin: 0; animation: bee-work-in 0.35s ease-out both; }
+@keyframes bee-work-in { from { opacity: 0; transform: translateY(0.6cqh); } to { opacity: 1; transform: none; } }
+.bee-tv-math.has-work .bee-mq { font-size: 4.8cqh; }
