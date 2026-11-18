@@ -92,6 +92,38 @@ export async function mountStudentClassroom(layout) {
     }
   }
   fillStudentStats(layout, assignments);
+  fillMyResults(layout, assignments);
+}
+
+/* ── My results: every paper the student has sat (mock papers, competitions), newest first, with the
+   score, the grade and a link back to their marked paper. A paper whose results the teacher holds says
+   so until they are released. ── */
+function fillMyResults(layout, assignments) {
+  const host = layout.querySelector("#db-results-list");
+  if (!host) return;
+  const papers = assignments.filter((a) => a.kind === "paper").sort((a, b) => (b.updatedMs || 0) - (a.updatedMs || 0));
+  if (!papers.length) {
+    host.innerHTML = `<div class="db-empty">No papers yet. When you sit a paper or a competition, your result comes here.</div>`;
+    return;
+  }
+  const when = (ms) => (ms ? new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "");
+  host.innerHTML = papers.map((a) => {
+    const held = a.status === "held";
+    const pct = a.lastPct ?? a.bestPct;
+    const tone = pct >= 70 ? "pill-green" : pct >= 40 ? "pill-yellow" : "pill-red";
+    const score = held || pct == null ? ""
+      : `${a.lastOutOf ? `${a.lastWon} of ${a.lastOutOf} · ` : ""}${pct}%${a.grade ? ` · grade ${esc(a.grade)}` : ""}`;
+    const pill = held ? `<span class="db-pill pill-yellow">With your teacher</span>`
+      : pct == null ? `<span class="db-pill pill-grey">Sat</span>`
+      : `<span class="db-pill ${tone}">${pct}%${a.grade ? ` ${esc(a.grade)}` : ""}</span>`;
+    return `<a class="db-assign-item" href="${esc(a.paperUrl || "#")}" style="text-decoration:none;color:inherit">
+      <div class="db-assign-top">
+        <div><div class="db-assign-title">${esc(a.activityTitle || "Paper")}</div>
+        <div class="db-assign-meta">${esc([score, when(a.updatedMs)].filter(Boolean).join(" · "))}${held ? "Your teacher will release your result." : ""}</div></div>
+        ${pill}
+      </div>
+    </a>`;
+  }).join("");
 }
 
 async function fillStudentStats(layout, assignments) {

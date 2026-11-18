@@ -842,6 +842,13 @@ module.exports = function () {
       if (!rs.exists) return res.status(404).json({ error: "That student has not handed the paper in." });
       await rRef.set({ released: true, releasedAt: stamp() }, { merge: true });
       const r = rs.data();
+      /* the student's dashboard: the score, now that it is released */
+      try {
+        await db().collection("studentAssignments").doc(req.params.uid).collection("items").doc(`paper_${code}`).set({
+          kind: "paper", paperUrl: `/paper/${code}`, activityTitle: own.p.data().title || "Mock paper", status: "done",
+          lastPct: r.lastPct || 0, bestPct: r.bestPct || r.lastPct || 0, lastWon: r.lastWon || 0, lastOutOf: r.lastOutOf || 0, grade: r.grade || "", updatedAt: stamp(),
+        }, { merge: true });
+      } catch (e) { console.error("[release item]", e.message); }
       try {
         await notifyStudents([req.params.uid], { kind: "result", title: own.p.data().title || "Mock paper", text: "Your teacher has marked your paper. Open it to see your results and their notes.", url: `/paper/${code}`, from: own.p.data().ownerName || "Your teacher" }, `released_${code}`, { push: true, mail: true });
       } catch (e) { console.error("[release notice]", e.message); }
@@ -1136,8 +1143,13 @@ module.exports = function () {
         }, { merge: true });
       } catch (e) { console.error("[paper notice]", e.message); }
       try {
+        /* the student's own results (their dashboard): the score, unless the paper's results are held for the
+           teacher, when it waits ("with your teacher") and the release fills it in */
         await db().collection("studentAssignments").doc(req.user.uid).collection("items").doc(`paper_${code}`).set({
-          kind: "paper", paperUrl: `/paper/${code}`, activityTitle: out.title || "Mock paper", status: "done", lastPct: pct, bestPct: out.best, updatedAt: stamp(),
+          kind: "paper", paperUrl: `/paper/${code}`, activityTitle: out.title || "Mock paper", updatedAt: stamp(),
+          ...(out.hold
+            ? { status: "held" }
+            : { status: "done", lastPct: pct, bestPct: out.best, lastWon: won, lastOutOf: outOf, grade: gradeOf(pct) }),
         }, { merge: true });
       } catch (e) { console.error("[paper item]", e.message); }
       if (out.hold) {

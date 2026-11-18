@@ -62,6 +62,18 @@ export function buildStudentPanels(user, data, layout) {
       </div>
     </div>
 
+    <div class="db-panel span-full" id="db-my-results">
+      <div class="db-panel-head">
+        <div>
+          <p class="db-kicker">Papers and Competitions</p>
+          <h2 class="db-panel-title">My results</h2>
+        </div>
+      </div>
+      <div class="db-assign-list" id="db-results-list">
+        <div class="db-empty">Loading…</div>
+      </div>
+    </div>
+
     <div class="db-panel span-full db-calendar-panel">
       <div class="db-panel-head">
         <div>

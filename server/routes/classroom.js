@@ -424,7 +424,9 @@ module.exports = function () {
     try {
       const snap = await db().collection("studentAssignments").doc(req.user.uid).collection("items").get();
       const ms = (x) => (x && x.toMillis ? x.toMillis() : 0);
-      const assignments = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => ms(b.assignedAt) - ms(a.assignedAt));
+      /* newest first: when it was set, or (a paper sat by link, which nobody "set") when it last changed */
+      const when = (a) => Math.max(ms(a.assignedAt), ms(a.updatedAt));
+      const assignments = snap.docs.map((d) => ({ id: d.id, ...d.data(), updatedMs: ms(d.data().updatedAt) })).sort((a, b) => when(b) - when(a));
       res.json({ assignments });
     } catch (e) {
       console.error("[/api/classroom/assignments]", e.message);
