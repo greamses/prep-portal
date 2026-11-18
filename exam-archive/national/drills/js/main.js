@@ -111,6 +111,19 @@ const MATH_BEE_GROUPS = [
   ['Geometry', ['angles', 'areas', 'pythag', 'circles']],
 ];
 const MATH_BEE_TOPICS = MATH_BEE_GROUPS.flatMap(([, list]) => list);
+/* each topic's question kinds, to tick one by one (the user: "I need the topics to be more
+   differentiated"). A topic not listed here is one group of its drills operations. */
+const MATH_BEE_KINDS = {
+  bases: [
+    ['Converting', ['binTo10', 'binFrom10', 'baseTo10', 'baseFrom10', 'baseToBase']],
+    ['Adding in the same base', ['binAdd', 'octAdd', 'hexAdd']],
+    ['Subtracting in the same base', ['binSub', 'octSub', 'hexSub']],
+    ['Multiplying in the same base', ['binMul', 'octMul', 'hexMul']],
+    ['Dividing in the same base', ['binDiv', 'octDiv', 'hexDiv']],
+  ],
+};
+const kindsOf = (t) => MATH_BEE_KINDS[t] || [[null, CATEGORY_OPERATIONS[t].filter((op) => op !== 'algMixed')]];
+const kindLabel = (op) => String(OPERATION_LABELS[op] || op).replace(/^[^A-Za-z0-9]*\s(?=[A-Z])/, '');   // "+ Addition" -> "Addition\"
 CATEGORY_OPERATIONS.mathbee = [...new Set(MATH_BEE_TOPICS.flatMap((t) => CATEGORY_OPERATIONS[t]))];
 const CATEGORY_DEFAULT_OPS = {
   mathbee: CATEGORY_OPERATIONS.basic,
@@ -257,10 +270,17 @@ const isMathBee = () => categoryValue === 'mathbee';
 const isAnyBee = () => isBee() || isMathBee();
 const mathTopics = new Set(mem.get('mathTopics', ['basic'], Array.isArray).filter((t) => MATH_BEE_TOPICS.includes(t)));
 if (!mathTopics.size) mathTopics.add('basic');
-/** The Math Bee's operations: every kind of question of every topic ticked. */
+// the question kinds ticked (a topic with none ticked takes all of its own)
+const mathOps = new Set(mem.get('mathOps', [], Array.isArray).filter((op) => CATEGORY_OPERATIONS.mathbee.includes(op)));
+const kindsIn = (t) => kindsOf(t).flatMap(([, list]) => list);
+/** The Math Bee's operations: the kinds ticked in every topic ticked. */
 function syncMathOps() {
   operations.clear();
-  for (const t of mathTopics) CATEGORY_OPERATIONS[t].forEach((op) => operations.add(op));
+  for (const t of mathTopics) {
+    let picked = kindsIn(t).filter((op) => mathOps.has(op));
+    if (!picked.length) { kindsIn(t).forEach((op) => mathOps.add(op)); picked = kindsIn(t); }
+    picked.forEach((op) => operations.add(op));
+  }
 }
 if (categoryValue === 'mathbee') syncMathOps();
 if (mode === 'cup' && categoryValue !== 'mathbee') mode = 'multiplayer';   // a tournament is the Math Bee's only
@@ -278,7 +298,7 @@ const saveContent = () => mem.save({
   fractionTypes: [...fractionTypes], denominators: [...denominators],
   compounds: [...compounds],
   spellSets: [...spellSets], spellBank, spellFocus, spellMaster, spellLevel,
-  mathTopics: [...mathTopics],
+  mathTopics: [...mathTopics], mathOps: [...mathOps],
   gridBlanks,
   barsLevel,
 });
@@ -405,6 +425,7 @@ topic.addSlide('category', 'Topic', () => {});
 topic.addSlide('fraction-type', 'Fraction Type', () => {});
 topic.addSlide('operations', 'Operations', () => {});
 topic.addSlide('mathbee-topics', 'Topics', () => {});
+topic.addSlide('mathbee-kinds', 'Questions', () => {});
 topic.addSlide('range', 'Number Range', () => {});
 topic.addSlide('numbers', 'Numbers', () => {});
 topic.addSlide('denominators', 'Denominators', () => {});
@@ -780,7 +801,53 @@ function renderMathTopicsStep() {
   }
   renderCustomStep(topic, 'mathbee-topics', {
     title: 'Which topics?',
-    subtitle: 'Questions come from every topic you tick.',
+    subtitle: 'Questions come from every topic you tick. Next, choose the kinds of question in each.',
+    content: box,
+    nextLabel: 'Next',
+    onNext: () => { syncMathOps(); saveContent(); updateStartDisabled(); renderMathKindsStep(); topic.goTo('mathbee-kinds'); },
+  });
+}
+
+/* The Math Bee: which kinds of question in each topic ticked (each keeps at least one). */
+function renderMathKindsStep() {
+  const box = document.createElement('div');
+  box.className = 'mb-topics mb-kinds';
+  let n = 0;
+  for (const [, list] of MATH_BEE_GROUPS) {
+    for (const t of list) {
+      if (!mathTopics.has(t)) continue;
+      const head = document.createElement('p');
+      head.className = 'mb-topics__head';
+      head.textContent = TOPIC_LABEL[t] || t;
+      box.append(head);
+      for (const [sub, ops] of kindsOf(t)) {
+        if (sub) {
+          const h = document.createElement('p');
+          h.className = 'mb-kinds__sub';
+          h.textContent = sub;
+          box.append(h);
+        }
+        const wrap = document.createElement('div');
+        wrap.className = 'pp-carousel-choices sticky-row';
+        for (const op of ops) {
+          const label = document.createElement('label');
+          label.className = `pp-sticky pp-sticky--tape sticky-choice pp-sticky--c${(3 + n++) % 6}`;
+          label.innerHTML = `<input type="checkbox" value="${op}" ${mathOps.has(op) ? 'checked' : ''} /><span>${kindLabel(op)}</span>`;
+          label.querySelector('input').addEventListener('change', (e) => {
+            if (e.target.checked) mathOps.add(op);
+            else if (kindsIn(t).some((o) => o !== op && mathOps.has(o))) mathOps.delete(op);
+            else e.target.checked = true;                   // every topic keeps at least one kind
+            syncMathOps(); saveContent(); updateStartDisabled();
+          });
+          wrap.append(label);
+        }
+        box.append(wrap);
+      }
+    }
+  }
+  renderCustomStep(topic, 'mathbee-kinds', {
+    title: 'Which questions?',
+    subtitle: 'Tick the kinds of question to ask in each topic.',
     content: box,
     nextLabel: 'Next',
     onNext: () => { syncMathOps(); saveContent(); updateStartDisabled(); flow.next(); },
@@ -955,7 +1022,7 @@ const flow = createSectionFlow([
     el: $('drill-section-topic'),
     chips: () => {
       const cat = TOPIC_LABEL[categoryValue] || categoryValue;
-      if (categoryValue === 'mathbee') return [{ label: 'Math Bee' }, ...[...mathTopics].map((t) => ({ label: TOPIC_LABEL[t] || t }))];
+      if (categoryValue === 'mathbee') return [{ label: 'Math Bee' }, ...[...mathTopics].map((t) => { const all = kindsIn(t), on = all.filter((op) => mathOps.has(op)).length; return { label: `${TOPIC_LABEL[t] || t}${on && on < all.length ? ` (${on} of ${all.length})` : ''}` }; })];
       // Tables (grid filler) recaps its two dials: size and blank density.
       if (categoryValue === 'timestable') {
         return [
