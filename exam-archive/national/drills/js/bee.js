@@ -1913,8 +1913,43 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       thoughts.set(kidEl, t);
     }
     t.classList.toggle('is-right', kidEl.classList.contains('is-at-mic2'));
-    t.querySelector('.bee-think__lines').replaceChildren(...lines.map((tex) => { const el = document.createElement('p'); drawMath(el, tex, ''); return el; }));
+    const box = t.querySelector('.bee-think__lines');
+    box.replaceChildren(...lines.flatMap((tex) => wrapTex(tex)).map((tex) => { const el = document.createElement('p'); drawMath(el, tex, ''); return el; }));
     t.classList.toggle('is-on', on);
+    // still too wide for the cloud: drawn smaller (MathJax gives each line a viewBox)
+    const room = parseFloat(getComputedStyle(box).fontSize) * 12;
+    for (const svg of box.querySelectorAll('svg')) {
+      const w = svg.getBoundingClientRect().width / (parseFloat(getComputedStyle(t).scale) || 1);
+      if (w > room) { const r = svg.getBoundingClientRect(); svg.style.width = `${room}px`; svg.style.height = `${(r.height * room) / r.width}px`; }
+    }
+  }
+  /* a TeX line too long for a cloud, broken into lines: words between words; maths before a +, a −,
+     an = or a × at the top level (never inside a bracket or a fraction) */
+  const texLen = (t) => t.replace(/\\(?:text|mathrm)\{([^{}]*)\}/g, '$1').replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}\s]/g, '').length;
+  function wrapTex(tex, max = 18) {
+    if (texLen(tex) <= max) return [tex];
+    const words = /^\\text\{([^{}]*)\}$/.exec(tex);
+    if (words) {
+      const out = [];
+      let cur = '';
+      for (const w of words[1].split(' ')) { if (cur && `${cur} ${w}`.length > max) { out.push(cur); cur = w; } else cur = cur ? `${cur} ${w}` : w; }
+      if (cur) out.push(cur);
+      return out.map((x) => `\\text{${x}}`);
+    }
+    const pieces = [];
+    let depth = 0, start = 0;
+    for (let k = 0; k < tex.length; k++) {
+      const ch = tex[k];
+      if (ch === '{' || ch === '(') depth++;
+      else if (ch === '}' || ch === ')') depth--;
+      else if (depth === 0 && k > start && tex[k - 1] === ' ' && (/[+=-]/.test(ch) || tex.startsWith('\\times', k))) { pieces.push(tex.slice(start, k).trim()); start = k; }
+    }
+    pieces.push(tex.slice(start).trim());
+    const lines = [];
+    let cur = '';
+    for (const p of pieces) { if (cur && texLen(`${cur}${p}`) > max) { lines.push(cur); cur = p; } else cur = cur ? `${cur} ${p}` : p; }
+    if (cur) lines.push(cur);
+    return lines;
   }
   /* a bot works a question out in its cloud across its thinking time; returns stop() */
   function think(kidEl, tr) {
@@ -1975,7 +2010,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     // the formula drawn smaller in place (it has a viewBox): nothing left hanging out of its box
     if (k < 1) { svg.style.width = `${r.width * k}px`; svg.style.height = `${r.height * k}px`; }
   }
-  if (window.__beeTest) { window.__beeTest.show = (q, typed = '') => showMath(q, typed, 0, 0); window.__beeTest.q = () => lastShow?.[0] || null; }   // the tests' window onto the TV
+  if (window.__beeTest) { window.__beeTest.show = (q, typed = '') => showMath(q, typed, 0, 0); window.__beeTest.q = () => lastShow?.[0] || null; window.__beeTest.cloud = (lines, n = 0) => setWork(lines, kids[n], true); }   // the tests' window onto the TV
   function hideMath() { shownKey = ''; setWork([]); hall.querySelector('.bee-tv').classList.remove('is-math-q', 'is-ok', 'is-bad'); }
   function mathFlash(ok) {
     const tv = hall.querySelector('.bee-tv');
@@ -2228,34 +2263,113 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   function duelOff() { $('.bee-tv-math').classList.remove('is-duel'); hideMath(); }
 
   /* ── the board over the hall: the qualifying table, then the bracket ── */
-  async function showBoard(title, html, ms) {
+  async function showBoard(title, html, ms, after) {
     const el = $('.bee-cup');
     el.querySelector('.bee-cup-title').textContent = title;
     el.querySelector('.bee-cup-body').innerHTML = html;
     el.hidden = false;
+    const web = el.querySelector('.bee-web');
+    if (web) { await new Promise((r) => requestAnimationFrame(r)); drawWires(web); }
+    if (after && pace) after(el);
     await wait(ms);
     el.hidden = true;
   }
-  function tableHtml(table) {
-    const rows = table.map((r) => {
+  const face = (s, cls = '') => `<span class="pp-face ${cls}" style="${faceStyle(s.kid)}" aria-hidden="true"></span>`;
+
+  /* the qualifying table: each contestant's face, a rank disc, a bar for their right answers, their
+     wrong ones, and the line the top ones go through over */
+  function tableHtml(table, B) {
+    const top = Math.max(1, ...table.map((r) => r.c));
+    const row = (r, n) => {
       const s = seats[r.seat];
-      return `<tr class="${s === mySeat ? 'is-me' : ''}${r.through ? '' : ' is-out'}"><td>${r.place}</td><td class="bee-cup-nm">${escH(cupName(s))}</td><td>${r.c}</td><td>${r.w}</td><td><span class="bee-cup-tag">${r.through ? 'Through' : 'Out'}</span></td></tr>`;
-    }).join('');
-    return `<table class="bee-cup-table"><thead><tr><th>#</th><th>Contestant</th><th>Right</th><th>Wrong</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+      return `<li class="bee-qt-row${s === mySeat ? ' is-me' : ''}${r.through ? '' : ' is-out'}" style="--i:${n}">
+        <span class="bee-qt-rank bee-qt-rank--${r.through ? Math.min(r.place, 4) : 'out'}">${r.place}</span>
+        ${face(s, 'bee-qt-face')}
+        <span class="bee-qt-who"><b>${escH(ownName(s))}${s === mySeat ? '<span class="bee-web-you">You</span>' : ''}</b><em>No. ${s.tag}</em></span>
+        <span class="bee-qt-bar" aria-label="${r.c} right"><i style="--w:${((r.c / top) * 100).toFixed(1)}%"></i><b>${r.c}</b></span>
+        <span class="bee-qt-wrong${r.w ? '' : ' is-none'}" aria-label="${r.w} wrong">${r.w} wrong</span>
+        <span class="bee-qt-tag">${r.through ? 'Through' : 'Out'}</span>
+      </li>`;
+    };
+    const through = table.filter((r) => r.through), out = table.filter((r) => !r.through);
+    return `<ol class="bee-qt">${through.map(row).join('')}${out.length ? `<li class="bee-qt-cut" style="--i:${through.length}"><span>The top ${through.length} go through to the knockout</span></li>` : ''}${out.map((r, n) => row(r, through.length + 1 + n)).join('')}</ol>`;
   }
-  function webHtml(rounds, now, B) {
-    const total = Math.log2(B), cols = [];
-    const card = (mt) => `<div class="bee-web-match${mt === now ? ' is-now' : ''}${mt.w ? ' is-done' : ''}">${['a', 'b'].map((k, n) => {
-      const s = mt[k], win = mt.w && s === mt.w, lose = mt.w && s && s !== mt.w;
-      return `<div class="bee-web-p${win ? ' is-win' : ''}${lose ? ' is-lose' : ''}${s && s === mySeat ? ' is-me' : ''}"><span class="bee-web-seed">${s ? seedOf.get(s.seat) : ''}</span><span class="bee-web-nm">${s ? escH(cupName(s)) : 'to be decided'}</span><span class="bee-web-sc">${mt.sc ? mt.sc[n] : ''}</span></div>`;
-    }).join('')}</div>`;
+
+  /* the bracket (the web): every round's matches with each side's face, seed, name and score; the
+     champion at the end; wires joining each match to the slot its winner goes to. opts.now marks the
+     match about to be played; opts.just the one just played: its loser is crossed out and its winner
+     flies along the wire into the next slot (the slot waits, empty, until they land). */
+  function webHtml(rounds, B, opts = {}) {
+    const total = Math.log2(B);
+    const [jr, jj] = opts.just || [-1, -1];
+    const pend = opts.just ? (jr + 1 < total ? `${jr + 1}-${jj >> 1}-${jj % 2}` : 'champ') : '';
+    const slot = (mt, r, j, side) => {
+      const s = mt[side ? 'b' : 'a'];
+      const win = mt.w && s && s === mt.w, lose = mt.w && s && s !== mt.w;
+      const key = `${r}-${j}-${side}`;
+      const cls = ['bee-web-p', win && 'is-win', lose && 'is-lose', lose && r === jr && j === jj && 'is-cancel', s && s === mySeat && 'is-me', !s && 'is-empty', key === pend && 'is-pending'].filter(Boolean).join(' ');
+      const inner = s ? `${face(s, 'bee-web-face')}<span class="bee-web-seed">${seedOf.get(s.seat)}</span><span class="bee-web-nm">${escH(ownName(s))}${s === mySeat ? '<span class="bee-web-you">You</span>' : ''}</span><span class="bee-web-sc">${mt.sc ? mt.sc[side] : ''}</span><span class="bee-web-x" aria-hidden="true">Out</span>`
+        : '<span class="bee-web-face is-blank"></span><span class="bee-web-seed"></span><span class="bee-web-nm">to be decided</span><span class="bee-web-sc"></span>';
+      return `<div class="${cls}" data-slot="${key}">${inner}</div>`;
+    };
+    const cols = [];
     for (let r = 0; r < total; r++) {
-      const rd = rounds[r] || Array.from({ length: B / 2 ** (r + 1) }, () => ({ a: null, b: null, w: null, sc: null }));
-      cols.push(`<div class="bee-web-col"><p class="bee-web-head">${roundsName(r, B)}</p><div class="bee-web-games">${rd.map(card).join('')}</div></div>`);
+      const games = rounds[r].map((mt, j) => {
+        const now = opts.now && opts.now[0] === r && opts.now[1] === j;
+        return `<div class="bee-web-match${now ? ' is-now' : ''}${mt.w ? ' is-done' : ''}" data-m="${r}-${j}">${now ? '<span class="bee-web-live">Up next</span>' : ''}${slot(mt, r, j, 0)}${slot(mt, r, j, 1)}</div>`;
+      }).join('');
+      cols.push(`<div class="bee-web-col"><p class="bee-web-head">${roundsName(r, B)}</p><div class="bee-web-games">${games}</div></div>`);
     }
-    const champ = rounds[total - 1]?.[0]?.w;
-    cols.push(`<div class="bee-web-col bee-web-col--champ"><p class="bee-web-head">Champion</p><div class="bee-web-games"><div class="bee-web-match bee-web-champ${champ ? ' is-done' : ''}"><div class="bee-web-p${champ ? ' is-win' : ''}">${champ ? `${UI.trophy(16)}<span class="bee-web-nm">${escH(cupName(champ))}</span>` : '<span class="bee-web-nm">?</span>'}</div></div></div></div>`);
-    return `<div class="bee-web">${cols.join('')}</div>`;
+    const champ = rounds[total - 1][0].w;
+    const ch = champ ? `${face(champ, 'bee-web-face')}<span class="bee-web-nm">${escH(nameOf(champ))}</span>` : '<span class="bee-web-face is-blank"></span><span class="bee-web-nm">?</span>';
+    cols.push(`<div class="bee-web-col bee-web-col--champ"><p class="bee-web-head">Champion</p><div class="bee-web-games"><div class="bee-web-match bee-web-champ${champ ? ' is-done' : ''}" data-m="champ"><span class="bee-web-cup">${UI.trophy(22)}</span><div class="bee-web-p${champ ? ' is-win' : ' is-empty'}${pend === 'champ' ? ' is-pending' : ''}" data-slot="champ">${ch}</div></div></div></div>`);
+    return `<div class="bee-web" style="--rounds:${total}"><svg class="bee-web-wires" aria-hidden="true"></svg>${cols.join('')}</div>`;
+  }
+  /* the wires: from each match to the slot its winner takes (elbows), lit once it is decided */
+  function drawWires(web) {
+    const svg = web.querySelector('.bee-web-wires'), box = web.getBoundingClientRect();
+    svg.setAttribute('width', box.width); svg.setAttribute('height', box.height);
+    svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+    let paths = '';
+    for (const m of web.querySelectorAll('.bee-web-match[data-m]:not([data-m="champ"])')) {
+      const [r, j] = m.dataset.m.split('-').map(Number);
+      const next = web.querySelector(`[data-slot="${r + 1}-${j >> 1}-${j % 2}"]`) || (!web.querySelector(`[data-m="${r + 1}-0"]`) ? web.querySelector('[data-slot="champ"]') : null);
+      if (!next) continue;
+      const a = m.getBoundingClientRect(), b = next.getBoundingClientRect();
+      const x1 = a.right - box.left, y1 = a.top + a.height / 2 - box.top, x2 = b.left - box.left, y2 = b.top + b.height / 2 - box.top, xm = (x1 + x2) / 2;
+      const lit = m.classList.contains('is-done');
+      paths += `<path class="bee-web-wire${lit ? ' is-lit' : ''}" data-from="${m.dataset.m}" d="M${x1.toFixed(1)} ${y1.toFixed(1)} H${xm.toFixed(1)} V${y2.toFixed(1)} H${x2.toFixed(1)}"/>`;
+    }
+    svg.innerHTML = paths;
+  }
+  /* after a match: the loser crossed out (CSS), then the winner flies along the wire to their new slot */
+  function advance(board, r, j) {
+    const web = board.querySelector('.bee-web');
+    const from = web?.querySelector(`[data-m="${r}-${j}"] .bee-web-p.is-win`);
+    const to = web?.querySelector('.bee-web-p.is-pending');
+    const wire = web?.querySelector(`.bee-web-wire[data-from="${r}-${j}"]`);
+    if (wire) { wire.classList.remove('is-lit'); }
+    if (!from || !to) return;
+    setTimeout(() => {
+      const a = from.getBoundingClientRect(), b = to.getBoundingClientRect(), o = board.getBoundingClientRect();
+      const ghost = from.cloneNode(true);
+      ghost.classList.add('bee-web-ghost');
+      ghost.querySelector('.bee-web-sc')?.replaceChildren();
+      Object.assign(ghost.style, { left: `${a.left - o.left}px`, top: `${a.top - o.top}px`, width: `${a.width}px`, height: `${a.height}px` });
+      board.append(ghost);
+      if (wire) wire.classList.add('is-lit', 'is-drawing');
+      const dx = b.left - a.left, dy = b.top - a.top;
+      ghost.animate([
+        { transform: 'translate(0, 0) scale(1)' },
+        { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 14}px) scale(1.1)`, offset: 0.5 },
+        { transform: `translate(${dx}px, ${dy}px) scale(1)` },
+      ], { duration: 1000, easing: 'cubic-bezier(.45, .05, .25, 1)', fill: 'forwards' }).finished.then(() => {
+        to.classList.remove('is-pending');          // the slot already holds them, waiting to be shown
+        to.classList.add('is-arrived');
+        ghost.remove();
+        if (to.dataset.slot === 'champ') chime();
+      }).catch(() => ghost.remove());
+    }, 1100);
   }
 
   /* ── the qualifying minute: another player's count, when it comes (a player gone: none) ── */
@@ -2466,35 +2580,32 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       .map((r, n) => ({ ...r, place: n + 1, through: n < B }));
     table.forEach((r) => seedOf.set(r.seat, r.place));
     if (pace) { chime(); readAloud('The qualifying table.'); }
-    await showBoard('The qualifying table', tableHtml(table), 8000);
+    await showBoard('The qualifying table', tableHtml(table, B), 9000);
     table.filter((r) => !r.through).forEach((r) => kids[r.seat].classList.add('is-out'));
     // 2. the knockout: 1 v 4 and 2 v 3 (1 v 8, 4 v 5, 2 v 7, 3 v 6 in a bracket of eight)
     const seeds = table.slice(0, B).map((r) => seats[r.seat]);
     const order = B === 8 ? [[0, 7], [3, 4], [1, 6], [2, 5]] : B === 4 ? [[0, 3], [1, 2]] : [[0, 1]];
-    let round = order.map(([a, b]) => ({ a: seeds[a], b: seeds[b], w: null, sc: null }));
-    const rounds = [round];
+    const total = Math.log2(B);
+    const rounds = [order.map(([a, b]) => ({ a: seeds[a], b: seeds[b], w: null, sc: null }))];
+    for (let r = 1; r < total; r++) rounds.push(Array.from({ length: B / 2 ** (r + 1) }, () => ({ a: null, b: null, w: null, sc: null })));
     let m = 0;
-    for (;;) {
-      const r = rounds.length - 1;
-      for (const mt of round) {
+    for (let r = 0; r < total; r++) {
+      for (let j = 0; j < rounds[r].length; j++) {
+        const mt = rounds[r][j];
         if (gone) return;
         // nothing more can happen to a player: offer the end
         skipBtn.hidden = skipping || seats.some((s) => s.uid && !kids[s.seat].classList.contains('is-out'));
-        await showBoard(roundsName(r, B), webHtml(rounds, mt, B), 4500);
+        await showBoard(roundsName(r, B), webHtml(rounds, B, { now: [r, j] }), 4500);
         const res = await playMatch(m++, [mt.a, mt.b], roundName(r, B));
         if (gone) return;
         mt.w = res.w === 0 ? mt.a : mt.b;
         mt.sc = res.sc;
         kids[(mt.w === mt.a ? mt.b : mt.a).seat].classList.add('is-out');
-        await showBoard(roundsName(r, B), webHtml(rounds, null, B), 3500);
+        if (r + 1 < total) rounds[r + 1][j >> 1][j % 2 ? 'b' : 'a'] = mt.w;
+        await showBoard(roundsName(r, B), webHtml(rounds, B, { just: [r, j] }), 6000, (board) => advance(board, r, j));
       }
-      if (round.length === 1) break;
-      const next = [];
-      for (let j = 0; j < round.length; j += 2) next.push({ a: round[j].w, b: round[j + 1].w, w: null, sc: null });
-      rounds.push(next);
-      round = next;
     }
-    const champ = round[0].w;
+    const champ = rounds[total - 1][0].w;
     // the placings: how far each got, then the qualifying table (losers of a round share a place)
     const depth = new Map(table.map((r) => [r.seat, -1]));
     const label = new Map(table.map((r) => [r.seat, `Qualifying: ${r.c} right`]));
@@ -2511,7 +2622,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     pace = 1; settle();
     skipBtn.hidden = true;
     stopClock(); clearScreen();
-    await showBoard('The champion', webHtml(rounds, null, B), 3500);
+    await showBoard('The champion', webHtml(rounds, B), 3500);
     kids[champ.seat].classList.remove('is-out');
     kids[champ.seat].classList.add('is-champion');
     say(`${who(champ)} wins the tournament!`);
