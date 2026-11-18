@@ -240,6 +240,11 @@ const spellIds = () => [...spellSets].sort((a, b) => a - b).map((n) => setId(spe
 const spellTime = () => roundSeconds(spellIds(), spellLevel);
 // The Spelling Bee: the room's clock is the seconds each speller gets at the microphone.
 const isBee = () => categoryValue === 'spelling' && operations.has('spellBee');
+/* The Math Bee: a number topic played as a bee in the hall (a minute each at the pulpit, the most
+   correct answers wins). It is a game mode beside Multiplayer and Versus. */
+const MATH_BEE_CATS = ['basic', 'exponent', 'integers'];
+const isMathBee = () => MATH_BEE_CATS.includes(categoryValue) && mode === 'mathbee';
+const isAnyBee = () => isBee() || isMathBee();
 // the speller this player chooses to be, at the Spelling Bee (remembered)
 let beeKid = mem.get('beeKid', BEE_SPELLERS[0].key, BEE_SPELLERS.map((k) => k.key));
 // Chemistry's single operation is never offered as a step, so a remembered
@@ -261,7 +266,7 @@ const saveContent = () => mem.save({
 // Bars, 'drill' for everything else. Written to the room doc so a code-joiner
 // plays the host's surface.
 const gameActivity = () => (
-  categoryValue === 'timestable' ? 'grid' : categoryValue === 'fracbars' ? 'bars' : 'drill'
+  categoryValue === 'timestable' ? 'grid' : categoryValue === 'fracbars' ? 'bars' : isMathBee() ? 'mathbee' : 'drill'
 );
 
 function getCurrentUser() {
@@ -314,7 +319,7 @@ function updateStartDisabled() {
 }
 
 function updateStartLabel() {
-  if (mode === 'multiplayer') {
+  if (mode !== 'versus') {
     startLabel.textContent =
       roomAction === 'join' ? 'Join Room' : roomAction === 'create' ? 'Create Room' : 'Find a Room';
     return;
@@ -697,6 +702,7 @@ const GAME_PAGES = {
 function pickCategory(v) {
   if (GAME_PAGES[v]) { window.location.href = GAME_PAGES[v]; return; }
   queueMicrotask(renderTimeStep);   // spelling's clock comes from its words, every other topic's is chosen
+  queueMicrotask(renderModeSize);   // the Math Bee is offered for the number topics only
   if (v !== categoryValue) {
     // Reset the whole branch — a range picked under Basic must not survive
     // into Fractions (which has no range at all). Re-picking the SAME
@@ -756,6 +762,8 @@ options.addSlide('speller', 'Your Speller', () => {});
 
 /* The Spelling Bee is for five players: no Versus, no room of ten (renderModeSize). */
 function renderModeSize() {
+// a Math Bee only for the number topics: anywhere else the mode goes back to Multiplayer
+if (mode === 'mathbee' && !MATH_BEE_CATS.includes(categoryValue)) mode = 'multiplayer';
 renderChoiceStep(options, 'mode', {
   title: 'How do you want to play?',
   subtitle: isBee() ? 'The Spelling Bee is held for five spellers.' : undefined,
@@ -763,6 +771,8 @@ renderChoiceStep(options, 'mode', {
   options: isBee() ? [{ value: 'multiplayer', label: 'Multiplayer', checked: true }] : [
     { value: 'multiplayer', label: 'Multiplayer', checked: mode === 'multiplayer' },
     { value: 'versus', label: 'Versus', checked: mode === 'versus' },
+    ...(MATH_BEE_CATS.includes(categoryValue) ? [{ value: 'mathbee', label: 'Math Bee', checked: mode === 'mathbee',
+      tip: 'A bee in a hall: each contestant has one minute at the pulpit. The judge reads the questions; type each answer and press Enter. The most correct answers wins.' }] : []),
   ],
   onPick: (v) => {
     mode = v;
@@ -772,18 +782,27 @@ renderChoiceStep(options, 'mode', {
     roomCarousel.start('entry');
     codeInput.hidden = roomAction !== 'join';
     updateStartLabel();
-    options.goTo(mode === 'versus' && !isBee() ? 'time' : 'size');
+    renderSizeStep();                              // a Math Bee is five players: the size step follows the mode
+    options.goTo(mode === 'versus' && !isAnyBee() ? 'time' : 'size');
   },
 });
+renderSizeStep();
+}
+function renderSizeStep() {
 renderChoiceStep(options, 'size', {
   title: 'How many players?',
   name: 'drill-size',
   colorOffset: 2,
-  options: isBee() ? [{ value: '5', label: '5 players', checked: true }] : [
+  options: isAnyBee() ? [{ value: '5', label: '5 players', checked: true }] : [
     { value: '5', label: '5 players', checked: roomSize === 5 },
     { value: '10', label: '10 players', checked: roomSize === 10 },
   ],
-  onPick: (v) => { if (!isBee()) { roomSize = Number(v); mem.save({ roomSize }); } options.goTo('time'); },
+  onPick: (v) => {
+    if (!isAnyBee()) { roomSize = Number(v); mem.save({ roomSize }); }
+    // the Math Bee's minute is fixed: next, the speller
+    if (isMathBee()) { renderBeeKidStep(); options.goTo('speller'); return; }
+    options.goTo('time');
+  },
 });
 }
 renderModeSize();
@@ -830,7 +849,7 @@ roomCarousel.addSlide('code', 'Code', () => {});
 
 function renderRoomEntry() {
   const choices =
-    mode === 'multiplayer'
+    mode !== 'versus'
       ? [
           { value: 'quickfill', label: 'Quickfill', checked: roomAction === 'quickfill' },
           { value: 'create', label: 'Create', checked: roomAction === 'create' },
@@ -842,7 +861,7 @@ function renderRoomEntry() {
         ];
 
   renderChoiceStep(roomCarousel, 'entry', {
-    title: mode === 'multiplayer' ? 'How do you want to join?' : 'Create or join the 1v1?',
+    title: mode !== 'versus' ? 'How do you want to join?' : 'Create or join the 1v1?',
     name: 'drill-room-action',
     colorOffset: 2,
     options: choices,
@@ -870,7 +889,7 @@ const opName = (o) => (OPERATION_LABELS[o] || o).split(' ').slice(1).join(' ') |
 const flow = createSectionFlow([
   {
     el: $('drill-section-player'),
-    chips: () => (isBee() ? [{ label: `${myName()} as ${spellerOf(beeKid).call}`, face: spellerOf(beeKid).face }] : playerChips(myName(), avatarUrl(getAvatarSeed()))),
+    chips: () => (isAnyBee() ? [{ label: `${myName()} as ${spellerOf(beeKid).call}`, face: spellerOf(beeKid).face }] : playerChips(myName(), avatarUrl(getAvatarSeed()))),
   },
   {
     el: $('drill-section-topic'),
@@ -915,7 +934,7 @@ const flow = createSectionFlow([
   },
   {
     el: $('drill-section-options'),
-    chips: () => [...optionsChips({ mode: isBee() ? 'multiplayer' : mode, roomSize: isBee() ? BEE_SIZE : roomSize, timeLabel: isBee() ? `${levelOf(spellLevel).label} ${beeSeconds(spellLevel)}s a word` : categoryValue === 'spelling' ? `${levelOf(spellLevel).label} ${clockLabel(spellTime())}` : `${timeLimit}s` }), ...(isBee() ? [{ label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [])],
+    chips: () => isMathBee() ? [{ label: 'Math Bee' }, { label: '5 players' }, { label: '1 minute each' }, { label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [...optionsChips({ mode: isBee() ? 'multiplayer' : mode, roomSize: isBee() ? BEE_SIZE : roomSize, timeLabel: isBee() ? `${levelOf(spellLevel).label} ${beeSeconds(spellLevel)}s a word` : categoryValue === 'spelling' ? `${levelOf(spellLevel).label} ${clockLabel(spellTime())}` : `${timeLimit}s` }), ...(isBee() ? [{ label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [])],
   },
   {
     el: $('drill-section-room'),
@@ -965,7 +984,7 @@ const spellerOf = (key) => BEE_SPELLERS.find((k) => k.key === key) || BEE_SPELLE
 function renderLobbySeats(playerCount, size) {
   lobbySeats.innerHTML = '';
   for (let i = 0; i < size; i++) {
-    if (i === 0 && isBee()) { const k = spellerOf(beeKid); lobbySeats.appendChild(seatSticker(i, null, myName(), k.face)); }
+    if (i === 0 && isAnyBee()) { const k = spellerOf(beeKid); lobbySeats.appendChild(seatSticker(i, null, myName(), k.face)); }
     else if (i === 0) lobbySeats.appendChild(seatSticker(i, getAvatarSeed(), 'You'));
     else if (i < playerCount) lobbySeats.appendChild(seatSticker(i, `Guest${i}`, 'Player'));
     else lobbySeats.appendChild(seatSticker(i, null));
@@ -989,7 +1008,7 @@ function revealBotsStaggered(size, botsNeeded, seed, revealMs) {
     const timer = setTimeout(() => {
       const seatEl = lobbySeats.children[seatIndex];
       if (!seatEl) return;
-      if (isBee()) {                    // the child this bot will be in the hall
+      if (isAnyBee()) {                 // the child this bot will be in the hall
         const k = spellerOf(spellerPool(seed).filter((x) => x !== beeKid)[i]);
         seatEl.replaceWith(seatSticker(seatIndex, null, k.call, k.face));
         return;
@@ -1088,7 +1107,7 @@ function hideResults() {
 const isSpellingRoom = (room) => (room.operations || []).some((o) => /^spell/.test(o));
 /* The Spelling Bee runs in its own hall (js/bee.js) and shows its own placings. It needs
    every real player's uid, so all devices seat them alike: read once from the room. */
-async function playBee(room, myName) {
+async function playBee(room, myName, extra = {}) {
   const uid = auth.currentUser.uid;
   const want = Math.max(1, room.size - (room.botsNeeded || 0));
   let humans = [];
@@ -1104,13 +1123,14 @@ async function playBee(room, myName) {
   humans = humans.sort((a, b) => (a.uid < b.uid ? -1 : 1)).slice(0, room.size);
   await startBee({
     roomId: room.roomId, seed: room.seed, sets: room.tables, turnSeconds: room.timeLimit,
-    humans, botsNeeded: Math.max(0, room.size - humans.length), me: { uid, name: myName, kid: beeKid },
+    humans, botsNeeded: Math.max(0, room.size - humans.length), me: { uid, name: myName, kid: beeKid }, ...extra,
   });
   startBtn.disabled = false;
 }
 
 async function playRoundAndShowResults(room, myName) {
   if ((room.operations || []).includes('spellBee')) { await playBee(room, myName); return; }
+  if (room.activity === 'mathbee') { await playBee(room, myName, { mode: 'math', operations: room.operations }); return; }
   const roster = buildRoster(room, myName);
   // The ROOM decides which surface plays — a grid room predates nothing here,
   // but a joiner who came by code never touched this client's setup, so read it
@@ -1241,7 +1261,7 @@ function makeOnWaiting(waitingStatusText) {
 }
 
 async function runMultiplayer({ timeLimit, operationsList, tablesList, fractionTypesList, compoundsList, myName }) {
-  const size = isBee() ? BEE_SIZE : roomSize;     // a Spelling Bee is for five
+  const size = isAnyBee() ? BEE_SIZE : roomSize;     // a Spelling Bee is for five
   showLobby(size);
   let room;
   try {
@@ -1261,7 +1281,7 @@ async function runMultiplayer({ timeLimit, operationsList, tablesList, fractionT
 }
 
 async function runMultiplayerCreate({ timeLimit, operationsList, tablesList, fractionTypesList, compoundsList, myName }) {
-  const size = isBee() ? BEE_SIZE : roomSize;     // a Spelling Bee is for five
+  const size = isAnyBee() ? BEE_SIZE : roomSize;     // a Spelling Bee is for five
   showLobby(size);
   lobbyStatus.textContent = 'Creating your room…';
   let created;
@@ -1364,7 +1384,7 @@ async function runVersusJoin({ myName }) {
 
 async function runDrill() {
   // the Spelling Bee is held on the whole screen; a browser allows that only inside this tap
-  if (isBee()) beeFullscreen();
+  if (isAnyBee()) beeFullscreen();
   startBtn.disabled = true;
   // The setup is proven good the moment a round starts with it — next visit
   // jumps straight to the last section with these picks as chips.
@@ -1378,7 +1398,7 @@ async function runDrill() {
   const compoundsList = categoryValue === 'chemistry' ? [...compounds] : [];
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
   // Spelling's clock is the words' own (10 a minute, 20 in Focus), not the chosen time.
-  const roundTime = isBee() ? beeSeconds(spellLevel) : categoryValue === 'spelling' ? spellTime() : timeLimit;
+  const roundTime = isBee() ? beeSeconds(spellLevel) : isMathBee() ? 60 : categoryValue === 'spelling' ? spellTime() : timeLimit;
 
   if (mode === 'versus' && !isBee()) {
     if (roomAction === 'join') await runVersusJoin({ timeLimit: roundTime, myName });

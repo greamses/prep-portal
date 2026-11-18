@@ -580,10 +580,21 @@ async function open() {
         return;
       }
     }
+    /* sat already, tries still left (from the result notification, My results, or the link): their result
+       comes first all the same; "See my marked paper" shows it, "Try again" opens a fresh paper */
+    let rvSat = null;
+    if (!locked && !isOwner && used > 0 && !holds()) {
+      try { rvSat = await api(`/api/workbooks/paper/${code}/review`); } catch { /* straight to the paper */ }
+      if (rvSat && rvSat.handedIn) {
+        const pick = await showResultCard(rvSat.score, { marked: !!(rvSat.answers && Object.keys(rvSat.answers).length), again: true });
+        if (pick === "review") locked = true;      // their result, read-only, below; Try again carries on to the paper
+      }
+    }
     if (locked) {
       /* their result: the marked paper when their answers were kept, and the score either way */
-      let rv = null;
-      try { rv = await api(`/api/workbooks/paper/${code}/review`); } catch { /* the paper alone, below */ }
+      let rv = rvSat;
+      const shownCard = !!rvSat;                   // the card was shown already (they chose to see the paper)
+      if (!rv) { try { rv = await api(`/api/workbooks/paper/${code}/review`); } catch { /* the paper alone, below */ } }
       if (rv && rv.handedIn && rv.answers && Object.keys(rv.answers).length) {
         review = rv;
         live.setOn(true);
@@ -592,7 +603,7 @@ async function open() {
         draw(); faces();
         $("xm-check").hidden = true; $("xm-clear").hidden = true;
         say(`Your result: ${rv.score.won} of ${rv.score.outOf}, grade ${rv.score.grade}. Your marked paper is below.`);
-        showResultCard(rv.score, { marked: true });
+        if (!shownCard) showResultCard(rv.score, { marked: true });
         return;
       }
       sheet.dataset.paper = head.paper === "letter" ? "letter" : "a4";
@@ -602,7 +613,7 @@ async function open() {
       say(rv && rv.handedIn
         ? `Your result: ${rv.score.won} of ${rv.score.outOf} (${rv.score.pct}%), grade ${rv.score.grade}. You have used ${tries === 1 ? "your one try" : `all ${tries} tries`} on this paper.`
         : `You have used ${tries === 1 ? "your one try" : `all ${tries} tries`} on this paper, so it cannot be answered again. Your teacher has your score.`);
-      if (rv && rv.handedIn) showResultCard(rv.score);
+      if (rv && rv.handedIn && !shownCard) showResultCard(rv.score);
       return;
     }
     /* the instructions page, when the teacher set one: read first, then Begin. Once per tab, so a
@@ -692,8 +703,8 @@ let paperTitle = "Mock paper";
    notification, the dashboard's My results, or the link) sees their result first: a receipt with the
    score, the percentage, the grade, their best and their tries. "See my marked paper" goes on to it. */
 const GRADE_WORD = { A: "Excellent", B: "Very good", C: "Good", D: "Fair", E: "Pass", F: "Try again" };
-function showResultCard(score, { marked = false } = {}) {
-  if (!score || !score.outOf) return;
+function showResultCard(score, { marked = false, again = false } = {}) {
+  if (!score || !score.outOf) return Promise.resolve("paper");
   const pct = score.pct != null ? score.pct : Math.round((100 * score.won) / score.outOf);
   const g = String(score.grade || "");
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -711,12 +722,18 @@ function showResultCard(score, { marked = false } = {}) {
         ${score.best != null && score.best !== pct ? `<dt>Best</dt><dd>${score.best}%</dd>` : ""}
         <dt>Tries</dt><dd>${used || 1}${tries ? ` of ${tries}` : ""}</dd>
       </dl>
-      <button type="button" class="pp-btn xm-result__go">${marked ? "See my marked paper" : "See the paper"}</button>
+      <div class="xm-result__btns">
+        <button type="button" class="pp-btn xm-result__go">${marked ? "See my marked paper" : "See the paper"}</button>
+        ${again ? `<button type="button" class="pp-btn pp-btn--ghost xm-result__again">Try again</button>` : ""}
+      </div>
     </div></div>`;
   document.body.appendChild(card);
   const go = card.querySelector(".xm-result__go");
-  go.addEventListener("click", () => card.remove());
   go.focus();
+  return new Promise((done) => {
+    go.addEventListener("click", () => { card.remove(); done("review"); });
+    card.querySelector(".xm-result__again")?.addEventListener("click", () => { card.remove(); done("again"); });
+  });
 }
 function triesNote() {
   if (isOwner || tries === 0) return "";

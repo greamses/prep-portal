@@ -376,7 +376,7 @@ service cloud.firestore {
         // across this deploy predates the fields — but present-but-wrong is
         // still rejected. 'bars' is Fraction Bars.
         (!('activity' in request.resource.data) ||
-          request.resource.data.activity in ['drill', 'grid', 'bars']) &&
+          request.resource.data.activity in ['drill', 'grid', 'bars', 'mathbee']) &&
         (!('gridBlanks' in request.resource.data) ||
           request.resource.data.gridBlanks in ['light', 'heavy']) &&
         // Fraction Bars: how the two denominators are related. Optional for

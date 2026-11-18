@@ -23,6 +23,8 @@ export const { matchmake, createCodeRoom, joinRoomByCode } = createRoomClient({
   bucketOf: (c) => {
     if (c.activity === 'grid') return `grid_${c.gridBlanks}`;
     if (c.activity === 'bars') return `bars_${[...c.operations].sort().join(',')}_${c.barsLevel}`;
+    // the Math Bee meets only Math Bees with the same questions
+    if (c.activity === 'mathbee') return `mathbee_${[...c.operations].sort().join(',')}_${[...c.tables].sort((a, b) => a - b).join(',')}`;
     return [
       [...c.operations].sort().join(','),
       [...c.tables].sort((a, b) => a - b).join(','),

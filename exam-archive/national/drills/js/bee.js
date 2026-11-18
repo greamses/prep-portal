@@ -31,6 +31,8 @@
 import { spellingQuestion, sayWord, hush, canSpeak, clipFor, preloadClip, isTalking, sanitizeSpelling, spelledRight } from './spelling.js';
 import { canListen, createSpellMic } from './spell-mic.js';
 import { seatSpellers, createBee, botSpelling } from './bee-logic.js';
+import { questionAt } from './rng.js';
+import { sayMaths } from '/utils/speech-maths.js';
 import { SPELLING_PHRASES, PHRASE } from '/data/spelling/phrases.js';
 import { LETTER } from '/data/spelling/letters.js';
 import { SPELLER_VOICES, LETTER_VOICES, KID_LETTER_SET, JUDGE_KOKORO, KOKORO_NAMES } from '/data/spelling/speller-voices.js';
@@ -1168,7 +1170,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  *   humans  [{ uid, name }] every real player in the room
  *   me      { uid, name }
  */
-export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, me }) {
+export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, me, mode = 'spell', operations = [] }) {
+  const isMath = mode === 'math';                  // the Math Bee: a minute each at the pulpit
+  const BEE_NAME = isMath ? 'Prep Math Bee' : 'Prep Spelling Bee';
   const myKid = KIDS[me.kid] ? me.kid : null;
   const seats = seatSpellers(seed, humans.map((h) => (h.uid === me.uid && myKid ? { ...h, kid: myKid } : h)), botsNeeded);
   const bee = createBee(seats.length);
@@ -1211,7 +1215,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     </div>
     <div class="bee-hall">
       <div class="bee-backdrop"></div>
-      <span class="pp-sticky pp-sticky--c0 pp-sticky--tape bee-banner bee-item" data-item="banner" data-label="Banner">Prep Spelling Bee</span>
+      <span class="pp-sticky pp-sticky--c0 pp-sticky--tape bee-banner bee-item" data-item="banner" data-label="Banner">${BEE_NAME}</span>
+      <div class="bee-pulpit bee-item" data-item="pulpit" data-label="Pulpit" aria-hidden="true"><svg viewBox="0 0 100 110" preserveAspectRatio="none"><defs><linearGradient id="bee-pw" x1="0" x2="1"><stop offset="0" stop-color="#5a3519"/><stop offset=".45" stop-color="#8a5a2f"/><stop offset="1" stop-color="#4a2a12"/></linearGradient><linearGradient id="bee-pt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#a06a3a"/><stop offset="1" stop-color="#6e4421"/></linearGradient></defs><polygon points="4,14 96,14 90,24 10,24" fill="url(#bee-pt)"/><rect x="4" y="11" width="92" height="4" fill="#b98250"/><polygon points="12,24 88,24 84,104 16,104" fill="url(#bee-pw)"/><rect x="10" y="102" width="80" height="8" fill="#3e2410"/><rect x="22" y="40" width="56" height="32" fill="#13234a" stroke="#d4a937" stroke-width="1.6"/><text x="50" y="53" text-anchor="middle" style="font-family: var(--font-mono)" font-size="7" font-weight="700" letter-spacing="1.4" fill="#e9c86a">PREP</text><text x="50" y="65" text-anchor="middle" style="font-family: var(--font-display)" font-size="9.5" font-weight="800" fill="#f6dc85">MATH BEE</text><path d="M70 12 C70 4 74 0 80 -4" fill="none" stroke="#2d3035" stroke-width="2"/><rect x="77" y="-10" width="7" height="9" rx="3" fill="#2c2f33" transform="rotate(30 80 -5)"/></svg></div>
       <div class="bee-judges"></div>
       <div class="bee-stand bee-item" data-item="mic" data-label="Microphone" aria-hidden="true"><svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><defs><linearGradient id="bee-chrome" x1="0" x2="1"><stop offset="0" stop-color="#6d737a"/><stop offset=".45" stop-color="#f1f3f5"/><stop offset="1" stop-color="#5b6168"/></linearGradient><pattern id="bee-mesh" width="1.4" height="1.4" patternUnits="userSpaceOnUse"><rect width="1.4" height="1.4" fill="#2c2f33"/><circle cx=".7" cy=".7" r=".42" fill="#6b7077"/></pattern></defs><path d="M10 85 L2.2 98.6 M10 85 L17.8 98.6 M10 85 L10 99" stroke="#25282c" stroke-width="1.6" stroke-linecap="round"/><rect x="8.4" y="80" width="3.2" height="6" rx="1" fill="#25282c"/><rect x="9.1" y="22" width="1.8" height="59" fill="url(#bee-chrome)"/><rect x="8.3" y="48" width="3.4" height="3" rx="1" fill="#25282c"/><path d="M10.6 30 Q14 40 11 52 Q9 62 12.5 80" fill="none" stroke="#111" stroke-width=".55" opacity=".85"/><rect x="8.4" y="18" width="3.2" height="5" rx="1" fill="#25282c"/><rect x="7.2" y="10" width="5.6" height="9" rx="1.6" fill="#1d1f22"/><rect x="7.6" y="16.2" width="4.8" height=".8" fill="#9aa1a9"/><path d="M5.8 10.5 Q5.8 2 10 2 Q14.2 2 14.2 10.5 Z" fill="url(#bee-mesh)" stroke="#9aa1a9" stroke-width=".5"/><rect x="5.6" y="9.8" width="8.8" height="1.4" rx=".6" fill="url(#bee-chrome)"/><path d="M7.4 4.6 Q8.4 3.2 10 3" stroke="#fff" stroke-width=".5" fill="none" opacity=".5"/></svg></div>
       <div class="bee-tv bee-item" data-item="tv" data-label="TV" aria-label="The screen">
@@ -1220,8 +1225,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
             <p class="bee-letters"></p>
             <input class="bee-input" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" aria-label="Spell the word, one letter at a time. Letters cannot be taken back." disabled />
           </div>
-          <div class="bee-tv-idle" aria-hidden="true"><svg class="bee-bot" viewBox="0 0 64 64" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="#1f2a37" stroke-width="2.6" stroke-linecap="round"/><circle class="bee-bot-ball" cx="32" cy="6" r="3.2" fill="#f4c95d"/><rect x="4" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="52" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="11" y="16" width="42" height="38" rx="14" fill="#7cc4f0"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="#1f2a37"/><circle class="bee-bot-eye" cx="26" cy="31.5" r="3.1" fill="#f4c95d"/><circle class="bee-bot-eye" cx="38" cy="31.5" r="3.1" fill="#f4c95d"/><path class="bee-bot-mouth" d="M24 48 L40 48" stroke="#1f2a37" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg><p class="bee-tv-logo"><small>Prep</small>Spelling Bee</p></div>
+          <div class="bee-tv-idle" aria-hidden="true"><svg class="bee-bot" viewBox="0 0 64 64" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="#1f2a37" stroke-width="2.6" stroke-linecap="round"/><circle class="bee-bot-ball" cx="32" cy="6" r="3.2" fill="#f4c95d"/><rect x="4" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="52" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="11" y="16" width="42" height="38" rx="14" fill="#7cc4f0"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="#1f2a37"/><circle class="bee-bot-eye" cx="26" cy="31.5" r="3.1" fill="#f4c95d"/><circle class="bee-bot-eye" cx="38" cy="31.5" r="3.1" fill="#f4c95d"/><path class="bee-bot-mouth" d="M24 48 L40 48" stroke="#1f2a37" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg><p class="bee-tv-logo"><small>Prep</small>${isMath ? 'Math Bee' : 'Spelling Bee'}</p></div>
           <div class="bee-tv-host" aria-hidden="true"><svg class="bee-bot" viewBox="0 0 64 64" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="#1f2a37" stroke-width="2.6" stroke-linecap="round"/><circle class="bee-bot-ball" cx="32" cy="6" r="3.2" fill="#f4c95d"/><rect x="4" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="52" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="11" y="16" width="42" height="38" rx="14" fill="#7cc4f0"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="#1f2a37"/><circle class="bee-bot-eye" cx="26" cy="31.5" r="3.1" fill="#f4c95d"/><circle class="bee-bot-eye" cx="38" cy="31.5" r="3.1" fill="#f4c95d"/><path class="bee-bot-mouth" d="M24 48 L40 48" stroke="#1f2a37" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg><p class="bee-tv-host-line"></p><div class="bee-tv-award"><svg class="bee-trophy" viewBox="0 0 64 72" aria-hidden="true"><path d="M14 8 H4 V16 Q4 30 18 32" fill="none" stroke="#d4a937" stroke-width="4"/><path d="M50 8 H60 V16 Q60 30 46 32" fill="none" stroke="#d4a937" stroke-width="4"/><path d="M14 4 H50 V20 Q50 40 32 42 Q14 40 14 20 Z" fill="#f2c94c"/><path d="M20 8 H26 V22 Q26 32 32 36 Q22 34 20 22 Z" fill="#fff0b3" opacity=".75"/><rect x="28" y="42" width="8" height="10" fill="#d4a937"/><rect x="18" y="52" width="28" height="7" fill="#b8902e"/><rect x="13" y="59" width="38" height="9" fill="#7a5c1c"/><rect x="22" y="61.5" width="20" height="4" fill="#f2c94c"/></svg><span class="bee-tv-prize"><b>5,000</b> PrepCoins</span></div></div>
+          <div class="bee-tv-math"><p class="bee-mq"></p><p class="bee-ma"></p><p class="bee-mn"></p><input class="bee-math-input" type="text" inputmode="numeric" enterkeyhint="go" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="12" aria-label="Your answer: type it and press Enter" disabled /></div>
           <div class="bee-tv-curtain" aria-hidden="true"></div>
           <span class="bee-tv-static" aria-hidden="true"></span>
           <span class="bee-tv-glare" aria-hidden="true"></span>
@@ -1247,7 +1253,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     <div class="bee-results" hidden>
       <div class="pp-receipt bee-results-card">
         <div class="pp-receipt__paper bee-results-paper">
-          <p class="bee-results-kicker">Prep Spelling Bee</p>
+          <p class="bee-results-kicker">${BEE_NAME}</p>
           <p class="bee-results-title"></p>
           <ol class="bee-results-list"></ol>
           <button type="button" class="pp-btn bee-results-close">Back to the setup</button>
@@ -1255,11 +1261,13 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       </div>
     </div>`;
   const $ = (q) => bd.querySelector(q);
+  if (isMath) bd.classList.add('is-math');
   $('.bee-blob').innerHTML = heroPaint();
   $('.bee-backdrop').innerHTML = hallSvg();
   $('.bee-audience').innerHTML = audienceSvg(seed);
   const judge = $('.bee-judges');
   judge.innerHTML = judgesSvg();
+  if (isMath) judge.querySelectorAll('text').forEach((t) => { if (t.textContent === 'SPELLING BEE') t.textContent = 'MATH BEE'; });   // the table's front panel
   followJudgeMouth(judge);              // her lips follow the speech code's mouth
   const hall = $('.bee-hall'), statusEl = $('.bee-status'), lettersEl = $('.bee-letters'), inputEl = $('.bee-input');
   const clockEl = $('.bee-clock'), toolsEl = $('.bee-tools'), heardEl = $('.bee-heard'), skipBtn = $('.bee-skip');
@@ -1726,9 +1734,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     if (drapes && pace) { if (pace) sfx.swish(); await drapes.open(); }
     curtainBox.hidden = true;
     if (gone || !pace) return endIntro(tv);
-    await host('Hello, learners! Welcome to the Prep Spelling Bee!', HOST('welcome'));
+    await host(`Hello, learners! Welcome to the ${BEE_NAME}!`, isMath ? null : HOST('welcome'));
     if (gone || !pace) return endIntro(tv);
-    await host(`${seats.length} spellers. Listen to your word, spell it letter by letter, and do not miss a single one.`, seats.length === 5 ? HOST('rules-5') : null);
+    await host(isMath ? 'One minute each at the pulpit. Answer as many questions as you can. The most correct answers wins.'
+      : `${seats.length} spellers. Listen to your word, spell it letter by letter, and do not miss a single one.`, !isMath && seats.length === 5 ? HOST('rules-5') : null);
     if (gone || !pace) return endIntro(tv);
     await host('Are you ready? Let the bee begin!', HOST('ready'));
     tv.classList.add('is-title-card');                // the title lands under him
@@ -1820,7 +1829,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const name = ownName(champ);
     const bot = !champ.uid;                          // only a bot's fixed name is recorded
     sfx.drumroll(2.6);
-    await judgeManSays('Ladies and gentlemen, the champion of the Prep Spelling Bee is...', '/media/spelling-judge/champion-is.mp3');
+    await judgeManSays(`Ladies and gentlemen, the champion of the ${BEE_NAME} is...`, isMath ? null : '/media/spelling-judge/champion-is.mp3');
     await wait(900);
     if (gone) return;
     sfx.fanfare();
@@ -1835,7 +1844,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     tv.classList.add('is-host');
     await wait(600);
     // PrepBot never says a player's name (his voice is ElevenLabs): a congratulation without it
-    if (champ === mySeat) await host('Congratulations! You are the champion of the Prep Spelling Bee!', HOST('champion-you'));
+    if (isMath) await host(`Congratulations to our champion! You are the champion of the ${BEE_NAME}!`, null);
+    else if (champ === mySeat) await host('Congratulations! You are the champion of the Prep Spelling Bee!', HOST('champion-you'));
     else if (bot) await host(`Congratulations, ${name}! You are the champion of the Prep Spelling Bee!`, HOST(`champion-${champ.kid}`));
     else await host('Congratulations to our champion! What a wonderful speller you are. You are the champion of the Prep Spelling Bee!', HOST('champion-player'));
     if (gone) return;
@@ -1849,6 +1859,237 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     await wait(1200);
     tv.classList.remove('is-white', 'is-host', 'is-award');
   }
+  /* ══ THE MATH BEE ═══════════════════════════════════════════════════════
+     Each contestant in turn stands at the pulpit for one minute. The judge reads a question (the
+     TV shows it); they type the answer and press Enter; their voice says it, a bell says right or
+     wrong, and the next question comes at once. The most correct answers in the minute wins (then
+     the fewest wrong). Questions come from the drills' own seeded questions (the operations and
+     tables chosen in the setup), each contestant their own run of them, the same on every screen. */
+  const MATH_SECONDS = 60;
+  const mathResults = new Map();   // seat -> { c, w }
+  let mathRanking = [];
+  const mathQ = (seat, i) => questionAt(seed, 50000 + seat.seat * 1000 + i, { operations, tables: sets });
+  const spokenMaths = (t) => sayMaths(String(t).replace(/∛/g, 'the cube root of ').replace(/⁴√/g, 'the fourth root of ').replace(/[()]/g, ' '));
+  const asNumber = (v) => Number(String(v).replace(/[−–]/g, '-').replace(/\s+/g, ''));
+  // a number between 0 and 1 for (seat, n): the same on every device
+  const seeded = (seat, n) => { const x = Math.sin((Number(seed) || 1) * 0.000137 + seat.seat * 97.13 + n * 12.9898) * 43758.5453; return x - Math.floor(x); };
+  function showMath(q, typed, c, w) {
+    const tv = hall.querySelector('.bee-tv');
+    tv.classList.remove('is-idle');
+    tv.classList.add('is-math-q');
+    $('.bee-mq').textContent = q ? `${q} =` : '';
+    $('.bee-ma').textContent = typed || '';
+    $('.bee-ma').classList.toggle('is-empty', !typed);
+    $('.bee-mn').textContent = `${c} correct${w ? ` · ${w} wrong` : ''}`;
+  }
+  function hideMath() { hall.querySelector('.bee-tv').classList.remove('is-math-q', 'is-ok', 'is-bad'); }
+  function mathFlash(ok) {
+    const tv = hall.querySelector('.bee-tv');
+    tv.classList.remove('is-ok', 'is-bad'); void tv.offsetWidth;
+    tv.classList.add(ok ? 'is-ok' : 'is-bad');
+  }
+  /* the judge reads a question: Mr. Whitmore, in the browser's voice (a man's where there is one),
+     his drawn mouth moving; queued behind whatever is being said, never cutting it off */
+  function judgeRead(text) {
+    if (!synth || !pace) return;
+    try {
+      const u = new SpeechSynthesisUtterance(spokenMaths(text));
+      const all = synth.getVoices().filter((v) => /^en[-_]?/i.test(v.lang));
+      const v = all.find((x) => /\b(male|david|george|ryan|guy|daniel|mark|thomas|arthur|fred)\b/i.test(x.name) && !/female/i.test(x.name)) || all[0];
+      if (v) { u.voice = v; u.lang = v.lang; }
+      u.rate = 1.02; u.pitch = 0.9;
+      const lips = hall.querySelector('.bee-jm-lips');
+      let flap = 0, open = false;
+      u.onstart = () => { flap = setInterval(() => { open = !open; drawJudgeLips(lips, open ? 0.45 + Math.random() * 0.5 : 0); }, 140); };
+      u.onend = u.onerror = () => { clearInterval(flap); drawJudgeLips(lips, 0); };
+      synth.speak(u);
+    } catch { /* no voice: the TV shows the question */ }
+  }
+  /* an answer given: cut the judge short, the contestant's voice says it, right or wrong is heard */
+  function answered(seat, v, ok) {
+    try { synth?.cancel(); } catch { /* nothing to stop */ }
+    spellerSays(String(v), seat.kid);
+    if (pace) { if (ok) chime(); else sfx.buzz(); }
+    mathFlash(ok);
+  }
+
+  /* my minute: type, Enter, next */
+  function myMath(seat) {
+    return new Promise((resolve) => {
+      const inp = $('.bee-math-input');
+      let i = 0, c = 0, w = 0, q = null, over = false;
+      const ask = () => { q = mathQ(seat, i); showMath(q.text, '', c, w); judgeRead(q.text); };
+      const onInput = () => {
+        inp.value = inp.value.replace(/[^0-9.\-−]/g, '');
+        showMath(q.text, inp.value, c, w);
+        try { room?.send('mtype', { s: seat.seat, i, v: inp.value }); } catch { /* the other screens just wait */ }
+      };
+      const onKey = (e) => {
+        e.stopPropagation();
+        if (e.key !== 'Enter' || over) return;
+        e.preventDefault();
+        const v = inp.value.trim();
+        if (!v) return;
+        const ok = asNumber(v) === asNumber(q.answer);
+        if (ok) c++; else w++;
+        answered(seat, v, ok);
+        try { room?.send('mans', { s: seat.seat, i, v, ok }); } catch { /* sent with the total at the end */ }
+        i++;
+        inp.value = '';
+        ask();
+      };
+      inp.addEventListener('input', onInput);
+      inp.addEventListener('keydown', onKey);
+      inp.disabled = false;
+      bd.classList.add('is-my-turn');
+      ask();
+      inp.focus();
+      runClock(MATH_SECONDS, () => {
+        over = true;
+        inp.removeEventListener('input', onInput);
+        inp.removeEventListener('keydown', onKey);
+        inp.disabled = true; inp.blur();
+        bd.classList.remove('is-my-turn');
+        const r = { u: me.uid, c, w };
+        publish(1000 + seat.seat, r);
+        resolve(r);
+      });
+    });
+  }
+  /* a bot's minute: how fast and how sure it is come from the seed, and so does every answer, so the
+     count is the same on every screen; the screen plays it out */
+  async function botMath(seat) {
+    const skill = 0.72 + seeded(seat, 1) * 0.24, speed = 2.3 + seeded(seat, 2) * 2.7;
+    const plan = [];
+    let t = 0;
+    for (let i = 0; i < 80; i++) {
+      const dt = speed * (0.6 + seeded(seat, 10 + i) * 0.8);
+      if (t + dt > MATH_SECONDS) break;
+      t += dt;
+      const q = mathQ(seat, i), ok = seeded(seat, 100 + i) < skill;
+      const off = (seeded(seat, 200 + i) < 0.5 ? -1 : 1) * (1 + Math.floor(seeded(seat, 300 + i) * 3));
+      plan.push({ q, at: t, ok, v: ok ? q.answer : (Number.isFinite(asNumber(q.answer)) ? asNumber(q.answer) + off : `${q.answer}?`) });
+    }
+    const r = { c: plan.filter((p) => p.ok).length, w: plan.filter((p) => !p.ok).length };
+    if (!pace) return r;
+    runClock(MATH_SECONDS);
+    const start = Date.now();
+    let c = 0, w = 0;
+    for (const p of plan) {
+      if (gone || !pace) break;
+      showMath(p.q.text, '', c, w);
+      judgeRead(p.q.text);
+      const due = start + p.at * 1000;
+      while (Date.now() < due && !gone && pace) await sleep(80);
+      if (gone || !pace) break;
+      if (p.ok) c++; else w++;
+      showMath(p.q.text, String(p.v), c, w);
+      answered(seat, p.v, p.ok);
+      await sleep(350);
+    }
+    while (Date.now() < start + MATH_SECONDS * 1000 && !gone && pace) await sleep(120);
+    stopClock();
+    return r;
+  }
+  /* another player's minute, from their screen's answers */
+  function theirMath(seat) {
+    const k = 1000 + seat.seat;
+    if (results.has(k)) return Promise.resolve(results.get(k));
+    return new Promise((resolve) => {
+      let i = 0, c = 0, w = 0;
+      const show = (typed = '') => showMath(mathQ(seat, i).text, typed, c, w);
+      show(); judgeRead(mathQ(seat, 0).text);
+      mathWatch = {
+        seat,
+        type: (p) => { if (p.i === i) show(String(p.v || '')); },
+        ans: (p) => {
+          if (p.i !== i) return;
+          if (p.ok) c++; else w++;
+          answered(seat, p.v, !!p.ok);
+          i += 1; show(); judgeRead(mathQ(seat, i).text);
+        },
+      };
+      const started = Date.now();
+      let watch = 0;
+      const finish = (r) => { clearInterval(watch); stopClock(); mathWatch = null; resolve(r); };
+      waiters.set(k, finish);
+      runClock(MATH_SECONDS);
+      // a player whose device has gone: the minute still ends, with what this screen saw
+      watch = setInterval(() => {
+        if (gone) { finish({ u: seat.uid, c, w }); return; }
+        const sec = (Date.now() - started) / 1000;
+        const seen = present.get(seat.uid);
+        const away = sec > 8 && (!seen || Date.now() - seen > 15000);
+        if ((sec > MATH_SECONDS + GRACE || away) && amArbiter(seat.uid)) publish(k, { u: seat.uid, c, w, to: 1 });
+      }, 1000);
+    });
+  }
+  async function mathBee() {
+    if (!gone && pace) { say('One minute each.'); sweep(); tvTitle('ONE MINUTE', 'is-round'); await wait(2200); }
+    clearScreen();
+    for (const seat of seats) {
+      if (gone) return;
+      const el = kids[seat.seat], k = 1000 + seat.seat;
+      const behind = results.has(k) && seat.uid && seat.uid !== me.uid;
+      pace = skipping ? 0 : behind ? 0.12 : 1;
+      settle();
+      // only bots left to go: nothing more can happen to a real player, so offer the end
+      skipBtn.hidden = skipping || seats.slice(seat.seat).some((s) => s.uid);
+      say(`${who(seat)}, to the pulpit.`);
+      speakingKid = el;
+      await walk(el, 'mic');
+      if (gone) return;
+      if (pace) { judgeRead('You have one minute. Here is your first question.'); await wait(2600); }
+      const r = seat === mySeat ? await myMath(seat) : seat.uid ? await theirMath(seat) : await botMath(seat);
+      if (gone) return;
+      mathResults.set(seat.seat, { c: r.c || 0, w: r.w || 0 });
+      hideMath();
+      clearScreen();
+      say(`${who(seat)}: ${r.c || 0} correct.`);
+      if (pace) { judgeRead(`Time! ${r.c || 0} correct.`); await wait(1800); }
+      await walk(el, 'seat');
+    }
+    // the ranking: most correct, then fewest wrong
+    mathRanking = seats.map((s) => ({ seat: s.seat, ...(mathResults.get(s.seat) || { c: 0, w: 0 }) }))
+      .sort((a, b) => b.c - a.c || a.w - b.w || a.seat - b.seat)
+      .map((r, n) => ({ ...r, place: n + 1 }));
+    const champ = seats[mathRanking[0].seat];
+    pace = 1; settle();
+    skipBtn.hidden = true;
+    stopClock(); clearScreen();
+    kids[champ.seat].classList.add('is-champion');
+    say(`${who(champ)} is the champion, with ${mathRanking[0].c} correct!`);
+    sweep();
+    tvTitle('CHAMPION', 'is-round');
+    chime();
+    await walk(kids[champ.seat], 'mic');
+    if (!gone) await award(champ);
+    if (!gone) showMathResults(champ);
+  }
+  function showMathResults(champ) {
+    $('.bee-results-title').textContent = champ === mySeat ? 'You are the champion!' : `Champion: number ${champ.tag}, ${nameOf(champ)}`;
+    const list = $('.bee-results-list');
+    for (const p of mathRanking) {
+      const s = seats[p.seat];
+      const li = document.createElement('li');
+      li.className = `bee-results-row${s === mySeat ? ' is-me' : ''}${p.place === 1 ? ' is-champion' : ''}`;
+      const place = document.createElement('span');
+      place.className = 'bee-results-place';
+      if (p.place === 1) place.innerHTML = UI.trophy(20); else place.textContent = p.place;
+      const name = document.createElement('span');
+      name.className = 'bee-results-name';
+      name.textContent = `No. ${s.tag} ${nameOf(s)}`;
+      const meta = document.createElement('span');
+      meta.className = 'bee-results-meta';
+      meta.textContent = `${p.c} correct${p.w ? `, ${p.w} wrong` : ''}`;
+      li.append(place, name, meta);
+      list.append(li);
+    }
+    $('.bee-results').hidden = false;
+    $('.bee-results-close').addEventListener('click', () => leave({ place: myPlace(), champion: champ, placings: mathRanking }));
+    $('.bee-results-close').focus();
+  }
+
   /** A light sweeps across the stage (a new round). */
   function sweep() {
     hall.classList.remove('is-sweep');
@@ -1869,6 +2110,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   let room = null;
   let nowK = -1, nowQ = null;      // the turn on this screen
   let theirTyping = null;          // (v) => void, while somebody else is spelling
+  let mathWatch = null;            // { seat, ans(p), type(p) }, while somebody else is at the pulpit
   function land(k, r) {
     if (results.has(k)) return;
     results.set(k, r);
@@ -1893,6 +2135,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     r.on('state', (s) => { for (const [key, v] of Object.entries(s || {})) { const m = /^r(\d+)$/.exec(key); if (m && v) land(Number(m[1]), v); } });
     r.on('spell', (p) => { if (p && p.k === nowK && theirTyping) theirTyping(String(p.v || '')); });
     r.on('ask', (p) => { if (p && p.k === nowK && nowQ) speak(p.kind); });
+    r.on('mans', (p) => { if (p && mathWatch && p.s === mathWatch.seat.seat) mathWatch.ans(p); });
+    r.on('mtype', (p) => { if (p && mathWatch && p.s === mathWatch.seat.seat) mathWatch.type(p); });
   }).catch((e) => console.warn('[bee] no live room; playing on this device only:', e));
   const beat = setInterval(() => { try { room?.presence.set({ seat: mySeat ? mySeat.seat : -1, kid: myKid }); } catch { /* ignore */ } }, 5000);
   /** Am I the one device that calls a silent turn? The lowest uid here, not counting the speller. */
@@ -2245,7 +2489,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     leaveFullscreen();
     finished(result);
   }
-  const myPlace = () => (mySeat ? (bee.placings.find((p) => p.seat === mySeat.seat) || {}).place ?? null : null);
+  const myPlace = () => (mySeat ? ((isMath ? mathRanking : bee.placings).find((p) => p.seat === mySeat.seat) || {}).place ?? null : null);
   const leaveBtn = $('.bee-leave');
   leaveBtn.innerHTML = UI.close(18);
   leaveBtn.setAttribute('aria-label', 'Leave the bee');
@@ -2328,10 +2572,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
 
   (async () => {
     pills();
-    say(`Welcome to the Prep Spelling Bee. ${seats.length} spellers. One wrong letter and you leave the stage.`);
+    say(isMath ? `Welcome to the Prep Math Bee. ${seats.length} contestants, one minute each at the pulpit.` : `Welcome to the Prep Spelling Bee. ${seats.length} spellers. One wrong letter and you leave the stage.`);
     // the title, dropping onto the closed curtains tile by tile
     const marquee = $('.bee-marquee');
-    [...'PREP SPELLING BEE'].forEach((ch, i) => { const t = tile(ch === ' ' ? ' ' : ch, 'is-new'); t.style.animationDelay = `${300 + i * 70}ms`; marquee.append(t); });
+    [...(isMath ? 'PREP MATH BEE' : 'PREP SPELLING BEE')].forEach((ch, i) => { const t = tile(ch === ' ' ? ' ' : ch, 'is-new'); t.style.animationDelay = `${300 + i * 70}ms`; marquee.append(t); });
     await Promise.race([joined, sleep(2500)]);
     await wait(1200);
     bd.classList.add('is-curtains-open');           // the curtains sweep open and are tied back in gold
@@ -2342,13 +2586,15 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     await wait(4700);
     if (!gone && pace) await tvIntro();
     if (!gone && pace) {                            // the judges introduce themselves
-      judgeSays('intro');
+      if (isMath) sayWord('Good afternoon, everyone. I am Mrs. Chen, your head judge. Listen carefully, and answer quickly.', judge, { rate: 0.95 });
+      else judgeSays('intro');
       await sleep(500);
       for (let t = 0; t < 140 && isTalking() && !gone; t++) await sleep(100);
       await wait(300);
       if (!gone && pace) await judgeManSays('And I am Mr. Whitmore. Good luck to every one of our spellers!', '/media/spelling-judge/intro.mp3');
       await wait(400);
     }
+    if (isMath) { await mathBee(); return; }        // the Math Bee has its own turns
     if (!gone && pace) {
       say(`Round 1. ${bee.alive.length} spellers.`);
       sweep();

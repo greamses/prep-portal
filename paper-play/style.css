@@ -98,3 +98,4 @@ html, body { overflow-x: clip !important; overflow-y: visible !important; }
 .xm-result__more { display: grid; grid-template-columns: auto auto; gap: 0.15rem 0.8rem; margin: 0.3rem 0 0.6rem; font-family: var(--font-mono); font-size: 0.8rem; }
 .xm-result__more dt { color: var(--text-secondary); text-align: right; }
 .xm-result__more dd { margin: 0; font-weight: 700; text-align: left; }
+.xm-result__btns { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
