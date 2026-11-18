@@ -102,7 +102,18 @@ const CATEGORY_OPERATIONS = {
   // Fractions category uses, read by js/bars.js instead of rng.js.
   fracbars: ['fracAdd', 'fracSub'],
 };
+/* The Math Bee asks from any of the maths topics (the user: "the math bee isn't just for
+   multiplication, it is for all the math drills in the site"): the ones picked bring all their
+   question kinds. Grouped as the drills' own areas. */
+const MATH_BEE_GROUPS = [
+  ['Numbers', ['basic', 'integers', 'exponent', 'fractions', 'percent', 'bases', 'roman']],
+  ['Algebra', ['algebra', 'equations', 'subject']],
+  ['Geometry', ['angles', 'areas', 'pythag', 'circles']],
+];
+const MATH_BEE_TOPICS = MATH_BEE_GROUPS.flatMap(([, list]) => list);
+CATEGORY_OPERATIONS.mathbee = [...new Set(MATH_BEE_TOPICS.flatMap((t) => CATEGORY_OPERATIONS[t]))];
 const CATEGORY_DEFAULT_OPS = {
+  mathbee: CATEGORY_OPERATIONS.basic,
   basic: ['multiply', 'divide'],
   exponent: [],
   fractions: [],
@@ -202,7 +213,7 @@ let timeLimit = mem.get('timeLimit', 60, [30, 60, 90, 120]);
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
-let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'equations', 'subject', 'percent', 'bases', 'roman', 'spelling', 'angles', 'areas', 'pythag', 'circles', 'timestable', 'fracbars']);
+let categoryValue = mem.get('category', 'basic', ['mathbee', 'basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'equations', 'subject', 'percent', 'bases', 'roman', 'spelling', 'angles', 'areas', 'pythag', 'circles', 'timestable', 'fracbars']);
 let range = mem.get('range', 'all', RANGES.map((r) => r.key));
 if (categoryValue === 'algebra' || categoryValue === 'subject' || categoryValue === 'percent' || categoryValue === 'roman' || categoryValue === 'spelling') range = '1-9'; // single digits only
 // Tables (grid filler) only — how much of each 5×5 grid is blank. The grid is
@@ -240,11 +251,18 @@ const spellIds = () => [...spellSets].sort((a, b) => a - b).map((n) => setId(spe
 const spellTime = () => roundSeconds(spellIds(), spellLevel);
 // The Spelling Bee: the room's clock is the seconds each speller gets at the microphone.
 const isBee = () => categoryValue === 'spelling' && operations.has('spellBee');
-/* The Math Bee: a number topic played as a bee in the hall (a minute each at the pulpit, the most
-   correct answers wins). It is a game mode beside Multiplayer and Versus. */
-const MATH_BEE_CATS = ['basic', 'exponent', 'integers'];
-const isMathBee = () => MATH_BEE_CATS.includes(categoryValue) && mode === 'mathbee';
+/* The Math Bee: its own topic (Numbers > Math Bee). The bee hall, a minute each at the pulpit,
+   questions from every topic ticked; the most correct answers wins. */
+const isMathBee = () => categoryValue === 'mathbee';
 const isAnyBee = () => isBee() || isMathBee();
+const mathTopics = new Set(mem.get('mathTopics', ['basic'], Array.isArray).filter((t) => MATH_BEE_TOPICS.includes(t)));
+if (!mathTopics.size) mathTopics.add('basic');
+/** The Math Bee's operations: every kind of question of every topic ticked. */
+function syncMathOps() {
+  operations.clear();
+  for (const t of mathTopics) CATEGORY_OPERATIONS[t].forEach((op) => operations.add(op));
+}
+if (categoryValue === 'mathbee') syncMathOps();
 // the speller this player chooses to be, at the Spelling Bee (remembered)
 let beeKid = mem.get('beeKid', BEE_SPELLERS[0].key, BEE_SPELLERS.map((k) => k.key));
 // Chemistry's single operation is never offered as a step, so a remembered
@@ -258,6 +276,7 @@ const saveContent = () => mem.save({
   fractionTypes: [...fractionTypes], denominators: [...denominators],
   compounds: [...compounds],
   spellSets: [...spellSets], spellBank, spellFocus, spellMaster, spellLevel,
+  mathTopics: [...mathTopics],
   gridBlanks,
   barsLevel,
 });
@@ -298,6 +317,7 @@ function getTablesPool() {
   if (categoryValue === 'fracbars') return [1]; // same — the sums are dealt by js/bars.js
   if (categoryValue === 'chemistry') return [1];
   if (categoryValue === 'spelling') return spellIds(); // the sets of ten, as list code + set number
+  if (categoryValue === 'mathbee') return [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   if (categoryValue === 'fractions') return [...denominators];
   if (isNumbersMode()) return [...tables];
   const list = rangesFor(categoryValue);
@@ -382,6 +402,7 @@ topic.addSlide('area', 'Area', () => {});
 topic.addSlide('category', 'Topic', () => {});
 topic.addSlide('fraction-type', 'Fraction Type', () => {});
 topic.addSlide('operations', 'Operations', () => {});
+topic.addSlide('mathbee-topics', 'Topics', () => {});
 topic.addSlide('range', 'Number Range', () => {});
 topic.addSlide('numbers', 'Numbers', () => {});
 topic.addSlide('denominators', 'Denominators', () => {});
@@ -677,7 +698,7 @@ const AREAS = [
 ];
 const AREA_TOPICS = {
   numbers: [
-    ['basic', 'Arithmetic'], ['integers', 'Integers'], ['exponent', 'Powers & Roots'],
+    ['mathbee', 'Math Bee'], ['basic', 'Arithmetic'], ['integers', 'Integers'], ['exponent', 'Powers & Roots'],
     ['fractions', 'Fractions'], ['percent', 'Percentages'], ['bases', 'Number Bases'], ['roman', 'Roman Numerals'], ['timestable', 'Times Tables Grid'], ['fracbars', 'Fraction Bars'], ['planner', 'Planner'],
   ],
   algebra: [['algebra', 'Expressions'], ['equations', 'Equations'], ['subject', 'Change of Subject']],
@@ -724,7 +745,43 @@ function pickCategory(v) {
   else if (v === 'chemistry') { renderCompoundsPick(); topic.goTo('compounds'); }
   else if (v === 'fractions') { renderFractionTypePick(); topic.goTo('fraction-type'); }
   else if (v === 'spelling') { renderSpellBankStep(); topic.goTo('spell-bank'); }
+  else if (v === 'mathbee') { syncMathOps(); updateStartDisabled(); renderMathTopicsStep(); topic.goTo('mathbee-topics'); }
   else { renderOperationsPick(); topic.goTo('operations'); }
+}
+
+/* The Math Bee: which topics its questions come from, grouped as the drills' areas. */
+function renderMathTopicsStep() {
+  const box = document.createElement('div');
+  box.className = 'mb-topics';
+  for (const [group, list] of MATH_BEE_GROUPS) {
+    const head = document.createElement('p');
+    head.className = 'mb-topics__head';
+    head.textContent = group;
+    const row = document.createElement('div');
+    row.className = 'mb-topics__row';
+    for (const t of list) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `pp-pill mb-topic${mathTopics.has(t) ? ' is-on' : ''}`;
+      b.textContent = TOPIC_LABEL[t] || t;
+      b.setAttribute('aria-pressed', mathTopics.has(t) ? 'true' : 'false');
+      b.addEventListener('click', () => {
+        if (mathTopics.has(t)) { if (mathTopics.size > 1) mathTopics.delete(t); } else mathTopics.add(t);
+        b.classList.toggle('is-on', mathTopics.has(t));
+        b.setAttribute('aria-pressed', mathTopics.has(t) ? 'true' : 'false');
+        syncMathOps(); saveContent(); updateStartDisabled();
+      });
+      row.append(b);
+    }
+    box.append(head, row);
+  }
+  renderCustomStep(topic, 'mathbee-topics', {
+    title: 'Which topics?',
+    subtitle: 'The Math Bee asks questions from every topic you tick: one minute each at the pulpit, the most correct answers wins.',
+    content: box,
+    nextLabel: 'Next',
+    onNext: () => { syncMathOps(); saveContent(); updateStartDisabled(); flow.next(); },
+  });
 }
 
 function renderTopicPick() {
@@ -762,17 +819,14 @@ options.addSlide('speller', 'Your Speller', () => {});
 
 /* The Spelling Bee is for five players: no Versus, no room of ten (renderModeSize). */
 function renderModeSize() {
-// a Math Bee only for the number topics: anywhere else the mode goes back to Multiplayer
-if (mode === 'mathbee' && !MATH_BEE_CATS.includes(categoryValue)) mode = 'multiplayer';
+if (mode === 'mathbee') mode = 'multiplayer';      // the Math Bee was a mode once; it is a topic now
 renderChoiceStep(options, 'mode', {
   title: 'How do you want to play?',
-  subtitle: isBee() ? 'The Spelling Bee is held for five spellers.' : undefined,
+  subtitle: isBee() ? 'The Spelling Bee is held for five spellers.' : isMathBee() ? 'The Math Bee is held for five contestants.' : undefined,
   name: 'drill-mode',
-  options: isBee() ? [{ value: 'multiplayer', label: 'Multiplayer', checked: true }] : [
+  options: isAnyBee() ? [{ value: 'multiplayer', label: 'Multiplayer', checked: true }] : [
     { value: 'multiplayer', label: 'Multiplayer', checked: mode === 'multiplayer' },
     { value: 'versus', label: 'Versus', checked: mode === 'versus' },
-    ...(MATH_BEE_CATS.includes(categoryValue) ? [{ value: 'mathbee', label: 'Math Bee', checked: mode === 'mathbee',
-      tip: 'A bee in a hall: each contestant has one minute at the pulpit. The judge reads the questions; type each answer and press Enter. The most correct answers wins.' }] : []),
   ],
   onPick: (v) => {
     mode = v;
@@ -895,6 +949,7 @@ const flow = createSectionFlow([
     el: $('drill-section-topic'),
     chips: () => {
       const cat = TOPIC_LABEL[categoryValue] || categoryValue;
+      if (categoryValue === 'mathbee') return [{ label: 'Math Bee' }, ...[...mathTopics].map((t) => ({ label: TOPIC_LABEL[t] || t }))];
       // Tables (grid filler) recaps its two dials: size and blank density.
       if (categoryValue === 'timestable') {
         return [

@@ -1,0 +1,60 @@
+/* The result sheet (omr-sheet.js): a marked paper laid out like an OMR answer sheet. */
+.omr { display: grid; gap: 0.6rem; text-align: left; }
+.omr-counts { display: flex; flex-wrap: wrap; gap: 0.4rem 0.9rem; margin: 0; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; }
+.omr-counts .is-r { color: #2f8a47; }
+.omr-counts .is-w { color: #c23b30; }
+.omr-counts .is-b { color: var(--text-tertiary, #8a8478); }
+.omr-grid { columns: 3 9.5rem; column-gap: 1rem; }
+.omr-row { break-inside: avoid; display: flex; align-items: center; gap: 0.35rem; padding: 2px 4px; font-family: var(--font-mono); font-size: 0.72rem; }
+.omr-row[tabindex] { cursor: help; }
+.omr-row[tabindex]:hover, .omr-row[tabindex]:focus { outline: none; background: var(--surface-secondary, rgba(0, 0, 0, 0.05)); }
+.omr-n { width: 1.7rem; text-align: right; font-weight: 700; color: var(--text-secondary, #6b655b); }
+.omr-marks { display: inline-flex; gap: 2px; align-items: center; }
+.omr-b { display: inline-grid; place-items: center; width: 1.15rem; height: 1.15rem; border-radius: 50%; border: 1px solid #b8b0a2; font-size: 0.6rem; color: #8a8478; }
+.omr-b.is-key { border: 2px solid #2f8a47; color: #2f8a47; font-weight: 700; }
+.omr-b.is-chosen { background: #3a342b; border-color: #3a342b; color: #fff; }
+.omr-row.is-r .omr-b.is-chosen { background: #2f8a47; border-color: #2f8a47; }
+.omr-row.is-w .omr-b.is-chosen { background: #c23b30; border-color: #c23b30; }
+.omr-row.is-b { opacity: 0.6; }
+.omr-row.is-b .omr-n::after { content: " ·"; }
+.omr-row.is-w .omr-n { color: #c23b30; }
+.omr-box { min-width: 3.4rem; max-width: 7rem; padding: 0 0.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 1.5px solid #b8b0a2; }
+.omr-row.is-r .omr-box { border-color: #2f8a47; color: #2f8a47; }
+.omr-row.is-w .omr-box { border-color: #c23b30; color: #c23b30; text-decoration: line-through; }
+.omr-key { color: #2f8a47; font-weight: 700; max-width: 5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.omr-sub { margin: 0.4rem 0 0; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary, #8a8478); }
+.omr-areas { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+.omr-areas li { display: grid; grid-template-columns: minmax(0, 1fr) 5rem auto; gap: 0.5rem; align-items: center; font-family: var(--font-mono); font-size: 0.75rem; }
+.omr-area { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.omr-bar { height: 0.45rem; background: var(--surface-secondary, #eee6d8); }
+.omr-bar i { display: block; height: 100%; background: #e8837a; }
+.omr-miss { color: var(--text-secondary, #6b655b); white-space: nowrap; }
+.omr-good, .omr-note, .omr-tipnote { margin: 0; font-size: 0.75rem; color: var(--text-secondary, #6b655b); }
+/* the question card on hover */
+.omr-pop { position: fixed; z-index: 9999; max-height: 70vh; }
+.omr-pop .pp-receipt__paper { max-height: 70vh; overflow-y: auto; padding: 0.9rem 1rem; display: grid; gap: 0.45rem; font-family: var(--font-mono); font-weight: 400; font-size: 0.82rem; }
+.omr-pop__n { margin: 0; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary, #8a8478); }
+.omr-pop__q { line-height: 1.5; }
+.omr-opts { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.2rem; }
+.omr-opts li { padding: 0.15rem 0.4rem; }
+.omr-opts li b { display: inline-block; width: 1.3rem; }
+.omr-opts li.is-key { background: rgba(47, 138, 71, 0.12); color: #1f6b35; }
+.omr-opts li.is-chosen:not(.is-key) { background: rgba(194, 59, 48, 0.12); color: #9b2c23; }
+.omr-pop__ans { margin: 0; display: grid; gap: 0.15rem; font-family: var(--font-mono); font-size: 0.78rem; }
+.omr-pop__ans .is-w { color: #c23b30; }
+.omr-pop__ans .is-r { color: #2f8a47; }
+.omr-pop__h { margin: 0.2rem 0 0; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary, #8a8478); }
+.omr-pop__sol p { margin: 0 0 0.3rem; line-height: 1.5; }
+/* printed */
+.omr-print { margin: 1.2cm; background: #fff; color: #1d1a16; font-family: var(--font-mono, monospace); }
+.omr-print__head { margin-bottom: 0.8rem; border-bottom: 2px solid #1d1a16; padding-bottom: 0.5rem; }
+.omr-print__head h1 { margin: 0.1rem 0; font-family: var(--font-display, sans-serif); font-size: 1.3rem; }
+.omr-print__head p { margin: 0.1rem 0; font-size: 0.85rem; }
+.omr-print__kicker { font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: #6b655b; }
+.omr-print__score b { font-size: 1.1rem; }
+.omr-print .omr-grid { columns: 4 8.5rem; }
+@media print { .omr-print { margin: 0; } .omr-row { opacity: 1 !important; } }
+
+/* the printable sheet, laid out off screen for the PDF / Word download */
+.omr-print-box { position: fixed; left: -20000px; top: 0; width: 760px; padding: 28px 32px; margin: 0; box-sizing: border-box; }
+.omr-print-box .omr-row { opacity: 1; }

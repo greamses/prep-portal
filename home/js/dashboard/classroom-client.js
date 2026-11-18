@@ -116,14 +116,42 @@ function fillMyResults(layout, assignments) {
     const pill = held ? `<span class="db-pill pill-yellow">With your teacher</span>`
       : pct == null ? `<span class="db-pill pill-grey">Sat</span>`
       : `<span class="db-pill ${tone}">${pct}%${a.grade ? ` ${esc(a.grade)}` : ""}</span>`;
-    return `<a class="db-assign-item" href="${esc(a.paperUrl || "#")}" style="text-decoration:none;color:inherit">
-      <div class="db-assign-top">
+    const code = String(a.paperUrl || "").split("/").pop();
+    return `<details class="db-assign-item db-result" data-code="${esc(code)}">
+      <summary class="db-assign-top">
         <div><div class="db-assign-title">${esc(a.activityTitle || "Paper")}</div>
         <div class="db-assign-meta">${esc([score, when(a.updatedMs)].filter(Boolean).join(" · "))}${held ? "Your teacher will release your result." : ""}</div></div>
         ${pill}
-      </div>
-    </a>`;
+      </summary>
+      <div class="db-result-sheet"><div class="db-empty">Loading your sheet…</div></div>
+      <div class="db-result-links"><a class="db-pill pill-blue" href="${esc(a.paperUrl || "#")}">Open the paper</a>
+        <button type="button" class="db-pill pill-grey db-result-print" hidden>Print the sheet</button></div>
+    </details>`;
   }).join("");
+  // the OMR sheet, when a paper is opened: right, wrong, not answered, areas to work on; hover a
+  // wrong answer for the question, the right answer, theirs and the solution
+  host.querySelectorAll("details.db-result").forEach((d) => {
+    d.addEventListener("toggle", async () => {
+      if (!d.open || d.dataset.loaded) return;
+      d.dataset.loaded = "1";
+      const box = d.querySelector(".db-result-sheet");
+      try {
+        const [{ renderOmr, printOmr, mountSheetDownload }, sh] = await Promise.all([
+          import("/utils/components/omr-sheet.js"),
+          api(`/api/workbooks/paper/${encodeURIComponent(d.dataset.code)}/sheet`),
+        ]);
+        renderOmr(box, sh, { hover: true });
+        if (sh && sh.items && sh.items.length) {
+          const pr = d.querySelector(".db-result-print");
+          pr.hidden = false;
+          pr.onclick = () => printOmr(sh);
+          mountSheetDownload(pr, sh);                  // Download beside Print: PDF, Word, Google Docs
+        }
+      } catch (e) {
+        box.innerHTML = `<div class="db-empty">Couldn't load the sheet: ${esc(e.message || "")}</div>`;
+      }
+    });
+  });
 }
 
 async function fillStudentStats(layout, assignments) {

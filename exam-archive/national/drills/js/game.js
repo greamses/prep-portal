@@ -393,6 +393,19 @@ function isCorrectAnswer(typed, answer) {
   return typed === answer;
 }
 
+/** The drills' marking for ANY question, without this round's state: the Math Bee marks with it. */
+export function answerIsRight(q, typed) {
+  const t = powers(String(typed ?? '').trim().replace(/[−–]/g, '-'));
+  if (!t || !q) return false;
+  const answer = q.answer;
+  if (answer && answer.kind === 'pair') return pairCorrect(t, answer);
+  if (answer && typeof answer === 'object') return answer.kind === 'subject' ? checkSubject(t, answer) : checkAlgebra(t, answer);
+  if (q.roman) return t.toUpperCase() === answer;
+  if (q.base) return t.toUpperCase().replace(/^0+(?=.)/, '') === String(answer);
+  if (typeof answer === 'number') { const n = parseFloat(t); return Number.isFinite(n) && Math.abs(n - answer) < 1e-9; }
+  return t.replace(/\s+/g, '') === String(answer).replace(/\s+/g, '');
+}
+
 // Strip to digits plus at most one "/" and at most one "." — neither of
 // which can lead. Everything else a question ever answers with is digits.
 function sanitizeTyped(raw) {

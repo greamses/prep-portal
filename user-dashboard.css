@@ -1093,3 +1093,9 @@
     grid-template-columns: 85px 1fr 32px;
   }
 }
+
+/* My results: a paper opens to its OMR result sheet (utils/components/omr-sheet.js) */
+.db-result > summary { list-style: none; cursor: pointer; }
+.db-result > summary::-webkit-details-marker { display: none; }
+.db-result-sheet { padding: 0.7rem 0 0.4rem; }
+.db-result-links { display: flex; flex-wrap: wrap; gap: 0.4rem; padding-bottom: 0.3rem; }

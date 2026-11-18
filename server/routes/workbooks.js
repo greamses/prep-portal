@@ -859,6 +859,74 @@ module.exports = function () {
     }
   });
 
+  /* ══ THE RESULT SHEET ══════════════════════════════════════════════════
+     GET /api/workbooks/paper/:code/sheet            the signed-in student's own sheet
+     GET /api/workbooks/paper/:code/sheet?uid=…      a student's, for the paper's owner or the admin
+     Like an OMR sheet: every question by number, the answer given and the key, right, wrong or not
+     answered, and the areas to work on (the topics with the most marks missed). The question, the
+     options and the worked solution come too, for the dashboard's hover; a printed sheet leaves them
+     out. Not for a held paper until it is released. */
+  router.get("/paper/:code/sheet", authenticate, async (req, res) => {
+    try {
+      const code = String(req.params.code || "").toUpperCase();
+      if (!codeOk(code)) return res.status(404).json({ error: "No such paper." });
+      const p = await db().collection("sharedPapers").doc(code).get();
+      if (!p.exists) return res.status(404).json({ error: "No such paper." });
+      const a = p.data();
+      const owner = a.ownerUid === req.user.uid || isAdmin(req);
+      const uid = owner && req.query.uid && uidOk(String(req.query.uid)) ? String(req.query.uid) : req.user.uid;
+      const rs = await p.ref.collection("results").doc(uid).get();
+      if (!rs.exists) return res.status(404).json({ error: "No result for this paper yet." });
+      const r = rs.data();
+      const hold = !!(a.head && a.head.holdResults) && a.ownerUid !== uid;
+      if (hold && r.released !== true && !owner) return res.json({ ok: true, held: true });
+      const answers = r.answers || {}, outcome = r.outcome || {};
+      if (!Object.keys(answers).length && !Object.keys(outcome).length) {
+        return res.json({ ok: true, title: a.title || "Mock paper", score: { won: r.lastWon || 0, outOf: r.lastOutOf || 0, pct: r.lastPct || 0, grade: r.grade || "" }, items: [], areas: [], old: true });
+      }
+      const L = "ABCDE";
+      const norm = (s) => String(s ?? "").replace(/\\\(|\\\)|\$/g, "").replace(/\s+/g, "").toLowerCase();
+      const TYPE_AREA = { mcq: "Objective questions", fill: "Fill in the blanks", sub: "Short answers", theory: "Theory" };
+      const items = (Array.isArray(a.questions) ? a.questions : []).map((q, i) => {
+        const type = q.type || "mcq", given = answers[q.id];
+        const blank = given === undefined || String(given).trim() === "";
+        let st = outcome[q.id];
+        if (!st) {
+          if (blank) st = "b";
+          else if (type === "mcq") st = Number(given) === Number(q.answer) ? "r" : "w";
+          else if (type === "fill") st = String(q.answer || "").split(/\s*(?:\s\/\s|\||;|\bor\b)\s*/i).map(norm).includes(norm(given)) ? "r" : "w";
+          else st = "m";
+        }
+        return {
+          n: i + 1, id: q.id, type,
+          chosen: blank ? "" : type === "mcq" ? (L[Number(given)] || "?") : String(given).slice(0, 200),
+          key: type === "mcq" ? (L[Number(q.answer)] || "") : String(q.answer || "").slice(0, 200),
+          st, topic: q.topic || TYPE_AREA[type] || "Questions",
+          text: String(q.text || "").slice(0, 3000),
+          options: Array.isArray(q.options) ? q.options.map((o) => String(o).slice(0, 600)) : [],
+          solution: Array.isArray(q.solution) ? q.solution.map((x) => String(x).slice(0, 1500)) : q.solution ? [String(q.solution).slice(0, 3000)] : [],
+        };
+      });
+      const byTopic = new Map();
+      for (const it of items) {
+        const t = byTopic.get(it.topic) || { topic: it.topic, total: 0, missed: 0 };
+        t.total += 1;
+        if (it.st === "w" || it.st === "b") t.missed += 1;
+        byTopic.set(it.topic, t);
+      }
+      const areas = [...byTopic.values()].filter((t) => t.missed).sort((x, y) => y.missed / y.total - x.missed / x.total || y.missed - x.missed);
+      res.json({
+        ok: true, title: a.title || "Mock paper", name: r.name || "", examNo: r.examNo || "",
+        score: { won: r.lastWon || 0, outOf: r.lastOutOf || 0, pct: r.lastPct || 0, grade: r.grade || "" },
+        items, areas,
+        counts: { right: items.filter((x) => x.st === "r").length, wrong: items.filter((x) => x.st === "w").length, blank: items.filter((x) => x.st === "b").length },
+      });
+    } catch (err) {
+      console.error("[/api/workbooks/paper/sheet]", err.message);
+      res.status(500).json({ error: "Could not build the result sheet." });
+    }
+  });
+
   router.get("/paper/:code/review", authenticate, async (req, res) => {
     try {
       const code = String(req.params.code || "").toUpperCase();
@@ -1101,6 +1169,13 @@ module.exports = function () {
       const examNo = issued || shaded;
       const pct = Math.round((100 * won) / outOf);
       /* the answers themselves, kept only for a paper whose results are held for the teacher (the student's page is rebuilt from them when the results are released) */
+      /* how the paper marked each question (r right, w wrong, b blank, m with the teacher): the result sheet */
+      const keepOutcome = {};
+      if (b.outcome && typeof b.outcome === "object") {
+        for (const k of Object.keys(b.outcome).slice(0, 200)) {
+          if (/^[\w:.-]{1,60}$/.test(k) && ["r", "w", "b", "m"].includes(b.outcome[k])) keepOutcome[k] = b.outcome[k];
+        }
+      }
       const keepAnswers = {};
       if (b.answers && typeof b.answers === "object") {
         for (const k of Object.keys(b.answers).slice(0, 120)) {
@@ -1127,6 +1202,7 @@ module.exports = function () {
           /* the answers, for every paper (not only a held one): a student back with no tries left, or from the
              "your result went in" notification, is shown their marked paper */
           ...(!hold && Object.keys(keepAnswers).length ? { answers: keepAnswers } : {}),
+          ...(Object.keys(keepOutcome).length ? { outcome: keepOutcome } : {}),
           uid: req.user.uid, name: typed || (prev && prev.name) || nameOf(req, p), email: req.user.email || null,
           lastWon: won, lastOutOf: outOf, lastPct: pct, grade: gradeOf(pct), bestPct: best, attempts, ...(examNo ? { examNo } : {}), ...(issued && shaded && shaded !== issued ? { examNoShaded: shaded } : {}),
           firstAt: prev ? prev.firstAt : stamp(), lastAt: stamp(),

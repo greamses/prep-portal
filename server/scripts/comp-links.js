@@ -75,6 +75,9 @@ const svgOf = (url) => {
         marks: 1, lines: mcq ? 0 : 1, svg: svgOf(q.image),
         options: mcq ? opts.slice(0, 5).map(tex) : [],
         answer: mcq ? (typeof q.correctIndex === "number" ? q.correctIndex : 0) : blankKey,
+        /* for the student's result sheet: the area it tests, and the worked solution shown on hover */
+        topic: String(q.topic || "").slice(0, 60),
+        solution: (Array.isArray(q.explanation) ? q.explanation : q.explanation ? [q.explanation] : []).map((x) => tex(String(x))).slice(0, 12),
       };
     });
     const timeText = minutes >= 60 ? `${minutes / 60} hour${minutes > 60 ? "s" : ""}` : `${minutes} minutes`;

@@ -13,7 +13,8 @@
 
 import { paperHtml } from "/prep-math/activity/exam-maker/js/paper.js";
 import { clean, paperMarks, shuffled, BLANK_HEAD } from "/prep-math/activity/exam-maker/js/model.js";
-import { createLive } from "/prep-math/activity/exam-maker/js/live.js";
+import { createLive, matches } from "/prep-math/activity/exam-maker/js/live.js";
+import { renderOmr, printOmr, mountSheetDownload } from "/utils/components/omr-sheet.js";
 import { examGate } from "/utils/components/exam-gate.js";
 import { createWatch } from "/utils/components/exam-watch.js";
 import { createVoice, leaveWarning } from "/utils/components/exam-voice.js";
@@ -371,7 +372,12 @@ function sendResult() {
     const s = live.score(questions);
     if (!s.outOf) return;
     const first = firstSend; firstSend = false;
-    try { await api(`/api/workbooks/paper/${code}/result`, { name: live.name, won: s.won, outOf: s.outOf, first, examNo: live.examNo, answers: live.snapshot() }); } catch { /* the page still works without it */ }
+    const ans = live.snapshot(), outcome = {};
+    for (const q of base) {
+      const g = ans[q.id], blank = g === undefined || String(g).trim() === "";
+      outcome[q.id] = blank ? "b" : q.type === "mcq" ? (g === q.answer ? "r" : "w") : q.type === "fill" ? (matches(g, q.answer) ? "r" : "w") : "m";
+    }
+    try { await api(`/api/workbooks/paper/${code}/result`, { name: live.name, won: s.won, outOf: s.outOf, first, examNo: live.examNo, answers: ans, outcome }); } catch { /* the page still works without it */ }
     /* results still to come (the teacher's review, or the AI marking the written answers): offer to say so when they are ready */
     if (first && (holds() || head.aiMark)) offerPush();
   }, 900);
@@ -722,7 +728,9 @@ function showResultCard(score, { marked = false, again = false } = {}) {
         ${score.best != null && score.best !== pct ? `<dt>Best</dt><dd>${score.best}%</dd>` : ""}
         <dt>Tries</dt><dd>${used || 1}${tries ? ` of ${tries}` : ""}</dd>
       </dl>
+      <div class="xm-result__sheet"></div>
       <div class="xm-result__btns">
+        <button type="button" class="pp-btn pp-btn--ghost xm-result__print" hidden>Print my result sheet</button>
         <button type="button" class="pp-btn xm-result__go">${marked ? "See my marked paper" : "See the paper"}</button>
         ${again ? `<button type="button" class="pp-btn pp-btn--ghost xm-result__again">Try again</button>` : ""}
       </div>
@@ -730,6 +738,16 @@ function showResultCard(score, { marked = false, again = false } = {}) {
   document.body.appendChild(card);
   const go = card.querySelector(".xm-result__go");
   go.focus();
+  /* the OMR sheet: right, wrong and not answered, and the areas to work on */
+  api(`/api/workbooks/paper/${code}/sheet`).then((sh) => {
+    if (!card.isConnected || !sh || !sh.items || !sh.items.length) return;
+    card.classList.add("has-sheet");
+    renderOmr(card.querySelector(".xm-result__sheet"), sh, { hover: true });
+    const pr = card.querySelector(".xm-result__print");
+    pr.hidden = false;
+    pr.addEventListener("click", () => printOmr(sh));
+    mountSheetDownload(pr, sh);                    // and Download: PDF, Word, Google Docs, as every print
+  }).catch(() => { /* the score alone */ });
   return new Promise((done) => {
     go.addEventListener("click", () => { card.remove(); done("review"); });
     card.querySelector(".xm-result__again")?.addEventListener("click", () => { card.remove(); done("again"); });
