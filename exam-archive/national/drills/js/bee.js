@@ -1230,7 +1230,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
           </div>
           <div class="bee-tv-idle" aria-hidden="true"><svg class="bee-bot" viewBox="0 0 64 64" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="#1f2a37" stroke-width="2.6" stroke-linecap="round"/><circle class="bee-bot-ball" cx="32" cy="6" r="3.2" fill="#f4c95d"/><rect x="4" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="52" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="11" y="16" width="42" height="38" rx="14" fill="#7cc4f0"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="#1f2a37"/><circle class="bee-bot-eye" cx="26" cy="31.5" r="3.1" fill="#f4c95d"/><circle class="bee-bot-eye" cx="38" cy="31.5" r="3.1" fill="#f4c95d"/><path class="bee-bot-mouth" d="M24 48 L40 48" stroke="#1f2a37" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg><p class="bee-tv-logo"><small>Prep</small>${isMath ? 'Math Bee' : 'Spelling Bee'}</p></div>
           <div class="bee-tv-host" aria-hidden="true"><svg class="bee-bot" viewBox="0 0 64 64" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="#1f2a37" stroke-width="2.6" stroke-linecap="round"/><circle class="bee-bot-ball" cx="32" cy="6" r="3.2" fill="#f4c95d"/><rect x="4" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="52" y="27" width="8" height="13" rx="4" fill="#f28fb0"/><rect x="11" y="16" width="42" height="38" rx="14" fill="#7cc4f0"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="#1f2a37"/><circle class="bee-bot-eye" cx="26" cy="31.5" r="3.1" fill="#f4c95d"/><circle class="bee-bot-eye" cx="38" cy="31.5" r="3.1" fill="#f4c95d"/><path class="bee-bot-mouth" d="M24 48 L40 48" stroke="#1f2a37" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg><p class="bee-tv-host-line"></p><div class="bee-tv-award"><svg class="bee-trophy" viewBox="0 0 64 72" aria-hidden="true"><path d="M14 8 H4 V16 Q4 30 18 32" fill="none" stroke="#d4a937" stroke-width="4"/><path d="M50 8 H60 V16 Q60 30 46 32" fill="none" stroke="#d4a937" stroke-width="4"/><path d="M14 4 H50 V20 Q50 40 32 42 Q14 40 14 20 Z" fill="#f2c94c"/><path d="M20 8 H26 V22 Q26 32 32 36 Q22 34 20 22 Z" fill="#fff0b3" opacity=".75"/><rect x="28" y="42" width="8" height="10" fill="#d4a937"/><rect x="18" y="52" width="28" height="7" fill="#b8902e"/><rect x="13" y="59" width="38" height="9" fill="#7a5c1c"/><rect x="22" y="61.5" width="20" height="4" fill="#f2c94c"/></svg><span class="bee-tv-prize"><b>5,000</b> PrepCoins</span></div></div>
-          <div class="bee-tv-math"><p class="bee-mh"></p><p class="bee-mq"></p><div class="bee-mw"></div><p class="bee-ma"></p><p class="bee-mn"></p><input class="bee-math-input" type="text" inputmode="text" enterkeyhint="go" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" aria-label="Your answer: type it and press Enter" disabled /></div>
+          <div class="bee-tv-math"><p class="bee-mh"></p><p class="bee-mq"></p><p class="bee-ma"></p><p class="bee-mn"></p><input class="bee-math-input" type="text" inputmode="text" enterkeyhint="go" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" aria-label="Your answer: type it and press Enter" disabled /></div>
           <div class="bee-tv-curtain" aria-hidden="true"></div>
           <span class="bee-tv-static" aria-hidden="true"></span>
           <span class="bee-tv-glare" aria-hidden="true"></span>
@@ -1887,10 +1887,18 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   /* ── the TV: everything typeset by MathJax (the drills' own TeX: game.js toTex / texFor) ── */
   const qTex = (q) => { const b = q.tex || toTex(q.text); return /=|\\square|\?/.test(b) ? b : `${b} = \\,?`; };
   let shownKey = '';
+  /* a bot's working: in a thought bubble over its head at the pulpit (not on the TV), a line at a time */
+  let thought = null;
   function setWork(lines) {
-    const box = $('.bee-mw');
-    box.replaceChildren(...lines.map((tex) => { const el = document.createElement('p'); drawMath(el, tex, ''); return el; }));
-    $('.bee-tv-math').classList.toggle('has-work', lines.length > 0);
+    if (!thought) {
+      thought = document.createElement('div');
+      thought.className = 'bee-think';
+      thought.setAttribute('aria-hidden', 'true');
+      thought.innerHTML = '<span class="bee-think__dot bee-think__dot--1"></span><span class="bee-think__dot bee-think__dot--2"></span><div class="bee-think__cloud"><div class="bee-think__lines"></div></div>';
+      hall.append(thought);
+    }
+    thought.querySelector('.bee-think__lines').replaceChildren(...lines.map((tex) => { const el = document.createElement('p'); drawMath(el, tex, ''); return el; }));
+    thought.classList.toggle('is-on', lines.length > 0);
   }
   function showMath(q, typed, c, w) {
     const tv = hall.querySelector('.bee-tv');
@@ -2033,6 +2041,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       const lines = p.easy ? [] : working(p.q).slice(0, p.ok ? undefined : -1);
       const due = start + p.at * 1000, from = due - p.dt * 1000, span = Math.max(1000, p.dt * 1000 - 700);
       let shown = 0;
+      if (!p.easy) { thought || setWork([]); thought.classList.add('is-on'); }
       while (Date.now() < due && !gone && pace) {
         const el = Date.now() - from;
         const want = lines.filter((_, j) => el >= ((j + 1) * span) / (lines.length + 1)).length;
@@ -2044,6 +2053,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       showMath(p.q, p.v, c, w);
       answered(seat, p.v, p.ok);
       await sleep(p.easy ? 350 : 900);
+      setWork([]);
     }
     while (Date.now() < start + MATH_SECONDS * 1000 && !gone && pace) await sleep(120);
     stopReading();

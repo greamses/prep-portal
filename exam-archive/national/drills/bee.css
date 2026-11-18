@@ -650,11 +650,30 @@
 .bee-mh:empty { display: none; }
 .bee-tv-math { grid-template-rows: auto 1fr auto auto; }
 
-/* the Math Bee's TV: hint, question, a bot's working (line by line), the answer, the count */
-.bee-tv-math { grid-template-rows: auto auto 1fr auto auto; }
-.bee-mq, .bee-ma, .bee-mw p { line-height: 1.2; }
-.bee-mq mjx-container, .bee-ma mjx-container, .bee-mw mjx-container { margin: 0 !important; }
-.bee-mw { display: grid; align-content: center; justify-items: center; gap: 0.6cqh; min-height: 0; overflow: hidden; font-family: var(--font-mono); font-size: 3.6cqh; color: #cfe6ff; }
-.bee-mw p { margin: 0; animation: bee-work-in 0.35s ease-out both; }
+/* the Math Bee's TV: hint, question, the answer, the count (MathJax) */
+.bee-tv-math { grid-template-rows: auto 1fr auto auto; }
+.bee-mq, .bee-ma { line-height: 1.2; }
+.bee-mq mjx-container, .bee-ma mjx-container { margin: 0 !important; }
+
+/* a bot thinking at the pulpit: a thought cloud beside its head, two little puffs leading to it */
+.bee-think { position: absolute; z-index: 9; left: 44.5%; top: var(--think-top, 49%); pointer-events: none; opacity: 0; scale: 0.6; transform-origin: 0 0; transition: opacity 0.3s, scale 0.35s cubic-bezier(.3, 1.4, .5, 1); }
+.bee-think.is-on { opacity: 1; scale: 1; }
+.bee-think__cloud {
+  position: relative; display: grid; place-items: center; min-width: 15cqw; min-height: 9cqh; padding: 2.4cqh 3.4cqh;
+  background: #fffdf7; border-radius: 50%; box-shadow: 0 0.6cqh 1.6cqh rgba(30, 20, 10, 0.28), inset 0 -0.5cqh 0 rgba(180, 160, 120, 0.18);
+  color: #2a2723; font-family: var(--font-mono); font-size: 2.5cqh;
+}
+.bee-think__cloud::before, .bee-think__cloud::after {           /* the cloud's bumps */
+  content: ""; position: absolute; z-index: -1; border-radius: 50%; background: #fffdf7;
+}
+.bee-think__cloud::before { width: 42%; height: 62%; left: 6%; top: -18%; }
+.bee-think__cloud::after { width: 46%; height: 66%; right: 4%; top: -22%; }
+.bee-think__lines { position: relative; display: grid; justify-items: center; gap: 0.5cqh; }
+.bee-think__lines p { margin: 0; line-height: 1.25; white-space: nowrap; animation: bee-work-in 0.35s ease-out both; }
+.bee-think__lines mjx-container { margin: 0 !important; }
+.bee-think__lines:empty::after { content: "..."; font-weight: 700; letter-spacing: 0.2em; animation: bee-dots 1s steps(4) infinite; }
+.bee-think__dot { position: absolute; border-radius: 50%; background: #fffdf7; box-shadow: 0 0.3cqh 0.8cqh rgba(30, 20, 10, 0.25); }
+.bee-think__dot--1 { width: 1.4cqh; height: 1.4cqh; left: -4.2cqh; top: -1.6cqh; }
+.bee-think__dot--2 { width: 2.4cqh; height: 2.4cqh; left: -1.6cqh; top: 1.4cqh; }
 @keyframes bee-work-in { from { opacity: 0; transform: translateY(0.6cqh); } to { opacity: 1; transform: none; } }
-.bee-tv-math.has-work .bee-mq { font-size: 4.8cqh; }
+@keyframes bee-dots { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
