@@ -557,6 +557,9 @@ async function open() {
     /* whoever holds the link has the paper free, and that includes printing it marked */
     document.documentElement.classList.add("wb-print-ok");
     isOwner = !!r.owner;
+    /* the teacher, from the bell ("Amara scored 68%"): that child's result first */
+    const resultUid = new URLSearchParams(location.search).get("result");
+    if (isOwner && resultUid) await showStudentResult(resultUid);
     tries = r.tries == null ? 1 : r.tries; used = r.used || 0;
     /* back with every try spent: the paper is shown, and nothing on it can be answered */
     locked = !isOwner && tries > 0 && used >= tries;
@@ -704,6 +707,44 @@ function faces() {
 }
 let locked = false;               // came back with no tries left: the paper is shown, not answerable
 let paperTitle = "Mock paper";
+
+/* A child's result, for the paper's owner (the teacher, from the bell or the dashboard): their score
+   and grade, the OMR sheet with the areas to work on (hover a red or grey question for it, their
+   answer, the right one and the solution), Print and Download. "Open the paper" goes on to the paper. */
+async function showStudentResult(uid) {
+  let sh = null;
+  try { sh = await api(`/api/workbooks/paper/${code}/sheet?uid=${encodeURIComponent(uid)}`); } catch { return; }
+  if (!sh || !sh.score) return;
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const s = sh.score, g = String(s.grade || "");
+  const card = document.createElement("div");
+  card.className = "xm-result has-sheet";
+  card.setAttribute("role", "dialog");
+  card.setAttribute("aria-label", `${sh.name || "A student"}'s result`);
+  card.innerHTML = `<div class="pp-receipt xm-result__card"><div class="pp-receipt__paper">
+      <p class="xm-result__kicker">${esc(sh.name || "A student")}'s result${sh.examNo ? ` · Exam no. ${esc(sh.examNo)}` : ""}</p>
+      <p class="xm-result__title">${esc(sh.title || paperTitle)}</p>
+      <p class="xm-result__score"><b>${s.won}</b> of ${s.outOf}</p>
+      <p class="xm-result__pct">${s.pct}%</p>
+      ${g ? `<p class="xm-result__grade"><span>${esc(g)}</span>${esc(GRADE_WORD[g] || "")}</p>` : ""}
+      <div class="xm-result__sheet"></div>
+      <div class="xm-result__btns">
+        <button type="button" class="pp-btn pp-btn--ghost xm-result__print" hidden>Print the result sheet</button>
+        <button type="button" class="pp-btn xm-result__go">Open the paper</button>
+      </div>
+    </div></div>`;
+  document.body.appendChild(card);
+  renderOmr(card.querySelector(".xm-result__sheet"), sh, { hover: true });
+  if (sh.items && sh.items.length) {
+    const pr = card.querySelector(".xm-result__print");
+    pr.hidden = false;
+    pr.addEventListener("click", () => printOmr(sh));
+    mountSheetDownload(pr, sh);
+  }
+  const go = card.querySelector(".xm-result__go");
+  go.focus();
+  await new Promise((done) => go.addEventListener("click", () => { card.remove(); done(); }));
+}
 
 /* THE RESULT PAGE. A student who comes back to a paper they have sat (from the "your result went in"
    notification, the dashboard's My results, or the link) sees their result first: a receipt with the

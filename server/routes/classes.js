@@ -274,7 +274,8 @@ module.exports = function () {
       /* a teacher's own notices (a score came in) share the bell */
       theirs.docs.forEach((d) => {
         const n = d.data();
-        const link = n.kind === "paper" ? `/paper/${n.code}` : n.kind === "workbook" ? `/wb/${n.code}` : "/dashboard.html";
+        /* a paper: straight to that child's result (the paper page opens on it); a workbook: its page */
+        const link = n.kind === "paper" ? `/paper/${n.code}${n.uid ? `?result=${encodeURIComponent(n.uid)}` : ""}` : n.kind === "workbook" ? `/wb/${n.code}` : "/dashboard.html";
         items.push({ id: d.id, src: "t", kind: "result", title: n.title || "Score in", text: `${n.name || "A student"} scored ${n.pct}%.`, url: link, at: ms(n.at), seen: !!n.seen });
       });
       items.sort((a, b) => b.at - a.at);

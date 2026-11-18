@@ -365,6 +365,7 @@ module.exports = function () {
      A short list, newest first, with the unread ones counted. Read is a
      state, not a deletion: the teacher can still see last week's hand-ins. */
   router.get("/notices", authenticate, async (req, res) => {
+    /* (each notice's `url`: a paper's goes straight to that child's result) */
     try {
       const snap = await db().collection("teacherNotices").doc(req.user.uid).collection("items")
         .limit(60).get();
@@ -372,7 +373,7 @@ module.exports = function () {
       const items = snap.docs.map((d) => {
         const n = d.data();
         return {
-          id: d.id, kind: n.kind || "workbook", code: n.code, title: n.title,
+          id: d.id, kind: n.kind || "workbook", code: n.code, title: n.title, uid: n.uid || "",
           name: n.name, right: n.right, total: n.total, pct: n.pct, bestPct: n.bestPct,
           attempts: n.attempts || 1, at: ms(n.at), seen: !!n.seen,
         };

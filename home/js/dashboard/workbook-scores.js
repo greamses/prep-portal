@@ -187,7 +187,7 @@ async function fillNotices(layout) {
     <div class="wbs-new" role="status">
       <p class="wbs-new__cap">${fresh.length} handed in since you last looked</p>
       <ul class="wbs-new__list">${fresh.slice(0, 8).map((n) => `
-        <li><b>${esc(n.name)}</b> checked <em>${esc(n.title)}</em> —
+        <li>${n.kind === "paper" && n.code ? `<a href="/paper/${esc(n.code)}?result=${encodeURIComponent(n.uid || "")}">` : ""}<b>${esc(n.name)}</b> checked <em>${esc(n.title)}</em>${n.kind === "paper" && n.code ? "</a>" : ""} —
           ${n.right} of ${n.total} (${n.pct}%)${n.attempts > 1 ? `, try ${n.attempts}` : ""}
           <span class="wbs-when">${when(n.at)}</span></li>`).join("")}
       </ul>
