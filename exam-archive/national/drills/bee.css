@@ -655,25 +655,28 @@
 .bee-mq, .bee-ma { line-height: 1.2; }
 .bee-mq mjx-container, .bee-ma mjx-container { margin: 0 !important; }
 
-/* a bot thinking at the pulpit: a thought cloud beside its head, two little puffs leading to it */
-.bee-think { position: absolute; z-index: 9; left: 44.5%; top: var(--think-top, 49%); pointer-events: none; opacity: 0; scale: 0.6; transform-origin: 0 0; transition: opacity 0.3s, scale 0.35s cubic-bezier(.3, 1.4, .5, 1); }
+/* a bot thinking: a drawn thought cloud over its head (inside the child, so it goes where they go),
+   three shrinking puffs trailing down to the head. Sized in the child's em, so it scales with them. */
+.bee-think { position: absolute; z-index: 12; left: 56%; bottom: calc(100% + 1.2em); width: max-content; max-width: 14em; pointer-events: none; opacity: 0; scale: 0.4; transform-origin: 15% 115%; transition: opacity 0.25s, scale 0.35s cubic-bezier(.3, 1.4, .5, 1); }
 .bee-think.is-on { opacity: 1; scale: 1; }
-.bee-think__cloud {
-  position: relative; display: grid; place-items: center; min-width: 15cqw; min-height: 9cqh; padding: 2.4cqh 3.4cqh;
-  background: #fffdf7; border-radius: 50%; box-shadow: 0 0.6cqh 1.6cqh rgba(30, 20, 10, 0.28), inset 0 -0.5cqh 0 rgba(180, 160, 120, 0.18);
-  color: #2a2723; font-family: var(--font-mono); font-size: 2.5cqh;
-}
-.bee-think__cloud::before, .bee-think__cloud::after {           /* the cloud's bumps */
-  content: ""; position: absolute; z-index: -1; border-radius: 50%; background: #fffdf7;
-}
-.bee-think__cloud::before { width: 42%; height: 62%; left: 6%; top: -18%; }
-.bee-think__cloud::after { width: 46%; height: 66%; right: 4%; top: -22%; }
-.bee-think__lines { position: relative; display: grid; justify-items: center; gap: 0.5cqh; }
-.bee-think__lines p { margin: 0; line-height: 1.25; white-space: nowrap; animation: bee-work-in 0.35s ease-out both; }
+.bee-think__cloud { position: relative; display: grid; place-items: center; min-width: 6em; min-height: 3.6em; padding: 2.1em 3.2em 2.2em; color: #2a2723; font-family: var(--font-mono); font-size: 0.5em; }
+.bee-think__lines svg { display: block; }
+.bee-think__shape { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0.25em 0.45em rgba(30, 20, 10, 0.3)); }
+.bee-think__shape path { fill: #fffdf6; stroke: rgba(150, 130, 100, 0.45); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.bee-think__lines { position: relative; display: grid; justify-items: center; gap: 0.25em; }
+.bee-think__lines p { margin: 0; font-size: inherit; line-height: 1.2; white-space: nowrap; animation: bee-work-in 0.35s ease-out both; }
 .bee-think__lines mjx-container { margin: 0 !important; }
-.bee-think__lines:empty::after { content: "..."; font-weight: 700; letter-spacing: 0.2em; animation: bee-dots 1s steps(4) infinite; }
-.bee-think__dot { position: absolute; border-radius: 50%; background: #fffdf7; box-shadow: 0 0.3cqh 0.8cqh rgba(30, 20, 10, 0.25); }
-.bee-think__dot--1 { width: 1.4cqh; height: 1.4cqh; left: -4.2cqh; top: -1.6cqh; }
-.bee-think__dot--2 { width: 2.4cqh; height: 2.4cqh; left: -1.6cqh; top: 1.4cqh; }
+.bee-think__lines:empty::after { content: "..."; font-weight: 700; letter-spacing: 0.25em; animation: bee-dots 1s steps(4) infinite; }
+.bee-think__dot { position: absolute; border-radius: 50%; background: #fffdf6; border: 1px solid rgba(150, 130, 100, 0.45); box-shadow: 0 0.1em 0.25em rgba(30, 20, 10, 0.25); }
+.bee-think__dot--1 { width: 0.5em; height: 0.42em; left: 0.5em; bottom: -0.55em; }
+.bee-think__dot--2 { width: 0.32em; height: 0.28em; left: 0.05em; bottom: -1em; }
+.bee-think__dot--3 { width: 0.2em; height: 0.18em; left: -0.3em; bottom: -1.35em; }
+/* the TV: a long question, answer or hint is made smaller to fit, never spills out */
+.bee-tv-math { min-width: 0; overflow: hidden; }
+.bee-mh { max-width: 100%; min-width: 0; }
+.bee-mh { white-space: normal; text-wrap: balance; }
+
+.bee-mq, .bee-ma { display: grid; place-items: center; overflow: visible; }
+.bee-mq svg, .bee-ma svg { flex: none; }
 @keyframes bee-work-in { from { opacity: 0; transform: translateY(0.6cqh); } to { opacity: 1; transform: none; } }
 @keyframes bee-dots { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }

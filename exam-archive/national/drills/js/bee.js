@@ -33,7 +33,7 @@ import { canListen, createSpellMic } from './spell-mic.js';
 import { seatSpellers, createBee, botSpelling } from './bee-logic.js';
 import { questionAt } from './rng.js';
 import { answerIsRight, sanitizeFor, texFor, drawMath, toTex } from './game.js';
-import { answerText, isEasy, working } from './bee-maths.js';
+import { answerText, isEasy, working, slip, setupLines } from './bee-maths.js';
 import { loadMath } from '/utils/components/workbook/mathify.js';
 import { sayMaths } from '/utils/speech-maths.js';
 import { SPELLING_PHRASES, PHRASE } from '/data/spelling/phrases.js';
@@ -1873,14 +1873,6 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   let mathRanking = [];
   const mathQ = (seat, i) => questionAt(seed, 50000 + seat.seat * 1000 + i, { operations, tables: sets });
   const spokenMaths = (t) => sayMaths(String(t).replace(/∛/g, 'the cube root of ').replace(/⁴√/g, 'the fourth root of ').replace(/[()]/g, ' '));
-  // a wrong answer a bot might give: one figure of the right one put off by one
-  const wrongText = (q, n) => {
-    const s = answerText(q);
-    const i = [...s].findIndex((ch) => /\d/.test(ch));
-    if (i < 0) return `${s}?`;
-    const d = (Number(s[i]) + 1 + (n % 3)) % 10;
-    return s.slice(0, i) + d + s.slice(i + 1);
-  };
   // a number between 0 and 1 for (seat, n): the same on every device
   const seeded = (seat, n) => { const x = Math.sin((Number(seed) || 1) * 0.000137 + seat.seat * 97.13 + n * 12.9898) * 43758.5453; return x - Math.floor(x); };
 
@@ -1888,15 +1880,19 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const qTex = (q) => { const b = q.tex || toTex(q.text); return /=|\\square|\?/.test(b) ? b : `${b} = \\,?`; };
   let shownKey = '';
   /* a bot's working: in a thought bubble over its head at the pulpit (not on the TV), a line at a time */
+  /* a bot's working: a thought cloud over ITS head (it goes where the bot goes), a line at a time */
   let thought = null;
-  function setWork(lines) {
+  const CLOUD = '<svg class="bee-think__shape" viewBox="0 0 200 120" preserveAspectRatio="none" aria-hidden="true">'
+    + '<path d="M38 96 C14 98 6 74 22 62 C10 44 28 24 50 30 C56 10 88 4 104 20 C118 4 150 8 154 30 C178 24 196 46 182 64 C198 78 186 102 162 98 C154 116 124 118 112 104 C98 118 66 118 58 102 C52 106 42 104 38 96 Z"/></svg>';
+  function setWork(lines, kidEl) {
     if (!thought) {
       thought = document.createElement('div');
       thought.className = 'bee-think';
       thought.setAttribute('aria-hidden', 'true');
-      thought.innerHTML = '<span class="bee-think__dot bee-think__dot--1"></span><span class="bee-think__dot bee-think__dot--2"></span><div class="bee-think__cloud"><div class="bee-think__lines"></div></div>';
-      hall.append(thought);
+      thought.innerHTML = `<div class="bee-think__cloud">${CLOUD}<div class="bee-think__lines"></div></div>`
+        + '<span class="bee-think__dot bee-think__dot--1"></span><span class="bee-think__dot bee-think__dot--2"></span><span class="bee-think__dot bee-think__dot--3"></span>';
     }
+    if (kidEl && thought.parentElement !== kidEl) kidEl.append(thought);
     thought.querySelector('.bee-think__lines').replaceChildren(...lines.map((tex) => { const el = document.createElement('p'); drawMath(el, tex, ''); return el; }));
     thought.classList.toggle('is-on', lines.length > 0);
   }
@@ -1909,12 +1905,27 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       shownKey = key;
       $('.bee-mh').textContent = q?.hint || '';
       drawMath($('.bee-mq'), q ? qTex(q) : '', q ? q.text : '');
+      fitTV($('.bee-mq'));
       setWork([]);
     }
     const t = q ? sanitizeFor(q, String(typed ?? '')) : '';
     drawMath($('.bee-ma'), t ? texFor(q, t) : '', t);
+    fitTV($('.bee-ma'));
     $('.bee-ma').classList.toggle('is-empty', !t);
     $('.bee-mn').textContent = `${c} correct${w ? ` · ${w} wrong` : ''}`;
+  }
+  /* shrink a typeset line to the room the TV has for it (never larger than drawn) */
+  function fitTV(el) {
+    const svg = el.querySelector('svg');
+    if (!svg) return;
+    svg.style.transform = '';
+    const box = el.getBoundingClientRect(), r = svg.getBoundingClientRect();
+    const tvm = $('.bee-tv-math').getBoundingClientRect();
+    const roomW = tvm.width * 0.94, roomH = el.classList.contains('bee-mq') ? tvm.height * 0.48 : tvm.height * 0.22;
+    const k = Math.min(1, roomW / (r.width || 1), roomH / (r.height || 1));
+    if (k < 1) { svg.style.transformOrigin = '50% 50%'; svg.style.transform = `scale(${k})`; el.style.height = `${r.height * k}px`; el.style.width = `${r.width * k}px`; }
+    else { el.style.height = ''; el.style.width = ''; }
+    void box;
   }
   function hideMath() { shownKey = ''; setWork([]); hall.querySelector('.bee-tv').classList.remove('is-math-q', 'is-ok', 'is-bad'); }
   function mathFlash(ok) {
@@ -2027,8 +2038,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       // (9(x - 3)); only the harder questions can go astray, as sure as the bot is
       const sure = easy || (q.answer && (q.answer.kind === 'factorise' || q.answer.kind === 'distribute'));
       const ok = sure || seeded(seat, 100 + i) < skill - 0.08;
-      const off = (seeded(seat, 200 + i) < 0.5 ? -1 : 1) * (1 + Math.floor(seeded(seat, 300 + i) * 3));
-      plan.push({ i, q, at: t, dt, easy, ok, v: ok ? answerText(q) : (typeof q.answer === 'number' ? String(q.answer + off) : wrongText(q, i)) });
+      let v = answerText(q);
+      if (!ok) { for (let n = i; n < i + 6; n++) { v = slip(q, n); if (!answerIsRight(q, sanitizeFor(q, v))) break; } }
+      plan.push({ i, q, at: t, dt, easy, ok, v });
     }
     const r = { c: plan.filter((p) => p.ok).length, w: plan.filter((p) => !p.ok).length };
     if (!pace) return r;
@@ -2039,26 +2051,27 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       if (gone || !pace) break;
       showMath(p.q, '', c, w);
       readQuestion(seat, p.i);
-      // the working: each line written down in turn across the thinking time (a wrong answer
-      // goes astray before the last line)
-      const lines = p.easy ? [] : working(p.q).slice(0, p.ok ? undefined : -1);
+      // the working: each line written down in turn across the thinking time. A wrong answer is never
+      // thought right and typed wrong: the bot sets up, then its last thought is its own slip.
+      const lines = p.easy ? [] : p.ok ? working(p.q) : [...setupLines(p.q), texFor(p.q, sanitizeFor(p.q, p.v))];
       const due = start + p.at * 1000, from = due - p.dt * 1000, span = Math.max(1000, p.dt * 1000 - 700);
       let shown = 0;
-      if (!p.easy) { thought || setWork([]); thought.classList.add('is-on'); }
+      if (!p.easy) { setWork([], kids[seat.seat]); thought.classList.add('is-on'); }
       while (Date.now() < due && !gone && pace) {
         const el = Date.now() - from;
         const want = lines.filter((_, j) => el >= ((j + 1) * span) / (lines.length + 1)).length;
-        if (want !== shown) { shown = want; setWork(lines.slice(0, shown)); }
+        if (want !== shown) { shown = want; setWork(lines.slice(0, shown), kids[seat.seat]); thought.classList.add('is-on'); }
         await sleep(80);
       }
       if (gone || !pace) break;
       if (p.ok) c++; else w++;
+      setWork([]);                                  // the thought is done: the answer goes up on the TV
       showMath(p.q, p.v, c, w);
       answered(seat, p.v, p.ok);
       await sleep(p.easy ? 350 : 900);
-      setWork([]);
     }
     while (Date.now() < start + MATH_SECONDS * 1000 && !gone && pace) await sleep(120);
+    setWork([]);
     stopReading();
     stopClock();
     return r;

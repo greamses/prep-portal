@@ -272,3 +272,52 @@ function workingLines(q) {
   }
   return [];
 }
+
+/** A wrong answer a bot might give (its n-th try at one): a number put off by a little, one figure of a
+ *  written answer misworked, a Roman numeral's pair turned round, a hex letter slipped. The caller
+ *  checks it really is wrong. */
+export function slip(q, n = 0) {
+  const a = q.answer;
+  if (typeof a === 'number') { const off = (n % 2 ? -1 : 1) * (1 + (n % 3)); return String(a + off).replace('-', MINUS); }
+  const s = answerText(q);
+  if (a && a.kind === 'subject') {              // a step undone the wrong way round
+    if (s.includes('-')) return s.replace('-', '+');
+    if (s.includes('/')) return s.replace('/', '*');
+    if (s.includes('√')) return s.replace('√', '');
+    return `${s}+1`;
+  }
+  if (q.base) {                                 // one figure off, but still a figure of that base
+    const subs = [...String(q.text).matchAll(/[₀-₉]+/g)];
+    const base = subs.length ? subNum(subs[subs.length - 1][0]) : 10;
+    const DIG = '0123456789ABCDEF';
+    const i = s.length - 1 - (n % Math.min(2, s.length));
+    const v = DIG.indexOf(s[i].toUpperCase());
+    return s.slice(0, i) + DIG[(v + 1) % base] + s.slice(i + 1);
+  }
+  if (q.roman) {
+    for (const [x, y] of [['IX', 'XI'], ['IV', 'VI'], ['XC', 'CX'], ['XL', 'LX'], ['CM', 'MC'], ['CD', 'DC']]) if (s.includes(x)) return s.replace(x, y);
+    return n % 2 ? s.slice(0, -1) || 'I' : `${s}I`;
+  }
+  const digits = [...s].map((ch, i) => (/\d/.test(ch) ? i : -1)).filter((i) => i >= 0);
+  if (digits.length) {
+    const i = digits[n % digits.length], d = Number(s[i]);
+    const nd = d >= 8 ? d - 1 - (n % 2) : d + 1 + (n % 2);
+    return s.slice(0, i) + nd + s.slice(i + 1);
+  }
+  const L = [...s].findLastIndex((ch) => /[A-F]/.test(ch));
+  if (L >= 0) return s.slice(0, L) + 'ABCDEF'['ABCDEF'.indexOf(s[L]) + 1 === 6 ? 0 : 'ABCDEF'.indexOf(s[L]) + 1] + s.slice(L + 1);
+  return `${s}1`;
+}
+
+/** The working a bot thinks through before it answers WRONG: the setting-up it got right (the lines
+ *  before the right result shows), at most one line of it, so its last thought is its own slip. */
+export function setupLines(q) {
+  const flat = (x) => String(x).replace(/\\[a-zA-Z]+/g, '').replace(/[{}\s,;]/g, '').replace(/[−–]/g, '-');
+  const want = flat(answerText(q));
+  const out = [];
+  for (const line of working(q)) {
+    if (want && flat(line).includes(want)) break;
+    out.push(line);
+  }
+  return out.slice(0, 1);
+}
