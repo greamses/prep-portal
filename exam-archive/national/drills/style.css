@@ -824,9 +824,8 @@ tbody .drill-grid-th { border-right-width: 2px; }
 /* the Spelling Bee's waiting room: a sticker is the speller, so the picture is a whole child */
 .pp-lobby-seat .pp-face { width: 30px; height: 30px; }
 
-/* the Math Bee's topics: tick any, grouped as the drills' areas */
-.mb-topics { display: grid; gap: 0.4rem; }
-.mb-topics__head { margin: 0.4rem 0 0; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); }
-.mb-topics__row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.mb-topic { cursor: pointer; opacity: 0.55; }
-.mb-topic.is-on { opacity: 1; outline: 2px solid var(--accent-primary); outline-offset: 1px; }
+/* the Math Bee's topics: the usual sticky choices, one row per area */
+.mb-topics__head { margin: 1.1rem 0 0.35rem; text-align: left; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); }
+.mb-topics__head:first-child { margin-top: 0.4rem; }
+.mb-topics .pp-carousel-choices { margin-bottom: 0.9rem; }
+.mb-topics .pp-carousel-choices:last-child { margin-bottom: 0; }

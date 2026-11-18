@@ -751,33 +751,33 @@ function pickCategory(v) {
 
 /* The Math Bee: which topics its questions come from, grouped as the drills' areas. */
 function renderMathTopicsStep() {
+  // the same ticked sticky notes as every other multi-pick step, one row per area
   const box = document.createElement('div');
   box.className = 'mb-topics';
+  let n = 0;
   for (const [group, list] of MATH_BEE_GROUPS) {
     const head = document.createElement('p');
     head.className = 'mb-topics__head';
     head.textContent = group;
-    const row = document.createElement('div');
-    row.className = 'mb-topics__row';
+    const wrap = document.createElement('div');
+    wrap.className = 'pp-carousel-choices sticky-row';
     for (const t of list) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = `pp-pill mb-topic${mathTopics.has(t) ? ' is-on' : ''}`;
-      b.textContent = TOPIC_LABEL[t] || t;
-      b.setAttribute('aria-pressed', mathTopics.has(t) ? 'true' : 'false');
-      b.addEventListener('click', () => {
-        if (mathTopics.has(t)) { if (mathTopics.size > 1) mathTopics.delete(t); } else mathTopics.add(t);
-        b.classList.toggle('is-on', mathTopics.has(t));
-        b.setAttribute('aria-pressed', mathTopics.has(t) ? 'true' : 'false');
+      const label = document.createElement('label');
+      label.className = `pp-sticky pp-sticky--tape sticky-choice pp-sticky--c${(3 + n++) % 6}`;
+      label.innerHTML = `<input type="checkbox" value="${t}" ${mathTopics.has(t) ? 'checked' : ''} /><span>${TOPIC_LABEL[t] || t}</span>`;
+      label.querySelector('input').addEventListener('change', (e) => {
+        if (e.target.checked) mathTopics.add(t);
+        else if (mathTopics.size > 1) mathTopics.delete(t);
+        else e.target.checked = true;                      // at least one topic stays ticked
         syncMathOps(); saveContent(); updateStartDisabled();
       });
-      row.append(b);
+      wrap.append(label);
     }
-    box.append(head, row);
+    box.append(head, wrap);
   }
   renderCustomStep(topic, 'mathbee-topics', {
     title: 'Which topics?',
-    subtitle: 'The Math Bee asks questions from every topic you tick: one minute each at the pulpit, the most correct answers wins.',
+    subtitle: 'Questions come from every topic you tick.',
     content: box,
     nextLabel: 'Next',
     onNext: () => { syncMathOps(); saveContent(); updateStartDisabled(); flow.next(); },
