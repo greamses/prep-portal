@@ -2023,7 +2023,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       const dt = easy ? (0.9 + s * 1.4) * quick : Math.max(5, (5 + s * 4) * quick);
       if (t + dt > MATH_SECONDS) break;
       t += dt;
-      const ok = seeded(seat, 100 + i) < (easy ? skill : skill - 0.08);
+      // never wrong (rushed or not): basic arithmetic, simple factorising (9x + 81) and expanding a bracket
+      // (9(x - 3)); only the harder questions can go astray, as sure as the bot is
+      const sure = easy || (q.answer && (q.answer.kind === 'factorise' || q.answer.kind === 'distribute'));
+      const ok = sure || seeded(seat, 100 + i) < skill - 0.08;
       const off = (seeded(seat, 200 + i) < 0.5 ? -1 : 1) * (1 + Math.floor(seeded(seat, 300 + i) * 3));
       plan.push({ i, q, at: t, dt, easy, ok, v: ok ? answerText(q) : (typeof q.answer === 'number' ? String(q.answer + off) : wrongText(q, i)) });
     }
