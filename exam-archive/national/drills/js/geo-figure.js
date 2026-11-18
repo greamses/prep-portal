@@ -74,6 +74,19 @@ function cornerLabel(v, centre, text, off = 14) {
   const u = unit(v, centre);
   return label([v[0] + u[0] * off, v[1] + u[1] * off], text);
 }
+/* a label INSIDE the angle at v between the directions to p and to q: on the bisector, as far out
+   as its width needs to clear both arms (a narrow angle puts it further out) */
+function angleLabel(v, p, q, text, size = 10, reach = 58) {
+  const u1 = unit(v, p), u2 = unit(v, q);
+  let bx = u1[0] + u2[0], by = u1[1] + u2[1];
+  const bl = Math.hypot(bx, by) || 1; bx /= bl; by /= bl;
+  const half = Math.acos(clamp(u1[0] * u2[0] + u1[1] * u2[1], -1, 1)) / 2;
+  const w = String(text).length * size * 1.25 * 0.62, hgt = size * 1.25;
+  const d = clamp((Math.max(w, hgt) / 2 + 2.5) / Math.max(Math.sin(half), 0.12), 11, Math.max(11, reach));
+  return label([v[0] + bx * d, v[1] + by * d], text, size);
+}
+// the same, the angle given by two directions in degrees (anticlockwise on screen) from v
+const angleLabelDeg = (v, d1, d2, text, size) => angleLabel(v, at(v, 10, d1), at(v, 10, d2), text, size);
 
 /** The diagram for a geometry question, or '' if it is not one. */
 export function geoFigure(q) {
@@ -90,7 +103,7 @@ export function geoFigure(q) {
       drawn.forEach((a, i) => {
         if (i) out += line(O, at(O, 62, from));
         out += arc(O, 12 + (i % 2) * 4, from, from + a);
-        out += label(at(O, a < 30 ? 40 : 30, from + a / 2), names[i], 9.5);
+        out += angleLabelDeg(O, from, from + a, names[i], 9.5);
         from += a;
       });
       return svg(out + dot(O));
@@ -98,14 +111,17 @@ export function geoFigure(q) {
     /* angles in a triangle: drawn with its angles, x at the top */
     if (/in a triangle/.test(h)) {
       const [a0, b0] = nums(t).filter((n) => n !== 180);
-      const [a, b, c] = softAngles([a0, b0, 180 - a0 - b0], 30, 180);
+      const [a, b, c] = softAngles([a0, b0, 180 - a0 - b0].map((x) => x * 0.55 + 60 * 0.45), 32, 180);
       const A = [0, 0], B = [100, 0];
       const AC = (100 * Math.sin(b * R)) / Math.sin(c * R);
       const C = [AC * Math.cos(a * R), -AC * Math.sin(a * R)];
-      const m = fitter([A, B, C]);
-      const [pA, pB, pC] = [m(A), m(B), m(C)];
+      const wide = (p) => [p[0] * 1.5, p[1]];             // drawn wider than true (not to scale): room for both base labels
+      const m = fitter([A, B, C].map(wide));
+      const [pA, pB, pC] = [m(wide(A)), m(wide(B)), m(wide(C))];
       const g = [(pA[0] + pB[0] + pC[0]) / 3, (pA[1] + pB[1] + pC[1]) / 3];
-      return svg(poly([pA, pB, pC]) + cornerLabel(pA, g, `${a0}°`, 20) + cornerLabel(pB, g, `${b0}°`, 20) + cornerLabel(pC, g, 'x', 16));
+      const len = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
+      const reach = (v, p, q) => 0.42 * Math.min(len(v, p), len(v, q));
+      return svg(poly([pA, pB, pC]) + angleLabel(pA, pB, pC, `${a0}°`, 10, reach(pA, pB, pC)) + angleLabel(pB, pA, pC, `${b0}°`, 10, reach(pB, pA, pC)) + angleLabel(pC, pA, pB, 'x', 10, reach(pC, pA, pB)));
     }
     /* a regular polygon of n sides */
     if (/n-sided polygon/.test(h)) {
@@ -116,14 +132,26 @@ export function geoFigure(q) {
         const [p0, p1] = [pts[0], pts[1]];
         const u = unit(p1, p0);
         out += dashed(p0, [p0[0] + u[0] * 22, p0[1] + u[1] * 22]) + cornerLabel(p0, [p0[0] + u[0] * 22 + (pts[n - 1][0] - p0[0]) * 0.4, p0[1] + u[1] * 22 + (pts[n - 1][1] - p0[1]) * 0.4], 'x', 9);
-      } else if (/One interior/.test(h)) out += cornerLabel(pts[0], C, 'x', 11);
+      } else if (/One interior/.test(h)) out += angleLabel(pts[0], pts[1], pts[n - 1], 'x');
+      return svg(out);
+    }
+    /* a bent line between two parallel lines (the Σ shape): a° at the top, b° at the bottom, x at the bend */
+    if (/bent line between parallel/i.test(h)) {
+      const a = clamp(v.a, 25, 75), b = clamp(v.b, 25, 75);
+      const yT = 26, yB = 90, P = [118, (yT + yB) / 2];
+      const T = [P[0] - (P[1] - yT) / Math.tan(a * R), yT], Bp = [P[0] - (yB - P[1]) / Math.tan(b * R), yB];
+      let out = line([8, yT], [156, yT]) + line([8, yB], [156, yB]);
+      out += `<path d="M138 ${yT - 3} l4 3 l-4 3 M138 ${yB - 3} l4 3 l-4 3" fill="none" stroke="${LINE}" stroke-width="1.2"/>`;   // the parallel marks
+      out += `<polyline points="${f1(T[0])},${f1(T[1])} ${f1(P[0])},${f1(P[1])} ${f1(Bp[0])},${f1(Bp[1])}" fill="none" stroke="${LINE}" stroke-width="1.8" stroke-linejoin="round"/>`;
+      out += dot(P);
+      out += angleLabel(T, [T[0] + 10, T[1]], P, `${v.a}°`) + angleLabel(Bp, [Bp[0] + 10, Bp[1]], P, `${v.b}°`) + angleLabel(P, T, Bp, 'x');
       return svg(out);
     }
     /* parallel lines cut by a transversal: a° at the top crossing, x where the rule puts it */
     if (/angles: find x/.test(h)) {
       const a = nums(t)[0], kind = (/([\w-]+) angles/.exec(h) || [])[1] || 'Corresponding';
       const th = Math.max(35, Math.min(80, a < 90 ? a : 180 - a));
-      const T = [70, 34], Bt = [70 + 46 / Math.tan(th * R), 80];
+      const T = [100, 34], Bt = [100 - 46 / Math.tan(th * R), 80];
       const mid = { UR: th / 2, UL: (th + 180) / 2, LL: 180 + th / 2, LR: (180 + th + 360) / 2 };
       const acute = a < 90;
       let top, bot;
@@ -134,7 +162,8 @@ export function geoFigure(q) {
       let out = line([8, 34], [152, 34]) + line([8, 80], [152, 80]);
       out += line([T[0] - dir[0] * 26, T[1] - dir[1] * 26], [Bt[0] + dir[0] * 26, Bt[1] + dir[1] * 26]);
       out += `<path d="M118 31 l4 3 l-4 3 M118 77 l4 3 l-4 3" fill="none" stroke="${LINE}" stroke-width="1.2"/>`;   // the parallel marks
-      out += label(at(T, 13, mid[top]), `${a}°`, 9) + label(at(Bt, 13, mid[bot]), 'x', 10);
+      const span = { UR: [0, th], UL: [th, 180], LL: [180, 180 + th], LR: [180 + th, 360] };
+      out += angleLabelDeg(T, ...span[top], `${a}°`, 9) + angleLabelDeg(Bt, ...span[bot], 'x', 10);
       return svg(out);
     }
     /* rectangle */

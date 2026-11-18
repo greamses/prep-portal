@@ -1221,9 +1221,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       <div class="bee-backdrop"></div>
       <span class="pp-sticky pp-sticky--c0 pp-sticky--tape bee-banner bee-item" data-item="banner" data-label="Banner">${BEE_NAME}</span>
       <div class="bee-platform" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="none"><rect x="6" y="6" width="96" height="34" fill="#6e4421"/><rect x="4" y="2" width="100" height="6" fill="#a06a3a"/><rect x="6" y="8" width="96" height="2" fill="#3e2410" opacity=".5"/><rect x="102" y="18" width="12" height="22" fill="#5a3519"/><rect x="101" y="15" width="14" height="4" fill="#a06a3a"/><rect x="112" y="29" width="8" height="11" fill="#4a2a12"/><rect x="111" y="26" width="9" height="4" fill="#a06a3a"/></svg></div>
-      <div class="bee-pulpit bee-item" data-item="pulpit" data-label="Pulpit" aria-hidden="true"><svg viewBox="0 0 100 110" preserveAspectRatio="none"><defs><linearGradient id="bee-pw" x1="0" x2="1"><stop offset="0" stop-color="#5a3519"/><stop offset=".45" stop-color="#8a5a2f"/><stop offset="1" stop-color="#4a2a12"/></linearGradient><linearGradient id="bee-pt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#a06a3a"/><stop offset="1" stop-color="#6e4421"/></linearGradient></defs><polygon points="4,14 96,14 90,24 10,24" fill="url(#bee-pt)"/><rect x="4" y="11" width="92" height="4" fill="#b98250"/><polygon points="12,24 88,24 84,104 16,104" fill="url(#bee-pw)"/><rect x="10" y="102" width="80" height="8" fill="#3e2410"/><rect x="22" y="40" width="56" height="32" fill="#13234a" stroke="#d4a937" stroke-width="1.6"/><text x="50" y="53" text-anchor="middle" style="font-family: var(--font-mono)" font-size="7" font-weight="700" letter-spacing="1.4" fill="#e9c86a">PREP</text><text x="50" y="65" text-anchor="middle" style="font-family: var(--font-display)" font-size="9.5" font-weight="800" fill="#f6dc85">MATH BEE</text><path d="M70 12 C70 4 74 0 80 -4" fill="none" stroke="#2d3035" stroke-width="2"/><rect x="77" y="-10" width="7" height="9" rx="3" fill="#2c2f33" transform="rotate(30 80 -5)"/></svg></div>
+      <div class="bee-pulpit bee-item" data-item="pulpit" data-label="Pulpit" aria-hidden="true"><svg viewBox="0 0 100 110" preserveAspectRatio="none"><defs><linearGradient id="bee-pw" x1="0" x2="1"><stop offset="0" stop-color="#5a3519"/><stop offset=".45" stop-color="#8a5a2f"/><stop offset="1" stop-color="#4a2a12"/></linearGradient><linearGradient id="bee-pt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#a06a3a"/><stop offset="1" stop-color="#6e4421"/></linearGradient></defs><polygon points="4,14 96,14 90,24 10,24" fill="url(#bee-pt)"/><rect x="4" y="11" width="92" height="4" fill="#b98250"/><polygon points="12,24 88,24 84,104 16,104" fill="url(#bee-pw)"/><rect x="10" y="102" width="80" height="8" fill="#3e2410"/><rect x="24" y="34" width="52" height="56" fill="none" stroke="#3e2410" stroke-width="1.2" opacity=".45"/><rect x="28" y="38" width="44" height="48" fill="none" stroke="#c08a52" stroke-width=".8" opacity=".35"/><g class="bee-buzzer"><rect x="2" y="8.5" width="22" height="4.5" fill="#2c2f33"/><rect x="4" y="7" width="18" height="2" fill="#4a4e55"/><path class="bee-buzzer-dome" d="M5 7.2 Q13 -4 21 7.2 Z"/><path d="M8.5 4.4 Q10.5 1.4 14 1" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round" opacity=".55"/></g><path d="M70 12 C70 4 74 0 80 -4" fill="none" stroke="#2d3035" stroke-width="2"/><rect x="77" y="-10" width="7" height="9" rx="3" fill="#2c2f33" transform="rotate(30 80 -5)"/></svg></div>
       <div class="bee-platform bee-platform--2" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="none"><rect x="6" y="6" width="96" height="34" fill="#6e4421"/><rect x="4" y="2" width="100" height="6" fill="#a06a3a"/><rect x="6" y="8" width="96" height="2" fill="#3e2410" opacity=".5"/><rect x="102" y="18" width="12" height="22" fill="#5a3519"/><rect x="101" y="15" width="14" height="4" fill="#a06a3a"/><rect x="112" y="29" width="8" height="11" fill="#4a2a12"/><rect x="111" y="26" width="9" height="4" fill="#a06a3a"/></svg></div>
-      <div class="bee-pulpit bee-pulpit--2" aria-hidden="true"><svg viewBox="0 0 100 110" preserveAspectRatio="none"><defs><linearGradient id="bee-pw" x1="0" x2="1"><stop offset="0" stop-color="#5a3519"/><stop offset=".45" stop-color="#8a5a2f"/><stop offset="1" stop-color="#4a2a12"/></linearGradient><linearGradient id="bee-pt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#a06a3a"/><stop offset="1" stop-color="#6e4421"/></linearGradient></defs><polygon points="4,14 96,14 90,24 10,24" fill="url(#bee-pt)"/><rect x="4" y="11" width="92" height="4" fill="#b98250"/><polygon points="12,24 88,24 84,104 16,104" fill="url(#bee-pw)"/><rect x="10" y="102" width="80" height="8" fill="#3e2410"/><rect x="22" y="40" width="56" height="32" fill="#13234a" stroke="#d4a937" stroke-width="1.6"/><text x="50" y="53" text-anchor="middle" style="font-family: var(--font-mono)" font-size="7" font-weight="700" letter-spacing="1.4" fill="#e9c86a">PREP</text><text x="50" y="65" text-anchor="middle" style="font-family: var(--font-display)" font-size="9.5" font-weight="800" fill="#f6dc85">MATH BEE</text><path d="M70 12 C70 4 74 0 80 -4" fill="none" stroke="#2d3035" stroke-width="2"/><rect x="77" y="-10" width="7" height="9" rx="3" fill="#2c2f33" transform="rotate(30 80 -5)"/></svg></div>
+      <div class="bee-pulpit bee-pulpit--2" aria-hidden="true"><svg viewBox="0 0 100 110" preserveAspectRatio="none"><defs><linearGradient id="bee-pw" x1="0" x2="1"><stop offset="0" stop-color="#5a3519"/><stop offset=".45" stop-color="#8a5a2f"/><stop offset="1" stop-color="#4a2a12"/></linearGradient><linearGradient id="bee-pt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#a06a3a"/><stop offset="1" stop-color="#6e4421"/></linearGradient></defs><polygon points="4,14 96,14 90,24 10,24" fill="url(#bee-pt)"/><rect x="4" y="11" width="92" height="4" fill="#b98250"/><polygon points="12,24 88,24 84,104 16,104" fill="url(#bee-pw)"/><rect x="10" y="102" width="80" height="8" fill="#3e2410"/><rect x="24" y="34" width="52" height="56" fill="none" stroke="#3e2410" stroke-width="1.2" opacity=".45"/><rect x="28" y="38" width="44" height="48" fill="none" stroke="#c08a52" stroke-width=".8" opacity=".35"/><g class="bee-buzzer"><rect x="2" y="8.5" width="22" height="4.5" fill="#2c2f33"/><rect x="4" y="7" width="18" height="2" fill="#4a4e55"/><path class="bee-buzzer-dome" d="M5 7.2 Q13 -4 21 7.2 Z"/><path d="M8.5 4.4 Q10.5 1.4 14 1" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round" opacity=".55"/></g><path d="M70 12 C70 4 74 0 80 -4" fill="none" stroke="#2d3035" stroke-width="2"/><rect x="77" y="-10" width="7" height="9" rx="3" fill="#2c2f33" transform="rotate(30 80 -5)"/></svg></div>
       <div class="bee-judges"></div>
       <div class="bee-stand bee-item" data-item="mic" data-label="Microphone" aria-hidden="true"><svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><defs><linearGradient id="bee-chrome" x1="0" x2="1"><stop offset="0" stop-color="#6d737a"/><stop offset=".45" stop-color="#f1f3f5"/><stop offset="1" stop-color="#5b6168"/></linearGradient><pattern id="bee-mesh" width="1.4" height="1.4" patternUnits="userSpaceOnUse"><rect width="1.4" height="1.4" fill="#2c2f33"/><circle cx=".7" cy=".7" r=".42" fill="#6b7077"/></pattern></defs><path d="M10 85 L2.2 98.6 M10 85 L17.8 98.6 M10 85 L10 99" stroke="#25282c" stroke-width="1.6" stroke-linecap="round"/><rect x="8.4" y="80" width="3.2" height="6" rx="1" fill="#25282c"/><rect x="9.1" y="22" width="1.8" height="59" fill="url(#bee-chrome)"/><rect x="8.3" y="48" width="3.4" height="3" rx="1" fill="#25282c"/><path d="M10.6 30 Q14 40 11 52 Q9 62 12.5 80" fill="none" stroke="#111" stroke-width=".55" opacity=".85"/><rect x="8.4" y="18" width="3.2" height="5" rx="1" fill="#25282c"/><rect x="7.2" y="10" width="5.6" height="9" rx="1.6" fill="#1d1f22"/><rect x="7.6" y="16.2" width="4.8" height=".8" fill="#9aa1a9"/><path d="M5.8 10.5 Q5.8 2 10 2 Q14.2 2 14.2 10.5 Z" fill="url(#bee-mesh)" stroke="#9aa1a9" stroke-width=".5"/><rect x="5.6" y="9.8" width="8.8" height="1.4" rx=".6" fill="url(#bee-chrome)"/><path d="M7.4 4.6 Q8.4 3.2 10 3" stroke="#fff" stroke-width=".5" fill="none" opacity=".5"/></svg></div>
       <div class="bee-tv bee-item" data-item="tv" data-label="TV" aria-label="The screen">
@@ -1278,6 +1278,21 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     </div>`;
   const $ = (q) => bd.querySelector(q);
   if (isMath) bd.classList.add('is-math');
+  /* the TV is a lit screen: the stage's dimming (.bee-spot) is cut away over it */
+  const keepTvLit = () => {
+    const sp = bd.querySelector('.bee-spot'), tvEl = bd.querySelector('.bee-tv');
+    if (!sp || !tvEl) return;
+    const h = sp.getBoundingClientRect(), t = tvEl.getBoundingClientRect();
+    if (!h.width || !t.width) return;
+    Object.assign(sp.style, {
+      maskImage: 'linear-gradient(#000, #000), linear-gradient(#000, #000)', webkitMaskImage: 'linear-gradient(#000, #000), linear-gradient(#000, #000)',
+      maskSize: `100% 100%, ${t.width}px ${t.height}px`, webkitMaskSize: `100% 100%, ${t.width}px ${t.height}px`,
+      maskPosition: `0 0, ${t.left - h.left}px ${t.top - h.top}px`, webkitMaskPosition: `0 0, ${t.left - h.left}px ${t.top - h.top}px`,
+      maskRepeat: 'no-repeat', webkitMaskRepeat: 'no-repeat', maskComposite: 'exclude', webkitMaskComposite: 'xor',
+    });
+  };
+  requestAnimationFrame(keepTvLit);
+  try { new ResizeObserver(keepTvLit).observe(bd); } catch { /* an old browser: the screen dims with the hall */ }
   if (isMath && cup) bd.classList.add('is-cup');
   $('.bee-blob').innerHTML = heroPaint();
   $('.bee-backdrop').innerHTML = hallSvg();
@@ -1973,12 +1988,18 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     if (key !== shownKey) {
       const tvm = $('.bee-tv-math'), fig = q ? geoFigure(q) : '';
       $('.bee-mfig').innerHTML = fig;                       // a geometry question comes with its diagram
+      const fsvg = $('.bee-mfig svg');
+      if (fsvg) {                                           // cropped to the drawing (labels and all), so it fills its card
+        tvm.classList.add('has-fig');
+        try { const b = fsvg.getBBox(); if (b.width && b.height) fsvg.setAttribute('viewBox', `${(b.x - 7).toFixed(1)} ${(b.y - 7).toFixed(1)} ${(b.width + 14).toFixed(1)} ${(b.height + 14).toFixed(1)}`); } catch { /* not drawn yet: as it comes */ }
+      }
       tvm.classList.toggle('has-fig', !!fig);
       $('.bee-mh').textContent = q?.hint || '';
       drawMath($('.bee-mq'), q ? qTex(q) : '', q ? q.text : '');
       // drawn as plain text (MathJax not up yet): drawn again with MathJax as soon as it is
       shownKey = !q || $('.bee-mq svg') ? key : '';
       fitTV($('.bee-mq'));
+      keepTvLit();
       setWork([]);
     }
     const t = q ? sanitizeFor(q, String(typed ?? '')) : '';
@@ -2057,6 +2078,14 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   /* an answer typed: the reading stops, a bell says right or wrong (nobody says the answer aloud) */
   function answered(seat, v, ok) {
     stopReading();
+    const kid = kids[seat.seat];
+    const pulpit = hall.querySelector(kid?.dataset.pulpit === '2' ? '.bee-pulpit--2' : '.bee-pulpit:not(.bee-pulpit--2)');
+    if (pulpit) {
+      pulpit.classList.remove('is-ok', 'is-bad'); void pulpit.offsetWidth;
+      pulpit.classList.add(ok ? 'is-ok' : 'is-bad');
+      clearTimeout(pulpit._buzz);
+      pulpit._buzz = setTimeout(() => pulpit.classList.remove('is-ok', 'is-bad'), 1100);
+    }
     if (pace) { if (ok) chime(); else sfx.buzz(); }
     mathFlash(ok);
   }
@@ -2557,7 +2586,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const w = sides[res.w];
     say(`${who(w)} wins, ${Math.max(...res.sc)} to ${Math.min(...res.sc)}.`);
     if (pace) { chime(); await wait(1800); }
-    await Promise.all(sides.map((s) => walk(kids[s.seat], 'seat')));
+    // the winner back to their chair; the loser leaves the stage
+    await Promise.all(sides.map((s) => walk(kids[s.seat], s === w ? 'seat' : 'off')));
     return res;
   }
 
@@ -2581,7 +2611,10 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     table.forEach((r) => seedOf.set(r.seat, r.place));
     if (pace) { chime(); readAloud('The qualifying table.'); }
     await showBoard('The qualifying table', tableHtml(table, B), 9000);
-    table.filter((r) => !r.through).forEach((r) => kids[r.seat].classList.add('is-out'));
+    const notThrough = table.filter((r) => !r.through);
+    notThrough.forEach((r) => kids[r.seat].classList.add('is-out'));
+    if (notThrough.length && pace) say(notThrough.length === 1 ? `${who(seats[notThrough[0].seat])} leaves the stage.` : 'The ones who did not qualify leave the stage.');
+    await Promise.all(notThrough.map((r) => walk(kids[r.seat], 'off')));
     // 2. the knockout: 1 v 4 and 2 v 3 (1 v 8, 4 v 5, 2 v 7, 3 v 6 in a bracket of eight)
     const seeds = table.slice(0, B).map((r) => seats[r.seat]);
     const order = B === 8 ? [[0, 7], [3, 4], [1, 6], [2, 5]] : B === 4 ? [[0, 3], [1, 2]] : [[0, 1]];

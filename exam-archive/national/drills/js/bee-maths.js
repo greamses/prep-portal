@@ -213,6 +213,7 @@ function workingLines(q) {
   if (/Sum of the interior/.test(h)) return [`(n - 2)\\times 180 = ${vars.n - 2}\\times 180`, `${a}^{\\circ}`];
   if (/One interior angle/.test(h)) return [`180 - ${frac(360, vars.n)}`, `${a}^{\\circ}`];
   if (/One exterior angle/.test(h)) return [frac(360, vars.n), `${a}^{\\circ}`];
+  if (/bent line between parallel/i.test(h)) return [`\\text{the bend} = a + b`, `x = ${vars.a} + ${vars.b}`, `x = ${a}^{\\circ}`];
   if (/Co-interior angles/.test(h)) return [`\\text{co-interior angles add up to } 180^{\\circ}`, `x = 180 - ${vars.a}`, `x = ${a}^{\\circ}`];
   if (/angles: find x/.test(h)) {
     const kind = /([\w-]+) angles/.exec(h)[1].toLowerCase();

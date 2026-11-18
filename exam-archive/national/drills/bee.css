@@ -457,6 +457,7 @@
   text-shadow: 0 0.25cqh 0 #f6dc85, 0 0.6cqh 1cqh rgba(0, 0, 0, 0.18); animation: bee-title-slam 0.6s cubic-bezier(.2, 1.4, .4, 1);
 }
 .bee-tv.is-title-card .bee-tv-host-line::before { content: "Prep Spelling Bee"; }
+.bee-bd.is-math .bee-tv.is-title-card .bee-tv-host-line::before { content: "Prep Math Bee"; }
 .bee-tv.is-title-card .bee-tv-host-line { font-size: 0; }
 .bee-tv.is-title-card .bee-tv-host-line::before { font-size: 5cqh; }
 @keyframes bee-title-slam { from { transform: scale(2.4); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -695,6 +696,9 @@
 .bee-tv-math.has-fig .bee-mfig { display: grid; place-items: center; grid-column: 2; grid-row: 1 / -1; width: 100%; height: 100%; min-height: 0; overflow: hidden; }
 .bee-tv-math.has-fig > :is(.bee-mh, .bee-mq, .bee-ma, .bee-mn) { grid-column: 1; }
 .bee-mfig svg { display: block; width: 100%; height: 100%; }
+/* the diagram on a white card, in dark ink (it was light lines on the screen) */
+.bee-tv-math.has-fig .bee-mfig { padding: 0.8cqh; }
+.bee-mfig svg { background: #fffdf8; box-shadow: 0 0.4cqh 1.2cqh rgba(0, 0, 0, 0.35); --geo-line: #24324a; --geo-fill: rgba(70, 130, 210, 0.12); --geo-label: #c2410c; }
 .bee-mq { overflow-wrap: anywhere; }
 
 /* ══ the Math Bee tournament ══ */
@@ -813,3 +817,18 @@
 .bee-web-champ .bee-web-nm { font-weight: 800; }
 /* at a tournament pulpit the TV names them (you); the YOU tag would sit on their answer line */
 .bee-bd.is-cup .bee-kid:is(.is-at-mic, .is-at-mic2) .bee-you { opacity: 0; }
+
+/* the buzzer on a pulpit: unlit, green for a right answer, red for a wrong one, pressed */
+.bee-buzzer-dome { fill: #b9b1a3; transition: fill 0.15s; }
+.bee-pulpit.is-ok .bee-buzzer-dome { fill: #36c46e; }
+.bee-pulpit.is-bad .bee-buzzer-dome { fill: #e2463d; }
+.bee-pulpit:is(.is-ok, .is-bad) .bee-buzzer { animation: bee-buzz 0.35s ease-out; transform-box: fill-box; transform-origin: 50% 100%; }
+.bee-pulpit.is-ok .bee-buzzer { filter: drop-shadow(0 0 2.5px #5cf09a) drop-shadow(0 0 6px rgba(54, 196, 110, 0.8)); }
+.bee-pulpit.is-bad .bee-buzzer { filter: drop-shadow(0 0 2.5px #ff7a70) drop-shadow(0 0 6px rgba(226, 70, 61, 0.8)); }
+@keyframes bee-buzz { 30% { transform: scaleY(0.72); } 100% { transform: none; } }
+
+/* a match with a diagram: the race row is narrower, so smaller names, answers and score */
+.bee-tv-math.has-fig.is-duel .bee-duel-score { font-size: 2.8cqh; }
+.bee-tv-math.has-fig.is-duel .bee-duel-ans { min-width: 0; max-width: 100%; font-size: 2.6cqh; min-height: 3.6cqh; }
+.bee-tv-math.has-fig.is-duel .bee-duel-name { font-size: 1.4cqh; }
+.bee-duel-ans { max-width: 100%; }

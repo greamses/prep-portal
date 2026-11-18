@@ -5,7 +5,7 @@
    `hint` says what to find; `text` carries the numbers, typeset by MathJax.
 ═══════════════════════════════════════════════════════ */
 export const GEOMETRY_OPS = [
-  'geoAngLine', 'geoAngTriangle', 'geoAngPolygon', 'geoAngParallel',
+  'geoAngLine', 'geoAngTriangle', 'geoAngPolygon', 'geoAngParallel', 'geoAngBend',
   'geoRect', 'geoTriangle', 'geoTrapezium', 'geoParallelogram',
   'geoHyp', 'geoLeg', 'geoTrig',
   'geoCircumference', 'geoCircleArea', 'geoCuboid', 'geoCylinder', 'geoCone',
@@ -53,6 +53,12 @@ export function geometryQuestion(rng, pool, op) {
     if (a === 90) a = 70;
     const kind = pick(rng, ['Alternate', 'Corresponding', 'Vertically opposite', 'Co-interior']);
     return q(`a = ${a}°`, `${kind} angles: find x`, kind === 'Co-interior' ? 180 - a : a);
+  }
+  /* the bent line between two parallel lines (the Σ shape): the angle at the bend is the sum of the
+     angles its two arms make with the parallel lines (two pairs of alternate angles) */
+  if (op === 'geoAngBend') {
+    const a = int(rng, 25, 75), b = int(rng, 25, 75);
+    return q(`a = ${a}°, b = ${b}°`, 'A bent line between parallel lines: find x', a + b);
   }
 
   /* ── area & perimeter ── */
