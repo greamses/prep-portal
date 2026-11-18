@@ -65,7 +65,7 @@ export async function mountWorkbookScores(layout) {
     if (kicker) {
       kicker.textContent = assignments.length
         ? `${assignments.length} set · ${scored} score${scored === 1 ? "" : "s"} in · ${students} in the class`
-        : "Workbooks";
+        : "Workbooks and papers";
     }
     host.innerHTML = assignments.length
       ? assignments.map(row).join("")
@@ -75,7 +75,7 @@ export async function mountWorkbookScores(layout) {
     host.querySelectorAll("[data-copy]").forEach((b) => {
       b.onclick = (e) => {
         e.preventDefault();
-        navigator.clipboard?.writeText(`${location.origin}/wb/${b.dataset.copy}`)
+        navigator.clipboard?.writeText(`${location.origin}${b.dataset.copy}`)
           .then(() => { b.textContent = "Link copied"; setTimeout(() => (b.textContent = "Copy link"), 1400); });
       };
     });
@@ -126,7 +126,7 @@ function row(a) {
       <p class="wbs-live" data-live="${esc(a.code)}" hidden></p>
       <div class="wbs-links">
         <a class="db-pill pill-blue" href="${esc(a.url)}" target="_blank" rel="noopener">Open the paper</a>
-        <button class="db-pill pill-grey" type="button" data-copy="${esc(a.code)}">Copy link</button>
+        <button class="db-pill pill-grey" type="button" data-copy="${esc(a.url)}">Copy link</button>
         <span class="wbs-code">${esc(a.code)}</span>
       </div>
     </details>`;
@@ -147,7 +147,7 @@ async function watchLive(host, assignments) {
   try { ({ openRoom, idFor } = await import("/utils/live/index.js")); } catch { return; }
   const uid = auth.currentUser?.uid;
   if (!uid) return;
-  for (const a of assignments.slice(0, 10)) {
+  for (const a of assignments.filter((x) => x.kind !== "paper").slice(0, 10)) {   // a shared paper has no live room
     const line = host.querySelector(`[data-live="${CSS.escape(a.code)}"]`);
     if (!line) continue;
     const room = await openRoom({ ns: "wb", code: a.code, role: "teacher", me: { id: idFor(uid), name: "Teacher" } }).catch(() => null);

@@ -306,8 +306,11 @@ module.exports = function () {
      call: the dashboard has no business making twenty. */
   router.get("/results", authenticate, async (req, res) => {
     try {
-      const snap = await db().collection("workbookAssignments")
-        .where("teacherUid", "==", req.user.uid).limit(60).get();
+      const [snap, papers] = await Promise.all([
+        db().collection("workbookAssignments").where("teacherUid", "==", req.user.uid).limit(60).get(),
+        /* the teacher's shared papers (mock papers, the competition links): their results belong here too */
+        db().collection("sharedPapers").where("ownerUid", "==", req.user.uid).limit(400).get(),
+      ]);
       const ms = (x) => (x && x.toMillis ? x.toMillis() : 0);
       const roster = await db().collection("teacherStudents").doc(req.user.uid).collection("roster").get();
       const names = new Map(roster.docs.map((d) => [d.id, d.data().name || "Student"]));
@@ -333,6 +336,22 @@ module.exports = function () {
         };
       }));
 
+      const paperRows = (await Promise.all(papers.docs.map(async (d) => {
+        const a = d.data();
+        const rs = await d.ref.collection("results").get();
+        if (!rs.size) return null;                      // a paper nobody has sat is not a row
+        const results = rs.docs.map((x) => {
+          const r = x.data();
+          return {
+            uid: x.id, name: r.name || names.get(x.id) || "Student", email: r.email || null,
+            lastRight: r.lastWon, lastTotal: r.lastOutOf, lastPct: r.lastPct,
+            bestPct: r.bestPct, attempts: r.attempts || 0, lastAt: ms(r.lastAt), held: r.held === true && r.released !== true,
+          };
+        }).sort((x, y) => y.lastAt - x.lastAt);
+        return { kind: "paper", code: d.id, title: a.title || "Mock paper", createdAt: ms(a.createdAt), url: `/paper/${d.id}`,
+          results, waiting: [], lastAt: results.length ? results[0].lastAt : 0 };
+      }))).filter(Boolean);
+      rows.push(...paperRows);
       rows.sort((x, y) => (y.lastAt || y.createdAt) - (x.lastAt || x.createdAt));
       const scored = rows.reduce((n, r) => n + r.results.length, 0);
       res.json({ ok: true, assignments: rows, students: names.size, scored });
@@ -840,8 +859,15 @@ module.exports = function () {
       const p = await db().collection("sharedPapers").doc(code).get();
       if (!p.exists) return res.status(404).json({ error: "No such paper." });
       const hold = !!(p.data().head && p.data().head.holdResults) && p.data().ownerUid !== req.user.uid;
-      if (!hold) return res.json({ ok: true, hold: false });
       const rs = await p.ref.collection("results").doc(req.user.uid).get();
+      /* a paper whose results are not held: the student's own result as soon as it is in (their marked answers
+         when they were kept, and the score) */
+      if (!hold) {
+        if (!rs.exists) return res.json({ ok: true, hold: false, handedIn: false });
+        const r = rs.data();
+        return res.json({ ok: true, hold: false, handedIn: true, released: true, answers: r.answers || null, annotations: r.annotations || {},
+          score: { won: r.lastWon || 0, outOf: r.lastOutOf || 0, pct: r.lastPct || 0, grade: r.grade || "", best: r.bestPct || 0 } });
+      }
       if (!rs.exists || !rs.data().held) return res.json({ ok: true, hold: true, handedIn: false, released: false });
       const r = rs.data();
       if (r.released !== true) return res.json({ ok: true, hold: true, handedIn: true, released: false });
@@ -1091,6 +1117,9 @@ module.exports = function () {
         const heldFields = hold ? { held: true, released: b.first === true || !prev ? false : !!(prev && prev.released), ...(Object.keys(keepAnswers).length ? { answers: keepAnswers } : {}), ...(b.first === true || !prev ? { annotations: {} } : {}) } : {};
         t.set(rRef, {
           ...heldFields,
+          /* the answers, for every paper (not only a held one): a student back with no tries left, or from the
+             "your result went in" notification, is shown their marked paper */
+          ...(!hold && Object.keys(keepAnswers).length ? { answers: keepAnswers } : {}),
           uid: req.user.uid, name: typed || (prev && prev.name) || nameOf(req, p), email: req.user.email || null,
           lastWon: won, lastOutOf: outOf, lastPct: pct, grade: gradeOf(pct), bestPct: best, attempts, ...(examNo ? { examNo } : {}), ...(issued && shaded && shaded !== issued ? { examNoShaded: shaded } : {}),
           firstAt: prev ? prev.firstAt : stamp(), lastAt: stamp(),
@@ -1153,8 +1182,9 @@ module.exports = function () {
       roster.docs.forEach((d) => { people.get(d.id).klass = groupNames.get(d.data().groupId) || ""; });
 
       const [wbs, papers] = await Promise.all([
-        db().collection("workbookAssignments").where("teacherUid", "==", req.user.uid).limit(80).get(),
-        db().collection("sharedPapers").where("ownerUid", "==", req.user.uid).limit(80).get(),
+        db().collection("workbookAssignments").where("teacherUid", "==", req.user.uid).limit(400).get(),
+        /* every paper (the competition links alone are dozens): 80, unordered, left whole competitions out */
+        db().collection("sharedPapers").where("ownerUid", "==", req.user.uid).limit(400).get(),
       ]);
       const seen = new Set();
       const take = async (snap, kind) => {

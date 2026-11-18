@@ -371,7 +371,7 @@ function sendResult() {
     const s = live.score(questions);
     if (!s.outOf) return;
     const first = firstSend; firstSend = false;
-    try { await api(`/api/workbooks/paper/${code}/result`, { name: live.name, won: s.won, outOf: s.outOf, first, examNo: live.examNo, ...(holds() ? { answers: live.snapshot() } : {}) }); } catch { /* the page still works without it */ }
+    try { await api(`/api/workbooks/paper/${code}/result`, { name: live.name, won: s.won, outOf: s.outOf, first, examNo: live.examNo, answers: live.snapshot() }); } catch { /* the page still works without it */ }
     /* results still to come (the teacher's review, or the AI marking the written answers): offer to say so when they are ready */
     if (first && (holds() || head.aiMark)) offerPush();
   }, 900);
@@ -579,11 +579,26 @@ async function open() {
       }
     }
     if (locked) {
+      /* their result: the marked paper when their answers were kept, and the score either way */
+      let rv = null;
+      try { rv = await api(`/api/workbooks/paper/${code}/review`); } catch { /* the paper alone, below */ }
+      if (rv && rv.handedIn && rv.answers && Object.keys(rv.answers).length) {
+        review = rv;
+        live.setOn(true);
+        live.loadAnswers(rv.answers);
+        live.check(questions);
+        draw(); faces();
+        $("xm-check").hidden = true; $("xm-clear").hidden = true;
+        say(`Your result: ${rv.score.won} of ${rv.score.outOf}, grade ${rv.score.grade}. Your marked paper is below.`);
+        return;
+      }
       sheet.dataset.paper = head.paper === "letter" ? "letter" : "a4";
       sheet.innerHTML = paperHtml(head, questions);
       typeset();
       $("xm-check").hidden = true; $("xm-clear").hidden = true;
-      say(`You have used ${tries === 1 ? "your one try" : `all ${tries} tries`} on this paper, so it cannot be answered again. Your teacher has your score.`);
+      say(rv && rv.handedIn
+        ? `Your result: ${rv.score.won} of ${rv.score.outOf} (${rv.score.pct}%), grade ${rv.score.grade}. You have used ${tries === 1 ? "your one try" : `all ${tries} tries`} on this paper.`
+        : `You have used ${tries === 1 ? "your one try" : `all ${tries} tries`} on this paper, so it cannot be answered again. Your teacher has your score.`);
       return;
     }
     /* the instructions page, when the teacher set one: read first, then Begin. Once per tab, so a
