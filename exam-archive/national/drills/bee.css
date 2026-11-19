@@ -849,3 +849,17 @@
 
 /* walking to the foot of the stairs: the step across (translate) keeps pace with the walk */
 .bee-bd.is-math .bee-kid.is-up.is-approach:is(.is-at-mic, .is-at-mic2) { transition: left 1.7s ease-in-out, top 1.7s ease-in-out, height 1.7s ease-in-out, font-size 1.7s ease-in-out, translate 1.7s ease-in-out; }
+
+/* ── the Soroban tournament: the flash on the TV, and a bot's soroban in its cloud ── */
+.bee-tv-flash { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 45%, #13324d, #071421 72%, #03080e); }
+.bee-tv-flash[hidden] { display: none; }
+.bee-flash-num { display: flex; align-items: center; justify-content: center; gap: 2cqh; height: 100%; max-width: 100%; animation: bee-flash-in 0.16s ease-out; }
+@keyframes bee-flash-in { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: none; } }
+.bee-flash-num .sor-abacus { height: 84%; width: auto; max-width: 70%; background: #fffdf6; padding: 0.6cqh; box-shadow: 0 0.4cqh 1.2cqh rgba(0, 0, 0, 0.4); }
+.bee-flash-fig { font-family: var(--font-display); font-weight: 800; font-size: 11cqh; line-height: 1; color: #f4f8ff; text-shadow: 0 0 1.4cqh rgba(140, 200, 255, 0.45); }
+.bee-flash-num.is-both .bee-flash-fig { font-size: 8cqh; }
+.bee-flash-sign { font-family: var(--font-display); font-weight: 800; font-size: 10cqh; line-height: 1; color: #7be0a0; }
+.bee-flash-sign.is-minus { color: #ff8a80; }
+.bee-think__sor { display: grid; place-items: center; }
+.bee-think__sor .sor-abacus { width: auto; height: 6.4em; max-width: 7em; }
+.bee-think__cloud:has(.bee-think__sor) { padding: 2.4em 3.4em 2.6em; }

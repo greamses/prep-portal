@@ -22,7 +22,7 @@ export const { matchmake, createCodeRoom, joinRoomByCode } = createRoomClient({
   // existing drill matchmaking is undisturbed — 'grid_…' can't collide with it.
   bucketOf: (c) => {
     if (c.activity === 'grid') return `grid_${c.gridBlanks}`;
-    if (c.activity === 'soroban') { const s = c.soroban || {}; return `soroban_${[...c.operations].sort().join(',')}_${(s.show || []).join('+')}_${(s.tests || []).join('+')}_${s.count}_${s.terms || 5}_${s.digits}_${s.speed}_${s.delay}`; }
+    if (c.activity === 'soroban' || c.activity === 'sorcup') { const s = c.soroban || {}; return `${c.activity}_${[...c.operations].sort().join(',')}_${(s.show || []).join('+')}_${(s.tests || []).join('+')}_${s.count}_${s.terms || 5}_${s.digits}_${s.speed}_${s.delay}`; }
     if (c.activity === 'bars') return `bars_${[...c.operations].sort().join(',')}_${c.barsLevel}`;
     // the Math Bee meets only Math Bees with the same questions
     if (c.activity === 'mathbee' || c.activity === 'mathcup') return `${c.activity}_${[...c.operations].sort().join(',')}_${[...c.tables].sort((a, b) => a - b).join(',')}`;

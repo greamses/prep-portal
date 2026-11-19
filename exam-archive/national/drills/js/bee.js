@@ -35,6 +35,7 @@ import { questionAt } from './rng.js';
 import { answerIsRight, sanitizeFor, texFor, drawMath, toTex } from './game.js';
 import { answerText, isEasy, working, slip, setupLines } from './bee-maths.js';
 import { geoFigure } from './geo-figure.js';
+import { sorobanSum, sorobanSvg, answerSeconds as sorAnswerSeconds, termsOf } from './soroban.js';
 import { loadMath } from '/utils/components/workbook/mathify.js';
 import { sayMaths } from '/utils/speech-maths.js';
 import { SPELLING_PHRASES, PHRASE } from '/data/spelling/phrases.js';
@@ -1174,7 +1175,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  *   humans  [{ uid, name }] every real player in the room
  *   me      { uid, name }
  */
-export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, me, mode = 'spell', operations = [], cup = false }) {
+export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, me, mode = 'spell', operations = [], cup = false, soroban = null }) {
   const isMath = mode === 'math';                  // the Math Bee: a minute each at the pulpit
   const BEE_NAME = isMath ? 'Prep Math Bee' : 'Prep Spelling Bee';
   const myKid = KIDS[me.kid] ? me.kid : null;
@@ -1966,8 +1967,15 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     if (cur) lines.push(cur);
     return lines;
   }
+  /* a cloud holding a drawing (the soroban), instead of lines */
+  function setCloud(kidEl, html) {
+    setWork([], kidEl, true);
+    const t = thoughts.get(kidEl);
+    if (t) t.querySelector('.bee-think__lines').innerHTML = html;
+  }
   /* a bot works a question out in its cloud across its thinking time; returns stop() */
   function think(kidEl, tr) {
+    if (tr.sor) return sorThink(kidEl, tr);
     if (tr.easy || !pace) return () => {};
     const lines = tr.ok ? working(tr.q) : [...setupLines(tr.q), texFor(tr.q, sanitizeFor(tr.q, tr.v))];
     const t0 = Date.now(), span = Math.max(1000, tr.dt * 1000 - 700);
@@ -2245,18 +2253,88 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
      says when each question starts, takes the answers in the order they come and awards the
      points ('dq' / 'dans' / 'dpt', and 'dst' every three seconds); the result is published (key
      9000 + match). A match of two bots is worked out from the seed, the same on every screen. */
-  const CUP_POINTS = 5, CUP_Q_SECONDS = 20, CUP_MAX_Q = 40;
-  const cupQ = (m, i) => questionAt(seed, 70000 + m * 200 + i, { operations, tables: sets });
+  /* ── THE SOROBAN TOURNAMENT (the room's `soroban` settings) ───────────────────────────────────
+     The same tournament, with soroban sums: each point (and each qualifying sum) is a sum whose
+     numbers flash one by one on the TV (as a soroban, figures or both); when the last has gone the
+     contestants type the total, the first right one takes the point, first to 3. A bot thinks with
+     a soroban in its cloud, its beads following the running total as the numbers flash (a bot that
+     slips ends on its slip). Never on the screen of a player who is answering: it is the answer. */
+  const isSor = !!soroban;
+  const SOR = isSor ? { show: ['number'], tests: ['simple'], count: 10, digits: 1, speed: 1, delay: 1.5, ...soroban } : null;
+  if (SOR && !(SOR.show || []).length) SOR.show = ['number'];
+  const SOR_LEAD = 700;                                     // the blank before the first number
+  const sorFlashMs = () => SOR_LEAD + termsOf(SOR) * SOR.speed * 1000 + (termsOf(SOR) - 1) * SOR.delay * 1000;
+  const sorQ = (key, hint = '') => {
+    const sum = sorobanSum(seed, key, SOR, operations);
+    return { math: true, text: 'The total', tex: '\\text{The total} = \\,?', hint, answer: sum.answer, terms: sum.terms, sor: true };
+  };
+  // a wrong total a bot might give: one figure of the right one off by one
+  const sorSlip = (ans, n) => {
+    const str = String(ans), k = n % str.length, dgt = Number(str[k]);
+    const nd = dgt === 9 ? 8 : dgt === 0 ? 1 : dgt + (n % 2 ? -1 : 1);
+    return Number(str.slice(0, k) + nd + str.slice(k + 1)) || ans + 1;
+  };
+  // how sure and how quick a bot is at a soroban sum (more digits, more numbers, big friends: harder)
+  function sorTry(seat, key, q) {
+    const skill = 0.72 + seeded(seat, 1) * 0.24, quick = 0.8 + seeded(seat, 2) * 0.5;
+    const d = SOR.digits, n = termsOf(SOR);
+    const sure = Math.max(0.3, Math.min(0.97, skill + 0.2 - 0.06 * (d - 1) - 0.004 * n - ((SOR.tests || []).includes('big') ? 0.05 : 0)));
+    const ok = seeded(seat, 8000 + key) < sure;
+    const dt = sorFlashMs() / 1000 + (1 + d * 0.5 + n * 0.04) * quick * (0.6 + seeded(seat, 8500 + key) * 0.9);
+    return { q, dt, ok, v: ok ? q.answer : sorSlip(q.answer, key), easy: false, sor: true };
+  }
+  /* the numbers, flashed on the TV one by one (with their signs), then gone */
+  function flashOnTV(terms) {
+    const screen = hall.querySelector('.bee-tv-screen');
+    let el = screen.querySelector('.bee-tv-flash');
+    if (!el) { el = document.createElement('div'); el.className = 'bee-tv-flash'; screen.append(el); }
+    const tool = SOR.show.includes('tool'), fig = SOR.show.includes('number');
+    const rods = Math.max(SOR.digits + 1, 3, ...terms.map((t) => String(Math.abs(t)).length));
+    let alive = true;
+    const done = (async () => {
+      el.hidden = false; el.innerHTML = '';
+      await sleep(SOR_LEAD);
+      for (let k = 0; k < terms.length && alive && !gone; k++) {
+        const n = terms[k], sign = k === 0 ? '' : n < 0 ? '−' : '+';
+        el.innerHTML = `<div class="bee-flash-num${tool && fig ? ' is-both' : ''}">${sign ? `<span class="bee-flash-sign${n < 0 ? ' is-minus' : ''}">${sign}</span>` : ''}${tool ? sorobanSvg(Math.abs(n), rods) : ''}${fig ? `<span class="bee-flash-fig">${Math.abs(n)}</span>` : ''}</div>`;
+        if (pace) sfx.tick();
+        await sleep(SOR.speed * 1000);
+        el.innerHTML = '';
+        if (k < terms.length - 1) await sleep(SOR.delay * 1000);
+      }
+      el.hidden = true;
+    })();
+    return { done, stop: () => { alive = false; el.hidden = true; el.innerHTML = ''; } };
+  }
+  /* a bot's soroban in its cloud: the beads follow the running total as each number flashes */
+  function sorThink(kidEl, tr) {
+    if (!pace) return () => {};
+    const terms = tr.q.terms;
+    const rods = Math.max(SOR.digits + 1, 3, String(Math.abs(tr.q.answer)).length, String(Math.abs(tr.v)).length);
+    const timers = [];
+    const show = (v) => setCloud(kidEl, `<div class="bee-think__sor">${sorobanSvg(Math.max(0, v), rods)}</div>`);
+    show(0);
+    let total = 0;
+    terms.forEach((t, j) => {
+      const at = SOR_LEAD + j * (SOR.speed + SOR.delay) * 1000 + SOR.speed * 600;   // a moment into each number
+      timers.push(setTimeout(() => { total += t; show(j === terms.length - 1 ? tr.v : total); }, at));
+    });
+    return () => { timers.forEach(clearTimeout); setWork([], kidEl, false); };
+  }
+  const CUP_POINTS = isSor ? 3 : 5, CUP_Q_SECONDS = isSor ? null : 20, CUP_MAX_Q = 40;
+  const qSeconds = () => (isSor ? sorFlashMs() / 1000 + sorAnswerSeconds(SOR.digits) : CUP_Q_SECONDS);
+  const cupQ = (m, i) => (isSor ? sorQ(20000 + m * 400 + i) : questionAt(seed, 70000 + m * 200 + i, { operations, tables: sets }));
   const cupName = (s) => `No. ${s.tag} ${nameOf(s)}`;
   const escH = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const roundName = (r, B) => ['Final', 'Semi-final', 'Quarter-final'][Math.log2(B) - 1 - r] || `Round ${r + 1}`;
   const roundsName = (r, B) => ['The final', 'The semi-finals', 'The quarter-finals'][Math.log2(B) - 1 - r] || `Round ${r + 1}`;
-  const readCupQ = (m, i) => readAloud(spokenQ(cupQ(m, i)));
-  const prefetchCup = (m, i) => { kokoroSays(spokenQ(cupQ(m, i)), Q_VOICE); };
+  const readCupQ = (m, i) => { if (!isSor) readAloud(spokenQ(cupQ(m, i))); };          // a soroban sum is flashed, not read
+  const prefetchCup = (m, i) => { if (!isSor) kokoroSays(spokenQ(cupQ(m, i)), Q_VOICE); };
   const seedOf = new Map();         // seat -> their place in the qualifying table
 
   /* a bot's go at question i of match m: when it answers (seconds after the question), and right or not */
   function botTry(seat, m, i) {
+    if (isSor) return sorTry(seat, 20000 + m * 400 + i, cupQ(m, i));
     const q = cupQ(m, i), easy = isEasy(q), s = seeded(seat, 5000 + m * 97 + i);
     const quick = 0.8 + seeded(seat, 2) * 0.5, skill = 0.72 + seeded(seat, 1) * 0.24;
     const sure = easy || (q.answer && (q.answer.kind === 'factorise' || q.answer.kind === 'distribute'));
@@ -2413,6 +2491,50 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   }
 
   /* ── the qualifying minute: another player's count, when it comes (a player gone: none) ── */
+  /* the soroban qualifier: the Sums dial's sums, each flashed on the TV for everyone at once; type the
+     total when the last number has gone. Bots think in their clouds (not while a player answers). */
+  const sorQualSeconds = () => SOR.count * (sorFlashMs() / 1000 + sorAnswerSeconds(SOR.digits) + 1.6);
+  function sorBotQual(seat) {
+    let c = 0, w = 0;
+    for (let k = 0; k < SOR.count; k++) { if (sorTry(seat, 30000 + k, sorQ(30000 + k)).ok) c++; else w++; }
+    return { c, w };
+  }
+  async function sorQualifier() {
+    const inp = $('.bee-math-input');
+    let c = 0, w = 0, t = 0;
+    for (let k = 0; k < SOR.count && !gone; k++) {
+      const q = sorQ(30000 + k, `Sum ${k + 1} of ${SOR.count}`);
+      showMath(q, '', c, w);
+      const stops = mySeat ? [] : seats.filter((s) => !s.uid).map((s) => think(kids[s.seat], sorTry(s, 30000 + k, q)));
+      const fl = flashOnTV(q.terms);
+      await fl.done;
+      if (gone) return null;
+      if (mySeat) {
+        const r = await new Promise((done) => {
+          const t0 = Date.now();
+          let fin = false;
+          const end = (v) => { if (fin) return; fin = true; inp.removeEventListener('input', onIn); inp.removeEventListener('keydown', onK); inp.disabled = true; stopClock(); done({ v, ms: Date.now() - t0 }); };
+          const onIn = () => { inp.value = sanitizeFor(q, inp.value); showMath(q, inp.value, c, w); };
+          const onK = (e) => { e.stopPropagation(); if (e.key === 'Enter' && inp.value.trim()) { e.preventDefault(); end(inp.value.trim()); } };
+          inp.value = ''; inp.disabled = false; inp.addEventListener('input', onIn); inp.addEventListener('keydown', onK); inp.focus();
+          bd.classList.add('is-my-turn');
+          runClock(sorAnswerSeconds(SOR.digits), () => end(null));
+        });
+        const ok = r.v != null && answerIsRight(q, r.v);
+        if (ok) c++; else w++;
+        t += r.ms;
+        answered(mySeat, r.v ?? '', ok);
+        showMath(q, r.v ?? '', c, w);
+      } else await wait(sorAnswerSeconds(SOR.digits) * 1000);
+      stops.forEach((f) => f());
+      say(`Sum ${k + 1}: the total was ${q.answer}.`);
+      await wait(1600);
+    }
+    bd.classList.remove('is-my-turn');
+    const r = { u: me.uid, c, w, t };
+    if (mySeat) publish(1000 + mySeat.seat, r);
+    return r;
+  }
   function waitQual(s) {
     const k = 1000 + s.seat;
     if (results.has(k)) return Promise.resolve(results.get(k));
@@ -2420,7 +2542,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       const started = Date.now();
       const iv = setInterval(() => {
         if (gone) { clearInterval(iv); resolve({ c: 0, w: 0 }); return; }
-        if ((Date.now() - started) / 1000 > MATH_SECONDS + GRACE && amArbiter(s.uid)) publish(k, { u: s.uid, c: 0, w: 0, to: 1 });
+        if ((Date.now() - started) / 1000 > (isSor ? sorQualSeconds() : MATH_SECONDS) + GRACE && amArbiter(s.uid)) publish(k, { u: s.uid, c: 0, w: 0, to: 1 });
       }, 1000);
       waiters.set(k, (r) => { clearInterval(iv); resolve(r); });
     });
@@ -2435,7 +2557,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       const typed = ['', ''], st = ['', ''];
       const draw = () => showDuel(q, sides, sc, typed, st);
       draw(); readCupQ(m, i); prefetchCup(m, i + 1);
+      const flash = isSor ? flashOnTV(q.terms) : null;
       const stops = sides.map((s, n) => think(kids[s.seat], tries[n]));
+      if (flash) stops.push(flash.stop);
       const t0 = Date.now();
       let win = -1;
       for (const n of [0, 1].sort((a, b) => tries[a].dt - tries[b].dt)) {
@@ -2466,7 +2590,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     return new Promise((resolve) => {
       let i = -1, q = null, over = false, awarded = false, lastHeard = Date.now();
       const sc = [0, 0], typed = ['', ''], st = ['', ''];
-      let stops = [], botTimers = [], qTimer = 0, nextTimer = 0;
+      let stops = [], botTimers = [], qTimer = 0, nextTimer = 0, flashEnd = 0;
       const draw = () => { if (q) showDuel(q, sides, sc, typed, st); };
       const send = (type, p) => { try { room?.send(type, { m, ...p }); } catch { /* the others catch up on the next 'dst' */ } };
       const clear = () => { stops.forEach((f) => f()); stops = []; botTimers.forEach(clearTimeout); botTimers = []; clearTimeout(qTimer); clearTimeout(nextTimer); };
@@ -2477,6 +2601,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         if (s0) { sc[0] = s0[0]; sc[1] = s0[1]; }
         typed[0] = typed[1] = ''; st[0] = st[1] = '';
         draw(); readCupQ(m, i); prefetchCup(m, i + 1); prefetchCup(m, i + 2);
+        if (isSor) { const fl = flashOnTV(q.terms); stops.push(fl.stop); flashEnd = Date.now() + sorFlashMs(); }
         sides.forEach((s, side) => {
           if (s.uid) return;
           const tr = botTry(s, m, i);
@@ -2484,8 +2609,13 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
           if (mine < 0) stops.push(think(kids[s.seat], tr));
           if (iBoss) botTimers.push(setTimeout(() => take(side, tr.v, tr.ok, true), tr.dt * 1000));
         });
-        if (mine >= 0) { inp.value = ''; inp.disabled = false; inp.focus(); }
-        if (iBoss) qTimer = setTimeout(() => point(-1), CUP_Q_SECONDS * 1000);
+        if (mine >= 0) {
+          inp.value = '';
+          // a soroban sum: the box opens when the last number has gone
+          const open = () => { if (!over && !awarded) { inp.disabled = false; inp.focus(); } };
+          if (isSor) { inp.disabled = true; botTimers.push(setTimeout(open, sorFlashMs())); } else open();
+        }
+        if (iBoss) qTimer = setTimeout(() => point(-1), qSeconds() * 1000);
       }
       function shown(side, v, ok) {
         typed[side] = String(v); st[side] = ok ? 'ok' : 'bad';
@@ -2527,7 +2657,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       };
       const onKey = (e) => {
         e.stopPropagation();
-        if (e.key !== 'Enter' || over || awarded || !q) return;
+        if (e.key !== 'Enter' || over || awarded || !q || Date.now() < flashEnd) return;
         e.preventDefault();
         const v = inp.value.trim();
         if (!v) return;
@@ -2584,7 +2714,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     pace = skipping && !humans.length ? 0 : 1;
     settle();
     if (!pace) return simulateMatch(m, sides);
-    say(`${title}: ${who(sides[0])} against ${who(sides[1])}. First to ${CUP_POINTS}.`);
+    say(`${title}: ${who(sides[0])} against ${who(sides[1])}. First to ${CUP_POINTS}.${isSor ? ' Watch the screen, then type the total.' : ''}`);
     sweep();
     tvTitle(title.toUpperCase(), 'is-round');
     for (let n = 0; n < 3; n++) prefetchCup(m, n);
@@ -2609,14 +2739,14 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const B = seats.length >= 8 ? 8 : seats.length >= 4 ? 4 : 2;
     // 1. the qualifying minute, everyone at once
     if (!gone && pace) {
-      say(`The qualifying round: one minute, everyone at once. The top ${B} go through to the knockout.`);
+      say(isSor ? `The qualifying round: ${SOR.count} soroban sums on the screen, everyone at once. Type each total when the last number has gone. The top ${B} go through.` : `The qualifying round: one minute, everyone at once. The top ${B} go through to the knockout.`);
       sweep(); tvTitle('QUALIFYING', 'is-round'); await wait(2600);
     }
     clearScreen();
-    const quals = await Promise.all(seats.map((s) => (s === mySeat ? myMath(s) : s.uid ? waitQual(s) : Promise.resolve(botPlan(s).r))));
+    const quals = await Promise.all(seats.map((s) => (s === mySeat ? (isSor ? sorQualifier() : myMath(s)) : s.uid ? waitQual(s) : Promise.resolve(isSor ? sorBotQual(s) : botPlan(s).r))));
     if (gone) return;
     hideMath(); stopClock(); clearScreen();
-    seats.forEach((s, n) => mathResults.set(s.seat, { c: quals[n].c || 0, w: quals[n].w || 0 }));
+    seats.forEach((s, n) => mathResults.set(s.seat, { c: (quals[n] || {}).c || 0, w: (quals[n] || {}).w || 0 }));
     const table = seats.map((s) => ({ seat: s.seat, ...mathResults.get(s.seat) }))
       .sort((a, b) => b.c - a.c || a.w - b.w || a.seat - b.seat)
       .map((r, n) => ({ ...r, place: n + 1, through: n < B }));

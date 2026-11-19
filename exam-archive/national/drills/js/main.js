@@ -277,7 +277,8 @@ const isBee = () => categoryValue === 'spelling' && operations.has('spellBee');
 /* The Math Bee: its own topic (Numbers > Math Bee). The bee hall, a minute each at the pulpit,
    questions from every topic ticked; the most correct answers wins. */
 const isMathBee = () => categoryValue === 'mathbee';
-const isAnyBee = () => isBee() || isMathBee();
+const isSorCup = () => categoryValue === 'soroban';      // the Soroban: always the hall tournament
+const isAnyBee = () => isBee() || isMathBee() || isSorCup();
 const mathTopics = new Set(mem.get('mathTopics', ['basic'], Array.isArray).filter((t) => MATH_BEE_TOPICS.includes(t)));
 if (!mathTopics.size) mathTopics.add('basic');
 // the question kinds ticked (a topic with none ticked takes all of its own)
@@ -293,7 +294,8 @@ function syncMathOps() {
   }
 }
 if (categoryValue === 'mathbee') syncMathOps();
-if (mode === 'cup' && categoryValue !== 'mathbee') mode = 'multiplayer';   // a tournament is the Math Bee's only
+if (mode === 'cup' && categoryValue !== 'mathbee' && categoryValue !== 'soroban') mode = 'multiplayer';   // a tournament is the bees' only
+if (categoryValue === 'soroban' && mode === 'versus') mode = 'cup';
 const isMathCup = () => isMathBee() && mode === 'cup';
 /* Soroban (flash anzan): how the numbers show, the test, and the four sliders. Speed and delay
    ranges follow the digits (soroban.js speedRange / delayRange). */
@@ -336,7 +338,7 @@ const saveContent = () => mem.save({
 // Bars, 'drill' for everything else. Written to the room doc so a code-joiner
 // plays the host's surface.
 const gameActivity = () => (
-  categoryValue === 'timestable' ? 'grid' : categoryValue === 'fracbars' ? 'bars' : isMathBee() ? (mode === 'cup' ? 'mathcup' : 'mathbee') : categoryValue === 'soroban' ? 'soroban' : 'drill'
+  categoryValue === 'timestable' ? 'grid' : categoryValue === 'fracbars' ? 'bars' : isMathBee() ? (mode === 'cup' ? 'mathcup' : 'mathbee') : categoryValue === 'soroban' ? 'sorcup' : 'drill'
 );
 
 function getCurrentUser() {
@@ -780,7 +782,8 @@ function pickCategory(v) {
   if (GAME_PAGES[v]) { window.location.href = GAME_PAGES[v]; return; }
   queueMicrotask(renderTimeStep);   // spelling's clock comes from its words, every other topic's is chosen
   queueMicrotask(renderModeSize);   // the Math Bee is offered for the number topics only
-  if (v !== 'mathbee' && mode === 'cup') { mode = 'multiplayer'; mem.save({ mode }); }
+  if (v !== 'mathbee' && v !== 'soroban' && mode === 'cup') { mode = 'multiplayer'; mem.save({ mode }); }
+  if (v === 'soroban' && mode === 'versus') { mode = 'cup'; mem.save({ mode }); }
   if (v !== categoryValue) {
     // Reset the whole branch — a range picked under Basic must not survive
     // into Fractions (which has no range at all). Re-picking the SAME
@@ -1013,9 +1016,9 @@ function renderModeSize() {
 if (mode === 'mathbee') mode = 'multiplayer';      // the Math Bee was a mode once; it is a topic now
 renderChoiceStep(options, 'mode', {
   title: 'How do you want to play?',
-  subtitle: isBee() ? 'The Spelling Bee is held for five spellers.' : isMathBee() ? 'The Math Bee is held for five contestants.' : undefined,
+  subtitle: isBee() ? 'The Spelling Bee is held for five spellers.' : isMathBee() ? 'The Math Bee is held for five contestants.' : isSorCup() ? 'The Soroban tournament is held for five contestants in the hall: a qualifier, then the knockout.' : undefined,
   name: 'drill-mode',
-  options: isMathBee() ? [
+  options: isSorCup() ? [{ value: 'cup', label: 'Tournament', checked: true }] : isMathBee() ? [
     { value: 'multiplayer', label: 'Classic', checked: mode !== 'cup', tip: 'One minute each at the pulpit; the most correct answers wins.' },
     { value: 'cup', label: 'Tournament', checked: mode === 'cup', tip: 'A qualifying minute for everyone at once, ranked in a table; then the top four race head to head, two at a time on the stage, the same questions, first to five, until the final.' },
   ] : isBee() ? [{ value: 'multiplayer', label: 'Multiplayer', checked: true }] : [
@@ -1049,7 +1052,7 @@ renderChoiceStep(options, 'size', {
   onPick: (v) => {
     if (!isAnyBee()) { roomSize = Number(v); mem.save({ roomSize }); }
     // the Math Bee's minute is fixed: next, the speller
-    if (isMathBee()) { renderBeeKidStep(); options.goTo('speller'); return; }
+    if (isMathBee() || isSorCup()) { renderBeeKidStep(); options.goTo('speller'); return; }
     if (categoryValue === 'soroban') { flow.next(); return; }   // the session's length comes from its sliders
     options.goTo('time');
   },
@@ -1186,7 +1189,7 @@ const flow = createSectionFlow([
   },
   {
     el: $('drill-section-options'),
-    chips: () => isMathBee() ? [{ label: isMathCup() ? 'Tournament' : 'Math Bee' }, { label: '5 players' }, { label: isMathCup() ? 'Qualifier, then knockout' : '1 minute each' }, { label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [...optionsChips({ mode: isBee() ? 'multiplayer' : mode, roomSize: isBee() ? BEE_SIZE : roomSize, timeLabel: isBee() ? `${levelOf(spellLevel).label} ${beeSeconds(spellLevel)}s a word` : categoryValue === 'spelling' ? `${levelOf(spellLevel).label} ${clockLabel(spellTime())}` : categoryValue === 'soroban' ? `${sorSpeed}s on, ${sorDelay}s gap` : `${timeLimit}s` }), ...(isBee() ? [{ label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [])],
+    chips: () => isSorCup() ? [{ label: 'Tournament' }, { label: '5 players' }, { label: `Qualifier ${sorCount} sums, then first to 3` }, { label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : isMathBee() ? [{ label: isMathCup() ? 'Tournament' : 'Math Bee' }, { label: '5 players' }, { label: isMathCup() ? 'Qualifier, then knockout' : '1 minute each' }, { label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [...optionsChips({ mode: isBee() ? 'multiplayer' : mode, roomSize: isBee() ? BEE_SIZE : roomSize, timeLabel: isBee() ? `${levelOf(spellLevel).label} ${beeSeconds(spellLevel)}s a word` : categoryValue === 'spelling' ? `${levelOf(spellLevel).label} ${clockLabel(spellTime())}` : categoryValue === 'soroban' ? `${sorSpeed}s on, ${sorDelay}s gap` : `${timeLimit}s` }), ...(isBee() ? [{ label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [])],
   },
   {
     el: $('drill-section-room'),
@@ -1384,6 +1387,7 @@ async function playRoundAndShowResults(room, myName) {
   if ((room.operations || []).includes('spellBee')) { await playBee(room, myName); return; }
   if (room.activity === 'mathbee') { await playBee(room, myName, { mode: 'math', operations: room.operations }); return; }
   if (room.activity === 'mathcup') { await playBee(room, myName, { mode: 'math', operations: room.operations, cup: true }); return; }
+  if (room.activity === 'sorcup') { await playBee(room, myName, { mode: 'math', operations: room.operations, cup: true, soroban: room.soroban }); return; }
   const roster = buildRoster(room, myName);
   // The ROOM decides which surface plays — a grid room predates nothing here,
   // but a joiner who came by code never touched this client's setup, so read it
