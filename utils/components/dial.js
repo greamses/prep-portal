@@ -1,7 +1,8 @@
 /* ============================================================================
    THE DIAL — a number picked on a gauge, like a car's speedometer
    ----------------------------------------------------------------------------
-   A real-looking instrument: a chrome bezel, a dark face under glass, graduations
+   A real-looking instrument: a chrome bezel, a face in one of the theme's colours
+   (each dial its own: butter, sky, leaf, rose, lilac, apricot) under glass, graduations
    round the rim, a red pointer and a metal cap on the value. What is lit is lit:
    the graduations up to the value glow, the arc glows, and the reading in the
    centre glows like an amber display. Roll it: drag the cap (or anywhere on the
@@ -17,6 +18,9 @@
    Two to a line in a `.pp-dials` row. The label and the ends are JetBrains Mono
    (the site's body face); the reading is the display face, lit.
    ========================================================================== */
+/* each dial a colour of the theme (the user: "the skeuomorph is fine, just use different colours from our theme") */
+const TONES = ['--accent-primary', '--accent-secondary', '--accent-success', '--accent-pink', '--accent-purple', '--accent-warning', '--accent-danger'];
+const FALLBACK = { '--accent-primary': '#f4c95d', '--accent-secondary': '#6fb7e8', '--accent-success': '#7cc47c', '--accent-pink': '#f0a8c9', '--accent-purple': '#b8a8e8', '--accent-warning': '#f0a868', '--accent-danger': '#f07a7a' };
 const SWEEP = 270, START = 135;               // from the bottom left, round over the top, to the bottom right
 const C = 60, R = 44;                          // viewBox 120 x 120: centre, the lit arc's radius
 
@@ -40,11 +44,13 @@ function arc(a0, a1, r) {
 }
 const decimals = (step) => { const s = String(step); return s.includes('.') ? s.split('.')[1].length : 0; };
 
-export function createDial({ label, min, max, step = 1, value, format = (v) => String(v), unit = '', onInput }) {
+export function createDial({ label, min, max, step = 1, value, format = (v) => String(v), unit = '', tone, onInput }) {
   ensureCss();
   const id = `ppd${++uid}`;
   const el = document.createElement('div');
   el.className = 'pp-dial';
+  const tok = tone || TONES[(uid - 1) % TONES.length];
+  el.style.setProperty('--tone', `var(${tok}, ${FALLBACK[tok] || '#f4c95d'})`);
   el.innerHTML = `
     <div class="pp-dial__face" role="slider" tabindex="0" aria-label="${label}">
       <svg viewBox="0 0 120 120" aria-hidden="true">
@@ -52,8 +58,8 @@ export function createDial({ label, min, max, step = 1, value, format = (v) => S
           <linearGradient id="${id}-chrome" x1="0" y1="0" x2="0.4" y2="1">
             <stop offset="0" stop-color="#fbfbfa"/><stop offset="0.3" stop-color="#b9bcc0"/><stop offset="0.55" stop-color="#eceef0"/><stop offset="0.8" stop-color="#8d9196"/><stop offset="1" stop-color="#d7d9dc"/>
           </linearGradient>
-          <radialGradient id="${id}-face" cx="0.5" cy="0.42" r="0.62">
-            <stop offset="0" stop-color="#2f343c"/><stop offset="0.7" stop-color="#15181d"/><stop offset="1" stop-color="#07080a"/>
+          <radialGradient id="${id}-face" cx="0.5" cy="0.38" r="0.66">
+            <stop offset="0" style="stop-color: color-mix(in srgb, var(--tone) 22%, #ffffff)"/><stop offset="0.72" style="stop-color: color-mix(in srgb, var(--tone) 55%, #ffffff)"/><stop offset="1" style="stop-color: color-mix(in srgb, var(--tone) 80%, #6b5a3a)"/>
           </radialGradient>
           <radialGradient id="${id}-cap" cx="0.38" cy="0.32" r="0.75">
             <stop offset="0" stop-color="#ffffff"/><stop offset="0.45" stop-color="#c3c6ca"/><stop offset="1" stop-color="#6c7076"/>
@@ -66,7 +72,7 @@ export function createDial({ label, min, max, step = 1, value, format = (v) => S
           </filter>
         </defs>
         <circle cx="${C}" cy="${C}" r="58.5" fill="url(#${id}-chrome)"/>
-        <circle cx="${C}" cy="${C}" r="54.2" fill="#1a1c20"/>
+        <circle cx="${C}" cy="${C}" r="54.2" fill="#5d6166"/>
         <circle cx="${C}" cy="${C}" r="53" fill="url(#${id}-face)"/>
         <path class="pp-dial__track"/>
         <path class="pp-dial__fill" filter="url(#${id}-glow)"/>
