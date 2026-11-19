@@ -863,3 +863,9 @@
 .bee-think__sor { display: grid; place-items: center; }
 .bee-think__sor .sor-abacus { width: auto; height: 6.4em; max-width: 7em; }
 .bee-think__cloud:has(.bee-think__sor) { padding: 2.4em 3.4em 2.6em; }
+
+/* Skip the intro: beside the hall's other keys while the intro plays */
+.bee-skip-intro[hidden] { display: none; }
+.bee-top .bee-skip-intro { display: inline-grid; place-items: center; width: 2.2rem; height: 2.2rem; padding: 0; cursor: pointer; }
+.bee-top .bee-skip-intro svg { width: 18px; height: 18px; }
+.bee-top .bee-skip-intro[hidden] { display: none; }

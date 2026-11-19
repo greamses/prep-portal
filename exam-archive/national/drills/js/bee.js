@@ -905,7 +905,7 @@ function mountTuner(hall, top, { say, hush = () => {} }) {
   const elevenSets = Object.keys(LETTER_VOICES);
   const voicesBox = document.createElement('div');
   voicesBox.className = 'bee-voice-picks';
-  const play = (url) => { try { const a = new Audio(url); a.play().catch(() => {}); } catch { /* no sound */ } };
+  const play = (url) => { try { const a = liveClip(new Audio(url)); a.play().catch(() => {}); } catch { /* no sound */ } };
   const choose = (opts, value, onPick, tip) => {
     const sel = document.createElement('select');
     sel.className = 'bee-voice-sel';
@@ -1207,6 +1207,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
 <span class="bee-clock" hidden aria-live="off"><svg viewBox="0 0 48 56" aria-hidden="true"><defs><linearGradient id="bee-sw-metal" x1="0" x2="1"><stop offset="0" stop-color="#9aa3ad"/><stop offset=".45" stop-color="#eef1f4"/><stop offset="1" stop-color="#7b848e"/></linearGradient><radialGradient id="bee-sw-face" cx=".45" cy=".4" r=".7"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9ecef"/></radialGradient></defs><rect x="20" y="0" width="8" height="5" rx="1.5" fill="url(#bee-sw-metal)"/><rect x="22" y="4" width="4" height="4" fill="#7b848e"/><rect x="36" y="6" width="5" height="4" rx="1.2" transform="rotate(40 38.5 8)" fill="url(#bee-sw-metal)"/><circle cx="24" cy="32" r="22" fill="url(#bee-sw-metal)"/><circle cx="24" cy="32" r="19" fill="url(#bee-sw-face)"/><circle class="bee-sw-ring" cx="24" cy="32" r="16" fill="none" stroke="#3bb273" stroke-width="3" pathLength="100" stroke-dasharray="100 100" transform="rotate(-90 24 32)"/><line x1="24" y1="14.2" x2="24" y2="16.4" stroke="#2a2f36" stroke-width="1" transform="rotate(0 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(30 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(60 24 32)"/><line x1="24" y1="14.2" x2="24" y2="16.4" stroke="#2a2f36" stroke-width="1" transform="rotate(90 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(120 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(150 24 32)"/><line x1="24" y1="14.2" x2="24" y2="16.4" stroke="#2a2f36" stroke-width="1" transform="rotate(180 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(210 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(240 24 32)"/><line x1="24" y1="14.2" x2="24" y2="16.4" stroke="#2a2f36" stroke-width="1" transform="rotate(270 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(300 24 32)"/><line x1="24" y1="14.2" x2="24" y2="15.4" stroke="#2a2f36" stroke-width="0.6" transform="rotate(330 24 32)"/><line class="bee-sw-hand" x1="24" y1="32" x2="24" y2="16" stroke="#d64541" stroke-width="1.4" stroke-linecap="round"/><circle cx="24" cy="32" r="1.8" fill="#2a2f36"/></svg><b class="bee-clock-n"></b></span>
       <span class="bee-spacer"></span>
       <button type="button" class="bee-skip" hidden></button>
+      <button type="button" class="bee-skip-intro" hidden></button>
       <div class="bee-toolbox">
         <button type="button" class="bee-tools-btn" hidden></button>
         <div class="bee-tools" hidden><p class="bee-keys">Keys: Enter done &middot; 1 word &middot; 2 meaning &middot; 3 sentence &middot; 4 origin &middot; 5 mic</p></div>
@@ -1303,6 +1304,15 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   if (isMath) judge.querySelectorAll('text').forEach((t) => { if (t.textContent === 'SPELLING BEE') t.textContent = 'MATH BEE'; });   // the table's front panel
   followJudgeMouth(judge);              // her lips follow the speech code's mouth
   const hall = $('.bee-hall'), statusEl = $('.bee-status'), lettersEl = $('.bee-letters'), inputEl = $('.bee-input');
+  const liveClips = new Set();
+  /** a recorded line, kept track of while it plays (stopClips() silences every one) */
+  function liveClip(a) {
+    liveClips.add(a);
+    const off = () => liveClips.delete(a);
+    a.addEventListener('ended', off); a.addEventListener('error', off); a.addEventListener('pause', off);
+    return a;
+  }
+  function stopClips() { for (const a of [...liveClips]) { try { a.pause(); a.dispatchEvent(new Event('ended')); } catch { /* gone */ } } liveClips.clear(); }
   const clockEl = $('.bee-clock'), toolsEl = $('.bee-tools'), heardEl = $('.bee-heard'), skipBtn = $('.bee-skip');
   const toolsBtn = $('.bee-tools-btn'), keysEl = $('.bee-keys');
   // the speller's tools live in the top bar, folded away behind one button
@@ -1611,7 +1621,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const tries = Array.isArray(item.url) ? item.url : item.url ? [{ url: item.url }] : [];
     if (tries.length) {
       const [first, ...rest] = tries;
-      const a = new Audio(first.url);
+      const a = liveClip(new Audio(first.url));
       // this speller's volume and pitch for the engine that made the recording (the settings)
       const engine = /raw\.githubusercontent/.test(first.url) ? 'kokoro' : 'eleven';
       const t = tuneOf(engine, item.kid);
@@ -1724,7 +1734,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       played = await new Promise((resolve) => {
         try {
           hush();
-          const a = new Audio(clip);
+          const a = liveClip(new Audio(clip));
           let done = false;
           const fin = (ok) => { if (!done) { done = true; resolve(ok); } };
           a.onended = () => fin(true);
@@ -1799,7 +1809,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       if (clip) {
         try {
           hush();
-          const a = new Audio(clip);
+          const a = liveClip(new Audio(clip));
           a.onplaying = () => { judges.classList.add('is-man-talking'); startFlap(); };
           a.onended = end;
           a.onerror = () => { clip = null; judges.classList.remove('is-man-talking'); speak(); };
@@ -2087,7 +2097,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     const url = await Promise.race([kokoroSays(text, Q_VOICE), new Promise((r) => setTimeout(() => r(null), 1500))]);
     if (mine !== readToken || !pace) return;
     if (!url) { offstage(text); return; }
-    const a = new Audio(url);
+    const a = liveClip(new Audio(url));
     readAudio = a;
     a.play().catch(() => { if (mine === readToken) offstage(text); });
   }
@@ -3385,6 +3395,18 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
   const onFull = () => fullBtn.setAttribute('aria-pressed', document.fullscreenElement ? 'true' : 'false');
   document.addEventListener('fullscreenchange', onFull);
   skipBtn.addEventListener('click', () => { skipping = true; pace = 0; hush(); try { synth?.cancel(); } catch { /* ignore */ } spellerHush(); skipBtn.hidden = true; settle(); });
+  /* Skip the intro: the curtains, the welcome, the TV's opening and the judges' introductions go by at
+     once (the clips stop), and the bee starts. */
+  const skipIntroBtn = $('.bee-skip-intro');
+  let introSkipped = false;
+  skipIntroBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5v13l8.5-6.5z M12.5 5.5v13l8.5-6.5z" fill="currentColor"/><rect x="20" y="5.5" width="2" height="13" fill="currentColor"/></svg>';
+  skipIntroBtn.dataset.tip = 'Skip the intro';
+  skipIntroBtn.setAttribute('aria-label', 'Skip the intro');
+  skipIntroBtn.addEventListener('click', () => {
+    introSkipped = true; pace = 0;
+    hush(); try { synth?.cancel(); } catch { /* ignore */ } spellerHush(); stopClips();
+    skipIntroBtn.hidden = true; settle();
+  });
 
   function showResults() {
     const champ = seats[bee.champion];
@@ -3414,6 +3436,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
 
   (async () => {
     pills();
+    skipIntroBtn.hidden = false;
     say(isMath ? `Welcome to the Prep Math Bee. ${seats.length} contestants, one minute each at the pulpit.` : `Welcome to the Prep Spelling Bee. ${seats.length} spellers. One wrong letter and you leave the stage.`);
     // the title, dropping onto the closed curtains tile by tile
     const marquee = $('.bee-marquee');
@@ -3434,6 +3457,14 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       await wait(300);
       if (!gone && pace) await judgeManSays('And I am Mr. Whitmore. Good luck to every one of our spellers!', '/media/spelling-judge/intro.mp3');
       await wait(400);
+    }
+    // the intro over (or skipped): the curtains open, the TV back to its card, full pace again
+    skipIntroBtn.hidden = true;
+    if (introSkipped) {
+      bd.classList.add('is-curtains-open');
+      hall.querySelector('.bee-tv')?.classList.remove('is-white', 'is-host', 'is-award', 'is-title-card', 'is-off', 'is-glitch');
+      pace = 1; settle();
+      introSkipped = false;
     }
     if (isMath) { await (cup ? mathCup() : mathBee()); return; }        // the Math Bee has its own turns
     if (!gone && pace) {
