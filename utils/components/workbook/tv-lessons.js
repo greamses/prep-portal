@@ -584,8 +584,12 @@ export async function playLesson(kind, title = "", strip = null) {
       strip?.classList.remove("is-playing");
       setTimeout(() => playLesson(id, next?.name || ""), 120);
     };
+    /* a soroban lesson has a soroban to practise on under it (../soroban-board.js) */
+    const below = /^sor-/.test(kind)
+      ? (host) => import("/utils/components/soroban-board.js").then((m) => m.mountSorobanBoard(host, { lesson: kind }))
+      : null;
     await openTv({ title, build: sized, steps: made.steps, onEdit: await editorFor(kind, title, coded), related, onPick, filmId: kind,
-      question: made.question || coded?.question || "", topic: me?.topic || "" });
+      question: made.question || coded?.question || "", topic: me?.topic || "", below });
     const refit = () => {
       const st = document.querySelector(".mm-tv-overlay [data-tv='stage'] .vm-tv");
       if (st) st.style.setProperty("--u", `${st.parentElement.clientWidth / 100}px`);

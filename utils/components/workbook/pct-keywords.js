@@ -100,6 +100,8 @@ const fbarStages = (id, { n, extra = 0, pale = 0, part = 0, topTo = null }) => (
   /* the fraction, then the whole as ONE bar (it is cut next, never drawn box by box) */
   [`${id}.base`]: (s, H) => {
     for (let i = 0; i < n; i++) key(s, `b${i}`)?.setAttribute("fill", SKY);
+    /* a copy still flying from a step that has been left comes off the drawing */
+    if (s) { s.__fb = (s.__fb || 0) + 1; s.querySelectorAll("[data-clone]").forEach((c) => c.remove()); }
     const tv = key(s, "topv"); if (tv && tv.dataset.was) { tv.textContent = tv.dataset.was; tv.setAttribute("fill", INK); }
     H.write(key(s, "fn"), 0); H.write(key(s, "fl"), 0.1); H.write(key(s, "fd"), 0.2);
     H.write(key(s, "top"), 0.5);
@@ -128,7 +130,36 @@ const fbarStages = (id, { n, extra = 0, pale = 0, part = 0, topTo = null }) => (
       setTimeout(() => { b.style.transition = "fill .45s"; b.setAttribute("fill", PART); }, (0.8 + i * 0.4) * 1000);
       H.lit(b, 0.8 + i * 0.4, 1.2, RED);
     }
-    for (let j = 0; j < extra; j++) H.grow(key(s, `x${j}`), 0.8 + j * 0.45);
+    /* ADDING ON IS A COPY OF A PART: "highlight 1 from the 4 cuts and clone and move it to show
+       increase". The box the numerator counts is lit, a copy of it lifts off, travels along the top
+       and lands as the new box on the end, which then turns green. */
+    for (let j = 0; j < extra; j++) {
+      const tgt = key(s, `x${j}`);
+      if (isInstant(H) || !s) { H.show(tgt); continue; }
+      const t0 = 0.8 + j * 1.9, src = key(s, `b${j % n}`), val = key(s, `v${j % n}`);
+      H.lit(src, t0, 1.4, RED);
+      const gen = s.__fb;
+      setTimeout(() => {
+        if (!s.isConnected || s.__fb !== gen) return;
+        const r = tgt?.querySelector("rect");
+        if (!src || !r) { H.show(tgt); return; }
+        const x0 = Number(src.getAttribute("x")), y0 = Number(src.getAttribute("y")), w = Number(src.getAttribute("width")), h = Number(src.getAttribute("height"));
+        const dx = Number(r.getAttribute("x")) - x0;
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.setAttribute("data-clone", "1");
+        g.innerHTML = `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="${SKY}" stroke="${RED}" stroke-width="0.8"/>` + (val ? val.innerHTML : "");
+        s.append(g);
+        H.sound("whoosh", 0);
+        const lift = -(h + 3);
+        const anim = g.animate([
+          { transform: "translate(0px, 0px)" },
+          { transform: `translate(0px, ${lift}px)`, offset: 0.25 },
+          { transform: `translate(${dx}px, ${lift}px)`, offset: 0.75 },
+          { transform: `translate(${dx}px, 0px)` },
+        ], { duration: 1500, easing: "ease-in-out", fill: "forwards" });
+        anim.onfinish = () => { g.remove(); H.write(tgt, 0); H.sound("pop", 0); };
+      }, (t0 + 0.5) * 1000);
+    }
     for (let i = n - pale; i < n; i++) H.write(key(s, `p${i}`), 0.8 + (i - n + pale) * 0.45);
     if (!isInstant(H)) H.sound("pop", 0.8);
   },
@@ -180,10 +211,14 @@ function dpic(from, mode, label) {
   o += `<circle cx="${DX0 + 3 * COLW + PTW / 2}" cy="17.4" r="1.1" fill="${RED}"/></g>`;
   tiles.forEach((t, i) => { o += `<g data-mb="num" data-k="d${i}"><g class="mv" data-dx="${dcx(t.to) - dcx(t.col)}">${S(dcx(t.col), 17.2, 7.2, t.d)}</g></g>`; });
   zeros.forEach((c, i) => { o += `<g data-mb="num" data-k="z${i}">${S(dcx(c), 17.2, 7.2, "0", "middle", GREEN)}</g>`; });
-  const a = dcx(1), b = dcx(3);
-  const arrow = mode === "div"
-    ? `<path d="M${a} 21.8 Q${(a + b) / 2} 26.5 ${b} 21.8" fill="none" stroke="${PURPLE}" stroke-width="0.55"/><path d="M${b - 1.6} 22.2 L${b} 21.8 L${b - 0.6} 23.4" fill="none" stroke="${PURPLE}" stroke-width="0.55"/>`
-    : `<path d="M${b} 21.8 Q${(a + b) / 2} 26.5 ${a} 21.8" fill="none" stroke="${PURPLE}" stroke-width="0.55"/><path d="M${a + 1.6} 22.2 L${a} 21.8 L${a + 0.6} 23.4" fill="none" stroke="${PURPLE}" stroke-width="0.55"/>`;
+  /* THE ARROWHEAD LIES ALONG THE CURVE where it arrives (from the control point to the end), and it
+     comes in with the label once the stroke has been drawn (film-kit draw() fades in nested svgs) */
+  const [from0, to0] = mode === "div" ? [dcx(1), dcx(3)] : [dcx(3), dcx(1)];
+  const a = dcx(1), b = dcx(3), cx = (a + b) / 2, cy = 26.5, Y = 21.8;
+  const ux = to0 - cx, uy = Y - cy, ul = Math.hypot(ux, uy), dx = ux / ul, dy = uy / ul;
+  const bx = to0 - dx * 2, by = Y - dy * 2, px = -dy * 1, py = dx * 1;
+  const head = `<svg overflow="visible"><polygon points="${f2(to0)},${f2(Y)} ${f2(bx + px)},${f2(by + py)} ${f2(bx - px)},${f2(by - py)}" fill="${PURPLE}"/></svg>`;
+  const arrow = `<path d="M${f2(from0)} ${Y} Q${f2(cx)} ${cy} ${f2(to0)} ${Y}" fill="none" stroke="${PURPLE}" stroke-width="0.55"/>${head}`;
   o += `<g data-mb="brace" data-mb-key="arr">${arrow}${S((a + b) / 2, 28.6, 3.4, mode === "div" ? "÷ 100: two places right" : "× 100: two places left", "middle", PURPLE)}</g>`;
   const res = mode === "div" ? String(value) : `${value}%`;
   o += `<g data-mb="num" data-k="res">${S(DX0 + 5 * COLW + PTW + 4, 16.5, 5.6, `= ${res}`, "start", GREEN)}</g>`;

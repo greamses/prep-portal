@@ -210,50 +210,9 @@ export function sorobanSum(seed, i, cfg, operations) {
   return { terms, answer: total };
 }
 
-/* ── the soroban, drawn (the workbench's 2D look) ────────────────────────── */
-const PITCH = 1.55, SLOT = 1.1, TRAVEL = 1.45, BAR_GAP = 1.0, EDGE = 1.1, BEAD_T = 1.0, BEAD_D = 1.3, EYE = 0.07;
-const PLACE = [['--accent-primary', '#f4c95d'], ['--accent-secondary', '#6fb7e8'], ['--accent-success', '#7cc47c']];
-const U = 22;                         // px to a unit
-/** A soroban showing n on `rods` rods (the ones on the right). */
-export function sorobanSvg(n, rods) {
-  const digits = String(Math.abs(n)).padStart(rods, '0').slice(-rods).split('').map(Number);
-  const heaven = BAR_GAP + TRAVEL + BEAD_T / 2, earth = BAR_GAP + 3 * SLOT + TRAVEL + BEAD_T / 2;
-  const W = rods * PITCH + EDGE * 2, H = heaven + earth + EDGE * 2, barY = EDGE + heaven;
-  const s = (v) => (v * U).toFixed(1);
-  const bead = (x, y, fill, dark) => {
-    const rr = BEAD_D / 2, tt = BEAD_T / 2;
-    const pts = [[-rr, 0], [-rr * 0.62, -tt * 0.44], [-EYE, -tt], [EYE, -tt], [rr * 0.62, -tt * 0.44], [rr, 0], [rr * 0.62, tt * 0.44], [EYE, tt], [-EYE, tt], [-rr * 0.62, tt * 0.44]];
-    return `<polygon points="${pts.map(([a, b]) => `${s(x + a)},${s(y + b)}`).join(' ')}" fill="${fill}" stroke="rgba(42,39,35,.55)" stroke-width="1"/>`
-      + `<path d="M${s(x - rr * 0.62)} ${s(y - tt * 0.3)} L${s(x + rr * 0.3)} ${s(y - tt * 0.3)}" stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-linecap="round"/>`
-      + (dark ? `<polygon points="${pts.map(([a, b]) => `${s(x + a)},${s(y + b)}`).join(' ')}" fill="rgba(0,0,0,.34)"/>` : '');
-  };
-  let out = '';
-  // the four timbers (no backing: the paper shows through)
-  const T = 0.55;
-  out += `<rect x="${s(T / 2)}" y="${s(T / 2)}" width="${s(W - T)}" height="${s(H - T)}" fill="none" stroke="var(--accent-warning, #f0a868)" stroke-width="${s(T)}"/>`;
-  out += `<rect x="${s(T / 2)}" y="${s(T / 2)}" width="${s(W - T)}" height="${s(H - T)}" fill="none" stroke="rgba(42,39,35,.35)" stroke-width="1.2"/>`;
-  for (let r = 0; r < rods; r++) {
-    const x = EDGE + PITCH * (r + 0.5);
-    out += `<line x1="${s(x)}" y1="${s(T)}" x2="${s(x)}" y2="${s(H - T)}" stroke="var(--text-tertiary, #9a948a)" stroke-width="2.4"/>`;
-  }
-  // the reckoning bar, with a dot on every third rod from the ones (the unit marks)
-  out += `<rect x="${s(T)}" y="${s(barY - 0.2)}" width="${s(W - 2 * T)}" height="${s(0.4)}" fill="var(--accent-warning, #f0a868)" stroke="rgba(42,39,35,.4)" stroke-width="1"/>`;
-  out += `<rect x="${s(T)}" y="${s(barY - 0.2)}" width="${s(W - 2 * T)}" height="${s(0.4)}" fill="rgba(0,0,0,.28)"/>`;
-  for (let r = 0; r < rods; r++) {
-    const power = rods - 1 - r;
-    if (power % 3 === 0) out += `<circle cx="${s(EDGE + PITCH * (r + 0.5))}" cy="${s(barY)}" r="2.6" fill="#2a2723"/>`;
-  }
-  // the beads: in = against the bar, out = against the frame
-  digits.forEach((v, r) => {
-    const x = EDGE + PITCH * (r + 0.5), power = rods - 1 - r;
-    const [tok, fb] = PLACE[power % 3];
-    const fill = `var(${tok}, ${fb})`;
-    const up = v >= 5, k = v % 5;
-    out += bead(x, barY - (BAR_GAP + (up ? 0 : TRAVEL)), fill, true);
-    for (let i = 0; i < 4; i++) out += bead(x, barY + BAR_GAP + i * SLOT + (i < k ? 0 : TRAVEL), fill, false);
-  });
-  return `<svg class="sor-abacus" viewBox="0 0 ${s(W)} ${s(H)}" width="${s(W)}" height="${s(H)}" role="img" aria-label="${Math.abs(n)} on a soroban">${out}</svg>`;
-}
+/* ── the soroban, drawn: the site's one 2D soroban (utils/components/soroban-svg.js) ── */
+import { sorobanSvg } from '/utils/components/soroban-svg.js';
+export { sorobanSvg };
 
 /* ── the round ─────────────────────────────────────────────────────────── */
 const $ = (id) => document.getElementById(id);

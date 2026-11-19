@@ -216,7 +216,7 @@ async function downloadThumb(id) {
   return true;
 }
 
-export async function openTv({ title = "", build = () => {}, steps: told = [], onEdit = null, related = [], onPick = null, filmId = "", question = "", topic = "" } = {}) {
+export async function openTv({ title = "", build = () => {}, steps: told = [], onEdit = null, related = [], onPick = null, filmId = "", question = "", topic = "", below = null } = {}) {
   const more = related.length && typeof onPick === "function";
   /* the chapters of the film: the title card, the question, each idea or method, the practice card */
   const firstTold = told.length && !told[0].chapter ? [{ ...told[0], chapter: "The question" }, ...told.slice(1)] : told;
@@ -279,8 +279,12 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     `<button class="mm-tv-btn" data-tv="close" type="button" aria-label="Turn the TV off" data-tip="Turn the TV off (Esc)" aria-keyshortcuts="Escape">${ICON_POWER}</button>` +
     `</div></div>` +
     `<div class="mm-tv-stand" aria-hidden="true"><div class="mm-tv-stand-neck"></div><div class="mm-tv-stand-base"></div></div>` +
+    (below ? `<div class="mm-tv-below"></div>` : "") +
     `</div>`;
+  /* `below`: something to DO under the film (the soroban practice board): the overlay scrolls down to it */
+  if (below) box.classList.add("mm-tv-overlay--below");
   document.body.appendChild(box);
+  if (below) { try { below(box.querySelector(".mm-tv-below")); } catch (err) { console.warn("below the TV:", err); } }
 
   const q = (k) => box.querySelector(`[data-tv="${k}"]`);
   const b = (k) => box.querySelector(`[data-b="${k}"]`);

@@ -28,51 +28,52 @@
 
 import { film, cueAt } from "./film-kit.js";
 import { svgBox, PAPER, PIC_W } from "./cbt-films.js";
+/* THE SITE'S OWN 2D SOROBAN (user: "Use the 2D soroban that we have for the video"): the very drawing
+   Drills and the practice board use, drawn here at U millimetres to a unit */
+import { sorobanGeom, sorobanMarkup, slideRod } from "../soroban-svg.js";
 
-const INK = "#2a2723", RED = "#c0453f", GREEN = "#2f7d4a", BLUE = "#2f6f8f";
-const PLACE = [["--accent-primary", "#f4c95d"], ["--accent-secondary", "#6fb7e8"], ["--accent-success", "#7cc47c"]];
+const INK = "#2a2723", RED = "#c0453f", GREEN = "#2f7d4a", BLUE = "#2f6f8f", PURPLE = "#6b4fa0";
 const NAMES = ["1", "10", "100", "1 000", "10 000"];
 
-/* the soroban's measures, in millimetres of the 150mm paper */
-const P = 15, RR = 6, TT = 2.5, TOP = 7, FT = 2.5;
-const H_OUT = 12.5, H_IN = 17.5, BEAM = 21.6, E0 = 25.7, SLOT = 5.4, E_TRAVEL = 5.6, BOTTOM = 53;
-const READ_Y = 55, WORK_Y = 71.5, SHEET = 112, MID = SHEET / 2;
+const U = 4, TOP = 7.5, SHEET = 112, MID = SHEET / 2;
 const BIG = PIC_W * (150 / SHEET);   // a 112mm sheet drawn as wide as the films' full 150mm pictures
+/* THE BEADS KEEP UP WITH THE VOICE: "the voice is faster than the counting". The word clock (cueAt)
+   assumes 2.4 words a second; the lesson voice is quicker, so every bead's moment is brought forward. */
+const PACE = 0.78;
 
 const isInstant = (H) => H.show === H.grow;
-const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 const f = (n) => n.toFixed(2);
+const geomOf = (rods) => sorobanGeom(rods, U);
 
-/** The soroban with `rods` rods (the ones rod on the right), every bead away from the beam. */
+/** The soroban with `rods` rods (the ones rod on the right), every bead away from the beam, with its
+    labels (the parts, named with leader lines), the place names, a figure under each rod and a working line. */
 function sorobanPic(rods) {
-  const W = rods * P + 8, x0 = MID - W / 2;
-  const cx = (p) => x0 + 4 + P * (rods - 1 - p + 0.5);
-  const bead = (x, y, fill, dark) => {
-    const pts = [[-RR, 0], [-RR * 0.62, -TT * 0.44], [-0.5, -TT], [0.5, -TT], [RR * 0.62, -TT * 0.44], [RR, 0], [RR * 0.62, TT * 0.44], [0.5, TT], [-0.5, TT], [-RR * 0.62, TT * 0.44]]
-      .map(([a, b]) => `${f(x + a)},${f(y + b)}`).join(" ");
-    return `<polygon class="sb-body" points="${pts}" fill="${fill}" stroke="rgba(42,39,35,.55)" stroke-width="0.35"/>`
-      + `<path d="M${f(x - RR * 0.62)} ${f(y - TT * 0.3)} L${f(x + RR * 0.3)} ${f(y - TT * 0.3)}" stroke="rgba(255,255,255,.6)" stroke-width="0.7" stroke-linecap="round"/>`
-      + (dark ? `<polygon points="${pts}" fill="rgba(0,0,0,.3)"/>` : "");
-  };
-  let o = "";
-  o += `<rect x="${f(x0 + FT / 2)}" y="${f(TOP + FT / 2)}" width="${f(W - FT)}" height="${f(BOTTOM - TOP - FT)}" fill="none" stroke="var(--accent-warning, #f0a868)" stroke-width="${FT}"/>`;
-  o += `<rect x="${f(x0 + FT / 2)}" y="${f(TOP + FT / 2)}" width="${f(W - FT)}" height="${f(BOTTOM - TOP - FT)}" fill="none" stroke="rgba(42,39,35,.35)" stroke-width="0.4"/>`;
-  for (let p = 0; p < rods; p++) o += `<line x1="${f(cx(p))}" y1="${TOP + FT}" x2="${f(cx(p))}" y2="${BOTTOM - FT}" stroke="var(--text-tertiary, #9a948a)" stroke-width="0.8"/>`;
-  o += `<rect data-k="beam" x="${f(x0 + FT)}" y="${f(BEAM - 1.2)}" width="${f(W - 2 * FT)}" height="2.4" fill="var(--accent-warning, #f0a868)" stroke="rgba(42,39,35,.4)" stroke-width="0.35"/>`;
-  o += `<rect x="${f(x0 + FT)}" y="${f(BEAM - 1.2)}" width="${f(W - 2 * FT)}" height="2.4" fill="rgba(0,0,0,.25)" pointer-events="none"/>`;
-  for (let p = 0; p < rods; p++) if (p % 3 === 0) o += `<circle data-k="dot${p}" cx="${f(cx(p))}" cy="${BEAM}" r="0.9" fill="${INK}"/>`;
+  const g = geomOf(rods), x0 = MID - g.W / 2, cx = (p) => x0 + g.cx(p);
+  const READ_Y = TOP + g.H + 2, WORK_Y = READ_Y + 15.5;
+  let o = `<g data-k="sor" transform="translate(${f(x0)} ${TOP})">${sorobanMarkup(rods, { U })}</g>`;
   for (let p = 0; p < rods; p++) {
-    const [tok, fb] = PLACE[p % 3], fill = `var(${tok}, ${fb})`, x = cx(p);
-    o += `<g data-bead="${p}h">${bead(x, H_OUT, fill, true)}</g>`;
-    for (let i = 0; i < 4; i++) o += `<g data-bead="${p}e${i}">${bead(x, E0 + i * SLOT + E_TRAVEL, fill, false)}</g>`;
-    /* the place name above, and the figure the rod reads below (both written when talked about) */
-    o += `<g data-mb="name" data-k="lab${p}"><text x="${f(x)}" y="4.6" text-anchor="middle" font-family="STIX Two Text, serif" font-size="3.4" fill="${BLUE}">${NAMES[p] || ""}</text></g>`;
-    o += `<g data-mb="num" data-k="rd${p}"><rect x="${f(x - 5)}" y="${READ_Y}" width="10" height="9" fill="#fffdf8" stroke="${INK}" stroke-width="0.45"/>`
-      + `<text data-k="rt${p}" x="${f(x)}" y="${READ_Y + 6.8}" text-anchor="middle" font-family="STIX Two Text, serif" font-size="6" fill="${INK}">0</text></g>`;
+    const x = cx(p), yName = p % 2 ? 2.6 : 5.6;
+    o += `<g data-mb="name" data-k="lab${p}"><text x="${f(x)}" y="${yName}" text-anchor="middle" font-family="STIX Two Text, serif" font-size="2.8" fill="${BLUE}">${NAMES[p] || ""}</text></g>`;
+    o += `<g data-mb="num" data-k="rd${p}"><rect x="${f(x - 2.8)}" y="${f(READ_Y)}" width="5.6" height="7" fill="#fffdf8" stroke="${INK}" stroke-width="0.4"/>`
+      + `<text data-k="rt${p}" x="${f(x)}" y="${f(READ_Y + 5.4)}" text-anchor="middle" font-family="STIX Two Text, serif" font-size="4.6" fill="${INK}">0</text></g>`;
   }
-  o += `<g data-mb="num" data-k="work"><text data-k="wt" x="${MID}" y="${WORK_Y}" text-anchor="middle" font-family="STIX Two Text, serif" font-size="7" fill="${GREEN}"></text></g>`;
-  return svgBox(SHEET, 74, o);
+  /* THE LABELS: "Add labels to the soroban". Right side: the five bead, the beam, the one beads;
+     left side: the frame and a rod. Each is a word with a leader line to the part. */
+  const R = x0 + g.W, Lx = x0, ones = cx(0), last = cx(rods - 1), bw = 0.65 * U;
+  const lab = (k, tx, ty, anchor, text, lx1, ly1) => `<g data-mb="name" data-k="${k}">`
+    + `<path d="M${f(anchor === "start" ? tx - 0.8 : tx + 0.8)} ${f(ty - 1)} L${f(lx1)} ${f(ly1)}" fill="none" stroke="${PURPLE}" stroke-width="0.3"/>`
+    + `<circle cx="${f(lx1)}" cy="${f(ly1)}" r="0.45" fill="${PURPLE}"/>`
+    + `<text x="${f(tx)}" y="${f(ty)}" text-anchor="${anchor}" font-family="JetBrains Mono, monospace" font-weight="700" font-size="2.6" fill="${PURPLE}">${text}</text></g>`;
+  o += lab("lbH", R + 4, TOP + g.heavenY + 0.9, "start", "five bead: 5", ones + bw, TOP + g.heavenY);
+  o += lab("lbB", R + 4, TOP + g.barY + 0.9, "start", "beam", R - g.timber, TOP + g.barY);
+  o += lab("lbE", R + 4, TOP + g.earthY(1) + 3, "start", "one beads: 1 each", ones + bw, TOP + g.earthY(1) + 1);
+  o += lab("lbD", R + 4, TOP + g.barY + 5.2, "start", "dot: the ones rod", ones, TOP + g.barY);
+  o += lab("lbF", Lx - 4, TOP + 3.2, "end", "frame", Lx + g.timber / 2, TOP + 2.4);
+  o += lab("lbR", Lx - 4, TOP + g.H * 0.8, "end", "rod", last, TOP + g.H * 0.8 - 1);
+  o += `<g data-mb="num" data-k="work"><text data-k="wt" x="${MID}" y="${f(WORK_Y)}" text-anchor="middle" font-family="STIX Two Text, serif" font-size="6.4" fill="${GREEN}"></text></g>`;
+  return svgBox(SHEET, WORK_Y + 3, o);
 }
+const LABELS = ["lbF", "lbR", "lbB", "lbH", "lbE", "lbD"];
 
 /* ── the hand on the soroban ──────────────────────────────────────────────── */
 const q = (s, k) => (s ? s.querySelector(`[data-k="${k}"]`) : null);
@@ -80,16 +81,10 @@ const beadOf = (s, p, part) => (s ? s.querySelector(`[data-bead="${p}${part}"]`)
 const digitsOf = (n, rods) => String(Math.max(0, n)).padStart(rods, "0").slice(-rods).split("").map(Number).reverse(); // [ones, tens, …]
 
 /** Slide a rod's beads to show v. */
-function setRod(s, p, v, H, delay, gen) {
+function setRod(s, p, v, H, delay, gen, rods) {
   const go = () => {
     if (!s || s.__gen !== gen) return;
-    const moves = [[beadOf(s, p, "h"), v >= 5 ? H_IN - H_OUT : 0]];
-    for (let i = 0; i < 4; i++) moves.push([beadOf(s, p, `e${i}`), i < v % 5 ? -E_TRAVEL : 0]);
-    for (const [b, dy] of moves) {
-      if (!b) continue;
-      b.style.transition = isInstant(H) ? "none" : "transform .42s cubic-bezier(.3,1.25,.55,1)";
-      b.style.transform = `translate(0px, ${dy}px)`;
-    }
+    slideRod(s, p, v, geomOf(rods), { instant: isInstant(H) });
     /* a figure already showing under this rod follows its beads */
     const rd = q(s, `rd${p}`), rt = q(s, `rt${p}`);
     if (rd && rt && Number(getComputedStyle(rd).opacity) > 0.5) rt.textContent = String(v);
@@ -104,7 +99,7 @@ function glow(s, n, H, delay, hold = 1.6) {
   const marks = n.matches("g") ? [...n.querySelectorAll(".sb-body")] : [n];
   setTimeout(() => {
     if (s.__gen !== gen) return;
-    marks.forEach((m) => { m.style.stroke = RED; m.style.strokeWidth = "0.9"; });
+    marks.forEach((m) => { m.style.stroke = RED; m.style.strokeWidth = "0.7"; });
     setTimeout(() => marks.forEach((m) => { m.style.stroke = ""; m.style.strokeWidth = ""; }), hold * 1000);
   }, delay * 1000);
 }
@@ -118,13 +113,13 @@ function runner(rods, say, acts) {
     /* a figure changes when its words are said, with its beads, never at the start of the step */
     const later = (at, fn) => { if (isInstant(H) || at <= 0.01) fn(); else setTimeout(() => { if (s.__gen === gen) fn(); }, at * 1000); };
     acts.forEach(([when, kind, a, b]) => {
-      const at = isInstant(H) ? 0 : typeof when === "number" ? when : cueAt(say, when);
+      const at = isInstant(H) ? 0 : typeof when === "number" ? when : cueAt(say, when) * PACE;
       if (kind === "num") {                                   // the whole soroban shows a number
         const d = digitsOf(a, rods);
-        d.forEach((v, p) => setRod(s, p, v, H, at + (b ? 0 : (rods - 1 - p) * 0.08), gen));
+        d.forEach((v, p) => setRod(s, p, v, H, at + (b ? 0 : (rods - 1 - p) * 0.08), gen, rods));
         if (!isInstant(H)) H.sound("tick", at);
       } else if (kind === "rod") {                            // one rod to a digit
-        setRod(s, a, b, H, at, gen);
+        setRod(s, a, b, H, at, gen, rods);
         if (!isInstant(H)) H.sound("tick", at);
       } else if (kind === "read") {                           // write the figures under the rods
         const d = digitsOf(a, rods), places = b ?? rods;
@@ -143,10 +138,14 @@ function runner(rods, say, acts) {
       } else if (kind === "unwork") {
         later(at, () => { const g = q(s, "work"); if (g) g.style.opacity = "0"; });
       } else if (kind === "glow") {                           // a bead: "h", or "e" for every earth bead in
-        if (a === "beam") glow(s, q(s, "beam"), H, at);
-        else if (a === "dot") glow(s, q(s, `dot${b || 0}`), H, at, 2.2);
+        if (a === "beam") glow(s, s.querySelector('[data-sk="beam"]'), H, at);
+        else if (a === "dot") glow(s, s.querySelector(`[data-sk="dot${b || 0}"]`), H, at, 2.2);
+        else if (a === "rod") glow(s, s.querySelector(`[data-sk="rod${b || 0}"]`), H, at, 2.2);
+        else if (a === "frame") glow(s, s.querySelector('[data-sk="frame"]'), H, at, 2.2);
         else if (b === "h") glow(s, beadOf(s, a, "h"), H, at);
         else for (let i = 0; i < 4; i++) glow(s, beadOf(s, a, `e${i}`), H, at + i * 0.12);
+      } else if (kind === "labels") {                          // name the parts: all of them, or the ones listed
+        (a || LABELS).forEach((k, i) => H.write(q(s, k), at + i * (a ? 0.5 : 0.15)));
       } else if (kind === "ding") {
         if (!isInstant(H)) H.sound("ding", at);
       }
@@ -155,8 +154,10 @@ function runner(rods, say, acts) {
 }
 
 /** A soroban film: `steps` = [{ say: [lines], acts: [[when, kind, a, b]], card: [title, sub], pause, rule: id-on/off }] */
-function sorFilm({ rods, ask, rules = [], steps }) {
+function sorFilm({ rods, ask, rules = [], steps, taught = false }) {
   const stages = {};
+  /* the parts are labelled from the start, except in the lesson that names them one by one */
+  if (!taught) steps[0].acts = [[0, "labels"], ...(steps[0].acts || [])];
   steps.forEach((st, i) => { st.text = st.say.join(" "); if (st.acts?.length) stages[`sb.s${i}`] = runner(rods, st.text, st.acts); });
   return film({
     paperMm: PAPER, picW: BIG,
@@ -180,13 +181,14 @@ const CLEAR = [0, "num", 0, true];
 
 /* ═══ 1. COUNTING ON A SOROBAN ═════════════════════════════════════════════ */
 export const sorCount = () => sorFilm({
-  rods: 3,
+  rods: 3, taught: true,
   ask: "How do you count from nought to nine on one rod of a soroban?",
   rules: [["r1", "The one rule", "A bead counts only when it touches the beam"], ["r2", "The top bead", "Worth five"]],
   steps: [
     { say: ["This is a soroban.", "It's a Japanese abacus, and with it you can add and take away faster than you can write.", "Before any sums, let's learn how it counts."], acts: [CLEAR] },
-    { card: ["The parts", "Beam, rods and beads"], say: ["Look at the long bar across the middle.", "That's the beam.", "Each wire going up and down is a rod.", "On every rod, there's one bead above the beam... and four beads below it."],
-      acts: [["the beam", "glow", "beam"], ["one bead above", "glow", 0, "h"], ["four beads below", "glow", 0, "e"]] },
+    { card: ["The parts", "Frame, beam, rods and beads"], say: ["The wooden border all round is the frame.", "Look at the long bar across the middle.", "That's the beam.", "Each wire going up and down is a rod.", "On every rod, there's one bead above the beam... and four beads below it."],
+      acts: [["the frame", "glow", "frame"], ["the frame", "labels", ["lbF"]], ["the beam", "glow", "beam"], ["the beam", "labels", ["lbB"]], ["is a rod", "glow", "rod", 2], ["is a rod", "labels", ["lbR"]],
+        ["one bead above", "glow", 0, "h"], ["one bead above", "labels", ["lbH"]], ["four beads below", "glow", 0, "e"], ["four beads below", "labels", ["lbE"]]] },
     { on: ["r1"], say: ["Now here's the one rule that matters.", "A bead counts only when it touches the beam.", "Right now, nothing is touching it.", "So this rod shows nought."],
       acts: [["shows nought", "read", 0, 1]] },
     { off: ["r1"], card: ["Counting", "One to four"], say: ["The beads below the beam are worth one each.", "Push one up with your thumb... one.", "Another... two.", "Three.", "Four."],
@@ -214,7 +216,7 @@ export const sorPlace = () => sorFilm({
   steps: [
     { say: ["One rod counts to nine.", "But real numbers have more than one figure.", "On a soroban, every rod is a place."], acts: [CLEAR] },
     { on: ["r1"], card: ["Finding the ones", "Look for the dot"], say: ["First, find the ones rod.", "See the little dots on the beam?", "Each one marks a ones rod.", "Use the dot on the right, and that rod is your ones."],
-      acts: [["little dots", "glow", "dot", 3], ["little dots", "glow", "dot", 0], ["dot on the right", "label", [0]]] },
+      acts: [["little dots", "glow", "dot", 3], ["little dots", "glow", "dot", 0], ["dot on the right", "label", [0]], ["dot on the right", "labels", ["lbD"]]] },
     { say: ["Going left, the next rod is the tens.", "Then the hundreds.", "Then thousands, and ten thousands.", "Same as the places in a number you write."],
       acts: [["next rod is the tens", "label", [1]], ["the hundreds", "label", [2]], ["Then thousands", "label", [3, 4]]] },
     { off: ["r1"], say: ["Every rod counts the same way as before.", "Five on top, ones below.", "But a bead on the tens rod is worth ten, not one.", "And a bead on the hundreds rod is worth a hundred."],

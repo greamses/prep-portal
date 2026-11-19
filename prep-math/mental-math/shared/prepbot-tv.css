@@ -708,3 +708,8 @@
 
 /* a save that failed: the speaker key itself says so (its tooltip has the reason) */
 .mm-tv-btn[data-tv="keep"].is-bad { color: #c0453f; }
+
+/* something to do under the film (openTv below): the overlay scrolls, the board sits under the stand */
+.mm-tv-overlay--below { overflow-y: auto; place-items: start center; }
+.mm-tv-overlay--below .mm-tv-col { margin: auto 0; }
+.mm-tv-below { width: min(760px, 100%); margin: 6px auto 24px; }
