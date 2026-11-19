@@ -876,3 +876,6 @@ tbody .drill-grid-th { border-right-width: 2px; }
 /* the soroban's dials: two to a line, an odd last one in the middle; the note across both */
 .sor-dials > .pp-dial.is-alone { grid-column: 1 / -1; }
 .sor-dials > .sor-note { grid-column: 1 / -1; }
+
+/* a locked choice: ticked, greyed, not changeable (the soroban's add + subtract without big friends) */
+.sticky-choice.is-disabled:has(input:checked) { opacity: 0.6; filter: grayscale(0.7); cursor: not-allowed; }

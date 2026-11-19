@@ -187,7 +187,7 @@ export function renderMultiStep(carousel, id, { title, subtitle, options, isChec
     const disabled = !!opt.disabled;
     const label = document.createElement('label');
     label.className = `pp-sticky pp-sticky--tape sticky-choice pp-sticky--c${(colorOffset + i) % 6}${disabled ? ' is-disabled' : ''}`;
-    label.innerHTML = `<input type="checkbox" value="${opt.value}" ${!disabled && isChecked(opt.value) ? 'checked' : ''} ${disabled ? 'disabled' : ''} /><span>${opt.label}${opt.note ? ` <em>(${opt.note})</em>` : ''}</span>`;
+    label.innerHTML = `<input type="checkbox" value="${opt.value}" ${(!disabled || opt.locked) && isChecked(opt.value) ? 'checked' : ''} ${disabled ? 'disabled' : ''} /><span>${opt.label}${opt.note ? ` <em>(${opt.note})</em>` : ''}</span>`;
     tipFor(label, opt);
     if (!disabled) {
       label.querySelector('input').addEventListener('change', (e) => onToggle(opt.value, e.target.checked));

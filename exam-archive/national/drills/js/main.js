@@ -315,6 +315,11 @@ let sorDelay = clampTo(Number(mem.get('sorDelay', 1.5)) || 1.5, delayRange(sorDi
 const sorTermsMax = () => (!sorTests.has('big') && (operations.has('sorAdd') !== operations.has('sorSub')) ? (sorTests.has('small') ? 9 : 5) : 100);
 const sorobanCfg = () => ({ show: [...sorShow].sort(), tests: [...sorTests].sort(), count: sorCount, terms: Math.min(sorTerms, sorTermsMax()), digits: sorDigits, speed: +sorSpeed.toFixed(2), delay: +sorDelay.toFixed(2) });
 const sorobanRoom = () => (categoryValue === 'soroban' ? { soroban: sorobanCfg() } : {});
+/* The user: "If big friends is not selected then automatically tick addition and subtraction and grey
+   them" (one way only, with no carrying, the rods soon fill up or run empty). */
+const sorBothLocked = () => categoryValue === 'soroban' && !sorTests.has('big');
+function syncSorOps() { if (sorBothLocked()) { operations.add('sorAdd'); operations.add('sorSub'); } }
+syncSorOps();
 // the speller this player chooses to be, at the Spelling Bee (remembered)
 let beeKid = mem.get('beeKid', BEE_SPELLERS[0].key, BEE_SPELLERS.map((k) => k.key));
 // Chemistry's single operation is never offered as a step, so a remembered
@@ -512,7 +517,8 @@ function renderOperationsPick() {
   renderMultiStep(topic, 'operations', {
     title: isBars ? 'Add, subtract, or both?' : categoryValue === 'spelling' ? 'Hear the word, or read its sounds?' : `Which ${(TOPIC_LABEL[categoryValue] || categoryValue).toLowerCase()} questions?`,
     colorOffset: 3,
-    options: CATEGORY_OPERATIONS[categoryValue].map((op) => ({ value: op, label: OPERATION_LABELS[op], tip: OPERATION_TIPS[op] })),
+    subtitle: sorBothLocked() ? 'Without Big friends, a sum both adds and takes away: one way only, the rods would soon fill up or run empty.' : undefined,
+    options: CATEGORY_OPERATIONS[categoryValue].map((op) => ({ value: op, label: OPERATION_LABELS[op], tip: OPERATION_TIPS[op], ...(sorBothLocked() ? { disabled: true, locked: true } : {}) })),
     isChecked: (v) => operations.has(v),
     onToggle: (v, checked) => {
       if (checked) operations.add(v); else operations.delete(v);
@@ -806,7 +812,7 @@ function pickCategory(v) {
   else if (v === 'fractions') { renderFractionTypePick(); topic.goTo('fraction-type'); }
   else if (v === 'spelling') { renderSpellBankStep(); topic.goTo('spell-bank'); }
   else if (v === 'mathbee') { syncMathOps(); updateStartDisabled(); renderMathTopicsStep(); topic.goTo('mathbee-topics'); }
-  else if (v === 'soroban') { renderSorShowStep(); topic.goTo('sor-show'); }
+  else if (v === 'soroban') { syncSorOps(); renderSorShowStep(); topic.goTo('sor-show'); }
   else { renderOperationsPick(); topic.goTo('operations'); }
 }
 
@@ -836,9 +842,9 @@ function renderSorTestStep() {
       { value: 'big', label: 'Big friends', tip: 'The friends of ten: 7 + 5 is 7 + 10 − 5' },
     ],
     isChecked: (v) => sorTests.has(v),
-    onToggle: (v, on) => { if (on) sorTests.add(v); else if (sorTests.size > 1) sorTests.delete(v); else renderSorTestStep(); saveContent(); },
+    onToggle: (v, on) => { if (on) sorTests.add(v); else if (sorTests.size > 1) sorTests.delete(v); else renderSorTestStep(); syncSorOps(); updateStartDisabled(); saveContent(); },
     nextLabel: 'Next',
-    onNext: () => { saveContent(); renderOperationsPick(); topic.goTo('operations'); },
+    onNext: () => { syncSorOps(); saveContent(); renderOperationsPick(); topic.goTo('operations'); },
   });
 }
 function renderSorSettingsStep() {
