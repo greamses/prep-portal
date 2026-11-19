@@ -834,11 +834,18 @@
 .bee-duel-ans { max-width: 100%; }
 
 /* the score screen on the front of a pulpit */
-.bee-pulpit-tv { position: absolute; left: 21%; right: 21%; top: 32%; height: 30%; display: grid; place-items: center; align-content: center; gap: 0.2cqh; background: radial-gradient(ellipse at 50% 40%, #16395a, #071421 75%, #03080e); border: 0.35cqh solid #1b1d21; box-shadow: inset 0 0 1cqh rgba(0, 0, 0, 0.8), 0 0.3cqh 0.6cqh rgba(0, 0, 0, 0.45); }
-.bee-pulpit-tv span { font-family: var(--font-mono); font-size: 1.05cqh; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9fd3f5; opacity: 0.85; }
-.bee-pulpit-tv b { font-family: var(--font-display); font-weight: 800; font-size: 3.8cqh; line-height: 1; color: #f6dc85; text-shadow: 0 0 1cqh rgba(246, 220, 133, 0.45); }
+.bee-pulpit-tv { position: absolute; left: 24%; width: 52%; top: 30.9%; height: 50.9%; display: grid; place-items: center; align-content: center; gap: 0.2cqh; background: radial-gradient(ellipse at 50% 40%, #16395a, #071421 75%, #03080e); border: 0.35cqh solid #1b1d21; box-shadow: inset 0 0 1cqh rgba(0, 0, 0, 0.8), 0 0.3cqh 0.6cqh rgba(0, 0, 0, 0.45); }
+.bee-pulpit-tv b { font-family: var(--font-display); font-weight: 800; font-size: 5.6cqh; line-height: 1; color: #f6dc85; text-shadow: 0 0 1cqh rgba(246, 220, 133, 0.45); }
 .bee-pulpit-tv b:empty::after { content: "–"; opacity: 0.35; }
 .bee-pulpit-tv b.is-bump { animation: bee-score-bump 0.45s cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes bee-score-bump { 40% { transform: scale(1.35); } 100% { transform: none; } }
 .bee-pulpit.is-ok .bee-pulpit-tv b { color: #7be0a0; text-shadow: 0 0 1cqh rgba(123, 224, 160, 0.6); }
 .bee-pulpit.is-bad .bee-pulpit-tv { box-shadow: inset 0 0 1.4cqh rgba(226, 70, 61, 0.7), 0 0.3cqh 0.6cqh rgba(0, 0, 0, 0.45); }
+
+/* walking, not gliding: a small step bounce while a contestant crosses the stage */
+.bee-kid.is-walking .bee-kid-rig { animation: bee-walk-bob 0.36s ease-in-out infinite alternate; }
+@keyframes bee-walk-bob { from { transform: translateY(0) rotate(-1.2deg); } to { transform: translateY(-1.6%) rotate(1.2deg); } }
+@media (prefers-reduced-motion: reduce) { .bee-kid.is-walking .bee-kid-rig { animation: none; } }
+
+/* walking to the foot of the stairs: the step across (translate) keeps pace with the walk */
+.bee-bd.is-math .bee-kid.is-up.is-approach:is(.is-at-mic, .is-at-mic2) { transition: left 1.7s ease-in-out, top 1.7s ease-in-out, height 1.7s ease-in-out, font-size 1.7s ease-in-out, translate 1.7s ease-in-out; }
