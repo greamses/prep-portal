@@ -274,17 +274,36 @@ function kwFilm({ ask, askKeys, group, before = null, examples, after = null, ex
     pics[`${e.id}H`] = () => main([L("a", `\\text{HCF}(${pa}, ${pb}) = ${h}`, PURPLE), L("e", "\\quad"), L("b", `\\dfrac{${pa} \\div ${h}}{${pb} \\div ${h}} = \\dfrac{${fa}}{${fb}}`, GREEN)], 6.2);
     pics[`${e.id}D`] = () => dpic(...e.dec);
     pics[`${e.id}b`] = () => fbar({ ...e.bar, num: fa, den: fb });
-    pics[`${e.id}S`] = () => main(e.sumTex.map((t, i) => L(`m${i}`, t, i === e.sumTex.length - 1 ? GREEN : null)), e.sumEm || 5.6);
-    if (e.decTex) pics[`${e.id}X`] = () => main(e.decTex.map((t, i) => L(`m${i}`, t, i === e.decTex.length - 1 ? GREEN : null)), 6);
+    /* ONE IDEA A LINE ("always use multilines instead of clustering two ideas on one line"): the
+       worded sum is one line; what follows its "⇒" goes underneath, one statement a line; the decimal
+       working is one line per statement too */
+    const cut = e.sumTex.findIndex((t) => t.startsWith("\\Rightarrow"));
+    const head = cut < 0 ? e.sumTex : e.sumTex.slice(0, cut);
+    const tail = cut < 0 ? [] : e.sumTex.slice(cut).join(" ").replace(/^\\Rightarrow\\ ?/, "").split(/,\\ /).map((t) => t.trim()).filter(Boolean);
+    e.sLines = [head, ...tail.map((t) => [t])];
+    e.xLines = e.decTex ? e.decTex.join(" ").split(/,\\quad/).map((t) => t.trim()).filter(Boolean) : [];
+    e.sLines.forEach((pieces, j) => { pics[`${e.id}S${j}`] = () => main(pieces.map((t, i) => L(`m${i}`, t, j === e.sLines.length - 1 && i === pieces.length - 1 ? GREEN : null)), j ? 6 : (e.sumEm || 5.6)); });
+    e.xLines.forEach((t, j) => { pics[`${e.id}X${j}`] = () => main([L("m0", t, j === e.xLines.length - 1 ? GREEN : null)], 6); });
     picAt[`${e.id}P`] = at(12); picAt[`${e.id}H`] = at(22); picAt[`${e.id}D`] = at(35);
-    picAt[`${e.id}b`] = centred(150, 14); picAt[`${e.id}S`] = at(26); picAt[`${e.id}X`] = at(37);
+    picAt[`${e.id}b`] = centred(150, 14);
+    /* the lines stack under the bar: the worded line is the tallest; four lines fit, so when there are
+       more, the decimal lines take the place of the fraction lines under the first */
+    const SY = (j) => (j === 0 ? 23 : 23 + 8.5 + (j - 1) * 6.6);
+    e.sLines.forEach((_, j) => { picAt[`${e.id}S${j}`] = at(SY(j)); });
+    e.xFrom = e.sLines.length + e.xLines.length > 4 ? 1 : e.sLines.length;
+    e.xLines.forEach((_, j) => { picAt[`${e.id}X${j}`] = at(SY(e.xFrom + j)); });
     if (e.mode === "out") picAt[`${e.id}D`] = at(37);
     stages[`${e.id}P.all`] = (sv, H) => { const ks = ["s0", ...steps.flatMap((_, k) => [`o${k}`, `s${k + 1}`])]; ks.forEach((k, i) => H.write(key(sv, k), i === 0 ? 0 : 1.4 + (i - 1) * 1.3)); };
     stages[`${e.id}H.all`] = (sv, H) => { H.write(key(sv, "a"), 0); H.write(key(sv, "e"), 0.6); H.write(key(sv, "b"), 1.8); H.sound("ding", 2); };
     Object.assign(stages, dStages(`${e.id}D`, e.dec[0], e.dec[1]));
     Object.assign(stages, fbarStages(`${e.id}b`, e.bar));
-    stages[`${e.id}S.all`] = (sv, H) => { e.sumTex.forEach((_, i) => H.write(key(sv, `m${i}`), i * (e.sumGap || 1.1))); };
-    if (e.decTex) stages[`${e.id}X.all`] = (sv, H) => { e.decTex.forEach((_, i) => H.write(key(sv, `m${i}`), i * 1.3)); H.sound("ding", (e.decTex.length - 1) * 1.3 + 0.3); };
+    let t0 = 0;
+    e.sLines.forEach((pieces, j) => {
+      const start = t0;
+      stages[`${e.id}S${j}.all`] = (sv, H) => { pieces.forEach((_, i) => H.write(key(sv, `m${i}`), start + i * (e.sumGap || 1.1))); };
+      t0 += pieces.length * (e.sumGap || 1.1) + 1.4;
+    });
+    e.xLines.forEach((_, j) => { stages[`${e.id}X${j}.all`] = (sv, H) => { H.write(key(sv, "m0"), j * 2.6); if (j === e.xLines.length - 1) H.sound("ding", j * 2.6 + 0.3); }; });
   });
   if (before) Object.assign(pics, before.pics), Object.assign(picAt, before.picAt), Object.assign(stages, before.stages);
   if (after) Object.assign(pics, after.pics), Object.assign(picAt, after.picAt), Object.assign(stages, after.stages);
@@ -322,10 +341,11 @@ function kwFilm({ ask, askKeys, group, before = null, examples, after = null, ex
           cue: { [`${e.id}b.cut`]: s.cutCue || "bottom number", ...(hold ? {} : { [`${e.id}b.fill`]: s.fillCue || "each" }) }, pause: 0.7 });
         /* the numerator points, and the fraction sum with its words */
         push(s.act, { add: [`${e.id}b.act`, ...(hold ? [`${e.id}b.fill`] : [])], cue: { [`${e.id}b.act`]: s.actCue || "top number", ...(hold ? { [`${e.id}b.fill`]: s.fillCue || "each" } : {}) }, pause: 0.7 });
-        push(s.sum, { on: [`${e.id}S`], add: [`${e.id}S.all`, ...(e.bar.topTo ? [`${e.id}b.whole`] : [])], cue: { [`${e.id}S.all`]: s.sumCue || "fraction", ...(e.bar.topTo ? { [`${e.id}b.whole`]: s.wholeCue } : {}) }, pause: 0.8 });
+        const sIds = e.sLines.map((_, j) => `${e.id}S${j}`), xIds = e.xLines.map((_, j) => `${e.id}X${j}`);
+        push(s.sum, { on: sIds, add: [...sIds.map((k) => `${k}.all`), ...(e.bar.topTo ? [`${e.id}b.whole`] : [])], cue: { ...Object.fromEntries(sIds.map((k) => [`${k}.all`, s.sumCue || "fraction"])), ...(e.bar.topTo ? { [`${e.id}b.whole`]: s.wholeCue } : {}) }, pause: 0.8 });
         if (e.mode === "out") push(s.dec, { on: [`${e.id}D`], add: [`${e.id}D.all`], cue: { [`${e.id}D.all`]: s.decCue || "decimal" }, pause: 1 });
-        else push(s.end, { on: [`${e.id}X`], add: [`${e.id}X.all`], cue: { [`${e.id}X.all`]: s.endCue || "decimal" }, pause: 1 });
-        prev = [e.id, `${e.id}b`, `${e.id}S`, ...(e.decTex ? [`${e.id}X`] : []), `${e.id}D`];
+        else push(s.end, { on: xIds, off: sIds.slice(e.xFrom), add: xIds.map((k) => `${k}.all`), cue: Object.fromEntries(xIds.map((k) => [`${k}.all`, s.endCue || "decimal"])), pause: 1 });
+        prev = [e.id, `${e.id}b`, ...sIds, ...xIds, `${e.id}D`];
       });
       if (after) { after.steps(push, prev); prev = after.leave; }
       push(group.close, { off: prev, on: ["kw"], pause: 0.6 });
