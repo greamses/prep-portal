@@ -32,7 +32,8 @@
 import { mulberry32, hashSeed, CONTENT_NS } from '/utils/games/rng.js';
 
 export const SOROBAN_OPS = ['sorAdd', 'sorSub'];
-export const SOROBAN_TERMS = 5;                       // numbers flashed in one sum
+export const SOROBAN_TERMS = 5;                       // numbers flashed in one sum, unless the setup says (5-100)
+export const termsOf = (cfg) => Math.round(Math.min(100, Math.max(5, Number(cfg && cfg.terms) || SOROBAN_TERMS)));
 const lerp = (a, b, t) => a + (b - a) * t;
 const at = (d) => (Math.min(6, Math.max(1, d)) - 1) / 5;
 /** seconds each number shows: one digit 0.45-2, six digits 2-10 */
@@ -45,7 +46,7 @@ const FEEDBACK_S = 1.6;
 const START_BUFFER_MS = 3000;
 /** the longest a session can take (every answer box run to its end): the room's clock */
 export function sessionSeconds(cfg) {
-  const per = SOROBAN_TERMS * (cfg.speed + cfg.delay) + answerSeconds(cfg.digits) + FEEDBACK_S;
+  const per = termsOf(cfg) * (cfg.speed + cfg.delay) + answerSeconds(cfg.digits) + FEEDBACK_S;
   return Math.min(10000, Math.ceil(cfg.count * per + 6));
 }
 
@@ -93,6 +94,7 @@ export function moveKinds(total, n, add, ripple = false) {
 export function sorobanSum(seed, i, cfg, operations) {
   const rng = mulberry32(hashSeed(seed, CONTENT_NS + 7300 + i));
   const d = Math.min(6, Math.max(1, cfg.digits || 1));
+  const TERMS = termsOf(cfg);
   const lo = d === 1 ? 1 : 10 ** (d - 1), hi = 10 ** d - 1;
   const rand = () => lo + Math.floor(rng() * (hi - lo + 1));
   const tests = new Set(cfg.tests && cfg.tests.length ? cfg.tests : ['simple']);
@@ -125,8 +127,9 @@ export function sorobanSum(seed, i, cfg, operations) {
         }
         if (!okDigits.length) { str = ''; break; }
         // one way only, no carries: small digits keep room on the rods for the numbers to come
-        const ix = Math.floor(rng() * okDigits.length), iy = Math.floor(rng() * okDigits.length);
-        str += okDigits[tests.has('big') || canAdd === canSub ? ix : Math.min(ix, iy)];
+        const ix = Math.floor(rng() * okDigits.length), iy = Math.floor(rng() * okDigits.length), iz = Math.floor(rng() * okDigits.length);
+        // (the lead rod takes a digit from every number: the smallest, or the rod overflows by the ninth)
+        str += okDigits[tests.has('big') || canAdd === canSub ? ix : r === 0 ? 0 : Math.min(ix, iy, iz)];
       }
       if (str) out.push(Number(str));
     }
@@ -148,7 +151,7 @@ export function sorobanSum(seed, i, cfg, operations) {
     return o.slice(0, 10);
   };
   const search = (total, t) => {
-    if (t === SOROBAN_TERMS) return [];
+    if (t === TERMS) return [];
     if (--budget < 0) return null;
     for (const c of ordered(total)) {
       const rest = search(total + c, t + 1);
@@ -159,13 +162,13 @@ export function sorobanSum(seed, i, cfg, operations) {
   // the first number, set on a clear frame (taking away only: a bigger one, with room to take from)
   const firsts = [];
   if (canSub && !canAdd) {
-    const top = (SOROBAN_TERMS - 1) * hi;
+    const top = (TERMS - 1) * hi;
     for (let k = 0; k < 24; k++) firsts.push(Math.round(top * (0.55 + rng() * 0.45)));
     // no borrowing: full rods (nines and eights) under a small lead, so there is plenty to take away
     if (!tests.has('big')) {
       for (let k = 0; k < 12; k++) {
         let str = String(1 + Math.floor(rng() * 3));
-        for (let r = 0; r < d; r++) str += [9, 9, 9, 8, 8, 7][Math.floor(rng() * 6)];
+        for (let r = 0; r < d; r++) str += r === 0 ? 9 : [9, 9, 9, 8, 8, 7][Math.floor(rng() * 6)];   // the rod every take-away's lead comes off: full
         firsts.unshift(Number(str));
       }
     }
@@ -194,7 +197,7 @@ export function sorobanSum(seed, i, cfg, operations) {
   // nothing fits all the way (a rare corner): one number at a time, the nearest honest ones
   let total = firsts[0];
   const terms = [total];
-  for (let t = 1; t < SOROBAN_TERMS; t++) {
+  for (let t = 1; t < TERMS; t++) {
     let picked = options(total)[0];
     if (picked == null) {
       const n = rand();
@@ -274,7 +277,7 @@ function mount() {
       <div class="sor-flash" aria-live="polite"></div>
       <form class="sor-answer" hidden autocomplete="off">
         <label class="sor-answer__label" for="sor-answer-input">The total</label>
-        <input id="sor-answer-input" class="sor-answer__input" type="text" inputmode="numeric" maxlength="9" autocomplete="off" />
+        <input id="sor-answer-input" class="sor-answer__input" type="text" inputmode="numeric" maxlength="12" autocomplete="off" />
         <span class="sor-answer__clock"></span>
       </form>
       <p class="sor-result" hidden></p>

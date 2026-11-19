@@ -15,6 +15,7 @@ import { startRound, masterFinished, lastRoundTimeMs } from './game.js';
 import { startGridRound } from './grid.js';
 import { startBarsRound } from './bars.js';
 import { startSorobanRound, lastSorobanTimeMs, speedRange, delayRange, sessionSeconds } from './soroban.js';
+import { createDial } from '/utils/components/dial.js';
 import { BANKS, BANK_KEYS, setCount, setId, setsLabel, roundSeconds, clockLabel, LEVELS, LEVEL_KEYS, levelOf, perMinute, wordsInSets } from './spelling.js';
 import { openSpellingLibrary } from './spelling-library.js';
 import { startBee, beeFullscreen, BEE_SPELLERS, BEE_SIZE, spellerPool } from './bee.js';
@@ -300,12 +301,17 @@ const sorShow = new Set(mem.get('sorShow', ['number'], Array.isArray).filter((v)
 if (!sorShow.size) sorShow.add('number');
 const sorTests = new Set(mem.get('sorTests', ['simple'], Array.isArray).filter((v) => ['simple', 'small', 'big'].includes(v)));
 if (!sorTests.size) sorTests.add('simple');
-let sorCount = Math.round(Math.min(100, Math.max(5, Number(mem.get('sorCount', 10)) || 10)));
+let sorCount = Math.round(Math.min(100, Math.max(5, Number(mem.get('sorCount', 10)) || 10)) / 5) * 5;   // in fives
+let sorTerms = Math.round(Math.min(100, Math.max(5, Number(mem.get('sorTerms', 5)) || 5)));   // numbers flashed in each sum
 let sorDigits = Math.round(Math.min(6, Math.max(1, Number(mem.get('sorDigits', 1)) || 1)));
 const clampTo = (v, [lo, hi]) => Math.min(hi, Math.max(lo, v));
 let sorSpeed = clampTo(Number(mem.get('sorSpeed', 1.2)) || 1.2, speedRange(sorDigits));
 let sorDelay = clampTo(Number(mem.get('sorDelay', 1.5)) || 1.5, delayRange(sorDigits));
-const sorobanCfg = () => ({ show: [...sorShow].sort(), tests: [...sorTests].sort(), count: sorCount, digits: sorDigits, speed: +sorSpeed.toFixed(2), delay: +sorDelay.toFixed(2) });
+/* No big friends and only one way (adding only, or taking away only): a rod can only fill to 9 (or
+   empty to 0) without a carry, so a sum can hold at most 9 numbers (nine ones, with small friends) or,
+   simple only, 5 (1 + 1 + 1 + 1 + 5: four to five needs a small friend). */
+const sorTermsMax = () => (!sorTests.has('big') && (operations.has('sorAdd') !== operations.has('sorSub')) ? (sorTests.has('small') ? 9 : 5) : 100);
+const sorobanCfg = () => ({ show: [...sorShow].sort(), tests: [...sorTests].sort(), count: sorCount, terms: Math.min(sorTerms, sorTermsMax()), digits: sorDigits, speed: +sorSpeed.toFixed(2), delay: +sorDelay.toFixed(2) });
 const sorobanRoom = () => (categoryValue === 'soroban' ? { soroban: sorobanCfg() } : {});
 // the speller this player chooses to be, at the Spelling Bee (remembered)
 let beeKid = mem.get('beeKid', BEE_SPELLERS[0].key, BEE_SPELLERS.map((k) => k.key));
@@ -321,7 +327,7 @@ const saveContent = () => mem.save({
   compounds: [...compounds],
   spellSets: [...spellSets], spellBank, spellFocus, spellMaster, spellLevel,
   mathTopics: [...mathTopics], mathOps: [...mathOps],
-  sorShow: [...sorShow], sorTests: [...sorTests], sorCount, sorDigits, sorSpeed, sorDelay,
+  sorShow: [...sorShow], sorTests: [...sorTests], sorCount, sorTerms, sorDigits, sorSpeed, sorDelay,
   gridBlanks,
   barsLevel,
 });
@@ -833,39 +839,43 @@ function renderSorTestStep() {
   });
 }
 function renderSorSettingsStep() {
+  // five dials, two to a line: roll one round and its reading shows in the middle
   const box = document.createElement('div');
-  box.className = 'sor-sliders';
-  const row = (label, min, max, step, value, fmt, onInput) => {
-    const wrap = document.createElement('label');
-    wrap.className = 'sor-slider';
-    wrap.innerHTML = `<span class="sor-slider__label">${label}</span><input type="range" min="${min}" max="${max}" step="${step}" value="${value}"><b class="sor-slider__val"></b><span class="sor-slider__ends"><i></i><i></i></span>`;
-    const input = wrap.querySelector('input'), val = wrap.querySelector('b'), ends = wrap.querySelectorAll('.sor-slider__ends i');
-    const paint = () => { val.textContent = fmt(Number(input.value)); ends[0].textContent = fmt(Number(input.min)); ends[1].textContent = fmt(Number(input.max)); };
-    input.addEventListener('input', () => { onInput(Number(input.value)); paint(); saveContent(); });
-    paint();
-    box.append(wrap);
-    return { input, paint };
-  };
+  box.className = 'pp-dials sor-dials';
   const secs = (v) => `${v.toFixed(v < 1 ? 2 : 1)} s`;
-  row('Sums', 5, 100, 1, sorCount, (v) => `${v}`, (v) => { sorCount = v; });
+  const dial = (opts, onInput) => {
+    const d = createDial({ ...opts, onInput: (v) => { onInput(v); saveContent(); } });
+    box.append(d.el);
+    return d;
+  };
+  dial({ label: 'Sums', min: 5, max: 100, step: 5, value: sorCount }, (v) => { sorCount = v; });
+  const tMax = sorTermsMax();
+  dial({ label: 'Numbers in each sum', min: 5, max: tMax, step: tMax < 100 ? 1 : 5, value: Math.min(sorTerms, tMax) }, (v) => { sorTerms = v; });
+  if (tMax < 100) {
+    const note = document.createElement('p');
+    note.className = 'sor-note';
+    note.textContent = `Without big friends, a sum that only ${operations.has('sorAdd') ? 'adds' : 'takes away'} can hold at most ${tMax} numbers: the rods ${operations.has('sorAdd') ? 'fill up' : 'run empty'}. Tick Big friends, or both Addition and Subtraction, for longer sums.`;
+    box.append(note);
+  }
   let speed, delay;
-  // more digits: slower ranges for speed and delay (the value keeps its place in the range)
-  row('Digits', 1, 6, 1, sorDigits, (v) => `${v}`, (v) => {
+  // more digits: slower ranges for speed and delay (each value keeps its place in its range)
+  dial({ label: 'Digits', min: 1, max: 6, step: 1, value: sorDigits }, (v) => {
     const sOld = speedRange(sorDigits), dOld = delayRange(sorDigits);
     const fs = (sorSpeed - sOld[0]) / (sOld[1] - sOld[0] || 1), fd = (sorDelay - dOld[0]) / (dOld[1] - dOld[0] || 1);
     sorDigits = v;
     const sNew = speedRange(v), dNew = delayRange(v);
     sorSpeed = +(sNew[0] + fs * (sNew[1] - sNew[0])).toFixed(2);
     sorDelay = +(dNew[0] + fd * (dNew[1] - dNew[0])).toFixed(2);
-    Object.assign(speed.input, { min: sNew[0], max: sNew[1], value: sorSpeed });
-    Object.assign(delay.input, { min: dNew[0], max: dNew[1], value: sorDelay });
-    speed.paint(); delay.paint();
+    speed.setRange(sNew[0], sNew[1], sorSpeed);
+    delay.setRange(dNew[0], dNew[1], sorDelay);
+    sorSpeed = speed.value; sorDelay = delay.value;
   });
-  speed = row('Speed (each number shows)', speedRange(sorDigits)[0], speedRange(sorDigits)[1], 0.05, sorSpeed, secs, (v) => { sorSpeed = v; });
-  delay = row('Delay (the gap between numbers)', delayRange(sorDigits)[0], delayRange(sorDigits)[1], 0.05, sorDelay, secs, (v) => { sorDelay = v; });
+  speed = dial({ label: 'Speed (each number shows)', min: speedRange(sorDigits)[0], max: speedRange(sorDigits)[1], step: 0.05, value: sorSpeed, format: secs, unit: 's' }, (v) => { sorSpeed = v; });
+  delay = dial({ label: 'Delay (the gap between numbers)', min: delayRange(sorDigits)[0], max: delayRange(sorDigits)[1], step: 0.05, value: sorDelay, format: secs, unit: 's' }, (v) => { sorDelay = v; });
+  delay.el.classList.add('is-alone');                      // the fifth: a line to itself, in the middle
   renderCustomStep(topic, 'sor-settings', {
     title: 'Sums, digits, speed and delay',
-    subtitle: 'Five numbers flash in each sum; type the total when the last one has gone.',
+    subtitle: 'Roll a dial (drag it round, or the mouse wheel over it). The numbers of each sum flash one by one; type the total when the last one has gone.',
     content: box,
     nextLabel: 'Next',
     onNext: () => { saveContent(); updateStartDisabled(); flow.next(); },
@@ -1135,7 +1145,7 @@ const flow = createSectionFlow([
     el: $('drill-section-topic'),
     chips: () => {
       const cat = TOPIC_LABEL[categoryValue] || categoryValue;
-      if (categoryValue === 'soroban') return [{ label: 'Soroban' }, { label: [...sorShow].map((v) => (v === 'tool' ? 'Tool' : 'Number')).join(' + ') }, { label: [...sorTests].map((v) => ({ simple: 'Simple', small: 'Small friends', big: 'Big friends' }[v])).join(', ') }, ...[...operations].map((o) => ({ label: OPERATION_LABELS[o] })), { label: `${sorCount} sums, ${sorDigits} digit${sorDigits > 1 ? 's' : ''}` }];
+      if (categoryValue === 'soroban') return [{ label: 'Soroban' }, { label: [...sorShow].map((v) => (v === 'tool' ? 'Tool' : 'Number')).join(' + ') }, { label: [...sorTests].map((v) => ({ simple: 'Simple', small: 'Small friends', big: 'Big friends' }[v])).join(', ') }, ...[...operations].map((o) => ({ label: OPERATION_LABELS[o] })), { label: `${sorCount} sums of ${Math.min(sorTerms, sorTermsMax())}, ${sorDigits} digit${sorDigits > 1 ? 's' : ''}` }];
       if (categoryValue === 'mathbee') return [{ label: 'Math Bee' }, ...[...mathTopics].map((t) => { const all = kindsIn(t), on = all.filter((op) => mathOps.has(op)).length; return { label: `${TOPIC_LABEL[t] || t}${on && on < all.length ? ` (${on} of ${all.length})` : ''}` }; })];
       // Tables (grid filler) recaps its two dials: size and blank density.
       if (categoryValue === 'timestable') {

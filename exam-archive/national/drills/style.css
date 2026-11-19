@@ -870,3 +870,9 @@ tbody .drill-grid-th { border-right-width: 2px; }
 .sor-slider input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent-primary); }
 .sor-slider__ends { grid-column: 1 / -1; display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-tertiary); }
 .sor-slider__ends i { font-style: normal; }
+
+.sor-note { margin: 0; padding: 0.5rem 0.7rem; font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.45; color: var(--text-secondary); background: color-mix(in srgb, var(--accent-warning, #f0a868) 14%, transparent); }
+
+/* the soroban's dials: two to a line, an odd last one in the middle; the note across both */
+.sor-dials > .pp-dial.is-alone { grid-column: 1 / -1; }
+.sor-dials > .sor-note { grid-column: 1 / -1; }
