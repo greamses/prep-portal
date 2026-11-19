@@ -17,7 +17,8 @@ const q = (text, tex, hint, answer) => ({ math: true, text, tex, hint, answer })
 export function moneyQuestion(rng, pool, op) {
   if (op === 'monSI') {
     const P = 100 * int(rng, 2, 50), R = int(rng, 2, 15), T = int(rng, 1, 6);
-    return q(`P = ${P}, R = ${R}%, T = ${T} years`, `P = ${P},\\; R = ${R}\\%,\\; T = ${T} \\text{ years}`, 'Simple interest: find I', (P * R * T) / 100);
+    const yr = T === 1 ? 'year' : 'years';
+    return q(`P = ${P}, R = ${R}%, T = ${T} ${yr}`, `P = ${P},\\; R = ${R}\\%,\\; T = ${T} \\text{ ${yr}}`, 'Simple interest: find I', (P * R * T) / 100);
   }
   if (op === 'monProfitPct' || op === 'monLossPct') {
     const CP = 20 * int(rng, 5, 100), p = pick(rng, STEPS), profit = op === 'monProfitPct';
