@@ -400,6 +400,7 @@ Object.assign(UI, {
   ),
   pulse: svg(`<path d="M2.4 12.4h4l2.6-6.4 4.8 12 2.6-5.6h5.2" fill="none" stroke="${LOUD}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>`),
   skip: svg(tri("M4 4.4 15.4 12 4 19.6z", PAPER) + r(16.8, 4.4, 3.2, 15.2, LOUD, 1.6)),
+  fastForward: svg(tri("M2.4 5.2 11.6 12 2.4 18.8z", PAPER) + tri("M11.4 5.2 20.6 12 11.4 18.8z", LOUD)),
   chevronsUp: svg(tri("M12 2.8 20 10.6h-4.4L12 7.2l-3.6 3.4H4z", PAPER) + tri("M12 11 20 18.8h-4.4L12 15.4l-3.6 3.4H4z", LOUD)),
   chevronsDown: svg(tri("M12 21.2 4 13.4h4.4L12 16.8l3.6-3.4H20z", PAPER) + tri("M12 13 4 5.2h4.4L12 8.6l3.6-3.4H20z", LOUD)),
   palette: svg(

@@ -3399,7 +3399,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
      once (the clips stop), and the bee starts. */
   const skipIntroBtn = $('.bee-skip-intro');
   let introSkipped = false;
-  skipIntroBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5v13l8.5-6.5z M12.5 5.5v13l8.5-6.5z" fill="currentColor"/><rect x="20" y="5.5" width="2" height="13" fill="currentColor"/></svg>';
+  skipIntroBtn.innerHTML = UI.fastForward(18);                 // the site's own icon set (ui-icons.js)
   skipIntroBtn.dataset.tip = 'Skip the intro';
   skipIntroBtn.setAttribute('aria-label', 'Skip the intro');
   skipIntroBtn.addEventListener('click', () => {
