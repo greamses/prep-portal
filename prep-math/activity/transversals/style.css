@@ -972,3 +972,11 @@ header {
   outline-offset: -2.5px;
 }
 .anim-mode-btn.is-answer { --pp-note-bg: #c8f0c0; }
+
+/* the bent line (Σ) */
+.bend-strip { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.bend-strip[hidden] { display: none; }
+.bend-sum { margin: 0; flex: 1 1 14rem; font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.4; }
+.bend-label { font-family: var(--font-mono); font-size: 15px; font-weight: 700; fill: #0a0a0a; paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+.bend-handle { cursor: grab; }
+.bend-handle:active { cursor: grabbing; }

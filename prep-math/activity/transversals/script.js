@@ -23,7 +23,9 @@ const state = {
     protractor: false,
     colors: true,         // off: every angle is plain paper, so position is the only clue
   arcs: true,           // off: no sectors at all — see arcVisible()
-  quiz: null            // see startQuiz() — null whenever an activity isn't running
+  quiz: null,           // see startQuiz() — null whenever an activity isn't running
+  bend: { x: 100, y: 0 }, // the bent line: where its bend is (from the arms' feet; see renderBend)
+  bendWhy: false        // the helper parallel through the bend, splitting x into a and b
 };
 
 /* ── THE NAMED PAIRS ──────────────────────────────────────────────────────
@@ -500,6 +502,65 @@ function quizOpacity(w) {
   return q.settled ? 0.12 : 0.4;   // still choosable until the round is done
 }
 
+/* ── THE BENT LINE (Σ) ─────────────────────────────────────────────────────
+   A line bent once between the two parallels. Its arms meet the top line at T
+   and the bottom line at B; a is the angle the top arm makes with the top line,
+   b the one the bottom arm makes with the bottom line, and the angle at the
+   bend is x = a + b. "Why?" draws a third parallel through the bend: it cuts x
+   into two angles, one alternate to a and one alternate to b. */
+function renderBend() {
+  const d = state.distance, top = CY - d / 2, bot = CY + d / 2;
+  const T = { x: CX - 130, y: top }, B = { x: CX - 130, y: bot };
+  const P = { x: T.x + state.bend.x, y: CY + state.bend.y };
+  const a = deg(Math.atan2(P.y - T.y, P.x - T.x));             // below the top line, towards the bend
+  const b = deg(Math.atan2(B.y - P.y, P.x - B.x));             // above the bottom line, towards the bend
+  const x = a + b;
+  const toB = deg(Math.atan2(B.y - P.y, B.x - P.x));           // from the bend: down and back (90..180)
+  let toT = deg(Math.atan2(T.y - P.y, T.x - P.x)); if (toT < 0) toT += 360;   // up and back (180..270)
+  const r = Math.min(state.radius, d / 3), cA = state.colors ? '#ffe500' : '#f4efe6', cB = state.colors ? '#0055ff' : '#f4efe6', cX = state.colors ? '#22b07a' : '#f4efe6';
+  const g = el('g');
+  const sector = (cx, cy, from, sweep, fill, op = 0.85) => g.appendChild(el('path', { d: getSectorPath(cx, cy, from, sweep, r), fill, 'fill-opacity': op, stroke: '#0a0a0a', 'stroke-width': '1.2' }));
+  const label = (cx, cy, dir, text, rr = r + 20) => {
+    const t = txt(text, { x: cx + rr * Math.cos(rad(dir)), y: cy + rr * Math.sin(rad(dir)), 'text-anchor': 'middle', 'dominant-baseline': 'middle', class: 'bend-label' });
+    g.appendChild(t);
+  };
+  // the parallels (with their arrows) and the bent line
+  for (const y of [top, bot]) {
+    g.appendChild(el('line', { x1: -5000, y1: y, x2: 5000, y2: y, stroke: '#0a0a0a', 'stroke-width': '2.5' }));
+    g.appendChild(el('path', { d: `M ${CX + 150} ${y - 7} l 9 7 l -9 7`, fill: 'none', stroke: '#0a0a0a', 'stroke-width': '2.2' }));
+  }
+  const ext = (from, to, k) => ({ x: from.x + (from.x - to.x) * k, y: from.y + (from.y - to.y) * k });
+  const T0 = ext(T, P, 0.35), B0 = ext(B, P, 0.35);
+  g.appendChild(el('polyline', { points: `${T0.x},${T0.y} ${P.x},${P.y} ${B0.x},${B0.y}`, fill: 'none', stroke: '#0a0a0a', 'stroke-width': '2.5', 'stroke-linejoin': 'round' }));
+  // the angles
+  sector(T.x, T.y, 0, a, cA);
+  sector(B.x, B.y, -b, b, cB);
+  if (state.bendWhy) {
+    g.appendChild(el('line', { x1: P.x - 160, y1: P.y, x2: P.x + 90, y2: P.y, stroke: '#0a0a0a', 'stroke-width': '1.6', 'stroke-dasharray': '6 5', class: 'bend-helper' }));
+    sector(P.x, P.y, 180, toT - 180, cA);                    // the top part: alternate to a
+    sector(P.x, P.y, toB, 180 - toB, cB);                    // the bottom part: alternate to b
+    label(P.x, P.y, (180 + toT) / 2, 'a', r * 0.62);
+    label(P.x, P.y, (toB + 180) / 2, 'b', r * 0.62);
+  } else sector(P.x, P.y, toB, toT - toB, cX);
+  label(T.x, T.y, a / 2, `a = ${Math.round(a)}°`, r + 34);
+  label(B.x, B.y, -b / 2, `b = ${Math.round(b)}°`, r + 34);
+  label(P.x, P.y, (toB + toT) / 2, `x = ${Math.round(a) + Math.round(b)}°`, r + 40);
+  for (const p of [T, B]) g.appendChild(el('circle', { cx: p.x, cy: p.y, r: '4', fill: '#0a0a0a' }));
+  g.appendChild(el('circle', { cx: P.x, cy: P.y, r: '9', class: 'bend-handle', fill: '#fff', stroke: '#0a0a0a', 'stroke-width': '2' }));
+  gTransform.appendChild(g);
+  // the panel
+  document.getElementById('s-family-a').textContent = 'Top angle a';
+  document.getElementById('s-family-b').textContent = 'Bottom angle b';
+  document.getElementById('s-angle-alpha').textContent = Math.round(a) + '°';
+  document.getElementById('s-angle-beta').textContent = Math.round(b) + '°';
+  document.getElementById('poly-badge').textContent = 'Bent line (Σ)';
+  document.getElementById('s-mode-name').textContent = 'Bent line (Σ)';
+  document.getElementById('s-relationship').textContent = `x = a + b = ${Math.round(a)}° + ${Math.round(b)}° = ${Math.round(a) + Math.round(b)}°`;
+  document.getElementById('bend-sum').textContent = state.bendWhy
+    ? `The dashed line through the bend is parallel too. It cuts x into a (alternate to a) and b (alternate to b), so x = a + b.`
+    : `x = a + b = ${Math.round(a) + Math.round(b)}°. Drag the bend.`;
+}
+
 function render() {
   gTransform.innerHTML = '';
   
@@ -525,6 +586,16 @@ function render() {
     gTransform.appendChild(el('rect', { x: '-50000', y: '-50000', width: '100000', height: '100000', fill: 'url(#grid-def)' }));
   }
   
+  const bendOn = state.animMode === 'bend';
+  document.getElementById('bend-strip').hidden = !bendOn;
+  // the bent line has no transversal to animate, and its two angles are a and b, not acute and obtuse
+  const slRow = document.getElementById('anim-slider-row');
+  if (slRow && bendOn) slRow.hidden = true;
+  else if (slRow && slRow.dataset.bendHid) slRow.hidden = false;
+  if (slRow) slRow.dataset.bendHid = bendOn ? '1' : '';
+  document.getElementById('s-tag-alpha').textContent = bendOn ? 'Top angle (a)' : 'Acute ∠ (α)';
+  document.getElementById('s-tag-beta').textContent = bendOn ? 'Bottom angle (b)' : 'Obtuse ∠ (β)';
+  if (bendOn) { renderBend(); return; }
   const gBase = el('g');
   
   gBase.appendChild(el('line', { x1: -5000, y1: P1.y, x2: 5000, y2: P1.y, stroke: '#0a0a0a', 'stroke-width': '2.5' }));
@@ -838,6 +909,12 @@ document.querySelectorAll('.quiz-choice').forEach((btn) => {
 });
 
 document.getElementById('quiz-next').addEventListener('click', nextQuestion);
+document.getElementById('bend-why').addEventListener('click', (e) => {
+  state.bendWhy = !state.bendWhy;
+  e.currentTarget.setAttribute('aria-pressed', state.bendWhy ? 'true' : 'false');
+  e.currentTarget.textContent = state.bendWhy ? 'Hide why' : 'Why?';
+  render();
+});
 
 /* Changing the figure mid-question would change the answer under the learner,
    so a fresh question is dealt whenever the angle moves. */
@@ -860,6 +937,7 @@ document.getElementById('btn-zoom-reset').onclick = () => { vX = 0; vY = 0; vSca
 let isDragging = false;
 let startX, startY, startVx, startVy;
 let dragVertIdx = null, startVertPos = null;
+let bendDrag = null;               // dragging the bend of the bent line
 
 svg.addEventListener('wheel', e => {
   e.preventDefault();
@@ -887,6 +965,14 @@ svg.addEventListener('pointerdown', e => {
     return;
   }
   
+  const bendHandle = e.target.closest('.bend-handle');
+  if (bendHandle) {
+    bendDrag = { x: e.clientX, y: e.clientY, bx: state.bend.x, by: state.bend.y };
+    svg.setPointerCapture(e.pointerId);
+    e.stopPropagation();
+    return;
+  }
+
   const handle = e.target.closest('.vert-handle');
   if (handle) {
     dragVertIdx = parseInt(handle.dataset.idx);
@@ -914,6 +1000,17 @@ svg.addEventListener('pointermove', e => {
   const rect = svg.getBoundingClientRect();
   const scaleRatio = VW / rect.width;
   
+  if (bendDrag) {
+    // the bend stays between the lines and to the right of the arms' feet (a and b from 10° to 80°)
+    const dxs = (e.clientX - bendDrag.x) * scaleRatio / vScale, dys = (e.clientY - bendDrag.y) * scaleRatio / vScale;
+    const half = state.distance / 2;
+    state.bend.y = clamp(bendDrag.by + dys, -half + 12, half - 12);
+    const minX = Math.max(half - state.bend.y, half + state.bend.y) / Math.tan(rad(80));
+    const maxX = Math.min(half - state.bend.y, half + state.bend.y) / Math.tan(rad(15));   // neither angle under 15°
+    state.bend.x = clamp(bendDrag.bx + dxs, Math.max(30, minX), Math.max(Math.max(30, minX), maxX));
+    render();
+    return;
+  }
   if (dragVertIdx !== null) {
     let dx = (e.clientX - vertDragStart.x) * scaleRatio / vScale;
     let dy = (e.clientY - vertDragStart.y) * scaleRatio / vScale;
@@ -956,10 +1053,10 @@ svg.addEventListener('pointermove', e => {
 });
 
 svg.addEventListener('pointerup', e => {
-  dragVertIdx = null; isDragging = false;
+  dragVertIdx = null; isDragging = false; bendDrag = null;
   svg.releasePointerCapture(e.pointerId);
 });
-svg.addEventListener('pointercancel', () => { dragVertIdx = null; isDragging = false; });
+svg.addEventListener('pointercancel', () => { dragVertIdx = null; isDragging = false; bendDrag = null; });
 
 let initialPinchDist = null, initialScale = 1;
 svg.addEventListener('touchstart', e => {

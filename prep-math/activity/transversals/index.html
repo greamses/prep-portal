@@ -138,6 +138,14 @@
               <button class="anim-mode-btn anim-mode-btn--quiz" data-mode="quiz_identify">
                 Name the Pair
               </button>
+              <button class="anim-mode-btn" data-mode="bend" data-tip="A line bent between the parallels: the angle at the bend is the sum of the other two">
+                Bent line (Σ)
+              </button>
+            </div>
+            <!-- the bent line: drag the bend; "Why?" draws the helper parallel through it -->
+            <div class="bend-strip" id="bend-strip" hidden>
+              <p class="bend-sum" id="bend-sum"></p>
+              <button type="button" class="pp-btn bend-why" id="bend-why" aria-pressed="false">Why?</button>
             </div>
 
             <!-- Quiz strip: replaces the animation slider in the two activity
@@ -153,7 +161,7 @@
                 <button class="pp-btn quiz-next" id="quiz-next" type="button" hidden>Next</button>
               </div>
             </div>
-            <div class="anim-slider-row">
+            <div class="anim-slider-row" id="anim-slider-row">
               <input
                 type="range"
                 id="sl-anim"
@@ -173,12 +181,12 @@
       <section class="stats-section">
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-tag">Acute ∠ (α)</div>
+            <div class="stat-tag" id="s-tag-alpha">Acute ∠ (α)</div>
             <div class="stat-val" id="s-angle-alpha">60°</div>
             <div class="stat-name" id="s-family-a">Yellow family</div>
           </div>
           <div class="stat-card">
-            <div class="stat-tag">Obtuse ∠ (β)</div>
+            <div class="stat-tag" id="s-tag-beta">Obtuse ∠ (β)</div>
             <div class="stat-val" id="s-angle-beta">120°</div>
             <div class="stat-name" id="s-family-b">Blue family</div>
           </div>
@@ -394,7 +402,7 @@
     <!-- the keyboard (utils/components/studio-keys.js) — ? shows the list -->
     <script type="module">
       import { studioKeys, flip, press } from "/utils/components/studio-keys.js";
-      const MODES = ["none", "vert_opp", "corresponding", "alt_int", "alt_ext", "cons_int", "cons_ext", "quiz_equal_supp", "quiz_pick", "quiz_identify"];
+      const MODES = ["none", "vert_opp", "corresponding", "alt_int", "alt_ext", "cons_int", "cons_ext", "quiz_equal_supp", "quiz_pick", "quiz_identify", "bend"];
       const map = {
         e: () => press('[data-answer="equal"]'), s: () => press('[data-answer="supplementary"]'),
         Enter: () => press("#quiz-next"), n: () => press("#quiz-next"),
