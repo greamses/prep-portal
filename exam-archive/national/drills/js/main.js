@@ -845,7 +845,7 @@ function renderSorSettingsStep() {
   // five dials, two to a line: roll one round and its reading shows in the middle
   const box = document.createElement('div');
   box.className = 'pp-dials sor-dials';
-  const secs = (v) => `${v.toFixed(v < 1 ? 2 : 1)} s`;
+  const secs = (v) => `${String(+v.toFixed(2))} s`;          // 0.25, 1.5, 6.25: every step of 0.05 shows
   const dial = (opts, onInput) => {
     const d = createDial({ ...opts, onInput: (v) => { onInput(v); saveContent(); } });
     box.append(d.el);

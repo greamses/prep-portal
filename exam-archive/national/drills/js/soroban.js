@@ -7,7 +7,7 @@
    = the fives, big friends = the tens), add / subtract, and four sliders: sums
    in the session (5-100), digits (1-6), speed (how long each number shows) and
    delay (the blank between numbers). Speed and delay ranges grow with the
-   digits: one digit 0.45-2 s and 1-4 s, six digits 2-10 s and 3-6 s, the
+   digits: one digit 0.25-2 s and 1-4 s, six digits 2-10 s and 3-6 s, the
    others in between (speedRange / delayRange).
 
    The TEST is checked bead by bead (moveKinds): adding d to a rod holding c is
@@ -36,10 +36,11 @@ export const SOROBAN_TERMS = 5;                       // numbers flashed in one 
 export const termsOf = (cfg) => Math.round(Math.min(100, Math.max(5, Number(cfg && cfg.terms) || SOROBAN_TERMS)));
 const lerp = (a, b, t) => a + (b - a) * t;
 const at = (d) => (Math.min(6, Math.max(1, d)) - 1) / 5;
-/** seconds each number shows: one digit 0.45-2, six digits 2-10 */
-export const speedRange = (d) => [+lerp(0.45, 2, at(d)).toFixed(2), +lerp(2, 10, at(d)).toFixed(2)];
+/** seconds each number shows: one digit 0.25-2, six digits 2-10 (ends on steps of 0.05) */
+const to05 = (x) => Math.round(x * 20) / 20;           // every end on a step of 0.05
+export const speedRange = (d) => [to05(lerp(0.25, 2, at(d))), to05(lerp(2, 10, at(d)))];
 /** the blank between numbers: one digit 1-4 s, six digits 3-6 s */
-export const delayRange = (d) => [+lerp(1, 3, at(d)).toFixed(2), +lerp(4, 6, at(d)).toFixed(2)];
+export const delayRange = (d) => [to05(lerp(1, 3, at(d))), to05(lerp(4, 6, at(d)))];
 /** time to type the total once the last number has gone */
 export const answerSeconds = (d) => 6 + 2 * d;
 const FEEDBACK_S = 1.6;

@@ -1,11 +1,12 @@
 /* ============================================================================
-   THE DIAL — a number picked on a wheel, like a speedometer
+   THE DIAL — a number picked on a gauge, like a car's speedometer
    ----------------------------------------------------------------------------
-   A 270° gauge: ticks round the rim, the chosen part of the track filled, a
-   knob on the value (no needle: it would cross the reading), and the reading large in the centre with its label under
-   it. Roll it: drag round the wheel, turn the mouse wheel over it, or use the
-   arrow keys (Page Up / Page Down move five steps, Home / End go to the ends).
-   It is a role="slider", so screen readers hear its value.
+   A real-looking instrument: a chrome bezel, a dark face under glass, graduations
+   round the rim, a red pointer and a metal cap on the value. What is lit is lit:
+   the graduations up to the value glow, the arc glows, and the reading in the
+   centre glows like an amber display. Roll it: drag the cap (or anywhere on the
+   face) round, turn the mouse wheel over it, or use the arrow keys (Page Up /
+   Page Down: five steps; Home / End: the ends). It is a role="slider".
 
      const d = createDial({ label: 'Sums', min: 5, max: 100, step: 5, value: 10,
                             format: (v) => `${v}`, unit: '', onInput: (v) => {} });
@@ -13,12 +14,14 @@
      d.setRange(min, max, value);    // a new range (the value kept in it)
      d.value;                        // what it reads
 
-   Two to a line in a `.pp-dials` row. Colours from the theme tokens.
+   Two to a line in a `.pp-dials` row. The label and the ends are JetBrains Mono
+   (the site's body face); the reading is the display face, lit.
    ========================================================================== */
 const SWEEP = 270, START = 135;               // from the bottom left, round over the top, to the bottom right
-const C = 60, R = 46;                          // viewBox 120 x 120: centre, track radius
+const C = 60, R = 44;                          // viewBox 120 x 120: centre, the lit arc's radius
 
 let cssDone = false;
+let uid = 0;
 function ensureCss() {
   if (cssDone || typeof document === 'undefined') return;
   cssDone = true;
@@ -39,16 +42,38 @@ const decimals = (step) => { const s = String(step); return s.includes('.') ? s.
 
 export function createDial({ label, min, max, step = 1, value, format = (v) => String(v), unit = '', onInput }) {
   ensureCss();
+  const id = `ppd${++uid}`;
   const el = document.createElement('div');
   el.className = 'pp-dial';
   el.innerHTML = `
     <div class="pp-dial__face" role="slider" tabindex="0" aria-label="${label}">
       <svg viewBox="0 0 120 120" aria-hidden="true">
-        <circle class="pp-dial__plate" cx="${C}" cy="${C}" r="57"/>
+        <defs>
+          <linearGradient id="${id}-chrome" x1="0" y1="0" x2="0.4" y2="1">
+            <stop offset="0" stop-color="#fbfbfa"/><stop offset="0.3" stop-color="#b9bcc0"/><stop offset="0.55" stop-color="#eceef0"/><stop offset="0.8" stop-color="#8d9196"/><stop offset="1" stop-color="#d7d9dc"/>
+          </linearGradient>
+          <radialGradient id="${id}-face" cx="0.5" cy="0.42" r="0.62">
+            <stop offset="0" stop-color="#2f343c"/><stop offset="0.7" stop-color="#15181d"/><stop offset="1" stop-color="#07080a"/>
+          </radialGradient>
+          <radialGradient id="${id}-cap" cx="0.38" cy="0.32" r="0.75">
+            <stop offset="0" stop-color="#ffffff"/><stop offset="0.45" stop-color="#c3c6ca"/><stop offset="1" stop-color="#6c7076"/>
+          </radialGradient>
+          <linearGradient id="${id}-glass" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#fff" stop-opacity="0.22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+          </linearGradient>
+          <filter id="${id}-glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="1.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <circle cx="${C}" cy="${C}" r="58.5" fill="url(#${id}-chrome)"/>
+        <circle cx="${C}" cy="${C}" r="54.2" fill="#1a1c20"/>
+        <circle cx="${C}" cy="${C}" r="53" fill="url(#${id}-face)"/>
         <path class="pp-dial__track"/>
-        <path class="pp-dial__fill"/>
+        <path class="pp-dial__fill" filter="url(#${id}-glow)"/>
         <g class="pp-dial__ticks"></g>
-        <circle class="pp-dial__knob" r="6.2"/>
+        <line class="pp-dial__pointer"/>
+        <circle class="pp-dial__cap" r="5.4" fill="url(#${id}-cap)"/>
+        <ellipse cx="${C}" cy="36" rx="40" ry="24" fill="url(#${id}-glass)" pointer-events="none"/>
       </svg>
       <div class="pp-dial__read"><b class="pp-dial__val"></b><span class="pp-dial__unit"></span></div>
     </div>
@@ -67,24 +92,30 @@ export function createDial({ label, min, max, step = 1, value, format = (v) => S
 
   function drawTicks() {
     const n = Math.round((hi - lo) / st);
-    const every = n <= 20 ? 1 : Math.ceil(n / 20);          // at most twenty ticks round the rim
+    const every = n <= 24 ? 1 : Math.ceil(n / 24);          // at most two dozen graduations round the rim
     let g = '';
     for (let i = 0; i <= n; i += every) {
-      const a = angleOf(lo + i * st), major = i === 0 || i >= n - every + 1 || i % (every * 5) === 0;
-      const [x0, y0] = pt(a, major ? 50.5 : 52), [x1, y1] = pt(a, 55.5);
-      g += `<line x1="${f1(x0)}" y1="${f1(y0)}" x2="${f1(x1)}" y2="${f1(y1)}" class="${major ? 'is-major' : ''}"/>`;
+      const tv = lo + i * st, a = angleOf(tv), major = i === 0 || i + every > n || (i / every) % 5 === 0;
+      const [x0, y0] = pt(a, major ? 45.5 : 48), [x1, y1] = pt(a, 51.5);
+      g += `<line data-v="${tv}" x1="${f1(x0)}" y1="${f1(y0)}" x2="${f1(x1)}" y2="${f1(y1)}" class="${major ? 'is-major' : ''}"/>`;
     }
-    q('.pp-dial__ticks').innerHTML = g;
-    q('.pp-dial__track').setAttribute('d', arc(START, START + SWEEP, R));
+    const ticks = q('.pp-dial__ticks');
+    ticks.innerHTML = g;
+    q('.pp-dial__track').setAttribute('d', arc(START, START + SWEEP, R - 4));
     q('.pp-dial__ends').children[0].textContent = format(lo);
     q('.pp-dial__ends').children[1].textContent = format(hi);
   }
   function paint() {
     const a = angleOf(v);
-    q('.pp-dial__fill').setAttribute('d', arc(START, a, R));
-    const [kx, ky] = pt(a, R);
-    const knob = q('.pp-dial__knob');
-    knob.setAttribute('cx', f1(kx)); knob.setAttribute('cy', f1(ky));
+    q('.pp-dial__fill').setAttribute('d', arc(START, a, R - 4));
+    // the graduations up to the value are lit
+    for (const t of q('.pp-dial__ticks').children) t.classList.toggle('is-lit', Number(t.dataset.v) <= v + 1e-9);
+    const [px0, py0] = pt(a, 30), [px1, py1] = pt(a, 52);
+    const ptr = q('.pp-dial__pointer');
+    ptr.setAttribute('x1', f1(px0)); ptr.setAttribute('y1', f1(py0)); ptr.setAttribute('x2', f1(px1)); ptr.setAttribute('y2', f1(py1));
+    const [cx, cy] = pt(a, R - 4);
+    const cap = q('.pp-dial__cap');
+    cap.setAttribute('cx', f1(cx)); cap.setAttribute('cy', f1(cy));
     q('.pp-dial__val').textContent = format(v).replace(unit, '').trim();
     q('.pp-dial__unit').textContent = unit;
     face.setAttribute('aria-valuemin', lo); face.setAttribute('aria-valuemax', hi);
@@ -98,14 +129,14 @@ export function createDial({ label, min, max, step = 1, value, format = (v) => S
     if (fromUser && onInput) onInput(v);
   }
 
-  // rolling it: drag round the wheel (the bottom gap snaps to the nearer end)
+  // rolling it: drag round the face (the bottom gap snaps to the nearer end)
   let dragging = false;
   const fromPointer = (e) => {
     const r = svg.getBoundingClientRect();
     const x = ((e.clientX - r.left) / r.width) * 120 - C, y = ((e.clientY - r.top) / r.height) * 120 - C;
-    let a = (Math.atan2(y, x) * 180) / Math.PI;               // -180..180, clockwise from the right
+    let a = (Math.atan2(y, x) * 180) / Math.PI;
     if (a < 0) a += 360;
-    if (a < START - (360 - SWEEP) / 2) a += 360;              // 0..90 belongs past the top: 360..450
+    if (a < START - (360 - SWEEP) / 2) a += 360;
     a = Math.min(START + SWEEP, Math.max(START, a));
     set(lo + ((a - START) / SWEEP) * (hi - lo), true);
   };
