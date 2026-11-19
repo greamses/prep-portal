@@ -14,6 +14,7 @@ import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound, masterFinished, lastRoundTimeMs } from './game.js';
 import { startGridRound } from './grid.js';
 import { startBarsRound } from './bars.js';
+import { startSorobanRound, lastSorobanTimeMs, speedRange, delayRange, sessionSeconds } from './soroban.js';
 import { BANKS, BANK_KEYS, setCount, setId, setsLabel, roundSeconds, clockLabel, LEVELS, LEVEL_KEYS, levelOf, perMinute, wordsInSets } from './spelling.js';
 import { openSpellingLibrary } from './spelling-library.js';
 import { startBee, beeFullscreen, BEE_SPELLERS, BEE_SIZE, spellerPool } from './bee.js';
@@ -62,6 +63,7 @@ const OPERATION_LABELS = {
   pctInc: 'Percentage increase', pctDec: 'Percentage decrease', pctIncBy: 'Increase by a percentage', pctDecBy: 'Decrease by a percentage',
   monSI: 'Simple interest', monProfitPct: 'Profit percent', monLossPct: 'Loss percent', monSP: 'Selling price from profit or loss %',
   monCP: 'Cost price from profit or loss %', monDiscount: 'Discount', monCommission: 'Commission',
+  sorAdd: 'Addition', sorSub: 'Subtraction',
   subOne: 'One step', subTwo: 'Two steps', subMulti: 'Brackets and fractions', subPower: 'Powers and roots',
   eqOne: '1-Step Equations', eqTwo: '2-Step Equations', eqMulti: 'Multi-Step Equations', eqSystem: 'Simultaneous Equations',
   baseTo10: 'To Base 10', baseFrom10: 'From Base 10', baseToBase: 'Base to Base',
@@ -90,6 +92,7 @@ const CATEGORY_OPERATIONS = {
   subject: ['subOne', 'subTwo', 'subMulti', 'subPower'],
   percent: ['pctToDec', 'pctToFrac', 'fracToPct', 'decToPct', 'pctOf', 'pctInc', 'pctDec', 'pctIncBy', 'pctDecBy'],
   money: ['monSI', 'monProfitPct', 'monLossPct', 'monSP', 'monCP', 'monDiscount', 'monCommission'],
+  soroban: ['sorAdd', 'sorSub'],
   bases: ['binTo10', 'binFrom10', 'binAdd', 'binSub', 'binMul', 'binDiv',
     'octAdd', 'octSub', 'octMul', 'octDiv', 'hexAdd', 'hexSub', 'hexMul', 'hexDiv', 'baseTo10', 'baseFrom10', 'baseToBase'],
   roman: ['romanToNum', 'numToRoman'],
@@ -141,6 +144,7 @@ const CATEGORY_DEFAULT_OPS = {
   subject: ['subOne'],
   percent: ['pctToDec'],
   money: ['monProfitPct'],
+  soroban: ['sorAdd'],
   bases: ['baseTo10'],
   roman: ['romanToNum'],
   spelling: ['spellSay'],
@@ -231,7 +235,7 @@ let timeLimit = mem.get('timeLimit', 60, [30, 60, 90, 120]);
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
-let categoryValue = mem.get('category', 'basic', ['mathbee', 'basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'equations', 'subject', 'percent', 'money', 'bases', 'roman', 'spelling', 'angles', 'areas', 'pythag', 'circles', 'timestable', 'fracbars']);
+let categoryValue = mem.get('category', 'basic', ['mathbee', 'basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'equations', 'subject', 'percent', 'money', 'soroban', 'bases', 'roman', 'spelling', 'angles', 'areas', 'pythag', 'circles', 'timestable', 'fracbars']);
 let range = mem.get('range', 'all', RANGES.map((r) => r.key));
 if (categoryValue === 'algebra' || categoryValue === 'subject' || categoryValue === 'percent' || categoryValue === 'money' || categoryValue === 'roman' || categoryValue === 'spelling') range = '1-9'; // single digits only
 // Tables (grid filler) only — how much of each 5×5 grid is blank. The grid is
@@ -290,6 +294,19 @@ function syncMathOps() {
 if (categoryValue === 'mathbee') syncMathOps();
 if (mode === 'cup' && categoryValue !== 'mathbee') mode = 'multiplayer';   // a tournament is the Math Bee's only
 const isMathCup = () => isMathBee() && mode === 'cup';
+/* Soroban (flash anzan): how the numbers show, the test, and the four sliders. Speed and delay
+   ranges follow the digits (soroban.js speedRange / delayRange). */
+const sorShow = new Set(mem.get('sorShow', ['number'], Array.isArray).filter((v) => ['tool', 'number'].includes(v)));
+if (!sorShow.size) sorShow.add('number');
+const sorTests = new Set(mem.get('sorTests', ['simple'], Array.isArray).filter((v) => ['simple', 'small', 'big'].includes(v)));
+if (!sorTests.size) sorTests.add('simple');
+let sorCount = Math.round(Math.min(100, Math.max(5, Number(mem.get('sorCount', 10)) || 10)));
+let sorDigits = Math.round(Math.min(6, Math.max(1, Number(mem.get('sorDigits', 1)) || 1)));
+const clampTo = (v, [lo, hi]) => Math.min(hi, Math.max(lo, v));
+let sorSpeed = clampTo(Number(mem.get('sorSpeed', 1.2)) || 1.2, speedRange(sorDigits));
+let sorDelay = clampTo(Number(mem.get('sorDelay', 1.5)) || 1.5, delayRange(sorDigits));
+const sorobanCfg = () => ({ show: [...sorShow].sort(), tests: [...sorTests].sort(), count: sorCount, digits: sorDigits, speed: +sorSpeed.toFixed(2), delay: +sorDelay.toFixed(2) });
+const sorobanRoom = () => (categoryValue === 'soroban' ? { soroban: sorobanCfg() } : {});
 // the speller this player chooses to be, at the Spelling Bee (remembered)
 let beeKid = mem.get('beeKid', BEE_SPELLERS[0].key, BEE_SPELLERS.map((k) => k.key));
 // Chemistry's single operation is never offered as a step, so a remembered
@@ -304,6 +321,7 @@ const saveContent = () => mem.save({
   compounds: [...compounds],
   spellSets: [...spellSets], spellBank, spellFocus, spellMaster, spellLevel,
   mathTopics: [...mathTopics], mathOps: [...mathOps],
+  sorShow: [...sorShow], sorTests: [...sorTests], sorCount, sorDigits, sorSpeed, sorDelay,
   gridBlanks,
   barsLevel,
 });
@@ -312,7 +330,7 @@ const saveContent = () => mem.save({
 // Bars, 'drill' for everything else. Written to the room doc so a code-joiner
 // plays the host's surface.
 const gameActivity = () => (
-  categoryValue === 'timestable' ? 'grid' : categoryValue === 'fracbars' ? 'bars' : isMathBee() ? (mode === 'cup' ? 'mathcup' : 'mathbee') : 'drill'
+  categoryValue === 'timestable' ? 'grid' : categoryValue === 'fracbars' ? 'bars' : isMathBee() ? (mode === 'cup' ? 'mathcup' : 'mathbee') : categoryValue === 'soroban' ? 'soroban' : 'drill'
 );
 
 function getCurrentUser() {
@@ -345,6 +363,7 @@ function getTablesPool() {
   if (categoryValue === 'chemistry') return [1];
   if (categoryValue === 'spelling') return spellIds(); // the sets of ten, as list code + set number
   if (categoryValue === 'mathbee') return [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  if (categoryValue === 'soroban') return [sorDigits];
   if (categoryValue === 'fractions') return [...denominators];
   if (isNumbersMode()) return [...tables];
   const list = rangesFor(categoryValue);
@@ -430,6 +449,9 @@ topic.addSlide('category', 'Topic', () => {});
 topic.addSlide('fraction-type', 'Fraction Type', () => {});
 topic.addSlide('operations', 'Operations', () => {});
 topic.addSlide('mathbee-topics', 'Topics', () => {});
+topic.addSlide('sor-show', 'Show', () => {});
+topic.addSlide('sor-test', 'Test', () => {});
+topic.addSlide('sor-settings', 'Settings', () => {});
 topic.addSlide('range', 'Number Range', () => {});
 topic.addSlide('numbers', 'Numbers', () => {});
 topic.addSlide('denominators', 'Denominators', () => {});
@@ -499,6 +521,7 @@ function renderOperationsPick() {
     onNext: () => {
       if (isFractions) { renderDenominatorsPick(); topic.goTo('denominators'); return; }
       if (isBars) { renderBarsLevelStep(); topic.goTo('bars-level'); return; }
+      if (categoryValue === 'soroban') { range = '1-9'; renderSorSettingsStep(); topic.goTo('sor-settings'); return; }
       if (categoryValue === 'spelling') { renderSpellSetsPick(); topic.goTo('spell-sets'); return; }
       // Algebra is single digits only: there is nothing to choose, so no step.
       if (categoryValue === 'algebra' || categoryValue === 'subject' || categoryValue === 'percent' || categoryValue === 'money' || categoryValue === 'roman') { range = '1-9'; saveContent(); flow.next(); return; }
@@ -726,7 +749,7 @@ const AREAS = [
 const AREA_TOPICS = {
   numbers: [
     ['mathbee', 'Math Bee'], ['basic', 'Arithmetic'], ['integers', 'Integers'], ['exponent', 'Powers & Roots'],
-    ['fractions', 'Fractions'], ['percent', 'Percentages'], ['money', 'Commercial Maths'], ['bases', 'Number Bases'], ['roman', 'Roman Numerals'], ['timestable', 'Times Tables Grid'], ['fracbars', 'Fraction Bars'], ['planner', 'Planner'],
+    ['fractions', 'Fractions'], ['percent', 'Percentages'], ['money', 'Commercial Maths'], ['soroban', 'Soroban'], ['bases', 'Number Bases'], ['roman', 'Roman Numerals'], ['timestable', 'Times Tables Grid'], ['fracbars', 'Fraction Bars'], ['planner', 'Planner'],
   ],
   algebra: [['algebra', 'Expressions'], ['equations', 'Equations'], ['subject', 'Change of Subject']],
   geometry: [['angles', 'Angles'], ['areas', 'Area & Perimeter'], ['pythag', 'Pythagoras & Trig'], ['circles', 'Circles & Volume']],
@@ -774,10 +797,81 @@ function pickCategory(v) {
   else if (v === 'fractions') { renderFractionTypePick(); topic.goTo('fraction-type'); }
   else if (v === 'spelling') { renderSpellBankStep(); topic.goTo('spell-bank'); }
   else if (v === 'mathbee') { syncMathOps(); updateStartDisabled(); renderMathTopicsStep(); topic.goTo('mathbee-topics'); }
+  else if (v === 'soroban') { renderSorShowStep(); topic.goTo('sor-show'); }
   else { renderOperationsPick(); topic.goTo('operations'); }
 }
 
 /* The Math Bee: which topics its questions come from, grouped as the drills' areas. */
+/* ── Soroban: show, test, (add / subtract: the operations step), the sliders ── */
+function renderSorShowStep() {
+  renderMultiStep(topic, 'sor-show', {
+    title: 'Show the numbers as',
+    subtitle: 'Tool flashes each number on a soroban; Number flashes the figures. Tick both for both.',
+    options: [
+      { value: 'tool', label: 'Tool (soroban)', tip: 'Each number set on a soroban, beads and all' },
+      { value: 'number', label: 'Number', tip: 'Each number in figures' },
+    ],
+    isChecked: (v) => sorShow.has(v),
+    onToggle: (v, on) => { if (on) sorShow.add(v); else if (sorShow.size > 1) sorShow.delete(v); else renderSorShowStep(); saveContent(); },
+    nextLabel: 'Next',
+    onNext: () => { saveContent(); renderSorTestStep(); topic.goTo('sor-test'); },
+  });
+}
+function renderSorTestStep() {
+  renderMultiStep(topic, 'sor-test', {
+    title: 'Which test?',
+    colorOffset: 2,
+    options: [
+      { value: 'simple', label: 'Simple', tip: 'Beads straight on and off: no five, no ten (1 + 3, 5 + 2)' },
+      { value: 'small', label: 'Small friends', tip: 'The friends of five: 3 + 4 is 3 + 5 − 1' },
+      { value: 'big', label: 'Big friends', tip: 'The friends of ten: 7 + 5 is 7 + 10 − 5' },
+    ],
+    isChecked: (v) => sorTests.has(v),
+    onToggle: (v, on) => { if (on) sorTests.add(v); else if (sorTests.size > 1) sorTests.delete(v); else renderSorTestStep(); saveContent(); },
+    nextLabel: 'Next',
+    onNext: () => { saveContent(); renderOperationsPick(); topic.goTo('operations'); },
+  });
+}
+function renderSorSettingsStep() {
+  const box = document.createElement('div');
+  box.className = 'sor-sliders';
+  const row = (label, min, max, step, value, fmt, onInput) => {
+    const wrap = document.createElement('label');
+    wrap.className = 'sor-slider';
+    wrap.innerHTML = `<span class="sor-slider__label">${label}</span><input type="range" min="${min}" max="${max}" step="${step}" value="${value}"><b class="sor-slider__val"></b><span class="sor-slider__ends"><i></i><i></i></span>`;
+    const input = wrap.querySelector('input'), val = wrap.querySelector('b'), ends = wrap.querySelectorAll('.sor-slider__ends i');
+    const paint = () => { val.textContent = fmt(Number(input.value)); ends[0].textContent = fmt(Number(input.min)); ends[1].textContent = fmt(Number(input.max)); };
+    input.addEventListener('input', () => { onInput(Number(input.value)); paint(); saveContent(); });
+    paint();
+    box.append(wrap);
+    return { input, paint };
+  };
+  const secs = (v) => `${v.toFixed(v < 1 ? 2 : 1)} s`;
+  row('Sums', 5, 100, 1, sorCount, (v) => `${v}`, (v) => { sorCount = v; });
+  let speed, delay;
+  // more digits: slower ranges for speed and delay (the value keeps its place in the range)
+  row('Digits', 1, 6, 1, sorDigits, (v) => `${v}`, (v) => {
+    const sOld = speedRange(sorDigits), dOld = delayRange(sorDigits);
+    const fs = (sorSpeed - sOld[0]) / (sOld[1] - sOld[0] || 1), fd = (sorDelay - dOld[0]) / (dOld[1] - dOld[0] || 1);
+    sorDigits = v;
+    const sNew = speedRange(v), dNew = delayRange(v);
+    sorSpeed = +(sNew[0] + fs * (sNew[1] - sNew[0])).toFixed(2);
+    sorDelay = +(dNew[0] + fd * (dNew[1] - dNew[0])).toFixed(2);
+    Object.assign(speed.input, { min: sNew[0], max: sNew[1], value: sorSpeed });
+    Object.assign(delay.input, { min: dNew[0], max: dNew[1], value: sorDelay });
+    speed.paint(); delay.paint();
+  });
+  speed = row('Speed (each number shows)', speedRange(sorDigits)[0], speedRange(sorDigits)[1], 0.05, sorSpeed, secs, (v) => { sorSpeed = v; });
+  delay = row('Delay (the gap between numbers)', delayRange(sorDigits)[0], delayRange(sorDigits)[1], 0.05, sorDelay, secs, (v) => { sorDelay = v; });
+  renderCustomStep(topic, 'sor-settings', {
+    title: 'Sums, digits, speed and delay',
+    subtitle: 'Five numbers flash in each sum; type the total when the last one has gone.',
+    content: box,
+    nextLabel: 'Next',
+    onNext: () => { saveContent(); updateStartDisabled(); flow.next(); },
+  });
+}
+
 /* The Math Bee's topics, grouped as the drills' areas. Clicking a topic opens its kinds of question
    under its row to tick one by one (number bases: converting, adding in the same base...); its own
    box ticks or unticks the whole topic. Every topic ticked keeps at least one kind. */
@@ -927,6 +1021,7 @@ renderChoiceStep(options, 'mode', {
     codeInput.hidden = roomAction !== 'join';
     updateStartLabel();
     renderSizeStep();                              // a Math Bee is five players: the size step follows the mode
+    if (mode === 'versus' && categoryValue === 'soroban') { flow.next(); return; }
     options.goTo(mode === 'versus' && !isAnyBee() ? 'time' : 'size');
   },
 });
@@ -945,6 +1040,7 @@ renderChoiceStep(options, 'size', {
     if (!isAnyBee()) { roomSize = Number(v); mem.save({ roomSize }); }
     // the Math Bee's minute is fixed: next, the speller
     if (isMathBee()) { renderBeeKidStep(); options.goTo('speller'); return; }
+    if (categoryValue === 'soroban') { flow.next(); return; }   // the session's length comes from its sliders
     options.goTo('time');
   },
 });
@@ -1039,6 +1135,7 @@ const flow = createSectionFlow([
     el: $('drill-section-topic'),
     chips: () => {
       const cat = TOPIC_LABEL[categoryValue] || categoryValue;
+      if (categoryValue === 'soroban') return [{ label: 'Soroban' }, { label: [...sorShow].map((v) => (v === 'tool' ? 'Tool' : 'Number')).join(' + ') }, { label: [...sorTests].map((v) => ({ simple: 'Simple', small: 'Small friends', big: 'Big friends' }[v])).join(', ') }, ...[...operations].map((o) => ({ label: OPERATION_LABELS[o] })), { label: `${sorCount} sums, ${sorDigits} digit${sorDigits > 1 ? 's' : ''}` }];
       if (categoryValue === 'mathbee') return [{ label: 'Math Bee' }, ...[...mathTopics].map((t) => { const all = kindsIn(t), on = all.filter((op) => mathOps.has(op)).length; return { label: `${TOPIC_LABEL[t] || t}${on && on < all.length ? ` (${on} of ${all.length})` : ''}` }; })];
       // Tables (grid filler) recaps its two dials: size and blank density.
       if (categoryValue === 'timestable') {
@@ -1079,7 +1176,7 @@ const flow = createSectionFlow([
   },
   {
     el: $('drill-section-options'),
-    chips: () => isMathBee() ? [{ label: isMathCup() ? 'Tournament' : 'Math Bee' }, { label: '5 players' }, { label: isMathCup() ? 'Qualifier, then knockout' : '1 minute each' }, { label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [...optionsChips({ mode: isBee() ? 'multiplayer' : mode, roomSize: isBee() ? BEE_SIZE : roomSize, timeLabel: isBee() ? `${levelOf(spellLevel).label} ${beeSeconds(spellLevel)}s a word` : categoryValue === 'spelling' ? `${levelOf(spellLevel).label} ${clockLabel(spellTime())}` : `${timeLimit}s` }), ...(isBee() ? [{ label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [])],
+    chips: () => isMathBee() ? [{ label: isMathCup() ? 'Tournament' : 'Math Bee' }, { label: '5 players' }, { label: isMathCup() ? 'Qualifier, then knockout' : '1 minute each' }, { label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [...optionsChips({ mode: isBee() ? 'multiplayer' : mode, roomSize: isBee() ? BEE_SIZE : roomSize, timeLabel: isBee() ? `${levelOf(spellLevel).label} ${beeSeconds(spellLevel)}s a word` : categoryValue === 'spelling' ? `${levelOf(spellLevel).label} ${clockLabel(spellTime())}` : categoryValue === 'soroban' ? `${sorSpeed}s on, ${sorDelay}s gap` : `${timeLimit}s` }), ...(isBee() ? [{ label: (BEE_SPELLERS.find((k) => k.key === beeKid) || {}).name || 'Speller' }] : [])],
   },
   {
     el: $('drill-section-room'),
@@ -1289,6 +1386,15 @@ async function playRoundAndShowResults(room, myName) {
         blanks: room.gridBlanks,
         roster,
       })
+    : room.activity === 'soroban'
+    ? await startSorobanRound({
+        seed: room.seed,
+        timeLimit: room.timeLimit,
+        startAt: room.startAt,
+        cfg: room.soroban,
+        operations: room.operations,
+        roster,
+      })
     : room.activity === 'bars'
     ? await startBarsRound({
         seed: room.seed,
@@ -1340,7 +1446,8 @@ async function playRoundAndShowResults(room, myName) {
       tables: room.tables,
       spellFocus: !!room.spellFocus,
       // Spelling ranks words right, then time: how long this player took.
-      myMetrics: spelling ? { timeMs: lastRoundTimeMs() } : undefined,
+      myMetrics: spelling ? { timeMs: lastRoundTimeMs() } : room.activity === 'soroban' ? { timeMs: lastSorobanTimeMs() } : undefined,
+      soroban: room.soroban,
       // The board goes up straight away and fills in as the room finishes,
       // instead of holding everyone behind the awaiting overlay.
       onUpdate: (rows) => {
@@ -1412,7 +1519,7 @@ async function runMultiplayer({ timeLimit, operationsList, tablesList, fractionT
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus && !isBee(), displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), ...sorobanRoom(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus && !isBee(), displayName: myName },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -1433,7 +1540,7 @@ async function runMultiplayerCreate({ timeLimit, operationsList, tablesList, fra
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus && !isBee(), displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), ...sorobanRoom(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus && !isBee(), displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for other players…') },
     );
   } catch (e) {
@@ -1499,7 +1606,7 @@ async function runVersusCreate({ timeLimit, operationsList, tablesList, fraction
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus && !isBee(), displayName: myName },
+      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), ...sorobanRoom(), gridBlanks, barsLevel, spellFocus: categoryValue === 'spelling' && spellFocus && !isBee(), displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for your opponent…') },
     );
   } catch (e) {
@@ -1544,7 +1651,7 @@ async function runDrill() {
   const compoundsList = categoryValue === 'chemistry' ? [...compounds] : [];
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
   // Spelling's clock is the words' own (10 a minute, 20 in Focus), not the chosen time.
-  const roundTime = isBee() ? beeSeconds(spellLevel) : isMathBee() ? 60 : categoryValue === 'spelling' ? spellTime() : timeLimit;
+  const roundTime = isBee() ? beeSeconds(spellLevel) : isMathBee() ? 60 : categoryValue === 'soroban' ? sessionSeconds(sorobanCfg()) : categoryValue === 'spelling' ? spellTime() : timeLimit;
 
   if (mode === 'versus' && !isBee()) {
     if (roomAction === 'join') await runVersusJoin({ timeLimit: roundTime, myName });

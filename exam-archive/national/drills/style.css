@@ -843,3 +843,30 @@ tbody .drill-grid-th { border-right-width: 2px; }
 @keyframes mb-open { from { opacity: 0; transform: translateY(-0.3rem); } to { opacity: 1; transform: none; } }
 .mb-opts__title { margin: 0 0 0.3rem; font-family: var(--font-display); font-size: 0.82rem; font-weight: 700; }
 .mb-opts__row .mb-opt { font-size: 0.74em; padding-top: 0.35em; padding-bottom: 0.35em; }
+
+/* ── Soroban (flash anzan) ── */
+.drill-soroban { width: min(760px, 100%); margin: 0 auto; display: grid; gap: 0.8rem; }
+.sor-paper { display: grid; justify-items: center; gap: 1rem; min-height: 22rem; padding: 1.5rem 1.2rem; }
+.sor-flash { display: grid; place-items: center; min-height: 15rem; width: 100%; }
+.sor-num { display: flex; align-items: center; justify-content: center; gap: 1.2rem; animation: sor-pop 0.18s ease-out; }
+@keyframes sor-pop { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+.sor-num .sor-abacus { width: auto; height: min(15rem, 46vh); max-width: 100%; }
+.sor-fig { font-family: var(--font-display); font-weight: 800; font-size: clamp(3.6rem, 12vw, 6.5rem); line-height: 1; letter-spacing: 0.02em; color: var(--text-primary); }
+.sor-num.is-both .sor-fig { font-size: clamp(2.6rem, 8vw, 4.4rem); }
+.sor-sign { font-family: var(--font-display); font-weight: 800; font-size: clamp(3rem, 10vw, 5.5rem); line-height: 1; color: #2f9a63; }
+.sor-sign.is-minus { color: #d64541; }
+.sor-answer { display: grid; justify-items: center; gap: 0.5rem; }
+.sor-answer__label { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); }
+.sor-answer__input { width: 10ch; padding: 0.3rem 0.5rem; font-family: var(--font-display); font-weight: 800; font-size: 2.6rem; text-align: center; border: 0; border-bottom: 3px solid var(--text-primary); background: transparent; color: var(--text-primary); outline: none; }
+.sor-answer__clock { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-tertiary); }
+.sor-result { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; }
+.sor-result.is-ok { color: #2f9a63; }
+.sor-result.is-bad { color: #d64541; }
+/* the setup's sliders */
+.sor-sliders { display: grid; gap: 1rem; width: 100%; }
+.sor-slider { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.2rem 0.8rem; }
+.sor-slider__label { font-family: var(--font-display); font-weight: 600; font-size: 0.9rem; }
+.sor-slider__val { justify-self: end; font-family: var(--font-mono); font-size: 0.9rem; }
+.sor-slider input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent-primary); }
+.sor-slider__ends { grid-column: 1 / -1; display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-tertiary); }
+.sor-slider__ends i { font-style: normal; }

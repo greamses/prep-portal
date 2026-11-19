@@ -337,7 +337,7 @@ service cloud.firestore {
         // A spelling round's clock comes from its words (3 to 10 s a word, by level),
         // up to a whole list; every other round picks one of the four.
         (request.resource.data.timeLimit in [30, 60, 90, 120] ||
-          (request.resource.data.operations.hasAny(['spellSay', 'spellIpa', 'spellBee']) &&
+          (request.resource.data.operations.hasAny(['spellSay', 'spellIpa', 'spellBee', 'sorAdd', 'sorSub']) &&
            request.resource.data.timeLimit is int &&
            request.resource.data.timeLimit >= 3 && request.resource.data.timeLimit <= 10000)) &&
         request.resource.data.operations is list &&
@@ -351,7 +351,7 @@ service cloud.firestore {
           'eqOne', 'eqTwo', 'eqMulti', 'eqSystem', 'baseTo10', 'baseFrom10', 'baseToBase', 'binTo10', 'binFrom10', 'binAdd', 'binSub', 'binMul', 'binDiv',
           'octAdd', 'octSub', 'octMul', 'octDiv', 'hexAdd', 'hexSub', 'hexMul', 'hexDiv', 'romanToNum', 'numToRoman', 'spellSay', 'spellIpa', 'spellBee',
           'geoAngLine', 'geoAngTriangle', 'geoAngPolygon', 'geoAngParallel', 'geoAngBend', 'geoAngPoint', 'geoAngComp',
-          'pctInc', 'pctDec', 'pctIncBy', 'pctDecBy',
+          'pctInc', 'pctDec', 'pctIncBy', 'pctDecBy', 'sorAdd', 'sorSub',
           'monSI', 'monProfitPct', 'monLossPct', 'monSP', 'monCP', 'monDiscount', 'monCommission',
           'geoRect', 'geoTriangle', 'geoTrapezium', 'geoParallelogram',
           'geoHyp', 'geoLeg', 'geoTrig',
@@ -378,7 +378,7 @@ service cloud.firestore {
         // across this deploy predates the fields — but present-but-wrong is
         // still rejected. 'bars' is Fraction Bars.
         (!('activity' in request.resource.data) ||
-          request.resource.data.activity in ['drill', 'grid', 'bars', 'mathbee', 'mathcup']) &&
+          request.resource.data.activity in ['drill', 'grid', 'bars', 'mathbee', 'mathcup', 'soroban']) &&
         (!('gridBlanks' in request.resource.data) ||
           request.resource.data.gridBlanks in ['light', 'heavy']) &&
         // Fraction Bars: how the two denominators are related. Optional for

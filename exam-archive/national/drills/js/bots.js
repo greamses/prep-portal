@@ -74,3 +74,19 @@ export function simulateSpellingBot(seed, botSlot, timeLimitSec, words, focus) {
   }
   return { score, timeMs: Math.round(t * 1000) };
 }
+
+/* Soroban: a bot answers every sum (it never runs the box out) and gets it right more often with
+   fewer digits and plain beads; its time is what it took to type the totals. */
+export function simulateSorobanBot(seed, botSlot, cfg) {
+  const rng = botRng(seed, botSlot);
+  const c = cfg || {};
+  const digits = c.digits || 1, count = c.count || 10, big = (c.tests || []).includes('big');
+  const sure = Math.max(0.35, 0.95 - 0.07 * (digits - 1) - (big ? 0.06 : 0) - rng() * 0.18);
+  const typing = 1.2 + digits * 0.55;
+  let score = 0, t = 0;
+  for (let i = 0; i < count; i++) {
+    if (rng() < sure) score += 1;
+    t += typing * (0.7 + rng() * 0.9);
+  }
+  return { score, timeMs: Math.round(t * 1000) };
+}

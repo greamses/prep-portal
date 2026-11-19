@@ -7,7 +7,7 @@
    (see js/bots.js), and the order of the board.
 ═══════════════════════════════════════════════════════ */
 import { createLeaderboard } from '/utils/games/leaderboard.js';
-import { simulateBotScore, botPaceFor, BARS_PACE, simulateSpellingBot } from './bots.js';
+import { simulateBotScore, botPaceFor, BARS_PACE, simulateSpellingBot, simulateSorobanBot } from './bots.js';
 import { wordsInSets } from './spelling.js';
 
 const isSpellingRoom = (a) => (a.operations || []).some((o) => /^spell/.test(o));
@@ -30,6 +30,8 @@ export const finishRound = createLeaderboard({
   // fixed list of words and a time, so its bots work through that list.
   scoreBot: (seed, slot, a) => (isSpellingRoom(a)
     ? simulateSpellingBot(seed, slot, a.timeLimit, wordsInSets(a.tables), !!a.spellFocus)
+    : a.activity === 'soroban'
+    ? simulateSorobanBot(seed, slot, a.soroban)
     : a.activity === 'grid'
     ? simulateBotScore(seed, slot, a.timeLimit, 1)
     : a.activity === 'bars'
