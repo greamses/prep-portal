@@ -213,6 +213,24 @@ function workingLines(q) {
   if (/Sum of the interior/.test(h)) return [`(n - 2)\\times 180 = ${vars.n - 2}\\times 180`, `${a}^{\\circ}`];
   if (/One interior angle/.test(h)) return [`180 - ${frac(360, vars.n)}`, `${a}^{\\circ}`];
   if (/One exterior angle/.test(h)) return [frac(360, vars.n), `${a}^{\\circ}`];
+  /* commercial maths */
+  if (/Simple interest/.test(h)) return [`I = \\frac{PRT}{100}`, `I = \\frac{${vars.P} \\times ${nums(t)[1]} \\times ${nums(t)[2]}}{100}`];
+  if (/^(Profit|Loss) percent/.test(h)) {
+    const [cp, sp] = nums(t), gap = Math.abs(sp - cp);
+    return [`${/Profit/.test(h) ? 'profit' : 'loss'} = ${gap}`, `\\frac{${gap}}{${cp}} \\times 100`];
+  }
+  if (/Selling price/.test(h)) { const [cp, p] = nums(t), up = /profit/.test(t); return [`\\text{SP} = ${cp} ${up ? '+' : '-'} \\frac{${p}}{100} \\times ${cp}`]; }
+  if (/Cost price/.test(h)) { const [sp, p] = nums(t), up = /profit/.test(t); return [`\\text{CP} = \\frac{${sp} \\times 100}{${up ? 100 + p : 100 - p}}`]; }
+  if (/Discount/.test(h)) {
+    const [mp, d] = nums(t), off = (mp * d) / 100;
+    return /price paid/.test(h) ? [`\\text{discount} = \\frac{${d}}{100} \\times ${mp} = ${off}`, `${mp} - ${off}`] : [`\\frac{${d}}{100} \\times ${mp}`];
+  }
+  if (/Commission/.test(h)) { const [s, r] = nums(t); return [`\\frac{${r}}{100} \\times ${s}`]; }
+  if (/at a point/.test(h)) {
+    const given = nums(t).filter((n) => n !== 360);
+    return [`x = 360 - ${given.join(' - ')}`, `x = ${a}^{\\circ}`];
+  }
+  if (/Complementary/.test(h)) return [`x = 90 - ${nums(t).filter((n) => n !== 90)[0]}`, `x = ${a}^{\\circ}`];
   if (/bent line between parallel/i.test(h)) return [`\\text{the bend} = a + b`, `x = ${vars.a} + ${vars.b}`, `x = ${a}^{\\circ}`];
   if (/Co-interior angles/.test(h)) return [`\\text{co-interior angles add up to } 180^{\\circ}`, `x = 180 - ${vars.a}`, `x = ${a}^{\\circ}`];
   if (/angles: find x/.test(h)) {

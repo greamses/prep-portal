@@ -5,7 +5,7 @@
    `hint` says what to find; `text` carries the numbers, typeset by MathJax.
 ═══════════════════════════════════════════════════════ */
 export const GEOMETRY_OPS = [
-  'geoAngLine', 'geoAngTriangle', 'geoAngPolygon', 'geoAngParallel', 'geoAngBend',
+  'geoAngLine', 'geoAngTriangle', 'geoAngPolygon', 'geoAngParallel', 'geoAngBend', 'geoAngPoint', 'geoAngComp',
   'geoRect', 'geoTriangle', 'geoTrapezium', 'geoParallelogram',
   'geoHyp', 'geoLeg', 'geoTrig',
   'geoCircumference', 'geoCircleArea', 'geoCuboid', 'geoCylinder', 'geoCone',
@@ -56,6 +56,17 @@ export function geometryQuestion(rng, pool, op) {
   }
   /* the bent line between two parallel lines (the Σ shape): the angle at the bend is the sum of the
      angles its two arms make with the parallel lines (two pairs of alternate angles) */
+  /* angles at a point: two or three given, x completes the full turn */
+  if (op === 'geoAngPoint') {
+    const k = rng() < 0.5 ? 2 : 3, given = [];
+    for (let i = 0; i < k; i++) given.push(int(rng, 30, k === 2 ? 150 : 110));
+    return q(`x + ${given.map((a) => `${a}°`).join(' + ')} = 360°`, 'Angles at a point: find x', 360 - given.reduce((s, a) => s + a, 0));
+  }
+  /* complementary angles: x completes the right angle */
+  if (op === 'geoAngComp') {
+    const a = int(rng, 10, 80);
+    return q(`x + ${a}° = 90°`, 'Complementary angles: find x', 90 - a);
+  }
   if (op === 'geoAngBend') {
     const a = int(rng, 25, 75), b = int(rng, 25, 75);
     return q(`a = ${a}°, b = ${b}°`, 'A bent line between parallel lines: find x', a + b);

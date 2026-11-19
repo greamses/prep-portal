@@ -2480,7 +2480,8 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         sides.forEach((s, side) => {
           if (s.uid) return;
           const tr = botTry(s, m, i);
-          stops.push(think(kids[s.seat], tr));
+          // a player racing this bot never sees its working (it would give the answer away)
+          if (mine < 0) stops.push(think(kids[s.seat], tr));
           if (iBoss) botTimers.push(setTimeout(() => take(side, tr.v, tr.ok, true), tr.dt * 1000));
         });
         if (mine >= 0) { inp.value = ''; inp.disabled = false; inp.focus(); }

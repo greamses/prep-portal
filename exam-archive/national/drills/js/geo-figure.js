@@ -135,6 +135,30 @@ export function geoFigure(q) {
       } else if (/One interior/.test(h)) out += angleLabel(pts[0], pts[1], pts[n - 1], 'x');
       return svg(out);
     }
+    /* angles at a point: rays all the way round, each angle at (about) its size, x the last */
+    if (/at a point/.test(h)) {
+      const given = nums(t).filter((n) => n !== 360);
+      const angs = [...given, 360 - given.reduce((s, n) => s + n, 0)];
+      const names = [...given.map((n) => `${n}°`), 'x'];
+      const O = [80, 56], drawn = softAngles(angs, 40, 360);
+      let out = '', from = 90;
+      drawn.forEach((a, i) => {
+        out += line(O, at(O, 48, from));
+        out += arc(O, 11 + (i % 2) * 4, from, from + a);
+        out += angleLabelDeg(O, from, from + a, names[i], 9.5);
+        from += a;
+      });
+      return svg(out + dot(O));
+    }
+    /* complementary angles: a right angle cut in two, a° and x */
+    if (/Complementary/.test(h)) {
+      const a0 = nums(t).filter((n) => n !== 90)[0], a = clamp(a0, 22, 68);
+      const O = [44, 96];
+      let out = line(O, at(O, 92, 0)) + line(O, at(O, 82, 90)) + line(O, at(O, 86, a));
+      out += rightMark(O, at(O, 10, 0), at(O, 10, 90), 9);
+      out += angleLabelDeg(O, 0, a, `${a0}°`, 10) + angleLabelDeg(O, a, 90, 'x', 10);
+      return svg(out + dot(O));
+    }
     /* a bent line between two parallel lines (the Σ shape): a° at the top, b° at the bottom, x at the bend */
     if (/bent line between parallel/i.test(h)) {
       const a = clamp(v.a, 25, 75), b = clamp(v.b, 25, 75);

@@ -48,7 +48,7 @@ const OPERATION_LABELS = {
   rmm: 'Σ Molecular Mass',
   intAdd: '+ Add Integers', intSub: '− Subtract Integers', directed: '± Directed Numbers', intMul: '× Multiply Integers', intDiv: '÷ Divide Integers',
   algDistribute: 'a(x+b) Distribution', algFactorise: 'Factorisation', algQuadExpand: '(x+a)(x+b) Quadratic Expansion', algQuadFactorise: 'x²+bx+c Quadratic Factorisation', algMixed: 'Mixed Algebra (all four)',
-  geoAngLine: 'Straight line', geoAngTriangle: 'Triangle', geoAngPolygon: 'Polygons', geoAngParallel: 'Parallel lines', geoAngBend: 'Bent line (Σ)',
+  geoAngLine: 'Straight line', geoAngTriangle: 'Triangle', geoAngPolygon: 'Polygons', geoAngParallel: 'Parallel lines', geoAngBend: 'Bent line (Σ)', geoAngPoint: 'Angles at a point (360°)', geoAngComp: 'Complementary (90°)',
   geoRect: 'Rectangle', geoTriangle: 'Triangle', geoTrapezium: 'Trapezium', geoParallelogram: 'Parallelogram',
   geoHyp: 'Find the hypotenuse', geoLeg: 'Find a short side', geoTrig: 'Sin, cos, tan ratios',
   geoCircumference: 'Circumference', geoCircleArea: 'Circle area', geoCuboid: 'Cuboid volume', geoCylinder: 'Cylinder volume', geoCone: 'Cone volume',
@@ -59,6 +59,8 @@ const OPERATION_LABELS = {
   spellSay: 'Read out', spellIpa: 'Transcribe', spellBee: 'Spelling Bee',
   pctToDec: 'Percentages to decimals', pctToFrac: 'Percentages to fractions', fracToPct: 'Fractions to percentages',
   decToPct: 'Decimals to percentages', pctOf: 'Percentages of numbers',
+  monSI: 'Simple interest', monProfitPct: 'Profit percent', monLossPct: 'Loss percent', monSP: 'Selling price from profit or loss %',
+  monCP: 'Cost price from profit or loss %', monDiscount: 'Discount', monCommission: 'Commission',
   subOne: 'One step', subTwo: 'Two steps', subMulti: 'Brackets and fractions', subPower: 'Powers and roots',
   eqOne: '1-Step Equations', eqTwo: '2-Step Equations', eqMulti: 'Multi-Step Equations', eqSystem: 'Simultaneous Equations',
   baseTo10: 'To Base 10', baseFrom10: 'From Base 10', baseToBase: 'Base to Base',
@@ -86,11 +88,12 @@ const CATEGORY_OPERATIONS = {
   equations: ['eqOne', 'eqTwo', 'eqMulti', 'eqSystem'],
   subject: ['subOne', 'subTwo', 'subMulti', 'subPower'],
   percent: ['pctToDec', 'pctToFrac', 'fracToPct', 'decToPct', 'pctOf'],
+  money: ['monSI', 'monProfitPct', 'monLossPct', 'monSP', 'monCP', 'monDiscount', 'monCommission'],
   bases: ['binTo10', 'binFrom10', 'binAdd', 'binSub', 'binMul', 'binDiv',
     'octAdd', 'octSub', 'octMul', 'octDiv', 'hexAdd', 'hexSub', 'hexMul', 'hexDiv', 'baseTo10', 'baseFrom10', 'baseToBase'],
   roman: ['romanToNum', 'numToRoman'],
   spelling: ['spellSay', 'spellIpa', 'spellBee'],
-  angles: ['geoAngLine', 'geoAngTriangle', 'geoAngPolygon', 'geoAngParallel', 'geoAngBend'],
+  angles: ['geoAngLine', 'geoAngComp', 'geoAngPoint', 'geoAngTriangle', 'geoAngPolygon', 'geoAngParallel', 'geoAngBend'],
   areas: ['geoRect', 'geoTriangle', 'geoTrapezium', 'geoParallelogram'],
   pythag: ['geoHyp', 'geoLeg', 'geoTrig'],
   circles: ['geoCircumference', 'geoCircleArea', 'geoCuboid', 'geoCylinder', 'geoCone'],
@@ -106,7 +109,7 @@ const CATEGORY_OPERATIONS = {
    multiplication, it is for all the math drills in the site"): the ones picked bring all their
    question kinds. Grouped as the drills' own areas. */
 const MATH_BEE_GROUPS = [
-  ['Numbers', ['basic', 'integers', 'exponent', 'fractions', 'percent', 'bases', 'roman']],
+  ['Numbers', ['basic', 'integers', 'exponent', 'fractions', 'percent', 'money', 'bases', 'roman']],
   ['Algebra', ['algebra', 'equations', 'subject']],
   ['Geometry', ['angles', 'areas', 'pythag', 'circles']],
 ];
@@ -136,6 +139,7 @@ const CATEGORY_DEFAULT_OPS = {
   equations: ['eqOne'],
   subject: ['subOne'],
   percent: ['pctToDec'],
+  money: ['monProfitPct'],
   bases: ['baseTo10'],
   roman: ['romanToNum'],
   spelling: ['spellSay'],
@@ -226,9 +230,9 @@ let timeLimit = mem.get('timeLimit', 60, [30, 60, 90, 120]);
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
-let categoryValue = mem.get('category', 'basic', ['mathbee', 'basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'equations', 'subject', 'percent', 'bases', 'roman', 'spelling', 'angles', 'areas', 'pythag', 'circles', 'timestable', 'fracbars']);
+let categoryValue = mem.get('category', 'basic', ['mathbee', 'basic', 'exponent', 'fractions', 'chemistry', 'integers', 'algebra', 'equations', 'subject', 'percent', 'money', 'bases', 'roman', 'spelling', 'angles', 'areas', 'pythag', 'circles', 'timestable', 'fracbars']);
 let range = mem.get('range', 'all', RANGES.map((r) => r.key));
-if (categoryValue === 'algebra' || categoryValue === 'subject' || categoryValue === 'percent' || categoryValue === 'roman' || categoryValue === 'spelling') range = '1-9'; // single digits only
+if (categoryValue === 'algebra' || categoryValue === 'subject' || categoryValue === 'percent' || categoryValue === 'money' || categoryValue === 'roman' || categoryValue === 'spelling') range = '1-9'; // single digits only
 // Tables (grid filler) only — how much of each 5×5 grid is blank. The grid is
 // always 5×5 with a fresh mix of 1..12 tables per grid, streamed one after the
 // next, so there is no size dial.
@@ -496,7 +500,7 @@ function renderOperationsPick() {
       if (isBars) { renderBarsLevelStep(); topic.goTo('bars-level'); return; }
       if (categoryValue === 'spelling') { renderSpellSetsPick(); topic.goTo('spell-sets'); return; }
       // Algebra is single digits only: there is nothing to choose, so no step.
-      if (categoryValue === 'algebra' || categoryValue === 'subject' || categoryValue === 'percent' || categoryValue === 'roman') { range = '1-9'; saveContent(); flow.next(); return; }
+      if (categoryValue === 'algebra' || categoryValue === 'subject' || categoryValue === 'percent' || categoryValue === 'money' || categoryValue === 'roman') { range = '1-9'; saveContent(); flow.next(); return; }
       renderRangePick();
       topic.goTo('range');
     },
@@ -721,7 +725,7 @@ const AREAS = [
 const AREA_TOPICS = {
   numbers: [
     ['mathbee', 'Math Bee'], ['basic', 'Arithmetic'], ['integers', 'Integers'], ['exponent', 'Powers & Roots'],
-    ['fractions', 'Fractions'], ['percent', 'Percentages'], ['bases', 'Number Bases'], ['roman', 'Roman Numerals'], ['timestable', 'Times Tables Grid'], ['fracbars', 'Fraction Bars'], ['planner', 'Planner'],
+    ['fractions', 'Fractions'], ['percent', 'Percentages'], ['money', 'Commercial Maths'], ['bases', 'Number Bases'], ['roman', 'Roman Numerals'], ['timestable', 'Times Tables Grid'], ['fracbars', 'Fraction Bars'], ['planner', 'Planner'],
   ],
   algebra: [['algebra', 'Expressions'], ['equations', 'Equations'], ['subject', 'Change of Subject']],
   geometry: [['angles', 'Angles'], ['areas', 'Area & Perimeter'], ['pythag', 'Pythagoras & Trig'], ['circles', 'Circles & Volume']],
