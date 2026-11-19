@@ -1221,9 +1221,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       <div class="bee-backdrop"></div>
       <span class="pp-sticky pp-sticky--c0 pp-sticky--tape bee-banner bee-item" data-item="banner" data-label="Banner">${BEE_NAME}</span>
       <div class="bee-platform" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="none"><rect x="6" y="6" width="96" height="34" fill="#6e4421"/><rect x="4" y="2" width="100" height="6" fill="#a06a3a"/><rect x="6" y="8" width="96" height="2" fill="#3e2410" opacity=".5"/><rect x="102" y="18" width="12" height="22" fill="#5a3519"/><rect x="101" y="15" width="14" height="4" fill="#a06a3a"/><rect x="112" y="29" width="8" height="11" fill="#4a2a12"/><rect x="111" y="26" width="9" height="4" fill="#a06a3a"/></svg></div>
-      <div class="bee-pulpit bee-item" data-item="pulpit" data-label="Pulpit" aria-hidden="true"><svg viewBox="0 0 100 110" preserveAspectRatio="none"><defs><linearGradient id="bee-pw" x1="0" x2="1"><stop offset="0" stop-color="#5a3519"/><stop offset=".45" stop-color="#8a5a2f"/><stop offset="1" stop-color="#4a2a12"/></linearGradient><linearGradient id="bee-pt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#a06a3a"/><stop offset="1" stop-color="#6e4421"/></linearGradient></defs><polygon points="4,14 96,14 90,24 10,24" fill="url(#bee-pt)"/><rect x="4" y="11" width="92" height="4" fill="#b98250"/><polygon points="12,24 88,24 84,104 16,104" fill="url(#bee-pw)"/><rect x="10" y="102" width="80" height="8" fill="#3e2410"/><rect x="24" y="34" width="52" height="56" fill="none" stroke="#3e2410" stroke-width="1.2" opacity=".45"/><rect x="28" y="38" width="44" height="48" fill="none" stroke="#c08a52" stroke-width=".8" opacity=".35"/><g class="bee-buzzer"><rect x="2" y="8.5" width="22" height="4.5" fill="#2c2f33"/><rect x="4" y="7" width="18" height="2" fill="#4a4e55"/><path class="bee-buzzer-dome" d="M5 7.2 Q13 -4 21 7.2 Z"/><path d="M8.5 4.4 Q10.5 1.4 14 1" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round" opacity=".55"/></g><path d="M70 12 C70 4 74 0 80 -4" fill="none" stroke="#2d3035" stroke-width="2"/><rect x="77" y="-10" width="7" height="9" rx="3" fill="#2c2f33" transform="rotate(30 80 -5)"/></svg></div>
+      <div class="bee-pulpit bee-item" data-item="pulpit" data-label="Pulpit" aria-hidden="true"><svg viewBox="0 0 100 110" preserveAspectRatio="none"><defs><linearGradient id="bee-pw" x1="0" x2="1"><stop offset="0" stop-color="#5a3519"/><stop offset=".45" stop-color="#8a5a2f"/><stop offset="1" stop-color="#4a2a12"/></linearGradient><linearGradient id="bee-pt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#a06a3a"/><stop offset="1" stop-color="#6e4421"/></linearGradient></defs><polygon points="4,14 96,14 90,24 10,24" fill="url(#bee-pt)"/><rect x="4" y="11" width="92" height="4" fill="#b98250"/><polygon points="12,24 88,24 84,104 16,104" fill="url(#bee-pw)"/><rect x="10" y="102" width="80" height="8" fill="#3e2410"/><rect x="24" y="34" width="52" height="56" fill="none" stroke="#3e2410" stroke-width="1.2" opacity=".45"/><rect x="28" y="38" width="44" height="48" fill="none" stroke="#c08a52" stroke-width=".8" opacity=".35"/><g class="bee-buzzer"><rect x="2" y="8.5" width="22" height="4.5" fill="#2c2f33"/><rect x="4" y="7" width="18" height="2" fill="#4a4e55"/><path class="bee-buzzer-dome" d="M5 7.2 Q13 -4 21 7.2 Z"/><path d="M8.5 4.4 Q10.5 1.4 14 1" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round" opacity=".55"/></g><path d="M70 12 C70 4 74 0 80 -4" fill="none" stroke="#2d3035" stroke-width="2"/><rect x="77" y="-10" width="7" height="9" rx="3" fill="#2c2f33" transform="rotate(30 80 -5)"/></svg><div class="bee-pulpit-tv"><span>Score</span><b></b></div></div>
       <div class="bee-platform bee-platform--2" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="none"><rect x="6" y="6" width="96" height="34" fill="#6e4421"/><rect x="4" y="2" width="100" height="6" fill="#a06a3a"/><rect x="6" y="8" width="96" height="2" fill="#3e2410" opacity=".5"/><rect x="102" y="18" width="12" height="22" fill="#5a3519"/><rect x="101" y="15" width="14" height="4" fill="#a06a3a"/><rect x="112" y="29" width="8" height="11" fill="#4a2a12"/><rect x="111" y="26" width="9" height="4" fill="#a06a3a"/></svg></div>
-      <div class="bee-pulpit bee-pulpit--2" aria-hidden="true"><svg viewBox="0 0 100 110" preserveAspectRatio="none"><defs><linearGradient id="bee-pw" x1="0" x2="1"><stop offset="0" stop-color="#5a3519"/><stop offset=".45" stop-color="#8a5a2f"/><stop offset="1" stop-color="#4a2a12"/></linearGradient><linearGradient id="bee-pt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#a06a3a"/><stop offset="1" stop-color="#6e4421"/></linearGradient></defs><polygon points="4,14 96,14 90,24 10,24" fill="url(#bee-pt)"/><rect x="4" y="11" width="92" height="4" fill="#b98250"/><polygon points="12,24 88,24 84,104 16,104" fill="url(#bee-pw)"/><rect x="10" y="102" width="80" height="8" fill="#3e2410"/><rect x="24" y="34" width="52" height="56" fill="none" stroke="#3e2410" stroke-width="1.2" opacity=".45"/><rect x="28" y="38" width="44" height="48" fill="none" stroke="#c08a52" stroke-width=".8" opacity=".35"/><g class="bee-buzzer"><rect x="2" y="8.5" width="22" height="4.5" fill="#2c2f33"/><rect x="4" y="7" width="18" height="2" fill="#4a4e55"/><path class="bee-buzzer-dome" d="M5 7.2 Q13 -4 21 7.2 Z"/><path d="M8.5 4.4 Q10.5 1.4 14 1" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round" opacity=".55"/></g><path d="M70 12 C70 4 74 0 80 -4" fill="none" stroke="#2d3035" stroke-width="2"/><rect x="77" y="-10" width="7" height="9" rx="3" fill="#2c2f33" transform="rotate(30 80 -5)"/></svg></div>
+      <div class="bee-pulpit bee-pulpit--2" aria-hidden="true"><svg viewBox="0 0 100 110" preserveAspectRatio="none"><defs><linearGradient id="bee-pw" x1="0" x2="1"><stop offset="0" stop-color="#5a3519"/><stop offset=".45" stop-color="#8a5a2f"/><stop offset="1" stop-color="#4a2a12"/></linearGradient><linearGradient id="bee-pt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#a06a3a"/><stop offset="1" stop-color="#6e4421"/></linearGradient></defs><polygon points="4,14 96,14 90,24 10,24" fill="url(#bee-pt)"/><rect x="4" y="11" width="92" height="4" fill="#b98250"/><polygon points="12,24 88,24 84,104 16,104" fill="url(#bee-pw)"/><rect x="10" y="102" width="80" height="8" fill="#3e2410"/><rect x="24" y="34" width="52" height="56" fill="none" stroke="#3e2410" stroke-width="1.2" opacity=".45"/><rect x="28" y="38" width="44" height="48" fill="none" stroke="#c08a52" stroke-width=".8" opacity=".35"/><g class="bee-buzzer"><rect x="2" y="8.5" width="22" height="4.5" fill="#2c2f33"/><rect x="4" y="7" width="18" height="2" fill="#4a4e55"/><path class="bee-buzzer-dome" d="M5 7.2 Q13 -4 21 7.2 Z"/><path d="M8.5 4.4 Q10.5 1.4 14 1" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round" opacity=".55"/></g><path d="M70 12 C70 4 74 0 80 -4" fill="none" stroke="#2d3035" stroke-width="2"/><rect x="77" y="-10" width="7" height="9" rx="3" fill="#2c2f33" transform="rotate(30 80 -5)"/></svg><div class="bee-pulpit-tv"><span>Score</span><b></b></div></div>
       <div class="bee-judges"></div>
       <div class="bee-stand bee-item" data-item="mic" data-label="Microphone" aria-hidden="true"><svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><defs><linearGradient id="bee-chrome" x1="0" x2="1"><stop offset="0" stop-color="#6d737a"/><stop offset=".45" stop-color="#f1f3f5"/><stop offset="1" stop-color="#5b6168"/></linearGradient><pattern id="bee-mesh" width="1.4" height="1.4" patternUnits="userSpaceOnUse"><rect width="1.4" height="1.4" fill="#2c2f33"/><circle cx=".7" cy=".7" r=".42" fill="#6b7077"/></pattern></defs><path d="M10 85 L2.2 98.6 M10 85 L17.8 98.6 M10 85 L10 99" stroke="#25282c" stroke-width="1.6" stroke-linecap="round"/><rect x="8.4" y="80" width="3.2" height="6" rx="1" fill="#25282c"/><rect x="9.1" y="22" width="1.8" height="59" fill="url(#bee-chrome)"/><rect x="8.3" y="48" width="3.4" height="3" rx="1" fill="#25282c"/><path d="M10.6 30 Q14 40 11 52 Q9 62 12.5 80" fill="none" stroke="#111" stroke-width=".55" opacity=".85"/><rect x="8.4" y="18" width="3.2" height="5" rx="1" fill="#25282c"/><rect x="7.2" y="10" width="5.6" height="9" rx="1.6" fill="#1d1f22"/><rect x="7.6" y="16.2" width="4.8" height=".8" fill="#9aa1a9"/><path d="M5.8 10.5 Q5.8 2 10 2 Q14.2 2 14.2 10.5 Z" fill="url(#bee-mesh)" stroke="#9aa1a9" stroke-width=".5"/><rect x="5.6" y="9.8" width="8.8" height="1.4" rx=".6" fill="url(#bee-chrome)"/><path d="M7.4 4.6 Q8.4 3.2 10 3" stroke="#fff" stroke-width=".5" fill="none" opacity=".5"/></svg></div>
       <div class="bee-tv bee-item" data-item="tv" data-label="TV" aria-label="The screen">
@@ -2008,6 +2008,16 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     fitTV($('.bee-mq'));                                   // a tall answer (a fraction) leaves the question less room
     $('.bee-ma').classList.toggle('is-empty', !t);
     $('.bee-mn').textContent = `${c} correct${w ? ` · ${w} wrong` : ''}`;
+    if (q && !$('.bee-tv-math').classList.contains('is-duel')) pulpitScore(1, c);
+  }
+  /* the screen on the front of a pulpit: that contestant's score (a little jump when it goes up) */
+  function pulpitScore(n, v) {
+    const b = hall.querySelector(n === 2 ? '.bee-pulpit--2 .bee-pulpit-tv b' : '.bee-pulpit:not(.bee-pulpit--2) .bee-pulpit-tv b');
+    if (!b) return;
+    const was = b.textContent, now = v === '' || v == null ? '' : String(v);
+    if (was === now) return;
+    b.textContent = now;
+    if (now !== '' && Number(now) > Number(was || 0)) { b.classList.remove('is-bump'); void b.offsetWidth; b.classList.add('is-bump'); }
   }
   /* shrink a typeset line to the room the TV really has left for it: its width less the diagram's
      column, its height less the instruction, the answer and the count (never larger than drawn) */
@@ -2032,7 +2042,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     if (k < 1) { svg.style.width = `${r.width * k}px`; svg.style.height = `${r.height * k}px`; }
   }
   if (window.__beeTest) { window.__beeTest.show = (q, typed = '') => showMath(q, typed, 0, 0); window.__beeTest.q = () => lastShow?.[0] || null; window.__beeTest.cloud = (lines, n = 0) => setWork(lines, kids[n], true); }   // the tests' window onto the TV
-  function hideMath() { shownKey = ''; setWork([]); hall.querySelector('.bee-tv').classList.remove('is-math-q', 'is-ok', 'is-bad'); }
+  function hideMath() { shownKey = ''; setWork([]); pulpitScore(1, ''); pulpitScore(2, ''); hall.querySelector('.bee-tv').classList.remove('is-math-q', 'is-ok', 'is-bad'); }
   function mathFlash(ok) {
     const tv = hall.querySelector('.bee-tv');
     tv.classList.remove('is-ok', 'is-bad'); void tv.offsetWidth;
@@ -2288,6 +2298,7 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
       }
     });
     $('.bee-duel-score').textContent = `${sc[0]} – ${sc[1]}`;
+    pulpitScore(1, sc[0]); pulpitScore(2, sc[1]);
   }
   function duelOff() { $('.bee-tv-math').classList.remove('is-duel'); hideMath(); }
 
@@ -3056,9 +3067,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     await wait(450);                               // up out of the chair first
     // the Math Bee: a short contestant steps down off the pulpit's platform before walking away
     if (isMath && el.classList.contains('is-up') && to !== 'mic' && to !== 'mic2') {
+      await stairs(el, false);                      // down the platform's stairs, a step at a time
       el.classList.remove('is-up');
       hall.querySelector(el.dataset.pulpit === '2' ? '.bee-platform--2' : '.bee-platform:not(.bee-platform--2)')?.classList.remove('is-on');
-      await wait(650);
     }
     el.classList.add('is-walking');
     el.classList.toggle('is-at-mic', to === 'mic');
@@ -3077,13 +3088,26 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
         pf?.style.setProperty('--lift', lift.toFixed(3));
         pf?.classList.add('is-on');
         await wait(80);
+        el.style.setProperty('--liftnow', '0'); el.style.setProperty('--stepx', '0cqh');
         el.classList.add('is-up');
-        await wait(650);
+        await stairs(el, true);                        // across to the stairs and up them
       }
     }
     if (to === 'seat') { el.classList.remove('is-standing'); await wait(450); }
     if (to === 'off') el.classList.add('is-gone');
     if (to !== 'mic' && to !== 'mic2') spotOff();             // back in the chair (or gone): the light goes off
+  }
+  /* A platform's stairs (on its right at the first pulpit, its left at the second): the foot of the
+     stairs, two steps, the top; [share of the climb, cqh across from the pulpit]. */
+  const STAIRS = [[0, 12], [0.35, 10.5], [0.62, 8.2], [1, 0]];
+  async function stairs(el, up) {
+    const side = el.dataset.pulpit === '2' ? -1 : 1;
+    const lift = parseFloat(el.style.getPropertyValue('--lift')) || 0;
+    for (const [f, dx] of up ? STAIRS : [...STAIRS].reverse()) {
+      el.style.setProperty('--liftnow', (lift * f).toFixed(3));
+      el.style.setProperty('--stepx', `${(side * dx).toFixed(1)}cqh`);
+      await wait(360);
+    }
   }
   /* The spotlight: the lamp on the lighting bar turns to the speller and its beam runs from the
      lens to them, every frame while it is on, so it follows them as they walk. */
