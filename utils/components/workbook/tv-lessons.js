@@ -38,8 +38,10 @@ import { loss25, score80, score90, profit20, ps4Loss, bikeProfit20, bikeProfit10
 import { stairs24, sum200, odd29, odd21, stairRows37, series123 } from "./cbt-shapes.js";
 import { share600Idowu, share600Kehinde, share4000, share45000, ratio45sum135, angles1234, boys34, girls35, ratio35small45 } from "./cbt-ratio.js";
 import { ratioWhat, ratioParts, ratioCompound } from "./ratio-intro.js";
-import { pctWhat, pctChange, pctTraps } from "./percent-intro.js";
+import { pctWhat, pctChange } from "./percent-intro.js";
 import { quadFormula } from "./algebra-films.js";
+import { pctKwPart, pctKwAdd, pctKwAway, pctKwOut, pctKwWhole } from "./pct-keywords.js";
+import { sorCount, sorPlace, sorSimple, sorFives, sorSmall, sorBig, sorMulti, sorAnzan, sorTimes1, sorTimes2 } from "./soroban-films.js";
 import { seqRule, seqNth, seqSum, seqNext17, seqNext36, seqMissing, seqWrong, seqTimes2, seqSum10106, seqSumOdd33, seqAlternating, seqTwoSeries, seqLetters } from "./seq-films.js";
 import { avgMean, avgMMR, avgTotals, avgThirteenth, avgSixth, avgGrandfather, avgSwap, avgGroups, avgMedianMode, avgMeanMedian, avgRangeMode } from "./average-films.js";
 import { ratioSquareCube, ratioPerimeter, ratioArea, ratioVolume, ratioAges } from "./ratio-shapes.js";
@@ -360,6 +362,8 @@ const SCENES = {
   "pct-what": pctWhat,
   "quad-formula": quadFormula,
   "seq-rule": seqRule, "seq-nth": seqNth, "seq-sum": seqSum,
+  "sor-count": sorCount, "sor-place": sorPlace, "sor-simple": sorSimple, "sor-fives": sorFives, "sor-small": sorSmall,
+  "sor-big": sorBig, "sor-multi": sorMulti, "sor-anzan": sorAnzan, "sor-times1": sorTimes1, "sor-times2": sorTimes2,
   "seq-next-17": seqNext17, "seq-next-36": seqNext36, "seq-missing": seqMissing, "seq-wrong": seqWrong, "seq-x2": seqTimes2,
   "seq-sum-10-106": seqSum10106, "seq-sum-odd-33": seqSumOdd33, "seq-alt": seqAlternating, "seq-two": seqTwoSeries, "seq-letters": seqLetters,
   "avg-mean": avgMean,
@@ -374,7 +378,9 @@ const SCENES = {
   "avg-mean-median": avgMeanMedian,
   "avg-range-mode": avgRangeMode,
   "pct-change": pctChange,
-  "pct-traps": pctTraps,
+  /* the old single keywords film is five films now (./pct-keywords.js); its id opens the first */
+  "pct-traps": pctKwPart,
+  "pct-kw-part": pctKwPart, "pct-kw-add": pctKwAdd, "pct-kw-away": pctKwAway, "pct-kw-out": pctKwOut, "pct-kw-whole": pctKwWhole,
   "ratio-what": ratioWhat,
   "ratio-parts": ratioParts,
   "ratio-compound": ratioCompound,
@@ -439,7 +445,11 @@ export const FILMS = [
   { id: "quad-formula", lesson: true, name: "Deriving the quadratic formula", of: "Algebra: derivations", topic: "algebra" },
   { id: "pct-what", lesson: true, name: "What is a percentage?", of: "Percentages, lesson 1", topic: "percent", thumb: { n: 5, k: 1 } },
   { id: "pct-change", lesson: true, name: "Percent of, increase and decrease", of: "Percentages, lesson 2", topic: "percent", thumb: { n: 5, k: 6 } },
-  { id: "pct-traps", lesson: true, name: "Percentage keywords, made simple", of: "Percentages, lesson 3", topic: "percent", thumb: { n: 5, k: 4 } },
+  { id: "pct-kw-part", lesson: true, name: "Keywords: take a part (of)", of: "Percentages, lesson 3", topic: "percent", thumb: { n: 4, k: 3 } },
+  { id: "pct-kw-add", lesson: true, name: "Keywords: add on (increase, profit)", of: "Percentages, lesson 4", topic: "percent", thumb: { n: 4, k: 7 } },
+  { id: "pct-kw-away", lesson: true, name: "Keywords: take away (discount, off, loss)", of: "Percentages, lesson 5", topic: "percent", thumb: { n: 4, k: 3 } },
+  { id: "pct-kw-out", lesson: true, name: "Keywords: out of (as a percentage)", of: "Percentages, lesson 6", topic: "percent", thumb: { n: 4, k: 3 } },
+  { id: "pct-kw-whole", lesson: true, name: "Keywords: find the whole (original, cost price)", of: "Percentages, lesson 7", topic: "percent", thumb: { n: 5, k: 4 } },
   { id: "loss-25", group: "Reverse: the price before the change", name: "A 25% loss: find the cost price (two ways)", of: "Scholastic 2022 first round, Q6", topic: "percent", thumb: { n: 4, k: 3 } },
   { id: "score-80", group: "A part is known: find the whole", name: "56 marks is 80%: find the full marks (two ways)", of: "Scholastic 2022 first round, Q8", topic: "percent", thumb: { n: 5, k: 4 } },
   { id: "score-90", group: "A part is known: find the whole", name: "72 marks is 90%: find the full marks (two ways)", of: "Scholastic 4th edition first round, Q10", topic: "percent", thumb: { n: 10, k: 9 } },
@@ -454,6 +464,16 @@ export const FILMS = [
   { id: "decrease-15", group: "After a change: the new amount", name: "Decrease 1,500 kg by 15% (two ways)", of: "Scholastic JS 5th edition first round, Q7", topic: "percent", thumb: { n: 20, k: 17 } },
   { id: "discount-35", group: "After a change: the new amount", name: "A 35% discount on 195 (two ways)", of: "Scholastic 2022 first round, Q46", topic: "percent", thumb: { n: 20, k: 13 } },
   { id: "alloy-26", group: "A part is known: find the whole", name: "26% copper: how much alloy? (two ways)", of: "Scholastic 2025 finals, Q33", topic: "percent", thumb: { n: 50, k: 13 } },
+  { id: "sor-count", lesson: true, name: "Counting on a soroban", of: "Soroban, lesson 1", topic: "soroban" },
+  { id: "sor-place", lesson: true, name: "Place value: reading a soroban", of: "Soroban, lesson 2", topic: "soroban" },
+  { id: "sor-simple", lesson: true, name: "Simple adding and taking away", of: "Soroban, lesson 3", topic: "soroban" },
+  { id: "sor-fives", lesson: true, name: "Adding and taking away with fives", of: "Soroban, lesson 4", topic: "soroban" },
+  { id: "sor-small", lesson: true, name: "Small friends: adding and taking away", of: "Soroban, lesson 5", topic: "soroban" },
+  { id: "sor-big", lesson: true, name: "Big friends: adding and taking away", of: "Soroban, lesson 6", topic: "soroban" },
+  { id: "sor-multi", lesson: true, name: "Multidigit adding and taking away", of: "Soroban, lesson 7", topic: "soroban" },
+  { id: "sor-anzan", lesson: true, name: "How to handle flash anzan", of: "Soroban, lesson 8", topic: "soroban" },
+  { id: "sor-times1", lesson: true, name: "Multiplying 2 digits by 1 digit", of: "Soroban, lesson 9", topic: "soroban" },
+  { id: "sor-times2", lesson: true, name: "Multiplying 2 digits by 2 digits", of: "Soroban, lesson 10", topic: "soroban" },
   { id: "seq-rule", lesson: true, name: "Sequences: find the rule", of: "Sequences, lesson 1", topic: "patterns" },
   { id: "seq-nth", lesson: true, name: "The nth term", of: "Sequences, lesson 2", topic: "patterns" },
   { id: "seq-sum", lesson: true, name: "Adding a series", of: "Sequences, lesson 3", topic: "patterns" },

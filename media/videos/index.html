@@ -68,7 +68,7 @@
 
       /* the topics, in the order a learner meets them; a film without a topic is filed by where it lives */
       const TOPICS = [
-        ["ratio", "Ratio"], ["percent", "Percentages"], ["averages", "Averages"], ["patterns", "Sequences"],
+        ["ratio", "Ratio"], ["percent", "Percentages"], ["averages", "Averages"], ["patterns", "Sequences"], ["soroban", "Soroban"],
         ["algebra", "Algebra"], ["workbook", "Workbook lessons"], ["english", "English"],
       ];
       const topicOf = (f) => f.topic || (/^Comprehension/.test(f.of || "") ? "english" : /algebra|quadratic/i.test(f.of || "") ? "algebra" : "workbook");

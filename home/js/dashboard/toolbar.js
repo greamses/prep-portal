@@ -1,4 +1,5 @@
 import { I } from "./icons.js";
+import { UI } from "/utils/components/ui-icons.js";
 import { auth } from "/firebase-init.js";
 import { signOut } from "firebase/auth";
 import { ROUTES } from "/home/js/routing.js";
@@ -44,6 +45,7 @@ export function buildToolbar(container, role, isPremium) {
       <a class="pp-pill" href="${ROUTES.MANAGE_USERS}">${I.users}<span>Manage Users</span></a>
       <a class="pp-pill" style="--tile: var(--accent-primary)" href="/admin-partners.html">${I.star}<span>Partner Program</span></a>
       <a class="pp-pill" style="--tile: var(--accent-secondary)" href="/admin-cbt.html">${I.papers}<span>CBT Bank</span></a>
+      <a class="pp-pill" style="--tile: var(--accent-success)" href="/admin/films/">${UI.video(18)}<span>Films &amp; Playlists</span></a>
       <a class="pp-pill" href="${ROUTES.SETTINGS}">${I.settings}<span>Settings</span></a>`,
   };
 

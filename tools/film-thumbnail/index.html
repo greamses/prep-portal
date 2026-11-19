@@ -118,6 +118,7 @@
     import { FILMS } from "/utils/components/workbook/tv-lessons.js";
     import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
     import { UI } from "/utils/components/ui-icons.js";
+    import { PLAYLISTS } from "/utils/components/workbook/playlists.js";
 
     const INK = "#2a2723";
     /* ONE ENTRY PER SUBJECT: its name, its note papers (the site's sticky pastels), a deeper dot
@@ -138,6 +139,14 @@
         sign: () => `<svg viewBox="0 0 160 110"><rect x="30" y="14" width="62" height="62" fill="#bfe3ff" stroke="${INK}" stroke-width="3"/><rect x="92" y="14" width="16" height="62" fill="#fff3a8" stroke="${INK}" stroke-width="3"/>`
           + `<rect x="30" y="76" width="62" height="16" fill="#fff3a8" stroke="${INK}" stroke-width="3"/><rect x="92" y="76" width="16" height="16" fill="#ffd7a3" stroke="#c0453f" stroke-width="3" stroke-dasharray="5 3"/>`
           + `<text x="61" y="52" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="900" font-size="22" fill="${INK}">x²</text></svg>` },
+      soroban: { name: "Soroban", note: "#ffd7a3", note2: "#fff3a8", deep: "#f0a868", word: "beads that count",
+        sign: () => { const bead = (x, y, c) => `<polygon points="${x - 15},${y} ${x - 8},${y - 5.5} ${x + 8},${y - 5.5} ${x + 15},${y} ${x + 8},${y + 5.5} ${x - 8},${y + 5.5}" fill="${c}" stroke="${INK}" stroke-width="2.4"/>`;
+          const rods = [[40, "#bfe3ff", 1, 2], [80, "#c8f0c0", 0, 4], [120, "#fff3a8", 1, 3]];
+          return `<svg viewBox="0 0 160 110"><rect x="10" y="6" width="140" height="98" fill="none" stroke="#f0a868" stroke-width="7"/>`
+            + rods.map(([x]) => `<line x1="${x}" y1="10" x2="${x}" y2="100" stroke="#9a948a" stroke-width="3"/>`).join("")
+            + `<rect x="13" y="36" width="134" height="6" fill="#d98a4a" stroke="${INK}" stroke-width="2"/>`
+            + rods.map(([x, c, top, k]) => bead(x, top ? 30 : 18, c) + [0, 1, 2, 3].map((i) => bead(x, 49 + i * 11.5 + (i < k ? 0 : 9), c)).join("")).join("")
+            + `</svg>`; } },
       maths: { name: "Maths", note: "#ffd7a3", note2: "#bfe3ff", deep: "#f0a868", word: "work it out",
         sign: () => `<svg viewBox="0 0 160 110"><text x="80" y="70" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="900" font-size="46" fill="${INK}">+ − × ÷</text></svg>` },
     };
@@ -171,13 +180,7 @@
 
     /* THE PLAYLIST COVER: ?playlist=<topic>. The subject's papers and sign, its name big, how many
        videos (a sticky note), what it covers (from the lesson names), and three of its videos fanned */
-    const PLAYLISTS = {
-      ratio: { title: "Ratio, step by step", blurb: ["What a ratio is", "Part, whole, difference", "Compound ratio", "Squares and cubes", "Ages, shapes"] },
-      percent: { title: "Percentages, step by step", blurb: ["Out of a hundred", "Percent of an amount", "Increase, decrease", "Reverse percentages"] },
-      averages: { title: "Mean, median, mode, range", blurb: ["Share it fairly", "Median and mode", "Totals", "Competition questions"] },
-      algebra: { title: "Algebra derivations", blurb: ["The quadratic formula", "Completing the square", "With pictures"] },
-      patterns: { title: "Sequences and series", blurb: ["Find the rule", "The nth term", "Adding a series", "Shapes that grow"] },
-    };
+    /* the playlists live in one shared list (the admin's Playlists panel reads it too) */
     function playlistCover(topic) {
       const s = SUBJECTS[topic] || SUBJECTS.maths, pl = PLAYLISTS[topic] || { title: s.name, blurb: [] };
       const films = FILMS.filter((f) => f.topic === topic);

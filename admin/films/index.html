@@ -55,12 +55,26 @@
     .fl-row__keys { display:flex; gap:.35rem; }
     .fl-row__keys .pp-btn { font-size:.76rem; padding:.28rem .55rem; min-height:0; }
     .fl-head { font-size:.72rem; font-weight:700; color: var(--text-secondary); margin:1.2rem 0 .35rem; }
+
+    /* the playlists: each cover beside its YouTube description */
+    .pl-list { display:grid; gap:.7rem; }
+    .pl-row { display:grid; grid-template-columns: minmax(0, 18rem) minmax(0, 1fr); gap:.9rem; padding:.8rem;
+              background: var(--surface-primary); border: var(--border); }
+    .pl-row img { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; border: var(--border-subtle); background: var(--surface-secondary); }
+    .pl-row h3 { font-family: var(--font-display); font-size:.9rem; margin:0 0 .15rem; }
+    .pl-row small { display:block; font-size:.7rem; color: var(--text-secondary); margin-bottom:.4rem; }
+    .pl-row textarea { width:100%; box-sizing:border-box; min-height:10.5rem; padding:.45rem .5rem; font: .74rem/1.5 var(--font-mono, monospace);
+                       color:inherit; background: var(--surface-secondary); border: var(--border-subtle); border-radius:0; resize:vertical; }
+    .pl-keys { display:flex; gap:.35rem; margin-top:.45rem; flex-wrap:wrap; }
+    .pl-keys .pp-btn { display:inline-grid; place-items:center; width:2.2rem; height:2.2rem; padding:0; min-height:0; }
+    .pl-note { font-size:.7rem; color: var(--text-secondary); margin:.3rem 0 0; min-height:1em; }
+    @media (max-width: 640px) { .pl-row { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
   <div class="fl-wrap">
     <div class="fl-top">
-      <h1>PrepBot's films</h1>
+      <h1>PrepBot's films and playlists</h1>
       <a class="fl-back" href="/admin/settings/">← Admin</a>
     </div>
     <p class="fl-sub">
@@ -82,6 +96,8 @@
         </div>
         <button type="button" class="pp-btn wb-tint-2" id="fl-make">Start a new film</button>
       </div>
+      <p class="fl-head">Playlists</p>
+      <div class="pl-list" id="pl-list"></div>
       <p class="fl-head">The lessons</p>
       <div class="fl-list" id="fl-list"></div>
       <p class="fl-head" id="fl-own-head" hidden>Films of your own</p>
@@ -94,6 +110,8 @@
     import { isFilmAdmin, allFilms } from "/utils/components/workbook/film-store.js";
     import { openFilmEditor } from "/utils/components/workbook/film-editor.js";
     import { playable } from "/utils/components/workbook/filmdoc.js";
+    import { PLAYLISTS, playlistDescription } from "/utils/components/workbook/playlists.js";
+    import { UI } from "/utils/components/ui-icons.js";
 
     const gate = document.getElementById("fl-gate");
     const main = document.getElementById("fl-main");
@@ -139,6 +157,51 @@
         </span></div>`;
     }
 
+    /* THE PLAYLISTS: the cover (the PNG made by the thumbnail tool), and the YouTube description made
+       from the playlist's videos. The description can be touched up here before copying; an edit is
+       kept on this device until it is reset. */
+    const DESC_KEY = (t) => `pp-playlist-desc:${t}`;
+    const keptDesc = (t) => { try { return localStorage.getItem(DESC_KEY(t)); } catch { return null; } };
+    const keyBtn = (attr, t, icon, tip) => `<button type="button" class="pp-btn wb-tint-2" ${attr}="${t}" data-tip="${tip}" aria-label="${tip}">${icon}</button>`;
+    function paintPlaylists() {
+      document.getElementById("pl-list").innerHTML = Object.entries(PLAYLISTS).map(([t, pl]) => {
+        const n = FILMS.filter((f) => f.topic === t).length;
+        const cover = `/tools/film-thumbnail/png/playlist-${t}.png`;
+        return `<div class="pl-row">
+          <a href="/tools/film-thumbnail/?playlist=${t}" target="_blank" rel="noopener"><img src="${cover}" alt="Playlist cover: ${esc(pl.title)}" loading="lazy"></a>
+          <div>
+            <h3>${esc(pl.title)}</h3><small>${n} videos · ${esc(t)}</small>
+            <textarea data-pl-desc="${t}" aria-label="YouTube description for ${esc(pl.title)}">${esc(keptDesc(t) ?? playlistDescription(t, FILMS))}</textarea>
+            <div class="pl-keys">
+              ${keyBtn("data-pl-copy", t, UI.copy(18), "Copy the description")}
+              <a class="pp-btn wb-tint-2" href="${cover}" download="prepbot-playlist-${t}.png" data-tip="Download the cover" aria-label="Download the cover">${UI.download(18)}</a>
+              <a class="pp-btn wb-tint-2" href="/tools/film-thumbnail/?playlist=${t}" target="_blank" rel="noopener" data-tip="Open the cover" aria-label="Open the cover">${UI.external(18)}</a>
+              ${keyBtn("data-pl-reset", t, UI.undo(18), "Reset to the made description")}
+            </div>
+            <p class="pl-note" data-pl-note="${t}" aria-live="polite"></p>
+          </div></div>`;
+      }).join("");
+    }
+    document.addEventListener("input", (e) => {
+      const ta = e.target.closest("[data-pl-desc]");
+      if (ta) try { localStorage.setItem(DESC_KEY(ta.dataset.plDesc), ta.value); } catch { /* not kept */ }
+    });
+    document.addEventListener("click", async (e) => {
+      const c = e.target.closest("[data-pl-copy]"), r = e.target.closest("[data-pl-reset]");
+      const t = (c || r)?.dataset.plCopy || (c || r)?.dataset.plReset;
+      if (!t) return;
+      const ta = document.querySelector(`[data-pl-desc="${t}"]`), note = document.querySelector(`[data-pl-note="${t}"]`);
+      if (c) {
+        try { await navigator.clipboard.writeText(ta.value); note.textContent = "Copied."; }
+        catch { ta.select(); note.textContent = "Selected: press Ctrl+C to copy."; }
+      } else {
+        try { localStorage.removeItem(DESC_KEY(t)); } catch { /* nothing kept */ }
+        ta.value = playlistDescription(t, FILMS);
+        note.textContent = "Back to the made description.";
+      }
+      setTimeout(() => { note.textContent = ""; }, 2500);
+    });
+
     async function paint() {
       const docs = await allFilms();
       document.getElementById("fl-list").innerHTML =
@@ -172,6 +235,7 @@
       }
       gate.hidden = true;
       main.hidden = false;
+      paintPlaylists();
       paint();
     })();
   </script>
