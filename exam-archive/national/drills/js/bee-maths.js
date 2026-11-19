@@ -164,6 +164,14 @@ function workingLines(q) {
   }
 
   /* percentages */
+  if (/^Percentage (increase|decrease)/.test(h)) {
+    const [o, n] = nums(t), gap = Math.abs(n - o);
+    return [`\\text{${n > o ? 'increase' : 'decrease'}} = ${gap}`, `\\frac{${gap}}{${o}} \\times 100`];
+  }
+  if (/by the percentage/.test(h)) {
+    const [o, p] = nums(t), up = /^Increase/.test(t);
+    return [`\\frac{${p}}{100} \\times ${o} = ${(o * p) / 100}`, `${o} ${up ? '+' : '-'} ${(o * p) / 100}`];
+  }
   if (/as a decimal/.test(h)) return [`${nums(t)[0]} \\div 100`, ans];
   if (/fraction in its lowest/.test(h)) return [frac(nums(t)[0], 100), ans];
   if (/as a percentage/.test(h)) {

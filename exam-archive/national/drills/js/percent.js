@@ -5,7 +5,7 @@
    the answers are exact: no 0.1 + 0.2 float noise ever reaches a question.
    Fractions are graded in lowest terms, typed with "/" (7/20).
 ═══════════════════════════════════════════════════════ */
-export const PERCENT_OPS = ['pctToDec', 'pctToFrac', 'fracToPct', 'decToPct', 'pctOf'];
+export const PERCENT_OPS = ['pctToDec', 'pctToFrac', 'fracToPct', 'decToPct', 'pctOf', 'pctInc', 'pctDec', 'pctIncBy', 'pctDecBy'];
 export const isPercentOp = (op) => PERCENT_OPS.includes(op);
 
 const pick = (rng, arr) => arr[Math.floor(rng() * arr.length)];
@@ -40,6 +40,18 @@ export function percentQuestion(rng, pool, op) {
     const t = pick(rng, PCTS);
     const dec = t / 1000;
     return { math: true, hint: 'Write as a percentage', text: `${dec}`, tex: `${dec} = \\square\\,\\%`, answer: t / 10 };
+  }
+  /* percentage increase and decrease: the percent from an old and a new value, or the new value
+     from a percent. The old value is a multiple of 20, so any 5% step lands on a whole number. */
+  if (op === 'pctInc' || op === 'pctDec' || op === 'pctIncBy' || op === 'pctDecBy') {
+    const up = op === 'pctInc' || op === 'pctIncBy';
+    const old = 20 * (5 + Math.floor(rng() * 96));
+    const pc = pick(rng, up ? [5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 100, 150] : [5, 10, 15, 20, 25, 30, 40, 50, 60, 75]);
+    const now = up ? old + (old * pc) / 100 : old - (old * pc) / 100;
+    if (op === 'pctInc' || op === 'pctDec') {
+      return { math: true, hint: up ? 'Percentage increase: find it' : 'Percentage decrease: find it', text: `from ${old} to ${now}`, tex: `\\text{from } ${old} \\text{ to } ${now}`, answer: pc };
+    }
+    return { math: true, hint: up ? 'Increase by the percentage: find the new value' : 'Decrease by the percentage: find the new value', text: `${up ? 'Increase' : 'Decrease'} ${old} by ${pc}%`, tex: `\\text{${up ? 'Increase' : 'Decrease'} } ${old} \\text{ by } ${pc}\\%`, answer: now };
   }
   // pctOf — chosen so the answer is a whole number
   const t = pick(rng, [5, 10, 12.5, 15, 20, 25, 30, 40, 50, 60, 75, 80, 150, 200].map((p) => p * 10));

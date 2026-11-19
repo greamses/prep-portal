@@ -351,6 +351,7 @@ service cloud.firestore {
           'eqOne', 'eqTwo', 'eqMulti', 'eqSystem', 'baseTo10', 'baseFrom10', 'baseToBase', 'binTo10', 'binFrom10', 'binAdd', 'binSub', 'binMul', 'binDiv',
           'octAdd', 'octSub', 'octMul', 'octDiv', 'hexAdd', 'hexSub', 'hexMul', 'hexDiv', 'romanToNum', 'numToRoman', 'spellSay', 'spellIpa', 'spellBee',
           'geoAngLine', 'geoAngTriangle', 'geoAngPolygon', 'geoAngParallel', 'geoAngBend', 'geoAngPoint', 'geoAngComp',
+          'pctInc', 'pctDec', 'pctIncBy', 'pctDecBy',
           'monSI', 'monProfitPct', 'monLossPct', 'monSP', 'monCP', 'monDiscount', 'monCommission',
           'geoRect', 'geoTriangle', 'geoTrapezium', 'geoParallelogram',
           'geoHyp', 'geoLeg', 'geoTrig',
