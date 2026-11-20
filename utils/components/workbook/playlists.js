@@ -36,6 +36,12 @@ export const PLAYLISTS = {
     about: "Sequences and series with number cards and jump arcs: find the rule in the gaps, the nth term, adding a series by pairing, and shapes that grow.",
     tag: "patterns",
   },
+  geometry: {
+    title: "Geometry, step by step",
+    blurb: ["Circles and tangents", "Right triangles", "SOH CAH TOA", "Similar triangles"],
+    about: "Geometry questions worked on a drawing that builds itself: every line is drawn as it is talked about, the part that matters lights up, and the working sits beside it one step a line. Each question is solved two ways.",
+    tag: "geometry",
+  },
   soroban: {
     title: "The soroban, step by step",
     blurb: ["Counting and place value", "Fives and friends", "Multidigit sums", "Flash anzan", "Multiplying"],

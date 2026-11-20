@@ -222,6 +222,7 @@
             <button type="button" class="pp-btn ct-tool" id="another" title="Another one (N)">Another</button>
           </span>
           <button type="button" class="pp-btn ct-tool" id="reset" title="Put the points back (R)">Start again</button>
+          <span id="ct-film" class="ct-film"></span>
         </div>
       </div>
     </div>
@@ -230,6 +231,12 @@
     <script type="module" src="/utils/components/nav-builder.js"></script>
     <script type="module" src="/utils/components/geometry-tabs.js"></script>
     <script type="module" src="./index.js"></script>
+    <!-- PrepBot's worked question on circles and tangents (two circles in an angle), played on the TV -->
+    <script type="module">
+      import { lessonStrip } from "/utils/components/workbook/tv-lessons.js";
+      const slot = document.getElementById("ct-film");
+      if (slot) slot.innerHTML = lessonStrip("geo-two-circles", "Two circles in an angle: find θ (two ways)");
+    </script>
   
     <!-- the list of the keys index.js already takes (utils/components/studio-keys.js) -->
     <script type="module">

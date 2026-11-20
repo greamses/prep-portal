@@ -147,6 +147,10 @@
             + `<rect x="13" y="36" width="134" height="6" fill="#d98a4a" stroke="${INK}" stroke-width="2"/>`
             + rods.map(([x, c, top, k]) => bead(x, top ? 30 : 18, c) + [0, 1, 2, 3].map((i) => bead(x, 49 + i * 11.5 + (i < k ? 0 : 9), c)).join("")).join("")
             + `</svg>`; } },
+      geometry: { name: "Geometry", note: "#c8f0c0", note2: "#bfe3ff", deep: "#7cc47c", word: "draw and see",
+        sign: () => `<svg viewBox="0 0 160 110"><path d="M14 58 L150 8 M14 58 L150 108" stroke="${INK}" stroke-width="3.4" fill="none"/>`
+          + `<circle cx="52" cy="58" r="14" fill="#bfe3ff" stroke="${INK}" stroke-width="3"/><circle cx="104" cy="58" r="38" fill="#fff3a8" stroke="${INK}" stroke-width="3"/>`
+          + `<path d="M30 52 A16 16 0 0 1 30 64" stroke="#c0453f" stroke-width="3" fill="none"/><text x="37" y="62" font-family="STIX Two Text, serif" font-style="italic" font-size="14" fill="#c0453f">θ</text></svg>` },
       maths: { name: "Maths", note: "#ffd7a3", note2: "#bfe3ff", deep: "#f0a868", word: "work it out",
         sign: () => `<svg viewBox="0 0 160 110"><text x="80" y="70" text-anchor="middle" font-family="Unbounded, sans-serif" font-weight="900" font-size="46" fill="${INK}">+ − × ÷</text></svg>` },
     };

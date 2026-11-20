@@ -890,7 +890,7 @@ export async function openTv({ title = "", build = () => {}, steps: told = [], o
     });
     return at;
   };
-  const TAG = { percent: "percentages", ratio: "ratio", patterns: "patterns", averages: "averages", soroban: "soroban" };
+  const TAG = { percent: "percentages", ratio: "ratio", patterns: "patterns", averages: "averages", soroban: "soroban", geometry: "geometry" };
   const describe = () => {
     let at = null;
     try { at = JSON.parse(localStorage.getItem(TIMES_KEY) || "null"); } catch { at = null; }
