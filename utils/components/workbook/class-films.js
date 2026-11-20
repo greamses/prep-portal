@@ -56,21 +56,19 @@ const MID = ROOM.x + ROOM.w / 2 - 6;              // the class sits a little lef
 const seatX = (r, c) => MID - rowW(r) / 2 + (c + 0.5) * (rowW(r) / COLS);
 const aisleX = (r) => MID + rowW(r) / 2 + 4.5 * rowScale(r);
 const DOOR = { x: 84, y: 5.5, w: 10, h: WALL_BOTTOM - 5.5 };
-const KID_H = 21.5;                                // a child's height in the front row
+const KID_H = 23;                                // a child's height in the front row
 const SIT = 0.5, STAND = 0.92;                     // how much of the child is above the desk top: seated, standing
 
 const GIRL = 23;                                   // row 2, seat 3: the girl, well inside the class
 const TRAP = 99;                                   // the boy at the front, nearest the aisle
 const LEAVERS = Array.from({ length: 50 }, (_, i) => 50 + i);   // the front five rows: fifty boys
-/* ONE boy for all ninety nine ("Some boys have bigger heads than others ... use the same boy"): Leo,
-   the short light-skinned boy; and the girl is Zainab, dark-skinned and tall ("Use zainab since she is
-   dark skinned and tall, then use the short light skinned boy to create contrast"). Each is drawn at the
-   height the bee hall gives them (its "tall": Zainab 1.12, Leo 0.78), so their heads match. */
-const BOY_PIC = ["boy-closed", 0.375, 1];
-/* heads, not bodies, must match: from the bee hall's face data, Leo's eyes are 0.107 of his height apart
-   (28.6% of a 0.375-wide picture) and Zainab's 0.060 of hers (21% of 0.285), so she is drawn 1.75 times
-   his height for her head to be the size of his */
-const GIRL_PIC = ["girl-curly", 0.285, 1.75];
+/* ONE boy for all ninety nine ("Some boys have bigger heads than others ... use the same boy"), and the
+   girl is Zainab, dark-skinned and tall ("Use zainab ... then use the short light skinned boy to create
+   contrast"). Leo's drawing has an oversized cartoon head ("The boys head is still too big"), so the boy is
+   Sam (boy-hoodie, light-skinned), whose head is in proportion like Zainab's (eyes 0.058 of his height
+   apart, hers 0.060), drawn SHORTER than her: she stands 1.3 times his height. */
+const BOY_PIC = ["boy-hoodie", 0.305, 1];
+const GIRL_PIC = ["girl-curly", 0.285, 1.3];
 const picOf = (i) => (i === GIRL ? GIRL_PIC : BOY_PIC);
 const rc = (i) => [Math.floor(i / COLS), i % COLS];
 
@@ -127,21 +125,36 @@ function desk(r, c) {
     + `<rect x="${f(x - dw / 2)}" y="${f(y + th)}" width="${f(dw)}" height="${f(fh)}" fill="#a8763f"/>`
     + `<rect x="${f(x - dw / 2)}" y="${f(y + th)}" width="${f(dw)}" height="${f(0.5 * k)}" fill="rgba(0,0,0,.18)"/></g>`;
 }
-function bar(id, n, y, label, side = false) {
-  const BOX = 1.42, BX = 4, BH = 7.4;
+/* EVERY BAR IS THE WHOLE CLASS, SO EVERY BAR IS THE SAME LENGTH: 100% ("Isn't the 50 bar and the 100 bar
+   supposed to be same width since they represent 100%"). A bar of n pupils is cut into n boxes, so a box
+   is 100/n per cent: 1% in the bar of a hundred, 2% in the bar of fifty — her box twice as wide. */
+const BW = 142, BX = 4, BH = 6.4, BY1 = 70, BY2 = 84;
+const boxW = (n) => BW / n;
+function bar(id, n, y, label) {
+  const w = boxW(n);
   let o = `<g data-mb="bar" data-k="${id}">`;
-  o += `<rect x="${BX}" y="${y}" width="${f((n - 1) * BOX)}" height="${BH}" fill="${BOYC}" fill-opacity="0.75"/>`;
-  o += `<rect x="${f(BX + (n - 1) * BOX)}" y="${y}" width="${BOX}" height="${BH}" fill="${GIRLC}"/>`;
+  o += `<rect x="${BX}" y="${y}" width="${f((n - 1) * w)}" height="${BH}" fill="${BOYC}" fill-opacity="0.75"/>`;
+  o += `<rect data-k="${id}G" x="${f(BX + (n - 1) * w)}" y="${y}" width="${f(w)}" height="${BH}" fill="${GIRLC}"/>`;
   let cuts = "";
-  for (let i = 1; i < n; i++) cuts += `M${f(BX + i * BOX)} ${y}V${y + BH}`;
-  o += `<path d="${cuts}" stroke="rgba(42,39,35,.35)" stroke-width="0.12"/>`;
-  o += `<rect x="${BX}" y="${y}" width="${f(n * BOX)}" height="${BH}" fill="none" stroke="${INK}" stroke-width="0.5"/></g>`;
-  o += side
-    ? `<g data-mb="name" data-k="${id}L"><text x="${f(BX + n * BOX + 3)}" y="${f(y + BH / 2 + 1.2)}" font-family="JetBrains Mono, monospace" font-weight="700" font-size="3.3" fill="${INK}">${label}</text></g>`
-    : `<g data-mb="name" data-k="${id}L"><text x="${BX}" y="${y - 1.3}" font-family="JetBrains Mono, monospace" font-weight="700" font-size="3.3" fill="${INK}">${label}</text></g>`;
+  for (let i = 1; i < n; i++) cuts += `M${f(BX + i * w)} ${y}V${y + BH}`;
+  o += `<path d="${cuts}" stroke="rgba(42,39,35,.35)" stroke-width="0.14"/>`;
+  o += `<rect x="${BX}" y="${y}" width="${BW}" height="${BH}" fill="none" stroke="${INK}" stroke-width="0.5"/></g>`;
+  /* the bar's name inside it, white on the blue, so above and below are free for what a box is worth */
+  o += `<g data-mb="name" data-k="${id}L"><text x="${BX + 2}" y="${f(y + BH / 2 + 1.15)}" font-family="JetBrains Mono, monospace" font-weight="800" font-size="3.2" fill="#fff" stroke="rgba(42,39,35,.35)" stroke-width="0.25" paint-order="stroke">${label}</text></g>`;
   return o;
 }
-const BY1 = 70.5, BY2 = 83, BOX = 1.42, BX = 4, BH = 7.4;
+/** a brace over (or under) one box of a bar, saying what a box is worth */
+function boxBrace(id, n, i, y, text, below = false) {
+  const w = boxW(n), x0 = BX + i * w, x1 = x0 + w;
+  if (below) {
+    const yb = y + BH, ym = yb + 1.6;
+    return `<g data-mb="brace" data-mb-key="${id}"><path d="M${f(x0)} ${f(yb + 0.3)} Q${f(x0)} ${f(ym)} ${f((x0 + x1) / 2)} ${f(ym)} Q${f(x1)} ${f(ym)} ${f(x1)} ${f(yb + 0.3)}" fill="none" stroke="${BLUE}" stroke-width="0.5"/>`
+      + `<text x="${f((x0 + x1) / 2)}" y="${f(ym + 3.2)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="3.1" fill="${BLUE}">${text}</text></g>`;
+  }
+  const ym = y - 1.6;
+  return `<g data-mb="brace" data-mb-key="${id}"><path d="M${f(x0)} ${f(y - 0.3)} Q${f(x0)} ${f(ym)} ${f((x0 + x1) / 2)} ${f(ym)} Q${f(x1)} ${f(ym)} ${f(x1)} ${f(y - 0.3)}" fill="none" stroke="${BLUE}" stroke-width="0.5"/>`
+    + `<text x="${f((x0 + x1) / 2)}" y="${f(ym - 0.9)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="3" fill="${BLUE}">${text}</text></g>`;
+}
 function picture() {
   let o = `<defs><clipPath id="cls-room"><rect x="${ROOM.x}" y="${ROOM.y}" width="${ROOM.w}" height="${ROOM.h}"/></clipPath></defs>`;
   o += `<g clip-path="url(#cls-room)">${backWall()}${floor()}${door()}`;
@@ -153,10 +166,17 @@ function picture() {
   o += `</g><rect x="${ROOM.x}" y="${ROOM.y}" width="${ROOM.w}" height="${ROOM.h}" fill="none" stroke="${INK}" stroke-width="0.6"/>`;
   o += bar("b100", 100, BY1, "100 pupils: 100%");
   o += bar("b99", 99, BY1, "99 pupils: 100%");
-  o += bar("b50", 50, BY2, "50 pupils: 100%", true);
-  o += `<g data-mb="num" data-k="l1"><text x="${f(BX + 99.5 * BOX)}" y="${BY1 + BH + 3.6}" text-anchor="end" font-family="STIX Two Text, serif" font-size="3.8" fill="${RED}">1 girl = 1%</text></g>`;
-  o += `<g data-mb="num" data-k="l2"><text x="${f(BX + 49.5 * BOX)}" y="${f(BY2 - 1.4)}" text-anchor="middle" font-family="STIX Two Text, serif" font-size="3.8" fill="${RED}">1 girl = 2%</text></g>`;
-  return svgBox(150, 92, o);
+  o += bar("b50", 50, BY2, "50 pupils: 100%");
+  o += boxBrace("e100", 100, 40, BY1, "1 box = 1%", true);
+  o += boxBrace("e50", 50, 30, BY2, "1 box = 2%");
+  const RX = BX + BW;
+  o += `<g data-mb="num" data-k="l1"><text x="${f(RX)}" y="${f(BY1 - 1.3)}" text-anchor="end" font-family="STIX Two Text, serif" font-size="3.6" fill="${RED}">1 girl = 1%</text></g>`;
+  o += `<g data-mb="num" data-k="l2"><text x="${f(RX)}" y="${f(BY2 - 1.3)}" text-anchor="end" font-family="STIX Two Text, serif" font-size="3.6" fill="${RED}">1 girl = 2%</text></g>`;
+  /* method 2 reads the bar of fifty in pupils: the whole is 100 − x, her box is 1 */
+  o += `<g data-mb="brace" data-mb-key="wx"><path d="M${BX} ${BY2 + BH + 0.6} Q${BX} ${BY2 + BH + 2.4} ${BX + 6} ${BY2 + BH + 2.4} L${f(BX + BW / 2 - 3)} ${BY2 + BH + 2.4} L${f(BX + BW / 2)} ${BY2 + BH + 3.6} L${f(BX + BW / 2 + 3)} ${BY2 + BH + 2.4} L${f(RX - 6)} ${BY2 + BH + 2.4} Q${f(RX)} ${BY2 + BH + 2.4} ${f(RX)} ${BY2 + BH + 0.6}" fill="none" stroke="${GREEN}" stroke-width="0.5"/>`
+    + `<text x="${f(BX + BW / 2)}" y="${BY2 + BH + 6.6}" text-anchor="middle" font-family="STIX Two Text, serif" font-style="italic" font-size="3.5" fill="${GREEN}">100 − x pupils</text></g>`;
+  o += `<g data-mb="num" data-k="g1"><text x="${f(RX - boxW(50) / 2)}" y="${f(BY2 + BH / 2 + 1.3)}" text-anchor="middle" font-family="STIX Two Text, serif" font-weight="700" font-size="3.4" fill="${INK}">1</text></g>`;
+  return svgBox(150, 97.5, o);
 }
 
 /* ── the children move: stand, walk the row to the aisle, up the aisle, out of the door ── */
@@ -218,7 +238,7 @@ function setClass(s, H, gone, { stagger = 0.08, delay = 0 } = {}) {
 const COL_X = 129.5;
 const wline = (pieces, em = 4) => () => svgBox(150, 12, mathRow(pieces, { cx: COL_X, y: 8, em }).svg);
 const WY = (i) => 10 + i * 5.2;
-const PIC_Y = 11.5;
+const PIC_Y = 9.3;
 const at = (y) => ({ x: X_AT, y });
 
 export function classBoys() {
@@ -234,15 +254,32 @@ export function classBoys() {
     m2: [L("a", "\\text{class} = 50")],
     m3: [L("a", "100 - 50 = 50\\ \\text{leave}", GREEN)],
     m4: [L("a", "\\tfrac{49}{50} = \\tfrac{98}{100} = 98\\%", GREEN)],
-    e1: [L("a", "\\tfrac{1}{100 - x} = \\tfrac{2}{100}")],
-    e2: [L("a", "100 - x = 50")],
-    e3: [L("a", "x = 50", GREEN)],
+    /* method 2, a line at a time: the left side (pupils), the right side (per cent), the reduction, the
+       equation, its tops lit, its bottoms lit, then the answer */
+    e1: [L("a", "\\dfrac{1}{100 - x}", GREEN), L("b", "="), L("c", "\\dfrac{2}{100}", RED)],
+    e2: [L("a", "\\dfrac{2}{100}"), L("b", "\\xrightarrow{\\ \\div 2\\ }", BLUE), L("c", "\\dfrac{1}{50}")],
+    e3: [L("a", "\\dfrac{1}{100 - x} = \\dfrac{1}{50}")],
+    e4: [L("a", "100 - x = 50", RED)],
+    e5: [L("a", "x = 50", GREEN)],
   };
   const pics = { cls: picture }, picAt = { cls: at(PIC_Y) }, stages = {};
-  [["a1", "a2"], ["t1", "t1b"], ["t2"], ["k1", "k2"], ["m1", "m2", "m3", "m4"], ["e1", "e2", "e3"]].forEach((group) => group.forEach((k, i) => {
+  [["a1", "a2"], ["t1", "t1b"], ["t2"], ["k1", "k2"], ["m1", "m2", "m3", "m4"], ["e1", "e2", "e3", "e4", "e5"]].forEach((group) => group.forEach((k, i) => {
+    if (!k) return;
     pics[k] = wline(W[k]); picAt[k] = at(PIC_Y + 1 + i * 5.4);
-    stages[`${k}.all`] = (s, H) => W[k].forEach((p, j) => H.write(key(s, p.k), j * 1));
+    stages[`${k}.all`] = (s, H) => W[k].forEach((p, j) => H.write(key(s, p.k), j * (k === "e2" ? 1.8 : 1)));
   }));
+  /* part 0 (the tops) or 1 (the bottoms) of every fraction in a line: coloured, and swelled for a moment */
+  const paintFrac = (s, H, part, ink) => {
+    if (!s) return;
+    s.querySelectorAll('[data-mml-node="mfrac"]').forEach((fr) => {
+      const g = [...fr.children].filter((c) => c.tagName === "g")[part];
+      if (!g) return;
+      /* colour and a bolder stroke only: each part keeps its own transform (a swell would replace it and
+         throw the part out of place) */
+      const paint = () => { g.style.fill = ink; g.style.color = ink; g.style.stroke = ink; g.style.strokeWidth = "40"; };
+      if (isInstant(H)) paint(); else setTimeout(paint, 300);
+    });
+  };
   const kidImg = (s, i) => s?.querySelector(`[data-kid="${i}"] image`);
   /* the girl lit: a ring of light round her for a moment */
   const ring = (s, H, i, delay, hold = 2.4) => {
@@ -263,13 +300,26 @@ export function classBoys() {
       else kids.forEach((g) => { g.style.opacity = "1"; });
     },
     "cls.girl": (s, H) => { ring(s, H, GIRL, 0.3, 3); },
-    "cls.bar": (s, H) => { H.grow(key(s, "b100"), 0.3); H.write(key(s, "b100L"), 0.8); H.write(key(s, "l1"), 2.2); },
+    "cls.bar": (s, H) => { H.grow(key(s, "b100"), 0.3); H.write(key(s, "b100L"), 0.8); H.draw(s?.querySelector('[data-mb-key="e100"]'), 2.2); H.write(key(s, "l1"), 3.6); },
+    "e1.lhs": (s, H) => H.write(key(s, "a"), 0.2),
+    "e3.tops": (s, H) => paintFrac(s, H, 0, GREEN),
+    "e3.bottoms": (s, H) => paintFrac(s, H, 1, RED),
+    "e1.rhs": (s, H) => { H.write(key(s, "b"), 0.2); H.write(key(s, "c"), 1.2); },
+    /* method 2 reads the bar of fifty in pupils */
+    "cls.m2whole": (s, H) => { const b = s?.querySelector('[data-mb-key="wx"]'); H.draw(b, 0.3); if (b && !isInstant(H)) H.lit(b, 1.2, 1.6, GREEN); },
+    "cls.m2girl": (s, H) => { H.write(key(s, "g1"), 0.3); const gb = key(s, "b50G"); if (gb && !isInstant(H)) H.lit(gb, 0.4, 2, RED); },
+    "cls.m2pct": (s, H) => { if (!isInstant(H)) { H.focus(key(s, "l2"), 0.3, 1.8, 1.4); const e = s?.querySelector('[data-mb-key="e50"]'); if (e) H.lit(e, 0.3, 1.8, RED); } },
     "cls.trap1": (s, H) => { setClass(s, H, [TRAP], { delay: 0.5 }); barSwap(s, H, true, 3.6); },
     "cls.back1": (s, H) => { setClass(s, H, []); barSwap(s, H, false, 3.4); },
     "cls.trap2": (s, H) => { setClass(s, H, [GIRL], { delay: 0.4 }); },
     "cls.back2": (s, H) => { setClass(s, H, []); },
     "cls.same": (s, H) => { ring(s, H, GIRL, 0.2, 3); H.focus(key(s, "l1"), 0.6, 1.8, 1.4); },
-    "cls.bar50": (s, H) => { H.grow(key(s, "b50"), 0.3); H.write(key(s, "b50L"), 0.9); H.write(key(s, "l2"), 2); if (!isInstant(H)) H.focus(key(s, "l2"), 2.6, 1.8, 1.4); },
+    "cls.bar50": (s, H) => {
+      H.grow(key(s, "b50"), 0.3); H.write(key(s, "b50L"), 0.9);
+      H.draw(s?.querySelector('[data-mb-key="e50"]'), 2.6);
+      H.write(key(s, "l2"), 4.4);
+      const gb = key(s, "b50G"); if (gb && !isInstant(H)) H.lit(gb, 4.6, 2, RED);
+    },
     "cls.leave": (s, H) => { setClass(s, H, LEAVERS, { delay: 0.4, stagger: 0.12 }); },
     "cls.check": (s, H) => { ring(s, H, GIRL, 0.3, 2.4); H.sound("ding", 0.6); },
   });
@@ -317,21 +367,39 @@ export function classBoys() {
       /* method 1 */
       push("Two per cent is two hundredths. Reduce it: one fiftieth.",
         { off: ["k1", "k2"], on: ["m1"], add: ["m1.all"], transition: card("Method 1", "the bar model"), pause: 0.6 });
-      push("One fiftieth means: she is one box out of fifty. Draw the new bar, one box for each pupil, the same size as before. Fifty boxes. Look: her box hasn't changed at all. The bar around it is half as long, so her share is double.",
-        { on: ["m2"], add: ["cls.bar50", "m2.all"], cue: { "cls.bar50": "Draw the new bar", "m2.all": "Fifty boxes" }, pause: 1 });
+      push("One fiftieth means: she is one box out of fifty. Draw the new bar. It's still the whole class, a hundred per cent, so it's just as long as the first one.",
+        { on: ["m2"], add: ["cls.bar50", "m2.all"], cue: { "cls.bar50": "Draw the new bar", "m2.all": "one box out of fifty" }, pause: 0.6 });
+      push("But now it's cut into fifty boxes, one for each pupil. A hundred per cent shared by fifty boxes: each box is two per cent. Look at her box. It's twice as wide as before. Same girl, double the share.",
+        { pause: 1 });
       push("So the class must shrink from a hundred to fifty. Fifty boys stand up, and walk out of the door.",
         { on: ["m3"], add: ["cls.leave", "m3.all"], cue: { "cls.leave": "Fifty boys", "m3.all": "from a hundred to fifty" }, pause: 4 });
       push("Check it. Forty nine boys out of fifty pupils. Forty nine fiftieths is ninety eight hundredths. Ninety eight per cent.",
         { on: ["m4"], add: ["m4.all", "cls.check"], cue: { "m4.all": "Forty nine fiftieths" }, pause: 1 });
       push("Fifty boys must leave. Not one. Fifty.",
         { pause: 1.2 });
-      /* method 2 */
-      push("Now the same in one line. Say x boys leave. The girl is one pupil out of a hundred take away x, and that must be two hundredths.",
-        { off: ["m1", "m2", "m3", "m4"], on: ["e1"], add: ["e1.all"], cue: { "e1.all": "one pupil out of" }, transition: card("Method 2", "an equation"), pause: 0.8 });
-      push("One over something is one fiftieth, so the something is fifty. A hundred take away x is fifty.",
-        { on: ["e2"], add: ["e2.all"], cue: { "e2.all": "A hundred take away" }, pause: 0.6 });
-      push("So x is fifty. The same answer.",
-        { on: ["e3"], add: ["e3.all"], pause: 1 });
+      /* method 2: the equation, built from the bar, one side at a time */
+      push("Now the same thing as an equation. Say x boys leave. Look at the bar after they've gone. In pupils, the whole bar is everyone who's left: a hundred take away x.",
+        { off: ["m1", "m2", "m3", "m4"], add: ["cls.m2whole"], cue: { "cls.m2whole": "a hundred take away x" }, transition: card("Method 2", "an equation from the bar"), pause: 0.8 });
+      push("And her box is one pupil: Zainab.",
+        { add: ["cls.m2girl"], pause: 0.6 });
+      push("Her share, counted in pupils, is her over everyone. One, over a hundred take away x. That's the left-hand side.",
+        { on: ["e1"], add: ["e1.lhs"], cue: { "e1.lhs": "One, over" }, pause: 0.8 });
+      push("Now the very same box, in per cent. We want her to be two per cent: two out of every hundred. That's the right-hand side.",
+        { add: ["e1.rhs", "cls.m2pct"], cue: { "e1.rhs": "two out of every", "cls.m2pct": "two per cent" }, pause: 0.6 });
+      push("It's one box, said two ways, so the two sides are equal.",
+        { pause: 0.8 });
+      push("Before we compare them, make the right side as simple as it goes. Two and a hundred are both even, so divide both by two. Two hundredths becomes one fiftieth.",
+        { on: ["e2"], add: ["e2.all"], cue: { "e2.all": "Two hundredths becomes" }, pause: 0.8 });
+      push("So one over a hundred take away x equals one over fifty.",
+        { on: ["e3"], add: ["e3.all"], pause: 0.8 });
+      push("Look at the tops first. Both are one. One girl, on both sides.",
+        { add: ["e3.tops"], cue: { "e3.tops": "Both are one" }, pause: 0.8 });
+      push("Now here's the key. Two fractions are equal, and their tops are the same. Then their bottoms must be the same too. One out of something equals one out of fifty only if the something is fifty.",
+        { add: ["e3.bottoms"], cue: { "e3.bottoms": "their bottoms must" }, pause: 1.2 });
+      push("So the bottoms are equal. A hundred take away x is fifty.",
+        { on: ["e4"], add: ["e4.all"], pause: 0.6 });
+      push("Take fifty from a hundred. x is fifty. Fifty boys leave, the same answer.",
+        { on: ["e5"], add: ["e5.all", "cls.check"], cue: { "e5.all": "x is fifty" }, pause: 1.2 });
       push("Remember this class. One per cent of a hundred is one pupil, but one pupil is two per cent of fifty. A per cent is a share of the whole, so always ask: per cent of what?");
     },
   });
