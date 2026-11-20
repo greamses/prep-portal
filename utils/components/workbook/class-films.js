@@ -62,9 +62,13 @@ const SIT = 0.5, STAND = 0.92;                     // how much of the child is a
 const GIRL = 23;                                   // row 2, seat 3: the girl, well inside the class
 const TRAP = 99;                                   // the boy at the front, nearest the aisle
 const LEAVERS = Array.from({ length: 50 }, (_, i) => 50 + i);   // the front five rows: fifty boys
-const BOYS = [["boy-closed", 0.375], ["boy-hoodie", 0.305], ["boy-curly", 0.375], ["boy", 0.365]];
-const GIRL_PIC = ["girl-hands-down", 0.425];
-const picOf = (i) => (i === GIRL ? GIRL_PIC : BOYS[(i * 7 + Math.floor(i / 10) * 3) % BOYS.length]);
+/* ONE boy for all ninety nine ("Some boys have bigger heads than others ... use the same boy"): Leo,
+   the short light-skinned boy; and the girl is Zainab, dark-skinned and tall ("Use zainab since she is
+   dark skinned and tall, then use the short light skinned boy to create contrast"). Each is drawn at the
+   height the bee hall gives them (its "tall": Zainab 1.12, Leo 0.78), so their heads match. */
+const BOY_PIC = ["boy-closed", 0.375, 1];
+const GIRL_PIC = ["girl-curly", 0.285, 1.12 / 0.78];
+const picOf = (i) => (i === GIRL ? GIRL_PIC : BOY_PIC);
 const rc = (i) => [Math.floor(i / COLS), i % COLS];
 
 function backWall() {
@@ -110,7 +114,7 @@ function door() {
   return o;
 }
 function kid(i) {
-  const [r, c] = rc(i), k = rowScale(r), h = KID_H * k, [src, asp] = picOf(i), w = h * asp;
+  const [r, c] = rc(i), [src, asp, tall] = picOf(i), k = rowScale(r), h = KID_H * k * tall, w = h * asp;
   const x = seatX(r, c), top = deskY(r) - SIT * h;
   return `<g data-kid="${i}" data-row="${r}"><g class="kv"><image href="/media/characters/png/${src}.png" x="${f(x - w / 2)}" y="${f(top)}" width="${f(w)}" height="${f(h)}"/></g></g>`;
 }
@@ -154,7 +158,7 @@ function picture() {
 /** the transform that puts child i's feet-line point (bx, by) at (x, y) and scales it by k about that point */
 const placeAt = (bx, by, x, y, k) => `translate(${f(x - bx * k)}px, ${f(y - by * k)}px) scale(${f(k)})`;
 function road(i) {
-  const [r, c] = rc(i), k0 = rowScale(r), h = KID_H * k0;
+  const [r, c] = rc(i), k0 = rowScale(r), h = KID_H * k0 * picOf(i)[2];
   const bx = seatX(r, c), by = deskY(r) - SIT * h + h;            // the child's feet as drawn (seated, behind the desk)
   const rise = (STAND - SIT) * h;
   const kDoor = rowScale(0) * 0.92 / k0;
@@ -206,8 +210,8 @@ function setClass(s, H, gone, { stagger = 0.08, delay = 0 } = {}) {
 }
 
 /* the working: a column to the right of the room, one idea a line */
-const COL_X = 126;
-const wline = (pieces, em = 4.4) => () => svgBox(150, 12, mathRow(pieces, { cx: COL_X, y: 8, em }).svg);
+const COL_X = 129.5;
+const wline = (pieces, em = 4) => () => svgBox(150, 12, mathRow(pieces, { cx: COL_X, y: 8, em }).svg);
 const WY = (i) => 10 + i * 5.2;
 const PIC_Y = 11.5;
 const at = (y) => ({ x: X_AT, y });
@@ -274,7 +278,7 @@ export function classBoys() {
         { on: ["a1q", "cls"], add: ["cls.base"], transition: "iris", pause: 1.2 });
       push("First, who is in the room? Ninety nine per cent of a hundred is ninety nine boys.",
         { on: ["a1"], add: ["a1.all"], cue: { "a1.all": "Ninety nine per cent of" }, pause: 0.6 });
-      push("That leaves one girl. There she is, in the third row.",
+      push("That leaves one girl, Zainab. There she is, in the third row.",
         { on: ["a2"], add: ["a2.all", "cls.girl"], cue: { "cls.girl": "There she is" }, pause: 0.8 });
       push("As a bar: one box for every pupil. A hundred boxes, and her box at the end is one per cent.",
         { add: ["cls.bar"], cue: { "cls.bar": "one box for every" }, pause: 0.8 });
