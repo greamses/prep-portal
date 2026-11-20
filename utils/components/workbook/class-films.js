@@ -329,3 +329,6 @@ export function classBoys() {
 }
 /* the first version told the same story with left- and right-handers; its id plays this film */
 export const classHanded = classBoys;
+
+/** The classroom alone (no bars), for the film's thumbnail: the same drawing, framed on the room. */
+export const classroomArt = () => picture().replace(/viewBox="[^"]*"/, 'viewBox="1.5 1.5 99 65"').replace('overflow="visible"', 'overflow="hidden" class="thumb__room"');

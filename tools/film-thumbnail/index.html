@@ -78,6 +78,7 @@
       display: grid; place-items: center; }
     .thumb__front.pp-sticky--tape::before { width: 120px; height: 34px; top: -18px; }
     .thumb__front svg { width: 82%; height: 72%; }
+    .thumb__front--art svg.thumb__room { width: 94%; height: auto; aspect-ratio: 99 / 65; outline: 3px solid #2a2723; margin-top: 10%; }
     .thumb__word { position: absolute; left: 40px; right: 0; bottom: 26px; text-align: center;
       font: 800 34px/1 "Shantell Sans", cursive; color: #14130f; }
     .thumb__bot { position: absolute; left: -150px; bottom: -96px; width: 190px; height: 190px; transform: rotate(-9deg);
@@ -119,6 +120,9 @@
     import { ICON_PREPBOT } from "/prep-math/mental-math/shared/icons.js";
     import { UI } from "/utils/components/ui-icons.js";
     import { PLAYLISTS } from "/utils/components/workbook/playlists.js";
+    import { classroomArt } from "/utils/components/workbook/class-films.js";
+    /* a film can show its OWN picture on the note instead of its subject's sign */
+    const ART = { "pct-boys": { art: classroomArt } };
 
     const INK = "#2a2723";
     /* ONE ENTRY PER SUBJECT: its name, its note papers (the site's sticky pastels), a deeper dot
@@ -156,7 +160,7 @@
     };
 
     /* THE COMPONENT: everything is fixed but the name, and the subject's papers */
-    function thumbnail({ name, topic, lesson }) {
+    function thumbnail({ id: filmId, name, topic, lesson }) {
       const s = SUBJECTS[topic] || SUBJECTS.maths;
       /* the first pill counts the film's ways from its name: "(three ways)" is 3 WAYS; a film
          with no ways in its name is a lesson */
@@ -174,7 +178,7 @@
         + `<span class="thumb__tag pp-sticky pp-sticky--c3" style="--pp-note-tilt:2deg">${UI.steps ? UI.steps(28) : ""}Step by step</span></div>`
         + `</div></div>`
         + `<div class="thumb__notes"><span class="thumb__back pp-sticky"></span>`
-        + `<div class="thumb__front pp-sticky pp-sticky--tape">${s.sign()}<span class="thumb__word">${s.word}</span>`
+        + `<div class="thumb__front pp-sticky pp-sticky--tape${ART[filmId] ? " thumb__front--art" : ""}">${ART[filmId] ? ART[filmId].art() : s.sign()}${ART[filmId] ? "" : `<span class="thumb__word">${s.word}</span>`}`
         + `<div class="thumb__bot">${ICON_PREPBOT}</div></div></div>`
         + `<div class="thumb__brand">Learning with <span>PrepBot</span></div>`
         + `<span class="thumb__url pp-pill" style="--tile:${s.deep}">prepportal.com.ng</span>`
