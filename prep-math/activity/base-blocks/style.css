@@ -1850,3 +1850,35 @@ body.bb-locked { overflow: hidden; }
 .bb-shelf__card .card-title { font-family: var(--font-display); font-size: 1rem; margin-top: 0.45rem; }
 .bb-shelf__card .card-excerpt { font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.5; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-top: 0.3rem; }
 .bb-shelf__card .read-more { margin-top: auto; padding-top: 0.6rem; }
+
+/* THE HANDLES IN THE RECEIPT STRIP ("put all the canvas icons for an item in the horizontal receipt and
+   I don't like the blue bg"): turn, lift and tip sit in the strip under what is in hand, as plain icons
+   like the block keys beside them — no blue disc, no shadow, no floating at a corner. */
+.bb-blockbar__handles { display: inline-flex; align-items: center; }
+.bb-blockbar__sep { display: inline-block; width: 1px; height: 22px; margin: 0 4px; background: var(--border-color, rgba(42, 39, 35, 0.15)); }
+.bb-blockbar__sep[hidden] { display: none; }
+.bb-turn.is-docked {
+  position: relative; top: auto; left: auto; z-index: auto;
+  width: 32px; height: 32px; border-radius: 0;
+  background: transparent; color: var(--ink); box-shadow: none; transform: none !important;
+}
+.bb-turn.is-docked[hidden] { display: none; }
+.bb-turn.is-docked:hover { background: var(--surface-secondary); }
+.bb-turn.is-docked svg { width: 18px; height: 18px; }
+.bb-turn.is-docked.is-turning,
+.bb-lift.is-docked.is-turning,
+.bb-tip.is-docked.is-turning { background: var(--surface-secondary); color: var(--ink); outline: 2px solid var(--accent-secondary); outline-offset: -2px; }
+.bb-blockbar__key[hidden] { display: none; }
+/* the trade offer, docked in the strip: a plain key like the others, lit green when it is there */
+.bb-trade.is-docked {
+  position: relative; transform: none !important; display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; padding: 0; margin: 0; border: 0 !important; border-radius: 0; box-shadow: none !important;
+  background: transparent !important; color: var(--ink); rotate: none; cursor: pointer;
+}
+.bb-trade.is-docked[hidden] { display: none; }
+.bb-trade.is-docked:hover { background: var(--surface-secondary) !important; }
+.bb-trade.is-docked svg { width: 18px; height: 18px; }
+/* every key in the strip is a bare icon: no border, no box, no paper */
+.bb-blockbar button, .bb-blockbar .bb-turn.is-docked { border: 0 !important; box-shadow: none !important; outline-color: transparent; }
+.bb-trade.is-docked .bb-trade__go { background: transparent !important; box-shadow: none !important; border: 0 !important; padding: 0; width: auto; height: auto; color: var(--ink); }
+.bb-trade.is-docked .bb-trade__go svg { width: 18px; height: 18px; }

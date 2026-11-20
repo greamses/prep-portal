@@ -939,10 +939,10 @@ async function bootCanvas() {
 
     pickTool = createPickTool(ctx, view, stage);
 
-    const trade = createRegroupPrompt(ctx, view, stage);
+    const trade = createRegroupPrompt(ctx, view, stage, { dock: blockBar.dock });
     noteEditor = createNoteEditor(ctx, view, stage,
       { onInput: () => emit(), onCommit: afterNote });
-    const turn = createTurnHandle(ctx, view, stage, () => emit());
+    const turn = createTurnHandle(ctx, view, stage, () => emit(), { dock: blockBar.dock });
     scaleBar = createScaleBar(ctx, stage, { onBalance: balanceScale, onEmpty: emptyScale });
     subscribe((s) => {
       view.sync(s);

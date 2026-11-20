@@ -35,7 +35,7 @@ const DEED = {
   regroup: { icon: "regroup", say: "Regroup" },
 };
 
-export function createRegroupPrompt(ctx, view, stage) {
+export function createRegroupPrompt(ctx, view, stage, { dock = null } = {}) {
   const { scene, camera } = ctx;
 
   const card = document.createElement("button");
@@ -50,7 +50,13 @@ export function createRegroupPrompt(ctx, view, stage) {
   card.innerHTML = `
     <span class="bb-trade__ico">${ARROWS}</span>
     <span class="bb-trade__go"></span>`;
-  stage.appendChild(card);
+  /* IN THE RECEIPT STRIP under the blocks in hand, as one more plain key, when there is a strip
+     ("put all the canvas icons for an item in the horizontal receipt"): no note sitting on the blocks */
+  if (dock) {
+    card.className = "bb-trade is-docked";
+    card.innerHTML = `<span class="bb-trade__go"></span>`;
+    dock.prepend(card);
+  } else stage.appendChild(card);
 
   const go = card.querySelector(".bb-trade__go");
 
@@ -103,7 +109,7 @@ export function createRegroupPrompt(ctx, view, stage) {
   /* Over the middle of the highlight, lifted clear of the tallest piece in it
      so the card never sits on top of the blocks it is describing. */
   function place() {
-    if (card.hidden) return;
+    if (card.hidden || dock) return;
     const BJS = B();
     const engine = scene.getEngine();
     const rect = stage.getBoundingClientRect();

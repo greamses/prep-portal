@@ -34,7 +34,7 @@ const STEP = Math.PI / 12; // fifteen degrees, while shift is held
 /* How far the hand must travel to tip a piece a quarter turn. */
 const TIP_PER_PX = Math.PI / 2 / 130;
 
-export function createTurnHandle(ctx, view, stage, onDone) {
+export function createTurnHandle(ctx, view, stage, onDone, { dock = null } = {}) {
   const { scene, camera } = ctx;
 
   const btn = document.createElement("button");
@@ -46,7 +46,9 @@ export function createTurnHandle(ctx, view, stage, onDone) {
     "Drag to turn the picked thing; hold shift for fifteen degree steps, "
     + "or right-click to type an exact angle");
   btn.innerHTML = ICON.turn;
-  stage.appendChild(btn);
+  /* IN THE RECEIPT STRIP under the thing in hand, as a plain icon (blockbar.js), when there is one */
+  if (dock) btn.classList.add("is-docked");
+  (dock || stage).appendChild(btn);
 
   /* ── the two that work in the third dimension ───────────────────────────── */
 
@@ -58,7 +60,8 @@ export function createTurnHandle(ctx, view, stage, onDone) {
     b.title = title;
     b.setAttribute("aria-label", aria);
     b.innerHTML = icon;
-    stage.appendChild(b);
+    if (dock) b.classList.add("is-docked");
+    (dock || stage).appendChild(b);
     return b;
   }
 
@@ -330,6 +333,7 @@ export function createTurnHandle(ctx, view, stage, onDone) {
 
   function place() {
     if (btn.hidden) return;
+    if (dock) { for (const el of [btn, liftBtn, tipBtn]) el.style.transform = ""; return; }
     const sel = selectedItems();
     if (!sel.length) { btn.hidden = true; return; }
 

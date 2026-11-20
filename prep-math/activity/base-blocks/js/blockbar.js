@@ -17,7 +17,7 @@
    camera can orbit without the store changing.
    ========================================================================== */
 
-import { selected } from "./state.js";
+import { selected, selectedItems } from "./state.js";
 import { footprint, topOf } from "./layout.js";
 import { ICON } from "./icons.js";
 
@@ -50,6 +50,9 @@ export function createBlockBar(ctx, view, stage, { onAct = () => {}, enabled = (
             title="${k.hint}" aria-label="${k.hint}">
       <span>${ICON[k.icon]}</span><em>${k.name}</em>
     </button>`).join("")
+    /* the handles of whatever is in hand (turn, lift, tip — turn.js) live in the same receipt:
+       "put all the canvas icons for an item in the horizontal receipt" */
+    + `<span class="bb-blockbar__sep" aria-hidden="true"></span><span class="bb-blockbar__handles"></span>`
     + `</div>`;
   stage.appendChild(bar);
 
@@ -84,7 +87,7 @@ export function createBlockBar(ctx, view, stage, { onAct = () => {}, enabled = (
    * over the block, not halfway across the chart it cannot do anything to.
    */
   function place() {
-    const picked = selected();
+    const picked = selectedItems();
     if (!picked.length) { bar.hidden = true; return; }
 
     let left = Infinity;
@@ -109,13 +112,9 @@ export function createBlockBar(ctx, view, stage, { onAct = () => {}, enabled = (
     const w = bar.offsetWidth || 200;
     const h = bar.offsetHeight || 40;
 
-    /* Centred under the block — but never reaching PAST its right-hand edge,
-       because that is where the turn and lift handles hang, and they sit above
-       the strip. A wide block is wider than the strip and gets it centred; a
-       unit is not, and gets it tucked to its left so the handles stay clear. */
+    /* centred under what is in hand (the handles are in the strip now, not hanging at a corner) */
     const middle = (left + right) / 2 - w / 2;
-    const clear = right - w;
-    const x = Math.max(8, Math.min(rect.width - w - 8, Math.min(middle, clear)));
+    const x = Math.max(8, Math.min(rect.width - w - 8, middle));
     const y = Math.max(8, Math.min(rect.height - h - 8, bottom + 12));
     bar.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
   }
@@ -126,13 +125,17 @@ export function createBlockBar(ctx, view, stage, { onAct = () => {}, enabled = (
    * offer, so it does not get one.
    */
   function refresh() {
-    const blocks = selected();
-    const on = blocks.length > 0;
+    /* the strip comes up for ANYTHING in hand; the block keys only when there is a block in it */
+    const items = selectedItems(), blocks = selected();
+    const on = items.length > 0;
     bar.hidden = !on;
     if (!on) return;
+    const hasBlock = blocks.length > 0;
     for (const key of bar.querySelectorAll("[data-act]")) {
-      key.disabled = !enabled(key.dataset.act);
+      key.hidden = !hasBlock;
+      key.disabled = !hasBlock || !enabled(key.dataset.act);
     }
+    bar.querySelector(".bb-blockbar__sep").hidden = !hasBlock;
     place();
   }
 
@@ -140,6 +143,8 @@ export function createBlockBar(ctx, view, stage, { onAct = () => {}, enabled = (
 
   return {
     refresh,
+    /** where the handles of the thing in hand go (turn.js) */
+    dock: bar.querySelector(".bb-blockbar__handles"),
     destroy() {
       scene.onAfterRenderObservable.remove(obs);
       bar.remove();
