@@ -360,8 +360,25 @@ export function createTurnHandle(ctx, view, stage, onDone) {
         }
       }
       if (!isFinite(right) || !isFinite(top)) { btn.hidden = true; return; }
-      cx = right + 10;
-      cy = top - h / 2;
+      /* NEVER ON A BLOCK ("Icons should not appear on blocks"): the column of handles goes beside the
+         picked piece where it covers nothing else — right, then left, then above, then below. */
+      const box = (b) => {
+        const f = footprint(b);
+        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+        for (const x of [b.x, b.x + f.l]) for (const z of [b.z, b.z + f.w]) for (const y of [b.y || 0, (b.y || 0) + standing(b).h]) {
+          const p = project(x, y, z);
+          x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y);
+        }
+        return { x0, x1, y0, y1 };
+      };
+      const mine = sel.map(box), them = store.blocks.concat(store.things).filter((b) => !sel.includes(b)).map(box);
+      const L = Math.min(...mine.map((m) => m.x0)), R = Math.max(...mine.map((m) => m.x1));
+      const T = Math.min(...mine.map((m) => m.y0)), Bt = Math.max(...mine.map((m) => m.y1));
+      const colH = h * 3 + 12;
+      const clear = (x, y) => them.every((o) => x + w < o.x0 || x > o.x1 || y + colH < o.y0 || y > o.y1);
+      const spots = [[R + 10, T], [L - w - 10, T], [R - w, T - colH - 10], [R - w, Bt + 10]];
+      const ok = spots.find(([x, y]) => clear(x, y) && x >= 8 && x + w <= rect.width - 8);
+      [cx, cy] = ok || [R + 10, T];
     }
 
     cx = Math.max(8, Math.min(rect.width - w - 8, cx));

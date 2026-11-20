@@ -35,6 +35,10 @@ const TOOLS = [
   /* the same rail, on a page that is not a workbook (workbook/toolbar.js) */
   ".wb-tools__btn", ".wb-tools__tab", ".wb-side-tab",
   ".bb-kit__btn", ".wb-drawbar .pp-btn",
+  /* EVERYTHING ON THE MANIPULATIVES CANVAS: "I don't buy the idea of the icons on sticky notes in the
+     canvas. It affects the contrast." (2026-11-20). Its panels, keys and the handles on a picked
+     piece are plain icons; the canvas's own sheet (style.css) lights the one in use. */
+  ".bb-frame *",
   /* a counter on the mat: a token worth ten or one, which the child pushes
      about. It answers to the keyboard, so it is a button as far as the browser
      is concerned, and paper and tape on it made it a note worth 10 */

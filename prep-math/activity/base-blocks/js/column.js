@@ -11,7 +11,7 @@
 import {
   ask, answer, cellsOf, checkSum, defaultSum, planOf, readSum, resetWork,
   setSum as setSumOn, setTotal as setTotalOn, setWritten as setWrittenOn,
-  sheetOf, showNext, makeColumn as newColumn, rebaseColumn as rebaseOn, workOut,
+  sheetOf, showNext, makeColumn as newColumn, rebaseColumn as rebaseOn, workOut, written,
   MAX_ADDENDS, MAX_DIGITS, MAX_PLACES,
 } from "/utils/components/boards/column.js";
 import { drawSheet } from "/utils/components/boards/paint.js";
@@ -19,7 +19,7 @@ import { cssVar } from "./config.js";
 
 export {
   ask, answer, cellsOf, checkSum, defaultSum, planOf, readSum, resetWork,
-  sheetOf, showNext, workOut, MAX_ADDENDS, MAX_DIGITS, MAX_PLACES,
+  sheetOf, showNext, workOut, written, MAX_ADDENDS, MAX_DIGITS, MAX_PLACES,
 };
 
 /* One figure of working is a two-cell square of the canvas's paper — the same

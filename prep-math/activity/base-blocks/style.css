@@ -1836,3 +1836,17 @@ body.bb-locked { overflow: hidden; }
 }
 .bb-scalebar__key:hover em,
 .bb-scalebar__key:focus-visible em { opacity: 1; }
+
+/* THE SHELF: a card for every thing on the canvas, under its family, each pictured by a capture of
+   that thing on the canvas (img/<tool>.jpg) */
+.bb-shelf { display: grid; gap: 2.2rem; max-width: none; }
+.bb-shelf__head { margin: 0; font-family: var(--font-display); font-size: 1.25rem; color: var(--text-primary); }
+.bb-shelf__blurb { margin: 0.2rem 0 0.9rem; font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary); }
+.bb-shelf__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr)); gap: 1.1rem; }
+.bb-shelf__card { text-align: left; cursor: pointer; }
+.bb-shelf__card .card-inner { display: flex; flex-direction: column; height: 100%; }
+.bb-shelf__shot { display: block; aspect-ratio: 16 / 10; overflow: hidden; background: #fbf8f1; border: 1px solid var(--border-subtle-color, rgba(42,39,35,.12)); margin-bottom: 0.7rem; }
+.bb-shelf__shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.bb-shelf__card .card-title { font-family: var(--font-display); font-size: 1rem; margin-top: 0.45rem; }
+.bb-shelf__card .card-excerpt { font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.5; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-top: 0.3rem; }
+.bb-shelf__card .read-more { margin-top: auto; padding-top: 0.6rem; }

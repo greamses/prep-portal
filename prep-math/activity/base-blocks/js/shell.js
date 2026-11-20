@@ -15,60 +15,35 @@ import { ICON } from "./icons.js";
 import { worksInBase } from "./abacus.js";
 import { TILES } from "./tiles.js";
 
-/* Which tool the canvas opens on. The dock has every one of them, so the shelf
-   does not need to: one card is the door, and choosing happens inside. */
-const DOOR = "base-blocks";
-
-/* The card counts the tools out loud, so a family added to the registry is
-   announced instead of leaving the copy a number behind. Prose on this page is
-   written, not numbered — the digits are for the canvas. */
-const COUNTS = ["no", "one", "two", "three", "four", "five", "six", "seven",
-                "eight", "nine", "ten", "eleven", "twelve"];
-const spell = (n) => COUNTS[n] || String(n);
-
 export function buildShelf(root, onOpen) {
-  /* The pictures across the door, taken from the registry so a family added to
-     tools.js shows up here instead of being quietly left off. A family shows
-     its first tool unless it names another with `face`, or several with
-     `faces` — which is how the number card gets onto the door beside the chart
-     it shares a family with, rather than living four presses deep in the dock
-     where nobody finds it. */
-  const strip = GROUPS
-    .flatMap((g) => (g.faces || [g.face || g.tools[0]?.id]))
-    .map(toolById)
-    .filter(Boolean)
-    .map((t) => `<span class="bb-card__pic" title="${t.label}">${t.art()}</span>`)
-    .join("");
+  /* A CARD FOR EVERY THING ON THE CANVAS, under its family ("Make the canvas entry cards separate
+     and use the items in the canvas as the image", 2026-11-20). The picture on each card is that
+     thing as the canvas draws it — a capture kept in img/<tool>.jpg — and pressing the card opens
+     the canvas with that thing already on it. Dressed as every other card the site offers a thing
+     on: the receipt paper, the sticky tag, the read-more (/blogs/css/blog.css). */
+  const ROTATE = ["--p1", "--p2", "--p3", "--p4", "--p5"];
+  root.innerHTML = GROUPS.map((g, gi) => `
+    <section class="bb-shelf__group" aria-label="${g.label}">
+      <h2 class="bb-shelf__head">${g.label}</h2>
+      <p class="bb-shelf__blurb">${g.blurb || ""}</p>
+      <div class="bb-shelf__grid">${g.tools.map((t) => `
+        <button class="science-card pp-receipt science-card${ROTATE[gi % ROTATE.length]} bb-shelf__card" type="button" data-tool="${t.id}">
+          <span class="card-inner pp-receipt__paper">
+            <span class="bb-shelf__shot"><img src="/prep-math/activity/base-blocks/img/${t.id}.jpg" alt="${t.label} on the canvas" loading="lazy" width="640" height="400"></span>
+            <span class="card-badges"><span class="pp-sticky pp-sticky--c${gi % 6}">${g.label}</span></span>
+            <span class="card-title">${t.label}</span>
+            <span class="card-excerpt">${t.blurb || ""}</span>
+            <span class="read-more">Open on the canvas ${ICON.chevron}</span>
+          </span>
+        </button>`).join("")}
+      </div>
+    </section>`).join("");
+  root.classList.add("bb-shelf");
+  return bindShelf(root, onOpen);
 
-  /* Dressed as every other card the site offers a thing on — the receipt paper,
-     the sticky tag, the meta line and the read-more of the games and blogs
-     grids (/blogs/css/blog.css). One card rather than a grid of them, because
-     choosing which manipulative happens inside the canvas and not out here. */
-  root.innerHTML = `
-    <button class="science-card pp-receipt science-card--p3 bb-door" type="button"
-            data-tool="${DOOR}">
-      <span class="card-inner pp-receipt__paper">
-        <span class="bb-card__art--strip">${strip}</span>
-        <span class="card-badges">
-          <span class="pp-sticky pp-sticky--c3">Mathematics</span>
-          <span class="pp-pill pp-pill--static">${ICON.grid}<span>One canvas</span></span>
-        </span>
-        <span class="card-meta">
-          <span>${ICON.blocks} ${spell(TOOLS.length)} things</span>
-          <span>${ICON.flat} 2D and 3D</span>
-        </span>
-        <span class="card-title">Open the workbench</span>
-        <span class="card-excerpt">
-          ${GROUPS.map((g) => g.label).join(" · ")} — ${spell(TOOLS.length)} things on
-          one endless sheet of squared paper. Blocks to split and trade in any base,
-          three counting frames, algebra tiles and cubes, charts to stand the blocks
-          on, and a card that says what the canvas comes to. Everything is in the
-          rail down the side once you are in.
-        </span>
-        <span class="read-more">Open the canvas ${ICON.chevron}</span>
-      </span>
-    </button>`;
+}
 
+function bindShelf(root, onOpen) {
   root.addEventListener("click", (e) => {
     const card = e.target.closest("[data-tool]");
     if (!card) return;
