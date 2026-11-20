@@ -56,7 +56,7 @@ const MID = ROOM.x + ROOM.w / 2 - 6;              // the class sits a little lef
 const seatX = (r, c) => MID - rowW(r) / 2 + (c + 0.5) * (rowW(r) / COLS);
 const aisleX = (r) => MID + rowW(r) / 2 + 4.5 * rowScale(r);
 const DOOR = { x: 84, y: 5.5, w: 10, h: WALL_BOTTOM - 5.5 };
-const KID_H = 15.5;                                // a child's height in the front row
+const KID_H = 21.5;                                // a child's height in the front row
 const SIT = 0.5, STAND = 0.92;                     // how much of the child is above the desk top: seated, standing
 
 const GIRL = 23;                                   // row 2, seat 3: the girl, well inside the class
