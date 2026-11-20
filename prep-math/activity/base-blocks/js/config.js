@@ -78,9 +78,11 @@ export function placeDims(placeId, base) {
 
 /** Which place a block is, or null when it is a shape the learner invented. */
 export function placeOf(block, base) {
+  /* whichever way it lies: a rod stood up the paper (as the layout sets them) is still a rod */
+  const key = (o) => [o.l, o.w, o.h].sort((x, y) => x - y).join(",");
+  const k = key(block);
   for (const p of PLACES) {
-    const d = placeDims(p.id, base);
-    if (block.l === d.l && block.w === d.w && block.h === d.h) return p.id;
+    if (key(placeDims(p.id, base)) === k) return p.id;
   }
   return null;
 }

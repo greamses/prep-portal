@@ -21,7 +21,7 @@ export const store = {
   selection: new Set(),
   tool: "base-blocks", // which tool the dock is showing
   group: "blocks",
-  flat: false, // 2D view on?
+  flat: true, // 2D view on? The flat view is where the canvas opens (the user: "make 2D the default view")
   sync: false, // when on, every tool shows the same number (js/sync.js)
   /* The pick tool (js/pick.js): a mode in which the CARDS themselves are what
      you are handling — moved, resized, closed — rather than what is on them. */

@@ -15,7 +15,8 @@
    how it happens to be lying.
    ========================================================================== */
 
-import { CFG } from "./config.js";
+import { CFG, placeOf } from "./config.js";
+import { store } from "./state.js";
 
 const key = (x, z) => x + "," + z;
 
@@ -258,9 +259,73 @@ function rows(list, sorter, { cap = 150 } = {}) {
  * The two bands are centred on the same middle line, so the canvas has a
  * top half and a bottom half however much is in either.
  */
+/**
+ * THE BLOCKS IN PLACE-VALUE COLUMNS, the way Polypad and Brainingcamp set them out
+ * (the user: "the blocks appear too small and unorganized, use the space efficiently ...
+ * polypad does this well"). Biggest place on the left, each place a column of its own, every
+ * column hung from the same top line:
+ *   cubes     side by side
+ *   flats     up to three across, then the next row
+ *   rods      STANDING (long side down the paper), side by side like ten-sticks, ten to a row
+ *   units     in TEN-FRAMES: two across and five down, touching, so seven is seen as five and
+ *             two without counting; a full frame is ten, and frames sit side by side
+ * A shape the learner invented has no place, so it gets a column of its own at the end,
+ * in the old one-row way.
+ */
+function columns(blocks) {
+  const pad = CFG.gap, colGap = pad + 1;
+  const base = store.base || CFG.defaultBase;
+  const sets = { cube: [], flat: [], rod: [], unit: [], other: [] };
+  for (const b of blocks) {
+    const place = placeOf(b, base);
+    (sets[place] || sets.other).push(b);
+  }
+  /* a rod stands: its long side runs down the paper */
+  for (const r of sets.rod) {
+    if (r.l > r.w) { const t = r.l; r.l = r.w; r.w = t; }
+    r.angle = 0;
+  }
+  const out = [];
+  let x = 0, h = 0;
+  /** lay one place out as a grid of `perRow` across, `gx`/`gz` apart, from column x */
+  const grid = (list, perRow, gx, gz) => {
+    if (!list.length) return;
+    const f = footprint(list[0]);
+    list.forEach((b, i) => {
+      const c = i % perRow, r = Math.floor(i / perRow);
+      out.push({ item: b, x: x + c * (f.l + gx), z: r * (f.w + gz) });
+    });
+    const cols = Math.min(perRow, list.length), rowsN = Math.ceil(list.length / perRow);
+    const w = cols * f.l + (cols - 1) * gx;
+    h = Math.max(h, rowsN * f.w + (rowsN - 1) * gz);
+    x += w + colGap;
+  };
+  grid(sets.cube.sort(byPlace), 3, pad, pad);
+  grid(sets.flat.sort(byPlace), 3, pad, pad);
+  grid(sets.rod.sort(byPlace), 10, pad, pad);
+  /* units: ten-frames of 2 × 5, filled down the left column then the right */
+  if (sets.unit.length) {
+    const units = sets.unit.sort(byPlace);
+    const frames = Math.ceil(units.length / 10);
+    units.forEach((b, i) => {
+      const fr = Math.floor(i / 10), k = i % 10, col = Math.floor(k / 5), row = k % 5;
+      out.push({ item: b, x: x + fr * (2 + pad) + col, z: row });
+    });
+    h = Math.max(h, 5);
+    x += frames * 2 + (frames - 1) * pad + colGap;
+  }
+  if (sets.other.length) {
+    const o = rows(sets.other, byPlace, { cap: 40 });
+    for (const p of o.out) out.push({ item: p.item, x: x + p.x, z: p.z });
+    h = Math.max(h, o.h);
+    x += o.w + colGap;
+  }
+  return { out, w: Math.max(0, x - colGap), h };
+}
+
 export function arrange(blocks, things) {
   const pad = CFG.gap;
-  const top = rows(blocks, byPlace);
+  const top = columns(blocks);
   const bottom = rows(things, byPutOut, { cap: 200 });
 
   /* `rows` counts its rows downward in its own space, so a world z is that

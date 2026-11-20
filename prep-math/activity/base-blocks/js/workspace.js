@@ -579,6 +579,8 @@ function placeTool(tool) {
 
   if (tool.kind === "blocks") {
     seedBlocks();
+    /* the blocks fill the screen, not a corner of it */
+    fitView(ctx, store.blocks.concat(store.things));
     return;
   }
   if (tool.kind === "note") {
@@ -741,6 +743,8 @@ async function bootCanvas() {
 
     engine = createEngine(canvas);
     ctx = createScene(engine, canvas);
+    /* the canvas opens on the flat 2D view (store.flat starts true) */
+    if (store.flat) setFlatView(ctx, true, { instant: true });
     view = createView(ctx);
 
     pointer = createPointer(ctx, view, canvas, {
@@ -1140,7 +1144,7 @@ export async function mountBaseBlocks(host, { shelf = null, tool = null, onBack 
   engine.resize();
   /* the work left on the canvas last time comes back; the opening tool is only placed on an empty canvas */
   const back = keepCanvas(remember);
-  if (back) emit();
+  if (back) { emit(); fitView(ctx, store.blocks.concat(store.things)); }
   const first = !back && tool && toolById(tool);
   if (first) {
     placeTool(first);

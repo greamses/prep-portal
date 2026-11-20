@@ -187,11 +187,19 @@ export function paintMat(ctx, base) {
 
 /* ── 2D ⇄ 3D ──────────────────────────────────────────────────────────────── */
 
-export function setFlatView(ctx, on) {
+export function setFlatView(ctx, on, { instant = false } = {}) {
   const BJS = B();
   const cam = ctx.camera;
   if (ctx.flat === on) return;
   ctx.flat = on;
+  /* straight into the flat view, no swing: how the canvas opens */
+  if (on && instant) {
+    cam.beta = 0.0001; cam.alpha = -Math.PI / 2;
+    cam.mode = BJS.Camera.ORTHOGRAPHIC_CAMERA;
+    cam.lowerBetaLimit = cam.upperBetaLimit = 0.0001;
+    cam.lowerAlphaLimit = cam.upperAlphaLimit = cam.alpha;
+    return;
+  }
 
   const fps = 60, frames = 22;
   const ease = new BJS.CubicEase();
@@ -240,9 +248,14 @@ export function fitView(ctx, items) {
   }
 
   const span = Math.max(x1 - x0, z1 - z0, 8);
+  /* THE FLAT VIEW SEES `radius` PAPER-UNITS TOP TO BOTTOM and radius × aspect across, so it is fitted
+     by whichever of the two the pieces fill first, with a margin for the rail and the dock: blocks fill
+     the screen rather than sitting small in the middle of it */
+  const aspect = ctx.engine?.getAspectRatio?.(ctx.camera) || 1.6;
+  const flatFit = Math.max(z1 - z0, (x1 - x0) / aspect, 6) * 1.3 + 2;
   const radius = Math.max(
     CFG.camera.min,
-    Math.min(CFG.camera.max, span / (2 * Math.tan(ctx.camera.fov / 2)) + span * 0.12)
+    Math.min(CFG.camera.max, ctx.flat ? flatFit : span / (2 * Math.tan(ctx.camera.fov / 2)) + span * 0.12)
   );
 
   /* Looking at the paper obliquely, whatever the camera aims at lands LOW in
