@@ -170,7 +170,7 @@
         return `<div class="pl-row">
           <a href="/tools/film-thumbnail/?playlist=${t}" target="_blank" rel="noopener"><img src="${cover}" alt="Playlist cover: ${esc(pl.title)}" loading="lazy"></a>
           <div>
-            <h3>${esc(pl.title)}</h3><small>${n} videos · ${esc(t)}</small>
+            <h3>${esc(pl.title)}</h3><small>${n} ${n === 1 ? "video" : "videos"} · ${esc(t)}</small>
             <textarea data-pl-desc="${t}" aria-label="YouTube description for ${esc(pl.title)}">${esc(keptDesc(t) ?? playlistDescription(t, FILMS))}</textarea>
             <div class="pl-keys">
               ${keyBtn("data-pl-copy", t, UI.copy(18), "Copy the description")}

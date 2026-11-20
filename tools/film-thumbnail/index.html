@@ -198,7 +198,7 @@
         + `<ul class="pl__topics">${pl.blurb.map((b) => `<li>${b}</li>`).join("")}</ul>`
         + `</div></div>`
         + `<div class="pl__fan">${picks.map((f, i) => `<div class="pl__shot pl__shot--${i}"><img src="png/${f.id}.png" alt=""></div>`).join("")}</div>`
-        + `<span class="pl__count pp-sticky pp-sticky--tape" style="left:600px;top:520px;--pp-note-bg:${s.note};--pp-note-tilt:-4deg"><b>${films.length}</b> videos</span>`
+        + `<span class="pl__count pp-sticky pp-sticky--tape" style="left:600px;top:520px;--pp-note-bg:${s.note};--pp-note-tilt:-4deg"><b>${films.length}</b> ${films.length === 1 ? "video" : "videos"}</span>`
         + `<div class="thumb__brand">Learning with <span>PrepBot</span></div>`
         + `<span class="thumb__url pp-pill" style="--tile:${s.deep}">prepportal.com.ng</span>`
         + `</div>`;
@@ -221,7 +221,7 @@
       document.getElementById("grid").innerHTML = Object.keys(PLAYLISTS).map((t) => `
         <div class="card pp-receipt"><div class="pp-receipt__paper">
           <a href="?playlist=${t}" target="_blank" rel="noopener"><img src="png/playlist-${t}.png" alt="Playlist cover: ${PLAYLISTS[t].title}" loading="lazy"></a>
-          <p>Playlist: ${PLAYLISTS[t].title}</p><small>${FILMS.filter((f) => f.topic === t).length} videos</small>
+          <p>Playlist: ${PLAYLISTS[t].title}</p><small>${((n) => `${n} ${n === 1 ? "video" : "videos"}`)(FILMS.filter((f) => f.topic === t).length)}</small>
           <div class="row"><a class="pp-pill" href="png/playlist-${t}.png" download="prepbot-playlist-${t}.png">${UI.download(15)}Download</a><a class="pp-pill" href="?playlist=${t}" target="_blank" rel="noopener">Open</a></div>
         </div></div>`).join("") + FILMS.filter((f) => f.topic).map((f) => `
         <div class="card pp-receipt"><div class="pp-receipt__paper">
