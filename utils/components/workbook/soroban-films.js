@@ -30,7 +30,7 @@ import { film, cueAt } from "./film-kit.js";
 import { svgBox, PAPER, PIC_W } from "./cbt-films.js";
 /* THE SITE'S OWN 2D SOROBAN (user: "Use the 2D soroban that we have for the video"): the very drawing
    Drills and the practice board use, drawn here at U millimetres to a unit */
-import { sorobanGeom, sorobanMarkup, slideRod } from "../soroban-svg.js";
+import { sorobanGeom, sorobanMarkup, slideRod, focusRod } from "../soroban-svg.js";
 
 const INK = "#2a2723", RED = "#c0453f", GREEN = "#2f7d4a", BLUE = "#2f6f8f", PURPLE = "#6b4fa0";
 const NAMES = ["1", "10", "100", "1 000", "10 000"];
@@ -133,7 +133,8 @@ function runner(rods, say, acts) {
         for (let p = 0; p < rods; p++) {
           const g = q(s, `rd${p}`), t = q(s, `rt${p}`);
           if (!g || !t) continue;
-          if (p < places) later(at + (places - 1 - p) * 0.3, () => { t.textContent = String(d[p]); H.write(g, 0); });
+          /* reading a rod: its counting beads are ringed and the resting ones fade back, as its figure is written */
+          if (p < places) later(at + (places - 1 - p) * 0.55, () => { t.textContent = String(d[p]); H.write(g, 0); if (!isInstant(H)) focusRod(s, p, d[p], { width: 0.55, ms: 1800 }); });
           else later(at, () => { g.style.opacity = "0"; });
         }
       } else if (kind === "unread") {

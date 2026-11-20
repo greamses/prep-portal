@@ -37,13 +37,21 @@ export function sorobanMarkup(rods, { value = 0, U = 22, labels = false } = {}) 
   const g = sorobanGeom(rods, U);
   const s = (v) => v.toFixed(1);
   const digits = String(Math.abs(value)).padStart(rods, "0").slice(-rods).split("").map(Number).reverse(); // [ones, tens, …]
+  /* A BEAD AS THE WORKBENCH SHOWS IT (its flat 2D view of the lathe-turned bicone): a spindle lit
+     from the top left, so the upper face is the colour gone lighter and the lower face the colour gone
+     deeper, with a glossy highlight and a soft shadow on the paper. A five bead is the same hue at
+     two thirds (the workbench's shade 0.66), not a grey wash over it. */
   const bead = (x, y, fill, dark) => {
     const rr = (BEAD_D / 2) * U, tt = (BEAD_T / 2) * U, e = EYE * U;
-    const pts = [[-rr, 0], [-rr * 0.62, -tt * 0.44], [-e, -tt], [e, -tt], [rr * 0.62, -tt * 0.44], [rr, 0], [rr * 0.62, tt * 0.44], [e, tt], [-e, tt], [-rr * 0.62, tt * 0.44]]
-      .map(([a, b]) => `${s(x + a)},${s(y + b)}`).join(" ");
-    return `<polygon class="sb-body" points="${pts}" fill="${fill}" stroke="rgba(42,39,35,.55)" stroke-width="${s(U / 22)}"/>`
-      + `<path d="M${s(x - rr * 0.62)} ${s(y - tt * 0.3)} L${s(x + rr * 0.3)} ${s(y - tt * 0.3)}" stroke="rgba(255,255,255,.55)" stroke-width="${s(2 * U / 22)}" stroke-linecap="round" pointer-events="none"/>`
-      + (dark ? `<polygon points="${pts}" fill="rgba(0,0,0,.34)" pointer-events="none"/>` : "");
+    const base = dark ? `color-mix(in srgb, ${fill} 66%, #000)` : fill;
+    const P = (pts) => pts.map(([a, b]) => `${s(x + a)},${s(y + b)}`).join(" ");
+    const outline = [[-rr, 0], [-rr * 0.62, -tt * 0.44], [-e, -tt], [e, -tt], [rr * 0.62, -tt * 0.44], [rr, 0], [rr * 0.62, tt * 0.44], [e, tt], [-e, tt], [-rr * 0.62, tt * 0.44]];
+    const upper = [[-rr, 0], [-rr * 0.62, -tt * 0.44], [-e, -tt], [e, -tt], [rr * 0.62, -tt * 0.44], [rr, 0]];
+    const sh = 0.09 * U;
+    return `<polygon points="${P(outline.map(([a, b]) => [a + sh, b + sh * 1.4]))}" fill="rgba(42,39,35,.2)" pointer-events="none"/>`
+      + `<polygon class="sb-body" points="${P(outline)}" style="fill: color-mix(in srgb, ${base} 78%, #000)" stroke="rgba(42,39,35,.35)" stroke-width="${s(0.8 * U / 22)}"/>`
+      + `<polygon points="${P(upper)}" style="fill: color-mix(in srgb, ${base} 82%, #fff)" pointer-events="none"/>`
+      + `<ellipse cx="${s(x - rr * 0.3)}" cy="${s(y - tt * 0.42)}" rx="${s(rr * 0.32)}" ry="${s(tt * 0.18)}" fill="rgba(255,255,255,.55)" pointer-events="none"/>`;
   };
   const T = g.timber, k = U / 22;
   let out = "";
@@ -69,6 +77,22 @@ export function sorobanMarkup(rods, { value = 0, U = 22, labels = false } = {}) 
 export function sorobanSvg(n, rods, U = 22) {
   const g = sorobanGeom(rods, U);
   return `<svg class="sor-abacus" viewBox="0 0 ${g.W.toFixed(1)} ${g.H.toFixed(1)}" width="${g.W.toFixed(1)}" height="${g.H.toFixed(1)}" role="img" aria-label="${Math.abs(n)} on a soroban">${sorobanMarkup(rods, { value: n, U })}</svg>`;
+}
+
+/** FOCUS WHILE A ROD IS READ ("when reading off the abacus, please highlight the beads"): the beads
+    that count (touching the beam) are ringed, the resting ones fade back, for `ms`. Returns a cancel. */
+export function focusRod(root, p, v, { ms = 2200, ink = "#c0453f", width = 1.6 } = {}) {
+  const counts = [], rest = [];
+  const h = root.querySelector(`[data-bead="${p}h"]`);
+  if (h) (v >= 5 ? counts : rest).push(h);
+  for (let i = 0; i < 4; i++) { const b = root.querySelector(`[data-bead="${p}e${i}"]`); if (b) (i < v % 5 ? counts : rest).push(b); }
+  const bodies = counts.map((b) => b.querySelector(".sb-body")).filter(Boolean);
+  bodies.forEach((m) => { m.style.stroke = ink; m.style.strokeWidth = String(width); });
+  rest.forEach((b) => { b.style.transition = "opacity .25s"; b.style.opacity = "0.35"; });
+  let done = false;
+  const undo = () => { if (done) return; done = true; bodies.forEach((m) => { m.style.stroke = ""; m.style.strokeWidth = ""; }); rest.forEach((b) => { b.style.opacity = ""; }); };
+  setTimeout(undo, ms);
+  return undo;
 }
 
 /** Slide the beads of one rod to show v (a moving soroban). `instant` skips the slide. */
