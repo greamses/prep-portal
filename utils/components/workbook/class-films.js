@@ -67,7 +67,10 @@ const LEAVERS = Array.from({ length: 50 }, (_, i) => 50 + i);   // the front fiv
    dark skinned and tall, then use the short light skinned boy to create contrast"). Each is drawn at the
    height the bee hall gives them (its "tall": Zainab 1.12, Leo 0.78), so their heads match. */
 const BOY_PIC = ["boy-closed", 0.375, 1];
-const GIRL_PIC = ["girl-curly", 0.285, 1.12 / 0.78];
+/* heads, not bodies, must match: from the bee hall's face data, Leo's eyes are 0.107 of his height apart
+   (28.6% of a 0.375-wide picture) and Zainab's 0.060 of hers (21% of 0.285), so she is drawn 1.75 times
+   his height for her head to be the size of his */
+const GIRL_PIC = ["girl-curly", 0.285, 1.75];
 const picOf = (i) => (i === GIRL ? GIRL_PIC : BOY_PIC);
 const rc = (i) => [Math.floor(i / COLS), i % COLS];
 
@@ -124,8 +127,8 @@ function desk(r, c) {
     + `<rect x="${f(x - dw / 2)}" y="${f(y + th)}" width="${f(dw)}" height="${f(fh)}" fill="#a8763f"/>`
     + `<rect x="${f(x - dw / 2)}" y="${f(y + th)}" width="${f(dw)}" height="${f(0.5 * k)}" fill="rgba(0,0,0,.18)"/></g>`;
 }
-function bar(id, n, y, label) {
-  const BOX = 1.38, BX = 6, BH = 5.4;
+function bar(id, n, y, label, side = false) {
+  const BOX = 1.42, BX = 4, BH = 7.4;
   let o = `<g data-mb="bar" data-k="${id}">`;
   o += `<rect x="${BX}" y="${y}" width="${f((n - 1) * BOX)}" height="${BH}" fill="${BOYC}" fill-opacity="0.75"/>`;
   o += `<rect x="${f(BX + (n - 1) * BOX)}" y="${y}" width="${BOX}" height="${BH}" fill="${GIRLC}"/>`;
@@ -133,10 +136,12 @@ function bar(id, n, y, label) {
   for (let i = 1; i < n; i++) cuts += `M${f(BX + i * BOX)} ${y}V${y + BH}`;
   o += `<path d="${cuts}" stroke="rgba(42,39,35,.35)" stroke-width="0.12"/>`;
   o += `<rect x="${BX}" y="${y}" width="${f(n * BOX)}" height="${BH}" fill="none" stroke="${INK}" stroke-width="0.5"/></g>`;
-  o += `<g data-mb="name" data-k="${id}L"><text x="${BX}" y="${y - 1.3}" font-family="JetBrains Mono, monospace" font-weight="700" font-size="2.9" fill="${INK}">${label}</text></g>`;
+  o += side
+    ? `<g data-mb="name" data-k="${id}L"><text x="${f(BX + n * BOX + 3)}" y="${f(y + BH / 2 + 1.2)}" font-family="JetBrains Mono, monospace" font-weight="700" font-size="3.3" fill="${INK}">${label}</text></g>`
+    : `<g data-mb="name" data-k="${id}L"><text x="${BX}" y="${y - 1.3}" font-family="JetBrains Mono, monospace" font-weight="700" font-size="3.3" fill="${INK}">${label}</text></g>`;
   return o;
 }
-const BY1 = 70, BY2 = 80.5, BOX = 1.38, BX = 6, BH = 5.4;
+const BY1 = 70.5, BY2 = 83, BOX = 1.42, BX = 4, BH = 7.4;
 function picture() {
   let o = `<defs><clipPath id="cls-room"><rect x="${ROOM.x}" y="${ROOM.y}" width="${ROOM.w}" height="${ROOM.h}"/></clipPath></defs>`;
   o += `<g clip-path="url(#cls-room)">${backWall()}${floor()}${door()}`;
@@ -148,10 +153,10 @@ function picture() {
   o += `</g><rect x="${ROOM.x}" y="${ROOM.y}" width="${ROOM.w}" height="${ROOM.h}" fill="none" stroke="${INK}" stroke-width="0.6"/>`;
   o += bar("b100", 100, BY1, "100 pupils: 100%");
   o += bar("b99", 99, BY1, "99 pupils: 100%");
-  o += bar("b50", 50, BY2, "50 pupils: 100%");
-  o += `<g data-mb="num" data-k="l1"><text x="${f(BX + 99.5 * BOX)}" y="${BY1 + BH + 3.2}" text-anchor="middle" font-family="STIX Two Text, serif" font-size="3.3" fill="${RED}">1 girl = 1%</text></g>`;
-  o += `<g data-mb="num" data-k="l2"><text x="${f(BX + 49.5 * BOX)}" y="${BY2 + BH + 3.2}" text-anchor="middle" font-family="STIX Two Text, serif" font-size="3.3" fill="${RED}">1 girl = 2%</text></g>`;
-  return svgBox(150, 90, o);
+  o += bar("b50", 50, BY2, "50 pupils: 100%", true);
+  o += `<g data-mb="num" data-k="l1"><text x="${f(BX + 99.5 * BOX)}" y="${BY1 + BH + 3.6}" text-anchor="end" font-family="STIX Two Text, serif" font-size="3.8" fill="${RED}">1 girl = 1%</text></g>`;
+  o += `<g data-mb="num" data-k="l2"><text x="${f(BX + 49.5 * BOX)}" y="${f(BY2 - 1.4)}" text-anchor="middle" font-family="STIX Two Text, serif" font-size="3.8" fill="${RED}">1 girl = 2%</text></g>`;
+  return svgBox(150, 92, o);
 }
 
 /* ── the children move: stand, walk the row to the aisle, up the aisle, out of the door ── */
