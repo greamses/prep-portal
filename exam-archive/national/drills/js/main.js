@@ -1335,11 +1335,14 @@ function buildRoster({ size, botsNeeded, seed }, myName) {
    shown as pending — so nobody watches a spinner wondering if it broke. Until
    it settles there is no winner, no trophy and no confetti: leading a race
    half the room hasn't finished isn't winning it. */
+let roundTimedOut = true;
 function renderResults(ranked, settled = true) {
   const repaint = resultsBd.classList.contains('open');
   // A Focus drop-out is handed in as -1 and does not make the board. If that
   // was you, the board says so above the others.
   const outSelf = ranked.some((r) => r.isSelf && !r.pending && r.score < 0);
+  const eyebrow = resultsBd.querySelector('.setup-eyebrow');
+  if (eyebrow) eyebrow.textContent = roundTimedOut ? "Time's Up" : outSelf ? 'Round Over' : 'All Done';
   const shown = ranked.filter((r) => r.pending || r.score >= 0);
   renderLeaderboard(leaderboardEl, shown, {
     settled, repaint,
@@ -1437,6 +1440,9 @@ async function playRoundAndShowResults(room, myName) {
         master: isSpellingRoom(room) && !room.spellFocus && spellMaster,
         focus: isSpellingRoom(room) && !!room.spellFocus,
       });
+  // Did the clock run out, or did this player finish early? The board's
+  // heading says which (it said "Time's Up" even after ten words in 25 s).
+  roundTimedOut = !room.startAt || !room.timeLimit || Date.now() >= room.startAt + room.timeLimit * 1000 - 750;
   const spelling = isSpellingRoom(room);
   // The score is handed in now (so the room's board is never held up); this
   // player's own results wait until Word Master is done.
