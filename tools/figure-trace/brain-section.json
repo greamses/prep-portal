@@ -1,0 +1,22 @@
+{
+  "title": "Inside the Brain",
+  "src": "src/brain-section.jpg",
+  "out": "data/vocab/organs/brain-section.js",
+  "check": "brain-section-check.png",
+  "parts": [
+    {"name": "pituitary gland", "grade": 5, "hint": "The small gland hanging beneath the brain — it releases hormones.", "picks": [[605, 495], [600, 505], [615, 490]], "tol": 40, "close": 2, "lasso": [[588, 458], [650, 440], [655, 525], [585, 525]]},
+    {"name": "thalamus", "grade": 7, "hint": "The central relay that passes signals up to the outer layer.", "picks": [[700, 370], [760, 330], [712, 345]], "tol": 45, "close": 3, "hole": 2000, "lasso": [[640, 300], [805, 300], [805, 398], [640, 398]]},
+    {"name": "fornix", "grade": 9, "hint": "The thin arch under the great band that carries memory signals.", "picks": [[720, 295]], "tol": 25, "lasso": [[625, 280], [790, 280], [800, 300], [788, 322], [662, 316], [652, 358], [622, 358]]},
+    {"name": "corpus callosum", "grade": 6, "hint": "The thick curved band of fibres joining the left and right halves.", "picks": [[600, 250], [830, 330], [520, 320]], "tol": 25, "close": 2, "lasso": [[480, 215], [885, 215], [885, 400], [640, 400], [640, 362], [480, 362]]},
+    {"name": "hypothalamus", "grade": 8, "hint": "The small control centre for hunger, temperature and hormones, just above the hanging gland.", "region": true, "lasso": [[640, 385], [700, 392], [706, 420], [672, 442], [640, 456], [622, 446], [628, 410]]},
+    {"name": "midbrain", "grade": 7, "hint": "The top of the stem, just under the central relay — eye movement and reflexes.", "picks": [[750, 420], [725, 430], [740, 440]], "tol": 40, "close": 2, "lasso": [[685, 375], [805, 375], [812, 452], [690, 452]]},
+    {"name": "pons", "grade": 6, "hint": "The rounded bulge of the stem that links across to the little brain behind.", "picks": [[720, 500]], "tol": 40, "close": 3, "hole": 2000, "lasso": [[670, 452], [812, 452], [830, 572], [690, 572]]},
+    {"name": "medulla oblongata", "grade": 6, "hint": "The lowest part of the stem into the spinal cord — breathing and heartbeat.", "picks": [[800, 640]], "tol": 40, "close": 3, "hole": 2000, "lasso": [[690, 572], [860, 572], [880, 730], [740, 730]]},
+    {"name": "cerebellum", "grade": 4, "hint": "The ridged “little brain” at the back — balance and coordination.", "picks": [[880, 450], [950, 520], [900, 600], [960, 620], [1000, 560], [940, 630]], "tol": 45, "close": 3, "hole": 6000, "lasso": [[830, 395], [900, 390], [930, 400], [962, 422], [995, 458], [1030, 500], [1045, 530], [1040, 600], [1000, 645], [930, 662], [860, 652], [825, 600], [815, 500], [818, 430]]},
+    {"name": "cingulate gyrus", "grade": 9, "hint": "The curved fold wrapped just above the great connecting band.", "around": "corpus callosum", "width": 26, "lasso": [[420, 175], [905, 175], [905, 392], [862, 392], [842, 330], [780, 282], [700, 268], [620, 272], [562, 300], [543, 340], [560, 392], [420, 392]]},
+    {"name": "temporal lobe", "grade": 5, "hint": "The lower lobe at the side — hearing and memory.", "region": true, "lasso": [[478, 456], [600, 446], [690, 452], [690, 600], [478, 600]]},
+    {"name": "frontal lobe", "grade": 5, "hint": "The front — planning, deciding and voluntary movement.", "region": true, "lasso": [[290, 30], [650, 30], [640, 240], [600, 300], [565, 420], [478, 456], [290, 470]]},
+    {"name": "parietal lobe", "grade": 5, "hint": "The upper middle — touch and knowing where the body is.", "region": true, "lasso": [[650, 30], [985, 30], [950, 200], [905, 330], [862, 392], [800, 300], [640, 240]]},
+    {"name": "occipital lobe", "grade": 5, "hint": "The very back — where seeing is understood.", "region": true, "lasso": [[985, 30], [1125, 30], [1125, 520], [1010, 520], [900, 405], [905, 330], [950, 200]]}
+  ]
+}

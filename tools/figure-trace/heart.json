@@ -1,0 +1,21 @@
+{
+  "title": "The Heart",
+  "src": "src/heart.jpg",
+  "out": "data/vocab/organs/heart.js",
+  "check": "heart-check.png",
+  "parts": [
+    {"name": "pulmonary valve", "grade": 7, "hint": "The flap guarding the way out to the lungs.", "region": true, "lasso": [[703, 432], [701, 443], [696, 453], [688, 461], [678, 466], [667, 468], [656, 466], [646, 461], [638, 453], [633, 443], [631, 432], [633, 421], [638, 411], [646, 403], [656, 398], [667, 396], [678, 398], [688, 403], [696, 411], [701, 421]]},
+    {"name": "aortic valve", "grade": 7, "hint": "The flap guarding the way out to the body.", "region": true, "lasso": [[765, 432], [764, 440], [760, 447], [755, 452], [748, 456], [740, 457], [732, 456], [725, 452], [720, 447], [716, 440], [715, 432], [716, 424], [720, 417], [725, 412], [732, 408], [740, 407], [748, 408], [755, 412], [760, 417], [764, 424]]},
+    {"name": "mitral valve", "grade": 7, "hint": "The valve between the left atrium and left ventricle.", "region": true, "lasso": [[768, 392], [860, 392], [872, 430], [862, 525], [800, 525], [770, 470]]},
+    {"name": "tricuspid valve", "grade": 7, "hint": "The valve between the right atrium and right ventricle.", "region": true, "lasso": [[548, 520], [600, 505], [660, 500], [705, 520], [700, 585], [640, 595], [560, 590]]},
+    {"name": "pulmonary veins", "grade": 5, "hint": "The vessels bringing oxygen-rich blood from the lungs back to the heart.", "picks": [[470, 315], [470, 365], [900, 295], [910, 345]], "tol": 50, "close": 2, "lasso": [[[435, 280], [512, 280], [512, 392], [435, 392]], [[862, 262], [962, 262], [962, 382], [862, 382]]]},
+    {"name": "aorta", "grade": 3, "hint": "The great vessel carrying blood out to the whole body.", "picks": [[650, 250], [770, 150], [720, 70]], "tol": 45, "close": 2, "hole": 2000, "lasso": [[590, 35], [870, 35], [870, 262], [835, 262], [835, 420], [590, 420]]},
+    {"name": "pulmonary artery", "grade": 4, "hint": "The vessel taking blood from the heart to the lungs for oxygen.", "picks": [[700, 300], [850, 215], [660, 350]], "tol": 55, "close": 2, "hole": 2000, "lasso": [[620, 150], [935, 150], [935, 250], [745, 255], [712, 300], [702, 400], [628, 400], [622, 300]]},
+    {"name": "superior vena cava", "grade": 4, "hint": "The big vein bringing blood down from the head and arms.", "picks": [[525, 200], [620, 115], [480, 210]], "tol": 50, "close": 2, "hole": 2000, "lasso": [[452, 40], [662, 40], [662, 150], [622, 180], [575, 300], [495, 310], [452, 240]]},
+    {"name": "inferior vena cava", "grade": 4, "hint": "The big vein bringing blood up from the lower body.", "picks": [[530, 650]], "tol": 50, "close": 2, "lasso": [[495, 560], [575, 560], [575, 715], [495, 715]]},
+    {"name": "right atrium", "grade": 3, "hint": "The upper chamber that receives tired blood returning from the body.", "picks": [[560, 350], [600, 480]], "tol": 45, "close": 3, "hole": 3000, "lasso": [[492, 295], [655, 295], [655, 505], [560, 525], [492, 560]]},
+    {"name": "left atrium", "grade": 3, "hint": "The upper chamber that receives fresh blood back from the lungs.", "picks": [[800, 330], [840, 370]], "tol": 45, "close": 3, "hole": 3000, "lasso": [[700, 278], [905, 278], [905, 405], [760, 405], [700, 385]]},
+    {"name": "left ventricle", "grade": 3, "hint": "The strongest chamber; it pumps blood out to the whole body.", "picks": [[800, 600], [880, 500], [860, 620], [910, 600]], "tol": 55, "close": 3, "hole": 3000, "lasso": [[740, 385], [960, 385], [960, 730], [690, 730], [735, 520]]},
+    {"name": "right ventricle", "grade": 3, "hint": "The lower chamber that pumps blood to the lungs.", "region": true, "lasso": [[555, 525], [640, 462], [720, 462], [745, 520], [770, 590], [800, 655], [760, 665], [690, 650], [620, 630], [560, 600]]}
+  ]
+}

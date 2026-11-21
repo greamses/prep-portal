@@ -19,6 +19,7 @@ A part in the spec:
                             list of polygons, for a part in two places)
   close                     px of gap (outline strokes) closed inside it (2)
   hole                      enclosed gaps smaller than this many px are filled (900)
+  around, width             a band `width` px wide round an EARLIER part (by name)
   region                    true: no colour test — the part is all the picture
                             inside its lasso (for a part only a drawn line divides)
 
@@ -125,6 +126,16 @@ def drop_specks(m, min_area=40):
 claimed = np.zeros((H, W), bool)
 masks = []
 for p in spec["parts"]:
+    if p.get("around"):
+        # a band `width` px wide hugging an earlier part (the fold that wraps
+        # round the corpus callosum), inside its lasso
+        base = masks[[q["name"] for q in spec["parts"]].index(p["around"])]
+        m = grow_mask(base, p.get("width", 20)) & ~base & ~claimed & ~paper
+        if "lasso" in p: m &= polygon_mask(p["lasso"])
+        m = drop_specks(m)
+        claimed |= m
+        masks.append(m)
+        continue
     if p.get("region"):
         # a part with no colour of its own: everything inside its lasso
         m = polygon_mask(p["lasso"]) & ~paper & ~claimed
@@ -158,6 +169,11 @@ for i, p in enumerate(spec["parts"]):
         if "lasso" in p: extra &= polygon_mask(p["lasso"])
         masks[i] |= extra
         claimed |= extra
+
+for p, m in zip(spec["parts"], masks):
+    print(f'  {p["name"]:<22} {int(m.sum()):>7} px')
+    if not m.any():
+        raise SystemExit(f'{p["name"]}: nothing left for this part (claimed by earlier parts?)')
 
 # ── crop: the picture's own box plus a small margin ──────────────────────
 ys, xs = np.nonzero(~paper)

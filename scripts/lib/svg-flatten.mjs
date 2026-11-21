@@ -1,5 +1,5 @@
 /* Shared SVG-flattening machinery for the sourced organ generators
-   (gen-heart-map.mjs, gen-brain-map.mjs). Turns a Wikimedia SVG's paths into
+   (gen-brain-map.mjs; the heart is now traced by tools/figure-trace). Turns a Wikimedia SVG's paths into
    baked absolute M/L/C/Z paths in a fitted box: a tiny XML reader, a full
    relative-path parser, affine transforms (translate/matrix/scale), a
    curve-sampled bounding box, and an anchor (centroid of the biggest subpath).
