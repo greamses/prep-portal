@@ -171,7 +171,9 @@ export function createView(ctx) {
          hiding the very label that says which piece it is. Every rig whose top
          is a separate printed plane must put that plane in with its body. */
       const on = store.selection.has(t.id);
-      const body = t.kind === "abacus" ? rig.parts.frame : rig.parts.slab;
+      /* the scale is not glowed: lighting only its foot read as a pale blue shadow under it ("I still see the
+         light blue shadow at the bottom of the scale") — the strip of keys under it says it is picked */
+      const body = t.kind === "abacus" ? rig.parts.frame : t.kind === "scale" ? null : rig.parts.slab;
       const lit = [body, rig.parts.face].filter(Boolean);
       if (lit.length && rig.lit !== on) {
         rig.lit = on;
