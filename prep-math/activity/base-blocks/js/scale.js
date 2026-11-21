@@ -328,6 +328,9 @@ function mat(scene, hex, shade = 1) {
   const m = new BJS.StandardMaterial("sc-" + k, scene);
   m.diffuseColor = BJS.Color3.FromHexString(norm(hex)).scale(shade);
   m.specularColor = new BJS.Color3(0.06, 0.06, 0.06);
+  /* LIT FROM WITHIN, so a pastel stays a pastel: the light pink and light purple of the bucket balance
+     went a dusky grey on their shaded sides ("there is this awkward grey shade. remove it") */
+  m.emissiveColor = BJS.Color3.FromHexString(norm(hex)).scale(shade * 0.22);
   matCache.set(k, m);
   return m;
 }
@@ -369,9 +372,9 @@ export function buildScale(ctx, thing) {
   /* THE CLASSROOM BUCKET BALANCE (the user's picture): a flared stand and a beam in LIGHT PINK, U-shaped
      hangers and round bowls in LIGHT PURPLE ("use light pink for the arm and maybe light purple for the
      basket") */
-  const wood = "#f6bfd6";            // the arm, the stand, the foot
+  const wood = "#f0a3c4";            // the arm, the stand, the foot: light pink, deep enough to read lit from above
   const ink = "#c46b93";             // the hub, the hooks: a deeper pink
-  const tray = "#d9c8f5";            // the bowls
+  const tray = "#cbb4f0";            // the bowls: light purple
   const handle = "#bda6ec";          // the hangers, a shade deeper than the bowls
 
   const tag = (m) => { m.metadata = { itemId: id }; m.parent = root; return m; };
@@ -546,13 +549,9 @@ export function placeScale(parts, thing) {
   }
   if (parts.flat !== flat) {
     parts.flat = flat;
-    /* a front view lying on the paper would throw a 3D shadow across it: none in the flat view */
-    if (parts.shadows) {
-      for (const m of parts.root.getChildMeshes()) {
-        if (flat) parts.shadows.removeShadowCaster(m);
-        else if (!/Hanger|Wall|Rim|Sign/.test(m.name)) parts.shadows.addShadowCaster(m);
-      }
-    }
+    /* the scale casts no shadow in either view: a grey slab across the paper (2D) or a big grey shape on
+       the floor (3D) — "there is this awkward grey shade. remove it" */
+    if (parts.shadows) for (const m of parts.root.getChildMeshes()) parts.shadows.removeShadowCaster(m);
     /* what is in a bowl is laid out on the bowl's floor: turned to face the camera in the front view */
     for (const side of ["left", "right"]) {
       const load = parts.pans[side].load;
@@ -630,7 +629,7 @@ function fillPan(ctx, thing, parts, side, base) {
     mesh.position.set(at.cx, at.cy, at.cz);
     mesh.metadata = { pan: { thingId: thing.id, side, index: at.index } };
     mesh.receiveShadows = true;
-    if (!store.flat) ctx.shadows.addShadowCaster(mesh);   // no 3D shadow under the front view
+    /* no shadow from what is in a bowl: the scale casts none */
     pan.pieces.push(mesh);
   }
 }

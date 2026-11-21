@@ -192,6 +192,9 @@ export function setFlatView(ctx, on, { instant = false } = {}) {
   const cam = ctx.camera;
   if (ctx.flat === on) return;
   ctx.flat = on;
+  /* NO SHADOW ON THE PAPER IN 2D ("there is this awkward grey shade. remove it"): looking straight down,
+     the sun's shadow is only a grey slab beside every piece. The solid view keeps it, where it says depth. */
+  if (ctx.mat) ctx.mat.receiveShadows = !on;
   /* straight into the flat view, no swing: how the canvas opens */
   if (on && instant) {
     cam.beta = 0.0001; cam.alpha = -Math.PI / 2;
