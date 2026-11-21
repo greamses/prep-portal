@@ -41,12 +41,21 @@ export function toMath(px, py) {
   return { x: (px - layout.ox) / layout.unitX, y: (layout.oy - py) / layout.unitY };
 }
 
+const MIN_AIM_PX = 4; // a whole unit this wide (or wider) can be clicked on purpose
+
 /** Pixel → nearest lattice point (snapped to the adaptive step, clamped). */
 export function toLattice(px, py) {
   const m = toMath(px, py);
   const g = state.grid;
-  const sx = snapStep(g.xMax - g.xMin);
-  const sy = snapStep(g.yMax - g.yMin);
+  let sx = snapStep(g.xMax - g.xMin);
+  let sy = snapStep(g.yMax - g.yMin);
+  // A puzzle's points are all whole numbers, but zoomed out the fine gridline
+  // can be 2 or 5 — then a click could never land on (-9, 11). In a puzzle,
+  // snap to whole units whenever one is wide enough to aim at.
+  if (state.mode === "puzzle") {
+    if (sx > 1 && Math.abs(layout.unitX) >= MIN_AIM_PX) sx = 1;
+    if (sy > 1 && Math.abs(layout.unitY) >= MIN_AIM_PX) sy = 1;
+  }
   return {
     x: Math.max(g.xMin, Math.min(g.xMax, snap(m.x, sx))),
     y: Math.max(g.yMin, Math.min(g.yMax, snap(m.y, sy))),

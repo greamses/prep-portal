@@ -99,7 +99,7 @@ function closePicker() {
 
 function card(doc) {
   const tile = DIFF_TILE[doc.difficulty] || "var(--accent-secondary)";
-  const n = (doc.points || []).length;
+  const n = new Set((doc.points || []).map((p) => `${p.x},${p.y}`)).size; // distinct points, as Check scores them
   const wrap = document.createElement("div");
   wrap.className = "ca-puzzle-card";
   wrap.innerHTML = `

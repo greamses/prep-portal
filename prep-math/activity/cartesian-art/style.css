@@ -1940,6 +1940,17 @@ body {
   .ca-studio .ca-dock { left: 62px; }
 }
 
+/* The site's tool strip (calculator, notes…) hangs on the window's left edge,
+   right where this rail sits, and used to cover Graph / Position / Shapes /
+   Point actions / Paint. Step the rail and its flyouts clear of the strip and
+   its tab — further while the strip is out, just past the tab once it's put away. */
+body:has(.wb-tools--left:not(.is-shut)) .ca-toolrail { left: 78px; }
+body:has(.wb-tools--left:not(.is-shut)) .ca-studio .ca-dock { left: 140px; }
+body:has(.wb-tools--left:not(.is-shut)) .ca-studio .ca-dock--float { left: 78px; }
+body:has(.wb-tools--left.is-shut) .ca-toolrail { left: 28px; }
+body:has(.wb-tools--left.is-shut) .ca-studio .ca-dock { left: 90px; }
+body:has(.wb-tools--left.is-shut) .ca-studio .ca-dock--float { left: 28px; }
+
 /* ── GRAPH: typed equations, Desmos-style ────────────────────────────────── */
 .ca-studio .ca-dock--graph {
   z-index: 27; /* over the steering pad, which shares the left edge */
