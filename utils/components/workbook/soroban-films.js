@@ -187,14 +187,8 @@ function sorFilm({ rods, ask, rules = [], steps, taught = false }) {
     asks,
     pics: { sb: () => sorobanPic(rods) },
     picAt: { sb: { x: 50 - (SHEET * (BIG / PAPER)) / 2, y: 8.5 } },
-    lines: rules.map(([id, sub, text]) => ({ id, receipt: true, sub, text, x: 21, y: 49 })),
+    lines: rules.map(([id, sub, text]) => ({ id, receipt: true, sub, text, y: 49 })),
     stages,
-    /* the rule cards wrap to a narrow receipt (one idea each), clear of the soroban */
-    build: (stage) => stage.querySelectorAll(".vm-rcpt").forEach((r) => {
-      r.style.maxWidth = "calc(var(--u, 8px) * 30)";
-      const t = r.querySelector(".vm-rcpt__t");
-      if (t) { t.style.whiteSpace = "normal"; t.style.textAlign = "center"; }
-    }),
     steps: ({ push }) => { let askOn = "a1"; steps.forEach((st, i) => {
       const swap = st.askId ? [askOn] : [];
       if (st.askId) askOn = st.askId;

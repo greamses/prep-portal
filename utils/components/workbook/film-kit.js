@@ -746,7 +746,9 @@ export function film({ pics = {}, picAt = {}, trays = {}, trayAt = {}, stages = 
        line nobody had measured ended up written across the bars. The column
        is anchored by its LEFT edge at SIDE_X and given a width to wrap in,
        which is a thing a teacher's board has and a stage had not. */
-    lines.filter((l) => l.receipt).forEach((l) => receiptLabel(stage, l.id, l.text, l.sub || "", l.x ?? 50, l.y));
+    /* THE SECTION RECEIPT SITS TO THE SIDE, SMALL ("Shift the TV section label to the side and make it
+       smaller", 2026-11-20): bottom left, clear of the drawing in the middle and PrepBot on the right */
+    lines.filter((l) => l.receipt).forEach((l) => receiptLabel(stage, l.id, l.text, l.sub || "", l.x ?? 15, l.y));
     lines.filter((l) => !l.receipt).forEach((l) => side(stage, l.id, l.text, l.x ?? SIDE_X, l.y, l.c ?? 0, l.size ?? 2.5,
       { w: l.w ?? SIDE_W, html: !!l.html, lh: l.lh ?? null }));
     if (extra) extra(stage);
@@ -921,12 +923,13 @@ function receiptCss() {
   st.id = "vm-rcpt-css";
   st.textContent = `
 .vm-rcpt.pp-receipt { display:inline-block; transform: rotate(-1.2deg); }
-.vm-rcpt .pp-receipt__paper { padding: calc(var(--u) * .9) calc(var(--u) * 3) calc(var(--u) * 1.1); text-align:center; white-space:nowrap;
+.vm-rcpt .pp-receipt__paper { padding: calc(var(--u) * .65) calc(var(--u) * 1.6) calc(var(--u) * .8); text-align:center; white-space:normal;
+  max-width: calc(var(--u) * 24); box-sizing: border-box;
   font-family: var(--font-mono, "JetBrains Mono", monospace); color:#2a2723; background-color:#fffdf8; }
-.vm-rcpt__k { display:block; font-size: calc(var(--u) * 1.15); font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:#6b645b; }
+.vm-rcpt__k { display:block; font-size: calc(var(--u) * .85); font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:#6b645b; }
 .vm-rcpt__rule { display:block; margin: calc(var(--u) * .45) 0 calc(var(--u) * .4); border-top: 1px dashed rgba(42,39,35,.45); }
-.vm-rcpt__t { display:block; font-size: calc(var(--u) * 1.75); font-weight:800; }
-.vm-rcpt__dot { display:inline-block; width: calc(var(--u) * .7); height: calc(var(--u) * .7); border-radius:50%; background: var(--accent-warning, #e8b93a); margin: 0 calc(var(--u) * .6); vertical-align: middle; }
+.vm-rcpt__t { display:block; font-size: calc(var(--u) * 1.25); font-weight:800; line-height: 1.3; }
+.vm-rcpt__dot { display:inline-block; width: calc(var(--u) * .5); height: calc(var(--u) * .5); border-radius:50%; background: var(--accent-warning, #e8b93a); margin: 0 calc(var(--u) * .6); vertical-align: middle; }
 `;
   document.head.appendChild(st);
 }
