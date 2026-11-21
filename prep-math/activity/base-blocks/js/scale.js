@@ -236,8 +236,8 @@ export function panUnder(thing, block) {
  * pan, less whatever is standing beside x on the left.
  */
 export function balanceX(thing) {
-  const blocks = thing.left.length + thing.right.length;
-  if (!blocks) return null;
+  /* An empty scale balances too ("the scale can be emptied. Also, x can be 0"): nothing on the right
+     means x weighs nothing, x = 0 — and blocks beside x with nothing opposite give the negative it must be. */
   return sumOf(thing.right) - sumOf(thing.left);
 }
 

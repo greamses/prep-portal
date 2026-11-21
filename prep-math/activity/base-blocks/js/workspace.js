@@ -460,6 +460,11 @@ function balanceScale(thing) {
   const was = store.xValue;
   store.xValue = n;
   const s = scaleSentence(thing, n, store.base);
+  if (!thing.left.length && !thing.right.length) {
+    say(`Level: there is nothing on the other pan, so x weighs nothing — x = 0 (it was ${num(was)}).`, "ok");
+    emit();
+    return;
+  }
   say(s.extra
     ? `Level: ${s.text}, so x = ${num(n)} now (it was ${num(was)}).`
     : `Level: x weighs the same as the blocks, so x = ${num(n)} now (it was ${num(was)}).`, "ok");
