@@ -31,6 +31,7 @@
 import { cssVar, toBase } from "./config.js";
 import { footprint } from "./layout.js";
 import { blockBox, colourOf } from "./blocks.js";
+import { store } from "./state.js";
 
 const B = () => window.BABYLON;
 
@@ -53,7 +54,7 @@ const ROOM = 6.4;         // the square inside a pan pieces are laid out in
 const GAP = 0.35;         // between piles of different pieces in a pan
 
 export const SCALE_L = Math.ceil(2 * (ARM + PAN_R));
-export const SCALE_W = 13;
+export const SCALE_W = 18;   // room for the front view (2D) as well, sign and all
 /** How high the top of the scale is — where its balance key is pinned. */
 export const SCALE_TOP = PILLAR_H + 4;
 export const MAX_IN_PAN = 30; // pieces a pan will hold before it says so
@@ -208,7 +209,8 @@ export function panCentre(thing, side) {
   const cx = thing.x + f.l / 2;
   const cz = thing.z + f.w / 2;
   const lx = side === "left" ? -ARM : ARM;
-  const lz = PAN_Z;
+  /* in the flat (front) view a bowl's middle sits up the screen: its height off the foot, less half the rig */
+  const lz = store.flat ? (PILLAR_H + 0.7 - HANG + 1.6) - FRONT_H / 2 : PAN_Z;
   const a = thing.angle || 0;
   const c = Math.cos(a);
   const s = Math.sin(a);
@@ -364,20 +366,24 @@ export function buildScale(ctx, thing) {
   const root = new BJS.TransformNode("sc" + thing.id, scene);
   const id = thing.id;
 
-  const wood = cssVar("--accent-warning", "#f0a868");
-  const ink = cssVar("--ink", "#2a2723");
-  const tray = cssVar("--surface-secondary", "#efe8dc");
+  /* THE CLASSROOM BUCKET BALANCE (the user's picture): a flared stand and a beam in LIGHT PINK, U-shaped
+     hangers and round bowls in LIGHT PURPLE ("use light pink for the arm and maybe light purple for the
+     basket") */
+  const wood = "#f6bfd6";            // the arm, the stand, the foot
+  const ink = "#c46b93";             // the hub, the hooks: a deeper pink
+  const tray = "#d9c8f5";            // the bowls
+  const handle = "#bda6ec";          // the hangers, a shade deeper than the bowls
 
   const tag = (m) => { m.metadata = { itemId: id }; m.parent = root; return m; };
 
   /* The foot the whole thing stands on, and the pillar the beam turns on. */
   const foot = tag(BJS.MeshBuilder.CreateBox("scFoot",
-    { width: 5, depth: 4, height: 0.5 }, scene));
-  foot.position.set(0, 0.25, PAN_Z);
+    { width: 7.5, depth: 4.5, height: 0.6 }, scene));
+  foot.position.set(0, 0.3, PAN_Z);
   foot.material = mat(scene, wood, 0.8);
 
   const pillar = tag(BJS.MeshBuilder.CreateCylinder("scPillar",
-    { diameter: 0.8, height: PILLAR_H, tessellation: 18 }, scene));
+    { diameterTop: 1.1, diameterBottom: 3.6, height: PILLAR_H, tessellation: 24 }, scene));
   pillar.position.set(0, PILLAR_H / 2 + 0.5, PAN_Z);
   pillar.material = mat(scene, wood, 0.9);
 
@@ -428,27 +434,39 @@ export function buildScale(ctx, thing) {
   for (const side of ["left", "right"]) {
     const node = new BJS.TransformNode("scPan-" + side, scene);
     node.parent = root;
-    const top = new BJS.Vector3(0, HANG, 0);
-    const lines = [0, 1, 2].map((i) => {
-      const a = Math.PI / 2 + (i * Math.PI * 2) / 3;
-      return [new BJS.Vector3(Math.cos(a) * PAN_R * 0.94, PAN_T, Math.sin(a) * PAN_R * 0.94), top];
-    });
-    const strings = BJS.MeshBuilder.CreateLineSystem("scStrings", { lines }, scene);
-    strings.parent = node;
-    strings.color = BJS.Color3.FromHexString(norm(ink));
-    strings.isPickable = false;
+    /* the hanger: a U from one side of the bowl's rim, up over the hook, down to the other */
+    const BOWL_H = 2.2;
+    const arc = [];
+    for (let k = 0; k <= 28; k++) {
+      const a = Math.PI * (k / 28);
+      arc.push(new BJS.Vector3(-Math.cos(a) * PAN_R * 0.98, BOWL_H * 0.55 + Math.sin(a) * (HANG - BOWL_H * 0.55), 0));
+    }
+    const hanger = tag(BJS.MeshBuilder.CreateTube("scHanger", { path: arc, radius: 0.16, tessellation: 10 }, scene));
+    hanger.parent = node;
+    hanger.material = mat(scene, handle);
+    hanger.isPickable = false;
+    /* the bowl: a flat floor and a wall that flares out to the rim, seen through a little */
     const dish = tag(BJS.MeshBuilder.CreateCylinder("scDish",
-      { diameter: PAN_R * 2, height: PAN_T, tessellation: 48 }, scene));
+      { diameter: PAN_R * 1.7, height: PAN_T, tessellation: 48 }, scene));
     dish.parent = node;
     dish.position.y = PAN_T / 2;
     dish.material = mat(scene, tray);
     dish.metadata.dish = { thingId: id, side };
     dish.receiveShadows = true;
+    const wall = tag(BJS.MeshBuilder.CreateCylinder("scWall",
+      { diameterTop: PAN_R * 2, diameterBottom: PAN_R * 1.7, height: BOWL_H, tessellation: 48, cap: BJS.Mesh.NO_CAP, sideOrientation: BJS.Mesh.DOUBLESIDE }, scene));
+    wall.parent = node;
+    wall.position.y = BOWL_H / 2;
+    const glass = mat(scene, tray).clone("scGlass");
+    glass.alpha = 0.55;
+    glass.backFaceCulling = false;
+    wall.material = glass;
+    wall.metadata.dish = { thingId: id, side };
     const rim = tag(BJS.MeshBuilder.CreateTorus("scRim",
-      { diameter: PAN_R * 2, thickness: 0.28, tessellation: 48 }, scene));
+      { diameter: PAN_R * 2, thickness: 0.22, tessellation: 48 }, scene));
     rim.parent = node;
-    rim.position.y = PAN_T;
-    rim.material = mat(scene, wood, 0.85);
+    rim.position.y = BOWL_H;
+    rim.material = mat(scene, handle);
     rim.metadata.dish = { thingId: id, side };
     ctx.shadows.addShadowCaster(dish);
     /* What is in the pan hangs off here, lifted to the dish's top. */
@@ -466,7 +484,7 @@ export function buildScale(ctx, thing) {
   sign.sheet.metadata = { itemId: id };
 
   const parts = {
-    root, slab: foot, face: null, pivot, beam, pans,
+    root, slab: foot, face: null, pivot, beam, pans, flat: null, shadows: ctx.shadows,
     sign: sign.sheet, signTex: sign.tex, tex: sign.tex,
     tilt: 0, goal: 0, vel: 0, loadKey: "", signKey: "",
   };
@@ -506,12 +524,47 @@ function applyTilt(parts) {
   parts.pans.right.node.position.set(ARM * c, y0 + ARM * s - HANG, PAN_Z);
 }
 
+/* THE FRONT VIEW IN 2D ("The two should be a front view not a top view"): in the flat view the camera
+   looks straight down, so the rig is laid on the paper on its back (a quarter turn about x, its front
+   facing up) and you see what you would see standing in front of it: the stand, the beam, the hangers and
+   the bowls side on, with what is in each bowl seen face on. Its height runs up the screen, centred on its
+   cell. In the solid view it stands up as before. */
+const FRONT_H = PILLAR_H + 6.5;        // how tall it is in the front view, foot to the top of the sign over it
 export function placeScale(parts, thing) {
   const f = footprint(thing);
+  const flat = !!store.flat;
   parts.root.position.x = thing.x + f.l / 2;
-  parts.root.position.y = 0;
-  parts.root.position.z = thing.z + f.w / 2;
   parts.root.rotation.y = thing.angle || 0;
+  if (flat) {
+    parts.root.rotation.x = Math.PI / 2;
+    parts.root.position.y = PAN_R + PAN_Z + 0.6;              // the bowls' depth stays above the paper
+    parts.root.position.z = thing.z + f.w / 2 - FRONT_H / 2;  // its height centred on its cell
+  } else {
+    parts.root.rotation.x = 0;
+    parts.root.position.y = 0;
+    parts.root.position.z = thing.z + f.w / 2;
+  }
+  if (parts.flat !== flat) {
+    parts.flat = flat;
+    /* a front view lying on the paper would throw a 3D shadow across it: none in the flat view */
+    if (parts.shadows) {
+      for (const m of parts.root.getChildMeshes()) {
+        if (flat) parts.shadows.removeShadowCaster(m);
+        else if (!/Hanger|Wall|Rim|Sign/.test(m.name)) parts.shadows.addShadowCaster(m);
+      }
+    }
+    /* what is in a bowl is laid out on the bowl's floor: turned to face the camera in the front view */
+    for (const side of ["left", "right"]) {
+      const load = parts.pans[side].load;
+      load.rotation.x = flat ? -Math.PI / 2 : 0;
+      load.position.y = flat ? PAN_T + ROOM / 2 : PAN_T;
+    }
+    /* the sign stands over the scale, facing the camera (the strip of keys goes under the foot) */
+    if (parts.sign) {
+      parts.sign.rotation.x = flat ? -Math.PI / 2 : 0;
+      parts.sign.position.set(0, flat ? PILLAR_H + 5.2 : 0.02, flat ? PAN_Z : SIGN_Z);
+    }
+  }
 }
 
 /**
@@ -577,7 +630,7 @@ function fillPan(ctx, thing, parts, side, base) {
     mesh.position.set(at.cx, at.cy, at.cz);
     mesh.metadata = { pan: { thingId: thing.id, side, index: at.index } };
     mesh.receiveShadows = true;
-    ctx.shadows.addShadowCaster(mesh);
+    if (!store.flat) ctx.shadows.addShadowCaster(mesh);   // no 3D shadow under the front view
     pan.pieces.push(mesh);
   }
 }

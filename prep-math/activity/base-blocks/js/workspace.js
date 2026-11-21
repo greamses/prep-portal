@@ -943,7 +943,7 @@ async function bootCanvas() {
     noteEditor = createNoteEditor(ctx, view, stage,
       { onInput: () => emit(), onCommit: afterNote });
     const turn = createTurnHandle(ctx, view, stage, () => emit(), { dock: blockBar.dock });
-    scaleBar = createScaleBar(ctx, stage, { onBalance: balanceScale, onEmpty: emptyScale });
+    scaleBar = createScaleBar(ctx, stage, { onBalance: balanceScale, onEmpty: emptyScale, dock: blockBar.dock });
     subscribe((s) => {
       view.sync(s);
       trade.refresh();

@@ -19,7 +19,7 @@ import { scales, weigh, SCALE_TOP } from "./scale.js";
 
 const B = () => window.BABYLON;
 
-export function createScaleBar(ctx, stage, { onBalance = () => {}, onEmpty = () => {} } = {}) {
+export function createScaleBar(ctx, stage, { onBalance = () => {}, onEmpty = () => {}, dock = null } = {}) {
   const { scene, camera } = ctx;
   const bars = new Map(); // scale id → element
 
@@ -40,13 +40,17 @@ export function createScaleBar(ctx, stage, { onBalance = () => {}, onEmpty = () 
     </div>`;
     /* A press on the key is not a press on the paper under it. */
     bar.addEventListener("pointerdown", (e) => e.stopPropagation());
-    bar.addEventListener("click", (e) => {
-      const key = e.target.closest("[data-act]");
-      const thing = store.things.find((t) => t.id === id);
-      if (!key || key.disabled || !thing) return;
-      if (key.dataset.act === "balance") onBalance(thing);
-      else onEmpty(thing);
-    });
+    for (const key of bar.querySelectorAll("[data-act]")) {
+      key.addEventListener("pointerdown", (e) => e.stopPropagation());
+      key.addEventListener("click", () => {
+        const thing = store.things.find((t) => t.id === id);
+        if (key.disabled || !thing) return;
+        if (key.dataset.act === "balance") onBalance(thing);
+        else onEmpty(thing);
+      });
+    }
+    bar.__keys = [...bar.querySelectorAll("[data-act]")];
+    bar.__paper = bar.querySelector(".bb-scalebar__paper");
     stage.appendChild(bar);
     return bar;
   }
@@ -65,22 +69,36 @@ export function createScaleBar(ctx, stage, { onBalance = () => {}, onEmpty = () 
     };
   }
 
-  /* Over the top of the pillar, clear of the needle. */
+  /* NEVER ON THE SCALE ("Icons should not appear on blocks", "put all the canvas icons for an item in the
+     horizontal receipt"): the keys stand in a little receipt UNDER the scale while it lies on the paper,
+     and when the scale is the thing in hand they move into its strip (blockbar.js) with turn and lift. */
   function place() {
     const rect = stage.getBoundingClientRect();
+    const only = store.selection.size === 1 ? [...store.selection][0] : null;
     for (const [id, bar] of bars) {
       const t = store.things.find((s) => s.id === id);
       if (!t) continue;
+      const inHand = dock && only === id;
+      if (inHand) {
+        if (bar.__keys[0].parentElement !== dock) bar.__keys.slice().reverse().forEach((k) => { k.classList.add("is-docked"); dock.prepend(k); });
+        bar.hidden = true;
+        continue;
+      }
+      if (bar.__keys[0].parentElement !== bar.__paper) bar.__keys.forEach((k) => { k.classList.remove("is-docked"); bar.__paper.appendChild(k); });
       const f = footprint(t);
-      const p = project(t.x + f.l / 2, SCALE_TOP, t.z + f.w / 2 + 1);
-      const off = !isFinite(p.x) || p.z < 0 || p.z > 1
-        || p.x < -40 || p.y < -40 || p.x > rect.width + 40 || p.y > rect.height + 40;
-      bar.style.visibility = off ? "hidden" : "";
+      let left = Infinity, right = -Infinity, bottom = -Infinity, behind = false;
+      for (const x of [t.x, t.x + f.l]) for (const z of [t.z, t.z + f.w]) {
+        const p = project(x, 0, z);
+        if (!isFinite(p.x) || p.z < 0 || p.z > 1) behind = true;
+        left = Math.min(left, p.x); right = Math.max(right, p.x); bottom = Math.max(bottom, p.y);
+      }
+      const off = behind || right < -40 || left > rect.width + 40 || bottom < -40 || bottom > rect.height + 80;
+      bar.hidden = off;
       if (off) continue;
       const w = bar.offsetWidth || 90;
       const h = bar.offsetHeight || 40;
-      const x = Math.max(8, Math.min(rect.width - w - 8, p.x - w / 2));
-      const y = Math.max(8, Math.min(rect.height - h - 8, p.y - h));
+      const x = Math.max(8, Math.min(rect.width - w - 8, (left + right) / 2 - w / 2));
+      const y = Math.max(8, Math.min(rect.height - h - 8, bottom + 12));
       bar.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
     }
   }
@@ -97,9 +115,10 @@ export function createScaleBar(ctx, stage, { onBalance = () => {}, onEmpty = () 
       const w = weigh(t, store.xValue);
       const loaded = t.left.length + t.right.length > 0;
       bar.classList.toggle("is-level", w.level);
-      const bal = bar.querySelector('[data-act="balance"]');
+      const [bal, empty] = bar.__keys;
       bal.setAttribute("aria-pressed", String(w.level));
-      bar.querySelector('[data-act="empty"]').disabled = !loaded;
+      bal.classList.toggle("is-level", w.level);
+      empty.disabled = !loaded;
     }
     place();
   }

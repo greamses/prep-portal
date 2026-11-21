@@ -1882,3 +1882,15 @@ body.bb-locked { overflow: hidden; }
 .bb-blockbar button, .bb-blockbar .bb-turn.is-docked { border: 0 !important; box-shadow: none !important; outline-color: transparent; }
 .bb-trade.is-docked .bb-trade__go { background: transparent !important; box-shadow: none !important; border: 0 !important; padding: 0; width: auto; height: auto; color: var(--ink); }
 .bb-trade.is-docked .bb-trade__go svg { width: 18px; height: 18px; }
+
+/* the scale's keys, docked in the strip of the thing in hand: plain icons like the rest */
+.bb-scalebar__key.is-docked { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0 !important; background: transparent !important; box-shadow: none !important; color: var(--ink); }
+.bb-scalebar__key.is-docked em { display: none; }
+.bb-scalebar__key.is-docked svg { width: 18px; height: 18px; }
+.bb-scalebar__key.is-docked:hover { background: var(--surface-secondary) !important; }
+.bb-scalebar__key.is-docked:disabled { opacity: 0.3; }
+.bb-scalebar__key.is-docked.is-level { outline: 2px solid var(--accent-success); outline-offset: -2px; }
+.bb-scalebar[hidden] { display: none; }
+/* the scale's keys in their own receipt under the scale: plain icons too, no coloured fill */
+.bb-scalebar__key, .bb-scalebar__key--balance { background: transparent !important; box-shadow: none !important; border: 0 !important; }
+.bb-scalebar__key:hover { background: var(--surface-secondary) !important; }

@@ -61,7 +61,8 @@ export function createBlockBar(ctx, view, stage, { onAct = () => {}, enabled = (
      down, and the strip vanishes from under the finger that was aiming at it. */
   bar.addEventListener("pointerdown", (e) => e.stopPropagation());
   bar.addEventListener("click", (e) => {
-    const key = e.target.closest("[data-act]");
+    /* only the block keys are this strip's own: the scale's keys and the handles docked here answer for themselves */
+    const key = e.target.closest(".bb-blockbar__key[data-act]");
     if (!key || key.disabled) return;
     onAct(key.dataset.act);
   });
@@ -131,7 +132,7 @@ export function createBlockBar(ctx, view, stage, { onAct = () => {}, enabled = (
     bar.hidden = !on;
     if (!on) return;
     const hasBlock = blocks.length > 0;
-    for (const key of bar.querySelectorAll("[data-act]")) {
+    for (const key of bar.querySelectorAll(".bb-blockbar__key[data-act]")) {
       key.hidden = !hasBlock;
       key.disabled = !hasBlock || !enabled(key.dataset.act);
     }
