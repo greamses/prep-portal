@@ -926,6 +926,16 @@ body.vocab-nav-hidden .site-nav { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .vocab-arrow { animation: none; }
 }
+/* A traced figure (the ear, the eye) rings the part in its OWN outline — a
+   breathing stroke, since an outline has no radius to pulse. */
+.vocab-rich-outline { stroke-width: 2.4; stroke-linejoin: round; animation: vocab-outline-pulse 1.2s ease-in-out infinite; }
+@keyframes vocab-outline-pulse {
+  0%, 100% { opacity: 0.95; stroke-width: 2.4; }
+  50% { opacity: 0.4; stroke-width: 4; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vocab-rich-outline { animation: none; }
+}
 .vocab-map--rich .vocab-rich-art { pointer-events: none; }
 /* In the study library the whole figure is shown bright — no scrim. */
 .vocab-map--rich.is-library .vocab-rich-scrim { display: none; }

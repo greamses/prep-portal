@@ -31,12 +31,27 @@ import {
   PIECES as TAN_PIECES, BOARD as TAN_BOARD, SNAP_TOLERANCE as TAN_SNAP,
   layoutRound as tangramLayout, slotFor as tangramSlotFor, placementCentre, pointsAttr,
 } from './tangram.js';
-import { generateMapJigsaw, mapFrameSvg, statePieceFullSvg, SNAP_TOLERANCE, MAP_W, ZONE_FILL, ZONES } from './mapjig.js';
+import {
+  generateMapJigsaw, mapFrameSvg, statePieceFullSvg, snapTolerance, ZONE_FILL, ZONES,
+  parseFigureTiles, loadFigure, loadedFigure,
+} from './mapjig.js';
 
-// The zone colour key, shown in the map's header (where the hint would sit).
-const zoneLegendHtml = () => '<span class="mapjig-legend">'
-  + ZONES.map((z) => `<span class="mapjig-legend-item"><i style="background:${ZONE_FILL[z.key]}"></i>${z.label}</span>`).join('')
-  + '</span>';
+// The sidebar key. Nigeria: the zone colour key. A biology figure: its title,
+// and the credit line its artwork owes (the heart and brains are CC-BY-SA).
+const figureLegendHtml = (fig) => (fig.key === 'nigeria'
+  ? '<span class="mapjig-legend">'
+    + ZONES.map((z) => `<span class="mapjig-legend-item"><i style="background:${ZONE_FILL[z.key]}"></i>${z.label}</span>`).join('')
+    + '</span>'
+  : `<span class="mapjig-legend"><span class="mapjig-legend-title">${fig.label}</span>`
+    + (fig.credit ? `<span class="mapjig-credit">${fig.credit}</span>` : '')
+    + '</span>');
+
+// A figure jigsaw's data loads on demand; main.js awaits this before
+// startRound(), which then builds synchronously. Anything else resolves at once.
+export function prepareRound({ puzzleType: type, tiles }) {
+  const f = type === 'jigsaw' && parseFigureTiles(tiles);
+  return f ? loadFigure(f.key) : Promise.resolve(null);
+}
 import { photoPictureUrl } from './photos.js';
 import { scenePictureUri } from './art.js';
 
@@ -91,8 +106,9 @@ let jigsawDrag = null; // live pointer-drag state, or null
 // Map jigsaw (Map of Nigeria): a jigsaw whose pieces are the 37 states. Same
 // heap/drag/lock/score flow, but the frame is a map of named slots and a piece
 // goes home into its own state's slot (found by elementFromPoint), not a grid cell.
-let mapMode = false;      // this jigsaw is the Map of Nigeria (assemble on the map)
-let mapShowStates = true; // State-maps toggle: draw the internal state outlines as a guide
+let mapMode = false;      // this jigsaw is a figure (Nigeria, the ear…): assemble on the figure
+let mapFig = null;        // that figure (mapjig.js loadFigure)
+let mapShowStates = true; // outlines toggle: draw the part outlines as a guide
 let mapShowNames = true;  // draw each piece's state name
 let mapHeap = null;       // the poured pieces [{ piece, ox, oy }]
 
@@ -478,9 +494,11 @@ const FS_COMPRESS = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
 
 function buildMapGrid() {
   gridEl.classList.add('mapjig-grid');
-  gridEl.innerHTML = mapFrameSvg(mapShowStates); // the guide beneath
+  gridEl.style.setProperty('--mapjig-w', mapFig.W);
+  gridEl.style.setProperty('--mapjig-h', mapFig.H);
+  gridEl.innerHTML = mapFrameSvg(mapFig, mapShowStates); // the guide beneath
   for (const h of mapHeap) {
-    gridEl.insertAdjacentHTML('beforeend', statePieceFullSvg(h.piece, h.ox, h.oy, mapShowNames));
+    gridEl.insertAdjacentHTML('beforeend', statePieceFullSvg(mapFig, h.piece, h.ox, h.oy, mapShowNames));
   }
   // Full-screen toggle in the map's corner — full-screening the play view hides
   // the browser chrome, so 100dvh grows and the map fills the whole screen.
@@ -511,7 +529,7 @@ function layoutMapSidebar(on) {
     if (!mapSide) { mapSide = document.createElement('div'); mapSide.className = 'mapjig-side'; }
     mapSide.innerHTML = '';
     mapSide.append(scoreNote, timerNote); // move the notes into the sidebar
-    mapSide.insertAdjacentHTML('beforeend', zoneLegendHtml());
+    mapSide.insertAdjacentHTML('beforeend', figureLegendHtml(mapFig));
     // The sidebar lives INSIDE the receipt, to the left of the map.
     if (mapSide.parentNode !== face) face.insertBefore(mapSide, gridEl);
   } else if (mapSide && mapSide.parentNode) {
@@ -524,7 +542,7 @@ function layoutMapSidebar(on) {
 }
 
 // px → map units for the currently-rendered map.
-const mapScale = () => (gridEl.getBoundingClientRect().width || 1) / MAP_W;
+const mapScale = () => (gridEl.getBoundingClientRect().width || 1) / mapFig.W;
 const mapPieceEl = (state) => gridEl.querySelector(`.mapjig-piece[data-state="${state}"]`);
 const setPieceOffset = (state, x, y) => {
   const g = mapPieceEl(state)?.querySelector('.mapjig-pg');
@@ -1156,14 +1174,18 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
       // `tiles` rides the room doc: 'nigeria' is the map jigsaw with its state
       // outlines shown, 'nigeria-blank' hides them (State-maps off); anything
       // else (incl. rooms made before this shipped) is the classic photo jigsaw.
-      mapMode = tiles === 'nigeria' || tiles === 'nigeria-blank';
+      // A biology figure ('ear', 'eye-blank', …) plays exactly the same way;
+      // its data was loaded by prepareRound().
+      const figTiles = parseFigureTiles(tiles);
+      mapFig = figTiles ? loadedFigure(figTiles.key) : null;
+      mapMode = !!mapFig;
       jigsawPlaced = 0;
       jigsawPicked = null;
       jigsawDrag = null;
       if (mapMode) {
-        mapShowStates = tiles !== 'nigeria-blank';
-        mapSnapTol = SNAP_TOLERANCE[difficulty] ?? SNAP_TOLERANCE.medium;
-        const puzzle = generateMapJigsaw(seed); // nothing pre-placed
+        mapShowStates = !figTiles.blank;
+        mapSnapTol = snapTolerance(mapFig, difficulty);
+        const puzzle = generateMapJigsaw(seed, mapFig); // nothing pre-placed
         mapHeap = puzzle.heap;
         mapOffsets = {};
         for (const h of mapHeap) mapOffsets[h.piece] = { x: h.ox, y: h.oy };

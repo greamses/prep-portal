@@ -1203,7 +1203,17 @@ async function renderMapLibrary({ mod, rows, set, regionOf, regionLabels, ariaLa
     art.innerHTML = mod.SVG;
     svg.appendChild(art);
     for (const c of rows) {
-      const s = c.part ? c.part.spot : c.spot;
+      const part = c.part || c;
+      if (part.shape) {
+        // a traced figure: the hover target is the part's real outline
+        const el = document.createElementNS(NS, 'path');
+        el.setAttribute('class', 'vocab-rich-hit');
+        el.setAttribute('d', part.shape);
+        el.dataset.tip = [c.name, c.hint].filter(Boolean).join(' — ');
+        svg.appendChild(el);
+        continue;
+      }
+      const s = part.spot;
       const g = document.createElementNS(NS, 'g');
       g.setAttribute('transform', `rotate(${s.rot} ${s.cx} ${s.cy})`);
       const el = document.createElementNS(NS, 'ellipse');

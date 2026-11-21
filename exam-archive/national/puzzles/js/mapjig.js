@@ -1,28 +1,37 @@
 /* ═══════════════════════════════════════════════════════
-   PUZZLES — Map jigsaw (Map of Nigeria)
+   PUZZLES — Figure jigsaw (Map of Nigeria, and the biology diagrams)
 
-   A jigsaw whose pieces are the 37 states. There is no separate pile: the pieces
-   are POURED straight onto the map and you drag each one to where it belongs. A
-   piece SNAPS and locks when it lands near its true spot — a classic jigsaw,
-   where placing pieces at their correct positions makes their edges line up.
+   A jigsaw whose pieces are the PARTS of one figure: the 37 states of Nigeria,
+   or the parts of the ear, the eye, the heart, the brain. There is no separate
+   pile: the pieces are POURED straight onto the figure and you drag each one to
+   where it belongs. A piece SNAPS and locks when it lands near its true spot —
+   a classic jigsaw, where placing pieces at their correct positions makes their
+   edges line up.
 
-   The trick: every piece is drawn in the WHOLE map's coordinate system (viewBox
-   0 0 1000 812) showing only its own state, so at offset (0,0) the state sits
-   exactly on the map. Scattering = translating the piece's inner <g>; dragging
+   The trick: every piece is drawn in the WHOLE figure's coordinate system
+   (its viewBox) showing only its own part, so at offset (0,0) the part sits
+   exactly home. Scattering = translating the piece's inner <g>; dragging
    changes that offset; a small-enough offset on release snaps it home.
 
-   A sticky-note "State maps" toggle shows or hides the internal state outlines:
-   ON = the subdivisions are drawn as a faint guide; OFF = only the country
-   silhouette shows (pure classic — place by shape alone).
+   Two kinds of figure, one game:
+     FLAT  (Nigeria, heart, brain) — each part is a coloured region `d`; a
+           piece is that region filled in its colour.
+     RICH  (ear, eye — traced pictures, see tools/figure-trace) — the figure is
+           a whole picture (`SVG`) and each part carries its outline `shape`; a
+           piece is the PICTURE clipped to that outline, so it keeps every line
+           and shade of the drawing. The frame shows the rest of the picture
+           with the parts cut out.
 
-   State outlines / names / zones / centroids come from the shared Nigeria map
-   data (data/vocab/nigeria-map.js, Natural Earth, public domain). One shared
-   `seed` → the same pre-placed states and the same scatter on every device.
+   A sticky-note "outlines" toggle shows or hides the part outlines in the frame:
+   ON = the subdivisions are drawn as a guide; OFF = place by shape alone.
+   It rides the room doc in `tiles` as '<figure>' / '<figure>-blank'.
+
+   Figure data is the Vocab game's (data/vocab/…), loaded on demand — the
+   Nigeria map is the only one imported up front. One shared `seed` → the same
+   scatter on every device.
 ═══════════════════════════════════════════════════════ */
-import { STATES, MAP_W, MAP_H } from '/data/vocab/nigeria-map.js';
+import * as nigeria from '/data/vocab/nigeria-map.js';
 import { mulberry32 } from './rng.js';
-
-export { MAP_W, MAP_H, STATES };
 
 // Soft fill per geopolitical zone, so the finished map reads as regions.
 export const ZONE_FILL = {
@@ -38,59 +47,120 @@ export const ZONES = [
   { key: 's-south', label: 'South South' },
   { key: 's-west', label: 'South West' },
 ];
-const fillOf = (s) => ZONE_FILL[s.zone] || '#cbb98f';
-export const stateFill = (i) => fillOf(STATES[i]);
 
-// How close (in map units) a piece must land to its home to snap in — the
-// difficulty setting, since nothing is pre-placed. Easy is forgiving, Hard is
-// precise. (MAP_W is 1000, so 70 ≈ 7% of the map's width.)
+/* Every figure the jigsaw can be. `group` sorts the setup choices; `module` is
+   the Vocab figure (lazy). The key is what `tiles` carries, so it is also in
+   firestore.rules' puzzleRooms tiles list — add a figure there too. */
+export const JIGSAW_FIGURES = [
+  { key: 'nigeria', label: 'Map of Nigeria', note: 'drag the states home', group: 'map', noun: 'States' },
+  { key: 'ear', label: 'The Ear', note: 'outer, middle, inner', group: 'biology', module: '/data/vocab/organs/ear.js', noun: 'Parts' },
+  { key: 'eye', label: 'The Eye', note: 'lens, iris, retina…', group: 'biology', module: '/data/vocab/organs/eye.js', noun: 'Parts' },
+  { key: 'heart', label: 'The Heart', note: 'chambers and vessels', group: 'biology', module: '/data/vocab/organs/heart.js', noun: 'Parts' },
+  { key: 'brain', label: 'The Brain', note: 'lobes and stem', group: 'biology', module: '/data/vocab/organs/brain.js', noun: 'Parts' },
+  { key: 'brain-section', label: 'Inside the Brain', note: 'cut down the middle', group: 'biology', module: '/data/vocab/organs/brain-section.js', noun: 'Parts' },
+];
+export const figureInfo = (key) => JIGSAW_FIGURES.find((f) => f.key === key);
+// 'ear-blank' → { key: 'ear', blank: true }; null when `tiles` is no figure.
+export function parseFigureTiles(tiles) {
+  if (typeof tiles !== 'string') return null;
+  const blank = tiles.endsWith('-blank');
+  const key = blank ? tiles.slice(0, -6) : tiles;
+  return figureInfo(key) ? { key, blank } : null;
+}
+
+/* A loaded figure, normalised:
+   { key, label, W, H, rich, art, credit, pieces:[{ name, d, fill, cx, cy }] }
+   `d` is the part's outline (a region for FLAT, the traced shape for RICH). */
+const cache = new Map();
+export async function loadFigure(key) {
+  if (cache.has(key)) return cache.get(key);
+  const info = figureInfo(key);
+  let fig;
+  if (key === 'nigeria') {
+    fig = {
+      key, label: info.label, W: nigeria.MAP_W, H: nigeria.MAP_H, rich: false, art: '', credit: '',
+      pieces: nigeria.STATES.map((s) => ({ name: s.name, d: s.d, fill: ZONE_FILL[s.zone] || '#cbb98f', cx: s.cx, cy: s.cy })),
+    };
+  } else {
+    const m = await import(info.module);
+    const rich = !!m.RICH;
+    fig = {
+      key, label: info.label, W: m.MAP_W, H: m.MAP_H, rich, art: rich ? m.SVG : '', credit: m.CREDIT || '',
+      pieces: m.PARTS.map((p) => ({ name: p.name, d: rich ? p.shape : p.d, fill: p.fill || '#cbb98f', cx: p.cx, cy: p.cy })),
+    };
+  }
+  cache.set(key, fig);
+  return fig;
+}
+// The figure startRound uses — loadFigure() must have resolved first.
+export const loadedFigure = (key) => cache.get(key) || null;
+
+// How close a piece must land to its home to snap in — the difficulty setting,
+// since nothing is pre-placed. In thousandths of the figure's WIDTH (the Nigeria
+// map is 1000 wide, where these were tuned), so a figure of any size plays alike.
 export const SNAP_TOLERANCE = { easy: 78, medium: 52, hard: 32 };
+export const snapTolerance = (fig, difficulty) =>
+  ((SNAP_TOLERANCE[difficulty] ?? SNAP_TOLERANCE.medium) * fig.W) / 1000;
 
-// { heap:[{piece, ox, oy}], movableCount }. Nothing is pre-placed — every one of
-// the 37 states is a loose piece, poured onto the map. `piece` is the state
-// index; ox/oy is its starting offset (map units) from home, scattered so each
-// state's centroid lands somewhere on the map. Seeded, so every client pours the
-// pieces the same way.
-export function generateMapJigsaw(seed) {
+// { heap:[{piece, ox, oy}], movableCount }. Nothing is pre-placed — every part
+// is a loose piece, poured onto the figure. `piece` is the part index; ox/oy
+// its starting offset from home, scattered so each part's centre lands
+// somewhere on the figure. Seeded, so every client pours the pieces the same way.
+export function generateMapJigsaw(seed, fig) {
   const rng = mulberry32(seed);
-  const order = STATES.map((_, i) => i);
+  const order = fig.pieces.map((_, i) => i);
   for (let i = order.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
     [order[i], order[j]] = [order[j], order[i]];
   }
+  const mx = fig.W * 0.09, my = fig.H * 0.09;
   const heap = order.map((piece) => {
-    const s = STATES[piece];
-    const sx = 90 + rng() * (MAP_W - 180); // where this state's centroid lands
-    const sy = 90 + rng() * (MAP_H - 180);
-    return { piece, ox: sx - s.cx, oy: sy - s.cy };
+    const p = fig.pieces[piece];
+    const sx = mx + rng() * (fig.W - 2 * mx); // where this part's centre lands
+    const sy = my + rng() * (fig.H - 2 * my);
+    return { piece, ox: sx - p.cx, oy: sy - p.cy };
   });
   return { heap, movableCount: heap.length };
 }
 
-// The map beneath the pieces — the GUIDE only (nothing is pre-placed). State
-// maps ON draws the internal state outlines; OFF draws a single quiet silhouette
-// (no internal seams), so you place by shape alone. A placed piece is marked
-// is-done as it locks, so the guide fills in behind the assembling map.
-export function mapFrameSvg(showStates = true) {
+const artId = (fig) => `mapjig-art-${fig.key}`;
+
+// The figure beneath the pieces — the GUIDE only (nothing is pre-placed).
+// FLAT: every part's slot (outlined when the guide is on, one quiet silhouette
+// when off). RICH: the whole picture, with each part's slot painted over it so
+// the parts are cut out — the rest of the drawing stays as context. The
+// picture is defined ONCE here and the pieces <use> it.
+export function mapFrameSvg(fig, showOutlines = true) {
   let slots = '';
-  STATES.forEach((s, i) => {
-    slots += `<path class="mapjig-slot${showStates ? '' : ' is-blank'}" data-state="${i}" d="${s.d}"/>`;
+  fig.pieces.forEach((p, i) => {
+    slots += `<path class="mapjig-slot${showOutlines ? '' : ' is-blank'}" data-state="${i}" d="${p.d}"/>`;
   });
-  return `<svg class="mapjig-frame" viewBox="0 0 ${MAP_W} ${MAP_H}" preserveAspectRatio="xMidYMid meet" `
-    + `aria-hidden="true"><g class="mapjig-slots">${slots}</g></svg>`;
+  const art = fig.rich
+    ? `<defs><g id="${artId(fig)}">${fig.art}</g></defs><use href="#${artId(fig)}" class="mapjig-art"/>`
+    : '';
+  return `<svg class="mapjig-frame${fig.rich ? ' is-rich' : ''}" viewBox="0 0 ${fig.W} ${fig.H}" preserveAspectRatio="xMidYMid meet" `
+    + `aria-hidden="true">${art}<g class="mapjig-slots">${slots}</g></svg>`;
 }
 
-// A loose piece: the whole-map viewBox showing only state `i`, its inner <g>
+// A loose piece: the whole-figure viewBox showing only part `i`, its inner <g>
 // translated by (ox,oy) so it starts scattered. The <svg> ignores the pointer
-// (its huge transparent area must not block pieces beneath); only the state
-// path and its name catch it.
-export function statePieceFullSvg(i, ox, oy, showName = true) {
-  const s = STATES[i];
+// (its huge transparent area must not block pieces beneath); only the part's
+// outline path catches it.
+export function statePieceFullSvg(fig, i, ox, oy, showName = true) {
+  const p = fig.pieces[i];
+  const fs = Math.round((13 * fig.W) / 1000 * 10) / 10;
   const name = showName
-    ? `<text class="mapjig-pname" x="${s.cx}" y="${s.cy}">${s.name}</text>` : '';
-  return `<svg class="mapjig-piece" viewBox="0 0 ${MAP_W} ${MAP_H}" preserveAspectRatio="xMidYMid meet" data-state="${i}">`
+    ? `<text class="mapjig-pname" x="${p.cx}" y="${p.cy}" style="font-size:${Math.max(fs, 9)}px">${p.name}</text>` : '';
+  const sw = ((2.5 * fig.W) / 1000).toFixed(2);
+  const body = fig.rich
+    // the picture clipped to the part, then an invisible-filled outline on top
+    // that carries the pointer and the edge
+    ? `<clipPath id="mapjig-clip-${fig.key}-${i}"><path d="${p.d}"/></clipPath>`
+      + `<g clip-path="url(#mapjig-clip-${fig.key}-${i})"><use href="#${artId(fig)}"/></g>`
+      + `<path class="mapjig-ppath" d="${p.d}" fill="#000" fill-opacity="0" stroke="var(--ink)" stroke-width="${sw}" stroke-linejoin="round"/>`
+    : `<path class="mapjig-ppath" d="${p.d}" fill="${p.fill}" stroke="var(--ink)" stroke-width="${sw}" stroke-linejoin="round"/>`;
+  return `<svg class="mapjig-piece" viewBox="0 0 ${fig.W} ${fig.H}" preserveAspectRatio="xMidYMid meet" data-state="${i}">`
     + `<g class="mapjig-pg" transform="translate(${ox.toFixed(1)} ${oy.toFixed(1)})">`
-    + `<path class="mapjig-ppath" d="${s.d}" fill="${fillOf(s)}" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/>`
-    + name
+    + body + name
     + `</g></svg>`;
 }

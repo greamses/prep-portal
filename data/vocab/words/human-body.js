@@ -4,7 +4,7 @@
 
    Two kinds of drawn topic:
      body-map            the whole-body figure — name the ORGAN (../body-map.js)
-     {heart,brain,ear,skin}-map   one organ — name the PART (../organs/*.js)
+     {heart,brain,ear,eye}-map   one organ — name the PART (../organs/*.js)
 
    Imports are absolute so the import map's content-hashed URLs apply (see
    scripts/version-assets.mjs). */
@@ -13,6 +13,7 @@ import { GAME_PARTS as HEART_PARTS } from '/data/vocab/organs/heart.js';
 import { GAME_PARTS as BRAIN_PARTS } from '/data/vocab/organs/brain.js';
 import { GAME_PARTS as BRAIN_SECTION_PARTS } from '/data/vocab/organs/brain-section.js';
 import { GAME_PARTS as EAR_PARTS } from '/data/vocab/organs/ear.js';
+import { GAME_PARTS as EYE_PARTS } from '/data/vocab/organs/eye.js';
 
 export const WORDS = {
   'body-map': GAME_ORGANS,
@@ -20,4 +21,5 @@ export const WORDS = {
   'brain-map': BRAIN_PARTS,
   'brain-section': BRAIN_SECTION_PARTS,
   'ear-map': EAR_PARTS,
+  'eye-map': EYE_PARTS,
 };

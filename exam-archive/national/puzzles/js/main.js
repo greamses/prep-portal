@@ -11,7 +11,8 @@
 import { auth } from '/firebase-init.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
-import { startRound } from './game.js';
+import { startRound, prepareRound } from './game.js';
+import { JIGSAW_FIGURES, figureInfo, parseFigureTiles } from './mapjig.js';
 import { finishRound } from './leaderboard.js';
 import { renderLeaderboard } from '/utils/games/leaderboard-view.js';
 import {
@@ -114,10 +115,20 @@ if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // V
 let puzzleType = mem.get('puzzleType', 'sudoku', ['sudoku', 'slider', 'jigsaw', 'shikaku', 'tangram']);
 let gridSize = mem.get('gridSize', defaultGridFor(puzzleType), GRID_SIZES_BY_TYPE[puzzleType].map((o) => o.value));
 let tileSet = mem.get('tileSet', 'picture', ['numbers', 'fractions', 'picture']); // slider only — what the tiles wear
-// jigsaw only — a photo, or the Map of Nigeria (with its state outlines shown
-// as a guide, or blank for a pure classic assemble).
-let jigsawContent = mem.get('jigsawContent', 'photo', ['photo', 'nigeria', 'nigeria-blank']);
-const isNigeriaJig = () => jigsawContent === 'nigeria' || jigsawContent === 'nigeria-blank';
+// jigsaw only — a photo, or a FIGURE: the Map of Nigeria or a biology diagram
+// (the ear, the eye…), with its part outlines shown as a guide ('ear') or
+// hidden for a pure classic assemble ('ear-blank').
+let jigsawContent = mem.get('jigsawContent', 'photo',
+  ['photo', ...JIGSAW_FIGURES.flatMap((f) => [f.key, `${f.key}-blank`])]);
+const jigFigure = () => parseFigureTiles(jigsawContent); // null for a photo jigsaw
+const isFigureJig = () => !!jigFigure();
+const BIO_FIGURES = JIGSAW_FIGURES.filter((f) => f.group === 'biology');
+// Pick a figure, keeping the outlines on/off choice already made.
+const setJigFigure = (key) => {
+  const blank = jigFigure()?.blank;
+  jigsawContent = blank ? `${key}-blank` : key;
+  mem.save({ jigsawContent });
+};
 let difficulty = mem.get('difficulty', 'easy', ['easy', 'medium', 'hard']);
 // tangram only — which silhouette to fill. Rides the room doc via `tiles`,
 // the same way the Map-of-Nigeria jigsaw carries its variant.
@@ -139,7 +150,7 @@ if (pictureSource === 'upload' && !localStorage.getItem(PIC_KEY)) pictureSource 
 
 const TILE_SET_LABELS = { numbers: 'Numbers', fractions: 'Fractions', picture: 'Picture' };
 // The Map of Nigeria jigsaw uses no photo — its pieces are the states.
-const usesPicture = () => (puzzleType === 'jigsaw' && !isNigeriaJig())
+const usesPicture = () => (puzzleType === 'jigsaw' && !isFigureJig())
   || (puzzleType === 'slider' && tileSet === 'picture');
 // This player's picture for a picture round, as a square data: URI — their own
 // upload, or a seeded Nigerian-leader portrait. '' means "use the round's own
@@ -160,7 +171,7 @@ const customArtUri = async (seed) => {
 const contentCfg = () => ({
   puzzleType, difficulty, gridSize,
   tiles: puzzleType === 'slider' ? tileSet
-    : puzzleType === 'jigsaw' ? (isNigeriaJig() ? jigsawContent : 'photo')
+    : puzzleType === 'jigsaw' ? (isFigureJig() ? jigsawContent : 'photo')
       : puzzleType === 'tangram' ? tangramFigure
         : 'numbers',
 });
@@ -219,26 +230,46 @@ const topic = createCarousel(topicMount);
 topic.addSlide('type', 'Puzzle', () => {});
 topic.addSlide('tiles', 'Tiles', () => {});
 topic.addSlide('photo', 'Picture', () => {});
-topic.addSlide('state-maps', 'State maps', () => {}); // Map-of-Nigeria jigsaw only
+topic.addSlide('bio', 'Diagram', () => {}); // biology figure jigsaw only
+topic.addSlide('state-maps', 'Outlines', () => {}); // figure jigsaws only
 topic.addSlide('figure', 'Shape', () => {}); // tangram only
 topic.addSlide('grid-size', 'Grid Size', () => {});
 topic.addSlide('difficulty', 'Difficulty', () => {});
 
-// Map-of-Nigeria jigsaw only: show the internal state outlines as a guide, or a
-// blank country for a pure classic assemble. Rides the room doc via `tiles`.
+// Figure jigsaws only: show the part outlines (Nigeria's states, the ear's
+// parts…) as a guide, or hide them for a pure classic assemble. Rides the room
+// doc via `tiles` ('ear' / 'ear-blank').
 function renderStateMapsPick() {
+  const f = jigFigure() || { key: 'nigeria', blank: false };
+  const noun = (figureInfo(f.key) || {}).noun || 'Parts';
   renderChoiceStep(topic, 'state-maps', {
-    title: 'Show the state maps?',
+    title: f.key === 'nigeria' ? 'Show the state maps?' : 'Show the part outlines?',
     name: 'puzzle-state-maps',
     colorOffset: 2,
     options: [
-      { value: 'nigeria', label: 'State maps on', note: 'outlines guide you', checked: jigsawContent !== 'nigeria-blank' },
-      { value: 'nigeria-blank', label: 'State maps off', note: 'place by shape', checked: jigsawContent === 'nigeria-blank' },
+      { value: f.key, label: f.key === 'nigeria' ? 'State maps on' : `${noun} outlined`, note: 'outlines guide you', checked: !f.blank },
+      { value: `${f.key}-blank`, label: f.key === 'nigeria' ? 'State maps off' : 'No outlines', note: 'place by shape', checked: f.blank },
     ],
     onPick: (v) => {
       jigsawContent = v;
       mem.save({ jigsawContent });
-      topic.goTo('difficulty'); // no grid size — always the 37 states
+      topic.goTo('difficulty'); // no grid size — the figure decides the pieces
+    },
+  });
+}
+
+// Biology jigsaw only — which diagram to rebuild. Each part is a piece.
+function renderBioPick() {
+  const cur = jigFigure()?.key;
+  renderChoiceStep(topic, 'bio', {
+    title: 'Which diagram?',
+    name: 'puzzle-bio',
+    colorOffset: 6,
+    options: BIO_FIGURES.map((f) => ({ value: f.key, label: f.label, note: f.note, checked: f.key === cur })),
+    onPick: (v) => {
+      setJigFigure(v);
+      renderStateMapsPick();
+      topic.goTo('state-maps');
     },
   });
 }
@@ -306,33 +337,42 @@ function renderPhotoPick() {
   // Jigsaw can also be the Map of Nigeria — drag each state home. It has no
   // photo and no grid size (always the 37 states), so picking it jumps to
   // difficulty (how many states start already placed).
+  const fig = jigFigure()?.key;
   const mapOption = puzzleType === 'jigsaw'
-    ? [{ value: 'nigeria', label: 'Map of Nigeria', note: 'drag the states home', checked: isNigeriaJig() }]
+    ? [
+      { value: 'nigeria', label: 'Map of Nigeria', note: 'drag the states home', checked: fig === 'nigeria' },
+      { value: 'biology', label: 'Biology', note: 'the ear, the eye, the heart', checked: !!fig && fig !== 'nigeria' },
+    ]
     : [];
   renderChoiceStep(topic, 'photo', {
     title: puzzleType === 'jigsaw' ? 'What jigsaw?' : 'Which picture?',
     name: 'puzzle-photo',
     colorOffset: 5,
     options: [
-      { value: 'scene', label: 'Surprise picture', note: surpriseNote, checked: jigsawContent !== 'nigeria' && pictureSource === 'scene' },
+      { value: 'scene', label: 'Surprise picture', note: surpriseNote, checked: !isFigureJig() && pictureSource === 'scene' },
       {
         value: 'leaders', label: 'Nigerian leaders',
         note: 'a head of state',
-        checked: jigsawContent !== 'nigeria' && pictureSource === 'leaders',
+        checked: !isFigureJig() && pictureSource === 'leaders',
       },
       {
         value: 'upload', label: 'Your photo',
         note: localStorage.getItem(PIC_KEY) ? 'tap to change it' : 'from your device',
-        checked: jigsawContent !== 'nigeria' && pictureSource === 'upload',
+        checked: !isFigureJig() && pictureSource === 'upload',
       },
       ...mapOption,
     ],
     onPick: (v) => {
       if (v === 'nigeria') {
-        if (!isNigeriaJig()) jigsawContent = 'nigeria'; // keep an existing on/off choice
-        mem.save({ jigsawContent });
+        setJigFigure('nigeria'); // keeps an existing on/off choice
         renderStateMapsPick();
         topic.goTo('state-maps'); // then difficulty — no photo, no size
+        return;
+      }
+      if (v === 'biology') {
+        if (!isFigureJig() || jigFigure().key === 'nigeria') setJigFigure(BIO_FIGURES[0].key);
+        renderBioPick();
+        topic.goTo('bio'); // which diagram, then outlines, then difficulty
         return;
       }
       jigsawContent = 'photo';
@@ -372,6 +412,7 @@ renderTilesPick();
 renderPhotoPick();
 renderFigurePick();
 renderStateMapsPick();
+renderBioPick();
 renderGridSizePick();
 
 renderChoiceStep(topic, 'difficulty', {
@@ -488,8 +529,10 @@ const flow = createSectionFlow([
   },
   {
     el: $('puzzle-section-topic'),
-    chips: () => (puzzleType === 'jigsaw' && isNigeriaJig())
-      ? [{ label: 'Jigsaw' }, { label: 'Map of Nigeria' }, { label: jigsawContent === 'nigeria-blank' ? 'Maps off' : 'Maps on' }, { label: difficulty[0].toUpperCase() + difficulty.slice(1) }]
+    chips: () => (puzzleType === 'jigsaw' && isFigureJig())
+      ? [{ label: 'Jigsaw' }, { label: figureInfo(jigFigure().key).label },
+        { label: jigFigure().key === 'nigeria' ? (jigFigure().blank ? 'Maps off' : 'Maps on') : (jigFigure().blank ? 'No outlines' : 'Outlined') },
+        { label: difficulty[0].toUpperCase() + difficulty.slice(1) }]
       : [
         { label: puzzleType[0].toUpperCase() + puzzleType.slice(1) },
         ...(puzzleType === 'slider' ? [{ label: TILE_SET_LABELS[tileSet] }] : []),
@@ -711,6 +754,7 @@ function hideResults() {
 // ── Round orchestration (shared by all three matchmaking paths) ─────────
 async function playRoundAndShowResults(room, myName) {
   const roster = buildRoster(room, myName);
+  await prepareRound({ puzzleType: room.puzzleType, tiles: room.tiles }); // a figure jigsaw's diagram
   const { score: myScore, totalUnits } = await startRound({
     seed: room.seed,
     timeLimit: room.timeLimit,

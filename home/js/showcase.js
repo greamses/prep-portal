@@ -118,8 +118,8 @@ console.log(typeof age);`, file: "types.js", out: 1 }), css: WB_CSS };
   board: async () => ({ img: "/prepbot-board/thumb.jpg", alt: "PrepBot's whiteboard explaining why a kicked ball curves" }),
   /* the map the jigsaw drops its 37 states into */
   map: async () => {
-    const { mapFrameSvg } = await import("/exam-archive/national/puzzles/js/mapjig.js");
-    return { svg: mapFrameSvg(true) };
+    const { mapFrameSvg, loadFigure } = await import("/exam-archive/national/puzzles/js/mapjig.js");
+    return { svg: mapFrameSvg(await loadFigure("nigeria"), true) };
   },
   /* the seeded picture a slider puzzle is cut out of */
   scene: async () => {

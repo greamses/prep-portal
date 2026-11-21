@@ -597,7 +597,8 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 .mapjig-grid {
   position: relative;
   width: 100%;
-  aspect-ratio: 1000 / 812;
+  /* the figure's own proportions (game.js sets --mapjig-w/h; Nigeria's by default) */
+  aspect-ratio: var(--mapjig-w, 1000) / var(--mapjig-h, 812);
   background: color-mix(in srgb, var(--ink) 7%, var(--surface-secondary, var(--app-bg)));
   border-width: 2.5px;
   border-radius: 0;
@@ -620,8 +621,21 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   stroke-width: 1.1;
   stroke-linejoin: round;
 }
+/* A traced picture (the ear, the eye): the slots are the parts cut out of the
+   drawing, so they wear the paper's own colour; outlines dashed. */
+.mapjig-frame.is-rich .mapjig-slot {
+  fill: var(--app-bg);
+  stroke: color-mix(in srgb, var(--ink) 45%, transparent);
+  stroke-dasharray: 5 4;
+}
+.mapjig-frame.is-rich .mapjig-art { opacity: 0.55; }
 /* State maps OFF: one quiet silhouette, no internal seams. */
 .mapjig-slot.is-blank { fill: color-mix(in srgb, var(--ink) 11%, var(--app-bg)); stroke: none; }
+.mapjig-frame.is-rich .mapjig-slot.is-blank { fill: var(--app-bg); stroke: none; }
+/* A biology figure's key: its name, and the credit its artwork owes. */
+.mapjig-legend-title { font-weight: 700; }
+.mapjig-credit { font-size: 0.66rem; opacity: 0.75; max-width: 14em; }
+.mapjig-credit a { color: inherit; }
 /* A poured piece: the SVG ignores the pointer (its huge transparent area must
    not block pieces beneath) — only the state shape and its name are grabbable. */
 .mapjig-piece { pointer-events: none; overflow: visible; z-index: 1; }
@@ -672,8 +686,8 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   height: 100%;
 }
 .mapjig-grid {
-  aspect-ratio: 1000 / 812;
-  height: min(calc(100dvh - 48px), calc(94vw * 812 / 1000));
+  aspect-ratio: var(--mapjig-w, 1000) / var(--mapjig-h, 812);
+  height: min(calc(100dvh - 48px), calc(94vw * var(--mapjig-h, 812) / var(--mapjig-w, 1000)));
   width: auto;
   max-width: 92vw;
 }
