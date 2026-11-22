@@ -52,9 +52,16 @@ d = ImageDraw.Draw(wall_img)
 for x1, y1, x2, y2 in spec.get("cuts", []):
     d.line([(x1, y1), (x2, y2)], fill=0, width=3)
 seal = spec.get("seal", 1)
+base_img = wall_img
 if seal:
-    wall_img = wall_img.filter(ImageFilter.MinFilter(2 * seal + 1))
+    wall_img = base_img.filter(ImageFilter.MinFilter(2 * seal + 1))
 wall = np.array(wall_img) < 128
+# `seal_zones`: [{"lasso": poly, "seal": 3}] — seal harder in one place only
+# (fat cells drawn with small breaks would otherwise run into the dermis;
+# sealing that hard everywhere would close the thin vessel tubes)
+for z in spec.get("seal_zones", []):
+    zw = np.array(base_img.filter(ImageFilter.MinFilter(2 * z["seal"] + 1))) < 128
+    wall |= zw & poly_mask(z["lasso"])
 cut_ink = (np.array(Image.fromarray(np.where(ink, 0, 255).astype(np.uint8))) < 128)
 lab = np.full((H, W), -1, int)
 n = 0
@@ -122,6 +129,18 @@ if left:
 part = np.where(lab >= 0, owner[np.maximum(lab, 0)], -1)
 outside = part == -2
 
+# lines and unnamed slivers -> nearest part, but only `line_reach` px: a line
+# with no part close by (the cube's outer edge) stays a plain outline, else
+# one part creeps the whole length of it (the artery up the right edge)
+for _ in range(spec.get("line_reach", 6)):
+    todo = part == -1
+    if not todo.any(): break
+    for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+        nb = np.full_like(part, -1)
+        nb[max(dy, 0):H + min(dy, 0), max(dx, 0):W + min(dx, 0)] = part[max(-dy, 0):H + min(-dy, 0), max(-dx, 0):W + min(-dx, 0)]
+        t = todo & (nb >= 0)
+        part[t] = nb[t]; todo &= ~t
+part[part == -1] = -2  # left over: outline only
 # ── open tubes: a vessel branch drawn as two lines with OPEN ends has no area
 # of its own (its inside runs into the dermis). A channel too narrow to hold a
 # disc of radius `tube_r` is a tube; each tube piece goes to the part (with
@@ -130,7 +149,9 @@ outside = part == -2
 br = [i for i, p in enumerate(parts) if p.get("branches")]
 if br:
     tr = spec.get("tube_r", 4)
-    free = (lab >= 0) & ~outside
+    # on the outline AS DRAWN: a branch's two lines sit 2-4 px apart, and
+    # the sealing used for splitting would swallow that inside entirely
+    free = ~ink & ~outside
     big = Image.fromarray(free.astype(np.uint8) * 255)
     opened = np.array(big.filter(ImageFilter.MinFilter(2 * tr + 1)).filter(ImageFilter.MaxFilter(2 * tr + 1))) > 127
     chan = free & ~opened
@@ -161,14 +182,17 @@ if br:
         low = comp[comp[:, 0].argmax()]
         best = min(br, key=lambda i: np.min(np.sum((trunk[i] - low) ** 2, axis=1)) if len(trunk[i]) else 1e18)
         part[comp[:, 0], comp[:, 1]] = best
-for _ in range(80):  # lines and unnamed slivers -> nearest part
-    todo = part == -1
-    if not todo.any(): break
-    for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-        nb = np.full_like(part, -1)
-        nb[max(dy, 0):H + min(dy, 0), max(dx, 0):W + min(dx, 0)] = part[max(-dy, 0):H + min(-dy, 0), max(-dx, 0):W + min(-dx, 0)]
-        t = todo & (nb >= 0)
-        part[t] = nb[t]; todo &= ~t
+# `close_r` on a part: the dips between its pieces (the gaps between the top
+# fat cells) join it, so the next layer stops on the line across their tops
+for i, p in enumerate(parts):
+    r = p.get("close_r")
+    if not r: continue
+    mi = Image.fromarray((part == i).astype(np.uint8) * 255)
+    closed = np.array(mi.filter(ImageFilter.MaxFilter(2 * r + 1)).filter(ImageFilter.MinFilter(2 * r + 1))) > 127
+    grab = closed & (part != i) & ~outside
+    if p.get("close_from"):
+        grab &= np.isin(part, [k for k, q in enumerate(parts) if q["name"] in p["close_from"]])
+    part[grab] = i
 np.save(os.path.splitext(spec_path)[0] + "-parts.npy", part)
 
 hexrgb = lambda h: [int(h[i:i + 2], 16) for i in (1, 3, 5)]
@@ -182,8 +206,25 @@ for i, p in enumerate(parts):
     # the lines handed to this part take its first colour (under the ink)
     # and any pixel carved out for it (an open tube inside another area)
     art[(part == i) & ((lab < 0) | (owner[np.maximum(lab, 0)] != i))] = fills[0]
-art[ink] = INK
-art[outside & ~ink] = 255
+# the drawn lines are thinned and coloured at 2x (thinning at 1x left 1-px
+# lines that broke up when traced): each stroke loses a pixel each side at
+# 2x, thin strokes keep their middle, and a line takes a darker, muted shade
+# of the part it borders
+AS = 2
+up = lambda a: np.repeat(np.repeat(a, AS, axis=0), AS, axis=1)
+ink2, part2 = up(ink), up(part)
+art2 = up(art)
+inkI = Image.fromarray(np.where(ink2, 255, 0).astype(np.uint8))
+core = np.array(inkI.filter(ImageFilter.MinFilter(3))) > 127
+thin2 = core | (ink2 & ~(np.array(Image.fromarray(core.astype(np.uint8) * 255).filter(ImageFilter.MaxFilter(5))) > 127))
+dark = spec.get("line_shade", 0.62)
+mute = np.array(hexrgb(spec.get("line_tint", "#6b5a55")), float)
+for i, p in enumerate(parts):
+    c = np.array(hexrgb((p.get("fills") or [p["fill"]])[0]), float)
+    art2[thin2 & (part2 == i)] = c * dark + mute * (1 - dark) * 0.55
+art2[thin2 & (part2 < 0)] = mute
+outside2 = up(outside)
+art2[outside2 & ~thin2] = 255
 paper = (part < 0)
 
 for i, p in enumerate(parts):
@@ -235,11 +276,9 @@ def trace(png, mode):
         vtracer.convert_image_to_svg_py(png, o, "binary", "stacked", "spline", 4, 6, 16, 60, 4.0, 10, 45, 1)
     return [(m.group(1), m.group(2), float(m.group(3)), float(m.group(4))) for m in path_re.finditer(open(o, encoding="utf-8").read())]
 
-AS = 2
-rgba = np.dstack([art.astype(np.uint8), np.where(paper & ~ink, 0, 255).astype(np.uint8)])
-rgba[outside & ink, 3] = 255
+rgba = np.dstack([art2.astype(np.uint8), np.where(up(paper) & ~thin2, 0, 255).astype(np.uint8)])
 png = os.path.join(tmp, "art.png")
-Image.fromarray(rgba, "RGBA").resize((W * AS, H * AS), Image.NEAREST).save(png)
+Image.fromarray(rgba, "RGBA").save(png)
 svg = [f'<g transform="scale({1 / AS})">']
 for dd, fill, tx, ty in trace(png, "color"):
     r, g, b = (int(fill[i:i + 2], 16) for i in (0, 2, 4))
