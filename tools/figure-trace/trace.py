@@ -208,7 +208,14 @@ for i, p in enumerate(spec["parts"]):
 # it: each region flat in its own average colour, the outline inked on top.
 LINEART = None
 if spec.get("lines"):
-    ln = np.array(Image.open(os.path.join(here, spec["lines"])).convert("L")).astype(int)
+    lim = Image.open(os.path.join(here, spec["lines"])).convert("L")
+    if "lines_at" in spec:
+        # the outline framed differently from the coloured picture (the heart's
+        # is 1376 wide, the picture 1408): placed at [dx, dy] on a white page
+        page = Image.new("L", (W, H), 255)
+        page.paste(lim, tuple(spec["lines_at"]))
+        lim = page
+    ln = np.array(lim).astype(int)
     if ln.shape != (H, W):
         raise SystemExit(f'{spec["lines"]} is {ln.shape[1]}x{ln.shape[0]}, the picture is {W}x{H}')
     ink = ln < spec.get("line_dark", 140)
@@ -252,6 +259,12 @@ if spec.get("lines"):
             if lab[y, x] >= 0: owner[lab[y, x]] = i
             else: raise SystemExit(f'{pp["name"]}: own_areas point {x},{y} is on a line')
     for e in edge: owner[e] = -2
+    # an area that is mostly PAPER in the coloured picture is outside too, even
+    # when vessels close it off from the edge (the gaps between the heart's
+    # vessels) — else its neighbour swallows it
+    pap = np.bincount(lab[lab >= 0], weights=paper[lab >= 0].astype(float), minlength=n)
+    tot = np.bincount(lab[lab >= 0], minlength=n)
+    owner[(pap / np.maximum(tot, 1)) > 0.5] = -2
     part = np.where(lab >= 0, owner[np.maximum(lab, 0)], -1)  # -1: line or unnamed, -2: outside
     mx = part == -3
     part[mx] = pidx[mx]  # -1 where the colour pass named nothing: filled from neighbours below
