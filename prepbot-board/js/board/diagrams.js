@@ -22,6 +22,8 @@ const SRC = {
   "brain-section": "/data/vocab/organs/brain-section.js",
   ear: "/data/vocab/organs/ear.js",
   eye: "/data/vocab/organs/eye.js",
+  skin: "/data/vocab/organs/skin.js",
+  skeleton: "/data/vocab/organs/skeleton.js",
 };
 export const DIAGRAM_NAMES = Object.keys(SRC);
 import { KITS } from "./kits.js";
@@ -101,6 +103,13 @@ const ALIASES = {
   "eustachian tube": "Eustachian tube", "auditory tube": "Eustachian tube",
   eyelid: "eyelids", "aqueous humor": "aqueous humour", "vitreous humor": "vitreous humour", vitreous: "vitreous humour",
   "eye muscle": "eye muscles", "white of the eye": "sclera",
+  /* skin and skeleton */
+  "hypodermis": "subcutaneous fat", "fat layer": "subcutaneous fat", "oil gland": "sebaceous gland", "erector muscle": "arrector pili muscle",
+  "hair muscle": "arrector pili muscle", "blood vessel": "artery", capillary: "artery",
+  cranium: "skull", jaw: "mandible", "lower jaw": "mandible", collarbone: "clavicle", breastbone: "sternum", kneecap: "patella",
+  "thigh bone": "femur", "shin bone": "tibia", ribs: "rib cage", rib: "rib cage", spine: "vertebral column", backbone: "vertebral column",
+  vertebrae: "vertebral column", hip: "pelvis", "hip bone": "pelvis", carpals: "hand bones", metacarpals: "hand bones", phalanges: "hand bones",
+  tarsals: "foot bones", metatarsals: "foot bones",
 };
 /** A part by name, forgiving of case, plural, "the" and other names for it. */
 export function findPart(diagram, name) {

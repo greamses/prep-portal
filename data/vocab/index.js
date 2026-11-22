@@ -151,6 +151,8 @@ export const PART_FIGURES = {
   'brain-section': { module: '/data/vocab/organs/brain-section.js', label: 'Inside the Brain' },
   'ear-map': { module: '/data/vocab/organs/ear.js', label: 'The Ear' },
   'eye-map': { module: '/data/vocab/organs/eye.js', label: 'The Eye' },
+  'skin-map': { module: '/data/vocab/organs/skin.js', label: 'The Skin' },
+  'skeleton': { module: '/data/vocab/organs/skeleton.js', label: 'The Skeleton' },
   'plant-cell': { module: '/data/vocab/cells/plant-cell.js', label: 'The Plant Cell' },
   'animal-cell': { module: '/data/vocab/cells/animal-cell.js', label: 'The Animal Cell' },
 };

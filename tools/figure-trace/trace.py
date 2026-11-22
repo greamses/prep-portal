@@ -17,6 +17,8 @@ A part in the spec:
   tol                       colour distance to a pick that still counts (40)
   lasso  [[x,y], ...]       optional polygon the part must lie inside (or a
                             list of polygons, for a part in two places)
+  walls                     N: ignore colour — flood every pixel whose darkest
+                            channel is >= N, so the drawn outline is the wall
   all                       true: every matching pixel in the lasso, not just
                             the patches the picks touch
   open                      px: threads thinner than twice this are cut off (0)
@@ -65,7 +67,9 @@ def flood(allowed, seeds):
         if x < allowed.shape[1] - 1: q.append((y, x + 1))
     return out
 
-light = (im.min(axis=2) >= 232) & ((im.max(axis=2) - im.min(axis=2)) <= 14)
+# "paper": {"light": 232, "sat": 14} — a grey or gradient backdrop needs a lower light
+PAPER = spec.get("paper", {})
+light = (im.min(axis=2) >= PAPER.get("light", 232)) & ((im.max(axis=2) - im.min(axis=2)) <= PAPER.get("sat", 14))
 border = [(0, x) for x in range(W)] + [(H - 1, x) for x in range(W)] \
     + [(y, 0) for y in range(H)] + [(y, W - 1) for y in range(H)]
 paper = flood(light, border + [(y, x) for x, y in spec.get("paper_seeds", [])])
@@ -148,6 +152,10 @@ for p in spec["parts"]:
     cols = np.array([im[y, x] for x, y in p["picks"]])
     dist = np.min(np.linalg.norm(im[:, :, None, :] - cols[None, None, :, :], axis=3), axis=2)
     near = (dist < p.get("tol", 40)) & ~paper
+    if "walls" in p:
+        # a tube the same colour as what is round it: fill everything LIGHTER
+        # than its drawn outline, from the picks out to the outline
+        near = (im.min(axis=2) >= p["walls"]) & ~paper
     if "lasso" in p:
         near &= polygon_mask(p["lasso"])
     # `all`: every matching pixel in the lasso (a part drawn as many separate

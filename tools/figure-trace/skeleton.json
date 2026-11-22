@@ -1,0 +1,25 @@
+{
+  "title": "The Skeleton",
+  "src": "src/skeleton.jpg",
+  "out": "data/vocab/organs/skeleton.js",
+  "check": "skeleton-check.png",
+  "paper": {"light": 165, "sat": 9},
+  "parts": [
+    {"name": "patella", "grade": 6, "hint": "The small round bone at the front of each knee — the kneecap.", "region": true, "lasso": [[[634, 538], [672, 538], [672, 563], [634, 563]], [[742, 538], [704, 538], [704, 563], [742, 563]]]},
+    {"name": "mandible", "grade": 5, "hint": "The lower jaw — the only bone of the head that moves.", "region": true, "lasso": [[658, 126], [718, 126], [714, 152], [662, 152]]},
+    {"name": "skull", "grade": 3, "hint": "The bony case that protects the brain.", "region": true, "lasso": [[648, 50], [728, 50], [728, 126], [648, 126]]},
+    {"name": "sternum", "grade": 6, "hint": "The flat bone down the middle of the chest — the breastbone.", "region": true, "lasso": [[676, 198], [700, 198], [696, 236], [692, 272], [684, 272], [680, 236]]},
+    {"name": "clavicle", "grade": 5, "hint": "The collarbone running from the neck out to the shoulder.", "region": true, "lasso": [[[602, 172], [677, 172], [677, 198], [602, 198]], [[774, 172], [699, 172], [699, 198], [774, 198]]]},
+    {"name": "humerus", "grade": 5, "hint": "The long bone of the upper arm.", "region": true, "lasso": [[[580, 186], [626, 186], [622, 316], [578, 316]], [[796, 186], [750, 186], [754, 316], [798, 316]]]},
+    {"name": "radius", "grade": 7, "hint": "The forearm bone on the thumb side.", "region": true, "lasso": [[[578, 312], [594, 315], [568, 406], [546, 402]], [[798, 312], [782, 315], [808, 406], [830, 402]]]},
+    {"name": "ulna", "grade": 7, "hint": "The forearm bone on the little-finger side.", "region": true, "lasso": [[[594, 315], [610, 316], [589, 411], [568, 406]], [[782, 315], [766, 316], [787, 411], [808, 406]]]},
+    {"name": "hand bones", "grade": 4, "hint": "The many small bones of the wrist, palm and fingers.", "region": true, "lasso": [[[522, 398], [606, 398], [606, 482], [522, 482]], [[854, 398], [770, 398], [770, 482], [854, 482]]]},
+    {"name": "pelvis", "grade": 5, "hint": "The bowl-shaped hip bones the legs hang from.", "region": true, "lasso": [[620, 330], [756, 330], [756, 420], [620, 420]]},
+    {"name": "femur", "grade": 4, "hint": "The thigh bone — the longest bone in the body.", "region": true, "lasso": [[[626, 386], [672, 386], [672, 540], [626, 540]], [[704, 386], [750, 386], [750, 540], [704, 540]]]},
+    {"name": "tibia", "grade": 6, "hint": "The thick shin bone of the lower leg.", "region": true, "lasso": [[[643, 562], [680, 562], [678, 699], [641, 699]], [[733, 562], [696, 562], [698, 699], [735, 699]]]},
+    {"name": "fibula", "grade": 7, "hint": "The thin bone beside the shin bone.", "region": true, "lasso": [[[626, 562], [643, 562], [641, 699], [626, 699]], [[750, 562], [733, 562], [735, 699], [750, 699]]]},
+    {"name": "foot bones", "grade": 4, "hint": "The many small bones of the ankle, sole and toes.", "region": true, "lasso": [[[615, 698], [684, 698], [684, 752], [615, 752]], [[761, 698], [692, 698], [692, 752], [761, 752]]]},
+    {"name": "vertebral column", "grade": 4, "hint": "The backbone — a stack of small bones protecting the spinal cord.", "region": true, "lasso": [[[670, 144], [706, 144], [706, 176], [670, 176]], [[670, 272], [706, 272], [706, 345], [670, 345]]]},
+    {"name": "rib cage", "grade": 3, "hint": "The curved bones that wrap round and protect the heart and lungs.", "region": true, "lasso": [[626, 172], [752, 172], [756, 318], [622, 318]]}
+  ]
+}

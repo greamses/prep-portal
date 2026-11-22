@@ -696,6 +696,7 @@ service cloud.firestore {
             'ear', 'ear-blank', 'eye', 'eye-blank', 'heart', 'heart-blank',
             'brain', 'brain-blank', 'brain-section', 'brain-section-blank',
             'plant-cell', 'plant-cell-blank', 'animal-cell', 'animal-cell-blank',
+            'skin', 'skin-blank', 'skeleton', 'skeleton-blank',
             'square', 'triangle', 'rectangle', 'parallelogram', 'cat', 'boat'
           ]);
 

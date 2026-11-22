@@ -82,7 +82,8 @@ const PAGES = [
   { name: 'puzzles', extra: ['/data/vocab/nigeria-map.js', '/data/vocab/history/leaders.js',
     '/data/vocab/organs/ear.js', '/data/vocab/organs/eye.js', '/data/vocab/organs/heart.js',
     '/data/vocab/organs/brain.js', '/data/vocab/organs/brain-section.js',
-    '/data/vocab/cells/plant-cell.js', '/data/vocab/cells/animal-cell.js'] },
+    '/data/vocab/cells/plant-cell.js', '/data/vocab/cells/animal-cell.js',
+    '/data/vocab/organs/skin.js', '/data/vocab/organs/skeleton.js'] },
   // The Planner brief is generated from the shared event pool, so editing it
   // must bust the page too.
   { name: 'planner', extra: ['/data/planner/scenarios.js', '/data/planner/routines.js'] },
@@ -102,6 +103,8 @@ const PAGES = [
       '/data/vocab/organs/brain-section.js',
       '/data/vocab/organs/ear.js',
       '/data/vocab/organs/eye.js',
+      '/data/vocab/organs/skin.js',
+      '/data/vocab/organs/skeleton.js',
       // The two cell diagrams (name the parts of one cell).
       '/data/vocab/cells/plant-cell.js',
       '/data/vocab/cells/animal-cell.js',
