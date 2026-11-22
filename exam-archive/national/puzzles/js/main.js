@@ -386,7 +386,7 @@ function renderJigPick() {
     colorOffset: 5,
     options: [
       { value: 'nigeria', label: 'Map', tip: 'The Map of Nigeria — drag the 37 states home', checked: fig === 'nigeria' },
-      { value: 'biology', label: 'Biology', tip: 'A diagram of the ear, eye, heart or brain — drag each part home', checked: !!fig && fig !== 'nigeria' },
+      { value: 'biology', label: 'Biology', tip: 'A diagram of the ear, eye, heart, brain or a cell — drag each part home', checked: !!fig && fig !== 'nigeria' },
     ],
     onPick: (v) => {
       if (v === 'nigeria') {

@@ -1,0 +1,20 @@
+{
+  "title": "The Animal Cell",
+  "src": "src/animal-cell.jpg",
+  "out": "data/vocab/cells/animal-cell.js",
+  "check": "animal-cell-check.png",
+  "parts": [
+    {"name": "mitochondrion", "grade": 5, "hint": "The bean-shaped powerhouse that releases energy from food.", "picks": [[630, 150], [1025, 355], [450, 565], [695, 605]], "tol": 70, "close": 3, "hole": 2000},
+    {"name": "vacuole", "grade": 5, "hint": "A small bag that stores water, food or waste — far smaller than a plant cell's.", "picks": [[890, 330], [886, 288]], "tol": 40, "close": 2, "hole": 3000},
+    {"name": "centrosome", "grade": 10, "hint": "The pair of tiny barrels that pull the cell apart when it divides.", "picks": [[705, 218], [768, 255]], "tol": 45, "close": 2, "hole": 500},
+    {"name": "nucleolus", "grade": 5, "hint": "The dark spot deep inside the control room where ribosomes are made.", "picks": [[545, 328]], "tol": 40, "close": 1},
+    {"name": "nucleus", "grade": 5, "hint": "The control room that stores the cell's instructions.", "picks": [[560, 400], [600, 300]], "tol": 40, "close": 2, "hole": 4000},
+    {"name": "nuclear envelope", "grade": 9, "hint": "The double skin around the control room, with gaps to let messages out.", "around": "nucleus", "width": 9, "lasso": [[430, 220], [700, 220], [700, 490], [430, 490]]},
+    {"name": "vesicle", "grade": 9, "hint": "A small bubble pinched off to carry goods around the cell.", "picks": [[408, 188], [368, 338], [785, 530], [845, 610], [850, 450]], "tol": 28, "close": 1},
+    {"name": "Golgi apparatus", "grade": 7, "hint": "The stack of sacs that packages and posts what the cell makes.", "picks": [[800, 135], [990, 500]], "tol": 30, "close": 4, "hole": 600, "lasso": [[[712, 75], [882, 75], [882, 198], [712, 198]], [[895, 440], [1032, 440], [1032, 598], [895, 598]]], "all": true},
+    {"name": "smooth endoplasmic reticulum", "grade": 10, "hint": "The smooth tubes that make fats and store them.", "picks": [[425, 380], [470, 210]], "tol": 30, "close": 3, "hole": 300, "lasso": [[398, 145], [655, 145], [655, 218], [560, 238], [472, 268], [442, 332], [442, 432], [398, 432]], "all": true},
+    {"name": "rough endoplasmic reticulum", "grade": 9, "hint": "The folded sheets studded with grains that build proteins.", "picks": [[720, 400], [665, 525]], "tol": 27, "close": 3, "hole": 300, "lasso": [[440, 252], [765, 252], [765, 612], [440, 612]], "all": true},
+    {"name": "cytoplasm", "grade": 5, "hint": "The jelly that fills the cell and holds everything in place.", "picks": [[380, 560]], "tol": 22, "close": 2, "hole": 400},
+    {"name": "cell membrane", "grade": 5, "hint": "The thin skin that holds the cell in and lets things pass.", "picks": [[305, 400], [700, 35]], "tol": 40, "close": 2, "open": 3}
+  ]
+}

@@ -59,6 +59,8 @@ export const JIGSAW_FIGURES = [
   { key: 'heart', label: 'The Heart', short: 'Heart', tip: 'The four chambers, the great vessels and the valves', group: 'biology', module: '/data/vocab/organs/heart.js' },
   { key: 'brain', label: 'The Brain', short: 'Brain', tip: 'The brain from the side — its lobes and stem', group: 'biology', module: '/data/vocab/organs/brain.js' },
   { key: 'brain-section', label: 'Inside the Brain', short: 'Brain cut', tip: 'The brain cut down the middle — 14 parts inside', group: 'biology', module: '/data/vocab/organs/brain-section.js' },
+  { key: 'plant-cell', label: 'The Plant Cell', short: 'Plant cell', tip: 'Wall, vacuole, chloroplasts and more — 13 parts', group: 'biology', module: '/data/vocab/cells/plant-cell.js' },
+  { key: 'animal-cell', label: 'The Animal Cell', short: 'Animal cell', tip: 'Nucleus, mitochondria, Golgi and more — 12 parts', group: 'biology', module: '/data/vocab/cells/animal-cell.js' },
 ];
 export const figureInfo = (key) => JIGSAW_FIGURES.find((f) => f.key === key);
 // 'ear-blank' → { key: 'ear', blank: true }; null when `tiles` is no figure.

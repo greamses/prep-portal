@@ -17,6 +17,9 @@ A part in the spec:
   tol                       colour distance to a pick that still counts (40)
   lasso  [[x,y], ...]       optional polygon the part must lie inside (or a
                             list of polygons, for a part in two places)
+  all                       true: every matching pixel in the lasso, not just
+                            the patches the picks touch
+  open                      px: threads thinner than twice this are cut off (0)
   close                     px of gap (outline strokes) closed inside it (2)
   hole                      enclosed gaps smaller than this many px are filled (900)
   around, width             a band `width` px wide round an EARLIER part (by name)
@@ -147,10 +150,17 @@ for p in spec["parts"]:
     near = (dist < p.get("tol", 40)) & ~paper
     if "lasso" in p:
         near &= polygon_mask(p["lasso"])
-    m = flood(near, [(y, x) for x, y in p["picks"]])
+    # `all`: every matching pixel in the lasso (a part drawn as many separate
+    # pieces split by lines: the Golgi's sacs, the ER's bands); else only the
+    # patches the picks touch
+    m = near.copy() if p.get("all") else flood(near, [(y, x) for x, y in p["picks"]])
     for x, y in p["picks"]:
         if not m[y, x]:
             raise SystemExit(f'{p["name"]}: pick {x},{y} is not on the part (colour {im[y, x].tolist()})')
+    o = p.get("open", 0)
+    if o:  # strip threads thinner than 2*open px (lines touching the part)
+        m = grow_mask(shrink_mask(m, o), o)
+        m = flood(m, [(y, x) for x, y in p["picks"] if m[y, x]]) if any(m[y, x] for x, y in p["picks"]) else m
     r = p.get("close", 2)
     m = shrink_mask(grow_mask(m, r), r)
     if "lasso" in p:
