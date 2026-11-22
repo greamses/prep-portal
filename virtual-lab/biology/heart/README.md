@@ -34,6 +34,19 @@ An interactive, anatomy-inspired heart you can take apart, cut open and watch be
 
 Motion starts paused when the visitor's system asks for reduced motion.
 
+## Colours and joins
+
+- **Inside shows the blood:** each chamber's and vessel's lining is coloured by
+  the side of the heart it belongs to: red on the left (oxygen-rich: left
+  ventricle and atrium, aorta, pulmonary veins), blue on the right
+  (oxygen-poor: right ventricle and atrium, pulmonary artery, venae cavae).
+- **A cut shows tissue:** `CUT_COLOUR` in `heart.js` gives each kind of part
+  its own cut colour (crimson muscle, red/blue vessel walls).
+- **Smooth joins:** the inner channels blend into the chambers (`CAV_BLEND`)
+  and the outside blends a little wider (`OUT_BLEND`). Vertex normals come
+  from the solid itself, so neighbouring parts shade as one surface with no
+  seam ring, after a light Taubin smoothing pass.
+
 ## Regenerate the model
 
 ```bash

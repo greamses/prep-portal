@@ -43,6 +43,8 @@ UNIT_TO_M = 0.03    # 1 unit = 3 cm
 LO = np.array([-1.65, -2.25, -2.15])
 HI = np.array([1.75, 3.15, 1.80])
 F = np.float32
+CAV_BLEND = 0.07    # how far the inner channels blend into each other (units)
+OUT_BLEND = 0.20    # how far the outside of the parts blends (units)
 T0 = time.time()
 
 
@@ -240,16 +242,18 @@ def cavity(p):
     for pts in PV.values():
         parts.append(sd_capsule(p, LA_C, pts[0], 0.09))
         parts.append(lumen(p, pts, 0.09, 0.30))
+    # a SMOOTH union: where a vessel's bore opens into a chamber the lining
+    # curves round into it instead of meeting it in a crease
     d = parts[0]
     for q in parts[1:]:
-        d = np.minimum(d, q)
+        d = smin(d, q, CAV_BLEND)
     return d
 
 
 def outer_raw(p):
     d = BASE(p)
     for fn in SHAPES.values():
-        d = smin(d, fn(p), 0.16)
+        d = smin(d, fn(p), OUT_BLEND)
     return d
 
 
@@ -427,12 +431,21 @@ for i, k in enumerate(NAMES):
 
 # ----------------------------------------------------------- 3. colours
 C = {
-    "muscle": (0.46, 0.10, 0.12), "atrium": (0.56, 0.22, 0.22), "auricle": (0.52, 0.17, 0.18),
-    "artery": (0.80, 0.22, 0.18), "pv": (0.74, 0.24, 0.22), "pa": (0.30, 0.42, 0.74),
-    "vc": (0.24, 0.38, 0.70), "endo": (0.74, 0.40, 0.40), "cut": (0.80, 0.46, 0.44),
-    "fat": (0.93, 0.78, 0.42), "papillary": (0.58, 0.18, 0.19),
-    "coronary": (0.72, 0.10, 0.10), "cardiac_vein": (0.22, 0.34, 0.68),
+    # outside: a living red muscle, not clay
+    "muscle": (0.72, 0.16, 0.20), "atrium": (0.84, 0.32, 0.34), "auricle": (0.80, 0.26, 0.30),
+    "artery": (0.93, 0.27, 0.25), "pv": (0.91, 0.33, 0.30), "pa": (0.33, 0.52, 0.92),
+    "vc": (0.27, 0.46, 0.90),
+    # inside: the lining shows which blood flows there (the textbook code) -
+    # oxygen-rich on the left side of the heart, oxygen-poor on the right
+    "lining_rich": (0.96, 0.42, 0.42), "lining_poor": (0.45, 0.62, 0.97),
+    # a cut through the wall: the muscle itself, a warm rose
+    "cut": (0.97, 0.58, 0.55),
+    "fat": (1.00, 0.84, 0.40), "papillary": (0.88, 0.30, 0.34),
+    "coronary": (0.86, 0.12, 0.14), "cardiac_vein": (0.24, 0.40, 0.86),
 }
+# which side of the heart a part's inside belongs to
+POOR_SIDE = {"right_ventricle", "right_atrium", "right_auricle", "pulmonary_trunk",
+             "left_pulmonary_artery", "right_pulmonary_artery", "superior_vena_cava", "inferior_vena_cava"}
 GROUP = {
     "left_ventricle": "muscle", "right_ventricle": "muscle", "right_atrium": "atrium",
     "left_atrium": "atrium", "right_auricle": "auricle", "left_auricle": "auricle",
@@ -468,7 +481,7 @@ def colour_piece(mesh, name):
     r = d_self - others
     kind = np.argmax(np.stack([o, c, r], -1), -1)  # which term made this surface
     base = np.asarray(C[GROUP[name]])
-    lining = C["endo"] if GROUP[name] in ("muscle", "atrium", "auricle") else mix(base, (1, 1, 1), 0.3)
+    lining = np.asarray(C["lining_poor"] if name in POOR_SIDE else C["lining_rich"])
     cols = np.tile(base, (len(v), 1))
     cols[kind == 1] = lining
     cols[kind == 2] = C["cut"]
@@ -477,6 +490,13 @@ def colour_piece(mesh, name):
         t = (np.clip((0.13 - g) / 0.07, 0, 1) * 0.85 * (kind == 0))[:, None]
         cols = cols * (1 - t) + np.asarray(C["fat"]) * t
     mesh.visual.vertex_colors = to_gltf_colors(cols)
+    # outside and lining take the solid's own normal; a cut face keeps the mesh's
+    nrm_out = gradient(outer, v)
+    nrm_in = -gradient(cavity, v)
+    vn = np.asarray(mesh.vertex_normals, F).copy()
+    vn[kind == 0] = nrm_out[kind == 0]
+    vn[kind == 1] = nrm_in[kind == 1]
+    mesh.vertex_normals = vn
     return mesh
 
 
@@ -499,6 +519,7 @@ for i, k in enumerate(NAMES):
     hi = np.minimum(idx.max(0) + 3, np.array(shape3))
     sub = np.pad(field[lo[0]:hi[0], lo[1]:hi[1], lo[2]:hi[2]], 1, constant_values=1.0)
     m = mesh_from_field(sub, origin + (lo - 1) * RES, RES)
+    trimesh.smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=8)
     pieces[k] = colour_piece(m, k)
     log(f"  {k}: {len(m.faces)} faces")
 

@@ -181,19 +181,30 @@ function applyBeat(p) {
 // Clipping plane for the cross-section. "Off" = pushed far away.
 const clip = new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e3);
 
-function partMaterial() {
+// The colour a cut through each kind of part shows (sRGB): the heart muscle a
+// deep crimson, the atria a warmer red, an artery's wall red and a vein's blue,
+// the valve muscles like the ventricle. Each part its own, so a cut reads as
+// tissue, not one flat putty colour.
+const CUT_COLOUR = {
+  muscle: [0.62, 0.10, 0.16], atrium: [0.76, 0.20, 0.24], auricle: [0.74, 0.18, 0.22],
+  artery: [0.86, 0.24, 0.24], pv: [0.84, 0.28, 0.28], pa: [0.30, 0.44, 0.84], vc: [0.26, 0.40, 0.82],
+  papillary: [0.66, 0.12, 0.18], coronary: [0.78, 0.10, 0.12], cardiac_vein: [0.24, 0.36, 0.80],
+};
+function partMaterial(group) {
+  const cut = new THREE.Color(...(CUT_COLOUR[group] || [0.80, 0.46, 0.44]));
   const m = new THREE.MeshPhysicalMaterial({
     vertexColors: true, roughness: 0.45, metalness: 0, clearcoat: 0.4, clearcoatRoughness: 0.3,
     side: THREE.DoubleSide, clippingPlanes: [clip],
   });
   m.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, U);
+    shader.uniforms.uCap = { value: cut }; // this part's own cut colour
     shader.vertexShader = BEAT_GLSL + shader.vertexShader.replace(
       '#include <begin_vertex>', '#include <begin_vertex>\n  transformed += beatDisp(position);');
     // Every part is a closed solid, so the only back faces you can ever see are
     // the inside of a wall exposed by the cut. Paint them as flat cut tissue.
     shader.fragmentShader = 'uniform vec3 uCap;\n' + shader.fragmentShader.replace(
-      '#include <dithering_fragment>', '#include <dithering_fragment>\n  if (!gl_FrontFacing) gl_FragColor = vec4(uCap, 1.0);');
+      '#include <dithering_fragment>', '#include <dithering_fragment>\n  if (!gl_FrontFacing) gl_FragColor = vec4(uCap * (0.86 + 0.14 * gl_FragCoord.z), 1.0);');
   };
   m.customProgramCacheKey = () => 'heart-part';
   return m;
@@ -366,7 +377,7 @@ Promise.all([
     const info = meta.parts[obj.name];
     if (!info) return;
     if (!obj.geometry.attributes.normal) obj.geometry.computeVertexNormals();
-    obj.material = partMaterial();
+    obj.material = partMaterial(info.group);
     obj.userData.part = obj.name;
     parts.set(obj.name, { ...info, mesh: obj, explode: new THREE.Vector3(...info.explode).multiplyScalar(EXPLODE_SPREAD) });
     pickables.push(obj);
