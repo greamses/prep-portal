@@ -1898,7 +1898,9 @@ export function startBee({ roomId, seed, sets, turnSeconds, humans, botsNeeded, 
     chime();
     await host('Here is your trophy, and your prize money: five thousand PrepCoins!', HOST('prize'));
     if (gone) return;
-    await host('Well done, every speller. See you at the next bee!', HOST('goodbye'));
+    // the goodbye is a recording that thanks "every speller": a math bee ends on the prize instead
+    // (a math goodbye needs its own recording in PrepBot's voice)
+    if (!isMath) await host('Well done, every speller. See you at the next bee!', HOST('goodbye'));
     await wait(1200);
     tv.classList.remove('is-white', 'is-host', 'is-award');
   }

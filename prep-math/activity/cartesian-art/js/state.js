@@ -115,7 +115,10 @@ export function emit(reason = "") {
 /** The current adaptive step (one fine gridline cell) per axis. */
 export function cursorStep() {
   const g = state.grid;
-  return { x: snapStep(g.xMax - g.xMin), y: snapStep(g.yMax - g.yMin) };
+  const x = snapStep(g.xMax - g.xMin), y = snapStep(g.yMax - g.yMin);
+  // a puzzle's points are whole numbers: never stride past them
+  if (state.mode === "puzzle") return { x: Math.min(x, 1), y: Math.min(y, 1) };
+  return { x, y };
 }
 
 /** Move the cursor to an absolute math coordinate, clamped to the grid. */
@@ -442,9 +445,12 @@ export function allPoints() {
  *  Order-independent vertex matching over the union of all shapes' points. */
 export function scoreAttempt() {
   const targets = (state.puzzle && state.puzzle.targets) || [];
-  const total = targets.length;
   const key = (p) => `${p.x},${p.y}`;
+  // a vertex shared by two lines (or a loop's repeated start) is ONE point to
+  // plot — count each distinct coordinate once, or a perfect picture can never
+  // reach 100% (the World Cup trophy topped out at 59/78)
   const want = new Set(targets.map(key));
+  const total = want.size;
   const got = new Set(allPoints().map(key));
   let correct = 0;
   for (const k of want) if (got.has(k)) correct++;

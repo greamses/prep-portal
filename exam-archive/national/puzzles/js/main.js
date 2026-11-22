@@ -751,8 +751,11 @@ function buildRoster({ size, botsNeeded, seed }, myName) {
    shown as pending — so nobody watches a spinner wondering if it broke. Until
    it settles there is no winner, no trophy and no confetti: leading a race
    half the room hasn't finished isn't winning it. */
+let roundEnd = "Time's Up";
 function renderResults(ranked, settled = true) {
   const repaint = resultsBd.classList.contains('open');
+  const eyebrow = resultsBd.querySelector('.setup-eyebrow');
+  if (eyebrow) eyebrow.textContent = roundEnd;
   renderLeaderboard(leaderboardEl, ranked, {
     settled, repaint,
     pendingLabel: (s) => (s ? 'no score' : 'still playing…'),
@@ -785,6 +788,10 @@ async function playRoundAndShowResults(room, myName) {
     customArt: await customArtUri(room.seed),
     roster,
   });
+  // The board's heading says how the round ended: it said "Time's Up" even
+  // when the puzzle was solved a minute early.
+  roundEnd = totalUnits && myScore >= totalUnits ? 'Solved'
+    : !room.startAt || !room.timeLimit || Date.now() >= room.startAt + room.timeLimit * 1000 - 750 ? "Time's Up" : 'Round Over';
 
   // The round overlay just closed but the leaderboard read (grace delay +
   // one getDocs) hasn't landed yet — show a small "tallying" modal instead

@@ -63,6 +63,9 @@ const SUFFIX = { 3: "T", 2: "H", "-1": "d", "-2": "c", "-3": "m", "-4": "u", "-5
 export function fmtShort(v) {
   if (v === 0) return "0";
   const a = Math.abs(v), s = v < 0 ? "-" : "";
+  // whole hundreds stay readable: "1H" stood for 100, 120 AND 140 alike, so a
+  // tick run read 1H, 1H, 1H. Three digits still fit; shorten only past them.
+  if (a < 1000 && Number.isInteger(v)) return String(v);
   if (a >= 100 || a < 0.1) {
     let e = Math.floor(Math.log10(a) + 1e-12);
     let d = Math.round(a / Math.pow(10, e));

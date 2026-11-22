@@ -115,7 +115,8 @@ export function renderLeaderboard(listEl, ranked, o = {}) {
       const m = document.createElement('small');
       m.className = metaClass;
       m.textContent = detail;
-      name.appendChild(m);
+      // a space between: an inline detail ("in 0:45") read "Adain 0:45"
+      name.append(' ', m);
     }
 
     const scoreEl = document.createElement('span');
