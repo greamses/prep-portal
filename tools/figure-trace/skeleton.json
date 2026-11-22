@@ -4,6 +4,7 @@
   "out": "data/vocab/organs/skeleton.js",
   "check": "skeleton-check.png",
   "paper": {"light": 165, "sat": 9},
+  "art": {"scale": 3, "median": 3, "speckle": 14, "precision": 7, "layer": 12},
   "parts": [
     {"name": "patella", "grade": 6, "hint": "The small round bone at the front of each knee — the kneecap.", "region": true, "lasso": [[[634, 538], [672, 538], [672, 563], [634, 563]], [[742, 538], [704, 538], [704, 563], [742, 563]]]},
     {"name": "mandible", "grade": 5, "hint": "The lower jaw — the only bone of the head that moves.", "region": true, "lasso": [[658, 126], [718, 126], [714, 152], [662, 152]]},

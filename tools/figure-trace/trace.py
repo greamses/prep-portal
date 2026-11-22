@@ -239,10 +239,17 @@ def bake(d, tx, ty):
     flush()
     return "".join(out).replace(" -", "-")
 
+# "art": {"scale": 1, "median": 3, "speckle": 6, "precision": 6, "layer": 24} —
+# a picture of fine lines (the skeleton) needs scale 3, median 0 and finer
+# colour steps, or its outlines melt away. The art is traced at `scale` and
+# shrunk back with one transform, so the parts' coordinates never change.
+ART = {"scale": 1, "median": 3, "speckle": 6, "precision": 6, "layer": 24, **spec.get("art", {})}
+
 def trace(png, mode):
     svg_out = os.path.join(tmp, "t.svg")
     if mode == "color":
-        vtracer.convert_image_to_svg_py(png, svg_out, "color", "stacked", "spline", 6, 6, 24, 60, 4.0, 10, 45, 1)
+        vtracer.convert_image_to_svg_py(png, svg_out, "color", "stacked", "spline",
+                                        ART["speckle"], ART["precision"], ART["layer"], 60, 4.0, 10, 45, 1)
     else:
         vtracer.convert_image_to_svg_py(png, svg_out, "binary", "stacked", "spline", 4, 6, 16, 60, 4.0, 10, 45, 1)
     return [(m.group(1), m.group(2), float(m.group(3)), float(m.group(4)))
@@ -254,16 +261,23 @@ off = lambda tx, ty: (tx - cx0 * SCALE, ty - cy0 * SCALE)
 # the art: paper made transparent, then a colour trace
 alpha = 255 - np.array(Image.fromarray(paper.astype(np.uint8) * 255).filter(ImageFilter.MaxFilter(3)))
 # a median pass first: JPEG speckle would otherwise trace as hundreds of tiny shapes
-soft = np.array(src.filter(ImageFilter.MedianFilter(3)))
-rgba = Image.fromarray(np.dstack([soft, alpha.astype(np.uint8)]), "RGBA")
+# (at scale > 1 the median runs AFTER enlarging, so hairlines survive it)
+AS = ART["scale"]
+rgb = src.resize((W * AS, H * AS), Image.LANCZOS) if AS != 1 else src
+if ART["median"]:
+    rgb = rgb.filter(ImageFilter.MedianFilter(ART["median"]))
+a = Image.fromarray(alpha.astype(np.uint8)).resize((W * AS, H * AS), Image.NEAREST) if AS != 1 else Image.fromarray(alpha.astype(np.uint8))
+rgba = Image.fromarray(np.dstack([np.array(rgb), np.array(a)]), "RGBA")
 art_png = os.path.join(tmp, "art.png")
-big(rgba, Image.LANCZOS).save(art_png)
+rgba.save(art_png)
 art = []
 for d, fill, tx, ty in trace(art_png, "color"):
     r, g, b = (int(fill[i:i + 2], 16) for i in (0, 2, 4))
     if min(r, g, b) >= 238:
         continue  # leftover paper
-    art.append(f'<path fill="#{fill.lower()}" d="{bake(d, *off(tx, ty))}"/>')
+    art.append(f'<path fill="#{fill.lower()}" d="{bake(d, tx - cx0 * AS, ty - cy0 * AS)}"/>')
+if AS != 1:
+    art = [f'<g transform="scale({1 / AS:.6g})">'] + art + ['</g>']
 
 # each part: its mask traced to an outline
 parts = []
