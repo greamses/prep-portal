@@ -16,6 +16,6 @@
     {"name": "vein", "grade": 6, "hint": "The blue vessel taking used blood away from the skin.", "picks": [[400, 560], [880, 560]], "tol": 55, "all": true, "close": 1, "lasso": [[365, 70], [1090, 70], [1090, 720], [365, 720]]},
     {"name": "subcutaneous fat", "grade": 5, "hint": "The bubbly yellow layer at the bottom that keeps the body warm.", "picks": [[400, 650], [600, 660], [800, 650], [700, 690]], "tol": 42, "all": true, "close": 4, "hole": 2000, "lasso": [[365, 588], [990, 588], [1090, 515], [1090, 720], [365, 720]]},
     {"name": "epidermis", "grade": 5, "hint": "The thin outer layer you can see and touch.", "region": true, "lasso": [[365, 70], [1090, 70], [1090, 175], [1000, 310], [960, 330], [420, 330], [400, 296], [365, 286]], "picks": [[700, 150], [450, 240], [900, 240], [1060, 200]], "seal": 3},
-    {"name": "dermis", "grade": 5, "hint": "The thick middle layer that holds the vessels, glands and roots.", "region": true, "lasso": [[365, 250], [1090, 150], [1090, 600], [365, 600]]}
+    {"name": "dermis", "grade": 5, "hint": "The thick middle layer that holds the vessels, glands and roots.", "region": true, "lasso": [[365, 250], [1090, 150], [1090, 468], [990, 584], [365, 600]]}
   ]
 }
