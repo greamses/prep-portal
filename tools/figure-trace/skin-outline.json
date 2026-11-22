@@ -1,0 +1,26 @@
+{
+  "title": "The Skin",
+  "src": "src/skin-line.png",
+  "out": "data/vocab/organs/skin.js",
+  "display": 1.125,
+  "seal": 1,
+  "ink": "#3e2c26",
+  "cuts": [[486, 199, 548, 199], [714, 328, 747, 328]],
+  "tube_r": 6,
+  "tube_min": 80,
+  "tube_lasso": [[365, 250], [1090, 150], [1090, 600], [365, 600]],
+  "parts": [
+    {"name": "hair", "grade": 3, "hint": "The thin dark strand that grows up and out through the surface.", "fill": "#4a3a33", "seeds": [[746, 203]]},
+    {"name": "sweat gland", "grade": 4, "hint": "The coiled tube deep down that makes sweat.", "fill": "#f3d9a8", "fills": ["#f3d9a8", "#ecc98f"], "enclose": true, "lasso": [[455, 450], [490, 438], [540, 440], [565, 470], [565, 520], [540, 548], [490, 552], [455, 530], [445, 490]], "share": 0.6},
+    {"name": "sweat duct", "grade": 6, "hint": "The narrow tube carrying sweat up to a pore on the surface.", "fill": "#f3d9a8", "seeds": [[512, 381]]},
+    {"name": "sebaceous gland", "grade": 7, "hint": "The little lobes beside the strand that make oil to keep it soft.", "fill": "#f6e3a7", "seeds": [[628, 358], [750, 340]]},
+    {"name": "Malpighian layer", "grade": 7, "hint": "The living bottom layer of the epidermis that makes new skin cells — it dips down to wrap the oil glands and line the hair's pocket.", "fill": "#e9a38f", "seeds": [[404, 285], [595, 342], [673, 378], [736, 344], [995, 243]]},
+    {"name": "hair follicle", "grade": 6, "hint": "The pocket in the skin that the strand grows from.", "fill": "#f4c7b6", "fills": ["#f4c7b6", "#eab8a5"], "seeds": [[630, 457], [692, 417], [703, 457]]},
+    {"name": "arrector pili muscle", "grade": 8, "hint": "The tiny strap that pulls the strand upright — goosebumps.", "fill": "#d98a7a", "fills": ["#d98a7a", "#cf7d6d"], "seeds": [[831, 388], [723, 454]], "lasso": [[740, 400], [890, 270], [935, 300], [800, 450], [735, 475]], "share": 0.6},
+    {"name": "artery", "grade": 6, "hint": "The red vessel bringing oxygen-rich blood to the skin.", "fill": "#d9534f", "branches": true, "seeds": [[504, 571], [707, 559], [769, 554], [375, 557], [417, 422], [763, 612], [1042, 495], [1050, 482], [952, 572], [912, 571]]},
+    {"name": "vein", "grade": 6, "hint": "The blue vessel taking used blood away from the skin.", "fill": "#4f86c6", "branches": true, "seeds": [[436, 576], [1017, 596], [1006, 514], [1023, 458], [1034, 404], [873, 568], [1010, 598]]},
+    {"name": "subcutaneous fat", "grade": 5, "hint": "The bubbly yellow layer at the bottom that keeps the body warm.", "fill": "#f7d65e", "fills": ["#f7d65e", "#f2c94c", "#f9df7b", "#eebd3f"], "lasso": [[365, 598], [990, 598], [1090, 505], [1090, 720], [365, 720]], "share": 0.55, "except": [[660, 601], [472, 601]]},
+    {"name": "epidermis", "grade": 5, "hint": "The thin outer layer you can see and touch.", "fill": "#f6cdbb", "fills": ["#f6cdbb", "#f2c0ad", "#f8d6c6"], "lasso": [[365, 70], [1090, 70], [1090, 175], [1000, 305], [365, 298]], "share": 0.6},
+    {"name": "dermis", "grade": 5, "hint": "The thick middle layer that holds the vessels, glands and roots.", "fill": "#efb294", "rest": true, "lasso": [[365, 150], [1090, 100], [1090, 720], [365, 720]]}
+  ]
+}
