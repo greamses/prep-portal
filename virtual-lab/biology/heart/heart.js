@@ -18,6 +18,47 @@ const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = I[el.dataset.icon] || ''; });
 $('paint').innerHTML = heroPaint();
 
+// ---------------------------------------------------------------- the rail's icons
+// Drawn for this page in the site's sticker style: flat token fills, a white
+// highlight, no outlines (DESIGN.md / icon house style).
+const HEART = 'M12 20.6S3.6 15.6 3.6 9.5C3.6 6.6 5.6 4.6 8 4.6c1.6 0 3 .8 4 2.1 1-1.3 2.4-2.1 4-2.1 2.4 0 4.4 2 4.4 4.9 0 6.1-8.4 11.1-8.4 11.1z';
+const HICONS = {
+  // two halves of a heart pulled apart
+  apart: `<g transform="translate(-1.6 0)"><path d="M11.4 19.4S3.6 14.8 3.6 9.2c0-2.7 1.9-4.6 4.2-4.6 1.4 0 2.7.7 3.6 1.9z" fill="var(--accent-danger)"/></g>
+          <g transform="translate(1.6 0)"><path d="M12.6 19.4s7.8-4.6 7.8-10.2c0-2.7-1.9-4.6-4.2-4.6-1.4 0-2.7.7-3.6 1.9z" fill="var(--accent-danger)"/></g>
+          <path d="M5.4 8.6c.3-1 1-1.6 2-1.7" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity=".85"/>`,
+  // a heart with a slice taken through it
+  cut: `<path d="${HEART}" fill="var(--accent-danger)"/>
+        <path d="M3 15.5 21 7" stroke="var(--surface-primary,#fffdf8)" stroke-width="3"/>
+        <path d="M3 15.5 21 7" stroke="var(--accent-warning)" stroke-width="1.4" stroke-dasharray="2.2 1.8"/>`,
+  // the pulse trace across a heart
+  beat: `<path d="${HEART}" fill="var(--accent-danger)"/>
+         <path d="M3.4 11.6h4.4l1.6-3 2.4 6 1.9-4.4 1.2 1.4h5.6" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+  // a vessel branching down the heart's face
+  vessels: `<path d="${HEART}" fill="var(--accent-danger)" opacity=".28"/>
+            <path d="M12 6.6v12.6M12 10.6 8.2 7.4M12 10.6l3.8-3.2M12 14.6l-3.6 2.4M12 14.6l3.6 2.4" fill="none" stroke="var(--accent-danger)" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M11.4 9.4 8.8 7.2" fill="none" stroke="#fff" stroke-width=".9" stroke-linecap="round" opacity=".8"/>`,
+  // a turntable: an arrow going round a dot
+  spin: `<path d="M19.4 12a7.4 7.4 0 1 1-2.2-5.25" fill="none" stroke="var(--accent-secondary)" stroke-width="2.8" stroke-linecap="round"/>
+         <path d="M18.6 3.6v4.4h-4.4" fill="none" stroke="var(--accent-secondary)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+         <circle cx="12" cy="12" r="2.4" fill="var(--accent-warning)"/>`,
+  // a wire globe
+  wire: `<circle cx="12" cy="12" r="8.4" fill="var(--accent-success)" opacity=".22"/>
+         <g fill="none" stroke="var(--accent-success)" stroke-width="1.6"><circle cx="12" cy="12" r="8.4"/><ellipse cx="12" cy="12" rx="3.6" ry="8.4"/><path d="M3.6 12h16.8M5 7.6h14M5 16.4h14"/></g>`,
+  // back to the start: an arrow turning back onto a heart
+  reset: `<path d="M5.2 12a6.8 6.8 0 1 0 2-4.8" fill="none" stroke="var(--accent-warning)" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M4.4 4v4.4h4.4" fill="none" stroke="var(--accent-warning)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 15.6s-3-1.8-3-3.9c0-1 .7-1.7 1.6-1.7.6 0 1.1.3 1.4.8.3-.5.8-.8 1.4-.8.9 0 1.6.7 1.6 1.7 0 2.1-3 3.9-3 3.9z" fill="var(--accent-danger)"/>`,
+  // the three cuts: a block of heart with the plane through it
+  'cut-front': `<rect x="5" y="4" width="14" height="16" fill="var(--accent-danger)" opacity=".85"/><path d="M12 2v20" stroke="#fff" stroke-width="2.6"/><path d="M12 2v20" stroke="var(--accent-warning)" stroke-width="1.2" stroke-dasharray="2 1.6"/>`,
+  'cut-top': `<rect x="4" y="5" width="16" height="14" fill="var(--accent-secondary)" opacity=".85"/><path d="M2 12h20" stroke="#fff" stroke-width="2.6"/><path d="M2 12h20" stroke="var(--accent-warning)" stroke-width="1.2" stroke-dasharray="2 1.6"/>`,
+  'cut-side': `<path d="M5 6.4 11 3.4h8v14.2l-6 3H5z" fill="var(--accent-success)" opacity=".85"/><path d="M3 9.2l18 5.6" stroke="#fff" stroke-width="2.6"/><path d="M3 9.2l18 5.6" stroke="var(--accent-warning)" stroke-width="1.2" stroke-dasharray="2 1.6"/>`,
+};
+document.querySelectorAll('[data-hicon]').forEach((el) => {
+  el.innerHTML = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">${HICONS[el.dataset.hicon] || ''}</svg>`;
+});
+
+
 const root = document.documentElement;
 let savedTheme = null;
 try { savedTheme = localStorage.getItem('pp-theme'); } catch (e) { /* storage blocked */ }
@@ -433,21 +474,15 @@ $('btnReset').addEventListener('click', () => {
   flyTo(new THREE.Vector3(0, 0.07, 1), state.explodeTarget ? EXPLODED_DIST : HOME_DIST);
 });
 
-// ---------------------------------------------------------------- tap to name
+// ----------------------------------------------- point at a part to name it
+// Hovering (or tapping, on a touch screen) a part lights it up and the site's
+// one tooltip (utils/components/tooltip.js) names it beside the pointer: an
+// invisible anchor follows the pointer and carries the words in data-tip.
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
+const tipAnchor = $('partTip');
+let hovered = null;
 let downAt = null;
-let selected = null;
-renderer.domElement.addEventListener('pointerdown', (e) => { downAt = { x: e.clientX, y: e.clientY }; });
-renderer.domElement.addEventListener('pointerup', (e) => {
-  if (!downAt || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 6) return;
-  const rect = renderer.domElement.getBoundingClientRect();
-  pointer.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
-  raycaster.setFromCamera(pointer, camera);
-  const hits = raycaster.intersectObjects(pickables, false)
-    .filter((h) => h.object.visible && (!state.section || clip.distanceToPoint(h.point) >= 0));
-  select(hits.length ? hits[0].object.userData.part : null);
-});
 function infoFor(name) {
   if (parts.has(name)) return parts.get(name);
   const v = meta.valves.find((x) => x.name === name);
@@ -456,23 +491,53 @@ function infoFor(name) {
   return null;
 }
 function highlight(name, on) {
-  const c = on ? 0x3a2400 : 0x000000;
+  const c = on ? 0x5a3200 : 0x000000;
   if (parts.has(name)) parts.get(name).mesh.material.emissive.setHex(c);
   const v = valves.find((x) => x.name === name);
   if (v) v.material.emissive.setHex(c);
   if (name === 'chordae' && chordae) chordae.material.emissive.setHex(c);
 }
-function select(name) {
-  if (selected) highlight(selected, false);
-  selected = name;
-  const info = name && infoFor(name);
-  $('partNote').hidden = !info;
-  document.body.classList.toggle('has-part', !!info);
-  if (!info) return;
-  highlight(name, true);
-  $('partName').textContent = info.label;
-  $('partDesc').textContent = info.description;
+function partAt(x, y) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.set(((x - rect.left) / rect.width) * 2 - 1, -((y - rect.top) / rect.height) * 2 + 1);
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(pickables, false)
+    .filter((h) => h.object.visible && (!state.section || clip.distanceToPoint(h.point) >= 0));
+  return hits.length ? hits[0].object.userData.part : null;
 }
+function pointAt(name, x, y) {
+  if (name !== hovered) {
+    if (hovered) highlight(hovered, false);
+    hovered = name;
+    if (name) highlight(name, true);
+  }
+  const info = name && infoFor(name);
+  renderer.domElement.style.cursor = info ? 'pointer' : '';
+  if (!info) {
+    tipAnchor.dispatchEvent(new PointerEvent('pointerout', { bubbles: true, relatedTarget: null }));
+    return;
+  }
+  tipAnchor.style.left = `${x}px`;
+  tipAnchor.style.top = `${y - 10}px`;
+  const words = info.description ? `${info.label} — ${info.description}` : info.label;
+  if (tipAnchor.dataset.tip !== words) setTip(tipAnchor, words, 'top');
+  tipAnchor.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+}
+let moveQueued = null;
+renderer.domElement.addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'touch' || e.buttons) return; // dragging turns the model
+  const { clientX: x, clientY: y } = e;
+  if (moveQueued) { moveQueued = [x, y]; return; }
+  moveQueued = [x, y];
+  requestAnimationFrame(() => { const [mx, my] = moveQueued; moveQueued = null; pointAt(partAt(mx, my), mx, my); });
+});
+renderer.domElement.addEventListener('pointerleave', () => pointAt(null, 0, 0));
+renderer.domElement.addEventListener('pointerdown', (e) => { downAt = { x: e.clientX, y: e.clientY }; });
+renderer.domElement.addEventListener('pointerup', (e) => {
+  // a tap (not a drag) names the part too — the only way on a touch screen
+  if (!downAt || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 6) return;
+  pointAt(partAt(e.clientX, e.clientY), e.clientX, e.clientY);
+});
 
 // ---------------------------------------------------------------- frame loop
 let lastPhase = null;
@@ -483,11 +548,7 @@ function applyCycle() {
   U.uE.value = cyc.uE;
   state.av = cyc.av;
   state.sl = cyc.sl;
-  if (cyc.phase !== lastPhase) {
-    lastPhase = cyc.phase;
-    $('phaseName').textContent = cyc.phase.name;
-    $('phaseDesc').textContent = cyc.phase.desc;
-  }
+  lastPhase = cyc.phase;
 }
 const _w = new THREE.Vector3();
 function updateClip() {
