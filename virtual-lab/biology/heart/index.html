@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D Heart Model</title>
+<meta name="description" content="Interactive, anatomy-inspired 3D model of the human heart: chambers, great vessels and coronary arteries.">
+<style>
+  :root {
+    --bg: #faf7f1;
+    --surface: #fffdf8;
+    --ink: #2a2723;
+    --text-secondary: #6b655c;
+    --border-subtle: rgba(42, 39, 35, .12);
+    --shadow: 0 8px 24px rgba(42, 39, 35, .10);
+    --accent: #f4c95d;
+    --artery: #b8322e;
+    --vein: #3d60b3;
+    --fat: #eccb6b;
+    --muscle: #80242a;
+    --font-display: "Unbounded", system-ui, sans-serif;
+    --font-mono: ui-monospace, "JetBrains Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1d1b18;
+      --surface: #2a2723;
+      --ink: #f3eee4;
+      --text-secondary: #b3ab9d;
+      --border-subtle: rgba(243, 238, 228, .14);
+      --shadow: 0 8px 24px rgba(0, 0, 0, .35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1d1b18;
+    --surface: #2a2723;
+    --ink: #f3eee4;
+    --text-secondary: #b3ab9d;
+    --border-subtle: rgba(243, 238, 228, .14);
+    --shadow: 0 8px 24px rgba(0, 0, 0, .35);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+  .panel {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 16px 18px;
+    z-index: 2;
+  }
+  #info { top: 16px; left: 16px; width: min(320px, calc(100vw - 32px)); }
+  #info h1 {
+    font: 700 18px/1.2 var(--font-display);
+    margin: 0 0 6px;
+  }
+  #info p { margin: 0 0 12px; color: var(--text-secondary); font-size: 14px; }
+  .eyebrow {
+    font: 600 11px/1 var(--font-mono);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+  .legend { list-style: none; padding: 0; margin: 0; display: grid; gap: 7px; }
+  .legend li { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .swatch { width: 14px; height: 14px; border-radius: 4px; flex: none; border: 1px solid var(--border-subtle); }
+
+  #controls {
+    bottom: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+    padding: 10px; width: max-content; max-width: calc(100vw - 32px);
+  }
+  button {
+    font: 600 13px/1 var(--font-mono);
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    padding: 10px 14px;
+    cursor: pointer;
+    min-height: 40px;
+  }
+  button:hover { border-color: var(--ink); }
+  button[aria-pressed="true"] { background: var(--accent); color: #2a2723; border-color: var(--ink); }
+  button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  #hint {
+    bottom: 16px; right: 16px; max-width: 260px; font-size: 13px; color: var(--text-secondary);
+    padding: 12px 14px;
+  }
+  #loading {
+    position: fixed; inset: 0; display: grid; place-items: center;
+    font: 600 13px var(--font-mono); color: var(--text-secondary); z-index: 3;
+    background: var(--bg); transition: opacity .4s;
+  }
+  #loading.done { opacity: 0; pointer-events: none; }
+  #error { display: none; }
+
+  @media (max-width: 640px) {
+    #info { top: 10px; left: 10px; right: 10px; width: auto; padding: 12px 14px; }
+    #info p { display: none; }
+    .legend { grid-template-columns: 1fr 1fr; }
+    #hint { display: none; }
+    #controls { bottom: 10px; }
+  }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="stage"></div>
+
+<section class="panel" id="info" aria-labelledby="title">
+  <div class="eyebrow">Biology lab</div>
+  <h1 id="title">The human heart</h1>
+  <p>Drag to rotate, scroll or pinch to zoom. Simplified, anatomy-inspired model for study.</p>
+  <ul class="legend">
+    <li><span class="swatch" style="background:var(--muscle)"></span>Heart muscle (myocardium)</li>
+    <li><span class="swatch" style="background:#b06a5e"></span>Atria (upper chambers)</li>
+    <li><span class="swatch" style="background:var(--artery)"></span>Aorta, arteries</li>
+    <li><span class="swatch" style="background:var(--vein)"></span>Venae cavae, veins</li>
+    <li><span class="swatch" style="background:#4d7fc6"></span>Pulmonary artery</li>
+    <li><span class="swatch" style="background:var(--fat)"></span>Fat in the grooves</li>
+  </ul>
+</section>
+
+<nav class="panel" id="controls" aria-label="Model controls">
+  <button id="btnCoronary" aria-pressed="true">Coronary vessels</button>
+  <button id="btnRotate" aria-pressed="true">Auto-rotate</button>
+  <button id="btnWire" aria-pressed="false">Wireframe</button>
+  <button id="btnReset">Reset view</button>
+</nav>
+
+<aside class="panel" id="hint">
+  Tip: the aorta leaves the left ventricle and arches to the right. The pulmonary artery is on the patient's left, in front of the aorta.
+</aside>
+
+<div id="loading"><span id="loadingText">Loading heart…</span></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const stage = document.getElementById('stage');
+const loading = document.getElementById('loading');
+const loadingText = document.getElementById('loadingText');
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#faf7f1');
+
+const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 10);
+camera.position.set(0.0, 0.02, 0.30);
+
+const key = new THREE.DirectionalLight(0xfff4e0, 1.6);
+key.position.set(0.4, 0.6, 0.8);
+scene.add(key);
+const rim = new THREE.DirectionalLight(0xc8dcff, 0.7);
+rim.position.set(-0.6, 0.2, -0.6);
+scene.add(rim);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.0, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 0.12;
+controls.maxDistance = 0.8;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.8;
+
+let heartRoot = null;
+const coronaryMeshes = [];
+const bodyMaterials = [];
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  // keep the whole heart in frame on narrow phones
+  camera.fov = w / h < 0.8 ? 46 : 35;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+const gltfLoader = new GLTFLoader();
+gltfLoader.load(
+  new URL('./models/heart.glb', import.meta.url).href,
+  (gltf) => {
+    heartRoot = gltf.scene;
+    heartRoot.traverse((obj) => {
+      if (!obj.isMesh) return;
+      // the exported GLB carries colours but no normals: derive smooth shading here
+      if (!obj.geometry.attributes.normal) obj.geometry.computeVertexNormals();
+      const isCoronary = /coronary|cardiac_vein/i.test(obj.name) || /coronary|cardiac_vein/i.test(obj.parent?.name || '');
+      if (isCoronary) coronaryMeshes.push(obj);
+      obj.material = new THREE.MeshPhysicalMaterial({
+        vertexColors: true,
+        roughness: 0.42,
+        metalness: 0.0,
+        clearcoat: 0.45,
+        clearcoatRoughness: 0.3,
+      });
+      bodyMaterials.push(obj.material);
+    });
+    // centre the model on its bounding box so the orbit pivot is the heart's middle
+    const box = new THREE.Box3().setFromObject(heartRoot);
+    const centre = box.getCenter(new THREE.Vector3());
+    heartRoot.position.sub(centre);
+    scene.add(heartRoot);
+    controls.target.set(0, 0, 0);
+    loading.classList.add('done');
+  },
+  (evt) => {
+    if (evt.total) loadingText.textContent = `Loading heart… ${Math.round(evt.loaded / evt.total * 100)}%`;
+  },
+  (err) => {
+    console.error(err);
+    loadingText.textContent = 'Could not load the heart model. Check your connection and reload.';
+  }
+);
+
+// ---------- controls
+const btnCoronary = document.getElementById('btnCoronary');
+const btnRotate = document.getElementById('btnRotate');
+const btnWire = document.getElementById('btnWire');
+const btnReset = document.getElementById('btnReset');
+
+btnCoronary.addEventListener('click', () => {
+  const on = btnCoronary.getAttribute('aria-pressed') !== 'true';
+  btnCoronary.setAttribute('aria-pressed', String(on));
+  coronaryMeshes.forEach((m) => { m.visible = on; });
+});
+btnRotate.addEventListener('click', () => {
+  const on = btnRotate.getAttribute('aria-pressed') !== 'true';
+  btnRotate.setAttribute('aria-pressed', String(on));
+  controls.autoRotate = on;
+});
+btnWire.addEventListener('click', () => {
+  const on = btnWire.getAttribute('aria-pressed') !== 'true';
+  btnWire.setAttribute('aria-pressed', String(on));
+  bodyMaterials.forEach((m) => { m.wireframe = on; });
+});
+btnReset.addEventListener('click', () => {
+  camera.position.set(0.0, 0.02, 0.30);
+  controls.target.set(0, 0, 0);
+  controls.update();
+});
+
+renderer.setAnimationLoop(() => {
+  controls.update();
+  renderer.render(scene, camera);
+});
+</script>
+</body>
+</html>
