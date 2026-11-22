@@ -212,16 +212,22 @@ if spec.get("lines"):
     if ln.shape != (H, W):
         raise SystemExit(f'{spec["lines"]} is {ln.shape[1]}x{ln.shape[0]}, the picture is {W}x{H}')
     ink = ln < spec.get("line_dark", 140)
+    # `line_seal`: thicken the lines by this many px for SPLITTING only, so a
+    # hairline gap in the outline can't join two areas (the dermis leaked up
+    # beside the hair); the drawn lines stay as they are
+    r_seal = spec.get("line_seal", 0)
+    wall = (np.array(Image.fromarray(ln.astype(np.uint8)).filter(ImageFilter.MinFilter(2 * r_seal + 1)))
+            < spec.get("line_dark", 140)) if r_seal else ink
     # label the white areas (4-connected)
     lab = np.full((H, W), -1, int)
     n = 0
-    for sy, sx in zip(*np.nonzero(~ink)):
+    for sy, sx in zip(*np.nonzero(~wall)):
         if lab[sy, sx] >= 0: continue
         q = deque([(sy, sx)]); lab[sy, sx] = n
         while q:
             y, x = q.popleft()
             for ny, nx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
-                if 0 <= ny < H and 0 <= nx < W and lab[ny, nx] < 0 and not ink[ny, nx]:
+                if 0 <= ny < H and 0 <= nx < W and lab[ny, nx] < 0 and not wall[ny, nx]:
                     lab[ny, nx] = n; q.append((ny, nx))
         n += 1
     # the outside: every area touching the picture's edge
@@ -239,6 +245,12 @@ if spec.get("lines"):
     share = votes.max(axis=1) / np.maximum(votes.sum(axis=1), 1)
     mixed = share < spec.get("own_share", 0.85)
     owner[mixed] = -3
+    # `own_areas`: [[x,y]...] — the WHOLE outline area at each point goes to
+    # this part, whatever the colours say (an open sliver the vote gets wrong)
+    for i, pp in enumerate(spec["parts"]):
+        for x, y in pp.get("own_areas", []):
+            if lab[y, x] >= 0: owner[lab[y, x]] = i
+            else: raise SystemExit(f'{pp["name"]}: own_areas point {x},{y} is on a line')
     for e in edge: owner[e] = -2
     part = np.where(lab >= 0, owner[np.maximum(lab, 0)], -1)  # -1: line or unnamed, -2: outside
     mx = part == -3
@@ -253,8 +265,14 @@ if spec.get("lines"):
             take = todo & (nb >= 0)
             part[take] = nb[take]
             todo &= ~take
+    # `enclose`: a part owns everything it wraps round (a coiled gland's loops)
+    for i, pp in enumerate(spec["parts"]):
+        if pp.get("enclose"):
+            inside = fill_holes(part == i, pp.get("enclose_max", 60000))
+            part[inside] = i
     masks = [part == i for i in range(NP)]
     paper = part < 0
+    np.save(os.path.join(here, f'{os.path.splitext(os.path.basename(spec_path))[0]}-parts.npy'), part)
     # the clean art: each area flat in its own average colour, ink blended on
     cnt = np.bincount(lab[lab >= 0], minlength=n).astype(float)
     flat = np.zeros((H, W, 3))
