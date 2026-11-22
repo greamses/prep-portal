@@ -140,8 +140,9 @@ const BODY = 'body-map';
 
 /* The single-FIGURE topics — where the whole-body map names the organs, each of
    these names the PARTS inside one thing: one organ, or one cell. Each is a
-   drawn topic backed by a module of its own, sourced from Wikimedia and baked
-   by its own scripts/gen-*.mjs. Unlike the geographic maps and the body map
+   drawn topic backed by a module of its own — sourced from Wikimedia and baked
+   by its own scripts/gen-*.mjs, or (the ear, the eye) traced from a picture by
+   tools/figure-trace/trace.py. Unlike the geographic maps and the body map
    they have NO sub-scope — one figure has too few parts to slice — so a pick
    jumps straight past the scope step. */
 export const PART_FIGURES = {
@@ -149,6 +150,9 @@ export const PART_FIGURES = {
   'brain-map': { module: '/data/vocab/organs/brain.js', label: 'The Brain' },
   'brain-section': { module: '/data/vocab/organs/brain-section.js', label: 'Inside the Brain' },
   'ear-map': { module: '/data/vocab/organs/ear.js', label: 'The Ear' },
+  'eye-map': { module: '/data/vocab/organs/eye.js', label: 'The Eye' },
+  'skin-map': { module: '/data/vocab/organs/skin.js', label: 'The Skin' },
+  'skeleton': { module: '/data/vocab/organs/skeleton.js', label: 'The Skeleton' },
   'plant-cell': { module: '/data/vocab/cells/plant-cell.js', label: 'The Plant Cell' },
   'animal-cell': { module: '/data/vocab/cells/animal-cell.js', label: 'The Animal Cell' },
 };

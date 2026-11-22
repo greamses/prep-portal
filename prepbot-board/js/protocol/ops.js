@@ -217,7 +217,7 @@ const SPEC = {
 
   /* A drawn diagram from the site's own library, in the figure panel. */
   diagram(o) {
-    const NAMES = ["plant-cell", "animal-cell", "heart", "brain", "brain-section", "ear"];
+    const NAMES = ["plant-cell", "animal-cell", "heart", "brain", "brain-section", "ear", "eye", "skin", "skeleton"];
     const name = String(o.name || "").toLowerCase().replace(/\s+/g, "-");
     if (!NAMES.includes(name)) return null;
     /* steps: the panel starts empty and each part is drawn when it is named */

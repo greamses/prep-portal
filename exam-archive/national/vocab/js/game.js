@@ -324,8 +324,8 @@ function arrowMarkup({ x1, y1, x2, y2 }) {
 
 // A RICH figure keeps its original shading — the whole artwork is drawn as-is
 // (figureMod.SVG) and the quizzed part is picked out WITHOUT redrawing it: an
-// arrow at it where the figure gives one (the cells), otherwise a spotlight
-// that dims everything else (the ear). No per-part paths either way, so this
+// arrow at it where the figure gives one (the cells), the part's own traced
+// outline where it has one (the ear, the eye), otherwise an elliptical spotlight. No per-part paths either way, so this
 // can't mislabel — both just point at the real art.
 function renderRichClue(p) {
   clueEl.className = 'vocab-clue vocab-clue--map';
@@ -338,6 +338,17 @@ function renderRichClue(p) {
   svg.setAttribute('aria-label', 'Diagram clue — one part is pointed out');
   if (p.arrow) {
     svg.innerHTML = `<g class="vocab-rich-art">${m.SVG}</g>${arrowMarkup(p.arrow)}`;
+  } else if (p.shape) {
+    // A traced figure (the ear, the eye) knows each part's REAL outline: the
+    // hole in the scrim is the part itself, ringed in its own shape.
+    svg.innerHTML =
+      `<defs><mask id="vocab-rich-spot">`
+      + `<rect x="0" y="0" width="${m.MAP_W}" height="${m.MAP_H}" fill="#fff"/>`
+      + `<path d="${p.shape}" fill="#000"/>`
+      + `</mask></defs>`
+      + `<g class="vocab-rich-art">${m.SVG}</g>`
+      + `<rect class="vocab-rich-scrim" x="0" y="0" width="${m.MAP_W}" height="${m.MAP_H}" mask="url(#vocab-rich-spot)"/>`
+      + `<path class="vocab-map-ring vocab-rich-outline" d="${p.shape}"/>`;
   } else {
     // A mask that is opaque everywhere except an elliptical hole over the part;
     // the dimming scrim wears it, so only the part stays bright.

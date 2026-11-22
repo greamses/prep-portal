@@ -1,0 +1,21 @@
+{
+  "title": "The Ear",
+  "src": "src/ear.jpg",
+  "out": "data/vocab/organs/ear.js",
+  "check": "ear-check.png",
+  "parts": [
+    {"name": "eardrum", "grade": 3, "hint": "The thin, tight skin at the end of the canal that shakes when sound hits it — the tympanic membrane.", "picks": [[725, 400], [705, 370], [745, 430]], "tol": 30, "lasso": [[686, 340], [772, 340], [782, 460], [736, 464], [686, 412]]},
+    {"name": "malleus", "grade": 6, "hint": "The hammer — the first of the three tiny bones, joined to the eardrum.", "picks": [[697, 287], [730, 303], [718, 330]], "tol": 45, "lasso": [[686, 258], [752, 258], [752, 380], [686, 380]], "hole": 150},
+    {"name": "incus", "grade": 6, "hint": "The anvil — the middle one of the three tiny bones.", "picks": [[763, 320], [780, 343], [790, 367]], "tol": 45, "lasso": [[752, 258], [792, 266], [808, 300], [838, 345], [838, 392], [752, 392]], "hole": 150},
+    {"name": "stapes", "grade": 6, "hint": "The stirrup — the smallest bone in the body, pressing on the inner ear.", "picks": [[820, 350], [860, 403], [837, 380]], "tol": 30, "lasso": [[806, 336], [846, 336], [878, 362], [878, 420], [806, 420]]},
+    {"name": "vestibule", "grade": 8, "hint": "The small chamber that joins the balance loops to the coiled tube.", "picks": [[880, 320]], "tol": 40, "lasso": [[838, 278], [918, 278], [918, 362], [846, 362], [838, 336]]},
+    {"name": "semicircular canals", "grade": 5, "hint": "Three looping tubes of fluid that sense balance and turning.", "picks": [[813, 253], [887, 187], [910, 253], [853, 270], [830, 237]], "tol": 50, "close": 3, "lasso": [[775, 170], [975, 170], [975, 330], [905, 330], [880, 290], [800, 300], [775, 290]]},
+    {"name": "cochlea", "grade": 4, "hint": "The coiled, snail-shaped tube that turns vibrations into nerve signals.", "picks": [[960, 380], [1000, 420]], "tol": 50, "close": 3, "hole": 4000, "lasso": [[852, 318], [1008, 318], [1045, 356], [1045, 475], [895, 475], [870, 445], [852, 410]]},
+    {"name": "auditory nerve", "grade": 5, "hint": "The bundle that carries hearing and balance messages to the brain.", "picks": [[1100, 300], [1150, 290]], "tol": 50, "close": 2, "lasso": [[900, 250], [1185, 250], [1185, 390], [900, 390]]},
+    {"name": "middle ear", "grade": 5, "hint": "The air-filled space behind the eardrum that holds three tiny bones.", "picks": [[800, 420]], "tol": 30, "hole": 3000, "lasso": [[748, 340], [880, 340], [880, 470], [836, 478], [760, 462]]},
+    {"name": "Eustachian tube", "grade": 6, "hint": "The passage down to the throat that keeps the air pressure equal on both sides of the eardrum.", "picks": [[930, 560], [960, 600]], "tol": 50, "close": 4, "lasso": [[790, 456], [880, 440], [1030, 600], [1030, 680], [930, 680], [800, 480]]},
+    {"name": "ear canal", "grade": 3, "hint": "The tube that carries sound in from outside to the eardrum.", "picks": [[550, 410]], "tol": 35},
+    {"name": "earlobe", "grade": 3, "hint": "The soft, fleshy bottom of the outer flap — where earrings hang.", "picks": [[380, 600]], "tol": 35, "close": 3, "lasso": [[225, 545], [470, 545], [470, 690], [225, 690]]},
+    {"name": "pinna", "grade": 3, "hint": "The outer flap you can see, which catches sound and funnels it inwards (the auricle).", "region": true, "lasso": [[225, 90], [330, 90], [410, 150], [415, 182], [380, 217], [374, 250], [388, 283], [400, 315], [398, 360], [395, 420], [400, 470], [408, 545], [225, 545]]}
+  ]
+}

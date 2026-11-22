@@ -678,8 +678,8 @@ service cloud.firestore {
         // main.js's GRID_SIZES_BY_TYPE.
         request.resource.data.gridSize in [3, 4, 5, 6, 7, 9, 10, 15, 20] &&
         // What the room is playing WITH: Slider's tile set (numbers /
-        // fractions / picture), what the Jigsaw is a jigsaw OF (a photo, or
-        // the Map of Nigeria with its state outlines shown or hidden), or
+        // fractions / picture), what the Jigsaw is a jigsaw OF (a photo, the
+        // Map of Nigeria or a biology diagram, outlines shown or '-blank'), or
         // which silhouette the Tangram is filling.
         // Sudoku and Shikaku always send 'numbers'. Deliberately not tied to
         // puzzleType — a mismatch is harmless (each puzzle reads the field
@@ -693,6 +693,10 @@ service cloud.firestore {
         (!('tiles' in request.resource.data) ||
           request.resource.data.tiles in [
             'numbers', 'fractions', 'picture', 'photo', 'nigeria', 'nigeria-blank',
+            'ear', 'ear-blank', 'eye', 'eye-blank', 'heart', 'heart-blank',
+            'brain', 'brain-blank', 'brain-section', 'brain-section-blank',
+            'plant-cell', 'plant-cell-blank', 'animal-cell', 'animal-cell-blank',
+            'skin', 'skin-blank', 'skeleton', 'skeleton-blank',
             'square', 'triangle', 'rectangle', 'parallelogram', 'cat', 'boat'
           ]);
 

@@ -1,0 +1,23 @@
+{
+  "title": "The Eye",
+  "src": "src/eye.jpg",
+  "out": "data/vocab/organs/eye.js",
+  "check": "eye-check.png",
+  "parts": [
+    {"name": "pupil", "grade": 3, "hint": "The black opening in the middle that lets the light in.", "picks": [[450, 373]], "tol": 60},
+    {"name": "lens", "grade": 4, "hint": "The clear, bendable disc that focuses light onto the back of the eye.", "picks": [[520, 373], [510, 330], [530, 420]], "tol": 35, "close": 3, "hole": 3000},
+    {"name": "iris", "grade": 3, "hint": "The coloured ring that makes the black opening bigger or smaller.", "picks": [[440, 300], [440, 470]], "tol": 55, "close": 3, "hole": 3000},
+    {"name": "cornea", "grade": 4, "hint": "The clear, curved window at the very front that starts bending the light.", "picks": [[373, 373]], "tol": 16, "lasso": [[340, 220], [480, 220], [480, 540], [340, 540]]},
+    {"name": "aqueous humour", "grade": 7, "hint": "The watery fluid filling the space just behind the clear front window.", "picks": [[407, 373]], "tol": 16, "lasso": [[340, 220], [480, 220], [480, 540], [340, 540]]},
+    {"name": "ciliary body", "grade": 8, "hint": "The ring of muscle that pulls on the lens to change its shape.", "picks": [[505, 250], [510, 500], [493, 260], [493, 507]], "tol": 45, "close": 2,
+     "lasso": [[[462, 205], [560, 175], [560, 300], [462, 300]], [[462, 450], [560, 450], [560, 570], [462, 545]]]},
+    {"name": "optic nerve", "grade": 5, "hint": "The cable that carries the picture from the eye to the brain.", "picks": [[987, 453]], "tol": 45, "close": 3, "hole": 3000,
+     "lasso": [[915, 375], [1085, 415], [1085, 470], [1035, 575], [915, 515]]},
+    {"name": "vitreous humour", "grade": 7, "hint": "The clear jelly that fills the big ball of the eye and keeps its shape.", "picks": [[650, 300], [650, 500]], "tol": 35, "close": 3, "hole": 12000},
+    {"name": "retina", "grade": 5, "hint": "The thin layer at the back that catches the light — home of the rods and cones.", "picks": [[720, 140]], "tol": 40, "close": 1},
+    {"name": "choroid", "grade": 8, "hint": "The blood-rich layer between the white coat and the light-catching layer, feeding the back of the eye.", "picks": [[653, 133], [700, 625]], "tol": 40, "close": 1},
+    {"name": "sclera", "grade": 5, "hint": "The tough outer coat — the white of the eye.", "picks": [[607, 113], [920, 350], [700, 640]], "tol": 30, "close": 1},
+    {"name": "eye muscles", "grade": 6, "hint": "The straps on the outside that turn the eyeball to look up, down and around.", "picks": [[787, 80], [720, 680]], "tol": 45, "close": 3, "hole": 3000},
+    {"name": "eyelids", "grade": 3, "hint": "The folds of skin that close over the front when you blink.", "picks": [[440, 150], [440, 600]], "tol": 40, "close": 3, "hole": 2000}
+  ]
+}
