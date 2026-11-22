@@ -26,7 +26,8 @@ A part in the spec:
   hole                      enclosed gaps smaller than this many px are filled (900)
   around, width             a band `width` px wide round an EARLIER part (by name)
   region                    true: no colour test — the part is all the picture
-                            inside its lasso (for a part only a drawn line divides)
+                            inside its lasso (with picks: only what they reach
+                            without crossing an earlier part — a boundary) (for a part only a drawn line divides)
 
 Parts are claimed in spec order: a pixel taken by an earlier part is never
 given to a later one, so list small parts before the big ones around them.
@@ -146,6 +147,17 @@ for p in spec["parts"]:
     if p.get("region"):
         # a part with no colour of its own: everything inside its lasso
         m = polygon_mask(p["lasso"]) & ~paper & ~claimed
+        if p.get("picks"):
+            # only what the picks can reach without crossing an EARLIER part:
+            # a layer bounded by another layer (the epidermis stops at the
+            # Malpighian layer, however it dips)
+            # the earlier parts are thickened by `seal` px while filling, so a
+            # hairline gap in the boundary can't let the fill leak through
+            seal = p.get("seal", 0)
+            free = m & ~grow_mask(claimed, seal) if seal else m
+            m = flood(free, [(y, x) for x, y in p["picks"] if free[y, x]])
+            if seal:
+                m = grow_mask(m, seal) & polygon_mask(p["lasso"]) & ~paper & ~claimed
         claimed |= m
         masks.append(m)
         continue
