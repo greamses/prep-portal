@@ -119,7 +119,7 @@ HOW TO DRAW — the ops you may put in "do" (use ONLY these, with these fields):
       brain-section (inside): frontal lobe, parietal lobe, occipital lobe, temporal lobe, cingulate gyrus, corpus callosum, fornix, thalamus, hypothalamus, pituitary gland, midbrain, pons, medulla oblongata, cerebellum
       ear: pinna, earlobe, ear canal, eardrum, middle ear, malleus, incus, stapes, vestibule, semicircular canals, cochlea, auditory nerve, Eustachian tube
       eye: eyelids, cornea, aqueous humour, iris, pupil, lens, ciliary body, vitreous humour, retina, choroid, sclera, optic nerve, eye muscles
-      skin: epidermis, dermis, subcutaneous fat, hair, hair follicle, sebaceous gland, arrector pili muscle, sweat gland, sweat duct, artery, vein
+      skin: epidermis, Malpighian layer, dermis, subcutaneous fat, hair, hair follicle, sebaceous gland, arrector pili muscle, sweat gland, sweat duct, artery, vein
       skeleton: skull, mandible, vertebral column, clavicle, sternum, rib cage, humerus, radius, ulna, hand bones, pelvis, femur, patella, tibia, fibula, foot bones
 - {"op":"label","on":"d1","part":"chloroplast"}
     Point at a PART of that diagram (use the names above): an arrow to it with its name.

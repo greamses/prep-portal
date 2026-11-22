@@ -104,6 +104,7 @@ const ALIASES = {
   eyelid: "eyelids", "aqueous humor": "aqueous humour", "vitreous humor": "vitreous humour", vitreous: "vitreous humour",
   "eye muscle": "eye muscles", "white of the eye": "sclera",
   /* skin and skeleton */
+  "basal layer": "Malpighian layer", "germinative layer": "Malpighian layer", "malpighian": "Malpighian layer",
   "hypodermis": "subcutaneous fat", "fat layer": "subcutaneous fat", "oil gland": "sebaceous gland", "erector muscle": "arrector pili muscle",
   "hair muscle": "arrector pili muscle", "blood vessel": "artery", capillary: "artery",
   cranium: "skull", jaw: "mandible", "lower jaw": "mandible", collarbone: "clavicle", breastbone: "sternum", kneecap: "patella",
