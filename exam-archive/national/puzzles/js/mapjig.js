@@ -51,13 +51,14 @@ export const ZONES = [
 /* Every figure the jigsaw can be. `group` sorts the setup choices; `module` is
    the Vocab figure (lazy). The key is what `tiles` carries, so it is also in
    firestore.rules' puzzleRooms tiles list — add a figure there too. */
+// `short` is the setup note's label; `tip` the hover tooltip with the details.
 export const JIGSAW_FIGURES = [
-  { key: 'nigeria', label: 'Map of Nigeria', note: 'drag the states home', group: 'map', noun: 'States' },
-  { key: 'ear', label: 'The Ear', note: 'outer, middle, inner', group: 'biology', module: '/data/vocab/organs/ear.js', noun: 'Parts' },
-  { key: 'eye', label: 'The Eye', note: 'lens, iris, retina…', group: 'biology', module: '/data/vocab/organs/eye.js', noun: 'Parts' },
-  { key: 'heart', label: 'The Heart', note: 'chambers and vessels', group: 'biology', module: '/data/vocab/organs/heart.js', noun: 'Parts' },
-  { key: 'brain', label: 'The Brain', note: 'lobes and stem', group: 'biology', module: '/data/vocab/organs/brain.js', noun: 'Parts' },
-  { key: 'brain-section', label: 'Inside the Brain', note: 'cut down the middle', group: 'biology', module: '/data/vocab/organs/brain-section.js', noun: 'Parts' },
+  { key: 'nigeria', label: 'Map of Nigeria', short: 'Nigeria', tip: 'Drag the 37 states home onto the map', group: 'map' },
+  { key: 'ear', label: 'The Ear', short: 'Ear', tip: 'The outer, middle and inner ear — 13 parts', group: 'biology', module: '/data/vocab/organs/ear.js' },
+  { key: 'eye', label: 'The Eye', short: 'Eye', tip: 'Lens, iris, retina and more — 13 parts', group: 'biology', module: '/data/vocab/organs/eye.js' },
+  { key: 'heart', label: 'The Heart', short: 'Heart', tip: 'The four chambers, the great vessels and the valves', group: 'biology', module: '/data/vocab/organs/heart.js' },
+  { key: 'brain', label: 'The Brain', short: 'Brain', tip: 'The brain from the side — its lobes and stem', group: 'biology', module: '/data/vocab/organs/brain.js' },
+  { key: 'brain-section', label: 'Inside the Brain', short: 'Brain cut', tip: 'The brain cut down the middle — 14 parts inside', group: 'biology', module: '/data/vocab/organs/brain-section.js' },
 ];
 export const figureInfo = (key) => JIGSAW_FIGURES.find((f) => f.key === key);
 // 'ear-blank' → { key: 'ear', blank: true }; null when `tiles` is no figure.
