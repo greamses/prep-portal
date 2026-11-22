@@ -1,9 +1,11 @@
 {
   "title": "The Skin",
   "src": "src/skin.jpg",
+  "lines": "src/skin-line.png",
   "out": "data/vocab/organs/skin.js",
   "check": "skin-check.png",
   "display": 1.125,
+  "art": {"scale": 2, "median": 0, "speckle": 6, "precision": 6, "layer": 16},
   "parts": [
     {"name": "hair", "grade": 3, "hint": "The thin dark strand that grows up and out through the surface.", "picks": [[750, 207], [703, 320], [663, 487]], "tol": 45, "close": 2},
     {"name": "Malpighian layer", "grade": 7, "hint": "The living bottom layer of the epidermis that makes new skin cells — it dips down to wrap the oil glands and line the hair's pocket.", "picks": [[570, 270], [760, 274], [588, 360], [635, 430], [653, 430], [788, 330], [786, 330], [400, 285], [400, 288], [450, 276], [450, 280], [520, 300], [520, 298], [850, 276], [950, 282], [950, 285]], "tol": 13, "close": 2, "hole": 150, "lasso": [[365, 150], [1090, 150], [1090, 560], [365, 560]]},

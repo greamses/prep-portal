@@ -200,6 +200,82 @@ for i, p in enumerate(spec["parts"]):
         masks[i] |= extra
         claimed |= extra
 
+# ── LINE ART: "lines": "src/<name>-line.png" — the same drawing as a colouring
+# outline, aligned with the coloured picture. Every enclosed white area becomes
+# a region; the colour pass above only NAMES them (each region joins the part
+# that covers most of it), and every line pixel goes to the nearest part, so
+# neighbouring parts meet exactly on the drawn line. The art is rebuilt from
+# it: each region flat in its own average colour, the outline inked on top.
+LINEART = None
+if spec.get("lines"):
+    ln = np.array(Image.open(os.path.join(here, spec["lines"])).convert("L")).astype(int)
+    if ln.shape != (H, W):
+        raise SystemExit(f'{spec["lines"]} is {ln.shape[1]}x{ln.shape[0]}, the picture is {W}x{H}')
+    ink = ln < spec.get("line_dark", 140)
+    # label the white areas (4-connected)
+    lab = np.full((H, W), -1, int)
+    n = 0
+    for sy, sx in zip(*np.nonzero(~ink)):
+        if lab[sy, sx] >= 0: continue
+        q = deque([(sy, sx)]); lab[sy, sx] = n
+        while q:
+            y, x = q.popleft()
+            for ny, nx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+                if 0 <= ny < H and 0 <= nx < W and lab[ny, nx] < 0 and not ink[ny, nx]:
+                    lab[ny, nx] = n; q.append((ny, nx))
+        n += 1
+    # the outside: every area touching the picture's edge
+    edge = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))) - {-1}
+    # which part covers most of each area
+    pidx = np.full((H, W), -1, int)
+    for i, m in enumerate(masks): pidx[m] = i
+    NP = len(masks)
+    sel = (lab >= 0) & (pidx >= 0)
+    votes = np.bincount(lab[sel] * NP + pidx[sel], minlength=n * NP).reshape(n, NP)
+    owner = np.where(votes.max(axis=1) > 0, votes.argmax(axis=1), -1)
+    # an area one part clearly owns goes to it whole; a MIXED area (the outline
+    # left no line between, say, a gland lobe and the band round it) keeps the
+    # colour pass's own split inside it
+    share = votes.max(axis=1) / np.maximum(votes.sum(axis=1), 1)
+    mixed = share < spec.get("own_share", 0.85)
+    owner[mixed] = -3
+    for e in edge: owner[e] = -2
+    part = np.where(lab >= 0, owner[np.maximum(lab, 0)], -1)  # -1: line or unnamed, -2: outside
+    mx = part == -3
+    part[mx] = pidx[mx]  # -1 where the colour pass named nothing: filled from neighbours below
+    # hand the lines (and any unnamed sliver) to the nearest named part
+    for _ in range(60):
+        todo = part == -1
+        if not todo.any(): break
+        for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            nb = np.full_like(part, -1)
+            nb[max(dy, 0):H + min(dy, 0), max(dx, 0):W + min(dx, 0)] = part[max(-dy, 0):H + min(-dy, 0), max(-dx, 0):W + min(-dx, 0)]
+            take = todo & (nb >= 0)
+            part[take] = nb[take]
+            todo &= ~take
+    masks = [part == i for i in range(NP)]
+    paper = part < 0
+    # the clean art: each area flat in its own average colour, ink blended on
+    cnt = np.bincount(lab[lab >= 0], minlength=n).astype(float)
+    flat = np.zeros((H, W, 3))
+    for c in range(3):
+        mean = np.bincount(lab[lab >= 0], weights=im[..., c][lab >= 0], minlength=n) / np.maximum(cnt, 1)
+        flat[..., c] = np.where(lab >= 0, mean[np.maximum(lab, 0)], 0)
+    # line pixels take the colour of the area they were handed to, then the ink
+    near = flat.copy()
+    for _ in range(6):
+        hole = (lab < 0)
+        for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            sh = np.roll(np.roll(near, dy, 0), dx, 1)
+            shl = np.roll(np.roll(lab >= 0, dy, 0), dx, 1)
+            near[hole & shl] = sh[hole & shl]
+    INK = np.array(spec.get("ink", [62, 44, 38]))
+    # solid ink, no anti-aliased blend: flat colours trace to a handful of
+    # shapes; the blend made thousands (1 MB of art for the skin)
+    LINEART = np.where(ink[..., None], INK, near)
+    LINEART[part == -2] = 255
+    print(f"  line art: {n} areas, {len(edge)} outside")
+
 for p, m in zip(spec["parts"], masks):
     print(f'  {p["name"]:<22} {int(m.sum()):>7} px')
     if not m.any():
@@ -275,7 +351,8 @@ alpha = 255 - np.array(Image.fromarray(paper.astype(np.uint8) * 255).filter(Imag
 # a median pass first: JPEG speckle would otherwise trace as hundreds of tiny shapes
 # (at scale > 1 the median runs AFTER enlarging, so hairlines survive it)
 AS = ART["scale"]
-rgb = src.resize((W * AS, H * AS), Image.LANCZOS) if AS != 1 else src
+base = Image.fromarray(np.clip(LINEART, 0, 255).astype(np.uint8)) if LINEART is not None else src
+rgb = base.resize((W * AS, H * AS), Image.NEAREST if LINEART is not None else Image.LANCZOS) if AS != 1 else base
 if ART["median"]:
     rgb = rgb.filter(ImageFilter.MedianFilter(ART["median"]))
 a = Image.fromarray(alpha.astype(np.uint8)).resize((W * AS, H * AS), Image.NEAREST) if AS != 1 else Image.fromarray(alpha.astype(np.uint8))
