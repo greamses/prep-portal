@@ -142,4 +142,36 @@ export const I = {
   // Calendar nav chrome — plain chevrons
   chevronLeft: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>`,
   chevronRight: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>`,
+
+  // ── Heart-lab glyphs (same sticker style: token fills + white highlights) ──
+  // Heart — the organ, with a highlight
+  heart: svg(
+    `<path d="M12 21s-8.6-5.1-8.6-11.4C3.4 6.4 5.5 4.2 8.1 4.2c1.7 0 3 .9 3.9 2.2.9-1.3 2.2-2.2 3.9-2.2 2.6 0 4.7 2.2 4.7 5.4C20.6 15.9 12 21 12 21z" fill="var(--accent-danger)"/>` +
+      `<path d="M7 8.3c.4-1.1 1.2-1.7 2.3-1.8" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" opacity="0.85"/>`,
+  ),
+
+  // Coronary vessels — a branching artery
+  vessel: svg(
+    `<path d="M12 21.5V12.5M12 12.5 6 6.2M12 12.5l6-6.3M12 16.5l-4.4 4.2M12 16.5l4.4 4.2" fill="none" stroke="var(--accent-danger)" stroke-width="3" stroke-linecap="round"/>` +
+      `<path d="M11.2 12.2 7.2 7.8" fill="none" stroke="#fff" stroke-width="1" stroke-linecap="round" opacity="0.8"/>`,
+  ),
+
+  // Auto-rotate — a turning arrow
+  rotate: svg(
+    `<path d="M20 12a8 8 0 1 1-2.35-5.65" fill="none" stroke="var(--accent-secondary)" stroke-width="3.2" stroke-linecap="round"/>` +
+      `<path d="M19.6 3.6v4.7h-4.7" fill="none" stroke="var(--accent-secondary)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+  ),
+
+  // Wireframe — a mesh cube
+  mesh: svg(
+    `<path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z" fill="var(--accent-success)"/>` +
+      `<path d="M12 12l8-4.5M12 12 4 7.5M12 12v9" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`,
+  ),
+
+  // Reset view — a target
+  target: svg(
+    `<circle cx="12" cy="12" r="9.2" fill="var(--accent-warning)"/>` +
+      `<circle cx="12" cy="12" r="5.6" fill="#fff"/>` +
+      `<circle cx="12" cy="12" r="2.3" fill="var(--accent-danger)"/>`,
+  ),
 };
