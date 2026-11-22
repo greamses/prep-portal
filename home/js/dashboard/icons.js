@@ -168,6 +168,30 @@ export const I = {
       `<path d="M12 12l8-4.5M12 12 4 7.5M12 12v9" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`,
   ),
 
+  // Take apart — a core with pieces flying out
+  explode: svg(
+    `<circle cx="12" cy="12" r="3.6" fill="var(--accent-danger)"/>` +
+      `<rect x="2.6" y="2.6" width="6" height="6" rx="1.4" fill="var(--accent-primary)"/>` +
+      `<rect x="15.4" y="2.6" width="6" height="6" rx="1.4" fill="var(--accent-secondary)"/>` +
+      `<rect x="2.6" y="15.4" width="6" height="6" rx="1.4" fill="var(--accent-success)"/>` +
+      `<rect x="15.4" y="15.4" width="6" height="6" rx="1.4" fill="var(--accent-warning)"/>` +
+      `<circle cx="11" cy="11" r="1.1" fill="#fff" opacity="0.85"/>`,
+  ),
+
+  // Cross-section — a ball cut in two, showing the inside
+  slice: svg(
+    `<path d="M11 3.1a9 9 0 0 0 0 17.8z" fill="var(--accent-danger)"/>` +
+      `<path d="M13 3.1a9 9 0 0 1 0 17.8z" fill="var(--accent-warning)"/>` +
+      `<circle cx="16.4" cy="12" r="2.2" fill="#fff" opacity="0.9"/>` +
+      `<path d="M6 7.6c.6-1 1.5-1.7 2.6-2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>`,
+  ),
+
+  // Heartbeat — a trace on a pink card
+  pulse: svg(
+    `<rect x="2" y="4" width="20" height="16" rx="3" fill="var(--accent-danger)"/>` +
+      `<path d="M4.6 12.4h3.6l1.7-4.2 3.1 8.2 1.8-4h4.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+  ),
+
   // Reset view — a target
   target: svg(
     `<circle cx="12" cy="12" r="9.2" fill="var(--accent-warning)"/>` +

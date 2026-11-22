@@ -1,0 +1,519 @@
+{
+ "unitToMetre": 0.03,
+ "parts": {
+  "left_ventricle": {
+   "label": "Left ventricle",
+   "description": "Pumps oxygen-rich blood through the aortic valve to the whole body. Its wall is the thickest in the heart.",
+   "group": "muscle",
+   "explode": [
+    0.4797,
+    -0.9814,
+    0.25
+   ]
+  },
+  "right_ventricle": {
+   "label": "Right ventricle",
+   "description": "Pumps oxygen-poor blood through the pulmonary valve to the lungs.",
+   "group": "muscle",
+   "explode": [
+    -0.3643,
+    -0.8073,
+    0.9069
+   ]
+  },
+  "right_atrium": {
+   "label": "Right atrium",
+   "description": "Collects oxygen-poor blood from the body through the venae cavae.",
+   "group": "atrium",
+   "explode": [
+    -1.0028,
+    0.2394,
+    -0.1438
+   ]
+  },
+  "right_auricle": {
+   "label": "Right auricle",
+   "description": "A small ear-shaped pouch of the right atrium.",
+   "group": "auricle",
+   "explode": [
+    -0.5759,
+    0.4581,
+    0.7123
+   ]
+  },
+  "left_atrium": {
+   "label": "Left atrium",
+   "description": "Collects oxygen-rich blood from the lungs through the pulmonary veins.",
+   "group": "atrium",
+   "explode": [
+    0.2063,
+    0.5117,
+    -0.7374
+   ]
+  },
+  "left_auricle": {
+   "label": "Left auricle",
+   "description": "A small ear-shaped pouch of the left atrium.",
+   "group": "auricle",
+   "explode": [
+    0.8412,
+    0.5043,
+    0.1125
+   ]
+  },
+  "ascending_aorta": {
+   "label": "Ascending aorta",
+   "description": "Carries blood up from the left ventricle. The coronary arteries branch from its root.",
+   "group": "artery",
+   "explode": [
+    0.0056,
+    0.7001,
+    0.5176
+   ]
+  },
+  "aortic_arch": {
+   "label": "Aortic arch",
+   "description": "Curves over the pulmonary arteries and sends branches to the head and arms.",
+   "group": "artery",
+   "explode": [
+    0.2563,
+    1.2501,
+    -0.5131
+   ]
+  },
+  "descending_aorta": {
+   "label": "Descending aorta",
+   "description": "Carries blood down to the chest and abdomen.",
+   "group": "artery",
+   "explode": [
+    0.3368,
+    0.3196,
+    -1.3032
+   ]
+  },
+  "brachiocephalic_trunk": {
+   "label": "Brachiocephalic trunk",
+   "description": "First branch of the arch. Supplies the right arm, head and neck.",
+   "group": "artery",
+   "explode": [
+    -0.1661,
+    1.6126,
+    -0.0792
+   ]
+  },
+  "left_common_carotid": {
+   "label": "Left common carotid artery",
+   "description": "Supplies the left side of the head and neck.",
+   "group": "artery",
+   "explode": [
+    0.2049,
+    1.6728,
+    -0.3221
+   ]
+  },
+  "left_subclavian": {
+   "label": "Left subclavian artery",
+   "description": "Supplies the left arm.",
+   "group": "artery",
+   "explode": [
+    0.4748,
+    1.5977,
+    -0.6892
+   ]
+  },
+  "pulmonary_trunk": {
+   "label": "Pulmonary trunk",
+   "description": "Carries oxygen-poor blood from the right ventricle towards the lungs.",
+   "group": "pa",
+   "explode": [
+    0.3805,
+    0.5904,
+    0.8531
+   ]
+  },
+  "left_pulmonary_artery": {
+   "label": "Left pulmonary artery",
+   "description": "Carries oxygen-poor blood to the left lung.",
+   "group": "pa",
+   "explode": [
+    0.9019,
+    0.8791,
+    0.0688
+   ]
+  },
+  "right_pulmonary_artery": {
+   "label": "Right pulmonary artery",
+   "description": "Carries oxygen-poor blood to the right lung, passing behind the aorta.",
+   "group": "pa",
+   "explode": [
+    -0.2314,
+    1.003,
+    -0.419
+   ]
+  },
+  "superior_vena_cava": {
+   "label": "Superior vena cava",
+   "description": "Returns blood from the head, neck and arms to the right atrium.",
+   "group": "vc",
+   "explode": [
+    -0.8234,
+    1.0736,
+    -0.1509
+   ]
+  },
+  "inferior_vena_cava": {
+   "label": "Inferior vena cava",
+   "description": "Returns blood from the lower body to the right atrium.",
+   "group": "vc",
+   "explode": [
+    -0.7567,
+    -0.9755,
+    -0.2885
+   ]
+  },
+  "pv_left_superior": {
+   "label": "Left superior pulmonary vein",
+   "description": "Brings oxygen-rich blood from the left lung to the left atrium.",
+   "group": "pv",
+   "explode": [
+    0.7435,
+    0.6852,
+    -0.9244
+   ]
+  },
+  "pv_left_inferior": {
+   "label": "Left inferior pulmonary vein",
+   "description": "Brings oxygen-rich blood from the left lung to the left atrium.",
+   "group": "pv",
+   "explode": [
+    0.763,
+    0.1895,
+    -1.0258
+   ]
+  },
+  "pv_right_superior": {
+   "label": "Right superior pulmonary vein",
+   "description": "Brings oxygen-rich blood from the right lung to the left atrium.",
+   "group": "pv",
+   "explode": [
+    -0.4911,
+    0.6971,
+    -0.982
+   ]
+  },
+  "pv_right_inferior": {
+   "label": "Right inferior pulmonary vein",
+   "description": "Brings oxygen-rich blood from the right lung to the left atrium.",
+   "group": "pv",
+   "explode": [
+    -0.5154,
+    0.2016,
+    -1.0747
+   ]
+  },
+  "papillary_muscle_anterolateral": {
+   "label": "Papillary muscle (anterolateral)",
+   "description": "Pulls on the chordae so the mitral valve does not flip back into the atrium.",
+   "group": "papillary",
+   "explode": [
+    0.4797,
+    -0.9814,
+    0.25
+   ]
+  },
+  "papillary_muscle_posteromedial": {
+   "label": "Papillary muscle (posteromedial)",
+   "description": "Pulls on the chordae so the mitral valve does not flip back into the atrium.",
+   "group": "papillary",
+   "explode": [
+    0.4797,
+    -0.9814,
+    0.25
+   ]
+  },
+  "papillary_muscle_right_anterior": {
+   "label": "Papillary muscle (right anterior)",
+   "description": "Anchors the tricuspid valve through its chordae.",
+   "group": "papillary",
+   "explode": [
+    -0.3643,
+    -0.8073,
+    0.9069
+   ]
+  },
+  "papillary_muscle_right_posterior": {
+   "label": "Papillary muscle (right posterior)",
+   "description": "Anchors the tricuspid valve through its chordae.",
+   "group": "papillary",
+   "explode": [
+    -0.3643,
+    -0.8073,
+    0.9069
+   ]
+  },
+  "left_main_coronary_artery": {
+   "label": "Left main coronary artery",
+   "description": "Short trunk from the aorta that splits into the anterior descending and circumflex arteries.",
+   "group": "coronary",
+   "explode": [
+    0.5079,
+    -0.7895,
+    0.4077
+   ]
+  },
+  "left_anterior_descending_artery": {
+   "label": "Left anterior descending artery",
+   "description": "Runs down the front groove. Feeds the front of the heart and most of the septum.",
+   "group": "coronary",
+   "explode": [
+    0.5101,
+    -1.078,
+    0.4787
+   ]
+  },
+  "diagonal_branch": {
+   "label": "Diagonal branch",
+   "description": "A branch of the anterior descending artery over the left ventricle.",
+   "group": "coronary",
+   "explode": [
+    0.5826,
+    -1.0555,
+    0.4655
+   ]
+  },
+  "anterior_interventricular_vein": {
+   "label": "Anterior interventricular vein",
+   "description": "Drains the front of the heart, beside the anterior descending artery.",
+   "group": "cardiac_vein",
+   "explode": [
+    0.5408,
+    -1.0788,
+    0.4721
+   ]
+  },
+  "left_circumflex_artery": {
+   "label": "Left circumflex artery",
+   "description": "Curves round the left side in the groove between atrium and ventricle.",
+   "group": "coronary",
+   "explode": [
+    0.5314,
+    -0.7397,
+    0.2127
+   ]
+  },
+  "great_cardiac_vein_and_coronary_sinus": {
+   "label": "Great cardiac vein and coronary sinus",
+   "description": "Collects blood from the heart muscle and empties it into the right atrium.",
+   "group": "cardiac_vein",
+   "explode": [
+    0.3026,
+    0.2899,
+    -0.801
+   ]
+  },
+  "posterior_descending_artery": {
+   "label": "Posterior descending artery",
+   "description": "Runs down the back groove between the ventricles.",
+   "group": "coronary",
+   "explode": [
+    0.3434,
+    -1.191,
+    0.2539
+   ]
+  },
+  "right_coronary_artery": {
+   "label": "Right coronary artery",
+   "description": "Runs round the right side in the groove between atrium and ventricle.",
+   "group": "coronary",
+   "explode": [
+    -0.4857,
+    -0.648,
+    0.7572
+   ]
+  },
+  "middle_cardiac_vein": {
+   "label": "Middle cardiac vein",
+   "description": "Drains the back of the ventricles, beside the posterior descending artery.",
+   "group": "cardiac_vein",
+   "explode": [
+    0.355,
+    -1.1979,
+    0.2583
+   ]
+  }
+ },
+ "valves": [
+  {
+   "name": "mitral_valve",
+   "label": "Mitral valve",
+   "description": "Two leaflets between the left atrium and left ventricle. Open while the ventricle fills.",
+   "type": "av",
+   "center": [
+    0.2166,
+    0.4884,
+    -0.2884
+   ],
+   "axis": [
+    0.1877,
+    -0.6945,
+    0.6945
+   ],
+   "radius": 0.25,
+   "ref": [
+    -0.2939,
+    0.1086,
+    0.9496
+   ],
+   "sectors": [
+    160,
+    200
+   ],
+   "depth": [
+    1.0,
+    0.92
+   ]
+  },
+  {
+   "name": "tricuspid_valve",
+   "label": "Tricuspid valve",
+   "description": "Three leaflets between the right atrium and right ventricle. Open while the ventricle fills.",
+   "type": "av",
+   "center": [
+    -0.8203,
+    0.4356,
+    0.0509
+   ],
+   "axis": [
+    0.2156,
+    -0.6149,
+    0.7586
+   ],
+   "radius": 0.23,
+   "ref": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "sectors": [
+    130,
+    110,
+    120
+   ],
+   "depth": [
+    1.0,
+    0.95,
+    0.95
+   ]
+  },
+  {
+   "name": "aortic_valve",
+   "label": "Aortic valve",
+   "description": "Three cusps at the root of the aorta. Open while the left ventricle pumps.",
+   "type": "semilunar",
+   "center": [
+    0.05,
+    0.55,
+    0.25
+   ],
+   "axis": [
+    -0.1089,
+    0.9805,
+    -0.1634
+   ],
+   "radius": 0.24,
+   "ref": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "sectors": [
+    120,
+    120,
+    120
+   ],
+   "depth": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "name": "pulmonary_valve",
+   "label": "Pulmonary valve",
+   "description": "Three cusps at the root of the pulmonary trunk. Open while the right ventricle pumps.",
+   "type": "semilunar",
+   "center": [
+    0.1,
+    0.62,
+    1.0
+   ],
+   "axis": [
+    0.2752,
+    0.7155,
+    -0.6421
+   ],
+   "radius": 0.22,
+   "ref": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "sectors": [
+    120,
+    120,
+    120
+   ],
+   "depth": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  }
+ ],
+ "papillary": [
+  {
+   "name": "papillary_muscle_anterolateral",
+   "valve": "mitral_valve",
+   "tip": [
+    0.5723,
+    -0.2589,
+    0.0934
+   ],
+   "host": "left_ventricle"
+  },
+  {
+   "name": "papillary_muscle_posteromedial",
+   "valve": "mitral_valve",
+   "tip": [
+    0.3672,
+    -0.2589,
+    -0.3214
+   ],
+   "host": "left_ventricle"
+  },
+  {
+   "name": "papillary_muscle_right_anterior",
+   "valve": "tricuspid_valve",
+   "tip": [
+    -0.8835,
+    -0.101,
+    0.543
+   ],
+   "host": "right_ventricle"
+  },
+  {
+   "name": "papillary_muscle_right_posterior",
+   "valve": "tricuspid_valve",
+   "tip": [
+    -0.852,
+    -0.1824,
+    0.2737
+   ],
+   "host": "right_ventricle"
+  }
+ ],
+ "chordae": {
+  "label": "Chordae tendineae",
+  "description": "Heart strings that tie the valve leaflets to the papillary muscles."
+ }
+}
