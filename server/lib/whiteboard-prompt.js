@@ -111,13 +111,14 @@ HOW TO DRAW — the ops you may put in "do" (use ONLY these, with these fields):
       sector {at, r, from, to}   a slice of a disc, angles in degrees anticlockwise from 3 o'clock (pie charts, fractions, angles)
     "fill": a tone for a soft wash inside; "tone": the outline colour; "label": a word under it. Build a picture from several shapes over a few beats, each drawn while you talk about it: the Sun, the Earth and the Moon; a plant cell; a circuit; a triangle with its angles; half of a pizza.
 - {"op":"diagram","id":"d1","name":"plant-cell","steps":true}
-    A proper labelled-quality DRAWING from the library, in the right-hand panel. Use it whenever the topic is one of these, instead of building it from shapes. With "steps":true (ALWAYS use it for plant-cell, animal-cell, heart, brain and brain-section) the panel starts EMPTY and you build the drawing up part by part, like a teacher at a board, with "part" ops. Without it the whole drawing appears at once (the ear only comes whole):
+    A proper labelled-quality DRAWING from the library, in the right-hand panel. Use it whenever the topic is one of these, instead of building it from shapes. With "steps":true (ALWAYS use it for every one of these) the panel starts EMPTY and you build the drawing up part by part, like a teacher at a board, with "part" ops. Without it the whole drawing appears at once:
       plant-cell: cell wall, cell membrane, cytoplasm, vacuole, tonoplast, chloroplast, thylakoid membrane, starch grain, mitochondrion, peroxisome, nucleus, nucleolus, nuclear pore, rough endoplasmic reticulum, smooth endoplasmic reticulum, ribosome, Golgi apparatus, vesicle, plasmodesma
       animal-cell: cell membrane, cytoplasm, nucleus, nucleolus, nuclear envelope, chromatin, mitochondrion, ribosome, rough endoplasmic reticulum, smooth endoplasmic reticulum, Golgi apparatus, lysosome, peroxisome, centrosome, secretory vesicle, flagellum, microtubule, cytoskeleton
-      heart: right atrium, left atrium, right ventricle, left ventricle, aorta, superior vena cava, inferior vena cava, pulmonary artery, pulmonary vein, tricuspid valve, mitral valve, pulmonary valve, aortic valve
+      heart: right atrium, left atrium, right ventricle, left ventricle, aorta, superior vena cava, inferior vena cava, pulmonary artery, pulmonary veins, tricuspid valve, mitral valve, pulmonary valve, aortic valve
       brain (outside): brain stem, cerebellum, frontal lobe, occipital lobe, parietal lobe, temporal lobe
-      brain-section (inside): amygdala, cerebellum, cingulate gyrus, corpus callosum, frontal lobe, hippocampus, hypothalamus, medulla oblongata, occipital lobe, parietal lobe, pituitary gland, pons, thalamus
-      ear: auricle, external auditory canal, tympanic membrane, tympanic cavity, malleus, incus, stapes, semicircular canals, cochlea, vestibular nerve, cochlear nerve, round window, Eustachian tube
+      brain-section (inside): frontal lobe, parietal lobe, occipital lobe, temporal lobe, cingulate gyrus, corpus callosum, fornix, thalamus, hypothalamus, pituitary gland, midbrain, pons, medulla oblongata, cerebellum
+      ear: pinna, earlobe, ear canal, eardrum, middle ear, malleus, incus, stapes, vestibule, semicircular canals, cochlea, auditory nerve, Eustachian tube
+      eye: eyelids, cornea, aqueous humour, iris, pupil, lens, ciliary body, vitreous humour, retina, choroid, sclera, optic nerve, eye muscles
 - {"op":"label","on":"d1","part":"chloroplast"}
     Point at a PART of that diagram (use the names above): an arrow to it with its name.
 - {"op":"part","on":"d1","part":"cell wall"}

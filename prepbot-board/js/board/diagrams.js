@@ -8,7 +8,10 @@
    PrepBot points at their parts by name ({"op":"label","on":"d1","part":…}).
 
    Each loads on first use (they are large). The credits travel with them and
-   are shown under the drawing: three are CC-BY-SA and must be credited.
+   are shown under the drawing when a figure has one (the brain's outside view
+   is CC-BY-SA). The ear, eye, heart and brain-section are TRACED from our own
+   pictures (tools/figure-trace): one whole painting plus each part's real
+   outline (`shape`), so they too can be drawn part by part.
    ========================================================================== */
 
 const SRC = {
@@ -18,6 +21,7 @@ const SRC = {
   brain: "/data/vocab/organs/brain.js",
   "brain-section": "/data/vocab/organs/brain-section.js",
   ear: "/data/vocab/organs/ear.js",
+  eye: "/data/vocab/organs/eye.js",
 };
 export const DIAGRAM_NAMES = Object.keys(SRC);
 import { KITS } from "./kits.js";
@@ -30,21 +34,32 @@ export function loadDiagram(name) {
   if (!cache.has(name)) {
     cache.set(name, import(SRC[name]).then((m) => {
       let art;
+      /* a traced figure: every part has its own outline over one painting */
+      const traced = !!m.SVG && m.PARTS.every((p) => p.shape);
+      const artId = `pb-art-${name}`;
       if (m.SVG) art = m.SVG; // a shaded illustration, embedded whole
       else {
         /* flat regions: each part a filled path in its own colour, over the outline */
         const decor = m.DECOR ? `<path d="${m.DECOR}" fill="#f1e4d4" stroke="#2a2723" stroke-width="2.4"/>` : "";
         art = decor + m.PARTS.map((p) => `<path d="${p.d}" fill="${p.fill || "#e9d6c4"}" stroke="#2a2723" stroke-width="2" stroke-linejoin="round"/>`).join("");
       }
-      const parts = m.PARTS.map((p) => ({
+      const parts = m.PARTS.map((p, i) => ({
         name: p.name,
         cx: p.cx ?? p.spot?.cx,
         cy: p.cy ?? p.spot?.cy,
         arrow: p.arrow ? [p.arrow.x1, p.arrow.y1, p.arrow.x2, p.arrow.y2] : null,
         /* a flat drawing's part can be drawn on its own: its outline, then its colour */
-        svg: !m.SVG && p.d ? `<path class="k-fill" d="${p.d}" fill="${p.fill || "#e9d6c4"}"/><path class="k-line" d="${p.d}" fill="none" stroke="#2a2723" stroke-width="2" stroke-linejoin="round"/>` : null,
+        svg: traced
+          /* the pencil traces the part's outline, then the painting fills in
+             inside it (one painting, defined once in `decor`, clipped per part) */
+          ? `<clipPath id="${artId}-c${i}"><path d="${p.shape}"/></clipPath>`
+            + `<g class="k-fill" clip-path="url(#${artId}-c${i})"><use href="#${artId}"/></g>`
+            + `<path class="k-line" d="${p.shape}" fill="none" stroke="#2a2723" stroke-width="1.6" stroke-linejoin="round"/>`
+          : !m.SVG && p.d ? `<path class="k-fill" d="${p.d}" fill="${p.fill || "#e9d6c4"}"/><path class="k-line" d="${p.d}" fill="none" stroke="#2a2723" stroke-width="2" stroke-linejoin="round"/>` : null,
       }));
-      const decor = !m.SVG && m.DECOR ? `<path class="k-line" d="${m.DECOR}" fill="#f1e4d4" stroke="#2a2723" stroke-width="2.4"/>` : "";
+      const decor = traced
+        ? `<defs><g id="${artId}">${m.SVG}</g></defs>` // nothing shows until a part is named
+        : !m.SVG && m.DECOR ? `<path class="k-line" d="${m.DECOR}" fill="#f1e4d4" stroke="#2a2723" stroke-width="2.4"/>` : "";
       return { name, w: m.MAP_W, h: m.MAP_H, art, parts, decor, credit: String(m.CREDIT || "").replace(/<[^>]+>/g, "") };
     }).catch(() => null));
   }
@@ -79,6 +94,13 @@ const ALIASES = {
   wall: "cell wall", grana: "thylakoid membrane", granum: "thylakoid membrane", thylakoid: "thylakoid membrane",
   starch: "starch grain", plasmodesmata: "plasmodesma", lysosomes: "lysosome", ribosomes: "ribosome", centrioles: "centrosome", centriole: "centrosome",
   chromosomes: "chromatin", dna: "chromatin", vesicles: "vesicle",
+  /* the ear and eye's textbook names */
+  auricle: "pinna", "outer ear": "pinna", "external auditory canal": "ear canal", "auditory canal": "ear canal",
+  "tympanic membrane": "eardrum", "tympanic cavity": "middle ear", hammer: "malleus", anvil: "incus", stirrup: "stapes",
+  ossicles: "malleus", "cochlear nerve": "auditory nerve", "vestibular nerve": "auditory nerve", "vestibulocochlear nerve": "auditory nerve",
+  "eustachian tube": "Eustachian tube", "auditory tube": "Eustachian tube",
+  eyelid: "eyelids", "aqueous humor": "aqueous humour", "vitreous humor": "vitreous humour", vitreous: "vitreous humour",
+  "eye muscle": "eye muscles", "white of the eye": "sclera",
 };
 /** A part by name, forgiving of case, plural, "the" and other names for it. */
 export function findPart(diagram, name) {
@@ -91,9 +113,9 @@ export function findPart(diagram, name) {
 
 /**
  * A diagram to be drawn IN STEPS, one part at a time as PrepBot names it:
- * the two cells from the step kits (kits.js), the heart and the brain from
- * their own per-part outlines. A painting with no parts to take apart (the
- * ear) has no step form: null, and the whole drawing is used instead.
+ * the two cells from the step kits (kits.js); the brain, heart, ear, eye
+ * and brain-section from their own per-part outlines. A drawing with no
+ * per-part outlines has no step form: null, and the whole drawing is used.
  */
 export function stepDiagram(name) {
   const kit = KITS[name];

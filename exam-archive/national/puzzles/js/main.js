@@ -244,19 +244,32 @@ topic.addSlide('difficulty', 'Difficulty', () => {});
 function renderStateMapsPick() {
   const f = jigFigure() || { key: 'nigeria', blank: false };
   const what = f.key === 'nigeria' ? 'state' : 'part';
-  renderChoiceStep(topic, 'state-maps', {
+  // ONE switch: on = outlines drawn as a guide, off = place by shape alone.
+  const wrap = document.createElement('div');
+  wrap.className = 'pp-switch-wrap';
+  const sw = document.createElement('button');
+  sw.type = 'button';
+  sw.className = 'pp-switch';
+  sw.setAttribute('role', 'switch');
+  sw.innerHTML = '<i aria-hidden="true"></i><span>Outlines</span>';
+  const show = () => {
+    const on = !jigFigure()?.blank;
+    sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    sw.dataset.tip = on ? `On: every ${what} outline is drawn as a guide`
+      : 'Off: no outlines — place each piece by its shape';
+  };
+  sw.addEventListener('click', () => {
+    const cur = jigFigure() || f;
+    jigsawContent = cur.blank ? cur.key : `${cur.key}-blank`;
+    mem.save({ jigsawContent });
+    show();
+  });
+  show();
+  wrap.appendChild(sw);
+  renderCustomStep(topic, 'state-maps', {
     title: 'Outlines?',
-    name: 'puzzle-state-maps',
-    colorOffset: 2,
-    options: [
-      { value: f.key, label: 'On', tip: `Every ${what} outline is drawn as a guide`, checked: !f.blank },
-      { value: `${f.key}-blank`, label: 'Off', tip: 'No outlines — place each piece by its shape', checked: f.blank },
-    ],
-    onPick: (v) => {
-      jigsawContent = v;
-      mem.save({ jigsawContent });
-      topic.goTo('difficulty'); // no grid size — the figure decides the pieces
-    },
+    content: wrap,
+    onNext: () => topic.goTo('difficulty'), // no grid size — the figure decides the pieces
   });
 }
 
