@@ -203,7 +203,7 @@ function drawMeteor(defs, g, b) {
 
 function drawBody(defs, b, reveal, sun) {
   const g = el('g', { class: 'vocab-solar-body', 'data-key': b.key });
-  if (reveal) g.setAttribute('data-tip', b.hint ? `${b.name} — ${b.hint}` : b.name);
+  if (reveal) g.setAttribute('data-map-tip', b.hint ? `${b.name} — ${b.hint}` : b.name);
 
   if (b.type === 'sun') {
     const R = b.r;

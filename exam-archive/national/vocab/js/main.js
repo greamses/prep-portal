@@ -1198,6 +1198,9 @@ async function renderMapLibrary({ mod, rows, set, regionOf, regionLabels, ariaLa
     svg.setAttribute('viewBox', `0 0 ${mod.MAP_W} ${mod.MAP_H}`);
     svg.setAttribute('role', 'img');
     svg.setAttribute('aria-label', ariaLabel);
+    // sized by height like the portrait figures, so a wide one (the skin, the
+    // ear) never fills the page; DISPLAY shrinks one further
+    svg.style.cssText = `display:block;margin:0 auto;width:auto;max-width:100%;height:calc(min(60vh, 560px) * ${mod.DISPLAY || 1})`;
     const art = document.createElementNS(NS, 'g');
     art.setAttribute('class', 'vocab-rich-art');
     art.innerHTML = mod.SVG;
@@ -1209,7 +1212,7 @@ async function renderMapLibrary({ mod, rows, set, regionOf, regionLabels, ariaLa
         const el = document.createElementNS(NS, 'path');
         el.setAttribute('class', 'vocab-rich-hit');
         el.setAttribute('d', part.shape);
-        el.dataset.tip = [c.name, c.hint].filter(Boolean).join(' — ');
+        el.dataset.mapTip = [c.name, c.hint].filter(Boolean).join(' — ');
         svg.appendChild(el);
         continue;
       }
@@ -1220,7 +1223,7 @@ async function renderMapLibrary({ mod, rows, set, regionOf, regionLabels, ariaLa
       el.setAttribute('class', 'vocab-rich-hit');
       el.setAttribute('cx', s.cx); el.setAttribute('cy', s.cy);
       el.setAttribute('rx', s.rx); el.setAttribute('ry', s.ry);
-      el.dataset.tip = [c.name, c.hint].filter(Boolean).join(' — ');
+      el.dataset.mapTip = [c.name, c.hint].filter(Boolean).join(' — ');
       g.appendChild(el);
       svg.appendChild(g);
     }
@@ -1228,9 +1231,9 @@ async function renderMapLibrary({ mod, rows, set, regionOf, regionLabels, ariaLa
     tip.className = 'vocab-map-tip'; tip.hidden = true;
     wrap.append(svg, tip);
     svg.addEventListener('pointermove', (e) => {
-      const hit = e.target.closest('[data-tip]');
+      const hit = e.target.closest('[data-map-tip]');
       if (!hit) { tip.hidden = true; return; }
-      tip.textContent = hit.dataset.tip; tip.hidden = false;
+      tip.textContent = hit.dataset.mapTip; tip.hidden = false;
       const box = wrap.getBoundingClientRect();
       const half = tip.offsetWidth / 2;
       const x = Math.min(Math.max(e.clientX - box.left, half + 4), box.width - half - 4);
@@ -1264,7 +1267,7 @@ async function renderMapLibrary({ mod, rows, set, regionOf, regionLabels, ariaLa
     if (c.fill) p.style.fill = c.fill;
     if (c.hint) {
       p.dataset.name = c.name;
-      p.dataset.tip = [c.name, regionLabels[regionOf(c)] || '', c.hint].filter(Boolean).join(' — ');
+      p.dataset.mapTip = [c.name, regionLabels[regionOf(c)] || '', c.hint].filter(Boolean).join(' — ');
     }
     svg.appendChild(p);
   }
@@ -1281,9 +1284,9 @@ async function renderMapLibrary({ mod, rows, set, regionOf, regionLabels, ariaLa
   wrap.append(svg, tip);
 
   svg.addEventListener('pointermove', (e) => {
-    const path = e.target.closest('path[data-tip]');
+    const path = e.target.closest('path[data-map-tip]');
     if (!path) { tip.hidden = true; return; }
-    tip.textContent = path.dataset.tip;
+    tip.textContent = path.dataset.mapTip;
     tip.hidden = false; // must be visible BEFORE measuring, or offsetWidth is 0
     // Clamp inside the map box so edge places (Alaska, New Zealand, Sokoto…)
     // never have their tip cut off: x pins to the sides, and a pointer too
@@ -1385,9 +1388,9 @@ async function openDictionary() {
     tip.hidden = true;
     wrap.append(svg, tip);
     svg.addEventListener('pointermove', (e) => {
-      const g = e.target.closest('[data-tip]');
+      const g = e.target.closest('[data-map-tip]');
       if (!g) { tip.hidden = true; return; }
-      tip.textContent = g.dataset.tip;
+      tip.textContent = g.dataset.mapTip;
       tip.hidden = false;
       const box = wrap.getBoundingClientRect();
       const half = tip.offsetWidth / 2;

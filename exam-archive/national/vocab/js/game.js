@@ -336,6 +336,8 @@ function renderRichClue(p) {
   svg.setAttribute('class', 'vocab-clue-map vocab-clue-map--tall vocab-map--rich');
   svg.setAttribute('viewBox', `0 0 ${m.MAP_W} ${m.MAP_H}`);
   svg.setAttribute('aria-label', 'Diagram clue — one part is pointed out');
+  // a figure may ask to be drawn smaller than the rest (the skin: DISPLAY 0.75)
+  if (m.DISPLAY) svg.style.height = `calc(min(56vh, 460px) * ${m.DISPLAY})`;
   if (p.arrow) {
     svg.innerHTML = `<g class="vocab-rich-art">${m.SVG}</g>${arrowMarkup(p.arrow)}`;
   } else if (p.shape) {

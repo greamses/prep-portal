@@ -324,6 +324,7 @@ js = f"""/* ══════════════════════�
 export const MAP_W = {VW};
 export const MAP_H = {VH};
 export const RICH = true;
+{f"export const DISPLAY = {spec['display']};  // drawn at this share of the usual size" if spec.get("display") else ""}
 {f"export const CREDIT = {json.dumps(credit)};" if credit else ""}
 export const SVG = {json.dumps("".join(art))};
 

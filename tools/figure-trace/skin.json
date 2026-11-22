@@ -3,6 +3,7 @@
   "src": "src/skin.jpg",
   "out": "data/vocab/organs/skin.js",
   "check": "skin-check.png",
+  "display": 0.75,
   "parts": [
     {"name": "hair", "grade": 3, "hint": "The thin dark strand that grows up and out through the surface.", "picks": [[750, 207], [703, 320], [663, 487]], "tol": 45, "close": 2},
     {"name": "hair follicle", "grade": 6, "hint": "The pocket in the skin that the strand grows from.", "around": "hair", "width": 14, "lasso": [[590, 290], [720, 250], [720, 560], [590, 560]]},
