@@ -205,6 +205,15 @@ const NAV_CONFIG = [
           { text: "Card Tricks", href: "/prep-math/activity/card-tricks/", description: "A real pack, and six tricks that are sums" },
         ],
       },
+      /* Science to explore hands-on: the 3D models in the virtual lab. */
+      {
+        text: "Science Activities",
+        icon: I.science,
+        description: "Explore science in 3D",
+        children: [
+          { text: "The Human Heart", href: "/virtual-lab/biology/heart/", description: "A beating 3D heart: turn it, take it apart, cut it open" },
+        ],
+      },
       /* The workbooks are books now: they are on the Editorials shelf (below). */
       {
         text: "Learning Tools",
