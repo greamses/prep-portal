@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D Heart Model</title>
+<meta name="description" content="Interactive, anatomy-inspired 3D model of the human heart: chambers, great vessels and coronary arteries.">
+<link rel="stylesheet" href="/utils/components/theme.css">
+<link rel="stylesheet" href="/utils/components/components.css">
+<style>
+  /* Page layout only. Colours, shadows, fonts and components all come from theme.css and components.css. */
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+
+  /* Paint-blob background: the site's logo motif, on every page (DESIGN.md section 6). */
+  .heart-paint { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; opacity: .26; }
+  .heart-paint svg { width: 100%; height: 100%; display: block; }
+  [data-theme="dark"] .heart-paint { opacity: .15; }
+
+  #stage { position: fixed; inset: 0; z-index: 1; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+  .heart-layer { position: fixed; z-index: 2; }
+
+  /* Top bar */
+  .heart-top {
+    top: 16px; left: 16px; right: 16px;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+  .heart-top .pp-pill { text-decoration: none; }
+
+  /* Info receipt */
+  .heart-info { top: 76px; left: 16px; width: min(330px, calc(100vw - 32px)); }
+  .heart-info .pp-receipt__paper { padding: 2.2rem 1.3rem 1.2rem; }
+  .heart-title {
+    display: flex; align-items: center; gap: 10px;
+    font: 700 1.15rem/1.2 var(--font-display, system-ui), sans-serif;
+    margin: 0 0 6px;
+  }
+  .heart-title svg { width: 30px; height: 30px; flex-shrink: 0; }
+  .heart-info p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+  .heart-legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .heart-dot {
+    width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0;
+    border: 1px solid rgba(42, 39, 35, .25);
+  }
+  .heart-legend .pp-pill { cursor: default; }
+
+  /* Tip sticky note */
+  .heart-tip { bottom: 92px; right: 16px; max-width: 250px; }
+  .heart-tip.pp-sticky { white-space: normal; font-size: 0.95rem; line-height: 1.35; }
+
+  /* Controls dock */
+  .heart-controls { bottom: 16px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px); }
+  .heart-bar {
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center;
+    padding: 0.8rem 1rem !important;
+  }
+  /* Toggles are sticky notes: paper colour shows the state (yellow = on, unbleached = off). */
+  .heart-toggle[aria-pressed="true"] { --pp-note-bg: #fff3a8; }
+  .heart-toggle[aria-pressed="false"] { --pp-note-bg: #f0ece2; color: #5a544a; }
+  .heart-toggle, .heart-reset { font-size: 0.8rem; padding: 0.55rem 0.95rem 0.6rem; }
+  .heart-toggle svg, .heart-reset svg { width: 18px; height: 18px; }
+
+  /* Loading note */
+  .heart-loading {
+    top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-2deg);
+    z-index: 3; transition: opacity .4s;
+  }
+  .heart-loading.done { opacity: 0; pointer-events: none; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  @media (max-width: 640px) {
+    .heart-top { top: 10px; left: 10px; right: 10px; }
+    .heart-info { top: 58px; left: 10px; right: 10px; width: auto; }
+    .heart-info .pp-receipt__paper { padding: 2.2rem 1.1rem 1rem; }
+    .heart-info p { display: none; }
+    .heart-tip { display: none; }
+    .heart-controls { bottom: 10px; width: calc(100vw - 20px); max-width: none; }
+    .heart-bar { justify-content: space-evenly; }
+  }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div class="heart-paint" id="paint" aria-hidden="true"></div>
+<div id="stage"></div>
+
+<header class="heart-layer heart-top">
+  <a class="pp-pill" href="/virtual-lab/index.html" id="backLink">
+    <span id="iconBack" aria-hidden="true"></span> Virtual lab
+  </a>
+  <button class="pp-pill" id="btnTheme" type="button" aria-label="Switch light or dark theme">
+    <span id="iconTheme" aria-hidden="true"></span>
+  </button>
+</header>
+
+<section class="heart-layer heart-info pp-receipt" aria-labelledby="title">
+  <div class="pp-receipt__paper">
+    <h1 class="heart-title" id="title">
+      <span id="iconHeart" aria-hidden="true"></span>
+      The human heart
+    </h1>
+    <p>Drag to rotate, scroll or pinch to zoom. A simplified, anatomy-inspired model for study.</p>
+    <ul class="heart-legend" aria-label="Colour key">
+      <li class="pp-pill pp-pill--static"><i class="heart-dot" style="background:#7a2228"></i>Muscle</li>
+      <li class="pp-pill pp-pill--static"><i class="heart-dot" style="background:#a55a52"></i>Atria</li>
+      <li class="pp-pill pp-pill--static"><i class="heart-dot" style="background:#c9302c"></i>Aorta</li>
+      <li class="pp-pill pp-pill--static"><i class="heart-dot" style="background:#3d60b3"></i>Veins</li>
+      <li class="pp-pill pp-pill--static"><i class="heart-dot" style="background:#5a84c8"></i>Pulmonary artery</li>
+      <li class="pp-pill pp-pill--static"><i class="heart-dot" style="background:#eccb6b"></i>Fat</li>
+    </ul>
+  </div>
+  <span class="pp-sticky pp-sticky--c2 pp-sticky--tape" style="--pp-note-tilt:-3deg;position:absolute;top:-14px;left:18px;z-index:1">Biology</span>
+</section>
+
+<aside class="heart-layer pp-sticky pp-sticky--c4 pp-sticky--tape heart-tip" style="--pp-note-tilt:2deg">
+  Tip: the aorta leaves the left ventricle and arches to the right. The pulmonary artery sits on the patient's left, in front of the aorta.
+</aside>
+
+<nav class="heart-layer heart-controls pp-receipt" aria-label="Model controls">
+  <div class="pp-receipt__paper heart-bar">
+    <button class="pp-sticky pp-note-btn heart-toggle" id="btnCoronary" type="button" aria-pressed="true"><span id="iconVessel" aria-hidden="true"></span>Coronary vessels</button>
+    <button class="pp-sticky pp-note-btn heart-toggle" id="btnRotate" type="button" aria-pressed="true"><span id="iconRotate" aria-hidden="true"></span>Auto-rotate</button>
+    <button class="pp-sticky pp-note-btn heart-toggle" id="btnWire" type="button" aria-pressed="false"><span id="iconWire" aria-hidden="true"></span>Wireframe</button>
+    <button class="pp-sticky pp-note-btn pp-sticky--c3 heart-reset" id="btnReset" type="button"><span id="iconReset" aria-hidden="true"></span>Reset view</button>
+  </div>
+</nav>
+
+<div class="heart-layer pp-sticky pp-sticky--c0 pp-sticky--tape heart-loading" id="loading" role="status" style="--pp-note-tilt:-2deg">
+  <span id="loadingText">Loading heart…</span>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { I } from '/home/js/dashboard/icons.js';
+import { heroPaint, SVG_SUN, SVG_MOON } from '/utils/components/nav-icons.js';
+
+// ---------- icons (shared sticker set in home/js/dashboard/icons.js)
+document.getElementById('iconRotate').innerHTML = I.rotate;
+document.getElementById('iconWire').innerHTML = I.mesh;
+document.getElementById('iconReset').innerHTML = I.target;
+document.getElementById('iconVessel').innerHTML = I.vessel;
+document.getElementById('iconHeart').innerHTML = I.heart;
+document.getElementById('iconBack').innerHTML = I.chevronLeft;
+
+// ---------- paint-blob background
+document.getElementById('paint').innerHTML = heroPaint();
+
+// ---------- theme (saved choice first, otherwise follow the system)
+const root = document.documentElement;
+const btnTheme = document.getElementById('btnTheme');
+const iconTheme = document.getElementById('iconTheme');
+function currentTheme() { return root.getAttribute('data-theme') || 'light'; }
+function paintThemeIcon() {
+  iconTheme.innerHTML = currentTheme() === 'dark' ? SVG_SUN : SVG_MOON;
+  btnTheme.setAttribute('aria-label', currentTheme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+}
+let savedTheme = null;
+try { savedTheme = localStorage.getItem('pp-theme'); } catch (e) { /* storage blocked: fall back to system */ }
+root.setAttribute('data-theme', savedTheme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+paintThemeIcon();
+btnTheme.addEventListener('click', () => {
+  const next = currentTheme() === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try { localStorage.setItem('pp-theme', next); } catch (e) { /* ignore */ }
+  paintThemeIcon();
+});
+
+// ---------- 3D scene (transparent, so the paint blobs show through)
+const stage = document.getElementById('stage');
+const loading = document.getElementById('loading');
+const loadingText = document.getElementById('loadingText');
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setClearColor(0x000000, 0);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 10);
+camera.position.set(0.0, 0.02, 0.30);
+
+const key = new THREE.DirectionalLight(0xfff4e0, 1.6);
+key.position.set(0.4, 0.6, 0.8);
+scene.add(key);
+const rim = new THREE.DirectionalLight(0xc8dcff, 0.7);
+rim.position.set(-0.6, 0.2, -0.6);
+scene.add(rim);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 0.12;
+controls.maxDistance = 0.8;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.8;
+
+const coronaryMeshes = [];
+const bodyMaterials = [];
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.fov = w / h < 0.8 ? 46 : 35; // keep the whole heart in frame on narrow phones
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+new GLTFLoader().load(
+  new URL('./models/heart.glb', import.meta.url).href,
+  (gltf) => {
+    const heart = gltf.scene;
+    heart.traverse((obj) => {
+      if (!obj.isMesh) return;
+      // the exported GLB carries colours but no normals: derive smooth shading here
+      if (!obj.geometry.attributes.normal) obj.geometry.computeVertexNormals();
+      if (/coronary|cardiac_vein/i.test(obj.name) || /coronary|cardiac_vein/i.test(obj.parent?.name || '')) {
+        coronaryMeshes.push(obj);
+      }
+      obj.material = new THREE.MeshPhysicalMaterial({
+        vertexColors: true,
+        roughness: 0.42,
+        metalness: 0.0,
+        clearcoat: 0.45,
+        clearcoatRoughness: 0.3,
+      });
+      bodyMaterials.push(obj.material);
+    });
+    // centre the model on its bounding box so the orbit pivot is the heart's middle
+    const centre = new THREE.Box3().setFromObject(heart).getCenter(new THREE.Vector3());
+    heart.position.sub(centre);
+    scene.add(heart);
+    loading.classList.add('done');
+  },
+  (evt) => {
+    if (evt.total) loadingText.textContent = `Loading heart… ${Math.round(evt.loaded / evt.total * 100)}%`;
+  },
+  (err) => {
+    console.error(err);
+    loadingText.textContent = 'Could not load the heart model. Check your connection and reload.';
+  }
+);
+
+// ---------- controls
+function toggle(btn, onChange) {
+  btn.addEventListener('click', () => {
+    const on = btn.getAttribute('aria-pressed') !== 'true';
+    btn.setAttribute('aria-pressed', String(on));
+    onChange(on);
+  });
+}
+toggle(document.getElementById('btnCoronary'), (on) => coronaryMeshes.forEach((m) => { m.visible = on; }));
+toggle(document.getElementById('btnRotate'), (on) => { controls.autoRotate = on; });
+toggle(document.getElementById('btnWire'), (on) => bodyMaterials.forEach((m) => { m.wireframe = on; }));
+document.getElementById('btnReset').addEventListener('click', () => {
+  camera.position.set(0.0, 0.02, 0.30);
+  controls.target.set(0, 0, 0);
+  controls.update();
+});
+
+renderer.setAnimationLoop(() => {
+  controls.update();
+  renderer.render(scene, camera);
+});
+</script>
+</body>
+</html>
