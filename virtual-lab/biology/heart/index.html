@@ -34,16 +34,6 @@
   .heart-top { top: 16px; left: 16px; right: 16px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .heart-top .pp-pill { text-decoration: none; }
 
-  /* Info receipt */
-  .heart-info { top: 76px; left: 16px; width: min(330px, calc(100vw - 32px)); }
-  .heart-info .pp-receipt__paper { padding: 2.2rem 1.3rem 1.2rem; }
-  .heart-title { display: flex; align-items: center; gap: 10px; font: 700 1.15rem/1.2 var(--font-display, system-ui), sans-serif; margin: 0 0 6px; }
-  .heart-title svg { width: 30px; height: 30px; flex-shrink: 0; }
-  .heart-info p { margin: 0 0 14px; color: var(--text-secondary); font-size: 0.92rem; line-height: 1.5; }
-  .heart-legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
-  .heart-legend .pp-pill { cursor: default; }
-  .heart-dot { width: 11px; height: 11px; flex-shrink: 0; border: 1px solid rgba(42, 39, 35, .25); }
-
   /* Sticky notes on the right: cardiac cycle + the part you tapped */
   .heart-notes { top: 76px; right: 16px; width: 260px; display: flex; flex-direction: column; gap: 22px; align-items: stretch; }
   .heart-notes .pp-sticky { white-space: normal; display: flex; flex-direction: column; gap: 4px; padding: 0.9rem 1rem 0.95rem; }
@@ -51,20 +41,25 @@
   .heart-notes strong { font-size: 1.05rem; line-height: 1.2; }
   .heart-note__body { font-size: 0.9rem; line-height: 1.35; font-weight: 400; }
 
-  /* Controls dock */
-  .heart-controls { bottom: 16px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px); }
-  .heart-bar { display: flex; flex-direction: column; gap: 12px; padding: 0.85rem 1rem !important; }
-  .heart-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; }
+  /* Controls: icon-only sticky notes in a narrow receipt down the left side;
+     each says what it does in its tooltip (data-tip) and to screen readers */
+  .heart-rail { top: 50%; left: 16px; transform: translateY(-50%); }
+  .heart-rail .pp-receipt__paper { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 1.4rem 0.6rem; }
+  .heart-icon { width: 46px; height: 46px; padding: 0 !important; display: inline-grid; place-items: center; }
+  .heart-icon svg { width: 22px; height: 22px; }
   .heart-toggle[aria-pressed="true"] { --pp-note-bg: #fff3a8; }
   .heart-toggle[aria-pressed="false"] { --pp-note-bg: #f0ece2; color: #5a544a; }
-  .heart-toggle, .heart-reset { font-size: 0.8rem; padding: 0.5rem 0.85rem 0.55rem; }
-  .heart-toggle svg, .heart-reset svg { width: 18px; height: 18px; }
-  .heart-dials { gap: 28px; align-items: flex-end; }
+  .heart-sep { width: 26px; height: 0; border-top: 1px dashed var(--border-light, rgba(42, 39, 35, .25)); margin: 2px 0; }
+
+  /* Dials: free on the page, bottom right — no card round them */
+  .heart-dials { right: 20px; bottom: 18px; display: flex; align-items: flex-end; gap: 22px; }
   /* the shared dial (utils/components/dial.js) sizes itself to its host */
-  .heart-dial { width: 108px; }
-  .heart-dial-group { display: inline-flex; align-items: center; gap: 14px; }
-  .heart-seg { display: inline-flex; flex-direction: column; gap: 6px; }
-  .heart-seg .pp-note-btn { font-size: 0.75rem; padding: 0.3rem 0.7rem 0.35rem; }
+  .heart-dial { width: 112px; }
+  .heart-dial-group { display: inline-flex; align-items: flex-end; gap: 12px; }
+  .heart-seg { display: inline-flex; flex-direction: column; gap: 8px; margin-bottom: 26px; }
+  .heart-seg .heart-icon { width: 38px; height: 38px; }
+  .heart-seg .heart-icon svg { width: 20px; height: 20px; }
+  .pp-visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
   /* Loading note */
   .heart-loading { top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-2deg); z-index: 3; transition: opacity .4s; }
@@ -76,24 +71,18 @@
   }
   @media (max-width: 640px) {
     .heart-top { top: 10px; left: 10px; right: 10px; }
-    .heart-info { top: 58px; left: 10px; right: 10px; width: auto; }
-    .heart-info .pp-receipt__paper { padding: 2.1rem 1rem 0.9rem; }
-    .heart-info p { display: none; }
-    .heart-legend .pp-pill { font-size: 0.6rem; padding: 0.3rem 0.5rem; }
-    .heart-notes { top: auto; bottom: var(--dock-h, 170px); left: 10px; right: 10px; width: auto; align-items: center; }
+    .heart-rail { left: 8px; }
+    .heart-rail .pp-receipt__paper { gap: 7px; padding: 1.1rem 0.4rem; }
+    .heart-icon { width: 38px; height: 38px; }
+    .heart-icon svg { width: 18px; height: 18px; }
+    .heart-wire { display: none !important; }
+    .heart-notes { top: 58px; left: 64px; right: 10px; width: auto; align-items: flex-end; }
     .heart-notes .pp-sticky { padding: 0.55rem 0.8rem 0.6rem; max-width: 100%; }
     .heart-note__body { display: none; }
     body.has-part .heart-phase { display: none !important; }
     body.has-part .heart-part .heart-note__body { display: block; }
-    .heart-controls { bottom: 10px; width: calc(100vw - 20px); max-width: none; }
-    .heart-bar { padding: 0.7rem 0.6rem !important; gap: 10px; }
-    .heart-row { gap: 6px; }
-    .heart-toggle, .heart-reset { font-size: 0.72rem; padding: 0.4rem 0.6rem 0.45rem; }
-    .heart-toggle svg, .heart-reset svg { width: 15px; height: 15px; }
-    .heart-wire { display: none !important; }
-    .heart-dials { gap: 16px; }
-    .heart-dial { width: 86px; }
-    .heart-seg .pp-note-btn { font-size: 0.68rem; padding: 0.25rem 0.55rem 0.3rem; }
+    .heart-dials { right: 10px; bottom: 10px; gap: 12px; }
+    .heart-dial { width: 88px; }
   }
 </style>
 <script type="importmap">
@@ -111,25 +100,9 @@
 
 <header class="heart-layer heart-top">
   <a class="pp-pill" href="/virtual-lab/index.html"><span data-icon="chevronLeft" aria-hidden="true"></span> Virtual lab</a>
-  <button class="pp-pill" id="btnTheme" type="button" aria-label="Switch light or dark theme"><span id="iconTheme" aria-hidden="true"></span></button>
 </header>
 
-<section class="heart-layer heart-info pp-receipt" aria-labelledby="title">
-  <div class="pp-receipt__paper">
-    <h1 class="heart-title" id="title"><span data-icon="heart" aria-hidden="true"></span>The human heart</h1>
-    <p>Drag to rotate, scroll or pinch to zoom. Tap any part to name it. Take it apart or cut through it to see the chambers and valves.</p>
-    <ul class="heart-legend" aria-label="Colour key">
-      <li class="pp-pill pp-pill--static"><i class="heart-dot" style="background:#7a2228"></i>Muscle</li>
-      <li class="pp-pill pp-pill--static"><i class="heart-dot" style="background:#a55a52"></i>Atria</li>
-      <li class="pp-pill pp-pill--static"><i class="heart-dot" style="background:#c9302c"></i>Oxygen-rich</li>
-      <li class="pp-pill pp-pill--static"><i class="heart-dot" style="background:#3d60b3"></i>Oxygen-poor</li>
-      <li class="pp-pill pp-pill--static"><i class="heart-dot" style="background:#f1e2c8"></i>Valves</li>
-      <li class="pp-pill pp-pill--static"><i class="heart-dot" style="background:#eccb6b"></i>Fat</li>
-      <li class="pp-pill pp-pill--static"><i class="heart-dot" style="background:#cc7570"></i>Cut face</li>
-    </ul>
-  </div>
-  <span class="pp-sticky pp-sticky--c2 pp-sticky--tape" style="--pp-note-tilt:-3deg;position:absolute;top:-14px;left:18px;z-index:1">Biology</span>
-</section>
+<h1 class="pp-visually-hidden">The human heart</h1>
 
 <aside class="heart-layer heart-notes" aria-label="Notes">
   <div class="pp-sticky pp-sticky--c0 pp-sticky--tape heart-phase" style="--pp-note-tilt:2deg" aria-live="polite">
@@ -144,30 +117,30 @@
   </div>
 </aside>
 
-<nav class="heart-layer heart-controls pp-receipt" aria-label="Model controls">
-  <div class="pp-receipt__paper heart-bar">
-    <div class="heart-row">
-      <button class="pp-sticky pp-note-btn heart-toggle" id="btnExplode" type="button" aria-pressed="false"><span data-icon="explode" aria-hidden="true"></span><span id="explodeLabel">Disassemble</span></button>
-      <button class="pp-sticky pp-note-btn heart-toggle" id="btnSection" type="button" aria-pressed="false"><span data-icon="slice" aria-hidden="true"></span>Cross-section</button>
-      <button class="pp-sticky pp-note-btn heart-toggle" id="btnBeat" type="button" aria-pressed="true"><span data-icon="pulse" aria-hidden="true"></span>Heartbeat</button>
-      <button class="pp-sticky pp-note-btn heart-toggle" id="btnCoronary" type="button" aria-pressed="true"><span data-icon="vessel" aria-hidden="true"></span>Coronary vessels</button>
-      <button class="pp-sticky pp-note-btn heart-toggle" id="btnRotate" type="button" aria-pressed="true"><span data-icon="rotate" aria-hidden="true"></span>Auto-rotate</button>
-      <button class="pp-sticky pp-note-btn heart-toggle heart-wire" id="btnWire" type="button" aria-pressed="false"><span data-icon="mesh" aria-hidden="true"></span>Wireframe</button>
-      <button class="pp-sticky pp-note-btn pp-sticky--c3 heart-reset" id="btnReset" type="button"><span data-icon="target" aria-hidden="true"></span>Reset view</button>
-    </div>
-    <div class="heart-row heart-dials">
-      <div class="heart-dial" id="rateDial"></div>
-      <div class="heart-dial-group" id="sectionGroup" hidden>
-        <div class="heart-seg" role="group" aria-label="Cut direction">
-          <button class="pp-sticky pp-note-btn heart-toggle" type="button" data-axis="front" aria-pressed="true">Front</button>
-          <button class="pp-sticky pp-note-btn heart-toggle" type="button" data-axis="top" aria-pressed="false">Top</button>
-          <button class="pp-sticky pp-note-btn heart-toggle" type="button" data-axis="side" aria-pressed="false">Side</button>
-        </div>
-        <div class="heart-dial" id="depthDial"></div>
-      </div>
-    </div>
+<nav class="heart-layer heart-rail pp-receipt" aria-label="Model controls">
+  <div class="pp-receipt__paper">
+    <button class="pp-sticky pp-note-btn heart-icon heart-toggle" id="btnExplode" type="button" aria-pressed="false" data-tip="Take it apart" data-tip-side="right" aria-label="Take it apart"><span data-icon="explode" aria-hidden="true"></span></button>
+    <button class="pp-sticky pp-note-btn heart-icon heart-toggle" id="btnSection" type="button" aria-pressed="false" data-tip="Cut it open" data-tip-side="right" aria-label="Cut it open"><span data-icon="slice" aria-hidden="true"></span></button>
+    <button class="pp-sticky pp-note-btn heart-icon heart-toggle" id="btnBeat" type="button" aria-pressed="true" data-tip="Heartbeat" data-tip-side="right" aria-label="Heartbeat"><span data-icon="pulse" aria-hidden="true"></span></button>
+    <button class="pp-sticky pp-note-btn heart-icon heart-toggle" id="btnCoronary" type="button" aria-pressed="true" data-tip="Coronary vessels" data-tip-side="right" aria-label="Coronary vessels"><span data-icon="vessel" aria-hidden="true"></span></button>
+    <button class="pp-sticky pp-note-btn heart-icon heart-toggle" id="btnRotate" type="button" aria-pressed="true" data-tip="Spin" data-tip-side="right" aria-label="Spin"><span data-icon="rotate" aria-hidden="true"></span></button>
+    <button class="pp-sticky pp-note-btn heart-icon heart-toggle heart-wire" id="btnWire" type="button" aria-pressed="false" data-tip="Wireframe" data-tip-side="right" aria-label="Wireframe"><span data-icon="mesh" aria-hidden="true"></span></button>
+    <span class="heart-sep" aria-hidden="true"></span>
+    <button class="pp-sticky pp-note-btn heart-icon pp-sticky--c3" id="btnReset" type="button" data-tip="Reset view" data-tip-side="right" aria-label="Reset view"><span data-icon="target" aria-hidden="true"></span></button>
   </div>
 </nav>
+
+<div class="heart-layer heart-dials">
+  <div class="heart-dial" id="rateDial"></div>
+  <div class="heart-dial-group" id="sectionGroup" hidden>
+    <div class="heart-seg" role="group" aria-label="Cut direction">
+      <button class="pp-sticky pp-note-btn heart-icon heart-toggle" type="button" data-axis="front" aria-pressed="true" data-tip="Cut from the front" data-tip-side="left" aria-label="Cut from the front"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="16" fill="var(--accent-danger)" opacity=".85"/><path d="M12 2v20" stroke="#fff" stroke-width="2.4"/><path d="M12 2v20" stroke="var(--ink)" stroke-width="1" stroke-dasharray="2 2"/></svg></button>
+      <button class="pp-sticky pp-note-btn heart-icon heart-toggle" type="button" data-axis="top" aria-pressed="false" data-tip="Cut from the top" data-tip-side="left" aria-label="Cut from the top"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" fill="var(--accent-secondary)" opacity=".85"/><path d="M2 12h20" stroke="#fff" stroke-width="2.4"/><path d="M2 12h20" stroke="var(--ink)" stroke-width="1" stroke-dasharray="2 2"/></svg></button>
+      <button class="pp-sticky pp-note-btn heart-icon heart-toggle" type="button" data-axis="side" aria-pressed="false" data-tip="Cut from the side" data-tip-side="left" aria-label="Cut from the side"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6l6-3h8v15l-6 3H5z" fill="var(--accent-success)" opacity=".85"/><path d="M3 9l18 6" stroke="#fff" stroke-width="2.4"/><path d="M3 9l18 6" stroke="var(--ink)" stroke-width="1" stroke-dasharray="2 2"/></svg></button>
+    </div>
+    <div class="heart-dial" id="depthDial"></div>
+  </div>
+</div>
 
 <div class="heart-layer pp-sticky pp-sticky--c0 pp-sticky--tape heart-loading" id="loading" role="status" style="--pp-note-tilt:-2deg">
   <span id="loadingText">Loading heart…</span>

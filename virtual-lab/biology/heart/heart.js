@@ -7,7 +7,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { I } from '/home/js/dashboard/icons.js';
-import { heroPaint, SVG_SUN, SVG_MOON } from '/utils/components/nav-icons.js';
+import { heroPaint } from '/utils/components/nav-icons.js';
+import { mountTooltips, setTip } from '/utils/components/tooltip.js';
 import { createDial } from '/utils/components/dial.js';
 
 const $ = (id) => document.getElementById(id);
@@ -18,21 +19,11 @@ document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = I[el.d
 $('paint').innerHTML = heroPaint();
 
 const root = document.documentElement;
-function currentTheme() { return root.getAttribute('data-theme') || 'light'; }
-function paintThemeIcon() {
-  $('iconTheme').innerHTML = currentTheme() === 'dark' ? SVG_SUN : SVG_MOON;
-  $('btnTheme').setAttribute('aria-label', currentTheme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
-}
 let savedTheme = null;
 try { savedTheme = localStorage.getItem('pp-theme'); } catch (e) { /* storage blocked */ }
+// the page follows the theme chosen elsewhere on the site (no toggle here)
 root.setAttribute('data-theme', savedTheme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-paintThemeIcon();
-$('btnTheme').addEventListener('click', () => {
-  const next = currentTheme() === 'dark' ? 'light' : 'dark';
-  root.setAttribute('data-theme', next);
-  try { localStorage.setItem('pp-theme', next); } catch (e) { /* ignore */ }
-  paintThemeIcon();
-});
+mountTooltips();
 
 // ---------------------------------------------------------------- renderer
 const stage = $('stage');
@@ -77,11 +68,6 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-// on phones the notes sit just above the control dock, whose height varies
-const dock = document.querySelector('.heart-controls');
-new ResizeObserver(() => {
-  root.style.setProperty('--dock-h', `${Math.round(dock.getBoundingClientRect().height) + 26}px`);
-}).observe(dock);
 
 // ------------------------------------------------------ the beat (shader + CPU)
 // One continuous displacement field moves every part, so the pieces stay joined
@@ -377,7 +363,9 @@ function stopAutoRotate() { controls.autoRotate = false; setPressed($('btnRotate
 $('btnExplode').addEventListener('click', () => {
   const on = !isPressed($('btnExplode'));
   setPressed($('btnExplode'), on);
-  $('explodeLabel').textContent = on ? 'Assemble' : 'Disassemble';
+  const tip = on ? 'Put it back together' : 'Take it apart';
+  setTip($('btnExplode'), tip, 'right');
+  $('btnExplode').setAttribute('aria-label', tip);
   state.explodeTarget = on ? 1 : 0;
   const dir = camera.position.clone().sub(controls.target);
   flyTo(dir, on ? EXPLODED_DIST : HOME_DIST);
