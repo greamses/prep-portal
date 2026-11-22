@@ -1,0 +1,22 @@
+/* The dial (utils/components/dial.js): a gauge you roll — chrome bezel, a face in a theme colour (--tone)
+   under glass, the graduations up to the value lit, the reading glowing. Labels in JetBrains Mono. */
+.pp-dials { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem 0.8rem; width: 100%; }
+.pp-dial { display: grid; justify-items: center; gap: 0.2rem; min-width: 0; }
+.pp-dial__face { position: relative; width: min(100%, 8.6rem); aspect-ratio: 1; cursor: grab; touch-action: none; outline: none; border-radius: 50%; filter: drop-shadow(0 3px 5px rgba(30, 20, 10, 0.35)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3)); }
+.pp-dial__face.is-turning { cursor: grabbing; }
+.pp-dial__face:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary, #f4c95d) 70%, transparent); }
+.pp-dial__face svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.pp-dial__track { fill: none; stroke: rgba(42, 39, 35, 0.1); stroke-width: 3.2; stroke-linecap: round; }
+.pp-dial__fill { fill: none; stroke: color-mix(in srgb, var(--tone) 72%, #3a2a10); stroke-width: 3.2; stroke-linecap: round; }
+.pp-dial__ticks line { stroke: rgba(42, 39, 35, 0.28); stroke-width: 1; stroke-linecap: round; transition: stroke 0.15s; }
+.pp-dial__ticks line.is-major { stroke-width: 1.7; }
+.pp-dial__ticks line.is-lit { stroke: color-mix(in srgb, var(--tone) 60%, #2a1c08); filter: drop-shadow(0 0 1.8px var(--tone)) drop-shadow(0 0 1px #fff); }
+.pp-dial__pointer { stroke: #2a2723; stroke-width: 2.2; stroke-linecap: round; filter: drop-shadow(0 0.6px 0.8px rgba(0, 0, 0, 0.35)); }
+.pp-dial__cap { stroke: #2a2c30; stroke-width: 0.8; filter: drop-shadow(0 1px 1.2px rgba(0, 0, 0, 0.6)); transition: r 0.15s; }
+.pp-dial__face:hover .pp-dial__cap, .pp-dial__face.is-turning .pp-dial__cap { r: 6.4; }
+.pp-dial__read { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; pointer-events: none; padding-top: 4%; }
+.pp-dial__val { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.05rem, 4.2vw, 1.5rem); line-height: 1; color: color-mix(in srgb, var(--tone) 45%, #1e1608); text-shadow: 0 0 2px #fff, 0 0 8px var(--tone), 0 0 16px var(--tone); }
+.pp-dial__unit { font-family: var(--font-mono); font-size: 0.62rem; font-weight: 700; color: color-mix(in srgb, var(--tone) 45%, #1e1608); min-height: 1em; }
+.pp-dial__label { margin: 0.15rem 0 0; font-family: var(--font-mono); font-weight: 700; font-size: 0.74rem; text-align: center; line-height: 1.3; color: var(--text-primary); }
+.pp-dial__ends { margin: 0; display: flex; justify-content: space-between; width: min(100%, 8.6rem); font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-tertiary, #8a847a); }
+.pp-dial__ends i { font-style: normal; }

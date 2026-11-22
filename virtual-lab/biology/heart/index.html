@@ -59,15 +59,12 @@
   .heart-toggle[aria-pressed="false"] { --pp-note-bg: #f0ece2; color: #5a544a; }
   .heart-toggle, .heart-reset { font-size: 0.8rem; padding: 0.5rem 0.85rem 0.55rem; }
   .heart-toggle svg, .heart-reset svg { width: 18px; height: 18px; }
-  .heart-sliders { gap: 18px; }
-  .heart-slider { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
-  .heart-slider__label, .heart-slider output {
-    font: 600 0.68rem/1 var(--font-mono, monospace); letter-spacing: .06em; text-transform: uppercase; color: var(--text-secondary);
-  }
-  .heart-slider output { min-width: 5.2em; }
-  .heart-slider input[type="range"] { width: 150px; accent-color: var(--accent-primary); }
-  .heart-seg { display: inline-flex; gap: 6px; }
-  .heart-seg .pp-note-btn { font-size: 0.75rem; padding: 0.35rem 0.7rem 0.4rem; }
+  .heart-dials { gap: 28px; align-items: flex-end; }
+  /* the shared dial (utils/components/dial.js) sizes itself to its host */
+  .heart-dial { width: 108px; }
+  .heart-dial-group { display: inline-flex; align-items: center; gap: 14px; }
+  .heart-seg { display: inline-flex; flex-direction: column; gap: 6px; }
+  .heart-seg .pp-note-btn { font-size: 0.75rem; padding: 0.3rem 0.7rem 0.35rem; }
 
   /* Loading note */
   .heart-loading { top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-2deg); z-index: 3; transition: opacity .4s; }
@@ -94,7 +91,9 @@
     .heart-toggle, .heart-reset { font-size: 0.72rem; padding: 0.4rem 0.6rem 0.45rem; }
     .heart-toggle svg, .heart-reset svg { width: 15px; height: 15px; }
     .heart-wire { display: none !important; }
-    .heart-slider input[type="range"] { width: 120px; }
+    .heart-dials { gap: 16px; }
+    .heart-dial { width: 86px; }
+    .heart-seg .pp-note-btn { font-size: 0.68rem; padding: 0.25rem 0.55rem 0.3rem; }
   }
 </style>
 <script type="importmap">
@@ -156,20 +155,15 @@
       <button class="pp-sticky pp-note-btn heart-toggle heart-wire" id="btnWire" type="button" aria-pressed="false"><span data-icon="mesh" aria-hidden="true"></span>Wireframe</button>
       <button class="pp-sticky pp-note-btn pp-sticky--c3 heart-reset" id="btnReset" type="button"><span data-icon="target" aria-hidden="true"></span>Reset view</button>
     </div>
-    <div class="heart-row heart-sliders">
-      <label class="heart-slider">
-        <span class="heart-slider__label">Heart rate</span>
-        <input type="range" id="rate" min="30" max="120" step="1" value="60">
-        <output id="rateValue" for="rate">60 bpm</output>
-      </label>
-      <div class="heart-slider" id="sectionGroup" hidden>
-        <span class="heart-slider__label">Cut</span>
+    <div class="heart-row heart-dials">
+      <div class="heart-dial" id="rateDial"></div>
+      <div class="heart-dial-group" id="sectionGroup" hidden>
         <div class="heart-seg" role="group" aria-label="Cut direction">
           <button class="pp-sticky pp-note-btn heart-toggle" type="button" data-axis="front" aria-pressed="true">Front</button>
           <button class="pp-sticky pp-note-btn heart-toggle" type="button" data-axis="top" aria-pressed="false">Top</button>
           <button class="pp-sticky pp-note-btn heart-toggle" type="button" data-axis="side" aria-pressed="false">Side</button>
         </div>
-        <input type="range" id="depth" min="-1.3" max="1.3" step="0.01" value="0.2" aria-label="Cut depth">
+        <div class="heart-dial" id="depthDial"></div>
       </div>
     </div>
   </div>

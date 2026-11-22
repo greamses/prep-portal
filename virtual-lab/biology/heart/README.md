@@ -29,6 +29,8 @@ An interactive, anatomy-inspired heart you can take apart, cut open and watch be
 - **Heartbeat:** atria then ventricles contract, great arteries stretch, valves move,
   with the phase of the cardiac cycle on a sticky note. Rate is adjustable.
 - **Tap a part** to see its name and what it does.
+- **Dials** for heart rate and cut depth use the shared dial component
+  (`utils/components/dial.js` + `dial.css`, the same one the soroban drills use).
 
 Motion starts paused when the visitor's system asks for reduced motion.
 

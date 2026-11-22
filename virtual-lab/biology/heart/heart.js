@@ -8,6 +8,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { I } from '/home/js/dashboard/icons.js';
 import { heroPaint, SVG_SUN, SVG_MOON } from '/utils/components/nav-icons.js';
+import { createDial } from '/utils/components/dial.js';
 
 const $ = (id) => document.getElementById(id);
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -382,12 +383,18 @@ $('btnExplode').addEventListener('click', () => {
   flyTo(dir, on ? EXPLODED_DIST : HOME_DIST);
 });
 
+// cut depth dial: 0% = the far side of the heart, 100% = the near side
+const depthToPct = (d) => { const ax = AXES[state.axis]; return ((d - ax.min) / (ax.max - ax.min)) * 100; };
+const pctToDepth = (p) => { const ax = AXES[state.axis]; return ax.min + (p / 100) * (ax.max - ax.min); };
+const depthDial = createDial({
+  label: 'Cut depth', min: 0, max: 100, step: 1, value: Math.round(depthToPct(state.depth)),
+  format: (v) => `${v}%`, unit: '%', tone: '--accent-secondary',
+  onInput: (v) => { state.depth = pctToDepth(v); },
+});
+$('depthDial').append(depthDial.el);
 function applySectionUI() {
   $('sectionGroup').hidden = !state.section;
-  const ax = AXES[state.axis];
-  const depth = $('depth');
-  depth.min = ax.min; depth.max = ax.max;
-  depth.value = state.depth;
+  depthDial.value = Math.round(depthToPct(state.depth));
   document.querySelectorAll('[data-axis]').forEach((b) => setPressed(b, b.dataset.axis === state.axis));
 }
 $('btnSection').addEventListener('click', () => {
@@ -407,17 +414,17 @@ document.querySelectorAll('[data-axis]').forEach((btn) => btn.addEventListener('
   flyTo(AXES[state.axis].cam, HOME_DIST);
   applySectionUI();
 }));
-$('depth').addEventListener('input', (e) => { state.depth = parseFloat(e.target.value); });
 
 $('btnBeat').addEventListener('click', () => {
   state.beat = !isPressed($('btnBeat'));
   setPressed($('btnBeat'), state.beat);
 });
 setPressed($('btnBeat'), state.beat);
-$('rate').addEventListener('input', (e) => {
-  state.bpm = parseInt(e.target.value, 10);
-  $('rateValue').textContent = `${state.bpm} bpm`;
-});
+$('rateDial').append(createDial({
+  label: 'Heart rate', min: 30, max: 120, step: 1, value: state.bpm,
+  format: (v) => `${v} bpm`, unit: 'bpm', tone: '--accent-danger',
+  onInput: (v) => { state.bpm = v; },
+}).el);
 
 $('btnCoronary').addEventListener('click', () => {
   const on = !isPressed($('btnCoronary'));
