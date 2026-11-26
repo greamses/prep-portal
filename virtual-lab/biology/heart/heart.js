@@ -67,21 +67,46 @@ controls.maxDistance = 1.4;
 controls.autoRotate = !reducedMotion;
 controls.autoRotateSpeed = 0.7;
 
+// The heart is framed in the space the panels leave free: above the control dock
+// (and the cycle note on phones), below the info card when it spans the screen.
+const view = { y: 0, zoom: 1 };
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.fov = w / h < 0.8 ? 48 : 35;
+  camera.zoom = view.zoom;
+  if (view.y) camera.setViewOffset(w, h, 0, view.y, w, h);
+  else camera.clearViewOffset();
   camera.updateProjectionMatrix();
 }
-window.addEventListener('resize', resize);
-resize();
-
-// on phones the notes sit just above the control dock, whose height varies
 const dock = document.querySelector('.heart-controls');
-new ResizeObserver(() => {
-  root.style.setProperty('--dock-h', `${Math.round(dock.getBoundingClientRect().height) + 26}px`);
-}).observe(dock);
+const infoCard = document.querySelector('.heart-info');
+const notesCol = document.querySelector('.heart-notes');
+function spansMiddle(el, w) {
+  const r = el.getBoundingClientRect();
+  return r.width > 0 && r.left < w / 2 && r.right > w / 2 ? r : null;
+}
+function frameFreeArea() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const rd = dock.getBoundingClientRect();
+  // on phones the notes sit just above the dock: place them before measuring them
+  root.style.setProperty('--dock-h', `${Math.round(rd.height) + 26}px`);
+  let top = 0, bottom = rd.top - 12;
+  const ri = spansMiddle(infoCard, w);
+  if (ri) top = ri.bottom + 8;
+  const rn = spansMiddle(notesCol, w);
+  if (rn && rn.top > h / 2) bottom = Math.min(bottom, rn.top - 8);
+  const free = Math.max(120, bottom - top);
+  const share = w / h < 0.8 ? 0.46 : 0.62; // how much of the height the heart fills at zoom 1
+  view.y = Math.round(h / 2 - (top + bottom) / 2);
+  view.zoom = Math.min(1, Math.max(0.5, free / (share * h)));
+  resize();
+}
+window.addEventListener('resize', frameFreeArea);
+const panelObserver = new ResizeObserver(frameFreeArea);
+[dock, infoCard, notesCol].forEach((el) => panelObserver.observe(el));
+frameFreeArea();
 
 // ------------------------------------------------------ the beat (shader + CPU)
 // One continuous displacement field moves every part, so the pieces stay joined
