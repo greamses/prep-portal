@@ -206,8 +206,8 @@ function editTerm(row, col, delta) {
   }
 }
 
-/* The little menu that opens on a fruit: two sticky notes, duplicate and
-   delete, just above it. */
+/* The little menu that opens on a fruit: two plain icons (no sticky
+   notes), duplicate and delete, on a small paper strip just above it. */
 let menuFor = null;
 function openMenu(pick) {
   const m = $("#fs-menu");
@@ -247,8 +247,8 @@ function buildMenu() {
   m.className = "fs-menu";
   m.setAttribute("role", "menu");
   m.hidden = true;
-  m.innerHTML = `<button type="button" role="menuitem" class="pp-sticky pp-note-btn pp-sticky--c2" data-act="dup"></button>`
-    + `<button type="button" role="menuitem" class="pp-sticky pp-note-btn pp-sticky--c4" data-act="del"></button>`;
+  m.innerHTML = `<button type="button" role="menuitem" class="pp-plain fs-menu__btn" data-act="dup"></button>`
+    + `<button type="button" role="menuitem" class="pp-plain fs-menu__btn fs-menu__btn--del" data-act="del"></button>`;
   document.body.appendChild(m);
   iconButton("#fs-menu [data-act='dup']", UI.copy(), "Duplicate this fruit");
   iconButton("#fs-menu [data-act='del']", UI.trash(), "Delete this fruit");
