@@ -368,7 +368,23 @@
 .fs-opts .fs-opt.is-on { --pp-note-bg: #fff3a8; color: #14130f; }
 .fs-opts .fs-opt em { font-size: 0.66rem; font-style: normal; font-weight: 600; opacity: 0.75; }
 
-/* the four levels two by two, so the card is as wide as two notes */
-#fs-opt-level { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-#fs-opt-level .fs-opt { width: 100%; }
-@media (max-width: 380px) { #fs-opt-level { grid-template-columns: minmax(0, 1fr); } }
+/* the options are icons: square notes, the icon in the middle */
+.fs-opts .fs-opt {
+  align-items: center;
+  justify-content: center;
+  min-width: 3.6rem;
+  min-height: 3.3rem;
+  padding: 0.5rem 0.7rem;
+}
+.fs-opt__ico { display: inline-flex; }
+.fs-opts .fs-opt .fs-opt__ico > svg { width: 32px; height: 32px; }
+.fs-opts .fs-opt:not(.is-on) .fs-opt__ico { opacity: 0.55; }
+
+/* a level's stars, one to four in a row */
+.fs-stars { display: inline-flex; gap: 1px; }
+.fs-opts .fs-opt .fs-stars svg { width: 20px; height: 20px; }
+@media (max-width: 420px) {
+  .fs-opts .fs-opt .fs-stars svg { width: 15px; height: 15px; }
+  #fs-opt-level .fs-opt { min-width: 3rem; padding: 0.5rem 0.5rem; }
+  #fs-opt-level { gap: 0.45rem; }
+}

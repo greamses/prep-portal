@@ -454,20 +454,46 @@ function levelShort(l) {
   return [`${l.fruits} fruits`, l.maxK === 3 ? "triples" : "doubles", l.minus ? "take away" : ""].filter(Boolean).join(" · ");
 }
 
-const optHtml = (kind, val, label, on, hint = "") =>
-  `<button type="button" role="radio" class="pp-sticky pp-note-btn fs-opt${on ? " is-on" : ""}"`
-  + ` data-opt="${kind}" data-val="${val}" aria-checked="${on}">`
-  + `<span>${label}</span>${hint ? `<em>${hint}</em>` : ""}</button>`;
+/* Every setting is an ICON on a sticky note (the house rule: a button shows
+   an icon or words, never both). Its name and what it does are in the
+   tooltip and the aria-label. */
+const optHtml = (kind, val, glyph, label, on, hint = "") => {
+  const words = hint ? `${label}: ${hint}` : label;
+  return `<button type="button" role="radio" class="pp-sticky pp-note-btn fs-opt${on ? " is-on" : ""}"`
+    + ` data-opt="${kind}" data-val="${val}" aria-checked="${on}" aria-label="${words}" data-tip="${words}">`
+    + `<span class="fs-opt__ico" aria-hidden="true">${glyph}</span></button>`;
+};
+
+/* A level is as many stars as it is hard: one for Starter, four for Hard. */
+const stars = (n) => `<span class="fs-stars fs-stars--${n}">${UI.star(true)().repeat(n)}</span>`;
+
+/* The letter a, drawn: what "Letters" turns the fruits into. */
+const LETTER_ICON = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">`
+  + `<rect x="2" y="2" width="20" height="20" rx="2" fill="var(--accent-secondary)"/>`
+  + `<text x="12" y="17.6" text-anchor="middle" font-family="'STIX Two Text','Cambria Math',Georgia,serif" font-style="italic" font-weight="600" font-size="17" fill="#fff">a</text></svg>`;
+
+/* A box over a fruit: the working box. */
+const WORK_ICON = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">`
+  + `<rect x="3" y="1.4" width="18" height="9.4" rx="1.4" fill="var(--accent-secondary)"/>`
+  + `<rect x="7" y="5" width="10" height="2.4" rx="1.2" fill="#fff"/>`
+  + `<circle cx="12" cy="17.4" r="5.4" fill="var(--accent-danger)"/>`
+  + `<circle cx="10.2" cy="15.6" r="1.3" fill="#fff" opacity=".7"/></svg>`;
+
+/* The same fruit with no box over it. */
+const BARE_ICON = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">`
+  + `<rect x="3" y="1.4" width="18" height="9.4" rx="1.4" fill="var(--text-tertiary)" opacity=".35"/>`
+  + `<circle cx="12" cy="17.4" r="5.4" fill="var(--accent-danger)"/>`
+  + `<circle cx="10.2" cy="15.6" r="1.3" fill="#fff" opacity=".7"/></svg>`;
 
 function drawSettings() {
   $("#fs-opt-level").innerHTML = LEVELS
-    .map((l) => optHtml("level", l.id, l.name, S.level === l.id, levelShort(l))).join("");
+    .map((l, i) => optHtml("level", l.id, stars(i + 1), l.name, S.level === l.id, levelShort(l))).join("");
   $("#fs-opt-letters").innerHTML =
-    optHtml("letters", "0", "Fruits", !S.letters, "the pictures")
-    + optHtml("letters", "1", "Letters", S.letters, "a, b, c as algebra");
+    optHtml("letters", "0", fruitSvg("apple"), "Fruits", !S.letters, "the pictures")
+    + optHtml("letters", "1", LETTER_ICON, "Letters", S.letters, "a, b, c as algebra");
   $("#fs-opt-work").innerHTML =
-    optHtml("work", "1", "Shown", S.work, "write each term's value")
-    + optHtml("work", "0", "Hidden", !S.work, "just the fruits");
+    optHtml("work", "1", WORK_ICON, "Working boxes shown", S.work, "write each term's value")
+    + optHtml("work", "0", BARE_ICON, "Working boxes hidden", !S.work, "just the fruits");
 }
 
 /* The pill in the bar names the level and opens the settings. */
