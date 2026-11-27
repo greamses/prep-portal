@@ -22,19 +22,20 @@
    the cap), so Hard stays hard by its shape, not by big numbers.
 
    THE LEVELS differ in how many fruits, how big a group of one fruit can be
-   (single / double / triple), whether a term can be taken away, and the SHAPE
-   of the system:
-     chain  — the first line has one fruit only, each line after brings in one
-              new fruit. Solved top to bottom, one at a time.
-     tangle — every line has two or more fruits and no line gives one away on
-              its own (a+b, a+c, b+c). The fruits must be found together.
+   (single / double / triple), whether a term can be taken away, and whether
+   a line may hold THREE fruits (`wide`).
+
+   NO LINE EVER HOLDS ONE FRUIT ALONE (the user's rule: "2a should not be
+   alone"). Every line has two or more different fruits and none gives a fruit
+   away on its own (a+b, a+c, b+c), so the fruits are always found together,
+   by comparing lines.
    ========================================================================== */
 
 export const LEVELS = [
-  { id: "starter", name: "Starter", fruits: 2, maxK: 2, minus: false, shape: "chain", max: 10, cap: 40, ask: "sum" },
-  { id: "easy", name: "Easy", fruits: 3, maxK: 2, minus: false, shape: "chain", max: 12, cap: 60, ask: "sum" },
-  { id: "medium", name: "Medium", fruits: 3, maxK: 3, minus: true, shape: "mixed", max: 15, cap: 80, ask: "sum" },
-  { id: "hard", name: "Hard", fruits: 4, maxK: 3, minus: true, shape: "tangle", max: 12, cap: 60, ask: "times" },
+  { id: "starter", name: "Starter", fruits: 2, maxK: 2, minus: false, wide: false, max: 10, cap: 40, ask: "sum" },
+  { id: "easy", name: "Easy", fruits: 3, maxK: 2, minus: false, wide: false, max: 12, cap: 60, ask: "sum" },
+  { id: "medium", name: "Medium", fruits: 3, maxK: 3, minus: true, wide: true, max: 15, cap: 80, ask: "sum" },
+  { id: "hard", name: "Hard", fruits: 4, maxK: 3, minus: true, wide: true, max: 12, cap: 60, ask: "times" },
 ];
 
 export const levelOf = (id) => LEVELS.find((l) => l.id === id) || LEVELS[0];
@@ -112,31 +113,14 @@ function equation(R, L, vars, vals) {
   return { terms, total: totalOf(terms, vals) };
 }
 
-/* chain: line i brings in unknown i, with some of the ones before it. The
-   first line is one fruit on its own, at least doubled, so it can be read
-   straight off: apple + apple = 8. */
-function chain(R, L, vals) {
-  const n = vals.length;
-  const eqs = [];
-  {
-    const k = int(R, 2, Math.max(2, L.maxK));
-    eqs.push({ terms: [{ v: 0, k, s: 1 }], total: k * vals[0] });
-  }
-  for (let i = 1; i < n; i++) {
-    const before = shuffle(R, [...Array(i).keys()]).slice(0, int(R, 1, Math.min(2, i)));
-    eqs.push(equation(R, L, [i, ...before], vals));
-  }
-  return eqs;
-}
-
-/* tangle: every line two or more fruits. Starts from the round of pairs
+/* Every line two or more fruits. Starts from the round of pairs
    (a+b, b+c, c+a, …) so every fruit is used, then lets the level's groups
    and signs loose on it. */
-function tangle(R, L, vals) {
+function lines(R, L, vals) {
   const n = vals.length;
   return [...Array(n).keys()].map((i) => {
     const vars = [i, (i + 1) % n];
-    if (n > 3 && R() < 0.4) vars.push((i + 2) % n);
+    if (L.wide && n > 2 && R() < 0.4) vars.push((i + 2) % n);
     return equation(R, L, vars, vals);
   });
 }
@@ -178,23 +162,20 @@ export function makePuzzle({ level = "starter", seed = 1, fruits }) {
        look like a mistake to a child even when they are not */
     const pool = shuffle(R, [...Array(L.max).keys()].map((i) => i + 1));
     const vals = pool.slice(0, n);
-    const shape = L.shape === "mixed" ? (R() < 0.5 ? "chain" : "tangle") : L.shape;
-    let eqs = shape === "chain" ? chain(R, L, vals) : tangle(R, L, vals);
+    const eqs = shuffle(R, lines(R, L, vals));
     const M = eqs.map((e) => rowOf(e, n));
     if (det(M) === 0) continue;
-    /* a tangle that slipped into giving one fruit away on its own is a chain */
-    if (shape === "tangle" && M.some((r) => r.filter((x) => x !== 0).length < 2)) continue;
+    /* never one fruit alone on a line */
+    if (M.some((r) => r.filter((x) => x !== 0).length < 2)) continue;
     /* keep totals within a child's reach: every line, and the last one too */
     if (eqs.some((e) => e.total > L.cap)) continue;
     const q = question(R, L, vals);
     if (q.answer > L.cap * 1.5) continue;
-    if (shape === "tangle") eqs = shuffle(R, eqs);
     const chosen = shuffle(R, fruits).slice(0, n);
     return {
       level: L.id,
       seed,
       n,
-      shape,
       fruits: chosen,
       letters: "abcd".slice(0, n).split(""),
       values: vals,

@@ -23,12 +23,13 @@ const FRUIT_IDS = FRUITS.map((f) => f.id);
 const S = {
   level: LEVELS[0].id,
   letters: false,
+  work: true,          // the working boxes above the terms
   p: null,
   done: false,
 };
 
 function remember() {
-  try { localStorage.setItem(KEEP, JSON.stringify({ level: S.level, letters: S.letters })); } catch { /* fine */ }
+  try { localStorage.setItem(KEEP, JSON.stringify({ level: S.level, letters: S.letters, work: S.work })); } catch { /* fine */ }
 }
 function recall() {
   try {
@@ -36,6 +37,7 @@ function recall() {
     if (!was) return;
     if (LEVELS.some((l) => l.id === was.level)) S.level = was.level;
     S.letters = !!was.letters;
+    if (typeof was.work === "boolean") S.work = was.work;
   } catch { /* fine */ }
 }
 
@@ -145,6 +147,7 @@ function check() {
 
   /* the working boxes above the terms: only the ones filled in are marked */
   document.querySelectorAll(".fs-box[data-row]").forEach((b) => {
+    if (!S.work) return mark(b, null);
     const n = read(b);
     if (n == null) return mark(b, null);
     const terms = b.dataset.row === "q" ? p.question.terms : p.equations[+b.dataset.row].terms;
@@ -206,6 +209,27 @@ function drawLettersButton() {
   b.dataset.tip = word;
 }
 
+/* The working boxes come and go with a switch; what is typed in them stays,
+   and a hidden box is never marked. */
+function drawWorkButton() {
+  const b = $("#fs-work");
+  const word = S.work ? "Hide the working boxes" : "Show the working boxes";
+  b.innerHTML = WORK_ICON;
+  b.classList.toggle("is-off", !S.work);
+  b.setAttribute("aria-label", word);
+  b.setAttribute("aria-pressed", String(S.work));
+  setTip(b, word);
+  b.dataset.tip = word;
+  document.querySelector(".fs-board").classList.toggle("fs-board--bare", !S.work);
+}
+
+/* A box over a fruit: the working box, in our own drawing. */
+const WORK_ICON = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">`
+  + `<rect x="3" y="1.4" width="18" height="9.4" rx="1.4" fill="var(--accent-secondary)"/>`
+  + `<rect x="7" y="5" width="10" height="2.4" rx="1.2" fill="#fff"/>`
+  + `<circle cx="12" cy="17.4" r="5.4" fill="var(--accent-danger)"/>`
+  + `<circle cx="10.2" cy="15.6" r="1.3" fill="#fff" opacity=".7"/></svg>`;
+
 function iconButton(sel, glyph, word) {
   const b = $(sel);
   b.innerHTML = glyph;
@@ -217,7 +241,7 @@ function iconButton(sel, glyph, word) {
 function onKey(e) {
   if (e.key !== "Enter" || !e.target.classList.contains("fs-box")) return;
   e.preventDefault();
-  const all = [...document.querySelectorAll(".fs-box")];
+  const all = [...document.querySelectorAll(".fs-box")].filter((x) => x.offsetParent !== null);
   const next = all[all.indexOf(e.target) + 1];
   if (next) next.focus();
   else check();
@@ -228,6 +252,7 @@ function init() {
   $("#fs-eyebrow-icon").innerHTML = fruitSvg("pineapple");
   drawLevels();
   drawLettersButton();
+  drawWorkButton();
   iconButton("#fs-check", UI.check(), "Check my answers");
   iconButton("#fs-new", UI.again(), "New puzzle");
   mountTooltips();
@@ -245,6 +270,11 @@ function init() {
     remember();
     drawLettersButton();
     redraw();
+  });
+  $("#fs-work").addEventListener("click", () => {
+    S.work = !S.work;
+    remember();
+    drawWorkButton();
   });
   $("#fs-check").addEventListener("click", check);
   $("#fs-new").addEventListener("click", deal);

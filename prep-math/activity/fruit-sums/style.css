@@ -179,6 +179,11 @@
 .fs-box.is-right { border-style: solid; border-color: var(--accent-success, #7cc47c); background: color-mix(in srgb, var(--accent-success, #7cc47c) 22%, transparent); }
 .fs-box.is-wrong { border-style: solid; border-color: var(--accent-danger, #f07a7a); background: color-mix(in srgb, var(--accent-danger, #f07a7a) 20%, transparent); }
 
+/* working boxes switched off: they go, and the lines close up */
+.fs-board--bare .fs-term > .fs-box { display: none; }
+.fs-board--bare .fs-eqs { gap: 0.9rem; }
+.fs-tools .pp-note-btn.is-off { opacity: 0.55; }
+
 .fs-box--answer {
   align-self: center;
   width: 4.6rem;
