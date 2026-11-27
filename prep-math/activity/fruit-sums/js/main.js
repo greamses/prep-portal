@@ -405,7 +405,6 @@ function onKey(e) {
 
 function init() {
   recall();
-  $("#fs-eyebrow-icon").innerHTML = fruitSvg("pineapple");
   drawLevels();
   drawLettersButton();
   drawWorkButton();

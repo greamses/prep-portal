@@ -13,28 +13,16 @@
   padding: 1.5rem 1rem 5rem;
 }
 
-/* ── head ─────────────────────────────────────────────────────────────── */
-
-.fs-head { margin-bottom: 1rem; }
-.fs-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-secondary, #6b655c);
+/* the heading is for screen readers only */
+.fs-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
-.fs-eyebrow svg { width: 18px; height: 18px; display: block; }
-.fs-title {
-  margin: 0.35rem 0 0.4rem;
-  font-family: var(--font-display, "Unbounded", system-ui, sans-serif);
-  font-size: clamp(1.6rem, 4.5vw, 2.4rem);
-  font-weight: 900;
-  color: var(--ink, #2a2723);
-}
-.fs-title em { color: var(--accent-primary, #f4c95d); font-style: normal; }
 
 /* ── bar ──────────────────────────────────────────────────────────────── */
 
@@ -44,7 +32,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.8rem 1.2rem;
-  margin: 1rem 0 1.4rem;
+  margin: 0 0 1.4rem;
 }
 .fs-levels, .fs-tools { display: flex; flex-wrap: wrap; gap: 0.6rem; }
 
