@@ -64,27 +64,11 @@
 
 .fs-work {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 15rem;
-  gap: 1.6rem;
-  align-items: start;
-}
-@media (max-width: 820px) {
-  .fs-work { grid-template-columns: minmax(0, 1fr); }
+  grid-template-columns: minmax(0, 1fr);
 }
 
-.fs-board.pp-receipt, .fs-key.pp-receipt { display: block; }
+.fs-board.pp-receipt { display: block; }
 .fs-board__paper { padding: 1.6rem 1.4rem 1.8rem; overflow-x: auto; }
-.fs-key__paper { padding: 1.4rem 1.2rem 1.6rem; }
-
-.fs-label {
-  display: block;
-  margin-bottom: 0.8rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-secondary, #6b655c);
-}
 
 /* one equation a line */
 .fs-eqs { display: flex; flex-direction: column; gap: 2rem; }
@@ -105,9 +89,15 @@
 .fs-term {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 0.35rem;
+  min-width: 2.6rem;
 }
+/* the box above a term is exactly as wide as the fruits under it: it adds
+   nothing to the column's width (width 0) and stretches to it (min-width) */
+.fs-term > .fs-slot { width: 100%; }
+.fs-term .fs-box { width: 0; min-width: 100%; }
+.fs-term > .fs-pic { justify-content: center; }
 .fs-pic {
   display: flex;
   align-items: center;
@@ -195,16 +185,6 @@
   font-size: 1.4rem;
 }
 
-/* the key */
-.fs-key__rows { display: flex; flex-direction: column; gap: 1.5rem; padding-top: 0.9rem; }
-.fs-key__row { display: flex; align-items: center; gap: 0.6rem; --fs-fruit: 2.8rem; }
-.fs-key__pic { display: inline-flex; justify-content: center; min-width: 2.8rem; }
-.fs-key__row .fs-alg { font-size: 1.9rem; }
-.fs-box--key { width: 4.2rem; height: 2.6rem; font-size: 1.2rem; }
-
-@media (max-width: 820px) {
-  .fs-key__rows { flex-direction: row; flex-wrap: wrap; gap: 0.8rem 1.4rem; }
-}
 
 /* small screens: smaller fruit, so a four-fruit line still fits */
 @media (max-width: 560px) {

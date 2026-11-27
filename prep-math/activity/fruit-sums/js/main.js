@@ -6,9 +6,11 @@
    fruit side by side is 2a or 3a. The Letters switch draws the same puzzle as
    algebra, so a child can see the fruit sum IS the equation.
 
-   Above every term is a box for working: what that term is worth (two apples
-   at 7 each → 14). The key on the side is the answer — what each fruit is
-   worth — and the last line asks for one more total using them.
+   Above every term is a box: what that term is worth (two apples at 7 each
+   → 14). Filling every box right means every fruit was found — that IS the
+   answer, so there is no separate key — and the last line asks for one more
+   total using them. With the boxes switched off, the last line alone is the
+   answer.
 
    IT CAN BE PLAYED WITH. Every box rolls up and down (roll.js). Tap a fruit
    and it can be deleted or duplicated: the line's total changes to match,
@@ -122,15 +124,6 @@ function draw() {
     "q",
     `<span class="fs-slot fs-slot--answer"><input class="fs-box fs-box--answer" id="fs-answer" type="text" inputmode="numeric" autocomplete="off" aria-label="The answer to the last line"><span class="fs-mark" role="img" hidden></span></span>`,
   );
-  $("#fs-key").innerHTML = p.fruits
-    .map((id, v) => `<label class="fs-key__row">
-        <span class="fs-key__pic">${S.letters ? `<span class="fs-alg"><i>${p.letters[v]}</i></span>` : `<span class="fs-fruit">${fruitSvg(id)}</span>`}</span>
-        <span class="fs-op">=</span>
-        <span class="fs-slot"><input class="fs-box fs-box--key" type="text" inputmode="numeric" autocomplete="off"
-               data-v="${v}" aria-label="What ${S.letters ? p.letters[v] : nameOf(id).toLowerCase()} is worth"><span class="fs-mark" role="img" hidden></span></span>
-      </label>`)
-    .join("");
-  $("#fs-key-label").textContent = S.letters ? "Each letter is worth" : "Each fruit is worth";
   S.done = false;
 }
 
@@ -138,11 +131,11 @@ function draw() {
    whose fruits were just changed (`fresh`) loses its working boxes — they
    were about terms that are not there any more — and its marks. */
 function redraw(fresh = new Set()) {
-  const kept = [...document.querySelectorAll(".fs-box")].map((b) => [b.dataset.row, b.dataset.col, b.dataset.v, b.id, b.value, b.className]);
+  const kept = [...document.querySelectorAll(".fs-box")].map((b) => [b.dataset.row, b.dataset.col, b.id, b.value, b.className]);
   draw();
-  for (const [row, col, v, id, value, cls] of kept) {
+  for (const [row, col, id, value, cls] of kept) {
     if (row != null && fresh.has(row)) continue;
-    const sel = id ? `#${id}` : v != null ? `.fs-box--key[data-v="${v}"]` : `.fs-box[data-row="${row}"][data-col="${col}"]`;
+    const sel = id ? `#${id}` : `.fs-box[data-row="${row}"][data-col="${col}"]`;
     const b = $(sel);
     if (!b) continue;
     b.value = value;
@@ -292,7 +285,7 @@ function deal() {
   startClock();
   say(S.letters
     ? "Find the value of each letter."
-    : "Each fruit stands for a number. Find what each one is worth.");
+    : "Each fruit stands for a number. Write what each part is worth in its box.");
 }
 
 /* ── checking ─────────────────────────────────────────────────────────── */
@@ -320,19 +313,14 @@ function check() {
   let blank = 0;
   let wrong = 0;
 
-  /* the working boxes above the terms: only the ones filled in are marked */
+  /* the boxes above the terms ARE the answer: each one must be filled and
+     right (unless the boxes are switched off) */
   document.querySelectorAll(".fs-box[data-row]").forEach((b) => {
     if (!S.work) return mark(b, null);
     const n = read(b);
-    if (n == null) return mark(b, null);
-    const terms = b.dataset.row === "q" ? p.question.terms : p.equations[+b.dataset.row].terms;
-    mark(b, n === termValue(terms[+b.dataset.col], p.values));
-  });
-
-  document.querySelectorAll(".fs-box--key").forEach((b) => {
-    const n = read(b);
     if (n == null) { blank++; return mark(b, null); }
-    const ok = n === p.values[+b.dataset.v];
+    const terms = b.dataset.row === "q" ? p.question.terms : p.equations[+b.dataset.row].terms;
+    const ok = n === termValue(terms[+b.dataset.col], p.values);
     if (!ok) wrong++;
     mark(b, ok);
   });
@@ -351,7 +339,7 @@ function check() {
     if (S.final == null) { S.misses++; drawStats(); }
     say(wrong === 1 ? "One answer is not right yet. Check it against the lines." : `${wrong} answers are not right yet. Check them against the lines.`);
   } else {
-    say("So far so good. Fill in every fruit and the last line.");
+    say(S.work ? "So far so good. Fill in every box and the last line." : "So far so good. Now the last line.");
   }
 }
 
