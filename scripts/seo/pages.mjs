@@ -321,6 +321,8 @@ export const PAGES = [
       "Single, double and triple fruits",
       "Letters on or off: the fruit sum and the equation side by side",
       "A box above every term for the working",
+      "Roll any number up and down, or type it",
+      "Delete or duplicate a fruit and watch its line's total change",
     ],
   },
   {

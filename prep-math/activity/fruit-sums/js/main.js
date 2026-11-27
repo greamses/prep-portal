@@ -9,13 +9,20 @@
    Above every term is a box for working: what that term is worth (two apples
    at 7 each → 14). The key on the side is the answer — what each fruit is
    worth — and the last line asks for one more total using them.
+
+   IT CAN BE PLAYED WITH. Every box rolls up and down (roll.js). Tap a fruit
+   and it can be deleted or duplicated: the line's total changes to match,
+   so a child can ask "what if there were one more mango?" and see it. That
+   gives a fruit's value away, so it is exploring, not solving — and the
+   Put-back button returns the lines as they were dealt.
    ========================================================================== */
 
 import { UI } from "/utils/components/ui-icons.js";
 import { mountTooltips, setTip } from "/utils/components/tooltip.js";
 import { FRUITS, fruitSvg } from "/utils/components/fruits.js";
 import { PEN_TICK, PEN_CROSS } from "/utils/components/pen-marks.js";
-import { LEVELS, levelOf, makePuzzle, termValue } from "./gen.js";
+import { LEVELS, levelOf, makePuzzle, termValue, det } from "./gen.js";
+import { mountRolling } from "./roll.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const KEEP = "prep-portal:fruit-sums";
@@ -26,6 +33,7 @@ const S = {
   letters: false,
   work: true,          // the working boxes above the terms
   p: null,
+  orig: null,          // the lines as dealt, for Put back
   done: false,
 };
 
@@ -71,7 +79,8 @@ function termHtml(t, row, col) {
   return `<div class="fs-term">
       <span class="fs-slot"><input class="fs-box" type="text" inputmode="numeric" autocomplete="off"
              data-row="${row}" data-col="${col}" aria-label="What ${spoken(t)} is worth"><span class="fs-mark" role="img" hidden></span></span>
-      <div class="fs-pic">${pic}</div>
+      <button type="button" class="fs-pic fs-pick pp-plain" data-row="${row}" data-col="${col}"
+              aria-haspopup="menu" aria-expanded="false" aria-label="${spoken(t)}: delete or duplicate" data-tip="Delete or duplicate">${pic}</button>
     </div>`;
 }
 
@@ -90,7 +99,7 @@ function lineHtml(terms, row, right) {
 function draw() {
   const p = S.p;
   $("#fs-eqs").innerHTML = p.equations
-    .map((e, r) => lineHtml(e.terms, r, `<span class="fs-total">${e.total}</span>`))
+    .map((e, r) => lineHtml(e.terms, r, `<span class="fs-total" data-row="${r}">${e.total}</span>`))
     .join("");
   $("#fs-ask").innerHTML = lineHtml(
     p.question.terms,
@@ -109,21 +118,159 @@ function draw() {
   S.done = false;
 }
 
-/* Swapping fruits for letters keeps everything the child has typed. */
-function redraw() {
+/* Swapping fruits for letters keeps everything the child has typed. A line
+   whose fruits were just changed (`fresh`) loses its working boxes — they
+   were about terms that are not there any more — and its marks. */
+function redraw(fresh = new Set()) {
   const kept = [...document.querySelectorAll(".fs-box")].map((b) => [b.dataset.row, b.dataset.col, b.dataset.v, b.id, b.value, b.className]);
   draw();
   for (const [row, col, v, id, value, cls] of kept) {
+    if (row != null && fresh.has(row)) continue;
     const sel = id ? `#${id}` : v != null ? `.fs-box--key[data-v="${v}"]` : `.fs-box[data-row="${row}"][data-col="${col}"]`;
     const b = $(sel);
-    if (b) { b.value = value; mark(b, cls.includes("is-right") ? true : cls.includes("is-wrong") ? false : null); }
+    if (!b) continue;
+    b.value = value;
+    const stale = id === "fs-answer" && fresh.has("q");
+    mark(b, stale ? null : cls.includes("is-right") ? true : cls.includes("is-wrong") ? false : null);
   }
+}
+
+/* ── deleting and duplicating a fruit ─────────────────────────────────── */
+
+const MAX_GROUP = 5;   // more than five of one fruit no longer fits a line
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const termsOf = (row) => (row === "q" ? S.p.question.terms : S.p.equations[+row].terms);
+
+function edited() {
+  return JSON.stringify([S.p.equations, S.p.question]) !== JSON.stringify([S.orig.equations, S.orig.question]);
+}
+
+/* Does every fruit still have one value only? The same determinant test
+   the generator uses. */
+function stillOneAnswer() {
+  const n = S.p.n;
+  const M = S.p.equations.map((e) => {
+    const r = new Array(n).fill(0);
+    for (const t of e.terms) r[t.v] += t.s * t.k;
+    return r;
+  });
+  return det(M) !== 0;
+}
+
+function editTerm(row, col, delta) {
+  const p = S.p;
+  const terms = termsOf(row);
+  const t = terms[col];
+  if (!t) return;
+  if (delta > 0 && t.k >= MAX_GROUP) return say(`${MAX_GROUP} is as many as fit in one group.`);
+  if (delta < 0 && t.k === 1 && terms.length === 1) return say("A line needs at least one fruit on it.");
+
+  t.k += delta;
+  if (t.k === 0) terms.splice(col, 1);
+
+  let before;
+  let after;
+  if (row === "q") {
+    before = p.question.answer;
+    p.question.answer = terms.reduce((s, x) => s + termValue(x, p.values), 0);
+    after = p.question.answer;
+  } else {
+    const e = p.equations[+row];
+    before = e.total;
+    e.total = terms.reduce((s, x) => s + x.s * termValue(x, p.values), 0);
+    after = e.total;
+  }
+
+  redraw(new Set([String(row)]));
+  const tot = row === "q" ? null : $(`.fs-total[data-row="${row}"]`);
+  if (tot && after !== before) tot.classList.add(after > before ? "fs-total--up" : "fs-total--down");
+  drawResetButton();
+
+  if (row === "q") {
+    say("The last line changed, so its answer changes too.");
+  } else if (!stillOneAnswer()) {
+    say(`That line now comes to ${after}. But now more than one answer fits the lines. Put the lines back to get the puzzle again.`);
+  } else {
+    say(`That line now comes to ${after}: ${after > before ? "up" : "down"} by ${Math.abs(after - before)}. What does that tell you?`);
+  }
+}
+
+/* The little menu that opens on a fruit: two sticky notes, duplicate and
+   delete, just above it. */
+let menuFor = null;
+function openMenu(pick) {
+  const m = $("#fs-menu");
+  menuFor = { row: pick.dataset.row, col: +pick.dataset.col };
+  const t = termsOf(menuFor.row)[menuFor.col];
+  const lone = t.k === 1 && termsOf(menuFor.row).length === 1;
+  m.querySelector("[data-act='dup']").disabled = t.k >= MAX_GROUP;
+  m.querySelector("[data-act='del']").disabled = lone;
+  m.hidden = false;
+  const r = pick.getBoundingClientRect();
+  const w = m.offsetWidth;
+  const x = Math.min(window.innerWidth - w - 8, Math.max(8, r.left + r.width / 2 - w / 2));
+  m.style.left = `${x + window.scrollX}px`;
+  m.style.top = `${r.top + window.scrollY - m.offsetHeight - 6}px`;
+  closeMenuMarks();
+  pick.classList.add("is-open");
+  pick.setAttribute("aria-expanded", "true");
+  m.querySelector("button:not(:disabled)")?.focus({ preventScroll: true });
+}
+function closeMenuMarks() {
+  document.querySelectorAll(".fs-pick.is-open").forEach((x) => {
+    x.classList.remove("is-open");
+    x.setAttribute("aria-expanded", "false");
+  });
+}
+function closeMenu() {
+  const m = $("#fs-menu");
+  if (!m || m.hidden) return;
+  m.hidden = true;
+  menuFor = null;
+  closeMenuMarks();
+}
+
+function buildMenu() {
+  const m = document.createElement("div");
+  m.id = "fs-menu";
+  m.className = "fs-menu";
+  m.setAttribute("role", "menu");
+  m.hidden = true;
+  m.innerHTML = `<button type="button" role="menuitem" class="pp-sticky pp-note-btn pp-sticky--c2" data-act="dup"></button>`
+    + `<button type="button" role="menuitem" class="pp-sticky pp-note-btn pp-sticky--c4" data-act="del"></button>`;
+  document.body.appendChild(m);
+  iconButton("#fs-menu [data-act='dup']", UI.copy(), "Duplicate this fruit");
+  iconButton("#fs-menu [data-act='del']", UI.trash(), "Delete this fruit");
+  m.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-act]");
+    if (!b || !menuFor) return;
+    const { row, col } = menuFor;
+    closeMenu();
+    editTerm(row, col, b.dataset.act === "dup" ? 1 : -1);
+  });
+}
+
+function drawResetButton() {
+  $("#fs-reset").disabled = !S.orig || !edited();
+}
+
+function putBack() {
+  if (!S.orig || !edited()) return;
+  const rows = new Set(["q", ...S.p.equations.map((_, r) => String(r))]);
+  S.p.equations = clone(S.orig.equations);
+  S.p.question = clone(S.orig.question);
+  redraw(rows);
+  drawResetButton();
+  say("The lines are back as they were dealt.");
 }
 
 function deal() {
   const seed = (Math.floor(Math.random() * 999983) + 1) >>> 0;
   S.p = makePuzzle({ level: S.level, seed, fruits: FRUIT_IDS });
+  S.orig = clone({ equations: S.p.equations, question: S.p.question });
+  closeMenu();
   draw();
+  drawResetButton();
   say(S.letters
     ? "Find the value of each letter."
     : "Each fruit stands for a number. Find what each one is worth.");
@@ -264,6 +411,8 @@ function init() {
   drawWorkButton();
   iconButton("#fs-check", UI.check(), "Check my answers");
   iconButton("#fs-new", UI.again(), "New puzzle");
+  iconButton("#fs-reset", UI.undo(), "Put the lines back");
+  buildMenu();
   mountTooltips();
 
   $("#fs-levels").addEventListener("click", (e) => {
@@ -287,6 +436,22 @@ function init() {
   });
   $("#fs-check").addEventListener("click", check);
   $("#fs-new").addEventListener("click", deal);
+  $("#fs-reset").addEventListener("click", putBack);
+
+  /* a fruit opens its menu; anywhere else closes it */
+  document.addEventListener("click", (e) => {
+    const pick = e.target.closest(".fs-pick");
+    if (pick) {
+      if (pick.classList.contains("is-open")) closeMenu();
+      else openMenu(pick);
+      return;
+    }
+    if (!e.target.closest("#fs-menu")) closeMenu();
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
+  window.addEventListener("resize", closeMenu);
+
+  mountRolling(document.querySelector(".fs-work"), ".fs-box");
 
   /* only digits (and a minus at the front) in a box; typing clears a mark */
   document.addEventListener("input", (e) => {

@@ -231,3 +231,76 @@
   .fs-total { font-size: 1.3rem; }
   .fs-op { font-size: 1.2rem; }
 }
+
+/* ── playing with it ──────────────────────────────────────────────────── */
+
+/* a box rolls: drag it up or down (roll.js), so a finger on it must not
+   scroll the page */
+.fs-box { touch-action: none; cursor: ns-resize; }
+.fs-box:focus { cursor: text; }
+.fs-box.is-dragging { cursor: grabbing; }
+.fs-box.is-rolling { color: transparent; }
+
+.fs-roll {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--ink, #2a2723);
+}
+.fs-roll > span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fs-roll--up .fs-roll__old { animation: fs-out-up 0.16s ease-in forwards; }
+.fs-roll--up .fs-roll__new { animation: fs-in-up 0.16s ease-out both; }
+.fs-roll--down .fs-roll__old { animation: fs-out-down 0.16s ease-in forwards; }
+.fs-roll--down .fs-roll__new { animation: fs-in-down 0.16s ease-out both; }
+@keyframes fs-out-up { to { transform: translateY(-100%); opacity: 0; } }
+@keyframes fs-in-up { from { transform: translateY(100%); opacity: 0; } }
+@keyframes fs-out-down { to { transform: translateY(100%); opacity: 0; } }
+@keyframes fs-in-down { from { transform: translateY(-100%); opacity: 0; } }
+
+/* a total that changed rolls in from the way it went */
+.fs-total--up { animation: fs-in-up 0.3s ease-out; }
+.fs-total--down { animation: fs-in-down 0.3s ease-out; }
+
+/* a fruit is pressable: it opens the delete / duplicate menu */
+.fs-pick.pp-plain {
+  display: flex;
+  align-items: center;
+  padding: 0.1rem 0.2rem;
+  border: 2px dashed transparent;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.fs-pick.pp-plain:hover,
+.fs-pick.pp-plain:focus-visible,
+.fs-pick.pp-plain.is-open {
+  outline: none;
+  border-color: var(--accent-secondary, #6fb7e8);
+  background: color-mix(in srgb, var(--accent-secondary, #6fb7e8) 12%, transparent);
+}
+
+.fs-menu {
+  position: absolute;
+  z-index: 50;
+  display: flex;
+  gap: 0.5rem;
+}
+.fs-menu[hidden] { display: none; }
+.fs-menu .pp-note-btn { min-width: 2.7rem; min-height: 2.5rem; padding: 0.45rem 0.65rem; }
+.fs-menu .pp-note-btn svg { width: 20px; height: 20px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fs-roll > span, .fs-total--up, .fs-total--down { animation: none !important; }
+  .fs-roll__old { display: none !important; }
+}
